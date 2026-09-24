@@ -285,9 +285,220 @@ details.test-panel summary {
   overflow-y: auto;
 }
 
+/* ---------- Lot 1 : en-tête, cartes, appareils, interrupteurs, Dormir ---------- */
+
+body { padding-bottom: 104px; } /* place pour la barre « Dormir » */
+
+.app-header { flex-wrap: wrap; }
+
+.indicators {
+  order: 3;
+  width: 100%;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.indicator {
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .indicators { justify-content: flex-start; gap: 8px 28px; }
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .cards { grid-template-columns: 1fr 1fr; }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+  color: var(--text);
+  font: inherit;
+}
+
+button.card { cursor: pointer; min-height: 44px; }
+button.card:active { transform: translateY(1px); }
+
+.card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.card-title .chevron { color: var(--text-muted); font-weight: 400; }
+
+.big {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.muted { color: var(--text-muted); font-size: 0.9rem; }
+.num { font-variant-numeric: tabular-nums; }
+
+.alert {
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip.panne { background: var(--danger); border-color: var(--danger); color: var(--danger-contrast); }
+.chip.warn { border-color: var(--danger); color: var(--danger); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.bar {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.bar-fill.warn { background: var(--color-sun); }
+.bar-fill.bad { background: var(--danger); }
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px 0 6px;
+  border-radius: 999px;
+  border: 2px solid var(--danger);
+  background: var(--danger);
+  color: var(--danger-contrast);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.switch .knob {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.switch[aria-checked="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  flex-direction: row-reverse;
+  padding: 0 6px 0 14px;
+}
+
+.switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.switch:focus-visible, .btn:focus-visible, .card:focus-visible, .tab-btn:focus-visible {
+  outline: 3px solid var(--color-sun);
+  outline-offset: 2px;
+}
+
+.device-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.device-actions .btn { padding: 0 12px; }
+
+.device-list { display: flex; flex-direction: column; gap: 12px; margin: 12px 0; }
+
+.screen-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.screen-head h2 { margin: 0; }
+
+.sleep-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: var(--bg-header);
+  border-top: 1px solid var(--border);
+}
+
+.sleep-bar .btn {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  min-height: 52px;
+  font-size: 1.1rem;
+}
+
+.report-list { list-style: none; margin: 12px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+select {
+  min-height: 44px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+  color: var(--text);
+  padding: 0 8px;
+  font: inherit;
+  max-width: 100%;
+}
+
 .toast {
   position: fixed;
-  bottom: 16px;
+  bottom: 88px;
   left: 16px;
   right: 16px;
   max-width: 480px;
@@ -321,11 +532,28 @@ details.test-panel summary {
         <button class="btn" type="button" data-action="test-add-100">+100 💰</button>
         <button class="btn" type="button" data-action="test-add-1000">+1 000 💰</button>
       </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-add-panel">+1 panneau</button>
+        <button class="btn" type="button" data-action="test-add-battery">+1 batterie</button>
+        <button class="btn" type="button" data-action="test-fill-batteries">Remplir les batteries</button>
+        <button class="btn" type="button" data-action="test-fill-tank">Remplir le réservoir</button>
+      </div>
+      <div class="row">
+        <label for="test-device">Appareil</label>
+        <select id="test-device"></select>
+        <button class="btn" type="button" data-action="test-wear">Usure à 100 %</button>
+      </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-skip-awake">Ignorer l'éveil minimal</button>
+        <button class="btn" type="button" data-action="test-nights-1">Passer 1 nuit</button>
+        <button class="btn" type="button" data-action="test-nights-5">Passer 5 nuits</button>
+      </div>
       <div class="state-dump" id="state-dump"></div>
     </div>
   </details>
 </main>
 
+<div class="sleep-bar" id="sleep-bar"></div>
 <div id="modal-root"></div>
 <div id="toast-root"></div>
 
@@ -336,8 +564,58 @@ details.test-panel summary {
    DATA — toutes les valeurs d'équilibrage du jeu.
    Les lots suivants viendront peupler cet objet. Aucune valeur d'équilibrage
    ne doit exister ailleurs que dans DATA.
+   Références : conception v15, sections 1.2, 1.4 et 8.2.
    ========================================================================== */
-const DATA = {};
+const DATA = {
+  // Départ de partie.
+  START: {
+    PIECES: 50,
+    // Les appareils de départ sont offerts : prix d'achat 0, donc entretien
+    // et réparation gratuits pour eux (l'entretien vaut 20 % du prix d'achat).
+    DEVICE_PRICE: 0,
+  },
+
+  // Temps : la journée commence à 6 h, 1 heure de jeu = 30 s d'éveil.
+  TIME: {
+    DAY_START_HOUR: 6,
+    SECONDS_PER_HOUR: 30,
+    MIN_AWAKE_S: 30,
+  },
+
+  LEVEL_MAX: 5,
+
+  // Grilles par niveau (index 0 = niveau 1), identiques pour chaque appareil
+  // d'un même type.
+  GRID: {
+    panneau: { kwhPerS: [0.03, 0.05, 0.08, 0.12, 0.18] },
+    batterie: { kwh: [5, 10, 20, 40, 80] },
+    pompe: {
+      litresPerS: [1, 2, 4, 6, 10],
+      reservoirL: [40, 80, 160, 300, 500], // le réservoir suit le niveau de la pompe
+    },
+  },
+
+  // Coût pour atteindre un niveau (index 0 = niveau 1, non utilisé).
+  UPGRADE_COST: [0, 40, 100, 250, 600],
+
+  PUMP: { KWH_PER_L: 0.01 },
+
+  // Achat d'un appareil supplémentaire : base × growth^n, n = nombre déjà possédé.
+  PURCHASE: {
+    panneau: { base: 60, growth: 1.2 },
+    batterie: { base: 80, growth: 1.2 },
+  },
+
+  // Usure : en points (0 à 100). Rendement = 1 − usure ÷ EFFICIENCY_DIVISOR.
+  WEAR: {
+    PER_HOUR: 0.5,
+    EFFICIENCY_DIVISOR: 200,
+    SERVICE_THRESHOLD: 70,
+    BREAKDOWN: 100,
+    MAINTAIN_RATE: 0.2, // part du prix d'achat
+    REPAIR_RATE: 0.5,
+  },
+};
 
 /* ==========================================================================
    ENGINE — simulation pure. Aucun accès au DOM, à window, au stockage ou à
@@ -358,37 +636,471 @@ function mulberry32(seed) {
   };
 }
 
-// Liste des étapes exécutées au clic sur "Dormir". Vide au Lot 0 ;
-// les lots suivants y ajouteront leurs fonctions (pousse, ponte, repas...).
+const STATE_VERSION = 2;
+const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
+
+// Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Vide au
+// Lot 1 (aucun système « par jour » n'existe encore) ; les lots suivants y
+// ajouteront leurs fonctions (repas, pousse, ponte, péremption...).
+// Chaque étape reçoit l'état et le modifie.
 const NIGHT_STEPS = [];
+
+/* ---------- appareils : fabrication et sélecteurs ---------- */
+
+function newDayStats() {
+  return { produite: 0, perdue: 0, eau: 0 };
+}
+
+function makeDevice(type, id, prix) {
+  const d = { id, type, niveau: 1, allume: true, usure: 0, prix };
+  if (type === 'batterie') {
+    d.charge = 0;
+    d.entree = 0; // kWh/s reçus au dernier tick
+    d.sortie = 0; // kWh/s soutirés au dernier tick
+  } else if (type === 'panneau') {
+    d.prod = 0; // kWh/s produits au dernier tick
+  } else if (type === 'pompe') {
+    d.debit = 0; // L/s réellement pompés au dernier tick
+    d.conso = 0; // kWh/s consommés au dernier tick
+  }
+  return d;
+}
+
+// Parc et réserves de départ : 1 panneau, 1 batterie, la pompe et le réservoir.
+// Les appareils sont des listes d'objets ; la pompe est un appareil unique ;
+// le réservoir n'est pas un appareil (`eau` = son contenu en litres).
+function startFarm() {
+  const prix = DATA.START.DEVICE_PRICE;
+  return {
+    compteurs: { panneau: 1, batterie: 1 },
+    panneaux: [makeDevice('panneau', 'panneau-1', prix)],
+    batteries: [makeDevice('batterie', 'batterie-1', prix)],
+    pompe: makeDevice('pompe', 'pompe', prix),
+    eau: 0,
+    flux: { perdue: 0, eau: 0 }, // kWh/s perdus, L/s reçus par le réservoir au dernier tick
+    jour: newDayStats(),
+    report: null,
+  };
+}
+
+function allDevices(state) {
+  return [...state.panneaux, ...state.batteries, state.pompe];
+}
+
+function findDevice(state, id) {
+  return allDevices(state).find((d) => d.id === id) || null;
+}
+
+function efficiency(d) {
+  return 1 - d.usure / DATA.WEAR.EFFICIENCY_DIVISOR;
+}
+
+function isBroken(d) {
+  return d.usure >= DATA.WEAR.BREAKDOWN - EPS;
+}
+
+function needsService(d) {
+  return !isBroken(d) && d.usure >= DATA.WEAR.SERVICE_THRESHOLD - EPS;
+}
+
+// Production nominale d'un panneau à son niveau et son usure actuels (kWh/s).
+function panelOutput(d) {
+  return DATA.GRID.panneau.kwhPerS[d.niveau - 1] * efficiency(d);
+}
+
+// Capacité utile d'une batterie (kWh) : capacité(niveau) × rendement.
+function batteryCapacity(d) {
+  return DATA.GRID.batterie.kwh[d.niveau - 1] * efficiency(d);
+}
+
+function pumpFlow(d) {
+  return DATA.GRID.pompe.litresPerS[d.niveau - 1] * efficiency(d);
+}
+
+function tankCapacity(state) {
+  return DATA.GRID.pompe.reservoirL[state.pompe.niveau - 1];
+}
+
+// Prix du n-ième appareil d'un type, n étant le nombre déjà possédé.
+function purchasePrice(type, owned) {
+  const p = DATA.PURCHASE[type];
+  return roundCoins(p.base * Math.pow(p.growth, owned));
+}
+
+function nextPurchasePrice(state, type) {
+  const owned = type === 'panneau' ? state.panneaux.length : state.batteries.length;
+  return purchasePrice(type, owned);
+}
+
+function maintainCost(d) {
+  return roundCoins(d.prix * DATA.WEAR.MAINTAIN_RATE);
+}
+
+function repairCost(d) {
+  return roundCoins(d.prix * DATA.WEAR.REPAIR_RATE);
+}
+
+function upgradeCost(d) {
+  return d.niveau >= DATA.LEVEL_MAX ? null : DATA.UPGRADE_COST[d.niveau];
+}
+
+// Les pièces restent à deux décimales (les prix ×1,2ⁿ ne sont pas entiers).
+function roundCoins(x) {
+  return Math.round(x * 100) / 100;
+}
+
+/* ---------- l'heure ---------- */
+
+function awakeRequired(state) {
+  return DATA.TIME.MIN_AWAKE_S;
+}
+
+// Heure d'ambiance (0 à 23) : 6 h au réveil, +1 par SECONDS_PER_HOUR d'éveil.
+function hourOfDay(state) {
+  const hours = Math.floor(state.awakeSeconds / DATA.TIME.SECONDS_PER_HOUR + EPS);
+  return (DATA.TIME.DAY_START_HOUR + hours) % 24;
+}
+
+/* ---------- énergie : stockage et prélèvement ---------- */
+
+// Range `energy` kWh dans les batteries allumées et non en panne, l'une après
+// l'autre dans l'ordre de la liste. Renvoie ce qui n'a rentré nulle part.
+function storeEnergy(state, energy) {
+  let rest = energy;
+  for (const b of state.batteries) {
+    if (rest <= EPS) break;
+    if (!b.allume || isBroken(b)) continue;
+    const room = Math.max(0, batteryCapacity(b) - b.charge);
+    const added = Math.min(room, rest);
+    if (added > 0) {
+      b.charge += added;
+      b.entree += added;
+      rest -= added;
+    }
+  }
+  return rest > EPS ? rest : 0;
+}
+
+// Prélève jusqu'à `energy` kWh dans les batteries, en sens inverse de la liste :
+// la dernière remplie se vide la première. Renvoie l'énergie réellement fournie.
+// Tous les consommateurs (pompe, puis moulin, presse, réfrigérateur) passent ici.
+function drawEnergy(state, energy) {
+  let rest = energy;
+  for (let i = state.batteries.length - 1; i >= 0; i--) {
+    if (rest <= EPS) break;
+    const b = state.batteries[i];
+    if (!b.allume || isBroken(b)) continue;
+    const taken = Math.min(b.charge, rest);
+    if (taken > 0) {
+      b.charge -= taken;
+      b.sortie += taken;
+      rest -= taken;
+    }
+  }
+  return energy - (rest > EPS ? rest : 0);
+}
+
+// Consommateurs d'énergie, exécutés dans l'ordre à chaque tick. Les lots
+// suivants y ajouteront le moulin, la presse et le réfrigérateur.
+// `run(state, dt)` prélève son énergie avec drawEnergy().
+const CONSUMERS = [
+  { id: 'pompe', run: runPump },
+];
+
+// La pompe remplit le réservoir si elle est allumée, en état, et que le
+// réservoir n'est pas plein. Si l'énergie manque, elle tourne au prorata.
+function runPump(state, dt) {
+  const p = state.pompe;
+  p.debit = 0;
+  p.conso = 0;
+  if (!p.allume || isBroken(p)) return;
+  const room = tankCapacity(state) - state.eau;
+  if (room <= EPS) return;
+  const kwhPerL = DATA.PUMP.KWH_PER_L;
+  const wanted = Math.min(pumpFlow(p) * dt, room);
+  const got = drawEnergy(state, wanted * kwhPerL);
+  const litres = Math.min(wanted, got / kwhPerL);
+  state.eau += litres;
+  state.jour.eau += litres;
+  p.debit = litres / dt;
+  p.conso = got / dt;
+  state.flux.eau = litres / dt;
+}
+
+/* ---------- la boucle de simulation ---------- */
+
+// Avance la simulation de dt secondes : production, stockage, consommation,
+// usure, puis le temps d'éveil.
+function tick(state, dt) {
+  if (!(dt > 0)) return state;
+  for (const b of state.batteries) {
+    b.entree = 0;
+    b.sortie = 0;
+  }
+  state.flux.eau = 0;
+
+  // a. production : chaque panneau allumé et non en panne
+  let produced = 0;
+  for (const p of state.panneaux) {
+    p.prod = 0;
+    if (p.allume && !isBroken(p)) {
+      const e = panelOutput(p) * dt;
+      produced += e;
+      p.prod = e / dt;
+    }
+  }
+
+  // b. stockage : batteries remplies l'une après l'autre ; le reste est perdu
+  const lost = storeEnergy(state, produced);
+  state.jour.produite += produced;
+  state.jour.perdue += lost;
+  state.flux.perdue = lost / dt;
+
+  // c. consommation : chaque consommateur tire sur les batteries (sens inverse)
+  for (const c of CONSUMERS) c.run(state, dt);
+
+  // les quantités du tick deviennent des puissances (kWh/s)
+  for (const b of state.batteries) {
+    b.entree /= dt;
+    b.sortie /= dt;
+  }
+
+  // d. usure : seulement pour un appareil qui a réellement fonctionné
+  const wear = DATA.WEAR.PER_HOUR * (dt / DATA.TIME.SECONDS_PER_HOUR);
+  for (const d of allDevices(state)) {
+    let worked = false;
+    if (d.type === 'panneau') worked = d.prod > EPS;
+    else if (d.type === 'batterie') worked = d.entree > EPS || d.sortie > EPS;
+    else if (d.type === 'pompe') worked = d.debit > EPS;
+    if (!worked) continue;
+    d.usure = Math.min(DATA.WEAR.BREAKDOWN, d.usure + wear);
+    if (isBroken(d)) {
+      d.usure = DATA.WEAR.BREAKDOWN;
+      d.allume = false;
+    }
+  }
+
+  // e. temps d'éveil (l'heure s'en déduit)
+  state.awakeSeconds += dt;
+  return state;
+}
+
+/* ---------- synthèses pour l'interface (fonctions pures) ---------- */
+
+function energyStats(state) {
+  const producing = state.panneaux.filter((p) => p.allume && !isBroken(p));
+  const s = {
+    production: state.panneaux.reduce((t, p) => t + p.prod, 0),
+    panneauxEnMarche: producing.length,
+    panneauxTotal: state.panneaux.length,
+    panneauxAEntretenir: state.panneaux.filter(needsService).length,
+    panneauxEnPanne: state.panneaux.filter(isBroken).length,
+    charge: state.batteries.reduce((t, b) => t + b.charge, 0),
+    capacite: state.batteries.reduce((t, b) => t + batteryCapacity(b), 0),
+    entree: state.batteries.reduce((t, b) => t + b.entree, 0),
+    sortie: state.batteries.reduce((t, b) => t + b.sortie, 0),
+    batteriesAEntretenir: state.batteries.filter(needsService).length,
+    batteriesEnPanne: state.batteries.filter(isBroken).length,
+  };
+  s.net = s.entree - s.sortie;
+  return s;
+}
+
+// État affichable d'un appareil : { code, label, badge }.
+function deviceStatus(state, d) {
+  let code;
+  let label;
+  if (isBroken(d)) {
+    code = 'panne';
+    label = 'En panne';
+  } else if (!d.allume) {
+    code = 'arret';
+    label = 'À l\'arrêt';
+  } else if (d.type === 'panneau') {
+    code = 'marche';
+    label = 'En marche';
+  } else if (d.type === 'batterie') {
+    const net = d.entree - d.sortie;
+    if (net < -1e-6) { code = 'decharge'; label = 'En décharge'; }
+    else if (net > 1e-6) { code = 'charge'; label = 'En charge'; }
+    else if (d.charge >= batteryCapacity(d) * 0.98) { code = 'pleine'; label = 'Pleine'; }
+    else if (d.charge <= EPS) { code = 'vide'; label = 'Vide'; }
+    else { code = 'attente'; label = 'En attente'; }
+  } else {
+    if (state.eau >= tankCapacity(state) - EPS) { code = 'plein'; label = 'Réservoir plein'; }
+    else if (d.debit > EPS) { code = 'marche'; label = 'En marche'; }
+    else { code = 'attente'; label = 'En attente d\'énergie'; }
+  }
+  return { code, label, badge: needsService(d) ? 'À entretenir' : '' };
+}
+
+/* ---------- actions du moteur ---------- */
+
+function fail(error) {
+  return { ok: false, error };
+}
+
+function spend(state, cost) {
+  state.pieces = roundCoins(state.pieces - cost);
+}
+
+function toggleDevice(state, id) {
+  const d = findDevice(state, id);
+  if (!d) return fail('Appareil introuvable.');
+  if (isBroken(d)) return fail('Appareil en panne : il faut le réparer.');
+  d.allume = !d.allume;
+  return { ok: true };
+}
+
+function buyDevice(state, type) {
+  if (type !== 'panneau' && type !== 'batterie') return fail('Type d\'appareil inconnu.');
+  const price = nextPurchasePrice(state, type);
+  if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
+  spend(state, price);
+  state.compteurs[type] += 1;
+  const d = makeDevice(type, `${type}-${state.compteurs[type]}`, price);
+  (type === 'panneau' ? state.panneaux : state.batteries).push(d);
+  return { ok: true, device: d, price };
+}
+
+function upgradeDevice(state, id) {
+  const d = findDevice(state, id);
+  if (!d) return fail('Appareil introuvable.');
+  const cost = upgradeCost(d);
+  if (cost === null) return fail('Niveau maximum atteint.');
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  d.niveau += 1;
+  return { ok: true, cost };
+}
+
+function maintainDevice(state, id) {
+  const d = findDevice(state, id);
+  if (!d) return fail('Appareil introuvable.');
+  if (isBroken(d)) return fail('Appareil en panne : il faut le réparer.');
+  if (d.usure <= EPS) return fail('Cet appareil n\'est pas usé.');
+  const cost = maintainCost(d);
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  d.usure = 0;
+  return { ok: true, cost };
+}
+
+// Une réparation remet l'usure à 0 ; l'appareil reste éteint : c'est au
+// joueur de le rallumer.
+function repairDevice(state, id) {
+  const d = findDevice(state, id);
+  if (!d) return fail('Appareil introuvable.');
+  if (!isBroken(d)) return fail('Cet appareil n\'est pas en panne.');
+  const cost = repairCost(d);
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  d.usure = 0;
+  d.allume = false;
+  return { ok: true, cost };
+}
+
+/* ---------- la nuit ---------- */
+
+function canSleep(state) {
+  return state.awakeSeconds >= awakeRequired(state) - EPS;
+}
+
+function buildMorningReport(state) {
+  const aSurveiller = (d) => ({ id: d.id, type: d.type, usure: d.usure });
+  return {
+    nuit: state.day,
+    energie: state.batteries.reduce((t, b) => t + b.charge, 0),
+    capacite: state.batteries.reduce((t, b) => t + batteryCapacity(b), 0),
+    energiePerdue: state.jour.perdue,
+    eau: state.eau,
+    capaciteEau: tankCapacity(state),
+    aEntretenir: allDevices(state).filter(needsService).map(aSurveiller),
+    enPanne: allDevices(state).filter(isBroken).map(aSurveiller),
+  };
+}
+
+// Ne fait rien tant que l'éveil minimal n'est pas atteint (renvoie null).
+// Sinon : étapes nocturnes dans l'ordre, jour suivant, éveil remis à 0
+// (l'heure repart à 6 h), rapport de réveil.
+function sleep(state) {
+  if (!canSleep(state)) return null;
+  for (const step of NIGHT_STEPS) step(state);
+  state.day += 1;
+  state.awakeSeconds = 0;
+  state.report = buildMorningReport(state);
+  state.jour = newDayStats();
+  return state.report;
+}
+
+/* ---------- actions du mode test ---------- */
+
+function testAddPieces(state, amount) {
+  state.pieces = roundCoins(state.pieces + amount);
+  return { ok: true };
+}
+
+function testAddDevice(state, type) {
+  const n = ++state.compteurs[type];
+  const d = makeDevice(type, `${type}-${n}`, 0);
+  (type === 'panneau' ? state.panneaux : state.batteries).push(d);
+  return { ok: true, device: d };
+}
+
+function testFillBatteries(state) {
+  for (const b of state.batteries) b.charge = batteryCapacity(b);
+  return { ok: true };
+}
+
+function testFillTank(state) {
+  state.eau = tankCapacity(state);
+  return { ok: true };
+}
+
+function testSetWear(state, id, usure) {
+  const d = findDevice(state, id);
+  if (!d) return fail('Appareil introuvable.');
+  d.usure = Math.max(0, Math.min(DATA.WEAR.BREAKDOWN, usure));
+  if (isBroken(d)) d.allume = false;
+  return { ok: true };
+}
+
+function testSkipAwake(state) {
+  state.awakeSeconds = Math.max(state.awakeSeconds, awakeRequired(state));
+  return { ok: true };
+}
+
+function testSleepNights(state, count) {
+  let report = null;
+  for (let i = 0; i < count; i++) {
+    testSkipAwake(state);
+    report = sleep(state);
+  }
+  return { ok: true, report };
+}
 
 // État initial du jeu. `seed` doit être fourni par l'appelant (l'app),
 // jamais lu depuis l'horloge ici : l'ENGINE reste pur et testable.
 function createInitialState(seed = 1) {
   return {
-    version: 1,
+    version: STATE_VERSION,
     day: 1,
     awakeSeconds: 0,
-    pieces: 50,
+    pieces: DATA.START.PIECES,
     rngSeed: seed >>> 0,
     unlockedTabs: ['ferme', 'inventaire', 'comptoir'],
     stats: {},
+    ...startFarm(),
   };
 }
 
-// Avance la simulation de dt secondes. Au Lot 0, incrémente seulement le
-// temps d'éveil ; les lots suivants y ajouteront les flux d'énergie et d'eau.
-function tick(state, dt) {
-  state.awakeSeconds += dt;
-  return state;
-}
-
 // Table de migrations successives : MIGRATIONS[n] transforme un état de
-// version n vers n+1. Vide en pratique tant qu'aucune vraie migration n'est
-// nécessaire, sauf l'entrée 0 ci-dessous qui sert de filet pour toute
-// sauvegarde antérieure au champ `version` (et de cas de test).
+// version n vers n+1. L'entrée 0 sert de filet pour toute sauvegarde
+// antérieure au champ `version` (et de cas de test).
 const MIGRATIONS = {
   0: (state) => ({ ...state, version: 1 }),
+  // v1 (Lot 0) → v2 (Lot 1) : ajout du parc d'appareils, de l'eau et du rapport.
+  1: (state) => ({ ...startFarm(), ...state, version: 2 }),
 };
 
 // Applique les migrations successives à une sauvegarde { v, t, s } (ou à un
@@ -443,6 +1155,29 @@ function groupThousands(intValue) {
 function formatFixed(value, digits) {
   return value.toFixed(digits).replace('.', ',');
 }
+
+// Pièces : entier si possible, sinon 1 ou 2 décimales (les prix ×1,2ⁿ ne sont
+// pas entiers : 86,4 ; 103,68).
+function formatCoins(n) {
+  const r = Math.round(n * 100) / 100;
+  if (Number.isInteger(r) || Math.abs(r) >= 10000) return formatNumber(r);
+  const sign = r < 0 ? '-' : '';
+  const abs = Math.abs(r);
+  const digits = Math.abs(abs * 10 - Math.round(abs * 10)) < 1e-9 ? 1 : 2;
+  const [i, dec] = abs.toFixed(digits).split('.');
+  return sign + groupThousands(Number(i)) + ',' + dec;
+}
+
+// Puissance signée en kWh/s avec le vrai signe moins : « +0,02 » ou « −0,01 ».
+function formatRate(value, digits = 2) {
+  const text = formatFixed(Math.abs(value), digits);
+  if (Number(text.replace(',', '.')) === 0) return text; // zéro : sans signe
+  return (value < 0 ? '−' : '+') + text;
+}
+
+function formatHour(h) {
+  return `${h} h`;
+}
 </script>
 
 <script id="tests" type="text/plain">
@@ -495,7 +1230,7 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 1);
+  assertEqual(s.version, 2);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
@@ -504,7 +1239,7 @@ test('état initial : forme et valeurs attendues', () => {
   assertEqual(s.stats, {});
 });
 
-test('tick() n\'incrémente que awakeSeconds', () => {
+test('tick() fait avancer awakeSeconds sans toucher au jour ni aux pièces', () => {
   const s = createInitialState(1);
   tick(s, 0.2);
   tick(s, 0.2);
@@ -521,20 +1256,38 @@ test('sérialisation JSON aller-retour identique', () => {
   assertEqual(roundTripped, s);
 });
 
-test('migration factice v0 → v1', () => {
+test('migration factice v0 → version courante', () => {
   const legacy = { day: 3, awakeSeconds: 10, pieces: 80, rngSeed: 9, unlockedTabs: ['ferme'], stats: {} };
-  // pas de champ `version` : doit être traité comme version 0 et migré vers 1
+  // pas de champ `version` : doit être traité comme version 0 et migré jusqu'au bout
   const migrated = migrate({ v: 0, t: Date.now(), s: legacy });
-  assertEqual(migrated.version, 1);
+  assertEqual(migrated.version, 2);
   assertEqual(migrated.day, 3);
   assertEqual(migrated.pieces, 80);
+  assertEqual(migrated.panneaux.length, 1);
+});
+
+test('migration v1 (Lot 0) → v2 : garde la partie et ajoute le parc', () => {
+  const v1 = { version: 1, day: 4, awakeSeconds: 12, pieces: 200, rngSeed: 3, unlockedTabs: ['ferme'], stats: { a: 1 } };
+  const m = migrate({ v: 1, t: 0, s: v1 });
+  assertEqual(m.version, 2);
+  assertEqual(m.day, 4);
+  assertEqual(m.pieces, 200);
+  assertEqual(m.stats, { a: 1 });
+  assertEqual(m.panneaux.length, 1);
+  assertEqual(m.batteries.length, 1);
+  assertEqual(m.pompe.id, 'pompe');
+  assertEqual(m.eau, 0);
+  // l'état migré doit pouvoir tourner
+  tick(m, 0.2);
+  assert(m.awakeSeconds > 12);
 });
 
 test('migrate() ne plante pas sur une entrée déjà à jour', () => {
   const s = createInitialState(5);
-  const migrated = migrate({ v: 1, t: Date.now(), s });
-  assertEqual(migrated.version, 1);
+  const migrated = migrate({ v: 2, t: Date.now(), s });
+  assertEqual(migrated.version, 2);
   assertEqual(migrated.pieces, 50);
+  assertEqual(migrated.panneaux.length, 1);
 });
 
 test('import d\'un texte invalide sans plantage', () => {
@@ -575,6 +1328,498 @@ test('générateur aléatoire reproductible à graine égale', () => {
   assert(rngC() !== seqA[0], 'deux graines différentes ne doivent pas (en pratique) produire la même première valeur');
 });
 
+/* ---------- Lot 1 : heure, parc électrique, eau, Dormir ---------- */
+
+function near(a, b, tol = 1e-6) {
+  return Math.abs(a - b) <= tol;
+}
+
+// État de test : seul le panneau produit, la pompe est coupée (sauf demande).
+function farm({ pump = false } = {}) {
+  const s = createInitialState(1);
+  s.pompe.allume = pump;
+  return s;
+}
+
+test('DATA : grilles par niveau, coûts et départ', () => {
+  assertEqual(DATA.GRID.panneau.kwhPerS, [0.03, 0.05, 0.08, 0.12, 0.18]);
+  assertEqual(DATA.GRID.batterie.kwh, [5, 10, 20, 40, 80]);
+  assertEqual(DATA.GRID.pompe.litresPerS, [1, 2, 4, 6, 10]);
+  assertEqual(DATA.GRID.pompe.reservoirL, [40, 80, 160, 300, 500]);
+  assertEqual(DATA.UPGRADE_COST.slice(1), [40, 100, 250, 600]);
+  const s = createInitialState(1);
+  assertEqual(s.panneaux.length, 1);
+  assertEqual(s.batteries.length, 1);
+  assertEqual(s.panneaux[0].niveau, 1);
+  assertEqual(s.batteries[0].niveau, 1);
+  assertEqual(s.pompe.niveau, 1);
+  assertEqual(tankCapacity(s), 40);
+  assertEqual(s.eau, 0);
+});
+
+test('production : un panneau de niveau 1 produit 0,03 kWh/s', () => {
+  const s = farm();
+  tick(s, 10);
+  assert(near(s.batteries[0].charge, 0.3), `charge ${s.batteries[0].charge}`);
+  assert(near(s.jour.produite, 0.3));
+});
+
+test('production réduite par l\'usure (rendement = 1 − usure ÷ 200)', () => {
+  const s = farm();
+  s.panneaux[0].usure = 50; // rendement 0,75
+  tick(s, 10);
+  assert(near(s.batteries[0].charge, 0.03 * 0.75 * 10), `charge ${s.batteries[0].charge}`);
+  const t = farm();
+  t.panneaux[0].usure = 100 - 1e-6; // presque en panne : rendement ≈ 0,5
+  assert(near(efficiency(t.panneaux[0]), 0.5, 1e-6));
+});
+
+test('un panneau éteint ne produit rien', () => {
+  const s = farm();
+  toggleDevice(s, 'panneau-1');
+  tick(s, 10);
+  assertEqual(s.batteries[0].charge, 0);
+});
+
+test('capacité utile d\'une batterie = capacité × rendement', () => {
+  const s = farm();
+  s.batteries[0].usure = 100 - 1e-6; // rendement ≈ 0,5
+  s.panneaux[0].niveau = 5; // 0,18 kWh/s
+  tick(s, 100); // 18 kWh produits, capacité utile ≈ 2,5
+  assert(near(s.batteries[0].charge, 2.5, 1e-3), `charge ${s.batteries[0].charge}`);
+});
+
+test('remplissage des batteries dans l\'ordre de la liste', () => {
+  const s = farm();
+  s.pieces = 1000;
+  buyDevice(s, 'batterie');
+  const [b1, b2] = s.batteries;
+  const rest = storeEnergy(s, 7);
+  assertEqual(rest, 0);
+  assert(near(b1.charge, 5), `b1 ${b1.charge}`);
+  assert(near(b2.charge, 2), `b2 ${b2.charge}`);
+  storeEnergy(s, 1);
+  assert(near(b2.charge, 3));
+});
+
+test('décharge en sens inverse : la dernière remplie se vide la première', () => {
+  const s = farm();
+  s.pieces = 1000;
+  buyDevice(s, 'batterie');
+  const [b1, b2] = s.batteries;
+  storeEnergy(s, 7); // b1 = 5, b2 = 2
+  const given = drawEnergy(s, 3);
+  assert(near(given, 3));
+  assert(near(b2.charge, 0), `b2 ${b2.charge}`);
+  assert(near(b1.charge, 4), `b1 ${b1.charge}`);
+});
+
+test('une batterie coupée garde sa charge sans la rendre ni la recevoir', () => {
+  const s = farm();
+  s.pieces = 1000;
+  buyDevice(s, 'batterie');
+  const [b1, b2] = s.batteries;
+  storeEnergy(s, 7);
+  toggleDevice(s, b2.id);
+  assert(near(drawEnergy(s, 10), 5), 'seule b1 peut rendre');
+  assert(near(b2.charge, 2), 'b2 garde sa charge');
+  assert(near(storeEnergy(s, 1), 0));
+  assert(near(b2.charge, 2), 'b2 ne reçoit rien');
+  assert(near(b1.charge, 1));
+});
+
+test('une batterie ne se décharge jamais d\'elle-même', () => {
+  const s = farm();
+  toggleDevice(s, 'panneau-1');
+  s.batteries[0].charge = 3;
+  for (let i = 0; i < 500; i++) tick(s, 0.2);
+  assert(near(s.batteries[0].charge, 3));
+});
+
+test('énergie perdue quand tout est plein, et le rapport la signale', () => {
+  const s = farm();
+  testFillBatteries(s);
+  tick(s, 10);
+  assert(near(s.jour.perdue, 0.3), `perdue ${s.jour.perdue}`);
+  assert(near(s.flux.perdue, 0.03));
+  s.awakeSeconds = 30;
+  const report = sleep(s);
+  assert(near(report.energiePerdue, 0.3), `rapport ${report.energiePerdue}`);
+  assertEqual(s.jour.perdue, 0);
+});
+
+test('énergie perdue quand toutes les batteries sont coupées', () => {
+  const s = farm();
+  toggleDevice(s, 'batterie-1');
+  tick(s, 10);
+  assert(near(s.jour.perdue, 0.3));
+  assertEqual(s.batteries[0].charge, 0);
+});
+
+test('pompe : 1 L/s pour 0,01 kWh/L, alimentée par la batterie', () => {
+  const s = farm({ pump: true });
+  toggleDevice(s, 'panneau-1');
+  s.batteries[0].charge = 1;
+  tick(s, 10);
+  assert(near(s.eau, 10), `eau ${s.eau}`);
+  assert(near(s.batteries[0].charge, 0.9), `charge ${s.batteries[0].charge}`);
+  assert(near(s.pompe.debit, 1));
+  assert(near(s.pompe.conso, 0.01));
+});
+
+test('pompe au prorata quand l\'énergie manque', () => {
+  const s = farm({ pump: true });
+  toggleDevice(s, 'panneau-1');
+  s.batteries[0].charge = 0.001; // il faudrait 0,002 kWh pour 0,2 L
+  tick(s, 0.2);
+  assert(near(s.eau, 0.1), `eau ${s.eau}`);
+  assert(near(s.batteries[0].charge, 0));
+  tick(s, 0.2);
+  assert(near(s.eau, 0.1), 'plus d\'énergie : plus d\'eau');
+  assertEqual(deviceStatus(s, s.pompe).code, 'attente');
+});
+
+test('pompe : l\'énergie est prise dans les batteries en sens inverse', () => {
+  const s = farm({ pump: true });
+  toggleDevice(s, 'panneau-1');
+  s.pieces = 1000;
+  buyDevice(s, 'batterie');
+  s.batteries[0].charge = 5;
+  s.batteries[1].charge = 2;
+  tick(s, 10); // 0,1 kWh
+  assert(near(s.batteries[1].charge, 1.9), `b2 ${s.batteries[1].charge}`);
+  assert(near(s.batteries[0].charge, 5));
+  assert(near(s.batteries[1].sortie, 0.01), 'la batterie en décharge affiche la puissance soutirée');
+  assertEqual(deviceStatus(s, s.batteries[1]).code, 'decharge');
+});
+
+test('pompe à l\'arrêt si le réservoir est plein : rien consommé, aucune usure', () => {
+  const s = farm({ pump: true });
+  toggleDevice(s, 'panneau-1');
+  testFillTank(s);
+  s.batteries[0].charge = 1;
+  for (let i = 0; i < 50; i++) tick(s, 0.2);
+  assert(near(s.batteries[0].charge, 1));
+  assertEqual(s.pompe.usure, 0);
+  assert(near(s.eau, 40));
+  assertEqual(deviceStatus(s, s.pompe).code, 'plein');
+});
+
+test('le réservoir ne dépasse jamais sa capacité', () => {
+  const s = farm({ pump: true });
+  s.eau = 39.95;
+  testFillBatteries(s);
+  tick(s, 10);
+  assert(near(s.eau, 40));
+});
+
+test('le réservoir suit le niveau de la pompe', () => {
+  const s = farm();
+  s.pieces = 1000;
+  for (const cap of [80, 160, 300, 500]) {
+    assert(upgradeDevice(s, 'pompe').ok);
+    assertEqual(tankCapacity(s), cap);
+  }
+  assertEqual(upgradeDevice(s, 'pompe').ok, false);
+  assertEqual(DATA.GRID.pompe.litresPerS[s.pompe.niveau - 1], 10);
+});
+
+test('usure : +0,5 point par heure de fonctionnement (30 s)', () => {
+  const s = farm();
+  for (let i = 0; i < 150; i++) tick(s, 0.2); // 30 s
+  assert(near(s.panneaux[0].usure, 0.5, 1e-6), `usure ${s.panneaux[0].usure}`);
+  assert(near(s.batteries[0].usure, 0.5, 1e-6), 'la batterie qui charge s\'use aussi');
+});
+
+test('aucune usure sur un appareil éteint, en panne ou sans énergie', () => {
+  const s = farm({ pump: true });
+  toggleDevice(s, 'panneau-1');
+  toggleDevice(s, 'batterie-1');
+  for (let i = 0; i < 150; i++) tick(s, 0.2);
+  assertEqual(s.panneaux[0].usure, 0, 'panneau éteint');
+  assertEqual(s.batteries[0].usure, 0, 'batterie éteinte');
+  assertEqual(s.pompe.usure, 0, 'pompe sans énergie');
+  const t = farm();
+  toggleDevice(t, 'panneau-1');
+  for (let i = 0; i < 150; i++) tick(t, 0.2);
+  assertEqual(t.batteries[0].usure, 0, 'batterie sans flux');
+});
+
+test('panne à 100 % : l\'appareil s\'arrête et s\'éteint', () => {
+  const s = farm();
+  s.panneaux[0].usure = 99.9;
+  tick(s, 30);
+  const p = s.panneaux[0];
+  assertEqual(p.usure, 100);
+  assertEqual(p.allume, false);
+  assertEqual(isBroken(p), true);
+  assertEqual(deviceStatus(s, p).code, 'panne');
+  const charge = s.batteries[0].charge;
+  tick(s, 10);
+  assert(near(s.batteries[0].charge, charge), 'un panneau en panne ne produit plus');
+  assertEqual(toggleDevice(s, 'panneau-1').ok, false, 'on ne rallume pas une panne');
+});
+
+test('seuil « à entretenir » à 70 % d\'usure', () => {
+  const s = farm();
+  s.panneaux[0].usure = 69.9;
+  assertEqual(deviceStatus(s, s.panneaux[0]).badge, '');
+  s.panneaux[0].usure = 70;
+  assertEqual(deviceStatus(s, s.panneaux[0]).badge, 'À entretenir');
+  assertEqual(energyStats(s).panneauxAEntretenir, 1);
+});
+
+test('coûts d\'achat croissants : 60, 72, 86,4 (panneau) et 80, 96 (batterie)', () => {
+  assertEqual([0, 1, 2].map((n) => purchasePrice('panneau', n)), [60, 72, 86.4]);
+  assertEqual([0, 1].map((n) => purchasePrice('batterie', n)), [80, 96]);
+  const s = farm();
+  s.pieces = 10000;
+  const paid = [];
+  for (let i = 0; i < 3; i++) paid.push(buyDevice(s, 'panneau').price);
+  // le premier achat compte l'appareil de départ déjà possédé (n = 1)
+  assertEqual(paid, [72, 86.4, 103.68]);
+  assertEqual(s.panneaux.length, 4);
+  assertEqual(s.panneaux[3].prix, 103.68);
+  assert(near(s.pieces, 10000 - 72 - 86.4 - 103.68, 1e-6));
+});
+
+test('achat refusé sans pièces, sans rien débiter', () => {
+  const s = farm();
+  s.pieces = 10;
+  const r = buyDevice(s, 'panneau');
+  assertEqual(r.ok, false);
+  assertEqual(s.pieces, 10);
+  assertEqual(s.panneaux.length, 1);
+  assertEqual(buyDevice(s, 'moulin').ok, false);
+});
+
+test('améliorer : coûts 40 / 100 / 250 / 600, refus sans pièces et au niveau 5', () => {
+  const s = farm();
+  s.pieces = 10;
+  assertEqual(upgradeDevice(s, 'panneau-1').ok, false);
+  assertEqual(s.panneaux[0].niveau, 1);
+  s.pieces = 1000;
+  const costs = [];
+  for (let i = 0; i < 4; i++) costs.push(upgradeDevice(s, 'panneau-1').cost);
+  assertEqual(costs, [40, 100, 250, 600]);
+  assertEqual(s.panneaux[0].niveau, 5);
+  assertEqual(s.pieces, 10);
+  assertEqual(upgradeDevice(s, 'panneau-1').ok, false);
+  assertEqual(upgradeDevice(s, 'inconnu').ok, false);
+});
+
+test('un appareil amélioré est indépendant des autres', () => {
+  const s = farm();
+  s.pieces = 1000;
+  buyDevice(s, 'panneau');
+  upgradeDevice(s, 'panneau-2');
+  assertEqual(s.panneaux[0].niveau, 1);
+  assertEqual(s.panneaux[1].niveau, 2);
+  tick(s, 10);
+  assert(near(s.batteries[0].charge, (0.03 + 0.05) * 10));
+});
+
+test('entretien 20 % et réparation 50 % du prix d\'achat', () => {
+  const s = farm();
+  s.pieces = 1000;
+  buyDevice(s, 'panneau'); // payé 72
+  const p = s.panneaux[1];
+  assertEqual(maintainCost(p), 14.4);
+  assertEqual(repairCost(p), 36);
+  // entretien : remet l'usure à 0
+  p.usure = 80;
+  const before = s.pieces;
+  const r = maintainDevice(s, p.id);
+  assertEqual(r.ok, true);
+  assertEqual(p.usure, 0);
+  assert(near(before - s.pieces, 14.4));
+  // entretien inutile sans usure, refusé sur une panne
+  assertEqual(maintainDevice(s, p.id).ok, false);
+  testSetWear(s, p.id, 100);
+  assertEqual(maintainDevice(s, p.id).ok, false);
+  // réparation : uniquement en panne, l'appareil reste éteint
+  const before2 = s.pieces;
+  assertEqual(repairDevice(s, p.id).ok, true);
+  assert(near(before2 - s.pieces, 36));
+  assertEqual(p.usure, 0);
+  assertEqual(p.allume, false);
+  assertEqual(repairDevice(s, p.id).ok, false);
+});
+
+test('entretien et réparation refusés sans pièces', () => {
+  const s = farm();
+  s.pieces = 1000;
+  buyDevice(s, 'batterie'); // payée 96
+  const b = s.batteries[1];
+  b.usure = 50;
+  s.pieces = 5;
+  assertEqual(maintainDevice(s, b.id).ok, false);
+  assertEqual(b.usure, 50);
+  testSetWear(s, b.id, 100);
+  assertEqual(repairDevice(s, b.id).ok, false);
+  assertEqual(isBroken(b), true);
+  assertEqual(s.pieces, 5);
+});
+
+test('les appareils de départ sont gratuits à entretenir', () => {
+  const s = farm();
+  s.panneaux[0].usure = 60;
+  assertEqual(maintainCost(s.panneaux[0]), 0);
+  s.pieces = 0;
+  assertEqual(maintainDevice(s, 'panneau-1').ok, true);
+});
+
+test('interrupteur : allume et éteint, id inconnu refusé', () => {
+  const s = farm();
+  assertEqual(s.panneaux[0].allume, true);
+  toggleDevice(s, 'panneau-1');
+  assertEqual(s.panneaux[0].allume, false);
+  toggleDevice(s, 'panneau-1');
+  assertEqual(s.panneaux[0].allume, true);
+  assertEqual(toggleDevice(s, 'nope').ok, false);
+});
+
+test('heure : suit le temps d\'éveil, 6 h au réveil, +1 h toutes les 30 s', () => {
+  const s = farm();
+  assertEqual(hourOfDay(s), 6);
+  s.awakeSeconds = 29.9;
+  assertEqual(hourOfDay(s), 6);
+  s.awakeSeconds = 30;
+  assertEqual(hourOfDay(s), 7);
+  s.awakeSeconds = 90;
+  assertEqual(hourOfDay(s), 9);
+  s.awakeSeconds = 30 * 18; // 24 h
+  assertEqual(hourOfDay(s), 0);
+  assertEqual(formatHour(7), '7 h');
+});
+
+test('heure : 150 ticks de 0,2 s font bien une heure de jeu (flottants)', () => {
+  const s = farm();
+  for (let i = 0; i < 150; i++) tick(s, 0.2);
+  assertEqual(hourOfDay(s), 7);
+  assertEqual(canSleep(s), true);
+});
+
+test('sleep refusé avant 30 s, puis accepté ; jour +1, éveil à 0, heure à 6 h', () => {
+  const s = farm();
+  s.awakeSeconds = 29;
+  assertEqual(canSleep(s), false);
+  assertEqual(sleep(s), null);
+  assertEqual(s.day, 1);
+  assertEqual(s.awakeSeconds, 29);
+  s.awakeSeconds = 30;
+  assertEqual(canSleep(s), true);
+  const report = sleep(s);
+  assert(report !== null);
+  assertEqual(s.day, 2);
+  assertEqual(s.awakeSeconds, 0);
+  assertEqual(hourOfDay(s), 6);
+});
+
+test('sleep conserve l\'énergie stockée et l\'eau (la nuit ne produit rien)', () => {
+  const s = farm();
+  s.batteries[0].charge = 2.5;
+  s.eau = 12;
+  s.awakeSeconds = 30;
+  const before = JSON.stringify([s.panneaux, s.batteries, s.pompe]);
+  const report = sleep(s);
+  assertEqual(JSON.stringify([s.panneaux, s.batteries, s.pompe]), before);
+  assert(near(s.batteries[0].charge, 2.5));
+  assert(near(report.energie, 2.5));
+  assert(near(report.eau, 12));
+});
+
+test('rapport de réveil : nuit, énergie, eau, appareils à entretenir ou en panne', () => {
+  const s = farm();
+  s.pieces = 1000;
+  buyDevice(s, 'panneau');
+  s.panneaux[0].usure = 75;
+  testSetWear(s, 'panneau-2', 100);
+  s.eau = 8;
+  testFillBatteries(s);
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual(r.nuit, 2);
+  assert(near(r.energie, 5));
+  assert(near(r.capacite, 5));
+  assert(near(r.eau, 8));
+  assertEqual(r.capaciteEau, 40);
+  assertEqual(r.aEntretenir.map((d) => d.id), ['panneau-1']);
+  assertEqual(r.enPanne.map((d) => d.id), ['panneau-2']);
+  assertEqual(s.report, r);
+});
+
+test('ordre des étapes nocturnes : dans l\'ordre, avant le changement de jour', () => {
+  const saved = NIGHT_STEPS.splice(0);
+  try {
+    const seen = [];
+    NIGHT_STEPS.push((st) => seen.push(['a', st.day, st.awakeSeconds]));
+    NIGHT_STEPS.push((st) => seen.push(['b', st.day, st.awakeSeconds]));
+    NIGHT_STEPS.push((st) => seen.push(['c', st.day, st.awakeSeconds]));
+    const s = farm();
+    sleep(s); // refusé : aucune étape
+    assertEqual(seen, []);
+    s.awakeSeconds = 30;
+    sleep(s);
+    assertEqual(seen, [['a', 1, 30], ['b', 1, 30], ['c', 1, 30]]);
+    assertEqual(s.day, 2);
+  } finally {
+    NIGHT_STEPS.splice(0, NIGHT_STEPS.length, ...saved);
+  }
+});
+
+test('mode test : ajout d\'appareils, remplissages, usure, nuits', () => {
+  const s = farm();
+  testAddDevice(s, 'panneau');
+  testAddDevice(s, 'batterie');
+  assertEqual(s.panneaux.length, 2);
+  assertEqual(s.batteries.length, 2);
+  assertEqual(s.pieces, 50);
+  testFillBatteries(s);
+  assert(near(energyStats(s).charge, 10));
+  testFillTank(s);
+  assertEqual(s.eau, 40);
+  testSetWear(s, 'pompe', 100);
+  assertEqual(isBroken(s.pompe), true);
+  testSleepNights(s, 5);
+  assertEqual(s.day, 6);
+  assertEqual(s.awakeSeconds, 0);
+});
+
+test('un id ne se réutilise jamais après un achat', () => {
+  const s = farm();
+  s.pieces = 1000;
+  buyDevice(s, 'batterie');
+  buyDevice(s, 'batterie');
+  const ids = s.batteries.map((b) => b.id);
+  assertEqual(ids, ['batterie-1', 'batterie-2', 'batterie-3']);
+});
+
+test('sérialisation JSON aller-retour avec le parc et après plusieurs ticks', () => {
+  const s = createInitialState(9);
+  s.pieces = 500;
+  buyDevice(s, 'panneau');
+  buyDevice(s, 'batterie');
+  for (let i = 0; i < 100; i++) tick(s, 0.2);
+  const copy = JSON.parse(JSON.stringify(s));
+  assertEqual(copy, s);
+  tick(copy, 0.2);
+  tick(s, 0.2);
+  assertEqual(copy, s);
+});
+
+test('formatage : pièces et puissances', () => {
+  assertEqual(formatCoins(50), '50');
+  assertEqual(formatCoins(86.4), '86,4');
+  assertEqual(formatCoins(103.68), '103,68');
+  assertEqual(formatCoins(14.4), '14,4');
+  assertEqual(formatRate(0.021), '+0,02');
+  assertEqual(formatRate(-0.01), '−0,01');
+  assertEqual(formatRate(0), '0,00');
+  assertEqual(formatRate(-0), '0,00');
+  assertEqual(formatRate(0.0004), '0,00');
+});
+
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
 // run-tests.mjs l'exécute explicitly avec Node après avoir lancé runTests().
 if (typeof module !== 'undefined' && typeof globalThis !== 'undefined') {
@@ -606,6 +1851,7 @@ const TABS = [
 
 let state = null;
 let activeTab = 'ferme';
+let screen = null; // écran de détail ouvert dans la Ferme : null, 'panneaux' ou 'batteries'
 let testMode = false;
 let renderScheduled = false;
 let lastRenderAt = 0;
@@ -685,17 +1931,70 @@ function importSaveText(text) {
   }
 }
 
+/* ---------- copie dans le presse-papiers ---------- */
+
+// Copie le contenu d'un textarea et n'annonce « Copié » que si la copie a
+// vraiment réussi. On essaie d'abord la commande synchrone (elle marche en
+// file://), puis l'API asynchrone dont l'échec est capté par la promesse.
+function copyFromTextarea(area) {
+  area.focus();
+  area.select();
+  area.setSelectionRange(0, area.value.length);
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch (e) {
+    ok = false;
+  }
+  if (ok) {
+    showToast('Copié !');
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(area.value).then(
+      () => showToast('Copié !'),
+      () => showToast('Copie impossible : le texte est sélectionné, copie-le à la main.')
+    );
+    return;
+  }
+  showToast('Copie impossible : le texte est sélectionné, copie-le à la main.');
+}
+
 /* ---------- actions du moteur (jamais d'accès direct à state depuis l'UI) ---------- */
 
 function actionNewGame() {
   state = createInitialState(makeSeed());
+  screen = null;
+  activeTab = 'ferme';
   persistState();
-  scheduleRender();
+  refresh();
 }
 
-function actionAddPieces(amount) {
-  state.pieces += amount;
-  scheduleRender();
+// Applique le résultat d'une action du moteur : message si elle est refusée,
+// puis rafraîchissement immédiat (sans attendre la cadence de 5 par seconde).
+function applyResult(result) {
+  if (result && result.ok === false) showToast(result.error);
+  refresh();
+  return result;
+}
+
+function actionSleep() {
+  const report = sleep(state);
+  if (!report) {
+    showToast('Encore un peu d\'éveil avant de dormir.');
+    refresh();
+    return;
+  }
+  persistState(); // sauvegarde après chaque nuit
+  refresh();
+  openWakeModal(report);
+}
+
+function actionTestNights(count) {
+  const { report } = testSleepNights(state, count);
+  persistState();
+  refresh();
+  if (report) openWakeModal(report);
 }
 
 /* ---------- boucle à pas fixe ---------- */
@@ -736,42 +2035,312 @@ function render() {
   renderIndicators();
   renderTabbar();
   renderTabContent();
+  renderSleepBar();
   renderTestPanel();
 }
 
+// Rafraîchit tout de suite (après une action du joueur).
+function refresh() {
+  renderScheduled = false;
+  lastRenderAt = performance.now();
+  render();
+}
+
+/* Mise à jour du DOM « sur place » : on compare le nouveau gabarit à ce qui
+   est affiché et on ne modifie que les textes et attributs qui changent. Les
+   boutons et interrupteurs gardent donc le même élément d'un rafraîchissement
+   à l'autre : un appui en cours n'est jamais interrompu et le focus clavier
+   reste en place. */
+function morph(target, html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  patchChildren(target, tpl.content);
+}
+
+function patchChildren(from, to) {
+  const oldNodes = Array.from(from.childNodes);
+  const newNodes = Array.from(to.childNodes);
+  const n = Math.max(oldNodes.length, newNodes.length);
+  for (let i = 0; i < n; i++) {
+    const o = oldNodes[i];
+    const w = newNodes[i];
+    if (!w) {
+      from.removeChild(o);
+    } else if (!o) {
+      from.appendChild(w);
+    } else if (o.nodeType !== w.nodeType || o.nodeName !== w.nodeName) {
+      from.replaceChild(w, o);
+    } else if (o.nodeType === 1) {
+      patchAttributes(o, w);
+      patchChildren(o, w);
+    } else if (o.nodeValue !== w.nodeValue) {
+      o.nodeValue = w.nodeValue;
+    }
+  }
+}
+
+function patchAttributes(o, w) {
+  for (const a of Array.from(o.attributes)) {
+    if (!w.hasAttribute(a.name)) o.removeAttribute(a.name);
+  }
+  for (const a of Array.from(w.attributes)) {
+    if (o.getAttribute(a.name) !== a.value) o.setAttribute(a.name, a.value);
+  }
+}
+
 function renderIndicators() {
-  const el = document.getElementById('indicators');
-  el.innerHTML = `
-    <span class="indicator" title="Nuit"><span>🌙</span><span>${state.day}</span></span>
-    <span class="indicator" title="Pièces"><span>💰</span><span>${formatNumber(state.pieces)}</span></span>
-  `;
+  morph(document.getElementById('indicators'), `
+    <span class="indicator" title="Nuit"><span aria-hidden="true">🌙</span><span><span class="visually-hidden">Nuit </span>${state.day}</span></span>
+    <span class="indicator" title="Heure"><span aria-hidden="true">🕐</span><span>${formatHour(hourOfDay(state))}</span></span>
+    <span class="indicator" title="Eau du réservoir"><span aria-hidden="true">💧</span><span class="num">${formatFixed(state.eau, 1)} L</span></span>
+    <span class="indicator" title="Pièces"><span aria-hidden="true">💰</span><span class="num">${formatCoins(state.pieces)}</span></span>
+  `);
 }
 
 function renderTabbar() {
-  const el = document.getElementById('tabbar');
   const visible = TABS.filter((t) => state.unlockedTabs.includes(t.id));
-  el.innerHTML = visible
-    .map(
-      (t) => `<button type="button" class="tab-btn${t.id === activeTab ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}">${t.icon} ${t.label}</button>`
-    )
-    .join('');
+  morph(
+    document.getElementById('tabbar'),
+    visible
+      .map(
+        (t) => `<button type="button" class="tab-btn${t.id === activeTab ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}">${t.icon} ${t.label}</button>`
+      )
+      .join('')
+  );
 }
 
 function renderTabContent() {
   const el = document.getElementById('tab-content');
+  if (activeTab === 'ferme') {
+    morph(el, screen === 'panneaux' || screen === 'batteries' ? renderDeviceScreen(screen) : renderFerme());
+    return;
+  }
   const tab = TABS.find((t) => t.id === activeTab) || TABS[0];
-  el.innerHTML = `
+  morph(el, `
     <h2>${tab.icon} ${tab.label}</h2>
-    <p class="hint">Rien à voir pour l'instant, patience — ce lot pose juste le socle.</p>
-  `;
+    <p class="hint">Rien à voir pour l'instant : cet onglet arrivera dans un lot suivant.</p>
+  `);
+}
+
+function renderSleepBar() {
+  const remaining = Math.max(1, Math.ceil(awakeRequired(state) - state.awakeSeconds - EPS));
+  morph(
+    document.getElementById('sleep-bar'),
+    canSleep(state)
+      ? '<button type="button" class="btn primary" data-action="sleep">😴 Dormir</button>'
+      : `<button type="button" class="btn" data-action="sleep" disabled>😴 Dormir (dans ${remaining} s)</button>`
+  );
 }
 
 function renderTestPanel() {
   const panel = document.getElementById('test-panel');
   panel.hidden = !testMode;
   if (!testMode) return;
+  syncTestDeviceSelect();
   const dump = document.getElementById('state-dump');
-  dump.textContent = JSON.stringify(state, null, 2);
+  const text = JSON.stringify(state, null, 2);
+  if (dump.textContent !== text) dump.textContent = text;
+}
+
+// La liste des appareils du mode test n'est reconstruite que si le parc change.
+function syncTestDeviceSelect() {
+  const sel = document.getElementById('test-device');
+  const devices = allDevices(state);
+  const signature = devices.map((d) => d.id).join('|');
+  if (sel.dataset.signature === signature) return;
+  const previous = sel.value;
+  sel.innerHTML = devices.map((d) => `<option value="${d.id}">${deviceName(d)}</option>`).join('');
+  sel.dataset.signature = signature;
+  if (devices.some((d) => d.id === previous)) sel.value = previous;
+}
+
+/* ---------- Ferme : cartes et écrans de détail ---------- */
+
+const DEVICE_ICONS = { panneau: '☀️', batterie: '🔋', pompe: '⛲' };
+const DEVICE_NAMES = { panneau: 'Panneau', batterie: 'Batterie', pompe: 'Pompe' };
+
+function deviceName(d) {
+  if (d.type === 'pompe') return 'Pompe';
+  const list = d.type === 'panneau' ? state.panneaux : state.batteries;
+  return `${DEVICE_NAMES[d.type]} n°${list.indexOf(d) + 1}`;
+}
+
+function costLabel(cost) {
+  return cost === 0 ? 'gratuit' : `${formatCoins(cost)} 💰`;
+}
+
+function canPay(cost) {
+  return state.pieces + EPS >= cost;
+}
+
+function alertLine(aEntretenir, enPanne) {
+  const parts = [];
+  if (enPanne) parts.push(`⛔ ${enPanne} en panne`);
+  if (aEntretenir) parts.push(`⚠️ ${aEntretenir} à entretenir`);
+  return parts.length ? `<span class="alert">${parts.join(' · ')}</span>` : '';
+}
+
+function renderFerme() {
+  const e = energyStats(state);
+  const p = state.pompe;
+  const ps = deviceStatus(state, p);
+  const cap = tankCapacity(state);
+  const netText =
+    e.net > 1e-6
+      ? `En charge (${formatRate(e.net)} kWh/s)`
+      : e.net < -1e-6
+        ? `En décharge (${formatRate(e.net)} kWh/s)`
+        : 'Stable (0,00 kWh/s)';
+  const tankText =
+    state.eau >= cap - EPS
+      ? 'Réservoir plein'
+      : `Vitesse de remplissage : ${formatRate(state.flux.eau)} L/s`;
+
+  return `
+    <h2>🌾 Ferme</h2>
+    <div class="cards">
+      <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
+        <span class="card-title"><span>☀️ Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="big">${formatFixed(e.production, 2)} kWh/s</span>
+        <span class="muted">${e.panneauxEnMarche} panneau${e.panneauxEnMarche > 1 ? 'x' : ''} en marche sur ${e.panneauxTotal}</span>
+        ${alertLine(e.panneauxAEntretenir, e.panneauxEnPanne)}
+      </button>
+      <button type="button" class="card" data-action="open-screen" data-screen="batteries">
+        <span class="card-title"><span>🔋 Stockage d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="big">${formatFixed(e.charge, 2)} / ${formatFixed(e.capacite, 2)} kWh</span>
+        <span class="muted">${netText}</span>
+        ${alertLine(e.batteriesAEntretenir, e.batteriesEnPanne)}
+      </button>
+      <div class="card">
+        <span class="card-title"><span>⛲ Pompe · niveau ${p.niveau}</span><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span></span>
+        <span class="muted">Débit réel : <span class="num">${formatFixed(p.debit, 2)} L/s</span> (max ${formatFixed(pumpFlow(p), 2)})</span>
+        <span class="muted">Consommation : <span class="num">${formatFixed(p.conso, 3)} kWh/s</span></span>
+        ${wearHtml(p)}
+        ${deviceControls(p)}
+      </div>
+      <div class="card">
+        <span class="card-title"><span>💧 Réservoir</span></span>
+        <span class="big">${formatFixed(state.eau, 1)} / ${formatNumber(cap)} L</span>
+        <span class="muted">${tankText}</span>
+      </div>
+    </div>
+  `;
+}
+
+function wearHtml(d) {
+  const pct = Math.round(d.usure * 10) / 10;
+  const cls = isBroken(d) ? ' bad' : needsService(d) ? ' warn' : '';
+  return `
+    <span class="muted">Usure : <span class="num">${formatFixed(pct, 1)} %</span></span>
+    <span class="bar" role="progressbar" aria-label="Usure" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(d.usure)}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
+  `;
+}
+
+// Interrupteur à deux positions : rouge à l'arrêt, vert en marche, et l'état
+// est aussi écrit (la couleur n'est jamais la seule indication).
+function switchHtml(d) {
+  const broken = isBroken(d);
+  const on = d.allume && !broken;
+  const text = broken ? 'En panne' : on ? 'Marche' : 'Arrêt';
+  return `<button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="${deviceName(d)}" data-action="toggle" data-id="${d.id}"${broken ? ' disabled' : ''}><span class="knob" aria-hidden="true"></span><span>${text}</span></button>`;
+}
+
+function deviceControls(d) {
+  const up = upgradeCost(d);
+  const maintain = maintainCost(d);
+  const repair = repairCost(d);
+  const broken = isBroken(d);
+  const upgradeBtn =
+    up === null
+      ? '<button type="button" class="btn" disabled>Niveau max</button>'
+      : `<button type="button" class="btn" data-action="upgrade" data-id="${d.id}"${canPay(up) ? '' : ' disabled'}>Améliorer (${costLabel(up)})</button>`;
+  const maintainOk = !broken && d.usure > EPS && canPay(maintain);
+  const repairOk = broken && canPay(repair);
+  return `
+    <span class="device-actions">
+      ${switchHtml(d)}
+      ${upgradeBtn}
+      <button type="button" class="btn" data-action="maintain" data-id="${d.id}"${maintainOk ? '' : ' disabled'}>Entretenir (${costLabel(maintain)})</button>
+      <button type="button" class="btn" data-action="repair" data-id="${d.id}"${repairOk ? '' : ' disabled'}>Réparer (${costLabel(repair)})</button>
+    </span>
+  `;
+}
+
+function deviceRow(d) {
+  const st = deviceStatus(state, d);
+  let detail;
+  if (d.type === 'panneau') {
+    detail = `<span class="muted">Production : <span class="num">${formatFixed(d.prod, 2)} kWh/s</span> (max ${formatFixed(panelOutput(d), 2)})</span>`;
+  } else {
+    const cap = batteryCapacity(d);
+    let flow = 'Ni charge ni décharge';
+    if (st.code === 'decharge') flow = `Puissance soutirée : ${formatRate(-d.sortie)} kWh/s`;
+    else if (st.code === 'charge') flow = `Charge : ${formatRate(d.entree)} kWh/s`;
+    detail = `
+      <span class="muted">Charge : <span class="num">${formatFixed(d.charge, 2)} / ${formatFixed(cap, 2)} kWh</span></span>
+      <span class="muted">${flow}</span>`;
+  }
+  const badge = st.badge ? `<span class="chip warn">⚠️ ${st.badge}</span>` : '';
+  return `
+    <article class="card">
+      <span class="card-title"><span>${DEVICE_ICONS[d.type]} ${deviceName(d)} · niveau ${d.niveau}</span><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span></span>
+      ${badge}
+      ${detail}
+      ${wearHtml(d)}
+      ${deviceControls(d)}
+    </article>
+  `;
+}
+
+function renderDeviceScreen(kind) {
+  const isPanels = kind === 'panneaux';
+  const list = isPanels ? state.panneaux : state.batteries;
+  const type = isPanels ? 'panneau' : 'batterie';
+  const e = energyStats(state);
+  const price = nextPurchasePrice(state, type);
+  const summary = isPanels
+    ? `<span class="big">${formatFixed(e.production, 2)} kWh/s</span>
+       <span class="muted">${e.panneauxEnMarche} panneau${e.panneauxEnMarche > 1 ? 'x' : ''} en marche sur ${e.panneauxTotal}</span>`
+    : `<span class="big">${formatFixed(e.charge, 2)} / ${formatFixed(e.capacite, 2)} kWh</span>
+       <span class="muted">Total reçu : ${formatRate(e.entree)} kWh/s · Total soutiré : ${formatRate(-e.sortie)} kWh/s</span>`;
+  return `
+    <div class="screen-head">
+      <button type="button" class="btn" data-action="close-screen">← Ferme</button>
+      <h2>${isPanels ? '☀️ Production d\'énergie' : '🔋 Stockage d\'énergie'}</h2>
+    </div>
+    <div class="stack">${summary}</div>
+    <div class="device-list">${list.map(deviceRow).join('')}</div>
+    <button type="button" class="btn primary" data-action="buy" data-type="${type}"${canPay(price) ? '' : ' disabled'}>Acheter ${isPanels ? 'un panneau' : 'une batterie'} (${formatCoins(price)} 💰)</button>
+  `;
+}
+
+/* ---------- écran de réveil ---------- */
+
+function openWakeModal(report) {
+  const root = document.getElementById('modal-root');
+  const line = (d, text) => {
+    const dev = findDevice(state, d.id);
+    return `<li>${text.replace('{nom}', dev ? deviceName(dev) : d.id).replace('{usure}', formatFixed(d.usure, 1))}</li>`;
+  };
+  const problems = [
+    ...report.enPanne.map((d) => line(d, '⛔ {nom} : en panne, à réparer.')),
+    ...report.aEntretenir.map((d) => line(d, '⚠️ {nom} : à entretenir (usure {usure} %).')),
+  ];
+  root.innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
+        <h2 id="wake-title">🌅 Réveil : nuit ${report.nuit}</h2>
+        <ul class="report-list">
+          <li>⚡ Énergie stockée : <strong class="num">${formatFixed(report.energie, 2)} / ${formatFixed(report.capacite, 2)} kWh</strong></li>
+          <li>💧 Eau disponible : <strong class="num">${formatFixed(report.eau, 1)} / ${formatNumber(report.capaciteEau)} L</strong></li>
+          ${report.energiePerdue > 0.005 ? `<li>☀️ Énergie perdue pendant la journée (batteries pleines) : <strong class="num">${formatFixed(report.energiePerdue, 2)} kWh</strong></li>` : ''}
+          ${problems.length ? problems.join('') : '<li>✅ Tous les appareils sont en bon état.</li>'}
+        </ul>
+        <button type="button" class="btn primary" data-action="close-modal" id="wake-close">Bonne journée</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('wake-close').focus();
 }
 
 /* ---------- options (modale) ---------- */
@@ -801,8 +2370,8 @@ function openOptionsModal() {
           </div>
           <div class="stack">
             <strong>Nouvelle partie</strong>
-            <div class="row">
-              <button class="btn danger" type="button" data-action="do-new-game">Recommencer à zéro</button>
+            <div class="row" id="new-game-zone">
+              <button class="btn danger" type="button" data-action="ask-new-game">Recommencer à zéro</button>
             </div>
           </div>
           <div class="stack">
@@ -847,13 +2416,64 @@ document.addEventListener('click', (e) => {
       break;
     case 'switch-tab':
       activeTab = target.dataset.tab;
-      scheduleRender();
+      screen = null;
+      refresh();
+      break;
+    case 'open-screen':
+      screen = target.dataset.screen;
+      refresh();
+      break;
+    case 'close-screen':
+      screen = null;
+      refresh();
+      break;
+    case 'toggle':
+      applyResult(toggleDevice(state, target.dataset.id));
+      break;
+    case 'upgrade':
+      applyResult(upgradeDevice(state, target.dataset.id));
+      break;
+    case 'maintain':
+      applyResult(maintainDevice(state, target.dataset.id));
+      break;
+    case 'repair':
+      applyResult(repairDevice(state, target.dataset.id));
+      break;
+    case 'buy':
+      applyResult(buyDevice(state, target.dataset.type));
+      break;
+    case 'sleep':
+      actionSleep();
       break;
     case 'test-add-100':
-      actionAddPieces(100);
+      applyResult(testAddPieces(state, 100));
       break;
     case 'test-add-1000':
-      actionAddPieces(1000);
+      applyResult(testAddPieces(state, 1000));
+      break;
+    case 'test-add-panel':
+      applyResult(testAddDevice(state, 'panneau'));
+      break;
+    case 'test-add-battery':
+      applyResult(testAddDevice(state, 'batterie'));
+      break;
+    case 'test-fill-batteries':
+      applyResult(testFillBatteries(state));
+      break;
+    case 'test-fill-tank':
+      applyResult(testFillTank(state));
+      break;
+    case 'test-wear':
+      applyResult(testSetWear(state, document.getElementById('test-device').value, DATA.WEAR.BREAKDOWN));
+      break;
+    case 'test-skip-awake':
+      applyResult(testSkipAwake(state));
+      break;
+    case 'test-nights-1':
+      actionTestNights(1);
+      break;
+    case 'test-nights-5':
+      actionTestNights(5);
       break;
     case 'do-export': {
       const area = document.getElementById('export-area');
@@ -863,18 +2483,7 @@ document.addEventListener('click', (e) => {
     case 'copy-export': {
       const area = document.getElementById('export-area');
       if (!area.value) area.value = exportSaveText();
-      area.select();
-      try {
-        navigator.clipboard.writeText(area.value);
-        showToast('Copié !');
-      } catch (err) {
-        try {
-          document.execCommand('copy');
-          showToast('Copié !');
-        } catch (err2) {
-          showToast('Copie impossible, sélectionne et copie manuellement.');
-        }
-      }
+      copyFromTextarea(area);
       break;
     }
     case 'do-import': {
@@ -882,18 +2491,31 @@ document.addEventListener('click', (e) => {
       const ok = importSaveText(area.value);
       showToast(ok ? 'Sauvegarde importée.' : 'Texte invalide, import annulé.');
       if (ok) {
+        screen = null;
         closeModal();
-        scheduleRender();
+        refresh();
       }
       break;
     }
-    case 'do-new-game': {
-      if (confirm('Nouvelle partie ? Toute la progression actuelle sera perdue.')) {
-        actionNewGame();
-        closeModal();
-      }
+    // Confirmation dans la page (et non confirm()) : certains navigateurs et
+    // aperçus bloquent les boîtes de dialogue natives sans rien signaler.
+    case 'ask-new-game':
+      document.getElementById('new-game-zone').innerHTML = `
+        <p class="alert">Toute la progression actuelle sera perdue.</p>
+        <div class="row">
+          <button class="btn danger" type="button" data-action="do-new-game">Oui, tout effacer</button>
+          <button class="btn" type="button" data-action="cancel-new-game">Annuler</button>
+        </div>`;
       break;
-    }
+    case 'cancel-new-game':
+      document.getElementById('new-game-zone').innerHTML =
+        '<button class="btn danger" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
+      break;
+    case 'do-new-game':
+      actionNewGame();
+      closeModal();
+      showToast('Nouvelle partie lancée.');
+      break;
   }
 });
 
