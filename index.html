@@ -740,6 +740,39 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 .semis-choice { justify-content: flex-start; text-align: left; height: auto; min-height: 44px; padding: 8px 12px; flex-direction: column; align-items: flex-start; gap: 2px; }
 .semis-choice > span { display: block; }
 .semis-choice[aria-pressed="true"] { border-color: var(--accent); border-width: 2px; }
+
+/* ---------- Lot 9 : chapitres et autonomie ---------- */
+
+.indicator-btn {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.indicator-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+.chapter-card { border-color: var(--accent); border-width: 2px; background: var(--bg-elevated); margin-bottom: 12px; }
+.chapter-card.done { border-color: var(--color-sun-dark); }
+.objectives { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.objective { display: flex; flex-direction: column; gap: 4px; }
+.objective-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.objective.ok .objective-label { color: var(--accent); font-weight: 700; }
+.objective-value { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.unlock-list { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.unlock-list li { padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--accent); background: var(--bg-muted); }
+.modal h3 { margin: 12px 0 4px; font-size: 1.05rem; }
+#chapter-close { margin-top: 16px; }
+.autonomy-card { margin-bottom: 12px; }
+.chart { display: block; width: 100%; max-width: 480px; height: auto; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-label { fill: var(--text-muted); font-size: 9px; }
+.chart-empty { fill: var(--text-muted); font-size: 10px; }
+.chart-bar { fill: var(--accent); }
+.chart-bar.full { fill: var(--color-sun-dark); }
+.chart-target { stroke: var(--danger); stroke-width: 1.5; stroke-dasharray: 4 3; }
 </style>
 </head>
 <body>
@@ -814,6 +847,12 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
         <button class="btn" type="button" data-action="test-verger">Construire le Verger</button>
         <button class="btn" type="button" data-action="test-fridge">Construire le Réfrigérateur</button>
         <button class="btn" type="button" data-action="test-empty-batteries">Vider les batteries</button>
+      </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-complete-chapter">Valider le chapitre en cours</button>
+        <label for="test-chapter">Chapitre</label>
+        <select id="test-chapter"></select>
+        <button class="btn" type="button" data-action="test-goto-chapter">Aller au chapitre</button>
       </div>
       <div class="row">
         <button class="btn" type="button" data-action="test-skip-awake">Ignorer l'éveil minimal</button>
@@ -1288,6 +1327,121 @@ const DATA = {
     SEUIL_ALIMENTE: 0.5,
     PERTE_NUITS: 1,
   },
+
+  /* ---------- Lot 9 : autonomie et chapitres ---------- */
+
+  // Autonomie d'une nuit (sections 4 et 8.10) = énergie mangée qui vient de lots
+  // d'origine « produit » ÷ besoin de la famille (320), plafonnée à 100 %. Les
+  // conserves et les achats du Comptoir (origine « acheté ») n'y comptent pas.
+  // HISTORIQUE_MAX : nombre de nuits gardées dans l'historique ; GRAPHIQUE_NUITS :
+  // nuits tracées dans le petit graphique.
+  AUTONOMIE: { HISTORIQUE_MAX: 1000, GRAPHIQUE_NUITS: 20 },
+
+  // Campagne en 7 chapitres (sections 4 et 8.10). Un chapitre atteint rend
+  // disponibles les éléments de `debloque` ; son objectif rempli, on passe au
+  // suivant. Le chapitre 7 rempli termine la campagne : mode libre, tout est
+  // débloqué. Un élément absent de tous les chapitres est disponible dès le départ
+  // (Potager niveau 1, pompe, panneaux, batteries, Comptoir).
+  //
+  // Objectifs (`type`) :
+  //   litres    : litres pompés au total ;
+  //   kwh       : record d'énergie stockée dans les batteries, en kWh ;
+  //   carottes  : carottes récoltées au total ;
+  //   autonomie : autonomie de la dernière nuit, en % ;
+  //   pontes    : nuits de ponte d'affilée (au moins un œuf pondu) ;
+  //   sante     : santé moyenne de la famille (un malade compte pour 0) ;
+  //   pains     : pains cuits au total (`recette` : la recette qui compte) ;
+  //   plats     : plats différents préparés (`exclut` : recettes qui n'en font
+  //               pas partie, ici le pain ; les transformations du Moulin et de
+  //               la Presse n'en sont jamais) ;
+  //   laines    : laines tondues au total ;
+  //   hiver     : la `saison` entière (LONGUEUR nuits) traversée avec au moins
+  //               `moyenne` % d'autonomie en moyenne, sans payer de soin ;
+  //   serie100  : nuits d'affilée à 100 % d'autonomie.
+  CHAPITRES: {
+    // Les séries d'affilée (« pontes », « serie100 ») et le suivi de l'hiver ne se
+    // comptent qu'à partir du chapitre qui porte l'objectif : les nuits d'avant
+    // ne comptent pas.
+    // Libellé des éléments débloqués (écran de fin de chapitre et Ferme).
+    ELEMENTS: {
+      champ:      { nom: 'Champ', icone: '🌾', note: 'blé pour les poules et la farine' },
+      silo:       { nom: 'Silo', icone: '🛖', note: 'stock de blé' },
+      poulailler: { nom: 'Poulailler', icone: '🐔', note: 'poules et œufs (les poules s\'achètent au Comptoir)' },
+      four:       { nom: 'Four', icone: '🔥', note: 'pain, gratin, tarte, et l\'onglet Livre de recette' },
+      cuisine:    { nom: 'Cuisine', icone: '🍳', note: 'omelette, ratatouille, ragoût, compote' },
+      moulin:     { nom: 'Moulin', icone: '⚙️', note: 'farine' },
+      presse:     { nom: 'Presse', icone: '🌻', note: 'huile de tournesol' },
+      tournesol:  { nom: 'Tournesol', icone: '🌻', note: 'nouvelle culture du Champ' },
+      paturage:   { nom: 'Pâturage', icone: '🐑', note: 'surface pour les moutons' },
+      moutons:    { nom: 'Moutons', icone: '🧶', note: 'laine, viande (les moutons s\'achètent au Comptoir)' },
+      serre:      { nom: 'Serre', icone: '🏡', note: 'des légumes toute l\'année' },
+      verger:     { nom: 'Verger', icone: '🌳', note: 'pommiers et poiriers' },
+      frigo:      { nom: 'Réfrigérateur', icone: '🧊', note: 'conservation sans péremption' },
+    },
+    liste: [
+      {
+        titre: 'L\'eau et le soleil', icone: '💧',
+        intro: 'Pompe de l\'eau et range de l\'énergie dans tes batteries : ce sont les deux ressources de la ferme. Tes conserves nourrissent la famille pour l\'instant.',
+        debloque: [],
+        objectifs: [
+          { type: 'litres', cible: 50, libelle: 'Pomper 50 L au total', unite: 'L' },
+          { type: 'kwh', cible: 3, libelle: 'Stocker 3 kWh dans les batteries', unite: 'kWh' },
+        ],
+      },
+      {
+        titre: 'Le premier potager', icone: '🥕',
+        intro: 'Plante, arrose, récolte : ta première production doit commencer à nourrir la famille.',
+        debloque: [],
+        objectifs: [
+          { type: 'carottes', cible: 20, libelle: 'Récolter 20 carottes', unite: '' },
+          { type: 'autonomie', cible: 25, libelle: 'Atteindre 25 % d\'autonomie', unite: '%' },
+        ],
+      },
+      {
+        titre: 'Le poulailler', icone: '🐔',
+        intro: 'Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé et une famille en bonne santé.',
+        debloque: ['champ', 'silo', 'poulailler'],
+        objectifs: [
+          { type: 'pontes', cible: 7, libelle: 'Pondre 7 nuits d\'affilée', unite: 'nuits' },
+          { type: 'sante', cible: 80, libelle: 'Santé moyenne d\'au moins 80', unite: '' },
+        ],
+      },
+      {
+        titre: 'Le four et le livre de recette', icone: '🍞',
+        intro: 'Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients.',
+        debloque: ['four', 'cuisine', 'moulin', 'presse', 'tournesol'],
+        objectifs: [
+          { type: 'pains', cible: 5, recette: 'pain', libelle: 'Cuire 5 pains', unite: '' },
+          { type: 'plats', cible: 3, exclut: ['pain'], libelle: 'Préparer 3 plats différents (hors pain)', unite: '' },
+        ],
+      },
+      {
+        titre: 'Le troupeau', icone: '🐑',
+        intro: 'Des moutons pour la laine et la viande, sur un pâturage qui grandit avec eux.',
+        debloque: ['paturage', 'moutons'],
+        objectifs: [
+          { type: 'laines', cible: 10, libelle: 'Tondre 10 laines', unite: '' },
+          { type: 'autonomie', cible: 60, libelle: 'Atteindre 60 % d\'autonomie', unite: '%' },
+        ],
+      },
+      {
+        titre: 'Toute l\'année', icone: '❄️',
+        intro: 'La Serre, le Verger et le Réfrigérateur pour tenir un hiver entier sans acheter de soins. Il faut être là dès la première nuit de l\'hiver.',
+        debloque: ['serre', 'verger', 'frigo'],
+        objectifs: [
+          { type: 'hiver', cible: 1, saison: 'hiver', moyenne: 80, libelle: 'Traverser un hiver complet à 80 % d\'autonomie en moyenne, sans payer de soin', unite: '' },
+        ],
+      },
+      {
+        titre: 'Famille autonome', icone: '🏡',
+        intro: 'Le dernier défi : nourrir la famille avec ce que produit la ferme, et rien d\'autre.',
+        debloque: [],
+        objectifs: [
+          { type: 'serie100', cible: 7, libelle: 'Atteindre 100 % d\'autonomie 7 nuits d\'affilée', unite: 'nuits' },
+        ],
+      },
+    ],
+  },
 };
 
 /* ==========================================================================
@@ -1309,7 +1463,7 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 9;
+const STATE_VERSION = 10;
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -1416,8 +1570,9 @@ function recipeOutputQty(id) {
 /* ---------- appareils : fabrication et sélecteurs ---------- */
 
 function newDayStats() {
-  // ble : blé mangé par les poules pendant la journée (Lot 4).
-  return { produite: 0, perdue: 0, eau: 0, ble: 0 };
+  // ble : blé mangé par les poules pendant la journée (Lot 4) ; soins : soins
+  // payés pendant la journée (Lot 9).
+  return { produite: 0, perdue: 0, eau: 0, ble: 0, soins: 0 };
 }
 
 function makeDevice(type, id, prix) {
@@ -1622,6 +1777,7 @@ function runPump(state, dt) {
   const litres = Math.min(wanted, got / kwhPerL);
   state.eau += litres;
   state.jour.eau += litres;
+  bumpCounter(state, 'litres', litres); // Lot 9
   p.debit = litres / dt;
   p.conso = got / dt;
   state.flux.eau = litres / dt;
@@ -1687,6 +1843,8 @@ function tick(state, dt) {
   // e. temps d'éveil (l'heure s'en déduit)
   state.awakeSeconds += dt;
   refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
+  noteEnergyRecord(state); // Lot 9 : record d'énergie stockée, puis objectifs du chapitre
+  updateChapters(state);
   return state;
 }
 
@@ -1889,8 +2047,9 @@ function addItem(state, item, qty) {
 }
 
 // Retire jusqu'à `qty` unités, toujours dans le lot le plus ancien, et renvoie
-// le nombre réellement retiré.
-function takeItem(state, item, qty) {
+// le nombre réellement retiré. Lot 9 : si `out` est un tableau, il reçoit les
+// morceaux retirés { qty, origin } (l'autonomie compte l'origine des repas).
+function takeItem(state, item, qty, out = null) {
   const n = Math.min(countItem(state, item), qty);
   if (!(n > 0)) return 0;
   let rest = n;
@@ -1899,6 +2058,7 @@ function takeItem(state, item, qty) {
     const taken = Math.min(lot.qty, rest);
     lot.qty -= taken;
     rest -= taken;
+    if (out && taken > 0) out.push({ qty: taken, origin: lot.origin });
     if (rest <= 0) break;
   }
   const kept = lots.filter((l) => l.qty > 0);
@@ -2088,9 +2248,11 @@ function moveFromFridge(state, item, qty) {
 
 // Retire jusqu'à `qty` unités d'un aliment du frigo (le lot le plus ancien
 // d'abord) pour un repas. Renvoie le nombre retiré.
-function takeFromFridge(state, item, qty) {
+function takeFromFridge(state, item, qty, out = null) {
   const lots = fridgeLots(state, item);
-  const taken = pullLots(lots, qty).reduce((t, p) => t + p.qty, 0);
+  const pulled = pullLots(lots, qty);
+  if (out) out.push(...pulled.map((p) => ({ qty: p.qty, origin: p.origin })));
+  const taken = pulled.reduce((t, p) => t + p.qty, 0);
   const kept = lots.filter((l) => l.qty > 0);
   if (kept.length) state.frigo.items[item] = kept;
   else if (state.frigo.items) delete state.frigo.items[item];
@@ -2402,7 +2564,7 @@ function updateHealth(state, coverage, bonus = 0) {
 }
 
 function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, bonusPlats: 0, termine: {}, auto: newAutoReport(), fruits: {}, frigo: { kwh: 0, panne: false, vieillis: false } };
+  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, bonusPlats: 0, termine: {}, auto: newAutoReport(), fruits: {}, frigo: { kwh: 0, panne: false, vieillis: false }, energieProduit: 0, autonomie: 0 };
 }
 
 // Bonus de santé d'une nuit : +1 par plat différent mangé, jusqu'à +3.
@@ -2415,10 +2577,16 @@ function dishBonus(mange) {
 // Première étape nocturne : le repas, puis la santé.
 function feedFamily(state) {
   const plan = planMeal(state);
+  // Lot 9 : énergie mangée qui vient de lots d'origine « produit » (autonomie).
+  let produit = 0;
   for (const [item, n] of Object.entries(plan.mange)) {
     const cold = plan.froid[item] || 0;
-    takeItem(state, item, n - cold);
-    if (cold > 0) takeFromFridge(state, item, cold);
+    const pieces = [];
+    takeItem(state, item, n - cold, pieces);
+    if (cold > 0) takeFromFridge(state, item, cold, pieces);
+    for (const p of pieces) {
+      if (p.origin === DATA.ORIGINE.PRODUIT) produit += p.qty * DATA.items[item].energie;
+    }
   }
   const avant = rawAverageHealth(state);
   const bonus = dishBonus(plan.mange);
@@ -2438,6 +2606,8 @@ function feedFamily(state) {
     auto: newAutoReport(),
     fruits: {},
     frigo: { kwh: 0, panne: false, vieillis: false },
+    energieProduit: produit,
+    autonomie: autonomyPercent(produit, plan.besoin),
   };
   return plan;
 }
@@ -2460,6 +2630,7 @@ function heal(state, memberId) {
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
   state.famille.soinsPayes += 1;
+  state.jour.soins = (state.jour.soins || 0) + 1; // Lot 9 : soin payé aujourd'hui (suivi de l'hiver)
   m.sante = DATA.FAMILY.SOIN.SANTE;
   m.malade = false;
   return { ok: true, cost };
@@ -2645,6 +2816,7 @@ function harvest(state, plotId, auto = false) {
   plot.stade = 0;
   plot.arrose = false;
   plot.montee = false;
+  if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9 (une carotte montée en graine ne compte pas)
   return { ok: true, culture, items };
 }
 
@@ -3059,6 +3231,7 @@ function shear(state, id) {
   const M = DATA.ANIMAUX.mouton;
   addItem(state, M.laine, M.laineParTonte);
   m.laine = 0;
+  bumpCounter(state, 'laines', M.laineParTonte); // Lot 9
   return { ok: true, laine: M.laineParTonte };
 }
 
@@ -3300,6 +3473,7 @@ function completeTask(state, id) {
   const qty = recipeOutputQty(recette);
   addItem(state, item, qty);
   st.tache = null;
+  noteRecipeDone(state, recette, qty); // Lot 9
   return { item, qty };
 }
 
@@ -3558,6 +3732,342 @@ function autoTasks(state) {
   return rap;
 }
 
+/* ---------- Lot 9 : autonomie et chapitres ---------- */
+
+// state.campagne = { chapitre, fini, annonces, historique, compteurs }.
+// chapitre : chapitre en cours (1 à 7) ; fini : la campagne est terminée (mode
+// libre, tout est débloqué) ; annonces : chapitres terminés dont l'écran de fin
+// n'a pas encore été vu [{ chapitre, nuit }] ; historique : autonomie de chaque
+// nuit [{ nuit, pct, energie }] ; compteurs : litres pompés, record de kWh
+// stockés, carottes récoltées, nuits de ponte d'affilée, pains cuits, plats
+// différents préparés, laines tondues, nuits à 100 % d'affilée, suivi de l'hiver.
+function newCampaign() {
+  return {
+    chapitre: 1,
+    fini: false,
+    annonces: [],
+    historique: [],
+    compteurs: newCampaignCounters(),
+  };
+}
+
+function newCampaignCounters() {
+  return {
+    litres: 0,
+    kwhMax: 0,
+    carottes: 0,
+    serieOeufs: 0,
+    pains: 0,
+    plats: [],
+    laines: 0,
+    serie100: 0,
+    hiver: null, // hiver en cours de suivi : { debut, nuits, somme, soins }
+    hiverDernier: null, // dernier hiver terminé : { moyenne, sansSoin, reussi }
+    hiverReussi: false,
+  };
+}
+
+/* -- autonomie -- */
+
+// Autonomie d'une nuit en % : énergie « produit » mangée ÷ besoin, plafonnée à 100.
+function autonomyPercent(energieProduit, besoin) {
+  if (!(besoin > 0)) return 0;
+  return Math.round(Math.min(100, (energieProduit / besoin) * 100) * 1e4) / 1e4;
+}
+
+// Part de `qty` unités qui vient de lots « produit », en parcourant les lots dans
+// l'ordre où on les retire (sans rien modifier).
+function producedShare(lots, qty) {
+  let rest = qty;
+  let produit = 0;
+  for (const lot of lots) {
+    if (rest <= 0) break;
+    const n = Math.min(lot.qty, rest);
+    if (lot.origin === DATA.ORIGINE.PRODUIT) produit += n;
+    rest -= n;
+  }
+  return produit;
+}
+
+// Autonomie prévue pour la nuit qui vient (repas prévu, origines comprises).
+function plannedAutonomy(state) {
+  const plan = planMeal(state);
+  let produit = 0;
+  for (const [item, n] of Object.entries(plan.mange)) {
+    const cold = plan.froid[item] || 0;
+    const energie = DATA.items[item].energie;
+    produit += producedShare(lotsOf(state, item), n - cold) * energie;
+    if (cold > 0) produit += producedShare(fridgeLots(state, item), cold) * energie;
+  }
+  return autonomyPercent(produit, plan.besoin);
+}
+
+function autonomyHistory(state, count = DATA.AUTONOMIE.GRAPHIQUE_NUITS) {
+  const h = state.campagne && Array.isArray(state.campagne.historique) ? state.campagne.historique : [];
+  return h.slice(-count);
+}
+
+// Autonomie de la dernière nuit (0 avant la première nuit).
+function lastAutonomy(state) {
+  const h = autonomyHistory(state, 1);
+  return h.length ? h[0].pct : 0;
+}
+
+/* -- chapitres et déblocages -- */
+
+function chapterCount() {
+  return DATA.CHAPITRES.liste.length;
+}
+
+// Chapitre atteint : 1 à 7 pendant la campagne, 8 en mode libre (tout est débloqué).
+function chapterReached(state) {
+  const c = state.campagne;
+  if (!c) return chapterCount() + 1;
+  return c.fini ? chapterCount() + 1 : c.chapitre;
+}
+
+// Numéro (1 à 7) du chapitre qui débloque cet élément ; 0 s'il est disponible dès
+// le départ.
+function unlockChapter(id) {
+  const i = DATA.CHAPITRES.liste.findIndex((ch) => ch.debloque.includes(id));
+  return i < 0 ? 0 : i + 1;
+}
+
+function isUnlocked(state, id) {
+  return chapterReached(state) >= unlockChapter(id);
+}
+
+// Numéro du premier chapitre qui porte un objectif de ce type.
+function objectiveChapter(type) {
+  return DATA.CHAPITRES.liste.findIndex((ch) => ch.objectifs.some((o) => o.type === type)) + 1;
+}
+
+function objectiveDef(type) {
+  for (const ch of DATA.CHAPITRES.liste) {
+    const o = ch.objectifs.find((x) => x.type === type);
+    if (o) return o;
+  }
+  return null;
+}
+
+// Cultures qu'on peut planter dans ce lieu avec les chapitres atteints (le
+// tournesol n'arrive qu'au chapitre 4).
+function plantableCropsFor(state, lieu) {
+  return plantableCrops(lieu).filter((c) => isUnlocked(state, c));
+}
+
+function bumpCounter(state, key, amount) {
+  const c = state.campagne;
+  if (c && amount > 0) c.compteurs[key] = (c.compteurs[key] || 0) + amount;
+}
+
+// Record d'énergie stockée : somme de la charge des batteries.
+function noteEnergyRecord(state) {
+  const c = state.campagne;
+  if (!c) return;
+  const total = state.batteries.reduce((t, b) => t + b.charge, 0);
+  if (total > c.compteurs.kwhMax) c.compteurs.kwhMax = total;
+}
+
+// Une recette vient de se terminer : pain cuit, ou plat différent préparé. Les
+// transformations (Moulin, Presse) ne comptent ni comme pain ni comme plat.
+function noteRecipeDone(state, recette, qty) {
+  const c = state.campagne;
+  const r = DATA.recipes[recette];
+  if (!c || !r || r.transformation) return;
+  const pain = objectiveDef('pains');
+  if (pain && recette === pain.recette) {
+    c.compteurs.pains += qty;
+    return;
+  }
+  const exclus = (objectiveDef('plats') || {}).exclut || [];
+  if (!exclus.includes(recette) && !c.compteurs.plats.includes(recette)) c.compteurs.plats.push(recette);
+}
+
+// Valeur actuelle d'un objectif.
+function objectiveValue(state, obj) {
+  const k = state.campagne.compteurs;
+  switch (obj.type) {
+    case 'litres': return k.litres;
+    case 'kwh': return k.kwhMax;
+    case 'carottes': return k.carottes;
+    case 'autonomie': return lastAutonomy(state);
+    case 'pontes': return k.serieOeufs;
+    case 'sante': return averageHealth(state);
+    case 'pains': return k.pains;
+    case 'plats': return k.plats.length;
+    case 'laines': return k.laines;
+    case 'hiver': return k.hiverReussi ? 1 : 0;
+    case 'serie100': return k.serie100;
+    default: return 0;
+  }
+}
+
+// Progression d'un chapitre : { chapitre, titre, icone, intro, objectifs: [{ ...objectif,
+// valeur, ok, ratio }], fait }.
+function chapterProgress(state, chapitre = state.campagne.chapitre) {
+  const def = DATA.CHAPITRES.liste[chapitre - 1];
+  const objectifs = def.objectifs.map((o) => {
+    const valeur = objectiveValue(state, o);
+    return { ...o, valeur, ok: valeur + EPS >= o.cible, ratio: Math.max(0, Math.min(1, valeur / o.cible)) };
+  });
+  return { chapitre, titre: def.titre, icone: def.icone, intro: def.intro, objectifs, fait: objectifs.every((o) => o.ok) };
+}
+
+// Terminer le chapitre en cours : on l'annonce, puis le suivant s'ouvre (ou la
+// campagne s'achève, mode libre).
+function completeChapter(state) {
+  const c = state.campagne;
+  if (!c || c.fini) return fail('La campagne est terminée.');
+  c.annonces.push({ chapitre: c.chapitre, nuit: state.day });
+  if (c.chapitre >= chapterCount()) c.fini = true;
+  else c.chapitre += 1;
+  return { ok: true, chapitre: c.chapitre, fini: c.fini };
+}
+
+// Passe au chapitre suivant tant que l'objectif du chapitre en cours est rempli.
+// Renvoie le nombre de chapitres terminés. Appelée à chaque tick et à chaque réveil.
+function updateChapters(state) {
+  const c = state.campagne;
+  if (!c) return 0;
+  let done = 0;
+  while (!c.fini && done < chapterCount() && chapterProgress(state).fait) {
+    completeChapter(state);
+    done++;
+  }
+  return done;
+}
+
+// Le joueur a vu l'écran de fin du chapitre : on l'enlève de la file.
+function acknowledgeChapter(state) {
+  const c = state.campagne;
+  if (!c || !c.annonces.length) return fail('Rien à annoncer.');
+  c.annonces.shift();
+  return { ok: true, restantes: c.annonces.length };
+}
+
+/* -- compteurs de nuit -- */
+
+// Suivi de l'hiver du chapitre 6 : il commence à la première nuit de la saison
+// (si le chapitre est déjà atteint), doit être suivi nuit après nuit, et n'est
+// réussi que s'il compte toutes les nuits de la saison, à `moyenne` % d'autonomie
+// en moyenne, sans soin payé entre la première et la dernière nuit.
+function trackWinter(state, pct) {
+  const k = state.campagne.compteurs;
+  const obj = objectiveDef('hiver');
+  if (!obj || k.hiverReussi || chapterReached(state) < objectiveChapter('hiver')) return;
+  const S = DATA.SAISONS;
+  const day = state.day;
+  if (S.ORDRE[seasonIndex(day)] !== obj.saison) {
+    k.hiver = null;
+    return;
+  }
+  const night = ((Math.max(1, day) - 1) % S.LONGUEUR) + 1;
+  // Soins déjà payés au matin de la première nuit : ceux d'aujourd'hui comptent dans l'hiver.
+  if (night === 1) k.hiver = { debut: day, nuits: 0, somme: 0, soins: state.famille.soinsPayes - (state.jour.soins || 0) };
+  const w = k.hiver;
+  if (!w || w.debut + w.nuits !== day) {
+    k.hiver = null; // hiver commencé en cours de route : il ne compte pas
+    return;
+  }
+  w.nuits += 1;
+  w.somme += pct;
+  if (night < S.LONGUEUR) return;
+  const moyenne = Math.round((w.somme / w.nuits) * 1e4) / 1e4;
+  const sansSoin = state.famille.soinsPayes <= w.soins;
+  const reussi = w.nuits === S.LONGUEUR && moyenne + EPS >= obj.moyenne && sansSoin;
+  k.hiverDernier = { moyenne, sansSoin, reussi };
+  if (reussi) k.hiverReussi = true;
+  k.hiver = null;
+}
+
+// Première nuit (≥ `day`) de la saison donnée.
+function nextSeasonStart(day, saison) {
+  const S = DATA.SAISONS;
+  const base = day - yearNight(day);
+  let start = base + S.ORDRE.indexOf(saison) * S.LONGUEUR + 1;
+  if (start < day) start += S.LONGUEUR * S.ORDRE.length;
+  return start;
+}
+
+// Où en est l'objectif de l'hiver (pour l'interface) : 'reussi', 'suivi' (hiver
+// en cours de suivi depuis sa première nuit), 'manque' (la saison est commencée
+// sans avoir été suivie : elle ne compte pas) ou 'attente' (la saison viendra).
+function winterStatus(state) {
+  const k = state.campagne.compteurs;
+  const obj = objectiveDef('hiver');
+  const prochaine = nextSeasonStart(state.day, obj.saison);
+  const dernier = k.hiverDernier;
+  if (k.hiverReussi) return { etat: 'reussi', prochaine, dernier };
+  if (k.hiver) {
+    return {
+      etat: 'suivi', prochaine, dernier, nuits: k.hiver.nuits,
+      moyenne: k.hiver.nuits ? k.hiver.somme / k.hiver.nuits : 0,
+      soinPaye: state.famille.soinsPayes > k.hiver.soins,
+    };
+  }
+  const enCours = DATA.SAISONS.ORDRE[seasonIndex(state.day)] === obj.saison;
+  return { etat: enCours && prochaine !== state.day ? 'manque' : 'attente', prochaine, dernier };
+}
+
+// Fin de la nuit (avant le passage au jour suivant) : autonomie de la nuit dans
+// l'historique, séries d'affilée (remises à zéro dès qu'une nuit les interrompt),
+// suivi de l'hiver.
+function recordNight(state) {
+  const c = state.campagne;
+  if (!c) return null;
+  const n = state.nuit;
+  const energie = n.energieProduit || 0;
+  const pct = autonomyPercent(energie, n.besoin);
+  n.autonomie = pct;
+  c.historique.push({ nuit: state.day, pct, energie });
+  const max = DATA.AUTONOMIE.HISTORIQUE_MAX;
+  if (c.historique.length > max) c.historique.splice(0, c.historique.length - max);
+  const k = c.compteurs;
+  const reached = chapterReached(state);
+    if (reached >= objectiveChapter('pontes')) k.serieOeufs = (n.oeufs || 0) > 0 ? k.serieOeufs + 1 : 0;
+  if (reached >= objectiveChapter('serie100')) k.serie100 = pct + EPS >= 100 ? k.serie100 + 1 : 0;
+  trackWinter(state, pct);
+  return pct;
+}
+
+/* -- ce que possède une partie (migration) -- */
+
+// Une partie possède-t-elle déjà cet élément débloqué par un chapitre ?
+function ownsElement(state, id) {
+  const built = (b) => !!(b && b.construit);
+  switch (id) {
+    case 'champ': return built(state.champ);
+    case 'silo': return built(state.silo);
+    case 'poulailler': return built(state.poulailler) || (state.poulailler && state.poulailler.poules > 0);
+    case 'four': case 'cuisine': case 'moulin': case 'presse':
+      return built(state.stations && state.stations[id]);
+    case 'tournesol':
+      return [...(state.champ ? state.champ.parcelles || [] : [])].some((p) => p && p.culture === 'tournesol');
+    case 'paturage': return built(state.paturage);
+    case 'moutons': return !!(state.paturage && Array.isArray(state.paturage.moutons) && state.paturage.moutons.length > 0);
+    case 'serre': return built(state.serre);
+    case 'verger': return built(state.verger) || !!(state.verger && Array.isArray(state.verger.arbres) && state.verger.arbres.length > 0);
+    case 'frigo': return built(state.frigo);
+    default: return false;
+  }
+}
+
+// Chapitre d'une ancienne partie : le plus avancé de ceux dont elle possède déjà
+// un élément. Sans aucun élément débloqué : chapitre 2 si elle a déjà passé une
+// nuit ou agrandi le Potager, sinon chapitre 1.
+function inferChapter(state) {
+  let chapitre = 0;
+  for (const ch of DATA.CHAPITRES.liste) {
+    for (const id of ch.debloque) {
+      if (ownsElement(state, id)) chapitre = Math.max(chapitre, unlockChapter(id));
+    }
+  }
+  if (chapitre > 0) return chapitre;
+  const niveau = state.potager && typeof state.potager.niveau === 'number' ? state.potager.niveau : 1;
+  return (typeof state.day === 'number' && state.day > 1) || niveau > 1 ? 2 : 1;
+}
+
 /* ---------- la nuit ---------- */
 
 function canSleep(state) {
@@ -3612,6 +4122,11 @@ function buildMorningReport(state) {
       unites: fridgeUnits(state),
       couvreLaNuit: fridgeCoversNight(state),
     },
+    // Lot 9 : autonomie de la nuit, chapitre en cours et chapitres terminés au réveil.
+    autonomie: state.nuit.autonomie || 0,
+    energieProduit: state.nuit.energieProduit || 0,
+    chapitre: state.campagne ? state.campagne.chapitre : 0,
+    chapitresTermines: state.campagne ? state.campagne.annonces.map((a) => a.chapitre) : [],
   };
 }
 
@@ -3622,11 +4137,13 @@ function sleep(state) {
   if (!canSleep(state)) return null;
   state.nuit = newNightStats();
   for (const step of NIGHT_STEPS) step(state);
+  recordNight(state); // Lot 9 : autonomie de la nuit, séries et hiver (nuit encore = state.day)
   state.day += 1;
   state.awakeSeconds = 0;
+  refreshUnlocks(state);
+  updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
   state.report = buildMorningReport(state);
   state.jour = newDayStats();
-  refreshUnlocks(state);
   return state.report;
 }
 
@@ -3777,6 +4294,27 @@ function testWearMill(state) {
   return testSetWear(state, d.id, DATA.WEAR.BREAKDOWN);
 }
 
+// Lot 9 : valide le chapitre en cours sans remplir son objectif (le suivant
+// s'ouvre, son écran de fin apparaît). Après le chapitre 7, la campagne est finie.
+function testCompleteChapter(state) {
+  return completeChapter(state);
+}
+
+// Lot 9 : va au chapitre `n` (1 à 7) ; n = 8 termine la campagne (mode libre, tout
+// débloqué). Les compteurs du chapitre repartent à zéro (sinon un objectif déjà
+// rempli le validerait aussitôt) et les écrans de fin en attente sont oubliés ;
+// l'historique d'autonomie est conservé.
+function testGoToChapter(state, n) {
+  const c = state.campagne;
+  const target = Math.floor(Number(n));
+  if (!c || !(target >= 1 && target <= chapterCount() + 1)) return fail('Chapitre inconnu.');
+  c.compteurs = newCampaignCounters();
+  c.annonces = [];
+  c.fini = target > chapterCount();
+  c.chapitre = c.fini ? chapterCount() : target;
+  return { ok: true, chapitre: c.chapitre, fini: c.fini };
+}
+
 // Lot 8 : saute à la première nuit de la saison suivante (sans passer la nuit :
 // rien ne pousse, rien ne se mange).
 function testNextSeason(state) {
@@ -3910,6 +4448,11 @@ function startLot8() {
   };
 }
 
+// Lot 9 : la campagne commence au chapitre 1, sans historique.
+function startLot9() {
+  return { campagne: newCampaign() };
+}
+
 function createInitialState(seed = 1) {
   return {
     version: STATE_VERSION,
@@ -3927,6 +4470,7 @@ function createInitialState(seed = 1) {
     ...startLot6(),
     ...startLot7(),
     ...startLot8(),
+    ...startLot9(),
   };
 }
 
@@ -4003,6 +4547,20 @@ const MIGRATIONS = {
     nuit: { fruits: {}, frigo: { kwh: 0, panne: false, vieillis: false }, ...(state.nuit && typeof state.nuit === 'object' ? state.nuit : {}) },
     version: 9,
   }),
+  // v9 (Lot 8) → v10 (Lot 9) : la campagne. Une ancienne partie est placée au
+  // chapitre qui correspond à ce qu'elle possède déjà ; les compteurs et
+  // l'historique d'autonomie repartent de zéro.
+  9: (state) => {
+    const campagne = newCampaign();
+    campagne.chapitre = inferChapter(state);
+    return {
+      ...state,
+      campagne,
+      jour: { ...newDayStats(), ...(state.jour && typeof state.jour === 'object' ? state.jour : {}) },
+      nuit: { energieProduit: 0, autonomie: 0, ...(state.nuit && typeof state.nuit === 'object' ? state.nuit : {}) },
+      version: 10,
+    };
+  },
 };
 
 // Applique les migrations successives à une sauvegarde { v, t, s } (ou à un
@@ -4088,6 +4646,12 @@ function formatHour(h) {
   return `${h} h`;
 }
 
+// Pourcentage entier arrondi vers le bas (99,6 s'affiche « 99 % » : 100 % veut
+// dire 100), avec une espace insécable avant le signe.
+function formatPercent(p) {
+  return `${formatNumber(Math.floor((Number(p) || 0) + EPS))}\u00a0%`;
+}
+
 // Multiplicateur de productivité : « 1 », « 0,8 », « 0,25 ».
 function formatMult(m) {
   return String(m).replace('.', ',');
@@ -4144,7 +4708,7 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 9);
+  assertEqual(s.version, 10);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
@@ -8437,7 +9001,7 @@ test('sérialisation JSON : Serre, Verger et Réfrigérateur font l\'aller-retou
   assertEqual(JSON.parse(JSON.stringify(copy)), JSON.parse(JSON.stringify(s)), 'la partie continue à l\'identique');
 });
 
-test('migration v8 (Lot 7) → v9 : Serre, Verger et Réfrigérateur à construire, la partie continue', () => {
+test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigérateur à construire, la partie continue', () => {
   const v8 = createInitialState(3);
   delete v8.serre;
   delete v8.verger;
@@ -8448,7 +9012,7 @@ test('migration v8 (Lot 7) → v9 : Serre, Verger et Réfrigérateur à construi
   v8.day = 25;
   v8.pieces = 321;
   const m = migrate({ v: 8, t: 0, s: v8 });
-  assertEqual(m.version, 9);
+  assertEqual(m.version, 10);
   assertEqual([m.day, m.pieces], [25, 321]);
   assertEqual(currentSeason(m), 'automne');
   assertEqual(m.serre, { construit: false, niveau: 1, parcelles: [] });
@@ -8457,7 +9021,7 @@ test('migration v8 (Lot 7) → v9 : Serre, Verger et Réfrigérateur à construi
   assertEqual(m.nuit.fruits, {});
   tick(m, 0.2);
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
-  assertEqual(migrate({ v: 9, t: 0, s: JSON.parse(JSON.stringify(m)) }).version, 9);
+  assertEqual(migrate({ v: 10, t: 0, s: JSON.parse(JSON.stringify(m)) }).version, 10);
 });
 
 test('mode test Lot 8 : saison suivante, constructions gratuites, batteries vides', () => {
@@ -8496,6 +9060,680 @@ test('rapport de réveil Lot 8 : saison, fruits et état du frigo', () => {
   assertEqual(r.frigo.construit, true);
   assertEqual(typeof r.frigo.couvreLaNuit, 'boolean');
   assertEqual(r.fruits, {});
+});
+
+/* ---------- Lot 9 : autonomie et chapitres ---------- */
+
+// Partie de test placée au chapitre `n` (1 à 7 ; 8 = campagne finie), pompe coupée.
+function atChapter(n) {
+  const s = farm();
+  assert(testGoToChapter(s, n).ok, `aller au chapitre ${n}`);
+  return s;
+}
+
+// Une nuit avec exactement `energie` d'énergie d'origine « produit » au menu
+// (patates : 15 chacune, jamais gardées en réserve), plus des conserves pour le reste.
+function nightWithProduced(s, patates) {
+  s.famille.reserve = {};
+  setInv(s, { patate: patates, conserve: 30 });
+  return sleepOnce(s);
+}
+
+function okList(s) {
+  return chapterProgress(s).objectifs.map((o) => o.ok);
+}
+
+test('DATA Lot 9 : sept chapitres, objectifs et déblocages', () => {
+  const L = DATA.CHAPITRES.liste;
+  assertEqual(L.map((c) => c.titre), ['L\'eau et le soleil', 'Le premier potager', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'Famille autonome']);
+  assertEqual(L.map((c) => c.debloque), [[], [], ['champ', 'silo', 'poulailler'], ['four', 'cuisine', 'moulin', 'presse', 'tournesol'], ['paturage', 'moutons'], ['serre', 'verger', 'frigo'], []]);
+  assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
+    [['litres', 50], ['kwh', 3]], [['carottes', 20], ['autonomie', 25]], [['pontes', 7], ['sante', 80]],
+    [['pains', 5], ['plats', 3]], [['laines', 10], ['autonomie', 60]], [['hiver', 1]], [['serie100', 7]],
+  ]);
+  assertEqual(DATA.CHAPITRES.liste[5].objectifs[0].moyenne, 80);
+  assertEqual(DATA.AUTONOMIE, { HISTORIQUE_MAX: 1000, GRAPHIQUE_NUITS: 20 });
+  // chaque élément débloqué est décrit, et n'apparaît que dans un chapitre
+  const ids = L.flatMap((c) => c.debloque);
+  assertEqual(new Set(ids).size, ids.length);
+  for (const id of ids) assert(DATA.CHAPITRES.ELEMENTS[id], `libellé de ${id}`);
+  assertEqual(Object.keys(DATA.CHAPITRES.ELEMENTS).sort(), [...ids].sort());
+});
+
+test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', () => {
+  const s = createInitialState(1);
+  assertEqual(s.campagne, {
+    chapitre: 1, fini: false, annonces: [], historique: [],
+    compteurs: { litres: 0, kwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, hiver: null, hiverDernier: null, hiverReussi: false },
+  });
+  assertEqual(chapterReached(s), 1);
+  assertEqual(lastAutonomy(s), 0);
+});
+
+/* --- autonomie --- */
+
+test('autonomie : énergie « produit » mangée ÷ 320, plafonnée à 100 %', () => {
+  assertEqual(autonomyPercent(160, 320), 50);
+  assertEqual(autonomyPercent(60, 320), 18.75);
+  assertEqual(autonomyPercent(330, 320), 100);
+  assertEqual(autonomyPercent(0, 320), 0);
+  assertEqual(autonomyPercent(50, 0), 0);
+  const s = farm();
+  s.famille.reserve = {};
+  setInv(s, { patate: 8, conserve: 100 }); // 8 × 15 = 120 produit
+  const r = sleepOnce(s);
+  assertEqual([r.energieProduit, r.autonomie], [120, 37.5]);
+  assertEqual(s.campagne.historique, [{ nuit: 1, pct: 37.5, energie: 120 }]);
+  assertEqual(lastAutonomy(s), 37.5);
+});
+
+test('autonomie : les conserves n\'y comptent pas', () => {
+  const s = farm();
+  setInv(s, { conserve: 16 }); // 16 × 20 = 320 : la famille est nourrie, mais rien n'est produit
+  const r = sleepOnce(s);
+  assertEqual(r.couverture, 1);
+  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [320, 0, 0]);
+});
+
+test('autonomie : un achat du Comptoir n\'y compte pas, une récolte oui', () => {
+  const s = farm();
+  s.famille.reserve = {};
+  setInv(s, { conserve: 10 });
+  s.pieces = 500;
+  assert(buyItem(s, 'carotte', 5).ok, 'acheter 5 carottes');
+  addItem(s, 'carotte', 5); // récoltées
+  assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.origin]).sort(), [[5, 'acheté'], [5, 'produit']].sort());
+  const r = sleepOnce(s); // tout est mangé : 10 carottes (60) + 10 conserves (200)
+  assertEqual(r.energieMangee, 260);
+  assertEqual(r.energieProduit, 30, 'seules les 5 carottes récoltées comptent');
+  assertEqual(r.autonomie, 9.375);
+});
+
+test('autonomie : un plat cuisiné compte, les œufs du frigo gardent leur origine', () => {
+  const s = coldRoom();
+  s.famille.reserve = {};
+  setInv(s, { conserve: 6 });
+  addItem(s, 'oeuf', 10);
+  addLot(s, 'oeuf', 10, 'acheté');
+  assert(moveToFridge(s, 'oeuf', 20).ok, 'ranger les œufs au frigo');
+  assertEqual(plannedAutonomy(s), 31.25);
+  const r = sleepOnce(s);
+  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [320, 100, 31.25]);
+});
+
+test('autonomie : la prévision de la nuit est celle qui est vraiment mesurée', () => {
+  const s = farm();
+  s.famille.reserve = {};
+  setInv(s, { patate: 5, carotte: 10, conserve: 10 });
+  addLot(s, 'carotte', 7, 'acheté');
+  const prevue = plannedAutonomy(s);
+  assert(prevue > 0 && prevue < 100);
+  assertEqual(sleepOnce(s).autonomie, prevue);
+});
+
+test('autonomie : l\'historique garde une entrée par nuit, dans la limite fixée', () => {
+  const s = farm();
+  for (let i = 0; i < 3; i++) sleepOnce(s);
+  assertEqual(s.campagne.historique.map((h) => h.nuit), [1, 2, 3]);
+  assertEqual(autonomyHistory(s, 2).map((h) => h.nuit), [2, 3]);
+  const saved = DATA.AUTONOMIE.HISTORIQUE_MAX;
+  DATA.AUTONOMIE.HISTORIQUE_MAX = 5;
+  try {
+    const t = farm();
+    for (let i = 0; i < 8; i++) {
+      setInv(t, { conserve: 50 });
+      sleepOnce(t);
+    }
+    assertEqual(t.campagne.historique.map((h) => h.nuit), [4, 5, 6, 7, 8]);
+  } finally {
+    DATA.AUTONOMIE.HISTORIQUE_MAX = saved;
+  }
+});
+
+/* --- compteurs --- */
+
+test('compteurs : litres pompés au total, record de kWh stockés', () => {
+  const s = farm({ pump: true });
+  runFor(s, 10);
+  assert(s.campagne.compteurs.litres > 9.9 && near(s.campagne.compteurs.litres, s.jour.eau, 1e-9), `litres ${s.campagne.compteurs.litres}`);
+  const stored = s.batteries[0].charge;
+  assert(near(s.campagne.compteurs.kwhMax, stored, 1e-9), 'le record suit la charge');
+  testFillBatteries(s);
+  tick(s, 0.2);
+  const record = s.campagne.compteurs.kwhMax;
+  assert(record > 4.99 && record <= 5, `record ${record}`);
+  testEmptyBatteries(s);
+  runFor(s, 1);
+  assertEqual(s.campagne.compteurs.kwhMax, record, 'un record ne redescend pas');
+});
+
+testBase('compteurs : carottes récoltées (la carotte montée en graine ne compte pas)', () => {
+  const s = garden();
+  plantRipe(s, 'potager-1', 'carotte');
+  assert(harvest(s, 'potager-1').ok);
+  assertEqual(s.campagne.compteurs.carottes, 10);
+  plantRipe(s, 'potager-2', 'tomate');
+  assert(harvest(s, 'potager-2').ok);
+  assertEqual(s.campagne.compteurs.carottes, 10, 'une tomate n\'est pas une carotte');
+  assert(plant(s, 'potager-3', 'carotte').ok);
+  findPlot(s, 'potager-3').stade = DATA.crops.carotte.stades;
+  assert(toggleBolting(s, 'potager-3').ok);
+  findPlot(s, 'potager-3').stade = maxStage(findPlot(s, 'potager-3'));
+  assert(harvest(s, 'potager-3').ok);
+  assertEqual(s.campagne.compteurs.carottes, 10, 'graines : pas de carottes');
+});
+
+testBase('compteurs : une récolte automatique compte aussi', () => {
+  const s = garden();
+  testSetBuildingLevel5(s, 'potager');
+  plantRipe(s, 'potager-1', 'carotte');
+  const r = harvest(s, 'potager-1', true);
+  assertEqual(r.ok, true);
+  assertEqual(s.campagne.compteurs.carottes, 10);
+});
+
+test('compteurs : laines tondues, pains cuits, plats différents', () => {
+  const s = atelier();
+  fillSheepAfterPasture(s);
+  testWoolReady(s);
+  for (const m of s.paturage.moutons) assert(shear(s, m.id).ok);
+  assertEqual(s.campagne.compteurs.laines, 2);
+  for (let i = 0; i < 2; i++) {
+    addItem(s, 'farine', 2);
+    s.eau = 40;
+    assert(startRecipe(s, 'pain').ok);
+    runFor(s, 25);
+  }
+  assertEqual([s.campagne.compteurs.pains, s.campagne.compteurs.plats], [2, []], 'le pain n\'est pas un plat');
+  addItem(s, 'ble', 3);
+  assert(startRecipe(s, 'farine').ok);
+  runFor(s, 10);
+  assertEqual([s.campagne.compteurs.pains, s.campagne.compteurs.plats], [2, []], 'moudre n\'est ni un pain ni un plat');
+  for (let i = 0; i < 2; i++) {
+    addItem(s, 'oeuf', 3);
+    addItem(s, 'huile', 1);
+    assert(startRecipe(s, 'omelette').ok);
+    runFor(s, 20);
+  }
+  assertEqual(s.campagne.compteurs.plats, ['omelette'], 'le même plat ne compte qu\'une fois');
+  addItem(s, 'patate', 3);
+  addItem(s, 'oeuf', 1);
+  assert(startRecipe(s, 'gratin_patates').ok);
+  runFor(s, 35);
+  assertEqual(s.campagne.compteurs.plats, ['omelette', 'gratin_patates']);
+});
+
+function fillSheepAfterPasture(s) {
+  assert(buildPaturage(s).ok, 'débloquer le Pâturage');
+  fillSheep(s, 2);
+}
+
+/* --- objectifs de chapitre --- */
+
+test('chapitre 1 : pomper 50 L et stocker 3 kWh', () => {
+  const s = atChapter(1);
+  s.pompe.allume = true;
+  runFor(s, 50); // le réservoir (40 L) se remplit, pas plus
+  assert(near(s.campagne.compteurs.litres, 40, 1e-6));
+  assertEqual(okList(s), [false, false]);
+  s.eau = 0; // l'eau a servi
+  runFor(s, 12);
+  assertEqual(okList(s), [true, false], 'plus de 50 L, mais moins de 3 kWh');
+  assertEqual(s.campagne.chapitre, 1);
+  testFillBatteries(s);
+  tick(s, 0.2);
+  assertEqual(s.campagne.chapitre, 2, 'objectif rempli : chapitre suivant');
+  assertEqual(s.campagne.annonces, [{ chapitre: 1, nuit: 1 }]);
+});
+
+test('chapitre 1 : 3 kWh sans 50 L ne suffit pas', () => {
+  const s = atChapter(1);
+  testFillBatteries(s);
+  tick(s, 0.2);
+  assertEqual(okList(s), [false, true]);
+  assertEqual(s.campagne.chapitre, 1);
+});
+
+testBase('chapitre 2 : 20 carottes et 25 % d\'autonomie', () => {
+  const s = atChapter(2);
+  for (let i = 1; i <= 2; i++) {
+    plantRipe(s, `potager-${i}`, 'carotte');
+    assert(harvest(s, `potager-${i}`).ok);
+  }
+  updateChapters(s);
+  assertEqual(okList(s), [true, false]);
+  assertEqual(s.campagne.chapitre, 2);
+  nightWithProduced(s, 5); // 75 / 320 = 23,4 %
+  assertEqual([lastAutonomy(s), okList(s)], [23.4375, [true, false]]);
+  nightWithProduced(s, 6); // 90 / 320 = 28,1 %
+  assertEqual(s.campagne.chapitre, 3);
+  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [2]);
+});
+
+testBase('chapitre 2 : 25 % sans les 20 carottes ne suffit pas', () => {
+  const s = atChapter(2);
+  nightWithProduced(s, 6);
+  assertEqual(okList(s), [false, true]);
+  assertEqual(s.campagne.chapitre, 2);
+});
+
+testBase('chapitre 3 : 7 nuits de ponte d\'affilée et santé moyenne d\'au moins 80', () => {
+  const s = atChapter(3);
+  s.pieces = 5000;
+  assert(buildSilo(s).ok);
+  assert(buildPoulailler(s).ok);
+  for (let i = 0; i < 4; i++) assert(buyAnimal(s, 'poule').ok);
+  testAddWheat(s, 50);
+  for (let night = 1; night <= 7; night++) {
+    assertEqual(s.campagne.chapitre, 3, `nuit ${night} : toujours le chapitre 3`);
+    assert(feedAllHens(s).ok);
+    sleepOnce(s);
+    assertEqual(s.campagne.compteurs.serieOeufs, night);
+  }
+  assertEqual(s.campagne.chapitre, 4);
+  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [3]);
+});
+
+test('chapitre 3 : sept nuits sans la santé requise ne suffisent pas', () => {
+  const s = atChapter(3);
+  s.campagne.compteurs.serieOeufs = 7;
+  setHealth(s, 79);
+  assertEqual(okList(s), [true, false]);
+  updateChapters(s);
+  assertEqual(s.campagne.chapitre, 3);
+  s.famille.membres[0].malade = true; // un malade compte pour 0
+  setHealth(s, 100);
+  s.famille.membres[0].malade = true;
+  assertEqual(okList(s), [true, false], '3 en pleine santé + 1 malade = 75');
+  s.famille.membres[0].malade = false;
+  updateChapters(s);
+  assertEqual(s.campagne.chapitre, 4);
+});
+
+testBase('remise à zéro : une nuit sans œuf casse la série de ponte', () => {
+  const s = atChapter(3);
+  s.pieces = 5000;
+  assert(buildSilo(s).ok);
+  assert(buildPoulailler(s).ok);
+  for (let i = 0; i < 4; i++) assert(buyAnimal(s, 'poule').ok);
+  testAddWheat(s, 50);
+  for (let night = 1; night <= 3; night++) {
+    assert(feedAllHens(s).ok);
+    sleepOnce(s);
+  }
+  assertEqual(s.campagne.compteurs.serieOeufs, 3);
+  sleepOnce(s); // les poules n'ont pas été nourries : pas d'œuf
+  assertEqual(s.campagne.compteurs.serieOeufs, 0);
+  assert(feedAllHens(s).ok);
+  sleepOnce(s);
+  assertEqual(s.campagne.compteurs.serieOeufs, 1, 'la série repart de 1');
+});
+
+test('séries d\'affilée : elles ne comptent qu\'à partir du chapitre qui les porte', () => {
+  const s = atChapter(1);
+  testAddHens(s, 4);
+  testAddWheat(s, 20);
+  feedAllHens(s);
+  sleepOnce(s);
+  assertEqual(s.campagne.compteurs.serieOeufs, 0, 'chapitre 1 : la ponte ne compte pas encore');
+  const t = atChapter(6);
+  nightWithProduced(t, 22);
+  assertEqual(t.campagne.compteurs.serie100, 0, 'chapitre 6 : les nuits à 100 % ne comptent pas encore');
+});
+
+testBase('chapitre 4 : 5 pains et 3 plats différents', () => {
+  const s = atelier();
+  testGoToChapter(s, 4);
+  for (let i = 0; i < 5; i++) {
+    addItem(s, 'farine', 2);
+    s.eau = 40;
+    assert(startRecipe(s, 'pain').ok);
+    runFor(s, 25);
+  }
+  assertEqual([s.campagne.compteurs.pains, okList(s)], [5, [true, false]]);
+  assertEqual(s.campagne.chapitre, 4, 'cinq pains ne font pas les trois plats');
+  const dishes = [['omelette', { oeuf: 3, huile: 1 }, 20], ['gratin_patates', { patate: 3, oeuf: 1 }, 35], ['ratatouille', { tomate: 1, courgette: 1, aubergine: 1, huile: 1 }, 35]];
+  dishes.forEach(([id, ing, secs], i) => {
+    for (const [item, n] of Object.entries(ing)) addItem(s, item, n);
+    assert(startRecipe(s, id).ok, id);
+    runFor(s, secs);
+    assertEqual(s.campagne.compteurs.plats.length, i + 1);
+  });
+  assertEqual(s.campagne.chapitre, 5);
+  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [4]);
+});
+
+testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {
+  const s = pature();
+  testGoToChapter(s, 5);
+  fillSheep(s, 3);
+  for (let round = 0; round < 3; round++) {
+    testWoolReady(s);
+    for (const m of s.paturage.moutons) assert(shear(s, m.id).ok);
+  }
+  updateChapters(s);
+  assertEqual([s.campagne.compteurs.laines, okList(s)], [9, [false, false]]);
+  testWoolReady(s);
+  assert(shear(s, s.paturage.moutons[0].id).ok);
+  updateChapters(s);
+  assertEqual([s.campagne.compteurs.laines, okList(s)], [10, [true, false]]);
+  nightWithProduced(s, 12); // 180 / 320 = 56 % : pas assez
+  assertEqual(s.campagne.chapitre, 5);
+  nightWithProduced(s, 13); // 195 / 320 = 60,9 %
+  assertEqual(s.campagne.chapitre, 6);
+});
+
+// Une nuit d'hiver avec `patates` patates produites au menu.
+function winterNights(s, count, patates) {
+  for (let i = 0; i < count; i++) nightWithProduced(s, patates);
+}
+
+test('chapitre 6 : un hiver complet à 80 % en moyenne, sans soin', () => {
+  const s = atChapter(6);
+  s.day = 31; // première nuit de l'hiver
+  assertEqual(currentSeason(s), 'hiver');
+  winterNights(s, 9, 18); // 270 / 320 = 84 %
+  assertEqual([s.campagne.chapitre, s.campagne.compteurs.hiver.nuits], [6, 9]);
+  winterNights(s, 1, 18);
+  assertEqual(s.campagne.chapitre, 7);
+  assertEqual(s.campagne.compteurs.hiverReussi, true);
+  assertEqual(s.campagne.compteurs.hiverDernier.reussi, true);
+  assertEqual(s.day, 41);
+});
+
+test('chapitre 6 : une moyenne de 79 % ne suffit pas', () => {
+  const s = atChapter(6);
+  s.day = 31;
+  winterNights(s, 10, 17); // 255 / 320 = 79,7 %
+  assertEqual(s.campagne.chapitre, 6);
+  assertEqual(s.campagne.compteurs.hiverDernier.reussi, false);
+  assert(s.campagne.compteurs.hiverDernier.moyenne < 80);
+});
+
+test('chapitre 6 : la moyenne compte toutes les nuits, pas seulement la dernière', () => {
+  const s = atChapter(6);
+  s.day = 31;
+  winterNights(s, 5, 22); // 100 %
+  winterNights(s, 5, 12); // 56,25 %
+  assertEqual(s.campagne.chapitre, 6);
+  assert(near(s.campagne.compteurs.hiverDernier.moyenne, 78.125, 1e-6));
+});
+
+test('chapitre 6 : un soin payé pendant l\'hiver fait échouer l\'hiver', () => {
+  const s = atChapter(6);
+  s.day = 31;
+  winterNights(s, 4, 22);
+  s.pieces = 500;
+  s.famille.membres[0].sante = 0;
+  s.famille.membres[0].malade = true;
+  assert(heal(s, 'adulte-1').ok);
+  winterNights(s, 6, 22);
+  assertEqual(s.campagne.chapitre, 6);
+  assertEqual(s.campagne.compteurs.hiverDernier, { moyenne: 100, sansSoin: false, reussi: false });
+});
+
+test('chapitre 6 : un soin payé le matin de la première nuit compte, celui de la veille non', () => {
+  const s = atChapter(6);
+  s.day = 30;
+  s.pieces = 500;
+  s.famille.membres[0].sante = 0;
+  s.famille.membres[0].malade = true;
+  assert(heal(s, 'adulte-1').ok); // veille de l'hiver
+  nightWithProduced(s, 22);
+  assertEqual(s.day, 31);
+  winterNights(s, 10, 22);
+  assertEqual(s.campagne.chapitre, 7, 'le soin de la veille ne compte pas');
+  const t = atChapter(6);
+  t.day = 31;
+  t.pieces = 500;
+  t.famille.membres[0].sante = 0;
+  t.famille.membres[0].malade = true;
+  assert(heal(t, 'adulte-1').ok); // premier matin de l'hiver
+  winterNights(t, 10, 22);
+  assertEqual(t.campagne.chapitre, 6, 'le soin du premier jour compte');
+});
+
+test('chapitre 6 : un hiver commencé en cours de route ne compte pas', () => {
+  const s = atChapter(6);
+  s.day = 33;
+  winterNights(s, 8, 22);
+  assertEqual(s.day, 41);
+  assertEqual([s.campagne.chapitre, s.campagne.compteurs.hiver, s.campagne.compteurs.hiverDernier], [6, null, null]);
+});
+
+test('chapitre 6 : arrivé au chapitre en pleine nuit d\'hiver, on attend le suivant', () => {
+  const s = atChapter(5);
+  s.day = 30;
+  nightWithProduced(s, 22); // dernière nuit d'automne
+  testCompleteChapter(s); // chapitre 6 atteint le matin du premier jour d'hiver
+  assertEqual([s.day, s.campagne.chapitre], [31, 6]);
+  winterNights(s, 10, 22);
+  assertEqual(s.campagne.chapitre, 7, 'un hiver suivi dès sa première nuit compte');
+});
+
+test('chapitre 7 : 100 % pendant 7 nuits d\'affilée termine la campagne', () => {
+  const s = atChapter(7);
+  for (let night = 1; night <= 6; night++) {
+    nightWithProduced(s, 22); // 330 : 100 %
+    assertEqual([s.campagne.compteurs.serie100, s.campagne.fini], [night, false]);
+  }
+  nightWithProduced(s, 22);
+  assertEqual(s.campagne.fini, true);
+  assertEqual(s.campagne.chapitre, 7);
+  assertEqual(chapterReached(s), 8);
+  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [7]);
+});
+
+test('remise à zéro : une nuit sous 100 % casse la série d\'autonomie', () => {
+  const s = atChapter(7);
+  for (let i = 0; i < 4; i++) nightWithProduced(s, 22);
+  assertEqual(s.campagne.compteurs.serie100, 4);
+  nightWithProduced(s, 21); // 315 / 320 = 98,4 %
+  assertEqual(s.campagne.compteurs.serie100, 0);
+  for (let i = 0; i < 6; i++) nightWithProduced(s, 22);
+  assertEqual([s.campagne.compteurs.serie100, s.campagne.fini], [6, false]);
+  nightWithProduced(s, 22);
+  assertEqual(s.campagne.fini, true);
+});
+
+test('chapitres : la campagne finie ne recule pas et ne recompte rien', () => {
+  const s = atChapter(8);
+  assertEqual(updateChapters(s), 0);
+  assertEqual(completeChapter(s).ok, false);
+  assertEqual(s.campagne.annonces, []);
+});
+
+
+test('cultures plantables : le tournesol attend le chapitre 4', () => {
+  assertEqual(plantableCropsFor(atChapter(3), 'champ'), ['ble']);
+  assertEqual(plantableCropsFor(atChapter(4), 'champ'), ['ble', 'tournesol']);
+  assertEqual(plantableCropsFor(atChapter(1), 'potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine']);
+  assertEqual(plantableCropsFor(atChapter(8), 'champ'), ['ble', 'tournesol']);
+});
+
+test('affichage : pourcentage arrondi vers le bas, 100 % seulement à 100', () => {
+  assertEqual([formatPercent(0), formatPercent(37.5), formatPercent(99.99), formatPercent(100), formatPercent(undefined)], ['0\u00a0%', '37\u00a0%', '99\u00a0%', '100\u00a0%', '0\u00a0%']);
+});
+
+test('hiver : première nuit de la saison et état du suivi', () => {
+  assertEqual([nextSeasonStart(1, 'hiver'), nextSeasonStart(31, 'hiver'), nextSeasonStart(32, 'hiver'), nextSeasonStart(40, 'hiver'), nextSeasonStart(41, 'hiver'), nextSeasonStart(75, 'hiver')], [31, 31, 71, 71, 71, 111]);
+  const s = atChapter(6);
+  assertEqual(winterStatus(s).etat, 'attente');
+  s.day = 31;
+  assertEqual([winterStatus(s).etat, winterStatus(s).prochaine], ['attente', 31], 'l\'hiver commence aujourd\'hui');
+  nightWithProduced(s, 22);
+  let w = winterStatus(s);
+  assertEqual([w.etat, w.nuits, w.moyenne, w.soinPaye], ['suivi', 1, 100, false]);
+  s.pieces = 500;
+  s.famille.membres[1].sante = 0;
+  s.famille.membres[1].malade = true;
+  assert(heal(s, 'adulte-2').ok);
+  assertEqual(winterStatus(s).soinPaye, true);
+  const t = atChapter(6);
+  t.day = 33;
+  assertEqual([winterStatus(t).etat, winterStatus(t).prochaine], ['manque', 71]);
+  const u = atChapter(6);
+  u.day = 31;
+  winterNights(u, 10, 22);
+  assertEqual(winterStatus(u).etat, 'reussi');
+});
+
+/* --- annonces --- */
+
+test('annonces : un écran de fin par chapitre terminé, vidé un à un', () => {
+  const s = atChapter(1);
+  assert(testCompleteChapter(s).ok);
+  assert(testCompleteChapter(s).ok);
+  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [1, 2]);
+  assertEqual(s.campagne.chapitre, 3);
+  assertEqual(acknowledgeChapter(s), { ok: true, restantes: 1 });
+  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [2]);
+  assertEqual(acknowledgeChapter(s), { ok: true, restantes: 0 });
+  assertEqual(acknowledgeChapter(s).ok, false);
+});
+
+test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres terminés', () => {
+  const s = atChapter(2);
+  s.famille.reserve = {};
+  setInv(s, { patate: 8, conserve: 10 });
+  s.campagne.compteurs.carottes = 20;
+  const r = sleepOnce(s);
+  assertEqual([r.autonomie, r.energieProduit, r.chapitre, r.chapitresTermines], [37.5, 120, 3, [2]]);
+});
+
+/* --- masquage --- */
+
+test('déblocages : chaque chapitre atteint ouvre ses éléments', () => {
+  const at = (n, id) => isUnlocked(atChapter(n), id);
+  const groups = { 3: ['champ', 'silo', 'poulailler'], 4: ['four', 'cuisine', 'moulin', 'presse', 'tournesol'], 5: ['paturage', 'moutons'], 6: ['serre', 'verger', 'frigo'] };
+  for (const [ch, ids] of Object.entries(groups)) {
+    for (const id of ids) {
+      assertEqual([id, ch - 1 >= 1 && at(ch - 1, id)], [id, false], `${id} masqué au chapitre ${ch - 1}`);
+      assertEqual([id, at(Number(ch), id)], [id, true], `${id} visible au chapitre ${ch}`);
+      assertEqual([id, at(7, id)], [id, true], `${id} visible ensuite`);
+      assertEqual([id, at(8, id)], [id, true], `${id} visible en mode libre`);
+    }
+  }
+  assertEqual(['champ', 'four', 'paturage', 'serre'].map((id) => at(1, id)), [false, false, false, false]);
+  assertEqual(['champ', 'four', 'paturage', 'serre'].map((id) => at(4, id)), [true, true, false, false]);
+});
+
+test('déblocages : le Potager, la pompe et le Comptoir sont là dès le départ', () => {
+  const s = atChapter(1);
+  for (const id of ['potager', 'pompe', 'panneau', 'batterie', 'comptoir']) assertEqual([id, isUnlocked(s, id)], [id, true]);
+  assertEqual(unlockChapter('potager'), 0);
+  assertEqual([unlockChapter('champ'), unlockChapter('presse'), unlockChapter('moutons'), unlockChapter('frigo')], [3, 4, 5, 6]);
+});
+
+test('masquage : un chapitre qui avance ne détruit rien de ce que la partie possède', () => {
+  const s = createInitialState(1);
+  s.pieces = 5000;
+  assert(buildChamp(s).ok, 'les actions du moteur restent libres : le masquage est celui de l\'interface');
+  testGoToChapter(s, 1);
+  assertEqual(s.champ.construit, true);
+  assertEqual(isUnlocked(s, 'champ'), false);
+});
+
+/* --- migration --- */
+
+// Sauvegarde de la version 9 (Lot 8) : une partie sans campagne.
+function v9State(mutate) {
+  const s = createInitialState(4);
+  delete s.campagne;
+  delete s.nuit.energieProduit;
+  delete s.nuit.autonomie;
+  delete s.jour.soins;
+  s.version = 9;
+  if (mutate) mutate(s);
+  return s;
+}
+
+test('migration v9 → v10 : une partie neuve arrive au chapitre 1', () => {
+  const m = migrate({ v: 9, t: 0, s: v9State() });
+  assertEqual(m.version, 10);
+  assertEqual([m.campagne.chapitre, m.campagne.fini, m.campagne.annonces, m.campagne.historique], [1, false, [], []]);
+  assertEqual(m.campagne.compteurs, newCampaignCounters());
+  assertEqual([m.nuit.energieProduit, m.nuit.autonomie, m.jour.soins], [0, 0, 0]);
+});
+
+test('migration v9 → v10 : le chapitre suit ce que la partie possède', () => {
+  const chapitre = (mutate) => migrate({ v: 9, t: 0, s: v9State(mutate) }).campagne.chapitre;
+  assertEqual(chapitre((s) => { s.day = 6; }), 2, 'quelques nuits passées, rien de débloqué');
+  assertEqual(chapitre((s) => { s.potager.niveau = 2; }), 2, 'Potager agrandi');
+  assertEqual(chapitre((s) => { s.champ.construit = true; }), 3, 'Champ');
+  assertEqual(chapitre((s) => { s.silo.construit = true; }), 3, 'Silo');
+  assertEqual(chapitre((s) => { s.poulailler.construit = true; }), 3, 'Poulailler');
+  assertEqual(chapitre((s) => { s.stations.four.construit = true; }), 4, 'Four');
+  assertEqual(chapitre((s) => { s.stations.moulin.construit = true; }), 4, 'Moulin');
+  assertEqual(chapitre((s) => { s.paturage.construit = true; }), 5, 'Pâturage');
+  assertEqual(chapitre((s) => { s.paturage.moutons.push({ id: 'mouton-1', poids: 20, laine: 0 }); }), 5, 'mouton');
+  assertEqual(chapitre((s) => { s.serre.construit = true; }), 6, 'Serre');
+  assertEqual(chapitre((s) => { s.verger.arbres.push({ id: 'arbre-1', espece: 'pommier', plantee: 1 }); }), 6, 'arbre');
+  assertEqual(chapitre((s) => { s.frigo.construit = true; }), 6, 'Réfrigérateur');
+  assertEqual(chapitre((s) => { s.champ.construit = true; s.paturage.construit = true; s.day = 80; }), 5, 'le plus avancé l\'emporte');
+  assertEqual(chapitre((s) => { s.champ.parcelles = [{ id: 'champ-1', culture: 'tournesol' }]; }), 4, 'tournesol planté');
+});
+
+test('migration v9 → v10 : la partie migrée continue, tout ce qu\'elle possède est visible', () => {
+  const m = migrate({ v: 9, t: 0, s: v9State((s) => { s.day = 30; s.pieces = 777; openSerre(s); openFridge(s); }) });
+  assertEqual([m.day, m.pieces, m.campagne.chapitre], [30, 777, 6]);
+  for (const id of ['serre', 'verger', 'frigo', 'champ', 'four', 'moutons']) assertEqual([id, isUnlocked(m, id)], [id, true]);
+  tick(m, 0.2);
+  assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
+  assertEqual(m.campagne.historique.length, 1);
+  assertEqual(JSON.parse(JSON.stringify(m)), m);
+  const again = migrate({ v: 10, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  assertEqual(again.campagne, m.campagne, 'une partie déjà à jour n\'est pas replacée');
+});
+
+test('migration : une sauvegarde très ancienne traverse toutes les versions jusqu\'au chapitre 2', () => {
+  const m = migrate({ v: 0, t: 0, s: { day: 4, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual([m.version, m.campagne.chapitre], [10, 2]);
+});
+
+/* --- mode test --- */
+
+test('mode test Lot 9 : valider le chapitre en cours', () => {
+  const s = atChapter(1);
+  assertEqual(testCompleteChapter(s), { ok: true, chapitre: 2, fini: false });
+  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [1]);
+  for (let i = 0; i < 5; i++) testCompleteChapter(s);
+  assertEqual([s.campagne.chapitre, s.campagne.fini], [7, false]);
+  assertEqual(testCompleteChapter(s), { ok: true, chapitre: 7, fini: true });
+  assertEqual(testCompleteChapter(s).ok, false, 'la campagne est terminée');
+});
+
+test('mode test Lot 9 : aller à un chapitre donné', () => {
+  const s = createInitialState(1);
+  s.campagne.compteurs.laines = 12;
+  s.campagne.annonces.push({ chapitre: 1, nuit: 1 });
+  assertEqual(testGoToChapter(s, 4), { ok: true, chapitre: 4, fini: false });
+  assertEqual([s.campagne.compteurs.laines, s.campagne.annonces], [0, []], 'compteurs et annonces remis à zéro');
+  assertEqual([isUnlocked(s, 'four'), isUnlocked(s, 'paturage')], [true, false]);
+  assertEqual(testGoToChapter(s, 8), { ok: true, chapitre: 7, fini: true });
+  assertEqual(isUnlocked(s, 'frigo'), true);
+  assertEqual(testGoToChapter(s, 2), { ok: true, chapitre: 2, fini: false });
+  assertEqual(s.campagne.fini, false);
+  assertEqual(testGoToChapter(s, 0).ok, false);
+  assertEqual(testGoToChapter(s, 9).ok, false);
+  assertEqual(testGoToChapter(s, 'abc').ok, false);
+  s.campagne.compteurs.carottes = 20;
+  s.campagne.historique.push({ nuit: 1, pct: 40, energie: 128 });
+  testGoToChapter(s, 2);
+  updateChapters(s);
+  assertEqual(s.campagne.chapitre, 2, 'aller à un chapitre ne le valide pas tout de suite');
+  assertEqual(s.campagne.historique.length, 1, 'l\'historique d\'autonomie est conservé');
+});
+
+test('sérialisation JSON Lot 9 : la campagne fait l\'aller-retour', () => {
+  const s = atChapter(6);
+  s.day = 31;
+  winterNights(s, 3, 22);
+  testCompleteChapter(s);
+  const copy = JSON.parse(JSON.stringify(s));
+  assertEqual(copy, s);
+  assert(sleepOnce(copy) !== null && sleepOnce(s) !== null);
+  assertEqual(JSON.parse(JSON.stringify(copy)), JSON.parse(JSON.stringify(s)), 'la partie continue à l\'identique');
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -8736,6 +9974,7 @@ function frame(now) {
   }
   watchPreparations();
   watchUnlocks();
+  watchChapters();
   requestAnimationFrame(frame);
 }
 
@@ -8820,6 +10059,7 @@ function renderIndicators() {
     <span class="indicator" title="Heure"><span aria-hidden="true">🕐</span><span>${formatHour(hourOfDay(state))}</span></span>
     <span class="indicator" title="Eau du réservoir"><span aria-hidden="true">💧</span><span class="num">${formatFixed(state.eau, 1)} L</span></span>
     <span class="indicator" title="Pièces"><span aria-hidden="true">💰</span><span class="num">${formatCoins(state.pieces)}</span></span>
+    <button type="button" class="indicator indicator-btn" data-action="switch-tab" data-tab="famille" title="Autonomie de la dernière nuit : ouvrir la Famille"><span aria-hidden="true">🌿</span><span class="visually-hidden">Autonomie </span><span class="num">${formatPercent(lastAutonomy(state))}</span></button>
   `);
 }
 
@@ -8872,7 +10112,7 @@ function renderSleepBar() {
   const remaining = Math.max(1, Math.ceil(awakeRequired(state) - state.awakeSeconds - EPS));
   const plan = planMeal(state);
   const short = plan.energie + EPS < plan.besoin;
-  const preview = `<p class="meal-preview${short ? ' short' : ''}">🍽️ Repas prévu : ${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)} énergie${short ? ' ⚠️' : ''}</p>`;
+  const preview = `<p class="meal-preview${short ? ' short' : ''}">🍽️ Repas prévu : ${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)} énergie${short ? ' ⚠️' : ''} · 🌿 ${formatPercent(plannedAutonomy(state))}</p>`;
   morph(
     document.getElementById('sleep-bar'),
     preview +
@@ -8948,14 +10188,15 @@ function renderFerme() {
 
   return `
     <h2>🌾 Ferme</h2>
+    ${renderChapterBanner()}
     ${renderCalendar()}
     ${renderPotager()}
-    ${renderSerre()}
-    ${renderChamp()}
-    ${renderSilo()}
-    ${renderPoulailler()}
-    ${renderPaturage()}
-    ${renderVerger()}
+    ${isUnlocked(state, 'serre') ? renderSerre() : ''}
+    ${isUnlocked(state, 'champ') ? renderChamp() : ''}
+    ${isUnlocked(state, 'silo') ? renderSilo() : ''}
+    ${isUnlocked(state, 'poulailler') ? renderPoulailler() : ''}
+    ${isUnlocked(state, 'paturage') ? renderPaturage() : ''}
+    ${isUnlocked(state, 'verger') ? renderVerger() : ''}
     ${renderAteliers()}
     <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
@@ -8983,7 +10224,7 @@ function renderFerme() {
         <span class="big">${formatFixed(state.eau, 1)} / ${formatNumber(cap)} L</span>
         <span class="muted">${tankText}</span>
       </div>
-      ${renderFridgeCard()}
+      ${isUnlocked(state, 'frigo') ? renderFridgeCard() : ''}
     </div>
   `;
 }
@@ -9312,7 +10553,7 @@ function semisButton(p) {
 }
 
 function plotCard(p, n) {
-  const seedsAvailable = plantableCrops(p.lieu).some((c) => seedStock(state, c) > 0);
+  const seedsAvailable = plantableCropsFor(state, p.lieu).some((c) => seedStock(state, c) > 0);
   if (!p.culture) {
     return `
       <div class="card plot">
@@ -9367,7 +10608,7 @@ function openSemisModal(plotId) {
         <span class="muted">${sub}</span>
       </button>`;
   };
-  const locks = plantableCrops(plot.lieu).map((c) => {
+  const locks = plantableCropsFor(state, plot.lieu).map((c) => {
     const def = DATA.crops[c];
     return choice('verrou', c, `🔒 Toujours ${def.icone} ${def.nom}`, `${def.graines.mode === 'plant' ? 'Plants' : 'Graines'} en stock : ${formatQty(seedStock(state, c))}`);
   });
@@ -9392,7 +10633,7 @@ function openSemisModal(plotId) {
 function openPlantModal(plotId) {
   const plot = findPlot(state, plotId);
   if (!plot || plot.culture) return;
-  const rows = plantableCrops(plot.lieu)
+  const rows = plantableCropsFor(state, plot.lieu)
     .map((c) => {
       const def = DATA.crops[c];
       const n = seedStock(state, c);
@@ -9649,7 +10890,9 @@ function stationBuildCard(id) {
 }
 
 function renderAteliers() {
-  const cards = Object.keys(DATA.STATIONS).map((id) => {
+  const ids = Object.keys(DATA.STATIONS).filter((id) => isUnlocked(state, id));
+  if (!ids.length) return '';
+  const cards = ids.map((id) => {
     const def = DATA.STATIONS[id];
     if (!state.stations[id].construit) return stationBuildCard(id);
     const where = state.unlockedTabs.includes('recettes')
@@ -9890,6 +11133,7 @@ function renderFamille() {
   return `
     <h2>👨‍👩‍👧‍👦 Famille</h2>
     <div class="portraits">${state.famille.membres.map(portraitCard).join('')}</div>
+    ${renderAutonomyCard()}
     <div class="cards">
       <div class="card">
         <span class="card-title"><span>🍽️ Énergie prévue cette nuit</span></span>
@@ -9997,11 +11241,13 @@ function subtabsHtml(tabs, current, action) {
 }
 
 function renderInventaire() {
-  const tab = INVENTORY_TABS.find((t) => t.id === invTab) || INVENTORY_TABS[0];
+  // Lot 9 : le sous-onglet Frigo n'apparaît qu'avec le chapitre 6.
+  const tabs = INVENTORY_TABS.filter((t) => t.id !== 'frigo' || isUnlocked(state, 'frigo'));
+  const tab = tabs.find((t) => t.id === invTab) || tabs[0];
   if (tab.id === 'frigo') {
     return `
     <h2>📦 Inventaire</h2>
-    ${subtabsHtml(INVENTORY_TABS, tab.id, 'inv-tab')}
+    ${subtabsHtml(tabs, tab.id, 'inv-tab')}
     ${renderFridgeTab()}`;
   }
   const items = Object.keys(DATA.items).filter(
@@ -10010,7 +11256,7 @@ function renderInventaire() {
   const soon = Object.keys(expiringSoon(state)).length > 0 && tab.id === 'frais';
   return `
     <h2>📦 Inventaire</h2>
-    ${subtabsHtml(INVENTORY_TABS, tab.id, 'inv-tab')}
+    ${subtabsHtml(tabs, tab.id, 'inv-tab')}
     ${soon ? '<p class="alert">⚠️ Une partie de tes aliments périt à la prochaine nuit.</p>' : ''}
     <div class="inv-group">
       ${items.length ? items.map(inventoryRow).join('') : `<p class="hint">${tab.empty}</p>`}
@@ -10123,8 +11369,8 @@ function renderSheepRow() {
 function renderAnimaux() {
   return `
     <p class="muted">Les animaux s'achètent à prix fixe, quel que soit leur nombre, et ne se revendent pas.</p>
-    ${renderHenRow()}
-    ${renderSheepRow()}`;
+    ${isUnlocked(state, 'poulailler') ? renderHenRow() : ''}
+    ${isUnlocked(state, 'moutons') ? renderSheepRow() : ''}`;
 }
 
 // Lot 8 : onglet Arbres, pommier et poirier à prix fixe sur un emplacement libre.
@@ -10166,8 +11412,24 @@ function renderArbres() {
     </div>`;
 }
 
+// Lot 9 : les onglets Animaux et Arbres n'apparaissent qu'avec les chapitres
+// qui débloquent leurs bâtiments.
+function comptoirTabs() {
+  return COMPTOIR_TABS.filter((t) => {
+    if (t.id === 'animaux') return isUnlocked(state, 'poulailler') || isUnlocked(state, 'moutons');
+    if (t.id === 'arbres') return isUnlocked(state, 'verger');
+    return true;
+  });
+}
+
+// Une graine dont la culture n'est pas encore débloquée (tournesol) n'est pas en vente.
+function seedForSale(item) {
+  return !Object.keys(DATA.crops).some((c) => seedItem(c) === item && !isUnlocked(state, c));
+}
+
 function renderComptoir() {
-  const tab = COMPTOIR_TABS.find((t) => t.id === comptoirTab) || COMPTOIR_TABS[0];
+  const tabs = comptoirTabs();
+  const tab = tabs.find((t) => t.id === comptoirTab) || tabs[0];
   let body;
   if (tab.id === 'vendre') {
     const items = Object.keys(DATA.items).filter((k) => countItem(state, k) > 0);
@@ -10180,7 +11442,7 @@ function renderComptoir() {
       <p class="muted">Prix d'achat = prix de vente × coefficient. Chaque unité achetée ajoute ${formatFixed(DATA.MARCHE.PAS, 1)} au coefficient, et il ne redescend qu'à la vente : le Comptoir dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'graines') {
-    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category === 'graine');
+    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category === 'graine' && seedForSale(k));
     body = `
       <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ×${formatFixed(DATA.MARCHE.PLANCHER.graine, 1)}. Produire tes propres graines reste plus rentable.</p>
       ${items.map(buyRow).join('')}`;
@@ -10191,7 +11453,7 @@ function renderComptoir() {
   }
   return `
     <h2>💰 Comptoir</h2>
-    ${subtabsHtml(COMPTOIR_TABS, tab.id, 'comptoir-tab')}
+    ${subtabsHtml(tabs, tab.id, 'comptoir-tab')}
     ${body}`;
 }
 
@@ -10260,6 +11522,7 @@ function openWakeModal(report) {
     : '';
   const family = [
     `<li>🍽️ Énergie mangée : <strong class="num">${formatNumber(shownEnergy)} / ${formatNumber(report.besoin)}</strong> (${covered} %)${eaten ? ` — ${eaten}` : ''}</li>`,
+    `<li>🌿 Autonomie de la nuit : <strong class="num">${formatPercent(report.autonomie)}</strong> (${formatNumber(report.energieProduit)} énergie produite par la ferme sur ${formatNumber(report.besoin)})</li>`,
     `<li>❤️ Santé moyenne : <strong class="num">${formatFixed(report.santeAvant, 0)} → ${formatFixed(report.santeApres, 0)}</strong> (${formatRate(report.santeApres - report.santeAvant, 0)})${report.bonusPlats > 0 ? ` · bonus des plats : +${report.bonusPlats}` : ''}</li>`,
     Object.keys(report.termine).length ? `<li>🍳 Terminé pendant la nuit : <strong>${itemsSummary(report.termine)}</strong></li>` : '',
     ...report.nouveauxMalades.map((nom) => `<li class="alert">🤒 ${nom} est tombé malade : il faut le soigner.</li>`),
@@ -10291,6 +11554,152 @@ function openWakeModal(report) {
     </div>
   `;
   document.getElementById('wake-close').focus();
+}
+
+/* ---------- Lot 9 : chapitres, autonomie, graphique ---------- */
+
+function objectiveValueText(o) {
+  const n = (x) => formatNumber(Math.floor(x + EPS));
+  switch (o.type) {
+    case 'litres': return `${n(o.valeur)} / ${formatNumber(o.cible)} L`;
+    case 'kwh': return `${formatFixed(o.valeur, 1)} / ${formatNumber(o.cible)} kWh`;
+    case 'autonomie': return `${formatPercent(o.valeur)} / ${formatNumber(o.cible)} %`;
+    case 'sante': return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
+    case 'pontes': case 'serie100': return `${n(o.valeur)} / ${formatNumber(o.cible)} nuits`;
+    case 'hiver': return o.ok ? '✅' : '';
+    default: return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
+  }
+}
+
+// Ligne d'explication sous l'objectif de l'hiver.
+function winterLine() {
+  const w = winterStatus(state);
+  const obj = objectiveDef('hiver');
+  const L = DATA.SAISONS.LONGUEUR;
+  const last = w.dernier && !w.dernier.reussi
+    ? ` Dernier hiver : moyenne ${formatPercent(w.dernier.moyenne)}${w.dernier.sansSoin ? '' : ', soin payé'} : raté.`
+    : '';
+  if (w.etat === 'reussi') return '✅ Hiver traversé.';
+  if (w.etat === 'suivi') {
+    return `❄️ Hiver suivi : nuit ${w.nuits} / ${L} · moyenne ${formatPercent(w.moyenne)} (objectif ${obj.moyenne} %)${w.soinPaye ? ' · ⚠️ un soin a été payé : cet hiver est raté.' : ''}`;
+  }
+  if (w.etat === 'manque') return `⏳ L'hiver a commencé sans être suivi depuis sa première nuit : il ne compte pas. Prochain hiver : nuit ${w.prochaine}.${last}`;
+  return `⏳ ${w.prochaine === state.day ? 'L\'hiver commence aujourd\'hui.' : `Prochain hiver : nuit ${w.prochaine}.`}${last}`;
+}
+
+function objectiveHtml(o) {
+  const line = o.type === 'hiver' ? `<span class="muted">${winterLine()}</span>` : '';
+  return `
+    <li class="objective${o.ok ? ' ok' : ''}">
+      <span class="objective-line"><span class="objective-label">${o.ok ? '✅' : '⬜'} ${o.libelle}</span><span class="objective-value">${objectiveValueText(o)}</span></span>
+      <span class="bar" role="progressbar" aria-label="${o.libelle}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(o.ratio * 100)}"><span class="bar-fill${o.ok ? '' : ' warn'}" style="width:${Math.round(o.ratio * 100)}%"></span></span>
+      ${line}
+    </li>`;
+}
+
+// Bandeau de chapitre, en haut de la Ferme : titre, objectifs et progression.
+function renderChapterBanner() {
+  const c = state.campagne;
+  if (c.fini) {
+    return `
+    <div class="card chapter-card done">
+      <span class="card-title"><span>🏆 Campagne terminée</span><span class="chip">Mode libre</span></span>
+      <span class="muted">La famille est autonome : tout est débloqué. Joue à ton rythme.</span>
+    </div>`;
+  }
+  const p = chapterProgress(state);
+  return `
+    <div class="card chapter-card">
+      <span class="card-title"><span>${p.icone} ${p.titre}</span><span class="chip">Chapitre ${p.chapitre} / ${chapterCount()}</span></span>
+      <span class="muted">${p.intro}</span>
+      <ul class="objectives">${p.objectifs.map(objectiveHtml).join('')}</ul>
+    </div>`;
+}
+
+// Petit graphique SVG : une barre par nuit, les GRAPHIQUE_NUITS dernières nuits,
+// la plus récente à droite ; la ligne pointillée est l'objectif du chapitre.
+function autonomyChartHtml() {
+  const N = DATA.AUTONOMIE.GRAPHIQUE_NUITS;
+  const h = autonomyHistory(state);
+  const W = 320, H = 130, left = 30, right = 6, top = 8, bottom = 20;
+  const plotW = W - left - right;
+  const plotH = H - top - bottom;
+  const slot = plotW / N;
+  const bw = slot * 0.7;
+  const y = (pct) => top + plotH * (1 - pct / 100);
+  const grid = [0, 25, 50, 75, 100]
+    .map((g) => `<line class="chart-grid" x1="${left}" y1="${y(g).toFixed(1)}" x2="${W - right}" y2="${y(g).toFixed(1)}"/><text class="chart-label" x="${left - 4}" y="${(y(g) + 3).toFixed(1)}" text-anchor="end">${g}</text>`)
+    .join('');
+  const bars = h
+    .map((e, i) => {
+      const x = left + (N - h.length + i) * slot + (slot - bw) / 2;
+      const bh = Math.max(e.pct > 0 ? 1.5 : 0, plotH * (e.pct / 100));
+      return `<rect class="chart-bar${e.pct + EPS >= 100 ? ' full' : ''}" x="${x.toFixed(1)}" y="${(top + plotH - bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}"><title>Nuit ${e.nuit} : ${formatPercent(e.pct)}</title></rect>`;
+    })
+    .join('');
+  const ends = h.length
+    ? `<text class="chart-label" x="${(left + (N - h.length) * slot + slot / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${h[0].nuit}</text>` +
+      (h.length > 1 ? `<text class="chart-label" x="${(left + (N - 1) * slot + slot / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${h[h.length - 1].nuit}</text>` : '')
+    : `<text class="chart-empty" x="${(left + plotW / 2).toFixed(1)}" y="${(top + plotH / 2).toFixed(1)}" text-anchor="middle">Le graphique apparaît après ta première nuit.</text>`;
+  const goal = !state.campagne.fini ? chapterProgress(state).objectifs.find((o) => o.type === 'autonomie') : null;
+  const target = goal
+    ? `<line class="chart-target" x1="${left}" y1="${y(goal.cible).toFixed(1)}" x2="${W - right}" y2="${y(goal.cible).toFixed(1)}"><title>Objectif du chapitre : ${goal.cible} %</title></line>`
+    : '';
+  const label = h.length
+    ? `Autonomie des ${h.length} dernière${h.length > 1 ? 's' : ''} nuit${h.length > 1 ? 's' : ''} : ${h.map((e) => `nuit ${e.nuit}, ${formatPercent(e.pct)}`).join(' ; ')}`
+    : 'Autonomie par nuit : aucune nuit pour l\'instant';
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">${grid}${bars}${target}${ends}</svg>`;
+}
+
+function renderAutonomyCard() {
+  const c = state.campagne;
+  const goal = !c.fini ? chapterProgress(state).objectifs.find((o) => o.type === 'autonomie') : null;
+  return `
+    <div class="card autonomy-card">
+      <span class="card-title"><span>🌿 Autonomie</span><span class="chip">${DATA.AUTONOMIE.GRAPHIQUE_NUITS} dernières nuits</span></span>
+      <span class="big">${formatPercent(lastAutonomy(state))}</span>
+      <span class="muted">Dernière nuit : l'énergie mangée qui vient de la ferme, sur ${formatNumber(familyNeed(state))}. Les conserves et les achats du Comptoir ne comptent pas. Prévue cette nuit : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
+      ${autonomyChartHtml()}
+    </div>`;
+}
+
+// Écran de fin de chapitre : ce qu'on vient de finir, les nouveautés, la suite.
+function openChapterModal() {
+  const c = state.campagne;
+  const a = c && c.annonces[0];
+  if (!a) return;
+  const L = DATA.CHAPITRES.liste;
+  const done = L[a.chapitre - 1];
+  const next = L[a.chapitre] || null;
+  const news = next ? next.debloque : [];
+  const newsHtml = news.length
+    ? `<h3>✨ Nouveautés</h3><ul class="unlock-list">${news
+        .map((id) => `<li><strong>${DATA.CHAPITRES.ELEMENTS[id].icone} ${DATA.CHAPITRES.ELEMENTS[id].nom}</strong><br><span class="muted">${DATA.CHAPITRES.ELEMENTS[id].note}</span></li>`)
+        .join('')}</ul>`
+    : '';
+  const body = next
+    ? `${newsHtml}
+       <h3>Chapitre ${a.chapitre + 1} : ${next.icone} ${next.titre}</h3>
+       <p class="muted">${next.intro}</p>
+       <ul class="objectives">${next.objectifs.map((o) => `<li class="objective"><span class="objective-label">⬜ ${o.libelle}</span></li>`).join('')}</ul>`
+    : `<h3>🏆 Campagne terminée</h3>
+       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : tout est débloqué, joue à ton rythme.</p>`;
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal" id="chapter-modal" role="dialog" aria-modal="true" aria-labelledby="chapter-title" data-stop-propagation>
+        <h2 id="chapter-title">🎉 Chapitre ${a.chapitre} terminé</h2>
+        <p><strong>${done.icone} ${done.titre}</strong></p>
+        ${body}
+        <button type="button" class="btn primary" data-action="ack-chapter" id="chapter-close">Continuer</button>
+      </div>
+    </div>`;
+  document.getElementById('chapter-close').focus();
+}
+
+// Ouvre l'écran de fin d'un chapitre dès qu'aucune autre fenêtre n'est ouverte.
+function watchChapters() {
+  if (!state.campagne || !state.campagne.annonces.length) return;
+  if (document.getElementById('modal-root').childElementCount === 0) openChapterModal();
 }
 
 /* ---------- options (modale) ---------- */
@@ -10339,7 +11748,13 @@ function openOptionsModal() {
 }
 
 function closeModal() {
+  // Lot 9 : fermer l'écran de fin de chapitre (bouton ou fond) l'acquitte.
+  const chapterShown = document.getElementById('chapter-modal');
   document.getElementById('modal-root').innerHTML = '';
+  if (chapterShown) {
+    acknowledgeChapter(state);
+    refresh();
+  }
 }
 
 function showToast(message) {
@@ -10684,6 +12099,19 @@ document.addEventListener('click', (e) => {
     case 'test-skip-awake':
       applyResult(testSkipAwake(state));
       break;
+    case 'ack-chapter':
+      closeModal();
+      break;
+    case 'test-complete-chapter': {
+      const result = applyResult(testCompleteChapter(state));
+      if (result.ok) showToast(result.fini ? '🏆 Campagne terminée' : `Chapitre ${result.chapitre} atteint`);
+      break;
+    }
+    case 'test-goto-chapter': {
+      const result = applyResult(testGoToChapter(state, document.getElementById('test-chapter').value));
+      if (result.ok) showToast(result.fini ? '🏆 Mode libre : tout est débloqué' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
+      break;
+    }
     case 'test-nights-1':
       actionTestNights(1);
       break;
@@ -10752,6 +12180,11 @@ document.getElementById('modal-root').addEventListener('click', (e) => {
 
 state = loadOrCreateState();
 syncJobs();
+
+// Lot 9 : les chapitres proposés par le mode test viennent de DATA.
+document.getElementById('test-chapter').innerHTML =
+  DATA.CHAPITRES.liste.map((ch, i) => `<option value="${i + 1}">${i + 1} · ${ch.titre}</option>`).join('') +
+  `<option value="${chapterCount() + 1}">Mode libre (fin)</option>`;
 
 const autosaveTimer = setInterval(persistState, AUTOSAVE_MS);
 window.addEventListener('beforeunload', persistState);
