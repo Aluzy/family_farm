@@ -605,6 +605,78 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 }
 
 .modal .stack { margin: 12px 0; }
+
+/* ---------- Lot 3 : inventaire par lots, Comptoir ---------- */
+
+.subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+
+.subtab-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.subtab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.subtab-btn.soon { opacity: 0.6; }
+
+.subtab-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+
+.lot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lot-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lot-list li.soon-spoil { color: var(--danger); font-weight: 600; }
+
+.chip.badge { border-color: var(--color-sun-dark); color: var(--color-sun-dark); }
+
+@media (prefers-color-scheme: dark) {
+  .chip.badge { border-color: var(--color-sun); color: var(--color-sun); }
+}
+
+.shop-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.shop-row > .btn { width: 100%; }
+
+.qty-row { gap: 8px; }
+.qty-row .qty { min-width: 2.5ch; text-align: center; font-weight: 700; font-size: 1.1rem; }
+.qty-row .sell-go { flex: 1 1 140px; }
+
+.coming { padding: 8px 0; }
 </style>
 </head>
 <body>
@@ -641,6 +713,10 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
         <button class="btn" type="button" data-action="test-seeds">+10 de chaque graine</button>
         <button class="btn" type="button" data-action="test-ripen">Faire mûrir les parcelles</button>
         <button class="btn" type="button" data-action="test-sick">Santé à 0</button>
+      </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-food">+20 de chaque aliment</button>
+        <button class="btn" type="button" data-action="test-age">Vieillir l'inventaire d'une nuit</button>
       </div>
       <div class="row">
         <button class="btn" type="button" data-action="test-skip-awake">Ignorer l'éveil minimal</button>
@@ -799,6 +875,34 @@ const DATA = {
     // Réserve de semences de départ : quantité par item que la famille ne mange jamais.
     RESERVE_DEPART: { patate: 6 },
   },
+
+  /* ---------- Lot 3 : péremption et Comptoir ---------- */
+
+  // Conservation en nuits hors réfrigérateur (sections 1.4 et 6.9 quinquies).
+  // Un item absent de ces deux tables ne périme jamais (blé, farine, huile,
+  // graines, laine, conserves). Les items viande, œuf, pomme, poire et pain
+  // n'existent pas encore dans DATA.items : leur durée est prête pour les lots
+  // suivants. CATEGORIE sert aux catégories entières (les plats cuisinés).
+  CONSERVATION: {
+    viande: 5,
+    tomate: 5, courgette: 5, aubergine: 5,
+    oeuf: 6, carotte: 6,
+    pomme: 7, poire: 7, pain: 7, patate: 7,
+  },
+  CONSERVATION_CATEGORIE: { plat: 6 },
+
+  // Origine d'un lot (sert au % d'autonomie du Lot 9) : « produit » par défaut,
+  // sauf pour les catégories listées ici (les conserves comptent comme achetées).
+  ORIGINE: { PRODUIT: 'produit', ACHETE: 'acheté', PAR_CATEGORIE: { conserve: 'acheté' } },
+
+  // Comptoir (sections 1.3, 6.7 et 8.9). Prix d'achat = prix de vente × coefficient.
+  // Le coefficient démarre à son plancher (1,2 ; 2,0 pour les graines), monte de
+  // PAS par unité achetée, baisse de PAS par unité vendue sans passer sous le
+  // plancher, et ne redescend jamais avec le temps.
+  MARCHE: {
+    PLANCHER: { defaut: 1.2, graine: 2.0 }, // par catégorie d'objet
+    PAS: 0.1,
+  },
 };
 
 /* ==========================================================================
@@ -820,13 +924,14 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 3;
+const STATE_VERSION = 4;
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
-// repas et santé, puis pousse. Les lots suivants y ajouteront leurs fonctions
-// (ponte, péremption...). Chaque étape reçoit l'état et le modifie.
-const NIGHT_STEPS = [feedFamily, growAll];
+// repas et santé, puis pousse. Lot 3 : la péremption, toujours en dernier.
+// Les lots suivants insèrent leurs fonctions (ponte...) avant `spoil`.
+// Chaque étape reçoit l'état et le modifie.
+const NIGHT_STEPS = [feedFamily, growAll, spoil];
 
 /* ---------- appareils : fabrication et sélecteurs ---------- */
 
@@ -1183,29 +1288,213 @@ function repairDevice(state, id) {
   return { ok: true, cost };
 }
 
-/* ---------- Lot 2 : inventaire ---------- */
+/* ---------- Lots 2 et 3 : inventaire par lots ---------- */
 
-// L'inventaire est ici un simple objet { item: quantité }. Le Lot 3 le
-// remplacera par des lots datés : tout le reste du code passe uniquement par
-// ces trois fonctions.
+// state.inventaire = { item: [ { qty, nightsLeft, origin } ] }, les lots étant
+// rangés du plus ancien au plus récent. nightsLeft vaut null pour un item qui
+// ne périme pas. origin vaut « produit » ou « acheté ». Tout le reste du code
+// passe uniquement par countItem, addItem et takeItem (et par buyItem au
+// Comptoir, qui pose l'origine « acheté »).
+
+// Conservation d'un item en nuits, ou null s'il ne périme jamais.
+function shelfLife(item) {
+  if (DATA.CONSERVATION[item] !== undefined) return DATA.CONSERVATION[item];
+  const def = DATA.items[item];
+  if (def && DATA.CONSERVATION_CATEGORIE[def.category] !== undefined) return DATA.CONSERVATION_CATEGORIE[def.category];
+  return null;
+}
+
+function isPerishable(item) {
+  return shelfLife(item) !== null;
+}
+
+// Origine d'un lot ajouté sans précision : « produit », sauf les conserves.
+function defaultOrigin(item) {
+  const def = DATA.items[item];
+  const byCategory = def ? DATA.ORIGINE.PAR_CATEGORIE[def.category] : undefined;
+  return byCategory || DATA.ORIGINE.PRODUIT;
+}
+
+function lotsOf(state, item) {
+  const lots = state.inventaire[item];
+  return Array.isArray(lots) ? lots : [];
+}
+
+// Rang d'un lot pour l'ordre de retrait : moins il lui reste de nuits, plus
+// il est « ancien ». Un lot qui ne périme pas passe en dernier.
+function lotRank(lot) {
+  return lot.nightsLeft === null ? Infinity : lot.nightsLeft;
+}
+
 function countItem(state, item) {
-  return state.inventaire[item] || 0;
+  return lotsOf(state, item).reduce((t, lot) => t + lot.qty, 0);
+}
+
+// Quantités totales par item : { item: quantité }, sans les items à zéro.
+function inventoryCounts(state) {
+  const out = {};
+  for (const item of Object.keys(state.inventaire)) {
+    const n = countItem(state, item);
+    if (n > 0) out[item] = n;
+  }
+  return out;
+}
+
+// Ajoute un lot à conservation pleine ; il rejoint le lot existant de même
+// origine et de même fraîcheur.
+function addLot(state, item, qty, origin) {
+  const nightsLeft = shelfLife(item);
+  const lots = lotsOf(state, item);
+  const same = lots.find((l) => l.nightsLeft === nightsLeft && l.origin === origin);
+  if (same) {
+    same.qty += qty;
+  } else {
+    lots.push({ qty, nightsLeft, origin });
+    lots.sort((a, b) => (lotRank(a) === lotRank(b) ? 0 : lotRank(a) < lotRank(b) ? -1 : 1));
+  }
+  state.inventaire[item] = lots;
 }
 
 function addItem(state, item, qty) {
   if (!DATA.items[item] || !(qty > 0)) return 0;
-  state.inventaire[item] = countItem(state, item) + qty;
+  addLot(state, item, qty, defaultOrigin(item));
   return qty;
 }
 
-// Retire jusqu'à `qty` unités et renvoie le nombre réellement retiré.
+// Retire jusqu'à `qty` unités, toujours dans le lot le plus ancien, et renvoie
+// le nombre réellement retiré.
 function takeItem(state, item, qty) {
   const n = Math.min(countItem(state, item), qty);
   if (!(n > 0)) return 0;
-  const left = countItem(state, item) - n;
-  if (left > 0) state.inventaire[item] = left;
+  let rest = n;
+  const lots = lotsOf(state, item);
+  for (const lot of lots) {
+    const taken = Math.min(lot.qty, rest);
+    lot.qty -= taken;
+    rest -= taken;
+    if (rest <= 0) break;
+  }
+  const kept = lots.filter((l) => l.qty > 0);
+  if (kept.length) state.inventaire[item] = kept;
   else delete state.inventaire[item];
   return n;
+}
+
+// Nuits restantes du lot le plus ancien d'un item (Infinity s'il n'y en a pas
+// ou s'il ne périme pas).
+function nextExpiry(state, item) {
+  const lots = lotsOf(state, item);
+  return lots.length ? lotRank(lots[0]) : Infinity;
+}
+
+// Quantités qui périmeront à la prochaine nuit (il leur reste 1 nuit).
+function expiringSoon(state) {
+  const out = {};
+  for (const item of Object.keys(state.inventaire)) {
+    const n = lotsOf(state, item)
+      .filter((l) => l.nightsLeft === 1)
+      .reduce((t, l) => t + l.qty, 0);
+    if (n > 0) out[item] = n;
+  }
+  return out;
+}
+
+// Étape nocturne de péremption, toujours la dernière : retire une nuit à chaque
+// lot qui périme, supprime ceux qui arrivent à 0 et note les pertes dans le
+// rapport de la nuit. Renvoie les pertes : { item: quantité }.
+function spoil(state) {
+  const perdus = {};
+  for (const item of Object.keys(state.inventaire)) {
+    const kept = [];
+    for (const lot of lotsOf(state, item)) {
+      if (lot.nightsLeft === null) {
+        kept.push(lot);
+        continue;
+      }
+      lot.nightsLeft -= 1;
+      if (lot.nightsLeft <= 0) perdus[item] = (perdus[item] || 0) + lot.qty;
+      else kept.push(lot);
+    }
+    if (kept.length) state.inventaire[item] = kept;
+    else delete state.inventaire[item];
+  }
+  if (!state.nuit.perdus) state.nuit.perdus = {};
+  for (const [item, n] of Object.entries(perdus)) {
+    state.nuit.perdus[item] = (state.nuit.perdus[item] || 0) + n;
+  }
+  return perdus;
+}
+
+/* ---------- Lot 3 : Comptoir ---------- */
+
+// Plancher du coefficient d'achat d'un item (1,2 ; 2,0 pour les graines).
+function marketFloor(item) {
+  const P = DATA.MARCHE.PLANCHER;
+  const p = P[DATA.items[item].category];
+  return p === undefined ? P.defaut : p;
+}
+
+// Les coefficients ne sont notés dans state.marche qu'une fois sortis de leur
+// plancher : { item: coefficient }.
+function marketCoef(state, item) {
+  const c = state.marche ? state.marche[item] : undefined;
+  return typeof c === 'number' ? c : marketFloor(item);
+}
+
+function setMarketCoef(state, item, coef) {
+  if (!state.marche) state.marche = {};
+  const c = Math.max(marketFloor(item), Math.round(coef * 100) / 100);
+  if (c <= marketFloor(item) + EPS) delete state.marche[item];
+  else state.marche[item] = c;
+}
+
+function isBuyable(item) {
+  const def = DATA.items[item];
+  return !!def && def.rachetable !== false;
+}
+
+function sellPrice(item) {
+  return DATA.items[item].prix;
+}
+
+// Prix de la prochaine unité achetée.
+function buyPrice(state, item) {
+  return roundCoins(sellPrice(item) * marketCoef(state, item));
+}
+
+// Achète jusqu'à `qty` unités, une par une : le prix monte entre deux unités.
+// S'arrête quand les pièces manquent. Un item acheté arrive avec sa
+// conservation pleine et l'origine « acheté ».
+function buyItem(state, item, qty = 1) {
+  const def = DATA.items[item];
+  if (!def) return fail('Objet inconnu.');
+  if (!isBuyable(item)) return fail(`${def.nom} ne s'achète pas.`);
+  let bought = 0;
+  let cost = 0;
+  for (let i = 0; i < qty; i++) {
+    const price = buyPrice(state, item);
+    if (state.pieces + EPS < price) break;
+    spend(state, price);
+    addLot(state, item, 1, DATA.ORIGINE.ACHETE);
+    setMarketCoef(state, item, marketCoef(state, item) + DATA.MARCHE.PAS);
+    bought += 1;
+    cost = roundCoins(cost + price);
+  }
+  if (bought === 0) return fail('Pas assez de pièces.');
+  return { ok: true, bought, cost };
+}
+
+// Vend jusqu'à `qty` unités (les lots les plus anciens d'abord) au prix fixe ;
+// chaque unité vendue retire un pas au coefficient, sans passer sous le plancher.
+function sellItem(state, item, qty) {
+  const def = DATA.items[item];
+  if (!def) return fail('Objet inconnu.');
+  const n = takeItem(state, item, Math.floor(Number(qty)) || 0);
+  if (n <= 0) return fail('Rien à vendre.');
+  const gain = roundCoins(n * sellPrice(item));
+  state.pieces = roundCoins(state.pieces + gain);
+  setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);
+  return { ok: true, sold: n, gain };
 }
 
 /* ---------- Lot 2 : aléatoire à graine (état dans state.rngSeed) ---------- */
@@ -1265,12 +1554,17 @@ function healthDelta(coverage) {
   return DATA.FAMILY.VARIATION[DATA.FAMILY.VARIATION.length - 1].delta;
 }
 
-// Aliments dans l'ordre où la famille les mange : énergie décroissante, les
-// conserves en dernier.
-function mealOrder() {
+// Aliments dans l'ordre où la famille les mange : d'abord ce qui périme le plus
+// tôt (lot le plus ancien de chaque item ; ce qui ne périme pas passe en
+// dernier, donc les conserves), puis par énergie décroissante.
+function mealOrder(state) {
   const keys = Object.keys(DATA.items).filter((k) => DATA.items[k].edible);
-  const isCanned = (k) => (DATA.items[k].category === 'conserve' ? 1 : 0);
-  return keys.sort((a, b) => isCanned(a) - isCanned(b) || DATA.items[b].energie - DATA.items[a].energie);
+  return keys.sort((a, b) => {
+    const ea = nextExpiry(state, a);
+    const eb = nextExpiry(state, b);
+    if (ea !== eb) return ea < eb ? -1 : 1;
+    return DATA.items[b].energie - DATA.items[a].energie;
+  });
 }
 
 // Repas de la nuit, calculé sans rien modifier (sert aussi à l'aperçu de
@@ -1279,7 +1573,7 @@ function planMeal(state) {
   const need = familyNeed(state);
   let covered = 0;
   const mange = {};
-  for (const item of mealOrder()) {
+  for (const item of mealOrder(state)) {
     if (covered >= need - EPS) break;
     const spare = countItem(state, item) - (state.famille.reserve[item] || 0);
     if (spare <= 0) continue;
@@ -1320,7 +1614,7 @@ function updateHealth(state, coverage) {
 }
 
 function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [] };
+  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {} };
 }
 
 // Première étape nocturne : le repas, puis la santé.
@@ -1337,6 +1631,7 @@ function feedFamily(state) {
     santeAvant: avant,
     santeApres: rawAverageHealth(state),
     nouveauxMalades: nouveaux,
+    perdus: {},
   };
   return plan;
 }
@@ -1559,6 +1854,9 @@ function buildMorningReport(state) {
     santeApres: state.nuit.santeApres,
     nouveauxMalades: [...state.nuit.nouveauxMalades],
     pretes: readyCrops(state),
+    // Lot 3 : ce qui a péri cette nuit, et ce qui périra à la prochaine.
+    perimes: { ...(state.nuit.perdus || {}) },
+    aPerimer: expiringSoon(state),
   };
 }
 
@@ -1636,6 +1934,20 @@ function testSetHealthZero(state) {
   return { ok: true };
 }
 
+// Lot 3 : 20 unités de chaque aliment (à conservation pleine).
+function testAddFood(state) {
+  for (const item of Object.keys(DATA.items)) {
+    if (DATA.items[item].edible) addItem(state, item, 20);
+  }
+  return { ok: true };
+}
+
+// Lot 3 : vieillit tout l'inventaire d'une nuit (sans passer la nuit) ; les
+// lots arrivés à 0 disparaissent. Renvoie les pertes.
+function testAgeInventory(state) {
+  return { ok: true, perdus: spoil(state) };
+}
+
 function testSleepNights(state, count) {
   let report = null;
   for (let i = 0; i < count; i++) {
@@ -1646,9 +1958,18 @@ function testSleepNights(state, count) {
 }
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
+// Lot 3 : l'inventaire de départ, en lots à conservation pleine.
+function startInventory() {
+  const inv = {};
+  for (const [item, qty] of Object.entries(DATA.START.INVENTAIRE)) {
+    inv[item] = [{ qty, nightsLeft: shelfLife(item), origin: defaultOrigin(item) }];
+  }
+  return inv;
+}
+
 function startHousehold() {
   return {
-    inventaire: { ...DATA.START.INVENTAIRE },
+    inventaire: startInventory(),
     potager: { niveau: 1, parcelles: makePlots(DATA.POTAGER.PARCELLES[0]) },
     famille: {
       membres: DATA.FAMILY.MEMBRES.map(makeMember),
@@ -1670,6 +1991,7 @@ function createInitialState(seed = 1) {
     rngSeed: seed >>> 0,
     unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'],
     stats: {},
+    marche: {}, // Lot 3 : coefficients d'achat au-dessus de leur plancher
     ...startFarm(),
     ...startHousehold(),
   };
@@ -1687,6 +2009,25 @@ const MIGRATIONS = {
     const tabs = Array.isArray(state.unlockedTabs) ? [...state.unlockedTabs] : ['ferme', 'inventaire', 'comptoir'];
     if (!tabs.includes('famille')) tabs.splice(Math.min(1, tabs.length), 0, 'famille');
     return { ...startHousehold(), ...state, unlockedTabs: tabs, version: 3 };
+  },
+  // v3 (Lot 2) → v4 (Lot 3) : l'inventaire { item: quantité } devient des lots
+  // d'origine « produit » (« acheté » pour les conserves) à conservation pleine ;
+  // le Comptoir et le rapport de péremption apparaissent.
+  3: (state) => {
+    const inventaire = {};
+    const old = state.inventaire && typeof state.inventaire === 'object' ? state.inventaire : {};
+    for (const [item, v] of Object.entries(old)) {
+      if (Array.isArray(v)) {
+        inventaire[item] = v;
+        continue;
+      }
+      const qty = Number(v);
+      if (qty > 0) inventaire[item] = [{ qty, nightsLeft: shelfLife(item), origin: defaultOrigin(item) }];
+    }
+    const nuit = state.nuit && typeof state.nuit === 'object'
+      ? { ...state.nuit, perdus: state.nuit.perdus || {} }
+      : newNightStats();
+    return { ...state, inventaire, nuit, marche: state.marche || {}, version: 4 };
   },
 };
 
@@ -1822,7 +2163,7 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 3);
+  assertEqual(s.version, 4);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
@@ -2430,6 +2771,12 @@ function plantRipe(s, plotId, culture) {
   return p;
 }
 
+// Lot 3 : remplace l'inventaire par ces quantités (lots à conservation pleine).
+function setInv(s, quantities) {
+  s.inventaire = {};
+  for (const [item, n] of Object.entries(quantities)) addItem(s, item, n);
+}
+
 function setHealth(s, value) {
   for (const m of s.famille.membres) {
     m.sante = value;
@@ -2471,7 +2818,7 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
 
 test('état initial Lot 2 : inventaire, potager de 6 parcelles, famille de 4 à 100', () => {
   const s = createInitialState(1);
-  assertEqual(s.inventaire, { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 });
+  assertEqual(inventoryCounts(s), { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 });
   assertEqual(s.pieces, 50);
   assertEqual(s.potager.niveau, 1);
   assertEqual(s.potager.parcelles.length, 6);
@@ -2492,7 +2839,7 @@ test('inventaire : add, take et count', () => {
   assertEqual(countItem(s, 'tomate'), 1);
   assertEqual(takeItem(s, 'tomate', 5), 1, 'ne retire pas plus que le stock');
   assertEqual(countItem(s, 'tomate'), 0);
-  assertEqual('tomate' in s.inventaire, false, 'une quantité nulle disparaît de l\'objet');
+  assertEqual('tomate' in s.inventaire, false, 'un item sans lot disparaît de l\'objet');
   assertEqual(takeItem(s, 'tomate', 1), 0);
   assertEqual(addItem(s, 'inconnu', 3), 0);
   assertEqual(addItem(s, 'tomate', 0), 0);
@@ -2761,19 +3108,20 @@ test('famille : besoin = 100 par adulte + 60 par enfant = 320', () => {
   assertEqual(planMeal(createInitialState(1)).besoin, 320);
 });
 
-test('repas : énergie décroissante, conserves en dernier, jusqu\'à couvrir le besoin', () => {
+test('repas : ce qui périme le plus tôt, conserves en dernier, jusqu\'à couvrir le besoin', () => {
   const s = garden();
-  s.inventaire = { conserve: 100, carotte: 10, patate: 2, courgette: 3 };
+  setInv(s, { conserve: 100, carotte: 10, patate: 2, courgette: 3 });
   s.famille.reserve = {};
   const plan = planMeal(s);
-  assertEqual(Object.keys(plan.mange), ['patate', 'courgette', 'carotte', 'conserve']);
-  assertEqual(plan.mange, { patate: 2, courgette: 3, carotte: 10, conserve: 11 });
-  assertEqual(plan.energie, 30 + 24 + 60 + 220);
+  // courgette 5 nuits, carotte 6, patate 7, conserve : ne périme pas
+  assertEqual(Object.keys(plan.mange), ['courgette', 'carotte', 'patate', 'conserve']);
+  assertEqual(plan.mange, { courgette: 3, carotte: 10, patate: 2, conserve: 11 });
+  assertEqual(plan.energie, 24 + 60 + 30 + 220);
   assertEqual(plan.couverture, 1);
   // planMeal ne modifie rien
   assertEqual(countItem(s, 'conserve'), 100);
   feedFamily(s);
-  assertEqual(s.inventaire, { conserve: 89 });
+  assertEqual(inventoryCounts(s), { conserve: 89 });
   // il s'arrête dès que le besoin est couvert : les 16 conserves suffisent
   const t = garden();
   feedFamily(t);
@@ -2783,7 +3131,7 @@ test('repas : énergie décroissante, conserves en dernier, jusqu\'à couvrir le
 
 test('repas : les non-comestibles (graines) ne sont jamais mangés', () => {
   const s = garden();
-  s.inventaire = { graine_carotte: 50, graine_tomate: 50 };
+  setInv(s, { graine_carotte: 50, graine_tomate: 50 });
   const plan = planMeal(s);
   assertEqual(plan.mange, {});
   assertEqual(plan.energie, 0);
@@ -2793,15 +3141,15 @@ test('repas : les non-comestibles (graines) ne sont jamais mangés', () => {
 test('réserve de semences : la famille ne mange jamais la réserve', () => {
   const s = garden();
   assertEqual(s.famille.reserve.patate, 6, 'les 6 patates de départ sont protégées');
-  s.inventaire = { patate: 10, carotte: 20 };
+  setInv(s, { patate: 10, carotte: 20 });
   const plan = planMeal(s);
-  assertEqual(plan.mange, { patate: 4, carotte: 20 });
+  assertEqual(plan.mange, { carotte: 20, patate: 4 });
   feedFamily(s);
   assertEqual(countItem(s, 'patate'), 6, 'la réserve reste intacte même en famille affamée');
   assertEqual(countItem(s, 'carotte'), 0);
   // réserve à 0 : tout peut être mangé
   const t = garden();
-  t.inventaire = { patate: 10 };
+  setInv(t, { patate: 10 });
   assertEqual(setSeedReserve(t, 'patate', 0).ok, true);
   assertEqual(planMeal(t).mange, { patate: 10 });
   // réserve supérieure au stock : rien n'est mangé
@@ -2821,7 +3169,7 @@ test('santé : +5 à 100 %, −5 de 75 à 99 %, −10 de 50 à 74 %, −20 sous 
   for (const [conserves, delta] of cases) {
     const s = garden();
     setHealth(s, 60);
-    s.inventaire = { conserve: conserves };
+    setInv(s, { conserve: conserves });
     feedFamily(s);
     assertEqual(s.famille.membres[0].sante, 60 + delta, `${conserves} conserves`);
     assertEqual(s.famille.membres[3].sante, 60 + delta);
@@ -2837,7 +3185,7 @@ test('santé : bornée entre 0 et 100, et un membre à 0 devient malade', () => 
   const t = garden();
   setHealth(t, 10);
   t.famille.membres[0].sante = 25;
-  t.inventaire = {};
+  setInv(t, {});
   const nouveaux = feedFamily(t) && t.nuit.nouveauxMalades;
   assertEqual(t.famille.membres[0].sante, 5);
   assertEqual(t.famille.membres[0].malade, false);
@@ -2911,33 +3259,34 @@ test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de g
   const m = s.famille.membres[0];
   m.sante = 0;
   m.malade = true;
-  s.inventaire = { conserve: 16 };
+  setInv(s, { conserve: 16 });
   feedFamily(s);
   assertEqual([m.sante, m.malade], [2, true], '+2 au lieu de +5');
   assertEqual(s.famille.membres[1].sante, 100);
   // une nuit mal nourrie : pas de récupération, variation normale (bornée à 0)
-  s.inventaire = { conserve: 15 };
+  setInv(s, { conserve: 15 });
   feedFamily(s);
   assertEqual([m.sante, m.malade], [0, true]);
   // 24 nuits bien nourries : 48 points, encore malade ; la 25e → 50 : guéri
   for (let i = 0; i < 24; i++) {
-    s.inventaire = { conserve: 16 };
+    setInv(s, { conserve: 16 });
     feedFamily(s);
   }
   assertEqual([m.sante, m.malade], [48, true]);
-  s.inventaire = { conserve: 16 };
+  setInv(s, { conserve: 16 });
   feedFamily(s);
   assertEqual([m.sante, m.malade], [50, false]);
-  s.inventaire = { conserve: 16 };
+  setInv(s, { conserve: 16 });
   feedFamily(s);
   assertEqual(m.sante, 55, 'guéri : la règle normale (+5) reprend');
   assertEqual(s.famille.soinsPayes, 0, 'aucun soin payé');
 });
 
-test('ordre des étapes nocturnes : repas et santé, puis pousse', () => {
-  assertEqual(NIGHT_STEPS.length, 2);
+test('ordre des étapes nocturnes : repas et santé, pousse, puis péremption en dernier', () => {
+  assertEqual(NIGHT_STEPS.length, 3);
   assert(NIGHT_STEPS[0] === feedFamily, 'première étape : repas et santé');
   assert(NIGHT_STEPS[1] === growAll, 'deuxième étape : pousse');
+  assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
 test('Dormir : repas, santé, pousse et rapport de réveil', () => {
@@ -2962,7 +3311,7 @@ test('Dormir : repas, santé, pousse et rapport de réveil', () => {
   assertEqual(r.pretes, [{ culture: 'carotte', nombre: 1, montee: false }]);
   // une nuit sans rien à manger : −20 pour tous, et l'écran de réveil le dit
   const t = garden();
-  t.inventaire = {};
+  setInv(t, {});
   t.awakeSeconds = 30;
   const r2 = sleep(t);
   assertEqual([r2.energieMangee, r2.couverture, r2.santeAvant, r2.santeApres], [0, 0, 100, 80]);
@@ -2972,14 +3321,20 @@ test('Dormir : repas, santé, pousse et rapport de réveil', () => {
   assertEqual([r3.santeAvant, r3.santeApres], [80, 60]);
 });
 
-test('Dormir avec la réserve de semences : 10 nuits de conserves, patates intactes', () => {
+test('Dormir avec la réserve de semences : 10 nuits de conserves, patates jamais mangées', () => {
   const s = garden();
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 6; i++) {
+    s.awakeSeconds = 30;
+    sleep(s);
+  }
+  // la réserve n'est jamais mangée ; les patates n'ont que vieilli (7 nuits au départ)
+  assertEqual(countItem(s, 'patate'), 6);
+  assertEqual(lotsOf(s, 'patate')[0].nightsLeft, 1);
+  for (let i = 0; i < 4; i++) {
     s.awakeSeconds = 30;
     sleep(s);
   }
   assertEqual(countItem(s, 'conserve'), 0);
-  assertEqual(countItem(s, 'patate'), 6);
   assertEqual(s.famille.membres.every((m) => m.sante === 100), true);
   s.awakeSeconds = 30;
   const r = sleep(s); // 11e nuit : plus rien à manger hors réserve
@@ -3007,17 +3362,17 @@ test('mode test Lot 2 : graines, maturité, santé à 0', () => {
   assertEqual(productivity(s), 0.25);
 });
 
-test('migration v2 (Lot 1) → v3 : garde la partie, ajoute le potager, la famille et l\'inventaire', () => {
+test('migration v2 (Lot 1) → version courante : garde la partie, ajoute le potager, la famille et l\'inventaire', () => {
   const v2 = {
     version: 2, day: 5, awakeSeconds: 3, pieces: 120, rngSeed: 9, stats: {},
     unlockedTabs: ['ferme', 'inventaire', 'comptoir'], ...startFarm(),
   };
   v2.eau = 12;
   const m = migrate({ v: 2, t: 0, s: v2 });
-  assertEqual(m.version, 3);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces, m.eau], [5, 120, 12]);
   assertEqual(m.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir']);
-  assertEqual(m.inventaire, { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 });
+  assertEqual(inventoryCounts(m), { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 });
   assertEqual(m.potager.parcelles.length, 6);
   assertEqual(m.famille.membres.length, 4);
   assertEqual(m.famille.reserve, { patate: 6 });
@@ -3028,9 +3383,9 @@ test('migration v2 (Lot 1) → v3 : garde la partie, ajoute le potager, la famil
   // une sauvegarde déjà à jour n'est pas touchée
   const s = garden();
   s.pieces = 77;
-  s.inventaire.conserve = 3;
-  const same = migrate({ v: 3, t: 0, s });
-  assertEqual([same.pieces, same.inventaire.conserve], [77, 3]);
+  setInv(s, { conserve: 3 });
+  const same = migrate({ v: STATE_VERSION, t: 0, s });
+  assertEqual([same.pieces, countItem(same, 'conserve')], [77, 3]);
 });
 
 test('sérialisation JSON aller-retour avec potager, famille et nuit', () => {
@@ -3048,6 +3403,428 @@ test('sérialisation JSON aller-retour avec potager, famille et nuit', () => {
   harvest(copy, 'potager-2');
   harvest(s, 'potager-2');
   assertEqual(copy, s, 'même suite d\'actions, même état (aléatoire compris)');
+});
+
+/* ---------- Lot 3 : inventaire par lots, péremption, Comptoir ---------- */
+
+// Compte les unités d'un item selon l'origine de leurs lots.
+function countByOrigin(s, item, origin) {
+  return lotsOf(s, item).filter((l) => l.origin === origin).reduce((t, l) => t + l.qty, 0);
+}
+
+test('DATA Lot 3 : conservation en nuits', () => {
+  const c = DATA.CONSERVATION;
+  assertEqual([c.viande, c.tomate, c.courgette, c.aubergine], [5, 5, 5, 5]);
+  assertEqual([c.oeuf, c.carotte, DATA.CONSERVATION_CATEGORIE.plat], [6, 6, 6]);
+  assertEqual([c.pomme, c.poire, c.pain, c.patate], [7, 7, 7, 7]);
+  // ce qui est absent des tables ne périme pas
+  for (const k of ['conserve', 'graine_carotte', 'graine_tomate', 'graine_courgette', 'graine_aubergine']) {
+    assertEqual(shelfLife(k), null, k);
+    assertEqual(isPerishable(k), false, k);
+  }
+  for (const k of ['ble', 'farine', 'huile', 'laine']) assertEqual(shelfLife(k), null, k);
+  assertEqual([shelfLife('carotte'), shelfLife('patate'), shelfLife('tomate')], [6, 7, 5]);
+});
+
+test('DATA Lot 3 : coefficients du Comptoir', () => {
+  assertEqual(DATA.MARCHE.PLANCHER, { defaut: 1.2, graine: 2.0 });
+  assertEqual(DATA.MARCHE.PAS, 0.1);
+  assertEqual(marketFloor('carotte'), 1.2);
+  assertEqual(marketFloor('conserve'), 1.2);
+  assertEqual(marketFloor('graine_carotte'), 2.0);
+  assertEqual(createInitialState(1).marche, {});
+});
+
+test('lots : un ajout crée un lot à conservation pleine et d\'origine « produit »', () => {
+  const s = garden();
+  addItem(s, 'carotte', 6);
+  assertEqual(lotsOf(s, 'carotte'), [{ qty: 6, nightsLeft: 6, origin: 'produit' }]);
+  addItem(s, 'carotte', 2); // même fraîcheur, même origine : le lot grossit
+  assertEqual(lotsOf(s, 'carotte'), [{ qty: 8, nightsLeft: 6, origin: 'produit' }]);
+  addItem(s, 'graine_tomate', 3);
+  assertEqual(lotsOf(s, 'graine_tomate')[0].nightsLeft, null, 'une graine ne périme pas');
+  assertEqual(countItem(s, 'carotte'), 8);
+});
+
+test('lots : les conserves et le kit de départ, origine et conservation', () => {
+  const s = createInitialState(1);
+  assertEqual(lotsOf(s, 'conserve'), [{ qty: 160, nightsLeft: null, origin: 'acheté' }], 'les conserves comptent comme achetées');
+  assertEqual(lotsOf(s, 'patate'), [{ qty: 6, nightsLeft: 7, origin: 'produit' }]);
+  assertEqual(lotsOf(s, 'graine_carotte'), [{ qty: 10, nightsLeft: null, origin: 'produit' }]);
+  addItem(s, 'conserve', 5);
+  assertEqual(countByOrigin(s, 'conserve', 'acheté'), 165);
+});
+
+test('retrait : toujours dans le lot le plus ancien', () => {
+  const s = garden();
+  setInv(s, {});
+  addItem(s, 'carotte', 5);
+  spoil(s);
+  spoil(s); // ce lot n'a plus que 4 nuits
+  addItem(s, 'carotte', 3); // lot frais : 6 nuits
+  assertEqual(lotsOf(s, 'carotte'), [
+    { qty: 5, nightsLeft: 4, origin: 'produit' },
+    { qty: 3, nightsLeft: 6, origin: 'produit' },
+  ]);
+  assertEqual(takeItem(s, 'carotte', 6), 6);
+  assertEqual(lotsOf(s, 'carotte'), [{ qty: 2, nightsLeft: 6, origin: 'produit' }], 'le lot ancien part en entier, puis 1 du frais');
+  assertEqual(takeItem(s, 'carotte', 1), 1);
+  assertEqual(lotsOf(s, 'carotte'), [{ qty: 1, nightsLeft: 6, origin: 'produit' }]);
+  assertEqual(takeItem(s, 'carotte', 9), 1);
+  assertEqual('carotte' in s.inventaire, false);
+});
+
+test('retrait : un lot frais ajouté après un lot ancien reste derrière lui', () => {
+  const s = garden();
+  setInv(s, {});
+  addItem(s, 'tomate', 2);
+  spoil(s);
+  addItem(s, 'tomate', 4);
+  takeItem(s, 'tomate', 1);
+  assertEqual(lotsOf(s, 'tomate').map((l) => [l.qty, l.nightsLeft]), [[1, 4], [4, 5]]);
+});
+
+test('péremption : chaque nuit retire 1 nuit ; un lot arrivé à 0 est supprimé et noté', () => {
+  const s = garden();
+  setInv(s, { tomate: 4 });
+  for (let i = 0; i < 4; i++) {
+    assertEqual(spoil(s), {}, `nuit ${i + 1} : rien n'est perdu`);
+    assertEqual(lotsOf(s, 'tomate')[0].nightsLeft, 4 - i);
+  }
+  assertEqual(countItem(s, 'tomate'), 4);
+  assertEqual(spoil(s), { tomate: 4 }, 'la 5e nuit, la tomate a péri');
+  assertEqual(countItem(s, 'tomate'), 0);
+  assertEqual('tomate' in s.inventaire, false);
+  assertEqual(s.nuit.perdus, { tomate: 4 }, 'noté dans le rapport de la nuit');
+});
+
+test('péremption : les durées propres à chaque item (carotte 6, patate 7)', () => {
+  const s = garden();
+  setInv(s, { tomate: 1, carotte: 1, patate: 1 });
+  const lostAt = {};
+  for (let n = 1; n <= 8; n++) {
+    for (const item of Object.keys(spoil(s))) lostAt[item] = n;
+  }
+  assertEqual(lostAt, { tomate: 5, carotte: 6, patate: 7 });
+});
+
+test('péremption : deux lots d\'un même item ne périment pas ensemble', () => {
+  const s = garden();
+  setInv(s, {});
+  addItem(s, 'courgette', 2);
+  for (let i = 0; i < 3; i++) spoil(s);
+  addItem(s, 'courgette', 5);
+  assertEqual(spoil(s), {});
+  assertEqual(spoil(s), { courgette: 2 }, 'seul le lot ancien périme');
+  assertEqual(countItem(s, 'courgette'), 5);
+  assertEqual(lotsOf(s, 'courgette')[0].nightsLeft, 3);
+});
+
+test('péremption : les items qui ne périssent pas restent intacts', () => {
+  const s = garden();
+  setInv(s, { conserve: 30, graine_carotte: 7, graine_tomate: 2 });
+  for (let i = 0; i < 40; i++) assertEqual(spoil(s), {});
+  assertEqual(inventoryCounts(s), { conserve: 30, graine_carotte: 7, graine_tomate: 2 });
+  assertEqual(lotsOf(s, 'conserve')[0].nightsLeft, null);
+});
+
+test('péremption : expiringSoon() repère ce qui périt à la prochaine nuit', () => {
+  const s = garden();
+  setInv(s, { carotte: 3, tomate: 2, conserve: 5 });
+  assertEqual(expiringSoon(s), {});
+  for (let i = 0; i < 4; i++) spoil(s); // tomate : 1 nuit, carotte : 2 nuits
+  assertEqual(expiringSoon(s), { tomate: 2 });
+});
+
+test('Dormir : la péremption est la dernière étape et le rapport nomme les pertes', () => {
+  const s = garden();
+  setInv(s, { conserve: 100, carotte: 4, tomate: 3 });
+  lotsOf(s, 'carotte')[0].nightsLeft = 1;
+  lotsOf(s, 'tomate')[0].nightsLeft = 2;
+  // la réserve empêche la famille de manger ces items avant qu'ils périssent
+  setSeedReserve(s, 'carotte', 4);
+  setSeedReserve(s, 'tomate', 3);
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual(r.perimes, { carotte: 4 });
+  assertEqual(r.aPerimer, { tomate: 3 }, 'la tomate périra la nuit suivante');
+  assertEqual(countItem(s, 'carotte'), 0);
+  assertEqual(countItem(s, 'tomate'), 3);
+  // la nuit suivante : plus de perte signalée pour la carotte, la tomate est perdue
+  s.awakeSeconds = 30;
+  const r2 = sleep(s);
+  assertEqual(r2.perimes, { tomate: 3 });
+  assertEqual(r2.aPerimer, {});
+});
+
+test('Dormir : le repas passe avant la péremption (un lot à 1 nuit est mangé, pas perdu)', () => {
+  const s = garden();
+  setInv(s, { conserve: 100, carotte: 4 });
+  lotsOf(s, 'carotte')[0].nightsLeft = 1;
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual(r.mange.carotte, 4);
+  assertEqual(r.perimes, {});
+});
+
+test('ordre de consommation : d\'abord ce qui périme le plus tôt', () => {
+  const s = garden();
+  setInv(s, { conserve: 100, carotte: 2, courgette: 2, tomate: 2 });
+  s.famille.reserve = {};
+  // au départ : tomate et courgette (5 nuits) avant la carotte (6), la courgette (8) avant la tomate (6)
+  assertEqual(Object.keys(planMeal(s).mange), ['courgette', 'tomate', 'carotte', 'conserve']);
+  // la carotte vieillit de 3 nuits : elle n'a plus que 3 nuits et passe en tête malgré son énergie
+  lotsOf(s, 'carotte')[0].nightsLeft = 3;
+  assertEqual(Object.keys(planMeal(s).mange), ['carotte', 'courgette', 'tomate', 'conserve']);
+});
+
+test('ordre de consommation : à péremption égale, par énergie décroissante', () => {
+  const s = garden();
+  setInv(s, { conserve: 100, tomate: 2, courgette: 2 });
+  s.famille.reserve = {};
+  assertEqual(Object.keys(planMeal(s).mange), ['courgette', 'tomate', 'conserve']);
+  const inStock = mealOrder(s).filter((k) => countItem(s, k) > 0);
+  assertEqual(inStock.slice(-1), ['conserve'], 'les conserves, qui ne périment pas, passent en dernier');
+});
+
+test('ordre de consommation : dans un item, le lot le plus ancien est mangé d\'abord', () => {
+  const s = garden();
+  setInv(s, { conserve: 100 });
+  s.famille.reserve = {};
+  addItem(s, 'carotte', 5);
+  spoil(s);
+  spoil(s);
+  addItem(s, 'carotte', 60); // 5 carottes à 4 nuits, 60 à 6 nuits
+  const plan = planMeal(s);
+  assertEqual(plan.mange, { carotte: 54 }, '54 carottes couvrent les 320 énergies du besoin');
+  feedFamily(s);
+  assertEqual(lotsOf(s, 'carotte'), [{ qty: 11, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 49 du lot frais');
+});
+
+test('Comptoir : prix d\'achat = prix de vente × coefficient, plancher 1,2', () => {
+  const s = garden();
+  assertEqual(marketCoef(s, 'patate'), 1.2);
+  assertEqual(buyPrice(s, 'patate'), 2.4);
+  assertEqual(buyPrice(s, 'carotte'), 1.2);
+  assertEqual(buyPrice(s, 'courgette'), 2.4);
+  assertEqual(isBuyable('carotte'), true);
+});
+
+test('Comptoir : le prix d\'achat monte de 0,1 de coefficient par unité, unité par unité', () => {
+  const s = garden();
+  s.pieces = 100;
+  const paid = [];
+  for (let i = 0; i < 3; i++) {
+    const before = s.pieces;
+    const r = buyItem(s, 'patate');
+    assertEqual([r.ok, r.bought], [true, 1]);
+    paid.push(roundCoins(before - s.pieces));
+    assertEqual(r.cost, paid[i]);
+  }
+  assertEqual(paid, [2.4, 2.6, 2.8]);
+  assertEqual(marketCoef(s, 'patate'), 1.5);
+  assertEqual(buyPrice(s, 'patate'), 3);
+  assertEqual(countItem(s, 'patate'), 9, '6 de départ + 3');
+  // un achat de plusieurs unités reprend le même chemin, le prix montant entre chacune
+  const t = garden();
+  t.pieces = 100;
+  const r = buyItem(t, 'patate', 3);
+  assertEqual([r.bought, r.cost], [3, 7.8]);
+  assertEqual(t.pieces, 92.2);
+});
+
+test('Comptoir : la vente est au prix fixe et fait baisser le coefficient de 0,1 par unité', () => {
+  const s = garden();
+  s.pieces = 100;
+  buyItem(s, 'patate', 3); // coefficient 1,5
+  const before = s.pieces;
+  const r = sellItem(s, 'patate', 2);
+  assertEqual([r.ok, r.sold, r.gain], [true, 2, 4]);
+  assertEqual(s.pieces, roundCoins(before + 4), 'prix de vente fixe : 2 pièces par patate');
+  assertEqual(marketCoef(s, 'patate'), 1.3);
+  assertEqual(buyPrice(s, 'patate'), 2.6, 'vendre 2 patates ramène le prix à 2,6');
+  // la vente ne dépend ni de l'âge ni de l'origine
+  assertEqual(sellItem(s, 'conserve', 10).gain, 30);
+});
+
+test('Comptoir : le coefficient ne descend jamais sous le plancher de 1,2', () => {
+  const s = garden();
+  sellItem(s, 'patate', 5);
+  assertEqual(marketCoef(s, 'patate'), 1.2);
+  assertEqual(buyPrice(s, 'patate'), 2.4);
+  buyItem(s, 'carotte', 1); // acheté : 1,3 — puis vendu 10 : bloqué à 1,2
+  addItem(s, 'carotte', 10);
+  sellItem(s, 'carotte', 11);
+  assertEqual(marketCoef(s, 'carotte'), 1.2);
+  assertEqual(s.marche, {}, 'un coefficient revenu à son plancher n\'est plus noté');
+});
+
+test('Comptoir : graines, coefficient de départ et plancher à 2,0', () => {
+  const s = garden();
+  assertEqual(marketCoef(s, 'graine_carotte'), 2);
+  assertEqual(buyPrice(s, 'graine_carotte'), 2);
+  s.pieces = 50;
+  buyItem(s, 'graine_carotte');
+  assertEqual(marketCoef(s, 'graine_carotte'), 2.1);
+  assertEqual(buyPrice(s, 'graine_carotte'), 2.1);
+  assertEqual(s.pieces, 48);
+  // en vendre ne descend jamais sous 2,0
+  sellItem(s, 'graine_carotte', 8);
+  assertEqual(marketCoef(s, 'graine_carotte'), 2);
+  assertEqual(buyPrice(s, 'graine_carotte'), 2);
+  assertEqual(buyPrice(s, 'graine_tomate'), 2);
+});
+
+test('Comptoir : les coefficients sont propres à chaque item et ne redescendent pas avec le temps', () => {
+  const s = garden();
+  s.pieces = 200;
+  buyItem(s, 'tomate', 4);
+  assertEqual(marketCoef(s, 'tomate'), 1.6);
+  assertEqual(marketCoef(s, 'carotte'), 1.2);
+  const c = marketCoef(s, 'tomate');
+  for (let i = 0; i < 12; i++) {
+    s.awakeSeconds = 30;
+    sleep(s);
+    tick(s, 5);
+  }
+  assertEqual(marketCoef(s, 'tomate'), c, 'aucune baisse avec les nuits ni le temps');
+});
+
+test('Comptoir : les conserves ne s\'achètent pas', () => {
+  const s = garden();
+  s.pieces = 500;
+  assertEqual(isBuyable('conserve'), false);
+  const r = buyItem(s, 'conserve');
+  assertEqual(r.ok, false);
+  assertEqual([s.pieces, countItem(s, 'conserve')], [500, 160]);
+  assertEqual(s.marche, {});
+  assertEqual(buyItem(s, 'inconnu').ok, false);
+});
+
+test('Comptoir : achat refusé sans pièces, et un achat multiple s\'arrête quand elles manquent', () => {
+  const s = garden();
+  s.pieces = 1;
+  const r = buyItem(s, 'carotte');
+  assertEqual(r.ok, false);
+  assertEqual([s.pieces, countItem(s, 'carotte')], [1, 0]);
+  s.pieces = 3; // carotte : 1,2 puis 1,3 puis 1,4 → 2 unités (2,5), la 3e (1,4) dépasse 0,5
+  const r2 = buyItem(s, 'carotte', 5);
+  assertEqual([r2.ok, r2.bought, r2.cost], [true, 2, 2.5]);
+  assertEqual(s.pieces, 0.5);
+  assertEqual(marketCoef(s, 'carotte'), 1.4);
+});
+
+test('Comptoir : un item acheté arrive avec sa conservation pleine et l\'origine « acheté »', () => {
+  const s = garden();
+  setInv(s, {});
+  addItem(s, 'carotte', 3);
+  spoil(s);
+  spoil(s); // la carotte produite n'a plus que 4 nuits
+  s.pieces = 50;
+  buyItem(s, 'carotte', 2);
+  const lots = lotsOf(s, 'carotte');
+  assertEqual(lots, [
+    { qty: 3, nightsLeft: 4, origin: 'produit' },
+    { qty: 2, nightsLeft: 6, origin: 'acheté' },
+  ]);
+  assertEqual([countByOrigin(s, 'carotte', 'produit'), countByOrigin(s, 'carotte', 'acheté')], [3, 2]);
+  buyItem(s, 'graine_tomate');
+  assertEqual(lotsOf(s, 'graine_tomate').slice(-1)[0].origin, 'acheté');
+  assertEqual(lotsOf(s, 'graine_tomate').slice(-1)[0].nightsLeft, null);
+});
+
+test('origine des lots : une récolte donne « produit », le Comptoir « acheté »', () => {
+  const s = garden();
+  setInv(s, { graine_tomate: 1 });
+  plantRipe(s, 'potager-1', 'tomate');
+  assertEqual(harvest(s, 'potager-1', true).ok, true);
+  assertEqual(countByOrigin(s, 'tomate', 'produit'), 10);
+  assertEqual(countByOrigin(s, 'tomate', 'acheté'), 0);
+  s.pieces = 20;
+  buyItem(s, 'tomate', 2);
+  assertEqual(countByOrigin(s, 'tomate', 'acheté'), 2);
+  assertEqual(countItem(s, 'tomate'), 12);
+});
+
+test('vente : retire les lots les plus anciens, refuse sans stock et ignore les quantités folles', () => {
+  const s = garden();
+  setInv(s, {});
+  addItem(s, 'carotte', 4);
+  spoil(s);
+  addItem(s, 'carotte', 4);
+  const r = sellItem(s, 'carotte', 5);
+  assertEqual([r.sold, r.gain], [5, 5]);
+  assertEqual(lotsOf(s, 'carotte'), [{ qty: 3, nightsLeft: 6, origin: 'produit' }]);
+  assertEqual(sellItem(s, 'carotte', 99).sold, 3, 'plafonné au stock');
+  assertEqual(sellItem(s, 'carotte', 1).ok, false, 'plus rien à vendre');
+  assertEqual(sellItem(s, 'tomate', 0).ok, false);
+  assertEqual(sellItem(s, 'tomate', 'abc').ok, false);
+  assertEqual(sellItem(s, 'inconnu', 1).ok, false);
+});
+
+test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', () => {
+  const s = garden();
+  setInv(s, { conserve: 5 });
+  testAddFood(s);
+  assertEqual(inventoryCounts(s), { conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20 });
+  assertEqual(countItem(s, 'graine_carotte'), 0, 'les graines ne sont pas des aliments');
+  const r = testAgeInventory(s);
+  assertEqual(r.ok, true);
+  assertEqual(r.perdus, {});
+  assertEqual(lotsOf(s, 'carotte')[0].nightsLeft, 5);
+  assertEqual(lotsOf(s, 'patate')[0].nightsLeft, 6);
+  assertEqual(lotsOf(s, 'conserve')[0].nightsLeft, null);
+  for (let i = 0; i < 4; i++) testAgeInventory(s);
+  const last = testAgeInventory(s); // 6e nuit : tomate, courgette, aubergine déjà perdues, carotte maintenant
+  assertEqual(last.perdus, { carotte: 20 });
+  assertEqual(inventoryCounts(s), { conserve: 25, patate: 20 });
+});
+
+test('migration v3 (Lot 2) → v4 : l\'inventaire devient des lots à conservation pleine', () => {
+  const v3 = {
+    version: 3, day: 9, awakeSeconds: 4, pieces: 66, rngSeed: 5, stats: {},
+    unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'], ...startFarm(), ...startHousehold(),
+  };
+  v3.inventaire = { conserve: 40, carotte: 7, patate: 6, graine_carotte: 3, tomate: 0 };
+  delete v3.nuit.perdus; // une nuit de Lot 2 ne connaît pas encore les pertes
+  const m = migrate({ v: 3, t: 0, s: v3 });
+  assertEqual(m.version, 4);
+  assertEqual([m.day, m.pieces], [9, 66]);
+  assertEqual(inventoryCounts(m), { conserve: 40, carotte: 7, patate: 6, graine_carotte: 3 }, 'un item à zéro disparaît');
+  assertEqual(lotsOf(m, 'carotte'), [{ qty: 7, nightsLeft: 6, origin: 'produit' }]);
+  assertEqual(lotsOf(m, 'patate'), [{ qty: 6, nightsLeft: 7, origin: 'produit' }]);
+  assertEqual(lotsOf(m, 'graine_carotte'), [{ qty: 3, nightsLeft: null, origin: 'produit' }]);
+  assertEqual(lotsOf(m, 'conserve'), [{ qty: 40, nightsLeft: null, origin: 'acheté' }]);
+  assertEqual(m.marche, {});
+  assertEqual(m.nuit.perdus, {});
+  // l'état migré tourne : Dormir, Comptoir
+  setSeedReserve(m, 'carotte', 7); // la famille ne mange pas ces carottes cette nuit
+  m.awakeSeconds = 30;
+  assert(sleep(m) !== null, 'l\'état migré peut dormir');
+  assertEqual(lotsOf(m, 'carotte')[0].nightsLeft, 5, 'la péremption s\'applique à la carotte migrée');
+  m.pieces = 10;
+  assertEqual(buyItem(m, 'carotte').ok, true);
+});
+
+test('migration v1 → version courante : les chaînes de migration mènent à des lots', () => {
+  const v1 = { version: 1, day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} };
+  const m = migrate({ v: 1, t: 0, s: v1 });
+  assertEqual(m.version, STATE_VERSION);
+  assertEqual(lotsOf(m, 'conserve'), [{ qty: 160, nightsLeft: null, origin: 'acheté' }]);
+  assertEqual(m.marche, {});
+  // une sauvegarde déjà en lots n'est pas convertie deux fois
+  const again = migrate({ v: 3, t: 0, s: { ...m, version: 3 } });
+  assertEqual(lotsOf(again, 'conserve'), [{ qty: 160, nightsLeft: null, origin: 'acheté' }]);
+});
+
+test('sérialisation JSON : lots et coefficients font l\'aller-retour', () => {
+  const s = createInitialState(3);
+  s.pieces = 100;
+  buyItem(s, 'carotte', 3);
+  spoil(s);
+  const copy = JSON.parse(JSON.stringify(s));
+  assertEqual(copy, s);
+  assertEqual(marketCoef(copy, 'carotte'), 1.5);
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -3084,6 +3861,9 @@ let state = null;
 let activeTab = 'ferme';
 let screen = null; // écran de détail ouvert dans la Ferme : null, 'panneaux' ou 'batteries'
 let testMode = false;
+let invTab = 'frais'; // Inventaire : 'frais', 'graines' ou 'produits'
+let comptoirTab = 'vendre'; // Comptoir : 'vendre', 'acheter', 'graines', 'animaux' ou 'arbres'
+const sellQuantities = {}; // quantité choisie par item dans l'onglet Vendre
 let renderScheduled = false;
 let lastRenderAt = 0;
 
@@ -3352,6 +4132,10 @@ function renderTabContent() {
   }
   if (activeTab === 'inventaire') {
     morph(el, renderInventaire());
+    return;
+  }
+  if (activeTab === 'comptoir') {
+    morph(el, renderComptoir());
     return;
   }
   const tab = TABS.find((t) => t.id === activeTab) || TABS[0];
@@ -3706,6 +4490,37 @@ function renderFamille() {
 
 /* ---------- Inventaire ---------- */
 
+// Libellé d'une quantité : « 6 carottes », « 1 carotte », « 1 graine de tomate ».
+function unitLabel(item, qty) {
+  const name = DATA.items[item].nom.toLowerCase();
+  if (name.startsWith('graines ')) return qty > 1 ? name : `graine ${name.slice(8)}`;
+  return qty > 1 ? `${name}s` : name;
+}
+
+function nightsLabel(n) {
+  return `${n} nuit${n > 1 ? 's' : ''}`;
+}
+
+// « 3 🥕 · 2 🍅 » à partir de { item: quantité }.
+function itemsSummary(map) {
+  return Object.entries(map)
+    .map(([item, n]) => `${n} ${DATA.items[item].icone}`)
+    .join(' · ');
+}
+
+// Les lots d'un item : « 6 carottes — 2 nuits », le plus ancien en premier ;
+// ce qui périt à la prochaine nuit est signalé.
+function lotListHtml(item) {
+  const lots = lotsOf(state, item);
+  if (!isPerishable(item)) return '<span class="muted">Ne périme pas</span>';
+  return `<ul class="lot-list" aria-label="Lots">${lots
+    .map((l) => {
+      const soon = l.nightsLeft === 1;
+      return `<li class="${soon ? 'soon-spoil' : ''}"><span>${l.qty} ${unitLabel(item, l.qty)} — ${nightsLabel(l.nightsLeft)}</span>${soon ? '<span aria-hidden="true">⚠️</span><span>périme à la prochaine nuit</span>' : ''}</li>`;
+    })
+    .join('')}</ul>`;
+}
+
 function inventoryRow(item) {
   const it = DATA.items[item];
   const n = countItem(state, item);
@@ -3729,29 +4544,113 @@ function inventoryRow(item) {
   return `
     <div class="inv-row">
       <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="big num">${formatNumber(n)}</span></div>
+      ${lotListHtml(item)}
       <span class="muted">${info}</span>
       ${reserve}
     </div>`;
 }
 
+const INVENTORY_TABS = [
+  { id: 'frais', label: 'Frais', icon: '🥕', match: (k) => isPerishable(k), empty: 'Aucun aliment frais pour l\'instant.' },
+  { id: 'graines', label: 'Graines', icon: '🌱', match: (k) => DATA.items[k].category === 'graine', empty: 'Aucune graine pour l\'instant.' },
+  { id: 'produits', label: 'Produits', icon: '🥫', match: (k) => !isPerishable(k) && DATA.items[k].category !== 'graine', empty: 'Aucun produit pour l\'instant.' },
+];
+
+function subtabsHtml(tabs, current, action) {
+  return `<div class="subtabs" role="group" aria-label="Sections">${tabs
+    .map(
+      (t) =>
+        `<button type="button" class="subtab-btn${t.id === current ? ' active' : ''}${t.soon ? ' soon' : ''}" data-action="${action}" data-tab="${t.id}" aria-pressed="${t.id === current}">${t.icon} ${t.label}</button>`
+    )
+    .join('')}</div>`;
+}
+
 function renderInventaire() {
-  const groups = [
-    { titre: '🍽️ Aliments', match: (it) => it.edible },
-    { titre: '🌱 Graines', match: (it) => it.category === 'graine' },
-  ];
-  const body = groups
-    .map((g) => {
-      const items = Object.keys(DATA.items).filter(
-        (k) => g.match(DATA.items[k]) && (countItem(state, k) > 0 || reservableItems().includes(k))
-      );
-      return `
-        <div class="inv-group">
-          <h3>${g.titre}</h3>
-          ${items.length ? items.map(inventoryRow).join('') : '<p class="hint">Rien pour l\'instant.</p>'}
-        </div>`;
-    })
-    .join('');
-  return `<h2>📦 Inventaire</h2>${body}`;
+  const tab = INVENTORY_TABS.find((t) => t.id === invTab) || INVENTORY_TABS[0];
+  const items = Object.keys(DATA.items).filter(
+    (k) => tab.match(k) && (countItem(state, k) > 0 || reservableItems().includes(k))
+  );
+  const soon = Object.keys(expiringSoon(state)).length > 0 && tab.id === 'frais';
+  return `
+    <h2>📦 Inventaire</h2>
+    ${subtabsHtml(INVENTORY_TABS, tab.id, 'inv-tab')}
+    ${soon ? '<p class="alert">⚠️ Une partie de tes aliments périt à la prochaine nuit.</p>' : ''}
+    <div class="inv-group">
+      ${items.length ? items.map(inventoryRow).join('') : `<p class="hint">${tab.empty}</p>`}
+    </div>`;
+}
+
+/* ---------- Comptoir ---------- */
+
+const COMPTOIR_TABS = [
+  { id: 'vendre', label: 'Vendre', icon: '💰' },
+  { id: 'acheter', label: 'Acheter', icon: '🛒' },
+  { id: 'graines', label: 'Graines', icon: '🌱' },
+  { id: 'animaux', label: 'Animaux', icon: '🐔', soon: true },
+  { id: 'arbres', label: 'Arbres', icon: '🌳', soon: true },
+];
+
+// Quantité choisie pour la vente, toujours entre 1 et le stock.
+function sellQuantity(item) {
+  const stock = countItem(state, item);
+  return Math.max(1, Math.min(stock, sellQuantities[item] || 1));
+}
+
+function sellRow(item) {
+  const it = DATA.items[item];
+  const stock = countItem(state, item);
+  const q = sellQuantity(item);
+  return `
+    <div class="shop-row">
+      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatNumber(stock)}</span></span></div>
+      <span class="muted">Prix de vente : <strong class="num">${formatCoins(it.prix)} 💰</strong> l'unité (fixe)</span>
+      <div class="row qty-row">
+        <button type="button" class="btn step-btn" data-action="sell-dec" data-item="${item}" aria-label="Vendre une unité de moins"${q <= 1 ? ' disabled' : ''}>−</button>
+        <strong class="num qty">${q}</strong>
+        <button type="button" class="btn step-btn" data-action="sell-inc" data-item="${item}" aria-label="Vendre une unité de plus"${q >= stock ? ' disabled' : ''}>+</button>
+        <button type="button" class="btn" data-action="sell-max" data-item="${item}"${q >= stock ? ' disabled' : ''}>Tout</button>
+        <button type="button" class="btn primary sell-go" data-action="sell-item" data-item="${item}">Vendre ${q} (+${formatCoins(q * it.prix)} 💰)</button>
+      </div>
+    </div>`;
+}
+
+function buyRow(item) {
+  const it = DATA.items[item];
+  const price = buyPrice(state, item);
+  const coef = marketCoef(state, item);
+  return `
+    <div class="shop-row">
+      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatNumber(countItem(state, item))}</span></span></div>
+      <span class="muted">Prochaine unité : <strong class="num">${formatCoins(price)} 💰</strong> · coefficient <span class="num">×${formatFixed(coef, 1)}</span> · vente ${formatCoins(it.prix)} 💰</span>
+      <button type="button" class="btn primary" data-action="buy-item" data-item="${item}"${canPay(price) ? '' : ' disabled'}>Acheter 1 (${formatCoins(price)} 💰)</button>
+    </div>`;
+}
+
+function renderComptoir() {
+  const tab = COMPTOIR_TABS.find((t) => t.id === comptoirTab) || COMPTOIR_TABS[0];
+  let body;
+  if (tab.id === 'vendre') {
+    const items = Object.keys(DATA.items).filter((k) => countItem(state, k) > 0);
+    body = `
+      <p class="muted">Prix de vente fixes. Chaque unité vendue baisse de ${formatFixed(DATA.MARCHE.PAS, 1)} le coefficient d'achat de l'objet, sans passer sous son plancher.</p>
+      ${items.length ? items.map(sellRow).join('') : '<p class="hint">Tu n\'as rien à vendre pour l\'instant.</p>'}`;
+  } else if (tab.id === 'acheter') {
+    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine');
+    body = `
+      <p class="muted">Prix d'achat = prix de vente × coefficient. Chaque unité achetée ajoute ${formatFixed(DATA.MARCHE.PAS, 1)} au coefficient, et il ne redescend qu'à la vente : le Comptoir dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
+      ${items.map(buyRow).join('')}`;
+  } else if (tab.id === 'graines') {
+    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category === 'graine');
+    body = `
+      <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ×${formatFixed(DATA.MARCHE.PLANCHER.graine, 1)}. Produire tes propres graines reste plus rentable.</p>
+      ${items.map(buyRow).join('')}`;
+  } else {
+    body = `<div class="coming"><p class="hint">${tab.icon} ${tab.label} : cet onglet arrivera dans un lot suivant.</p></div>`;
+  }
+  return `
+    <h2>💰 Comptoir</h2>
+    ${subtabsHtml(COMPTOIR_TABS, tab.id, 'comptoir-tab')}
+    ${body}`;
 }
 
 /* ---------- écran de réveil ---------- */
@@ -3766,9 +4665,9 @@ function openWakeModal(report) {
     ...report.enPanne.map((d) => line(d, '⛔ {nom} : en panne, à réparer.')),
     ...report.aEntretenir.map((d) => line(d, '⚠️ {nom} : à entretenir (usure {usure} %).')),
   ];
-  const eaten = Object.entries(report.mange)
-    .map(([item, n]) => `${n} ${DATA.items[item].icone}`)
-    .join(' · ');
+  const eaten = itemsSummary(report.mange);
+  const spoiled = itemsSummary(report.perimes);
+  const expiring = itemsSummary(report.aPerimer);
   const shownEnergy = Math.min(report.energieMangee, report.besoin);
   const covered = Math.floor(report.couverture * 100 + EPS);
   const ready = report.pretes.length
@@ -3781,6 +4680,8 @@ function openWakeModal(report) {
     `<li>❤️ Santé moyenne : <strong class="num">${formatFixed(report.santeAvant, 0)} → ${formatFixed(report.santeApres, 0)}</strong> (${formatRate(report.santeApres - report.santeAvant, 0)})</li>`,
     ...report.nouveauxMalades.map((nom) => `<li class="alert">🤒 ${nom} est tombé malade : il faut le soigner.</li>`),
     ready ? `<li>🧺 Récoltes prêtes : <strong>${ready}</strong></li>` : '<li>🌱 Aucune récolte prête pour l\'instant.</li>',
+    spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
+    expiring ? `<li>⏳ À manger vite, périme à la prochaine nuit : <strong>${expiring}</strong></li>` : '',
   ];
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
@@ -3931,6 +4832,44 @@ document.addEventListener('click', (e) => {
       const item = target.dataset.item;
       const now = state.famille.reserve[item] || 0;
       applyResult(setSeedReserve(state, item, now + (action === 'reserve-inc' ? 1 : -1)));
+      break;
+    }
+    case 'inv-tab':
+      invTab = target.dataset.tab;
+      refresh();
+      break;
+    case 'comptoir-tab':
+      comptoirTab = target.dataset.tab;
+      refresh();
+      break;
+    case 'buy-item': {
+      const item = target.dataset.item;
+      const result = applyResult(buyItem(state, item));
+      if (result.ok) showToast(`Acheté : 1 ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
+      break;
+    }
+    case 'sell-dec':
+    case 'sell-inc':
+    case 'sell-max': {
+      const item = target.dataset.item;
+      const now = sellQuantity(item);
+      sellQuantities[item] = action === 'sell-max' ? countItem(state, item) : now + (action === 'sell-inc' ? 1 : -1);
+      refresh();
+      break;
+    }
+    case 'sell-item': {
+      const item = target.dataset.item;
+      const result = applyResult(sellItem(state, item, sellQuantity(item)));
+      if (result.ok) showToast(`Vendu : ${result.sold} ${DATA.items[item].icone} (+${formatCoins(result.gain)} 💰)`);
+      break;
+    }
+    case 'test-food':
+      applyResult(testAddFood(state));
+      break;
+    case 'test-age': {
+      const result = applyResult(testAgeInventory(state));
+      const lost = itemsSummary(result.perdus);
+      showToast(lost ? `Périmés : ${lost}` : 'Rien n\'a péri.');
       break;
     }
     case 'test-seeds':
