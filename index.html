@@ -731,6 +731,12 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 .level-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .level-row .chip { white-space: normal; }
 .chip.auto { border-color: var(--accent); color: var(--accent); }
+.season-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.season-card .bar { margin-top: 2px; }
+.fridge.cold { border-color: var(--accent); }
+.fridge.warm { border-color: var(--danger); border-width: 2px; }
+.tree.adult { border-color: var(--accent); }
+.tree.free { border-style: dashed; }
 .semis-choice { justify-content: flex-start; text-align: left; height: auto; min-height: 44px; padding: 8px 12px; flex-direction: column; align-items: flex-start; gap: 2px; }
 .semis-choice > span { display: block; }
 .semis-choice[aria-pressed="true"] { border-color: var(--accent); border-width: 2px; }
@@ -801,6 +807,13 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
         </select>
         <button class="btn" type="button" data-action="test-level5">Niveau 5</button>
         <button class="btn" type="button" data-action="test-techs">Débloquer tous les nœuds</button>
+      </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-next-season">Saison suivante</button>
+        <button class="btn" type="button" data-action="test-serre">Construire la Serre</button>
+        <button class="btn" type="button" data-action="test-verger">Construire le Verger</button>
+        <button class="btn" type="button" data-action="test-fridge">Construire le Réfrigérateur</button>
+        <button class="btn" type="button" data-action="test-empty-batteries">Vider les batteries</button>
       </div>
       <div class="row">
         <button class="btn" type="button" data-action="test-skip-awake">Ignorer l'éveil minimal</button>
@@ -966,11 +979,11 @@ const DATA = {
                  graines: { item: 'graine_carotte', mode: 'montee', stadesSupp: 2, quantite: 6 } },
     patate:    { nom: 'Patate',    icone: '🥔', lieux: ['potager'], stades: 6, litres: 3, rendement: 8,
                  graines: { item: 'patate', mode: 'plant' } },
-    tomate:    { nom: 'Tomate',    icone: '🍅', lieux: ['potager'], stades: 5, litres: 3, rendement: 10,
+    tomate:    { nom: 'Tomate',    icone: '🍅', lieux: ['potager', 'serre'], stades: 5, litres: 3, rendement: 10,
                  graines: { item: 'graine_tomate', mode: 'recolte', min: 1, max: 2 } },
-    courgette: { nom: 'Courgette', icone: '🥒', lieux: ['potager'], stades: 5, litres: 4, rendement: 6,
+    courgette: { nom: 'Courgette', icone: '🥒', lieux: ['potager', 'serre'], stades: 5, litres: 4, rendement: 6,
                  graines: { item: 'graine_courgette', mode: 'recolte', min: 1, max: 2 } },
-    aubergine: { nom: 'Aubergine', icone: '🍆', lieux: ['potager'], stades: 6, litres: 4, rendement: 6,
+    aubergine: { nom: 'Aubergine', icone: '🍆', lieux: ['potager', 'serre'], stades: 6, litres: 4, rendement: 6,
                  graines: { item: 'graine_aubergine', mode: 'recolte', min: 1, max: 2 } },
     // Lot 4 (Champ). produit : l'objet récolté quand il n'a pas le nom de la
     // culture. Blé : 1 blé = 1 graine. Tournesol : la récolte donne des graines,
@@ -1191,6 +1204,90 @@ const DATA = {
       },
     },
   },
+
+  /* ---------- Lot 8 : saisons, Serre, Verger, Réfrigérateur ---------- */
+
+  // Saisons légères (sections 1.4 et 6.9 ter) : 4 saisons de LONGUEUR nuits, la
+  // saison se déduit de la nuit courante (nuit 1 = premier jour du printemps).
+  // MODS : facteur par saison et par type de calcul (solaire : production des
+  // panneaux ; potager et champ : rendement d'une récolte ; eau : litres par
+  // arrosage ; moutons : gain de poids par nuit). La Serre les ignore tous.
+  SAISONS: {
+    LONGUEUR: 10,
+    ORDRE: ['printemps', 'ete', 'automne', 'hiver'],
+    INFOS: {
+      printemps: { nom: 'Printemps', icone: '🌱' },
+      ete:       { nom: 'Été',       icone: '☀️' },
+      automne:   { nom: 'Automne',   icone: '🍂' },
+      hiver:     { nom: 'Hiver',     icone: '❄️' },
+    },
+    MODS: {
+      printemps: { solaire: 1.0, potager: 1.1, eau: 1.0, champ: 1.0, moutons: 1.2 },
+      ete:       { solaire: 1.3, potager: 1.0, eau: 1.3, champ: 1.2, moutons: 1.0 },
+      automne:   { solaire: 0.9, potager: 1.0, eau: 0.9, champ: 0.9, moutons: 1.0 },
+      hiver:     { solaire: 0.7, potager: 0.7, eau: 0.8, champ: 0.7, moutons: 0.8 },
+    },
+    // Types de facteurs, avec leur libellé pour le calendrier.
+    FACTEURS: {
+      solaire: { nom: 'Solaire', icone: '☀️' },
+      potager: { nom: 'Potager', icone: '🌱' },
+      eau:     { nom: 'Eau', icone: '💧' },
+      champ:   { nom: 'Champ', icone: '🌾' },
+      moutons: { nom: 'Moutons', icone: '🐑' },
+    },
+    // Lieu de culture → facteur de rendement qui s'y applique. Un lieu absent
+    // (la Serre) n'a aucun modificateur, ni de rendement ni d'eau.
+    RENDEMENT_LIEU: { potager: 'potager', champ: 'champ' },
+    EAU_LIEUX: ['potager', 'champ'],
+  },
+
+  // Serre (sections 1.4 et 8.3) : mêmes parcelles que le Potager, sans modificateur
+  // de saison. CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour
+  // atteindre le niveau n + 1 (index 0 non utilisé). Tomate, courgette, aubergine.
+  SERRE: {
+    LIEU: 'serre',
+    CONSTRUCTION: 400,
+    PARCELLES: [6, 9, 12, 15, 18],
+    COUT: [0, 300, 600, 1000, 1800],
+  },
+
+  // Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent au Comptoir à prix
+  // fixe et se plantent sur un emplacement libre. Un arbre est adulte MATURITE
+  // nuits après sa plantation ; adulte, il donne FRUITS fruits toutes les PERIODE
+  // nuits, seulement dans la fenêtre : les `dernieresNuits` dernières nuits de
+  // l'été et toute la saison suivante (automne). Pas d'arrosage.
+  // CONSTRUCTION : 0 (« aménager » le Verger est gratuit : la conception parle
+  // d'un déblocage au chapitre 6, qui n'existe pas encore) ; l'emplacement
+  // supplémentaire coûte EMPLACEMENT.base × croissance^n, n étant le nombre
+  // d'emplacements déjà achetés (ceux de départ ne comptent pas).
+  VERGER: {
+    CONSTRUCTION: 0,
+    EMPLACEMENTS_DEPART: 2,
+    EMPLACEMENT: { base: 50, croissance: 1.25 },
+    MATURITE: 15,
+    FRUITS: 6,
+    PERIODE: 3,
+    FENETRE: { debut: { saison: 'ete', dernieresNuits: 5 }, fin: { saison: 'automne' } },
+    ARBRES: {
+      pommier: { nom: 'Pommier', icone: '🌳', fruit: 'pomme', prix: 40 },
+      poirier: { nom: 'Poirier', icone: '🌳', fruit: 'poire', prix: 40 },
+    },
+  },
+
+  // Réfrigérateur (sections 1.3, 1.4, 6.9 quater et 8.2) : appareil électrique du
+  // parc (interrupteur, usure, panne à 100 %), capacité illimitée. Consommation :
+  // BASE + PAR_UNITE × unités stockées, en kWh/s. Au Dormir, BLOC_NUIT_S secondes
+  // de consommation sont prélevées d'un bloc. Si le frigo a été alimenté moins de
+  // SEUIL_ALIMENTE du temps d'éveil (ou en cas de panne nocturne), chaque lot du
+  // frigo perd PERTE_NUITS nuit de conservation.
+  FRIGO: {
+    CONSTRUCTION: 600,
+    BASE_KWH_S: 0.005,
+    PAR_UNITE_KWH_S: 0.00005,
+    BLOC_NUIT_S: 30,
+    SEUIL_ALIMENTE: 0.5,
+    PERTE_NUITS: 1,
+  },
 };
 
 /* ==========================================================================
@@ -1212,7 +1309,7 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 8;
+const STATE_VERSION = 9;
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -1223,8 +1320,53 @@ const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrag
 // lots suivants insèrent leurs fonctions avant `spoil`. Lot 7 : les
 // automatisations du niveau 5 passent juste après le repas, avant la pousse (une
 // parcelle arrosée pousse cette nuit) et avant la ponte (une poule nourrie pond).
+// Lot 8 : le verger donne ses fruits juste après les moutons ; puis le bloc
+// nocturne du réfrigérateur (nightPower), sa panne éventuelle (fridgeNight) et
+// enfin la péremption. Les préparations en cours se terminent avant le frigo.
 // Chaque étape reçoit l'état et le modifie.
-const NIGHT_STEPS = [feedFamily, autoTasks, growAll, layEggs, growSheep, finishPreparations, spoil];
+const NIGHT_STEPS = [feedFamily, autoTasks, growAll, layEggs, growSheep, growOrchard, finishPreparations, nightPower, fridgeNight, spoil];
+
+/* ---------- Lot 8 : saisons ---------- */
+
+// Indice de saison (0 à 3) d'une nuit : nuits 1 à 10 printemps, 11 à 20 été,
+// 21 à 30 automne, 31 à 40 hiver, puis retour au printemps à la nuit 41.
+function seasonIndex(day) {
+  const S = DATA.SAISONS;
+  return Math.floor((Math.max(1, day) - 1) / S.LONGUEUR) % S.ORDRE.length;
+}
+
+// Identifiant de la saison de la nuit courante ('printemps', 'ete', ...).
+function currentSeason(state) {
+  return DATA.SAISONS.ORDRE[seasonIndex(state.day)];
+}
+
+// Numéro de la nuit dans la saison (1 à LONGUEUR).
+function seasonNight(state) {
+  return ((Math.max(1, state.day) - 1) % DATA.SAISONS.LONGUEUR) + 1;
+}
+
+// Numéro de la nuit dans l'année (1 à 40).
+function yearNight(day) {
+  const S = DATA.SAISONS;
+  return ((Math.max(1, day) - 1) % (S.LONGUEUR * S.ORDRE.length)) + 1;
+}
+
+// Facteur saisonnier d'un type de calcul : 'solaire', 'potager', 'eau', 'champ'
+// ou 'moutons'. Les calculs existants le multiplient à leur valeur de base.
+function seasonFactor(state, kind) {
+  return DATA.SAISONS.MODS[currentSeason(state)][kind];
+}
+
+// Facteur de rendement d'une récolte selon le lieu (1 pour la Serre).
+function yieldSeasonFactor(state, lieu) {
+  const kind = DATA.SAISONS.RENDEMENT_LIEU[lieu];
+  return kind ? seasonFactor(state, kind) : 1;
+}
+
+// Facteur d'eau d'un arrosage selon le lieu (1 pour la Serre).
+function waterSeasonFactor(state, lieu) {
+  return DATA.SAISONS.EAU_LIEUX.includes(lieu) ? seasonFactor(state, 'eau') : 1;
+}
 
 /* ---------- Lot 5 : plats cuisinés (objets calculés depuis DATA.recipes) ---------- */
 
@@ -1289,7 +1431,7 @@ function makeDevice(type, id, prix) {
   } else if (type === 'pompe') {
     d.debit = 0; // L/s réellement pompés au dernier tick
     d.conso = 0; // kWh/s consommés au dernier tick
-  } else if (type === 'moulin' || type === 'presse') {
+  } else if (type === 'moulin' || type === 'presse' || type === 'frigo') {
     d.conso = 0; // kWh/s consommés au dernier tick (0 en pause ou au repos)
   }
   return d;
@@ -1320,8 +1462,13 @@ function startFarm() {
   };
 }
 
+// Lot 8 : le réfrigérateur est un appareil du parc une fois construit.
+function fridgeDevices(state) {
+  return state.frigo && state.frigo.construit && state.frigo.appareil ? [state.frigo.appareil] : [];
+}
+
 function allDevices(state) {
-  return [...state.panneaux, ...state.batteries, state.pompe, ...stationDevices(state)];
+  return [...state.panneaux, ...state.batteries, state.pompe, ...stationDevices(state), ...fridgeDevices(state)];
 }
 
 function findDevice(state, id) {
@@ -1341,8 +1488,10 @@ function needsService(d) {
 }
 
 // Production nominale d'un panneau à son niveau et son usure actuels (kWh/s).
-function panelOutput(d) {
-  return DATA.GRID.panneau.kwhPerS[d.niveau - 1] * efficiency(d);
+// Lot 8 : avec `state`, le facteur solaire de la saison s'y applique.
+function panelOutput(d, state) {
+  const base = DATA.GRID.panneau.kwhPerS[d.niveau - 1] * efficiency(d);
+  return state ? base * seasonFactor(state, 'solaire') : base;
 }
 
 // Capacité utile d'une batterie (kWh) : capacité(niveau) × rendement.
@@ -1450,6 +1599,9 @@ function drawEnergy(state, energy) {
 // suivants y ajouteront le moulin, la presse et le réfrigérateur.
 // `run(state, dt)` prélève son énergie avec drawEnergy().
 const CONSUMERS = [
+  // Lot 8 : le frigo est une charge permanente, servie avant les autres pour que
+  // la nourriture passe avant l'eau et les transformations.
+  { id: 'frigo', run: runFridge },
   { id: 'pompe', run: runPump },
   { id: 'moulin', run: (state, dt) => runElectricStation(state, 'moulin', dt) },
   { id: 'presse', run: (state, dt) => runElectricStation(state, 'presse', dt) },
@@ -1492,7 +1644,7 @@ function tick(state, dt) {
   for (const p of state.panneaux) {
     p.prod = 0;
     if (p.allume && !isBroken(p)) {
-      const e = panelOutput(p) * dt;
+      const e = panelOutput(p, state) * dt;
       produced += e;
       p.prod = e / dt;
     }
@@ -1523,7 +1675,7 @@ function tick(state, dt) {
     if (d.type === 'panneau') worked = d.prod > EPS;
     else if (d.type === 'batterie') worked = d.entree > EPS || d.sortie > EPS;
     else if (d.type === 'pompe') worked = d.debit > EPS;
-    else if (d.type === 'moulin' || d.type === 'presse') worked = d.conso > EPS; // Lot 5 : il tourne vraiment
+    else if (d.type === 'moulin' || d.type === 'presse' || d.type === 'frigo') worked = d.conso > EPS; // Lots 5 et 8 : il tourne vraiment
     if (!worked) continue;
     d.usure = Math.min(DATA.WEAR.BREAKDOWN, d.usure + wear);
     if (isBroken(d)) {
@@ -1579,6 +1731,9 @@ function deviceStatus(state, d) {
     else if (d.charge >= batteryCapacity(d) * 0.98) { code = 'pleine'; label = 'Pleine'; }
     else if (d.charge <= EPS) { code = 'vide'; label = 'Vide'; }
     else { code = 'attente'; label = 'En attente'; }
+  } else if (d.type === 'frigo') {
+    if (state.frigo.alimente) { code = 'marche'; label = 'Alimenté'; }
+    else { code = 'attente'; label = 'Hors tension'; }
   } else if (d.type === 'moulin' || d.type === 'presse') {
     const job = state.stations[d.type].tache;
     if (!job) { code = 'repos'; label = 'Au repos'; }
@@ -1607,7 +1762,7 @@ function toggleDevice(state, id) {
   if (!d) return fail('Appareil introuvable.');
   if (isBroken(d)) return fail('Appareil en panne : il faut le réparer.');
   d.allume = !d.allume;
-  if (!d.allume && (d.type === 'moulin' || d.type === 'presse')) d.conso = 0;
+  if (!d.allume && (d.type === 'moulin' || d.type === 'presse' || d.type === 'frigo')) d.conso = 0;
   return { ok: true };
 }
 
@@ -1797,6 +1952,238 @@ function spoil(state) {
   return perdus;
 }
 
+/* ---------- Lot 8 : réfrigérateur ---------- */
+
+// state.frigo = { construit, appareil, items, alimenteS, eveilS, panneNuit, alimente }.
+// items : { item: [ { qty, nightsLeft, origin } ] }, mêmes lots que l'inventaire
+// mais au frais : leur nightsLeft est figé tant que le frigo est alimenté.
+// alimenteS et eveilS : secondes alimentées et secondes d'éveil depuis le réveil ;
+// panneNuit : le bloc nocturne n'a pas pu être payé ; alimente : le frigo a
+// reçu son énergie au dernier tick (❄️ ou ⚠️ à l'écran).
+
+function fridgeLots(state, item) {
+  const lots = state.frigo && state.frigo.items ? state.frigo.items[item] : null;
+  return Array.isArray(lots) ? lots : [];
+}
+
+function fridgeCount(state, item) {
+  return fridgeLots(state, item).reduce((t, lot) => t + lot.qty, 0);
+}
+
+// Quantités stockées au frigo : { item: quantité }.
+function fridgeCounts(state) {
+  const out = {};
+  if (!state.frigo || !state.frigo.items) return out;
+  for (const item of Object.keys(state.frigo.items)) {
+    const n = fridgeCount(state, item);
+    if (n > 0) out[item] = n;
+  }
+  return out;
+}
+
+function fridgeUnits(state) {
+  return Object.values(fridgeCounts(state)).reduce((t, n) => t + n, 0);
+}
+
+// Consommation du frigo en marche (kWh/s) : base + une part par unité stockée.
+function fridgeRate(state) {
+  const F = DATA.FRIGO;
+  return F.BASE_KWH_S + F.PAR_UNITE_KWH_S * fridgeUnits(state);
+}
+
+// Énergie que les batteries en service peuvent fournir (kWh).
+function availableEnergy(state) {
+  return state.batteries.reduce((t, b) => (b.allume && !isBroken(b) ? t + b.charge : t), 0);
+}
+
+// Besoin du bloc nocturne (kWh) et batterie suffisante pour la nuit ?
+function fridgeNightNeed(state) {
+  return fridgeRate(state) * DATA.FRIGO.BLOC_NUIT_S;
+}
+
+function fridgeCoversNight(state) {
+  return availableEnergy(state) + EPS >= fridgeNightNeed(state);
+}
+
+// Consommateur du parc, à chaque tick. Le frigo tourne si l'énergie de ce tick
+// est disponible en entier ; sinon il s'arrête (les batteries sont vides).
+function runFridge(state, dt) {
+  const f = state.frigo;
+  if (!f || !f.construit) return;
+  const d = f.appareil;
+  d.conso = 0;
+  f.eveilS += dt;
+  f.alimente = false;
+  if (!d.allume || isBroken(d)) return;
+  const need = fridgeRate(state) * dt;
+  if (availableEnergy(state) + EPS < need) return;
+  const got = drawEnergy(state, need);
+  d.conso = got / dt;
+  f.alimente = true;
+  f.alimenteS += dt;
+}
+
+// Retire jusqu'à `qty` unités d'une liste de lots (le plus ancien d'abord) et
+// renvoie les morceaux retirés, avec leur conservation et leur origine.
+function pullLots(lots, qty) {
+  const out = [];
+  let rest = qty;
+  for (const lot of lots) {
+    if (rest <= 0) break;
+    const n = Math.min(lot.qty, rest);
+    if (n > 0) {
+      out.push({ qty: n, nightsLeft: lot.nightsLeft, origin: lot.origin });
+      lot.qty -= n;
+      rest -= n;
+    }
+  }
+  return out;
+}
+
+// Range des morceaux dans une liste de lots, en les fusionnant s'ils ont la même
+// conservation et la même origine ; le plus ancien reste en tête.
+function pushLots(lots, pulled) {
+  for (const p of pulled) {
+    const same = lots.find((l) => l.nightsLeft === p.nightsLeft && l.origin === p.origin);
+    if (same) same.qty += p.qty;
+    else lots.push({ ...p });
+  }
+  lots.sort((a, b) => (lotRank(a) === lotRank(b) ? 0 : lotRank(a) < lotRank(b) ? -1 : 1));
+}
+
+// Déplace `qty` unités d'un aliment périssable de l'inventaire vers le frigo.
+// Les lots gardent leur compteur de conservation, qui se fige au frais.
+function moveToFridge(state, item, qty) {
+  if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
+  if (!DATA.items[item]) return fail('Objet inconnu.');
+  if (!isPerishable(item)) return fail(`${DATA.items[item].nom} ne périme pas : inutile de le ranger au frais.`);
+  const n = Math.min(Math.floor(Number(qty)) || 0, Math.floor(countItem(state, item) + EPS));
+  if (n <= 0) return fail('Rien à ranger.');
+  const inv = lotsOf(state, item);
+  const pulled = pullLots(inv, n);
+  const kept = inv.filter((l) => l.qty > 0);
+  if (kept.length) state.inventaire[item] = kept;
+  else delete state.inventaire[item];
+  const lots = fridgeLots(state, item);
+  pushLots(lots, pulled);
+  state.frigo.items[item] = lots;
+  return { ok: true, moved: n };
+}
+
+// Sort `qty` unités du frigo vers l'inventaire. Leur compteur reprend.
+function moveFromFridge(state, item, qty) {
+  if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
+  const n = Math.min(Math.floor(Number(qty)) || 0, fridgeCount(state, item));
+  if (n <= 0) return fail('Rien à sortir.');
+  const lots = fridgeLots(state, item);
+  const pulled = pullLots(lots, n);
+  const kept = lots.filter((l) => l.qty > 0);
+  if (kept.length) state.frigo.items[item] = kept;
+  else delete state.frigo.items[item];
+  const inv = lotsOf(state, item);
+  pushLots(inv, pulled);
+  state.inventaire[item] = inv;
+  return { ok: true, moved: n };
+}
+
+// Retire jusqu'à `qty` unités d'un aliment du frigo (le lot le plus ancien
+// d'abord) pour un repas. Renvoie le nombre retiré.
+function takeFromFridge(state, item, qty) {
+  const lots = fridgeLots(state, item);
+  const taken = pullLots(lots, qty).reduce((t, p) => t + p.qty, 0);
+  const kept = lots.filter((l) => l.qty > 0);
+  if (kept.length) state.frigo.items[item] = kept;
+  else if (state.frigo.items) delete state.frigo.items[item];
+  return taken;
+}
+
+function nightFridgeStats(state) {
+  if (!state.nuit) state.nuit = newNightStats();
+  if (!state.nuit.frigo) state.nuit.frigo = { kwh: 0, panne: false, vieillis: false };
+  return state.nuit.frigo;
+}
+
+// Étape nocturne « nightPower » : prélève d'un coup BLOC_NUIT_S secondes de
+// consommation. Si les batteries ne suffisent pas (ou si le frigo est éteint ou
+// en panne), la nuit compte comme une panne de froid.
+function nightPower(state) {
+  const f = state.frigo;
+  if (!f || !f.construit) return;
+  const stats = nightFridgeStats(state);
+  const d = f.appareil;
+  if (!d.allume || isBroken(d)) {
+    f.panneNuit = true;
+    stats.panne = true;
+    return;
+  }
+  const need = fridgeNightNeed(state);
+  const avail = availableEnergy(state);
+  const wanted = Math.min(need, avail);
+  // Un prélèvement de la nuit n'est pas une puissance : on ne touche pas aux
+  // compteurs d'affichage (kWh/s) des batteries.
+  const saved = state.batteries.map((b) => b.sortie);
+  drawEnergy(state, wanted);
+  state.batteries.forEach((b, i) => { b.sortie = saved[i]; });
+  stats.kwh = wanted;
+  if (avail + EPS < need) {
+    f.panneNuit = true;
+    stats.panne = true;
+  }
+}
+
+// Étape nocturne « fridgeNight » : si le frigo a été alimenté moins de
+// SEUIL_ALIMENTE du temps d'éveil, ou en cas de panne nocturne, chaque lot du
+// frigo perd PERTE_NUITS nuit de conservation (ceux qui arrivent à 0 sont
+// perdus). Les compteurs de la journée repartent à zéro.
+function fridgeNight(state) {
+  const f = state.frigo;
+  if (!f || !f.construit) return;
+  const F = DATA.FRIGO;
+  const stats = nightFridgeStats(state);
+  // Sans temps d'éveil observé (test, Dormir immédiat), rien n'a manqué de froid.
+  const ratio = f.eveilS > EPS ? f.alimenteS / f.eveilS : 1;
+  const warm = f.panneNuit || ratio < F.SEUIL_ALIMENTE - EPS;
+  if (warm) {
+    stats.vieillis = true;
+    if (!state.nuit.perdus) state.nuit.perdus = {};
+    for (const item of Object.keys(f.items)) {
+      const kept = [];
+      for (const lot of fridgeLots(state, item)) {
+        if (lot.nightsLeft === null) {
+          kept.push(lot);
+          continue;
+        }
+        lot.nightsLeft -= F.PERTE_NUITS;
+        if (lot.nightsLeft <= 0) state.nuit.perdus[item] = (state.nuit.perdus[item] || 0) + lot.qty;
+        else kept.push(lot);
+      }
+      if (kept.length) f.items[item] = kept;
+      else delete f.items[item];
+    }
+  }
+  f.alimenteS = 0;
+  f.eveilS = 0;
+  f.panneNuit = false;
+}
+
+function buildFridge(state) {
+  const f = state.frigo;
+  if (f.construit) return fail('Le Réfrigérateur est déjà construit.');
+  const cost = DATA.FRIGO.CONSTRUCTION;
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  openFridge(state);
+  return { ok: true, cost };
+}
+
+// Pose le frigo dans l'état (sans payer).
+function openFridge(state) {
+  const f = state.frigo;
+  f.construit = true;
+  if (!f.appareil) f.appareil = makeDevice('frigo', 'frigo', DATA.FRIGO.CONSTRUCTION);
+  f.alimente = true;
+}
+
 /* ---------- Lot 3 : Comptoir ---------- */
 
 // Plancher du coefficient d'achat d'un item (1,2 ; 2,0 pour les graines).
@@ -1942,26 +2329,51 @@ function mealOrder(state) {
   });
 }
 
+// Lot 8 : les stocks que la famille peut manger, dans l'ordre du repas. Une
+// entrée par aliment de l'inventaire (rang = nuits avant péremption) et une par
+// aliment du frigo (rang infini : au frais, il ne périme pas). Les entrées de
+// même rang passent par énergie décroissante, l'inventaire avant le frigo.
+// La réserve de semences protège d'abord l'inventaire (c'est là qu'on prend les
+// plants), puis le frigo.
+function mealEntries(state) {
+  const entries = [];
+  for (const item of mealOrder(state)) {
+    const reserve = state.famille.reserve[item] || 0;
+    const inv = countItem(state, item);
+    const cold = fridgeCount(state, item);
+    const invSpare = Math.max(0, inv - reserve);
+    const coldSpare = Math.max(0, cold - Math.max(0, reserve - inv));
+    if (invSpare > 0) entries.push({ item, froid: false, spare: invSpare, rank: nextExpiry(state, item) });
+    if (coldSpare > 0) entries.push({ item, froid: true, spare: coldSpare, rank: Infinity });
+  }
+  return entries.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank < b.rank ? -1 : 1;
+    return DATA.items[b.item].energie - DATA.items[a.item].energie;
+  });
+}
+
 // Repas de la nuit, calculé sans rien modifier (sert aussi à l'aperçu de
 // Dormir). Les quantités de la réserve de semences ne sont jamais mangées.
+// `mange` : total par aliment ; `froid` : la part prise dans le frigo (Lot 8).
 function planMeal(state) {
   const need = familyNeed(state);
   let covered = 0;
   const mange = {};
-  for (const item of mealOrder(state)) {
+  const froid = {};
+  for (const entry of mealEntries(state)) {
     if (covered >= need - EPS) break;
-    const spare = countItem(state, item) - (state.famille.reserve[item] || 0);
-    if (spare <= 0) continue;
-    const energy = DATA.items[item].energie;
-    const n = Math.min(spare, Math.ceil((need - covered) / energy - EPS));
+    const energy = DATA.items[entry.item].energie;
+    const n = Math.min(entry.spare, Math.ceil((need - covered) / energy - EPS));
     if (n <= 0) continue;
-    mange[item] = n;
+    mange[entry.item] = (mange[entry.item] || 0) + n;
+    if (entry.froid) froid[entry.item] = (froid[entry.item] || 0) + n;
     covered += n * energy;
   }
   return {
     besoin: need,
     energie: covered,
     mange,
+    froid,
     couverture: need > 0 ? Math.min(1, covered / need) : 1,
   };
 }
@@ -1990,7 +2402,7 @@ function updateHealth(state, coverage, bonus = 0) {
 }
 
 function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, bonusPlats: 0, termine: {}, auto: newAutoReport() };
+  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, bonusPlats: 0, termine: {}, auto: newAutoReport(), fruits: {}, frigo: { kwh: 0, panne: false, vieillis: false } };
 }
 
 // Bonus de santé d'une nuit : +1 par plat différent mangé, jusqu'à +3.
@@ -2003,7 +2415,11 @@ function dishBonus(mange) {
 // Première étape nocturne : le repas, puis la santé.
 function feedFamily(state) {
   const plan = planMeal(state);
-  for (const [item, n] of Object.entries(plan.mange)) takeItem(state, item, n);
+  for (const [item, n] of Object.entries(plan.mange)) {
+    const cold = plan.froid[item] || 0;
+    takeItem(state, item, n - cold);
+    if (cold > 0) takeFromFridge(state, item, cold);
+  }
   const avant = rawAverageHealth(state);
   const bonus = dishBonus(plan.mange);
   const nouveaux = updateHealth(state, plan.couverture, bonus);
@@ -2020,6 +2436,8 @@ function feedFamily(state) {
     perdus: {},
     oeufs: 0,
     auto: newAutoReport(),
+    fruits: {},
+    frigo: { kwh: 0, panne: false, vieillis: false },
   };
   return plan;
 }
@@ -2079,7 +2497,7 @@ function makePlots(count, lieu = DATA.POTAGER.LIEU) {
 
 // Toutes les parcelles de la ferme : Potager d'abord, puis Champ.
 function allPlots(state) {
-  return [...state.potager.parcelles, ...(state.champ ? state.champ.parcelles : [])];
+  return [...state.potager.parcelles, ...(state.champ ? state.champ.parcelles : []), ...(state.serre ? state.serre.parcelles : [])];
 }
 
 function findPlot(state, id) {
@@ -2125,8 +2543,21 @@ function isMature(plot) {
 }
 
 // Rendement d'une récolte au clic (× productivité) ou automatique (× 1).
-function harvestYield(state, culture, auto = false) {
-  return Math.round(DATA.crops[culture].rendement * (auto ? 1 : productivity(state)));
+// Lot 8 : avec `lieu`, le facteur de saison du lieu s'y applique (Potager, Champ ;
+// jamais la Serre).
+function harvestYield(state, culture, auto = false, lieu = null) {
+  const saison = lieu ? yieldSeasonFactor(state, lieu) : 1;
+  return Math.round(DATA.crops[culture].rendement * (auto ? 1 : productivity(state)) * saison + EPS);
+}
+
+// Eau d'un arrosage (L) : celle de la culture × le facteur d'eau de la saison
+// (sauf en Serre), arrondie au centième de litre.
+function waterCostFor(state, culture, lieu) {
+  return Math.round(DATA.crops[culture].litres * waterSeasonFactor(state, lieu) * 100) / 100;
+}
+
+function waterCost(state, plot) {
+  return waterCostFor(state, plot.culture, plot.lieu);
 }
 
 // Parcelles mûres regroupées par culture et par mode : [{ culture, nombre, montee }].
@@ -2166,7 +2597,7 @@ function water(state, plotId) {
   if (!plot.culture) return fail('Rien n\'est planté ici.');
   if (plot.arrose) return fail('Déjà arrosée : une fois par nuit.');
   if (isMature(plot)) return fail('Déjà mûre, inutile d\'arroser.');
-  const litres = DATA.crops[plot.culture].litres;
+  const litres = waterCost(state, plot);
   if (state.eau + EPS < litres) return fail('Pas assez d\'eau dans le réservoir.');
   state.eau = Math.max(0, state.eau - litres);
   plot.arrose = true;
@@ -2207,7 +2638,7 @@ function harvest(state, plotId, auto = false) {
   if (plot.montee) {
     gain(def.graines.item, def.graines.quantite);
   } else {
-    gain(cropProduct(culture), harvestYield(state, culture, auto));
+    gain(cropProduct(culture), harvestYield(state, culture, auto, plot.lieu));
     if (def.graines.mode === 'recolte') gain(def.graines.item, randomInt(state, def.graines.min, def.graines.max));
   }
   plot.culture = null;
@@ -2274,6 +2705,46 @@ function upgradeChamp(state) {
   c.niveau += 1;
   const target = DATA.CHAMP.PARCELLES[c.niveau - 1];
   for (let n = c.parcelles.length + 1; n <= target; n++) c.parcelles.push(makePlot(n, DATA.CHAMP.LIEU));
+  return { ok: true, cost };
+}
+
+/* ---------- Lot 8 : Serre ---------- */
+
+// state.serre = { construit, niveau, parcelles }. Mêmes règles que le Potager
+// (arrosage, pousse, récolte), sans aucun modificateur de saison.
+
+function serreUpgradeCost(state) {
+  return state.serre.niveau >= DATA.LEVEL_MAX ? null : DATA.SERRE.COUT[state.serre.niveau];
+}
+
+function buildSerre(state) {
+  const g = state.serre;
+  if (g.construit) return fail('La Serre est déjà construite.');
+  const cost = DATA.SERRE.CONSTRUCTION;
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  openSerre(state);
+  return { ok: true, cost };
+}
+
+// Pose la Serre au niveau 1 (sans payer) et crée ses parcelles.
+function openSerre(state) {
+  const g = state.serre;
+  g.construit = true;
+  g.niveau = 1;
+  g.parcelles = makePlots(DATA.SERRE.PARCELLES[0], DATA.SERRE.LIEU);
+}
+
+function upgradeSerre(state) {
+  const g = state.serre;
+  if (!g.construit) return fail('Construis d\'abord la Serre.');
+  const cost = serreUpgradeCost(state);
+  if (cost === null) return fail('Niveau maximum atteint.');
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  g.niveau += 1;
+  const target = DATA.SERRE.PARCELLES[g.niveau - 1];
+  for (let n = g.parcelles.length + 1; n <= target; n++) g.parcelles.push(makePlot(n, DATA.SERRE.LIEU));
   return { ok: true, cost };
 }
 
@@ -2572,8 +3043,10 @@ function growSheep(state) {
   const M = DATA.ANIMAUX.mouton;
   const p = state.paturage;
   const enough = p.moutons.length <= pastureCapacity(state);
+  // Lot 8 : le gain de poids suit la saison (arrondi au centième de kg).
+  const gain = M.gainKg * seasonFactor(state, 'moutons');
   for (const m of p.moutons) {
-    if (enough) m.poids = Math.min(M.poidsMax, m.poids + M.gainKg);
+    if (enough) m.poids = Math.round(Math.min(M.poidsMax, m.poids + gain) * 100) / 100;
     m.laine = Math.min(M.joursLaine, m.laine + 1);
   }
 }
@@ -2599,6 +3072,129 @@ function slaughter(state, id) {
   p.moutons.splice(i, 1);
   addItem(state, DATA.ANIMAUX.mouton.viande, portions);
   return { ok: true, portions };
+}
+
+/* ---------- Lot 8 : Verger ---------- */
+
+// state.verger = { construit, places, achetes, compteur, arbres }.
+// places : emplacements au total (départ compris) ; achetes : emplacements
+// achetés en plus (ils fixent le prix du suivant) ; arbres : { id, espece,
+// plantee } où plantee est la nuit de plantation.
+
+function orchardFree(state) {
+  return Math.max(0, state.verger.places - state.verger.arbres.length);
+}
+
+// Prix du prochain emplacement : 50 × 1,25^n, n = emplacements déjà achetés.
+function orchardSlotPrice(state) {
+  const E = DATA.VERGER.EMPLACEMENT;
+  return roundCoins(E.base * Math.pow(E.croissance, state.verger.achetes));
+}
+
+// Aménage le Verger (gratuit tant que DATA.VERGER.CONSTRUCTION vaut 0).
+function buildVerger(state) {
+  const v = state.verger;
+  if (v.construit) return fail('Le Verger est déjà aménagé.');
+  const cost = DATA.VERGER.CONSTRUCTION;
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  openVerger(state);
+  return { ok: true, cost };
+}
+
+function openVerger(state) {
+  const v = state.verger;
+  v.construit = true;
+  if (v.places < DATA.VERGER.EMPLACEMENTS_DEPART) v.places = DATA.VERGER.EMPLACEMENTS_DEPART;
+}
+
+function buyOrchardSlot(state) {
+  const v = state.verger;
+  if (!v.construit) return fail('Aménage d\'abord le Verger (onglet Ferme).');
+  const cost = orchardSlotPrice(state);
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  v.places += 1;
+  v.achetes += 1;
+  return { ok: true, cost, places: v.places };
+}
+
+// Achat d'un arbre au Comptoir : prix fixe, refusé sans Verger, sans
+// emplacement libre ou sans assez de pièces. L'arbre est planté aussitôt.
+function buyTree(state, espece) {
+  const def = DATA.VERGER.ARBRES[espece];
+  if (!def) return fail('Cet arbre n\'est pas en vente.');
+  const v = state.verger;
+  if (!v.construit) return fail('Aménage d\'abord le Verger (onglet Ferme).');
+  if (orchardFree(state) <= 0) return fail('Le Verger est plein : achète un emplacement.');
+  if (state.pieces + EPS < def.prix) return fail('Pas assez de pièces.');
+  spend(state, def.prix);
+  v.compteur += 1;
+  const tree = { id: `arbre-${v.compteur}`, espece, plantee: state.day };
+  v.arbres.push(tree);
+  return { ok: true, cost: def.prix, id: tree.id };
+}
+
+// Nuits écoulées depuis la plantation, au réveil (0 le jour de la plantation).
+function treeAge(state, tree) {
+  return Math.max(0, state.day - tree.plantee);
+}
+
+function isTreeAdult(state, tree) {
+  return treeAge(state, tree) >= DATA.VERGER.MATURITE;
+}
+
+// Fenêtre de production, en numéros de nuit de l'année (1 à 40) : les dernières
+// nuits de l'été, puis toute la saison de fin (l'automne).
+function orchardWindow() {
+  const S = DATA.SAISONS;
+  const W = DATA.VERGER.FENETRE;
+  const debut = S.ORDRE.indexOf(W.debut.saison) * S.LONGUEUR + (S.LONGUEUR - W.debut.dernieresNuits) + 1;
+  const fin = (S.ORDRE.indexOf(W.fin.saison) + 1) * S.LONGUEUR;
+  return { debut, fin };
+}
+
+// Un arbre adulte donne ses fruits la PERIODE-ième nuit de la fenêtre, puis
+// toutes les PERIODE nuits : nuits 18, 21, 24, 27 et 30 de l'année.
+function orchardProducesOn(day) {
+  const w = orchardWindow();
+  const y = yearNight(day);
+  if (y < w.debut || y > w.fin) return false;
+  return (y - w.debut + 1) % DATA.VERGER.PERIODE === 0;
+}
+
+// Prochaine nuit (numéro absolu, à partir de `day` compris) où un arbre déjà
+// adulte à ce moment donne des fruits.
+function nextOrchardNight(day) {
+  for (let d = Math.max(1, day); d < day + 2 * DATA.SAISONS.LONGUEUR * DATA.SAISONS.ORDRE.length; d++) {
+    if (orchardProducesOn(d)) return d;
+  }
+  return null;
+}
+
+// Nuit (numéro absolu) de la prochaine récolte d'un arbre, à partir de la nuit
+// courante comprise : la première nuit de production où il aura MATURITÉ nuits.
+function treeNextHarvest(state, tree) {
+  for (let d = state.day; d < state.day + 3 * DATA.SAISONS.LONGUEUR * DATA.SAISONS.ORDRE.length; d++) {
+    if (orchardProducesOn(d) && d - tree.plantee + 1 >= DATA.VERGER.MATURITE) return d;
+  }
+  return null;
+}
+
+// Étape nocturne (après les moutons) : les arbres adultes donnent leurs fruits
+// dans la fenêtre de production. Ils sont adultes à la nuit qui complète leur
+// MATURITÉ-ième nuit depuis la plantation.
+function growOrchard(state) {
+  const v = state.verger;
+  if (!v || !v.construit) return;
+  if (!state.nuit.fruits) state.nuit.fruits = {};
+  if (!orchardProducesOn(state.day)) return;
+  for (const tree of v.arbres) {
+    if (state.day - tree.plantee + 1 < DATA.VERGER.MATURITE) continue;
+    const fruit = DATA.VERGER.ARBRES[tree.espece].fruit;
+    addItem(state, fruit, DATA.VERGER.FRUITS);
+    state.nuit.fruits[fruit] = (state.nuit.fruits[fruit] || 0) + DATA.VERGER.FRUITS;
+  }
 }
 
 /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
@@ -3003,6 +3599,19 @@ function buildMorningReport(state) {
     lainePrete: sheepToShear(state),
     // Lot 7 : ce que les automatisations ont fait (ou n'ont pas pu faire) cette nuit.
     auto: { ...newAutoReport(), ...(state.nuit.auto || {}), recoltes: { ...((state.nuit.auto || {}).recoltes || {}) } },
+    // Lot 8 : saison du réveil, fruits du verger, nuit du frigo (kWh prélevés,
+    // panne de froid, lots qui ont perdu une nuit) et contenu du frigo.
+    saison: currentSeason(state),
+    nuitDeSaison: seasonNight(state),
+    fruits: { ...(state.nuit.fruits || {}) },
+    frigo: {
+      construit: !!state.frigo.construit,
+      kwh: (state.nuit.frigo || {}).kwh || 0,
+      panne: !!(state.nuit.frigo || {}).panne,
+      vieillis: !!(state.nuit.frigo || {}).vieillis,
+      unites: fridgeUnits(state),
+      couvreLaNuit: fridgeCoversNight(state),
+    },
   };
 }
 
@@ -3168,6 +3777,36 @@ function testWearMill(state) {
   return testSetWear(state, d.id, DATA.WEAR.BREAKDOWN);
 }
 
+// Lot 8 : saute à la première nuit de la saison suivante (sans passer la nuit :
+// rien ne pousse, rien ne se mange).
+function testNextSeason(state) {
+  const L = DATA.SAISONS.LONGUEUR;
+  state.day = (Math.floor((state.day - 1) / L) + 1) * L + 1;
+  return { ok: true, saison: currentSeason(state) };
+}
+
+// Lot 8 : construit gratuitement la Serre (niveau 1), le Verger et le Réfrigérateur.
+function testBuildSerre(state) {
+  if (!state.serre.construit) openSerre(state);
+  return { ok: true };
+}
+
+function testBuildVerger(state) {
+  openVerger(state);
+  return { ok: true };
+}
+
+function testBuildFridge(state) {
+  openFridge(state);
+  return { ok: true };
+}
+
+// Lot 8 : toutes les batteries à 0 kWh.
+function testEmptyBatteries(state) {
+  for (const b of state.batteries) b.charge = 0;
+  return { ok: true };
+}
+
 // Lot 2 : toutes les parcelles plantées deviennent mûres.
 function testRipenAll(state) {
   for (const p of allPlots(state)) {
@@ -3261,6 +3900,16 @@ function startLot7() {
   return { technologies: [] };
 }
 
+// Lot 8 : Serre, Verger et Réfrigérateur, tous à construire. La saison se
+// déduit de la nuit courante : elle n'est pas stockée.
+function startLot8() {
+  return {
+    serre: { construit: false, niveau: 1, parcelles: [] },
+    verger: { construit: false, places: DATA.VERGER.EMPLACEMENTS_DEPART, achetes: 0, compteur: 0, arbres: [] },
+    frigo: { construit: false, appareil: null, items: {}, alimenteS: 0, eveilS: 0, panneNuit: false, alimente: true },
+  };
+}
+
 function createInitialState(seed = 1) {
   return {
     version: STATE_VERSION,
@@ -3277,6 +3926,7 @@ function createInitialState(seed = 1) {
     ...startLot5(),
     ...startLot6(),
     ...startLot7(),
+    ...startLot8(),
   };
 }
 
@@ -3345,6 +3995,14 @@ const MIGRATIONS = {
     out.nuit = { auto: newAutoReport(), ...(state.nuit && typeof state.nuit === 'object' ? state.nuit : {}) };
     return out;
   },
+  // v8 (Lot 7) → v9 (Lot 8) : Serre, Verger et Réfrigérateur (à construire) ; la
+  // saison se déduit de la nuit courante, il n'y a rien d'autre à convertir.
+  8: (state) => ({
+    ...startLot8(),
+    ...state,
+    nuit: { fruits: {}, frigo: { kwh: 0, panne: false, vieillis: false }, ...(state.nuit && typeof state.nuit === 'object' ? state.nuit : {}) },
+    version: 9,
+  }),
 };
 
 // Applique les migrations successives à une sauvegarde { v, t, s } (ou à un
@@ -3486,7 +4144,7 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 8);
+  assertEqual(s.version, 9);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
@@ -3583,6 +4241,27 @@ test('générateur aléatoire reproductible à graine égale', () => {
   const rngC = mulberry32(9999);
   assert(rngC() !== seqA[0], 'deux graines différentes ne doivent pas (en pratique) produire la même première valeur');
 });
+
+// Lots 1 à 7 : ces tests vérifient les règles de base (rendements, eau, poids
+// des moutons), sans modificateur de saison. Les quatre saisons passent à ×1 le
+// temps du test (le printemps de la nuit 1 vaut sinon potager ×1,1 et moutons
+// ×1,2, et les longues séries de nuits traversent l'hiver) ; les modificateurs
+// eux-mêmes sont testés dans les tests du Lot 8.
+function neutralSeasons(fn) {
+  const saved = JSON.parse(JSON.stringify(DATA.SAISONS.MODS));
+  for (const mods of Object.values(DATA.SAISONS.MODS)) {
+    for (const k of Object.keys(mods)) mods[k] = 1;
+  }
+  try {
+    return fn();
+  } finally {
+    for (const [saison, mods] of Object.entries(saved)) Object.assign(DATA.SAISONS.MODS[saison], mods);
+  }
+}
+
+function testBase(name, fn) {
+  test(name, () => neutralSeasons(fn));
+}
 
 /* ---------- Lot 1 : heure, parc électrique, eau, Dormir ---------- */
 
@@ -4137,7 +4816,8 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
     assertEqual([c[k].graines.mode, c[k].graines.min, c[k].graines.max], ['recolte', 1, 2]);
   }
   // Lot 4 : blé et tournesol sont des cultures du Champ.
-  for (const k of ['carotte', 'patate', 'tomate', 'courgette', 'aubergine']) assertEqual(c[k].lieux, ['potager']);
+  for (const k of ['carotte', 'patate']) assertEqual(c[k].lieux, ['potager']);
+  for (const k of ['tomate', 'courgette', 'aubergine']) assertEqual(c[k].lieux, ['potager', 'serre']); // Lot 8 : la Serre
   for (const k of ['ble', 'tournesol']) assertEqual(c[k].lieux, ['champ']);
 });
 
@@ -4267,7 +4947,7 @@ test('arroser une parcelle mûre est refusé (l\'eau n\'est pas gaspillée)', ()
   assertEqual(s.eau, 40);
 });
 
-test('récolte manuelle : rendement × productivité selon la santé', () => {
+testBase('récolte manuelle : rendement × productivité selon la santé', () => {
   const s = garden();
   const cases = [[100, 10], [80, 10], [60, 8], [30, 5], [10, 3]]; // 10 × 1 / 1 / 0,8 / 0,5 / 0,25 (arrondi)
   cases.forEach(([sante, attendu], i) => {
@@ -4282,7 +4962,7 @@ test('récolte manuelle : rendement × productivité selon la santé', () => {
   });
 });
 
-test('récolte automatique : jamais pénalisée par la santé', () => {
+testBase('récolte automatique : jamais pénalisée par la santé', () => {
   const s = garden();
   setHealth(s, 10);
   plantRipe(s, 'potager-1', 'carotte');
@@ -4292,7 +4972,7 @@ test('récolte automatique : jamais pénalisée par la santé', () => {
   assertEqual(harvestYield(s, 'carotte', true), 10);
 });
 
-test('récolte : la parcelle est libérée, refus si pas mûre ou vide', () => {
+testBase('récolte : la parcelle est libérée, refus si pas mûre ou vide', () => {
   const s = garden();
   plant(s, 'potager-1', 'patate');
   assertEqual(harvest(s, 'potager-1').ok, false, 'pas mûre');
@@ -4361,7 +5041,7 @@ test('graines rendues : montée en graine = 6 graines et aucune carotte', () => 
   assertEqual(countItem(s, 'graine_carotte'), before);
 });
 
-test('graines rendues : tomate, courgette et aubergine rendent 1 à 2 graines, reproductibles', () => {
+testBase('graines rendues : tomate, courgette et aubergine rendent 1 à 2 graines, reproductibles', () => {
   function run(seed, culture) {
     const s = createInitialState(seed);
     setHealth(s, 100);
@@ -4608,13 +5288,16 @@ test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de g
 });
 
 test('ordre des étapes nocturnes : repas et santé, automatisations, pousse, ponte, moutons, préparations, puis péremption en dernier', () => {
-  assertEqual(NIGHT_STEPS.length, 7);
+  assertEqual(NIGHT_STEPS.length, 10); // Lot 8 : verger, nightPower et fridgeNight s'ajoutent
   assert(NIGHT_STEPS[0] === feedFamily, 'première étape : repas et santé');
   assert(NIGHT_STEPS[1] === autoTasks, 'deuxième étape (Lot 7) : automatisations, juste après le repas');
   assert(NIGHT_STEPS[2] === growAll, 'troisième étape : pousse');
   assert(NIGHT_STEPS[3] === layEggs, 'quatrième étape : ponte');
   assert(NIGHT_STEPS[4] === growSheep, 'cinquième étape : les moutons grossissent, juste après la ponte');
-  assert(NIGHT_STEPS[5] === finishPreparations, 'sixième étape : les préparations se terminent');
+  assert(NIGHT_STEPS[5] === growOrchard, 'sixième étape (Lot 8) : le verger, juste après les moutons');
+  assert(NIGHT_STEPS[6] === finishPreparations, 'septième étape : les préparations se terminent');
+  assert(NIGHT_STEPS[7] === nightPower, 'huitième étape (Lot 8) : le bloc nocturne du frigo');
+  assert(NIGHT_STEPS[8] === fridgeNight, 'neuvième étape (Lot 8) : la panne de froid éventuelle');
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
@@ -5062,7 +5745,7 @@ test('Comptoir : un item acheté arrive avec sa conservation pleine et l\'origin
   assertEqual(lotsOf(s, 'graine_tomate').slice(-1)[0].nightsLeft, null);
 });
 
-test('origine des lots : une récolte donne « produit », le Comptoir « acheté »', () => {
+testBase('origine des lots : une récolte donne « produit », le Comptoir « acheté »', () => {
   const s = garden();
   setInv(s, { graine_tomate: 1 });
   plantRipe(s, 'potager-1', 'tomate');
@@ -6419,7 +7102,7 @@ test('surface : refusée sans Pâturage, sans pièces, ou s\'il reste une place 
   assertEqual(buyPasture(s).ok, false, 'la nouvelle place n\'est pas encore prise');
 });
 
-test('croissance : +0,5 kg par nuit, plafonnée à 50 kg', () => {
+testBase('croissance : +0,5 kg par nuit, plafonnée à 50 kg', () => {
   const s = pature();
   fillSheep(s, 1);
   const m = s.paturage.moutons[0];
@@ -6434,7 +7117,7 @@ test('croissance : +0,5 kg par nuit, plafonnée à 50 kg', () => {
   assertEqual(s.day, 113);
 });
 
-test('croissance : 60 nuits pour passer de 20 à 50 kg', () => {
+testBase('croissance : 60 nuits pour passer de 20 à 50 kg', () => {
   const s = pature();
   fillSheep(s, 1);
   for (let i = 0; i < 59; i++) sleepOnce(s);
@@ -6443,7 +7126,7 @@ test('croissance : 60 nuits pour passer de 20 à 50 kg', () => {
   assertEqual(s.paturage.moutons[0].poids, 50);
 });
 
-test('growSheep : tous les moutons grossissent, seulement tant que le pâturage suffit', () => {
+testBase('growSheep : tous les moutons grossissent, seulement tant que le pâturage suffit', () => {
   const s = pature();
   fillSheep(s, 3);
   growSheep(s);
@@ -6529,7 +7212,7 @@ test('abattage : la surface achetée reste acquise et la place se libère', () =
   assertEqual(s.paturage.ha, 0.55);
 });
 
-test('abattage : viande rendue selon le poids réel après plusieurs nuits', () => {
+testBase('abattage : viande rendue selon le poids réel après plusieurs nuits', () => {
   const s = pature();
   fillSheep(s, 1);
   for (let i = 0; i < 25; i++) sleepOnce(s);
@@ -6565,7 +7248,7 @@ test('rapport de réveil : moutons présents et laine prête', () => {
   assertEqual([rep.moutons, rep.lainePrete], [0, 0]);
 });
 
-test('nuit : growSheep passe juste après la ponte et ne perturbe ni le repas ni les œufs', () => {
+testBase('nuit : growSheep passe juste après la ponte et ne perturbe ni le repas ni les œufs', () => {
   const s = pature();
   testAddHens(s, 4);
   fillSheep(s, 2);
@@ -6596,7 +7279,7 @@ test('mode test Lot 6 : +3 moutons, poids maximum, laine prête', () => {
   assertEqual(slaughter(s, 'mouton-2').portions, 50);
 });
 
-test('sérialisation JSON : Pâturage et moutons font l\'aller-retour et la partie continue à l\'identique', () => {
+testBase('sérialisation JSON : Pâturage et moutons font l\'aller-retour et la partie continue à l\'identique', () => {
   const s = pature();
   fillSheep(s, 3);
   sleepOnce(s);
@@ -6701,7 +7384,7 @@ test('arrosage automatique : une parcelle déjà arrosée à la main n\'est pas 
   assertEqual(autoTasks(t).arrosees, 1);
 });
 
-test('récolte automatique : parcelles mûres seulement, jamais celles montées en graine', () => {
+testBase('récolte automatique : parcelles mûres seulement, jamais celles montées en graine', () => {
   const s = auto5('potager');
   plantRipe(s, 'potager-1', 'carotte');
   plantRipe(s, 'potager-2', 'carotte');
@@ -6755,7 +7438,7 @@ test('nourrissage automatique : Poulailler niveau 5, et pas avant', () => {
   assertEqual(r2.bleConsomme, 2);
 });
 
-test('les automatisations ne sont jamais réduites par une santé basse (les gestes au clic, si)', () => {
+testBase('les automatisations ne sont jamais réduites par une santé basse (les gestes au clic, si)', () => {
   const s = auto5('potager', 'poulailler');
   testAddHens(s, 4);
   testAddWheat(s, 10);
@@ -6789,7 +7472,7 @@ test('eau ou blé insuffisants : les automatisations servent ce qu\'elles peuven
   assertEqual(s.silo.ble, 0);
 });
 
-test('semis automatique : sans le nœud, la parcelle récoltée reste vide', () => {
+testBase('semis automatique : sans le nœud, la parcelle récoltée reste vide', () => {
   const s = auto5('potager');
   plantRipe(s, 'potager-1', 'patate');
   sleepOnce(s);
@@ -6797,7 +7480,7 @@ test('semis automatique : sans le nœud, la parcelle récoltée reste vide', () 
   assertEqual(countItem(s, 'patate'), 5 + 8);
 });
 
-test('semis automatique : replante la même culture, arrosée dans la foulée', () => {
+testBase('semis automatique : replante la même culture, arrosée dans la foulée', () => {
   const s = auto5('potager');
   s.technologies.push('semis_auto');
   plantRipe(s, 'potager-1', 'patate');
@@ -6812,7 +7495,7 @@ test('semis automatique : replante la même culture, arrosée dans la foulée', 
   assertEqual(r.auto.semees, 2);
 });
 
-test('semis automatique : respecte la réserve de semences', () => {
+testBase('semis automatique : respecte la réserve de semences', () => {
   // 5 patates en stock + 8 récoltées = 13 avant le semis.
   const essai = (reserve) => {
     const s = auto5('potager');
@@ -7000,7 +7683,7 @@ test('mode test Lot 7 : un bâtiment au niveau 5, tous les nœuds débloqués', 
   assertEqual(t, s, 'l\'état reste sérialisable');
 });
 
-test('rapport de réveil : ce que les automatisations ont fait', () => {
+testBase('rapport de réveil : ce que les automatisations ont fait', () => {
   const s = auto5('potager', 'champ', 'poulailler');
   s.technologies.push('semis_auto');
   testAddHens(s, 4);
@@ -7016,7 +7699,7 @@ test('rapport de réveil : ce que les automatisations ont fait', () => {
   assertEqual([rn.auto.potager, rn.auto.champ, rn.auto.poulailler, rn.auto.arrosees], [false, false, false, 0]);
 });
 
-test('une nuit complète au niveau 5 : arrosage, pousse, récolte et semis s\'enchaînent', () => {
+testBase('une nuit complète au niveau 5 : arrosage, pousse, récolte et semis s\'enchaînent', () => {
   const s = auto5('potager');
   s.technologies.push('semis_auto');
   s.pompe.allume = true;
@@ -7063,7 +7746,7 @@ test('migration v7 (Lot 6) → v8 : technologies vides, réglage de semis sur ch
   delete v7.nuit.auto;
   v7.champ = { construit: true, niveau: 1, parcelles: [{ id: 'champ-1', lieu: 'champ', culture: 'ble', stade: 3, arrose: true, montee: false }] };
   const m = migrate({ v: 7, t: 0, s: v7 });
-  assertEqual(m.version, 8);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces], [40, 900]);
   assertEqual(m.technologies, []);
   assertEqual(m.potager.parcelles.every((p) => p.semis === 'meme' && p.verrou === null), true);
@@ -7088,6 +7771,731 @@ test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage',
   assertEqual(buyTech(s, 'reveil_1').ok, false, 'pas assez de pièces (50)');
   s.pieces = 400;
   assertEqual(buyTech(s, 'reveil_1').ok, true, 'la liste est recréée');
+});
+
+/* ---------- Lot 8 : saisons, Serre, Verger, Réfrigérateur ---------- */
+
+// Aliments protégés du repas : la famille ne touche pas à ce qui est en réserve.
+function protect(s, ...items) {
+  for (const item of items) s.famille.reserve[item] = 99999;
+}
+
+function coldRoom({ charge = true } = {}) {
+  const s = farm();
+  s.pieces = 5000;
+  assert(buildFridge(s).ok, 'construire le Réfrigérateur');
+  if (charge) testFillBatteries(s);
+  s.panneaux[0].allume = false; // seul le frigo consomme, rien ne recharge
+  return s;
+}
+
+function orchard() {
+  const s = garden();
+  s.pieces = 5000;
+  assert(buildVerger(s).ok, 'aménager le Verger');
+  return s;
+}
+
+test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
+  const S = DATA.SAISONS;
+  assertEqual(S.LONGUEUR, 10);
+  assertEqual(S.ORDRE, ['printemps', 'ete', 'automne', 'hiver']);
+  assertEqual(S.MODS.printemps, { solaire: 1.0, potager: 1.1, eau: 1.0, champ: 1.0, moutons: 1.2 });
+  assertEqual(S.MODS.ete, { solaire: 1.3, potager: 1.0, eau: 1.3, champ: 1.2, moutons: 1.0 });
+  assertEqual(S.MODS.automne, { solaire: 0.9, potager: 1.0, eau: 0.9, champ: 0.9, moutons: 1.0 });
+  assertEqual(S.MODS.hiver, { solaire: 0.7, potager: 0.7, eau: 0.8, champ: 0.7, moutons: 0.8 });
+  assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 400, PARCELLES: [6, 9, 12, 15, 18], COUT: [0, 300, 600, 1000, 1800] });
+  const V = DATA.VERGER;
+  assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 50, 1.25]);
+  assertEqual([V.MATURITE, V.FRUITS, V.PERIODE], [15, 6, 3]);
+  assertEqual([V.ARBRES.pommier.prix, V.ARBRES.poirier.prix], [40, 40]);
+  assertEqual([V.ARBRES.pommier.fruit, V.ARBRES.poirier.fruit], ['pomme', 'poire']);
+  for (const fruit of ['pomme', 'poire']) {
+    assertEqual([DATA.items[fruit].energie, DATA.items[fruit].prix, shelfLife(fruit)], [8, 2, 7]);
+  }
+  const F = DATA.FRIGO;
+  assertEqual([F.CONSTRUCTION, F.BASE_KWH_S, F.PAR_UNITE_KWH_S, F.BLOC_NUIT_S, F.SEUIL_ALIMENTE], [600, 0.005, 0.00005, 30, 0.5]);
+});
+
+test('état initial Lot 8 : Serre, Verger et Réfrigérateur à construire', () => {
+  const s = createInitialState(1);
+  assertEqual(s.serre, { construit: false, niveau: 1, parcelles: [] });
+  assertEqual(s.verger, { construit: false, places: 2, achetes: 0, compteur: 0, arbres: [] });
+  assertEqual(s.frigo.construit, false);
+  assertEqual(s.frigo.appareil, null);
+  assertEqual(allDevices(s).some((d) => d.type === 'frigo'), false);
+  assertEqual(currentSeason(s), 'printemps');
+});
+
+/* --- saisons --- */
+
+test('saisons : changement aux nuits 11, 21 et 31, retour au printemps à la nuit 41', () => {
+  const at = (day) => currentSeason({ day });
+  assertEqual([1, 5, 10].map(at), ['printemps', 'printemps', 'printemps']);
+  assertEqual([11, 15, 20].map(at), ['ete', 'ete', 'ete']);
+  assertEqual([21, 25, 30].map(at), ['automne', 'automne', 'automne']);
+  assertEqual([31, 35, 40].map(at), ['hiver', 'hiver', 'hiver']);
+  assertEqual([41, 50, 51, 81].map(at), ['printemps', 'printemps', 'ete', 'printemps']);
+  assertEqual([1, 10, 11, 20, 40, 41].map((day) => seasonNight({ day })), [1, 10, 1, 10, 10, 1]);
+});
+
+test('saisons : la saison suit la nuit courante quand on dort', () => {
+  const s = garden();
+  const seen = [];
+  for (let i = 0; i < 42; i++) {
+    seen.push(currentSeason(s));
+    sleepOnce(s);
+  }
+  assertEqual(seen[0], 'printemps');
+  assertEqual([seen[9], seen[10], seen[19], seen[20], seen[29], seen[30], seen[39], seen[40]],
+    ['printemps', 'ete', 'ete', 'automne', 'automne', 'hiver', 'hiver', 'printemps']);
+  assertEqual(s.report.saison, currentSeason(s));
+});
+
+test('seasonFactor : les cinq modificateurs de chaque saison', () => {
+  const s = createInitialState(1);
+  const all = (kind) => [1, 11, 21, 31].map((day) => { s.day = day; return seasonFactor(s, kind); });
+  assertEqual(all('solaire'), [1.0, 1.3, 0.9, 0.7]);
+  assertEqual(all('potager'), [1.1, 1.0, 1.0, 0.7]);
+  assertEqual(all('eau'), [1.0, 1.3, 0.9, 0.8]);
+  assertEqual(all('champ'), [1.0, 1.2, 0.9, 0.7]);
+  assertEqual(all('moutons'), [1.2, 1.0, 1.0, 0.8]);
+});
+
+test('saisons : la production solaire suit la saison', () => {
+  const at = (day) => {
+    const s = farm(); // neuf à chaque saison : pas d'usure d'un test à l'autre
+    s.day = day;
+    tick(s, 1);
+    return s.panneaux[0].prod;
+  };
+  assert(near(at(1), 0.03), 'printemps ×1,0');
+  assert(near(at(11), 0.039), 'été ×1,3');
+  assert(near(at(21), 0.027), 'automne ×0,9');
+  assert(near(at(31), 0.021), 'hiver ×0,7');
+});
+
+test('saisons : le rendement du potager suit la saison (10 carottes au départ)', () => {
+  const yieldAt = (day) => {
+    const s = garden();
+    s.day = day;
+    plantRipe(s, 'potager-1', 'carotte');
+    return harvest(s, 'potager-1').items.carotte;
+  };
+  assertEqual([yieldAt(1), yieldAt(11), yieldAt(21), yieldAt(31)], [11, 10, 10, 7]);
+});
+
+test('saisons : le rendement du champ suit la saison (8 blés au départ)', () => {
+  const yieldAt = (day) => {
+    const s = ranch({ champ: true });
+    s.day = day;
+    testAddWheat(s);
+    plantRipe(s, 'champ-1', 'ble');
+    const r = harvest(s, 'champ-1');
+    return r.items.ble;
+  };
+  // 8 × 1,0 / 1,2 / 0,9 / 0,7 = 8 / 9,6 / 7,2 / 5,6, arrondi
+  assertEqual([yieldAt(1), yieldAt(11), yieldAt(21), yieldAt(31)], [8, 10, 7, 6]);
+});
+
+test('saisons : l\'eau par arrosage suit la saison, la récolte automatique aussi', () => {
+  const litres = (day) => {
+    const s = garden();
+    s.day = day;
+    plant(s, 'potager-1', 'carotte');
+    const before = s.eau;
+    assert(water(s, 'potager-1').ok);
+    return Math.round((before - s.eau) * 100) / 100;
+  };
+  assertEqual([litres(1), litres(11), litres(21), litres(31)], [2, 2.6, 1.8, 1.6]);
+  // la récolte automatique n'est pas réduite par la santé, mais suit la saison
+  const s = garden();
+  s.day = 31;
+  assertEqual(harvestYield(s, 'carotte', true, 'potager'), 7);
+  assertEqual(harvestYield(s, 'carotte', true), 10, 'sans lieu, pas de saison');
+});
+
+test('saisons : la croissance des moutons suit la saison', () => {
+  const weightAt = (day) => {
+    const s = pature();
+    s.day = day;
+    assert(buySheep(s).ok);
+    growSheep(s);
+    return s.paturage.moutons[0].poids;
+  };
+  assertEqual([weightAt(1), weightAt(11), weightAt(21), weightAt(31)], [20.6, 20.5, 20.5, 20.4]);
+  const s = pature();
+  buySheep(s);
+  for (let i = 0; i < 100; i++) growSheep(s);
+  assertEqual(s.paturage.moutons[0].poids, 50, 'plafonné au poids maximal');
+});
+
+/* --- Serre --- */
+
+test('Serre : 400 pièces, 6 parcelles, refus sans pièces ou si déjà construite', () => {
+  const s = garden();
+  s.pieces = 399;
+  assertEqual(buildSerre(s).ok, false);
+  s.pieces = 400;
+  const r = buildSerre(s);
+  assertEqual([r.ok, r.cost, s.pieces], [true, 400, 0]);
+  assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, 1, 6]);
+  assertEqual(s.serre.parcelles.every((p) => p.lieu === 'serre'), true);
+  assertEqual(buildSerre(s).ok, false);
+  assertEqual(allPlots(s).length, 12, '6 du Potager et 6 de la Serre');
+  assertEqual(findPlot(s, 'serre-3').lieu, 'serre');
+});
+
+test('Serre : +3 parcelles par niveau, 300 / 600 / 1 000 / 1 800 pièces', () => {
+  const s = garden();
+  s.pieces = 100000;
+  buildSerre(s);
+  const seen = [];
+  for (let i = 0; i < 4; i++) {
+    const cost = serreUpgradeCost(s);
+    const before = s.pieces;
+    assert(upgradeSerre(s).ok);
+    seen.push([s.serre.niveau, s.serre.parcelles.length, before - s.pieces, cost]);
+  }
+  assertEqual(seen, [[2, 9, 300, 300], [3, 12, 600, 600], [4, 15, 1000, 1000], [5, 18, 1800, 1800]]);
+  assertEqual(serreUpgradeCost(s), null);
+  assertEqual(upgradeSerre(s).ok, false, 'niveau maximum');
+  assertEqual(upgradeSerre(garden()).ok, false, 'pas construite');
+});
+
+test('Serre : tomate, courgette et aubergine seulement', () => {
+  const s = garden();
+  s.pieces = 5000;
+  buildSerre(s);
+  testAddSeeds(s);
+  for (const culture of ['tomate', 'courgette', 'aubergine']) {
+    assertEqual(plant(s, `serre-${['tomate', 'courgette', 'aubergine'].indexOf(culture) + 1}`, culture).ok, true, culture);
+  }
+  for (const culture of ['carotte', 'patate', 'ble', 'tournesol']) {
+    assertEqual(plant(s, 'serre-4', culture).ok, false, `${culture} ne se plante pas en Serre`);
+  }
+  assertEqual(plantableCrops('serre'), ['tomate', 'courgette', 'aubergine']);
+  assertEqual(plantableCrops('potager').includes('tomate'), true);
+});
+
+test('Serre : insensible aux saisons, en été comme en hiver', () => {
+  for (const day of [1, 11, 21, 31]) {
+    const s = garden();
+    s.pieces = 5000;
+    buildSerre(s);
+    s.day = day;
+    plant(s, 'serre-1', 'tomate');
+    const before = s.eau;
+    assert(water(s, 'serre-1').ok);
+    assertEqual(before - s.eau, 3, `3 L exactement à la nuit ${day}`);
+    findPlot(s, 'serre-1').stade = maxStage(findPlot(s, 'serre-1'));
+    assertEqual(harvest(s, 'serre-1').items.tomate, 10, `10 tomates à la nuit ${day}`);
+  }
+  // au même moment, le Potager subit l'hiver
+  const s = garden();
+  s.day = 31;
+  plantRipe(s, 'potager-1', 'tomate');
+  assertEqual(harvest(s, 'potager-1').items.tomate, 7);
+});
+
+test('Serre : pousse une nuit arrosée, et les récoltes prêtes la comptent', () => {
+  const s = garden();
+  s.pieces = 5000;
+  buildSerre(s);
+  plant(s, 'serre-1', 'tomate');
+  water(s, 'serre-1');
+  sleepOnce(s);
+  assertEqual(findPlot(s, 'serre-1').stade, 1);
+  findPlot(s, 'serre-1').stade = 5;
+  assertEqual(readyCrops(s), [{ culture: 'tomate', nombre: 1, montee: false }]);
+});
+
+/* --- Verger --- */
+
+test('Verger : 2 emplacements au départ, aucun arbre', () => {
+  const s = orchard();
+  assertEqual([s.verger.construit, s.verger.places, s.verger.arbres.length, orchardFree(s)], [true, 2, 0, 2]);
+  assertEqual(buildVerger(s).ok, false, 'déjà aménagé');
+  assertEqual(buyTree(garden(), 'pommier').ok, false, 'sans Verger');
+});
+
+test('Verger : prix des emplacements supplémentaires 50 × 1,25^n', () => {
+  const s = orchard();
+  s.pieces = 100000;
+  const seen = [];
+  for (let i = 0; i < 6; i++) {
+    const before = s.pieces;
+    const price = orchardSlotPrice(s);
+    assert(buyOrchardSlot(s).ok);
+    seen.push([price, roundCoins(before - s.pieces), s.verger.places]);
+  }
+  assertEqual(seen.map((x) => x[0]), [50, 62.5, 78.13, 97.66, 122.07, 152.59]);
+  assertEqual(seen.map((x) => x[1]), [50, 62.5, 78.13, 97.66, 122.07, 152.59]);
+  assertEqual(seen.map((x) => x[2]), [3, 4, 5, 6, 7, 8]);
+  assertEqual(s.verger.achetes, 6, 'les 2 emplacements de départ ne comptent pas');
+  const poor = orchard();
+  poor.pieces = 49;
+  assertEqual(buyOrchardSlot(poor).ok, false);
+  assertEqual(buyOrchardSlot(garden()).ok, false, 'sans Verger');
+});
+
+test('Verger : arbre à 40 pièces sur un emplacement libre, pommier ou poirier', () => {
+  const s = orchard();
+  s.pieces = 100;
+  const a = buyTree(s, 'pommier');
+  assertEqual([a.ok, a.cost, s.pieces], [true, 40, 60]);
+  assertEqual(buyTree(s, 'poirier').ok, true);
+  assertEqual(s.pieces, 20);
+  assertEqual(s.verger.arbres.map((t) => [t.id, t.espece, t.plantee]), [['arbre-1', 'pommier', 1], ['arbre-2', 'poirier', 1]]);
+  s.pieces = 500;
+  assertEqual(buyTree(s, 'pommier').ok, false, 'verger plein');
+  assertEqual(s.pieces, 500);
+  buyOrchardSlot(s);
+  assertEqual(buyTree(s, 'pommier').ok, true, 'un emplacement acheté');
+  assertEqual(buyTree(s, 'cerisier').ok, false, 'arbre inconnu');
+  const poor = orchard();
+  poor.pieces = 39;
+  assertEqual(buyTree(poor, 'pommier').ok, false);
+});
+
+test('Verger : première récolte 15 nuits après la plantation', () => {
+  const s = orchard();
+  protect(s, 'pomme');
+  s.day = 10;
+  buyTree(s, 'pommier');
+  const fruits = {};
+  while (s.day <= 30) {
+    const day = s.day;
+    const r = sleepOnce(s);
+    if (r.fruits.pomme) fruits[day] = r.fruits.pomme;
+  }
+  // production les nuits 18, 21, 24, 27, 30 : les nuits 18 et 21 sont trop tôt
+  // (9 et 12 nuits), la première récolte tombe à la 15ᵉ nuit, la nuit 24
+  assertEqual(fruits, { 24: 6, 27: 6, 30: 6 });
+  assertEqual(countItem(s, 'pomme'), 12, 'les pommes de la nuit 24 ont déjà péri (7 nuits)');
+});
+
+test('Verger : arbre planté en début d\'année, première récolte à la nuit 18 (dans la fenêtre)', () => {
+  const s = orchard();
+  protect(s, 'poire');
+  buyTree(s, 'poirier');
+  const fruits = {};
+  while (s.day <= 30) {
+    const day = s.day;
+    const r = sleepOnce(s);
+    if (r.fruits.poire) fruits[day] = r.fruits.poire;
+  }
+  assertEqual(fruits, { 18: 6, 21: 6, 24: 6, 27: 6, 30: 6 });
+});
+
+test('Verger : fenêtre de production, fin d\'été et automne, 30 fruits par an', () => {
+  assertEqual(orchardWindow(), { debut: 16, fin: 30 });
+  const days = [];
+  for (let d = 1; d <= 80; d++) if (orchardProducesOn(d)) days.push(d);
+  assertEqual(days, [18, 21, 24, 27, 30, 58, 61, 64, 67, 70]);
+  assertEqual(nextOrchardNight(1), 18);
+  assertEqual(nextOrchardNight(31), 58);
+  const s = orchard();
+  protect(s, 'pomme');
+  s.verger.arbres.push({ id: 'arbre-9', espece: 'pommier', plantee: -100 });
+  const seasons = { printemps: 0, ete: 0, automne: 0, hiver: 0 };
+  for (let i = 0; i < 40; i++) {
+    const saison = currentSeason(s);
+    seasons[saison] += sleepOnce(s).fruits.pomme || 0;
+  }
+  // nuit 18 (été), puis 21, 24, 27 et 30 (automne)
+  assertEqual(seasons, { printemps: 0, ete: 6, automne: 24, hiver: 0 });
+  assertEqual(seasons.ete + seasons.automne, 30, '30 fruits par an et par arbre');
+});
+
+test('Verger : chaque arbre donne 6 fruits de son espèce, pas d\'arrosage', () => {
+  const s = orchard();
+  protect(s, 'pomme', 'poire');
+  s.verger.arbres.push({ id: 'arbre-1', espece: 'pommier', plantee: -50 }, { id: 'arbre-2', espece: 'poirier', plantee: -50 });
+  s.day = 18;
+  s.eau = 0;
+  const r = sleepOnce(s);
+  assertEqual(r.fruits, { pomme: 6, poire: 6 });
+  assertEqual([countItem(s, 'pomme'), countItem(s, 'poire')], [6, 6]);
+  assertEqual(lotsOf(s, 'pomme')[0].nightsLeft, 6, 'fruits de 7 nuits, dont une déjà passée');
+  const noVerger = garden();
+  noVerger.verger.arbres.push({ id: 'arbre-1', espece: 'pommier', plantee: -50 });
+  noVerger.day = 18;
+  assertEqual(sleepOnce(noVerger).fruits, {}, 'rien sans Verger aménagé');
+});
+
+/* --- Réfrigérateur --- */
+
+test('Réfrigérateur : 600 pièces, appareil du parc avec interrupteur, usure et panne', () => {
+  const s = farm();
+  s.pieces = 599;
+  assertEqual(buildFridge(s).ok, false);
+  s.pieces = 700;
+  const r = buildFridge(s);
+  assertEqual([r.ok, r.cost, s.pieces], [true, 600, 100]);
+  assertEqual(buildFridge(s).ok, false, 'déjà construit');
+  const d = findDevice(s, 'frigo');
+  assertEqual([d.type, d.allume, d.usure, d.prix], ['frigo', true, 0, 600]);
+  assertEqual(allDevices(s).includes(d), true);
+  assertEqual(upgradeCost(d), null, 'pas de niveaux');
+  assertEqual(maintainCost(d), 120);
+  assertEqual(repairCost(d), 300);
+});
+
+test('Réfrigérateur : consommation 0,005 kWh/s + 0,00005 par unité, prise dans les batteries', () => {
+  const s = coldRoom();
+  assert(near(fridgeRate(s), 0.005));
+  setInv(s, { carotte: 100 });
+  moveToFridge(s, 'carotte', 100);
+  assert(near(fridgeRate(s), 0.01), '100 unités : 0,005 + 0,005');
+  const before = s.batteries[0].charge;
+  runFor(s, 10);
+  assert(near(before - s.batteries[0].charge, 0.1, 1e-6), 'soit 0,1 kWh en 10 s');
+  const d = findDevice(s, 'frigo');
+  assert(near(d.conso, 0.01, 1e-6), 'consommation affichée');
+  assertEqual(s.frigo.alimente, true);
+  assertEqual(deviceStatus(s, d).code, 'marche');
+});
+
+test('Réfrigérateur : batteries en sens inverse, et il passe avant la pompe', () => {
+  assertEqual(CONSUMERS[0].id, 'frigo');
+  const s = coldRoom();
+  testAddDevice(s, 'batterie');
+  s.batteries[0].charge = 1;
+  s.batteries[1].charge = 1;
+  runFor(s, 10);
+  assert(near(s.batteries[1].charge, 1 - 0.05, 1e-6), 'la dernière se vide d\'abord');
+  assertEqual(s.batteries[0].charge, 1);
+});
+
+test('Réfrigérateur : s\'arrête quand les batteries sont vides', () => {
+  const s = coldRoom({ charge: false });
+  runFor(s, 5);
+  const d = findDevice(s, 'frigo');
+  assertEqual([s.frigo.alimente, d.conso, s.frigo.alimenteS], [false, 0, 0]);
+  assertEqual(deviceStatus(s, d).code, 'attente');
+  assert(near(s.frigo.eveilS, 5, 1e-6), 'le temps d\'éveil compte quand même');
+  // dès que de l'énergie revient, il repart
+  s.batteries[0].charge = 1;
+  runFor(s, 1);
+  assertEqual(s.frigo.alimente, true);
+});
+
+test('Réfrigérateur : éteint ou en panne, il ne consomme rien et ne s\'use pas', () => {
+  const s = coldRoom();
+  assert(toggleDevice(s, 'frigo').ok);
+  const d = findDevice(s, 'frigo');
+  const before = s.batteries[0].charge;
+  runFor(s, 30);
+  assertEqual([s.batteries[0].charge, d.usure, d.conso, s.frigo.alimenteS], [before, 0, 0, 0]);
+  assertEqual(deviceStatus(s, d).code, 'arret');
+  toggleDevice(s, 'frigo');
+  runFor(s, 30);
+  assert(near(d.usure, 0.5, 1e-6), '0,5 point par heure de fonctionnement (30 s)');
+  testSetWear(s, 'frigo', 100);
+  assertEqual([isBroken(d), d.allume], [true, false]);
+  assertEqual(toggleDevice(s, 'frigo').ok, false);
+  assertEqual(deviceStatus(s, d).code, 'panne');
+  assertEqual(repairDevice(s, 'frigo').ok, true);
+  assertEqual([d.usure, d.allume], [0, false], 'réparé, à rallumer');
+});
+
+test('Réfrigérateur : usure jusqu\'à la panne à 100 %', () => {
+  const s = coldRoom();
+  s.batteries[0].charge = 5;
+  findDevice(s, 'frigo').usure = 99.9;
+  runFor(s, 30);
+  const d = findDevice(s, 'frigo');
+  assertEqual([d.usure, d.allume, isBroken(d)], [100, false, true]);
+});
+
+test('déplacer des aliments : inventaire ↔ frigo, lots et conservation gardés', () => {
+  const s = coldRoom();
+  setInv(s, { carotte: 4, conserve: 10 });
+  s.inventaire.carotte[0].nightsLeft = 2; // vieux lot
+  addLot(s, 'carotte', 6, 'acheté'); // lot frais, autre origine
+  assertEqual(countItem(s, 'carotte'), 10);
+  assertEqual(moveToFridge(s, 'carotte', 5).moved, 5);
+  assertEqual(fridgeLots(s, 'carotte').map((l) => [l.qty, l.nightsLeft]), [[4, 2], [1, 6]], 'le plus ancien d\'abord');
+  assertEqual(countItem(s, 'carotte'), 5);
+  assertEqual(fridgeCount(s, 'carotte'), 5);
+  assertEqual(fridgeUnits(s), 5);
+  assertEqual(moveToFridge(s, 'conserve', 3).ok, false, 'une conserve ne périme pas');
+  assertEqual(moveToFridge(s, 'patate', 1).ok, false, 'rien à ranger');
+  assertEqual(moveFromFridge(s, 'carotte', 3).moved, 3);
+  assertEqual(fridgeLots(s, 'carotte').map((l) => [l.qty, l.nightsLeft]), [[1, 2], [1, 6]], 'le plus ancien sort d\'abord');
+  assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.nightsLeft, l.origin]), [[3, 2, 'produit'], [5, 6, 'acheté']].sort((a, b) => a[1] - b[1]), 'les lots sortis retrouvent leur compteur');
+  assertEqual(moveFromFridge(s, 'carotte', 99).moved, 2, 'au plus ce qu\'il y a');
+  assertEqual(fridgeCounts(s), {});
+  assertEqual(moveFromFridge(s, 'carotte', 1).ok, false);
+  assertEqual(moveToFridge(farm(), 'carotte', 1).ok, false, 'sans frigo');
+});
+
+test('conservation figée au frigo : le compteur ne bouge pas quand il est alimenté', () => {
+  const s = coldRoom();
+  setInv(s, { carotte: 6, conserve: 500 });
+  moveToFridge(s, 'carotte', 6);
+  addItem(s, 'carotte', 2); // 2 carottes restées dans l'inventaire...
+  s.famille.reserve.carotte = 2; // ...que la famille ne mange pas : on regarde seulement leur âge
+  for (let i = 0; i < 4; i++) {
+    s.batteries[0].charge = 5;
+    runFor(s, 30);
+    assert(sleepOnce(s) !== null);
+  }
+  assertEqual(fridgeLots(s, 'carotte').map((l) => [l.qty, l.nightsLeft]), [[6, 6]], '6 nuits au frigo, toujours 6');
+  assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.nightsLeft]), [[2, 2]], 'dehors, 4 nuits ont passé');
+  s.batteries[0].charge = 5;
+  runFor(s, 30);
+  sleepOnce(s);
+  sleepOnce(s);
+  assertEqual(countItem(s, 'carotte'), 0, 'dehors, tout a péri');
+  assertEqual(fridgeCount(s, 'carotte'), 6, 'au frigo, rien n\'a bougé');
+});
+
+test('panne de froid : moins de 50 % du temps alimenté, chaque lot perd une nuit', () => {
+  const s = coldRoom();
+  setInv(s, { carotte: 6, tomate: 3, conserve: 500 });
+  moveToFridge(s, 'carotte', 6);
+  moveToFridge(s, 'tomate', 3);
+  s.batteries[0].charge = 0; // rien ne l'alimente pendant l'éveil
+  runFor(s, 30);
+  assertEqual(s.frigo.alimenteS, 0);
+  s.batteries[0].charge = 5; // de quoi payer le bloc nocturne : seule la journée a manqué
+  sleepOnce(s);
+  assertEqual(fridgeLots(s, 'carotte')[0].nightsLeft, 5);
+  assertEqual(fridgeLots(s, 'tomate')[0].nightsLeft, 4);
+  assertEqual(s.report.frigo.vieillis, true);
+  assertEqual(s.report.frigo.panne, false, 'le bloc nocturne, lui, a été payé');
+  assertEqual([s.frigo.alimenteS, s.frigo.eveilS, s.frigo.panneNuit], [0, 0, false], 'compteurs remis à zéro');
+});
+
+test('panne de froid : le seuil est de 50 % du temps d\'éveil', () => {
+  const nightsAfter = (powered, awake) => {
+    const s = coldRoom();
+    setInv(s, { carotte: 6, conserve: 500 });
+    moveToFridge(s, 'carotte', 6);
+    s.frigo.alimenteS = powered;
+    s.frigo.eveilS = awake;
+    sleepOnce(s);
+    return fridgeLots(s, 'carotte')[0].nightsLeft;
+  };
+  assertEqual(nightsAfter(14, 30), 5, '47 % : une nuit perdue');
+  assertEqual(nightsAfter(15, 30), 6, 'pile 50 % : rien');
+  assertEqual(nightsAfter(30, 30), 6, 'alimenté tout le temps');
+  assertEqual(nightsAfter(0, 0), 6, 'aucun temps d\'éveil observé : rien à reprocher');
+});
+
+test('panne nocturne : le bloc de 30 s n\'est pas couvert, la nuit compte comme une panne', () => {
+  const s = coldRoom();
+  setInv(s, { carotte: 6, conserve: 500 });
+  moveToFridge(s, 'carotte', 6);
+  s.frigo.alimenteS = 30;
+  s.frigo.eveilS = 30; // alimenté toute la journée
+  s.batteries[0].charge = 0.05; // moins de 0,005 × 30 + 6 × 0,00005 × 30 = 0,159 kWh
+  sleepOnce(s);
+  assertEqual(fridgeLots(s, 'carotte')[0].nightsLeft, 5, 'une nuit perdue');
+  assertEqual(s.batteries[0].charge, 0, 'les batteries sont vidées');
+  assertEqual([s.report.frigo.panne, s.report.frigo.vieillis], [true, true]);
+});
+
+test('consommation nocturne : 30 s de consommation prélevées d\'un coup', () => {
+  const s = coldRoom();
+  setInv(s, { carotte: 100, conserve: 500 });
+  moveToFridge(s, 'carotte', 100);
+  s.frigo.alimenteS = 30;
+  s.frigo.eveilS = 30;
+  s.batteries[0].charge = 5;
+  const need = fridgeNightNeed(s);
+  assert(near(need, 0.3), '(0,005 + 100 × 0,00005) × 30 = 0,3 kWh');
+  sleepOnce(s);
+  assert(near(s.batteries[0].charge, 4.7), `4,7 kWh restants, obtenu ${s.batteries[0].charge}`);
+  assertEqual(s.report.frigo.panne, false);
+  assert(near(s.report.frigo.kwh, 0.3), 'noté dans le rapport');
+  assertEqual(fridgeLots(s, 'carotte')[0].nightsLeft, 6);
+  assertEqual(s.batteries[0].sortie, 0, 'la nuit n\'affiche pas de puissance de décharge');
+});
+
+test('consommation nocturne : la charge du frigo suit son contenu, et il couvre ou non la nuit', () => {
+  const s = coldRoom();
+  s.batteries[0].charge = 0.14;
+  assertEqual(fridgeCoversNight(s), false, '0,15 kWh nécessaires, 0,14 disponibles');
+  s.batteries[0].charge = 0.15;
+  assertEqual(fridgeCoversNight(s), true);
+  s.batteries[0].allume = false;
+  assertEqual(availableEnergy(s), 0, 'une batterie éteinte ne rend rien');
+  assertEqual(fridgeCoversNight(s), false);
+});
+
+test('frigo éteint ou en panne : la nuit compte comme une panne de froid', () => {
+  for (const cut of ['off', 'broken']) {
+    const s = coldRoom();
+    setInv(s, { carotte: 6, conserve: 500 });
+    moveToFridge(s, 'carotte', 6);
+    if (cut === 'off') toggleDevice(s, 'frigo');
+    else testSetWear(s, 'frigo', 100);
+    const before = s.batteries[0].charge;
+    sleepOnce(s);
+    assertEqual(fridgeLots(s, 'carotte')[0].nightsLeft, 5, cut);
+    assertEqual(s.batteries[0].charge, before, 'aucune énergie prélevée');
+  }
+});
+
+test('panne de froid : un lot qui arrive à 0 nuit est perdu et signalé au réveil', () => {
+  const s = coldRoom();
+  setInv(s, { carotte: 4, tomate: 2, conserve: 500 });
+  moveToFridge(s, 'carotte', 4);
+  moveToFridge(s, 'tomate', 2);
+  fridgeLots(s, 'tomate')[0].nightsLeft = 1;
+  toggleDevice(s, 'frigo');
+  sleepOnce(s);
+  assertEqual(fridgeCount(s, 'tomate'), 0);
+  assertEqual(s.report.perimes.tomate, 2);
+  assertEqual(fridgeCount(s, 'carotte'), 4);
+});
+
+test('nuit sans frigo construit : nightPower et fridgeNight ne font rien', () => {
+  const s = farm();
+  const before = JSON.stringify(s.batteries);
+  nightPower(s);
+  fridgeNight(s);
+  assertEqual(JSON.stringify(s.batteries), before);
+  assert(sleepOnce(s) !== null);
+  assertEqual(s.report.frigo.construit, false);
+});
+
+test('la famille mange le contenu du frigo, après l\'inventaire', () => {
+  const s = coldRoom();
+  setInv(s, {});
+  addItem(s, 'pomme', 50);
+  moveToFridge(s, 'pomme', 40); // 10 pommes dehors, 40 au frigo
+  s.frigo.alimenteS = 30;
+  s.frigo.eveilS = 30;
+  assertEqual(planMeal(s).mange, { pomme: 40 });
+  assertEqual(planMeal(s).couverture, 1);
+  sleepOnce(s);
+  assertEqual(s.report.mange, { pomme: 40 });
+  assertEqual(countItem(s, 'pomme'), 0, 'l\'inventaire d\'abord');
+  assertEqual(fridgeCount(s, 'pomme'), 10, '30 pommes prises au frigo');
+  assertEqual(s.report.couverture, 1);
+});
+
+test('la réserve de semences compte le frigo : on ne mange pas ce qui est réservé', () => {
+  const s = coldRoom();
+  setInv(s, {});
+  addItem(s, 'patate', 10);
+  moveToFridge(s, 'patate', 10);
+  s.famille.reserve.patate = 10;
+  assertEqual(planMeal(s).mange, {});
+  s.famille.reserve.patate = 4;
+  assertEqual(planMeal(s).mange, { patate: 6 });
+});
+
+test('frigo : les compteurs d\'éveil et d\'alimentation suivent les ticks', () => {
+  const s = coldRoom();
+  s.batteries[0].charge = 5;
+  runFor(s, 10);
+  assert(near(s.frigo.alimenteS, 10, 1e-6) && near(s.frigo.eveilS, 10, 1e-6));
+  s.batteries[0].charge = 0;
+  runFor(s, 10);
+  assert(near(s.frigo.alimenteS, 10, 1e-6) && near(s.frigo.eveilS, 20, 1e-6), 'une moitié alimentée : pile 50 %');
+  sleepOnce(s);
+  assertEqual(s.report.frigo.vieillis, true, 'la nuit suivante bloc payé ? batteries vides : panne');
+});
+
+test('ordre nocturne complet : verger avant le frigo, péremption après', () => {
+  const s = coldRoom();
+  protect(s, 'pomme');
+  setInv(s, { carotte: 2, conserve: 500 });
+  s.verger.construit = true;
+  s.verger.arbres.push({ id: 'arbre-1', espece: 'pommier', plantee: -50 });
+  s.day = 18;
+  moveToFridge(s, 'carotte', 2);
+  s.frigo.alimenteS = 30;
+  s.frigo.eveilS = 30;
+  s.batteries[0].charge = 5;
+  const r = sleepOnce(s);
+  assertEqual(r.fruits.pomme, 6, 'le verger a donné ses fruits');
+  assert(r.frigo.kwh > 0, 'puis le frigo a pris son bloc');
+  assertEqual(s.day, 19, 'puis nuit + 1');
+  assertEqual(s.awakeSeconds, 0, 'réveil');
+});
+
+/* --- sauvegarde et mode test --- */
+
+test('sérialisation JSON : Serre, Verger et Réfrigérateur font l\'aller-retour', () => {
+  const s = coldRoom();
+  s.pieces = 9999;
+  buildSerre(s);
+  buildVerger(s);
+  buyTree(s, 'pommier');
+  setInv(s, { carotte: 5, conserve: 500 });
+  moveToFridge(s, 'carotte', 5);
+  runFor(s, 2);
+  const copy = JSON.parse(JSON.stringify(s));
+  assertEqual(copy, s);
+  assert(sleepOnce(copy) !== null && sleepOnce(s) !== null);
+  assertEqual(JSON.parse(JSON.stringify(copy)), JSON.parse(JSON.stringify(s)), 'la partie continue à l\'identique');
+});
+
+test('migration v8 (Lot 7) → v9 : Serre, Verger et Réfrigérateur à construire, la partie continue', () => {
+  const v8 = createInitialState(3);
+  delete v8.serre;
+  delete v8.verger;
+  delete v8.frigo;
+  delete v8.nuit.fruits;
+  delete v8.nuit.frigo;
+  v8.version = 8;
+  v8.day = 25;
+  v8.pieces = 321;
+  const m = migrate({ v: 8, t: 0, s: v8 });
+  assertEqual(m.version, 9);
+  assertEqual([m.day, m.pieces], [25, 321]);
+  assertEqual(currentSeason(m), 'automne');
+  assertEqual(m.serre, { construit: false, niveau: 1, parcelles: [] });
+  assertEqual(m.verger.places, 2);
+  assertEqual(m.frigo.construit, false);
+  assertEqual(m.nuit.fruits, {});
+  tick(m, 0.2);
+  assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
+  assertEqual(migrate({ v: 9, t: 0, s: JSON.parse(JSON.stringify(m)) }).version, 9);
+});
+
+test('mode test Lot 8 : saison suivante, constructions gratuites, batteries vides', () => {
+  const s = garden();
+  const seen = [];
+  for (let i = 0; i < 5; i++) {
+    testNextSeason(s);
+    seen.push([s.day, currentSeason(s)]);
+  }
+  assertEqual(seen, [[11, 'ete'], [21, 'automne'], [31, 'hiver'], [41, 'printemps'], [51, 'ete']]);
+  s.day = 5;
+  testNextSeason(s);
+  assertEqual(s.day, 11, 'depuis le milieu du printemps');
+  const t = farm();
+  testFillBatteries(t);
+  t.pieces = 0;
+  testBuildSerre(t);
+  testBuildVerger(t);
+  testBuildFridge(t);
+  assertEqual([t.serre.construit, t.serre.parcelles.length, t.verger.construit, t.frigo.construit, t.pieces], [true, 6, true, true, 0]);
+  assertEqual(t.frigo.appareil.type, 'frigo');
+  testBuildSerre(t);
+  assertEqual(t.serre.parcelles.length, 6, 'sans doublon');
+  testEmptyBatteries(t);
+  t.panneaux[0].allume = false;
+  assertEqual(availableEnergy(t), 0);
+  runFor(t, 1);
+  assertEqual(t.frigo.alimente, false);
+});
+
+test('rapport de réveil Lot 8 : saison, fruits et état du frigo', () => {
+  const s = coldRoom();
+  s.day = 10;
+  const r = sleepOnce(s);
+  assertEqual([r.saison, r.nuitDeSaison], ['ete', 1]);
+  assertEqual(r.frigo.construit, true);
+  assertEqual(typeof r.frigo.couvreLaNuit, 'boolean');
+  assertEqual(r.fruits, {});
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -7408,6 +8816,7 @@ function patchAttributes(o, w) {
 function renderIndicators() {
   morph(document.getElementById('indicators'), `
     <span class="indicator" title="Nuit"><span aria-hidden="true">🌙</span><span><span class="visually-hidden">Nuit </span>${state.day}</span></span>
+    <span class="indicator" title="Saison : ${DATA.SAISONS.INFOS[currentSeason(state)].nom}"><span aria-hidden="true">${DATA.SAISONS.INFOS[currentSeason(state)].icone}</span><span class="visually-hidden">Saison ${DATA.SAISONS.INFOS[currentSeason(state)].nom}</span></span>
     <span class="indicator" title="Heure"><span aria-hidden="true">🕐</span><span>${formatHour(hourOfDay(state))}</span></span>
     <span class="indicator" title="Eau du réservoir"><span aria-hidden="true">💧</span><span class="num">${formatFixed(state.eau, 1)} L</span></span>
     <span class="indicator" title="Pièces"><span aria-hidden="true">💰</span><span class="num">${formatCoins(state.pieces)}</span></span>
@@ -7497,11 +8906,11 @@ function syncTestDeviceSelect() {
 
 /* ---------- Ferme : cartes et écrans de détail ---------- */
 
-const DEVICE_ICONS = { panneau: '☀️', batterie: '🔋', pompe: '⛲', moulin: '⚙️', presse: '🌻' };
-const DEVICE_NAMES = { panneau: 'Panneau', batterie: 'Batterie', pompe: 'Pompe', moulin: 'Moulin', presse: 'Presse' };
+const DEVICE_ICONS = { panneau: '☀️', batterie: '🔋', pompe: '⛲', moulin: '⚙️', presse: '🌻', frigo: '🧊' };
+const DEVICE_NAMES = { panneau: 'Panneau', batterie: 'Batterie', pompe: 'Pompe', moulin: 'Moulin', presse: 'Presse', frigo: 'Réfrigérateur' };
 
 function deviceName(d) {
-  if (d.type === 'pompe' || d.type === 'moulin' || d.type === 'presse') return DEVICE_NAMES[d.type];
+  if (d.type === 'pompe' || d.type === 'moulin' || d.type === 'presse' || d.type === 'frigo') return DEVICE_NAMES[d.type];
   const list = d.type === 'panneau' ? state.panneaux : state.batteries;
   return `${DEVICE_NAMES[d.type]} n°${list.indexOf(d) + 1}`;
 }
@@ -7539,11 +8948,14 @@ function renderFerme() {
 
   return `
     <h2>🌾 Ferme</h2>
+    ${renderCalendar()}
     ${renderPotager()}
+    ${renderSerre()}
     ${renderChamp()}
     ${renderSilo()}
     ${renderPoulailler()}
     ${renderPaturage()}
+    ${renderVerger()}
     ${renderAteliers()}
     <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
@@ -7571,6 +8983,7 @@ function renderFerme() {
         <span class="big">${formatFixed(state.eau, 1)} / ${formatNumber(cap)} L</span>
         <span class="muted">${tankText}</span>
       </div>
+      ${renderFridgeCard()}
     </div>
   `;
 }
@@ -7618,7 +9031,7 @@ function deviceRow(d) {
   const st = deviceStatus(state, d);
   let detail;
   if (d.type === 'panneau') {
-    detail = `<span class="muted">Production : <span class="num">${formatFixed(d.prod, 2)} kWh/s</span> (max ${formatFixed(panelOutput(d), 2)})</span>`;
+    detail = `<span class="muted">Production : <span class="num">${formatFixed(d.prod, 2)} kWh/s</span> (max ${formatFixed(panelOutput(d, state), 2)})</span>`;
   } else {
     const cap = batteryCapacity(d);
     let flow = 'Ni charge ni décharge';
@@ -7925,11 +9338,12 @@ function plotCard(p, n) {
   if (mature) {
     const label = p.montee
       ? `Récolter (+${def.graines.quantite} 🌱)`
-      : `Récolter (+${harvestYield(state, p.culture)} ${DATA.items[cropProduct(p.culture)].icone})`;
+      : `Récolter (+${harvestYield(state, p.culture, false, p.lieu)} ${DATA.items[cropProduct(p.culture)].icone})`;
     actions = `<button type="button" class="btn primary" data-action="harvest" data-id="${p.id}">${label}</button>${boltBtn}`;
   } else {
-    const noWater = state.eau + EPS < def.litres;
-    actions = `<button type="button" class="btn" data-action="water" data-id="${p.id}"${p.arrose || noWater ? ' disabled' : ''}>${p.arrose ? '💧 Arrosée' : `💧 Arroser (${def.litres} L)`}</button>${boltBtn}`;
+    const litres = waterCost(state, p);
+    const noWater = state.eau + EPS < litres;
+    actions = `<button type="button" class="btn" data-action="water" data-id="${p.id}"${p.arrose || noWater ? ' disabled' : ''}>${p.arrose ? '💧 Arrosée' : `💧 Arroser (${formatQty(litres)} L)`}</button>${boltBtn}`;
   }
   return `
     <div class="card plot${mature ? ' mature' : ''}">
@@ -7986,7 +9400,7 @@ function openPlantModal(plotId) {
       return `
         <button type="button" class="btn plant-choice" data-action="plant" data-id="${plotId}" data-crop="${c}"${n > 0 ? '' : ' disabled'}>
           <span>${def.icone} ${def.nom}</span>
-          <span class="muted">${stock} : ${formatQty(n)} · ${def.stades} nuits · ${def.litres} L par arrosage</span>
+          <span class="muted">${stock} : ${formatQty(n)} · ${def.stades} nuits · ${formatQty(waterCostFor(state, c, plot.lieu))} L par arrosage</span>
         </button>`;
     })
     .join('');
@@ -8006,6 +9420,203 @@ function openPlantModal(plotId) {
 function harvestToast(result) {
   const parts = Object.entries(result.items).map(([item, n]) => `+${n} ${DATA.items[item].icone}`);
   return `Récolte : ${parts.join(' ')}`;
+}
+
+/* ---------- Lot 8 : calendrier, Serre, Verger, Réfrigérateur ---------- */
+
+// Facteur affiché avec une décimale : « ×1,3 ».
+function formatFactor(f) {
+  return `×${formatFixed(f, 1)}`;
+}
+
+// Calendrier : saison, nuit x / 10, et les modificateurs de la saison (en vert
+// ce qui aide, en rouge ce qui freine ; la couleur n'est jamais la seule
+// indication : le facteur est écrit).
+function renderCalendar() {
+  const S = DATA.SAISONS;
+  const id = currentSeason(state);
+  const info = S.INFOS[id];
+  const n = seasonNight(state);
+  const chips = Object.keys(S.FACTEURS)
+    .map((kind) => {
+      const f = seasonFactor(state, kind);
+      const cls = f > 1 + EPS ? ' auto' : f < 1 - EPS ? ' warn' : '';
+      const sign = f > 1 + EPS ? '▲ ' : f < 1 - EPS ? '▼ ' : '';
+      const k = S.FACTEURS[kind];
+      return `<span class="chip${cls}" title="${k.nom} ${formatFactor(f)}"><span aria-hidden="true">${k.icone}</span> ${k.nom} ${sign}${formatFactor(f)}</span>`;
+    })
+    .join('');
+  return `
+    <div class="card season-card">
+      <span class="card-title"><span>${info.icone} ${info.nom}</span><span class="chip">Nuit ${n} / ${S.LONGUEUR}</span></span>
+      <span class="bar" role="progressbar" aria-label="Avancement de la saison" aria-valuemin="0" aria-valuemax="${S.LONGUEUR}" aria-valuenow="${n}"><span class="bar-fill" style="width:${Math.round((n / S.LONGUEUR) * 100)}%"></span></span>
+      <span class="season-chips">${chips}</span>
+      <span class="muted">Les modificateurs jouent sur le Potager, le Champ, l'eau des arrosages, le solaire et les moutons. La Serre les ignore.</span>
+    </div>`;
+}
+
+function renderSerre() {
+  const g = state.serre;
+  if (!g.construit) {
+    const cost = DATA.SERRE.CONSTRUCTION;
+    return `
+      <div class="section-head"><h3>🏡 Serre</h3></div>
+      <div class="card">
+        <span class="muted">Tomate, courgette et aubergine : ${DATA.SERRE.PARCELLES[0]} parcelles au départ, +${DATA.SERRE.PARCELLES[1] - DATA.SERRE.PARCELLES[0]} par niveau. Aucun modificateur de saison : ni l'hiver ni l'été n'y changent rien.</span>
+        <button type="button" class="btn primary" data-action="build-serre"${canPay(cost) ? '' : ' disabled'}>Construire la Serre (${costLabel(cost)})</button>
+      </div>`;
+  }
+  const up = serreUpgradeCost(state);
+  const upBtn =
+    up === null
+      ? '<button type="button" class="btn" disabled>Serre au niveau maximum</button>'
+      : `<button type="button" class="btn" data-action="upgrade-serre"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${g.niveau + 1}, ${DATA.SERRE.PARCELLES[g.niveau]} parcelles (${costLabel(up)})</button>`;
+  return `
+    <div class="section-head">
+      <h3>🏡 Serre · niveau ${g.niveau}</h3>
+      <span class="chip" title="La Serre ignore les modificateurs de saison">🌡️ Sans saison</span>
+    </div>
+    <div class="plots">${g.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
+    <div class="row plot-foot">${upBtn}</div>
+  `;
+}
+
+function treeCard(tree) {
+  const V = DATA.VERGER;
+  const def = V.ARBRES[tree.espece];
+  const fruit = DATA.items[def.fruit];
+  const age = Math.min(V.MATURITE, treeAge(state, tree));
+  const adult = isTreeAdult(state, tree);
+  const next = treeNextHarvest(state, tree);
+  const inWindow = orchardProducesOn(state.day);
+  let line;
+  if (!adult) line = `Jeune plant : ${age} / ${V.MATURITE} nuits`;
+  else line = 'Adulte';
+  const when = next === null ? '' : next === state.day ? 'Prochaine récolte : cette nuit' : `Prochaine récolte : nuit ${next} (dans ${nightsLabel(next - state.day)})`;
+  return `
+    <div class="card plot tree${adult ? ' adult' : ''}">
+      <span class="card-title"><span>${def.nom}</span><span aria-hidden="true">${fruit.icone}</span></span>
+      <span class="muted">${line}${adult ? ` · ${V.FRUITS} ${fruit.nom.toLowerCase()}s par récolte` : ''}</span>
+      <span class="bar" role="progressbar" aria-label="Croissance" aria-valuemin="0" aria-valuemax="${V.MATURITE}" aria-valuenow="${age}"><span class="bar-fill" style="width:${Math.round((age / V.MATURITE) * 100)}%"></span></span>
+      <span class="muted">${when}${inWindow && adult ? ' · 🍎 en saison' : ''}</span>
+    </div>`;
+}
+
+function renderVerger() {
+  const v = state.verger;
+  const V = DATA.VERGER;
+  if (!v.construit) {
+    const cost = V.CONSTRUCTION;
+    return `
+      <div class="section-head"><h3>🌳 Verger</h3></div>
+      <div class="card">
+        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Pommiers et poiriers s'achètent au Comptoir (onglet Arbres), sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne, ${V.MATURITE} nuits après la plantation.</span>
+        <button type="button" class="btn primary" data-action="build-verger"${canPay(cost) ? '' : ' disabled'}>Aménager le Verger (${costLabel(cost)})</button>
+      </div>`;
+  }
+  const w = orchardWindow();
+  const L = DATA.SAISONS.LONGUEUR;
+  const price = orchardSlotPrice(state);
+  const free = orchardFree(state);
+  const slots = [];
+  for (const t of v.arbres) slots.push(treeCard(t));
+  for (let i = 0; i < free; i++) {
+    slots.push(`
+      <div class="card plot tree free">
+        <span class="card-title"><span>Emplacement libre</span><span aria-hidden="true">🟫</span></span>
+        <span class="muted">Achète un pommier ou un poirier au Comptoir (onglet Arbres).</span>
+      </div>`);
+  }
+  const nightOfYear = yearNight(state.day);
+  const season = nightOfYear >= w.debut && nightOfYear <= w.fin ? '🍎 Les fruits sont de saison.' : `Les fruits arrivent de la nuit ${w.debut} à la nuit ${w.fin} de l'année (l'année compte ${L * DATA.SAISONS.ORDRE.length} nuits).`;
+  return `
+    <div class="section-head">
+      <h3>🌳 Verger · ${v.arbres.length} / ${v.places} emplacements</h3>
+    </div>
+    <div class="plots">${slots.join('')}</div>
+    <div class="card">
+      <span class="muted">${season}</span>
+      <button type="button" class="btn" data-action="buy-orchard-slot"${canPay(price) ? '' : ' disabled'}>Acheter un emplacement (${costLabel(price)})</button>
+    </div>
+  `;
+}
+
+// ❄️ quand le frigo est alimenté ; ⚠️ en panne, éteint ou hors tension.
+function fridgeIcon() {
+  const f = state.frigo;
+  if (!f.construit) return '';
+  const d = f.appareil;
+  return !isBroken(d) && d.allume && f.alimente ? '❄️' : '⚠️';
+}
+
+function renderFridgeCard() {
+  const f = state.frigo;
+  if (!f.construit) {
+    const cost = DATA.FRIGO.CONSTRUCTION;
+    return `
+      <div class="card">
+        <span class="card-title"><span>🧊 Réfrigérateur</span><span class="chip">Non construit</span></span>
+        <span class="muted">Les aliments rangés au frigo ne vieillissent plus. Capacité illimitée, mais il consomme en permanence : ${formatFixed(DATA.FRIGO.BASE_KWH_S, 3)} kWh/s + ${formatFixed(DATA.FRIGO.PAR_UNITE_KWH_S, 5)} par unité stockée. Appareil électrique : interrupteur, usure, pannes.</span>
+        <button type="button" class="btn primary" data-action="build-fridge"${canPay(cost) ? '' : ' disabled'}>Construire le Réfrigérateur (${costLabel(cost)})</button>
+      </div>`;
+  }
+  const d = f.appareil;
+  const st = deviceStatus(state, d);
+  const ok = fridgeIcon() === '❄️';
+  const need = fridgeNightNeed(state);
+  const avail = availableEnergy(state);
+  const alert = !fridgeCoversNight(state)
+    ? `<span class="alert">⚠️ La batterie ne couvrira pas la nuit : il faut <span class="num">${formatFixed(need, 2)} kWh</span>, il y en a <span class="num">${formatFixed(avail, 2)} kWh</span>. Les aliments perdront une nuit de conservation.</span>`
+    : '';
+  const badge = st.badge ? `<span class="chip warn">⚠️ ${st.badge}</span>` : '';
+  return `
+    <div class="card fridge ${ok ? 'cold' : 'warm'}">
+      <span class="card-title"><span>${fridgeIcon()} Réfrigérateur</span><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span></span>
+      ${badge}
+      <span class="big">${formatFixed(d.conso, 3)} kWh/s</span>
+      <span class="muted">Consommation à pleine charge : <span class="num">${formatFixed(fridgeRate(state), 4)} kWh/s</span> · ${fridgeUnits(state)} unité${fridgeUnits(state) > 1 ? 's' : ''} au frais (onglet Inventaire › Frigo)</span>
+      ${alert}
+      ${wearHtml(d)}
+      ${stationControls(d)}
+    </div>`;
+}
+
+// Frigo (Inventaire) : contenu, conservation figée, ce qu'on peut sortir.
+function fridgeRowHtml(item) {
+  const it = DATA.items[item];
+  const n = fridgeCount(state, item);
+  const lots = fridgeLots(state, item)
+    .map((l) => `<li><span>${l.qty} ${unitLabel(item, l.qty)} — ${nightsLabel(l.nightsLeft)} <span class="muted">(figé)</span></span></li>`)
+    .join('');
+  return `
+    <div class="inv-row">
+      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="big num">${formatQty(n)}</span></div>
+      <ul class="lot-list" aria-label="Lots au frigo">${lots}</ul>
+      <span class="device-actions">
+        <button type="button" class="btn" data-action="fridge-out" data-item="${item}" data-qty="1">Sortir 1</button>
+        <button type="button" class="btn" data-action="fridge-out" data-item="${item}" data-qty="all">Tout sortir</button>
+      </span>
+    </div>`;
+}
+
+function renderFridgeTab() {
+  const f = state.frigo;
+  if (!f.construit) {
+    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le dans l'onglet Ferme (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
+  }
+  const counts = fridgeCounts(state);
+  const items = Object.keys(DATA.items).filter((k) => counts[k] > 0);
+  const ok = fridgeIcon() === '❄️';
+  return `
+    <div class="card fridge ${ok ? 'cold' : 'warm'}">
+      <span class="card-title"><span>${fridgeIcon()} Réfrigérateur</span><span class="chip">${fridgeUnits(state)} unité${fridgeUnits(state) > 1 ? 's' : ''}</span></span>
+      <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : '⚠️ Pas alimenté : si le froid manque plus de la moitié de l\'éveil, ou toute la nuit, chaque lot perd une nuit.'} Consommation : <span class="num">${formatFixed(fridgeRate(state), 4)} kWh/s</span>.</span>
+      ${!fridgeCoversNight(state) ? '<span class="alert">⚠️ La batterie ne couvrira pas la nuit.</span>' : ''}
+      <span class="muted">La famille mange aussi le contenu du frigo, après ce qui est dans l'inventaire. Le Comptoir et les recettes utilisent l'inventaire : sors ce qu'il te faut.</span>
+    </div>
+    <div class="inv-group">
+      ${items.length ? items.map(fridgeRowHtml).join('') : '<p class="hint">Le frigo est vide. Range des aliments frais depuis l\'onglet Frais.</p>'}
+    </div>`;
 }
 
 /* ---------- Lot 5 : ateliers (Ferme) et Livre de recette ---------- */
@@ -8327,6 +9938,16 @@ function lotListHtml(item) {
     .join('')}</ul>`;
 }
 
+// Lot 8 : boutons pour ranger un aliment périssable au frigo (s'il est construit).
+function fridgeInButtons(item) {
+  if (!state.frigo.construit || !isPerishable(item) || countItem(state, item) < 1) return '';
+  return `
+      <span class="device-actions">
+        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="1">🧊 Ranger 1 au frigo</button>
+        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all">🧊 Tout ranger</button>
+      </span>`;
+}
+
 function inventoryRow(item) {
   const it = DATA.items[item];
   const n = countItem(state, item);
@@ -8352,6 +9973,7 @@ function inventoryRow(item) {
     <div class="inv-row">
       <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="big num">${formatQty(n)}</span></div>
       ${lotListHtml(item)}
+      ${fridgeInButtons(item)}
       <span class="muted">${info}</span>
       ${item === DATA.SILO.ITEM && state.silo.construit ? `<span class="muted">🛖 Dans le Silo : <span class="num">${formatQty(state.silo.ble)}</span> (hors de l'inventaire)</span>` : ''}
       ${reserve}
@@ -8360,6 +9982,7 @@ function inventoryRow(item) {
 
 const INVENTORY_TABS = [
   { id: 'frais', label: 'Frais', icon: '🥕', match: (k) => isPerishable(k), empty: 'Aucun aliment frais pour l\'instant.' },
+  { id: 'frigo', label: 'Frigo', icon: '🧊', match: () => false, empty: '' },
   { id: 'graines', label: 'Graines', icon: '🌱', match: (k) => DATA.items[k].category === 'graine', empty: 'Aucune graine pour l\'instant.' },
   { id: 'produits', label: 'Produits', icon: '🥫', match: (k) => !isPerishable(k) && DATA.items[k].category !== 'graine', empty: 'Aucun produit pour l\'instant.' },
 ];
@@ -8375,6 +9998,12 @@ function subtabsHtml(tabs, current, action) {
 
 function renderInventaire() {
   const tab = INVENTORY_TABS.find((t) => t.id === invTab) || INVENTORY_TABS[0];
+  if (tab.id === 'frigo') {
+    return `
+    <h2>📦 Inventaire</h2>
+    ${subtabsHtml(INVENTORY_TABS, tab.id, 'inv-tab')}
+    ${renderFridgeTab()}`;
+  }
   const items = Object.keys(DATA.items).filter(
     (k) => tab.match(k) && (countItem(state, k) > 0 || reservableItems().includes(k))
   );
@@ -8395,7 +10024,7 @@ const COMPTOIR_TABS = [
   { id: 'acheter', label: 'Acheter', icon: '🛒' },
   { id: 'graines', label: 'Graines', icon: '🌱' },
   { id: 'animaux', label: 'Animaux', icon: '🐔' },
-  { id: 'arbres', label: 'Arbres', icon: '🌳', soon: true },
+  { id: 'arbres', label: 'Arbres', icon: '🌳' },
 ];
 
 // Seules les unités entières se vendent (un demi-blé reste en stock).
@@ -8498,6 +10127,45 @@ function renderAnimaux() {
     ${renderSheepRow()}`;
 }
 
+// Lot 8 : onglet Arbres, pommier et poirier à prix fixe sur un emplacement libre.
+function renderTreeRow(espece) {
+  const def = DATA.VERGER.ARBRES[espece];
+  const fruit = DATA.items[def.fruit];
+  const v = state.verger;
+  let note;
+  let ok = true;
+  if (!v.construit) {
+    note = '⚠️ Aménage d\'abord le Verger (onglet Ferme).';
+    ok = false;
+  } else if (orchardFree(state) <= 0) {
+    note = `⚠️ Le Verger est plein : achète un emplacement (${costLabel(orchardSlotPrice(state))}).`;
+    ok = false;
+  } else {
+    note = `Emplacements libres : ${orchardFree(state)}.`;
+  }
+  return `
+    <div class="shop-row${ok ? '' : ' unavailable'}">
+      <div class="inv-main"><span><span aria-hidden="true">${fruit.icone}</span> ${def.nom}</span><span class="muted">Arbres : <span class="num">${v.arbres.filter((t) => t.espece === espece).length}</span></span></div>
+      <span class="muted">Prix fixe : <strong class="num">${formatCoins(def.prix)} 💰</strong> · ${fruit.nom.toLowerCase()}s (${fruit.energie} énergie, vente ${formatCoins(fruit.prix)} 💰) · première récolte ${DATA.VERGER.MATURITE} nuits après la plantation.</span>
+      <span class="muted">${note}</span>
+      <button type="button" class="btn primary" data-action="buy-tree" data-species="${espece}"${ok && canPay(def.prix) ? '' : ' disabled'}>Acheter un ${def.nom.toLowerCase()} (${formatCoins(def.prix)} 💰)</button>
+    </div>`;
+}
+
+function renderArbres() {
+  const V = DATA.VERGER;
+  const v = state.verger;
+  const price = orchardSlotPrice(state);
+  return `
+    <p class="muted">Les arbres s'achètent à prix fixe, se plantent sur un emplacement libre du Verger et ne s'arrosent pas : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne.</p>
+    ${Object.keys(V.ARBRES).map(renderTreeRow).join('')}
+    <div class="shop-row${v.construit ? '' : ' unavailable'}">
+      <div class="inv-main"><span><span aria-hidden="true">🟫</span> Emplacement</span><span class="muted">Emplacements : <span class="num">${v.arbres.length} / ${v.places}</span></span></div>
+      <span class="muted">Prix : <strong class="num">${formatCoins(price)} 💰</strong> (${V.EMPLACEMENT.base} × ${formatFixed(V.EMPLACEMENT.croissance, 2)}<sup>${v.achetes}</sup>, le prix monte à chaque emplacement acheté).</span>
+      <button type="button" class="btn primary" data-action="buy-orchard-slot"${v.construit && canPay(price) ? '' : ' disabled'}>Acheter un emplacement (${formatCoins(price)} 💰)</button>
+    </div>`;
+}
+
 function renderComptoir() {
   const tab = COMPTOIR_TABS.find((t) => t.id === comptoirTab) || COMPTOIR_TABS[0];
   let body;
@@ -8519,7 +10187,7 @@ function renderComptoir() {
   } else if (tab.id === 'animaux') {
     body = renderAnimaux();
   } else {
-    body = `<div class="coming"><p class="hint">${tab.icon} ${tab.label} : cet onglet arrivera dans un lot suivant.</p></div>`;
+    body = renderArbres();
   }
   return `
     <h2>💰 Comptoir</h2>
@@ -8546,6 +10214,27 @@ function autoLines(a) {
   if (a.sansEau > 0) lines.push(`<li class="alert">💧 Eau insuffisante : ${plural(a.sansEau, 'parcelle')} non arrosée${a.sansEau > 1 ? 's' : ''} cette nuit.</li>`);
   if (a.sansBle > 0) lines.push(`<li class="alert">🌾 Blé insuffisant : ${plural(a.sansBle, 'poule')} non nourrie${a.sansBle > 1 ? 's' : ''}, pas d'œuf.</li>`);
   if (a.sansGraine > 0) lines.push(`<li class="alert">🌱 Pas de graine au-delà de la réserve : ${plural(a.sansGraine, 'parcelle')} laissée${a.sansGraine > 1 ? 's' : ''} vide${a.sansGraine > 1 ? 's' : ''}.</li>`);
+  return lines;
+}
+
+// Lot 8 : saison du réveil, fruits du verger et nuit du frigo.
+function seasonLines(report) {
+  const lines = [];
+  const info = DATA.SAISONS.INFOS[report.saison];
+  if (info) {
+    lines.push(report.nuitDeSaison === 1
+      ? `<li>📅 <strong>Nouvelle saison : ${info.icone} ${info.nom}</strong> (nuit 1 / ${DATA.SAISONS.LONGUEUR})</li>`
+      : `<li>📅 ${info.icone} ${info.nom} · nuit ${report.nuitDeSaison} / ${DATA.SAISONS.LONGUEUR}</li>`);
+  }
+  const fruits = itemsSummary(report.fruits || {});
+  if (fruits) lines.push(`<li>🌳 Fruits du verger : <strong>${fruits}</strong></li>`);
+  const f = report.frigo;
+  if (f && f.construit) {
+    lines.push(`<li>🧊 Frigo : <strong class="num">${formatFixed(f.kwh, 2)} kWh</strong> prélevés pour la nuit · ${f.unites} unité${f.unites > 1 ? 's' : ''} au frais</li>`);
+    if (f.panne) lines.push('<li class="alert">⚠️ Panne de froid cette nuit : batteries insuffisantes (ou frigo éteint).</li>');
+    if (f.vieillis) lines.push('<li class="alert">⚠️ Le frigo n\'a pas assez tenu : chaque lot a perdu une nuit de conservation.</li>');
+    else if (!f.couvreLaNuit) lines.push('<li class="alert">⚠️ La batterie ne couvrira pas la prochaine nuit du frigo.</li>');
+  }
   return lines;
 }
 
@@ -8581,6 +10270,7 @@ function openWakeModal(report) {
       ? `<li>🐑 Moutons : <strong class="num">${report.moutons}</strong>${report.lainePrete > 0 ? ` · 🧶 Laine prête : <strong class="num">${report.lainePrete}</strong> mouton${report.lainePrete > 1 ? 's' : ''} à tondre` : ''}</li>`
       : '',
     ...autoLines(report.auto),
+    ...seasonLines(report),
     ready ? `<li>🧺 Récoltes prêtes : <strong>${ready}</strong></li>` : '<li>🌱 Aucune récolte prête pour l\'instant.</li>',
     spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
     expiring ? `<li>⏳ À manger vite, périme à la prochaine nuit : <strong>${expiring}</strong></li>` : '',
@@ -8809,6 +10499,61 @@ document.addEventListener('click', (e) => {
     }
     case 'test-techs':
       applyResult(testUnlockAllTechs(state));
+      break;
+    case 'build-serre': {
+      const result = applyResult(buildSerre(state));
+      if (result.ok) showToast(`🏡 Serre construite : ${state.serre.parcelles.length} parcelles (−${formatCoins(result.cost)} 💰)`);
+      break;
+    }
+    case 'upgrade-serre':
+      applyResult(upgradeSerre(state));
+      break;
+    case 'build-verger': {
+      const result = applyResult(buildVerger(state));
+      if (result.ok) showToast(`🌳 Verger aménagé : ${state.verger.places} emplacements`);
+      break;
+    }
+    case 'buy-orchard-slot': {
+      const result = applyResult(buyOrchardSlot(state));
+      if (result.ok) showToast(`Emplacement acheté : ${result.places} au total (−${formatCoins(result.cost)} 💰)`);
+      break;
+    }
+    case 'buy-tree': {
+      const espece = target.dataset.species;
+      const result = applyResult(buyTree(state, espece));
+      if (result.ok) showToast(`${DATA.items[DATA.VERGER.ARBRES[espece].fruit].icone} ${DATA.VERGER.ARBRES[espece].nom} planté (−${formatCoins(result.cost)} 💰)`);
+      break;
+    }
+    case 'build-fridge': {
+      const result = applyResult(buildFridge(state));
+      if (result.ok) showToast(`🧊 Réfrigérateur construit (−${formatCoins(result.cost)} 💰)`);
+      break;
+    }
+    case 'fridge-in':
+    case 'fridge-out': {
+      const item = target.dataset.item;
+      const all = target.dataset.qty === 'all';
+      const qty = all ? (action === 'fridge-in' ? countItem(state, item) : fridgeCount(state, item)) : Number(target.dataset.qty);
+      const result = applyResult(action === 'fridge-in' ? moveToFridge(state, item, qty) : moveFromFridge(state, item, qty));
+      if (result.ok) showToast(`${action === 'fridge-in' ? '🧊 Rangé' : 'Sorti'} : ${result.moved} ${DATA.items[item].icone}`);
+      break;
+    }
+    case 'test-next-season': {
+      const result = applyResult(testNextSeason(state));
+      showToast(`Saison : ${DATA.SAISONS.INFOS[result.saison].icone} ${DATA.SAISONS.INFOS[result.saison].nom} (nuit ${state.day})`);
+      break;
+    }
+    case 'test-serre':
+      applyResult(testBuildSerre(state));
+      break;
+    case 'test-verger':
+      applyResult(testBuildVerger(state));
+      break;
+    case 'test-fridge':
+      applyResult(testBuildFridge(state));
+      break;
+    case 'test-empty-batteries':
+      applyResult(testEmptyBatteries(state));
       break;
     case 'test-sheep':
       applyResult(testAddSheep(state));
