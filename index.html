@@ -671,6 +671,7 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 }
 
 .shop-row > .btn { width: 100%; }
+.shop-row.unavailable > :not(.btn) { opacity: 0.7; }
 
 .qty-row { gap: 8px; }
 .qty-row .qty { min-width: 2.5ch; text-align: center; font-weight: 700; font-size: 1.1rem; }
@@ -713,6 +714,10 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
         <button class="btn" type="button" data-action="test-seeds">+10 de chaque graine</button>
         <button class="btn" type="button" data-action="test-ripen">Faire mûrir les parcelles</button>
         <button class="btn" type="button" data-action="test-sick">Santé à 0</button>
+      </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-wheat">+50 blés</button>
+        <button class="btn" type="button" data-action="test-hens">+4 poules</button>
       </div>
       <div class="row">
         <button class="btn" type="button" data-action="test-food">+20 de chaque aliment</button>
@@ -811,6 +816,11 @@ const DATA = {
     graine_tomate:    { nom: 'Graines de tomate',    icone: '🌱', prix: 1, edible: false, category: 'graine' },
     graine_courgette: { nom: 'Graines de courgette', icone: '🌱', prix: 1, edible: false, category: 'graine' },
     graine_aubergine: { nom: 'Graines d\'aubergine', icone: '🌱', prix: 1, edible: false, category: 'graine' },
+    // Lot 4 : blé (stock du Silo ; un blé sert de graine), graines de tournesol
+    // (à replanter), œuf (10 énergie, 6 nuits : voir CONSERVATION).
+    ble:              { nom: 'Blé',                  icone: '🌾', prix: 1, edible: false, category: 'ingrédient' },
+    graine_tournesol: { nom: 'Graines de tournesol', icone: '🌻', prix: 1, edible: false, category: 'graine' },
+    oeuf:             { nom: 'Œuf',                  icone: '🥚', energie: 10, prix: 2, edible: true, category: 'produit' },
   },
 
   // Cultures (sections 6.3 et 8.3). stades : nuits arrosées pour mûrir ;
@@ -831,6 +841,13 @@ const DATA = {
                  graines: { item: 'graine_courgette', mode: 'recolte', min: 1, max: 2 } },
     aubergine: { nom: 'Aubergine', icone: '🍆', lieux: ['potager'], stades: 6, litres: 4, rendement: 6,
                  graines: { item: 'graine_aubergine', mode: 'recolte', min: 1, max: 2 } },
+    // Lot 4 (Champ). produit : l'objet récolté quand il n'a pas le nom de la
+    // culture. Blé : 1 blé = 1 graine. Tournesol : la récolte donne des graines,
+    // à replanter ou à presser (même ressource).
+    ble:       { nom: 'Blé',       icone: '🌾', lieux: ['champ'], stades: 7, litres: 2, rendement: 8,
+                 graines: { item: 'ble', mode: 'plant' } },
+    tournesol: { nom: 'Tournesol', icone: '🌻', lieux: ['champ'], stades: 7, litres: 2, rendement: 9, produit: 'graine_tournesol',
+                 graines: { item: 'graine_tournesol', mode: 'plant' } },
   },
 
   // Potager (section 8.3) : parcelles par niveau (index 0 = niveau 1) et coût
@@ -903,6 +920,42 @@ const DATA = {
     PLANCHER: { defaut: 1.2, graine: 2.0 }, // par catégorie d'objet
     PAS: 0.1,
   },
+
+  /* ---------- Lot 4 : Champ, Silo, Poulailler ---------- */
+
+  // Champ (sections 1.3 et 8.3) : mêmes règles que le Potager. CONSTRUCTION est
+  // le prix du niveau 1 ; COUT[n] est le prix pour atteindre le niveau n + 1
+  // (index 0 = construction, non utilisé ici).
+  CHAMP: {
+    LIEU: 'champ',
+    CONSTRUCTION: 60,
+    PARCELLES: [4, 6, 9, 12, 16],
+    COUT: [0, 120, 280, 600, 1300],
+  },
+
+  // Silo (section 8.5) : stock de blé. Construction offerte (validée) ; COUT[n]
+  // est le prix pour atteindre le niveau n + 1. Le blé récolté y va d'abord ;
+  // les poules y mangent d'abord. ITEM : l'objet stocké.
+  SILO: {
+    ITEM: 'ble',
+    CONSTRUCTION: 0,
+    CAPACITE: [20, 50, 100, 200, 400],
+    COUT: [0, 30, 80, 180, 400],
+  },
+
+  // Poulailler (sections 1.3 et 8.5).
+  POULAILLER: {
+    CONSTRUCTION: 40,
+    CAPACITE: [4, 8, 12, 16, 24],
+    COUT: [0, 100, 220, 450, 900],
+  },
+
+  // Animaux achetés au Comptoir (section 1.4) : prix fixes, sans revente.
+  // Poule : mange bleParNuit blé (une fois par nuit) et pond oeufsParNuit œuf si
+  // elle a été nourrie. Le mouton arrivera avec le Lot suivant.
+  ANIMAUX: {
+    poule: { nom: 'Poule', icone: '🐔', prix: 15, bleParNuit: 0.5, oeufsParNuit: 1, produit: 'oeuf' },
+  },
 };
 
 /* ==========================================================================
@@ -924,19 +977,20 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 4;
+const STATE_VERSION = 5;
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
-// repas et santé, puis pousse. Lot 3 : la péremption, toujours en dernier.
-// Les lots suivants insèrent leurs fonctions (ponte...) avant `spoil`.
+// repas et santé, puis pousse. Lot 4 : la ponte. Lot 3 : la péremption,
+// toujours en dernier. Les lots suivants insèrent leurs fonctions avant `spoil`.
 // Chaque étape reçoit l'état et le modifie.
-const NIGHT_STEPS = [feedFamily, growAll, spoil];
+const NIGHT_STEPS = [feedFamily, growAll, layEggs, spoil];
 
 /* ---------- appareils : fabrication et sélecteurs ---------- */
 
 function newDayStats() {
-  return { produite: 0, perdue: 0, eau: 0 };
+  // ble : blé mangé par les poules pendant la journée (Lot 4).
+  return { produite: 0, perdue: 0, eau: 0, ble: 0 };
 }
 
 function makeDevice(type, id, prix) {
@@ -1489,7 +1543,9 @@ function buyItem(state, item, qty = 1) {
 function sellItem(state, item, qty) {
   const def = DATA.items[item];
   if (!def) return fail('Objet inconnu.');
-  const n = takeItem(state, item, Math.floor(Number(qty)) || 0);
+  // Seules les unités entières se vendent (le blé peut compter des demis).
+  const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(countItem(state, item) + EPS));
+  const n = takeItem(state, item, wanted);
   if (n <= 0) return fail('Rien à vendre.');
   const gain = roundCoins(n * sellPrice(item));
   state.pieces = roundCoins(state.pieces + gain);
@@ -1614,7 +1670,7 @@ function updateHealth(state, coverage) {
 }
 
 function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {} };
+  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0 };
 }
 
 // Première étape nocturne : le repas, puis la santé.
@@ -1632,6 +1688,7 @@ function feedFamily(state) {
     santeApres: rawAverageHealth(state),
     nouveauxMalades: nouveaux,
     perdus: {},
+    oeufs: 0,
   };
   return plan;
 }
@@ -1675,24 +1732,49 @@ function setSeedReserve(state, item, qty) {
   return { ok: true, reserve: n };
 }
 
-/* ---------- Lot 2 : potager ---------- */
+/* ---------- Lot 2 : potager (Lot 4 : le même moteur sert le Champ) ---------- */
 
-function makePlot(n) {
-  return { id: `${DATA.POTAGER.LIEU}-${n}`, lieu: DATA.POTAGER.LIEU, culture: null, stade: 0, arrose: false, montee: false };
+function makePlot(n, lieu = DATA.POTAGER.LIEU) {
+  return { id: `${lieu}-${n}`, lieu, culture: null, stade: 0, arrose: false, montee: false };
 }
 
-function makePlots(count) {
+function makePlots(count, lieu = DATA.POTAGER.LIEU) {
   const plots = [];
-  for (let i = 1; i <= count; i++) plots.push(makePlot(i));
+  for (let i = 1; i <= count; i++) plots.push(makePlot(i, lieu));
   return plots;
 }
 
+// Toutes les parcelles de la ferme : Potager d'abord, puis Champ.
+function allPlots(state) {
+  return [...state.potager.parcelles, ...(state.champ ? state.champ.parcelles : [])];
+}
+
 function findPlot(state, id) {
-  return state.potager.parcelles.find((p) => p.id === id) || null;
+  return allPlots(state).find((p) => p.id === id) || null;
 }
 
 function seedItem(culture) {
   return DATA.crops[culture].graines.item;
+}
+
+// Objet que rend la récolte : le nom de la culture, sauf `produit` (tournesol).
+function cropProduct(culture) {
+  return DATA.crops[culture].produit || culture;
+}
+
+// Graines disponibles pour semer une culture. Le blé sert de graine : celui de
+// l'inventaire et celui du Silo comptent tous les deux.
+function seedStock(state, culture) {
+  const item = seedItem(culture);
+  return item === DATA.SILO.ITEM ? wheatTotal(state) : countItem(state, item);
+}
+
+// Retire une graine. Le blé se prend d'abord dans l'inventaire (le Silo reste
+// pour les poules), puis dans le Silo.
+function takeSeed(state, culture) {
+  const item = seedItem(culture);
+  if (item === DATA.SILO.ITEM) return takeWheat(state, 1, 'inventaire') ? 1 : 0;
+  return takeItem(state, item, 1);
 }
 
 function plantableCrops(lieu) {
@@ -1717,7 +1799,7 @@ function harvestYield(state, culture, auto = false) {
 // Parcelles mûres regroupées par culture et par mode : [{ culture, nombre, montee }].
 function readyCrops(state) {
   const out = [];
-  for (const p of state.potager.parcelles) {
+  for (const p of allPlots(state)) {
     if (!isMature(p)) continue;
     let e = out.find((x) => x.culture === p.culture && x.montee === p.montee);
     if (!e) {
@@ -1736,7 +1818,7 @@ function plant(state, plotId, culture) {
   if (!def) return fail('Culture inconnue.');
   if (plot.culture) return fail('Cette parcelle est déjà plantée.');
   if (!def.lieux.includes(plot.lieu)) return fail(`${def.nom} ne se plante pas ici.`);
-  if (takeItem(state, seedItem(culture), 1) < 1) return fail(`Pas de graines : ${def.nom}.`);
+  if (takeSeed(state, culture) < 1) return fail(`Pas de graines : ${def.nom}.`);
   plot.culture = culture;
   plot.stade = 0;
   plot.arrose = false;
@@ -1783,14 +1865,16 @@ function harvest(state, plotId, auto = false) {
   const items = {};
   const gain = (item, qty) => {
     if (qty > 0) {
-      addItem(state, item, qty);
+      // Le blé récolté va d'abord au Silo, le surplus dans l'inventaire.
+      if (item === DATA.SILO.ITEM) storeWheat(state, qty);
+      else addItem(state, item, qty);
       items[item] = (items[item] || 0) + qty;
     }
   };
   if (plot.montee) {
     gain(def.graines.item, def.graines.quantite);
   } else {
-    gain(culture, harvestYield(state, culture, auto));
+    gain(cropProduct(culture), harvestYield(state, culture, auto));
     if (def.graines.mode === 'recolte') gain(def.graines.item, randomInt(state, def.graines.min, def.graines.max));
   }
   plot.culture = null;
@@ -1803,7 +1887,7 @@ function harvest(state, plotId, auto = false) {
 // Deuxième étape nocturne : +1 stade si la parcelle a été arrosée (jusqu'au
 // dernier stade), puis remise à zéro de l'arrosage.
 function growAll(state) {
-  for (const p of state.potager.parcelles) {
+  for (const p of allPlots(state)) {
     if (!p.culture) {
       p.arrose = false;
       continue;
@@ -1826,6 +1910,219 @@ function upgradePotager(state) {
   const target = DATA.POTAGER.PARCELLES[state.potager.niveau - 1];
   for (let n = state.potager.parcelles.length + 1; n <= target; n++) state.potager.parcelles.push(makePlot(n));
   return { ok: true, cost };
+}
+
+/* ---------- Lot 4 : Champ ---------- */
+
+function champUpgradeCost(state) {
+  return state.champ.niveau >= DATA.LEVEL_MAX ? null : DATA.CHAMP.COUT[state.champ.niveau];
+}
+
+// Construit le Champ (niveau 1) et crée ses parcelles.
+function buildChamp(state) {
+  const c = state.champ;
+  if (c.construit) return fail('Le Champ est déjà construit.');
+  const cost = DATA.CHAMP.CONSTRUCTION;
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  c.construit = true;
+  c.niveau = 1;
+  c.parcelles = makePlots(DATA.CHAMP.PARCELLES[0], DATA.CHAMP.LIEU);
+  return { ok: true, cost };
+}
+
+function upgradeChamp(state) {
+  const c = state.champ;
+  if (!c.construit) return fail('Construis d\'abord le Champ.');
+  const cost = champUpgradeCost(state);
+  if (cost === null) return fail('Niveau maximum atteint.');
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  c.niveau += 1;
+  const target = DATA.CHAMP.PARCELLES[c.niveau - 1];
+  for (let n = c.parcelles.length + 1; n <= target; n++) c.parcelles.push(makePlot(n, DATA.CHAMP.LIEU));
+  return { ok: true, cost };
+}
+
+/* ---------- Lot 4 : Silo et blé ---------- */
+
+// Le blé du Silo est un nombre à part (state.silo.ble) ; le surplus vit dans
+// l'inventaire (non périssable). Les quantités peuvent être des demis : une
+// poule mange 0,5 blé.
+
+function siloCapacity(state) {
+  return state.silo.construit ? DATA.SILO.CAPACITE[state.silo.niveau - 1] : 0;
+}
+
+function siloUpgradeCost(state) {
+  return state.silo.niveau >= DATA.LEVEL_MAX ? null : DATA.SILO.COUT[state.silo.niveau];
+}
+
+function wheatTotal(state) {
+  return state.silo.ble + countItem(state, DATA.SILO.ITEM);
+}
+
+// Range du blé récolté : d'abord dans le Silo jusqu'à sa capacité, le surplus
+// dans l'inventaire. Renvoie { silo, inventaire }.
+function storeWheat(state, qty) {
+  if (!(qty > 0)) return { silo: 0, inventaire: 0 };
+  const room = Math.max(0, siloCapacity(state) - state.silo.ble);
+  const silo = Math.min(room, qty);
+  state.silo.ble += silo;
+  const inventaire = qty - silo;
+  if (inventaire > 0) addItem(state, DATA.SILO.ITEM, inventaire);
+  return { silo, inventaire };
+}
+
+// Retire exactement `qty` blé (tout ou rien), en commençant par le Silo
+// (`first` = 'silo') ou par l'inventaire (`first` = 'inventaire').
+// Renvoie true si le retrait a eu lieu.
+function takeWheat(state, qty, first = 'silo') {
+  if (wheatTotal(state) + EPS < qty) return false;
+  let rest = qty;
+  const fromSilo = () => {
+    const n = Math.min(state.silo.ble, rest);
+    state.silo.ble -= n;
+    rest -= n;
+  };
+  const fromStock = () => {
+    if (rest > EPS) rest -= takeItem(state, DATA.SILO.ITEM, rest);
+  };
+  if (first === 'silo') {
+    fromSilo();
+    fromStock();
+  } else {
+    fromStock();
+    fromSilo();
+  }
+  return true;
+}
+
+// Le Silo est offert (construction à 0 dans DATA) mais reste à construire.
+function buildSilo(state) {
+  const s = state.silo;
+  if (s.construit) return fail('Le Silo est déjà construit.');
+  const cost = DATA.SILO.CONSTRUCTION;
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  s.construit = true;
+  s.niveau = 1;
+  return { ok: true, cost };
+}
+
+function upgradeSilo(state) {
+  if (!state.silo.construit) return fail('Construis d\'abord le Silo.');
+  const cost = siloUpgradeCost(state);
+  if (cost === null) return fail('Niveau maximum atteint.');
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  state.silo.niveau += 1;
+  return { ok: true, cost };
+}
+
+/* ---------- Lot 4 : Poulailler et poules ---------- */
+
+function coopCapacity(state) {
+  return state.poulailler.construit ? DATA.POULAILLER.CAPACITE[state.poulailler.niveau - 1] : 0;
+}
+
+function coopUpgradeCost(state) {
+  return state.poulailler.niveau >= DATA.LEVEL_MAX ? null : DATA.POULAILLER.COUT[state.poulailler.niveau];
+}
+
+function buildPoulailler(state) {
+  const p = state.poulailler;
+  if (p.construit) return fail('Le Poulailler est déjà construit.');
+  const cost = DATA.POULAILLER.CONSTRUCTION;
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  p.construit = true;
+  p.niveau = 1;
+  return { ok: true, cost };
+}
+
+function upgradePoulailler(state) {
+  if (!state.poulailler.construit) return fail('Construis d\'abord le Poulailler.');
+  const cost = coopUpgradeCost(state);
+  if (cost === null) return fail('Niveau maximum atteint.');
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  state.poulailler.niveau += 1;
+  return { ok: true, cost };
+}
+
+// Prix fixe d'un animal : il ne dépend ni du nombre d'animaux ni du Comptoir.
+function animalPrice(kind) {
+  return DATA.ANIMAUX[kind].prix;
+}
+
+// Achat d'une poule au Comptoir : refusé si le Poulailler n'existe pas, s'il
+// est plein ou si les pièces manquent. Pas de revente.
+function buyAnimal(state, kind) {
+  if (kind !== 'poule') return fail('Cet animal n\'est pas encore en vente.');
+  const p = state.poulailler;
+  if (!p.construit) return fail('Construis d\'abord le Poulailler.');
+  if (p.poules >= coopCapacity(state)) return fail('Le Poulailler est plein.');
+  const price = animalPrice(kind);
+  if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
+  spend(state, price);
+  p.poules += 1;
+  return { ok: true, cost: price };
+}
+
+// Poules restant à nourrir cette nuit.
+function hensToFeed(state) {
+  return state.poulailler.poules - state.poulailler.nourries;
+}
+
+// Nourrit une poule (au clic). Sous productivité 1, le geste ne compte qu'avec
+// une probabilité égale à la productivité (tirage du générateur de l'état) : s'il
+// rate, rien n'est retiré du blé et la poule reste à nourrir. Le blé est pris
+// d'abord dans le Silo, puis dans l'inventaire.
+function feedHen(state) {
+  const p = state.poulailler;
+  const need = DATA.ANIMAUX.poule.bleParNuit;
+  if (p.poules <= 0) return fail('Aucune poule à nourrir.');
+  if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
+  if (wheatTotal(state) + EPS < need) return fail('Pas assez de blé.');
+  const prod = productivity(state);
+  if (prod < 1 - EPS && nextRandom(state) >= prod) return { ok: true, compte: false };
+  takeWheat(state, need, 'silo');
+  p.nourries += 1;
+  state.jour.ble += need;
+  return { ok: true, compte: true };
+}
+
+// « Nourrir tout » : une tentative par poule restante, tant qu'il reste du blé.
+// Renvoie { ok, nourries, ratees } ; refusé si rien n'était possible.
+function feedAllHens(state) {
+  const p = state.poulailler;
+  if (p.poules <= 0) return fail('Aucune poule à nourrir.');
+  if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
+  const need = DATA.ANIMAUX.poule.bleParNuit;
+  if (wheatTotal(state) + EPS < need) return fail('Pas assez de blé.');
+  let nourries = 0;
+  let ratees = 0;
+  const attempts = hensToFeed(state);
+  for (let i = 0; i < attempts; i++) {
+    const r = feedHen(state);
+    if (!r.ok) break; // plus de blé
+    if (r.compte) nourries += 1;
+    else ratees += 1;
+  }
+  return { ok: true, nourries, ratees };
+}
+
+// Étape nocturne : chaque poule nourrie pond ses œufs, puis les compteurs
+// repartent à zéro. Les œufs pondus sont notés pour l'écran de réveil.
+function layEggs(state) {
+  const p = state.poulailler;
+  const def = DATA.ANIMAUX.poule;
+  const eggs = p.nourries * def.oeufsParNuit;
+  if (eggs > 0) addItem(state, def.produit, eggs);
+  state.nuit.oeufs = eggs;
+  p.nourries = 0;
+  return eggs;
 }
 
 /* ---------- la nuit ---------- */
@@ -1857,6 +2154,10 @@ function buildMorningReport(state) {
     // Lot 3 : ce qui a péri cette nuit, et ce qui périra à la prochaine.
     perimes: { ...(state.nuit.perdus || {}) },
     aPerimer: expiringSoon(state),
+    // Lot 4 : œufs pondus cette nuit, blé mangé par les poules pendant la journée.
+    oeufs: state.nuit.oeufs || 0,
+    bleConsomme: state.jour.ble || 0,
+    poules: state.poulailler.poules,
   };
 }
 
@@ -1917,9 +2218,28 @@ function testAddSeeds(state) {
   return { ok: true };
 }
 
+// Lot 4 : +50 blés, rangés comme une récolte (Silo d'abord, surplus dans
+// l'inventaire).
+function testAddWheat(state, qty = 50) {
+  storeWheat(state, qty);
+  return { ok: true };
+}
+
+// Lot 4 : +4 poules, dans la limite de la capacité. Le Poulailler est construit
+// gratuitement s'il ne l'était pas.
+function testAddHens(state, count = 4) {
+  const p = state.poulailler;
+  if (!p.construit) {
+    p.construit = true;
+    p.niveau = 1;
+  }
+  p.poules = Math.min(coopCapacity(state), p.poules + count);
+  return { ok: true };
+}
+
 // Lot 2 : toutes les parcelles plantées deviennent mûres.
 function testRipenAll(state) {
-  for (const p of state.potager.parcelles) {
+  for (const p of allPlots(state)) {
     if (p.culture) p.stade = maxStage(p);
   }
   return { ok: true };
@@ -1982,6 +2302,15 @@ function startHousehold() {
 
 // État initial du jeu. `seed` doit être fourni par l'appelant (l'app),
 // jamais lu depuis l'horloge ici : l'ENGINE reste pur et testable.
+// Lot 4 : Champ, Silo et Poulailler, tous à construire.
+function startLot4() {
+  return {
+    champ: { construit: false, niveau: 1, parcelles: [] },
+    silo: { construit: false, niveau: 1, ble: 0 },
+    poulailler: { construit: false, niveau: 1, poules: 0, nourries: 0 },
+  };
+}
+
 function createInitialState(seed = 1) {
   return {
     version: STATE_VERSION,
@@ -1994,6 +2323,7 @@ function createInitialState(seed = 1) {
     marche: {}, // Lot 3 : coefficients d'achat au-dessus de leur plancher
     ...startFarm(),
     ...startHousehold(),
+    ...startLot4(),
   };
 }
 
@@ -2029,6 +2359,15 @@ const MIGRATIONS = {
       : newNightStats();
     return { ...state, inventaire, nuit, marche: state.marche || {}, version: 4 };
   },
+  // v4 (Lot 3) → v5 (Lot 4) : Champ, Silo et Poulailler (à construire), blé
+  // mangé du jour et œufs de la nuit.
+  4: (state) => ({
+    ...startLot4(),
+    ...state,
+    jour: { ...newDayStats(), ...(state.jour && typeof state.jour === 'object' ? state.jour : {}) },
+    nuit: { oeufs: 0, ...(state.nuit && typeof state.nuit === 'object' ? state.nuit : {}) },
+    version: 5,
+  }),
 };
 
 // Applique les migrations successives à une sauvegarde { v, t, s } (ou à un
@@ -2103,6 +2442,13 @@ function formatRate(value, digits = 2) {
   return (value < 0 ? '−' : '+') + text;
 }
 
+// Quantité d'un stock : entier, ou avec une décimale quand il y a un demi
+// (le blé : « 3,5 »).
+function formatQty(n) {
+  if (typeof n !== 'number' || Number.isNaN(n)) return '0';
+  return Math.abs(n - Math.round(n)) < 1e-9 ? formatNumber(n) : formatFixed(n, 1);
+}
+
 function formatHour(h) {
   return `${h} h`;
 }
@@ -2163,7 +2509,7 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 4);
+  assertEqual(s.version, 5);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
@@ -2804,7 +3150,7 @@ test('DATA Lot 2 : objets, énergies et prix de vente', () => {
 
 test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
   const c = DATA.crops;
-  assertEqual(Object.keys(c), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine']);
+  assertEqual(Object.keys(c), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'ble', 'tournesol']);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].stades), [4, 6, 5, 5, 6]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].litres), [2, 3, 3, 4, 4]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].rendement), [10, 8, 10, 6, 6]);
@@ -2813,7 +3159,9 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
   for (const k of ['tomate', 'courgette', 'aubergine']) {
     assertEqual([c[k].graines.mode, c[k].graines.min, c[k].graines.max], ['recolte', 1, 2]);
   }
-  for (const k of Object.keys(c)) assertEqual(c[k].lieux, ['potager']);
+  // Lot 4 : blé et tournesol sont des cultures du Champ.
+  for (const k of ['carotte', 'patate', 'tomate', 'courgette', 'aubergine']) assertEqual(c[k].lieux, ['potager']);
+  for (const k of ['ble', 'tournesol']) assertEqual(c[k].lieux, ['champ']);
 });
 
 test('état initial Lot 2 : inventaire, potager de 6 parcelles, famille de 4 à 100', () => {
@@ -3282,10 +3630,11 @@ test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de g
   assertEqual(s.famille.soinsPayes, 0, 'aucun soin payé');
 });
 
-test('ordre des étapes nocturnes : repas et santé, pousse, puis péremption en dernier', () => {
-  assertEqual(NIGHT_STEPS.length, 3);
+test('ordre des étapes nocturnes : repas et santé, pousse, ponte, puis péremption en dernier', () => {
+  assertEqual(NIGHT_STEPS.length, 4);
   assert(NIGHT_STEPS[0] === feedFamily, 'première étape : repas et santé');
   assert(NIGHT_STEPS[1] === growAll, 'deuxième étape : pousse');
+  assert(NIGHT_STEPS[2] === layEggs, 'troisième étape : ponte');
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
@@ -3766,7 +4115,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   const s = garden();
   setInv(s, { conserve: 5 });
   testAddFood(s);
-  assertEqual(inventoryCounts(s), { conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20 });
+  assertEqual(inventoryCounts(s), { conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20, oeuf: 20 });
   assertEqual(countItem(s, 'graine_carotte'), 0, 'les graines ne sont pas des aliments');
   const r = testAgeInventory(s);
   assertEqual(r.ok, true);
@@ -3776,7 +4125,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   assertEqual(lotsOf(s, 'conserve')[0].nightsLeft, null);
   for (let i = 0; i < 4; i++) testAgeInventory(s);
   const last = testAgeInventory(s); // 6e nuit : tomate, courgette, aubergine déjà perdues, carotte maintenant
-  assertEqual(last.perdus, { carotte: 20 });
+  assertEqual(last.perdus, { carotte: 20, oeuf: 20 });
   assertEqual(inventoryCounts(s), { conserve: 25, patate: 20 });
 });
 
@@ -3788,7 +4137,7 @@ test('migration v3 (Lot 2) → v4 : l\'inventaire devient des lots à conservati
   v3.inventaire = { conserve: 40, carotte: 7, patate: 6, graine_carotte: 3, tomate: 0 };
   delete v3.nuit.perdus; // une nuit de Lot 2 ne connaît pas encore les pertes
   const m = migrate({ v: 3, t: 0, s: v3 });
-  assertEqual(m.version, 4);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces], [9, 66]);
   assertEqual(inventoryCounts(m), { conserve: 40, carotte: 7, patate: 6, graine_carotte: 3 }, 'un item à zéro disparaît');
   assertEqual(lotsOf(m, 'carotte'), [{ qty: 7, nightsLeft: 6, origin: 'produit' }]);
@@ -3825,6 +4174,528 @@ test('sérialisation JSON : lots et coefficients font l\'aller-retour', () => {
   const copy = JSON.parse(JSON.stringify(s));
   assertEqual(copy, s);
   assertEqual(marketCoef(copy, 'carotte'), 1.5);
+});
+
+/* ---------- Lot 4 : Champ, Silo, Poulailler ---------- */
+
+// État de test : riche, Silo et Poulailler construits, réservoir plein.
+function ranch({ silo = true, coop = true, champ = false } = {}) {
+  const s = garden();
+  s.pieces = 5000;
+  if (silo) assert(buildSilo(s).ok, 'construire le Silo');
+  if (coop) assert(buildPoulailler(s).ok, 'construire le Poulailler');
+  if (champ) assert(buildChamp(s).ok, 'construire le Champ');
+  return s;
+}
+
+test('DATA Lot 4 : Champ, Silo, Poulailler, poule, blé, tournesol et œuf', () => {
+  assertEqual([DATA.CHAMP.CONSTRUCTION, DATA.CHAMP.PARCELLES, DATA.CHAMP.COUT], [60, [4, 6, 9, 12, 16], [0, 120, 280, 600, 1300]]);
+  assertEqual([DATA.SILO.CAPACITE, DATA.SILO.CONSTRUCTION, DATA.SILO.COUT], [[20, 50, 100, 200, 400], 0, [0, 30, 80, 180, 400]]);
+  assertEqual([DATA.POULAILLER.CONSTRUCTION, DATA.POULAILLER.CAPACITE, DATA.POULAILLER.COUT], [40, [4, 8, 12, 16, 24], [0, 100, 220, 450, 900]]);
+  assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.poule.bleParNuit, DATA.ANIMAUX.poule.oeufsParNuit], [15, 0.5, 1]);
+  const c = DATA.crops;
+  assertEqual([c.ble.stades, c.ble.litres, c.ble.rendement, c.ble.graines], [7, 2, 8, { item: 'ble', mode: 'plant' }]);
+  assertEqual([c.tournesol.stades, c.tournesol.litres, c.tournesol.rendement], [7, 2, 9]);
+  assertEqual(cropProduct('tournesol'), 'graine_tournesol');
+  assertEqual(cropProduct('ble'), 'ble');
+  assertEqual([DATA.items.oeuf.energie, DATA.items.oeuf.prix, shelfLife('oeuf')], [10, 2, 6]);
+  assertEqual(shelfLife('ble'), null, 'le blé ne périme jamais');
+  assertEqual(shelfLife('graine_tournesol'), null);
+});
+
+test('état initial Lot 4 : rien n\'est construit', () => {
+  const s = createInitialState(1);
+  assertEqual(s.champ, { construit: false, niveau: 1, parcelles: [] });
+  assertEqual(s.silo, { construit: false, niveau: 1, ble: 0 });
+  assertEqual(s.poulailler, { construit: false, niveau: 1, poules: 0, nourries: 0 });
+  assertEqual([siloCapacity(s), coopCapacity(s)], [0, 0]);
+  assertEqual(s.jour.ble, 0);
+});
+
+test('Champ : construction à 60 pièces avec 4 parcelles, niveaux 2 à 5 aux bons coûts', () => {
+  const s = garden();
+  s.pieces = 59;
+  assertEqual(buildChamp(s).ok, false, 'construction refusée sans 60 pièces');
+  assertEqual(s.champ.construit, false);
+  assertEqual(upgradeChamp(s).ok, false, 'pas d\'amélioration avant la construction');
+  s.pieces = 60;
+  assertEqual(buildChamp(s).ok, true);
+  assertEqual(s.pieces, 0);
+  assertEqual(s.champ.parcelles.map((p) => p.id), ['champ-1', 'champ-2', 'champ-3', 'champ-4']);
+  assertEqual(s.champ.parcelles[0].lieu, 'champ');
+  assertEqual(buildChamp(s).ok, false, 'une seule construction');
+  const seen = [];
+  s.pieces = 3000;
+  while (champUpgradeCost(s) !== null) {
+    const cost = champUpgradeCost(s);
+    const before = s.pieces;
+    assertEqual(upgradeChamp(s).ok, true);
+    assertEqual(before - s.pieces, cost);
+    seen.push([cost, s.champ.niveau, s.champ.parcelles.length]);
+  }
+  assertEqual(seen, [[120, 2, 6], [280, 3, 9], [600, 4, 12], [1300, 5, 16]]);
+  assertEqual(upgradeChamp(s).ok, false, 'niveau maximum');
+  s.pieces = 0;
+  const t = garden();
+  t.champ = { construit: true, niveau: 1, parcelles: makePlots(4, 'champ') };
+  assertEqual(upgradeChamp(t).ok, false, 'pas assez de pièces');
+});
+
+test('Champ : le moteur de cultures du potager sert aussi le champ (planter, arroser, pousser, récolter)', () => {
+  const s = ranch({ champ: true });
+  setInv(s, { ble: 3, graine_tournesol: 2, conserve: 300 }); // la famille mange : la productivité reste à 1
+  assertEqual(plant(s, 'champ-1', 'ble').ok, true);
+  assertEqual(plant(s, 'champ-2', 'tournesol').ok, true);
+  assertEqual(plant(s, 'potager-1', 'ble').ok, false, 'le blé ne pousse pas au potager');
+  assertEqual(plant(s, 'champ-3', 'carotte').ok, false, 'la carotte ne pousse pas au champ');
+  assertEqual(s.eau, 40);
+  assertEqual(water(s, 'champ-1').ok, true);
+  assertEqual(water(s, 'champ-2').ok, true);
+  assertEqual(s.eau, 36, '2 L par arrosage');
+  for (let i = 1; i <= 7; i++) {
+    sleep(Object.assign(s, { awakeSeconds: 30 }));
+    for (const id of ['champ-1', 'champ-2']) if (findPlot(s, id).stade < 7) water(s, id);
+  }
+  assertEqual(findPlot(s, 'champ-1').stade, 7);
+  assertEqual(isMature(findPlot(s, 'champ-1')), true);
+  assertEqual(readyCrops(s).map((r) => [r.culture, r.nombre]), [['ble', 1], ['tournesol', 1]]);
+  assertEqual(harvest(s, 'champ-1').items, { ble: 8 });
+  assertEqual(harvest(s, 'champ-2').items, { graine_tournesol: 9 });
+  assertEqual(findPlot(s, 'champ-1').culture, null, 'parcelle libérée');
+  assertEqual(countItem(s, 'graine_tournesol'), 9 + 1, 'la graine plantée est consommée : 2 − 1 + 9');
+});
+
+test('Silo : capacité par niveau et coûts 30 / 80 / 180 / 400, construction offerte', () => {
+  const s = garden();
+  s.pieces = 0;
+  assertEqual(buildSilo(s).ok, true, 'la construction est gratuite');
+  assertEqual(s.pieces, 0);
+  assertEqual(buildSilo(s).ok, false);
+  assertEqual(siloCapacity(s), 20);
+  const seen = [];
+  s.pieces = 1000;
+  while (siloUpgradeCost(s) !== null) {
+    const cost = siloUpgradeCost(s);
+    assertEqual(upgradeSilo(s).ok, true);
+    seen.push([cost, s.silo.niveau, siloCapacity(s)]);
+  }
+  assertEqual(seen, [[30, 2, 50], [80, 3, 100], [180, 4, 200], [400, 5, 400]]);
+  assertEqual(s.pieces, 1000 - 690);
+  assertEqual(upgradeSilo(s).ok, false, 'niveau maximum');
+  const t = garden();
+  assertEqual(upgradeSilo(t).ok, false, 'pas avant la construction');
+  buildSilo(t);
+  t.pieces = 29;
+  assertEqual(upgradeSilo(t).ok, false, 'pas assez de pièces');
+});
+
+test('Silo : le blé récolté va d\'abord au Silo, le surplus déborde dans l\'inventaire', () => {
+  const s = ranch({ champ: true });
+  setInv(s, {});
+  // 3 récoltes de 8 blés = 24 : 20 au Silo (niveau 1), 4 dans l'inventaire
+  s.champ.parcelles.forEach((p, i) => {
+    if (i < 3) {
+      p.culture = 'ble';
+      p.stade = 7;
+    }
+  });
+  harvest(s, 'champ-1');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [8, 0]);
+  harvest(s, 'champ-2');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [16, 0]);
+  harvest(s, 'champ-3');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 4], 'plein à 20, surplus de 4 dans l\'inventaire');
+  assertEqual(lotsOf(s, 'ble')[0].nightsLeft, null, 'le blé de l\'inventaire ne périme pas');
+  assertEqual(wheatTotal(s), 24);
+  // sans Silo, tout va dans l'inventaire
+  const t = ranch({ silo: false, champ: true });
+  setInv(t, {});
+  assertEqual(storeWheat(t, 8), { silo: 0, inventaire: 8 });
+  assertEqual([t.silo.ble, countItem(t, 'ble')], [0, 8]);
+  // niveau 2 : capacité 50
+  upgradeSilo(s);
+  assertEqual(storeWheat(s, 100), { silo: 30, inventaire: 100 - 30 });
+  assertEqual(s.silo.ble, 50);
+});
+
+test('Silo : les poules mangent d\'abord dans le Silo, puis dans l\'inventaire', () => {
+  const s = ranch();
+  setInv(s, { ble: 3 });
+  s.silo.ble = 1;
+  testAddHens(s, 4);
+  assertEqual(feedHen(s).compte, true);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [0.5, 3]);
+  assertEqual(feedHen(s).compte, true);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [0, 3]);
+  assertEqual(feedHen(s).compte, true);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [0, 2.5], 'le Silo est vide : on entame l\'inventaire');
+  assertEqual(s.poulailler.nourries, 3);
+  assertEqual(s.jour.ble, 1.5, 'blé mangé du jour');
+});
+
+test('blé décimal : un demi reste dans le stock, ne se vend pas et se compte avec une décimale', () => {
+  const s = ranch({ silo: false });
+  setInv(s, { ble: 3 });
+  testAddHens(s, 4);
+  feedHen(s);
+  assertEqual(countItem(s, 'ble'), 2.5);
+  assertEqual(formatQty(2.5), '2,5');
+  assertEqual(formatQty(3), '3');
+  assertEqual(formatQty(0), '0');
+  const r = sellItem(s, 'ble', 99);
+  assertEqual([r.ok, r.sold, r.gain], [true, 2, 2], 'seules les unités entières se vendent');
+  assertEqual(countItem(s, 'ble'), 0.5);
+  assertEqual(sellItem(s, 'ble', 1).ok, false, 'un demi-blé ne se vend pas');
+  assertEqual(countItem(s, 'ble'), 0.5);
+});
+
+test('Poulailler : construction 40, capacité 4 / 8 / 12 / 16 / 24 aux coûts 100 / 220 / 450 / 900', () => {
+  const s = garden();
+  s.pieces = 39;
+  assertEqual(buildPoulailler(s).ok, false);
+  assertEqual(upgradePoulailler(s).ok, false, 'pas avant la construction');
+  s.pieces = 40;
+  assertEqual(buildPoulailler(s).ok, true);
+  assertEqual([s.pieces, coopCapacity(s)], [0, 4]);
+  assertEqual(buildPoulailler(s).ok, false);
+  s.pieces = 5000;
+  const seen = [];
+  while (coopUpgradeCost(s) !== null) {
+    const cost = coopUpgradeCost(s);
+    assertEqual(upgradePoulailler(s).ok, true);
+    seen.push([cost, s.poulailler.niveau, coopCapacity(s)]);
+  }
+  assertEqual(seen, [[100, 2, 8], [220, 3, 12], [450, 4, 16], [900, 5, 24]]);
+  assertEqual(upgradePoulailler(s).ok, false, 'niveau maximum');
+});
+
+test('poule : prix fixe de 15 pièces, quel que soit le nombre de poules', () => {
+  const s = ranch();
+  s.pieces = 100;
+  for (let i = 0; i < 4; i++) {
+    assertEqual(animalPrice('poule'), 15);
+    const before = s.pieces;
+    assertEqual(buyAnimal(s, 'poule').ok, true);
+    assertEqual(before - s.pieces, 15, `la ${i + 1}re poule coûte 15`);
+  }
+  assertEqual(s.poulailler.poules, 4);
+  assertEqual(s.pieces, 40);
+  assertEqual(buyAnimal(s, 'poule').ok, false, 'plein : refusé même avec des pièces');
+  s.pieces = 100;
+  assertEqual(upgradePoulailler(s).ok, true);
+  s.pieces = 15;
+  const r = buyAnimal(s, 'poule');
+  assertEqual([r.ok, r.cost, s.pieces], [true, 15, 0], 'toujours 15 avec 4 poules de plus');
+  assertEqual(buyAnimal(s, 'poule').ok, false, 'pas assez de pièces');
+});
+
+test('achat de poule refusé si le poulailler est plein ou absent, et sans effet sur les pièces', () => {
+  const s = ranch();
+  testAddHens(s, 4);
+  s.pieces = 1000;
+  const r = buyAnimal(s, 'poule');
+  assertEqual([r.ok, r.error], [false, 'Le Poulailler est plein.']);
+  assertEqual([s.pieces, s.poulailler.poules], [1000, 4]);
+  const t = ranch({ coop: false });
+  assertEqual(buyAnimal(t, 'poule').ok, false, 'pas de poulailler');
+  assertEqual(t.poulailler.poules, 0);
+  assertEqual(buyAnimal(s, 'mouton').ok, false, 'le mouton arrive plus tard');
+  assertEqual(typeof sellItem, 'function');
+  assertEqual(DATA.items.poule, undefined, 'une poule n\'est pas un objet : elle ne se revend pas');
+});
+
+test('poule non nourrie : pas d\'œuf ; poule nourrie : 1 œuf, puis remise à zéro', () => {
+  const s = ranch();
+  setInv(s, { ble: 10, conserve: 200 });
+  testAddHens(s, 4);
+  assertEqual(feedHen(s).compte, true);
+  assertEqual(feedHen(s).compte, true);
+  assertEqual([s.poulailler.poules, s.poulailler.nourries], [4, 2]);
+  assertEqual(layEggs(s), 2, '2 poules nourries sur 4 : 2 œufs');
+  assertEqual(countItem(s, 'oeuf'), 2);
+  assertEqual(s.poulailler.nourries, 0, 'remise à zéro');
+  assertEqual(layEggs(s), 0, 'personne nourrie : aucun œuf');
+  assertEqual(countItem(s, 'oeuf'), 2);
+  assertEqual(s.nuit.oeufs, 0);
+  // Aucune poule nourrie du tout, sur une vraie nuit
+  const t = ranch();
+  testAddHens(t, 4);
+  t.awakeSeconds = 30;
+  const report = sleep(t);
+  assertEqual([report.oeufs, countItem(t, 'oeuf')], [0, 0]);
+});
+
+test('ponte : les œufs sont pondus après la pousse et avant la péremption', () => {
+  const s = ranch();
+  setInv(s, { ble: 10, conserve: 200 });
+  testAddHens(s, 4);
+  feedAllHens(s);
+  assertEqual(s.poulailler.nourries, 4);
+  s.awakeSeconds = 30;
+  const report = sleep(s);
+  assertEqual(countItem(s, 'oeuf'), 4);
+  assertEqual(lotsOf(s, 'oeuf')[0].nightsLeft, 5, 'pondu avant la péremption : il a déjà perdu une nuit sur 6');
+  assertEqual(report.oeufs, 4);
+  assertEqual(report.bleConsomme, 2, '4 poules × 0,5 blé');
+  assertEqual(report.poules, 4);
+  assertEqual(s.poulailler.nourries, 0);
+  assertEqual(s.jour.ble, 0, 'compteur du jour remis à zéro');
+  // la nuit d'après, sans nourrir : aucun œuf de plus
+  s.awakeSeconds = 30;
+  assertEqual(sleep(s).oeufs, 0);
+  assertEqual(countItem(s, 'oeuf') <= 4, true);
+});
+
+test('« Nourrir tout » nourrit autant de poules que possible, dans la limite du blé', () => {
+  const s = ranch();
+  setInv(s, { ble: 1.5 });
+  testAddHens(s, 4);
+  const r = feedAllHens(s);
+  assertEqual([r.ok, r.nourries, r.ratees], [true, 3, 0], '1,5 blé = 3 poules');
+  assertEqual([s.poulailler.nourries, wheatTotal(s)], [3, 0]);
+  assertEqual(feedAllHens(s).ok, false, 'plus de blé');
+  assertEqual(feedHen(s).error, 'Pas assez de blé.');
+  s.silo.ble = 10;
+  const r2 = feedAllHens(s);
+  assertEqual([r2.nourries, s.poulailler.nourries], [1, 4]);
+  assertEqual(s.silo.ble, 9.5);
+  assertEqual(feedAllHens(s).error, 'Toutes les poules sont nourries.');
+  assertEqual(feedHen(s).ok, false);
+  const t = ranch();
+  assertEqual(feedAllHens(t).error, 'Aucune poule à nourrir.');
+});
+
+test('nourrissage : le blé est retiré une fois par poule et par nuit', () => {
+  const s = ranch();
+  s.silo.ble = 10;
+  testAddHens(s, 1);
+  assertEqual(feedHen(s).compte, true);
+  assertEqual(feedHen(s).ok, false, 'une seule fois par nuit');
+  assertEqual(s.silo.ble, 9.5);
+});
+
+test('productivité < 1 : un nourrissage manuel compte avec une probabilité égale à la productivité', () => {
+  const trial = (health) => {
+    const s = ranch();
+    setHealth(s, health);
+    s.silo.ble = 400;
+    testAddHens(s, 4);
+    return s;
+  };
+  // santé 30 → productivité ×0,5
+  const s = trial(30);
+  assertEqual(productivity(s), 0.5);
+  let counted = 0;
+  const N = 400;
+  for (let i = 0; i < N; i++) {
+    s.poulailler.nourries = 0;
+    const wheatBefore = wheatTotal(s);
+    const r = feedHen(s);
+    assertEqual(r.ok, true);
+    if (r.compte) {
+      counted += 1;
+      assertEqual(wheatTotal(s), wheatBefore - 0.5, 'un geste qui compte retire 0,5 blé');
+      assertEqual(s.poulailler.nourries, 1);
+    } else {
+      assertEqual(wheatTotal(s), wheatBefore, 'un geste raté conserve le blé');
+      assertEqual(s.poulailler.nourries, 0, 'la poule reste à nourrir');
+    }
+  }
+  const rate = counted / N;
+  assert(rate > 0.42 && rate < 0.58, `taux observé ${rate}, attendu ≈ 0,5`);
+  // productivité ×0,25 (santé < 20) : environ un geste sur quatre
+  const t = trial(10);
+  assertEqual(productivity(t), 0.25);
+  let c2 = 0;
+  for (let i = 0; i < N; i++) {
+    t.poulailler.nourries = 0;
+    if (feedHen(t).compte) c2 += 1;
+  }
+  assert(c2 / N > 0.17 && c2 / N < 0.33, `taux observé ${c2 / N}, attendu ≈ 0,25`);
+  // productivité 1 : le geste compte toujours et le générateur n'est pas tiré
+  const u = trial(100);
+  const seedBefore = u.rngSeed;
+  assertEqual(feedHen(u).compte, true);
+  assertEqual(u.rngSeed, seedBefore, 'aucun tirage à pleine productivité');
+  // « Nourrir tout » applique la même règle poule par poule
+  const v = trial(30);
+  const all = feedAllHens(v);
+  assertEqual(all.nourries + all.ratees, 4);
+  assertEqual(v.poulailler.nourries, all.nourries);
+  assertEqual(400 - wheatTotal(v), all.nourries * 0.5);
+});
+
+test('productivité : le tirage vient du générateur à graine de l\'état (reproductible)', () => {
+  const run = () => {
+    const s = ranch();
+    setHealth(s, 30);
+    s.silo.ble = 100;
+    s.rngSeed = 12345;
+    testAddHens(s, 4);
+    const out = [];
+    for (let i = 0; i < 30; i++) {
+      s.poulailler.nourries = 0;
+      out.push(feedHen(s).compte);
+    }
+    return out;
+  };
+  assertEqual(run(), run());
+});
+
+test('tournesol : les graines récoltées servent à semer', () => {
+  const s = ranch({ champ: true });
+  setInv(s, {});
+  const p = findPlot(s, 'champ-1');
+  p.culture = 'tournesol';
+  p.stade = 7;
+  assertEqual(harvest(s, 'champ-1', true).items, { graine_tournesol: 9 });
+  assertEqual(countItem(s, 'graine_tournesol'), 9);
+  assertEqual(seedStock(s, 'tournesol'), 9);
+  assertEqual(plant(s, 'champ-2', 'tournesol').ok, true);
+  assertEqual(countItem(s, 'graine_tournesol'), 8);
+  assertEqual(findPlot(s, 'champ-2').culture, 'tournesol');
+  assertEqual(plant(s, 'champ-3', 'tournesol').ok, true);
+  assertEqual(countItem(s, 'graine_tournesol'), 7);
+  // sans graines, on ne sème pas
+  setInv(s, {});
+  assertEqual(plant(s, 'champ-4', 'tournesol').ok, false);
+  // et elles s'achètent au Comptoir au prix des graines (coefficient 2,0)
+  s.pieces = 10;
+  const r = buyItem(s, 'graine_tournesol');
+  assertEqual([r.ok, r.cost], [true, 2]);
+  assertEqual(plant(s, 'champ-4', 'tournesol').ok, true);
+});
+
+test('blé : un blé sert de graine, pris d\'abord dans l\'inventaire puis dans le Silo', () => {
+  const s = ranch({ champ: true });
+  setInv(s, { ble: 1 });
+  s.silo.ble = 5;
+  assertEqual(seedStock(s, 'ble'), 6);
+  assertEqual(plant(s, 'champ-1', 'ble').ok, true);
+  assertEqual([countItem(s, 'ble'), s.silo.ble], [0, 5], 'l\'inventaire d\'abord');
+  assertEqual(plant(s, 'champ-2', 'ble').ok, true);
+  assertEqual([countItem(s, 'ble'), s.silo.ble], [0, 4], 'puis le Silo');
+  s.silo.ble = 0;
+  assertEqual(plant(s, 'champ-3', 'ble').ok, false, 'plus de blé du tout');
+  assertEqual(plant(s, 'champ-3', 'ble').error, 'Pas de graines : Blé.');
+});
+
+test('le blé et les graines de tournesol ne sont pas des aliments de la famille', () => {
+  const s = ranch();
+  setInv(s, { ble: 50, graine_tournesol: 50 });
+  s.silo.ble = 20;
+  const plan = planMeal(s);
+  assertEqual(plan.mange, {});
+  assertEqual(plan.energie, 0);
+});
+
+test('la famille mange les œufs (10 énergie) : ils périment avant les conserves', () => {
+  const s = ranch();
+  setInv(s, { oeuf: 4, conserve: 200 });
+  const plan = planMeal(s);
+  assertEqual(plan.mange.oeuf, 4);
+  assertEqual(plan.mange.conserve, Math.ceil((320 - 40) / 20));
+  assertEqual(plan.energie, 320);
+});
+
+test('migration v4 (Lot 3) → v5 : Champ, Silo et Poulailler apparaissent, la partie est gardée', () => {
+  const v4 = {
+    version: 4, day: 12, awakeSeconds: 5, pieces: 321, rngSeed: 8, stats: {},
+    unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'], marche: { carotte: 1.5 },
+    ...startFarm(), ...startHousehold(),
+  };
+  delete v4.champ;
+  delete v4.silo;
+  delete v4.poulailler;
+  delete v4.jour.ble;
+  delete v4.nuit.oeufs;
+  const m = migrate({ v: 4, t: 0, s: v4 });
+  assertEqual(m.version, 5);
+  assertEqual([m.day, m.pieces], [12, 321]);
+  assertEqual(m.marche, { carotte: 1.5 });
+  assertEqual(m.champ, { construit: false, niveau: 1, parcelles: [] });
+  assertEqual(m.silo, { construit: false, niveau: 1, ble: 0 });
+  assertEqual(m.poulailler, { construit: false, niveau: 1, poules: 0, nourries: 0 });
+  assertEqual([m.jour.ble, m.nuit.oeufs], [0, 0]);
+  assertEqual(inventoryCounts(m).conserve, 160);
+  // l'état migré tourne, construit et pond
+  m.pieces = 500;
+  assertEqual(buildPoulailler(m).ok, true);
+  buyAnimal(m, 'poule');
+  m.silo.ble = 0;
+  setInv(m, { ble: 2, conserve: 200 });
+  feedHen(m);
+  m.awakeSeconds = 30;
+  const report = sleep(m);
+  assertEqual([report.oeufs, countItem(m, 'oeuf')], [1, 1]);
+  // une sauvegarde déjà en v5 n'est pas modifiée par la migration
+  const again = migrate({ v: 5, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  assertEqual(again.poulailler, m.poulailler);
+});
+
+test('migration v0 → version courante : les chaînes mènent au Lot 4', () => {
+  const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual(m.version, STATE_VERSION);
+  assertEqual(m.silo.construit, false);
+  assertEqual(m.champ.parcelles, []);
+  assertEqual(m.jour.ble, 0);
+});
+
+test('mode test Lot 4 : +50 blés (Silo puis inventaire) et +4 poules dans la limite de la capacité', () => {
+  const s = ranch();
+  setInv(s, {});
+  assertEqual(testAddWheat(s).ok, true);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 30], 'Silo niveau 1 : 20, le reste déborde');
+  assertEqual(testAddHens(s).ok, true);
+  assertEqual(s.poulailler.poules, 4);
+  testAddHens(s);
+  assertEqual(s.poulailler.poules, 4, 'plafonné par la capacité du Poulailler');
+  // sans poulailler, il est construit gratuitement
+  const t = garden();
+  t.pieces = 0;
+  testAddHens(t);
+  assertEqual([t.poulailler.construit, t.poulailler.poules, t.pieces], [true, 4, 0]);
+  // sans Silo, tout va dans l'inventaire
+  const u = garden();
+  testAddWheat(u);
+  assertEqual([u.silo.ble, countItem(u, 'ble')], [0, 50]);
+});
+
+test('mode test : « faire mûrir » et « +10 de chaque graine » couvrent aussi le Champ', () => {
+  const s = ranch({ champ: true });
+  setInv(s, {});
+  testAddSeeds(s);
+  assertEqual(countItem(s, 'graine_tournesol'), 10);
+  assertEqual(countItem(s, 'ble'), 10);
+  plant(s, 'champ-1', 'ble');
+  plant(s, 'potager-1', 'carotte');
+  testRipenAll(s);
+  assertEqual(isMature(findPlot(s, 'champ-1')), true);
+  assertEqual(isMature(findPlot(s, 'potager-1')), true);
+});
+
+test('sérialisation JSON : le Champ, le Silo, les poules et les demis font l\'aller-retour', () => {
+  const s = ranch({ champ: true });
+  s.silo.ble = 7.5;
+  testAddHens(s);
+  feedHen(s);
+  plant(s, 'champ-1', 'ble');
+  const copy = JSON.parse(JSON.stringify(s));
+  assertEqual(copy, s);
+  assertEqual(wheatTotal(copy), wheatTotal(s));
+});
+
+test('rapport de réveil Lot 4 : œufs pondus et blé consommé', () => {
+  const s = ranch();
+  setInv(s, { ble: 4, conserve: 200 });
+  testAddHens(s, 3);
+  feedAllHens(s);
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual([r.oeufs, r.bleConsomme, r.poules], [3, 1.5, 3]);
+  s.awakeSeconds = 30;
+  const r2 = sleep(s);
+  assertEqual([r2.oeufs, r2.bleConsomme], [0, 0], 'rien mangé la journée suivante');
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -4226,6 +5097,9 @@ function renderFerme() {
   return `
     <h2>🌾 Ferme</h2>
     ${renderPotager()}
+    ${renderChamp()}
+    ${renderSilo()}
+    ${renderPoulailler()}
     <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
@@ -4349,7 +5223,6 @@ function renderPotager() {
   const pot = state.potager;
   const up = potagerUpgradeCost(state);
   const prod = productivity(state);
-  const seeds = plantableCrops(DATA.POTAGER.LIEU).some((c) => countItem(state, seedItem(c)) > 0);
   const upBtn =
     up === null
       ? '<button type="button" class="btn" disabled>Potager au niveau maximum</button>'
@@ -4359,12 +5232,114 @@ function renderPotager() {
       <h3>🌱 Potager · niveau ${pot.niveau}</h3>
       <span class="chip${prod < 1 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ×${formatMult(prod)}</span>
     </div>
-    <div class="plots">${pot.parcelles.map((p, i) => plotCard(p, i + 1, seeds)).join('')}</div>
+    <div class="plots">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${upBtn}</div>
   `;
 }
 
-function plotCard(p, n, seedsAvailable) {
+/* ---------- Ferme : Champ, Silo et Poulailler ---------- */
+
+function renderChamp() {
+  const c = state.champ;
+  if (!c.construit) {
+    const cost = DATA.CHAMP.CONSTRUCTION;
+    return `
+      <div class="section-head"><h3>🌾 Champ</h3></div>
+      <div class="card">
+        <span class="muted">Blé et tournesol : ${DATA.CHAMP.PARCELLES[0]} parcelles au départ. Le blé nourrit les poules, le tournesol donne des graines.</span>
+        <button type="button" class="btn primary" data-action="build-champ"${canPay(cost) ? '' : ' disabled'}>Construire le Champ (${costLabel(cost)})</button>
+      </div>`;
+  }
+  const up = champUpgradeCost(state);
+  const upBtn =
+    up === null
+      ? '<button type="button" class="btn" disabled>Champ au niveau maximum</button>'
+      : `<button type="button" class="btn" data-action="upgrade-champ"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${c.niveau + 1}, ${DATA.CHAMP.PARCELLES[c.niveau]} parcelles (${costLabel(up)})</button>`;
+  return `
+    <div class="section-head">
+      <h3>🌾 Champ · niveau ${c.niveau}</h3>
+    </div>
+    <div class="plots">${c.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
+    <div class="row plot-foot">${upBtn}</div>
+  `;
+}
+
+function renderSilo() {
+  const s = state.silo;
+  if (!s.construit) {
+    const cost = DATA.SILO.CONSTRUCTION;
+    return `
+      <div class="section-head"><h3>🛖 Silo</h3></div>
+      <div class="card">
+        <span class="muted">Le blé récolté y est rangé d'abord ; les poules y mangent d'abord. Capacité de départ : ${DATA.SILO.CAPACITE[0]} blés.</span>
+        <button type="button" class="btn primary" data-action="build-silo"${canPay(cost) ? '' : ' disabled'}>Construire le Silo (${costLabel(cost)})</button>
+      </div>`;
+  }
+  const cap = siloCapacity(state);
+  const pct = cap > 0 ? Math.min(100, Math.round((s.ble / cap) * 100)) : 0;
+  const cls = s.ble >= cap - EPS ? ' warn' : '';
+  const surplus = countItem(state, DATA.SILO.ITEM);
+  const up = siloUpgradeCost(state);
+  const upBtn =
+    up === null
+      ? '<button type="button" class="btn" disabled>Silo au niveau maximum</button>'
+      : `<button type="button" class="btn" data-action="upgrade-silo"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${s.niveau + 1}, ${formatNumber(DATA.SILO.CAPACITE[s.niveau])} blés (${costLabel(up)})</button>`;
+  return `
+    <div class="section-head"><h3>🛖 Silo · niveau ${s.niveau}</h3></div>
+    <div class="card">
+      <span class="big">${formatQty(s.ble)} / ${formatNumber(cap)} 🌾</span>
+      <span class="bar" role="progressbar" aria-label="Remplissage du Silo" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${Math.round(s.ble)}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
+      <span class="muted">${s.ble >= cap - EPS ? 'Silo plein : le surplus de blé va dans l\'inventaire.' : 'Le blé récolté est rangé ici en premier.'}${surplus > 0 ? ` Inventaire : ${formatQty(surplus)} blé${surplus > 1 ? 's' : ''}.` : ''}</span>
+      ${upBtn}
+    </div>`;
+}
+
+function renderPoulailler() {
+  const p = state.poulailler;
+  if (!p.construit) {
+    const cost = DATA.POULAILLER.CONSTRUCTION;
+    return `
+      <div class="section-head"><h3>🐔 Poulailler</h3></div>
+      <div class="card">
+        <span class="muted">Les poules mangent ${formatFixed(DATA.ANIMAUX.poule.bleParNuit, 1)} blé par nuit et pondent 1 œuf si elles sont nourries. Capacité de départ : ${DATA.POULAILLER.CAPACITE[0]} poules. Les poules s'achètent au Comptoir.</span>
+        <button type="button" class="btn primary" data-action="build-poulailler"${canPay(cost) ? '' : ' disabled'}>Construire le Poulailler (${costLabel(cost)})</button>
+      </div>`;
+  }
+  const cap = coopCapacity(state);
+  const toFeed = hensToFeed(state);
+  const need = DATA.ANIMAUX.poule.bleParNuit;
+  const noWheat = wheatTotal(state) + EPS < need;
+  const prod = productivity(state);
+  const up = coopUpgradeCost(state);
+  const upBtn =
+    up === null
+      ? '<button type="button" class="btn" disabled>Poulailler au niveau maximum</button>'
+      : `<button type="button" class="btn" data-action="upgrade-poulailler"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${p.niveau + 1}, ${DATA.POULAILLER.CAPACITE[p.niveau]} poules (${costLabel(up)})</button>`;
+  let hint;
+  if (p.poules === 0) hint = 'Aucune poule : achètes-en au Comptoir (onglet Animaux).';
+  else if (toFeed === 0) hint = '✅ Toutes les poules sont nourries : elles pondront cette nuit.';
+  else if (noWheat) hint = '⚠️ Pas assez de blé pour nourrir une poule.';
+  else hint = `Une poule non nourrie ne pond pas. Blé disponible : ${formatQty(wheatTotal(state))}.`;
+  return `
+    <div class="section-head">
+      <h3>🐔 Poulailler · niveau ${p.niveau}</h3>
+      <span class="chip${prod < 1 ? ' warn' : ''}" title="Un nourrissage au clic ne compte qu'avec cette probabilité">Productivité ×${formatMult(prod)}</span>
+    </div>
+    <div class="card">
+      <span class="big" aria-label="Poules nourries sur total">🥚 ${p.nourries} / ${p.poules} nourries</span>
+      <span class="muted">Poules : <span class="num">${p.poules} / ${cap}</span> · ${formatFixed(need, 1)} blé chacune</span>
+      <span class="bar" role="progressbar" aria-label="Poules nourries" aria-valuemin="0" aria-valuemax="${p.poules}" aria-valuenow="${p.nourries}"><span class="bar-fill" style="width:${p.poules ? Math.round((p.nourries / p.poules) * 100) : 0}%"></span></span>
+      <span class="muted">${hint}</span>
+      <span class="device-actions">
+        <button type="button" class="btn primary" data-action="feed-all"${toFeed > 0 && !noWheat ? '' : ' disabled'}>🌾 Nourrir tout</button>
+        <button type="button" class="btn" data-action="feed-hen"${toFeed > 0 && !noWheat ? '' : ' disabled'}>Nourrir une poule</button>
+      </span>
+      ${upBtn}
+    </div>`;
+}
+
+function plotCard(p, n) {
+  const seedsAvailable = plantableCrops(p.lieu).some((c) => seedStock(state, c) > 0);
   if (!p.culture) {
     return `
       <div class="card plot">
@@ -4389,7 +5364,7 @@ function plotCard(p, n, seedsAvailable) {
   if (mature) {
     const label = p.montee
       ? `Récolter (+${def.graines.quantite} 🌱)`
-      : `Récolter (+${harvestYield(state, p.culture)} ${def.icone})`;
+      : `Récolter (+${harvestYield(state, p.culture)} ${DATA.items[cropProduct(p.culture)].icone})`;
     actions = `<button type="button" class="btn primary" data-action="harvest" data-id="${p.id}">${label}</button>${boltBtn}`;
   } else {
     const noWater = state.eau + EPS < def.litres;
@@ -4411,12 +5386,12 @@ function openPlantModal(plotId) {
   const rows = plantableCrops(plot.lieu)
     .map((c) => {
       const def = DATA.crops[c];
-      const n = countItem(state, seedItem(c));
+      const n = seedStock(state, c);
       const stock = def.graines.mode === 'plant' ? 'Plants' : 'Graines';
       return `
         <button type="button" class="btn plant-choice" data-action="plant" data-id="${plotId}" data-crop="${c}"${n > 0 ? '' : ' disabled'}>
           <span>${def.icone} ${def.nom}</span>
-          <span class="muted">${stock} : ${n} · ${def.stades} nuits · ${def.litres} L par arrosage</span>
+          <span class="muted">${stock} : ${formatQty(n)} · ${def.stades} nuits · ${def.litres} L par arrosage</span>
         </button>`;
     })
     .join('');
@@ -4543,9 +5518,10 @@ function inventoryRow(item) {
     : '';
   return `
     <div class="inv-row">
-      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="big num">${formatNumber(n)}</span></div>
+      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="big num">${formatQty(n)}</span></div>
       ${lotListHtml(item)}
       <span class="muted">${info}</span>
+      ${item === DATA.SILO.ITEM && state.silo.construit ? `<span class="muted">🛖 Dans le Silo : <span class="num">${formatQty(state.silo.ble)}</span> (hors de l'inventaire)</span>` : ''}
       ${reserve}
     </div>`;
 }
@@ -4586,23 +5562,28 @@ const COMPTOIR_TABS = [
   { id: 'vendre', label: 'Vendre', icon: '💰' },
   { id: 'acheter', label: 'Acheter', icon: '🛒' },
   { id: 'graines', label: 'Graines', icon: '🌱' },
-  { id: 'animaux', label: 'Animaux', icon: '🐔', soon: true },
+  { id: 'animaux', label: 'Animaux', icon: '🐔' },
   { id: 'arbres', label: 'Arbres', icon: '🌳', soon: true },
 ];
 
+// Seules les unités entières se vendent (un demi-blé reste en stock).
+function sellableStock(item) {
+  return Math.floor(countItem(state, item) + EPS);
+}
+
 // Quantité choisie pour la vente, toujours entre 1 et le stock.
 function sellQuantity(item) {
-  const stock = countItem(state, item);
+  const stock = sellableStock(item);
   return Math.max(1, Math.min(stock, sellQuantities[item] || 1));
 }
 
 function sellRow(item) {
   const it = DATA.items[item];
-  const stock = countItem(state, item);
+  const stock = sellableStock(item);
   const q = sellQuantity(item);
   return `
     <div class="shop-row">
-      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatNumber(stock)}</span></span></div>
+      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatQty(countItem(state, item))}</span></span></div>
       <span class="muted">Prix de vente : <strong class="num">${formatCoins(it.prix)} 💰</strong> l'unité (fixe)</span>
       <div class="row qty-row">
         <button type="button" class="btn step-btn" data-action="sell-dec" data-item="${item}" aria-label="Vendre une unité de moins"${q <= 1 ? ' disabled' : ''}>−</button>
@@ -4620,9 +5601,37 @@ function buyRow(item) {
   const coef = marketCoef(state, item);
   return `
     <div class="shop-row">
-      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatNumber(countItem(state, item))}</span></span></div>
+      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatQty(countItem(state, item))}</span></span></div>
       <span class="muted">Prochaine unité : <strong class="num">${formatCoins(price)} 💰</strong> · coefficient <span class="num">×${formatFixed(coef, 1)}</span> · vente ${formatCoins(it.prix)} 💰</span>
       <button type="button" class="btn primary" data-action="buy-item" data-item="${item}"${canPay(price) ? '' : ' disabled'}>Acheter 1 (${formatCoins(price)} 💰)</button>
+    </div>`;
+}
+
+// Onglet Animaux : la poule, à prix fixe et sans revente. Grisée si le
+// Poulailler est plein ou n'existe pas.
+function renderAnimaux() {
+  const def = DATA.ANIMAUX.poule;
+  const p = state.poulailler;
+  const cap = coopCapacity(state);
+  const price = animalPrice('poule');
+  let note;
+  let ok = true;
+  if (!p.construit) {
+    note = '⚠️ Construis d\'abord le Poulailler (onglet Ferme).';
+    ok = false;
+  } else if (p.poules >= cap) {
+    note = '⚠️ Le Poulailler est plein : agrandis-le pour accueillir d\'autres poules.';
+    ok = false;
+  } else {
+    note = `Places libres : ${cap - p.poules}.`;
+  }
+  return `
+    <p class="muted">Les animaux s'achètent à prix fixe, quel que soit leur nombre, et ne se revendent pas.</p>
+    <div class="shop-row${ok ? '' : ' unavailable'}">
+      <div class="inv-main"><span><span aria-hidden="true">${def.icone}</span> ${def.nom}</span><span class="muted">Poules : <span class="num">${p.poules} / ${cap}</span></span></div>
+      <span class="muted">Prix fixe : <strong class="num">${formatCoins(price)} 💰</strong> · mange ${formatFixed(def.bleParNuit, 1)} blé par nuit · pond 1 œuf par nuit si nourrie, toute sa vie.</span>
+      <span class="muted">${note}</span>
+      <button type="button" class="btn primary" data-action="buy-animal" data-kind="poule"${ok && canPay(price) ? '' : ' disabled'}>Acheter une poule (${formatCoins(price)} 💰)</button>
     </div>`;
 }
 
@@ -4644,6 +5653,8 @@ function renderComptoir() {
     body = `
       <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ×${formatFixed(DATA.MARCHE.PLANCHER.graine, 1)}. Produire tes propres graines reste plus rentable.</p>
       ${items.map(buyRow).join('')}`;
+  } else if (tab.id === 'animaux') {
+    body = renderAnimaux();
   } else {
     body = `<div class="coming"><p class="hint">${tab.icon} ${tab.label} : cet onglet arrivera dans un lot suivant.</p></div>`;
   }
@@ -4679,6 +5690,9 @@ function openWakeModal(report) {
     `<li>🍽️ Énergie mangée : <strong class="num">${formatNumber(shownEnergy)} / ${formatNumber(report.besoin)}</strong> (${covered} %)${eaten ? ` — ${eaten}` : ''}</li>`,
     `<li>❤️ Santé moyenne : <strong class="num">${formatFixed(report.santeAvant, 0)} → ${formatFixed(report.santeApres, 0)}</strong> (${formatRate(report.santeApres - report.santeAvant, 0)})</li>`,
     ...report.nouveauxMalades.map((nom) => `<li class="alert">🤒 ${nom} est tombé malade : il faut le soigner.</li>`),
+    report.poules > 0 || report.oeufs > 0
+      ? `<li>🥚 Œufs pondus : <strong class="num">${formatNumber(report.oeufs)}</strong> · 🌾 Blé consommé par les poules : <strong class="num">${formatQty(report.bleConsomme)}</strong></li>`
+      : '',
     ready ? `<li>🧺 Récoltes prêtes : <strong>${ready}</strong></li>` : '<li>🌱 Aucune récolte prête pour l\'instant.</li>',
     spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
     expiring ? `<li>⏳ À manger vite, périme à la prochaine nuit : <strong>${expiring}</strong></li>` : '',
@@ -4823,6 +5837,51 @@ document.addEventListener('click', (e) => {
     }
     case 'upgrade-potager':
       applyResult(upgradePotager(state));
+      break;
+    case 'build-champ':
+      applyResult(buildChamp(state));
+      break;
+    case 'upgrade-champ':
+      applyResult(upgradeChamp(state));
+      break;
+    case 'build-silo':
+      applyResult(buildSilo(state));
+      break;
+    case 'upgrade-silo':
+      applyResult(upgradeSilo(state));
+      break;
+    case 'build-poulailler':
+      applyResult(buildPoulailler(state));
+      break;
+    case 'upgrade-poulailler':
+      applyResult(upgradePoulailler(state));
+      break;
+    case 'feed-hen': {
+      const result = applyResult(feedHen(state));
+      if (result.ok) showToast(result.compte ? '🌾 Une poule nourrie (−0,5 blé)' : 'Le geste n\'a pas compté (santé faible) : le blé est conservé, réessaie.');
+      break;
+    }
+    case 'feed-all': {
+      const result = applyResult(feedAllHens(state));
+      if (result.ok) {
+        showToast(
+          result.ratees > 0
+            ? `${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}, ${result.ratees} geste${result.ratees > 1 ? 's' : ''} sans effet (santé faible) : réessaie.`
+            : `${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}.`
+        );
+      }
+      break;
+    }
+    case 'buy-animal': {
+      const result = applyResult(buyAnimal(state, target.dataset.kind));
+      if (result.ok) showToast(`Acheté : 1 ${DATA.ANIMAUX[target.dataset.kind].icone} (−${formatCoins(result.cost)} 💰)`);
+      break;
+    }
+    case 'test-wheat':
+      applyResult(testAddWheat(state));
+      break;
+    case 'test-hens':
+      applyResult(testAddHens(state));
       break;
     case 'heal':
       applyResult(heal(state, target.dataset.id));
