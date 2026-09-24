@@ -773,6 +773,11 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 .chart-bar { fill: var(--accent); }
 .chart-bar.full { fill: var(--color-sun-dark); }
 .chart-target { stroke: var(--danger); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.chart-curve { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.chart-raw { fill: none; stroke: var(--text-muted); stroke-width: 1; opacity: 0.55; }
+.chart-death { fill: var(--danger); opacity: 0.18; }
+.sim-result { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); }
+.sim-result p { margin: 0; font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -859,6 +864,10 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
         <button class="btn" type="button" data-action="test-nights-1">Passer 1 nuit</button>
         <button class="btn" type="button" data-action="test-nights-5">Passer 5 nuits</button>
       </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-simulate">Simuler 60 nuits (joueur appliqué)</button>
+      </div>
+      <div class="sim-result" id="sim-result" hidden></div>
       <div class="state-dump" id="state-dump"></div>
     </div>
   </details>
@@ -1441,6 +1450,78 @@ const DATA = {
         ],
       },
     ],
+  },
+
+  /* ---------- Lot 10 : simulation d'un joueur automatique ---------- */
+
+  // Réglages du joueur automatique (scripts/simulate.mjs et bouton du mode test) :
+  // ce ne sont pas des règles du jeu, mais ce que le joueur simulé vise ou garde.
+  // Les jalons et les seuils des vérifications (sections 8.10 et 8.11) sont ici aussi.
+  SIMULATION: {
+    NUITS: 80,
+    GRAINE: 1,
+    PAS_S: 5, // secondes simulées entre deux séries d'actions du joueur
+    LISSAGE: 7, // nuits de la moyenne mobile qui sert à dater un jalon d'autonomie
+    STRATEGIES: {
+      applique: { nom: 'Joueur appliqué', eveilS: 60 },
+      minimal: { nom: 'Joueur minimal', eveilS: 30 },
+    },
+    // Ce que le joueur garde ou vise.
+    CAISSE: 20, // pièces gardées en réserve (graines, blé, soins) : les achats du plan ne les touchent pas
+    CONSERVES_GARDEES: 96, // il ne vend des conserves que pour payer un achat, jamais sous ce stock
+    PRIX_GRAINE_MAX: 4, // prix maximal d'une graine (ou d'un blé) achetée au Comptoir
+    ETALEMENT_JOURS: 1, // les semis d'un lieu s'étalent sur ce nombre de jours (1 : on replante dès la récolte)
+    GRAINES_CAROTTE: 6, // sous ce stock, une carotte mûre monte en graine
+    PARCELLES_TOURNESOL: 1, // parcelles du Champ en tournesol quand la Presse existe
+    BLE_JOURS_GARDES: 3, // nuits de blé des poules qu'on ne moud pas
+    BLE_MAX: 40, // blé en stock au-delà duquel on vend
+    STOCK_FARINE: 4, // farine en réserve qu'on cherche à avoir
+    STOCK_HUILE: 2,
+    POIDS_ABATTAGE: 35, // kg : un mouton est abattu à ce poids
+    // Estimations pour dimensionner l'eau et l'énergie.
+    LITRES_PARCELLE: 3,
+    LITRES_CUISINE: 6,
+    MARCHE_STATIONS: 0.5, // part du temps d'éveil où le Moulin et la Presse tournent
+    MARGE_EAU: 0.9,
+    MARGE_ENERGIE: 1.5,
+    MARGE_BATTERIE: 0.7,
+    // Achats : d'abord ce qui fait avancer le chapitre en cours, puis le plan général.
+    // Un élément pas encore débloqué par un chapitre est sauté.
+    PRIORITE: {
+      1: [],
+      2: [{ type: 'potager', niveau: 2 }],
+      3: [{ type: 'poulailler', niveau: 1 }, { type: 'silo', niveau: 1 }, { type: 'champ', niveau: 1 }, { type: 'poules', n: 4 }],
+      4: [{ type: 'station', id: 'four' }, { type: 'station', id: 'moulin' }, { type: 'station', id: 'presse' }, { type: 'station', id: 'cuisine' }],
+      5: [{ type: 'paturage' }, { type: 'moutons', n: 3 }],
+      6: [{ type: 'serre', niveau: 1 }, { type: 'verger' }, { type: 'arbres', n: 2 }, { type: 'frigo' }],
+      7: [],
+    },
+    PLAN: [
+      { type: 'potager', niveau: 2 },
+      { type: 'poulailler', niveau: 1 }, { type: 'silo', niveau: 1 }, { type: 'champ', niveau: 1 }, { type: 'poules', n: 4 },
+      { type: 'potager', niveau: 3 },
+      { type: 'champ', niveau: 2 }, { type: 'poulailler', niveau: 2 }, { type: 'poules', n: 8 }, { type: 'silo', niveau: 2 },
+      { type: 'station', id: 'four' }, { type: 'station', id: 'moulin' }, { type: 'station', id: 'presse' }, { type: 'station', id: 'cuisine' },
+      { type: 'potager', niveau: 4 },
+      { type: 'paturage' }, { type: 'moutons', n: 3 },
+      { type: 'champ', niveau: 3 }, { type: 'poules', n: 12 },
+      { type: 'verger' }, { type: 'arbres', n: 2 }, { type: 'serre', niveau: 1 }, { type: 'frigo' },
+      { type: 'potager', niveau: 5 },
+      { type: 'tech', id: 'semis_auto' },
+      { type: 'arbres', n: 4 }, { type: 'moutons', n: 6 }, { type: 'champ', niveau: 4 },
+      { type: 'poules', n: 16 }, { type: 'serre', niveau: 2 }, { type: 'serre', niveau: 3 }, { type: 'champ', niveau: 5 },
+    ],
+    // Vérifications de la section 8.10 : jalons d'autonomie (nuit visée, % visé) et tolérance en nuits.
+    JALONS: [
+      { nuit: 8, pct: 35 },
+      { nuit: 15, pct: 50 },
+      { nuit: 25, pct: 75 },
+      { nuit: 40, pct: 90 },
+      { nuit: 60, pct: 100 },
+    ],
+    TOLERANCE_NUITS: 10,
+    // Vérification de la section 8.11 : une unité de cet aliment achetée chaque nuit, encore payable à la nuit donnée.
+    DEPANNAGE: { item: 'carotte', nuit: 30 },
   },
 };
 
@@ -4655,6 +4736,489 @@ function formatPercent(p) {
 // Multiplicateur de productivité : « 1 », « 0,8 », « 0,25 ».
 function formatMult(m) {
   return String(m).replace('.', ',');
+}
+
+/* ==========================================================================
+   Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et
+   8.11). Le joueur automatique joue avec les vraies actions du moteur, sans
+   interface : il sert au script scripts/simulate.mjs et au bouton du mode test.
+   Il ne lit ni l'horloge ni Math.random : une partie simulée est entièrement
+   déterminée par sa graine. Tout ce qu'il vise ou garde vit dans
+   DATA.SIMULATION.
+   ========================================================================== */
+
+/* ---------- entretien, soins, infrastructure ---------- */
+
+// Répare ce qui est en panne (et le rallume), entretient ce qui est usé.
+function botMaintenance(state) {
+  for (const d of allDevices(state)) {
+    if (isBroken(d)) {
+      if (repairDevice(state, d.id).ok) toggleDevice(state, d.id);
+    } else if (needsService(d)) {
+      maintainDevice(state, d.id);
+    }
+  }
+}
+
+// Un malade est soigné dès que les pièces le permettent.
+function botHeal(state) {
+  for (const m of state.famille.membres) {
+    if (m.malade && state.pieces + EPS >= careCost(state)) heal(state, m.id);
+  }
+}
+
+// Eau demandée par une journée : toutes les parcelles arrosées, plus la cuisine.
+function botWaterPerDay(state) {
+  const S = DATA.SIMULATION;
+  let litres = S.LITRES_CUISINE;
+  for (const p of allPlots(state)) litres += p.culture ? waterCost(state, p) : S.LITRES_PARCELLE;
+  return litres;
+}
+
+// Énergie demandée par une journée : pompe, réfrigérateur, Moulin et Presse.
+function botEnergyPerDay(state, eveilS) {
+  let kwh = botWaterPerDay(state) * DATA.PUMP.KWH_PER_L;
+  if (state.frigo && state.frigo.construit) kwh += fridgeRate(state) * (eveilS + DATA.FRIGO.BLOC_NUIT_S);
+  for (const id of Object.keys(DATA.STATIONS)) {
+    const st = state.stations[id];
+    if (DATA.STATIONS[id].electrique && st.construit) kwh += DATA.STATIONS[id].kwhParS * eveilS * DATA.SIMULATION.MARCHE_STATIONS;
+  }
+  return kwh;
+}
+
+// Pompe, panneaux et batteries : le joueur ne laisse pas la ferme manquer d'eau
+// ni d'énergie (au pire de l'année : l'hiver). Renvoie la prochaine amélioration
+// nécessaire { cost, buy }, ou { done: true }. Pour l'énergie, il choisit le moyen
+// le moins cher d'ajouter de la puissance : améliorer un appareil ou en acheter un.
+function botInfraInfo(state, eveilS) {
+  const S = DATA.SIMULATION;
+  const litres = botWaterPerDay(state);
+  const pump = state.pompe;
+  const needsFlow = litres > pumpFlow(pump) * eveilS * S.MARGE_EAU;
+  const needsTank = (isAutomated(state, 'potager') || isAutomated(state, 'champ')) && litres > tankCapacity(state) * S.MARGE_EAU;
+  if (pump.niveau < DATA.LEVEL_MAX && (needsFlow || needsTank)) return { cost: upgradeCost(pump), buy: () => upgradeDevice(state, pump.id) };
+
+  const worst = Math.min(...Object.values(DATA.SAISONS.MODS).map((m) => m.solaire));
+  const produced = state.panneaux.reduce((t, p) => t + panelOutput(p) * worst, 0) * eveilS;
+  const need = botEnergyPerDay(state, eveilS);
+  const cheapest = (type, list, grid) => {
+    let best = { ratio: nextPurchasePrice(state, type) / grid[0], buy: () => buyDevice(state, type), cost: nextPurchasePrice(state, type) };
+    for (const d of list) {
+      if (d.niveau >= DATA.LEVEL_MAX) continue;
+      const cost = upgradeCost(d);
+      const ratio = cost / (grid[d.niveau] - grid[d.niveau - 1]);
+      if (ratio < best.ratio) best = { ratio, buy: () => upgradeDevice(state, d.id), cost };
+    }
+    return best;
+  };
+  if (produced < need * S.MARGE_ENERGIE) return cheapest('panneau', state.panneaux, DATA.GRID.panneau.kwhPerS);
+  const capacity = state.batteries.reduce((t, b) => t + batteryCapacity(b), 0);
+  if (capacity < need * S.MARGE_BATTERIE) return cheapest('batterie', state.batteries, DATA.GRID.batterie.kwh);
+  return { done: true };
+}
+
+/* ---------- cultures ---------- */
+
+// Énergie rendue par une parcelle et par nuit (critère de choix des légumes).
+function botCropScore(culture) {
+  const c = DATA.crops[culture];
+  const item = DATA.items[cropProduct(culture)];
+  return ((item.energie || 0) * c.rendement) / c.stades;
+}
+
+// Achète une unité de graine si le prix reste raisonnable ; renvoie true si elle est là.
+function botBuySeed(state, item) {
+  if (!isBuyable(item)) return false;
+  const price = buyPrice(state, item);
+  if (price > DATA.SIMULATION.PRIX_GRAINE_MAX + EPS || state.pieces + EPS < price) return false;
+  return buyItem(state, item, 1).ok === true;
+}
+
+function botHasSeed(state, culture) {
+  return seedStock(state, culture) >= 1 - EPS || botBuySeed(state, seedItem(culture));
+}
+
+// Vrai tant que l'objectif « carottes récoltées » du chapitre en cours n'est pas
+// couvert par les récoltes faites et les carottes déjà en terre.
+function botWantsCarrots(state) {
+  const obj = objectiveDef('carottes');
+  if (!obj || chapterReached(state) > objectiveChapter('carottes')) return false;
+  const inGround = allPlots(state).filter((p) => p.culture === 'carotte' && !p.montee).length * DATA.crops.carotte.rendement;
+  return state.campagne.compteurs.carottes + inGround < obj.cible;
+}
+
+// Culture à planter sur une parcelle vide, ou null.
+function botPickCrop(state, plot) {
+  const S = DATA.SIMULATION;
+  const options = plantableCropsFor(state, plot.lieu);
+  if (plot.lieu === DATA.CHAMP.LIEU) {
+    const sun = state.champ.parcelles.filter((p) => p.culture === 'tournesol').length;
+    const wanted = state.stations.presse.construit && options.includes('tournesol') && sun < S.PARCELLES_TOURNESOL ? ['tournesol', 'ble'] : ['ble'];
+    return wanted.find((c) => botHasSeed(state, c)) || null;
+  }
+  const foods = options.filter((c) => DATA.items[cropProduct(c)].edible).sort((a, b) => botCropScore(b) - botCropScore(a));
+  // l'objectif du chapitre 2 demande des carottes : elles passent devant
+  if (botWantsCarrots(state)) foods.sort((a, b) => (b === 'carotte') - (a === 'carotte'));
+  return foods.find((c) => botHasSeed(state, c)) || null;
+}
+
+// Récolte, replante, arrose. Une carotte mûre monte en graine quand la réserve
+// de graines de carotte descend sous la cible.
+function botFarm(state) {
+  const S = DATA.SIMULATION;
+  for (const p of allPlots(state)) {
+    if (p.culture === 'carotte' && !p.montee && p.stade >= DATA.crops.carotte.stades) {
+      const bolting = allPlots(state).filter((x) => x.culture === 'carotte' && x.montee).length;
+      const seeds = seedStock(state, 'carotte') + bolting * DATA.crops.carotte.graines.quantite;
+      if (seeds < S.GRAINES_CAROTTE) toggleBolting(state, p.id);
+    }
+    if (isMature(p)) harvest(state, p.id);
+    if (!p.culture) {
+      // On étale les semis sur plusieurs jours : une ferme plantée d'un coup est
+      // récoltée d'un coup, et la famille jeûne entre deux récoltes.
+      const lieu = allPlots(state).filter((x) => x.lieu === p.lieu);
+      const fresh = lieu.filter((x) => x.culture && x.stade === 0).length;
+      if (fresh >= Math.max(1, Math.ceil(lieu.length / S.ETALEMENT_JOURS))) continue;
+      const culture = botPickCrop(state, p);
+      if (culture) plant(state, p.id, culture);
+    }
+  }
+  const thirsty = allPlots(state).filter((p) => p.culture && !p.arrose && !isMature(p));
+  thirsty.sort((a, b) => b.stade - a.stade);
+  for (const p of thirsty) water(state, p.id);
+}
+
+/* ---------- animaux ---------- */
+
+function botHens(state) {
+  const p = state.poulailler;
+  if (!p.construit || p.poules <= 0) return;
+  const need = DATA.ANIMAUX.poule.bleParNuit;
+  // pas de blé pour les poules : un dépannage au Comptoir, comme pour les graines
+  while (hensToFeed(state) > 0 && wheatTotal(state) + EPS < need && botBuySeed(state, DATA.SILO.ITEM)) {
+    if (wheatTotal(state) + EPS >= need) break;
+  }
+  for (let i = 0; i < p.poules + 3 && hensToFeed(state) > 0; i++) {
+    if (!feedAllHens(state).ok) break;
+  }
+}
+
+function botSheep(state) {
+  const p = state.paturage;
+  if (!p.construit) return;
+  for (const m of [...p.moutons]) {
+    if (woolReady(m)) shear(state, m.id);
+    if (m.poids >= DATA.SIMULATION.POIDS_ABATTAGE) slaughter(state, m.id);
+  }
+}
+
+/* ---------- cuisine ---------- */
+
+// Unités disponibles d'un ingrédient (inventaire et frigo), sans la réserve de semences.
+function botSpare(state, item) {
+  if (item === DATA.SILO.ITEM) return wheatTotal(state);
+  const reserve = state.famille.reserve[item] || 0;
+  return countItem(state, item) + fridgeCount(state, item) - reserve;
+}
+
+// Option retenue pour un ingrédient (celle dont il reste assez), ou null.
+function botIngredient(state, ing) {
+  return ingredientOptions(ing).find((item) => botSpare(state, item) + EPS >= ing.qte) || null;
+}
+
+// Intérêt d'une recette : gain en pièces par seconde de préparation, ou 0 si elle ne vaut pas le coup.
+function botRecipeValue(state, id) {
+  const S = DATA.SIMULATION;
+  const r = DATA.recipes[id];
+  if (r.eau && state.eau + EPS < r.eau) return 0;
+  const items = r.ingredients.map((ing) => botIngredient(state, ing));
+  if (items.some((i) => i === null)) return 0;
+  if (r.transformation) {
+    if (r.sortie === 'farine') {
+      const spare = wheatTotal(state) - botWheatKept(state);
+      return countItem(state, 'farine') < S.STOCK_FARINE && spare >= 1 ? 1 / r.temps : 0;
+    }
+    if (r.sortie === 'huile') {
+      const spare = countItem(state, 'graine_tournesol') - S.PARCELLES_TOURNESOL;
+      return countItem(state, 'huile') < S.STOCK_HUILE && spare >= r.ingredients[0].qte ? 1 / r.temps : 0;
+    }
+    return 0;
+  }
+  let cost = (r.eau || 0) * DATA.RECETTES.PRIX_EAU;
+  r.ingredients.forEach((ing, i) => { cost += DATA.items[items[i]].prix * ing.qte; });
+  const gain = dishPrice(id) - cost;
+  return gain > 0 ? gain / r.temps : 0;
+}
+
+// Blé à ne pas transformer : les semis du Champ et trois nuits de poules.
+function botWheatKept(state) {
+  const S = DATA.SIMULATION;
+  const hens = state.poulailler.poules * DATA.ANIMAUX.poule.bleParNuit * S.BLE_JOURS_GARDES;
+  return hens + (state.champ.construit ? state.champ.parcelles.length : 0);
+}
+
+// Sort du frigo ce qu'il faut pour une recette, puis la lance.
+function botStartRecipe(state, id) {
+  const r = DATA.recipes[id];
+  r.ingredients.forEach((ing) => {
+    const item = botIngredient(state, ing);
+    const missing = ing.qte - countItem(state, item);
+    if (item !== DATA.SILO.ITEM && missing > 0) moveFromFridge(state, item, missing);
+  });
+  return startRecipe(state, id).ok === true;
+}
+
+function botCook(state) {
+  if (!state.stations) return;
+  for (const station of Object.keys(DATA.STATIONS)) {
+    const st = state.stations[station];
+    if (!st.construit || st.tache) continue;
+    let best = null;
+    for (const id of Object.keys(DATA.recipes)) {
+      if (DATA.recipes[id].station !== station) continue;
+      const v = botRecipeValue(state, id);
+      if (v > 0 && (!best || v > best.v)) best = { id, v };
+    }
+    if (best) botStartRecipe(state, best.id);
+  }
+}
+
+/* ---------- achats ---------- */
+
+// Ce qu'il reste à faire pour une étape du plan : { done }, { locked } ou { cost, buy }.
+function botStepInfo(state, step, eveilS) {
+  const built = (b) => b.construit && b.niveau >= step.niveau;
+  switch (step.type) {
+    case 'infra':
+      return botInfraInfo(state, eveilS);
+    case 'potager':
+      return state.potager.niveau >= step.niveau ? { done: true } : { cost: potagerUpgradeCost(state), buy: () => upgradePotager(state) };
+    case 'champ':
+      if (!isUnlocked(state, 'champ')) return { locked: true };
+      if (built(state.champ)) return { done: true };
+      return state.champ.construit ? { cost: champUpgradeCost(state), buy: () => upgradeChamp(state) } : { cost: DATA.CHAMP.CONSTRUCTION, buy: () => buildChamp(state) };
+    case 'silo':
+      if (!isUnlocked(state, 'silo')) return { locked: true };
+      if (built(state.silo)) return { done: true };
+      return state.silo.construit ? { cost: siloUpgradeCost(state), buy: () => upgradeSilo(state) } : { cost: DATA.SILO.CONSTRUCTION, buy: () => buildSilo(state) };
+    case 'poulailler':
+      if (!isUnlocked(state, 'poulailler')) return { locked: true };
+      if (built(state.poulailler)) return { done: true };
+      return state.poulailler.construit ? { cost: coopUpgradeCost(state), buy: () => upgradePoulailler(state) } : { cost: DATA.POULAILLER.CONSTRUCTION, buy: () => buildPoulailler(state) };
+    case 'poules': {
+      if (!isUnlocked(state, 'poulailler')) return { locked: true };
+      const p = state.poulailler;
+      if (p.poules >= step.n) return { done: true };
+      if (!p.construit) return { cost: DATA.POULAILLER.CONSTRUCTION, buy: () => buildPoulailler(state) };
+      if (p.poules >= coopCapacity(state)) return { cost: coopUpgradeCost(state), buy: () => upgradePoulailler(state) };
+      return { cost: animalPrice('poule'), buy: () => buyAnimal(state, 'poule') };
+    }
+    case 'station': {
+      const def = DATA.STATIONS[step.id];
+      if (!isUnlocked(state, step.id)) return { locked: true };
+      if (state.stations[step.id].construit) return { done: true };
+      if (def.requiert && !state.stations[def.requiert].construit) return { locked: true };
+      return { cost: def.cout, buy: () => buildStation(state, step.id) };
+    }
+    case 'paturage':
+      if (!isUnlocked(state, 'paturage')) return { locked: true };
+      return state.paturage.construit ? { done: true } : { cost: DATA.PATURAGE.deblocage, buy: () => buildPaturage(state) };
+    case 'moutons': {
+      if (!isUnlocked(state, 'moutons')) return { locked: true };
+      const p = state.paturage;
+      if (!p.construit) return { cost: DATA.PATURAGE.deblocage, buy: () => buildPaturage(state) };
+      if (sheepCount(state) >= step.n) return { done: true };
+      if (freeSheepPlaces(state) <= 0) return { cost: pastureCost(state), buy: () => buyPasture(state) };
+      return { cost: animalPrice('mouton'), buy: () => buySheep(state) };
+    }
+    case 'serre':
+      if (!isUnlocked(state, 'serre')) return { locked: true };
+      if (built(state.serre)) return { done: true };
+      return state.serre.construit ? { cost: serreUpgradeCost(state), buy: () => upgradeSerre(state) } : { cost: DATA.SERRE.CONSTRUCTION, buy: () => buildSerre(state) };
+    case 'verger':
+      if (!isUnlocked(state, 'verger')) return { locked: true };
+      return state.verger.construit ? { done: true } : { cost: DATA.VERGER.CONSTRUCTION, buy: () => buildVerger(state) };
+    case 'arbres': {
+      if (!isUnlocked(state, 'verger')) return { locked: true };
+      const v = state.verger;
+      if (!v.construit) return { cost: DATA.VERGER.CONSTRUCTION, buy: () => buildVerger(state) };
+      if (v.arbres.length >= step.n) return { done: true };
+      if (orchardFree(state) <= 0) return { cost: orchardSlotPrice(state), buy: () => buyOrchardSlot(state) };
+      const espece = Object.keys(DATA.VERGER.ARBRES)[v.arbres.length % Object.keys(DATA.VERGER.ARBRES).length];
+      return { cost: DATA.VERGER.ARBRES[espece].prix, buy: () => buyTree(state, espece) };
+    }
+    case 'frigo':
+      if (!isUnlocked(state, 'frigo')) return { locked: true };
+      return state.frigo.construit ? { done: true } : { cost: DATA.FRIGO.CONSTRUCTION, buy: () => buildFridge(state) };
+    case 'pompe':
+      return state.pompe.niveau >= step.niveau ? { done: true } : { cost: upgradeCost(state.pompe), buy: () => upgradeDevice(state, state.pompe.id) };
+    case 'tech': {
+      if (hasTech(state, step.id)) return { done: true };
+      if (techStatus(state, step.id) !== 'disponible') return { locked: true };
+      return { cost: DATA.techtree.noeuds[step.id].cout, buy: () => buyTech(state, step.id) };
+    }
+    default:
+      return { done: true };
+  }
+}
+
+// Vend juste assez de conserves pour payer un achat, sans descendre sous le stock gardé.
+function botRaiseFunds(state, cost) {
+  const price = DATA.items.conserve.prix;
+  const spare = countItem(state, 'conserve') - DATA.SIMULATION.CONSERVES_GARDEES;
+  const needed = Math.ceil((cost - state.pieces - EPS) / price);
+  if (needed > 0 && needed <= spare) sellItem(state, 'conserve', needed);
+}
+
+// Achète, dans l'ordre, ce qui fait le plus avancer le chapitre en cours puis le
+// plan général ; s'arrête sur la première étape trop chère (il économise pour elle).
+function botBuy(state, eveilS) {
+  const S = DATA.SIMULATION;
+  const chapitre = Math.min(chapterReached(state), chapterCount());
+  const steps = [{ type: 'infra' }, ...(S.PRIORITE[chapitre] || []), ...S.PLAN];
+  for (let guard = 0; guard < 40; guard++) {
+    let bought = false;
+    for (const step of steps) {
+      const info = botStepInfo(state, step, eveilS);
+      if (info.done || info.locked) continue;
+      // une caisse reste en réserve pour les graines, le blé et les soins (sauf pour l'eau et l'énergie)
+      const target = info.cost + (step.type === 'infra' ? 0 : S.CAISSE);
+      if (state.pieces + EPS < target) botRaiseFunds(state, target);
+      if (state.pieces + EPS < target) return;
+      if (!info.buy().ok) return;
+      bought = true;
+      break; // l'état a changé : on relit le plan depuis le début
+    }
+    if (!bought) return;
+  }
+}
+
+/* ---------- ventes et rangement du soir ---------- */
+
+// Vend ce qui périrait demain et que le repas de ce soir ne mangera pas, la laine
+// et le blé en trop. Avec un réfrigérateur en marche, on range au lieu de vendre.
+function botSell(state) {
+  const S = DATA.SIMULATION;
+  const cold = state.frigo.construit && state.frigo.appareil.allume && !isBroken(state.frigo.appareil);
+  if (!cold) {
+    const plan = planMeal(state);
+    const expiring = expiringSoon(state);
+    for (const item of Object.keys(expiring)) {
+      const eaten = Math.max(0, (plan.mange[item] || 0) - (plan.froid[item] || 0));
+      const spare = Math.min(expiring[item] - eaten, countItem(state, item) - (state.famille.reserve[item] || 0));
+      if (spare >= 1) sellItem(state, item, Math.floor(spare));
+    }
+  }
+  const laine = countItem(state, 'laine');
+  if (laine >= 1) sellItem(state, 'laine', laine);
+  const ble = countItem(state, DATA.SILO.ITEM) - S.BLE_MAX;
+  if (ble >= 1) sellItem(state, DATA.SILO.ITEM, ble);
+}
+
+// Range au frais tout ce qui périme (sauf la réserve de semences).
+function botStore(state) {
+  const f = state.frigo;
+  if (!f.construit || !f.appareil.allume || isBroken(f.appareil)) return;
+  for (const item of Object.keys(inventoryCounts(state))) {
+    if (!isPerishable(item)) continue;
+    const qty = Math.floor(countItem(state, item) - (state.famille.reserve[item] || 0) + EPS);
+    if (qty >= 1) moveToFridge(state, item, qty);
+  }
+}
+
+/* ---------- une journée, une partie ---------- */
+
+// Série d'actions du joueur. `soir` : dernière série avant de dormir.
+function botActions(state, strat, options, soir) {
+  botMaintenance(state);
+  botHeal(state);
+  setSeedReserve(state, 'patate', state.potager.parcelles.length);
+  botBuy(state, strat.eveilS);
+  botFarm(state);
+  botHens(state);
+  botSheep(state);
+  botCook(state);
+  if (!soir) return;
+  botSell(state);
+  botBuy(state, strat.eveilS);
+  if (options.depannage) {
+    const item = options.depannage.item;
+    const price = buyPrice(state, item);
+    options.depannage.dernier = { prix: price, possible: state.pieces + EPS >= price };
+    if (options.depannage.dernier.possible) buyItem(state, item, 1);
+  }
+  botStore(state);
+}
+
+// Une journée complète : des séries d'actions tous les PAS_S secondes pendant
+// `eveilS` secondes, puis Dormir. Renvoie le compte rendu du réveil.
+function botDay(state, strat, options) {
+  const S = DATA.SIMULATION;
+  const eveil = Math.max(strat.eveilS, awakeRequired(state));
+  botActions(state, strat, options, false);
+  let t = 0;
+  while (t + EPS < eveil) {
+    const dt = Math.min(S.PAS_S, eveil - t);
+    tick(state, dt);
+    t += dt;
+    botActions(state, strat, options, t + EPS >= eveil);
+  }
+  return sleep(state);
+}
+
+// Joue `nuits` nuits à partir de `state` (l'appelant passe une copie : elle est
+// modifiée). Renvoie une ligne par nuit : chapitre au début de la journée,
+// autonomie et santé à la fin de la nuit, pièces et conserves au réveil.
+// options.depannage = { item } : chaque soir, le joueur achète aussi une unité de
+// cet aliment au Comptoir (vérification de la section 8.11).
+function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, options = {}) {
+  const strat = DATA.SIMULATION.STRATEGIES[strategyId];
+  if (!strat) throw new Error(`Stratégie inconnue : ${strategyId}`);
+  const rows = [];
+  for (let i = 0; i < nights; i++) {
+    const nuit = state.day;
+    const chapitre = chapterReached(state);
+    if (options.depannage) options.depannage.dernier = null;
+    botDay(state, strat, options);
+    const sante = state.famille.membres.map((m) => m.sante);
+    rows.push({
+      nuit,
+      chapitre,
+      autonomie: state.nuit.autonomie,
+      couverture: state.nuit.couverture,
+      santeMoyenne: rawAverageHealth(state),
+      santeMin: Math.min(...sante),
+      malades: state.famille.membres.filter((m) => m.malade).length,
+      pieces: state.pieces,
+      conserves: countItem(state, 'conserve'),
+      soinsPayes: state.famille.soinsPayes,
+      potager: state.potager.niveau,
+      depannage: options.depannage ? options.depannage.dernier : null,
+    });
+  }
+  return rows;
+}
+
+// Partie neuve de `nights` nuits, jouée par la stratégie donnée.
+function simulateGame(strategyId, nights = DATA.SIMULATION.NUITS, seed = DATA.SIMULATION.GRAINE, options = {}) {
+  return simulatePlay(createInitialState(seed), strategyId, nights, options);
+}
+
+// Première nuit où l'autonomie lissée (moyenne des LISSAGE dernières nuits) atteint `pct`, ou null.
+function simulationReach(rows, pct) {
+  const k = DATA.SIMULATION.LISSAGE;
+  for (let i = k - 1; i < rows.length; i++) {
+    const window = rows.slice(i - k + 1, i + 1);
+    const mean = window.reduce((t, r) => t + r.autonomie, 0) / k;
+    if (mean + EPS >= pct) return rows[i].nuit;
+  }
+  return null;
+}
+
+// Joue `nights` nuits sur une COPIE de la partie (la partie en cours n'est pas
+// touchée) : sert au bouton du mode test.
+function simulateFromCopy(state, strategyId = 'applique', nights = 60) {
+  return simulatePlay(JSON.parse(JSON.stringify(state)), strategyId, nights);
 }
 </script>
 
@@ -9736,6 +10300,162 @@ test('sérialisation JSON Lot 9 : la campagne fait l\'aller-retour', () => {
   assertEqual(JSON.parse(JSON.stringify(copy)), JSON.parse(JSON.stringify(s)), 'la partie continue à l\'identique');
 });
 
+/* --- Lot 10 : simulation d'un joueur automatique --- */
+
+// Partie simulée sur `nights` nuits, avec un jeu de DATA légèrement modifié
+// si `tweak` est donné (restauré ensuite).
+function simRows(strategy, nights, seed = 1) {
+  return simulateGame(strategy, nights, seed);
+}
+
+test('Lot 10 : DATA.SIMULATION est cohérent (stratégies, jalons, plan)', () => {
+  const S = DATA.SIMULATION;
+  assertEqual(Object.keys(S.STRATEGIES).sort(), ['applique', 'minimal']);
+  assertEqual([S.STRATEGIES.applique.eveilS, S.STRATEGIES.minimal.eveilS], [60, 30]);
+  assert(S.STRATEGIES.minimal.eveilS >= DATA.TIME.MIN_AWAKE_S, 'le joueur minimal reste éveillé au moins l\'éveil minimal');
+  assertEqual(S.JALONS.map((j) => [j.nuit, j.pct]), [[8, 35], [15, 50], [25, 75], [40, 90], [60, 100]]);
+  assertEqual(S.TOLERANCE_NUITS, 10);
+  assertEqual(S.NUITS, 80);
+  // chaque étape du plan et des priorités se lit sans erreur sur une partie neuve
+  const s = createInitialState(1);
+  const steps = [...S.PLAN, ...Object.values(S.PRIORITE).flat()];
+  for (const step of steps) {
+    const info = botStepInfo(s, step, 60);
+    assert(info.done || info.locked || (info.cost >= 0 && typeof info.buy === 'function'), `étape mal formée : ${JSON.stringify(step)}`);
+  }
+});
+
+test('Lot 10 : une partie simulée est reproductible (même graine, même courbe)', () => {
+  const a = simRows('applique', 12, 5);
+  const b = simRows('applique', 12, 5);
+  assertEqual(a, b);
+  assertEqual(a.length, 12);
+  assertEqual(a.map((r) => r.nuit), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  for (const r of a) {
+    assert(r.autonomie >= 0 && r.autonomie <= 100, 'autonomie entre 0 et 100');
+    assert(r.santeMoyenne >= 0 && r.santeMoyenne <= DATA.FAMILY.SANTE_MAX);
+    assert(r.pieces >= 0 && r.conserves >= 0 && r.soinsPayes >= 0);
+  }
+});
+
+test('Lot 10 : la simulation ne lit ni l\'horloge ni Math.random', () => {
+  const random = Math.random;
+  const now = Date.now;
+  Math.random = () => { throw new Error('Math.random interdit'); };
+  Date.now = () => { throw new Error('Date.now interdit'); };
+  try {
+    assertEqual(simRows('minimal', 4).length, 4);
+  } finally {
+    Math.random = random;
+    Date.now = now;
+  }
+});
+
+test('Lot 10 : chaque nuit, la journée du joueur dure son temps d\'éveil', () => {
+  for (const id of ['applique', 'minimal']) {
+    const s = createInitialState(1);
+    const strat = DATA.SIMULATION.STRATEGIES[id];
+    // on mesure l'éveil juste avant Dormir : botDay l'a rempli, sleep() le remet à zéro
+    const eveil = [];
+    const sleepBefore = sleep;
+    sleep = (state) => { eveil.push(state.awakeSeconds); return sleepBefore(state); };
+    try {
+      botDay(s, strat, {});
+    } finally {
+      sleep = sleepBefore;
+    }
+    assert(Math.abs(eveil[0] - strat.eveilS) < 1e-6, `${id} : ${eveil[0]} s d'éveil au lieu de ${strat.eveilS}`);
+    assertEqual([s.day, s.awakeSeconds], [2, 0]);
+  }
+});
+
+test('Lot 10 : simulateFromCopy ne touche pas la partie en cours', () => {
+  const s = createInitialState(3);
+  s.pieces = 123;
+  s.day = 5;
+  const before = JSON.stringify(s);
+  const rows = simulateFromCopy(s, 'applique', 6);
+  assertEqual(JSON.stringify(s), before, 'la partie en cours est identique');
+  assertEqual(rows.length, 6);
+  assertEqual(rows.map((r) => r.nuit), [5, 6, 7, 8, 9, 10], 'la simulation continue à partir de la nuit en cours');
+});
+
+test('Lot 10 : simulationReach date un jalon sur la moyenne mobile', () => {
+  const mk = (list) => list.map((a, i) => ({ nuit: i + 1, autonomie: a }));
+  const k = DATA.SIMULATION.LISSAGE;
+  const rows = mk(Array.from({ length: 30 }, (_, i) => (i < 10 ? 0 : 80)));
+  const n = simulationReach(rows, 40);
+  assert(n > 10 && n <= 10 + k, `jalon daté à la nuit ${n}`);
+  assertEqual(simulationReach(rows, 90), null, 'jamais atteint');
+  assertEqual(simulationReach(mk([100, 0, 100]), 100), null, 'une nuit isolée à 100 % ne compte pas');
+});
+
+test('Lot 10 : le joueur vend ce qui périt demain et que le repas ne mangera pas, jamais la réserve', () => {
+  const s = createInitialState(1);
+  s.inventaire = { carotte: [{ qty: 100, nightsLeft: 1, origin: 'produit' }], patate: [{ qty: 10, nightsLeft: 1, origin: 'produit' }] };
+  s.famille.reserve = { patate: 6 };
+  const mange = planMeal(s).mange;
+  const piecesAvant = s.pieces;
+  botSell(s);
+  const attendu = 100 - (mange.carotte || 0);
+  assertEqual(countItem(s, 'carotte'), 100 - attendu, 'seul le surplus de carottes est vendu');
+  assert(countItem(s, 'patate') >= 6, 'la réserve de semences reste');
+  assert(s.pieces > piecesAvant, 'la vente rapporte des pièces');
+});
+
+test('Lot 10 : le joueur n\'achète le Potager niveau 2 qu\'en gardant sa caisse', () => {
+  const s = createInitialState(1);
+  s.inventaire = {};
+  const cout = DATA.POTAGER.COUT[1];
+  s.pieces = cout + DATA.SIMULATION.CAISSE - 1;
+  botBuy(s, 60);
+  assertEqual(s.potager.niveau, 1, 'il lui manque une pièce pour garder la caisse');
+  s.pieces = cout + DATA.SIMULATION.CAISSE;
+  botBuy(s, 60);
+  assertEqual(s.potager.niveau, 2);
+  assertEqual(s.pieces, DATA.SIMULATION.CAISSE);
+});
+
+test('Lot 10 : le joueur ne vend des conserves que pour payer un achat, et pas sous le stock gardé', () => {
+  const s = createInitialState(1);
+  s.pieces = 0;
+  s.inventaire.conserve = [{ qty: DATA.SIMULATION.CONSERVES_GARDEES, nightsLeft: null, origin: 'acheté' }];
+  botRaiseFunds(s, 30);
+  assertEqual(countItem(s, 'conserve'), DATA.SIMULATION.CONSERVES_GARDEES, 'sous le stock gardé, on ne vend pas');
+  s.inventaire.conserve = [{ qty: DATA.SIMULATION.CONSERVES_GARDEES + 100, nightsLeft: null, origin: 'acheté' }];
+  botRaiseFunds(s, 30);
+  assertEqual(s.pieces, 30, 'juste ce qu\'il faut');
+  assertEqual(countItem(s, 'conserve'), DATA.SIMULATION.CONSERVES_GARDEES + 100 - 10);
+});
+
+test('Lot 10 : le joueur soigne un malade dès qu\'il en a les moyens', () => {
+  const s = createInitialState(1);
+  s.famille.membres[0].malade = true;
+  s.famille.membres[0].sante = 0;
+  s.pieces = 0;
+  botHeal(s);
+  assertEqual(s.famille.membres[0].malade, true, 'pas de pièces, pas de soin');
+  s.pieces = careCost(s);
+  botHeal(s);
+  assertEqual([s.famille.membres[0].malade, s.famille.soinsPayes], [false, 1]);
+});
+
+test('Lot 10 : plante, arrose et récolte : les premières carottes arrivent', () => {
+  const s = createInitialState(1);
+  const strat = DATA.SIMULATION.STRATEGIES.applique;
+  for (let i = 0; i < 6; i++) botDay(s, strat, {});
+  assert(s.campagne.compteurs.carottes > 0 || countItem(s, 'patate') > 0 || countItem(s, 'carotte') > 0, 'la ferme a produit');
+  assert(s.campagne.compteurs.litres > 0, 'la pompe a tourné');
+});
+
+test('Lot 10 : dépannage : une unité de nourriture achetée chaque soir fait monter son prix', () => {
+  const opts = { depannage: { item: 'carotte', dernier: null } };
+  const rows = simulateGame('applique', 5, 1, opts);
+  assert(rows.every((r) => r.depannage && typeof r.depannage.prix === 'number'), 'le prix de la prochaine unité est relevé chaque nuit');
+  const prix = rows.map((r) => r.depannage.prix);
+  assert(prix[4] >= prix[0], 'le prix ne baisse pas quand on achète chaque nuit');
+});
+
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
 // run-tests.mjs l'exécute explicitly avec Node après avoir lancé runTests().
 if (typeof module !== 'undefined' && typeof globalThis !== 'undefined') {
@@ -9919,6 +10639,68 @@ function actionTestNights(count) {
   persistState();
   refresh();
   if (report) openWakeModal(report);
+}
+
+/* ---------- Lot 10 : simulation d'un joueur automatique (mode test) ---------- */
+
+const SIM_NIGHTS = 60;
+
+// Courbe d'autonomie d'une simulation : la valeur de chaque nuit en gris, la
+// moyenne mobile en couleur, la courbe cible de la conception en pointillés, et
+// une bande rouge pour les nuits où un membre de la famille est à 0 de santé.
+function simulationHtml(rows) {
+  const S = DATA.SIMULATION;
+  const W = 320, H = 150, left = 30, right = 8, top = 8, bottom = 22;
+  const plotW = W - left - right;
+  const plotH = H - top - bottom;
+  const first = rows[0].nuit;
+  const last = rows[rows.length - 1].nuit;
+  const span = Math.max(1, last - first);
+  const x = (nuit) => left + plotW * ((nuit - first) / span);
+  const y = (pct) => top + plotH * (1 - pct / 100);
+  const smooth = rows.map((r, i) => {
+    const w = rows.slice(Math.max(0, i - S.LISSAGE + 1), i + 1);
+    return w.reduce((t, q) => t + q.autonomie, 0) / w.length;
+  });
+  const grid = [0, 25, 50, 75, 100]
+    .map((g) => `<line class="chart-grid" x1="${left}" y1="${y(g).toFixed(1)}" x2="${W - right}" y2="${y(g).toFixed(1)}"/><text class="chart-label" x="${left - 4}" y="${(y(g) + 3).toFixed(1)}" text-anchor="end">${g}</text>`)
+    .join('');
+  const step = Math.max(1, Math.ceil(span / 6 / 5) * 5);
+  const ticks = rows
+    .filter((r) => (r.nuit - first) % step === 0)
+    .map((r) => `<text class="chart-label" x="${x(r.nuit).toFixed(1)}" y="${H - 6}" text-anchor="middle">${r.nuit}</text>`)
+    .join('');
+  const death = rows
+    .filter((r) => r.santeMin <= 0)
+    .map((r) => `<rect class="chart-death" x="${(x(r.nuit) - plotW / span / 2).toFixed(1)}" y="${top}" width="${(plotW / span).toFixed(1)}" height="${plotH}"/>`)
+    .join('');
+  const raw = rows.map((r) => `${x(r.nuit).toFixed(1)},${y(r.autonomie).toFixed(1)}`).join(' ');
+  const curve = rows.map((r, i) => `${x(r.nuit).toFixed(1)},${y(smooth[i]).toFixed(1)}`).join(' ');
+  const goal = S.JALONS.filter((j) => j.nuit >= first && j.nuit <= last).map((j) => `${x(j.nuit).toFixed(1)},${y(j.pct).toFixed(1)}`).join(' ');
+  const goalLine = goal.includes(' ') ? `<polyline class="chart-target" fill="none" points="${goal}"><title>Courbe cible de la conception (section 8.10)</title></polyline>` : '';
+  const zero = rows.find((r) => r.santeMin <= 0);
+  const reach = S.JALONS.map((j) => {
+    const n = simulationReach(rows, j.pct);
+    return `${j.pct} % : ${n === null ? 'pas atteint' : 'nuit ' + n}`;
+  }).join(' · ');
+  const final = smooth[smooth.length - 1];
+  const summary = `Simulation de ${rows.length} nuits (nuits ${first} à ${last}) : autonomie finale ${formatPercent(final)} (moyenne sur ${S.LISSAGE} nuits) ; ${zero ? 'un membre de la famille tombe à 0 de santé dès la nuit ' + zero.nuit : 'aucune santé à 0'}.`;
+  return `
+    <strong>Joueur appliqué, ${rows.length} nuits</strong>
+    <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${summary}">${grid}${death}<polyline class="chart-raw" points="${raw}"/>${goalLine}<polyline class="chart-curve" points="${curve}"/>${ticks}</svg>
+    <p class="muted">Ligne colorée : moyenne sur ${S.LISSAGE} nuits · gris : chaque nuit · pointillés : courbe cible · bande rouge : santé à 0.</p>
+    <p>${summary}</p>
+    <p class="muted">Jalons (lissés) : ${reach}.</p>
+    <p class="muted">Pièces à la fin : ${formatCoins(rows[rows.length - 1].pieces)} · conserves restantes : ${formatNumber(rows[rows.length - 1].conserves)} · soins payés : ${rows[rows.length - 1].soinsPayes}. Ta partie n'a pas été modifiée.</p>`;
+}
+
+// Le bouton travaille sur une copie de l'état : la partie en cours ne bouge pas.
+function actionTestSimulate() {
+  const rows = simulateFromCopy(state, 'applique', SIM_NIGHTS);
+  const box = document.getElementById('sim-result');
+  box.innerHTML = simulationHtml(rows);
+  box.hidden = false;
+  showToast(`Simulation de ${SIM_NIGHTS} nuits terminée`);
 }
 
 /* ---------- boucle à pas fixe ---------- */
@@ -12112,6 +12894,9 @@ document.addEventListener('click', (e) => {
       if (result.ok) showToast(result.fini ? '🏆 Mode libre : tout est débloqué' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
       break;
     }
+    case 'test-simulate':
+      actionTestSimulate();
+      break;
     case 'test-nights-1':
       actionTestNights(1);
       break;
