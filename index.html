@@ -711,6 +711,29 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 }
 
 .ingredients .missing { color: var(--danger); font-weight: 600; }
+
+/* ---------- Lot 7 : arbre des technologies et automatisations ---------- */
+
+.chips { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.branch { margin: 8px 0 22px; }
+.branch-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; }
+.branch-head h3 { margin: 0; font-size: 1.1rem; }
+.branch-nodes { display: flex; flex-direction: column; gap: 12px; }
+.tech-node .desc { font-size: 0.95rem; }
+.tech-node.available { border-color: var(--accent); border-width: 2px; background: var(--bg-elevated); }
+.tech-node.owned { border-color: var(--accent); }
+.tech-node.locked .card-title, .tech-node.locked .desc { opacity: 0.75; }
+.tech-node .btn { width: 100%; }
+.prereqs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 0.95rem; }
+.prereqs .missing { color: var(--danger); font-weight: 600; }
+.level-row { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border-radius: var(--radius); border: 1px dashed var(--border); }
+.level-row .level-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-weight: 600; }
+.level-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.level-row .chip { white-space: normal; }
+.chip.auto { border-color: var(--accent); color: var(--accent); }
+.semis-choice { justify-content: flex-start; text-align: left; height: auto; min-height: 44px; padding: 8px 12px; flex-direction: column; align-items: flex-start; gap: 2px; }
+.semis-choice > span { display: block; }
+.semis-choice[aria-pressed="true"] { border-color: var(--accent); border-width: 2px; }
 </style>
 </head>
 <body>
@@ -767,6 +790,17 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
         <button class="btn" type="button" data-action="test-oil">+10 huiles</button>
         <button class="btn" type="button" data-action="test-eggs">+20 œufs</button>
         <button class="btn" type="button" data-action="test-wear-mill">User le moulin</button>
+      </div>
+      <div class="row">
+        <label for="test-building">Bâtiment</label>
+        <select id="test-building">
+          <option value="potager">Potager</option>
+          <option value="champ">Champ</option>
+          <option value="poulailler">Poulailler</option>
+          <option value="silo">Silo</option>
+        </select>
+        <button class="btn" type="button" data-action="test-level5">Niveau 5</button>
+        <button class="btn" type="button" data-action="test-techs">Débloquer tous les nœuds</button>
       </div>
       <div class="row">
         <button class="btn" type="button" data-action="test-skip-awake">Ignorer l'éveil minimal</button>
@@ -1080,6 +1114,83 @@ const DATA = {
     prixSurface: 40,
     croissance: 1.2,
   },
+
+  /* ---------- Lot 7 : automatisations et arbre des technologies ---------- */
+
+  // Automatisations de niveau (sections 1.3, 1.4 et 6.4-6.5) : à ce niveau, le
+  // bâtiment travaille tout seul pendant la nuit (Potager et Champ : arrosage et
+  // récolte ; Poulailler : nourrissage). Elles ne subissent jamais la productivité.
+  AUTOMATISATION: {
+    NIVEAU: 5,
+    BATIMENTS: ['potager', 'champ', 'poulailler'],
+  },
+
+  // L'onglet « Arbre des technologies » apparaît la première fois que le joueur
+  // possède au moins SEUIL_PIECES pièces (il reste ensuite).
+  TECHNO: { ONGLET: 'techno', SEUIL_PIECES: 100 },
+
+  // Arbre des technologies (sections 1.4, 8.3 et 8.7).
+  // batiments : bâtiments dont le niveau sert de prérequis ou de suivi.
+  // branches  : suivi = ce que l'onglet affiche comme progression (les
+  //             améliorations de niveau restent sur les cartes des bâtiments).
+  // noeuds    : cout en pièces ; requiert = liste de { batiment, niveau } ou
+  //             { noeud } ; effet : tempsPrepa = multiplicateur des temps de
+  //             préparation (les paliers se multiplient) ; eveilMin = éveil
+  //             minimal en secondes (le plus bas des paliers acquis compte).
+  techtree: {
+    batiments: {
+      potager:    { nom: 'Potager',    icone: '🌱' },
+      champ:      { nom: 'Champ',      icone: '🌾' },
+      poulailler: { nom: 'Poulailler', icone: '🐔' },
+      silo:       { nom: 'Silo',       icone: '🛖' },
+      pompe:      { nom: 'Pompe',      icone: '⛲' },
+    },
+    suivi: {
+      panneau:    { type: 'appareils', nom: 'Panneaux solaires', icone: '☀️' },
+      batterie:   { type: 'appareils', nom: 'Batteries', icone: '🔋' },
+      pompe:      { type: 'niveau', nom: 'Pompe et réservoir', icone: '⛲' },
+      potager:    { type: 'niveau', nom: 'Potager', icone: '🌱', note: 'arrosage et récolte automatiques' },
+      champ:      { type: 'niveau', nom: 'Champ', icone: '🌾', note: 'arrosage et récolte automatiques' },
+      poulailler: { type: 'niveau', nom: 'Poulailler', icone: '🐔', note: 'nourrissage automatique' },
+      silo:       { type: 'niveau', nom: 'Silo', icone: '🛖' },
+      stations:   { type: 'stations', nom: 'Ateliers', icone: '🍞' },
+    },
+    branches: [
+      { id: 'energie', nom: 'Énergie', icone: '⚡', suivi: ['panneau', 'batterie'] },
+      { id: 'eau', nom: 'Eau', icone: '💧', suivi: ['pompe'] },
+      { id: 'culture', nom: 'Culture', icone: '🌱', suivi: ['potager', 'champ'] },
+      { id: 'elevage', nom: 'Élevage', icone: '🐔', suivi: ['poulailler', 'silo'] },
+      { id: 'cuisine', nom: 'Cuisine', icone: '🍳', suivi: ['stations'] },
+      { id: 'famille', nom: 'Famille', icone: '👨‍👩‍👧‍👦', suivi: [] },
+    ],
+    noeuds: {
+      semis_auto: {
+        branche: 'culture', nom: 'Semis automatique', icone: '🌾', cout: 1500,
+        requiert: [{ batiment: 'potager', niveau: 5 }],
+        description: 'Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle (désactiver ou verrouiller la culture).',
+      },
+      prepa_1: {
+        branche: 'cuisine', nom: 'Préparation rapide I', icone: '⏱️', cout: 400,
+        requiert: [], effet: { tempsPrepa: 0.8 },
+        description: 'Les temps de préparation (Four, Cuisine, Moulin, Presse) baissent de 20 %.',
+      },
+      prepa_2: {
+        branche: 'cuisine', nom: 'Préparation rapide II', icone: '⏱️', cout: 900,
+        requiert: [{ noeud: 'prepa_1' }], effet: { tempsPrepa: 0.8 },
+        description: 'Encore −20 % sur les temps de préparation (multiplié : ×0,64 en tout).',
+      },
+      reveil_1: {
+        branche: 'famille', nom: 'Réveil matinal I', icone: '🌅', cout: 300,
+        requiert: [], effet: { eveilMin: 20 },
+        description: 'L\'éveil minimal avant de pouvoir dormir passe de 30 s à 20 s.',
+      },
+      reveil_2: {
+        branche: 'famille', nom: 'Réveil matinal II', icone: '🌅', cout: 800,
+        requiert: [{ noeud: 'reveil_1' }], effet: { eveilMin: 10 },
+        description: 'L\'éveil minimal passe à 10 s.',
+      },
+    },
+  },
 };
 
 /* ==========================================================================
@@ -1101,7 +1212,7 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 7;
+const STATE_VERSION = 8;
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -1109,9 +1220,11 @@ const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrag
 // cours se terminent (après le repas du soir : un plat fini pendant la nuit se
 // mange dès le repas suivant). Lot 6 : les moutons grossissent et leur laine
 // repousse, juste après la ponte. Lot 3 : la péremption, toujours en dernier. Les
-// lots suivants insèrent leurs fonctions avant `spoil`.
+// lots suivants insèrent leurs fonctions avant `spoil`. Lot 7 : les
+// automatisations du niveau 5 passent juste après le repas, avant la pousse (une
+// parcelle arrosée pousse cette nuit) et avant la ponte (une poule nourrie pond).
 // Chaque étape reçoit l'état et le modifie.
-const NIGHT_STEPS = [feedFamily, growAll, layEggs, growSheep, finishPreparations, spoil];
+const NIGHT_STEPS = [feedFamily, autoTasks, growAll, layEggs, growSheep, finishPreparations, spoil];
 
 /* ---------- Lot 5 : plats cuisinés (objets calculés depuis DATA.recipes) ---------- */
 
@@ -1277,8 +1390,15 @@ function roundCoins(x) {
 
 /* ---------- l'heure ---------- */
 
+// Éveil minimal avant de dormir : celui de départ, ou le plus bas des paliers
+// « Réveil matinal » acquis (Lot 7).
 function awakeRequired(state) {
-  return DATA.TIME.MIN_AWAKE_S;
+  let required = DATA.TIME.MIN_AWAKE_S;
+  for (const id of ownedTechs(state)) {
+    const e = DATA.techtree.noeuds[id].effet;
+    if (e && e.eveilMin !== undefined) required = Math.min(required, e.eveilMin);
+  }
+  return required;
 }
 
 // Heure d'ambiance (0 à 23) : 6 h au réveil, +1 par SECONDS_PER_HOUR d'éveil.
@@ -1414,6 +1534,7 @@ function tick(state, dt) {
 
   // e. temps d'éveil (l'heure s'en déduit)
   state.awakeSeconds += dt;
+  refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
   return state;
 }
 
@@ -1747,6 +1868,7 @@ function sellItem(state, item, qty) {
   const gain = roundCoins(n * sellPrice(item));
   state.pieces = roundCoins(state.pieces + gain);
   setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);
+  refreshUnlocks(state);
   return { ok: true, sold: n, gain };
 }
 
@@ -1868,7 +1990,7 @@ function updateHealth(state, coverage, bonus = 0) {
 }
 
 function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, bonusPlats: 0, termine: {} };
+  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, bonusPlats: 0, termine: {}, auto: newAutoReport() };
 }
 
 // Bonus de santé d'une nuit : +1 par plat différent mangé, jusqu'à +3.
@@ -1897,6 +2019,7 @@ function feedFamily(state) {
     nouveauxMalades: nouveaux,
     perdus: {},
     oeufs: 0,
+    auto: newAutoReport(),
   };
   return plan;
 }
@@ -1943,7 +2066,9 @@ function setSeedReserve(state, item, qty) {
 /* ---------- Lot 2 : potager (Lot 4 : le même moteur sert le Champ) ---------- */
 
 function makePlot(n, lieu = DATA.POTAGER.LIEU) {
-  return { id: `${lieu}-${n}`, lieu, culture: null, stade: 0, arrose: false, montee: false };
+  // Lot 7 : semis = réglage du semis automatique de la parcelle ('meme' : même
+  // culture que la récolte, 'verrou' : toujours `verrou`, 'off' : désactivé).
+  return { id: `${lieu}-${n}`, lieu, culture: null, stade: 0, arrose: false, montee: false, semis: 'meme', verrou: null };
 }
 
 function makePlots(count, lieu = DATA.POTAGER.LIEU) {
@@ -2288,13 +2413,15 @@ function hensToFeed(state) {
 // une probabilité égale à la productivité (tirage du générateur de l'état) : s'il
 // rate, rien n'est retiré du blé et la poule reste à nourrir. Le blé est pris
 // d'abord dans le Silo, puis dans l'inventaire.
-function feedHen(state) {
+// Lot 7 : `auto` = true pour le nourrissage automatique du niveau 5, jamais
+// réduit par la productivité.
+function feedHen(state, auto = false) {
   const p = state.poulailler;
   const need = DATA.ANIMAUX.poule.bleParNuit;
   if (p.poules <= 0) return fail('Aucune poule à nourrir.');
   if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
   if (wheatTotal(state) + EPS < need) return fail('Pas assez de blé.');
-  const prod = productivity(state);
+  const prod = auto ? 1 : productivity(state);
   if (prod < 1 - EPS && nextRandom(state) >= prod) return { ok: true, compte: false };
   takeWheat(state, need, 'silo');
   p.nourries += 1;
@@ -2304,7 +2431,7 @@ function feedHen(state) {
 
 // « Nourrir tout » : une tentative par poule restante, tant qu'il reste du blé.
 // Renvoie { ok, nourries, ratees } ; refusé si rien n'était possible.
-function feedAllHens(state) {
+function feedAllHens(state, auto = false) {
   const p = state.poulailler;
   if (p.poules <= 0) return fail('Aucune poule à nourrir.');
   if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
@@ -2314,7 +2441,7 @@ function feedAllHens(state) {
   let ratees = 0;
   const attempts = hensToFeed(state);
   for (let i = 0; i < attempts; i++) {
-    const r = feedHen(state);
+    const r = feedHen(state, auto);
     if (!r.ok) break; // plus de blé
     if (r.compte) nourries += 1;
     else ratees += 1;
@@ -2560,7 +2687,10 @@ function startRecipe(state, id) {
     if (l.eau) state.eau = Math.max(0, state.eau - l.qte);
     else takeIngredient(state, l.item, l.qte);
   }
-  st.tache = { recette: id, reste: r.temps, duree: r.temps };
+  // Lot 7 : les paliers « Préparation rapide » raccourcissent la préparation à
+  // son lancement (une préparation déjà en cours garde son temps).
+  const temps = recipeTime(state, id);
+  st.tache = { recette: id, reste: temps, duree: temps };
   return { ok: true, recette: id };
 }
 
@@ -2653,6 +2783,185 @@ function openStation(state, id) {
   }
 }
 
+/* ---------- Lot 7 : arbre des technologies ---------- */
+
+// state.technologies = liste des identifiants de nœuds acquis. On ignore les
+// identifiants inconnus (sauvegarde importée d'une autre version).
+function ownedTechs(state) {
+  return Array.isArray(state.technologies) ? state.technologies.filter((id) => DATA.techtree.noeuds[id]) : [];
+}
+
+function hasTech(state, id) {
+  return ownedTechs(state).includes(id);
+}
+
+// Multiplicateur des temps de préparation : produit des paliers acquis
+// (×0,8 puis ×0,64), arrondi pour effacer les restes de calcul flottant.
+function prepTimeMult(state) {
+  let m = 1;
+  for (const id of ownedTechs(state)) {
+    const e = DATA.techtree.noeuds[id].effet;
+    if (e && e.tempsPrepa !== undefined) m *= e.tempsPrepa;
+  }
+  return Math.round(m * 1e6) / 1e6;
+}
+
+// Temps de préparation d'une recette avec les technologies actuelles, en secondes à vitesse 1.
+function recipeTime(state, id) {
+  return Math.round(DATA.recipes[id].temps * prepTimeMult(state) * 1e6) / 1e6;
+}
+
+// Niveau d'un bâtiment (0 s'il n'est pas construit).
+function buildingLevel(state, id) {
+  if (id === 'potager') return state.potager.niveau;
+  if (id === 'pompe') return state.pompe.niveau;
+  const b = state[id];
+  return b && b.construit ? b.niveau : 0;
+}
+
+// Prérequis d'un nœud : [{ ok, texte }].
+function techPrereqs(state, id) {
+  return DATA.techtree.noeuds[id].requiert.map((r) => {
+    if (r.batiment) {
+      const b = DATA.techtree.batiments[r.batiment];
+      return { ok: buildingLevel(state, r.batiment) >= r.niveau, texte: `${b.icone} ${b.nom} niveau ${r.niveau}` };
+    }
+    const n = DATA.techtree.noeuds[r.noeud];
+    return { ok: hasTech(state, r.noeud), texte: `${n.icone} ${n.nom}` };
+  });
+}
+
+// 'acquis', 'disponible' (prérequis remplis) ou 'verrouille'.
+function techStatus(state, id) {
+  if (hasTech(state, id)) return 'acquis';
+  return techPrereqs(state, id).every((p) => p.ok) ? 'disponible' : 'verrouille';
+}
+
+function buyTech(state, id) {
+  const n = DATA.techtree.noeuds[id];
+  if (!n) return fail('Technologie inconnue.');
+  if (hasTech(state, id)) return fail('Déjà acquise.');
+  if (techStatus(state, id) !== 'disponible') return fail('Prérequis manquants.');
+  if (state.pieces + EPS < n.cout) return fail('Pas assez de pièces.');
+  spend(state, n.cout);
+  if (!Array.isArray(state.technologies)) state.technologies = [];
+  state.technologies.push(id);
+  return { ok: true, cost: n.cout };
+}
+
+// Progression affichée dans une branche (les améliorations se font sur les
+// cartes des bâtiments) : [{ cle, nom, icone, type, ... }].
+function techProgress(state, brancheId) {
+  const branche = DATA.techtree.branches.find((b) => b.id === brancheId);
+  return branche.suivi.map((cle) => {
+    const def = DATA.techtree.suivi[cle];
+    const e = { cle, nom: def.nom, icone: def.icone, type: def.type, note: def.note || null, max: DATA.LEVEL_MAX };
+    if (def.type === 'appareils') {
+      e.niveaux = (cle === 'panneau' ? state.panneaux : state.batteries).map((d) => d.niveau);
+    } else if (def.type === 'niveau') {
+      e.niveau = buildingLevel(state, cle);
+      e.automatise = DATA.AUTOMATISATION.BATIMENTS.includes(cle) && e.niveau >= DATA.AUTOMATISATION.NIVEAU;
+    } else {
+      e.ateliers = Object.keys(DATA.STATIONS).map((id) => ({
+        id, nom: DATA.STATIONS[id].nom, icone: DATA.STATIONS[id].icone, construit: !!(state.stations && state.stations[id].construit),
+      }));
+    }
+    return e;
+  });
+}
+
+// Première fois à SEUIL_PIECES pièces : l'onglet s'ajoute et ne disparaît plus.
+function refreshUnlocks(state) {
+  const tab = DATA.TECHNO.ONGLET;
+  if (state.pieces + EPS >= DATA.TECHNO.SEUIL_PIECES && !state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
+}
+
+/* ---------- Lot 7 : automatisations de la nuit ---------- */
+
+function newAutoReport() {
+  return { potager: false, champ: false, poulailler: false, arrosees: 0, sansEau: 0, recoltes: {}, semees: 0, sansGraine: 0, nourries: 0, sansBle: 0 };
+}
+
+function isAutomated(state, id) {
+  return DATA.AUTOMATISATION.BATIMENTS.includes(id) && buildingLevel(state, id) >= DATA.AUTOMATISATION.NIVEAU;
+}
+
+// Semis automatique d'une parcelle qui vient d'être récoltée. Renvoie null si
+// le semis ne s'applique pas (nœud absent ou parcelle désactivée), true si la
+// parcelle est replantée, false s'il n'y a pas de graine au-delà de la réserve
+// de semences.
+function autoReplant(state, plot, harvested) {
+  if (!hasTech(state, 'semis_auto')) return null;
+  const mode = plot.semis || 'meme';
+  if (mode === 'off') return null;
+  const culture = mode === 'verrou' && plot.verrou && DATA.crops[plot.verrou] ? plot.verrou : harvested;
+  if (!DATA.crops[culture].lieux.includes(plot.lieu)) return false;
+  const reserve = state.famille.reserve[seedItem(culture)] || 0;
+  if (seedStock(state, culture) - reserve < 1 - EPS) return false;
+  return plant(state, plot.id, culture).ok === true;
+}
+
+// Réglage du semis automatique d'une parcelle : 'meme', 'off' ou 'verrou' (avec
+// la culture à verrouiller, plantable dans ce lieu).
+function setSemis(state, plotId, mode, culture) {
+  const plot = findPlot(state, plotId);
+  if (!plot) return fail('Parcelle introuvable.');
+  if (!['meme', 'off', 'verrou'].includes(mode)) return fail('Réglage inconnu.');
+  if (mode === 'verrou') {
+    const def = DATA.crops[culture];
+    if (!def) return fail('Culture inconnue.');
+    if (!def.lieux.includes(plot.lieu)) return fail(`${def.nom} ne se plante pas ici.`);
+    plot.verrou = culture;
+  } else {
+    plot.verrou = null;
+  }
+  plot.semis = mode;
+  return { ok: true };
+}
+
+// Étape nocturne (juste après le repas) : automatisations du niveau 5.
+// Potager et Champ : récolte des parcelles mûres (sauf celles montées en
+// graine), semis automatique, puis arrosage de toutes les parcelles plantées.
+// Poulailler : nourrissage. Rien n'est réduit par la productivité ; si l'eau ou
+// le blé manquent, on sert ce qu'on peut et le rapport le signale au réveil.
+function autoTasks(state) {
+  const rap = newAutoReport();
+  const zones = [
+    { id: 'potager', plots: state.potager.parcelles },
+    { id: 'champ', plots: state.champ ? state.champ.parcelles : [] },
+  ];
+  for (const zone of zones) {
+    if (!isAutomated(state, zone.id)) continue;
+    rap[zone.id] = true;
+    for (const p of zone.plots) {
+      if (!p.culture || !isMature(p) || p.montee) continue;
+      const culture = p.culture;
+      const r = harvest(state, p.id, true);
+      if (!r.ok) continue;
+      for (const [item, qty] of Object.entries(r.items)) rap.recoltes[item] = (rap.recoltes[item] || 0) + qty;
+      const replanted = autoReplant(state, p, culture);
+      if (replanted === true) rap.semees += 1;
+      else if (replanted === false) rap.sansGraine += 1;
+    }
+    for (const p of zone.plots) {
+      if (!p.culture || p.arrose || isMature(p)) continue;
+      if (water(state, p.id).ok) rap.arrosees += 1;
+      else rap.sansEau += 1;
+    }
+  }
+  if (isAutomated(state, 'poulailler')) {
+    rap.poulailler = true;
+    if (state.poulailler.poules > 0) {
+      const before = state.poulailler.nourries;
+      feedAllHens(state, true);
+      rap.nourries = state.poulailler.nourries - before;
+      rap.sansBle = hensToFeed(state);
+    }
+  }
+  state.nuit.auto = rap;
+  return rap;
+}
+
 /* ---------- la nuit ---------- */
 
 function canSleep(state) {
@@ -2692,6 +3001,8 @@ function buildMorningReport(state) {
     // Lot 6 : moutons présents et moutons dont la laine est prête à tondre.
     moutons: state.paturage.moutons.length,
     lainePrete: sheepToShear(state),
+    // Lot 7 : ce que les automatisations ont fait (ou n'ont pas pu faire) cette nuit.
+    auto: { ...newAutoReport(), ...(state.nuit.auto || {}), recoltes: { ...((state.nuit.auto || {}).recoltes || {}) } },
   };
 }
 
@@ -2706,6 +3017,7 @@ function sleep(state) {
   state.awakeSeconds = 0;
   state.report = buildMorningReport(state);
   state.jour = newDayStats();
+  refreshUnlocks(state);
   return state.report;
 }
 
@@ -2713,6 +3025,37 @@ function sleep(state) {
 
 function testAddPieces(state, amount) {
   state.pieces = roundCoins(state.pieces + amount);
+  refreshUnlocks(state);
+  return { ok: true };
+}
+
+// Lot 7 : met un bâtiment au niveau 5 (potager, champ, poulailler, silo), sans
+// payer : le bâtiment est construit s'il ne l'était pas et ses parcelles ou sa
+// capacité suivent le niveau.
+function testSetBuildingLevel5(state, id) {
+  const niveau = DATA.LEVEL_MAX;
+  if (id === 'potager') {
+    state.potager.niveau = niveau;
+    for (let n = state.potager.parcelles.length + 1; n <= DATA.POTAGER.PARCELLES[niveau - 1]; n++) state.potager.parcelles.push(makePlot(n));
+  } else if (id === 'champ') {
+    state.champ.construit = true;
+    state.champ.niveau = niveau;
+    for (let n = state.champ.parcelles.length + 1; n <= DATA.CHAMP.PARCELLES[niveau - 1]; n++) state.champ.parcelles.push(makePlot(n, DATA.CHAMP.LIEU));
+  } else if (id === 'poulailler' || id === 'silo') {
+    state[id].construit = true;
+    state[id].niveau = niveau;
+  } else {
+    return fail('Bâtiment inconnu.');
+  }
+  return { ok: true };
+}
+
+// Lot 7 : débloque tous les nœuds de l'arbre, sans payer ni vérifier les
+// prérequis, et ouvre l'onglet.
+function testUnlockAllTechs(state) {
+  state.technologies = Object.keys(DATA.techtree.noeuds);
+  const tab = DATA.TECHNO.ONGLET;
+  if (!state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
   return { ok: true };
 }
 
@@ -2913,6 +3256,11 @@ function startLot6() {
   };
 }
 
+// Lot 7 : aucune technologie acquise au départ.
+function startLot7() {
+  return { technologies: [] };
+}
+
 function createInitialState(seed = 1) {
   return {
     version: STATE_VERSION,
@@ -2928,6 +3276,7 @@ function createInitialState(seed = 1) {
     ...startLot4(),
     ...startLot5(),
     ...startLot6(),
+    ...startLot7(),
   };
 }
 
@@ -2986,6 +3335,16 @@ const MIGRATIONS = {
     ...state,
     version: 7,
   }),
+  // v7 (Lot 6) → v8 (Lot 7) : les technologies (aucune acquise), le réglage du
+  // semis automatique de chaque parcelle et le compte rendu des automatisations.
+  7: (state) => {
+    const withSemis = (plots) => (Array.isArray(plots) ? plots.map((p) => ({ semis: 'meme', verrou: null, ...p })) : plots);
+    const out = { ...startLot7(), ...state, version: 8 };
+    if (state.potager && typeof state.potager === 'object') out.potager = { ...state.potager, parcelles: withSemis(state.potager.parcelles) };
+    if (state.champ && typeof state.champ === 'object') out.champ = { ...state.champ, parcelles: withSemis(state.champ.parcelles) };
+    out.nuit = { auto: newAutoReport(), ...(state.nuit && typeof state.nuit === 'object' ? state.nuit : {}) };
+    return out;
+  },
 };
 
 // Applique les migrations successives à une sauvegarde { v, t, s } (ou à un
@@ -3127,7 +3486,7 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 7);
+  assertEqual(s.version, 8);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
@@ -4248,13 +4607,14 @@ test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de g
   assertEqual(s.famille.soinsPayes, 0, 'aucun soin payé');
 });
 
-test('ordre des étapes nocturnes : repas et santé, pousse, ponte, moutons, préparations, puis péremption en dernier', () => {
-  assertEqual(NIGHT_STEPS.length, 6);
+test('ordre des étapes nocturnes : repas et santé, automatisations, pousse, ponte, moutons, préparations, puis péremption en dernier', () => {
+  assertEqual(NIGHT_STEPS.length, 7);
   assert(NIGHT_STEPS[0] === feedFamily, 'première étape : repas et santé');
-  assert(NIGHT_STEPS[1] === growAll, 'deuxième étape : pousse');
-  assert(NIGHT_STEPS[2] === layEggs, 'troisième étape : ponte');
-  assert(NIGHT_STEPS[3] === growSheep, 'quatrième étape : les moutons grossissent, juste après la ponte');
-  assert(NIGHT_STEPS[4] === finishPreparations, 'cinquième étape : les préparations se terminent');
+  assert(NIGHT_STEPS[1] === autoTasks, 'deuxième étape (Lot 7) : automatisations, juste après le repas');
+  assert(NIGHT_STEPS[2] === growAll, 'troisième étape : pousse');
+  assert(NIGHT_STEPS[3] === layEggs, 'quatrième étape : ponte');
+  assert(NIGHT_STEPS[4] === growSheep, 'cinquième étape : les moutons grossissent, juste après la ponte');
+  assert(NIGHT_STEPS[5] === finishPreparations, 'sixième étape : les préparations se terminent');
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
@@ -6257,7 +6617,7 @@ test('migration v6 (Lot 5) → v7 : le Pâturage apparaît à débloquer, la par
     ...startFarm(), ...startHousehold(), ...startLot4(), ...startLot5(),
   };
   const m = migrate({ v: 6, t: 0, s: v6 });
-  assertEqual(m.version, 7);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces], [30, 640]);
   assertEqual(m.paturage, { construit: false, ha: 0, compteur: 0, moutons: [] });
   assertEqual(inventoryCounts(m).conserve, 160);
@@ -6273,9 +6633,461 @@ test('migration v6 (Lot 5) → v7 : le Pâturage apparaît à débloquer, la par
 
 test('migration v0 → version courante : les chaînes mènent au Lot 6', () => {
   const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
-  assertEqual(m.version, 7);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual(m.paturage.construit, false);
   assertEqual(m.paturage.moutons, []);
+});
+
+/* ---------- Lot 7 : automatisations du niveau 5, arbre des technologies ---------- */
+
+// État de test : riche, réservoir plein, Silo et Poulailler construits (ranch),
+// Champ construit. Les bâtiments demandés passent au niveau 5.
+function auto5(...batiments) {
+  const s = ranch({ champ: true });
+  for (const b of batiments) assert(testSetBuildingLevel5(s, b).ok, `niveau 5 : ${b}`);
+  return s;
+}
+
+test('DATA Lot 7 : automatisations, arbre des technologies, coûts et prérequis', () => {
+  assertEqual(DATA.AUTOMATISATION, { NIVEAU: 5, BATIMENTS: ['potager', 'champ', 'poulailler'] });
+  assertEqual(DATA.TECHNO, { ONGLET: 'techno', SEUIL_PIECES: 100 });
+  const N = DATA.techtree.noeuds;
+  assertEqual(Object.keys(N), ['semis_auto', 'prepa_1', 'prepa_2', 'reveil_1', 'reveil_2']);
+  assertEqual([N.semis_auto.cout, N.prepa_1.cout, N.prepa_2.cout, N.reveil_1.cout, N.reveil_2.cout], [1500, 400, 900, 300, 800]);
+  assertEqual(N.semis_auto.requiert, [{ batiment: 'potager', niveau: 5 }]);
+  assertEqual(N.prepa_1.requiert, []);
+  assertEqual(N.prepa_2.requiert, [{ noeud: 'prepa_1' }]);
+  assertEqual(N.reveil_2.requiert, [{ noeud: 'reveil_1' }]);
+  assertEqual([N.prepa_1.effet.tempsPrepa, N.prepa_2.effet.tempsPrepa], [0.8, 0.8]);
+  assertEqual([N.reveil_1.effet.eveilMin, N.reveil_2.effet.eveilMin], [20, 10]);
+  assertEqual(DATA.techtree.branches.map((b) => b.nom), ['Énergie', 'Eau', 'Culture', 'Élevage', 'Cuisine', 'Famille']);
+  for (const [id, n] of Object.entries(N)) assert(DATA.techtree.branches.some((b) => b.id === n.branche), `branche de ${id}`);
+});
+
+test('état initial Lot 7 : aucune technologie, semis réglé sur « même culture »', () => {
+  const s = createInitialState(1);
+  assertEqual(s.technologies, []);
+  assertEqual(s.potager.parcelles.every((p) => p.semis === 'meme' && p.verrou === null), true);
+  assertEqual(s.nuit.auto, newAutoReport());
+  assertEqual(makePlot(3, 'champ').semis, 'meme');
+});
+
+test('arrosage automatique : Potager niveau 5, et pas avant', () => {
+  const s = garden();
+  s.potager.niveau = 4;
+  for (const id of ['potager-1', 'potager-2', 'potager-3']) assert(plant(s, id, 'carotte').ok);
+  sleepOnce(s);
+  assertEqual(s.potager.parcelles.slice(0, 3).map((p) => p.stade), [0, 0, 0], 'niveau 4 : personne n\'arrose');
+  assertEqual(s.eau, 40);
+  testSetBuildingLevel5(s, 'potager');
+  const r = sleepOnce(s);
+  assertEqual(s.potager.parcelles.slice(0, 3).map((p) => p.stade), [1, 1, 1], 'niveau 5 : arrosées, elles poussent');
+  assertEqual(s.eau, 34, '3 parcelles × 2 L');
+  assertEqual([r.auto.potager, r.auto.arrosees, r.auto.sansEau], [true, 3, 0]);
+});
+
+test('arrosage automatique : une parcelle déjà arrosée à la main n\'est pas arrosée deux fois, une parcelle mûre n\'est pas arrosée', () => {
+  const s = auto5('potager');
+  plant(s, 'potager-1', 'carotte');
+  plant(s, 'potager-2', 'carotte');
+  assert(water(s, 'potager-1').ok);
+  const eau = s.eau;
+  const rap = autoTasks(s);
+  assertEqual(rap.arrosees, 1);
+  assertEqual(s.eau, eau - 2);
+  const t = auto5('potager');
+  plantRipe(t, 'potager-1', 'carotte');
+  t.potager.parcelles[0].montee = true; // maturité repoussée de 2 stades : elle a soif
+  assertEqual(autoTasks(t).arrosees, 1);
+});
+
+test('récolte automatique : parcelles mûres seulement, jamais celles montées en graine', () => {
+  const s = auto5('potager');
+  plantRipe(s, 'potager-1', 'carotte');
+  plantRipe(s, 'potager-2', 'carotte');
+  findPlot(s, 'potager-2').montee = true; // 6 stades demandés : à 6 sur 6, mûre en graine
+  plant(s, 'potager-3', 'carotte');
+  findPlot(s, 'potager-3').stade = 2;
+  const r = sleepOnce(s);
+  assertEqual(findPlot(s, 'potager-1').culture, null, 'mûre : récoltée, parcelle libérée');
+  assertEqual(countItem(s, 'carotte'), 10);
+  assertEqual(r.auto.recoltes, { carotte: 10 });
+  assertEqual(findPlot(s, 'potager-2').culture, 'carotte', 'montée en graine : laissée au joueur');
+  assertEqual(findPlot(s, 'potager-3').stade, 3, 'pas mûre : arrosée, elle pousse');
+  const t = auto5();
+  plantRipe(t, 'potager-1', 'carotte');
+  sleepOnce(t);
+  assertEqual(findPlot(t, 'potager-1').culture, 'carotte', 'Potager niveau 1 : rien ne se récolte seul');
+});
+
+test('Champ niveau 5 : arrosage et récolte automatiques (le blé va au Silo)', () => {
+  const s = auto5('champ');
+  testAddWheat(s, 10);
+  plantRipe(s, 'champ-1', 'ble');
+  plant(s, 'champ-2', 'ble');
+  const silo = s.silo.ble;
+  const eau = s.eau;
+  const r = sleepOnce(s);
+  assertEqual(findPlot(s, 'champ-1').culture, null);
+  assertEqual(s.silo.ble, silo + 8);
+  assertEqual(findPlot(s, 'champ-2').stade, 1);
+  assertEqual(s.eau, eau - 2);
+  assertEqual([r.auto.champ, r.auto.arrosees, r.auto.recoltes.ble], [true, 1, 8]);
+  const t = auto5();
+  testAddWheat(t, 10);
+  plant(t, 'champ-1', 'ble');
+  sleepOnce(t);
+  assertEqual(findPlot(t, 'champ-1').stade, 0, 'Champ niveau 1 : pas d\'arrosage automatique');
+});
+
+test('nourrissage automatique : Poulailler niveau 5, et pas avant', () => {
+  const s = auto5();
+  testAddHens(s, 4);
+  testAddWheat(s, 10);
+  const r1 = sleepOnce(s);
+  assertEqual(r1.oeufs, 0, 'niveau 1 : aucune poule nourrie, aucun œuf');
+  assertEqual(s.silo.ble, 10);
+  testSetBuildingLevel5(s, 'poulailler');
+  const r2 = sleepOnce(s);
+  assertEqual(r2.oeufs, 4);
+  assertEqual(s.silo.ble, 8, '4 poules × 0,5 blé');
+  assertEqual([r2.auto.poulailler, r2.auto.nourries, r2.auto.sansBle], [true, 4, 0]);
+  assertEqual(r2.bleConsomme, 2);
+});
+
+test('les automatisations ne sont jamais réduites par une santé basse (les gestes au clic, si)', () => {
+  const s = auto5('potager', 'poulailler');
+  testAddHens(s, 4);
+  testAddWheat(s, 10);
+  plantRipe(s, 'potager-1', 'carotte');
+  setHealth(s, 5);
+  assert(productivity(s) < 0.5, 'famille épuisée');
+  assertEqual(harvestYield(s, 'carotte'), 3, 'au clic : rendement réduit');
+  const r = sleepOnce(s);
+  assert(productivity(s) < 0.5, 'toujours épuisée au réveil');
+  assertEqual(countItem(s, 'carotte'), 10, 'récolte automatique à 100 %');
+  assertEqual(r.oeufs, 4, 'toutes les poules nourries, sans tirage raté');
+  assertEqual(r.auto.nourries, 4);
+  const t = auto5('potager');
+  plant(t, 'potager-1', 'carotte');
+  setHealth(t, 5);
+  sleepOnce(t);
+  assertEqual(findPlot(t, 'potager-1').stade, 1, 'arrosée malgré la santé basse');
+});
+
+test('eau ou blé insuffisants : les automatisations servent ce qu\'elles peuvent et le signalent', () => {
+  const s = auto5('potager', 'poulailler');
+  for (let i = 1; i <= 4; i++) plant(s, `potager-${i}`, 'carotte');
+  testAddHens(s, 4);
+  s.silo.ble = 1; // de quoi nourrir 2 poules
+  s.eau = 5; // de quoi arroser 2 parcelles (2 L chacune)
+  const r = sleepOnce(s);
+  assertEqual([r.auto.arrosees, r.auto.sansEau], [2, 2]);
+  assertEqual(s.potager.parcelles.slice(0, 4).map((p) => p.stade), [1, 1, 0, 0]);
+  assertEqual([r.auto.nourries, r.auto.sansBle], [2, 2]);
+  assertEqual(r.oeufs, 2);
+  assertEqual(s.silo.ble, 0);
+});
+
+test('semis automatique : sans le nœud, la parcelle récoltée reste vide', () => {
+  const s = auto5('potager');
+  plantRipe(s, 'potager-1', 'patate');
+  sleepOnce(s);
+  assertEqual(findPlot(s, 'potager-1').culture, null);
+  assertEqual(countItem(s, 'patate'), 5 + 8);
+});
+
+test('semis automatique : replante la même culture, arrosée dans la foulée', () => {
+  const s = auto5('potager');
+  s.technologies.push('semis_auto');
+  plantRipe(s, 'potager-1', 'patate');
+  plantRipe(s, 'potager-2', 'carotte');
+  const r = sleepOnce(s);
+  const p1 = findPlot(s, 'potager-1');
+  assertEqual([p1.culture, p1.stade], ['patate', 1]);
+  assertEqual(countItem(s, 'patate'), 5 + 8 - 1);
+  const p2 = findPlot(s, 'potager-2');
+  assertEqual([p2.culture, p2.stade], ['carotte', 1], 'une graine de carotte de l\'inventaire');
+  assertEqual(countItem(s, 'graine_carotte'), 10 - 1 - 1, 'une pour la plantation à la main, une pour le semis');
+  assertEqual(r.auto.semees, 2);
+});
+
+test('semis automatique : respecte la réserve de semences', () => {
+  // 5 patates en stock + 8 récoltées = 13 avant le semis.
+  const essai = (reserve) => {
+    const s = auto5('potager');
+    s.technologies.push('semis_auto');
+    setSeedReserve(s, 'patate', reserve);
+    plantRipe(s, 'potager-1', 'patate');
+    const r = autoTasks(s);
+    return { culture: findPlot(s, 'potager-1').culture, patates: countItem(s, 'patate'), rap: r };
+  };
+  const a = essai(12);
+  assertEqual([a.culture, a.patates, a.rap.semees, a.rap.sansGraine], ['patate', 12, 1, 0], '13 − 12 = 1 graine au-delà de la réserve');
+  const b = essai(13);
+  assertEqual([b.culture, b.patates, b.rap.semees, b.rap.sansGraine], [null, 13, 0, 1], 'toute la réserve est intouchable');
+  const c = essai(0);
+  assertEqual(c.culture, 'patate');
+});
+
+test('semis automatique : sans graine, la parcelle reste vide et le rapport le dit', () => {
+  const s = auto5('potager');
+  s.technologies.push('semis_auto');
+  setInv(s, { conserve: 160, graine_carotte: 1 });
+  plantRipe(s, 'potager-1', 'carotte');
+  const r = autoTasks(s);
+  assertEqual(findPlot(s, 'potager-1').culture, null, 'la carotte ne rend pas de graines : plus rien à semer');
+  assertEqual([r.semees, r.sansGraine], [0, 1]);
+});
+
+test('semis automatique : option par parcelle (désactiver, verrouiller une culture)', () => {
+  const s = auto5('potager');
+  s.technologies.push('semis_auto');
+  for (const id of ['potager-1', 'potager-2', 'potager-3']) plantRipe(s, id, 'patate');
+  assertEqual(setSemis(s, 'potager-2', 'off').ok, true);
+  assertEqual(setSemis(s, 'potager-3', 'verrou', 'carotte').ok, true);
+  assertEqual(setSemis(s, 'potager-3', 'verrou', 'ble').ok, false, 'le blé ne se plante pas au Potager');
+  assertEqual(setSemis(s, 'potager-1', 'nimporte').ok, false);
+  const r = autoTasks(s);
+  assertEqual(findPlot(s, 'potager-1').culture, 'patate');
+  assertEqual(findPlot(s, 'potager-2').culture, null, 'désactivé : reste vide');
+  assertEqual(findPlot(s, 'potager-3').culture, 'carotte', 'verrouillé : toujours des carottes');
+  assertEqual([r.semees, r.sansGraine], [2, 0], 'une parcelle désactivée n\'est pas comptée comme manque');
+  assertEqual(findPlot(s, 'potager-2').semis, 'off');
+  setSemis(s, 'potager-3', 'meme');
+  assertEqual([findPlot(s, 'potager-3').semis, findPlot(s, 'potager-3').verrou], ['meme', null]);
+});
+
+test('semis automatique : aussi au Champ (blé), avec sa réserve', () => {
+  const s = auto5('potager', 'champ');
+  s.technologies.push('semis_auto');
+  testAddWheat(s, 3);
+  plantRipe(s, 'champ-1', 'ble');
+  sleepOnce(s);
+  const p = findPlot(s, 'champ-1');
+  assertEqual([p.culture, p.stade], ['ble', 1]);
+  assertEqual(wheatTotal(s), 3 - 1 + 8 - 1, 'plantation à la main, récolte, semis');
+});
+
+test('temps de préparation : −20 % puis encore −20 %, à tous les ateliers', () => {
+  const s = atelier();
+  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine')], [20, 45, 5]);
+  s.technologies.push('prepa_1');
+  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine'), recipeTime(s, 'huile')], [16, 36, 4, 8]);
+  s.technologies.push('prepa_2');
+  assertEqual(prepTimeMult(s), 0.64);
+  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine')], [12.8, 28.8, 3.2]);
+});
+
+test('temps de préparation : la préparation lancée prend le temps réduit, celle en cours garde le sien', () => {
+  const s = atelier();
+  setInv(s, { farine: 6 });
+  assert(startRecipe(s, 'pain').ok);
+  assertEqual(s.stations.four.tache.duree, 20);
+  s.pieces = 5000;
+  assert(buyTech(s, 'prepa_1').ok);
+  assertEqual(s.stations.four.tache.duree, 20, 'déjà lancée : inchangée');
+  runFor(s, 20);
+  assertEqual(countItem(s, 'pain'), 1);
+  assert(startRecipe(s, 'pain').ok);
+  assertEqual([s.stations.four.tache.duree, s.stations.four.tache.reste], [16, 16]);
+  runFor(s, 15);
+  assertEqual(countItem(s, 'pain'), 1, 'pas encore finie à 15 s');
+  runFor(s, 1);
+  assertEqual(countItem(s, 'pain'), 2, 'finie à 16 s au lieu de 20');
+});
+
+test('éveil minimal : 30 s, puis 20 s, puis 10 s', () => {
+  const s = farm();
+  assertEqual(awakeRequired(s), 30);
+  s.awakeSeconds = 20;
+  assertEqual(canSleep(s), false);
+  s.pieces = 5000;
+  assert(buyTech(s, 'reveil_1').ok);
+  assertEqual(awakeRequired(s), 20);
+  assertEqual(canSleep(s), true);
+  s.awakeSeconds = 19.9;
+  assertEqual(canSleep(s), false);
+  assert(buyTech(s, 'reveil_2').ok);
+  assertEqual(awakeRequired(s), 10);
+  s.awakeSeconds = 10;
+  assertEqual(canSleep(s), true);
+  assert(sleep(s) !== null, 'on peut dormir dès 10 s');
+  s.awakeSeconds = 9;
+  assertEqual(sleep(s), null);
+  const t = farm();
+  t.technologies.push('reveil_2');
+  assertEqual(awakeRequired(t), 10, 'le plus bas des paliers acquis compte');
+});
+
+test('prérequis : niveau de bâtiment, nœud précédent, pièces', () => {
+  const s = createInitialState(1);
+  s.pieces = 5000;
+  assertEqual(techStatus(s, 'semis_auto'), 'verrouille');
+  assertEqual(techPrereqs(s, 'semis_auto').map((p) => p.ok), [false]);
+  const refus = buyTech(s, 'semis_auto');
+  assertEqual([refus.ok, s.pieces, s.technologies], [false, 5000, []]);
+  s.potager.niveau = 4;
+  assertEqual(buyTech(s, 'semis_auto').ok, false, 'niveau 4 ne suffit pas');
+  s.potager.niveau = 5;
+  assertEqual(techStatus(s, 'semis_auto'), 'disponible');
+  assertEqual(buyTech(s, 'semis_auto').ok, true);
+  assertEqual([s.pieces, s.technologies, techStatus(s, 'semis_auto')], [3500, ['semis_auto'], 'acquis']);
+  assertEqual(buyTech(s, 'semis_auto').ok, false, 'déjà acquis : pas de deuxième paiement');
+  assertEqual(s.pieces, 3500);
+  // chaîne de nœuds
+  assertEqual(techStatus(s, 'prepa_2'), 'verrouille');
+  assertEqual(buyTech(s, 'prepa_2').ok, false, 'II demande I, même avec les pièces');
+  assertEqual(buyTech(s, 'prepa_1').ok, true);
+  assertEqual(techStatus(s, 'prepa_2'), 'disponible');
+  assertEqual(buyTech(s, 'prepa_2').ok, true);
+  assertEqual(s.pieces, 3500 - 400 - 900);
+  // pièces insuffisantes
+  const p = createInitialState(1);
+  p.pieces = 299;
+  assertEqual(buyTech(p, 'reveil_1').ok, false);
+  assertEqual(p.pieces, 299);
+  p.pieces = 300;
+  assertEqual(buyTech(p, 'reveil_1').ok, true);
+  assertEqual(p.pieces, 0);
+  assertEqual(buyTech(p, 'inconnue').ok, false);
+});
+
+test('onglet Arbre des technologies : ajouté la première fois qu\'on possède 100 pièces, et il reste', () => {
+  const s = createInitialState(1);
+  tick(s, 0.2);
+  assertEqual(s.unlockedTabs.includes('techno'), false);
+  testAddPieces(s, 49);
+  assertEqual(s.unlockedTabs.includes('techno'), false, '99 pièces : pas encore');
+  testAddPieces(s, 1);
+  assertEqual(s.unlockedTabs.includes('techno'), true, '100 pièces');
+  spend(s, 100);
+  tick(s, 0.2);
+  assertEqual(s.unlockedTabs.includes('techno'), true, 'ne disparaît plus');
+  testAddPieces(s, 500);
+  assertEqual(s.unlockedTabs.filter((t) => t === 'techno').length, 1);
+  // gagné par une vente
+  const v = createInitialState(1);
+  v.pieces = 98;
+  assertEqual(sellItem(v, 'conserve', 1).ok, true);
+  assertEqual(v.unlockedTabs.includes('techno'), true, '98 + 3 = 101');
+  // une partie chargée qui a déjà 100 pièces l'obtient au premier tick
+  const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 500, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual(m.unlockedTabs.includes('techno'), false);
+  tick(m, 0.2);
+  assertEqual(m.unlockedTabs.includes('techno'), true);
+});
+
+test('mode test Lot 7 : un bâtiment au niveau 5, tous les nœuds débloqués', () => {
+  const s = createInitialState(1);
+  assertEqual(testSetBuildingLevel5(s, 'potager').ok, true);
+  assertEqual([s.potager.niveau, s.potager.parcelles.length], [5, 20]);
+  assertEqual(s.pieces, 50, 'sans rien payer');
+  assertEqual(testSetBuildingLevel5(s, 'champ').ok, true);
+  assertEqual([s.champ.construit, s.champ.niveau, s.champ.parcelles.length], [true, 5, 16]);
+  assertEqual(s.champ.parcelles[0].id, 'champ-1');
+  assertEqual(testSetBuildingLevel5(s, 'poulailler').ok, true);
+  assertEqual([s.poulailler.construit, s.poulailler.niveau, coopCapacity(s)], [true, 5, 24]);
+  assertEqual(testSetBuildingLevel5(s, 'silo').ok, true);
+  assertEqual(siloCapacity(s), 400);
+  assertEqual(testSetBuildingLevel5(s, 'moulin').ok, false);
+  assertEqual([isAutomated(s, 'potager'), isAutomated(s, 'champ'), isAutomated(s, 'poulailler'), isAutomated(s, 'silo')], [true, true, true, false]);
+  assertEqual(testUnlockAllTechs(s).ok, true);
+  assertEqual(s.technologies.slice().sort(), Object.keys(DATA.techtree.noeuds).sort());
+  assertEqual(s.unlockedTabs.includes('techno'), true);
+  assertEqual([awakeRequired(s), prepTimeMult(s)], [10, 0.64]);
+  const t = JSON.parse(JSON.stringify(s));
+  assertEqual(t, s, 'l\'état reste sérialisable');
+});
+
+test('rapport de réveil : ce que les automatisations ont fait', () => {
+  const s = auto5('potager', 'champ', 'poulailler');
+  s.technologies.push('semis_auto');
+  testAddHens(s, 4);
+  testAddWheat(s, 10);
+  plantRipe(s, 'potager-1', 'patate');
+  plant(s, 'potager-2', 'carotte');
+  const r = sleepOnce(s);
+  assertEqual([r.auto.potager, r.auto.champ, r.auto.poulailler], [true, true, true]);
+  assertEqual(r.auto.recoltes, { patate: 8 });
+  assertEqual([r.auto.semees, r.auto.arrosees, r.auto.nourries], [1, 2, 4]);
+  const n = createInitialState(1);
+  const rn = sleepOnce(n);
+  assertEqual([rn.auto.potager, rn.auto.champ, rn.auto.poulailler, rn.auto.arrosees], [false, false, false, 0]);
+});
+
+test('une nuit complète au niveau 5 : arrosage, pousse, récolte et semis s\'enchaînent', () => {
+  const s = auto5('potager');
+  s.technologies.push('semis_auto');
+  s.pompe.allume = true;
+  testFillBatteries(s);
+  plant(s, 'potager-1', 'patate');
+  const stades = [];
+  const recoltes = [];
+  for (let i = 0; i < 8; i++) {
+    runFor(s, 30);
+    const r = sleepOnce(s);
+    stades.push(findPlot(s, 'potager-1').stade);
+    recoltes.push(r.auto.recoltes.patate || 0);
+  }
+  // 6 nuits arrosées pour mûrir, récolte à la 7e nuit, puis la parcelle repart.
+  assertEqual(stades, [1, 2, 3, 4, 5, 6, 1, 2]);
+  assertEqual(recoltes, [0, 0, 0, 0, 0, 0, 8, 0], '8 patates récoltées à la 7e nuit');
+});
+
+test('progression affichée dans l\'arbre : niveaux des bâtiments et appareils', () => {
+  const s = auto5('potager');
+  const culture = techProgress(s, 'culture');
+  assertEqual(culture.map((e) => [e.cle, e.niveau, e.automatise]), [['potager', 5, true], ['champ', 1, false]]);
+  const energie = techProgress(s, 'energie');
+  assertEqual(energie.map((e) => [e.cle, e.niveaux]), [['panneau', [1]], ['batterie', [1]]]);
+  s.panneaux[0].niveau = 3;
+  assertEqual(techProgress(s, 'energie')[0].niveaux, [3]);
+  assertEqual(techProgress(s, 'eau')[0].niveau, 1);
+  assertEqual(techProgress(s, 'famille'), []);
+  const cuisine = techProgress(s, 'cuisine')[0];
+  assertEqual(cuisine.ateliers.map((a) => a.construit), [false, false, false, false]);
+  assertEqual(techProgress(createInitialState(1), 'elevage').map((e) => e.niveau), [0, 0], 'pas construits : niveau 0');
+});
+
+test('migration v7 (Lot 6) → v8 : technologies vides, réglage de semis sur chaque parcelle', () => {
+  const v7 = {
+    version: 7, day: 40, awakeSeconds: 5, pieces: 900, rngSeed: 2, stats: {},
+    unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes'], marche: {},
+    ...startFarm(), ...startHousehold(), ...startLot4(), ...startLot5(), ...startLot6(),
+  };
+  for (const p of v7.potager.parcelles) {
+    delete p.semis;
+    delete p.verrou;
+  }
+  delete v7.nuit.auto;
+  v7.champ = { construit: true, niveau: 1, parcelles: [{ id: 'champ-1', lieu: 'champ', culture: 'ble', stade: 3, arrose: true, montee: false }] };
+  const m = migrate({ v: 7, t: 0, s: v7 });
+  assertEqual(m.version, 8);
+  assertEqual([m.day, m.pieces], [40, 900]);
+  assertEqual(m.technologies, []);
+  assertEqual(m.potager.parcelles.every((p) => p.semis === 'meme' && p.verrou === null), true);
+  assertEqual([m.champ.parcelles[0].culture, m.champ.parcelles[0].stade, m.champ.parcelles[0].semis], ['ble', 3, 'meme']);
+  assertEqual(m.nuit.auto, newAutoReport());
+  tick(m, 0.2);
+  assertEqual(m.unlockedTabs.includes('techno'), true, '900 pièces');
+  assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
+  const again = migrate({ v: 8, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  assertEqual(again.potager, m.potager);
+  assertEqual(again.technologies, m.technologies);
+});
+
+test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage', () => {
+  const s = createInitialState(1);
+  s.technologies = ['reveil_1', 'nexiste_pas'];
+  assertEqual(ownedTechs(s), ['reveil_1']);
+  assertEqual(awakeRequired(s), 20);
+  assertEqual(prepTimeMult(s), 1);
+  delete s.technologies;
+  assertEqual(awakeRequired(s), 30);
+  assertEqual(buyTech(s, 'reveil_1').ok, false, 'pas assez de pièces (50)');
+  s.pieces = 400;
+  assertEqual(buyTech(s, 'reveil_1').ok, true, 'la liste est recréée');
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -6472,7 +7284,17 @@ let lastFrameTime = null;
 // « prêt ! » quand une préparation se termine pendant que le joueur joue.
 let lastJobs = {};
 
+// Lot 7 : l'onglet Arbre des technologies était-il déjà ouvert ? (pour annoncer son arrivée)
+let technoOpened = false;
+
+function watchUnlocks() {
+  const opened = state.unlockedTabs.includes(DATA.TECHNO.ONGLET);
+  if (opened && !technoOpened) showToast('🌳 Nouvel onglet : Arbre des technologies');
+  technoOpened = opened;
+}
+
 function syncJobs() {
+  technoOpened = state.unlockedTabs.includes(DATA.TECHNO.ONGLET);
   lastJobs = {};
   for (const id of Object.keys(DATA.STATIONS)) {
     const job = state.stations[id].tache;
@@ -6505,6 +7327,7 @@ function frame(now) {
     scheduleRender();
   }
   watchPreparations();
+  watchUnlocks();
   requestAnimationFrame(frame);
 }
 
@@ -6623,6 +7446,10 @@ function renderTabContent() {
   }
   if (activeTab === 'recettes') {
     morph(el, renderRecettes());
+    return;
+  }
+  if (activeTab === 'techno') {
+    morph(el, renderTechno());
     return;
   }
   const tab = TABS.find((t) => t.id === activeTab) || TABS[0];
@@ -6848,7 +7675,7 @@ function renderPotager() {
   return `
     <div class="section-head">
       <h3>🌱 Potager · niveau ${pot.niveau}</h3>
-      <span class="chip${prod < 1 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ×${formatMult(prod)}</span>
+      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 1 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ×${formatMult(prod)}</span></span>
     </div>
     <div class="plots">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${upBtn}</div>
@@ -6876,6 +7703,7 @@ function renderChamp() {
   return `
     <div class="section-head">
       <h3>🌾 Champ · niveau ${c.niveau}</h3>
+      ${autoChip('champ', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}
     </div>
     <div class="plots">${c.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${upBtn}</div>
@@ -6936,12 +7764,13 @@ function renderPoulailler() {
   let hint;
   if (p.poules === 0) hint = 'Aucune poule : achètes-en au Comptoir (onglet Animaux).';
   else if (toFeed === 0) hint = '✅ Toutes les poules sont nourries : elles pondront cette nuit.';
+  else if (isAutomated(state, 'poulailler')) hint = `🤖 Nourrissage automatique : les poules restantes seront nourries cette nuit avec le blé disponible (${formatQty(wheatTotal(state))}).`;
   else if (noWheat) hint = '⚠️ Pas assez de blé pour nourrir une poule.';
   else hint = `Une poule non nourrie ne pond pas. Blé disponible : ${formatQty(wheatTotal(state))}.`;
   return `
     <div class="section-head">
       <h3>🐔 Poulailler · niveau ${p.niveau}</h3>
-      <span class="chip${prod < 1 ? ' warn' : ''}" title="Un nourrissage au clic ne compte qu'avec cette probabilité">Productivité ×${formatMult(prod)}</span>
+      <span class="chips">${autoChip('poulailler', 'Nourrit les poules tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 1 ? ' warn' : ''}" title="Un nourrissage au clic ne compte qu'avec cette probabilité">Productivité ×${formatMult(prod)}</span></span>
     </div>
     <div class="card">
       <span class="big" aria-label="Poules nourries sur total">🥚 ${p.nourries} / ${p.poules} nourries</span>
@@ -7053,6 +7882,22 @@ function openSlaughterModal(id) {
   document.getElementById('slaughter-cancel').focus();
 }
 
+// Pastille « Automatique » d'un bâtiment de niveau 5.
+function autoChip(id, title) {
+  return isAutomated(state, id) ? `<span class="chip auto" title="${title}">🤖 Automatique</span>` : '';
+}
+
+function semisLabel(p) {
+  if (p.semis === 'off') return '⛔ Semis auto : désactivé';
+  if (p.semis === 'verrou' && p.verrou && DATA.crops[p.verrou]) return `🔒 Semis auto : ${DATA.crops[p.verrou].icone} ${DATA.crops[p.verrou].nom}`;
+  return '🔁 Semis auto : même culture';
+}
+
+function semisButton(p) {
+  if (!hasTech(state, 'semis_auto')) return '';
+  return `<button type="button" class="btn" data-action="semis-open" data-id="${p.id}">${semisLabel(p)}</button>`;
+}
+
 function plotCard(p, n) {
   const seedsAvailable = plantableCrops(p.lieu).some((c) => seedStock(state, c) > 0);
   if (!p.culture) {
@@ -7062,6 +7907,7 @@ function plotCard(p, n) {
         <span class="plot-emoji" aria-hidden="true">🟫</span>
         <span class="muted">Vide</span>
         <button type="button" class="btn primary" data-action="plant-open" data-id="${p.id}"${seedsAvailable ? '' : ' disabled'}>${seedsAvailable ? 'Planter' : 'Aucune graine'}</button>
+        ${semisButton(p)}
       </div>`;
   }
   const def = DATA.crops[p.culture];
@@ -7091,7 +7937,41 @@ function plotCard(p, n) {
       <span class="muted">${def.nom} · ${stateLine}</span>
       <span class="bar" role="progressbar" aria-label="Croissance" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${p.stade}"><span class="bar-fill" style="width:${pct}%"></span></span>
       ${actions}
+      ${semisButton(p)}
     </div>`;
+}
+
+// Réglage du semis automatique d'une parcelle (Lot 7).
+function openSemisModal(plotId) {
+  const plot = findPlot(state, plotId);
+  if (!plot) return;
+  const choice = (mode, crop, title, sub) => {
+    const pressed = plot.semis === mode && (mode !== 'verrou' || plot.verrou === crop);
+    return `
+      <button type="button" class="btn semis-choice" data-action="semis-set" data-id="${plotId}" data-mode="${mode}"${crop ? ` data-crop="${crop}"` : ''} aria-pressed="${pressed}">
+        <span>${pressed ? '✅ ' : ''}${title}</span>
+        <span class="muted">${sub}</span>
+      </button>`;
+  };
+  const locks = plantableCrops(plot.lieu).map((c) => {
+    const def = DATA.crops[c];
+    return choice('verrou', c, `🔒 Toujours ${def.icone} ${def.nom}`, `${def.graines.mode === 'plant' ? 'Plants' : 'Graines'} en stock : ${formatQty(seedStock(state, c))}`);
+  });
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="semis-title" data-stop-propagation>
+        <h2 id="semis-title">🔁 Semis automatique</h2>
+        <p class="muted">Après une récolte automatique, cette parcelle est replantée si une graine reste au-delà de la réserve de semences.</p>
+        <div class="stack">
+          ${choice('meme', null, '🔁 Même culture que la récolte', 'Réglage par défaut.')}
+          ${choice('off', null, '⛔ Désactivé', 'La parcelle reste vide après la récolte.')}
+          ${locks.join('')}
+        </div>
+        <button type="button" class="btn" data-action="close-modal">Fermer</button>
+      </div>
+    </div>
+  `;
 }
 
 // Choix de la graine à planter sur une parcelle vide.
@@ -7252,7 +8132,7 @@ function recipeCard(id) {
   const power = sdef.electrique ? ` · ${formatFixed(sdef.kwhParS, 2)} kWh/s` : '';
   return `
     <article class="card recipe ${status.ok ? 'ready' : 'unavailable'}">
-      <span class="card-title"><span>${r.icone} ${r.nom}</span><span class="chip">${sdef.icone} ${sdef.nom} · ${r.temps} s</span></span>
+      <span class="card-title"><span>${r.icone} ${r.nom}</span><span class="chip">${sdef.icone} ${sdef.nom} · ${formatQty(Math.round(recipeTime(state, id) * 10) / 10)} s</span></span>
       <span class="muted">${recipeMeta(id)}${power}</span>
       <ul class="ingredients" aria-label="Ingrédients">${lines}</ul>
       ${reason}
@@ -7274,6 +8154,94 @@ function renderRecettes() {
     <div class="cards">${ids.map(stationCard).join('')}</div>
     <h3 class="section-title">Recettes</h3>
     <div class="recipes">${recipes.map(recipeCard).join('')}</div>`;
+}
+
+/* ---------- Lot 7 : Arbre des technologies ---------- */
+
+// Progression d'un bâtiment ou d'un groupe d'appareils (lecture seule : les
+// améliorations se font sur les cartes des bâtiments).
+function techLevelRow(e) {
+  let body;
+  if (e.type === 'niveau') {
+    const built = e.niveau > 0;
+    const pct = Math.round((e.niveau / e.max) * 100);
+    const note = e.note
+      ? `<span class="chip${e.automatise ? ' auto' : ''}">${e.automatise ? '🤖 ' : ''}Niveau ${DATA.AUTOMATISATION.NIVEAU} : ${e.note}</span>`
+      : '';
+    body = `
+      <span class="level-line"><span>${e.icone} ${e.nom}</span><span class="num">${built ? `niveau ${e.niveau} / ${e.max}` : 'non construit'}</span></span>
+      <span class="bar" role="progressbar" aria-label="Niveau : ${e.nom}" aria-valuemin="0" aria-valuemax="${e.max}" aria-valuenow="${e.niveau}"><span class="bar-fill" style="width:${pct}%"></span></span>
+      ${note}`;
+  } else if (e.type === 'appareils') {
+    const chips = e.niveaux.map((n, i) => `<span class="chip">n°${i + 1} · niv. ${n} / ${e.max}</span>`).join('');
+    body = `
+      <span class="level-line"><span>${e.icone} ${e.nom}</span><span class="num">${e.niveaux.length} appareil${e.niveaux.length > 1 ? 's' : ''}</span></span>
+      <span class="level-chips">${chips}</span>`;
+  } else {
+    const chips = e.ateliers.map((a) => `<span class="chip">${a.icone} ${a.nom} · ${a.construit ? 'construit' : 'à construire'}</span>`).join('');
+    body = `
+      <span class="level-line"><span>${e.icone} ${e.nom}</span></span>
+      <span class="level-chips">${chips}</span>`;
+  }
+  return `<div class="level-row">${body}</div>`;
+}
+
+function techNodeCard(id) {
+  const n = DATA.techtree.noeuds[id];
+  const status = techStatus(state, id);
+  const chip = status === 'acquis'
+    ? '<span class="chip auto">✅ Acquis</span>'
+    : status === 'disponible'
+      ? '<span class="chip">✨ Disponible</span>'
+      : '<span class="chip">🔒 Verrouillé</span>';
+  const prereqs = techPrereqs(state, id);
+  const prereqList = prereqs.length
+    ? `<ul class="prereqs" aria-label="Prérequis">${prereqs.map((p) => `<li class="${p.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${p.ok ? '✅' : '❌'}</span> ${p.texte}</li>`).join('')}</ul>`
+    : '<span class="muted">Aucun prérequis.</span>';
+  const button = status === 'acquis'
+    ? ''
+    : `<button type="button" class="btn${status === 'disponible' ? ' primary' : ''}" data-action="buy-tech" data-id="${id}"${status === 'disponible' && canPay(n.cout) ? '' : ' disabled'}>Acquérir (${costLabel(n.cout)})</button>`;
+  return `
+    <article class="card tech-node ${status === 'acquis' ? 'owned' : status === 'disponible' ? 'available' : 'locked'}">
+      <span class="card-title"><span>${n.icone} ${n.nom}</span>${chip}</span>
+      <span class="desc">${n.description}</span>
+      <span class="muted">Coût : <span class="num">${costLabel(n.cout)}</span></span>
+      ${prereqList}
+      ${button}
+    </article>`;
+}
+
+// Effet en cours d'une branche, affiché dans son en-tête.
+function branchEffectChip(id) {
+  if (id === 'cuisine') return `<span class="chip">Temps de préparation ×${formatMult(prepTimeMult(state))}</span>`;
+  if (id === 'famille') return `<span class="chip">Éveil minimal : ${formatQty(awakeRequired(state))} s</span>`;
+  return '';
+}
+
+function renderTechno() {
+  const branches = DATA.techtree.branches.map((b) => {
+    const nodes = Object.keys(DATA.techtree.noeuds).filter((id) => DATA.techtree.noeuds[id].branche === b.id);
+    const progress = techProgress(state, b.id).map(techLevelRow).join('');
+    const owned = nodes.filter((id) => hasTech(state, id)).length;
+    return `
+      <section class="branch" aria-label="Branche ${b.nom}">
+        <div class="branch-head">
+          <h3>${b.icone} ${b.nom}</h3>
+          <span class="chips">${branchEffectChip(b.id)}${nodes.length ? `<span class="chip">${owned} / ${nodes.length} acquis</span>` : ''}</span>
+        </div>
+        <div class="branch-nodes">
+          ${progress}
+          ${nodes.length ? nodes.map(techNodeCard).join('') : '<span class="muted">Aucune technologie à acquérir dans cette branche pour l\'instant.</span>'}
+        </div>
+      </section>`;
+  });
+  return `
+    <div class="section-head">
+      <h2>🌳 Arbre des technologies</h2>
+      <span class="chip" title="Pièces disponibles">💰 ${formatCoins(state.pieces)}</span>
+    </div>
+    <p class="muted">Chaque technologie s'achète une fois, avec ses prérequis. Les niveaux des bâtiments s'améliorent sur leurs cartes, dans la Ferme : ils sont rappelés ici avec leur progression.</p>
+    ${branches.join('')}`;
 }
 
 /* ---------- Famille ---------- */
@@ -7561,6 +8529,26 @@ function renderComptoir() {
 
 /* ---------- écran de réveil ---------- */
 
+function plural(n, mot) {
+  return `${n} ${mot}${n > 1 ? 's' : ''}`;
+}
+
+// Lignes du réveil pour les automatisations (Lot 7) : ce qui a été fait, puis ce qui a manqué.
+function autoLines(a) {
+  if (!a || !(a.potager || a.champ || a.poulailler)) return [];
+  const done = [];
+  if (a.potager || a.champ) done.push(`💧 ${plural(a.arrosees, 'parcelle')} arrosée${a.arrosees > 1 ? 's' : ''}`);
+  const harvested = itemsSummary(a.recoltes || {});
+  if (harvested) done.push(`🧺 ${harvested}`);
+  if (a.semees > 0) done.push(`🌱 ${plural(a.semees, 'semis')}`);
+  if (a.poulailler) done.push(`🌾 ${plural(a.nourries, 'poule')} nourrie${a.nourries > 1 ? 's' : ''}`);
+  const lines = [`<li>🤖 Automatisations : <strong>${done.join(' · ')}</strong></li>`];
+  if (a.sansEau > 0) lines.push(`<li class="alert">💧 Eau insuffisante : ${plural(a.sansEau, 'parcelle')} non arrosée${a.sansEau > 1 ? 's' : ''} cette nuit.</li>`);
+  if (a.sansBle > 0) lines.push(`<li class="alert">🌾 Blé insuffisant : ${plural(a.sansBle, 'poule')} non nourrie${a.sansBle > 1 ? 's' : ''}, pas d'œuf.</li>`);
+  if (a.sansGraine > 0) lines.push(`<li class="alert">🌱 Pas de graine au-delà de la réserve : ${plural(a.sansGraine, 'parcelle')} laissée${a.sansGraine > 1 ? 's' : ''} vide${a.sansGraine > 1 ? 's' : ''}.</li>`);
+  return lines;
+}
+
 function openWakeModal(report) {
   const root = document.getElementById('modal-root');
   const line = (d, text) => {
@@ -7592,6 +8580,7 @@ function openWakeModal(report) {
     report.moutons > 0
       ? `<li>🐑 Moutons : <strong class="num">${report.moutons}</strong>${report.lainePrete > 0 ? ` · 🧶 Laine prête : <strong class="num">${report.lainePrete}</strong> mouton${report.lainePrete > 1 ? 's' : ''} à tondre` : ''}</li>`
       : '',
+    ...autoLines(report.auto),
     ready ? `<li>🧺 Récoltes prêtes : <strong>${ready}</strong></li>` : '<li>🌱 Aucune récolte prête pour l\'instant.</li>',
     spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
     expiring ? `<li>⏳ À manger vite, périme à la prochaine nuit : <strong>${expiring}</strong></li>` : '',
@@ -7800,6 +8789,27 @@ document.addEventListener('click', (e) => {
       if (result.ok) showToast(`🔪 Mouton abattu : +${result.portions} 🥩`);
       break;
     }
+    case 'buy-tech': {
+      const id = target.dataset.id;
+      const result = applyResult(buyTech(state, id));
+      if (result.ok) showToast(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatCoins(result.cost)} 💰)`);
+      break;
+    }
+    case 'semis-open':
+      openSemisModal(target.dataset.id);
+      break;
+    case 'semis-set':
+      closeModal();
+      applyResult(setSemis(state, target.dataset.id, target.dataset.mode, target.dataset.crop));
+      break;
+    case 'test-level5': {
+      const result = applyResult(testSetBuildingLevel5(state, document.getElementById('test-building').value));
+      if (result.ok) showToast('Bâtiment au niveau 5.');
+      break;
+    }
+    case 'test-techs':
+      applyResult(testUnlockAllTechs(state));
+      break;
     case 'test-sheep':
       applyResult(testAddSheep(state));
       break;
