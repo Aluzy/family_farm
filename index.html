@@ -678,6 +678,33 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 .qty-row .sell-go { flex: 1 1 140px; }
 
 .coming { padding: 8px 0; }
+
+/* ---------- Lot 5 : ateliers (Ferme) et Livre de recette ---------- */
+
+.station.busy { border-color: var(--color-sun-dark); }
+
+.recipes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe.ready { border-color: var(--accent); border-width: 2px; background: var(--bg-elevated); }
+.recipe.unavailable .card-title, .recipe.unavailable .muted { opacity: 0.75; }
+.recipe .btn { width: 100%; }
+
+.ingredients {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ingredients .missing { color: var(--danger); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -722,6 +749,13 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
       <div class="row">
         <button class="btn" type="button" data-action="test-food">+20 de chaque aliment</button>
         <button class="btn" type="button" data-action="test-age">Vieillir l'inventaire d'une nuit</button>
+      </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-stations">Construire toutes les stations</button>
+        <button class="btn" type="button" data-action="test-flour">+10 farines</button>
+        <button class="btn" type="button" data-action="test-oil">+10 huiles</button>
+        <button class="btn" type="button" data-action="test-eggs">+20 œufs</button>
+        <button class="btn" type="button" data-action="test-wear-mill">User le moulin</button>
       </div>
       <div class="row">
         <button class="btn" type="button" data-action="test-skip-awake">Ignorer l'éveil minimal</button>
@@ -821,6 +855,55 @@ const DATA = {
     ble:              { nom: 'Blé',                  icone: '🌾', prix: 1, edible: false, category: 'ingrédient' },
     graine_tournesol: { nom: 'Graines de tournesol', icone: '🌻', prix: 1, edible: false, category: 'graine' },
     oeuf:             { nom: 'Œuf',                  icone: '🥚', energie: 10, prix: 2, edible: true, category: 'produit' },
+    // Lot 5 : viande, fruits, farine et huile (sections 1.1 et 8.9). La ferme ne
+    // produit pas encore la viande ni les fruits : les recettes qui en ont besoin
+    // restent grisées. La farine et l'huile valent 10 d'énergie dans les plats mais
+    // ne se mangent pas seules. Les plats cuisinés (pain compris) sont ajoutés à
+    // cette table au chargement, à partir de `recipes` : voir registerDishItems().
+    viande:           { nom: 'Viande',               icone: '🥩', energie: 30, prix: 5, edible: true,  category: 'produit' },
+    pomme:            { nom: 'Pomme',                icone: '🍎', energie: 8,  prix: 2, edible: true,  category: 'fruit' },
+    poire:            { nom: 'Poire',                icone: '🍐', energie: 8,  prix: 2, edible: true,  category: 'fruit' },
+    farine:           { nom: 'Farine',               icone: '🥣', energie: 10, prix: 1, edible: false, category: 'ingrédient' },
+    huile:            { nom: 'Huile de tournesol',   icone: '🛢️', energie: 10, prix: 4, edible: false, category: 'ingrédient' },
+  },
+
+  /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
+
+  // Stations (sections 1.4 et 8.7) : une seule de chaque, une préparation à la
+  // fois, sans file d'attente. cout : prix de construction ; electrique : la
+  // station est un appareil du parc (interrupteur, usure, panne) qui prend
+  // kwhParS kWh par seconde de fonctionnement ; requiert : station à bâtir
+  // avant ; debloque : onglets ouverts par la construction.
+  STATIONS: {
+    four:    { nom: 'Four',    article: 'le', icone: '🔥', cout: 100, electrique: false, debloque: ['recettes'] },
+    cuisine: { nom: 'Cuisine', article: 'la', icone: '🍳', cout: 150, electrique: false, requiert: 'four' },
+    moulin:  { nom: 'Moulin',  article: 'le', icone: '⚙️', cout: 120, electrique: true, kwhParS: 0.02 },
+    presse:  { nom: 'Presse',  article: 'la', icone: '🌻', cout: 150, electrique: true, kwhParS: 0.03 },
+  },
+
+  // Plats (sections 1.3, 1.4 et 6.8) : énergie = somme des énergies des
+  // ingrédients × COEF_PLAT, arrondie ; prix de vente = somme des prix × COEF_PLAT,
+  // arrondi. L'eau compte pour ENERGIE_EAU d'énergie et PRIX_EAU pièces par litre.
+  // PRIX_EAU (1) est ma lecture pour retrouver le prix du pain de la section 8.9
+  // (2 farines + 1 L d'eau = 3, × 1,3 = 4) : à confirmer.
+  RECETTES: { COEF_PLAT: 1.3, ENERGIE_EAU: 0, PRIX_EAU: 1 },
+
+  // Recettes (section 1.3). ingredients : { item, qte } ou { ou: [items], qte }
+  // (l'un OU l'autre, sans mélange) ; eau : litres pris dans le réservoir ;
+  // temps : secondes à vitesse 1. Les transformations (transformation: true)
+  // rendent qteSortie unités de `sortie` ; les plats rendent 1 plat du nom de la
+  // recette et sont des aliments (bonus de santé).
+  recipes: {
+    pain:            { nom: 'Pain',              icone: '🍞', station: 'four',    temps: 20, ingredients: [{ item: 'farine', qte: 2 }], eau: 1 },
+    omelette:        { nom: 'Omelette',          icone: '🍳', station: 'cuisine', temps: 15, ingredients: [{ item: 'oeuf', qte: 3 }, { item: 'huile', qte: 1 }] },
+    ratatouille:     { nom: 'Ratatouille',       icone: '🍲', station: 'cuisine', temps: 30, ingredients: [{ item: 'tomate', qte: 1 }, { item: 'courgette', qte: 1 }, { item: 'aubergine', qte: 1 }, { item: 'huile', qte: 1 }] },
+    gratin_patates:  { nom: 'Gratin de patates', icone: '🥘', station: 'four',    temps: 30, ingredients: [{ item: 'patate', qte: 3 }, { item: 'oeuf', qte: 1 }] },
+    ragout:          { nom: 'Ragoût',            icone: '🍖', station: 'cuisine', temps: 45, ingredients: [{ item: 'viande', qte: 2 }, { item: 'carotte', qte: 2 }, { item: 'patate', qte: 1 }] },
+    compote:         { nom: 'Compote',           icone: '🍮', station: 'cuisine', temps: 15, ingredients: [{ ou: ['pomme', 'poire'], qte: 3 }] },
+    tarte_pommes:    { nom: 'Tarte aux pommes',  icone: '🥧', station: 'four',    temps: 45, ingredients: [{ item: 'farine', qte: 2 }, { item: 'pomme', qte: 3 }, { item: 'oeuf', qte: 1 }] },
+    // Transformations (section 8.2) : le Moulin et la Presse, appareils électriques.
+    farine:          { nom: 'Moudre du blé',     icone: '⚙️', station: 'moulin',  temps: 5,  ingredients: [{ item: 'ble', qte: 1 }], transformation: true, sortie: 'farine', qteSortie: 1 },
+    huile:           { nom: 'Presser du tournesol', icone: '🌻', station: 'presse', temps: 10, ingredients: [{ item: 'graine_tournesol', qte: 3 }], transformation: true, sortie: 'huile', qteSortie: 1 },
   },
 
   // Cultures (sections 6.3 et 8.3). stades : nuits arrosées pour mûrir ;
@@ -886,6 +969,8 @@ const DATA = {
     ],
     // Soin : base × croissance^(soins déjà payés) ; il remet la santé à SANTE.
     SOIN: { base: 20, croissance: 1.5, SANTE: 50 },
+    // Lot 5 : bonus de santé de la nuit, +PAR_PLAT par plat différent mangé, jusqu'à MAX.
+    BONUS_PLATS: { PAR_PLAT: 1, MAX: 3 },
     // Sans soin, un malade regagne ce nombre de points par nuit où le besoin est
     // couvert à 100 %. Il guérit en atteignant la santé remise par un soin.
     RECUPERATION_MALADE: 2,
@@ -977,14 +1062,61 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 5;
+const STATE_VERSION = 6;
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
-// repas et santé, puis pousse. Lot 4 : la ponte. Lot 3 : la péremption,
-// toujours en dernier. Les lots suivants insèrent leurs fonctions avant `spoil`.
+// repas et santé, puis pousse. Lot 4 : la ponte. Lot 5 : les préparations en
+// cours se terminent (après le repas du soir : un plat fini pendant la nuit se
+// mange dès le repas suivant). Lot 3 : la péremption, toujours en dernier. Les
+// lots suivants insèrent leurs fonctions avant `spoil`.
 // Chaque étape reçoit l'état et le modifie.
-const NIGHT_STEPS = [feedFamily, growAll, layEggs, spoil];
+const NIGHT_STEPS = [feedFamily, growAll, layEggs, finishPreparations, spoil];
+
+/* ---------- Lot 5 : plats cuisinés (objets calculés depuis DATA.recipes) ---------- */
+
+// Les ingrédients d'une recette : un seul objet, ou l'un des objets de `ou`.
+function ingredientOptions(ing) {
+  return ing.ou || [ing.item];
+}
+
+// Somme d'un champ (energie ou prix) des ingrédients d'une recette, eau comprise.
+// Pour un ingrédient « l'un ou l'autre », on prend le premier (les valeurs sont égales).
+function recipeSum(recipe, field, waterValue) {
+  const sum = recipe.ingredients.reduce((t, ing) => t + (DATA.items[ingredientOptions(ing)[0]][field] || 0) * ing.qte, 0);
+  return sum + (recipe.eau || 0) * waterValue;
+}
+
+// Énergie d'un plat : somme des ingrédients × 1,3, arrondie (pain 26, omelette 52, ragoût 113).
+function dishEnergy(id) {
+  const R = DATA.RECETTES;
+  return Math.round(recipeSum(DATA.recipes[id], 'energie', R.ENERGIE_EAU) * R.COEF_PLAT + EPS);
+}
+
+// Prix de vente d'un plat : somme des prix × 1,3, arrondi.
+function dishPrice(id) {
+  const R = DATA.RECETTES;
+  return Math.round(recipeSum(DATA.recipes[id], 'prix', R.PRIX_EAU) * R.COEF_PLAT + EPS);
+}
+
+// Ajoute chaque plat à DATA.items (énergie et prix calculés). Ils se gardent
+// 6 nuits (catégorie « plat »), sauf le pain (7 nuits, voir CONSERVATION).
+function registerDishItems() {
+  for (const [id, r] of Object.entries(DATA.recipes)) {
+    if (r.transformation) continue;
+    DATA.items[id] = { nom: r.nom, icone: r.icone, energie: dishEnergy(id), prix: dishPrice(id), edible: true, category: 'plat', plat: true };
+  }
+}
+registerDishItems();
+
+// Objet rendu par une recette et quantité rendue.
+function recipeOutput(id) {
+  return DATA.recipes[id].sortie || id;
+}
+
+function recipeOutputQty(id) {
+  return DATA.recipes[id].qteSortie || 1;
+}
 
 /* ---------- appareils : fabrication et sélecteurs ---------- */
 
@@ -1004,8 +1136,18 @@ function makeDevice(type, id, prix) {
   } else if (type === 'pompe') {
     d.debit = 0; // L/s réellement pompés au dernier tick
     d.conso = 0; // kWh/s consommés au dernier tick
+  } else if (type === 'moulin' || type === 'presse') {
+    d.conso = 0; // kWh/s consommés au dernier tick (0 en pause ou au repos)
   }
   return d;
+}
+
+// Appareils des stations électriques déjà construites (Moulin, Presse).
+function stationDevices(state) {
+  if (!state.stations) return [];
+  return Object.keys(DATA.STATIONS)
+    .filter((id) => DATA.STATIONS[id].electrique && state.stations[id] && state.stations[id].appareil)
+    .map((id) => state.stations[id].appareil);
 }
 
 // Parc et réserves de départ : 1 panneau, 1 batterie, la pompe et le réservoir.
@@ -1026,7 +1168,7 @@ function startFarm() {
 }
 
 function allDevices(state) {
-  return [...state.panneaux, ...state.batteries, state.pompe];
+  return [...state.panneaux, ...state.batteries, state.pompe, ...stationDevices(state)];
 }
 
 function findDevice(state, id) {
@@ -1082,7 +1224,9 @@ function repairCost(d) {
   return roundCoins(d.prix * DATA.WEAR.REPAIR_RATE);
 }
 
+// Le Moulin et la Presse n'ont pas de niveaux : pas d'amélioration (null).
 function upgradeCost(d) {
+  if (!DATA.GRID[d.type]) return null;
   return d.niveau >= DATA.LEVEL_MAX ? null : DATA.UPGRADE_COST[d.niveau];
 }
 
@@ -1147,6 +1291,8 @@ function drawEnergy(state, energy) {
 // `run(state, dt)` prélève son énergie avec drawEnergy().
 const CONSUMERS = [
   { id: 'pompe', run: runPump },
+  { id: 'moulin', run: (state, dt) => runElectricStation(state, 'moulin', dt) },
+  { id: 'presse', run: (state, dt) => runElectricStation(state, 'presse', dt) },
 ];
 
 // La pompe remplit le réservoir si elle est allumée, en état, et que le
@@ -1201,6 +1347,9 @@ function tick(state, dt) {
   // c. consommation : chaque consommateur tire sur les batteries (sens inverse)
   for (const c of CONSUMERS) c.run(state, dt);
 
+  // c bis. Lot 5 : le Four et la Cuisine n'ont pas besoin d'électricité
+  runCooking(state, dt);
+
   // les quantités du tick deviennent des puissances (kWh/s)
   for (const b of state.batteries) {
     b.entree /= dt;
@@ -1214,6 +1363,7 @@ function tick(state, dt) {
     if (d.type === 'panneau') worked = d.prod > EPS;
     else if (d.type === 'batterie') worked = d.entree > EPS || d.sortie > EPS;
     else if (d.type === 'pompe') worked = d.debit > EPS;
+    else if (d.type === 'moulin' || d.type === 'presse') worked = d.conso > EPS; // Lot 5 : il tourne vraiment
     if (!worked) continue;
     d.usure = Math.min(DATA.WEAR.BREAKDOWN, d.usure + wear);
     if (isBroken(d)) {
@@ -1268,6 +1418,11 @@ function deviceStatus(state, d) {
     else if (d.charge >= batteryCapacity(d) * 0.98) { code = 'pleine'; label = 'Pleine'; }
     else if (d.charge <= EPS) { code = 'vide'; label = 'Vide'; }
     else { code = 'attente'; label = 'En attente'; }
+  } else if (d.type === 'moulin' || d.type === 'presse') {
+    const job = state.stations[d.type].tache;
+    if (!job) { code = 'repos'; label = 'Au repos'; }
+    else if (d.conso > EPS) { code = 'marche'; label = 'En marche'; }
+    else { code = 'attente'; label = 'En pause : énergie manquante'; }
   } else {
     if (state.eau >= tankCapacity(state) - EPS) { code = 'plein'; label = 'Réservoir plein'; }
     else if (d.debit > EPS) { code = 'marche'; label = 'En marche'; }
@@ -1291,6 +1446,7 @@ function toggleDevice(state, id) {
   if (!d) return fail('Appareil introuvable.');
   if (isBroken(d)) return fail('Appareil en panne : il faut le réparer.');
   d.allume = !d.allume;
+  if (!d.allume && (d.type === 'moulin' || d.type === 'presse')) d.conso = 0;
   return { ok: true };
 }
 
@@ -1308,6 +1464,7 @@ function buyDevice(state, type) {
 function upgradeDevice(state, id) {
   const d = findDevice(state, id);
   if (!d) return fail('Appareil introuvable.');
+  if (!DATA.GRID[d.type]) return fail('Cet appareil n\'a pas de niveaux.');
   const cost = upgradeCost(d);
   if (cost === null) return fail('Niveau maximum atteint.');
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
@@ -1651,9 +1808,10 @@ function planMeal(state) {
 // malade regagne RECUPERATION_MALADE points par nuit couverte à 100 % (sinon il
 // subit la variation normale) et guérit en atteignant la santé d'un soin.
 // Renvoie les membres devenus malades cette nuit.
-function updateHealth(state, coverage) {
+// Lot 5 : `bonus` s'ajoute à la variation d'une nuit (plats différents mangés).
+function updateHealth(state, coverage, bonus = 0) {
   const F = DATA.FAMILY;
-  const delta = healthDelta(coverage);
+  const delta = healthDelta(coverage) + bonus;
   const fed = coverage + EPS >= 1;
   const nouveaux = [];
   for (const m of state.famille.membres) {
@@ -1670,7 +1828,14 @@ function updateHealth(state, coverage) {
 }
 
 function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0 };
+  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, bonusPlats: 0, termine: {} };
+}
+
+// Bonus de santé d'une nuit : +1 par plat différent mangé, jusqu'à +3.
+function dishBonus(mange) {
+  const B = DATA.FAMILY.BONUS_PLATS;
+  const plats = Object.keys(mange).filter((item) => mange[item] > 0 && DATA.items[item].plat).length;
+  return Math.min(B.MAX, plats * B.PAR_PLAT);
 }
 
 // Première étape nocturne : le repas, puis la santé.
@@ -1678,8 +1843,11 @@ function feedFamily(state) {
   const plan = planMeal(state);
   for (const [item, n] of Object.entries(plan.mange)) takeItem(state, item, n);
   const avant = rawAverageHealth(state);
-  const nouveaux = updateHealth(state, plan.couverture);
+  const bonus = dishBonus(plan.mange);
+  const nouveaux = updateHealth(state, plan.couverture, bonus);
   state.nuit = {
+    bonusPlats: bonus,
+    termine: {},
     besoin: plan.besoin,
     energie: plan.energie,
     couverture: plan.couverture,
@@ -2125,6 +2293,185 @@ function layEggs(state) {
   return eggs;
 }
 
+/* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
+
+// state.stations = { four|cuisine|moulin|presse: { construit, tache, appareil } }.
+// tache : null (libre) ou { recette, reste, duree }, en secondes à vitesse 1.
+// appareil : l'appareil du parc (Moulin, Presse) une fois construit, sinon null.
+
+function isElectricStation(id) {
+  return !!DATA.STATIONS[id].electrique;
+}
+
+// Vitesse d'une préparation : productivité de la famille (préparations lancées
+// à la main) ; pour le Moulin et la Presse, aussi le rendement de l'usure.
+function stationSpeed(state, id) {
+  const st = state.stations[id];
+  let v = productivity(state);
+  if (isElectricStation(id) && st.appareil) v *= efficiency(st.appareil);
+  return v;
+}
+
+// Secondes réelles restantes d'une préparation (0 si la station est libre).
+function taskTimeLeft(state, id) {
+  const job = state.stations[id].tache;
+  if (!job) return 0;
+  const v = stationSpeed(state, id);
+  return v > 0 ? job.reste / v : Infinity;
+}
+
+// Quantité disponible d'un ingrédient : le blé compte celui du Silo.
+function ingredientStock(state, item) {
+  return item === DATA.SILO.ITEM ? wheatTotal(state) : countItem(state, item);
+}
+
+// Objet choisi pour un ingrédient : le premier de ses options en quantité
+// suffisante, ou null.
+function pickIngredient(state, ing) {
+  return ingredientOptions(ing).find((item) => ingredientStock(state, item) + EPS >= ing.qte) || null;
+}
+
+// Une ligne par ingrédient (puis une pour l'eau) : { options, qte, have, ok, item }.
+// `have` est le meilleur stock parmi les options ; `item` l'option retenue.
+function recipeLines(state, id) {
+  const r = DATA.recipes[id];
+  const lines = r.ingredients.map((ing) => {
+    const item = pickIngredient(state, ing);
+    const have = Math.max(...ingredientOptions(ing).map((it) => ingredientStock(state, it)));
+    return { options: ingredientOptions(ing), qte: ing.qte, have, ok: item !== null, item };
+  });
+  if (r.eau) lines.push({ eau: true, qte: r.eau, have: state.eau, ok: state.eau + EPS >= r.eau, item: null });
+  return lines;
+}
+
+// État d'une recette pour l'interface : 'absente' (station non construite),
+// 'occupee', 'manque' (ingrédients) ou 'pret'.
+function recipeStatus(state, id) {
+  const r = DATA.recipes[id];
+  const st = state.stations[r.station];
+  const lines = recipeLines(state, id);
+  let code = 'pret';
+  if (!st.construit) code = 'absente';
+  else if (st.tache) code = 'occupee';
+  else if (lines.some((l) => !l.ok)) code = 'manque';
+  return { code, lignes: lines, ok: code === 'pret' };
+}
+
+function takeIngredient(state, item, qty) {
+  if (item === DATA.SILO.ITEM) takeWheat(state, qty, 'inventaire');
+  else takeItem(state, item, qty);
+}
+
+// Lance une préparation : la station doit exister et être libre, les
+// ingrédients (et l'eau) présents. Tout est vérifié avant de retirer quoi que
+// ce soit ; ensuite les ingrédients partent et le minuteur démarre.
+function startRecipe(state, id) {
+  const r = DATA.recipes[id];
+  if (!r) return fail('Recette inconnue.');
+  const def = DATA.STATIONS[r.station];
+  const st = state.stations[r.station];
+  if (!st.construit) return fail(`Construis d'abord ${def.article} ${def.nom}.`);
+  if (st.tache) return fail(`${def.nom} : une préparation est déjà en cours.`);
+  const lines = recipeLines(state, id);
+  const missing = lines.find((l) => !l.ok);
+  if (missing) return fail(missing.eau ? 'Pas assez d\'eau dans le réservoir.' : 'Il manque des ingrédients.');
+  for (const l of lines) {
+    if (l.eau) state.eau = Math.max(0, state.eau - l.qte);
+    else takeIngredient(state, l.item, l.qte);
+  }
+  st.tache = { recette: id, reste: r.temps, duree: r.temps };
+  return { ok: true, recette: id };
+}
+
+// Termine la préparation d'une station : le produit entre dans l'inventaire et
+// la station se libère. Renvoie { item, qty } (ou null si la station était libre).
+function completeTask(state, id) {
+  const st = state.stations[id];
+  if (!st.tache) return null;
+  const recette = st.tache.recette;
+  const item = recipeOutput(recette);
+  const qty = recipeOutputQty(recette);
+  addItem(state, item, qty);
+  st.tache = null;
+  return { item, qty };
+}
+
+// Four et Cuisine : le minuteur avance à la vitesse de la famille, sans énergie.
+function runCooking(state, dt) {
+  if (!state.stations) return;
+  for (const id of Object.keys(DATA.STATIONS)) {
+    if (isElectricStation(id)) continue;
+    const st = state.stations[id];
+    if (!st.construit || !st.tache) continue;
+    st.tache.reste -= dt * stationSpeed(state, id);
+    if (st.tache.reste <= EPS) completeTask(state, id);
+  }
+}
+
+// Moulin et Presse : appareils électriques au sens du Lot 1. Ils tirent leur
+// énergie par drawEnergy (batteries en sens inverse). Éteints ou en panne, ils
+// ne font rien ; sans énergie, ils sont en pause ; avec peu d'énergie, ils
+// avancent au prorata. Ils s'usent seulement quand ils tournent (voir tick).
+function runElectricStation(state, id, dt) {
+  const st = state.stations && state.stations[id];
+  if (!st || !st.appareil) return;
+  const d = st.appareil;
+  d.conso = 0;
+  const job = st.tache;
+  if (!job || !d.allume || isBroken(d)) return;
+  const speed = stationSpeed(state, id);
+  if (!(speed > 0)) return;
+  const run = Math.min(dt, job.reste / speed); // secondes de marche nécessaires
+  const wanted = DATA.STATIONS[id].kwhParS * run;
+  const got = drawEnergy(state, wanted);
+  const fraction = wanted > 0 ? got / wanted : 0;
+  job.reste -= run * speed * fraction;
+  d.conso = got / dt;
+  if (job.reste <= EPS) completeTask(state, id);
+}
+
+// Étape nocturne : toute préparation en cours se termine immédiatement.
+function finishPreparations(state) {
+  const done = {};
+  if (state.stations) {
+    for (const id of Object.keys(DATA.STATIONS)) {
+      const out = completeTask(state, id);
+      if (out) done[out.item] = (done[out.item] || 0) + out.qty;
+    }
+  }
+  state.nuit.termine = done;
+  return done;
+}
+
+// Construit une station. Le Four ouvre l'onglet Livre de recette ; la Cuisine
+// demande le Four ; le Moulin et la Presse deviennent des appareils du parc.
+function buildStation(state, id) {
+  const def = DATA.STATIONS[id];
+  if (!def) return fail('Atelier inconnu.');
+  const st = state.stations[id];
+  if (st.construit) return fail('Cet atelier est déjà construit.');
+  if (def.requiert && !state.stations[def.requiert].construit) {
+    const need = DATA.STATIONS[def.requiert];
+    return fail(`Construis d'abord ${need.article} ${need.nom}.`);
+  }
+  if (state.pieces + EPS < def.cout) return fail('Pas assez de pièces.');
+  spend(state, def.cout);
+  openStation(state, id);
+  return { ok: true, cost: def.cout };
+}
+
+// Pose la station dans l'état (sans payer) : appareil pour les stations
+// électriques, onglets débloqués.
+function openStation(state, id) {
+  const def = DATA.STATIONS[id];
+  const st = state.stations[id];
+  st.construit = true;
+  if (def.electrique && !st.appareil) st.appareil = makeDevice(id, id, def.cout);
+  for (const tab of def.debloque || []) {
+    if (!state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
+  }
+}
+
 /* ---------- la nuit ---------- */
 
 function canSleep(state) {
@@ -2158,6 +2505,9 @@ function buildMorningReport(state) {
     oeufs: state.nuit.oeufs || 0,
     bleConsomme: state.jour.ble || 0,
     poules: state.poulailler.poules,
+    // Lot 5 : bonus de santé des plats mangés, préparations terminées pendant la nuit.
+    bonusPlats: state.nuit.bonusPlats || 0,
+    termine: { ...(state.nuit.termine || {}) },
   };
 }
 
@@ -2237,6 +2587,35 @@ function testAddHens(state, count = 4) {
   return { ok: true };
 }
 
+// Lot 5 : construit toutes les stations gratuitement (Four, Cuisine, Moulin,
+// Presse) : l'onglet Livre de recette s'ouvre.
+function testBuildStations(state) {
+  for (const id of Object.keys(DATA.STATIONS)) openStation(state, id);
+  return { ok: true };
+}
+
+function testAddFlour(state, qty = 10) {
+  addItem(state, 'farine', qty);
+  return { ok: true };
+}
+
+function testAddOil(state, qty = 10) {
+  addItem(state, 'huile', qty);
+  return { ok: true };
+}
+
+function testAddEggs(state, qty = 20) {
+  addItem(state, 'oeuf', qty);
+  return { ok: true };
+}
+
+// Lot 5 : le Moulin passe à 100 % d'usure (panne).
+function testWearMill(state) {
+  const d = state.stations.moulin.appareil;
+  if (!d) return fail('Construis d\'abord le Moulin.');
+  return testSetWear(state, d.id, DATA.WEAR.BREAKDOWN);
+}
+
 // Lot 2 : toutes les parcelles plantées deviennent mûres.
 function testRipenAll(state) {
   for (const p of allPlots(state)) {
@@ -2311,6 +2690,13 @@ function startLot4() {
   };
 }
 
+// Lot 5 : les quatre stations, toutes à construire, libres.
+function startLot5() {
+  const stations = {};
+  for (const id of Object.keys(DATA.STATIONS)) stations[id] = { construit: false, tache: null, appareil: null };
+  return { stations };
+}
+
 function createInitialState(seed = 1) {
   return {
     version: STATE_VERSION,
@@ -2324,6 +2710,7 @@ function createInitialState(seed = 1) {
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
+    ...startLot5(),
   };
 }
 
@@ -2367,6 +2754,14 @@ const MIGRATIONS = {
     jour: { ...newDayStats(), ...(state.jour && typeof state.jour === 'object' ? state.jour : {}) },
     nuit: { oeufs: 0, ...(state.nuit && typeof state.nuit === 'object' ? state.nuit : {}) },
     version: 5,
+  }),
+  // v5 (Lot 4) → v6 (Lot 5) : les quatre stations (à construire) et les
+  // compteurs de nuit des plats.
+  5: (state) => ({
+    ...startLot5(),
+    ...state,
+    nuit: { bonusPlats: 0, termine: {}, ...(state.nuit && typeof state.nuit === 'object' ? state.nuit : {}) },
+    version: 6,
   }),
 };
 
@@ -2509,7 +2904,7 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 5);
+  assertEqual(s.version, 6);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
@@ -3630,11 +4025,12 @@ test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de g
   assertEqual(s.famille.soinsPayes, 0, 'aucun soin payé');
 });
 
-test('ordre des étapes nocturnes : repas et santé, pousse, ponte, puis péremption en dernier', () => {
-  assertEqual(NIGHT_STEPS.length, 4);
+test('ordre des étapes nocturnes : repas et santé, pousse, ponte, préparations, puis péremption en dernier', () => {
+  assertEqual(NIGHT_STEPS.length, 5);
   assert(NIGHT_STEPS[0] === feedFamily, 'première étape : repas et santé');
   assert(NIGHT_STEPS[1] === growAll, 'deuxième étape : pousse');
   assert(NIGHT_STEPS[2] === layEggs, 'troisième étape : ponte');
+  assert(NIGHT_STEPS[3] === finishPreparations, 'quatrième étape : les préparations se terminent');
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
@@ -4115,8 +4511,13 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   const s = garden();
   setInv(s, { conserve: 5 });
   testAddFood(s);
-  assertEqual(inventoryCounts(s), { conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20, oeuf: 20 });
+  // Lot 5 : la viande, les fruits, le pain et les plats sont aussi des aliments.
+  assertEqual(inventoryCounts(s), {
+    conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20, oeuf: 20,
+    viande: 20, pomme: 20, poire: 20, pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, ragout: 20, compote: 20, tarte_pommes: 20,
+  });
   assertEqual(countItem(s, 'graine_carotte'), 0, 'les graines ne sont pas des aliments');
+  assertEqual(countItem(s, 'farine') + countItem(s, 'huile'), 0, 'ni la farine ni l\'huile');
   const r = testAgeInventory(s);
   assertEqual(r.ok, true);
   assertEqual(r.perdus, {});
@@ -4124,9 +4525,9 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   assertEqual(lotsOf(s, 'patate')[0].nightsLeft, 6);
   assertEqual(lotsOf(s, 'conserve')[0].nightsLeft, null);
   for (let i = 0; i < 4; i++) testAgeInventory(s);
-  const last = testAgeInventory(s); // 6e nuit : tomate, courgette, aubergine déjà perdues, carotte maintenant
-  assertEqual(last.perdus, { carotte: 20, oeuf: 20 });
-  assertEqual(inventoryCounts(s), { conserve: 25, patate: 20 });
+  const last = testAgeInventory(s); // 6e nuit : tomate, courgette, aubergine, viande déjà perdues, carotte, œuf et plats maintenant
+  assertEqual(last.perdus, { carotte: 20, oeuf: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, ragout: 20, compote: 20, tarte_pommes: 20 });
+  assertEqual(inventoryCounts(s), { conserve: 25, patate: 20, pomme: 20, poire: 20, pain: 20 });
 });
 
 test('migration v3 (Lot 2) → v4 : l\'inventaire devient des lots à conservation pleine', () => {
@@ -4610,7 +5011,7 @@ test('migration v4 (Lot 3) → v5 : Champ, Silo et Poulailler apparaissent, la p
   delete v4.jour.ble;
   delete v4.nuit.oeufs;
   const m = migrate({ v: 4, t: 0, s: v4 });
-  assertEqual(m.version, 5);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces], [12, 321]);
   assertEqual(m.marche, { carotte: 1.5 });
   assertEqual(m.champ, { construit: false, niveau: 1, parcelles: [] });
@@ -4696,6 +5097,629 @@ test('rapport de réveil Lot 4 : œufs pondus et blé consommé', () => {
   s.awakeSeconds = 30;
   const r2 = sleep(s);
   assertEqual([r2.oeufs, r2.bleConsomme], [0, 0], 'rien mangé la journée suivante');
+});
+
+/* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
+
+// État de test : riche, les quatre stations construites, inventaire vide, batteries
+// pleines, réservoir plein, panneau coupé (l'énergie ne bouge que par les consommateurs).
+function atelier({ stations = ['four', 'cuisine', 'moulin', 'presse'] } = {}) {
+  const s = ranch();
+  for (const id of stations) assert(buildStation(s, id).ok, `construire ${id}`);
+  s.pieces = 1000;
+  setInv(s, {});
+  testFillBatteries(s);
+  s.panneaux[0].allume = false;
+  return s;
+}
+
+// Fait avancer la simulation de `seconds` secondes par pas de 0,2 s.
+function runFor(s, seconds, dt = 0.2) {
+  const n = Math.round(seconds / dt);
+  for (let i = 0; i < n; i++) tick(s, dt);
+}
+
+test('DATA Lot 5 : stations, recettes, farine et huile', () => {
+  const S = DATA.STATIONS;
+  assertEqual([S.four.cout, S.cuisine.cout, S.moulin.cout, S.presse.cout], [100, 150, 120, 150]);
+  assertEqual([S.four.electrique, S.cuisine.electrique, S.moulin.electrique, S.presse.electrique], [false, false, true, true]);
+  assertEqual([S.moulin.kwhParS, S.presse.kwhParS], [0.02, 0.03]);
+  assertEqual(S.cuisine.requiert, 'four');
+  assertEqual(S.four.debloque, ['recettes']);
+  const R = DATA.recipes;
+  assertEqual([R.pain.station, R.pain.temps, R.pain.ingredients, R.pain.eau], ['four', 20, [{ item: 'farine', qte: 2 }], 1]);
+  assertEqual([R.omelette.station, R.omelette.temps], ['cuisine', 15]);
+  assertEqual([R.ratatouille.station, R.ratatouille.temps], ['cuisine', 30]);
+  assertEqual([R.gratin_patates.station, R.gratin_patates.temps], ['four', 30]);
+  assertEqual([R.ragout.station, R.ragout.temps], ['cuisine', 45]);
+  assertEqual([R.compote.station, R.compote.temps, R.compote.ingredients], ['cuisine', 15, [{ ou: ['pomme', 'poire'], qte: 3 }]]);
+  assertEqual([R.tarte_pommes.station, R.tarte_pommes.temps], ['four', 45]);
+  assertEqual([R.farine.station, R.farine.temps, R.farine.sortie], ['moulin', 5, 'farine']);
+  assertEqual([R.huile.station, R.huile.temps, R.huile.ingredients], ['presse', 10, [{ item: 'graine_tournesol', qte: 3 }]]);
+  assertEqual([DATA.items.farine.energie, DATA.items.huile.energie], [10, 10]);
+  assertEqual([DATA.items.farine.prix, DATA.items.huile.prix], [1, 4]);
+  assertEqual([DATA.items.farine.edible, DATA.items.huile.edible], [false, false]);
+});
+
+test('énergie des plats : somme des ingrédients × 1,3, arrondie (pain 26, omelette 52, ragoût 113)', () => {
+  assertEqual(DATA.items.pain.energie, 26);
+  assertEqual(DATA.items.omelette.energie, 52);
+  assertEqual(DATA.items.ragout.energie, 113);
+  assertEqual(DATA.items.ratatouille.energie, 42);
+  assertEqual(DATA.items.gratin_patates.energie, 72);
+  assertEqual(DATA.items.compote.energie, 31);
+  assertEqual(DATA.items.tarte_pommes.energie, 70);
+  assertEqual(dishEnergy('ragout'), 113);
+});
+
+test('prix de vente des plats : somme des prix × 1,3, arrondi', () => {
+  assertEqual(DATA.items.pain.prix, 4, 'pain : 4 (section 8.9)');
+  assertEqual(DATA.items.omelette.prix, 13);
+  assertEqual(DATA.items.ratatouille.prix, 12);
+  assertEqual(DATA.items.gratin_patates.prix, 10);
+  assertEqual(DATA.items.ragout.prix, 18);
+  assertEqual(DATA.items.compote.prix, 8);
+  assertEqual(DATA.items.tarte_pommes.prix, 13);
+  assertEqual([DATA.items.viande.prix, DATA.items.pomme.prix, DATA.items.poire.prix], [5, 2, 2]);
+});
+
+test('les plats se gardent 6 nuits (le pain 7) ; la farine et l\'huile ne périment pas', () => {
+  for (const id of ['omelette', 'ratatouille', 'gratin_patates', 'ragout', 'compote', 'tarte_pommes']) {
+    assertEqual(shelfLife(id), 6, id);
+  }
+  assertEqual(shelfLife('pain'), 7);
+  assertEqual([shelfLife('farine'), shelfLife('huile')], [null, null]);
+});
+
+test('la farine et l\'huile ne se mangent pas seules ; les plats se mangent', () => {
+  const s = atelier();
+  setInv(s, { farine: 50, huile: 50 });
+  assertEqual(planMeal(s).mange, {});
+  setInv(s, { pain: 3, omelette: 1, conserve: 200 });
+  const plan = planMeal(s);
+  assertEqual([plan.mange.pain, plan.mange.omelette], [3, 1]);
+});
+
+test('état initial Lot 5 : quatre stations à construire, libres, sans appareil', () => {
+  const s = createInitialState(1);
+  for (const id of ['four', 'cuisine', 'moulin', 'presse']) {
+    assertEqual(s.stations[id], { construit: false, tache: null, appareil: null }, id);
+  }
+  assertEqual(allDevices(s).length, 3, 'panneau, batterie, pompe seulement');
+  assertEqual(s.unlockedTabs.includes('recettes'), false);
+});
+
+test('construire le Four : 100 pièces, et l\'onglet Livre de recette s\'ouvre', () => {
+  const s = ranch();
+  s.pieces = 100;
+  const r = buildStation(s, 'four');
+  assertEqual([r.ok, r.cost, s.pieces], [true, 100, 0]);
+  assertEqual(s.stations.four.construit, true);
+  assertEqual(s.unlockedTabs.includes('recettes'), true, 'onglet ouvert par le Four');
+  assertEqual(s.unlockedTabs.filter((t) => t === 'recettes').length, 1);
+  assertEqual(allDevices(s).length, 3, 'le Four n\'est pas un appareil électrique');
+  assertEqual(buildStation(s, 'four').ok, false, 'une seule de chaque');
+});
+
+test('la Cuisine (150) se construit une fois le Four bâti', () => {
+  const s = ranch();
+  const before = s.pieces;
+  const r = buildStation(s, 'cuisine');
+  assertEqual([r.ok, r.error], [false, 'Construis d\'abord le Four.']);
+  assertEqual(s.pieces, before, 'rien n\'est payé');
+  buildStation(s, 'four');
+  s.pieces = 149;
+  assertEqual(buildStation(s, 'cuisine').ok, false, 'pas assez de pièces');
+  s.pieces = 150;
+  assertEqual(buildStation(s, 'cuisine').ok, true);
+  assertEqual(s.pieces, 0);
+  assertEqual(buildStation(s, 'cuisine').ok, false, 'une seule Cuisine');
+});
+
+test('le Moulin (120) et la Presse (150) se construisent sans le Four et rejoignent le parc', () => {
+  const s = ranch();
+  s.pieces = 270;
+  assertEqual(buildStation(s, 'moulin').ok, true);
+  assertEqual(buildStation(s, 'presse').ok, true);
+  assertEqual(s.pieces, 0);
+  assertEqual(s.unlockedTabs.includes('recettes'), false, 'seul le Four ouvre l\'onglet');
+  assertEqual(allDevices(s).map((d) => d.id), ['panneau-1', 'batterie-1', 'pompe', 'moulin', 'presse']);
+  const m = s.stations.moulin.appareil;
+  assertEqual([m.type, m.prix, m.allume, m.usure], ['moulin', 120, true, 0]);
+  assertEqual(findDevice(s, 'presse').prix, 150);
+  assertEqual(s.stations.four.appareil, null);
+});
+
+test('le Moulin et la Presse n\'ont pas de niveaux, mais s\'entretiennent et se réparent', () => {
+  const s = atelier();
+  assertEqual(upgradeCost(s.stations.moulin.appareil), null);
+  const r = upgradeDevice(s, 'moulin');
+  assertEqual([r.ok, r.error], [false, 'Cet appareil n\'a pas de niveaux.']);
+  s.stations.moulin.appareil.usure = 40;
+  assertEqual(maintainCost(s.stations.moulin.appareil), 24, 'entretien : 20 % de 120');
+  assertEqual(repairCost(s.stations.presse.appareil), 75, 'réparation : 50 % de 150');
+  const before = s.pieces;
+  assertEqual(maintainDevice(s, 'moulin').ok, true);
+  assertEqual([s.stations.moulin.appareil.usure, s.pieces], [0, before - 24]);
+});
+
+test('startRecipe : refusée sans station construite, sans rien retirer', () => {
+  const s = atelier({ stations: [] });
+  setInv(s, { farine: 2 });
+  const r = startRecipe(s, 'pain');
+  assertEqual([r.ok, r.error], [false, 'Construis d\'abord le Four.']);
+  assertEqual([countItem(s, 'farine'), s.eau], [2, 40]);
+  assertEqual(startRecipe(s, 'inconnue').ok, false);
+});
+
+test('une seule préparation par station, sans file d\'attente', () => {
+  const s = atelier();
+  setInv(s, { farine: 6, patate: 3, oeuf: 1 });
+  assertEqual(startRecipe(s, 'pain').ok, true);
+  const r = startRecipe(s, 'gratin_patates'); // même station : le Four
+  assertEqual([r.ok, r.error], [false, 'Four : une préparation est déjà en cours.']);
+  assertEqual([countItem(s, 'patate'), countItem(s, 'oeuf')], [3, 1], 'rien n\'est retiré pour une recette refusée');
+  assertEqual(startRecipe(s, 'pain').ok, false, 'pas de file : la même recette non plus');
+  assertEqual(countItem(s, 'farine'), 4);
+});
+
+test('les stations travaillent en parallèle : Four, Cuisine, Moulin et Presse', () => {
+  const s = atelier();
+  setInv(s, { farine: 2, oeuf: 3, huile: 1, ble: 1, graine_tournesol: 3 });
+  for (const id of ['pain', 'omelette', 'farine', 'huile']) assertEqual(startRecipe(s, id).ok, true, id);
+  assertEqual(['four', 'cuisine', 'moulin', 'presse'].map((k) => s.stations[k].tache.recette), ['pain', 'omelette', 'farine', 'huile']);
+});
+
+test('les ingrédients sont retirés au lancement (eau comprise)', () => {
+  const s = atelier();
+  setInv(s, { farine: 5 });
+  assertEqual(startRecipe(s, 'pain').ok, true);
+  assertEqual([countItem(s, 'farine'), s.eau], [3, 39]);
+  assertEqual(s.stations.four.tache, { recette: 'pain', reste: 20, duree: 20 });
+  assertEqual(countItem(s, 'pain'), 0, 'le pain n\'existe pas avant la fin');
+});
+
+test('ingrédients ou eau manquants : refus net, rien n\'est retiré', () => {
+  const s = atelier();
+  setInv(s, { oeuf: 3 }); // il manque l'huile
+  const r = startRecipe(s, 'omelette');
+  assertEqual([r.ok, r.error], [false, 'Il manque des ingrédients.']);
+  assertEqual(countItem(s, 'oeuf'), 3);
+  assertEqual(s.stations.cuisine.tache, null);
+  setInv(s, { farine: 2 });
+  s.eau = 0.5;
+  const w = startRecipe(s, 'pain');
+  assertEqual([w.ok, w.error], [false, 'Pas assez d\'eau dans le réservoir.']);
+  assertEqual([countItem(s, 'farine'), s.eau], [2, 0.5]);
+});
+
+test('la préparation avance dans tick ; à la fin le plat entre dans l\'inventaire et la station se libère', () => {
+  const s = atelier();
+  setInv(s, { farine: 2 });
+  startRecipe(s, 'pain');
+  runFor(s, 19.8);
+  assertEqual(countItem(s, 'pain'), 0);
+  assert(s.stations.four.tache !== null, 'encore en cours à 19,8 s');
+  runFor(s, 0.2);
+  assertEqual(countItem(s, 'pain'), 1);
+  assertEqual(s.stations.four.tache, null, 'station libérée');
+  assertEqual(startRecipe(s, 'pain').ok, false, 'plus de farine, mais la station est bien libre');
+  setInv(s, { farine: 2 });
+  assertEqual(startRecipe(s, 'pain').ok, true, 'on relance soi-même');
+});
+
+test('le Four et la Cuisine ne consomment pas d\'électricité et ne s\'usent pas', () => {
+  const s = atelier();
+  setInv(s, { farine: 2, oeuf: 3, huile: 1 });
+  startRecipe(s, 'pain');
+  startRecipe(s, 'omelette');
+  const before = s.batteries[0].charge;
+  runFor(s, 20);
+  assertEqual([countItem(s, 'pain'), countItem(s, 'omelette')], [1, 1]);
+  assertEqual(s.batteries[0].charge, before);
+  assertEqual([s.stations.four.appareil, s.stations.cuisine.appareil], [null, null]);
+});
+
+test('la vitesse d\'une préparation suit la productivité de la famille', () => {
+  const s = atelier();
+  setHealth(s, 60); // ×0,8
+  setInv(s, { farine: 2 });
+  startRecipe(s, 'pain');
+  assert(near(taskTimeLeft(s, 'four'), 25), 'temps réel restant 20 ÷ 0,8');
+  runFor(s, 20);
+  assertEqual(countItem(s, 'pain'), 0, 'pas fini à 20 s');
+  runFor(s, 5);
+  assertEqual(countItem(s, 'pain'), 1);
+  setHealth(s, 30); // ×0,5
+  setInv(s, { farine: 2 });
+  startRecipe(s, 'pain');
+  assert(near(taskTimeLeft(s, 'four'), 40));
+});
+
+test('compote : 3 pommes ou 3 poires, sans les mélanger', () => {
+  const s = atelier();
+  setInv(s, { pomme: 2, poire: 2 });
+  assertEqual(startRecipe(s, 'compote').ok, false, '2 pommes + 2 poires ne font pas une compote');
+  setInv(s, { poire: 3 });
+  assertEqual(startRecipe(s, 'compote').ok, true);
+  assertEqual(countItem(s, 'poire'), 0);
+  s.stations.cuisine.tache = null;
+  setInv(s, { pomme: 3, poire: 3 });
+  assertEqual(startRecipe(s, 'compote').ok, true);
+  assertEqual([countItem(s, 'pomme'), countItem(s, 'poire')], [0, 3], 'les pommes d\'abord');
+});
+
+test('les recettes à viande ou à fruits existent déjà, mais restent impossibles sans ces ingrédients', () => {
+  const s = atelier();
+  setInv(s, { carotte: 2, patate: 1 });
+  assertEqual(recipeStatus(s, 'ragout').code, 'manque');
+  assertEqual(recipeStatus(s, 'tarte_pommes').code, 'manque');
+  assertEqual(startRecipe(s, 'ragout').ok, false);
+  setInv(s, { viande: 2, carotte: 2, patate: 1 });
+  assertEqual(recipeStatus(s, 'ragout').code, 'pret');
+});
+
+test('recipeStatus : absente, occupée, manque ou prête, avec le détail des ingrédients', () => {
+  const s = atelier({ stations: ['four'] });
+  setInv(s, { patate: 3, oeuf: 1, farine: 1 });
+  assertEqual(recipeStatus(s, 'omelette').code, 'absente', 'Cuisine non construite');
+  assertEqual(recipeStatus(s, 'gratin_patates').code, 'pret');
+  const pain = recipeStatus(s, 'pain');
+  assertEqual(pain.code, 'manque');
+  assertEqual(pain.lignes.map((l) => [l.qte, l.have, l.ok]), [[2, 1, false], [1, 40, true]]);
+  assertEqual(pain.lignes[1].eau, true);
+  startRecipe(s, 'gratin_patates');
+  assertEqual(recipeStatus(s, 'pain').code, 'occupee', 'le Four est pris');
+});
+
+test('Moulin : 1 blé → 1 farine en 5 s, 0,02 kWh/s pris sur les batteries', () => {
+  const s = atelier();
+  setInv(s, { ble: 1 });
+  assertEqual(startRecipe(s, 'farine').ok, true);
+  assertEqual(countItem(s, 'ble'), 0);
+  runFor(s, 4.8);
+  assertEqual(countItem(s, 'farine'), 0);
+  assert(near(s.stations.moulin.appareil.conso, 0.02), 'consommation 0,02 kWh/s');
+  // (l'usure, qui monte pendant la marche, allonge la préparation de quelques millisecondes)
+  runFor(s, 0.4);
+  assertEqual(countItem(s, 'farine'), 1);
+  assertEqual(s.stations.moulin.tache, null);
+  assert(near(s.batteries[0].charge, 5 - 0.1, 1e-4), `5 s × 0,02 = 0,1 kWh : ${s.batteries[0].charge}`);
+  tick(s, 0.2);
+  assertEqual(s.stations.moulin.appareil.conso, 0, 'libre : il ne consomme plus');
+});
+
+test('Moulin : le blé se prend d\'abord dans l\'inventaire, puis dans le Silo', () => {
+  const s = atelier();
+  setInv(s, { ble: 1 });
+  s.silo.ble = 4;
+  startRecipe(s, 'farine');
+  assertEqual([countItem(s, 'ble'), s.silo.ble], [0, 4]);
+  s.stations.moulin.tache = null;
+  startRecipe(s, 'farine');
+  assertEqual(s.silo.ble, 3, 'puis le Silo');
+  s.silo.ble = 0;
+  s.stations.moulin.tache = null;
+  assertEqual(startRecipe(s, 'farine').ok, false, 'plus de blé du tout');
+});
+
+test('Moulin : mêmes règles que la pompe, batteries vidées en sens inverse', () => {
+  const s = atelier();
+  testAddDevice(s, 'batterie');
+  testFillBatteries(s);
+  setInv(s, { ble: 1 });
+  startRecipe(s, 'farine');
+  runFor(s, 5.4);
+  assert(near(s.batteries[1].charge, 5 - 0.1, 1e-4), 'la dernière batterie remplie se vide d\'abord');
+  assert(near(s.batteries[0].charge, 5), 'la première reste pleine');
+});
+
+test('Moulin en pause quand l\'énergie manque, et il reprend quand elle revient', () => {
+  const s = atelier();
+  s.batteries[0].charge = 0;
+  setInv(s, { ble: 1 });
+  startRecipe(s, 'farine');
+  runFor(s, 10);
+  const m = s.stations.moulin;
+  assertEqual(countItem(s, 'farine'), 0, 'rien ne sort sans énergie');
+  assertEqual(m.tache.reste, 5, 'le minuteur n\'a pas bougé');
+  assertEqual(m.appareil.conso, 0);
+  assertEqual(m.appareil.usure, 0, 'en pause, il ne s\'use pas');
+  assertEqual(deviceStatus(s, m.appareil).code, 'attente');
+  s.batteries[0].charge = 1;
+  runFor(s, 5.4);
+  assertEqual(countItem(s, 'farine'), 1, 'il reprend seul');
+  assertEqual(deviceStatus(s, m.appareil).code, 'repos');
+});
+
+test('Moulin : avec un peu d\'énergie seulement, il avance au prorata', () => {
+  const s = atelier();
+  s.batteries[0].charge = 0.05; // 2,5 s de marche à 0,02 kWh/s
+  setInv(s, { ble: 1 });
+  startRecipe(s, 'farine');
+  runFor(s, 10);
+  assert(near(s.stations.moulin.tache.reste, 2.5, 1e-3), `reste ${s.stations.moulin.tache.reste}`);
+  assert(near(s.batteries[0].charge, 0), 'toute l\'énergie est passée dans le travail');
+  assertEqual(countItem(s, 'farine'), 0);
+});
+
+test('Moulin éteint : il ne progresse pas, ne consomme pas et ne s\'use pas', () => {
+  const s = atelier();
+  setInv(s, { ble: 1 });
+  startRecipe(s, 'farine');
+  assertEqual(toggleDevice(s, 'moulin').ok, true);
+  assertEqual(s.stations.moulin.appareil.allume, false);
+  runFor(s, 30);
+  const m = s.stations.moulin;
+  assertEqual([m.appareil.usure, m.tache.reste, s.batteries[0].charge], [0, 5, 5]);
+  assertEqual(deviceStatus(s, m.appareil).code, 'arret');
+  toggleDevice(s, 'moulin');
+  runFor(s, 5.4);
+  assertEqual(countItem(s, 'farine'), 1, 'rallumé, il termine');
+});
+
+test('Moulin allumé : il s\'use en tournant (0,5 point par heure de marche), pas au repos', () => {
+  const s = atelier();
+  runFor(s, 30); // au repos
+  assertEqual(s.stations.moulin.appareil.usure, 0);
+  setInv(s, { ble: 1 });
+  startRecipe(s, 'farine');
+  runFor(s, 5.4);
+  assertEqual(countItem(s, 'farine'), 1);
+  const usure = s.stations.moulin.appareil.usure;
+  // 0,5 point par heure de marche (30 s) : ≈ 0,083 pour 5 s, au pas de tick près
+  assert(usure > 0.5 * 5 / 30 - 1e-4 && usure < 0.5 * 5.4 / 30 + 1e-4, `usure ${usure}`);
+  runFor(s, 30);
+  assertEqual(s.stations.moulin.appareil.usure, usure, 'plus d\'usure une fois libre');
+});
+
+test('l\'usure ralentit le Moulin (rendement = 1 − usure ÷ 200)', () => {
+  const s = atelier();
+  s.stations.moulin.appareil.usure = 50; // rendement 0,75
+  setInv(s, { ble: 1 });
+  startRecipe(s, 'farine');
+  assert(near(taskTimeLeft(s, 'moulin'), 5 / 0.75, 1e-9));
+  runFor(s, 6.4);
+  assertEqual(countItem(s, 'farine'), 0, 'pas fini à 6,4 s');
+  runFor(s, 0.4);
+  assertEqual(countItem(s, 'farine'), 1);
+});
+
+test('Moulin : panne à 100 % d\'usure, la préparation attend la réparation', () => {
+  const s = atelier();
+  setInv(s, { ble: 2 });
+  startRecipe(s, 'farine');
+  s.stations.moulin.appareil.usure = 99.99;
+  runFor(s, 1);
+  const d = s.stations.moulin.appareil;
+  assertEqual([d.usure, d.allume, isBroken(d)], [100, false, true]);
+  assertEqual(deviceStatus(s, d).code, 'panne');
+  const left = s.stations.moulin.tache.reste;
+  runFor(s, 10);
+  assertEqual(s.stations.moulin.tache.reste, left, 'la panne fige la préparation');
+  assertEqual(toggleDevice(s, 'moulin').ok, false, 'on ne rallume pas un appareil en panne');
+  assertEqual(repairDevice(s, 'moulin').ok, true);
+  assertEqual(s.pieces, 1000 - 60, 'réparation : 50 % de 120');
+  assertEqual([d.usure, d.allume], [0, false], 'réparé mais encore éteint');
+  toggleDevice(s, 'moulin');
+  runFor(s, 6);
+  assertEqual(countItem(s, 'farine'), 1);
+});
+
+test('Presse : 3 graines de tournesol → 1 huile en 10 s, 0,03 kWh/s', () => {
+  const s = atelier();
+  setInv(s, { graine_tournesol: 4 });
+  assertEqual(startRecipe(s, 'huile').ok, true);
+  assertEqual(countItem(s, 'graine_tournesol'), 1);
+  runFor(s, 9.8);
+  assertEqual(countItem(s, 'huile'), 0);
+  assert(near(s.stations.presse.appareil.conso, 0.03));
+  runFor(s, 0.4);
+  assertEqual(countItem(s, 'huile'), 1);
+  assert(near(s.batteries[0].charge, 5 - 0.3, 1e-3), `10 s × 0,03 = 0,3 kWh : ${s.batteries[0].charge}`);
+  setInv(s, { graine_tournesol: 2 });
+  assertEqual(startRecipe(s, 'huile').ok, false, 'il en faut 3');
+});
+
+test('Moulin et Presse partagent les batteries : chacun tire sa part', () => {
+  const s = atelier();
+  setInv(s, { ble: 1, graine_tournesol: 3 });
+  startRecipe(s, 'farine');
+  startRecipe(s, 'huile');
+  runFor(s, 10.4);
+  assertEqual([countItem(s, 'farine'), countItem(s, 'huile')], [1, 1]);
+  assert(near(s.batteries[0].charge, 5 - 0.1 - 0.3, 1e-3), `${s.batteries[0].charge}`);
+});
+
+test('bonus de santé : +1 par plat différent mangé, plafonné à +3', () => {
+  const nuit = (inv, sante = 50) => {
+    const s = atelier();
+    setHealth(s, sante);
+    setInv(s, { conserve: 200, ...inv });
+    const plan = planMeal(s);
+    assertEqual(plan.couverture, 1);
+    sleepNow(s);
+    return s;
+  };
+  const sleepNow = (s) => {
+    s.awakeSeconds = 30;
+    return sleep(s);
+  };
+  // sans plat : +5 (couverture 100 %)
+  assertEqual(nuit({}).famille.membres[0].sante, 55);
+  // un plat : +1
+  assertEqual(nuit({ omelette: 1 }).famille.membres[0].sante, 56);
+  // deux plats différents : +2 ; le pain compte comme un plat
+  assertEqual(nuit({ omelette: 1, pain: 2 }).famille.membres[0].sante, 57);
+  // un même plat en plusieurs exemplaires ne compte qu'une fois
+  assertEqual(nuit({ omelette: 4 }).famille.membres[0].sante, 56);
+  // trois, quatre plats différents : plafonné à +3
+  assertEqual(nuit({ omelette: 1, pain: 1, ragout: 1 }).famille.membres[0].sante, 58);
+  const quatre = nuit({ omelette: 1, pain: 1, ragout: 1, compote: 1, tarte_pommes: 1 });
+  assertEqual(quatre.famille.membres[0].sante, 58, '5 plats : toujours +3');
+  // la santé ne dépasse jamais 100
+  assertEqual(nuit({ omelette: 1, pain: 1, ragout: 1 }, 99).famille.membres[0].sante, 100);
+});
+
+test('bonus de santé : il s\'ajoute à la variation (−5 devient −4), noté au rapport de réveil', () => {
+  const s = atelier();
+  setHealth(s, 50);
+  setInv(s, { omelette: 1, conserve: 12 }); // 52 + 240 = 292 sur 320 : couverture 91 %
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual(r.bonusPlats, 1);
+  assertEqual(s.famille.membres[0].sante, 46, '−5 + 1');
+  assertEqual(r.mange.omelette, 1);
+  s.awakeSeconds = 30;
+  assertEqual(sleep(s).bonusPlats, 0, 'plus de plat, plus de bonus');
+});
+
+test('Dormir : une préparation en cours se termine immédiatement', () => {
+  const s = atelier();
+  setInv(s, { farine: 2, ble: 1, conserve: 200 });
+  startRecipe(s, 'pain');
+  startRecipe(s, 'farine');
+  runFor(s, 2);
+  assert(s.stations.four.tache.reste > 15, 'le pain est loin d\'être fini');
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual([countItem(s, 'pain'), countItem(s, 'farine')], [1, 1]);
+  assertEqual([s.stations.four.tache, s.stations.moulin.tache], [null, null], 'stations libérées');
+  assertEqual(r.termine, { pain: 1, farine: 1 });
+  s.awakeSeconds = 30;
+  assertEqual(sleep(s).termine, {}, 'rien la nuit suivante');
+});
+
+test('Dormir : le plat fini pendant la nuit se mange à partir du repas suivant', () => {
+  const s = atelier();
+  setInv(s, { farine: 2, conserve: 200 });
+  startRecipe(s, 'pain');
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual(r.mange.pain, undefined, 'pas mangé cette nuit');
+  assertEqual(countItem(s, 'pain'), 1);
+  assertEqual(lotsOf(s, 'pain')[0].nightsLeft, 6, 'le pain vieillit d\'une nuit comme les œufs pondus');
+  s.awakeSeconds = 30;
+  assertEqual(sleep(s).mange.pain, 1, 'mangé la nuit suivante');
+});
+
+test('Dormir avec une station libre ou non construite ne change rien', () => {
+  const s = createInitialState(1);
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual(r.termine, {});
+  assertEqual(s.stations.four, { construit: false, tache: null, appareil: null });
+});
+
+test('rapport de réveil : le Moulin en panne ou à entretenir est signalé comme les autres appareils', () => {
+  const s = atelier();
+  s.stations.moulin.appareil.usure = 75;
+  s.stations.presse.appareil.usure = 100;
+  s.stations.presse.appareil.allume = false;
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual(r.aEntretenir.map((d) => d.id), ['moulin']);
+  assertEqual(r.enPanne.map((d) => d.id), ['presse']);
+});
+
+test('onglet Livre de recette : ouvert par le Four, jamais avant', () => {
+  const s = createInitialState(1);
+  assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir']);
+  s.pieces = 500;
+  buildStation(s, 'moulin');
+  buildStation(s, 'presse');
+  assertEqual(s.unlockedTabs.includes('recettes'), false);
+  buildStation(s, 'four');
+  assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes']);
+});
+
+test('plats et ingrédients se vendent au Comptoir au prix fixe', () => {
+  const s = atelier();
+  setInv(s, { ragout: 2, farine: 3, huile: 1 });
+  const before = s.pieces;
+  assertEqual(sellItem(s, 'ragout', 2).gain, 36);
+  assertEqual(sellItem(s, 'farine', 3).gain, 3);
+  assertEqual(sellItem(s, 'huile', 1).gain, 4);
+  assertEqual(s.pieces, before + 43);
+});
+
+test('mode test Lot 5 : stations gratuites, +10 farines, +10 huiles, +20 œufs, moulin usé', () => {
+  const s = createInitialState(1);
+  s.pieces = 0;
+  assertEqual(testWearMill(s).ok, false, 'pas de Moulin, pas d\'usure');
+  assertEqual(testBuildStations(s).ok, true);
+  assertEqual(s.pieces, 0, 'gratuit');
+  for (const id of ['four', 'cuisine', 'moulin', 'presse']) assertEqual(s.stations[id].construit, true, id);
+  assertEqual(s.unlockedTabs.includes('recettes'), true);
+  assertEqual(s.stations.moulin.appareil.type, 'moulin');
+  testBuildStations(s);
+  assertEqual(allDevices(s).length, 5, 'rien n\'est construit deux fois');
+  testAddFlour(s);
+  testAddOil(s);
+  testAddEggs(s);
+  assertEqual([countItem(s, 'farine'), countItem(s, 'huile'), countItem(s, 'oeuf')], [10, 10, 20]);
+  assertEqual(testWearMill(s).ok, true);
+  const m = s.stations.moulin.appareil;
+  assertEqual([m.usure, m.allume, isBroken(m)], [100, false, true]);
+  assertEqual(s.stations.presse.appareil.usure, 0, 'la Presse n\'est pas touchée');
+});
+
+test('mode test : l\'usure d\'un appareil choisi marche aussi pour le Moulin', () => {
+  const s = atelier();
+  assertEqual(testSetWear(s, 'moulin', 100).ok, true);
+  assertEqual(isBroken(s.stations.moulin.appareil), true);
+});
+
+test('sérialisation JSON : préparations en cours, appareils et plats font l\'aller-retour', () => {
+  const s = atelier();
+  setInv(s, { farine: 2, ble: 1, oeuf: 3, huile: 1, omelette: 2 });
+  startRecipe(s, 'pain');
+  startRecipe(s, 'farine');
+  startRecipe(s, 'omelette');
+  runFor(s, 1);
+  const copy = JSON.parse(JSON.stringify(s));
+  assertEqual(copy, s);
+  runFor(s, 30);
+  runFor(copy, 30);
+  assertEqual(copy, s, 'la copie continue exactement comme l\'original');
+  assertEqual([countItem(copy, 'pain'), countItem(copy, 'farine')], [1, 1]);
+});
+
+test('migration v5 (Lot 4) → v6 : les stations apparaissent, la partie est gardée', () => {
+  const v5 = {
+    version: 5, day: 20, awakeSeconds: 8, pieces: 432, rngSeed: 4, stats: {},
+    unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'], marche: {},
+    ...startFarm(), ...startHousehold(), ...startLot4(),
+  };
+  delete v5.nuit.bonusPlats;
+  const m = migrate({ v: 5, t: 0, s: v5 });
+  assertEqual(m.version, 6);
+  assertEqual([m.day, m.pieces], [20, 432]);
+  for (const id of ['four', 'cuisine', 'moulin', 'presse']) {
+    assertEqual(m.stations[id], { construit: false, tache: null, appareil: null }, id);
+  }
+  assertEqual([m.nuit.bonusPlats, m.nuit.termine], [0, {}]);
+  assertEqual(inventoryCounts(m).conserve, 160);
+  // l'état migré construit, cuisine et dort
+  m.pieces = 500;
+  assertEqual(buildStation(m, 'four').ok, true);
+  assertEqual(m.unlockedTabs.includes('recettes'), true);
+  addItem(m, 'farine', 2);
+  assertEqual(startRecipe(m, 'pain').ok, false, 'le réservoir de cette sauvegarde est vide');
+  m.eau = 5;
+  assertEqual(startRecipe(m, 'pain').ok, true);
+  m.awakeSeconds = 30;
+  assertEqual(sleep(m).termine, { pain: 1 });
+  // une sauvegarde déjà en v6 n'est pas modifiée par la migration
+  const again = migrate({ v: 6, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  assertEqual(again.stations, m.stations);
+});
+
+test('migration v0 → version courante : les chaînes mènent au Lot 5', () => {
+  const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual(m.version, STATE_VERSION);
+  assertEqual(m.stations.moulin.construit, false);
+  assertEqual(allDevices(m).length, 3);
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -4806,6 +5830,7 @@ function importSaveText(text) {
       throw new Error('format de sauvegarde invalide');
     }
     state = migrate(parsed);
+    syncJobs();
     persistState();
     return true;
   } catch (e) {
@@ -4846,6 +5871,7 @@ function copyFromTextarea(area) {
 
 function actionNewGame() {
   state = createInitialState(makeSeed());
+  syncJobs();
   screen = null;
   activeTab = 'ferme';
   persistState();
@@ -4867,6 +5893,7 @@ function actionSleep() {
     refresh();
     return;
   }
+  syncJobs(); // les préparations terminées pendant la nuit ne sont pas annoncées par un toast
   persistState(); // sauvegarde après chaque nuit
   refresh();
   openWakeModal(report);
@@ -4874,6 +5901,7 @@ function actionSleep() {
 
 function actionTestNights(count) {
   const { report } = testSleepNights(state, count);
+  syncJobs();
   persistState();
   refresh();
   if (report) openWakeModal(report);
@@ -4883,6 +5911,31 @@ function actionTestNights(count) {
 
 let accumulatorMs = 0;
 let lastFrameTime = null;
+
+// Recette en cours dans chaque station au dernier passage : sert à annoncer
+// « prêt ! » quand une préparation se termine pendant que le joueur joue.
+let lastJobs = {};
+
+function syncJobs() {
+  lastJobs = {};
+  for (const id of Object.keys(DATA.STATIONS)) {
+    const job = state.stations[id].tache;
+    lastJobs[id] = job ? job.recette : null;
+  }
+}
+
+function watchPreparations() {
+  for (const id of Object.keys(DATA.STATIONS)) {
+    const job = state.stations[id].tache;
+    const was = lastJobs[id];
+    if (was && !job) {
+      const r = DATA.recipes[was];
+      const out = DATA.items[recipeOutput(was)];
+      showToast(`${out.icone} ${r.transformation ? out.nom : r.nom} : prêt !`);
+    }
+    lastJobs[id] = job ? job.recette : null;
+  }
+}
 
 function frame(now) {
   if (lastFrameTime === null) lastFrameTime = now;
@@ -4895,6 +5948,7 @@ function frame(now) {
     accumulatorMs -= TICK_MS;
     scheduleRender();
   }
+  watchPreparations();
   requestAnimationFrame(frame);
 }
 
@@ -4914,6 +5968,8 @@ function renderLoop(now) {
 /* ---------- rendu ---------- */
 
 function render() {
+  // Un onglet non débloqué (sauvegarde importée, par exemple) retombe sur la Ferme.
+  if (!state.unlockedTabs.includes(activeTab)) activeTab = 'ferme';
   renderIndicators();
   renderTabbar();
   renderTabContent();
@@ -5009,6 +6065,10 @@ function renderTabContent() {
     morph(el, renderComptoir());
     return;
   }
+  if (activeTab === 'recettes') {
+    morph(el, renderRecettes());
+    return;
+  }
   const tab = TABS.find((t) => t.id === activeTab) || TABS[0];
   morph(el, `
     <h2>${tab.icon} ${tab.label}</h2>
@@ -5054,11 +6114,11 @@ function syncTestDeviceSelect() {
 
 /* ---------- Ferme : cartes et écrans de détail ---------- */
 
-const DEVICE_ICONS = { panneau: '☀️', batterie: '🔋', pompe: '⛲' };
-const DEVICE_NAMES = { panneau: 'Panneau', batterie: 'Batterie', pompe: 'Pompe' };
+const DEVICE_ICONS = { panneau: '☀️', batterie: '🔋', pompe: '⛲', moulin: '⚙️', presse: '🌻' };
+const DEVICE_NAMES = { panneau: 'Panneau', batterie: 'Batterie', pompe: 'Pompe', moulin: 'Moulin', presse: 'Presse' };
 
 function deviceName(d) {
-  if (d.type === 'pompe') return 'Pompe';
+  if (d.type === 'pompe' || d.type === 'moulin' || d.type === 'presse') return DEVICE_NAMES[d.type];
   const list = d.type === 'panneau' ? state.panneaux : state.batteries;
   return `${DEVICE_NAMES[d.type]} n°${list.indexOf(d) + 1}`;
 }
@@ -5100,6 +6160,7 @@ function renderFerme() {
     ${renderChamp()}
     ${renderSilo()}
     ${renderPoulailler()}
+    ${renderAteliers()}
     <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
@@ -5413,6 +6474,154 @@ function harvestToast(result) {
   return `Récolte : ${parts.join(' ')}`;
 }
 
+/* ---------- Lot 5 : ateliers (Ferme) et Livre de recette ---------- */
+
+// Recettes d'une station, dans l'ordre de DATA.recipes.
+function stationRecipes(id) {
+  return Object.keys(DATA.recipes).filter((r) => DATA.recipes[r].station === id);
+}
+
+function stationBlurb(id) {
+  const def = DATA.STATIONS[id];
+  const names = stationRecipes(id).map((r) => DATA.recipes[r].nom.toLowerCase()).join(', ');
+  const power = def.electrique
+    ? ` Appareil électrique : ${formatFixed(def.kwhParS, 2)} kWh/s en marche, avec interrupteur, usure et pannes.`
+    : ' Pas d\'électricité.';
+  return `${names.charAt(0).toUpperCase()}${names.slice(1)}.${power}${id === 'four' ? ' Le construire ouvre l\'onglet Livre de recette.' : ''}`;
+}
+
+function stationBuildCard(id) {
+  const def = DATA.STATIONS[id];
+  const need = def.requiert ? DATA.STATIONS[def.requiert] : null;
+  const blocked = need && !state.stations[def.requiert].construit;
+  return `
+    <div class="card station">
+      <span class="card-title"><span>${def.icone} ${def.nom}</span><span class="chip">Non construit</span></span>
+      <span class="muted">${stationBlurb(id)}</span>
+      ${blocked ? `<span class="alert">Construis d'abord ${need.article} ${need.nom}.</span>` : ''}
+      <button type="button" class="btn primary" data-action="build-station" data-station="${id}"${!blocked && canPay(def.cout) ? '' : ' disabled'}>Construire ${def.article} ${def.nom} (${costLabel(def.cout)})</button>
+    </div>`;
+}
+
+function renderAteliers() {
+  const cards = Object.keys(DATA.STATIONS).map((id) => {
+    const def = DATA.STATIONS[id];
+    if (!state.stations[id].construit) return stationBuildCard(id);
+    const where = state.unlockedTabs.includes('recettes')
+      ? 'Se lance depuis l\'onglet Livre de recette.'
+      : 'Se lancera depuis le Livre de recette, que le Four ouvre.';
+    return `
+      <div class="card station">
+        <span class="card-title"><span>${def.icone} ${def.nom}</span><span class="chip">✅ Construit</span></span>
+        <span class="muted">${where}</span>
+      </div>`;
+  });
+  return `
+    <h3 class="section-title">🍞 Ateliers</h3>
+    <div class="cards">${cards.join('')}</div>`;
+}
+
+// Interrupteur, entretien et réparation du Moulin et de la Presse (pas de niveaux).
+function stationControls(d) {
+  const maintain = maintainCost(d);
+  const repair = repairCost(d);
+  const broken = isBroken(d);
+  const maintainOk = !broken && d.usure > EPS && canPay(maintain);
+  const repairOk = broken && canPay(repair);
+  return `
+    <span class="device-actions">
+      ${switchHtml(d)}
+      <button type="button" class="btn" data-action="maintain" data-id="${d.id}"${maintainOk ? '' : ' disabled'}>Entretenir (${costLabel(maintain)})</button>
+      <button type="button" class="btn" data-action="repair" data-id="${d.id}"${repairOk ? '' : ' disabled'}>Réparer (${costLabel(repair)})</button>
+    </span>`;
+}
+
+function stationCard(id) {
+  const def = DATA.STATIONS[id];
+  const st = state.stations[id];
+  if (!st.construit) return stationBuildCard(id);
+  const job = st.tache;
+  let work;
+  if (job) {
+    const r = DATA.recipes[job.recette];
+    const pct = Math.max(0, Math.min(100, Math.round((1 - job.reste / job.duree) * 100)));
+    const left = Math.ceil(taskTimeLeft(state, id) - EPS);
+    work = `
+      <span class="muted">${r.icone} ${r.nom} · encore <span class="num">${Number.isFinite(left) ? left : '?'} s</span></span>
+      <span class="bar" role="progressbar" aria-label="Avancement : ${r.nom}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span class="bar-fill" style="width:${pct}%"></span></span>`;
+  } else {
+    work = '<span class="muted">Prête pour une nouvelle préparation.</span>';
+  }
+  let power = '';
+  if (def.electrique) {
+    const d = st.appareil;
+    const ds = deviceStatus(state, d);
+    power = `
+      <span class="muted">${ds.label}${ds.badge ? ` · ⚠️ ${ds.badge}` : ''} · <span class="num">${formatFixed(d.conso, 3)} kWh/s</span> (${formatFixed(def.kwhParS, 2)} en marche)</span>
+      ${wearHtml(d)}
+      ${stationControls(d)}`;
+  }
+  const chip = job ? '<span class="chip">⏳ Occupée</span>' : '<span class="chip">✅ Libre</span>';
+  return `
+    <div class="card station${job ? ' busy' : ''}">
+      <span class="card-title"><span>${def.icone} ${def.nom}</span>${chip}</span>
+      ${work}
+      ${power}
+    </div>`;
+}
+
+function recipeMeta(id) {
+  const r = DATA.recipes[id];
+  const out = DATA.items[recipeOutput(id)];
+  if (r.transformation) return `→ ${recipeOutputQty(id)} ${out.icone} ${out.nom.toLowerCase()}`;
+  const life = shelfLife(id);
+  return `⚡ ${out.energie} énergie · 💰 ${formatCoins(out.prix)} · se garde ${nightsLabel(life)}`;
+}
+
+function recipeCard(id) {
+  const r = DATA.recipes[id];
+  const sdef = DATA.STATIONS[r.station];
+  const status = recipeStatus(state, id);
+  const lines = status.lignes
+    .map((l) => {
+      const what = l.eau
+        ? `${formatQty(l.qte)} L d'eau`
+        : `${formatQty(l.qte)} ${l.options.map((it) => `${DATA.items[it].icone} ${DATA.items[it].nom.toLowerCase()}`).join(' ou ')}`;
+      const have = l.eau ? `${formatFixed(l.have, 1)} L dans le réservoir` : `en stock : ${formatQty(l.have)}`;
+      return `<li class="${l.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${l.ok ? '✅' : '❌'}</span> <span>${what}</span> <span class="muted">(${have})</span></li>`;
+    })
+    .join('');
+  let reason = '';
+  if (status.code === 'absente') reason = `<span class="alert">Construis d'abord ${sdef.article} ${sdef.nom}.</span>`;
+  else if (status.code === 'occupee') reason = `<span class="alert">${sdef.nom} : ${sdef.article === 'la' ? 'occupée' : 'occupé'}, attends la fin de la préparation.</span>`;
+  else if (status.code === 'manque') reason = '<span class="alert">Il manque des ingrédients.</span>';
+  const power = sdef.electrique ? ` · ${formatFixed(sdef.kwhParS, 2)} kWh/s` : '';
+  return `
+    <article class="card recipe ${status.ok ? 'ready' : 'unavailable'}">
+      <span class="card-title"><span>${r.icone} ${r.nom}</span><span class="chip">${sdef.icone} ${sdef.nom} · ${r.temps} s</span></span>
+      <span class="muted">${recipeMeta(id)}${power}</span>
+      <ul class="ingredients" aria-label="Ingrédients">${lines}</ul>
+      ${reason}
+      <button type="button" class="btn${status.ok ? ' primary' : ''}" data-action="start-recipe" data-recipe="${id}"${status.ok ? '' : ' disabled'}>Préparer</button>
+    </article>`;
+}
+
+function renderRecettes() {
+  const ids = Object.keys(DATA.STATIONS);
+  const recipes = Object.keys(DATA.recipes).sort((a, b) => ids.indexOf(DATA.recipes[a].station) - ids.indexOf(DATA.recipes[b].station));
+  const prod = productivity(state);
+  return `
+    <div class="section-head">
+      <h2>📖 Livre de recette</h2>
+      <span class="chip${prod < 1 ? ' warn' : ''}" title="Productivité : la santé de la famille ralentit les préparations">Vitesse ×${formatMult(prod)}</span>
+    </div>
+    <p class="muted">Une seule préparation à la fois par station, sans file d'attente : c'est toi qui relances. Une préparation en cours se termine pendant la nuit.</p>
+    <h3 class="section-title">Stations</h3>
+    <div class="cards">${ids.map(stationCard).join('')}</div>
+    <h3 class="section-title">Recettes</h3>
+    <div class="recipes">${recipes.map(recipeCard).join('')}</div>`;
+}
+
 /* ---------- Famille ---------- */
 
 const PORTRAITS = { 'adulte-1': '👩', 'adulte-2': '👨', 'enfant-1': '🧒', 'enfant-2': '👧' };
@@ -5469,7 +6678,7 @@ function renderFamille() {
 function unitLabel(item, qty) {
   const name = DATA.items[item].nom.toLowerCase();
   if (name.startsWith('graines ')) return qty > 1 ? name : `graine ${name.slice(8)}`;
-  return qty > 1 ? `${name}s` : name;
+  return qty > 1 && !/[sx]$/.test(name) ? `${name}s` : name;
 }
 
 function nightsLabel(n) {
@@ -5502,7 +6711,8 @@ function inventoryRow(item) {
   const reservable = reservableItems().includes(item);
   const res = state.famille.reserve[item] || 0;
   const info = [
-    it.energie ? `Énergie ${it.energie}` : '',
+    it.energie && it.edible ? `Énergie ${it.energie}` : '',
+    it.energie && !it.edible ? `Ingrédient : compte pour ${it.energie} d'énergie dans les plats` : '',
     `Vente ${formatCoins(it.prix)} 💰`,
     it.rachetable === false ? 'non rachetable' : '',
   ].filter(Boolean).join(' · ');
@@ -5688,7 +6898,8 @@ function openWakeModal(report) {
     : '';
   const family = [
     `<li>🍽️ Énergie mangée : <strong class="num">${formatNumber(shownEnergy)} / ${formatNumber(report.besoin)}</strong> (${covered} %)${eaten ? ` — ${eaten}` : ''}</li>`,
-    `<li>❤️ Santé moyenne : <strong class="num">${formatFixed(report.santeAvant, 0)} → ${formatFixed(report.santeApres, 0)}</strong> (${formatRate(report.santeApres - report.santeAvant, 0)})</li>`,
+    `<li>❤️ Santé moyenne : <strong class="num">${formatFixed(report.santeAvant, 0)} → ${formatFixed(report.santeApres, 0)}</strong> (${formatRate(report.santeApres - report.santeAvant, 0)})${report.bonusPlats > 0 ? ` · bonus des plats : +${report.bonusPlats}` : ''}</li>`,
+    Object.keys(report.termine).length ? `<li>🍳 Terminé pendant la nuit : <strong>${itemsSummary(report.termine)}</strong></li>` : '',
     ...report.nouveauxMalades.map((nom) => `<li class="alert">🤒 ${nom} est tombé malade : il faut le soigner.</li>`),
     report.poules > 0 || report.oeufs > 0
       ? `<li>🥚 Œufs pondus : <strong class="num">${formatNumber(report.oeufs)}</strong> · 🌾 Blé consommé par les poules : <strong class="num">${formatQty(report.bleConsomme)}</strong></li>`
@@ -5877,6 +7088,39 @@ document.addEventListener('click', (e) => {
       if (result.ok) showToast(`Acheté : 1 ${DATA.ANIMAUX[target.dataset.kind].icone} (−${formatCoins(result.cost)} 💰)`);
       break;
     }
+    case 'build-station': {
+      const id = target.dataset.station;
+      const result = applyResult(buildStation(state, id));
+      if (result.ok) {
+        const def = DATA.STATIONS[id];
+        showToast(`${def.icone} ${def.nom} construit${def.article === 'la' ? 'e' : ''} (−${formatCoins(result.cost)} 💰)${def.debloque ? ' · onglet Livre de recette débloqué !' : ''}`);
+      }
+      break;
+    }
+    case 'start-recipe': {
+      const id = target.dataset.recipe;
+      const result = applyResult(startRecipe(state, id));
+      if (result.ok) {
+        syncJobs();
+        showToast(`${DATA.recipes[id].icone} ${DATA.recipes[id].nom} : préparation lancée`);
+      }
+      break;
+    }
+    case 'test-stations':
+      applyResult(testBuildStations(state));
+      break;
+    case 'test-flour':
+      applyResult(testAddFlour(state));
+      break;
+    case 'test-oil':
+      applyResult(testAddOil(state));
+      break;
+    case 'test-eggs':
+      applyResult(testAddEggs(state));
+      break;
+    case 'test-wear-mill':
+      applyResult(testWearMill(state));
+      break;
     case 'test-wheat':
       applyResult(testAddWheat(state));
       break;
@@ -6031,6 +7275,7 @@ document.getElementById('modal-root').addEventListener('click', (e) => {
 /* ---------- démarrage ---------- */
 
 state = loadOrCreateState();
+syncJobs();
 
 const autosaveTimer = setInterval(persistState, AUTOSAVE_MS);
 window.addEventListener('beforeunload', persistState);
