@@ -511,6 +511,100 @@ select {
   z-index: 200;
   text-align: center;
 }
+
+/* ---------- Lot 2 : potager, famille, inventaire, aperçu du repas ---------- */
+
+body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aperçu du repas */
+.toast { bottom: 120px; }
+
+.sleep-bar .meal-preview {
+  max-width: 720px;
+  margin: 0 auto 6px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sleep-bar .meal-preview.short { color: var(--danger); }
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+
+.section-head h3, .section-title { margin: 0; font-size: 1.05rem; }
+.section-title { margin-top: 22px; margin-bottom: 10px; }
+
+.plots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .plots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.plot { padding: 12px; gap: 6px; }
+.plot.mature { border-color: var(--accent); border-width: 2px; }
+.plot .btn { width: 100%; padding: 0 8px; font-size: 0.92rem; }
+.plot-emoji { font-size: 2rem; line-height: 1.1; }
+.plot-foot { margin-top: 12px; }
+
+.portraits {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+@media (min-width: 640px) {
+  .portraits { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.portrait { align-items: flex-start; }
+.portrait .btn { width: 100%; padding: 0 8px; font-size: 0.92rem; }
+.portrait-emoji { font-size: 2.2rem; line-height: 1.1; }
+.portrait .bar { width: 100%; }
+
+.inv-group { margin: 12px 0 20px; }
+.inv-group h3 { margin: 0 0 8px; font-size: 1.05rem; }
+
+.inv-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.inv-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.reserve { gap: 10px; }
+.step-btn { min-width: 44px; padding: 0; font-size: 1.3rem; line-height: 1; }
+
+.plant-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 14px;
+  text-align: left;
+}
+
+.modal .stack { margin: 12px 0; }
 </style>
 </head>
 <body>
@@ -544,6 +638,11 @@ select {
         <button class="btn" type="button" data-action="test-wear">Usure à 100 %</button>
       </div>
       <div class="row">
+        <button class="btn" type="button" data-action="test-seeds">+10 de chaque graine</button>
+        <button class="btn" type="button" data-action="test-ripen">Faire mûrir les parcelles</button>
+        <button class="btn" type="button" data-action="test-sick">Santé à 0</button>
+      </div>
+      <div class="row">
         <button class="btn" type="button" data-action="test-skip-awake">Ignorer l'éveil minimal</button>
         <button class="btn" type="button" data-action="test-nights-1">Passer 1 nuit</button>
         <button class="btn" type="button" data-action="test-nights-5">Passer 5 nuits</button>
@@ -573,6 +672,8 @@ const DATA = {
     // Les appareils de départ sont offerts : prix d'achat 0, donc entretien
     // et réparation gratuits pour eux (l'entretien vaut 20 % du prix d'achat).
     DEVICE_PRICE: 0,
+    // Inventaire de départ (section 8.1) : 160 conserves = 10 nuits, plus le kit de graines.
+    INVENTAIRE: { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 },
   },
 
   // Temps : la journée commence à 6 h, 1 heure de jeu = 30 s d'éveil.
@@ -615,6 +716,89 @@ const DATA = {
     MAINTAIN_RATE: 0.2, // part du prix d'achat
     REPAIR_RATE: 0.5,
   },
+
+  /* ---------- Lot 2 : objets, cultures, potager, famille ---------- */
+
+  // Objets (sections 1.1, 8.1 et 8.9). energie : énergie par unité (aliments
+  // seulement) ; prix : prix de vente fixe en pièces ; edible : la famille peut
+  // le manger ; category : légume, fruit, plat, graine, ingrédient, produit,
+  // conserve. nom et icone servent uniquement à l'affichage.
+  items: {
+    carotte:        { nom: 'Carotte',              icone: '🥕', energie: 6,  prix: 1, edible: true,  category: 'légume' },
+    patate:         { nom: 'Patate',               icone: '🥔', energie: 15, prix: 2, edible: true,  category: 'légume' },
+    tomate:         { nom: 'Tomate',               icone: '🍅', energie: 6,  prix: 1, edible: true,  category: 'légume' },
+    courgette:      { nom: 'Courgette',            icone: '🥒', energie: 8,  prix: 2, edible: true,  category: 'légume' },
+    aubergine:      { nom: 'Aubergine',            icone: '🍆', energie: 8,  prix: 2, edible: true,  category: 'légume' },
+    // Non périssable, non rachetable au Comptoir (Lot 3).
+    conserve:       { nom: 'Conserve',             icone: '🥫', energie: 20, prix: 3, edible: true,  category: 'conserve', rachetable: false },
+    graine_carotte:   { nom: 'Graines de carotte',   icone: '🌱', prix: 1, edible: false, category: 'graine' },
+    graine_tomate:    { nom: 'Graines de tomate',    icone: '🌱', prix: 1, edible: false, category: 'graine' },
+    graine_courgette: { nom: 'Graines de courgette', icone: '🌱', prix: 1, edible: false, category: 'graine' },
+    graine_aubergine: { nom: 'Graines d\'aubergine', icone: '🌱', prix: 1, edible: false, category: 'graine' },
+  },
+
+  // Cultures (sections 6.3 et 8.3). stades : nuits arrosées pour mûrir ;
+  // litres : eau par arrosage ; rendement : unités par récolte.
+  // graines.mode :
+  //   'recolte' : la récolte rend aussi min à max graines ;
+  //   'plant'   : l'item récolté sert lui-même de plant (1 patate = 1 plant) ;
+  //   'montee'  : option « monter en graine » : stadesSupp stades de plus, puis
+  //               quantite graines à la place de la récolte.
+  crops: {
+    carotte:   { nom: 'Carotte',   icone: '🥕', lieux: ['potager'], stades: 4, litres: 2, rendement: 10,
+                 graines: { item: 'graine_carotte', mode: 'montee', stadesSupp: 2, quantite: 6 } },
+    patate:    { nom: 'Patate',    icone: '🥔', lieux: ['potager'], stades: 6, litres: 3, rendement: 8,
+                 graines: { item: 'patate', mode: 'plant' } },
+    tomate:    { nom: 'Tomate',    icone: '🍅', lieux: ['potager'], stades: 5, litres: 3, rendement: 10,
+                 graines: { item: 'graine_tomate', mode: 'recolte', min: 1, max: 2 } },
+    courgette: { nom: 'Courgette', icone: '🥒', lieux: ['potager'], stades: 5, litres: 4, rendement: 6,
+                 graines: { item: 'graine_courgette', mode: 'recolte', min: 1, max: 2 } },
+    aubergine: { nom: 'Aubergine', icone: '🍆', lieux: ['potager'], stades: 6, litres: 4, rendement: 6,
+                 graines: { item: 'graine_aubergine', mode: 'recolte', min: 1, max: 2 } },
+  },
+
+  // Potager (section 8.3) : parcelles par niveau (index 0 = niveau 1) et coût
+  // pour atteindre chaque niveau (index 0 = niveau 1, non utilisé).
+  POTAGER: {
+    LIEU: 'potager',
+    PARCELLES: [6, 9, 12, 16, 20],
+    COUT: [0, 80, 200, 450, 1000],
+  },
+
+  // Famille et santé (sections 1.1, 1.4, 6.9 et 8.8).
+  FAMILY: {
+    MEMBRES: [
+      { id: 'adulte-1', nom: 'Adulte 1', enfant: false },
+      { id: 'adulte-2', nom: 'Adulte 2', enfant: false },
+      { id: 'enfant-1', nom: 'Enfant 1', enfant: true },
+      { id: 'enfant-2', nom: 'Enfant 2', enfant: true },
+    ],
+    AJ: { adulte: 100, enfant: 60 }, // énergie par jour et par membre
+    SANTE_DEPART: 100,
+    SANTE_MAX: 100,
+    // Couverture minimale du besoin (0 à 1) → variation de santé, du palier le
+    // plus haut au plus bas.
+    VARIATION: [
+      { min: 1, delta: 5 },
+      { min: 0.75, delta: -5 },
+      { min: 0.5, delta: -10 },
+      { min: 0, delta: -20 },
+    ],
+    // Santé moyenne minimale → multiplicateur de productivité (actions au clic).
+    PRODUCTIVITE: [
+      { min: 80, mult: 1 },
+      { min: 50, mult: 0.8 },
+      { min: 20, mult: 0.5 },
+      { min: 0, mult: 0.25 },
+    ],
+    // Soin : base × croissance^(soins déjà payés) ; il remet la santé à SANTE.
+    SOIN: { base: 20, croissance: 1.5, SANTE: 50 },
+    // Sans soin, un malade regagne ce nombre de points par nuit où le besoin est
+    // couvert à 100 %. Il guérit en atteignant la santé remise par un soin.
+    RECUPERATION_MALADE: 2,
+    // Réserve de semences de départ : quantité par item que la famille ne mange jamais.
+    RESERVE_DEPART: { patate: 6 },
+  },
 };
 
 /* ==========================================================================
@@ -636,14 +820,13 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 2;
+const STATE_VERSION = 3;
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
-// Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Vide au
-// Lot 1 (aucun système « par jour » n'existe encore) ; les lots suivants y
-// ajouteront leurs fonctions (repas, pousse, ponte, péremption...).
-// Chaque étape reçoit l'état et le modifie.
-const NIGHT_STEPS = [];
+// Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
+// repas et santé, puis pousse. Les lots suivants y ajouteront leurs fonctions
+// (ponte, péremption...). Chaque étape reçoit l'état et le modifie.
+const NIGHT_STEPS = [feedFamily, growAll];
 
 /* ---------- appareils : fabrication et sélecteurs ---------- */
 
@@ -1000,6 +1183,356 @@ function repairDevice(state, id) {
   return { ok: true, cost };
 }
 
+/* ---------- Lot 2 : inventaire ---------- */
+
+// L'inventaire est ici un simple objet { item: quantité }. Le Lot 3 le
+// remplacera par des lots datés : tout le reste du code passe uniquement par
+// ces trois fonctions.
+function countItem(state, item) {
+  return state.inventaire[item] || 0;
+}
+
+function addItem(state, item, qty) {
+  if (!DATA.items[item] || !(qty > 0)) return 0;
+  state.inventaire[item] = countItem(state, item) + qty;
+  return qty;
+}
+
+// Retire jusqu'à `qty` unités et renvoie le nombre réellement retiré.
+function takeItem(state, item, qty) {
+  const n = Math.min(countItem(state, item), qty);
+  if (!(n > 0)) return 0;
+  const left = countItem(state, item) - n;
+  if (left > 0) state.inventaire[item] = left;
+  else delete state.inventaire[item];
+  return n;
+}
+
+/* ---------- Lot 2 : aléatoire à graine (état dans state.rngSeed) ---------- */
+
+// Même suite que mulberry32(graine), mais l'état du générateur vit dans
+// state.rngSeed : il est sauvegardé avec la partie et reste reproductible.
+function nextRandom(state) {
+  const a = ((state.rngSeed >>> 0) + 0x6d2b79f5) | 0;
+  state.rngSeed = a;
+  let t = Math.imul(a ^ (a >>> 15), 1 | a);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+// Entier tiré dans [min, max], bornes comprises.
+function randomInt(state, min, max) {
+  return min + Math.floor(nextRandom(state) * (max - min + 1));
+}
+
+/* ---------- Lot 2 : famille et santé ---------- */
+
+function makeMember(def) {
+  return { id: def.id, nom: def.nom, enfant: def.enfant, sante: DATA.FAMILY.SANTE_DEPART, malade: false };
+}
+
+function familyNeed(state) {
+  return state.famille.membres.reduce((t, m) => t + DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte'], 0);
+}
+
+// Moyenne brute des santés (sert aux comptes rendus).
+function rawAverageHealth(state) {
+  const m = state.famille.membres;
+  return m.length ? m.reduce((t, x) => t + x.sante, 0) / m.length : 0;
+}
+
+// Santé moyenne pour la productivité : un membre malade compte pour 0.
+function averageHealth(state) {
+  const m = state.famille.membres;
+  return m.length ? m.reduce((t, x) => t + (x.malade ? 0 : x.sante), 0) / m.length : 0;
+}
+
+// Multiplicateur de productivité. Il ne s'applique qu'aux actions au clic
+// (récolte manuelle) : jamais aux automatisations des lots suivants.
+function productivity(state) {
+  const h = averageHealth(state);
+  for (const tier of DATA.FAMILY.PRODUCTIVITE) {
+    if (h + EPS >= tier.min) return tier.mult;
+  }
+  return DATA.FAMILY.PRODUCTIVITE[DATA.FAMILY.PRODUCTIVITE.length - 1].mult;
+}
+
+// Variation de santé d'une nuit selon la couverture du besoin (0 à 1).
+function healthDelta(coverage) {
+  for (const tier of DATA.FAMILY.VARIATION) {
+    if (coverage + EPS >= tier.min) return tier.delta;
+  }
+  return DATA.FAMILY.VARIATION[DATA.FAMILY.VARIATION.length - 1].delta;
+}
+
+// Aliments dans l'ordre où la famille les mange : énergie décroissante, les
+// conserves en dernier.
+function mealOrder() {
+  const keys = Object.keys(DATA.items).filter((k) => DATA.items[k].edible);
+  const isCanned = (k) => (DATA.items[k].category === 'conserve' ? 1 : 0);
+  return keys.sort((a, b) => isCanned(a) - isCanned(b) || DATA.items[b].energie - DATA.items[a].energie);
+}
+
+// Repas de la nuit, calculé sans rien modifier (sert aussi à l'aperçu de
+// Dormir). Les quantités de la réserve de semences ne sont jamais mangées.
+function planMeal(state) {
+  const need = familyNeed(state);
+  let covered = 0;
+  const mange = {};
+  for (const item of mealOrder()) {
+    if (covered >= need - EPS) break;
+    const spare = countItem(state, item) - (state.famille.reserve[item] || 0);
+    if (spare <= 0) continue;
+    const energy = DATA.items[item].energie;
+    const n = Math.min(spare, Math.ceil((need - covered) / energy - EPS));
+    if (n <= 0) continue;
+    mange[item] = n;
+    covered += n * energy;
+  }
+  return {
+    besoin: need,
+    energie: covered,
+    mange,
+    couverture: need > 0 ? Math.min(1, covered / need) : 1,
+  };
+}
+
+// Applique la variation de santé. Un membre qui tombe à 0 devient malade ; un
+// malade regagne RECUPERATION_MALADE points par nuit couverte à 100 % (sinon il
+// subit la variation normale) et guérit en atteignant la santé d'un soin.
+// Renvoie les membres devenus malades cette nuit.
+function updateHealth(state, coverage) {
+  const F = DATA.FAMILY;
+  const delta = healthDelta(coverage);
+  const fed = coverage + EPS >= 1;
+  const nouveaux = [];
+  for (const m of state.famille.membres) {
+    const gain = m.malade && fed ? F.RECUPERATION_MALADE : delta;
+    m.sante = Math.max(0, Math.min(F.SANTE_MAX, m.sante + gain));
+    if (m.malade && m.sante >= F.SOIN.SANTE) {
+      m.malade = false;
+    } else if (!m.malade && m.sante <= 0) {
+      m.malade = true;
+      nouveaux.push(m.nom);
+    }
+  }
+  return nouveaux;
+}
+
+function newNightStats() {
+  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [] };
+}
+
+// Première étape nocturne : le repas, puis la santé.
+function feedFamily(state) {
+  const plan = planMeal(state);
+  for (const [item, n] of Object.entries(plan.mange)) takeItem(state, item, n);
+  const avant = rawAverageHealth(state);
+  const nouveaux = updateHealth(state, plan.couverture);
+  state.nuit = {
+    besoin: plan.besoin,
+    energie: plan.energie,
+    couverture: plan.couverture,
+    mange: plan.mange,
+    santeAvant: avant,
+    santeApres: rawAverageHealth(state),
+    nouveauxMalades: nouveaux,
+  };
+  return plan;
+}
+
+function careCost(state) {
+  const c = DATA.FAMILY.SOIN;
+  return Math.round(c.base * Math.pow(c.croissance, state.famille.soinsPayes));
+}
+
+function findMember(state, id) {
+  return state.famille.membres.find((m) => m.id === id) || null;
+}
+
+// Soigne un malade : coût croissant, santé remise à SOIN.SANTE.
+function heal(state, memberId) {
+  const m = findMember(state, memberId);
+  if (!m) return fail('Membre introuvable.');
+  if (!m.malade) return fail(`${m.nom} n'est pas malade.`);
+  const cost = careCost(state);
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  state.famille.soinsPayes += 1;
+  m.sante = DATA.FAMILY.SOIN.SANTE;
+  m.malade = false;
+  return { ok: true, cost };
+}
+
+// Items que la famille pourrait manger mais qui servent aussi de plants
+// (aujourd'hui la patate) : ce sont ceux dont la réserve se règle.
+function reservableItems() {
+  return Object.keys(DATA.crops)
+    .map((c) => DATA.crops[c].graines.item)
+    .filter((item, i, all) => DATA.items[item].edible && all.indexOf(item) === i);
+}
+
+function setSeedReserve(state, item, qty) {
+  if (!DATA.items[item]) return fail('Objet inconnu.');
+  const n = Math.max(0, Math.floor(Number(qty)));
+  if (!Number.isFinite(n)) return fail('Quantité invalide.');
+  state.famille.reserve[item] = n;
+  return { ok: true, reserve: n };
+}
+
+/* ---------- Lot 2 : potager ---------- */
+
+function makePlot(n) {
+  return { id: `${DATA.POTAGER.LIEU}-${n}`, lieu: DATA.POTAGER.LIEU, culture: null, stade: 0, arrose: false, montee: false };
+}
+
+function makePlots(count) {
+  const plots = [];
+  for (let i = 1; i <= count; i++) plots.push(makePlot(i));
+  return plots;
+}
+
+function findPlot(state, id) {
+  return state.potager.parcelles.find((p) => p.id === id) || null;
+}
+
+function seedItem(culture) {
+  return DATA.crops[culture].graines.item;
+}
+
+function plantableCrops(lieu) {
+  return Object.keys(DATA.crops).filter((c) => DATA.crops[c].lieux.includes(lieu));
+}
+
+// Dernier stade d'une plante : la montée en graine de la carotte en ajoute.
+function maxStage(plot) {
+  const def = DATA.crops[plot.culture];
+  return def.stades + (plot.montee ? def.graines.stadesSupp : 0);
+}
+
+function isMature(plot) {
+  return !!plot.culture && plot.stade >= maxStage(plot);
+}
+
+// Rendement d'une récolte au clic (× productivité) ou automatique (× 1).
+function harvestYield(state, culture, auto = false) {
+  return Math.round(DATA.crops[culture].rendement * (auto ? 1 : productivity(state)));
+}
+
+// Parcelles mûres regroupées par culture et par mode : [{ culture, nombre, montee }].
+function readyCrops(state) {
+  const out = [];
+  for (const p of state.potager.parcelles) {
+    if (!isMature(p)) continue;
+    let e = out.find((x) => x.culture === p.culture && x.montee === p.montee);
+    if (!e) {
+      e = { culture: p.culture, nombre: 0, montee: p.montee };
+      out.push(e);
+    }
+    e.nombre += 1;
+  }
+  return out;
+}
+
+function plant(state, plotId, culture) {
+  const plot = findPlot(state, plotId);
+  if (!plot) return fail('Parcelle introuvable.');
+  const def = DATA.crops[culture];
+  if (!def) return fail('Culture inconnue.');
+  if (plot.culture) return fail('Cette parcelle est déjà plantée.');
+  if (!def.lieux.includes(plot.lieu)) return fail(`${def.nom} ne se plante pas ici.`);
+  if (takeItem(state, seedItem(culture), 1) < 1) return fail(`Pas de graines : ${def.nom}.`);
+  plot.culture = culture;
+  plot.stade = 0;
+  plot.arrose = false;
+  plot.montee = false;
+  return { ok: true };
+}
+
+// Une fois par nuit et par parcelle ; consomme l'eau du réservoir.
+function water(state, plotId) {
+  const plot = findPlot(state, plotId);
+  if (!plot) return fail('Parcelle introuvable.');
+  if (!plot.culture) return fail('Rien n\'est planté ici.');
+  if (plot.arrose) return fail('Déjà arrosée : une fois par nuit.');
+  if (isMature(plot)) return fail('Déjà mûre, inutile d\'arroser.');
+  const litres = DATA.crops[plot.culture].litres;
+  if (state.eau + EPS < litres) return fail('Pas assez d\'eau dans le réservoir.');
+  state.eau = Math.max(0, state.eau - litres);
+  plot.arrose = true;
+  return { ok: true, litres };
+}
+
+// Carotte seulement, et seulement une fois mûre : elle reste alors 2 stades de
+// plus et rend des graines au lieu de carottes. Rebasculer annule.
+function toggleBolting(state, plotId) {
+  const plot = findPlot(state, plotId);
+  if (!plot) return fail('Parcelle introuvable.');
+  if (!plot.culture) return fail('Rien n\'est planté ici.');
+  const def = DATA.crops[plot.culture];
+  if (def.graines.mode !== 'montee') return fail(`${def.nom} ne monte pas en graine.`);
+  if (plot.stade < def.stades) return fail('Pas encore mûre.');
+  plot.montee = !plot.montee;
+  return { ok: true, montee: plot.montee };
+}
+
+// Récolte : la parcelle est libérée. `auto` = true pour une automatisation
+// (non pénalisée par la santé) ; le clic du joueur applique la productivité.
+function harvest(state, plotId, auto = false) {
+  const plot = findPlot(state, plotId);
+  if (!plot) return fail('Parcelle introuvable.');
+  if (!plot.culture) return fail('Rien à récolter ici.');
+  if (!isMature(plot)) return fail('Pas encore mûre.');
+  const culture = plot.culture;
+  const def = DATA.crops[culture];
+  const items = {};
+  const gain = (item, qty) => {
+    if (qty > 0) {
+      addItem(state, item, qty);
+      items[item] = (items[item] || 0) + qty;
+    }
+  };
+  if (plot.montee) {
+    gain(def.graines.item, def.graines.quantite);
+  } else {
+    gain(culture, harvestYield(state, culture, auto));
+    if (def.graines.mode === 'recolte') gain(def.graines.item, randomInt(state, def.graines.min, def.graines.max));
+  }
+  plot.culture = null;
+  plot.stade = 0;
+  plot.arrose = false;
+  plot.montee = false;
+  return { ok: true, culture, items };
+}
+
+// Deuxième étape nocturne : +1 stade si la parcelle a été arrosée (jusqu'au
+// dernier stade), puis remise à zéro de l'arrosage.
+function growAll(state) {
+  for (const p of state.potager.parcelles) {
+    if (!p.culture) {
+      p.arrose = false;
+      continue;
+    }
+    if (p.arrose && p.stade < maxStage(p)) p.stade += 1;
+    p.arrose = false;
+  }
+}
+
+function potagerUpgradeCost(state) {
+  return state.potager.niveau >= DATA.LEVEL_MAX ? null : DATA.POTAGER.COUT[state.potager.niveau];
+}
+
+function upgradePotager(state) {
+  const cost = potagerUpgradeCost(state);
+  if (cost === null) return fail('Niveau maximum atteint.');
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  state.potager.niveau += 1;
+  const target = DATA.POTAGER.PARCELLES[state.potager.niveau - 1];
+  for (let n = state.potager.parcelles.length + 1; n <= target; n++) state.potager.parcelles.push(makePlot(n));
+  return { ok: true, cost };
+}
+
 /* ---------- la nuit ---------- */
 
 function canSleep(state) {
@@ -1017,6 +1550,15 @@ function buildMorningReport(state) {
     capaciteEau: tankCapacity(state),
     aEntretenir: allDevices(state).filter(needsService).map(aSurveiller),
     enPanne: allDevices(state).filter(isBroken).map(aSurveiller),
+    // Lot 2 : repas, santé et récoltes prêtes.
+    besoin: state.nuit.besoin,
+    energieMangee: state.nuit.energie,
+    couverture: state.nuit.couverture,
+    mange: { ...state.nuit.mange },
+    santeAvant: state.nuit.santeAvant,
+    santeApres: state.nuit.santeApres,
+    nouveauxMalades: [...state.nuit.nouveauxMalades],
+    pretes: readyCrops(state),
   };
 }
 
@@ -1025,6 +1567,7 @@ function buildMorningReport(state) {
 // (l'heure repart à 6 h), rapport de réveil.
 function sleep(state) {
   if (!canSleep(state)) return null;
+  state.nuit = newNightStats();
   for (const step of NIGHT_STEPS) step(state);
   state.day += 1;
   state.awakeSeconds = 0;
@@ -1070,6 +1613,29 @@ function testSkipAwake(state) {
   return { ok: true };
 }
 
+// Lot 2 : 10 de chaque graine (et de chaque plant).
+function testAddSeeds(state) {
+  for (const culture of Object.keys(DATA.crops)) addItem(state, seedItem(culture), 10);
+  return { ok: true };
+}
+
+// Lot 2 : toutes les parcelles plantées deviennent mûres.
+function testRipenAll(state) {
+  for (const p of state.potager.parcelles) {
+    if (p.culture) p.stade = maxStage(p);
+  }
+  return { ok: true };
+}
+
+// Lot 2 : santé de toute la famille à 0 (tous malades).
+function testSetHealthZero(state) {
+  for (const m of state.famille.membres) {
+    m.sante = 0;
+    m.malade = true;
+  }
+  return { ok: true };
+}
+
 function testSleepNights(state, count) {
   let report = null;
   for (let i = 0; i < count; i++) {
@@ -1077,6 +1643,20 @@ function testSleepNights(state, count) {
     report = sleep(state);
   }
   return { ok: true, report };
+}
+
+// Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
+function startHousehold() {
+  return {
+    inventaire: { ...DATA.START.INVENTAIRE },
+    potager: { niveau: 1, parcelles: makePlots(DATA.POTAGER.PARCELLES[0]) },
+    famille: {
+      membres: DATA.FAMILY.MEMBRES.map(makeMember),
+      soinsPayes: 0,
+      reserve: { ...DATA.FAMILY.RESERVE_DEPART },
+    },
+    nuit: newNightStats(),
+  };
 }
 
 // État initial du jeu. `seed` doit être fourni par l'appelant (l'app),
@@ -1088,9 +1668,10 @@ function createInitialState(seed = 1) {
     awakeSeconds: 0,
     pieces: DATA.START.PIECES,
     rngSeed: seed >>> 0,
-    unlockedTabs: ['ferme', 'inventaire', 'comptoir'],
+    unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'],
     stats: {},
     ...startFarm(),
+    ...startHousehold(),
   };
 }
 
@@ -1101,6 +1682,12 @@ const MIGRATIONS = {
   0: (state) => ({ ...state, version: 1 }),
   // v1 (Lot 0) → v2 (Lot 1) : ajout du parc d'appareils, de l'eau et du rapport.
   1: (state) => ({ ...startFarm(), ...state, version: 2 }),
+  // v2 (Lot 1) → v3 (Lot 2) : inventaire de départ, potager, famille, onglet Famille.
+  2: (state) => {
+    const tabs = Array.isArray(state.unlockedTabs) ? [...state.unlockedTabs] : ['ferme', 'inventaire', 'comptoir'];
+    if (!tabs.includes('famille')) tabs.splice(Math.min(1, tabs.length), 0, 'famille');
+    return { ...startHousehold(), ...state, unlockedTabs: tabs, version: 3 };
+  },
 };
 
 // Applique les migrations successives à une sauvegarde { v, t, s } (ou à un
@@ -1178,6 +1765,11 @@ function formatRate(value, digits = 2) {
 function formatHour(h) {
   return `${h} h`;
 }
+
+// Multiplicateur de productivité : « 1 », « 0,8 », « 0,25 ».
+function formatMult(m) {
+  return String(m).replace('.', ',');
+}
 </script>
 
 <script id="tests" type="text/plain">
@@ -1230,12 +1822,12 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 2);
+  assertEqual(s.version, 3);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
   assertEqual(s.rngSeed, 42);
-  assertEqual(s.unlockedTabs, ['ferme', 'inventaire', 'comptoir']);
+  assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir']);
   assertEqual(s.stats, {});
 });
 
@@ -1260,16 +1852,16 @@ test('migration factice v0 → version courante', () => {
   const legacy = { day: 3, awakeSeconds: 10, pieces: 80, rngSeed: 9, unlockedTabs: ['ferme'], stats: {} };
   // pas de champ `version` : doit être traité comme version 0 et migré jusqu'au bout
   const migrated = migrate({ v: 0, t: Date.now(), s: legacy });
-  assertEqual(migrated.version, 2);
+  assertEqual(migrated.version, STATE_VERSION);
   assertEqual(migrated.day, 3);
   assertEqual(migrated.pieces, 80);
   assertEqual(migrated.panneaux.length, 1);
 });
 
-test('migration v1 (Lot 0) → v2 : garde la partie et ajoute le parc', () => {
+test('migration v1 (Lot 0) → version courante : garde la partie et ajoute le parc', () => {
   const v1 = { version: 1, day: 4, awakeSeconds: 12, pieces: 200, rngSeed: 3, unlockedTabs: ['ferme'], stats: { a: 1 } };
   const m = migrate({ v: 1, t: 0, s: v1 });
-  assertEqual(m.version, 2);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual(m.day, 4);
   assertEqual(m.pieces, 200);
   assertEqual(m.stats, { a: 1 });
@@ -1284,8 +1876,8 @@ test('migration v1 (Lot 0) → v2 : garde la partie et ajoute le parc', () => {
 
 test('migrate() ne plante pas sur une entrée déjà à jour', () => {
   const s = createInitialState(5);
-  const migrated = migrate({ v: 2, t: Date.now(), s });
-  assertEqual(migrated.version, 2);
+  const migrated = migrate({ v: STATE_VERSION, t: Date.now(), s });
+  assertEqual(migrated.version, STATE_VERSION);
   assertEqual(migrated.pieces, 50);
   assertEqual(migrated.panneaux.length, 1);
 });
@@ -1820,6 +2412,644 @@ test('formatage : pièces et puissances', () => {
   assertEqual(formatRate(0.0004), '0,00');
 });
 
+/* ---------- Lot 2 : potager, famille, santé, conserves ---------- */
+
+// État de test : réservoir plein d'eau (le potager s'arrose avec).
+function garden() {
+  const s = createInitialState(1);
+  s.pompe.allume = false;
+  s.eau = 40;
+  return s;
+}
+
+// Plante une culture sur une parcelle et la fait mûrir d'un coup.
+function plantRipe(s, plotId, culture) {
+  assert(plant(s, plotId, culture).ok, `planter ${culture}`);
+  const p = findPlot(s, plotId);
+  p.stade = maxStage(p);
+  return p;
+}
+
+function setHealth(s, value) {
+  for (const m of s.famille.membres) {
+    m.sante = value;
+    m.malade = false;
+  }
+}
+
+test('DATA Lot 2 : objets, énergies et prix de vente', () => {
+  const it = DATA.items;
+  assertEqual([it.carotte.energie, it.carotte.prix], [6, 1]);
+  assertEqual([it.patate.energie, it.patate.prix], [15, 2]);
+  assertEqual([it.tomate.energie, it.tomate.prix], [6, 1]);
+  assertEqual([it.courgette.energie, it.courgette.prix], [8, 2]);
+  assertEqual([it.aubergine.energie, it.aubergine.prix], [8, 2]);
+  assertEqual([it.conserve.energie, it.conserve.prix], [20, 3]);
+  assertEqual(it.conserve.rachetable, false);
+  assertEqual(it.conserve.category, 'conserve');
+  for (const k of ['graine_carotte', 'graine_tomate', 'graine_courgette', 'graine_aubergine']) {
+    assertEqual([it[k].prix, it[k].edible, it[k].category], [1, false, 'graine']);
+  }
+  for (const k of Object.keys(it)) {
+    assert(typeof it[k].edible === 'boolean' && typeof it[k].category === 'string', `${k} : edible et category`);
+  }
+});
+
+test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
+  const c = DATA.crops;
+  assertEqual(Object.keys(c), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine']);
+  assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].stades), [4, 6, 5, 5, 6]);
+  assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].litres), [2, 3, 3, 4, 4]);
+  assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].rendement), [10, 8, 10, 6, 6]);
+  assertEqual(c.carotte.graines, { item: 'graine_carotte', mode: 'montee', stadesSupp: 2, quantite: 6 });
+  assertEqual(c.patate.graines.mode, 'plant');
+  for (const k of ['tomate', 'courgette', 'aubergine']) {
+    assertEqual([c[k].graines.mode, c[k].graines.min, c[k].graines.max], ['recolte', 1, 2]);
+  }
+  for (const k of Object.keys(c)) assertEqual(c[k].lieux, ['potager']);
+});
+
+test('état initial Lot 2 : inventaire, potager de 6 parcelles, famille de 4 à 100', () => {
+  const s = createInitialState(1);
+  assertEqual(s.inventaire, { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 });
+  assertEqual(s.pieces, 50);
+  assertEqual(s.potager.niveau, 1);
+  assertEqual(s.potager.parcelles.length, 6);
+  assertEqual(s.potager.parcelles.every((p) => p.culture === null && p.stade === 0 && !p.arrose && !p.montee), true);
+  assertEqual(s.famille.membres.length, 4);
+  assertEqual(s.famille.membres.filter((m) => m.enfant).length, 2);
+  assertEqual(s.famille.membres.every((m) => m.sante === 100 && m.malade === false), true);
+  assertEqual(s.famille.soinsPayes, 0);
+});
+
+test('inventaire : add, take et count', () => {
+  const s = garden();
+  assertEqual(countItem(s, 'conserve'), 160);
+  assertEqual(countItem(s, 'tomate'), 0);
+  addItem(s, 'tomate', 3);
+  assertEqual(countItem(s, 'tomate'), 3);
+  assertEqual(takeItem(s, 'tomate', 2), 2);
+  assertEqual(countItem(s, 'tomate'), 1);
+  assertEqual(takeItem(s, 'tomate', 5), 1, 'ne retire pas plus que le stock');
+  assertEqual(countItem(s, 'tomate'), 0);
+  assertEqual('tomate' in s.inventaire, false, 'une quantité nulle disparaît de l\'objet');
+  assertEqual(takeItem(s, 'tomate', 1), 0);
+  assertEqual(addItem(s, 'inconnu', 3), 0);
+  assertEqual(addItem(s, 'tomate', 0), 0);
+  assertEqual(countItem(s, 'inconnu'), 0);
+});
+
+test('planter : consomme une graine, refus sans graine, sur parcelle occupée ou culture inconnue', () => {
+  const s = garden();
+  assertEqual(plant(s, 'potager-1', 'carotte').ok, true);
+  assertEqual(countItem(s, 'graine_carotte'), 9);
+  const p = findPlot(s, 'potager-1');
+  assertEqual([p.culture, p.stade, p.arrose, p.montee], ['carotte', 0, false, false]);
+  assertEqual(plant(s, 'potager-1', 'tomate').ok, false, 'parcelle occupée');
+  assertEqual(countItem(s, 'graine_tomate'), 4);
+  assertEqual(plant(s, 'potager-2', 'courgette').ok, false, 'pas de graines de courgette');
+  assertEqual(findPlot(s, 'potager-2').culture, null);
+  assertEqual(plant(s, 'potager-2', 'ble').ok, false, 'culture inconnue');
+  assertEqual(plant(s, 'potager-99', 'carotte').ok, false, 'parcelle inconnue');
+  // la patate sert de plant : 1 patate = 1 plant
+  assertEqual(plant(s, 'potager-2', 'patate').ok, true);
+  assertEqual(countItem(s, 'patate'), 5);
+});
+
+test('pousse : +1 stade seulement si la parcelle a été arrosée, puis arrosage remis à zéro', () => {
+  const s = garden();
+  plant(s, 'potager-1', 'carotte');
+  plant(s, 'potager-2', 'carotte');
+  assertEqual(water(s, 'potager-1').ok, true);
+  growAll(s);
+  const [p1, p2] = [findPlot(s, 'potager-1'), findPlot(s, 'potager-2')];
+  assertEqual([p1.stade, p1.arrose], [1, false]);
+  assertEqual([p2.stade, p2.arrose], [0, false], 'non arrosée : elle stagne');
+  growAll(s);
+  assertEqual(p1.stade, 1, 'plus arrosée : elle stagne');
+  for (let i = 0; i < 3; i++) {
+    water(s, 'potager-1');
+    growAll(s);
+  }
+  assertEqual(p1.stade, 4);
+  assertEqual(isMature(p1), true);
+  assertEqual(isMature(p2), false);
+});
+
+test('pousse par les nuits : Dormir fait pousser les parcelles arrosées', () => {
+  const s = garden();
+  plant(s, 'potager-1', 'tomate');
+  water(s, 'potager-1');
+  s.awakeSeconds = 30;
+  sleep(s);
+  assertEqual(findPlot(s, 'potager-1').stade, 1);
+  assertEqual(findPlot(s, 'potager-1').arrose, false);
+  s.awakeSeconds = 30;
+  sleep(s); // pas arrosée cette journée
+  assertEqual(findPlot(s, 'potager-1').stade, 1);
+});
+
+test('arrosage : une fois par nuit et par parcelle, et l\'eau du réservoir est consommée', () => {
+  const s = garden();
+  plant(s, 'potager-1', 'carotte'); // 2 L
+  plant(s, 'potager-2', 'patate'); // 3 L
+  const r = water(s, 'potager-1');
+  assertEqual([r.ok, r.litres], [true, 2]);
+  assertEqual(s.eau, 38);
+  assertEqual(water(s, 'potager-1').ok, false, 'une seule fois par nuit');
+  assertEqual(s.eau, 38, 'le refus ne consomme rien');
+  assertEqual(water(s, 'potager-2').ok, true);
+  assertEqual(s.eau, 35);
+  assertEqual(water(s, 'potager-3').ok, false, 'parcelle vide');
+  assertEqual(s.eau, 35);
+  growAll(s);
+  assertEqual(water(s, 'potager-1').ok, true, 'de nouveau possible après la nuit');
+  assertEqual(s.eau, 33);
+});
+
+test('eau insuffisante : arrosage refusé, rien de modifié', () => {
+  const s = garden();
+  testAddSeeds(s);
+  assertEqual(plant(s, 'potager-1', 'courgette').ok, true); // 4 L
+  assertEqual(plant(s, 'potager-2', 'carotte').ok, true); // 2 L
+  s.eau = 3;
+  const r = water(s, 'potager-1');
+  assertEqual(r.ok, false);
+  assertEqual(s.eau, 3);
+  assertEqual(findPlot(s, 'potager-1').arrose, false);
+  growAll(s);
+  assertEqual(findPlot(s, 'potager-1').stade, 0, 'sans eau, la plante ne pousse pas');
+  assertEqual(water(s, 'potager-2').ok, true, 'assez pour une carotte');
+  assert(near(s.eau, 1));
+  assertEqual(water(s, 'potager-2').ok, false, 'déjà arrosée');
+  plant(s, 'potager-3', 'carotte');
+  assertEqual(water(s, 'potager-3').ok, false, 'il reste 1 L pour 2 L nécessaires');
+  s.eau = 2 - 1e-12; // tolérance flottante
+  assertEqual(water(s, 'potager-3').ok, true);
+});
+
+test('arroser une parcelle mûre est refusé (l\'eau n\'est pas gaspillée)', () => {
+  const s = garden();
+  plantRipe(s, 'potager-1', 'carotte');
+  assertEqual(water(s, 'potager-1').ok, false);
+  assertEqual(s.eau, 40);
+});
+
+test('récolte manuelle : rendement × productivité selon la santé', () => {
+  const s = garden();
+  const cases = [[100, 10], [80, 10], [60, 8], [30, 5], [10, 3]]; // 10 × 1 / 1 / 0,8 / 0,5 / 0,25 (arrondi)
+  cases.forEach(([sante, attendu], i) => {
+    setHealth(s, sante);
+    const id = `potager-${i + 1}`;
+    plantRipe(s, id, 'carotte');
+    const before = countItem(s, 'carotte');
+    const r = harvest(s, id);
+    assertEqual(r.ok, true);
+    assertEqual(countItem(s, 'carotte') - before, attendu, `santé ${sante}`);
+    assertEqual(r.items.carotte, attendu);
+  });
+});
+
+test('récolte automatique : jamais pénalisée par la santé', () => {
+  const s = garden();
+  setHealth(s, 10);
+  plantRipe(s, 'potager-1', 'carotte');
+  harvest(s, 'potager-1', true);
+  assertEqual(countItem(s, 'carotte'), 10);
+  assertEqual(harvestYield(s, 'carotte'), 3);
+  assertEqual(harvestYield(s, 'carotte', true), 10);
+});
+
+test('récolte : la parcelle est libérée, refus si pas mûre ou vide', () => {
+  const s = garden();
+  plant(s, 'potager-1', 'patate');
+  assertEqual(harvest(s, 'potager-1').ok, false, 'pas mûre');
+  assertEqual(countItem(s, 'patate'), 5);
+  const p = findPlot(s, 'potager-1');
+  p.stade = 6;
+  const r = harvest(s, 'potager-1');
+  assertEqual(r.ok, true);
+  assertEqual(countItem(s, 'patate'), 13, '5 restantes + 8 récoltées, aucune graine en plus');
+  assertEqual([p.culture, p.stade, p.arrose, p.montee], [null, 0, false, false]);
+  assertEqual(harvest(s, 'potager-1').ok, false, 'parcelle vide');
+  assertEqual(plant(s, 'potager-1', 'carotte').ok, true, 'on peut replanter');
+});
+
+test('montée en graine : carotte seulement, mûre seulement, 2 stades de plus', () => {
+  const s = garden();
+  plant(s, 'potager-1', 'carotte');
+  assertEqual(toggleBolting(s, 'potager-1').ok, false, 'pas encore mûre');
+  const p = findPlot(s, 'potager-1');
+  p.stade = 4;
+  assertEqual(toggleBolting(s, 'potager-1').ok, true);
+  assertEqual(p.montee, true);
+  assertEqual(maxStage(p), 6);
+  assertEqual(isMature(p), false, 'elle doit rester 2 stades de plus');
+  assertEqual(harvest(s, 'potager-1').ok, false);
+  for (let i = 0; i < 2; i++) {
+    assertEqual(water(s, 'potager-1').ok, true);
+    growAll(s);
+  }
+  assertEqual(p.stade, 6);
+  assertEqual(isMature(p), true);
+  water(s, 'potager-1');
+  growAll(s);
+  assertEqual(p.stade, 6, 'pas au-delà du dernier stade');
+  // autres cultures et parcelle vide : refusé
+  plantRipe(s, 'potager-2', 'patate');
+  assertEqual(toggleBolting(s, 'potager-2').ok, false);
+  assertEqual(toggleBolting(s, 'potager-3').ok, false);
+  // rebasculer annule : la carotte est de nouveau mûre au stade 4
+  const q = plantRipe(s, 'potager-4', 'carotte');
+  toggleBolting(s, 'potager-4');
+  assertEqual(isMature(q), false);
+  toggleBolting(s, 'potager-4');
+  assertEqual([q.montee, isMature(q)], [false, true]);
+});
+
+test('graines rendues : montée en graine = 6 graines et aucune carotte', () => {
+  const s = garden();
+  plantRipe(s, 'potager-1', 'carotte');
+  toggleBolting(s, 'potager-1');
+  findPlot(s, 'potager-1').stade = 6;
+  const r = harvest(s, 'potager-1');
+  assertEqual(r.items, { graine_carotte: 6 });
+  assertEqual(countItem(s, 'graine_carotte'), 15, '10 − 1 plantée + 6');
+  assertEqual(countItem(s, 'carotte'), 0);
+  // la santé ne réduit pas les graines
+  setHealth(s, 10);
+  plantRipe(s, 'potager-2', 'carotte');
+  toggleBolting(s, 'potager-2');
+  findPlot(s, 'potager-2').stade = 6;
+  assertEqual(harvest(s, 'potager-2').items, { graine_carotte: 6 });
+  // récolte normale de carotte : aucune graine
+  plantRipe(s, 'potager-3', 'carotte');
+  const before = countItem(s, 'graine_carotte');
+  harvest(s, 'potager-3');
+  assertEqual(countItem(s, 'graine_carotte'), before);
+});
+
+test('graines rendues : tomate, courgette et aubergine rendent 1 à 2 graines, reproductibles', () => {
+  function run(seed, culture) {
+    const s = createInitialState(seed);
+    setHealth(s, 100);
+    const gains = [];
+    const seedName = seedItem(culture);
+    addItem(s, seedName, 40);
+    for (let i = 0; i < 30; i++) {
+      plant(s, 'potager-1', culture);
+      const p = findPlot(s, 'potager-1');
+      p.stade = maxStage(p);
+      const before = countItem(s, seedName);
+      const r = harvest(s, 'potager-1');
+      gains.push(countItem(s, seedName) - before);
+      assertEqual(r.items[culture], DATA.crops[culture].rendement);
+    }
+    return gains;
+  }
+  for (const culture of ['tomate', 'courgette', 'aubergine']) {
+    const a = run(7, culture);
+    assert(a.every((g) => g === 1 || g === 2), `${culture} : 1 ou 2 graines, obtenu ${a}`);
+    assert(a.includes(1) && a.includes(2), `${culture} : les deux valeurs sortent`);
+    assertEqual(run(7, culture), a, 'même graine, même suite');
+  }
+});
+
+test('aléatoire à graine : nextRandom suit mulberry32 et vit dans l\'état', () => {
+  const s = createInitialState(1234);
+  const ref = mulberry32(1234);
+  for (let i = 0; i < 5; i++) assertEqual(nextRandom(s), ref());
+  const copy = JSON.parse(JSON.stringify(s));
+  assertEqual(nextRandom(copy), nextRandom(s), 'l\'état sérialisé reprend la même suite');
+  const t = createInitialState(5);
+  for (let i = 0; i < 200; i++) {
+    const v = randomInt(t, 1, 2);
+    assert(v === 1 || v === 2);
+  }
+});
+
+test('potager : 6 / 9 / 12 / 16 / 20 parcelles, coûts 80 / 200 / 450 / 1 000', () => {
+  assertEqual(DATA.POTAGER.PARCELLES, [6, 9, 12, 16, 20]);
+  assertEqual(DATA.POTAGER.COUT.slice(1), [80, 200, 450, 1000]);
+  const s = garden();
+  s.pieces = 10;
+  assertEqual(upgradePotager(s).ok, false, 'pas assez de pièces');
+  assertEqual(s.potager.niveau, 1);
+  assertEqual(s.pieces, 10);
+  s.pieces = 5000;
+  plant(s, 'potager-1', 'carotte');
+  const costs = [];
+  const counts = [];
+  for (let i = 0; i < 4; i++) {
+    costs.push(upgradePotager(s).cost);
+    counts.push(s.potager.parcelles.length);
+  }
+  assertEqual(costs, [80, 200, 450, 1000]);
+  assertEqual(counts, [9, 12, 16, 20]);
+  assertEqual(s.potager.niveau, 5);
+  assertEqual(s.pieces, 5000 - 1730);
+  assertEqual(upgradePotager(s).ok, false, 'niveau maximum');
+  assertEqual(findPlot(s, 'potager-1').culture, 'carotte', 'les parcelles existantes sont conservées');
+  assertEqual(new Set(s.potager.parcelles.map((p) => p.id)).size, 20, 'ids uniques');
+});
+
+test('famille : besoin = 100 par adulte + 60 par enfant = 320', () => {
+  const s = createInitialState(1);
+  assertEqual(familyNeed(s), 320);
+  s.famille.membres.pop();
+  assertEqual(familyNeed(s), 260);
+  assertEqual(planMeal(createInitialState(1)).besoin, 320);
+});
+
+test('repas : énergie décroissante, conserves en dernier, jusqu\'à couvrir le besoin', () => {
+  const s = garden();
+  s.inventaire = { conserve: 100, carotte: 10, patate: 2, courgette: 3 };
+  s.famille.reserve = {};
+  const plan = planMeal(s);
+  assertEqual(Object.keys(plan.mange), ['patate', 'courgette', 'carotte', 'conserve']);
+  assertEqual(plan.mange, { patate: 2, courgette: 3, carotte: 10, conserve: 11 });
+  assertEqual(plan.energie, 30 + 24 + 60 + 220);
+  assertEqual(plan.couverture, 1);
+  // planMeal ne modifie rien
+  assertEqual(countItem(s, 'conserve'), 100);
+  feedFamily(s);
+  assertEqual(s.inventaire, { conserve: 89 });
+  // il s'arrête dès que le besoin est couvert : les 16 conserves suffisent
+  const t = garden();
+  feedFamily(t);
+  assertEqual(countItem(t, 'conserve'), 144);
+  assertEqual(countItem(t, 'patate'), 6);
+});
+
+test('repas : les non-comestibles (graines) ne sont jamais mangés', () => {
+  const s = garden();
+  s.inventaire = { graine_carotte: 50, graine_tomate: 50 };
+  const plan = planMeal(s);
+  assertEqual(plan.mange, {});
+  assertEqual(plan.energie, 0);
+  assertEqual(plan.couverture, 0);
+});
+
+test('réserve de semences : la famille ne mange jamais la réserve', () => {
+  const s = garden();
+  assertEqual(s.famille.reserve.patate, 6, 'les 6 patates de départ sont protégées');
+  s.inventaire = { patate: 10, carotte: 20 };
+  const plan = planMeal(s);
+  assertEqual(plan.mange, { patate: 4, carotte: 20 });
+  feedFamily(s);
+  assertEqual(countItem(s, 'patate'), 6, 'la réserve reste intacte même en famille affamée');
+  assertEqual(countItem(s, 'carotte'), 0);
+  // réserve à 0 : tout peut être mangé
+  const t = garden();
+  t.inventaire = { patate: 10 };
+  assertEqual(setSeedReserve(t, 'patate', 0).ok, true);
+  assertEqual(planMeal(t).mange, { patate: 10 });
+  // réserve supérieure au stock : rien n'est mangé
+  assertEqual(setSeedReserve(t, 'patate', 25).ok, true);
+  assertEqual(planMeal(t).mange, {});
+  // valeurs invalides refusées
+  assertEqual(setSeedReserve(t, 'inconnu', 3).ok, false);
+  assertEqual(setSeedReserve(t, 'patate', 'abc').ok, false);
+  assertEqual(t.famille.reserve.patate, 25);
+  assertEqual(setSeedReserve(t, 'patate', -4).reserve, 0, 'jamais négative');
+  assertEqual(reservableItems(), ['patate']);
+});
+
+test('santé : +5 à 100 %, −5 de 75 à 99 %, −10 de 50 à 74 %, −20 sous 50 %', () => {
+  // besoin 320 = 16 conserves
+  const cases = [[16, 5], [20, 5], [15, -5], [12, -5], [11, -10], [8, -10], [7, -20], [0, -20]];
+  for (const [conserves, delta] of cases) {
+    const s = garden();
+    setHealth(s, 60);
+    s.inventaire = { conserve: conserves };
+    feedFamily(s);
+    assertEqual(s.famille.membres[0].sante, 60 + delta, `${conserves} conserves`);
+    assertEqual(s.famille.membres[3].sante, 60 + delta);
+  }
+  assertEqual([1, 0.99, 0.75, 0.74, 0.5, 0.49].map(healthDelta), [5, -5, -5, -10, -10, -20]);
+});
+
+test('santé : bornée entre 0 et 100, et un membre à 0 devient malade', () => {
+  const s = garden();
+  setHealth(s, 98);
+  feedFamily(s);
+  assertEqual(s.famille.membres.every((m) => m.sante === 100), true);
+  const t = garden();
+  setHealth(t, 10);
+  t.famille.membres[0].sante = 25;
+  t.inventaire = {};
+  const nouveaux = feedFamily(t) && t.nuit.nouveauxMalades;
+  assertEqual(t.famille.membres[0].sante, 5);
+  assertEqual(t.famille.membres[0].malade, false);
+  assertEqual(t.famille.membres[1].sante, 0);
+  assertEqual(t.famille.membres[1].malade, true);
+  assertEqual(nouveaux, ['Adulte 2', 'Enfant 1', 'Enfant 2']);
+});
+
+test('productivité : ×1 à 80 et plus, ×0,8 de 50 à 79, ×0,5 de 20 à 49, ×0,25 sous 20', () => {
+  const s = garden();
+  const cases = [[100, 1], [80, 1], [79, 0.8], [50, 0.8], [49, 0.5], [20, 0.5], [19, 0.25], [0, 0.25]];
+  for (const [sante, mult] of cases) {
+    setHealth(s, sante);
+    assertEqual(productivity(s), mult, `santé ${sante}`);
+  }
+  assertEqual(formatMult(1), '1');
+  assertEqual(formatMult(0.8), '0,8');
+  assertEqual(formatMult(0.25), '0,25');
+});
+
+test('productivité : un membre malade compte pour 0 dans la moyenne', () => {
+  const s = garden();
+  setHealth(s, 100);
+  const m = s.famille.membres[0];
+  m.sante = 30; // en convalescence : sa santé réelle ne compte pas
+  m.malade = true;
+  assertEqual(averageHealth(s), 75);
+  assertEqual(productivity(s), 0.8);
+  m.malade = false;
+  assertEqual(averageHealth(s), 82.5);
+  assertEqual(productivity(s), 1, 'sans la maladie, sa santé de 30 compterait : (300 + 30) ÷ 4 = 82,5');
+});
+
+test('soins : coût 20 × 1,5^n (20, 30, 45, 68), santé remise à 50', () => {
+  const s = garden();
+  s.pieces = 1000;
+  const costs = [];
+  for (let i = 0; i < 4; i++) {
+    const m = s.famille.membres[i];
+    m.sante = 0;
+    m.malade = true;
+    assertEqual(careCost(s), [20, 30, 45, 68][i]);
+    const r = heal(s, m.id);
+    assertEqual(r.ok, true);
+    costs.push(r.cost);
+    assertEqual([m.sante, m.malade], [50, false]);
+  }
+  assertEqual(costs, [20, 30, 45, 68]);
+  assertEqual(s.famille.soinsPayes, 4);
+  assertEqual(s.pieces, 1000 - 163);
+  assertEqual(careCost(s), 101);
+});
+
+test('soins : refusés sans pièces, sur un membre non malade ou inconnu', () => {
+  const s = garden();
+  const m = s.famille.membres[0];
+  assertEqual(heal(s, m.id).ok, false, 'pas malade');
+  m.sante = 0;
+  m.malade = true;
+  s.pieces = 19;
+  assertEqual(heal(s, m.id).ok, false, 'pas assez de pièces');
+  assertEqual([m.sante, m.malade, s.pieces, s.famille.soinsPayes], [0, true, 19, 0]);
+  assertEqual(heal(s, 'inconnu').ok, false);
+  s.pieces = 20;
+  assertEqual(heal(s, m.id).ok, true);
+  assertEqual(s.pieces, 0);
+});
+
+test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de gain sinon', () => {
+  const s = garden();
+  const m = s.famille.membres[0];
+  m.sante = 0;
+  m.malade = true;
+  s.inventaire = { conserve: 16 };
+  feedFamily(s);
+  assertEqual([m.sante, m.malade], [2, true], '+2 au lieu de +5');
+  assertEqual(s.famille.membres[1].sante, 100);
+  // une nuit mal nourrie : pas de récupération, variation normale (bornée à 0)
+  s.inventaire = { conserve: 15 };
+  feedFamily(s);
+  assertEqual([m.sante, m.malade], [0, true]);
+  // 24 nuits bien nourries : 48 points, encore malade ; la 25e → 50 : guéri
+  for (let i = 0; i < 24; i++) {
+    s.inventaire = { conserve: 16 };
+    feedFamily(s);
+  }
+  assertEqual([m.sante, m.malade], [48, true]);
+  s.inventaire = { conserve: 16 };
+  feedFamily(s);
+  assertEqual([m.sante, m.malade], [50, false]);
+  s.inventaire = { conserve: 16 };
+  feedFamily(s);
+  assertEqual(m.sante, 55, 'guéri : la règle normale (+5) reprend');
+  assertEqual(s.famille.soinsPayes, 0, 'aucun soin payé');
+});
+
+test('ordre des étapes nocturnes : repas et santé, puis pousse', () => {
+  assertEqual(NIGHT_STEPS.length, 2);
+  assert(NIGHT_STEPS[0] === feedFamily, 'première étape : repas et santé');
+  assert(NIGHT_STEPS[1] === growAll, 'deuxième étape : pousse');
+});
+
+test('Dormir : repas, santé, pousse et rapport de réveil', () => {
+  const s = garden();
+  plant(s, 'potager-1', 'carotte');
+  plant(s, 'potager-2', 'carotte');
+  findPlot(s, 'potager-1').stade = 3;
+  water(s, 'potager-1');
+  water(s, 'potager-2');
+  s.awakeSeconds = 30;
+  const r = sleep(s);
+  assertEqual(s.day, 2);
+  assertEqual(countItem(s, 'conserve'), 144);
+  assertEqual(findPlot(s, 'potager-1').stade, 4);
+  assertEqual(findPlot(s, 'potager-2').stade, 1);
+  assertEqual(r.besoin, 320);
+  assertEqual(r.energieMangee, 320);
+  assertEqual(r.couverture, 1);
+  assertEqual(r.mange, { conserve: 16 });
+  assertEqual([r.santeAvant, r.santeApres], [100, 100]);
+  assertEqual(r.nouveauxMalades, []);
+  assertEqual(r.pretes, [{ culture: 'carotte', nombre: 1, montee: false }]);
+  // une nuit sans rien à manger : −20 pour tous, et l'écran de réveil le dit
+  const t = garden();
+  t.inventaire = {};
+  t.awakeSeconds = 30;
+  const r2 = sleep(t);
+  assertEqual([r2.energieMangee, r2.couverture, r2.santeAvant, r2.santeApres], [0, 0, 100, 80]);
+  // et le compte rendu de la nuit repart de zéro à la nuit suivante
+  t.awakeSeconds = 30;
+  const r3 = sleep(t);
+  assertEqual([r3.santeAvant, r3.santeApres], [80, 60]);
+});
+
+test('Dormir avec la réserve de semences : 10 nuits de conserves, patates intactes', () => {
+  const s = garden();
+  for (let i = 0; i < 10; i++) {
+    s.awakeSeconds = 30;
+    sleep(s);
+  }
+  assertEqual(countItem(s, 'conserve'), 0);
+  assertEqual(countItem(s, 'patate'), 6);
+  assertEqual(s.famille.membres.every((m) => m.sante === 100), true);
+  s.awakeSeconds = 30;
+  const r = sleep(s); // 11e nuit : plus rien à manger hors réserve
+  assertEqual(r.energieMangee, 0);
+  assertEqual(s.famille.membres[0].sante, 80);
+});
+
+test('mode test Lot 2 : graines, maturité, santé à 0', () => {
+  const s = garden();
+  testAddSeeds(s);
+  assertEqual(countItem(s, 'graine_carotte'), 20);
+  assertEqual(countItem(s, 'graine_tomate'), 14);
+  assertEqual(countItem(s, 'graine_courgette'), 10);
+  assertEqual(countItem(s, 'graine_aubergine'), 10);
+  assertEqual(countItem(s, 'patate'), 16);
+  plant(s, 'potager-1', 'carotte');
+  plant(s, 'potager-2', 'aubergine');
+  plantRipe(s, 'potager-3', 'carotte');
+  toggleBolting(s, 'potager-3');
+  testRipenAll(s);
+  assertEqual(readyCrops(s).map((c) => [c.culture, c.nombre, c.montee]), [['carotte', 1, false], ['aubergine', 1, false], ['carotte', 1, true]]);
+  assertEqual(s.potager.parcelles.filter((p) => !p.culture).every((p) => p.stade === 0), true);
+  testSetHealthZero(s);
+  assertEqual(s.famille.membres.every((m) => m.sante === 0 && m.malade), true);
+  assertEqual(productivity(s), 0.25);
+});
+
+test('migration v2 (Lot 1) → v3 : garde la partie, ajoute le potager, la famille et l\'inventaire', () => {
+  const v2 = {
+    version: 2, day: 5, awakeSeconds: 3, pieces: 120, rngSeed: 9, stats: {},
+    unlockedTabs: ['ferme', 'inventaire', 'comptoir'], ...startFarm(),
+  };
+  v2.eau = 12;
+  const m = migrate({ v: 2, t: 0, s: v2 });
+  assertEqual(m.version, 3);
+  assertEqual([m.day, m.pieces, m.eau], [5, 120, 12]);
+  assertEqual(m.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir']);
+  assertEqual(m.inventaire, { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 });
+  assertEqual(m.potager.parcelles.length, 6);
+  assertEqual(m.famille.membres.length, 4);
+  assertEqual(m.famille.reserve, { patate: 6 });
+  assertEqual(m.panneaux.length, 1);
+  m.awakeSeconds = 30;
+  assert(sleep(m) !== null, 'l\'état migré peut dormir');
+  assertEqual(countItem(m, 'conserve'), 144);
+  // une sauvegarde déjà à jour n'est pas touchée
+  const s = garden();
+  s.pieces = 77;
+  s.inventaire.conserve = 3;
+  const same = migrate({ v: 3, t: 0, s });
+  assertEqual([same.pieces, same.inventaire.conserve], [77, 3]);
+});
+
+test('sérialisation JSON aller-retour avec potager, famille et nuit', () => {
+  const s = createInitialState(11);
+  testAddSeeds(s);
+  s.eau = 40;
+  plant(s, 'potager-1', 'tomate');
+  water(s, 'potager-1');
+  s.awakeSeconds = 30;
+  sleep(s);
+  const copy = JSON.parse(JSON.stringify(s));
+  assertEqual(copy, s);
+  plantRipe(copy, 'potager-2', 'courgette');
+  plantRipe(s, 'potager-2', 'courgette');
+  harvest(copy, 'potager-2');
+  harvest(s, 'potager-2');
+  assertEqual(copy, s, 'même suite d\'actions, même état (aléatoire compris)');
+});
+
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
 // run-tests.mjs l'exécute explicitly avec Node après avoir lancé runTests().
 if (typeof module !== 'undefined' && typeof globalThis !== 'undefined') {
@@ -1843,6 +3073,7 @@ const RENDER_THROTTLE_MS = 200; // ~5 fois par seconde
 
 const TABS = [
   { id: 'ferme', label: 'Ferme', icon: '🌾' },
+  { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦' },
   { id: 'inventaire', label: 'Inventaire', icon: '📦' },
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳' },
@@ -2115,6 +3346,14 @@ function renderTabContent() {
     morph(el, screen === 'panneaux' || screen === 'batteries' ? renderDeviceScreen(screen) : renderFerme());
     return;
   }
+  if (activeTab === 'famille') {
+    morph(el, renderFamille());
+    return;
+  }
+  if (activeTab === 'inventaire') {
+    morph(el, renderInventaire());
+    return;
+  }
   const tab = TABS.find((t) => t.id === activeTab) || TABS[0];
   morph(el, `
     <h2>${tab.icon} ${tab.label}</h2>
@@ -2124,11 +3363,15 @@ function renderTabContent() {
 
 function renderSleepBar() {
   const remaining = Math.max(1, Math.ceil(awakeRequired(state) - state.awakeSeconds - EPS));
+  const plan = planMeal(state);
+  const short = plan.energie + EPS < plan.besoin;
+  const preview = `<p class="meal-preview${short ? ' short' : ''}">🍽️ Repas prévu : ${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)} énergie${short ? ' ⚠️' : ''}</p>`;
   morph(
     document.getElementById('sleep-bar'),
-    canSleep(state)
-      ? '<button type="button" class="btn primary" data-action="sleep">😴 Dormir</button>'
-      : `<button type="button" class="btn" data-action="sleep" disabled>😴 Dormir (dans ${remaining} s)</button>`
+    preview +
+      (canSleep(state)
+        ? '<button type="button" class="btn primary" data-action="sleep">😴 Dormir</button>'
+        : `<button type="button" class="btn" data-action="sleep" disabled>😴 Dormir (dans ${remaining} s)</button>`)
   );
 }
 
@@ -2198,6 +3441,8 @@ function renderFerme() {
 
   return `
     <h2>🌾 Ferme</h2>
+    ${renderPotager()}
+    <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
         <span class="card-title"><span>☀️ Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
@@ -2314,6 +3559,201 @@ function renderDeviceScreen(kind) {
   `;
 }
 
+/* ---------- Ferme : potager ---------- */
+
+function renderPotager() {
+  const pot = state.potager;
+  const up = potagerUpgradeCost(state);
+  const prod = productivity(state);
+  const seeds = plantableCrops(DATA.POTAGER.LIEU).some((c) => countItem(state, seedItem(c)) > 0);
+  const upBtn =
+    up === null
+      ? '<button type="button" class="btn" disabled>Potager au niveau maximum</button>'
+      : `<button type="button" class="btn" data-action="upgrade-potager"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${pot.niveau + 1}, ${DATA.POTAGER.PARCELLES[pot.niveau]} parcelles (${costLabel(up)})</button>`;
+  return `
+    <div class="section-head">
+      <h3>🌱 Potager · niveau ${pot.niveau}</h3>
+      <span class="chip${prod < 1 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ×${formatMult(prod)}</span>
+    </div>
+    <div class="plots">${pot.parcelles.map((p, i) => plotCard(p, i + 1, seeds)).join('')}</div>
+    <div class="row plot-foot">${upBtn}</div>
+  `;
+}
+
+function plotCard(p, n, seedsAvailable) {
+  if (!p.culture) {
+    return `
+      <div class="card plot">
+        <span class="card-title"><span>Parcelle ${n}</span></span>
+        <span class="plot-emoji" aria-hidden="true">🟫</span>
+        <span class="muted">Vide</span>
+        <button type="button" class="btn primary" data-action="plant-open" data-id="${p.id}"${seedsAvailable ? '' : ' disabled'}>${seedsAvailable ? 'Planter' : 'Aucune graine'}</button>
+      </div>`;
+  }
+  const def = DATA.crops[p.culture];
+  const max = maxStage(p);
+  const mature = isMature(p);
+  const pct = Math.round((p.stade / max) * 100);
+  const stateLine = mature
+    ? (p.montee ? '🌱 Graines prêtes' : '✅ Mûre')
+    : `Stade ${p.stade} / ${max}${p.montee ? ' · monte en graine' : ''}`;
+  const canBolt = def.graines.mode === 'montee' && p.stade >= def.stades;
+  const boltBtn = canBolt
+    ? `<button type="button" class="btn" data-action="bolt" data-id="${p.id}">${p.montee ? '↩ Annuler la montée en graine' : '🌱 Laisser monter en graine'}</button>`
+    : '';
+  let actions;
+  if (mature) {
+    const label = p.montee
+      ? `Récolter (+${def.graines.quantite} 🌱)`
+      : `Récolter (+${harvestYield(state, p.culture)} ${def.icone})`;
+    actions = `<button type="button" class="btn primary" data-action="harvest" data-id="${p.id}">${label}</button>${boltBtn}`;
+  } else {
+    const noWater = state.eau + EPS < def.litres;
+    actions = `<button type="button" class="btn" data-action="water" data-id="${p.id}"${p.arrose || noWater ? ' disabled' : ''}>${p.arrose ? '💧 Arrosée' : `💧 Arroser (${def.litres} L)`}</button>${boltBtn}`;
+  }
+  return `
+    <div class="card plot${mature ? ' mature' : ''}">
+      <span class="card-title"><span>Parcelle ${n}</span><span aria-hidden="true">${def.icone}</span></span>
+      <span class="muted">${def.nom} · ${stateLine}</span>
+      <span class="bar" role="progressbar" aria-label="Croissance" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${p.stade}"><span class="bar-fill" style="width:${pct}%"></span></span>
+      ${actions}
+    </div>`;
+}
+
+// Choix de la graine à planter sur une parcelle vide.
+function openPlantModal(plotId) {
+  const plot = findPlot(state, plotId);
+  if (!plot || plot.culture) return;
+  const rows = plantableCrops(plot.lieu)
+    .map((c) => {
+      const def = DATA.crops[c];
+      const n = countItem(state, seedItem(c));
+      const stock = def.graines.mode === 'plant' ? 'Plants' : 'Graines';
+      return `
+        <button type="button" class="btn plant-choice" data-action="plant" data-id="${plotId}" data-crop="${c}"${n > 0 ? '' : ' disabled'}>
+          <span>${def.icone} ${def.nom}</span>
+          <span class="muted">${stock} : ${n} · ${def.stades} nuits · ${def.litres} L par arrosage</span>
+        </button>`;
+    })
+    .join('');
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="plant-title" data-stop-propagation>
+        <h2 id="plant-title">🌱 Planter</h2>
+        <p class="muted">Choisis ce que tu plantes sur cette parcelle.</p>
+        <div class="stack">${rows}</div>
+        <button type="button" class="btn" data-action="close-modal">Annuler</button>
+      </div>
+    </div>
+  `;
+}
+
+function harvestToast(result) {
+  const parts = Object.entries(result.items).map(([item, n]) => `+${n} ${DATA.items[item].icone}`);
+  return `Récolte : ${parts.join(' ')}`;
+}
+
+/* ---------- Famille ---------- */
+
+const PORTRAITS = { 'adulte-1': '👩', 'adulte-2': '👨', 'enfant-1': '🧒', 'enfant-2': '👧' };
+
+function healthBarHtml(sante) {
+  const cls = sante < 50 ? ' bad' : sante < 80 ? ' warn' : '';
+  return `<span class="bar" role="progressbar" aria-label="Santé" aria-valuemin="0" aria-valuemax="${DATA.FAMILY.SANTE_MAX}" aria-valuenow="${Math.round(sante)}"><span class="bar-fill${cls}" style="width:${sante}%"></span></span>`;
+}
+
+function portraitCard(m) {
+  const cost = careCost(state);
+  const sick = m.malade
+    ? `<span class="alert">🤒 Malade : ne compte plus dans la productivité.</span>
+       <button type="button" class="btn danger" data-action="heal" data-id="${m.id}"${canPay(cost) ? '' : ' disabled'}>Soigner (${formatCoins(cost)} 💰)</button>`
+    : '';
+  return `
+    <article class="card portrait">
+      <span class="portrait-emoji" aria-hidden="true">${m.malade ? '🤒' : PORTRAITS[m.id] || '🙂'}</span>
+      <span class="card-title"><span>${m.nom}</span></span>
+      <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} énergie/jour</span>
+      ${healthBarHtml(m.sante)}
+      <span class="muted">Santé : <span class="num">${Math.round(m.sante)} / ${DATA.FAMILY.SANTE_MAX}</span></span>
+      ${sick}
+    </article>`;
+}
+
+function renderFamille() {
+  const plan = planMeal(state);
+  const shown = Math.min(plan.energie, plan.besoin);
+  const short = plan.energie + EPS < plan.besoin;
+  const prod = productivity(state);
+  const avg = averageHealth(state);
+  return `
+    <h2>👨‍👩‍👧‍👦 Famille</h2>
+    <div class="portraits">${state.famille.membres.map(portraitCard).join('')}</div>
+    <div class="cards">
+      <div class="card">
+        <span class="card-title"><span>🍽️ Énergie prévue cette nuit</span></span>
+        <span class="big">${formatNumber(shown)} / ${formatNumber(plan.besoin)}</span>
+        <span class="bar" role="progressbar" aria-label="Énergie prévue" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
+        <span class="muted">${short ? '⚠️ Le besoin ne sera pas couvert : la santé va baisser.' : 'Le besoin sera couvert : la santé remonte.'}</span>
+      </div>
+      <div class="card">
+        <span class="card-title"><span>⚙️ Productivité</span></span>
+        <span class="big">×${formatMult(prod)}</span>
+        <span class="muted">Santé moyenne : <span class="num">${formatFixed(avg, 1)}</span> (un malade compte pour 0). Elle ne s'applique qu'aux actions au clic, comme la récolte.</span>
+      </div>
+    </div>`;
+}
+
+/* ---------- Inventaire ---------- */
+
+function inventoryRow(item) {
+  const it = DATA.items[item];
+  const n = countItem(state, item);
+  const reservable = reservableItems().includes(item);
+  const res = state.famille.reserve[item] || 0;
+  const info = [
+    it.energie ? `Énergie ${it.energie}` : '',
+    `Vente ${formatCoins(it.prix)} 💰`,
+    it.rachetable === false ? 'non rachetable' : '',
+  ].filter(Boolean).join(' · ');
+  const reserve = reservable
+    ? `
+      <div class="row reserve">
+        <span class="muted">🔒 Réserve de semences</span>
+        <button type="button" class="btn step-btn" data-action="reserve-dec" data-item="${item}" aria-label="Réduire la réserve"${res <= 0 ? ' disabled' : ''}>−</button>
+        <strong class="num">${res}</strong>
+        <button type="button" class="btn step-btn" data-action="reserve-inc" data-item="${item}" aria-label="Augmenter la réserve"${res >= n ? ' disabled' : ''}>+</button>
+      </div>
+      <span class="muted">La famille ne mange jamais ${Math.min(res, n)} de ces ${it.nom.toLowerCase()}s : ce sont tes plants.</span>`
+    : '';
+  return `
+    <div class="inv-row">
+      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="big num">${formatNumber(n)}</span></div>
+      <span class="muted">${info}</span>
+      ${reserve}
+    </div>`;
+}
+
+function renderInventaire() {
+  const groups = [
+    { titre: '🍽️ Aliments', match: (it) => it.edible },
+    { titre: '🌱 Graines', match: (it) => it.category === 'graine' },
+  ];
+  const body = groups
+    .map((g) => {
+      const items = Object.keys(DATA.items).filter(
+        (k) => g.match(DATA.items[k]) && (countItem(state, k) > 0 || reservableItems().includes(k))
+      );
+      return `
+        <div class="inv-group">
+          <h3>${g.titre}</h3>
+          ${items.length ? items.map(inventoryRow).join('') : '<p class="hint">Rien pour l\'instant.</p>'}
+        </div>`;
+    })
+    .join('');
+  return `<h2>📦 Inventaire</h2>${body}`;
+}
+
 /* ---------- écran de réveil ---------- */
 
 function openWakeModal(report) {
@@ -2326,11 +3766,28 @@ function openWakeModal(report) {
     ...report.enPanne.map((d) => line(d, '⛔ {nom} : en panne, à réparer.')),
     ...report.aEntretenir.map((d) => line(d, '⚠️ {nom} : à entretenir (usure {usure} %).')),
   ];
+  const eaten = Object.entries(report.mange)
+    .map(([item, n]) => `${n} ${DATA.items[item].icone}`)
+    .join(' · ');
+  const shownEnergy = Math.min(report.energieMangee, report.besoin);
+  const covered = Math.floor(report.couverture * 100 + EPS);
+  const ready = report.pretes.length
+    ? report.pretes
+        .map((r) => `${r.nombre} ${DATA.crops[r.culture].icone} ${DATA.crops[r.culture].nom.toLowerCase()}${r.montee ? ' (graines)' : ''}`)
+        .join(', ')
+    : '';
+  const family = [
+    `<li>🍽️ Énergie mangée : <strong class="num">${formatNumber(shownEnergy)} / ${formatNumber(report.besoin)}</strong> (${covered} %)${eaten ? ` — ${eaten}` : ''}</li>`,
+    `<li>❤️ Santé moyenne : <strong class="num">${formatFixed(report.santeAvant, 0)} → ${formatFixed(report.santeApres, 0)}</strong> (${formatRate(report.santeApres - report.santeAvant, 0)})</li>`,
+    ...report.nouveauxMalades.map((nom) => `<li class="alert">🤒 ${nom} est tombé malade : il faut le soigner.</li>`),
+    ready ? `<li>🧺 Récoltes prêtes : <strong>${ready}</strong></li>` : '<li>🌱 Aucune récolte prête pour l\'instant.</li>',
+  ];
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
         <h2 id="wake-title">🌅 Réveil : nuit ${report.nuit}</h2>
         <ul class="report-list">
+          ${family.join('')}
           <li>⚡ Énergie stockée : <strong class="num">${formatFixed(report.energie, 2)} / ${formatFixed(report.capacite, 2)} kWh</strong></li>
           <li>💧 Eau disponible : <strong class="num">${formatFixed(report.eau, 1)} / ${formatNumber(report.capaciteEau)} L</strong></li>
           ${report.energiePerdue > 0.005 ? `<li>☀️ Énergie perdue pendant la journée (batteries pleines) : <strong class="num">${formatFixed(report.energiePerdue, 2)} kWh</strong></li>` : ''}
@@ -2444,6 +3901,46 @@ document.addEventListener('click', (e) => {
       break;
     case 'sleep':
       actionSleep();
+      break;
+    case 'plant-open':
+      openPlantModal(target.dataset.id);
+      break;
+    case 'plant':
+      closeModal();
+      applyResult(plant(state, target.dataset.id, target.dataset.crop));
+      break;
+    case 'water':
+      applyResult(water(state, target.dataset.id));
+      break;
+    case 'bolt':
+      applyResult(toggleBolting(state, target.dataset.id));
+      break;
+    case 'harvest': {
+      const result = applyResult(harvest(state, target.dataset.id));
+      if (result.ok) showToast(harvestToast(result));
+      break;
+    }
+    case 'upgrade-potager':
+      applyResult(upgradePotager(state));
+      break;
+    case 'heal':
+      applyResult(heal(state, target.dataset.id));
+      break;
+    case 'reserve-inc':
+    case 'reserve-dec': {
+      const item = target.dataset.item;
+      const now = state.famille.reserve[item] || 0;
+      applyResult(setSeedReserve(state, item, now + (action === 'reserve-inc' ? 1 : -1)));
+      break;
+    }
+    case 'test-seeds':
+      applyResult(testAddSeeds(state));
+      break;
+    case 'test-ripen':
+      applyResult(testRipenAll(state));
+      break;
+    case 'test-sick':
+      applyResult(testSetHealthZero(state));
       break;
     case 'test-add-100':
       applyResult(testAddPieces(state, 100));
