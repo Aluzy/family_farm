@@ -679,6 +679,12 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 
 .coming { padding: 8px 0; }
 
+/* ---------- Lot 6 : Pâturage et moutons ---------- */
+
+.sheep-list { margin-top: 12px; }
+.sheep.ready { border-color: var(--accent); border-width: 2px; background: var(--bg-elevated); }
+.sheep .device-actions .btn { flex: 1 1 130px; }
+
 /* ---------- Lot 5 : ateliers (Ferme) et Livre de recette ---------- */
 
 .station.busy { border-color: var(--color-sun-dark); }
@@ -745,6 +751,11 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
       <div class="row">
         <button class="btn" type="button" data-action="test-wheat">+50 blés</button>
         <button class="btn" type="button" data-action="test-hens">+4 poules</button>
+      </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-sheep">+3 moutons</button>
+        <button class="btn" type="button" data-action="test-fatten">Moutons au poids max</button>
+        <button class="btn" type="button" data-action="test-wool">Laine prête</button>
       </div>
       <div class="row">
         <button class="btn" type="button" data-action="test-food">+20 de chaque aliment</button>
@@ -855,9 +866,9 @@ const DATA = {
     ble:              { nom: 'Blé',                  icone: '🌾', prix: 1, edible: false, category: 'ingrédient' },
     graine_tournesol: { nom: 'Graines de tournesol', icone: '🌻', prix: 1, edible: false, category: 'graine' },
     oeuf:             { nom: 'Œuf',                  icone: '🥚', energie: 10, prix: 2, edible: true, category: 'produit' },
-    // Lot 5 : viande, fruits, farine et huile (sections 1.1 et 8.9). La ferme ne
-    // produit pas encore la viande ni les fruits : les recettes qui en ont besoin
-    // restent grisées. La farine et l'huile valent 10 d'énergie dans les plats mais
+    // Lot 5 : viande, fruits, farine et huile (sections 1.1 et 8.9). La viande
+    // vient de l'abattage des moutons (Lot 6) ; la ferme ne produit pas encore les
+    // fruits : les recettes qui en ont besoin restent grisées. La farine et l'huile valent 10 d'énergie dans les plats mais
     // ne se mangent pas seules. Les plats cuisinés (pain compris) sont ajoutés à
     // cette table au chargement, à partir de `recipes` : voir registerDishItems().
     viande:           { nom: 'Viande',               icone: '🥩', energie: 30, prix: 5, edible: true,  category: 'produit' },
@@ -865,6 +876,9 @@ const DATA = {
     poire:            { nom: 'Poire',                icone: '🍐', energie: 8,  prix: 2, edible: true,  category: 'fruit' },
     farine:           { nom: 'Farine',               icone: '🥣', energie: 10, prix: 1, edible: false, category: 'ingrédient' },
     huile:            { nom: 'Huile de tournesol',   icone: '🛢️', energie: 10, prix: 4, edible: false, category: 'ingrédient' },
+    // Lot 6 : laine (section 8.6). Ni périssable ni comestible : elle sert
+    // uniquement à la vente. Elle ne se rachète pas au Comptoir.
+    laine:            { nom: 'Laine',                icone: '🧶', prix: 6, edible: false, category: 'produit', rachetable: false },
   },
 
   /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
@@ -1037,9 +1051,34 @@ const DATA = {
 
   // Animaux achetés au Comptoir (section 1.4) : prix fixes, sans revente.
   // Poule : mange bleParNuit blé (une fois par nuit) et pond oeufsParNuit œuf si
-  // elle a été nourrie. Le mouton arrivera avec le Lot suivant.
+  // elle a été nourrie.
+  // Lot 6 (sections 1.4 et 8.6) : le mouton, à prix fixe. Il grossit de gainKg par
+  // nuit jusqu'à poidsMax ; sa laine repousse d'un jour par nuit et se tond tous
+  // les joursLaine jours (laineParTonte unité) ; à l'abattage, il rend
+  // poids × rendement ÷ kgParPortion portions de viande (arrondi inférieur).
   ANIMAUX: {
     poule: { nom: 'Poule', icone: '🐔', prix: 15, bleParNuit: 0.5, oeufsParNuit: 1, produit: 'oeuf' },
+    mouton: {
+      nom: 'Mouton', icone: '🐑', prix: 60,
+      poidsDepart: 20, gainKg: 0.5, poidsMax: 50,
+      joursLaine: 7, laineParTonte: 1, laine: 'laine',
+      rendement: 0.5, kgParPortion: 0.5, viande: 'viande',
+    },
+  },
+
+  /* ---------- Lot 6 : Pâturage ---------- */
+
+  // Pâturage (sections 1.3 et 8.6) : déblocage à `deblocage` pièces avec
+  // `surfaceDepart` ha ; un mouton occupe `haParMouton` ha. Au-delà, chaque
+  // mouton demande d'acheter d'abord `haParMouton` ha, au prix
+  // prixSurface × croissance^(n − 1), n étant le rang du mouton au-delà de ceux
+  // que la surface de départ accueille. La surface achetée reste acquise.
+  PATURAGE: {
+    deblocage: 150,
+    surfaceDepart: 0.5,
+    haParMouton: 0.05,
+    prixSurface: 40,
+    croissance: 1.2,
   },
 };
 
@@ -1062,16 +1101,17 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 6;
+const STATE_VERSION = 7;
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // repas et santé, puis pousse. Lot 4 : la ponte. Lot 5 : les préparations en
 // cours se terminent (après le repas du soir : un plat fini pendant la nuit se
-// mange dès le repas suivant). Lot 3 : la péremption, toujours en dernier. Les
+// mange dès le repas suivant). Lot 6 : les moutons grossissent et leur laine
+// repousse, juste après la ponte. Lot 3 : la péremption, toujours en dernier. Les
 // lots suivants insèrent leurs fonctions avant `spoil`.
 // Chaque étape reçoit l'état et le modifie.
-const NIGHT_STEPS = [feedFamily, growAll, layEggs, finishPreparations, spoil];
+const NIGHT_STEPS = [feedFamily, growAll, layEggs, growSheep, finishPreparations, spoil];
 
 /* ---------- Lot 5 : plats cuisinés (objets calculés depuis DATA.recipes) ---------- */
 
@@ -2227,7 +2267,8 @@ function animalPrice(kind) {
 // Achat d'une poule au Comptoir : refusé si le Poulailler n'existe pas, s'il
 // est plein ou si les pièces manquent. Pas de revente.
 function buyAnimal(state, kind) {
-  if (kind !== 'poule') return fail('Cet animal n\'est pas encore en vente.');
+  if (kind === 'mouton') return buySheep(state);
+  if (kind !== 'poule') return fail('Cet animal n\'est pas en vente.');
   const p = state.poulailler;
   if (!p.construit) return fail('Construis d\'abord le Poulailler.');
   if (p.poules >= coopCapacity(state)) return fail('Le Poulailler est plein.');
@@ -2291,6 +2332,146 @@ function layEggs(state) {
   state.nuit.oeufs = eggs;
   p.nourries = 0;
   return eggs;
+}
+
+/* ---------- Lot 6 : Pâturage et moutons ---------- */
+
+// state.paturage = { construit, ha, compteur, moutons: [ { id, poids, laine } ] }.
+// ha : surface acquise (0 avant le déblocage) ; compteur : numéro du dernier
+// mouton acheté (les identifiants ne sont jamais réutilisés) ; poids en kg ;
+// laine : jours de repousse accumulés depuis la dernière tonte.
+
+// Nombre de moutons qu'une surface accueille (0,05 ha chacun).
+function maxSheep(ha) {
+  return Math.floor(ha / DATA.PATURAGE.haParMouton + EPS);
+}
+
+// Arrondit une surface au centième d'hectare : évite la dérive des additions
+// de 0,05.
+function roundHa(ha) {
+  return Math.round(ha * 100) / 100;
+}
+
+function sheepCount(state) {
+  return state.paturage.moutons.length;
+}
+
+function pastureCapacity(state) {
+  return state.paturage.construit ? maxSheep(state.paturage.ha) : 0;
+}
+
+function freeSheepPlaces(state) {
+  return Math.max(0, pastureCapacity(state) - sheepCount(state));
+}
+
+// Prix des prochains 0,05 ha : 40 × 1,2^(n − 1), n étant le rang du prochain
+// mouton au-delà de ceux que la surface de départ accueille (11ᵉ : 40, 12ᵉ : 48,
+// 13ᵉ : 57,6). Le rang suit le nombre de moutons présents.
+function pastureCost(state) {
+  const P = DATA.PATURAGE;
+  const rank = Math.max(1, sheepCount(state) - maxSheep(P.surfaceDepart) + 1);
+  return roundCoins(P.prixSurface * Math.pow(P.croissance, rank - 1));
+}
+
+// Débloque le Pâturage : la surface de départ est acquise.
+function buildPaturage(state) {
+  const p = state.paturage;
+  if (p.construit) return fail('Le Pâturage est déjà débloqué.');
+  const cost = DATA.PATURAGE.deblocage;
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  p.construit = true;
+  p.ha = DATA.PATURAGE.surfaceDepart;
+  return { ok: true, cost };
+}
+
+// Achète 0,05 ha. Refusé s'il reste une place libre : la surface n'est utile que
+// pour le mouton suivant, et son prix suit le nombre de moutons présents.
+function buyPasture(state) {
+  const p = state.paturage;
+  if (!p.construit) return fail('Débloque d\'abord le Pâturage.');
+  if (freeSheepPlaces(state) > 0) return fail('Il reste de la place : achète un mouton d\'abord.');
+  const cost = pastureCost(state);
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  p.ha = roundHa(p.ha + DATA.PATURAGE.haParMouton);
+  return { ok: true, cost, ha: p.ha };
+}
+
+function makeSheep(state) {
+  const p = state.paturage;
+  p.compteur += 1;
+  return { id: `mouton-${p.compteur}`, poids: DATA.ANIMAUX.mouton.poidsDepart, laine: 0 };
+}
+
+// Achat d'un mouton au Comptoir : prix fixe, refusé sans Pâturage, sans place
+// libre ou sans assez de pièces. Pas de revente.
+function buySheep(state) {
+  const p = state.paturage;
+  if (!p.construit) return fail('Débloque d\'abord le Pâturage (onglet Ferme).');
+  if (freeSheepPlaces(state) <= 0) return fail('Le Pâturage est plein : achète 0,05 ha (onglet Ferme).');
+  const price = animalPrice('mouton');
+  if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
+  spend(state, price);
+  const sheep = makeSheep(state);
+  p.moutons.push(sheep);
+  return { ok: true, cost: price, id: sheep.id };
+}
+
+function findSheep(state, id) {
+  return state.paturage.moutons.find((m) => m.id === id) || null;
+}
+
+// Portions de viande rendues à l'abattage : poids × rendement ÷ kg par portion,
+// arrondi à l'inférieur (20 kg → 20 portions, 50 kg → 50).
+function meatPortions(poids) {
+  const M = DATA.ANIMAUX.mouton;
+  return Math.floor((poids * M.rendement) / M.kgParPortion + EPS);
+}
+
+// Un mouton se tond quand sa laine a repoussé le nombre de jours voulu.
+function woolReady(m) {
+  return m.laine >= DATA.ANIMAUX.mouton.joursLaine;
+}
+
+function sheepToShear(state) {
+  return state.paturage.moutons.filter(woolReady).length;
+}
+
+// Étape nocturne, juste après la ponte : chaque mouton prend du poids (jusqu'au
+// maximum) tant que le pâturage suffit, et sa laine repousse d'un jour (jusqu'à
+// la tonte possible).
+function growSheep(state) {
+  const M = DATA.ANIMAUX.mouton;
+  const p = state.paturage;
+  const enough = p.moutons.length <= pastureCapacity(state);
+  for (const m of p.moutons) {
+    if (enough) m.poids = Math.min(M.poidsMax, m.poids + M.gainKg);
+    m.laine = Math.min(M.joursLaine, m.laine + 1);
+  }
+}
+
+// Tonte au clic : 1 laine, la repousse repart de zéro, le mouton reste.
+function shear(state, id) {
+  const m = findSheep(state, id);
+  if (!m) return fail('Mouton introuvable.');
+  if (!woolReady(m)) return fail(`La laine n'a pas fini de repousser (${m.laine} / ${DATA.ANIMAUX.mouton.joursLaine} nuits).`);
+  const M = DATA.ANIMAUX.mouton;
+  addItem(state, M.laine, M.laineParTonte);
+  m.laine = 0;
+  return { ok: true, laine: M.laineParTonte };
+}
+
+// Abattage au clic : le mouton disparaît, sa viande arrive à l'inventaire, sa
+// place se libère. La surface achetée reste acquise.
+function slaughter(state, id) {
+  const p = state.paturage;
+  const i = p.moutons.findIndex((m) => m.id === id);
+  if (i < 0) return fail('Mouton introuvable.');
+  const portions = meatPortions(p.moutons[i].poids);
+  p.moutons.splice(i, 1);
+  addItem(state, DATA.ANIMAUX.mouton.viande, portions);
+  return { ok: true, portions };
 }
 
 /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
@@ -2508,6 +2689,9 @@ function buildMorningReport(state) {
     // Lot 5 : bonus de santé des plats mangés, préparations terminées pendant la nuit.
     bonusPlats: state.nuit.bonusPlats || 0,
     termine: { ...(state.nuit.termine || {}) },
+    // Lot 6 : moutons présents et moutons dont la laine est prête à tondre.
+    moutons: state.paturage.moutons.length,
+    lainePrete: sheepToShear(state),
   };
 }
 
@@ -2584,6 +2768,31 @@ function testAddHens(state, count = 4) {
     p.niveau = 1;
   }
   p.poules = Math.min(coopCapacity(state), p.poules + count);
+  return { ok: true };
+}
+
+// Lot 6 : +3 moutons, dans la limite des places libres. Le Pâturage est débloqué
+// gratuitement s'il ne l'était pas.
+function testAddSheep(state, count = 3) {
+  const p = state.paturage;
+  if (!p.construit) {
+    p.construit = true;
+    p.ha = DATA.PATURAGE.surfaceDepart;
+  }
+  const n = Math.min(count, freeSheepPlaces(state));
+  for (let i = 0; i < n; i++) p.moutons.push(makeSheep(state));
+  return { ok: true, added: n };
+}
+
+// Lot 6 : tous les moutons passent au poids maximum.
+function testFattenSheep(state) {
+  for (const m of state.paturage.moutons) m.poids = DATA.ANIMAUX.mouton.poidsMax;
+  return { ok: true };
+}
+
+// Lot 6 : la laine de tous les moutons est prête à tondre.
+function testWoolReady(state) {
+  for (const m of state.paturage.moutons) m.laine = DATA.ANIMAUX.mouton.joursLaine;
   return { ok: true };
 }
 
@@ -2697,6 +2906,13 @@ function startLot5() {
   return { stations };
 }
 
+// Lot 6 : le Pâturage, à débloquer (aucune surface, aucun mouton).
+function startLot6() {
+  return {
+    paturage: { construit: false, ha: 0, compteur: 0, moutons: [] },
+  };
+}
+
 function createInitialState(seed = 1) {
   return {
     version: STATE_VERSION,
@@ -2711,6 +2927,7 @@ function createInitialState(seed = 1) {
     ...startHousehold(),
     ...startLot4(),
     ...startLot5(),
+    ...startLot6(),
   };
 }
 
@@ -2762,6 +2979,12 @@ const MIGRATIONS = {
     ...state,
     nuit: { bonusPlats: 0, termine: {}, ...(state.nuit && typeof state.nuit === 'object' ? state.nuit : {}) },
     version: 6,
+  }),
+  // v6 (Lot 5) → v7 (Lot 6) : le Pâturage (à débloquer), sans moutons.
+  6: (state) => ({
+    ...startLot6(),
+    ...state,
+    version: 7,
   }),
 };
 
@@ -2904,7 +3127,7 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 6);
+  assertEqual(s.version, 7);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
@@ -4025,12 +4248,13 @@ test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de g
   assertEqual(s.famille.soinsPayes, 0, 'aucun soin payé');
 });
 
-test('ordre des étapes nocturnes : repas et santé, pousse, ponte, préparations, puis péremption en dernier', () => {
-  assertEqual(NIGHT_STEPS.length, 5);
+test('ordre des étapes nocturnes : repas et santé, pousse, ponte, moutons, préparations, puis péremption en dernier', () => {
+  assertEqual(NIGHT_STEPS.length, 6);
   assert(NIGHT_STEPS[0] === feedFamily, 'première étape : repas et santé');
   assert(NIGHT_STEPS[1] === growAll, 'deuxième étape : pousse');
   assert(NIGHT_STEPS[2] === layEggs, 'troisième étape : ponte');
-  assert(NIGHT_STEPS[3] === finishPreparations, 'quatrième étape : les préparations se terminent');
+  assert(NIGHT_STEPS[3] === growSheep, 'quatrième étape : les moutons grossissent, juste après la ponte');
+  assert(NIGHT_STEPS[4] === finishPreparations, 'cinquième étape : les préparations se terminent');
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
@@ -4800,7 +5024,8 @@ test('achat de poule refusé si le poulailler est plein ou absent, et sans effet
   const t = ranch({ coop: false });
   assertEqual(buyAnimal(t, 'poule').ok, false, 'pas de poulailler');
   assertEqual(t.poulailler.poules, 0);
-  assertEqual(buyAnimal(s, 'mouton').ok, false, 'le mouton arrive plus tard');
+  assertEqual(buyAnimal(s, 'mouton').ok, false, 'pas de Pâturage : pas de mouton');
+  assertEqual(buyAnimal(s, 'chevre').ok, false, 'animal inconnu');
   assertEqual(typeof sellItem, 'function');
   assertEqual(DATA.items.poule, undefined, 'une poule n\'est pas un objet : elle ne se revend pas');
 });
@@ -5685,7 +5910,7 @@ test('sérialisation JSON : préparations en cours, appareils et plats font l\'a
   assertEqual([countItem(copy, 'pain'), countItem(copy, 'farine')], [1, 1]);
 });
 
-test('migration v5 (Lot 4) → v6 : les stations apparaissent, la partie est gardée', () => {
+test('migration v5 (Lot 4) → v6 (puis v7) : les stations apparaissent, la partie est gardée', () => {
   const v5 = {
     version: 5, day: 20, awakeSeconds: 8, pieces: 432, rngSeed: 4, stats: {},
     unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'], marche: {},
@@ -5693,7 +5918,7 @@ test('migration v5 (Lot 4) → v6 : les stations apparaissent, la partie est gar
   };
   delete v5.nuit.bonusPlats;
   const m = migrate({ v: 5, t: 0, s: v5 });
-  assertEqual(m.version, 6);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces], [20, 432]);
   for (const id of ['four', 'cuisine', 'moulin', 'presse']) {
     assertEqual(m.stations[id], { construit: false, tache: null, appareil: null }, id);
@@ -5720,6 +5945,337 @@ test('migration v0 → version courante : les chaînes mènent au Lot 5', () => 
   assertEqual(m.version, STATE_VERSION);
   assertEqual(m.stations.moulin.construit, false);
   assertEqual(allDevices(m).length, 3);
+});
+
+/* ---------- Lot 6 : Pâturage et moutons ---------- */
+
+// État de test : Pâturage débloqué (0,5 ha) avec assez de pièces pour tout acheter.
+function pature({ built = true } = {}) {
+  const s = garden();
+  s.pieces = 5000;
+  if (built) assert(buildPaturage(s).ok, 'débloquer le Pâturage');
+  return s;
+}
+
+function fillSheep(s, n) {
+  for (let i = 0; i < n; i++) assert(buySheep(s).ok, `mouton ${i + 1}`);
+}
+
+function sleepOnce(s) {
+  s.awakeSeconds = 30;
+  return sleep(s);
+}
+
+test('DATA Lot 6 : Pâturage, mouton, laine', () => {
+  assertEqual(DATA.PATURAGE, { deblocage: 150, surfaceDepart: 0.5, haParMouton: 0.05, prixSurface: 40, croissance: 1.2 });
+  const m = DATA.ANIMAUX.mouton;
+  assertEqual([m.prix, m.poidsDepart, m.gainKg, m.poidsMax], [60, 20, 0.5, 50]);
+  assertEqual([m.joursLaine, m.laineParTonte, m.rendement, m.kgParPortion], [7, 1, 0.5, 0.5]);
+  assertEqual([DATA.items.laine.prix, DATA.items.laine.edible, shelfLife('laine')], [6, false, null]);
+  assertEqual([DATA.items.viande.energie, DATA.items.viande.prix, shelfLife('viande')], [30, 5, 5]);
+});
+
+test('état initial Lot 6 : Pâturage à débloquer, sans surface ni mouton', () => {
+  const s = createInitialState(1);
+  assertEqual(s.paturage, { construit: false, ha: 0, compteur: 0, moutons: [] });
+  assertEqual([pastureCapacity(s), sheepCount(s), freeSheepPlaces(s)], [0, 0, 0]);
+});
+
+test('Pâturage : débloqué à 150 pièces, 0,5 ha et 10 places', () => {
+  const s = garden();
+  s.pieces = 149;
+  assertEqual(buildPaturage(s).ok, false, 'refusé sans 150 pièces');
+  assertEqual([s.pieces, s.paturage.construit, s.paturage.ha], [149, false, 0]);
+  s.pieces = 150;
+  assertEqual(buildPaturage(s).ok, true);
+  assertEqual([s.pieces, s.paturage.construit, s.paturage.ha], [0, true, 0.5]);
+  assertEqual([pastureCapacity(s), freeSheepPlaces(s)], [10, 10]);
+  assertEqual(buildPaturage(s).ok, false, 'un seul déblocage');
+  assertEqual(maxSheep(0.5), 10);
+  assertEqual([maxSheep(0.55), maxSheep(0.6), maxSheep(0.65), maxSheep(0.05), maxSheep(0.049)], [11, 12, 13, 1, 0]);
+});
+
+test('mouton : 60 pièces, refusé sans Pâturage ni pièces, poids de départ 20 kg', () => {
+  const s = pature({ built: false });
+  const r = buySheep(s);
+  assertEqual([r.ok, s.pieces], [false, 5000], 'pas de Pâturage');
+  buildPaturage(s);
+  s.pieces = 59;
+  assertEqual(buySheep(s).ok, false, 'pas assez de pièces');
+  assertEqual(sheepCount(s), 0);
+  s.pieces = 200;
+  const ok = buyAnimal(s, 'mouton');
+  assertEqual([ok.ok, ok.cost, s.pieces], [true, 60, 140]);
+  assertEqual(s.paturage.moutons, [{ id: 'mouton-1', poids: 20, laine: 0 }]);
+  assertEqual(animalPrice('mouton'), 60);
+  buyAnimal(s, 'mouton');
+  assertEqual(animalPrice('mouton'), 60, 'prix fixe, quel que soit le nombre');
+  assertEqual(s.paturage.moutons.map((m) => m.id), ['mouton-1', 'mouton-2']);
+});
+
+test('mouton : refusé quand le Pâturage est plein (10 places pour 0,5 ha), sans effet sur les pièces', () => {
+  const s = pature();
+  fillSheep(s, 10);
+  assertEqual([sheepCount(s), freeSheepPlaces(s)], [10, 0]);
+  const before = s.pieces;
+  const r = buyAnimal(s, 'mouton');
+  assertEqual(r.ok, false);
+  assertEqual([s.pieces, sheepCount(s)], [before, 10]);
+});
+
+test('surface : 0,05 ha à 40, 48 puis 57,6 pièces pour les 11ᵉ, 12ᵉ et 13ᵉ moutons', () => {
+  const s = pature();
+  fillSheep(s, 10);
+  assertEqual(pastureCost(s), 40);
+  const prices = [];
+  for (let i = 0; i < 3; i++) {
+    const cost = pastureCost(s);
+    const before = s.pieces;
+    const r = buyPasture(s);
+    assertEqual(r.ok, true);
+    assertEqual(roundCoins(before - s.pieces), cost);
+    prices.push(cost);
+    assertEqual(freeSheepPlaces(s), 1);
+    assert(buySheep(s).ok, 'le mouton suit la surface');
+  }
+  assertEqual(prices, [40, 48, 57.6]);
+  assertEqual([s.paturage.ha, sheepCount(s), pastureCapacity(s)], [0.65, 13, 13]);
+  assertEqual(pastureCost(s), 69.12, '14ᵉ mouton : 40 × 1,2³');
+});
+
+test('surface : refusée sans Pâturage, sans pièces, ou s\'il reste une place libre', () => {
+  const s = pature({ built: false });
+  assertEqual(buyPasture(s).ok, false, 'pas de Pâturage');
+  buildPaturage(s);
+  assertEqual(buyPasture(s).ok, false, 'il reste 10 places libres');
+  assertEqual(s.paturage.ha, 0.5);
+  fillSheep(s, 10);
+  s.pieces = 39;
+  assertEqual(buyPasture(s).ok, false, 'pas assez de pièces');
+  assertEqual([s.pieces, s.paturage.ha], [39, 0.5]);
+  s.pieces = 40;
+  assertEqual(buyPasture(s).ok, true);
+  assertEqual([s.pieces, s.paturage.ha], [0, 0.55]);
+  assertEqual(buyPasture(s).ok, false, 'la nouvelle place n\'est pas encore prise');
+});
+
+test('croissance : +0,5 kg par nuit, plafonnée à 50 kg', () => {
+  const s = pature();
+  fillSheep(s, 1);
+  const m = s.paturage.moutons[0];
+  sleepOnce(s);
+  assertEqual(m.poids, 20.5);
+  for (let i = 0; i < 10; i++) sleepOnce(s);
+  assertEqual(m.poids, 25.5);
+  for (let i = 0; i < 100; i++) sleepOnce(s);
+  assertEqual(m.poids, 50, 'jamais au-dessus du maximum');
+  sleepOnce(s);
+  assertEqual(m.poids, 50);
+  assertEqual(s.day, 113);
+});
+
+test('croissance : 60 nuits pour passer de 20 à 50 kg', () => {
+  const s = pature();
+  fillSheep(s, 1);
+  for (let i = 0; i < 59; i++) sleepOnce(s);
+  assertEqual(s.paturage.moutons[0].poids, 49.5);
+  sleepOnce(s);
+  assertEqual(s.paturage.moutons[0].poids, 50);
+});
+
+test('growSheep : tous les moutons grossissent, seulement tant que le pâturage suffit', () => {
+  const s = pature();
+  fillSheep(s, 3);
+  growSheep(s);
+  assertEqual(s.paturage.moutons.map((m) => m.poids), [20.5, 20.5, 20.5]);
+  s.paturage.ha = 0.1; // situation impossible en jeu : 3 moutons pour 2 places
+  growSheep(s);
+  assertEqual(s.paturage.moutons.map((m) => m.poids), [20.5, 20.5, 20.5], 'pas de prise de poids sans pâturage suffisant');
+  assertEqual(s.paturage.moutons.map((m) => m.laine), [2, 2, 2], 'la laine repousse quand même');
+});
+
+test('laine : +1 jour par nuit, tonte refusée avant 7 nuits, puis 1 laine et repousse à zéro', () => {
+  const s = pature();
+  fillSheep(s, 1);
+  const id = s.paturage.moutons[0].id;
+  for (let n = 1; n <= 6; n++) {
+    sleepOnce(s);
+    assertEqual(s.paturage.moutons[0].laine, n);
+    const r = shear(s, id);
+    assertEqual(r.ok, false, `tonte refusée à ${n} nuit${n > 1 ? 's' : ''}`);
+  }
+  assertEqual(countItem(s, 'laine'), 0);
+  assertEqual(woolReady(s.paturage.moutons[0]), false);
+  assertEqual(sheepToShear(s), 0);
+  sleepOnce(s);
+  assertEqual(sheepToShear(s), 1);
+  const r = shear(s, id);
+  assertEqual([r.ok, r.laine], [true, 1]);
+  assertEqual([countItem(s, 'laine'), s.paturage.moutons[0].laine, sheepCount(s)], [1, 0, 1], 'le mouton reste');
+  assertEqual(shear(s, id).ok, false, 'pas deux tontes de suite');
+  for (let i = 0; i < 20; i++) sleepOnce(s);
+  assertEqual(s.paturage.moutons[0].laine, 7, 'la repousse plafonne à 7 jours');
+  assertEqual(shear(s, id).ok, true);
+  assertEqual(countItem(s, 'laine'), 2);
+  assertEqual(shear(s, 'mouton-99').ok, false, 'mouton inconnu');
+});
+
+test('laine : ni périssable ni comestible, vendue 6 pièces l\'unité', () => {
+  const s = pature();
+  testAddSheep(s, 1);
+  testWoolReady(s);
+  shear(s, 'mouton-1');
+  for (let i = 0; i < 10; i++) sleepOnce(s);
+  assertEqual(countItem(s, 'laine'), 1, 'la laine ne périme pas');
+  assertEqual(planMeal(s).mange.laine, undefined, 'la famille ne la mange pas');
+  const before = s.pieces;
+  const r = sellItem(s, 'laine', 1);
+  assertEqual([r.ok, r.gain, s.pieces], [true, 6, before + 6]);
+  assertEqual(isBuyable('laine'), false, 'la laine ne se rachète pas');
+});
+
+test('abattage : 20 portions à 20 kg, 50 portions à 50 kg, et le mouton disparaît', () => {
+  const s = pature();
+  fillSheep(s, 2);
+  assertEqual(meatPortions(20), 20);
+  assertEqual(meatPortions(50), 50);
+  assertEqual(meatPortions(20.5), 20, 'arrondi à l\'inférieur');
+  assertEqual(meatPortions(20.4), 20);
+  const r = slaughter(s, 'mouton-1');
+  assertEqual([r.ok, r.portions], [true, 20]);
+  assertEqual(countItem(s, 'viande'), 20);
+  assertEqual(s.paturage.moutons.map((m) => m.id), ['mouton-2']);
+  s.paturage.moutons[0].poids = 50;
+  assertEqual(slaughter(s, 'mouton-2').portions, 50);
+  assertEqual(countItem(s, 'viande'), 70);
+  assertEqual(sheepCount(s), 0);
+  assertEqual(slaughter(s, 'mouton-2').ok, false, 'déjà abattu');
+  assertEqual(lotsOf(s, 'viande')[0].nightsLeft, 5, 'la viande périme en 5 nuits');
+});
+
+test('abattage : la surface achetée reste acquise et la place se libère', () => {
+  const s = pature();
+  fillSheep(s, 10);
+  assertEqual(buyPasture(s).ok, true);
+  assert(buySheep(s).ok);
+  assertEqual([s.paturage.ha, sheepCount(s), freeSheepPlaces(s)], [0.55, 11, 0]);
+  assertEqual(slaughter(s, 'mouton-11').ok, true);
+  assertEqual(s.paturage.ha, 0.55, 'la surface reste acquise');
+  assertEqual([sheepCount(s), pastureCapacity(s), freeSheepPlaces(s)], [10, 11, 1]);
+  const before = s.pieces;
+  assertEqual(buySheep(s).ok, true, 'le remplaçant se paie 60 pièces, sans racheter de surface');
+  assertEqual(before - s.pieces, 60);
+  assertEqual(s.paturage.moutons[10].id, 'mouton-12', 'les identifiants ne sont pas réutilisés');
+  assertEqual(s.paturage.ha, 0.55);
+});
+
+test('abattage : viande rendue selon le poids réel après plusieurs nuits', () => {
+  const s = pature();
+  fillSheep(s, 1);
+  for (let i = 0; i < 25; i++) sleepOnce(s);
+  assertEqual(s.paturage.moutons[0].poids, 32.5);
+  assertEqual(slaughter(s, 'mouton-1').portions, 32);
+});
+
+test('recettes à viande : le ragoût devient réalisable avec la viande d\'un mouton abattu', () => {
+  const s = pature();
+  s.stations.four = { construit: true, tache: null, appareil: null };
+  s.stations.cuisine = { construit: true, tache: null, appareil: null };
+  setInv(s, { carotte: 2, patate: 1 });
+  assertEqual(recipeStatus(s, 'ragout').code, 'manque');
+  fillSheep(s, 1);
+  slaughter(s, 'mouton-1');
+  assertEqual(countItem(s, 'viande'), 20);
+  assertEqual(recipeStatus(s, 'ragout').code, 'pret');
+  assertEqual(startRecipe(s, 'ragout').ok, true);
+  assertEqual(countItem(s, 'viande'), 18);
+});
+
+test('rapport de réveil : moutons présents et laine prête', () => {
+  const s = pature();
+  fillSheep(s, 3);
+  for (let i = 0; i < 6; i++) sleepOnce(s);
+  let rep = sleepOnce(s);
+  assertEqual([rep.moutons, rep.lainePrete], [3, 3]);
+  shear(s, 'mouton-1');
+  rep = buildMorningReport(s);
+  assertEqual([rep.moutons, rep.lainePrete], [3, 2]);
+  const t = garden();
+  rep = sleepOnce(t);
+  assertEqual([rep.moutons, rep.lainePrete], [0, 0]);
+});
+
+test('nuit : growSheep passe juste après la ponte et ne perturbe ni le repas ni les œufs', () => {
+  const s = pature();
+  testAddHens(s, 4);
+  fillSheep(s, 2);
+  s.poulailler.nourries = 4;
+  const rep = sleepOnce(s);
+  assertEqual(rep.oeufs, 4);
+  assertEqual(s.paturage.moutons.map((m) => [m.poids, m.laine]), [[20.5, 1], [20.5, 1]]);
+  assert(rep.energieMangee > 0, 'le repas a bien eu lieu');
+});
+
+test('mode test Lot 6 : +3 moutons, poids maximum, laine prête', () => {
+  const s = createInitialState(1);
+  s.pieces = 0;
+  assertEqual(testAddSheep(s).ok, true);
+  assertEqual([s.pieces, s.paturage.construit, s.paturage.ha, sheepCount(s)], [0, true, 0.5, 3], 'Pâturage débloqué gratuitement');
+  testAddSheep(s);
+  assertEqual(sheepCount(s), 6);
+  testAddSheep(s, 10);
+  assertEqual(sheepCount(s), 10, 'dans la limite des places libres');
+  assertEqual(testAddSheep(s).added, 0);
+  assertEqual(s.paturage.moutons.map((m) => m.id).length, 10);
+  testFattenSheep(s);
+  assertEqual(s.paturage.moutons.every((m) => m.poids === 50), true);
+  assertEqual(sheepToShear(s), 0);
+  testWoolReady(s);
+  assertEqual(sheepToShear(s), 10);
+  assertEqual(shear(s, 'mouton-1').ok, true);
+  assertEqual(slaughter(s, 'mouton-2').portions, 50);
+});
+
+test('sérialisation JSON : Pâturage et moutons font l\'aller-retour et la partie continue à l\'identique', () => {
+  const s = pature();
+  fillSheep(s, 3);
+  sleepOnce(s);
+  const copy = JSON.parse(JSON.stringify(s));
+  assertEqual(copy, s);
+  for (let i = 0; i < 8; i++) {
+    sleepOnce(s);
+    sleepOnce(copy);
+  }
+  assertEqual(copy, s);
+  assertEqual(copy.paturage.moutons[0].poids, 24.5);
+});
+
+test('migration v6 (Lot 5) → v7 : le Pâturage apparaît à débloquer, la partie est gardée', () => {
+  const v6 = {
+    version: 6, day: 30, awakeSeconds: 11, pieces: 640, rngSeed: 2, stats: {},
+    unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes'], marche: {},
+    ...startFarm(), ...startHousehold(), ...startLot4(), ...startLot5(),
+  };
+  const m = migrate({ v: 6, t: 0, s: v6 });
+  assertEqual(m.version, 7);
+  assertEqual([m.day, m.pieces], [30, 640]);
+  assertEqual(m.paturage, { construit: false, ha: 0, compteur: 0, moutons: [] });
+  assertEqual(inventoryCounts(m).conserve, 160);
+  m.pieces = 500;
+  assertEqual(buildPaturage(m).ok, true);
+  assertEqual(buySheep(m).ok, true);
+  m.awakeSeconds = 30;
+  assertEqual(sleep(m).moutons, 1);
+  // une sauvegarde déjà en v7 n'est pas modifiée
+  const again = migrate({ v: 7, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  assertEqual(again.paturage, m.paturage);
+});
+
+test('migration v0 → version courante : les chaînes mènent au Lot 6', () => {
+  const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual(m.version, 7);
+  assertEqual(m.paturage.construit, false);
+  assertEqual(m.paturage.moutons, []);
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -6160,6 +6716,7 @@ function renderFerme() {
     ${renderChamp()}
     ${renderSilo()}
     ${renderPoulailler()}
+    ${renderPaturage()}
     ${renderAteliers()}
     <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
@@ -6397,6 +6954,103 @@ function renderPoulailler() {
       </span>
       ${upBtn}
     </div>`;
+}
+
+/* ---------- Ferme : Pâturage et moutons ---------- */
+
+function formatHa(ha) {
+  return `${formatFixed(ha, 2)} ha`;
+}
+
+// « 20,5 kg » : une décimale seulement quand il y a un demi.
+function formatKg(kg) {
+  return `${formatQty(kg)} kg`;
+}
+
+function sheepNumber(m) {
+  return m.id.replace('mouton-', '');
+}
+
+function sheepCard(m) {
+  const M = DATA.ANIMAUX.mouton;
+  const ready = woolReady(m);
+  const woolPct = Math.round((m.laine / M.joursLaine) * 100);
+  const weightPct = Math.round((m.poids / M.poidsMax) * 100);
+  const portions = meatPortions(m.poids);
+  const woolText = ready ? 'Laine prête' : `Laine : ${m.laine} / ${M.joursLaine} nuits`;
+  return `
+    <article class="card sheep${ready ? ' ready' : ''}">
+      <span class="card-title"><span>${M.icone} Mouton n°${sheepNumber(m)}</span><span class="chip${ready ? ' badge' : ''}">${ready ? '🧶 Prêt à tondre' : 'Laine en repousse'}</span></span>
+      <span class="muted">Poids : <strong class="num">${formatKg(m.poids)}</strong> sur ${formatKg(M.poidsMax)}${m.poids >= M.poidsMax - EPS ? ' (maximum)' : ''}</span>
+      <span class="bar" role="progressbar" aria-label="Poids" aria-valuemin="0" aria-valuemax="${M.poidsMax}" aria-valuenow="${Math.round(m.poids)}"><span class="bar-fill" style="width:${weightPct}%"></span></span>
+      <span class="muted">${woolText}</span>
+      <span class="bar" role="progressbar" aria-label="Repousse de la laine" aria-valuemin="0" aria-valuemax="${M.joursLaine}" aria-valuenow="${m.laine}"><span class="bar-fill${ready ? '' : ' warn'}" style="width:${woolPct}%"></span></span>
+      <span class="device-actions">
+        <button type="button" class="btn primary" data-action="shear" data-id="${m.id}"${ready ? '' : ' disabled'}>✂️ Tondre</button>
+        <button type="button" class="btn danger" data-action="ask-slaughter" data-id="${m.id}" aria-label="Abattre le mouton n°${sheepNumber(m)} : ${portions} portions">🔪 Abattre</button>
+      </span>
+    </article>`;
+}
+
+function renderPaturage() {
+  const p = state.paturage;
+  const M = DATA.ANIMAUX.mouton;
+  if (!p.construit) {
+    const cost = DATA.PATURAGE.deblocage;
+    return `
+      <div class="section-head"><h3>🐑 Pâturage</h3></div>
+      <div class="card">
+        <span class="muted">${formatHa(DATA.PATURAGE.surfaceDepart)} au départ : ${maxSheep(DATA.PATURAGE.surfaceDepart)} moutons au plus. La laine se tond toutes les ${M.joursLaine} nuits ; la viande vient de l'abattage. Les moutons s'achètent au Comptoir.</span>
+        <button type="button" class="btn primary" data-action="build-paturage"${canPay(cost) ? '' : ' disabled'}>Débloquer le Pâturage (${costLabel(cost)})</button>
+      </div>`;
+  }
+  const count = sheepCount(state);
+  const cap = pastureCapacity(state);
+  const free = freeSheepPlaces(state);
+  const cost = pastureCost(state);
+  const pct = cap > 0 ? Math.min(100, Math.round((count / cap) * 100)) : 0;
+  const ready = sheepToShear(state);
+  let hint;
+  if (count === 0) hint = 'Aucun mouton : achètes-en au Comptoir (onglet Animaux).';
+  else if (free === 0) hint = '⚠️ Pâturage plein : achète 0,05 ha pour accueillir le mouton suivant.';
+  else hint = `${free} place${free > 1 ? 's' : ''} libre${free > 1 ? 's' : ''}.`;
+  const buyOk = free === 0 && canPay(cost);
+  return `
+    <div class="section-head">
+      <h3>🐑 Pâturage · ${formatHa(p.ha)}</h3>
+      ${ready > 0 ? `<span class="chip badge">🧶 ${ready} à tondre</span>` : ''}
+    </div>
+    <div class="card">
+      <span class="big" aria-label="Moutons sur capacité">${M.icone} ${count} / ${cap} moutons</span>
+      <span class="bar" role="progressbar" aria-label="Places occupées" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${count}"><span class="bar-fill${free === 0 ? ' warn' : ''}" style="width:${pct}%"></span></span>
+      <span class="muted">Surface : <span class="num">${formatHa(p.ha)}</span> · ${formatFixed(DATA.PATURAGE.haParMouton, 2)} ha par mouton. La surface achetée reste acquise, même après un abattage.</span>
+      <span class="muted">${hint}</span>
+      <button type="button" class="btn" data-action="buy-pasture"${buyOk ? '' : ' disabled'}>Acheter ${formatFixed(DATA.PATURAGE.haParMouton, 2)} ha (${costLabel(cost)})</button>
+    </div>
+    ${count > 0 ? `<div class="cards sheep-list">${p.moutons.map(sheepCard).join('')}</div>` : ''}`;
+}
+
+function openSlaughterModal(id) {
+  const m = findSheep(state, id);
+  if (!m) return;
+  const portions = meatPortions(m.poids);
+  const energy = portions * DATA.items[DATA.ANIMAUX.mouton.viande].energie;
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="slaughter-title" data-stop-propagation>
+        <h2 id="slaughter-title">🔪 Abattre le mouton n°${sheepNumber(m)} ?</h2>
+        <div class="stack">
+          <p>Il pèse <strong class="num">${formatKg(m.poids)}</strong> : il donnera <strong class="num">${portions} portion${portions > 1 ? 's' : ''}</strong> de viande 🥩 (${formatNumber(energy)} énergie).</p>
+          <p class="muted">Le mouton disparaît, sa place se libère et la surface achetée reste acquise. Un mouton abattu se rachète ${formatCoins(animalPrice('mouton'))} 💰.</p>
+        </div>
+        <div class="row">
+          <button type="button" class="btn danger" data-action="confirm-slaughter" data-id="${m.id}">Oui, abattre</button>
+          <button type="button" class="btn" data-action="close-modal" id="slaughter-cancel">Annuler</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('slaughter-cancel').focus();
 }
 
 function plotCard(p, n) {
@@ -6817,9 +7471,9 @@ function buyRow(item) {
     </div>`;
 }
 
-// Onglet Animaux : la poule, à prix fixe et sans revente. Grisée si le
-// Poulailler est plein ou n'existe pas.
-function renderAnimaux() {
+// Onglet Animaux : la poule et le mouton, à prix fixe et sans revente. Grisés
+// s'il n'y a plus de place, ou si leur logement n'existe pas.
+function renderHenRow() {
   const def = DATA.ANIMAUX.poule;
   const p = state.poulailler;
   const cap = coopCapacity(state);
@@ -6836,13 +7490,44 @@ function renderAnimaux() {
     note = `Places libres : ${cap - p.poules}.`;
   }
   return `
-    <p class="muted">Les animaux s'achètent à prix fixe, quel que soit leur nombre, et ne se revendent pas.</p>
     <div class="shop-row${ok ? '' : ' unavailable'}">
       <div class="inv-main"><span><span aria-hidden="true">${def.icone}</span> ${def.nom}</span><span class="muted">Poules : <span class="num">${p.poules} / ${cap}</span></span></div>
       <span class="muted">Prix fixe : <strong class="num">${formatCoins(price)} 💰</strong> · mange ${formatFixed(def.bleParNuit, 1)} blé par nuit · pond 1 œuf par nuit si nourrie, toute sa vie.</span>
       <span class="muted">${note}</span>
       <button type="button" class="btn primary" data-action="buy-animal" data-kind="poule"${ok && canPay(price) ? '' : ' disabled'}>Acheter une poule (${formatCoins(price)} 💰)</button>
     </div>`;
+}
+
+function renderSheepRow() {
+  const def = DATA.ANIMAUX.mouton;
+  const p = state.paturage;
+  const cap = pastureCapacity(state);
+  const price = animalPrice('mouton');
+  let note;
+  let ok = true;
+  if (!p.construit) {
+    note = '⚠️ Débloque d\'abord le Pâturage (onglet Ferme).';
+    ok = false;
+  } else if (freeSheepPlaces(state) <= 0) {
+    note = `⚠️ Le Pâturage est plein : achète ${formatFixed(DATA.PATURAGE.haParMouton, 2)} ha (${costLabel(pastureCost(state))}) dans l'onglet Ferme.`;
+    ok = false;
+  } else {
+    note = `Places libres : ${freeSheepPlaces(state)}.`;
+  }
+  return `
+    <div class="shop-row${ok ? '' : ' unavailable'}">
+      <div class="inv-main"><span><span aria-hidden="true">${def.icone}</span> ${def.nom}</span><span class="muted">Moutons : <span class="num">${sheepCount(state)} / ${cap}</span></span></div>
+      <span class="muted">Prix fixe : <strong class="num">${formatCoins(price)} 💰</strong> · grossit de ${formatFixed(def.gainKg, 1)} kg par nuit (${formatKg(def.poidsDepart)} → ${formatKg(def.poidsMax)}) · laine tous les ${def.joursLaine} jours · viande à l'abattage.</span>
+      <span class="muted">${note}</span>
+      <button type="button" class="btn primary" data-action="buy-animal" data-kind="mouton"${ok && canPay(price) ? '' : ' disabled'}>Acheter un mouton (${formatCoins(price)} 💰)</button>
+    </div>`;
+}
+
+function renderAnimaux() {
+  return `
+    <p class="muted">Les animaux s'achètent à prix fixe, quel que soit leur nombre, et ne se revendent pas.</p>
+    ${renderHenRow()}
+    ${renderSheepRow()}`;
 }
 
 function renderComptoir() {
@@ -6903,6 +7588,9 @@ function openWakeModal(report) {
     ...report.nouveauxMalades.map((nom) => `<li class="alert">🤒 ${nom} est tombé malade : il faut le soigner.</li>`),
     report.poules > 0 || report.oeufs > 0
       ? `<li>🥚 Œufs pondus : <strong class="num">${formatNumber(report.oeufs)}</strong> · 🌾 Blé consommé par les poules : <strong class="num">${formatQty(report.bleConsomme)}</strong></li>`
+      : '',
+    report.moutons > 0
+      ? `<li>🐑 Moutons : <strong class="num">${report.moutons}</strong>${report.lainePrete > 0 ? ` · 🧶 Laine prête : <strong class="num">${report.lainePrete}</strong> mouton${report.lainePrete > 1 ? 's' : ''} à tondre` : ''}</li>`
       : '',
     ready ? `<li>🧺 Récoltes prêtes : <strong>${ready}</strong></li>` : '<li>🌱 Aucune récolte prête pour l\'instant.</li>',
     spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
@@ -7088,6 +7776,39 @@ document.addEventListener('click', (e) => {
       if (result.ok) showToast(`Acheté : 1 ${DATA.ANIMAUX[target.dataset.kind].icone} (−${formatCoins(result.cost)} 💰)`);
       break;
     }
+    case 'build-paturage': {
+      const result = applyResult(buildPaturage(state));
+      if (result.ok) showToast(`🐑 Pâturage débloqué : ${formatHa(state.paturage.ha)} (−${formatCoins(result.cost)} 💰)`);
+      break;
+    }
+    case 'buy-pasture': {
+      const result = applyResult(buyPasture(state));
+      if (result.ok) showToast(`Surface achetée : ${formatHa(result.ha)} au total (−${formatCoins(result.cost)} 💰)`);
+      break;
+    }
+    case 'shear': {
+      const result = applyResult(shear(state, target.dataset.id));
+      if (result.ok) showToast(`✂️ Tonte : +${result.laine} 🧶`);
+      break;
+    }
+    case 'ask-slaughter':
+      openSlaughterModal(target.dataset.id);
+      break;
+    case 'confirm-slaughter': {
+      closeModal();
+      const result = applyResult(slaughter(state, target.dataset.id));
+      if (result.ok) showToast(`🔪 Mouton abattu : +${result.portions} 🥩`);
+      break;
+    }
+    case 'test-sheep':
+      applyResult(testAddSheep(state));
+      break;
+    case 'test-fatten':
+      applyResult(testFattenSheep(state));
+      break;
+    case 'test-wool':
+      applyResult(testWoolReady(state));
+      break;
     case 'build-station': {
       const id = target.dataset.station;
       const result = applyResult(buildStation(state, id));
