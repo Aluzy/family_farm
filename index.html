@@ -553,7 +553,6 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 .plot { padding: 12px; gap: 6px; }
 .plot.mature { border-color: var(--accent); border-width: 2px; }
 .plot .btn { width: 100%; padding: 0 8px; font-size: 0.92rem; }
-.plot-emoji { font-size: 2rem; line-height: 1.1; }
 .plot-foot { margin-top: 12px; }
 
 .portraits {
@@ -632,7 +631,6 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
   color: var(--accent-contrast);
 }
 
-.subtab-btn.soon { opacity: 0.6; }
 
 .subtab-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 
@@ -677,7 +675,6 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 .qty-row .qty { min-width: 2.5ch; text-align: center; font-weight: 700; font-size: 1.1rem; }
 .qty-row .sell-go { flex: 1 1 140px; }
 
-.coming { padding: 8px 0; }
 
 /* ---------- Lot 6 : Pâturage et moutons ---------- */
 
@@ -778,9 +775,421 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 .chart-death { fill: var(--danger); opacity: 0.18; }
 .sim-result { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); }
 .sim-result p { margin: 0; font-size: 0.85rem; }
+
+/* ---------- Lot 11 : accessibilité (contrastes, focus, cibles de 44 px) ---------- */
+
+/* Contrastes AA mesurés (texte ≥ 4,5:1, contours ≥ 3:1) : vert et rouge un peu
+   plus foncés en clair, rouge un peu plus clair en sombre, ambre lisible pour
+   les pastilles, anneau de focus visible sur tous les fonds. */
+:root {
+  --accent: #3a7530;
+  --danger: #b23a25;
+  --warn-text: #855400;
+  --focus: #a35a00;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #6fae5a;
+    --danger: #ea7a61;
+    --warn-text: #f2a71b;
+    --focus: #f2a71b;
+  }
+}
+
+.chip.badge { border-color: var(--warn-text); color: var(--warn-text); }
+.chart-bar.full { fill: var(--warn-text); }
+.chapter-card.done, .station.busy { border-color: var(--warn-text); }
+
+:where(button, a[href], input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+details.test-panel summary { min-height: 44px; display: flex; align-items: center; }
+.check-row { min-height: 44px; gap: 12px; cursor: pointer; }
+.check-row input[type="checkbox"] { width: 24px; height: 24px; margin: 0; accent-color: var(--accent); }
+
+/* ---------- Lot 11 : notifications ---------- */
+
+#toast-root {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 120px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+#toast-root .toast {
+  position: static;
+  width: 100%;
+  max-width: 480px;
+  margin: 0;
+  pointer-events: auto;
+  font-weight: 600;
+}
+
+#toast-root .toast.alerte {
+  background: var(--danger);
+  color: var(--danger-contrast);
+}
+
+/* ---------- Lot 11 : illustrations SVG ---------- */
+
+/* Couleurs des dessins (le sprite est dans la page, les <use> en héritent). */
+:root {
+  --a-soil: #9b6a43; --a-soil2: #6f4526; --a-leaf: #5b9e3f; --a-leaf2: #3f7d2c;
+  --a-orange: #e8792b; --a-red: #d63b2f; --a-yellow: #f2c230; --a-yellow2: #b98a12;
+  --a-purple: #6b3a86; --a-green: #2f6e2a; --a-brown: #8a5a2b; --a-white: #fdfaf3;
+  --a-line: #5c4a36; --a-dark: #3b3024; --a-grey: #a9b1b6; --a-grey2: #6d777d;
+  --a-blue: #3d6fb6; --a-blue2: #9cc3ef; --a-wood: #a0703f; --a-roof: #b5452f;
+  --a-brick: #c0643f; --a-glass: #d6eef6; --a-sun: #f2a71b; --a-skin: #efc4b0;
+  --a-egg: #f6e7cc; --a-water: #4a90d9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --a-soil: #8c613f; --a-soil2: #5e3c22; --a-white: #efe8da; --a-line: #d9ccb4;
+    --a-dark: #15110c; --a-grey: #8b949a; --a-glass: #3b5561; --a-egg: #eadbbd;
+  }
+}
+
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.art { display: block; width: 48px; height: 48px; flex: none; overflow: visible; }
+.art-icon { display: inline-block; width: 28px; height: 28px; vertical-align: -7px; margin-right: 6px; }
+.plot-art { width: 56px; height: 56px; margin: 0 auto; }
+.tree .plot-art { width: 64px; height: 64px; }
+.card-art-row { display: flex; align-items: center; gap: 10px; }
+.card-art-row .art { width: 56px; height: 56px; }
+.egg-art { width: 28px; height: 28px; }
+.art-hidden { visibility: hidden; }
+.sheep .card-art-row .art { width: 64px; height: 64px; }
+
+/* ---------- Lot 11 : aide des bâtiments ---------- */
+
+.help-btn {
+  min-width: 44px;
+  width: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1;
+  flex: none;
+}
+
+.card-title .chips { flex-wrap: nowrap; align-items: center; }
+.help-list { margin: 8px 0 16px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.help-list li { padding: 10px 12px; border-radius: var(--radius); background: var(--bg-muted); border: 1px solid var(--border); }
+.help-list strong { display: block; margin-bottom: 2px; }
+.help-head { display: flex; align-items: center; gap: 12px; }
+.help-head h2 { margin: 0; }
+
+/* ---------- Lot 11 : bulles d'aide de la première partie ---------- */
+
+.tuto {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 118px;
+  z-index: 60;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 14px 16px 12px;
+  border-radius: var(--radius);
+  border: 2px solid var(--accent);
+  background: var(--bg-elevated);
+  color: var(--text);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+
+.tuto::after {
+  content: "";
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  background: var(--bg-elevated);
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.tuto.up::after { display: none; }
+.tuto h2 { margin: 0 0 4px; font-size: 1.05rem; display: flex; justify-content: space-between; gap: 8px; }
+.tuto p { margin: 0 0 10px; font-size: 0.95rem; }
+.tuto .row { justify-content: flex-end; }
+body.has-tuto { padding-bottom: 300px; }
+
+.tuto-target {
+  scroll-margin-top: 140px;
+  outline: 3px dashed var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius);
+  animation: tuto-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tuto-pulse {
+  0%, 100% { outline-color: var(--accent); }
+  50% { outline-color: transparent; }
+}
+
+/* ---------- Lot 11 : À propos ---------- */
+
+.about-rules { margin: 8px 0 16px; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.about-version { font-variant-numeric: tabular-nums; }
+
+/* ---------- Lot 11 : rendu par tranches et animations ---------- */
+
+/* Chaque tranche de la Ferme est mise à jour à part ; elle n'ajoute aucune boîte. */
+.slot { display: contents; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
 </style>
 </head>
 <body>
+
+<!-- Lot 11 : illustrations originales (parcelles, animaux, bâtiments), dessinées
+     ici une fois et réutilisées par <use href="#…">. Les couleurs viennent des
+     variables --a-* (thèmes clair et sombre). Toutes sont décoratives. -->
+<svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- parcelles et plantes -->
+    <symbol id="plot-soil" viewBox="0 0 48 48">
+      <rect x="3" y="30" width="42" height="14" rx="5" style="fill:var(--a-soil)"/>
+      <path d="M10 36h28M13 40h22" style="fill:none;stroke:var(--a-soil2);stroke-width:2;stroke-linecap:round"/>
+    </symbol>
+    <symbol id="plant-s0" viewBox="0 0 48 48">
+      <ellipse cx="24" cy="31" rx="7" ry="3" style="fill:var(--a-soil2)"/>
+      <circle cx="24" cy="29" r="2" style="fill:var(--a-leaf)"/>
+    </symbol>
+    <symbol id="plant-s1" viewBox="0 0 48 48">
+      <path d="M24 31v-9" style="fill:none;stroke:var(--a-leaf2);stroke-width:2;stroke-linecap:round"/>
+      <path d="M24 25c-6 0-8-4-8-6 4 0 8 2 8 6z" style="fill:var(--a-leaf)"/>
+      <path d="M24 23c5 0 7-4 7-6-4 0-7 2-7 6z" style="fill:var(--a-leaf2)"/>
+    </symbol>
+    <symbol id="plant-s2" viewBox="0 0 48 48">
+      <path d="M24 31V14" style="fill:none;stroke:var(--a-leaf2);stroke-width:2.5;stroke-linecap:round"/>
+      <path d="M24 22c-8 0-11-6-11-9 6 0 11 3 11 9z" style="fill:var(--a-leaf)"/>
+      <path d="M24 19c7 0 10-6 10-9-6 0-10 3-10 9z" style="fill:var(--a-leaf2)"/>
+      <path d="M24 29c-6 0-9-3-9-5 5 0 9 1 9 5z" style="fill:var(--a-leaf2)"/>
+      <path d="M24 28c6 0 9-3 9-5-5 0-9 1-9 5z" style="fill:var(--a-leaf)"/>
+    </symbol>
+    <symbol id="crop-carotte" viewBox="0 0 48 48">
+      <path d="M24 30V13M24 30l-8-14M24 30l8-14" style="fill:none;stroke:var(--a-leaf);stroke-width:3;stroke-linecap:round"/>
+      <path d="M18 28h12l-6 15z" style="fill:var(--a-orange)"/>
+      <path d="M20 32h4M21 36h3" style="fill:none;stroke:var(--a-soil2);stroke-width:1.2;stroke-linecap:round"/>
+    </symbol>
+    <symbol id="crop-patate" viewBox="0 0 48 48">
+      <use href="#plant-s2"/>
+      <ellipse cx="16" cy="37" rx="6" ry="4" style="fill:var(--a-brown)"/>
+      <ellipse cx="31" cy="38" rx="7" ry="4.5" style="fill:var(--a-brown)"/>
+      <circle cx="14" cy="36" r="0.9" style="fill:var(--a-soil2)"/>
+      <circle cx="33" cy="37" r="0.9" style="fill:var(--a-soil2)"/>
+    </symbol>
+    <symbol id="crop-tomate" viewBox="0 0 48 48">
+      <path d="M24 31V8" style="fill:none;stroke:var(--a-wood);stroke-width:2"/>
+      <use href="#plant-s2"/>
+      <circle cx="16" cy="20" r="4" style="fill:var(--a-red)"/>
+      <circle cx="31" cy="15" r="4" style="fill:var(--a-red)"/>
+      <circle cx="30" cy="26" r="4" style="fill:var(--a-red)"/>
+    </symbol>
+    <symbol id="crop-courgette" viewBox="0 0 48 48">
+      <use href="#plant-s2"/>
+      <rect x="9" y="26" width="17" height="6" rx="3" transform="rotate(-12 17 29)" style="fill:var(--a-green)"/>
+      <rect x="24" y="27" width="16" height="5.5" rx="2.75" transform="rotate(10 32 30)" style="fill:var(--a-green)"/>
+      <circle cx="30" cy="12" r="3" style="fill:var(--a-yellow)"/>
+    </symbol>
+    <symbol id="crop-aubergine" viewBox="0 0 48 48">
+      <use href="#plant-s2"/>
+      <ellipse cx="17" cy="25" rx="4.5" ry="6.5" style="fill:var(--a-purple)"/>
+      <ellipse cx="31" cy="24" rx="4.5" ry="6.5" style="fill:var(--a-purple)"/>
+      <path d="M14 19h6M28 18h6" style="fill:none;stroke:var(--a-leaf2);stroke-width:2.5;stroke-linecap:round"/>
+    </symbol>
+    <symbol id="crop-ble" viewBox="0 0 48 48">
+      <path d="M15 31V14M24 31V10M33 31V14" style="fill:none;stroke:var(--a-yellow2);stroke-width:2;stroke-linecap:round"/>
+      <ellipse cx="15" cy="13" rx="3" ry="6.5" style="fill:var(--a-yellow)"/>
+      <ellipse cx="24" cy="9" rx="3" ry="6.5" style="fill:var(--a-yellow)"/>
+      <ellipse cx="33" cy="13" rx="3" ry="6.5" style="fill:var(--a-yellow)"/>
+      <path d="M24 24l-5-3M15 25l4-3M33 25l-4-3" style="fill:none;stroke:var(--a-yellow2);stroke-width:1.5;stroke-linecap:round"/>
+    </symbol>
+    <symbol id="crop-tournesol" viewBox="0 0 48 48">
+      <path d="M24 31V16" style="fill:none;stroke:var(--a-leaf2);stroke-width:3;stroke-linecap:round"/>
+      <path d="M24 27c-7 0-9-3-9-5 5 0 9 1 9 5z" style="fill:var(--a-leaf)"/>
+      <path d="M24 24c7 0 9-3 9-5-5 0-9 1-9 5z" style="fill:var(--a-leaf2)"/>
+      <circle cx="24" cy="12" r="9" style="fill:var(--a-yellow)"/>
+      <circle cx="24" cy="12" r="4.5" style="fill:var(--a-brown)"/>
+    </symbol>
+    <symbol id="crop-graine" viewBox="0 0 48 48">
+      <path d="M24 31V15M24 21l-6-7M24 21l6-7" style="fill:none;stroke:var(--a-leaf2);stroke-width:2;stroke-linecap:round"/>
+      <circle cx="17" cy="12" r="4" style="fill:var(--a-white);stroke:var(--a-line);stroke-width:1"/>
+      <circle cx="24" cy="10" r="4.5" style="fill:var(--a-white);stroke:var(--a-line);stroke-width:1"/>
+      <circle cx="31" cy="12" r="4" style="fill:var(--a-white);stroke:var(--a-line);stroke-width:1"/>
+    </symbol>
+    <!-- verger -->
+    <symbol id="tree-young" viewBox="0 0 48 48">
+      <ellipse cx="24" cy="43" rx="11" ry="3" style="fill:var(--a-soil)"/>
+      <rect x="22.5" y="27" width="3" height="16" rx="1" style="fill:var(--a-wood)"/>
+      <circle cx="24" cy="23" r="8" style="fill:var(--a-leaf)"/>
+    </symbol>
+    <symbol id="tree-adult" viewBox="0 0 48 48">
+      <ellipse cx="24" cy="44" rx="15" ry="3" style="fill:var(--a-soil)"/>
+      <rect x="21" y="26" width="6" height="18" rx="2" style="fill:var(--a-wood)"/>
+      <circle cx="24" cy="18" r="15" style="fill:var(--a-leaf2)"/>
+      <circle cx="18" cy="14" r="8" style="fill:var(--a-leaf)"/>
+    </symbol>
+    <symbol id="tree-pommier" viewBox="0 0 48 48">
+      <use href="#tree-adult"/>
+      <circle cx="14" cy="18" r="3" style="fill:var(--a-red)"/>
+      <circle cx="28" cy="11" r="3" style="fill:var(--a-red)"/>
+      <circle cx="32" cy="23" r="3" style="fill:var(--a-red)"/>
+      <circle cx="21" cy="26" r="3" style="fill:var(--a-red)"/>
+    </symbol>
+    <symbol id="tree-poirier" viewBox="0 0 48 48">
+      <use href="#tree-adult"/>
+      <path d="M14 15c-2 3-3 7 0 7s2-4 0-7z" style="fill:var(--a-yellow)"/>
+      <path d="M28 8c-2 3-3 7 0 7s2-4 0-7z" style="fill:var(--a-yellow)"/>
+      <path d="M32 20c-2 3-3 7 0 7s2-4 0-7z" style="fill:var(--a-yellow)"/>
+      <path d="M21 23c-2 3-3 7 0 7s2-4 0-7z" style="fill:var(--a-yellow)"/>
+    </symbol>
+    <!-- animaux -->
+    <symbol id="hen" viewBox="0 0 48 48">
+      <path d="M11 27c-5-4-5-10-1-13 1 5 4 8 7 8z" style="fill:var(--a-white);stroke:var(--a-line);stroke-width:1.5;stroke-linejoin:round"/>
+      <path d="M20 40v5M26 40v5" style="fill:none;stroke:var(--a-orange);stroke-width:2;stroke-linecap:round"/>
+      <ellipse cx="22" cy="30" rx="13" ry="10" style="fill:var(--a-white);stroke:var(--a-line);stroke-width:1.5"/>
+      <circle cx="33" cy="18" r="6.5" style="fill:var(--a-white);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M30 12c0-3 2.5-4 3.5-1.5 1-3 4-2 3.5 1.5z" style="fill:var(--a-red)"/>
+      <path d="M39 17l5 2-5 2z" style="fill:var(--a-orange)"/>
+      <circle cx="35" cy="17" r="1.3" style="fill:var(--a-dark)"/>
+      <path d="M17 29c3 3 8 3 10 0" style="fill:none;stroke:var(--a-line);stroke-width:1.5;stroke-linecap:round"/>
+    </symbol>
+    <symbol id="egg" viewBox="0 0 48 48">
+      <path d="M24 8c-8 0-13 13-13 21a13 13 0 0 0 26 0c0-8-5-21-13-21z" style="fill:var(--a-egg);stroke:var(--a-line);stroke-width:2"/>
+    </symbol>
+    <symbol id="sheep-wool" viewBox="0 0 48 48">
+      <path d="M17 36v8M23 37v7M29 37v7M34 35v8" style="fill:none;stroke:var(--a-dark);stroke-width:3;stroke-linecap:round"/>
+      <g style="fill:var(--a-white);stroke:var(--a-line);stroke-width:1.3">
+        <circle cx="14" cy="26" r="8"/><circle cx="23" cy="21" r="9"/><circle cx="32" cy="24" r="8"/>
+        <circle cx="20" cy="31" r="8"/><circle cx="30" cy="31" r="7"/>
+      </g>
+      <ellipse cx="41" cy="22" rx="5" ry="6.5" style="fill:var(--a-dark)"/>
+      <circle cx="42.5" cy="20.5" r="1.2" style="fill:var(--a-white)"/>
+    </symbol>
+    <symbol id="sheep-shorn" viewBox="0 0 48 48">
+      <path d="M17 34v10M23 35v9M29 35v9M34 33v11" style="fill:none;stroke:var(--a-dark);stroke-width:3;stroke-linecap:round"/>
+      <ellipse cx="25" cy="28" rx="14" ry="8" style="fill:var(--a-skin);stroke:var(--a-line);stroke-width:1.3"/>
+      <path d="M15 26c3-2 6-2 9 0M26 25c3-2 6-2 9 0" style="fill:none;stroke:var(--a-line);stroke-width:1;stroke-linecap:round;opacity:0.6"/>
+      <ellipse cx="41" cy="22" rx="5" ry="6.5" style="fill:var(--a-dark)"/>
+      <circle cx="42.5" cy="20.5" r="1.2" style="fill:var(--a-white)"/>
+    </symbol>
+    <!-- bâtiments et appareils -->
+    <symbol id="b-panneau" viewBox="0 0 48 48">
+      <circle cx="40" cy="8" r="5" style="fill:var(--a-sun)"/>
+      <rect x="22" y="30" width="4" height="13" style="fill:var(--a-grey2)"/>
+      <path d="M5 32l8-18h30l-8 18z" style="fill:var(--a-blue);stroke:var(--a-line);stroke-width:1.5;stroke-linejoin:round"/>
+      <path d="M15 14l-7 18M23 14l-6 18M31 14l-6 18M39 14l-7 18M11 23h29" style="fill:none;stroke:var(--a-blue2);stroke-width:1.2"/>
+    </symbol>
+    <symbol id="b-batterie" viewBox="0 0 48 48">
+      <rect x="18" y="6" width="12" height="6" rx="1.5" style="fill:var(--a-dark)"/>
+      <rect x="10" y="11" width="28" height="33" rx="4" style="fill:var(--a-grey);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M27 16l-9 13h7l-3 11 10-15h-7z" style="fill:var(--a-yellow);stroke:var(--a-yellow2);stroke-width:1;stroke-linejoin:round"/>
+    </symbol>
+    <symbol id="b-pompe" viewBox="0 0 48 48">
+      <path d="M6 16h36l-5-9H11z" style="fill:var(--a-roof)"/>
+      <path d="M12 16v14M36 16v14" style="fill:none;stroke:var(--a-wood);stroke-width:3"/>
+      <path d="M24 16v6" style="fill:none;stroke:var(--a-grey2);stroke-width:2"/>
+      <path d="M24 22c-3 4-3 6 0 6s3-2 0-6z" style="fill:var(--a-water)"/>
+      <rect x="7" y="30" width="34" height="13" rx="3" style="fill:var(--a-grey);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M7 36h34M18 30v6M30 36v7" style="fill:none;stroke:var(--a-line);stroke-width:1"/>
+    </symbol>
+    <symbol id="b-reservoir" viewBox="0 0 48 48">
+      <rect x="10" y="7" width="28" height="36" rx="6" style="fill:var(--a-grey)"/>
+      <path d="M10 24h28v13a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6z" style="fill:var(--a-water)"/>
+      <rect x="10" y="7" width="28" height="36" rx="6" style="fill:none;stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M14 28c3-2 5 2 8 0s5 2 8 0 4 2 4 0" style="fill:none;stroke:var(--a-blue2);stroke-width:1.5"/>
+    </symbol>
+    <symbol id="b-potager" viewBox="0 0 48 48">
+      <use href="#plot-soil"/>
+      <use href="#plant-s1" x="-12" y="2"/><use href="#plant-s1" y="2"/><use href="#plant-s1" x="12" y="2"/>
+    </symbol>
+    <symbol id="b-champ" viewBox="0 0 48 48">
+      <use href="#plot-soil"/>
+      <use href="#crop-ble"/>
+    </symbol>
+    <symbol id="b-serre" viewBox="0 0 48 48">
+      <path d="M5 43V27a19 17 0 0 1 38 0v16z" style="fill:var(--a-glass);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M24 10v33M5 31h38M14 13v30M34 13v30" style="fill:none;stroke:var(--a-line);stroke-width:1.2"/>
+      <use href="#plant-s1" x="-10" y="11"/><use href="#plant-s1" x="10" y="11"/>
+    </symbol>
+    <symbol id="b-verger" viewBox="0 0 48 48">
+      <use href="#tree-pommier"/>
+    </symbol>
+    <symbol id="b-silo" viewBox="0 0 48 48">
+      <path d="M13 16a11 9 0 0 1 22 0z" style="fill:var(--a-roof)"/>
+      <rect x="13" y="16" width="22" height="28" style="fill:var(--a-grey);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M13 23h22M13 30h22M13 37h22" style="fill:none;stroke:var(--a-grey2);stroke-width:1.2"/>
+      <path d="M35 20h5v24" style="fill:none;stroke:var(--a-grey2);stroke-width:2"/>
+    </symbol>
+    <symbol id="b-poulailler" viewBox="0 0 48 48">
+      <path d="M6 23L24 9l18 14z" style="fill:var(--a-roof)"/>
+      <rect x="10" y="23" width="28" height="18" style="fill:var(--a-wood);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M20 41v-8a4 4 0 0 1 8 0v8z" style="fill:var(--a-dark)"/>
+      <path d="M28 41l12 4" style="fill:none;stroke:var(--a-wood);stroke-width:3;stroke-linecap:round"/>
+      <circle cx="16" cy="29" r="2" style="fill:var(--a-dark)"/>
+    </symbol>
+    <symbol id="b-paturage" viewBox="0 0 48 48">
+      <path d="M3 44h42" style="fill:none;stroke:var(--a-leaf2);stroke-width:4;stroke-linecap:round"/>
+      <path d="M8 22v22M24 22v22M40 22v22" style="fill:none;stroke:var(--a-wood);stroke-width:3.5;stroke-linecap:round"/>
+      <path d="M5 28h38M5 36h38" style="fill:none;stroke:var(--a-wood);stroke-width:2.5;stroke-linecap:round"/>
+      <path d="M12 44l2-5 2 5M30 44l2-6 2 6" style="fill:none;stroke:var(--a-leaf);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"/>
+    </symbol>
+    <symbol id="b-four" viewBox="0 0 48 48">
+      <path d="M5 43V29a19 17 0 0 1 38 0v14z" style="fill:var(--a-brick);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M12 22h6M26 16h6M30 26h6M9 33h5" style="fill:none;stroke:var(--a-line);stroke-width:1.2;opacity:0.6"/>
+      <path d="M15 43v-8a9 8 0 0 1 18 0v8z" style="fill:var(--a-dark)"/>
+      <path d="M20 43c0-4 4-5 4-9 0 4 4 5 4 9z" style="fill:var(--a-orange)"/>
+    </symbol>
+    <symbol id="b-cuisine" viewBox="0 0 48 48">
+      <path d="M18 12c-2-3 2-4 0-7M24 12c-2-3 2-4 0-7M30 12c-2-3 2-4 0-7" style="fill:none;stroke:var(--a-grey2);stroke-width:1.5;stroke-linecap:round"/>
+      <path d="M11 16h26v11a5 5 0 0 1-5 5H16a5 5 0 0 1-5-5z" style="fill:var(--a-grey2);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M6 18h5M37 18h5" style="fill:none;stroke:var(--a-line);stroke-width:2.5;stroke-linecap:round"/>
+      <rect x="5" y="33" width="38" height="10" rx="2" style="fill:var(--a-grey);stroke:var(--a-line);stroke-width:1.5"/>
+      <circle cx="13" cy="38" r="2" style="fill:var(--a-red)"/>
+    </symbol>
+    <symbol id="b-moulin" viewBox="0 0 48 48">
+      <path d="M17 44l3-22h8l3 22z" style="fill:var(--a-white);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M21 44v-6a3 3 0 0 1 6 0v6z" style="fill:var(--a-dark)"/>
+      <path d="M24 19L9 7M24 19l15-12M24 19L10 31M24 19l14 12" style="fill:none;stroke:var(--a-wood);stroke-width:4;stroke-linecap:round"/>
+      <circle cx="24" cy="19" r="3" style="fill:var(--a-dark)"/>
+    </symbol>
+    <symbol id="b-presse" viewBox="0 0 48 48">
+      <rect x="7" y="37" width="34" height="6" rx="1" style="fill:var(--a-wood)"/>
+      <path d="M13 37V8M35 37V8" style="fill:none;stroke:var(--a-wood);stroke-width:4"/>
+      <rect x="10" y="6" width="28" height="5" rx="1" style="fill:var(--a-wood)"/>
+      <path d="M24 11v11" style="fill:none;stroke:var(--a-grey2);stroke-width:3"/>
+      <rect x="16" y="22" width="16" height="5" rx="1" style="fill:var(--a-grey);stroke:var(--a-line);stroke-width:1"/>
+      <path d="M24 29c-3 4-3 6.5 0 6.5s3-2.5 0-6.5z" style="fill:var(--a-yellow)"/>
+    </symbol>
+    <symbol id="b-frigo" viewBox="0 0 48 48">
+      <rect x="12" y="4" width="24" height="40" rx="4" style="fill:var(--a-white);stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M12 17h24" style="fill:none;stroke:var(--a-line);stroke-width:1.5"/>
+      <path d="M16 9v4M16 22v7" style="fill:none;stroke:var(--a-dark);stroke-width:2.5;stroke-linecap:round"/>
+      <path d="M28 27v10M23.7 29.5l8.6 5M23.7 34.5l8.6-5" style="fill:none;stroke:var(--a-water);stroke-width:1.6;stroke-linecap:round"/>
+    </symbol>
+  </defs>
+</svg>
 
 <header class="app-header">
   <div class="app-title">🌾 Ferme Familiale</div>
@@ -789,7 +1198,7 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 </header>
 
 <main>
-  <nav class="tabbar" id="tabbar"></nav>
+  <nav class="tabbar" id="tabbar" aria-label="Onglets du jeu"></nav>
   <section id="tab-content" class="panel"></section>
 
   <details class="test-panel" id="test-panel" hidden>
@@ -874,15 +1283,16 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 </main>
 
 <div class="sleep-bar" id="sleep-bar"></div>
+<div id="tuto-root"></div>
 <div id="modal-root"></div>
-<div id="toast-root"></div>
+<div id="toast-root" role="status" aria-live="polite"></div>
 
 <script id="core">
 'use strict';
 
 /* ==========================================================================
    DATA — toutes les valeurs d'équilibrage du jeu.
-   Les lots suivants viendront peupler cet objet. Aucune valeur d'équilibrage
+   Chaque lot y a ajouté ses valeurs, par section. Aucune valeur d'équilibrage
    ne doit exister ailleurs que dans DATA.
    Références : conception v15, sections 1.2, 1.4 et 8.2.
    ========================================================================== */
@@ -910,7 +1320,9 @@ const DATA = {
   // d'un même type.
   GRID: {
     panneau: { kwhPerS: [0.03, 0.05, 0.08, 0.12, 0.18] },
-    batterie: { kwh: [5, 10, 20, 40, 80] },
+    // pleine : part de la capacité utile au-delà de laquelle une batterie qui ne
+    // charge plus s'affiche « Pleine » (Lot 11 : sortie du moteur vers DATA).
+    batterie: { kwh: [5, 10, 20, 40, 80], pleine: 0.98 },
     pompe: {
       litresPerS: [1, 2, 4, 6, 10],
       reservoirL: [40, 80, 160, 300, 500], // le réservoir suit le niveau de la pompe
@@ -962,8 +1374,8 @@ const DATA = {
     graine_tournesol: { nom: 'Graines de tournesol', icone: '🌻', prix: 1, edible: false, category: 'graine' },
     oeuf:             { nom: 'Œuf',                  icone: '🥚', energie: 10, prix: 2, edible: true, category: 'produit' },
     // Lot 5 : viande, fruits, farine et huile (sections 1.1 et 8.9). La viande
-    // vient de l'abattage des moutons (Lot 6) ; la ferme ne produit pas encore les
-    // fruits : les recettes qui en ont besoin restent grisées. La farine et l'huile valent 10 d'énergie dans les plats mais
+    // vient de l'abattage des moutons (Lot 6), les fruits du Verger (Lot 8). La
+    // farine et l'huile valent 10 d'énergie dans les plats mais
     // ne se mangent pas seules. Les plats cuisinés (pain compris) sont ajoutés à
     // cette table au chargement, à partir de `recipes` : voir registerDishItems().
     viande:           { nom: 'Viande',               icone: '🥩', energie: 30, prix: 5, edible: true,  category: 'produit' },
@@ -1091,9 +1503,8 @@ const DATA = {
 
   // Conservation en nuits hors réfrigérateur (sections 1.4 et 6.9 quinquies).
   // Un item absent de ces deux tables ne périme jamais (blé, farine, huile,
-  // graines, laine, conserves). Les items viande, œuf, pomme, poire et pain
-  // n'existent pas encore dans DATA.items : leur durée est prête pour les lots
-  // suivants. CATEGORIE sert aux catégories entières (les plats cuisinés).
+  // graines, laine, conserves). CATEGORIE sert aux catégories entières (les
+  // plats cuisinés).
   CONSERVATION: {
     viande: 5,
     tomate: 5, courgette: 5, aubergine: 5,
@@ -1304,8 +1715,8 @@ const DATA = {
   // nuits après sa plantation ; adulte, il donne FRUITS fruits toutes les PERIODE
   // nuits, seulement dans la fenêtre : les `dernieresNuits` dernières nuits de
   // l'été et toute la saison suivante (automne). Pas d'arrosage.
-  // CONSTRUCTION : 0 (« aménager » le Verger est gratuit : la conception parle
-  // d'un déblocage au chapitre 6, qui n'existe pas encore) ; l'emplacement
+  // CONSTRUCTION : 0 (« aménager » le Verger est gratuit : il est débloqué par le
+  // chapitre 6, voir CHAPITRES) ; l'emplacement
   // supplémentaire coûte EMPLACEMENT.base × croissance^n, n étant le nombre
   // d'emplacements déjà achetés (ceux de départ ne comptent pas).
   VERGER: {
@@ -1523,6 +1934,22 @@ const DATA = {
     // Vérification de la section 8.11 : une unité de cet aliment achetée chaque nuit, encore payable à la nuit donnée.
     DEPANNAGE: { item: 'carotte', nuit: 30 },
   },
+
+  /* ---------- Lot 11 : hors-ligne et première partie ---------- */
+
+  // Progression hors-ligne (section 6.10). Le temps passé loin du jeu (page
+  // fermée, ou onglet resté en arrière-plan) est simulé au retour, plafonné à
+  // MAX_S secondes, par pas de PAS_S secondes. Seuls avancent les flux (panneaux
+  // et batteries, pompe, moulin, presse, consommation du réfrigérateur) et les
+  // préparations en cours ; aucune nuit ne passe. Ce temps compte comme temps
+  // d'éveil. USURE : les appareils s'usent-ils hors-ligne ? Non (décision du
+  // Lot 11 : 8 h réelles valent 960 heures de jeu, soit +480 points d'usure).
+  // ECRAN_S : absence minimale, en secondes, pour afficher « Pendant votre absence… ».
+  HORS_LIGNE: { MAX_S: 8 * 3600, PAS_S: 5, USURE: false, ECRAN_S: 60 },
+
+  // Première partie : bulles d'aide, dans cet ordre. La dernière (« dormir »)
+  // se ferme aussi d'elle-même à la première nuit.
+  AIDE: { ETAPES: ['eau', 'potager', 'dormir'] },
 };
 
 /* ==========================================================================
@@ -1544,7 +1971,9 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 10;
+const STATE_VERSION = 11;
+// Version du jeu, affichée dans les Options (À propos). Lot 11 : 0.11.0.
+const GAME_VERSION = '0.11.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -1866,10 +2295,26 @@ function runPump(state, dt) {
 
 /* ---------- la boucle de simulation ---------- */
 
-// Avance la simulation de dt secondes : production, stockage, consommation,
-// usure, puis le temps d'éveil.
+// Avance la simulation de dt secondes : flux (production, stockage,
+// consommation, préparations), usure, puis le temps d'éveil.
+// Lot 11 : les trois phases sont séparées pour que la progression hors-ligne
+// réutilise exactement les mêmes flux, sans l'usure (voir simulateOffline).
 function tick(state, dt) {
   if (!(dt > 0)) return state;
+  flowStep(state, dt);
+  wearStep(state, dt);
+
+  // e. temps d'éveil (l'heure s'en déduit)
+  state.awakeSeconds += dt;
+  refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
+  noteEnergyRecord(state); // Lot 9 : record d'énergie stockée, puis objectifs du chapitre
+  updateChapters(state);
+  return state;
+}
+
+// Phases a à c de tick : production, stockage, consommateurs, Four et Cuisine.
+// Les quantités du pas deviennent des puissances (kWh/s) pour l'affichage.
+function flowStep(state, dt) {
   for (const b of state.batteries) {
     b.entree = 0;
     b.sortie = 0;
@@ -1904,8 +2349,11 @@ function tick(state, dt) {
     b.entree /= dt;
     b.sortie /= dt;
   }
+}
 
-  // d. usure : seulement pour un appareil qui a réellement fonctionné
+// Phase d de tick : l'usure, seulement pour un appareil qui a réellement
+// fonctionné pendant le pas (d'après les puissances laissées par flowStep).
+function wearStep(state, dt) {
   const wear = DATA.WEAR.PER_HOUR * (dt / DATA.TIME.SECONDS_PER_HOUR);
   for (const d of allDevices(state)) {
     let worked = false;
@@ -1920,13 +2368,6 @@ function tick(state, dt) {
       d.allume = false;
     }
   }
-
-  // e. temps d'éveil (l'heure s'en déduit)
-  state.awakeSeconds += dt;
-  refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
-  noteEnergyRecord(state); // Lot 9 : record d'énergie stockée, puis objectifs du chapitre
-  updateChapters(state);
-  return state;
 }
 
 /* ---------- synthèses pour l'interface (fonctions pures) ---------- */
@@ -1967,7 +2408,7 @@ function deviceStatus(state, d) {
     const net = d.entree - d.sortie;
     if (net < -1e-6) { code = 'decharge'; label = 'En décharge'; }
     else if (net > 1e-6) { code = 'charge'; label = 'En charge'; }
-    else if (d.charge >= batteryCapacity(d) * 0.98) { code = 'pleine'; label = 'Pleine'; }
+    else if (d.charge >= batteryCapacity(d) * DATA.GRID.batterie.pleine) { code = 'pleine'; label = 'Pleine'; }
     else if (d.charge <= EPS) { code = 'vide'; label = 'Vide'; }
     else { code = 'attente'; label = 'En attente'; }
   } else if (d.type === 'frigo') {
@@ -3417,15 +3858,6 @@ function orchardProducesOn(day) {
   return (y - w.debut + 1) % DATA.VERGER.PERIODE === 0;
 }
 
-// Prochaine nuit (numéro absolu, à partir de `day` compris) où un arbre déjà
-// adulte à ce moment donne des fruits.
-function nextOrchardNight(day) {
-  for (let d = Math.max(1, day); d < day + 2 * DATA.SAISONS.LONGUEUR * DATA.SAISONS.ORDRE.length; d++) {
-    if (orchardProducesOn(d)) return d;
-  }
-  return null;
-}
-
 // Nuit (numéro absolu) de la prochaine récolte d'un arbre, à partir de la nuit
 // courante comprise : la première nuit de production où il aura MATURITÉ nuits.
 function treeNextHarvest(state, tree) {
@@ -4223,9 +4655,192 @@ function sleep(state) {
   state.awakeSeconds = 0;
   refreshUnlocks(state);
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
+  noteTutorialSleep(state); // Lot 11 : la bulle « Dormir » se ferme à la première nuit
   state.report = buildMorningReport(state);
   state.jour = newDayStats();
   return state.report;
+}
+
+/* ---------- Lot 11 : progression hors-ligne ---------- */
+
+// Ce qu'il faut relever avant la simulation pour en faire le bilan ensuite.
+function offlineSnapshot(state) {
+  const taches = {};
+  for (const id of Object.keys(DATA.STATIONS)) {
+    const st = state.stations[id];
+    taches[id] = st && st.tache ? st.tache.recette : null;
+  }
+  const f = state.frigo;
+  return {
+    produite: state.jour.produite,
+    perdue: state.jour.perdue,
+    eauPompee: state.jour.eau,
+    energie: state.batteries.reduce((t, b) => t + b.charge, 0),
+    eau: state.eau,
+    taches,
+    frigoEveil: f && f.construit ? f.eveilS : 0,
+    frigoAlimente: f && f.construit ? f.alimenteS : 0,
+  };
+}
+
+// Bilan d'une période hors-ligne : durée demandée et simulée, énergie, eau,
+// préparations terminées ou encore en cours, temps sans froid du réfrigérateur.
+function offlineReport(state, before, demande, simule) {
+  const terminees = {};
+  const enCours = [];
+  for (const id of Object.keys(DATA.STATIONS)) {
+    const st = state.stations[id];
+    const avant = before.taches[id];
+    if (avant && !(st && st.tache)) {
+      const item = recipeOutput(avant);
+      terminees[item] = (terminees[item] || 0) + recipeOutputQty(avant);
+    }
+    if (st && st.tache) enCours.push({ station: id, recette: st.tache.recette, reste: taskTimeLeft(state, id) });
+  }
+  const f = state.frigo;
+  const frigoConstruit = !!(f && f.construit);
+  const eveil = frigoConstruit ? f.eveilS - before.frigoEveil : 0;
+  const alimente = frigoConstruit ? f.alimenteS - before.frigoAlimente : 0;
+  return {
+    demande,
+    simule,
+    plafonne: demande > simule + EPS,
+    nuit: state.day,
+    energieProduite: state.jour.produite - before.produite,
+    energiePerdue: state.jour.perdue - before.perdue,
+    energieDebut: before.energie,
+    energieFin: state.batteries.reduce((t, b) => t + b.charge, 0),
+    capacite: state.batteries.reduce((t, b) => t + batteryCapacity(b), 0),
+    eauPompee: state.jour.eau - before.eauPompee,
+    eauDebut: before.eau,
+    eauFin: state.eau,
+    capaciteEau: tankCapacity(state),
+    terminees,
+    enCours,
+    frigo: {
+      construit: frigoConstruit,
+      horsTensionS: Math.max(0, eveil - alimente),
+      alimente: frigoConstruit ? !!f.alimente : false,
+    },
+  };
+}
+
+// Simule `seconds` secondes d'absence (plafonnées à HORS_LIGNE.MAX_S) par pas de
+// HORS_LIGNE.PAS_S : mêmes flux que tick (panneaux, batteries, pompe, moulin,
+// presse, réfrigérateur, Four et Cuisine), sans usure, et jamais de nuit : ni
+// pousse, ni repas, ni ponte, ni péremption. Le temps simulé s'ajoute au temps
+// d'éveil. Renvoie le bilan (voir offlineReport). Une durée nulle, négative ou
+// invalide ne change rien.
+function simulateOffline(state, seconds) {
+  const H = DATA.HORS_LIGNE;
+  const demande = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+  const simule = Math.min(demande, H.MAX_S);
+  const before = offlineSnapshot(state);
+  let left = simule;
+  while (left > EPS) {
+    const dt = Math.min(H.PAS_S, left);
+    flowStep(state, dt);
+    if (H.USURE) wearStep(state, dt);
+    state.awakeSeconds += dt;
+    noteEnergyRecord(state);
+    left -= dt;
+  }
+  if (simule > 0) {
+    refreshUnlocks(state);
+    updateChapters(state);
+  }
+  return offlineReport(state, before, demande, simule);
+}
+
+// Additionne deux bilans hors-ligne successifs (le second suit le premier) :
+// sert quand une nouvelle absence arrive avant que le joueur ait lu la première.
+function mergeOfflineReports(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  const terminees = { ...a.terminees };
+  for (const [item, n] of Object.entries(b.terminees)) terminees[item] = (terminees[item] || 0) + n;
+  return {
+    ...b,
+    demande: a.demande + b.demande,
+    simule: a.simule + b.simule,
+    plafonne: a.plafonne || b.plafonne,
+    energieProduite: a.energieProduite + b.energieProduite,
+    energiePerdue: a.energiePerdue + b.energiePerdue,
+    energieDebut: a.energieDebut,
+    eauPompee: a.eauPompee + b.eauPompee,
+    eauDebut: a.eauDebut,
+    terminees,
+    frigo: { ...b.frigo, horsTensionS: a.frigo.horsTensionS + b.frigo.horsTensionS },
+  };
+}
+
+/* ---------- Lot 11 : alertes (notifications de l'interface) ---------- */
+
+// Photo des situations qui méritent une notification : appareils en panne ou à
+// entretenir, batteries vides, réfrigérateur allumé mais sans courant.
+function alertSnapshot(state) {
+  const f = state.frigo;
+  const d = f && f.construit ? f.appareil : null;
+  return {
+    panne: allDevices(state).filter(isBroken).map((x) => x.id),
+    entretien: allDevices(state).filter(needsService).map((x) => x.id),
+    batteriesVides: state.batteries.some((b) => b.allume && !isBroken(b)) && availableEnergy(state) <= EPS,
+    frigoCoupe: !!(d && d.allume && !isBroken(d) && !f.alimente),
+  };
+}
+
+// Ce qui vient d'arriver entre deux photos : [{ type, id? }], type parmi
+// 'panne', 'entretien', 'batteriesVides', 'frigoCoupe'.
+function alertEvents(before, after) {
+  const events = [];
+  for (const id of after.panne) if (!before.panne.includes(id)) events.push({ type: 'panne', id });
+  for (const id of after.entretien) if (!before.entretien.includes(id)) events.push({ type: 'entretien', id });
+  if (after.batteriesVides && !before.batteriesVides) events.push({ type: 'batteriesVides' });
+  if (after.frigoCoupe && !before.frigoCoupe) events.push({ type: 'frigoCoupe' });
+  return events;
+}
+
+/* ---------- Lot 11 : bulles d'aide de la première partie ---------- */
+
+function newTutorial() {
+  return { etape: 0, fini: false };
+}
+
+// Bulle à afficher : 'eau', 'potager', 'dormir', ou null (aide terminée).
+function tutorialStep(state) {
+  const a = state.aide;
+  if (!a || a.fini) return null;
+  return DATA.AIDE.ETAPES[a.etape] || null;
+}
+
+// « Compris » : passe à la bulle suivante (la dernière termine l'aide).
+function advanceTutorial(state) {
+  const a = state.aide;
+  if (!a || a.fini) return fail('L\'aide est déjà terminée.');
+  a.etape += 1;
+  if (a.etape >= DATA.AIDE.ETAPES.length) a.fini = true;
+  return { ok: true, etape: tutorialStep(state) };
+}
+
+// « Passer l'aide » : ferme toutes les bulles.
+function skipTutorial(state) {
+  const a = state.aide;
+  if (!a || a.fini) return fail('L\'aide est déjà terminée.');
+  a.fini = true;
+  return { ok: true };
+}
+
+// Appelée par sleep() : dormir pendant la bulle « dormir » la valide.
+function noteTutorialSleep(state) {
+  if (tutorialStep(state) === 'dormir') advanceTutorial(state);
+}
+
+// Nouvelle partie depuis les Options : état de départ, mais un joueur qui a déjà
+// vu les bulles d'aide ne les revoit pas (elles sont pour la première partie).
+function newGameFrom(previous, seed) {
+  const s = createInitialState(seed);
+  if (previous && previous.aide && previous.aide.fini) s.aide = { ...previous.aide };
+  return s;
 }
 
 /* ---------- actions du mode test ---------- */
@@ -4534,6 +5149,11 @@ function startLot9() {
   return { campagne: newCampaign() };
 }
 
+// Lot 11 : les bulles d'aide commencent à la première (« eau »).
+function startLot11() {
+  return { aide: newTutorial() };
+}
+
 function createInitialState(seed = 1) {
   return {
     version: STATE_VERSION,
@@ -4552,6 +5172,7 @@ function createInitialState(seed = 1) {
     ...startLot7(),
     ...startLot8(),
     ...startLot9(),
+    ...startLot11(),
   };
 }
 
@@ -4642,6 +5263,15 @@ const MIGRATIONS = {
       version: 10,
     };
   },
+  // v10 (Lot 10) → v11 (Lot 11) : les bulles d'aide. Une partie déjà commencée
+  // (au moins une nuit passée) ne les affiche pas : elles sont pour la première
+  // journée. La progression hors-ligne n'ajoute rien à l'état (l'heure de la
+  // sauvegarde est dans l'enveloppe { v, t, s }).
+  10: (state) => {
+    const commencee = typeof state.day === 'number' && state.day > 1;
+    const aide = state.aide && typeof state.aide === 'object' ? state.aide : { ...newTutorial(), fini: commencee };
+    return { ...state, aide, version: 11 };
+  },
 };
 
 // Applique les migrations successives à une sauvegarde { v, t, s } (ou à un
@@ -4725,6 +5355,18 @@ function formatQty(n) {
 
 function formatHour(h) {
   return `${h} h`;
+}
+
+// Lot 11 : durée d'une absence, arrondie vers le bas : « 45 s », « 12 min »,
+// « 2 h 05 min », « 8 h ».
+function formatDuration(seconds) {
+  const s = Math.max(0, Math.floor((Number(seconds) || 0) + EPS));
+  if (s < 60) return `${s} s`;
+  const min = Math.floor(s / 60);
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m ? `${h} h ${String(m).padStart(2, '0')} min` : `${h} h`;
 }
 
 // Pourcentage entier arrondi vers le bas (99,6 s'affiche « 99 % » : 100 % veut
@@ -5272,7 +5914,7 @@ function runTests() {
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);
-  assertEqual(s.version, 10);
+  assertEqual(s.version, STATE_VERSION);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
   assertEqual(s.pieces, 50);
@@ -9221,8 +9863,6 @@ test('Verger : fenêtre de production, fin d\'été et automne, 30 fruits par an
   const days = [];
   for (let d = 1; d <= 80; d++) if (orchardProducesOn(d)) days.push(d);
   assertEqual(days, [18, 21, 24, 27, 30, 58, 61, 64, 67, 70]);
-  assertEqual(nextOrchardNight(1), 18);
-  assertEqual(nextOrchardNight(31), 58);
   const s = orchard();
   protect(s, 'pomme');
   s.verger.arbres.push({ id: 'arbre-9', espece: 'pommier', plantee: -100 });
@@ -9576,7 +10216,7 @@ test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigéra
   v8.day = 25;
   v8.pieces = 321;
   const m = migrate({ v: 8, t: 0, s: v8 });
-  assertEqual(m.version, 10);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces], [25, 321]);
   assertEqual(currentSeason(m), 'automne');
   assertEqual(m.serre, { construit: false, niveau: 1, parcelles: [] });
@@ -9585,7 +10225,7 @@ test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigéra
   assertEqual(m.nuit.fruits, {});
   tick(m, 0.2);
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
-  assertEqual(migrate({ v: 10, t: 0, s: JSON.parse(JSON.stringify(m)) }).version, 10);
+  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }).version, STATE_VERSION);
 });
 
 test('mode test Lot 8 : saison suivante, constructions gratuites, batteries vides', () => {
@@ -10214,7 +10854,7 @@ function v9State(mutate) {
 
 test('migration v9 → v10 : une partie neuve arrive au chapitre 1', () => {
   const m = migrate({ v: 9, t: 0, s: v9State() });
-  assertEqual(m.version, 10);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.campagne.chapitre, m.campagne.fini, m.campagne.annonces, m.campagne.historique], [1, false, [], []]);
   assertEqual(m.campagne.compteurs, newCampaignCounters());
   assertEqual([m.nuit.energieProduit, m.nuit.autonomie, m.jour.soins], [0, 0, 0]);
@@ -10246,13 +10886,13 @@ test('migration v9 → v10 : la partie migrée continue, tout ce qu\'elle possè
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
   assertEqual(m.campagne.historique.length, 1);
   assertEqual(JSON.parse(JSON.stringify(m)), m);
-  const again = migrate({ v: 10, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  const again = migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) });
   assertEqual(again.campagne, m.campagne, 'une partie déjà à jour n\'est pas replacée');
 });
 
 test('migration : une sauvegarde très ancienne traverse toutes les versions jusqu\'au chapitre 2', () => {
   const m = migrate({ v: 0, t: 0, s: { day: 4, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
-  assertEqual([m.version, m.campagne.chapitre], [10, 2]);
+  assertEqual([m.version, m.campagne.chapitre], [STATE_VERSION, 2]);
 });
 
 /* --- mode test --- */
@@ -10456,6 +11096,275 @@ test('Lot 10 : dépannage : une unité de nourriture achetée chaque soir fait m
   assert(prix[4] >= prix[0], 'le prix ne baisse pas quand on achète chaque nuit');
 });
 
+/* ---------- Lot 11 : hors-ligne, alertes, bulles d'aide, version ---------- */
+
+test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois bulles d\'aide', () => {
+  assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
+  assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
+  assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
+  assertEqual(GAME_VERSION, '0.11.0');
+});
+
+test('Lot 11 : hors-ligne plafonné à 8 h', () => {
+  const s = farm({ pump: true });
+  const avant = s.awakeSeconds;
+  const r = simulateOffline(s, 20 * 3600);
+  assertEqual([r.demande, r.simule, r.plafonne], [72000, 28800, true]);
+  assert(near(s.awakeSeconds - avant, 28800), 'seules 8 h sont simulées');
+  const t = farm({ pump: true });
+  const r8 = simulateOffline(t, 8 * 3600);
+  assertEqual([r8.simule, r8.plafonne], [28800, false], '8 h pile ne sont pas « plafonnées »');
+});
+
+test('Lot 11 : une durée nulle, négative ou invalide ne change rien', () => {
+  for (const d of [0, -30, NaN, undefined, 'x']) {
+    const s = farm({ pump: true });
+    const before = JSON.stringify(s);
+    const r = simulateOffline(s, d);
+    assertEqual([r.demande, r.simule], [0, 0], String(d));
+    assertEqual(JSON.stringify(s), before, `état inchangé pour ${String(d)}`);
+  }
+});
+
+test('Lot 11 : le temps hors-ligne compte comme temps d\'éveil, par pas de 5 s', () => {
+  const s = farm();
+  assertEqual(canSleep(s), false);
+  simulateOffline(s, 7);
+  assert(near(s.awakeSeconds, 7), 'un pas de 5 s puis un de 2 s');
+  simulateOffline(s, awakeRequired(s));
+  assertEqual(canSleep(s), true, 'au retour, on peut dormir tout de suite');
+});
+
+test('Lot 11 : aucune nuit ne passe hors-ligne', () => {
+  const s = garden();
+  const plot = s.potager.parcelles[0];
+  plantRipe(s, plot.id, 'carotte');
+  plot.stade = 1;
+  s.eau = 10;
+  assert(water(s, plot.id).ok, 'arroser');
+  testAddHens(s);
+  testAddSheep(s, 2);
+  const avant = {
+    day: s.day, stade: plot.stade, arrose: plot.arrose,
+    sante: s.famille.membres.map((m) => m.sante),
+    inventaire: JSON.stringify(s.inventaire),
+    moutons: JSON.stringify(s.paturage.moutons),
+    historique: s.campagne.historique.length,
+  };
+  const r = simulateOffline(s, 8 * 3600);
+  assertEqual(r.nuit, avant.day);
+  assertEqual(s.day, avant.day, 'le jour ne change pas');
+  assertEqual([plot.stade, plot.arrose], [avant.stade, avant.arrose], 'la plante ne pousse pas, elle reste arrosée pour la nuit');
+  assertEqual(s.famille.membres.map((m) => m.sante), avant.sante, 'personne ne mange');
+  assertEqual(JSON.stringify(s.inventaire), avant.inventaire, 'rien ne périme, rien n\'est pondu');
+  assertEqual(JSON.stringify(s.paturage.moutons), avant.moutons, 'les moutons ne grossissent pas');
+  assertEqual(s.campagne.historique.length, avant.historique, 'aucune nuit enregistrée');
+});
+
+test('Lot 11 : préparations terminées pendant l\'absence', () => {
+  const s = atelier();
+  s.eau = 10;
+  setInv(s, { farine: 2, graine_tournesol: 3 });
+  storeWheat(s, 1);
+  for (const id of ['pain', 'farine', 'huile']) assert(startRecipe(s, id).ok, `lancer ${id}`);
+  const r = simulateOffline(s, 10 * 60);
+  assertEqual(r.terminees, { pain: 1, farine: 1, huile: 1 });
+  assertEqual(r.enCours, []);
+  for (const id of ['four', 'moulin', 'presse']) assertEqual(s.stations[id].tache, null, `${id} libre`);
+  assertEqual([countItem(s, 'pain'), countItem(s, 'farine'), countItem(s, 'huile')], [1, 1, 1]);
+  assertEqual(s.campagne.compteurs.pains, 1, 'le pain compte pour le chapitre');
+});
+
+test('Lot 11 : une préparation plus longue que l\'absence reste en cours', () => {
+  const s = atelier({ stations: ['four', 'cuisine', 'moulin'] });
+  storeWheat(s, 1);
+  assert(startRecipe(s, 'farine').ok);
+  const r = simulateOffline(s, 3);
+  assertEqual(r.terminees, {});
+  assertEqual(r.enCours.map((e) => [e.station, e.recette]), [['moulin', 'farine']]);
+  assert(near(r.enCours[0].reste, 2, 1e-6), `reste ${r.enCours[0].reste}`);
+});
+
+test('Lot 11 : le Moulin s\'arrête hors-ligne quand les batteries sont vides', () => {
+  const s = atelier({ stations: ['four', 'cuisine', 'moulin'] });
+  testEmptyBatteries(s);
+  storeWheat(s, 1);
+  assert(startRecipe(s, 'farine').ok);
+  const r = simulateOffline(s, 3600);
+  assertEqual(r.terminees, {}, 'sans énergie, pas de farine');
+  assertEqual(s.stations.moulin.tache.recette, 'farine');
+});
+
+test('Lot 11 : frigo en panne si la batterie s\'est vidée pendant l\'absence', () => {
+  const s = coldRoom(); // batterie pleine (5 kWh), panneau coupé
+  addItem(s, 'carotte', 100);
+  assert(moveToFridge(s, 'carotte', 100).ok);
+  const avant = fridgeLots(s, 'carotte')[0].nightsLeft;
+  // 0,005 + 100 × 0,00005 = 0,01 kWh/s : 5 kWh tiennent 500 s sur 3 600.
+  const r = simulateOffline(s, 3600);
+  assertEqual(s.frigo.alimente, false, 'plus de courant au retour');
+  assert(near(r.frigo.horsTensionS, 3100, 5), `hors tension ${r.frigo.horsTensionS} s`);
+  assertEqual(r.frigo.alimente, false);
+  assert(near(r.energieFin, 0), 'batteries vides');
+  testFillBatteries(s); // le bloc de la nuit est couvert : seule l'absence compte
+  sleepOnce(s);
+  assertEqual(s.report.frigo.panne, false, 'pas de panne pendant la nuit elle-même');
+  assertEqual(s.report.frigo.vieillis, true, 'froid manquant plus de la moitié de l\'éveil');
+  assertEqual(fridgeLots(s, 'carotte')[0].nightsLeft, avant - DATA.FRIGO.PERTE_NUITS);
+});
+
+test('Lot 11 : frigo alimenté pendant toute l\'absence : rien ne vieillit', () => {
+  const s = coldRoom();
+  s.panneaux[0].allume = true; // 0,03 kWh/s > 0,01 kWh/s consommés
+  addItem(s, 'carotte', 100);
+  assert(moveToFridge(s, 'carotte', 100).ok);
+  const avant = fridgeLots(s, 'carotte')[0].nightsLeft;
+  const r = simulateOffline(s, 8 * 3600);
+  assertEqual([r.frigo.horsTensionS, r.frigo.alimente], [0, true]);
+  sleepOnce(s);
+  assertEqual(s.report.frigo.vieillis, false);
+  assertEqual(fridgeLots(s, 'carotte')[0].nightsLeft, avant);
+});
+
+test('Lot 11 : pas d\'usure hors-ligne, même après 8 h de marche', () => {
+  const s = farm({ pump: true });
+  s.panneaux[0].usure = 12;
+  const r = simulateOffline(s, 8 * 3600);
+  assert(r.energieProduite > 0 && r.eauPompee > 0, 'le panneau et la pompe ont tourné');
+  assertEqual(allDevices(s).map((d) => d.usure), [12, 0, 0], 'usure inchangée');
+  assertEqual(allDevices(s).some(isBroken), false);
+});
+
+test('Lot 11 : hors-ligne, mêmes flux que le jeu, plafonnés par les capacités', () => {
+  const live = farm({ pump: true });
+  const away = farm({ pump: true });
+  const usure = DATA.WEAR.PER_HOUR;
+  DATA.WEAR.PER_HOUR = 0; // en jeu, l'usure baisse un peu le débit : on la retire pour comparer les flux
+  try {
+    runFor(live, 30);
+  } finally {
+    DATA.WEAR.PER_HOUR = usure;
+  }
+  const r = simulateOffline(away, 30);
+  assert(near(live.eau, away.eau, 1e-6), `eau : ${live.eau} en jeu, ${away.eau} hors-ligne`);
+  assert(near(energyStats(live).charge, energyStats(away).charge, 1e-6), 'même charge');
+  assert(near(r.eauPompee, away.eau), 'bilan d\'eau');
+  const full = farm({ pump: true });
+  const r8 = simulateOffline(full, 8 * 3600);
+  assertEqual(full.eau, tankCapacity(full), 'réservoir plein, pas au-delà');
+  assert(near(r8.energieFin, batteryCapacity(full.batteries[0])), 'batterie pleine, pas au-delà');
+  assert(r8.energiePerdue > 0, 'le surplus est perdu');
+  assert(near(r8.energieProduite, r8.energiePerdue + (r8.energieFin - r8.energieDebut) + r8.eauPompee * DATA.PUMP.KWH_PER_L, 1e-6), 'bilan énergétique');
+});
+
+test('Lot 11 : la progression hors-ligne compte pour les objectifs du chapitre', () => {
+  const s = createInitialState(1);
+  assertEqual(s.campagne.chapitre, 1);
+  s.pompe.niveau = 2; // réservoir de 80 L : on peut pomper les 50 L de l'objectif
+  simulateOffline(s, 2 * 3600); // 50 L pompés et 3 kWh stockés
+  assert(s.campagne.compteurs.litres >= 50, 'litres comptés');
+  assert(s.campagne.compteurs.kwhMax >= 3, 'record d\'énergie');
+  assertEqual(s.campagne.chapitre, 2);
+  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [1], 'l\'écran de fin sera montré au retour');
+});
+
+test('Lot 11 : deux absences successives s\'additionnent dans un seul bilan', () => {
+  const s = atelier({ stations: ['four', 'cuisine', 'moulin'] });
+  s.panneaux[0].allume = true;
+  storeWheat(s, 2);
+  assert(startRecipe(s, 'farine').ok);
+  const a = simulateOffline(s, 60);
+  assert(startRecipe(s, 'farine').ok);
+  const b = simulateOffline(s, 9 * 3600);
+  const m = mergeOfflineReports(a, b);
+  assertEqual([m.demande, m.simule, m.plafonne], [60 + 9 * 3600, 60 + 28800, true]);
+  assertEqual(m.terminees, { farine: 2 });
+  assertEqual([m.energieDebut, m.energieFin], [a.energieDebut, b.energieFin]);
+  assert(near(m.energieProduite, a.energieProduite + b.energieProduite));
+  assertEqual(mergeOfflineReports(null, b), b);
+});
+
+test('Lot 11 : formatDuration', () => {
+  assertEqual(
+    [0, 45, 59.9, 60, 12 * 60 + 30, 3600, 2 * 3600 + 5 * 60, 8 * 3600].map(formatDuration),
+    ['0 s', '45 s', '59 s', '1 min', '12 min', '1 h', '2 h 05 min', '8 h']
+  );
+});
+
+test('Lot 11 : alertes : panne, entretien, batteries vides, frigo coupé', () => {
+  const s = coldRoom();
+  let snap = alertSnapshot(s);
+  assertEqual(alertEvents(snap, alertSnapshot(s)), [], 'rien de neuf');
+  testSetWear(s, 'panneau-1', 75);
+  let now = alertSnapshot(s);
+  assertEqual(alertEvents(snap, now), [{ type: 'entretien', id: 'panneau-1' }]);
+  snap = now;
+  testSetWear(s, 'panneau-1', DATA.WEAR.BREAKDOWN);
+  now = alertSnapshot(s);
+  assertEqual(alertEvents(snap, now), [{ type: 'panne', id: 'panneau-1' }]);
+  snap = now;
+  testEmptyBatteries(s);
+  tick(s, 0.2); // le panneau est en panne : plus rien pour le frigo
+  now = alertSnapshot(s);
+  assertEqual(alertEvents(snap, now), [{ type: 'batteriesVides' }, { type: 'frigoCoupe' }]);
+  assertEqual(alertEvents(now, alertSnapshot(s)), [], 'une alerte n\'est annoncée qu\'une fois');
+  toggleDevice(s, 'frigo');
+  assertEqual(alertSnapshot(s).frigoCoupe, false, 'un frigo éteint par le joueur n\'est pas une alerte');
+});
+
+test('Lot 11 : bulles d\'aide : eau, potager, dormir, puis terminé', () => {
+  const s = createInitialState(1);
+  assertEqual(s.aide, { etape: 0, fini: false });
+  assertEqual(tutorialStep(s), 'eau');
+  assertEqual(advanceTutorial(s).etape, 'potager');
+  assertEqual(advanceTutorial(s).etape, 'dormir');
+  assertEqual(advanceTutorial(s).etape, null);
+  assertEqual([s.aide.fini, tutorialStep(s)], [true, null]);
+  assertEqual(advanceTutorial(s).ok, false);
+});
+
+test('Lot 11 : la bulle « dormir » se ferme à la première nuit ; « Passer » ferme tout', () => {
+  const s = createInitialState(1);
+  sleepOnce(s);
+  assertEqual(tutorialStep(s), 'eau', 'dormir avant la dernière bulle ne saute rien');
+  advanceTutorial(s);
+  advanceTutorial(s);
+  assertEqual(tutorialStep(s), 'dormir');
+  sleepOnce(s);
+  assertEqual(s.aide.fini, true);
+  const t = createInitialState(1);
+  assertEqual(skipTutorial(t).ok, true);
+  assertEqual(tutorialStep(t), null);
+  assertEqual(skipTutorial(t).ok, false);
+});
+
+test('Lot 11 : nouvelle partie : les bulles déjà vues ne reviennent pas', () => {
+  const old = createInitialState(1);
+  old.day = 12;
+  assertEqual(newGameFrom(old, 5).aide.fini, false, 'aide pas encore terminée : elle reprend');
+  skipTutorial(old);
+  const s = newGameFrom(old, 5);
+  assertEqual([s.day, s.rngSeed, s.aide.fini], [1, 5, true]);
+  assertEqual(newGameFrom(null, 2).aide, { etape: 0, fini: false });
+});
+
+test('migration v10 → v11 : bulles d\'aide seulement pour une partie pas encore commencée', () => {
+  const v10 = (day) => {
+    const s = createInitialState(1);
+    delete s.aide;
+    s.version = 10;
+    s.day = day;
+    return s;
+  };
+  const neuve = migrate({ v: 10, t: 0, s: v10(1) });
+  assertEqual([neuve.version, neuve.aide], [STATE_VERSION, { etape: 0, fini: false }]);
+  const avancee = migrate({ v: 10, t: 0, s: v10(9) });
+  assertEqual(avancee.aide.fini, true);
+  assertEqual(avancee.day, 9);
+  assertEqual(JSON.parse(JSON.stringify(avancee)), avancee);
+  assertEqual(migrate({ v: 0, t: 0, s: { day: 3, pieces: 10, stats: {} } }).aide.fini, true, 'depuis une très vieille sauvegarde');
+});
+
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
 // run-tests.mjs l'exécute explicitly avec Node après avoir lancé runTests().
 if (typeof module !== 'undefined' && typeof globalThis !== 'undefined') {
@@ -10496,6 +11405,16 @@ const sellQuantities = {}; // quantité choisie par item dans l'onglet Vendre
 let renderScheduled = false;
 let lastRenderAt = 0;
 
+// Lot 11 : heure (Date.now) jusqu'à laquelle la partie a été simulée. Elle est
+// écrite dans la sauvegarde ({ v, t, s } : t = simulatedAt) ; au chargement, ou
+// quand la boucle reprend après une pause (onglet en arrière-plan, téléphone en
+// veille), l'écart avec l'heure actuelle est rattrapé par simulateOffline.
+let simulatedAt = Date.now();
+// Écart minimal (ms) traité comme une absence : en dessous, la boucle normale suffit.
+const CATCH_UP_MIN_MS = 2000;
+// Bilan d'absence pas encore montré (une fenêtre était déjà ouverte).
+let pendingAbsence = null;
+
 /* ---------- stockage : localStorage, toujours entouré de try/catch ---------- */
 
 function safeStorageGet(key) {
@@ -10515,12 +11434,16 @@ function safeStorageSet(key, value) {
   }
 }
 
+// Charge la sauvegarde (ou crée une partie). Lot 11 : simulatedAt reprend
+// l'heure de la sauvegarde, pour rattraper le temps passé page fermée.
 function loadOrCreateState() {
+  simulatedAt = Date.now();
   const raw = safeStorageGet(SAVE_KEY);
   if (!raw) return createInitialState(makeSeed());
   try {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return createInitialState(makeSeed());
+    if (typeof parsed.t === 'number' && Number.isFinite(parsed.t)) simulatedAt = parsed.t;
     return migrate(parsed);
   } catch (e) {
     return createInitialState(makeSeed());
@@ -10534,7 +11457,7 @@ function makeSeed() {
 
 function persistState() {
   try {
-    const payload = JSON.stringify({ v: state.version, t: Date.now(), s: state });
+    const payload = JSON.stringify({ v: state.version, t: simulatedAt, s: state });
     safeStorageSet(SAVE_KEY, payload);
   } catch (e) {
     // La sauvegarde ne doit jamais faire planter la page.
@@ -10552,7 +11475,7 @@ function decodeBase64(b64) {
 }
 
 function exportSaveText() {
-  const payload = JSON.stringify({ v: state.version, t: Date.now(), s: state });
+  const payload = JSON.stringify({ v: state.version, t: simulatedAt, s: state });
   return encodeBase64(payload);
 }
 
@@ -10563,7 +11486,10 @@ function importSaveText(text) {
     if (!parsed || typeof parsed !== 'object' || !parsed.s) {
       throw new Error('format de sauvegarde invalide');
     }
+    // Une sauvegarde importée reprend maintenant : pas de rattrapage hors-ligne.
     state = migrate(parsed);
+    simulatedAt = Date.now();
+    pendingAbsence = null;
     syncJobs();
     persistState();
     return true;
@@ -10604,7 +11530,9 @@ function copyFromTextarea(area) {
 /* ---------- actions du moteur (jamais d'accès direct à state depuis l'UI) ---------- */
 
 function actionNewGame() {
-  state = createInitialState(makeSeed());
+  state = newGameFrom(state, makeSeed());
+  simulatedAt = Date.now();
+  pendingAbsence = null;
   syncJobs();
   screen = null;
   activeTab = 'ferme';
@@ -10744,20 +11672,106 @@ function watchPreparations() {
 }
 
 function frame(now) {
+  const wall = Date.now();
+  if (wall - simulatedAt >= CATCH_UP_MIN_MS) {
+    // La boucle était en pause (onglet caché, veille) : même règle que hors-ligne.
+    catchUp(wall);
+    lastFrameTime = now;
+    accumulatorMs = 0;
+  }
   if (lastFrameTime === null) lastFrameTime = now;
   let elapsed = now - lastFrameTime;
   lastFrameTime = now;
   if (elapsed > MAX_FRAME_MS) elapsed = MAX_FRAME_MS;
   accumulatorMs += elapsed;
+  let ticked = false;
   while (accumulatorMs >= TICK_MS) {
     tick(state, TICK_MS / 1000);
     accumulatorMs -= TICK_MS;
+    ticked = true;
     scheduleRender();
   }
+  simulatedAt = wall;
   watchPreparations();
   watchUnlocks();
+  if (ticked) watchAlerts();
+  watchAbsence();
   watchChapters();
   requestAnimationFrame(frame);
+}
+
+/* ---------- Lot 11 : rattrapage hors-ligne et écran « Pendant votre absence… » ---------- */
+
+// Simule le temps écoulé depuis simulatedAt (plafonné par le moteur), garde le
+// bilan pour l'écran d'absence s'il dépasse HORS_LIGNE.ECRAN_S, puis sauvegarde.
+// Une horloge qui recule (réglage de l'appareil) ne rattrape rien.
+function catchUp(wall = Date.now()) {
+  const seconds = (wall - simulatedAt) / 1000;
+  simulatedAt = wall;
+  if (!(seconds > 0)) return null;
+  const report = simulateOffline(state, seconds);
+  // Les préparations terminées et les alertes sont dans le bilan : pas de notification en rafale.
+  syncJobs();
+  alertState = alertSnapshot(state);
+  alertMuteUntil = Date.now() + ALERT_MUTE_AFTER_CATCH_UP_MS;
+  if (report.demande >= DATA.HORS_LIGNE.ECRAN_S) pendingAbsence = mergeOfflineReports(pendingAbsence, report);
+  persistState();
+  scheduleRender();
+  return report;
+}
+
+// Ouvre l'écran d'absence dès qu'aucune autre fenêtre n'est ouverte (il passe
+// avant l'écran de fin de chapitre).
+function watchAbsence() {
+  if (!pendingAbsence) return;
+  if (document.getElementById('modal-root').childElementCount > 0) return;
+  const report = pendingAbsence;
+  pendingAbsence = null;
+  openAbsenceModal(report);
+}
+
+function openAbsenceModal(r) {
+  const cap = DATA.HORS_LIGNE.MAX_S;
+  const done = itemsSummary(r.terminees);
+  const running = r.enCours.map((e) => {
+    const def = DATA.STATIONS[e.station];
+    const rec = DATA.recipes[e.recette];
+    const left = Number.isFinite(e.reste) ? `encore ${formatDuration(Math.ceil(e.reste - EPS))}` : 'en pause';
+    return `${def.icone} ${def.nom} : ${rec.nom.toLowerCase()} (${left})`;
+  });
+  const f = r.frigo;
+  let fridge = '';
+  if (f.construit) {
+    fridge = f.horsTensionS > 0.5
+      ? `<li class="alert">⚠️ Le réfrigérateur a manqué de courant pendant ${formatDuration(f.horsTensionS)}. S'il a manqué de froid plus de la moitié de la journée, chaque lot perdra une nuit de conservation au prochain Dormir.</li>`
+      : '<li>🧊 Le réfrigérateur est resté alimenté.</li>';
+  }
+  const lines = [
+    `<li>⏳ Absence : <strong class="num">${formatDuration(r.demande)}</strong>${r.plafonne ? ` <span class="muted">(seules les ${formatDuration(cap)} premières comptent)</span>` : ''}</li>`,
+    `<li>☀️ Énergie produite : <strong class="num">${formatFixed(r.energieProduite, 2)} kWh</strong>${r.energiePerdue > 0.005 ? ` <span class="muted">(dont ${formatFixed(r.energiePerdue, 2)} kWh perdus, batteries pleines)</span>` : ''}</li>`,
+    `<li>🔋 Batteries : <strong class="num">${formatFixed(r.energieDebut, 2)} → ${formatFixed(r.energieFin, 2)} / ${formatFixed(r.capacite, 2)} kWh</strong></li>`,
+    `<li>💧 Eau pompée : <strong class="num">${formatFixed(r.eauPompee, 1)} L</strong> · réservoir <span class="num">${formatFixed(r.eauFin, 1)} / ${formatNumber(r.capaciteEau)} L</span></li>`,
+    done ? `<li>🍳 Préparations terminées : <strong>${done}</strong></li>` : '',
+    running.length ? `<li>⏳ Toujours en cours : ${running.join(' · ')}</li>` : '',
+    fridge,
+    `<li>🌙 Aucune nuit n'est passée : les cultures, les animaux et la famille attendent que tu dormes.${canSleep(state) ? ' Tu peux dormir dès maintenant.' : ''}</li>`,
+    DATA.HORS_LIGNE.USURE ? '' : '<li class="muted">🛠️ Les appareils ne se sont pas usés pendant ton absence.</li>',
+  ];
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="absence-title" data-stop-propagation>
+        <h2 id="absence-title">⏳ Pendant votre absence…</h2>
+        <ul class="report-list">${lines.join('')}</ul>
+        <button type="button" class="btn primary" data-action="close-modal" id="absence-close">Reprendre</button>
+      </div>
+    </div>`;
+  document.getElementById('absence-close').focus();
+}
+
+// Quitter la page ou la cacher : on sauvegarde tout de suite (sur mobile,
+// l'onglet peut être tué en arrière-plan sans « beforeunload »).
+function onHide() {
+  if (document.visibilityState === 'hidden') persistState();
 }
 
 function scheduleRender() {
@@ -10782,13 +11796,21 @@ function render() {
   renderTabbar();
   renderTabContent();
   renderSleepBar();
+  renderTutorial();
   renderTestPanel();
 }
 
 // Rafraîchit tout de suite (après une action du joueur).
+// Lot 11 : jamais plus de 5 rendus par seconde, même en tapant vite : si le
+// dernier rendu est trop récent, celui-ci part au prochain créneau (≤ 200 ms).
 function refresh() {
+  const now = performance.now();
+  if (now - lastRenderAt < RENDER_THROTTLE_MS) {
+    renderScheduled = true;
+    return;
+  }
   renderScheduled = false;
-  lastRenderAt = performance.now();
+  lastRenderAt = now;
   render();
 }
 
@@ -10798,9 +11820,30 @@ function refresh() {
    à l'autre : un appui en cours n'est jamais interrompu et le focus clavier
    reste en place. */
 function morph(target, html) {
+  // Lot 11 : un gabarit identique au précédent ne coûte rien (ni analyse, ni comparaison).
+  if (target.__html === html) return;
+  target.__html = html;
   const tpl = document.createElement('template');
   tpl.innerHTML = html;
   patchChildren(target, tpl.content);
+}
+
+// Lot 11 : rendu par tranches. `parts` est une liste de gabarits ; chacun a son
+// conteneur (.slot, sans boîte à l'écran) et n'est comparé que s'il a changé. Si
+// le nombre de tranches change (autre onglet), les conteneurs sont recréés.
+function morphSlots(target, parts) {
+  const slots = target.__slots;
+  if (!slots || slots.length !== parts.length || target.firstChild !== slots[0]) {
+    target.textContent = '';
+    target.__html = null;
+    target.__slots = parts.map(() => {
+      const d = document.createElement('div');
+      d.className = 'slot';
+      target.appendChild(d);
+      return d;
+    });
+  }
+  parts.forEach((html, i) => morph(target.__slots[i], html));
 }
 
 function patchChildren(from, to) {
@@ -10816,6 +11859,11 @@ function patchChildren(from, to) {
       from.appendChild(w);
     } else if (o.nodeType !== w.nodeType || o.nodeName !== w.nodeName) {
       from.replaceChild(w, o);
+    } else if (o.nodeType === 1 && o.getAttribute('data-key') !== w.getAttribute('data-key')) {
+      // Lot 11 : un dessin dont la clé change (une plante qui pousse, une ponte)
+      // est remplacé puis animé ; au premier affichage, rien ne bouge.
+      from.replaceChild(w, o);
+      if (o.hasAttribute('data-key') && w.hasAttribute('data-key')) animateIn(w);
     } else if (o.nodeType === 1) {
       patchAttributes(o, w);
       patchChildren(o, w);
@@ -10851,43 +11899,25 @@ function renderTabbar() {
     document.getElementById('tabbar'),
     visible
       .map(
-        (t) => `<button type="button" class="tab-btn${t.id === activeTab ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}">${t.icon} ${t.label}</button>`
+        (t) => `<button type="button" class="tab-btn${t.id === activeTab ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}"${t.id === activeTab ? ' aria-current="page"' : ''}>${t.icon} ${t.label}</button>`
       )
       .join('')
   );
 }
 
+// Chaque onglet donne une liste de tranches (la Ferme en a une par section).
+// render() ramène déjà un onglet non débloqué sur la Ferme.
+const TAB_RENDERERS = {
+  ferme: () => (screen === 'panneaux' || screen === 'batteries' ? [renderDeviceScreen(screen)] : renderFerme()),
+  famille: () => [renderFamille()],
+  inventaire: () => [renderInventaire()],
+  comptoir: () => [renderComptoir()],
+  recettes: () => [renderRecettes()],
+  techno: () => [renderTechno()],
+};
+
 function renderTabContent() {
-  const el = document.getElementById('tab-content');
-  if (activeTab === 'ferme') {
-    morph(el, screen === 'panneaux' || screen === 'batteries' ? renderDeviceScreen(screen) : renderFerme());
-    return;
-  }
-  if (activeTab === 'famille') {
-    morph(el, renderFamille());
-    return;
-  }
-  if (activeTab === 'inventaire') {
-    morph(el, renderInventaire());
-    return;
-  }
-  if (activeTab === 'comptoir') {
-    morph(el, renderComptoir());
-    return;
-  }
-  if (activeTab === 'recettes') {
-    morph(el, renderRecettes());
-    return;
-  }
-  if (activeTab === 'techno') {
-    morph(el, renderTechno());
-    return;
-  }
-  const tab = TABS.find((t) => t.id === activeTab) || TABS[0];
-  morph(el, `
-    <h2>${tab.icon} ${tab.label}</h2>
-    <p class="hint">Rien à voir pour l'instant : cet onglet arrivera dans un lot suivant.</p>
-  `);
+  morphSlots(document.getElementById('tab-content'), (TAB_RENDERERS[activeTab] || TAB_RENDERERS.ferme)());
 }
 
 function renderSleepBar() {
@@ -10899,8 +11929,8 @@ function renderSleepBar() {
     document.getElementById('sleep-bar'),
     preview +
       (canSleep(state)
-        ? '<button type="button" class="btn primary" data-action="sleep">😴 Dormir</button>'
-        : `<button type="button" class="btn" data-action="sleep" disabled>😴 Dormir (dans ${remaining} s)</button>`)
+        ? `<button type="button" class="btn primary${tutoTarget('dormir')}" data-action="sleep">😴 Dormir</button>`
+        : `<button type="button" class="btn${tutoTarget('dormir')}" data-action="sleep" disabled>😴 Dormir (dans ${remaining} s)</button>`)
   );
 }
 
@@ -10909,6 +11939,8 @@ function renderTestPanel() {
   panel.hidden = !testMode;
   if (!testMode) return;
   syncTestDeviceSelect();
+  // Lot 11 : l'état complet n'est sérialisé que si le panneau est déplié.
+  if (!panel.open) return;
   const dump = document.getElementById('state-dump');
   const text = JSON.stringify(state, null, 2);
   if (dump.textContent !== text) dump.textContent = text;
@@ -10968,47 +12000,50 @@ function renderFerme() {
       ? 'Réservoir plein'
       : `Vitesse de remplissage : ${formatRate(state.flux.eau)} L/s`;
 
-  return `
-    <h2>🌾 Ferme</h2>
-    ${renderChapterBanner()}
-    ${renderCalendar()}
-    ${renderPotager()}
-    ${isUnlocked(state, 'serre') ? renderSerre() : ''}
-    ${isUnlocked(state, 'champ') ? renderChamp() : ''}
-    ${isUnlocked(state, 'silo') ? renderSilo() : ''}
-    ${isUnlocked(state, 'poulailler') ? renderPoulailler() : ''}
-    ${isUnlocked(state, 'paturage') ? renderPaturage() : ''}
-    ${isUnlocked(state, 'verger') ? renderVerger() : ''}
-    ${renderAteliers()}
+  // Lot 11 : une tranche par section, toujours le même nombre de tranches (une
+  // section pas encore débloquée est vide) : chacune n'est mise à jour que si
+  // son gabarit a changé.
+  return [
+    `<h2>🌾 Ferme</h2>${renderChapterBanner()}${renderCalendar()}`,
+    renderPotager(),
+    isUnlocked(state, 'serre') ? renderSerre() : '',
+    isUnlocked(state, 'champ') ? renderChamp() : '',
+    isUnlocked(state, 'silo') ? renderSilo() : '',
+    isUnlocked(state, 'poulailler') ? renderPoulailler() : '',
+    isUnlocked(state, 'paturage') ? renderPaturage() : '',
+    isUnlocked(state, 'verger') ? renderVerger() : '',
+    renderAteliers(),
+    `
     <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
-        <span class="card-title"><span>☀️ Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="card-title"><span>${icon('panneau')}Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
         <span class="big">${formatFixed(e.production, 2)} kWh/s</span>
         <span class="muted">${e.panneauxEnMarche} panneau${e.panneauxEnMarche > 1 ? 'x' : ''} en marche sur ${e.panneauxTotal}</span>
         ${alertLine(e.panneauxAEntretenir, e.panneauxEnPanne)}
       </button>
       <button type="button" class="card" data-action="open-screen" data-screen="batteries">
-        <span class="card-title"><span>🔋 Stockage d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="card-title"><span>${icon('batterie')}Stockage d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
         <span class="big">${formatFixed(e.charge, 2)} / ${formatFixed(e.capacite, 2)} kWh</span>
         <span class="muted">${netText}</span>
         ${alertLine(e.batteriesAEntretenir, e.batteriesEnPanne)}
       </button>
-      <div class="card">
-        <span class="card-title"><span>⛲ Pompe · niveau ${p.niveau}</span><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span></span>
+      <div class="card${tutoTarget('eau')}">
+        <span class="card-title"><span>${icon('pompe')}Pompe · niveau ${p.niveau}</span><span class="chips"><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span>${helpBtn('pompe')}</span></span>
         <span class="muted">Débit réel : <span class="num">${formatFixed(p.debit, 2)} L/s</span> (max ${formatFixed(pumpFlow(p), 2)})</span>
         <span class="muted">Consommation : <span class="num">${formatFixed(p.conso, 3)} kWh/s</span></span>
         ${wearHtml(p)}
         ${deviceControls(p)}
       </div>
-      <div class="card">
-        <span class="card-title"><span>💧 Réservoir</span></span>
+      <div class="card${tutoTarget('eau')}">
+        <span class="card-title"><span>${icon('reservoir')}Réservoir</span>${helpBtn('reservoir')}</span>
         <span class="big">${formatFixed(state.eau, 1)} / ${formatNumber(cap)} L</span>
         <span class="muted">${tankText}</span>
       </div>
       ${isUnlocked(state, 'frigo') ? renderFridgeCard() : ''}
     </div>
-  `;
+  `,
+  ];
 }
 
 function wearHtml(d) {
@@ -11090,7 +12125,8 @@ function renderDeviceScreen(kind) {
   return `
     <div class="screen-head">
       <button type="button" class="btn" data-action="close-screen">← Ferme</button>
-      <h2>${isPanels ? '☀️ Production d\'énergie' : '🔋 Stockage d\'énergie'}</h2>
+      <h2>${icon(type)}${isPanels ? 'Production d\'énergie' : 'Stockage d\'énergie'}</h2>
+      ${helpBtn(type)}
     </div>
     <div class="stack">${summary}</div>
     <div class="device-list">${list.map(deviceRow).join('')}</div>
@@ -11110,10 +12146,10 @@ function renderPotager() {
       : `<button type="button" class="btn" data-action="upgrade-potager"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${pot.niveau + 1}, ${DATA.POTAGER.PARCELLES[pot.niveau]} parcelles (${costLabel(up)})</button>`;
   return `
     <div class="section-head">
-      <h3>🌱 Potager · niveau ${pot.niveau}</h3>
-      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 1 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ×${formatMult(prod)}</span></span>
+      <h3>${icon('potager')}Potager · niveau ${pot.niveau}</h3>
+      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 1 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ×${formatMult(prod)}</span>${helpBtn('potager')}</span>
     </div>
-    <div class="plots">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
+    <div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${upBtn}</div>
   `;
 }
@@ -11125,7 +12161,7 @@ function renderChamp() {
   if (!c.construit) {
     const cost = DATA.CHAMP.CONSTRUCTION;
     return `
-      <div class="section-head"><h3>🌾 Champ</h3></div>
+      <div class="section-head"><h3>${icon('champ')}Champ</h3>${helpBtn('champ')}</div>
       <div class="card">
         <span class="muted">Blé et tournesol : ${DATA.CHAMP.PARCELLES[0]} parcelles au départ. Le blé nourrit les poules, le tournesol donne des graines.</span>
         <button type="button" class="btn primary" data-action="build-champ"${canPay(cost) ? '' : ' disabled'}>Construire le Champ (${costLabel(cost)})</button>
@@ -11138,8 +12174,8 @@ function renderChamp() {
       : `<button type="button" class="btn" data-action="upgrade-champ"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${c.niveau + 1}, ${DATA.CHAMP.PARCELLES[c.niveau]} parcelles (${costLabel(up)})</button>`;
   return `
     <div class="section-head">
-      <h3>🌾 Champ · niveau ${c.niveau}</h3>
-      ${autoChip('champ', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}
+      <h3>${icon('champ')}Champ · niveau ${c.niveau}</h3>
+      <span class="chips">${autoChip('champ', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}${helpBtn('champ')}</span>
     </div>
     <div class="plots">${c.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${upBtn}</div>
@@ -11151,7 +12187,7 @@ function renderSilo() {
   if (!s.construit) {
     const cost = DATA.SILO.CONSTRUCTION;
     return `
-      <div class="section-head"><h3>🛖 Silo</h3></div>
+      <div class="section-head"><h3>${icon('silo')}Silo</h3>${helpBtn('silo')}</div>
       <div class="card">
         <span class="muted">Le blé récolté y est rangé d'abord ; les poules y mangent d'abord. Capacité de départ : ${DATA.SILO.CAPACITE[0]} blés.</span>
         <button type="button" class="btn primary" data-action="build-silo"${canPay(cost) ? '' : ' disabled'}>Construire le Silo (${costLabel(cost)})</button>
@@ -11167,7 +12203,7 @@ function renderSilo() {
       ? '<button type="button" class="btn" disabled>Silo au niveau maximum</button>'
       : `<button type="button" class="btn" data-action="upgrade-silo"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${s.niveau + 1}, ${formatNumber(DATA.SILO.CAPACITE[s.niveau])} blés (${costLabel(up)})</button>`;
   return `
-    <div class="section-head"><h3>🛖 Silo · niveau ${s.niveau}</h3></div>
+    <div class="section-head"><h3>${icon('silo')}Silo · niveau ${s.niveau}</h3>${helpBtn('silo')}</div>
     <div class="card">
       <span class="big">${formatQty(s.ble)} / ${formatNumber(cap)} 🌾</span>
       <span class="bar" role="progressbar" aria-label="Remplissage du Silo" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${Math.round(s.ble)}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
@@ -11181,7 +12217,7 @@ function renderPoulailler() {
   if (!p.construit) {
     const cost = DATA.POULAILLER.CONSTRUCTION;
     return `
-      <div class="section-head"><h3>🐔 Poulailler</h3></div>
+      <div class="section-head"><h3>${icon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
       <div class="card">
         <span class="muted">Les poules mangent ${formatFixed(DATA.ANIMAUX.poule.bleParNuit, 1)} blé par nuit et pondent 1 œuf si elles sont nourries. Capacité de départ : ${DATA.POULAILLER.CAPACITE[0]} poules. Les poules s'achètent au Comptoir.</span>
         <button type="button" class="btn primary" data-action="build-poulailler"${canPay(cost) ? '' : ' disabled'}>Construire le Poulailler (${costLabel(cost)})</button>
@@ -11205,10 +12241,11 @@ function renderPoulailler() {
   else hint = `Une poule non nourrie ne pond pas. Blé disponible : ${formatQty(wheatTotal(state))}.`;
   return `
     <div class="section-head">
-      <h3>🐔 Poulailler · niveau ${p.niveau}</h3>
-      <span class="chips">${autoChip('poulailler', 'Nourrit les poules tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 1 ? ' warn' : ''}" title="Un nourrissage au clic ne compte qu'avec cette probabilité">Productivité ×${formatMult(prod)}</span></span>
+      <h3>${icon('poulailler')}Poulailler · niveau ${p.niveau}</h3>
+      <span class="chips">${autoChip('poulailler', 'Nourrit les poules tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 1 ? ' warn' : ''}" title="Un nourrissage au clic ne compte qu'avec cette probabilité">Productivité ×${formatMult(prod)}</span>${helpBtn('poulailler')}</span>
     </div>
     <div class="card">
+      ${coopArtRow()}
       <span class="big" aria-label="Poules nourries sur total">🥚 ${p.nourries} / ${p.poules} nourries</span>
       <span class="muted">Poules : <span class="num">${p.poules} / ${cap}</span> · ${formatFixed(need, 1)} blé chacune</span>
       <span class="bar" role="progressbar" aria-label="Poules nourries" aria-valuemin="0" aria-valuemax="${p.poules}" aria-valuenow="${p.nourries}"><span class="bar-fill" style="width:${p.poules ? Math.round((p.nourries / p.poules) * 100) : 0}%"></span></span>
@@ -11245,7 +12282,8 @@ function sheepCard(m) {
   const woolText = ready ? 'Laine prête' : `Laine : ${m.laine} / ${M.joursLaine} nuits`;
   return `
     <article class="card sheep${ready ? ' ready' : ''}">
-      <span class="card-title"><span>${M.icone} Mouton n°${sheepNumber(m)}</span><span class="chip${ready ? ' badge' : ''}">${ready ? '🧶 Prêt à tondre' : 'Laine en repousse'}</span></span>
+      <span class="card-title"><span>Mouton n°${sheepNumber(m)}</span><span class="chip${ready ? ' badge' : ''}">${ready ? '🧶 Prêt à tondre' : 'Laine en repousse'}</span></span>
+      <span class="card-art-row">${artSvg([ready ? 'sheep-wool' : 'sheep-shorn'], '', `${m.id}-${ready ? 'laine' : 'tondu'}`, 'grow')}</span>
       <span class="muted">Poids : <strong class="num">${formatKg(m.poids)}</strong> sur ${formatKg(M.poidsMax)}${m.poids >= M.poidsMax - EPS ? ' (maximum)' : ''}</span>
       <span class="bar" role="progressbar" aria-label="Poids" aria-valuemin="0" aria-valuemax="${M.poidsMax}" aria-valuenow="${Math.round(m.poids)}"><span class="bar-fill" style="width:${weightPct}%"></span></span>
       <span class="muted">${woolText}</span>
@@ -11263,7 +12301,7 @@ function renderPaturage() {
   if (!p.construit) {
     const cost = DATA.PATURAGE.deblocage;
     return `
-      <div class="section-head"><h3>🐑 Pâturage</h3></div>
+      <div class="section-head"><h3>${icon('paturage')}Pâturage</h3>${helpBtn('paturage')}</div>
       <div class="card">
         <span class="muted">${formatHa(DATA.PATURAGE.surfaceDepart)} au départ : ${maxSheep(DATA.PATURAGE.surfaceDepart)} moutons au plus. La laine se tond toutes les ${M.joursLaine} nuits ; la viande vient de l'abattage. Les moutons s'achètent au Comptoir.</span>
         <button type="button" class="btn primary" data-action="build-paturage"${canPay(cost) ? '' : ' disabled'}>Débloquer le Pâturage (${costLabel(cost)})</button>
@@ -11282,8 +12320,8 @@ function renderPaturage() {
   const buyOk = free === 0 && canPay(cost);
   return `
     <div class="section-head">
-      <h3>🐑 Pâturage · ${formatHa(p.ha)}</h3>
-      ${ready > 0 ? `<span class="chip badge">🧶 ${ready} à tondre</span>` : ''}
+      <h3>${icon('paturage')}Pâturage · ${formatHa(p.ha)}</h3>
+      <span class="chips">${ready > 0 ? `<span class="chip badge">🧶 ${ready} à tondre</span>` : ''}${helpBtn('paturage')}</span>
     </div>
     <div class="card">
       <span class="big" aria-label="Moutons sur capacité">${M.icone} ${count} / ${cap} moutons</span>
@@ -11340,7 +12378,7 @@ function plotCard(p, n) {
     return `
       <div class="card plot">
         <span class="card-title"><span>Parcelle ${n}</span></span>
-        <span class="plot-emoji" aria-hidden="true">🟫</span>
+        ${plotArt(p)}
         <span class="muted">Vide</span>
         <button type="button" class="btn primary" data-action="plant-open" data-id="${p.id}"${seedsAvailable ? '' : ' disabled'}>${seedsAvailable ? 'Planter' : 'Aucune graine'}</button>
         ${semisButton(p)}
@@ -11371,6 +12409,7 @@ function plotCard(p, n) {
   return `
     <div class="card plot${mature ? ' mature' : ''}">
       <span class="card-title"><span>Parcelle ${n}</span><span aria-hidden="true">${def.icone}</span></span>
+      ${plotArt(p)}
       <span class="muted">${def.nom} · ${stateLine}</span>
       <span class="bar" role="progressbar" aria-label="Croissance" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${p.stade}"><span class="bar-fill" style="width:${pct}%"></span></span>
       ${actions}
@@ -11483,7 +12522,7 @@ function renderSerre() {
   if (!g.construit) {
     const cost = DATA.SERRE.CONSTRUCTION;
     return `
-      <div class="section-head"><h3>🏡 Serre</h3></div>
+      <div class="section-head"><h3>${icon('serre')}Serre</h3>${helpBtn('serre')}</div>
       <div class="card">
         <span class="muted">Tomate, courgette et aubergine : ${DATA.SERRE.PARCELLES[0]} parcelles au départ, +${DATA.SERRE.PARCELLES[1] - DATA.SERRE.PARCELLES[0]} par niveau. Aucun modificateur de saison : ni l'hiver ni l'été n'y changent rien.</span>
         <button type="button" class="btn primary" data-action="build-serre"${canPay(cost) ? '' : ' disabled'}>Construire la Serre (${costLabel(cost)})</button>
@@ -11496,8 +12535,8 @@ function renderSerre() {
       : `<button type="button" class="btn" data-action="upgrade-serre"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${g.niveau + 1}, ${DATA.SERRE.PARCELLES[g.niveau]} parcelles (${costLabel(up)})</button>`;
   return `
     <div class="section-head">
-      <h3>🏡 Serre · niveau ${g.niveau}</h3>
-      <span class="chip" title="La Serre ignore les modificateurs de saison">🌡️ Sans saison</span>
+      <h3>${icon('serre')}Serre · niveau ${g.niveau}</h3>
+      <span class="chips"><span class="chip" title="La Serre ignore les modificateurs de saison">🌡️ Sans saison</span>${helpBtn('serre')}</span>
     </div>
     <div class="plots">${g.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${upBtn}</div>
@@ -11519,6 +12558,7 @@ function treeCard(tree) {
   return `
     <div class="card plot tree${adult ? ' adult' : ''}">
       <span class="card-title"><span>${def.nom}</span><span aria-hidden="true">${fruit.icone}</span></span>
+      ${treeArt(tree)}
       <span class="muted">${line}${adult ? ` · ${V.FRUITS} ${fruit.nom.toLowerCase()}s par récolte` : ''}</span>
       <span class="bar" role="progressbar" aria-label="Croissance" aria-valuemin="0" aria-valuemax="${V.MATURITE}" aria-valuenow="${age}"><span class="bar-fill" style="width:${Math.round((age / V.MATURITE) * 100)}%"></span></span>
       <span class="muted">${when}${inWindow && adult ? ' · 🍎 en saison' : ''}</span>
@@ -11531,7 +12571,7 @@ function renderVerger() {
   if (!v.construit) {
     const cost = V.CONSTRUCTION;
     return `
-      <div class="section-head"><h3>🌳 Verger</h3></div>
+      <div class="section-head"><h3>${icon('verger')}Verger</h3>${helpBtn('verger')}</div>
       <div class="card">
         <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Pommiers et poiriers s'achètent au Comptoir (onglet Arbres), sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne, ${V.MATURITE} nuits après la plantation.</span>
         <button type="button" class="btn primary" data-action="build-verger"${canPay(cost) ? '' : ' disabled'}>Aménager le Verger (${costLabel(cost)})</button>
@@ -11546,7 +12586,8 @@ function renderVerger() {
   for (let i = 0; i < free; i++) {
     slots.push(`
       <div class="card plot tree free">
-        <span class="card-title"><span>Emplacement libre</span><span aria-hidden="true">🟫</span></span>
+        <span class="card-title"><span>Emplacement libre</span></span>
+        ${artSvg(['plot-soil'], 'plot-art')}
         <span class="muted">Achète un pommier ou un poirier au Comptoir (onglet Arbres).</span>
       </div>`);
   }
@@ -11554,7 +12595,8 @@ function renderVerger() {
   const season = nightOfYear >= w.debut && nightOfYear <= w.fin ? '🍎 Les fruits sont de saison.' : `Les fruits arrivent de la nuit ${w.debut} à la nuit ${w.fin} de l'année (l'année compte ${L * DATA.SAISONS.ORDRE.length} nuits).`;
   return `
     <div class="section-head">
-      <h3>🌳 Verger · ${v.arbres.length} / ${v.places} emplacements</h3>
+      <h3>${icon('verger')}Verger · ${v.arbres.length} / ${v.places} emplacements</h3>
+      ${helpBtn('verger')}
     </div>
     <div class="plots">${slots.join('')}</div>
     <div class="card">
@@ -11578,7 +12620,7 @@ function renderFridgeCard() {
     const cost = DATA.FRIGO.CONSTRUCTION;
     return `
       <div class="card">
-        <span class="card-title"><span>🧊 Réfrigérateur</span><span class="chip">Non construit</span></span>
+        <span class="card-title"><span>${icon('frigo')}Réfrigérateur</span><span class="chips"><span class="chip">Non construit</span>${helpBtn('frigo')}</span></span>
         <span class="muted">Les aliments rangés au frigo ne vieillissent plus. Capacité illimitée, mais il consomme en permanence : ${formatFixed(DATA.FRIGO.BASE_KWH_S, 3)} kWh/s + ${formatFixed(DATA.FRIGO.PAR_UNITE_KWH_S, 5)} par unité stockée. Appareil électrique : interrupteur, usure, pannes.</span>
         <button type="button" class="btn primary" data-action="build-fridge"${canPay(cost) ? '' : ' disabled'}>Construire le Réfrigérateur (${costLabel(cost)})</button>
       </div>`;
@@ -11594,7 +12636,7 @@ function renderFridgeCard() {
   const badge = st.badge ? `<span class="chip warn">⚠️ ${st.badge}</span>` : '';
   return `
     <div class="card fridge ${ok ? 'cold' : 'warm'}">
-      <span class="card-title"><span>${fridgeIcon()} Réfrigérateur</span><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span></span>
+      <span class="card-title"><span>${icon('frigo')}${fridgeIcon()} Réfrigérateur</span><span class="chips"><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span>${helpBtn('frigo')}</span></span>
       ${badge}
       <span class="big">${formatFixed(d.conso, 3)} kWh/s</span>
       <span class="muted">Consommation à pleine charge : <span class="num">${formatFixed(fridgeRate(state), 4)} kWh/s</span> · ${fridgeUnits(state)} unité${fridgeUnits(state) > 1 ? 's' : ''} au frais (onglet Inventaire › Frigo)</span>
@@ -11664,7 +12706,7 @@ function stationBuildCard(id) {
   const blocked = need && !state.stations[def.requiert].construit;
   return `
     <div class="card station">
-      <span class="card-title"><span>${def.icone} ${def.nom}</span><span class="chip">Non construit</span></span>
+      <span class="card-title"><span>${icon(id)}${def.nom}</span><span class="chips"><span class="chip">Non construit</span>${helpBtn(id)}</span></span>
       <span class="muted">${stationBlurb(id)}</span>
       ${blocked ? `<span class="alert">Construis d'abord ${need.article} ${need.nom}.</span>` : ''}
       <button type="button" class="btn primary" data-action="build-station" data-station="${id}"${!blocked && canPay(def.cout) ? '' : ' disabled'}>Construire ${def.article} ${def.nom} (${costLabel(def.cout)})</button>
@@ -11682,7 +12724,7 @@ function renderAteliers() {
       : 'Se lancera depuis le Livre de recette, que le Four ouvre.';
     return `
       <div class="card station">
-        <span class="card-title"><span>${def.icone} ${def.nom}</span><span class="chip">✅ Construit</span></span>
+        <span class="card-title"><span>${icon(id)}${def.nom}</span><span class="chips"><span class="chip">✅ Construit</span>${helpBtn(id)}</span></span>
         <span class="muted">${where}</span>
       </div>`;
   });
@@ -11734,7 +12776,7 @@ function stationCard(id) {
   const chip = job ? '<span class="chip">⏳ Occupée</span>' : '<span class="chip">✅ Libre</span>';
   return `
     <div class="card station${job ? ' busy' : ''}">
-      <span class="card-title"><span>${def.icone} ${def.nom}</span>${chip}</span>
+      <span class="card-title"><span>${icon(id)}${def.nom}</span><span class="chips">${chip}${helpBtn(id)}</span></span>
       ${work}
       ${power}
     </div>`;
@@ -12017,7 +13059,7 @@ function subtabsHtml(tabs, current, action) {
   return `<div class="subtabs" role="group" aria-label="Sections">${tabs
     .map(
       (t) =>
-        `<button type="button" class="subtab-btn${t.id === current ? ' active' : ''}${t.soon ? ' soon' : ''}" data-action="${action}" data-tab="${t.id}" aria-pressed="${t.id === current}">${t.icon} ${t.label}</button>`
+        `<button type="button" class="subtab-btn${t.id === current ? ' active' : ''}" data-action="${action}" data-tab="${t.id}" aria-pressed="${t.id === current}">${t.icon} ${t.label}</button>`
     )
     .join('')}</div>`;
 }
@@ -12484,16 +13526,374 @@ function watchChapters() {
   if (document.getElementById('modal-root').childElementCount === 0) openChapterModal();
 }
 
+/* ---------- Lot 11 : illustrations et animations ---------- */
+
+// Dessin décoratif : un <svg> qui empile des symboles du sprite. `key` identifie
+// ce qu'il montre (une plante à un stade) : quand la clé change, morph remplace
+// le dessin et l'anime (`anim` : 'grow' pour la pousse, 'lay' pour la ponte).
+function artSvg(symbols, cls = '', key = '', anim = '') {
+  const uses = symbols.map((id) => `<use href="#${id}"/>`).join('');
+  return `<svg class="art${cls ? ' ' + cls : ''}" viewBox="0 0 48 48" aria-hidden="true" focusable="false"${key ? ` data-key="${key}"` : ''}${anim ? ` data-anim="${anim}"` : ''}>${uses}</svg>`;
+}
+
+// Petite icône de bâtiment, devant un titre.
+function icon(id) {
+  return artSvg([`b-${id}`], 'art-icon');
+}
+
+// Symbole de la plante d'une parcelle : semis, pousse, feuillage, puis la
+// culture mûre (ou la fleur à graines d'une carotte montée en graine).
+function plotSymbol(p) {
+  if (!p.culture) return null;
+  const def = DATA.crops[p.culture];
+  if (isMature(p)) return p.montee ? 'crop-graine' : `crop-${p.culture}`;
+  if (p.stade >= def.stades) return `crop-${p.culture}`; // mûre, en train de monter en graine
+  if (p.stade === 0) return 'plant-s0';
+  return p.stade * 2 < def.stades ? 'plant-s1' : 'plant-s2';
+}
+
+function plotArt(p) {
+  const sym = plotSymbol(p);
+  return artSvg(sym ? ['plot-soil', sym] : ['plot-soil'], 'plot-art', `${p.culture || 'vide'}-${sym || 'terre'}`, 'grow');
+}
+
+// Poulailler : une poule, et l'œuf de la nuit qui tombe au réveil (ponte). L'œuf
+// est toujours dans le gabarit (caché sans ponte) pour que sa clé change d'une
+// nuit à l'autre et déclenche l'animation.
+function coopArtRow() {
+  const p = state.poulailler;
+  if (!p.poules) return '';
+  const r = state.report;
+  const laid = r && r.nuit === state.day ? r.oeufs : 0;
+  return `<span class="card-art-row">${artSvg(['hen'])}${artSvg(['egg'], `egg-art${laid > 0 ? '' : ' art-hidden'}`, `ponte-${laid > 0 ? state.day : 0}`, 'lay')}${laid > 0 ? `<span class="muted">+${laid} œuf${laid > 1 ? 's' : ''} cette nuit</span>` : ''}</span>`;
+}
+
+function treeArt(tree) {
+  const adult = isTreeAdult(state, tree);
+  return artSvg([adult ? `tree-${tree.espece}` : 'tree-young'], 'plot-art', `${tree.id}-${adult ? 'adulte' : 'jeune'}`, 'grow');
+}
+
+const REDUCED_MOTION = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+const ANIMATIONS = {
+  grow: {
+    frames: [{ transform: 'scale(0.6)', opacity: 0.3 }, { transform: 'scale(1.08)', opacity: 1, offset: 0.7 }, { transform: 'scale(1)', opacity: 1 }],
+    options: { duration: 600, easing: 'ease-out' },
+  },
+  lay: {
+    frames: [{ transform: 'translateY(-12px)', opacity: 0 }, { transform: 'translateY(2px)', opacity: 1, offset: 0.6 }, { transform: 'translateY(0)', opacity: 1 }],
+    options: { duration: 700, easing: 'ease-out' },
+  },
+};
+
+// Animation discrète d'un dessin qui vient de changer ; rien si le joueur a
+// demandé moins d'animations (prefers-reduced-motion).
+function animateIn(node) {
+  if (!node.animate || (REDUCED_MOTION && REDUCED_MOTION.matches)) return;
+  const a = ANIMATIONS[node.getAttribute('data-anim')];
+  if (a) node.animate(a.frames, a.options);
+}
+
+/* ---------- Lot 11 : aide sur chaque bâtiment ---------- */
+
+const listFixed = (values, digits, unit) => `${values.map((v) => formatFixed(v, digits)).join(' · ')} ${unit}`;
+const listNum = (values, unit) => `${values.map((v) => formatNumber(v)).join(' · ')} ${unit}`;
+
+// Plage d'un facteur de saison : « ×0,7 à ×1,3 ».
+function seasonRange(kind) {
+  const f = Object.values(DATA.SAISONS.MODS).map((m) => m[kind]);
+  return `${formatFactor(Math.min(...f))} à ${formatFactor(Math.max(...f))}`;
+}
+
+function cropsLine(lieu, what) {
+  return plantableCropsFor(state, lieu)
+    .map((c) => {
+      const d = DATA.crops[c];
+      const out = DATA.items[cropProduct(c)];
+      return what === 'eau'
+        ? `${d.icone} ${d.nom.toLowerCase()} ${formatQty(d.litres)} L`
+        : `${d.icone} ${d.nom.toLowerCase()} : ${d.rendement} ${out.nom.toLowerCase()} en ${nightsLabel(d.stades)}`;
+    })
+    .join(' · ');
+}
+
+function stationRecipesLine(id) {
+  return stationRecipes(id)
+    .map((r) => {
+      const def = DATA.recipes[r];
+      const ing = def.ingredients.map((i) => `${formatQty(i.qte)} ${ingredientOptions(i).map((it) => DATA.items[it].nom.toLowerCase()).join(' ou ')}`).join(' + ');
+      const eau = def.eau ? ` + ${formatQty(def.eau)} L d'eau` : '';
+      return `${def.icone} ${def.nom} : ${ing}${eau} (${formatQty(def.temps)} s)`;
+    })
+    .join(' ; ');
+}
+
+function levelsNote(parcelles, nom) {
+  return `Parcelles par niveau : ${listNum(parcelles, '')}. Au niveau ${DATA.AUTOMATISATION.NIVEAU}, ${nom} arrose et récolte tout seul pendant la nuit, à 100 %.`;
+}
+
+// Rôle, consommation et production de chaque bâtiment, calculés depuis DATA.
+const HELP = {
+  panneau: () => ({
+    nom: 'Panneaux solaires',
+    role: 'Transforment le soleil en électricité, rangée dans les batteries. Chaque panneau a son niveau, son usure et son interrupteur.',
+    conso: 'Aucune.',
+    prod: `${listFixed(DATA.GRID.panneau.kwhPerS, 2, 'kWh/s')} selon le niveau, ${seasonRange('solaire')} selon la saison. L'usure en retire jusqu'à ${formatNumber(DATA.WEAR.BREAKDOWN / DATA.WEAR.EFFICIENCY_DIVISOR * 100)} %. En ce moment : ${formatFixed(energyStats(state).production, 2)} kWh/s.`,
+    note: `Un panneau de plus coûte ${formatNumber(DATA.PURCHASE.panneau.base)} 💰 × ${formatFixed(DATA.PURCHASE.panneau.growth, 1)} par panneau déjà possédé.`,
+  }),
+  batterie: () => ({
+    nom: 'Batteries',
+    role: 'Stockent l\'électricité des panneaux. La première batterie disponible se remplit d\'abord ; la dernière remplie se vide d\'abord. Elles ne se déchargent jamais d\'elles-mêmes.',
+    conso: 'Aucune : elles alimentent la pompe, le moulin, la presse et le réfrigérateur.',
+    prod: `Capacité : ${listNum(DATA.GRID.batterie.kwh, 'kWh')} selon le niveau (l'usure réduit la capacité utile). En ce moment : ${formatFixed(energyStats(state).charge, 2)} / ${formatFixed(energyStats(state).capacite, 2)} kWh.`,
+    note: `Une batterie de plus coûte ${formatNumber(DATA.PURCHASE.batterie.base)} 💰 × ${formatFixed(DATA.PURCHASE.batterie.growth, 1)} par batterie déjà possédée.`,
+  }),
+  pompe: () => ({
+    nom: 'Pompe',
+    role: 'Tire l\'eau du puits vers le réservoir, tant qu\'il reste de la place.',
+    conso: `${formatFixed(DATA.PUMP.KWH_PER_L, 2)} kWh par litre pompé, soit ${formatFixed(pumpFlow(state.pompe) * DATA.PUMP.KWH_PER_L, 2)} kWh/s à plein débit au niveau ${state.pompe.niveau}.`,
+    prod: `Débit : ${listNum(DATA.GRID.pompe.litresPerS, 'L/s')} selon le niveau.`,
+    note: 'Sans énergie, elle attend ; avec peu d\'énergie, elle pompe au prorata.',
+  }),
+  reservoir: () => ({
+    nom: 'Réservoir',
+    role: 'Garde l\'eau pompée pour les arrosages et le pain.',
+    conso: 'Aucune.',
+    prod: `Capacité : ${listNum(DATA.GRID.pompe.reservoirL, 'L')}, selon le niveau de la pompe.`,
+    note: `L'eau d'un arrosage varie avec la saison (${seasonRange('eau')}), sauf dans la Serre.`,
+  }),
+  potager: () => ({
+    nom: 'Potager',
+    role: 'Planter, arroser, récolter. Une plante arrosée gagne un stade chaque nuit ; sans eau, elle attend. La parcelle se libère après la récolte.',
+    conso: `Eau par arrosage : ${cropsLine('potager', 'eau')}.`,
+    prod: `${cropsLine('potager', 'recolte')}. Saison : ${seasonRange('potager')}.`,
+    note: levelsNote(DATA.POTAGER.PARCELLES, 'le Potager'),
+  }),
+  champ: () => ({
+    nom: 'Champ',
+    role: 'Blé pour les poules et la farine, tournesol pour l\'huile. Mêmes règles que le Potager.',
+    conso: `Eau par arrosage : ${cropsLine('champ', 'eau')}.`,
+    prod: `${cropsLine('champ', 'recolte')}. Saison : ${seasonRange('champ')}. Un blé sert aussi de graine.`,
+    note: `Construction : ${costLabel(DATA.CHAMP.CONSTRUCTION)}. ${levelsNote(DATA.CHAMP.PARCELLES, 'le Champ')}`,
+  }),
+  serre: () => ({
+    nom: 'Serre',
+    role: 'Des légumes toute l\'année : la Serre ignore les saisons, à l\'eau comme à la récolte.',
+    conso: `Eau par arrosage : ${cropsLine('serre', 'eau')}.`,
+    prod: `${cropsLine('serre', 'recolte')}.`,
+    note: `Construction : ${costLabel(DATA.SERRE.CONSTRUCTION)}. Parcelles par niveau : ${listNum(DATA.SERRE.PARCELLES, '')}.`,
+  }),
+  silo: () => ({
+    nom: 'Silo',
+    role: 'Stocke le blé récolté ; les poules y mangent d\'abord. Le surplus va dans l\'inventaire.',
+    conso: 'Aucune.',
+    prod: `Capacité : ${listNum(DATA.SILO.CAPACITE, 'blés')} selon le niveau.`,
+    note: '',
+  }),
+  poulailler: () => ({
+    nom: 'Poulailler',
+    role: 'Loge les poules, achetées au Comptoir. Une poule pond toute sa vie, tant qu\'elle est nourrie.',
+    conso: `${formatFixed(DATA.ANIMAUX.poule.bleParNuit, 1)} blé par poule nourrie.`,
+    prod: `${DATA.ANIMAUX.poule.oeufsParNuit} œuf par nuit et par poule nourrie (${DATA.items.oeuf.energie} énergie).`,
+    note: `Poules par niveau : ${listNum(DATA.POULAILLER.CAPACITE, '')}. Au niveau ${DATA.AUTOMATISATION.NIVEAU}, les poules sont nourries toutes seules pendant la nuit.`,
+  }),
+  paturage: () => {
+    const M = DATA.ANIMAUX.mouton;
+    return {
+      nom: 'Pâturage',
+      role: `Surface où vivent les moutons : ${formatFixed(DATA.PATURAGE.haParMouton, 2)} ha chacun. La surface achetée reste acquise.`,
+      conso: 'Aucune.',
+      prod: `Un mouton grossit de ${formatFixed(M.gainKg, 1)} kg par nuit (jusqu'à ${formatNumber(M.poidsMax)} kg, ${seasonRange('moutons')} selon la saison), donne ${M.laineParTonte} laine toutes les ${M.joursLaine} nuits, et à l'abattage ${formatNumber(M.rendement * 100)} % de son poids en portions de ${formatFixed(M.kgParPortion, 1)} kg de viande.`,
+      note: `Déblocage : ${costLabel(DATA.PATURAGE.deblocage)} pour ${formatFixed(DATA.PATURAGE.surfaceDepart, 1)} ha.`,
+    };
+  },
+  verger: () => {
+    const V = DATA.VERGER;
+    const w = orchardWindow();
+    return {
+      nom: 'Verger',
+      role: 'Pommiers et poiriers, achetés au Comptoir et plantés sur un emplacement libre. Ils restent en place.',
+      conso: 'Aucune : pas d\'arrosage.',
+      prod: `${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, de la nuit ${w.debut} à la nuit ${w.fin} de l'année, à partir de ${nightsLabel(V.MATURITE)} après la plantation.`,
+      note: `Emplacement supplémentaire : ${formatNumber(V.EMPLACEMENT.base)} 💰 × ${formatFixed(V.EMPLACEMENT.croissance, 2)} par emplacement déjà acheté.`,
+    };
+  },
+  four: () => ({
+    nom: 'Four',
+    role: 'Cuit le pain et les plats au four. Une préparation à la fois ; le construire ouvre le Livre de recette.',
+    conso: 'Pas d\'électricité.',
+    prod: `${stationRecipesLine('four')}.`,
+    note: 'Les temps de préparation suivent la productivité de la famille.',
+  }),
+  cuisine: () => ({
+    nom: 'Cuisine',
+    role: 'Prépare les plats mijotés. Une préparation à la fois.',
+    conso: 'Pas d\'électricité.',
+    prod: `${stationRecipesLine('cuisine')}.`,
+    note: `Un plat vaut ${formatFixed(DATA.RECETTES.COEF_PLAT, 1)} fois l'énergie de ses ingrédients, et chaque plat différent mangé dans la journée donne +${DATA.FAMILY.BONUS_PLATS.PAR_PLAT} de santé (jusqu'à +${DATA.FAMILY.BONUS_PLATS.MAX}).`,
+  }),
+  moulin: () => ({
+    nom: 'Moulin',
+    role: 'Moud le blé en farine. Appareil électrique : interrupteur, usure, pannes.',
+    conso: `${formatFixed(DATA.STATIONS.moulin.kwhParS, 2)} kWh/s pendant qu'il tourne.`,
+    prod: `${stationRecipesLine('moulin')}.`,
+    note: 'Sans énergie, la préparation se met en pause.',
+  }),
+  presse: () => ({
+    nom: 'Presse',
+    role: 'Presse les graines de tournesol en huile. Appareil électrique : interrupteur, usure, pannes.',
+    conso: `${formatFixed(DATA.STATIONS.presse.kwhParS, 2)} kWh/s pendant qu'elle tourne.`,
+    prod: `${stationRecipesLine('presse')}.`,
+    note: 'Sans énergie, la préparation se met en pause.',
+  }),
+  frigo: () => ({
+    nom: 'Réfrigérateur',
+    role: 'Les aliments rangés au frais ne vieillissent plus, tant qu\'il est alimenté. Capacité illimitée.',
+    conso: `${formatFixed(DATA.FRIGO.BASE_KWH_S, 3)} kWh/s + ${formatFixed(DATA.FRIGO.PAR_UNITE_KWH_S, 5)} kWh/s par unité stockée, jour et nuit. Au Dormir, ${DATA.FRIGO.BLOC_NUIT_S} s de consommation sont prélevées d'un coup pour la nuit.`,
+    prod: 'Du froid : aucune péremption au frigo.',
+    note: `S'il manque de courant plus de ${formatNumber(DATA.FRIGO.SEUIL_ALIMENTE * 100)} % de la journée, ou pendant la nuit, chaque lot perd ${nightsLabel(DATA.FRIGO.PERTE_NUITS)} de conservation.`,
+  }),
+};
+
+function helpBtn(id) {
+  const h = HELP[id]();
+  return `<button type="button" class="btn help-btn" data-action="help" data-id="${id}" aria-label="Aide : ${h.nom}">?</button>`;
+}
+
+function openHelpModal(id) {
+  if (!HELP[id]) return;
+  const h = HELP[id]();
+  const sym = id === 'reservoir' ? 'b-reservoir' : `b-${id}`;
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" data-stop-propagation>
+        <div class="help-head">${artSvg([sym])}<h2 id="help-title">${h.nom}</h2></div>
+        <ul class="help-list">
+          <li><strong>Rôle</strong>${h.role}</li>
+          <li><strong>Consommation</strong>${h.conso}</li>
+          <li><strong>Production</strong>${h.prod}</li>
+          ${h.note ? `<li><strong>Bon à savoir</strong>${h.note}</li>` : ''}
+        </ul>
+        <button type="button" class="btn primary" data-action="close-modal" id="help-close">Compris</button>
+      </div>
+    </div>`;
+  document.getElementById('help-close').focus();
+}
+
+/* ---------- Lot 11 : bulles d'aide de la première partie ---------- */
+
+const TUTO = {
+  eau: {
+    titre: '💧 L\'eau et le soleil',
+    texte: () => `Les panneaux solaires chargent la batterie ; la pompe s'en sert pour remplir le réservoir (${formatFixed(DATA.PUMP.KWH_PER_L, 2)} kWh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).`,
+  },
+  potager: {
+    titre: '🌱 Le potager',
+    texte: () => `Touche « Planter » sur une parcelle vide, puis « Arroser ». Une plante arrosée gagne un stade chaque nuit : les carottes sont mûres en ${nightsLabel(DATA.crops.carotte.stades)}. Après la récolte, replante.`,
+  },
+  dormir: {
+    titre: '😴 Dormir',
+    texte: () => `La journée ne finit que quand tu dors. Le bouton s'active après ${formatNumber(awakeRequired(state))} s d'éveil. La nuit, la famille mange, puis les plantes arrosées poussent.`,
+  },
+};
+
+let tutoShown = null; // bulle affichée au dernier rendu (pour faire défiler vers sa cible)
+
+// Bulle visible maintenant : « dormir » partout, les autres sur la Ferme.
+function visibleTutorial() {
+  const step = tutorialStep(state);
+  if (!step) return null;
+  if (step === 'dormir') return step;
+  return activeTab === 'ferme' && !screen ? step : null;
+}
+
+// Classe à ajouter à l'élément que la bulle montre.
+function tutoTarget(step) {
+  return visibleTutorial() === step ? ' tuto-target' : '';
+}
+
+function renderTutorial() {
+  const root = document.getElementById('tuto-root');
+  const step = visibleTutorial();
+  document.body.classList.toggle('has-tuto', !!step);
+  if (!step) {
+    if (root.childElementCount) morph(root, '');
+    tutoShown = null;
+    return;
+  }
+  const t = TUTO[step];
+  const n = DATA.AIDE.ETAPES.indexOf(step) + 1;
+  morph(root, `
+    <section class="tuto${step === 'dormir' ? '' : ' up'}" aria-labelledby="tuto-title">
+      <h2 id="tuto-title"><span>${t.titre}</span><span class="muted num">${n} / ${DATA.AIDE.ETAPES.length}</span></h2>
+      <p>${t.texte()}</p>
+      <div class="row">
+        <button type="button" class="btn" data-action="tuto-skip">Passer l'aide</button>
+        <button type="button" class="btn primary" data-action="tuto-next">${n < DATA.AIDE.ETAPES.length ? 'Compris' : 'J\'ai compris'}</button>
+      </div>
+    </section>`);
+  if (tutoShown !== step) {
+    tutoShown = step;
+    const target = document.querySelector('.tuto-target');
+    // La cible monte en haut de l'écran (sous l'en-tête) : la bulle, en bas, ne la cache pas.
+    if (target && step !== 'dormir') target.scrollIntoView({ block: 'start', behavior: REDUCED_MOTION && REDUCED_MOTION.matches ? 'auto' : 'smooth' });
+  }
+}
+
+/* ---------- Lot 11 : À propos ---------- */
+
+function openAboutModal() {
+  const F = DATA.FAMILY;
+  const V = F.VARIATION;
+  const M = DATA.MARCHE;
+  const adultes = F.MEMBRES.filter((m) => !m.enfant).length;
+  const enfants = F.MEMBRES.length - adultes;
+  const durees = [...Object.values(DATA.CONSERVATION), ...Object.values(DATA.CONSERVATION_CATEGORIE)];
+  const H = DATA.HORS_LIGNE;
+  const rules = [
+    `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} énergie par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
+    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure de jeu dure ${DATA.TIME.SECONDS_PER_HOUR} s. Elle ne finit que quand tu cliques sur « Dormir », après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins.`,
+    `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons grossissent, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
+    `Santé : un besoin couvert à 100 % la remonte (${formatRate(V[0].delta, 0)}), sinon elle baisse (${V.slice(1).map((x) => formatRate(x.delta, 0)).join(', ')}). Une santé faible ralentit les actions au clic ; les automatisations restent à 100 %. À 0, un soin coûte ${formatNumber(F.SOIN.base)} 💰 × ${formatFixed(F.SOIN.croissance, 1)} par soin déjà payé.`,
+    `Énergie : panneaux → batteries → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use de ${formatFixed(DATA.WEAR.PER_HOUR, 1)} point par heure de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE * 100)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE * 100)} %.`,
+    `Comptoir : prix de vente fixes. Chaque unité achetée ajoute ${formatFixed(M.PAS, 1)} au coefficient d'achat, chaque unité vendue en retire ${formatFixed(M.PAS, 1)} (plancher ×${formatFixed(M.PLANCHER.defaut, 1)}, graines ×${formatFixed(M.PLANCHER.graine, 1)}).`,
+    `Saisons de ${DATA.SAISONS.LONGUEUR} nuits : elles nuancent le solaire, les récoltes, l'eau et les moutons, sans rien bloquer. La Serre les ignore.`,
+    `Autonomie = énergie mangée produite par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
+    `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
+  ];
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="about-title" data-stop-propagation>
+        <h2 id="about-title">ℹ️ À propos</h2>
+        <p class="about-version"><strong>Ferme Familiale</strong> · version ${GAME_VERSION} <span class="muted">(format de sauvegarde ${STATE_VERSION})</span></p>
+        <h3>Règles principales</h3>
+        <ol class="about-rules">${rules.map((r) => `<li>${r}</li>`).join('')}</ol>
+        <p class="muted">Illustrations originales. Un seul fichier HTML, sans bibliothèque, qui marche hors connexion.</p>
+        <div class="row">
+          <button type="button" class="btn" data-action="open-options">← Options</button>
+          <button type="button" class="btn primary" data-action="close-modal" id="about-close">Fermer</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('about-close').focus();
+}
+
 /* ---------- options (modale) ---------- */
 
 function openOptionsModal() {
   const root = document.getElementById('modal-root');
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" data-stop-propagation>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="options-title" data-stop-propagation>
         <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
-        <h2>⚙️ Options</h2>
+        <h2 id="options-title">⚙️ Options</h2>
+        <p class="muted about-version">Ferme Familiale · version ${GAME_VERSION}</p>
         <div class="stack">
+          <div class="stack">
+            <strong>À propos</strong>
+            <div class="row">
+              <button class="btn" type="button" data-action="open-about">ℹ️ Règles principales et version</button>
+            </div>
+          </div>
           <div class="stack">
             <strong>Exporter la sauvegarde</strong>
             <textarea id="export-area" rows="4" readonly></textarea>
@@ -12517,7 +13917,7 @@ function openOptionsModal() {
           </div>
           <div class="stack">
             <strong>Mode test</strong>
-            <label class="row">
+            <label class="row check-row">
               <input type="checkbox" id="test-mode-toggle" ${testMode ? 'checked' : ''}>
               Activer le panneau de mode test
             </label>
@@ -12539,12 +13939,67 @@ function closeModal() {
   }
 }
 
-function showToast(message) {
+/* ---------- Lot 11 : notifications légères ---------- */
+
+// Pile de notifications en bas de l'écran (au plus NOTIFY_MAX), annoncées aux
+// lecteurs d'écran (#toast-root est une région aria-live). Une notification
+// identique à une notification affichée la remplace au lieu de s'empiler.
+const NOTIFY_MAX = 3;
+const NOTIFY_MS = { info: 2600, alerte: 5000 };
+// Une même alerte n'est pas répétée avant ce délai (batteries qui se vident et
+// se rechargent au fil des ticks, par exemple).
+const ALERT_REPEAT_MS = 30000;
+const lastAlertAt = new Map();
+let alertState = null; // dernière photo des alertes (voir alertSnapshot)
+// Juste après un rattrapage hors-ligne, l'écran d'absence fait le bilan : les
+// alertes des toutes premières secondes (frigo qui s'arrête sur un reste de
+// charge, par exemple) seraient redondantes.
+const ALERT_MUTE_AFTER_CATCH_UP_MS = 3000;
+let alertMuteUntil = 0;
+
+function notify(message, kind = 'info') {
   const root = document.getElementById('toast-root');
-  root.innerHTML = `<div class="toast">${message}</div>`;
-  setTimeout(() => {
-    root.innerHTML = '';
-  }, 2200);
+  for (const el of Array.from(root.children)) {
+    if (el.dataset.msg === message) el.remove();
+  }
+  const el = document.createElement('div');
+  el.className = `toast ${kind}`;
+  el.dataset.msg = message;
+  el.textContent = message;
+  root.appendChild(el);
+  while (root.children.length > NOTIFY_MAX) root.firstElementChild.remove();
+  setTimeout(() => el.remove(), NOTIFY_MS[kind] || NOTIFY_MS.info);
+}
+
+function showToast(message) {
+  notify(message, 'info');
+}
+
+function alertMessage(ev) {
+  const d = ev.id ? findDevice(state, ev.id) : null;
+  const name = d ? deviceName(d) : '';
+  switch (ev.type) {
+    case 'panne': return `⛔ ${name} en panne : il faut le réparer.`;
+    case 'entretien': return `⚠️ ${name} : usure à ${formatNumber(DATA.WEAR.SERVICE_THRESHOLD)} %, pense à l'entretenir.`;
+    case 'batteriesVides': return '🔋 Batteries vides : la pompe et les ateliers attendent le soleil.';
+    case 'frigoCoupe': return '🧊 Réfrigérateur hors tension : il manque d\'énergie.';
+    default: return '';
+  }
+}
+
+// Compare la situation à la précédente et annonce ce qui vient d'arriver.
+function watchAlerts() {
+  const now = alertSnapshot(state);
+  if (alertState && Date.now() >= alertMuteUntil) {
+    const t = Date.now();
+    for (const ev of alertEvents(alertState, now)) {
+      const msg = alertMessage(ev);
+      if (!msg || t - (lastAlertAt.get(msg) || 0) < ALERT_REPEAT_MS) continue;
+      lastAlertAt.set(msg, t);
+      notify(msg, 'alerte');
+    }
+  }
+  alertState = now;
 }
 
 /* ---------- délégation d'événements ---------- */
@@ -12557,6 +14012,18 @@ document.addEventListener('click', (e) => {
   switch (action) {
     case 'open-options':
       openOptionsModal();
+      break;
+    case 'open-about':
+      openAboutModal();
+      break;
+    case 'help':
+      openHelpModal(target.dataset.id);
+      break;
+    case 'tuto-next':
+      applyResult(advanceTutorial(state));
+      break;
+    case 'tuto-skip':
+      applyResult(skipTutorial(state));
       break;
     case 'close-modal':
       if (e.target === target) closeModal();
@@ -12954,6 +14421,14 @@ document.addEventListener('change', (e) => {
   }
 });
 
+// Lot 11 : Échap ferme la fenêtre ouverte (comme le bouton Fermer).
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('modal-root').childElementCount > 0) {
+    e.preventDefault();
+    closeModal();
+  }
+});
+
 document.getElementById('modal-root').addEventListener('click', (e) => {
   // ferme la modale si on clique sur le fond, pas sur son contenu
   if (e.target.dataset.action === 'close-modal' && e.target.classList.contains('modal-backdrop')) {
@@ -12965,14 +14440,18 @@ document.getElementById('modal-root').addEventListener('click', (e) => {
 
 state = loadOrCreateState();
 syncJobs();
+alertState = alertSnapshot(state);
+catchUp(); // Lot 11 : le temps passé page fermée depuis la dernière sauvegarde
 
 // Lot 9 : les chapitres proposés par le mode test viennent de DATA.
 document.getElementById('test-chapter').innerHTML =
   DATA.CHAPITRES.liste.map((ch, i) => `<option value="${i + 1}">${i + 1} · ${ch.titre}</option>`).join('') +
   `<option value="${chapterCount() + 1}">Mode libre (fin)</option>`;
 
-const autosaveTimer = setInterval(persistState, AUTOSAVE_MS);
+setInterval(persistState, AUTOSAVE_MS);
 window.addEventListener('beforeunload', persistState);
+window.addEventListener('pagehide', persistState);
+document.addEventListener('visibilitychange', onHide);
 
 requestAnimationFrame(frame);
 requestAnimationFrame(renderLoop);
