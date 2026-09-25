@@ -1,6 +1,8 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v16** : la partie démarre désormais avec **350 pièces** (au lieu de 50) ; aucune autre règle économique n'est modifiée, et les parties déjà en cours conservent leur solde actuel.
+>
 > **v15** : ajout du **parc d'appareils électriques** — plusieurs panneaux et plusieurs batteries, chacun avec son niveau, son usure et son interrupteur — d'une **heure d'ambiance** en en-tête, et séparation de la **Pompe** et du **Réservoir**.
 >
 > **v14** : **toutes les règles sont validées**. Le coefficient d'achat ne redescend qu'à la vente, les 160 conserves de départ sont retenues, et le rythme du tableau d'équilibrage (100 % vers la nuit 60) est adopté comme cible.
@@ -882,7 +884,7 @@ export function take(s: GameState, item: string, qty: number) {
 
 | Élément | Valeur |
 |---|---|
-| Pièces | 50 |
+| Pièces | 350 |
 | Conserves (non périssables, 20 énergie, vendables 3 💰, non rachetables) ✅ | 160 → 10 nuits d'autonomie |
 | Graines | 10 carotte, 6 patates, 4 tomate |
 | Bâtiments | Panneau niv. 1, Batterie niv. 1, Puit + Pompe niv. 1, Potager niv. 1 |
@@ -1070,7 +1072,7 @@ Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi. Prix d
 | Cuisine | **Livre de recette = onglet** ouvert par le **Four** ; **une station de chaque type**, une préparation à la fois |
 | Stockage | Inventaire et Réfrigérateur **illimités** ; péremption **5 à 7 nuits** ; frigo alimenté **en continu** + **bloc nocturne de 30 s** ; batterie **sans autodécharge** |
 | Économie | Prix de vente **fixes** ; coefficient d'achat **+0,1 / achat, −0,1 / vente uniquement**, plancher 1,2 (graines 2,0) |
-| Départ | 50 💰 + **160 conserves** (10 nuits) |
+| Départ | 350 💰 + **160 conserves** (10 nuits) |
 | Rythme | **100 % d'autonomie vers la nuit 60** |
 
 ### Ajouts de la v15 ✅

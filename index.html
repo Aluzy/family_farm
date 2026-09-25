@@ -1299,7 +1299,7 @@ body.has-tuto { padding-bottom: 300px; }
 const DATA = {
   // Départ de partie.
   START: {
-    PIECES: 50,
+    PIECES: 350,
     // Les appareils de départ sont offerts : prix d'achat 0, donc entretien
     // et réparation gratuits pour eux (l'entretien vaut 20 % du prix d'achat).
     DEVICE_PRICE: 0,
@@ -5917,10 +5917,15 @@ test('état initial : forme et valeurs attendues', () => {
   assertEqual(s.version, STATE_VERSION);
   assertEqual(s.day, 1);
   assertEqual(s.awakeSeconds, 0);
-  assertEqual(s.pieces, 50);
+  assertEqual(s.pieces, 350);
   assertEqual(s.rngSeed, 42);
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir']);
   assertEqual(s.stats, {});
+});
+
+test('createInitialState() : une nouvelle partie démarre avec 350 pièces', () => {
+  assertEqual(createInitialState().pieces, 350);
+  assertEqual(createInitialState().pieces, DATA.START.PIECES);
 });
 
 test('tick() fait avancer awakeSeconds sans toucher au jour ni aux pièces', () => {
@@ -5929,7 +5934,7 @@ test('tick() fait avancer awakeSeconds sans toucher au jour ni aux pièces', () 
   tick(s, 0.2);
   assert(Math.abs(s.awakeSeconds - 0.4) < 1e-9, 'awakeSeconds devrait valoir 0.4');
   assertEqual(s.day, 1);
-  assertEqual(s.pieces, 50);
+  assertEqual(s.pieces, 350);
 });
 
 test('sérialisation JSON aller-retour identique', () => {
@@ -5970,7 +5975,7 @@ test('migrate() ne plante pas sur une entrée déjà à jour', () => {
   const s = createInitialState(5);
   const migrated = migrate({ v: STATE_VERSION, t: Date.now(), s });
   assertEqual(migrated.version, STATE_VERSION);
-  assertEqual(migrated.pieces, 50);
+  assertEqual(migrated.pieces, 350);
   assertEqual(migrated.panneaux.length, 1);
 });
 
@@ -6479,7 +6484,7 @@ test('mode test : ajout d\'appareils, remplissages, usure, nuits', () => {
   testAddDevice(s, 'batterie');
   assertEqual(s.panneaux.length, 2);
   assertEqual(s.batteries.length, 2);
-  assertEqual(s.pieces, 50);
+  assertEqual(s.pieces, 350);
   testFillBatteries(s);
   assert(near(energyStats(s).charge, 10));
   testFillTank(s);
@@ -6594,7 +6599,7 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
 test('état initial Lot 2 : inventaire, potager de 6 parcelles, famille de 4 à 100', () => {
   const s = createInitialState(1);
   assertEqual(inventoryCounts(s), { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 });
-  assertEqual(s.pieces, 50);
+  assertEqual(s.pieces, 350);
   assertEqual(s.potager.niveau, 1);
   assertEqual(s.potager.parcelles.length, 6);
   assertEqual(s.potager.parcelles.every((p) => p.culture === null && p.stade === 0 && !p.arrose && !p.montee), true);
@@ -7673,8 +7678,8 @@ test('Champ : construction à 60 pièces avec 4 parcelles, niveaux 2 à 5 aux bo
   }
   assertEqual(seen, [[120, 2, 6], [280, 3, 9], [600, 4, 12], [1300, 5, 16]]);
   assertEqual(upgradeChamp(s).ok, false, 'niveau maximum');
-  s.pieces = 0;
   const t = garden();
+  t.pieces = 0;
   t.champ = { construit: true, niveau: 1, parcelles: makePlots(4, 'champ') };
   assertEqual(upgradeChamp(t).ok, false, 'pas assez de pièces');
 });
@@ -9408,9 +9413,8 @@ test('prérequis : niveau de bâtiment, nœud précédent, pièces', () => {
 
 test('onglet Arbre des technologies : ajouté la première fois qu\'on possède 100 pièces, et il reste', () => {
   const s = createInitialState(1);
+  s.pieces = 99; // isole ce test du montant de départ pour tester le franchissement du seuil
   tick(s, 0.2);
-  assertEqual(s.unlockedTabs.includes('techno'), false);
-  testAddPieces(s, 49);
   assertEqual(s.unlockedTabs.includes('techno'), false, '99 pièces : pas encore');
   testAddPieces(s, 1);
   assertEqual(s.unlockedTabs.includes('techno'), true, '100 pièces');
@@ -9435,7 +9439,7 @@ test('mode test Lot 7 : un bâtiment au niveau 5, tous les nœuds débloqués', 
   const s = createInitialState(1);
   assertEqual(testSetBuildingLevel5(s, 'potager').ok, true);
   assertEqual([s.potager.niveau, s.potager.parcelles.length], [5, 20]);
-  assertEqual(s.pieces, 50, 'sans rien payer');
+  assertEqual(s.pieces, 350, 'sans rien payer');
   assertEqual(testSetBuildingLevel5(s, 'champ').ok, true);
   assertEqual([s.champ.construit, s.champ.niveau, s.champ.parcelles.length], [true, 5, 16]);
   assertEqual(s.champ.parcelles[0].id, 'champ-1');
@@ -9538,7 +9542,8 @@ test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage',
   assertEqual(prepTimeMult(s), 1);
   delete s.technologies;
   assertEqual(awakeRequired(s), 30);
-  assertEqual(buyTech(s, 'reveil_1').ok, false, 'pas assez de pièces (50)');
+  s.pieces = 0; // isole ce test du montant de départ pour vérifier le refus faute de pièces
+  assertEqual(buyTech(s, 'reveil_1').ok, false, 'pas assez de pièces');
   s.pieces = 400;
   assertEqual(buyTech(s, 'reveil_1').ok, true, 'la liste est recréée');
 });
