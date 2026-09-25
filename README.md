@@ -38,7 +38,7 @@ chemins relatifs, aucun `fetch` et aucun module externe.
 
 ## Règles en bref
 
-- La famille (2 adultes, 2 enfants) a besoin de **320 énergie par jour** ; elle
+- La famille (2 adultes, 2 enfants) a besoin de **150 énergie par jour** ; elle
   mange à chaque nuit, d'abord ce qui périme le plus tôt.
 - La journée commence à 6 h (1 heure de jeu = 30 s). Elle ne se termine que par
   **Dormir**, après 30 s d'éveil au moins.

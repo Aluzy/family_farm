@@ -1470,7 +1470,7 @@ const DATA = {
       { id: 'enfant-1', nom: 'Enfant 1', enfant: true },
       { id: 'enfant-2', nom: 'Enfant 2', enfant: true },
     ],
-    AJ: { adulte: 100, enfant: 60 }, // énergie par jour et par membre
+    AJ: { adulte: 50, enfant: 25 }, // énergie par jour et par membre
     SANTE_DEPART: 100,
     SANTE_MAX: 100,
     // Couverture minimale du besoin (0 à 1) → variation de santé, du palier le
@@ -1751,7 +1751,7 @@ const DATA = {
   /* ---------- Lot 9 : autonomie et chapitres ---------- */
 
   // Autonomie d'une nuit (sections 4 et 8.10) = énergie mangée qui vient de lots
-  // d'origine « produit » ÷ besoin de la famille (320), plafonnée à 100 %. Les
+  // d'origine « produit » ÷ besoin de la famille (150), plafonnée à 100 %. Les
   // conserves et les achats du Comptoir (origine « acheté ») n'y comptent pas.
   // HISTORIQUE_MAX : nombre de nuits gardées dans l'historique ; GRAPHIQUE_NUITS :
   // nuits tracées dans le petit graphique.
@@ -6880,12 +6880,12 @@ test('potager : 6 / 9 / 12 / 16 / 20 parcelles, coûts 80 / 200 / 450 / 1 000', 
   assertEqual(new Set(s.potager.parcelles.map((p) => p.id)).size, 20, 'ids uniques');
 });
 
-test('famille : besoin = 100 par adulte + 60 par enfant = 320', () => {
+test('famille : besoin = 50 par adulte + 25 par enfant = 150', () => {
   const s = createInitialState(1);
-  assertEqual(familyNeed(s), 320);
+  assertEqual(familyNeed(s), 150);
   s.famille.membres.pop();
-  assertEqual(familyNeed(s), 260);
-  assertEqual(planMeal(createInitialState(1)).besoin, 320);
+  assertEqual(familyNeed(s), 125);
+  assertEqual(planMeal(createInitialState(1)).besoin, 150);
 });
 
 test('repas : ce qui périme le plus tôt, conserves en dernier, jusqu\'à couvrir le besoin', () => {
@@ -6895,17 +6895,17 @@ test('repas : ce qui périme le plus tôt, conserves en dernier, jusqu\'à couvr
   const plan = planMeal(s);
   // courgette 5 nuits, carotte 6, patate 7, conserve : ne périme pas
   assertEqual(Object.keys(plan.mange), ['courgette', 'carotte', 'patate', 'conserve']);
-  assertEqual(plan.mange, { courgette: 3, carotte: 10, patate: 2, conserve: 11 });
-  assertEqual(plan.energie, 24 + 60 + 30 + 220);
+  assertEqual(plan.mange, { courgette: 3, carotte: 10, patate: 2, conserve: 2 });
+  assertEqual(plan.energie, 24 + 60 + 30 + 40);
   assertEqual(plan.couverture, 1);
   // planMeal ne modifie rien
   assertEqual(countItem(s, 'conserve'), 100);
   feedFamily(s);
-  assertEqual(inventoryCounts(s), { conserve: 89 });
-  // il s'arrête dès que le besoin est couvert : les 16 conserves suffisent
+  assertEqual(inventoryCounts(s), { conserve: 98 });
+  // il s'arrête dès que le besoin est couvert : les 8 conserves suffisent
   const t = garden();
   feedFamily(t);
-  assertEqual(countItem(t, 'conserve'), 144);
+  assertEqual(countItem(t, 'conserve'), 152);
   assertEqual(countItem(t, 'patate'), 6);
 });
 
@@ -6923,9 +6923,9 @@ test('réserve de semences : la famille ne mange jamais la réserve', () => {
   assertEqual(s.famille.reserve.patate, 6, 'les 6 patates de départ sont protégées');
   setInv(s, { patate: 10, carotte: 20 });
   const plan = planMeal(s);
-  assertEqual(plan.mange, { carotte: 20, patate: 4 });
+  assertEqual(plan.mange, { carotte: 20, patate: 2 });
   feedFamily(s);
-  assertEqual(countItem(s, 'patate'), 6, 'la réserve reste intacte même en famille affamée');
+  assertEqual(countItem(s, 'patate'), 8, 'la réserve (6 patates) reste intacte, seul le surplus est mangé');
   assertEqual(countItem(s, 'carotte'), 0);
   // réserve à 0 : tout peut être mangé
   const t = garden();
@@ -6944,8 +6944,8 @@ test('réserve de semences : la famille ne mange jamais la réserve', () => {
 });
 
 test('santé : +5 à 100 %, −5 de 75 à 99 %, −10 de 50 à 74 %, −20 sous 50 %', () => {
-  // besoin 320 = 16 conserves
-  const cases = [[16, 5], [20, 5], [15, -5], [12, -5], [11, -10], [8, -10], [7, -20], [0, -20]];
+  // besoin 150 : 8 conserves (160) couvrent 100 %
+  const cases = [[8, 5], [10, 5], [6, -5], [7, -5], [4, -10], [5, -10], [3, -20], [0, -20]];
   for (const [conserves, delta] of cases) {
     const s = garden();
     setHealth(s, 60);
@@ -7039,24 +7039,24 @@ test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de g
   const m = s.famille.membres[0];
   m.sante = 0;
   m.malade = true;
-  setInv(s, { conserve: 16 });
+  setInv(s, { conserve: 8 });
   feedFamily(s);
   assertEqual([m.sante, m.malade], [2, true], '+2 au lieu de +5');
   assertEqual(s.famille.membres[1].sante, 100);
   // une nuit mal nourrie : pas de récupération, variation normale (bornée à 0)
-  setInv(s, { conserve: 15 });
+  setInv(s, { conserve: 5 });
   feedFamily(s);
   assertEqual([m.sante, m.malade], [0, true]);
   // 24 nuits bien nourries : 48 points, encore malade ; la 25e → 50 : guéri
   for (let i = 0; i < 24; i++) {
-    setInv(s, { conserve: 16 });
+    setInv(s, { conserve: 8 });
     feedFamily(s);
   }
   assertEqual([m.sante, m.malade], [48, true]);
-  setInv(s, { conserve: 16 });
+  setInv(s, { conserve: 8 });
   feedFamily(s);
   assertEqual([m.sante, m.malade], [50, false]);
-  setInv(s, { conserve: 16 });
+  setInv(s, { conserve: 8 });
   feedFamily(s);
   assertEqual(m.sante, 55, 'guéri : la règle normale (+5) reprend');
   assertEqual(s.famille.soinsPayes, 0, 'aucun soin payé');
@@ -7086,13 +7086,13 @@ test('Dormir : repas, santé, pousse et rapport de réveil', () => {
   s.awakeSeconds = 30;
   const r = sleep(s);
   assertEqual(s.day, 2);
-  assertEqual(countItem(s, 'conserve'), 144);
+  assertEqual(countItem(s, 'conserve'), 152);
   assertEqual(findPlot(s, 'potager-1').stade, 4);
   assertEqual(findPlot(s, 'potager-2').stade, 1);
-  assertEqual(r.besoin, 320);
-  assertEqual(r.energieMangee, 320);
+  assertEqual(r.besoin, 150);
+  assertEqual(r.energieMangee, 160);
   assertEqual(r.couverture, 1);
-  assertEqual(r.mange, { conserve: 16 });
+  assertEqual(r.mange, { conserve: 8 });
   assertEqual([r.santeAvant, r.santeApres], [100, 100]);
   assertEqual(r.nouveauxMalades, []);
   assertEqual(r.pretes, [{ culture: 'carotte', nombre: 1, montee: false }]);
@@ -7110,6 +7110,7 @@ test('Dormir : repas, santé, pousse et rapport de réveil', () => {
 
 test('Dormir avec la réserve de semences : 10 nuits de conserves, patates jamais mangées', () => {
   const s = garden();
+  setInv(s, { conserve: 80, patate: 6 }); // 8 conserves/nuit (besoin 150) × 10 nuits = 80
   for (let i = 0; i < 6; i++) {
     s.awakeSeconds = 30;
     sleep(s);
@@ -7166,7 +7167,7 @@ test('migration v2 (Lot 1) → version courante : garde la partie, ajoute le pot
   assertEqual(m.panneaux.length, 1);
   m.awakeSeconds = 30;
   assert(sleep(m) !== null, 'l\'état migré peut dormir');
-  assertEqual(countItem(m, 'conserve'), 144);
+  assertEqual(countItem(m, 'conserve'), 152);
   // une sauvegarde déjà à jour n'est pas touchée
   const s = garden();
   s.pieces = 77;
@@ -7383,9 +7384,9 @@ test('ordre de consommation : dans un item, le lot le plus ancien est mangé d\'
   spoil(s);
   addItem(s, 'carotte', 60); // 5 carottes à 4 nuits, 60 à 6 nuits
   const plan = planMeal(s);
-  assertEqual(plan.mange, { carotte: 54 }, '54 carottes couvrent les 320 énergies du besoin');
+  assertEqual(plan.mange, { carotte: 25 }, '25 carottes couvrent les 150 énergies du besoin');
   feedFamily(s);
-  assertEqual(lotsOf(s, 'carotte'), [{ qty: 11, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 49 du lot frais');
+  assertEqual(lotsOf(s, 'carotte'), [{ qty: 40, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 20 du lot frais');
 });
 
 test('Comptoir : prix d\'achat = prix de vente × coefficient, plancher 1,2', () => {
@@ -8038,8 +8039,8 @@ test('la famille mange les œufs (10 énergie) : ils périment avant les conserv
   setInv(s, { oeuf: 4, conserve: 200 });
   const plan = planMeal(s);
   assertEqual(plan.mange.oeuf, 4);
-  assertEqual(plan.mange.conserve, Math.ceil((320 - 40) / 20));
-  assertEqual(plan.energie, 320);
+  assertEqual(plan.mange.conserve, Math.ceil((150 - 40) / 20));
+  assertEqual(plan.energie, 160);
 });
 
 test('migration v4 (Lot 3) → v5 : Champ, Silo et Poulailler apparaissent, la partie est gardée', () => {
@@ -8596,18 +8597,20 @@ test('bonus de santé : +1 par plat différent mangé, plafonné à +3', () => {
   assertEqual(nuit({ omelette: 1, pain: 2 }).famille.membres[0].sante, 57);
   // un même plat en plusieurs exemplaires ne compte qu'une fois
   assertEqual(nuit({ omelette: 4 }).famille.membres[0].sante, 56);
-  // trois, quatre plats différents : plafonné à +3
-  assertEqual(nuit({ omelette: 1, pain: 1, ragout: 1 }).famille.membres[0].sante, 58);
-  const quatre = nuit({ omelette: 1, pain: 1, ragout: 1, compote: 1, tarte_pommes: 1 });
-  assertEqual(quatre.famille.membres[0].sante, 58, '5 plats : toujours +3');
+  // trois plats différents (légers, tous mangés avant que le besoin soit
+  // couvert) : plafonné à +3
+  assertEqual(nuit({ pain: 1, compote: 1, omelette: 1 }).famille.membres[0].sante, 58);
   // la santé ne dépasse jamais 100
-  assertEqual(nuit({ omelette: 1, pain: 1, ragout: 1 }, 99).famille.membres[0].sante, 100);
+  assertEqual(nuit({ pain: 1, compote: 1, omelette: 1 }, 99).famille.membres[0].sante, 100);
+  // le plafond est bien +3, quel que soit le nombre de plats différents reçus
+  // (fonction pure, indépendante du besoin de la famille et donc de la nuit simulée)
+  assertEqual(dishBonus({ omelette: 1, pain: 1, ragout: 1, compote: 1, tarte_pommes: 1 }), 3, '5 plats : toujours +3');
 });
 
 test('bonus de santé : il s\'ajoute à la variation (−5 devient −4), noté au rapport de réveil', () => {
   const s = atelier();
   setHealth(s, 50);
-  setInv(s, { omelette: 1, conserve: 12 }); // 52 + 240 = 292 sur 320 : couverture 91 %
+  setInv(s, { omelette: 1, conserve: 4 }); // 52 + 80 = 132 sur 150 : couverture 88 %
   s.awakeSeconds = 30;
   const r = sleep(s);
   assertEqual(r.bonusPlats, 1);
@@ -10143,12 +10146,12 @@ test('la famille mange le contenu du frigo, après l\'inventaire', () => {
   moveToFridge(s, 'pomme', 40); // 10 pommes dehors, 40 au frigo
   s.frigo.alimenteS = 30;
   s.frigo.eveilS = 30;
-  assertEqual(planMeal(s).mange, { pomme: 40 });
+  assertEqual(planMeal(s).mange, { pomme: 19 });
   assertEqual(planMeal(s).couverture, 1);
   sleepOnce(s);
-  assertEqual(s.report.mange, { pomme: 40 });
+  assertEqual(s.report.mange, { pomme: 19 });
   assertEqual(countItem(s, 'pomme'), 0, 'l\'inventaire d\'abord');
-  assertEqual(fridgeCount(s, 'pomme'), 10, '30 pommes prises au frigo');
+  assertEqual(fridgeCount(s, 'pomme'), 31, '9 pommes prises au frigo');
   assertEqual(s.report.couverture, 1);
 });
 
@@ -10321,27 +10324,27 @@ test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', ()
 
 /* --- autonomie --- */
 
-test('autonomie : énergie « produit » mangée ÷ 320, plafonnée à 100 %', () => {
-  assertEqual(autonomyPercent(160, 320), 50);
-  assertEqual(autonomyPercent(60, 320), 18.75);
-  assertEqual(autonomyPercent(330, 320), 100);
-  assertEqual(autonomyPercent(0, 320), 0);
+test('autonomie : énergie « produit » mangée ÷ besoin, plafonnée à 100 %', () => {
+  assertEqual(autonomyPercent(75, 150), 50);
+  assertEqual(autonomyPercent(30, 150), 20);
+  assertEqual(autonomyPercent(165, 150), 100);
+  assertEqual(autonomyPercent(0, 150), 0);
   assertEqual(autonomyPercent(50, 0), 0);
   const s = farm();
   s.famille.reserve = {};
   setInv(s, { patate: 8, conserve: 100 }); // 8 × 15 = 120 produit
   const r = sleepOnce(s);
-  assertEqual([r.energieProduit, r.autonomie], [120, 37.5]);
-  assertEqual(s.campagne.historique, [{ nuit: 1, pct: 37.5, energie: 120 }]);
-  assertEqual(lastAutonomy(s), 37.5);
+  assertEqual([r.energieProduit, r.autonomie], [120, 80]);
+  assertEqual(s.campagne.historique, [{ nuit: 1, pct: 80, energie: 120 }]);
+  assertEqual(lastAutonomy(s), 80);
 });
 
 test('autonomie : les conserves n\'y comptent pas', () => {
   const s = farm();
-  setInv(s, { conserve: 16 }); // 16 × 20 = 320 : la famille est nourrie, mais rien n'est produit
+  setInv(s, { conserve: 8 }); // 8 × 20 = 160 couvre le besoin (150) : la famille est nourrie, mais rien n'est produit
   const r = sleepOnce(s);
   assertEqual(r.couverture, 1);
-  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [320, 0, 0]);
+  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [160, 0, 0]);
 });
 
 test('autonomie : un achat du Comptoir n\'y compte pas, une récolte oui', () => {
@@ -10352,10 +10355,10 @@ test('autonomie : un achat du Comptoir n\'y compte pas, une récolte oui', () =>
   assert(buyItem(s, 'carotte', 5).ok, 'acheter 5 carottes');
   addItem(s, 'carotte', 5); // récoltées
   assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.origin]).sort(), [[5, 'acheté'], [5, 'produit']].sort());
-  const r = sleepOnce(s); // tout est mangé : 10 carottes (60) + 10 conserves (200)
-  assertEqual(r.energieMangee, 260);
+  const r = sleepOnce(s); // 10 carottes (60) + 5 conserves (100) : le besoin (150) est couvert avant les 10 conserves
+  assertEqual(r.energieMangee, 160);
   assertEqual(r.energieProduit, 30, 'seules les 5 carottes récoltées comptent');
-  assertEqual(r.autonomie, 9.375);
+  assertEqual(r.autonomie, 20);
 });
 
 test('autonomie : un plat cuisiné compte, les œufs du frigo gardent leur origine', () => {
@@ -10365,9 +10368,12 @@ test('autonomie : un plat cuisiné compte, les œufs du frigo gardent leur origi
   addItem(s, 'oeuf', 10);
   addLot(s, 'oeuf', 10, 'acheté');
   assert(moveToFridge(s, 'oeuf', 20).ok, 'ranger les œufs au frigo');
-  assertEqual(plannedAutonomy(s), 31.25);
+  // à rang égal (rien ne périme), la conserve (20 énergie) passe avant l'œuf (10) :
+  // 6 conserves (120) + 3 œufs (30) couvrent les 150 énergies du besoin ; les 3
+  // œufs viennent du lot « produit », le plus ancien des deux lots au frigo
+  assertEqual(plannedAutonomy(s), 20);
   const r = sleepOnce(s);
-  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [320, 100, 31.25]);
+  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [150, 30, 20]);
 });
 
 test('autonomie : la prévision de la nuit est celle qui est vraiment mesurée', () => {
@@ -10512,9 +10518,9 @@ testBase('chapitre 2 : 20 carottes et 25 % d\'autonomie', () => {
   updateChapters(s);
   assertEqual(okList(s), [true, false]);
   assertEqual(s.campagne.chapitre, 2);
-  nightWithProduced(s, 5); // 75 / 320 = 23,4 %
-  assertEqual([lastAutonomy(s), okList(s)], [23.4375, [true, false]]);
-  nightWithProduced(s, 6); // 90 / 320 = 28,1 %
+  nightWithProduced(s, 2); // 30 / 150 = 20 %
+  assertEqual([lastAutonomy(s), okList(s)], [20, [true, false]]);
+  nightWithProduced(s, 3); // 45 / 150 = 30 %
   assertEqual(s.campagne.chapitre, 3);
   assertEqual(s.campagne.annonces.map((a) => a.chapitre), [2]);
 });
@@ -10626,9 +10632,9 @@ testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {
   assert(shear(s, s.paturage.moutons[0].id).ok);
   updateChapters(s);
   assertEqual([s.campagne.compteurs.laines, okList(s)], [10, [true, false]]);
-  nightWithProduced(s, 12); // 180 / 320 = 56 % : pas assez
+  nightWithProduced(s, 5); // 75 / 150 = 50 % : pas assez
   assertEqual(s.campagne.chapitre, 5);
-  nightWithProduced(s, 13); // 195 / 320 = 60,9 %
+  nightWithProduced(s, 6); // 90 / 150 = 60 %
   assertEqual(s.campagne.chapitre, 6);
 });
 
@@ -10641,7 +10647,7 @@ test('chapitre 6 : un hiver complet à 80 % en moyenne, sans soin', () => {
   const s = atChapter(6);
   s.day = 31; // première nuit de l'hiver
   assertEqual(currentSeason(s), 'hiver');
-  winterNights(s, 9, 18); // 270 / 320 = 84 %
+  winterNights(s, 9, 18); // 270 / 150 = 180 % (plafonné à 100 %)
   assertEqual([s.campagne.chapitre, s.campagne.compteurs.hiver.nuits], [6, 9]);
   winterNights(s, 1, 18);
   assertEqual(s.campagne.chapitre, 7);
@@ -10653,7 +10659,7 @@ test('chapitre 6 : un hiver complet à 80 % en moyenne, sans soin', () => {
 test('chapitre 6 : une moyenne de 79 % ne suffit pas', () => {
   const s = atChapter(6);
   s.day = 31;
-  winterNights(s, 10, 17); // 255 / 320 = 79,7 %
+  winterNights(s, 10, 7); // 105 / 150 = 70 %
   assertEqual(s.campagne.chapitre, 6);
   assertEqual(s.campagne.compteurs.hiverDernier.reussi, false);
   assert(s.campagne.compteurs.hiverDernier.moyenne < 80);
@@ -10662,10 +10668,10 @@ test('chapitre 6 : une moyenne de 79 % ne suffit pas', () => {
 test('chapitre 6 : la moyenne compte toutes les nuits, pas seulement la dernière', () => {
   const s = atChapter(6);
   s.day = 31;
-  winterNights(s, 5, 22); // 100 %
-  winterNights(s, 5, 12); // 56,25 %
+  winterNights(s, 5, 10); // 150 / 150 = 100 %
+  winterNights(s, 5, 4); // 60 / 150 = 40 %
   assertEqual(s.campagne.chapitre, 6);
-  assert(near(s.campagne.compteurs.hiverDernier.moyenne, 78.125, 1e-6));
+  assert(near(s.campagne.compteurs.hiverDernier.moyenne, 70, 1e-6));
 });
 
 test('chapitre 6 : un soin payé pendant l\'hiver fait échouer l\'hiver', () => {
@@ -10737,7 +10743,7 @@ test('remise à zéro : une nuit sous 100 % casse la série d\'autonomie', () =>
   const s = atChapter(7);
   for (let i = 0; i < 4; i++) nightWithProduced(s, 22);
   assertEqual(s.campagne.compteurs.serie100, 4);
-  nightWithProduced(s, 21); // 315 / 320 = 98,4 %
+  nightWithProduced(s, 9); // 135 / 150 = 90 %
   assertEqual(s.campagne.compteurs.serie100, 0);
   for (let i = 0; i < 6; i++) nightWithProduced(s, 22);
   assertEqual([s.campagne.compteurs.serie100, s.campagne.fini], [6, false]);
@@ -10807,7 +10813,7 @@ test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres termi
   setInv(s, { patate: 8, conserve: 10 });
   s.campagne.compteurs.carottes = 20;
   const r = sleepOnce(s);
-  assertEqual([r.autonomie, r.energieProduit, r.chapitre, r.chapitresTermines], [37.5, 120, 3, [2]]);
+  assertEqual([r.autonomie, r.energieProduit, r.chapitre, r.chapitresTermines], [80, 120, 3, [2]]);
 });
 
 /* --- masquage --- */

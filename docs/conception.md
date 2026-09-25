@@ -39,9 +39,9 @@
 
 | Membre | Nombre | AJ unitaire | Total |
 |---|---|---|---|
-| Adulte | 2 | 100 énergies | 200 |
-| Enfant | 2 | 60 énergies | 120 |
-| **Famille** | 4 | — | **320 énergies / jour** |
+| Adulte | 2 | 50 énergies | 100 |
+| Enfant | 2 | 25 énergies | 50 |
+| **Famille** | 4 | — | **150 énergies / jour** |
 
 La famille consomme **œufs, viande, légumes, fruits, pain et plats cuisinés**. L'huile, la farine et le blé sont des ingrédients, pas des aliments consommés directement.
 
@@ -58,7 +58,7 @@ Valeurs énergétiques (validées, détail en section 8) :
 
 *Ingrédients non consommables seuls, mais comptés dans l'énergie des plats* : farine 10, huile 10.
 
-*Exemple d'une journée à 320 énergies* : 1 ragoût (113) + 2 pains (52) + 1 omelette (52) + 4 patates (60) + 6 carottes (36) + 1 pomme (8) = **321**.
+*Exemple d'une journée à 150 énergies* : 1 pain (26) + 1 omelette (52) + 2 patates (30) + 7 carottes (42) = **150**.
 
 ### 1.2 Entités et chaînes de production
 
@@ -338,7 +338,7 @@ Le joueur ne possède plus un panneau et une batterie, mais un **parc** qu'il ag
 | Recette | {ingrédients}, {station : cuisine / four}, {temps de préparation}, {énergie = ingrédients × 1,3}, {bonus santé} |
 | Plante | {stades}, {rendement}, {graines rendues}, {mode de reproduction} |
 | Comptoir | {prix de vente}, {coef d'achat dynamique : plancher 1,2 (graines 2,0)}, {prix de vente fixes}, {prix fixes poule / mouton} |
-| Famille | {AJ adulte 100}, {AJ enfant 60}, {santé 0–100}, {multiplicateur de productivité} |
+| Famille | {AJ adulte 50}, {AJ enfant 25}, {santé 0–100}, {multiplicateur de productivité} |
 
 ---
 
@@ -351,7 +351,7 @@ Le moteur tourne en continu : l'électricité et l'eau sont des **flux** (kWh et
 ```
 Tick (200 ms) : Panneau → Batterie → Pompe / Moulin / Presse → réservoir d'eau
 Clic Dormir  : pousse des plantes (si arrosées) → ponte (si nourries)
-               → repas familial (320 énergies) → santé → péremption → bilan
+               → repas familial (150 énergies) → santé → péremption → bilan
 ```
 
 ### Particularités
@@ -376,7 +376,7 @@ Le temps avance **par journées**, chaque journée se terminant par le bouton **
 |---|---|
 | 🌅 Réveil | Écran de bilan de la nuit ; le soleil recharge la batterie en temps réel ; compte à rebours avant de pouvoir dormir |
 | ☀️ Journée (temps libre) | Le joueur arrose, nourrit, tond, cuisine, moud, presse, vend |
-| 😴 Clic « Dormir » | Repas familial (320 énergies) → santé → pousse (+1 stade si arrosé) → ponte (si nourrie) → croissance et laine des moutons → péremption hors frigo |
+| 😴 Clic « Dormir » | Repas familial (150 énergies) → santé → pousse (+1 stade si arrosé) → ponte (si nourrie) → croissance et laine des moutons → péremption hors frigo |
 
 ### Rôle des nouveaux éléments
 - **Serre** : rendement constant toute l'année, sans malus d'hiver.
@@ -407,7 +407,7 @@ L'hiver reste plus serré, sans être punitif : stocker au réfrigérateur et in
 ## 4. Structure C — « Les Paliers d'Autonomie »
 
 ### Principe
-La progression suit des **chapitres**, mesurés par le **% d'autonomie** = énergie produite sur la ferme ÷ 320. La nourriture achetée au Comptoir ne compte pas.
+La progression suit des **chapitres**, mesurés par le **% d'autonomie** = énergie produite sur la ferme ÷ 150. La nourriture achetée au Comptoir ne compte pas.
 
 ### Chapitres
 | # | Titre | Débloque | Objectif |
@@ -477,7 +477,7 @@ src/
 │   ├── day.ts                    pousse, ponte, repas, péremption
 │   ├── crops.ts                  planter, arroser, récolter
 │   ├── animals.ts                nourrir, pâturage
-│   ├── family.ts                 consommation des 320 énergies
+│   ├── family.ts                 consommation des 150 énergies
 │   ├── market.ts                 prix dynamiques
 │   ├── kitchen.ts                file de recettes
 │   ├── inventory.ts              inventaire, frigo, silo
@@ -688,7 +688,7 @@ export const dishEnergy = (id: string) =>
     .reduce((t, [k, q]) => t + (items[k].energy ?? 0) * q, 0));      // 🟡
 ```
 
-### 6.9 Repas familial (320 énergies)
+### 6.9 Repas familial (150 énergies)
 
 ```ts
 // engine/family.ts
@@ -850,8 +850,8 @@ export function take(s: GameState, item: string, qty: number) {
 - **Parcelle** : vide → menu « Planter » (graines disponibles) ; mature → « Récolter » ou, pour la carotte, « Laisser monter en graine ».
 - **Livre de recette** (onglet, pas un objet) : point d'entrée unique pour lancer les plats ; recettes réalisables en surbrillance, ingrédients manquants signalés ; chaque station (🍳 Cuisine, 🔥 Four, ⚙️ Moulin, 🌻 Presse) affiche **libre** ou **occupée** avec son minuteur ; les recettes d'une station occupée sont grisées.
 - **Comptoir** : onglets Vendre / Acheter / Graines (badge « dépannage ») / Animaux / Arbres ; prix d'achat actuel et coefficient affichés ; animaux grisés si le poulailler ou le pâturage est plein.
-- **Famille** : 4 portraits avec barre de santé, jauge 320 énergies, % d'autonomie, multiplicateur de productivité.
-- **Bouton « Dormir »** toujours visible : grisé avec compte à rebours tant que l'éveil minimal n'est pas atteint, puis aperçu « Repas prévu : 280 / 320 énergies ⚠️ ».
+- **Famille** : 4 portraits avec barre de santé, jauge 150 énergies, % d'autonomie, multiplicateur de productivité.
+- **Bouton « Dormir »** toujours visible : grisé avec compte à rebours tant que l'éveil minimal n'est pas atteint, puis aperçu « Repas prévu : 130 / 150 énergies ⚠️ ».
 - **Portrait malade** : icône 🤒 et bouton « Soigner (X pièces) ».
 - **Calendrier** : saison en cours, nuit n / 10, icônes des modificateurs actifs.
 - **Réfrigérateur** : icône ❄️ (alimenté) / ⚠️ (en panne), consommation actuelle en kWh/s, alerte si la batterie ne tiendra pas la nuit.
