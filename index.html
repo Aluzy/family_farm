@@ -1382,6 +1382,9 @@ const DATA = {
     graine_aubergine: { nom: 'Graines d\'aubergine', icone: '🌱', prix: 1, edible: false, category: 'graine' },
     // Lot 4 : blé (stock du Silo ; un blé sert de graine), graines de tournesol
     // (à replanter), œuf (12,5 → 13 énergie, 6 nuits : voir CONSERVATION).
+    // category reste « ingrédient » (Silo, Moulin, alimentation des poules,
+    // plancher de marché ×1,2) même si le blé sert aussi de semence : voir
+    // isGraineComptoir(), qui l'ajoute en plus à l'onglet Graines du Comptoir.
     ble:              { nom: 'Blé',                  icone: '🌾', prix: 1, edible: false, category: 'ingrédient' },
     graine_tournesol: { nom: 'Graines de tournesol', icone: '🌻', prix: 1, edible: false, category: 'graine' },
     oeuf:             { nom: 'Œuf',                  icone: '🥚', energie: 13, prix: 2, edible: true, category: 'produit' }, // 10 × 1,25 = 12,5 → 13
@@ -3241,6 +3244,19 @@ function seedItem(culture) {
 // Objet que rend la récolte : le nom de la culture, sauf `produit` (tournesol).
 function cropProduct(culture) {
   return DATA.crops[culture].produit || culture;
+}
+
+// Un item apparaît dans l'onglet Graines du Comptoir (et donc dans la liste
+// filtrée par seedForSale) s'il est de catégorie « graine », ou si c'est le
+// blé. Le blé garde sa catégorie « ingrédient » (prix, plancher de marché,
+// conservation et origine inchangés : voir DATA.items.ble et DATA.MARCHE) car
+// il reste avant tout la ressource du Silo, de l'alimentation des poules et
+// du Moulin ; ce test l'ajoute simplement à l'onglet Graines en plus, sans
+// rien retirer à sa présence dans l'onglet Acheter. On ne généralise pas ce
+// cas à toute culture en mode « plant » (ex. la patate) : seul le blé est
+// concerné par cette règle.
+function isGraineComptoir(item) {
+  return DATA.items[item].category === 'graine' || item === DATA.SILO.ITEM;
 }
 
 // Graines disponibles pour semer une culture. Le blé sert de graine : celui de
@@ -7700,6 +7716,27 @@ test('DATA Lot 4 : Champ, Silo, Poulailler, poule, blé, tournesol et œuf', () 
   assertEqual([DATA.items.oeuf.energie, DATA.items.oeuf.prix, shelfLife('oeuf')], [scaleEnergie(10), 2, 6]);
   assertEqual(shelfLife('ble'), null, 'le blé ne périme jamais');
   assertEqual(shelfLife('graine_tournesol'), null);
+});
+
+test('Comptoir – onglet Graines : isGraineComptoir()', () => {
+  // Le blé y apparaît sans changer de catégorie (double fonction préservée :
+  // Silo, Moulin, poules, plancher de marché ×1,2, comme avant).
+  assertEqual(isGraineComptoir('ble'), true);
+  assertEqual(DATA.items.ble.category, 'ingrédient');
+  assertEqual(marketFloor('ble'), DATA.MARCHE.PLANCHER.defaut);
+  // Les graines de tournesol restent classées « graine », comme les autres graines.
+  assertEqual(isGraineComptoir('graine_tournesol'), true);
+  assertEqual(DATA.items.graine_tournesol.category, 'graine');
+  for (const k of ['graine_carotte', 'graine_tomate', 'graine_courgette', 'graine_aubergine']) {
+    assertEqual(isGraineComptoir(k), true, k);
+  }
+  // On ne généralise pas aux autres cultures « mode: plant » (la patate reste
+  // hors de l'onglet Graines : seul le blé fait exception) ni aux items qui
+  // partagent juste la catégorie « ingrédient ».
+  assertEqual(isGraineComptoir('patate'), false, 'la patate ne fait pas exception, contrairement au blé');
+  assertEqual(isGraineComptoir('farine'), false);
+  assertEqual(isGraineComptoir('huile'), false);
+  assertEqual(isGraineComptoir('carotte'), false);
 });
 
 test('état initial Lot 4 : rien n\'est construit', () => {
@@ -13406,9 +13443,9 @@ function renderComptoir() {
       <p class="muted">Prix d'achat = prix de vente × coefficient. Chaque unité achetée ajoute ${formatFixed(DATA.MARCHE.PAS, 1)} au coefficient, et il ne redescend qu'à la vente : le Comptoir dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'graines') {
-    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category === 'graine' && seedForSale(k));
+    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = `
-      <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ×${formatFixed(DATA.MARCHE.PLANCHER.graine, 1)}. Produire tes propres graines reste plus rentable.</p>
+      <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ×${formatFixed(DATA.MARCHE.PLANCHER.graine, 1)}. Produire tes propres graines reste plus rentable. Le blé fait exception : c'est aussi la ressource du Silo, du Moulin et des poules, donc il garde son prix habituel (plancher ×${formatFixed(DATA.MARCHE.PLANCHER.defaut, 1)}) et reste également listé dans l'onglet Acheter.</p>
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'animaux') {
     body = renderAnimaux();
