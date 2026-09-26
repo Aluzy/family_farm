@@ -1,6 +1,8 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v18** : **10 nouvelles cultures** — Potager (oignon, ail, poivron, épinard, fraise), Champ (riz, houblon), et 3 **cultures de rente exclusives à la Serre** (cacao, vanille, café : jamais comestibles, vente et recettes de luxe uniquement). Le poivron reprend le mécanisme Potager + Serre de la tomate/courgette/aubergine. Voir 1.4 (« Cultures de rente ») et 8.3 (tableau chiffré complet). 🟡 Le riz demande 4 L par arrosage (le double du blé) : aucune règle de pompe n'a été changée pour autant, à surveiller si le débit devient un goulot d'étranglement.
+>
 > **v17** : la valeur nutritionnelle de tous les aliments de base existants est **augmentée de 25 %** (arrondie à l'entier le plus proche, règle centralisée — voir 1.1 et 8.1). Le **Gratin de patates** reçoit une valeur nutritionnelle dédiée de **150** (au lieu du calcul ingrédients × 1,3) pour couvrir à lui seul l'Apport Journalier d'une famille de 2 adultes + 2 enfants (voir 1.4). Les prix de vente ne changent pas. 🟡 Conséquence non traitée par ce changement : la courbe de progression cible (8.10) suppose des rendements de production non modifiés ; avec des aliments plus nutritifs pour les mêmes récoltes, l'autonomie mesurée progresse mécaniquement plus vite que cette courbe (à confirmer/ajuster).
 >
 > **v16** : la partie démarre désormais avec **350 pièces** (au lieu de 50) ; aucune autre règle économique n'est modifiée, et les parties déjà en cours conservent leur solde actuel.
@@ -90,8 +92,11 @@ Puit (illimité) + Pompe [kWh] ──► Eau (L) ──► Potager [L] · Serre 
 **Végétal**
 ```
 Potager ─ graine ─► carotte · courgette · tomate · aubergine · patate
-Serre   ─ graine ─► tomate · courgette · aubergine
-Champ   ─ graine ─► blé · tournesol
+                    · poivron · oignon · ail · épinard · fraise
+Serre   ─ graine ─► tomate · courgette · aubergine · poivron
+Serre   ─ graine ─► cacao · vanille · café (cultures de rente, exclusives à la Serre,
+                    jamais comestibles : vente et recettes de luxe seulement)
+Champ   ─ graine ─► blé · tournesol · riz · houblon
 Verger  ─ arbre  ─► pommier → pomme · poirier → poire
 ```
 
@@ -218,12 +223,22 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 
 | Plante | Comment obtenir des graines |
 |---|---|
-| Tomate, courgette, aubergine | Chaque récolte rend aussi 🟡 1 à 2 graines |
+| Tomate, courgette, aubergine, poivron | Chaque récolte rend aussi 1 à 2 graines |
+| Oignon, épinard | Chaque récolte rend aussi 1 à 2 graines |
+| Fraise | Chaque récolte rend aussi 2 à 3 graines |
 | Patate | On garde des patates : 1 patate = 1 plant (choix manger / replanter) |
+| Ail, riz | On garde ail/riz : 1 ail ou 1 riz = 1 plant (choix manger / replanter) |
 | Blé | On garde du blé : 1 blé = 1 graine (choix manger via farine / nourrir les poules / replanter) |
+| Houblon, cacao, vanille, café | On garde une partie de la récolte : 1 unité = 1 plant (jamais mangées : voir « cultures de rente » ci-dessous) |
 | Tournesol | La récolte donne des graines : à **replanter** ou à **presser** en huile (même ressource) |
 | Carotte | 🟡 Option « Laisser monter en graine » : la plante reste 2 stades de plus et donne des graines au lieu de carottes |
 | Pommier, poirier | Arbres permanents : pas de graines ; nouveaux arbres **achetés au Comptoir** |
+
+**🌰 Cultures de rente (cacao, vanille, café)**
+- Exclusives à la **Serre** : `lieux: ['serre']` seul dans la culture, sans Potager ni Champ. La fonction de plantation elle-même refuse toute autre parcelle (pas seulement l'écran de plantation, qui se contente de ne pas les proposer).
+- **Jamais comestibles** (`edible: false`) : la composition du repas familial les ignore totalement, même si la famille est affamée et même si elles sont en stock.
+- Elles ne servent qu'à la **vente** (prix élevé : cacao 8, vanille 15, café 6) et comme ingrédients de recettes de luxe à venir.
+- Poussent et se récoltent en Serre exactement comme les autres cultures de Serre : aucune saison ne les affecte, et l'absence d'arrosage/récolte automatique en Serre (aucune culture n'y est aujourd'hui automatisée, cacao/vanille/café compris) reste identique à ce qui existait déjà pour tomate/courgette/aubergine.
 
 - Tension de jeu : **manger ou replanter**. Une famille affamée qui mange ses semences compromet la saison suivante.
 
@@ -960,8 +975,20 @@ Les conserves laissent le temps de lancer le potager avant que la santé ne soit
 | Aubergine | Potager, Serre | 6 | 4 L | 6 | +1 à 2 | 10 | 2 |
 | Blé | Champ | 7 | 2 L | 8 | 1 blé = 1 graine | — | 1 |
 | Tournesol | Champ | 7 | 2 L | 9 graines | 1 graine = 1 plant | — | 1 |
+| Oignon | Potager | 5 | 3 L | 8 | +1 à 2 | 6 | 1 |
+| Ail | Potager | 6 | 2 L | 6 | 1 ail = 1 plant | 6 | 2 |
+| Poivron | Potager, Serre | 6 | 4 L | 6 | +1 à 2 | 7 | 2 |
+| Épinard | Potager | 3 | 3 L | 8 | +1 à 2 | 5 | 1 |
+| Fraise | Potager | 4 | 3 L | 10 | +2 à 3 | 5 | 2 |
+| Riz | Champ | 8 | 4 L | 10 | 1 riz = 1 graine | 10 | 1 |
+| Houblon | Champ | 6 | 2 L | 6 | 1 houblon = 1 graine | — | 3 |
+| Cacao *(Serre uniquement)* | Serre | 8 | 3 L | 5 | 1 fève = 1 plant | — (non comestible) | 8 |
+| Vanille *(Serre uniquement)* | Serre | 10 | 2 L | 3 | 1 gousse = 1 plant | — (non comestible) | 15 |
+| Café *(Serre uniquement)* | Serre | 8 | 3 L | 6 | 1 grain = 1 plant | — (non comestible) | 6 |
 
 Graines de légumes : vente 1 💰 ; achat en dépannage au coefficient 2,0 (soit 2 💰 la première).
+
+**Point de vigilance (riz)** : le riz demande 4 L par arrosage au Champ, contre 2 L pour le blé — soit le double. La pompe et le réservoir (§8.2) ne changent pas : au niveau 1 (1 L/s, réservoir 40 L), planter beaucoup de riz en même temps peut mettre le débit d'eau sous tension si le joueur ne monte pas la pompe en parallèle. Aucune règle de pompe n'a été modifiée pour cette raison ; à surveiller au playtest / avec le script de simulation (§6).
 
 **Rendement moyen par parcelle** (énergie / nuit, graine déduite, mis à jour au §4) : carotte ≈ 20 · patate ≈ 22 · tomate ≈ 16 · courgette ≈ 12 · aubergine ≈ 10.
 

@@ -1401,6 +1401,31 @@ const DATA = {
     // Lot 6 : laine (section 8.6). Ni périssable ni comestible : elle sert
     // uniquement à la vente. Elle ne se rachète pas au Comptoir.
     laine:            { nom: 'Laine',                icone: '🧶', prix: 6, edible: false, category: 'produit', rachetable: false },
+    // 10 nouvelles cultures : Potager (oignon, ail, poivron, épinard, fraise),
+    // Champ (riz, houblon), Serre exclusivement (cacao, vanille, café). Poivron
+    // reprend le mode « récolte » (comme tomate/courgette/aubergine) ; ail, riz,
+    // houblon, cacao, vanille et café reprennent le mode « plant » (comme la
+    // patate ou le blé : la récolte elle-même sert de graine, pas d'item séparé).
+    // Cacao, vanille et café sont des cultures de rente : edible: false, donc
+    // ignorées par planMeal()/mealOrder() (filtre déjà générique sur ce champ) —
+    // elles ne nourrissent jamais la famille, même affamée. category:
+    // 'ingrédient' pour ces trois-là et pour le houblon, comme farine/huile
+    // (ingrédients de recette, jamais mangés seuls ; aucun plancher de marché
+    // spécifique n'est attaché à cette catégorie, voir DATA.MARCHE.PLANCHER).
+    oignon:           { nom: 'Oignon',                icone: '🧅', energie: 6,  prix: 1,  edible: true,  category: 'légume' },
+    graine_oignon:    { nom: 'Graines d\'oignon',     icone: '🌱', prix: 1,  edible: false, category: 'graine' },
+    ail:              { nom: 'Ail',                   icone: '🧄', energie: 6,  prix: 2,  edible: true,  category: 'légume' },
+    poivron:          { nom: 'Poivron',               icone: '🫑', energie: 7,  prix: 2,  edible: true,  category: 'légume' },
+    graine_poivron:   { nom: 'Graines de poivron',    icone: '🌱', prix: 1,  edible: false, category: 'graine' },
+    epinard:          { nom: 'Épinard',               icone: '🥬', energie: 5,  prix: 1,  edible: true,  category: 'légume' },
+    graine_epinard:   { nom: 'Graines d\'épinard',    icone: '🌱', prix: 1,  edible: false, category: 'graine' },
+    fraise:           { nom: 'Fraise',                icone: '🍓', energie: 5,  prix: 2,  edible: true,  category: 'fruit' },
+    graine_fraise:    { nom: 'Graines de fraise',     icone: '🌱', prix: 1,  edible: false, category: 'graine' },
+    riz:              { nom: 'Riz',                   icone: '🍚', energie: 10, prix: 1,  edible: true,  category: 'légume' },
+    houblon:          { nom: 'Houblon',               icone: '🌿', prix: 3,  edible: false, category: 'ingrédient' },
+    cacao:            { nom: 'Cacao',                 icone: '🍫', prix: 8,  edible: false, category: 'ingrédient' },
+    vanille:          { nom: 'Vanille',                icone: '🫘', prix: 15, edible: false, category: 'ingrédient' },
+    cafe:             { nom: 'Café',                   icone: '☕', prix: 6,  edible: false, category: 'ingrédient' },
   },
 
   /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
@@ -1472,6 +1497,24 @@ const DATA = {
                  graines: { item: 'graine_courgette', mode: 'recolte', min: 1, max: 2 } },
     aubergine: { nom: 'Aubergine', icone: '🍆', lieux: ['potager', 'serre'], stades: 6, litres: 4, rendement: 6,
                  graines: { item: 'graine_aubergine', mode: 'recolte', min: 1, max: 2 } },
+    // 10 nouvelles cultures. Le poivron pousse au Potager ET en Serre, exactement
+    // comme la tomate/courgette/aubergine ci-dessus (même mécanisme, mêmes
+    // fonctions : plant(), harvest(), yieldSeasonFactor()/waterSeasonFactor()
+    // n'appliquent déjà le facteur de saison que si le *lieu* de la parcelle
+    // (pas la culture) figure dans DATA.SAISONS.RENDEMENT_LIEU / EAU_LIEUX — la
+    // Serre n'y figure pas, donc un poivron planté en Serre ignore déjà les
+    // saisons sans code supplémentaire).
+    poivron:   { nom: 'Poivron',   icone: '🫑', lieux: ['potager', 'serre'], stades: 6, litres: 4, rendement: 6,
+                 graines: { item: 'graine_poivron', mode: 'recolte', min: 1, max: 2 } },
+    oignon:    { nom: 'Oignon',    icone: '🧅', lieux: ['potager'], stades: 5, litres: 3, rendement: 8,
+                 graines: { item: 'graine_oignon', mode: 'recolte', min: 1, max: 2 } },
+    // 1 ail = 1 plant (mode 'plant', comme la patate) : pas d'item graine séparé.
+    ail:       { nom: 'Ail',       icone: '🧄', lieux: ['potager'], stades: 6, litres: 2, rendement: 6,
+                 graines: { item: 'ail', mode: 'plant' } },
+    epinard:   { nom: 'Épinard',   icone: '🥬', lieux: ['potager'], stades: 3, litres: 3, rendement: 8,
+                 graines: { item: 'graine_epinard', mode: 'recolte', min: 1, max: 2 } },
+    fraise:    { nom: 'Fraise',    icone: '🍓', lieux: ['potager'], stades: 4, litres: 3, rendement: 10,
+                 graines: { item: 'graine_fraise', mode: 'recolte', min: 2, max: 3 } },
     // Lot 4 (Champ). produit : l'objet récolté quand il n'a pas le nom de la
     // culture. Blé : 1 blé = 1 graine. Tournesol : la récolte donne des graines,
     // à replanter ou à presser (même ressource).
@@ -1479,6 +1522,23 @@ const DATA = {
                  graines: { item: 'ble', mode: 'plant' } },
     tournesol: { nom: 'Tournesol', icone: '🌻', lieux: ['champ'], stades: 7, litres: 2, rendement: 9, produit: 'graine_tournesol',
                  graines: { item: 'graine_tournesol', mode: 'plant' } },
+    // Riz : comestible directement (contrairement au blé), mais demande plus
+    // d'eau par arrosage (4 L contre 2 L pour le blé) — voir DATA.GRID.pompe et
+    // le point de vigilance signalé en fin de réponse au sujet du débit d'eau.
+    riz:       { nom: 'Riz',       icone: '🍚', lieux: ['champ'], stades: 8, litres: 4, rendement: 10,
+                 graines: { item: 'riz', mode: 'plant' } },
+    houblon:   { nom: 'Houblon',   icone: '🌿', lieux: ['champ'], stades: 6, litres: 2, rendement: 6,
+                 graines: { item: 'houblon', mode: 'plant' } },
+    // Cultures de rente : lieux: ['serre'] *seul* (ni 'potager' ni 'champ') —
+    // plant() (voir plus haut) refuse déjà toute parcelle dont le lieu n'est pas
+    // dans cette liste, donc aucune règle spéciale supplémentaire n'est requise
+    // pour leur interdire le Potager ou le Champ.
+    cacao:     { nom: 'Cacao',     icone: '🍫', lieux: ['serre'], stades: 8, litres: 3, rendement: 5,
+                 graines: { item: 'cacao', mode: 'plant' } },
+    vanille:   { nom: 'Vanille',   icone: '🫘', lieux: ['serre'], stades: 10, litres: 2, rendement: 3,
+                 graines: { item: 'vanille', mode: 'plant' } },
+    cafe:      { nom: 'Café',      icone: '☕', lieux: ['serre'], stades: 8, litres: 3, rendement: 6,
+                 graines: { item: 'cafe', mode: 'plant' } },
   },
 
   // Potager (section 8.3) : parcelles par niveau (index 0 = niveau 1) et coût
@@ -1534,9 +1594,14 @@ const DATA = {
   // plats cuisinés).
   CONSERVATION: {
     viande: 5,
-    tomate: 5, courgette: 5, aubergine: 5,
-    oeuf: 6, carotte: 6,
-    pomme: 7, poire: 7, pain: 7, patate: 7,
+    tomate: 5, courgette: 5, aubergine: 5, poivron: 5,
+    oeuf: 6, carotte: 6, oignon: 6,
+    pomme: 7, poire: 7, pain: 7, patate: 7, ail: 7,
+    // Épinard et fraise sont plus fragiles que les autres légumes/fruits frais.
+    // Le riz (comme le blé) et le houblon/cacao/vanille/café (comme
+    // farine/huile/laine, non comestibles) ne figurent pas ici : denrées sèches,
+    // ils ne périment pas (voir shelfLife() : absent de la table = imperissable).
+    epinard: 4, fraise: 4,
   },
   CONSERVATION_CATEGORIE: { plat: 6 },
 
@@ -6636,7 +6701,11 @@ test('DATA Lot 2 : objets, énergies et prix de vente', () => {
 
 test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
   const c = DATA.crops;
-  assertEqual(Object.keys(c), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'ble', 'tournesol']);
+  assertEqual(Object.keys(c), [
+    'carotte', 'patate', 'tomate', 'courgette', 'aubergine',
+    'poivron', 'oignon', 'ail', 'epinard', 'fraise',
+    'ble', 'tournesol', 'riz', 'houblon', 'cacao', 'vanille', 'cafe',
+  ]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].stades), [4, 6, 5, 5, 6]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].litres), [2, 3, 3, 4, 4]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].rendement), [10, 8, 10, 6, 6]);
@@ -6649,6 +6718,37 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
   for (const k of ['carotte', 'patate']) assertEqual(c[k].lieux, ['potager']);
   for (const k of ['tomate', 'courgette', 'aubergine']) assertEqual(c[k].lieux, ['potager', 'serre']); // Lot 8 : la Serre
   for (const k of ['ble', 'tournesol']) assertEqual(c[k].lieux, ['champ']);
+});
+
+test('DATA « 10 cultures » : stades, eau, rendement, graines, comestibilité, vente', () => {
+  const c = DATA.crops;
+  const it = DATA.items;
+  assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz', 'houblon', 'cacao', 'vanille', 'cafe'].map((k) => c[k].stades),
+    [5, 6, 6, 3, 4, 8, 6, 8, 10, 8]);
+  assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz', 'houblon', 'cacao', 'vanille', 'cafe'].map((k) => c[k].litres),
+    [3, 2, 4, 3, 3, 4, 2, 3, 2, 3]);
+  assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz', 'houblon', 'cacao', 'vanille', 'cafe'].map((k) => c[k].rendement),
+    [8, 6, 6, 8, 10, 10, 6, 5, 3, 6]);
+  assertEqual([c.oignon.graines.mode, c.oignon.graines.min, c.oignon.graines.max], ['recolte', 1, 2]);
+  assertEqual([c.poivron.graines.mode, c.poivron.graines.min, c.poivron.graines.max], ['recolte', 1, 2]);
+  assertEqual([c.epinard.graines.mode, c.epinard.graines.min, c.epinard.graines.max], ['recolte', 1, 2]);
+  assertEqual([c.fraise.graines.mode, c.fraise.graines.min, c.fraise.graines.max], ['recolte', 2, 3]);
+  for (const k of ['ail', 'riz', 'houblon', 'cacao', 'vanille', 'cafe']) {
+    assertEqual(c[k].graines, { item: k, mode: 'plant' }, `${k} : 1 récolte = 1 graine`);
+  }
+  // Lieux : Potager pour oignon/ail/épinard/fraise, Potager + Serre pour le
+  // poivron (même mécanisme que tomate/courgette/aubergine), Champ pour
+  // riz/houblon, Serre exclusivement pour cacao/vanille/café.
+  for (const k of ['oignon', 'ail', 'epinard', 'fraise']) assertEqual(c[k].lieux, ['potager']);
+  assertEqual(c.poivron.lieux, ['potager', 'serre']);
+  for (const k of ['riz', 'houblon']) assertEqual(c[k].lieux, ['champ']);
+  for (const k of ['cacao', 'vanille', 'cafe']) assertEqual(c[k].lieux, ['serre']);
+  // Comestibilité et prix de vente exactement comme demandé.
+  assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz'].map((k) => [it[k].edible, it[k].energie]),
+    [[true, 6], [true, 6], [true, 7], [true, 5], [true, 5], [true, 10]]);
+  for (const k of ['houblon', 'cacao', 'vanille', 'cafe']) assertEqual(it[k].edible, false, `${k} n'est jamais comestible`);
+  assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz', 'houblon', 'cacao', 'vanille', 'cafe'].map((k) => it[k].prix),
+    [1, 2, 2, 1, 2, 1, 3, 8, 15, 6]);
 });
 
 test('état initial Lot 2 : inventaire, potager de 6 parcelles, famille de 4 à 100', () => {
@@ -6999,7 +7099,9 @@ test('réserve de semences : la famille ne mange jamais la réserve', () => {
   assertEqual(setSeedReserve(t, 'patate', 'abc').ok, false);
   assertEqual(t.famille.reserve.patate, 25);
   assertEqual(setSeedReserve(t, 'patate', -4).reserve, 0, 'jamais négative');
-  assertEqual(reservableItems(), ['patate']);
+  // Lot « 10 cultures » : ail et riz se replantent aussi eux-mêmes (mode
+  // 'plant', comme la patate) et sont comestibles : ils rejoignent la réserve.
+  assertEqual(reservableItems(), ['patate', 'ail', 'riz']);
 });
 
 test('santé : +5 à 100 %, −5 de 75 à 99 %, −10 de 50 à 74 %, −20 sous 50 %', () => {
@@ -7621,27 +7723,63 @@ test('vente : retire les lots les plus anciens, refuse sans stock et ignore les 
   assertEqual(sellItem(s, 'inconnu', 1).ok, false);
 });
 
+test('les 10 nouvelles cultures : récolte stockée dans l\'inventaire, puis vendable', () => {
+  const s = garden();
+  s.pieces = 5000;
+  buildChamp(s);
+  buildSerre(s);
+  addItem(s, 'graine_oignon', 1);
+  addItem(s, 'riz', 1);
+  addItem(s, 'cacao', 1);
+  plantRipe(s, 'potager-1', 'oignon');
+  plantRipe(s, 'champ-1', 'riz');
+  plantRipe(s, 'serre-1', 'cacao');
+  // Nuit 1 = printemps : le facteur de saison du Potager est ×1,1 (voir
+  // DATA.SAISONS.MODS.printemps.potager), donc 8 × 1,1 arrondi = 9 pour
+  // l'oignon ; le Champ (×1,0 au printemps) et la Serre (jamais de saison) ne
+  // sont pas affectés.
+  assertEqual(harvest(s, 'potager-1').items.oignon, 9);
+  assertEqual(harvest(s, 'champ-1').items.riz, 10);
+  assertEqual(harvest(s, 'serre-1').items.cacao, 5);
+  assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [9, 10, 5], 'récoltes bien dans l\'inventaire');
+  assertEqual(sellItem(s, 'oignon', 9), { ok: true, sold: 9, gain: 9 });
+  assertEqual(sellItem(s, 'riz', 10), { ok: true, sold: 10, gain: 10 });
+  assertEqual(sellItem(s, 'cacao', 5), { ok: true, sold: 5, gain: 40 }, '5 × 8 : le cacao se vend cher, comme prévu');
+  assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [0, 0, 0]);
+});
+
 test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', () => {
   const s = garden();
   setInv(s, { conserve: 5 });
   testAddFood(s);
   // Lot 5 : la viande, les fruits, le pain et les plats sont aussi des aliments.
+  // Lot « 10 cultures » : oignon, ail, poivron, épinard, fraise et riz sont
+  // comestibles (contrairement à houblon/cacao/vanille/café, edible: false,
+  // absents d'ici) — ajoutés à la suite dans DATA.items, donc à la fin ici.
   assertEqual(inventoryCounts(s), {
     conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20, oeuf: 20,
-    viande: 20, pomme: 20, poire: 20, pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, ragout: 20, compote: 20, tarte_pommes: 20,
+    viande: 20, pomme: 20, poire: 20, oignon: 20, ail: 20, poivron: 20, epinard: 20, fraise: 20, riz: 20,
+    pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, ragout: 20, compote: 20, tarte_pommes: 20,
   });
   assertEqual(countItem(s, 'graine_carotte'), 0, 'les graines ne sont pas des aliments');
   assertEqual(countItem(s, 'farine') + countItem(s, 'huile'), 0, 'ni la farine ni l\'huile');
+  assertEqual(countItem(s, 'cacao') + countItem(s, 'vanille') + countItem(s, 'cafe') + countItem(s, 'houblon'), 0, 'les cultures de rente non plus');
   const r = testAgeInventory(s);
   assertEqual(r.ok, true);
   assertEqual(r.perdus, {});
   assertEqual(lotsOf(s, 'carotte')[0].nightsLeft, 5);
   assertEqual(lotsOf(s, 'patate')[0].nightsLeft, 6);
   assertEqual(lotsOf(s, 'conserve')[0].nightsLeft, null);
+  assertEqual(lotsOf(s, 'oignon')[0].nightsLeft, 5);
+  assertEqual(lotsOf(s, 'ail')[0].nightsLeft, 6);
+  assertEqual(lotsOf(s, 'riz')[0].nightsLeft, null, 'le riz, comme le blé, ne périme pas');
   for (let i = 0; i < 4; i++) testAgeInventory(s);
-  const last = testAgeInventory(s); // 6e nuit : tomate, courgette, aubergine, viande déjà perdues, carotte, œuf et plats maintenant
-  assertEqual(last.perdus, { carotte: 20, oeuf: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, ragout: 20, compote: 20, tarte_pommes: 20 });
-  assertEqual(inventoryCounts(s), { conserve: 25, patate: 20, pomme: 20, poire: 20, pain: 20 });
+  // 6e nuit : tomate, courgette, aubergine, viande, poivron, épinard, fraise déjà
+  // perdues (conservation à 5 ou 4 nuits), carotte, œuf, oignon (6 nuits) et
+  // plats maintenant.
+  const last = testAgeInventory(s);
+  assertEqual(last.perdus, { carotte: 20, oeuf: 20, oignon: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, ragout: 20, compote: 20, tarte_pommes: 20 });
+  assertEqual(inventoryCounts(s), { conserve: 25, patate: 20, pomme: 20, poire: 20, ail: 20, riz: 20, pain: 20 });
 });
 
 test('migration v3 (Lot 2) → v4 : l\'inventaire devient des lots à conservation pleine', () => {
@@ -7737,6 +7875,37 @@ test('Comptoir – onglet Graines : isGraineComptoir()', () => {
   assertEqual(isGraineComptoir('farine'), false);
   assertEqual(isGraineComptoir('huile'), false);
   assertEqual(isGraineComptoir('carotte'), false);
+});
+
+test('Comptoir – onglet Graines : les 10 nouvelles cultures', () => {
+  // graine_oignon, graine_poivron, graine_epinard et graine_fraise sont de
+  // vraies graines (mode 'recolte') : elles apparaissent dans l'onglet Graines,
+  // comme graine_carotte etc.
+  for (const k of ['graine_oignon', 'graine_poivron', 'graine_epinard', 'graine_fraise']) {
+    assertEqual(isGraineComptoir(k), true, k);
+  }
+  // ail, riz, houblon, cacao, vanille, café sont en mode 'plant' : comme la
+  // patate (et contrairement au blé), ils ne font pas exception et restent hors
+  // de l'onglet Graines — ils s'achètent via l'onglet Acheter s'ils sont
+  // rachetables (voir isBuyable()).
+  for (const k of ['ail', 'riz', 'houblon', 'cacao', 'vanille', 'cafe']) {
+    assertEqual(isGraineComptoir(k), false, `${k} ne fait pas exception, comme la patate`);
+  }
+  // Aucune de ces 10 cultures n'est verrouillée par un chapitre (voir
+  // DATA.CHAPITRES.liste) : leurs graines sont donc déjà en vente dès le départ.
+  // (seedForSale(), qui applique cette même règle, vit dans le bloc de rendu
+  // et n'est pas exposée à ce banc de tests moteur : on rejoue ici sa logique —
+  // « aucune culture qui utilise cette graine n'est verrouillée ».)
+  const s = createInitialState(1);
+  const seedLocked = (item) => Object.keys(DATA.crops).some((c) => DATA.crops[c].graines.item === item && !isUnlocked(s, c));
+  for (const k of ['graine_oignon', 'graine_poivron', 'graine_epinard', 'graine_fraise']) {
+    assertEqual(seedLocked(k), false, `${k} en vente dès le départ`);
+  }
+  // Achat effectif d'une graine de la nouvelle liste, comme pour les graines
+  // déjà existantes.
+  const before = countItem(s, 'graine_oignon');
+  assertEqual(buyItem(s, 'graine_oignon').ok, true);
+  assertEqual(countItem(s, 'graine_oignon'), before + 1);
 });
 
 test('état initial Lot 4 : rien n\'est construit', () => {
@@ -9354,6 +9523,58 @@ test('Champ niveau 5 : arrosage et récolte automatiques (le blé va au Silo)', 
   assertEqual(findPlot(t, 'champ-1').stade, 0, 'Champ niveau 1 : pas d\'arrosage automatique');
 });
 
+test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que les anciennes', () => {
+  // Champ niveau 5 : riz et houblon sont arrosés et récoltés automatiquement,
+  // exactement comme le blé (autoTasks() ne fait aucune distinction de culture,
+  // seulement de lieu : voir zones = [potager, champ] dans autoTasks()).
+  const s = auto5('champ');
+  addItem(s, 'riz', 2);
+  addItem(s, 'houblon', 1);
+  plantRipe(s, 'champ-1', 'riz');
+  plantRipe(s, 'champ-2', 'houblon');
+  plant(s, 'champ-3', 'riz');
+  const r = sleepOnce(s);
+  assertEqual(findPlot(s, 'champ-1').culture, null, 'riz mûr : récolté automatiquement');
+  assertEqual(findPlot(s, 'champ-2').culture, null, 'houblon mûr : récolté automatiquement');
+  assertEqual(r.auto.recoltes, { riz: 10, houblon: 6 });
+  assertEqual(findPlot(s, 'champ-3').stade, 1, 'riz pas mûr : arrosé, il pousse (4 L, comme au clic)');
+
+  // Potager niveau 5 : oignon, ail, poivron, épinard, fraise pareil.
+  const t = auto5('potager');
+  addItem(t, 'graine_oignon', 1);
+  addItem(t, 'ail', 1);
+  addItem(t, 'graine_epinard', 1);
+  plantRipe(t, 'potager-1', 'oignon');
+  plantRipe(t, 'potager-2', 'ail');
+  plant(t, 'potager-3', 'epinard');
+  const rt = sleepOnce(t);
+  assertEqual(findPlot(t, 'potager-1').culture, null);
+  assertEqual(findPlot(t, 'potager-2').culture, null);
+  // Nuit 1 = printemps, facteur Potager ×1,1 (comme pour l'oignon plus haut) :
+  // 8 × 1,1 = 9 (oignon), 6 × 1,1 = 6,6 arrondi 7 (ail). L'oignon est en mode
+  // 'recolte' (comme la tomate) : la récolte rend aussi 1 à 2 graines bonus
+  // (ici 2, déterministe avec la graine aléatoire n°1 utilisée par garden()).
+  assertEqual(rt.auto.recoltes, { oignon: 9, graine_oignon: 2, ail: 7 });
+  assertEqual(findPlot(t, 'potager-3').stade, 1);
+});
+
+test('Serre : aucune automatisation nocturne (comme pour tomate/courgette/aubergine, avant ou après cet ajout)', () => {
+  // DATA.AUTOMATISATION.BATIMENTS ne liste que potager/champ/poulailler : la
+  // Serre n'a jamais eu d'arrosage/récolte automatique, même à son niveau
+  // maximum. Le poivron et les 3 cultures de rente n'y changent rien : ils
+  // suivent la même règle (ou plutôt la même absence de règle) que les
+  // légumes de Serre déjà en place, sans exception de code par culture.
+  assertEqual(DATA.AUTOMATISATION.BATIMENTS.includes('serre'), false);
+  const s = garden();
+  s.pieces = 5000;
+  buildSerre(s);
+  s.serre.niveau = DATA.LEVEL_MAX;
+  addItem(s, 'cacao', 1);
+  plantRipe(s, 'serre-1', 'cacao');
+  sleepOnce(s);
+  assertEqual(findPlot(s, 'serre-1').culture, 'cacao', 'mûr, mais rien ne le récolte tout seul en Serre');
+});
+
 test('nourrissage automatique : Poulailler niveau 5, et pas avant', () => {
   const s = auto5();
   testAddHens(s, 4);
@@ -9894,19 +10115,60 @@ test('Serre : +3 parcelles par niveau, 300 / 600 / 1 000 / 1 800 pièces', () =>
   assertEqual(upgradeSerre(garden()).ok, false, 'pas construite');
 });
 
-test('Serre : tomate, courgette et aubergine seulement', () => {
+test('Serre : tomate, courgette, aubergine, poivron, cacao, vanille, café', () => {
   const s = garden();
   s.pieces = 5000;
   buildSerre(s);
+  upgradeSerre(s); // niveau 2 : 9 parcelles, assez pour tout planter en même temps
   testAddSeeds(s);
-  for (const culture of ['tomate', 'courgette', 'aubergine']) {
-    assertEqual(plant(s, `serre-${['tomate', 'courgette', 'aubergine'].indexOf(culture) + 1}`, culture).ok, true, culture);
+  const toPlant = ['tomate', 'courgette', 'aubergine', 'poivron', 'cacao', 'vanille', 'cafe'];
+  toPlant.forEach((culture, i) => {
+    assertEqual(plant(s, `serre-${i + 1}`, culture).ok, true, culture);
+  });
+  for (const culture of ['carotte', 'patate', 'ble', 'tournesol', 'riz', 'houblon']) {
+    assertEqual(plant(s, 'serre-8', culture).ok, false, `${culture} ne se plante pas en Serre`);
   }
-  for (const culture of ['carotte', 'patate', 'ble', 'tournesol']) {
-    assertEqual(plant(s, 'serre-4', culture).ok, false, `${culture} ne se plante pas en Serre`);
-  }
-  assertEqual(plantableCrops('serre'), ['tomate', 'courgette', 'aubergine']);
+  assertEqual(plantableCrops('serre'), ['tomate', 'courgette', 'aubergine', 'poivron', 'cacao', 'vanille', 'cafe']);
   assertEqual(plantableCrops('potager').includes('tomate'), true);
+});
+
+test('cultures de rente : cacao, vanille et café exclusivement en Serre', () => {
+  const rente = ['cacao', 'vanille', 'cafe'];
+  // Sur DATA.crops directement, sans passer par l'interface : seul le lieu
+  // 'serre' est déclaré.
+  for (const c of rente) assertEqual(DATA.crops[c].lieux, ['serre']);
+  // plant() lui-même refuse le Potager et le Champ, pas seulement l'écran de
+  // plantation (qui se contente de ne pas les proposer) : c'est bien la
+  // fonction de plantation qui porte la règle.
+  const s = garden();
+  s.pieces = 5000;
+  buildChamp(s);
+  buildSerre(s);
+  addItem(s, 'cacao', 5);
+  addItem(s, 'vanille', 5);
+  addItem(s, 'cafe', 5);
+  for (const c of rente) {
+    assertEqual(plant(s, 'potager-1', c).ok, false, `${c} ne se plante pas au Potager`);
+    assertEqual(plant(s, 'champ-1', c).ok, false, `${c} ne se plante pas au Champ`);
+    assertEqual(findPlot(s, 'potager-1').culture, null);
+    assertEqual(findPlot(s, 'champ-1').culture, null);
+  }
+  // Elles se plantent en revanche bien en Serre.
+  rente.forEach((c, i) => {
+    assertEqual(plant(s, `serre-${i + 1}`, c).ok, true, `${c} se plante en Serre`);
+  });
+});
+
+test('cultures de rente : jamais mangées par la famille, même affamée', () => {
+  const s = garden();
+  // La famille ne possède que cacao, vanille et café : le repas doit rester vide.
+  setInv(s, { cacao: 50, vanille: 50, cafe: 50 });
+  setHealth(s, 5); // famille affamée : la présence de stock ne doit rien changer
+  const plan = planMeal(s);
+  assertEqual(plan.mange, {}, 'aucune de ces 3 cultures ne nourrit jamais la famille');
+  assertEqual(plan.couverture, 0);
+  feedFamily(s);
+  assertEqual([countItem(s, 'cacao'), countItem(s, 'vanille'), countItem(s, 'cafe')], [50, 50, 50], 'rien n\'est consommé');
 });
 
 test('Serre : insensible aux saisons, en été comme en hiver', () => {
@@ -10925,10 +11187,17 @@ test('chapitres : la campagne finie ne recule pas et ne recompte rien', () => {
 
 
 test('cultures plantables : le tournesol attend le chapitre 4', () => {
-  assertEqual(plantableCropsFor(atChapter(3), 'champ'), ['ble']);
-  assertEqual(plantableCropsFor(atChapter(4), 'champ'), ['ble', 'tournesol']);
-  assertEqual(plantableCropsFor(atChapter(1), 'potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine']);
-  assertEqual(plantableCropsFor(atChapter(8), 'champ'), ['ble', 'tournesol']);
+  // Riz et houblon ne sont pas dans un `debloque` de chapitre (comme le blé) :
+  // ils sont disponibles dès que le Champ existe, sans attendre le chapitre 4
+  // (contrairement au tournesol, seule culture explicitement retardée).
+  assertEqual(plantableCropsFor(atChapter(3), 'champ'), ['ble', 'riz', 'houblon']);
+  assertEqual(plantableCropsFor(atChapter(4), 'champ'), ['ble', 'tournesol', 'riz', 'houblon']);
+  // Les 5 nouvelles cultures du Potager suivent le même principe que
+  // tomate/courgette/aubergine : disponibles dès le chapitre 1, sans chapitre
+  // de déblocage dédié (voir DATA.CHAPITRES.liste[*].debloque).
+  assertEqual(plantableCropsFor(atChapter(1), 'potager'),
+    ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise']);
+  assertEqual(plantableCropsFor(atChapter(8), 'champ'), ['ble', 'tournesol', 'riz', 'houblon']);
 });
 
 test('affichage : pourcentage arrondi vers le bas, 100 % seulement à 100', () => {
@@ -12340,7 +12609,7 @@ function renderChamp() {
     return `
       <div class="section-head"><h3>${icon('champ')}Champ</h3>${helpBtn('champ')}</div>
       <div class="card">
-        <span class="muted">Blé et tournesol : ${DATA.CHAMP.PARCELLES[0]} parcelles au départ. Le blé nourrit les poules, le tournesol donne des graines.</span>
+        <span class="muted">Blé, tournesol, riz et houblon : ${DATA.CHAMP.PARCELLES[0]} parcelles au départ. Le blé nourrit les poules, le tournesol donne des graines ; riz et houblon serviront aussi en cuisine.</span>
         <button type="button" class="btn primary" data-action="build-champ"${canPay(cost) ? '' : ' disabled'}>Construire le Champ (${costLabel(cost)})</button>
       </div>`;
   }
@@ -12701,7 +12970,7 @@ function renderSerre() {
     return `
       <div class="section-head"><h3>${icon('serre')}Serre</h3>${helpBtn('serre')}</div>
       <div class="card">
-        <span class="muted">Tomate, courgette et aubergine : ${DATA.SERRE.PARCELLES[0]} parcelles au départ, +${DATA.SERRE.PARCELLES[1] - DATA.SERRE.PARCELLES[0]} par niveau. Aucun modificateur de saison : ni l'hiver ni l'été n'y changent rien.</span>
+        <span class="muted">Tomate, courgette, aubergine et poivron, plus trois cultures de rente exclusives à la Serre (cacao, vanille, café) : ${DATA.SERRE.PARCELLES[0]} parcelles au départ, +${DATA.SERRE.PARCELLES[1] - DATA.SERRE.PARCELLES[0]} par niveau. Aucun modificateur de saison : ni l'hiver ni l'été n'y changent rien.</span>
         <button type="button" class="btn primary" data-action="build-serre"${canPay(cost) ? '' : ' disabled'}>Construire la Serre (${costLabel(cost)})</button>
       </div>`;
   }
@@ -13847,16 +14116,16 @@ const HELP = {
   }),
   champ: () => ({
     nom: 'Champ',
-    role: 'Blé pour les poules et la farine, tournesol pour l\'huile. Mêmes règles que le Potager.',
+    role: 'Blé pour les poules et la farine, tournesol pour l\'huile, riz et houblon pour la cuisine. Mêmes règles que le Potager.',
     conso: `Eau par arrosage : ${cropsLine('champ', 'eau')}.`,
-    prod: `${cropsLine('champ', 'recolte')}. Saison : ${seasonRange('champ')}. Un blé sert aussi de graine.`,
+    prod: `${cropsLine('champ', 'recolte')}. Saison : ${seasonRange('champ')}. Un blé sert aussi de graine (comme le riz et le houblon).`,
     note: `Construction : ${costLabel(DATA.CHAMP.CONSTRUCTION)}. ${levelsNote(DATA.CHAMP.PARCELLES, 'le Champ')}`,
   }),
   serre: () => ({
     nom: 'Serre',
-    role: 'Des légumes toute l\'année : la Serre ignore les saisons, à l\'eau comme à la récolte.',
+    role: 'Des légumes toute l\'année, et trois cultures de rente (cacao, vanille, café) qu\'on ne trouve qu\'ici : la Serre ignore les saisons, à l\'eau comme à la récolte.',
     conso: `Eau par arrosage : ${cropsLine('serre', 'eau')}.`,
-    prod: `${cropsLine('serre', 'recolte')}.`,
+    prod: `${cropsLine('serre', 'recolte')}. Cacao, vanille et café ne se mangent pas : ils servent à la vente et aux recettes de luxe.`,
     note: `Construction : ${costLabel(DATA.SERRE.CONSTRUCTION)}. Parcelles par niveau : ${listNum(DATA.SERRE.PARCELLES, '')}.`,
   }),
   silo: () => ({
