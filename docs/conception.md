@@ -213,6 +213,7 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 - Les graines proviennent **normalement des récoltes**. 🟡 Un **kit de départ** (ex. 6 graines de carotte, 4 patates, 4 graines de blé) lance la partie.
 - **Dépannage au Comptoir** : on peut acheter des graines, mais à **prix majoré**. 🟡 Leur coefficient d'achat démarre à **2,0** au lieu de 1,2 (plancher 2,0), puis suit la même règle (+0,1 par achat, −0,1 par vente). Acheter reste donc possible, mais produire ses propres graines est toujours plus rentable.
 - Les graines en surplus peuvent aussi être **vendues** au Comptoir.
+- **Exception du blé** : le blé reste classé comme **ingrédient** (Silo, Moulin, alimentation des poules, plancher de marché normal ×1,2, inchangé), mais il est **listé en plus dans l'onglet Graines du Comptoir** puisqu'il sert aussi de semence pour le Champ — sans y perdre sa place dans l'onglet Acheter. Ce n'est pas généralisé aux autres cultures qui se replantent avec leur propre récolte (la patate reste seulement dans l'onglet Acheter).
 - Chaque plante a son propre mode de reproduction (**validé**, quantités 🟡) :
 
 | Plante | Comment obtenir des graines |
@@ -868,7 +869,7 @@ export function take(s: GameState, item: string, qty: number) {
 - **Inventaire** : onglets Frais / Frigo / Silo / Graines / Plats ; indicateur de péremption ; 🟡 curseur **« Réserve de semences »** par item (patates, blé, graines de tournesol) que la famille ne mangera pas.
 - **Parcelle** : vide → menu « Planter » (graines disponibles) ; mature → « Récolter » ou, pour la carotte, « Laisser monter en graine ».
 - **Livre de recette** (onglet, pas un objet) : point d'entrée unique pour lancer les plats ; recettes réalisables en surbrillance, ingrédients manquants signalés ; chaque station (🍳 Cuisine, 🔥 Four, ⚙️ Moulin, 🌻 Presse) affiche **libre** ou **occupée** avec son minuteur ; les recettes d'une station occupée sont grisées.
-- **Comptoir** : onglets Vendre / Acheter / Graines (badge « dépannage ») / Animaux / Arbres ; prix d'achat actuel et coefficient affichés ; animaux grisés si le poulailler ou le pâturage est plein.
+- **Comptoir** : onglets Vendre / Acheter / Graines (badge « dépannage ») / Animaux / Arbres ; prix d'achat actuel et coefficient affichés ; animaux grisés si le poulailler ou le pâturage est plein. Le blé apparaît à la fois dans Acheter (à prix normal, comme ingrédient) et dans Graines (comme semence du Champ), sans doublon d'objet ; les autres onglets Graines restent réservés aux items de catégorie « graine ».
 - **Famille** : 4 portraits avec barre de santé, jauge 150 énergies, % d'autonomie, multiplicateur de productivité.
 - **Bouton « Dormir »** toujours visible : grisé avec compte à rebours tant que l'éveil minimal n'est pas atteint, puis aperçu « Repas prévu : 130 / 150 énergies ⚠️ ».
 - **Portrait malade** : icône 🤒 et bouton « Soigner (X pièces) ».
