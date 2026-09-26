@@ -1352,37 +1352,49 @@ const DATA = {
 
   /* ---------- Lot 2 : objets, cultures, potager, famille ---------- */
 
+  // Lot 11 (nutrition) : au chapitre §4, la valeur nutritionnelle de tous les
+  // aliments de base existants a été augmentée de 25 % par rapport aux
+  // valeurs d'origine (celles en commentaire, à droite de chaque objet), pour
+  // rapprocher les plats des besoins réels de la famille (voir gratin_patates
+  // ci-dessous). AUGMENTATION est la seule source de ce coefficient : toute
+  // future revalorisation doit s'y référer plutôt que d'inventer un nouveau
+  // pourcentage ailleurs. scaleEnergie() (fonctions utilitaires) applique la
+  // règle d'arrondi centralisée (Math.round, arrondi standard au demi
+  // supérieur) : les valeurs ci-dessous sont scaleEnergie(valeur d'origine),
+  // vérifié par les tests DATA Lot 2 / Lot 11.
+  NUTRITION: { AUGMENTATION: 1.25 },
+
   // Objets (sections 1.1, 8.1 et 8.9). energie : énergie par unité (aliments
   // seulement) ; prix : prix de vente fixe en pièces ; edible : la famille peut
   // le manger ; category : légume, fruit, plat, graine, ingrédient, produit,
   // conserve. nom et icone servent uniquement à l'affichage.
   items: {
-    carotte:        { nom: 'Carotte',              icone: '🥕', energie: 6,  prix: 1, edible: true,  category: 'légume' },
-    patate:         { nom: 'Patate',               icone: '🥔', energie: 15, prix: 2, edible: true,  category: 'légume' },
-    tomate:         { nom: 'Tomate',               icone: '🍅', energie: 6,  prix: 1, edible: true,  category: 'légume' },
-    courgette:      { nom: 'Courgette',            icone: '🥒', energie: 8,  prix: 2, edible: true,  category: 'légume' },
-    aubergine:      { nom: 'Aubergine',            icone: '🍆', energie: 8,  prix: 2, edible: true,  category: 'légume' },
+    carotte:        { nom: 'Carotte',              icone: '🥕', energie: 8,  prix: 1, edible: true,  category: 'légume' }, // 6 × 1,25
+    patate:         { nom: 'Patate',               icone: '🥔', energie: 19, prix: 2, edible: true,  category: 'légume' }, // 15 × 1,25
+    tomate:         { nom: 'Tomate',               icone: '🍅', energie: 8,  prix: 1, edible: true,  category: 'légume' }, // 6 × 1,25
+    courgette:      { nom: 'Courgette',            icone: '🥒', energie: 10, prix: 2, edible: true,  category: 'légume' }, // 8 × 1,25
+    aubergine:      { nom: 'Aubergine',            icone: '🍆', energie: 10, prix: 2, edible: true,  category: 'légume' }, // 8 × 1,25
     // Non périssable, non rachetable au Comptoir (Lot 3).
-    conserve:       { nom: 'Conserve',             icone: '🥫', energie: 20, prix: 3, edible: true,  category: 'conserve', rachetable: false },
+    conserve:       { nom: 'Conserve',             icone: '🥫', energie: 25, prix: 3, edible: true,  category: 'conserve', rachetable: false }, // 20 × 1,25
     graine_carotte:   { nom: 'Graines de carotte',   icone: '🌱', prix: 1, edible: false, category: 'graine' },
     graine_tomate:    { nom: 'Graines de tomate',    icone: '🌱', prix: 1, edible: false, category: 'graine' },
     graine_courgette: { nom: 'Graines de courgette', icone: '🌱', prix: 1, edible: false, category: 'graine' },
     graine_aubergine: { nom: 'Graines d\'aubergine', icone: '🌱', prix: 1, edible: false, category: 'graine' },
     // Lot 4 : blé (stock du Silo ; un blé sert de graine), graines de tournesol
-    // (à replanter), œuf (10 énergie, 6 nuits : voir CONSERVATION).
+    // (à replanter), œuf (12,5 → 13 énergie, 6 nuits : voir CONSERVATION).
     ble:              { nom: 'Blé',                  icone: '🌾', prix: 1, edible: false, category: 'ingrédient' },
     graine_tournesol: { nom: 'Graines de tournesol', icone: '🌻', prix: 1, edible: false, category: 'graine' },
-    oeuf:             { nom: 'Œuf',                  icone: '🥚', energie: 10, prix: 2, edible: true, category: 'produit' },
+    oeuf:             { nom: 'Œuf',                  icone: '🥚', energie: 13, prix: 2, edible: true, category: 'produit' }, // 10 × 1,25 = 12,5 → 13
     // Lot 5 : viande, fruits, farine et huile (sections 1.1 et 8.9). La viande
     // vient de l'abattage des moutons (Lot 6), les fruits du Verger (Lot 8). La
-    // farine et l'huile valent 10 d'énergie dans les plats mais
+    // farine et l'huile valent 13 d'énergie dans les plats mais
     // ne se mangent pas seules. Les plats cuisinés (pain compris) sont ajoutés à
     // cette table au chargement, à partir de `recipes` : voir registerDishItems().
-    viande:           { nom: 'Viande',               icone: '🥩', energie: 30, prix: 5, edible: true,  category: 'produit' },
-    pomme:            { nom: 'Pomme',                icone: '🍎', energie: 8,  prix: 2, edible: true,  category: 'fruit' },
-    poire:            { nom: 'Poire',                icone: '🍐', energie: 8,  prix: 2, edible: true,  category: 'fruit' },
-    farine:           { nom: 'Farine',               icone: '🥣', energie: 10, prix: 1, edible: false, category: 'ingrédient' },
-    huile:            { nom: 'Huile de tournesol',   icone: '🛢️', energie: 10, prix: 4, edible: false, category: 'ingrédient' },
+    viande:           { nom: 'Viande',               icone: '🥩', energie: 38, prix: 5, edible: true,  category: 'produit' }, // 30 × 1,25 = 37,5 → 38
+    pomme:            { nom: 'Pomme',                icone: '🍎', energie: 10, prix: 2, edible: true,  category: 'fruit' }, // 8 × 1,25
+    poire:            { nom: 'Poire',                icone: '🍐', energie: 10, prix: 2, edible: true,  category: 'fruit' }, // 8 × 1,25
+    farine:           { nom: 'Farine',               icone: '🥣', energie: 13, prix: 1, edible: false, category: 'ingrédient' }, // 10 × 1,25 = 12,5 → 13
+    huile:            { nom: 'Huile de tournesol',   icone: '🛢️', energie: 13, prix: 4, edible: false, category: 'ingrédient' }, // 10 × 1,25 = 12,5 → 13
     // Lot 6 : laine (section 8.6). Ni périssable ni comestible : elle sert
     // uniquement à la vente. Elle ne se rachète pas au Comptoir.
     laine:            { nom: 'Laine',                icone: '🧶', prix: 6, edible: false, category: 'produit', rachetable: false },
@@ -1413,12 +1425,24 @@ const DATA = {
   // (l'un OU l'autre, sans mélange) ; eau : litres pris dans le réservoir ;
   // temps : secondes à vitesse 1. Les transformations (transformation: true)
   // rendent qteSortie unités de `sortie` ; les plats rendent 1 plat du nom de la
-  // recette et sont des aliments (bonus de santé).
+  // recette et sont des aliments (bonus de santé). energieForcee (optionnel) :
+  // override explicite de l'énergie du plat, utilisé par dishEnergy() à la
+  // place du calcul ingrédients × COEF_PLAT — pour une recette dont l'énergie
+  // cible ne découle pas mathématiquement de cette formule (voir gratin_patates).
+  // Le prix de vente n'est jamais concerné : dishPrice() reste toujours calculé
+  // depuis les ingrédients.
   recipes: {
     pain:            { nom: 'Pain',              icone: '🍞', station: 'four',    temps: 20, ingredients: [{ item: 'farine', qte: 2 }], eau: 1 },
     omelette:        { nom: 'Omelette',          icone: '🍳', station: 'cuisine', temps: 15, ingredients: [{ item: 'oeuf', qte: 3 }, { item: 'huile', qte: 1 }] },
     ratatouille:     { nom: 'Ratatouille',       icone: '🍲', station: 'cuisine', temps: 30, ingredients: [{ item: 'tomate', qte: 1 }, { item: 'courgette', qte: 1 }, { item: 'aubergine', qte: 1 }, { item: 'huile', qte: 1 }] },
-    gratin_patates:  { nom: 'Gratin de patates', icone: '🥘', station: 'four',    temps: 30, ingredients: [{ item: 'patate', qte: 3 }, { item: 'oeuf', qte: 1 }] },
+    // Lot 11 (nutrition) : override à 150 (energieForcee) pour qu'une unité de
+    // gratin couvre exactement le besoin d'une journée de la famille de départ
+    // (2 adultes + 2 enfants = familyNeed() = 150, voir DATA.FAMILY.AJ). Le
+    // calcul ingrédients × COEF_PLAT donnerait 91 (3 patates à 19 + 1 œuf à 13,
+    // soit 70 × 1,3), donc l'objectif est atteint via ce champ dédié plutôt
+    // qu'en gonflant les quantités d'ingrédients (ce qui aurait changé le coût
+    // en pièces et en temps de préparation de la recette).
+    gratin_patates:  { nom: 'Gratin de patates', icone: '🥘', station: 'four',    temps: 30, ingredients: [{ item: 'patate', qte: 3 }, { item: 'oeuf', qte: 1 }], energieForcee: 150 },
     ragout:          { nom: 'Ragoût',            icone: '🍖', station: 'cuisine', temps: 45, ingredients: [{ item: 'viande', qte: 2 }, { item: 'carotte', qte: 2 }, { item: 'patate', qte: 1 }] },
     compote:         { nom: 'Compote',           icone: '🍮', station: 'cuisine', temps: 15, ingredients: [{ ou: ['pomme', 'poire'], qte: 3 }] },
     tarte_pommes:    { nom: 'Tarte aux pommes',  icone: '🥧', station: 'four',    temps: 45, ingredients: [{ item: 'farine', qte: 2 }, { item: 'pomme', qte: 3 }, { item: 'oeuf', qte: 1 }] },
@@ -2046,10 +2070,23 @@ function recipeSum(recipe, field, waterValue) {
   return sum + (recipe.eau || 0) * waterValue;
 }
 
-// Énergie d'un plat : somme des ingrédients × 1,3, arrondie (pain 26, omelette 52, ragoût 113).
+// Lot 11 (nutrition) : applique la règle d'arrondi centralisée d'une
+// revalorisation nutritionnelle des aliments de base (Math.round, arrondi
+// standard au demi supérieur). Utilisée pour dériver DATA.items[*].energie
+// (voir commentaires « × 1,25 » sur chaque objet) ; centralisée ici pour que
+// toute future revalorisation applique la même règle, plutôt que des arrondis
+// ad hoc dispersés dans DATA.
+function scaleEnergie(valeurBase, augmentation = DATA.NUTRITION.AUGMENTATION) {
+  return Math.round(valeurBase * augmentation + EPS);
+}
+
+// Énergie d'un plat : somme des ingrédients × 1,3, arrondie (pain 34, omelette 68, ragoût 144),
+// sauf si la recette porte un champ energieForcee (override explicite, voir gratin_patates).
 function dishEnergy(id) {
+  const recipe = DATA.recipes[id];
+  if (recipe.energieForcee != null) return recipe.energieForcee;
   const R = DATA.RECETTES;
-  return Math.round(recipeSum(DATA.recipes[id], 'energie', R.ENERGIE_EAU) * R.COEF_PLAT + EPS);
+  return Math.round(recipeSum(recipe, 'energie', R.ENERGIE_EAU) * R.COEF_PLAT + EPS);
 }
 
 // Prix de vente d'un plat : somme des prix × 1,3, arrondi.
@@ -6563,12 +6600,14 @@ function setHealth(s, value) {
 
 test('DATA Lot 2 : objets, énergies et prix de vente', () => {
   const it = DATA.items;
-  assertEqual([it.carotte.energie, it.carotte.prix], [6, 1]);
-  assertEqual([it.patate.energie, it.patate.prix], [15, 2]);
-  assertEqual([it.tomate.energie, it.tomate.prix], [6, 1]);
-  assertEqual([it.courgette.energie, it.courgette.prix], [8, 2]);
-  assertEqual([it.aubergine.energie, it.aubergine.prix], [8, 2]);
-  assertEqual([it.conserve.energie, it.conserve.prix], [20, 3]);
+  // Lot 11 (nutrition) : +25 % par rapport aux valeurs d'origine (6, 15, 6, 8,
+  // 8, 20), arrondi via scaleEnergie() ; les prix de vente sont inchangés.
+  assertEqual([it.carotte.energie, it.carotte.prix], [scaleEnergie(6), 1]);
+  assertEqual([it.patate.energie, it.patate.prix], [scaleEnergie(15), 2]);
+  assertEqual([it.tomate.energie, it.tomate.prix], [scaleEnergie(6), 1]);
+  assertEqual([it.courgette.energie, it.courgette.prix], [scaleEnergie(8), 2]);
+  assertEqual([it.aubergine.energie, it.aubergine.prix], [scaleEnergie(8), 2]);
+  assertEqual([it.conserve.energie, it.conserve.prix], [scaleEnergie(20), 3]);
   assertEqual(it.conserve.rachetable, false);
   assertEqual(it.conserve.category, 'conserve');
   for (const k of ['graine_carotte', 'graine_tomate', 'graine_courgette', 'graine_aubergine']) {
@@ -6895,17 +6934,19 @@ test('repas : ce qui périme le plus tôt, conserves en dernier, jusqu\'à couvr
   const plan = planMeal(s);
   // courgette 5 nuits, carotte 6, patate 7, conserve : ne périme pas
   assertEqual(Object.keys(plan.mange), ['courgette', 'carotte', 'patate', 'conserve']);
-  assertEqual(plan.mange, { courgette: 3, carotte: 10, patate: 2, conserve: 2 });
-  assertEqual(plan.energie, 24 + 60 + 30 + 40);
+  // Lot 11 (nutrition) : énergies × 1,25 (courgette 10, carotte 8, patate 19,
+  // conserve 25) ; 1 seule conserve suffit désormais à couvrir le reliquat.
+  assertEqual(plan.mange, { courgette: 3, carotte: 10, patate: 2, conserve: 1 });
+  assertEqual(plan.energie, 30 + 80 + 38 + 25);
   assertEqual(plan.couverture, 1);
   // planMeal ne modifie rien
   assertEqual(countItem(s, 'conserve'), 100);
   feedFamily(s);
-  assertEqual(inventoryCounts(s), { conserve: 98 });
-  // il s'arrête dès que le besoin est couvert : les 8 conserves suffisent
+  assertEqual(inventoryCounts(s), { conserve: 99 });
+  // il s'arrête dès que le besoin est couvert : les 6 conserves suffisent
   const t = garden();
   feedFamily(t);
-  assertEqual(countItem(t, 'conserve'), 152);
+  assertEqual(countItem(t, 'conserve'), 154);
   assertEqual(countItem(t, 'patate'), 6);
 });
 
@@ -6921,17 +6962,19 @@ test('repas : les non-comestibles (graines) ne sont jamais mangés', () => {
 test('réserve de semences : la famille ne mange jamais la réserve', () => {
   const s = garden();
   assertEqual(s.famille.reserve.patate, 6, 'les 6 patates de départ sont protégées');
-  setInv(s, { patate: 10, carotte: 20 });
+  // Lot 11 (nutrition) : carotte à 8 d'énergie ne suffit plus à couvrir le
+  // besoin (150) à elle seule avec 20 unités ; 15 carottes + 2 patates y suffisent.
+  setInv(s, { patate: 10, carotte: 15 });
   const plan = planMeal(s);
-  assertEqual(plan.mange, { carotte: 20, patate: 2 });
+  assertEqual(plan.mange, { carotte: 15, patate: 2 });
   feedFamily(s);
   assertEqual(countItem(s, 'patate'), 8, 'la réserve (6 patates) reste intacte, seul le surplus est mangé');
   assertEqual(countItem(s, 'carotte'), 0);
-  // réserve à 0 : tout peut être mangé
+  // réserve à 0 : tout peut être mangé (8 patates à 19 d'énergie couvrent le besoin de 150)
   const t = garden();
-  setInv(t, { patate: 10 });
+  setInv(t, { patate: 8 });
   assertEqual(setSeedReserve(t, 'patate', 0).ok, true);
-  assertEqual(planMeal(t).mange, { patate: 10 });
+  assertEqual(planMeal(t).mange, { patate: 8 });
   // réserve supérieure au stock : rien n'est mangé
   assertEqual(setSeedReserve(t, 'patate', 25).ok, true);
   assertEqual(planMeal(t).mange, {});
@@ -6944,14 +6987,24 @@ test('réserve de semences : la famille ne mange jamais la réserve', () => {
 });
 
 test('santé : +5 à 100 %, −5 de 75 à 99 %, −10 de 50 à 74 %, −20 sous 50 %', () => {
-  // besoin 150 : 8 conserves (160) couvrent 100 %
-  const cases = [[8, 5], [10, 5], [6, -5], [7, -5], [4, -10], [5, -10], [3, -20], [0, -20]];
-  for (const [conserves, delta] of cases) {
+  // Lot 11 (nutrition) : besoin 150, conserve à 25 d'énergie (6 conserves = 150
+  // couvrent 100 %, contre 8 avant l'augmentation de +25 %).
+  const cases = [
+    [{ conserve: 6 }, 5],
+    [{ conserve: 9 }, 5],
+    [{ conserve: 5 }, -5],
+    [{ conserve: 4, carotte: 2 }, -5],
+    [{ conserve: 3 }, -10],
+    [{ conserve: 4 }, -10],
+    [{ conserve: 2 }, -20],
+    [{ conserve: 0 }, -20],
+  ];
+  for (const [quantities, delta] of cases) {
     const s = garden();
     setHealth(s, 60);
-    setInv(s, { conserve: conserves });
+    setInv(s, quantities);
     feedFamily(s);
-    assertEqual(s.famille.membres[0].sante, 60 + delta, `${conserves} conserves`);
+    assertEqual(s.famille.membres[0].sante, 60 + delta, JSON.stringify(quantities));
     assertEqual(s.famille.membres[3].sante, 60 + delta);
   }
   assertEqual([1, 0.99, 0.75, 0.74, 0.5, 0.49].map(healthDelta), [5, -5, -5, -10, -10, -20]);
@@ -7086,13 +7139,14 @@ test('Dormir : repas, santé, pousse et rapport de réveil', () => {
   s.awakeSeconds = 30;
   const r = sleep(s);
   assertEqual(s.day, 2);
-  assertEqual(countItem(s, 'conserve'), 152);
+  assertEqual(countItem(s, 'conserve'), 154);
   assertEqual(findPlot(s, 'potager-1').stade, 4);
   assertEqual(findPlot(s, 'potager-2').stade, 1);
   assertEqual(r.besoin, 150);
-  assertEqual(r.energieMangee, 160);
+  // Lot 11 (nutrition) : conserve à 25 d'énergie, 6 suffisent à couvrir 150.
+  assertEqual(r.energieMangee, 150);
   assertEqual(r.couverture, 1);
-  assertEqual(r.mange, { conserve: 8 });
+  assertEqual(r.mange, { conserve: 6 });
   assertEqual([r.santeAvant, r.santeApres], [100, 100]);
   assertEqual(r.nouveauxMalades, []);
   assertEqual(r.pretes, [{ culture: 'carotte', nombre: 1, montee: false }]);
@@ -7110,7 +7164,7 @@ test('Dormir : repas, santé, pousse et rapport de réveil', () => {
 
 test('Dormir avec la réserve de semences : 10 nuits de conserves, patates jamais mangées', () => {
   const s = garden();
-  setInv(s, { conserve: 80, patate: 6 }); // 8 conserves/nuit (besoin 150) × 10 nuits = 80
+  setInv(s, { conserve: 60, patate: 6 }); // 6 conserves/nuit (besoin 150, 25 d'énergie chacune) × 10 nuits = 60
   for (let i = 0; i < 6; i++) {
     s.awakeSeconds = 30;
     sleep(s);
@@ -7167,7 +7221,7 @@ test('migration v2 (Lot 1) → version courante : garde la partie, ajoute le pot
   assertEqual(m.panneaux.length, 1);
   m.awakeSeconds = 30;
   assert(sleep(m) !== null, 'l\'état migré peut dormir');
-  assertEqual(countItem(m, 'conserve'), 152);
+  assertEqual(countItem(m, 'conserve'), 154);
   // une sauvegarde déjà à jour n'est pas touchée
   const s = garden();
   s.pieces = 77;
@@ -7384,9 +7438,10 @@ test('ordre de consommation : dans un item, le lot le plus ancien est mangé d\'
   spoil(s);
   addItem(s, 'carotte', 60); // 5 carottes à 4 nuits, 60 à 6 nuits
   const plan = planMeal(s);
-  assertEqual(plan.mange, { carotte: 25 }, '25 carottes couvrent les 150 énergies du besoin');
+  // Lot 11 (nutrition) : carotte à 8 d'énergie, 19 en couvrent les 150.
+  assertEqual(plan.mange, { carotte: 19 }, '19 carottes couvrent les 150 énergies du besoin');
   feedFamily(s);
-  assertEqual(lotsOf(s, 'carotte'), [{ qty: 40, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 20 du lot frais');
+  assertEqual(lotsOf(s, 'carotte'), [{ qty: 46, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 14 du lot frais');
 });
 
 test('Comptoir : prix d\'achat = prix de vente × coefficient, plancher 1,2', () => {
@@ -7642,7 +7697,7 @@ test('DATA Lot 4 : Champ, Silo, Poulailler, poule, blé, tournesol et œuf', () 
   assertEqual([c.tournesol.stades, c.tournesol.litres, c.tournesol.rendement], [7, 2, 9]);
   assertEqual(cropProduct('tournesol'), 'graine_tournesol');
   assertEqual(cropProduct('ble'), 'ble');
-  assertEqual([DATA.items.oeuf.energie, DATA.items.oeuf.prix, shelfLife('oeuf')], [10, 2, 6]);
+  assertEqual([DATA.items.oeuf.energie, DATA.items.oeuf.prix, shelfLife('oeuf')], [scaleEnergie(10), 2, 6]);
   assertEqual(shelfLife('ble'), null, 'le blé ne périme jamais');
   assertEqual(shelfLife('graine_tournesol'), null);
 });
@@ -8034,13 +8089,15 @@ test('le blé et les graines de tournesol ne sont pas des aliments de la famille
   assertEqual(plan.energie, 0);
 });
 
-test('la famille mange les œufs (10 énergie) : ils périment avant les conserves', () => {
+test('la famille mange les œufs (13 énergie) : ils périment avant les conserves', () => {
   const s = ranch();
   setInv(s, { oeuf: 4, conserve: 200 });
   const plan = planMeal(s);
   assertEqual(plan.mange.oeuf, 4);
-  assertEqual(plan.mange.conserve, Math.ceil((150 - 40) / 20));
-  assertEqual(plan.energie, 160);
+  // Lot 11 (nutrition) : œuf 13, conserve 25.
+  const conserves = Math.ceil((150 - 4 * DATA.items.oeuf.energie) / DATA.items.conserve.energie);
+  assertEqual(plan.mange.conserve, conserves);
+  assertEqual(plan.energie, 4 * DATA.items.oeuf.energie + conserves * DATA.items.conserve.energie);
 });
 
 test('migration v4 (Lot 3) → v5 : Champ, Silo et Poulailler apparaissent, la partie est gardée', () => {
@@ -8180,20 +8237,78 @@ test('DATA Lot 5 : stations, recettes, farine et huile', () => {
   assertEqual([R.tarte_pommes.station, R.tarte_pommes.temps], ['four', 45]);
   assertEqual([R.farine.station, R.farine.temps, R.farine.sortie], ['moulin', 5, 'farine']);
   assertEqual([R.huile.station, R.huile.temps, R.huile.ingredients], ['presse', 10, [{ item: 'graine_tournesol', qte: 3 }]]);
-  assertEqual([DATA.items.farine.energie, DATA.items.huile.energie], [10, 10]);
+  assertEqual([DATA.items.farine.energie, DATA.items.huile.energie], [scaleEnergie(10), scaleEnergie(10)]);
   assertEqual([DATA.items.farine.prix, DATA.items.huile.prix], [1, 4]);
   assertEqual([DATA.items.farine.edible, DATA.items.huile.edible], [false, false]);
 });
 
-test('énergie des plats : somme des ingrédients × 1,3, arrondie (pain 26, omelette 52, ragoût 113)', () => {
-  assertEqual(DATA.items.pain.energie, 26);
-  assertEqual(DATA.items.omelette.energie, 52);
-  assertEqual(DATA.items.ragout.energie, 113);
-  assertEqual(DATA.items.ratatouille.energie, 42);
-  assertEqual(DATA.items.gratin_patates.energie, 72);
-  assertEqual(DATA.items.compote.energie, 31);
-  assertEqual(DATA.items.tarte_pommes.energie, 70);
-  assertEqual(dishEnergy('ragout'), 113);
+test('énergie des plats : somme des ingrédients × 1,3, arrondie (pain 34, omelette 68, ragoût 144)', () => {
+  // Lot 11 (nutrition) : énergies des ingrédients × 1,25 (voir DATA.items),
+  // sauf gratin_patates qui porte un override explicite (energieForcee: 150).
+  assertEqual(DATA.items.pain.energie, 34);
+  assertEqual(DATA.items.omelette.energie, 68);
+  assertEqual(DATA.items.ragout.energie, 144);
+  assertEqual(DATA.items.ratatouille.energie, 53);
+  assertEqual(DATA.items.gratin_patates.energie, 150);
+  assertEqual(DATA.items.compote.energie, 39);
+  assertEqual(DATA.items.tarte_pommes.energie, 90);
+  assertEqual(dishEnergy('ragout'), 144);
+  assertEqual(dishEnergy('gratin_patates'), 150, 'override explicite, pas un calcul ingrédients × coefficient');
+});
+
+test('Lot 11 (nutrition) : +25 % sur les aliments existants, arrondi centralisé', () => {
+  // scaleEnergie() est LA règle d'arrondi (Math.round) utilisée pour dériver
+  // chaque valeur ci-dessous à partir de l'ancienne (avant/après) ; on vérifie
+  // qu'elle est bien cohérente avec elle-même sur des cas ronds et des cas
+  // à arrondir (,5).
+  assertEqual([scaleEnergie(6), scaleEnergie(8), scaleEnergie(20)], [8, 10, 25], 'cas ronds');
+  assertEqual([scaleEnergie(10), scaleEnergie(15), scaleEnergie(30)], [13, 19, 38], 'cas à ,5 : arrondi au supérieur');
+  // Avant / après (valeurs d'origine → valeurs actuelles) pour quelques aliments.
+  const avantApres = [
+    ['carotte', 6, 8], ['patate', 15, 19], ['tomate', 6, 8], ['courgette', 8, 10],
+    ['aubergine', 8, 10], ['conserve', 20, 25], ['oeuf', 10, 13], ['viande', 30, 38],
+    ['pomme', 8, 10], ['poire', 8, 10], ['farine', 10, 13], ['huile', 10, 13],
+  ];
+  for (const [item, avant, apres] of avantApres) {
+    assertEqual(DATA.items[item].energie, apres, `${item} : ${avant} → ${apres}`);
+    assertEqual(scaleEnergie(avant), apres, `${item} : cohérent avec la règle d'arrondi`);
+  }
+});
+
+test('Lot 11 (nutrition) : le Gratin de patates couvre exactement le besoin d\'une famille de 2 adultes + 2 enfants', () => {
+  const s = garden();
+  assertEqual(familyNeed(s), 150, '2 adultes (50) + 2 enfants (25) = 150');
+  s.famille.reserve = {};
+  setInv(s, { gratin_patates: 3 });
+  const plan = planMeal(s);
+  // un seul gratin est mangé : aucune consommation résiduelle inattendue
+  assertEqual(plan.mange, { gratin_patates: 1 });
+  assertEqual(plan.energie, 150);
+  assertEqual(plan.couverture, 1);
+  feedFamily(s);
+  assertEqual(countItem(s, 'gratin_patates'), 2, 'les 2 gratins restants ne sont pas touchés');
+});
+
+test('Lot 11 (nutrition) : familyNeed() suit la composition de la famille', () => {
+  const s = garden();
+  assertEqual(familyNeed(s), 150, '2 adultes + 2 enfants');
+  // 1 adulte + 2 enfants
+  s.famille.membres = s.famille.membres.filter((m) => m.id !== 'adulte-2');
+  assertEqual(familyNeed(s), 100);
+  // 1 adulte seul
+  s.famille.membres = s.famille.membres.filter((m) => !m.enfant);
+  assertEqual(familyNeed(s), 50);
+  // 3 adultes + 1 enfant
+  const t = garden();
+  t.famille.membres = [
+    ...t.famille.membres,
+    { id: 'adulte-3', nom: 'Adulte 3', enfant: false, sante: 100, malade: false },
+  ].filter((m) => m.id !== 'enfant-2');
+  assertEqual(familyNeed(t), 175, '3 × 50 + 1 × 25');
+  // famille vide (cas limite)
+  const u = garden();
+  u.famille.membres = [];
+  assertEqual(familyNeed(u), 0);
 });
 
 test('prix de vente des plats : somme des prix × 1,3, arrondi', () => {
@@ -8610,7 +8725,8 @@ test('bonus de santé : +1 par plat différent mangé, plafonné à +3', () => {
 test('bonus de santé : il s\'ajoute à la variation (−5 devient −4), noté au rapport de réveil', () => {
   const s = atelier();
   setHealth(s, 50);
-  setInv(s, { omelette: 1, conserve: 4 }); // 52 + 80 = 132 sur 150 : couverture 88 %
+  // Lot 11 (nutrition) : omelette 68 + 3 conserves à 25 = 143 sur 150 (couverture ≈95 %).
+  setInv(s, { omelette: 1, conserve: 3 });
   s.awakeSeconds = 30;
   const r = sleep(s);
   assertEqual(r.bonusPlats, 1);
@@ -8793,7 +8909,7 @@ test('DATA Lot 6 : Pâturage, mouton, laine', () => {
   assertEqual([m.prix, m.poidsDepart, m.gainKg, m.poidsMax], [60, 20, 0.5, 50]);
   assertEqual([m.joursLaine, m.laineParTonte, m.rendement, m.kgParPortion], [7, 1, 0.5, 0.5]);
   assertEqual([DATA.items.laine.prix, DATA.items.laine.edible, shelfLife('laine')], [6, false, null]);
-  assertEqual([DATA.items.viande.energie, DATA.items.viande.prix, shelfLife('viande')], [30, 5, 5]);
+  assertEqual([DATA.items.viande.energie, DATA.items.viande.prix, shelfLife('viande')], [scaleEnergie(30), 5, 5]);
 });
 
 test('état initial Lot 6 : Pâturage à débloquer, sans surface ni mouton', () => {
@@ -9589,7 +9705,7 @@ test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
   assertEqual([V.ARBRES.pommier.prix, V.ARBRES.poirier.prix], [40, 40]);
   assertEqual([V.ARBRES.pommier.fruit, V.ARBRES.poirier.fruit], ['pomme', 'poire']);
   for (const fruit of ['pomme', 'poire']) {
-    assertEqual([DATA.items[fruit].energie, DATA.items[fruit].prix, shelfLife(fruit)], [8, 2, 7]);
+    assertEqual([DATA.items[fruit].energie, DATA.items[fruit].prix, shelfLife(fruit)], [scaleEnergie(8), 2, 7]);
   }
   const F = DATA.FRIGO;
   assertEqual([F.CONSTRUCTION, F.BASE_KWH_S, F.PAR_UNITE_KWH_S, F.BLOC_NUIT_S, F.SEUIL_ALIMENTE], [600, 0.005, 0.00005, 30, 0.5]);
@@ -10146,12 +10262,13 @@ test('la famille mange le contenu du frigo, après l\'inventaire', () => {
   moveToFridge(s, 'pomme', 40); // 10 pommes dehors, 40 au frigo
   s.frigo.alimenteS = 30;
   s.frigo.eveilS = 30;
-  assertEqual(planMeal(s).mange, { pomme: 19 });
+  // Lot 11 (nutrition) : pomme à 10 d'énergie ; 10 dehors (100) + 5 au frigo (50) = 150.
+  assertEqual(planMeal(s).mange, { pomme: 15 });
   assertEqual(planMeal(s).couverture, 1);
   sleepOnce(s);
-  assertEqual(s.report.mange, { pomme: 19 });
+  assertEqual(s.report.mange, { pomme: 15 });
   assertEqual(countItem(s, 'pomme'), 0, 'l\'inventaire d\'abord');
-  assertEqual(fridgeCount(s, 'pomme'), 31, '9 pommes prises au frigo');
+  assertEqual(fridgeCount(s, 'pomme'), 35, '5 pommes prises au frigo');
   assertEqual(s.report.couverture, 1);
 });
 
@@ -10283,11 +10400,14 @@ function atChapter(n) {
   return s;
 }
 
-// Une nuit avec exactement `energie` d'énergie d'origine « produit » au menu
-// (patates : 15 chacune, jamais gardées en réserve), plus des conserves pour le reste.
-function nightWithProduced(s, patates) {
+// Une nuit avec exactement `qty` unités de `item` d'origine « produit » au menu
+// (jamais gardées en réserve), plus des conserves pour le reste. `item` vaut
+// patate par défaut (19 d'énergie depuis le Lot 11) ; un autre item (ex.
+// courgette, 10 d'énergie) permet d'atteindre des pourcentages d'autonomie
+// précis que les multiples de 19 ne permettent pas.
+function nightWithProduced(s, qty, item = 'patate') {
   s.famille.reserve = {};
-  setInv(s, { patate: patates, conserve: 30 });
+  setInv(s, { [item]: qty, conserve: 30 });
   return sleepOnce(s);
 }
 
@@ -10332,19 +10452,20 @@ test('autonomie : énergie « produit » mangée ÷ besoin, plafonnée à 100 %'
   assertEqual(autonomyPercent(50, 0), 0);
   const s = farm();
   s.famille.reserve = {};
-  setInv(s, { patate: 8, conserve: 100 }); // 8 × 15 = 120 produit
+  // Lot 11 (nutrition) : patate à 19, 6 unités (114) restent sous le besoin (150).
+  setInv(s, { patate: 6, conserve: 100 }); // 6 × 19 = 114 produit
   const r = sleepOnce(s);
-  assertEqual([r.energieProduit, r.autonomie], [120, 80]);
-  assertEqual(s.campagne.historique, [{ nuit: 1, pct: 80, energie: 120 }]);
-  assertEqual(lastAutonomy(s), 80);
+  assertEqual([r.energieProduit, r.autonomie], [114, 76]);
+  assertEqual(s.campagne.historique, [{ nuit: 1, pct: 76, energie: 114 }]);
+  assertEqual(lastAutonomy(s), 76);
 });
 
 test('autonomie : les conserves n\'y comptent pas', () => {
   const s = farm();
-  setInv(s, { conserve: 8 }); // 8 × 20 = 160 couvre le besoin (150) : la famille est nourrie, mais rien n'est produit
+  setInv(s, { conserve: 6 }); // 6 × 25 = 150 couvre le besoin (150) : la famille est nourrie, mais rien n'est produit
   const r = sleepOnce(s);
   assertEqual(r.couverture, 1);
-  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [160, 0, 0]);
+  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [150, 0, 0]);
 });
 
 test('autonomie : un achat du Comptoir n\'y compte pas, une récolte oui', () => {
@@ -10352,28 +10473,29 @@ test('autonomie : un achat du Comptoir n\'y compte pas, une récolte oui', () =>
   s.famille.reserve = {};
   setInv(s, { conserve: 10 });
   s.pieces = 500;
-  assert(buyItem(s, 'carotte', 5).ok, 'acheter 5 carottes');
-  addItem(s, 'carotte', 5); // récoltées
-  assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.origin]).sort(), [[5, 'acheté'], [5, 'produit']].sort());
-  const r = sleepOnce(s); // 10 carottes (60) + 5 conserves (100) : le besoin (150) est couvert avant les 10 conserves
-  assertEqual(r.energieMangee, 160);
-  assertEqual(r.energieProduit, 30, 'seules les 5 carottes récoltées comptent');
-  assertEqual(r.autonomie, 20);
+  assert(buyItem(s, 'carotte', 4).ok, 'acheter 4 carottes');
+  addItem(s, 'carotte', 15); // récoltées
+  assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.origin]).sort(), [[4, 'acheté'], [15, 'produit']].sort());
+  // Lot 11 (nutrition) : carotte à 8 d'énergie, 19 (=4+15) couvrent le besoin (152) avant les conserves
+  const r = sleepOnce(s);
+  assertEqual(r.energieMangee, 152);
+  assertEqual(r.energieProduit, 120, 'seules les 15 carottes récoltées comptent');
+  assertEqual(r.autonomie, 80);
 });
 
 test('autonomie : un plat cuisiné compte, les œufs du frigo gardent leur origine', () => {
   const s = coldRoom();
   s.famille.reserve = {};
-  setInv(s, { conserve: 6 });
+  setInv(s, { conserve: 4 });
   addItem(s, 'oeuf', 10);
   addLot(s, 'oeuf', 10, 'acheté');
   assert(moveToFridge(s, 'oeuf', 20).ok, 'ranger les œufs au frigo');
-  // à rang égal (rien ne périme), la conserve (20 énergie) passe avant l'œuf (10) :
-  // 6 conserves (120) + 3 œufs (30) couvrent les 150 énergies du besoin ; les 3
-  // œufs viennent du lot « produit », le plus ancien des deux lots au frigo
-  assertEqual(plannedAutonomy(s), 20);
+  // Lot 11 (nutrition) : à rang égal (rien ne périme), la conserve (25 énergie)
+  // passe avant l'œuf (13) : 4 conserves (100) + 4 œufs (52) couvrent les 150
+  // énergies du besoin ; les 4 œufs viennent du lot « produit », le plus ancien
+  // des deux lots au frigo
   const r = sleepOnce(s);
-  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [150, 30, 20]);
+  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [152, 52, 34.6667]);
 });
 
 test('autonomie : la prévision de la nuit est celle qui est vraiment mesurée', () => {
@@ -10518,9 +10640,10 @@ testBase('chapitre 2 : 20 carottes et 25 % d\'autonomie', () => {
   updateChapters(s);
   assertEqual(okList(s), [true, false]);
   assertEqual(s.campagne.chapitre, 2);
-  nightWithProduced(s, 2); // 30 / 150 = 20 %
-  assertEqual([lastAutonomy(s), okList(s)], [20, [true, false]]);
-  nightWithProduced(s, 3); // 45 / 150 = 30 %
+  // Lot 11 (nutrition) : patate à 19 d'énergie (au lieu de 15).
+  nightWithProduced(s, 1); // 19 / 150 ≈ 12,67 %
+  assertEqual([lastAutonomy(s), okList(s)], [12.6667, [true, false]]);
+  nightWithProduced(s, 2); // 38 / 150 ≈ 25,33 %
   assertEqual(s.campagne.chapitre, 3);
   assertEqual(s.campagne.annonces.map((a) => a.chapitre), [2]);
 });
@@ -10632,15 +10755,16 @@ testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {
   assert(shear(s, s.paturage.moutons[0].id).ok);
   updateChapters(s);
   assertEqual([s.campagne.compteurs.laines, okList(s)], [10, [true, false]]);
-  nightWithProduced(s, 5); // 75 / 150 = 50 % : pas assez
+  // Lot 11 (nutrition) : patate à 19 d'énergie (au lieu de 15).
+  nightWithProduced(s, 4); // 76 / 150 ≈ 50,67 % : pas assez
   assertEqual(s.campagne.chapitre, 5);
-  nightWithProduced(s, 6); // 90 / 150 = 60 %
+  nightWithProduced(s, 5); // 95 / 150 ≈ 63,33 %
   assertEqual(s.campagne.chapitre, 6);
 });
 
-// Une nuit d'hiver avec `patates` patates produites au menu.
-function winterNights(s, count, patates) {
-  for (let i = 0; i < count; i++) nightWithProduced(s, patates);
+// Une nuit d'hiver avec `qty` unités de `item` (patate par défaut) produites au menu.
+function winterNights(s, count, qty, item = 'patate') {
+  for (let i = 0; i < count; i++) nightWithProduced(s, qty, item);
 }
 
 test('chapitre 6 : un hiver complet à 80 % en moyenne, sans soin', () => {
@@ -10659,7 +10783,8 @@ test('chapitre 6 : un hiver complet à 80 % en moyenne, sans soin', () => {
 test('chapitre 6 : une moyenne de 79 % ne suffit pas', () => {
   const s = atChapter(6);
   s.day = 31;
-  winterNights(s, 10, 7); // 105 / 150 = 70 %
+  // Lot 11 (nutrition) : patate à 19 d'énergie, 6 unités (114) restent sous 80 %.
+  winterNights(s, 10, 6); // 114 / 150 = 76 %
   assertEqual(s.campagne.chapitre, 6);
   assertEqual(s.campagne.compteurs.hiverDernier.reussi, false);
   assert(s.campagne.compteurs.hiverDernier.moyenne < 80);
@@ -10668,8 +10793,10 @@ test('chapitre 6 : une moyenne de 79 % ne suffit pas', () => {
 test('chapitre 6 : la moyenne compte toutes les nuits, pas seulement la dernière', () => {
   const s = atChapter(6);
   s.day = 31;
-  winterNights(s, 5, 10); // 150 / 150 = 100 %
-  winterNights(s, 5, 4); // 60 / 150 = 40 %
+  winterNights(s, 5, 10); // 190 / 150 : plafonné à 100 %
+  // Lot 11 (nutrition) : courgette (10 d'énergie) donne un pourcentage exact,
+  // ce que ne permettent pas les multiples de 19 (patate).
+  winterNights(s, 5, 6, 'courgette'); // 60 / 150 = 40 %
   assertEqual(s.campagne.chapitre, 6);
   assert(near(s.campagne.compteurs.hiverDernier.moyenne, 70, 1e-6));
 });
@@ -10743,7 +10870,8 @@ test('remise à zéro : une nuit sous 100 % casse la série d\'autonomie', () =>
   const s = atChapter(7);
   for (let i = 0; i < 4; i++) nightWithProduced(s, 22);
   assertEqual(s.campagne.compteurs.serie100, 4);
-  nightWithProduced(s, 9); // 135 / 150 = 90 %
+  // Lot 11 (nutrition) : 7 patates (133) restent sous 150, contre 9 avant l'augmentation.
+  nightWithProduced(s, 7); // 133 / 150 ≈ 88,67 %
   assertEqual(s.campagne.compteurs.serie100, 0);
   for (let i = 0; i < 6; i++) nightWithProduced(s, 22);
   assertEqual([s.campagne.compteurs.serie100, s.campagne.fini], [6, false]);
@@ -10810,10 +10938,11 @@ test('annonces : un écran de fin par chapitre terminé, vidé un à un', () => 
 test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres terminés', () => {
   const s = atChapter(2);
   s.famille.reserve = {};
-  setInv(s, { patate: 8, conserve: 10 });
+  // Lot 11 (nutrition) : patate à 19 d'énergie, 6 unités (114) sous le besoin (150).
+  setInv(s, { patate: 6, conserve: 10 });
   s.campagne.compteurs.carottes = 20;
   const r = sleepOnce(s);
-  assertEqual([r.autonomie, r.energieProduit, r.chapitre, r.chapitresTermines], [80, 120, 3, [2]]);
+  assertEqual([r.autonomie, r.energieProduit, r.chapitre, r.chapitresTermines], [76, 114, 3, [2]]);
 });
 
 /* --- masquage --- */

@@ -1,6 +1,8 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v17** : la valeur nutritionnelle de tous les aliments de base existants est **augmentée de 25 %** (arrondie à l'entier le plus proche, règle centralisée — voir 1.1 et 8.1). Le **Gratin de patates** reçoit une valeur nutritionnelle dédiée de **150** (au lieu du calcul ingrédients × 1,3) pour couvrir à lui seul l'Apport Journalier d'une famille de 2 adultes + 2 enfants (voir 1.4). Les prix de vente ne changent pas. 🟡 Conséquence non traitée par ce changement : la courbe de progression cible (8.10) suppose des rendements de production non modifiés ; avec des aliments plus nutritifs pour les mêmes récoltes, l'autonomie mesurée progresse mécaniquement plus vite que cette courbe (à confirmer/ajuster).
+>
 > **v16** : la partie démarre désormais avec **350 pièces** (au lieu de 50) ; aucune autre règle économique n'est modifiée, et les parties déjà en cours conservent leur solde actuel.
 >
 > **v15** : ajout du **parc d'appareils électriques** — plusieurs panneaux et plusieurs batteries, chacun avec son niveau, son usure et son interrupteur — d'une **heure d'ambiance** en en-tête, et séparation de la **Pompe** et du **Réservoir**.
@@ -45,20 +47,26 @@
 
 La famille consomme **œufs, viande, légumes, fruits, pain et plats cuisinés**. L'huile, la farine et le blé sont des ingrédients, pas des aliments consommés directement.
 
-Valeurs énergétiques (validées, détail en section 8) :
+> **+25 % (§4)** : la valeur nutritionnelle de tous les aliments de base a été
+> augmentée de 25 % par rapport aux valeurs d'origine, arrondie à l'entier le
+> plus proche (`Math.round`, règle centralisée dans `scaleEnergie()` — voir
+> 8.1). Le tableau ci-dessous donne les valeurs **actuelles** ; l'Apport
+> Journalier (AJ) de la famille n'a pas changé (toujours 150 énergies/jour).
+
+Valeurs énergétiques (détail en section 8) :
 
 | Aliment | Énergie / unité | Aliment | Énergie / unité |
 |---|---|---|---|
-| Œuf | 10 | Patate | 15 |
-| Viande (portion 0,5 kg) | 30 | Aubergine | 8 |
-| Carotte | 6 | Courgette | 8 |
-| Tomate | 6 | Pomme / Poire | 8 |
-| Pain | 26 | Conserve (départ) | 20 |
+| Œuf | 13 | Patate | 19 |
+| Viande (portion 0,5 kg) | 38 | Aubergine | 10 |
+| Carotte | 8 | Courgette | 10 |
+| Tomate | 8 | Pomme / Poire | 10 |
+| Pain | 34 | Conserve (départ) | 25 |
 | Plats cuisinés | voir 1.4 | | |
 
-*Ingrédients non consommables seuls, mais comptés dans l'énergie des plats* : farine 10, huile 10.
+*Ingrédients non consommables seuls, mais comptés dans l'énergie des plats* : farine 13, huile 13.
 
-*Exemple d'une journée à 150 énergies* : 1 pain (26) + 1 omelette (52) + 2 patates (30) + 7 carottes (42) = **150**.
+*Exemple d'une journée à 150 énergies* : 1 **Gratin de patates** (150, voir 1.4 — sa recette porte une valeur nutritionnelle dédiée pour couvrir à elle seule le besoin d'une famille de 2 adultes + 2 enfants sur une journée).
 
 ### 1.2 Entités et chaînes de production
 
@@ -236,15 +244,26 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 
 | Recette 🟡 | Ingrédients | Station | Temps | Énergie |
 |---|---|---|---|---|
-| Pain | 2 farine + 1 L eau | Four | 20 s | 26 |
-| Omelette | 3 œufs + 1 huile | Cuisine | 15 s | 52 |
-| Ratatouille | 1 tomate + 1 courgette + 1 aubergine + 1 huile | Cuisine | 30 s | 42 |
-| Gratin de patates | 3 patates + 1 œuf | Four | 30 s | 72 |
-| Ragoût | 2 viande + 2 carottes + 1 patate | Cuisine | 45 s | 113 |
-| Compote | 3 pommes ou 3 poires | Cuisine | 15 s | 31 |
-| Tarte aux pommes | 2 farine + 3 pommes + 1 œuf | Four | 45 s | 70 |
+| Pain | 2 farine + 1 L eau | Four | 20 s | 34 |
+| Omelette | 3 œufs + 1 huile | Cuisine | 15 s | 68 |
+| Ratatouille | 1 tomate + 1 courgette + 1 aubergine + 1 huile | Cuisine | 30 s | 53 |
+| Gratin de patates | 3 patates + 1 œuf | Four | 30 s | **150** (valeur dédiée, voir ci-dessous) |
+| Ragoût | 2 viande + 2 carottes + 1 patate | Cuisine | 45 s | 144 |
+| Compote | 3 pommes ou 3 poires | Cuisine | 15 s | 39 |
+| Tarte aux pommes | 2 farine + 3 pommes + 1 œuf | Four | 45 s | 90 |
 
-Énergie = somme des ingrédients × 1,3, arrondie. Les temps sont calés sur le temps d'éveil minimal (30 s) : on peut lancer au moins une recette courte par journée, et une recette longue continue pendant la nuit.
+Énergie = somme des ingrédients × 1,3, arrondie (mise à jour au §4 avec les
+valeurs d'aliments +25 %). Les temps sont calés sur le temps d'éveil minimal
+(30 s) : on peut lancer au moins une recette courte par journée, et une
+recette longue continue pendant la nuit.
+
+**Exception — Gratin de patates (§4)** : le calcul ingrédients × 1,3 donnerait
+91 (3 patates à 19 + 1 œuf à 13, soit 70 × 1,3), mais la recette porte un
+champ `energieForcee: 150` (override explicite dans `DATA.recipes`, lu par
+`dishEnergy()`) pour qu'une seule unité couvre exactement le besoin d'une
+journée de la famille de départ (2 adultes + 2 enfants = 150, voir 1.1). Le
+prix de vente du gratin, lui, reste calculé normalement depuis ses
+ingrédients (`dishPrice()` n'est pas concerné par l'override).
 
 **📦 Inventaire et péremption**
 - L'**Inventaire est illimité** : aucune gestion de place, la contrainte vient de la péremption.
@@ -885,7 +904,7 @@ export function take(s: GameState, item: string, qty: number) {
 | Élément | Valeur |
 |---|---|
 | Pièces | 350 |
-| Conserves (non périssables, 20 énergie, vendables 3 💰, non rachetables) ✅ | 160 → 10 nuits d'autonomie |
+| Conserves (non périssables, 25 énergie depuis le §4, vendables 3 💰, non rachetables) ✅ | 160 → 10 nuits d'autonomie |
 | Graines | 10 carotte, 6 patates, 4 tomate |
 | Bâtiments | Panneau niv. 1, Batterie niv. 1, Puit + Pompe niv. 1, Potager niv. 1 |
 | Famille | 4 membres, santé 100 |
@@ -933,17 +952,17 @@ Les conserves laissent le temps de lancer le potager avant que la santé ne soit
 
 | Plante | Lieu | Stades (nuits) | Eau / arrosage | Rendement | Graines | Énergie / unité | Vente 💰 |
 |---|---|---|---|---|---|---|---|
-| Carotte | Potager | 4 | 2 L | 10 | montée en graine : +2 nuits → 6 graines | 6 | 1 |
-| Patate | Potager | 6 | 3 L | 8 | 1 patate = 1 plant | 15 | 2 |
-| Tomate | Potager, Serre | 5 | 3 L | 10 | +1 à 2 | 6 | 1 |
-| Courgette | Potager, Serre | 5 | 4 L | 6 | +1 à 2 | 8 | 2 |
-| Aubergine | Potager, Serre | 6 | 4 L | 6 | +1 à 2 | 8 | 2 |
+| Carotte | Potager | 4 | 2 L | 10 | montée en graine : +2 nuits → 6 graines | 8 | 1 |
+| Patate | Potager | 6 | 3 L | 8 | 1 patate = 1 plant | 19 | 2 |
+| Tomate | Potager, Serre | 5 | 3 L | 10 | +1 à 2 | 8 | 1 |
+| Courgette | Potager, Serre | 5 | 4 L | 6 | +1 à 2 | 10 | 2 |
+| Aubergine | Potager, Serre | 6 | 4 L | 6 | +1 à 2 | 10 | 2 |
 | Blé | Champ | 7 | 2 L | 8 | 1 blé = 1 graine | — | 1 |
 | Tournesol | Champ | 7 | 2 L | 9 graines | 1 graine = 1 plant | — | 1 |
 
 Graines de légumes : vente 1 💰 ; achat en dépannage au coefficient 2,0 (soit 2 💰 la première).
 
-**Rendement moyen par parcelle** (énergie / nuit, graine déduite) : carotte ≈ 15 · patate ≈ 17 · tomate ≈ 12 · courgette ≈ 10 · aubergine ≈ 8.
+**Rendement moyen par parcelle** (énergie / nuit, graine déduite, mis à jour au §4) : carotte ≈ 20 · patate ≈ 22 · tomate ≈ 16 · courgette ≈ 12 · aubergine ≈ 10.
 
 | Niveau | Parcelles Potager | Parcelles Champ | Coût Potager 💰 | Coût Champ 💰 |
 |---|---|---|---|---|
@@ -968,9 +987,9 @@ Graines de légumes : vente 1 💰 ; achat en dépannage au coefficient 2,0 (soi
 | Délai avant première récolte | 15 nuits |
 | Production | 6 fruits toutes les 3 nuits, pendant les 5 dernières nuits de l'été et tout l'automne |
 | Arrosage | aucun |
-| Fruit | 8 énergie, vente 2 💰 |
+| Fruit | 10 énergie (§4), vente 2 💰 |
 
-Un arbre adulte donne environ **30 fruits par an** (≈ 240 énergie).
+Un arbre adulte donne environ **30 fruits par an** (≈ 300 énergie).
 
 ### 8.5 Poulailler et poules
 
@@ -986,10 +1005,10 @@ Un arbre adulte donne environ **30 fruits par an** (≈ 240 énergie).
 |---|---|
 | Prix | 15 💰 (fixe, pas de revente) |
 | Consommation | 0,5 blé / nuit |
-| Production | 1 œuf / nuit si nourrie (10 énergie, vente 2 💰) |
+| Production | 1 œuf / nuit si nourrie (13 énergie depuis le §4, vente 2 💰) |
 | Silo (niv. 1 → 5) | 20 · 50 · 100 · 200 · 400 blé (coûts 30 · 80 · 180 · 400) |
 
-Repère : 12 poules = 120 énergie / nuit et 6 blé / nuit, soit environ 6 parcelles de blé.
+Repère : 12 poules = 156 énergie / nuit et 6 blé / nuit, soit environ 6 parcelles de blé.
 
 ### 8.6 Pâturage et moutons
 
@@ -999,10 +1018,10 @@ Repère : 12 poules = 120 énergie / nuit et 6 blé / nuit, soit environ 6 parce
 | 0,05 ha supplémentaire | 40 💰 × 1,2ⁿ⁻¹ (n = rang du mouton au-delà du 10ᵉ) |
 | Mouton | 60 💰 (fixe, pas de revente) |
 | Poids de départ / gain / max | 20 kg / +0,5 kg par nuit / 50 kg |
-| Viande à l'abattage | poids × 50 % ÷ 0,5 kg → 20 à 50 portions (30 énergie, vente 5 💰) |
+| Viande à l'abattage | poids × 50 % ÷ 0,5 kg → 20 à 50 portions (38 énergie depuis le §4, vente 5 💰) |
 | Tonte | toutes les 7 nuits → 1 laine (vente 6 💰, non périssable) |
 
-Repère : un mouton élevé jusqu'à 50 kg (60 nuits) rapporte **8 laines (48 💰)** puis **50 portions (1 500 énergie)**.
+Repère : un mouton élevé jusqu'à 50 kg (60 nuits) rapporte **8 laines (48 💰)** puis **50 portions (1 900 énergie)**.
 
 ### 8.7 Stations et bâtiments
 
@@ -1040,6 +1059,19 @@ Repère : un mouton élevé jusqu'à 50 kg (60 nuits) rapporte **8 laines (48 �
 Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi. Prix d'achat = vente × coefficient (plancher 1,2 ; graines 2,0 ; +0,1 par unité achetée, −0,1 par unité vendue).
 
 ### 8.10 Courbe de progression cible
+
+> 🟡 **À rediscuter depuis le §4/v17** : cette courbe a été calée avec les
+> valeurs nutritionnelles d'avant l'augmentation de 25 %. Les rendements de
+> récolte (unités/nuit) n'ont pas changé, mais chaque unité valant 25 % de
+> plus en énergie, l'autonomie mesurée par `simulate.mjs` franchit désormais
+> les paliers ci-dessous plus tôt que prévu (vérifié : 75 %/90 %/100 % sont
+> atteints largement avant les nuits 25/40/60 avec le joueur automatique
+> « appliqué »). Deux options, à trancher par un⋅e game designer : (a)
+> accepter que l'autonomie progresse plus vite (et mettre à jour cette
+> courbe et `DATA.SIMULATION`) ; (b) revoir à la baisse un autre paramètre
+> (rendements, coûts d'amélioration) pour retrouver le rythme visé. Ce choix
+> n'a pas été fait ici : seule la valeur nutritionnelle des aliments a été
+> modifiée, conformément à la demande.
 
 | Étape | Nuit visée | Production estimée | Autonomie |
 |---|---|---|---|
