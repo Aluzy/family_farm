@@ -1,6 +1,25 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v20** : **15 nouvelles recettes** (voir 1.4 et 8.9bis) : Soupe de légumes,
+> Salade de tomates, Quiche aux épinards, Fromage frais, Riz au lait, Pain à
+> l'ail (utilise le pain comme ingrédient), Poivrons farcis (viande de
+> mouton), Tarte aux fraises, Confiture de fraises, Rôti de bœuf, Poulet rôti
+> à l'ail, et **4 recettes de luxe** — Chocolat chaud, Café, Crème à la
+> vanille, Bière artisanale — qui se vendent **×3 le prix de leurs
+> ingrédients** au lieu du coefficient ×1,3 normal (champ optionnel
+> `priceMultiplier` sur la recette, lu par `dishPrice()` ; l'énergie suit
+> toujours le calcul normal). Aucun nouvel item de base : toutes les
+> nouvelles recettes réutilisent des ingrédients déjà en jeu (légumes/fruits
+> des 10 cultures de v18, viande_boeuf/viande_volaille/lait de v19, et les
+> cultures de rente cacao/vanille/café/houblon). La **Bière artisanale ne
+> périme pas** (comme le blé/la farine/la laine) ; le **Fromage frais** se
+> conserve 8 nuits (mieux que le lait cru, 4 nuits) et la **Confiture de
+> fraises** ne périme pas non plus — ces deux derniers chiffres sont des 🟡
+> décisions de game design ouvertes, la demande d'origine ne les chiffrant
+> pas. Pure addition de données (`DATA.recipes`) : **aucune migration de
+> sauvegarde n'est nécessaire**, comme pour les 10 cultures de v18.
+>
 > **v19** : la **vache** rejoint le pâturage (achat au Comptoir, 200 💰) — elle occupe **0,15 ha** (3× un mouton), grossit de 1 kg/nuit (40 → 150 kg) et donne **1 lait par nuit dès l'achat**, sans délai de maturité ni condition autre que la place au pâturage (contrairement à la laine du mouton). Abattage sur le même modèle que le mouton (poids × 50 %), donnant un item distinct `viande_boeuf`. L'ancien item générique « viande » (mouton) est renommé **`viande_mouton`** pour laisser la place à `viande_boeuf` et à `viande_volaille`. Les **poules peuvent désormais être abattues** au clic (bouton dédié au Poulailler, avec confirmation) : rendement fixe et volontairement modeste (3 portions de `viande_volaille`), la poule abattue quitte le cheptel (ne pond plus, ne mange plus de blé), sa place se libère mais n'est pas rachetée automatiquement. Voir 1.4, 8.5 et 8.6 pour le détail chiffré et la logique d'équilibrage.
 >
 > **v18** : **10 nouvelles cultures** — Potager (oignon, ail, poivron, épinard, fraise), Champ (riz, houblon), et 3 **cultures de rente exclusives à la Serre** (cacao, vanille, café : jamais comestibles, vente et recettes de luxe uniquement). Le poivron reprend le mécanisme Potager + Serre de la tomate/courgette/aubergine. Voir 1.4 (« Cultures de rente ») et 8.3 (tableau chiffré complet). 🟡 Le riz demande 4 L par arrosage (le double du blé) : aucune règle de pompe n'a été changée pour autant, à surveiller si le débit devient un goulot d'étranglement.
@@ -268,7 +287,7 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 | Omelette | 3 œufs + 1 huile | Cuisine | 15 s | 68 |
 | Ratatouille | 1 tomate + 1 courgette + 1 aubergine + 1 huile | Cuisine | 30 s | 53 |
 | Gratin de patates | 3 patates + 1 œuf | Four | 30 s | **150** (valeur dédiée, voir ci-dessous) |
-| Ragoût | 2 viande + 2 carottes + 1 patate | Cuisine | 45 s | 144 |
+| Ragoût | 2 viande de mouton + 2 carottes + 1 patate | Cuisine | 45 s | 144 |
 | Compote | 3 pommes ou 3 poires | Cuisine | 15 s | 39 |
 | Tarte aux pommes | 2 farine + 3 pommes + 1 œuf | Four | 45 s | 90 |
 
@@ -285,6 +304,55 @@ journée de la famille de départ (2 adultes + 2 enfants = 150, voir 1.1). Le
 prix de vente du gratin, lui, reste calculé normalement depuis ses
 ingrédients (`dishPrice()` n'est pas concerné par l'override).
 
+**🍽️bis 15 nouvelles recettes (v20)**
+
+Même système, mêmes fonctions (`DATA.recipes`, `dishEnergy()`, `dishPrice()`,
+`registerDishItems()`) : aucune nouvelle mécanique de cuisine, seulement de
+nouvelles entrées de données. Énergie et prix suivis dans la colonne
+« Énergie/Prix » sont calculés par le système existant (`recipeSum() ×
+COEF_PLAT`, sauf les 4 recettes de luxe — voir plus bas).
+
+| Recette | Ingrédients | Station | Temps | Énergie | Prix | Note |
+|---|---|---|---|---|---|---|
+| Soupe de légumes | 1 carotte + 1 oignon + 1 patate + 1 L eau | Cuisine | 30 s | 43 | 7 | repas familial |
+| Salade de tomates | 2 tomates + 1 huile | Cuisine | 10 s | 38 | 8 | rapide, léger |
+| Quiche aux épinards | 2 farine + 2 œufs + 1 lait + 1 épinard | Four | 40 s | 95 | 14 | repas familial |
+| Fromage frais | 3 lait | Cuisine | 60 s | 62 | 16 | se conserve 8 nuits (mieux que le lait cru, 4 nuits) |
+| Riz au lait | 2 riz + 1 lait | Cuisine | 30 s | 47 | 8 | repas familial |
+| Pain à l'ail | 1 pain + 1 ail + 1 huile | Four | 15 s | 69 | 13 | utilise le pain comme ingrédient (retiré du stock comme n'importe quel autre) |
+| Poivrons farcis | 2 poivrons + 1 viande de mouton + 1 riz | Four | 40 s | 81 | 13 | repas copieux (viande = mouton, comme le ragoût) |
+| Tarte aux fraises | 2 farine + 3 fraises + 1 œuf | Four | 40 s | 70 | 13 | dessert |
+| Confiture de fraises | 4 fraises | Cuisine | 30 s | 26 | 10 | se conserve bien : imperissable |
+| Chocolat chaud 🌟 | 1 cacao + 1 lait | Cuisine | 20 s | 21 | **36** (×3) | luxe |
+| Café 🌟 | 1 café + 1 L eau | Cuisine | 10 s | 0 | **21** (×3) | luxe ; id technique `cafe_boisson` (distinct de l'item `cafe`) |
+| Crème à la vanille 🌟 | 1 vanille + 2 lait + 2 œufs | Cuisine | 45 s | 75 | **81** (×3) | luxe |
+| Bière artisanale 🌟 | 2 houblon + 1 L eau | Cuisine | 60 s | 0 | **21** (×3) | luxe ; ne périme pas (comme le blé/la farine/la laine) |
+| Rôti de bœuf | 2 viande de bœuf + 2 carottes + 1 patate | Four | 60 s | 144 | 18 | repas copieux |
+| Poulet rôti à l'ail | 1 viande de volaille + 2 patates + 1 ail | Four | 45 s | 75 | 12 | repas familial |
+
+**Recettes de luxe (🌟) — règle du multiplicateur** : ces 4 recettes portent un
+champ optionnel `priceMultiplier: 3` sur leur entrée `DATA.recipes`, lu par
+`dishPrice()` à la place de `DATA.RECETTES.COEF_PLAT` (×1,3 pour toutes les
+autres recettes) — sans dupliquer la formule de calcul (`recipeSum()` reste
+l'unique somme des prix). L'énergie de ces 4 plats suit toujours le calcul
+normal (`dishEnergy()`, ×1,3, jamais concerné par `priceMultiplier`) : le café
+et la bière tombent à 0 énergie faute d'ingrédient comestible (le café et le
+houblon ne sont pas des aliments, voir 1.4 « Cultures de rente »), ce qui est
+cohérent avec le reste du jeu.
+
+**🟡 Décisions de game design ouvertes (v20)**, faute de chiffre fourni par la
+demande d'origine :
+- Fromage frais : conservation choisie à 8 nuits (entre le lait cru et
+  l'indéfini du frigo). À ajuster si besoin.
+- Confiture de fraises : « se conserve bien » interprété comme imperissable
+  (comme une conserve), faute de durée précisée.
+- Les notes « repas familial », « repas copieux », « rapide, léger », «
+  dessert » sont **purement descriptives** (aucun effet mécanique, à la
+  différence du Gratin de patates qui porte un `energieForcee` explicite) :
+  aucune de ces 11 recettes ne couvre à elle seule l'AJ d'une journée (150).
+  Si une ou plusieurs doivent devenir des « repas complets » comme le gratin,
+  c'est une décision de contenu distincte, non traitée ici.
+
 **📦 Inventaire et péremption**
 - L'**Inventaire est illimité** : aucune gestion de place, la contrainte vient de la péremption.
 - Les aliments frais et les plats **périment en 5 à 7 nuits** hors réfrigérateur ; le Réfrigérateur les conserve sans limite de temps.
@@ -297,7 +365,8 @@ ingrédients (`dishPrice()` n'est pas concerné par l'override).
 | Œuf, carotte, plats cuisinés | 6 nuits |
 | Pomme, poire, pain | 7 nuits |
 | Patate | 7 nuits |
-| Blé, farine, huile, graines, laine | jamais |
+| Fromage frais (v20) | 8 nuits (exception, plus long que le lait cru) |
+| Blé, farine, huile, graines, laine, bière artisanale, confiture de fraises (v20) | jamais |
 
 - La famille mange **d'abord ce qui périme le plus tôt** (voir 6.9).
 - 🟡 Une notification au réveil signale les lots qui périment la nuit suivante.

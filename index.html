@@ -1512,6 +1512,64 @@ const DATA = {
     ragout:          { nom: 'Ragoût',            icone: '🍖', station: 'cuisine', temps: 45, ingredients: [{ item: 'viande_mouton', qte: 2 }, { item: 'carotte', qte: 2 }, { item: 'patate', qte: 1 }] },
     compote:         { nom: 'Compote',           icone: '🍮', station: 'cuisine', temps: 15, ingredients: [{ ou: ['pomme', 'poire'], qte: 3 }] },
     tarte_pommes:    { nom: 'Tarte aux pommes',  icone: '🥧', station: 'four',    temps: 45, ingredients: [{ item: 'farine', qte: 2 }, { item: 'pomme', qte: 3 }, { item: 'oeuf', qte: 1 }] },
+
+    // 15 nouvelles recettes. Aucun nouvel item de base : toutes les
+    // ingrédients existent déjà (légumes/fruits du Lot « 10 nouvelles
+    // cultures », viande_mouton/viande_boeuf/viande_volaille, lait, et les
+    // cultures de rente cacao/vanille/café/houblon de la Serre/du Champ).
+    // Énergie et prix suivent tous deux le calcul générique (recipeSum ×
+    // COEF_PLAT, voir dishEnergy()/dishPrice()), sauf les 4 recettes « luxe »
+    // ci-dessous qui portent priceMultiplier (voir plus bas).
+    soupe_legumes:   { nom: 'Soupe de légumes',   icone: '🍲', station: 'cuisine', temps: 30, ingredients: [{ item: 'carotte', qte: 1 }, { item: 'oignon', qte: 1 }, { item: 'patate', qte: 1 }], eau: 1 },
+    salade_tomates:  { nom: 'Salade de tomates',  icone: '🥗', station: 'cuisine', temps: 10, ingredients: [{ item: 'tomate', qte: 2 }, { item: 'huile', qte: 1 }] },
+    quiche_epinards: { nom: 'Quiche aux épinards', icone: '🥧', station: 'four',    temps: 40, ingredients: [{ item: 'farine', qte: 2 }, { item: 'oeuf', qte: 2 }, { item: 'lait', qte: 1 }, { item: 'epinard', qte: 1 }] },
+    // Se conserve mieux que le lait cru (4 nuits, voir DATA.CONSERVATION) :
+    // 8 nuits, entre la conservation du lait et celle, indéfinie, du frigo.
+    // 🟡 Décision de game design ouverte : valeur choisie faute d'un chiffre
+    // fourni par la demande, à ajuster si besoin.
+    fromage_frais:   { nom: 'Fromage frais',      icone: '🧀', station: 'cuisine', temps: 60, ingredients: [{ item: 'lait', qte: 3 }] },
+    riz_au_lait:     { nom: 'Riz au lait',        icone: '🍚', station: 'cuisine', temps: 30, ingredients: [{ item: 'riz', qte: 2 }, { item: 'lait', qte: 1 }] },
+    // Utilise le pain (déjà un item via registerDishItems()) comme un
+    // ingrédient ordinaire : startRecipe()/takeIngredient() le retirent de
+    // l'inventaire exactement comme n'importe quel autre item (voir test
+    // dédié). Il doit rester déclaré après `pain` dans cet objet pour que
+    // DATA.items.pain existe déjà quand dishEnergy()/dishPrice() le lisent au
+    // chargement (registerDishItems() boucle dans l'ordre de déclaration) —
+    // c'est déjà le cas ici, pain étant la toute première recette.
+    pain_ail:        { nom: "Pain à l'ail",       icone: '🥖', station: 'four',    temps: 15, ingredients: [{ item: 'pain', qte: 1 }, { item: 'ail', qte: 1 }, { item: 'huile', qte: 1 }] },
+    // Utilise précisément viande_mouton (comme le ragoût) : la demande
+    // précise « viande = mouton ». Ouvrir la recette aux autres viandes via
+    // un `ou` est un choix de game design distinct, non traité ici.
+    poivrons_farcis: { nom: 'Poivrons farcis',    icone: '🫑', station: 'four',    temps: 40, ingredients: [{ item: 'poivron', qte: 2 }, { item: 'viande_mouton', qte: 1 }, { item: 'riz', qte: 1 }] },
+    tarte_fraises:   { nom: 'Tarte aux fraises',  icone: '🍰', station: 'four',    temps: 40, ingredients: [{ item: 'farine', qte: 2 }, { item: 'fraise', qte: 3 }, { item: 'oeuf', qte: 1 }] },
+    // Se conserve bien (demande) : traitée comme une conserve, imperissable
+    // (voir l'entrée `confiture_fraises: null` dans DATA.CONSERVATION, qui
+    // écarte explicitement la durée par défaut de 6 nuits des plats). 🟡
+    // Décision de game design ouverte : la demande ne chiffre pas de durée,
+    // « imperissable » est l'interprétation la plus proche d'une confiture.
+    confiture_fraises: { nom: 'Confiture de fraises', icone: '🍓', station: 'cuisine', temps: 30, ingredients: [{ item: 'fraise', qte: 4 }] },
+    // --- Recettes de luxe (×3 sur le prix des ingrédients, énergie normale) ---
+    // priceMultiplier (optionnel) : lu par dishPrice() à la place de
+    // DATA.RECETTES.COEF_PLAT, sans dupliquer la formule (recipeSum() reste
+    // le seul calcul de somme). dishEnergy() n'est pas concerné : l'énergie
+    // continue de suivre COEF_PLAT normalement (aucune recette de luxe ne
+    // porte energieForcee).
+    chocolat_chaud:  { nom: 'Chocolat chaud',     icone: '🍫', station: 'cuisine', temps: 20, ingredients: [{ item: 'cacao', qte: 1 }, { item: 'lait', qte: 1 }], priceMultiplier: 3 },
+    // id « cafe_boisson » (et non « cafe ») : la recette ne doit pas
+    // remplacer DATA.items.cafe (l'ingrédient de la Serre) dans
+    // registerDishItems(), qui indexe chaque plat par l'id de sa recette.
+    cafe_boisson:    { nom: 'Café',               icone: '☕', station: 'cuisine', temps: 10, ingredients: [{ item: 'cafe', qte: 1 }], eau: 1, priceMultiplier: 3 },
+    creme_vanille:   { nom: 'Crème à la vanille', icone: '🍨', station: 'cuisine', temps: 45, ingredients: [{ item: 'vanille', qte: 1 }, { item: 'lait', qte: 2 }, { item: 'oeuf', qte: 2 }], priceMultiplier: 3 },
+    // Ne périme pas (demande) : même règle que le blé/la farine/la laine,
+    // voir l'entrée `biere_artisanale: null` dans DATA.CONSERVATION (absent
+    // des deux tables de péremption = imperissable ; ici on l'y met
+    // explicitement à `null` pour écarter la durée par défaut de 6 nuits des
+    // plats, exactement comme confiture_fraises ci-dessus).
+    biere_artisanale: { nom: 'Bière artisanale',  icone: '🍺', station: 'cuisine', temps: 60, ingredients: [{ item: 'houblon', qte: 2 }], eau: 1, priceMultiplier: 3 },
+    // --- Repas copieux (viandes de pâturage) ---
+    roti_boeuf:      { nom: 'Rôti de bœuf',       icone: '🥩', station: 'four',    temps: 60, ingredients: [{ item: 'viande_boeuf', qte: 2 }, { item: 'carotte', qte: 2 }, { item: 'patate', qte: 1 }] },
+    poulet_roti_ail: { nom: "Poulet rôti à l'ail", icone: '🍗', station: 'four',    temps: 45, ingredients: [{ item: 'viande_volaille', qte: 1 }, { item: 'patate', qte: 2 }, { item: 'ail', qte: 1 }] },
+
     // Transformations (section 8.2) : le Moulin et la Presse, appareils électriques.
     farine:          { nom: 'Moudre du blé',     icone: '⚙️', station: 'moulin',  temps: 5,  ingredients: [{ item: 'ble', qte: 1 }], transformation: true, sortie: 'farine', qteSortie: 1 },
     huile:           { nom: 'Presser du tournesol', icone: '🌻', station: 'presse', temps: 10, ingredients: [{ item: 'graine_tournesol', qte: 3 }], transformation: true, sortie: 'huile', qteSortie: 1 },
@@ -1642,6 +1700,21 @@ const DATA = {
     // Vache et abattage des poules : le lait et la viande de volaille sont plus
     // fragiles que les viandes de pâturage (même durée que l'épinard/la fraise).
     epinard: 4, fraise: 4, viande_volaille: 4, lait: 4,
+    // 15 nouvelles recettes : le fromage frais se conserve mieux que le lait
+    // cru (4 nuits ci-dessus), sans aller jusqu'à l'imperissable (🟡 valeur
+    // choisie, décision de game design ouverte — voir commentaire sur la
+    // recette DATA.recipes.fromage_frais).
+    fromage_frais: 8,
+    // La bière artisanale et la confiture de fraises sont des plats (donc
+    // normalement CONSERVATION_CATEGORIE.plat = 6 nuits), mais la demande les
+    // veut imperissables (« ne périme pas », « se conserve bien ») : une
+    // valeur explicite à `null` ici prend le pas sur la durée par catégorie
+    // (voir shelfLife(), qui teste `!== undefined`, pas la véracité de la
+    // valeur), exactement comme blé/farine/huile/laine ci-dessus mais listée
+    // explicitement puisque ces deux plats appartiendraient sinon à la
+    // catégorie « plat » par défaut.
+    biere_artisanale: null,
+    confiture_fraises: null,
   },
   CONSERVATION_CATEGORIE: { plat: 6 },
 
@@ -2245,10 +2318,15 @@ function dishEnergy(id) {
   return Math.round(recipeSum(recipe, 'energie', R.ENERGIE_EAU) * R.COEF_PLAT + EPS);
 }
 
-// Prix de vente d'un plat : somme des prix × 1,3, arrondi.
+// Prix de vente d'un plat : somme des prix × 1,3, arrondi, sauf si la recette
+// porte un champ priceMultiplier (override explicite du coefficient, pas de
+// la formule elle-même — voir les 4 recettes « luxe » : chocolat chaud, café,
+// crème à la vanille, bière artisanale, toutes à ×3 au lieu de ×1,3).
 function dishPrice(id) {
+  const recipe = DATA.recipes[id];
   const R = DATA.RECETTES;
-  return Math.round(recipeSum(DATA.recipes[id], 'prix', R.PRIX_EAU) * R.COEF_PLAT + EPS);
+  const coef = recipe.priceMultiplier != null ? recipe.priceMultiplier : R.COEF_PLAT;
+  return Math.round(recipeSum(recipe, 'prix', R.PRIX_EAU) * coef + EPS);
 }
 
 // Ajoute chaque plat à DATA.items (énergie et prix calculés). Ils se gardent
@@ -8061,11 +8139,17 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   // Vache et abattage des poules (nouveauté) : viande_mouton reprend la place
   // de l'ancien « viande » ; viande_boeuf, viande_volaille et lait sont ajoutés
   // à la toute fin de DATA.items (après café), donc juste avant les plats.
+  // 15 nouvelles recettes : ajoutées à DATA.items par registerDishItems(),
+  // dans l'ordre de déclaration de DATA.recipes, donc après tarte_pommes.
   assertEqual(inventoryCounts(s), {
     conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20, oeuf: 20,
     viande_mouton: 20, pomme: 20, poire: 20, oignon: 20, ail: 20, poivron: 20, epinard: 20, fraise: 20, riz: 20,
     viande_boeuf: 20, viande_volaille: 20, lait: 20,
     pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, ragout: 20, compote: 20, tarte_pommes: 20,
+    soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, fromage_frais: 20, riz_au_lait: 20,
+    pain_ail: 20, poivrons_farcis: 20, tarte_fraises: 20, confiture_fraises: 20,
+    chocolat_chaud: 20, cafe_boisson: 20, creme_vanille: 20, biere_artisanale: 20,
+    roti_boeuf: 20, poulet_roti_ail: 20,
   });
   assertEqual(countItem(s, 'graine_carotte'), 0, 'les graines ne sont pas des aliments');
   assertEqual(countItem(s, 'farine') + countItem(s, 'huile'), 0, 'ni la farine ni l\'huile');
@@ -8083,9 +8167,20 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   // 6e nuit : tomate, courgette, aubergine, viande_mouton, poivron, épinard,
   // fraise, viande_boeuf, viande_volaille et lait déjà perdus (conservation à
   // 5 ou 4 nuits), carotte, œuf, oignon (6 nuits) et plats maintenant.
+  // 15 nouvelles recettes : celles à conservation par défaut (catégorie
+  // « plat », 6 nuits) sont perdues en même temps que les anciens plats ;
+  // fromage_frais (8 nuits) leur survit encore, et biere_artisanale /
+  // confiture_fraises (imperissables) ne sont jamais perdues.
   const last = testAgeInventory(s);
-  assertEqual(last.perdus, { carotte: 20, oeuf: 20, oignon: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, ragout: 20, compote: 20, tarte_pommes: 20 });
-  assertEqual(inventoryCounts(s), { conserve: 25, patate: 20, pomme: 20, poire: 20, ail: 20, riz: 20, pain: 20 });
+  assertEqual(last.perdus, {
+    carotte: 20, oeuf: 20, oignon: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, ragout: 20, compote: 20, tarte_pommes: 20,
+    soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, riz_au_lait: 20, pain_ail: 20, poivrons_farcis: 20,
+    tarte_fraises: 20, chocolat_chaud: 20, cafe_boisson: 20, creme_vanille: 20, roti_boeuf: 20, poulet_roti_ail: 20,
+  });
+  assertEqual(inventoryCounts(s), {
+    conserve: 25, patate: 20, pomme: 20, poire: 20, ail: 20, riz: 20, pain: 20,
+    fromage_frais: 20, confiture_fraises: 20, biere_artisanale: 20,
+  });
 });
 
 test('migration v3 (Lot 2) → v4 : l\'inventaire devient des lots à conservation pleine', () => {
@@ -8892,6 +8987,153 @@ test('les plats se gardent 6 nuits (le pain 7) ; la farine et l\'huile ne périm
   }
   assertEqual(shelfLife('pain'), 7);
   assertEqual([shelfLife('farine'), shelfLife('huile')], [null, null]);
+});
+
+/* ---------- 15 nouvelles recettes ---------- */
+
+const NOUVELLES_RECETTES = [
+  'soupe_legumes', 'salade_tomates', 'quiche_epinards', 'fromage_frais', 'riz_au_lait',
+  'pain_ail', 'poivrons_farcis', 'tarte_fraises', 'confiture_fraises',
+  'chocolat_chaud', 'cafe_boisson', 'creme_vanille', 'biere_artisanale',
+  'roti_boeuf', 'poulet_roti_ail',
+];
+const RECETTES_LUXE = ['chocolat_chaud', 'cafe_boisson', 'creme_vanille', 'biere_artisanale'];
+
+test('15 nouvelles recettes : chacune existe, ses ingrédients et sa station existent, les quantités sont valides', () => {
+  assertEqual(NOUVELLES_RECETTES.length, 15);
+  for (const id of NOUVELLES_RECETTES) {
+    const r = DATA.recipes[id];
+    assert(!!r, `recette ${id} absente de DATA.recipes`);
+    assert(!!DATA.STATIONS[r.station], `${id} : station ${r.station} inconnue`);
+    assert(Array.isArray(r.ingredients) && r.ingredients.length > 0, `${id} : ingrédients manquants`);
+    for (const ing of r.ingredients) {
+      for (const item of ingredientOptions(ing)) {
+        assert(!!DATA.items[item], `${id} : ingrédient ${item} absent de DATA.items`);
+      }
+      assert(typeof ing.qte === 'number' && ing.qte > 0, `${id} : quantité invalide pour ${ing.item || ing.ou}`);
+    }
+    assert(typeof r.temps === 'number' && r.temps > 0, `${id} : temps invalide`);
+    if (r.eau != null) assert(typeof r.eau === 'number' && r.eau > 0, `${id} : eau invalide`);
+  }
+});
+
+test('15 nouvelles recettes : aucune n\'est une transformation, toutes deviennent des items « plat »', () => {
+  for (const id of NOUVELLES_RECETTES) {
+    const r = DATA.recipes[id];
+    assert(!r.transformation, `${id} ne doit pas être classée comme une transformation`);
+    const it = DATA.items[id];
+    assert(!!it, `${id} doit être enregistrée comme item par registerDishItems()`);
+    assertEqual([it.category, it.plat, it.edible], ['plat', true, true], id);
+  }
+});
+
+test('15 nouvelles recettes : énergie et prix, calculés par le système existant (recipeSum × COEF_PLAT)', () => {
+  const attendu = {
+    soupe_legumes: [43, 7], salade_tomates: [38, 8], quiche_epinards: [95, 14],
+    fromage_frais: [62, 16], riz_au_lait: [47, 8], pain_ail: [69, 13],
+    poivrons_farcis: [81, 13], tarte_fraises: [70, 13], confiture_fraises: [26, 10],
+    roti_boeuf: [144, 18], poulet_roti_ail: [75, 12],
+  };
+  for (const [id, [energie, prix]] of Object.entries(attendu)) {
+    assertEqual([dishEnergy(id), DATA.items[id].energie], [energie, energie], id);
+    assertEqual([dishPrice(id), DATA.items[id].prix], [prix, prix], id);
+  }
+  // Poivrons farcis utilise précisément la viande de mouton (demande : « viande = mouton »).
+  assertEqual(DATA.recipes.poivrons_farcis.ingredients.some((i) => i.item === 'viande_mouton'), true);
+});
+
+test('4 recettes de luxe : prix ×3 sur les ingrédients (pas le coefficient ×1,3 normal), énergie inchangée', () => {
+  for (const id of RECETTES_LUXE) {
+    assertEqual(DATA.recipes[id].priceMultiplier, 3, id);
+  }
+  const R = DATA.RECETTES;
+  const casLuxe = {
+    chocolat_chaud: { energie: 21, prixIngredients: 12 },
+    cafe_boisson: { energie: 0, prixIngredients: 7 },
+    creme_vanille: { energie: 75, prixIngredients: 27 },
+    biere_artisanale: { energie: 0, prixIngredients: 7 },
+  };
+  for (const [id, { energie, prixIngredients }] of Object.entries(casLuxe)) {
+    // Énergie : calcul normal (×COEF_PLAT), priceMultiplier ne la concerne pas.
+    assertEqual(dishEnergy(id), energie, `${id} : énergie normale (×${R.COEF_PLAT})`);
+    // Prix : ×3, et surtout pas le ×1,3 qu'aurait donné le coefficient normal.
+    assertEqual(dishPrice(id), Math.round(prixIngredients * 3 + EPS), `${id} : prix ×3`);
+    assert(dishPrice(id) !== Math.round(prixIngredients * R.COEF_PLAT + EPS), `${id} : ne doit pas retomber sur le coefficient ×${R.COEF_PLAT}`);
+  }
+});
+
+test('bière artisanale : ne périme pas (comme le blé/la farine/la laine), contrairement aux autres plats', () => {
+  assertEqual(shelfLife('biere_artisanale'), null);
+  assertEqual(isPerishable('biere_artisanale'), false);
+  const s = atelier();
+  setInv(s, { biere_artisanale: 5 });
+  assertEqual(lotsOf(s, 'biere_artisanale')[0].nightsLeft, null);
+});
+
+test('confiture de fraises : se conserve bien, imperissable comme une conserve', () => {
+  assertEqual(shelfLife('confiture_fraises'), null);
+  assertEqual(isPerishable('confiture_fraises'), false);
+});
+
+test('fromage frais : se conserve mieux que le lait cru (8 nuits contre 4)', () => {
+  assertEqual(shelfLife('fromage_frais'), 8);
+  assert(shelfLife('fromage_frais') > shelfLife('lait'), 'plus long que le lait cru');
+});
+
+test('15 nouvelles recettes : chacune se prépare quand ses conditions sont remplies', () => {
+  const s = atelier();
+  const stocks = {
+    soupe_legumes: { carotte: 1, oignon: 1, patate: 1 },
+    salade_tomates: { tomate: 2, huile: 1 },
+    quiche_epinards: { farine: 2, oeuf: 2, lait: 1, epinard: 1 },
+    fromage_frais: { lait: 3 },
+    riz_au_lait: { riz: 2, lait: 1 },
+    pain_ail: { pain: 1, ail: 1, huile: 1 },
+    poivrons_farcis: { poivron: 2, viande_mouton: 1, riz: 1 },
+    tarte_fraises: { farine: 2, fraise: 3, oeuf: 1 },
+    confiture_fraises: { fraise: 4 },
+    chocolat_chaud: { cacao: 1, lait: 1 },
+    cafe_boisson: { cafe: 1 },
+    creme_vanille: { vanille: 1, lait: 2, oeuf: 2 },
+    biere_artisanale: { houblon: 2 },
+    roti_boeuf: { viande_boeuf: 2, carotte: 2, patate: 1 },
+    poulet_roti_ail: { viande_volaille: 1, patate: 2, ail: 1 },
+  };
+  for (const id of NOUVELLES_RECETTES) {
+    // Chaque recette, sans ses ingrédients : grisée (« manque »), refusée.
+    setInv(s, {});
+    s.stations[DATA.recipes[id].station].tache = null; // station libre entre deux essais
+    assertEqual(recipeStatus(s, id).code, 'manque', `${id} sans ingrédients`);
+    assertEqual(startRecipe(s, id).ok, false, `${id} refusée sans ingrédients`);
+    // Avec les ingrédients (et l'eau, si nécessaire) : prête, et se lance.
+    setInv(s, stocks[id]);
+    s.eau = 40;
+    assertEqual(recipeStatus(s, id).code, 'pret', `${id} avec ses ingrédients`);
+    assertEqual(startRecipe(s, id).ok, true, `${id} se lance`);
+    assertEqual(s.stations[DATA.recipes[id].station].tache.recette, id);
+  }
+});
+
+test('Pain à l\'ail : retire bien 1 pain du stock, comme n\'importe quel autre ingrédient', () => {
+  const s = atelier();
+  setInv(s, { pain: 3, ail: 1, huile: 1 });
+  assertEqual(startRecipe(s, 'pain_ail').ok, true);
+  assertEqual(countItem(s, 'pain'), 2, 'un seul pain consommé');
+  assertEqual(countItem(s, 'ail'), 0);
+  assertEqual(countItem(s, 'huile'), 0);
+  // Sans pain, la recette est refusée et rien n'est retiré.
+  const t = atelier();
+  setInv(t, { ail: 1, huile: 1 });
+  assertEqual(recipeStatus(t, 'pain_ail').code, 'manque');
+  assertEqual(startRecipe(t, 'pain_ail').ok, false);
+  assertEqual([countItem(t, 'ail'), countItem(t, 'huile')], [1, 1], 'rien retiré si la recette échoue');
+});
+
+test('Café (cafe_boisson) : id distinct de l\'item cafe, ne remplace pas l\'ingrédient de la Serre', () => {
+  assertEqual(DATA.items.cafe.category, 'ingrédient', 'l\'ingrédient de la Serre reste inchangé');
+  assertEqual(DATA.items.cafe.edible, false);
+  assertEqual(DATA.items.cafe_boisson.category, 'plat');
+  assertEqual(DATA.items.cafe_boisson.edible, true);
 });
 
 test('la farine et l\'huile ne se mangent pas seules ; les plats se mangent', () => {
@@ -14758,7 +15000,7 @@ const HELP = {
     role: 'Prépare les plats mijotés. Une préparation à la fois.',
     conso: 'Pas d\'électricité.',
     prod: `${stationRecipesLine('cuisine')}.`,
-    note: `Un plat vaut ${formatFixed(DATA.RECETTES.COEF_PLAT, 1)} fois l'énergie de ses ingrédients, et chaque plat différent mangé dans la journée donne +${DATA.FAMILY.BONUS_PLATS.PAR_PLAT} de santé (jusqu'à +${DATA.FAMILY.BONUS_PLATS.MAX}).`,
+    note: `Un plat vaut ${formatFixed(DATA.RECETTES.COEF_PLAT, 1)} fois l'énergie de ses ingrédients, et chaque plat différent mangé dans la journée donne +${DATA.FAMILY.BONUS_PLATS.PAR_PLAT} de santé (jusqu'à +${DATA.FAMILY.BONUS_PLATS.MAX}). Quatre recettes de luxe (chocolat chaud, café, crème à la vanille, bière artisanale) se vendent ×3 le prix de leurs ingrédients au lieu de ${formatFixed(DATA.RECETTES.COEF_PLAT, 1)}.`,
   }),
   moulin: () => ({
     nom: 'Moulin',
