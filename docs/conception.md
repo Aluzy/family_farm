@@ -1,6 +1,8 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v19** : la **vache** rejoint le pâturage (achat au Comptoir, 200 💰) — elle occupe **0,15 ha** (3× un mouton), grossit de 1 kg/nuit (40 → 150 kg) et donne **1 lait par nuit dès l'achat**, sans délai de maturité ni condition autre que la place au pâturage (contrairement à la laine du mouton). Abattage sur le même modèle que le mouton (poids × 50 %), donnant un item distinct `viande_boeuf`. L'ancien item générique « viande » (mouton) est renommé **`viande_mouton`** pour laisser la place à `viande_boeuf` et à `viande_volaille`. Les **poules peuvent désormais être abattues** au clic (bouton dédié au Poulailler, avec confirmation) : rendement fixe et volontairement modeste (3 portions de `viande_volaille`), la poule abattue quitte le cheptel (ne pond plus, ne mange plus de blé), sa place se libère mais n'est pas rachetée automatiquement. Voir 1.4, 8.5 et 8.6 pour le détail chiffré et la logique d'équilibrage.
+>
 > **v18** : **10 nouvelles cultures** — Potager (oignon, ail, poivron, épinard, fraise), Champ (riz, houblon), et 3 **cultures de rente exclusives à la Serre** (cacao, vanille, café : jamais comestibles, vente et recettes de luxe uniquement). Le poivron reprend le mécanisme Potager + Serre de la tomate/courgette/aubergine. Voir 1.4 (« Cultures de rente ») et 8.3 (tableau chiffré complet). 🟡 Le riz demande 4 L par arrosage (le double du blé) : aucune règle de pompe n'a été changée pour autant, à surveiller si le débit devient un goulot d'étranglement.
 >
 > **v17** : la valeur nutritionnelle de tous les aliments de base existants est **augmentée de 25 %** (arrondie à l'entier le plus proche, règle centralisée — voir 1.1 et 8.1). Le **Gratin de patates** reçoit une valeur nutritionnelle dédiée de **150** (au lieu du calcul ingrédients × 1,3) pour couvrir à lui seul l'Apport Journalier d'une famille de 2 adultes + 2 enfants (voir 1.4). Les prix de vente ne changent pas. 🟡 Conséquence non traitée par ce changement : la courbe de progression cible (8.10) suppose des rendements de production non modifiés ; avec des aliments plus nutritifs pour les mêmes récoltes, l'autonomie mesurée progresse mécaniquement plus vite que cette courbe (à confirmer/ajuster).
@@ -110,7 +112,9 @@ Ingrédients ─────► Recette (clic + temps de préparation) ─► Pl
 **Animal**
 ```
 Silo (stock blé) ─► Poulailler ─► Poule [consomme blé] ─► 1 œuf / jour si nourrie
-Pâturage (ha)   ─► Mouton (poids) ─► Viande | Laine
+                                          └─► (v19) Abattage ─► Viande de volaille (portion fixe)
+Pâturage (ha)   ─► Mouton (poids) ─► Viande de mouton | Laine
+Pâturage (ha)   ─► Vache (poids, v19) ─► Viande de bœuf | Lait (chaque nuit, sans condition)
 ```
 
 **Stockage et économie**
@@ -332,21 +336,33 @@ Le joueur ne possède plus un panneau et une batterie, mais un **parc** qu'il ag
 - Le **Verger** reste saisonnier : il ne donne des fruits qu'en 🟡 fin d'été et en automne.
 
 **🐔 Achat des animaux**
-- Poules et moutons s'obtiennent **uniquement par achat au Comptoir** (pas de reproduction).
+- Poules, moutons et **vaches** (v19) s'obtiennent **uniquement par achat au Comptoir** (pas de reproduction).
 - Un achat n'est possible que s'il reste de la place :
   - poule → **capacité du Poulailler** ;
-  - mouton → **surface de pâturage** (0,05 ha / mouton ; au-delà de 10, acheter d'abord la surface au prix × 1,2ⁿ).
-- **Prix fixes**, quel que soit le nombre d'animaux possédés : 🟡 poule 15 pièces, mouton 60 pièces. La croissance est freinée par la capacité du Poulailler et par le coût du pâturage (× 1,2 par mouton au-delà de 10), pas par le prix de l'animal.
-- **Pas de revente** d'animaux vivants : un achat est définitif. Un mouton ne quitte la ferme que par l'abattage.
-- Un mouton abattu doit être **racheté** : l'abattage a un vrai coût.
-- **La poule pond toute sa vie** : pas de vieillissement, pas de baisse de ponte, pas d'abattage. Une poule est un investissement permanent, tant qu'elle est nourrie. Elle ne fournit jamais de viande : la viande vient uniquement des moutons.
+  - mouton → **surface de pâturage** (0,05 ha / mouton ; au-delà de 10, acheter d'abord la surface au prix × 1,2ⁿ) ;
+  - vache (v19) → **surface de pâturage**, comme le mouton, mais **0,15 ha / vache** (3× un mouton) ; le pâturage est un terrain **commun aux deux espèces** : la surface libre se calcule sur leur occupation totale.
+- **Prix fixes**, quel que soit le nombre d'animaux possédés : 🟡 poule 15 pièces, mouton 60 pièces, **vache 200 pièces** (v19, ≈ 3,3× le mouton — un peu plus que le seul rapport de surface/viande, le lait quotidien dès l'achat justifiant l'écart). La croissance est freinée par la capacité du Poulailler et par le coût du pâturage (× 1,2 par 0,05 ha au-delà de la surface de départ), pas par le prix de l'animal.
+- **Pas de revente** d'animaux vivants : un achat est définitif. Un mouton ou une vache ne quitte la ferme que par l'abattage ; une poule, par la ponte à vie ou (v19) par l'abattage.
+- Un mouton ou une vache abattu(e) doit être **racheté(e)** : l'abattage a un vrai coût. Une poule abattue (v19) aussi : sa place se libère mais n'est **jamais remplacée automatiquement**.
+- **La poule pond toute sa vie** : pas de vieillissement, pas de baisse de ponte. Une poule est d'abord un investissement permanent, tant qu'elle est nourrie. Depuis v19, elle peut aussi être **abattue** (viande de volaille), mais seulement comme option de dernier recours : voir plus bas.
 
 **🐑 Mouton : laine régulière, viande à l'abattage**
 - Le mouton **grossit chaque jour** tant que le pâturage suffit (🟡 jusqu'à un poids maximal).
 - La **laine repousse** : tonte possible tous les 🟡 7 jours → 🟡 1 unité de laine, sans perte du mouton.
-- **Abattage** au clic : viande = poids × 🟡 50 % (rendement carcasse). Le mouton disparaît et libère sa place de pâturage (la surface achetée reste acquise).
+- **Abattage** au clic : viande de mouton (`viande_mouton`, v19 : anciennement l'item générique « viande ») = poids × 🟡 50 % (rendement carcasse). Le mouton disparaît et libère sa place de pâturage (la surface achetée reste acquise).
 - **La laine sert uniquement à la vente** au Comptoir : c'est un revenu régulier en pièces, sans usage d'artisanat ni effet sur la santé. Elle n'est pas périssable.
 - Tension de jeu : garder un mouton pour la laine (pièces régulières) ou l'abattre pour nourrir la famille (viande immédiate).
+
+**🐄 Vache (v19) : lait quotidien, viande à l'abattage**
+- La vache **grossit chaque jour** tant que le pâturage suffit (même règle de saison que le mouton), de 1 kg/nuit, de 40 à 150 kg.
+- **Le lait est produit chaque nuit, sans aucune condition** au-delà de la place au pâturage : ni délai de maturité, ni tonte à déclencher (contrairement à la laine du mouton). 1 unité de `lait` par vache et par nuit, dès l'achat.
+- **Abattage** au clic, sur le modèle exact du mouton : viande de bœuf (`viande_boeuf`) = poids × 50 %. La vache disparaît, la surface reste acquise. Au poids maximal (150 kg), une vache rend 150 portions — exactement 3× le maximum du mouton (50 portions à 50 kg), le même rapport que l'occupation au pâturage : à surface égale, une vache n'est ni plus ni moins rentable en viande que des moutons.
+- Tension de jeu : un investissement plus lourd (200 💰, 0,15 ha) mais qui rapporte tout de suite (lait) et sur la durée (croissance vers une viande abondante), en concurrence directe avec l'espace qu'occuperaient des moutons.
+
+**🍗 Abattage des poules (v19) : dernier recours, jamais une rente**
+- Contrairement au mouton et à la vache, la poule n'est **pas suivie individuellement** (pas de poids) : l'abattage rend un nombre **fixe** de portions de `viande_volaille` (3 portions), quel que soit son âge ou son historique de ponte.
+- Volontairement **peu rentable à court terme** : 3 portions à 3 💰 (9 💰) contre un prix d'achat de 15 💰. Abattre une poule pour la revendre en viande immédiate est donc toujours une perte sèche par rapport à son prix d'achat — l'abattage reste une option de variété alimentaire ou de gestion de place, jamais une meilleure rente que la ponte continue, la laine du mouton ou le lait de la vache.
+- La poule abattue **quitte le cheptel immédiatement** : elle ne pond plus et ne consomme plus de blé dès la nuit suivante. La capacité du Poulailler ne change pas ; la place libérée peut accueillir une poule rachetée au Comptoir (jamais automatiquement).
 
 ### 1.5 Paramètres par entité
 
@@ -364,15 +380,16 @@ Le joueur ne possède plus un panneau et une batterie, mais un **parc** qu'il ag
 | Moulin / Presse | {conso kWh}, {ratio entrée → sortie}, {temps} |
 | Silo | {capacité blé} |
 | Poulailler | {niveau}, {capacité}, {nourrissage auto ≥ niv. 5} |
-| Poule | {1 œuf / jour si nourrie, à vie}, {blé / jour}, {pas de vieillissement ni d'abattage} |
-| Pâturage | {surface ha}, {0,05 ha / mouton}, {prix base × 1,2ⁿ} |
-| Mouton | {poids, croissance / jour, poids max}, {rendement viande}, {jours entre tontes}, {laine / tonte}, {prix de vente de la laine} |
+| Poule | {1 œuf / jour si nourrie, à vie}, {blé / jour}, {pas de vieillissement}, {v19 : abattage à rendement fixe, viande_volaille} |
+| Pâturage | {surface ha}, {0,05 ha / mouton, 0,15 ha / vache (v19)}, {prix base × 1,2ⁿ, terrain commun aux deux espèces} |
+| Mouton | {poids, croissance / jour, poids max}, {rendement viande_mouton}, {jours entre tontes}, {laine / tonte}, {prix de vente de la laine} |
+| Vache (v19) | {poids, croissance / jour, poids max}, {rendement viande_boeuf}, {lait / nuit, sans délai de maturité} |
 | Réfrigérateur | {capacité illimitée}, {conservation tant qu'alimenté}, {conso kWh permanente : base + par unité}, {seuil de panne} |
 | Inventaire | {illimité}, {lots datés : nuits restantes} |
 | Station (Cuisine, Four, Moulin, Presse — 1 exemplaire chacune) | {occupée / libre}, {préparation en cours}, {temps restant} |
 | Recette | {ingrédients}, {station : cuisine / four}, {temps de préparation}, {énergie = ingrédients × 1,3}, {bonus santé} |
 | Plante | {stades}, {rendement}, {graines rendues}, {mode de reproduction} |
-| Comptoir | {prix de vente}, {coef d'achat dynamique : plancher 1,2 (graines 2,0)}, {prix de vente fixes}, {prix fixes poule / mouton} |
+| Comptoir | {prix de vente}, {coef d'achat dynamique : plancher 1,2 (graines 2,0)}, {prix de vente fixes}, {prix fixes poule / mouton / vache (v19)} |
 | Famille | {AJ adulte 50}, {AJ enfant 25}, {santé 0–100}, {multiplicateur de productivité} |
 
 ---
@@ -411,7 +428,7 @@ Le temps avance **par journées**, chaque journée se terminant par le bouton **
 |---|---|
 | 🌅 Réveil | Écran de bilan de la nuit ; le soleil recharge la batterie en temps réel ; compte à rebours avant de pouvoir dormir |
 | ☀️ Journée (temps libre) | Le joueur arrose, nourrit, tond, cuisine, moud, presse, vend |
-| 😴 Clic « Dormir » | Repas familial (150 énergies) → santé → pousse (+1 stade si arrosé) → ponte (si nourrie) → croissance et laine des moutons → péremption hors frigo |
+| 😴 Clic « Dormir » | Repas familial (150 énergies) → santé → pousse (+1 stade si arrosé) → ponte (si nourrie) → croissance et laine des moutons → croissance et lait des vaches (v19) → péremption hors frigo |
 
 ### Rôle des nouveaux éléments
 - **Serre** : rendement constant toute l'année, sans malus d'hiver.
@@ -421,13 +438,15 @@ Le temps avance **par journées**, chaque journée se terminant par le bouton **
 - **Presse / Moulin** : transformer quand la batterie est pleine (été).
 
 ### Modificateurs saisonniers (légers) 🟡
-| Saison | Solaire | Rendement potager | Eau consommée | Champ | Pâturage (croissance moutons) | Verger |
+| Saison | Solaire | Rendement potager | Eau consommée | Champ | Pâturage (croissance moutons **et vaches**, v19) | Verger |
 |---|---|---|---|---|---|---|
 | 🌱 Printemps | ×1,0 | ×1,1 | ×1,0 | ×1,0 | ×1,2 | — |
 | ☀️ Été | ×1,3 | ×1,0 | ×1,3 | ×1,2 | ×1,0 | fruits (fin) |
 | 🍂 Automne | ×0,9 | ×1,0 | ×0,9 | ×0,9 | ×1,0 | fruits |
 | ❄️ Hiver | ×0,7 | ×0,7 | ×0,8 | ×0,7 | ×0,8 | — |
 | Serre | — | ×1,0 toute l'année | ×1,0 | — | — | — |
+
+(v19) La croissance de la vache réutilise le même facteur saisonnier que le mouton (même colonne) plutôt que d'en introduire un dédié ; seul son lait échappe aux saisons, comme la ponte des poules.
 
 L'hiver reste plus serré, sans être punitif : stocker au réfrigérateur et investir dans la serre aident, mais ne sont pas obligatoires pour survivre.
 
@@ -451,7 +470,7 @@ La progression suit des **chapitres**, mesurés par le **% d'autonomie** = éner
 | 2 | *Le premier potager* | Potager (carotte, patate) | Récolter 20 carottes, replanter sans épuiser ses graines — 25 % d'autonomie |
 | 3 | *Le poulailler* | Champ (blé), Silo, Poulailler | 7 jours de ponte sans interruption, santé ≥ 80 |
 | 4 | *Le four et le livre de recette* | Four → onglet Livre de recette, puis Cuisine, Moulin, Presse, tournesol | Cuire 5 pains et préparer 3 plats différents |
-| 5 | *Le troupeau* | Pâturage, Moutons, tonte, abattage | Tondre 10 laines — 60 % d'autonomie |
+| 5 | *Le troupeau* | Pâturage, Moutons **et Vaches (v19)**, tonte, abattage, lait | Tondre 10 laines — 60 % d'autonomie |
 | 6 | *Toute l'année* | Serre, Verger, Réfrigérateur | Traverser un hiver à 80 % sans payer de soins |
 | 7 | *Famille autonome* | Automatisations avancées | 100 % pendant 7 jours → mode libre |
 
@@ -502,7 +521,7 @@ src/
 │   ├── items.ts                  aliments, graines, produits, énergie, prix
 │   ├── crops.ts                  plantes : lieu, stades, eau
 │   ├── buildings.ts              panneau, batterie, pompe, moulin, presse, silo...
-│   ├── animals.ts                poule, mouton
+│   ├── animals.ts                poule, mouton, vache (v19)
 │   ├── recipes.ts                ingrédients, temps, énergie
 │   ├── techtree.ts
 │   └── chapters.ts
@@ -511,7 +530,7 @@ src/
 │   ├── tick.ts                   flux kWh et eau
 │   ├── day.ts                    pousse, ponte, repas, péremption
 │   ├── crops.ts                  planter, arroser, récolter
-│   ├── animals.ts                nourrir, pâturage
+│   ├── animals.ts                nourrir, pâturage, abattage (mouton, vache, poule — v19)
 │   ├── family.ts                 consommation des 150 énergies
 │   ├── market.ts                 prix dynamiques
 │   ├── kitchen.ts                file de recettes
@@ -609,29 +628,65 @@ function feedHen(s: GameState, hen: Hen) {
   s.silo.ble -= BLE_PAR_POULE;
   hen.fedToday = true;
 }
-```
 
-### 6.6 Pâturage
-
-```ts
-export const maxSheep = (ha: number) => Math.floor(ha / 0.05 + 1e-9);
-
-export function pastureCost(s: GameState) {
-  const extra = s.sheep.length - 10 + 1;          // rang au-delà du 10ᵉ
-  return Math.round(PRIX_BASE_005HA * 1.2 ** Math.max(0, extra - 1));
+// v19 : abattage d'une poule. Contrairement au mouton/à la vache, la poule
+// n'est pas suivie individuellement : un simple décompte (voir 6.6 bis pour
+// le parallèle avec slaughter()). Rendement fixe et volontairement modeste
+// (voir 8.5) pour ne jamais concurrencer la ponte, le mouton ou la vache.
+export function slaughterHen(s: GameState) {
+  if (s.hens.length === 0) return false;
+  s.hens.pop();                                    // une poule de moins, place libérée
+  s.inventory.viande_volaille += PORTIONS_ABATTAGE_POULE; // 3 (fixe)
+  return true;
 }
 ```
 
-### 6.6 bis Moutons : croissance, tonte, abattage
+### 6.6 Pâturage (v19 : terrain commun aux moutons et aux vaches)
+
+```ts
+export const maxSheep = (ha: number) => Math.floor(ha / 0.05 + 1e-9);
+export const maxCows = (ha: number) => Math.floor(ha / 0.15 + 1e-9); // v19
+
+// v19 : la surface libre se calcule sur l'occupation totale du troupeau
+// (moutons + vaches), pas seulement sur le nombre de moutons.
+export const occupiedHa = (s: GameState) =>
+  s.sheep.length * 0.05 + s.cows.length * 0.15;
+
+export function pastureCost(s: GameState) {
+  // v19 : le rang suit désormais les hectares déjà achetés au-delà de la
+  // surface de départ (et non plus le nombre de moutons), pour rester correct
+  // quand des vaches achètent, elles aussi, leur part de terrain par les
+  // mêmes pas de 0,05 ha.
+  const extraHa = Math.max(0, s.pasture.ha - 0.5);
+  const rank = Math.round(extraHa / 0.05) + 1;
+  return Math.round(PRIX_BASE_005HA * 1.2 ** (rank - 1));
+}
+```
+
+### 6.6 bis Moutons et vaches (v19) : croissance, tonte, lait, abattage
 
 ```ts
 // engine/animals.ts
 export function growSheep(s: GameState) {             // appelé par sleep()
-  const ok = s.sheep.length <= maxSheep(s.pasture.ha);
+  const ok = occupiedHa(s) <= s.pasture.ha;           // v19 : troupeau entier
   for (const m of s.sheep) {
     if (ok) m.weight = Math.min(SHEEP_MAX_KG, m.weight + SHEEP_GAIN_KG);
     m.woolDays = Math.min(WOOL_DAYS, m.woolDays + 1);
   }
+}
+
+// v19 : sur le même modèle que growSheep(), appelé juste après dans sleep().
+// Contrairement à la laine, le lait n'a pas de délai : il est produit chaque
+// nuit, sans condition autre que la place au pâturage.
+export function growCattle(s: GameState) {
+  const ok = occupiedHa(s) <= s.pasture.ha;
+  let milk = 0;
+  for (const c of s.cows) {
+    if (!ok) continue;
+    c.weight = Math.min(COW_MAX_KG, c.weight + COW_GAIN_KG);
+    milk += 1;
+  }
+  s.inventory.lait += milk;
 }
 
 export function shear(s: GameState, id: string) {
@@ -642,11 +697,20 @@ export function shear(s: GameState, id: string) {
   return true;
 }
 
+// v19 : un seul point d'entrée pour l'abattage du pâturage, qui distingue le
+// mouton de la vache — jamais un stock générique de « viande ».
 export function slaughter(s: GameState, id: string) {
-  const i = s.sheep.findIndex(x => x.id === id);
-  if (i < 0) return;
-  s.inventory.viande += Math.floor(s.sheep[i].weight * MEAT_RATIO / PORTION_KG);
-  s.sheep.splice(i, 1);                               // la surface reste acquise
+  const si = s.sheep.findIndex(x => x.id === id);
+  if (si >= 0) {
+    s.inventory.viande_mouton += Math.floor(s.sheep[si].weight * MEAT_RATIO / PORTION_KG);
+    s.sheep.splice(si, 1);                            // la surface reste acquise
+    return;
+  }
+  const ci = s.cows.findIndex(x => x.id === id);
+  if (ci >= 0) {
+    s.inventory.viande_boeuf += Math.floor(s.cows[ci].weight * MEAT_RATIO / PORTION_KG);
+    s.cows.splice(ci, 1);
+  }
 }
 ```
 
@@ -677,14 +741,18 @@ export function sell(s: GameState, item: string, qty: number) {
 }
 // état initial : s.market[item].coef = floor(item)
 
-// achat d'animaux
-export const animalPrice = (_s: GameState, kind: 'poule' | 'mouton') =>
-  ANIMAL_PRICE[kind];                                  // prix fixes (🟡 15 / 60), pas de revente
+// achat d'animaux (v19 : 'vache' rejoint 'poule' et 'mouton')
+export const animalPrice = (_s: GameState, kind: 'poule' | 'mouton' | 'vache') =>
+  ANIMAL_PRICE[kind];                                  // prix fixes (🟡 15 / 60 / 200), pas de revente
 
-export function buyAnimal(s: GameState, kind: 'poule' | 'mouton') {
+export function buyAnimal(s: GameState, kind: 'poule' | 'mouton' | 'vache') {
+  // v19 : la place d'un mouton ou d'une vache se calcule sur l'occupation
+  // totale du pâturage (occupiedHa), pas seulement sur les moutons.
   const room = kind === 'poule'
     ? s.animals.poule.length < coopCapacity(s)
-    : s.animals.mouton.length < maxSheep(s.pasture.ha);
+    : kind === 'mouton'
+      ? maxSheep(s.pasture.ha - s.cows.length * 0.15) - s.sheep.length > 0
+      : maxCows(s.pasture.ha - s.sheep.length * 0.05) - s.cows.length > 0;
   const price = animalPrice(s, kind);
   if (!room || s.pieces < price) return false;
   s.pieces -= price;
@@ -805,6 +873,7 @@ export function sleep(s: GameState) {
   growAll(s);             // 3. pousse
   layEggs(s);             // 4. ponte
   growSheep(s);           // 5. moutons
+  growCattle(s);          // 5 bis (v19) : vaches, juste après les moutons
   nightPower(s);          // 6. bloc nocturne du frigo (30 s)
   fridgeNight(s);         //    panne éventuelle du frigo
   spoil(s);               // 7. péremption (hors frigo, + frigo si panne > 50 %)
@@ -904,7 +973,7 @@ export function take(s: GameState, item: string, qty: number) {
 | 2 | Inventaire, Comptoir avec prix dynamiques, graines en dépannage |
 | 3 | Champ (blé), Silo, achat de poules, Poulailler au clic, ponte |
 | 4 | Moulin, Presse, Four, tournesol, recettes avec minuteur, énergie et bonus des plats |
-| 5 | Pâturage, achat de moutons et de surface, croissance, tonte, abattage |
+| 5 | Pâturage, achat de moutons et de vaches (v19) et de surface, croissance, tonte, lait, abattage |
 | 6 | Arbre techno, automatisations niveau 5, semis automatique |
 | 7 | Saisons légères, Serre, Verger, péremption par lots, Réfrigérateur, soins |
 | 8 | Chapitres, hors-ligne, finitions, mobile |
@@ -1031,25 +1100,34 @@ Un arbre adulte donne environ **30 fruits par an** (≈ 300 énergie).
 
 | Poule | Valeur |
 |---|---|
-| Prix | 15 💰 (fixe, pas de revente) |
+| Prix | 15 💰 (fixe, pas de revente vivante) |
 | Consommation | 0,5 blé / nuit |
 | Production | 1 œuf / nuit si nourrie (13 énergie depuis le §4, vente 2 💰) |
 | Silo (niv. 1 → 5) | 20 · 50 · 100 · 200 · 400 blé (coûts 30 · 80 · 180 · 400) |
+| **Abattage (v19)** | **rendement fixe : 3 portions de `viande_volaille`** (14 énergie chacune, vente 3 💰), quel que soit l'historique de la poule. La poule quitte le cheptel : elle ne pond plus, ne mange plus de blé ; sa place se libère (rachat au Comptoir, jamais automatique). |
 
 Repère : 12 poules = 156 énergie / nuit et 6 blé / nuit, soit environ 6 parcelles de blé.
 
-### 8.6 Pâturage et moutons
+Repère (v19, équilibrage de l'abattage) : abattre une poule tout de suite rend 3 × 3 = **9 💰** de viande, contre un prix d'achat de **15 💰** — toujours une perte sèche par rapport à l'investissement initial, et sans commune mesure avec la ponte continue (2 💰/nuit à vie). L'abattage des poules reste donc un choix de dernier recours (variété alimentaire, place à libérer), jamais une rente plus intéressante que la ponte, le mouton ou la vache.
+
+### 8.6 Pâturage, moutons et vaches (v19)
 
 | Élément | Valeur |
 |---|---|
-| Déblocage du pâturage (0,5 ha, 10 moutons) | 150 💰 |
-| 0,05 ha supplémentaire | 40 💰 × 1,2ⁿ⁻¹ (n = rang du mouton au-delà du 10ᵉ) |
-| Mouton | 60 💰 (fixe, pas de revente) |
-| Poids de départ / gain / max | 20 kg / +0,5 kg par nuit / 50 kg |
-| Viande à l'abattage | poids × 50 % ÷ 0,5 kg → 20 à 50 portions (38 énergie depuis le §4, vente 5 💰) |
+| Déblocage du pâturage (0,5 ha, 10 moutons **ou** 3 vaches, ou un mélange) | 150 💰 |
+| 0,05 ha supplémentaire | 40 💰 × 1,2ⁿ⁻¹ (n = rang de l'achat de surface au-delà de la surface de départ — le terrain est commun aux moutons et aux vaches, voir 1.4) |
+| Mouton | 60 💰 (fixe, pas de revente), 0,05 ha |
+| Poids de départ / gain / max (mouton) | 20 kg / +0,5 kg par nuit / 50 kg |
+| Viande de mouton à l'abattage | `viande_mouton` = poids × 50 % ÷ 0,5 kg → 20 à 50 portions (38 énergie depuis le §4, vente 5 💰) |
 | Tonte | toutes les 7 nuits → 1 laine (vente 6 💰, non périssable) |
+| **Vache (v19)** | **200 💰** (fixe, pas de revente), **0,15 ha** (3× un mouton) |
+| Poids de départ / gain / max (vache) | 40 kg / +1 kg par nuit / 150 kg |
+| **Lait (v19)** | **1 lait / nuit et par vache, dès l'achat**, sans condition de maturité — tant que le pâturage suffit au troupeau entier (16 énergie, vente 4 💰, périssable 4 nuits comme l'épinard) |
+| **Viande de bœuf à l'abattage (v19)** | `viande_boeuf` = poids × 50 % ÷ 0,5 kg → 20 à 150 portions (même barème que le mouton : 38 énergie, vente 5 💰) |
 
 Repère : un mouton élevé jusqu'à 50 kg (60 nuits) rapporte **8 laines (48 💰)** puis **50 portions (1 900 énergie)**.
+
+Repère (v19) : une vache élevée jusqu'à 150 kg (110 nuits) rapporte **110 laits (440 💰 de vente)** en cours d'élevage, puis **150 portions de bœuf (5 700 énergie)** à l'abattage — exactement 3× le rendement en viande d'un mouton au maximum (50 portions), le même rapport que l'occupation au sol (0,15 ha contre 0,05 ha) : à surface égale, élever des vaches ou des moutons donne la même viande totale, la vache ajoutant en plus le revenu régulier du lait, en échange d'un investissement de départ et d'une croissance plus lents.
 
 ### 8.7 Stations et bâtiments
 
@@ -1128,7 +1206,7 @@ Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi. Prix d
 | Santé | Malus de productivité sur les **actions au clic uniquement** ; **soins payants** à 0 |
 | Cultures | Pousse d'un stade par nuit arrosée ; parcelle libérée après récolte ; graines issues des récoltes (système par plante) + dépannage au Comptoir ; **semis automatique** via l'arbre techno |
 | Verger | Arbres **achetés** au Comptoir ; emplacements limités, **extensibles par achat de surface** |
-| Animaux | Achat au Comptoir à **prix fixes**, **sans revente** ; poule qui **pond à vie** ; mouton : **laine tondue** (vente uniquement), **viande à l'abattage** |
+| Animaux | Achat au Comptoir à **prix fixes**, **sans revente vivante** ; poule qui **pond à vie** (v19 : ou s'abat, rendement fixe et modeste) ; mouton : **laine tondue** (vente uniquement), **viande_mouton à l'abattage** ; **vache (v19)** : **lait chaque nuit** dès l'achat, **viande_boeuf à l'abattage** (0,15 ha, 3× le mouton) |
 | Cuisine | **Livre de recette = onglet** ouvert par le **Four** ; **une station de chaque type**, une préparation à la fois |
 | Stockage | Inventaire et Réfrigérateur **illimités** ; péremption **5 à 7 nuits** ; frigo alimenté **en continu** + **bloc nocturne de 30 s** ; batterie **sans autodécharge** |
 | Économie | Prix de vente **fixes** ; coefficient d'achat **+0,1 / achat, −0,1 / vente uniquement**, plancher 1,2 (graines 2,0) |
