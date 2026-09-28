@@ -7,15 +7,19 @@ réfrigérateur ; les journées ne passent que quand vous cliquez sur **Dormir**
 
 - **Version** : 0.11.0 (affichée dans ⚙️ Options › À propos)
 - **Conception** : [`docs/conception.md`](docs/conception.md) (v15), qui fait foi
-- **Technique** : un seul fichier `index.html`, sans bibliothèque, sans étape de
-  build, sans serveur. Il fonctionne ouvert depuis le disque comme servi en HTTP.
+- **Technique** : trois pages HTML autonomes, sans bibliothèque, sans étape de
+  build, sans serveur : `index.html` (page d'accueil), `jeu.html` (le jeu) et
+  `encyclopedie.html` (glossaire du jeu, généré depuis
+  `encyclopedie_ferme_familiale.json`). Elles fonctionnent ouvertes depuis le
+  disque comme servies en HTTP.
 
 ## Jouer
 
 ### En local
 
 Ouvrez `index.html` dans un navigateur récent (double-clic, ou glisser le fichier
-dans une fenêtre). Rien à installer.
+dans une fenêtre), puis cliquez sur **Jouer**. Vous pouvez aussi ouvrir
+`jeu.html` directement. Rien à installer.
 
 ### En ligne (GitHub Pages)
 
@@ -23,11 +27,13 @@ dans une fenêtre). Rien à installer.
 2. Sur la page du dépôt : **Settings → Pages**.
 3. Dans **Build and deployment**, choisissez **Source : Deploy from a branch**.
 4. **Branch** : `main`, dossier **`/ (root)`**, puis **Save**.
-5. Après une à deux minutes, le jeu est en ligne à l'adresse
+5. Après une à deux minutes, le site est en ligne à l'adresse
    `https://<votre-compte>.github.io/<nom-du-depot>/` (elle s'affiche en haut de
-   la page Settings → Pages). Chaque `git push` sur `main` met le site à jour.
+   la page Settings → Pages) — c'est la page d'accueil ; le jeu est à
+   `.../jeu.html` et l'encyclopédie à `.../encyclopedie.html`. Chaque
+   `git push` sur `main` met le site à jour.
 
-Aucun fichier de configuration n'est nécessaire : la page n'utilise que des
+Aucun fichier de configuration n'est nécessaire : les pages n'utilisent que des
 chemins relatifs, aucun `fetch` et aucun module externe.
 
 > **Sauvegardes et adresse** : la partie est enregistrée dans le navigateur

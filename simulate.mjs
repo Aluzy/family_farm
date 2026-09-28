@@ -2,7 +2,7 @@
 // Simulation et équilibrage (Lot 10, conception sections 8.10 et 8.11).
 //
 // Comme run-tests.mjs, ce script extrait le bloc <script id="core"> de
-// index.html et joue des parties complètes avec le vrai moteur, sans interface.
+// jeu.html et joue des parties complètes avec le vrai moteur, sans interface.
 // Le joueur automatique et ses réglages vivent dans le bloc core
 // (DATA.SIMULATION et fonctions bot*/simulate*) : le script ne fait que lancer
 // les parties, écrire le CSV, le graphique, et vérifier la courbe cible.
@@ -13,7 +13,7 @@
 //
 // Options : --nuits N (80), --graine N (1), --strategie applique|minimal|toutes,
 //           --csv fichier (simulation.csv), --svg fichier (simulation-autonomie.svg),
-//           --index chemin/vers/index.html, --lissage N (nuits de la moyenne mobile).
+//           --index chemin/vers/jeu.html, --lissage N (nuits de la moyenne mobile).
 // Code de sortie : 0 si toutes les vérifications sont OK, 1 sinon.
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -33,9 +33,9 @@ if (args.includes('--aide') || args.includes('--help')) {
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
-const indexPath = resolve(option('index', resolve(here, '..', 'index.html')));
+const indexPath = resolve(option('index', resolve(here, '..', 'jeu.html')));
 
-/* ---------- le moteur, extrait de index.html ---------- */
+/* ---------- le moteur, extrait de jeu.html ---------- */
 
 const html = readFileSync(indexPath, 'utf8');
 const match = html.match(/<script id="core">([\s\S]*?)<\/script>/);

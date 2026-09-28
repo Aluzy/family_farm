@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Lanceur de tests pour Ferme Familiale.
-// Lit index.html, extrait les blocs <script id="core"> et
+// Lit jeu.html, extrait les blocs <script id="core"> et
 // <script id="tests" type="text/plain">, les exécute avec Node (sans DOM,
 // puisque le bloc core n'en a pas besoin), et affiche le nombre de tests
 // passés et échoués. Code de sortie non nul en cas d'échec.
@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const indexPath = join(__dirname, 'index.html');
+const indexPath = join(__dirname, 'jeu.html');
 
 let html;
 try {
@@ -29,7 +29,7 @@ function extractScript(html, id) {
   const re = new RegExp(`<script[^>]*\\bid=["']${id}["'][^>]*>([\\s\\S]*?)<\\/script>`, 'i');
   const match = html.match(re);
   if (!match) {
-    console.error(`Bloc <script id="${id}"> introuvable dans index.html`);
+    console.error(`Bloc <script id="${id}"> introuvable dans jeu.html`);
     process.exit(1);
   }
   return match[1];
@@ -49,7 +49,7 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
 try {
-  vm.runInContext(combined, sandbox, { filename: 'index.html (core+tests)' });
+  vm.runInContext(combined, sandbox, { filename: 'jeu.html (core+tests)' });
 } catch (err) {
   console.error('Erreur pendant l\'exécution des blocs core/tests :');
   console.error(err.stack || err.message || err);
