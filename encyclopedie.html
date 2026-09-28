@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Encyclopédie de Ferme Familiale — tous les bâtiments, cultures, animaux, ressources, recettes et mécaniques du jeu.">
+  <meta name="theme-color" content="#183b2a">
+  <title>Encyclopédie — Ferme Familiale</title>
+  <style>
+    :root{
+      --ink:#183326;
+      --muted:#647268;
+      --cream:#fbf7ed;
+      --paper:#fffdf8;
+      --green:#24543c;
+      --green-2:#367451;
+      --lime:#b9d77a;
+      --yellow:#f3c95b;
+      --orange:#df8b4e;
+      --line:#e7dfcf;
+      --shadow:0 22px 60px rgba(30,58,42,.12);
+      --radius:24px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;color:var(--ink);background:var(--cream);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+    a{text-decoration:none;color:inherit}
+    .wrap{width:min(1120px,calc(100% - 40px));margin:auto}
+    .nav{
+      position:sticky;z-index:20;top:0;left:0;right:0;
+      padding:16px 0;background:rgba(251,247,237,.88);backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--line);
+    }
+    .nav-inner{display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.03em}
+    .brand-mark{
+      width:38px;height:38px;border-radius:12px;background:var(--green);
+      display:grid;place-items:center;color:#fff;font-size:21px;
+      box-shadow:0 8px 20px rgba(36,84,60,.2)
+    }
+    .nav-links{display:flex;gap:24px;color:#496052;font-weight:650;font-size:14px;align-items:center}
+    .nav-links a:hover{color:var(--green)}
+    .nav-cta{background:var(--green);color:white;padding:10px 16px;border-radius:999px;font-weight:800;font-size:14px}
+    header.hero{
+      padding:64px 0 40px;
+      background:
+        radial-gradient(circle at 82% 22%,rgba(243,201,91,.30),transparent 30%),
+        radial-gradient(circle at 16% 80%,rgba(185,215,122,.28),transparent 32%),
+        linear-gradient(145deg,#f8f2df 0%,#eef2df 100%);
+      border-bottom:1px solid var(--line);
+    }
+    .eyebrow{
+      display:inline-flex;gap:8px;align-items:center;background:#edf4df;color:#356141;
+      border:1px solid #d8e5c3;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:850;
+      text-transform:uppercase;letter-spacing:.08em;
+    }
+    h1{font-size:clamp(34px,5vw,54px);line-height:1.02;letter-spacing:-.045em;margin:16px 0 10px;max-width:700px}
+    .lead{font-size:17px;color:#536258;max-width:640px;margin:0 0 26px}
+    .search-box{
+      display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);
+      border-radius:16px;padding:12px 16px;box-shadow:var(--shadow);max-width:520px;
+    }
+    .search-box input{
+      border:none;outline:none;background:transparent;font-size:15px;color:var(--ink);width:100%;
+      font-family:inherit;
+    }
+    .search-box input::placeholder{color:#9aa89e}
+    .search-count{font-size:12px;color:var(--muted);margin-top:10px}
+    .cat-nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+    .catlink{
+      display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);
+      border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;color:#3c4a40;
+      transition:.15s transform,.15s box-shadow;
+    }
+    .catlink:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(30,58,42,.08)}
+    .catlink span{color:var(--green-2);font-weight:900}
+    main{padding:50px 0 20px}
+    .category{padding:36px 0;border-bottom:1px solid var(--line)}
+    .category:last-child{border-bottom:none}
+    .cat-head{display:flex;align-items:center;gap:16px;margin-bottom:24px;scroll-margin-top:90px}
+    .cat-icon{
+      width:52px;height:52px;border-radius:16px;background:#edf4df;display:grid;place-items:center;
+      font-size:26px;flex-shrink:0;
+    }
+    .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--green-2);font-weight:900}
+    h2{font-size:clamp(24px,3vw,32px);line-height:1.08;letter-spacing:-.03em;margin:4px 0 0}
+    .entry-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .entry{
+      background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:20px;
+      box-shadow:0 8px 24px rgba(30,58,42,.04);scroll-margin-top:90px;transition:.2s box-shadow,.2s border-color;
+    }
+    .entry:target{border-color:var(--green-2);box-shadow:0 0 0 3px rgba(54,116,81,.18)}
+    .entry h3{margin:0 0 8px;font-size:16px;letter-spacing:-.01em}
+    .entry p{margin:0 0 10px;color:#4b584f;font-size:13.5px}
+    .links{display:flex;flex-wrap:wrap;gap:6px}
+    .chip{
+      font-size:11.5px;font-weight:700;background:#f1f6e6;color:#3c6146;border:1px solid #dce8c6;
+      border-radius:999px;padding:4px 10px;
+    }
+    .chip:hover{background:#e2eecb}
+    .entry.hidden{display:none}
+    .category.hidden{display:none}
+    footer{padding:28px 0;color:#758078;font-size:12px;border-top:1px solid var(--line)}
+    .footer-inner{display:flex;justify-content:space-between;gap:20px;align-items:center}
+    .no-results{display:none;color:var(--muted);font-size:15px;padding:40px 0;text-align:center}
+    @media(max-width:850px){
+      .nav-links{display:none}.entry-grid{grid-template-columns:1fr 1fr}
+    }
+    @media(max-width:560px){
+      .wrap{width:min(100% - 28px,1120px)}.entry-grid{grid-template-columns:1fr}
+      header.hero{padding:44px 0 30px}.footer-inner{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="landing.html">
+        <span class="brand-mark">🌱</span><span>Ferme Familiale</span>
+      </a>
+      <nav class="nav-links">
+        <a href="landing.html">Accueil</a>
+        <a href="landing.html#concept">Le concept</a>
+        <a href="encyclopedie.html">Encyclopédie</a>
+      </nav>
+      <a class="nav-cta" href="index.html">Jouer</a>
+    </div>
+  </header>
+
+  <header class="hero">
+    <div class="wrap">
+      <div class="eyebrow">📖 96 entrées · 7 catégories</div>
+      <h1>L'encyclopédie de la ferme.</h1>
+      <p class="lead">Tous les bâtiments, cultures, animaux, ressources, recettes et mécaniques du jeu, expliqués et reliés entre eux.</p>
+      <div class="search-box">
+        🔎 <input type="search" id="search" placeholder="Rechercher un terme (ex. « batterie », « pain »…)" autocomplete="off">
+      </div>
+      <div class="search-count" id="search-count"></div>
+      <nav class="cat-nav">
+        <a class="catlink" href="#cat-batiments">🏗️ Bâtiments &amp; infrastructures <span>20</span></a><a class="catlink" href="#cat-cultures">🌾 Cultures &amp; plantes <span>19</span></a><a class="catlink" href="#cat-animaux">🐄 Animaux &amp; produits animaux <span>9</span></a><a class="catlink" href="#cat-ressources">📦 Ressources, ingrédients &amp; stockage <span>10</span></a><a class="catlink" href="#cat-recettes">🍲 Recettes &amp; plats <span>22</span></a><a class="catlink" href="#cat-mecaniques">⚙️ Mécaniques de jeu <span>13</span></a><a class="catlink" href="#cat-famille">👨‍👩‍👧‍👦 Famille <span>3</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    
+    <section class="category" id="cat-batiments">
+      <div class="cat-head">
+        <div class="cat-icon">🏗️</div>
+        <div>
+          <div class="kicker">Catégorie</div>
+          <h2>Bâtiments &amp; infrastructures</h2>
+        </div>
+      </div>
+      <div class="entry-grid">
+        <article class="entry" id="panneau_solaire" data-search="panneau solaire produit de l&#x27;électricité à partir du soleil, stockée dans la batterie. peut être amélioré en niveau, s&#x27;use durant son fonctionnement et peut être coupé par un interrupteur pour éviter cette usure.">
+          <h3>Panneau solaire</h3>
+          <p>Produit de l&#x27;électricité à partir du soleil, stockée dans la batterie. Peut être amélioré en niveau, s&#x27;use durant son fonctionnement et peut être coupé par un interrupteur pour éviter cette usure.</p>
+          <div class="links"><a class="chip" href="#batterie">Batterie</a></div>
+        </article>
+        <article class="entry" id="batterie" data-search="batterie stocke l&#x27;électricité produite par les panneaux solaires. alimente la pompe, le moulin, la presse et le réfrigérateur. plusieurs batteries peuvent être possédées ; elles se remplissent l&#x27;une après l&#x27;autre et se vident dans l&#x27;ordre inverse.">
+          <h3>Batterie</h3>
+          <p>Stocke l&#x27;électricité produite par les panneaux solaires. Alimente la pompe, le moulin, la presse et le réfrigérateur. Plusieurs batteries peuvent être possédées ; elles se remplissent l&#x27;une après l&#x27;autre et se vident dans l&#x27;ordre inverse.</p>
+          <div class="links"><a class="chip" href="#panneau_solaire">Panneau solaire</a><a class="chip" href="#pompe">Pompe</a><a class="chip" href="#moulin">Moulin</a><a class="chip" href="#presse">Presse</a><a class="chip" href="#refrigerateur">Réfrigérateur</a></div>
+        </article>
+        <article class="entry" id="puit" data-search="puit source d&#x27;eau illimitée, à laquelle la pompe puise pour remplir le réservoir.">
+          <h3>Puit</h3>
+          <p>Source d&#x27;eau illimitée, à laquelle la pompe puise pour remplir le réservoir.</p>
+          <div class="links"><a class="chip" href="#pompe">Pompe</a><a class="chip" href="#reservoir">Réservoir</a></div>
+        </article>
+        <article class="entry" id="pompe" data-search="pompe extrait l&#x27;eau du puit et la fait circuler vers le réservoir. consomme de l&#x27;électricité fournie par la batterie, elle-même chargée par les panneaux solaires.">
+          <h3>Pompe</h3>
+          <p>Extrait l&#x27;eau du puit et la fait circuler vers le réservoir. Consomme de l&#x27;électricité fournie par la batterie, elle-même chargée par les panneaux solaires.</p>
+          <div class="links"><a class="chip" href="#puit">Puit</a><a class="chip" href="#reservoir">Réservoir</a><a class="chip" href="#batterie">Batterie</a><a class="chip" href="#panneau_solaire">Panneau solaire</a></div>
+        </article>
+        <article class="entry" id="reservoir" data-search="réservoir stock d&#x27;eau qui nécessite une pompe alimentée en électricité par les panneaux solaires et la batterie pour extraire l&#x27;eau du puit.">
+          <h3>Réservoir</h3>
+          <p>Stock d&#x27;eau qui nécessite une pompe alimentée en électricité par les panneaux solaires et la batterie pour extraire l&#x27;eau du puit.</p>
+          <div class="links"><a class="chip" href="#pompe">Pompe</a><a class="chip" href="#panneau_solaire">Panneau solaire</a><a class="chip" href="#batterie">Batterie</a><a class="chip" href="#puit">Puit</a></div>
+        </article>
+        <article class="entry" id="potager" data-search="potager parcelles de culture pour les légumes de base (carotte, patate, tomate, courgette, aubergine, oignon, ail, poivron, épinard, fraise). chaque parcelle doit être arrosée avec l&#x27;eau du réservoir pour que la plante pousse.">
+          <h3>Potager</h3>
+          <p>Parcelles de culture pour les légumes de base (carotte, patate, tomate, courgette, aubergine, oignon, ail, poivron, épinard, fraise). Chaque parcelle doit être arrosée avec l&#x27;eau du réservoir pour que la plante pousse.</p>
+          <div class="links"><a class="chip" href="#reservoir">Réservoir</a><a class="chip" href="#carotte">Carotte</a><a class="chip" href="#patate">Patate</a><a class="chip" href="#tomate">Tomate</a><a class="chip" href="#courgette">Courgette</a><a class="chip" href="#aubergine">Aubergine</a><a class="chip" href="#oignon">Oignon</a><a class="chip" href="#ail">Ail</a><a class="chip" href="#poivron">Poivron</a><a class="chip" href="#epinard">Épinard</a><a class="chip" href="#fraise">Fraise</a></div>
+        </article>
+        <article class="entry" id="champ" data-search="champ parcelles de culture pour le blé, le tournesol, le riz et le houblon. comme le potager, les parcelles doivent être arrosées avec l&#x27;eau du réservoir.">
+          <h3>Champ</h3>
+          <p>Parcelles de culture pour le blé, le tournesol, le riz et le houblon. Comme le potager, les parcelles doivent être arrosées avec l&#x27;eau du réservoir.</p>
+          <div class="links"><a class="chip" href="#reservoir">Réservoir</a><a class="chip" href="#ble">Blé</a><a class="chip" href="#tournesol">Tournesol</a><a class="chip" href="#riz">Riz</a><a class="chip" href="#houblon">Houblon</a></div>
+        </article>
+        <article class="entry" id="serre" data-search="serre parcelles de culture protégées qui produisent toute l&#x27;année sans être affectées par les saisons, contrairement au potager et au champ. c&#x27;est le seul endroit où peuvent être cultivés le cacao, la vanille et le café.">
+          <h3>Serre</h3>
+          <p>Parcelles de culture protégées qui produisent toute l&#x27;année sans être affectées par les saisons, contrairement au potager et au champ. C&#x27;est le seul endroit où peuvent être cultivés le cacao, la vanille et le café.</p>
+          <div class="links"><a class="chip" href="#saisons">Saisons</a><a class="chip" href="#cacao">Cacao</a><a class="chip" href="#vanille">Vanille</a><a class="chip" href="#cafe">Café</a></div>
+        </article>
+        <article class="entry" id="verger" data-search="verger emplacements où l&#x27;on plante des arbres fruitiers (pommier, poirier) achetés au comptoir. les arbres ne produisent des fruits qu&#x27;à certaines saisons, plusieurs nuits après leur plantation.">
+          <h3>Verger</h3>
+          <p>Emplacements où l&#x27;on plante des arbres fruitiers (pommier, poirier) achetés au comptoir. Les arbres ne produisent des fruits qu&#x27;à certaines saisons, plusieurs nuits après leur plantation.</p>
+          <div class="links"><a class="chip" href="#comptoir">Comptoir</a><a class="chip" href="#pommier">Pommier</a><a class="chip" href="#poirier">Poirier</a><a class="chip" href="#saisons">Saisons</a></div>
+        </article>
+        <article class="entry" id="poulailler" data-search="poulailler bâtiment qui loge les poules. sa capacité maximale de poules augmente avec son niveau. les poules doivent y être nourries avec le blé du silo pour pondre.">
+          <h3>Poulailler</h3>
+          <p>Bâtiment qui loge les poules. Sa capacité maximale de poules augmente avec son niveau. Les poules doivent y être nourries avec le blé du silo pour pondre.</p>
+          <div class="links"><a class="chip" href="#poule">Poule</a><a class="chip" href="#silo">Silo</a><a class="chip" href="#ble">Blé</a></div>
+        </article>
+        <article class="entry" id="paturage" data-search="pâturage terrain où vivent les moutons et les vaches. sa surface, mesurée en hectares, est partagée entre les deux espèces et doit être agrandie par achat au comptoir pour accueillir plus d&#x27;animaux.">
+          <h3>Pâturage</h3>
+          <p>Terrain où vivent les moutons et les vaches. Sa surface, mesurée en hectares, est partagée entre les deux espèces et doit être agrandie par achat au comptoir pour accueillir plus d&#x27;animaux.</p>
+          <div class="links"><a class="chip" href="#mouton">Mouton</a><a class="chip" href="#vache">Vache</a><a class="chip" href="#comptoir">Comptoir</a></div>
+        </article>
+        <article class="entry" id="silo" data-search="silo stock de blé récolté, utilisé pour nourrir les poules du poulailler.">
+          <h3>Silo</h3>
+          <p>Stock de blé récolté, utilisé pour nourrir les poules du poulailler.</p>
+          <div class="links"><a class="chip" href="#ble">Blé</a><a class="chip" href="#poulailler">Poulailler</a><a class="chip" href="#poule">Poule</a></div>
+        </article>
+        <article class="entry" id="moulin" data-search="moulin transforme le blé en farine. fonctionne à l&#x27;électricité fournie par la batterie.">
+          <h3>Moulin</h3>
+          <p>Transforme le blé en farine. Fonctionne à l&#x27;électricité fournie par la batterie.</p>
+          <div class="links"><a class="chip" href="#ble">Blé</a><a class="chip" href="#farine">Farine</a><a class="chip" href="#batterie">Batterie</a></div>
+        </article>
+        <article class="entry" id="presse" data-search="presse transforme les graines de tournesol en huile. fonctionne à l&#x27;électricité fournie par la batterie.">
+          <h3>Presse</h3>
+          <p>Transforme les graines de tournesol en huile. Fonctionne à l&#x27;électricité fournie par la batterie.</p>
+          <div class="links"><a class="chip" href="#tournesol">Tournesol</a><a class="chip" href="#huile">Huile</a><a class="chip" href="#batterie">Batterie</a></div>
+        </article>
+        <article class="entry" id="four" data-search="four bâtiment qui débloque le livre de recette dès sa construction. sert à cuire le pain et d&#x27;autres plats comme le gratin de patates ou les tartes.">
+          <h3>Four</h3>
+          <p>Bâtiment qui débloque le livre de recette dès sa construction. Sert à cuire le pain et d&#x27;autres plats comme le gratin de patates ou les tartes.</p>
+          <div class="links"><a class="chip" href="#livre_de_recette">Livre de recette</a><a class="chip" href="#pain">Pain</a><a class="chip" href="#gratin_de_patates">Gratin de patates</a></div>
+        </article>
+        <article class="entry" id="cuisine" data-search="cuisine bâtiment qui se construit après le four et permet de préparer des plats comme l&#x27;omelette, la ratatouille, le ragoût ou la compote.">
+          <h3>Cuisine</h3>
+          <p>Bâtiment qui se construit après le four et permet de préparer des plats comme l&#x27;omelette, la ratatouille, le ragoût ou la compote.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#livre_de_recette">Livre de recette</a></div>
+        </article>
+        <article class="entry" id="refrigerateur" data-search="réfrigérateur bâtiment qui empêche les aliments et plats qui y sont rangés de périmer. consomme de l&#x27;électricité en continu, jour et nuit, prélevée sur la batterie ; si celle-ci se vide, le réfrigérateur tombe en panne et le contenu peut recommencer à périmer.">
+          <h3>Réfrigérateur</h3>
+          <p>Bâtiment qui empêche les aliments et plats qui y sont rangés de périmer. Consomme de l&#x27;électricité en continu, jour et nuit, prélevée sur la batterie ; si celle-ci se vide, le réfrigérateur tombe en panne et le contenu peut recommencer à périmer.</p>
+          <div class="links"><a class="chip" href="#batterie">Batterie</a><a class="chip" href="#peremption">Péremption</a></div>
+        </article>
+        <article class="entry" id="livre_de_recette" data-search="livre de recette onglet du jeu (et non un objet possédé) débloqué par la construction du four, qui permet de lancer la préparation des plats à partir des ingrédients disponibles dans l&#x27;inventaire.">
+          <h3>Livre de recette</h3>
+          <p>Onglet du jeu (et non un objet possédé) débloqué par la construction du four, qui permet de lancer la préparation des plats à partir des ingrédients disponibles dans l&#x27;inventaire.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#inventaire">Inventaire</a></div>
+        </article>
+        <article class="entry" id="comptoir" data-search="comptoir lieu d&#x27;achat et de vente. on y vend les surplus de la ferme contre des pièces, on y achète des graines en dépannage, des animaux (poule, mouton, vache) et des arbres fruitiers. les prix d&#x27;achat augmentent avec les achats et diminuent avec les ventes.">
+          <h3>Comptoir</h3>
+          <p>Lieu d&#x27;achat et de vente. On y vend les surplus de la ferme contre des pièces, on y achète des graines en dépannage, des animaux (poule, mouton, vache) et des arbres fruitiers. Les prix d&#x27;achat augmentent avec les achats et diminuent avec les ventes.</p>
+          <div class="links"><a class="chip" href="#pieces">Pièces</a><a class="chip" href="#poule">Poule</a><a class="chip" href="#mouton">Mouton</a><a class="chip" href="#vache">Vache</a><a class="chip" href="#pommier">Pommier</a><a class="chip" href="#poirier">Poirier</a></div>
+        </article>
+        <article class="entry" id="arbre_technologique" data-search="arbre technologique ensemble d&#x27;améliorations à débloquer avec des pièces, qui permettent par exemple d&#x27;automatiser l&#x27;arrosage et le nourrissage, de replanter automatiquement après récolte, ou de réduire le temps d&#x27;éveil minimal avant de pouvoir dormir.">
+          <h3>Arbre technologique</h3>
+          <p>Ensemble d&#x27;améliorations à débloquer avec des pièces, qui permettent par exemple d&#x27;automatiser l&#x27;arrosage et le nourrissage, de replanter automatiquement après récolte, ou de réduire le temps d&#x27;éveil minimal avant de pouvoir dormir.</p>
+          <div class="links"><a class="chip" href="#automatisation">Automatisation</a><a class="chip" href="#semis_automatique">Semis automatique</a><a class="chip" href="#temps_eveil_minimal">Temps d&#x27;éveil minimal</a></div>
+        </article></div>
+    </section>
+    <section class="category" id="cat-cultures">
+      <div class="cat-head">
+        <div class="cat-icon">🌾</div>
+        <div>
+          <div class="kicker">Catégorie</div>
+          <h2>Cultures &amp; plantes</h2>
+        </div>
+      </div>
+      <div class="entry-grid">
+        <article class="entry" id="carotte" data-search="carotte légume du potager qui atteint sa maturité en 4 stades de croissance (un par nuit arrosée). peut aussi être laissée à monter en graine plutôt que récoltée pour se nourrir.">
+          <h3>Carotte</h3>
+          <p>Légume du potager qui atteint sa maturité en 4 stades de croissance (un par nuit arrosée). Peut aussi être laissée à monter en graine plutôt que récoltée pour se nourrir.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a></div>
+        </article>
+        <article class="entry" id="patate" data-search="patate légume du potager qui atteint sa maturité en 6 stades. une patate récoltée peut directement être replantée comme un plant.">
+          <h3>Patate</h3>
+          <p>Légume du potager qui atteint sa maturité en 6 stades. Une patate récoltée peut directement être replantée comme un plant.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a></div>
+        </article>
+        <article class="entry" id="tomate" data-search="tomate légume qui peut être cultivé aussi bien au potager qu&#x27;en serre, en 5 stades.">
+          <h3>Tomate</h3>
+          <p>Légume qui peut être cultivé aussi bien au potager qu&#x27;en serre, en 5 stades.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a><a class="chip" href="#serre">Serre</a></div>
+        </article>
+        <article class="entry" id="courgette" data-search="courgette légume qui peut être cultivé aussi bien au potager qu&#x27;en serre, en 5 stades.">
+          <h3>Courgette</h3>
+          <p>Légume qui peut être cultivé aussi bien au potager qu&#x27;en serre, en 5 stades.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a><a class="chip" href="#serre">Serre</a></div>
+        </article>
+        <article class="entry" id="aubergine" data-search="aubergine légume qui peut être cultivé aussi bien au potager qu&#x27;en serre, en 6 stades.">
+          <h3>Aubergine</h3>
+          <p>Légume qui peut être cultivé aussi bien au potager qu&#x27;en serre, en 6 stades.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a><a class="chip" href="#serre">Serre</a></div>
+        </article>
+        <article class="entry" id="oignon" data-search="oignon légume du potager, en 5 stades de croissance.">
+          <h3>Oignon</h3>
+          <p>Légume du potager, en 5 stades de croissance.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a></div>
+        </article>
+        <article class="entry" id="ail" data-search="ail légume du potager, en 6 stades. une fois récolté, il peut directement être replanté comme un plant.">
+          <h3>Ail</h3>
+          <p>Légume du potager, en 6 stades. Une fois récolté, il peut directement être replanté comme un plant.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a></div>
+        </article>
+        <article class="entry" id="poivron" data-search="poivron légume qui peut être cultivé aussi bien au potager qu&#x27;en serre, en 6 stades.">
+          <h3>Poivron</h3>
+          <p>Légume qui peut être cultivé aussi bien au potager qu&#x27;en serre, en 6 stades.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a><a class="chip" href="#serre">Serre</a></div>
+        </article>
+        <article class="entry" id="epinard" data-search="épinard légume du potager qui pousse le plus rapidement, en seulement 3 stades.">
+          <h3>Épinard</h3>
+          <p>Légume du potager qui pousse le plus rapidement, en seulement 3 stades.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a></div>
+        </article>
+        <article class="entry" id="fraise" data-search="fraise légume du potager, en 4 stades, qui rend le plus de graines par récolte.">
+          <h3>Fraise</h3>
+          <p>Légume du potager, en 4 stades, qui rend le plus de graines par récolte.</p>
+          <div class="links"><a class="chip" href="#potager">Potager</a></div>
+        </article>
+        <article class="entry" id="ble" data-search="blé culture du champ. sert à la fois d&#x27;ingrédient (transformé en farine par le moulin, ou donné aux poules du poulailler) et de semence pour replanter au champ.">
+          <h3>Blé</h3>
+          <p>Culture du champ. Sert à la fois d&#x27;ingrédient (transformé en farine par le moulin, ou donné aux poules du poulailler) et de semence pour replanter au champ.</p>
+          <div class="links"><a class="chip" href="#champ">Champ</a><a class="chip" href="#moulin">Moulin</a><a class="chip" href="#farine">Farine</a><a class="chip" href="#poulailler">Poulailler</a><a class="chip" href="#poule">Poule</a></div>
+        </article>
+        <article class="entry" id="tournesol" data-search="tournesol culture du champ dont les graines sont soit replantées, soit transformées en huile par la presse.">
+          <h3>Tournesol</h3>
+          <p>Culture du champ dont les graines sont soit replantées, soit transformées en huile par la presse.</p>
+          <div class="links"><a class="chip" href="#champ">Champ</a><a class="chip" href="#presse">Presse</a><a class="chip" href="#huile">Huile</a></div>
+        </article>
+        <article class="entry" id="riz" data-search="riz culture du champ qui demande deux fois plus d&#x27;eau à l&#x27;arrosage que le blé.">
+          <h3>Riz</h3>
+          <p>Culture du champ qui demande deux fois plus d&#x27;eau à l&#x27;arrosage que le blé.</p>
+          <div class="links"><a class="chip" href="#champ">Champ</a><a class="chip" href="#reservoir">Réservoir</a></div>
+        </article>
+        <article class="entry" id="houblon" data-search="houblon culture du champ non comestible, utilisée uniquement pour la vente et pour préparer la bière artisanale.">
+          <h3>Houblon</h3>
+          <p>Culture du champ non comestible, utilisée uniquement pour la vente et pour préparer la bière artisanale.</p>
+          <div class="links"><a class="chip" href="#champ">Champ</a><a class="chip" href="#biere_artisanale">Bière artisanale</a></div>
+        </article>
+        <article class="entry" id="cacao" data-search="cacao culture de rente cultivée exclusivement en serre, jamais comestible. utilisée pour la vente et pour préparer le chocolat chaud.">
+          <h3>Cacao</h3>
+          <p>Culture de rente cultivée exclusivement en serre, jamais comestible. Utilisée pour la vente et pour préparer le chocolat chaud.</p>
+          <div class="links"><a class="chip" href="#serre">Serre</a><a class="chip" href="#chocolat_chaud">Chocolat chaud</a></div>
+        </article>
+        <article class="entry" id="vanille" data-search="vanille culture de rente cultivée exclusivement en serre, jamais comestible et la plus chère à la vente. utilisée pour préparer la crème à la vanille.">
+          <h3>Vanille</h3>
+          <p>Culture de rente cultivée exclusivement en serre, jamais comestible et la plus chère à la vente. Utilisée pour préparer la crème à la vanille.</p>
+          <div class="links"><a class="chip" href="#serre">Serre</a><a class="chip" href="#creme_a_la_vanille">Crème à la vanille</a></div>
+        </article>
+        <article class="entry" id="cafe" data-search="café culture de rente cultivée exclusivement en serre, jamais comestible. utilisée pour préparer la boisson du même nom.">
+          <h3>Café</h3>
+          <p>Culture de rente cultivée exclusivement en serre, jamais comestible. Utilisée pour préparer la boisson du même nom.</p>
+          <div class="links"><a class="chip" href="#serre">Serre</a></div>
+        </article>
+        <article class="entry" id="pommier" data-search="pommier arbre fruitier permanent du verger, acheté au comptoir. donne des pommes après un délai suivant sa plantation, puis à chaque saison de récolte.">
+          <h3>Pommier</h3>
+          <p>Arbre fruitier permanent du verger, acheté au comptoir. Donne des pommes après un délai suivant sa plantation, puis à chaque saison de récolte.</p>
+          <div class="links"><a class="chip" href="#verger">Verger</a><a class="chip" href="#comptoir">Comptoir</a></div>
+        </article>
+        <article class="entry" id="poirier" data-search="poirier arbre fruitier permanent du verger, acheté au comptoir. donne des poires après un délai suivant sa plantation, puis à chaque saison de récolte.">
+          <h3>Poirier</h3>
+          <p>Arbre fruitier permanent du verger, acheté au comptoir. Donne des poires après un délai suivant sa plantation, puis à chaque saison de récolte.</p>
+          <div class="links"><a class="chip" href="#verger">Verger</a><a class="chip" href="#comptoir">Comptoir</a></div>
+        </article></div>
+    </section>
+    <section class="category" id="cat-animaux">
+      <div class="cat-head">
+        <div class="cat-icon">🐄</div>
+        <div>
+          <div class="kicker">Catégorie</div>
+          <h2>Animaux &amp; produits animaux</h2>
+        </div>
+      </div>
+      <div class="entry-grid">
+        <article class="entry" id="poule" data-search="poule animal du poulailler, acheté au comptoir. pond un œuf chaque nuit tant qu&#x27;elle est nourrie avec le blé du silo, et cela toute sa vie. peut aussi être abattue pour un peu de viande de volaille, mais c&#x27;est une option de dernier recours peu rentable.">
+          <h3>Poule</h3>
+          <p>Animal du poulailler, acheté au comptoir. Pond un œuf chaque nuit tant qu&#x27;elle est nourrie avec le blé du silo, et cela toute sa vie. Peut aussi être abattue pour un peu de viande de volaille, mais c&#x27;est une option de dernier recours peu rentable.</p>
+          <div class="links"><a class="chip" href="#poulailler">Poulailler</a><a class="chip" href="#silo">Silo</a><a class="chip" href="#ble">Blé</a><a class="chip" href="#oeuf">Œuf</a><a class="chip" href="#viande_de_volaille">Viande de volaille</a></div>
+        </article>
+        <article class="entry" id="mouton" data-search="mouton animal du pâturage, acheté au comptoir. grossit chaque nuit et peut être tondu régulièrement pour obtenir de la laine, ou abattu pour obtenir de la viande de mouton.">
+          <h3>Mouton</h3>
+          <p>Animal du pâturage, acheté au comptoir. Grossit chaque nuit et peut être tondu régulièrement pour obtenir de la laine, ou abattu pour obtenir de la viande de mouton.</p>
+          <div class="links"><a class="chip" href="#paturage">Pâturage</a><a class="chip" href="#comptoir">Comptoir</a><a class="chip" href="#laine">Laine</a><a class="chip" href="#viande_de_mouton">Viande de mouton</a></div>
+        </article>
+        <article class="entry" id="vache" data-search="vache animal du pâturage, acheté au comptoir, occupant trois fois plus de surface qu&#x27;un mouton. produit du lait chaque nuit dès son achat, sans condition, et peut être abattue pour obtenir de la viande de bœuf.">
+          <h3>Vache</h3>
+          <p>Animal du pâturage, acheté au comptoir, occupant trois fois plus de surface qu&#x27;un mouton. Produit du lait chaque nuit dès son achat, sans condition, et peut être abattue pour obtenir de la viande de bœuf.</p>
+          <div class="links"><a class="chip" href="#paturage">Pâturage</a><a class="chip" href="#comptoir">Comptoir</a><a class="chip" href="#lait">Lait</a><a class="chip" href="#viande_de_boeuf">Viande de bœuf</a></div>
+        </article>
+        <article class="entry" id="oeuf" data-search="œuf aliment produit par les poules du poulailler, consommé par la famille ou utilisé dans des recettes comme l&#x27;omelette.">
+          <h3>Œuf</h3>
+          <p>Aliment produit par les poules du poulailler, consommé par la famille ou utilisé dans des recettes comme l&#x27;omelette.</p>
+          <div class="links"><a class="chip" href="#poule">Poule</a><a class="chip" href="#omelette">Omelette</a></div>
+        </article>
+        <article class="entry" id="laine" data-search="laine produit obtenu en tondant un mouton, vendu au comptoir. ne se consomme pas et ne périme jamais.">
+          <h3>Laine</h3>
+          <p>Produit obtenu en tondant un mouton, vendu au comptoir. Ne se consomme pas et ne périme jamais.</p>
+          <div class="links"><a class="chip" href="#mouton">Mouton</a><a class="chip" href="#comptoir">Comptoir</a></div>
+        </article>
+        <article class="entry" id="lait" data-search="lait produit obtenu chaque nuit auprès des vaches du pâturage, consommé par la famille ou utilisé dans des recettes comme le fromage frais ou le chocolat chaud.">
+          <h3>Lait</h3>
+          <p>Produit obtenu chaque nuit auprès des vaches du pâturage, consommé par la famille ou utilisé dans des recettes comme le fromage frais ou le chocolat chaud.</p>
+          <div class="links"><a class="chip" href="#vache">Vache</a><a class="chip" href="#fromage_frais">Fromage frais</a><a class="chip" href="#chocolat_chaud">Chocolat chaud</a></div>
+        </article>
+        <article class="entry" id="viande_de_mouton" data-search="viande de mouton obtenue en abattant un mouton, en quantité proportionnelle à son poids. utilisée dans des recettes comme le ragoût.">
+          <h3>Viande de mouton</h3>
+          <p>Obtenue en abattant un mouton, en quantité proportionnelle à son poids. Utilisée dans des recettes comme le ragoût.</p>
+          <div class="links"><a class="chip" href="#mouton">Mouton</a><a class="chip" href="#ragout">Ragoût</a></div>
+        </article>
+        <article class="entry" id="viande_de_boeuf" data-search="viande de bœuf obtenue en abattant une vache, en quantité proportionnelle à son poids. utilisée dans des recettes comme le rôti de bœuf.">
+          <h3>Viande de bœuf</h3>
+          <p>Obtenue en abattant une vache, en quantité proportionnelle à son poids. Utilisée dans des recettes comme le rôti de bœuf.</p>
+          <div class="links"><a class="chip" href="#vache">Vache</a><a class="chip" href="#roti_de_boeuf">Rôti de bœuf</a></div>
+        </article>
+        <article class="entry" id="viande_de_volaille" data-search="viande de volaille obtenue en abattant une poule, en quantité fixe et modeste. utilisée dans des recettes comme le poulet rôti à l&#x27;ail.">
+          <h3>Viande de volaille</h3>
+          <p>Obtenue en abattant une poule, en quantité fixe et modeste. Utilisée dans des recettes comme le poulet rôti à l&#x27;ail.</p>
+          <div class="links"><a class="chip" href="#poule">Poule</a><a class="chip" href="#poulet_roti_a_lail">Poulet rôti à l&#x27;ail</a></div>
+        </article></div>
+    </section>
+    <section class="category" id="cat-ressources">
+      <div class="cat-head">
+        <div class="cat-icon">📦</div>
+        <div>
+          <div class="kicker">Catégorie</div>
+          <h2>Ressources, ingrédients &amp; stockage</h2>
+        </div>
+      </div>
+      <div class="entry-grid">
+        <article class="entry" id="electricite" data-search="électricité ressource produite par les panneaux solaires, stockée dans la batterie, et consommée par la pompe, le moulin, la presse et le réfrigérateur.">
+          <h3>Électricité</h3>
+          <p>Ressource produite par les panneaux solaires, stockée dans la batterie, et consommée par la pompe, le moulin, la presse et le réfrigérateur.</p>
+          <div class="links"><a class="chip" href="#panneau_solaire">Panneau solaire</a><a class="chip" href="#batterie">Batterie</a></div>
+        </article>
+        <article class="entry" id="eau" data-search="eau ressource puisée dans le puit par la pompe, stockée dans le réservoir, et utilisée pour arroser le potager, le champ et la serre.">
+          <h3>Eau</h3>
+          <p>Ressource puisée dans le puit par la pompe, stockée dans le réservoir, et utilisée pour arroser le potager, le champ et la serre.</p>
+          <div class="links"><a class="chip" href="#puit">Puit</a><a class="chip" href="#pompe">Pompe</a><a class="chip" href="#reservoir">Réservoir</a></div>
+        </article>
+        <article class="entry" id="pieces" data-search="pièces monnaie du jeu, obtenue en vendant les surplus de la ferme au comptoir, et dépensée pour les achats, les améliorations et l&#x27;agrandissement des surfaces.">
+          <h3>Pièces</h3>
+          <p>Monnaie du jeu, obtenue en vendant les surplus de la ferme au comptoir, et dépensée pour les achats, les améliorations et l&#x27;agrandissement des surfaces.</p>
+          <div class="links"><a class="chip" href="#comptoir">Comptoir</a></div>
+        </article>
+        <article class="entry" id="farine" data-search="farine ingrédient obtenu en transformant le blé au moulin, utilisé dans des recettes comme le pain.">
+          <h3>Farine</h3>
+          <p>Ingrédient obtenu en transformant le blé au moulin, utilisé dans des recettes comme le pain.</p>
+          <div class="links"><a class="chip" href="#ble">Blé</a><a class="chip" href="#moulin">Moulin</a><a class="chip" href="#pain">Pain</a></div>
+        </article>
+        <article class="entry" id="huile" data-search="huile ingrédient obtenu en transformant les graines de tournesol à la presse, utilisé dans des recettes comme l&#x27;omelette ou la ratatouille.">
+          <h3>Huile</h3>
+          <p>Ingrédient obtenu en transformant les graines de tournesol à la presse, utilisé dans des recettes comme l&#x27;omelette ou la ratatouille.</p>
+          <div class="links"><a class="chip" href="#tournesol">Tournesol</a><a class="chip" href="#presse">Presse</a><a class="chip" href="#omelette">Omelette</a><a class="chip" href="#ratatouille">Ratatouille</a></div>
+        </article>
+        <article class="entry" id="graines" data-search="graines obtenues normalement en récoltant les cultures, elles permettent de replanter. peuvent aussi être achetées au comptoir en dépannage, mais à un prix plus élevé que la production.">
+          <h3>Graines</h3>
+          <p>Obtenues normalement en récoltant les cultures, elles permettent de replanter. Peuvent aussi être achetées au comptoir en dépannage, mais à un prix plus élevé que la production.</p>
+          <div class="links"><a class="chip" href="#comptoir">Comptoir</a></div>
+        </article>
+        <article class="entry" id="conserve" data-search="conserve aliment non périssable présent dès le début de la partie, qui laisse le temps de lancer le potager avant que la santé de la famille ne soit menacée. ne peut pas être racheté une fois épuisé.">
+          <h3>Conserve</h3>
+          <p>Aliment non périssable présent dès le début de la partie, qui laisse le temps de lancer le potager avant que la santé de la famille ne soit menacée. Ne peut pas être racheté une fois épuisé.</p>
+          <div class="links"><a class="chip" href="#sante">Santé</a><a class="chip" href="#potager">Potager</a></div>
+        </article>
+        <article class="entry" id="inventaire" data-search="inventaire stock illimité de tous les objets possédés par la ferme, organisé en lots datés selon leur date de récolte, pour suivre leur péremption.">
+          <h3>Inventaire</h3>
+          <p>Stock illimité de tous les objets possédés par la ferme, organisé en lots datés selon leur date de récolte, pour suivre leur péremption.</p>
+          <div class="links"><a class="chip" href="#peremption">Péremption</a></div>
+        </article>
+        <article class="entry" id="apport_journalier" data-search="apport journalier besoin quotidien en énergie de toute la famille, fixé à 150 par jour (deux adultes à 50 chacun, deux enfants à 25 chacun). ce besoin doit être couvert par les aliments consommés au repas du soir pour préserver la santé de la famille.">
+          <h3>Apport journalier</h3>
+          <p>Besoin quotidien en énergie de toute la famille, fixé à 150 par jour (deux adultes à 50 chacun, deux enfants à 25 chacun). Ce besoin doit être couvert par les aliments consommés au repas du soir pour préserver la santé de la famille.</p>
+          <div class="links"><a class="chip" href="#famille">Famille</a><a class="chip" href="#sante">Santé</a></div>
+        </article>
+        <article class="entry" id="peremption" data-search="péremption durée pendant laquelle un aliment ou un plat reste consommable hors du réfrigérateur, généralement entre 5 et 7 nuits selon la catégorie. le réfrigérateur permet de conserver sans limite de temps.">
+          <h3>Péremption</h3>
+          <p>Durée pendant laquelle un aliment ou un plat reste consommable hors du réfrigérateur, généralement entre 5 et 7 nuits selon la catégorie. Le réfrigérateur permet de conserver sans limite de temps.</p>
+          <div class="links"><a class="chip" href="#refrigerateur">Réfrigérateur</a></div>
+        </article></div>
+    </section>
+    <section class="category" id="cat-recettes">
+      <div class="cat-head">
+        <div class="cat-icon">🍲</div>
+        <div>
+          <div class="kicker">Catégorie</div>
+          <h2>Recettes &amp; plats</h2>
+        </div>
+      </div>
+      <div class="entry-grid">
+        <article class="entry" id="pain" data-search="pain plat cuit au four à partir de farine et d&#x27;eau.">
+          <h3>Pain</h3>
+          <p>Plat cuit au four à partir de farine et d&#x27;eau.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#farine">Farine</a></div>
+        </article>
+        <article class="entry" id="omelette" data-search="omelette plat préparé à la cuisine à partir d&#x27;œufs et d&#x27;huile.">
+          <h3>Omelette</h3>
+          <p>Plat préparé à la cuisine à partir d&#x27;œufs et d&#x27;huile.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#oeuf">Œuf</a><a class="chip" href="#huile">Huile</a></div>
+        </article>
+        <article class="entry" id="ratatouille" data-search="ratatouille plat préparé à la cuisine à partir de tomate, courgette, aubergine et huile.">
+          <h3>Ratatouille</h3>
+          <p>Plat préparé à la cuisine à partir de tomate, courgette, aubergine et huile.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#tomate">Tomate</a><a class="chip" href="#courgette">Courgette</a><a class="chip" href="#aubergine">Aubergine</a><a class="chip" href="#huile">Huile</a></div>
+        </article>
+        <article class="entry" id="gratin_de_patates" data-search="gratin de patates plat cuit au four à partir de patates et d&#x27;œuf, dont la valeur nutritionnelle est fixée pour couvrir à elle seule tout l&#x27;apport journalier d&#x27;une famille.">
+          <h3>Gratin de patates</h3>
+          <p>Plat cuit au four à partir de patates et d&#x27;œuf, dont la valeur nutritionnelle est fixée pour couvrir à elle seule tout l&#x27;apport journalier d&#x27;une famille.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#patate">Patate</a><a class="chip" href="#oeuf">Œuf</a><a class="chip" href="#apport_journalier">Apport journalier</a></div>
+        </article>
+        <article class="entry" id="ragout" data-search="ragoût plat préparé à la cuisine à partir de viande de mouton, carottes et patate.">
+          <h3>Ragoût</h3>
+          <p>Plat préparé à la cuisine à partir de viande de mouton, carottes et patate.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#viande_de_mouton">Viande de mouton</a><a class="chip" href="#carotte">Carotte</a><a class="chip" href="#patate">Patate</a></div>
+        </article>
+        <article class="entry" id="compote" data-search="compote plat préparé à la cuisine à partir de pommes ou de poires.">
+          <h3>Compote</h3>
+          <p>Plat préparé à la cuisine à partir de pommes ou de poires.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#pommier">Pommier</a><a class="chip" href="#poirier">Poirier</a></div>
+        </article>
+        <article class="entry" id="tarte_aux_pommes" data-search="tarte aux pommes plat cuit au four à partir de farine, pommes et œuf.">
+          <h3>Tarte aux pommes</h3>
+          <p>Plat cuit au four à partir de farine, pommes et œuf.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#farine">Farine</a><a class="chip" href="#pommier">Pommier</a><a class="chip" href="#oeuf">Œuf</a></div>
+        </article>
+        <article class="entry" id="soupe_de_legumes" data-search="soupe de légumes plat préparé à la cuisine à partir de carotte, oignon, patate et eau.">
+          <h3>Soupe de légumes</h3>
+          <p>Plat préparé à la cuisine à partir de carotte, oignon, patate et eau.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#carotte">Carotte</a><a class="chip" href="#oignon">Oignon</a><a class="chip" href="#patate">Patate</a></div>
+        </article>
+        <article class="entry" id="salade_de_tomates" data-search="salade de tomates plat préparé à la cuisine à partir de tomates et d&#x27;huile.">
+          <h3>Salade de tomates</h3>
+          <p>Plat préparé à la cuisine à partir de tomates et d&#x27;huile.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#tomate">Tomate</a><a class="chip" href="#huile">Huile</a></div>
+        </article>
+        <article class="entry" id="quiche_aux_epinards" data-search="quiche aux épinards plat cuit au four à partir de farine, œufs, lait et épinard.">
+          <h3>Quiche aux épinards</h3>
+          <p>Plat cuit au four à partir de farine, œufs, lait et épinard.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#oeuf">Œuf</a><a class="chip" href="#lait">Lait</a><a class="chip" href="#epinard">Épinard</a></div>
+        </article>
+        <article class="entry" id="fromage_frais" data-search="fromage frais plat préparé à la cuisine à partir de lait, se conservant mieux que le lait cru.">
+          <h3>Fromage frais</h3>
+          <p>Plat préparé à la cuisine à partir de lait, se conservant mieux que le lait cru.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#lait">Lait</a></div>
+        </article>
+        <article class="entry" id="riz_au_lait" data-search="riz au lait plat préparé à la cuisine à partir de riz et de lait.">
+          <h3>Riz au lait</h3>
+          <p>Plat préparé à la cuisine à partir de riz et de lait.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#riz">Riz</a><a class="chip" href="#lait">Lait</a></div>
+        </article>
+        <article class="entry" id="pain_a_lail" data-search="pain à l&#x27;ail plat cuit au four à partir de pain, d&#x27;ail et d&#x27;huile.">
+          <h3>Pain à l&#x27;ail</h3>
+          <p>Plat cuit au four à partir de pain, d&#x27;ail et d&#x27;huile.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#pain">Pain</a><a class="chip" href="#ail">Ail</a><a class="chip" href="#huile">Huile</a></div>
+        </article>
+        <article class="entry" id="poivrons_farcis" data-search="poivrons farcis plat cuit au four à partir de poivrons, de viande de mouton et de riz.">
+          <h3>Poivrons farcis</h3>
+          <p>Plat cuit au four à partir de poivrons, de viande de mouton et de riz.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#poivron">Poivron</a><a class="chip" href="#viande_de_mouton">Viande de mouton</a><a class="chip" href="#riz">Riz</a></div>
+        </article>
+        <article class="entry" id="tarte_aux_fraises" data-search="tarte aux fraises plat cuit au four à partir de farine, fraises et œuf.">
+          <h3>Tarte aux fraises</h3>
+          <p>Plat cuit au four à partir de farine, fraises et œuf.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#fraise">Fraise</a><a class="chip" href="#oeuf">Œuf</a></div>
+        </article>
+        <article class="entry" id="confiture_de_fraises" data-search="confiture de fraises plat préparé à la cuisine à partir de fraises, ne périmant pas.">
+          <h3>Confiture de fraises</h3>
+          <p>Plat préparé à la cuisine à partir de fraises, ne périmant pas.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#fraise">Fraise</a></div>
+        </article>
+        <article class="entry" id="roti_de_boeuf" data-search="rôti de bœuf plat cuit au four à partir de viande de bœuf, carottes et patate.">
+          <h3>Rôti de bœuf</h3>
+          <p>Plat cuit au four à partir de viande de bœuf, carottes et patate.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#viande_de_boeuf">Viande de bœuf</a><a class="chip" href="#carotte">Carotte</a><a class="chip" href="#patate">Patate</a></div>
+        </article>
+        <article class="entry" id="poulet_roti_a_lail" data-search="poulet rôti à l&#x27;ail plat cuit au four à partir de viande de volaille, patates et ail.">
+          <h3>Poulet rôti à l&#x27;ail</h3>
+          <p>Plat cuit au four à partir de viande de volaille, patates et ail.</p>
+          <div class="links"><a class="chip" href="#four">Four</a><a class="chip" href="#viande_de_volaille">Viande de volaille</a><a class="chip" href="#patate">Patate</a><a class="chip" href="#ail">Ail</a></div>
+        </article>
+        <article class="entry" id="chocolat_chaud" data-search="chocolat chaud recette de luxe préparée à la cuisine à partir de cacao et de lait, vendue trois fois le prix de ses ingrédients.">
+          <h3>Chocolat chaud</h3>
+          <p>Recette de luxe préparée à la cuisine à partir de cacao et de lait, vendue trois fois le prix de ses ingrédients.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#cacao">Cacao</a><a class="chip" href="#lait">Lait</a></div>
+        </article>
+        <article class="entry" id="cafe_boisson" data-search="café (boisson) recette de luxe préparée à la cuisine à partir de café et d&#x27;eau, vendue trois fois le prix de ses ingrédients.">
+          <h3>Café (boisson)</h3>
+          <p>Recette de luxe préparée à la cuisine à partir de café et d&#x27;eau, vendue trois fois le prix de ses ingrédients.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#cafe">Café</a></div>
+        </article>
+        <article class="entry" id="creme_a_la_vanille" data-search="crème à la vanille recette de luxe préparée à la cuisine à partir de vanille, lait et œufs, vendue trois fois le prix de ses ingrédients.">
+          <h3>Crème à la vanille</h3>
+          <p>Recette de luxe préparée à la cuisine à partir de vanille, lait et œufs, vendue trois fois le prix de ses ingrédients.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#vanille">Vanille</a><a class="chip" href="#lait">Lait</a><a class="chip" href="#oeuf">Œuf</a></div>
+        </article>
+        <article class="entry" id="biere_artisanale" data-search="bière artisanale recette de luxe préparée à la cuisine à partir de houblon et d&#x27;eau, vendue trois fois le prix de ses ingrédients et ne périmant pas.">
+          <h3>Bière artisanale</h3>
+          <p>Recette de luxe préparée à la cuisine à partir de houblon et d&#x27;eau, vendue trois fois le prix de ses ingrédients et ne périmant pas.</p>
+          <div class="links"><a class="chip" href="#cuisine">Cuisine</a><a class="chip" href="#houblon">Houblon</a></div>
+        </article></div>
+    </section>
+    <section class="category" id="cat-mecaniques">
+      <div class="cat-head">
+        <div class="cat-icon">⚙️</div>
+        <div>
+          <div class="kicker">Catégorie</div>
+          <h2>Mécaniques de jeu</h2>
+        </div>
+      </div>
+      <div class="entry-grid">
+        <article class="entry" id="bouton_dormir" data-search="bouton « dormir » action qui fait avancer la journée d&#x27;une nuit. c&#x27;est le seul moment où se résolvent le repas de la famille, la pousse des plantes arrosées, la ponte des poules nourries, la croissance des moutons et des vaches, et la péremption des aliments.">
+          <h3>Bouton « Dormir »</h3>
+          <p>Action qui fait avancer la journée d&#x27;une nuit. C&#x27;est le seul moment où se résolvent le repas de la famille, la pousse des plantes arrosées, la ponte des poules nourries, la croissance des moutons et des vaches, et la péremption des aliments.</p>
+          <div class="links"><a class="chip" href="#apport_journalier">Apport journalier</a><a class="chip" href="#sante">Santé</a><a class="chip" href="#peremption">Péremption</a></div>
+        </article>
+        <article class="entry" id="temps_eveil_minimal" data-search="temps d&#x27;éveil minimal durée de 30 secondes pendant laquelle le bouton dormir reste inactif après le réveil, laissant le temps aux panneaux solaires de recharger la batterie.">
+          <h3>Temps d&#x27;éveil minimal</h3>
+          <p>Durée de 30 secondes pendant laquelle le bouton Dormir reste inactif après le réveil, laissant le temps aux panneaux solaires de recharger la batterie.</p>
+          <div class="links"><a class="chip" href="#panneau_solaire">Panneau solaire</a><a class="chip" href="#batterie">Batterie</a><a class="chip" href="#bouton_dormir">Bouton « Dormir »</a></div>
+        </article>
+        <article class="entry" id="sante" data-search="santé valeur de 0 à 100 pour chaque membre de la famille, qui augmente ou diminue selon que l&#x27;apport journalier a été couvert ou non au repas du soir. une santé trop basse réduit la productivité et peut nécessiter des soins payants.">
+          <h3>Santé</h3>
+          <p>Valeur de 0 à 100 pour chaque membre de la famille, qui augmente ou diminue selon que l&#x27;apport journalier a été couvert ou non au repas du soir. Une santé trop basse réduit la productivité et peut nécessiter des soins payants.</p>
+          <div class="links"><a class="chip" href="#apport_journalier">Apport journalier</a><a class="chip" href="#productivite">Productivité</a><a class="chip" href="#soins">Soins</a></div>
+        </article>
+        <article class="entry" id="productivite" data-search="productivité multiplicateur qui réduit l&#x27;efficacité des actions faites manuellement (arrosage, nourrissage, récolte, préparation) lorsque la santé moyenne de la famille est basse. les tâches automatisées ne sont jamais affectées.">
+          <h3>Productivité</h3>
+          <p>Multiplicateur qui réduit l&#x27;efficacité des actions faites manuellement (arrosage, nourrissage, récolte, préparation) lorsque la santé moyenne de la famille est basse. Les tâches automatisées ne sont jamais affectées.</p>
+          <div class="links"><a class="chip" href="#sante">Santé</a><a class="chip" href="#automatisation">Automatisation</a></div>
+        </article>
+        <article class="entry" id="soins" data-search="soins action payante en pièces qui permet de remonter la santé d&#x27;un membre de la famille tombée à 0, à un coût qui augmente à chaque soin déjà payé.">
+          <h3>Soins</h3>
+          <p>Action payante en pièces qui permet de remonter la santé d&#x27;un membre de la famille tombée à 0, à un coût qui augmente à chaque soin déjà payé.</p>
+          <div class="links"><a class="chip" href="#sante">Santé</a><a class="chip" href="#pieces">Pièces</a></div>
+        </article>
+        <article class="entry" id="saisons" data-search="saisons quatre périodes de 10 nuits chacune (printemps, été, automne, hiver) qui font varier légèrement les rendements des cultures et la consommation, sans jamais rendre une culture impossible. la serre n&#x27;est pas affectée par les saisons.">
+          <h3>Saisons</h3>
+          <p>Quatre périodes de 10 nuits chacune (printemps, été, automne, hiver) qui font varier légèrement les rendements des cultures et la consommation, sans jamais rendre une culture impossible. La serre n&#x27;est pas affectée par les saisons.</p>
+          <div class="links"><a class="chip" href="#serre">Serre</a></div>
+        </article>
+        <article class="entry" id="chapitres" data-search="chapitres sept étapes de progression qui débloquent de nouveaux bâtiments et mécaniques, mesurées par le pourcentage d&#x27;autonomie alimentaire et énergétique de la famille.">
+          <h3>Chapitres</h3>
+          <p>Sept étapes de progression qui débloquent de nouveaux bâtiments et mécaniques, mesurées par le pourcentage d&#x27;autonomie alimentaire et énergétique de la famille.</p>
+          <div class="links"><a class="chip" href="#autonomie">Autonomie</a></div>
+        </article>
+        <article class="entry" id="autonomie" data-search="autonomie pourcentage représentant la part de l&#x27;apport journalier couverte par la production de la ferme elle-même, sans compter la nourriture achetée au comptoir.">
+          <h3>Autonomie</h3>
+          <p>Pourcentage représentant la part de l&#x27;apport journalier couverte par la production de la ferme elle-même, sans compter la nourriture achetée au comptoir.</p>
+          <div class="links"><a class="chip" href="#apport_journalier">Apport journalier</a><a class="chip" href="#comptoir">Comptoir</a></div>
+        </article>
+        <article class="entry" id="coefficient_dachat" data-search="coefficient d&#x27;achat multiplicateur appliqué au prix de vente d&#x27;un objet pour déterminer son prix d&#x27;achat au comptoir. il augmente à chaque achat et diminue à chaque vente, sans jamais descendre sous un plancher minimal.">
+          <h3>Coefficient d&#x27;achat</h3>
+          <p>Multiplicateur appliqué au prix de vente d&#x27;un objet pour déterminer son prix d&#x27;achat au comptoir. Il augmente à chaque achat et diminue à chaque vente, sans jamais descendre sous un plancher minimal.</p>
+          <div class="links"><a class="chip" href="#comptoir">Comptoir</a></div>
+        </article>
+        <article class="entry" id="usure" data-search="usure valeur de 0 à 100 % pour chaque appareil électrique (panneau, batterie, pompe, moulin, presse), qui augmente avec son temps de fonctionnement et réduit son rendement. à 100 %, l&#x27;appareil tombe en panne et doit être réparé.">
+          <h3>Usure</h3>
+          <p>Valeur de 0 à 100 % pour chaque appareil électrique (panneau, batterie, pompe, moulin, presse), qui augmente avec son temps de fonctionnement et réduit son rendement. À 100 %, l&#x27;appareil tombe en panne et doit être réparé.</p>
+          <div class="links"><a class="chip" href="#panneau_solaire">Panneau solaire</a><a class="chip" href="#batterie">Batterie</a><a class="chip" href="#pompe">Pompe</a><a class="chip" href="#moulin">Moulin</a><a class="chip" href="#presse">Presse</a></div>
+        </article>
+        <article class="entry" id="interrupteur" data-search="interrupteur bouton marche/arrêt présent sur chaque appareil électrique, qui permet de le couper pour éviter qu&#x27;il ne s&#x27;use ou ne consomme de l&#x27;énergie inutilement.">
+          <h3>Interrupteur</h3>
+          <p>Bouton marche/arrêt présent sur chaque appareil électrique, qui permet de le couper pour éviter qu&#x27;il ne s&#x27;use ou ne consomme de l&#x27;énergie inutilement.</p>
+          
+        </article>
+        <article class="entry" id="automatisation" data-search="automatisation fonctionnalité débloquée à un certain niveau de bâtiment (comme le potager ou le poulailler) qui effectue automatiquement l&#x27;arrosage ou le nourrissage, sans être affectée par une santé familiale basse.">
+          <h3>Automatisation</h3>
+          <p>Fonctionnalité débloquée à un certain niveau de bâtiment (comme le potager ou le poulailler) qui effectue automatiquement l&#x27;arrosage ou le nourrissage, sans être affectée par une santé familiale basse.</p>
+          <div class="links"><a class="chip" href="#sante">Santé</a><a class="chip" href="#productivite">Productivité</a></div>
+        </article>
+        <article class="entry" id="semis_automatique" data-search="semis automatique amélioration de l&#x27;arbre technologique qui replante automatiquement une parcelle récoltée avec la même culture, si une graine est disponible.">
+          <h3>Semis automatique</h3>
+          <p>Amélioration de l&#x27;arbre technologique qui replante automatiquement une parcelle récoltée avec la même culture, si une graine est disponible.</p>
+          <div class="links"><a class="chip" href="#arbre_technologique">Arbre technologique</a></div>
+        </article></div>
+    </section>
+    <section class="category" id="cat-famille">
+      <div class="cat-head">
+        <div class="cat-icon">👨‍👩‍👧‍👦</div>
+        <div>
+          <div class="kicker">Catégorie</div>
+          <h2>Famille</h2>
+        </div>
+      </div>
+      <div class="entry-grid">
+        <article class="entry" id="adulte" data-search="adulte membre de la famille dont le besoin énergétique quotidien est de 50 ; il y en a deux dans la famille.">
+          <h3>Adulte</h3>
+          <p>Membre de la famille dont le besoin énergétique quotidien est de 50 ; il y en a deux dans la famille.</p>
+          <div class="links"><a class="chip" href="#apport_journalier">Apport journalier</a></div>
+        </article>
+        <article class="entry" id="enfant" data-search="enfant membre de la famille dont le besoin énergétique quotidien est de 25 ; il y en a deux dans la famille.">
+          <h3>Enfant</h3>
+          <p>Membre de la famille dont le besoin énergétique quotidien est de 25 ; il y en a deux dans la famille.</p>
+          <div class="links"><a class="chip" href="#apport_journalier">Apport journalier</a></div>
+        </article>
+        <article class="entry" id="famille" data-search="famille groupe de quatre personnes (deux adultes, deux enfants) dont le but du jeu est d&#x27;assurer l&#x27;apport journalier de 150 en énergie, entièrement produit par la ferme, sans dépendre du comptoir.">
+          <h3>Famille</h3>
+          <p>Groupe de quatre personnes (deux adultes, deux enfants) dont le but du jeu est d&#x27;assurer l&#x27;apport journalier de 150 en énergie, entièrement produit par la ferme, sans dépendre du comptoir.</p>
+          <div class="links"><a class="chip" href="#apport_journalier">Apport journalier</a><a class="chip" href="#autonomie">Autonomie</a></div>
+        </article></div>
+    </section>
+    <p class="no-results" id="no-results">Aucun terme ne correspond à votre recherche.</p>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <div>🌱 <strong>Ferme Familiale</strong> — un jeu de gestion agricole.</div>
+      <div><a href="landing.html">Accueil</a> · <a href="index.html">Jouer</a></div>
+    </div>
+  </footer>
+
+  <script>
+    const input = document.getElementById('search');
+    const entries = Array.from(document.querySelectorAll('.entry'));
+    const categories = Array.from(document.querySelectorAll('.category'));
+    const countEl = document.getElementById('search-count');
+    const noResults = document.getElementById('no-results');
+
+    function filter() {
+      const q = input.value.trim().toLowerCase();
+      let visible = 0;
+      entries.forEach(e => {
+        const match = !q || e.dataset.search.includes(q);
+        e.classList.toggle('hidden', !match);
+        if (match) visible++;
+      });
+      categories.forEach(cat => {
+        const anyVisible = cat.querySelectorAll('.entry:not(.hidden)').length > 0;
+        cat.classList.toggle('hidden', !anyVisible);
+      });
+      countEl.textContent = q ? `${visible} résultat${visible === 1 ? '' : 's'}` : '';
+      noResults.style.display = (q && visible === 0) ? 'block' : 'none';
+    }
+    input.addEventListener('input', filter);
+  </script>
+</body>
+</html>

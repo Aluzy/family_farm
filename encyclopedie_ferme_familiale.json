@@ -1,0 +1,143 @@
+{
+  "titre": "Encyclopédie — Ferme Familiale",
+  "categories": [
+    {
+      "id": "batiments",
+      "nom": "Bâtiments & infrastructures",
+      "entrees": [
+        { "id": "panneau_solaire", "terme": "Panneau solaire", "description": "Produit de l'électricité à partir du soleil, stockée dans la batterie. Peut être amélioré en niveau, s'use durant son fonctionnement et peut être coupé par un interrupteur pour éviter cette usure.", "liens": ["batterie"] },
+        { "id": "batterie", "terme": "Batterie", "description": "Stocke l'électricité produite par les panneaux solaires. Alimente la pompe, le moulin, la presse et le réfrigérateur. Plusieurs batteries peuvent être possédées ; elles se remplissent l'une après l'autre et se vident dans l'ordre inverse.", "liens": ["panneau_solaire", "pompe", "moulin", "presse", "refrigerateur"] },
+        { "id": "puit", "terme": "Puit", "description": "Source d'eau illimitée, à laquelle la pompe puise pour remplir le réservoir.", "liens": ["pompe", "reservoir"] },
+        { "id": "pompe", "terme": "Pompe", "description": "Extrait l'eau du puit et la fait circuler vers le réservoir. Consomme de l'électricité fournie par la batterie, elle-même chargée par les panneaux solaires.", "liens": ["puit", "reservoir", "batterie", "panneau_solaire"] },
+        { "id": "reservoir", "terme": "Réservoir", "description": "Stock d'eau qui nécessite une pompe alimentée en électricité par les panneaux solaires et la batterie pour extraire l'eau du puit.", "liens": ["pompe", "panneau_solaire", "batterie", "puit"] },
+        { "id": "potager", "terme": "Potager", "description": "Parcelles de culture pour les légumes de base (carotte, patate, tomate, courgette, aubergine, oignon, ail, poivron, épinard, fraise). Chaque parcelle doit être arrosée avec l'eau du réservoir pour que la plante pousse.", "liens": ["reservoir", "carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard", "fraise"] },
+        { "id": "champ", "terme": "Champ", "description": "Parcelles de culture pour le blé, le tournesol, le riz et le houblon. Comme le potager, les parcelles doivent être arrosées avec l'eau du réservoir.", "liens": ["reservoir", "ble", "tournesol", "riz", "houblon"] },
+        { "id": "serre", "terme": "Serre", "description": "Parcelles de culture protégées qui produisent toute l'année sans être affectées par les saisons, contrairement au potager et au champ. C'est le seul endroit où peuvent être cultivés le cacao, la vanille et le café.", "liens": ["saisons", "cacao", "vanille", "cafe"] },
+        { "id": "verger", "terme": "Verger", "description": "Emplacements où l'on plante des arbres fruitiers (pommier, poirier) achetés au comptoir. Les arbres ne produisent des fruits qu'à certaines saisons, plusieurs nuits après leur plantation.", "liens": ["comptoir", "pommier", "poirier", "saisons"] },
+        { "id": "poulailler", "terme": "Poulailler", "description": "Bâtiment qui loge les poules. Sa capacité maximale de poules augmente avec son niveau. Les poules doivent y être nourries avec le blé du silo pour pondre.", "liens": ["poule", "silo", "ble"] },
+        { "id": "paturage", "terme": "Pâturage", "description": "Terrain où vivent les moutons et les vaches. Sa surface, mesurée en hectares, est partagée entre les deux espèces et doit être agrandie par achat au comptoir pour accueillir plus d'animaux.", "liens": ["mouton", "vache", "comptoir"] },
+        { "id": "silo", "terme": "Silo", "description": "Stock de blé récolté, utilisé pour nourrir les poules du poulailler.", "liens": ["ble", "poulailler", "poule"] },
+        { "id": "moulin", "terme": "Moulin", "description": "Transforme le blé en farine. Fonctionne à l'électricité fournie par la batterie.", "liens": ["ble", "farine", "batterie"] },
+        { "id": "presse", "terme": "Presse", "description": "Transforme les graines de tournesol en huile. Fonctionne à l'électricité fournie par la batterie.", "liens": ["tournesol", "huile", "batterie"] },
+        { "id": "four", "terme": "Four", "description": "Bâtiment qui débloque le livre de recette dès sa construction. Sert à cuire le pain et d'autres plats comme le gratin de patates ou les tartes.", "liens": ["livre_de_recette", "pain", "gratin_de_patates"] },
+        { "id": "cuisine", "terme": "Cuisine", "description": "Bâtiment qui se construit après le four et permet de préparer des plats comme l'omelette, la ratatouille, le ragoût ou la compote.", "liens": ["four", "livre_de_recette"] },
+        { "id": "refrigerateur", "terme": "Réfrigérateur", "description": "Bâtiment qui empêche les aliments et plats qui y sont rangés de périmer. Consomme de l'électricité en continu, jour et nuit, prélevée sur la batterie ; si celle-ci se vide, le réfrigérateur tombe en panne et le contenu peut recommencer à périmer.", "liens": ["batterie", "peremption"] },
+        { "id": "livre_de_recette", "terme": "Livre de recette", "description": "Onglet du jeu (et non un objet possédé) débloqué par la construction du four, qui permet de lancer la préparation des plats à partir des ingrédients disponibles dans l'inventaire.", "liens": ["four", "inventaire"] },
+        { "id": "comptoir", "terme": "Comptoir", "description": "Lieu d'achat et de vente. On y vend les surplus de la ferme contre des pièces, on y achète des graines en dépannage, des animaux (poule, mouton, vache) et des arbres fruitiers. Les prix d'achat augmentent avec les achats et diminuent avec les ventes.", "liens": ["pieces", "poule", "mouton", "vache", "pommier", "poirier"] },
+        { "id": "arbre_technologique", "terme": "Arbre technologique", "description": "Ensemble d'améliorations à débloquer avec des pièces, qui permettent par exemple d'automatiser l'arrosage et le nourrissage, de replanter automatiquement après récolte, ou de réduire le temps d'éveil minimal avant de pouvoir dormir.", "liens": ["automatisation", "semis_automatique", "temps_eveil_minimal"] }
+      ]
+    },
+    {
+      "id": "cultures",
+      "nom": "Cultures & plantes",
+      "entrees": [
+        { "id": "carotte", "terme": "Carotte", "description": "Légume du potager qui atteint sa maturité en 4 stades de croissance (un par nuit arrosée). Peut aussi être laissée à monter en graine plutôt que récoltée pour se nourrir.", "liens": ["potager"] },
+        { "id": "patate", "terme": "Patate", "description": "Légume du potager qui atteint sa maturité en 6 stades. Une patate récoltée peut directement être replantée comme un plant.", "liens": ["potager"] },
+        { "id": "tomate", "terme": "Tomate", "description": "Légume qui peut être cultivé aussi bien au potager qu'en serre, en 5 stades.", "liens": ["potager", "serre"] },
+        { "id": "courgette", "terme": "Courgette", "description": "Légume qui peut être cultivé aussi bien au potager qu'en serre, en 5 stades.", "liens": ["potager", "serre"] },
+        { "id": "aubergine", "terme": "Aubergine", "description": "Légume qui peut être cultivé aussi bien au potager qu'en serre, en 6 stades.", "liens": ["potager", "serre"] },
+        { "id": "oignon", "terme": "Oignon", "description": "Légume du potager, en 5 stades de croissance.", "liens": ["potager"] },
+        { "id": "ail", "terme": "Ail", "description": "Légume du potager, en 6 stades. Une fois récolté, il peut directement être replanté comme un plant.", "liens": ["potager"] },
+        { "id": "poivron", "terme": "Poivron", "description": "Légume qui peut être cultivé aussi bien au potager qu'en serre, en 6 stades.", "liens": ["potager", "serre"] },
+        { "id": "epinard", "terme": "Épinard", "description": "Légume du potager qui pousse le plus rapidement, en seulement 3 stades.", "liens": ["potager"] },
+        { "id": "fraise", "terme": "Fraise", "description": "Légume du potager, en 4 stades, qui rend le plus de graines par récolte.", "liens": ["potager"] },
+        { "id": "ble", "terme": "Blé", "description": "Culture du champ. Sert à la fois d'ingrédient (transformé en farine par le moulin, ou donné aux poules du poulailler) et de semence pour replanter au champ.", "liens": ["champ", "moulin", "farine", "poulailler", "poule"] },
+        { "id": "tournesol", "terme": "Tournesol", "description": "Culture du champ dont les graines sont soit replantées, soit transformées en huile par la presse.", "liens": ["champ", "presse", "huile"] },
+        { "id": "riz", "terme": "Riz", "description": "Culture du champ qui demande deux fois plus d'eau à l'arrosage que le blé.", "liens": ["champ", "reservoir"] },
+        { "id": "houblon", "terme": "Houblon", "description": "Culture du champ non comestible, utilisée uniquement pour la vente et pour préparer la bière artisanale.", "liens": ["champ", "biere_artisanale"] },
+        { "id": "cacao", "terme": "Cacao", "description": "Culture de rente cultivée exclusivement en serre, jamais comestible. Utilisée pour la vente et pour préparer le chocolat chaud.", "liens": ["serre", "chocolat_chaud"] },
+        { "id": "vanille", "terme": "Vanille", "description": "Culture de rente cultivée exclusivement en serre, jamais comestible et la plus chère à la vente. Utilisée pour préparer la crème à la vanille.", "liens": ["serre", "creme_a_la_vanille"] },
+        { "id": "cafe", "terme": "Café", "description": "Culture de rente cultivée exclusivement en serre, jamais comestible. Utilisée pour préparer la boisson du même nom.", "liens": ["serre"] },
+        { "id": "pommier", "terme": "Pommier", "description": "Arbre fruitier permanent du verger, acheté au comptoir. Donne des pommes après un délai suivant sa plantation, puis à chaque saison de récolte.", "liens": ["verger", "comptoir"] },
+        { "id": "poirier", "terme": "Poirier", "description": "Arbre fruitier permanent du verger, acheté au comptoir. Donne des poires après un délai suivant sa plantation, puis à chaque saison de récolte.", "liens": ["verger", "comptoir"] }
+      ]
+    },
+    {
+      "id": "animaux",
+      "nom": "Animaux & produits animaux",
+      "entrees": [
+        { "id": "poule", "terme": "Poule", "description": "Animal du poulailler, acheté au comptoir. Pond un œuf chaque nuit tant qu'elle est nourrie avec le blé du silo, et cela toute sa vie. Peut aussi être abattue pour un peu de viande de volaille, mais c'est une option de dernier recours peu rentable.", "liens": ["poulailler", "silo", "ble", "oeuf", "viande_de_volaille"] },
+        { "id": "mouton", "terme": "Mouton", "description": "Animal du pâturage, acheté au comptoir. Grossit chaque nuit et peut être tondu régulièrement pour obtenir de la laine, ou abattu pour obtenir de la viande de mouton.", "liens": ["paturage", "comptoir", "laine", "viande_de_mouton"] },
+        { "id": "vache", "terme": "Vache", "description": "Animal du pâturage, acheté au comptoir, occupant trois fois plus de surface qu'un mouton. Produit du lait chaque nuit dès son achat, sans condition, et peut être abattue pour obtenir de la viande de bœuf.", "liens": ["paturage", "comptoir", "lait", "viande_de_boeuf"] },
+        { "id": "oeuf", "terme": "Œuf", "description": "Aliment produit par les poules du poulailler, consommé par la famille ou utilisé dans des recettes comme l'omelette.", "liens": ["poule", "omelette"] },
+        { "id": "laine", "terme": "Laine", "description": "Produit obtenu en tondant un mouton, vendu au comptoir. Ne se consomme pas et ne périme jamais.", "liens": ["mouton", "comptoir"] },
+        { "id": "lait", "terme": "Lait", "description": "Produit obtenu chaque nuit auprès des vaches du pâturage, consommé par la famille ou utilisé dans des recettes comme le fromage frais ou le chocolat chaud.", "liens": ["vache", "fromage_frais", "chocolat_chaud"] },
+        { "id": "viande_de_mouton", "terme": "Viande de mouton", "description": "Obtenue en abattant un mouton, en quantité proportionnelle à son poids. Utilisée dans des recettes comme le ragoût.", "liens": ["mouton", "ragout"] },
+        { "id": "viande_de_boeuf", "terme": "Viande de bœuf", "description": "Obtenue en abattant une vache, en quantité proportionnelle à son poids. Utilisée dans des recettes comme le rôti de bœuf.", "liens": ["vache", "roti_de_boeuf"] },
+        { "id": "viande_de_volaille", "terme": "Viande de volaille", "description": "Obtenue en abattant une poule, en quantité fixe et modeste. Utilisée dans des recettes comme le poulet rôti à l'ail.", "liens": ["poule", "poulet_roti_a_lail"] }
+      ]
+    },
+    {
+      "id": "ressources",
+      "nom": "Ressources, ingrédients & stockage",
+      "entrees": [
+        { "id": "electricite", "terme": "Électricité", "description": "Ressource produite par les panneaux solaires, stockée dans la batterie, et consommée par la pompe, le moulin, la presse et le réfrigérateur.", "liens": ["panneau_solaire", "batterie"] },
+        { "id": "eau", "terme": "Eau", "description": "Ressource puisée dans le puit par la pompe, stockée dans le réservoir, et utilisée pour arroser le potager, le champ et la serre.", "liens": ["puit", "pompe", "reservoir"] },
+        { "id": "pieces", "terme": "Pièces", "description": "Monnaie du jeu, obtenue en vendant les surplus de la ferme au comptoir, et dépensée pour les achats, les améliorations et l'agrandissement des surfaces.", "liens": ["comptoir"] },
+        { "id": "farine", "terme": "Farine", "description": "Ingrédient obtenu en transformant le blé au moulin, utilisé dans des recettes comme le pain.", "liens": ["ble", "moulin", "pain"] },
+        { "id": "huile", "terme": "Huile", "description": "Ingrédient obtenu en transformant les graines de tournesol à la presse, utilisé dans des recettes comme l'omelette ou la ratatouille.", "liens": ["tournesol", "presse", "omelette", "ratatouille"] },
+        { "id": "graines", "terme": "Graines", "description": "Obtenues normalement en récoltant les cultures, elles permettent de replanter. Peuvent aussi être achetées au comptoir en dépannage, mais à un prix plus élevé que la production.", "liens": ["comptoir"] },
+        { "id": "conserve", "terme": "Conserve", "description": "Aliment non périssable présent dès le début de la partie, qui laisse le temps de lancer le potager avant que la santé de la famille ne soit menacée. Ne peut pas être racheté une fois épuisé.", "liens": ["sante", "potager"] },
+        { "id": "inventaire", "terme": "Inventaire", "description": "Stock illimité de tous les objets possédés par la ferme, organisé en lots datés selon leur date de récolte, pour suivre leur péremption.", "liens": ["peremption"] },
+        { "id": "apport_journalier", "terme": "Apport journalier", "description": "Besoin quotidien en énergie de toute la famille, fixé à 150 par jour (deux adultes à 50 chacun, deux enfants à 25 chacun). Ce besoin doit être couvert par les aliments consommés au repas du soir pour préserver la santé de la famille.", "liens": ["famille", "sante"] },
+        { "id": "peremption", "terme": "Péremption", "description": "Durée pendant laquelle un aliment ou un plat reste consommable hors du réfrigérateur, généralement entre 5 et 7 nuits selon la catégorie. Le réfrigérateur permet de conserver sans limite de temps.", "liens": ["refrigerateur"] }
+      ]
+    },
+    {
+      "id": "recettes",
+      "nom": "Recettes & plats",
+      "entrees": [
+        { "id": "pain", "terme": "Pain", "description": "Plat cuit au four à partir de farine et d'eau.", "liens": ["four", "farine"] },
+        { "id": "omelette", "terme": "Omelette", "description": "Plat préparé à la cuisine à partir d'œufs et d'huile.", "liens": ["cuisine", "oeuf", "huile"] },
+        { "id": "ratatouille", "terme": "Ratatouille", "description": "Plat préparé à la cuisine à partir de tomate, courgette, aubergine et huile.", "liens": ["cuisine", "tomate", "courgette", "aubergine", "huile"] },
+        { "id": "gratin_de_patates", "terme": "Gratin de patates", "description": "Plat cuit au four à partir de patates et d'œuf, dont la valeur nutritionnelle est fixée pour couvrir à elle seule tout l'apport journalier d'une famille.", "liens": ["four", "patate", "oeuf", "apport_journalier"] },
+        { "id": "ragout", "terme": "Ragoût", "description": "Plat préparé à la cuisine à partir de viande de mouton, carottes et patate.", "liens": ["cuisine", "viande_de_mouton", "carotte", "patate"] },
+        { "id": "compote", "terme": "Compote", "description": "Plat préparé à la cuisine à partir de pommes ou de poires.", "liens": ["cuisine", "pommier", "poirier"] },
+        { "id": "tarte_aux_pommes", "terme": "Tarte aux pommes", "description": "Plat cuit au four à partir de farine, pommes et œuf.", "liens": ["four", "farine", "pommier", "oeuf"] },
+        { "id": "soupe_de_legumes", "terme": "Soupe de légumes", "description": "Plat préparé à la cuisine à partir de carotte, oignon, patate et eau.", "liens": ["cuisine", "carotte", "oignon", "patate"] },
+        { "id": "salade_de_tomates", "terme": "Salade de tomates", "description": "Plat préparé à la cuisine à partir de tomates et d'huile.", "liens": ["cuisine", "tomate", "huile"] },
+        { "id": "quiche_aux_epinards", "terme": "Quiche aux épinards", "description": "Plat cuit au four à partir de farine, œufs, lait et épinard.", "liens": ["four", "oeuf", "lait", "epinard"] },
+        { "id": "fromage_frais", "terme": "Fromage frais", "description": "Plat préparé à la cuisine à partir de lait, se conservant mieux que le lait cru.", "liens": ["cuisine", "lait"] },
+        { "id": "riz_au_lait", "terme": "Riz au lait", "description": "Plat préparé à la cuisine à partir de riz et de lait.", "liens": ["cuisine", "riz", "lait"] },
+        { "id": "pain_a_lail", "terme": "Pain à l'ail", "description": "Plat cuit au four à partir de pain, d'ail et d'huile.", "liens": ["four", "pain", "ail", "huile"] },
+        { "id": "poivrons_farcis", "terme": "Poivrons farcis", "description": "Plat cuit au four à partir de poivrons, de viande de mouton et de riz.", "liens": ["four", "poivron", "viande_de_mouton", "riz"] },
+        { "id": "tarte_aux_fraises", "terme": "Tarte aux fraises", "description": "Plat cuit au four à partir de farine, fraises et œuf.", "liens": ["four", "fraise", "oeuf"] },
+        { "id": "confiture_de_fraises", "terme": "Confiture de fraises", "description": "Plat préparé à la cuisine à partir de fraises, ne périmant pas.", "liens": ["cuisine", "fraise"] },
+        { "id": "roti_de_boeuf", "terme": "Rôti de bœuf", "description": "Plat cuit au four à partir de viande de bœuf, carottes et patate.", "liens": ["four", "viande_de_boeuf", "carotte", "patate"] },
+        { "id": "poulet_roti_a_lail", "terme": "Poulet rôti à l'ail", "description": "Plat cuit au four à partir de viande de volaille, patates et ail.", "liens": ["four", "viande_de_volaille", "patate", "ail"] },
+        { "id": "chocolat_chaud", "terme": "Chocolat chaud", "description": "Recette de luxe préparée à la cuisine à partir de cacao et de lait, vendue trois fois le prix de ses ingrédients.", "liens": ["cuisine", "cacao", "lait"] },
+        { "id": "cafe_boisson", "terme": "Café (boisson)", "description": "Recette de luxe préparée à la cuisine à partir de café et d'eau, vendue trois fois le prix de ses ingrédients.", "liens": ["cuisine", "cafe"] },
+        { "id": "creme_a_la_vanille", "terme": "Crème à la vanille", "description": "Recette de luxe préparée à la cuisine à partir de vanille, lait et œufs, vendue trois fois le prix de ses ingrédients.", "liens": ["cuisine", "vanille", "lait", "oeuf"] },
+        { "id": "biere_artisanale", "terme": "Bière artisanale", "description": "Recette de luxe préparée à la cuisine à partir de houblon et d'eau, vendue trois fois le prix de ses ingrédients et ne périmant pas.", "liens": ["cuisine", "houblon"] }
+      ]
+    },
+    {
+      "id": "mecaniques",
+      "nom": "Mécaniques de jeu",
+      "entrees": [
+        { "id": "bouton_dormir", "terme": "Bouton « Dormir »", "description": "Action qui fait avancer la journée d'une nuit. C'est le seul moment où se résolvent le repas de la famille, la pousse des plantes arrosées, la ponte des poules nourries, la croissance des moutons et des vaches, et la péremption des aliments.", "liens": ["apport_journalier", "sante", "peremption"] },
+        { "id": "temps_eveil_minimal", "terme": "Temps d'éveil minimal", "description": "Durée de 30 secondes pendant laquelle le bouton Dormir reste inactif après le réveil, laissant le temps aux panneaux solaires de recharger la batterie.", "liens": ["panneau_solaire", "batterie", "bouton_dormir"] },
+        { "id": "sante", "terme": "Santé", "description": "Valeur de 0 à 100 pour chaque membre de la famille, qui augmente ou diminue selon que l'apport journalier a été couvert ou non au repas du soir. Une santé trop basse réduit la productivité et peut nécessiter des soins payants.", "liens": ["apport_journalier", "productivite", "soins"] },
+        { "id": "productivite", "terme": "Productivité", "description": "Multiplicateur qui réduit l'efficacité des actions faites manuellement (arrosage, nourrissage, récolte, préparation) lorsque la santé moyenne de la famille est basse. Les tâches automatisées ne sont jamais affectées.", "liens": ["sante", "automatisation"] },
+        { "id": "soins", "terme": "Soins", "description": "Action payante en pièces qui permet de remonter la santé d'un membre de la famille tombée à 0, à un coût qui augmente à chaque soin déjà payé.", "liens": ["sante", "pieces"] },
+        { "id": "saisons", "terme": "Saisons", "description": "Quatre périodes de 10 nuits chacune (printemps, été, automne, hiver) qui font varier légèrement les rendements des cultures et la consommation, sans jamais rendre une culture impossible. La serre n'est pas affectée par les saisons.", "liens": ["serre"] },
+        { "id": "chapitres", "terme": "Chapitres", "description": "Sept étapes de progression qui débloquent de nouveaux bâtiments et mécaniques, mesurées par le pourcentage d'autonomie alimentaire et énergétique de la famille.", "liens": ["autonomie"] },
+        { "id": "autonomie", "terme": "Autonomie", "description": "Pourcentage représentant la part de l'apport journalier couverte par la production de la ferme elle-même, sans compter la nourriture achetée au comptoir.", "liens": ["apport_journalier", "comptoir"] },
+        { "id": "coefficient_dachat", "terme": "Coefficient d'achat", "description": "Multiplicateur appliqué au prix de vente d'un objet pour déterminer son prix d'achat au comptoir. Il augmente à chaque achat et diminue à chaque vente, sans jamais descendre sous un plancher minimal.", "liens": ["comptoir"] },
+        { "id": "usure", "terme": "Usure", "description": "Valeur de 0 à 100 % pour chaque appareil électrique (panneau, batterie, pompe, moulin, presse), qui augmente avec son temps de fonctionnement et réduit son rendement. À 100 %, l'appareil tombe en panne et doit être réparé.", "liens": ["panneau_solaire", "batterie", "pompe", "moulin", "presse"] },
+        { "id": "interrupteur", "terme": "Interrupteur", "description": "Bouton marche/arrêt présent sur chaque appareil électrique, qui permet de le couper pour éviter qu'il ne s'use ou ne consomme de l'énergie inutilement.", "liens": [] },
+        { "id": "automatisation", "terme": "Automatisation", "description": "Fonctionnalité débloquée à un certain niveau de bâtiment (comme le potager ou le poulailler) qui effectue automatiquement l'arrosage ou le nourrissage, sans être affectée par une santé familiale basse.", "liens": ["sante", "productivite"] },
+        { "id": "semis_automatique", "terme": "Semis automatique", "description": "Amélioration de l'arbre technologique qui replante automatiquement une parcelle récoltée avec la même culture, si une graine est disponible.", "liens": ["arbre_technologique"] }
+      ]
+    },
+    {
+      "id": "famille",
+      "nom": "Famille",
+      "entrees": [
+        { "id": "adulte", "terme": "Adulte", "description": "Membre de la famille dont le besoin énergétique quotidien est de 50 ; il y en a deux dans la famille.", "liens": ["apport_journalier"] },
+        { "id": "enfant", "terme": "Enfant", "description": "Membre de la famille dont le besoin énergétique quotidien est de 25 ; il y en a deux dans la famille.", "liens": ["apport_journalier"] },
+        { "id": "famille", "terme": "Famille", "description": "Groupe de quatre personnes (deux adultes, deux enfants) dont le but du jeu est d'assurer l'apport journalier de 150 en énergie, entièrement produit par la ferme, sans dépendre du comptoir.", "liens": ["apport_journalier", "autonomie"] }
+      ]
+    }
+  ]
+}
