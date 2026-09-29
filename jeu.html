@@ -1967,10 +1967,13 @@ const DATA = {
   // CONSTRUCTION : 0 (« aménager » le Verger est gratuit : il est débloqué par le
   // chapitre 6, voir CHAPITRES) ; l'emplacement
   // supplémentaire coûte EMPLACEMENT.base × croissance^n, n étant le nombre
-  // d'emplacements déjà achetés (ceux de départ ne comptent pas).
+  // d'emplacements déjà achetés (ceux de départ ne comptent pas), arrondi à
+  // l'entier supérieur. EMPLACEMENTS_MAX plafonne le nombre total d'emplacements
+  // (départ compris) : au-delà, aucun nouvel emplacement ne peut être acheté.
   VERGER: {
     CONSTRUCTION: 0,
     EMPLACEMENTS_DEPART: 2,
+    EMPLACEMENTS_MAX: 20,
     EMPLACEMENT: { base: 50, croissance: 1.25 },
     MATURITE: 15,
     FRUITS: 6,
@@ -4220,10 +4223,11 @@ function orchardFree(state) {
   return Math.max(0, state.verger.places - state.verger.arbres.length);
 }
 
-// Prix du prochain emplacement : 50 × 1,25^n, n = emplacements déjà achetés.
+// Prix du prochain emplacement : 50 × 1,25^n (arrondi à l'entier supérieur),
+// n = emplacements déjà achetés.
 function orchardSlotPrice(state) {
   const E = DATA.VERGER.EMPLACEMENT;
-  return roundCoins(E.base * Math.pow(E.croissance, state.verger.achetes));
+  return Math.ceil(E.base * Math.pow(E.croissance, state.verger.achetes));
 }
 
 // Aménage le Verger (gratuit tant que DATA.VERGER.CONSTRUCTION vaut 0).
@@ -4246,6 +4250,7 @@ function openVerger(state) {
 function buyOrchardSlot(state) {
   const v = state.verger;
   if (!v.construit) return fail('Aménage d\'abord le Verger (onglet Ferme).');
+  if (v.places >= DATA.VERGER.EMPLACEMENTS_MAX) return fail('Le Verger a atteint sa taille maximale (' + DATA.VERGER.EMPLACEMENTS_MAX + ' emplacements).');
   const cost = orchardSlotPrice(state);
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
@@ -10676,7 +10681,7 @@ test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
   assertEqual(S.MODS.hiver, { solaire: 0.7, potager: 0.7, eau: 0.8, champ: 0.7, moutons: 0.8 });
   assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 400, PARCELLES: [6, 9, 12, 15, 18], COUT: [0, 300, 600, 1000, 1800] });
   const V = DATA.VERGER;
-  assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 50, 1.25]);
+  assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 20, 50, 1.25]);
   assertEqual([V.MATURITE, V.FRUITS, V.PERIODE], [15, 6, 3]);
   assertEqual([V.ARBRES.pommier.prix, V.ARBRES.poirier.prix], [40, 40]);
   assertEqual([V.ARBRES.pommier.fruit, V.ARBRES.poirier.fruit], ['pomme', 'poire']);
@@ -10930,7 +10935,7 @@ test('Verger : 2 emplacements au départ, aucun arbre', () => {
   assertEqual(buyTree(garden(), 'pommier').ok, false, 'sans Verger');
 });
 
-test('Verger : prix des emplacements supplémentaires 50 × 1,25^n', () => {
+test('Verger : prix des emplacements supplémentaires 50 × 1,25^n arrondi à l\'entier supérieur', () => {
   const s = orchard();
   s.pieces = 100000;
   const seen = [];
@@ -10940,14 +10945,29 @@ test('Verger : prix des emplacements supplémentaires 50 × 1,25^n', () => {
     assert(buyOrchardSlot(s).ok);
     seen.push([price, roundCoins(before - s.pieces), s.verger.places]);
   }
-  assertEqual(seen.map((x) => x[0]), [50, 62.5, 78.13, 97.66, 122.07, 152.59]);
-  assertEqual(seen.map((x) => x[1]), [50, 62.5, 78.13, 97.66, 122.07, 152.59]);
+  assertEqual(seen.map((x) => x[0]), [50, 63, 79, 98, 123, 153]);
+  assertEqual(seen.map((x) => x[1]), [50, 63, 79, 98, 123, 153]);
   assertEqual(seen.map((x) => x[2]), [3, 4, 5, 6, 7, 8]);
   assertEqual(s.verger.achetes, 6, 'les 2 emplacements de départ ne comptent pas');
   const poor = orchard();
   poor.pieces = 49;
   assertEqual(buyOrchardSlot(poor).ok, false);
   assertEqual(buyOrchardSlot(garden()).ok, false, 'sans Verger');
+});
+
+test('Verger : le nombre d\'emplacements est plafonné à 20', () => {
+  const s = orchard();
+  s.pieces = 10000000;
+  assertEqual(DATA.VERGER.EMPLACEMENTS_MAX, 20);
+  // 2 emplacements de départ + 18 achats = 20.
+  for (let i = 0; i < 18; i++) {
+    assert(buyOrchardSlot(s).ok, `achat ${i + 1}/18 devrait réussir`);
+  }
+  assertEqual(s.verger.places, 20);
+  assertEqual(s.verger.achetes, 18);
+  const blocked = buyOrchardSlot(s);
+  assertEqual(blocked.ok, false, 'refusé au-delà de 20 emplacements');
+  assertEqual(s.verger.places, 20, 'le plafond ne bouge pas même avec assez de pièces');
 });
 
 test('Verger : arbre à 40 pièces sur un emplacement libre, pommier ou poirier', () => {
@@ -13831,6 +13851,7 @@ function renderVerger() {
   }
   const nightOfYear = yearNight(state.day);
   const season = nightOfYear >= w.debut && nightOfYear <= w.fin ? '🍎 Les fruits sont de saison.' : `Les fruits arrivent de la nuit ${w.debut} à la nuit ${w.fin} de l'année (l'année compte ${L * DATA.SAISONS.ORDRE.length} nuits).`;
+  const atMax = v.places >= V.EMPLACEMENTS_MAX;
   return `
     <div class="section-head">
       <h3>${icon('verger')}Verger · ${v.arbres.length} / ${v.places} emplacements</h3>
@@ -13839,7 +13860,9 @@ function renderVerger() {
     <div class="plots">${slots.join('')}</div>
     <div class="card">
       <span class="muted">${season}</span>
-      <button type="button" class="btn" data-action="buy-orchard-slot"${canPay(price) ? '' : ' disabled'}>Acheter un emplacement (${costLabel(price)})</button>
+      ${atMax
+        ? `<span class="muted">Le Verger a atteint sa taille maximale (${V.EMPLACEMENTS_MAX} emplacements).</span>`
+        : `<button type="button" class="btn" data-action="buy-orchard-slot"${canPay(price) ? '' : ' disabled'}>Acheter un emplacement (${costLabel(price)})</button>`}
     </div>
   `;
 }
@@ -14475,7 +14498,9 @@ function renderTreeRow(espece) {
     note = '⚠️ Aménage d\'abord le Verger (onglet Ferme).';
     ok = false;
   } else if (orchardFree(state) <= 0) {
-    note = `⚠️ Le Verger est plein : achète un emplacement (${costLabel(orchardSlotPrice(state))}).`;
+    note = v.places >= DATA.VERGER.EMPLACEMENTS_MAX
+      ? '⚠️ Le Verger est plein et a atteint sa taille maximale.'
+      : `⚠️ Le Verger est plein : achète un emplacement (${costLabel(orchardSlotPrice(state))}).`;
     ok = false;
   } else {
     note = `Emplacements libres : ${orchardFree(state)}.`;
@@ -14493,13 +14518,17 @@ function renderArbres() {
   const V = DATA.VERGER;
   const v = state.verger;
   const price = orchardSlotPrice(state);
+  const atMax = v.places >= V.EMPLACEMENTS_MAX;
+  const slotNote = atMax
+    ? `Le Verger a atteint sa taille maximale (${V.EMPLACEMENTS_MAX} emplacements).`
+    : `Prix : <strong class="num">${formatCoins(price)} 💰</strong> (${V.EMPLACEMENT.base} × ${formatFixed(V.EMPLACEMENT.croissance, 2)}<sup>${v.achetes}</sup>, le prix monte à chaque emplacement acheté).`;
   return `
     <p class="muted">Les arbres s'achètent à prix fixe, se plantent sur un emplacement libre du Verger et ne s'arrosent pas : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne.</p>
     ${Object.keys(V.ARBRES).map(renderTreeRow).join('')}
-    <div class="shop-row${v.construit ? '' : ' unavailable'}">
+    <div class="shop-row${v.construit && !atMax ? '' : ' unavailable'}">
       <div class="inv-main"><span><span aria-hidden="true">🟫</span> Emplacement</span><span class="muted">Emplacements : <span class="num">${v.arbres.length} / ${v.places}</span></span></div>
-      <span class="muted">Prix : <strong class="num">${formatCoins(price)} 💰</strong> (${V.EMPLACEMENT.base} × ${formatFixed(V.EMPLACEMENT.croissance, 2)}<sup>${v.achetes}</sup>, le prix monte à chaque emplacement acheté).</span>
-      <button type="button" class="btn primary" data-action="buy-orchard-slot"${v.construit && canPay(price) ? '' : ' disabled'}>Acheter un emplacement (${formatCoins(price)} 💰)</button>
+      <span class="muted">${slotNote}</span>
+      <button type="button" class="btn primary" data-action="buy-orchard-slot"${v.construit && !atMax && canPay(price) ? '' : ' disabled'}>${atMax ? 'Verger complet' : `Acheter un emplacement (${formatCoins(price)} 💰)`}</button>
     </div>`;
 }
 
