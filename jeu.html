@@ -1351,8 +1351,8 @@ const DATA = {
 
   // Achat d'un appareil supplémentaire : base × growth^n, n = nombre déjà possédé.
   PURCHASE: {
-    panneau: { base: 60, growth: 1.2 },
-    batterie: { base: 80, growth: 1.2 },
+    panneau: { base: 60, growth: 120 },
+    batterie: { base: 80, growth: 120 },
   },
 
   // Usure : en points (0 à 100). Rendement = 1 − usure ÷ EFFICIENCY_DIVISOR.
@@ -1361,8 +1361,8 @@ const DATA = {
     EFFICIENCY_DIVISOR: 200,
     SERVICE_THRESHOLD: 70,
     BREAKDOWN: 100,
-    MAINTAIN_RATE: 0.2, // part du prix d'achat
-    REPAIR_RATE: 0.5,
+    MAINTAIN_RATE: 20, // % du prix d'achat
+    REPAIR_RATE: 50, // %
   },
 
   /* ---------- Lot 2 : objets, cultures, potager, famille ---------- */
@@ -1686,7 +1686,7 @@ const DATA = {
       { min: 0, mult: 0.25 },
     ],
     // Soin : base × croissance^(soins déjà payés) ; il remet la santé à SANTE.
-    SOIN: { base: 20, croissance: 1.5, SANTE: 50 },
+    SOIN: { base: 20, croissance: 150, SANTE: 50 },
     // Lot 5 : bonus de santé de la nuit, +PAR_PLAT par plat différent mangé, jusqu'à MAX.
     BONUS_PLATS: { PAR_PLAT: 1, MAX: 3 },
     // Sans soin, un malade regagne ce nombre de points par nuit où le besoin est
@@ -1741,8 +1741,8 @@ const DATA = {
   // PAS par unité achetée, baisse de PAS par unité vendue sans passer sous le
   // plancher, et ne redescend jamais avec le temps.
   MARCHE: {
-    PLANCHER: { defaut: 1.2, graine: 2.0 }, // par catégorie d'objet
-    PAS: 0.1,
+    PLANCHER: { defaut: 120, graine: 200 }, // en %, par catégorie d'objet
+    PAS: 10, // points de %
     // Lot 12 (doublement des prix de vente des productions de la ferme) :
     // multiplicateur appliqué une seule fois, au chargement, au prix de
     // vente (DATA.items[x].prix) de chaque récolte de culture, fruit du
@@ -1862,7 +1862,7 @@ const DATA = {
     haParMouton: 0.05,
     haParVache: 0.15,
     prixSurface: 40,
-    croissance: 1.2,
+    croissance: 120,
   },
 
   /* ---------- Lot 7 : automatisations et arbre des technologies ---------- */
@@ -2007,7 +2007,7 @@ const DATA = {
     CONSTRUCTION: 0,
     EMPLACEMENTS_DEPART: 2,
     EMPLACEMENTS_MAX: 20,
-    EMPLACEMENT: { base: 50, croissance: 1.25 },
+    EMPLACEMENT: { base: 50, croissance: 125 },
     MATURITE: 15,
     FRUITS: 6,
     PERIODE: 3,
@@ -2543,7 +2543,7 @@ function tankCapacity(state) {
 // Prix du n-ième appareil d'un type, n étant le nombre déjà possédé.
 function purchasePrice(type, owned) {
   const p = DATA.PURCHASE[type];
-  return roundCoins(p.base * Math.pow(p.growth, owned));
+  return growthPrice(p.base, p.growth, owned);
 }
 
 function nextPurchasePrice(state, type) {
@@ -2552,11 +2552,11 @@ function nextPurchasePrice(state, type) {
 }
 
 function maintainCost(d) {
-  return roundCoins(d.prix * DATA.WEAR.MAINTAIN_RATE);
+  return percentCeil(d.prix, DATA.WEAR.MAINTAIN_RATE);
 }
 
 function repairCost(d) {
-  return roundCoins(d.prix * DATA.WEAR.REPAIR_RATE);
+  return percentCeil(d.prix, DATA.WEAR.REPAIR_RATE);
 }
 
 // Le Moulin et la Presse n'ont pas de niveaux : pas d'amélioration (null).
@@ -2565,9 +2565,20 @@ function upgradeCost(d) {
   return d.niveau >= DATA.LEVEL_MAX ? null : DATA.UPGRADE_COST[d.niveau];
 }
 
-// Les pièces restent à deux décimales (les prix ×1,2ⁿ ne sont pas entiers).
-function roundCoins(x) {
-  return Math.round(x * 100) / 100;
+// Pièces entières : tout prix calculé est arrondi à l'entier supérieur.
+// percentCeil(x, p) = ⌈x × p ÷ 100⌉, en arithmétique entière.
+function percentCeil(x, pct) {
+  const num = BigInt(Math.round(x)) * BigInt(Math.round(pct));
+  return Number((num + 99n) / 100n);
+}
+
+// Prix croissant : ⌈base × (pct ÷ 100)^n⌉, calculé exactement en entiers
+// (BigInt) pour éviter toute dérive des puissances décimales.
+function growthPrice(base, pct, n) {
+  const k = Math.max(0, Math.floor(n));
+  const num = BigInt(Math.round(base)) * BigInt(Math.round(pct)) ** BigInt(k);
+  const den = 100n ** BigInt(k);
+  return Number((num + den - 1n) / den);
 }
 
 /* ---------- l'heure ---------- */
@@ -2802,7 +2813,7 @@ function fail(error) {
 }
 
 function spend(state, cost) {
-  state.pieces = roundCoins(state.pieces - cost);
+  state.pieces = Math.round(state.pieces - cost);
 }
 
 function toggleDevice(state, id) {
@@ -3254,8 +3265,8 @@ function marketCoef(state, item) {
 
 function setMarketCoef(state, item, coef) {
   if (!state.marche) state.marche = {};
-  const c = Math.max(marketFloor(item), Math.round(coef * 100) / 100);
-  if (c <= marketFloor(item) + EPS) delete state.marche[item];
+  const c = Math.max(marketFloor(item), Math.round(coef));
+  if (c <= marketFloor(item)) delete state.marche[item];
   else state.marche[item] = c;
 }
 
@@ -3270,7 +3281,7 @@ function sellPrice(item) {
 
 // Prix de la prochaine unité achetée.
 function buyPrice(state, item) {
-  return roundCoins(sellPrice(item) * marketCoef(state, item));
+  return percentCeil(sellPrice(item), marketCoef(state, item));
 }
 
 // Achète jusqu'à `qty` unités, une par une : le prix monte entre deux unités.
@@ -3289,7 +3300,7 @@ function buyItem(state, item, qty = 1) {
     addLot(state, item, 1, DATA.ORIGINE.ACHETE);
     setMarketCoef(state, item, marketCoef(state, item) + DATA.MARCHE.PAS);
     bought += 1;
-    cost = roundCoins(cost + price);
+    cost += price;
   }
   if (bought === 0) return fail('Pas assez de pièces.');
   return { ok: true, bought, cost };
@@ -3313,8 +3324,8 @@ function sellItem(state, item, qty) {
   const fromFridge = wanted - fromInventory > 0 ? takeFromFridge(state, item, wanted - fromInventory) : 0;
   const n = fromInventory + fromFridge;
   if (n <= 0) return fail('Rien à vendre.');
-  const gain = roundCoins(n * sellPrice(item));
-  state.pieces = roundCoins(state.pieces + gain);
+  const gain = n * sellPrice(item);
+  state.pieces += gain;
   setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);
   refreshUnlocks(state);
   return { ok: true, sold: n, gain };
@@ -3513,7 +3524,7 @@ function feedFamily(state) {
 
 function careCost(state) {
   const c = DATA.FAMILY.SOIN;
-  return Math.round(c.base * Math.pow(c.croissance, state.famille.soinsPayes));
+  return growthPrice(c.base, c.croissance, state.famille.soinsPayes);
 }
 
 function findMember(state, id) {
@@ -4130,7 +4141,7 @@ function pastureCost(state) {
   const P = DATA.PATURAGE;
   const extraHa = Math.max(0, roundHa(state.paturage.ha - P.surfaceDepart));
   const rank = Math.round(extraHa / P.haParMouton) + 1;
-  return roundCoins(P.prixSurface * Math.pow(P.croissance, rank - 1));
+  return growthPrice(P.prixSurface, P.croissance, rank - 1);
 }
 
 // Débloque le Pâturage : la surface de départ est acquise.
@@ -4330,7 +4341,7 @@ function orchardFree(state) {
 // n = emplacements déjà achetés.
 function orchardSlotPrice(state) {
   const E = DATA.VERGER.EMPLACEMENT;
-  return Math.ceil(E.base * Math.pow(E.croissance, state.verger.achetes));
+  return growthPrice(E.base, E.croissance, state.verger.achetes);
 }
 
 // Aménage le Verger (gratuit tant que DATA.VERGER.CONSTRUCTION vaut 0).
@@ -5397,7 +5408,7 @@ function newGameFrom(previous, seed) {
 /* ---------- actions du mode test ---------- */
 
 function testAddPieces(state, amount) {
-  state.pieces = roundCoins(state.pieces + amount);
+  state.pieces = Math.round(state.pieces + amount);
   refreshUnlocks(state);
   return { ok: true };
 }
@@ -5929,16 +5940,9 @@ function formatFixed(value, digits) {
   return value.toFixed(digits).replace('.', ',');
 }
 
-// Pièces : entier si possible, sinon 1 ou 2 décimales (les prix ×1,2ⁿ ne sont
-// pas entiers : 86,4 ; 103,68).
+// Pièces : toujours un entier (tous les prix sont arrondis à l'entier supérieur).
 function formatCoins(n) {
-  const r = Math.round(n * 100) / 100;
-  if (Number.isInteger(r) || Math.abs(r) >= 10000) return formatNumber(r);
-  const sign = r < 0 ? '-' : '';
-  const abs = Math.abs(r);
-  const digits = Math.abs(abs * 10 - Math.round(abs * 10)) < 1e-9 ? 1 : 2;
-  const [i, dec] = abs.toFixed(digits).split('.');
-  return sign + groupThousands(Number(i)) + ',' + dec;
+  return formatNumber(Math.round(Number(n) || 0));
 }
 
 // Puissance signée en kWh/s avec le vrai signe moins : « +0,02 » ou « −0,01 ».
@@ -6881,18 +6885,19 @@ test('seuil « à entretenir » à 70 % d\'usure', () => {
   assertEqual(energyStats(s).panneauxAEntretenir, 1);
 });
 
-test('coûts d\'achat croissants : 60, 72, 86,4 (panneau) et 80, 96 (batterie)', () => {
-  assertEqual([0, 1, 2].map((n) => purchasePrice('panneau', n)), [60, 72, 86.4]);
+test('coûts d\'achat croissants : 60, 72, 87 (panneau) et 80, 96 (batterie)', () => {
+  // 60 × 1,2ⁿ arrondi à l'entier supérieur : 86,4 → 87 ; 103,68 → 104.
+  assertEqual([0, 1, 2].map((n) => purchasePrice('panneau', n)), [60, 72, 87]);
   assertEqual([0, 1].map((n) => purchasePrice('batterie', n)), [80, 96]);
   const s = farm();
   s.pieces = 10000;
   const paid = [];
   for (let i = 0; i < 3; i++) paid.push(buyDevice(s, 'panneau').price);
   // le premier achat compte l'appareil de départ déjà possédé (n = 1)
-  assertEqual(paid, [72, 86.4, 103.68]);
+  assertEqual(paid, [72, 87, 104]);
   assertEqual(s.panneaux.length, 4);
-  assertEqual(s.panneaux[3].prix, 103.68);
-  assert(near(s.pieces, 10000 - 72 - 86.4 - 103.68, 1e-6));
+  assertEqual(s.panneaux[3].prix, 104);
+  assertEqual(s.pieces, 10000 - 72 - 87 - 104);
 });
 
 test('achat refusé sans pièces, sans rien débiter', () => {
@@ -6936,7 +6941,7 @@ test('entretien 20 % et réparation 50 % du prix d\'achat', () => {
   s.pieces = 1000;
   buyDevice(s, 'panneau'); // payé 72
   const p = s.panneaux[1];
-  assertEqual(maintainCost(p), 14.4);
+  assertEqual(maintainCost(p), 15, '20 % de 72 = 14,4, arrondi à 15');
   assertEqual(repairCost(p), 36);
   // entretien : remet l'usure à 0
   p.usure = 80;
@@ -6944,7 +6949,7 @@ test('entretien 20 % et réparation 50 % du prix d\'achat', () => {
   const r = maintainDevice(s, p.id);
   assertEqual(r.ok, true);
   assertEqual(p.usure, 0);
-  assert(near(before - s.pieces, 14.4));
+  assertEqual(before - s.pieces, 15);
   // entretien inutile sans usure, refusé sur une panne
   assertEqual(maintainDevice(s, p.id).ok, false);
   testSetWear(s, p.id, 100);
@@ -7122,9 +7127,9 @@ test('sérialisation JSON aller-retour avec le parc et après plusieurs ticks', 
 
 test('formatage : pièces et puissances', () => {
   assertEqual(formatCoins(50), '50');
-  assertEqual(formatCoins(86.4), '86,4');
-  assertEqual(formatCoins(103.68), '103,68');
-  assertEqual(formatCoins(14.4), '14,4');
+  assertEqual(formatCoins(87), '87');
+  assertEqual(formatCoins(1234), '1 234');
+  assertEqual(formatCoins(14.4), '14', 'une ancienne valeur décimale s\'affiche sans virgule');
   assertEqual(formatRate(0.021), '+0,02');
   assertEqual(formatRate(-0.01), '−0,01');
   assertEqual(formatRate(0), '0,00');
@@ -7677,7 +7682,7 @@ test('soins : coût 20 × 1,5^n (20, 30, 45, 68), santé remise à 50', () => {
   assertEqual(costs, [20, 30, 45, 68]);
   assertEqual(s.famille.soinsPayes, 4);
   assertEqual(s.pieces, 1000 - 163);
-  assertEqual(careCost(s), 101);
+  assertEqual(careCost(s), 102, '20 × 1,5⁴ = 101,25, arrondi à 102');
 });
 
 test('soins : refusés sans pièces, sur un membre non malade ou inconnu', () => {
@@ -7881,11 +7886,11 @@ test('DATA Lot 3 : conservation en nuits', () => {
 });
 
 test('DATA Lot 3 : coefficients du Comptoir', () => {
-  assertEqual(DATA.MARCHE.PLANCHER, { defaut: 1.2, graine: 2.0 });
-  assertEqual(DATA.MARCHE.PAS, 0.1);
-  assertEqual(marketFloor('carotte'), 1.2);
-  assertEqual(marketFloor('conserve'), 1.2);
-  assertEqual(marketFloor('graine_carotte'), 2.0);
+  assertEqual(DATA.MARCHE.PLANCHER, { defaut: 120, graine: 200 });
+  assertEqual(DATA.MARCHE.PAS, 10);
+  assertEqual(marketFloor('carotte'), 120);
+  assertEqual(marketFloor('conserve'), 120);
+  assertEqual(marketFloor('graine_carotte'), 200);
   assertEqual(createInitialState(1).marche, {});
 });
 
@@ -8058,11 +8063,12 @@ test('ordre de consommation : dans un item, le lot le plus ancien est mangé d\'
 
 test('Comptoir : prix d\'achat = prix de vente × coefficient, plancher 1,2', () => {
   const s = garden();
-  assertEqual(marketCoef(s, 'patate'), 1.2);
-  // Lot 12 : prix de vente doublés (patate 4, carotte 2, courgette 4).
-  assertEqual(buyPrice(s, 'patate'), 4.8);
-  assertEqual(buyPrice(s, 'carotte'), 2.4);
-  assertEqual(buyPrice(s, 'courgette'), 4.8);
+  assertEqual(marketCoef(s, 'patate'), 120);
+  // Lot 12 : prix de vente doublés (patate 4, carotte 2, courgette 4), × 120 %
+  // arrondi à l'entier supérieur (4,8 → 5 ; 2,4 → 3).
+  assertEqual(buyPrice(s, 'patate'), 5);
+  assertEqual(buyPrice(s, 'carotte'), 3);
+  assertEqual(buyPrice(s, 'courgette'), 5);
   assertEqual(isBuyable('carotte'), true);
 });
 
@@ -8074,33 +8080,34 @@ test('Comptoir : le prix d\'achat monte de 0,1 de coefficient par unité, unité
     const before = s.pieces;
     const r = buyItem(s, 'patate');
     assertEqual([r.ok, r.bought], [true, 1]);
-    paid.push(roundCoins(before - s.pieces));
+    paid.push(before - s.pieces);
     assertEqual(r.cost, paid[i]);
   }
-  // Lot 12 : patate à 4 (au lieu de 2) × coefficient 1,2 puis 1,3 puis 1,4.
-  assertEqual(paid, [4.8, 5.2, 5.6]);
-  assertEqual(marketCoef(s, 'patate'), 1.5);
+  // Lot 12 : patate à 4 × coefficient 120 %, 130 %, 140 % = 4,8 ; 5,2 ; 5,6,
+  // arrondis à l'entier supérieur.
+  assertEqual(paid, [5, 6, 6]);
+  assertEqual(marketCoef(s, 'patate'), 150);
   assertEqual(buyPrice(s, 'patate'), 6);
   assertEqual(countItem(s, 'patate'), 9, '6 de départ + 3');
   // un achat de plusieurs unités reprend le même chemin, le prix montant entre chacune
   const t = garden();
   t.pieces = 100;
   const r = buyItem(t, 'patate', 3);
-  assertEqual([r.bought, r.cost], [3, 15.6]);
-  assertEqual(t.pieces, 84.4);
+  assertEqual([r.bought, r.cost], [3, 17]);
+  assertEqual(t.pieces, 83);
 });
 
 test('Comptoir : la vente est au prix fixe et fait baisser le coefficient de 0,1 par unité', () => {
   const s = garden();
   s.pieces = 100;
-  buyItem(s, 'patate', 3); // coefficient 1,5
+  buyItem(s, 'patate', 3); // coefficient 150 %
   const before = s.pieces;
   const r = sellItem(s, 'patate', 2);
   // Lot 12 : patate vendue 4 pièces (au lieu de 2) l'unité.
   assertEqual([r.ok, r.sold, r.gain], [true, 2, 8]);
-  assertEqual(s.pieces, roundCoins(before + 8), 'prix de vente fixe : 4 pièces par patate');
-  assertEqual(marketCoef(s, 'patate'), 1.3);
-  assertEqual(buyPrice(s, 'patate'), 5.2, 'vendre 2 patates ramène le prix à 5,2');
+  assertEqual(s.pieces, before + 8, 'prix de vente fixe : 4 pièces par patate');
+  assertEqual(marketCoef(s, 'patate'), 130);
+  assertEqual(buyPrice(s, 'patate'), 6, 'vendre 2 patates ramène le prix à 5,2, arrondi à 6');
   // la vente ne dépend ni de l'âge ni de l'origine (la conserve n'est pas
   // une production de la ferme : son prix reste inchangé à 3)
   assertEqual(sellItem(s, 'conserve', 10).gain, 30);
@@ -8109,27 +8116,27 @@ test('Comptoir : la vente est au prix fixe et fait baisser le coefficient de 0,1
 test('Comptoir : le coefficient ne descend jamais sous le plancher de 1,2', () => {
   const s = garden();
   sellItem(s, 'patate', 5);
-  assertEqual(marketCoef(s, 'patate'), 1.2);
-  assertEqual(buyPrice(s, 'patate'), 4.8);
-  buyItem(s, 'carotte', 1); // acheté : 1,3 — puis vendu 10 : bloqué à 1,2
+  assertEqual(marketCoef(s, 'patate'), 120);
+  assertEqual(buyPrice(s, 'patate'), 5);
+  buyItem(s, 'carotte', 1); // acheté : 130 % — puis vendu 10 : bloqué à 120 %
   addItem(s, 'carotte', 10);
   sellItem(s, 'carotte', 11);
-  assertEqual(marketCoef(s, 'carotte'), 1.2);
+  assertEqual(marketCoef(s, 'carotte'), 120);
   assertEqual(s.marche, {}, 'un coefficient revenu à son plancher n\'est plus noté');
 });
 
 test('Comptoir : graines, coefficient de départ et plancher à 2,0', () => {
   const s = garden();
-  assertEqual(marketCoef(s, 'graine_carotte'), 2);
+  assertEqual(marketCoef(s, 'graine_carotte'), 200);
   assertEqual(buyPrice(s, 'graine_carotte'), 2);
   s.pieces = 50;
   buyItem(s, 'graine_carotte');
-  assertEqual(marketCoef(s, 'graine_carotte'), 2.1);
-  assertEqual(buyPrice(s, 'graine_carotte'), 2.1);
+  assertEqual(marketCoef(s, 'graine_carotte'), 210);
+  assertEqual(buyPrice(s, 'graine_carotte'), 3, '1 × 210 % = 2,1, arrondi à 3');
   assertEqual(s.pieces, 48);
-  // en vendre ne descend jamais sous 2,0
+  // en vendre ne descend jamais sous 200 %
   sellItem(s, 'graine_carotte', 8);
-  assertEqual(marketCoef(s, 'graine_carotte'), 2);
+  assertEqual(marketCoef(s, 'graine_carotte'), 200);
   assertEqual(buyPrice(s, 'graine_carotte'), 2);
   assertEqual(buyPrice(s, 'graine_tomate'), 2);
 });
@@ -8138,8 +8145,8 @@ test('Comptoir : les coefficients sont propres à chaque item et ne redescendent
   const s = garden();
   s.pieces = 200;
   buyItem(s, 'tomate', 4);
-  assertEqual(marketCoef(s, 'tomate'), 1.6);
-  assertEqual(marketCoef(s, 'carotte'), 1.2);
+  assertEqual(marketCoef(s, 'tomate'), 160);
+  assertEqual(marketCoef(s, 'carotte'), 120);
   const c = marketCoef(s, 'tomate');
   for (let i = 0; i < 12; i++) {
     s.awakeSeconds = 30;
@@ -8166,13 +8173,13 @@ test('Comptoir : achat refusé sans pièces, et un achat multiple s\'arrête qua
   const r = buyItem(s, 'carotte');
   assertEqual(r.ok, false);
   assertEqual([s.pieces, countItem(s, 'carotte')], [1, 0]);
-  // Lot 12 : carotte à 2 pièces (au lieu de 1) : 2,4 puis 2,6 puis 2,8 →
-  // 1 unité (2,4), la 2e (2,6) dépasse les 0,6 restants.
-  s.pieces = 3;
+  // Lot 12 : carotte à 2 pièces : 2,4 puis 2,6 → 3 puis 3 pièces (arrondi
+  // supérieur) : 1 unité, la 2e dépasse les 2 pièces restantes.
+  s.pieces = 5;
   const r2 = buyItem(s, 'carotte', 5);
-  assertEqual([r2.ok, r2.bought, r2.cost], [true, 1, 2.4]);
-  assertEqual(s.pieces, 0.6);
-  assertEqual(marketCoef(s, 'carotte'), 1.3);
+  assertEqual([r2.ok, r2.bought, r2.cost], [true, 1, 3]);
+  assertEqual(s.pieces, 2);
+  assertEqual(marketCoef(s, 'carotte'), 130);
 });
 
 test('Comptoir : un item acheté arrive avec sa conservation pleine et l\'origine « acheté »', () => {
@@ -8349,7 +8356,7 @@ test('sérialisation JSON : lots et coefficients font l\'aller-retour', () => {
   spoil(s);
   const copy = JSON.parse(JSON.stringify(s));
   assertEqual(copy, s);
-  assertEqual(marketCoef(copy, 'carotte'), 1.5);
+  assertEqual(marketCoef(copy, 'carotte'), 150);
 });
 
 /* ---------- Lot 4 : Champ, Silo, Poulailler ---------- */
@@ -9175,19 +9182,20 @@ test('Lot 12 : la vente crédite le nouveau montant et le Comptoir affiche le pr
   const avant = s.pieces;
   const r = sellItem(s, 'patate', 3);
   assertEqual([r.ok, r.gain], [true, 12], '3 patates à 4');
-  assertEqual(s.pieces, roundCoins(avant + 12));
+  assertEqual(s.pieces, avant + 12);
   assertEqual(sellItem(s, 'lait', 2).gain, 16, '2 laits à 8');
   assertEqual(sellItem(s, 'cacao', 1).gain, 16, '1 cacao à 16');
   // Achat : le prix affiché (buyPrice) est exactement ce qui est débité, et
-  // la formule d'achat s'applique au nouveau prix de vente (×1,2 au départ).
+  // la formule d'achat s'applique au nouveau prix de vente (× 120 % au départ,
+  // arrondi à l'entier supérieur).
   const t = garden();
   t.pieces = 100;
   const affiche = buyPrice(t, 'tomate');
-  assertEqual(affiche, roundCoins(DATA.items.tomate.prix * 1.2));
+  assertEqual(affiche, Math.ceil(DATA.items.tomate.prix * 1.2));
   const avantAchat = t.pieces;
   const b = buyItem(t, 'tomate');
   assertEqual([b.ok, b.cost], [true, affiche]);
-  assertEqual(t.pieces, roundCoins(avantAchat - affiche));
+  assertEqual(t.pieces, avantAchat - affiche);
   // Revendre ce qu'on vient d'acheter reste perdant (achat > vente).
   assert(buyPrice(garden(), 'tomate') > sellPrice('tomate'), 'acheter coûte plus cher que revendre');
 });
@@ -9203,7 +9211,7 @@ test('Comptoir : les articles rangés au frigo se vendent aussi (l\'inventaire p
   // 4 carottes : les 2 de l'inventaire d'abord, puis 2 du frigo.
   const r = sellItem(s, 'carotte', 4);
   assertEqual([r.ok, r.sold, r.gain], [true, 4, 8], '4 carottes à 2');
-  assertEqual(s.pieces, roundCoins(avant + 8));
+  assertEqual(s.pieces, avant + 8);
   assertEqual([countItem(s, 'carotte'), fridgeCount(s, 'carotte')], [0, 1]);
   // Article uniquement au frigo : vendable, et le stock plafonne la vente.
   const r2 = sellItem(s, 'carotte', 99);
@@ -9217,9 +9225,9 @@ test('Comptoir : les articles rangés au frigo se vendent aussi (l\'inventaire p
   buildFridge(t);
   buyItem(t, 'tomate', 3);
   moveToFridge(t, 'tomate', 3);
-  assertEqual(marketCoef(t, 'tomate'), 1.5);
+  assertEqual(marketCoef(t, 'tomate'), 150);
   sellItem(t, 'tomate', 3);
-  assertEqual(marketCoef(t, 'tomate'), 1.2);
+  assertEqual(marketCoef(t, 'tomate'), 120);
 });
 
 test('Comptoir : sans frigo, rien ne change pour la vente', () => {
@@ -9271,8 +9279,8 @@ test('Lot 13 : farine et pain se vendent deux fois leur ancien prix', () => {
   setInv(s, { farine: 3, pain: 2 });
   const avant = s.pieces;
   assertEqual([sellItem(s, 'farine', 3).gain, sellItem(s, 'pain', 2).gain], [6, 16]);
-  assertEqual(s.pieces, roundCoins(avant + 22));
-  assertEqual(buyPrice(garden(), 'farine'), roundCoins(2 * 1.2), 'prix d\'achat = nouveau prix de vente × coefficient');
+  assertEqual(s.pieces, avant + 22);
+  assertEqual(buyPrice(garden(), 'farine'), 3, 'prix d\'achat = nouveau prix de vente × coefficient (2 × 120 % = 2,4 → 3)');
 });
 
 test('les plats se gardent 6 nuits (le pain 7) ; la farine et l\'huile ne périment pas', () => {
@@ -10017,7 +10025,7 @@ function sleepOnce(s) {
 }
 
 test('DATA Lot 6 : Pâturage, mouton, laine', () => {
-  assertEqual(DATA.PATURAGE, { deblocage: 150, surfaceDepart: 0.5, haParMouton: 0.05, haParVache: 0.15, prixSurface: 40, croissance: 1.2 });
+  assertEqual(DATA.PATURAGE, { deblocage: 150, surfaceDepart: 0.5, haParMouton: 0.05, haParVache: 0.15, prixSurface: 40, croissance: 120 });
   const m = DATA.ANIMAUX.mouton;
   assertEqual([m.prix, m.poidsDepart, m.gainKg, m.poidsMax], [60, 20, 0.5, 50]);
   assertEqual([m.joursLaine, m.laineParTonte, m.rendement, m.kgParPortion], [7, 1, 0.5, 0.5]);
@@ -10093,7 +10101,7 @@ test('mouton : refusé quand le Pâturage est plein (10 places pour 0,5 ha), san
   assertEqual([s.pieces, sheepCount(s)], [before, 10]);
 });
 
-test('surface : 0,05 ha à 40, 48 puis 57,6 pièces pour les 11ᵉ, 12ᵉ et 13ᵉ moutons', () => {
+test('surface : 0,05 ha à 40, 48 puis 58 pièces pour les 11ᵉ, 12ᵉ et 13ᵉ moutons', () => {
   const s = pature();
   fillSheep(s, 10);
   assertEqual(pastureCost(s), 40);
@@ -10103,14 +10111,14 @@ test('surface : 0,05 ha à 40, 48 puis 57,6 pièces pour les 11ᵉ, 12ᵉ et 13�
     const before = s.pieces;
     const r = buyPasture(s);
     assertEqual(r.ok, true);
-    assertEqual(roundCoins(before - s.pieces), cost);
+    assertEqual(before - s.pieces, cost);
     prices.push(cost);
     assertEqual(freeSheepPlaces(s), 1);
     assert(buySheep(s).ok, 'le mouton suit la surface');
   }
-  assertEqual(prices, [40, 48, 57.6]);
+  assertEqual(prices, [40, 48, 58], '57,6 arrondi à 58');
   assertEqual([s.paturage.ha, sheepCount(s), pastureCapacity(s)], [0.65, 13, 13]);
-  assertEqual(pastureCost(s), 69.12, '14ᵉ mouton : 40 × 1,2³');
+  assertEqual(pastureCost(s), 70, '14ᵉ mouton : 40 × 1,2³ = 69,12, arrondi à 70');
 });
 
 test('surface : refusée sans Pâturage, sans pièces, ou s\'il reste une place libre', () => {
@@ -10982,7 +10990,7 @@ test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
   assertEqual(S.MODS.hiver, { solaire: 0.7, potager: 0.7, eau: 0.8, champ: 0.7, moutons: 0.8 });
   assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 400, PARCELLES: [6, 9, 12, 15, 18], COUT: [0, 300, 600, 1000, 1800] });
   const V = DATA.VERGER;
-  assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 20, 50, 1.25]);
+  assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 20, 50, 125]);
   assertEqual([V.MATURITE, V.FRUITS, V.PERIODE], [15, 6, 3]);
   assertEqual([V.ARBRES.pommier.prix, V.ARBRES.poirier.prix], [40, 40]);
   assertEqual([V.ARBRES.pommier.fruit, V.ARBRES.poirier.fruit], ['pomme', 'poire']);
@@ -11245,7 +11253,7 @@ test('Verger : prix des emplacements supplémentaires 50 × 1,25^n arrondi à l\
     const before = s.pieces;
     const price = orchardSlotPrice(s);
     assert(buyOrchardSlot(s).ok);
-    seen.push([price, roundCoins(before - s.pieces), s.verger.places]);
+    seen.push([price, before - s.pieces, s.verger.places]);
   }
   assertEqual(seen.map((x) => x[0]), [50, 63, 79, 98, 123, 153]);
   assertEqual(seen.map((x) => x[1]), [50, 63, 79, 98, 123, 153]);
@@ -14696,7 +14704,7 @@ function buyRow(item) {
   return `
     <div class="shop-row">
       <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatQty(countItem(state, item))}</span></span></div>
-      <span class="muted">Prochaine unité : <strong class="num">${formatCoins(price)} 💰</strong> · coefficient <span class="num">×${formatFixed(coef, 1)}</span> · vente ${formatCoins(it.prix)} 💰</span>
+      <span class="muted">Prochaine unité : <strong class="num">${formatCoins(price)} 💰</strong> · coefficient <span class="num">${formatNumber(coef)} %</span> · vente ${formatCoins(it.prix)} 💰</span>
       <button type="button" class="btn primary" data-action="buy-item" data-item="${item}"${canPay(price) ? '' : ' disabled'}>Acheter 1 (${formatCoins(price)} 💰)</button>
     </div>`;
 }
@@ -14823,7 +14831,7 @@ function renderArbres() {
   const atMax = v.places >= V.EMPLACEMENTS_MAX;
   const slotNote = atMax
     ? `Le Verger a atteint sa taille maximale (${V.EMPLACEMENTS_MAX} emplacements).`
-    : `Prix : <strong class="num">${formatCoins(price)} 💰</strong> (${V.EMPLACEMENT.base} × ${formatFixed(V.EMPLACEMENT.croissance, 2)}<sup>${v.achetes}</sup>, le prix monte à chaque emplacement acheté).`;
+    : `Prix : <strong class="num">${formatCoins(price)} 💰</strong> (+${formatNumber(V.EMPLACEMENT.croissance - 100)} % par emplacement déjà acheté, arrondi à l'entier supérieur).`;
   return `
     <p class="muted">Les arbres s'achètent à prix fixe, se plantent sur un emplacement libre du Verger et ne s'arrosent pas : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne.</p>
     ${Object.keys(V.ARBRES).map(renderTreeRow).join('')}
@@ -14856,17 +14864,17 @@ function renderComptoir() {
   if (tab.id === 'vendre') {
     const items = Object.keys(DATA.items).filter((k) => sellableCount(state, k) > 0);
     body = `
-      <p class="muted">Prix de vente fixes. Les articles rangés au frigo se vendent aussi (l'inventaire part en premier). Chaque unité vendue baisse de ${formatFixed(DATA.MARCHE.PAS, 1)} le coefficient d'achat de l'objet, sans passer sous son plancher.</p>
+      <p class="muted">Prix de vente fixes. Les articles rangés au frigo se vendent aussi (l'inventaire part en premier). Chaque unité vendue baisse de ${formatNumber(DATA.MARCHE.PAS)} points le coefficient d'achat de l'objet, sans passer sous son plancher.</p>
       ${items.length ? items.map(sellRow).join('') : '<p class="hint">Tu n\'as rien à vendre pour l\'instant.</p>'}`;
   } else if (tab.id === 'acheter') {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine');
     body = `
-      <p class="muted">Prix d'achat = prix de vente × coefficient. Chaque unité achetée ajoute ${formatFixed(DATA.MARCHE.PAS, 1)} au coefficient, et il ne redescend qu'à la vente : le Comptoir dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
+      <p class="muted">Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Comptoir dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'graines') {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = `
-      <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ×${formatFixed(DATA.MARCHE.PLANCHER.graine, 1)}. Produire tes propres graines reste plus rentable. Le blé fait exception : c'est aussi la ressource du Silo, du Moulin et des poules, donc il garde son prix habituel (plancher ×${formatFixed(DATA.MARCHE.PLANCHER.defaut, 1)}) et reste également listé dans l'onglet Acheter.</p>
+      <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Produire tes propres graines reste plus rentable. Le blé fait exception : c'est aussi la ressource du Silo, du Moulin et des poules, donc il garde son prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et reste également listé dans l'onglet Acheter.</p>
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'animaux') {
     body = renderAnimaux();
@@ -15239,14 +15247,14 @@ const HELP = {
     role: 'Transforment le soleil en électricité, rangée dans les batteries. Chaque panneau a son niveau, son usure et son interrupteur.',
     conso: 'Aucune.',
     prod: `${listFixed(DATA.GRID.panneau.kwhPerS, 2, 'kWh/s')} selon le niveau, ${seasonRange('solaire')} selon la saison. L'usure en retire jusqu'à ${formatNumber(DATA.WEAR.BREAKDOWN / DATA.WEAR.EFFICIENCY_DIVISOR * 100)} %. En ce moment : ${formatFixed(energyStats(state).production, 2)} kWh/s.`,
-    note: `Un panneau de plus coûte ${formatNumber(DATA.PURCHASE.panneau.base)} 💰 × ${formatFixed(DATA.PURCHASE.panneau.growth, 1)} par panneau déjà possédé.`,
+    note: `Un panneau de plus coûte ${formatNumber(DATA.PURCHASE.panneau.base)} 💰, +${formatNumber(DATA.PURCHASE.panneau.growth - 100)} % par panneau déjà possédé (arrondi à l'entier supérieur).`,
   }),
   batterie: () => ({
     nom: 'Batteries',
     role: 'Stockent l\'électricité des panneaux. La première batterie disponible se remplit d\'abord ; la dernière remplie se vide d\'abord. Elles ne se déchargent jamais d\'elles-mêmes.',
     conso: 'Aucune : elles alimentent la pompe, le moulin, la presse et le réfrigérateur.',
     prod: `Capacité : ${listNum(DATA.GRID.batterie.kwh, 'kWh')} selon le niveau (l'usure réduit la capacité utile). En ce moment : ${formatFixed(energyStats(state).charge, 2)} / ${formatFixed(energyStats(state).capacite, 2)} kWh.`,
-    note: `Une batterie de plus coûte ${formatNumber(DATA.PURCHASE.batterie.base)} 💰 × ${formatFixed(DATA.PURCHASE.batterie.growth, 1)} par batterie déjà possédée.`,
+    note: `Une batterie de plus coûte ${formatNumber(DATA.PURCHASE.batterie.base)} 💰, +${formatNumber(DATA.PURCHASE.batterie.growth - 100)} % par batterie déjà possédée (arrondi à l'entier supérieur).`,
   }),
   pompe: () => ({
     nom: 'Pompe',
@@ -15316,7 +15324,7 @@ const HELP = {
       role: 'Pommiers et poiriers, achetés au Comptoir et plantés sur un emplacement libre. Ils restent en place.',
       conso: 'Aucune : pas d\'arrosage.',
       prod: `${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, de la nuit ${w.debut} à la nuit ${w.fin} de l'année, à partir de ${nightsLabel(V.MATURITE)} après la plantation.`,
-      note: `Emplacement supplémentaire : ${formatNumber(V.EMPLACEMENT.base)} 💰 × ${formatFixed(V.EMPLACEMENT.croissance, 2)} par emplacement déjà acheté.`,
+      note: `Emplacement supplémentaire : ${formatNumber(V.EMPLACEMENT.base)} 💰, +${formatNumber(V.EMPLACEMENT.croissance - 100)} % par emplacement déjà acheté (arrondi à l'entier supérieur).`,
     };
   },
   four: () => ({
@@ -15455,9 +15463,9 @@ function openAboutModal() {
     `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} énergie par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
     `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure de jeu dure ${DATA.TIME.SECONDS_PER_HOUR} s. Elle ne finit que quand tu cliques sur « Dormir », après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins.`,
     `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
-    `Santé : un besoin couvert à 100 % la remonte (${formatRate(V[0].delta, 0)}), sinon elle baisse (${V.slice(1).map((x) => formatRate(x.delta, 0)).join(', ')}). Une santé faible ralentit les actions au clic ; les automatisations restent à 100 %. À 0, un soin coûte ${formatNumber(F.SOIN.base)} 💰 × ${formatFixed(F.SOIN.croissance, 1)} par soin déjà payé.`,
-    `Énergie : panneaux → batteries → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use de ${formatFixed(DATA.WEAR.PER_HOUR, 1)} point par heure de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE * 100)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE * 100)} %.`,
-    `Comptoir : prix de vente fixes. Chaque unité achetée ajoute ${formatFixed(M.PAS, 1)} au coefficient d'achat, chaque unité vendue en retire ${formatFixed(M.PAS, 1)} (plancher ×${formatFixed(M.PLANCHER.defaut, 1)}, graines ×${formatFixed(M.PLANCHER.graine, 1)}).`,
+    `Santé : un besoin couvert à 100 % la remonte (${formatRate(V[0].delta, 0)}), sinon elle baisse (${V.slice(1).map((x) => formatRate(x.delta, 0)).join(', ')}). Une santé faible ralentit les actions au clic ; les automatisations restent à 100 %. À 0, un soin coûte ${formatNumber(F.SOIN.base)} 💰, +${formatNumber(F.SOIN.croissance - 100)} % par soin déjà payé (arrondi à l'entier supérieur).`,
+    `Énergie : panneaux → batteries → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use de ${formatFixed(DATA.WEAR.PER_HOUR, 1)} point par heure de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
+    `Comptoir : prix de vente fixes. Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient d'achat, chaque unité vendue en retire ${formatNumber(M.PAS)} (plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %).`,
     `Saisons de ${DATA.SAISONS.LONGUEUR} nuits : elles nuancent le solaire, les récoltes, l'eau et les moutons, sans rien bloquer. La Serre les ignore.`,
     `Autonomie = énergie mangée produite par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
