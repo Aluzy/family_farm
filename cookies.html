@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Politique de cookies et de traceurs de Ferme Familiale : ce qui est enregistré dans votre navigateur, pourquoi, et comment refuser ou retirer votre accord.">
+  <meta name="theme-color" content="#183b2a">
+  <title>Cookies et traceurs — Ferme Familiale</title>
+  <style>
+    :root{
+      --ink:#183326;--muted:#647268;--cream:#fbf7ed;--paper:#fffdf8;
+      --green:#24543c;--green-2:#367451;--line:#e7dfcf;--radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;color:var(--ink);background:var(--cream);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.65}
+    a{color:var(--green-2);font-weight:600}
+    .wrap{width:min(860px,calc(100% - 32px));margin:auto}
+    .nav{padding:16px 0;border-bottom:1px solid var(--line);background:rgba(251,247,237,.9)}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.03em;color:var(--ink);text-decoration:none}
+    .nav-links{display:flex;gap:18px;font-size:14px}
+    .nav-links a{text-decoration:none}
+    header.hero{padding:48px 0 12px}
+    .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--green-2);font-weight:900}
+    h1{font-size:clamp(30px,5vw,46px);line-height:1.08;letter-spacing:-.04em;margin:8px 0 12px}
+    .lead{font-size:18px;color:var(--muted);margin:0 0 6px}
+    .meta{font-size:13px;color:var(--muted)}
+    .summary{background:#eaf1dc;border:1px solid #d6e2bd;border-radius:var(--radius);padding:20px 24px;margin:26px 0}
+    .summary ul{margin:8px 0 0;padding-left:20px}
+    h2{font-size:22px;letter-spacing:-.02em;margin:38px 0 8px}
+    p,li{font-size:16px}
+    ul{padding-left:22px}
+    .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--paper)}
+    table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+    th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+    th{background:#f3eedf;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+    tr:last-child td{border-bottom:0}
+    code{background:#f1ebdc;padding:1px 6px;border-radius:6px;font-size:.92em}
+    footer{padding:28px 0 40px;color:#758078;font-size:12px;border-top:1px solid var(--line);margin-top:48px}
+    .footer-inner{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="index.html"><span>🌱</span><span>Ferme Familiale</span></a>
+      <nav class="nav-links">
+        <a href="index.html">Accueil</a>
+        <a href="jeu.html">Jouer</a>
+        <a href="encyclopedie.html">Encyclopédie</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <header class="hero">
+      <div class="kicker">Confidentialité</div>
+      <h1>Cookies et traceurs</h1>
+      <p class="lead">Ce que Ferme Familiale enregistre dans votre navigateur, pourquoi, et comment garder la main.</p>
+      <p class="meta">Version 1.0 · dernière mise à jour : 29 septembre 2026</p>
+    </header>
+
+    <div class="summary">
+      <strong>En résumé</strong>
+      <ul>
+        <li>Votre partie est sauvegardée sur votre appareil, sans que rien ne soit envoyé nulle part.</li>
+        <li>Avec votre accord seulement, le jeu note anonymement les boutons utilisés, les écrans consultés et votre progression, pour l'améliorer.</li>
+        <li>Refuser n'enlève rien au jeu. Vous pouvez changer d'avis à tout moment dans ⚙️ Options, rubrique « Confidentialité ».</li>
+        <li>Aucune publicité, aucun réseau social, aucun outil de suivi tiers.</li>
+      </ul>
+    </div>
+
+    <h2>1. Qui sommes-nous ?</h2>
+    <p>Ferme Familiale est un jeu de gestion agricole en ligne publié par Alexandre Fuzy, joignable à <a href="mailto:contact.voidr@gmail.com">contact.voidr@gmail.com</a>. Il est responsable du traitement des données décrites sur cette page. Le site est hébergé par GitHub Pages.</p>
+
+    <h2>2. Qu'est-ce qu'un traceur ?</h2>
+    <p>Un traceur est une petite information enregistrée dans votre navigateur quand vous visitez un site. Cela comprend les cookies, mais aussi le stockage local (<code>localStorage</code>) et le stockage de session (<code>sessionStorage</code>). Ferme Familiale n'utilise aucun cookie au sens strict ; elle utilise ces deux stockages, soumis aux mêmes règles. Nous les appelons donc « traceurs » sur cette page.</p>
+
+    <h2>3. Les traceurs utilisés</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Nom</th><th>À quoi il sert</th><th>Où</th><th>Durée</th><th>Votre accord</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ferme-save</code></td><td>Enregistrer votre partie (ferme, progression) sur votre appareil.</td><td><code>localStorage</code></td><td>Jusqu'à ce que vous l'effaciez ou recommenciez à zéro</td><td>Non requis : nécessaire au jeu que vous utilisez</td></tr>
+          <tr><td><code>ferme-consent</code></td><td>Mémoriser votre choix sur le suivi (accepté ou refusé, date, version de cette page).</td><td><code>localStorage</code></td><td>6 mois, puis nous vous redemandons</td><td>Non requis : nécessaire pour respecter votre choix</td></tr>
+          <tr><td><code>ff_sid</code></td><td>Numéro aléatoire de votre visite, pour regrouper les actions d'une même session de jeu.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
+          <tr><td><code>ff_t0</code></td><td>Heure de début de votre visite.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
+          <tr><td><code>ff_data</code></td><td>Compteurs de la visite en cours, pour ne pas les perdre si vous rechargez la page.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>4. Pourquoi mesurer votre utilisation ?</h2>
+    <p>Uniquement pour améliorer le jeu : repérer les boutons que personne ne trouve, les chapitres trop longs ou trop difficiles, les moments où l'on arrête de jouer, et corriger les erreurs techniques. Nous ne cherchons pas à vous identifier, et aucune décision vous concernant personnellement n'est prise à partir de ces données.</p>
+
+    <h2>5. Ce qui est enregistré si vous acceptez</h2>
+    <ul>
+      <li>les boutons utilisés (par exemple « Dormir », « Arroser », « Acheter ») et combien de fois, avec l'élément concerné (une culture, un onglet) ;</li>
+      <li>le nombre de clics en dehors des boutons ;</li>
+      <li>les écrans consultés et le temps passé sur chacun, onglet visible ;</li>
+      <li>le défilement : nombre de défilements et profondeur maximale atteinte sur chaque écran, par paliers de 25 % ;</li>
+      <li>les fenêtres ouvertes (options, aide, récolte…) ;</li>
+      <li>à chaque nuit : le jour, le chapitre, l'autonomie de la famille, les pièces, la santé moyenne et le temps d'éveil ;</li>
+      <li>les alertes affichées (batteries vides, panne…) ;</li>
+      <li>les erreurs techniques (message tronqué, nom du fichier et ligne, sans pile complète) ;</li>
+      <li>la version du jeu, la durée de la visite, une classe d'appareil (mobile ou ordinateur) et la largeur d'écran arrondie à 100 pixels ;</li>
+      <li>le numéro de session aléatoire, l'heure de début et la dernière mise à jour.</li>
+    </ul>
+    <p><strong>Jamais enregistré :</strong> votre nom, votre e-mail, votre position, ce que vous écrivez dans un champ de texte, le contenu de votre sauvegarde exportée ou importée. Le jeu ne lit ni ne conserve votre adresse IP. Aucun enregistrement d'écran ni de vidéo de votre partie n'est réalisé.</p>
+
+    <h2>6. Base légale</h2>
+    <p>Votre consentement, pour tout ce qui concerne le suivi (article 6.1.a du RGPD et article 82 de la loi Informatique et Libertés). Les traceurs strictement nécessaires (<code>ferme-save</code> et <code>ferme-consent</code>) reposent sur notre intérêt légitime à faire fonctionner le jeu que vous avez demandé.</p>
+
+    <h2>7. Qui reçoit les données ?</h2>
+    <p>Seul l'éditeur y accède. Les données de suivi sont reçues et stockées par Cloudflare (Workers et stockage R2), notre sous-traitant, dans un espace configuré en juridiction de l'Union européenne, dans le cadre de son accord de traitement des données. Elles ne sont ni vendues ni partagées avec d'autres tiers. Le site étant hébergé par GitHub Pages, GitHub peut enregistrer techniquement votre adresse IP lors de la visite, indépendamment du jeu et selon sa propre politique de confidentialité. Cloudflare, en tant que réseau, voit aussi votre adresse IP lors de l'envoi des données, mais notre programme de collecte ne la lit pas et ne l'enregistre pas.</p>
+
+    <h2>8. Combien de temps ?</h2>
+    <p>Les données de suivi sont conservées 12 mois au maximum, puis supprimées. Votre choix est valable 6 mois : nous vous le redemandons ensuite, ou dès que cette page change.</p>
+
+    <h2>9. Vos choix et vos droits</h2>
+    <ul>
+      <li><strong>Accepter ou refuser.</strong> Un bandeau s'affiche à votre première visite dans le jeu. Refuser n'enlève rien au jeu.</li>
+      <li><strong>Changer d'avis.</strong> Dans le jeu, ouvrez ⚙️ Options puis « Confidentialité » : le suivi s'arrête immédiatement et les traceurs <code>ff_sid</code>, <code>ff_t0</code> et <code>ff_data</code> sont effacés.</li>
+      <li><strong>Signal du navigateur.</strong> Si votre navigateur envoie Global Privacy Control ou Do Not Track, aucun suivi n'est activé.</li>
+      <li><strong>Vos droits.</strong> Accès, rectification, effacement, limitation, opposition et retrait du consentement : écrivez à <a href="mailto:contact.voidr@gmail.com">contact.voidr@gmail.com</a>. Comme les données sont rattachées à un numéro aléatoire sans identité, indiquez-nous votre numéro de session, affiché dans ⚙️ Options › Confidentialité tant que le suivi est actif, pour que nous puissions retrouver vos données.</li>
+      <li><strong>Réclamation.</strong> Vous pouvez saisir la CNIL (<a href="https://www.cnil.fr" rel="noopener">www.cnil.fr</a>).</li>
+      <li><strong>Effacer vous-même.</strong> Vous pouvez vider le stockage du site dans les réglages de votre navigateur. Attention : cela supprime aussi votre partie ; exportez-la d'abord via ⚙️ Options › Exporter.</li>
+    </ul>
+
+    <h2>10. Enfants</h2>
+    <p>Le jeu s'adresse à tous. Si vous avez moins de 15 ans, demandez l'accord d'un parent avant d'accepter le suivi. Refuser est toujours possible et n'empêche pas de jouer.</p>
+
+    <h2>11. Modifications</h2>
+    <p>Cette page peut évoluer. Si les finalités ou les données collectées changent, le numéro de version ci-dessus change et votre accord vous est redemandé.</p>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <div>🌱 <strong>Ferme Familiale</strong> — un jeu de gestion agricole.</div>
+      <div><a href="index.html">Accueil</a> · <a href="jeu.html">Jouer</a> · <a href="encyclopedie.html">Encyclopédie</a></div>
+    </div>
+  </footer>
+</body>
+</html>

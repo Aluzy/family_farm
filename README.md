@@ -9,11 +9,13 @@ réfrigérateur ; les journées ne passent que quand vous cliquez sur **Dormir**
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
-- **Technique** : trois pages HTML autonomes, sans bibliothèque, sans étape de
-  build, sans serveur : `index.html` (page d'accueil), `jeu.html` (le jeu) et
+- **Technique** : trois pages HTML autonomes, sans bibliothèque et sans étape de
+  build : `index.html` (page d'accueil), `jeu.html` (le jeu) et
   `encyclopedie.html` (glossaire du jeu, généré depuis
-  `encyclopedie_ferme_familiale.json`). Elles fonctionnent ouvertes depuis le
-  disque comme servies en HTTP.
+  `encyclopedie_ferme_familiale.json`), plus `cookies.html` (politique de cookies
+  et traceurs). Elles fonctionnent ouvertes depuis le disque comme servies en HTTP.
+  Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
+  (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
 
 ## Jouer
 
@@ -35,8 +37,9 @@ dans une fenêtre), puis cliquez sur **Jouer**. Vous pouvez aussi ouvrir
    `.../jeu.html` et l'encyclopédie à `.../encyclopedie.html`. Chaque
    `git push` sur `main` met le site à jour.
 
-Aucun fichier de configuration n'est nécessaire : les pages n'utilisent que des
-chemins relatifs, aucun `fetch` et aucun module externe.
+Aucun fichier de configuration n'est nécessaire pour le site : les pages n'utilisent
+que des chemins relatifs et aucun module externe. Le seul appel réseau du jeu est
+l'envoi du suivi de session, décrit ci-dessous.
 
 > **Sauvegardes et adresse** : la partie est enregistrée dans le navigateur
 > (`localStorage`), séparément pour chaque adresse. Une partie commencée en
@@ -122,3 +125,33 @@ nuits ou des saisons, aller à un chapitre, et voir l'état complet de la partie
    (par exemple `python3 -m http.server` et <http://localhost:8000/>) : aucune
    erreur dans la console, à 390 px et à 1 280 px de large, en thème clair et
    sombre.
+
+## Suivi de session et politique de cookies
+
+Avec l'accord du joueur (bandeau au premier chargement, réglable dans ⚙️ Options ›
+Confidentialité), le jeu enregistre de façon anonyme, pour l'améliorer : les boutons
+utilisés, les écrans consultés, le défilement et un instantané de progression à
+chaque nuit. Rien n'est stocké ni envoyé sans accord, et un signal Global Privacy
+Control ou Do Not Track du navigateur désactive tout. La politique publique est
+`cookies.html` ; le code est le bloc `<script id="telemetry">` de `jeu.html`
+(l'app l'appelle via `Telemetry.*`, jamais l'ENGINE).
+
+- **Stockage** : `sessionStorage` (`ff_sid`, `ff_t0`, `ff_data`) pour la visite,
+  `localStorage` (`ferme-consent`) pour le choix, valable 6 mois.
+- **Envoi** : un fichier JSON par session, toutes les 60 s si quelque chose a changé
+  et à la fermeture de l'onglet (`sendBeacon`).
+  - Sur `https://aluzy.github.io` : vers le Worker Cloudflare de `worker/`, qui écrit
+    `sessions/<sid>.json` dans un bucket R2 (juridiction UE). Le fichier
+    `wrangler.toml` (racine) décrit ce Worker.
+  - Ouvert en local (`file://`, `localhost`) : vers `http://127.0.0.1:8787/session`, où
+    `node collect-server.mjs` écrit les sessions dans `./sessions/` (essais).
+  - Sur tout autre domaine : rien n'est envoyé.
+- **Si vous modifiez ce qui est collecté**, mettez à jour `cookies.html` et
+  `POLICY_VERSION` dans le bloc `telemetry` : le consentement est alors redemandé.
+
+## Tests
+
+```
+node run-tests.mjs        # moteur du jeu
+node test-telemetry.mjs   # suivi de session (rien sans consentement, retrait, limites)
+```
