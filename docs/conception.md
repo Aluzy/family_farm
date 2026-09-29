@@ -1,6 +1,15 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v23** : **les articles rangés au réfrigérateur se vendent depuis le Comptoir
+> (onglet Vendre)**. Avant, seul l'inventaire était vendable : il fallait sortir
+> les articles du frigo un par un pour les vendre. `sellItem()` vend désormais
+> l'inventaire **d'abord** (ce qui périt), puis le frigo (dont la conservation
+> est figée) ; `sellableCount()` (inventaire + frigo) sert de stock vendable. La
+> ligne de vente affiche « ❄️ dont N au frigo ». Les prix et le coefficient
+> d'achat se comportent exactement comme pour une vente ordinaire. Aucune
+> migration (la structure de `state.frigo` est inchangée).
+>
 > **v22** : **la farine et le pain se vendent aussi ×2** (farine 1 → 2, pain
 > 4 → 8). La farine, transformation du blé, est ajoutée à la liste explicite
 > `DATA.MARCHE.TRANSFORMATIONS_DOUBLEES`, traitée par la même fonction centrale
@@ -1059,7 +1068,7 @@ export function take(s: GameState, item: string, qty: number) {
 - **Inventaire** : onglets Frais / Frigo / Silo / Graines / Plats ; indicateur de péremption ; 🟡 curseur **« Réserve de semences »** par item (patates, blé, graines de tournesol) que la famille ne mangera pas.
 - **Parcelle** : vide → menu « Planter » (graines disponibles) ; mature → « Récolter » ou, pour la carotte, « Laisser monter en graine ».
 - **Livre de recette** (onglet, pas un objet) : point d'entrée unique pour lancer les plats ; recettes réalisables en surbrillance, ingrédients manquants signalés ; chaque station (🍳 Cuisine, 🔥 Four, ⚙️ Moulin, 🌻 Presse) affiche **libre** ou **occupée** avec son minuteur ; les recettes d'une station occupée sont grisées.
-- **Comptoir** : onglets Vendre / Acheter / Graines (badge « dépannage ») / Animaux / Arbres ; prix d'achat actuel et coefficient affichés ; animaux grisés si le poulailler ou le pâturage est plein. Le blé apparaît à la fois dans Acheter (à prix normal, comme ingrédient) et dans Graines (comme semence du Champ), sans doublon d'objet ; les autres onglets Graines restent réservés aux items de catégorie « graine ».
+- **Comptoir** : l'onglet Vendre inclut les articles rangés au frigo (v23) ; onglets Vendre / Acheter / Graines (badge « dépannage ») / Animaux / Arbres ; prix d'achat actuel et coefficient affichés ; animaux grisés si le poulailler ou le pâturage est plein. Le blé apparaît à la fois dans Acheter (à prix normal, comme ingrédient) et dans Graines (comme semence du Champ), sans doublon d'objet ; les autres onglets Graines restent réservés aux items de catégorie « graine ».
 - **Famille** : 4 portraits avec barre de santé, jauge 150 énergies, % d'autonomie, multiplicateur de productivité.
 - **Bouton « Dormir »** toujours visible : grisé avec compte à rebours tant que l'éveil minimal n'est pas atteint, puis aperçu « Repas prévu : 130 / 150 énergies ⚠️ ».
 - **Portrait malade** : icône 🤒 et bouton « Soigner (X pièces) ».

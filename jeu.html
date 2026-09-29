@@ -3274,14 +3274,23 @@ function buyItem(state, item, qty = 1) {
   return { ok: true, bought, cost };
 }
 
+// Quantité vendable d'un item : l'inventaire plus ce qui est rangé au frigo.
+function sellableCount(state, item) {
+  return countItem(state, item) + fridgeCount(state, item);
+}
+
 // Vend jusqu'à `qty` unités (les lots les plus anciens d'abord) au prix fixe ;
 // chaque unité vendue retire un pas au coefficient, sans passer sous le plancher.
+// Les articles rangés au frigo se vendent aussi : on vend d'abord ce qui est
+// dans l'inventaire (il périt), puis ce qui est au frais.
 function sellItem(state, item, qty) {
   const def = DATA.items[item];
   if (!def) return fail('Objet inconnu.');
   // Seules les unités entières se vendent (le blé peut compter des demis).
-  const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(countItem(state, item) + EPS));
-  const n = takeItem(state, item, wanted);
+  const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
+  const fromInventory = takeItem(state, item, wanted);
+  const fromFridge = wanted - fromInventory > 0 ? takeFromFridge(state, item, wanted - fromInventory) : 0;
+  const n = fromInventory + fromFridge;
   if (n <= 0) return fail('Rien à vendre.');
   const gain = roundCoins(n * sellPrice(item));
   state.pieces = roundCoins(state.pieces + gain);
@@ -9161,6 +9170,43 @@ test('Lot 12 : la vente crédite le nouveau montant et le Comptoir affiche le pr
   assert(buyPrice(garden(), 'tomate') > sellPrice('tomate'), 'acheter coûte plus cher que revendre');
 });
 
+test('Comptoir : les articles rangés au frigo se vendent aussi (l\'inventaire part d\'abord)', () => {
+  const s = garden();
+  s.pieces = 1000;
+  buildFridge(s);
+  setInv(s, { carotte: 5 });
+  assert(moveToFridge(s, 'carotte', 3).ok, 'ranger 3 carottes');
+  assertEqual([countItem(s, 'carotte'), fridgeCount(s, 'carotte'), sellableCount(s, 'carotte')], [2, 3, 5]);
+  const avant = s.pieces;
+  // 4 carottes : les 2 de l'inventaire d'abord, puis 2 du frigo.
+  const r = sellItem(s, 'carotte', 4);
+  assertEqual([r.ok, r.sold, r.gain], [true, 4, 8], '4 carottes à 2');
+  assertEqual(s.pieces, roundCoins(avant + 8));
+  assertEqual([countItem(s, 'carotte'), fridgeCount(s, 'carotte')], [0, 1]);
+  // Article uniquement au frigo : vendable, et le stock plafonne la vente.
+  const r2 = sellItem(s, 'carotte', 99);
+  assertEqual([r2.ok, r2.sold, r2.gain], [true, 1, 2]);
+  assertEqual([fridgeCount(s, 'carotte'), fridgeUnits(s)], [0, 0]);
+  assert(!s.frigo.items.carotte, 'le lot vide est retiré du frigo');
+  assertEqual(sellItem(s, 'carotte', 1).ok, false, 'plus rien à vendre');
+  // Le coefficient d'achat baisse comme pour une vente ordinaire.
+  const t = garden();
+  t.pieces = 1000;
+  buildFridge(t);
+  buyItem(t, 'tomate', 3);
+  moveToFridge(t, 'tomate', 3);
+  assertEqual(marketCoef(t, 'tomate'), 1.5);
+  sellItem(t, 'tomate', 3);
+  assertEqual(marketCoef(t, 'tomate'), 1.2);
+});
+
+test('Comptoir : sans frigo, rien ne change pour la vente', () => {
+  const s = garden();
+  setInv(s, { patate: 2 });
+  assertEqual([sellableCount(s, 'patate'), fridgeCount(s, 'patate')], [2, 0]);
+  assertEqual(sellItem(s, 'patate', 5).sold, 2);
+});
+
 test('Lot 13 : farine et pain se vendent deux fois leur ancien prix', () => {
   assertEqual([DATA.items.farine.prix, sellPrice('farine')], [2, 2], 'farine : 1 × 2');
   assertEqual([DATA.items.pain.prix, sellPrice('pain')], [8, 8], 'pain : 4 × 2');
@@ -14563,7 +14609,7 @@ const COMPTOIR_TABS = [
 
 // Seules les unités entières se vendent (un demi-blé reste en stock).
 function sellableStock(item) {
-  return Math.floor(countItem(state, item) + EPS);
+  return Math.floor(sellableCount(state, item) + EPS);
 }
 
 // Quantité choisie pour la vente, toujours entre 1 et le stock.
@@ -14578,7 +14624,7 @@ function sellRow(item) {
   const q = sellQuantity(item);
   return `
     <div class="shop-row">
-      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatQty(countItem(state, item))}</span></span></div>
+      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatQty(sellableCount(state, item))}</span>${fridgeCount(state, item) > 0 ? ` <span class="chip">❄️ dont ${formatQty(fridgeCount(state, item))} au frigo</span>` : ''}</span></div>
       <span class="muted">Prix de vente : <strong class="num">${formatCoins(it.prix)} 💰</strong> l'unité (fixe)</span>
       <div class="row qty-row">
         <button type="button" class="btn step-btn" data-action="sell-dec" data-item="${item}" aria-label="Vendre une unité de moins"${q <= 1 ? ' disabled' : ''}>−</button>
@@ -14755,9 +14801,9 @@ function renderComptoir() {
   const tab = tabs.find((t) => t.id === comptoirTab) || tabs[0];
   let body;
   if (tab.id === 'vendre') {
-    const items = Object.keys(DATA.items).filter((k) => countItem(state, k) > 0);
+    const items = Object.keys(DATA.items).filter((k) => sellableCount(state, k) > 0);
     body = `
-      <p class="muted">Prix de vente fixes. Chaque unité vendue baisse de ${formatFixed(DATA.MARCHE.PAS, 1)} le coefficient d'achat de l'objet, sans passer sous son plancher.</p>
+      <p class="muted">Prix de vente fixes. Les articles rangés au frigo se vendent aussi (l'inventaire part en premier). Chaque unité vendue baisse de ${formatFixed(DATA.MARCHE.PAS, 1)} le coefficient d'achat de l'objet, sans passer sous son plancher.</p>
       ${items.length ? items.map(sellRow).join('') : '<p class="hint">Tu n\'as rien à vendre pour l\'instant.</p>'}`;
   } else if (tab.id === 'acheter') {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine');
@@ -15817,7 +15863,7 @@ document.addEventListener('click', (e) => {
     case 'sell-max': {
       const item = target.dataset.item;
       const now = sellQuantity(item);
-      sellQuantities[item] = action === 'sell-max' ? countItem(state, item) : now + (action === 'sell-inc' ? 1 : -1);
+      sellQuantities[item] = action === 'sell-max' ? sellableStock(item) : now + (action === 'sell-inc' ? 1 : -1);
       refresh();
       break;
     }
