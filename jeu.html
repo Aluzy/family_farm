@@ -1480,7 +1480,17 @@ const DATA = {
   // arrondi. L'eau compte pour ENERGIE_EAU d'énergie et PRIX_EAU pièces par litre.
   // PRIX_EAU (1) est ma lecture pour retrouver le prix du pain de la section 8.9
   // (2 farines + 1 L d'eau = 3, × 1,3 = 4) : à confirmer.
-  RECETTES: { COEF_PLAT: 1.3, ENERGIE_EAU: 0, PRIX_EAU: 1 },
+  RECETTES: {
+    COEF_PLAT: 1.3, ENERGIE_EAU: 0, PRIX_EAU: 1,
+    // Lot 14 : le temps de préparation des plats du Four et de la Cuisine est
+    // divisé par DIVISEUR_TEMPS, puis arrondi à l'entier supérieur (Math.ceil),
+    // une seule fois au chargement, par applyDishTimeDivisor() (juste après
+    // DATA). Le Moulin et la Presse (transformations) ne sont pas concernés.
+    // Les multiplicateurs de l'arbre techno (×0,8, ×0,64) s'appliquent ensuite
+    // sur ce nouveau temps de base, via recipeTime().
+    DIVISEUR_TEMPS: 2,
+    STATIONS_TEMPS_DIVISE: ['four', 'cuisine'],
+  },
 
   // Recettes (section 1.3). ingredients : { item, qte } ou { ou: [items], qte }
   // (l'un OU l'autre, sans mélange) ; eau : litres pris dans le réservoir ;
@@ -2276,6 +2286,17 @@ function applyProductionPriceMultiplier() {
 // bœuf, poulet rôti à l'ail, etc.) doivent lire des prix d'ingrédients déjà
 // doublés, une seule fois, jamais l'inverse.
 applyProductionPriceMultiplier();
+
+// Lot 14 : temps de préparation des plats (voir DATA.RECETTES.DIVISEUR_TEMPS).
+// Chaque recette est traitée une seule fois, ce qui rend le résultat stable
+// (20 s → 10 s, 15 s → 8 s, 45 s → 23 s, etc.).
+function applyDishTimeDivisor() {
+  const R = DATA.RECETTES;
+  for (const r of Object.values(DATA.recipes)) {
+    if (R.STATIONS_TEMPS_DIVISE.includes(r.station)) r.temps = Math.ceil(r.temps / R.DIVISEUR_TEMPS);
+  }
+}
+applyDishTimeDivisor();
 
 /* ==========================================================================
    ENGINE — simulation pure. Aucun accès au DOM, à window, au stockage ou à
@@ -8987,13 +9008,14 @@ test('DATA Lot 5 : stations, recettes, farine et huile', () => {
   assertEqual(S.cuisine.requiert, 'four');
   assertEqual(S.four.debloque, ['recettes']);
   const R = DATA.recipes;
-  assertEqual([R.pain.station, R.pain.temps, R.pain.ingredients, R.pain.eau], ['four', 20, [{ item: 'farine', qte: 2 }], 1]);
-  assertEqual([R.omelette.station, R.omelette.temps], ['cuisine', 15]);
-  assertEqual([R.ratatouille.station, R.ratatouille.temps], ['cuisine', 30]);
-  assertEqual([R.gratin_patates.station, R.gratin_patates.temps], ['four', 30]);
-  assertEqual([R.ragout.station, R.ragout.temps], ['cuisine', 45]);
-  assertEqual([R.compote.station, R.compote.temps, R.compote.ingredients], ['cuisine', 15, [{ ou: ['pomme', 'poire'], qte: 3 }]]);
-  assertEqual([R.tarte_pommes.station, R.tarte_pommes.temps], ['four', 45]);
+  // Lot 14 : temps des plats Four/Cuisine divisés par 2, arrondis au supérieur.
+  assertEqual([R.pain.station, R.pain.temps, R.pain.ingredients, R.pain.eau], ['four', 10, [{ item: 'farine', qte: 2 }], 1]);
+  assertEqual([R.omelette.station, R.omelette.temps], ['cuisine', 8]); // 15 / 2 = 7,5 → 8
+  assertEqual([R.ratatouille.station, R.ratatouille.temps], ['cuisine', 15]);
+  assertEqual([R.gratin_patates.station, R.gratin_patates.temps], ['four', 15]);
+  assertEqual([R.ragout.station, R.ragout.temps], ['cuisine', 23]); // 45 / 2 = 22,5 → 23
+  assertEqual([R.compote.station, R.compote.temps, R.compote.ingredients], ['cuisine', 8, [{ ou: ['pomme', 'poire'], qte: 3 }]]);
+  assertEqual([R.tarte_pommes.station, R.tarte_pommes.temps], ['four', 23]);
   assertEqual([R.farine.station, R.farine.temps, R.farine.sortie], ['moulin', 5, 'farine']);
   assertEqual([R.huile.station, R.huile.temps, R.huile.ingredients], ['presse', 10, [{ item: 'graine_tournesol', qte: 3 }]]);
   assertEqual([DATA.items.farine.energie, DATA.items.huile.energie], [scaleEnergie(10), scaleEnergie(10)]);
@@ -9205,6 +9227,35 @@ test('Comptoir : sans frigo, rien ne change pour la vente', () => {
   setInv(s, { patate: 2 });
   assertEqual([sellableCount(s, 'patate'), fridgeCount(s, 'patate')], [2, 0]);
   assertEqual(sellItem(s, 'patate', 5).sold, 2);
+});
+
+// Lot 14 : temps de préparation d'origine (secondes) des plats du Four et de la Cuisine.
+const TEMPS_PLATS_AVANT_LOT_14 = {
+  pain: 20, omelette: 15, ratatouille: 30, gratin_patates: 30, ragout: 45, compote: 15, tarte_pommes: 45,
+  soupe_legumes: 30, salade_tomates: 10, quiche_epinards: 40, fromage_frais: 60, riz_au_lait: 30,
+  pain_ail: 15, poivrons_farcis: 40, tarte_fraises: 40, confiture_fraises: 30,
+  chocolat_chaud: 20, cafe_boisson: 10, creme_vanille: 45, biere_artisanale: 60,
+  roti_boeuf: 60, poulet_roti_ail: 45,
+};
+
+test('Lot 14 : temps de préparation des plats Four/Cuisine divisés par 2 (arrondi au supérieur), transformations intactes', () => {
+  const ids = Object.keys(DATA.recipes).filter((id) => !DATA.recipes[id].transformation);
+  assertEqual([...ids].sort(), Object.keys(TEMPS_PLATS_AVANT_LOT_14).sort(), 'aucun plat oublié ni en trop');
+  for (const [id, avant] of Object.entries(TEMPS_PLATS_AVANT_LOT_14)) {
+    const r = DATA.recipes[id];
+    assert(['four', 'cuisine'].includes(r.station), `${id} : plat du Four ou de la Cuisine`);
+    assertEqual(r.temps, Math.ceil(avant / 2), `${id} : ${avant} s / 2 arrondi au supérieur`);
+    assert(Number.isInteger(r.temps), `${id} : temps entier`);
+  }
+  // Cas à demi-seconde : arrondi vers le haut, jamais vers le bas.
+  assertEqual([DATA.recipes.omelette.temps, DATA.recipes.ragout.temps, DATA.recipes.pain_ail.temps], [8, 23, 8]);
+  // Moulin et Presse : inchangés.
+  assertEqual([DATA.recipes.farine.temps, DATA.recipes.huile.temps], [5, 10]);
+  // La durée d'une préparation lancée est bien le nouveau temps.
+  const s = atelier();
+  setInv(s, { oeuf: 3, huile: 1 });
+  assert(startRecipe(s, 'omelette').ok);
+  assertEqual(s.stations.cuisine.tache.duree, 8);
 });
 
 test('Lot 13 : farine et pain se vendent deux fois leur ancien prix', () => {
@@ -9489,7 +9540,7 @@ test('les ingrédients sont retirés au lancement (eau comprise)', () => {
   setInv(s, { farine: 5 });
   assertEqual(startRecipe(s, 'pain').ok, true);
   assertEqual([countItem(s, 'farine'), s.eau], [3, 39]);
-  assertEqual(s.stations.four.tache, { recette: 'pain', reste: 20, duree: 20 });
+  assertEqual(s.stations.four.tache, { recette: 'pain', reste: 10, duree: 10 });
   assertEqual(countItem(s, 'pain'), 0, 'le pain n\'existe pas avant la fin');
 });
 
@@ -9511,9 +9562,9 @@ test('la préparation avance dans tick ; à la fin le plat entre dans l\'inventa
   const s = atelier();
   setInv(s, { farine: 2 });
   startRecipe(s, 'pain');
-  runFor(s, 19.8);
+  runFor(s, 9.8);
   assertEqual(countItem(s, 'pain'), 0);
-  assert(s.stations.four.tache !== null, 'encore en cours à 19,8 s');
+  assert(s.stations.four.tache !== null, 'encore en cours à 9,8 s');
   runFor(s, 0.2);
   assertEqual(countItem(s, 'pain'), 1);
   assertEqual(s.stations.four.tache, null, 'station libérée');
@@ -9528,7 +9579,7 @@ test('le Four et la Cuisine ne consomment pas d\'électricité et ne s\'usent pa
   startRecipe(s, 'pain');
   startRecipe(s, 'omelette');
   const before = s.batteries[0].charge;
-  runFor(s, 20);
+  runFor(s, 10);
   assertEqual([countItem(s, 'pain'), countItem(s, 'omelette')], [1, 1]);
   assertEqual(s.batteries[0].charge, before);
   assertEqual([s.stations.four.appareil, s.stations.cuisine.appareil], [null, null]);
@@ -9539,15 +9590,15 @@ test('la vitesse d\'une préparation suit la productivité de la famille', () =>
   setHealth(s, 60); // ×0,8
   setInv(s, { farine: 2 });
   startRecipe(s, 'pain');
-  assert(near(taskTimeLeft(s, 'four'), 25), 'temps réel restant 20 ÷ 0,8');
-  runFor(s, 20);
-  assertEqual(countItem(s, 'pain'), 0, 'pas fini à 20 s');
-  runFor(s, 5);
+  assert(near(taskTimeLeft(s, 'four'), 12.5), 'temps réel restant 10 ÷ 0,8');
+  runFor(s, 10);
+  assertEqual(countItem(s, 'pain'), 0, 'pas fini à 10 s');
+  runFor(s, 2.5);
   assertEqual(countItem(s, 'pain'), 1);
   setHealth(s, 30); // ×0,5
   setInv(s, { farine: 2 });
   startRecipe(s, 'pain');
-  assert(near(taskTimeLeft(s, 'four'), 40));
+  assert(near(taskTimeLeft(s, 'four'), 20));
 });
 
 test('compote : 3 pommes ou 3 poires, sans les mélanger', () => {
@@ -9797,7 +9848,7 @@ test('Dormir : une préparation en cours se termine immédiatement', () => {
   startRecipe(s, 'pain');
   startRecipe(s, 'farine');
   runFor(s, 2);
-  assert(s.stations.four.tache.reste > 15, 'le pain est loin d\'être fini');
+  assert(s.stations.four.tache.reste > 7, 'le pain est loin d\'être fini');
   s.awakeSeconds = 30;
   const r = sleep(s);
   assertEqual([countItem(s, 'pain'), countItem(s, 'farine')], [1, 1]);
@@ -10677,30 +10728,32 @@ test('semis automatique : aussi au Champ (blé), avec sa réserve', () => {
 
 test('temps de préparation : −20 % puis encore −20 %, à tous les ateliers', () => {
   const s = atelier();
-  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine')], [20, 45, 5]);
+  // Lot 14 : pain 10 s et ragoût 23 s (temps de base des plats divisés par 2) ;
+  // le Moulin (5 s) et la Presse (10 s) ne sont pas concernés.
+  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine')], [10, 23, 5]);
   s.technologies.push('prepa_1');
-  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine'), recipeTime(s, 'huile')], [16, 36, 4, 8]);
+  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine'), recipeTime(s, 'huile')], [8, 18.4, 4, 8]);
   s.technologies.push('prepa_2');
   assertEqual(prepTimeMult(s), 0.64);
-  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine')], [12.8, 28.8, 3.2]);
+  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine')], [6.4, 14.72, 3.2]);
 });
 
 test('temps de préparation : la préparation lancée prend le temps réduit, celle en cours garde le sien', () => {
   const s = atelier();
   setInv(s, { farine: 6 });
   assert(startRecipe(s, 'pain').ok);
-  assertEqual(s.stations.four.tache.duree, 20);
+  assertEqual(s.stations.four.tache.duree, 10);
   s.pieces = 5000;
   assert(buyTech(s, 'prepa_1').ok);
-  assertEqual(s.stations.four.tache.duree, 20, 'déjà lancée : inchangée');
-  runFor(s, 20);
+  assertEqual(s.stations.four.tache.duree, 10, 'déjà lancée : inchangée');
+  runFor(s, 10);
   assertEqual(countItem(s, 'pain'), 1);
   assert(startRecipe(s, 'pain').ok);
-  assertEqual([s.stations.four.tache.duree, s.stations.four.tache.reste], [16, 16]);
-  runFor(s, 15);
-  assertEqual(countItem(s, 'pain'), 1, 'pas encore finie à 15 s');
+  assertEqual([s.stations.four.tache.duree, s.stations.four.tache.reste], [8, 8]);
+  runFor(s, 7);
+  assertEqual(countItem(s, 'pain'), 1, 'pas encore finie à 7 s');
   runFor(s, 1);
-  assertEqual(countItem(s, 'pain'), 2, 'finie à 16 s au lieu de 20');
+  assertEqual(countItem(s, 'pain'), 2, 'finie à 8 s au lieu de 10');
 });
 
 test('éveil minimal : 30 s, puis 20 s, puis 10 s', () => {

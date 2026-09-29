@@ -1,6 +1,18 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v24** : **le temps de préparation des plats du Four et de la Cuisine est
+> divisé par 2, arrondi à l'entier supérieur** (pain 20 s → 10 s, omelette 15 s
+> → 8 s, ragoût 45 s → 23 s, etc. ; voir les tableaux de recettes). Réglé à la
+> source : `DATA.RECETTES.DIVISEUR_TEMPS` (2) et `STATIONS_TEMPS_DIVISE`
+> (`four`, `cuisine`), appliqués une seule fois au chargement par
+> `applyDishTimeDivisor()`. Le Moulin (5 s) et la Presse (10 s) ne changent
+> pas. Les nœuds « Préparation rapide » de l'arbre techno (×0,8 puis ×0,64)
+> s'appliquent ensuite sur ce nouveau temps de base, donc ils peuvent encore
+> donner des durées décimales (ex. ragoût 23 s × 0,8 = 18,4 s). Aucune
+> migration : une préparation en cours garde sa durée déjà enregistrée dans la
+> sauvegarde.
+>
 > **v23** : **les articles rangés au réfrigérateur se vendent depuis le Comptoir
 > (onglet Vendre)**. Avant, seul l'inventaire était vendable : il fallait sortir
 > les articles du frigo un par un pour les vendre. `sellItem()` vend désormais
@@ -329,18 +341,19 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 
 | Recette 🟡 | Ingrédients | Station | Temps | Énergie |
 |---|---|---|---|---|
-| Pain | 2 farine + 1 L eau | Four | 20 s | 34 |
-| Omelette | 3 œufs + 1 huile | Cuisine | 15 s | 68 |
-| Ratatouille | 1 tomate + 1 courgette + 1 aubergine + 1 huile | Cuisine | 30 s | 53 |
-| Gratin de patates | 3 patates + 1 œuf | Four | 30 s | **150** (valeur dédiée, voir ci-dessous) |
-| Ragoût | 2 viande de mouton + 2 carottes + 1 patate | Cuisine | 45 s | 144 |
-| Compote | 3 pommes ou 3 poires | Cuisine | 15 s | 39 |
-| Tarte aux pommes | 2 farine + 3 pommes + 1 œuf | Four | 45 s | 90 |
+| Pain | 2 farine + 1 L eau | Four | 10 s | 34 |
+| Omelette | 3 œufs + 1 huile | Cuisine | 8 s | 68 |
+| Ratatouille | 1 tomate + 1 courgette + 1 aubergine + 1 huile | Cuisine | 15 s | 53 |
+| Gratin de patates | 3 patates + 1 œuf | Four | 15 s | **150** (valeur dédiée, voir ci-dessous) |
+| Ragoût | 2 viande de mouton + 2 carottes + 1 patate | Cuisine | 23 s | 144 |
+| Compote | 3 pommes ou 3 poires | Cuisine | 8 s | 39 |
+| Tarte aux pommes | 2 farine + 3 pommes + 1 œuf | Four | 23 s | 90 |
 
 Énergie = somme des ingrédients × 1,3, arrondie (mise à jour au §4 avec les
-valeurs d'aliments +25 %). Les temps sont calés sur le temps d'éveil minimal
-(30 s) : on peut lancer au moins une recette courte par journée, et une
-recette longue continue pendant la nuit.
+valeurs d'aliments +25 %). Les temps des plats sont divisés par 2 depuis v24
+(arrondis au supérieur) : sur un éveil minimal de 30 s, on peut désormais
+enchaîner plusieurs recettes courtes par journée, et même les recettes les plus
+longues (30 s) tiennent dans un éveil minimal.
 
 **Exception — Gratin de patates (§4)** : le calcul ingrédients × 1,3 donnerait
 91 (3 patates à 19 + 1 œuf à 13, soit 70 × 1,3), mais la recette porte un
@@ -360,21 +373,21 @@ COEF_PLAT`, sauf les 4 recettes de luxe — voir plus bas).
 
 | Recette | Ingrédients | Station | Temps | Énergie | Prix | Note |
 |---|---|---|---|---|---|---|
-| Soupe de légumes | 1 carotte + 1 oignon + 1 patate + 1 L eau | Cuisine | 30 s | 43 | 12 | repas familial |
-| Salade de tomates | 2 tomates + 1 huile | Cuisine | 10 s | 38 | 10 | rapide, léger |
-| Quiche aux épinards | 2 farine + 2 œufs + 1 lait + 1 épinard | Four | 40 s | 95 | 29 | repas familial |
-| Fromage frais | 3 lait | Cuisine | 60 s | 62 | 31 | se conserve 8 nuits (mieux que le lait cru, 4 nuits) |
-| Riz au lait | 2 riz + 1 lait | Cuisine | 30 s | 47 | 16 | repas familial |
-| Pain à l'ail | 1 pain + 1 ail + 1 huile | Four | 15 s | 69 | 21 | utilise le pain comme ingrédient (retiré du stock comme n'importe quel autre) |
-| Poivrons farcis | 2 poivrons + 1 viande de mouton + 1 riz | Four | 40 s | 81 | 26 | repas copieux (viande = mouton, comme le ragoût) |
-| Tarte aux fraises | 2 farine + 3 fraises + 1 œuf | Four | 40 s | 70 | 26 | dessert |
-| Confiture de fraises | 4 fraises | Cuisine | 30 s | 26 | 21 | se conserve bien : imperissable |
-| Chocolat chaud 🌟 | 1 cacao + 1 lait | Cuisine | 20 s | 21 | **72** (×3) | luxe |
-| Café 🌟 | 1 café + 1 L eau | Cuisine | 10 s | 0 | **39** (×3) | luxe ; id technique `cafe_boisson` (distinct de l'item `cafe`) |
-| Crème à la vanille 🌟 | 1 vanille + 2 lait + 2 œufs | Cuisine | 45 s | 75 | **162** (×3) | luxe |
-| Bière artisanale 🌟 | 2 houblon + 1 L eau | Cuisine | 60 s | 0 | **39** (×3) | luxe ; ne périme pas (comme le blé/la farine/la laine) |
-| Rôti de bœuf | 2 viande de bœuf + 2 carottes + 1 patate | Four | 60 s | 144 | 36 | repas copieux |
-| Poulet rôti à l'ail | 1 viande de volaille + 2 patates + 1 ail | Four | 45 s | 75 | 23 | repas familial |
+| Soupe de légumes | 1 carotte + 1 oignon + 1 patate + 1 L eau | Cuisine | 15 s | 43 | 12 | repas familial |
+| Salade de tomates | 2 tomates + 1 huile | Cuisine | 5 s | 38 | 10 | rapide, léger |
+| Quiche aux épinards | 2 farine + 2 œufs + 1 lait + 1 épinard | Four | 20 s | 95 | 29 | repas familial |
+| Fromage frais | 3 lait | Cuisine | 30 s | 62 | 31 | se conserve 8 nuits (mieux que le lait cru, 4 nuits) |
+| Riz au lait | 2 riz + 1 lait | Cuisine | 15 s | 47 | 16 | repas familial |
+| Pain à l'ail | 1 pain + 1 ail + 1 huile | Four | 8 s | 69 | 21 | utilise le pain comme ingrédient (retiré du stock comme n'importe quel autre) |
+| Poivrons farcis | 2 poivrons + 1 viande de mouton + 1 riz | Four | 20 s | 81 | 26 | repas copieux (viande = mouton, comme le ragoût) |
+| Tarte aux fraises | 2 farine + 3 fraises + 1 œuf | Four | 20 s | 70 | 26 | dessert |
+| Confiture de fraises | 4 fraises | Cuisine | 15 s | 26 | 21 | se conserve bien : imperissable |
+| Chocolat chaud 🌟 | 1 cacao + 1 lait | Cuisine | 10 s | 21 | **72** (×3) | luxe |
+| Café 🌟 | 1 café + 1 L eau | Cuisine | 5 s | 0 | **39** (×3) | luxe ; id technique `cafe_boisson` (distinct de l'item `cafe`) |
+| Crème à la vanille 🌟 | 1 vanille + 2 lait + 2 œufs | Cuisine | 23 s | 75 | **162** (×3) | luxe |
+| Bière artisanale 🌟 | 2 houblon + 1 L eau | Cuisine | 30 s | 0 | **39** (×3) | luxe ; ne périme pas (comme le blé/la farine/la laine) |
+| Rôti de bœuf | 2 viande de bœuf + 2 carottes + 1 patate | Four | 30 s | 144 | 36 | repas copieux |
+| Poulet rôti à l'ail | 1 viande de volaille + 2 patates + 1 ail | Four | 23 s | 75 | 23 | repas familial |
 
 **Recettes de luxe (🌟) — règle du multiplicateur** : ces 4 recettes portent un
 champ optionnel `priceMultiplier: 3` sur leur entrée `DATA.recipes`, lu par
