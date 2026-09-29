@@ -5,8 +5,10 @@ objectif, nourrir la famille avec ce que la ferme produit. Panneaux solaires,
 batteries, pompe, potager, champ, poulailler, moutons, verger, serre, cuisine et
 réfrigérateur ; les journées ne passent que quand vous cliquez sur **Dormir**.
 
-- **Version** : 0.11.0 (affichée dans ⚙️ Options › À propos)
-- **Conception** : [`docs/conception.md`](docs/conception.md) (v15), qui fait foi
+- **Version** : 0.13.0 (affichée dans ⚙️ Options › À propos)
+- **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
+- **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
+  %, kg) ; voir la note v25 de la conception
 - **Technique** : trois pages HTML autonomes, sans bibliothèque, sans étape de
   build, sans serveur : `index.html` (page d'accueil), `jeu.html` (le jeu) et
   `encyclopedie.html` (glossaire du jeu, généré depuis

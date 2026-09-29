@@ -11,6 +11,7 @@
 //  3. Pas de système de qualité ni de produits « premium ».
 //  4. Les 6 branches actuelles sont conservées telles quelles.
 //
+// Tous les effets sont en entiers (% ou quantités), comme le reste du jeu (v25).
 // Chaque nœud coûte des PT ET des pièces. Les identifiants existants
 // (semis_auto, prepa_1, prepa_2, reveil_1, reveil_2) sont conservés pour la
 // compatibilité des sauvegardes.
@@ -94,13 +95,13 @@ export const TECHTREE_V2 = {
     en_entretien: {
       branche: 'energie', palier: 1, nom: 'Entretien préventif', icone: '🔧', fonction: 'productivite',
       pt: 1, cout: 100, requiert: [],
-      effet: { usure: 0.75 },
+      effet: { usure: 75 },
       description: 'Panneaux, batteries et appareils s\'usent 25 % moins vite.',
     },
     en_delestage: {
       branche: 'energie', palier: 3, nom: 'Délestage intelligent', icone: '🎛️', fonction: 'automatisation',
       pt: 1, cout: 400, requiert: [{ noeud: 'en_entretien' }, { appareil: 'batterie', nombre: 2 }],
-      effet: { delestage: { seuil: 0.1 } },
+      effet: { delestage: { seuil: 10 } },
       description: 'Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l\'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte.',
     },
     en_entretien_auto: {
@@ -112,13 +113,13 @@ export const TECHTREE_V2 = {
     en_frigo_eco: {
       branche: 'energie', palier: 4, nom: 'Réfrigérateur basse consommation', icone: '🧊', fonction: 'productivite',
       pt: 1, cout: 600, requiert: [{ noeud: 'en_delestage' }, { construit: 'frigo' }],
-      effet: { frigoConso: 0.7 },
+      effet: { frigoConso: 70 },
       description: 'Le réfrigérateur consomme 30 % d\'électricité en moins.',
     },
     en_hiver: {
       branche: 'energie', palier: 4, nom: 'Panneaux orientables', icone: '☀️', fonction: 'productivite',
       pt: 2, cout: 800, requiert: [{ noeud: 'en_entretien_auto' }],
-      effet: { solaireHiver: 0.85 },
+      effet: { solaireHiver: 85 },
       description: 'En hiver, les panneaux produisent 85 % de leur puissance au lieu de 70 %.',
     },
 
@@ -126,7 +127,7 @@ export const TECHTREE_V2 = {
     ea_econome: {
       branche: 'eau', palier: 1, nom: 'Arrosage économe', icone: '💧', fonction: 'productivite',
       pt: 1, cout: 150, requiert: [{ batiment: 'pompe', niveau: 2 }],
-      effet: { eauArrosage: 0.85 },
+      effet: { eauArrosage: 85 },
       description: 'Chaque arrosage consomme 15 % d\'eau en moins.',
     },
     ea_pluie: {
@@ -144,7 +145,7 @@ export const TECHTREE_V2 = {
     ea_pompe_eco: {
       branche: 'eau', palier: 3, nom: 'Pompe à haut rendement', icone: '⛲', fonction: 'productivite',
       pt: 1, cout: 500, requiert: [{ noeud: 'ea_econome' }, { noeud: 'en_entretien' }],
-      effet: { kwhParLitre: 0.75 },
+      effet: { whParLitre: 75 },
       description: 'La pompe consomme 25 % d\'électricité en moins par litre.',
     },
     ea_serre: {
@@ -156,7 +157,7 @@ export const TECHTREE_V2 = {
     ea_gestion: {
       branche: 'eau', palier: 5, nom: 'Gestion intelligente de l\'eau', icone: '📟', fonction: 'automatisation',
       pt: 3, cout: 1500, requiert: [{ noeud: 'ea_serre' }, { noeud: 'en_delestage' }],
-      effet: { arrosagePrioritaire: true, eauArrosage: 0.9 },
+      effet: { arrosagePrioritaire: true, eauArrosage: 90 },
       description: 'Quand l\'eau manque, l\'arrosage automatique sert d\'abord les plantes les plus proches de la récolte. Chaque arrosage consomme encore 10 % d\'eau en moins.',
     },
 
@@ -196,8 +197,8 @@ export const TECHTREE_V2 = {
     el_ration: {
       branche: 'elevage', palier: 2, nom: 'Ration équilibrée', icone: '🌾', fonction: 'productivite',
       pt: 1, cout: 200, requiert: [{ construit: 'poulailler' }],
-      effet: { blePoule: 0.8 },
-      description: 'Une poule mange 0,4 blé par nuit au lieu de 0,5.',
+      effet: { poulesParBle: 5, parBle: 2 },
+      description: '2 blé nourrissent 5 poules au lieu de 4.',
     },
     el_mangeoire: {
       branche: 'elevage', palier: 3, nom: 'Mangeoire à trémie', icone: '🪣', fonction: 'automatisation',
@@ -214,7 +215,7 @@ export const TECHTREE_V2 = {
     el_paturage: {
       branche: 'elevage', palier: 4, nom: 'Pâturage tournant', icone: '🐑', fonction: 'productivite',
       pt: 1, cout: 400, requiert: [{ construit: 'paturage' }],
-      effet: { croissanceSurface: 1.1 },
+      effet: { croissanceSurface: 110 },
       description: 'Le prix de chaque parcelle de pâturage supplémentaire augmente de 10 % au lieu de 20 %.',
     },
 
@@ -222,7 +223,7 @@ export const TECHTREE_V2 = {
     prepa_1: {
       branche: 'cuisine', palier: 2, nom: 'Préparation rapide I', icone: '⏱️', fonction: 'temps',
       pt: 1, cout: 300, requiert: [],
-      effet: { tempsPrepa: 0.8 },
+      effet: { tempsPrepa: 80 },
       description: 'Les temps de préparation (Four, Cuisine, Moulin, Presse) baissent de 20 %.',
     },
     cui_boulangerie: {
@@ -252,8 +253,8 @@ export const TECHTREE_V2 = {
     prepa_2: {
       branche: 'cuisine', palier: 4, nom: 'Préparation rapide II', icone: '⏱️', fonction: 'temps',
       pt: 1, cout: 700, requiert: [{ noeud: 'cui_serie' }],
-      effet: { tempsPrepa: 0.8 },
-      description: 'Encore −20 % sur les temps de préparation (×0,64 en tout).',
+      effet: { tempsPrepa: 80 },
+      description: 'Encore −20 % sur les temps de préparation (64 % du temps de départ en tout).',
     },
     cui_conserverie: {
       branche: 'cuisine', palier: 4, nom: 'Conserverie', icone: '🫙', fonction: 'deblocage',
@@ -278,7 +279,7 @@ export const TECHTREE_V2 = {
     fa_remedes: {
       branche: 'famille', palier: 1, nom: 'Remèdes maison', icone: '🌿', fonction: 'productivite',
       pt: 1, cout: 100, requiert: [],
-      effet: { soinCout: 0.7, recuperation: 1 },
+      effet: { soinCout: 70, recuperation: 1 },
       description: 'Les soins coûtent 30 % de moins, et un malade regagne 3 points de santé par nuit bien nourrie au lieu de 2.',
     },
     fa_cellier: {

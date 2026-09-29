@@ -1,6 +1,37 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v25** : **chiffres entiers partout** (données, état du jeu et affichage).
+> Règles d'arrondi : un **coût** (prix, eau d'un arrosage, durée) est arrondi à
+> l'entier **supérieur** (sauf l'eau d'un arrosage : au plus proche, 1 L
+> minimum), un **stock** s'affiche arrondi vers le **bas**, un **gain** (récolte,
+> énergie d'un plat) au plus **proche**. Changements :
+> - **Pièces entières** : prix croissants (appareils, surface, emplacements,
+>   soins), entretien, réparation et prix d'achat du Comptoir arrondis à
+>   l'entier supérieur (panneau : 60, 72, 87, 104 ; carotte achetée 3 au lieu
+>   de 2,4). Le **coefficient d'achat** est en % (plancher 120 %, graines 200 %,
+>   ±10 points par unité).
+> - **Coefficients en %** : saisons (110 %, 70 %…), productivité (100 / 80 /
+>   50 / 25 %), plats (130 %, pain 160 %, luxe 300 %), arbre techno (80 %),
+>   seuils de santé (75 %, 50 %), frigo (50 %), batterie pleine (98 %).
+> - **Blé** : **1 blé nourrit 2 poules** (n poules → ⌈n ÷ 2⌉ blé ; une ration
+>   entamée se perd à la fin de la nuit). Plus de demi-blé.
+> - **Énergie en Wh** (état en mWh) : panneaux 30 / 50 / 80 / 120 / 180 Wh/s,
+>   batteries 5 000 à 80 000 Wh, pompe 10 Wh/L, Moulin 20 Wh/s, Presse 30 Wh/s,
+>   frigo 5 Wh/s + 50 mWh/s par unité. Objectif du chapitre 1 : 3 000 Wh.
+> - **Eau** : état en mL, affichage en L entiers ; litres par arrosage entiers.
+> - **Temps** : état en ms ; temps de préparation en secondes entières
+>   (ragoût 23 s × 80 % = 19 s).
+> - **Usure** : +1 point toutes les **2 heures** de marche (même rythme que
+>   0,5 point/heure), rendement = 100 − ⌊usure ÷ 2⌋ %.
+> - **Pâturage en ares** : 50 a au départ, 5 a par mouton, 15 a par vache.
+>   **Poids en hg** (affiché en kg) : mouton 200 → 500 hg, +5 hg/nuit ; vache
+>   400 → 1 500 hg, +10 hg/nuit ; portions = kg.
+> - **Autonomie, santé moyenne, couverture** : % entiers, arrondis vers le bas.
+> - Sauvegarde **v13** (`MIGRATIONS[12]`, `migrateToIntegers()`) ; version 0.13.0.
+> Les tableaux de la section 8 sont mis à jour pour l'énergie et le parc ;
+> ailleurs, lire 0,05 ha = 5 a, kWh = 1 000 Wh, ×1,2 = 120 %.
+>
 > **v24** : **le temps de préparation des plats du Four et de la Cuisine est
 > divisé par 2, arrondi à l'entier supérieur** (pain 20 s → 10 s, omelette 15 s
 > → 8 s, ragoût 45 s → 23 s, etc. ; voir les tableaux de recettes). Réglé à la
@@ -1127,38 +1158,38 @@ Les conserves laissent le temps de lancer le potager avant que la santé ne soit
 
 ### 8.2 Énergie et eau
 
-| Niveau | Panneau (kWh/s) | Batterie (kWh) | Pompe (L/s) | Réservoir (L) | Coût amélioration 💰 |
+| Niveau | Panneau (Wh/s) | Batterie (Wh) | Pompe (L/s) | Réservoir (L) | Coût amélioration 💰 |
 |---|---|---|---|---|---|
-| 1 | 0,03 | 5 | 1 | 40 | départ |
-| 2 | 0,05 | 10 | 2 | 80 | 40 |
-| 3 | 0,08 | 20 | 4 | 160 | 100 |
-| 4 | 0,12 | 40 | 6 | 300 | 250 |
-| 5 | 0,18 | 80 | 10 | 500 | 600 |
+| 1 | 30 | 5 000 | 1 | 40 | départ |
+| 2 | 50 | 10 000 | 2 | 80 | 40 |
+| 3 | 80 | 20 000 | 4 | 160 | 100 |
+| 4 | 120 | 40 000 | 6 | 300 | 250 |
+| 5 | 180 | 80 000 | 10 | 500 | 600 |
 
-- Pompe : **0,01 kWh par litre** pompé.
+- Pompe : **10 Wh par litre** pompé.
 - Chaque appareil s'améliore séparément, avec la même grille de coûts.
-- Repère : une heure de jeu (30 s) avec un panneau de niveau 1 → 0,9 kWh, soit de quoi pomper 90 L.
+- Repère : une heure de jeu (30 s) avec un panneau de niveau 1 → 900 Wh, soit de quoi pomper 90 L.
 
 **Parc d'appareils** ✅
 
 | Élément | Valeur 🟡 |
 |---|---|
-| Panneau supplémentaire | 60 💰 × 1,2ⁿ (n = panneaux déjà possédés) |
-| Batterie supplémentaire | 80 💰 × 1,2ⁿ |
+| Panneau supplémentaire | 60 💰 × 120 %ⁿ, arrondi supérieur (n = panneaux déjà possédés) : 60, 72, 87, 104… |
+| Batterie supplémentaire | 80 💰 × 120 %ⁿ, arrondi supérieur |
 | Départ | 1 panneau et 1 batterie de niveau 1 |
-| Usure | +0,5 point par heure de fonctionnement ; aucune usure à l'arrêt |
-| Effet de l'usure | rendement = 1 − usure ÷ 200 |
+| Usure | +1 point toutes les 2 heures de fonctionnement ; aucune usure à l'arrêt |
+| Effet de l'usure | rendement = 100 − ⌊usure ÷ 2⌋ % |
 | Seuil « à entretenir » | 70 % d'usure |
 | Panne | à 100 % d'usure, l'appareil s'arrête |
-| Entretien | 20 % du prix d'achat, remet l'usure à 0 |
-| Réparation | 50 % du prix d'achat |
+| Entretien | 20 % du prix d'achat (arrondi supérieur), remet l'usure à 0 |
+| Réparation | 50 % du prix d'achat (arrondi supérieur) |
 | Batteries | remplissage dans l'ordre, décharge en sens inverse |
 
 | Consommateur | Consommation |
 |---|---|
-| Moulin | 1 blé → 1 farine, 5 s, 0,02 kWh/s |
-| Presse | 3 graines de tournesol → 1 huile, 10 s, 0,03 kWh/s |
-| Réfrigérateur | 0,005 kWh/s + 0,00005 kWh/s par unité stockée ; bloc nocturne = 30 s |
+| Moulin | 1 blé → 1 farine, 5 s, 20 Wh/s |
+| Presse | 3 graines de tournesol → 1 huile, 10 s, 30 Wh/s |
+| Réfrigérateur | 5 Wh/s + 50 mWh/s par unité stockée ; bloc nocturne = 30 s |
 | Four, Cuisine | pas d'électricité (bois / gaz implicite) |
 
 ### 8.3 Cultures

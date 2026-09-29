@@ -3,6 +3,7 @@
 > Proposition de conception, à intégrer à `docs/conception.md` (section 1.4, 8.3 et 8.7) une fois validée.
 > Les données correspondantes sont dans `docs/techtree_v2.js` (format `DATA.techtree`) ; les tableaux ci-dessous en sont générés.
 > 🟡 = valeur provisoire, à caler avec `simulate.mjs`.
+> Depuis la v25 de la conception, tous les effets sont en **entiers** (% ou quantités).
 
 ## 1. Décisions retenues
 
@@ -65,10 +66,11 @@ Un seul agrégateur remplace `prepTimeMult()` et `awakeRequired()` : il parcourt
 
 | Clé | Combinaison | Utilisée par | Cumul maximal |
 |---|---|---|---|
-| `tempsPrepa`, `eauArrosage`, `usure`, `kwhParLitre`, `frigoConso`, `blePoule`, `soinCout` | produit | temps, eau, usure, pompe, frigo, poules, soins | ×0,64 · ×0,765 · ×0,75 · ×0,75 · ×0,7 · ×0,8 · ×0,7 |
+| `tempsPrepa`, `eauArrosage`, `usure`, `whParLitre`, `frigoConso`, `soinCout` (en %) | produit, arrondi | temps, eau, usure, pompe, frigo, soins | 64 % · 76 % · 75 % · 75 % · 70 % · 70 % |
+| `poulesParBle` / `parBle` | valeur du nœud | poules | 2 blé pour 5 poules |
 | `eveilMin` | minimum | éveil minimal | 10 s |
 | `conservation`, `grainesBonus`, `recuperation` | somme | péremption, graines, santé | +1 · +1 · +1 |
-| `bonusPlatsMax`, `solaireHiver`, `croissanceSurface`, `fileAttente` | valeur du nœud | santé, saisons, pâturage, ateliers | 5 · 0,85 · 1,1 · 3 |
+| `bonusPlatsMax`, `solaireHiver`, `croissanceSurface`, `fileAttente` | valeur du nœud | santé, saisons, pâturage, ateliers | 5 · 85 % · 110 % · 3 |
 | `auto: { tâche: [lieux] }` | union | nuit (`autoTasks`) | arrosage, récolte, semis, nourrissage, tonte |
 | `recettes` | union | Livre de recette | 16 recettes |
 | `actionsGroupees`, `pluie`, `delestage`, `entretienAuto`, `arrosagePrioritaire`, `routine` | présence | fonctions dédiées | — |
@@ -195,7 +197,7 @@ flowchart LR
 
 | Palier | ID | Nœud | Fonction | Coût | Prérequis | Effet |
 |---|---|---|---|---|---|---|
-| 2 | `el_ration` | 🌾 Ration équilibrée | Productivité | 1 PT + 200 💰 | Poulailler construit | Une poule mange 0,4 blé par nuit au lieu de 0,5. |
+| 2 | `el_ration` | 🌾 Ration équilibrée | Productivité | 1 PT + 200 💰 | Poulailler construit | 2 blé nourrissent 5 poules au lieu de 4. |
 | 3 | `el_mangeoire` | 🪣 Mangeoire à trémie | Automatisation | 2 PT + 600 💰 | Poulailler niv. 3 + Silo niv. 2 | Chaque nuit, les poules sont nourries automatiquement avec le blé du Silo. |
 | 4 | `el_tonte` | ✂️ Tonte planifiée | Automatisation | 2 PT + 500 💰 | Mangeoire à trémie + Pâturage construit | Chaque nuit, les moutons dont la laine est prête sont tondus automatiquement. |
 | 4 | `el_paturage` | 🐑 Pâturage tournant | Productivité | 1 PT + 400 💰 | Pâturage construit | Le prix de chaque parcelle de pâturage supplémentaire augmente de 10 % au lieu de 20 %. |
@@ -209,7 +211,7 @@ flowchart LR
 | 3 | `cui_serie` | 📋 Préparations en série | Automatisation | 2 PT + 500 💰 | Préparation rapide I | Chaque atelier accepte jusqu'à 3 préparations à la suite : elles s'enchaînent sans clic, ingrédients réservés au lancement. |
 | 3 | `cui_laiterie` | 🧀 Laiterie | Déblocage | 1 PT + 300 💰 | Pâturage construit | Nouvelles recettes en Cuisine : fromage frais, riz au lait. |
 | 3 | `cui_rotisserie` | 🍗 Rôtisserie | Déblocage | 1 PT + 300 💰 | Boulangerie + Pâturage construit | Nouvelles recettes au Four : rôti de bœuf, poulet rôti à l'ail, poivrons farcis. |
-| 4 | `prepa_2` | ⏱️ Préparation rapide II | Temps | 1 PT + 700 💰 | Préparations en série | Encore −20 % sur les temps de préparation (×0,64 en tout). |
+| 4 | `prepa_2` | ⏱️ Préparation rapide II | Temps | 1 PT + 700 💰 | Préparations en série | Encore −20 % sur les temps de préparation (64 % du temps de départ en tout). |
 | 4 | `cui_conserverie` | 🫙 Conserverie | Déblocage | 2 PT + 600 💰 | Préparations en série + Cellier | Nouvelles recettes en Cuisine : bocal de légumes (4 légumes d'une même sorte, ne périme pas) et confiture de fraises. |
 | 4 | `cui_epicerie` | ☕ Épicerie fine | Déblocage | 2 PT + 800 💰 | Laiterie + Serre construit | Recettes de luxe en Cuisine : chocolat chaud, café, crème à la vanille, bière artisanale. |
 
