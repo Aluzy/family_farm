@@ -1493,7 +1493,11 @@ const DATA = {
   // Le prix de vente n'est jamais concerné : dishPrice() reste toujours calculé
   // depuis les ingrédients.
   recipes: {
-    pain:            { nom: 'Pain',              icone: '🍞', station: 'four',    temps: 20, ingredients: [{ item: 'farine', qte: 2 }], eau: 1 },
+    pain:            { nom: 'Pain',              icone: '🍞', station: 'four',    temps: 20, ingredients: [{ item: 'farine', qte: 2 }], eau: 1,
+                     // Lot 13 : le pain se vend 2 × son ancien prix (4 → 8). La farine
+                     // ayant doublé, la somme des ingrédients vaut 5 (2 × 2 + 1 L d'eau) ;
+                     // le coefficient ×1,3 donnerait 7, donc coefficient dédié 1,6 (5 × 1,6 = 8).
+                     priceMultiplier: 1.6 },
     omelette:        { nom: 'Omelette',          icone: '🍳', station: 'cuisine', temps: 15, ingredients: [{ item: 'oeuf', qte: 3 }, { item: 'huile', qte: 1 }] },
     ratatouille:     { nom: 'Ratatouille',       icone: '🍲', station: 'cuisine', temps: 30, ingredients: [{ item: 'tomate', qte: 1 }, { item: 'courgette', qte: 1 }, { item: 'aubergine', qte: 1 }, { item: 'huile', qte: 1 }] },
     // Lot 11 (nutrition) : override à 150 (energieForcee) pour qu'une unité de
@@ -1742,6 +1746,11 @@ const DATA = {
     // liste des objets concernés à partir de DATA.crops, DATA.VERGER.ARBRES
     // et DATA.ANIMAUX plutôt que d'une liste codée en dur ici.
     MULTIPLICATEUR_PRODUCTION: 2,
+    // Lot 13 : la farine (transformation du blé, pas une production directe de
+    // la ferme) reçoit elle aussi le multiplicateur ci-dessus, par choix
+    // explicite. L'huile, autre transformation, n'y figure pas. Le pain (plat)
+    // est réglé sur sa propre recette : voir `recipes.pain.priceMultiplier`.
+    TRANSFORMATIONS_DOUBLEES: ['farine'],
   },
 
   /* ---------- Lot 4 : Champ, Silo, Poulailler ---------- */
@@ -2256,7 +2265,9 @@ function productionItemKeys() {
 
 function applyProductionPriceMultiplier() {
   const mult = DATA.MARCHE.MULTIPLICATEUR_PRODUCTION;
-  for (const key of productionItemKeys()) {
+  const keys = productionItemKeys();
+  for (const key of DATA.MARCHE.TRANSFORMATIONS_DOUBLEES) keys.add(key);
+  for (const key of keys) {
     DATA.items[key].prix *= mult;
   }
 }
@@ -8977,7 +8988,8 @@ test('DATA Lot 5 : stations, recettes, farine et huile', () => {
   assertEqual([R.farine.station, R.farine.temps, R.farine.sortie], ['moulin', 5, 'farine']);
   assertEqual([R.huile.station, R.huile.temps, R.huile.ingredients], ['presse', 10, [{ item: 'graine_tournesol', qte: 3 }]]);
   assertEqual([DATA.items.farine.energie, DATA.items.huile.energie], [scaleEnergie(10), scaleEnergie(10)]);
-  assertEqual([DATA.items.farine.prix, DATA.items.huile.prix], [1, 4]);
+  // Lot 13 : farine 1 → 2 (doublée) ; huile inchangée.
+  assertEqual([DATA.items.farine.prix, DATA.items.huile.prix], [2, 4]);
   assertEqual([DATA.items.farine.edible, DATA.items.huile.edible], [false, false]);
 });
 
@@ -9054,14 +9066,15 @@ test('prix de vente des plats : somme des prix × 1,3, arrondi', () => {
   // Lot 12 : les productions de la ferme sont doublées à la source ; les
   // plats gardent la même formule (somme des prix d'ingrédients × 1,3) et
   // ne sont donc doublés qu'indirectement, une seule fois. Le pain, fait de
-  // farine et d'eau (ni l'une ni l'autre n'est une production), ne bouge pas.
-  assertEqual(DATA.items.pain.prix, 4, 'pain : 4 (section 8.9), inchangé');
+  // farine et d'eau, est doublé explicitement au Lot 13 (4 → 8, voir
+  // recipes.pain.priceMultiplier).
+  assertEqual(DATA.items.pain.prix, 8, 'pain : 4 × 2 (Lot 13)');
   assertEqual(DATA.items.omelette.prix, 21); // (3 œufs à 4 + huile 4) × 1,3 = 20,8
   assertEqual(DATA.items.ratatouille.prix, 18); // (2 + 4 + 4 + huile 4) × 1,3 = 18,2
   assertEqual(DATA.items.gratin_patates.prix, 21); // (3 patates à 4 + 1 œuf à 4) × 1,3 = 20,8
   assertEqual(DATA.items.ragout.prix, 36); // (2 viandes à 10 + 2 carottes à 2 + 1 patate à 4) × 1,3 = 36,4
   assertEqual(DATA.items.compote.prix, 16); // 3 pommes à 4 × 1,3 = 15,6
-  assertEqual(DATA.items.tarte_pommes.prix, 23);
+  assertEqual(DATA.items.tarte_pommes.prix, 26); // farine à 2 depuis le Lot 13 (23 avant)
   // Productions de la ferme : ancienne valeur × 2.
   assertEqual([DATA.items.viande_mouton.prix, DATA.items.pomme.prix, DATA.items.poire.prix], [10, 4, 4]);
   // Vache et abattage des poules (nouveauté) : mêmes portions, mêmes valeurs
@@ -9107,13 +9120,13 @@ test('Lot 12 : chaque production de la ferme se vend deux fois son ancien prix',
   assertEqual([...productionItemKeys()].sort(), Object.keys(PRIX_PRODUCTIONS_AVANT_LOT_12).sort());
 });
 
-test('Lot 12 : graines, conserve, farine, huile inchangées ; aucun bâtiment, animal ni arbre doublé', () => {
+test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni arbre doublé', () => {
   const it = DATA.items;
   for (const [id, def] of Object.entries(it)) {
     if (def.category === 'graine') assertEqual(def.prix, 1, `${id} : graine inchangée`);
   }
   assertEqual(it.graine_tournesol.prix, 1, 'le tournesol récolte des graines : non doublées');
-  assertEqual([it.conserve.prix, it.farine.prix, it.huile.prix], [3, 1, 4]);
+  assertEqual([it.conserve.prix, it.huile.prix], [3, 4]); // la farine, elle, double au Lot 13
   // Prix d'achat des graines au Comptoir : prix inchangé × plancher 2,0.
   assertEqual(buyPrice(garden(), 'graine_carotte'), 2);
   // Constructions, améliorations, animaux, arbres, soins : hors périmètre.
@@ -9146,6 +9159,23 @@ test('Lot 12 : la vente crédite le nouveau montant et le Comptoir affiche le pr
   assertEqual(t.pieces, roundCoins(avantAchat - affiche));
   // Revendre ce qu'on vient d'acheter reste perdant (achat > vente).
   assert(buyPrice(garden(), 'tomate') > sellPrice('tomate'), 'acheter coûte plus cher que revendre');
+});
+
+test('Lot 13 : farine et pain se vendent deux fois leur ancien prix', () => {
+  assertEqual([DATA.items.farine.prix, sellPrice('farine')], [2, 2], 'farine : 1 × 2');
+  assertEqual([DATA.items.pain.prix, sellPrice('pain')], [8, 8], 'pain : 4 × 2');
+  assertEqual(DATA.items.huile.prix, 4, 'l\'huile n\'est pas concernée');
+  // Le pain garde la formule des plats sur ses ingrédients (farine doublée) avec
+  // son coefficient dédié : (2 farines à 2 + 1 L d'eau) × 1,6 = 8, et non 7 (×1,3).
+  assertEqual(DATA.recipes.pain.priceMultiplier, 1.6);
+  assertEqual(dishPrice('pain'), 8);
+  assertEqual(DATA.items.pain.prix, dishPrice('pain'));
+  const s = atelier();
+  setInv(s, { farine: 3, pain: 2 });
+  const avant = s.pieces;
+  assertEqual([sellItem(s, 'farine', 3).gain, sellItem(s, 'pain', 2).gain], [6, 16]);
+  assertEqual(s.pieces, roundCoins(avant + 22));
+  assertEqual(buyPrice(garden(), 'farine'), roundCoins(2 * 1.2), 'prix d\'achat = nouveau prix de vente × coefficient');
 });
 
 test('les plats se gardent 6 nuits (le pain 7) ; la farine et l\'huile ne périment pas', () => {
@@ -9199,9 +9229,9 @@ test('15 nouvelles recettes : énergie et prix, calculés par le système exista
     // Lot 12 : énergies inchangées ; prix recalculés sur des ingrédients
     // dont les prix de vente ont doublé (avant : 7, 8, 14, 16, 8, 13, 13,
     // 13, 10, 18, 12).
-    soupe_legumes: [43, 12], salade_tomates: [38, 10], quiche_epinards: [95, 26],
-    fromage_frais: [62, 31], riz_au_lait: [47, 16], pain_ail: [69, 16],
-    poivrons_farcis: [81, 26], tarte_fraises: [70, 23], confiture_fraises: [26, 21],
+    soupe_legumes: [43, 12], salade_tomates: [38, 10], quiche_epinards: [95, 29],
+    fromage_frais: [62, 31], riz_au_lait: [47, 16], pain_ail: [69, 21],
+    poivrons_farcis: [81, 26], tarte_fraises: [70, 26], confiture_fraises: [26, 21],
     roti_boeuf: [144, 36], poulet_roti_ail: [75, 23],
   };
   for (const [id, [energie, prix]] of Object.entries(attendu)) {
@@ -9778,12 +9808,12 @@ test('plats et ingrédients se vendent au Comptoir au prix fixe', () => {
   const s = atelier();
   setInv(s, { ragout: 2, farine: 3, huile: 1 });
   const before = s.pieces;
-  // Lot 12 : ragoût à 36 (ingrédients doublés) ; farine et huile, des
-  // transformations, gardent leur prix (1 et 4).
+  // Lot 12 : ragoût à 36 (ingrédients doublés). Lot 13 : farine à 2 (doublée) ;
+  // l'huile garde son prix (4).
   assertEqual(sellItem(s, 'ragout', 2).gain, 72);
-  assertEqual(sellItem(s, 'farine', 3).gain, 3);
+  assertEqual(sellItem(s, 'farine', 3).gain, 6);
   assertEqual(sellItem(s, 'huile', 1).gain, 4);
-  assertEqual(s.pieces, before + 79);
+  assertEqual(s.pieces, before + 82);
 });
 
 test('mode test Lot 5 : stations gratuites, +10 farines, +10 huiles, +20 œufs, moulin usé', () => {

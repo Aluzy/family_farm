@@ -1,6 +1,19 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v22** : **la farine et le pain se vendent aussi ×2** (farine 1 → 2, pain
+> 4 → 8). La farine, transformation du blé, est ajoutée à la liste explicite
+> `DATA.MARCHE.TRANSFORMATIONS_DOUBLEES`, traitée par la même fonction centrale
+> `applyProductionPriceMultiplier()` que les productions de v21 (l'huile n'y
+> figure pas : inchangée à 4). Le pain est un plat : avec la farine doublée, la
+> formule normale (2 × 2 + 1 L d'eau) × 1,3 donnerait 7 ; pour qu'il vaille
+> exactement le double (8), la recette `pain` porte `priceMultiplier: 1.6`
+> (5 × 1,6), sur le mécanisme existant des recettes de luxe. Conséquence : les
+> plats qui utilisent de la farine ou du pain augmentent aussi (tarte aux
+> pommes 23 → 26, quiche aux épinards 26 → 29, tarte aux fraises 23 → 26, pain à
+> l'ail 16 → 21). Aucune migration de sauvegarde (`STATE_VERSION` inchangé). 🟡
+> Voir « Décisions ouvertes (v22) » en 8.9.
+>
 > **v21** : **les productions de la ferme se vendent ×2** au Comptoir (voir
 > 8.9). Sont concernés les objets issus directement de la ferme : récoltes des
 > cultures (carotte, patate, tomate, courgette, aubergine, oignon, ail,
@@ -14,7 +27,7 @@
 > (`productionItemKeys()`) : une future culture, un futur arbre ou un futur
 > animal est couvert automatiquement. **Ne sont pas doublés** : les graines
 > (y compris `graine_tournesol`, récolte du tournesol), la conserve, la
-> farine et l'huile (transformations), les bâtiments, appareils, animaux,
+> huile (transformation ; la farine est doublée depuis v22), les bâtiments, appareils, animaux,
 > arbres, soins, améliorations et services, ni le coefficient d'achat du
 > marché (le prix d'achat = nouveau prix de vente × coefficient, inchangé). Les
 > **plats cuisinés** ne reçoivent pas de ×2 propre : leur prix suit la formule
@@ -340,12 +353,12 @@ COEF_PLAT`, sauf les 4 recettes de luxe — voir plus bas).
 |---|---|---|---|---|---|---|
 | Soupe de légumes | 1 carotte + 1 oignon + 1 patate + 1 L eau | Cuisine | 30 s | 43 | 12 | repas familial |
 | Salade de tomates | 2 tomates + 1 huile | Cuisine | 10 s | 38 | 10 | rapide, léger |
-| Quiche aux épinards | 2 farine + 2 œufs + 1 lait + 1 épinard | Four | 40 s | 95 | 26 | repas familial |
+| Quiche aux épinards | 2 farine + 2 œufs + 1 lait + 1 épinard | Four | 40 s | 95 | 29 | repas familial |
 | Fromage frais | 3 lait | Cuisine | 60 s | 62 | 31 | se conserve 8 nuits (mieux que le lait cru, 4 nuits) |
 | Riz au lait | 2 riz + 1 lait | Cuisine | 30 s | 47 | 16 | repas familial |
-| Pain à l'ail | 1 pain + 1 ail + 1 huile | Four | 15 s | 69 | 16 | utilise le pain comme ingrédient (retiré du stock comme n'importe quel autre) |
+| Pain à l'ail | 1 pain + 1 ail + 1 huile | Four | 15 s | 69 | 21 | utilise le pain comme ingrédient (retiré du stock comme n'importe quel autre) |
 | Poivrons farcis | 2 poivrons + 1 viande de mouton + 1 riz | Four | 40 s | 81 | 26 | repas copieux (viande = mouton, comme le ragoût) |
-| Tarte aux fraises | 2 farine + 3 fraises + 1 œuf | Four | 40 s | 70 | 23 | dessert |
+| Tarte aux fraises | 2 farine + 3 fraises + 1 œuf | Four | 40 s | 70 | 26 | dessert |
 | Confiture de fraises | 4 fraises | Cuisine | 30 s | 26 | 21 | se conserve bien : imperissable |
 | Chocolat chaud 🌟 | 1 cacao + 1 lait | Cuisine | 20 s | 21 | **72** (×3) | luxe |
 | Café 🌟 | 1 café + 1 L eau | Cuisine | 10 s | 0 | **39** (×3) | luxe ; id technique `cafe_boisson` (distinct de l'item `cafe`) |
@@ -1249,16 +1262,16 @@ Repère (v19) : une vache élevée jusqu'à 150 kg (110 nuits) rapporte **110 la
 
 | Item | 💰 | Item | 💰 | Item | 💰 |
 |---|---|---|---|---|---|
-| Carotte | 2 | Œuf | 4 | Farine | 1 |
+| Carotte | 2 | Œuf | 4 | Farine | 2 |
 | Patate | 4 | Viande (mouton / bœuf) | 10 | Huile | 4 |
 | Tomate | 2 | Viande de volaille | 6 | Laine | 12 |
 | Courgette | 4 | Lait | 8 | Blé | 2 |
-| Aubergine | 4 | Pomme / Poire | 4 | Pain | 4 |
+| Aubergine | 4 | Pomme / Poire | 4 | Pain | 8 |
 | Oignon / Épinard / Riz | 2 | Ail / Poivron / Fraise | 4 | Conserve | 3 |
 | Houblon | 6 | Cacao | 16 | Graines | 1 |
 | Vanille | 30 | Café | 12 | | |
 
-**Règle v21 : productions de la ferme ×2.** Les prix ci-dessus des récoltes, fruits et produits animaux valent 2 × leur valeur d'origine (carotte 1, patate 2, œuf 2, viande 5, laine 6, blé 1, pomme/poire 2, cacao 8, vanille 15, café 6, houblon 3, lait 4, volaille 3, etc.). Le multiplicateur (`DATA.MARCHE.MULTIPLICATEUR_PRODUCTION`) est appliqué à la source par `applyProductionPriceMultiplier()`. Inchangés : graines, conserve, farine, huile, pain (eau + farine), bâtiments, appareils, animaux, arbres, soins, améliorations. Le prix d'achat au Comptoir reste prix de vente × coefficient : il double donc lui aussi pour ces productions (carotte : 2,4 au départ au lieu de 1,2).
+**Règle v21 : productions de la ferme ×2.** Les prix ci-dessus des récoltes, fruits et produits animaux valent 2 × leur valeur d'origine (carotte 1, patate 2, œuf 2, viande 5, laine 6, blé 1, pomme/poire 2, cacao 8, vanille 15, café 6, houblon 3, lait 4, volaille 3, etc.). Le multiplicateur (`DATA.MARCHE.MULTIPLICATEUR_PRODUCTION`) est appliqué à la source par `applyProductionPriceMultiplier()`. Doublés en v22 : farine (1 → 2) et pain (4 → 8). Inchangés : graines, conserve, huile, bâtiments, appareils, animaux, arbres, soins, améliorations. Le prix d'achat au Comptoir reste prix de vente × coefficient : il double donc lui aussi pour ces productions (carotte : 2,4 au départ au lieu de 1,2).
 
 Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi (formule inchangée, **pas de ×2 supplémentaire** : les ingrédients sont déjà doublés ; ex. gratin de patates 10 → 21, ragoût 18 → 36). Prix d'achat = vente × coefficient (plancher 1,2 ; graines 2,0 ; +0,1 par unité achetée, −0,1 par unité vendue).
 
@@ -1266,7 +1279,11 @@ Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi (formul
 - **Abattage des poules** : 3 × 6 = 18 💰 de viande pour une poule achetée 15 💰 (avant : 9 💰). La note d'équilibrage de v19 (« jamais une perte évitée ») ne tient plus. À trancher : réduire `portionsAbattage`, ou revoir le prix de la volaille, ou accepter.
 - **Ratio graines / récolte** : les graines restent à 1 💰 de vente (achat 2,0 au plancher) alors que les récoltes valent le double ; produire est encore plus avantageux qu'acheter, ce qui va dans le sens voulu, mais l'écart de dépannage grandit.
 - **Courbe de progression cible (8.10)** : les revenus de vente doublent ; la courbe et les achats du bot de simulation (`simulate.mjs`) n'ont pas été recalibrés.
-- **Pain, farine, huile** : non doublés (transformations/eau), donc moulins et presses rapportent proportionnellement moins que vendre le blé brut (blé 2 💰 contre farine 1 💰).
+- **Meunerie** : depuis v22, la farine (2 💰) vaut autant que le blé qu'elle transforme (2 💰) ; le Moulin ne fait donc plus perdre de valeur à la vente. La **Presse** est inchangée : 3 graines de tournesol (1 💰 chacune) donnent 1 huile à 4 💰, elle crée déjà de la valeur.
+
+**🟡 Décisions de game design ouvertes (v22)** :
+- **Pain à 8 via un coefficient dédié (1,6)** : la formule normale des plats (×1,3) donnerait 7. Le coefficient 1,6 est un réglage choisi pour obtenir exactement le double ; si l'on préfère laisser la formule agir (pain à 7), il suffit de retirer `priceMultiplier` de la recette `pain`.
+- **Plats à base de farine ou de pain** : ils montent de 3 à 5 💰 (voir v22) sans que leurs propres recettes aient été retouchées.
 
 ### 8.10 Courbe de progression cible
 
