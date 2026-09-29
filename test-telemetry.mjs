@@ -122,7 +122,7 @@ test('acceptation : session créée, premier envoi, format et destination', () =
   eq(b.T.sessionId(), sid);
   eq(b.beacons.length, 1);
   const { url, body, type } = b.beacons[0];
-  eq(url, 'https://ferme-familiale-collecte.contact-voidr.workers.dev/session');
+  eq(url, 'https://family-farm.contact-voidr.workers.dev/session');
   assert(/^text\/plain/.test(type), 'text/plain : pas de requête préliminaire CORS');
   eq(body.sid, sid);
   eq(body.game, '0.14.0');

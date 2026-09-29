@@ -1,4 +1,4 @@
-name = "ferme-familiale-collecte"
+name = "family-farm"
 main = "worker/src/index.js"
 compatibility_date = "2026-09-01"
 
