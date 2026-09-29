@@ -1269,6 +1269,7 @@ body.has-tuto { padding-bottom: 300px; }
         </select>
         <button class="btn" type="button" data-action="test-level5">Niveau 5</button>
         <button class="btn" type="button" data-action="test-techs">Débloquer tous les nœuds</button>
+        <button class="btn" type="button" data-action="test-tech-points">+10 PT</button>
       </div>
       <div class="row">
         <button class="btn" type="button" data-action="test-next-season">Saison suivante</button>
@@ -5334,6 +5335,19 @@ function autoMaintain(state) {
 
 // Arbre v2 (Outils de jardin) : « Arroser tout » d'un lieu (au clic : chaque
 // parcelle compte comme un arrosage manuel). Renvoie { ok, arrosees, sansEau }.
+// Arbre v2 (Routine familiale) : réglage « Dormir tout seul ».
+function setRoutine(state, on) {
+  if (on && !techFlag(state, 'routine')) return fail('Débloque la Routine familiale dans l\'Arbre des technologies.');
+  state.routine = !!on;
+  return { ok: true, routine: state.routine };
+}
+
+// La famille va-t-elle se coucher toute seule maintenant ? (jeu ouvert seulement :
+// l'interface l'appelle à chaque image ; le hors-ligne ne fait passer aucune nuit)
+function routineDue(state) {
+  return !!(state.routine && techFlag(state, 'routine') && canSleep(state));
+}
+
 function waterAll(state, lieu) {
   if (!(techFlag(state, 'actionsGroupees') || []).includes('arroser')) return fail('Débloque les Outils de jardin dans l\'Arbre des technologies.');
   let arrosees = 0;
@@ -6010,6 +6024,12 @@ function testSetBuildingLevel5(state, id) {
 
 // Lot 7 : débloque tous les nœuds de l'arbre, sans payer ni vérifier les
 // prérequis, et ouvre l'onglet.
+// Arbre v2 : +n points de technologie (mode test).
+function testAddTechPoints(state, n = 10) {
+  grantTechPoints(state, n, 'Mode test');
+  return { ok: true };
+}
+
 function testUnlockAllTechs(state) {
   state.technologies = Object.keys(DATA.techtree.noeuds);
   const tab = DATA.TECHNO.ONGLET;
@@ -6288,7 +6308,8 @@ function startLot6() {
 
 // Lot 7 : aucune technologie acquise au départ.
 function startLot7() {
-  return { technologies: [], pointsTech: newTechPoints() };
+  // routine : réglage « Dormir tout seul » (Routine familiale, arbre v2).
+  return { technologies: [], pointsTech: newTechPoints(), routine: false };
 }
 
 // Lot 8 : Serre, Verger et Réfrigérateur, tous à construire. La saison se
@@ -14297,6 +14318,27 @@ function watchPreparations() {
   }
 }
 
+// Arbre v2 : annonce les points de technologie gagnés (chapitre, maîtrise, mode libre).
+function watchTechPoints() {
+  const pt = state.pointsTech;
+  if (!pt || !pt.annonces || !pt.annonces.length) return;
+  for (const a of pt.annonces.splice(0)) showToast(`🔬 +${formatNumber(a.pt)} PT : ${a.raison}`);
+  persistState();
+}
+
+// Arbre v2 (Routine familiale) : la famille se couche d'elle-même, jeu ouvert,
+// dès que l'éveil minimal est écoulé et qu'aucune fenêtre n'attend le joueur.
+function watchRoutine() {
+  if (!routineDue(state)) return;
+  if (document.getElementById('modal-root').childElementCount > 0) return;
+  const report = sleep(state);
+  if (!report) return;
+  syncJobs();
+  persistState();
+  refresh();
+  showToast(`🌙 Routine : la famille a dormi. Nuit ${report.nuit} · autonomie ${formatPercent(report.autonomie)}`);
+}
+
 function frame(now) {
   const wall = Date.now();
   if (wall - simulatedAt >= CATCH_UP_MIN_MS) {
@@ -14318,6 +14360,8 @@ function frame(now) {
     scheduleRender();
   }
   simulatedAt = wall;
+  watchTechPoints();
+  watchRoutine();
   watchPreparations();
   watchUnlocks();
   if (ticked) watchAlerts();
@@ -14776,7 +14820,7 @@ function renderPotager() {
       <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ${formatPercent(prod)}</span>${helpBtn('potager')}</span>
     </div>
     <div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${upBtn}</div>
+    <div class="row plot-foot">${groupButtons('potager')}${upBtn}</div>
   `;
 }
 
@@ -14804,7 +14848,7 @@ function renderChamp() {
       <span class="chips">${autoChip('champ', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}${helpBtn('champ')}</span>
     </div>
     <div class="plots">${c.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${upBtn}</div>
+    <div class="row plot-foot">${groupButtons('champ')}${upBtn}</div>
   `;
 }
 
@@ -15061,9 +15105,22 @@ function openHenSlaughterModal() {
   document.getElementById('slaughter-hen-cancel').focus();
 }
 
-// Pastille « Automatique » d'un bâtiment de niveau 5.
+// Pastille « Automatique » : les tâches que l'Arbre des technologies automatise ici.
 function autoChip(id, title) {
-  return isAutomated(state, id) ? `<span class="chip auto" title="${title}">🤖 Automatique</span>` : '';
+  if (!isAutomated(state, id)) return '';
+  const taches = (AUTO_TACHES[id] || []).filter((t) => techAuto(state, t, id));
+  const noms = { arrosage: 'arrosage', recolte: 'récolte', semis: 'semis', nourrissage: 'nourrissage', tonte: 'tonte' };
+  return `<span class="chip auto" title="${title}">🤖 ${taches.map((t) => noms[t]).join(', ')}</span>`;
+}
+
+// Arbre v2 (Outils de jardin) : « Arroser tout » et « Récolter tout ».
+function groupButtons(lieu) {
+  const g = techFlag(state, 'actionsGroupees') || [];
+  if (!g.length) return '';
+  const plots = allPlots(state).filter((p) => p.lieu === lieu);
+  const aArroser = plots.filter((p) => p.culture && !p.arrose && !isMature(p)).length;
+  const murs = plots.filter((p) => p.culture && isMature(p)).length;
+  return `${g.includes('arroser') ? `<button type="button" class="btn" data-action="water-all" data-lieu="${lieu}"${aArroser ? '' : ' disabled'}>💧 Arroser tout (${aArroser})</button>` : ''}${g.includes('recolter') ? `<button type="button" class="btn" data-action="harvest-all" data-lieu="${lieu}"${murs ? '' : ' disabled'}>🧺 Récolter tout (${murs})</button>` : ''}`;
 }
 
 function semisLabel(p) {
@@ -15073,7 +15130,7 @@ function semisLabel(p) {
 }
 
 function semisButton(p) {
-  if (!hasTech(state, 'semis_auto')) return '';
+  if (!techAuto(state, 'semis', p.lieu)) return '';
   return `<button type="button" class="btn" data-action="semis-open" data-id="${p.id}">${semisLabel(p)}</button>`;
 }
 
@@ -15242,10 +15299,10 @@ function renderSerre() {
   return `
     <div class="section-head">
       <h3>${icon('serre')}Serre · niveau ${g.niveau}</h3>
-      <span class="chips"><span class="chip" title="La Serre ignore les modificateurs de saison">🌡️ Sans saison</span>${helpBtn('serre')}</span>
+      <span class="chips">${autoChip('serre', 'Travaille tout seul, à 100 %, pendant la nuit')}<span class="chip" title="La Serre ignore les modificateurs de saison">🌡️ Sans saison</span>${helpBtn('serre')}</span>
     </div>
     <div class="plots">${g.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${upBtn}</div>
+    <div class="row plot-foot">${groupButtons('serre')}${upBtn}</div>
   `;
 }
 
@@ -15473,6 +15530,13 @@ function stationCard(id) {
   } else {
     work = '<span class="muted">Prête pour une nouvelle préparation.</span>';
   }
+  // Arbre v2 : préparations en attente (annulables, ingrédients rendus).
+  const file = Array.isArray(st.file) ? st.file : [];
+  if (file.length) {
+    work += `<span class="muted">En attente :</span><span class="level-chips">${file
+      .map((e, i) => `<span class="chip">${DATA.recipes[e.recette].icone} ${DATA.recipes[e.recette].nom} <button type="button" class="btn" data-action="cancel-queued" data-station="${id}" data-index="${i}" aria-label="Annuler ${DATA.recipes[e.recette].nom}">✕</button></span>`)
+      .join('')}</span>`;
+  }
   let power = '';
   if (def.electrique) {
     const d = st.appareil;
@@ -15513,7 +15577,10 @@ function recipeCard(id) {
     })
     .join('');
   let reason = '';
-  if (status.code === 'absente') reason = `<span class="alert">Construis d'abord ${sdef.article} ${sdef.nom}.</span>`;
+  if (status.code === 'verrouillee') {
+    const n = DATA.techtree.noeuds[status.noeud];
+    reason = `<span class="alert">🔒 À débloquer dans l'Arbre des technologies : ${n ? `${n.icone} ${n.nom}` : ''}.</span>`;
+  } else if (status.code === 'absente') reason = `<span class="alert">Construis d'abord ${sdef.article} ${sdef.nom}.</span>`;
   else if (status.code === 'occupee') reason = `<span class="alert">${sdef.nom} : ${sdef.article === 'la' ? 'occupée' : 'occupé'}, attends la fin de la préparation.</span>`;
   else if (status.code === 'manque') reason = '<span class="alert">Il manque des ingrédients.</span>';
   const power = sdef.electrique ? ` · ${formatNumber(sdef.whParS)} Wh/s` : '';
@@ -15536,7 +15603,7 @@ function renderRecettes() {
       <h2>📖 Livre de recette</h2>
       <span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : la santé de la famille ralentit les préparations">Vitesse ${formatPercent(prod)}</span>
     </div>
-    <p class="muted">Une seule préparation à la fois par station, sans file d'attente : c'est toi qui relances. Une préparation en cours se termine pendant la nuit.</p>
+    <p class="muted">${queueCapacity(state) > 1 ? `Jusqu'à ${queueCapacity(state)} préparations à la suite par atelier : elles s'enchaînent sans clic, ingrédients réservés au lancement.` : 'Une seule préparation à la fois par atelier : c\'est toi qui relances (les Préparations en série de l\'Arbre des technologies ajoutent une file).'} Tout ce qui est en cours se termine pendant la nuit. Certaines recettes se débloquent dans l'Arbre des technologies.</p>
     <h3 class="section-title">Stations</h3>
     <div class="cards">${ids.map(stationCard).join('')}</div>
     <h3 class="section-title">Recettes</h3>
@@ -15573,26 +15640,33 @@ function techLevelRow(e) {
   return `<div class="level-row">${body}</div>`;
 }
 
+// Coût d'un nœud : « 2 PT + 900 💰 ».
+function techCostLabel(n) {
+  return `${formatNumber(n.pt)} PT + ${costLabel(n.cout)}`;
+}
+
 function techNodeCard(id) {
   const n = DATA.techtree.noeuds[id];
   const status = techStatus(state, id);
+  const pt = techPoints(state);
   const chip = status === 'acquis'
     ? '<span class="chip auto">✅ Acquis</span>'
     : status === 'disponible'
       ? '<span class="chip">✨ Disponible</span>'
       : '<span class="chip">🔒 Verrouillé</span>';
   const prereqs = techPrereqs(state, id);
-  const prereqList = prereqs.length
-    ? `<ul class="prereqs" aria-label="Prérequis">${prereqs.map((p) => `<li class="${p.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${p.ok ? '✅' : '❌'}</span> ${p.texte}</li>`).join('')}</ul>`
-    : '<span class="muted">Aucun prérequis.</span>';
+  const prereqList = status === 'acquis'
+    ? ''
+    : `<ul class="prereqs" aria-label="Prérequis">${prereqs.map((p) => `<li class="${p.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${p.ok ? '✅' : '❌'}</span> ${p.texte}</li>`).join('')}</ul>`;
+  const affordable = pt.solde >= n.pt && canPay(n.cout);
   const button = status === 'acquis'
     ? ''
-    : `<button type="button" class="btn${status === 'disponible' ? ' primary' : ''}" data-action="buy-tech" data-id="${id}"${status === 'disponible' && canPay(n.cout) ? '' : ' disabled'}>Acquérir (${costLabel(n.cout)})</button>`;
+    : `<button type="button" class="btn${status === 'disponible' ? ' primary' : ''}" data-action="buy-tech" data-id="${id}"${status === 'disponible' && affordable ? '' : ' disabled'}>Acquérir (${techCostLabel(n)})</button>`;
   return `
     <article class="card tech-node ${status === 'acquis' ? 'owned' : status === 'disponible' ? 'available' : 'locked'}">
       <span class="card-title"><span>${n.icone} ${n.nom}</span>${chip}</span>
+      <span class="muted">Palier ${n.palier} · ${techCostLabel(n)}</span>
       <span class="desc">${n.description}</span>
-      <span class="muted">Coût : <span class="num">${costLabel(n.cout)}</span></span>
       ${prereqList}
       ${button}
     </article>`;
@@ -15605,29 +15679,55 @@ function branchEffectChip(id) {
   return '';
 }
 
+// Jalons de maîtrise : chacun rapporte 1 PT, une seule fois.
+function masteryHtml() {
+  const pt = techPoints(state);
+  const items = DATA.techtree.POINTS.MAITRISE.map((m) => {
+    const done = pt.maitrise.includes(m.id);
+    const v = Math.min(m.cible, masteryValue(state, m));
+    return `<li class="${done ? 'ok' : ''}"><span aria-hidden="true">${done ? '✅' : '⬜'}</span> ${m.libelle} <span class="muted num">(${formatNumber(v)} / ${formatNumber(m.cible)})</span></li>`;
+  });
+  return `<ul class="prereqs" aria-label="Jalons de maîtrise">${items.join('')}</ul>`;
+}
+
 function renderTechno() {
+  const pt = techPoints(state);
+  const P = DATA.techtree.POINTS;
   const branches = DATA.techtree.branches.map((b) => {
-    const nodes = Object.keys(DATA.techtree.noeuds).filter((id) => DATA.techtree.noeuds[id].branche === b.id);
+    const nodes = Object.keys(DATA.techtree.noeuds)
+      .filter((id) => DATA.techtree.noeuds[id].branche === b.id)
+      .sort((x, y) => DATA.techtree.noeuds[x].palier - DATA.techtree.noeuds[y].palier);
     const progress = techProgress(state, b.id).map(techLevelRow).join('');
     const owned = nodes.filter((id) => hasTech(state, id)).length;
     return `
       <section class="branch" aria-label="Branche ${b.nom}">
         <div class="branch-head">
           <h3>${b.icone} ${b.nom}</h3>
-          <span class="chips">${branchEffectChip(b.id)}${nodes.length ? `<span class="chip">${owned} / ${nodes.length} acquis</span>` : ''}</span>
+          <span class="chips">${branchEffectChip(b.id)}<span class="chip">${owned} / ${nodes.length} acquis</span></span>
         </div>
         <div class="branch-nodes">
           ${progress}
-          ${nodes.length ? nodes.map(techNodeCard).join('') : '<span class="muted">Aucune technologie à acquérir dans cette branche pour l\'instant.</span>'}
+          ${nodes.map(techNodeCard).join('')}
         </div>
       </section>`;
   });
+  const libre = state.campagne && state.campagne.fini
+    ? ` En mode libre, +1 PT toutes les ${P.MODE_LIBRE_NUITS_100} nuits à 100 % d'autonomie.`
+    : '';
+  const routine = techFlag(state, 'routine')
+    ? `<label class="row check-row"><input type="checkbox" data-action="routine-toggle"${state.routine ? ' checked' : ''}> 🏡 Routine familiale : la famille va dormir toute seule dès que l'éveil minimal est écoulé (jeu ouvert seulement).</label>`
+    : '';
   return `
     <div class="section-head">
       <h2>🌳 Arbre des technologies</h2>
-      <span class="chip" title="Pièces disponibles">💰 ${formatCoins(state.pieces)}</span>
+      <span class="chips"><span class="chip" title="Points de technologie disponibles">🔬 ${formatNumber(pt.solde)} PT</span><span class="chip" title="Pièces disponibles">💰 ${formatCoins(state.pieces)}</span></span>
     </div>
-    <p class="muted">Chaque technologie s'achète une fois, avec ses prérequis. Les niveaux des bâtiments s'améliorent sur leurs cartes, dans la Ferme : ils sont rappelés ici avec leur progression.</p>
+    <p class="muted">Chaque technologie coûte des points de technologie (PT) et des pièces, et s'ouvre à un palier de la campagne. Les chapitres terminés rapportent des PT (${P.CHAPITRES.join(' · ')}), comme les jalons de maîtrise ci-dessous.${libre} Tu as gagné ${formatNumber(pt.gagnes)} PT en tout.</p>
+    ${routine}
+    <details class="card">
+      <summary><strong>🏅 Jalons de maîtrise</strong> <span class="muted">(${pt.maitrise.length} / ${P.MAITRISE.length})</span></summary>
+      ${masteryHtml()}
+    </details>
     ${branches.join('')}`;
 }
 
@@ -16033,13 +16133,14 @@ function plural(n, mot) {
 
 // Lignes du réveil pour les automatisations (Lot 7) : ce qui a été fait, puis ce qui a manqué.
 function autoLines(a) {
-  if (!a || !(a.potager || a.champ || a.poulailler)) return [];
+  if (!a || !(a.potager || a.champ || a.serre || a.poulailler || a.tondus)) return [];
   const done = [];
-  if (a.potager || a.champ) done.push(`💧 ${plural(a.arrosees, 'parcelle')} arrosée${a.arrosees > 1 ? 's' : ''}`);
+  if (a.potager || a.champ || a.serre) done.push(`💧 ${plural(a.arrosees, 'parcelle')} arrosée${a.arrosees > 1 ? 's' : ''}`);
   const harvested = itemsSummary(a.recoltes || {});
   if (harvested) done.push(`🧺 ${harvested}`);
   if (a.semees > 0) done.push(`🌱 ${plural(a.semees, 'semis')}`);
   if (a.poulailler) done.push(`🌾 ${plural(a.nourries, 'poule')} nourrie${a.nourries > 1 ? 's' : ''}`);
+  if (a.tondus > 0) done.push(`✂️ ${plural(a.tondus, 'mouton')} tondu${a.tondus > 1 ? 's' : ''}`);
   const lines = [`<li>🤖 Automatisations : <strong>${done.join(' · ')}</strong></li>`];
   if (a.sansEau > 0) lines.push(`<li class="alert">💧 Eau insuffisante : ${plural(a.sansEau, 'parcelle')} non arrosée${a.sansEau > 1 ? 's' : ''} cette nuit.</li>`);
   if (a.sansBle > 0) lines.push(`<li class="alert">🌾 Blé insuffisant : ${plural(a.sansBle, 'poule')} non nourrie${a.sansBle > 1 ? 's' : ''}, pas d'œuf.</li>`);
@@ -16104,6 +16205,8 @@ function openWakeModal(report) {
       ? `<li>🐄 Vaches : <strong class="num">${report.vaches}</strong>${report.lait > 0 ? ` · 🥛 Lait produit : <strong class="num">${formatNumber(report.lait)}</strong>` : ' · ⚠️ pas assez de pâturage pour produire du lait cette nuit'}</li>`
       : '',
     ...autoLines(report.auto),
+    report.pluie > 0 ? `<li>🌧️ Eau de pluie récupérée : <strong class="num">${formatNumber(report.pluie)} L</strong></li>` : '',
+    ...(report.entretiens || []).map((e) => { const d = findDevice(state, e.id); return `<li>🛠️ Entretien automatique : ${d ? deviceName(d) : e.id} (${costLabel(e.cost)})</li>`; }),
     ...seasonLines(report),
     ready ? `<li>🧺 Récoltes prêtes : <strong>${ready}</strong></li>` : '<li>🌱 Aucune récolte prête pour l\'instant.</li>',
     spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
@@ -16254,12 +16357,13 @@ function openChapterModal() {
        <p class="muted">${next.intro}</p>
        <ul class="objectives">${next.objectifs.map((o) => `<li class="objective"><span class="objective-label">⬜ ${o.libelle}</span></li>`).join('')}</ul>`
     : `<h3>🏆 Campagne terminée</h3>
-       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : tout est débloqué, joue à ton rythme.</p>`;
+       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : tout est débloqué, joue à ton rythme. Chaque série de ${DATA.techtree.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>`;
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" id="chapter-modal" role="dialog" aria-modal="true" aria-labelledby="chapter-title" data-stop-propagation>
         <h2 id="chapter-title">🎉 Chapitre ${a.chapitre} terminé</h2>
         <p><strong>${done.icone} ${done.titre}</strong></p>
+        <p>🔬 +${formatNumber(DATA.techtree.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
         ${body}
         <button type="button" class="btn primary" data-action="ack-chapter" id="chapter-close">Continuer</button>
       </div>
@@ -16605,6 +16709,7 @@ function openAboutModal() {
     `Comptoir : prix de vente fixes. Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient d'achat, chaque unité vendue en retire ${formatNumber(M.PAS)} (plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %).`,
     `Saisons de ${DATA.SAISONS.LONGUEUR} nuits : elles nuancent le solaire, les récoltes, l'eau et les moutons, sans rien bloquer. La Serre les ignore.`,
     `Autonomie = énergie mangée produite par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
+    `Arbre des technologies : ${Object.keys(DATA.techtree.noeuds).length} technologies en ${DATA.techtree.branches.length} branches, payées en points de technologie (chapitres terminés, jalons de maîtrise, mode libre) et en pièces. Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
   ];
   document.getElementById('modal-root').innerHTML = `
@@ -16905,9 +17010,28 @@ document.addEventListener('click', (e) => {
     case 'buy-tech': {
       const id = target.dataset.id;
       const result = applyResult(buyTech(state, id));
-      if (result.ok) showToast(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatCoins(result.cost)} 💰)`);
+      if (result.ok) showToast(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰)`);
       break;
     }
+    case 'water-all': {
+      const result = applyResult(waterAll(state, target.dataset.lieu));
+      if (result.ok) showToast(`💧 ${plural(result.arrosees, 'parcelle')} arrosée${result.arrosees > 1 ? 's' : ''}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
+      break;
+    }
+    case 'harvest-all': {
+      const result = applyResult(harvestAll(state, target.dataset.lieu));
+      if (result.ok) showToast(`🧺 ${itemsSummary(result.items)}`);
+      break;
+    }
+    case 'cancel-queued':
+      applyResult(cancelQueued(state, target.dataset.station, Number(target.dataset.index)));
+      break;
+    case 'routine-toggle':
+      applyResult(setRoutine(state, target.checked));
+      break;
+    case 'test-tech-points':
+      applyResult(testAddTechPoints(state, 10));
+      break;
     case 'semis-open':
       openSemisModal(target.dataset.id);
       break;
