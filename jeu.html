@@ -2570,7 +2570,7 @@ const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrag
 // growSheep, sur le même modèle (juste après la ponte, avant le verger) : les
 // deux troupeaux du même pâturage grossissent au même moment de la nuit.
 // Chaque étape reçoit l'état et le modifie.
-const NIGHT_STEPS = [feedFamily, autoTasks, growAll, layEggs, growSheep, growCattle, growOrchard, finishPreparations, nightPower, fridgeNight, spoil];
+const NIGHT_STEPS = [feedFamily, rainNight, autoTasks, growAll, layEggs, growSheep, growCattle, growOrchard, finishPreparations, autoMaintain, nightPower, fridgeNight, spoil];
 
 /* ---------- Lot 8 : saisons ---------- */
 
@@ -2775,7 +2775,14 @@ function needsService(d) {
 // Lot 8 : avec `state`, le facteur solaire de la saison s'y applique.
 function panelOutput(d, state) {
   const base = Math.floor((DATA.GRID.panneau.whParS[d.niveau - 1] * 1000 * efficiency(d)) / 100);
-  return state ? Math.floor((base * seasonFactor(state, 'solaire')) / 100) : base;
+  return state ? Math.floor((base * solarFactor(state)) / 100) : base;
+}
+
+// Facteur solaire de la saison (%) ; les Panneaux orientables relèvent l'hiver.
+function solarFactor(state) {
+  const f = seasonFactor(state, 'solaire');
+  const hiver = currentSeason(state) === 'hiver' ? techFlag(state, 'solaireHiver') : null;
+  return hiver ? Math.max(f, hiver) : f;
 }
 
 // Capacité utile d'une batterie (mWh) : capacité(niveau) × rendement.
@@ -2904,6 +2911,15 @@ const CONSUMERS = [
   { id: 'presse', run: (state, dtMs) => runElectricStation(state, 'presse', dtMs) },
 ];
 
+// Arbre v2 (Délestage intelligent) : sous le seuil de charge totale, la pompe,
+// le Moulin et la Presse se mettent en pause pour garder le froid du frigo.
+function loadShedding(state) {
+  const d = techFlag(state, 'delestage');
+  if (!d) return false;
+  const cap = state.batteries.reduce((t, b) => (b.allume && !isBroken(b) ? t + batteryCapacity(b) : t), 0);
+  return cap > 0 && availableEnergy(state) * 100 < cap * d.seuil;
+}
+
 // La pompe remplit le réservoir si elle est allumée, en état, et que le
 // réservoir n'est pas plein. Si l'énergie manque, elle tourne au prorata
 // (au mL près : chaque mL coûte WH_PAR_L mWh).
@@ -2914,11 +2930,13 @@ function runPump(state, dtMs) {
   if (!p.allume || isBroken(p)) return;
   const room = tankCapacity(state) - state.eauMl;
   if (room <= 0) return;
-  const k = DATA.PUMP.WH_PAR_L;
+  if (loadShedding(state)) return; // arbre v2 : délestage
+  // mWh par mL × % (Pompe à haut rendement) : le coût d'un lot de mL est arrondi vers le haut.
+  const kPct = DATA.PUMP.WH_PAR_L * techPct(state, 'whParLitre');
   const wanted = Math.min(perTick(pumpFlow(p), dtMs), room);
-  const ml = Math.min(wanted, Math.floor(availableEnergy(state) / k));
+  const ml = Math.min(wanted, Math.floor((availableEnergy(state) * 100) / kPct));
   if (ml <= 0) return;
-  const got = drawEnergy(state, ml * k);
+  const got = drawEnergy(state, Math.ceil((ml * kPct) / 100));
   state.eauMl += ml;
   state.jour.eau += ml;
   bumpCounter(state, 'eauMl', ml); // Lot 9
@@ -2989,7 +3007,8 @@ function flowStep(state, dtMs) {
 // Phase d de tick : l'usure, seulement pour un appareil qui a réellement
 // fonctionné pendant le pas (d'après les puissances laissées par flowStep).
 function wearStep(state, dtMs) {
-  const msParPoint = DATA.WEAR.HEURES_PAR_POINT * DATA.TIME.SECONDS_PER_HOUR * 1000;
+  // Arbre v2 (Entretien préventif) : usure à 75 % → un point demande plus de marche.
+  const msParPoint = Math.floor((DATA.WEAR.HEURES_PAR_POINT * DATA.TIME.SECONDS_PER_HOUR * 1000 * 100) / techPct(state, 'usure'));
   for (const d of allDevices(state)) {
     let worked = false;
     if (d.type === 'panneau') worked = d.prod > 0;
@@ -3190,7 +3209,9 @@ function inventoryCounts(state) {
 // Ajoute un lot à conservation pleine ; il rejoint le lot existant de même
 // origine et de même fraîcheur.
 function addLot(state, item, qty, origin) {
-  const nightsLeft = shelfLife(item);
+  // arbre v2 (Cellier) : ce qui périme se garde plus longtemps
+  const base = shelfLife(item);
+  const nightsLeft = base === null ? null : base + techSum(state, 'conservation');
   const lots = lotsOf(state, item);
   const same = lots.find((l) => l.nightsLeft === nightsLeft && l.origin === origin);
   if (same) {
@@ -3310,7 +3331,8 @@ function fridgeUnits(state) {
 // Consommation du frigo en marche (mWh/s) : base + une part par unité stockée.
 function fridgeRate(state) {
   const F = DATA.FRIGO;
-  return F.BASE_WH_S * 1000 + F.PAR_UNITE_MWH_S * fridgeUnits(state);
+  const base = F.BASE_WH_S * 1000 + F.PAR_UNITE_MWH_S * fridgeUnits(state);
+  return Math.floor((base * techPct(state, 'frigoConso')) / 100); // arbre v2 : basse consommation
 }
 
 // Énergie que les batteries en service peuvent fournir (mWh).
@@ -3720,7 +3742,7 @@ function updateHealth(state, coverage, bonus = 0) {
   const fed = coverage >= 100;
   const nouveaux = [];
   for (const m of state.famille.membres) {
-    const gain = m.malade && fed ? F.RECUPERATION_MALADE : delta;
+    const gain = m.malade && fed ? F.RECUPERATION_MALADE + techSum(state, 'recuperation') : delta;
     m.sante = Math.max(0, Math.min(F.SANTE_MAX, m.sante + gain));
     if (m.malade && m.sante >= F.SOIN.SANTE) {
       m.malade = false;
@@ -3733,14 +3755,15 @@ function updateHealth(state, coverage, bonus = 0) {
 }
 
 function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 100, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, lait: 0, bonusPlats: 0, termine: {}, auto: newAutoReport(), fruits: {}, frigo: { mwh: 0, panne: false, vieillis: false }, energieProduit: 0, autonomie: 0 };
+  return { besoin: 0, energie: 0, couverture: 100, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, lait: 0, bonusPlats: 0, termine: {}, auto: newAutoReport(), fruits: {}, frigo: { mwh: 0, panne: false, vieillis: false }, energieProduit: 0, autonomie: 0, pluie: 0, entretiens: [] };
 }
 
 // Bonus de santé d'une nuit : +1 par plat différent mangé, jusqu'à +3.
-function dishBonus(mange) {
+function dishBonus(mange, state = null) {
   const B = DATA.FAMILY.BONUS_PLATS;
   const plats = Object.keys(mange).filter((item) => mange[item] > 0 && DATA.items[item].plat).length;
-  return Math.min(B.MAX, plats * B.PAR_PLAT);
+  const max = state ? Math.max(B.MAX, techFlag(state, 'bonusPlatsMax') || 0) : B.MAX; // arbre v2 : Menus variés
+  return Math.min(max, plats * B.PAR_PLAT);
 }
 
 // Première étape nocturne : le repas, puis la santé.
@@ -3758,7 +3781,7 @@ function feedFamily(state) {
     }
   }
   const avant = rawAverageHealth(state);
-  const bonus = dishBonus(plan.mange);
+  const bonus = dishBonus(plan.mange, state);
   const nouveaux = updateHealth(state, plan.couverture, bonus);
   state.nuit = {
     bonusPlats: bonus,
@@ -3783,7 +3806,8 @@ function feedFamily(state) {
 
 function careCost(state) {
   const c = DATA.FAMILY.SOIN;
-  return growthPrice(c.base, c.croissance, state.famille.soinsPayes);
+  // arbre v2 (Remèdes maison) : soins moins chers
+  return percentCeil(growthPrice(c.base, c.croissance, state.famille.soinsPayes), techPct(state, 'soinCout'));
 }
 
 function findMember(state, id) {
@@ -3907,7 +3931,9 @@ function harvestYield(state, culture, auto = false, lieu = null) {
 // Eau d'un arrosage (L entiers) : celle de la culture × le facteur d'eau de la
 // saison (sauf en Serre), arrondie au litre le plus proche, 1 L au minimum.
 function waterCostFor(state, culture, lieu) {
-  return Math.max(1, roundPct(DATA.crops[culture].litres, waterSeasonFactor(state, lieu)));
+  // arbre v2 : Arrosage économe et Gestion intelligente de l'eau (en %)
+  const pct = (waterSeasonFactor(state, lieu) * techPct(state, 'eauArrosage')) / 100;
+  return Math.max(1, roundPct(DATA.crops[culture].litres, pct));
 }
 
 function waterCost(state, plot) {
@@ -3990,10 +4016,13 @@ function harvest(state, plotId, auto = false) {
     }
   };
   if (plot.montee) {
-    gain(def.graines.item, def.graines.quantite);
+    gain(def.graines.item, def.graines.quantite + 2 * techSum(state, 'grainesBonus'));
   } else {
     gain(cropProduct(culture), harvestYield(state, culture, auto, plot.lieu));
-    if (def.graines.mode === 'recolte') gain(def.graines.item, randomInt(state, def.graines.min, def.graines.max));
+    if (def.graines.mode === 'recolte') {
+      const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
+      gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
+    }
   }
   plot.culture = null;
   plot.stade = 0;
@@ -4250,14 +4279,24 @@ function feedHen(state, auto = false) {
   const prod = auto ? 100 : productivity(state);
   if (prod < 100 && Math.floor(nextRandom(state) * 100) >= prod) return { ok: true, compte: false };
   if (!(p.restes > 0)) {
-    // Un blé entamé : il nourrit cette poule et laisse des rations pour les suivantes.
-    takeWheat(state, 1, 'silo');
-    state.jour.ble += 1;
-    p.restes = DATA.ANIMAUX.poule.poulesParBle;
+    // Un blé entamé : il nourrit cette poule et laisse des rations pour les
+    // suivantes. Ration équilibrée (arbre v2) : 2 blé pour 5 poules si possible.
+    const r = henRation(state);
+    const ble = wheatTotal(state) >= r.ble ? r.ble : 1;
+    takeWheat(state, ble, 'silo');
+    state.jour.ble += ble;
+    p.restes = ble === r.ble ? r.poules : DATA.ANIMAUX.poule.poulesParBle;
   }
   p.restes -= 1;
   p.nourries += 1;
   return { ok: true, compte: true };
+}
+
+// Ration des poules : { ble, poules } (1 blé → 2 poules, ou 2 blé → 5 poules).
+function henRation(state) {
+  const poules = techFlag(state, 'poulesParBle');
+  const ble = techFlag(state, 'parBle');
+  return poules && ble ? { ble, poules } : { ble: 1, poules: DATA.ANIMAUX.poule.poulesParBle };
 }
 
 // Peut-on nourrir une poule de plus ? Oui s'il reste une ration entamée ou un blé.
@@ -4268,7 +4307,8 @@ function canFeedHen(state) {
 // Blé nécessaire pour nourrir `n` poules de plus (rations entamées déduites).
 function wheatForHens(state, n) {
   const left = Math.max(0, n - (state.poulailler.restes || 0));
-  return Math.ceil(left / DATA.ANIMAUX.poule.poulesParBle);
+  const r = henRation(state);
+  return Math.ceil((left * r.ble) / r.poules);
 }
 
 // « Nourrir tout » : une tentative par poule restante, tant qu'il reste du blé.
@@ -4410,7 +4450,9 @@ function pastureCost(state) {
   const P = DATA.PATURAGE;
   const extra = Math.max(0, state.paturage.ares - P.surfaceDepart);
   const rank = Math.floor(extra / P.aresParMouton) + 1;
-  return growthPrice(P.prixSurface, P.croissance, rank - 1);
+  // arbre v2 (Pâturage tournant) : croissance du prix réduite
+  const croissance = techFlag(state, 'croissanceSurface') || P.croissance;
+  return growthPrice(P.prixSurface, croissance, rank - 1);
 }
 
 // Débloque le Pâturage : la surface de départ est acquise.
@@ -4904,6 +4946,7 @@ function runElectricStation(state, id, dtMs) {
   if (!job || !d.allume || isBroken(d)) return;
   const speed = stationSpeed(state, id);
   if (!(speed > 0)) return;
+  if (loadShedding(state)) return; // arbre v2 : délestage
   // ms de marche nécessaires pour finir, puis ms que l'énergie disponible
   // permet (whParS Wh/s = whParS mWh par ms).
   const whParS = DATA.STATIONS[id].whParS;
@@ -5261,6 +5304,62 @@ function autoTasks(state) {
   }
   state.nuit.auto = rap;
   return rap;
+}
+
+// Arbre v2 (Récupérateur d'eau de pluie) : chaque nuit, des litres selon la
+// saison entrent dans le réservoir, sans électricité, dans la limite de sa place.
+function rainNight(state) {
+  const pluie = techFlag(state, 'pluie');
+  if (!state.nuit) state.nuit = newNightStats();
+  if (!pluie) return 0;
+  const ml = Math.min((pluie[currentSeason(state)] || 0) * 1000, Math.max(0, tankCapacity(state) - state.eauMl));
+  state.eauMl += ml;
+  state.nuit.pluie = Math.floor(ml / 1000);
+  return ml;
+}
+
+// Arbre v2 (Entretien automatique) : chaque nuit, les appareils à entretenir
+// (sans être en panne) le sont, au prix normal, tant que les pièces suffisent.
+function autoMaintain(state) {
+  if (!state.nuit) state.nuit = newNightStats();
+  state.nuit.entretiens = [];
+  if (!techFlag(state, 'entretienAuto')) return [];
+  for (const d of allDevices(state)) {
+    if (!needsService(d)) continue;
+    const r = maintainDevice(state, d.id);
+    if (r.ok) state.nuit.entretiens.push({ id: d.id, cost: r.cost });
+  }
+  return state.nuit.entretiens;
+}
+
+// Arbre v2 (Outils de jardin) : « Arroser tout » d'un lieu (au clic : chaque
+// parcelle compte comme un arrosage manuel). Renvoie { ok, arrosees, sansEau }.
+function waterAll(state, lieu) {
+  if (!(techFlag(state, 'actionsGroupees') || []).includes('arroser')) return fail('Débloque les Outils de jardin dans l\'Arbre des technologies.');
+  let arrosees = 0;
+  let sansEau = 0;
+  for (const p of allPlots(state).filter((x) => x.lieu === lieu && x.culture && !x.arrose && !isMature(x))) {
+    if (water(state, p.id).ok) arrosees += 1;
+    else sansEau += 1;
+  }
+  if (arrosees === 0 && sansEau === 0) return fail('Rien à arroser.');
+  return { ok: true, arrosees, sansEau };
+}
+
+// Arbre v2 (Outils de jardin) : « Récolter tout » d'un lieu (au clic, avec la
+// productivité). Renvoie { ok, recoltees, items }.
+function harvestAll(state, lieu) {
+  if (!(techFlag(state, 'actionsGroupees') || []).includes('recolter')) return fail('Débloque les Outils de jardin dans l\'Arbre des technologies.');
+  const items = {};
+  let recoltees = 0;
+  for (const p of allPlots(state).filter((x) => x.lieu === lieu && x.culture && isMature(x))) {
+    const r = harvest(state, p.id);
+    if (!r.ok) continue;
+    recoltees += 1;
+    for (const [item, qty] of Object.entries(r.items)) items[item] = (items[item] || 0) + qty;
+  }
+  if (recoltees === 0) return fail('Rien à récolter.');
+  return { ok: true, recoltees, items };
 }
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
@@ -5669,6 +5768,9 @@ function buildMorningReport(state) {
       unites: fridgeUnits(state),
       couvreLaNuit: fridgeCoversNight(state),
     },
+    // Arbre v2 : eau de pluie reçue et appareils entretenus automatiquement.
+    pluie: state.nuit.pluie || 0,
+    entretiens: [...(state.nuit.entretiens || [])],
     // Lot 9 : autonomie de la nuit, chapitre en cours et chapitres terminés au réveil.
     autonomie: state.nuit.autonomie || 0,
     energieProduit: state.nuit.energieProduit || 0,
@@ -8363,17 +8465,9 @@ test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de g
 });
 
 test('ordre des étapes nocturnes : repas et santé, automatisations, pousse, ponte, moutons, vaches, préparations, puis péremption en dernier', () => {
-  assertEqual(NIGHT_STEPS.length, 11); // Vache (nouveauté) : growCattle s'ajoute après growSheep
-  assert(NIGHT_STEPS[0] === feedFamily, 'première étape : repas et santé');
-  assert(NIGHT_STEPS[1] === autoTasks, 'deuxième étape (Lot 7) : automatisations, juste après le repas');
-  assert(NIGHT_STEPS[2] === growAll, 'troisième étape : pousse');
-  assert(NIGHT_STEPS[3] === layEggs, 'quatrième étape : ponte');
-  assert(NIGHT_STEPS[4] === growSheep, 'cinquième étape : les moutons grossissent, juste après la ponte');
-  assert(NIGHT_STEPS[5] === growCattle, 'sixième étape (nouveauté) : les vaches grossissent et donnent leur lait, juste après les moutons');
-  assert(NIGHT_STEPS[6] === growOrchard, 'septième étape (Lot 8) : le verger, juste après les vaches');
-  assert(NIGHT_STEPS[7] === finishPreparations, 'huitième étape : les préparations se terminent');
-  assert(NIGHT_STEPS[8] === nightPower, 'neuvième étape (Lot 8) : le bloc nocturne du frigo');
-  assert(NIGHT_STEPS[9] === fridgeNight, 'dixième étape (Lot 8) : la panne de froid éventuelle');
+  // Arbre v2 : la pluie avant les automatisations, l'entretien automatique
+  // après les préparations et avant le bloc nocturne du frigo.
+  assertEqual(NIGHT_STEPS, [feedFamily, rainNight, autoTasks, growAll, layEggs, growSheep, growCattle, growOrchard, finishPreparations, autoMaintain, nightPower, fridgeNight, spoil]);
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
@@ -10114,6 +10208,179 @@ test('arbre v2 : préparations en série (file de 3 par atelier)', () => {
   const r = sleep(s);
   assertEqual(r.termine.pain, 2);
   assertEqual([s.stations.four.tache, s.stations.four.file], [null, []]);
+});
+
+test('arbre v2 : effets sur l\'énergie (usure, délestage, frigo, hiver, pompe)', () => {
+  // Entretien préventif : 1 point d'usure toutes les 80 s de marche au lieu de 60 s
+  const s = farm();
+  grantTech(s, 'en_entretien');
+  runFor(s, 60);
+  assertEqual(s.panneaux[0].usure, 0);
+  runFor(s, 20);
+  assertEqual(s.panneaux[0].usure, 1);
+  // Panneaux orientables : hiver 85 % au lieu de 70 %
+  const h = farm();
+  h.day = 31;
+  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.021));
+  grantTech(h, 'en_hiver');
+  assertEqual(panelOutput(h.panneaux[0], h), Math.floor((kwh(0.03) * 85) / 100));
+  h.day = 11;
+  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.039), 'l\'été n\'est pas touché');
+  // Réfrigérateur basse consommation : 70 %
+  const f = coldRoom();
+  const avant = fridgeRate(f);
+  grantTech(f, 'en_frigo_eco');
+  assertEqual(fridgeRate(f), Math.floor((avant * 70) / 100));
+  // Pompe à haut rendement : 7,5 mWh par mL au lieu de 10
+  const p = farm({ pump: true });
+  toggleDevice(p, 'panneau-1');
+  p.batteries[0].chargeMwh = kwh(1);
+  grantTech(p, 'ea_pompe_eco');
+  tick(p, 10);
+  assertEqual([p.eauMl, p.batteries[0].chargeMwh], [ml(10), kwh(1) - 75000]);
+  // Délestage : sous 10 % de charge, la pompe s'arrête (le frigo, lui, continue)
+  const d = farm({ pump: true });
+  toggleDevice(d, 'panneau-1');
+  grantTech(d, 'en_delestage');
+  d.batteries[0].chargeMwh = kwh(0.4); // 8 % de 5 000 Wh
+  tick(d, 1);
+  assertEqual([d.eauMl, loadShedding(d)], [0, true]);
+  d.batteries[0].chargeMwh = kwh(1);
+  tick(d, 1);
+  assertEqual(d.eauMl, ml(1));
+});
+
+test('arbre v2 : entretien automatique et eau de pluie la nuit', () => {
+  const s = farm();
+  s.pieces = 1000;
+  setInv(s, { conserve: 200 });
+  buyDevice(s, 'panneau'); // payé 72
+  s.panneaux[1].usure = 75;
+  s.panneaux[0].usure = 75; // appareil de départ : entretien gratuit
+  s.awakeMs = 30000;
+  let r = sleep(s);
+  assertEqual(r.entretiens, [], 'sans le nœud : rien');
+  grantTech(s, 'en_entretien_auto');
+  const pieces = s.pieces;
+  s.awakeMs = 30000;
+  r = sleep(s);
+  assertEqual(r.entretiens.map((e) => [e.id, e.cost]), [['panneau-1', 0], ['panneau-2', 15]]);
+  assertEqual([s.panneaux[0].usure, s.panneaux[1].usure, pieces - s.pieces], [0, 0, 15]);
+  // pluie : 20 L au printemps, dans la limite du réservoir
+  grantTech(s, 'ea_pluie');
+  s.eauMl = ml(30);
+  s.awakeMs = 30000;
+  r = sleep(s);
+  assertEqual([r.pluie, s.eauMl], [10, ml(40)], 'plafonné à la place libre');
+  s.eauMl = 0;
+  s.day = 11; // été : 5 L
+  s.awakeMs = 30000;
+  assertEqual(sleep(s).pluie, 5);
+});
+
+test('arbre v2 : effets sur les cultures et l\'élevage', () => {
+  // Arrosage économe puis Gestion intelligente : 85 % puis 76 %
+  const s = garden();
+  plant(s, 'potager-1', 'courgette'); // 4 L
+  grantTech(s, 'ea_econome');
+  assertEqual(waterCostFor(s, 'courgette', 'potager'), 3, '4 × 85 % = 3,4 → 3');
+  grantTech(s, 'ea_gestion');
+  assertEqual(waterCostFor(s, 'courgette', 'potager'), 3, '4 × 76 % = 3,04 → 3');
+  assertEqual(waterCostFor(s, 'carotte', 'potager'), 2, '2 × 76 % = 1,52 → 2');
+  // Outils de jardin : Arroser tout, Récolter tout
+  const g = garden();
+  testAddSeeds(g);
+  plant(g, 'potager-1', 'carotte');
+  plant(g, 'potager-2', 'carotte');
+  plantRipe(g, 'potager-3', 'patate');
+  assertEqual(waterAll(g, 'potager').ok, false, 'sans le nœud');
+  grantTech(g, 'cu_outils');
+  assertEqual(waterAll(g, 'potager'), { ok: true, arrosees: 2, sansEau: 0 });
+  assertEqual(harvestAll(g, 'potager').recoltees, 1);
+  assertEqual(harvestAll(g, 'potager').ok, false, 'plus rien de mûr');
+  // Sélection des semences : +1 graine, carotte montée en graine 8 au lieu de 6
+  const m = garden();
+  grantTech(m, 'cu_semences');
+  plantRipe(m, 'potager-1', 'carotte');
+  toggleBolting(m, 'potager-1');
+  testRipenAll(m);
+  const avant = countItem(m, 'graine_carotte');
+  assertEqual(harvest(m, 'potager-1').items.graine_carotte, 8);
+  assertEqual(countItem(m, 'graine_carotte') - avant, 8);
+  // Ration équilibrée : 2 blé pour 5 poules
+  const r = ranch();
+  grantTech(r, 'el_ration');
+  r.poulailler.niveau = 2; // 8 places
+  testAddHens(r, 5);
+  testAddWheat(r, 10);
+  feedAllHens(r);
+  assertEqual([r.poulailler.nourries, r.jour.ble], [5, 2]);
+  assertEqual(wheatForHens(r, 10), 4);
+  // Pâturage tournant : +10 % par achat au lieu de +20 %
+  const t = pature();
+  fillSheep(t, 10);
+  buyPasture(t);
+  buySheep(t);
+  assertEqual(pastureCost(t), 48);
+  grantTech(t, 'el_paturage');
+  assertEqual(pastureCost(t), 44);
+  // Tonte planifiée
+  const u = pature();
+  fillSheep(u, 2);
+  testWoolReady(u);
+  grantTech(u, 'el_tonte');
+  setInv(u, { conserve: 200 });
+  const rep = sleepOnce(u);
+  assertEqual([rep.auto.tondus, countItem(u, 'laine')], [2, 2]);
+});
+
+test('arbre v2 : effets sur la famille (soins, récupération, menus, cellier)', () => {
+  const s = garden();
+  assertEqual(careCost(s), 20);
+  grantTech(s, 'fa_remedes');
+  assertEqual(careCost(s), 14, '20 × 70 %');
+  s.famille.soinsPayes = 2;
+  assertEqual(careCost(s), 32, '45 × 70 % = 31,5 → 32');
+  // récupération d'un malade : 3 au lieu de 2
+  const m = s.famille.membres[0];
+  m.sante = 10;
+  m.malade = true;
+  updateHealth(s, 100, 0);
+  assertEqual(m.sante, 13);
+  // Menus variés : bonus des plats jusqu'à +5
+  const mange = { pain: 1, omelette: 1, ratatouille: 1, gratin_patates: 1, compote: 1 };
+  assertEqual(dishBonus(mange, s), 3);
+  grantTech(s, 'fa_menus');
+  assertEqual(dishBonus(mange, s), 5);
+  // Cellier : +1 nuit hors frigo pour ce qui périme, rien pour le reste
+  grantTech(s, 'fa_cellier');
+  setInv(s, {});
+  addItem(s, 'carotte', 1);
+  addItem(s, 'ble', 1);
+  assertEqual([lotsOf(s, 'carotte')[0].nightsLeft, lotsOf(s, 'ble')[0].nightsLeft], [7, null]);
+});
+
+test('arbre v2 : arrosage prioritaire quand l\'eau manque', () => {
+  const s = garden();
+  testAddSeeds(s);
+  grantTech(s, 'ea_irrigation');
+  plant(s, 'potager-1', 'carotte');
+  plant(s, 'potager-2', 'carotte');
+  findPlot(s, 'potager-2').stade = 3; // à un stade de la récolte
+  s.eauMl = ml(2); // de quoi arroser une seule carotte
+  setInv(s, { conserve: 200, graine_carotte: 5 });
+  sleepOnce(s);
+  assertEqual([findPlot(s, 'potager-1').stade, findPlot(s, 'potager-2').stade], [1, 3], 'dans l\'ordre des parcelles sans le nœud');
+  const t = garden();
+  testAddSeeds(t);
+  grantTech(t, 'ea_gestion');
+  plant(t, 'potager-1', 'carotte');
+  plant(t, 'potager-2', 'carotte');
+  findPlot(t, 'potager-2').stade = 3;
+  t.eauMl = ml(2);
+  setInv(t, { conserve: 200, graine_carotte: 5 });
+  sleepOnce(t);
+  assertEqual([findPlot(t, 'potager-1').stade, findPlot(t, 'potager-2').stade], [0, 4], 'la plus proche de la récolte d\'abord');
 });
 
 test('Pain à l\'ail : retire bien 1 pain du stock, comme n\'importe quel autre ingrédient', () => {
