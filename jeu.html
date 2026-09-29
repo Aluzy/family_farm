@@ -2431,12 +2431,17 @@ const DATA = {
       { type: 'potager', niveau: 3 },
       { type: 'champ', niveau: 2 }, { type: 'poulailler', niveau: 2 }, { type: 'poules', n: 8 }, { type: 'silo', niveau: 2 },
       { type: 'station', id: 'four' }, { type: 'station', id: 'moulin' }, { type: 'station', id: 'presse' }, { type: 'station', id: 'cuisine' },
-      { type: 'potager', niveau: 4 },
+      // arbre v2 : premiers pas (palier 1), puis l'automatisation (palier 3)
+      { type: 'tech', id: 'cu_outils' }, { type: 'pompe', niveau: 2 }, { type: 'tech', id: 'ea_econome' },
+      { type: 'pompe', niveau: 3 }, { type: 'tech', id: 'ea_irrigation' },
+      { type: 'poulailler', niveau: 3 }, { type: 'tech', id: 'el_mangeoire' },
+      { type: 'potager', niveau: 4 }, { type: 'tech', id: 'cu_recolte_auto' },
+      { type: 'tech', id: 'cui_boulangerie' }, { type: 'tech', id: 'prepa_1' },
       { type: 'paturage' }, { type: 'moutons', n: 3 },
       { type: 'champ', niveau: 3 }, { type: 'poules', n: 12 },
       { type: 'verger' }, { type: 'arbres', n: 2 }, { type: 'serre', niveau: 1 }, { type: 'frigo' },
+      { type: 'tech', id: 'semis_auto' }, { type: 'tech', id: 'cui_laiterie' }, { type: 'tech', id: 'el_tonte' },
       { type: 'potager', niveau: 5 },
-      { type: 'tech', id: 'semis_auto' },
       { type: 'arbres', n: 4 }, { type: 'moutons', n: 6 }, { type: 'champ', niveau: 4 },
       { type: 'poules', n: 16 }, { type: 'serre', niveau: 2 }, { type: 'serre', niveau: 3 }, { type: 'champ', niveau: 5 },
     ],
@@ -2553,7 +2558,7 @@ function mulberry32(seed) {
 const STATE_VERSION = 14;
 // Version du jeu, affichée dans les Options (À propos). Vache et abattage des
 // poules : 0.12.0.
-const GAME_VERSION = '0.13.0';
+const GAME_VERSION = '0.14.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -6923,6 +6928,7 @@ function botIngredient(state, ing) {
 function botRecipeValue(state, id) {
   const S = DATA.SIMULATION;
   const r = DATA.recipes[id];
+  if (!recipeUnlocked(state, id)) return 0; // arbre v2 : recette encore verrouillée
   if (r.eau && state.eauMl < r.eau * 1000) return 0;
   const items = r.ingredients.map((ing) => botIngredient(state, ing));
   if (items.some((i) => i === null)) return 0;
@@ -7044,10 +7050,14 @@ function botStepInfo(state, step, eveilS) {
       if (!isUnlocked(state, 'frigo')) return { locked: true };
       return state.frigo.construit ? { done: true } : { cost: DATA.FRIGO.CONSTRUCTION, buy: () => buildFridge(state) };
     case 'pompe':
+      if (chapterReached(state) < 4) return { locked: true }; // d'abord les achats essentiels
+      if (state.pompe.niveau < step.niveau && !hasTech(state, step.niveau === 2 ? 'cu_outils' : 'ea_econome')) return { locked: true }; // après le nœud précédent
       return state.pompe.niveau >= step.niveau ? { done: true } : { cost: upgradeCost(state.pompe), buy: () => upgradeDevice(state, state.pompe.id) };
     case 'tech': {
       if (hasTech(state, step.id)) return { done: true };
+      if (chapterReached(state) < 4) return { locked: true }; // d'abord les achats essentiels
       if (techStatus(state, step.id) !== 'disponible') return { locked: true };
+      if (techPoints(state).solde < DATA.techtree.noeuds[step.id].pt) return { locked: true }; // arbre v2 : PT
       return { cost: DATA.techtree.noeuds[step.id].cout, buy: () => buyTech(state, step.id) };
     }
     default:
@@ -10404,6 +10414,20 @@ test('arbre v2 : arrosage prioritaire quand l\'eau manque', () => {
   assertEqual([findPlot(t, 'potager-1').stade, findPlot(t, 'potager-2').stade], [0, 4], 'la plus proche de la récolte d\'abord');
 });
 
+test('arbre v2 : Routine familiale (réglage « Dormir tout seul »)', () => {
+  const s = farm();
+  assertEqual(setRoutine(s, true).ok, false, 'sans le nœud');
+  assertEqual(routineDue(s), false);
+  grantTech(s, 'fa_routine');
+  assertEqual(setRoutine(s, true).ok, true);
+  assertEqual(routineDue(s), false, 'éveil minimal pas encore écoulé');
+  s.awakeMs = awakeRequired(s) * 1000;
+  assertEqual(routineDue(s), true);
+  setRoutine(s, false);
+  assertEqual(routineDue(s), false, 'désactivée');
+  assertEqual(createInitialState(1).routine, false);
+});
+
 test('Pain à l\'ail : retire bien 1 pain du stock, comme n\'importe quel autre ingrédient', () => {
   const s = atelier();
   unlockRecipes(s);
@@ -13749,7 +13773,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '0.13.0');
+  assertEqual(GAME_VERSION, '0.14.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {

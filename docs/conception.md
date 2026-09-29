@@ -28,7 +28,7 @@
 >   **Poids en hg** (affiché en kg) : mouton 200 → 500 hg, +5 hg/nuit ; vache
 >   400 → 1 500 hg, +10 hg/nuit ; portions = kg.
 > - **Autonomie, santé moyenne, couverture** : % entiers, arrondis vers le bas.
-> - Sauvegarde **v13** (`MIGRATIONS[12]`, `migrateToIntegers()`) ; version 0.13.0.
+> - Sauvegarde **v13** (`MIGRATIONS[12]`, `migrateToIntegers()`) ; version 0.13.0 ; arbre des technologies v2 : sauvegarde **v14** (`MIGRATIONS[13]`), version 0.14.0.
 > Les tableaux de la section 8 sont mis à jour pour l'énergie et le parc ;
 > ailleurs, lire 0,05 ha = 5 a, kWh = 1 000 Wh, ×1,2 = 120 %.
 >
