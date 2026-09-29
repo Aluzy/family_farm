@@ -1337,7 +1337,7 @@ const DATA = {
     panneau: { kwhPerS: [0.03, 0.05, 0.08, 0.12, 0.18] },
     // pleine : part de la capacité utile au-delà de laquelle une batterie qui ne
     // charge plus s'affiche « Pleine » (Lot 11 : sortie du moteur vers DATA).
-    batterie: { kwh: [5, 10, 20, 40, 80], pleine: 0.98 },
+    batterie: { kwh: [5, 10, 20, 40, 80], pleine: 98 }, // pleine en %
     pompe: {
       litresPerS: [1, 2, 4, 6, 10],
       reservoirL: [40, 80, 160, 300, 500], // le réservoir suit le niveau de la pompe
@@ -1377,7 +1377,7 @@ const DATA = {
   // règle d'arrondi centralisée (Math.round, arrondi standard au demi
   // supérieur) : les valeurs ci-dessous sont scaleEnergie(valeur d'origine),
   // vérifié par les tests DATA Lot 2 / Lot 11.
-  NUTRITION: { AUGMENTATION: 1.25 },
+  NUTRITION: { AUGMENTATION: 125 }, // %
 
   // Objets (sections 1.1, 8.1 et 8.9). energie : énergie par unité (aliments
   // seulement) ; prix : prix de vente fixe en pièces ; edible : la famille peut
@@ -1481,7 +1481,7 @@ const DATA = {
   // PRIX_EAU (1) est ma lecture pour retrouver le prix du pain de la section 8.9
   // (2 farines + 1 L d'eau = 3, × 1,3 = 4) : à confirmer.
   RECETTES: {
-    COEF_PLAT: 1.3, ENERGIE_EAU: 0, PRIX_EAU: 1,
+    COEF_PLAT: 130, ENERGIE_EAU: 0, PRIX_EAU: 1, // COEF_PLAT en %
     // Lot 14 : le temps de préparation des plats du Four et de la Cuisine est
     // divisé par DIVISEUR_TEMPS, puis arrondi à l'entier supérieur (Math.ceil),
     // une seule fois au chargement, par applyDishTimeDivisor() (juste après
@@ -1507,7 +1507,7 @@ const DATA = {
                      // Lot 13 : le pain se vend 2 × son ancien prix (4 → 8). La farine
                      // ayant doublé, la somme des ingrédients vaut 5 (2 × 2 + 1 L d'eau) ;
                      // le coefficient ×1,3 donnerait 7, donc coefficient dédié 1,6 (5 × 1,6 = 8).
-                     priceMultiplier: 1.6 },
+                     priceMultiplier: 160 },
     omelette:        { nom: 'Omelette',          icone: '🍳', station: 'cuisine', temps: 15, ingredients: [{ item: 'oeuf', qte: 3 }, { item: 'huile', qte: 1 }] },
     ratatouille:     { nom: 'Ratatouille',       icone: '🍲', station: 'cuisine', temps: 30, ingredients: [{ item: 'tomate', qte: 1 }, { item: 'courgette', qte: 1 }, { item: 'aubergine', qte: 1 }, { item: 'huile', qte: 1 }] },
     // Lot 11 (nutrition) : override à 150 (energieForcee) pour qu'une unité de
@@ -1568,18 +1568,18 @@ const DATA = {
     // le seul calcul de somme). dishEnergy() n'est pas concerné : l'énergie
     // continue de suivre COEF_PLAT normalement (aucune recette de luxe ne
     // porte energieForcee).
-    chocolat_chaud:  { nom: 'Chocolat chaud',     icone: '🍫', station: 'cuisine', temps: 20, ingredients: [{ item: 'cacao', qte: 1 }, { item: 'lait', qte: 1 }], priceMultiplier: 3 },
+    chocolat_chaud:  { nom: 'Chocolat chaud',     icone: '🍫', station: 'cuisine', temps: 20, ingredients: [{ item: 'cacao', qte: 1 }, { item: 'lait', qte: 1 }], priceMultiplier: 300 },
     // id « cafe_boisson » (et non « cafe ») : la recette ne doit pas
     // remplacer DATA.items.cafe (l'ingrédient de la Serre) dans
     // registerDishItems(), qui indexe chaque plat par l'id de sa recette.
-    cafe_boisson:    { nom: 'Café',               icone: '☕', station: 'cuisine', temps: 10, ingredients: [{ item: 'cafe', qte: 1 }], eau: 1, priceMultiplier: 3 },
-    creme_vanille:   { nom: 'Crème à la vanille', icone: '🍨', station: 'cuisine', temps: 45, ingredients: [{ item: 'vanille', qte: 1 }, { item: 'lait', qte: 2 }, { item: 'oeuf', qte: 2 }], priceMultiplier: 3 },
+    cafe_boisson:    { nom: 'Café',               icone: '☕', station: 'cuisine', temps: 10, ingredients: [{ item: 'cafe', qte: 1 }], eau: 1, priceMultiplier: 300 },
+    creme_vanille:   { nom: 'Crème à la vanille', icone: '🍨', station: 'cuisine', temps: 45, ingredients: [{ item: 'vanille', qte: 1 }, { item: 'lait', qte: 2 }, { item: 'oeuf', qte: 2 }], priceMultiplier: 300 },
     // Ne périme pas (demande) : même règle que le blé/la farine/la laine,
     // voir l'entrée `biere_artisanale: null` dans DATA.CONSERVATION (absent
     // des deux tables de péremption = imperissable ; ici on l'y met
     // explicitement à `null` pour écarter la durée par défaut de 6 nuits des
     // plats, exactement comme confiture_fraises ci-dessus).
-    biere_artisanale: { nom: 'Bière artisanale',  icone: '🍺', station: 'cuisine', temps: 60, ingredients: [{ item: 'houblon', qte: 2 }], eau: 1, priceMultiplier: 3 },
+    biere_artisanale: { nom: 'Bière artisanale',  icone: '🍺', station: 'cuisine', temps: 60, ingredients: [{ item: 'houblon', qte: 2 }], eau: 1, priceMultiplier: 300 },
     // --- Repas copieux (viandes de pâturage) ---
     roti_boeuf:      { nom: 'Rôti de bœuf',       icone: '🥩', station: 'four',    temps: 60, ingredients: [{ item: 'viande_boeuf', qte: 2 }, { item: 'carotte', qte: 2 }, { item: 'patate', qte: 1 }] },
     poulet_roti_ail: { nom: "Poulet rôti à l'ail", icone: '🍗', station: 'four',    temps: 45, ingredients: [{ item: 'viande_volaille', qte: 1 }, { item: 'patate', qte: 2 }, { item: 'ail', qte: 1 }] },
@@ -1670,20 +1670,20 @@ const DATA = {
     AJ: { adulte: 50, enfant: 25 }, // énergie par jour et par membre
     SANTE_DEPART: 100,
     SANTE_MAX: 100,
-    // Couverture minimale du besoin (0 à 1) → variation de santé, du palier le
+    // Couverture minimale du besoin (en %) → variation de santé, du palier le
     // plus haut au plus bas.
     VARIATION: [
-      { min: 1, delta: 5 },
-      { min: 0.75, delta: -5 },
-      { min: 0.5, delta: -10 },
+      { min: 100, delta: 5 },
+      { min: 75, delta: -5 },
+      { min: 50, delta: -10 },
       { min: 0, delta: -20 },
     ],
-    // Santé moyenne minimale → multiplicateur de productivité (actions au clic).
+    // Santé moyenne minimale → productivité en % (actions au clic).
     PRODUCTIVITE: [
-      { min: 80, mult: 1 },
-      { min: 50, mult: 0.8 },
-      { min: 20, mult: 0.5 },
-      { min: 0, mult: 0.25 },
+      { min: 80, pct: 100 },
+      { min: 50, pct: 80 },
+      { min: 20, pct: 50 },
+      { min: 0, pct: 25 },
     ],
     // Soin : base × croissance^(soins déjà payés) ; il remet la santé à SANTE.
     SOIN: { base: 20, croissance: 150, SANTE: 50 },
@@ -1922,12 +1922,12 @@ const DATA = {
       },
       prepa_1: {
         branche: 'cuisine', nom: 'Préparation rapide I', icone: '⏱️', cout: 400,
-        requiert: [], effet: { tempsPrepa: 0.8 },
+        requiert: [], effet: { tempsPrepa: 80 },
         description: 'Les temps de préparation (Four, Cuisine, Moulin, Presse) baissent de 20 %.',
       },
       prepa_2: {
         branche: 'cuisine', nom: 'Préparation rapide II', icone: '⏱️', cout: 900,
-        requiert: [{ noeud: 'prepa_1' }], effet: { tempsPrepa: 0.8 },
+        requiert: [{ noeud: 'prepa_1' }], effet: { tempsPrepa: 80 },
         description: 'Encore −20 % sur les temps de préparation (multiplié : ×0,64 en tout).',
       },
       reveil_1: {
@@ -1964,10 +1964,11 @@ const DATA = {
       hiver:     { nom: 'Hiver',     icone: '❄️' },
     },
     MODS: {
-      printemps: { solaire: 1.0, potager: 1.1, eau: 1.0, champ: 1.0, moutons: 1.2 },
-      ete:       { solaire: 1.3, potager: 1.0, eau: 1.3, champ: 1.2, moutons: 1.0 },
-      automne:   { solaire: 0.9, potager: 1.0, eau: 0.9, champ: 0.9, moutons: 1.0 },
-      hiver:     { solaire: 0.7, potager: 0.7, eau: 0.8, champ: 0.7, moutons: 0.8 },
+      // en % : 110 = +10 %, 70 = −30 %
+      printemps: { solaire: 100, potager: 110, eau: 100, champ: 100, moutons: 120 },
+      ete:       { solaire: 130, potager: 100, eau: 130, champ: 120, moutons: 100 },
+      automne:   { solaire: 90,  potager: 100, eau: 90,  champ: 90,  moutons: 100 },
+      hiver:     { solaire: 70,  potager: 70,  eau: 80,  champ: 70,  moutons: 80 },
     },
     // Types de facteurs, avec leur libellé pour le calendrier.
     FACTEURS: {
@@ -2030,7 +2031,7 @@ const DATA = {
     BASE_KWH_S: 0.005,
     PAR_UNITE_KWH_S: 0.00005,
     BLOC_NUIT_S: 30,
-    SEUIL_ALIMENTE: 0.5,
+    SEUIL_ALIMENTE: 50, // %
     PERTE_NUITS: 1,
   },
 
@@ -2178,10 +2179,10 @@ const DATA = {
     // Estimations pour dimensionner l'eau et l'énergie.
     LITRES_PARCELLE: 3,
     LITRES_CUISINE: 6,
-    MARCHE_STATIONS: 0.5, // part du temps d'éveil où le Moulin et la Presse tournent
-    MARGE_EAU: 0.9,
-    MARGE_ENERGIE: 1.5,
-    MARGE_BATTERIE: 0.7,
+    MARCHE_STATIONS: 50, // % du temps d'éveil où le Moulin et la Presse tournent
+    MARGE_EAU: 90, // %
+    MARGE_ENERGIE: 150, // %
+    MARGE_BATTERIE: 70, // %
     // Achats : d'abord ce qui fait avancer le chapitre en cours, puis le plan général.
     // Un élément pas encore débloqué par un chapitre est sauté.
     PRIORITE: {
@@ -2368,6 +2369,12 @@ function yearNight(day) {
 
 // Facteur saisonnier d'un type de calcul : 'solaire', 'potager', 'eau', 'champ'
 // ou 'moutons'. Les calculs existants le multiplient à leur valeur de base.
+// Arrondi entier de x × pct ÷ 100 (au plus proche, demi vers le haut).
+function roundPct(x, pct) {
+  return Math.floor((x * pct + 50) / 100);
+}
+
+// Facteur de saison en % (100 = sans effet).
 function seasonFactor(state, kind) {
   return DATA.SAISONS.MODS[currentSeason(state)][kind];
 }
@@ -2375,12 +2382,12 @@ function seasonFactor(state, kind) {
 // Facteur de rendement d'une récolte selon le lieu (1 pour la Serre).
 function yieldSeasonFactor(state, lieu) {
   const kind = DATA.SAISONS.RENDEMENT_LIEU[lieu];
-  return kind ? seasonFactor(state, kind) : 1;
+  return kind ? seasonFactor(state, kind) : 100;
 }
 
 // Facteur d'eau d'un arrosage selon le lieu (1 pour la Serre).
 function waterSeasonFactor(state, lieu) {
-  return DATA.SAISONS.EAU_LIEUX.includes(lieu) ? seasonFactor(state, 'eau') : 1;
+  return DATA.SAISONS.EAU_LIEUX.includes(lieu) ? seasonFactor(state, 'eau') : 100;
 }
 
 /* ---------- Lot 5 : plats cuisinés (objets calculés depuis DATA.recipes) ---------- */
@@ -2404,7 +2411,7 @@ function recipeSum(recipe, field, waterValue) {
 // toute future revalorisation applique la même règle, plutôt que des arrondis
 // ad hoc dispersés dans DATA.
 function scaleEnergie(valeurBase, augmentation = DATA.NUTRITION.AUGMENTATION) {
-  return Math.round(valeurBase * augmentation + EPS);
+  return roundPct(valeurBase, augmentation);
 }
 
 // Énergie d'un plat : somme des ingrédients × 1,3, arrondie (pain 34, omelette 68, ragoût 144),
@@ -2413,7 +2420,7 @@ function dishEnergy(id) {
   const recipe = DATA.recipes[id];
   if (recipe.energieForcee != null) return recipe.energieForcee;
   const R = DATA.RECETTES;
-  return Math.round(recipeSum(recipe, 'energie', R.ENERGIE_EAU) * R.COEF_PLAT + EPS);
+  return roundPct(recipeSum(recipe, 'energie', R.ENERGIE_EAU), R.COEF_PLAT);
 }
 
 // Prix de vente d'un plat : somme des prix × 1,3, arrondi, sauf si la recette
@@ -2424,7 +2431,7 @@ function dishPrice(id) {
   const recipe = DATA.recipes[id];
   const R = DATA.RECETTES;
   const coef = recipe.priceMultiplier != null ? recipe.priceMultiplier : R.COEF_PLAT;
-  return Math.round(recipeSum(recipe, 'prix', R.PRIX_EAU) * coef + EPS);
+  return roundPct(recipeSum(recipe, 'prix', R.PRIX_EAU), coef);
 }
 
 // Ajoute chaque plat à DATA.items (énergie et prix calculés). Ils se gardent
@@ -2525,7 +2532,7 @@ function needsService(d) {
 // Lot 8 : avec `state`, le facteur solaire de la saison s'y applique.
 function panelOutput(d, state) {
   const base = DATA.GRID.panneau.kwhPerS[d.niveau - 1] * efficiency(d);
-  return state ? base * seasonFactor(state, 'solaire') : base;
+  return state ? base * seasonFactor(state, 'solaire') / 100 : base;
 }
 
 // Capacité utile d'une batterie (kWh) : capacité(niveau) × rendement.
@@ -2788,7 +2795,7 @@ function deviceStatus(state, d) {
     const net = d.entree - d.sortie;
     if (net < -1e-6) { code = 'decharge'; label = 'En décharge'; }
     else if (net > 1e-6) { code = 'charge'; label = 'En charge'; }
-    else if (d.charge >= batteryCapacity(d) * DATA.GRID.batterie.pleine) { code = 'pleine'; label = 'Pleine'; }
+    else if (d.charge * 100 >= batteryCapacity(d) * DATA.GRID.batterie.pleine) { code = 'pleine'; label = 'Pleine'; }
     else if (d.charge <= EPS) { code = 'vide'; label = 'Vide'; }
     else { code = 'attente'; label = 'En attente'; }
   } else if (d.type === 'frigo') {
@@ -3205,8 +3212,7 @@ function fridgeNight(state) {
   const F = DATA.FRIGO;
   const stats = nightFridgeStats(state);
   // Sans temps d'éveil observé (test, Dormir immédiat), rien n'a manqué de froid.
-  const ratio = f.eveilS > EPS ? f.alimenteS / f.eveilS : 1;
-  const warm = f.panneNuit || ratio < F.SEUIL_ALIMENTE - EPS;
+  const warm = f.panneNuit || (f.eveilS > EPS && f.alimenteS * 100 < f.eveilS * F.SEUIL_ALIMENTE - EPS);
   if (warm) {
     stats.vieillis = true;
     if (!state.nuit.perdus) state.nuit.perdus = {};
@@ -3367,23 +3373,23 @@ function rawAverageHealth(state) {
 // Santé moyenne pour la productivité : un membre malade compte pour 0.
 function averageHealth(state) {
   const m = state.famille.membres;
-  return m.length ? m.reduce((t, x) => t + (x.malade ? 0 : x.sante), 0) / m.length : 0;
+  return m.length ? Math.floor(m.reduce((t, x) => t + (x.malade ? 0 : x.sante), 0) / m.length) : 0;
 }
 
-// Multiplicateur de productivité. Il ne s'applique qu'aux actions au clic
+// Productivité en % (100 = pleine). Elle ne s'applique qu'aux actions au clic
 // (récolte manuelle) : jamais aux automatisations des lots suivants.
 function productivity(state) {
   const h = averageHealth(state);
   for (const tier of DATA.FAMILY.PRODUCTIVITE) {
-    if (h + EPS >= tier.min) return tier.mult;
+    if (h >= tier.min) return tier.pct;
   }
-  return DATA.FAMILY.PRODUCTIVITE[DATA.FAMILY.PRODUCTIVITE.length - 1].mult;
+  return DATA.FAMILY.PRODUCTIVITE[DATA.FAMILY.PRODUCTIVITE.length - 1].pct;
 }
 
-// Variation de santé d'une nuit selon la couverture du besoin (0 à 1).
+// Variation de santé d'une nuit selon la couverture du besoin (en %, 0 à 100).
 function healthDelta(coverage) {
   for (const tier of DATA.FAMILY.VARIATION) {
-    if (coverage + EPS >= tier.min) return tier.delta;
+    if (coverage >= tier.min) return tier.delta;
   }
   return DATA.FAMILY.VARIATION[DATA.FAMILY.VARIATION.length - 1].delta;
 }
@@ -3446,7 +3452,7 @@ function planMeal(state) {
     energie: covered,
     mange,
     froid,
-    couverture: need > 0 ? Math.min(1, covered / need) : 1,
+    couverture: need > 0 ? Math.min(100, Math.floor((covered * 100) / need)) : 100, // %
   };
 }
 
@@ -3458,7 +3464,7 @@ function planMeal(state) {
 function updateHealth(state, coverage, bonus = 0) {
   const F = DATA.FAMILY;
   const delta = healthDelta(coverage) + bonus;
-  const fed = coverage + EPS >= 1;
+  const fed = coverage >= 100;
   const nouveaux = [];
   for (const m of state.famille.membres) {
     const gain = m.malade && fed ? F.RECUPERATION_MALADE : delta;
@@ -3474,7 +3480,7 @@ function updateHealth(state, coverage, bonus = 0) {
 }
 
 function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 1, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, lait: 0, bonusPlats: 0, termine: {}, auto: newAutoReport(), fruits: {}, frigo: { kwh: 0, panne: false, vieillis: false }, energieProduit: 0, autonomie: 0 };
+  return { besoin: 0, energie: 0, couverture: 100, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, lait: 0, bonusPlats: 0, termine: {}, auto: newAutoReport(), fruits: {}, frigo: { kwh: 0, panne: false, vieillis: false }, energieProduit: 0, autonomie: 0 };
 }
 
 // Bonus de santé d'une nuit : +1 par plat différent mangé, jusqu'à +3.
@@ -3640,14 +3646,15 @@ function isMature(plot) {
 // Lot 8 : avec `lieu`, le facteur de saison du lieu s'y applique (Potager, Champ ;
 // jamais la Serre).
 function harvestYield(state, culture, auto = false, lieu = null) {
-  const saison = lieu ? yieldSeasonFactor(state, lieu) : 1;
-  return Math.round(DATA.crops[culture].rendement * (auto ? 1 : productivity(state)) * saison + EPS);
+  const saison = lieu ? yieldSeasonFactor(state, lieu) : 100;
+  const prod = auto ? 100 : productivity(state);
+  return Math.floor((DATA.crops[culture].rendement * prod * saison + 5000) / 10000);
 }
 
 // Eau d'un arrosage (L entiers) : celle de la culture × le facteur d'eau de la
 // saison (sauf en Serre), arrondie au litre le plus proche, 1 L au minimum.
 function waterCostFor(state, culture, lieu) {
-  return Math.max(1, Math.round(DATA.crops[culture].litres * waterSeasonFactor(state, lieu) + EPS));
+  return Math.max(1, roundPct(DATA.crops[culture].litres, waterSeasonFactor(state, lieu)));
 }
 
 function waterCost(state, plot) {
@@ -3987,8 +3994,8 @@ function feedHen(state, auto = false) {
   if (p.poules <= 0) return fail('Aucune poule à nourrir.');
   if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
   if (!canFeedHen(state)) return fail('Pas assez de blé.');
-  const prod = auto ? 1 : productivity(state);
-  if (prod < 1 - EPS && nextRandom(state) >= prod) return { ok: true, compte: false };
+  const prod = auto ? 100 : productivity(state);
+  if (prod < 100 && Math.floor(nextRandom(state) * 100) >= prod) return { ok: true, compte: false };
   if (!(p.restes > 0)) {
     // Un blé entamé : il nourrit cette poule et laisse des rations pour les suivantes.
     takeWheat(state, 1, 'silo');
@@ -4276,7 +4283,7 @@ function growSheep(state) {
   const p = state.paturage;
   const enough = pastureEnough(state);
   // Lot 8 : le gain de poids suit la saison (arrondi au centième de kg).
-  const gain = M.gainKg * seasonFactor(state, 'moutons');
+  const gain = M.gainKg * seasonFactor(state, 'moutons') / 100;
   for (const m of p.moutons) {
     if (enough) m.poids = Math.round(Math.min(M.poidsMax, m.poids + gain) * 100) / 100;
     m.laine = Math.min(M.joursLaine, m.laine + 1);
@@ -4293,7 +4300,7 @@ function growCattle(state) {
   const V = DATA.ANIMAUX.vache;
   const p = state.paturage;
   const enough = pastureEnough(state);
-  const gain = V.gainKg * seasonFactor(state, 'moutons');
+  const gain = V.gainKg * seasonFactor(state, 'moutons') / 100;
   let lait = 0;
   for (const v of p.vaches) {
     if (!enough) continue;
@@ -4471,7 +4478,7 @@ function isElectricStation(id) {
 // à la main) ; pour le Moulin et la Presse, aussi le rendement de l'usure.
 function stationSpeed(state, id) {
   const st = state.stations[id];
-  let v = productivity(state);
+  let v = productivity(state) / 100;
   if (isElectricStation(id) && st.appareil) v *= efficiency(st.appareil);
   return v;
 }
@@ -4652,20 +4659,20 @@ function hasTech(state, id) {
   return ownedTechs(state).includes(id);
 }
 
-// Multiplicateur des temps de préparation : produit des paliers acquis
-// (×0,8 puis ×0,64), arrondi pour effacer les restes de calcul flottant.
+// Temps de préparation en % : produit des paliers acquis (80 % puis 64 %).
 function prepTimeMult(state) {
-  let m = 1;
+  let m = 100;
   for (const id of ownedTechs(state)) {
     const e = DATA.techtree.noeuds[id].effet;
-    if (e && e.tempsPrepa !== undefined) m *= e.tempsPrepa;
+    if (e && e.tempsPrepa !== undefined) m = roundPct(m, e.tempsPrepa);
   }
-  return Math.round(m * 1e6) / 1e6;
+  return m;
 }
 
-// Temps de préparation d'une recette avec les technologies actuelles, en secondes à vitesse 1.
+// Temps de préparation d'une recette avec les technologies actuelles, en
+// secondes entières à vitesse 1 (arrondi à la seconde supérieure).
 function recipeTime(state, id) {
-  return Math.round(DATA.recipes[id].temps * prepTimeMult(state) * 1e6) / 1e6;
+  return Math.ceil((DATA.recipes[id].temps * prepTimeMult(state)) / 100);
 }
 
 // Niveau d'un bâtiment (0 s'il n'est pas construit).
@@ -5996,10 +6003,6 @@ function formatPercent(p) {
   return `${formatNumber(Math.floor((Number(p) || 0) + EPS))}\u00a0%`;
 }
 
-// Multiplicateur de productivité : « 1 », « 0,8 », « 0,25 ».
-function formatMult(m) {
-  return String(m).replace('.', ',');
-}
 
 /* ==========================================================================
    Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et
@@ -6044,7 +6047,7 @@ function botEnergyPerDay(state, eveilS) {
   if (state.frigo && state.frigo.construit) kwh += fridgeRate(state) * (eveilS + DATA.FRIGO.BLOC_NUIT_S);
   for (const id of Object.keys(DATA.STATIONS)) {
     const st = state.stations[id];
-    if (DATA.STATIONS[id].electrique && st.construit) kwh += DATA.STATIONS[id].kwhParS * eveilS * DATA.SIMULATION.MARCHE_STATIONS;
+    if (DATA.STATIONS[id].electrique && st.construit) kwh += (DATA.STATIONS[id].kwhParS * eveilS * DATA.SIMULATION.MARCHE_STATIONS) / 100;
   }
   return kwh;
 }
@@ -6057,8 +6060,8 @@ function botInfraInfo(state, eveilS) {
   const S = DATA.SIMULATION;
   const litres = botWaterPerDay(state);
   const pump = state.pompe;
-  const needsFlow = litres > pumpFlow(pump) * eveilS * S.MARGE_EAU;
-  const needsTank = (isAutomated(state, 'potager') || isAutomated(state, 'champ')) && litres > tankCapacity(state) * S.MARGE_EAU;
+  const needsFlow = litres * 100 > pumpFlow(pump) * eveilS * S.MARGE_EAU;
+  const needsTank = (isAutomated(state, 'potager') || isAutomated(state, 'champ')) && litres * 100 > tankCapacity(state) * S.MARGE_EAU;
   if (pump.niveau < DATA.LEVEL_MAX && (needsFlow || needsTank)) return { cost: upgradeCost(pump), buy: () => upgradeDevice(state, pump.id) };
 
   const worst = Math.min(...Object.values(DATA.SAISONS.MODS).map((m) => m.solaire));
@@ -6074,9 +6077,9 @@ function botInfraInfo(state, eveilS) {
     }
     return best;
   };
-  if (produced < need * S.MARGE_ENERGIE) return cheapest('panneau', state.panneaux, DATA.GRID.panneau.kwhPerS);
+  if (produced * 100 < need * S.MARGE_ENERGIE) return cheapest('panneau', state.panneaux, DATA.GRID.panneau.kwhPerS);
   const capacity = state.batteries.reduce((t, b) => t + batteryCapacity(b), 0);
-  if (capacity < need * S.MARGE_BATTERIE) return cheapest('batterie', state.batteries, DATA.GRID.batterie.kwh);
+  if (capacity * 100 < need * S.MARGE_BATTERIE) return cheapest('batterie', state.batteries, DATA.GRID.batterie.kwh);
   return { done: true };
 }
 
@@ -6638,14 +6641,14 @@ test('générateur aléatoire reproductible à graine égale', () => {
 });
 
 // Lots 1 à 7 : ces tests vérifient les règles de base (rendements, eau, poids
-// des moutons), sans modificateur de saison. Les quatre saisons passent à ×1 le
+// des moutons), sans modificateur de saison. Les quatre saisons passent à 100 % le
 // temps du test (le printemps de la nuit 1 vaut sinon potager ×1,1 et moutons
 // ×1,2, et les longues séries de nuits traversent l'hiver) ; les modificateurs
 // eux-mêmes sont testés dans les tests du Lot 8.
 function neutralSeasons(fn) {
   const saved = JSON.parse(JSON.stringify(DATA.SAISONS.MODS));
   for (const mods of Object.values(DATA.SAISONS.MODS)) {
-    for (const k of Object.keys(mods)) mods[k] = 1;
+    for (const k of Object.keys(mods)) mods[k] = 100;
   }
   try {
     return fn();
@@ -7563,7 +7566,7 @@ test('repas : ce qui périme le plus tôt, conserves en dernier, jusqu\'à couvr
   // conserve 25) ; 1 seule conserve suffit désormais à couvrir le reliquat.
   assertEqual(plan.mange, { courgette: 3, carotte: 10, patate: 2, conserve: 1 });
   assertEqual(plan.energie, 30 + 80 + 38 + 25);
-  assertEqual(plan.couverture, 1);
+  assertEqual(plan.couverture, 100);
   // planMeal ne modifie rien
   assertEqual(countItem(s, 'conserve'), 100);
   feedFamily(s);
@@ -7634,7 +7637,7 @@ test('santé : +5 à 100 %, −5 de 75 à 99 %, −10 de 50 à 74 %, −20 sous 
     assertEqual(s.famille.membres[0].sante, 60 + delta, JSON.stringify(quantities));
     assertEqual(s.famille.membres[3].sante, 60 + delta);
   }
-  assertEqual([1, 0.99, 0.75, 0.74, 0.5, 0.49].map(healthDelta), [5, -5, -5, -10, -10, -20]);
+  assertEqual([100, 99, 75, 74, 50, 49].map(healthDelta), [5, -5, -5, -10, -10, -20]);
 });
 
 test('santé : bornée entre 0 et 100, et un membre à 0 devient malade', () => {
@@ -7654,16 +7657,14 @@ test('santé : bornée entre 0 et 100, et un membre à 0 devient malade', () => 
   assertEqual(nouveaux, ['Adulte 2', 'Enfant 1', 'Enfant 2']);
 });
 
-test('productivité : ×1 à 80 et plus, ×0,8 de 50 à 79, ×0,5 de 20 à 49, ×0,25 sous 20', () => {
+test('productivité : 100 % à 80 et plus, 80 % de 50 à 79, 50 % de 20 à 49, 25 % sous 20', () => {
   const s = garden();
-  const cases = [[100, 1], [80, 1], [79, 0.8], [50, 0.8], [49, 0.5], [20, 0.5], [19, 0.25], [0, 0.25]];
-  for (const [sante, mult] of cases) {
+  const cases = [[100, 100], [80, 100], [79, 80], [50, 80], [49, 50], [20, 50], [19, 25], [0, 25]];
+  for (const [sante, pct] of cases) {
     setHealth(s, sante);
-    assertEqual(productivity(s), mult, `santé ${sante}`);
+    assertEqual(productivity(s), pct, `santé ${sante}`);
   }
-  assertEqual(formatMult(1), '1');
-  assertEqual(formatMult(0.8), '0,8');
-  assertEqual(formatMult(0.25), '0,25');
+  assertEqual(formatPercent(80), '80\u00a0%');
 });
 
 test('productivité : un membre malade compte pour 0 dans la moyenne', () => {
@@ -7673,10 +7674,10 @@ test('productivité : un membre malade compte pour 0 dans la moyenne', () => {
   m.sante = 30; // en convalescence : sa santé réelle ne compte pas
   m.malade = true;
   assertEqual(averageHealth(s), 75);
-  assertEqual(productivity(s), 0.8);
+  assertEqual(productivity(s), 80);
   m.malade = false;
-  assertEqual(averageHealth(s), 82.5);
-  assertEqual(productivity(s), 1, 'sans la maladie, sa santé de 30 compterait : (300 + 30) ÷ 4 = 82,5');
+  assertEqual(averageHealth(s), 82, 'moyenne entière, arrondie vers le bas : 82,5 → 82');
+  assertEqual(productivity(s), 100, 'sans la maladie, sa santé de 30 compterait : (300 + 30) ÷ 4 = 82');
 });
 
 test('soins : coût 20 × 1,5^n (20, 30, 45, 68), santé remise à 50', () => {
@@ -7773,7 +7774,7 @@ test('Dormir : repas, santé, pousse et rapport de réveil', () => {
   assertEqual(r.besoin, 150);
   // Lot 11 (nutrition) : conserve à 25 d'énergie, 6 suffisent à couvrir 150.
   assertEqual(r.energieMangee, 150);
-  assertEqual(r.couverture, 1);
+  assertEqual(r.couverture, 100);
   assertEqual(r.mange, { conserve: 6 });
   assertEqual([r.santeAvant, r.santeApres], [100, 100]);
   assertEqual(r.nouveauxMalades, []);
@@ -7829,7 +7830,7 @@ test('mode test Lot 2 : graines, maturité, santé à 0', () => {
   assertEqual(s.potager.parcelles.filter((p) => !p.culture).every((p) => p.stade === 0), true);
   testSetHealthZero(s);
   assertEqual(s.famille.membres.every((m) => m.sante === 0 && m.malade), true);
-  assertEqual(productivity(s), 0.25);
+  assertEqual(productivity(s), 25);
 });
 
 test('migration v2 (Lot 1) → version courante : garde la partie, ajoute le potager, la famille et l\'inventaire', () => {
@@ -8792,7 +8793,7 @@ test('productivité < 1 : un nourrissage manuel compte avec une probabilité ég
   };
   // santé 30 → productivité ×0,5
   const s = trial(30);
-  assertEqual(productivity(s), 0.5);
+  assertEqual(productivity(s), 50);
   let counted = 0;
   const N = 400;
   for (let i = 0; i < N; i++) {
@@ -8814,7 +8815,7 @@ test('productivité < 1 : un nourrissage manuel compte avec une probabilité ég
   assert(rate > 0.42 && rate < 0.58, `taux observé ${rate}, attendu ≈ 0,5`);
   // productivité ×0,25 (santé < 20) : environ un geste sur quatre
   const t = trial(10);
-  assertEqual(productivity(t), 0.25);
+  assertEqual(productivity(t), 25);
   let c2 = 0;
   for (let i = 0; i < N; i++) {
     t.poulailler.nourries = 0;
@@ -9095,7 +9096,7 @@ test('Lot 11 (nutrition) : le Gratin de patates couvre exactement le besoin d\'u
   // un seul gratin est mangé : aucune consommation résiduelle inattendue
   assertEqual(plan.mange, { gratin_patates: 1 });
   assertEqual(plan.energie, 150);
-  assertEqual(plan.couverture, 1);
+  assertEqual(plan.couverture, 100);
   feedFamily(s);
   assertEqual(countItem(s, 'gratin_patates'), 2, 'les 2 gratins restants ne sont pas touchés');
 });
@@ -9148,7 +9149,7 @@ test('Lot 12 : le gratin est doublé une seule fois (formule sur ingrédients d�
   const prixIngredients = 3 * it.patate.prix + 1 * it.oeuf.prix; // 12 + 4 = 16
   assertEqual(prixIngredients, 16);
   // Une seule application de la formule sur les prix d'ingrédients courants…
-  assertEqual(it.gratin_patates.prix, Math.round(prixIngredients * R.COEF_PLAT + EPS));
+  assertEqual(it.gratin_patates.prix, Math.round((prixIngredients * R.COEF_PLAT) / 100));
   assertEqual(it.gratin_patates.prix, dishPrice('gratin_patates'));
   // …et surtout pas un second ×2 par-dessus (42) : 21 seulement, contre 10 avant le Lot 12.
   assert(it.gratin_patates.prix !== 2 * dishPrice('gratin_patates'), 'pas de double doublement');
@@ -9294,7 +9295,7 @@ test('Lot 13 : farine et pain se vendent deux fois leur ancien prix', () => {
   assertEqual(DATA.items.huile.prix, 4, 'l\'huile n\'est pas concernée');
   // Le pain garde la formule des plats sur ses ingrédients (farine doublée) avec
   // son coefficient dédié : (2 farines à 2 + 1 L d'eau) × 1,6 = 8, et non 7 (×1,3).
-  assertEqual(DATA.recipes.pain.priceMultiplier, 1.6);
+  assertEqual(DATA.recipes.pain.priceMultiplier, 160);
   assertEqual(dishPrice('pain'), 8);
   assertEqual(DATA.items.pain.prix, dishPrice('pain'));
   const s = atelier();
@@ -9371,7 +9372,7 @@ test('15 nouvelles recettes : énergie et prix, calculés par le système exista
 
 test('4 recettes de luxe : prix ×3 sur les ingrédients (pas le coefficient ×1,3 normal), énergie inchangée', () => {
   for (const id of RECETTES_LUXE) {
-    assertEqual(DATA.recipes[id].priceMultiplier, 3, id);
+    assertEqual(DATA.recipes[id].priceMultiplier, 300, id);
   }
   const R = DATA.RECETTES;
   const casLuxe = {
@@ -9387,8 +9388,8 @@ test('4 recettes de luxe : prix ×3 sur les ingrédients (pas le coefficient ×1
     // Énergie : calcul normal (×COEF_PLAT), priceMultiplier ne la concerne pas.
     assertEqual(dishEnergy(id), energie, `${id} : énergie normale (×${R.COEF_PLAT})`);
     // Prix : ×3, et surtout pas le ×1,3 qu'aurait donné le coefficient normal.
-    assertEqual(dishPrice(id), Math.round(prixIngredients * 3 + EPS), `${id} : prix ×3`);
-    assert(dishPrice(id) !== Math.round(prixIngredients * R.COEF_PLAT + EPS), `${id} : ne doit pas retomber sur le coefficient ×${R.COEF_PLAT}`);
+    assertEqual(dishPrice(id), prixIngredients * 3, `${id} : prix ×3`);
+    assert(dishPrice(id) !== Math.round((prixIngredients * R.COEF_PLAT) / 100), `${id} : ne doit pas retomber sur le coefficient de ${R.COEF_PLAT} %`);
   }
 });
 
@@ -9832,7 +9833,7 @@ test('bonus de santé : +1 par plat différent mangé, plafonné à +3', () => {
     setHealth(s, sante);
     setInv(s, { conserve: 200, ...inv });
     const plan = planMeal(s);
-    assertEqual(plan.couverture, 1);
+    assertEqual(plan.couverture, 100);
     sleepNow(s);
     return s;
   };
@@ -10493,7 +10494,7 @@ test('DATA Lot 7 : automatisations, arbre des technologies, coûts et prérequis
   assertEqual(N.prepa_1.requiert, []);
   assertEqual(N.prepa_2.requiert, [{ noeud: 'prepa_1' }]);
   assertEqual(N.reveil_2.requiert, [{ noeud: 'reveil_1' }]);
-  assertEqual([N.prepa_1.effet.tempsPrepa, N.prepa_2.effet.tempsPrepa], [0.8, 0.8]);
+  assertEqual([N.prepa_1.effet.tempsPrepa, N.prepa_2.effet.tempsPrepa], [80, 80]);
   assertEqual([N.reveil_1.effet.eveilMin, N.reveil_2.effet.eveilMin], [20, 10]);
   assertEqual(DATA.techtree.branches.map((b) => b.nom), ['Énergie', 'Eau', 'Culture', 'Élevage', 'Cuisine', 'Famille']);
   for (const [id, n] of Object.entries(N)) assert(DATA.techtree.branches.some((b) => b.id === n.branche), `branche de ${id}`);
@@ -10648,10 +10649,10 @@ testBase('les automatisations ne sont jamais réduites par une santé basse (les
   testAddWheat(s, 10);
   plantRipe(s, 'potager-1', 'carotte');
   setHealth(s, 5);
-  assert(productivity(s) < 0.5, 'famille épuisée');
+  assert(productivity(s) < 50, 'famille épuisée');
   assertEqual(harvestYield(s, 'carotte'), 3, 'au clic : rendement réduit');
   const r = sleepOnce(s);
-  assert(productivity(s) < 0.5, 'toujours épuisée au réveil');
+  assert(productivity(s) < 50, 'toujours épuisée au réveil');
   assertEqual(countItem(s, 'carotte'), 10, 'récolte automatique à 100 %');
   assertEqual(r.oeufs, 4, 'toutes les poules nourries, sans tirage raté');
   assertEqual(r.auto.nourries, 4);
@@ -10762,10 +10763,11 @@ test('temps de préparation : −20 % puis encore −20 %, à tous les ateliers'
   // le Moulin (5 s) et la Presse (10 s) ne sont pas concernés.
   assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine')], [10, 23, 5]);
   s.technologies.push('prepa_1');
-  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine'), recipeTime(s, 'huile')], [8, 18.4, 4, 8]);
+  // Secondes entières, arrondies vers le haut : ragoût 23 × 80 % = 18,4 → 19.
+  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine'), recipeTime(s, 'huile')], [8, 19, 4, 8]);
   s.technologies.push('prepa_2');
-  assertEqual(prepTimeMult(s), 0.64);
-  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine')], [6.4, 14.72, 3.2]);
+  assertEqual(prepTimeMult(s), 64);
+  assertEqual([recipeTime(s, 'pain'), recipeTime(s, 'ragout'), recipeTime(s, 'farine')], [7, 15, 4]);
 });
 
 test('temps de préparation : la préparation lancée prend le temps réduit, celle en cours garde le sien', () => {
@@ -10883,7 +10885,7 @@ test('mode test Lot 7 : un bâtiment au niveau 5, tous les nœuds débloqués', 
   assertEqual(testUnlockAllTechs(s).ok, true);
   assertEqual(s.technologies.slice().sort(), Object.keys(DATA.techtree.noeuds).sort());
   assertEqual(s.unlockedTabs.includes('techno'), true);
-  assertEqual([awakeRequired(s), prepTimeMult(s)], [10, 0.64]);
+  assertEqual([awakeRequired(s), prepTimeMult(s)], [10, 64]);
   const t = JSON.parse(JSON.stringify(s));
   assertEqual(t, s, 'l\'état reste sérialisable');
 });
@@ -10970,7 +10972,7 @@ test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage',
   s.technologies = ['reveil_1', 'nexiste_pas'];
   assertEqual(ownedTechs(s), ['reveil_1']);
   assertEqual(awakeRequired(s), 20);
-  assertEqual(prepTimeMult(s), 1);
+  assertEqual(prepTimeMult(s), 100);
   delete s.technologies;
   assertEqual(awakeRequired(s), 30);
   s.pieces = 0; // isole ce test du montant de départ pour vérifier le refus faute de pièces
@@ -11006,10 +11008,10 @@ test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
   const S = DATA.SAISONS;
   assertEqual(S.LONGUEUR, 10);
   assertEqual(S.ORDRE, ['printemps', 'ete', 'automne', 'hiver']);
-  assertEqual(S.MODS.printemps, { solaire: 1.0, potager: 1.1, eau: 1.0, champ: 1.0, moutons: 1.2 });
-  assertEqual(S.MODS.ete, { solaire: 1.3, potager: 1.0, eau: 1.3, champ: 1.2, moutons: 1.0 });
-  assertEqual(S.MODS.automne, { solaire: 0.9, potager: 1.0, eau: 0.9, champ: 0.9, moutons: 1.0 });
-  assertEqual(S.MODS.hiver, { solaire: 0.7, potager: 0.7, eau: 0.8, champ: 0.7, moutons: 0.8 });
+  assertEqual(S.MODS.printemps, { solaire: 100, potager: 110, eau: 100, champ: 100, moutons: 120 });
+  assertEqual(S.MODS.ete, { solaire: 130, potager: 100, eau: 130, champ: 120, moutons: 100 });
+  assertEqual(S.MODS.automne, { solaire: 90, potager: 100, eau: 90, champ: 90, moutons: 100 });
+  assertEqual(S.MODS.hiver, { solaire: 70, potager: 70, eau: 80, champ: 70, moutons: 80 });
   assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 400, PARCELLES: [6, 9, 12, 15, 18], COUT: [0, 300, 600, 1000, 1800] });
   const V = DATA.VERGER;
   assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 20, 50, 125]);
@@ -11021,7 +11023,7 @@ test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
     assertEqual([DATA.items[fruit].energie, DATA.items[fruit].prix, shelfLife(fruit)], [scaleEnergie(8), 4, 7]);
   }
   const F = DATA.FRIGO;
-  assertEqual([F.CONSTRUCTION, F.BASE_KWH_S, F.PAR_UNITE_KWH_S, F.BLOC_NUIT_S, F.SEUIL_ALIMENTE], [600, 0.005, 0.00005, 30, 0.5]);
+  assertEqual([F.CONSTRUCTION, F.BASE_KWH_S, F.PAR_UNITE_KWH_S, F.BLOC_NUIT_S, F.SEUIL_ALIMENTE], [600, 0.005, 0.00005, 30, 50]);
 });
 
 test('état initial Lot 8 : Serre, Verger et Réfrigérateur à construire', () => {
@@ -11062,11 +11064,11 @@ test('saisons : la saison suit la nuit courante quand on dort', () => {
 test('seasonFactor : les cinq modificateurs de chaque saison', () => {
   const s = createInitialState(1);
   const all = (kind) => [1, 11, 21, 31].map((day) => { s.day = day; return seasonFactor(s, kind); });
-  assertEqual(all('solaire'), [1.0, 1.3, 0.9, 0.7]);
-  assertEqual(all('potager'), [1.1, 1.0, 1.0, 0.7]);
-  assertEqual(all('eau'), [1.0, 1.3, 0.9, 0.8]);
-  assertEqual(all('champ'), [1.0, 1.2, 0.9, 0.7]);
-  assertEqual(all('moutons'), [1.2, 1.0, 1.0, 0.8]);
+  assertEqual(all('solaire'), [100, 130, 90, 70]);
+  assertEqual(all('potager'), [110, 100, 100, 70]);
+  assertEqual(all('eau'), [100, 130, 90, 80]);
+  assertEqual(all('champ'), [100, 120, 90, 70]);
+  assertEqual(all('moutons'), [120, 100, 100, 80]);
 });
 
 test('saisons : la production solaire suit la saison', () => {
@@ -11634,12 +11636,12 @@ test('la famille mange le contenu du frigo, après l\'inventaire', () => {
   s.frigo.eveilS = 30;
   // Lot 11 (nutrition) : pomme à 10 d'énergie ; 10 dehors (100) + 5 au frigo (50) = 150.
   assertEqual(planMeal(s).mange, { pomme: 15 });
-  assertEqual(planMeal(s).couverture, 1);
+  assertEqual(planMeal(s).couverture, 100);
   sleepOnce(s);
   assertEqual(s.report.mange, { pomme: 15 });
   assertEqual(countItem(s, 'pomme'), 0, 'l\'inventaire d\'abord');
   assertEqual(fridgeCount(s, 'pomme'), 35, '5 pommes prises au frigo');
-  assertEqual(s.report.couverture, 1);
+  assertEqual(s.report.couverture, 100);
 });
 
 test('la réserve de semences compte le frigo : on ne mange pas ce qui est réservé', () => {
@@ -11834,7 +11836,7 @@ test('autonomie : les conserves n\'y comptent pas', () => {
   const s = farm();
   setInv(s, { conserve: 6 }); // 6 × 25 = 150 couvre le besoin (150) : la famille est nourrie, mais rien n'est produit
   const r = sleepOnce(s);
-  assertEqual(r.couverture, 1);
+  assertEqual(r.couverture, 100);
   assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [150, 0, 0]);
 });
 
@@ -13664,7 +13666,7 @@ function renderPotager() {
   return `
     <div class="section-head">
       <h3>${icon('potager')}Potager · niveau ${pot.niveau}</h3>
-      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 1 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ×${formatMult(prod)}</span>${helpBtn('potager')}</span>
+      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ${formatPercent(prod)}</span>${helpBtn('potager')}</span>
     </div>
     <div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${upBtn}</div>
@@ -13758,7 +13760,7 @@ function renderPoulailler() {
   return `
     <div class="section-head">
       <h3>${icon('poulailler')}Poulailler · niveau ${p.niveau}</h3>
-      <span class="chips">${autoChip('poulailler', 'Nourrit les poules tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 1 ? ' warn' : ''}" title="Un nourrissage au clic ne compte qu'avec cette probabilité">Productivité ×${formatMult(prod)}</span>${helpBtn('poulailler')}</span>
+      <span class="chips">${autoChip('poulailler', 'Nourrit les poules tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Un nourrissage au clic ne compte qu'avec cette probabilité">Productivité ${formatPercent(prod)}</span>${helpBtn('poulailler')}</span>
     </div>
     <div class="card">
       ${coopArtRow()}
@@ -14076,9 +14078,10 @@ function harvestToast(result) {
 
 /* ---------- Lot 8 : calendrier, Serre, Verger, Réfrigérateur ---------- */
 
-// Facteur affiché avec une décimale : « ×1,3 ».
+// Facteur de saison en % : « +10 % », « −30 % », « 0 % ».
 function formatFactor(f) {
-  return `×${formatFixed(f, 1)}`;
+  const d = f - 100;
+  return d === 0 ? '0 %' : `${d > 0 ? '+' : '−'}${Math.abs(d)} %`;
 }
 
 // Calendrier : saison, nuit x / 10, et les modificateurs de la saison (en vert
@@ -14092,8 +14095,8 @@ function renderCalendar() {
   const chips = Object.keys(S.FACTEURS)
     .map((kind) => {
       const f = seasonFactor(state, kind);
-      const cls = f > 1 + EPS ? ' auto' : f < 1 - EPS ? ' warn' : '';
-      const sign = f > 1 + EPS ? '▲ ' : f < 1 - EPS ? '▼ ' : '';
+      const cls = f > 100 ? ' auto' : f < 100 ? ' warn' : '';
+      const sign = f > 100 ? '▲ ' : f < 100 ? '▼ ' : '';
       const k = S.FACTEURS[kind];
       return `<span class="chip${cls}" title="${k.nom} ${formatFactor(f)}"><span aria-hidden="true">${k.icone}</span> ${k.nom} ${sign}${formatFactor(f)}</span>`;
     })
@@ -14418,7 +14421,7 @@ function renderRecettes() {
   return `
     <div class="section-head">
       <h2>📖 Livre de recette</h2>
-      <span class="chip${prod < 1 ? ' warn' : ''}" title="Productivité : la santé de la famille ralentit les préparations">Vitesse ×${formatMult(prod)}</span>
+      <span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : la santé de la famille ralentit les préparations">Vitesse ${formatPercent(prod)}</span>
     </div>
     <p class="muted">Une seule préparation à la fois par station, sans file d'attente : c'est toi qui relances. Une préparation en cours se termine pendant la nuit.</p>
     <h3 class="section-title">Stations</h3>
@@ -14484,7 +14487,7 @@ function techNodeCard(id) {
 
 // Effet en cours d'une branche, affiché dans son en-tête.
 function branchEffectChip(id) {
-  if (id === 'cuisine') return `<span class="chip">Temps de préparation ×${formatMult(prepTimeMult(state))}</span>`;
+  if (id === 'cuisine') return `<span class="chip">Temps de préparation ${formatPercent(prepTimeMult(state))}</span>`;
   if (id === 'famille') return `<span class="chip">Éveil minimal : ${formatQty(awakeRequired(state))} s</span>`;
   return '';
 }
@@ -14560,8 +14563,8 @@ function renderFamille() {
       </div>
       <div class="card">
         <span class="card-title"><span>⚙️ Productivité</span></span>
-        <span class="big">×${formatMult(prod)}</span>
-        <span class="muted">Santé moyenne : <span class="num">${formatFixed(avg, 1)}</span> (un malade compte pour 0). Elle ne s'applique qu'aux actions au clic, comme la récolte.</span>
+        <span class="big">${formatPercent(prod)}</span>
+        <span class="muted">Santé moyenne : <span class="num">${formatNumber(avg)}</span> (un malade compte pour 0). Elle ne s'applique qu'aux actions au clic, comme la récolte.</span>
       </div>
     </div>`;
 }
@@ -14966,7 +14969,7 @@ function openWakeModal(report) {
   const spoiled = itemsSummary(report.perimes);
   const expiring = itemsSummary(report.aPerimer);
   const shownEnergy = Math.min(report.energieMangee, report.besoin);
-  const covered = Math.floor(report.couverture * 100 + EPS);
+  const covered = report.couverture;
   const ready = report.pretes.length
     ? report.pretes
         .map((r) => `${r.nombre} ${DATA.crops[r.culture].icone} ${DATA.crops[r.culture].nom.toLowerCase()}${r.montee ? ' (graines)' : ''}`)
@@ -15229,7 +15232,7 @@ function animateIn(node) {
 const listFixed = (values, digits, unit) => `${values.map((v) => formatFixed(v, digits)).join(' · ')} ${unit}`;
 const listNum = (values, unit) => `${values.map((v) => formatNumber(v)).join(' · ')} ${unit}`;
 
-// Plage d'un facteur de saison : « ×0,7 à ×1,3 ».
+// Plage d'un facteur de saison : « −30 % à +30 % ».
 function seasonRange(kind) {
   const f = Object.values(DATA.SAISONS.MODS).map((m) => m[kind]);
   return `${formatFactor(Math.min(...f))} à ${formatFactor(Math.max(...f))}`;
@@ -15361,7 +15364,7 @@ const HELP = {
     role: 'Prépare les plats mijotés. Une préparation à la fois.',
     conso: 'Pas d\'électricité.',
     prod: `${stationRecipesLine('cuisine')}.`,
-    note: `Un plat vaut ${formatFixed(DATA.RECETTES.COEF_PLAT, 1)} fois l'énergie de ses ingrédients, et chaque plat différent mangé dans la journée donne +${DATA.FAMILY.BONUS_PLATS.PAR_PLAT} de santé (jusqu'à +${DATA.FAMILY.BONUS_PLATS.MAX}). Quatre recettes de luxe (chocolat chaud, café, crème à la vanille, bière artisanale) se vendent ×3 le prix de leurs ingrédients au lieu de ${formatFixed(DATA.RECETTES.COEF_PLAT, 1)}.`,
+    note: `Un plat vaut ${formatNumber(DATA.RECETTES.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et chaque plat différent mangé dans la journée donne +${DATA.FAMILY.BONUS_PLATS.PAR_PLAT} de santé (jusqu'à +${DATA.FAMILY.BONUS_PLATS.MAX}). Quatre recettes de luxe (chocolat chaud, café, crème à la vanille, bière artisanale) se vendent 300 % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.RECETTES.COEF_PLAT)} %.`,
   }),
   moulin: () => ({
     nom: 'Moulin',
