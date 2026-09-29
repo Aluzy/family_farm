@@ -1584,6 +1584,9 @@ const DATA = {
     biere_artisanale: { nom: 'Bière artisanale',  icone: '🍺', station: 'cuisine', temps: 60, ingredients: [{ item: 'houblon', qte: 2 }], eau: 1, priceMultiplier: 300 },
     // --- Repas copieux (viandes de pâturage) ---
     roti_boeuf:      { nom: 'Rôti de bœuf',       icone: '🥩', station: 'four',    temps: 60, ingredients: [{ item: 'viande_boeuf', qte: 2 }, { item: 'carotte', qte: 2 }, { item: 'patate', qte: 1 }] },
+    // --- Arbre v2 : Conserverie. 4 légumes d'une même sorte + 1 L d'eau → 1 bocal
+    // qui ne périme pas ; énergie forfaitaire (🟡 à caler).
+    bocal_legumes:   { nom: 'Bocal de légumes',   icone: '🫙', station: 'cuisine', temps: 60, ingredients: [{ ou: ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'oignon', 'poivron', 'epinard'], qte: 4 }], eau: 1, energieForcee: 40 },
     poulet_roti_ail: { nom: "Poulet rôti à l'ail", icone: '🍗', station: 'four',    temps: 45, ingredients: [{ item: 'viande_volaille', qte: 1 }, { item: 'patate', qte: 2 }, { item: 'ail', qte: 1 }] },
 
     // Transformations (section 8.2) : le Moulin et la Presse, appareils électriques.
@@ -1731,6 +1734,8 @@ const DATA = {
     // catégorie « plat » par défaut.
     biere_artisanale: null,
     confiture_fraises: null,
+    // Arbre v2 (Conserverie) : le bocal de légumes ne périme pas.
+    bocal_legumes: null,
   },
   CONSERVATION_CATEGORIE: { plat: 6 },
 
@@ -4765,10 +4770,54 @@ function recipeStatus(state, id) {
   const st = state.stations[r.station];
   const lines = recipeLines(state, id);
   let code = 'pret';
-  if (!st.construit) code = 'absente';
-  else if (st.tache) code = 'occupee';
+  if (!recipeUnlocked(state, id)) code = 'verrouillee';
+  else if (!st.construit) code = 'absente';
+  else if (st.tache && !queueRoom(state, r.station)) code = 'occupee';
   else if (lines.some((l) => !l.ok)) code = 'manque';
-  return { code, lignes: lines, ok: code === 'pret' };
+  return { code, lignes: lines, ok: code === 'pret', noeud: recipeNode(id) };
+}
+
+// Arbre v2 : une recette est libre (RECETTES_LIBRES) ou débloquée par un nœud.
+function recipeUnlocked(state, id) {
+  return DATA.techtree.RECETTES_LIBRES.includes(id) || techEffects(state, 'recettes').some((l) => l.includes(id));
+}
+
+// Nœud qui débloque une recette (null si elle est libre).
+function recipeNode(id) {
+  if (DATA.techtree.RECETTES_LIBRES.includes(id)) return null;
+  return Object.keys(DATA.techtree.noeuds).find((n) => (DATA.techtree.noeuds[n].effet.recettes || []).includes(id)) || null;
+}
+
+// Préparations en série : places totales d'un atelier (1 sans le nœud).
+function queueCapacity(state) {
+  return Math.max(1, techFlag(state, 'fileAttente') || 1);
+}
+
+// Reste-t-il une place dans la file d'un atelier occupé ?
+function queueRoom(state, stationId) {
+  const st = state.stations[stationId];
+  const used = (st.tache ? 1 : 0) + (Array.isArray(st.file) ? st.file.length : 0);
+  return used < queueCapacity(state);
+}
+
+// Démarre la préparation `recette` sur un atelier libre.
+function beginTask(state, stationId, recette) {
+  const temps = recipeTime(state, recette) * 1000;
+  state.stations[stationId].tache = { recette, resteMs: temps, dureeMs: temps };
+}
+
+// Annule une préparation en file (pas celle en cours) : ses ingrédients et son
+// eau reviennent au stock.
+function cancelQueued(state, stationId, index) {
+  const st = state.stations[stationId];
+  if (!st || !Array.isArray(st.file) || !st.file[index]) return fail('Rien à annuler.');
+  const [entry] = st.file.splice(index, 1);
+  for (const p of entry.pris || []) {
+    if (p.item === DATA.SILO.ITEM) storeWheat(state, p.qte);
+    else addItem(state, p.item, p.qte);
+  }
+  if (entry.eau) state.eauMl = Math.min(tankCapacity(state), state.eauMl + entry.eau * 1000);
+  return { ok: true, recette: entry.recette };
 }
 
 function takeIngredient(state, item, qty) {
@@ -4784,19 +4833,33 @@ function startRecipe(state, id) {
   if (!r) return fail('Recette inconnue.');
   const def = DATA.STATIONS[r.station];
   const st = state.stations[r.station];
+  if (!recipeUnlocked(state, id)) {
+    const n = DATA.techtree.noeuds[recipeNode(id)];
+    return fail(`Recette à débloquer dans l'Arbre des technologies${n ? ` (${n.nom})` : ''}.`);
+  }
   if (!st.construit) return fail(`Construis d'abord ${def.article} ${def.nom}.`);
-  if (st.tache) return fail(`${def.nom} : une préparation est déjà en cours.`);
+  if (st.tache && !queueRoom(state, r.station)) return fail(`${def.nom} : une préparation est déjà en cours.`);
   const lines = recipeLines(state, id);
   const missing = lines.find((l) => !l.ok);
   if (missing) return fail(missing.eau ? 'Pas assez d\'eau dans le réservoir.' : 'Il manque des ingrédients.');
+  const pris = [];
   for (const l of lines) {
     if (l.eau) state.eauMl = Math.max(0, state.eauMl - l.qte * 1000);
-    else takeIngredient(state, l.item, l.qte);
+    else {
+      takeIngredient(state, l.item, l.qte);
+      pris.push({ item: l.item, qte: l.qte });
+    }
+  }
+  // Arbre v2 : atelier occupé mais file disponible, la préparation attend son
+  // tour (ingrédients déjà réservés).
+  if (st.tache) {
+    if (!Array.isArray(st.file)) st.file = [];
+    st.file.push({ recette: id, pris, eau: r.eau || 0 });
+    return { ok: true, recette: id, enFile: true };
   }
   // Lot 7 : les paliers « Préparation rapide » raccourcissent la préparation à
   // son lancement (une préparation déjà en cours garde son temps).
-  const temps = recipeTime(state, id) * 1000;
-  st.tache = { recette: id, resteMs: temps, dureeMs: temps };
+  beginTask(state, r.station, id);
   return { ok: true, recette: id };
 }
 
@@ -4811,6 +4874,8 @@ function completeTask(state, id) {
   addItem(state, item, qty);
   st.tache = null;
   noteRecipeDone(state, recette, qty); // Lot 9
+  // Arbre v2 : la préparation suivante de la file démarre toute seule.
+  if (Array.isArray(st.file) && st.file.length) beginTask(state, id, st.file.shift().recette);
   return { item, qty };
 }
 
@@ -4856,8 +4921,8 @@ function finishPreparations(state) {
   const done = {};
   if (state.stations) {
     for (const id of Object.keys(DATA.STATIONS)) {
-      const out = completeTask(state, id);
-      if (out) done[out.item] = (done[out.item] || 0) + out.qty;
+      // la préparation en cours, puis celles de la file (arbre v2)
+      for (let out = completeTask(state, id); out; out = completeTask(state, id)) done[out.item] = (done[out.item] || 0) + out.qty;
     }
   }
   state.nuit.termine = done;
@@ -8848,7 +8913,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
     soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, fromage_frais: 20, riz_au_lait: 20,
     pain_ail: 20, poivrons_farcis: 20, tarte_fraises: 20, confiture_fraises: 20,
     chocolat_chaud: 20, cafe_boisson: 20, creme_vanille: 20, biere_artisanale: 20,
-    roti_boeuf: 20, poulet_roti_ail: 20,
+    roti_boeuf: 20, bocal_legumes: 20, poulet_roti_ail: 20,
   });
   assertEqual(countItem(s, 'graine_carotte'), 0, 'les graines ne sont pas des aliments');
   assertEqual(countItem(s, 'farine') + countItem(s, 'huile'), 0, 'ni la farine ni l\'huile');
@@ -8878,7 +8943,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   });
   assertEqual(inventoryCounts(s), {
     conserve: 25, patate: 20, pomme: 20, poire: 20, ail: 20, riz: 20, pain: 20,
-    fromage_frais: 20, confiture_fraises: 20, biere_artisanale: 20,
+    fromage_frais: 20, confiture_fraises: 20, biere_artisanale: 20, bocal_legumes: 20,
   });
 });
 
@@ -9821,7 +9886,7 @@ const TEMPS_PLATS_AVANT_LOT_14 = {
   soupe_legumes: 30, salade_tomates: 10, quiche_epinards: 40, fromage_frais: 60, riz_au_lait: 30,
   pain_ail: 15, poivrons_farcis: 40, tarte_fraises: 40, confiture_fraises: 30,
   chocolat_chaud: 20, cafe_boisson: 10, creme_vanille: 45, biere_artisanale: 60,
-  roti_boeuf: 60, poulet_roti_ail: 45,
+  roti_boeuf: 60, poulet_roti_ail: 45, bocal_legumes: 60,
 };
 
 test('Lot 14 : temps de préparation des plats Four/Cuisine divisés par 2 (arrondi au supérieur), transformations intactes', () => {
@@ -9968,6 +10033,7 @@ test('fromage frais : se conserve mieux que le lait cru (8 nuits contre 4)', () 
 
 test('15 nouvelles recettes : chacune se prépare quand ses conditions sont remplies', () => {
   const s = atelier();
+  unlockRecipes(s); // arbre v2 : la plupart sont débloquées par un nœud
   const stocks = {
     soupe_legumes: { carotte: 1, oignon: 1, patate: 1 },
     salade_tomates: { tomate: 2, huile: 1 },
@@ -10000,15 +10066,66 @@ test('15 nouvelles recettes : chacune se prépare quand ses conditions sont remp
   }
 });
 
+test('arbre v2 : 11 recettes libres, 14 débloquées par un nœud', () => {
+  const s = atelier();
+  const libres = Object.keys(DATA.recipes).filter((id) => recipeUnlocked(s, id));
+  assertEqual(libres.sort(), [...DATA.techtree.RECETTES_LIBRES].sort());
+  assertEqual(libres.length, 11);
+  assertEqual(Object.keys(DATA.recipes).length - libres.length, 14);
+  for (const id of Object.keys(DATA.recipes)) assert(recipeUnlocked(s, id) || recipeNode(id), `${id} : libre ou débloquée par un nœud`);
+  setInv(s, { pain: 1, ail: 1, huile: 1 });
+  assertEqual(recipeStatus(s, 'pain_ail').code, 'verrouillee');
+  assertEqual(startRecipe(s, 'pain_ail').error, 'Recette à débloquer dans l\'Arbre des technologies (Boulangerie).');
+  assertEqual(countItem(s, 'pain'), 1, 'rien retiré');
+  grantTech(s, 'cui_boulangerie');
+  assertEqual(startRecipe(s, 'pain_ail').ok, true);
+  // bocal de légumes : 4 légumes d'une même sorte, ne périme pas
+  grantTech(s, 'cui_conserverie', false);
+  setInv(s, { carotte: 4 });
+  s.eauMl = ml(40);
+  assertEqual(startRecipe(s, 'bocal_legumes').ok, true);
+  runFor(s, 31);
+  assertEqual(countItem(s, 'bocal_legumes'), 1);
+  assertEqual([shelfLife('bocal_legumes'), DATA.items.bocal_legumes.energie], [null, 40]);
+});
+
+test('arbre v2 : préparations en série (file de 3 par atelier)', () => {
+  const s = atelier();
+  setInv(s, { farine: 10 });
+  assert(startRecipe(s, 'pain').ok);
+  assertEqual(startRecipe(s, 'pain').ok, false, 'sans le nœud : une préparation à la fois');
+  grantTech(s, 'cui_serie');
+  assertEqual(queueCapacity(s), 3);
+  assertEqual(startRecipe(s, 'pain').enFile, true);
+  assertEqual(startRecipe(s, 'pain').enFile, true);
+  assertEqual(startRecipe(s, 'pain').ok, false, 'file pleine : 1 en cours + 2 en attente');
+  assertEqual(recipeStatus(s, 'pain').code, 'occupee');
+  assertEqual([countItem(s, 'farine'), s.eauMl], [4, ml(37)], 'ingrédients et eau réservés au lancement');
+  // annuler rend les ingrédients
+  assert(cancelQueued(s, 'four', 1).ok);
+  assertEqual([countItem(s, 'farine'), s.eauMl, s.stations.four.file.length], [6, ml(38), 1]);
+  // la suivante démarre toute seule
+  runFor(s, 10.2);
+  assertEqual([countItem(s, 'pain'), s.stations.four.tache.recette, s.stations.four.file.length], [1, 'pain', 0]);
+  // la nuit termine tout ce qui est en cours
+  assert(startRecipe(s, 'pain').ok);
+  setInv(s, { farine: countItem(s, 'farine'), pain: countItem(s, 'pain'), conserve: 200 });
+  s.awakeMs = 30000;
+  const r = sleep(s);
+  assertEqual(r.termine.pain, 2);
+  assertEqual([s.stations.four.tache, s.stations.four.file], [null, []]);
+});
+
 test('Pain à l\'ail : retire bien 1 pain du stock, comme n\'importe quel autre ingrédient', () => {
   const s = atelier();
+  unlockRecipes(s);
   setInv(s, { pain: 3, ail: 1, huile: 1 });
   assertEqual(startRecipe(s, 'pain_ail').ok, true);
   assertEqual(countItem(s, 'pain'), 2, 'un seul pain consommé');
   assertEqual(countItem(s, 'ail'), 0);
   assertEqual(countItem(s, 'huile'), 0);
   // Sans pain, la recette est refusée et rien n'est retiré.
-  const t = atelier();
+  const t = unlockRecipes(atelier());
   setInv(t, { ail: 1, huile: 1 });
   assertEqual(recipeStatus(t, 'pain_ail').code, 'manque');
   assertEqual(startRecipe(t, 'pain_ail').ok, false);
@@ -11048,6 +11165,12 @@ function auto5(...batiments) {
     }
     if (b === 'poulailler') grantTech(s, 'el_mangeoire');
   }
+  return s;
+}
+
+// Arbre v2 : offre tous les nœuds de recettes (sans leurs prérequis).
+function unlockRecipes(s) {
+  for (const [id, n] of Object.entries(DATA.techtree.noeuds)) if (n.effet.recettes) grantTech(s, id, false);
   return s;
 }
 
