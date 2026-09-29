@@ -1793,8 +1793,9 @@ const DATA = {
   },
 
   // Animaux achetés au Comptoir (section 1.4) : prix fixes, sans revente.
-  // Poule : mange bleParNuit blé (une fois par nuit) et pond oeufsParNuit œuf si
-  // elle a été nourrie.
+  // Poule : 1 blé nourrit poulesParBle poules (une fois par nuit) ; une poule
+  // nourrie pond oeufsParNuit œuf. Une ration entamée (poule impaire) est
+  // perdue à la fin de la nuit : n poules coûtent ⌈n ÷ poulesParBle⌉ blé.
   // Lot 6 (sections 1.4 et 8.6) : le mouton, à prix fixe. Il grossit de gainKg par
   // nuit jusqu'à poidsMax ; sa laine repousse d'un jour par nuit et se tond tous
   // les joursLaine jours (laineParTonte unité) ; à l'abattage, il rend
@@ -1825,7 +1826,7 @@ const DATA = {
   //   de ce rapport : c'est le lait quotidien, dès l'achat, qui justifie l'écart.
   ANIMAUX: {
     poule: {
-      nom: 'Poule', icone: '🐔', prix: 15, bleParNuit: 0.5, oeufsParNuit: 1, produit: 'oeuf',
+      nom: 'Poule', icone: '🐔', prix: 15, poulesParBle: 2, oeufsParNuit: 1, produit: 'oeuf',
       viande: 'viande_volaille', portionsAbattage: 3,
     },
     mouton: {
@@ -3318,7 +3319,6 @@ function sellableCount(state, item) {
 function sellItem(state, item, qty) {
   const def = DATA.items[item];
   if (!def) return fail('Objet inconnu.');
-  // Seules les unités entières se vendent (le blé peut compter des demis).
   const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
   const fromInventory = takeItem(state, item, wanted);
   const fromFridge = wanted - fromInventory > 0 ? takeFromFridge(state, item, wanted - fromInventory) : 0;
@@ -3644,10 +3644,10 @@ function harvestYield(state, culture, auto = false, lieu = null) {
   return Math.round(DATA.crops[culture].rendement * (auto ? 1 : productivity(state)) * saison + EPS);
 }
 
-// Eau d'un arrosage (L) : celle de la culture × le facteur d'eau de la saison
-// (sauf en Serre), arrondie au centième de litre.
+// Eau d'un arrosage (L entiers) : celle de la culture × le facteur d'eau de la
+// saison (sauf en Serre), arrondie au litre le plus proche, 1 L au minimum.
 function waterCostFor(state, culture, lieu) {
-  return Math.round(DATA.crops[culture].litres * waterSeasonFactor(state, lieu) * 100) / 100;
+  return Math.max(1, Math.round(DATA.crops[culture].litres * waterSeasonFactor(state, lieu) + EPS));
 }
 
 function waterCost(state, plot) {
@@ -3846,8 +3846,8 @@ function upgradeSerre(state) {
 /* ---------- Lot 4 : Silo et blé ---------- */
 
 // Le blé du Silo est un nombre à part (state.silo.ble) ; le surplus vit dans
-// l'inventaire (non périssable). Les quantités peuvent être des demis : une
-// poule mange 0,5 blé.
+// l'inventaire (non périssable). Les quantités sont entières : 1 blé nourrit
+// 2 poules (voir feedHen).
 
 function siloCapacity(state) {
   return state.silo.construit ? DATA.SILO.CAPACITE[state.silo.niveau - 1] : 0;
@@ -3984,16 +3984,31 @@ function hensToFeed(state) {
 // réduit par la productivité.
 function feedHen(state, auto = false) {
   const p = state.poulailler;
-  const need = DATA.ANIMAUX.poule.bleParNuit;
   if (p.poules <= 0) return fail('Aucune poule à nourrir.');
   if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
-  if (wheatTotal(state) + EPS < need) return fail('Pas assez de blé.');
+  if (!canFeedHen(state)) return fail('Pas assez de blé.');
   const prod = auto ? 1 : productivity(state);
   if (prod < 1 - EPS && nextRandom(state) >= prod) return { ok: true, compte: false };
-  takeWheat(state, need, 'silo');
+  if (!(p.restes > 0)) {
+    // Un blé entamé : il nourrit cette poule et laisse des rations pour les suivantes.
+    takeWheat(state, 1, 'silo');
+    state.jour.ble += 1;
+    p.restes = DATA.ANIMAUX.poule.poulesParBle;
+  }
+  p.restes -= 1;
   p.nourries += 1;
-  state.jour.ble += need;
   return { ok: true, compte: true };
+}
+
+// Peut-on nourrir une poule de plus ? Oui s'il reste une ration entamée ou un blé.
+function canFeedHen(state) {
+  return state.poulailler.restes > 0 || wheatTotal(state) >= 1;
+}
+
+// Blé nécessaire pour nourrir `n` poules de plus (rations entamées déduites).
+function wheatForHens(state, n) {
+  const left = Math.max(0, n - (state.poulailler.restes || 0));
+  return Math.ceil(left / DATA.ANIMAUX.poule.poulesParBle);
 }
 
 // « Nourrir tout » : une tentative par poule restante, tant qu'il reste du blé.
@@ -4002,8 +4017,7 @@ function feedAllHens(state, auto = false) {
   const p = state.poulailler;
   if (p.poules <= 0) return fail('Aucune poule à nourrir.');
   if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
-  const need = DATA.ANIMAUX.poule.bleParNuit;
-  if (wheatTotal(state) + EPS < need) return fail('Pas assez de blé.');
+  if (!canFeedHen(state)) return fail('Pas assez de blé.');
   let nourries = 0;
   let ratees = 0;
   const attempts = hensToFeed(state);
@@ -4025,6 +4039,7 @@ function layEggs(state) {
   if (eggs > 0) addItem(state, def.produit, eggs);
   state.nuit.oeufs = eggs;
   p.nourries = 0;
+  p.restes = 0; // une ration entamée ne se garde pas
   return eggs;
 }
 
@@ -5692,7 +5707,7 @@ function startLot4() {
   return {
     champ: { construit: false, niveau: 1, parcelles: [] },
     silo: { construit: false, niveau: 1, ble: 0 },
-    poulailler: { construit: false, niveau: 1, poules: 0, nourries: 0 },
+    poulailler: { construit: false, niveau: 1, poules: 0, nourries: 0, restes: 0 },
   };
 }
 
@@ -6141,10 +6156,9 @@ function botFarm(state) {
 function botHens(state) {
   const p = state.poulailler;
   if (!p.construit || p.poules <= 0) return;
-  const need = DATA.ANIMAUX.poule.bleParNuit;
   // pas de blé pour les poules : un dépannage au Comptoir, comme pour les graines
-  while (hensToFeed(state) > 0 && wheatTotal(state) + EPS < need && botBuySeed(state, DATA.SILO.ITEM)) {
-    if (wheatTotal(state) + EPS >= need) break;
+  while (hensToFeed(state) > 0 && !canFeedHen(state) && botBuySeed(state, DATA.SILO.ITEM)) {
+    if (canFeedHen(state)) break;
   }
   for (let i = 0; i < p.poules + 3 && hensToFeed(state) > 0; i++) {
     if (!feedAllHens(state).ok) break;
@@ -6201,7 +6215,7 @@ function botRecipeValue(state, id) {
 // Blé à ne pas transformer : les semis du Champ et trois nuits de poules.
 function botWheatKept(state) {
   const S = DATA.SIMULATION;
-  const hens = state.poulailler.poules * DATA.ANIMAUX.poule.bleParNuit * S.BLE_JOURS_GARDES;
+  const hens = Math.ceil(state.poulailler.poules / DATA.ANIMAUX.poule.poulesParBle) * S.BLE_JOURS_GARDES;
   return hens + (state.champ.construit ? state.champ.parcelles.length : 0);
 }
 
@@ -8375,7 +8389,7 @@ test('DATA Lot 4 : Champ, Silo, Poulailler, poule, blé, tournesol et œuf', () 
   assertEqual([DATA.CHAMP.CONSTRUCTION, DATA.CHAMP.PARCELLES, DATA.CHAMP.COUT], [60, [4, 6, 9, 12, 16], [0, 120, 280, 600, 1300]]);
   assertEqual([DATA.SILO.CAPACITE, DATA.SILO.CONSTRUCTION, DATA.SILO.COUT], [[20, 50, 100, 200, 400], 0, [0, 30, 80, 180, 400]]);
   assertEqual([DATA.POULAILLER.CONSTRUCTION, DATA.POULAILLER.CAPACITE, DATA.POULAILLER.COUT], [40, [4, 8, 12, 16, 24], [0, 100, 220, 450, 900]]);
-  assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.poule.bleParNuit, DATA.ANIMAUX.poule.oeufsParNuit], [15, 0.5, 1]);
+  assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.poule.poulesParBle, DATA.ANIMAUX.poule.oeufsParNuit], [15, 2, 1]);
   const c = DATA.crops;
   assertEqual([c.ble.stades, c.ble.litres, c.ble.rendement, c.ble.graines], [7, 2, 8, { item: 'ble', mode: 'plant' }]);
   assertEqual([c.tournesol.stades, c.tournesol.litres, c.tournesol.rendement], [7, 2, 9]);
@@ -8443,7 +8457,7 @@ test('état initial Lot 4 : rien n\'est construit', () => {
   const s = createInitialState(1);
   assertEqual(s.champ, { construit: false, niveau: 1, parcelles: [] });
   assertEqual(s.silo, { construit: false, niveau: 1, ble: 0 });
-  assertEqual(s.poulailler, { construit: false, niveau: 1, poules: 0, nourries: 0 });
+  assertEqual(s.poulailler, { construit: false, niveau: 1, poules: 0, nourries: 0, restes: 0 });
   assertEqual([siloCapacity(s), coopCapacity(s)], [0, 0]);
   assertEqual(s.jour.ble, 0);
 });
@@ -8560,30 +8574,37 @@ test('Silo : les poules mangent d\'abord dans le Silo, puis dans l\'inventaire',
   s.silo.ble = 1;
   testAddHens(s, 4);
   assertEqual(feedHen(s).compte, true);
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [0.5, 3]);
-  assertEqual(feedHen(s).compte, true);
   assertEqual([s.silo.ble, countItem(s, 'ble')], [0, 3]);
   assertEqual(feedHen(s).compte, true);
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [0, 2.5], 'le Silo est vide : on entame l\'inventaire');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [0, 3], 'la 2e poule finit le blé entamé');
+  assertEqual(feedHen(s).compte, true);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [0, 2], 'le Silo est vide : on entame l\'inventaire');
   assertEqual(s.poulailler.nourries, 3);
-  assertEqual(s.jour.ble, 1.5, 'blé mangé du jour');
+  assertEqual(s.jour.ble, 2, 'blé mangé du jour');
 });
 
-test('blé décimal : un demi reste dans le stock, ne se vend pas et se compte avec une décimale', () => {
+test('blé entier : 1 blé nourrit 2 poules, une ration entamée ne revient pas au stock', () => {
   const s = ranch({ silo: false });
   setInv(s, { ble: 3 });
   testAddHens(s, 4);
   feedHen(s);
-  assertEqual(countItem(s, 'ble'), 2.5);
-  assertEqual(formatQty(2.5), '2,5');
+  assertEqual([countItem(s, 'ble'), s.poulailler.restes], [2, 1], 'un blé entamé : encore une ration');
+  feedHen(s);
+  assertEqual([countItem(s, 'ble'), s.poulailler.restes], [2, 0], 'la 2e poule mange la ration entamée');
+  feedHen(s);
+  assertEqual([countItem(s, 'ble'), s.poulailler.restes, s.jour.ble], [1, 1, 2]);
+  assertEqual(wheatForHens(s, 1), 0, 'la 4e poule a déjà sa ration');
+  assertEqual(wheatForHens(s, 4), 2, '⌈(4 − 1) ÷ 2⌉');
+  const r = sellItem(s, 'ble', 99);
+  // Lot 12 : blé vendu 2 pièces l'unité ; le stock est toujours entier.
+  assertEqual([r.ok, r.sold, r.gain], [true, 1, 2]);
+  assertEqual(feedHen(s).compte, true, 'la ration entamée nourrit encore une poule sans blé');
+  s.awakeSeconds = 30;
+  setInv(s, { conserve: 200 });
+  sleep(s);
+  assertEqual(s.poulailler.restes, 0, 'une ration entamée ne se garde pas d\'une nuit à l\'autre');
   assertEqual(formatQty(3), '3');
   assertEqual(formatQty(0), '0');
-  const r = sellItem(s, 'ble', 99);
-  // Lot 12 : blé vendu 2 pièces (au lieu de 1) l'unité.
-  assertEqual([r.ok, r.sold, r.gain], [true, 2, 4], 'seules les unités entières se vendent');
-  assertEqual(countItem(s, 'ble'), 0.5);
-  assertEqual(sellItem(s, 'ble', 1).ok, false, 'un demi-blé ne se vend pas');
-  assertEqual(countItem(s, 'ble'), 0.5);
 });
 
 test('Poulailler : construction 40, capacité 4 / 8 / 12 / 16 / 24 aux coûts 100 / 220 / 450 / 900', () => {
@@ -8696,7 +8717,7 @@ test('une poule abattue ne pond plus et ne mange plus de blé', () => {
   // Nuit suivante : seules les 3 poules restantes ont besoin de blé, pas 4.
   assertEqual(hensToFeed(s), 3);
   const r2 = feedAllHens(s);
-  assertEqual([r2.nourries, s.jour.ble], [3, 1.5], '3 poules × 0,5 blé, pas 4');
+  assertEqual([r2.nourries, s.jour.ble], [3, 2], '3 poules : ⌈3 ÷ 2⌉ = 2 blé');
 });
 
 // Achat, nourrissage et ponte d'une poule restent inchangés (mécanique déjà
@@ -8723,7 +8744,7 @@ test('ponte : les œufs sont pondus après la pousse et avant la péremption', (
   assertEqual(countItem(s, 'oeuf'), 4);
   assertEqual(lotsOf(s, 'oeuf')[0].nightsLeft, 5, 'pondu avant la péremption : il a déjà perdu une nuit sur 6');
   assertEqual(report.oeufs, 4);
-  assertEqual(report.bleConsomme, 2, '4 poules × 0,5 blé');
+  assertEqual(report.bleConsomme, 2, '4 poules : 2 blé');
   assertEqual(report.poules, 4);
   assertEqual(s.poulailler.nourries, 0);
   assertEqual(s.jour.ble, 0, 'compteur du jour remis à zéro');
@@ -8735,17 +8756,17 @@ test('ponte : les œufs sont pondus après la pousse et avant la péremption', (
 
 test('« Nourrir tout » nourrit autant de poules que possible, dans la limite du blé', () => {
   const s = ranch();
-  setInv(s, { ble: 1.5 });
+  setInv(s, { ble: 1 });
   testAddHens(s, 4);
   const r = feedAllHens(s);
-  assertEqual([r.ok, r.nourries, r.ratees], [true, 3, 0], '1,5 blé = 3 poules');
-  assertEqual([s.poulailler.nourries, wheatTotal(s)], [3, 0]);
+  assertEqual([r.ok, r.nourries, r.ratees], [true, 2, 0], '1 blé = 2 poules');
+  assertEqual([s.poulailler.nourries, wheatTotal(s)], [2, 0]);
   assertEqual(feedAllHens(s).ok, false, 'plus de blé');
   assertEqual(feedHen(s).error, 'Pas assez de blé.');
   s.silo.ble = 10;
   const r2 = feedAllHens(s);
-  assertEqual([r2.nourries, s.poulailler.nourries], [1, 4]);
-  assertEqual(s.silo.ble, 9.5);
+  assertEqual([r2.nourries, s.poulailler.nourries], [2, 4]);
+  assertEqual(s.silo.ble, 9);
   assertEqual(feedAllHens(s).error, 'Toutes les poules sont nourries.');
   assertEqual(feedHen(s).ok, false);
   const t = ranch();
@@ -8758,7 +8779,7 @@ test('nourrissage : le blé est retiré une fois par poule et par nuit', () => {
   testAddHens(s, 1);
   assertEqual(feedHen(s).compte, true);
   assertEqual(feedHen(s).ok, false, 'une seule fois par nuit');
-  assertEqual(s.silo.ble, 9.5);
+  assertEqual([s.silo.ble, s.poulailler.restes], [9, 1], 'une poule seule entame un blé entier');
 });
 
 test('productivité < 1 : un nourrissage manuel compte avec une probabilité égale à la productivité', () => {
@@ -8776,12 +8797,13 @@ test('productivité < 1 : un nourrissage manuel compte avec une probabilité ég
   const N = 400;
   for (let i = 0; i < N; i++) {
     s.poulailler.nourries = 0;
+    s.poulailler.restes = 0;
     const wheatBefore = wheatTotal(s);
     const r = feedHen(s);
     assertEqual(r.ok, true);
     if (r.compte) {
       counted += 1;
-      assertEqual(wheatTotal(s), wheatBefore - 0.5, 'un geste qui compte retire 0,5 blé');
+      assertEqual(wheatTotal(s), wheatBefore - 1, 'un geste qui compte entame un blé');
       assertEqual(s.poulailler.nourries, 1);
     } else {
       assertEqual(wheatTotal(s), wheatBefore, 'un geste raté conserve le blé');
@@ -8809,7 +8831,7 @@ test('productivité < 1 : un nourrissage manuel compte avec une probabilité ég
   const all = feedAllHens(v);
   assertEqual(all.nourries + all.ratees, 4);
   assertEqual(v.poulailler.nourries, all.nourries);
-  assertEqual(400 - wheatTotal(v), all.nourries * 0.5);
+  assertEqual(400 - wheatTotal(v), Math.ceil(all.nourries / 2));
 });
 
 test('productivité : le tirage vient du générateur à graine de l\'état (reproductible)', () => {
@@ -8904,7 +8926,7 @@ test('migration v4 (Lot 3) → v5 : Champ, Silo et Poulailler apparaissent, la p
   assertEqual(m.marche, { carotte: 1.5 });
   assertEqual(m.champ, { construit: false, niveau: 1, parcelles: [] });
   assertEqual(m.silo, { construit: false, niveau: 1, ble: 0 });
-  assertEqual(m.poulailler, { construit: false, niveau: 1, poules: 0, nourries: 0 });
+  assertEqual(m.poulailler, { construit: false, niveau: 1, poules: 0, nourries: 0, restes: 0 });
   assertEqual([m.jour.ble, m.nuit.oeufs], [0, 0]);
   assertEqual(inventoryCounts(m).conserve, 160);
   // l'état migré tourne, construit et pond
@@ -8963,7 +8985,7 @@ test('mode test : « faire mûrir » et « +10 de chaque graine » couvrent auss
   assertEqual(isMature(findPlot(s, 'potager-1')), true);
 });
 
-test('sérialisation JSON : le Champ, le Silo, les poules et les demis font l\'aller-retour', () => {
+test('sérialisation JSON : le Champ, le Silo et les poules font l\'aller-retour', () => {
   const s = ranch({ champ: true });
   s.silo.ble = 7.5;
   testAddHens(s);
@@ -8981,7 +9003,7 @@ test('rapport de réveil Lot 4 : œufs pondus et blé consommé', () => {
   feedAllHens(s);
   s.awakeSeconds = 30;
   const r = sleep(s);
-  assertEqual([r.oeufs, r.bleConsomme, r.poules], [3, 1.5, 3]);
+  assertEqual([r.oeufs, r.bleConsomme, r.poules], [3, 2, 3]);
   s.awakeSeconds = 30;
   const r2 = sleep(s);
   assertEqual([r2.oeufs, r2.bleConsomme], [0, 0], 'rien mangé la journée suivante');
@@ -10615,7 +10637,7 @@ test('nourrissage automatique : Poulailler niveau 5, et pas avant', () => {
   testSetBuildingLevel5(s, 'poulailler');
   const r2 = sleepOnce(s);
   assertEqual(r2.oeufs, 4);
-  assertEqual(s.silo.ble, 8, '4 poules × 0,5 blé');
+  assertEqual(s.silo.ble, 8, '4 poules : 2 blé');
   assertEqual([r2.auto.poulailler, r2.auto.nourries, r2.auto.sansBle], [true, 4, 0]);
   assertEqual(r2.bleConsomme, 2);
 });
@@ -11092,7 +11114,8 @@ test('saisons : l\'eau par arrosage suit la saison, la récolte automatique auss
     assert(water(s, 'potager-1').ok);
     return Math.round((before - s.eau) * 100) / 100;
   };
-  assertEqual([litres(1), litres(11), litres(21), litres(31)], [2, 2.6, 1.8, 1.6]);
+  // 2 L × 1 / 1,3 / 0,9 / 0,8 = 2 ; 2,6 ; 1,8 ; 1,6, arrondis au litre.
+  assertEqual([litres(1), litres(11), litres(21), litres(31)], [2, 3, 2, 2]);
   // la récolte automatique n'est pas réduite par la santé, mais suit la saison
   const s = garden();
   s.day = 31;
@@ -13713,14 +13736,13 @@ function renderPoulailler() {
     return `
       <div class="section-head"><h3>${icon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
       <div class="card">
-        <span class="muted">Les poules mangent ${formatFixed(DATA.ANIMAUX.poule.bleParNuit, 1)} blé par nuit et pondent 1 œuf si elles sont nourries. Capacité de départ : ${DATA.POULAILLER.CAPACITE[0]} poules. Les poules s'achètent au Comptoir.</span>
+        <span class="muted">1 blé nourrit ${DATA.ANIMAUX.poule.poulesParBle} poules pour la nuit ; une poule nourrie pond 1 œuf. Capacité de départ : ${DATA.POULAILLER.CAPACITE[0]} poules. Les poules s'achètent au Comptoir.</span>
         <button type="button" class="btn primary" data-action="build-poulailler"${canPay(cost) ? '' : ' disabled'}>Construire le Poulailler (${costLabel(cost)})</button>
       </div>`;
   }
   const cap = coopCapacity(state);
   const toFeed = hensToFeed(state);
-  const need = DATA.ANIMAUX.poule.bleParNuit;
-  const noWheat = wheatTotal(state) + EPS < need;
+  const noWheat = !canFeedHen(state);
   const prod = productivity(state);
   const up = coopUpgradeCost(state);
   const upBtn =
@@ -13741,7 +13763,7 @@ function renderPoulailler() {
     <div class="card">
       ${coopArtRow()}
       <span class="big" aria-label="Poules nourries sur total">🥚 ${p.nourries} / ${p.poules} nourries</span>
-      <span class="muted">Poules : <span class="num">${p.poules} / ${cap}</span> · ${formatFixed(need, 1)} blé chacune</span>
+      <span class="muted">Poules : <span class="num">${p.poules} / ${cap}</span> · 1 blé pour ${DATA.ANIMAUX.poule.poulesParBle} poules${p.restes > 0 ? ` (ration entamée : encore ${p.restes})` : ''}</span>
       <span class="bar" role="progressbar" aria-label="Poules nourries" aria-valuemin="0" aria-valuemax="${p.poules}" aria-valuenow="${p.nourries}"><span class="bar-fill" style="width:${p.poules ? Math.round((p.nourries / p.poules) * 100) : 0}%"></span></span>
       <span class="muted">${hint}</span>
       <span class="device-actions">
@@ -14730,7 +14752,7 @@ function renderHenRow() {
   return `
     <div class="shop-row${ok ? '' : ' unavailable'}">
       <div class="inv-main"><span><span aria-hidden="true">${def.icone}</span> ${def.nom}</span><span class="muted">Poules : <span class="num">${p.poules} / ${cap}</span></span></div>
-      <span class="muted">Prix fixe : <strong class="num">${formatCoins(price)} 💰</strong> · mange ${formatFixed(def.bleParNuit, 1)} blé par nuit · pond 1 œuf par nuit si nourrie, toute sa vie.</span>
+      <span class="muted">Prix fixe : <strong class="num">${formatCoins(price)} 💰</strong> · 1 blé nourrit ${def.poulesParBle} poules pour la nuit · pond 1 œuf par nuit si nourrie, toute sa vie.</span>
       <span class="muted">${note}</span>
       <button type="button" class="btn primary" data-action="buy-animal" data-kind="poule"${ok && canPay(price) ? '' : ' disabled'}>Acheter une poule (${formatCoins(price)} 💰)</button>
     </div>`;
@@ -15301,7 +15323,7 @@ const HELP = {
   poulailler: () => ({
     nom: 'Poulailler',
     role: 'Loge les poules, achetées au Comptoir. Une poule pond toute sa vie, tant qu\'elle est nourrie ; elle peut aussi être abattue pour sa viande, en dernier recours.',
-    conso: `${formatFixed(DATA.ANIMAUX.poule.bleParNuit, 1)} blé par poule nourrie.`,
+    conso: `1 blé pour ${DATA.ANIMAUX.poule.poulesParBle} poules nourries (une ration entamée se perd à la fin de la nuit).`,
     prod: `${DATA.ANIMAUX.poule.oeufsParNuit} œuf par nuit et par poule nourrie (${DATA.items.oeuf.energie} énergie). Abattue, une poule rend ${DATA.ANIMAUX.poule.portionsAbattage} portions de ${DATA.items[DATA.ANIMAUX.poule.viande].nom.toLowerCase()} (${DATA.items[DATA.ANIMAUX.poule.viande].energie} énergie chacune), une seule fois.`,
     note: `Poules par niveau : ${listNum(DATA.POULAILLER.CAPACITE, '')}. Au niveau ${DATA.AUTOMATISATION.NIVEAU}, les poules sont nourries toutes seules pendant la nuit. Abattre une poule libère sa place, sans la remplacer automatiquement.`,
   }),
