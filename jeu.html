@@ -1729,6 +1729,19 @@ const DATA = {
   MARCHE: {
     PLANCHER: { defaut: 1.2, graine: 2.0 }, // par catégorie d'objet
     PAS: 0.1,
+    // Lot 12 (doublement des prix de vente des productions de la ferme) :
+    // multiplicateur appliqué une seule fois, au chargement, au prix de
+    // vente (DATA.items[x].prix) de chaque récolte de culture, fruit du
+    // Verger et produit animal (œuf, lait, laine, viande) — jamais aux
+    // graines, aux achats du Comptoir qui ne sont pas des productions, aux
+    // bâtiments/appareils/soins/services, ni aux ingrédients transformés
+    // (farine, huile) ou aux plats cuisinés, dont le prix se calcule déjà à
+    // partir des prix des ingrédients (voir dishPrice()) et serait donc
+    // doublé deux fois si ce multiplicateur s'y appliquait aussi. Voir
+    // applyProductionPriceMultiplier(), juste après DATA, qui détermine la
+    // liste des objets concernés à partir de DATA.crops, DATA.VERGER.ARBRES
+    // et DATA.ANIMAUX plutôt que d'une liste codée en dur ici.
+    MULTIPLICATEUR_PRODUCTION: 2,
   },
 
   /* ---------- Lot 4 : Champ, Silo, Poulailler ---------- */
@@ -1771,13 +1784,14 @@ const DATA = {
   // Vache et abattage des poules (nouveauté, section 8.6) :
   // - poule.viande / poule.portionsAbattage : l'abattage d'une poule (nouveau,
   //   voir slaughterHen()) rend toujours ce nombre fixe de portions — les
-  //   poules ne sont pas suivies individuellement (pas de poids). La quantité
-  //   (3 portions à 3 pièces, soit 9 pièces au total) est volontairement sous le
-  //   prix d'achat d'une poule (15 pièces) : abattre une poule tout de suite
-  //   reste toujours une perte sèche par rapport à la revendre... sauf qu'on ne
-  //   revend jamais un animal vivant. L'abattage est donc une option de dernier
-  //   recours (variété alimentaire, place à libérer), jamais une rente plus
-  //   intéressante que la ponte continue ou l'élevage de moutons/vaches.
+  //   poules ne sont pas suivies individuellement (pas de poids). À la création,
+  //   la quantité (3 portions à 3 pièces, soit 9 pièces) était volontairement
+  //   sous le prix d'achat d'une poule (15 pièces) : l'abattage devait rester
+  //   une option de dernier recours (variété alimentaire, place à libérer),
+  //   jamais une rente. Lot 12 : le prix de vente de la volaille a doublé
+  //   (6 pièces), donc 3 portions valent maintenant 18 pièces, plus que le prix
+  //   d'achat. Règle laissée telle quelle : décision de game design ouverte
+  //   (voir docs/conception.md, 8.9, « Décisions ouvertes (v21) »).
   // - vache : même principe que le mouton (prix fixe, grossit de gainKg par nuit
   //   jusqu'à poidsMax, abattage à poids × rendement ÷ kgParPortion portions de
   //   viande). Sa laitParNuit unité de lait est produite CHAQUE nuit, sans
@@ -2203,6 +2217,54 @@ const DATA = {
   // se ferme aussi d'elle-même à la première nuit.
   AIDE: { ETAPES: ['eau', 'potager', 'dormir'] },
 };
+
+// Lot 12 (doublement des prix de vente des productions de la ferme) : les
+// objets concernés (récolte d'une culture, fruit du Verger, produit animal)
+// se déduisent des tables existantes plutôt que d'une liste écrite en dur,
+// pour qu'une nouvelle culture, un nouvel arbre ou un nouvel animal ajouté
+// plus tard à DATA.crops / DATA.VERGER.ARBRES / DATA.ANIMAUX soit couvert
+// automatiquement, sans exception dispersée dans le code :
+// - DATA.crops : l'objet réellement récolté par chaque culture (`produit`
+//   s'il diffère du nom de la culture, sinon la clé de la culture elle-même),
+//   en excluant tout objet de catégorie « graine » — le tournesol récolte
+//   ainsi `graine_tournesol`, une graine, qui n'est jamais concernée ;
+// - DATA.VERGER.ARBRES : le fruit (`fruit`) de chaque arbre ;
+// - DATA.ANIMAUX : ce que chaque animal produit régulièrement (`produit` :
+//   l'œuf de la poule), tond (`laine`), donne au trait (`lait`) ou à
+//   l'abattage (`viande`).
+// Un même objet peut apparaître via plusieurs entrées (le blé, à la fois
+// récolté et semé) : l'ensemble `keys` déduplique, donc chaque prix n'est
+// doublé qu'une seule fois. Les graines dédiées (graine_carotte, etc.), les
+// transformations (farine, huile) et les plats cuisinés ne figurent dans
+// aucune de ces trois tables : ils restent donc intacts.
+function productionItemKeys() {
+  const keys = new Set();
+  for (const [cropKey, crop] of Object.entries(DATA.crops)) {
+    const item = crop.produit || cropKey;
+    if (DATA.items[item] && DATA.items[item].category !== 'graine') keys.add(item);
+  }
+  for (const arbre of Object.values(DATA.VERGER.ARBRES)) {
+    if (DATA.items[arbre.fruit]) keys.add(arbre.fruit);
+  }
+  for (const animal of Object.values(DATA.ANIMAUX)) {
+    for (const champ of ['produit', 'laine', 'lait', 'viande']) {
+      if (animal[champ] && DATA.items[animal[champ]]) keys.add(animal[champ]);
+    }
+  }
+  return keys;
+}
+
+function applyProductionPriceMultiplier() {
+  const mult = DATA.MARCHE.MULTIPLICATEUR_PRODUCTION;
+  for (const key of productionItemKeys()) {
+    DATA.items[key].prix *= mult;
+  }
+}
+// Appliqué immédiatement, avant registerDishItems() (plus bas) : les plats
+// dont le prix se calcule à partir des prix des ingrédients (ragoût, rôti de
+// bœuf, poulet rôti à l'ail, etc.) doivent lire des prix d'ingrédients déjà
+// doublés, une seule fois, jamais l'inverse.
+applyProductionPriceMultiplier();
 
 /* ==========================================================================
    ENGINE — simulation pure. Aucun accès au DOM, à window, au stockage ou à
@@ -7063,12 +7125,16 @@ function setHealth(s, value) {
 test('DATA Lot 2 : objets, énergies et prix de vente', () => {
   const it = DATA.items;
   // Lot 11 (nutrition) : +25 % par rapport aux valeurs d'origine (6, 15, 6, 8,
-  // 8, 20), arrondi via scaleEnergie() ; les prix de vente sont inchangés.
-  assertEqual([it.carotte.energie, it.carotte.prix], [scaleEnergie(6), 1]);
-  assertEqual([it.patate.energie, it.patate.prix], [scaleEnergie(15), 2]);
-  assertEqual([it.tomate.energie, it.tomate.prix], [scaleEnergie(6), 1]);
-  assertEqual([it.courgette.energie, it.courgette.prix], [scaleEnergie(8), 2]);
-  assertEqual([it.aubergine.energie, it.aubergine.prix], [scaleEnergie(8), 2]);
+  // 8, 20), arrondi via scaleEnergie(). Lot 12 : les prix de vente des
+  // récoltes (légumes) sont doublés par applyProductionPriceMultiplier() —
+  // valeurs d'origine 1, 2, 1, 2, 2 ci-dessous, en commentaire.
+  assertEqual([it.carotte.energie, it.carotte.prix], [scaleEnergie(6), 2]); // 1 × 2
+  assertEqual([it.patate.energie, it.patate.prix], [scaleEnergie(15), 4]); // 2 × 2
+  assertEqual([it.tomate.energie, it.tomate.prix], [scaleEnergie(6), 2]); // 1 × 2
+  assertEqual([it.courgette.energie, it.courgette.prix], [scaleEnergie(8), 4]); // 2 × 2
+  assertEqual([it.aubergine.energie, it.aubergine.prix], [scaleEnergie(8), 4]); // 2 × 2
+  // La conserve n'est pas une production de la ferme (catégorie « conserve »,
+  // non rachetable) : son prix reste inchangé.
   assertEqual([it.conserve.energie, it.conserve.prix], [scaleEnergie(20), 3]);
   assertEqual(it.conserve.rachetable, false);
   assertEqual(it.conserve.category, 'conserve');
@@ -7128,8 +7194,10 @@ test('DATA « 10 cultures » : stades, eau, rendement, graines, comestibilité, 
   assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz'].map((k) => [it[k].edible, it[k].energie]),
     [[true, 6], [true, 6], [true, 7], [true, 5], [true, 5], [true, 10]]);
   for (const k of ['houblon', 'cacao', 'vanille', 'cafe']) assertEqual(it[k].edible, false, `${k} n'est jamais comestible`);
+  // Lot 12 : prix de vente doublés (valeurs d'origine, en commentaire :
+  // 1, 2, 2, 1, 2, 1, 3, 8, 15, 6).
   assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz', 'houblon', 'cacao', 'vanille', 'cafe'].map((k) => it[k].prix),
-    [1, 2, 2, 1, 2, 1, 3, 8, 15, 6]);
+    [2, 4, 4, 2, 4, 2, 6, 16, 30, 12]);
 });
 
 test('état initial Lot 2 : inventaire, potager de 6 parcelles, famille de 4 à 100', () => {
@@ -7950,9 +8018,10 @@ test('ordre de consommation : dans un item, le lot le plus ancien est mangé d\'
 test('Comptoir : prix d\'achat = prix de vente × coefficient, plancher 1,2', () => {
   const s = garden();
   assertEqual(marketCoef(s, 'patate'), 1.2);
-  assertEqual(buyPrice(s, 'patate'), 2.4);
-  assertEqual(buyPrice(s, 'carotte'), 1.2);
-  assertEqual(buyPrice(s, 'courgette'), 2.4);
+  // Lot 12 : prix de vente doublés (patate 4, carotte 2, courgette 4).
+  assertEqual(buyPrice(s, 'patate'), 4.8);
+  assertEqual(buyPrice(s, 'carotte'), 2.4);
+  assertEqual(buyPrice(s, 'courgette'), 4.8);
   assertEqual(isBuyable('carotte'), true);
 });
 
@@ -7967,16 +8036,17 @@ test('Comptoir : le prix d\'achat monte de 0,1 de coefficient par unité, unité
     paid.push(roundCoins(before - s.pieces));
     assertEqual(r.cost, paid[i]);
   }
-  assertEqual(paid, [2.4, 2.6, 2.8]);
+  // Lot 12 : patate à 4 (au lieu de 2) × coefficient 1,2 puis 1,3 puis 1,4.
+  assertEqual(paid, [4.8, 5.2, 5.6]);
   assertEqual(marketCoef(s, 'patate'), 1.5);
-  assertEqual(buyPrice(s, 'patate'), 3);
+  assertEqual(buyPrice(s, 'patate'), 6);
   assertEqual(countItem(s, 'patate'), 9, '6 de départ + 3');
   // un achat de plusieurs unités reprend le même chemin, le prix montant entre chacune
   const t = garden();
   t.pieces = 100;
   const r = buyItem(t, 'patate', 3);
-  assertEqual([r.bought, r.cost], [3, 7.8]);
-  assertEqual(t.pieces, 92.2);
+  assertEqual([r.bought, r.cost], [3, 15.6]);
+  assertEqual(t.pieces, 84.4);
 });
 
 test('Comptoir : la vente est au prix fixe et fait baisser le coefficient de 0,1 par unité', () => {
@@ -7985,11 +8055,13 @@ test('Comptoir : la vente est au prix fixe et fait baisser le coefficient de 0,1
   buyItem(s, 'patate', 3); // coefficient 1,5
   const before = s.pieces;
   const r = sellItem(s, 'patate', 2);
-  assertEqual([r.ok, r.sold, r.gain], [true, 2, 4]);
-  assertEqual(s.pieces, roundCoins(before + 4), 'prix de vente fixe : 2 pièces par patate');
+  // Lot 12 : patate vendue 4 pièces (au lieu de 2) l'unité.
+  assertEqual([r.ok, r.sold, r.gain], [true, 2, 8]);
+  assertEqual(s.pieces, roundCoins(before + 8), 'prix de vente fixe : 4 pièces par patate');
   assertEqual(marketCoef(s, 'patate'), 1.3);
-  assertEqual(buyPrice(s, 'patate'), 2.6, 'vendre 2 patates ramène le prix à 2,6');
-  // la vente ne dépend ni de l'âge ni de l'origine
+  assertEqual(buyPrice(s, 'patate'), 5.2, 'vendre 2 patates ramène le prix à 5,2');
+  // la vente ne dépend ni de l'âge ni de l'origine (la conserve n'est pas
+  // une production de la ferme : son prix reste inchangé à 3)
   assertEqual(sellItem(s, 'conserve', 10).gain, 30);
 });
 
@@ -7997,7 +8069,7 @@ test('Comptoir : le coefficient ne descend jamais sous le plancher de 1,2', () =
   const s = garden();
   sellItem(s, 'patate', 5);
   assertEqual(marketCoef(s, 'patate'), 1.2);
-  assertEqual(buyPrice(s, 'patate'), 2.4);
+  assertEqual(buyPrice(s, 'patate'), 4.8);
   buyItem(s, 'carotte', 1); // acheté : 1,3 — puis vendu 10 : bloqué à 1,2
   addItem(s, 'carotte', 10);
   sellItem(s, 'carotte', 11);
@@ -8053,11 +8125,13 @@ test('Comptoir : achat refusé sans pièces, et un achat multiple s\'arrête qua
   const r = buyItem(s, 'carotte');
   assertEqual(r.ok, false);
   assertEqual([s.pieces, countItem(s, 'carotte')], [1, 0]);
-  s.pieces = 3; // carotte : 1,2 puis 1,3 puis 1,4 → 2 unités (2,5), la 3e (1,4) dépasse 0,5
+  // Lot 12 : carotte à 2 pièces (au lieu de 1) : 2,4 puis 2,6 puis 2,8 →
+  // 1 unité (2,4), la 2e (2,6) dépasse les 0,6 restants.
+  s.pieces = 3;
   const r2 = buyItem(s, 'carotte', 5);
-  assertEqual([r2.ok, r2.bought, r2.cost], [true, 2, 2.5]);
-  assertEqual(s.pieces, 0.5);
-  assertEqual(marketCoef(s, 'carotte'), 1.4);
+  assertEqual([r2.ok, r2.bought, r2.cost], [true, 1, 2.4]);
+  assertEqual(s.pieces, 0.6);
+  assertEqual(marketCoef(s, 'carotte'), 1.3);
 });
 
 test('Comptoir : un item acheté arrive avec sa conservation pleine et l\'origine « acheté »', () => {
@@ -8099,7 +8173,8 @@ test('vente : retire les lots les plus anciens, refuse sans stock et ignore les 
   spoil(s);
   addItem(s, 'carotte', 4);
   const r = sellItem(s, 'carotte', 5);
-  assertEqual([r.sold, r.gain], [5, 5]);
+  // Lot 12 : carotte vendue 2 pièces (au lieu de 1) l'unité.
+  assertEqual([r.sold, r.gain], [5, 10]);
   assertEqual(lotsOf(s, 'carotte'), [{ qty: 3, nightsLeft: 6, origin: 'produit' }]);
   assertEqual(sellItem(s, 'carotte', 99).sold, 3, 'plafonné au stock');
   assertEqual(sellItem(s, 'carotte', 1).ok, false, 'plus rien à vendre');
@@ -8127,9 +8202,10 @@ test('les 10 nouvelles cultures : récolte stockée dans l\'inventaire, puis ven
   assertEqual(harvest(s, 'champ-1').items.riz, 10);
   assertEqual(harvest(s, 'serre-1').items.cacao, 5);
   assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [9, 10, 5], 'récoltes bien dans l\'inventaire');
-  assertEqual(sellItem(s, 'oignon', 9), { ok: true, sold: 9, gain: 9 });
-  assertEqual(sellItem(s, 'riz', 10), { ok: true, sold: 10, gain: 10 });
-  assertEqual(sellItem(s, 'cacao', 5), { ok: true, sold: 5, gain: 40 }, '5 × 8 : le cacao se vend cher, comme prévu');
+  // Lot 12 : prix de vente doublés (oignon 2, riz 2, cacao 16).
+  assertEqual(sellItem(s, 'oignon', 9), { ok: true, sold: 9, gain: 18 });
+  assertEqual(sellItem(s, 'riz', 10), { ok: true, sold: 10, gain: 20 });
+  assertEqual(sellItem(s, 'cacao', 5), { ok: true, sold: 5, gain: 80 }, '5 × 16 : le cacao se vend cher, comme prévu');
   assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [0, 0, 0]);
 });
 
@@ -8257,7 +8333,8 @@ test('DATA Lot 4 : Champ, Silo, Poulailler, poule, blé, tournesol et œuf', () 
   assertEqual([c.tournesol.stades, c.tournesol.litres, c.tournesol.rendement], [7, 2, 9]);
   assertEqual(cropProduct('tournesol'), 'graine_tournesol');
   assertEqual(cropProduct('ble'), 'ble');
-  assertEqual([DATA.items.oeuf.energie, DATA.items.oeuf.prix, shelfLife('oeuf')], [scaleEnergie(10), 2, 6]);
+  // Lot 12 : prix de vente de l'œuf doublé (2 → 4).
+  assertEqual([DATA.items.oeuf.energie, DATA.items.oeuf.prix, shelfLife('oeuf')], [scaleEnergie(10), 4, 6]);
   assertEqual(shelfLife('ble'), null, 'le blé ne périme jamais');
   assertEqual(shelfLife('graine_tournesol'), null);
 });
@@ -8454,7 +8531,8 @@ test('blé décimal : un demi reste dans le stock, ne se vend pas et se compte a
   assertEqual(formatQty(3), '3');
   assertEqual(formatQty(0), '0');
   const r = sellItem(s, 'ble', 99);
-  assertEqual([r.ok, r.sold, r.gain], [true, 2, 2], 'seules les unités entières se vendent');
+  // Lot 12 : blé vendu 2 pièces (au lieu de 1) l'unité.
+  assertEqual([r.ok, r.sold, r.gain], [true, 2, 4], 'seules les unités entières se vendent');
   assertEqual(countItem(s, 'ble'), 0.5);
   assertEqual(sellItem(s, 'ble', 1).ok, false, 'un demi-blé ne se vend pas');
   assertEqual(countItem(s, 'ble'), 0.5);
@@ -8973,17 +9051,101 @@ test('Lot 11 (nutrition) : familyNeed() suit la composition de la famille', () =
 });
 
 test('prix de vente des plats : somme des prix × 1,3, arrondi', () => {
-  assertEqual(DATA.items.pain.prix, 4, 'pain : 4 (section 8.9)');
-  assertEqual(DATA.items.omelette.prix, 13);
-  assertEqual(DATA.items.ratatouille.prix, 12);
-  assertEqual(DATA.items.gratin_patates.prix, 10);
-  assertEqual(DATA.items.ragout.prix, 18);
-  assertEqual(DATA.items.compote.prix, 8);
-  assertEqual(DATA.items.tarte_pommes.prix, 13);
-  assertEqual([DATA.items.viande_mouton.prix, DATA.items.pomme.prix, DATA.items.poire.prix], [5, 2, 2]);
+  // Lot 12 : les productions de la ferme sont doublées à la source ; les
+  // plats gardent la même formule (somme des prix d'ingrédients × 1,3) et
+  // ne sont donc doublés qu'indirectement, une seule fois. Le pain, fait de
+  // farine et d'eau (ni l'une ni l'autre n'est une production), ne bouge pas.
+  assertEqual(DATA.items.pain.prix, 4, 'pain : 4 (section 8.9), inchangé');
+  assertEqual(DATA.items.omelette.prix, 21); // (3 œufs à 4 + huile 4) × 1,3 = 20,8
+  assertEqual(DATA.items.ratatouille.prix, 18); // (2 + 4 + 4 + huile 4) × 1,3 = 18,2
+  assertEqual(DATA.items.gratin_patates.prix, 21); // (3 patates à 4 + 1 œuf à 4) × 1,3 = 20,8
+  assertEqual(DATA.items.ragout.prix, 36); // (2 viandes à 10 + 2 carottes à 2 + 1 patate à 4) × 1,3 = 36,4
+  assertEqual(DATA.items.compote.prix, 16); // 3 pommes à 4 × 1,3 = 15,6
+  assertEqual(DATA.items.tarte_pommes.prix, 23);
+  // Productions de la ferme : ancienne valeur × 2.
+  assertEqual([DATA.items.viande_mouton.prix, DATA.items.pomme.prix, DATA.items.poire.prix], [10, 4, 4]);
   // Vache et abattage des poules (nouveauté) : mêmes portions, mêmes valeurs
   // pour le bœuf que le mouton ; la volaille, plus modeste, vaut moins.
-  assertEqual([DATA.items.viande_boeuf.prix, DATA.items.viande_volaille.prix, DATA.items.lait.prix], [5, 3, 4]);
+  assertEqual([DATA.items.viande_boeuf.prix, DATA.items.viande_volaille.prix, DATA.items.lait.prix], [10, 6, 8]);
+});
+
+test('Lot 12 : le gratin est doublé une seule fois (formule sur ingrédients déjà doublés, pas de ×2 en plus)', () => {
+  const it = DATA.items;
+  const R = DATA.RECETTES;
+  const prixIngredients = 3 * it.patate.prix + 1 * it.oeuf.prix; // 12 + 4 = 16
+  assertEqual(prixIngredients, 16);
+  // Une seule application de la formule sur les prix d'ingrédients courants…
+  assertEqual(it.gratin_patates.prix, Math.round(prixIngredients * R.COEF_PLAT + EPS));
+  assertEqual(it.gratin_patates.prix, dishPrice('gratin_patates'));
+  // …et surtout pas un second ×2 par-dessus (42) : 21 seulement, contre 10 avant le Lot 12.
+  assert(it.gratin_patates.prix !== 2 * dishPrice('gratin_patates'), 'pas de double doublement');
+  assertEqual(it.gratin_patates.prix, 21);
+  // Aucun objet « plat » ne figure dans l'ensemble des productions doublées.
+  const doubles = productionItemKeys();
+  for (const [id, def] of Object.entries(it)) {
+    if (def.plat) assertEqual(doubles.has(id), false, `${id} : un plat n'est pas une production doublée`);
+  }
+});
+
+// Lot 12 : valeurs d'origine (avant doublement) des productions de la ferme.
+const PRIX_PRODUCTIONS_AVANT_LOT_12 = {
+  carotte: 1, patate: 2, tomate: 1, courgette: 2, aubergine: 2, ble: 1,
+  oeuf: 2, viande_mouton: 5, pomme: 2, poire: 2, laine: 6,
+  oignon: 1, ail: 2, poivron: 2, epinard: 1, fraise: 2, riz: 1,
+  houblon: 3, cacao: 8, vanille: 15, cafe: 6,
+  viande_boeuf: 5, viande_volaille: 3, lait: 4,
+};
+
+test('Lot 12 : chaque production de la ferme se vend deux fois son ancien prix', () => {
+  for (const [id, avant] of Object.entries(PRIX_PRODUCTIONS_AVANT_LOT_12)) {
+    assertEqual(DATA.items[id].prix, avant * DATA.MARCHE.MULTIPLICATEUR_PRODUCTION, `${id} : ${avant} × 2`);
+    assertEqual(DATA.items[id].prix, avant * 2, `${id} : ancienne valeur × 2`);
+    assertEqual(sellPrice(id), avant * 2, `${id} : sellPrice()`);
+  }
+  // La liste déduite de DATA.crops / VERGER / ANIMAUX correspond exactement
+  // à la liste attendue : ni oubli, ni objet en trop.
+  assertEqual([...productionItemKeys()].sort(), Object.keys(PRIX_PRODUCTIONS_AVANT_LOT_12).sort());
+});
+
+test('Lot 12 : graines, conserve, farine, huile inchangées ; aucun bâtiment, animal ni arbre doublé', () => {
+  const it = DATA.items;
+  for (const [id, def] of Object.entries(it)) {
+    if (def.category === 'graine') assertEqual(def.prix, 1, `${id} : graine inchangée`);
+  }
+  assertEqual(it.graine_tournesol.prix, 1, 'le tournesol récolte des graines : non doublées');
+  assertEqual([it.conserve.prix, it.farine.prix, it.huile.prix], [3, 1, 4]);
+  // Prix d'achat des graines au Comptoir : prix inchangé × plancher 2,0.
+  assertEqual(buyPrice(garden(), 'graine_carotte'), 2);
+  // Constructions, améliorations, animaux, arbres, soins : hors périmètre.
+  assertEqual([DATA.CHAMP.CONSTRUCTION, DATA.POULAILLER.CONSTRUCTION, DATA.SERRE.CONSTRUCTION, DATA.FRIGO.CONSTRUCTION], [60, 40, 400, 600]);
+  assertEqual(DATA.STATIONS.four.cout, 100);
+  assertEqual(DATA.UPGRADE_COST, [0, 40, 100, 250, 600]);
+  assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.mouton.prix, DATA.ANIMAUX.vache.prix], [15, 60, 200]);
+  assertEqual([DATA.VERGER.ARBRES.pommier.prix, DATA.VERGER.ARBRES.poirier.prix], [40, 40]);
+  assertEqual(DATA.FAMILY.SOIN.base, 20);
+});
+
+test('Lot 12 : la vente crédite le nouveau montant et le Comptoir affiche le prix réellement payé', () => {
+  const s = garden();
+  setInv(s, { patate: 3, lait: 2, cacao: 1 });
+  const avant = s.pieces;
+  const r = sellItem(s, 'patate', 3);
+  assertEqual([r.ok, r.gain], [true, 12], '3 patates à 4');
+  assertEqual(s.pieces, roundCoins(avant + 12));
+  assertEqual(sellItem(s, 'lait', 2).gain, 16, '2 laits à 8');
+  assertEqual(sellItem(s, 'cacao', 1).gain, 16, '1 cacao à 16');
+  // Achat : le prix affiché (buyPrice) est exactement ce qui est débité, et
+  // la formule d'achat s'applique au nouveau prix de vente (×1,2 au départ).
+  const t = garden();
+  t.pieces = 100;
+  const affiche = buyPrice(t, 'tomate');
+  assertEqual(affiche, roundCoins(DATA.items.tomate.prix * 1.2));
+  const avantAchat = t.pieces;
+  const b = buyItem(t, 'tomate');
+  assertEqual([b.ok, b.cost], [true, affiche]);
+  assertEqual(t.pieces, roundCoins(avantAchat - affiche));
+  // Revendre ce qu'on vient d'acheter reste perdant (achat > vente).
+  assert(buyPrice(garden(), 'tomate') > sellPrice('tomate'), 'acheter coûte plus cher que revendre');
 });
 
 test('les plats se gardent 6 nuits (le pain 7) ; la farine et l\'huile ne périment pas', () => {
@@ -9034,10 +9196,13 @@ test('15 nouvelles recettes : aucune n\'est une transformation, toutes deviennen
 
 test('15 nouvelles recettes : énergie et prix, calculés par le système existant (recipeSum × COEF_PLAT)', () => {
   const attendu = {
-    soupe_legumes: [43, 7], salade_tomates: [38, 8], quiche_epinards: [95, 14],
-    fromage_frais: [62, 16], riz_au_lait: [47, 8], pain_ail: [69, 13],
-    poivrons_farcis: [81, 13], tarte_fraises: [70, 13], confiture_fraises: [26, 10],
-    roti_boeuf: [144, 18], poulet_roti_ail: [75, 12],
+    // Lot 12 : énergies inchangées ; prix recalculés sur des ingrédients
+    // dont les prix de vente ont doublé (avant : 7, 8, 14, 16, 8, 13, 13,
+    // 13, 10, 18, 12).
+    soupe_legumes: [43, 12], salade_tomates: [38, 10], quiche_epinards: [95, 26],
+    fromage_frais: [62, 31], riz_au_lait: [47, 16], pain_ail: [69, 16],
+    poivrons_farcis: [81, 26], tarte_fraises: [70, 23], confiture_fraises: [26, 21],
+    roti_boeuf: [144, 36], poulet_roti_ail: [75, 23],
   };
   for (const [id, [energie, prix]] of Object.entries(attendu)) {
     assertEqual([dishEnergy(id), DATA.items[id].energie], [energie, energie], id);
@@ -9053,10 +9218,13 @@ test('4 recettes de luxe : prix ×3 sur les ingrédients (pas le coefficient ×1
   }
   const R = DATA.RECETTES;
   const casLuxe = {
-    chocolat_chaud: { energie: 21, prixIngredients: 12 },
-    cafe_boisson: { energie: 0, prixIngredients: 7 },
-    creme_vanille: { energie: 75, prixIngredients: 27 },
-    biere_artisanale: { energie: 0, prixIngredients: 7 },
+    // Lot 12 : prixIngredients suit les prix de vente doublés (cacao 16,
+    // lait 8, café 12, vanille 30, œuf 4, houblon 6, eau 1 L à 1). Avant :
+    // 12, 7, 27, 7.
+    chocolat_chaud: { energie: 21, prixIngredients: 24 },
+    cafe_boisson: { energie: 0, prixIngredients: 13 },
+    creme_vanille: { energie: 75, prixIngredients: 54 },
+    biere_artisanale: { energie: 0, prixIngredients: 13 },
   };
   for (const [id, { energie, prixIngredients }] of Object.entries(casLuxe)) {
     // Énergie : calcul normal (×COEF_PLAT), priceMultiplier ne la concerne pas.
@@ -9610,10 +9778,12 @@ test('plats et ingrédients se vendent au Comptoir au prix fixe', () => {
   const s = atelier();
   setInv(s, { ragout: 2, farine: 3, huile: 1 });
   const before = s.pieces;
-  assertEqual(sellItem(s, 'ragout', 2).gain, 36);
+  // Lot 12 : ragoût à 36 (ingrédients doublés) ; farine et huile, des
+  // transformations, gardent leur prix (1 et 4).
+  assertEqual(sellItem(s, 'ragout', 2).gain, 72);
   assertEqual(sellItem(s, 'farine', 3).gain, 3);
   assertEqual(sellItem(s, 'huile', 1).gain, 4);
-  assertEqual(s.pieces, before + 43);
+  assertEqual(s.pieces, before + 79);
 });
 
 test('mode test Lot 5 : stations gratuites, +10 farines, +10 huiles, +20 œufs, moulin usé', () => {
@@ -9724,8 +9894,9 @@ test('DATA Lot 6 : Pâturage, mouton, laine', () => {
   const m = DATA.ANIMAUX.mouton;
   assertEqual([m.prix, m.poidsDepart, m.gainKg, m.poidsMax], [60, 20, 0.5, 50]);
   assertEqual([m.joursLaine, m.laineParTonte, m.rendement, m.kgParPortion], [7, 1, 0.5, 0.5]);
-  assertEqual([DATA.items.laine.prix, DATA.items.laine.edible, shelfLife('laine')], [6, false, null]);
-  assertEqual([DATA.items.viande_mouton.energie, DATA.items.viande_mouton.prix, shelfLife('viande_mouton')], [scaleEnergie(30), 5, 5]);
+  // Lot 12 : laine 6 → 12, viande de mouton 5 → 10 (prix de vente doublés).
+  assertEqual([DATA.items.laine.prix, DATA.items.laine.edible, shelfLife('laine')], [12, false, null]);
+  assertEqual([DATA.items.viande_mouton.energie, DATA.items.viande_mouton.prix, shelfLife('viande_mouton')], [scaleEnergie(30), 10, 5]);
 });
 
 // Nouveauté : la vache, sur le modèle du test précédent.
@@ -9733,12 +9904,13 @@ test('DATA vache et abattage des poules : prix, croissance, lait, viande distinc
   const v = DATA.ANIMAUX.vache;
   assertEqual([v.prix, v.poidsDepart, v.gainKg, v.poidsMax], [200, 40, 1, 150]);
   assertEqual([v.laitParNuit, v.lait, v.rendement, v.kgParPortion, v.viande], [1, 'lait', 0.5, 0.5, 'viande_boeuf']);
-  assertEqual([DATA.items.lait.energie, DATA.items.lait.prix, shelfLife('lait')], [16, 4, 4]);
-  assertEqual([DATA.items.viande_boeuf.energie, DATA.items.viande_boeuf.prix], [38, 5]);
+  // Lot 12 : prix de vente doublés (lait 4 → 8, bœuf 5 → 10, volaille 3 → 6).
+  assertEqual([DATA.items.lait.energie, DATA.items.lait.prix, shelfLife('lait')], [16, 8, 4]);
+  assertEqual([DATA.items.viande_boeuf.energie, DATA.items.viande_boeuf.prix], [38, 10]);
   // Poule : abattage distinct de sa ponte, portion fixe et modeste.
   const p = DATA.ANIMAUX.poule;
   assertEqual([p.viande, p.portionsAbattage], ['viande_volaille', 3]);
-  assertEqual([DATA.items.viande_volaille.energie, DATA.items.viande_volaille.prix], [14, 3]);
+  assertEqual([DATA.items.viande_volaille.energie, DATA.items.viande_volaille.prix], [14, 6]);
   // 150 kg (poidsMax vache) × 0,5 rendement ÷ 0,5 kg par portion = 150 portions,
   // exactement 3 fois le maximum du mouton (50 kg → 50 portions), comme
   // haParVache = 3 × haParMouton.
@@ -9891,7 +10063,7 @@ test('laine : +1 jour par nuit, tonte refusée avant 7 nuits, puis 1 laine et re
   assertEqual(shear(s, 'mouton-99').ok, false, 'mouton inconnu');
 });
 
-test('laine : ni périssable ni comestible, vendue 6 pièces l\'unité', () => {
+test('laine : ni périssable ni comestible, vendue 12 pièces l\'unité (6 avant le Lot 12)', () => {
   const s = pature();
   testAddSheep(s, 1);
   testWoolReady(s);
@@ -9901,7 +10073,7 @@ test('laine : ni périssable ni comestible, vendue 6 pièces l\'unité', () => {
   assertEqual(planMeal(s).mange.laine, undefined, 'la famille ne la mange pas');
   const before = s.pieces;
   const r = sellItem(s, 'laine', 1);
-  assertEqual([r.ok, r.gain, s.pieces], [true, 6, before + 6]);
+  assertEqual([r.ok, r.gain, s.pieces], [true, 12, before + 12]);
   assertEqual(isBuyable('laine'), false, 'la laine ne se rachète pas');
 });
 
@@ -10686,7 +10858,8 @@ test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
   assertEqual([V.ARBRES.pommier.prix, V.ARBRES.poirier.prix], [40, 40]);
   assertEqual([V.ARBRES.pommier.fruit, V.ARBRES.poirier.fruit], ['pomme', 'poire']);
   for (const fruit of ['pomme', 'poire']) {
-    assertEqual([DATA.items[fruit].energie, DATA.items[fruit].prix, shelfLife(fruit)], [scaleEnergie(8), 2, 7]);
+    // Lot 12 : prix de vente du fruit doublé (2 → 4).
+    assertEqual([DATA.items[fruit].energie, DATA.items[fruit].prix, shelfLife(fruit)], [scaleEnergie(8), 4, 7]);
   }
   const F = DATA.FRIGO;
   assertEqual([F.CONSTRUCTION, F.BASE_KWH_S, F.PAR_UNITE_KWH_S, F.BLOC_NUIT_S, F.SEUIL_ALIMENTE], [600, 0.005, 0.00005, 30, 0.5]);

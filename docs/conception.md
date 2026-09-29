@@ -1,6 +1,30 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v21** : **les productions de la ferme se vendent ×2** au Comptoir (voir
+> 8.9). Sont concernés les objets issus directement de la ferme : récoltes des
+> cultures (carotte, patate, tomate, courgette, aubergine, oignon, ail,
+> poivron, épinard, fraise, riz, houblon, cacao, vanille, café, blé), fruits du
+> Verger (pomme, poire) et produits animaux (œuf, lait, laine, viande de
+> mouton / bœuf / volaille). Le doublement est défini **à la source** : le
+> coefficient `DATA.MARCHE.MULTIPLICATEUR_PRODUCTION` (2) est appliqué une
+> seule fois, au chargement, par `applyProductionPriceMultiplier()` (juste
+> après `DATA`, avant `registerDishItems()`), sur la liste déduite de
+> `DATA.crops`, `DATA.VERGER.ARBRES` et `DATA.ANIMAUX`
+> (`productionItemKeys()`) : une future culture, un futur arbre ou un futur
+> animal est couvert automatiquement. **Ne sont pas doublés** : les graines
+> (y compris `graine_tournesol`, récolte du tournesol), la conserve, la
+> farine et l'huile (transformations), les bâtiments, appareils, animaux,
+> arbres, soins, améliorations et services, ni le coefficient d'achat du
+> marché (le prix d'achat = nouveau prix de vente × coefficient, inchangé). Les
+> **plats cuisinés** ne reçoivent pas de ×2 propre : leur prix suit la formule
+> existante (somme des prix d'ingrédients × 1,3, ou ×3 pour le luxe) sur des
+> ingrédients déjà doublés, donc **une seule fois** — ils n'augmentent pas
+> exactement de ×2 (l'eau, la farine et l'huile ne bougent pas, et l'arrondi
+> s'applique). Les prix ne sont pas enregistrés dans les sauvegardes : **aucune
+> migration** n'est nécessaire (`STATE_VERSION` inchangé). 🟡 Voir « Décisions
+> ouvertes (v21) » en 8.9.
+>
 > **v20** : **15 nouvelles recettes** (voir 1.4 et 8.9bis) : Soupe de légumes,
 > Salade de tomates, Quiche aux épinards, Fromage frais, Riz au lait, Pain à
 > l'ail (utilise le pain comme ingrédient), Poivrons farcis (viande de
@@ -260,7 +284,7 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 **🌰 Cultures de rente (cacao, vanille, café)**
 - Exclusives à la **Serre** : `lieux: ['serre']` seul dans la culture, sans Potager ni Champ. La fonction de plantation elle-même refuse toute autre parcelle (pas seulement l'écran de plantation, qui se contente de ne pas les proposer).
 - **Jamais comestibles** (`edible: false`) : la composition du repas familial les ignore totalement, même si la famille est affamée et même si elles sont en stock.
-- Elles ne servent qu'à la **vente** (prix élevé : cacao 8, vanille 15, café 6) et comme ingrédients de recettes de luxe à venir.
+- Elles ne servent qu'à la **vente** (prix élevé, doublé en v21 : cacao 16, vanille 30, café 12) et comme ingrédients de recettes de luxe à venir.
 - Poussent et se récoltent en Serre exactement comme les autres cultures de Serre : aucune saison ne les affecte, et l'absence d'arrosage/récolte automatique en Serre (aucune culture n'y est aujourd'hui automatisée, cacao/vanille/café compris) reste identique à ce qui existait déjà pour tomate/courgette/aubergine.
 
 - Tension de jeu : **manger ou replanter**. Une famille affamée qui mange ses semences compromet la saison suivante.
@@ -314,21 +338,21 @@ COEF_PLAT`, sauf les 4 recettes de luxe — voir plus bas).
 
 | Recette | Ingrédients | Station | Temps | Énergie | Prix | Note |
 |---|---|---|---|---|---|---|
-| Soupe de légumes | 1 carotte + 1 oignon + 1 patate + 1 L eau | Cuisine | 30 s | 43 | 7 | repas familial |
-| Salade de tomates | 2 tomates + 1 huile | Cuisine | 10 s | 38 | 8 | rapide, léger |
-| Quiche aux épinards | 2 farine + 2 œufs + 1 lait + 1 épinard | Four | 40 s | 95 | 14 | repas familial |
-| Fromage frais | 3 lait | Cuisine | 60 s | 62 | 16 | se conserve 8 nuits (mieux que le lait cru, 4 nuits) |
-| Riz au lait | 2 riz + 1 lait | Cuisine | 30 s | 47 | 8 | repas familial |
-| Pain à l'ail | 1 pain + 1 ail + 1 huile | Four | 15 s | 69 | 13 | utilise le pain comme ingrédient (retiré du stock comme n'importe quel autre) |
-| Poivrons farcis | 2 poivrons + 1 viande de mouton + 1 riz | Four | 40 s | 81 | 13 | repas copieux (viande = mouton, comme le ragoût) |
-| Tarte aux fraises | 2 farine + 3 fraises + 1 œuf | Four | 40 s | 70 | 13 | dessert |
-| Confiture de fraises | 4 fraises | Cuisine | 30 s | 26 | 10 | se conserve bien : imperissable |
-| Chocolat chaud 🌟 | 1 cacao + 1 lait | Cuisine | 20 s | 21 | **36** (×3) | luxe |
-| Café 🌟 | 1 café + 1 L eau | Cuisine | 10 s | 0 | **21** (×3) | luxe ; id technique `cafe_boisson` (distinct de l'item `cafe`) |
-| Crème à la vanille 🌟 | 1 vanille + 2 lait + 2 œufs | Cuisine | 45 s | 75 | **81** (×3) | luxe |
-| Bière artisanale 🌟 | 2 houblon + 1 L eau | Cuisine | 60 s | 0 | **21** (×3) | luxe ; ne périme pas (comme le blé/la farine/la laine) |
-| Rôti de bœuf | 2 viande de bœuf + 2 carottes + 1 patate | Four | 60 s | 144 | 18 | repas copieux |
-| Poulet rôti à l'ail | 1 viande de volaille + 2 patates + 1 ail | Four | 45 s | 75 | 12 | repas familial |
+| Soupe de légumes | 1 carotte + 1 oignon + 1 patate + 1 L eau | Cuisine | 30 s | 43 | 12 | repas familial |
+| Salade de tomates | 2 tomates + 1 huile | Cuisine | 10 s | 38 | 10 | rapide, léger |
+| Quiche aux épinards | 2 farine + 2 œufs + 1 lait + 1 épinard | Four | 40 s | 95 | 26 | repas familial |
+| Fromage frais | 3 lait | Cuisine | 60 s | 62 | 31 | se conserve 8 nuits (mieux que le lait cru, 4 nuits) |
+| Riz au lait | 2 riz + 1 lait | Cuisine | 30 s | 47 | 16 | repas familial |
+| Pain à l'ail | 1 pain + 1 ail + 1 huile | Four | 15 s | 69 | 16 | utilise le pain comme ingrédient (retiré du stock comme n'importe quel autre) |
+| Poivrons farcis | 2 poivrons + 1 viande de mouton + 1 riz | Four | 40 s | 81 | 26 | repas copieux (viande = mouton, comme le ragoût) |
+| Tarte aux fraises | 2 farine + 3 fraises + 1 œuf | Four | 40 s | 70 | 23 | dessert |
+| Confiture de fraises | 4 fraises | Cuisine | 30 s | 26 | 21 | se conserve bien : imperissable |
+| Chocolat chaud 🌟 | 1 cacao + 1 lait | Cuisine | 20 s | 21 | **72** (×3) | luxe |
+| Café 🌟 | 1 café + 1 L eau | Cuisine | 10 s | 0 | **39** (×3) | luxe ; id technique `cafe_boisson` (distinct de l'item `cafe`) |
+| Crème à la vanille 🌟 | 1 vanille + 2 lait + 2 œufs | Cuisine | 45 s | 75 | **162** (×3) | luxe |
+| Bière artisanale 🌟 | 2 houblon + 1 L eau | Cuisine | 60 s | 0 | **39** (×3) | luxe ; ne périme pas (comme le blé/la farine/la laine) |
+| Rôti de bœuf | 2 viande de bœuf + 2 carottes + 1 patate | Four | 60 s | 144 | 36 | repas copieux |
+| Poulet rôti à l'ail | 1 viande de volaille + 2 patates + 1 ail | Four | 45 s | 75 | 23 | repas familial |
 
 **Recettes de luxe (🌟) — règle du multiplicateur** : ces 4 recettes portent un
 champ optionnel `priceMultiplier: 3` sur leur entrée `DATA.recipes`, lu par
@@ -430,7 +454,7 @@ Le joueur ne possède plus un panneau et une batterie, mais un **parc** qu'il ag
 
 **🍗 Abattage des poules (v19) : dernier recours, jamais une rente**
 - Contrairement au mouton et à la vache, la poule n'est **pas suivie individuellement** (pas de poids) : l'abattage rend un nombre **fixe** de portions de `viande_volaille` (3 portions), quel que soit son âge ou son historique de ponte.
-- Volontairement **peu rentable à court terme** : 3 portions à 3 💰 (9 💰) contre un prix d'achat de 15 💰. Abattre une poule pour la revendre en viande immédiate est donc toujours une perte sèche par rapport à son prix d'achat — l'abattage reste une option de variété alimentaire ou de gestion de place, jamais une meilleure rente que la ponte continue, la laine du mouton ou le lait de la vache.
+- Conçu en v19 pour être **peu rentable à court terme** : 3 portions à 3 💰 (9 💰) contre un prix d'achat de 15 💰, donc une perte sèche. 🟡 **Depuis v21** (prix de vente ×2), la volaille se vend 6 💰 : 3 portions rapportent **18 💰**, soit **plus que le prix d'achat (15 💰)**. Cette intention d'équilibrage n'est plus respectée ; décision de game design ouverte (voir 8.9).
 - La poule abattue **quitte le cheptel immédiatement** : elle ne pond plus et ne consomme plus de blé dès la nuit suivante. La capacité du Poulailler ne change pas ; la place libérée peut accueillir une poule rachetée au Comptoir (jamais automatiquement).
 
 ### 1.5 Paramètres par entité
@@ -1173,11 +1197,11 @@ Un arbre adulte donne environ **30 fruits par an** (≈ 300 énergie).
 | Consommation | 0,5 blé / nuit |
 | Production | 1 œuf / nuit si nourrie (13 énergie depuis le §4, vente 2 💰) |
 | Silo (niv. 1 → 5) | 20 · 50 · 100 · 200 · 400 blé (coûts 30 · 80 · 180 · 400) |
-| **Abattage (v19)** | **rendement fixe : 3 portions de `viande_volaille`** (14 énergie chacune, vente 3 💰), quel que soit l'historique de la poule. La poule quitte le cheptel : elle ne pond plus, ne mange plus de blé ; sa place se libère (rachat au Comptoir, jamais automatique). |
+| **Abattage (v19)** | **rendement fixe : 3 portions de `viande_volaille`** (14 énergie chacune, vente 6 💰 depuis v21, 3 💰 avant), quel que soit l'historique de la poule. La poule quitte le cheptel : elle ne pond plus, ne mange plus de blé ; sa place se libère (rachat au Comptoir, jamais automatique). |
 
 Repère : 12 poules = 156 énergie / nuit et 6 blé / nuit, soit environ 6 parcelles de blé.
 
-Repère (v19, équilibrage de l'abattage) : abattre une poule tout de suite rend 3 × 3 = **9 💰** de viande, contre un prix d'achat de **15 💰** — toujours une perte sèche par rapport à l'investissement initial, et sans commune mesure avec la ponte continue (2 💰/nuit à vie). L'abattage des poules reste donc un choix de dernier recours (variété alimentaire, place à libérer), jamais une rente plus intéressante que la ponte, le mouton ou la vache.
+Repère (v19, équilibrage de l'abattage) : abattre une poule tout de suite rendait 3 × 3 = **9 💰** de viande, contre un prix d'achat de **15 💰** — une perte sèche. 🟡 **Depuis v21** elle rend 3 × 6 = **18 💰** : plus que le prix d'achat. La ponte reste plus rentable sur la durée (1 œuf/nuit à 4 💰 depuis v21), mais l'abattage n'est plus une perte sèche (décision ouverte, voir 8.9).
 
 ### 8.6 Pâturage, moutons et vaches (v19)
 
@@ -1187,16 +1211,16 @@ Repère (v19, équilibrage de l'abattage) : abattre une poule tout de suite rend
 | 0,05 ha supplémentaire | 40 💰 × 1,2ⁿ⁻¹ (n = rang de l'achat de surface au-delà de la surface de départ — le terrain est commun aux moutons et aux vaches, voir 1.4) |
 | Mouton | 60 💰 (fixe, pas de revente), 0,05 ha |
 | Poids de départ / gain / max (mouton) | 20 kg / +0,5 kg par nuit / 50 kg |
-| Viande de mouton à l'abattage | `viande_mouton` = poids × 50 % ÷ 0,5 kg → 20 à 50 portions (38 énergie depuis le §4, vente 5 💰) |
-| Tonte | toutes les 7 nuits → 1 laine (vente 6 💰, non périssable) |
+| Viande de mouton à l'abattage | `viande_mouton` = poids × 50 % ÷ 0,5 kg → 20 à 50 portions (38 énergie depuis le §4, vente 10 💰 depuis v21, 5 💰 avant) |
+| Tonte | toutes les 7 nuits → 1 laine (vente 12 💰 depuis v21, 6 💰 avant ; non périssable) |
 | **Vache (v19)** | **200 💰** (fixe, pas de revente), **0,15 ha** (3× un mouton) |
 | Poids de départ / gain / max (vache) | 40 kg / +1 kg par nuit / 150 kg |
-| **Lait (v19)** | **1 lait / nuit et par vache, dès l'achat**, sans condition de maturité — tant que le pâturage suffit au troupeau entier (16 énergie, vente 4 💰, périssable 4 nuits comme l'épinard) |
-| **Viande de bœuf à l'abattage (v19)** | `viande_boeuf` = poids × 50 % ÷ 0,5 kg → 20 à 150 portions (même barème que le mouton : 38 énergie, vente 5 💰) |
+| **Lait (v19)** | **1 lait / nuit et par vache, dès l'achat**, sans condition de maturité — tant que le pâturage suffit au troupeau entier (16 énergie, vente 8 💰 depuis v21, 4 💰 avant ; périssable 4 nuits comme l'épinard) |
+| **Viande de bœuf à l'abattage (v19)** | `viande_boeuf` = poids × 50 % ÷ 0,5 kg → 20 à 150 portions (même barème que le mouton : 38 énergie, vente 10 💰 depuis v21, 5 💰 avant) |
 
-Repère : un mouton élevé jusqu'à 50 kg (60 nuits) rapporte **8 laines (48 💰)** puis **50 portions (1 900 énergie)**.
+Repère : un mouton élevé jusqu'à 50 kg (60 nuits) rapporte **8 laines (96 💰 depuis v21, 48 💰 avant)** puis **50 portions (1 900 énergie)**.
 
-Repère (v19) : une vache élevée jusqu'à 150 kg (110 nuits) rapporte **110 laits (440 💰 de vente)** en cours d'élevage, puis **150 portions de bœuf (5 700 énergie)** à l'abattage — exactement 3× le rendement en viande d'un mouton au maximum (50 portions), le même rapport que l'occupation au sol (0,15 ha contre 0,05 ha) : à surface égale, élever des vaches ou des moutons donne la même viande totale, la vache ajoutant en plus le revenu régulier du lait, en échange d'un investissement de départ et d'une croissance plus lents.
+Repère (v19) : une vache élevée jusqu'à 150 kg (110 nuits) rapporte **110 laits (880 💰 de vente depuis v21, 440 💰 avant)** en cours d'élevage, puis **150 portions de bœuf (5 700 énergie)** à l'abattage — exactement 3× le rendement en viande d'un mouton au maximum (50 portions), le même rapport que l'occupation au sol (0,15 ha contre 0,05 ha) : à surface égale, élever des vaches ou des moutons donne la même viande totale, la vache ajoutant en plus le revenu régulier du lait, en échange d'un investissement de départ et d'une croissance plus lents.
 
 ### 8.7 Stations et bâtiments
 
@@ -1225,13 +1249,24 @@ Repère (v19) : une vache élevée jusqu'à 150 kg (110 nuits) rapporte **110 la
 
 | Item | 💰 | Item | 💰 | Item | 💰 |
 |---|---|---|---|---|---|
-| Carotte | 1 | Œuf | 2 | Farine | 1 |
-| Patate | 2 | Viande | 5 | Huile | 4 |
-| Tomate | 1 | Pain | 4 | Laine | 6 |
-| Courgette | 2 | Pomme / Poire | 2 | Blé | 1 |
-| Aubergine | 2 | Conserve | 3 | Graines | 1 |
+| Carotte | 2 | Œuf | 4 | Farine | 1 |
+| Patate | 4 | Viande (mouton / bœuf) | 10 | Huile | 4 |
+| Tomate | 2 | Viande de volaille | 6 | Laine | 12 |
+| Courgette | 4 | Lait | 8 | Blé | 2 |
+| Aubergine | 4 | Pomme / Poire | 4 | Pain | 4 |
+| Oignon / Épinard / Riz | 2 | Ail / Poivron / Fraise | 4 | Conserve | 3 |
+| Houblon | 6 | Cacao | 16 | Graines | 1 |
+| Vanille | 30 | Café | 12 | | |
 
-Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi. Prix d'achat = vente × coefficient (plancher 1,2 ; graines 2,0 ; +0,1 par unité achetée, −0,1 par unité vendue).
+**Règle v21 : productions de la ferme ×2.** Les prix ci-dessus des récoltes, fruits et produits animaux valent 2 × leur valeur d'origine (carotte 1, patate 2, œuf 2, viande 5, laine 6, blé 1, pomme/poire 2, cacao 8, vanille 15, café 6, houblon 3, lait 4, volaille 3, etc.). Le multiplicateur (`DATA.MARCHE.MULTIPLICATEUR_PRODUCTION`) est appliqué à la source par `applyProductionPriceMultiplier()`. Inchangés : graines, conserve, farine, huile, pain (eau + farine), bâtiments, appareils, animaux, arbres, soins, améliorations. Le prix d'achat au Comptoir reste prix de vente × coefficient : il double donc lui aussi pour ces productions (carotte : 2,4 au départ au lieu de 1,2).
+
+Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi (formule inchangée, **pas de ×2 supplémentaire** : les ingrédients sont déjà doublés ; ex. gratin de patates 10 → 21, ragoût 18 → 36). Prix d'achat = vente × coefficient (plancher 1,2 ; graines 2,0 ; +0,1 par unité achetée, −0,1 par unité vendue).
+
+**🟡 Décisions de game design ouvertes (v21)** :
+- **Abattage des poules** : 3 × 6 = 18 💰 de viande pour une poule achetée 15 💰 (avant : 9 💰). La note d'équilibrage de v19 (« jamais une perte évitée ») ne tient plus. À trancher : réduire `portionsAbattage`, ou revoir le prix de la volaille, ou accepter.
+- **Ratio graines / récolte** : les graines restent à 1 💰 de vente (achat 2,0 au plancher) alors que les récoltes valent le double ; produire est encore plus avantageux qu'acheter, ce qui va dans le sens voulu, mais l'écart de dépannage grandit.
+- **Courbe de progression cible (8.10)** : les revenus de vente doublent ; la courbe et les achats du bot de simulation (`simulate.mjs`) n'ont pas été recalibrés.
+- **Pain, farine, huile** : non doublés (transformations/eau), donc moulins et presses rapportent proportionnellement moins que vendre le blé brut (blé 2 💰 contre farine 1 💰).
 
 ### 8.10 Courbe de progression cible
 
