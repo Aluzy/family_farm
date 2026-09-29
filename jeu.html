@@ -11630,6 +11630,55 @@ test('migration v12 → v13 : une sauvegarde à décimales passe en unités enti
   assertEqual(again, m);
 });
 
+test('points de technologie : chapitres, jalons de maîtrise, mode libre', () => {
+  const s = createInitialState(1);
+  assertEqual(s.pointsTech, { solde: 0, gagnes: 0, maitrise: [], libre: 0, annonces: [] });
+  // chapitre terminé : 2 PT pour le chapitre 1
+  completeChapter(s);
+  assertEqual([techPoints(s).solde, techPoints(s).gagnes], [2, 2]);
+  assertEqual(techPoints(s).annonces[0], { pt: 2, raison: 'Chapitre 1 terminé' });
+  // jalon : 50 pains cuits → 1 PT, une seule fois
+  s.campagne.compteurs.pains = 50;
+  assertEqual(checkMastery(s), 1);
+  assertEqual(checkMastery(s), 0, 'une seule fois');
+  assertEqual(techPoints(s).maitrise, ['pains_50']);
+  assertEqual(techPoints(s).solde, 3);
+  // les 7 chapitres rapportent 26 PT
+  const t = createInitialState(1);
+  for (let i = 0; i < 7; i++) completeChapter(t);
+  assertEqual([t.campagne.fini, techPoints(t).gagnes], [true, 26]);
+  // mode libre : +1 PT toutes les 5 nuits à 100 %
+  t.nuit = newNightStats();
+  t.nuit.besoin = 150;
+  for (let i = 0; i < 5; i++) {
+    t.nuit.energieProduit = 150;
+    recordNight(t);
+  }
+  assertEqual([techPoints(t).libre, techPoints(t).gagnes, t.campagne.compteurs.nuits100], [5, 27, 5]);
+});
+
+test('migration v13 → v14 : PT des chapitres faits, automatisations et recettes offertes', () => {
+  const s = createInitialState(1);
+  delete s.pointsTech;
+  s.technologies = ['semis_auto'];
+  s.campagne.chapitre = 5; // chapitres 1 à 4 terminés : 2 + 3 + 3 + 4 = 12 PT
+  s.campagne.historique = [{ nuit: 1, pct: 100, energie: 150 }, { nuit: 2, pct: 80, energie: 120 }];
+  delete s.campagne.compteurs.nuits100;
+  s.potager.niveau = 5;
+  s.poulailler.construit = true;
+  s.poulailler.niveau = 5;
+  s.stations.four.construit = true;
+  s.version = 13;
+  const m = migrate({ v: 13, t: 0, s: JSON.parse(JSON.stringify(s)) });
+  assertEqual(m.version, 14);
+  assertEqual([m.pointsTech.solde, m.pointsTech.gagnes, m.campagne.compteurs.nuits100], [12, 12, 1]);
+  for (const id of ['semis_auto', 'ea_econome', 'ea_irrigation', 'cu_outils', 'cu_recolte_auto', 'el_mangeoire', 'cui_boulangerie']) {
+    assert(m.technologies.includes(id), `${id} offert`);
+  }
+  assertEqual(m.technologies.includes('cui_laiterie'), false, 'pas de Pâturage : pas de Laiterie');
+  assertEqual([isAutomated(m, 'potager'), isAutomated(m, 'poulailler')], [true, true], 'rien n\'est perdu');
+});
+
 test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage', () => {
   const s = createInitialState(1);
   s.technologies = ['reveil_1', 'nexiste_pas'];
