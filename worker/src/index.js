@@ -2,11 +2,14 @@
 // - POST /session : reçoit le JSON d'une session (depuis le jeu) et l'écrit dans
 //   le bucket R2 sous la clé sessions/<sid>.json. Un envoi ultérieur de la même
 //   session remplace le fichier (dernière version = la plus complète).
-// - Tous les jours à 13 h (heure de Paris) : calcule le rapport des dernières
-//   24 h à partir des sessions et l'envoie par e-mail (voir report.mjs).
-// - GET /report (facultatif) : aperçu du rapport, protégé par REPORT_TOKEN.
+// - Tous les jours à 13 h (heure de Paris) : calcule le rapport des dernières 24 h
+//   et le publie comme issue d'un dépôt GitHub PRIVÉ (l'e-mail vient des notifications
+//   GitHub). Le Worker refuse de publier si ce dépôt n'est pas privé : le rapport
+//   contient les commentaires des joueurs.
+// - GET /report (facultatif) : aperçu du rapport en Markdown, ou publication de test
+//   avec &publish=1. Protégé par REPORT_TOKEN : sans ce secret, la route n'existe pas.
 
-import { buildReport, renderText, renderHtml, reportSubject, parisHour } from './report.mjs';
+import { buildReport, renderMarkdown, reportSubject, parisHour } from './report.mjs';
 
 const ALLOWED_ORIGIN = 'https://aluzy.github.io';
 const MAX_BYTES = 64 * 1024;
@@ -82,25 +85,47 @@ async function makeReport(env, now) {
   return buildReport(sessions, now, { unreadable, truncated });
 }
 
-// Envoi par Resend (https://resend.com/docs/api-reference/emails/send-email).
-async function sendEmail(env, { subject, text, html }) {
-  if (!env.RESEND_API_KEY || !env.REPORT_TO) throw new Error('RESEND_API_KEY ou REPORT_TO non configuré');
-  const to = String(env.REPORT_TO).split(',').map((s) => s.trim()).filter(Boolean);
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: env.REPORT_FROM || 'Ferme Familiale <onboarding@resend.dev>',
-      to, subject, text, html,
-    }),
+// Une issue GitHub accepte 65 536 signes au plus.
+const MAX_ISSUE_CHARS = 60000;
+const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+
+async function github(env, method, path, body) {
+  const res = await fetch(`https://api.github.com${path}`, {
+    method,
+    headers: {
+      'Authorization': `Bearer ${env.REPORT_GITHUB_TOKEN}`,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'family-farm-report',
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`Resend ${res.status} : ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) throw new Error(`GitHub ${method} ${path} : ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return res.json();
+}
+
+// Crée l'issue du rapport dans le dépôt privé REPORT_GITHUB_REPO (« compte/depot »).
+// Retourne l'adresse de l'issue.
+async function publishReport(env, report) {
+  const repo = String(env.REPORT_GITHUB_REPO || '');
+  if (!env.REPORT_GITHUB_TOKEN || !REPO_RE.test(repo)) {
+    throw new Error('REPORT_GITHUB_TOKEN ou REPORT_GITHUB_REPO manquant ou invalide');
+  }
+  // Garde-fou : jamais de commentaires de joueurs dans un dépôt public.
+  const info = await github(env, 'GET', `/repos/${repo}`);
+  if (info.private !== true) throw new Error(`le dépôt ${repo} n'est pas privé : publication refusée`);
+
+  let body = renderMarkdown(report);
+  if (body.length > MAX_ISSUE_CHARS) body = `${body.slice(0, MAX_ISSUE_CHARS)}\n\n… rapport tronqué (trop long pour une issue GitHub).\n`;
+  const issue = await github(env, 'POST', `/repos/${repo}/issues`, { title: reportSubject(report), body });
+  return issue.html_url;
 }
 
 async function runDailyReport(env, now) {
   const report = await makeReport(env, now);
-  await sendEmail(env, { subject: reportSubject(report), text: renderText(report), html: renderHtml(report) });
-  console.log(`rapport envoyé : ${report.sessions} session(s), ${report.comments.length} commentaire(s)`);
+  const url = await publishReport(env, report);
+  console.log(`rapport publié : ${report.sessions} session(s), ${report.comments.length} commentaire(s) — ${url}`);
 }
 
 // Comparaison sans fuite de temps sur le jeton d'accès à l'aperçu.
@@ -113,27 +138,28 @@ async function sameSecret(a, b) {
   return diff === 0;
 }
 
-// GET /report?token=…            : affiche le rapport (texte), sans l'envoyer.
-// GET /report?token=…&send=1     : l'envoie aussi par e-mail (pour tester).
-// Le jeton peut aussi venir de l'en-tête Authorization: Bearer …
+// GET /report : rapport des dernières 24 h, en Markdown (&publish=1 : le publie aussi).
+// Le jeton vient de l'en-tête « Authorization: Bearer … » (à préférer : il ne
+// s'affiche pas dans les journaux) ou, pour un essai dans un navigateur, de ?token=…
 // Sans REPORT_TOKEN configuré, cette route n'existe pas.
-async function handleReportPreview(request, env, url) {
+async function handleReport(request, env, url) {
   if (!env.REPORT_TOKEN) return new Response('not found', { status: 404 });
   const bearer = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
   const given = bearer || url.searchParams.get('token') || '';
   if (!given || !(await sameSecret(given, env.REPORT_TOKEN))) return new Response('accès refusé', { status: 403 });
 
   const report = await makeReport(env, new Date());
-  const text = renderText(report);
-  if (url.searchParams.get('send') === '1') {
+  const md = renderMarkdown(report);
+  const headers = { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store' };
+  if (url.searchParams.get('publish') === '1') {
     try {
-      await sendEmail(env, { subject: reportSubject(report), text, html: renderHtml(report) });
-      return new Response(`E-mail envoyé.\n\n${text}`, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+      const issue = await publishReport(env, report);
+      return new Response(`Issue créée : ${issue}\n\n${md}`, { headers });
     } catch (e) {
-      return new Response(`Échec de l'envoi : ${e.message}\n\n${text}`, { status: 502, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+      return new Response(`Échec de la publication : ${e.message}\n\n${md}`, { status: 502, headers });
     }
   }
-  return new Response(text, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+  return new Response(md, { headers });
 }
 
 export default {
@@ -141,7 +167,7 @@ export default {
     const origin = request.headers.get('Origin') || '';
     const url = new URL(request.url);
 
-    if (request.method === 'GET' && url.pathname === '/report') return handleReportPreview(request, env, url);
+    if (request.method === 'GET' && url.pathname === '/report') return handleReport(request, env, url);
 
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
     if (request.method !== 'POST' || url.pathname !== '/session') return json({ error: 'not found' }, 404, origin);
@@ -169,7 +195,7 @@ export default {
   },
 
   // Deux déclencheurs UTC (11 h et 12 h) couvrent l'heure d'été et l'heure d'hiver :
-  // seul celui qui tombe à 13 h à Paris produit un rapport.
+  // seul celui qui tombe à 13 h à Paris publie un rapport.
   async scheduled(event, env, ctx) {
     const at = new Date(event.scheduledTime);
     if (parisHour(at) !== 13) return;

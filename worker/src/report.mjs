@@ -112,14 +112,10 @@ function fmtLongDate(date) {
   }).format(date);
 }
 
-// Heure (0 à 23) à Paris : sert à ne lancer le rapport qu'à 13 h, été comme hiver.
+// Heure (0 à 23) à Paris : sert à ne publier le rapport qu'à 13 h, été comme hiver.
 export function parisHour(date) {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', hourCycle: 'h23' }).formatToParts(date);
   return Number(parts.find((p) => p.type === 'hour').value);
-}
-
-export function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' }[c]));
 }
 
 /* ---------- chapitres ---------- */
@@ -267,66 +263,30 @@ export function buildReport(sessions, now, meta = {}) {
   };
 }
 
-/* ---------- rendu ---------- */
+/* ---------- rendu Markdown (corps d'une issue GitHub) ---------- */
+
+// Les compteurs, la version du jeu et le type d'appareil viennent du navigateur
+// du joueur, donc d'une source non fiable : tout texte inséré hors bloc de code
+// est neutralisé (mise en forme, liens, @mentions, références #123).
+function mdSafe(s) {
+  return String(s)
+    .replace(/[\\`*_{}[\]()<>#+!|~&]/g, (c) => `\\${c}`)
+    .replace(/@/g, '@​')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Bloc de code dont la clôture est plus longue que toute suite de ` du texte :
+// un commentaire ne peut ni en sortir ni déclencher de mention ou de lien.
+function codeBlock(text) {
+  const runs = text.match(/`+/g) || [];
+  const fence = '`'.repeat(Math.max(3, ...runs.map((r) => r.length + 1)));
+  return `${fence}text\n${text}\n${fence}`;
+}
 
 function commentMeta(c) {
   return [fmtDateTime(new Date(c.at)), c.chapter ? `chapitre ${c.chapter}` : null, c.device || null, c.game ? `v${c.game}` : null]
-    .filter(Boolean).join(' · ');
-}
-
-export function reportSubject(r) {
-  return `Ferme Familiale · rapport du ${new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' }).format(r.end)} : ${r.sessions} session${r.sessions > 1 ? 's' : ''}`;
-}
-
-export function renderText(r) {
-  const L = [];
-  L.push(`Ferme Familiale — rapport du ${fmtLongDate(r.end)}`);
-  L.push(`Période : ${fmtDateTime(r.start)} → ${fmtDateTime(r.end)} (heure de Paris)`);
-  L.push('');
-  L.push('SESSIONS');
-  L.push(`- Sessions ouvertes : ${r.sessions}`);
-  if (r.sessions) {
-    L.push(`- Temps actif moyen par session : ${fmtDuration(r.avgActiveMs)} (médiane ${fmtDuration(r.medianActiveMs)})`);
-    L.push(`- Sessions très courtes (moins de 30 s) : ${r.shortSessions}`);
-  }
-  L.push('');
-  L.push('TEMPS PASSÉ PAR CHAPITRE');
-  if (r.chapters.length) {
-    for (const c of r.chapters) {
-      L.push(`- Chapitre ${c.chapter} : ${c.sessions} session${c.sessions > 1 ? 's' : ''}, ${fmtDuration(c.totalMs)} au total, ${fmtDuration(c.avgMs)} en moyenne`);
-    }
-  } else {
-    L.push('- Aucune donnée (aucune nuit jouée pendant la période).');
-  }
-  if (r.unknownChapter) L.push(`  (${r.unknownChapter} session${r.unknownChapter > 1 ? 's' : ''} sans nuit jouée : chapitre inconnu, non comptée${r.unknownChapter > 1 ? 's' : ''} ci-dessus)`);
-  L.push('  Temps actif (onglet visible), réparti au prorata du temps écoulé dans chaque chapitre.');
-  L.push('');
-  L.push(`TOP ${TOP_N} DES ACTIONS DES JOUEURS`);
-  if (r.topActions.length) {
-    r.topActions.forEach((a, i) => L.push(`${i + 1}. ${a.label} : ${a.count}`));
-  } else {
-    L.push('- Aucune action enregistrée.');
-  }
-  L.push(`  (${r.interfaceClicks} clics d'interface — navigation, fenêtres, réglages — exclus du classement)`);
-  if (r.signals.length) {
-    L.push('');
-    L.push('AUTRES SIGNAUX');
-    for (const s of r.signals) L.push(`- ${s.label} : ${s.count}`);
-  }
-  L.push('');
-  L.push(`COMMENTAIRES DES JOUEURS (${r.comments.length})`);
-  if (r.comments.length) {
-    for (const c of r.comments.slice(0, MAX_COMMENTS_SHOWN)) {
-      L.push(`- ${commentMeta(c)}`);
-      L.push(`  « ${c.text.replace(/\s+/g, ' ')} »`);
-    }
-    if (r.comments.length > MAX_COMMENTS_SHOWN) L.push(`… et ${r.comments.length - MAX_COMMENTS_SHOWN} autres commentaires.`);
-  } else {
-    L.push('- Aucun commentaire.');
-  }
-  const notes = dataNotes(r);
-  if (notes.length) { L.push(''); L.push('À SAVOIR'); notes.forEach((n) => L.push(`- ${n}`)); }
-  return L.join('\n');
+    .filter(Boolean).map(mdSafe).join(' · ');
 }
 
 function dataNotes(r) {
@@ -336,64 +296,76 @@ function dataNotes(r) {
   return notes;
 }
 
-export function renderHtml(r) {
-  const e = escapeHtml;
-  const h2 = (t) => `<h2 style="font-size:16px;margin:24px 0 8px;color:#183b2a">${e(t)}</h2>`;
-  const td = 'padding:6px 10px;border-bottom:1px solid #e7dfcf;';
-  const table = (rows, head) => `<table style="border-collapse:collapse;width:100%;font-size:14px">${head
-    ? `<tr>${head.map((x) => `<th align="left" style="${td}color:#647268;font-size:12px">${e(x)}</th>`).join('')}</tr>` : ''}${rows
-    .map((row) => `<tr>${row.map((x) => `<td style="${td}">${e(x)}</td>`).join('')}</tr>`).join('')}</table>`;
+export function reportSubject(r) {
+  return `Rapport du ${new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' }).format(r.end)} : ${r.sessions} session${r.sessions > 1 ? 's' : ''}`;
+}
 
-  const parts = [];
-  parts.push(`<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#183326;max-width:640px;margin:auto">`);
-  parts.push(`<h1 style="font-size:20px;margin:0 0 4px">🌾 Ferme Familiale — rapport du ${e(fmtLongDate(r.end))}</h1>`);
-  parts.push(`<p style="margin:0;color:#647268;font-size:13px">Période : ${e(fmtDateTime(r.start))} → ${e(fmtDateTime(r.end))} (heure de Paris)</p>`);
-
-  parts.push(h2('Sessions'));
-  const sessionRows = [['Sessions ouvertes', String(r.sessions)]];
+export function renderMarkdown(r) {
+  const L = [];
+  L.push(`# 🌾 Ferme Familiale — rapport du ${fmtLongDate(r.end)}`);
+  L.push('');
+  L.push(`Période : ${fmtDateTime(r.start)} → ${fmtDateTime(r.end)} (heure de Paris)`);
+  L.push('');
+  L.push('## Sessions');
+  L.push('');
+  L.push(`- **Sessions ouvertes** : ${r.sessions}`);
   if (r.sessions) {
-    sessionRows.push(['Temps actif moyen par session', `${fmtDuration(r.avgActiveMs)} (médiane ${fmtDuration(r.medianActiveMs)})`]);
-    sessionRows.push(['Sessions très courtes (moins de 30 s)', String(r.shortSessions)]);
+    L.push(`- **Temps actif moyen par session** : ${fmtDuration(r.avgActiveMs)} (médiane ${fmtDuration(r.medianActiveMs)})`);
+    L.push(`- **Sessions très courtes** (moins de 30 s) : ${r.shortSessions}`);
   }
-  parts.push(table(sessionRows));
-
-  parts.push(h2('Temps passé par chapitre'));
+  L.push('');
+  L.push('## Temps passé par chapitre');
+  L.push('');
   if (r.chapters.length) {
-    parts.push(table(r.chapters.map((c) => [`Chapitre ${c.chapter}`, String(c.sessions), fmtDuration(c.totalMs), fmtDuration(c.avgMs)]),
-      ['Chapitre', 'Sessions', 'Total', 'Moyenne par session']));
+    L.push('| Chapitre | Sessions | Total | Moyenne par session |');
+    L.push('| --- | ---: | ---: | ---: |');
+    for (const c of r.chapters) L.push(`| ${c.chapter} | ${c.sessions} | ${fmtDuration(c.totalMs)} | ${fmtDuration(c.avgMs)} |`);
   } else {
-    parts.push('<p style="font-size:14px">Aucune donnée (aucune nuit jouée pendant la période).</p>');
+    L.push('Aucune donnée (aucune nuit jouée pendant la période).');
   }
+  L.push('');
   const chapterNote = [];
   if (r.unknownChapter) chapterNote.push(`${r.unknownChapter} session(s) sans nuit jouée : chapitre inconnu, non comptée(s) ci-dessus.`);
   chapterNote.push('Temps actif (onglet visible), réparti au prorata du temps écoulé dans chaque chapitre.');
-  parts.push(`<p style="font-size:12px;color:#647268">${e(chapterNote.join(' '))}</p>`);
-
-  parts.push(h2(`Top ${TOP_N} des actions des joueurs`));
+  L.push(`<sub>${chapterNote.join(' ')}</sub>`);
+  L.push('');
+  L.push(`## Top ${TOP_N} des actions des joueurs`);
+  L.push('');
   if (r.topActions.length) {
-    parts.push(table(r.topActions.map((a, i) => [String(i + 1), a.label, String(a.count)]), ['#', 'Action', 'Nombre']));
+    L.push('| # | Action | Nombre |');
+    L.push('| ---: | --- | ---: |');
+    r.topActions.forEach((a, i) => L.push(`| ${i + 1} | ${mdSafe(a.label)} | ${a.count} |`));
   } else {
-    parts.push('<p style="font-size:14px">Aucune action enregistrée.</p>');
+    L.push('Aucune action enregistrée.');
   }
-  parts.push(`<p style="font-size:12px;color:#647268">${e(`${r.interfaceClicks} clics d'interface (navigation, fenêtres, réglages) exclus du classement.`)}</p>`);
-
+  L.push('');
+  L.push(`<sub>${r.interfaceClicks} clics d'interface (navigation, fenêtres, réglages) exclus du classement.</sub>`);
   if (r.signals.length) {
-    parts.push(h2('Autres signaux'));
-    parts.push(table(r.signals.map((s) => [s.label, String(s.count)])));
+    L.push('');
+    L.push('## Autres signaux');
+    L.push('');
+    for (const s of r.signals) L.push(`- ${s.label} : ${s.count}`);
   }
-
-  parts.push(h2(`Commentaires des joueurs (${r.comments.length})`));
+  L.push('');
+  L.push(`## Commentaires des joueurs (${r.comments.length})`);
+  L.push('');
   if (r.comments.length) {
     for (const c of r.comments.slice(0, MAX_COMMENTS_SHOWN)) {
-      parts.push(`<div style="margin:0 0 12px;padding:8px 12px;background:#f6f1e3;border-radius:8px"><div style="font-size:12px;color:#647268">${e(commentMeta(c))}</div><div style="font-size:14px;white-space:pre-wrap">${e(c.text)}</div></div>`);
+      L.push(`**${commentMeta(c)}**`);
+      L.push('');
+      L.push(codeBlock(c.text));
+      L.push('');
     }
-    if (r.comments.length > MAX_COMMENTS_SHOWN) parts.push(`<p style="font-size:12px;color:#647268">… et ${r.comments.length - MAX_COMMENTS_SHOWN} autres commentaires.</p>`);
+    if (r.comments.length > MAX_COMMENTS_SHOWN) L.push(`… et ${r.comments.length - MAX_COMMENTS_SHOWN} autres commentaires.`);
   } else {
-    parts.push('<p style="font-size:14px">Aucun commentaire.</p>');
+    L.push('Aucun commentaire.');
   }
-
   const notes = dataNotes(r);
-  if (notes.length) parts.push(`<p style="font-size:12px;color:#8a5a00">${e(notes.join(' '))}</p>`);
-  parts.push('</div>');
-  return parts.join('');
+  if (notes.length) {
+    L.push('');
+    L.push('## À savoir');
+    L.push('');
+    for (const n of notes) L.push(`- ${n}`);
+  }
+  return L.join('\n').replace(/\n{3,}/g, '\n\n') + '\n';
 }

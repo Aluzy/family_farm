@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Tests du rapport quotidien (worker/src/report.mjs et worker/src/index.js).
-// Aucun accès réseau : le bucket R2 et l'envoi d'e-mail sont simulés.
+// Aucun accès réseau : le bucket R2 et l'API GitHub sont simulés.
 //
 // Usage : node test-report.mjs
 
@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
-  buildReport, chapterSegments, renderText, renderHtml, reportSubject, parisHour, fmtDuration,
+  buildReport, chapterSegments, renderMarkdown, reportSubject, fmtDuration, parisHour,
 } from './worker/src/report.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -132,41 +132,69 @@ test('commentaires : datés au moment de l\'écriture, hors période exclus, cha
   eq(r.comments[1].device, 'mobile');
 });
 
-/* ---------- rendu ---------- */
+/* ---------- rendu Markdown ---------- */
 
-test('texte et HTML : chiffres clés présents, HTML échappé', () => {
+test('Markdown : chiffres clés présents, tableaux, titre', () => {
   const s = session({
     counters: { clicks: { water: 3 } },
     events: [night(60000, 1)],
-    feedback: [{ t: 1000, text: '<script>alert("x")</script> & « merci »' }],
+    feedback: [{ t: 1000, text: 'Le chapitre 1 est trop long' }],
   });
   const r = buildReport([s, session()], NOW);
-  const text = renderText(r);
-  assert(text.includes('Sessions ouvertes : 2'));
-  assert(text.includes('1. Arroser : 3'));
-  assert(text.includes('Chapitre 1'));
-  assert(text.includes('<script>'), 'le texte brut garde le commentaire tel quel');
-  const html = renderHtml(r);
-  assert(!html.includes('<script>'), 'aucune balise script dans l\'e-mail HTML');
-  assert(html.includes('&lt;script&gt;'));
-  assert(html.includes('Sessions ouvertes'));
+  const md = renderMarkdown(r);
+  assert(md.startsWith('# '), 'titre de niveau 1');
+  assert(md.includes('**Sessions ouvertes** : 2'));
+  assert(md.includes('| 1 | Arroser | 3 |'));
+  assert(md.includes('| Chapitre | Sessions | Total | Moyenne par session |'));
+  assert(md.includes('Le chapitre 1 est trop long'));
+  assert(md.endsWith('\n') && !/\n{3,}/.test(md), 'pas de lignes vides en excès');
   assert(reportSubject(r).includes('30/09/2026') && reportSubject(r).includes('2 sessions'));
 });
 
+test('Markdown : les commentaires ne peuvent ni mentionner quelqu\'un, ni lier, ni sortir de leur bloc', () => {
+  const hostile = '@octocat merci ! Voir #123 et [clic](https://exemple.org) ![img](https://x/y.png) <script>alert(1)</script>\n```\n# faux titre\n````';
+  const r = buildReport([session({ feedback: [{ t: 1000, text: hostile }] })], NOW);
+  const md = renderMarkdown(r);
+  const start = md.indexOf('## Commentaires');
+  const section = md.slice(start);
+  // Le texte hostile est enfermé dans un bloc de code dont la clôture est plus longue que ses ` .
+  const fence = section.match(/^(`{3,})text$/m);
+  assert(fence && fence[1].length >= 5, 'clôture allongée : ' + (fence && fence[1]));
+  const inside = section.slice(section.indexOf(fence[0]) + fence[0].length, section.lastIndexOf(fence[1]));
+  assert(inside.includes('@octocat') && inside.includes('# faux titre'), 'le texte est bien dans le bloc');
+  // Le titre « # faux titre » ne doit exister nulle part hors du bloc.
+  const outside = md.replace(inside, '');
+  assert(!/^# faux titre/m.test(outside), 'aucun titre injecté');
+});
+
+test('Markdown : version du jeu, appareil et actions inconnues (venus du navigateur) sont neutralisés', () => {
+  const s = session({
+    game: '@octocat`x`', device: { cls: '[lien](https://x.org)' },
+    counters: { clicks: { '@octocat': 5, '<img src=x>': 4, 'a|b': 3 } },
+    feedback: [{ t: 1000, text: 'ok' }],
+  });
+  const md = renderMarkdown(buildReport([s], NOW));
+  assert(!md.includes('@octocat'), 'mention neutralisée par un caractère invisible');
+  assert(md.includes('@\u200boctocat'), 'le texte reste lisible');
+  assert(!/(^|[^\\])<img/.test(md), 'balise HTML échappée (\\<)');
+  assert(!md.includes('[lien](https'), 'lien échappé');
+  const rows = md.split('\n').filter((l) => l.startsWith('| ') && /non répertorié/.test(l));
+  assert(rows.length === 3, 'trois lignes de tableau, aucune colonne créée par le « | » : ' + rows.length);
+  for (const row of rows) eq(row.split(/(?<!\\)\|/).length, 5, 'colonnes du tableau : ' + row);
+});
+
 test('rapport vide : lisible, sans erreur', () => {
-  const r = buildReport([], NOW);
-  const text = renderText(r);
-  assert(text.includes('Sessions ouvertes : 0'));
-  assert(text.includes('Aucun commentaire'));
-  assert(text.includes('Aucune action enregistrée'));
-  assert(renderHtml(r).length > 100);
+  const md = renderMarkdown(buildReport([], NOW));
+  assert(md.includes('**Sessions ouvertes** : 0'));
+  assert(md.includes('Aucun commentaire'));
+  assert(md.includes('Aucune action enregistrée'));
+  assert(md.includes('Aucune donnée'));
 });
 
 test('rapport : signale les fichiers illisibles et la lecture partielle', () => {
-  const r = buildReport([session()], NOW, { unreadable: 2, truncated: 5 });
-  const text = renderText(r);
-  assert(/2 fichier\(s\) de session illisible/.test(text));
-  assert(/5 fichier\(s\) de session non lus/.test(text));
+  const md = renderMarkdown(buildReport([session()], NOW, { unreadable: 2, truncated: 5 }));
+  assert(/2 fichier\(s\) de session illisible/.test(md));
+  assert(/5 fichier\(s\) de session non lus/.test(md));
 });
 
 test('durées : format lisible', () => {
@@ -176,17 +204,7 @@ test('durées : format lisible', () => {
   eq(fmtDuration(NaN), '0 s');
 });
 
-test('13 h à Paris : heure d\'été (11 h UTC) et heure d\'hiver (12 h UTC)', () => {
-  eq(parisHour(new Date('2026-07-01T11:00:00Z')), 13);
-  eq(parisHour(new Date('2026-07-01T12:00:00Z')), 14);
-  eq(parisHour(new Date('2026-12-01T12:00:00Z')), 13);
-  eq(parisHour(new Date('2026-12-01T11:00:00Z')), 12);
-  // Jours de changement d'heure 2026 : 29 mars (été) et 25 octobre (hiver).
-  eq(parisHour(new Date('2026-03-29T11:00:00Z')), 13);
-  eq(parisHour(new Date('2026-10-25T12:00:00Z')), 13);
-});
-
-/* ---------- Worker (R2 et e-mail simulés) ---------- */
+/* ---------- Worker (R2 simulé) ---------- */
 
 async function loadWorker() {
   const dir = mkdtempSync(join(tmpdir(), 'ff-worker-'));
@@ -212,60 +230,7 @@ function fakeBucket(files) {
   };
 }
 
-function withFetch(fn) {
-  return async () => {
-    const real = globalThis.fetch;
-    const calls = [];
-    globalThis.fetch = async (url, opts) => { calls.push({ url, opts, body: JSON.parse(opts.body) }); return new Response('{"id":"abc"}', { status: 200 }); };
-    try { await fn(calls); } finally { globalThis.fetch = real; }
-  };
-}
-
-const uploadedNow = new Date(NOW.getTime() - 5 * MIN);
-const baseEnv = (files) => ({ SESSIONS: fakeBucket(files), RESEND_API_KEY: 'cle-secrete', REPORT_TO: 'moi@example.org' });
-
-test('Worker : à 13 h Paris, le rapport est envoyé avec les bonnes données', withFetch(async (calls) => {
-  const worker = await loadWorker();
-  const files = {
-    'sessions/a.json': { uploaded: uploadedNow, data: session({ counters: { clicks: { water: 4 } }, feedback: [{ t: 1000, text: 'Bravo' }] }) },
-    'sessions/b.json': { uploaded: uploadedNow, broken: true },
-    'sessions/vieux.json': { uploaded: new Date(NOW.getTime() - 40 * 3600 * 1000), data: session({ startedAt: ago(40 * 3600 * 1000) }) },
-  };
-  const waits = [];
-  await worker.scheduled({ scheduledTime: NOW.getTime() }, baseEnv(files), { waitUntil: (p) => waits.push(p) });
-  await Promise.all(waits);
-  eq(calls.length, 1);
-  eq(calls[0].url, 'https://api.resend.com/emails');
-  eq(calls[0].opts.headers.Authorization, 'Bearer cle-secrete');
-  eq(calls[0].body.to, ['moi@example.org']);
-  assert(calls[0].body.from.includes('onboarding@resend.dev'));
-  assert(calls[0].body.text.includes('Sessions ouvertes : 1'));
-  assert(calls[0].body.text.includes('Arroser : 4') && calls[0].body.text.includes('Bravo'));
-  assert(/1 fichier\(s\) de session illisible/.test(calls[0].body.text));
-  assert(calls[0].body.html.includes('<table'));
-}));
-
-test('Worker : hors 13 h Paris (le second déclencheur UTC), aucun envoi', withFetch(async (calls) => {
-  const worker = await loadWorker();
-  const waits = [];
-  await worker.scheduled({ scheduledTime: NOW.getTime() + 3600 * 1000 }, baseEnv({}), { waitUntil: (p) => waits.push(p) });
-  await Promise.all(waits);
-  eq(calls.length, 0);
-}));
-
-test('Worker : un envoi qui échoue ne fait pas planter le déclencheur', withFetch(async () => {
-  const worker = await loadWorker();
-  globalThis.fetch = async () => new Response('erreur', { status: 500 });
-  const waits = [];
-  const errors = [];
-  const realError = console.error;
-  console.error = (m) => errors.push(m);
-  try {
-    await worker.scheduled({ scheduledTime: NOW.getTime() }, baseEnv({}), { waitUntil: (p) => waits.push(p) });
-    await Promise.all(waits);
-  } finally { console.error = realError; }
-  assert(errors.some((e) => /rapport en échec.*500/.test(e)), 'l\'échec est journalisé');
-}));
+const baseEnv = (files) => ({ SESSIONS: fakeBucket(files) });
 
 function post(body, origin = 'https://aluzy.github.io') {
   return new Request('https://family-farm.example/session', { method: 'POST', headers: { Origin: origin, 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
@@ -298,33 +263,148 @@ test('Worker : la collecte garde ses protections (origine, sid, événements)', 
   eq(env.SESSIONS.puts.length, 0);
 });
 
-test('Worker : GET /report n\'existe pas sans jeton configuré, refuse un mauvais jeton, sert le rapport au bon', withFetch(async (calls) => {
+test('13 h à Paris : heure d\'été (11 h UTC) et heure d\'hiver (12 h UTC)', () => {
+  eq(parisHour(new Date('2026-07-01T11:00:00Z')), 13);
+  eq(parisHour(new Date('2026-07-01T12:00:00Z')), 14);
+  eq(parisHour(new Date('2026-12-01T12:00:00Z')), 13);
+  eq(parisHour(new Date('2026-12-01T11:00:00Z')), 12);
+  // Jours de changement d'heure 2026 : 29 mars (été) et 25 octobre (hiver).
+  eq(parisHour(new Date('2026-03-29T11:00:00Z')), 13);
+  eq(parisHour(new Date('2026-10-25T12:00:00Z')), 13);
+});
+
+/* ---------- Worker : publication GitHub simulée ---------- */
+
+const TOKEN = 'github_pat_SECRET_123';
+const ghEnv = (files = {}, over = {}) => ({ SESSIONS: fakeBucket(files), REPORT_GITHUB_TOKEN: TOKEN, REPORT_GITHUB_REPO: 'Aluzy/rapports', ...over });
+const oneSession = () => ({
+  'sessions/a.json': { uploaded: uploadedNow, data: session({ counters: { clicks: { water: 4 } }, feedback: [{ t: 1000, text: 'Bravo' }] }) },
+});
+const uploadedNow = new Date(NOW.getTime() - 5 * MIN);
+
+// Remplace fetch et console pour la durée d'un test ; rend les appels GitHub et les journaux.
+function withGithub(opts, fn) {
+  if (typeof opts === 'function') { fn = opts; opts = {}; }
+  return async () => {
+    const realFetch = globalThis.fetch; const realErr = console.error; const realLog = console.log;
+    const calls = []; const errors = []; const logs = [];
+    globalThis.fetch = async (url, o = {}) => {
+      calls.push({ url: String(url), method: o.method, headers: o.headers || {}, body: o.body ? JSON.parse(o.body) : null });
+      if (o.method === 'GET') return new Response(JSON.stringify({ private: opts.isPrivate !== false }), { status: 200 });
+      if (opts.failPost) return new Response('Resource not accessible by personal access token', { status: 403 });
+      return new Response(JSON.stringify({ html_url: 'https://github.com/Aluzy/rapports/issues/7' }), { status: 201 });
+    };
+    console.error = (m) => errors.push(String(m)); console.log = (m) => logs.push(String(m));
+    try { await fn({ calls, errors, logs }); } finally { globalThis.fetch = realFetch; console.error = realErr; console.log = realLog; }
+  };
+}
+
+async function runScheduled(worker, env, when) {
+  const waits = [];
+  await worker.scheduled({ scheduledTime: when.getTime() }, env, { waitUntil: (p) => waits.push(p) });
+  await Promise.all(waits);
+}
+
+test('Worker : à 13 h Paris, l\'issue est créée dans le dépôt privé avec le bon contenu', withGithub(async ({ calls, errors, logs }) => {
   const worker = await loadWorker();
-  const files = { 'sessions/a.json': { uploaded: new Date(), data: session({ startedAt: new Date(Date.now() - 60000).toISOString() }) } };
-  const get = (qs, headers = {}) => new Request(`https://family-farm.example/report${qs}`, { headers });
-  eq((await worker.fetch(get('?token=x'), baseEnv(files))).status, 404, 'route absente sans REPORT_TOKEN');
-  const env = { ...baseEnv(files), REPORT_TOKEN: 'jeton-long-et-secret' };
-  eq((await worker.fetch(get(''), env)).status, 403);
-  eq((await worker.fetch(get('?token=faux'), env)).status, 403);
-  const ok = await worker.fetch(get('?token=jeton-long-et-secret'), env);
-  eq(ok.status, 200);
-  assert((await ok.text()).includes('Sessions ouvertes : 1'));
-  eq(calls.length, 0, 'un simple aperçu n\'envoie rien');
-  const viaHeader = await worker.fetch(get('', { Authorization: 'Bearer jeton-long-et-secret' }), env);
-  eq(viaHeader.status, 200);
-  const sent = await worker.fetch(get('?token=jeton-long-et-secret&send=1'), env);
-  eq(sent.status, 200);
-  assert((await sent.text()).startsWith('E-mail envoyé.'));
-  eq(calls.length, 1);
+  await runScheduled(worker, ghEnv(oneSession()), NOW);
+  eq(errors, []);
+  eq(calls.map((c) => `${c.method} ${c.url}`), ['GET https://api.github.com/repos/Aluzy/rapports', 'POST https://api.github.com/repos/Aluzy/rapports/issues']);
+  eq(calls[1].headers.Authorization, `Bearer ${TOKEN}`);
+  eq(calls[1].headers['X-GitHub-Api-Version'], '2022-11-28');
+  assert(calls[1].headers['User-Agent'], 'GitHub exige un User-Agent');
+  assert(calls[1].body.title.includes('Rapport du 30/09/2026') && calls[1].body.title.includes('1 session'));
+  assert(calls[1].body.body.includes('| 1 | Arroser | 4 |') && calls[1].body.body.includes('Bravo'));
+  assert(!JSON.stringify(calls[1].body).includes(TOKEN), 'le jeton ne figure pas dans l\'issue');
+  assert(logs.some((l) => l.includes('rapport publié') && l.includes('/issues/7')));
 }));
 
-test('Worker : sans clé Resend, le test d\'envoi échoue proprement et affiche quand même le rapport', async () => {
+test('Worker : hors 13 h Paris (le second déclencheur UTC), rien n\'est publié', withGithub(async ({ calls }) => {
   const worker = await loadWorker();
-  const env = { SESSIONS: fakeBucket({}), REPORT_TOKEN: 'jeton' };
-  const res = await worker.fetch(new Request('https://family-farm.example/report?token=jeton&send=1'), env);
-  eq(res.status, 502);
-  const t = await res.text();
-  assert(t.includes('RESEND_API_KEY') && t.includes('Sessions ouvertes'));
+  await runScheduled(worker, ghEnv(oneSession()), new Date(NOW.getTime() + 3600 * 1000));
+  eq(calls.length, 0);
+}));
+
+test('Worker : dépôt public → publication refusée, aucune issue créée', withGithub({ isPrivate: false }, async ({ calls, errors }) => {
+  const worker = await loadWorker();
+  await runScheduled(worker, ghEnv(oneSession()), NOW);
+  eq(calls.map((c) => c.method), ['GET'], 'seule la vérification a lieu');
+  assert(errors.some((e) => /n'est pas privé : publication refusée/.test(e)));
+}));
+
+test('Worker : configuration absente ou invalide → aucun appel réseau, échec journalisé', withGithub(async ({ calls, errors }) => {
+  const worker = await loadWorker();
+  await runScheduled(worker, ghEnv(oneSession(), { REPORT_GITHUB_TOKEN: undefined }), NOW);
+  await runScheduled(worker, ghEnv(oneSession(), { REPORT_GITHUB_REPO: '../../etc/passwd' }), NOW);
+  await runScheduled(worker, ghEnv(oneSession(), { REPORT_GITHUB_REPO: 'Aluzy/rapports/../autre' }), NOW);
+  eq(calls.length, 0);
+  eq(errors.length, 3);
+}));
+
+test('Worker : une erreur de l\'API GitHub est journalisée sans faire planter le déclencheur ni fuiter le jeton', withGithub({ failPost: true }, async ({ errors }) => {
+  const worker = await loadWorker();
+  await runScheduled(worker, ghEnv(oneSession()), NOW);
+  assert(errors.some((e) => /rapport en échec.*403/.test(e)));
+  assert(!errors.join('\n').includes(TOKEN), 'le jeton n\'est pas journalisé');
+}));
+
+test('Worker : un rapport démesuré est tronqué pour rester sous la limite d\'une issue', withGithub(async ({ calls }) => {
+  const worker = await loadWorker();
+  // Session fabriquée à la main (le navigateur n'est pas une source fiable) avec un nom d'action gigantesque.
+  const files = { 'sessions/x.json': { uploaded: uploadedNow, data: session({ counters: { clicks: { ['a'.repeat(70000)]: 5 } } }) } };
+  await runScheduled(worker, ghEnv(files), NOW);
+  const body = calls.find((c) => c.method === 'POST').body.body;
+  assert(body.length <= 60000 + 200, `taille ${body.length}`);
+  assert(body.includes('rapport tronqué'));
+}));
+
+const getReport = (qs, headers = {}) => new Request(`https://family-farm.example/report${qs}`, { headers });
+
+test('Worker : GET /report n\'existe pas sans jeton configuré, refuse un mauvais jeton, sert le rapport au bon', async () => {
+  const worker = await loadWorker();
+  const recent = new Date(Date.now() - 60000);
+  const files = {
+    'sessions/a.json': { uploaded: new Date(), data: session({ startedAt: recent.toISOString(), counters: { clicks: { water: 2 } } }) },
+    'sessions/b.json': { uploaded: new Date(), broken: true },
+    'sessions/vieux.json': { uploaded: new Date(Date.now() - 40 * 3600 * 1000), data: session({ startedAt: new Date(Date.now() - 40 * 3600 * 1000).toISOString() }) },
+  };
+  eq((await worker.fetch(getReport('?token=x'), baseEnv(files))).status, 404, 'route absente sans REPORT_TOKEN');
+  const env = { ...baseEnv(files), REPORT_TOKEN: 'jeton-long-et-secret' };
+  eq((await worker.fetch(getReport(''), env)).status, 403);
+  eq((await worker.fetch(getReport('?token=faux'), env)).status, 403);
+  eq((await worker.fetch(getReport('', { Authorization: 'Bearer faux' }), env)).status, 403);
+  const ok = await worker.fetch(getReport('', { Authorization: 'Bearer jeton-long-et-secret' }), env);
+  eq(ok.status, 200);
+  assert(/^text\/markdown/.test(ok.headers.get('Content-Type')));
+  eq(ok.headers.get('Cache-Control'), 'no-store');
+  const md = await ok.text();
+  assert(md.includes('**Sessions ouvertes** : 1'), 'seule la session récente est comptée');
+  assert(md.includes('| 1 | Arroser | 2 |'));
+  assert(/1 fichier\(s\) de session illisible/.test(md));
+  eq((await worker.fetch(getReport('?token=jeton-long-et-secret'), env)).status, 200, 'jeton dans l\'adresse : pratique pour un essai dans un navigateur');
+});
+
+test('Worker : /report sans publish ne publie rien ; avec publish=1 crée l\'issue ou explique l\'échec', withGithub(async ({ calls }) => {
+  const worker = await loadWorker();
+  const files = { 'sessions/a.json': { uploaded: new Date(), data: session({ startedAt: new Date(Date.now() - 60000).toISOString() }) } };
+  const env = ghEnv(files, { REPORT_TOKEN: 'jeton' });
+  await worker.fetch(getReport('?token=jeton'), env);
+  eq(calls.length, 0, 'un simple aperçu ne publie rien');
+  const ok = await worker.fetch(getReport('?token=jeton&publish=1'), env);
+  eq(ok.status, 200);
+  const text = await ok.text();
+  assert(text.startsWith('Issue créée : https://github.com/Aluzy/rapports/issues/7'));
+  assert(!text.includes(TOKEN));
+  eq(calls.map((c) => c.method), ['GET', 'POST']);
+  const bad = await worker.fetch(getReport('?token=jeton&publish=1'), ghEnv(files, { REPORT_TOKEN: 'jeton', REPORT_GITHUB_TOKEN: undefined }));
+  eq(bad.status, 502);
+  const t = await bad.text();
+  assert(t.includes('REPORT_GITHUB_TOKEN') && t.includes('Sessions ouvertes'), 'le rapport reste affiché');
+}));
+
+test('Worker : aucune trace de Resend ni de service d\'e-mail tiers', () => {
+  const src = readFileSync(join(here, 'worker/src/index.js'), 'utf8');
+  assert(!/resend/i.test(src));
 });
 
 /* ---------- exécution ---------- */
