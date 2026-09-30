@@ -6,3 +6,19 @@ compatibility_date = "2026-09-01"
 binding = "SESSIONS"
 bucket_name = "ferme-familiale-sessions"
 jurisdiction = "eu"
+
+# Rapport quotidien : 13 h à Paris. Cloudflare compte en UTC ; 11 h UTC = 13 h en été
+# (CEST), 12 h UTC = 13 h en hiver (CET). Le Worker ignore celui qui ne tombe pas à 13 h.
+[triggers]
+crons = ["0 11 * * *", "0 12 * * *"]
+
+# Journaux visibles dans Cloudflare : Workers › family-farm › Observability.
+[observability]
+enabled = true
+
+# Secrets à créer dans Cloudflare (Workers › family-farm › Settings › Variables and Secrets),
+# jamais dans ce fichier :
+#   RESEND_API_KEY  clé d'API Resend (envoi de l'e-mail)
+#   REPORT_TO       adresse qui reçoit le rapport (plusieurs : séparées par des virgules)
+#   REPORT_FROM     (facultatif) expéditeur ; par défaut « Ferme Familiale <onboarding@resend.dev> »
+#   REPORT_TOKEN    (facultatif) jeton long et aléatoire qui active GET /report pour tester

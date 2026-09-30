@@ -14079,8 +14079,9 @@ if (typeof module !== 'undefined' && typeof globalThis !== 'undefined') {
      du navigateur, désactive tout.
    - Aucune donnée personnelle : un numéro de session aléatoire, des compteurs
      (boutons, écrans, défilement) et des instantanés de progression.
-   - Le contenu de la sauvegarde, les textes saisis et l'adresse IP ne sont
-     jamais lus.
+   - Le contenu de la sauvegarde et l'adresse IP ne sont jamais lus. Le seul
+     texte saisi qui part est le commentaire que le joueur choisit lui-même
+     d'envoyer (Options › « Aidez-nous à améliorer le jeu ! »).
    - Ce bloc ne touche ni à l'ENGINE ni à la sauvegarde ; l'app l'appelle via
      Telemetry.* et le jeu fonctionne à l'identique s'il est absent.
    Politique publique : cookies.html (à tenir à jour avec ce fichier).
@@ -14091,7 +14092,7 @@ const Telemetry = (() => {
   const SID_KEY = 'ff_sid';            // sessionStorage : numéro de session
   const T0_KEY = 'ff_t0';              // sessionStorage : début de session
   const DATA_KEY = 'ff_data';          // sessionStorage : compteurs de la visite
-  const POLICY_VERSION = '1.0';
+  const POLICY_VERSION = '1.1';
   const CONSENT_TTL_MS = 183 * 24 * 3600 * 1000; // environ 6 mois
   const FLUSH_MS = 60000;
   const MAX_EVENTS = 400;
@@ -14099,6 +14100,8 @@ const Telemetry = (() => {
   const MAX_KEYS = 200;
   const MAX_ERRORS = 10;
   const MAX_DEAD_EVENTS = 20;
+  const MAX_FEEDBACK = 3;          // commentaires par visite
+  const MAX_FEEDBACK_CHARS = 1000; // longueur d'un commentaire
   const MAX_IDLE_STEP_MS = 10 * 60 * 1000; // un écart plus long = appareil en veille
 
   const ENDPOINT_PROD = 'https://family-farm.contact-voidr.workers.dev/session';
@@ -14186,7 +14189,7 @@ const Telemetry = (() => {
   }
 
   function emptyData() {
-    return { clicks: {}, dead: 0, scrolls: 0, tabs: {}, scroll: {}, modals: {}, errors: 0, visibleMs: 0, dropped: 0, events: [] };
+    return { clicks: {}, dead: 0, scrolls: 0, tabs: {}, scroll: {}, modals: {}, errors: 0, visibleMs: 0, dropped: 0, feedback: [], events: [] };
   }
 
   function bump(map, key, by) {
@@ -14274,6 +14277,21 @@ const Telemetry = (() => {
     });
   }
 
+  // Commentaire libre du joueur, envoyé avec la session. Retourne :
+  // 'ok' | 'empty' (rien d'écrit) | 'limit' (maximum atteint) | 'inactive' (suivi non autorisé).
+  function feedback(text) {
+    if (!active) return 'inactive';
+    const t = clean(text, MAX_FEEDBACK_CHARS).trim();
+    if (!t) return 'empty';
+    if (!Array.isArray(data.feedback)) data.feedback = [];
+    if (data.feedback.length >= MAX_FEEDBACK) return 'limit';
+    accrue();
+    data.feedback.push({ t: rel(), text: t });
+    dirty = true;
+    flush(false);
+    return 'ok';
+  }
+
   function chapter(n, day) { push('chapter', { chapter: num(n), day: num(day) }); }
   function alertSeen(kind) { push('alert', { kind: cleanKey(kind) }); }
 
@@ -14334,6 +14352,7 @@ const Telemetry = (() => {
       ended: !!ended, durationMs: rel(), visibleMs: Math.round(d.visibleMs),
       device: deviceInfo(),
       counters: { clicks: d.clicks, deadClicks: d.dead, scrolls: d.scrolls, tabs: d.tabs, scrollDepth: d.scroll, modals: d.modals, errors: d.errors, droppedEvents: d.dropped },
+      feedback: d.feedback || [],
       events,
     });
     let json = make();
@@ -14449,7 +14468,7 @@ const Telemetry = (() => {
 
   return {
     init, status, setConsent, track: push,
-    click, deadClick, tab, modal, night, chapter, alert: alertSeen,
+    click, deadClick, tab, modal, night, chapter, alert: alertSeen, feedback,
     sessionId: () => (active ? sid : null),
     isActive: () => active,
     policyVersion: POLICY_VERSION,
@@ -17258,6 +17277,50 @@ function openAboutModal() {
 
 /* ---------- options (modale) ---------- */
 
+// Contenu de la zone « Aidez-nous à améliorer le jeu ! » : le commentaire part
+// avec la session de suivi, donc seulement si le joueur a autorisé le suivi.
+function feedbackZoneHtml() {
+  const st = Telemetry.status();
+  if (st === 'granted' && Telemetry.isActive()) {
+    return `<div class="stack">
+      <label for="feedback-text" class="muted">Une idée, un problème, un passage trop difficile ? Écrivez-nous. N'indiquez aucune donnée personnelle.</label>
+      <textarea id="feedback-text" rows="4" maxlength="1000" placeholder="Votre commentaire"></textarea>
+      <div class="row"><button class="btn primary" type="button" data-action="send-feedback">Envoyer</button></div>
+    </div>`;
+  }
+  if (st === 'optout') {
+    return '<p class="muted">Votre navigateur demande de ne pas être suivi : l\'envoi de commentaires est indisponible.</p>';
+  }
+  return '<p class="muted">Votre commentaire est transmis avec la session de suivi anonyme. Pour en envoyer un, autorisez d\'abord le suivi dans la rubrique « Confidentialité » ci-dessous.</p>';
+}
+
+function openFeedbackZone() {
+  const zone = document.getElementById('feedback-zone');
+  if (!zone) return;
+  zone.innerHTML = feedbackZoneHtml();
+  const area = document.getElementById('feedback-text');
+  if (area) area.focus();
+}
+
+function sendFeedback() {
+  const area = document.getElementById('feedback-text');
+  if (!area) return;
+  if (testMode) { showToast('Envoi désactivé en mode test.'); return; }
+  let result = 'inactive';
+  try { result = Telemetry.feedback(area.value); } catch (e) { /* le suivi ne doit jamais gêner le jeu */ }
+  if (result === 'ok') {
+    const zone = document.getElementById('feedback-zone');
+    if (zone) zone.innerHTML = '';
+    showToast('Merci pour votre commentaire !');
+  } else if (result === 'empty') {
+    showToast('Écrivez votre commentaire avant de l\'envoyer.');
+  } else if (result === 'limit') {
+    showToast('Nombre maximal de commentaires atteint pour cette visite.');
+  } else {
+    showToast('Commentaire non envoyé : le suivi anonyme n\'est pas activé.');
+  }
+}
+
 function openOptionsModal() {
   tel('modal', 'options');
   const root = document.getElementById('modal-root');
@@ -17294,6 +17357,13 @@ function openOptionsModal() {
             <div class="row" id="new-game-zone">
               <button class="btn danger" type="button" data-action="ask-new-game">Recommencer à zéro</button>
             </div>
+          </div>
+          <div class="stack">
+            <strong>Votre avis</strong>
+            <div class="row">
+              <button class="btn" type="button" data-action="open-feedback">💬 Aidez-nous à améliorer le jeu !</button>
+            </div>
+            <div id="feedback-zone"></div>
           </div>
           ${privacySectionHtml()}
           <div class="stack">
@@ -17409,6 +17479,12 @@ document.addEventListener('click', (e) => {
       break;
     case 'open-about':
       openAboutModal();
+      break;
+    case 'open-feedback':
+      openFeedbackZone();
+      break;
+    case 'send-feedback':
+      sendFeedback();
       break;
     case 'help':
       openHelpModal(target.dataset.id);

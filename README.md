@@ -148,10 +148,23 @@ Control ou Do Not Track du navigateur désactive tout. La politique publique est
   - Sur tout autre domaine : rien n'est envoyé.
 - **Si vous modifiez ce qui est collecté**, mettez à jour `cookies.html` et
   `POLICY_VERSION` dans le bloc `telemetry` : le consentement est alors redemandé.
+- **Commentaires** : ⚙️ Options › « Aidez-nous à améliorer le jeu ! » ouvre un champ
+  texte (1 000 signes, 3 par visite). Le commentaire est ajouté au fichier de session
+  (`feedback`), donc envoyé seulement si le suivi est autorisé.
+
+## Rapport quotidien
+
+Chaque jour à 13 h (heure de Paris), le Worker lit les sessions des dernières 24 h
+dans R2 et envoie un e-mail : nombre de sessions ouvertes, temps actif moyen par
+session, temps passé par chapitre, top 10 des actions des joueurs et commentaires.
+Le calcul est dans `worker/src/report.mjs` ; les libellés des actions (`GAME_ACTIONS`)
+sont à compléter quand une action est ajoutée au jeu, faute de quoi elle apparaît sous
+son nom brut suivi de « (non répertorié) ». Installation : `worker/README.md`.
 
 ## Tests
 
 ```
 node run-tests.mjs        # moteur du jeu
-node test-telemetry.mjs   # suivi de session (rien sans consentement, retrait, limites)
+node test-telemetry.mjs   # suivi de session (rien sans consentement, retrait, limites, commentaires)
+node test-report.mjs      # rapport quotidien (calculs, heure de Paris, e-mail simulé)
 ```
