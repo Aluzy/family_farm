@@ -54,6 +54,11 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Le masquage du défilement horizontal est sur html seul : avec overflow sur html ET body,
+   body devient un conteneur de défilement et le bandeau « sticky » ne reste plus en haut. */
+html {
   overflow-x: hidden;
 }
 
@@ -125,32 +130,120 @@ main {
   margin: 0 auto;
 }
 
-.tabbar {
+/* Barre de menu du bas : fixée, sous la barre « Dormir ». */
+:root { --dock: calc(60px + env(safe-area-inset-bottom)); }
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 55;
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 0 12px;
-  -webkit-overflow-scrolling: touch;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
 }
 
-.tab-btn {
-  flex: 0 0 auto;
+.nav-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border: 0;
+  border-top: 3px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.nav-btn.active {
+  color: var(--accent);
+  border-top-color: var(--accent);
+  background: var(--bg-muted);
+}
+
+.nav-icon { position: relative; font-size: 1.5rem; line-height: 1; }
+.nav-label { font-size: 0.75rem; font-weight: 600; }
+
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -12px;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--danger-contrast);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.ferme-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+
+.ferme-link {
+  flex: 1 1 auto;
   min-height: 44px;
-  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--text-muted);
-  cursor: pointer;
+  background: var(--bg-muted);
+  color: var(--text);
+  font: inherit;
   font-weight: 600;
-  white-space: nowrap;
+  cursor: pointer;
 }
 
-.tab-btn.active {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border-color: var(--accent);
+.notif-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
+
+.notif {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-left-width: 5px;
+  background: var(--bg-muted);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notif.p1 { border-left-color: var(--danger); }
+.notif.p2 { border-left-color: var(--color-sun-dark); }
+.notif.p3 { border-left-color: var(--accent); }
+.notif-icon { font-size: 1.4rem; }
+.notif-text { flex: 1 1 auto; min-width: 0; font-weight: 600; }
+.notif-go { color: var(--text-muted); font-size: 1.4rem; }
+.notif-empty { padding: 12px 0; }
 
 .panel {
   background: var(--bg-elevated);
@@ -462,7 +555,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
   cursor: not-allowed;
 }
 
-.switch:focus-visible, .btn:focus-visible, .card:focus-visible, .tab-btn:focus-visible {
+.switch:focus-visible, .btn:focus-visible, .card:focus-visible, .nav-btn:focus-visible, .ferme-link:focus-visible {
   outline: 3px solid var(--color-sun);
   outline-offset: 2px;
 }
@@ -491,9 +584,9 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--dock);
   z-index: 50;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  padding: 10px 16px 10px;
   background: var(--bg-header);
   border-top: 1px solid var(--border);
 }
@@ -508,6 +601,14 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 }
 
 .report-list { list-style: none; margin: 12px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+/* Résumé de réveil allégé */
+.wake-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.wake-kpi { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius); background: var(--bg-muted); border: 1px solid var(--border); }
+.wake-kpi strong { font-size: 1.4rem; }
+.wake-harvest { margin: 0 0 12px; line-height: 1.5; }
+.wake-actions { margin-top: 12px; justify-content: flex-end; }
+.btn.btn-pill { border-radius: 999px; min-width: 44px; }
 
 select {
   min-height: 44px;
@@ -538,8 +639,8 @@ select {
 
 /* ---------- Lot 2 : potager, famille, inventaire, aperçu du repas ---------- */
 
-body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aperçu du repas */
-.toast { bottom: 120px; }
+body { padding-bottom: calc(136px + var(--dock)); } /* barre « Dormir » (avec l'aperçu du repas) + menu du bas */
+.toast { bottom: calc(120px + var(--dock)); }
 
 .sleep-bar .meal-preview {
   max-width: 720px;
@@ -629,7 +730,7 @@ body { padding-bottom: 136px; } /* la barre « Dormir » porte maintenant l'aper
 
 .modal .stack { margin: 12px 0; }
 
-/* ---------- Lot 3 : inventaire par lots, Comptoir ---------- */
+/* ---------- Lot 3 : inventaire par lots, Marché ---------- */
 
 .subtabs {
   display: flex;
@@ -840,7 +941,7 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
   position: fixed;
   left: 16px;
   right: 16px;
-  bottom: 120px;
+  bottom: calc(120px + var(--dock));
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -920,7 +1021,7 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
   position: fixed;
   left: 16px;
   right: 16px;
-  bottom: 118px;
+  bottom: calc(118px + var(--dock));
   z-index: 60;
   max-width: 560px;
   margin: 0 auto;
@@ -949,7 +1050,7 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
 .tuto h2 { margin: 0 0 4px; font-size: 1.05rem; display: flex; justify-content: space-between; gap: 8px; }
 .tuto p { margin: 0 0 10px; font-size: 0.95rem; }
 .tuto .row { justify-content: flex-end; }
-body.has-tuto { padding-bottom: 300px; }
+body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
 
 .tuto-target {
   scroll-margin-top: 140px;
@@ -1233,7 +1334,6 @@ body.has-tuto { padding-bottom: 300px; }
 </header>
 
 <main>
-  <nav class="tabbar" id="tabbar" aria-label="Onglets du jeu"></nav>
   <section id="tab-content" class="panel"></section>
 
   <details class="test-panel" id="test-panel" hidden>
@@ -1323,6 +1423,7 @@ body.has-tuto { padding-bottom: 300px; }
 </main>
 
 <div class="sleep-bar" id="sleep-bar"></div>
+<nav class="bottom-nav" id="bottom-nav" aria-label="Menu principal"></nav>
 <div id="tuto-root"></div>
 <div id="modal-root"></div>
 <div id="toast-root" role="status" aria-live="polite"></div>
@@ -1416,7 +1517,7 @@ const DATA = {
     tomate:         { nom: 'Tomate',               icone: '🍅', energie: 8,  prix: 1, edible: true,  category: 'légume' }, // 6 × 1,25
     courgette:      { nom: 'Courgette',            icone: '🥒', energie: 10, prix: 2, edible: true,  category: 'légume' }, // 8 × 1,25
     aubergine:      { nom: 'Aubergine',            icone: '🍆', energie: 10, prix: 2, edible: true,  category: 'légume' }, // 8 × 1,25
-    // Non périssable, non rachetable au Comptoir (Lot 3).
+    // Non périssable, non rachetable au Marché (Lot 3).
     conserve:       { nom: 'Conserve',             icone: '🥫', energie: 25, prix: 3, edible: true,  category: 'conserve', rachetable: false }, // 20 × 1,25
     graine_carotte:   { nom: 'Graines de carotte',   icone: '🌱', prix: 1, edible: false, category: 'graine' },
     graine_tomate:    { nom: 'Graines de tomate',    icone: '🌱', prix: 1, edible: false, category: 'graine' },
@@ -1426,7 +1527,7 @@ const DATA = {
     // (à replanter), œuf (12,5 → 13 énergie, 6 nuits : voir CONSERVATION).
     // category reste « ingrédient » (Silo, Moulin, alimentation des poules,
     // plancher de marché ×1,2) même si le blé sert aussi de semence : voir
-    // isGraineComptoir(), qui l'ajoute en plus à l'onglet Graines du Comptoir.
+    // isGraineComptoir(), qui l'ajoute en plus à l'onglet Graines du Marché.
     ble:              { nom: 'Blé',                  icone: '🌾', prix: 1, edible: false, category: 'ingrédient' },
     graine_tournesol: { nom: 'Graines de tournesol', icone: '🌻', prix: 1, edible: false, category: 'graine' },
     oeuf:             { nom: 'Œuf',                  icone: '🥚', energie: 13, prix: 2, edible: true, category: 'produit' }, // 10 × 1,25 = 12,5 → 13
@@ -1446,7 +1547,7 @@ const DATA = {
     farine:           { nom: 'Farine',               icone: '🥣', energie: 13, prix: 1, edible: false, category: 'ingrédient' }, // 10 × 1,25 = 12,5 → 13
     huile:            { nom: 'Huile de tournesol',   icone: '🛢️', energie: 13, prix: 4, edible: false, category: 'ingrédient' }, // 10 × 1,25 = 12,5 → 13
     // Lot 6 : laine (section 8.6). Ni périssable ni comestible : elle sert
-    // uniquement à la vente. Elle ne se rachète pas au Comptoir.
+    // uniquement à la vente. Elle ne se rachète pas au Marché.
     laine:            { nom: 'Laine',                icone: '🧶', prix: 6, edible: false, category: 'produit', rachetable: false },
     // 10 nouvelles cultures : Potager (oignon, ail, poivron, épinard, fraise),
     // Champ (riz, houblon), Serre exclusivement (cacao, vanille, café). Poivron
@@ -1726,7 +1827,7 @@ const DATA = {
     RESERVE_DEPART: { patate: 6 },
   },
 
-  /* ---------- Lot 3 : péremption et Comptoir ---------- */
+  /* ---------- Lot 3 : péremption et Marché ---------- */
 
   // Conservation en nuits hors réfrigérateur (sections 1.4 et 6.9 quinquies).
   // Un item absent de ces deux tables ne périme jamais (blé, farine, huile,
@@ -1768,7 +1869,7 @@ const DATA = {
   // sauf pour les catégories listées ici (les conserves comptent comme achetées).
   ORIGINE: { PRODUIT: 'produit', ACHETE: 'acheté', PAR_CATEGORIE: { conserve: 'acheté' } },
 
-  // Comptoir (sections 1.3, 6.7 et 8.9). Prix d'achat = prix de vente × coefficient.
+  // Marché (sections 1.3, 6.7 et 8.9). Prix d'achat = prix de vente × coefficient.
   // Le coefficient démarre à son plancher (1,2 ; 2,0 pour les graines), monte de
   // PAS par unité achetée, baisse de PAS par unité vendue sans passer sous le
   // plancher, et ne redescend jamais avec le temps.
@@ -1779,7 +1880,7 @@ const DATA = {
     // multiplicateur appliqué une seule fois, au chargement, au prix de
     // vente (DATA.items[x].prix) de chaque récolte de culture, fruit du
     // Verger et produit animal (œuf, lait, laine, viande) — jamais aux
-    // graines, aux achats du Comptoir qui ne sont pas des productions, aux
+    // graines, aux achats du Marché qui ne sont pas des productions, aux
     // bâtiments/appareils/soins/services, ni aux ingrédients transformés
     // (farine, huile) ou aux plats cuisinés, dont le prix se calcule déjà à
     // partir des prix des ingrédients (voir dishPrice()) et serait donc
@@ -1824,7 +1925,7 @@ const DATA = {
     COUT: [0, 100, 220, 450, 900],
   },
 
-  // Animaux achetés au Comptoir (section 1.4) : prix fixes, sans revente.
+  // Animaux achetés au Marché (section 1.4) : prix fixes, sans revente.
   // Poule : 1 blé nourrit poulesParBle poules (une fois par nuit) ; une poule
   // nourrie pond oeufsParNuit œuf. Une ration entamée (poule impaire) est
   // perdue à la fin de la nuit : n poules coûtent ⌈n ÷ poulesParBle⌉ blé.
@@ -2249,7 +2350,7 @@ const DATA = {
     COUT: [0, 300, 600, 1000, 1800],
   },
 
-  // Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent au Comptoir à prix
+  // Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent au Marché à prix
   // fixe et se plantent sur un emplacement libre. Un arbre est adulte MATURITE
   // nuits après sa plantation ; adulte, il donne FRUITS fruits toutes les PERIODE
   // nuits, seulement dans la fenêtre : les `dernieresNuits` dernières nuits de
@@ -2294,7 +2395,7 @@ const DATA = {
 
   // Autonomie d'une nuit (sections 4 et 8.10) = énergie mangée qui vient de lots
   // d'origine « produit » ÷ besoin de la famille (150), plafonnée à 100 %. Les
-  // conserves et les achats du Comptoir (origine « acheté ») n'y comptent pas.
+  // conserves et les achats du Marché (origine « acheté ») n'y comptent pas.
   // HISTORIQUE_MAX : nombre de nuits gardées dans l'historique ; GRAPHIQUE_NUITS :
   // nuits tracées dans le petit graphique.
   AUTONOMIE: { HISTORIQUE_MAX: 1000, GRAPHIQUE_NUITS: 20 },
@@ -2303,7 +2404,7 @@ const DATA = {
   // disponibles les éléments de `debloque` ; son objectif rempli, on passe au
   // suivant. Le chapitre 7 rempli termine la campagne : mode libre, tout est
   // débloqué. Un élément absent de tous les chapitres est disponible dès le départ
-  // (Potager niveau 1, pompe, panneaux, batteries, Comptoir).
+  // (Potager niveau 1, pompe, panneaux, batteries, Marché).
   //
   // Objectifs (`type`) :
   //   litres    : litres pompés au total ;
@@ -2328,14 +2429,14 @@ const DATA = {
     ELEMENTS: {
       champ:      { nom: 'Champ', icone: '🌾', note: 'blé pour les poules et la farine' },
       silo:       { nom: 'Silo', icone: '🛖', note: 'stock de blé' },
-      poulailler: { nom: 'Poulailler', icone: '🐔', note: 'poules et œufs (les poules s\'achètent au Comptoir)' },
+      poulailler: { nom: 'Poulailler', icone: '🐔', note: 'poules et œufs (les poules s\'achètent au Marché)' },
       four:       { nom: 'Four', icone: '🔥', note: 'pain, gratin, tarte, et l\'onglet Livre de recette' },
       cuisine:    { nom: 'Cuisine', icone: '🍳', note: 'omelette, ratatouille, ragoût, compote' },
       moulin:     { nom: 'Moulin', icone: '⚙️', note: 'farine' },
       presse:     { nom: 'Presse', icone: '🌻', note: 'huile de tournesol' },
       tournesol:  { nom: 'Tournesol', icone: '🌻', note: 'nouvelle culture du Champ' },
       paturage:   { nom: 'Pâturage', icone: '🐑', note: 'surface pour les moutons et les vaches' },
-      moutons:    { nom: 'Moutons', icone: '🧶', note: 'laine, viande, et désormais des vaches pour le lait (les moutons et les vaches s\'achètent au Comptoir)' },
+      moutons:    { nom: 'Moutons', icone: '🧶', note: 'laine, viande, et désormais des vaches pour le lait (les moutons et les vaches s\'achètent au Marché)' },
       serre:      { nom: 'Serre', icone: '🏡', note: 'des légumes toute l\'année' },
       verger:     { nom: 'Verger', icone: '🌳', note: 'pommiers et poiriers' },
       frigo:      { nom: 'Réfrigérateur', icone: '🧊', note: 'conservation sans péremption' },
@@ -2422,7 +2523,7 @@ const DATA = {
     // Ce que le joueur garde ou vise.
     CAISSE: 20, // pièces gardées en réserve (graines, blé, soins) : les achats du plan ne les touchent pas
     CONSERVES_GARDEES: 96, // il ne vend des conserves que pour payer un achat, jamais sous ce stock
-    PRIX_GRAINE_MAX: 4, // prix maximal d'une graine (ou d'un blé) achetée au Comptoir
+    PRIX_GRAINE_MAX: 4, // prix maximal d'une graine (ou d'un blé) achetée au Marché
     ETALEMENT_JOURS: 1, // les semis d'un lieu s'étalent sur ce nombre de jours (1 : on replante dès la récolte)
     GRAINES_CAROTTE: 6, // sous ce stock, une carotte mûre monte en graine
     PARCELLES_TOURNESOL: 1, // parcelles du Champ en tournesol quand la Presse existe
@@ -2493,6 +2594,8 @@ const DATA = {
   // Lot 11 : 8 h réelles valent 960 heures de jeu, soit +480 points d'usure).
   // ECRAN_S : absence minimale, en secondes, pour afficher « Pendant votre absence… ».
   HORS_LIGNE: { MAX_S: 8 * 3600, PAS_S: 5, USURE: false, ECRAN_S: 60 },
+  // Résumé de réveil allégé : nombre maximal de produits listés dans « Récolte » (le reste va dans « Voir plus »).
+  REVEIL: { RECOLTE_MAX: 5 },
 
   // Première partie : bulles d'aide, dans cet ordre. La dernière (« dormir »)
   // se ferme aussi d'elle-même à la première nuit.
@@ -2582,7 +2685,7 @@ function mulberry32(seed) {
 const STATE_VERSION = 14;
 // Version du jeu, affichée dans les Options (À propos). Vache et abattage des
 // poules : 0.12.0.
-const GAME_VERSION = '0.14.0';
+const GAME_VERSION = '0.18.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -3190,7 +3293,7 @@ function repairDevice(state, id) {
 // rangés du plus ancien au plus récent. nightsLeft vaut null pour un item qui
 // ne périme pas. origin vaut « produit » ou « acheté ». Tout le reste du code
 // passe uniquement par countItem, addItem et takeItem (et par buyItem au
-// Comptoir, qui pose l'origine « acheté »).
+// Marché, qui pose l'origine « acheté »).
 
 // Conservation d'un item en nuits, ou null s'il ne périme jamais.
 function shelfLife(item) {
@@ -3559,7 +3662,7 @@ function openFridge(state) {
   f.alimente = true;
 }
 
-/* ---------- Lot 3 : Comptoir ---------- */
+/* ---------- Lot 3 : Marché ---------- */
 
 // Plancher du coefficient d'achat d'un item (1,2 ; 2,0 pour les graines).
 function marketFloor(item) {
@@ -3907,7 +4010,7 @@ function cropProduct(culture) {
   return DATA.crops[culture].produit || culture;
 }
 
-// Un item apparaît dans l'onglet Graines du Comptoir (et donc dans la liste
+// Un item apparaît dans l'onglet Graines du Marché (et donc dans la liste
 // filtrée par seedForSale) s'il est de catégorie « graine », ou si c'est le
 // blé. Le blé garde sa catégorie « ingrédient » (prix, plancher de marché,
 // conservation et origine inchangés : voir DATA.items.ble et DATA.MARCHE) car
@@ -4269,12 +4372,12 @@ function upgradePoulailler(state) {
   return { ok: true, cost };
 }
 
-// Prix fixe d'un animal : il ne dépend ni du nombre d'animaux ni du Comptoir.
+// Prix fixe d'un animal : il ne dépend ni du nombre d'animaux ni du Marché.
 function animalPrice(kind) {
   return DATA.ANIMAUX[kind].prix;
 }
 
-// Achat d'une poule au Comptoir : refusé si le Poulailler n'existe pas, s'il
+// Achat d'une poule au Marché : refusé si le Poulailler n'existe pas, s'il
 // est plein ou si les pièces manquent. Pas de revente.
 function buyAnimal(state, kind) {
   if (kind === 'mouton') return buySheep(state);
@@ -4381,7 +4484,7 @@ function layEggs(state) {
 // DATA.ANIMAUX.poule). La poule abattue ne pond plus et ne mange plus de blé
 // dès cette nuit (son décompte quitte state.poulailler.poules) ; la capacité
 // du Poulailler ne change pas, la place se libère donc pour une poule rachetée
-// au Comptoir, jamais remplacée automatiquement.
+// au Marché, jamais remplacée automatiquement.
 function slaughterHen(state) {
   const p = state.poulailler;
   if (p.poules <= 0) return fail('Aucune poule à abattre.');
@@ -4519,7 +4622,7 @@ function makeSheep(state) {
   return { id: `mouton-${p.compteur}`, poids: DATA.ANIMAUX.mouton.poidsDepart, laine: 0 };
 }
 
-// Achat d'un mouton au Comptoir : prix fixe, refusé sans Pâturage, sans place
+// Achat d'un mouton au Marché : prix fixe, refusé sans Pâturage, sans place
 // libre ou sans assez de pièces. Pas de revente.
 function buySheep(state) {
   const p = state.paturage;
@@ -4545,7 +4648,7 @@ function makeCow(state) {
   return { id: `vache-${p.compteurVache}`, poids: DATA.ANIMAUX.vache.poidsDepart };
 }
 
-// Achat d'une vache au Comptoir : prix fixe, refusé sans Pâturage, sans place
+// Achat d'une vache au Marché : prix fixe, refusé sans Pâturage, sans place
 // libre (15 a, voir freeCowPlaces()) ou sans assez de pièces. Pas de revente.
 function buyCow(state) {
   const p = state.paturage;
@@ -4714,7 +4817,7 @@ function buyOrchardSlot(state) {
   return { ok: true, cost, places: v.places };
 }
 
-// Achat d'un arbre au Comptoir : prix fixe, refusé sans Verger, sans
+// Achat d'un arbre au Marché : prix fixe, refusé sans Verger, sans
 // emplacement libre ou sans assez de pièces. L'arbre est planté aussitôt.
 function buyTree(state, espece) {
   const def = DATA.VERGER.ARBRES[espece];
@@ -5822,6 +5925,39 @@ function buildMorningReport(state) {
   };
 }
 
+// Résumé de réveil allégé : ce que la ferme a produit pendant la nuit, regroupé par
+// produit { item: quantité } = œufs pondus + lait + fruits du verger + récoltes
+// des automatisations. (Les « récoltes prêtes » à cueillir ne comptent pas : ce n'est
+// pas encore récolté.) Pure : ne lit que le rapport.
+function nightHarvest(report) {
+  const total = {};
+  const add = (item, qty) => {
+    const n = Math.floor((Number(qty) || 0) + EPS);
+    if (n > 0 && DATA.items[item]) total[item] = (total[item] || 0) + n;
+  };
+  add('oeuf', report.oeufs);
+  add('lait', report.lait);
+  for (const [item, qty] of Object.entries(report.fruits || {})) add(item, qty);
+  for (const [item, qty] of Object.entries((report.auto || {}).recoltes || {})) add(item, qty);
+  return total;
+}
+
+// Tri stable : quantité décroissante, puis nom (ordre alphabétique français).
+// Renvoie { affiches: [{ item, qte }], reste: [{ item, qte }] } avec au plus `limite` produits affichés.
+function wakeHarvestList(report, limite = DATA.REVEIL.RECOLTE_MAX) {
+  const rows = Object.entries(nightHarvest(report))
+    .map(([item, qte]) => ({ item, qte }))
+    .sort((x, y) => y.qte - x.qte || DATA.items[x.item].nom.localeCompare(DATA.items[y.item].nom, 'fr'));
+  return { affiches: rows.slice(0, limite), reste: rows.slice(limite) };
+}
+
+// Les deux indicateurs du résumé de réveil, en entiers (arrondi à l'unité inférieure,
+// comme formatPercent) : autonomie de la nuit et santé moyenne de la famille, en %.
+function wakeSummary(report) {
+  const floor = (x) => Math.floor((Number(x) || 0) + EPS);
+  return { autonomie: floor(report.autonomie), sante: floor(report.santeApres), recolte: wakeHarvestList(report) };
+}
+
 // Ne fait rien tant que l'éveil minimal n'est pas atteint (renvoie null).
 // Sinon : étapes nocturnes dans l'ordre, jour suivant, éveil remis à 0
 // (l'heure repart à 6 h), rapport de réveil.
@@ -5977,6 +6113,52 @@ function alertEvents(before, after) {
   if (after.batteriesVides && !before.batteriesVides) events.push({ type: 'batteriesVides' });
   if (after.frigoCoupe && !before.frigoCoupe) events.push({ type: 'frigoCoupe' });
   return events;
+}
+
+/* ---------- Centre de notifications : les alertes du jour ---------- */
+
+// Ce qui demande l'attention du joueur maintenant. Fonction pure, recalculée à
+// chaque appel depuis l'état : rien n'est stocké (pas de migration) et une
+// alerte disparaît dès que sa cause est réglée. Une entrée par catégorie (pas
+// de doublon), triée par priorité (1 = urgent, 2 = utile, 3 = à faire) puis
+// par ordre de définition. Les tâches déjà automatisées par l'arbre des
+// technologies n'y figurent pas : la nuit s'en charge.
+// Renvoie [{ id, type, texte, priorite, icone, nombre }].
+function getNotifications(state) {
+  const out = [];
+  const add = (type, priorite, icone, nombre, un, plusieurs) => {
+    if (nombre > 0) out.push({ id: type, type, texte: nombre === 1 ? un : plusieurs.replace('{n}', nombre), priorite, icone, nombre });
+  };
+  const snap = alertSnapshot(state);
+  const auto = (tache, lieu) => techAuto(state, tache, lieu);
+
+  // 1 : la ferme s'arrête ou la famille risque de manquer.
+  add('panne', 1, '🔧', snap.panne.length, '1 appareil en panne', '{n} appareils en panne');
+  add('batteriesVides', 1, '🔋', snap.batteriesVides ? 1 : 0, 'Batteries vides', 'Batteries vides');
+  add('frigoCoupe', 1, '❄️', snap.frigoCoupe ? 1 : 0, 'Réfrigérateur sans courant', 'Réfrigérateur sans courant');
+  const perissent = Object.values(expiringSoon(state)).reduce((t, n) => t + n, 0);
+  add('peremption', 1, '⏳', perissent, '1 aliment périra cette nuit', '{n} aliments périront cette nuit');
+
+  // 2 : à faire aujourd'hui pour que la nuit se passe bien.
+  const plots = allPlots(state).filter((p) => p.culture);
+  const nonArrosees = plots.filter((p) => !p.arrose && !isMature(p) && !auto('arrosage', p.lieu)).length;
+  add('arrosage', 2, '💧', nonArrosees, '1 parcelle non arrosée', '{n} parcelles non arrosées');
+  const hens = state.poulailler && state.poulailler.construit && !auto('nourrissage', 'poulailler') ? Math.max(0, hensToFeed(state)) : 0;
+  add('poules', 2, '🐔', hens, '1 poule à nourrir', '{n} poules à nourrir');
+  add('entretien', 2, '🛠️', snap.entretien.length, '1 appareil à entretenir', '{n} appareils à entretenir');
+
+  // 3 : récoltes et tontes prêtes.
+  const mures = plots.filter((p) => isMature(p) && !auto('recolte', p.lieu)).length;
+  add('recolte', 3, '🧺', mures, '1 récolte prête', '{n} récoltes prêtes');
+  const laine = auto('tonte', 'paturage') ? 0 : sheepToShear(state);
+  add('tonte', 3, '🐑', laine, '1 mouton à tondre', '{n} moutons à tondre');
+
+  return out.map((n, i) => ({ n, i })).sort((a, b) => a.n.priorite - b.n.priorite || a.i - b.i).map((x) => x.n);
+}
+
+// Pastille de la future barre de menu : nombre d'alertes en cours.
+function notificationCount(state) {
+  return getNotifications(state).length;
 }
 
 /* ---------- Lot 11 : bulles d'aide de la première partie ---------- */
@@ -6398,7 +6580,7 @@ const MIGRATIONS = {
   },
   // v3 (Lot 2) → v4 (Lot 3) : l'inventaire { item: quantité } devient des lots
   // d'origine « produit » (« acheté » pour les conserves) à conservation pleine ;
-  // le Comptoir et le rapport de péremption apparaissent.
+  // le Marché et le rapport de péremption apparaissent.
   3: (state) => {
     const inventaire = {};
     const old = state.inventaire && typeof state.inventaire === 'object' ? state.inventaire : {};
@@ -6482,7 +6664,7 @@ const MIGRATIONS = {
   // v11 → v12 (Vache et abattage des poules) : le Pâturage gagne compteurVache
   // et vaches (aucune vache dans une ancienne partie) ; l'ancien item générique
   // « viande » (mouton) est renommé « viande_mouton » dans l'inventaire et au
-  // Comptoir (coefficient de marché), pour laisser la place à « viande_boeuf »
+  // Marché (coefficient de marché), pour laisser la place à « viande_boeuf »
   // et « viande_volaille ». Le Poulailler n'a besoin d'aucune migration : les
   // poules restent un simple compteur, inchangé par l'abattage (nouveauté).
   11: (state) => {
@@ -6511,7 +6693,7 @@ const MIGRATIONS = {
     return { ...state, paturage, inventaire, marche, version: 12 };
   },
   // v12 → v13 : chiffres entiers partout. Pièces et prix entiers, coefficients
-  // du Comptoir en %, énergie en mWh, eau en mL, temps en ms, usure en points
+  // du Marché en %, énergie en mWh, eau en mL, temps en ms, usure en points
   // entiers (+ temps de marche), pâturage en ares, poids en hg, blé entier
   // (1 blé nourrit 2 poules), autonomie en % entiers. Le rapport de réveil en
   // attente est retiré (il était en anciennes unités).
@@ -6573,7 +6755,7 @@ function migrateToIntegers(old) {
   const state = JSON.parse(JSON.stringify(old));
   const msParPoint = DATA.WEAR.HEURES_PAR_POINT * DATA.TIME.SECONDS_PER_HOUR * 1000;
   state.pieces = Math.round(num(state.pieces));
-  // Comptoir : coefficients 1,3 → 130 %.
+  // Marché : coefficients 1,3 → 130 %.
   const marche = {};
   for (const [item, c] of Object.entries(state.marche || {})) marche[item] = Math.round(num(c) * 100);
   state.marche = marche;
@@ -6916,7 +7098,7 @@ function botFarm(state) {
 function botHens(state) {
   const p = state.poulailler;
   if (!p.construit || p.poules <= 0) return;
-  // pas de blé pour les poules : un dépannage au Comptoir, comme pour les graines
+  // pas de blé pour les poules : un dépannage au Marché, comme pour les graines
   while (hensToFeed(state) > 0 && !canFeedHen(state) && botBuySeed(state, DATA.SILO.ITEM)) {
     if (canFeedHen(state)) break;
   }
@@ -7197,7 +7379,7 @@ function botDay(state, strat, options) {
 // modifiée). Renvoie une ligne par nuit : chapitre au début de la journée,
 // autonomie et santé à la fin de la nuit, pièces et conserves au réveil.
 // options.depannage = { item } : chaque soir, le joueur achète aussi une unité de
-// cet aliment au Comptoir (vérification de la section 8.11).
+// cet aliment au Marché (vérification de la section 8.11).
 function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, options = {}) {
   const strat = DATA.SIMULATION.STRATEGIES[strategyId];
   if (!strat) throw new Error(`Stratégie inconnue : ${strategyId}`);
@@ -8645,7 +8827,7 @@ test('sérialisation JSON aller-retour avec potager, famille et nuit', () => {
   assertEqual(copy, s, 'même suite d\'actions, même état (aléatoire compris)');
 });
 
-/* ---------- Lot 3 : inventaire par lots, péremption, Comptoir ---------- */
+/* ---------- Lot 3 : inventaire par lots, péremption, Marché ---------- */
 
 // Compte les unités d'un item selon l'origine de leurs lots.
 function countByOrigin(s, item, origin) {
@@ -8669,7 +8851,7 @@ test('DATA Lot 3 : conservation en nuits', () => {
   assertEqual([shelfLife('carotte'), shelfLife('patate'), shelfLife('tomate')], [6, 7, 5]);
 });
 
-test('DATA Lot 3 : coefficients du Comptoir', () => {
+test('DATA Lot 3 : coefficients du Marché', () => {
   assertEqual(DATA.MARCHE.PLANCHER, { defaut: 120, graine: 200 });
   assertEqual(DATA.MARCHE.PAS, 10);
   assertEqual(marketFloor('carotte'), 120);
@@ -8845,7 +9027,7 @@ test('ordre de consommation : dans un item, le lot le plus ancien est mangé d\'
   assertEqual(lotsOf(s, 'carotte'), [{ qty: 46, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 14 du lot frais');
 });
 
-test('Comptoir : prix d\'achat = prix de vente × coefficient, plancher 1,2', () => {
+test('Marché : prix d\'achat = prix de vente × coefficient, plancher 1,2', () => {
   const s = garden();
   assertEqual(marketCoef(s, 'patate'), 120);
   // Lot 12 : prix de vente doublés (patate 4, carotte 2, courgette 4), × 120 %
@@ -8856,7 +9038,7 @@ test('Comptoir : prix d\'achat = prix de vente × coefficient, plancher 1,2', ()
   assertEqual(isBuyable('carotte'), true);
 });
 
-test('Comptoir : le prix d\'achat monte de 0,1 de coefficient par unité, unité par unité', () => {
+test('Marché : le prix d\'achat monte de 0,1 de coefficient par unité, unité par unité', () => {
   const s = garden();
   s.pieces = 100;
   const paid = [];
@@ -8881,7 +9063,7 @@ test('Comptoir : le prix d\'achat monte de 0,1 de coefficient par unité, unité
   assertEqual(t.pieces, 83);
 });
 
-test('Comptoir : la vente est au prix fixe et fait baisser le coefficient de 0,1 par unité', () => {
+test('Marché : la vente est au prix fixe et fait baisser le coefficient de 0,1 par unité', () => {
   const s = garden();
   s.pieces = 100;
   buyItem(s, 'patate', 3); // coefficient 150 %
@@ -8897,7 +9079,7 @@ test('Comptoir : la vente est au prix fixe et fait baisser le coefficient de 0,1
   assertEqual(sellItem(s, 'conserve', 10).gain, 30);
 });
 
-test('Comptoir : le coefficient ne descend jamais sous le plancher de 1,2', () => {
+test('Marché : le coefficient ne descend jamais sous le plancher de 1,2', () => {
   const s = garden();
   sellItem(s, 'patate', 5);
   assertEqual(marketCoef(s, 'patate'), 120);
@@ -8909,7 +9091,7 @@ test('Comptoir : le coefficient ne descend jamais sous le plancher de 1,2', () =
   assertEqual(s.marche, {}, 'un coefficient revenu à son plancher n\'est plus noté');
 });
 
-test('Comptoir : graines, coefficient de départ et plancher à 2,0', () => {
+test('Marché : graines, coefficient de départ et plancher à 2,0', () => {
   const s = garden();
   assertEqual(marketCoef(s, 'graine_carotte'), 200);
   assertEqual(buyPrice(s, 'graine_carotte'), 2);
@@ -8925,7 +9107,7 @@ test('Comptoir : graines, coefficient de départ et plancher à 2,0', () => {
   assertEqual(buyPrice(s, 'graine_tomate'), 2);
 });
 
-test('Comptoir : les coefficients sont propres à chaque item et ne redescendent pas avec le temps', () => {
+test('Marché : les coefficients sont propres à chaque item et ne redescendent pas avec le temps', () => {
   const s = garden();
   s.pieces = 200;
   buyItem(s, 'tomate', 4);
@@ -8940,7 +9122,7 @@ test('Comptoir : les coefficients sont propres à chaque item et ne redescendent
   assertEqual(marketCoef(s, 'tomate'), c, 'aucune baisse avec les nuits ni le temps');
 });
 
-test('Comptoir : les conserves ne s\'achètent pas', () => {
+test('Marché : les conserves ne s\'achètent pas', () => {
   const s = garden();
   s.pieces = 500;
   assertEqual(isBuyable('conserve'), false);
@@ -8951,7 +9133,7 @@ test('Comptoir : les conserves ne s\'achètent pas', () => {
   assertEqual(buyItem(s, 'inconnu').ok, false);
 });
 
-test('Comptoir : achat refusé sans pièces, et un achat multiple s\'arrête quand elles manquent', () => {
+test('Marché : achat refusé sans pièces, et un achat multiple s\'arrête quand elles manquent', () => {
   const s = garden();
   s.pieces = 1;
   const r = buyItem(s, 'carotte');
@@ -8966,7 +9148,7 @@ test('Comptoir : achat refusé sans pièces, et un achat multiple s\'arrête qua
   assertEqual(marketCoef(s, 'carotte'), 130);
 });
 
-test('Comptoir : un item acheté arrive avec sa conservation pleine et l\'origine « acheté »', () => {
+test('Marché : un item acheté arrive avec sa conservation pleine et l\'origine « acheté »', () => {
   const s = garden();
   setInv(s, {});
   addItem(s, 'carotte', 3);
@@ -8985,7 +9167,7 @@ test('Comptoir : un item acheté arrive avec sa conservation pleine et l\'origin
   assertEqual(lotsOf(s, 'graine_tomate').slice(-1)[0].nightsLeft, null);
 });
 
-testBase('origine des lots : une récolte donne « produit », le Comptoir « acheté »', () => {
+testBase('origine des lots : une récolte donne « produit », le Marché « acheté »', () => {
   const s = garden();
   setInv(s, { graine_tomate: 1 });
   plantRipe(s, 'potager-1', 'tomate');
@@ -9113,7 +9295,7 @@ test('migration v3 (Lot 2) → v4 : l\'inventaire devient des lots à conservati
   assertEqual(lotsOf(m, 'conserve'), [{ qty: 40, nightsLeft: null, origin: 'acheté' }]);
   assertEqual(m.marche, {});
   assertEqual(m.nuit.perdus, {});
-  // l'état migré tourne : Dormir, Comptoir
+  // l'état migré tourne : Dormir, Marché
   setSeedReserve(m, 'carotte', 7); // la famille ne mange pas ces carottes cette nuit
   m.awakeMs = 30000;
   assert(sleep(m) !== null, 'l\'état migré peut dormir');
@@ -9171,7 +9353,7 @@ test('DATA Lot 4 : Champ, Silo, Poulailler, poule, blé, tournesol et œuf', () 
   assertEqual(shelfLife('graine_tournesol'), null);
 });
 
-test('Comptoir – onglet Graines : isGraineComptoir()', () => {
+test('Marché – onglet Graines : isGraineComptoir()', () => {
   // Le blé y apparaît sans changer de catégorie (double fonction préservée :
   // Silo, Moulin, poules, plancher de marché ×1,2, comme avant).
   assertEqual(isGraineComptoir('ble'), true);
@@ -9192,7 +9374,7 @@ test('Comptoir – onglet Graines : isGraineComptoir()', () => {
   assertEqual(isGraineComptoir('carotte'), false);
 });
 
-test('Comptoir – onglet Graines : les 10 nouvelles cultures', () => {
+test('Marché – onglet Graines : les 10 nouvelles cultures', () => {
   // graine_oignon, graine_poivron, graine_epinard et graine_fraise sont de
   // vraies graines (mode 'recolte') : elles apparaissent dans l'onglet Graines,
   // comme graine_carotte etc.
@@ -9463,7 +9645,7 @@ test('abattage d\'une poule : viande_volaille (jamais viande_mouton ni viande_bo
   assertEqual([s.poulailler.poules, coopCapacity(s)], [3, 4], 'une poule de moins, capacité inchangée : la place est libre');
   assertEqual(countItem(s, 'viande_volaille'), 3);
   assertEqual([countItem(s, 'viande_mouton'), countItem(s, 'viande_boeuf')], [0, 0], 'jamais confondue avec les autres viandes');
-  // La place libérée se rachète normalement au Comptoir (pas de remplacement
+  // La place libérée se rachète normalement au Marché (pas de remplacement
   // automatique).
   assertEqual(buyAnimal(s, 'poule').ok, true);
   assertEqual(s.poulailler.poules, 4);
@@ -9638,7 +9820,7 @@ test('tournesol : les graines récoltées servent à semer', () => {
   // sans graines, on ne sème pas
   setInv(s, {});
   assertEqual(plant(s, 'champ-4', 'tournesol').ok, false);
-  // et elles s'achètent au Comptoir au prix des graines (coefficient 2,0)
+  // et elles s'achètent au Marché au prix des graines (coefficient 2,0)
   s.pieces = 10;
   const r = buyItem(s, 'graine_tournesol');
   assertEqual([r.ok, r.cost], [true, 2]);
@@ -9957,7 +10139,7 @@ test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni
   }
   assertEqual(it.graine_tournesol.prix, 1, 'le tournesol récolte des graines : non doublées');
   assertEqual([it.conserve.prix, it.huile.prix], [3, 4]); // la farine, elle, double au Lot 13
-  // Prix d'achat des graines au Comptoir : prix inchangé × plancher 2,0.
+  // Prix d'achat des graines au Marché : prix inchangé × plancher 2,0.
   assertEqual(buyPrice(garden(), 'graine_carotte'), 2);
   // Constructions, améliorations, animaux, arbres, soins : hors périmètre.
   assertEqual([DATA.CHAMP.CONSTRUCTION, DATA.POULAILLER.CONSTRUCTION, DATA.SERRE.CONSTRUCTION, DATA.FRIGO.CONSTRUCTION], [60, 40, 400, 600]);
@@ -9968,7 +10150,7 @@ test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni
   assertEqual(DATA.FAMILY.SOIN.base, 20);
 });
 
-test('Lot 12 : la vente crédite le nouveau montant et le Comptoir affiche le prix réellement payé', () => {
+test('Lot 12 : la vente crédite le nouveau montant et le Marché affiche le prix réellement payé', () => {
   const s = garden();
   setInv(s, { patate: 3, lait: 2, cacao: 1 });
   const avant = s.pieces;
@@ -9992,7 +10174,7 @@ test('Lot 12 : la vente crédite le nouveau montant et le Comptoir affiche le pr
   assert(buyPrice(garden(), 'tomate') > sellPrice('tomate'), 'acheter coûte plus cher que revendre');
 });
 
-test('Comptoir : les articles rangés au frigo se vendent aussi (l\'inventaire part d\'abord)', () => {
+test('Marché : les articles rangés au frigo se vendent aussi (l\'inventaire part d\'abord)', () => {
   const s = garden();
   s.pieces = 1000;
   buildFridge(s);
@@ -10022,7 +10204,7 @@ test('Comptoir : les articles rangés au frigo se vendent aussi (l\'inventaire p
   assertEqual(marketCoef(t, 'tomate'), 120);
 });
 
-test('Comptoir : sans frigo, rien ne change pour la vente', () => {
+test('Marché : sans frigo, rien ne change pour la vente', () => {
   const s = garden();
   setInv(s, { patate: 2 });
   assertEqual([sellableCount(s, 'patate'), fridgeCount(s, 'patate')], [2, 0]);
@@ -10942,7 +11124,7 @@ test('onglet Livre de recette : ouvert par le Four, jamais avant', () => {
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes']);
 });
 
-test('plats et ingrédients se vendent au Comptoir au prix fixe', () => {
+test('plats et ingrédients se vendent au Marché au prix fixe', () => {
   const s = atelier();
   setInv(s, { ragout: 2, farine: 3, huile: 1 });
   const before = s.pieces;
@@ -13015,7 +13197,7 @@ test('autonomie : les conserves n\'y comptent pas', () => {
   assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [150, 0, 0]);
 });
 
-test('autonomie : un achat du Comptoir n\'y compte pas, une récolte oui', () => {
+test('autonomie : un achat du Marché n\'y compte pas, une récolte oui', () => {
   const s = farm();
   s.famille.reserve = {};
   setInv(s, { conserve: 10 });
@@ -13517,7 +13699,7 @@ test('déblocages : chaque chapitre atteint ouvre ses éléments', () => {
   assertEqual(['champ', 'four', 'paturage', 'serre'].map((id) => at(4, id)), [true, true, false, false]);
 });
 
-test('déblocages : le Potager, la pompe et le Comptoir sont là dès le départ', () => {
+test('déblocages : le Potager, la pompe et le Marché sont là dès le départ', () => {
   const s = atChapter(1);
   for (const id of ['potager', 'pompe', 'panneau', 'batterie', 'comptoir']) assertEqual([id, isUnlocked(s, id)], [id, true]);
   assertEqual(unlockChapter('potager'), 0);
@@ -13797,7 +13979,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '0.14.0');
+  assertEqual(GAME_VERSION, '0.18.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -14007,6 +14189,121 @@ test('Lot 11 : alertes : panne, entretien, batteries vides, frigo coupé', () =>
   assertEqual(alertSnapshot(s).frigoCoupe, false, 'un frigo éteint par le joueur n\'est pas une alerte');
 });
 
+/* ---------- Centre de notifications ---------- */
+
+// Batteries chargées : sans cela, « Batteries vides » (vraie alerte) s'ajoute à chaque scénario.
+function charged(s) {
+  testFillBatteries(s);
+  return s;
+}
+
+function notifTypes(s) {
+  return getNotifications(s).map((n) => n.type);
+}
+
+test('notifications : rien à signaler au départ, pastille à 0', () => {
+  const s = charged(garden());
+  assertEqual(getNotifications(s), []);
+  assertEqual(notificationCount(s), 0);
+});
+
+test('notifications : parcelle non arrosée puis arrosée, récolte prête', () => {
+  const s = charged(garden());
+  testAddSeeds(s);
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  assert(plant(s, 'potager-2', 'carotte').ok);
+  let n = getNotifications(s);
+  assertEqual(n.map((x) => [x.type, x.nombre]), [['arrosage', 2]]);
+  assertEqual(n[0].texte, '2 parcelles non arrosées');
+  assert(water(s, 'potager-1').ok);
+  n = getNotifications(s);
+  assertEqual([n[0].nombre, n[0].texte], [1, '1 parcelle non arrosée']);
+  assert(water(s, 'potager-2').ok);
+  assertEqual(notifTypes(s), [], 'tout est arrosé');
+  testRipenAll(s);
+  n = getNotifications(s);
+  assertEqual(n.map((x) => [x.type, x.nombre]), [['recolte', 2]], 'mûres : plus à arroser, à récolter');
+  assert(harvest(s, 'potager-1').ok);
+  assertEqual(getNotifications(s).map((x) => [x.type, x.nombre]), [['recolte', 1]]);
+});
+
+test('notifications : mouton à tondre', () => {
+  const s = charged(pature());
+  fillSheep(s, 2);
+  assertEqual(notifTypes(s), [], 'laine pas encore repoussée');
+  testWoolReady(s);
+  assertEqual(getNotifications(s).map((x) => [x.type, x.nombre, x.texte]), [['tonte', 2, '2 moutons à tondre']]);
+  assert(shear(s, 'mouton-1').ok);
+  assertEqual(getNotifications(s).map((x) => [x.type, x.texte]), [['tonte', '1 mouton à tondre']]);
+  assert(shear(s, 'mouton-2').ok);
+  assertEqual(notifTypes(s), []);
+});
+
+test('notifications : poules à nourrir', () => {
+  const s = charged(garden());
+  testAddHens(s, 4);
+  assertEqual(getNotifications(s).map((x) => [x.type, x.nombre]), [['poules', 4]]);
+  s.poulailler.nourries = 4;
+  assertEqual(notifTypes(s), []);
+});
+
+test('notifications : panne, entretien et priorités (urgent d\'abord)', () => {
+  const s = coldRoom();
+  testAddSeeds(s);
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  testSetWear(s, 'panneau-1', DATA.WEAR.BREAKDOWN);
+  const n = getNotifications(s);
+  assertEqual(n.map((x) => x.type), ['panne', 'arrosage']);
+  assertEqual(n.map((x) => x.priorite), [1, 2]);
+  testSetWear(s, 'panneau-1', DATA.WEAR.SERVICE_THRESHOLD);
+  assertEqual(notifTypes(s), ['arrosage', 'entretien']);
+  testSetWear(s, 'panneau-1', 0);
+  assertEqual(notifTypes(s), ['arrosage'], 'l\'alerte disparaît quand la cause est réglée');
+});
+
+test('notifications : batteries vides et frigo sans courant', () => {
+  const s = coldRoom();
+  testEmptyBatteries(s);
+  tick(s, 0.2);
+  assertEqual(notifTypes(s), ['batteriesVides', 'frigoCoupe']);
+});
+
+test('notifications : aliments qui périssent cette nuit', () => {
+  const s = charged(garden());
+  setInv(s, { carotte: 3, tomate: 2, conserve: 5 });
+  assertEqual(notifTypes(s), []);
+  for (let i = 0; i < 4; i++) spoil(s); // tomate : plus qu'une nuit
+  const n = getNotifications(s);
+  assertEqual(n.map((x) => [x.type, x.nombre, x.priorite]), [['peremption', 2, 1]]);
+});
+
+test('notifications : les tâches automatisées par la technologie ne sont pas signalées', () => {
+  const s = charged(pature());
+  testAddSeeds(s);
+  testAddHens(s, 2);
+  fillSheep(s, 1);
+  testWoolReady(s);
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  assertEqual(notifTypes(s).sort(), ['arrosage', 'poules', 'tonte']);
+  testUnlockAllTechs(s);
+  assertEqual(notifTypes(s), [], 'arrosage, nourrissage et tonte sont automatiques');
+});
+
+test('notifications : entiers, identifiants uniques, texte et icône présents', () => {
+  const s = charged(pature());
+  testAddSeeds(s);
+  testAddHens(s, 3);
+  fillSheep(s, 2);
+  testWoolReady(s);
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  testSetWear(s, 'panneau-1', DATA.WEAR.BREAKDOWN);
+  const n = getNotifications(s);
+  assertEqual(new Set(n.map((x) => x.id)).size, n.length, 'pas de doublon');
+  for (const x of n) assert(Number.isInteger(x.nombre) && x.nombre > 0 && x.texte && x.icone, `entrée valide : ${x.id}`);
+  assertEqual(n.map((x) => x.priorite), [...n.map((x) => x.priorite)].sort((a, b) => a - b), 'tri par priorité');
+  assertEqual(notificationCount(s), n.length);
+});
+
 test('Lot 11 : bulles d\'aide : eau, potager, dormir, puis terminé', () => {
   const s = createInitialState(1);
   assertEqual(s.aide, { etape: 0, fini: false });
@@ -14058,6 +14355,62 @@ test('migration v10 → v11 : bulles d\'aide seulement pour une partie pas encor
   assertEqual(avancee.day, 9);
   assertEqual(JSON.parse(JSON.stringify(avancee)), avancee);
   assertEqual(migrate({ v: 0, t: 0, s: { day: 3, pieces: 10, stats: {} } }).aide.fini, true, 'depuis une très vieille sauvegarde');
+});
+
+// Résumé de réveil allégé (v0.18.0) : récolte de la nuit, tri, limite, indicateurs entiers.
+const fakeReport = (over = {}) => ({ oeufs: 0, lait: 0, fruits: {}, auto: { recoltes: {} }, autonomie: 100, santeApres: 100, ...over });
+
+test('Résumé de réveil : rien récolté → liste vide', () => {
+  assertEqual(nightHarvest(fakeReport()), {});
+  assertEqual(wakeHarvestList(fakeReport()), { affiches: [], reste: [] });
+});
+
+test('Résumé de réveil : un seul produit', () => {
+  const r = fakeReport({ oeufs: 24 });
+  assertEqual(nightHarvest(r), { oeuf: 24 });
+  assertEqual(wakeHarvestList(r), { affiches: [{ item: 'oeuf', qte: 24 }], reste: [] });
+});
+
+test('Résumé de réveil : regroupe œufs, lait, fruits et récoltes automatiques par produit, quantité décroissante', () => {
+  const r = fakeReport({ oeufs: 24, lait: 2, fruits: { pomme: 3 }, auto: { recoltes: { carotte: 12, pomme: 4 } } });
+  assertEqual(nightHarvest(r), { oeuf: 24, lait: 2, pomme: 7, carotte: 12 });
+  assertEqual(wakeHarvestList(r).affiches.map((x) => [x.item, x.qte]), [['oeuf', 24], ['carotte', 12], ['pomme', 7], ['lait', 2]]);
+});
+
+test('Résumé de réveil : limite de 5 produits, le reste va dans « Voir plus » ; égalité départagée par le nom', () => {
+  assertEqual(DATA.REVEIL.RECOLTE_MAX, 5);
+  const r = fakeReport({ oeufs: 9, lait: 9, auto: { recoltes: { carotte: 9, oignon: 5, ble: 4, patate: 3, epinard: 1 } } });
+  const { affiches, reste } = wakeHarvestList(r);
+  assertEqual(affiches.length, 5);
+  assertEqual(reste.length, 2);
+  // 9, 9, 9 : ordre alphabétique des noms (Carotte, Lait, Œuf), puis Oignon 5, Blé 4.
+  assertEqual(affiches.map((x) => x.item), ['carotte', 'lait', 'oeuf', 'oignon', 'ble']);
+  assertEqual(reste.map((x) => x.item), ['patate', 'epinard']);
+  assertEqual(wakeHarvestList(r, 3).affiches.length, 3, 'la limite est un paramètre');
+});
+
+test('Résumé de réveil : quantités négatives, nulles ou produits inconnus ignorés', () => {
+  assertEqual(nightHarvest(fakeReport({ oeufs: -2, lait: 0, fruits: { inconnu: 5, pomme: 0 } })), {});
+});
+
+test('Résumé de réveil : autonomie et santé en entiers (arrondi inférieur)', () => {
+  const w = wakeSummary(fakeReport({ autonomie: 99.9, santeApres: 87.6 }));
+  assertEqual([w.autonomie, w.sante], [99, 87]);
+  const cent = wakeSummary(fakeReport({ autonomie: 100, santeApres: 100 }));
+  assertEqual([cent.autonomie, cent.sante], [100, 100]);
+  assertEqual(wakeSummary(fakeReport({ autonomie: NaN, santeApres: undefined })).autonomie, 0);
+});
+
+test('Résumé de réveil : avec une vraie nuit, les œufs pondus sont dans la récolte', () => {
+  const s = ranch();
+  setInv(s, { ble: 10, conserve: 200 });
+  testAddHens(s, 4);
+  feedAllHens(s);
+  const report = sleepOnce(s);
+  const w = wakeSummary(report);
+  assertEqual(w.recolte.affiches, [{ item: 'oeuf', qte: report.oeufs }]);
+  assert(report.oeufs > 0, 'la ferme a pondu');
+  assertEqual([Number.isInteger(w.autonomie), Number.isInteger(w.sante)], [true, true]);
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -14474,20 +14827,35 @@ const AUTOSAVE_MS = 10000;
 const RENDER_THROTTLE_MS = 200; // ~5 fois par seconde
 
 const TABS = [
-  { id: 'ferme', label: 'Ferme', icon: '🌾' },
+  { id: 'ferme', label: 'Ferme', icon: '🏠' },
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦' },
   { id: 'inventaire', label: 'Inventaire', icon: '📦' },
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳' },
-  { id: 'comptoir', label: 'Comptoir', icon: '💰' },
+  { id: 'comptoir', label: 'Marché', icon: '🧺' },
+  { id: 'notifications', label: 'Notifications', icon: '✉️' },
 ];
+
+// Barre de menu du bas : quatre destinations, côte à côte.
+const NAV_TABS = ['ferme', 'inventaire', 'comptoir', 'notifications'];
+
+// Écrans ouverts depuis la Ferme (raccourcis en haut de l'écran Ferme). Ils
+// restent des onglets pour le moteur et le suivi, mais n'ont pas d'icône en bas :
+// la barre garde alors « Ferme » allumé.
+const FERME_LINKS = ['famille', 'recettes', 'techno'];
+
+// Onglets toujours disponibles, sans passer par state.unlockedTabs (aucune migration).
+const ALWAYS_TABS = ['notifications'];
+function tabAvailable(id) {
+  return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
+}
 
 let state = null;
 let activeTab = 'ferme';
 let screen = null; // écran de détail ouvert dans la Ferme : null, 'panneaux' ou 'batteries'
 let testMode = false;
 let invTab = 'frais'; // Inventaire : 'frais', 'graines' ou 'produits'
-let comptoirTab = 'vendre'; // Comptoir : 'vendre', 'acheter', 'graines', 'animaux' ou 'arbres'
+let comptoirTab = 'vendre'; // Marché : 'vendre', 'acheter', 'graines', 'animaux' ou 'arbres'
 const sellQuantities = {}; // quantité choisie par item dans l'onglet Vendre
 
 /* ---------- suivi de session (consentement requis, voir cookies.html) ---------- */
@@ -14983,7 +15351,7 @@ function renderLoop(now) {
 
 function render() {
   // Un onglet non débloqué (sauvegarde importée, par exemple) retombe sur la Ferme.
-  if (!state.unlockedTabs.includes(activeTab)) activeTab = 'ferme';
+  if (!tabAvailable(activeTab)) activeTab = 'ferme';
   renderIndicators();
   renderTabbar();
   renderTabContent();
@@ -15078,7 +15446,6 @@ function renderIndicators() {
   morph(document.getElementById('indicators'), `
     <span class="indicator" title="Nuit"><span aria-hidden="true">🌙</span><span><span class="visually-hidden">Nuit </span>${state.day}</span></span>
     <span class="indicator" title="Saison : ${DATA.SAISONS.INFOS[currentSeason(state)].nom}"><span aria-hidden="true">${DATA.SAISONS.INFOS[currentSeason(state)].icone}</span><span class="visually-hidden">Saison ${DATA.SAISONS.INFOS[currentSeason(state)].nom}</span></span>
-    <span class="indicator" title="Heure"><span aria-hidden="true">🕐</span><span>${formatHour(hourOfDay(state))}</span></span>
     <span class="indicator" title="Eau du réservoir"><span aria-hidden="true">💧</span><span class="num">${formatLitres(state.eauMl)}</span></span>
     <span class="indicator" title="Pièces"><span aria-hidden="true">💰</span><span class="num">${formatCoins(state.pieces)}</span></span>
     <button type="button" class="indicator indicator-btn" data-action="switch-tab" data-tab="famille" title="Autonomie de la dernière nuit : ouvrir la Famille"><span aria-hidden="true">🌿</span><span class="visually-hidden">Autonomie </span><span class="num">${formatPercent(lastAutonomy(state))}</span></button>
@@ -15086,13 +15453,17 @@ function renderIndicators() {
 }
 
 function renderTabbar() {
-  const visible = TABS.filter((t) => state.unlockedTabs.includes(t.id));
+  const current = FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
+  const alerts = notificationCount(state);
   morph(
-    document.getElementById('tabbar'),
-    visible
-      .map(
-        (t) => `<button type="button" class="tab-btn${t.id === activeTab ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}"${t.id === activeTab ? ' aria-current="page"' : ''}>${t.icon} ${t.label}</button>`
-      )
+    document.getElementById('bottom-nav'),
+    NAV_TABS.map((id) => TABS.find((t) => t.id === id))
+      .filter((t) => tabAvailable(t.id))
+      .map((t) => {
+        const badge = t.id === 'notifications' && alerts > 0 ? `<span class="nav-badge" aria-hidden="true">${alerts}</span>` : '';
+        const label = t.id === 'notifications' && alerts > 0 ? `${t.label} (${alerts} alerte${alerts > 1 ? 's' : ''})` : t.label;
+        return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
+      })
       .join('')
   );
 }
@@ -15101,11 +15472,12 @@ function renderTabbar() {
 // render() ramène déjà un onglet non débloqué sur la Ferme.
 const TAB_RENDERERS = {
   ferme: () => (screen === 'panneaux' || screen === 'batteries' ? [renderDeviceScreen(screen)] : renderFerme()),
-  famille: () => [renderFamille()],
+  famille: () => [backToFerme() + renderFamille()],
   inventaire: () => [renderInventaire()],
   comptoir: () => [renderComptoir()],
-  recettes: () => [renderRecettes()],
-  techno: () => [renderTechno()],
+  recettes: () => [backToFerme() + renderRecettes()],
+  techno: () => [backToFerme() + renderTechno()],
+  notifications: () => [renderNotifications()],
 };
 
 function renderTabContent() {
@@ -15176,6 +15548,21 @@ function alertLine(aEntretenir, enPanne) {
   return parts.length ? `<span class="alert">${parts.join(' · ')}</span>` : '';
 }
 
+// En-tête des écrans ouverts depuis la Ferme.
+function backToFerme() {
+  return '<div class="screen-head"><button type="button" class="btn" data-action="switch-tab" data-tab="ferme">← Ferme</button></div>';
+}
+
+// Raccourcis de la Ferme : Famille, Livre de recette, Arbre des technologies
+// (les deux derniers seulement une fois débloqués).
+function renderFermeLinks() {
+  const links = FERME_LINKS.filter((id) => tabAvailable(id))
+    .map((id) => TABS.find((t) => t.id === id))
+    .map((t) => `<button type="button" class="ferme-link" data-action="switch-tab" data-tab="${t.id}"><span aria-hidden="true">${t.icon}</span><span>${t.label}</span></button>`)
+    .join('');
+  return links ? `<nav class="ferme-links" aria-label="Raccourcis de la ferme">${links}</nav>` : '';
+}
+
 function renderFerme() {
   const e = energyStats(state);
   const p = state.pompe;
@@ -15196,7 +15583,7 @@ function renderFerme() {
   // section pas encore débloquée est vide) : chacune n'est mise à jour que si
   // son gabarit a changé.
   return [
-    `<h2>🌾 Ferme</h2>${renderChapterBanner()}${renderCalendar()}`,
+    `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}${renderCalendar()}`,
     renderPotager(),
     isUnlocked(state, 'serre') ? renderSerre() : '',
     isUnlocked(state, 'champ') ? renderChamp() : '',
@@ -15411,7 +15798,7 @@ function renderPoulailler() {
     return `
       <div class="section-head"><h3>${icon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
       <div class="card">
-        <span class="muted">1 blé nourrit ${DATA.ANIMAUX.poule.poulesParBle} poules pour la nuit ; une poule nourrie pond 1 œuf. Capacité de départ : ${DATA.POULAILLER.CAPACITE[0]} poules. Les poules s'achètent au Comptoir.</span>
+        <span class="muted">1 blé nourrit ${DATA.ANIMAUX.poule.poulesParBle} poules pour la nuit ; une poule nourrie pond 1 œuf. Capacité de départ : ${DATA.POULAILLER.CAPACITE[0]} poules. Les poules s'achètent au Marché.</span>
         <button type="button" class="btn primary" data-action="build-poulailler"${canPay(cost) ? '' : ' disabled'}>Construire le Poulailler (${costLabel(cost)})</button>
       </div>`;
   }
@@ -15425,7 +15812,7 @@ function renderPoulailler() {
       ? '<button type="button" class="btn" disabled>Poulailler au niveau maximum</button>'
       : `<button type="button" class="btn" data-action="upgrade-poulailler"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${p.niveau + 1}, ${DATA.POULAILLER.CAPACITE[p.niveau]} poules (${costLabel(up)})</button>`;
   let hint;
-  if (p.poules === 0) hint = 'Aucune poule : achètes-en au Comptoir (onglet Animaux).';
+  if (p.poules === 0) hint = 'Aucune poule : achètes-en au Marché (onglet Animaux).';
   else if (toFeed === 0) hint = '✅ Toutes les poules sont nourries : elles pondront cette nuit.';
   else if (isAutomated(state, 'poulailler')) hint = `🤖 Nourrissage automatique : les poules restantes seront nourries cette nuit avec le blé disponible (${formatQty(wheatTotal(state))}).`;
   else if (noWheat) hint = '⚠️ Pas assez de blé pour nourrir une poule.';
@@ -15526,7 +15913,7 @@ function renderPaturage() {
     return `
       <div class="section-head"><h3>${icon('paturage')}Pâturage</h3>${helpBtn('paturage')}</div>
       <div class="card">
-        <span class="muted">${formatAres(DATA.PATURAGE.surfaceDepart)} au départ : ${maxSheep(DATA.PATURAGE.surfaceDepart)} moutons au plus, ou ${maxCows(DATA.PATURAGE.surfaceDepart)} vaches (${formatAres(DATA.PATURAGE.aresParVache)} chacune), ou un mélange des deux. La laine se tond toutes les ${M.joursLaine} nuits, le lait se récolte chaque nuit ; la viande vient de l'abattage. Les moutons et les vaches s'achètent au Comptoir.</span>
+        <span class="muted">${formatAres(DATA.PATURAGE.surfaceDepart)} au départ : ${maxSheep(DATA.PATURAGE.surfaceDepart)} moutons au plus, ou ${maxCows(DATA.PATURAGE.surfaceDepart)} vaches (${formatAres(DATA.PATURAGE.aresParVache)} chacune), ou un mélange des deux. La laine se tond toutes les ${M.joursLaine} nuits, le lait se récolte chaque nuit ; la viande vient de l'abattage. Les moutons et les vaches s'achètent au Marché.</span>
         <button type="button" class="btn primary" data-action="build-paturage"${canPay(cost) ? '' : ' disabled'}>Débloquer le Pâturage (${costLabel(cost)})</button>
       </div>`;
   }
@@ -15541,7 +15928,7 @@ function renderPaturage() {
   const pct = p.ares > 0 ? Math.min(100, Math.round((occupied / p.ares) * 100)) : 0;
   const ready = sheepToShear(state);
   let hint;
-  if (sCount === 0 && cCount === 0) hint = 'Aucun animal : achètes-en au Comptoir (onglet Animaux).';
+  if (sCount === 0 && cCount === 0) hint = 'Aucun animal : achètes-en au Marché (onglet Animaux).';
   else if (sFree === 0) hint = `⚠️ Pâturage plein pour un mouton : achète ${formatAres(DATA.PATURAGE.aresParMouton)} (une vache en demande ${formatAres(DATA.PATURAGE.aresParVache)}).`;
   else hint = `${sFree} place${sFree > 1 ? 's' : ''} de mouton libre${sFree > 1 ? 's' : ''}${cFree > 0 ? `, ${cFree} de vache` : ''}.`;
   // Achat de surface toujours refusé tant qu'il reste au moins une place de
@@ -15615,7 +16002,7 @@ function openHenSlaughterModal() {
         <h2 id="slaughter-hen-title">🔪 Abattre une poule ?</h2>
         <div class="stack">
           <p>Elle donnera <strong class="num">${portions} portion${portions > 1 ? 's' : ''}</strong> de ${meat.nom.toLowerCase()} ${meat.icone} (${formatNumber(energy)} énergie).</p>
-          <p class="muted">La poule disparaît du Poulailler : elle ne pond plus et ne mange plus de blé. Sa place se libère, sans être rachetée automatiquement (${formatCoins(animalPrice('poule'))} 💰 au Comptoir).</p>
+          <p class="muted">La poule disparaît du Poulailler : elle ne pond plus et ne mange plus de blé. Sa place se libère, sans être rachetée automatiquement (${formatCoins(animalPrice('poule'))} 💰 au Marché).</p>
         </div>
         <div class="row">
           <button type="button" class="btn danger" data-action="confirm-slaughter-hen">Oui, abattre</button>
@@ -15859,7 +16246,7 @@ function renderVerger() {
     return `
       <div class="section-head"><h3>${icon('verger')}Verger</h3>${helpBtn('verger')}</div>
       <div class="card">
-        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Pommiers et poiriers s'achètent au Comptoir (onglet Arbres), sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne, ${V.MATURITE} nuits après la plantation.</span>
+        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Pommiers et poiriers s'achètent au Marché (onglet Arbres), sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne, ${V.MATURITE} nuits après la plantation.</span>
         <button type="button" class="btn primary" data-action="build-verger"${canPay(cost) ? '' : ' disabled'}>Aménager le Verger (${costLabel(cost)})</button>
       </div>`;
   }
@@ -15874,7 +16261,7 @@ function renderVerger() {
       <div class="card plot tree free">
         <span class="card-title"><span>Emplacement libre</span></span>
         ${artSvg(['plot-soil'], 'plot-art')}
-        <span class="muted">Achète un pommier ou un poirier au Comptoir (onglet Arbres).</span>
+        <span class="muted">Achète un pommier ou un poirier au Marché (onglet Arbres).</span>
       </div>`);
   }
   const nightOfYear = yearNight(state.day);
@@ -15966,7 +16353,7 @@ function renderFridgeTab() {
       <span class="card-title"><span>${fridgeIcon()} Réfrigérateur</span><span class="chip">${fridgeUnits(state)} unité${fridgeUnits(state) > 1 ? 's' : ''}</span></span>
       <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : '⚠️ Pas alimenté : si le froid manque plus de la moitié de l\'éveil, ou toute la nuit, chaque lot perd une nuit.'} Consommation : <span class="num">${formatWhRate(fridgeRate(state))}</span>.</span>
       ${!fridgeCoversNight(state) ? '<span class="alert">⚠️ La batterie ne couvrira pas la nuit.</span>' : ''}
-      <span class="muted">La famille mange aussi le contenu du frigo, après ce qui est dans l'inventaire. Le Comptoir et les recettes utilisent l'inventaire : sors ce qu'il te faut.</span>
+      <span class="muted">La famille mange aussi le contenu du frigo, après ce qui est dans l'inventaire. Le Marché et les recettes utilisent l'inventaire : sors ce qu'il te faut.</span>
     </div>
     <div class="inv-group">
       ${items.length ? items.map(fridgeRowHtml).join('') : '<p class="hint">Le frigo est vide. Range des aliments frais depuis l\'onglet Frais.</p>'}
@@ -16305,6 +16692,30 @@ function renderFamille() {
     </div>`;
 }
 
+/* ---------- Notifications ---------- */
+
+// Onglet où le joueur règle chaque alerte (la péremption se gère à l'Inventaire).
+const NOTIF_TARGET = { peremption: 'inventaire' };
+
+function renderNotifications() {
+  const list = getNotifications(state);
+  if (!list.length) {
+    return `
+      <h2>✉️ Notifications</h2>
+      <p class="hint notif-empty">Rien à signaler aujourd'hui. 🌾</p>`;
+  }
+  const items = list
+    .map((n) => {
+      const tab = NOTIF_TARGET[n.type] || 'ferme';
+      return `<li><button type="button" class="notif p${n.priorite}" data-action="switch-tab" data-tab="${tab}"><span class="notif-icon" aria-hidden="true">${n.icone}</span><span class="notif-text">${n.texte}</span><span class="notif-go" aria-hidden="true">›</span></button></li>`;
+    })
+    .join('');
+  return `
+    <h2>✉️ Notifications</h2>
+    <p class="hint">${list.length} chose${list.length > 1 ? 's' : ''} à voir aujourd'hui.</p>
+    <ul class="notif-list">${items}</ul>`;
+}
+
 /* ---------- Inventaire ---------- */
 
 // Libellé d'une quantité : « 6 carottes », « 1 carotte », « 1 graine de tomate ».
@@ -16419,7 +16830,7 @@ function renderInventaire() {
     </div>`;
 }
 
-/* ---------- Comptoir ---------- */
+/* ---------- Marché ---------- */
 
 const COMPTOIR_TABS = [
   { id: 'vendre', label: 'Vendre', icon: '💰' },
@@ -16630,7 +17041,7 @@ function renderComptoir() {
   } else if (tab.id === 'acheter') {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine');
     body = `
-      <p class="muted">Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Comptoir dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
+      <p class="muted">Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'graines') {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
@@ -16643,7 +17054,7 @@ function renderComptoir() {
     body = renderArbres();
   }
   return `
-    <h2>💰 Comptoir</h2>
+    <h2>🧺 Marché</h2>
     ${subtabsHtml(tabs, tab.id, 'comptoir-tab')}
     ${body}`;
 }
@@ -16736,18 +17147,39 @@ function openWakeModal(report) {
     spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
     expiring ? `<li>⏳ À manger vite, périme à la prochaine nuit : <strong>${expiring}</strong></li>` : '',
   ];
+  // Résumé allégé : autonomie, santé, récolte de la nuit. Tout le reste (ancien contenu du
+  // réveil, inchangé) est dans « Voir plus ».
+  const w = wakeSummary(report);
+  const harvestName = (r) => `<span aria-hidden="true">${DATA.items[r.item].icone}</span> ${DATA.items[r.item].nom.toLowerCase()} ×${formatNumber(r.qte)}`;
+  const harvestLine = w.recolte.affiches.length
+    ? w.recolte.affiches.map(harvestName).join(', ') + (w.recolte.reste.length ? ` <span class="muted">+ ${w.recolte.reste.length} autre${w.recolte.reste.length > 1 ? 's' : ''}</span>` : '')
+    : '<span class="muted">Rien récolté cette nuit</span>';
+  const fullHarvest = w.recolte.reste.length
+    ? `<li>🧺 Récolte complète de la nuit : <strong>${[...w.recolte.affiches, ...w.recolte.reste].map(harvestName).join(', ')}</strong></li>`
+    : '';
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
         <h2 id="wake-title">🌅 Réveil : nuit ${report.nuit}</h2>
-        <ul class="report-list">
-          ${family.join('')}
-          <li>⚡ Énergie stockée : <strong class="num">${formatNumber(Math.floor(report.energie / 1000))} / ${formatWh(report.capacite)}</strong></li>
-          <li>💧 Eau disponible : <strong class="num">${formatNumber(Math.floor(report.eau / 1000))} / ${formatLitres(report.capaciteEau)}</strong></li>
-          ${report.energiePerdue >= 1000 ? `<li>☀️ Énergie perdue pendant la journée (batteries pleines) : <strong class="num">${formatWh(report.energiePerdue)}</strong></li>` : ''}
-          ${problems.length ? problems.join('') : '<li>✅ Tous les appareils sont en bon état.</li>'}
-        </ul>
-        <button type="button" class="btn primary" data-action="close-modal" id="wake-close">Bonne journée</button>
+        <div class="wake-kpis">
+          <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>
+          <div class="wake-kpi"><span class="muted">❤️ Santé</span><strong class="num">${formatPercent(w.sante)}</strong></div>
+        </div>
+        <p class="wake-harvest"><strong>🧺 Récolte</strong> : ${harvestLine}</p>
+        <div id="wake-detail" hidden>
+          <ul class="report-list">
+            ${fullHarvest}
+            ${family.join('')}
+            <li>⚡ Énergie stockée : <strong class="num">${formatNumber(Math.floor(report.energie / 1000))} / ${formatWh(report.capacite)}</strong></li>
+            <li>💧 Eau disponible : <strong class="num">${formatNumber(Math.floor(report.eau / 1000))} / ${formatLitres(report.capaciteEau)}</strong></li>
+            ${report.energiePerdue >= 1000 ? `<li>☀️ Énergie perdue pendant la journée (batteries pleines) : <strong class="num">${formatWh(report.energiePerdue)}</strong></li>` : ''}
+            ${problems.length ? problems.join('') : '<li>✅ Tous les appareils sont en bon état.</li>'}
+          </ul>
+        </div>
+        <div class="row wake-actions">
+          <button type="button" class="btn btn-pill" data-action="wake-more" id="wake-more" aria-expanded="false" aria-controls="wake-detail">Voir plus</button>
+          <button type="button" class="btn primary btn-pill" data-action="close-modal" id="wake-close">Bonne journée</button>
+        </div>
       </div>
     </div>
   `;
@@ -16856,7 +17288,7 @@ function renderAutonomyCard() {
     <div class="card autonomy-card">
       <span class="card-title"><span>🌿 Autonomie</span><span class="chip">${DATA.AUTONOMIE.GRAPHIQUE_NUITS} dernières nuits</span></span>
       <span class="big">${formatPercent(lastAutonomy(state))}</span>
-      <span class="muted">Dernière nuit : l'énergie mangée qui vient de la ferme, sur ${formatNumber(familyNeed(state))}. Les conserves et les achats du Comptoir ne comptent pas. Prévue cette nuit : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
+      <span class="muted">Dernière nuit : l'énergie mangée qui vient de la ferme, sur ${formatNumber(familyNeed(state))}. Les conserves et les achats du Marché ne comptent pas. Prévue cette nuit : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
       ${autonomyChartHtml()}
     </div>`;
 }
@@ -17066,7 +17498,7 @@ const HELP = {
   }),
   poulailler: () => ({
     nom: 'Poulailler',
-    role: 'Loge les poules, achetées au Comptoir. Une poule pond toute sa vie, tant qu\'elle est nourrie ; elle peut aussi être abattue pour sa viande, en dernier recours.',
+    role: 'Loge les poules, achetées au Marché. Une poule pond toute sa vie, tant qu\'elle est nourrie ; elle peut aussi être abattue pour sa viande, en dernier recours.',
     conso: `1 blé pour ${DATA.ANIMAUX.poule.poulesParBle} poules nourries (une ration entamée se perd à la fin de la nuit).`,
     prod: `${DATA.ANIMAUX.poule.oeufsParNuit} œuf par nuit et par poule nourrie (${DATA.items.oeuf.energie} énergie). Abattue, une poule rend ${DATA.ANIMAUX.poule.portionsAbattage} portions de ${DATA.items[DATA.ANIMAUX.poule.viande].nom.toLowerCase()} (${DATA.items[DATA.ANIMAUX.poule.viande].energie} énergie chacune), une seule fois.`,
     note: `Poules par niveau : ${listNum(DATA.POULAILLER.CAPACITE, '')}. Avec la Mangeoire à trémie (Arbre des technologies, branche Élevage), les poules sont nourries toutes seules pendant la nuit. Abattre une poule libère sa place, sans la remplacer automatiquement.`,
@@ -17087,7 +17519,7 @@ const HELP = {
     const w = orchardWindow();
     return {
       nom: 'Verger',
-      role: 'Pommiers et poiriers, achetés au Comptoir et plantés sur un emplacement libre. Ils restent en place.',
+      role: 'Pommiers et poiriers, achetés au Marché et plantés sur un emplacement libre. Ils restent en place.',
       conso: 'Aucune : pas d\'arrosage.',
       prod: `${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, de la nuit ${w.debut} à la nuit ${w.fin} de l'année, à partir de ${nightsLabel(V.MATURITE)} après la plantation.`,
       note: `Emplacement supplémentaire : ${formatNumber(V.EMPLACEMENT.base)} 💰, +${formatNumber(V.EMPLACEMENT.croissance - 100)} % par emplacement déjà acheté (arrondi à l'entier supérieur).`,
@@ -17233,7 +17665,7 @@ function openAboutModal() {
     `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
     `Santé : un besoin couvert à 100 % la remonte (${formatSigned(V[0].delta)}), sinon elle baisse (${V.slice(1).map((x) => formatSigned(x.delta)).join(', ')}). Une santé faible ralentit les actions au clic ; les automatisations restent à 100 %. À 0, un soin coûte ${formatNumber(F.SOIN.base)} 💰, +${formatNumber(F.SOIN.croissance - 100)} % par soin déjà payé (arrondi à l'entier supérieur).`,
     `Énergie : panneaux → batteries → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
-    `Comptoir : prix de vente fixes. Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient d'achat, chaque unité vendue en retire ${formatNumber(M.PAS)} (plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %).`,
+    `Marché : prix de vente fixes. Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient d'achat, chaque unité vendue en retire ${formatNumber(M.PAS)} (plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %).`,
     `Saisons de ${DATA.SAISONS.LONGUEUR} nuits : elles nuancent le solaire, les récoltes, l'eau et les moutons, sans rien bloquer. La Serre les ignore.`,
     `Autonomie = énergie mangée produite par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
     `Arbre des technologies : ${Object.keys(DATA.techtree.noeuds).length} technologies en ${DATA.techtree.branches.length} branches, payées en points de technologie (chapitres terminés, jalons de maîtrise, mode libre) et en pièces. Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
@@ -17422,6 +17854,15 @@ document.addEventListener('click', (e) => {
     case 'close-modal':
       if (e.target === target) closeModal();
       break;
+    case 'wake-more': {
+      const detail = document.getElementById('wake-detail');
+      if (!detail) break;
+      const open = detail.hidden; // hidden = replié : on ouvre
+      detail.hidden = !open;
+      target.setAttribute('aria-expanded', String(open));
+      target.textContent = open ? 'Voir moins' : 'Voir plus';
+      break;
+    }
     case 'switch-tab':
       activeTab = target.dataset.tab;
       screen = null;
