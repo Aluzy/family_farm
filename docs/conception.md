@@ -1120,6 +1120,7 @@ export function take(s: GameState, item: string, qty: number) {
 - **Réfrigérateur** : icône ❄️ (alimenté) / ⚠️ (en panne), consommation actuelle en kWh/s, alerte si la batterie ne tiendra pas la nuit.
 - **Moutons** : fiche par animal (poids, jauge de laine, boutons ✂️ Tondre / 🔪 Abattre).
 - **Poules** : simple compteur « nourries / total » ; aucune fiche individuelle nécessaire.
+- **Notifications** (v0.15.0) : onglet ✉️ qui liste les **alertes du jour**, calculées à la volée par `getNotifications(state)` (fonction pure, rien n'est sauvegardé, donc pas de migration). Une entrée par catégorie, triée par priorité : **1 urgent** (appareils en panne, batteries vides, réfrigérateur sans courant, aliments qui périront cette nuit), **2 utile** (parcelles non arrosées, poules à nourrir, appareils à entretenir), **3 à faire** (récoltes prêtes, moutons à tondre). Une tâche déjà **automatisée** par l'arbre des technologies (arrosage, récolte, nourrissage, tonte) n'est pas signalée. Chaque alerte disparaît dès que sa cause est réglée ; toucher une carte ouvre l'onglet concerné (Ferme, ou Inventaire pour la péremption). Sans alerte : « Rien à signaler aujourd'hui ». La pastille de l'onglet affiche `notificationCount(state)`. Les alertes ponctuelles (toasts, `alertEvents`) restent inchangées.
 
 ---
 

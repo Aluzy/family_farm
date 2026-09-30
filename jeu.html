@@ -152,6 +152,53 @@ main {
   border-color: var(--accent);
 }
 
+.tab-badge {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 6px;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--danger-contrast);
+  font-size: 0.8rem;
+  line-height: 20px;
+  text-align: center;
+}
+
+.notif-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notif {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-left-width: 5px;
+  background: var(--bg-muted);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notif.p1 { border-left-color: var(--danger); }
+.notif.p2 { border-left-color: var(--color-sun-dark); }
+.notif.p3 { border-left-color: var(--accent); }
+.notif-icon { font-size: 1.4rem; }
+.notif-text { flex: 1 1 auto; min-width: 0; font-weight: 600; }
+.notif-go { color: var(--text-muted); font-size: 1.4rem; }
+.notif-empty { padding: 12px 0; }
+
 .panel {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -2582,7 +2629,7 @@ function mulberry32(seed) {
 const STATE_VERSION = 14;
 // Version du jeu, affichée dans les Options (À propos). Vache et abattage des
 // poules : 0.12.0.
-const GAME_VERSION = '0.14.0';
+const GAME_VERSION = '0.15.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -5977,6 +6024,52 @@ function alertEvents(before, after) {
   if (after.batteriesVides && !before.batteriesVides) events.push({ type: 'batteriesVides' });
   if (after.frigoCoupe && !before.frigoCoupe) events.push({ type: 'frigoCoupe' });
   return events;
+}
+
+/* ---------- Centre de notifications : les alertes du jour ---------- */
+
+// Ce qui demande l'attention du joueur maintenant. Fonction pure, recalculée à
+// chaque appel depuis l'état : rien n'est stocké (pas de migration) et une
+// alerte disparaît dès que sa cause est réglée. Une entrée par catégorie (pas
+// de doublon), triée par priorité (1 = urgent, 2 = utile, 3 = à faire) puis
+// par ordre de définition. Les tâches déjà automatisées par l'arbre des
+// technologies n'y figurent pas : la nuit s'en charge.
+// Renvoie [{ id, type, texte, priorite, icone, nombre }].
+function getNotifications(state) {
+  const out = [];
+  const add = (type, priorite, icone, nombre, un, plusieurs) => {
+    if (nombre > 0) out.push({ id: type, type, texte: nombre === 1 ? un : plusieurs.replace('{n}', nombre), priorite, icone, nombre });
+  };
+  const snap = alertSnapshot(state);
+  const auto = (tache, lieu) => techAuto(state, tache, lieu);
+
+  // 1 : la ferme s'arrête ou la famille risque de manquer.
+  add('panne', 1, '🔧', snap.panne.length, '1 appareil en panne', '{n} appareils en panne');
+  add('batteriesVides', 1, '🔋', snap.batteriesVides ? 1 : 0, 'Batteries vides', 'Batteries vides');
+  add('frigoCoupe', 1, '❄️', snap.frigoCoupe ? 1 : 0, 'Réfrigérateur sans courant', 'Réfrigérateur sans courant');
+  const perissent = Object.values(expiringSoon(state)).reduce((t, n) => t + n, 0);
+  add('peremption', 1, '⏳', perissent, '1 aliment périra cette nuit', '{n} aliments périront cette nuit');
+
+  // 2 : à faire aujourd'hui pour que la nuit se passe bien.
+  const plots = allPlots(state).filter((p) => p.culture);
+  const nonArrosees = plots.filter((p) => !p.arrose && !isMature(p) && !auto('arrosage', p.lieu)).length;
+  add('arrosage', 2, '💧', nonArrosees, '1 parcelle non arrosée', '{n} parcelles non arrosées');
+  const hens = state.poulailler && state.poulailler.construit && !auto('nourrissage', 'poulailler') ? Math.max(0, hensToFeed(state)) : 0;
+  add('poules', 2, '🐔', hens, '1 poule à nourrir', '{n} poules à nourrir');
+  add('entretien', 2, '🛠️', snap.entretien.length, '1 appareil à entretenir', '{n} appareils à entretenir');
+
+  // 3 : récoltes et tontes prêtes.
+  const mures = plots.filter((p) => isMature(p) && !auto('recolte', p.lieu)).length;
+  add('recolte', 3, '🧺', mures, '1 récolte prête', '{n} récoltes prêtes');
+  const laine = auto('tonte', 'paturage') ? 0 : sheepToShear(state);
+  add('tonte', 3, '🐑', laine, '1 mouton à tondre', '{n} moutons à tondre');
+
+  return out.map((n, i) => ({ n, i })).sort((a, b) => a.n.priorite - b.n.priorite || a.i - b.i).map((x) => x.n);
+}
+
+// Pastille de la future barre de menu : nombre d'alertes en cours.
+function notificationCount(state) {
+  return getNotifications(state).length;
 }
 
 /* ---------- Lot 11 : bulles d'aide de la première partie ---------- */
@@ -13797,7 +13890,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '0.14.0');
+  assertEqual(GAME_VERSION, '0.15.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -14005,6 +14098,121 @@ test('Lot 11 : alertes : panne, entretien, batteries vides, frigo coupé', () =>
   assertEqual(alertEvents(now, alertSnapshot(s)), [], 'une alerte n\'est annoncée qu\'une fois');
   toggleDevice(s, 'frigo');
   assertEqual(alertSnapshot(s).frigoCoupe, false, 'un frigo éteint par le joueur n\'est pas une alerte');
+});
+
+/* ---------- Centre de notifications ---------- */
+
+// Batteries chargées : sans cela, « Batteries vides » (vraie alerte) s'ajoute à chaque scénario.
+function charged(s) {
+  testFillBatteries(s);
+  return s;
+}
+
+function notifTypes(s) {
+  return getNotifications(s).map((n) => n.type);
+}
+
+test('notifications : rien à signaler au départ, pastille à 0', () => {
+  const s = charged(garden());
+  assertEqual(getNotifications(s), []);
+  assertEqual(notificationCount(s), 0);
+});
+
+test('notifications : parcelle non arrosée puis arrosée, récolte prête', () => {
+  const s = charged(garden());
+  testAddSeeds(s);
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  assert(plant(s, 'potager-2', 'carotte').ok);
+  let n = getNotifications(s);
+  assertEqual(n.map((x) => [x.type, x.nombre]), [['arrosage', 2]]);
+  assertEqual(n[0].texte, '2 parcelles non arrosées');
+  assert(water(s, 'potager-1').ok);
+  n = getNotifications(s);
+  assertEqual([n[0].nombre, n[0].texte], [1, '1 parcelle non arrosée']);
+  assert(water(s, 'potager-2').ok);
+  assertEqual(notifTypes(s), [], 'tout est arrosé');
+  testRipenAll(s);
+  n = getNotifications(s);
+  assertEqual(n.map((x) => [x.type, x.nombre]), [['recolte', 2]], 'mûres : plus à arroser, à récolter');
+  assert(harvest(s, 'potager-1').ok);
+  assertEqual(getNotifications(s).map((x) => [x.type, x.nombre]), [['recolte', 1]]);
+});
+
+test('notifications : mouton à tondre', () => {
+  const s = charged(pature());
+  fillSheep(s, 2);
+  assertEqual(notifTypes(s), [], 'laine pas encore repoussée');
+  testWoolReady(s);
+  assertEqual(getNotifications(s).map((x) => [x.type, x.nombre, x.texte]), [['tonte', 2, '2 moutons à tondre']]);
+  assert(shear(s, 'mouton-1').ok);
+  assertEqual(getNotifications(s).map((x) => [x.type, x.texte]), [['tonte', '1 mouton à tondre']]);
+  assert(shear(s, 'mouton-2').ok);
+  assertEqual(notifTypes(s), []);
+});
+
+test('notifications : poules à nourrir', () => {
+  const s = charged(garden());
+  testAddHens(s, 4);
+  assertEqual(getNotifications(s).map((x) => [x.type, x.nombre]), [['poules', 4]]);
+  s.poulailler.nourries = 4;
+  assertEqual(notifTypes(s), []);
+});
+
+test('notifications : panne, entretien et priorités (urgent d\'abord)', () => {
+  const s = coldRoom();
+  testAddSeeds(s);
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  testSetWear(s, 'panneau-1', DATA.WEAR.BREAKDOWN);
+  const n = getNotifications(s);
+  assertEqual(n.map((x) => x.type), ['panne', 'arrosage']);
+  assertEqual(n.map((x) => x.priorite), [1, 2]);
+  testSetWear(s, 'panneau-1', DATA.WEAR.SERVICE_THRESHOLD);
+  assertEqual(notifTypes(s), ['arrosage', 'entretien']);
+  testSetWear(s, 'panneau-1', 0);
+  assertEqual(notifTypes(s), ['arrosage'], 'l\'alerte disparaît quand la cause est réglée');
+});
+
+test('notifications : batteries vides et frigo sans courant', () => {
+  const s = coldRoom();
+  testEmptyBatteries(s);
+  tick(s, 0.2);
+  assertEqual(notifTypes(s), ['batteriesVides', 'frigoCoupe']);
+});
+
+test('notifications : aliments qui périssent cette nuit', () => {
+  const s = charged(garden());
+  setInv(s, { carotte: 3, tomate: 2, conserve: 5 });
+  assertEqual(notifTypes(s), []);
+  for (let i = 0; i < 4; i++) spoil(s); // tomate : plus qu'une nuit
+  const n = getNotifications(s);
+  assertEqual(n.map((x) => [x.type, x.nombre, x.priorite]), [['peremption', 2, 1]]);
+});
+
+test('notifications : les tâches automatisées par la technologie ne sont pas signalées', () => {
+  const s = charged(pature());
+  testAddSeeds(s);
+  testAddHens(s, 2);
+  fillSheep(s, 1);
+  testWoolReady(s);
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  assertEqual(notifTypes(s).sort(), ['arrosage', 'poules', 'tonte']);
+  testUnlockAllTechs(s);
+  assertEqual(notifTypes(s), [], 'arrosage, nourrissage et tonte sont automatiques');
+});
+
+test('notifications : entiers, identifiants uniques, texte et icône présents', () => {
+  const s = charged(pature());
+  testAddSeeds(s);
+  testAddHens(s, 3);
+  fillSheep(s, 2);
+  testWoolReady(s);
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  testSetWear(s, 'panneau-1', DATA.WEAR.BREAKDOWN);
+  const n = getNotifications(s);
+  assertEqual(new Set(n.map((x) => x.id)).size, n.length, 'pas de doublon');
+  for (const x of n) assert(Number.isInteger(x.nombre) && x.nombre > 0 && x.texte && x.icone, `entrée valide : ${x.id}`);
+  assertEqual(n.map((x) => x.priorite), [...n.map((x) => x.priorite)].sort((a, b) => a - b), 'tri par priorité');
+  assertEqual(notificationCount(s), n.length);
 });
 
 test('Lot 11 : bulles d\'aide : eau, potager, dormir, puis terminé', () => {
@@ -14480,7 +14688,14 @@ const TABS = [
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳' },
   { id: 'comptoir', label: 'Comptoir', icon: '💰' },
+  { id: 'notifications', label: 'Notifications', icon: '✉️' },
 ];
+
+// Onglets toujours disponibles, sans passer par state.unlockedTabs (aucune migration).
+const ALWAYS_TABS = ['notifications'];
+function tabAvailable(id) {
+  return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
+}
 
 let state = null;
 let activeTab = 'ferme';
@@ -14983,7 +15198,7 @@ function renderLoop(now) {
 
 function render() {
   // Un onglet non débloqué (sauvegarde importée, par exemple) retombe sur la Ferme.
-  if (!state.unlockedTabs.includes(activeTab)) activeTab = 'ferme';
+  if (!tabAvailable(activeTab)) activeTab = 'ferme';
   renderIndicators();
   renderTabbar();
   renderTabContent();
@@ -15086,13 +15301,15 @@ function renderIndicators() {
 }
 
 function renderTabbar() {
-  const visible = TABS.filter((t) => state.unlockedTabs.includes(t.id));
+  const visible = TABS.filter((t) => tabAvailable(t.id));
+  const alerts = notificationCount(state);
   morph(
     document.getElementById('tabbar'),
     visible
-      .map(
-        (t) => `<button type="button" class="tab-btn${t.id === activeTab ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}"${t.id === activeTab ? ' aria-current="page"' : ''}>${t.icon} ${t.label}</button>`
-      )
+      .map((t) => {
+        const badge = t.id === 'notifications' && alerts > 0 ? ` <span class="tab-badge" aria-label="${alerts} alerte${alerts > 1 ? 's' : ''}">${alerts}</span>` : '';
+        return `<button type="button" class="tab-btn${t.id === activeTab ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}"${t.id === activeTab ? ' aria-current="page"' : ''}>${t.icon} ${t.label}${badge}</button>`;
+      })
       .join('')
   );
 }
@@ -15106,6 +15323,7 @@ const TAB_RENDERERS = {
   comptoir: () => [renderComptoir()],
   recettes: () => [renderRecettes()],
   techno: () => [renderTechno()],
+  notifications: () => [renderNotifications()],
 };
 
 function renderTabContent() {
@@ -16303,6 +16521,30 @@ function renderFamille() {
         <span class="muted">Santé moyenne : <span class="num">${formatNumber(avg)}</span> (un malade compte pour 0). Elle ne s'applique qu'aux actions au clic, comme la récolte.</span>
       </div>
     </div>`;
+}
+
+/* ---------- Notifications ---------- */
+
+// Onglet où le joueur règle chaque alerte (la péremption se gère à l'Inventaire).
+const NOTIF_TARGET = { peremption: 'inventaire' };
+
+function renderNotifications() {
+  const list = getNotifications(state);
+  if (!list.length) {
+    return `
+      <h2>✉️ Notifications</h2>
+      <p class="hint notif-empty">Rien à signaler aujourd'hui. 🌾</p>`;
+  }
+  const items = list
+    .map((n) => {
+      const tab = NOTIF_TARGET[n.type] || 'ferme';
+      return `<li><button type="button" class="notif p${n.priorite}" data-action="switch-tab" data-tab="${tab}"><span class="notif-icon" aria-hidden="true">${n.icone}</span><span class="notif-text">${n.texte}</span><span class="notif-go" aria-hidden="true">›</span></button></li>`;
+    })
+    .join('');
+  return `
+    <h2>✉️ Notifications</h2>
+    <p class="hint">${list.length} chose${list.length > 1 ? 's' : ''} à voir aujourd'hui.</p>
+    <ul class="notif-list">${items}</ul>`;
 }
 
 /* ---------- Inventaire ---------- */
