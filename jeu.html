@@ -54,6 +54,11 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Le masquage du défilement horizontal est sur html seul : avec overflow sur html ET body,
+   body devient un conteneur de défilement et le bandeau « sticky » ne reste plus en haut. */
+html {
   overflow-x: hidden;
 }
 
@@ -2670,7 +2675,7 @@ function mulberry32(seed) {
 const STATE_VERSION = 14;
 // Version du jeu, affichée dans les Options (À propos). Vache et abattage des
 // poules : 0.12.0.
-const GAME_VERSION = '0.16.0';
+const GAME_VERSION = '0.17.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -13931,7 +13936,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '0.16.0');
+  assertEqual(GAME_VERSION, '0.17.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -15342,7 +15347,6 @@ function renderIndicators() {
   morph(document.getElementById('indicators'), `
     <span class="indicator" title="Nuit"><span aria-hidden="true">🌙</span><span><span class="visually-hidden">Nuit </span>${state.day}</span></span>
     <span class="indicator" title="Saison : ${DATA.SAISONS.INFOS[currentSeason(state)].nom}"><span aria-hidden="true">${DATA.SAISONS.INFOS[currentSeason(state)].icone}</span><span class="visually-hidden">Saison ${DATA.SAISONS.INFOS[currentSeason(state)].nom}</span></span>
-    <span class="indicator" title="Heure"><span aria-hidden="true">🕐</span><span>${formatHour(hourOfDay(state))}</span></span>
     <span class="indicator" title="Eau du réservoir"><span aria-hidden="true">💧</span><span class="num">${formatLitres(state.eauMl)}</span></span>
     <span class="indicator" title="Pièces"><span aria-hidden="true">💰</span><span class="num">${formatCoins(state.pieces)}</span></span>
     <button type="button" class="indicator indicator-btn" data-action="switch-tab" data-tab="famille" title="Autonomie de la dernière nuit : ouvrir la Famille"><span aria-hidden="true">🌿</span><span class="visually-hidden">Autonomie </span><span class="num">${formatPercent(lastAutonomy(state))}</span></button>
