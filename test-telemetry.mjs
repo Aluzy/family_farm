@@ -75,7 +75,7 @@ function makeBrowser(env = {}) {
   return { T, ctx, local, session, beacons, fetches, handlers };
 }
 
-const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.0', ...over });
+const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.1', ...over });
 
 test('sans choix : statut « unknown », aucun stockage, aucun envoi', () => {
   const b = makeBrowser();
@@ -267,6 +267,54 @@ test('erreurs : limitées à 10, message tronqué, aucune pile', () => {
   eq(errs.length, 10);
   eq(errs[0].message.length, 160);
   eq(errs[0].file, 'jeu.html');
+});
+
+test('commentaire : refusé sans consentement, rien n\'est stocké ni envoyé', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  eq(b.T.feedback('Super jeu'), 'inactive');
+  b.T.setConsent('denied');
+  eq(b.T.feedback('Super jeu'), 'inactive');
+  eq(b.beacons.length, 0);
+  eq(b.session.map.size, 0);
+});
+
+test('commentaire : envoyé aussitôt avec la session, tronqué à 1000 signes, limité à 3', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  b.T.setConsent('granted');
+  eq(b.T.feedback('   '), 'empty');
+  const before = b.beacons.length;
+  eq(b.T.feedback('  Le chapitre 2 est trop long  '), 'ok');
+  assert(b.beacons.length === before + 1, 'envoi immédiat');
+  eq(b.beacons.at(-1).body.feedback.map((f) => f.text), ['Le chapitre 2 est trop long']);
+  assert(typeof b.beacons.at(-1).body.feedback[0].t === 'number', 'horodatage relatif');
+  eq(b.T.feedback('x'.repeat(5000)), 'ok');
+  eq(b.beacons.at(-1).body.feedback[1].text.length, 1000);
+  eq(b.T.feedback('troisième'), 'ok');
+  eq(b.T.feedback('quatrième'), 'limit');
+  eq(b.beacons.at(-1).body.feedback.length, 3);
+  assert(JSON.stringify(b.beacons.at(-1).body).length <= 60 * 1024, 'taille bornée');
+});
+
+test('commentaire : conservé après rechargement, effacé au retrait du consentement', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  b.T.setConsent('granted');
+  b.T.feedback('Ajoutez des vaches');
+  const b2 = makeBrowser({ local: b.local, session: b.session });
+  b2.T.init({ version: '1' });
+  eq(b2.beacons.at(-1).body.feedback.map((f) => f.text), ['Ajoutez des vaches']);
+  b2.T.setConsent('denied');
+  eq(b2.T.feedback('Encore'), 'inactive');
+  eq([...b2.session.map.keys()], []);
+});
+
+test('payload sans commentaire : liste « feedback » vide', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  b.T.setConsent('granted');
+  eq(b.beacons.at(-1).body.feedback, []);
 });
 
 console.log('Ferme Familiale — tests du suivi de session');

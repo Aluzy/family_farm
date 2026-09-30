@@ -6,3 +6,20 @@ compatibility_date = "2026-09-01"
 binding = "SESSIONS"
 bucket_name = "ferme-familiale-sessions"
 jurisdiction = "eu"
+
+# Rapport quotidien : 13 h à Paris. Cloudflare compte en UTC ; 11 h UTC = 13 h en été
+# (CEST), 12 h UTC = 13 h en hiver (CET). Le Worker ignore celui qui ne tombe pas à 13 h.
+[triggers]
+crons = ["0 11 * * *", "0 12 * * *"]
+
+# Journaux visibles dans Cloudflare : Workers › family-farm › Observability.
+[observability]
+enabled = true
+
+# Secrets à créer dans Cloudflare (Workers › family-farm › Settings › Variables and Secrets),
+# jamais dans ce fichier :
+#   REPORT_GITHUB_TOKEN  jeton GitHub « fine-grained » limité au dépôt de rapports,
+#                        avec la seule permission « Issues : Read and write »
+#   REPORT_GITHUB_REPO   dépôt PRIVÉ qui reçoit les rapports, au format compte/depot
+#   REPORT_TOKEN         (facultatif) longue chaîne aléatoire qui active GET /report
+#                        pour prévisualiser ou tester la publication
