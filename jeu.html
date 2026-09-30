@@ -602,6 +602,14 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 
 .report-list { list-style: none; margin: 12px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 
+/* Résumé de réveil allégé */
+.wake-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.wake-kpi { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius); background: var(--bg-muted); border: 1px solid var(--border); }
+.wake-kpi strong { font-size: 1.4rem; }
+.wake-harvest { margin: 0 0 12px; line-height: 1.5; }
+.wake-actions { margin-top: 12px; justify-content: flex-end; }
+.btn.btn-pill { border-radius: 999px; min-width: 44px; }
+
 select {
   min-height: 44px;
   border-radius: var(--radius);
@@ -2586,6 +2594,8 @@ const DATA = {
   // Lot 11 : 8 h réelles valent 960 heures de jeu, soit +480 points d'usure).
   // ECRAN_S : absence minimale, en secondes, pour afficher « Pendant votre absence… ».
   HORS_LIGNE: { MAX_S: 8 * 3600, PAS_S: 5, USURE: false, ECRAN_S: 60 },
+  // Résumé de réveil allégé : nombre maximal de produits listés dans « Récolte » (le reste va dans « Voir plus »).
+  REVEIL: { RECOLTE_MAX: 5 },
 
   // Première partie : bulles d'aide, dans cet ordre. La dernière (« dormir »)
   // se ferme aussi d'elle-même à la première nuit.
@@ -2675,7 +2685,7 @@ function mulberry32(seed) {
 const STATE_VERSION = 14;
 // Version du jeu, affichée dans les Options (À propos). Vache et abattage des
 // poules : 0.12.0.
-const GAME_VERSION = '0.17.0';
+const GAME_VERSION = '0.18.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -5913,6 +5923,39 @@ function buildMorningReport(state) {
     chapitre: state.campagne ? state.campagne.chapitre : 0,
     chapitresTermines: state.campagne ? state.campagne.annonces.map((a) => a.chapitre) : [],
   };
+}
+
+// Résumé de réveil allégé : ce que la ferme a produit pendant la nuit, regroupé par
+// produit { item: quantité } = œufs pondus + lait + fruits du verger + récoltes
+// des automatisations. (Les « récoltes prêtes » à cueillir ne comptent pas : ce n'est
+// pas encore récolté.) Pure : ne lit que le rapport.
+function nightHarvest(report) {
+  const total = {};
+  const add = (item, qty) => {
+    const n = Math.floor((Number(qty) || 0) + EPS);
+    if (n > 0 && DATA.items[item]) total[item] = (total[item] || 0) + n;
+  };
+  add('oeuf', report.oeufs);
+  add('lait', report.lait);
+  for (const [item, qty] of Object.entries(report.fruits || {})) add(item, qty);
+  for (const [item, qty] of Object.entries((report.auto || {}).recoltes || {})) add(item, qty);
+  return total;
+}
+
+// Tri stable : quantité décroissante, puis nom (ordre alphabétique français).
+// Renvoie { affiches: [{ item, qte }], reste: [{ item, qte }] } avec au plus `limite` produits affichés.
+function wakeHarvestList(report, limite = DATA.REVEIL.RECOLTE_MAX) {
+  const rows = Object.entries(nightHarvest(report))
+    .map(([item, qte]) => ({ item, qte }))
+    .sort((x, y) => y.qte - x.qte || DATA.items[x.item].nom.localeCompare(DATA.items[y.item].nom, 'fr'));
+  return { affiches: rows.slice(0, limite), reste: rows.slice(limite) };
+}
+
+// Les deux indicateurs du résumé de réveil, en entiers (arrondi à l'unité inférieure,
+// comme formatPercent) : autonomie de la nuit et santé moyenne de la famille, en %.
+function wakeSummary(report) {
+  const floor = (x) => Math.floor((Number(x) || 0) + EPS);
+  return { autonomie: floor(report.autonomie), sante: floor(report.santeApres), recolte: wakeHarvestList(report) };
 }
 
 // Ne fait rien tant que l'éveil minimal n'est pas atteint (renvoie null).
@@ -13936,7 +13979,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '0.17.0');
+  assertEqual(GAME_VERSION, '0.18.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -14312,6 +14355,62 @@ test('migration v10 → v11 : bulles d\'aide seulement pour une partie pas encor
   assertEqual(avancee.day, 9);
   assertEqual(JSON.parse(JSON.stringify(avancee)), avancee);
   assertEqual(migrate({ v: 0, t: 0, s: { day: 3, pieces: 10, stats: {} } }).aide.fini, true, 'depuis une très vieille sauvegarde');
+});
+
+// Résumé de réveil allégé (v0.18.0) : récolte de la nuit, tri, limite, indicateurs entiers.
+const fakeReport = (over = {}) => ({ oeufs: 0, lait: 0, fruits: {}, auto: { recoltes: {} }, autonomie: 100, santeApres: 100, ...over });
+
+test('Résumé de réveil : rien récolté → liste vide', () => {
+  assertEqual(nightHarvest(fakeReport()), {});
+  assertEqual(wakeHarvestList(fakeReport()), { affiches: [], reste: [] });
+});
+
+test('Résumé de réveil : un seul produit', () => {
+  const r = fakeReport({ oeufs: 24 });
+  assertEqual(nightHarvest(r), { oeuf: 24 });
+  assertEqual(wakeHarvestList(r), { affiches: [{ item: 'oeuf', qte: 24 }], reste: [] });
+});
+
+test('Résumé de réveil : regroupe œufs, lait, fruits et récoltes automatiques par produit, quantité décroissante', () => {
+  const r = fakeReport({ oeufs: 24, lait: 2, fruits: { pomme: 3 }, auto: { recoltes: { carotte: 12, pomme: 4 } } });
+  assertEqual(nightHarvest(r), { oeuf: 24, lait: 2, pomme: 7, carotte: 12 });
+  assertEqual(wakeHarvestList(r).affiches.map((x) => [x.item, x.qte]), [['oeuf', 24], ['carotte', 12], ['pomme', 7], ['lait', 2]]);
+});
+
+test('Résumé de réveil : limite de 5 produits, le reste va dans « Voir plus » ; égalité départagée par le nom', () => {
+  assertEqual(DATA.REVEIL.RECOLTE_MAX, 5);
+  const r = fakeReport({ oeufs: 9, lait: 9, auto: { recoltes: { carotte: 9, oignon: 5, ble: 4, patate: 3, epinard: 1 } } });
+  const { affiches, reste } = wakeHarvestList(r);
+  assertEqual(affiches.length, 5);
+  assertEqual(reste.length, 2);
+  // 9, 9, 9 : ordre alphabétique des noms (Carotte, Lait, Œuf), puis Oignon 5, Blé 4.
+  assertEqual(affiches.map((x) => x.item), ['carotte', 'lait', 'oeuf', 'oignon', 'ble']);
+  assertEqual(reste.map((x) => x.item), ['patate', 'epinard']);
+  assertEqual(wakeHarvestList(r, 3).affiches.length, 3, 'la limite est un paramètre');
+});
+
+test('Résumé de réveil : quantités négatives, nulles ou produits inconnus ignorés', () => {
+  assertEqual(nightHarvest(fakeReport({ oeufs: -2, lait: 0, fruits: { inconnu: 5, pomme: 0 } })), {});
+});
+
+test('Résumé de réveil : autonomie et santé en entiers (arrondi inférieur)', () => {
+  const w = wakeSummary(fakeReport({ autonomie: 99.9, santeApres: 87.6 }));
+  assertEqual([w.autonomie, w.sante], [99, 87]);
+  const cent = wakeSummary(fakeReport({ autonomie: 100, santeApres: 100 }));
+  assertEqual([cent.autonomie, cent.sante], [100, 100]);
+  assertEqual(wakeSummary(fakeReport({ autonomie: NaN, santeApres: undefined })).autonomie, 0);
+});
+
+test('Résumé de réveil : avec une vraie nuit, les œufs pondus sont dans la récolte', () => {
+  const s = ranch();
+  setInv(s, { ble: 10, conserve: 200 });
+  testAddHens(s, 4);
+  feedAllHens(s);
+  const report = sleepOnce(s);
+  const w = wakeSummary(report);
+  assertEqual(w.recolte.affiches, [{ item: 'oeuf', qte: report.oeufs }]);
+  assert(report.oeufs > 0, 'la ferme a pondu');
+  assertEqual([Number.isInteger(w.autonomie), Number.isInteger(w.sante)], [true, true]);
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -17048,18 +17147,39 @@ function openWakeModal(report) {
     spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
     expiring ? `<li>⏳ À manger vite, périme à la prochaine nuit : <strong>${expiring}</strong></li>` : '',
   ];
+  // Résumé allégé : autonomie, santé, récolte de la nuit. Tout le reste (ancien contenu du
+  // réveil, inchangé) est dans « Voir plus ».
+  const w = wakeSummary(report);
+  const harvestName = (r) => `<span aria-hidden="true">${DATA.items[r.item].icone}</span> ${DATA.items[r.item].nom.toLowerCase()} ×${formatNumber(r.qte)}`;
+  const harvestLine = w.recolte.affiches.length
+    ? w.recolte.affiches.map(harvestName).join(', ') + (w.recolte.reste.length ? ` <span class="muted">+ ${w.recolte.reste.length} autre${w.recolte.reste.length > 1 ? 's' : ''}</span>` : '')
+    : '<span class="muted">Rien récolté cette nuit</span>';
+  const fullHarvest = w.recolte.reste.length
+    ? `<li>🧺 Récolte complète de la nuit : <strong>${[...w.recolte.affiches, ...w.recolte.reste].map(harvestName).join(', ')}</strong></li>`
+    : '';
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
         <h2 id="wake-title">🌅 Réveil : nuit ${report.nuit}</h2>
-        <ul class="report-list">
-          ${family.join('')}
-          <li>⚡ Énergie stockée : <strong class="num">${formatNumber(Math.floor(report.energie / 1000))} / ${formatWh(report.capacite)}</strong></li>
-          <li>💧 Eau disponible : <strong class="num">${formatNumber(Math.floor(report.eau / 1000))} / ${formatLitres(report.capaciteEau)}</strong></li>
-          ${report.energiePerdue >= 1000 ? `<li>☀️ Énergie perdue pendant la journée (batteries pleines) : <strong class="num">${formatWh(report.energiePerdue)}</strong></li>` : ''}
-          ${problems.length ? problems.join('') : '<li>✅ Tous les appareils sont en bon état.</li>'}
-        </ul>
-        <button type="button" class="btn primary" data-action="close-modal" id="wake-close">Bonne journée</button>
+        <div class="wake-kpis">
+          <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>
+          <div class="wake-kpi"><span class="muted">❤️ Santé</span><strong class="num">${formatPercent(w.sante)}</strong></div>
+        </div>
+        <p class="wake-harvest"><strong>🧺 Récolte</strong> : ${harvestLine}</p>
+        <div id="wake-detail" hidden>
+          <ul class="report-list">
+            ${fullHarvest}
+            ${family.join('')}
+            <li>⚡ Énergie stockée : <strong class="num">${formatNumber(Math.floor(report.energie / 1000))} / ${formatWh(report.capacite)}</strong></li>
+            <li>💧 Eau disponible : <strong class="num">${formatNumber(Math.floor(report.eau / 1000))} / ${formatLitres(report.capaciteEau)}</strong></li>
+            ${report.energiePerdue >= 1000 ? `<li>☀️ Énergie perdue pendant la journée (batteries pleines) : <strong class="num">${formatWh(report.energiePerdue)}</strong></li>` : ''}
+            ${problems.length ? problems.join('') : '<li>✅ Tous les appareils sont en bon état.</li>'}
+          </ul>
+        </div>
+        <div class="row wake-actions">
+          <button type="button" class="btn btn-pill" data-action="wake-more" id="wake-more" aria-expanded="false" aria-controls="wake-detail">Voir plus</button>
+          <button type="button" class="btn primary btn-pill" data-action="close-modal" id="wake-close">Bonne journée</button>
+        </div>
       </div>
     </div>
   `;
@@ -17734,6 +17854,15 @@ document.addEventListener('click', (e) => {
     case 'close-modal':
       if (e.target === target) closeModal();
       break;
+    case 'wake-more': {
+      const detail = document.getElementById('wake-detail');
+      if (!detail) break;
+      const open = detail.hidden; // hidden = replié : on ouvre
+      detail.hidden = !open;
+      target.setAttribute('aria-expanded', String(open));
+      target.textContent = open ? 'Voir moins' : 'Voir plus';
+      break;
+    }
     case 'switch-tab':
       activeTab = target.dataset.tab;
       screen = null;
