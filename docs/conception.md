@@ -7,7 +7,7 @@
 > minimum), un **stock** s'affiche arrondi vers le **bas**, un **gain** (récolte,
 > énergie d'un plat) au plus **proche**. Changements :
 > - **Pièces entières** : prix croissants (appareils, surface, emplacements,
->   soins), entretien, réparation et prix d'achat du Comptoir arrondis à
+>   soins), entretien, réparation et prix d'achat du Marché arrondis à
 >   l'entier supérieur (panneau : 60, 72, 87, 104 ; carotte achetée 3 au lieu
 >   de 2,4). Le **coefficient d'achat** est en % (plancher 120 %, graines 200 %,
 >   ±10 points par unité).
@@ -44,7 +44,7 @@
 > migration : une préparation en cours garde sa durée déjà enregistrée dans la
 > sauvegarde.
 >
-> **v23** : **les articles rangés au réfrigérateur se vendent depuis le Comptoir
+> **v23** : **les articles rangés au réfrigérateur se vendent depuis le Marché
 > (onglet Vendre)**. Avant, seul l'inventaire était vendable : il fallait sortir
 > les articles du frigo un par un pour les vendre. `sellItem()` vend désormais
 > l'inventaire **d'abord** (ce qui périt), puis le frigo (dont la conservation
@@ -66,7 +66,7 @@
 > l'ail 16 → 21). Aucune migration de sauvegarde (`STATE_VERSION` inchangé). 🟡
 > Voir « Décisions ouvertes (v22) » en 8.9.
 >
-> **v21** : **les productions de la ferme se vendent ×2** au Comptoir (voir
+> **v21** : **les productions de la ferme se vendent ×2** au Marché (voir
 > 8.9). Sont concernés les objets issus directement de la ferme : récoltes des
 > cultures (carotte, patate, tomate, courgette, aubergine, oignon, ail,
 > poivron, épinard, fraise, riz, houblon, cacao, vanille, café, blé), fruits du
@@ -109,7 +109,7 @@
 > pas. Pure addition de données (`DATA.recipes`) : **aucune migration de
 > sauvegarde n'est nécessaire**, comme pour les 10 cultures de v18.
 >
-> **v19** : la **vache** rejoint le pâturage (achat au Comptoir, 200 💰) — elle occupe **0,15 ha** (3× un mouton), grossit de 1 kg/nuit (40 → 150 kg) et donne **1 lait par nuit dès l'achat**, sans délai de maturité ni condition autre que la place au pâturage (contrairement à la laine du mouton). Abattage sur le même modèle que le mouton (poids × 50 %), donnant un item distinct `viande_boeuf`. L'ancien item générique « viande » (mouton) est renommé **`viande_mouton`** pour laisser la place à `viande_boeuf` et à `viande_volaille`. Les **poules peuvent désormais être abattues** au clic (bouton dédié au Poulailler, avec confirmation) : rendement fixe et volontairement modeste (3 portions de `viande_volaille`), la poule abattue quitte le cheptel (ne pond plus, ne mange plus de blé), sa place se libère mais n'est pas rachetée automatiquement. Voir 1.4, 8.5 et 8.6 pour le détail chiffré et la logique d'équilibrage.
+> **v19** : la **vache** rejoint le pâturage (achat au Marché, 200 💰) — elle occupe **0,15 ha** (3× un mouton), grossit de 1 kg/nuit (40 → 150 kg) et donne **1 lait par nuit dès l'achat**, sans délai de maturité ni condition autre que la place au pâturage (contrairement à la laine du mouton). Abattage sur le même modèle que le mouton (poids × 50 %), donnant un item distinct `viande_boeuf`. L'ancien item générique « viande » (mouton) est renommé **`viande_mouton`** pour laisser la place à `viande_boeuf` et à `viande_volaille`. Les **poules peuvent désormais être abattues** au clic (bouton dédié au Poulailler, avec confirmation) : rendement fixe et volontairement modeste (3 portions de `viande_volaille`), la poule abattue quitte le cheptel (ne pond plus, ne mange plus de blé), sa place se libère mais n'est pas rachetée automatiquement. Voir 1.4, 8.5 et 8.6 pour le détail chiffré et la logique d'équilibrage.
 >
 > **v18** : **10 nouvelles cultures** — Potager (oignon, ail, poivron, épinard, fraise), Champ (riz, houblon), et 3 **cultures de rente exclusives à la Serre** (cacao, vanille, café : jamais comestibles, vente et recettes de luxe uniquement). Le poivron reprend le mécanisme Potager + Serre de la tomate/courgette/aubergine. Voir 1.4 (« Cultures de rente ») et 8.3 (tableau chiffré complet). 🟡 Le riz demande 4 L par arrosage (le double du blé) : aucune règle de pompe n'a été changée pour autant, à surveiller si le débit devient un goulot d'étranglement.
 >
@@ -123,7 +123,7 @@
 >
 > **v13** : **tableau d'équilibrage complet** (section 8), **Livre de recette ouvert par le Four**, **verger extensible par achat de surface**, valeurs énergétiques harmonisées.
 >
-> **v12** : **pas de revente d'animaux vivants**, le **Livre de recette est un onglet** (unique, non vendable) qui sert à lancer les plats, **arbres fruitiers achetés au Comptoir**.
+> **v12** : **pas de revente d'animaux vivants**, le **Livre de recette est un onglet** (unique, non vendable) qui sert à lancer les plats, **arbres fruitiers achetés au Marché**.
 >
 > **v11** : consommation nocturne du frigo = **bloc de 30 s au Dormir**, **prix fixes** pour les animaux, **prix de vente fixes** toute l'année.
 >
@@ -135,7 +135,7 @@
 >
 > **v7** : la **laine sert uniquement à la vente**, la **poule pond toute sa vie**, **une seule station de chaque type**.
 >
-> **v6** : graines **achetables en dépannage** à prix majoré, **poules et moutons achetés au Comptoir**, **une préparation à la fois par station**.
+> **v6** : graines **achetables en dépannage** à prix majoré, **poules et moutons achetés au Marché**, **une préparation à la fois par station**.
 >
 > **v5** : les **graines viennent des récoltes**, la **parcelle est libérée** après récolte, la famille mange aussi **fruits, pain et plats cuisinés**.
 >
@@ -143,7 +143,7 @@
 >
 > **v3** : le temps avance avec un bouton **« Dormir »**, un AJ non couvert entraîne un **malus de santé et de productivité**, et le mouton est **tondu régulièrement** (laine) puis **abattu** (viande).
 >
-> **v2** : intègre les nouveaux éléments (énergie en kWh et batterie, potager et serre par stades de pousse, verger, poulailler, pâturage en hectares, moulin et presse, silo, réfrigérateur, inventaire, recettes à temps de préparation, prix dynamiques du Comptoir, Apport Journalier en énergies). Les hypothèses provisoires sont signalées par 🟡 et les questions ouvertes sont regroupées à la fin.
+> **v2** : intègre les nouveaux éléments (énergie en kWh et batterie, potager et serre par stades de pousse, verger, poulailler, pâturage en hectares, moulin et presse, silo, réfrigérateur, inventaire, recettes à temps de préparation, prix dynamiques du Marché, Apport Journalier en énergies). Les hypothèses provisoires sont signalées par 🟡 et les questions ouvertes sont regroupées à la fin.
 
 ---
 
@@ -229,7 +229,7 @@ Pâturage (ha)   ─► Vache (poids, v19) ─► Viande de bœuf | Lait (chaque
 ```
 Inventaire ─► contient tous les items
 Réfrigérateur ─► aliments frais et plats sans péremption
-Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
+Surplus ─► Marché ─► Pièces ─► achats, améliorations, surface
 ```
 
 ### 1.3 Règles de mécanique définies
@@ -257,7 +257,7 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 |---|---|---|---|---|---|
 | Coefficient | ×1,00 | ×1,20 | ×1,44 | ×2,07 | ×5,16 |
 
-**Comptoir — prix dynamiques**
+**Marché — prix dynamiques**
 - Vente des surplus → **pièces**.
 - **Prix de vente fixes** : ils ne varient ni avec la saison ni avec la fraîcheur. Seul le **coefficient d'achat** est dynamique.
 - Prix d'achat = **1,2 × prix de vente** au départ.
@@ -277,9 +277,9 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 - C'est depuis cet onglet qu'on **lance la confection des plats** : il liste les recettes, indique les ingrédients disponibles ou manquants, la station requise et son état.
 
 **Verger**
-- Pommiers et poiriers s'**achètent au Comptoir** (🟡 prix fixe, comme les animaux) et se plantent sur un emplacement libre du verger.
+- Pommiers et poiriers s'**achètent au Marché** (🟡 prix fixe, comme les animaux) et se plantent sur un emplacement libre du verger.
 - Un arbre acheté est un jeune plant : il met 🟡 15 nuits avant sa première récolte, puis produit pendant les saisons de fruits (fin d'été, automne).
-- **Emplacements limités** (🟡 2 au départ), **extensibles par achat de surface** au Comptoir, à prix croissant (voir section 8).
+- **Emplacements limités** (🟡 2 au départ), **extensibles par achat de surface** au Marché, à prix croissant (voir section 8).
 
 **Réfrigérateur**
 - Les aliments frais et les plats qui y sont rangés **ne périment pas**.
@@ -328,9 +328,9 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 
 **🌱 Graines issues des récoltes**
 - Les graines proviennent **normalement des récoltes**. 🟡 Un **kit de départ** (ex. 6 graines de carotte, 4 patates, 4 graines de blé) lance la partie.
-- **Dépannage au Comptoir** : on peut acheter des graines, mais à **prix majoré**. 🟡 Leur coefficient d'achat démarre à **2,0** au lieu de 1,2 (plancher 2,0), puis suit la même règle (+0,1 par achat, −0,1 par vente). Acheter reste donc possible, mais produire ses propres graines est toujours plus rentable.
-- Les graines en surplus peuvent aussi être **vendues** au Comptoir.
-- **Exception du blé** : le blé reste classé comme **ingrédient** (Silo, Moulin, alimentation des poules, plancher de marché normal ×1,2, inchangé), mais il est **listé en plus dans l'onglet Graines du Comptoir** puisqu'il sert aussi de semence pour le Champ — sans y perdre sa place dans l'onglet Acheter. Ce n'est pas généralisé aux autres cultures qui se replantent avec leur propre récolte (la patate reste seulement dans l'onglet Acheter).
+- **Dépannage au Marché** : on peut acheter des graines, mais à **prix majoré**. 🟡 Leur coefficient d'achat démarre à **2,0** au lieu de 1,2 (plancher 2,0), puis suit la même règle (+0,1 par achat, −0,1 par vente). Acheter reste donc possible, mais produire ses propres graines est toujours plus rentable.
+- Les graines en surplus peuvent aussi être **vendues** au Marché.
+- **Exception du blé** : le blé reste classé comme **ingrédient** (Silo, Moulin, alimentation des poules, plancher de marché normal ×1,2, inchangé), mais il est **listé en plus dans l'onglet Graines du Marché** puisqu'il sert aussi de semence pour le Champ — sans y perdre sa place dans l'onglet Acheter. Ce n'est pas généralisé aux autres cultures qui se replantent avec leur propre récolte (la patate reste seulement dans l'onglet Acheter).
 - Chaque plante a son propre mode de reproduction (**validé**, quantités 🟡) :
 
 | Plante | Comment obtenir des graines |
@@ -344,7 +344,7 @@ Surplus ─► Comptoir ─► Pièces ─► achats, améliorations, surface
 | Houblon, cacao, vanille, café | On garde une partie de la récolte : 1 unité = 1 plant (jamais mangées : voir « cultures de rente » ci-dessous) |
 | Tournesol | La récolte donne des graines : à **replanter** ou à **presser** en huile (même ressource) |
 | Carotte | 🟡 Option « Laisser monter en graine » : la plante reste 2 stades de plus et donne des graines au lieu de carottes |
-| Pommier, poirier | Arbres permanents : pas de graines ; nouveaux arbres **achetés au Comptoir** |
+| Pommier, poirier | Arbres permanents : pas de graines ; nouveaux arbres **achetés au Marché** |
 
 **🌰 Cultures de rente (cacao, vanille, café)**
 - Exclusives à la **Serre** : `lieux: ['serre']` seul dans la culture, sans Potager ni Champ. La fonction de plantation elle-même refuse toute autre parcelle (pas seulement l'écran de plantation, qui se contente de ne pas les proposer).
@@ -495,7 +495,7 @@ Le joueur ne possède plus un panneau et une batterie, mais un **parc** qu'il ag
 - Le **Verger** reste saisonnier : il ne donne des fruits qu'en 🟡 fin d'été et en automne.
 
 **🐔 Achat des animaux**
-- Poules, moutons et **vaches** (v19) s'obtiennent **uniquement par achat au Comptoir** (pas de reproduction).
+- Poules, moutons et **vaches** (v19) s'obtiennent **uniquement par achat au Marché** (pas de reproduction).
 - Un achat n'est possible que s'il reste de la place :
   - poule → **capacité du Poulailler** ;
   - mouton → **surface de pâturage** (0,05 ha / mouton ; au-delà de 10, acheter d'abord la surface au prix × 1,2ⁿ) ;
@@ -509,7 +509,7 @@ Le joueur ne possède plus un panneau et une batterie, mais un **parc** qu'il ag
 - Le mouton **grossit chaque jour** tant que le pâturage suffit (🟡 jusqu'à un poids maximal).
 - La **laine repousse** : tonte possible tous les 🟡 7 jours → 🟡 1 unité de laine, sans perte du mouton.
 - **Abattage** au clic : viande de mouton (`viande_mouton`, v19 : anciennement l'item générique « viande ») = poids × 🟡 50 % (rendement carcasse). Le mouton disparaît et libère sa place de pâturage (la surface achetée reste acquise).
-- **La laine sert uniquement à la vente** au Comptoir : c'est un revenu régulier en pièces, sans usage d'artisanat ni effet sur la santé. Elle n'est pas périssable.
+- **La laine sert uniquement à la vente** au Marché : c'est un revenu régulier en pièces, sans usage d'artisanat ni effet sur la santé. Elle n'est pas périssable.
 - Tension de jeu : garder un mouton pour la laine (pièces régulières) ou l'abattre pour nourrir la famille (viande immédiate).
 
 **🐄 Vache (v19) : lait quotidien, viande à l'abattage**
@@ -521,7 +521,7 @@ Le joueur ne possède plus un panneau et une batterie, mais un **parc** qu'il ag
 **🍗 Abattage des poules (v19) : dernier recours, jamais une rente**
 - Contrairement au mouton et à la vache, la poule n'est **pas suivie individuellement** (pas de poids) : l'abattage rend un nombre **fixe** de portions de `viande_volaille` (3 portions), quel que soit son âge ou son historique de ponte.
 - Conçu en v19 pour être **peu rentable à court terme** : 3 portions à 3 💰 (9 💰) contre un prix d'achat de 15 💰, donc une perte sèche. 🟡 **Depuis v21** (prix de vente ×2), la volaille se vend 6 💰 : 3 portions rapportent **18 💰**, soit **plus que le prix d'achat (15 💰)**. Cette intention d'équilibrage n'est plus respectée ; décision de game design ouverte (voir 8.9).
-- La poule abattue **quitte le cheptel immédiatement** : elle ne pond plus et ne consomme plus de blé dès la nuit suivante. La capacité du Poulailler ne change pas ; la place libérée peut accueillir une poule rachetée au Comptoir (jamais automatiquement).
+- La poule abattue **quitte le cheptel immédiatement** : elle ne pond plus et ne consomme plus de blé dès la nuit suivante. La capacité du Poulailler ne change pas ; la place libérée peut accueillir une poule rachetée au Marché (jamais automatiquement).
 
 ### 1.5 Paramètres par entité
 
@@ -548,7 +548,7 @@ Le joueur ne possède plus un panneau et une batterie, mais un **parc** qu'il ag
 | Station (Cuisine, Four, Moulin, Presse — 1 exemplaire chacune) | {occupée / libre}, {préparation en cours}, {temps restant} |
 | Recette | {ingrédients}, {station : cuisine / four}, {temps de préparation}, {énergie = ingrédients × 1,3}, {bonus santé} |
 | Plante | {stades}, {rendement}, {graines rendues}, {mode de reproduction} |
-| Comptoir | {prix de vente}, {coef d'achat dynamique : plancher 1,2 (graines 2,0)}, {prix de vente fixes}, {prix fixes poule / mouton / vache (v19)} |
+| Marché | {prix de vente}, {coef d'achat dynamique : plancher 1,2 (graines 2,0)}, {prix de vente fixes}, {prix fixes poule / mouton / vache (v19)} |
 | Famille | {AJ adulte 50}, {AJ enfant 25}, {santé 0–100}, {multiplicateur de productivité} |
 
 ---
@@ -620,7 +620,7 @@ L'hiver reste plus serré, sans être punitif : stocker au réfrigérateur et in
 ## 4. Structure C — « Les Paliers d'Autonomie »
 
 ### Principe
-La progression suit des **chapitres**, mesurés par le **% d'autonomie** = énergie produite sur la ferme ÷ 150. La nourriture achetée au Comptoir ne compte pas.
+La progression suit des **chapitres**, mesurés par le **% d'autonomie** = énergie produite sur la ferme ÷ 150. La nourriture achetée au Marché ne compte pas.
 
 ### Chapitres
 | # | Titre | Débloque | Objectif |
@@ -696,7 +696,7 @@ src/
 │   ├── inventory.ts              inventaire, frigo, silo
 │   └── offline.ts
 ├── persistence/save.ts
-├── ui/tabs/  Ferme · Inventaire · LivreRecette · ArbreTechno · Comptoir
+├── ui/tabs/  Ferme · Inventaire · LivreRecette · ArbreTechno · Marché
 └── main.ts
 ```
 
@@ -873,7 +873,7 @@ export function slaughter(s: GameState, id: string) {
 }
 ```
 
-### 6.7 Comptoir
+### 6.7 Marché
 
 ```ts
 // engine/market.ts
@@ -1112,7 +1112,7 @@ export function take(s: GameState, item: string, qty: number) {
 - **Inventaire** : onglets Frais / Frigo / Silo / Graines / Plats ; indicateur de péremption ; 🟡 curseur **« Réserve de semences »** par item (patates, blé, graines de tournesol) que la famille ne mangera pas.
 - **Parcelle** : vide → menu « Planter » (graines disponibles) ; mature → « Récolter » ou, pour la carotte, « Laisser monter en graine ».
 - **Livre de recette** (onglet, pas un objet) : point d'entrée unique pour lancer les plats ; recettes réalisables en surbrillance, ingrédients manquants signalés ; chaque station (🍳 Cuisine, 🔥 Four, ⚙️ Moulin, 🌻 Presse) affiche **libre** ou **occupée** avec son minuteur ; les recettes d'une station occupée sont grisées.
-- **Comptoir** : l'onglet Vendre inclut les articles rangés au frigo (v23) ; onglets Vendre / Acheter / Graines (badge « dépannage ») / Animaux / Arbres ; prix d'achat actuel et coefficient affichés ; animaux grisés si le poulailler ou le pâturage est plein. Le blé apparaît à la fois dans Acheter (à prix normal, comme ingrédient) et dans Graines (comme semence du Champ), sans doublon d'objet ; les autres onglets Graines restent réservés aux items de catégorie « graine ».
+- **Marché** : l'onglet Vendre inclut les articles rangés au frigo (v23) ; onglets Vendre / Acheter / Graines (badge « dépannage ») / Animaux / Arbres ; prix d'achat actuel et coefficient affichés ; animaux grisés si le poulailler ou le pâturage est plein. Le blé apparaît à la fois dans Acheter (à prix normal, comme ingrédient) et dans Graines (comme semence du Champ), sans doublon d'objet ; les autres onglets Graines restent réservés aux items de catégorie « graine ».
 - **Famille** : 4 portraits avec barre de santé, jauge 150 énergies, % d'autonomie, multiplicateur de productivité.
 - **Bouton « Dormir »** toujours visible : grisé avec compte à rebours tant que l'éveil minimal n'est pas atteint, puis aperçu « Repas prévu : 130 / 150 énergies ⚠️ ».
 - **Portrait malade** : icône 🤒 et bouton « Soigner (X pièces) ».
@@ -1120,6 +1120,7 @@ export function take(s: GameState, item: string, qty: number) {
 - **Réfrigérateur** : icône ❄️ (alimenté) / ⚠️ (en panne), consommation actuelle en kWh/s, alerte si la batterie ne tiendra pas la nuit.
 - **Moutons** : fiche par animal (poids, jauge de laine, boutons ✂️ Tondre / 🔪 Abattre).
 - **Poules** : simple compteur « nourries / total » ; aucune fiche individuelle nécessaire.
+- **Menu du bas** (v0.16.0) : barre fixe sous le bouton « Dormir », quatre destinations côte à côte : 🏠 **Ferme**, 📦 **Inventaire**, 🧺 **Marché** (ex-Comptoir ; identifiant technique `comptoir` inchangé), ✉️ **Notifications** (pastille = nombre d'alertes). Il n'y a plus de barre d'onglets en haut. **Famille**, **Livre de recette** et **Arbre des technologies** s'ouvrent depuis des **raccourcis en haut de l'écran Ferme** (Livre et Arbre seulement une fois débloqués, comme avant) ; chaque écran a un bouton « ← Ferme » et le menu garde alors 🏠 allumé. Zones tactiles de 60 px, zone de sécurité iOS respectée, `aria-current` sur la destination active.
 - **Notifications** (v0.15.0) : onglet ✉️ qui liste les **alertes du jour**, calculées à la volée par `getNotifications(state)` (fonction pure, rien n'est sauvegardé, donc pas de migration). Une entrée par catégorie, triée par priorité : **1 urgent** (appareils en panne, batteries vides, réfrigérateur sans courant, aliments qui périront cette nuit), **2 utile** (parcelles non arrosées, poules à nourrir, appareils à entretenir), **3 à faire** (récoltes prêtes, moutons à tondre). Une tâche déjà **automatisée** par l'arbre des technologies (arrosage, récolte, nourrissage, tonte) n'est pas signalée. Chaque alerte disparaît dès que sa cause est réglée ; toucher une carte ouvre l'onglet concerné (Ferme, ou Inventaire pour la péremption). Sans alerte : « Rien à signaler aujourd'hui ». La pastille de l'onglet affiche `notificationCount(state)`. Les alertes ponctuelles (toasts, `alertEvents`) restent inchangées.
 
 ---
@@ -1130,7 +1131,7 @@ export function take(s: GameState, item: string, qty: number) {
 |---|---|
 | 0 | Store, boucle, panneau → batterie → pompe → eau, bouton Dormir, écran de réveil |
 | 1 | Potager (carotte, patate), kit de départ, planter / arroser / récolter, graines issues des récoltes, repas familial, santé |
-| 2 | Inventaire, Comptoir avec prix dynamiques, graines en dépannage |
+| 2 | Inventaire, Marché avec prix dynamiques, graines en dépannage |
 | 3 | Champ (blé), Silo, achat de poules, Poulailler au clic, ponte |
 | 4 | Moulin, Presse, Four, tournesol, recettes avec minuteur, énergie et bonus des plats |
 | 5 | Pâturage, achat de moutons et de vaches (v19) et de surface, croissance, tonte, lait, abattage |
@@ -1264,7 +1265,7 @@ Un arbre adulte donne environ **30 fruits par an** (≈ 300 énergie).
 | Consommation | 0,5 blé / nuit |
 | Production | 1 œuf / nuit si nourrie (13 énergie depuis le §4, vente 2 💰) |
 | Silo (niv. 1 → 5) | 20 · 50 · 100 · 200 · 400 blé (coûts 30 · 80 · 180 · 400) |
-| **Abattage (v19)** | **rendement fixe : 3 portions de `viande_volaille`** (14 énergie chacune, vente 6 💰 depuis v21, 3 💰 avant), quel que soit l'historique de la poule. La poule quitte le cheptel : elle ne pond plus, ne mange plus de blé ; sa place se libère (rachat au Comptoir, jamais automatique). |
+| **Abattage (v19)** | **rendement fixe : 3 portions de `viande_volaille`** (14 énergie chacune, vente 6 💰 depuis v21, 3 💰 avant), quel que soit l'historique de la poule. La poule quitte le cheptel : elle ne pond plus, ne mange plus de blé ; sa place se libère (rachat au Marché, jamais automatique). |
 
 Repère : 12 poules = 156 énergie / nuit et 6 blé / nuit, soit environ 6 parcelles de blé.
 
@@ -1325,7 +1326,7 @@ Repère (v19) : une vache élevée jusqu'à 150 kg (110 nuits) rapporte **110 la
 | Houblon | 6 | Cacao | 16 | Graines | 1 |
 | Vanille | 30 | Café | 12 | | |
 
-**Règle v21 : productions de la ferme ×2.** Les prix ci-dessus des récoltes, fruits et produits animaux valent 2 × leur valeur d'origine (carotte 1, patate 2, œuf 2, viande 5, laine 6, blé 1, pomme/poire 2, cacao 8, vanille 15, café 6, houblon 3, lait 4, volaille 3, etc.). Le multiplicateur (`DATA.MARCHE.MULTIPLICATEUR_PRODUCTION`) est appliqué à la source par `applyProductionPriceMultiplier()`. Doublés en v22 : farine (1 → 2) et pain (4 → 8). Inchangés : graines, conserve, huile, bâtiments, appareils, animaux, arbres, soins, améliorations. Le prix d'achat au Comptoir reste prix de vente × coefficient : il double donc lui aussi pour ces productions (carotte : 2,4 au départ au lieu de 1,2).
+**Règle v21 : productions de la ferme ×2.** Les prix ci-dessus des récoltes, fruits et produits animaux valent 2 × leur valeur d'origine (carotte 1, patate 2, œuf 2, viande 5, laine 6, blé 1, pomme/poire 2, cacao 8, vanille 15, café 6, houblon 3, lait 4, volaille 3, etc.). Le multiplicateur (`DATA.MARCHE.MULTIPLICATEUR_PRODUCTION`) est appliqué à la source par `applyProductionPriceMultiplier()`. Doublés en v22 : farine (1 → 2) et pain (4 → 8). Inchangés : graines, conserve, huile, bâtiments, appareils, animaux, arbres, soins, améliorations. Le prix d'achat au Marché reste prix de vente × coefficient : il double donc lui aussi pour ces productions (carotte : 2,4 au départ au lieu de 1,2).
 
 Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi (formule inchangée, **pas de ×2 supplémentaire** : les ingrédients sont déjà doublés ; ex. gratin de patates 10 → 21, ragoût 18 → 36). Prix d'achat = vente × coefficient (plancher 1,2 ; graines 2,0 ; +0,1 par unité achetée, −0,1 par unité vendue).
 
@@ -1365,7 +1366,7 @@ Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi (formul
 
 ### 8.11 Points de vigilance pour les tests
 
-- **Coefficient d'achat** ✅ : il ne redescend **qu'à la vente**. C'est un choix assumé : le Comptoir est un **dépannage**, pas une source de nourriture durable. Un aliment acheté régulièrement devient de plus en plus cher, ce qui pousse à le produire. À vérifier en simulation : qu'un joueur en difficulté puisse encore acheter quelques unités sans être bloqué. L'interface doit afficher clairement le prix de la prochaine unité.
+- **Coefficient d'achat** ✅ : il ne redescend **qu'à la vente**. C'est un choix assumé : le Marché est un **dépannage**, pas une source de nourriture durable. Un aliment acheté régulièrement devient de plus en plus cher, ce qui pousse à le produire. À vérifier en simulation : qu'un joueur en difficulté puisse encore acheter quelques unités sans être bloqué. L'interface doit afficher clairement le prix de la prochaine unité.
 - **Argent en début de partie** : le Potager niv. 2 (80 💰) doit rester atteignable avant la fin des conserves (vente de quelques conserves et des premiers surplus de carottes).
 - **Transition 35 % → 50 %** : les 160 conserves ✅ doivent couvrir cette phase, où la santé baisserait de 20 par nuit.
 
@@ -1379,9 +1380,9 @@ Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi (formul
 |---|---|
 | Temps | Bouton **Dormir**, éveil minimal **30 s**, saisons **légères** de 10 nuits |
 | Santé | Malus de productivité sur les **actions au clic uniquement** ; **soins payants** à 0 |
-| Cultures | Pousse d'un stade par nuit arrosée ; parcelle libérée après récolte ; graines issues des récoltes (système par plante) + dépannage au Comptoir ; **semis automatique** via l'arbre techno |
-| Verger | Arbres **achetés** au Comptoir ; emplacements limités, **extensibles par achat de surface** |
-| Animaux | Achat au Comptoir à **prix fixes**, **sans revente vivante** ; poule qui **pond à vie** (v19 : ou s'abat, rendement fixe et modeste) ; mouton : **laine tondue** (vente uniquement), **viande_mouton à l'abattage** ; **vache (v19)** : **lait chaque nuit** dès l'achat, **viande_boeuf à l'abattage** (0,15 ha, 3× le mouton) |
+| Cultures | Pousse d'un stade par nuit arrosée ; parcelle libérée après récolte ; graines issues des récoltes (système par plante) + dépannage au Marché ; **semis automatique** via l'arbre techno |
+| Verger | Arbres **achetés** au Marché ; emplacements limités, **extensibles par achat de surface** |
+| Animaux | Achat au Marché à **prix fixes**, **sans revente vivante** ; poule qui **pond à vie** (v19 : ou s'abat, rendement fixe et modeste) ; mouton : **laine tondue** (vente uniquement), **viande_mouton à l'abattage** ; **vache (v19)** : **lait chaque nuit** dès l'achat, **viande_boeuf à l'abattage** (0,15 ha, 3× le mouton) |
 | Cuisine | **Livre de recette = onglet** ouvert par le **Four** ; **une station de chaque type**, une préparation à la fois |
 | Stockage | Inventaire et Réfrigérateur **illimités** ; péremption **5 à 7 nuits** ; frigo alimenté **en continu** + **bloc nocturne de 30 s** ; batterie **sans autodécharge** |
 | Économie | Prix de vente **fixes** ; coefficient d'achat **+0,1 / achat, −0,1 / vente uniquement**, plancher 1,2 (graines 2,0) |
