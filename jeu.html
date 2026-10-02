@@ -1082,6 +1082,31 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
     scroll-behavior: auto !important;
   }
 }
+/* ---------- Carte Phaser : zone entre le bandeau et la barre du bas ---------- */
+:root { --header-h: 56px; --sleep-h: 0px; }
+#farm-stage {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--header-h);
+  bottom: calc(var(--dock) + var(--sleep-h));
+  z-index: 5;
+  overflow: hidden;
+  background: #699654;
+  touch-action: manipulation;
+}
+#farm-stage[hidden] { display: none; }
+#farm-stage canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.stage-corner {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 6;
+  min-width: 44px;
+  min-height: 44px;
+}
+body.has-stage main { display: none; }
+body.has-stage { padding-bottom: 0; }
 </style>
 </head>
 <body>
@@ -1332,6 +1357,8 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   <div class="indicators" id="indicators"></div>
   <button class="icon-btn" id="options-btn" type="button" aria-label="Options" data-action="open-options">⚙️</button>
 </header>
+
+<div id="farm-stage" hidden aria-label="Carte de la ferme"></div>
 
 <main>
   <section id="tab-content" class="panel"></section>
@@ -14831,6 +14858,8 @@ const Telemetry = (() => {
 })();
 </script>
 
+<script src="vendor/phaser.min.js"></script>
+<script src="farm-stage.js"></script>
 <script id="app">
 'use strict';
 
@@ -14871,7 +14900,7 @@ function tabAvailable(id) {
 
 let state = null;
 let activeTab = 'ferme';
-let screen = null; // écran de détail ouvert dans la Ferme : null, 'panneaux' ou 'batteries'
+let ecranFerme = null; // écran de détail ouvert dans la Ferme : null, 'panneaux' ou 'batteries'
 let testMode = false;
 let invTab = 'frais'; // Inventaire : 'frais', 'graines' ou 'produits'
 let comptoirTab = 'vendre'; // Marché : 'vendre', 'acheter', 'graines', 'animaux' ou 'arbres'
@@ -14892,7 +14921,7 @@ function telClick(target, action) {
   tel('click', action, detail);
 }
 
-function telView() { tel('tab', activeTab, screen); }
+function telView() { tel('tab', activeTab, ecranFerme); }
 
 let telChapter = null; // dernier chapitre vu, pour repérer les passages de chapitre
 
@@ -15088,7 +15117,7 @@ function actionNewGame() {
   simulatedAt = Date.now();
   pendingAbsence = null;
   syncJobs();
-  screen = null;
+  ecranFerme = null;
   activeTab = 'ferme';
   persistState();
   refresh();
@@ -15375,6 +15404,7 @@ function render() {
   renderTabbar();
   renderTabContent();
   renderSleepBar();
+  renderStage();
   renderTutorial();
   renderTestPanel();
 }
@@ -15461,6 +15491,86 @@ function patchAttributes(o, w) {
   }
 }
 
+/* ---------- Carte Phaser (voir farm-stage.js et ARCHITECTURE.md) ---------- */
+
+let farmList = false; // transitoire : true = on affiche la liste classique de la Ferme à la place de la carte
+
+// La carte est active si Phaser est chargé, qu'on est sur la Ferme (pas dans un écran de détail)
+// et que le joueur n'a pas demandé la liste classique.
+function stageActive() {
+  return !!(window.FarmStage && window.Phaser) && activeTab === 'ferme' && ecranFerme === null && !farmList;
+}
+
+function backToMap() {
+  return window.FarmStage && window.Phaser
+    ? '<div class="screen-head"><button type="button" class="btn" data-action="stage-map">🗺️ Carte</button></div>'
+    : '';
+}
+
+// Colonnes de la zone de culture selon le nombre de parcelles : 6, 12, 18, 24, 30 parcelles =
+// 2×3, 3×4, 3×6, 4×6, 5×6 (colonnes × rangées). Le maximum, 5×6, remplit `zone_culture` de la carte.
+function stageCols(n) {
+  return n <= 6 ? 2 : n <= 18 ? 3 : n <= 24 ? 4 : 5;
+}
+
+// Modèle de vue : tout ce que la carte a le droit de savoir. Aucune référence à `state`.
+function stageModel() {
+  const plots = state.potager.parcelles.map((p) => {
+    if (!p.culture) return { id: p.id, culture: null, icone: '', phase: -1, mature: false, arrosee: !!p.arrose };
+    const max = maxStage(p);
+    const mature = isMature(p);
+    const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
+    return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: !!p.arrose };
+  });
+  return { season: currentSeason(state), cols: stageCols(plots.length), plots };
+}
+
+// Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La
+// délégation d'événements existante fait le reste (action, fenêtre, suivi).
+function stageAct(action, data) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.hidden = true;
+  b.dataset.action = action;
+  for (const k of Object.keys(data || {})) b.dataset[k] = data[k];
+  document.getElementById('farm-stage').appendChild(b);
+  b.click();
+  b.remove();
+}
+
+let stageMounted = false;
+
+function renderStage() {
+  const el = document.getElementById('farm-stage');
+  const on = stageActive();
+  if (on && !stageMounted) {
+    stageMounted = true;
+    el.hidden = false;
+    // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
+    try {
+      if (!FarmStage.mount(el, { act: stageAct, base: 'assets/' })) stageMounted = false;
+    } catch (err) {
+      stageMounted = false;
+      farmList = true;
+    }
+  }
+  el.hidden = !on;
+  document.body.classList.toggle('has-stage', on);
+  if (!on) {
+    if (window.FarmStage) FarmStage.hide();
+    return;
+  }
+  const head = document.querySelector('.app-header');
+  const sleep = document.getElementById('sleep-bar');
+  document.documentElement.style.setProperty('--header-h', head.offsetHeight + 'px');
+  document.documentElement.style.setProperty('--sleep-h', sleep.offsetHeight + 'px');
+  FarmStage.show();
+  FarmStage.update(stageModel());
+  if (!el.querySelector('.stage-corner')) {
+    el.insertAdjacentHTML('beforeend', '<button type="button" class="icon-btn stage-corner" data-action="stage-list" aria-label="Liste de la ferme" title="Liste de la ferme">📋</button>');
+  }
+}
+
 function renderIndicators() {
   morph(document.getElementById('indicators'), `
     <span class="indicator" title="Nuit"><span aria-hidden="true">🌙</span><span><span class="visually-hidden">Nuit </span>${state.day}</span></span>
@@ -15490,7 +15600,7 @@ function renderTabbar() {
 // Chaque onglet donne une liste de tranches (la Ferme en a une par section).
 // render() ramène déjà un onglet non débloqué sur la Ferme.
 const TAB_RENDERERS = {
-  ferme: () => (screen === 'panneaux' || screen === 'batteries' ? [renderDeviceScreen(screen)] : renderFerme()),
+  ferme: () => (ecranFerme === 'panneaux' || ecranFerme === 'batteries' ? [renderDeviceScreen(ecranFerme)] : stageActive() ? [''] : [backToMap() + '<div></div>'].concat(renderFerme())),
   famille: () => [backToFerme() + renderFamille()],
   inventaire: () => [renderInventaire()],
   comptoir: () => [renderComptoir()],
@@ -17631,7 +17741,7 @@ function visibleTutorial() {
   const step = tutorialStep(state);
   if (!step) return null;
   if (step === 'dormir') return step;
-  return activeTab === 'ferme' && !screen ? step : null;
+  return activeTab === 'ferme' && !ecranFerme ? step : null;
 }
 
 // Classe à ajouter à l'élément que la bulle montre.
@@ -17939,19 +18049,28 @@ document.addEventListener('click', (e) => {
       target.textContent = open ? 'Voir moins' : 'Voir plus';
       break;
     }
+    case 'stage-list':
+      farmList = true;
+      refresh();
+      break;
+    case 'stage-map':
+      farmList = false;
+      refresh();
+      break;
     case 'switch-tab':
       activeTab = target.dataset.tab;
-      screen = null;
+      farmList = false;
+      ecranFerme = null;
       telView();
       refresh();
       break;
     case 'open-screen':
-      screen = target.dataset.screen;
+      ecranFerme = target.dataset.screen;
       telView();
       refresh();
       break;
     case 'close-screen':
-      screen = null;
+      ecranFerme = null;
       telView();
       refresh();
       break;
@@ -18337,7 +18456,7 @@ document.addEventListener('click', (e) => {
       const ok = importSaveText(area.value);
       showToast(ok ? 'Sauvegarde importée.' : 'Texte invalide, import annulé.');
       if (ok) {
-        screen = null;
+        ecranFerme = null;
         closeModal();
         refresh();
       }
