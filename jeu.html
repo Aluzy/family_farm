@@ -130,7 +130,7 @@ main {
   margin: 0 auto;
 }
 
-/* Barre de menu du bas : fixée, sous la barre « Dormir ». */
+/* Barre de menu du bas : fixée ; le bouton « Zzz » flotte juste au-dessus, à droite. */
 :root { --dock: calc(60px + env(safe-area-inset-bottom)); }
 
 .bottom-nav {
@@ -380,8 +380,6 @@ details.test-panel summary {
 
 /* ---------- Lot 1 : en-tête, cartes, appareils, interrupteurs, Dormir ---------- */
 
-body { padding-bottom: 104px; } /* place pour la barre « Dormir » */
-
 .app-header { flex-wrap: wrap; }
 
 .indicators {
@@ -580,24 +578,53 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 
 .screen-head h2 { margin: 0; }
 
-.sleep-bar {
+/* Bouton « Zzz » (Dormir) : rond, flottant en bas à droite de l'écran, au-dessus du menu
+   du bas, sur tous les onglets. Désactivé, il affiche les secondes restantes. */
+.sleep-fab {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: var(--dock);
+  right: calc(12px + env(safe-area-inset-right));
+  bottom: calc(var(--dock) + 12px);
   z-index: 50;
-  padding: 10px 16px 10px;
-  background: var(--bg-header);
-  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none; /* seuls le bouton et la pastille reçoivent les appuis */
 }
 
-.sleep-bar .btn {
-  display: block;
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  min-height: 52px;
-  font-size: 1.1rem;
+.sleep-fab > * { pointer-events: auto; }
+
+.sleep-fab .sleep-btn {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.sleep-fab .sleep-btn:active { transform: translateY(1px); }
+
+.sleep-fab .sleep-btn:disabled {
+  border-color: var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.sleep-fab .sleep-wait {
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .report-list { list-style: none; margin: 12px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -639,19 +666,15 @@ select {
 
 /* ---------- Lot 2 : potager, famille, inventaire, aperçu du repas ---------- */
 
-body { padding-bottom: calc(136px + var(--dock)); } /* barre « Dormir » (avec l'aperçu du repas) + menu du bas */
-.toast { bottom: calc(120px + var(--dock)); }
+body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zzz » : la fin du contenu passe au-dessus du bouton */
+.toast { bottom: calc(84px + var(--dock)); }
 
-.sleep-bar .meal-preview {
-  max-width: 720px;
-  margin: 0 auto 6px;
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: 600;
+/* Aperçu du repas : une pastille à côté du bouton « Zzz », seulement si le repas prévu est insuffisant. */
+.sleep-fab .meal-chip {
+  min-height: 28px;
   font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
-
-.sleep-bar .meal-preview.short { color: var(--danger); }
 
 .section-head {
   display: flex;
@@ -941,7 +964,7 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
   position: fixed;
   left: 16px;
   right: 16px;
-  bottom: calc(120px + var(--dock));
+  bottom: calc(84px + var(--dock));
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -1047,6 +1070,11 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
 }
 
 .tuto.up::after { display: none; }
+/* Bulle « Dormir » : calée à droite, la pointe au-dessus du bouton « Zzz » ; elle descend
+   près du bouton quand le bandeau de choix sur le suivi n'occupe plus le bas de l'écran. */
+.tuto:not(.up) { margin-right: 0; }
+body:not(:has(#consent-banner)) .tuto:not(.up) { bottom: calc(86px + var(--dock)); }
+.tuto:not(.up)::after { left: auto; right: 16px; transform: rotate(45deg); }
 .tuto h2 { margin: 0 0 4px; font-size: 1.05rem; display: flex; justify-content: space-between; gap: 8px; }
 .tuto p { margin: 0 0 10px; font-size: 0.95rem; }
 .tuto .row { justify-content: flex-end; }
@@ -1082,31 +1110,107 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
     scroll-behavior: auto !important;
   }
 }
-/* ---------- Carte Phaser : zone entre le bandeau et la barre du bas ---------- */
-:root { --header-h: 56px; --sleep-h: 0px; }
+/* ---------- Carte Phaser : zone entre le bandeau et le menu du bas ---------- */
+:root { --header-h: 56px; }
 #farm-stage {
   position: fixed;
   left: 0;
   right: 0;
   top: var(--header-h);
-  bottom: calc(var(--dock) + var(--sleep-h));
+  bottom: var(--dock);
   z-index: 5;
   overflow: hidden;
   background: #699654;
-  touch-action: manipulation;
+  touch-action: none; /* le doigt fait glisser la carte, pas la page */
+  -webkit-user-select: none;
+  user-select: none;
 }
 #farm-stage[hidden] { display: none; }
-#farm-stage canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
-.stage-corner {
+/* La taille réelle du canvas (× densité de l'écran) est gérée par farm-stage.js. */
+#farm-stage canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: pixelated; cursor: grab; }
+/* Boutons ronds posés sur la carte (DOM, pas dans le canvas). */
+.stage-btns {
   position: absolute;
-  right: 8px;
   top: 8px;
+  right: calc(8px + env(safe-area-inset-right));
   z-index: 6;
-  min-width: 44px;
-  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
+.stage-btn {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.stage-btn:active { transform: translateY(1px); }
 body.has-stage main { display: none; }
 body.has-stage { padding-bottom: 0; }
+
+/* ---------- Fenêtres de la carte : au-dessus de la carte et du menu, sous les fenêtres de #modal-root ---------- */
+.window-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.window-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+.stage-window {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  max-height: 88vh;
+  max-height: 88dvh;
+  background: var(--bg);
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+.stage-window.tall { height: 88vh; height: 88dvh; }
+.window-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 8px 16px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+}
+.window-head h2 { margin: 0; font-size: 1.15rem; }
+.window-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+}
+.window-body > :first-child { margin-top: 0; }
+.window-body > .subtabs:first-child { margin-top: 0; }
+@media (min-width: 640px) {
+  .window-layer { align-items: center; padding: 16px; }
+  .stage-window { border-radius: var(--radius); }
+}
+.modal a { color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -1449,9 +1553,10 @@ body.has-stage { padding-bottom: 0; }
   </details>
 </main>
 
-<div class="sleep-bar" id="sleep-bar"></div>
+<div class="sleep-fab" id="sleep-fab"></div>
 <nav class="bottom-nav" id="bottom-nav" aria-label="Menu principal"></nav>
 <div id="tuto-root"></div>
+<div id="window-root"></div>
 <div id="modal-root"></div>
 <div id="toast-root" role="status" aria-live="polite"></div>
 
@@ -2712,7 +2817,7 @@ function mulberry32(seed) {
 const STATE_VERSION = 14;
 // Version du jeu, affichée dans les Options (À propos). Vache et abattage des
 // poules : 0.12.0.
-const GAME_VERSION = '0.18.0';
+const GAME_VERSION = '1.0.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -14006,7 +14111,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '0.18.0');
+  assertEqual(GAME_VERSION, '1.0.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -15405,6 +15510,7 @@ function render() {
   renderTabContent();
   renderSleepBar();
   renderStage();
+  renderStageWindow();
   renderTutorial();
   renderTestPanel();
 }
@@ -15491,24 +15597,31 @@ function patchAttributes(o, w) {
   }
 }
 
-/* ---------- Carte Phaser (voir farm-stage.js et ARCHITECTURE.md) ---------- */
+/* ---------- Carte Phaser (voir farm-stage.js et docs/architecture-phaser.md) ---------- */
 
-let farmList = false; // transitoire : true = on affiche la liste classique de la Ferme à la place de la carte
+let stageMounted = false;
+let stageMountedAt = 0;
+let stageBroken = false; // Phaser a planté au montage : la Ferme garde sa liste classique
+// Sans scène prête après ce délai (plantage au démarrage, images qui ne viennent pas), la
+// Ferme repasse sur la liste classique ; la carte revient d'elle-même si elle finit par démarrer.
+const STAGE_BOOT_MS = 12000;
 
-// La carte est active si Phaser est chargé, qu'on est sur la Ferme (pas dans un écran de détail)
-// et que le joueur n'a pas demandé la liste classique.
-function stageActive() {
-  return !!(window.FarmStage && window.Phaser) && activeTab === 'ferme' && ecranFerme === null && !farmList;
+function stageUsable() {
+  if (!(window.FarmStage && window.Phaser) || stageBroken) return false;
+  // Jeu ouvert depuis le disque : le navigateur refuse de charger la carte et ses images.
+  if (location.protocol === 'file:') return false;
+  if (stageMounted && !FarmStage.ready() && Date.now() - stageMountedAt > STAGE_BOOT_MS) return false;
+  return true;
 }
 
-function backToMap() {
-  return window.FarmStage && window.Phaser
-    ? '<div class="screen-head"><button type="button" class="btn" data-action="stage-map">🗺️ Carte</button></div>'
-    : '';
+// La carte est affichée si Phaser est disponible et qu'on est sur la Ferme (pas dans un écran
+// de détail). Sans Phaser, la Ferme garde sa liste classique.
+function stageActive() {
+  return stageUsable() && activeTab === 'ferme' && ecranFerme === null;
 }
 
 // Colonnes de la zone de culture selon le nombre de parcelles : 6, 12, 18, 24, 30 parcelles =
-// 2×3, 3×4, 3×6, 4×6, 5×6 (colonnes × rangées). Le maximum, 5×6, remplit `zone_culture` de la carte.
+// 2×3, 3×4, 3×6, 4×6, 5×6 (colonnes × rangées), à partir du coin de `zone_culture` de la carte.
 function stageCols(n) {
   return n <= 6 ? 2 : n <= 18 ? 3 : n <= 24 ? 4 : 5;
 }
@@ -15522,7 +15635,10 @@ function stageModel() {
     const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
     return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: !!p.arrose };
   });
-  return { season: currentSeason(state), cols: stageCols(plots.length), plots };
+  // Bâtiments dessinés : seulement ceux que le jeu a débloqués (la maison est toujours là).
+  const batiments = {};
+  for (const id of ['etable', 'moulin', 'serre', 'verger']) batiments[id] = STAGE_WINDOWS[id].ok();
+  return { season: currentSeason(state), cols: stageCols(plots.length), plots, batiments };
 }
 
 // Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La
@@ -15538,20 +15654,22 @@ function stageAct(action, data) {
   b.remove();
 }
 
-let stageMounted = false;
-
 function renderStage() {
   const el = document.getElementById('farm-stage');
-  const on = stageActive();
+  let on = stageActive();
   if (on && !stageMounted) {
     stageMounted = true;
+    stageMountedAt = Date.now();
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, base: 'assets/' })) stageMounted = false;
+      if (!FarmStage.mount(el, { act: stageAct, base: 'assets/' })) stageBroken = true;
     } catch (err) {
-      stageMounted = false;
-      farmList = true;
+      stageBroken = true;
+    }
+    if (stageBroken) {
+      on = false;
+      renderTabContent();
     }
   }
   el.hidden = !on;
@@ -15561,14 +15679,109 @@ function renderStage() {
     return;
   }
   const head = document.querySelector('.app-header');
-  const sleep = document.getElementById('sleep-bar');
   document.documentElement.style.setProperty('--header-h', head.offsetHeight + 'px');
-  document.documentElement.style.setProperty('--sleep-h', sleep.offsetHeight + 'px');
   FarmStage.show();
   FarmStage.update(stageModel());
-  if (!el.querySelector('.stage-corner')) {
-    el.insertAdjacentHTML('beforeend', '<button type="button" class="icon-btn stage-corner" data-action="stage-list" aria-label="Liste de la ferme" title="Liste de la ferme">📋</button>');
+  if (!el.querySelector('.stage-btns')) {
+    el.insertAdjacentHTML('beforeend', `
+      <div class="stage-btns">
+        <button type="button" class="stage-btn" data-action="stage-open" data-window="zone" aria-label="Zone de culture" title="Zone de culture">🌱</button>
+        <button type="button" class="stage-btn" data-action="stage-open" data-window="chapitres" aria-label="Chapitres" title="Chapitres">📜</button>
+      </div>`);
   }
+}
+
+/* ---------- Fenêtres de la carte ---------- */
+
+// Un appui sur un bâtiment (ou un bouton rond) ouvre une fenêtre dont le contenu est celui
+// des sections de la Ferme, redessiné à chaque rendu : les boutons y fonctionnent comme
+// dans la liste classique. Les fenêtres de #modal-root s'affichent par-dessus.
+let stageWindow = null; // null, 'maison', 'etable', 'serre', 'moulin', 'verger', 'zone' ou 'chapitres'
+let stageReturn = null; // fenêtre à rouvrir en revenant d'un écran de détail (panneaux, batteries)
+let stageWindowShown = null; // dernière fenêtre dessinée (avec son onglet) : pour remonter en haut au changement
+let maisonTab = 'famille'; // onglet de la fenêtre Maison
+
+const MAISON_TABS = [
+  { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), corps: () => renderFamille() },
+  { id: 'recettes', label: 'Livre de recette', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
+  { id: 'techno', label: 'Arbre des technologies', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
+  { id: 'batiments', label: 'Bâtiments', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
+];
+
+function maisonCurrentTab() {
+  const tabs = MAISON_TABS.filter((t) => t.ok());
+  return tabs.find((t) => t.id === maisonTab) || tabs[0];
+}
+
+function renderMaisonWindow() {
+  const tab = maisonCurrentTab();
+  return subtabsHtml(MAISON_TABS.filter((t) => t.ok()), tab.id, 'maison-tab') + tab.corps();
+}
+
+// Bâtiments techniques sans dessin sur la carte : énergie et eau, Silo, calendrier.
+function renderBatiments() {
+  return `${renderEnergieEau()}${isUnlocked(state, 'silo') ? renderSilo() : ''}<h3 class="section-title">📅 Calendrier</h3>${renderCalendar()}`;
+}
+
+// `ok` : la fenêtre (et son bâtiment sur la carte) existe-t-elle à ce stade de la partie ?
+const STAGE_WINDOWS = {
+  maison: { titre: '🏠 Maison', ok: () => true, haute: true, corps: () => renderMaisonWindow() },
+  etable: {
+    titre: '🐄 Étable',
+    ok: () => isUnlocked(state, 'poulailler') || isUnlocked(state, 'paturage'),
+    corps: () => (isUnlocked(state, 'poulailler') ? renderPoulailler() : '') + (isUnlocked(state, 'paturage') ? renderPaturage() : ''),
+  },
+  serre: { titre: '🪴 Serre', ok: () => isUnlocked(state, 'serre'), corps: () => renderSerre() },
+  // Le moulin regroupe tous les ateliers : il apparaît dès que le premier est débloqué.
+  moulin: { titre: '⚙️ Moulin et ateliers', ok: () => Object.keys(DATA.STATIONS).some((id) => isUnlocked(state, id)), corps: () => renderAteliers() },
+  verger: { titre: '🍎 Verger', ok: () => isUnlocked(state, 'verger'), corps: () => renderVerger() },
+  zone: { titre: '🌱 Zone de culture', ok: () => true, corps: () => renderPotager() },
+  chapitres: { titre: '📜 Chapitres', ok: () => true, corps: () => renderChapterBanner() },
+};
+
+function renderStageWindow() {
+  const root = document.getElementById('window-root');
+  const w = stageWindow ? STAGE_WINDOWS[stageWindow] : null;
+  if (stageWindow && (!w || !w.ok() || !stageActive())) stageWindow = null;
+  if (!stageWindow) {
+    if (root.childElementCount) morph(root, '');
+    stageWindowShown = null;
+    return;
+  }
+  morph(root, `
+    <div class="window-layer">
+      <div class="window-backdrop" data-action="stage-close"></div>
+      <section class="stage-window${w.haute ? ' tall' : ''}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
+        <header class="window-head">
+          <h2 id="stage-window-title">${w.titre}</h2>
+          <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer la fenêtre" title="Fermer">✕</button>
+        </header>
+        <div class="window-body">${w.corps()}</div>
+      </section>
+    </div>`);
+  // Autre fenêtre ou autre onglet : le contenu repart du haut ; à l'ouverture, le focus va sur ✕.
+  const shown = stageWindow + (stageWindow === 'maison' ? ':' + maisonCurrentTab().id : '');
+  if (shown !== stageWindowShown) {
+    const opening = stageWindowShown === null;
+    stageWindowShown = shown;
+    root.querySelector('.window-body').scrollTop = 0;
+    if (opening) document.getElementById('stage-window-close').focus({ preventScroll: true });
+  }
+}
+
+function openStageWindow(id) {
+  if (!STAGE_WINDOWS[id] || !STAGE_WINDOWS[id].ok()) return;
+  stageWindow = id;
+  stageReturn = null;
+  renderStageWindow(); // tout de suite, sans attendre la cadence de rendu
+  refresh();
+}
+
+function closeStageWindow() {
+  stageWindow = null;
+  stageReturn = null;
+  renderStageWindow();
+  refresh();
 }
 
 function renderIndicators() {
@@ -15600,7 +15813,8 @@ function renderTabbar() {
 // Chaque onglet donne une liste de tranches (la Ferme en a une par section).
 // render() ramène déjà un onglet non débloqué sur la Ferme.
 const TAB_RENDERERS = {
-  ferme: () => (ecranFerme === 'panneaux' || ecranFerme === 'batteries' ? [renderDeviceScreen(ecranFerme)] : stageActive() ? [''] : [backToMap() + '<div></div>'].concat(renderFerme())),
+  // Avec la carte, tout passe par elle et ses fenêtres ; sans Phaser, la liste classique.
+  ferme: () => (ecranFerme === 'panneaux' || ecranFerme === 'batteries' ? [renderDeviceScreen(ecranFerme)] : stageActive() ? [''] : renderFerme()),
   famille: () => [backToFerme() + renderFamille()],
   inventaire: () => [renderInventaire()],
   comptoir: () => [renderComptoir()],
@@ -15613,17 +15827,20 @@ function renderTabContent() {
   morphSlots(document.getElementById('tab-content'), (TAB_RENDERERS[activeTab] || TAB_RENDERERS.ferme)());
 }
 
+// Bouton « Zzz » (Dormir), en bas à droite sur tous les onglets. L'aperçu du repas est dans
+// son libellé (title / aria-label) ; une pastille ne s'affiche que si le repas prévu est insuffisant.
 function renderSleepBar() {
   const remaining = Math.max(1, Math.ceil((awakeRequired(state) * 1000 - state.awakeMs) / 1000));
   const plan = planMeal(state);
   const short = plan.energie + EPS < plan.besoin;
-  const preview = `<p class="meal-preview${short ? ' short' : ''}">🍽️ Repas prévu : ${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)} énergie${short ? ' ⚠️' : ''} · 🌿 ${formatPercent(plannedAutonomy(state))}</p>`;
+  const eaten = `${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)}`;
+  const meal = `Repas prévu : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
+  const ok = canSleep(state);
+  const label = `${ok ? 'Dormir' : `Dormir (dans ${remaining} s)`}. ${meal}`;
   morph(
-    document.getElementById('sleep-bar'),
-    preview +
-      (canSleep(state)
-        ? `<button type="button" class="btn primary${tutoTarget('dormir')}" data-action="sleep">😴 Dormir</button>`
-        : `<button type="button" class="btn${tutoTarget('dormir')}" data-action="sleep" disabled>😴 Dormir (dans ${remaining} s)</button>`)
+    document.getElementById('sleep-fab'),
+    (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
+      `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}"${ok ? '' : ' disabled'}><span aria-hidden="true">Zzz</span>${ok ? '' : `<span class="sleep-wait" aria-hidden="true">${remaining} s</span>`}</button>`
   );
 }
 
@@ -15693,21 +15910,6 @@ function renderFermeLinks() {
 }
 
 function renderFerme() {
-  const e = energyStats(state);
-  const p = state.pompe;
-  const ps = deviceStatus(state, p);
-  const cap = tankCapacity(state);
-  const netText =
-    e.net > 0
-      ? `En charge (${formatWhRate(e.net, true)})`
-      : e.net < 0
-        ? `En décharge (${formatWhRate(e.net, true)})`
-        : 'Stable (0 Wh/s)';
-  const tankText =
-    state.eauMl >= cap
-      ? 'Réservoir plein'
-      : `Vitesse de remplissage : ${formatLitresRate(state.flux.eau)}`;
-
   // Lot 11 : une tranche par section, toujours le même nombre de tranches (une
   // section pas encore débloquée est vide) : chacune n'est mise à jour que si
   // son gabarit a changé.
@@ -15721,7 +15923,19 @@ function renderFerme() {
     isUnlocked(state, 'paturage') ? renderPaturage() : '',
     isUnlocked(state, 'verger') ? renderVerger() : '',
     renderAteliers(),
-    `
+    renderEnergieEau(),
+  ];
+}
+
+// Cartes « Énergie et eau » : dans la liste classique de la Ferme et dans la fenêtre
+// Maison › Bâtiments de la carte.
+function renderEnergieEau() {
+  const e = energyStats(state), p = state.pompe, ps = deviceStatus(state, p), cap = tankCapacity(state);
+  let netText = 'Stable (0 Wh/s)';
+  if (e.net > 0) netText = `En charge (${formatWhRate(e.net, true)})`;
+  else if (e.net < 0) netText = `En décharge (${formatWhRate(e.net, true)})`;
+  const tankText = state.eauMl >= cap ? 'Réservoir plein' : `Vitesse de remplissage : ${formatLitresRate(state.flux.eau)}`;
+  return `
     <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
@@ -15750,8 +15964,7 @@ function renderFerme() {
       </div>
       ${isUnlocked(state, 'frigo') ? renderFridgeCard() : ''}
     </div>
-  `,
-  ];
+  `;
 }
 
 function wearHtml(d) {
@@ -17807,7 +18020,10 @@ function openAboutModal() {
         <p class="about-version"><strong>Ferme Familiale</strong> · version ${GAME_VERSION} <span class="muted">(format de sauvegarde ${STATE_VERSION})</span></p>
         <h3>Règles principales</h3>
         <ol class="about-rules">${rules.map((r) => `<li>${r}</li>`).join('')}</ol>
-        <p class="muted">Illustrations originales. Un seul fichier HTML, sans bibliothèque, qui marche hors connexion.</p>
+        <h3>Crédits</h3>
+        <p class="muted">Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <a href="https://antarcticbees.itch.io/" target="_blank" rel="noopener noreferrer">https://antarcticbees.itch.io/</a></p>
+        <p class="muted">Moteur d'affichage : Phaser 3 (licence MIT).</p>
+        <p class="muted">Icônes et illustrations des fiches : originales.</p>
         <div class="row">
           <button type="button" class="btn" data-action="open-options">← Options</button>
           <button type="button" class="btn primary" data-action="close-modal" id="about-close">Fermer</button>
@@ -18049,28 +18265,37 @@ document.addEventListener('click', (e) => {
       target.textContent = open ? 'Voir moins' : 'Voir plus';
       break;
     }
-    case 'stage-list':
-      farmList = true;
-      refresh();
+    case 'stage-open':
+      openStageWindow(target.dataset.window);
       break;
-    case 'stage-map':
-      farmList = false;
+    case 'stage-close':
+      closeStageWindow();
+      break;
+    case 'maison-tab':
+      maisonTab = target.dataset.tab;
+      renderStageWindow();
       refresh();
       break;
     case 'switch-tab':
       activeTab = target.dataset.tab;
-      farmList = false;
+      stageWindow = null;
+      stageReturn = null;
       ecranFerme = null;
       telView();
       refresh();
       break;
     case 'open-screen':
+      // Depuis une fenêtre de la carte : elle se ferme le temps de l'écran de détail.
+      stageReturn = stageWindow;
+      stageWindow = null;
       ecranFerme = target.dataset.screen;
       telView();
       refresh();
       break;
     case 'close-screen':
       ecranFerme = null;
+      stageWindow = stageReturn;
+      stageReturn = null;
       telView();
       refresh();
       break;
@@ -18491,11 +18716,16 @@ document.addEventListener('change', (e) => {
   }
 });
 
-// Lot 11 : Échap ferme la fenêtre ouverte (comme le bouton Fermer).
+// Lot 11 : Échap ferme la fenêtre ouverte (comme le bouton Fermer) ; d'abord celle de
+// #modal-root, puis la fenêtre de la carte.
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && document.getElementById('modal-root').childElementCount > 0) {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('modal-root').childElementCount > 0) {
     e.preventDefault();
     closeModal();
+  } else if (stageWindow) {
+    e.preventDefault();
+    closeStageWindow();
   }
 });
 

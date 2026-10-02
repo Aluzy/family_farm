@@ -5,7 +5,7 @@ objectif, nourrir la famille avec ce que la ferme produit. Panneaux solaires,
 batteries, pompe, potager, champ, poulailler, moutons, verger, serre, cuisine et
 réfrigérateur ; les journées ne passent que quand vous cliquez sur **Dormir**.
 
-- **Version** : 0.18.0 (affichée dans ⚙️ Options › À propos)
+- **Version** : 1.0.0 (affichée dans ⚙️ Options › À propos)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
@@ -16,6 +16,11 @@ réfrigérateur ; les journées ne passent que quand vous cliquez sur **Dormir**
   et traceurs). Elles fonctionnent ouvertes depuis le disque comme servies en HTTP.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
+- **Carte de la ferme** : l'onglet Ferme affiche une carte en pixel art (Phaser 3,
+  `vendor/phaser.min.js`, scène dans `farm-stage.js`, images et carte Tiled dans
+  `assets/`) ; voir [`docs/architecture-phaser.md`](docs/architecture-phaser.md). La
+  carte demande d'ouvrir le jeu en HTTP (`python3 -m http.server`) ; sans Phaser ou
+  depuis le disque, la Ferme garde sa liste classique et le jeu reste jouable.
 
 ## Jouer
 
@@ -316,3 +321,8 @@ node run-tests.mjs        # moteur du jeu
 node test-telemetry.mjs   # suivi de session (rien sans consentement, retrait, limites, commentaires)
 node test-report.mjs      # rapport quotidien (calculs, Markdown, protections du Worker)
 ```
+
+## Crédits
+
+- Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <https://antarcticbees.itch.io/>
+- Moteur d'affichage : Phaser 3 (licence MIT)
