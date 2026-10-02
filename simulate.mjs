@@ -150,13 +150,13 @@ if (!parties.applique) {
 } else {
   const rows = parties.applique;
 
-  // 1. Potager niveau 2 avant la fin des conserves
+  // 1. Zone de culture (state.potager) niveau 2 avant la fin des conserves
   const p2 = rows.find((r) => r.potager >= 2);
   const finConserves = rows.find((r) => r.conserves === 0);
   verifie(
-    'Potager niveau 2 acheté avant la fin des conserves',
+    'Zone de culture niveau 2 achetée avant la fin des conserves',
     !!p2 && (!finConserves || p2.nuit <= finConserves.nuit),
-    `Potager niveau 2 : ${p2 ? 'nuit ' + p2.nuit : 'jamais acheté'} ; conserves épuisées : ${finConserves ? 'nuit ' + finConserves.nuit : 'jamais'}.`,
+    `Zone de culture niveau 2 : ${p2 ? 'nuit ' + p2.nuit : 'jamais achetée'} ; conserves épuisées : ${finConserves ? 'nuit ' + finConserves.nuit : 'jamais'}.`,
   );
 
   // 2. Aucune santé à 0

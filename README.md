@@ -2,7 +2,7 @@
 
 Un *idle game* de gestion agricole familiale : quatre personnes, une ferme, et un
 objectif, nourrir la famille avec ce que la ferme produit. Panneaux solaires,
-batteries, pompe, potager, champ, poulailler, moutons, verger, serre, cuisine et
+batteries, pompe, zone de culture, poulailler, moutons, verger, serre, cuisine et
 réfrigérateur ; les journées ne passent que quand vous cliquez sur **Dormir**.
 
 - **Version** : 0.18.0 (affichée dans ⚙️ Options › À propos)

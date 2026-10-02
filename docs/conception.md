@@ -1,6 +1,31 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v26 (jeu 1.0)** : **le Potager et le Champ deviennent une seule « Zone de
+> culture »** (🌱). Cette note **fait foi** sur tout ce qui, plus bas, parle
+> encore du Potager et du Champ comme de deux lieux.
+> - **Une seule zone** : 6 / 12 / 18 / 24 / 30 parcelles (niveaux 1 à 5), coûts
+>   200 / 480 / 1 050 / 2 300 💰 (anciens coûts du Potager et du Champ
+>   additionnés). Le niveau 1 (6 parcelles au départ) est inchangé. Dans le
+>   code, la zone garde l'identifiant `potager` (`state.potager`, parcelles
+>   `potager-n`).
+> - **Plus de restriction de lieu** : toutes les cultures du Potager et du Champ
+>   poussent sur n'importe quelle parcelle de la zone. La Serre garde ses
+>   parcelles et sa liste (cacao, vanille, café restent exclusifs à la Serre).
+> - **Le Champ n'est plus un bâtiment** (ni construction, ni niveaux). Le
+>   déblocage `champ` du chapitre 3 s'appelle désormais « Cultures de plein
+>   champ » : c'est lui qui rend plantables le blé, le riz et le houblon (le
+>   tournesol attend toujours le chapitre 4).
+> - **Saisons** : toute la zone suit le facteur « potager » (×1,1 / ×1,0 /
+>   ×1,0 / ×0,7) et le facteur d'eau ; le facteur « champ » disparaît.
+> - **Automatisations** : Réseau d'irrigation, Récolte automatique et Semis
+>   automatique couvrent toute la zone.
+> - **Sauvegardes** (format 15) : les parcelles du Potager et du Champ sont
+>   regroupées, avec tout ce qu'elles portent ; le niveau de la zone est le plus
+>   petit qui les contient toutes. Au-delà de 30 parcelles (36 au plus), les
+>   parcelles vides partent d'abord, puis les plantes les moins avancées, et
+>   chaque plante retirée rend une graine ou un plant.
+>
 > **v25** : **chiffres entiers partout** (données, état du jeu et affichage).
 > Règles d'arrondi : un **coût** (prix, eau d'un arrosage, durée) est arrondi à
 > l'entier **supérieur** (sauf l'eau d'un arrosage : au plus proche, 1 L
@@ -597,13 +622,13 @@ Le temps avance **par journées**, chaque journée se terminant par le bouton **
 - **Presse / Moulin** : transformer quand la batterie est pleine (été).
 
 ### Modificateurs saisonniers (légers) 🟡
-| Saison | Solaire | Rendement potager | Eau consommée | Champ | Pâturage (croissance moutons **et vaches**, v19) | Verger |
-|---|---|---|---|---|---|---|
-| 🌱 Printemps | ×1,0 | ×1,1 | ×1,0 | ×1,0 | ×1,2 | — |
-| ☀️ Été | ×1,3 | ×1,0 | ×1,3 | ×1,2 | ×1,0 | fruits (fin) |
-| 🍂 Automne | ×0,9 | ×1,0 | ×0,9 | ×0,9 | ×1,0 | fruits |
-| ❄️ Hiver | ×0,7 | ×0,7 | ×0,8 | ×0,7 | ×0,8 | — |
-| Serre | — | ×1,0 toute l'année | ×1,0 | — | — | — |
+| Saison | Solaire | Rendement de la Zone de culture (v26 : toutes les cultures) | Eau consommée | Pâturage (croissance moutons **et vaches**, v19) | Verger |
+|---|---|---|---|---|---|
+| 🌱 Printemps | ×1,0 | ×1,1 | ×1,0 | ×1,2 | — |
+| ☀️ Été | ×1,3 | ×1,0 | ×1,3 | ×1,0 | fruits (fin) |
+| 🍂 Automne | ×0,9 | ×1,0 | ×0,9 | ×1,0 | fruits |
+| ❄️ Hiver | ×0,7 | ×0,7 | ×0,8 | ×0,8 | — |
+| Serre | — | ×1,0 toute l'année | ×1,0 | — | — |
 
 (v19) La croissance de la vache réutilise le même facteur saisonnier que le mouton (même colonne) plutôt que d'en introduire un dédié ; seul son lait échappe aux saisons, comme la ponte des poules.
 
@@ -1224,13 +1249,15 @@ Graines de légumes : vente 1 💰 ; achat en dépannage au coefficient 2,0 (soi
 
 **Rendement moyen par parcelle** (énergie / nuit, graine déduite, mis à jour au §4) : carotte ≈ 20 · patate ≈ 22 · tomate ≈ 16 · courgette ≈ 12 · aubergine ≈ 10.
 
-| Niveau | Parcelles Potager | Parcelles Champ | Coût Potager 💰 | Coût Champ 💰 |
-|---|---|---|---|---|
-| 1 | 6 | 4 | départ | 60 (construction) |
-| 2 | 9 | 6 | 80 | 120 |
-| 3 | 12 | 9 | 200 | 280 |
-| 4 | 16 | 12 | 450 | 600 |
-| 5 | 20 + **arrosage auto** | 16 + **arrosage auto** | 1 000 | 1 300 |
+| Niveau | Parcelles de la Zone de culture (v26) | Coût 💰 |
+|---|---|---|
+| 1 | 6 | départ |
+| 2 | 12 | 200 |
+| 3 | 18 | 480 |
+| 4 | 24 | 1 050 |
+| 5 | 30 | 2 300 |
+
+(Avant la v26 : Potager 6 / 9 / 12 / 16 / 20 pour 80 / 200 / 450 / 1 000 💰, et Champ 4 / 6 / 9 / 12 / 16 pour 60 / 120 / 280 / 600 / 1 300 💰.)
 
 | Autre | Valeur |
 |---|---|
