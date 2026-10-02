@@ -1128,32 +1128,6 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
 #farm-stage[hidden] { display: none; }
 /* La taille réelle du canvas (× densité de l'écran) est gérée par farm-stage.js. */
 #farm-stage canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: pixelated; cursor: grab; }
-/* Boutons ronds posés sur la carte (DOM, pas dans le canvas). */
-.stage-btns {
-  position: absolute;
-  top: 8px;
-  right: calc(8px + env(safe-area-inset-right));
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.stage-btn {
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--text);
-  font-size: 1.4rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-.stage-btn:active { transform: translateY(1px); }
 body.has-stage main { display: none; }
 body.has-stage { padding-bottom: 0; }
 
@@ -1211,6 +1185,232 @@ body.has-stage { padding-bottom: 0; }
   .stage-window { border-radius: var(--radius); }
 }
 .modal a { color: var(--accent); font-weight: 600; }
+
+/* ---------- 1.1 : navigation de la carte (étiquettes, points, objectif, fenêtres, bandeau) ---------- */
+
+/* Bandeau : la nuit et l'heure à côté du titre ; dessous, une rangée d'indicateurs. Chaque
+   indicateur a sa valeur et, en petit, sa légende. Ceux qui mènent quelque part sont des boutons. */
+.app-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.app-clock { display: flex; align-items: stretch; gap: 12px; margin-left: auto; font-variant-numeric: tabular-nums; }
+.indicators { gap: 4px 6px; align-items: stretch; }
+.indicator { flex-direction: column; justify-content: center; gap: 1px; line-height: 1.15; }
+.ind-val { display: flex; align-items: center; gap: 4px; }
+.ind-leg { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); }
+.indicator-btn { padding: 2px 8px; border: 1px solid var(--border); background: var(--bg-elevated); box-shadow: var(--shadow); }
+.indicator-btn:active { transform: translateY(1px); }
+
+/* Étiquettes des bâtiments : en DOM, par-dessus le canvas, replacées à chaque image par
+   farm-stage.js. Elles ne prennent pas les appuis : la carte glisse aussi quand le doigt part
+   d'une étiquette, et c'est la scène qui reconnaît un appui dessus. */
+.stage-labels { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+.stage-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(44, 36, 22, 0.45);
+  background: rgba(255, 250, 238, 0.94);
+  color: #2c2416;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  will-change: transform;
+}
+.stage-label.todo { border-color: #c1442e; }
+.stage-label:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+.stage-label-badge {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #c1442e;
+  color: #ffffff;
+  font-size: 0.7rem;
+  line-height: 17px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.stage-label-badge[hidden] { display: none; }
+
+/* Objectif du chapitre : une ligne en haut de la carte ; un appui ouvre la fenêtre Chapitres. */
+.stage-hud {
+  position: absolute;
+  top: 2px;
+  left: calc(8px + env(safe-area-inset-left));
+  right: calc(8px + env(safe-area-inset-right));
+  z-index: 6;
+  display: flex;
+  pointer-events: none;
+}
+.stage-chip {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.stage-chip-pill {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+.stage-chip:focus-visible { outline: none; }
+.stage-chip:focus-visible .stage-chip-pill { outline: 3px solid var(--color-sun); outline-offset: 1px; }
+.stage-chip:active .stage-chip-pill { transform: translateY(1px); }
+.stage-chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage-chip-val { flex: none; color: var(--text-muted); white-space: nowrap; }
+.stage-chip-go { flex: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; }
+.stage-chip-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--bg-muted); }
+.stage-chip-bar > span { display: block; height: 100%; background: var(--accent); }
+
+/* Les trois points (un par écran de la carte) et les flèches des bords. */
+.stage-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 6;
+  transform: translateX(-50%);
+  display: flex;
+}
+.stage-dots::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 50%;
+  height: 22px;
+  margin-top: -11px;
+  border-radius: 999px;
+  background: rgba(28, 26, 20, 0.5);
+}
+.stage-dot {
+  position: relative;
+  width: 36px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.stage-dot > span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, 0.5); transition: transform 0.15s, background 0.15s; }
+.stage-dot.active > span { background: #ffffff; transform: scale(1.35); }
+.stage-dot:focus-visible { outline: 3px solid var(--color-sun); outline-offset: -6px; border-radius: 999px; }
+.stage-arrow {
+  position: absolute;
+  top: 27%; /* au-dessus de la zone de culture, sous la ligne de l'objectif */
+  z-index: 6;
+  width: 44px;
+  height: 56px;
+  margin-top: -28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.stage-arrow.gauche { left: 0; justify-content: flex-start; }
+.stage-arrow.droite { right: 0; justify-content: flex-end; }
+.stage-arrow > span {
+  width: 24px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 26, 20, 0.5);
+  font-size: 1.6rem;
+  line-height: 1;
+  padding-bottom: 4px;
+  animation: stage-arrow 1.6s ease-in-out infinite;
+}
+.stage-arrow.gauche > span { border-radius: 0 12px 12px 0; --pousse: -3px; }
+.stage-arrow.droite > span { border-radius: 12px 0 0 12px; --pousse: 3px; }
+.stage-arrow:focus-visible { outline: 3px solid var(--color-sun); outline-offset: -4px; }
+@keyframes stage-arrow {
+  0%, 100% { transform: translateX(0); opacity: 0.85; }
+  50% { transform: translateX(var(--pousse)); opacity: 1; }
+}
+
+/* Fenêtres de la carte : deux tailles seulement, demi-hauteur ou pleine hauteur. Le ✕ est
+   toujours au même endroit dans chacune. */
+.stage-window.half { height: 54vh; height: 54dvh; }
+.stage-window.tall { height: 92vh; height: 92dvh; max-height: 92vh; max-height: 92dvh; }
+.window-head { min-height: 61px; }
+.window-head h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.window-detail { font-size: 0.92rem; font-weight: 500; color: var(--text-muted); }
+.window-tabs { flex: none; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.window-tabs .subtabs { margin: 0; }
+/* Le titre de la fenêtre dit déjà où l'on est : le premier titre du contenu, qui le répète,
+   est masqué ici (la liste classique de la Ferme garde les siens). */
+.window-body.sans-titre > h2:first-child,
+.window-body.sans-titre > .section-head:first-child > h2,
+.window-body.sans-titre > .section-head:first-child > h3 { display: none; }
+.window-body.sans-titre > .section-head:first-child { justify-content: flex-end; }
+.window-body .ancre { scroll-margin-top: 8px; }
+main .ancre { scroll-margin-top: 150px; }
+
+/* Sous-onglets (Maison, Inventaire, Marché) : toujours une seule rangée. À partir de quatre
+   onglets sur un téléphone, seul l'onglet ouvert affiche son nom. */
+.subtabs { flex-wrap: nowrap; gap: 6px; }
+.subtab-btn {
+  flex: 1 1 auto;
+  min-width: 44px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.92rem;
+  overflow: hidden;
+}
+.subtab-icon { flex: none; }
+.subtab-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 639px) {
+  .subtabs.compact .subtab-btn { flex: 0 0 44px; padding: 0; }
+  .subtabs.compact .subtab-btn:not(.active) .subtab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+  }
+  .subtabs.compact .subtab-btn.active { flex: 1 1 auto; padding: 0 10px; }
+  .subtabs.compact .subtab-btn.active .subtab-label { white-space: normal; text-align: left; font-size: 0.9rem; line-height: 1.1; }
+}
+
+/* Notifications : où mène la ligne. */
+.notif-where { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
 </style>
 </head>
 <body>
@@ -1458,6 +1658,7 @@ body.has-stage { padding-bottom: 0; }
 
 <header class="app-header">
   <div class="app-title">🌾 Ferme Familiale</div>
+  <div class="app-clock" id="app-clock"></div>
   <div class="indicators" id="indicators"></div>
   <button class="icon-btn" id="options-btn" type="button" aria-label="Options" data-action="open-options">⚙️</button>
 </header>
@@ -15321,7 +15522,7 @@ let activeTab = 'ferme';
 let ecranFerme = null; // écran de détail ouvert dans la Ferme : null, 'panneaux' ou 'batteries'
 let testMode = false;
 let invTab = 'frais'; // Inventaire : 'frais', 'graines' ou 'produits'
-let comptoirTab = 'vendre'; // Marché : 'vendre', 'acheter', 'graines', 'animaux' ou 'arbres'
+let comptoirTab = 'vendre'; // Marché : 'vendre', 'acheter' ou 'graines'
 const sellQuantities = {}; // quantité choisie par item dans l'onglet Vendre
 
 /* ---------- suivi de session (consentement requis, voir cookies.html) ---------- */
@@ -15818,12 +16019,21 @@ function renderLoop(now) {
 function render() {
   // Un onglet non débloqué (sauvegarde importée, par exemple) retombe sur la Ferme.
   if (!tabAvailable(activeTab)) activeTab = 'ferme';
+  // Avec la carte, Famille, Livre de recette et Arbre des technologies n'existent que
+  // comme onglets de la fenêtre Maison : une page ouverte avant que la carte soit prête y est ramenée.
+  if (FERME_LINKS.includes(activeTab) && stageUsable()) {
+    maisonTab = activeTab;
+    activeTab = 'ferme';
+    ecranFerme = null;
+    stageWindow = 'maison';
+  }
   renderIndicators();
   renderTabbar();
   renderTabContent();
   renderSleepBar();
   renderStage();
   renderStageWindow();
+  applyAnchor();
   renderTutorial();
   renderTestPanel();
 }
@@ -15939,6 +16149,77 @@ function stageCols(n) {
   return n <= 6 ? 2 : n <= 18 ? 3 : n <= 24 ? 4 : 5;
 }
 
+// Heure du jour, de 0 à 24 (fractionnaire) : la journée commence à DAY_START_HOUR au réveil,
+// puis une heure passe toutes les CLOCK_SECONDS_PER_HOUR secondes d'éveil (5 s par défaut).
+function heureDuJour() {
+  const parHeure = (DATA.TIME.CLOCK_SECONDS_PER_HOUR || 5) * 1000;
+  return (DATA.TIME.DAY_START_HOUR + state.awakeMs / parHeure) % 24;
+}
+
+// Cadran d'horloge de l'heure entière : 🕐 (1 h) à 🕛 (12 h), le même le matin et le soir.
+function horlogeEmoji(heure) {
+  return String.fromCodePoint(0x1f550 + ((Math.floor(heure) + 11) % 12));
+}
+
+// Lieux de la carte qui portent une étiquette (et une fenêtre du même nom).
+const STAGE_LIEUX = ['maison', 'etable', 'moulin', 'serre', 'verger', 'zone'];
+
+// Le Moulin a-t-il sa propre fenêtre de travail (renderMoulin) ? Sinon ses commandes
+// restent dans le Livre de recette.
+function moulinSurPlace() {
+  return typeof renderMoulin === 'function';
+}
+
+// Où se règle un appareil en panne ou à entretenir : { fenetre, onglet, ancre }.
+function lieuAppareil(id) {
+  const d = id ? findDevice(state, id) : null;
+  if (d && d.type === 'moulin' && moulinSurPlace()) return { fenetre: 'moulin' };
+  if (d && (d.type === 'moulin' || d.type === 'presse')) return { fenetre: 'maison', onglet: 'recettes' };
+  return { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' };
+}
+
+// Parcelles d'un lieu ('potager' ou 'serre') qui attendent un geste, avec les règles des
+// notifications : à arroser, ou mûres (sauf ce que l'Arbre des technologies automatise).
+function parcellesAFaire(lieu, quoi) {
+  return allPlots(state).filter((p) => {
+    if (!p.culture || p.lieu !== lieu) return false;
+    if (isMature(p)) return quoi !== 'arrosage' && !techAuto(state, 'recolte', lieu);
+    return quoi !== 'recolte' && !p.arrose && !techAuto(state, 'arrosage', lieu);
+  }).length;
+}
+
+// Nombre de choses à faire par lieu de la carte : la pastille des étiquettes. Rien de
+// nouveau : ce sont les alertes de getNotifications() et de alertSnapshot(), rangées là
+// où elles se règlent, plus les malades à soigner (Maison › Famille).
+function aFaireParLieu() {
+  const n = { maison: 0, etable: 0, moulin: 0, serre: 0, verger: 0, zone: 0 };
+  const snap = alertSnapshot(state);
+  for (const id of snap.panne.concat(snap.entretien)) n[lieuAppareil(id).fenetre] += 1;
+  if (snap.batteriesVides) n.maison += 1;
+  if (snap.frigoCoupe) n.maison += 1;
+  n.maison += state.famille.membres.filter((m) => m.malade).length;
+  for (const a of getNotifications(state)) {
+    if (a.type === 'poules' || a.type === 'tonte') n.etable += a.nombre;
+  }
+  n.zone = parcellesAFaire('potager');
+  n.serre = parcellesAFaire('serre');
+  return n;
+}
+
+// Où mène une ligne des Notifications : { fenetre, onglet, ancre } sur la carte, ou
+// { page } pour un onglet du menu du bas.
+function notifCible(n) {
+  switch (n.type) {
+    case 'peremption': return { page: 'inventaire' };
+    case 'panne': case 'entretien': return lieuAppareil(alertSnapshot(state)[n.type][0]);
+    case 'batteriesVides': case 'frigoCoupe': return { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' };
+    case 'arrosage': case 'recolte': return { fenetre: parcellesAFaire('potager', n.type) > 0 || !isUnlocked(state, 'serre') ? 'zone' : 'serre' };
+    case 'poules': return { fenetre: 'etable', ancre: 'etable-poules' };
+    case 'tonte': return { fenetre: 'etable', ancre: 'etable-troupeau' };
+    default: return { page: 'ferme' };
+  }
+}
+
 // Modèle de vue : tout ce que la carte a le droit de savoir. Aucune référence à `state`.
 function stageModel() {
   const plots = state.potager.parcelles.map((p) => {
@@ -15948,10 +16229,14 @@ function stageModel() {
     const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
     return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: !!p.arrose };
   });
-  // Bâtiments dessinés : seulement ceux que le jeu a débloqués (la maison est toujours là).
+  // Lieux étiquetés : seulement ceux que le jeu a débloqués (la maison et la zone sont
+  // toujours là), avec leur nom et le nombre de choses à y faire.
+  const aFaire = aFaireParLieu();
   const batiments = {};
-  for (const id of ['etable', 'moulin', 'serre', 'verger']) batiments[id] = STAGE_WINDOWS[id].ok();
-  return { season: currentSeason(state), cols: stageCols(plots.length), plots, batiments };
+  for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok(), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id] };
+  // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
+  const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
+  return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, batiments };
 }
 
 // Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La
@@ -15970,13 +16255,14 @@ function stageAct(action, data) {
 function renderStage() {
   const el = document.getElementById('farm-stage');
   let on = stageActive();
+  const wasOn = stageMounted && !el.hidden; // la carte était-elle déjà à l'écran ?
   if (on && !stageMounted) {
     stageMounted = true;
     stageMountedAt = Date.now();
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, base: 'assets/' })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, base: 'assets/' })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
@@ -15995,24 +16281,101 @@ function renderStage() {
   document.documentElement.style.setProperty('--header-h', head.offsetHeight + 'px');
   FarmStage.show();
   FarmStage.update(stageModel());
-  if (!el.querySelector('.stage-btns')) {
-    el.insertAdjacentHTML('beforeend', `
-      <div class="stage-btns">
-        <button type="button" class="stage-btn" data-action="stage-open" data-window="zone" aria-label="Zone de culture" title="Zone de culture">🌱</button>
-        <button type="button" class="stage-btn" data-action="stage-open" data-window="chapitres" aria-label="Chapitres" title="Chapitres">📜</button>
-      </div>`);
+  // Déplacement demandé par une notification ou un indicateur : sans animation si la carte
+  // vient d'apparaître. Tant que la scène n'est pas prête, la demande attend.
+  if (stagePan && FarmStage.ready()) {
+    FarmStage.panTo(stagePan, !wasOn);
+    stagePan = null;
   }
+  renderStageHud(el);
+}
+
+/* Par-dessus la carte (DOM) : l'objectif du chapitre en haut, les trois points en bas, et
+   une flèche sur chaque bord tant que le joueur n'a pas fait glisser la carte. */
+
+const STAGE_DRAG_KEY = 'ferme-carte-glissee';
+let stageDragged = safeStorageGet(STAGE_DRAG_KEY) === '1'; // le joueur a déjà fait glisser la carte
+let stageView = null;  // dernière vue signalée par la scène (voir viewInfo() dans farm-stage.js)
+let stagePan = null;   // lieu vers lequel la carte doit glisser au prochain rendu
+
+// Appelé par la scène quand l'écran courant change, quand un bord est atteint ou quitté,
+// et au premier glissement.
+function stageOnView(v) {
+  stageView = v;
+  if (v.glisse && !stageDragged) {
+    stageDragged = true;
+    safeStorageSet(STAGE_DRAG_KEY, '1');
+  }
+  const el = document.getElementById('farm-stage');
+  if (el && !el.hidden) renderStageNav(el);
+}
+
+// Objectif en cours, en une ligne : le premier objectif pas encore atteint du chapitre.
+function chapterChipHtml() {
+  const c = state.campagne;
+  if (c.fini) {
+    return '<button type="button" class="stage-chip done" data-action="stage-open" data-window="chapitres" aria-label="Campagne terminée, mode libre. Ouvrir les chapitres"><span class="stage-chip-pill"><span aria-hidden="true">🏆</span><span class="stage-chip-text">Mode libre</span><span class="stage-chip-go" aria-hidden="true">›</span></span></button>';
+  }
+  const p = chapterProgress(state);
+  const faits = p.objectifs.filter((o) => o.ok).length;
+  const o = p.objectifs.find((x) => !x.ok) || p.objectifs[p.objectifs.length - 1];
+  const valeur = objectiveValueText(o);
+  const pct = Math.round(o.ratio * 100);
+  const suite = p.objectifs.length > 1 ? `, objectif ${Math.min(faits + 1, p.objectifs.length)} sur ${p.objectifs.length}` : '';
+  return `<button type="button" class="stage-chip" data-action="stage-open" data-window="chapitres" aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. Ouvrir les chapitres" title="Chapitre ${p.chapitre} : ${p.titre}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span><span class="stage-chip-text">${o.libelle}</span><span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
+}
+
+function renderStageHud(el) {
+  let hud = el.querySelector('.stage-hud');
+  if (!hud) {
+    el.insertAdjacentHTML('beforeend', '<div class="stage-hud"></div><div class="stage-nav"></div>');
+    hud = el.querySelector('.stage-hud');
+  }
+  morph(hud, chapterChipHtml());
+  if (!stageView) stageView = FarmStage.view();
+  renderStageNav(el);
+}
+
+// Les trois points (écran de gauche, du milieu, de droite) et les flèches des bords.
+function renderStageNav(el) {
+  const nav = el.querySelector('.stage-nav');
+  const v = stageView;
+  if (!nav) return;
+  if (!v || !v.mobile) {
+    morph(nav, '');
+    return;
+  }
+  const noms = ['Écran de gauche : l\'étable', 'Écran du milieu : la maison', 'Écran de droite : le moulin et la serre'];
+  const dots = noms
+    .map((nom, i) => `<button type="button" class="stage-dot${i === v.ecran ? ' active' : ''}" data-action="stage-pan" data-ecran="${i}" aria-label="${nom}" title="${nom}"${i === v.ecran ? ' aria-current="true"' : ''}><span aria-hidden="true"></span></button>`)
+    .join('');
+  const fleche = (cote, ecran, signe, nom) =>
+    `<button type="button" class="stage-arrow ${cote}" data-action="stage-pan" data-ecran="${ecran}" aria-label="${nom}" title="${nom}"><span aria-hidden="true">${signe}</span></button>`;
+  const arrows = stageDragged
+    ? ''
+    : (v.gauche ? fleche('gauche', Math.max(0, v.ecran - 1), '‹', 'La carte continue à gauche') : '') +
+      (v.droite ? fleche('droite', Math.min(v.ecrans - 1, v.ecran + 1), '›', 'La carte continue à droite') : '');
+  morph(nav, `<div class="stage-dots" role="group" aria-label="Écrans de la carte">${dots}</div>${arrows}`);
+}
+
+// Fait glisser la carte jusqu'à un écran (0, 1 ou 2).
+function stagePanToScreen(i) {
+  const v = window.FarmStage ? FarmStage.view() : null;
+  if (!v || !v.mobile) return;
+  const n = Math.max(0, Math.min(v.ecrans - 1, Number(i) || 0));
+  FarmStage.panTo(v.min + ((v.max - v.min) * n) / (v.ecrans - 1));
 }
 
 /* ---------- Fenêtres de la carte ---------- */
 
-// Un appui sur un bâtiment (ou un bouton rond) ouvre une fenêtre dont le contenu est celui
+// Un appui sur un bâtiment ou sur son étiquette ouvre une fenêtre dont le contenu est celui
 // des sections de la Ferme, redessiné à chaque rendu : les boutons y fonctionnent comme
 // dans la liste classique. Les fenêtres de #modal-root s'affichent par-dessus.
 let stageWindow = null; // null, 'maison', 'etable', 'serre', 'moulin', 'verger', 'zone' ou 'chapitres'
 let stageReturn = null; // fenêtre à rouvrir en revenant d'un écran de détail (panneaux, batteries)
 let stageWindowShown = null; // dernière fenêtre dessinée (avec son onglet) : pour remonter en haut au changement
 let maisonTab = 'famille'; // onglet de la fenêtre Maison
+let ancreVoulue = null; // id de l'élément à amener en haut au prochain rendu (calendrier, eau…)
 
 const MAISON_TABS = [
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), corps: () => renderFamille() },
@@ -16026,30 +16389,70 @@ function maisonCurrentTab() {
   return tabs.find((t) => t.id === maisonTab) || tabs[0];
 }
 
-function renderMaisonWindow() {
-  const tab = maisonCurrentTab();
-  return subtabsHtml(MAISON_TABS.filter((t) => t.ok()), tab.id, 'maison-tab') + tab.corps();
-}
-
-// Bâtiments techniques sans dessin sur la carte : énergie et eau, Silo, calendrier.
+// Bâtiments sans dessin sur la carte : ateliers (Four, Cuisine, Presse), énergie et eau,
+// Silo, calendrier. Les ancres servent aux indicateurs du bandeau (💧, saison).
 function renderBatiments() {
-  return `${renderEnergieEau()}${isUnlocked(state, 'silo') ? renderSilo() : ''}<h3 class="section-title">📅 Calendrier</h3>${renderCalendar()}`;
+  return `${renderAteliers()}<div id="bat-eau" class="ancre">${renderEnergieEau()}</div>${isUnlocked(state, 'silo') ? renderSilo() : ''}<h3 class="section-title ancre" id="bat-calendrier">📅 Calendrier</h3>${renderCalendar()}`;
 }
 
-// `ok` : la fenêtre (et son bâtiment sur la carte) existe-t-elle à ce stade de la partie ?
+// Achats sur place : « on achète là où on s'en sert ». Ce sont les lignes d'achat de
+// l'ancien Marché (mêmes fonctions, mêmes actions), affichées une fois le lieu construit.
+function renderAchatPoules() {
+  return state.poulailler.construit ? renderAnimaux(['poule']) : '';
+}
+
+function renderAchatTroupeau() {
+  return state.paturage.construit ? renderAnimaux(['mouton', 'vache']) : '';
+}
+
+function renderAchatArbres() {
+  return state.verger.construit ? renderArbres() : '';
+}
+
+function renderEtableWindow() {
+  const poules = isUnlocked(state, 'poulailler') ? `<div id="etable-poules" class="ancre">${renderPoulailler()}${renderAchatPoules()}</div>` : '';
+  const troupeau = isUnlocked(state, 'paturage') ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}${renderAchatTroupeau()}</div>` : '';
+  return poules + troupeau;
+}
+
+// Fenêtres de la carte. Deux tailles seulement : pleine hauteur (`haute`) ou demi-hauteur.
+//   nom      : le lieu, tel qu'il est écrit sur son étiquette ;
+//   detail   : complément du titre (niveau, emplacements) ;
+//   sansTitre: le premier titre du contenu répète le titre de la fenêtre, il est masqué (CSS) ;
+//   onglets  : rangée d'onglets fixe, sous le titre ;
+//   ok       : la fenêtre (et son bâtiment sur la carte) existe-t-elle à ce stade de la partie ?
 const STAGE_WINDOWS = {
-  maison: { titre: '🏠 Maison', ok: () => true, haute: true, corps: () => renderMaisonWindow() },
-  etable: {
-    titre: '🐄 Étable',
-    ok: () => isUnlocked(state, 'poulailler') || isUnlocked(state, 'paturage'),
-    corps: () => (isUnlocked(state, 'poulailler') ? renderPoulailler() : '') + (isUnlocked(state, 'paturage') ? renderPaturage() : ''),
+  maison: {
+    nom: 'Maison', icone: '🏠', ok: () => true, haute: true, sansTitre: true,
+    onglets: () => subtabsHtml(MAISON_TABS.filter((t) => t.ok()), maisonCurrentTab().id, 'maison-tab'),
+    corps: () => maisonCurrentTab().corps(),
   },
-  serre: { titre: '🪴 Serre', ok: () => isUnlocked(state, 'serre'), corps: () => renderSerre() },
-  // Le moulin regroupe tous les ateliers : il apparaît dès que le premier est débloqué.
-  moulin: { titre: '⚙️ Moulin et ateliers', ok: () => Object.keys(DATA.STATIONS).some((id) => isUnlocked(state, id)), corps: () => renderAteliers() },
-  verger: { titre: '🍎 Verger', ok: () => isUnlocked(state, 'verger'), corps: () => renderVerger() },
-  zone: { titre: '🌱 Zone de culture', ok: () => true, corps: () => renderPotager() },
-  chapitres: { titre: '📜 Chapitres', ok: () => true, corps: () => renderChapterBanner() },
+  etable: {
+    nom: 'Étable', icone: '🐄',
+    ok: () => isUnlocked(state, 'poulailler') || isUnlocked(state, 'paturage'),
+    corps: () => renderEtableWindow(),
+  },
+  serre: {
+    nom: 'Serre', icone: '🪴', ok: () => isUnlocked(state, 'serre'), sansTitre: true,
+    detail: () => (state.serre.construit ? `niveau ${state.serre.niveau}` : ''),
+    corps: () => renderSerre(),
+  },
+  // Le Moulin : on y fait la farine (renderMoulin). Les autres ateliers sont dans la Maison.
+  moulin: {
+    nom: 'Moulin', icone: '⚙️', ok: () => isUnlocked(state, 'moulin'),
+    corps: () => (typeof renderMoulin === 'function' ? renderMoulin() : renderAteliers()),
+  },
+  verger: {
+    nom: 'Verger', icone: '🍎', ok: () => isUnlocked(state, 'verger'), sansTitre: true,
+    detail: () => (state.verger.construit ? `${state.verger.arbres.length} / ${state.verger.places} emplacements` : ''),
+    corps: () => renderVerger() + renderAchatArbres(),
+  },
+  zone: {
+    nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => true, haute: true, sansTitre: true,
+    detail: () => `niveau ${state.potager.niveau}`,
+    corps: () => renderPotager(),
+  },
+  chapitres: { nom: 'Chapitres', icone: '📜', ok: () => true, corps: () => renderChapterBanner() },
 };
 
 function renderStageWindow() {
@@ -16061,15 +16464,17 @@ function renderStageWindow() {
     stageWindowShown = null;
     return;
   }
+  const detail = w.detail ? w.detail() : '';
   morph(root, `
     <div class="window-layer">
       <div class="window-backdrop" data-action="stage-close"></div>
-      <section class="stage-window${w.haute ? ' tall' : ''}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
+      <section class="stage-window ${w.haute ? 'tall' : 'half'}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
         <header class="window-head">
-          <h2 id="stage-window-title">${w.titre}</h2>
+          <h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>
           <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer la fenêtre" title="Fermer">✕</button>
         </header>
-        <div class="window-body">${w.corps()}</div>
+        ${w.onglets ? `<div class="window-tabs">${w.onglets()}</div>` : ''}
+        <div class="window-body${w.sansTitre ? ' sans-titre' : ''}">${w.corps()}</div>
       </section>
     </div>`);
   // Autre fenêtre ou autre onglet : le contenu repart du haut ; à l'ouverture, le focus va sur ✕.
@@ -16097,14 +16502,55 @@ function closeStageWindow() {
   refresh();
 }
 
+// Règle de rangement : un lieu s'ouvre sur la carte. Va à la fenêtre `fenetre` (et, pour la
+// Maison, à son onglet), fait glisser la carte jusqu'au bâtiment et amène `ancre` en haut.
+// Sans la carte, ce sont les pages classiques : Famille, Livre de recette, Arbre des
+// technologies, ou la liste de la Ferme.
+function allerAuLieu(fenetre, onglet, ancre) {
+  ecranFerme = null;
+  stageReturn = null;
+  if (stageUsable()) {
+    activeTab = 'ferme';
+    if (fenetre === 'maison' && onglet) maisonTab = onglet;
+    stageWindow = STAGE_WINDOWS[fenetre] && STAGE_WINDOWS[fenetre].ok() ? fenetre : null;
+    if (STAGE_LIEUX.includes(fenetre)) stagePan = fenetre;
+  } else {
+    stageWindow = null;
+    activeTab = fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme';
+  }
+  ancreVoulue = ancre || null;
+  telView();
+  lastRenderAt = 0; // rendu tout de suite : la fenêtre s'ouvre sans attendre la cadence
+  refresh();
+}
+
+// Amène l'ancre demandée en haut de ce qui défile (fenêtre de la carte ou page).
+function applyAnchor() {
+  if (!ancreVoulue) return;
+  const el = document.getElementById(ancreVoulue);
+  ancreVoulue = null;
+  if (el) el.scrollIntoView({ block: 'start' });
+}
+
+// Bandeau : chaque indicateur porte sa légende ; ceux qui ont un lieu y mènent (saison →
+// calendrier, eau → Maison › Bâtiments, autonomie → Maison › Famille).
 function renderIndicators() {
-  morph(document.getElementById('indicators'), `
-    <span class="indicator" title="Nuit"><span aria-hidden="true">🌙</span><span><span class="visually-hidden">Nuit </span>${state.day}</span></span>
-    <span class="indicator" title="Saison : ${DATA.SAISONS.INFOS[currentSeason(state)].nom}"><span aria-hidden="true">${DATA.SAISONS.INFOS[currentSeason(state)].icone}</span><span class="visually-hidden">Saison ${DATA.SAISONS.INFOS[currentSeason(state)].nom}</span></span>
-    <span class="indicator" title="Eau du réservoir"><span aria-hidden="true">💧</span><span class="num">${formatLitres(state.eauMl)}</span></span>
-    <span class="indicator" title="Pièces"><span aria-hidden="true">💰</span><span class="num">${formatCoins(state.pieces)}</span></span>
-    <button type="button" class="indicator indicator-btn" data-action="switch-tab" data-tab="famille" title="Autonomie de la dernière nuit : ouvrir la Famille"><span aria-hidden="true">🌿</span><span class="visually-hidden">Autonomie </span><span class="num">${formatPercent(lastAutonomy(state))}</span></button>
-  `);
+  const saison = DATA.SAISONS.INFOS[currentSeason(state)];
+  const heure = Math.floor(heureDuJour());
+  const cell = (icone, valeur, legende, titre) =>
+    `<span class="indicator" title="${titre}"><span class="ind-val"><span aria-hidden="true">${icone}</span>${valeur ? `<span class="num">${valeur}</span>` : ''}</span><span class="ind-leg">${legende}</span></span>`;
+  const lien = (icone, valeur, legende, titre, lieu) =>
+    `<button type="button" class="indicator indicator-btn" data-action="stage-goto" data-window="${lieu.fenetre}" data-tab="${lieu.onglet}"${lieu.ancre ? ` data-anchor="${lieu.ancre}"` : ''} title="${titre}" aria-label="${titre}"><span class="ind-val"><span aria-hidden="true">${icone}</span>${valeur ? `<span class="num">${valeur}</span>` : ''}</span><span class="ind-leg">${legende}</span></button>`;
+  // Première ligne, à côté du titre : la nuit et l'heure. Deuxième ligne : le reste.
+  morph(document.getElementById('app-clock'),
+    cell('🌙', state.day, 'Nuit', `Nuit ${state.day}`) +
+    cell(horlogeEmoji(heure), `${heure} h`, 'Heure', `Heure de la journée : ${heure} h`));
+  morph(document.getElementById('indicators'),
+    lien(saison.icone, '', saison.nom, `Saison : ${saison.nom}. Ouvrir le calendrier`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-calendrier' }) +
+    lien('💧', formatLitres(state.eauMl), 'Eau', `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +
+    cell('💰', formatCoins(state.pieces), 'Pièces', `Pièces : ${formatCoins(state.pieces)}`) +
+    lien('🌿', formatPercent(lastAutonomy(state)), 'Autonomie', `Autonomie de la dernière nuit : ${formatPercent(lastAutonomy(state))}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' })
+  );
 }
 
 function renderTabbar() {
@@ -16226,16 +16672,22 @@ function renderFerme() {
   // Lot 11 : une tranche par section, toujours le même nombre de tranches (une
   // section pas encore débloquée est vide) : chacune n'est mise à jour que si
   // son gabarit a changé.
+  // Les achats d'animaux et d'arbres suivent leur section (comme dans les fenêtres de la
+  // carte) ; les ancres sont celles des indicateurs du bandeau et des notifications.
   return [
-    `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}${renderCalendar()}`,
+    `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}<div id="bat-calendrier" class="ancre">${renderCalendar()}</div>`,
     renderPotager(),
     isUnlocked(state, 'serre') ? renderSerre() : '',
     isUnlocked(state, 'silo') ? renderSilo() : '',
-    isUnlocked(state, 'poulailler') ? renderPoulailler() : '',
-    isUnlocked(state, 'paturage') ? renderPaturage() : '',
+    isUnlocked(state, 'poulailler') ? `<div id="etable-poules" class="ancre">${renderPoulailler()}</div>` : '',
+    isUnlocked(state, 'poulailler') ? renderAchatPoules() : '',
+    isUnlocked(state, 'paturage') ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}</div>` : '',
+    isUnlocked(state, 'paturage') ? renderAchatTroupeau() : '',
     isUnlocked(state, 'verger') ? renderVerger() : '',
+    isUnlocked(state, 'verger') ? renderAchatArbres() : '',
     renderAteliers(),
-    renderEnergieEau(),
+    typeof renderMoulin === 'function' ? renderMoulin() : '',
+    `<div id="bat-eau" class="ancre">${renderEnergieEau()}</div>`,
   ];
 }
 
@@ -16874,7 +17326,7 @@ function renderVerger() {
     return `
       <div class="section-head"><h3>${icon('verger')}Verger</h3>${helpBtn('verger')}</div>
       <div class="card">
-        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Pommiers et poiriers s'achètent au Marché (onglet Arbres), sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne, ${V.MATURITE} nuits après la plantation.</span>
+        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Pommiers et poiriers s'achètent ici, au Verger, sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne, ${V.MATURITE} nuits après la plantation.</span>
         <button type="button" class="btn primary" data-action="build-verger"${canPay(cost) ? '' : ' disabled'}>Aménager le Verger (${costLabel(cost)})</button>
       </div>`;
   }
@@ -16889,7 +17341,7 @@ function renderVerger() {
       <div class="card plot tree free">
         <span class="card-title"><span>Emplacement libre</span></span>
         ${artSvg(['plot-soil'], 'plot-art')}
-        <span class="muted">Achète un pommier ou un poirier au Marché (onglet Arbres).</span>
+        <span class="muted">Achète un pommier ou un poirier ci-dessous.</span>
       </div>`);
   }
   const nightOfYear = yearNight(state.day);
@@ -16971,7 +17423,7 @@ function fridgeRowHtml(item) {
 function renderFridgeTab() {
   const f = state.frigo;
   if (!f.construit) {
-    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le dans l'onglet Ferme (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
+    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans la Maison, onglet Bâtiments' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
   }
   const counts = fridgeCounts(state);
   const items = Object.keys(DATA.items).filter((k) => counts[k] > 0);
@@ -17322,8 +17774,9 @@ function renderFamille() {
 
 /* ---------- Notifications ---------- */
 
-// Onglet où le joueur règle chaque alerte (la péremption se gère à l'Inventaire).
-const NOTIF_TARGET = { peremption: 'inventaire' };
+// Chaque ligne mène là où l'alerte se règle (voir notifCible) : une fenêtre de la carte,
+// avec la carte glissée jusqu'au bâtiment, ou l'Inventaire pour la péremption. Sans la
+// carte : la liste de la Ferme, ou la page du Livre de recette.
 
 function renderNotifications() {
   const list = getNotifications(state);
@@ -17334,8 +17787,12 @@ function renderNotifications() {
   }
   const items = list
     .map((n) => {
-      const tab = NOTIF_TARGET[n.type] || 'ferme';
-      return `<li><button type="button" class="notif p${n.priorite}" data-action="switch-tab" data-tab="${tab}"><span class="notif-icon" aria-hidden="true">${n.icone}</span><span class="notif-text">${n.texte}</span><span class="notif-go" aria-hidden="true">›</span></button></li>`;
+      const c = notifCible(n);
+      const go = c.page
+        ? `data-action="switch-tab" data-tab="${c.page}"`
+        : `data-action="stage-goto" data-window="${c.fenetre}"${c.onglet ? ` data-tab="${c.onglet}"` : ''}${c.ancre ? ` data-anchor="${c.ancre}"` : ''}`;
+      const ou = c.page ? TABS.find((t) => t.id === c.page).label : stageUsable() ? STAGE_WINDOWS[c.fenetre].nom : 'Ferme';
+      return `<li><button type="button" class="notif p${n.priorite}" ${go}><span class="notif-icon" aria-hidden="true">${n.icone}</span><span class="notif-text">${n.texte}<span class="notif-where">${ou}</span></span><span class="notif-go" aria-hidden="true">›</span></button></li>`;
     })
     .join('');
   return `
@@ -17426,11 +17883,14 @@ const INVENTORY_TABS = [
   { id: 'produits', label: 'Produits', icon: '🥫', match: (k) => !isPerishable(k) && DATA.items[k].category !== 'graine', empty: 'Aucun produit pour l\'instant.' },
 ];
 
+// Toujours sur une seule rangée. À partir de quatre onglets (`compact`), seul l'onglet
+// ouvert affiche son nom ; les autres montrent leur icône (le nom reste dans `title` et
+// pour les lecteurs d'écran).
 function subtabsHtml(tabs, current, action) {
-  return `<div class="subtabs" role="group" aria-label="Sections">${tabs
+  return `<div class="subtabs${tabs.length > 3 ? ' compact' : ''}" role="group" aria-label="Sections">${tabs
     .map(
       (t) =>
-        `<button type="button" class="subtab-btn${t.id === current ? ' active' : ''}" data-action="${action}" data-tab="${t.id}" aria-pressed="${t.id === current}">${t.icon} ${t.label}</button>`
+        `<button type="button" class="subtab-btn${t.id === current ? ' active' : ''}" data-action="${action}" data-tab="${t.id}" aria-pressed="${t.id === current}" title="${t.label}"><span class="subtab-icon" aria-hidden="true">${t.icon}</span><span class="subtab-label">${t.label}</span></button>`
     )
     .join('')}</div>`;
 }
@@ -17460,12 +17920,11 @@ function renderInventaire() {
 
 /* ---------- Marché ---------- */
 
+// Les animaux s'achètent à l'Étable et les arbres au Verger (voir renderAnimaux, renderArbres).
 const COMPTOIR_TABS = [
   { id: 'vendre', label: 'Vendre', icon: '💰' },
   { id: 'acheter', label: 'Acheter', icon: '🛒' },
   { id: 'graines', label: 'Graines', icon: '🌱' },
-  { id: 'animaux', label: 'Animaux', icon: '🐔' },
-  { id: 'arbres', label: 'Arbres', icon: '🌳' },
 ];
 
 // Seules les unités entières se vendent (un demi-blé reste en stock).
@@ -17509,7 +17968,7 @@ function buyRow(item) {
     </div>`;
 }
 
-// Onglet Animaux : la poule et le mouton, à prix fixe et sans revente. Grisés
+// Achat des animaux (à l'Étable) : à prix fixe et sans revente. Grisés
 // s'il n'y a plus de place, ou si leur logement n'existe pas.
 function renderHenRow() {
   const def = DATA.ANIMAUX.poule;
@@ -17589,15 +18048,22 @@ function renderCowRow() {
     </div>`;
 }
 
-function renderAnimaux() {
+// Bloc d'achat affiché à l'Étable, sous la section des animaux concernés (`especes`).
+function renderAnimaux(especes = ['poule', 'mouton', 'vache']) {
+  const lignes = {
+    poule: () => (isUnlocked(state, 'poulailler') ? renderHenRow() : ''),
+    mouton: () => (isUnlocked(state, 'moutons') ? renderSheepRow() : ''),
+    vache: () => (isUnlocked(state, 'moutons') ? renderCowRow() : ''),
+  };
+  const html = especes.map((e) => lignes[e]()).join('');
+  if (!html) return '';
   return `
-    <p class="muted">Les animaux s'achètent à prix fixe, quel que soit leur nombre, et ne se revendent pas.</p>
-    ${isUnlocked(state, 'poulailler') ? renderHenRow() : ''}
-    ${isUnlocked(state, 'moutons') ? renderSheepRow() : ''}
-    ${isUnlocked(state, 'moutons') ? renderCowRow() : ''}`;
+    <h3 class="section-title">🛒 ${especes.length === 1 && especes[0] === 'poule' ? 'Acheter des poules' : 'Acheter des animaux'}</h3>
+    <p class="muted">Prix fixe, quel que soit leur nombre. Un animal ne se revend pas.</p>
+    ${html}`;
 }
 
-// Lot 8 : onglet Arbres, pommier et poirier à prix fixe sur un emplacement libre.
+// Lot 8 : achat des arbres (au Verger), pommier et poirier à prix fixe sur un emplacement libre.
 function renderTreeRow(espece) {
   const def = DATA.VERGER.ARBRES[espece];
   const fruit = DATA.items[def.fruit];
@@ -17624,32 +18090,14 @@ function renderTreeRow(espece) {
     </div>`;
 }
 
+// Bloc d'achat affiché au Verger, sous les emplacements (l'achat d'un emplacement est
+// déjà dans la section du Verger).
 function renderArbres() {
   const V = DATA.VERGER;
-  const v = state.verger;
-  const price = orchardSlotPrice(state);
-  const atMax = v.places >= V.EMPLACEMENTS_MAX;
-  const slotNote = atMax
-    ? `Le Verger a atteint sa taille maximale (${V.EMPLACEMENTS_MAX} emplacements).`
-    : `Prix : <strong class="num">${formatCoins(price)} 💰</strong> (+${formatNumber(V.EMPLACEMENT.croissance - 100)} % par emplacement déjà acheté, arrondi à l'entier supérieur).`;
   return `
-    <p class="muted">Les arbres s'achètent à prix fixe, se plantent sur un emplacement libre du Verger et ne s'arrosent pas : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne.</p>
-    ${Object.keys(V.ARBRES).map(renderTreeRow).join('')}
-    <div class="shop-row${v.construit && !atMax ? '' : ' unavailable'}">
-      <div class="inv-main"><span><span aria-hidden="true">🟫</span> Emplacement</span><span class="muted">Emplacements : <span class="num">${v.arbres.length} / ${v.places}</span></span></div>
-      <span class="muted">${slotNote}</span>
-      <button type="button" class="btn primary" data-action="buy-orchard-slot"${v.construit && !atMax && canPay(price) ? '' : ' disabled'}>${atMax ? 'Verger complet' : `Acheter un emplacement (${formatCoins(price)} 💰)`}</button>
-    </div>`;
-}
-
-// Lot 9 : les onglets Animaux et Arbres n'apparaissent qu'avec les chapitres
-// qui débloquent leurs bâtiments.
-function comptoirTabs() {
-  return COMPTOIR_TABS.filter((t) => {
-    if (t.id === 'animaux') return isUnlocked(state, 'poulailler') || isUnlocked(state, 'moutons');
-    if (t.id === 'arbres') return isUnlocked(state, 'verger');
-    return true;
-  });
+    <h3 class="section-title">🛒 Acheter des arbres</h3>
+    <p class="muted">Prix fixe. Un arbre se plante sur un emplacement libre et ne s'arrose pas : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne.</p>
+    ${Object.keys(V.ARBRES).map(renderTreeRow).join('')}`;
 }
 
 // Une graine dont la culture n'est pas encore débloquée (tournesol) n'est pas en vente.
@@ -17658,7 +18106,7 @@ function seedForSale(item) {
 }
 
 function renderComptoir() {
-  const tabs = comptoirTabs();
+  const tabs = COMPTOIR_TABS;
   const tab = tabs.find((t) => t.id === comptoirTab) || tabs[0];
   let body;
   if (tab.id === 'vendre') {
@@ -17671,15 +18119,11 @@ function renderComptoir() {
     body = `
       <p class="muted">Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
       ${items.map(buyRow).join('')}`;
-  } else if (tab.id === 'graines') {
+  } else {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = `
       <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Produire tes propres graines reste plus rentable. Le blé fait exception : c'est aussi la ressource du Silo, du Moulin et des poules, donc il garde son prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et reste également listé dans l'onglet Acheter.</p>
       ${items.map(buyRow).join('')}`;
-  } else if (tab.id === 'animaux') {
-    body = renderAnimaux();
-  } else {
-    body = renderArbres();
   }
   return `
     <h2>🧺 Marché</h2>
@@ -18557,7 +19001,18 @@ document.addEventListener('click', (e) => {
       renderStageWindow();
       refresh();
       break;
+    case 'stage-goto':
+      allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
+      break;
+    case 'stage-pan':
+      stagePanToScreen(target.dataset.ecran);
+      break;
     case 'switch-tab':
+      // Avec la carte, Famille, Livre de recette et Arbre des technologies sont des onglets de la Maison.
+      if (FERME_LINKS.includes(target.dataset.tab) && stageUsable()) {
+        allerAuLieu('maison', target.dataset.tab);
+        break;
+      }
       activeTab = target.dataset.tab;
       stageWindow = null;
       stageReturn = null;
