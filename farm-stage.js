@@ -307,7 +307,9 @@
       }
 
       onDown(pointer) {
-        if (this.drag) return;
+        // Un deuxième doigt est ignoré ; le même pointeur qui rappuie repart de zéro (cas d'un
+        // relâchement perdu, par exemple hors de la fenêtre).
+        if (this.drag && this.drag.id !== pointer.id) return;
         this.vx = this.vy = 0;
         const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
         this.drag = {

@@ -18216,15 +18216,15 @@ function openHelpModal(id) {
 const TUTO = {
   eau: {
     titre: '💧 L\'eau et le soleil',
-    texte: () => `Les panneaux solaires chargent la batterie ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).`,
+    texte: () => `Les panneaux solaires chargent la batterie ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).${stageUsable() ? ' Panneaux, batterie et pompe se trouvent dans la maison : touche-la, puis ouvre « Bâtiments ».' : ''}`,
   },
   potager: {
     titre: '🌱 La zone de culture',
-    texte: () => `Touche « Planter » sur une parcelle vide, puis « Arroser ». Une plante arrosée gagne un stade chaque nuit : les carottes sont mûres en ${nightsLabel(DATA.crops.carotte.stades)}. Après la récolte, replante.`,
+    texte: () => `${stageUsable() ? 'Touche une parcelle vide (le carré de terre sous la barrière) pour planter, puis touche-la encore pour l\'arroser' : 'Touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade chaque nuit : les carottes sont mûres en ${nightsLabel(DATA.crops.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante.' : 'Après la récolte, replante.'}`,
   },
   dormir: {
     titre: '😴 Dormir',
-    texte: () => `La journée ne finit que quand tu dors. Le bouton s'active après ${formatNumber(awakeRequired(state))} s d'éveil. La nuit, la famille mange, puis les plantes arrosées poussent.`,
+    texte: () => `La journée ne finit que quand tu dors. Le bouton « Zzz », en bas à droite, s'active après ${formatNumber(awakeRequired(state))} s d'éveil. La nuit, la famille mange, puis les plantes arrosées poussent.`,
   },
 };
 
