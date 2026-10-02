@@ -3064,7 +3064,7 @@ function mulberry32(seed) {
 
 const STATE_VERSION = 16;
 // Version du jeu, affichée dans les Options (À propos).
-const GAME_VERSION = '1.0.0';
+const GAME_VERSION = '1.1.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -15649,7 +15649,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.0.0');
+  assertEqual(GAME_VERSION, '1.1.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
