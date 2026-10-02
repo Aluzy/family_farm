@@ -69,6 +69,7 @@ export const INTERFACE_ACTIONS = new Set([
   'sell-dec', 'sell-max', 'reserve-inc', 'reserve-dec', 'cancel-queued', 'ack-chapter',
   'ask-slaughter', 'ask-slaughter-hen', 'ask-new-game', 'cancel-new-game', 'copy-export',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
+  'stage-open', 'stage-close', 'maison-tab', // carte de la ferme : fenêtres et onglets de la maison
 ]);
 
 // Signaux utiles à la décision, affichés à part.

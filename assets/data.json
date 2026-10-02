@@ -1,0 +1,116 @@
+{
+ "serre_sp": {
+  "size": [
+   177,
+   272
+  ],
+  "beds": [
+   [
+    17,
+    144,
+    64,
+    112
+   ],
+   [
+    97,
+    144,
+    64,
+    112
+   ]
+  ]
+ },
+ "serre_au": {
+  "size": [
+   176,
+   273
+  ],
+  "beds": [
+   [
+    16,
+    145,
+    64,
+    112
+   ],
+   [
+    96,
+    145,
+    64,
+    112
+   ]
+  ]
+ },
+ "serre_wi": {
+  "size": [
+   177,
+   272
+  ],
+  "beds": [
+   [
+    17,
+    144,
+    64,
+    112
+   ],
+   [
+    97,
+    144,
+    64,
+    112
+   ]
+  ]
+ },
+ "decor_sp": 30,
+ "decor_au": 26,
+ "sheet_windmill_sp": [
+  384,
+  128
+ ],
+ "sheet_windmill_au": [
+  384,
+  128
+ ],
+ "sheet_windmill_wi": [
+  384,
+  128
+ ],
+ "sheet_apple_printemps": [
+  640,
+  80
+ ],
+ "sheet_apple_ete": [
+  640,
+  80
+ ],
+ "sheet_apple_automne": [
+  640,
+  80
+ ],
+ "sheet_apple_hiver": [
+  640,
+  80
+ ],
+ "sheet_basic_sp": [
+  640,
+  80
+ ],
+ "sheet_basic_au": [
+  640,
+  80
+ ],
+ "sheet_basic_wi": [
+  640,
+  80
+ ],
+ "sheet_pine_sp": [
+  464,
+  64
+ ],
+ "sheet_pine_au": [
+  464,
+  64
+ ],
+ "sheet_pine_wi": [
+  464,
+  64
+ ]
+}

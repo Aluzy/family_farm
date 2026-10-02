@@ -130,7 +130,7 @@ main {
   margin: 0 auto;
 }
 
-/* Barre de menu du bas : fixée, sous la barre « Dormir ». */
+/* Barre de menu du bas : fixée ; le bouton « Zzz » flotte juste au-dessus, à droite. */
 :root { --dock: calc(60px + env(safe-area-inset-bottom)); }
 
 .bottom-nav {
@@ -380,8 +380,6 @@ details.test-panel summary {
 
 /* ---------- Lot 1 : en-tête, cartes, appareils, interrupteurs, Dormir ---------- */
 
-body { padding-bottom: 104px; } /* place pour la barre « Dormir » */
-
 .app-header { flex-wrap: wrap; }
 
 .indicators {
@@ -580,24 +578,53 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 
 .screen-head h2 { margin: 0; }
 
-.sleep-bar {
+/* Bouton « Zzz » (Dormir) : rond, flottant en bas à droite de l'écran, au-dessus du menu
+   du bas, sur tous les onglets. Désactivé, il affiche les secondes restantes. */
+.sleep-fab {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: var(--dock);
+  right: calc(12px + env(safe-area-inset-right));
+  bottom: calc(var(--dock) + 12px);
   z-index: 50;
-  padding: 10px 16px 10px;
-  background: var(--bg-header);
-  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none; /* seuls le bouton et la pastille reçoivent les appuis */
 }
 
-.sleep-bar .btn {
-  display: block;
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  min-height: 52px;
-  font-size: 1.1rem;
+.sleep-fab > * { pointer-events: auto; }
+
+.sleep-fab .sleep-btn {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.sleep-fab .sleep-btn:active { transform: translateY(1px); }
+
+.sleep-fab .sleep-btn:disabled {
+  border-color: var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.sleep-fab .sleep-wait {
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .report-list { list-style: none; margin: 12px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -639,19 +666,15 @@ select {
 
 /* ---------- Lot 2 : potager, famille, inventaire, aperçu du repas ---------- */
 
-body { padding-bottom: calc(136px + var(--dock)); } /* barre « Dormir » (avec l'aperçu du repas) + menu du bas */
-.toast { bottom: calc(120px + var(--dock)); }
+body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zzz » : la fin du contenu passe au-dessus du bouton */
+.toast { bottom: calc(84px + var(--dock)); }
 
-.sleep-bar .meal-preview {
-  max-width: 720px;
-  margin: 0 auto 6px;
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: 600;
+/* Aperçu du repas : une pastille à côté du bouton « Zzz », seulement si le repas prévu est insuffisant. */
+.sleep-fab .meal-chip {
+  min-height: 28px;
   font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
-
-.sleep-bar .meal-preview.short { color: var(--danger); }
 
 .section-head {
   display: flex;
@@ -941,7 +964,7 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
   position: fixed;
   left: 16px;
   right: 16px;
-  bottom: calc(120px + var(--dock));
+  bottom: calc(84px + var(--dock));
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -1047,6 +1070,11 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
 }
 
 .tuto.up::after { display: none; }
+/* Bulle « Dormir » : calée à droite, la pointe au-dessus du bouton « Zzz » ; elle descend
+   près du bouton quand le bandeau de choix sur le suivi n'occupe plus le bas de l'écran. */
+.tuto:not(.up) { margin-right: 0; }
+body:not(:has(#consent-banner)) .tuto:not(.up) { bottom: calc(86px + var(--dock)); }
+.tuto:not(.up)::after { left: auto; right: 16px; transform: rotate(45deg); }
 .tuto h2 { margin: 0 0 4px; font-size: 1.05rem; display: flex; justify-content: space-between; gap: 8px; }
 .tuto p { margin: 0 0 10px; font-size: 0.95rem; }
 .tuto .row { justify-content: flex-end; }
@@ -1082,6 +1110,107 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
     scroll-behavior: auto !important;
   }
 }
+/* ---------- Carte Phaser : zone entre le bandeau et le menu du bas ---------- */
+:root { --header-h: 56px; }
+#farm-stage {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--header-h);
+  bottom: var(--dock);
+  z-index: 5;
+  overflow: hidden;
+  background: #699654;
+  touch-action: none; /* le doigt fait glisser la carte, pas la page */
+  -webkit-user-select: none;
+  user-select: none;
+}
+#farm-stage[hidden] { display: none; }
+/* La taille réelle du canvas (× densité de l'écran) est gérée par farm-stage.js. */
+#farm-stage canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: pixelated; cursor: grab; }
+/* Boutons ronds posés sur la carte (DOM, pas dans le canvas). */
+.stage-btns {
+  position: absolute;
+  top: 8px;
+  right: calc(8px + env(safe-area-inset-right));
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stage-btn {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.stage-btn:active { transform: translateY(1px); }
+body.has-stage main { display: none; }
+body.has-stage { padding-bottom: 0; }
+
+/* ---------- Fenêtres de la carte : au-dessus de la carte et du menu, sous les fenêtres de #modal-root ---------- */
+.window-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.window-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+.stage-window {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  max-height: 88vh;
+  max-height: 88dvh;
+  background: var(--bg);
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+.stage-window.tall { height: 88vh; height: 88dvh; }
+.window-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 8px 16px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+}
+.window-head h2 { margin: 0; font-size: 1.15rem; }
+.window-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+}
+.window-body > :first-child { margin-top: 0; }
+.window-body > .subtabs:first-child { margin-top: 0; }
+@media (min-width: 640px) {
+  .window-layer { align-items: center; padding: 16px; }
+  .stage-window { border-radius: var(--radius); }
+}
+.modal a { color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -1333,6 +1462,8 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   <button class="icon-btn" id="options-btn" type="button" aria-label="Options" data-action="open-options">⚙️</button>
 </header>
 
+<div id="farm-stage" hidden aria-label="Carte de la ferme"></div>
+
 <main>
   <section id="tab-content" class="panel"></section>
 
@@ -1386,8 +1517,7 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
       <div class="row">
         <label for="test-building">Bâtiment</label>
         <select id="test-building">
-          <option value="potager">Potager</option>
-          <option value="champ">Champ</option>
+          <option value="potager">Zone de culture</option>
           <option value="poulailler">Poulailler</option>
           <option value="silo">Silo</option>
         </select>
@@ -1422,9 +1552,10 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   </details>
 </main>
 
-<div class="sleep-bar" id="sleep-bar"></div>
+<div class="sleep-fab" id="sleep-fab"></div>
 <nav class="bottom-nav" id="bottom-nav" aria-label="Menu principal"></nav>
 <div id="tuto-root"></div>
+<div id="window-root"></div>
 <div id="modal-root"></div>
 <div id="toast-root" role="status" aria-live="polite"></div>
 
@@ -1549,8 +1680,8 @@ const DATA = {
     // Lot 6 : laine (section 8.6). Ni périssable ni comestible : elle sert
     // uniquement à la vente. Elle ne se rachète pas au Marché.
     laine:            { nom: 'Laine',                icone: '🧶', prix: 6, edible: false, category: 'produit', rachetable: false },
-    // 10 nouvelles cultures : Potager (oignon, ail, poivron, épinard, fraise),
-    // Champ (riz, houblon), Serre exclusivement (cacao, vanille, café). Poivron
+    // 10 nouvelles cultures : Zone de culture (oignon, ail, poivron, épinard,
+    // fraise, riz, houblon), Serre exclusivement (cacao, vanille, café). Poivron
     // reprend le mode « récolte » (comme tomate/courgette/aubergine) ; ail, riz,
     // houblon, cacao, vanille et café reprennent le mode « plant » (comme la
     // patate ou le blé : la récolte elle-même sert de graine, pas d'item séparé).
@@ -1658,7 +1789,7 @@ const DATA = {
     // 15 nouvelles recettes. Aucun nouvel item de base : toutes les
     // ingrédients existent déjà (légumes/fruits du Lot « 10 nouvelles
     // cultures », viande_mouton/viande_boeuf/viande_volaille, lait, et les
-    // cultures de rente cacao/vanille/café/houblon de la Serre/du Champ).
+    // cultures de rente cacao/vanille/café/houblon de la Serre/de la Zone de culture).
     // Énergie et prix suivent tous deux le calcul générique (recipeSum ×
     // COEF_PLAT, voir dishEnergy()/dishPrice()), sauf les 4 recettes « luxe »
     // ci-dessous qui portent priceMultiplier (voir plus bas).
@@ -1727,6 +1858,11 @@ const DATA = {
   //   'plant'   : l'item récolté sert lui-même de plant (1 patate = 1 plant) ;
   //   'montee'  : option « monter en graine » : stadesSupp stades de plus, puis
   //               quantite graines à la place de la récolte.
+  // lieux : où la culture se plante. 'potager' est l'identifiant interne de la
+  // Zone de culture (version 1.0 : l'ancien Potager et l'ancien Champ réunis).
+  // deblocage : élément de chapitre (DATA.CHAPITRES) à obtenir avant de pouvoir
+  // planter la culture — voir cropUnlocked(). Les cultures de plein champ
+  // attendent 'champ' (chapitre 3), comme à l'époque où il fallait un Champ.
   crops: {
     carotte:   { nom: 'Carotte',   icone: '🥕', lieux: ['potager'], stades: 4, litres: 2, rendement: 10,
                  graines: { item: 'graine_carotte', mode: 'montee', stadesSupp: 2, quantite: 6 } },
@@ -1756,24 +1892,25 @@ const DATA = {
                  graines: { item: 'graine_epinard', mode: 'recolte', min: 1, max: 2 } },
     fraise:    { nom: 'Fraise',    icone: '🍓', lieux: ['potager'], stades: 4, litres: 3, rendement: 10,
                  graines: { item: 'graine_fraise', mode: 'recolte', min: 2, max: 3 } },
-    // Lot 4 (Champ). produit : l'objet récolté quand il n'a pas le nom de la
-    // culture. Blé : 1 blé = 1 graine. Tournesol : la récolte donne des graines,
-    // à replanter ou à presser (même ressource).
-    ble:       { nom: 'Blé',       icone: '🌾', lieux: ['champ'], stades: 7, litres: 2, rendement: 8,
+    // Lot 4 (cultures de plein champ). produit : l'objet récolté quand il n'a pas
+    // le nom de la culture. Blé : 1 blé = 1 graine. Tournesol : la récolte donne
+    // des graines, à replanter ou à presser (même ressource). Le tournesol
+    // attend en plus son propre déblocage (chapitre 4).
+    ble:       { nom: 'Blé',       icone: '🌾', lieux: ['potager'], deblocage: 'champ', stades: 7, litres: 2, rendement: 8,
                  graines: { item: 'ble', mode: 'plant' } },
-    tournesol: { nom: 'Tournesol', icone: '🌻', lieux: ['champ'], stades: 7, litres: 2, rendement: 9, produit: 'graine_tournesol',
+    tournesol: { nom: 'Tournesol', icone: '🌻', lieux: ['potager'], deblocage: 'champ', stades: 7, litres: 2, rendement: 9, produit: 'graine_tournesol',
                  graines: { item: 'graine_tournesol', mode: 'plant' } },
     // Riz : comestible directement (contrairement au blé), mais demande plus
     // d'eau par arrosage (4 L contre 2 L pour le blé) — voir DATA.GRID.pompe et
     // le point de vigilance signalé en fin de réponse au sujet du débit d'eau.
-    riz:       { nom: 'Riz',       icone: '🍚', lieux: ['champ'], stades: 8, litres: 4, rendement: 10,
+    riz:       { nom: 'Riz',       icone: '🍚', lieux: ['potager'], deblocage: 'champ', stades: 8, litres: 4, rendement: 10,
                  graines: { item: 'riz', mode: 'plant' } },
-    houblon:   { nom: 'Houblon',   icone: '🌿', lieux: ['champ'], stades: 6, litres: 2, rendement: 6,
+    houblon:   { nom: 'Houblon',   icone: '🌿', lieux: ['potager'], deblocage: 'champ', stades: 6, litres: 2, rendement: 6,
                  graines: { item: 'houblon', mode: 'plant' } },
-    // Cultures de rente : lieux: ['serre'] *seul* (ni 'potager' ni 'champ') —
+    // Cultures de rente : lieux: ['serre'] *seul* (pas 'potager') —
     // plant() (voir plus haut) refuse déjà toute parcelle dont le lieu n'est pas
     // dans cette liste, donc aucune règle spéciale supplémentaire n'est requise
-    // pour leur interdire le Potager ou le Champ.
+    // pour leur interdire la Zone de culture.
     cacao:     { nom: 'Cacao',     icone: '🍫', lieux: ['serre'], stades: 8, litres: 3, rendement: 5,
                  graines: { item: 'cacao', mode: 'plant' } },
     vanille:   { nom: 'Vanille',   icone: '🫘', lieux: ['serre'], stades: 10, litres: 2, rendement: 3,
@@ -1782,12 +1919,18 @@ const DATA = {
                  graines: { item: 'cafe', mode: 'plant' } },
   },
 
-  // Potager (section 8.3) : parcelles par niveau (index 0 = niveau 1) et coût
-  // pour atteindre chaque niveau (index 0 = niveau 1, non utilisé).
+  // Zone de culture (section 8.3 ; version 1.0 : l'ancien Potager et l'ancien
+  // Champ réunis en une seule zone, sans restriction de lieu). L'identifiant
+  // interne reste 'potager' (state.potager, parcelles « potager-n ») ; le joueur
+  // lit NOM. Parcelles par niveau (index 0 = niveau 1) et coût pour atteindre
+  // chaque niveau (index 0 = niveau 1, non utilisé) : les anciens coûts du
+  // Potager et du Champ additionnés.
   POTAGER: {
     LIEU: 'potager',
-    PARCELLES: [6, 9, 12, 16, 20],
-    COUT: [0, 80, 200, 450, 1000],
+    NOM: 'Zone de culture',
+    ICONE: '🌱',
+    PARCELLES: [6, 12, 18, 24, 30],
+    COUT: [0, 200, 480, 1050, 2300],
   },
 
   // Famille et santé (sections 1.1, 1.4, 6.9 et 8.8).
@@ -1896,17 +2039,10 @@ const DATA = {
     TRANSFORMATIONS_DOUBLEES: ['farine'],
   },
 
-  /* ---------- Lot 4 : Champ, Silo, Poulailler ---------- */
+  /* ---------- Lot 4 : Silo, Poulailler ---------- */
 
-  // Champ (sections 1.3 et 8.3) : mêmes règles que le Potager. CONSTRUCTION est
-  // le prix du niveau 1 ; COUT[n] est le prix pour atteindre le niveau n + 1
-  // (index 0 = construction, non utilisé ici).
-  CHAMP: {
-    LIEU: 'champ',
-    CONSTRUCTION: 60,
-    PARCELLES: [4, 6, 9, 12, 16],
-    COUT: [0, 120, 280, 600, 1300],
-  },
+  // (Le Champ du Lot 4 a disparu en version 1.0 : ses cultures poussent dans la
+  // Zone de culture, voir DATA.POTAGER et MIGRATIONS[14].)
 
   // Silo (section 8.5) : stock de blé. Construction offerte (validée) ; COUT[n]
   // est le prix pour atteindre le niveau n + 1. Le blé récolté y va d'abord ;
@@ -2041,8 +2177,7 @@ const DATA = {
     },
 
     batiments: {
-      potager:    { nom: 'Potager',    icone: '🌱' },
-      champ:      { nom: 'Champ',      icone: '🌾' },
+      potager:    { nom: 'Zone de culture', icone: '🌱' },
       serre:      { nom: 'Serre',      icone: '🏡' },
       poulailler: { nom: 'Poulailler', icone: '🐔' },
       silo:       { nom: 'Silo',       icone: '🛖' },
@@ -2057,8 +2192,7 @@ const DATA = {
       panneau:    { type: 'appareils', nom: 'Panneaux solaires', icone: '☀️' },
       batterie:   { type: 'appareils', nom: 'Batteries', icone: '🔋' },
       pompe:      { type: 'niveau', nom: 'Pompe et réservoir', icone: '⛲' },
-      potager:    { type: 'niveau', nom: 'Potager', icone: '🌱', note: 'arrosage et récolte automatiques' },
-      champ:      { type: 'niveau', nom: 'Champ', icone: '🌾', note: 'arrosage et récolte automatiques' },
+      potager:    { type: 'niveau', nom: 'Zone de culture', icone: '🌱', note: 'arrosage et récolte automatiques' },
       poulailler: { type: 'niveau', nom: 'Poulailler', icone: '🐔', note: 'nourrissage automatique' },
       silo:       { type: 'niveau', nom: 'Silo', icone: '🛖' },
       stations:   { type: 'stations', nom: 'Ateliers', icone: '🍞' },
@@ -2066,7 +2200,7 @@ const DATA = {
     branches: [
       { id: 'energie', nom: 'Énergie', icone: '⚡', suivi: ['panneau', 'batterie'] },
       { id: 'eau', nom: 'Eau', icone: '💧', suivi: ['pompe'] },
-      { id: 'culture', nom: 'Culture', icone: '🌱', suivi: ['potager', 'champ'] },
+      { id: 'culture', nom: 'Culture', icone: '🌱', suivi: ['potager'] },
       { id: 'elevage', nom: 'Élevage', icone: '🐔', suivi: ['poulailler', 'silo'] },
       { id: 'cuisine', nom: 'Cuisine', icone: '🍳', suivi: ['stations'] },
       { id: 'famille', nom: 'Famille', icone: '👨‍👩‍👧‍👦', suivi: [] },
@@ -2128,8 +2262,8 @@ const DATA = {
       ea_irrigation: {
         branche: 'eau', palier: 3, nom: 'Réseau d\'irrigation', icone: '🚿', fonction: 'automatisation',
         pt: 2, cout: 900, requiert: [{ noeud: 'ea_econome' }, { batiment: 'pompe', niveau: 3 }, { batiment: 'potager', niveau: 3 }],
-        effet: { auto: { arrosage: ['potager', 'champ'] } },
-        description: 'Chaque nuit, toutes les parcelles plantées du Potager et du Champ sont arrosées automatiquement.',
+        effet: { auto: { arrosage: ['potager'] } },
+        description: 'Chaque nuit, toutes les parcelles plantées de la Zone de culture sont arrosées automatiquement.',
       },
       ea_pompe_eco: {
         branche: 'eau', palier: 3, nom: 'Pompe à haut rendement', icone: '⛲', fonction: 'productivite',
@@ -2155,7 +2289,7 @@ const DATA = {
         branche: 'culture', palier: 1, nom: 'Outils de jardin', icone: '🧰', fonction: 'temps',
         pt: 1, cout: 100, requiert: [],
         effet: { actionsGroupees: ['arroser', 'recolter'] },
-        description: 'Ajoute « Arroser tout » et « Récolter tout » au Potager, au Champ et à la Serre.',
+        description: 'Ajoute « Arroser tout » et « Récolter tout » à la Zone de culture et à la Serre.',
       },
       cu_semences: {
         branche: 'culture', palier: 2, nom: 'Sélection des semences', icone: '🌰', fonction: 'productivite',
@@ -2166,13 +2300,13 @@ const DATA = {
       cu_recolte_auto: {
         branche: 'culture', palier: 3, nom: 'Récolte automatique', icone: '🧺', fonction: 'automatisation',
         pt: 2, cout: 900, requiert: [{ noeud: 'cu_outils' }, { batiment: 'potager', niveau: 4 }],
-        effet: { auto: { recolte: ['potager', 'champ'] } },
-        description: 'Chaque nuit, les parcelles mûres du Potager et du Champ sont récoltées automatiquement (sauf celles qui montent en graine).',
+        effet: { auto: { recolte: ['potager'] } },
+        description: 'Chaque nuit, les parcelles mûres de la Zone de culture sont récoltées automatiquement (sauf celles qui montent en graine).',
       },
       semis_auto: {
         branche: 'culture', palier: 4, nom: 'Semis automatique', icone: '🌾', fonction: 'automatisation',
         pt: 2, cout: 1200, requiert: [{ noeud: 'cu_recolte_auto' }, { noeud: 'ea_irrigation' }],
-        effet: { auto: { semis: ['potager', 'champ'] } },
+        effet: { auto: { semis: ['potager'] } },
         description: 'Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle.',
       },
       cu_serre_auto: {
@@ -2304,8 +2438,9 @@ const DATA = {
   // Saisons légères (sections 1.4 et 6.9 ter) : 4 saisons de LONGUEUR nuits, la
   // saison se déduit de la nuit courante (nuit 1 = premier jour du printemps).
   // MODS : facteur par saison et par type de calcul (solaire : production des
-  // panneaux ; potager et champ : rendement d'une récolte ; eau : litres par
-  // arrosage ; moutons : gain de poids par nuit). La Serre les ignore tous.
+  // panneaux ; potager : rendement d'une récolte de la Zone de culture, quelle
+  // que soit la culture ; eau : litres par arrosage ; moutons : gain de poids
+  // par nuit). La Serre les ignore tous.
   // Vache (nouveauté) : la croissance de la vache réutilise le même facteur
   // « moutons » (gain de poids du bétail au pâturage) plutôt que d'introduire
   // une catégorie « vaches » dédiée : voir growCattle(). Seul le lait échappe
@@ -2321,26 +2456,25 @@ const DATA = {
     },
     MODS: {
       // en % : 110 = +10 %, 70 = −30 %
-      printemps: { solaire: 100, potager: 110, eau: 100, champ: 100, moutons: 120 },
-      ete:       { solaire: 130, potager: 100, eau: 130, champ: 120, moutons: 100 },
-      automne:   { solaire: 90,  potager: 100, eau: 90,  champ: 90,  moutons: 100 },
-      hiver:     { solaire: 70,  potager: 70,  eau: 80,  champ: 70,  moutons: 80 },
+      printemps: { solaire: 100, potager: 110, eau: 100, moutons: 120 },
+      ete:       { solaire: 130, potager: 100, eau: 130, moutons: 100 },
+      automne:   { solaire: 90,  potager: 100, eau: 90,  moutons: 100 },
+      hiver:     { solaire: 70,  potager: 70,  eau: 80,  moutons: 80 },
     },
     // Types de facteurs, avec leur libellé pour le calendrier.
     FACTEURS: {
       solaire: { nom: 'Solaire', icone: '☀️' },
-      potager: { nom: 'Potager', icone: '🌱' },
+      potager: { nom: 'Zone de culture', icone: '🌱' },
       eau:     { nom: 'Eau', icone: '💧' },
-      champ:   { nom: 'Champ', icone: '🌾' },
       moutons: { nom: 'Moutons', icone: '🐑' },
     },
     // Lieu de culture → facteur de rendement qui s'y applique. Un lieu absent
     // (la Serre) n'a aucun modificateur, ni de rendement ni d'eau.
-    RENDEMENT_LIEU: { potager: 'potager', champ: 'champ' },
-    EAU_LIEUX: ['potager', 'champ'],
+    RENDEMENT_LIEU: { potager: 'potager' },
+    EAU_LIEUX: ['potager'],
   },
 
-  // Serre (sections 1.4 et 8.3) : mêmes parcelles que le Potager, sans modificateur
+  // Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture, sans modificateur
   // de saison. CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour
   // atteindre le niveau n + 1 (index 0 non utilisé). Tomate, courgette, aubergine.
   SERRE: {
@@ -2427,14 +2561,16 @@ const DATA = {
     // ne comptent pas.
     // Libellé des éléments débloqués (écran de fin de chapitre et Ferme).
     ELEMENTS: {
-      champ:      { nom: 'Champ', icone: '🌾', note: 'blé pour les poules et la farine' },
+      // 'champ' : identifiant historique (l'ancien bâtiment Champ). Il ouvre
+      // désormais les cultures de plein champ dans la Zone de culture.
+      champ:      { nom: 'Cultures de plein champ', icone: '🌾', note: 'blé pour les poules et la farine' },
       silo:       { nom: 'Silo', icone: '🛖', note: 'stock de blé' },
       poulailler: { nom: 'Poulailler', icone: '🐔', note: 'poules et œufs (les poules s\'achètent au Marché)' },
       four:       { nom: 'Four', icone: '🔥', note: 'pain, gratin, tarte, et l\'onglet Livre de recette' },
       cuisine:    { nom: 'Cuisine', icone: '🍳', note: 'omelette, ratatouille, ragoût, compote' },
       moulin:     { nom: 'Moulin', icone: '⚙️', note: 'farine' },
       presse:     { nom: 'Presse', icone: '🌻', note: 'huile de tournesol' },
-      tournesol:  { nom: 'Tournesol', icone: '🌻', note: 'nouvelle culture du Champ' },
+      tournesol:  { nom: 'Tournesol', icone: '🌻', note: 'nouvelle culture de plein champ' },
       paturage:   { nom: 'Pâturage', icone: '🐑', note: 'surface pour les moutons et les vaches' },
       moutons:    { nom: 'Moutons', icone: '🧶', note: 'laine, viande, et désormais des vaches pour le lait (les moutons et les vaches s\'achètent au Marché)' },
       serre:      { nom: 'Serre', icone: '🏡', note: 'des légumes toute l\'année' },
@@ -2526,7 +2662,12 @@ const DATA = {
     PRIX_GRAINE_MAX: 4, // prix maximal d'une graine (ou d'un blé) achetée au Marché
     ETALEMENT_JOURS: 1, // les semis d'un lieu s'étalent sur ce nombre de jours (1 : on replante dès la récolte)
     GRAINES_CAROTTE: 6, // sous ce stock, une carotte mûre monte en graine
-    PARCELLES_TOURNESOL: 1, // parcelles du Champ en tournesol quand la Presse existe
+    // Part (en %) des parcelles de la Zone de culture que le joueur réserve aux
+    // cultures de plein champ (blé, tournesol) dès qu'elles sont débloquées : à
+    // peu près ce que le Champ représentait (4 parcelles sur 13 au début, 16 sur
+    // 36 à la fin). Zone de 12 / 18 / 24 / 30 parcelles : 4 / 7 / 9 / 12.
+    PART_PLEIN_CHAMP: 40,
+    PARCELLES_TOURNESOL: 1, // parcelles de plein champ en tournesol quand la Presse existe
     BLE_JOURS_GARDES: 3, // nuits de blé des poules qu'on ne moud pas
     BLE_MAX: 40, // blé en stock au-delà duquel on vend
     STOCK_FARINE: 4, // farine en réserve qu'on cherche à avoir
@@ -2544,7 +2685,7 @@ const DATA = {
     PRIORITE: {
       1: [],
       2: [{ type: 'potager', niveau: 2 }],
-      3: [{ type: 'poulailler', niveau: 1 }, { type: 'silo', niveau: 1 }, { type: 'champ', niveau: 1 }, { type: 'poules', n: 4 }],
+      3: [{ type: 'poulailler', niveau: 1 }, { type: 'silo', niveau: 1 }, { type: 'poules', n: 4 }],
       4: [{ type: 'station', id: 'four' }, { type: 'station', id: 'moulin' }, { type: 'station', id: 'presse' }, { type: 'station', id: 'cuisine' }],
       5: [{ type: 'paturage' }, { type: 'moutons', n: 3 }],
       6: [{ type: 'serre', niveau: 1 }, { type: 'verger' }, { type: 'arbres', n: 2 }, { type: 'frigo' }],
@@ -2552,9 +2693,9 @@ const DATA = {
     },
     PLAN: [
       { type: 'potager', niveau: 2 },
-      { type: 'poulailler', niveau: 1 }, { type: 'silo', niveau: 1 }, { type: 'champ', niveau: 1 }, { type: 'poules', n: 4 },
+      { type: 'poulailler', niveau: 1 }, { type: 'silo', niveau: 1 }, { type: 'poules', n: 4 },
       { type: 'potager', niveau: 3 },
-      { type: 'champ', niveau: 2 }, { type: 'poulailler', niveau: 2 }, { type: 'poules', n: 8 }, { type: 'silo', niveau: 2 },
+      { type: 'poulailler', niveau: 2 }, { type: 'poules', n: 8 }, { type: 'silo', niveau: 2 },
       { type: 'station', id: 'four' }, { type: 'station', id: 'moulin' }, { type: 'station', id: 'presse' }, { type: 'station', id: 'cuisine' },
       // arbre v2 : premiers pas (palier 1), puis l'automatisation (palier 3)
       { type: 'tech', id: 'cu_outils' }, { type: 'pompe', niveau: 2 }, { type: 'tech', id: 'ea_econome' },
@@ -2563,12 +2704,12 @@ const DATA = {
       { type: 'potager', niveau: 4 }, { type: 'tech', id: 'cu_recolte_auto' },
       { type: 'tech', id: 'cui_boulangerie' }, { type: 'tech', id: 'prepa_1' },
       { type: 'paturage' }, { type: 'moutons', n: 3 },
-      { type: 'champ', niveau: 3 }, { type: 'poules', n: 12 },
+      { type: 'poules', n: 12 },
       { type: 'verger' }, { type: 'arbres', n: 2 }, { type: 'serre', niveau: 1 }, { type: 'frigo' },
       { type: 'tech', id: 'semis_auto' }, { type: 'tech', id: 'cui_laiterie' }, { type: 'tech', id: 'el_tonte' },
       { type: 'potager', niveau: 5 },
-      { type: 'arbres', n: 4 }, { type: 'moutons', n: 6 }, { type: 'champ', niveau: 4 },
-      { type: 'poules', n: 16 }, { type: 'serre', niveau: 2 }, { type: 'serre', niveau: 3 }, { type: 'champ', niveau: 5 },
+      { type: 'arbres', n: 4 }, { type: 'moutons', n: 6 },
+      { type: 'poules', n: 16 }, { type: 'serre', niveau: 2 }, { type: 'serre', niveau: 3 },
     ],
     // Vérifications de la section 8.10 : jalons d'autonomie (nuit visée, % visé) et tolérance en nuits.
     JALONS: [
@@ -2682,10 +2823,10 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 14;
+const STATE_VERSION = 15;
 // Version du jeu, affichée dans les Options (À propos). Vache et abattage des
 // poules : 0.12.0.
-const GAME_VERSION = '0.18.0';
+const GAME_VERSION = '1.0.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -2730,7 +2871,7 @@ function yearNight(day) {
   return ((Math.max(1, day) - 1) % (S.LONGUEUR * S.ORDRE.length)) + 1;
 }
 
-// Facteur saisonnier d'un type de calcul : 'solaire', 'potager', 'eau', 'champ'
+// Facteur saisonnier d'un type de calcul : 'solaire', 'potager', 'eau'
 // ou 'moutons'. Les calculs existants le multiplient à leur valeur de base.
 // Arrondi entier de x × pct ÷ 100 (au plus proche, demi vers le haut).
 function roundPct(x, pct) {
@@ -3978,7 +4119,7 @@ function setSeedReserve(state, item, qty) {
   return { ok: true, reserve: n };
 }
 
-/* ---------- Lot 2 : potager (Lot 4 : le même moteur sert le Champ) ---------- */
+/* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
 function makePlot(n, lieu = DATA.POTAGER.LIEU) {
   // Lot 7 : semis = réglage du semis automatique de la parcelle ('meme' : même
@@ -3992,9 +4133,9 @@ function makePlots(count, lieu = DATA.POTAGER.LIEU) {
   return plots;
 }
 
-// Toutes les parcelles de la ferme : Potager d'abord, puis Champ.
+// Toutes les parcelles de la ferme : la Zone de culture d'abord, puis la Serre.
 function allPlots(state) {
-  return [...state.potager.parcelles, ...(state.champ ? state.champ.parcelles : []), ...(state.serre ? state.serre.parcelles : [])];
+  return [...state.potager.parcelles, ...(state.serre ? state.serre.parcelles : [])];
 }
 
 function findPlot(state, id) {
@@ -4053,8 +4194,8 @@ function isMature(plot) {
 }
 
 // Rendement d'une récolte au clic (× productivité) ou automatique (× 1).
-// Lot 8 : avec `lieu`, le facteur de saison du lieu s'y applique (Potager, Champ ;
-// jamais la Serre).
+// Lot 8 : avec `lieu`, le facteur de saison du lieu s'y applique (Zone de culture,
+// quelle que soit la culture ; jamais la Serre).
 function harvestYield(state, culture, auto = false, lieu = null) {
   const saison = lieu ? yieldSeasonFactor(state, lieu) : 100;
   const prod = auto ? 100 : productivity(state);
@@ -4190,38 +4331,6 @@ function upgradePotager(state) {
   state.potager.niveau += 1;
   const target = DATA.POTAGER.PARCELLES[state.potager.niveau - 1];
   for (let n = state.potager.parcelles.length + 1; n <= target; n++) state.potager.parcelles.push(makePlot(n));
-  return { ok: true, cost };
-}
-
-/* ---------- Lot 4 : Champ ---------- */
-
-function champUpgradeCost(state) {
-  return state.champ.niveau >= DATA.LEVEL_MAX ? null : DATA.CHAMP.COUT[state.champ.niveau];
-}
-
-// Construit le Champ (niveau 1) et crée ses parcelles.
-function buildChamp(state) {
-  const c = state.champ;
-  if (c.construit) return fail('Le Champ est déjà construit.');
-  const cost = DATA.CHAMP.CONSTRUCTION;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
-  c.construit = true;
-  c.niveau = 1;
-  c.parcelles = makePlots(DATA.CHAMP.PARCELLES[0], DATA.CHAMP.LIEU);
-  return { ok: true, cost };
-}
-
-function upgradeChamp(state) {
-  const c = state.champ;
-  if (!c.construit) return fail('Construis d\'abord le Champ.');
-  const cost = champUpgradeCost(state);
-  if (cost === null) return fail('Niveau maximum atteint.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
-  c.niveau += 1;
-  const target = DATA.CHAMP.PARCELLES[c.niveau - 1];
-  for (let n = c.parcelles.length + 1; n <= target; n++) c.parcelles.push(makePlot(n, DATA.CHAMP.LIEU));
   return { ok: true, cost };
 }
 
@@ -5173,7 +5282,7 @@ function techFlag(state, key) {
 }
 
 // Automatisation d'une tâche ('arrosage', 'recolte', 'semis', 'nourrissage',
-// 'tonte') sur un lieu ('potager', 'champ', 'serre', 'poulailler', 'paturage').
+// 'tonte') sur un lieu ('potager', 'serre', 'poulailler', 'paturage').
 function techAuto(state, tache, lieu) {
   return techEffects(state, 'auto').some((a) => Array.isArray(a[tache]) && a[tache].includes(lieu));
 }
@@ -5332,14 +5441,13 @@ function refreshUnlocks(state) {
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
 
 function newAutoReport() {
-  return { potager: false, champ: false, serre: false, poulailler: false, arrosees: 0, sansEau: 0, recoltes: {}, semees: 0, sansGraine: 0, nourries: 0, sansBle: 0, tondus: 0 };
+  return { potager: false, serre: false, poulailler: false, arrosees: 0, sansEau: 0, recoltes: {}, semees: 0, sansGraine: 0, nourries: 0, sansBle: 0, tondus: 0 };
 }
 
 // Tâches automatisables par lieu (arbre v2) : un lieu est « automatisé » dès
 // qu'une de ses tâches l'est.
 const AUTO_TACHES = {
   potager: ['arrosage', 'recolte', 'semis'],
-  champ: ['arrosage', 'recolte', 'semis'],
   serre: ['arrosage', 'recolte', 'semis'],
   poulailler: ['nourrissage'],
   paturage: ['tonte'],
@@ -5383,7 +5491,7 @@ function setSemis(state, plotId, mode, culture) {
 }
 
 // Étape nocturne (juste après le repas) : automatisations du niveau 5.
-// Potager et Champ : récolte des parcelles mûres (sauf celles montées en
+// Zone de culture et Serre : récolte des parcelles mûres (sauf celles montées en
 // graine), semis automatique, puis arrosage de toutes les parcelles plantées.
 // Poulailler : nourrissage. Rien n'est réduit par la productivité ; si l'eau ou
 // le blé manquent, on sert ce qu'on peut et le rapport le signale au réveil.
@@ -5391,7 +5499,6 @@ function autoTasks(state) {
   const rap = newAutoReport();
   const zones = [
     { id: 'potager', plots: state.potager.parcelles },
-    { id: 'champ', plots: state.champ ? state.champ.parcelles : [] },
     { id: 'serre', plots: state.serre && state.serre.construit ? state.serre.parcelles : [] },
   ];
   const prioritaire = !!techFlag(state, 'arrosagePrioritaire');
@@ -5627,10 +5734,19 @@ function objectiveDef(type) {
   return null;
 }
 
-// Cultures qu'on peut planter dans ce lieu avec les chapitres atteints (le
-// tournesol n'arrive qu'au chapitre 4).
+// Une culture est-elle débloquée ? Il faut son propre déblocage de chapitre
+// (le tournesol n'arrive qu'au chapitre 4) et, si elle en demande un autre
+// (`deblocage` : les cultures de plein champ attendent 'champ', au chapitre 3),
+// celui-là aussi.
+function cropUnlocked(state, culture) {
+  const requis = DATA.crops[culture].deblocage;
+  return isUnlocked(state, culture) && (!requis || isUnlocked(state, requis));
+}
+
+// Cultures qu'on peut planter dans ce lieu avec les chapitres atteints. Comme
+// pour les bâtiments, c'est un masquage : plant() lui-même reste libre.
 function plantableCropsFor(state, lieu) {
-  return plantableCrops(lieu).filter((c) => isUnlocked(state, c));
+  return plantableCrops(lieu).filter((c) => cropUnlocked(state, c));
 }
 
 function bumpCounter(state, key, amount) {
@@ -5822,17 +5938,31 @@ function recordNight(state) {
 
 /* -- ce que possède une partie (migration) -- */
 
+// L'ancien Champ d'une sauvegarde d'avant la version 15 (MIGRATIONS[14]), ou
+// null : une partie à jour n'a plus ce bâtiment. Ne sert qu'aux migrations.
+function legacyChamp(state) {
+  return state.champ && typeof state.champ === 'object' ? state.champ : null;
+}
+
+// Parcelles de la Zone de culture d'une sauvegarde, ancienne (Potager + Champ) ou à jour.
+function ownedPlots(state) {
+  const list = (b) => (b && Array.isArray(b.parcelles) ? b.parcelles : []);
+  return [...list(state.potager), ...list(legacyChamp(state))];
+}
+
 // Une partie possède-t-elle déjà cet élément débloqué par un chapitre ?
 function ownsElement(state, id) {
   const built = (b) => !!(b && b.construit);
   switch (id) {
-    case 'champ': return built(state.champ);
+    // 'champ' : l'ancien Champ construit (sauvegarde d'avant la version 15), ou
+    // une culture de plein champ en terre.
+    case 'champ': return built(legacyChamp(state)) || ownedPlots(state).some((p) => p && p.culture && DATA.crops[p.culture] && DATA.crops[p.culture].deblocage === 'champ');
     case 'silo': return built(state.silo);
     case 'poulailler': return built(state.poulailler) || (state.poulailler && state.poulailler.poules > 0);
     case 'four': case 'cuisine': case 'moulin': case 'presse':
       return built(state.stations && state.stations[id]);
     case 'tournesol':
-      return [...(state.champ ? state.champ.parcelles || [] : [])].some((p) => p && p.culture === 'tournesol');
+      return ownedPlots(state).some((p) => p && p.culture === 'tournesol');
     case 'paturage': return built(state.paturage);
     case 'moutons': return !!(state.paturage && Array.isArray(state.paturage.moutons) && state.paturage.moutons.length > 0);
     case 'serre': return built(state.serre);
@@ -6212,7 +6342,7 @@ function testAddPieces(state, amount) {
   return { ok: true };
 }
 
-// Lot 7 : met un bâtiment au niveau 5 (potager, champ, poulailler, silo), sans
+// Lot 7 : met un bâtiment au niveau 5 (potager, poulailler, silo), sans
 // payer : le bâtiment est construit s'il ne l'était pas et ses parcelles ou sa
 // capacité suivent le niveau.
 function testSetBuildingLevel5(state, id) {
@@ -6220,10 +6350,6 @@ function testSetBuildingLevel5(state, id) {
   if (id === 'potager') {
     state.potager.niveau = niveau;
     for (let n = state.potager.parcelles.length + 1; n <= DATA.POTAGER.PARCELLES[niveau - 1]; n++) state.potager.parcelles.push(makePlot(n));
-  } else if (id === 'champ') {
-    state.champ.construit = true;
-    state.champ.niveau = niveau;
-    for (let n = state.champ.parcelles.length + 1; n <= DATA.CHAMP.PARCELLES[niveau - 1]; n++) state.champ.parcelles.push(makePlot(n, DATA.CHAMP.LIEU));
   } else if (id === 'poulailler' || id === 'silo') {
     state[id].construit = true;
     state[id].niveau = niveau;
@@ -6493,10 +6619,10 @@ function startHousehold() {
 
 // État initial du jeu. `seed` doit être fourni par l'appelant (l'app),
 // jamais lu depuis l'horloge ici : l'ENGINE reste pur et testable.
-// Lot 4 : Champ, Silo et Poulailler, tous à construire.
+// Lot 4 : Silo et Poulailler, tous deux à construire (l'ancien Champ a rejoint
+// la Zone de culture en version 15).
 function startLot4() {
   return {
-    champ: { construit: false, niveau: 1, parcelles: [] },
     silo: { construit: false, niveau: 1, ble: 0 },
     poulailler: { construit: false, niveau: 1, poules: 0, nourries: 0, restes: 0 },
   };
@@ -6597,8 +6723,9 @@ const MIGRATIONS = {
       : newNightStats();
     return { ...state, inventaire, nuit, marche: state.marche || {}, version: 4 };
   },
-  // v4 (Lot 3) → v5 (Lot 4) : Champ, Silo et Poulailler (à construire), blé
-  // mangé du jour et œufs de la nuit.
+  // v4 (Lot 3) → v5 (Lot 4) : Silo et Poulailler (à construire), blé mangé du
+  // jour et œufs de la nuit. (Le Champ, apparu ici à l'époque, n'est plus créé :
+  // MIGRATIONS[14] le fond dans la Zone de culture quand il existe.)
   4: (state) => ({
     ...startLot4(),
     ...state,
@@ -6702,7 +6829,60 @@ const MIGRATIONS = {
   // déjà terminés ; les automatisations du niveau 5 et les recettes déjà
   // accessibles sont offertes sous forme de nœuds (rien n'est perdu).
   13: (state) => migrateTechTreeV2(state),
+  // v14 → v15 (version 1.0) : le Potager et le Champ deviennent une seule Zone
+  // de culture (state.potager). Toutes les parcelles sont regroupées, rien
+  // n'est perdu ; state.champ disparaît.
+  14: (state) => migrateCropZone(state),
 };
+
+// Fusion du Potager et du Champ (v14 → v15). Les parcelles du Champ rejoignent
+// celles du Potager, à la suite, avec tout ce qu'elles portent (culture, stade,
+// arrosage, montée en graine, réglage du semis automatique) ; elles prennent le
+// lieu et les identifiants de la zone (« potager-n », comme makePlot()). Le
+// niveau de la zone est le plus petit dont la capacité contient toutes les
+// parcelles possédées ; des parcelles vides complètent jusqu'à cette capacité.
+// Au-delà de la capacité maximale (l'ancien maximum était 20 + 16 = 36, pour
+// 30) : les parcelles vides partent d'abord, puis les plantes les moins
+// avancées, et chaque plante retirée est rendue sous forme d'une graine (ou
+// d'un plant) dans l'inventaire.
+function migrateCropZone(old) {
+  const state = JSON.parse(JSON.stringify(old));
+  const P = DATA.POTAGER;
+  const max = P.PARCELLES[P.PARCELLES.length - 1];
+  const plotsOf = (b) => (b && Array.isArray(b.parcelles) ? b.parcelles.filter((p) => p && typeof p === 'object') : []);
+  const potager = state.potager && typeof state.potager === 'object' ? state.potager : {};
+  let plots = [...plotsOf(potager), ...plotsOf(legacyChamp(state))];
+  if (plots.length > max) {
+    const planted = (p) => (p.culture ? 1 : 0);
+    const stade = (p) => (typeof p.stade === 'number' ? p.stade : 0);
+    const rang = plots.map((p, i) => ({ p, i }))
+      .sort((a, b) => (planted(b.p) - planted(a.p)) || (stade(b.p) - stade(a.p)) || (a.i - b.i));
+    const gardees = new Set(rang.slice(0, max).map((x) => x.i));
+    if (!state.inventaire || typeof state.inventaire !== 'object') state.inventaire = {};
+    for (const x of rang.slice(max)) {
+      if (x.p.culture && DATA.crops[x.p.culture]) addItem(state, seedItem(x.p.culture), 1);
+    }
+    plots = plots.filter((p, i) => gardees.has(i));
+  }
+  const niveau = Math.max(1, P.PARCELLES.findIndex((n) => n >= plots.length) + 1);
+  const parcelles = [];
+  for (let n = 1; n <= P.PARCELLES[niveau - 1]; n++) {
+    const neuve = makePlot(n);
+    parcelles.push(n <= plots.length ? { ...neuve, ...plots[n - 1], id: neuve.id, lieu: neuve.lieu } : neuve);
+  }
+  state.potager = { ...potager, niveau, parcelles };
+  delete state.champ;
+  // Comptes rendus des automatisations (nuit en cours et réveil en attente) :
+  // l'ancienne ligne du Champ rejoint celle de la zone.
+  for (const auto of [state.nuit && state.nuit.auto, state.report && state.report.auto]) {
+    if (auto && typeof auto === 'object' && 'champ' in auto) {
+      auto.potager = !!(auto.potager || auto.champ);
+      delete auto.champ;
+    }
+  }
+  state.version = 15;
+  return state;
+}
 
 // Offre un nœud (et, si `avecPrerequis`, ses prérequis de type nœud) sans rien payer.
 function grantTech(state, id, avecPrerequis = true) {
@@ -7000,7 +7180,7 @@ function botInfraInfo(state, eveilS) {
   const litres = botWaterPerDay(state);
   const pump = state.pompe;
   const needsFlow = litres * 1000 * 100 > pumpFlow(pump) * eveilS * S.MARGE_EAU;
-  const needsTank = (isAutomated(state, 'potager') || isAutomated(state, 'champ')) && litres * 1000 * 100 > tankCapacity(state) * S.MARGE_EAU;
+  const needsTank = isAutomated(state, 'potager') && litres * 1000 * 100 > tankCapacity(state) * S.MARGE_EAU;
   if (pump.niveau < DATA.LEVEL_MAX && (needsFlow || needsTank)) return { cost: upgradeCost(pump), buy: () => upgradeDevice(state, pump.id) };
 
   const worst = Math.min(...Object.values(DATA.SAISONS.MODS).map((m) => m.solaire));
@@ -7052,16 +7232,38 @@ function botWantsCarrots(state) {
   return state.campagne.compteurs.carottes + inGround < obj.cible;
 }
 
+// Une culture de plein champ (blé, tournesol, riz, houblon) : celles que le
+// déblocage 'champ' ouvre.
+function botIsFieldCrop(culture) {
+  return DATA.crops[culture].deblocage === 'champ';
+}
+
+// Parcelles de la Zone de culture que le joueur réserve au plein champ (blé et
+// tournesol) : PART_PLEIN_CHAMP % de la zone une fois ces cultures débloquées,
+// 0 avant.
+function botFieldTarget(state) {
+  if (!isUnlocked(state, 'champ')) return 0;
+  return Math.floor((state.potager.parcelles.length * DATA.SIMULATION.PART_PLEIN_CHAMP) / 100);
+}
+
 // Culture à planter sur une parcelle vide, ou null.
 function botPickCrop(state, plot) {
   const S = DATA.SIMULATION;
   const options = plantableCropsFor(state, plot.lieu);
-  if (plot.lieu === DATA.CHAMP.LIEU) {
-    const sun = state.champ.parcelles.filter((p) => p.culture === 'tournesol').length;
-    const wanted = state.stations.presse.construit && options.includes('tournesol') && sun < S.PARCELLES_TOURNESOL ? ['tournesol', 'ble'] : ['ble'];
-    return wanted.find((c) => botHasSeed(state, c)) || null;
+  if (plot.lieu === DATA.POTAGER.LIEU) {
+    // Tant que la part de plein champ n'est pas atteinte : du blé (pour les poules
+    // et la farine), et un peu de tournesol quand la Presse existe.
+    const zone = state.potager.parcelles;
+    const field = zone.filter((p) => p.culture && botIsFieldCrop(p.culture)).length;
+    if (field < botFieldTarget(state)) {
+      const sun = zone.filter((p) => p.culture === 'tournesol').length;
+      const wanted = state.stations.presse.construit && sun < S.PARCELLES_TOURNESOL ? ['tournesol', 'ble'] : ['ble'];
+      const culture = wanted.find((c) => options.includes(c) && botHasSeed(state, c));
+      if (culture) return culture;
+    }
   }
-  const foods = options.filter((c) => DATA.items[cropProduct(c)].edible).sort((a, b) => botCropScore(b) - botCropScore(a));
+  // Le reste de la zone (et la Serre) nourrit la famille : les légumes, pas le plein champ.
+  const foods = options.filter((c) => !botIsFieldCrop(c) && DATA.items[cropProduct(c)].edible).sort((a, b) => botCropScore(b) - botCropScore(a));
   // l'objectif du chapitre 2 demande des carottes : elles passent devant
   if (botWantsCarrots(state)) foods.sort((a, b) => (b === 'carotte') - (a === 'carotte'));
   return foods.find((c) => botHasSeed(state, c)) || null;
@@ -7155,11 +7357,11 @@ function botRecipeValue(state, id) {
   return gain > 0 ? gain / r.temps : 0;
 }
 
-// Blé à ne pas transformer : les semis du Champ et trois nuits de poules.
+// Blé à ne pas transformer : les semis de plein champ et trois nuits de poules.
 function botWheatKept(state) {
   const S = DATA.SIMULATION;
   const hens = Math.ceil(state.poulailler.poules / DATA.ANIMAUX.poule.poulesParBle) * S.BLE_JOURS_GARDES;
-  return hens + (state.champ.construit ? state.champ.parcelles.length : 0);
+  return hens + botFieldTarget(state);
 }
 
 // Sort du frigo ce qu'il faut pour une recette, puis la lance.
@@ -7198,10 +7400,6 @@ function botStepInfo(state, step, eveilS) {
       return botInfraInfo(state, eveilS);
     case 'potager':
       return state.potager.niveau >= step.niveau ? { done: true } : { cost: potagerUpgradeCost(state), buy: () => upgradePotager(state) };
-    case 'champ':
-      if (!isUnlocked(state, 'champ')) return { locked: true };
-      if (built(state.champ)) return { done: true };
-      return state.champ.construit ? { cost: champUpgradeCost(state), buy: () => upgradeChamp(state) } : { cost: DATA.CHAMP.CONSTRUCTION, buy: () => buildChamp(state) };
     case 'silo':
       if (!isUnlocked(state, 'silo')) return { locked: true };
       if (built(state.silo)) return { done: true };
@@ -7341,7 +7539,7 @@ function botStore(state) {
 function botActions(state, strat, options, soir) {
   botMaintenance(state);
   botHeal(state);
-  setSeedReserve(state, 'patate', state.potager.parcelles.length);
+  setSeedReserve(state, 'patate', state.potager.parcelles.length - botFieldTarget(state));
   botBuy(state, strat.eveilS);
   botFarm(state);
   botHens(state);
@@ -8182,10 +8380,13 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
   for (const k of ['tomate', 'courgette', 'aubergine']) {
     assertEqual([c[k].graines.mode, c[k].graines.min, c[k].graines.max], ['recolte', 1, 2]);
   }
-  // Lot 4 : blé et tournesol sont des cultures du Champ.
-  for (const k of ['carotte', 'patate']) assertEqual(c[k].lieux, ['potager']);
+  // Version 1.0 : une seule Zone de culture (lieu 'potager'). Blé et tournesol y
+  // poussent comme le reste ; seul leur déblocage ('champ', chapitre 3) les distingue.
+  for (const k of ['carotte', 'patate']) assertEqual([c[k].lieux, c[k].deblocage], [['potager'], undefined]);
   for (const k of ['tomate', 'courgette', 'aubergine']) assertEqual(c[k].lieux, ['potager', 'serre']); // Lot 8 : la Serre
-  for (const k of ['ble', 'tournesol']) assertEqual(c[k].lieux, ['champ']);
+  for (const k of ['ble', 'tournesol']) assertEqual([c[k].lieux, c[k].deblocage], [['potager'], 'champ']);
+  // plus aucune culture ne cite l'ancien lieu « champ »
+  for (const k of Object.keys(c)) assertEqual(c[k].lieux.includes('champ'), false, `${k} : pas de lieu champ`);
 });
 
 test('DATA « 10 cultures » : stades, eau, rendement, graines, comestibilité, vente', () => {
@@ -8204,12 +8405,14 @@ test('DATA « 10 cultures » : stades, eau, rendement, graines, comestibilité, 
   for (const k of ['ail', 'riz', 'houblon', 'cacao', 'vanille', 'cafe']) {
     assertEqual(c[k].graines, { item: k, mode: 'plant' }, `${k} : 1 récolte = 1 graine`);
   }
-  // Lieux : Potager pour oignon/ail/épinard/fraise, Potager + Serre pour le
-  // poivron (même mécanisme que tomate/courgette/aubergine), Champ pour
-  // riz/houblon, Serre exclusivement pour cacao/vanille/café.
+  // Lieux : Zone de culture ('potager') pour oignon/ail/épinard/fraise, Zone +
+  // Serre pour le poivron (même mécanisme que tomate/courgette/aubergine), Zone
+  // de culture aussi pour riz/houblon (cultures de plein champ : déblocage
+  // 'champ'), Serre exclusivement pour cacao/vanille/café.
   for (const k of ['oignon', 'ail', 'epinard', 'fraise']) assertEqual(c[k].lieux, ['potager']);
   assertEqual(c.poivron.lieux, ['potager', 'serre']);
-  for (const k of ['riz', 'houblon']) assertEqual(c[k].lieux, ['champ']);
+  for (const k of ['riz', 'houblon']) assertEqual([c[k].lieux, c[k].deblocage], [['potager'], 'champ']);
+  for (const k of ['oignon', 'ail', 'epinard', 'fraise', 'poivron', 'cacao', 'vanille', 'cafe']) assertEqual(c[k].deblocage, undefined, `${k} : aucun déblocage requis`);
   for (const k of ['cacao', 'vanille', 'cafe']) assertEqual(c[k].lieux, ['serre']);
   // Comestibilité et prix de vente exactement comme demandé.
   assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz'].map((k) => [it[k].edible, it[k].energie]),
@@ -8480,9 +8683,11 @@ test('aléatoire à graine : nextRandom suit mulberry32 et vit dans l\'état', (
   }
 });
 
-test('potager : 6 / 9 / 12 / 16 / 20 parcelles, coûts 80 / 200 / 450 / 1 000', () => {
-  assertEqual(DATA.POTAGER.PARCELLES, [6, 9, 12, 16, 20]);
-  assertEqual(DATA.POTAGER.COUT.slice(1), [80, 200, 450, 1000]);
+test('Zone de culture : 6 / 12 / 18 / 24 / 30 parcelles, coûts 200 / 480 / 1 050 / 2 300', () => {
+  assertEqual([DATA.POTAGER.LIEU, DATA.POTAGER.NOM, DATA.POTAGER.ICONE], ['potager', 'Zone de culture', '🌱']);
+  assertEqual(DATA.POTAGER.PARCELLES, [6, 12, 18, 24, 30]);
+  assertEqual(DATA.POTAGER.COUT, [0, 200, 480, 1050, 2300]);
+  assertEqual(DATA.CHAMP, undefined, 'le Champ n\'existe plus comme bâtiment');
   const s = garden();
   s.pieces = 10;
   assertEqual(upgradePotager(s).ok, false, 'pas assez de pièces');
@@ -8496,13 +8701,15 @@ test('potager : 6 / 9 / 12 / 16 / 20 parcelles, coûts 80 / 200 / 450 / 1 000', 
     costs.push(upgradePotager(s).cost);
     counts.push(s.potager.parcelles.length);
   }
-  assertEqual(costs, [80, 200, 450, 1000]);
-  assertEqual(counts, [9, 12, 16, 20]);
+  assertEqual(costs, [200, 480, 1050, 2300]);
+  assertEqual(counts, [12, 18, 24, 30]);
   assertEqual(s.potager.niveau, 5);
-  assertEqual(s.pieces, 5000 - 1730);
+  assertEqual(s.pieces, 5000 - 4030);
   assertEqual(upgradePotager(s).ok, false, 'niveau maximum');
   assertEqual(findPlot(s, 'potager-1').culture, 'carotte', 'les parcelles existantes sont conservées');
-  assertEqual(new Set(s.potager.parcelles.map((p) => p.id)).size, 20, 'ids uniques');
+  assertEqual(new Set(s.potager.parcelles.map((p) => p.id)).size, 30, 'ids uniques');
+  assertEqual(s.potager.parcelles.map((p) => p.lieu).every((l) => l === 'potager'), true);
+  assertEqual(s.potager.parcelles[29].id, 'potager-30');
 });
 
 test('famille : besoin = 50 par adulte + 25 par enfant = 150', () => {
@@ -9200,25 +9407,25 @@ test('vente : retire les lots les plus anciens, refuse sans stock et ignore les 
 test('les 10 nouvelles cultures : récolte stockée dans l\'inventaire, puis vendable', () => {
   const s = garden();
   s.pieces = 5000;
-  buildChamp(s);
   buildSerre(s);
   addItem(s, 'graine_oignon', 1);
   addItem(s, 'riz', 1);
   addItem(s, 'cacao', 1);
   plantRipe(s, 'potager-1', 'oignon');
-  plantRipe(s, 'champ-1', 'riz');
+  plantRipe(s, 'potager-2', 'riz');
   plantRipe(s, 'serre-1', 'cacao');
-  // Nuit 1 = printemps : le facteur de saison du Potager est ×1,1 (voir
-  // DATA.SAISONS.MODS.printemps.potager), donc 8 × 1,1 arrondi = 9 pour
-  // l'oignon ; le Champ (×1,0 au printemps) et la Serre (jamais de saison) ne
-  // sont pas affectés.
+  // Nuit 1 = printemps : le facteur de saison de la Zone de culture est ×1,1
+  // (voir DATA.SAISONS.MODS.printemps.potager), donc 8 × 1,1 arrondi = 9 pour
+  // l'oignon et 10 × 1,1 = 11 pour le riz (version 1.0 : le riz suit la même
+  // saison que le reste de la zone) ; la Serre (jamais de saison) n'est pas
+  // affectée.
   assertEqual(harvest(s, 'potager-1').items.oignon, 9);
-  assertEqual(harvest(s, 'champ-1').items.riz, 10);
+  assertEqual(harvest(s, 'potager-2').items.riz, 11);
   assertEqual(harvest(s, 'serre-1').items.cacao, 5);
-  assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [9, 10, 5], 'récoltes bien dans l\'inventaire');
+  assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [9, 11, 5], 'récoltes bien dans l\'inventaire');
   // Lot 12 : prix de vente doublés (oignon 2, riz 2, cacao 16).
   assertEqual(sellItem(s, 'oignon', 9), { ok: true, sold: 9, gain: 18 });
-  assertEqual(sellItem(s, 'riz', 10), { ok: true, sold: 10, gain: 20 });
+  assertEqual(sellItem(s, 'riz', 11), { ok: true, sold: 11, gain: 22 });
   assertEqual(sellItem(s, 'cacao', 5), { ok: true, sold: 5, gain: 80 }, '5 × 16 : le cacao se vend cher, comme prévu');
   assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [0, 0, 0]);
 });
@@ -9325,20 +9532,21 @@ test('sérialisation JSON : lots et coefficients font l\'aller-retour', () => {
   assertEqual(marketCoef(copy, 'carotte'), 150);
 });
 
-/* ---------- Lot 4 : Champ, Silo, Poulailler ---------- */
+/* ---------- Lot 4 : cultures de plein champ, Silo, Poulailler ---------- */
 
-// État de test : riche, Silo et Poulailler construits, réservoir plein.
-function ranch({ silo = true, coop = true, champ = false } = {}) {
+// État de test : riche, Silo et Poulailler construits, réservoir plein. Les
+// cultures de plein champ (blé, tournesol, riz, houblon) se plantent dans la
+// Zone de culture de départ (potager-1 à potager-6) : plus de Champ à construire.
+function ranch({ silo = true, coop = true } = {}) {
   const s = garden();
   s.pieces = 5000;
   if (silo) assert(buildSilo(s).ok, 'construire le Silo');
   if (coop) assert(buildPoulailler(s).ok, 'construire le Poulailler');
-  if (champ) assert(buildChamp(s).ok, 'construire le Champ');
   return s;
 }
 
-test('DATA Lot 4 : Champ, Silo, Poulailler, poule, blé, tournesol et œuf', () => {
-  assertEqual([DATA.CHAMP.CONSTRUCTION, DATA.CHAMP.PARCELLES, DATA.CHAMP.COUT], [60, [4, 6, 9, 12, 16], [0, 120, 280, 600, 1300]]);
+test('DATA Lot 4 : Silo, Poulailler, poule, blé, tournesol et œuf (plus de Champ)', () => {
+  assertEqual(DATA.CHAMP, undefined, 'version 1.0 : le Champ a rejoint la Zone de culture');
   assertEqual([DATA.SILO.CAPACITE, DATA.SILO.CONSTRUCTION, DATA.SILO.COUT], [[20, 50, 100, 200, 400], 0, [0, 30, 80, 180, 400]]);
   assertEqual([DATA.POULAILLER.CONSTRUCTION, DATA.POULAILLER.CAPACITE, DATA.POULAILLER.COUT], [40, [4, 8, 12, 16, 24], [0, 100, 220, 450, 900]]);
   assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.poule.poulesParBle, DATA.ANIMAUX.poule.oeufsParNuit], [15, 2, 1]);
@@ -9407,64 +9615,56 @@ test('Marché – onglet Graines : les 10 nouvelles cultures', () => {
 
 test('état initial Lot 4 : rien n\'est construit', () => {
   const s = createInitialState(1);
-  assertEqual(s.champ, { construit: false, niveau: 1, parcelles: [] });
+  assertEqual('champ' in s, false, 'une partie neuve n\'a pas de state.champ');
   assertEqual(s.silo, { construit: false, niveau: 1, ble: 0 });
   assertEqual(s.poulailler, { construit: false, niveau: 1, poules: 0, nourries: 0, restes: 0 });
   assertEqual([siloCapacity(s), coopCapacity(s)], [0, 0]);
   assertEqual(s.jour.ble, 0);
 });
 
-test('Champ : construction à 60 pièces avec 4 parcelles, niveaux 2 à 5 aux bons coûts', () => {
+test('le Champ n\'existe plus : ni état, ni actions, une seule zone qui grandit', () => {
+  assertEqual([typeof buildChamp, typeof upgradeChamp, typeof champUpgradeCost], ['undefined', 'undefined', 'undefined']);
   const s = garden();
-  s.pieces = 59;
-  assertEqual(buildChamp(s).ok, false, 'construction refusée sans 60 pièces');
-  assertEqual(s.champ.construit, false);
-  assertEqual(upgradeChamp(s).ok, false, 'pas d\'amélioration avant la construction');
-  s.pieces = 60;
-  assertEqual(buildChamp(s).ok, true);
-  assertEqual(s.pieces, 0);
-  assertEqual(s.champ.parcelles.map((p) => p.id), ['champ-1', 'champ-2', 'champ-3', 'champ-4']);
-  assertEqual(s.champ.parcelles[0].lieu, 'champ');
-  assertEqual(buildChamp(s).ok, false, 'une seule construction');
-  const seen = [];
-  s.pieces = 3000;
-  while (champUpgradeCost(s) !== null) {
-    const cost = champUpgradeCost(s);
-    const before = s.pieces;
-    assertEqual(upgradeChamp(s).ok, true);
-    assertEqual(before - s.pieces, cost);
-    seen.push([cost, s.champ.niveau, s.champ.parcelles.length]);
-  }
-  assertEqual(seen, [[120, 2, 6], [280, 3, 9], [600, 4, 12], [1300, 5, 16]]);
-  assertEqual(upgradeChamp(s).ok, false, 'niveau maximum');
-  const t = garden();
-  t.pieces = 0;
-  t.champ = { construit: true, niveau: 1, parcelles: makePlots(4, 'champ') };
-  assertEqual(upgradeChamp(t).ok, false, 'pas assez de pièces');
+  assertEqual(s.champ, undefined);
+  assertEqual(allPlots(s).map((p) => p.id), ['potager-1', 'potager-2', 'potager-3', 'potager-4', 'potager-5', 'potager-6']);
+  assertEqual(allPlots(s).every((p) => p.lieu === 'potager'), true);
+  assertEqual(findPlot(s, 'champ-1'), null, 'aucune parcelle « champ-n »');
+  // les 6 parcelles de plus du niveau 2 remplacent l'ancien Champ (4 parcelles pour 60 pièces)
+  s.pieces = 199;
+  assertEqual(upgradePotager(s).ok, false, 'agrandissement refusé sans 200 pièces');
+  s.pieces = 200;
+  assertEqual(upgradePotager(s).ok, true);
+  assertEqual([s.pieces, s.potager.niveau, s.potager.parcelles.length], [0, 2, 12]);
+  assertEqual(s.potager.parcelles.slice(6).map((p) => [p.id, p.lieu]), [7, 8, 9, 10, 11, 12].map((n) => [`potager-${n}`, 'potager']));
 });
 
-test('Champ : le moteur de cultures du potager sert aussi le champ (planter, arroser, pousser, récolter)', () => {
-  const s = ranch({ champ: true });
-  setInv(s, { ble: 3, graine_tournesol: 2, conserve: 300 }); // la famille mange : la productivité reste à 1
-  assertEqual(plant(s, 'champ-1', 'ble').ok, true);
-  assertEqual(plant(s, 'champ-2', 'tournesol').ok, true);
-  assertEqual(plant(s, 'potager-1', 'ble').ok, false, 'le blé ne pousse pas au potager');
-  assertEqual(plant(s, 'champ-3', 'carotte').ok, false, 'la carotte ne pousse pas au champ');
+test('cultures de plein champ : la Zone de culture les fait pousser comme les légumes (planter, arroser, pousser, récolter)', () => {
+  const s = ranch();
+  setInv(s, { ble: 3, graine_tournesol: 2, graine_carotte: 1, riz: 1, houblon: 1, conserve: 300 }); // la famille mange : la productivité reste à 1
+  assertEqual(plant(s, 'potager-1', 'ble').ok, true, 'le blé pousse dans la zone');
+  assertEqual(plant(s, 'potager-2', 'tournesol').ok, true);
+  assertEqual(plant(s, 'potager-3', 'carotte').ok, true, 'aucune restriction de lieu : la carotte à côté du blé');
+  assertEqual(plant(s, 'potager-4', 'riz').ok, true);
+  assertEqual(plant(s, 'potager-5', 'houblon').ok, true);
+  assertEqual(plantableCrops('potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise', 'ble', 'tournesol', 'riz', 'houblon']);
+  assertEqual(plantableCrops('champ'), [], 'plus aucun lieu « champ »');
   assertEqual(s.eauMl, ml(40));
-  assertEqual(water(s, 'champ-1').ok, true);
-  assertEqual(water(s, 'champ-2').ok, true);
+  assertEqual(water(s, 'potager-1').ok, true);
+  assertEqual(water(s, 'potager-2').ok, true);
   assertEqual(s.eauMl, ml(36), '2 L par arrosage');
   for (let i = 1; i <= 7; i++) {
     sleep(Object.assign(s, { awakeMs: 30000 }));
-    for (const id of ['champ-1', 'champ-2']) if (findPlot(s, id).stade < 7) water(s, id);
+    for (const id of ['potager-1', 'potager-2']) if (findPlot(s, id).stade < 7) water(s, id);
   }
-  assertEqual(findPlot(s, 'champ-1').stade, 7);
-  assertEqual(isMature(findPlot(s, 'champ-1')), true);
+  assertEqual(findPlot(s, 'potager-1').stade, 7);
+  assertEqual(isMature(findPlot(s, 'potager-1')), true);
   assertEqual(readyCrops(s).map((r) => [r.culture, r.nombre]), [['ble', 1], ['tournesol', 1]]);
-  assertEqual(harvest(s, 'champ-1').items, { ble: 8 });
-  assertEqual(harvest(s, 'champ-2').items, { graine_tournesol: 9 });
-  assertEqual(findPlot(s, 'champ-1').culture, null, 'parcelle libérée');
-  assertEqual(countItem(s, 'graine_tournesol'), 9 + 1, 'la graine plantée est consommée : 2 − 1 + 9');
+  // nuit 8 : encore le printemps, la zone rend ×1,1 quelle que soit la culture
+  // (8 blés → 9, 9 graines de tournesol → 10)
+  assertEqual(harvest(s, 'potager-1').items, { ble: 9 });
+  assertEqual(harvest(s, 'potager-2').items, { graine_tournesol: 10 });
+  assertEqual(findPlot(s, 'potager-1').culture, null, 'parcelle libérée');
+  assertEqual(countItem(s, 'graine_tournesol'), 10 + 1, 'la graine plantée est consommée : 2 − 1 + 10');
 });
 
 test('Silo : capacité par niveau et coûts 30 / 80 / 180 / 400, construction offerte', () => {
@@ -9492,25 +9692,25 @@ test('Silo : capacité par niveau et coûts 30 / 80 / 180 / 400, construction of
 });
 
 test('Silo : le blé récolté va d\'abord au Silo, le surplus déborde dans l\'inventaire', () => {
-  const s = ranch({ champ: true });
+  const s = ranch();
   setInv(s, {});
-  // 3 récoltes de 8 blés = 24 : 20 au Silo (niveau 1), 4 dans l'inventaire
-  s.champ.parcelles.forEach((p, i) => {
+  // 3 récoltes de 9 blés (8 × 1,1 au printemps) = 27 : 20 au Silo (niveau 1), 7 dans l'inventaire
+  s.potager.parcelles.forEach((p, i) => {
     if (i < 3) {
       p.culture = 'ble';
       p.stade = 7;
     }
   });
-  harvest(s, 'champ-1');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [8, 0]);
-  harvest(s, 'champ-2');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [16, 0]);
-  harvest(s, 'champ-3');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 4], 'plein à 20, surplus de 4 dans l\'inventaire');
+  harvest(s, 'potager-1');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [9, 0]);
+  harvest(s, 'potager-2');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [18, 0]);
+  harvest(s, 'potager-3');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 7], 'plein à 20, surplus de 7 dans l\'inventaire');
   assertEqual(lotsOf(s, 'ble')[0].nightsLeft, null, 'le blé de l\'inventaire ne périme pas');
-  assertEqual(wheatTotal(s), 24);
+  assertEqual(wheatTotal(s), 27);
   // sans Silo, tout va dans l'inventaire
-  const t = ranch({ silo: false, champ: true });
+  const t = ranch({ silo: false });
   setInv(t, {});
   assertEqual(storeWheat(t, 8), { silo: 0, inventaire: 8 });
   assertEqual([t.silo.ble, countItem(t, 'ble')], [0, 8]);
@@ -9804,41 +10004,42 @@ test('productivité : le tirage vient du générateur à graine de l\'état (rep
 });
 
 test('tournesol : les graines récoltées servent à semer', () => {
-  const s = ranch({ champ: true });
+  const s = ranch();
   setInv(s, {});
-  const p = findPlot(s, 'champ-1');
+  const p = findPlot(s, 'potager-1');
   p.culture = 'tournesol';
   p.stade = 7;
-  assertEqual(harvest(s, 'champ-1', true).items, { graine_tournesol: 9 });
+  // printemps : 9 × 1,1 = 10 graines dans la Zone de culture
+  assertEqual(harvest(s, 'potager-1', true).items, { graine_tournesol: 10 });
+  assertEqual(countItem(s, 'graine_tournesol'), 10);
+  assertEqual(seedStock(s, 'tournesol'), 10);
+  assertEqual(plant(s, 'potager-2', 'tournesol').ok, true);
   assertEqual(countItem(s, 'graine_tournesol'), 9);
-  assertEqual(seedStock(s, 'tournesol'), 9);
-  assertEqual(plant(s, 'champ-2', 'tournesol').ok, true);
+  assertEqual(findPlot(s, 'potager-2').culture, 'tournesol');
+  assertEqual(plant(s, 'potager-3', 'tournesol').ok, true);
   assertEqual(countItem(s, 'graine_tournesol'), 8);
-  assertEqual(findPlot(s, 'champ-2').culture, 'tournesol');
-  assertEqual(plant(s, 'champ-3', 'tournesol').ok, true);
-  assertEqual(countItem(s, 'graine_tournesol'), 7);
   // sans graines, on ne sème pas
   setInv(s, {});
-  assertEqual(plant(s, 'champ-4', 'tournesol').ok, false);
+  assertEqual(plant(s, 'potager-4', 'tournesol').ok, false);
   // et elles s'achètent au Marché au prix des graines (coefficient 2,0)
   s.pieces = 10;
   const r = buyItem(s, 'graine_tournesol');
   assertEqual([r.ok, r.cost], [true, 2]);
-  assertEqual(plant(s, 'champ-4', 'tournesol').ok, true);
+  assertEqual(plant(s, 'potager-4', 'tournesol').ok, true);
 });
 
 test('blé : un blé sert de graine, pris d\'abord dans l\'inventaire puis dans le Silo', () => {
-  const s = ranch({ champ: true });
+  const s = ranch();
   setInv(s, { ble: 1 });
   s.silo.ble = 5;
   assertEqual(seedStock(s, 'ble'), 6);
-  assertEqual(plant(s, 'champ-1', 'ble').ok, true);
+  assertEqual(plant(s, 'potager-1', 'ble').ok, true);
   assertEqual([countItem(s, 'ble'), s.silo.ble], [0, 5], 'l\'inventaire d\'abord');
-  assertEqual(plant(s, 'champ-2', 'ble').ok, true);
+  assertEqual(plant(s, 'potager-2', 'ble').ok, true);
   assertEqual([countItem(s, 'ble'), s.silo.ble], [0, 4], 'puis le Silo');
   s.silo.ble = 0;
-  assertEqual(plant(s, 'champ-3', 'ble').ok, false, 'plus de blé du tout');
-  assertEqual(plant(s, 'champ-3', 'ble').error, 'Pas de graines : Blé.');
+  assertEqual(plant(s, 'potager-3', 'ble').ok, false, 'plus de blé du tout');
+  assertEqual(plant(s, 'potager-3', 'ble').error, 'Pas de graines : Blé.');
 });
 
 test('le blé et les graines de tournesol ne sont pas des aliments de la famille', () => {
@@ -9861,7 +10062,7 @@ test('la famille mange les œufs (13 énergie) : ils périment avant les conserv
   assertEqual(plan.energie, 4 * DATA.items.oeuf.energie + conserves * DATA.items.conserve.energie);
 });
 
-test('migration v4 (Lot 3) → v5 : Champ, Silo et Poulailler apparaissent, la partie est gardée', () => {
+test('migration v4 (Lot 3) → v5 : Silo et Poulailler apparaissent (plus de Champ), la partie est gardée', () => {
   const v4 = {
     version: 4, day: 12, awakeSeconds: 5, pieces: 321, rngSeed: 8, stats: {},
     unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'], marche: { carotte: 1.5 },
@@ -9876,7 +10077,8 @@ test('migration v4 (Lot 3) → v5 : Champ, Silo et Poulailler apparaissent, la p
   assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces], [12, 321]);
   assertEqual(m.marche, { carotte: 150 }, 'coefficient converti en %');
-  assertEqual(m.champ, { construit: false, niveau: 1, parcelles: [] });
+  assertEqual('champ' in m, false, 'aucun Champ n\'est créé : la Zone de culture le remplace');
+  assertEqual([m.potager.niveau, m.potager.parcelles.length], [1, 6]);
   assertEqual(m.silo, { construit: false, niveau: 1, ble: 0 });
   assertEqual(m.poulailler, { construit: false, niveau: 1, poules: 0, nourries: 0, restes: 0 });
   assertEqual([m.jour.ble, m.nuit.oeufs], [0, 0]);
@@ -9900,7 +10102,8 @@ test('migration v0 → version courante : les chaînes mènent au Lot 4', () => 
   const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
   assertEqual(m.version, STATE_VERSION);
   assertEqual(m.silo.construit, false);
-  assertEqual(m.champ.parcelles, []);
+  assertEqual('champ' in m, false);
+  assertEqual(m.potager.parcelles.map((p) => p.id), ['potager-1', 'potager-2', 'potager-3', 'potager-4', 'potager-5', 'potager-6']);
   assertEqual(m.jour.ble, 0);
 });
 
@@ -9924,25 +10127,25 @@ test('mode test Lot 4 : +50 blés (Silo puis inventaire) et +4 poules dans la li
   assertEqual([u.silo.ble, countItem(u, 'ble')], [0, 50]);
 });
 
-test('mode test : « faire mûrir » et « +10 de chaque graine » couvrent aussi le Champ', () => {
-  const s = ranch({ champ: true });
+test('mode test : « faire mûrir » et « +10 de chaque graine » couvrent aussi les cultures de plein champ', () => {
+  const s = ranch();
   setInv(s, {});
   testAddSeeds(s);
   assertEqual(countItem(s, 'graine_tournesol'), 10);
   assertEqual(countItem(s, 'ble'), 10);
-  plant(s, 'champ-1', 'ble');
+  plant(s, 'potager-2', 'ble');
   plant(s, 'potager-1', 'carotte');
   testRipenAll(s);
-  assertEqual(isMature(findPlot(s, 'champ-1')), true);
+  assertEqual(isMature(findPlot(s, 'potager-2')), true);
   assertEqual(isMature(findPlot(s, 'potager-1')), true);
 });
 
-test('sérialisation JSON : le Champ, le Silo et les poules font l\'aller-retour', () => {
-  const s = ranch({ champ: true });
+test('sérialisation JSON : le blé en terre, le Silo et les poules font l\'aller-retour', () => {
+  const s = ranch();
   s.silo.ble = 7.5;
   testAddHens(s);
   feedHen(s);
-  plant(s, 'champ-1', 'ble');
+  plant(s, 'potager-1', 'ble');
   const copy = JSON.parse(JSON.stringify(s));
   assertEqual(copy, s);
   assertEqual(wheatTotal(copy), wheatTotal(s));
@@ -10142,7 +10345,7 @@ test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni
   // Prix d'achat des graines au Marché : prix inchangé × plancher 2,0.
   assertEqual(buyPrice(garden(), 'graine_carotte'), 2);
   // Constructions, améliorations, animaux, arbres, soins : hors périmètre.
-  assertEqual([DATA.CHAMP.CONSTRUCTION, DATA.POULAILLER.CONSTRUCTION, DATA.SERRE.CONSTRUCTION, DATA.FRIGO.CONSTRUCTION], [60, 40, 400, 600]);
+  assertEqual([DATA.POULAILLER.CONSTRUCTION, DATA.SERRE.CONSTRUCTION, DATA.FRIGO.CONSTRUCTION], [40, 400, 600]);
   assertEqual(DATA.STATIONS.four.cout, 100);
   assertEqual(DATA.UPGRADE_COST, [0, 40, 100, 250, 600]);
   assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.mouton.prix, DATA.ANIMAUX.vache.prix], [15, 60, 200]);
@@ -11669,15 +11872,15 @@ test('migration v0 → version courante : les chaînes mènent au Lot 6', () => 
 
 /* ---------- Lot 7 : automatisations du niveau 5, arbre des technologies ---------- */
 
-// État de test : riche, réservoir plein, Silo et Poulailler construits (ranch),
-// Champ construit. Les bâtiments demandés passent au niveau 5.
+// État de test : riche, réservoir plein, Silo et Poulailler construits (ranch).
+// Les bâtiments demandés passent au niveau 5 ('potager' : la Zone de culture).
 // Arbre v2 : l'ancien « niveau 5 » = le bâtiment au niveau 5 + les nœuds
 // d'automatisation correspondants (comme la migration v14 les offre).
 function auto5(...batiments) {
-  const s = ranch({ champ: true });
+  const s = ranch();
   for (const b of batiments) {
     assert(testSetBuildingLevel5(s, b).ok, `niveau 5 : ${b}`);
-    if (b === 'potager' || b === 'champ') {
+    if (b === 'potager') {
       grantTech(s, 'ea_irrigation');
       grantTech(s, 'cu_recolte_auto');
     }
@@ -11782,46 +11985,57 @@ testBase('récolte automatique : parcelles mûres seulement, jamais celles mont�
   const t = auto5();
   plantRipe(t, 'potager-1', 'carotte');
   sleepOnce(t);
-  assertEqual(findPlot(t, 'potager-1').culture, 'carotte', 'Potager niveau 1 : rien ne se récolte seul');
+  assertEqual(findPlot(t, 'potager-1').culture, 'carotte', 'Zone de culture niveau 1 : rien ne se récolte seul');
 });
 
-test('Champ niveau 5 : arrosage et récolte automatiques (le blé va au Silo)', () => {
-  const s = auto5('champ');
+test('automatisations : elles couvrent toute la Zone de culture, plein champ compris (le blé va au Silo)', () => {
+  // les nœuds ne citent plus que la zone ('potager') et la Serre : plus de lieu « champ »
+  const N = DATA.techtree.noeuds;
+  assertEqual([N.ea_irrigation.effet.auto, N.cu_recolte_auto.effet.auto, N.semis_auto.effet.auto],
+    [{ arrosage: ['potager'] }, { recolte: ['potager'] }, { semis: ['potager'] }]);
+  assertEqual(Object.keys(AUTO_TACHES), ['potager', 'serre', 'poulailler', 'paturage']);
+  assertEqual(newAutoReport(), { potager: false, serre: false, poulailler: false, arrosees: 0, sansEau: 0, recoltes: {}, semees: 0, sansGraine: 0, nourries: 0, sansBle: 0, tondus: 0 });
+  const s = auto5('potager');
   testAddWheat(s, 10);
-  plantRipe(s, 'champ-1', 'ble');
-  plant(s, 'champ-2', 'ble');
+  addItem(s, 'graine_carotte', 1);
+  plantRipe(s, 'potager-1', 'ble');
+  plant(s, 'potager-2', 'ble');
+  plant(s, 'potager-30', 'carotte'); // la dernière parcelle de la zone, à côté du blé
   const silo = s.silo.ble;
   const eau = s.eauMl;
   const r = sleepOnce(s);
-  assertEqual(findPlot(s, 'champ-1').culture, null);
-  assertEqual(s.silo.ble, silo + 8);
-  assertEqual(findPlot(s, 'champ-2').stade, 1);
-  assertEqual(s.eauMl, eau - ml(2));
-  assertEqual([r.auto.champ, r.auto.arrosees, r.auto.recoltes.ble], [true, 1, 8]);
+  assertEqual(findPlot(s, 'potager-1').culture, null);
+  assertEqual(s.silo.ble, silo + 9, 'printemps : 8 × 1,1 = 9 blés, comme tout ce qui pousse dans la zone');
+  assertEqual(findPlot(s, 'potager-2').stade, 1);
+  assertEqual(findPlot(s, 'potager-30').stade, 1);
+  assertEqual(s.eauMl, eau - ml(2 + 2));
+  assertEqual([r.auto.potager, r.auto.arrosees, r.auto.recoltes.ble], [true, 2, 9]);
+  assertEqual('champ' in r.auto, false, 'le compte rendu n\'a plus de ligne Champ');
   const t = auto5();
   testAddWheat(t, 10);
-  plant(t, 'champ-1', 'ble');
+  plant(t, 'potager-1', 'ble');
   sleepOnce(t);
-  assertEqual(findPlot(t, 'champ-1').stade, 0, 'Champ niveau 1 : pas d\'arrosage automatique');
+  assertEqual(findPlot(t, 'potager-1').stade, 0, 'sans les nœuds : pas d\'arrosage automatique');
 });
 
 test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que les anciennes', () => {
-  // Champ niveau 5 : riz et houblon sont arrosés et récoltés automatiquement,
-  // exactement comme le blé (autoTasks() ne fait aucune distinction de culture,
-  // seulement de lieu : voir zones = [potager, champ] dans autoTasks()).
-  const s = auto5('champ');
+  // Zone de culture automatisée : riz et houblon sont arrosés et récoltés
+  // automatiquement, exactement comme le blé (autoTasks() ne fait aucune
+  // distinction de culture, seulement de lieu : voir zones = [potager, serre]
+  // dans autoTasks()). Printemps : ×1,1 (10 riz → 11, 6 houblons → 7).
+  const s = auto5('potager');
   addItem(s, 'riz', 2);
   addItem(s, 'houblon', 1);
-  plantRipe(s, 'champ-1', 'riz');
-  plantRipe(s, 'champ-2', 'houblon');
-  plant(s, 'champ-3', 'riz');
+  plantRipe(s, 'potager-1', 'riz');
+  plantRipe(s, 'potager-2', 'houblon');
+  plant(s, 'potager-3', 'riz');
   const r = sleepOnce(s);
-  assertEqual(findPlot(s, 'champ-1').culture, null, 'riz mûr : récolté automatiquement');
-  assertEqual(findPlot(s, 'champ-2').culture, null, 'houblon mûr : récolté automatiquement');
-  assertEqual(r.auto.recoltes, { riz: 10, houblon: 6 });
-  assertEqual(findPlot(s, 'champ-3').stade, 1, 'riz pas mûr : arrosé, il pousse (4 L, comme au clic)');
+  assertEqual(findPlot(s, 'potager-1').culture, null, 'riz mûr : récolté automatiquement');
+  assertEqual(findPlot(s, 'potager-2').culture, null, 'houblon mûr : récolté automatiquement');
+  assertEqual(r.auto.recoltes, { riz: 11, houblon: 7 });
+  assertEqual(findPlot(s, 'potager-3').stade, 1, 'riz pas mûr : arrosé, il pousse (4 L, comme au clic)');
 
-  // Potager niveau 5 : oignon, ail, poivron, épinard, fraise pareil.
+  // Oignon, ail, poivron, épinard, fraise pareil.
   const t = auto5('potager');
   addItem(t, 'graine_oignon', 1);
   addItem(t, 'ail', 1);
@@ -11850,7 +12064,7 @@ test('Serre : automatisée seulement par ses nœuds (Irrigation de la Serre, Ser
   grantTech(s, 'ea_irrigation');
   grantTech(s, 'cu_recolte_auto');
   sleepOnce(s);
-  assertEqual(findPlot(s, 'serre-1').culture, 'cacao', 'les nœuds du Potager et du Champ ne touchent pas la Serre');
+  assertEqual(findPlot(s, 'serre-1').culture, 'cacao', 'les nœuds de la Zone de culture ne touchent pas la Serre');
   assertEqual(isAutomated(s, 'serre'), false);
   grantTech(s, 'cu_serre_auto');
   const r = sleepOnce(s);
@@ -11965,8 +12179,10 @@ test('semis automatique : option par parcelle (désactiver, verrouiller une cult
   s.technologies.push('semis_auto');
   for (const id of ['potager-1', 'potager-2', 'potager-3']) plantRipe(s, id, 'patate');
   assertEqual(setSemis(s, 'potager-2', 'off').ok, true);
+  assertEqual(setSemis(s, 'potager-3', 'verrou', 'ble').ok, true, 'le blé se verrouille aussi : il pousse dans la zone');
   assertEqual(setSemis(s, 'potager-3', 'verrou', 'carotte').ok, true);
-  assertEqual(setSemis(s, 'potager-3', 'verrou', 'ble').ok, false, 'le blé ne se plante pas au Potager');
+  assertEqual(setSemis(s, 'potager-3', 'verrou', 'cacao').ok, false, 'le cacao ne se plante qu\'en Serre');
+  assertEqual(findPlot(s, 'potager-3').verrou, 'carotte', 'un refus ne change pas le réglage');
   assertEqual(setSemis(s, 'potager-1', 'nimporte').ok, false);
   const r = autoTasks(s);
   assertEqual(findPlot(s, 'potager-1').culture, 'patate');
@@ -11978,15 +12194,15 @@ test('semis automatique : option par parcelle (désactiver, verrouiller une cult
   assertEqual([findPlot(s, 'potager-3').semis, findPlot(s, 'potager-3').verrou], ['meme', null]);
 });
 
-test('semis automatique : aussi au Champ (blé), avec sa réserve', () => {
-  const s = auto5('potager', 'champ');
+test('semis automatique : aussi pour le plein champ (blé), avec sa réserve', () => {
+  const s = auto5('potager');
   s.technologies.push('semis_auto');
   testAddWheat(s, 3);
-  plantRipe(s, 'champ-1', 'ble');
+  plantRipe(s, 'potager-7', 'ble');
   sleepOnce(s);
-  const p = findPlot(s, 'champ-1');
+  const p = findPlot(s, 'potager-7');
   assertEqual([p.culture, p.stade], ['ble', 1]);
-  assertEqual(wheatTotal(s), 3 - 1 + 8 - 1, 'plantation à la main, récolte, semis');
+  assertEqual(wheatTotal(s), 3 - 1 + 9 - 1, 'plantation à la main, récolte (9 au printemps), semis');
 });
 
 test('temps de préparation : −20 % puis encore −20 %, à tous les ateliers', () => {
@@ -12109,17 +12325,16 @@ test('onglet Arbre des technologies : ajouté la première fois qu\'on possède 
 test('mode test Lot 7 : un bâtiment au niveau 5, tous les nœuds débloqués', () => {
   const s = createInitialState(1);
   assertEqual(testSetBuildingLevel5(s, 'potager').ok, true);
-  assertEqual([s.potager.niveau, s.potager.parcelles.length], [5, 20]);
+  assertEqual([s.potager.niveau, s.potager.parcelles.length], [5, 30]);
   assertEqual(s.pieces, 350, 'sans rien payer');
-  assertEqual(testSetBuildingLevel5(s, 'champ').ok, true);
-  assertEqual([s.champ.construit, s.champ.niveau, s.champ.parcelles.length], [true, 5, 16]);
-  assertEqual(s.champ.parcelles[0].id, 'champ-1');
+  assertEqual(testSetBuildingLevel5(s, 'champ').ok, false, 'le Champ n\'est plus un bâtiment');
+  assertEqual(s.champ, undefined);
   assertEqual(testSetBuildingLevel5(s, 'poulailler').ok, true);
   assertEqual([s.poulailler.construit, s.poulailler.niveau, coopCapacity(s)], [true, 5, 24]);
   assertEqual(testSetBuildingLevel5(s, 'silo').ok, true);
   assertEqual(siloCapacity(s), 400);
   assertEqual(testSetBuildingLevel5(s, 'moulin').ok, false);
-  assertEqual([isAutomated(s, 'potager'), isAutomated(s, 'champ'), isAutomated(s, 'poulailler'), isAutomated(s, 'silo')], [false, false, false, false], 'le niveau 5 n\'automatise plus');
+  assertEqual([isAutomated(s, 'potager'), isAutomated(s, 'poulailler'), isAutomated(s, 'silo')], [false, false, false], 'le niveau 5 n\'automatise plus');
   assertEqual(testUnlockAllTechs(s).ok, true);
   assertEqual([isAutomated(s, 'potager'), isAutomated(s, 'serre'), isAutomated(s, 'poulailler'), isAutomated(s, 'paturage')], [true, true, true, true]);
   assertEqual(s.technologies.slice().sort(), Object.keys(DATA.techtree.noeuds).sort());
@@ -12130,19 +12345,20 @@ test('mode test Lot 7 : un bâtiment au niveau 5, tous les nœuds débloqués', 
 });
 
 testBase('rapport de réveil : ce que les automatisations ont fait', () => {
-  const s = auto5('potager', 'champ', 'poulailler');
+  const s = auto5('potager', 'poulailler');
   s.technologies.push('semis_auto');
   testAddHens(s, 4);
   testAddWheat(s, 10);
   plantRipe(s, 'potager-1', 'patate');
   plant(s, 'potager-2', 'carotte');
   const r = sleepOnce(s);
-  assertEqual([r.auto.potager, r.auto.champ, r.auto.poulailler], [true, true, true]);
+  assertEqual([r.auto.potager, r.auto.serre, r.auto.poulailler], [true, false, true]);
+  assertEqual('champ' in r.auto, false);
   assertEqual(r.auto.recoltes, { patate: 8 });
   assertEqual([r.auto.semees, r.auto.arrosees, r.auto.nourries], [1, 2, 4]);
   const n = createInitialState(1);
   const rn = sleepOnce(n);
-  assertEqual([rn.auto.potager, rn.auto.champ, rn.auto.poulailler, rn.auto.arrosees], [false, false, false, 0]);
+  assertEqual([rn.auto.potager, rn.auto.serre, rn.auto.poulailler, rn.auto.arrosees], [false, false, false, 0]);
 });
 
 testBase('une nuit complète au niveau 5 : arrosage, pousse, récolte et semis s\'enchaînent', () => {
@@ -12167,8 +12383,10 @@ testBase('une nuit complète au niveau 5 : arrosage, pousse, récolte et semis s
 test('progression affichée dans l\'arbre : niveaux des bâtiments et appareils', () => {
   const s = auto5('potager');
   const culture = techProgress(s, 'culture');
-  // les nœuds d'automatisation valent pour le Potager et le Champ, quel que soit leur niveau
-  assertEqual(culture.map((e) => [e.cle, e.niveau, e.automatise]), [['potager', 5, true], ['champ', 1, true]]);
+  // une seule ligne : la Zone de culture (l'ancien Champ n'est plus suivi)
+  assertEqual(culture.map((e) => [e.cle, e.nom, e.niveau, e.automatise]), [['potager', 'Zone de culture', 5, true]]);
+  assertEqual([DATA.techtree.batiments.champ, DATA.techtree.suivi.champ], [undefined, undefined]);
+  assertEqual(DATA.techtree.batiments.potager.nom, 'Zone de culture');
   const energie = techProgress(s, 'energie');
   assertEqual(energie.map((e) => [e.cle, e.niveaux]), [['panneau', [1]], ['batterie', [1]]]);
   s.panneaux[0].niveau = 3;
@@ -12197,7 +12415,10 @@ test('migration v7 (Lot 6) → v8 : technologies vides, réglage de semis sur ch
   assertEqual([m.day, m.pieces], [40, 900]);
   assertEqual(m.technologies, []);
   assertEqual(m.potager.parcelles.every((p) => p.semis === 'meme' && p.verrou === null), true);
-  assertEqual([m.champ.parcelles[0].culture, m.champ.parcelles[0].stade, m.champ.parcelles[0].semis], ['ble', 3, 'meme']);
+  // v15 : la parcelle de l'ancien Champ a rejoint la zone (6 + 1 = 7 parcelles : niveau 2, 12 parcelles)
+  assertEqual('champ' in m, false);
+  assertEqual([m.potager.niveau, m.potager.parcelles.length], [2, 12]);
+  assertEqual(m.potager.parcelles[6], { id: 'potager-7', lieu: 'potager', culture: 'ble', stade: 3, arrose: true, montee: false, semis: 'meme', verrou: null });
   assertEqual(m.nuit.auto, newAutoReport());
   tick(m, 0.2);
   assertEqual(m.unlockedTabs.includes('techno'), true, '900 pièces');
@@ -12311,13 +12532,180 @@ test('migration v13 → v14 : PT des chapitres faits, automatisations et recette
   s.stations.four.construit = true;
   s.version = 13;
   const m = migrate({ v: 13, t: 0, s: JSON.parse(JSON.stringify(s)) });
-  assertEqual(m.version, 14);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.pointsTech.solde, m.pointsTech.gagnes, m.campagne.compteurs.nuits100], [12, 12, 1]);
   for (const id of ['semis_auto', 'ea_econome', 'ea_irrigation', 'cu_outils', 'cu_recolte_auto', 'el_mangeoire', 'cui_boulangerie']) {
     assert(m.technologies.includes(id), `${id} offert`);
   }
   assertEqual(m.technologies.includes('cui_laiterie'), false, 'pas de Pâturage : pas de Laiterie');
   assertEqual([isAutomated(m, 'potager'), isAutomated(m, 'poulailler')], [true, true], 'rien n\'est perdu');
+});
+
+/* --- migration v14 → v15 : le Potager et le Champ deviennent la Zone de culture --- */
+
+// Sauvegarde de la version 14 : une partie d'avant la fusion, avec l'ancien
+// Potager (6 / 9 / 12 / 16 / 20 parcelles) et l'ancien Champ (4 / 6 / 9 / 12 / 16,
+// à construire). `potager` et `champ` : niveaux d'alors (champ 0 : pas construit).
+function v14State({ potager = 1, champ = 0 } = {}, mutate) {
+  const anciennes = { potager: [6, 9, 12, 16, 20], champ: [4, 6, 9, 12, 16] };
+  const plots = (n, lieu) => Array.from({ length: n }, (_, i) => ({ id: `${lieu}-${i + 1}`, lieu, culture: null, stade: 0, arrose: false, montee: false, semis: 'meme', verrou: null }));
+  const s = createInitialState(6);
+  s.potager = { niveau: potager, parcelles: plots(anciennes.potager[potager - 1], 'potager') };
+  s.champ = champ > 0
+    ? { construit: true, niveau: champ, parcelles: plots(anciennes.champ[champ - 1], 'champ') }
+    : { construit: false, niveau: 1, parcelles: [] };
+  s.nuit.auto = { ...s.nuit.auto, champ: false };
+  s.campagne.chapitre = 4;
+  s.version = 14;
+  if (mutate) mutate(s);
+  return JSON.parse(JSON.stringify(s));
+}
+
+// Ce qu'une parcelle porte, sans son identifiant ni son lieu (que la fusion renumérote).
+function plotContent(p) {
+  const { id, lieu, ...reste } = p;
+  return reste;
+}
+
+test('migration v14 → v15 : Champ non construit, le Potager devient la Zone de culture', () => {
+  assertEqual(STATE_VERSION, 15);
+  const v14 = v14State({ potager: 3 }, (s) => {
+    Object.assign(s.potager.parcelles[0], { culture: 'carotte', stade: 2, arrose: true });
+    Object.assign(s.potager.parcelles[11], { culture: 'patate', stade: 6 });
+    s.pieces = 432;
+  });
+  const m = migrate({ v: 14, t: 0, s: v14 });
+  assertEqual(m.version, 15);
+  assertEqual('champ' in m, false, 'state.champ a disparu');
+  // 12 parcelles possédées : niveau 2 de la zone (12 parcelles), rien à compléter
+  assertEqual([m.potager.niveau, m.potager.parcelles.length], [2, 12]);
+  assertEqual(m.potager.parcelles.map((p) => p.id), Array.from({ length: 12 }, (_, i) => `potager-${i + 1}`));
+  assertEqual(m.potager.parcelles.map(plotContent), v14.potager.parcelles.map(plotContent), 'chaque parcelle garde tout ce qu\'elle portait');
+  assertEqual([m.pieces, m.inventaire, m.campagne], [432, v14.inventaire, v14.campagne], 'rien d\'autre ne bouge');
+  assertEqual(m.nuit.auto, newAutoReport(), 'le compte rendu n\'a plus de ligne Champ');
+  // niveau de la zone = le plus petit dont la capacité (6 / 12 / 18 / 24 / 30) contient les parcelles possédées
+  const zone = (potager) => { const z = migrate({ v: 14, t: 0, s: v14State({ potager }) }).potager; return [z.niveau, z.parcelles.length]; };
+  assertEqual([1, 2, 3, 4, 5].map(zone), [[1, 6], [2, 12], [2, 12], [3, 18], [4, 24]]);
+  // les parcelles ajoutées pour compléter le niveau sont vides, et la partie continue
+  const z = migrate({ v: 14, t: 0, s: v14State({ potager: 2 }) });
+  assertEqual(z.potager.parcelles.slice(9), [makePlot(10), makePlot(11), makePlot(12)]);
+  assert(sleepOnce(z) !== null, 'la partie migrée passe la nuit');
+  assertEqual(upgradePotager(Object.assign(z, { pieces: 5000 })).cost, 480, 'la zone s\'agrandit ensuite au nouveau tarif');
+  assertEqual(z.potager.parcelles.length, 18);
+});
+
+test('migration v14 → v15 : Champ construit avec des cultures, tout est regroupé dans la zone', () => {
+  const v14 = v14State({ potager: 2, champ: 2 }, (s) => {
+    Object.assign(s.potager.parcelles[0], { culture: 'carotte', stade: 4, montee: true });
+    Object.assign(s.potager.parcelles[8], { culture: 'tomate', stade: 1, arrose: true, semis: 'off' });
+    Object.assign(s.champ.parcelles[0], { culture: 'ble', stade: 5, arrose: true });
+    Object.assign(s.champ.parcelles[1], { culture: 'tournesol', stade: 7, semis: 'verrou', verrou: 'tournesol' });
+    Object.assign(s.champ.parcelles[3], { culture: 'riz', stade: 2, semis: 'verrou', verrou: 'ble', note: 'champ libre' });
+    s.technologies = ['cu_outils', 'ea_econome', 'ea_irrigation', 'cu_recolte_auto', 'semis_auto'];
+    s.nuit.auto = { ...s.nuit.auto, potager: false, champ: true, arrosees: 3 };
+    s.report = { nuit: 4, auto: { potager: false, champ: true, serre: false, poulailler: false, arrosees: 3, recoltes: { ble: 8 } } };
+    s.silo.construit = true;
+    s.eauMl = ml(40);
+  });
+  const m = migrate({ v: 14, t: 0, s: v14 });
+  assertEqual([m.version, 'champ' in m], [15, false]);
+  // 9 + 6 = 15 parcelles : niveau 3 (18 parcelles), 3 parcelles vides en plus
+  assertEqual([m.potager.niveau, m.potager.parcelles.length], [3, 18]);
+  assertEqual(m.potager.parcelles.map((p) => p.id), Array.from({ length: 18 }, (_, i) => `potager-${i + 1}`));
+  assertEqual(m.potager.parcelles.every((p) => p.lieu === 'potager'), true, 'le lieu « champ » a disparu');
+  // d'abord les parcelles du Potager, puis celles du Champ, dans leur ordre, avec tous leurs champs
+  assertEqual(m.potager.parcelles.slice(0, 15).map(plotContent), [...v14.potager.parcelles, ...v14.champ.parcelles].map(plotContent));
+  assertEqual(m.potager.parcelles[9], { id: 'potager-10', lieu: 'potager', culture: 'ble', stade: 5, arrose: true, montee: false, semis: 'meme', verrou: null });
+  assertEqual(m.potager.parcelles[10], { id: 'potager-11', lieu: 'potager', culture: 'tournesol', stade: 7, arrose: false, montee: false, semis: 'verrou', verrou: 'tournesol' });
+  assertEqual(m.potager.parcelles[12], { id: 'potager-13', lieu: 'potager', culture: 'riz', stade: 2, arrose: false, montee: false, semis: 'verrou', verrou: 'ble', note: 'champ libre' }, 'même un champ inconnu est gardé');
+  assertEqual(m.potager.parcelles.slice(15), [makePlot(16), makePlot(17), makePlot(18)]);
+  assertEqual(m.inventaire, v14.inventaire, 'aucun remboursement : rien n\'a été retiré');
+  // ce qui était rangé sous la clé « champ » rejoint la zone
+  assertEqual([m.nuit.auto.potager, 'champ' in m.nuit.auto, m.nuit.auto.arrosees], [true, false, 3]);
+  assertEqual([m.report.auto.potager, 'champ' in m.report.auto, m.report.auto.recoltes], [true, false, { ble: 8 }]);
+  // le déblocage « champ » (chapitre 3) reste acquis : les cultures de plein champ restent plantables
+  assertEqual([isUnlocked(m, 'champ'), plantableCropsFor(m, 'potager').includes('ble')], [true, true]);
+  // les automatisations acquises couvrent maintenant les anciennes parcelles du Champ
+  assertEqual(isAutomated(m, 'potager'), true);
+  const r = sleepOnce(m);
+  assertEqual(r.auto.recoltes.graine_tournesol > 0, true, 'le tournesol mûr de l\'ancien Champ est récolté tout seul');
+  assertEqual([findPlot(m, 'potager-11').culture, findPlot(m, 'potager-11').stade], ['tournesol', 1], 'et replanté (verrou gardé)');
+  assertEqual(findPlot(m, 'potager-10').stade, 6, 'le blé déjà arrosé a poussé');
+  assertEqual(JSON.parse(JSON.stringify(m)), m);
+  // une partie déjà à jour n'est pas retouchée
+  const again = migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  assertEqual(again, m);
+});
+
+test('migration v14 → v15 : plus de 30 parcelles, on en garde 30 et chaque plante retirée rend une graine', () => {
+  // 20 + 16 = 36 parcelles. 33 sont plantées : 3 vides partent d'abord, puis
+  // les 3 plantes les moins avancées (une carotte, une patate, un blé).
+  const v14 = v14State({ potager: 5, champ: 5 }, (s) => {
+    s.potager.parcelles.forEach((p, i) => Object.assign(p, { culture: i < 10 ? 'carotte' : 'patate', stade: 3 }));
+    s.champ.parcelles.forEach((p, i) => Object.assign(p, { culture: i < 12 ? 'ble' : 'tournesol', stade: 4, semis: 'off' }));
+    Object.assign(s.potager.parcelles[4], { stade: 0 }); // carotte tout juste semée : retirée
+    Object.assign(s.potager.parcelles[15], { stade: 1, arrose: true }); // patate : retirée
+    Object.assign(s.champ.parcelles[2], { stade: 2 }); // blé : retiré
+    for (const i of [13, 14, 15]) Object.assign(s.champ.parcelles[i], { culture: null, stade: 0 }); // vides : retirées sans rien rendre
+    s.inventaire = {};
+    addItem(s, 'graine_carotte', 2);
+    s.silo.construit = true;
+    s.silo.ble = 5;
+  });
+  const before = [...v14.potager.parcelles, ...v14.champ.parcelles];
+  const m = migrate({ v: 14, t: 0, s: v14 });
+  assertEqual([m.version, 'champ' in m], [15, false]);
+  assertEqual([m.potager.niveau, m.potager.parcelles.length], [5, 30]);
+  assertEqual(m.potager.parcelles.map((p) => p.id), Array.from({ length: 30 }, (_, i) => `potager-${i + 1}`));
+  assertEqual(m.potager.parcelles.every((p) => p.lieu === 'potager' && p.culture !== null), true, 'les 30 parcelles gardées sont toutes plantées');
+  // les parcelles gardées restent dans l'ordre, avec tout ce qu'elles portaient
+  const retirees = ['potager-5', 'potager-16', 'champ-3', 'champ-14', 'champ-15', 'champ-16'];
+  assertEqual(m.potager.parcelles.map(plotContent), before.filter((p) => !retirees.includes(p.id)).map(plotContent));
+  // une graine (ou un plant) par plante retirée ; le blé va dans l'inventaire
+  assertEqual([countItem(m, 'graine_carotte'), countItem(m, 'patate'), countItem(m, 'ble'), countItem(m, 'graine_tournesol')], [2 + 1, 1, 1, 0]);
+  assertEqual(Object.keys(inventoryCounts(m)).sort(), ['ble', 'graine_carotte', 'patate']);
+  assertEqual(m.silo.ble, 5, 'le Silo n\'est pas touché');
+  const count = (plots, c) => plots.filter((p) => p.culture === c).length;
+  for (const c of ['carotte', 'patate', 'ble', 'tournesol']) {
+    const rendu = c === 'tournesol' ? 0 : 1;
+    assertEqual([c, count(m.potager.parcelles, c) + rendu], [c, count(before, c)], `${c} : en terre + rendu = avant`);
+  }
+  // 20 + 9 = 29 parcelles, toutes plantées : sous la limite, rien à retirer ni à rendre
+  const pile = migrate({ v: 14, t: 0, s: v14State({ potager: 5, champ: 3 }, (s) => {
+    for (const p of [...s.potager.parcelles, ...s.champ.parcelles]) Object.assign(p, { culture: 'patate', stade: 1 });
+    s.inventaire = {};
+  }) });
+  assertEqual([pile.potager.niveau, pile.potager.parcelles.length, pile.inventaire], [5, 30, {}]);
+  assertEqual(pile.potager.parcelles.map((p) => p.culture), [...Array(29).fill('patate'), null]);
+});
+
+test('migration v14 → v15 : chaque champ de chaque parcelle est conservé, quelle que soit la sauvegarde', () => {
+  for (const [potager, champ] of [[1, 0], [1, 1], [3, 4], [5, 5], [2, 5]]) {
+    const v14 = v14State({ potager, champ }, (s) => {
+      // une parcelle sur deux est plantée : il reste toujours assez de parcelles vides à retirer
+      [...s.potager.parcelles, ...s.champ.parcelles].forEach((p, i) => {
+        if (i % 2 === 0) Object.assign(p, { culture: p.lieu === 'champ' ? 'ble' : 'carotte', stade: 1 + (i % 4), arrose: i % 4 === 0, montee: false, semis: ['meme', 'off', 'verrou'][i % 3], verrou: i % 3 === 2 ? 'carotte' : null });
+      });
+    });
+    const before = [...v14.potager.parcelles, ...v14.champ.parcelles];
+    const m = migrate({ v: 14, t: 0, s: v14 });
+    const planted = m.potager.parcelles.filter((p) => p.culture);
+    assertEqual(planted.map(plotContent), before.filter((p) => p.culture).map(plotContent), `potager ${potager}, champ ${champ} : les parcelles plantées`);
+    assertEqual(m.potager.parcelles.length, DATA.POTAGER.PARCELLES[m.potager.niveau - 1], 'la zone est pleine à son niveau');
+    assert(m.potager.parcelles.length >= Math.min(30, before.length), 'aucune parcelle possédée n\'est perdue (30 au plus)');
+    assertEqual(new Set(m.potager.parcelles.map((p) => p.id)).size, m.potager.parcelles.length, 'identifiants uniques');
+    assertEqual(m.potager.parcelles.map((p) => p.id), m.potager.parcelles.map((_, i) => makePlot(i + 1).id), 'numérotés comme makePlot()');
+    assertEqual(m.inventaire, v14.inventaire, 'rien à rendre');
+    assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
+  }
+  // sauvegarde abîmée : sans Champ, ou sans parcelles — la migration ne plante pas
+  const sans = v14State({ potager: 2 });
+  delete sans.champ;
+  assertEqual(migrate({ v: 14, t: 0, s: sans }).potager.parcelles.length, 12);
+  const vide = v14State();
+  delete vide.potager.parcelles;
+  const mv = migrate({ v: 14, t: 0, s: vide });
+  assertEqual([mv.potager.niveau, mv.potager.parcelles], [1, makePlots(6)]);
 });
 
 test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage', () => {
@@ -12362,10 +12750,13 @@ test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
   const S = DATA.SAISONS;
   assertEqual(S.LONGUEUR, 10);
   assertEqual(S.ORDRE, ['printemps', 'ete', 'automne', 'hiver']);
-  assertEqual(S.MODS.printemps, { solaire: 100, potager: 110, eau: 100, champ: 100, moutons: 120 });
-  assertEqual(S.MODS.ete, { solaire: 130, potager: 100, eau: 130, champ: 120, moutons: 100 });
-  assertEqual(S.MODS.automne, { solaire: 90, potager: 100, eau: 90, champ: 90, moutons: 100 });
-  assertEqual(S.MODS.hiver, { solaire: 70, potager: 70, eau: 80, champ: 70, moutons: 80 });
+  // version 1.0 : plus de facteur « champ », toute la Zone de culture suit « potager »
+  assertEqual(S.MODS.printemps, { solaire: 100, potager: 110, eau: 100, moutons: 120 });
+  assertEqual(S.MODS.ete, { solaire: 130, potager: 100, eau: 130, moutons: 100 });
+  assertEqual(S.MODS.automne, { solaire: 90, potager: 100, eau: 90, moutons: 100 });
+  assertEqual(S.MODS.hiver, { solaire: 70, potager: 70, eau: 80, moutons: 80 });
+  assertEqual(Object.keys(S.FACTEURS), ['solaire', 'potager', 'eau', 'moutons']);
+  assertEqual([S.RENDEMENT_LIEU, S.EAU_LIEUX], [{ potager: 'potager' }, ['potager']]);
   assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 400, PARCELLES: [6, 9, 12, 15, 18], COUT: [0, 300, 600, 1000, 1800] });
   const V = DATA.VERGER;
   assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 20, 50, 125]);
@@ -12415,13 +12806,13 @@ test('saisons : la saison suit la nuit courante quand on dort', () => {
   assertEqual(s.report.saison, currentSeason(s));
 });
 
-test('seasonFactor : les cinq modificateurs de chaque saison', () => {
+test('seasonFactor : les quatre modificateurs de chaque saison', () => {
   const s = createInitialState(1);
   const all = (kind) => [1, 11, 21, 31].map((day) => { s.day = day; return seasonFactor(s, kind); });
   assertEqual(all('solaire'), [100, 130, 90, 70]);
   assertEqual(all('potager'), [110, 100, 100, 70]);
   assertEqual(all('eau'), [100, 130, 90, 80]);
-  assertEqual(all('champ'), [100, 120, 90, 70]);
+  assertEqual(all('champ'), [undefined, undefined, undefined, undefined], 'plus de facteur champ');
   assertEqual(all('moutons'), [120, 100, 100, 80]);
 });
 
@@ -12449,17 +12840,21 @@ test('saisons : le rendement du potager suit la saison (10 carottes au départ)'
   assertEqual([yieldAt(1), yieldAt(11), yieldAt(21), yieldAt(31)], [11, 10, 10, 7]);
 });
 
-test('saisons : le rendement du champ suit la saison (8 blés au départ)', () => {
+test('saisons : le blé suit le facteur de la Zone de culture, comme les légumes (8 blés au départ)', () => {
   const yieldAt = (day) => {
-    const s = ranch({ champ: true });
+    const s = ranch();
     s.day = day;
     testAddWheat(s);
-    plantRipe(s, 'champ-1', 'ble');
-    const r = harvest(s, 'champ-1');
+    plantRipe(s, 'potager-1', 'ble');
+    const r = harvest(s, 'potager-1');
     return r.items.ble;
   };
-  // 8 × 1,0 / 1,2 / 0,9 / 0,7 = 8 / 9,6 / 7,2 / 5,6, arrondi
-  assertEqual([yieldAt(1), yieldAt(11), yieldAt(21), yieldAt(31)], [8, 10, 7, 6]);
+  // facteur « potager » : 8 × 1,1 / 1,0 / 1,0 / 0,7 = 8,8 / 8 / 8 / 5,6, arrondi
+  // (avant la version 1.0, le Champ avait le sien : 1,0 / 1,2 / 0,9 / 0,7)
+  assertEqual([yieldAt(1), yieldAt(11), yieldAt(21), yieldAt(31)], [9, 8, 8, 6]);
+  const s = ranch();
+  assertEqual([1, 11, 21, 31].map((day) => { s.day = day; return [yieldSeasonFactor(s, 'potager'), waterSeasonFactor(s, 'potager'), waterCostFor(s, 'ble', 'potager')]; }),
+    [[110, 100, 2], [100, 130, 3], [100, 90, 2], [70, 80, 2]], 'rendement et eau du blé : ceux de la zone');
 });
 
 test('saisons : l\'eau par arrosage suit la saison, la récolte automatique aussi', () => {
@@ -12551,22 +12946,23 @@ test('cultures de rente : cacao, vanille et café exclusivement en Serre', () =>
   // Sur DATA.crops directement, sans passer par l'interface : seul le lieu
   // 'serre' est déclaré.
   for (const c of rente) assertEqual(DATA.crops[c].lieux, ['serre']);
-  // plant() lui-même refuse le Potager et le Champ, pas seulement l'écran de
+  // plant() lui-même refuse la Zone de culture, pas seulement l'écran de
   // plantation (qui se contente de ne pas les proposer) : c'est bien la
   // fonction de plantation qui porte la règle.
   const s = garden();
   s.pieces = 5000;
-  buildChamp(s);
   buildSerre(s);
   addItem(s, 'cacao', 5);
   addItem(s, 'vanille', 5);
   addItem(s, 'cafe', 5);
   for (const c of rente) {
-    assertEqual(plant(s, 'potager-1', c).ok, false, `${c} ne se plante pas au Potager`);
-    assertEqual(plant(s, 'champ-1', c).ok, false, `${c} ne se plante pas au Champ`);
+    assertEqual(plant(s, 'potager-1', c).ok, false, `${c} ne se plante pas dans la Zone de culture`);
     assertEqual(findPlot(s, 'potager-1').culture, null);
-    assertEqual(findPlot(s, 'champ-1').culture, null);
   }
+  // à l'inverse, les cultures de plein champ ne vont pas en Serre
+  addItem(s, 'ble', 1);
+  addItem(s, 'riz', 1);
+  for (const c of ['ble', 'riz']) assertEqual(plant(s, 'serre-6', c).ok, false, `${c} ne se plante pas en Serre`);
   // Elles se plantent en revanche bien en Serre.
   rente.forEach((c, i) => {
     assertEqual(plant(s, `serre-${i + 1}`, c).ok, true, `${c} se plante en Serre`);
@@ -13617,18 +14013,25 @@ test('chapitres : la campagne finie ne recule pas et ne recompte rien', () => {
 });
 
 
-test('cultures plantables : le tournesol attend le chapitre 4', () => {
-  // Riz et houblon ne sont pas dans un `debloque` de chapitre (comme le blé) :
-  // ils sont disponibles dès que le Champ existe, sans attendre le chapitre 4
-  // (contrairement au tournesol, seule culture explicitement retardée).
-  assertEqual(plantableCropsFor(atChapter(3), 'champ'), ['ble', 'riz', 'houblon']);
-  assertEqual(plantableCropsFor(atChapter(4), 'champ'), ['ble', 'tournesol', 'riz', 'houblon']);
-  // Les 5 nouvelles cultures du Potager suivent le même principe que
-  // tomate/courgette/aubergine : disponibles dès le chapitre 1, sans chapitre
-  // de déblocage dédié (voir DATA.CHAPITRES.liste[*].debloque).
-  assertEqual(plantableCropsFor(atChapter(1), 'potager'),
-    ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise']);
-  assertEqual(plantableCropsFor(atChapter(8), 'champ'), ['ble', 'tournesol', 'riz', 'houblon']);
+test('cultures plantables : le plein champ attend le chapitre 3, le tournesol le chapitre 4', () => {
+  const legumes = ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise'];
+  // Les légumes de la Zone de culture sont disponibles dès le chapitre 1, sans
+  // chapitre de déblocage dédié (voir DATA.CHAPITRES.liste[*].debloque).
+  assertEqual(plantableCropsFor(atChapter(1), 'potager'), legumes);
+  assertEqual(plantableCropsFor(atChapter(2), 'potager'), legumes, 'pas de blé avant le déblocage « champ »');
+  // Blé, riz et houblon arrivent avec le déblocage « champ » (chapitre 3) : au
+  // moment exact où il fallait autrefois construire le Champ. Le tournesol
+  // attend en plus son propre déblocage (chapitre 4).
+  assertEqual(plantableCropsFor(atChapter(3), 'potager'), [...legumes, 'ble', 'riz', 'houblon']);
+  assertEqual(plantableCropsFor(atChapter(4), 'potager'), [...legumes, 'ble', 'tournesol', 'riz', 'houblon']);
+  assertEqual(plantableCropsFor(atChapter(8), 'potager'), [...legumes, 'ble', 'tournesol', 'riz', 'houblon']);
+  assertEqual(plantableCropsFor(atChapter(8), 'champ'), [], 'le lieu « champ » n\'existe plus');
+  assertEqual(['ble', 'riz', 'houblon', 'tournesol', 'carotte'].map((c) => [2, 3, 4].map((n) => cropUnlocked(atChapter(n), c))),
+    [[false, true, true], [false, true, true], [false, true, true], [false, false, true], [true, true, true]]);
+  // la Serre n'est pas concernée : ses cultures ne demandent aucun déblocage
+  assertEqual(plantableCropsFor(atChapter(1), 'serre'), plantableCrops('serre'));
+  // libellé du déblocage pour le joueur : plus un bâtiment, des cultures
+  assertEqual(DATA.CHAPITRES.ELEMENTS.champ, { nom: 'Cultures de plein champ', icone: '🌾', note: 'blé pour les poules et la farine' });
 });
 
 test('affichage : pourcentage arrondi vers le bas, 100 % seulement à 100', () => {
@@ -13709,17 +14112,22 @@ test('déblocages : le Potager, la pompe et le Marché sont là dès le départ'
 test('masquage : un chapitre qui avance ne détruit rien de ce que la partie possède', () => {
   const s = createInitialState(1);
   s.pieces = 5000;
-  assert(buildChamp(s).ok, 'les actions du moteur restent libres : le masquage est celui de l\'interface');
+  addItem(s, 'ble', 1);
+  assert(plant(s, 'potager-1', 'ble').ok, 'les actions du moteur restent libres : le masquage est celui de l\'interface');
+  assert(buildPoulailler(s).ok);
   testGoToChapter(s, 1);
-  assertEqual(s.champ.construit, true);
-  assertEqual(isUnlocked(s, 'champ'), false);
+  assertEqual([findPlot(s, 'potager-1').culture, s.poulailler.construit], ['ble', true]);
+  assertEqual([isUnlocked(s, 'champ'), isUnlocked(s, 'poulailler')], [false, false]);
+  assertEqual(plantableCropsFor(s, 'potager').includes('ble'), false, 'le blé n\'est pas proposé avant le chapitre 3');
 });
 
 /* --- migration --- */
 
-// Sauvegarde de la version 9 (Lot 8) : une partie sans campagne.
+// Sauvegarde de la version 9 (Lot 8) : une partie sans campagne, avec le Champ
+// de l'époque (à construire).
 function v9State(mutate) {
   const s = createInitialState(4);
+  s.champ = { construit: false, niveau: 1, parcelles: [] };
   delete s.campagne;
   delete s.nuit.energieProduit;
   delete s.nuit.autonomie;
@@ -13933,6 +14341,43 @@ test('Lot 10 : le joueur n\'achète le Potager niveau 2 qu\'en gardant sa caisse
   assertEqual(s.pieces, DATA.SIMULATION.CAISSE);
 });
 
+test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ (blé, tournesol)', () => {
+  const S = DATA.SIMULATION;
+  assertEqual(S.PART_PLEIN_CHAMP, 40);
+  // plus d'étape « champ » : la zone grandit par les étapes « potager »
+  assertEqual([...S.PLAN, ...Object.values(S.PRIORITE).flat()].some((e) => e.type === 'champ'), false);
+  assertEqual(S.PLAN.filter((e) => e.type === 'potager').map((e) => e.niveau), [2, 3, 4, 5]);
+  // la part ne vaut qu'une fois les cultures de plein champ débloquées (chapitre 3)
+  const cible = (chapitre, niveau) => {
+    const s = atChapter(chapitre);
+    while (s.potager.niveau < niveau) upgradePotager(Object.assign(s, { pieces: 5000 }));
+    return botFieldTarget(s);
+  };
+  assertEqual([cible(2, 2), cible(3, 1), cible(3, 2), cible(3, 3), cible(3, 4), cible(3, 5)], [0, 2, 4, 7, 9, 12]);
+  // chapitre 3, zone de 12 parcelles : 4 parcelles de blé, le reste en légumes
+  const s = atChapter(3);
+  upgradePotager(Object.assign(s, { pieces: 5000 }));
+  setInv(s, { ble: 20, patate: 20, graine_carotte: 20, riz: 20, houblon: 20, graine_tournesol: 20 });
+  botFarm(s);
+  const cultures = (st) => st.potager.parcelles.map((p) => p.culture);
+  assertEqual(cultures(s).filter((c) => c === 'ble').length, 4);
+  assertEqual(cultures(s).filter((c) => c === 'ble' || c === null).length, 4, 'toutes les autres parcelles sont plantées');
+  assertEqual(cultures(s).some((c) => ['riz', 'houblon', 'tournesol'].includes(c)), false, 'ni riz ni houblon, et pas de tournesol avant la Presse');
+  assertEqual(botWheatKept(s), 4, 'il garde de quoi ressemer son blé');
+  // chapitre 4 avec la Presse : une parcelle de tournesol prise sur la part de plein champ
+  const t = atChapter(4);
+  upgradePotager(Object.assign(t, { pieces: 5000 }));
+  t.stations.presse.construit = true;
+  setInv(t, { ble: 20, patate: 20, graine_tournesol: 20 });
+  botFarm(t);
+  assertEqual([cultures(t).filter((c) => c === 'tournesol').length, cultures(t).filter((c) => c === 'ble').length], [S.PARCELLES_TOURNESOL, 4 - S.PARCELLES_TOURNESOL]);
+  // avant le chapitre 3 : aucune culture de plein champ, même avec du blé en stock
+  const u = atChapter(2);
+  setInv(u, { ble: 20, patate: 20 });
+  botFarm(u);
+  assertEqual(cultures(u).every((c) => c !== null && !botIsFieldCrop(c)), true, 'six parcelles de légumes');
+});
+
 test('Lot 10 : le joueur ne vend des conserves que pour payer un achat, et pas sous le stock gardé', () => {
   const s = createInitialState(1);
   s.pieces = 0;
@@ -13979,7 +14424,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '0.18.0');
+  assertEqual(GAME_VERSION, '1.0.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -14831,6 +15276,8 @@ const Telemetry = (() => {
 })();
 </script>
 
+<script src="vendor/phaser.min.js"></script>
+<script src="farm-stage.js"></script>
 <script id="app">
 'use strict';
 
@@ -14871,7 +15318,7 @@ function tabAvailable(id) {
 
 let state = null;
 let activeTab = 'ferme';
-let screen = null; // écran de détail ouvert dans la Ferme : null, 'panneaux' ou 'batteries'
+let ecranFerme = null; // écran de détail ouvert dans la Ferme : null, 'panneaux' ou 'batteries'
 let testMode = false;
 let invTab = 'frais'; // Inventaire : 'frais', 'graines' ou 'produits'
 let comptoirTab = 'vendre'; // Marché : 'vendre', 'acheter', 'graines', 'animaux' ou 'arbres'
@@ -14892,7 +15339,7 @@ function telClick(target, action) {
   tel('click', action, detail);
 }
 
-function telView() { tel('tab', activeTab, screen); }
+function telView() { tel('tab', activeTab, ecranFerme); }
 
 let telChapter = null; // dernier chapitre vu, pour repérer les passages de chapitre
 
@@ -15088,7 +15535,7 @@ function actionNewGame() {
   simulatedAt = Date.now();
   pendingAbsence = null;
   syncJobs();
-  screen = null;
+  ecranFerme = null;
   activeTab = 'ferme';
   persistState();
   refresh();
@@ -15375,6 +15822,8 @@ function render() {
   renderTabbar();
   renderTabContent();
   renderSleepBar();
+  renderStage();
+  renderStageWindow();
   renderTutorial();
   renderTestPanel();
 }
@@ -15461,6 +15910,193 @@ function patchAttributes(o, w) {
   }
 }
 
+/* ---------- Carte Phaser (voir farm-stage.js et docs/architecture-phaser.md) ---------- */
+
+let stageMounted = false;
+let stageMountedAt = 0;
+let stageBroken = false; // Phaser a planté au montage : la Ferme garde sa liste classique
+// Sans scène prête après ce délai (plantage au démarrage, images qui ne viennent pas), la
+// Ferme repasse sur la liste classique ; la carte revient d'elle-même si elle finit par démarrer.
+const STAGE_BOOT_MS = 12000;
+
+function stageUsable() {
+  if (!(window.FarmStage && window.Phaser) || stageBroken) return false;
+  // Jeu ouvert depuis le disque : le navigateur refuse de charger la carte et ses images.
+  if (location.protocol === 'file:') return false;
+  if (stageMounted && !FarmStage.ready() && Date.now() - stageMountedAt > STAGE_BOOT_MS) return false;
+  return true;
+}
+
+// La carte est affichée si Phaser est disponible et qu'on est sur la Ferme (pas dans un écran
+// de détail). Sans Phaser, la Ferme garde sa liste classique.
+function stageActive() {
+  return stageUsable() && activeTab === 'ferme' && ecranFerme === null;
+}
+
+// Colonnes de la zone de culture selon le nombre de parcelles : 6, 12, 18, 24, 30 parcelles =
+// 2×3, 3×4, 3×6, 4×6, 5×6 (colonnes × rangées), à partir du coin de `zone_culture` de la carte.
+function stageCols(n) {
+  return n <= 6 ? 2 : n <= 18 ? 3 : n <= 24 ? 4 : 5;
+}
+
+// Modèle de vue : tout ce que la carte a le droit de savoir. Aucune référence à `state`.
+function stageModel() {
+  const plots = state.potager.parcelles.map((p) => {
+    if (!p.culture) return { id: p.id, culture: null, icone: '', phase: -1, mature: false, arrosee: !!p.arrose };
+    const max = maxStage(p);
+    const mature = isMature(p);
+    const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
+    return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: !!p.arrose };
+  });
+  // Bâtiments dessinés : seulement ceux que le jeu a débloqués (la maison est toujours là).
+  const batiments = {};
+  for (const id of ['etable', 'moulin', 'serre', 'verger']) batiments[id] = STAGE_WINDOWS[id].ok();
+  return { season: currentSeason(state), cols: stageCols(plots.length), plots, batiments };
+}
+
+// Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La
+// délégation d'événements existante fait le reste (action, fenêtre, suivi).
+function stageAct(action, data) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.hidden = true;
+  b.dataset.action = action;
+  for (const k of Object.keys(data || {})) b.dataset[k] = data[k];
+  document.getElementById('farm-stage').appendChild(b);
+  b.click();
+  b.remove();
+}
+
+function renderStage() {
+  const el = document.getElementById('farm-stage');
+  let on = stageActive();
+  if (on && !stageMounted) {
+    stageMounted = true;
+    stageMountedAt = Date.now();
+    el.hidden = false;
+    // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
+    try {
+      if (!FarmStage.mount(el, { act: stageAct, base: 'assets/' })) stageBroken = true;
+    } catch (err) {
+      stageBroken = true;
+    }
+    if (stageBroken) {
+      on = false;
+      renderTabContent();
+    }
+  }
+  el.hidden = !on;
+  document.body.classList.toggle('has-stage', on);
+  if (!on) {
+    if (window.FarmStage) FarmStage.hide();
+    return;
+  }
+  const head = document.querySelector('.app-header');
+  document.documentElement.style.setProperty('--header-h', head.offsetHeight + 'px');
+  FarmStage.show();
+  FarmStage.update(stageModel());
+  if (!el.querySelector('.stage-btns')) {
+    el.insertAdjacentHTML('beforeend', `
+      <div class="stage-btns">
+        <button type="button" class="stage-btn" data-action="stage-open" data-window="zone" aria-label="Zone de culture" title="Zone de culture">🌱</button>
+        <button type="button" class="stage-btn" data-action="stage-open" data-window="chapitres" aria-label="Chapitres" title="Chapitres">📜</button>
+      </div>`);
+  }
+}
+
+/* ---------- Fenêtres de la carte ---------- */
+
+// Un appui sur un bâtiment (ou un bouton rond) ouvre une fenêtre dont le contenu est celui
+// des sections de la Ferme, redessiné à chaque rendu : les boutons y fonctionnent comme
+// dans la liste classique. Les fenêtres de #modal-root s'affichent par-dessus.
+let stageWindow = null; // null, 'maison', 'etable', 'serre', 'moulin', 'verger', 'zone' ou 'chapitres'
+let stageReturn = null; // fenêtre à rouvrir en revenant d'un écran de détail (panneaux, batteries)
+let stageWindowShown = null; // dernière fenêtre dessinée (avec son onglet) : pour remonter en haut au changement
+let maisonTab = 'famille'; // onglet de la fenêtre Maison
+
+const MAISON_TABS = [
+  { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), corps: () => renderFamille() },
+  { id: 'recettes', label: 'Livre de recette', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
+  { id: 'techno', label: 'Arbre des technologies', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
+  { id: 'batiments', label: 'Bâtiments', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
+];
+
+function maisonCurrentTab() {
+  const tabs = MAISON_TABS.filter((t) => t.ok());
+  return tabs.find((t) => t.id === maisonTab) || tabs[0];
+}
+
+function renderMaisonWindow() {
+  const tab = maisonCurrentTab();
+  return subtabsHtml(MAISON_TABS.filter((t) => t.ok()), tab.id, 'maison-tab') + tab.corps();
+}
+
+// Bâtiments techniques sans dessin sur la carte : énergie et eau, Silo, calendrier.
+function renderBatiments() {
+  return `${renderEnergieEau()}${isUnlocked(state, 'silo') ? renderSilo() : ''}<h3 class="section-title">📅 Calendrier</h3>${renderCalendar()}`;
+}
+
+// `ok` : la fenêtre (et son bâtiment sur la carte) existe-t-elle à ce stade de la partie ?
+const STAGE_WINDOWS = {
+  maison: { titre: '🏠 Maison', ok: () => true, haute: true, corps: () => renderMaisonWindow() },
+  etable: {
+    titre: '🐄 Étable',
+    ok: () => isUnlocked(state, 'poulailler') || isUnlocked(state, 'paturage'),
+    corps: () => (isUnlocked(state, 'poulailler') ? renderPoulailler() : '') + (isUnlocked(state, 'paturage') ? renderPaturage() : ''),
+  },
+  serre: { titre: '🪴 Serre', ok: () => isUnlocked(state, 'serre'), corps: () => renderSerre() },
+  // Le moulin regroupe tous les ateliers : il apparaît dès que le premier est débloqué.
+  moulin: { titre: '⚙️ Moulin et ateliers', ok: () => Object.keys(DATA.STATIONS).some((id) => isUnlocked(state, id)), corps: () => renderAteliers() },
+  verger: { titre: '🍎 Verger', ok: () => isUnlocked(state, 'verger'), corps: () => renderVerger() },
+  zone: { titre: '🌱 Zone de culture', ok: () => true, corps: () => renderPotager() },
+  chapitres: { titre: '📜 Chapitres', ok: () => true, corps: () => renderChapterBanner() },
+};
+
+function renderStageWindow() {
+  const root = document.getElementById('window-root');
+  const w = stageWindow ? STAGE_WINDOWS[stageWindow] : null;
+  if (stageWindow && (!w || !w.ok() || !stageActive())) stageWindow = null;
+  if (!stageWindow) {
+    if (root.childElementCount) morph(root, '');
+    stageWindowShown = null;
+    return;
+  }
+  morph(root, `
+    <div class="window-layer">
+      <div class="window-backdrop" data-action="stage-close"></div>
+      <section class="stage-window${w.haute ? ' tall' : ''}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
+        <header class="window-head">
+          <h2 id="stage-window-title">${w.titre}</h2>
+          <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer la fenêtre" title="Fermer">✕</button>
+        </header>
+        <div class="window-body">${w.corps()}</div>
+      </section>
+    </div>`);
+  // Autre fenêtre ou autre onglet : le contenu repart du haut ; à l'ouverture, le focus va sur ✕.
+  const shown = stageWindow + (stageWindow === 'maison' ? ':' + maisonCurrentTab().id : '');
+  if (shown !== stageWindowShown) {
+    const opening = stageWindowShown === null;
+    stageWindowShown = shown;
+    root.querySelector('.window-body').scrollTop = 0;
+    if (opening) document.getElementById('stage-window-close').focus({ preventScroll: true });
+  }
+}
+
+function openStageWindow(id) {
+  if (!STAGE_WINDOWS[id] || !STAGE_WINDOWS[id].ok()) return;
+  stageWindow = id;
+  stageReturn = null;
+  renderStageWindow(); // tout de suite, sans attendre la cadence de rendu
+  refresh();
+}
+
+function closeStageWindow() {
+  stageWindow = null;
+  stageReturn = null;
+  renderStageWindow();
+  refresh();
+}
+
 function renderIndicators() {
   morph(document.getElementById('indicators'), `
     <span class="indicator" title="Nuit"><span aria-hidden="true">🌙</span><span><span class="visually-hidden">Nuit </span>${state.day}</span></span>
@@ -15490,7 +16126,8 @@ function renderTabbar() {
 // Chaque onglet donne une liste de tranches (la Ferme en a une par section).
 // render() ramène déjà un onglet non débloqué sur la Ferme.
 const TAB_RENDERERS = {
-  ferme: () => (screen === 'panneaux' || screen === 'batteries' ? [renderDeviceScreen(screen)] : renderFerme()),
+  // Avec la carte, tout passe par elle et ses fenêtres ; sans Phaser, la liste classique.
+  ferme: () => (ecranFerme === 'panneaux' || ecranFerme === 'batteries' ? [renderDeviceScreen(ecranFerme)] : stageActive() ? [''] : renderFerme()),
   famille: () => [backToFerme() + renderFamille()],
   inventaire: () => [renderInventaire()],
   comptoir: () => [renderComptoir()],
@@ -15503,17 +16140,20 @@ function renderTabContent() {
   morphSlots(document.getElementById('tab-content'), (TAB_RENDERERS[activeTab] || TAB_RENDERERS.ferme)());
 }
 
+// Bouton « Zzz » (Dormir), en bas à droite sur tous les onglets. L'aperçu du repas est dans
+// son libellé (title / aria-label) ; une pastille ne s'affiche que si le repas prévu est insuffisant.
 function renderSleepBar() {
   const remaining = Math.max(1, Math.ceil((awakeRequired(state) * 1000 - state.awakeMs) / 1000));
   const plan = planMeal(state);
   const short = plan.energie + EPS < plan.besoin;
-  const preview = `<p class="meal-preview${short ? ' short' : ''}">🍽️ Repas prévu : ${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)} énergie${short ? ' ⚠️' : ''} · 🌿 ${formatPercent(plannedAutonomy(state))}</p>`;
+  const eaten = `${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)}`;
+  const meal = `Repas prévu : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
+  const ok = canSleep(state);
+  const label = `${ok ? 'Dormir' : `Dormir (dans ${remaining} s)`}. ${meal}`;
   morph(
-    document.getElementById('sleep-bar'),
-    preview +
-      (canSleep(state)
-        ? `<button type="button" class="btn primary${tutoTarget('dormir')}" data-action="sleep">😴 Dormir</button>`
-        : `<button type="button" class="btn${tutoTarget('dormir')}" data-action="sleep" disabled>😴 Dormir (dans ${remaining} s)</button>`)
+    document.getElementById('sleep-fab'),
+    (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
+      `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}"${ok ? '' : ' disabled'}><span aria-hidden="true">Zzz</span>${ok ? '' : `<span class="sleep-wait" aria-hidden="true">${remaining} s</span>`}</button>`
   );
 }
 
@@ -15583,21 +16223,6 @@ function renderFermeLinks() {
 }
 
 function renderFerme() {
-  const e = energyStats(state);
-  const p = state.pompe;
-  const ps = deviceStatus(state, p);
-  const cap = tankCapacity(state);
-  const netText =
-    e.net > 0
-      ? `En charge (${formatWhRate(e.net, true)})`
-      : e.net < 0
-        ? `En décharge (${formatWhRate(e.net, true)})`
-        : 'Stable (0 Wh/s)';
-  const tankText =
-    state.eauMl >= cap
-      ? 'Réservoir plein'
-      : `Vitesse de remplissage : ${formatLitresRate(state.flux.eau)}`;
-
   // Lot 11 : une tranche par section, toujours le même nombre de tranches (une
   // section pas encore débloquée est vide) : chacune n'est mise à jour que si
   // son gabarit a changé.
@@ -15605,13 +16230,24 @@ function renderFerme() {
     `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}${renderCalendar()}`,
     renderPotager(),
     isUnlocked(state, 'serre') ? renderSerre() : '',
-    isUnlocked(state, 'champ') ? renderChamp() : '',
     isUnlocked(state, 'silo') ? renderSilo() : '',
     isUnlocked(state, 'poulailler') ? renderPoulailler() : '',
     isUnlocked(state, 'paturage') ? renderPaturage() : '',
     isUnlocked(state, 'verger') ? renderVerger() : '',
     renderAteliers(),
-    `
+    renderEnergieEau(),
+  ];
+}
+
+// Cartes « Énergie et eau » : dans la liste classique de la Ferme et dans la fenêtre
+// Maison › Bâtiments de la carte.
+function renderEnergieEau() {
+  const e = energyStats(state), p = state.pompe, ps = deviceStatus(state, p), cap = tankCapacity(state);
+  let netText = 'Stable (0 Wh/s)';
+  if (e.net > 0) netText = `En charge (${formatWhRate(e.net, true)})`;
+  else if (e.net < 0) netText = `En décharge (${formatWhRate(e.net, true)})`;
+  const tankText = state.eauMl >= cap ? 'Réservoir plein' : `Vitesse de remplissage : ${formatLitresRate(state.flux.eau)}`;
+  return `
     <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
@@ -15640,8 +16276,7 @@ function renderFerme() {
       </div>
       ${isUnlocked(state, 'frigo') ? renderFridgeCard() : ''}
     </div>
-  `,
-  ];
+  `;
 }
 
 function wearHtml(d) {
@@ -15732,7 +16367,7 @@ function renderDeviceScreen(kind) {
   `;
 }
 
-/* ---------- Ferme : potager ---------- */
+/* ---------- Ferme : Zone de culture (state.potager) ---------- */
 
 function renderPotager() {
   const pot = state.potager;
@@ -15740,11 +16375,11 @@ function renderPotager() {
   const prod = productivity(state);
   const upBtn =
     up === null
-      ? '<button type="button" class="btn" disabled>Potager au niveau maximum</button>'
+      ? '<button type="button" class="btn" disabled>Zone de culture au niveau maximum</button>'
       : `<button type="button" class="btn" data-action="upgrade-potager"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${pot.niveau + 1}, ${DATA.POTAGER.PARCELLES[pot.niveau]} parcelles (${costLabel(up)})</button>`;
   return `
     <div class="section-head">
-      <h3>${icon('potager')}Potager · niveau ${pot.niveau}</h3>
+      <h3>${icon('potager')}${DATA.POTAGER.NOM} · niveau ${pot.niveau}</h3>
       <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ${formatPercent(prod)}</span>${helpBtn('potager')}</span>
     </div>
     <div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
@@ -15752,33 +16387,7 @@ function renderPotager() {
   `;
 }
 
-/* ---------- Ferme : Champ, Silo et Poulailler ---------- */
-
-function renderChamp() {
-  const c = state.champ;
-  if (!c.construit) {
-    const cost = DATA.CHAMP.CONSTRUCTION;
-    return `
-      <div class="section-head"><h3>${icon('champ')}Champ</h3>${helpBtn('champ')}</div>
-      <div class="card">
-        <span class="muted">Blé, tournesol, riz et houblon : ${DATA.CHAMP.PARCELLES[0]} parcelles au départ. Le blé nourrit les poules, le tournesol donne des graines ; riz et houblon serviront aussi en cuisine.</span>
-        <button type="button" class="btn primary" data-action="build-champ"${canPay(cost) ? '' : ' disabled'}>Construire le Champ (${costLabel(cost)})</button>
-      </div>`;
-  }
-  const up = champUpgradeCost(state);
-  const upBtn =
-    up === null
-      ? '<button type="button" class="btn" disabled>Champ au niveau maximum</button>'
-      : `<button type="button" class="btn" data-action="upgrade-champ"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${c.niveau + 1}, ${DATA.CHAMP.PARCELLES[c.niveau]} parcelles (${costLabel(up)})</button>`;
-  return `
-    <div class="section-head">
-      <h3>${icon('champ')}Champ · niveau ${c.niveau}</h3>
-      <span class="chips">${autoChip('champ', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}${helpBtn('champ')}</span>
-    </div>
-    <div class="plots">${c.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${groupButtons('champ')}${upBtn}</div>
-  `;
-}
+/* ---------- Ferme : Silo et Poulailler ---------- */
 
 function renderSilo() {
   const s = state.silo;
@@ -16205,7 +16814,7 @@ function renderCalendar() {
       <span class="card-title"><span>${info.icone} ${info.nom}</span><span class="chip">Nuit ${n} / ${S.LONGUEUR}</span></span>
       <span class="bar" role="progressbar" aria-label="Avancement de la saison" aria-valuemin="0" aria-valuemax="${S.LONGUEUR}" aria-valuenow="${n}"><span class="bar-fill" style="width:${Math.round((n / S.LONGUEUR) * 100)}%"></span></span>
       <span class="season-chips">${chips}</span>
-      <span class="muted">Les modificateurs jouent sur le Potager, le Champ, l'eau des arrosages, le solaire et les moutons. La Serre les ignore.</span>
+      <span class="muted">Les modificateurs jouent sur la Zone de culture, l'eau des arrosages, le solaire et les moutons. La Serre les ignore.</span>
     </div>`;
 }
 
@@ -17086,9 +17695,9 @@ function plural(n, mot) {
 
 // Lignes du réveil pour les automatisations (Lot 7) : ce qui a été fait, puis ce qui a manqué.
 function autoLines(a) {
-  if (!a || !(a.potager || a.champ || a.serre || a.poulailler || a.tondus)) return [];
+  if (!a || !(a.potager || a.serre || a.poulailler || a.tondus)) return [];
   const done = [];
-  if (a.potager || a.champ || a.serre) done.push(`💧 ${plural(a.arrosees, 'parcelle')} arrosée${a.arrosees > 1 ? 's' : ''}`);
+  if (a.potager || a.serre) done.push(`💧 ${plural(a.arrosees, 'parcelle')} arrosée${a.arrosees > 1 ? 's' : ''}`);
   const harvested = itemsSummary(a.recoltes || {});
   if (harvested) done.push(`🧺 ${harvested}`);
   if (a.semees > 0) done.push(`🌱 ${plural(a.semees, 'semis')}`);
@@ -17488,18 +18097,13 @@ const HELP = {
     note: `L'eau d'un arrosage varie avec la saison (${seasonRange('eau')}), sauf dans la Serre.`,
   }),
   potager: () => ({
-    nom: 'Potager',
-    role: 'Planter, arroser, récolter. Une plante arrosée gagne un stade chaque nuit ; sans eau, elle attend. La parcelle se libère après la récolte.',
+    nom: DATA.POTAGER.NOM,
+    role: `Planter, arroser, récolter : toutes les cultures poussent ici, sur n'importe quelle parcelle. Une plante arrosée gagne un stade chaque nuit ; sans eau, elle attend. La parcelle se libère après la récolte. ${isUnlocked(state, 'champ')
+      ? 'Cultures de plein champ : le blé nourrit les poules et donne la farine, le tournesol donne l\'huile, le riz et le houblon servent en cuisine ; un blé sert aussi de graine (comme le riz et le houblon).'
+      : `Les cultures de plein champ (blé, riz, houblon) arrivent au chapitre ${unlockChapter('champ')}.`}`,
     conso: `Eau par arrosage : ${cropsLine('potager', 'eau')}.`,
-    prod: `${cropsLine('potager', 'recolte')}. Saison : ${seasonRange('potager')}.`,
-    note: levelsNote(DATA.POTAGER.PARCELLES, 'le Potager'),
-  }),
-  champ: () => ({
-    nom: 'Champ',
-    role: 'Blé pour les poules et la farine, tournesol pour l\'huile, riz et houblon pour la cuisine. Mêmes règles que le Potager.',
-    conso: `Eau par arrosage : ${cropsLine('champ', 'eau')}.`,
-    prod: `${cropsLine('champ', 'recolte')}. Saison : ${seasonRange('champ')}. Un blé sert aussi de graine (comme le riz et le houblon).`,
-    note: `Construction : ${costLabel(DATA.CHAMP.CONSTRUCTION)}. ${levelsNote(DATA.CHAMP.PARCELLES, 'le Champ')}`,
+    prod: `${cropsLine('potager', 'recolte')}. Saison : ${seasonRange('potager')}, pour toutes les cultures.`,
+    note: levelsNote(DATA.POTAGER.PARCELLES, 'la Zone de culture'),
   }),
   serre: () => ({
     nom: 'Serre',
@@ -17612,15 +18216,15 @@ function openHelpModal(id) {
 const TUTO = {
   eau: {
     titre: '💧 L\'eau et le soleil',
-    texte: () => `Les panneaux solaires chargent la batterie ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).`,
+    texte: () => `Les panneaux solaires chargent la batterie ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).${stageUsable() ? ' Panneaux, batterie et pompe se trouvent dans la maison : touche-la, puis ouvre « Bâtiments ».' : ''}`,
   },
   potager: {
-    titre: '🌱 Le potager',
-    texte: () => `Touche « Planter » sur une parcelle vide, puis « Arroser ». Une plante arrosée gagne un stade chaque nuit : les carottes sont mûres en ${nightsLabel(DATA.crops.carotte.stades)}. Après la récolte, replante.`,
+    titre: '🌱 La zone de culture',
+    texte: () => `${stageUsable() ? 'Touche une parcelle vide (le carré de terre sous la barrière) pour planter, puis touche-la encore pour l\'arroser' : 'Touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade chaque nuit : les carottes sont mûres en ${nightsLabel(DATA.crops.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante.' : 'Après la récolte, replante.'}`,
   },
   dormir: {
     titre: '😴 Dormir',
-    texte: () => `La journée ne finit que quand tu dors. Le bouton s'active après ${formatNumber(awakeRequired(state))} s d'éveil. La nuit, la famille mange, puis les plantes arrosées poussent.`,
+    texte: () => `La journée ne finit que quand tu dors. Le bouton « Zzz », en bas à droite, s'active après ${formatNumber(awakeRequired(state))} s d'éveil. La nuit, la famille mange, puis les plantes arrosées poussent.`,
   },
 };
 
@@ -17631,7 +18235,7 @@ function visibleTutorial() {
   const step = tutorialStep(state);
   if (!step) return null;
   if (step === 'dormir') return step;
-  return activeTab === 'ferme' && !screen ? step : null;
+  return activeTab === 'ferme' && !ecranFerme ? step : null;
 }
 
 // Classe à ajouter à l'élément que la bulle montre.
@@ -17697,7 +18301,10 @@ function openAboutModal() {
         <p class="about-version"><strong>Ferme Familiale</strong> · version ${GAME_VERSION} <span class="muted">(format de sauvegarde ${STATE_VERSION})</span></p>
         <h3>Règles principales</h3>
         <ol class="about-rules">${rules.map((r) => `<li>${r}</li>`).join('')}</ol>
-        <p class="muted">Illustrations originales. Un seul fichier HTML, sans bibliothèque, qui marche hors connexion.</p>
+        <h3>Crédits</h3>
+        <p class="muted">Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <a href="https://antarcticbees.itch.io/" target="_blank" rel="noopener noreferrer">https://antarcticbees.itch.io/</a></p>
+        <p class="muted">Moteur d'affichage : Phaser 3 (licence MIT).</p>
+        <p class="muted">Icônes et illustrations des fiches : originales.</p>
         <div class="row">
           <button type="button" class="btn" data-action="open-options">← Options</button>
           <button type="button" class="btn primary" data-action="close-modal" id="about-close">Fermer</button>
@@ -17939,19 +18546,37 @@ document.addEventListener('click', (e) => {
       target.textContent = open ? 'Voir moins' : 'Voir plus';
       break;
     }
+    case 'stage-open':
+      openStageWindow(target.dataset.window);
+      break;
+    case 'stage-close':
+      closeStageWindow();
+      break;
+    case 'maison-tab':
+      maisonTab = target.dataset.tab;
+      renderStageWindow();
+      refresh();
+      break;
     case 'switch-tab':
       activeTab = target.dataset.tab;
-      screen = null;
+      stageWindow = null;
+      stageReturn = null;
+      ecranFerme = null;
       telView();
       refresh();
       break;
     case 'open-screen':
-      screen = target.dataset.screen;
+      // Depuis une fenêtre de la carte : elle se ferme le temps de l'écran de détail.
+      stageReturn = stageWindow;
+      stageWindow = null;
+      ecranFerme = target.dataset.screen;
       telView();
       refresh();
       break;
     case 'close-screen':
-      screen = null;
+      ecranFerme = null;
+      stageWindow = stageReturn;
+      stageReturn = null;
       telView();
       refresh();
       break;
@@ -17993,12 +18618,6 @@ document.addEventListener('click', (e) => {
     }
     case 'upgrade-potager':
       applyResult(upgradePotager(state));
-      break;
-    case 'build-champ':
-      applyResult(buildChamp(state));
-      break;
-    case 'upgrade-champ':
-      applyResult(upgradeChamp(state));
       break;
     case 'build-silo':
       applyResult(buildSilo(state));
@@ -18337,7 +18956,7 @@ document.addEventListener('click', (e) => {
       const ok = importSaveText(area.value);
       showToast(ok ? 'Sauvegarde importée.' : 'Texte invalide, import annulé.');
       if (ok) {
-        screen = null;
+        ecranFerme = null;
         closeModal();
         refresh();
       }
@@ -18372,11 +18991,16 @@ document.addEventListener('change', (e) => {
   }
 });
 
-// Lot 11 : Échap ferme la fenêtre ouverte (comme le bouton Fermer).
+// Lot 11 : Échap ferme la fenêtre ouverte (comme le bouton Fermer) ; d'abord celle de
+// #modal-root, puis la fenêtre de la carte.
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && document.getElementById('modal-root').childElementCount > 0) {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('modal-root').childElementCount > 0) {
     e.preventDefault();
     closeModal();
+  } else if (stageWindow) {
+    e.preventDefault();
+    closeStageWindow();
   }
 });
 
