@@ -44,8 +44,8 @@ une action existante dans `tap()`. Jamais d'appel au moteur depuis `farm-stage.j
 
 `assets/carte_printemps.json` est la carte Tiled du propriétaire : 36×19 tuiles de 16 px
 (576×304 px), quatre couches de tuiles et une couche d'objets `batiment`. Elle sert aux quatre
-saisons (il n'existe qu'une carte de printemps) ; seules les images des bâtiments changent
-(`_sp`, `_au`, `_wi`).
+saisons (il n'existe qu'une carte de printemps). Depuis la version 1.1.2 les bâtiments gardent
+eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`.
 
 - **Sol cuit en une image.** Au démarrage, `bakeGround()` lit le JSON brut
   (`cache.tilemap.get(clé).data`) et dessine toutes les couches de tuiles dans un seul canvas
@@ -166,7 +166,7 @@ Depuis la console : `FarmStage.scene()` (caméra : `.cameras.main`, centre : `.c
 
 ## 8. Limites connues
 
-- Automne et hiver : bâtiments de saison sur la carte de printemps (pas encore d'autres cartes).
+- Automne et hiver : la carte garde son apparence de printemps toute l'année (`SEASONS_ON_MAP = false` dans `farm-stage.js`) ; les images d'automne et d'hiver des bâtiments restent dans `assets/` pour le jour où les cartes de ces saisons existeront.
 - La grille 5×6 (80 px) dépasse la barrière dessinée sur la carte (64 px) et touche le chemin.
 - Les bulles d'aide « eau » et « potager » ne désignent plus rien sur la carte (leurs cibles
   sont dans la fenêtre Maison › Installations et dans la fenêtre Zone de culture).
