@@ -85,6 +85,7 @@ export const INTERFACE_ACTIONS = new Set([
   'animal-dec', 'animal-inc', 'animal-max',
   'member-edit', 'member-genre', 'member-teint', 'wake-more',
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
+  'mail-open', // version 1.3 : ouvrir une lettre du courrier
 ]);
 
 // Signaux utiles à la décision, affichés à part.

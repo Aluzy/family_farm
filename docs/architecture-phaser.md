@@ -225,3 +225,12 @@ Depuis la console : `FarmStage.scene()` (caméra : `.cameras.main`, centre : `.c
 - **Sauvegardes** : format 18. La migration ajoute une liste d'animaux vide et les compteurs ; les membres ne changent pas.
 - **Encyclopédie** : remise à jour avec le jeu (famille composable, animaux de compagnie, Étable et paille, Moulin, horloge et repas de 19 h, carte, Marché, fin des viandes). Le JSON fait foi ; `node build-encyclopedie.mjs` régénère la page, `--check` vérifie qu'elle est à jour.
 - **Non fait** : les animaux de compagnie n'apparaissent pas sur la carte.
+
+## Version 1.3 : le courrier
+
+- **Données** : `DATA.COURRIER` décrit chaque lettre : sa condition (`quand.debloque` : un élément ouvert par la campagne), ses cadeaux, son texte. Pour l'instant une seule : `cousin_venezuela`, à l'ouverture de la Serre (chapitre 6), avec 1 cacao, 1 vanille et 1 café.
+- **Moteur** : `deliverMail(state)`, appelée par `updateChapters()` (donc à chaque pas de jeu et à chaque nuit), fait arriver une lettre une seule fois : cadeaux dans l'inventaire, lettre dans `state.courrier` (`{ id, nuit, lu }`). `readMail()` la marque lue ; `notificationCount()` compte les lettres non lues.
+- **Parties existantes** : une partie où la Serre est déjà ouverte reçoit la lettre et ses graines au premier pas de jeu après la mise à jour.
+- **Interface** : la lettre non lue est en tête de l'onglet Notifications (« Courrier »), puis rangée en bas (« Courrier lu ») ; `openMailModal()` l'affiche comme une feuille de papier, avec un raccourci vers la Serre. À l'arrivée, une annonce cliquable s'affiche (`watchMail()`).
+- **Ajouter une lettre** : une entrée de plus dans `DATA.COURRIER` suffit ; pour une autre condition qu'un déblocage, compléter `mailDue()`.
+- **Sauvegardes** : format 19.

@@ -245,6 +245,24 @@ main {
 .notif-go { color: var(--text-muted); font-size: 1.4rem; }
 .notif-empty { padding: 12px 0; }
 
+/* Version 1.3 : le courrier. Une lettre non lue se remarque ; la lettre ouverte est une
+   feuille de papier (mêmes couleurs en thème clair et en thème sombre). */
+.notif.mail { border-left-color: #b9772a; }
+.notif.mail.lu { opacity: 0.8; }
+.notif.mail:not(.lu) { background: #fff6dc; color: #3a2a12; border-color: #d9b56a; border-left-color: #b9772a; }
+.notif.mail:not(.lu) .notif-where { color: #6b5330; }
+.mail-new { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #b9772a; color: #ffffff; font-size: 0.72rem; font-weight: 700; vertical-align: middle; }
+.mail-title { margin-top: 18px; }
+.modal.letter { background: #fdf6e3; color: #3a2a12; border: 1px solid #d9c9a0; }
+.modal.letter h2 { color: #3a2a12; }
+.letter-place { margin: 0 0 4px; text-align: right; font-style: italic; color: #6b5330; }
+.letter-body { margin: 10px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 1.02rem; line-height: 1.55; }
+.letter-body p { margin: 0 0 10px; }
+.letter-sign { margin: 0 0 14px; text-align: right; font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 1.05rem; }
+.letter-gifts { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; padding: 10px 12px; border: 1px dashed #b9772a; border-radius: var(--radius); background: #fff9ea; }
+.letter-gifts .muted { color: #6b5330; }
+.letter-gift-list { font-size: 1.05rem; font-weight: 700; }
+
 .panel {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -2838,6 +2856,30 @@ const DATA = {
   //   hiver     : la `saison` entière (LONGUEUR nuits) traversée avec au moins
   //               `moyenne` % d'autonomie en moyenne, sans payer de soin ;
   //   serie100  : nuits d'affilée à 100 % d'autonomie.
+  // Version 1.3 : le courrier. Une lettre arrive une seule fois, quand sa
+  // condition est remplie (`quand.debloque` : un élément que la campagne vient
+  // d'ouvrir, voir isUnlocked()). Ses cadeaux vont tout de suite dans
+  // l'inventaire ; la lettre se lit dans l'onglet Notifications.
+  // Le texte ne cite aucun prénom : il vaut pour toutes les familles.
+  COURRIER: {
+    cousin_venezuela: {
+      quand: { debloque: 'serre' },
+      cadeaux: { cacao: 1, vanille: 1, cafe: 1 },
+      icone: '✉️',
+      objet: 'Une lettre du Venezuela',
+      expediteur: 'Cousin Mateo',
+      lieu: 'Mérida, Venezuela',
+      texte: [
+        'Chère famille,',
+        'La nouvelle a traversé l\'océan : il paraît que vous allez avoir une serre ! Ici, dans les montagnes de Mérida, on en a parlé toute la soirée sous la véranda.',
+        'Alors j\'ai glissé dans l\'enveloppe trois petits trésors de chez nous : une fève de cacao, une gousse de vanille et un grain de café. Dehors, chez vous, ils auraient trop froid. Mais bien à l\'abri dans la serre, avec de l\'eau et de la patience, ils pousseront comme ici.',
+        'Un conseil de planteur : à chaque récolte, gardez toujours de quoi replanter. La vanille est la plus lente, ne vous découragez pas.',
+        'Écrivez-moi le jour où vous boirez votre premier chocolat chaud. Je vous embrasse tous, et une caresse aux bêtes.',
+      ],
+      signature: 'Votre cousin Mateo',
+    },
+  },
+
   CHAPITRES: {
     // Les séries d'affilée (« pontes », « serie100 ») et le suivi de l'hiver ne se
     // comptent qu'à partir du chapitre qui porte l'objectif : les nuits d'avant
@@ -3109,9 +3151,9 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 18;
+const STATE_VERSION = 19;
 // Version du jeu, affichée dans les Options (À propos).
-const GAME_VERSION = '1.2.0';
+const GAME_VERSION = '1.3.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -6507,7 +6549,54 @@ function updateChapters(state) {
     done++;
   }
   checkMastery(state); // Arbre v2 : jalons de maîtrise
+  deliverMail(state); // version 1.3 : le courrier que ce stade de la partie fait arriver
   return done;
+}
+
+/* ---------- version 1.3 : le courrier ---------- */
+
+function mailbox(state) {
+  return Array.isArray(state.courrier) ? state.courrier : [];
+}
+
+function mailReceived(state, id) {
+  return mailbox(state).some((l) => l.id === id);
+}
+
+// Lettres pas encore lues, dans l'ordre d'arrivée.
+function unreadMail(state) {
+  return mailbox(state).filter((l) => !l.lu);
+}
+
+// La condition d'une lettre est-elle remplie ?
+function mailDue(state, def) {
+  const q = def.quand || {};
+  if (q.debloque) return !!state.campagne && isUnlocked(state, q.debloque);
+  return false;
+}
+
+// Fait arriver les lettres dont la condition vient d'être remplie : les cadeaux
+// vont dans l'inventaire, la lettre dans state.courrier (non lue). Une lettre
+// n'arrive qu'une fois ; une partie qui remplissait déjà la condition avant la
+// version 1.3 la reçoit au premier passage. Renvoie les identifiants arrivés.
+function deliverMail(state) {
+  const arrivees = [];
+  for (const [id, def] of Object.entries(DATA.COURRIER)) {
+    if (mailReceived(state, id) || !mailDue(state, def)) continue;
+    if (!Array.isArray(state.courrier)) state.courrier = [];
+    for (const [item, qty] of Object.entries(def.cadeaux || {})) addItem(state, item, qty);
+    state.courrier.push({ id, nuit: state.day, lu: false });
+    arrivees.push(id);
+  }
+  return arrivees;
+}
+
+// Le joueur a ouvert la lettre : elle reste dans le courrier, marquée lue.
+function readMail(state, id) {
+  const l = mailbox(state).find((x) => x.id === id);
+  if (!l || !DATA.COURRIER[id]) return fail('Lettre introuvable.');
+  l.lu = true;
+  return { ok: true, id };
 }
 
 // Le joueur a vu l'écran de fin du chapitre : on l'enlève de la file.
@@ -6984,9 +7073,9 @@ function getNotifications(state) {
   return out.map((n, i) => ({ n, i })).sort((a, b) => a.n.priorite - b.n.priorite || a.i - b.i).map((x) => x.n);
 }
 
-// Pastille de la future barre de menu : nombre d'alertes en cours.
+// Pastille du menu du bas : nombre d'alertes en cours, plus les lettres à lire.
 function notificationCount(state) {
-  return getNotifications(state).length;
+  return getNotifications(state).length + unreadMail(state).length;
 }
 
 /* ---------- Lot 11 : bulles d'aide de la première partie ---------- */
@@ -7369,6 +7458,7 @@ function createInitialState(seed = 1) {
     day: 1,
     awakeMs: 0,
     repas: null, // version 1.1.1 : compte du repas de 19 h, jusqu'à la nuit (voir takeMeal)
+    courrier: [], // version 1.3 : lettres reçues [{ id, nuit, lu }] (voir deliverMail)
     pieces: DATA.START.PIECES,
     rngSeed: seed >>> 0,
     unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'],
@@ -7538,6 +7628,10 @@ const MIGRATIONS = {
   // pas ; la famille reçoit sa liste d'animaux de compagnie (vide) et ses
   // compteurs d'identifiants.
   17: (state) => migrateFamily12(state),
+  // v18 → v19 (version 1.3) : le courrier. La boîte commence vide ; une partie
+  // où la Serre est déjà ouverte reçoit la lettre du cousin (et ses trois
+  // graines) au premier passage de deliverMail().
+  18: (state) => ({ ...state, version: 19, courrier: Array.isArray(state.courrier) ? state.courrier : [] }),
 };
 
 function migrateFamily12(old) {
@@ -15963,7 +16057,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.2.0');
+  assertEqual(GAME_VERSION, '1.3.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -16599,7 +16693,7 @@ test('version 1.1.1 : sans mouton ni vache, jamais d\'alerte de paille', () => {
 /* ---------- version 1.2 : composition de la famille, animaux de compagnie ---------- */
 
 test('version 1.2 : format 18, la migration ajoute les animaux de compagnie et les compteurs sans toucher aux membres', () => {
-  assertEqual([STATE_VERSION, typeof MIGRATIONS[17], MIGRATIONS[18]], [18, 'function', undefined]);
+  assertEqual(typeof MIGRATIONS[17], 'function');
   assertEqual(DATA.FAMILY.COMPOSITION, { MEMBRES_MIN: 1, MEMBRES_MAX: 6, ADULTES_MIN: 1 });
   assertEqual([DATA.FAMILY.COMPAGNIE.MAX, Object.keys(DATA.FAMILY.COMPAGNIE.ESPECES)], [3, ['chien', 'chat']]);
   const neuf = createInitialState(1);
@@ -16611,12 +16705,12 @@ test('version 1.2 : format 18, la migration ajoute les animaux de compagnie et l
   v17.famille.membres[0].prenom = 'Léa';
   v17.famille.membres[2].sante = 40;
   const m = migrate({ v: 17, t: 0, s: v17 });
-  assertEqual([m.version, m.famille.animaux, m.famille.numeros], [18, [], { adulte: 2, enfant: 2, compagnon: 0 }]);
+  assertEqual([m.version, m.famille.animaux, m.famille.numeros], [STATE_VERSION, [], { adulte: 2, enfant: 2, compagnon: 0 }]);
   assertEqual(m.famille.membres, v17.famille.membres, 'les membres ne changent pas');
-  assertEqual(migrate({ v: 18, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
   // une sauvegarde abîmée ne fait pas planter la migration
   for (const bad of [{ version: 17 }, { version: 17, famille: null }, { version: 17, famille: 7 }, { version: 17, famille: { membres: 'x' } }]) {
-    assertEqual(migrate(bad).version, 18);
+    assertEqual(migrate(bad).version, STATE_VERSION);
   }
 });
 
@@ -16738,6 +16832,79 @@ test('version 1.2 : nom et espèce d\'un animal de compagnie, départ, identifia
   assertEqual([removePet(s, 'compagnon-1').ok, pets(s), petRoom(s)], [true, [], 3]);
   assertEqual(addPet(s, 'chat').id, 'compagnon-2');
   assertEqual(JSON.parse(JSON.stringify(s)).famille.animaux, [{ id: 'compagnon-2', espece: 'chat', nom: 'Chat 2' }]);
+});
+
+/* ---------- version 1.3 : le courrier (lettre du cousin au déblocage de la Serre) ---------- */
+
+test('version 1.3 : format 19, la boîte aux lettres commence vide et la migration l\'ajoute', () => {
+  assertEqual([STATE_VERSION, typeof MIGRATIONS[18], MIGRATIONS[19]], [19, 'function', undefined]);
+  const neuf = createInitialState(1);
+  assertEqual([neuf.courrier, unreadMail(neuf), notificationCount(neuf) - getNotifications(neuf).length], [[], [], 0]);
+  const v18 = JSON.parse(JSON.stringify(createInitialState(3)));
+  v18.version = 18;
+  delete v18.courrier;
+  const m = migrate({ v: 18, t: 0, s: v18 });
+  assertEqual([m.version, m.courrier], [19, []]);
+  assertEqual(migrate({ v: 19, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+});
+
+test('version 1.3 : la lettre du cousin est définie : Serre, 1 cacao, 1 vanille, 1 café, sans prénom de la famille', () => {
+  const L = DATA.COURRIER.cousin_venezuela;
+  assertEqual([L.quand, L.cadeaux], [{ debloque: 'serre' }, { cacao: 1, vanille: 1, cafe: 1 }]);
+  // les trois cadeaux se plantent tels quels, et seulement dans la Serre
+  for (const item of Object.keys(L.cadeaux)) {
+    assertEqual([seedItem(item), DATA.crops[item].lieux], [item, ['serre']], item);
+    assert(DATA.crops[item].rendement > 1, `${item} : une récolte rend de quoi replanter`);
+  }
+  assert(L.texte.length >= 3 && L.texte.every((p) => typeof p === 'string' && p.length > 0), 'un texte en paragraphes');
+  assert(/Venezuela/.test(L.lieu) && /cacao/.test(L.texte.join(' ')) && /vanille/.test(L.texte.join(' ')) && /café/.test(L.texte.join(' ')), 'la lettre parle de ses cadeaux');
+  for (const m of DATA.FAMILY.MEMBRES) assert(!L.texte.join(' ').includes(m.nom), 'pas de prénom dans la lettre');
+});
+
+test('version 1.3 : la lettre arrive quand la Serre se débloque, une seule fois, avec ses trois graines', () => {
+  const avant = atChapter(unlockChapter('serre') - 1);
+  setInv(avant, {});
+  updateChapters(avant);
+  assertEqual([isUnlocked(avant, 'serre'), avant.courrier, countItem(avant, 'cacao')], [false, [], 0], 'rien avant le déblocage');
+  const s = atChapter(unlockChapter('serre'));
+  setInv(s, {});
+  s.day = 57;
+  assertEqual(deliverMail(s), ['cousin_venezuela']);
+  assertEqual(s.courrier, [{ id: 'cousin_venezuela', nuit: 57, lu: false }]);
+  assertEqual([countItem(s, 'cacao'), countItem(s, 'vanille'), countItem(s, 'cafe')], [1, 1, 1]);
+  assertEqual([mailReceived(s, 'cousin_venezuela'), unreadMail(s).length, notificationCount(s) - getNotifications(s).length], [true, 1, 1]);
+  // pas de deuxième lettre ni de deuxième cadeau
+  assertEqual([deliverMail(s), updateChapters(s) >= 0, s.courrier.length], [[], true, 1]);
+  tick(s, 1);
+  sleepOnce(s);
+  assertEqual([s.courrier.length, countItem(s, 'cacao'), countItem(s, 'vanille'), countItem(s, 'cafe')], [1, 1, 1, 1], 'ni le temps ni la nuit n\'en redonnent');
+  // la lettre lue reste dans la boîte, et ne compte plus dans la pastille
+  assertEqual([readMail(s, 'cousin_venezuela').ok, s.courrier[0].lu, unreadMail(s), readMail(s, 'inconnue').ok], [true, true, [], false]);
+  assertEqual(JSON.parse(JSON.stringify(s)).courrier, s.courrier, 'le courrier se sauvegarde');
+});
+
+test('version 1.3 : la lettre arrive par le jeu lui-même, à la fin du chapitre qui ouvre la Serre', () => {
+  const s = atChapter(unlockChapter('serre') - 1);
+  assertEqual(s.courrier, []);
+  const vanille = countItem(s, 'vanille');
+  assert(testCompleteChapter(s).ok, 'valider le chapitre');
+  tick(s, 0.2); // le pas de jeu suivant fait arriver le courrier
+  assertEqual([isUnlocked(s, 'serre'), s.courrier.map((l) => l.id), countItem(s, 'vanille') - vanille], [true, ['cousin_venezuela'], 1]);
+});
+
+test('version 1.3 : une partie d\'avant la version 1.3, Serre déjà ouverte, reçoit la lettre au premier passage', () => {
+  const v18 = JSON.parse(JSON.stringify(atChapter(7)));
+  v18.version = 18;
+  delete v18.courrier;
+  const m = migrate({ v: 18, t: 0, s: v18 });
+  assertEqual(m.courrier, [], 'la migration ne distribue rien elle-même');
+  const cacao = countItem(m, 'cacao');
+  tick(m, 0.2);
+  assertEqual([m.courrier.map((l) => [l.id, l.lu]), countItem(m, 'cacao') - cacao], [[['cousin_venezuela', false]], 1]);
+  // boîte abîmée : elle est refaite, sans plantage
+  const t = atChapter(7);
+  t.courrier = 'x';
+  assertEqual([unreadMail(t), deliverMail(t), t.courrier.length], [[], ['cousin_venezuela'], 1]);
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -17560,6 +17727,28 @@ function watchPreparations() {
   }
 }
 
+// Version 1.3 : annonce une lettre qui vient d'arriver (un appui mène aux Notifications).
+// `mailSeen` : les lettres déjà annoncées ; il est rempli au chargement de la partie.
+let mailSeen = null;
+
+function watchMail() {
+  const box = mailbox(state);
+  // Première fois, ou partie remplacée (nouvelle partie, import) : rien à annoncer.
+  if (mailSeen === null || box.length < mailSeen.size) {
+    mailSeen = new Set(box.map((l) => l.id));
+    return;
+  }
+  for (const l of box) {
+    if (mailSeen.has(l.id)) continue;
+    mailSeen.add(l.id);
+    const def = DATA.COURRIER[l.id];
+    if (!def || l.lu) continue;
+    notify(`${def.icone} ${def.objet} est arrivée ! Elle t'attend dans les Notifications.`, 'lettre', { page: 'notifications' });
+    persistState();
+    scheduleRender();
+  }
+}
+
 // Arbre v2 : annonce les points de technologie gagnés (chapitre, maîtrise, mode libre).
 function watchTechPoints() {
   const pt = state.pointsTech;
@@ -17639,6 +17828,7 @@ function frame(now) {
   watchTechPoints();
   watchRoutine();
   watchDay();
+  watchMail();
   watchPreparations();
   watchUnlocks();
   if (ticked) watchAlerts();
@@ -20005,13 +20195,17 @@ function renderFamille() {
 // avec la carte glissée jusqu'au bâtiment, ou l'Inventaire pour la péremption. Sans la
 // carte : la liste de la Ferme, ou la page du Livre de recette.
 
+// Version 1.3 : une lettre du courrier, dans la liste des Notifications.
+function mailRow(l) {
+  const def = DATA.COURRIER[l.id];
+  return `<li><button type="button" class="notif mail${l.lu ? ' lu' : ''}" data-action="mail-open" data-id="${l.id}" aria-label="${def.objet}, de ${def.expediteur}${l.lu ? '' : ' (non lue)'}. Ouvrir la lettre"><span class="notif-icon" aria-hidden="true">${l.lu ? '📭' : '📬'}</span><span class="notif-text">${def.objet}${l.lu ? '' : '<span class="mail-new">Nouveau</span>'}<span class="notif-where">De : ${def.expediteur} · reçue la nuit ${formatNumber(l.nuit)}</span></span><span class="notif-go" aria-hidden="true">›</span></button></li>`;
+}
+
 function renderNotifications() {
   const list = getNotifications(state);
-  if (!list.length) {
-    return `
-      <h2>✉️ Notifications</h2>
-      <p class="hint notif-empty">Rien à signaler aujourd'hui. 🌾</p>`;
-  }
+  const lettres = mailbox(state).filter((l) => DATA.COURRIER[l.id]);
+  const aLire = lettres.filter((l) => !l.lu);
+  const lues = lettres.filter((l) => l.lu);
   const items = list
     .map((n) => {
       const c = notifCible(n);
@@ -20019,10 +20213,47 @@ function renderNotifications() {
       return `<li><button type="button" class="notif p${n.priorite}" ${cibleAttrs(c)}><span class="notif-icon" aria-hidden="true">${n.icone}</span><span class="notif-text">${n.texte}<span class="notif-where">${ou}</span></span><span class="notif-go" aria-hidden="true">›</span></button></li>`;
     })
     .join('');
+  // Le courrier à lire passe en premier ; les lettres déjà lues restent en bas, pour les relire.
   return `
     <h2>✉️ Notifications</h2>
-    <p class="hint">${list.length} chose${list.length > 1 ? 's' : ''} à voir aujourd'hui.</p>
-    <ul class="notif-list">${items}</ul>`;
+    ${aLire.length ? `<h3 class="section-title">📬 Courrier</h3><ul class="notif-list">${aLire.map(mailRow).join('')}</ul>` : ''}
+    ${list.length
+      ? `<p class="hint${aLire.length ? ' mail-title' : ''}">${list.length} chose${list.length > 1 ? 's' : ''} à voir aujourd'hui.</p><ul class="notif-list">${items}</ul>`
+      : `<p class="hint notif-empty">${aLire.length ? 'Rien d\'autre à signaler aujourd\'hui.' : 'Rien à signaler aujourd\'hui.'} 🌾</p>`}
+    ${lues.length ? `<h3 class="section-title mail-title">📭 Courrier lu</h3><ul class="notif-list">${lues.map(mailRow).join('')}</ul>` : ''}`;
+}
+
+// Ouvre une lettre : elle est marquée lue (elle reste dans le courrier).
+function openMailModal(id) {
+  const def = DATA.COURRIER[id];
+  if (!def || !mailReceived(state, id)) return;
+  tel('modal', 'mail');
+  // L'annonce d'arrivée n'a plus lieu d'être : elle cacherait le bas de la lettre.
+  for (const t of document.querySelectorAll('#toast-root .toast.lettre')) t.remove();
+  readMail(state, id);
+  persistState();
+  const cadeaux = Object.entries(def.cadeaux || {})
+    .map(([item, n]) => `${formatNumber(n)} <span aria-hidden="true">${DATA.items[item].icone}</span> ${DATA.items[item].nom}`)
+    .join(' · ');
+  // Les cadeaux de cette lettre se plantent dans la Serre : un raccourci y mène si la carte l'affiche.
+  const serre = def.quand && def.quand.debloque === 'serre';
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal letter" role="dialog" aria-modal="true" aria-labelledby="mail-title" data-stop-propagation>
+        <p class="letter-place">${def.lieu}</p>
+        <h2 id="mail-title">${def.icone} ${def.objet}</h2>
+        <div class="letter-body">${def.texte.map((p) => `<p>${p}</p>`).join('')}</div>
+        <p class="letter-sign">${def.signature}</p>
+        ${cadeaux ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${cadeaux}</span><span class="muted">Déjà rangés dans ton inventaire.${serre ? ' Ils se plantent dans la Serre, et nulle part ailleurs.' : ''}</span></div>` : ''}
+        <div class="row">
+          ${serre ? `<button type="button" class="btn primary" ${cibleAttrs({ fenetre: 'serre' })}>Aller à la Serre</button>` : ''}
+          <button type="button" class="btn${serre ? '' : ' primary'}" data-action="close-modal" id="mail-close">Fermer</button>
+        </div>
+      </div>
+    </div>`;
+  // Le focus va sur « Fermer » sans faire défiler : la lettre se lit depuis son en-tête.
+  document.getElementById('mail-close').focus({ preventScroll: true });
+  refresh();
 }
 
 /* ---------- Inventaire ---------- */
@@ -21170,7 +21401,7 @@ function closeModal() {
 // lecteurs d'écran (#toast-root est une région aria-live). Une notification
 // identique à une notification affichée la remplace au lieu de s'empiler.
 const NOTIFY_MAX = 3;
-const NOTIFY_MS = { info: 2600, alerte: 5000, repas: 5000 };
+const NOTIFY_MS = { info: 2600, alerte: 5000, repas: 5000, lettre: 7000 };
 // Une même alerte n'est pas répétée avant ce délai (batteries qui se vident et
 // se rechargent au fil des ticks, par exemple).
 const ALERT_REPEAT_MS = 30000;
@@ -21347,6 +21578,10 @@ document.addEventListener('click', (e) => {
       break;
     case 'pet-remove':
       removePetFromModal();
+      break;
+    // ----- version 1.3 : courrier -----
+    case 'mail-open':
+      openMailModal(target.dataset.id);
       break;
     case 'test-straw':
       applyResult(testAddStraw(state));
@@ -21852,6 +22087,7 @@ document.getElementById('modal-root').addEventListener('click', (e) => {
 state = loadOrCreateState();
 telChapter = state.campagne ? state.campagne.chapitre : null;
 syncJobs();
+mailSeen = new Set(mailbox(state).map((l) => l.id)); // les lettres déjà là ne sont pas réannoncées
 alertState = alertSnapshot(state);
 catchUp(); // Lot 11 : le temps passé page fermée depuis la dernière sauvegarde
 

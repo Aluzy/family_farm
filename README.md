@@ -6,7 +6,7 @@ batteries, pompe, zone de culture, poulailler, moutons, verger, serre, cuisine e
 réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
-- **Version** : 1.2.0 (affichée dans ⚙️ Options › À propos)
+- **Version** : 1.3.0 (affichée dans ⚙️ Options › À propos)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
