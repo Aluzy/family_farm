@@ -14,9 +14,17 @@
  * La carte (Tiled, 36×19 tuiles de 16 px) fait trois écrans de large : le zoom
  * montre toute sa hauteur et le doigt (ou la souris) la fait glisser.
  *
- * API publique : FarmStage.mount(element, { act, base }) puis
+ * Par-dessus la carte, la scène pose des étiquettes en DOM (nom du bâtiment et pastille
+ * « à faire », données par le modèle) qu'elle replace à chaque image, et un voile de
+ * lumière qui suit l'heure du modèle (aube, plein jour, soir, nuit).
+ *
+ * API publique : FarmStage.mount(element, { act, onView, base }) puis
  *                FarmStage.update(modèle), FarmStage.show(), FarmStage.hide(),
- *                FarmStage.ready() (la scène est-elle affichable ?).
+ *                FarmStage.ready() (la scène est-elle affichable ?),
+ *                FarmStage.view() (où en est la vue : écran 0, 1 ou 2, bornes),
+ *                FarmStage.panTo(x ou id de bâtiment) (glisse jusque-là).
+ *                onView(vue) est appelé quand l'écran courant change, quand un bord est
+ *                atteint ou quitté, et au premier glissement du joueur.
  */
 (function (global) {
   'use strict';
@@ -47,7 +55,7 @@
   const SERRE_FRAME = 'batiment';
   // Bâtiments : `object` = rectangle nommé de la carte (le bas-centre de l'image se pose sur
   // le bas-centre du rectangle), `window` = fenêtre ouverte par un appui. La maison est
-  // toujours là ; les autres n'apparaissent que si modèle.batiments[id] est vrai.
+  // toujours là ; les autres n'apparaissent que si modèle.batiments[id].visible est vrai.
   const BUILDINGS = [
     { id: 'maison', object: 'maison', tex: 'house', seasonal: true, window: 'maison' },
     { id: 'etable', object: 'grange', tex: 'barn', seasonal: true, window: 'etable' },
@@ -61,6 +69,20 @@
   const MIN_TAP = 44;          // px CSS : taille minimale de la zone d'appui d'un bâtiment
   const INERTIA_MS = 260;      // constante de temps de l'élan après un glissement
   const MAX_SPEED = 1.5;       // px de carte par ms
+  const PAN_MS = 380;          // durée d'un déplacement demandé par panTo()
+  const SCREENS = 3;           // la carte fait trois écrans : gauche, milieu, droite
+  const LABEL_GAP = 3;         // px CSS entre l'étiquette et ce qu'elle nomme
+  const LABEL_HOLD_MS = 1200;  // au doigt : le nom reste affiché ce temps après le relâchement
+  const ZONE_LABEL_UP = 14;    // px de carte : l'étiquette de la zone passe au-dessus de la barrière
+  const LIGHT_MS = 1200;       // fondu entre deux lumières (un quart d'heure de jeu dure à peu près autant)
+
+  // Lumière selon l'heure : couleur par laquelle la carte est multipliée (blanc = plein jour).
+  // Aube chaude à 6 h, plein jour de 9 h à 16 h, lumière dorée de 17 h à 19 h, crépuscule
+  // vers 20-21 h, nuit bleue de 22 h à 5 h. La nuit reste claire : la carte doit rester jouable.
+  const LIGHT_KEYS = [
+    [0, 0x8494d0], [5, 0x8494d0], [6, 0xf0d2b4], [7.5, 0xfff0dc], [9, 0xffffff], [16, 0xffffff],
+    [17.5, 0xffe2b0], [19, 0xfac48e], [20, 0xcfa0a8], [21, 0xa490c2], [22, 0x8494d0], [24, 0x8494d0],
+  ];
 
   // Cases de crops.png : r = rangée de la base de la plante, h = hauteur du dessin
   // (16 ou 32), c = colonnes des 4 phases.
@@ -93,7 +115,20 @@
   let visible = false;
   let awake = false;        // la boucle Phaser tourne et la taille est à jour
 
+  let labelLayer = null;     // calque DOM des étiquettes, par-dessus le canvas
+
   const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
+
+  // Couleur de la lumière à une heure donnée (0 à 24, fractionnaire) : [r, v, b] de 0 à 255,
+  // interpolée entre les deux repères voisins de LIGHT_KEYS.
+  function lightAt(hour) {
+    const h = ((Number(hour) % 24) + 24) % 24;
+    let i = 0;
+    while (i < LIGHT_KEYS.length - 2 && h >= LIGHT_KEYS[i + 1][0]) i++;
+    const a = LIGHT_KEYS[i], b = LIGHT_KEYS[i + 1];
+    const t = clamp((h - a[0]) / (b[0] - a[0]), 0, 1);
+    return [16, 8, 0].map((s) => ((a[1] >> s) & 255) + (((b[1] >> s) & 255) - ((a[1] >> s) & 255)) * t);
+  }
 
   // Le canvas est rendu à la densité de l'écran (plafonnée à 3) : avec un zoom non entier,
   // les pixels de la carte restent réguliers.
@@ -109,12 +144,24 @@
     host = element;
     bridge = options;
     const base = (options && options.base) || 'assets/';
+    labelLayer = document.createElement('div');
+    labelLayer.className = 'stage-labels';
+    element.appendChild(labelLayer);
 
     class FarmScene extends global.Phaser.Scene {
       constructor() {
         super('farm');
         this.plots = new Map();          // id de parcelle -> { soil, crop, key, tween }
         this.buildings = new Map();      // id de bâtiment -> { def, sprite }
+        this.labels = new Map();         // id de lieu -> étiquette DOM et son point d'ancrage
+        this.hoverId = null;             // lieu survolé (souris) ou touché (doigt) : son nom s'affiche
+        this.hoverUntil = 0;             // au doigt : heure à laquelle le nom s'efface
+        this.pan = null;                 // déplacement demandé par panTo() : { from, to, t0 }
+        this.dragged = false;            // le joueur a-t-il déjà fait glisser la carte ?
+        this.viewKey = '';               // dernière vue signalée à la page
+        this.light = null;               // voile de lumière (rectangle en mode « multiplier »)
+        this.lightNow = [255, 255, 255]; // couleur affichée
+        this.lightFade = null;           // fondu en cours : { from, to, t0 }
         this.world = { w: DEFAULT_W, h: DEFAULT_H };
         this.objects = Object.assign({}, DEFAULT_OBJECTS);
         this.grid = { x: 192, y: 176, cols: 2 };
@@ -153,6 +200,11 @@
         this.defineAnims();
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
+        // Voile de lumière : il couvre toute la carte, au-dessus des bâtiments et des
+        // plantes, et multiplie leurs couleurs (blanc = aucun effet). Les étiquettes et les
+        // boutons, en DOM, restent au-dessus et gardent leurs couleurs.
+        this.light = this.add.rectangle(0, 0, this.world.w, this.world.h, 0xffffff)
+          .setOrigin(0).setDepth(1e6).setBlendMode(global.Phaser.BlendModes.MULTIPLY).setVisible(false);
 
         const z = this.objects.zone_culture;
         this.grid.x = Math.round(z.x / T) * T;
@@ -165,7 +217,8 @@
         I.on('pointermove', this.onMove, this);
         I.on('pointerup', (p) => this.onUp(p, true));
         I.on('pointerupoutside', (p) => this.onUp(p, false));
-        I.on('wheel', (p, over, dx, dy) => { this.vx = this.vy = 0; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
+        I.on('gameout', () => { if (!this.drag) this.setHover(null); });
+        I.on('wheel', (p, over, dx, dy) => { this.vx = this.vy = 0; this.pan = null; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
         this.scale.on('resize', () => this.fit());
         this.fit();
         this.ready = true;
@@ -311,7 +364,9 @@
         // relâchement perdu, par exemple hors de la fenêtre).
         if (this.drag && this.drag.id !== pointer.id) return;
         this.vx = this.vy = 0;
+        this.pan = null;
         const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        this.setHover(this.placeAt(wp.x, wp.y));   // le nom du lieu touché s'affiche
         this.drag = {
           id: pointer.id, x: pointer.x, y: pointer.y, cx: this.cx, cy: this.cy,
           wx: wp.x, wy: wp.y, moved: false, vx: 0, vy: 0,
@@ -325,7 +380,9 @@
           // Souris : main sur ce qui se touche, poignée ailleurs.
           if (!pointer.wasTouch) {
             const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-            this.game.canvas.style.cursor = this.hitAt(wp.x, wp.y) ? 'pointer' : 'grab';
+            const hit = this.hitAt(wp.x, wp.y);
+            this.game.canvas.style.cursor = hit ? 'pointer' : 'grab';
+            this.setHover(this.placeOf(hit));       // survol : le nom du lieu s'affiche
           }
           return;
         }
@@ -335,6 +392,8 @@
         const dx = pointer.x - d.x, dy = pointer.y - d.y;
         if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) {
           d.moved = true;
+          this.setHover(null);           // on fait glisser la carte : plus de nom affiché
+          this.dragged = true;           // signalé à la page par reportView()
           this.game.canvas.style.cursor = 'grabbing';
         }
         this.setCentre(d.cx - dx / zoom, d.cy - dy / zoom);
@@ -352,6 +411,8 @@
         if (!d || d.id !== pointer.id) return;
         this.drag = null;
         this.game.canvas.style.cursor = '';
+        // Au doigt, rien ne « survole » : le nom reste un instant, puis s'efface.
+        if (pointer.wasTouch && this.hoverId) this.hoverUntil = performance.now() + LABEL_HOLD_MS;
         if (!d.moved) {
           // Appui : la vue revient où elle était (elle a pu bouger de quelques pixels).
           this.setCentre(d.cx, d.cy);
@@ -365,19 +426,212 @@
       }
 
       update(time, delta) {
-        if (!this.vx && !this.vy) return;
-        if (this.drag) { this.vx = this.vy = 0; return; }
         const dt = Math.min(delta, 50);
+        // Déplacement et fondu suivent l'horloge réelle : ils durent le même temps même
+        // si les images sont lentes (Phaser plafonne `delta`).
+        if (this.pan) this.stepPan();
+        else if (this.vx || this.vy) this.stepInertia(dt);
+        if (this.lightFade) this.stepLight();
+        if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
+        this.placeLabels();
+        this.reportView();
+      }
+
+      stepInertia(dt) {
+        if (this.drag) { this.vx = this.vy = 0; return; }
         const free = this.setCentre(this.cx + this.vx * dt, this.cy + this.vy * dt);
         const k = Math.exp(-dt / INERTIA_MS);
         this.vx *= k; this.vy *= k;
         if (!free || Math.hypot(this.vx, this.vy) < 0.01) this.vx = this.vy = 0;
       }
 
+      /* ---------- vue : écran courant, déplacement demandé ---------- */
+
+      // Où en est la vue, pour la page : `ecran` = 0 (gauche), 1 (milieu) ou 2 (droite) ;
+      // `min` et `max` = bornes du centre ; `mobile` = la carte dépasse-t-elle de la zone ?
+      viewInfo() {
+        const vw = this.scale.width / this.cameras.main.zoom;
+        const min = vw / 2, max = this.world.w - vw / 2;
+        const mobile = max - min > 1;
+        const f = mobile ? (this.cx - min) / (max - min) : 0.5;
+        return {
+          x: this.cx, min, max, mobile, ecrans: SCREENS,
+          ecran: mobile ? Math.round(f * (SCREENS - 1)) : 1,
+          gauche: mobile && this.cx > min + 1,     // il reste de la carte à gauche
+          droite: mobile && this.cx < max - 1,     // il reste de la carte à droite
+          glisse: this.dragged,
+        };
+      }
+
+      // Prévient la page quand quelque chose qu'elle affiche a changé (pas à chaque image).
+      reportView() {
+        if (!bridge || !bridge.onView) return;
+        const v = this.viewInfo();
+        const key = [v.ecran, v.mobile, v.gauche, v.droite, v.glisse].join();
+        if (key === this.viewKey) return;
+        this.viewKey = key;
+        bridge.onView(v);
+      }
+
+      // Centre horizontal d'un lieu de la carte (bâtiment affiché ou zone de culture).
+      placeX(id) {
+        if (id === 'zone') return this.grid.x + (this.grid.cols * T) / 2;
+        const e = this.buildings.get(id);
+        return e ? e.sprite.x + e.sprite.width / 2 : null;
+      }
+
+      // Glisse jusqu'à x (px de carte) ou jusqu'à un lieu ('maison', 'etable', 'zone'…).
+      // `now` : sans animation. Renvoie false si le lieu n'est pas sur la carte.
+      panTo(target, now) {
+        const x = typeof target === 'number' ? target : this.placeX(target);
+        if (x === null || !Number.isFinite(x)) return false;
+        this.vx = this.vy = 0;
+        if (now || reducedMotion()) { this.pan = null; this.setCentre(x, this.cy); return true; }
+        const v = this.viewInfo();
+        this.pan = { from: this.cx, to: clamp(x, v.min, v.max), t0: performance.now() };
+        return true;
+      }
+
+      stepPan() {
+        const p = this.pan;
+        const t = Math.min(1, (performance.now() - p.t0) / PAN_MS);
+        const k = 1 - Math.pow(1 - t, 3);            // départ vif, arrivée douce
+        this.setCentre(p.from + (p.to - p.from) * k, this.cy);
+        if (t >= 1) this.pan = null;
+      }
+
+      /* ---------- lumière du jour ---------- */
+
+      // Passe à la lumière de l'heure donnée : en fondu, ou tout de suite (`now`, premier
+      // affichage, animations réduites).
+      setLight(hour, now) {
+        const to = hour == null ? [255, 255, 255] : lightAt(hour);
+        if (now || reducedMotion()) { this.lightFade = null; this.applyLight(to); return; }
+        this.lightFade = { from: this.lightNow.slice(), to, t0: performance.now() };
+      }
+
+      stepLight() {
+        const f = this.lightFade;
+        const t = Math.min(1, (performance.now() - f.t0) / LIGHT_MS);
+        this.applyLight(f.from.map((c, i) => c + (f.to[i] - c) * t));
+        if (t >= 1) this.lightFade = null;
+      }
+
+      applyLight(rgb) {
+        this.lightNow = rgb;
+        const c = rgb.map((v) => clamp(Math.round(v), 0, 255));
+        const color = (c[0] << 16) | (c[1] << 8) | c[2];
+        this.light.setFillStyle(color, 1).setVisible(color !== 0xffffff);
+      }
+
+      /* ---------- étiquettes (DOM) ---------- */
+
+      // Une étiquette par lieu affiché : un bouton DOM qui ne reçoit pas les appuis (ils
+      // traversent jusqu'à la carte, qui teste elle-même la zone de l'étiquette), mais qui
+      // reste accessible au clavier : Entrée y déclenche `stage-open`, comme tout bouton.
+      // Le nom ne s'affiche qu'au survol du lieu (souris), pendant qu'on le touche (doigt)
+      // ou quand le bouton a le focus (clavier). La pastille « à faire », elle, reste visible.
+
+      // Lieu survolé ou touché (null : aucun).
+      setHover(id) {
+        this.hoverUntil = 0;
+        if (id === this.hoverId) return;
+        this.hoverId = id || null;
+        for (const L of this.labels.values()) this.applyShown(L);
+      }
+
+      applyShown(L) {
+        const shown = L.id === this.hoverId || !!L.focus;
+        if (shown === L.shown) return;
+        L.shown = shown;
+        L.el.classList.toggle('show', shown);
+        L.w = 0;                                 // la taille change : à remesurer
+      }
+
+      // Lieu désigné par un résultat de hitAt() : une parcelle désigne la zone de culture.
+      placeOf(hit) {
+        if (!hit) return null;
+        return hit.plot ? 'zone' : hit.window || null;
+      }
+
+      placeAt(wx, wy) { return this.placeOf(this.hitAt(wx, wy)); }
+
+      syncLabel(id, info, win, ax, ay, align) {
+        let L = this.labels.get(id);
+        if (!info) {
+          if (L) { L.el.remove(); this.labels.delete(id); }
+          return;
+        }
+        if (!L) {
+          const el = document.createElement('button');
+          el.type = 'button';
+          el.className = 'stage-label';
+          el.dataset.action = 'stage-open';
+          el.dataset.window = win;
+          el.innerHTML = '<span class="stage-label-name"></span><span class="stage-label-badge" hidden></span>';
+          labelLayer.appendChild(el);
+          L = { el, id, window: win, name: null, badge: null, w: 0, h: 0, tr: '', off: false, shown: false, focus: false };
+          const self = L;
+          el.addEventListener('focus', () => { self.focus = true; this.applyShown(self); });
+          el.addEventListener('blur', () => { self.focus = false; this.applyShown(self); });
+          this.labels.set(id, L);
+          if (id === this.hoverId) this.applyShown(L);
+        }
+        const name = String(info.nom || id), badge = Math.max(0, info.badge | 0);
+        if (name !== L.name || badge !== L.badge) {
+          L.name = name; L.badge = badge;
+          L.el.firstChild.textContent = name;
+          const b = L.el.lastChild;
+          b.hidden = !badge;
+          b.textContent = badge > 9 ? '9+' : String(badge);
+          L.el.setAttribute('aria-label', badge ? name + ' : ' + badge + ' à faire' : name);
+          L.el.classList.toggle('todo', !!badge);
+          L.w = 0;                               // à remesurer
+        }
+        L.ax = ax; L.ay = ay; L.align = align || 'centre';
+      }
+
+      // Replace chaque étiquette au-dessus de son lieu (positions entières en pixels de
+      // l'écran : le texte reste net, même avec un zoom non entier).
+      placeLabels() {
+        if (!this.labels.size) return;
+        const dpr = pixelRatio();
+        const k = this.cameras.main.zoom / dpr;                    // px CSS par px de carte
+        const left = this.cx - this.scale.width / this.cameras.main.zoom / 2;
+        const top = this.cy - this.scale.height / this.cameras.main.zoom / 2;
+        const snap = (v) => Math.round(v * dpr) / dpr;
+        for (const L of this.labels.values()) {
+          if (!L.shown && !L.badge) continue;     // ni nom ni pastille : rien à placer
+          if (!L.w) { L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; if (!L.w) continue; }
+          const x = (L.ax - left) * k - (L.align === 'gauche' ? 0 : L.w / 2);
+          const y = Math.max(0, (L.ay - top) * k - L.h - LABEL_GAP);
+          const tr = 'translate(' + snap(x) + 'px,' + snap(y) + 'px)';
+          if (tr !== L.tr) { L.tr = tr; L.el.style.transform = tr; }
+          // Une étiquette dont il ne reste qu'un bout au bord de l'écran est masquée.
+          const seen = Math.min(x + L.w, this.scale.width / dpr) - Math.max(x, 0);
+          const off = seen < L.w * 0.6;
+          if (off !== L.off) { L.off = off; L.el.style.visibility = off ? 'hidden' : ''; }
+        }
+      }
+
+      // Étiquette sous un point de la carte : sa boîte, élargie à 44 px CSS au besoin.
+      labelAt(wx, wy) {
+        const k = this.cameras.main.zoom / pixelRatio();
+        const top = this.cy - this.scale.height / this.cameras.main.zoom / 2;
+        for (const L of this.labels.values()) {
+          if (!L.w || L.off || (!L.shown && !L.badge)) continue;   // une étiquette invisible ne se touche pas
+          const w = Math.max(L.w, MIN_TAP) / k, h = Math.max(L.h, MIN_TAP) / k;
+          const cx = L.align === 'gauche' ? L.ax + L.w / k / 2 : L.ax;
+          const cy = Math.max(top + L.h / k / 2, L.ay - (LABEL_GAP + L.h / 2) / k);
+          if (Math.abs(wx - cx) <= w / 2 && Math.abs(wy - cy) <= h / 2) return L;
+        }
+        return null;
+      }
+
       /* ---------- appuis ---------- */
 
       // Ce qui se trouve sous un point de la carte : une parcelle (exactement sa tuile),
-      // sinon le bâtiment le plus en avant.
+      // sinon une étiquette, sinon le bâtiment le plus en avant.
       hitAt(wx, wy) {
         const m = lastModel;
         const g = this.grid;
@@ -388,6 +642,8 @@
             if (p) return { plot: p };
           }
         }
+        const label = this.labelAt(wx, wy);
+        if (label) return { window: label.window };
         const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom;
         let best = null;
         for (const e of this.buildings.values()) {
@@ -396,13 +652,13 @@
           if (wx < s.x - padX || wx > s.x + s.width + padX || wy < s.y - s.height - padY || wy > s.y + padY) continue;
           if (!best || s.depth > best.sprite.depth) best = e;
         }
-        return best ? { building: best.def } : null;
+        return best ? { window: best.def.window } : null;
       }
 
       tap(wx, wy) {
         const hit = this.hitAt(wx, wy);
         if (!hit) return;
-        if (hit.building) { bridge.act('stage-open', { window: hit.building.window }); return; }
+        if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
         const p = hit.plot;
         if (!p.culture) bridge.act('plant-open', { id: p.id });
         else if (p.mature) bridge.act('harvest', { id: p.id });
@@ -418,13 +674,25 @@
         const seasonChanged = force || this.sfx !== sfx;
         this.sfx = sfx;
 
+        // Lumière de l'heure : en fondu, sauf au premier affichage.
+        if (force || model.heure !== this.hour) { this.hour = model.heure; this.setLight(model.heure, force); }
+
         // Bâtiments : présents seulement si le jeu les a débloqués ; image de la saison.
+        // modèle.batiments[id] = { visible, nom, badge } (ou un simple booléen).
         const shown = model.batiments || {};
+        const info = (id) => {
+          const v = shown[id];
+          const o = v && typeof v === 'object' ? v : { visible: !!v };
+          return (id === 'maison' || id === 'zone' || o.visible) ? o : null;
+        };
         for (const def of BUILDINGS) {
-          const want = def.id === 'maison' || !!shown[def.id];
+          const want = info(def.id);
           const e = this.buildings.get(def.id);
           if (e && (!want || seasonChanged)) { e.sprite.destroy(); this.buildings.delete(def.id); }
           if (want && !this.buildings.has(def.id)) this.buildings.set(def.id, { def, sprite: this.makeBuilding(def, sfx) });
+          // Étiquette : centrée au-dessus de l'image.
+          const s = want ? this.buildings.get(def.id).sprite : null;
+          this.syncLabel(def.id, want, def.window, s ? s.x + s.width / 2 : 0, s ? s.y - s.height + (def.labelDown || 0) : 0);
         }
 
         // Parcelles : on crée, met à jour, détruit. Tuiles jointives depuis le coin de zone_culture.
@@ -446,6 +714,9 @@
         for (const [id, e] of this.plots) {
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
         }
+        // Étiquette de la zone de culture : calée à gauche sur les parcelles, au-dessus de la barrière.
+        this.syncLabel('zone', info('zone'), 'zone', g.x, g.y - ZONE_LABEL_UP, 'gauche');
+        this.placeLabels();
       }
 
       // Pose le bas-centre de l'image sur le bas-centre du rectangle de la carte, sans sortir
@@ -589,5 +860,11 @@
     if (game && game.isBooted) game.loop.sleep();
   }
 
-  global.FarmStage = { mount, update, show, hide, ready, scene: getScene }; // scene() : pour le débogage et les tests
+  // Où en est la vue (voir viewInfo()) ; null tant que la scène n'est pas prête.
+  function view() { const s = getScene(); return s && s.ready ? s.viewInfo() : null; }
+
+  // Glisse jusqu'à x (px de carte) ou jusqu'à un lieu ; false si ce n'est pas possible.
+  function panTo(target, now) { const s = getScene(); return !!(s && s.ready && s.panTo(target, now)); }
+
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

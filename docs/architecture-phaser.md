@@ -133,7 +133,7 @@ est celui des fonctions de rendu existantes, sans réécriture :
 
 | Fenêtre | Contenu |
 |---|---|
-| Maison | onglets (`maisonTab`) : Famille `renderFamille()`, Livre de recette `renderRecettes()`, Arbre des technologies `renderTechno()`, Bâtiments = `renderEnergieEau()` + `renderSilo()` + `renderCalendar()` |
+| Maison | onglets (`maisonTab`) : Famille `renderFamille()`, Livre de recette `renderRecettes()`, Arbre des technologies `renderTechno()`, Installations (`batiments`) = `renderAteliers()` + `renderEnergieEau()` + `renderSilo()` + `renderCalendar()` |
 | Étable | `renderPoulailler()` + `renderPaturage()` (ceux qui sont débloqués) |
 | Serre / Moulin / Verger | `renderSerre()` / `renderAteliers()` / `renderVerger()` |
 | Zone de culture | `renderPotager()` |
@@ -169,9 +169,35 @@ Depuis la console : `FarmStage.scene()` (caméra : `.cameras.main`, centre : `.c
 - Automne et hiver : bâtiments de saison sur la carte de printemps (pas encore d'autres cartes).
 - La grille 5×6 (80 px) dépasse la barrière dessinée sur la carte (64 px) et touche le chemin.
 - Les bulles d'aide « eau » et « potager » ne désignent plus rien sur la carte (leurs cibles
-  sont dans la fenêtre Maison › Bâtiments et dans la fenêtre Zone de culture).
+  sont dans la fenêtre Maison › Installations et dans la fenêtre Zone de culture).
 
 ## Crédits
 
 - Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <https://antarcticbees.itch.io/>
 - Moteur d'affichage : Phaser 3 (licence MIT)
+
+## Version 1.1 : ce qui a changé
+
+- **Repères sur la carte** : trois points (gauche, milieu, droite) et des flèches de bord, en DOM par-dessus le canvas ; un appui sur un point déplace la caméra.
+- **Étiquettes des bâtiments** : nom et pastille « à faire » au-dessus de chaque bâtiment et de la zone de culture. Le modèle de vue porte le libellé et le nombre ; la scène ne calcule rien.
+- **Fenêtres** : deux tailles seulement (demi-écran, plein écran), ✕ toujours au même endroit, titre unique.
+- **Règle de rangement** : ce qui est un lieu s'ouvre sur la carte ; ce qui est un stock ou un échange est dans la barre du bas. Les animaux s'achètent à l'Étable, les arbres au Verger ; le Marché garde Vendre, Acheter, Graines. Famille, Livre de recette et Arbre des technologies ne s'ouvrent plus que dans la Maison (les pages restent pour le repli sans Phaser).
+- **Bandeau** : nuit et heure à côté du titre ; saison, eau et autonomie ouvrent leur fenêtre ; l'objectif du chapitre est affiché sous le bandeau.
+- **Horloge** : 6 h au réveil, 1 h toutes les 5 s d'éveil (`DATA.TIME.CLOCK_SECONDS_PER_HOUR`, distinct de `SECONDS_PER_HOUR` qui règle l'usure). La carte reçoit l'heure dans le modèle de vue et pose un voile coloré : aube, plein jour, soir doré, crépuscule, nuit.
+- **Moulin** : sa fenêtre moud le blé directement (`renderMoulin()`), 1 blé = 1 farine + 1 paille ; la mouture n'est plus dans le Livre de recette.
+- **Élevage** : plus d'abattage ni de poids. Chaque nuit un mouton mange 1 paille, une vache 2 ; nourrie, la vache donne du lait, le mouton de la laine toutes les 2 nuits nourries. Le mot « pâturage » a disparu des textes (la clé interne `state.paturage` reste).
+- **Famille** : prénom, femme ou homme, couleur de peau par membre (`setMemberProfile`). Le prénom reste dans la sauvegarde locale et n'est jamais envoyé au suivi.
+- **Sauvegardes** : format 16.
+
+## Version 1.1.1 : corrections
+
+- **Animaux au Marché** : l'onglet Animaux revient dans le Marché (`COMPTOIR_TABS`) ; l'Étable n'a plus de lignes d'achat mais un raccourci vers cet onglet. Les arbres restent au Verger.
+- **Achats par quantité** : chaque ligne d'achat (produits, graines, animaux) a « − », « + » et « Max ». Le total affiché est le vrai prix : `buyQuote(state, item, qty)` suit la hausse du prix unité par unité ; `buyAnimals()` et `animalBuyMax()` pour les animaux (prix fixe, limité par les places).
+- **Repas de 19 h** : `mealDue(state)` puis `takeMeal(state)` ; le compte du repas attend dans `state.repas` jusqu'à la nuit, qui le recopie dans son compte rendu (`feedFamily`). Si la famille dort avant 19 h, le repas est pris au coucher, comme avant. L'annonce est dans `playMealScene()` : c'est là que se branchera la cinématique.
+- **Nuit de minuit** : `midnightDue(state)` ; c'est l'interface qui lance `sleep()` (`watchDay()`, appelée à chaque image, comme `watchRoutine()`). Elle attend qu'une fenêtre de `#modal-root` soit refermée et ne se lance pas tant que l'aide de la première partie est affichée.
+- **Horloge arrêtée** : pendant le résumé du réveil (`tick(state, dt, true)`), la journée commence quand le joueur le ferme ; pendant une absence, `simulateOffline()` n'avance l'horloge que jusqu'à l'éveil minimal (midi), donc ni repas ni nuit ne se déclenchent jeu fermé.
+- **Notifications** : une « cible » (`cibleAlerte(type, id)`) dit où mène chaque alerte : fenêtre de la carte, écran de détail ou onglet du bas, avec l'`id` de la ligne concernée (`animal-…`, `plot-…`, `dev-…`, `moulin-moudre`…). La liste des Notifications et les notifications qui s'affichent en bas de l'écran sont des boutons (`data-action="aller"`, `allerA()`).
+- **Animaux cachés** : l'Étable et ses sections existent dès qu'elles abritent quelque chose (`coopShown()`, `herdShown()`), même si le chapitre ne les a pas encore ouvertes (mode test « +3 moutons »). Sans cela, l'alerte « il manque de la paille » parlait d'animaux qu'on ne voyait nulle part.
+- **Étiquettes au survol** : le nom d'un lieu ne s'affiche que souris dessus, doigt posé (il reste 1,2 s après le relâchement) ou focus clavier (`setHover()` dans `farm-stage.js`, classe `show`). La pastille « à faire » reste visible en permanence.
+- **Maison** : l'onglet « Bâtiments » s'appelle « Installations » (identifiant interne `batiments` inchangé).
+- **Sauvegardes** : format 17 (`state.repas`).

@@ -3,9 +3,10 @@
 Un *idle game* de gestion agricole familiale : quatre personnes, une ferme, et un
 objectif, nourrir la famille avec ce que la ferme produit. Panneaux solaires,
 batteries, pompe, zone de culture, poulailler, moutons, verger, serre, cuisine et
-réfrigérateur ; les journées ne passent que quand vous cliquez sur **Dormir**.
+réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la famille à
+19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à minuit.
 
-- **Version** : 1.0.0 (affichée dans ⚙️ Options › À propos)
+- **Version** : 1.1.1 (affichée dans ⚙️ Options › À propos)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
@@ -55,11 +56,12 @@ l'envoi du suivi de session, décrit ci-dessous.
 ## Règles en bref
 
 - La famille (2 adultes, 2 enfants) a besoin de **150 énergie par jour** ; elle
-  mange à chaque nuit, d'abord ce qui périme le plus tôt.
-- La journée commence à 6 h (1 heure de jeu = 30 s). Elle ne se termine que par
-  **Dormir**, après 30 s d'éveil au moins.
-- La nuit : repas et santé, puis les plantes arrosées gagnent un stade, les
-  poules nourries pondent, les moutons grossissent, les aliments vieillissent.
+  mange à 19 h (ou au coucher, si elle dort avant), d'abord ce qui périme le plus tôt.
+- La journée commence à 6 h et une heure passe toutes les 5 s. On peut **Dormir**
+  après 30 s d'éveil (midi) ; à minuit, la nuit se déroule d'elle-même. L'horloge
+  s'arrête pendant le résumé du réveil et quand le jeu est fermé.
+- La nuit : les plantes arrosées gagnent un stade, les poules nourries pondent,
+  les moutons et les vaches mangent leur paille (laine, lait), les aliments vieillissent.
 - L'électricité et l'eau circulent en temps réel : panneaux → batteries →
   pompe, moulin, presse, réfrigérateur. Les appareils s'usent quand ils tournent.
 - Sept chapitres mènent à une famille **100 % autonome**.
