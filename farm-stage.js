@@ -80,6 +80,7 @@
   const SCREENS = 3;           // la carte fait trois écrans : gauche, milieu, droite
   const LABEL_GAP = 3;         // px CSS entre l'étiquette et ce qu'elle nomme
   const LABEL_HOLD_MS = 1200;  // au doigt : le nom reste affiché ce temps après le relâchement
+  const GROUND_CHECK_MS = 3000; // le fond de la carte est vérifié à ce rythme (voir repairGround)
   const ZONE_LABEL_UP = 14;    // px de carte : l'étiquette de la zone passe au-dessus de la barrière
   const LIGHT_MS = 1200;       // fondu entre deux lumières (un quart d'heure de jeu dure à peu près autant)
 
@@ -207,6 +208,7 @@
         this.defineAnims();
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
+        this.watchGround();
         // Voile de lumière : il couvre toute la carte, au-dessus des bâtiments et des
         // plantes, et multiplie leurs couleurs (blanc = aucun effet). Les étiquettes et les
         // boutons, en DOM, restent au-dessus et gardent leurs couleurs.
@@ -296,25 +298,75 @@
         const raw = ok ? this.cache.tilemap.get(MAP.key).data : null;
         const valid = !!(raw && raw.width && raw.height && raw.tilewidth && Array.isArray(raw.layers));
         if (valid) this.world = { w: raw.width * raw.tilewidth, h: raw.height * raw.tileheight };
-        const tex = this.textures.createCanvas('ground', this.world.w, this.world.h);
+        this.mapRaw = valid ? raw : null;
+        if (valid) {
+          for (const layer of raw.layers) {
+            if (layer.type === 'objectgroup') for (const o of layer.objects || []) if (o.name) this.objects[o.name] = o;
+          }
+          const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
+          if (!set) console.warn('[FarmStage] jeu de tuiles ' + MAP.image + ' introuvable dans la carte (est-il intégré ?)');
+        }
+        this.textures.createCanvas('ground', this.world.w, this.world.h);
+        this.paintGround();
+      }
+
+      // Dessine (ou redessine) le fond dans la texture « ground », puis l'envoie à la carte
+      // graphique. Appelée au démarrage et chaque fois que le navigateur a vidé cette image.
+      paintGround() {
+        const tex = this.textures.get('ground');
         const ctx = tex.getContext();
+        const raw = this.mapRaw;
         ctx.imageSmoothingEnabled = false;
+        ctx.globalAlpha = 1;
         ctx.fillStyle = '#699654';
         ctx.fillRect(0, 0, this.world.w, this.world.h);
-        if (valid) {
+        if (raw) {
           const img = this.has(MAP.tiles) ? this.textures.get(MAP.tiles).getSourceImage() : null;
           // Jeu de tuiles : celui dont l'image est la planche chargée (intégré dans le JSON).
-          const set = (raw.tilesets || []).find((s) => s.image && String(s.image).split('/').pop() === MAP.image);
-          if (!set) console.warn('[FarmStage] jeu de tuiles ' + MAP.image + ' introuvable dans la carte (est-il intégré ?)');
+          const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
           for (const layer of raw.layers) {
-            if (layer.type === 'objectgroup') {
-              for (const o of layer.objects || []) if (o.name) this.objects[o.name] = o;
-            } else if (layer.type === 'tilelayer' && layer.visible !== false && img && set && Array.isArray(layer.data)) {
+            if (layer.type === 'tilelayer' && layer.visible !== false && img && set && Array.isArray(layer.data)) {
               this.drawLayer(ctx, raw, layer, set, img);
             }
           }
         }
         tex.refresh();
+      }
+
+      // Le fond a-t-il été vidé ? Il est entièrement opaque quand il est dessiné : un point
+      // transparent veut dire que le navigateur a jeté son contenu (page restée en
+      // arrière-plan sur un téléphone, mémoire graphique reprise).
+      groundWiped() {
+        try {
+          const tex = this.textures.get('ground');
+          const ctx = tex.getContext();
+          if (ctx.isContextLost && ctx.isContextLost()) return false;   // pas encore rendu : on réessaiera
+          const w = this.world.w, h = this.world.h;
+          return [[0, 0], [w >> 1, h >> 1], [w - 1, h - 1]].some((p) => ctx.getImageData(p[0], p[1], 1, 1).data[3] === 0);
+        } catch (e) {
+          return false;
+        }
+      }
+
+      // Redessine le fond s'il a été vidé (ou d'office avec `force`). Sans cela, au retour
+      // d'une absence, la carte n'affichait plus qu'un vert uni sous les bâtiments.
+      repairGround(force) {
+        if (!this.textures.exists('ground')) return false;
+        if (!force && !this.groundWiped()) return false;
+        this.paintGround();
+        return true;
+      }
+
+      // Tout ce qui peut annoncer que la mémoire graphique a été reprise puis rendue.
+      watchGround() {
+        const R = this.game.renderer;
+        const E = global.Phaser.Renderer && global.Phaser.Renderer.Events;
+        // Contexte WebGL rendu : Phaser recrée ses textures, puis on renvoie le fond.
+        if (R && R.on) R.on((E && E.RESTORE_WEBGL) || 'restorewebgl', () => this.repairGround(true));
+        // Canvas du fond rendu par le navigateur (il revient vide).
+        const c = this.textures.get('ground').getSourceImage();
+        if (c && c.addEventListener) c.addEventListener('contextrestored', () => this.repairGround(true));
+        this.groundCheckAt = 0;
       }
 
       drawLayer(ctx, raw, layer, set, img) {
@@ -440,6 +492,8 @@
         else if (this.vx || this.vy) this.stepInertia(dt);
         if (this.lightFade) this.stepLight();
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
+        // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
+        if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false); }
         this.placeLabels();
         this.reportView();
       }
@@ -810,6 +864,19 @@
       if (visible) { awake = false; show(); } else game.loop.sleep();
     });
 
+    // Retour sur la page (onglet réaffiché, téléphone rallumé) : le fond est vérifié tout de
+    // suite, puis encore un peu plus tard, le temps que le navigateur rende la mémoire graphique.
+    const checkGround = () => {
+      const s = getScene();
+      if (!s || !s.ready || !visible) return;
+      s.repairGround(false);
+      s.groundCheckAt = 0;
+    };
+    const onBack = () => { if (!document.hidden) { checkGround(); setTimeout(checkGround, 400); setTimeout(checkGround, 1500); } };
+    document.addEventListener('visibilitychange', onBack);
+    global.addEventListener('pageshow', onBack);
+    global.addEventListener('focus', onBack);
+
     if (global.ResizeObserver) new global.ResizeObserver(resize).observe(element);
     global.addEventListener('resize', resize);
     // Avant chaque geste, Phaser doit connaître la position exacte du canvas dans la page
@@ -859,6 +926,8 @@
     resize();
     lastKey = '';
     if (lastModel) update(lastModel);
+    const s = getScene();
+    if (s && s.ready) s.repairGround(false);
   }
 
   function hide() {
