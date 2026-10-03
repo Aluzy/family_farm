@@ -1,19 +1,19 @@
 # 🌾 Ferme Familiale
 
-Un *idle game* de gestion agricole familiale : quatre personnes, une ferme, et un
+Un *idle game* de gestion agricole familiale : une famille (quatre personnes au départ), une ferme, et un
 objectif, nourrir la famille avec ce que la ferme produit. Panneaux solaires,
 batteries, pompe, zone de culture, poulailler, moutons, verger, serre, cuisine et
 réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
-- **Version** : 1.1.4 (affichée dans ⚙️ Options › À propos)
+- **Version** : 1.2.0 (affichée dans ⚙️ Options › À propos)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
 - **Technique** : trois pages HTML autonomes, sans bibliothèque et sans étape de
   build : `index.html` (page d'accueil), `jeu.html` (le jeu) et
   `encyclopedie.html` (glossaire du jeu, généré depuis
-  `encyclopedie_ferme_familiale.json`), plus `cookies.html` (politique de cookies
+  `encyclopedie_ferme_familiale.json` par `node build-encyclopedie.mjs`), plus `cookies.html` (politique de cookies
   et traceurs). Elles fonctionnent ouvertes depuis le disque comme servies en HTTP.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
@@ -55,7 +55,9 @@ l'envoi du suivi de session, décrit ci-dessous.
 
 ## Règles en bref
 
-- La famille (2 adultes, 2 enfants) a besoin de **150 énergie par jour** ; elle
+- La famille commence à 2 adultes et 2 enfants : **150 énergie par jour** (50 par
+  adulte, 25 par enfant). Le joueur peut la composer : 1 à 6 membres, dont au moins
+  un adulte, et jusqu'à 3 chiens ou chats, qui ne comptent pas dans le besoin. Elle
   mange à 19 h (ou au coucher, si elle dort avant), d'abord ce qui périme le plus tôt.
 - La journée va de 6 h à 22 h et une heure dure 18 s (288 s en tout). On peut **Dormir**
   après 30 s d'éveil ; à 22 h, la nuit se déroule d'elle-même. L'horloge

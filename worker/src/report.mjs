@@ -34,6 +34,11 @@ export const GAME_ACTIONS = {
   'mill-start': 'Moudre du blé au Moulin',
   'mill-cancel': 'Moudre du blé au Moulin',
   'member-save': 'Personnaliser un membre de la famille',
+  'member-add': 'Ajouter un membre à la famille',
+  'member-remove': 'Retirer un membre de la famille',
+  'pet-add': 'Adopter un animal de compagnie',
+  'pet-save': 'Personnaliser un animal de compagnie',
+  'pet-remove': 'Retirer un animal de compagnie',
   'buy-orchard-slot': 'Acheter un emplacement de verger',
   'buy-tech': 'Acquérir une technologie',
   'sleep': 'Dormir',
@@ -79,6 +84,7 @@ export const INTERFACE_ACTIONS = new Set([
   'mill-dec', 'mill-inc', 'mill-max', 'buy-dec', 'buy-inc', 'buy-max',
   'animal-dec', 'animal-inc', 'animal-max',
   'member-edit', 'member-genre', 'member-teint', 'wake-more',
+  'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
 ]);
 
 // Signaux utiles à la décision, affichés à part.
