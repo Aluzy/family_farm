@@ -215,3 +215,12 @@ Depuis la console : `FarmStage.scene()` (caméra : `.cameras.main`, centre : `.c
 - **Cause** : le fond (texture `ground`) est un canvas composé au démarrage à partir des couches Tiled. Quand le navigateur reprend la mémoire graphique d'une page en arrière-plan, il vide ce canvas et le contexte WebGL ; au retour, Phaser recrée ses textures à partir de leurs sources : les images reviennent, le canvas revient vide.
 - **Correction** (`farm-stage.js`) : `paintGround()` redessine le fond dans la texture existante ; `repairGround()` l'appelle quand le contexte WebGL est rendu (`RESTORE_WEBGL`), quand le canvas du fond est rendu (`contextrestored`), au retour sur la page (`visibilitychange`, `pageshow`, `focus`, `FarmStage.show()`), et toutes les 3 s si un point du fond est devenu transparent (`groundWiped()`).
 - **Vérification** : perte simulée avec l'extension `WEBGL_lose_context` et canvas vidé à la main ; pas d'essai sur un vrai téléphone.
+
+## Version 1.2 : composer sa famille
+
+- **Membres** : de 1 à 6 (`DATA.FAMILY.COMPOSITION`), dont au moins un adulte. `addMember(state, enfant)` et `removeMember(state, id)` ; le besoin journalier est la somme des apports des membres présents (`familyNeed()`), donc il suit tout seul : 50 par adulte, 25 par enfant.
+- **Garde-fous** : un nouveau membre arrive avec la santé moyenne de la famille (agrandir la famille ne soigne personne) ; un malade ne peut pas partir (`memberRemovalBlock()` dit pourquoi) ; un identifiant n'est jamais réutilisé (`state.famille.numeros`).
+- **Animaux de compagnie** : jusqu'à 3 chiens ou chats (`DATA.FAMILY.COMPAGNIE`, `state.famille.animaux`, `addPet()`, `setPetProfile()`, `removePet()`). Gratuits, sans effet sur le besoin, la santé ou la productivité. Leur nom suit les règles d'un prénom et, comme lui, reste dans la sauvegarde locale.
+- **Interface** : Maison › Famille. Deux boutons « ➕ Un adulte / Un enfant » (la fiche s'ouvre aussitôt pour le prénom), la section « Animaux de compagnie », et « Retirer de la famille » dans la fiche « Modifier » (deux appuis).
+- **Sauvegardes** : format 18. La migration ajoute une liste d'animaux vide et les compteurs ; les membres ne changent pas.
+- **Non fait** : l'encyclopédie (`encyclopedie.html` et son JSON) décrit encore une famille fixe de quatre personnes ; les animaux de compagnie n'apparaissent pas sur la carte.

@@ -369,6 +369,13 @@ textarea, input[type="text"] {
 .choice-btn:focus-visible, .swatch-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .mill-stock { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 1.05rem; }
 
+/* Version 1.2 : composer la famille, animaux de compagnie. */
+.family-count { margin: 0 0 10px; }
+.family-add { gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+.family-add .btn { flex: 1 1 150px; }
+.member-leave { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); gap: 6px; }
+.pet .portrait-emoji { font-size: 2rem; }
+
 @media (min-width: 640px) {
   .modal { border-radius: var(--radius); }
 }
@@ -2224,6 +2231,21 @@ const DATA = {
       PORTRAITS: { adulte: { f: '👩', m: '👨' }, enfant: { f: '👧', m: '👦' } },
     },
     AJ: { adulte: 50, enfant: 25 }, // énergie par jour et par membre
+    // Version 1.2 : le joueur compose sa famille. De MEMBRES_MIN à MEMBRES_MAX
+    // membres (adultes ou enfants), dont au moins ADULTES_MIN adulte ; la partie
+    // commence avec les quatre membres de MEMBRES. Le besoin journalier suit :
+    // c'est la somme des AJ des membres présents (familyNeed()).
+    COMPOSITION: { MEMBRES_MIN: 1, MEMBRES_MAX: 6, ADULTES_MIN: 1 },
+    // Animaux de compagnie : jusqu'à MAX chiens ou chats. Ils ne mangent pas les
+    // réserves de la famille et ne comptent ni dans le besoin journalier, ni dans
+    // la santé, ni dans la productivité. Leur nom suit les règles d'un prénom.
+    COMPAGNIE: {
+      MAX: 3,
+      ESPECES: {
+        chien: { nom: 'Chien', icone: '🐶' },
+        chat: { nom: 'Chat', icone: '🐱' },
+      },
+    },
     SANTE_DEPART: 100,
     SANTE_MAX: 100,
     // Couverture minimale du besoin (en %) → variation de santé, du palier le
@@ -3087,9 +3109,9 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 17;
+const STATE_VERSION = 18;
 // Version du jeu, affichée dans les Options (À propos).
-const GAME_VERSION = '1.1.4';
+const GAME_VERSION = '1.2.0';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -4312,6 +4334,150 @@ function setMemberProfile(state, id, profil) {
   m.genre = next.genre;
   m.teint = next.teint;
   return { ok: true, id: m.id };
+}
+
+/* ---------- version 1.2 : composition de la famille et animaux de compagnie ---------- */
+
+// Dernier numéro utilisé par type d'identifiant (« adulte-3 » → 3), d'après les
+// membres et les animaux présents : { adulte, enfant, compagnon }.
+function familyNumbers(membres, animaux) {
+  const n = { adulte: 0, enfant: 0, compagnon: 0 };
+  for (const x of [...(Array.isArray(membres) ? membres : []), ...(Array.isArray(animaux) ? animaux : [])]) {
+    const m = x && typeof x.id === 'string' ? x.id.match(/^(adulte|enfant|compagnon)-(\d+)$/) : null;
+    if (m) n[m[1]] = Math.max(n[m[1]], Number(m[2]));
+  }
+  return n;
+}
+
+function adultCount(state) {
+  return state.famille.membres.filter((m) => !m.enfant).length;
+}
+
+function childCount(state) {
+  return state.famille.membres.filter((m) => m.enfant).length;
+}
+
+// Places encore libres dans la famille (0 à MEMBRES_MAX).
+function memberRoom(state) {
+  return Math.max(0, DATA.FAMILY.COMPOSITION.MEMBRES_MAX - state.famille.membres.length);
+}
+
+// Prochain numéro d'un type d'identifiant ; le compteur de l'état avance.
+function nextFamilyNumber(state, type) {
+  const f = state.famille;
+  const vus = familyNumbers(f.membres, f.animaux);
+  if (!f.numeros || typeof f.numeros !== 'object') f.numeros = vus;
+  const n = Math.max(Number(f.numeros[type]) || 0, vus[type]) + 1;
+  f.numeros[type] = n;
+  return n;
+}
+
+// Ajoute un membre à la famille : un adulte, ou un enfant si `enfant` est vrai.
+// Refusé au-delà de MEMBRES_MAX. Le nouveau venu arrive avec la santé moyenne
+// de la famille (au moins 1) : agrandir la famille ne soigne personne et ne
+// change pas la productivité. Son besoin s'ajoute dès le prochain repas.
+function addMember(state, enfant = false) {
+  const C = DATA.FAMILY.COMPOSITION;
+  const f = state.famille;
+  if (f.membres.length >= C.MEMBRES_MAX) return fail(`La famille est au complet : ${C.MEMBRES_MAX} membres au plus.`);
+  const type = enfant ? 'enfant' : 'adulte';
+  const n = nextFamilyNumber(state, type);
+  const m = makeMember({ id: `${type}-${n}`, nom: `${enfant ? 'Enfant' : 'Adulte'} ${n}`, enfant: !!enfant });
+  m.sante = Math.max(1, Math.min(DATA.FAMILY.SANTE_MAX, Math.floor(rawAverageHealth(state))));
+  f.membres.push(m);
+  return { ok: true, id: m.id, besoin: familyNeed(state) };
+}
+
+// Pourquoi un membre ne peut pas quitter la famille (texte), ou '' s'il le peut :
+// il reste toujours MEMBRES_MIN membre dont ADULTES_MIN adulte, et un malade
+// ne part pas (ce serait un soin gratuit pour la moyenne de la famille).
+function memberRemovalBlock(state, id) {
+  const C = DATA.FAMILY.COMPOSITION;
+  const m = findMember(state, id);
+  if (!m) return 'Membre introuvable.';
+  if (state.famille.membres.length <= C.MEMBRES_MIN) return 'Il faut au moins un membre dans la famille.';
+  if (!m.enfant && adultCount(state) <= C.ADULTES_MIN) return 'Il faut au moins un adulte dans la famille.';
+  if (m.malade) return `${memberName(state, m.id)} est malade : soigne-le avant qu'il parte.`;
+  return '';
+}
+
+// Retire un membre de la famille (voir memberRemovalBlock). Son besoin disparaît
+// dès le prochain repas ; un repas déjà pris aujourd'hui n'est pas refait.
+function removeMember(state, id) {
+  const raison = memberRemovalBlock(state, id);
+  if (raison) return fail(raison);
+  const f = state.famille;
+  f.membres = f.membres.filter((m) => m.id !== id);
+  return { ok: true, id, besoin: familyNeed(state) };
+}
+
+/* -- animaux de compagnie -- */
+
+function pets(state) {
+  return Array.isArray(state.famille.animaux) ? state.famille.animaux : [];
+}
+
+function findPet(state, id) {
+  return pets(state).find((a) => a.id === id) || null;
+}
+
+function petRoom(state) {
+  return Math.max(0, DATA.FAMILY.COMPAGNIE.MAX - pets(state).length);
+}
+
+// Nom affiché d'un animal de compagnie (texte brut : à passer par escapeHtml()).
+function petName(state, id) {
+  const a = findPet(state, id);
+  if (!a) return '';
+  const E = DATA.FAMILY.COMPAGNIE.ESPECES;
+  return validFirstName(a.nom) ? cleanFirstName(a.nom) : (E[a.espece] ? E[a.espece].nom : 'Animal');
+}
+
+function petIcon(espece) {
+  const e = DATA.FAMILY.COMPAGNIE.ESPECES[espece];
+  return e ? e.icone : '🐾';
+}
+
+// Adopte un chien ou un chat : refusé au-delà de COMPAGNIE.MAX. Gratuit, et sans
+// effet sur le besoin journalier, la santé ou la productivité.
+function addPet(state, espece) {
+  const K = DATA.FAMILY.COMPAGNIE;
+  if (!K.ESPECES[espece]) return fail('Cet animal ne s\'adopte pas.');
+  if (!Array.isArray(state.famille.animaux)) state.famille.animaux = [];
+  if (state.famille.animaux.length >= K.MAX) return fail(`${K.MAX} animaux de compagnie au plus.`);
+  const n = nextFamilyNumber(state, 'compagnon');
+  const a = { id: `compagnon-${n}`, espece, nom: `${K.ESPECES[espece].nom} ${n}` };
+  state.famille.animaux.push(a);
+  return { ok: true, id: a.id };
+}
+
+// Change le nom ou l'espèce d'un animal de compagnie : { nom, espece }. Un champ
+// absent garde sa valeur ; tout est vérifié avant de rien modifier.
+function setPetProfile(state, id, profil) {
+  const K = DATA.FAMILY.COMPAGNIE;
+  const a = findPet(state, id);
+  if (!a) return fail('Animal introuvable.');
+  if (!profil || typeof profil !== 'object') return fail('Profil invalide.');
+  let nom = a.nom;
+  let espece = a.espece;
+  if (profil.nom !== undefined) {
+    if (typeof profil.nom !== 'string' || cleanFirstName(profil.nom) === '') return fail('Écris un nom.');
+    if (!validFirstName(profil.nom)) return fail(`Le nom doit faire ${DATA.FAMILY.PROFIL.PRENOM_MAX} caractères au plus.`);
+    nom = cleanFirstName(profil.nom);
+  }
+  if (profil.espece !== undefined) {
+    if (!K.ESPECES[profil.espece]) return fail('Choix inconnu.');
+    espece = profil.espece;
+  }
+  a.nom = nom;
+  a.espece = espece;
+  return { ok: true, id: a.id };
+}
+
+function removePet(state, id) {
+  if (!findPet(state, id)) return fail('Animal introuvable.');
+  state.famille.animaux = pets(state).filter((a) => a.id !== id);
+  return { ok: true, id };
 }
 
 // Texte sûr à écrire dans une page : les caractères spéciaux du HTML sont
@@ -7135,6 +7301,10 @@ function startHousehold() {
     potager: { niveau: 1, parcelles: makePlots(DATA.POTAGER.PARCELLES[0]) },
     famille: {
       membres: DATA.FAMILY.MEMBRES.map(makeMember),
+      // version 1.2 : animaux de compagnie, et dernier numéro donné à un adulte, à un
+      // enfant et à un animal (les identifiants ne sont jamais réutilisés)
+      animaux: [],
+      numeros: familyNumbers(DATA.FAMILY.MEMBRES, []),
       soinsPayes: 0,
       reserve: { ...DATA.FAMILY.RESERVE_DEPART },
     },
@@ -7364,7 +7534,21 @@ const MIGRATIONS = {
   // v16 → v17 (version 1.1.1) : le repas de 19 h. Le repas du jour n'est pas
   // encore pris (state.repas = null) : il le sera à 19 h ou au coucher.
   16: (state) => ({ ...state, version: 17, repas: null }),
+  // v17 → v18 (version 1.2) : la famille se compose. Les membres ne changent
+  // pas ; la famille reçoit sa liste d'animaux de compagnie (vide) et ses
+  // compteurs d'identifiants.
+  17: (state) => migrateFamily12(state),
 };
+
+function migrateFamily12(old) {
+  const state = { ...old, version: 18 };
+  const f = state.famille;
+  if (f && typeof f === 'object' && !Array.isArray(f)) {
+    const animaux = Array.isArray(f.animaux) ? f.animaux : [];
+    state.famille = { ...f, animaux, numeros: familyNumbers(f.membres, animaux) };
+  }
+  return state;
+}
 
 // Règles de la version 1.1 (v15 → v16). Rien n'est perdu :
 // - famille : chaque membre reçoit son profil de départ (prénom = son rôle,
@@ -15779,7 +15963,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.1.4');
+  assertEqual(GAME_VERSION, '1.2.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -16259,15 +16443,15 @@ test('Résumé de réveil : avec une vraie nuit, les œufs pondus sont dans la r
 /* ---------- versions 1.1.1 et 1.1.3 : repas de 19 h, nuit de 22 h, achats par quantité ---------- */
 
 test('version 1.1.1 : version 17, la migration v16 → v17 ajoute le repas du jour (pas encore pris)', () => {
-  assertEqual([STATE_VERSION, typeof MIGRATIONS[16], MIGRATIONS[17]], [17, 'function', undefined]);
+  assertEqual(typeof MIGRATIONS[16], 'function');
   assertEqual(createInitialState(1).repas, null);
   const v16 = JSON.parse(JSON.stringify(createInitialState(4)));
   delete v16.repas;
   v16.version = 16;
   v16.pieces = 321;
   const m = migrate({ v: 16, t: 0, s: v16 });
-  assertEqual([m.version, m.repas, m.pieces], [17, null, 321]);
-  assertEqual(migrate({ v: 17, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+  assertEqual([m.version, m.repas, m.pieces], [STATE_VERSION, null, 321]);
+  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
 });
 
 test('version 1.1.3 : la journée va de 6 h à 22 h, 18 s par heure (288 s)', () => {
@@ -16410,6 +16594,150 @@ test('version 1.1.1 : sans mouton ni vache, jamais d\'alerte de paille', () => {
   assertEqual([s.report.pailleBesoin, s.report.etable.manque, alertSnapshot(s).pailleManque], [0, 0, false]);
   testAddHens(s, 4);
   assertEqual(getNotifications(s).filter((n) => n.type === 'paille'), [], 'les poules ne mangent pas de paille');
+});
+
+/* ---------- version 1.2 : composition de la famille, animaux de compagnie ---------- */
+
+test('version 1.2 : format 18, la migration ajoute les animaux de compagnie et les compteurs sans toucher aux membres', () => {
+  assertEqual([STATE_VERSION, typeof MIGRATIONS[17], MIGRATIONS[18]], [18, 'function', undefined]);
+  assertEqual(DATA.FAMILY.COMPOSITION, { MEMBRES_MIN: 1, MEMBRES_MAX: 6, ADULTES_MIN: 1 });
+  assertEqual([DATA.FAMILY.COMPAGNIE.MAX, Object.keys(DATA.FAMILY.COMPAGNIE.ESPECES)], [3, ['chien', 'chat']]);
+  const neuf = createInitialState(1);
+  assertEqual([neuf.famille.animaux, neuf.famille.numeros, neuf.famille.membres.length], [[], { adulte: 2, enfant: 2, compagnon: 0 }, 4]);
+  const v17 = JSON.parse(JSON.stringify(createInitialState(7)));
+  v17.version = 17;
+  delete v17.famille.animaux;
+  delete v17.famille.numeros;
+  v17.famille.membres[0].prenom = 'Léa';
+  v17.famille.membres[2].sante = 40;
+  const m = migrate({ v: 17, t: 0, s: v17 });
+  assertEqual([m.version, m.famille.animaux, m.famille.numeros], [18, [], { adulte: 2, enfant: 2, compagnon: 0 }]);
+  assertEqual(m.famille.membres, v17.famille.membres, 'les membres ne changent pas');
+  assertEqual(migrate({ v: 18, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+  // une sauvegarde abîmée ne fait pas planter la migration
+  for (const bad of [{ version: 17 }, { version: 17, famille: null }, { version: 17, famille: 7 }, { version: 17, famille: { membres: 'x' } }]) {
+    assertEqual(migrate(bad).version, 18);
+  }
+});
+
+test('version 1.2 : ajouter des membres jusqu\'à 6, le besoin journalier suit', () => {
+  const s = garden();
+  assertEqual([familyNeed(s), memberRoom(s), adultCount(s), childCount(s)], [150, 2, 2, 2]);
+  const a = addMember(s, false);
+  assertEqual([a.ok, a.id, a.besoin, familyNeed(s)], [true, 'adulte-3', 200, 200]);
+  const e = addMember(s, true);
+  assertEqual([e.ok, e.id, e.besoin, memberRoom(s)], [true, 'enfant-3', 225, 0]);
+  const m = findMember(s, 'adulte-3');
+  assertEqual([m.nom, m.prenom, m.enfant, m.malade, m.sante, m.teint, DATA.FAMILY.PROFIL.GENRES.includes(m.genre)], ['Adulte 3', 'Adulte 3', false, false, 100, 0, true]);
+  assertEqual(findMember(s, 'enfant-3').enfant, true);
+  const plein = addMember(s, true);
+  assertEqual([plein.ok, s.famille.membres.length], [false, 6], 'pas de septième membre');
+  // le repas se calcule sur le nouveau besoin
+  setInv(s, { conserve: 200 });
+  assertEqual(planMeal(s).besoin, 225);
+  const rep = sleepOnce(s);
+  assertEqual([rep.besoin, rep.couverture], [225, 100]);
+  assertEqual(setMemberProfile(s, 'adulte-3', { prenom: 'Mamie', genre: 'f', teint: 2 }).ok, true);
+  assertEqual([memberName(s, 'adulte-3'), memberPortrait(s, 'adulte-3')], ['Mamie', '👩\u{1F3FC}']);
+});
+
+test('version 1.2 : le nouveau membre arrive avec la santé moyenne de la famille', () => {
+  const s = garden();
+  setHealth(s, 60);
+  s.famille.membres[0].sante = 20;
+  const avant = rawAverageHealth(s);
+  addMember(s, true);
+  assertEqual([findMember(s, 'enfant-3').sante, rawAverageHealth(s)], [50, avant], 'la moyenne ne bouge pas');
+  setHealth(s, 0);
+  addMember(s, false);
+  assertEqual(findMember(s, 'adulte-3').sante, 1, 'jamais à 0 : il n\'arrive pas malade');
+});
+
+test('version 1.2 : retirer un membre : au moins un membre, au moins un adulte, pas un malade', () => {
+  const s = garden();
+  const r = removeMember(s, 'enfant-2');
+  assertEqual([r.ok, r.besoin, s.famille.membres.map((m) => m.id)], [true, 125, ['adulte-1', 'adulte-2', 'enfant-1']]);
+  assertEqual(removeMember(s, 'enfant-2').ok, false, 'déjà parti');
+  assertEqual(removeMember(s, 'adulte-2').ok, true);
+  const dernierAdulte = removeMember(s, 'adulte-1');
+  assertEqual([dernierAdulte.ok, dernierAdulte.error, memberRemovalBlock(s, 'adulte-1')], [false, 'Il faut au moins un adulte dans la famille.', 'Il faut au moins un adulte dans la famille.']);
+  assertEqual([removeMember(s, 'enfant-1').ok, familyNeed(s)], [true, 50]);
+  const seul = removeMember(s, 'adulte-1');
+  assertEqual([seul.ok, seul.error, s.famille.membres.length], [false, 'Il faut au moins un membre dans la famille.', 1]);
+  // un malade ne part pas
+  const t = garden();
+  findMember(t, 'enfant-1').malade = true;
+  findMember(t, 'enfant-1').sante = 0;
+  assertEqual([removeMember(t, 'enfant-1').ok, t.famille.membres.length], [false, 4]);
+  assert(memberRemovalBlock(t, 'enfant-1').includes('malade'), 'la raison est dite');
+  assertEqual(memberRemovalBlock(t, 'enfant-2'), '');
+});
+
+test('version 1.2 : un identifiant de membre n\'est jamais réutilisé, la famille se sauvegarde telle quelle', () => {
+  const s = garden();
+  addMember(s, true);
+  assertEqual(removeMember(s, 'enfant-3').ok, true);
+  assertEqual(addMember(s, true).id, 'enfant-4');
+  assertEqual(s.famille.numeros, { adulte: 2, enfant: 4, compagnon: 0 });
+  // compteur perdu (sauvegarde modifiée) : on repart du plus grand numéro présent
+  delete s.famille.numeros;
+  assertEqual(addMember(s, false).id, 'adulte-3');
+  const copie = JSON.parse(JSON.stringify(s));
+  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: copie }).famille, s.famille);
+});
+
+test('version 1.2 : une famille d\'un seul adulte vit sa nuit (besoin 50), une famille de six aussi (besoin 250)', () => {
+  const s = garden();
+  for (const id of ['adulte-2', 'enfant-1', 'enfant-2']) assert(removeMember(s, id).ok, id);
+  setInv(s, { conserve: 200 });
+  const r = sleepOnce(s);
+  assertEqual([r.besoin, r.couverture, familyNeed(s), averageHealth(s)], [50, 100, 50, 100]);
+  const t = garden();
+  addMember(t, false);
+  addMember(t, false);
+  setInv(t, { conserve: 400 });
+  const r6 = sleepOnce(t);
+  assertEqual([familyNeed(t), r6.besoin, r6.couverture, t.famille.membres.length], [250, 250, 100, 6]);
+});
+
+test('version 1.2 : chiens et chats : trois au plus, hors du besoin journalier, de la santé et de la productivité', () => {
+  const s = garden();
+  const besoin = familyNeed(s);
+  const sante = [rawAverageHealth(s), averageHealth(s), productivity(s)];
+  assertEqual([pets(s), petRoom(s)], [[], 3]);
+  const a = addPet(s, 'chien');
+  const b = addPet(s, 'chat');
+  const c = addPet(s, 'chat');
+  assertEqual([a.ok, a.id, b.id, c.id, petRoom(s)], [true, 'compagnon-1', 'compagnon-2', 'compagnon-3', 0]);
+  assertEqual(pets(s), [{ id: 'compagnon-1', espece: 'chien', nom: 'Chien 1' }, { id: 'compagnon-2', espece: 'chat', nom: 'Chat 2' }, { id: 'compagnon-3', espece: 'chat', nom: 'Chat 3' }]);
+  assertEqual([addPet(s, 'chien').ok, pets(s).length], [false, 3], 'pas de quatrième animal');
+  assertEqual(addPet(garden(), 'poney').ok, false);
+  assertEqual([familyNeed(s), rawAverageHealth(s), averageHealth(s), productivity(s), s.famille.membres.length], [besoin, ...sante, 4], 'ils ne comptent pas');
+  // la nuit ne les nourrit pas et ne les compte pas
+  setInv(s, { conserve: 200 });
+  const avant = countItem(s, 'conserve');
+  const rep = sleepOnce(s);
+  const sans = garden();
+  setInv(sans, { conserve: 200 });
+  sleepOnce(sans);
+  assertEqual([rep.besoin, avant - countItem(s, 'conserve')], [150, 200 - countItem(sans, 'conserve')], 'même repas avec ou sans animaux');
+  assertEqual(pets(s).length, 3, 'ils sont toujours là au réveil');
+});
+
+test('version 1.2 : nom et espèce d\'un animal de compagnie, départ, identifiants jamais réutilisés', () => {
+  const s = garden();
+  addPet(s, 'chien');
+  assertEqual([petName(s, 'compagnon-1'), petIcon('chien'), petIcon('chat'), petIcon('poney')], ['Chien 1', '🐶', '🐱', '🐾']);
+  assertEqual(setPetProfile(s, 'compagnon-1', { nom: '  Rex  ', espece: 'chat' }).ok, true);
+  assertEqual(findPet(s, 'compagnon-1'), { id: 'compagnon-1', espece: 'chat', nom: 'Rex' });
+  for (const bad of [{ nom: '' }, { nom: '   ' }, { nom: 'x'.repeat(13) }, { nom: 7 }, { espece: 'poney' }, null]) {
+    assertEqual(setPetProfile(s, 'compagnon-1', bad).ok, false, JSON.stringify(bad));
+  }
+  assertEqual(findPet(s, 'compagnon-1'), { id: 'compagnon-1', espece: 'chat', nom: 'Rex' }, 'un refus ne change rien');
+  assertEqual([setPetProfile(s, 'inconnu', { nom: 'A' }).ok, removePet(s, 'inconnu').ok, petName(s, 'inconnu')], [false, false, '']);
+  assertEqual([removePet(s, 'compagnon-1').ok, pets(s), petRoom(s)], [true, [], 3]);
+  assertEqual(addPet(s, 'chat').id, 'compagnon-2');
+  assertEqual(JSON.parse(JSON.stringify(s)).famille.animaux, [{ id: 'compagnon-2', espece: 'chat', nom: 'Chat 2' }]);
 });
 
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
@@ -19338,7 +19666,7 @@ function portraitCard(m) {
 
 // Choix en cours dans la fenêtre (rien n'est changé avant « Enregistrer »). Le
 // prénom, lui, reste dans le champ de saisie jusqu'à l'enregistrement.
-let memberDraft = null; // { id, enfant, genre, teint }
+let memberDraft = null; // { id, enfant, genre, teint, depart } (depart : le joueur a demandé le départ, on attend sa confirmation)
 
 const GENRE_LABELS = {
   adulte: { f: 'Femme', m: 'Homme' },
@@ -19357,7 +19685,15 @@ function openMemberModal(id) {
     enfant: !!m.enfant,
     genre: P.GENRES.includes(m.genre) ? m.genre : P.GENRES[0],
     teint: Number.isInteger(m.teint) && m.teint >= 0 && m.teint < P.TEINTS.length ? m.teint : 0,
+    depart: false,
   };
+  // Version 1.2 : le membre peut quitter la famille, sauf s'il est le dernier, le
+  // dernier adulte, ou malade (le moteur dit pourquoi).
+  const blocage = memberRemovalBlock(state, m.id);
+  const depart = blocage
+    ? `<span class="muted">${escapeHtml(blocage)}</span>`
+    : `<button type="button" class="btn" data-action="member-remove" id="member-remove">Retirer de la famille</button>
+       <span class="muted">Le besoin de la famille baisse de ${DATA.FAMILY.AJ[age]} énergie par jour.</span>`;
   const genres = P.GENRES.map((g) => `<button type="button" class="btn choice-btn" data-action="member-genre" data-genre="${g}" aria-pressed="false"><span class="choice-emoji" aria-hidden="true"></span><span>${GENRE_LABELS[age][g]}</span></button>`).join('');
   const teints = P.TEINTS.map((_, t) => `<button type="button" class="btn swatch-btn" data-action="member-teint" data-teint="${t}" aria-pressed="false" aria-label="${TEINT_LABELS[t]}" title="${TEINT_LABELS[t]}"></button>`).join('');
   document.getElementById('modal-root').innerHTML = `
@@ -19388,6 +19724,7 @@ function openMemberModal(id) {
           <button type="button" class="btn primary" data-action="member-save">Enregistrer</button>
           <button type="button" class="btn" data-action="close-modal">Annuler</button>
         </div>
+        <div class="stack member-leave">${depart}</div>
       </div>
     </div>`;
   const input = document.getElementById('member-prenom');
@@ -19447,6 +19784,189 @@ function saveMemberModal() {
   showToast('✏️ C\'est noté !');
 }
 
+// « Retirer de la famille » : un premier appui demande confirmation, le second
+// retire le membre (le moteur vérifie encore qu'il peut partir).
+function removeMemberFromModal() {
+  const d = memberDraft;
+  const btn = document.getElementById('member-remove');
+  if (!d || !btn) return;
+  if (!d.depart) {
+    d.depart = true;
+    btn.classList.add('danger');
+    btn.textContent = 'Confirmer le départ';
+    return;
+  }
+  const nom = memberName(state, d.id);
+  const result = removeMember(state, d.id);
+  if (!result.ok) {
+    const error = document.getElementById('member-error');
+    if (error) {
+      error.textContent = result.error;
+      error.hidden = false;
+    }
+    return;
+  }
+  memberDraft = null;
+  closeModal();
+  persistState();
+  refresh();
+  showToast(`👋 ${nom} a quitté la famille. Besoin : ${formatNumber(result.besoin)} énergie par jour.`);
+}
+
+/* -- version 1.2 : animaux de compagnie (chiens et chats) -- */
+
+function petNameHtml(id) {
+  return escapeHtml(petName(state, id));
+}
+
+function petCard(a) {
+  const e = DATA.FAMILY.COMPAGNIE.ESPECES[a.espece];
+  return `
+    <article class="card portrait pet">
+      <span class="portrait-emoji" aria-hidden="true">${petIcon(a.espece)}</span>
+      <span class="card-title"><span class="member-name">${petNameHtml(a.id)}</span></span>
+      <span class="muted">${e ? e.nom : 'Animal'} · ne compte pas dans le besoin</span>
+      <button type="button" class="btn" data-action="pet-edit" data-id="${a.id}" aria-label="Modifier cet animal : nom et espèce">✏️ Modifier</button>
+    </article>`;
+}
+
+let petDraft = null; // { id, espece, depart }
+
+function openPetModal(id) {
+  const a = findPet(state, id);
+  if (!a) return;
+  tel('modal', 'pet'); // le nom de la fenêtre seulement : jamais le nom de l'animal
+  const K = DATA.FAMILY.COMPAGNIE;
+  const P = DATA.FAMILY.PROFIL;
+  petDraft = { id: a.id, espece: K.ESPECES[a.espece] ? a.espece : Object.keys(K.ESPECES)[0], depart: false };
+  const especes = Object.entries(K.ESPECES).map(([k, e]) => `<button type="button" class="btn choice-btn" data-action="pet-espece" data-espece="${k}" aria-pressed="false"><span class="choice-emoji" aria-hidden="true">${e.icone}</span><span>${e.nom}</span></button>`).join('');
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal member-modal" role="dialog" aria-modal="true" aria-labelledby="pet-title" data-stop-propagation>
+        <h2 id="pet-title">✏️ Animal de compagnie</h2>
+        <div class="member-preview" aria-live="polite">
+          <span class="portrait-emoji" id="pet-preview-emoji" aria-hidden="true"></span>
+          <strong class="member-name" id="pet-preview-name"></strong>
+        </div>
+        <div class="stack">
+          <div class="stack member-field">
+            <label for="pet-nom"><strong>Nom</strong> <span class="muted">(${P.PRENOM_MAX} caractères au plus)</span></label>
+            <input type="text" id="pet-nom" class="member-input" maxlength="${P.PRENOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${petNameHtml(a.id)}">
+          </div>
+          <div class="stack member-field" role="group" aria-label="Chien ou chat">
+            <strong>Chien ou chat</strong>
+            <div class="row choice-row">${especes}</div>
+          </div>
+          <p class="muted">Il ne mange pas les réserves de la famille : il ne compte pas dans le besoin journalier. Son nom reste sur cet appareil, dans ta sauvegarde.</p>
+          <p class="alert" id="pet-error" role="alert" hidden></p>
+        </div>
+        <div class="row">
+          <button type="button" class="btn primary" data-action="pet-save">Enregistrer</button>
+          <button type="button" class="btn" data-action="close-modal">Annuler</button>
+        </div>
+        <div class="stack member-leave">
+          <button type="button" class="btn" data-action="pet-remove" id="pet-remove">Retirer de la famille</button>
+        </div>
+      </div>
+    </div>`;
+  const input = document.getElementById('pet-nom');
+  input.addEventListener('input', syncPetModal);
+  syncPetModal();
+  input.focus();
+  input.select();
+}
+
+function syncPetModal() {
+  const d = petDraft;
+  const input = document.getElementById('pet-nom');
+  if (!d || !input) return;
+  document.getElementById('pet-preview-emoji').textContent = petIcon(d.espece);
+  // textContent : le nom tapé s'affiche comme du texte, jamais comme du HTML
+  document.getElementById('pet-preview-name').textContent = cleanFirstName(input.value) || '…';
+  for (const b of document.getElementById('modal-root').querySelectorAll('[data-action="pet-espece"]')) {
+    const on = b.dataset.espece === d.espece;
+    b.setAttribute('aria-pressed', String(on));
+    b.classList.toggle('active', on);
+  }
+  const error = document.getElementById('pet-error');
+  if (error) error.hidden = true;
+}
+
+function petModalError(text) {
+  const error = document.getElementById('pet-error');
+  if (!error) return;
+  error.textContent = text;
+  error.hidden = false;
+}
+
+function savePetModal() {
+  const d = petDraft;
+  const input = document.getElementById('pet-nom');
+  if (!d || !input) return;
+  const result = setPetProfile(state, d.id, { nom: input.value, espece: d.espece });
+  if (!result.ok) {
+    petModalError(result.error);
+    input.focus();
+    return;
+  }
+  petDraft = null;
+  closeModal();
+  persistState();
+  refresh();
+  showToast('✏️ C\'est noté !');
+}
+
+function removePetFromModal() {
+  const d = petDraft;
+  const btn = document.getElementById('pet-remove');
+  if (!d || !btn) return;
+  if (!d.depart) {
+    d.depart = true;
+    btn.classList.add('danger');
+    btn.textContent = 'Confirmer le départ';
+    return;
+  }
+  const nom = petName(state, d.id);
+  const result = removePet(state, d.id);
+  if (!result.ok) {
+    petModalError(result.error);
+    return;
+  }
+  petDraft = null;
+  closeModal();
+  persistState();
+  refresh();
+  showToast(`👋 ${nom} a quitté la famille.`);
+}
+
+// Version 1.2 : composition de la famille (1 à 6 membres) et animaux de compagnie (3 au plus).
+function renderFamilyAdd() {
+  const C = DATA.FAMILY.COMPOSITION;
+  const AJ = DATA.FAMILY.AJ;
+  const full = memberRoom(state) === 0;
+  return `
+    <div class="row family-add">
+      <button type="button" class="btn" data-action="member-add" data-age="adulte"${full ? ' disabled' : ''}>➕ Un adulte <span class="muted">(+${AJ.adulte} énergie/jour)</span></button>
+      <button type="button" class="btn" data-action="member-add" data-age="enfant"${full ? ' disabled' : ''}>➕ Un enfant <span class="muted">(+${AJ.enfant} énergie/jour)</span></button>
+    </div>
+    <p class="muted">${full ? `La famille est au complet (${C.MEMBRES_MAX} membres). ` : ''}Pour retirer quelqu'un, ouvre « Modifier » sur sa fiche.</p>`;
+}
+
+function renderPets() {
+  const K = DATA.FAMILY.COMPAGNIE;
+  const list = pets(state);
+  const full = petRoom(state) === 0;
+  const boutons = Object.entries(K.ESPECES)
+    .map(([k, e]) => `<button type="button" class="btn" data-action="pet-add" data-espece="${k}"${full ? ' disabled' : ''}><span aria-hidden="true">${e.icone}</span> Adopter un ${e.nom.toLowerCase()}</button>`)
+    .join('');
+  return `
+    <h3 class="section-title">🐾 Animaux de compagnie · <span class="num">${list.length} / ${K.MAX}</span></h3>
+    <p class="muted">Un chien ou un chat tient compagnie à la famille. Il ne mange pas ses réserves : il ne compte pas dans le besoin journalier.</p>
+    ${list.length ? `<div class="portraits">${list.map(petCard).join('')}</div>` : ''}
+    <div class="row family-add">${boutons}</div>
+    ${full ? `<p class="muted">${K.MAX} animaux de compagnie au plus.</p>` : ''}`;
+}
+
 function renderFamille() {
   // Avant 19 h : le repas prévu ; après : celui qui a été pris.
   const pris = !!state.repas;
@@ -19457,7 +19977,10 @@ function renderFamille() {
   const avg = averageHealth(state);
   return `
     <h2>👨‍👩‍👧‍👦 Famille</h2>
+    <p class="muted family-count"><span class="num">${state.famille.membres.length} / ${DATA.FAMILY.COMPOSITION.MEMBRES_MAX}</span> membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> énergie par jour</p>
     <div class="portraits">${state.famille.membres.map(portraitCard).join('')}</div>
+    ${renderFamilyAdd()}
+    ${renderPets()}
     ${renderAutonomyCard()}
     <div class="cards">
       <div class="card">
@@ -20789,6 +21312,41 @@ document.addEventListener('click', (e) => {
       break;
     case 'member-save':
       saveMemberModal();
+      break;
+    // ----- version 1.2 : composition de la famille, animaux de compagnie -----
+    case 'member-add': {
+      const enfant = target.dataset.age === 'enfant';
+      const result = applyResult(addMember(state, enfant));
+      if (result.ok) {
+        persistState();
+        showToast(`👋 Un ${enfant ? 'enfant' : 'adulte'} rejoint la famille. Besoin : ${formatNumber(result.besoin)} énergie par jour.`);
+        openMemberModal(result.id); // tout de suite : son prénom et son apparence
+      }
+      break;
+    }
+    case 'member-remove':
+      removeMemberFromModal();
+      break;
+    case 'pet-add': {
+      const result = applyResult(addPet(state, target.dataset.espece));
+      if (result.ok) {
+        persistState();
+        openPetModal(result.id); // tout de suite : son nom
+      }
+      break;
+    }
+    case 'pet-edit':
+      openPetModal(target.dataset.id);
+      break;
+    case 'pet-espece':
+      if (petDraft) petDraft.espece = target.dataset.espece;
+      syncPetModal();
+      break;
+    case 'pet-save':
+      savePetModal();
+      break;
+    case 'pet-remove':
+      removePetFromModal();
       break;
     case 'test-straw':
       applyResult(testAddStraw(state));
