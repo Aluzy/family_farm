@@ -194,10 +194,17 @@ Depuis la console : `FarmStage.scene()` (caméra : `.cameras.main`, centre : `.c
 - **Animaux au Marché** : l'onglet Animaux revient dans le Marché (`COMPTOIR_TABS`) ; l'Étable n'a plus de lignes d'achat mais un raccourci vers cet onglet. Les arbres restent au Verger.
 - **Achats par quantité** : chaque ligne d'achat (produits, graines, animaux) a « − », « + » et « Max ». Le total affiché est le vrai prix : `buyQuote(state, item, qty)` suit la hausse du prix unité par unité ; `buyAnimals()` et `animalBuyMax()` pour les animaux (prix fixe, limité par les places).
 - **Repas de 19 h** : `mealDue(state)` puis `takeMeal(state)` ; le compte du repas attend dans `state.repas` jusqu'à la nuit, qui le recopie dans son compte rendu (`feedFamily`). Si la famille dort avant 19 h, le repas est pris au coucher, comme avant. L'annonce est dans `playMealScene()` : c'est là que se branchera la cinématique.
-- **Nuit de minuit** : `midnightDue(state)` ; c'est l'interface qui lance `sleep()` (`watchDay()`, appelée à chaque image, comme `watchRoutine()`). Elle attend qu'une fenêtre de `#modal-root` soit refermée et ne se lance pas tant que l'aide de la première partie est affichée.
+- **Nuit automatique** (à minuit en 1.1.1, à 22 h depuis la 1.1.3) : `bedtimeDue(state)` ; c'est l'interface qui lance `sleep()` (`watchDay()`, appelée à chaque image, comme `watchRoutine()`). Elle attend qu'une fenêtre de `#modal-root` soit refermée et ne se lance pas tant que l'aide de la première partie est affichée.
 - **Horloge arrêtée** : pendant le résumé du réveil (`tick(state, dt, true)`), la journée commence quand le joueur le ferme ; pendant une absence, `simulateOffline()` n'avance l'horloge que jusqu'à l'éveil minimal (midi), donc ni repas ni nuit ne se déclenchent jeu fermé.
 - **Notifications** : une « cible » (`cibleAlerte(type, id)`) dit où mène chaque alerte : fenêtre de la carte, écran de détail ou onglet du bas, avec l'`id` de la ligne concernée (`animal-…`, `plot-…`, `dev-…`, `moulin-moudre`…). La liste des Notifications et les notifications qui s'affichent en bas de l'écran sont des boutons (`data-action="aller"`, `allerA()`).
 - **Animaux cachés** : l'Étable et ses sections existent dès qu'elles abritent quelque chose (`coopShown()`, `herdShown()`), même si le chapitre ne les a pas encore ouvertes (mode test « +3 moutons »). Sans cela, l'alerte « il manque de la paille » parlait d'animaux qu'on ne voyait nulle part.
 - **Étiquettes au survol** : le nom d'un lieu ne s'affiche que souris dessus, doigt posé (il reste 1,2 s après le relâchement) ou focus clavier (`setHover()` dans `farm-stage.js`, classe `show`). La pastille « à faire » reste visible en permanence.
 - **Maison** : l'onglet « Bâtiments » s'appelle « Installations » (identifiant interne `batiments` inchangé).
 - **Sauvegardes** : format 17 (`state.repas`).
+
+## Version 1.1.3 : journée de 6 h à 22 h
+
+- `DATA.TIME.CLOCK_SECONDS_PER_HOUR` passe de 5 à 18 s et `DATA.TIME.NIGHT_HOUR` de 24 à 22 : la journée dure 16 heures de 18 s, soit 288 s. Le repas reste à 19 h (234 s après le réveil).
+- À 22 h, la nuit se lance d'elle-même (`bedtimeDue()`, ex-`midnightDue()`), avec les mêmes attentes qu'avant : fenêtre ouverte, aide de la première partie.
+- Le joueur peut toujours dormir plus tôt : l'éveil minimal reste de 30 s (`MIN_AWAKE_S`), soit 7 h 40 à l'horloge.
+- Pas de changement de format de sauvegarde : l'heure se déduit de `state.awakeMs`. Une partie enregistrée en cours de journée reprend à l'heure qui correspond au même temps d'éveil avec la nouvelle durée.
