@@ -1831,18 +1831,21 @@ const DATA = {
   // Temps : la journée commence à 6 h au réveil.
   // SECONDS_PER_HOUR : durée d'une « heure de marche » des appareils (usure,
   // voir WEAR.HEURES_PAR_POINT). Ne pas la changer pour régler l'horloge.
-  // CLOCK_SECONDS_PER_HOUR (version 1.1) : l'horloge affichée au joueur avance
-  // d'une heure toutes les 5 s d'éveil (voir hourOfDay() et clockHours()).
+  // CLOCK_SECONDS_PER_HOUR : l'horloge affichée au joueur avance d'une heure
+  // toutes les 18 s d'éveil (version 1.1.3 ; 5 s auparavant). Voir hourOfDay()
+  // et clockHours().
   // MEAL_HOUR (version 1.1.1) : à 19 h, la famille prend son repas (takeMeal()).
-  // NIGHT_HOUR : à minuit (24 h), la nuit se déroule d'elle-même si le joueur
-  // n'a pas cliqué sur Dormir (midnightDue() ; c'est l'interface qui déclenche).
+  // NIGHT_HOUR : à 22 h (version 1.1.3 ; minuit auparavant), la journée est
+  // finie : la nuit se déroule d'elle-même si le joueur n'a pas cliqué sur
+  // Dormir (bedtimeDue() ; c'est l'interface qui déclenche). La journée dure
+  // donc de 6 h à 22 h : 16 heures de 18 s, soit 288 s.
   TIME: {
     DAY_START_HOUR: 6,
     SECONDS_PER_HOUR: 30,
-    CLOCK_SECONDS_PER_HOUR: 5,
+    CLOCK_SECONDS_PER_HOUR: 18,
     MIN_AWAKE_S: 30,
     MEAL_HOUR: 19,
-    NIGHT_HOUR: 24,
+    NIGHT_HOUR: 22,
   },
 
   LEVEL_MAX: 5,
@@ -3086,7 +3089,7 @@ function mulberry32(seed) {
 
 const STATE_VERSION = 17;
 // Version du jeu, affichée dans les Options (À propos).
-const GAME_VERSION = '1.1.2';
+const GAME_VERSION = '1.1.3';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -3394,9 +3397,9 @@ function awakeRequired(state) {
 }
 
 // Heure de la journée (0 à 23) : 6 h au réveil, +1 heure toutes les
-// CLOCK_SECONDS_PER_HOUR secondes d'éveil (5 s). À 19 h la famille prend son
-// repas (mealDue / takeMeal) ; à minuit la nuit se déroule d'elle-même
-// (midnightDue : c'est l'interface qui lance sleep(), jeu ouvert). Si rien ne
+// CLOCK_SECONDS_PER_HOUR secondes d'éveil (18 s). À 19 h la famille prend son
+// repas (mealDue / takeMeal) ; à 22 h la nuit se déroule d'elle-même
+// (bedtimeDue : c'est l'interface qui lance sleep(), jeu ouvert). Si rien ne
 // la lance, l'horloge repasse à 0 h et continue. (L'usure des appareils a sa
 // propre « heure de marche », SECONDS_PER_HOUR : voir wearStep().)
 function hourOfDay(state) {
@@ -3424,9 +3427,10 @@ function mealDue(state) {
   return !state.repas && state.awakeMs >= awakeMsAtHour(DATA.TIME.MEAL_HOUR);
 }
 
-// Minuit est-il passé sans que personne n'ait dormi ? L'interface lance alors
+// L'heure du coucher (NIGHT_HOUR, 22 h) est-elle passée sans que personne n'ait
+// dormi ? L'interface lance alors
 // la nuit (sleep()) : repas s'il n'a pas été pris, puis les étapes habituelles.
-function midnightDue(state) {
+function bedtimeDue(state) {
   return state.awakeMs >= awakeMsAtHour(DATA.TIME.NIGHT_HOUR);
 }
 
@@ -6694,7 +6698,7 @@ function offlineReport(state, before, demande, simule) {
 // pousse, ni repas, ni ponte, ni péremption. Le temps simulé s'ajoute au temps
 // d'éveil, mais seulement jusqu'à l'éveil minimal (version 1.1.1) : au retour
 // le joueur peut dormir tout de suite, et l'horloge n'a pas dépassé midi (ou
-// l'heure où il est parti) ; ni le repas de 19 h ni la nuit de minuit ne se
+// l'heure où il est parti) ; ni le repas de 19 h ni la nuit de 22 h ne se
 // déclenchent pendant une absence. Renvoie le bilan (voir offlineReport). Une
 // durée nulle, négative ou invalide ne change rien.
 function simulateOffline(state, seconds) {
@@ -8843,38 +8847,42 @@ test('interrupteur : allume et éteint, id inconnu refusé', () => {
   assertEqual(toggleDevice(s, 'nope').ok, false);
 });
 
-test('heure : suit le temps d\'éveil, 6 h au réveil, +1 h toutes les 5 s', () => {
+test('heure : suit le temps d\'éveil, 6 h au réveil, +1 h toutes les 18 s', () => {
   const s = farm();
-  assertEqual(DATA.TIME.CLOCK_SECONDS_PER_HOUR, 5);
+  assertEqual(DATA.TIME.CLOCK_SECONDS_PER_HOUR, 18);
+  const H = 18000;
   assertEqual(hourOfDay(s), 6);
-  s.awakeMs = 4900;
+  s.awakeMs = H - 100;
   assertEqual(hourOfDay(s), 6);
-  s.awakeMs = 5000;
+  s.awakeMs = H;
   assertEqual(hourOfDay(s), 7);
-  s.awakeMs = 15000;
+  s.awakeMs = H * 3;
   assertEqual(hourOfDay(s), 9);
-  s.awakeMs = 5000 * 17;
+  s.awakeMs = H * 16; // 22 h : la fin de la journée
+  assertEqual(hourOfDay(s), 22);
+  s.awakeMs = H * 17;
   assertEqual(hourOfDay(s), 23);
-  s.awakeMs = 5000 * 18; // minuit : l'horloge repart de 0 et continue
+  s.awakeMs = H * 18; // si rien ne lance la nuit, l'horloge repart de 0 et continue
   assertEqual(hourOfDay(s), 0);
-  s.awakeMs = 5000 * 24; // un tour complet
+  s.awakeMs = H * 24; // un tour complet
   assertEqual(hourOfDay(s), 6);
-  s.awakeMs = 5000 * 100; // rester éveillé longtemps : (6 + 100) modulo 24
+  s.awakeMs = H * 100; // (6 + 100) modulo 24
   assertEqual(hourOfDay(s), 10);
   assertEqual(formatHour(7), '7 h');
 });
 
 test('clockHours : la même heure, avec ses minutes, toujours dans [0, 24)', () => {
   const s = farm();
+  const H = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
   const at = (ms) => { s.awakeMs = ms; return clockHours(s); };
   assertEqual(at(0), 6);
-  assertEqual(at(2500), 6.5, '6 h 30 après 2,5 s');
-  assertEqual(at(5000), 7);
-  assertEqual(at(5000 * 17 + 2500), 23.5);
-  assertEqual(at(5000 * 18), 0, 'minuit');
-  assertEqual(at(5000 * 18 + 1250), 0.25);
-  assertEqual(at(5000 * 24), 6, 'un tour complet ramène à 6 h');
-  for (const ms of [0, 1, 199, 4999, 5000, 61234, 89999, 90000, 119999, 120000, 987654321]) {
+  assertEqual(at(H / 2), 6.5, '6 h 30 après une demi-heure de jeu (9 s)');
+  assertEqual(at(H), 7);
+  assertEqual(at(H * 17 + H / 2), 23.5);
+  assertEqual(at(H * 18), 0, 'minuit');
+  assertEqual(at(H * 18 + H / 4), 0.25);
+  assertEqual(at(H * 24), 6, 'un tour complet ramène à 6 h');
+  for (const ms of [0, 1, 199, H - 1, H, 61234, H * 16 - 1, H * 16, H * 18 - 1, H * 18, H * 24 - 1, H * 24, 987654321]) {
     const h = at(ms);
     assert(h >= 0 && h < 24, `dans [0, 24) : ${h}`);
     assertEqual(Math.floor(h), hourOfDay(s), `même heure entière que hourOfDay à ${ms} ms`);
@@ -8892,28 +8900,28 @@ test('horloge : l\'heure affichée ne change ni l\'usure ni le sommeil', () => {
   assertEqual(s.panneaux[0].usure, 0, '59,8 s de marche : pas encore un point');
   tick(s, 0.2);
   assertEqual(s.panneaux[0].usure, 1, '60 s de marche : 1 point, comme avant');
-  // On peut dormir après 30 s d'éveil, quelle que soit l'heure ; à minuit passé aussi.
+  // On peut dormir après 30 s d'éveil, quelle que soit l'heure (30 s = 7 h 40 à 18 s par heure).
   const t = farm();
   t.awakeMs = 29000;
-  assertEqual([hourOfDay(t), canSleep(t)], [11, false]);
+  assertEqual([hourOfDay(t), canSleep(t)], [7, false]);
   t.awakeMs = 30000;
-  assertEqual([hourOfDay(t), canSleep(t)], [12, true]);
-  t.awakeMs = 5000 * 20;
+  assertEqual([hourOfDay(t), canSleep(t)], [7, true]);
+  t.awakeMs = 18000 * 20;
   assertEqual([hourOfDay(t), canSleep(t)], [2, true], 'veiller tard ne bloque rien');
   const day = t.day;
   assert(sleep(t) !== null);
   assertEqual([t.day, t.awakeMs, hourOfDay(t), clockHours(t)], [day + 1, 0, 6, 6], 'au réveil il est 6 h');
 });
 
-test('heure : 25 ticks de 0,2 s font bien une heure de jeu (flottants)', () => {
+test('heure : 90 ticks de 0,2 s font bien une heure de jeu (flottants)', () => {
   const s = farm();
-  for (let i = 0; i < 24; i++) tick(s, 0.2);
+  for (let i = 0; i < 89; i++) tick(s, 0.2);
   assertEqual(hourOfDay(s), 6);
   tick(s, 0.2);
-  assertEqual([s.awakeMs, hourOfDay(s)], [5000, 7]);
-  assertEqual(canSleep(s), false, '5 s d\'éveil : trop tôt pour dormir');
-  for (let i = 0; i < 125; i++) tick(s, 0.2);
-  assertEqual([s.awakeMs, hourOfDay(s)], [30000, 12]);
+  assertEqual([s.awakeMs, hourOfDay(s)], [18000, 7]);
+  assertEqual(canSleep(s), false, '18 s d\'éveil : trop tôt pour dormir');
+  for (let i = 0; i < 60; i++) tick(s, 0.2);
+  assertEqual([s.awakeMs, hourOfDay(s)], [30000, 7]);
   assertEqual(canSleep(s), true);
 });
 
@@ -15771,7 +15779,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.1.2');
+  assertEqual(GAME_VERSION, '1.1.3');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -16248,7 +16256,7 @@ test('Résumé de réveil : avec une vraie nuit, les œufs pondus sont dans la r
   assertEqual([Number.isInteger(w.autonomie), Number.isInteger(w.sante)], [true, true]);
 });
 
-/* ---------- version 1.1.1 : repas de 19 h, nuit de minuit, achats par quantité ---------- */
+/* ---------- versions 1.1.1 et 1.1.3 : repas de 19 h, nuit de 22 h, achats par quantité ---------- */
 
 test('version 1.1.1 : version 17, la migration v16 → v17 ajoute le repas du jour (pas encore pris)', () => {
   assertEqual([STATE_VERSION, typeof MIGRATIONS[16], MIGRATIONS[17]], [17, 'function', undefined]);
@@ -16262,13 +16270,20 @@ test('version 1.1.1 : version 17, la migration v16 → v17 ajoute le repas du jo
   assertEqual(migrate({ v: 17, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
 });
 
-test('version 1.1.1 : le repas se prend à 19 h (65 s d\'éveil), une seule fois par jour', () => {
-  assertEqual([DATA.TIME.MEAL_HOUR, DATA.TIME.NIGHT_HOUR, awakeMsAtHour(19), awakeMsAtHour(24), awakeMsAtHour(6)], [19, 24, 65000, 90000, 0]);
+test('version 1.1.3 : la journée va de 6 h à 22 h, 18 s par heure (288 s)', () => {
+  assertEqual([DATA.TIME.DAY_START_HOUR, DATA.TIME.MEAL_HOUR, DATA.TIME.NIGHT_HOUR, DATA.TIME.CLOCK_SECONDS_PER_HOUR], [6, 19, 22, 18]);
+  assertEqual([awakeMsAtHour(6), awakeMsAtHour(7), awakeMsAtHour(19), awakeMsAtHour(22)], [0, 18000, 234000, 288000]);
+  // le repas et le coucher restent dans la journée, et l'on peut dormir bien avant 22 h
+  assert(awakeMsAtHour(DATA.TIME.MEAL_HOUR) < awakeMsAtHour(DATA.TIME.NIGHT_HOUR), 'le repas précède le coucher');
+  assert(DATA.TIME.MIN_AWAKE_S * 1000 < awakeMsAtHour(DATA.TIME.MEAL_HOUR), 'on peut dormir avant le repas');
+});
+
+test('version 1.1.1 : le repas se prend à 19 h (234 s d\'éveil), une seule fois par jour', () => {
   const s = garden();
   setInv(s, { conserve: 200 });
-  s.awakeMs = 64900;
+  s.awakeMs = awakeMsAtHour(19) - 100;
   assertEqual([mealDue(s), hourOfDay(s)], [false, 18]);
-  s.awakeMs = 65000;
+  s.awakeMs = awakeMsAtHour(19);
   assertEqual([mealDue(s), hourOfDay(s)], [true, 19]);
   const besoin = familyNeed(s);
   const avant = countItem(s, 'conserve');
@@ -16284,7 +16299,7 @@ test('version 1.1.1 : la nuit reprend le repas de 19 h sans faire manger une deu
   const b = garden();
   for (const s of [a, b]) { setInv(s, { conserve: 200 }); setHealth(s, 50); }
   // a : repas à 19 h puis coucher ; b : coucher avant 19 h (le repas est pris au coucher)
-  a.awakeMs = 65000;
+  a.awakeMs = awakeMsAtHour(19);
   takeMeal(a);
   const apresRepas = countItem(a, 'conserve');
   const ra = sleep(a);
@@ -16301,7 +16316,7 @@ test('version 1.1.1 : un soin payé entre le repas et la nuit figure dans la san
   setInv(s, {});
   setHealth(s, 1);
   s.pieces = 5000;
-  s.awakeMs = 65000;
+  s.awakeMs = awakeMsAtHour(19);
   const r = takeMeal(s).repas;
   assert(r.nouveauxMalades.length > 0, 'sans rien à manger, la famille tombe malade au repas');
   for (const m of s.famille.membres) if (m.malade) assert(heal(s, m.id).ok, 'soin');
@@ -16310,17 +16325,17 @@ test('version 1.1.1 : un soin payé entre le repas et la nuit figure dans la san
   assert(rep.santeApres > r.santeApres, 'la santé du réveil tient compte des soins');
 });
 
-test('version 1.1.1 : minuit (90 s d\'éveil) rend la nuit due ; l\'aperçu d\'autonomie suit le repas pris', () => {
+test('version 1.1.3 : 22 h (288 s d\'éveil) rend la nuit due ; l\'aperçu d\'autonomie suit le repas pris', () => {
   const s = garden();
   setInv(s, { conserve: 200 });
-  s.awakeMs = 89900;
-  assertEqual([midnightDue(s), hourOfDay(s)], [false, 23]);
-  s.awakeMs = 90000;
-  assertEqual([midnightDue(s), canSleep(s)], [true, true]);
+  s.awakeMs = 287900;
+  assertEqual([bedtimeDue(s), hourOfDay(s)], [false, 21]);
+  s.awakeMs = 288000;
+  assertEqual([bedtimeDue(s), hourOfDay(s), canSleep(s)], [true, 22, true]);
   takeMeal(s);
   assertEqual(plannedAutonomy(s), s.repas.autonomie);
   const rep = sleep(s);
-  assertEqual([s.day, s.awakeMs, midnightDue(s), rep.nuit], [2, 0, false, 2]);
+  assertEqual([s.day, s.awakeMs, bedtimeDue(s), rep.nuit], [2, 0, false, 2]);
 });
 
 test('version 1.1.1 : horloge arrêtée (résumé du réveil ouvert), les flux tournent mais l\'heure n\'avance pas', () => {
@@ -16336,14 +16351,14 @@ test('version 1.1.1 : horloge arrêtée (résumé du réveil ouvert), les flux t
 test('version 1.1.1 : hors-ligne, l\'horloge s\'arrête à l\'éveil minimal (ni repas ni nuit pendant l\'absence)', () => {
   const s = farm({ pump: true });
   simulateOffline(s, 3600);
-  assertEqual([s.awakeMs, canSleep(s), mealDue(s), midnightDue(s), s.repas, s.day], [30000, true, false, false, null, 1]);
+  assertEqual([s.awakeMs, canSleep(s), mealDue(s), bedtimeDue(s), s.repas, s.day], [30000, true, false, false, null, 1]);
   // parti à 20 h, après le repas : l'horloge ne recule pas et n'avance pas
   const t = farm({ pump: true });
   setInv(t, { conserve: 200 });
-  t.awakeMs = 70000;
+  t.awakeMs = awakeMsAtHour(20);
   takeMeal(t);
   simulateOffline(t, 3600);
-  assertEqual([t.awakeMs, hourOfDay(t), midnightDue(t), t.day], [70000, 20, false, 1]);
+  assertEqual([t.awakeMs, hourOfDay(t), bedtimeDue(t), t.day], [252000, 20, false, 1]);
 });
 
 test('version 1.1.1 : devis d\'achat (buyQuote) = ce que buyItem achète, prix montant compris', () => {
@@ -17091,8 +17106,8 @@ function applyResult(result) {
   return result;
 }
 
-// `minuit` : la nuit s'est lancée d'elle-même à minuit (voir watchDay).
-function actionSleep(minuit = false) {
+// `auto` : la nuit s'est lancée d'elle-même à 22 h (voir watchDay).
+function actionSleep(auto = false) {
   const awakeBefore = Math.round(state.awakeMs / 1000);
   const report = sleep(state);
   if (!report) {
@@ -17104,7 +17119,7 @@ function actionSleep(minuit = false) {
   syncJobs(); // les préparations terminées pendant la nuit ne sont pas annoncées par un toast
   persistState(); // sauvegarde après chaque nuit
   refresh();
-  openWakeModal(report, minuit);
+  openWakeModal(report, auto);
 }
 
 function actionTestNights(count) {
@@ -17238,11 +17253,11 @@ function watchRoutine() {
   showToast(`🌙 Routine : la famille a dormi. Nuit ${report.nuit} · autonomie ${formatPercent(report.autonomie)}`);
 }
 
-// Version 1.1.1 : la journée suit l'horloge. À 19 h, la famille prend son repas. À
-// minuit, si personne n'a cliqué sur « Zzz », la nuit se déroule d'elle-même et le
-// résumé habituel s'affiche (il est alors 6 h). Jeu ouvert seulement : une absence
-// n'avance pas l'horloge au-delà de midi (voir simulateOffline). La nuit attend qu'une
-// fenêtre ouverte soit refermée, et ne se lance pas tant que l'aide de la première
+// La journée suit l'horloge : de 6 h à 22 h, 18 s par heure. À 19 h, la famille prend
+// son repas. À 22 h, si personne n'a cliqué sur « Zzz », la nuit se déroule d'elle-même
+// et le résumé habituel s'affiche (il est alors 6 h). Jeu ouvert seulement : une absence
+// n'avance l'horloge que jusqu'à l'éveil minimal (voir simulateOffline). La nuit attend
+// qu'une fenêtre ouverte soit refermée, et ne se lance pas tant que l'aide de la première
 // partie est affichée (le joueur lit).
 function watchDay() {
   if (mealDue(state)) {
@@ -17251,7 +17266,7 @@ function watchDay() {
     refresh();
     if (r.ok) playMealScene(r.repas);
   }
-  if (!midnightDue(state)) return;
+  if (!bedtimeDue(state)) return;
   if (document.getElementById('modal-root').childElementCount > 0) return;
   if (tutorialStep(state)) return;
   actionSleep(true);
@@ -17529,9 +17544,9 @@ function stageCols(n) {
 }
 
 // Heure du jour, de 0 à 24 (fractionnaire) : la journée commence à DAY_START_HOUR au réveil,
-// puis une heure passe toutes les CLOCK_SECONDS_PER_HOUR secondes d'éveil (5 s par défaut).
+// puis une heure passe toutes les CLOCK_SECONDS_PER_HOUR secondes d'éveil (18 s).
 function heureDuJour() {
-  const parHeure = (DATA.TIME.CLOCK_SECONDS_PER_HOUR || 5) * 1000;
+  const parHeure = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
   return (DATA.TIME.DAY_START_HOUR + state.awakeMs / parHeure) % 24;
 }
 
@@ -19929,7 +19944,7 @@ function seasonLines(report) {
   return lines;
 }
 
-function openWakeModal(report, minuit = false) {
+function openWakeModal(report, auto = false) {
   tel('modal', 'wake');
   const root = document.getElementById('modal-root');
   const line = (d, text) => {
@@ -19983,7 +19998,7 @@ function openWakeModal(report, minuit = false) {
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
         <h2 id="wake-title">🌅 Réveil : nuit ${report.nuit}</h2>
-        <p class="muted wake-hour">${minuit ? 'Minuit est passé : la famille est allée se coucher. ' : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
+        <p class="muted wake-hour">${auto ? `Il était ${DATA.TIME.NIGHT_HOUR}&nbsp;h : la famille est allée se coucher. ` : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
         <div class="wake-kpis">
           <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>
           <div class="wake-kpi"><span class="muted">❤️ Santé</span><strong class="num">${formatPercent(w.sante)}</strong></div>
@@ -20421,7 +20436,7 @@ const TUTO = {
   },
   dormir: {
     titre: '😴 Dormir',
-    texte: () => `Le bouton « Zzz », en bas à droite, s'active après ${formatNumber(awakeRequired(state))} s d'éveil. À ${DATA.TIME.MEAL_HOUR} h la famille mange ; à minuit, tout le monde va se coucher. La nuit, les plantes arrosées poussent.`,
+    texte: () => `Le bouton « Zzz », en bas à droite, s'active après ${formatNumber(awakeRequired(state))} s d'éveil. À ${DATA.TIME.MEAL_HOUR} h la famille mange ; à ${DATA.TIME.NIGHT_HOUR} h, tout le monde va se coucher. La nuit, les plantes arrosées poussent.`,
   },
 };
 
@@ -20481,7 +20496,7 @@ function openAboutModal() {
   const H = DATA.HORS_LIGNE;
   const rules = [
     `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} énergie par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
-    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. Tu peux dormir (bouton « Zzz ») après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins ; à minuit, la nuit se déroule d'elle-même. L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
+    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. Tu peux dormir (bouton « Zzz ») après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins ; à ${DATA.TIME.NIGHT_HOUR} h, la journée est finie et la nuit se déroule d'elle-même. L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
     `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
     `Santé : un besoin couvert à 100 % la remonte (${formatSigned(V[0].delta)}), sinon elle baisse (${V.slice(1).map((x) => formatSigned(x.delta)).join(', ')}). Une santé faible ralentit les actions au clic ; les automatisations restent à 100 %. À 0, un soin coûte ${formatNumber(F.SOIN.base)} 💰, +${formatNumber(F.SOIN.croissance - 100)} % par soin déjà payé (arrondi à l'entier supérieur).`,
     `Énergie : panneaux → batteries → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,

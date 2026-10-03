@@ -4,9 +4,9 @@ Un *idle game* de gestion agricole familiale : quatre personnes, une ferme, et u
 objectif, nourrir la famille avec ce que la ferme produit. Panneaux solaires,
 batteries, pompe, zone de culture, poulailler, moutons, verger, serre, cuisine et
 réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la famille à
-19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à minuit.
+19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
-- **Version** : 1.1.2 (affichée dans ⚙️ Options › À propos)
+- **Version** : 1.1.3 (affichée dans ⚙️ Options › À propos)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
@@ -57,8 +57,8 @@ l'envoi du suivi de session, décrit ci-dessous.
 
 - La famille (2 adultes, 2 enfants) a besoin de **150 énergie par jour** ; elle
   mange à 19 h (ou au coucher, si elle dort avant), d'abord ce qui périme le plus tôt.
-- La journée commence à 6 h et une heure passe toutes les 5 s. On peut **Dormir**
-  après 30 s d'éveil (midi) ; à minuit, la nuit se déroule d'elle-même. L'horloge
+- La journée va de 6 h à 22 h et une heure dure 18 s (288 s en tout). On peut **Dormir**
+  après 30 s d'éveil ; à 22 h, la nuit se déroule d'elle-même. L'horloge
   s'arrête pendant le résumé du réveil et quand le jeu est fermé.
 - La nuit : les plantes arrosées gagnent un stade, les poules nourries pondent,
   les moutons et les vaches mangent leur paille (laine, lait), les aliments vieillissent.
