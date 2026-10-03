@@ -32,8 +32,15 @@
   const T = 16;
   // Une seule carte pour l'instant (printemps), utilisée aux quatre saisons.
   const MAP = { key: 'map_sp', json: 'carte_printemps.json', tiles: 'tiles_sp', image: 'farm_spring_summer.png' };
-  const SEASON_SUFFIX = { printemps: 'sp', ete: 'sp', automne: 'au', hiver: 'wi' };
-  const SUFFIXES = ['sp', 'au', 'wi'];
+  // Version 1.1.2 : la carte garde la même apparence toute l'année (celle du printemps), pour
+  // que les bâtiments restent assortis au décor. Quand les cartes d'automne et d'hiver
+  // existeront, passer SEASONS_ON_MAP à true : les bâtiments suivront de nouveau la saison.
+  const SEASONS_ON_MAP = false;
+  const SEASON_SUFFIX = SEASONS_ON_MAP
+    ? { printemps: 'sp', ete: 'sp', automne: 'au', hiver: 'wi' }
+    : { printemps: 'sp', ete: 'sp', automne: 'sp', hiver: 'sp' };
+  // Seules les images utiles sont chargées.
+  const SUFFIXES = SEASONS_ON_MAP ? ['sp', 'au', 'wi'] : ['sp'];
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
   const DEFAULT_W = 36 * T;
   const DEFAULT_H = 19 * T;
