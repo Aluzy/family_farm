@@ -13,7 +13,7 @@ réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la fami
 - **Technique** : trois pages HTML autonomes, sans bibliothèque et sans étape de
   build : `index.html` (page d'accueil), `jeu.html` (le jeu) et
   `encyclopedie.html` (glossaire du jeu, généré depuis
-  `encyclopedie_ferme_familiale.json`), plus `cookies.html` (politique de cookies
+  `encyclopedie_ferme_familiale.json` par `node build-encyclopedie.mjs`), plus `cookies.html` (politique de cookies
   et traceurs). Elles fonctionnent ouvertes depuis le disque comme servies en HTTP.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.

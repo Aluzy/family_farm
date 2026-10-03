@@ -223,4 +223,5 @@ Depuis la console : `FarmStage.scene()` (caméra : `.cameras.main`, centre : `.c
 - **Animaux de compagnie** : jusqu'à 3 chiens ou chats (`DATA.FAMILY.COMPAGNIE`, `state.famille.animaux`, `addPet()`, `setPetProfile()`, `removePet()`). Gratuits, sans effet sur le besoin, la santé ou la productivité. Leur nom suit les règles d'un prénom et, comme lui, reste dans la sauvegarde locale.
 - **Interface** : Maison › Famille. Deux boutons « ➕ Un adulte / Un enfant » (la fiche s'ouvre aussitôt pour le prénom), la section « Animaux de compagnie », et « Retirer de la famille » dans la fiche « Modifier » (deux appuis).
 - **Sauvegardes** : format 18. La migration ajoute une liste d'animaux vide et les compteurs ; les membres ne changent pas.
-- **Non fait** : l'encyclopédie (`encyclopedie.html` et son JSON) décrit encore une famille fixe de quatre personnes ; les animaux de compagnie n'apparaissent pas sur la carte.
+- **Encyclopédie** : remise à jour avec le jeu (famille composable, animaux de compagnie, Étable et paille, Moulin, horloge et repas de 19 h, carte, Marché, fin des viandes). Le JSON fait foi ; `node build-encyclopedie.mjs` régénère la page, `--check` vérifie qu'elle est à jour.
+- **Non fait** : les animaux de compagnie n'apparaissent pas sur la carte.
