@@ -208,3 +208,10 @@ Depuis la console : `FarmStage.scene()` (caméra : `.cameras.main`, centre : `.c
 - À 22 h, la nuit se lance d'elle-même (`bedtimeDue()`, ex-`midnightDue()`), avec les mêmes attentes qu'avant : fenêtre ouverte, aide de la première partie.
 - Le joueur peut toujours dormir plus tôt : l'éveil minimal reste de 30 s (`MIN_AWAKE_S`), soit 7 h 40 à l'horloge.
 - Pas de changement de format de sauvegarde : l'heure se déduit de `state.awakeMs`. Une partie enregistrée en cours de journée reprend à l'heure qui correspond au même temps d'éveil avec la nouvelle durée.
+
+## Version 1.1.4 : le fond de la carte au retour d'une absence
+
+- **Symptôme** : sur téléphone, au retour d'une absence, la carte n'affichait plus qu'un vert uni sous les bâtiments et les parcelles.
+- **Cause** : le fond (texture `ground`) est un canvas composé au démarrage à partir des couches Tiled. Quand le navigateur reprend la mémoire graphique d'une page en arrière-plan, il vide ce canvas et le contexte WebGL ; au retour, Phaser recrée ses textures à partir de leurs sources : les images reviennent, le canvas revient vide.
+- **Correction** (`farm-stage.js`) : `paintGround()` redessine le fond dans la texture existante ; `repairGround()` l'appelle quand le contexte WebGL est rendu (`RESTORE_WEBGL`), quand le canvas du fond est rendu (`contextrestored`), au retour sur la page (`visibilitychange`, `pageshow`, `focus`, `FarmStage.show()`), et toutes les 3 s si un point du fond est devenu transparent (`groundWiped()`).
+- **Vérification** : perte simulée avec l'extension `WEBGL_lose_context` et canvas vidé à la main ; pas d'essai sur un vrai téléphone.
