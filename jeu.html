@@ -1018,6 +1018,17 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
   color: var(--danger-contrast);
 }
 
+/* Notification qui mène au menu concerné : un bouton, sur toute la largeur. */
+#toast-root .toast-link {
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+#toast-root .toast-link:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+.toast-go { display: inline-block; margin-left: 4px; font-weight: 800; }
+.wake-hour { margin: -4px 0 8px; font-size: 0.85rem; }
+
 /* ---------- Lot 11 : illustrations SVG ---------- */
 
 /* Couleurs des dessins (le sprite est dans la page, les <use> en héritent). */
@@ -1232,7 +1243,10 @@ body.has-stage { padding-bottom: 0; }
 
 /* Étiquettes des bâtiments : en DOM, par-dessus le canvas, replacées à chaque image par
    farm-stage.js. Elles ne prennent pas les appuis : la carte glisse aussi quand le doigt part
-   d'une étiquette, et c'est la scène qui reconnaît un appui dessus. */
+   d'une étiquette, et c'est la scène qui reconnaît un appui dessus.
+   Version 1.1.1 : le nom ne s'affiche qu'au survol du lieu (classe `show`, posée par la
+   scène : souris dessus, doigt posé, ou focus clavier). Sans survol, il ne reste que la
+   pastille « à faire » ; sans pastille, rien du tout. */
 .stage-labels { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
 .stage-label {
   position: absolute;
@@ -1256,6 +1270,10 @@ body.has-stage { padding-bottom: 0; }
   will-change: transform;
 }
 .stage-label.todo { border-color: #c1442e; }
+.stage-label:not(.show) { min-height: 0; padding: 0; border-color: transparent; background: none; box-shadow: none; }
+.stage-label:not(.show) .stage-label-name { display: none; }
+.stage-label:not(.show):not(.todo) { opacity: 0; }
+.stage-label:not(.show) .stage-label-badge { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); border: 1px solid #ffffff; }
 .stage-label:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .stage-label-badge {
   min-width: 17px;
@@ -1814,13 +1832,17 @@ const DATA = {
   // SECONDS_PER_HOUR : durée d'une « heure de marche » des appareils (usure,
   // voir WEAR.HEURES_PAR_POINT). Ne pas la changer pour régler l'horloge.
   // CLOCK_SECONDS_PER_HOUR (version 1.1) : l'horloge affichée au joueur avance
-  // d'une heure toutes les 5 s d'éveil (voir hourOfDay() et clockHours()). Après
-  // 23 h elle repasse à 0 h et continue : veiller tard n'a aucune conséquence.
+  // d'une heure toutes les 5 s d'éveil (voir hourOfDay() et clockHours()).
+  // MEAL_HOUR (version 1.1.1) : à 19 h, la famille prend son repas (takeMeal()).
+  // NIGHT_HOUR : à minuit (24 h), la nuit se déroule d'elle-même si le joueur
+  // n'a pas cliqué sur Dormir (midnightDue() ; c'est l'interface qui déclenche).
   TIME: {
     DAY_START_HOUR: 6,
     SECONDS_PER_HOUR: 30,
     CLOCK_SECONDS_PER_HOUR: 5,
     MIN_AWAKE_S: 30,
+    MEAL_HOUR: 19,
+    NIGHT_HOUR: 24,
   },
 
   LEVEL_MAX: 5,
@@ -3062,9 +3084,9 @@ function mulberry32(seed) {
   };
 }
 
-const STATE_VERSION = 16;
+const STATE_VERSION = 17;
 // Version du jeu, affichée dans les Options (À propos).
-const GAME_VERSION = '1.1.0';
+const GAME_VERSION = '1.1.1';
 const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -3372,10 +3394,11 @@ function awakeRequired(state) {
 }
 
 // Heure de la journée (0 à 23) : 6 h au réveil, +1 heure toutes les
-// CLOCK_SECONDS_PER_HOUR secondes d'éveil (5 s). Après 23 h, elle repasse à 0 h
-// et continue : rester éveillé n'a aucune conséquence, et les règles du
-// sommeil ne dépendent pas de l'heure. (L'usure des appareils a sa propre
-// « heure de marche », SECONDS_PER_HOUR : voir wearStep().)
+// CLOCK_SECONDS_PER_HOUR secondes d'éveil (5 s). À 19 h la famille prend son
+// repas (mealDue / takeMeal) ; à minuit la nuit se déroule d'elle-même
+// (midnightDue : c'est l'interface qui lance sleep(), jeu ouvert). Si rien ne
+// la lance, l'horloge repasse à 0 h et continue. (L'usure des appareils a sa
+// propre « heure de marche », SECONDS_PER_HOUR : voir wearStep().)
 function hourOfDay(state) {
   const hours = Math.floor(state.awakeMs / (DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000));
   return (DATA.TIME.DAY_START_HOUR + hours) % 24;
@@ -3388,6 +3411,23 @@ function clockHours(state) {
   const perDay = 24 * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
   const h = DATA.TIME.DAY_START_HOUR + (ms % perDay) / (DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
   return h >= 24 ? h - 24 : h;
+}
+
+// Temps d'éveil (ms) auquel l'horloge marque `hour` heures (19 h → 65 000 ms).
+function awakeMsAtHour(hour) {
+  return (hour - DATA.TIME.DAY_START_HOUR) * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+}
+
+// Version 1.1.1 : le repas de 19 h est-il à prendre maintenant ? (pas encore
+// pris aujourd'hui, et l'horloge a atteint MEAL_HOUR)
+function mealDue(state) {
+  return !state.repas && state.awakeMs >= awakeMsAtHour(DATA.TIME.MEAL_HOUR);
+}
+
+// Minuit est-il passé sans que personne n'ait dormi ? L'interface lance alors
+// la nuit (sleep()) : repas s'il n'a pas été pris, puis les étapes habituelles.
+function midnightDue(state) {
+  return state.awakeMs >= awakeMsAtHour(DATA.TIME.NIGHT_HOUR);
 }
 
 /* ---------- énergie : stockage et prélèvement ---------- */
@@ -3481,14 +3521,17 @@ function runPump(state, dtMs) {
 // (production, stockage, consommation, préparations), usure, puis le temps d'éveil.
 // Lot 11 : les trois phases sont séparées pour que la progression hors-ligne
 // réutilise exactement les mêmes flux, sans l'usure (voir simulateOffline).
-function tick(state, dt) {
+// Version 1.1.1 : `horlogeArretee` (le joueur lit le résumé du réveil) : tout
+// continue de tourner, mais l'heure n'avance pas ; la journée commence quand il
+// ferme le résumé.
+function tick(state, dt, horlogeArretee = false) {
   const dtMs = Math.round((Number(dt) || 0) * 1000);
   if (!(dtMs > 0)) return state;
   flowStep(state, dtMs);
   wearStep(state, dtMs);
 
   // e. temps d'éveil (l'heure s'en déduit)
-  state.awakeMs += dtMs;
+  if (!horlogeArretee) state.awakeMs += dtMs;
   refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
   noteEnergyRecord(state); // Lot 9 : record d'énergie stockée, puis objectifs du chapitre
   updateChapters(state);
@@ -4096,6 +4139,27 @@ function buyPrice(state, item) {
   return percentCeil(sellPrice(item), marketCoef(state, item));
 }
 
+// Devis d'un achat de `qty` unités, sans rien modifier : le prix monte d'un
+// pas entre deux unités, et l'on s'arrête quand les pièces manquent.
+// Renvoie { quantite, cout } : ce que buyItem(state, item, qty) achèterait.
+function buyQuote(state, item, qty = 1) {
+  if (!DATA.items[item] || !isBuyable(item)) return { quantite: 0, cout: 0 };
+  const floor = marketFloor(item);
+  let coef = marketCoef(state, item);
+  let pieces = state.pieces;
+  let quantite = 0;
+  let cout = 0;
+  for (let i = 0; i < Math.max(0, Math.floor(Number(qty)) || 0); i++) {
+    const price = percentCeil(sellPrice(item), coef);
+    if (pieces + EPS < price) break;
+    pieces -= price;
+    cout += price;
+    quantite += 1;
+    coef = Math.max(floor, Math.round(coef + DATA.MARCHE.PAS));
+  }
+  return { quantite, cout };
+}
+
 // Achète jusqu'à `qty` unités, une par une : le prix monte entre deux unités.
 // S'arrête quand les pièces manquent. Un item acheté arrive avec sa
 // conservation pleine et l'origine « acheté ».
@@ -4390,8 +4454,12 @@ function dishBonus(mange, state = null) {
   return Math.min(max, plats * B.PAR_PLAT);
 }
 
-// Première étape nocturne : le repas, puis la santé.
-function feedFamily(state) {
+// Le repas de la famille, puis la santé. Version 1.1.1 : il se prend à 19 h
+// (mealDue) ; si la famille se couche avant, il est pris au coucher (feedFamily).
+// Le compte du repas est gardé dans state.repas jusqu'à la nuit, qui le recopie
+// dans son compte rendu : un seul repas par jour, quoi qu'il arrive.
+function takeMeal(state) {
+  if (state.repas) return fail('La famille a déjà pris son repas aujourd\'hui.');
   const plan = planMeal(state);
   // Lot 9 : énergie mangée qui vient de lots d'origine « produit » (autonomie).
   let produit = 0;
@@ -4407,9 +4475,9 @@ function feedFamily(state) {
   const avant = rawAverageHealth(state);
   const bonus = dishBonus(plan.mange, state);
   const nouveaux = updateHealth(state, plan.couverture, bonus);
-  state.nuit = {
+  state.repas = {
+    heure: hourOfDay(state),
     bonusPlats: bonus,
-    termine: {},
     besoin: plan.besoin,
     energie: plan.energie,
     couverture: plan.couverture,
@@ -4417,15 +4485,30 @@ function feedFamily(state) {
     santeAvant: avant,
     santeApres: rawAverageHealth(state),
     nouveauxMalades: nouveaux,
+    energieProduit: produit,
+    autonomie: autonomyPercent(produit, plan.besoin),
+  };
+  return { ok: true, repas: state.repas };
+}
+
+// Première étape nocturne : le repas s'il n'a pas été pris à 19 h, puis son
+// compte recopié dans celui de la nuit. La santé « après » est celle du
+// coucher : un soin payé entre le repas et la nuit y figure.
+function feedFamily(state) {
+  if (!state.repas) takeMeal(state);
+  const { heure, ...repas } = state.repas;
+  state.repas = null;
+  state.nuit = {
+    ...repas,
+    santeApres: rawAverageHealth(state),
+    termine: {},
     perdus: {},
     oeufs: 0,
     auto: newAutoReport(),
     fruits: {},
     frigo: { mwh: 0, panne: false, vieillis: false },
-    energieProduit: produit,
-    autonomie: autonomyPercent(produit, plan.besoin),
   };
-  return plan;
+  return state.nuit;
 }
 
 function careCost(state) {
@@ -4850,6 +4933,38 @@ function buyAnimal(state, kind) {
   spend(state, price);
   p.poules += 1;
   return { ok: true, cost: price };
+}
+
+// Combien d'animaux d'une espèce on peut encore acheter : les places libres,
+// et ce que les pièces permettent (prix fixe).
+function animalRoom(state, kind) {
+  if (kind === 'poule') return state.poulailler.construit ? Math.max(0, coopCapacity(state) - state.poulailler.poules) : 0;
+  if (kind === 'mouton') return state.paturage.construit ? freeSheepPlaces(state) : 0;
+  if (kind === 'vache') return state.paturage.construit ? freeCowPlaces(state) : 0;
+  return 0;
+}
+
+function animalBuyMax(state, kind) {
+  if (!DATA.ANIMAUX[kind]) return 0;
+  const price = animalPrice(kind);
+  const payes = price > 0 ? Math.floor((state.pieces + EPS) / price) : Infinity;
+  return Math.max(0, Math.min(animalRoom(state, kind), payes));
+}
+
+// Achète jusqu'à `qty` animaux, un par un (buyAnimal) : s'arrête quand la place
+// ou les pièces manquent. Renvoie { ok, bought, cost }.
+function buyAnimals(state, kind, qty = 1) {
+  let bought = 0;
+  let cost = 0;
+  let last = null;
+  for (let i = 0; i < Math.max(1, Math.floor(Number(qty)) || 1); i++) {
+    last = buyAnimal(state, kind);
+    if (!last.ok) break;
+    bought += 1;
+    cost += last.cost;
+  }
+  if (bought === 0) return last;
+  return { ok: true, bought, cost };
 }
 
 // Poules restant à nourrir cette nuit.
@@ -6065,6 +6180,7 @@ function producedShare(lots, qty) {
 
 // Autonomie prévue pour la nuit qui vient (repas prévu, origines comprises).
 function plannedAutonomy(state) {
+  if (state.repas) return state.repas.autonomie; // le repas de 19 h est déjà pris
   const plan = planMeal(state);
   let produit = 0;
   for (const [item, n] of Object.entries(plan.mange)) {
@@ -6576,19 +6692,23 @@ function offlineReport(state, before, demande, simule) {
 // HORS_LIGNE.PAS_S : mêmes flux que tick (panneaux, batteries, pompe, moulin,
 // presse, réfrigérateur, Four et Cuisine), sans usure, et jamais de nuit : ni
 // pousse, ni repas, ni ponte, ni péremption. Le temps simulé s'ajoute au temps
-// d'éveil. Renvoie le bilan (voir offlineReport). Une durée nulle, négative ou
-// invalide ne change rien.
+// d'éveil, mais seulement jusqu'à l'éveil minimal (version 1.1.1) : au retour
+// le joueur peut dormir tout de suite, et l'horloge n'a pas dépassé midi (ou
+// l'heure où il est parti) ; ni le repas de 19 h ni la nuit de minuit ne se
+// déclenchent pendant une absence. Renvoie le bilan (voir offlineReport). Une
+// durée nulle, négative ou invalide ne change rien.
 function simulateOffline(state, seconds) {
   const H = DATA.HORS_LIGNE;
   const demande = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
   const simule = Math.min(demande, H.MAX_S);
   const before = offlineSnapshot(state);
+  const eveilMax = Math.max(state.awakeMs, awakeRequired(state) * 1000);
   let left = Math.round(simule * 1000);
   while (left > 0) {
     const dtMs = Math.min(H.PAS_S * 1000, left);
     flowStep(state, dtMs);
     if (H.USURE) wearStep(state, dtMs);
-    state.awakeMs += dtMs;
+    state.awakeMs = Math.min(eveilMax, state.awakeMs + dtMs);
     noteEnergyRecord(state);
     left -= dtMs;
   }
@@ -7074,6 +7194,7 @@ function createInitialState(seed = 1) {
     version: STATE_VERSION,
     day: 1,
     awakeMs: 0,
+    repas: null, // version 1.1.1 : compte du repas de 19 h, jusqu'à la nuit (voir takeMeal)
     pieces: DATA.START.PIECES,
     rngSeed: seed >>> 0,
     unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'],
@@ -7236,6 +7357,9 @@ const MIGRATIONS = {
   // v15 → v16 (version 1.1) : profil de la famille, animaux sans poids,
   // places à l'Étable, paille, Moulin par quantité, fin des recettes à la viande.
   15: (state) => migrateRules11(state),
+  // v16 → v17 (version 1.1.1) : le repas de 19 h. Le repas du jour n'est pas
+  // encore pris (state.repas = null) : il le sera à 19 h ou au coucher.
+  16: (state) => ({ ...state, version: 17, repas: null }),
 };
 
 // Règles de la version 1.1 (v15 → v16). Rien n'est perdu :
@@ -13612,13 +13736,11 @@ function v15Herd(s, laines, vaches = 0, ares = 50) {
   };
 }
 
-test('migration v15 → v16 : la version courante est 16, une partie sans animaux ne perd ni ne gagne rien', () => {
-  assertEqual(STATE_VERSION, 16);
+test('migration v15 → v16 : une partie sans animaux ne perd ni ne gagne rien', () => {
   assertEqual(typeof MIGRATIONS[15], 'function');
-  assertEqual(MIGRATIONS[16], undefined, 'pas de migration au-delà de la version courante');
   const v15 = v15State((s) => { s.pieces = 432; s.day = 12; });
   const m = migrate({ v: 15, t: 0, s: v15 });
-  assertEqual(m.version, 16);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.pieces, m.day, m.inventaire, m.campagne, m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, v15.campagne, v15.potager, v15.technologies, v15.pointsTech]);
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   assertEqual(countItem(m, 'paille'), 0, 'pas d\'animaux : pas de paille offerte');
@@ -13825,7 +13947,7 @@ test('migration v15 → v16 : une partie avancée continue à tourner après la 
     s.technologies = ['el_tonte', 'cui_rotisserie'];
   });
   const m = migrate({ v: 15, t: 0, s: v15 });
-  assertEqual([m.version, m.campagne.compteurs.laines, m.campagne.compteurs.plats], [16, 4, ['omelette', 'ragout', 'roti_boeuf']], 'les plats déjà préparés restent comptés');
+  assertEqual([m.version, m.campagne.compteurs.laines, m.campagne.compteurs.plats], [STATE_VERSION, 4, ['omelette', 'ragout', 'roti_boeuf']], 'les plats déjà préparés restent comptés');
   assertEqual(JSON.parse(JSON.stringify(m)), m, 'l\'état migré se sauvegarde tel quel');
   assertEqual(strawStock(m), 10);
   testFillBatteries(m);
@@ -13850,7 +13972,7 @@ test('migration v15 → v16 : une partie avancée continue à tourner après la 
 
 test('migration v15 → v16 : toute la chaîne depuis une très vieille sauvegarde mène au nouveau format', () => {
   const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
-  assertEqual(m.version, 16);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual(m.famille.membres.map((x) => [x.prenom, x.genre, x.teint]), [['Adulte 1', 'f', 0], ['Adulte 2', 'm', 0], ['Enfant 1', 'm', 0], ['Enfant 2', 'f', 0]]);
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   // des entrées absurdes ne font jamais planter la migration
@@ -15649,7 +15771,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.1.0');
+  assertEqual(GAME_VERSION, '1.1.1');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -15657,7 +15779,8 @@ test('Lot 11 : hors-ligne plafonné à 8 h', () => {
   const avant = s.awakeMs;
   const r = simulateOffline(s, 20 * 3600);
   assertEqual([r.demande, r.simule, r.plafonne], [72000, 28800, true]);
-  assertEqual(s.awakeMs - avant, 28800 * 1000, 'seules 8 h sont simulées');
+  // Version 1.1.1 : l'horloge, elle, s'arrête à l'éveil minimal (voir plus bas).
+  assertEqual([avant, s.awakeMs], [0, awakeRequired(s) * 1000], 'l\'horloge ne dépasse pas l\'heure où l\'on peut dormir');
   const t = farm({ pump: true });
   const r8 = simulateOffline(t, 8 * 3600);
   assertEqual([r8.simule, r8.plafonne], [28800, false], '8 h pile ne sont pas « plafonnées »');
@@ -16125,6 +16248,155 @@ test('Résumé de réveil : avec une vraie nuit, les œufs pondus sont dans la r
   assertEqual([Number.isInteger(w.autonomie), Number.isInteger(w.sante)], [true, true]);
 });
 
+/* ---------- version 1.1.1 : repas de 19 h, nuit de minuit, achats par quantité ---------- */
+
+test('version 1.1.1 : version 17, la migration v16 → v17 ajoute le repas du jour (pas encore pris)', () => {
+  assertEqual([STATE_VERSION, typeof MIGRATIONS[16], MIGRATIONS[17]], [17, 'function', undefined]);
+  assertEqual(createInitialState(1).repas, null);
+  const v16 = JSON.parse(JSON.stringify(createInitialState(4)));
+  delete v16.repas;
+  v16.version = 16;
+  v16.pieces = 321;
+  const m = migrate({ v: 16, t: 0, s: v16 });
+  assertEqual([m.version, m.repas, m.pieces], [17, null, 321]);
+  assertEqual(migrate({ v: 17, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+});
+
+test('version 1.1.1 : le repas se prend à 19 h (65 s d\'éveil), une seule fois par jour', () => {
+  assertEqual([DATA.TIME.MEAL_HOUR, DATA.TIME.NIGHT_HOUR, awakeMsAtHour(19), awakeMsAtHour(24), awakeMsAtHour(6)], [19, 24, 65000, 90000, 0]);
+  const s = garden();
+  setInv(s, { conserve: 200 });
+  s.awakeMs = 64900;
+  assertEqual([mealDue(s), hourOfDay(s)], [false, 18]);
+  s.awakeMs = 65000;
+  assertEqual([mealDue(s), hourOfDay(s)], [true, 19]);
+  const besoin = familyNeed(s);
+  const avant = countItem(s, 'conserve');
+  const r = takeMeal(s);
+  assertEqual([r.ok, r.repas.heure, r.repas.besoin, r.repas.couverture], [true, 19, besoin, 100]);
+  assert(countItem(s, 'conserve') < avant, 'les conserves sont mangées à 19 h');
+  assertEqual([mealDue(s), takeMeal(s).ok], [false, false], 'pas de deuxième repas');
+  assertEqual(JSON.parse(JSON.stringify(s)).repas, s.repas, 'le repas pris se sauvegarde');
+});
+
+test('version 1.1.1 : la nuit reprend le repas de 19 h sans faire manger une deuxième fois', () => {
+  const a = garden();
+  const b = garden();
+  for (const s of [a, b]) { setInv(s, { conserve: 200 }); setHealth(s, 50); }
+  // a : repas à 19 h puis coucher ; b : coucher avant 19 h (le repas est pris au coucher)
+  a.awakeMs = 65000;
+  takeMeal(a);
+  const apresRepas = countItem(a, 'conserve');
+  const ra = sleep(a);
+  b.awakeMs = 30000;
+  const rb = sleep(b);
+  assertEqual(countItem(a, 'conserve'), apresRepas, 'la nuit ne remange pas');
+  assertEqual(countItem(a, 'conserve'), countItem(b, 'conserve'), 'même repas dans les deux cas');
+  assertEqual([ra.energieMangee, ra.couverture, ra.santeAvant, ra.santeApres, ra.autonomie], [rb.energieMangee, rb.couverture, rb.santeAvant, rb.santeApres, rb.autonomie]);
+  assertEqual([a.repas, b.repas, a.awakeMs, mealDue(a)], [null, null, 0, false], 'au réveil, le repas du jour est à prendre');
+});
+
+test('version 1.1.1 : un soin payé entre le repas et la nuit figure dans la santé du réveil', () => {
+  const s = garden();
+  setInv(s, {});
+  setHealth(s, 1);
+  s.pieces = 5000;
+  s.awakeMs = 65000;
+  const r = takeMeal(s).repas;
+  assert(r.nouveauxMalades.length > 0, 'sans rien à manger, la famille tombe malade au repas');
+  for (const m of s.famille.membres) if (m.malade) assert(heal(s, m.id).ok, 'soin');
+  const rep = sleep(s);
+  assertEqual(rep.santeApres, rawAverageHealth(s));
+  assert(rep.santeApres > r.santeApres, 'la santé du réveil tient compte des soins');
+});
+
+test('version 1.1.1 : minuit (90 s d\'éveil) rend la nuit due ; l\'aperçu d\'autonomie suit le repas pris', () => {
+  const s = garden();
+  setInv(s, { conserve: 200 });
+  s.awakeMs = 89900;
+  assertEqual([midnightDue(s), hourOfDay(s)], [false, 23]);
+  s.awakeMs = 90000;
+  assertEqual([midnightDue(s), canSleep(s)], [true, true]);
+  takeMeal(s);
+  assertEqual(plannedAutonomy(s), s.repas.autonomie);
+  const rep = sleep(s);
+  assertEqual([s.day, s.awakeMs, midnightDue(s), rep.nuit], [2, 0, false, 2]);
+});
+
+test('version 1.1.1 : horloge arrêtée (résumé du réveil ouvert), les flux tournent mais l\'heure n\'avance pas', () => {
+  const s = farm({ pump: true });
+  const eau = s.eauMl;
+  tick(s, 5, true);
+  assertEqual(s.awakeMs, 0);
+  assert(s.eauMl !== eau || s.jour.produite > 0, 'la ferme continue de produire');
+  tick(s, 5);
+  assertEqual(s.awakeMs, 5000);
+});
+
+test('version 1.1.1 : hors-ligne, l\'horloge s\'arrête à l\'éveil minimal (ni repas ni nuit pendant l\'absence)', () => {
+  const s = farm({ pump: true });
+  simulateOffline(s, 3600);
+  assertEqual([s.awakeMs, canSleep(s), mealDue(s), midnightDue(s), s.repas, s.day], [30000, true, false, false, null, 1]);
+  // parti à 20 h, après le repas : l'horloge ne recule pas et n'avance pas
+  const t = farm({ pump: true });
+  setInv(t, { conserve: 200 });
+  t.awakeMs = 70000;
+  takeMeal(t);
+  simulateOffline(t, 3600);
+  assertEqual([t.awakeMs, hourOfDay(t), midnightDue(t), t.day], [70000, 20, false, 1]);
+});
+
+test('version 1.1.1 : devis d\'achat (buyQuote) = ce que buyItem achète, prix montant compris', () => {
+  const s = garden();
+  s.pieces = 1000;
+  const q = buyQuote(s, 'ble', 5);
+  const copie = JSON.parse(JSON.stringify(s));
+  const r = buyItem(copie, 'ble', 5);
+  assertEqual([q.quantite, q.cout], [r.bought, r.cost]);
+  assertEqual([s.pieces, countItem(s, 'ble')], [1000, 0], 'le devis ne modifie rien');
+  assert(q.cout > 5 * buyPrice(s, 'ble'), 'le prix monte à chaque unité');
+  // pièces insuffisantes : le devis s'arrête à ce qu'on peut payer
+  s.pieces = buyPrice(s, 'ble') * 2;
+  const court = buyQuote(s, 'ble', 50);
+  const achat = buyItem(JSON.parse(JSON.stringify(s)), 'ble', 50);
+  assertEqual([court.quantite, court.cout], [achat.bought, achat.cost]);
+  assert(court.quantite >= 1 && court.quantite < 50, `quantité plafonnée : ${court.quantite}`);
+  assertEqual([buyQuote(s, 'conserve', 3), buyQuote(s, 'inconnu', 3), buyQuote(s, 'ble', 0)], [{ quantite: 0, cout: 0 }, { quantite: 0, cout: 0 }, { quantite: 0, cout: 0 }]);
+});
+
+test('version 1.1.1 : animaux achetés par quantité, dans la limite des places et des pièces', () => {
+  const s = ranch();
+  s.pieces = 5000;
+  assertEqual([animalRoom(s, 'poule'), animalBuyMax(s, 'poule')], [4, 4]);
+  const r = buyAnimals(s, 'poule', 3);
+  assertEqual([r.ok, r.bought, r.cost, s.poulailler.poules], [true, 3, 45, 3]);
+  const plein = buyAnimals(s, 'poule', 5);
+  assertEqual([plein.ok, plein.bought, s.poulailler.poules, animalBuyMax(s, 'poule')], [true, 1, 4, 0], 'on s\'arrête quand le Poulailler est plein');
+  assertEqual(buyAnimals(s, 'poule', 1).ok, false);
+  s.pieces = 20;
+  assertEqual([animalBuyMax(s, 'mouton'), animalRoom(s, 'mouton')], [0, 0], 'pas d\'Étable : pas de mouton');
+  s.pieces = 5000;
+  assert(buildPaturage(s).ok, 'préparer l\'Étable');
+  s.pieces = 130;
+  assertEqual(animalBuyMax(s, 'mouton'), 2, '130 pièces = 2 moutons à 60');
+  const m = buyAnimals(s, 'mouton', 9);
+  assertEqual([m.bought, m.cost, sheepCount(s), s.pieces], [2, 120, 2, 10]);
+  assertEqual([animalBuyMax(s, 'chat'), buyAnimals(s, 'chat', 2).ok], [0, false]);
+});
+
+test('version 1.1.1 : sans mouton ni vache, jamais d\'alerte de paille', () => {
+  const s = ranch();
+  s.pieces = 5000;
+  assert(buildPaturage(s).ok, 'préparer l\'Étable');
+  setStraw(s, 0);
+  assertEqual([strawNeed(s), strawMissing(s), alertSnapshot(s).pailleManque], [0, 0, false]);
+  assertEqual(getNotifications(s).filter((n) => n.type === 'paille'), []);
+  sleepOnce(s);
+  assertEqual([s.report.pailleBesoin, s.report.etable.manque, alertSnapshot(s).pailleManque], [0, 0, false]);
+  testAddHens(s, 4);
+  assertEqual(getNotifications(s).filter((n) => n.type === 'paille'), [], 'les poules ne mangent pas de paille');
+});
+
 // En environnement navigateur, ce bloc n'est jamais exécuté (type="text/plain").
 // run-tests.mjs l'exécute explicitly avec Node après avoir lancé runTests().
 if (typeof module !== 'undefined' && typeof globalThis !== 'undefined') {
@@ -16588,8 +16860,11 @@ let activeTab = 'ferme';
 let ecranFerme = null; // écran de détail ouvert dans la Ferme : null, 'panneaux' ou 'batteries'
 let testMode = false;
 let invTab = 'frais'; // Inventaire : 'frais', 'graines' ou 'produits'
-let comptoirTab = 'vendre'; // Marché : 'vendre', 'acheter' ou 'graines'
+let comptoirTab = 'vendre'; // Marché : 'vendre', 'acheter', 'graines' ou 'animaux'
 const sellQuantities = {}; // quantité choisie par item dans l'onglet Vendre
+const buyQuantities = {}; // quantité choisie par item dans les onglets Acheter et Graines
+const animalQuantities = {}; // quantité choisie par espèce dans l'onglet Animaux
+const BUY_MAX = 99; // plus grande quantité qu'on peut choisir d'acheter en une fois
 
 /* ---------- suivi de session (consentement requis, voir cookies.html) ---------- */
 
@@ -16816,7 +17091,8 @@ function applyResult(result) {
   return result;
 }
 
-function actionSleep() {
+// `minuit` : la nuit s'est lancée d'elle-même à minuit (voir watchDay).
+function actionSleep(minuit = false) {
   const awakeBefore = Math.round(state.awakeMs / 1000);
   const report = sleep(state);
   if (!report) {
@@ -16828,7 +17104,7 @@ function actionSleep() {
   syncJobs(); // les préparations terminées pendant la nuit ne sont pas annoncées par un toast
   persistState(); // sauvegarde après chaque nuit
   refresh();
-  openWakeModal(report);
+  openWakeModal(report, minuit);
 }
 
 function actionTestNights(count) {
@@ -16962,6 +17238,39 @@ function watchRoutine() {
   showToast(`🌙 Routine : la famille a dormi. Nuit ${report.nuit} · autonomie ${formatPercent(report.autonomie)}`);
 }
 
+// Version 1.1.1 : la journée suit l'horloge. À 19 h, la famille prend son repas. À
+// minuit, si personne n'a cliqué sur « Zzz », la nuit se déroule d'elle-même et le
+// résumé habituel s'affiche (il est alors 6 h). Jeu ouvert seulement : une absence
+// n'avance pas l'horloge au-delà de midi (voir simulateOffline). La nuit attend qu'une
+// fenêtre ouverte soit refermée, et ne se lance pas tant que l'aide de la première
+// partie est affichée (le joueur lit).
+function watchDay() {
+  if (mealDue(state)) {
+    const r = takeMeal(state);
+    persistState();
+    refresh();
+    if (r.ok) playMealScene(r.repas);
+  }
+  if (!midnightDue(state)) return;
+  if (document.getElementById('modal-root').childElementCount > 0) return;
+  if (tutorialStep(state)) return;
+  actionSleep(true);
+}
+
+// Le repas de 19 h. Pour l'instant, une annonce (un appui mène à la Famille) ; plus
+// tard, une petite cinématique se jouera ici.
+function playMealScene(repas) {
+  const mange = itemsSummary(repas.mange);
+  const complet = repas.couverture >= 100;
+  const suite = complet ? 'Tout le monde a mangé à sa faim.' : `Repas insuffisant : ${formatNumber(Math.min(repas.energie, repas.besoin))} / ${formatNumber(repas.besoin)} énergie, la santé baisse.`;
+  notify(`🍽️ ${DATA.TIME.MEAL_HOUR} h : la famille passe à table${mange ? ` (${mange})` : ''}. ${suite}`, complet ? 'repas' : 'alerte', { fenetre: 'maison', onglet: 'famille' });
+}
+
+// Le résumé du réveil est-il à l'écran ? Tant qu'il l'est, l'horloge reste à 6 h.
+function wakeModalOpen() {
+  return !!document.getElementById('wake-title');
+}
+
 function frame(now) {
   const wall = Date.now();
   if (wall - simulatedAt >= CATCH_UP_MIN_MS) {
@@ -16976,8 +17285,9 @@ function frame(now) {
   if (elapsed > MAX_FRAME_MS) elapsed = MAX_FRAME_MS;
   accumulatorMs += elapsed;
   let ticked = false;
+  const horlogeArretee = wakeModalOpen();
   while (accumulatorMs >= TICK_MS) {
-    tick(state, TICK_MS / 1000);
+    tick(state, TICK_MS / 1000, horlogeArretee);
     accumulatorMs -= TICK_MS;
     ticked = true;
     scheduleRender();
@@ -16985,6 +17295,7 @@ function frame(now) {
   simulatedAt = wall;
   watchTechPoints();
   watchRoutine();
+  watchDay();
   watchPreparations();
   watchUnlocks();
   if (ticked) watchAlerts();
@@ -17049,7 +17360,7 @@ function openAbsenceModal(r) {
     done ? `<li>🍳 Préparations terminées : <strong>${done}</strong></li>` : '',
     running.length ? `<li>⏳ Toujours en cours : ${running.join(' · ')}</li>` : '',
     fridge,
-    `<li>🌙 Aucune nuit n'est passée : les cultures, les animaux et la famille attendent que tu dormes.${canSleep(state) ? ' Tu peux dormir dès maintenant.' : ''}</li>`,
+    `<li>🌙 Aucune nuit n'est passée : l'horloge s'arrête quand le jeu est fermé, et les cultures, les animaux et la famille t'attendent.${canSleep(state) ? ' Tu peux dormir dès maintenant.' : ''}</li>`,
     DATA.HORS_LIGNE.USURE ? '' : '<li class="muted">🛠️ Les appareils ne se sont pas usés pendant ton absence.</li>',
   ];
   document.getElementById('modal-root').innerHTML = `
@@ -17238,12 +17549,28 @@ function moulinSurPlace() {
   return typeof renderMoulin === 'function';
 }
 
-// Où se règle un appareil en panne ou à entretenir : { fenetre, onglet, ancre }.
+// Une « cible » dit où mène une notification, un indicateur ou un raccourci :
+//   { fenetre, onglet, ancre } : une fenêtre de la carte (et, pour la Maison, son onglet) ;
+//   { ecran, ancre }           : un écran de détail (panneaux, batteries) ;
+//   { page, sous, ancre }      : un onglet du menu du bas (et son sous-onglet).
+// `ancre` est l'id de l'élément à amener en haut : on arrive sur la ligne concernée.
+
+// Où se règle un appareil (panne, entretien) : sa propre carte.
 function lieuAppareil(id) {
   const d = id ? findDevice(state, id) : null;
-  if (d && d.type === 'moulin' && moulinSurPlace()) return { fenetre: 'moulin' };
-  if (d && (d.type === 'moulin' || d.type === 'presse')) return { fenetre: 'maison', onglet: 'recettes' };
+  if (!d) return { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' };
+  if (d.type === 'panneau') return { ecran: 'panneaux', ancre: `dev-${d.id}` };
+  if (d.type === 'batterie') return { ecran: 'batteries', ancre: `dev-${d.id}` };
+  if (d.type === 'moulin' && moulinSurPlace()) return { fenetre: 'moulin', ancre: 'moulin-appareil' };
+  if (d.type === 'moulin' || d.type === 'presse') return { fenetre: 'maison', onglet: 'recettes', ancre: `station-${d.type}` };
+  if (d.type === 'frigo') return { fenetre: 'maison', onglet: 'batiments', ancre: 'dev-frigo' };
+  if (d.type === 'pompe') return { fenetre: 'maison', onglet: 'batiments', ancre: 'dev-pompe' };
   return { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' };
+}
+
+// Fenêtre de la carte où ranger une cible (pour les pastilles des étiquettes).
+function fenetreDeCible(c) {
+  return c.fenetre || (c.ecran ? 'maison' : null);
 }
 
 // Parcelles d'un lieu ('potager' ou 'serre') qui attendent un geste, avec les règles des
@@ -17262,7 +17589,10 @@ function parcellesAFaire(lieu, quoi) {
 function aFaireParLieu() {
   const n = { maison: 0, etable: 0, moulin: 0, serre: 0, verger: 0, zone: 0 };
   const snap = alertSnapshot(state);
-  for (const id of snap.panne.concat(snap.entretien)) n[lieuAppareil(id).fenetre] += 1;
+  for (const id of snap.panne.concat(snap.entretien)) {
+    const f = fenetreDeCible(lieuAppareil(id));
+    if (f) n[f] += 1;
+  }
   if (snap.batteriesVides) n.maison += 1;
   if (snap.frigoCoupe) n.maison += 1;
   n.maison += state.famille.membres.filter((m) => m.malade).length;
@@ -17274,18 +17604,98 @@ function aFaireParLieu() {
   return n;
 }
 
-// Où mène une ligne des Notifications : { fenetre, onglet, ancre } sur la carte, ou
-// { page } pour un onglet du menu du bas.
-function notifCible(n) {
-  switch (n.type) {
-    case 'peremption': return { page: 'inventaire' };
-    case 'panne': case 'entretien': return lieuAppareil(alertSnapshot(state)[n.type][0]);
-    case 'batteriesVides': case 'frigoCoupe': return { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' };
-    case 'arrosage': case 'recolte': return { fenetre: parcellesAFaire('potager', n.type) > 0 || !isUnlocked(state, 'serre') ? 'zone' : 'serre' };
+// Première parcelle d'un lieu qui attend le geste `quoi` ('arrosage' ou 'recolte').
+function premiereParcelle(lieu, quoi) {
+  return allPlots(state).find((p) => {
+    if (!p.culture || p.lieu !== lieu) return false;
+    if (isMature(p)) return quoi === 'recolte' && !techAuto(state, 'recolte', lieu);
+    return quoi === 'arrosage' && !p.arrose && !techAuto(state, 'arrosage', lieu);
+  }) || null;
+}
+
+// Où mène une alerte : la cible où elle se règle, à la ligne concernée. `type` est celui
+// de getNotifications() ou de alertEvents() ; `id` l'appareil d'une panne ou d'un entretien.
+function cibleAlerte(type, id) {
+  switch (type) {
+    case 'peremption': return { page: 'inventaire', sous: 'frais' };
+    case 'panne': case 'entretien': return lieuAppareil(id || alertSnapshot(state)[type][0]);
+    case 'batteriesVides': return { ecran: 'batteries' };
+    case 'frigoCoupe': return { fenetre: 'maison', onglet: 'batiments', ancre: 'dev-frigo' };
+    case 'arrosage': case 'recolte': {
+      const lieu = parcellesAFaire('potager', type) > 0 || !isUnlocked(state, 'serre') ? 'potager' : 'serre';
+      const p = premiereParcelle(lieu, type);
+      return { fenetre: lieu === 'potager' ? 'zone' : 'serre', ancre: p ? `plot-${p.id}` : null };
+    }
     case 'poules': return { fenetre: 'etable', ancre: 'etable-poules' };
-    case 'tonte': return { fenetre: 'etable', ancre: 'etable-troupeau' };
+    case 'tonte': {
+      const m = state.paturage.moutons.find(woolReady);
+      return { fenetre: 'etable', ancre: m ? `animal-${m.id}` : 'etable-animaux' };
+    }
+    // La paille se fait au Moulin ; tant qu'il n'existe pas, on montre le stock à l'Étable.
+    case 'paille': case 'pailleManque':
+      return isUnlocked(state, 'moulin') && state.stations.moulin.construit && moulinSurPlace()
+        ? { fenetre: 'moulin', ancre: 'moulin-moudre' }
+        : { fenetre: 'etable', ancre: 'etable-paille' };
     default: return { page: 'ferme' };
   }
+}
+
+function notifCible(n) {
+  return cibleAlerte(n.type);
+}
+
+// Attributs d'un bouton qui mène à une cible (action `aller`, lue par cibleDe()).
+function cibleAttrs(c) {
+  const a = ['data-action="aller"'];
+  if (c.page) a.push(`data-page="${c.page}"`);
+  if (c.ecran) a.push(`data-screen="${c.ecran}"`);
+  if (c.fenetre) a.push(`data-window="${c.fenetre}"`);
+  if (c.onglet || c.sous) a.push(`data-tab="${c.onglet || c.sous}"`);
+  if (c.ancre) a.push(`data-anchor="${c.ancre}"`);
+  return a.join(' ');
+}
+
+function cibleDe(d) {
+  if (d.page) return { page: d.page, sous: d.tab || null, ancre: d.anchor || null };
+  if (d.screen) return { ecran: d.screen, ancre: d.anchor || null };
+  return { fenetre: d.window, onglet: d.tab || null, ancre: d.anchor || null };
+}
+
+// Nom du lieu où mène une cible, pour l'écrire sous une notification.
+function cibleNom(c) {
+  if (c.page) return TABS.find((t) => t.id === c.page).label;
+  if (c.ecran) return c.ecran === 'panneaux' ? 'Panneaux solaires' : 'Batteries';
+  if (!stageUsable()) return 'Ferme';
+  const w = STAGE_WINDOWS[c.fenetre];
+  const onglet = c.fenetre === 'maison' && c.onglet ? MAISON_TABS.find((t) => t.id === c.onglet) : null;
+  return onglet ? `${w.nom} › ${onglet.label}` : w.nom;
+}
+
+// Va à une cible : ouvre le bon menu et amène la ligne concernée en haut.
+function allerA(c) {
+  if (!c) return;
+  if (c.page) {
+    activeTab = tabAvailable(c.page) ? c.page : 'ferme';
+    if (c.page === 'inventaire' && c.sous) invTab = c.sous;
+    if (c.page === 'comptoir' && c.sous) comptoirTab = c.sous;
+    stageWindow = null;
+    stageReturn = null;
+    ecranFerme = null;
+  } else if (c.ecran) {
+    // Écran de détail : au retour, on retombe sur Maison › Installations.
+    activeTab = 'ferme';
+    maisonTab = 'batiments';
+    stageReturn = stageUsable() ? 'maison' : null;
+    stageWindow = null;
+    ecranFerme = c.ecran;
+  } else {
+    allerAuLieu(c.fenetre, c.onglet, c.ancre);
+    return;
+  }
+  ancreVoulue = c.ancre || null;
+  telView();
+  lastRenderAt = 0; // rendu tout de suite
+  refresh();
 }
 
 // Modèle de vue : tout ce que la carte a le droit de savoir. Aucune référence à `state`.
@@ -17449,7 +17859,7 @@ const MAISON_TABS = [
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), corps: () => renderFamille() },
   { id: 'recettes', label: 'Livre de recette', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
-  { id: 'batiments', label: 'Bâtiments', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
+  { id: 'batiments', label: 'Installations', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
 ];
 
 function maisonCurrentTab() {
@@ -17457,29 +17867,45 @@ function maisonCurrentTab() {
   return tabs.find((t) => t.id === maisonTab) || tabs[0];
 }
 
-// Bâtiments sans dessin sur la carte : ateliers (Four, Cuisine, Presse), énergie et eau,
+// Onglet « Installations » de la Maison (identifiant interne : batiments) : ce qui n'a pas
+// de dessin sur la carte : ateliers (Four, Cuisine, Presse), énergie et eau,
 // Silo, calendrier. Les ancres servent aux indicateurs du bandeau (💧, saison).
 function renderBatiments() {
   return `${renderAteliers()}<div id="bat-eau" class="ancre">${renderEnergieEau()}</div>${isUnlocked(state, 'silo') ? renderSilo() : ''}<h3 class="section-title ancre" id="bat-calendrier">📅 Calendrier</h3>${renderCalendar()}`;
 }
 
-// Achats sur place : « on achète là où on s'en sert ». Ce sont les lignes d'achat de
-// l'ancien Marché (mêmes fonctions, mêmes actions), affichées une fois le lieu construit.
+// Version 1.1.1 : les animaux s'achètent au Marché ; l'Étable y mène par un raccourci.
+// (Les arbres, eux, s'achètent toujours au Verger.)
+function lienMarcheAnimaux(libelle) {
+  return `<p class="row"><button type="button" class="btn" ${cibleAttrs({ page: 'comptoir', sous: 'animaux' })}>🛒 ${libelle} au Marché <span aria-hidden="true">›</span></button></p>`;
+}
+
 function renderAchatPoules() {
-  return state.poulailler.construit ? renderAnimaux(['poule']) : '';
+  return state.poulailler.construit ? lienMarcheAnimaux('Acheter des poules') : '';
 }
 
 function renderAchatTroupeau() {
-  return state.paturage.construit ? renderAnimaux(['mouton', 'vache']) : '';
+  return state.paturage.construit ? lienMarcheAnimaux('Acheter des moutons et des vaches') : '';
 }
 
 function renderAchatArbres() {
   return state.verger.construit ? renderArbres() : '';
 }
 
+// Une partie peut avoir des animaux avant que le chapitre n'ouvre leur logement (mode
+// test, sauvegarde modifiée) : l'Étable et ses sections existent alors quand même, pour
+// qu'aucun animal ne soit caché (et qu'aucune alerte ne parle d'animaux invisibles).
+function coopShown() {
+  return isUnlocked(state, 'poulailler') || state.poulailler.construit;
+}
+
+function herdShown() {
+  return isUnlocked(state, 'paturage') || state.paturage.construit || sheepCount(state) + cowCount(state) > 0;
+}
+
 function renderEtableWindow() {
-  const poules = isUnlocked(state, 'poulailler') ? `<div id="etable-poules" class="ancre">${renderPoulailler()}${renderAchatPoules()}</div>` : '';
-  const troupeau = isUnlocked(state, 'paturage') ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}${renderAchatTroupeau()}</div>` : '';
+  const poules = coopShown() ? `<div id="etable-poules" class="ancre">${renderPoulailler()}${renderAchatPoules()}</div>` : '';
+  const troupeau = herdShown() ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}${renderAchatTroupeau()}</div>` : '';
   return poules + troupeau;
 }
 
@@ -17497,7 +17923,7 @@ const STAGE_WINDOWS = {
   },
   etable: {
     nom: 'Étable', icone: '🐄',
-    ok: () => isUnlocked(state, 'poulailler') || isUnlocked(state, 'paturage'),
+    ok: () => coopShown() || herdShown(),
     corps: () => renderEtableWindow(),
   },
   serre: {
@@ -17601,7 +18027,7 @@ function applyAnchor() {
 }
 
 // Bandeau : chaque indicateur porte sa légende ; ceux qui ont un lieu y mènent (saison →
-// calendrier, eau → Maison › Bâtiments, autonomie → Maison › Famille).
+// calendrier, eau → Maison › Installations, autonomie → Maison › Famille).
 function renderIndicators() {
   const saison = DATA.SAISONS.INFOS[currentSeason(state)];
   const heure = Math.floor(heureDuJour());
@@ -17658,10 +18084,11 @@ function renderTabContent() {
 // son libellé (title / aria-label) ; une pastille ne s'affiche que si le repas prévu est insuffisant.
 function renderSleepBar() {
   const remaining = Math.max(1, Math.ceil((awakeRequired(state) * 1000 - state.awakeMs) / 1000));
-  const plan = planMeal(state);
+  // Après 19 h, le repas est pris : on montre ce qui a été mangé, plus ce qui est prévu.
+  const plan = state.repas || planMeal(state);
   const short = plan.energie + EPS < plan.besoin;
   const eaten = `${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)}`;
-  const meal = `Repas prévu : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
+  const meal = `${state.repas ? `Repas pris à ${DATA.TIME.MEAL_HOUR} h` : `Repas prévu à ${DATA.TIME.MEAL_HOUR} h`} : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
   const ok = canSleep(state);
   const label = `${ok ? 'Dormir' : `Dormir (dans ${remaining} s)`}. ${meal}`;
   morph(
@@ -17747,10 +18174,10 @@ function renderFerme() {
     renderPotager(),
     isUnlocked(state, 'serre') ? renderSerre() : '',
     isUnlocked(state, 'silo') ? renderSilo() : '',
-    isUnlocked(state, 'poulailler') ? `<div id="etable-poules" class="ancre">${renderPoulailler()}</div>` : '',
-    isUnlocked(state, 'poulailler') ? renderAchatPoules() : '',
-    isUnlocked(state, 'paturage') ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}</div>` : '',
-    isUnlocked(state, 'paturage') ? renderAchatTroupeau() : '',
+    coopShown() ? `<div id="etable-poules" class="ancre">${renderPoulailler()}</div>` : '',
+    coopShown() ? renderAchatPoules() : '',
+    herdShown() ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}</div>` : '',
+    herdShown() ? renderAchatTroupeau() : '',
     isUnlocked(state, 'verger') ? renderVerger() : '',
     isUnlocked(state, 'verger') ? renderAchatArbres() : '',
     renderAteliers(),
@@ -17760,7 +18187,7 @@ function renderFerme() {
 }
 
 // Cartes « Énergie et eau » : dans la liste classique de la Ferme et dans la fenêtre
-// Maison › Bâtiments de la carte.
+// Maison › Installations de la carte.
 function renderEnergieEau() {
   const e = energyStats(state), p = state.pompe, ps = deviceStatus(state, p), cap = tankCapacity(state);
   let netText = 'Stable (0 Wh/s)';
@@ -17782,7 +18209,7 @@ function renderEnergieEau() {
         <span class="muted">${netText}</span>
         ${alertLine(e.batteriesAEntretenir, e.batteriesEnPanne)}
       </button>
-      <div class="card${tutoTarget('eau')}">
+      <div class="card ancre${tutoTarget('eau')}" id="dev-pompe">
         <span class="card-title"><span>${icon('pompe')}Pompe · niveau ${p.niveau}</span><span class="chips"><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span>${helpBtn('pompe')}</span></span>
         <span class="muted">Débit réel : <span class="num">${formatLitresRate(p.debit)}</span> (max ${formatLitresRate(pumpFlow(p))})</span>
         <span class="muted">Consommation : <span class="num">${formatWhRate(p.conso)}</span></span>
@@ -17854,7 +18281,7 @@ function deviceRow(d) {
   }
   const badge = st.badge ? `<span class="chip warn">⚠️ ${st.badge}</span>` : '';
   return `
-    <article class="card">
+    <article class="card ancre" id="dev-${d.id}">
       <span class="card-title"><span>${DEVICE_ICONS[d.type]} ${deviceName(d)} · niveau ${d.niveau}</span><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span></span>
       ${badge}
       ${detail}
@@ -18031,7 +18458,7 @@ function sheepCard(m, fed) {
   const woolText = ready ? 'Laine prête' : `Laine : ${m.laine} / ${M.joursLaine} nuits nourri`;
   const willEat = fed.has(m.id);
   return `
-    <article class="card sheep${ready ? ' ready' : ''}">
+    <article class="card sheep ancre${ready ? ' ready' : ''}" id="animal-${m.id}">
       <span class="card-title"><span>Mouton n°${sheepNumber(m)}</span><span class="chip${ready ? ' badge' : ''}">${ready ? '🧶 Prêt à tondre' : 'Laine en cours'}</span></span>
       <span class="card-art-row">${artSvg([ready ? 'sheep-wool' : 'sheep-shorn'], '', `${m.id}-${ready ? 'laine' : 'tondu'}`, 'grow')}</span>
       <span class="muted">${woolText}</span>
@@ -18048,7 +18475,7 @@ function cowCard(v, fed) {
   const V = DATA.ANIMAUX.vache;
   const willEat = fed.has(v.id);
   return `
-    <article class="card sheep">
+    <article class="card sheep ancre" id="animal-${v.id}">
       <span class="card-title"><span>Vache n°${cowNumber(v)}</span><span class="chip${willEat ? ' badge' : ''}">${willEat ? '🥛 Lait cette nuit' : 'Pas de lait cette nuit'}</span></span>
       <span class="card-art-row">${artSvg(['cow'], '', v.id, 'grow')}</span>
       <span class="${willEat ? 'muted' : 'alert'}">${willEat ? `✅ Mangera ${formatStraw(V.pailleParNuit)} cette nuit` : `⚠️ Il lui faut ${formatStraw(V.pailleParNuit)} pour donner son lait`}</span>
@@ -18107,13 +18534,13 @@ function renderPaturage() {
       <span class="muted">${hint}</span>
       <button type="button" class="btn" data-action="buy-pasture"${buyOk ? '' : ' disabled'}>Acheter une place (${costLabel(cost)})</button>
     </div>
-    <div class="card">
+    <div class="card ancre" id="etable-paille">
       <span class="card-title"><span><span aria-hidden="true">${straw.icone}</span> Paille</span><span class="chip${missing > 0 ? ' warn' : ''}">${missing > 0 ? `⚠️ il en manque ${formatNumber(missing)}` : 'en stock'}</span></span>
       <span class="big" aria-label="Paille en stock sur paille mangée cette nuit">${formatQty(stock)} / ${formatQty(need)} pour cette nuit</span>
       <span class="${missing > 0 ? 'alert' : 'muted'}">${strawHint}</span>
       <span class="muted">${rules}</span>
     </div>
-    ${sCount + cCount > 0 ? `<div class="cards sheep-list">${p.moutons.map((m) => sheepCard(m, fed)).join('')}${p.vaches.map((v) => cowCard(v, fed)).join('')}</div>` : ''}`;
+    ${sCount + cCount > 0 ? `<div class="cards sheep-list ancre" id="etable-animaux">${p.moutons.map((m) => sheepCard(m, fed)).join('')}${p.vaches.map((v) => cowCard(v, fed)).join('')}</div>` : ''}`;
 }
 
 // Pastille « Automatique » : les tâches que l'Arbre des technologies automatise ici.
@@ -18149,7 +18576,7 @@ function plotCard(p, n) {
   const seedsAvailable = plantableCropsFor(state, p.lieu).some((c) => seedStock(state, c) > 0);
   if (!p.culture) {
     return `
-      <div class="card plot">
+      <div class="card plot ancre" id="plot-${p.id}">
         <span class="card-title"><span>Parcelle ${n}</span></span>
         ${plotArt(p)}
         <span class="muted">Vide</span>
@@ -18180,7 +18607,7 @@ function plotCard(p, n) {
     actions = `<button type="button" class="btn" data-action="water" data-id="${p.id}"${p.arrose || noWater ? ' disabled' : ''}>${p.arrose ? '💧 Arrosée' : `💧 Arroser (${formatQty(litres)} L)`}</button>${boltBtn}`;
   }
   return `
-    <div class="card plot${mature ? ' mature' : ''}">
+    <div class="card plot ancre${mature ? ' mature' : ''}" id="plot-${p.id}">
       <span class="card-title"><span>Parcelle ${n}</span><span aria-hidden="true">${def.icone}</span></span>
       ${plotArt(p)}
       <span class="muted">${def.nom} · ${stateLine}</span>
@@ -18413,7 +18840,7 @@ function renderFridgeCard() {
     : '';
   const badge = st.badge ? `<span class="chip warn">⚠️ ${st.badge}</span>` : '';
   return `
-    <div class="card fridge ${ok ? 'cold' : 'warm'}">
+    <div class="card fridge ancre ${ok ? 'cold' : 'warm'}" id="dev-frigo">
       <span class="card-title"><span>${icon('frigo')}${fridgeIcon()} Réfrigérateur</span><span class="chips"><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span>${helpBtn('frigo')}</span></span>
       ${badge}
       <span class="big">${formatWhRate(d.conso)}</span>
@@ -18445,7 +18872,7 @@ function fridgeRowHtml(item) {
 function renderFridgeTab() {
   const f = state.frigo;
   if (!f.construit) {
-    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans la Maison, onglet Bâtiments' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
+    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans la Maison, onglet Installations' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
   }
   const counts = fridgeCounts(state);
   const items = Object.keys(DATA.items).filter((k) => counts[k] > 0);
@@ -18591,7 +19018,7 @@ function renderMoulin() {
       <span class="chips">${chip}${helpBtn('moulin')}</span>
     </div>
     <div class="cards">
-      <div class="card station mill${job ? ' busy' : ''}">
+      <div class="card station mill ancre${job ? ' busy' : ''}" id="moulin-moudre">
         <span class="card-title"><span>🌾 Moudre du blé</span><span class="chip">${formatNumber(each)} s par blé</span></span>
         <span class="muted">1 blé donne ${millOutputText()}. Tout se fait ici : choisis combien de blés moudre.</span>
         <span class="big" aria-label="Blé disponible">🌾 ${formatQty(wheat)} blé${wheat > 1 ? 's' : ''} disponible${wheat > 1 ? 's' : ''}</span>
@@ -18614,7 +19041,7 @@ function renderMoulin() {
         <span class="muted">La farine sert au pain et aux tartes. La paille nourrit les moutons et les vaches.</span>
         ${strawNote}
       </div>
-      <div class="card">
+      <div class="card ancre" id="moulin-appareil">
         <span class="card-title"><span>⚡ Appareil</span><span class="chip${ds.code === 'panne' ? ' panne' : ''}">${ds.label}</span></span>
         ${ds.badge ? `<span class="chip warn">⚠️ ${ds.badge}</span>` : ''}
         <span class="muted">Consommation : <span class="num">${formatWhRate(d.conso)}</span> (${formatNumber(def.whParS)} Wh/s quand il tourne). Sans énergie, il attend.</span>
@@ -18673,7 +19100,7 @@ function stationCard(id) {
   }
   const chip = job ? '<span class="chip">⏳ Occupée</span>' : '<span class="chip">✅ Libre</span>';
   return `
-    <div class="card station${job ? ' busy' : ''}">
+    <div class="card station ancre${job ? ' busy' : ''}" id="station-${id}">
       <span class="card-title"><span>${icon(id)}${def.nom}</span><span class="chips">${chip}${helpBtn(id)}</span></span>
       ${work}
       ${power}
@@ -19006,7 +19433,9 @@ function saveMemberModal() {
 }
 
 function renderFamille() {
-  const plan = planMeal(state);
+  // Avant 19 h : le repas prévu ; après : celui qui a été pris.
+  const pris = !!state.repas;
+  const plan = state.repas || planMeal(state);
   const shown = Math.min(plan.energie, plan.besoin);
   const short = plan.energie + EPS < plan.besoin;
   const prod = productivity(state);
@@ -19017,10 +19446,12 @@ function renderFamille() {
     ${renderAutonomyCard()}
     <div class="cards">
       <div class="card">
-        <span class="card-title"><span>🍽️ Énergie prévue cette nuit</span></span>
+        <span class="card-title"><span>🍽️ ${pris ? `Repas de ${DATA.TIME.MEAL_HOUR} h : énergie mangée` : `Repas de ${DATA.TIME.MEAL_HOUR} h : énergie prévue`}</span>${pris ? '<span class="chip">✅ pris</span>' : ''}</span>
         <span class="big">${formatNumber(shown)} / ${formatNumber(plan.besoin)}</span>
-        <span class="bar" role="progressbar" aria-label="Énergie prévue" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
-        <span class="muted">${short ? '⚠️ Le besoin ne sera pas couvert : la santé va baisser.' : 'Le besoin sera couvert : la santé remonte.'}</span>
+        <span class="bar" role="progressbar" aria-label="${pris ? 'Énergie mangée' : 'Énergie prévue'}" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
+        <span class="muted">${pris
+          ? (short ? '⚠️ Le besoin n\'a pas été couvert : la santé a baissé.' : 'Le besoin a été couvert : la santé est remontée.')
+          : (short ? '⚠️ Le besoin ne sera pas couvert : la santé va baisser.' : 'Le besoin sera couvert : la santé remonte.')} La famille mange à ${DATA.TIME.MEAL_HOUR} h, ou au coucher si elle dort avant.</span>
       </div>
       <div class="card">
         <span class="card-title"><span>⚙️ Productivité</span></span>
@@ -19046,11 +19477,8 @@ function renderNotifications() {
   const items = list
     .map((n) => {
       const c = notifCible(n);
-      const go = c.page
-        ? `data-action="switch-tab" data-tab="${c.page}"`
-        : `data-action="stage-goto" data-window="${c.fenetre}"${c.onglet ? ` data-tab="${c.onglet}"` : ''}${c.ancre ? ` data-anchor="${c.ancre}"` : ''}`;
-      const ou = c.page ? TABS.find((t) => t.id === c.page).label : stageUsable() ? STAGE_WINDOWS[c.fenetre].nom : 'Ferme';
-      return `<li><button type="button" class="notif p${n.priorite}" ${go}><span class="notif-icon" aria-hidden="true">${n.icone}</span><span class="notif-text">${n.texte}<span class="notif-where">${ou}</span></span><span class="notif-go" aria-hidden="true">›</span></button></li>`;
+      const ou = cibleNom(c);
+      return `<li><button type="button" class="notif p${n.priorite}" ${cibleAttrs(c)}><span class="notif-icon" aria-hidden="true">${n.icone}</span><span class="notif-text">${n.texte}<span class="notif-where">${ou}</span></span><span class="notif-go" aria-hidden="true">›</span></button></li>`;
     })
     .join('');
   return `
@@ -19178,12 +19606,36 @@ function renderInventaire() {
 
 /* ---------- Marché ---------- */
 
-// Les animaux s'achètent à l'Étable et les arbres au Verger (voir renderAnimaux, renderArbres).
+// Version 1.1.1 : les animaux s'achètent de nouveau au Marché (onglet Animaux, dès que le
+// Poulailler ou l'Étable existe dans la partie) ; l'Étable y mène par un raccourci. Les
+// arbres s'achètent au Verger (voir renderArbres).
 const COMPTOIR_TABS = [
-  { id: 'vendre', label: 'Vendre', icon: '💰' },
-  { id: 'acheter', label: 'Acheter', icon: '🛒' },
-  { id: 'graines', label: 'Graines', icon: '🌱' },
+  { id: 'vendre', label: 'Vendre', icon: '💰', ok: () => true },
+  { id: 'acheter', label: 'Acheter', icon: '🛒', ok: () => true },
+  { id: 'graines', label: 'Graines', icon: '🌱', ok: () => true },
+  { id: 'animaux', label: 'Animaux', icon: '🐔', ok: () => isUnlocked(state, 'poulailler') || isUnlocked(state, 'moutons') || coopShown() || herdShown() },
 ];
+
+// Quantité choisie pour un achat : entre 1 et ce que les pièces permettent (au moins 1,
+// pour que la ligne reste lisible même sans pièces).
+function buyQuantity(item) {
+  const max = Math.max(1, buyQuote(state, item, BUY_MAX).quantite);
+  return Math.max(1, Math.min(max, buyQuantities[item] || 1));
+}
+
+function animalQuantity(kind) {
+  const max = Math.max(1, Math.min(BUY_MAX, animalBuyMax(state, kind)));
+  return Math.max(1, Math.min(max, animalQuantities[kind] || 1));
+}
+
+// Les trois boutons de quantité (−, +, Max) d'une ligne d'achat.
+function qtyButtons(action, attr, q, max, nom) {
+  return `
+        <button type="button" class="btn step-btn" data-action="${action}-dec" ${attr} aria-label="Acheter ${nom} de moins"${q <= 1 ? ' disabled' : ''}>−</button>
+        <strong class="num qty">${q}</strong>
+        <button type="button" class="btn step-btn" data-action="${action}-inc" ${attr} aria-label="Acheter ${nom} de plus"${q >= max ? ' disabled' : ''}>+</button>
+        <button type="button" class="btn" data-action="${action}-max" ${attr} title="La plus grande quantité possible"${q >= max ? ' disabled' : ''}>Max</button>`;
+}
 
 // Seules les unités entières se vendent (un demi-blé reste en stock).
 function sellableStock(item) {
@@ -19214,20 +19666,38 @@ function sellRow(item) {
     </div>`;
 }
 
+// Version 1.1.1 : on choisit la quantité. Le total affiché est le vrai prix : il tient
+// compte de la hausse du prix à chaque unité (buyQuote).
 function buyRow(item) {
   const it = DATA.items[item];
   const price = buyPrice(state, item);
   const coef = marketCoef(state, item);
+  const max = buyQuote(state, item, BUY_MAX).quantite;
+  const q = buyQuantity(item);
+  const total = max > 0 ? buyQuote(state, item, q).cout : price;
   return `
     <div class="shop-row">
       <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatQty(countItem(state, item))}</span></span></div>
       <span class="muted">Prochaine unité : <strong class="num">${formatCoins(price)} 💰</strong> · coefficient <span class="num">${formatNumber(coef)} %</span> · vente ${formatCoins(it.prix)} 💰</span>
-      <button type="button" class="btn primary" data-action="buy-item" data-item="${item}"${canPay(price) ? '' : ' disabled'}>Acheter 1 (${formatCoins(price)} 💰)</button>
+      <div class="row qty-row">${qtyButtons('buy', `data-item="${item}"`, q, max, 'une unité')}
+        <button type="button" class="btn primary sell-go" data-action="buy-item" data-item="${item}"${max > 0 ? '' : ' disabled'}>Acheter ${q} (−${formatCoins(total)} 💰)</button>
+      </div>
     </div>`;
 }
 
-// Achat des animaux (à l'Étable) : la poule, le mouton et la vache, à prix fixe et sans revente. Grisés
-// s'il n'y a plus de place, ou si leur logement n'existe pas.
+// Quantité et bouton d'achat d'un animal (prix fixe : le total est q × prix).
+function animalBuyHtml(kind, ok, libelle) {
+  const price = animalPrice(kind);
+  const max = ok ? Math.min(BUY_MAX, animalBuyMax(state, kind)) : 0;
+  const q = animalQuantity(kind);
+  return `
+      <div class="row qty-row">${qtyButtons('animal', `data-kind="${kind}"`, q, max, 'un animal')}
+        <button type="button" class="btn primary sell-go" data-action="buy-animal" data-kind="${kind}"${max > 0 ? '' : ' disabled'}>Acheter ${q} ${libelle}${q > 1 ? 's' : ''} (−${formatCoins(q * price)} 💰)</button>
+      </div>`;
+}
+
+// Achat des animaux (au Marché, onglet Animaux) : la poule, le mouton et la vache, à prix
+// fixe et sans revente. Grisés s'il n'y a plus de place, ou si leur logement n'existe pas.
 function renderHenRow() {
   const def = DATA.ANIMAUX.poule;
   const p = state.poulailler;
@@ -19236,7 +19706,7 @@ function renderHenRow() {
   let note;
   let ok = true;
   if (!p.construit) {
-    note = '⚠️ Construis d\'abord le Poulailler (onglet Ferme).';
+    note = '⚠️ Construis d\'abord le Poulailler (à l\'Étable, sur la carte).';
     ok = false;
   } else if (p.poules >= cap) {
     note = '⚠️ Le Poulailler est plein : agrandis-le pour accueillir d\'autres poules.';
@@ -19249,7 +19719,7 @@ function renderHenRow() {
       <div class="inv-main"><span><span aria-hidden="true">${def.icone}</span> ${def.nom}</span><span class="muted">Poules : <span class="num">${p.poules} / ${cap}</span></span></div>
       <span class="muted">Prix fixe : <strong class="num">${formatCoins(price)} 💰</strong> · 1 blé nourrit ${def.poulesParBle} poules pour la nuit · pond 1 œuf par nuit si nourrie, toute sa vie.</span>
       <span class="muted">${note}</span>
-      <button type="button" class="btn primary" data-action="buy-animal" data-kind="poule"${ok && canPay(price) ? '' : ' disabled'}>Acheter une poule (${formatCoins(price)} 💰)</button>
+      ${animalBuyHtml('poule', ok, 'poule')}
     </div>`;
 }
 
@@ -19274,7 +19744,7 @@ function renderSheepRow() {
       <div class="inv-main"><span><span aria-hidden="true">${def.icone}</span> ${def.nom}</span><span class="muted">Moutons : <span class="num">${sheepCount(state)} / ${cap}</span></span></div>
       <span class="muted">Prix fixe : <strong class="num">${formatCoins(price)} 💰</strong> · prend ${formatPlaces(DATA.PATURAGE.placesParMouton)} · mange ${formatStraw(def.pailleParNuit)} par nuit · ${def.laineParTonte} laine toutes les ${def.joursLaine} nuits nourri.</span>
       <span class="muted">${note}</span>
-      <button type="button" class="btn primary" data-action="buy-animal" data-kind="mouton"${ok && canPay(price) ? '' : ' disabled'}>Acheter un mouton (${formatCoins(price)} 💰)</button>
+      ${animalBuyHtml('mouton', ok, 'mouton')}
     </div>`;
 }
 
@@ -19301,22 +19771,21 @@ function renderCowRow() {
       <div class="inv-main"><span><span aria-hidden="true">${def.icone}</span> ${def.nom}</span><span class="muted">Vaches : <span class="num">${cowCount(state)} / ${cap}</span></span></div>
       <span class="muted">Prix fixe : <strong class="num">${formatCoins(price)} 💰</strong> · prend ${formatPlaces(DATA.PATURAGE.placesParVache)} · mange ${formatStraw(def.pailleParNuit)} par nuit · ${def.laitParNuit} lait chaque nuit où elle a mangé.</span>
       <span class="muted">${note}</span>
-      <button type="button" class="btn primary" data-action="buy-animal" data-kind="vache"${ok && canPay(price) ? '' : ' disabled'}>Acheter une vache (${formatCoins(price)} 💰)</button>
+      ${animalBuyHtml('vache', ok, 'vache')}
     </div>`;
 }
 
-// Bloc d'achat affiché à l'Étable, sous la section des animaux concernés (`especes`).
+// Lignes d'achat des animaux (onglet Animaux du Marché).
 function renderAnimaux(especes = ['poule', 'mouton', 'vache']) {
   const lignes = {
-    poule: () => (isUnlocked(state, 'poulailler') ? renderHenRow() : ''),
-    mouton: () => (isUnlocked(state, 'moutons') ? renderSheepRow() : ''),
-    vache: () => (isUnlocked(state, 'moutons') ? renderCowRow() : ''),
+    poule: () => (coopShown() ? renderHenRow() : ''),
+    mouton: () => (isUnlocked(state, 'moutons') || herdShown() ? renderSheepRow() : ''),
+    vache: () => (isUnlocked(state, 'moutons') || herdShown() ? renderCowRow() : ''),
   };
   const html = especes.map((e) => lignes[e]()).join('');
   if (!html) return '';
   return `
-    <h3 class="section-title">🛒 ${especes.length === 1 && especes[0] === 'poule' ? 'Acheter des poules' : 'Acheter des animaux'}</h3>
-    <p class="muted">Prix fixe, quel que soit leur nombre. Un animal ne se revend pas.</p>
+    <p class="muted">Prix fixe, quel que soit leur nombre. Un animal ne se revend pas. Les poules, les moutons et les vaches vivent à l'Étable.</p>
     ${html}`;
 }
 
@@ -19363,7 +19832,7 @@ function seedForSale(item) {
 }
 
 function renderComptoir() {
-  const tabs = COMPTOIR_TABS;
+  const tabs = COMPTOIR_TABS.filter((t) => t.ok());
   const tab = tabs.find((t) => t.id === comptoirTab) || tabs[0];
   let body;
   if (tab.id === 'vendre') {
@@ -19376,6 +19845,8 @@ function renderComptoir() {
     body = `
       <p class="muted">Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
       ${items.map(buyRow).join('')}`;
+  } else if (tab.id === 'animaux') {
+    body = renderAnimaux();
   } else {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = `
@@ -19458,7 +19929,7 @@ function seasonLines(report) {
   return lines;
 }
 
-function openWakeModal(report) {
+function openWakeModal(report, minuit = false) {
   tel('modal', 'wake');
   const root = document.getElementById('modal-root');
   const line = (d, text) => {
@@ -19512,6 +19983,7 @@ function openWakeModal(report) {
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
         <h2 id="wake-title">🌅 Réveil : nuit ${report.nuit}</h2>
+        <p class="muted wake-hour">${minuit ? 'Minuit est passé : la famille est allée se coucher. ' : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
         <div class="wake-kpis">
           <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>
           <div class="wake-kpi"><span class="muted">❤️ Santé</span><strong class="num">${formatPercent(w.sante)}</strong></div>
@@ -19949,7 +20421,7 @@ const TUTO = {
   },
   dormir: {
     titre: '😴 Dormir',
-    texte: () => `La journée ne finit que quand tu dors. Le bouton « Zzz », en bas à droite, s'active après ${formatNumber(awakeRequired(state))} s d'éveil. La nuit, la famille mange, puis les plantes arrosées poussent.`,
+    texte: () => `Le bouton « Zzz », en bas à droite, s'active après ${formatNumber(awakeRequired(state))} s d'éveil. À ${DATA.TIME.MEAL_HOUR} h la famille mange ; à minuit, tout le monde va se coucher. La nuit, les plantes arrosées poussent.`,
   },
 };
 
@@ -20009,7 +20481,7 @@ function openAboutModal() {
   const H = DATA.HORS_LIGNE;
   const rules = [
     `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} énergie par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
-    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure de jeu dure ${DATA.TIME.SECONDS_PER_HOUR} s. Elle ne finit que quand tu cliques sur « Dormir », après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins.`,
+    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. Tu peux dormir (bouton « Zzz ») après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins ; à minuit, la nuit se déroule d'elle-même. L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
     `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
     `Santé : un besoin couvert à 100 % la remonte (${formatSigned(V[0].delta)}), sinon elle baisse (${V.slice(1).map((x) => formatSigned(x.delta)).join(', ')}). Une santé faible ralentit les actions au clic ; les automatisations restent à 100 %. À 0, un soin coûte ${formatNumber(F.SOIN.base)} 💰, +${formatNumber(F.SOIN.croissance - 100)} % par soin déjà payé (arrondi à l'entier supérieur).`,
     `Énergie : panneaux → batteries → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
@@ -20160,7 +20632,7 @@ function closeModal() {
 // lecteurs d'écran (#toast-root est une région aria-live). Une notification
 // identique à une notification affichée la remplace au lieu de s'empiler.
 const NOTIFY_MAX = 3;
-const NOTIFY_MS = { info: 2600, alerte: 5000 };
+const NOTIFY_MS = { info: 2600, alerte: 5000, repas: 5000 };
 // Une même alerte n'est pas répétée avant ce délai (batteries qui se vident et
 // se rechargent au fil des ticks, par exemple).
 const ALERT_REPEAT_MS = 30000;
@@ -20172,15 +20644,27 @@ let alertState = null; // dernière photo des alertes (voir alertSnapshot)
 const ALERT_MUTE_AFTER_CATCH_UP_MS = 3000;
 let alertMuteUntil = 0;
 
-function notify(message, kind = 'info') {
+// `cible` (voir cibleAlerte) : la notification devient un bouton qui mène au menu concerné.
+function notify(message, kind = 'info', cible = null) {
   const root = document.getElementById('toast-root');
   for (const el of Array.from(root.children)) {
     if (el.dataset.msg === message) el.remove();
   }
-  const el = document.createElement('div');
-  el.className = `toast ${kind}`;
+  const el = document.createElement(cible ? 'button' : 'div');
+  el.className = `toast ${kind}${cible ? ' toast-link' : ''}`;
   el.dataset.msg = message;
   el.textContent = message;
+  if (cible) {
+    el.type = 'button';
+    el.dataset.action = 'aller';
+    if (cible.page) el.dataset.page = cible.page;
+    if (cible.ecran) el.dataset.screen = cible.ecran;
+    if (cible.fenetre) el.dataset.window = cible.fenetre;
+    if (cible.onglet || cible.sous) el.dataset.tab = cible.onglet || cible.sous;
+    if (cible.ancre) el.dataset.anchor = cible.ancre;
+    el.insertAdjacentHTML('beforeend', '<span class="toast-go" aria-hidden="true"> ›</span>');
+    el.addEventListener('click', () => setTimeout(() => el.remove(), 0));
+  }
   root.appendChild(el);
   while (root.children.length > NOTIFY_MAX) root.firstElementChild.remove();
   setTimeout(() => el.remove(), NOTIFY_MS[kind] || NOTIFY_MS.info);
@@ -20212,7 +20696,7 @@ function watchAlerts() {
       const msg = alertMessage(ev);
       if (!msg || t - (lastAlertAt.get(msg) || 0) < ALERT_REPEAT_MS) continue;
       lastAlertAt.set(msg, t);
-      notify(msg, 'alerte');
+      notify(msg, 'alerte', cibleAlerte(ev.type, ev.id));
       tel('alert', ev.type);
     }
   }
@@ -20326,6 +20810,10 @@ document.addEventListener('click', (e) => {
     case 'stage-goto':
       allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
       break;
+    case 'aller':
+      closeModal();
+      allerA(cibleDe(target.dataset));
+      break;
     case 'stage-pan':
       stagePanToScreen(target.dataset.ecran);
       break;
@@ -20425,8 +20913,21 @@ document.addEventListener('click', (e) => {
       break;
     }
     case 'buy-animal': {
-      const result = applyResult(buyAnimal(state, target.dataset.kind));
-      if (result.ok) showToast(`Acheté : 1 ${DATA.ANIMAUX[target.dataset.kind].icone} (−${formatCoins(result.cost)} 💰)`);
+      const kind = target.dataset.kind;
+      const result = applyResult(buyAnimals(state, kind, animalQuantity(kind)));
+      if (result.ok) {
+        animalQuantities[kind] = 1;
+        showToast(`Acheté : ${result.bought} ${DATA.ANIMAUX[kind].icone} (−${formatCoins(result.cost)} 💰)`);
+        refresh();
+      }
+      break;
+    }
+    case 'animal-dec':
+    case 'animal-inc':
+    case 'animal-max': {
+      const kind = target.dataset.kind;
+      animalQuantities[kind] = action === 'animal-max' ? Math.min(BUY_MAX, animalBuyMax(state, kind)) : animalQuantity(kind) + (action === 'animal-inc' ? 1 : -1);
+      refresh();
       break;
     }
     case 'build-paturage': {
@@ -20607,8 +21108,20 @@ document.addEventListener('click', (e) => {
       break;
     case 'buy-item': {
       const item = target.dataset.item;
-      const result = applyResult(buyItem(state, item));
-      if (result.ok) showToast(`Acheté : 1 ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
+      const result = applyResult(buyItem(state, item, buyQuantity(item)));
+      if (result.ok) {
+        buyQuantities[item] = 1;
+        showToast(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
+        refresh();
+      }
+      break;
+    }
+    case 'buy-dec':
+    case 'buy-inc':
+    case 'buy-max': {
+      const item = target.dataset.item;
+      buyQuantities[item] = action === 'buy-max' ? buyQuote(state, item, BUY_MAX).quantite : buyQuantity(item) + (action === 'buy-inc' ? 1 : -1);
+      refresh();
       break;
     }
     case 'sell-dec':

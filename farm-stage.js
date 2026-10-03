@@ -72,6 +72,7 @@
   const PAN_MS = 380;          // durée d'un déplacement demandé par panTo()
   const SCREENS = 3;           // la carte fait trois écrans : gauche, milieu, droite
   const LABEL_GAP = 3;         // px CSS entre l'étiquette et ce qu'elle nomme
+  const LABEL_HOLD_MS = 1200;  // au doigt : le nom reste affiché ce temps après le relâchement
   const ZONE_LABEL_UP = 14;    // px de carte : l'étiquette de la zone passe au-dessus de la barrière
   const LIGHT_MS = 1200;       // fondu entre deux lumières (un quart d'heure de jeu dure à peu près autant)
 
@@ -153,6 +154,8 @@
         this.plots = new Map();          // id de parcelle -> { soil, crop, key, tween }
         this.buildings = new Map();      // id de bâtiment -> { def, sprite }
         this.labels = new Map();         // id de lieu -> étiquette DOM et son point d'ancrage
+        this.hoverId = null;             // lieu survolé (souris) ou touché (doigt) : son nom s'affiche
+        this.hoverUntil = 0;             // au doigt : heure à laquelle le nom s'efface
         this.pan = null;                 // déplacement demandé par panTo() : { from, to, t0 }
         this.dragged = false;            // le joueur a-t-il déjà fait glisser la carte ?
         this.viewKey = '';               // dernière vue signalée à la page
@@ -214,6 +217,7 @@
         I.on('pointermove', this.onMove, this);
         I.on('pointerup', (p) => this.onUp(p, true));
         I.on('pointerupoutside', (p) => this.onUp(p, false));
+        I.on('gameout', () => { if (!this.drag) this.setHover(null); });
         I.on('wheel', (p, over, dx, dy) => { this.vx = this.vy = 0; this.pan = null; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
         this.scale.on('resize', () => this.fit());
         this.fit();
@@ -362,6 +366,7 @@
         this.vx = this.vy = 0;
         this.pan = null;
         const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        this.setHover(this.placeAt(wp.x, wp.y));   // le nom du lieu touché s'affiche
         this.drag = {
           id: pointer.id, x: pointer.x, y: pointer.y, cx: this.cx, cy: this.cy,
           wx: wp.x, wy: wp.y, moved: false, vx: 0, vy: 0,
@@ -375,7 +380,9 @@
           // Souris : main sur ce qui se touche, poignée ailleurs.
           if (!pointer.wasTouch) {
             const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-            this.game.canvas.style.cursor = this.hitAt(wp.x, wp.y) ? 'pointer' : 'grab';
+            const hit = this.hitAt(wp.x, wp.y);
+            this.game.canvas.style.cursor = hit ? 'pointer' : 'grab';
+            this.setHover(this.placeOf(hit));       // survol : le nom du lieu s'affiche
           }
           return;
         }
@@ -385,6 +392,7 @@
         const dx = pointer.x - d.x, dy = pointer.y - d.y;
         if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) {
           d.moved = true;
+          this.setHover(null);           // on fait glisser la carte : plus de nom affiché
           this.dragged = true;           // signalé à la page par reportView()
           this.game.canvas.style.cursor = 'grabbing';
         }
@@ -403,6 +411,8 @@
         if (!d || d.id !== pointer.id) return;
         this.drag = null;
         this.game.canvas.style.cursor = '';
+        // Au doigt, rien ne « survole » : le nom reste un instant, puis s'efface.
+        if (pointer.wasTouch && this.hoverId) this.hoverUntil = performance.now() + LABEL_HOLD_MS;
         if (!d.moved) {
           // Appui : la vue revient où elle était (elle a pu bouger de quelques pixels).
           this.setCentre(d.cx, d.cy);
@@ -422,6 +432,7 @@
         if (this.pan) this.stepPan();
         else if (this.vx || this.vy) this.stepInertia(dt);
         if (this.lightFade) this.stepLight();
+        if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
         this.placeLabels();
         this.reportView();
       }
@@ -518,6 +529,33 @@
       // Une étiquette par lieu affiché : un bouton DOM qui ne reçoit pas les appuis (ils
       // traversent jusqu'à la carte, qui teste elle-même la zone de l'étiquette), mais qui
       // reste accessible au clavier : Entrée y déclenche `stage-open`, comme tout bouton.
+      // Le nom ne s'affiche qu'au survol du lieu (souris), pendant qu'on le touche (doigt)
+      // ou quand le bouton a le focus (clavier). La pastille « à faire », elle, reste visible.
+
+      // Lieu survolé ou touché (null : aucun).
+      setHover(id) {
+        this.hoverUntil = 0;
+        if (id === this.hoverId) return;
+        this.hoverId = id || null;
+        for (const L of this.labels.values()) this.applyShown(L);
+      }
+
+      applyShown(L) {
+        const shown = L.id === this.hoverId || !!L.focus;
+        if (shown === L.shown) return;
+        L.shown = shown;
+        L.el.classList.toggle('show', shown);
+        L.w = 0;                                 // la taille change : à remesurer
+      }
+
+      // Lieu désigné par un résultat de hitAt() : une parcelle désigne la zone de culture.
+      placeOf(hit) {
+        if (!hit) return null;
+        return hit.plot ? 'zone' : hit.window || null;
+      }
+
+      placeAt(wx, wy) { return this.placeOf(this.hitAt(wx, wy)); }
+
       syncLabel(id, info, win, ax, ay, align) {
         let L = this.labels.get(id);
         if (!info) {
@@ -532,8 +570,12 @@
           el.dataset.window = win;
           el.innerHTML = '<span class="stage-label-name"></span><span class="stage-label-badge" hidden></span>';
           labelLayer.appendChild(el);
-          L = { el, id, window: win, name: null, badge: null, w: 0, h: 0, tr: '', off: false };
+          L = { el, id, window: win, name: null, badge: null, w: 0, h: 0, tr: '', off: false, shown: false, focus: false };
+          const self = L;
+          el.addEventListener('focus', () => { self.focus = true; this.applyShown(self); });
+          el.addEventListener('blur', () => { self.focus = false; this.applyShown(self); });
           this.labels.set(id, L);
+          if (id === this.hoverId) this.applyShown(L);
         }
         const name = String(info.nom || id), badge = Math.max(0, info.badge | 0);
         if (name !== L.name || badge !== L.badge) {
@@ -559,6 +601,7 @@
         const top = this.cy - this.scale.height / this.cameras.main.zoom / 2;
         const snap = (v) => Math.round(v * dpr) / dpr;
         for (const L of this.labels.values()) {
+          if (!L.shown && !L.badge) continue;     // ni nom ni pastille : rien à placer
           if (!L.w) { L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; if (!L.w) continue; }
           const x = (L.ax - left) * k - (L.align === 'gauche' ? 0 : L.w / 2);
           const y = Math.max(0, (L.ay - top) * k - L.h - LABEL_GAP);
@@ -576,7 +619,7 @@
         const k = this.cameras.main.zoom / pixelRatio();
         const top = this.cy - this.scale.height / this.cameras.main.zoom / 2;
         for (const L of this.labels.values()) {
-          if (!L.w || L.off) continue;
+          if (!L.w || L.off || (!L.shown && !L.badge)) continue;   // une étiquette invisible ne se touche pas
           const w = Math.max(L.w, MIN_TAP) / k, h = Math.max(L.h, MIN_TAP) / k;
           const cx = L.align === 'gauche' ? L.ax + L.w / k / 2 : L.ax;
           const cy = Math.max(top + L.h / k / 2, L.ay - (LABEL_GAP + L.h / 2) / k);

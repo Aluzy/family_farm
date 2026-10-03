@@ -30,7 +30,10 @@ export const GAME_ACTIONS = {
   'buy-animal': 'Acheter un animal',
   'buy-tree': 'Acheter un arbre',
   'buy': 'Acheter un panneau ou une batterie',
-  'buy-pasture': 'Acheter du pâturage',
+  'buy-pasture': 'Acheter une place à l\'Étable',
+  'mill-start': 'Moudre du blé au Moulin',
+  'mill-cancel': 'Moudre du blé au Moulin',
+  'member-save': 'Personnaliser un membre de la famille',
   'buy-orchard-slot': 'Acheter un emplacement de verger',
   'buy-tech': 'Acquérir une technologie',
   'sleep': 'Dormir',
@@ -70,6 +73,12 @@ export const INTERFACE_ACTIONS = new Set([
   'ask-slaughter', 'ask-slaughter-hen', 'ask-new-game', 'cancel-new-game', 'copy-export',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', // carte de la ferme : fenêtres et onglets de la maison
+  // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
+  // réglages de quantité (Moulin, achats), fiche d'un membre de la famille
+  'stage-goto', 'stage-pan', 'aller', 'comptoir-tab', 'inv-tab',
+  'mill-dec', 'mill-inc', 'mill-max', 'buy-dec', 'buy-inc', 'buy-max',
+  'animal-dec', 'animal-inc', 'animal-max',
+  'member-edit', 'member-genre', 'member-teint', 'wake-more',
 ]);
 
 // Signaux utiles à la décision, affichés à part.
