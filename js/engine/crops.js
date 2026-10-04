@@ -6,7 +6,7 @@ import { addItem, countItem, takeItem } from './inventory.js';
 import { productivity } from './family.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { techPct, techSum } from './techtree.js';
-import { bumpCounter } from './campaign.js';
+import { bumpCounter, isUnlocked } from './campaign.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -22,9 +22,40 @@ export function makePlots(count, lieu = DATA.POTAGER.LIEU) {
   return plots;
 }
 
-// Toutes les parcelles de la ferme : la Zone de culture d'abord, puis la Serre.
+// Toutes les parcelles de la ferme : la Zone de culture d'abord, puis le Champ, puis la Serre.
 export function allPlots(state) {
-  return [...state.potager.parcelles, ...(state.serre ? state.serre.parcelles : [])];
+  return [...state.potager.parcelles, ...zone2Plots(state), ...(state.serre ? state.serre.parcelles : [])];
+}
+
+/* ---------- version 1.4 : le Champ (deuxième zone de culture) ---------- */
+
+// Parcelles du Champ (state.potager.zone2) : vide tant qu'il n'est pas ouvert. Elles portent
+// le lieu de la Zone de culture ('potager') : toutes ses règles s'y appliquent sans rien
+// redire (cultures, saisons, automatisations). `zone: 2` les distingue pour l'affichage.
+export function zone2Plots(state) {
+  return state.potager && Array.isArray(state.potager.zone2) ? state.potager.zone2 : [];
+}
+
+export function makeZone2Plot(n) {
+  return { ...makePlot(n), id: `${DATA.POTAGER.ZONE2.ID}-${n}`, zone: 2 };
+}
+
+// Zone d'une parcelle de la Zone de culture : 1 (la zone du départ) ou 2 (le Champ).
+export function plotZone(plot) {
+  return plot.zone === 2 ? 2 : 1;
+}
+
+// Le Champ s'ouvre en entier, sans rien payer, quand la campagne débloque le Moulin
+// (DATA.POTAGER.ZONE2.DEBLOCAGE). Appelée à chaque passage de updateChapters() : une
+// partie déjà plus loin le reçoit au premier pas de jeu. Renvoie true s'il vient de s'ouvrir.
+export function openZone2(state) {
+  const Z = DATA.POTAGER.ZONE2;
+  if (!state.potager || !isUnlocked(state, Z.DEBLOCAGE)) return false;
+  if (zone2Plots(state).length >= Z.PARCELLES) return false;
+  const plots = zone2Plots(state).slice();
+  for (let n = plots.length + 1; n <= Z.PARCELLES; n++) plots.push(makeZone2Plot(n));
+  state.potager.zone2 = plots;
+  return true;
 }
 
 export function findPlot(state, id) {

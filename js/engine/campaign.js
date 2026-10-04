@@ -5,7 +5,7 @@ import { fail } from './devices.js';
 import { addItem, lotsOf } from './inventory.js';
 import { fridgeLots } from './fridge.js';
 import { averageHealth, planMeal } from './family.js';
-import { plantableCrops } from './crops.js';
+import { openZone2, plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, techPoints } from './techtree.js';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
@@ -226,6 +226,7 @@ export function updateChapters(state) {
   }
   checkMastery(state); // Arbre v2 : jalons de maîtrise
   deliverMail(state); // version 1.3 : le courrier que ce stade de la partie fait arriver
+  openZone2(state); // version 1.4 : le Champ s'ouvre avec le Moulin
   return done;
 }
 

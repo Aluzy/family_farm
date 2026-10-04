@@ -16,7 +16,7 @@
       "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tarte, et l'onglet Livre de recette" },
       "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe" },
-      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches" },
+      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 parcelles de plus, pour le blé" },
       "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
       "tournesol": { "nom": "Tournesol", "icone": "🌻", "note": "nouvelle culture de plein champ" },
       "//paturage": "'paturage' et 'moutons' : identifiants historiques (l'ancien Pâturage).",

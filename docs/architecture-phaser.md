@@ -29,8 +29,9 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
 ```
 
 - **Modèle de vue** (`stageModel()`), le seul objet que la scène reçoit :
-  `{ season, cols, plots: [{ id, culture, icone, phase (-1, 0…3), mature, arrosee }],
-  batiments: { etable, moulin, serre, verger } }`.
+  `{ season, heure, cols, plots: [{ id, culture, icone, phase (-1, 0…3), mature, arrosee }],
+  cols2, plots2 (le Champ, même forme que plots), arbres: [{ id, jeune }],
+  batiments: { etable, moulin, serre, verger, zone, zone2 } }`.
 - **`sync(modèle)` est idempotent** : `render()` appelle `renderStage()` environ 5 fois par
   seconde ; un modèle identique est écarté avant la scène (comparaison de la clé JSON), un modèle
   différent crée, met à jour ou détruit exactement ce qui a changé.
@@ -68,10 +69,11 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
   | `serre` | `serre_*`, découpe « batiment » (verrière seule, 94×83) | Serre débloquée | Serre |
   | `verger` | `sign.png` (pancarte) | Verger débloqué | Verger |
   | `zone_culture_1` (ou `zone_culture`) | parcelles | toujours | Zone de culture |
+  | `zone_culture_2` | parcelles (8 colonnes) | Moulin débloqué | Champ |
+  | `arbre_verger_1` à `arbre_verger_12` | `basic_*` (8 images de 80×80, animé) | un arbre par arbre du Verger, dans l'ordre d'achat | Verger |
 
-  La carte porte aussi `zone_culture_2`, `silo`, `poulailler` et `arbre_verger_1` à
-  `arbre_verger_12` : ces rectangles sont lus mais le jeu ne s'en sert pas encore (rien n'y est
-  dessiné, rien ne s'y touche).
+  Un arbre pas encore adulte est dessiné à 60 % de sa taille. La carte porte aussi `silo` et
+  `poulailler` : ces rectangles sont lus mais le jeu ne s'en sert pas encore.
 
   Un bâtiment verrouillé n'est pas dessiné (l'herbe reste). `SERRE_FRAME = 'cour'` dans
   `farm-stage.js` affiche à la place la verrière avec sa cour pavée (177×144), nettement plus
@@ -104,11 +106,13 @@ dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
 
 ## 3. Caméra, glissement, appuis
 
-- **Zoom** = `max(hauteur zone / (19 × 16 px), largeur zone / largeur carte)` : 19 rangées
-  sont visibles en hauteur (`VIEW_ROWS`, la hauteur de la première carte), quelle que soit la
-  taille de la carte, et la zone est entièrement couverte, sans bande. Sur un téléphone de
-  390 px de large, on voit environ 11 tuiles de large ; sur un ordinateur, une quarantaine. La
-  carte étant plus grande que la vue dans les deux sens, elle glisse aussi de haut en bas.
+- **Zoom** = `max(hauteur zone / (VIEW_ROWS × 16 px), largeur zone / largeur carte)` : `VIEW_ROWS`
+  rangées sont visibles en hauteur, quelle que soit la taille de la carte, et la zone est
+  entièrement couverte, sans bande. `VIEW_ROWS` vaut 21 depuis la version 1.4 (19 auparavant,
+  la hauteur de la première carte) : le bandeau est deux fois moins haut, et la place gagnée
+  montre deux rangées de plus, à la même échelle. Sur un téléphone de 390 px de large, on voit
+  environ 11 tuiles de large ; sur un ordinateur, une quarantaine. La carte étant plus grande
+  que la vue dans les deux sens, elle glisse aussi de haut en bas.
 - **Trois repères** (`makeScreens()`), calculés depuis les rectangles de la carte : l'étable
   (`grange`), la maison avec la zone de culture, le moulin avec la serre. Ce sont les trois
   points du bas de la carte : un appui y fait glisser la vue, en largeur et en hauteur ; le
@@ -191,11 +195,11 @@ est la poignée de débogage posée par `js/main.js`).
 ## 8. Limites connues
 
 - Automne et hiver : la carte garde son apparence de printemps toute l'année (`SEASONS_ON_MAP = false` dans `farm-stage.js`) ; les images d'automne et d'hiver des bâtiments restent dans `assets/` pour le jour où les cartes de ces saisons existeront.
-- Sur un ordinateur, au repère du milieu, le bas du moulin dépasse sous la vue : de la maison
-  au pied du moulin, la carte fait presque 19 rangées. Il se voit en entier en glissant ou
-  depuis le troisième point.
-- `zone_culture_2`, `silo`, `poulailler` et les douze `arbre_verger_*` de la carte ne sont pas
-  encore utilisés par le jeu.
+- Sur un ordinateur, au repère du milieu, le pied du moulin dépasse d'une douzaine de pixels
+  sous la vue. Il se voit en entier en glissant ou depuis le troisième point.
+- `silo` et `poulailler` de la carte ne sont pas encore utilisés par le jeu.
+- L'étiquette « Verger » reste sur la pancarte, près de la maison : survoler un arbre l'affiche
+  là-bas, pas au-dessus des arbres.
 - Les bulles d'aide « eau » et « potager » ne désignent plus rien sur la carte (leurs cibles
   sont dans la fenêtre Maison › Installations et dans la fenêtre Zone de culture).
 
@@ -262,3 +266,13 @@ est la poignée de débogage posée par `js/main.js`).
 - **Interface** : la lettre non lue est en tête de l'onglet Notifications (« Courrier »), puis rangée en bas (« Courrier lu ») ; `openMailModal()` l'affiche comme une feuille de papier, avec un raccourci vers la Serre. À l'arrivée, une annonce cliquable s'affiche (`watchMail()`).
 - **Ajouter une lettre** : une entrée de plus dans `COURRIER` (`data/campaign.json`) suffit ; pour une autre condition qu'un déblocage, compléter `mailDue()`.
 - **Sauvegardes** : format 19.
+
+## Version 1.4 : le Champ, les arbres du Verger, le bandeau sur une ligne
+
+- **Le Champ** : la deuxième zone de culture (rectangle `zone_culture_2`, 8 × 8 = 64 parcelles) s'ouvre en entier, sans rien payer, quand le Moulin se débloque. Moteur : `openZone2(state)`, appelée par `updateChapters()` ; les parcelles sont dans `state.potager.zone2`, portent le lieu `potager` (mêmes cultures, saisons et automatisations que la Zone de culture), `zone: 2` et les identifiants `zone2-n` ; `zone2Plots()`, `plotZone()`. `waterAll()` et `harvestAll()` prennent une zone en troisième argument. Valeurs dans `DATA.POTAGER.ZONE2` (`data/crops.json`).
+- **Sur la carte** : la scène a deux grilles (`grid`, `grid2`) et une seule table de parcelles ; `zones()` les parcourt pour l'affichage et pour les appuis. Lieu `zone2`, fenêtre `zone2` (`renderZone2()`), étiquette et pastille « à faire » propres. Les notifications d'arrosage et de récolte mènent à la Zone de culture d'abord, puis au Champ, puis à la Serre.
+- **Arbres du Verger** : `modèle.arbres` (12 au plus) ; `syncTrees()` pose le n-ième arbre sur `arbre_verger_n`. Un appui sur un arbre ouvre la fenêtre du Verger. Le Verger est limité à 12 emplacements (`DATA.VERGER.EMPLACEMENTS_MAX`) ; une partie qui en avait davantage garde ses arbres, dont 12 sont dessinés.
+- **Options** : le bouton ⚙️ quitte le bandeau pour le bout du menu du bas (`renderTabbar()`, même action `open-options`).
+- **Bandeau** : une ligne, 53 px (117 auparavant). Plus de titre, plus de légendes : 📅 Jour n, saison, heure, eau, pièces, autonomie (`renderIndicators()`). `fitIndicators()` réduit le texte si la ligne déborde. Le titre reste dans la page pour les lecteurs d'écran (`h1` masqué).
+- **Sauvegardes** : format 20 (`state.potager.zone2`).
+- **Équilibrage** : `node scripts/simulate.mjs` passe de 273 à 5 045 pièces à la nuit 80, le joueur automatique plantant des légumes dans le Champ. À revoir si le Champ doit rester un champ de blé (restreindre ses cultures, ou régler le joueur automatique).

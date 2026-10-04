@@ -1,7 +1,8 @@
 import { DATA } from '../engine/catalog.js';
 import { currentSeason } from '../engine/seasons.js';
 import { findDevice } from '../engine/devices.js';
-import { allPlots, isMature, maxStage } from '../engine/crops.js';
+import { allPlots, isMature, maxStage, plotZone, zone2Plots } from '../engine/crops.js';
+import { isTreeAdult } from '../engine/orchard.js';
 import { woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
@@ -71,7 +72,11 @@ export function horlogeEmoji(heure) {
 }
 
 // Lieux de la carte qui portent une étiquette (et une fenêtre du même nom).
-export const STAGE_LIEUX = ['maison', 'etable', 'moulin', 'serre', 'verger', 'zone'];
+export const STAGE_LIEUX = ['maison', 'etable', 'moulin', 'serre', 'verger', 'zone', 'zone2'];
+
+// La carte a douze emplacements d'arbres (rectangles arbre_verger_1 à 12) : autant que le
+// Verger peut en compter.
+const STAGE_ARBRES = 12;
 
 // Le Moulin a-t-il sa propre fenêtre de travail (renderMoulin) ? Sinon ses commandes
 // restent dans le Livre de recette.
@@ -105,9 +110,10 @@ function fenetreDeCible(c) {
 
 // Parcelles d'un lieu ('potager' ou 'serre') qui attendent un geste, avec les règles des
 // notifications : à arroser, ou mûres (sauf ce que l'Arbre des technologies automatise).
-function parcellesAFaire(lieu, quoi) {
+// `zone` (facultatif, pour 'potager') : 1 = la Zone de culture, 2 = le Champ.
+function parcellesAFaire(lieu, quoi, zone) {
   return allPlots(state).filter((p) => {
-    if (!p.culture || p.lieu !== lieu) return false;
+    if (!p.culture || p.lieu !== lieu || (zone && plotZone(p) !== zone)) return false;
     if (isMature(p)) return quoi !== 'arrosage' && !techAuto(state, 'recolte', lieu);
     return quoi !== 'recolte' && !p.arrose && !techAuto(state, 'arrosage', lieu);
   }).length;
@@ -117,7 +123,7 @@ function parcellesAFaire(lieu, quoi) {
 // nouveau : ce sont les alertes de getNotifications() et de alertSnapshot(), rangées là
 // où elles se règlent, plus les malades à soigner (Maison › Famille).
 function aFaireParLieu() {
-  const n = { maison: 0, etable: 0, moulin: 0, serre: 0, verger: 0, zone: 0 };
+  const n = { maison: 0, etable: 0, moulin: 0, serre: 0, verger: 0, zone: 0, zone2: 0 };
   const snap = alertSnapshot(state);
   for (const id of snap.panne.concat(snap.entretien)) {
     const f = fenetreDeCible(lieuAppareil(id));
@@ -129,15 +135,16 @@ function aFaireParLieu() {
   for (const a of getNotifications(state)) {
     if (a.type === 'poules' || a.type === 'tonte') n.etable += a.nombre;
   }
-  n.zone = parcellesAFaire('potager');
+  n.zone = parcellesAFaire('potager', null, 1);
+  n.zone2 = parcellesAFaire('potager', null, 2);
   n.serre = parcellesAFaire('serre');
   return n;
 }
 
 // Première parcelle d'un lieu qui attend le geste `quoi` ('arrosage' ou 'recolte').
-function premiereParcelle(lieu, quoi) {
+function premiereParcelle(lieu, quoi, zone) {
   return allPlots(state).find((p) => {
-    if (!p.culture || p.lieu !== lieu) return false;
+    if (!p.culture || p.lieu !== lieu || (zone && plotZone(p) !== zone)) return false;
     if (isMature(p)) return quoi === 'recolte' && !techAuto(state, 'recolte', lieu);
     return quoi === 'arrosage' && !p.arrose && !techAuto(state, 'arrosage', lieu);
   }) || null;
@@ -152,9 +159,12 @@ export function cibleAlerte(type, id) {
     case 'batteriesVides': return { ecran: 'batteries' };
     case 'frigoCoupe': return { fenetre: 'maison', onglet: 'batiments', ancre: 'dev-frigo' };
     case 'arrosage': case 'recolte': {
-      const lieu = parcellesAFaire('potager', type) > 0 || !isUnlocked(state, 'serre') ? 'potager' : 'serre';
-      const p = premiereParcelle(lieu, type);
-      return { fenetre: lieu === 'potager' ? 'zone' : 'serre', ancre: p ? `plot-${p.id}` : null };
+      // La Zone de culture d'abord, puis le Champ, puis la Serre.
+      const ou = parcellesAFaire('potager', type, 1) > 0 ? ['potager', 1, 'zone']
+        : parcellesAFaire('potager', type, 2) > 0 ? ['potager', 2, 'zone2']
+          : isUnlocked(state, 'serre') ? ['serre', null, 'serre'] : ['potager', 1, 'zone'];
+      const p = premiereParcelle(ou[0], type, ou[1]);
+      return { fenetre: ou[2], ancre: p ? `plot-${p.id}` : null };
     }
     case 'poules': return { fenetre: 'etable', ancre: 'etable-poules' };
     case 'tonte': {
@@ -230,13 +240,20 @@ function allerA(c) {
 
 // Modèle de vue : tout ce que la carte a le droit de savoir. Aucune référence à `state`.
 export function stageModel() {
-  const plots = state.potager.parcelles.map((p) => {
+  const vue = (p) => {
     if (!p.culture) return { id: p.id, culture: null, icone: '', phase: -1, mature: false, arrosee: !!p.arrose };
     const max = maxStage(p);
     const mature = isMature(p);
     const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
     return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: !!p.arrose };
-  });
+  };
+  const plots = state.potager.parcelles.map(vue);
+  // Le Champ (vide tant que le Moulin n'est pas débloqué) et les arbres du Verger, dans
+  // l'ordre où ils ont été plantés : chacun prend l'emplacement suivant de la carte.
+  const plots2 = zone2Plots(state).map(vue);
+  const arbres = isUnlocked(state, 'verger')
+    ? state.verger.arbres.slice(0, STAGE_ARBRES).map((t) => ({ id: t.id, jeune: !isTreeAdult(state, t) }))
+    : [];
   // Lieux étiquetés : seulement ceux que le jeu a débloqués (la maison et la zone sont
   // toujours là), avec leur nom et le nombre de choses à y faire.
   const aFaire = aFaireParLieu();
@@ -244,7 +261,7 @@ export function stageModel() {
   for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok(), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id] };
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
-  return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, batiments };
+  return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, arbres, batiments };
 }
 
 // Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La

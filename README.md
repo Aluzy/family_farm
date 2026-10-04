@@ -6,7 +6,7 @@ batteries, pompe, zone de culture, poulailler, moutons, verger, serre, cuisine e
 réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
-- **Version** : 1.3.0 (affichée dans ⚙️ Options › À propos)
+- **Version** : 1.4.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
@@ -66,6 +66,8 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   les moutons et les vaches mangent leur paille (laine, lait), les aliments vieillissent.
 - L'électricité et l'eau circulent en temps réel : panneaux → batteries →
   pompe, moulin, presse, réfrigérateur. Les appareils s'usent quand ils tournent.
+- Le **Champ**, une deuxième zone de culture de 64 parcelles, s'ouvre avec le Moulin
+  (chapitre 4) ; les arbres du Verger (12 au plus) apparaissent sur la carte.
 - Sept chapitres mènent à une famille **100 % autonome**.
 
 Le détail (valeurs, formules, tableau d'équilibrage) est dans la conception ; les

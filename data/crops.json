@@ -228,7 +228,19 @@
     "chaque niveau (index 0 = niveau 1, non utilisé) : les anciens coûts du",
     "Potager et du Champ additionnés."
   ],
-  "POTAGER": { "LIEU": "potager", "NOM": "Zone de culture", "ICONE": "🌱", "PARCELLES": [6, 12, 18, 24, 30], "COUT": [0, 200, 480, 1050, 2300] },
+  "//POTAGER.ZONE2": [
+    "Version 1.4 : le Champ, deuxième zone de culture (rectangle zone_culture_2",
+    "de la carte). Il s'ouvre en entier, sans rien payer, avec DEBLOCAGE (le",
+    "Moulin) : PARCELLES parcelles sur COLONNES colonnes, pour cultiver beaucoup",
+    "de blé (animaux, paille). Mêmes règles que la Zone de culture, dont ses",
+    "parcelles portent le lieu ('potager') : mêmes cultures, mêmes saisons,",
+    "mêmes automatisations. Leurs identifiants sont « ID-n » et elles portent",
+    "zone: 2 ; elles sont rangées dans state.potager.zone2."
+  ],
+  "POTAGER": {
+    "LIEU": "potager", "NOM": "Zone de culture", "ICONE": "🌱", "PARCELLES": [6, 12, 18, 24, 30], "COUT": [0, 200, 480, 1050, 2300],
+    "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "PARCELLES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
+  },
   "//SERRE": [
     "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture, sans modificateur",
     "de saison. CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",
@@ -251,7 +263,7 @@
   "VERGER": {
     "CONSTRUCTION": 0,
     "EMPLACEMENTS_DEPART": 2,
-    "EMPLACEMENTS_MAX": 20,
+    "EMPLACEMENTS_MAX": 12,
     "EMPLACEMENT": { "base": 50, "croissance": 125 },
     "MATURITE": 15,
     "FRUITS": 6,

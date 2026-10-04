@@ -459,12 +459,19 @@ export const RAW_DATA = {
       "sprite": { "r": 11, "h": 32, "c": [9, 10, 12, 13] }
     }
   },
-  "POTAGER": { "LIEU": "potager", "NOM": "Zone de culture", "ICONE": "🌱", "PARCELLES": [6, 12, 18, 24, 30], "COUT": [0, 200, 480, 1050, 2300] },
+  "POTAGER": {
+    "LIEU": "potager",
+    "NOM": "Zone de culture",
+    "ICONE": "🌱",
+    "PARCELLES": [6, 12, 18, 24, 30],
+    "COUT": [0, 200, 480, 1050, 2300],
+    "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "PARCELLES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
+  },
   "SERRE": { "LIEU": "serre", "CONSTRUCTION": 400, "PARCELLES": [6, 9, 12, 15, 18], "COUT": [0, 300, 600, 1000, 1800] },
   "VERGER": {
     "CONSTRUCTION": 0,
     "EMPLACEMENTS_DEPART": 2,
-    "EMPLACEMENTS_MAX": 20,
+    "EMPLACEMENTS_MAX": 12,
     "EMPLACEMENT": { "base": 50, "croissance": 125 },
     "MATURITE": 15,
     "FRUITS": 6,
@@ -982,7 +989,11 @@ export const RAW_DATA = {
       "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tarte, et l'onglet Livre de recette" },
       "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe" },
-      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches" },
+      "moulin": {
+        "nom": "Moulin",
+        "icone": "⚙️",
+        "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 parcelles de plus, pour le blé"
+      },
       "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
       "tournesol": { "nom": "Tournesol", "icone": "🌻", "note": "nouvelle culture de plein champ" },
       "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },

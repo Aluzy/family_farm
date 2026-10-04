@@ -99,7 +99,7 @@ const HELP = {
       : `Les cultures de plein champ (blé, riz, houblon) arrivent au chapitre ${unlockChapter('champ')}.`}`,
     conso: `Eau par arrosage : ${cropsLine('potager', 'eau')}.`,
     prod: `${cropsLine('potager', 'recolte')}. Saison : ${seasonRange('potager')}, pour toutes les cultures.`,
-    note: levelsNote(DATA.POTAGER.PARCELLES, 'la Zone de culture'),
+    note: `${levelsNote(DATA.POTAGER.PARCELLES, 'la Zone de culture')} Le ${DATA.POTAGER.ZONE2.NOM}, une deuxième zone de ${DATA.POTAGER.ZONE2.PARCELLES} parcelles aux mêmes règles, s'ouvre avec le Moulin (chapitre ${unlockChapter(DATA.POTAGER.ZONE2.DEBLOCAGE)}) : de quoi cultiver beaucoup de blé.`,
   }),
   serre: () => ({
     nom: 'Serre',

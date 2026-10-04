@@ -25,7 +25,7 @@ export function startInventory() {
 export function startHousehold() {
   return {
     inventaire: startInventory(),
-    potager: { niveau: 1, parcelles: makePlots(DATA.POTAGER.PARCELLES[0]) },
+    potager: { niveau: 1, parcelles: makePlots(DATA.POTAGER.PARCELLES[0]), zone2: [] },
     famille: {
       membres: DATA.FAMILY.MEMBRES.map(makeMember),
       // version 1.2 : animaux de compagnie, et dernier numéro donné à un adulte, à un
@@ -270,6 +270,14 @@ export const MIGRATIONS = {
   // où la Serre est déjà ouverte reçoit la lettre du cousin (et ses trois
   // graines) au premier passage de deliverMail().
   18: (state) => ({ ...state, version: 19, courrier: Array.isArray(state.courrier) ? state.courrier : [] }),
+  // v19 → v20 (version 1.4) : le Champ, deuxième zone de culture. Il commence
+  // vide ; une partie où le Moulin est déjà débloqué le reçoit, avec toutes ses
+  // parcelles, au premier passage de openZone2(). Le Verger passe à 12
+  // emplacements au plus : une partie qui en a davantage les garde, avec leurs arbres.
+  19: (state) => {
+    const p = state.potager && typeof state.potager === 'object' ? state.potager : null;
+    return { ...state, version: 20, ...(p ? { potager: { ...p, zone2: Array.isArray(p.zone2) ? p.zone2 : [] } } : {}) };
+  },
 };
 
 export function migrateFamily12(old) {
