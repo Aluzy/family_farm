@@ -120,18 +120,29 @@ function rowHasStatus(items, i) {
   return items.slice(first, first + 2).some(hasStatus);
 }
 
-// Les noms (et les lignes énergie · prix) trop longs pour leur case sont écrits
-// plus petit, juste assez pour tenir en entier sur leur ligne (comme fitIndicators pour le bandeau). Appelé
-// après chaque rendu : la taille dépend de la largeur réelle de la case.
-const NAME_MIN_PX = 7;
+// Ajuste une ligne trop longue pour sa case : sa police est réduite juste
+// assez pour qu'elle tienne en entier (comme fitIndicators pour le bandeau).
+// Renvoie la taille retenue, en px.
+const FIT_MIN_PX = 7;
+function fitLine(el) {
+  el.style.fontSize = '';
+  let size = parseFloat(getComputedStyle(el).fontSize) || 15;
+  for (let pass = 0; pass < 4 && el.scrollWidth > el.clientWidth && size > FIT_MIN_PX; pass++) {
+    size = Math.max(FIT_MIN_PX, Math.floor(((size * el.clientWidth) / el.scrollWidth) * 10) / 10 - (pass ? 0.2 : 0));
+    el.style.fontSize = `${size}px`;
+  }
+  return size;
+}
+
+// Appelé après chaque rendu (la taille dépend de la largeur réelle des cases).
+// Les noms d'une même grille ont tous la même taille : celle du nom qui doit
+// être le plus réduit pour tenir. Les lignes énergie · prix s'ajustent une à une.
 export function fitInventoryNames(root = document) {
-  for (const el of root.querySelectorAll('.inv-name, .inv-info')) {
-    el.style.fontSize = '';
-    let size = parseFloat(getComputedStyle(el).fontSize) || 15;
-    for (let pass = 0; pass < 4 && el.scrollWidth > el.clientWidth && size > NAME_MIN_PX; pass++) {
-      size = Math.max(NAME_MIN_PX, Math.floor(((size * el.clientWidth) / el.scrollWidth) * 10) / 10 - (pass ? 0.2 : 0));
-      el.style.fontSize = `${size}px`;
-    }
+  for (const grid of root.querySelectorAll('.inv-grid')) {
+    const names = [...grid.querySelectorAll('.inv-name')];
+    const size = Math.min(...names.map(fitLine));
+    for (const el of names) el.style.fontSize = `${size}px`;
+    for (const el of grid.querySelectorAll('.inv-info')) fitLine(el);
   }
 }
 

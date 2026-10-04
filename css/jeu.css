@@ -789,8 +789,8 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
 }
 
 .inv-card:has(.inv-status) { grid-template-rows: auto 1.4em; }
-.inv-card:has(.inv-actions) { grid-template-rows: auto 40px; }
-.inv-card:has(.inv-status):has(.inv-actions) { grid-template-rows: auto 1.4em 40px; }
+.inv-card:has(.inv-actions) { grid-template-rows: auto 28px; }
+.inv-card:has(.inv-status):has(.inv-actions) { grid-template-rows: auto 1.4em 28px; }
 .inv-card.soon { border-color: var(--danger); }
 
 /* En haut : le cadre de l'icône, et à sa droite deux lignes de même hauteur que lui. */
@@ -815,8 +815,9 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
 .inv-info { font-size: 0.8rem; line-height: 1.2; white-space: nowrap; overflow: hidden; }
 .inv-status { display: flex; align-items: center; height: 1.4em; font-size: 0.9rem; white-space: nowrap; overflow: hidden; }
 .inv-soon { color: var(--danger); font-weight: 600; }
-.inv-actions { display: flex; gap: 6px; width: 100%; }
-.inv-actions .btn { flex: 1; min-width: 0; min-height: 40px; padding: 0 4px; font-size: 0.9rem; white-space: nowrap; }
+.inv-actions { display: flex; gap: 4px; width: 100%; }
+/* Boutons du frigo réduits d'environ 30 % (28 px de haut au lieu de 40). */
+.inv-actions .btn { flex: 1; min-width: 0; min-height: 28px; height: 28px; padding: 0 3px; border-radius: 8px; font-size: 0.65rem; white-space: nowrap; }
 .inv-all { width: 100%; margin-bottom: 20px; }
 
 .step-btn { min-width: 44px; padding: 0; font-size: 1.3rem; line-height: 1; }
