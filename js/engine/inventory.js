@@ -21,6 +21,12 @@ export function isPerishable(item) {
   return shelfLife(item) !== null;
 }
 
+// Ce qui peut aller au réfrigérateur : tout ce qui périme, sauf le blé, qui se
+// conserve au Silo (où il ne périme pas) et pas au frais.
+export function isFridgeable(item) {
+  return isPerishable(item) && item !== DATA.SILO.ITEM;
+}
+
 // Origine d'un lot ajouté sans précision : « produit », sauf les conserves.
 export function defaultOrigin(item) {
   const def = DATA.items[item];

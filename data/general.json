@@ -80,8 +80,8 @@
       "couvert à 100 %. Il guérit en atteignant la santé remise par un soin."
     ],
     "RECUPERATION_MALADE": 2,
-    "//RESERVE_DEPART": "Réserve de semences de départ : quantité par item que la famille ne mange jamais.",
-    "RESERVE_DEPART": { "patate": 6 }
+    "//RESERVE_DEPART": "Réserve de semences de départ : quantité par item que la famille ne mange jamais. Vide depuis la suppression de la réserve dans l'Inventaire (les semences se rachètent au Marché).",
+    "RESERVE_DEPART": {}
   },
   "//MARCHE": [
     "Marché (sections 1.3, 6.7 et 8.9). Prix d'achat = prix de vente × coefficient.",

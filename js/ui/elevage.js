@@ -206,14 +206,14 @@ export function renderPaturage() {
   const fed = strawPlan();
   let hint;
   if (sCount === 0 && cCount === 0) hint = 'Aucun animal : achètes-en au Marché (onglet Animaux).';
-  else if (sFree === 0) hint = `⚠️ Plus de place : achète une place de plus (une vache en demande ${P.placesParVache}).`;
+  else if (sFree === 0) hint = `⚠️ Plus de place : achète des places (une vache en demande ${P.placesParVache}).`;
   else hint = `${formatPlaces(sFree)} libre${sFree > 1 ? 's' : ''} : de quoi accueillir ${sFree} mouton${sFree > 1 ? 's' : ''}${cFree > 0 ? ` ou ${cFree} vache${cFree > 1 ? 's' : ''}` : ''}.`;
   let strawHint;
   if (need === 0) strawHint = 'Pas d\'animaux à nourrir pour l\'instant.';
   else if (missing > 0) strawHint = `⚠️ Il manque ${formatStraw(missing)} pour cette nuit : mouds du blé au Moulin. Les animaux sans paille ne donneront rien cette nuit (ils mangent dans l'ordre de la liste).`;
   else strawHint = `✅ Assez de paille pour cette nuit${stock >= need * 2 ? ` (il y en a pour ${formatNumber(Math.floor(stock / need))} nuits)` : ''}.`;
-  // L'achat d'une place est refusé tant qu'il en reste une de libre (voir buyPasture()).
-  const buyOk = sFree === 0 && canPay(cost);
+  // Les places s'achètent à la suite, tant que les pièces suffisent (voir buyPasture()).
+  const buyOk = canPay(cost);
   return `
     <div class="section-head">
       <h3>${icon('paturage')}Moutons et vaches · ${formatPlaces(p.places)}</h3>

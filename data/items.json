@@ -20,7 +20,7 @@
     "le manger ; category : légume, fruit, plat, graine, ingrédient, produit,",
     "conserve. nom et icone servent uniquement à l'affichage.",
     "conservation (facultatif) : nombre de nuits hors réfrigérateur avant que l'objet périme. Sans ce champ,",
-    "l'objet ne périme jamais (blé, farine, huile, graines, laine, conserves)."
+    "l'objet ne périme jamais (farine, huile, graines, laine, conserves)."
   ],
   "items": {
     "//carotte": "6 × 1,25",
@@ -44,9 +44,12 @@
       "(à replanter), œuf (12,5 → 13 énergie, 6 nuits : voir CONSERVATION).",
       "category reste « ingrédient » (Silo, Moulin, alimentation des poules,",
       "plancher de marché ×1,2) même si le blé sert aussi de semence : voir",
-      "isGraineComptoir(), qui l'ajoute en plus à l'onglet Graines du Marché."
+      "isGraineComptoir(), qui l'ajoute en plus à l'onglet Graines du Marché.",
+      "Le blé de l'inventaire périme en 10 nuits ; celui du Silo (state.silo.ble) ne",
+      "périme jamais. Il ne se range pas au réfrigérateur : son lieu de conservation",
+      "est le Silo (voir isFridgeable())."
     ],
-    "ble": { "nom": "Blé", "icone": "🌾", "prix": 1, "edible": false, "category": "ingrédient" },
+    "ble": { "nom": "Blé", "icone": "🌾", "prix": 1, "edible": false, "category": "ingrédient", "conservation": 10 },
     "graine_tournesol": { "nom": "Graines de tournesol", "icone": "🌻", "prix": 1, "edible": false, "category": "graine" },
     "//oeuf": "10 × 1,25 = 12,5 → 13",
     "oeuf": { "nom": "Œuf", "icone": "🥚", "energie": 13, "prix": 2, "edible": true, "category": "produit", "conservation": 6 },

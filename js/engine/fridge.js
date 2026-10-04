@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, isBroken, makeDevice, perSecond, perTick, spend } from './devices.js';
 import { drawEnergy } from './energy.js';
-import { countItem, isPerishable, lotRank, lotsOf } from './inventory.js';
+import { countItem, isFridgeable, isPerishable, lotRank, lotsOf } from './inventory.js';
 import { newNightStats } from './family.js';
 import { techPct } from './techtree.js';
 
@@ -112,6 +112,7 @@ export function moveToFridge(state, item, qty) {
   if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
   if (!DATA.items[item]) return fail('Objet inconnu.');
   if (!isPerishable(item)) return fail(`${DATA.items[item].nom} ne périme pas : inutile de le ranger au frais.`);
+  if (!isFridgeable(item)) return fail(`${DATA.items[item].nom} ne se range pas au frigo : sa place est au Silo.`);
   const n = Math.min(Math.floor(Number(qty)) || 0, Math.floor(countItem(state, item) + EPS));
   if (n <= 0) return fail('Rien à ranger.');
   const inv = lotsOf(state, item);
@@ -123,6 +124,27 @@ export function moveToFridge(state, item, qty) {
   pushLots(lots, pulled);
   state.frigo.items[item] = lots;
   return { ok: true, moved: n };
+}
+
+// « Tout ranger » : range au frigo tous les aliments frais de l'inventaire qui
+// peuvent y aller (voir isFridgeable). Renvoie { ok, moved, items } où items =
+// { item: quantité rangée }.
+export function moveAllToFridge(state) {
+  if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
+  const items = {};
+  let moved = 0;
+  for (const item of Object.keys(state.inventaire)) {
+    if (!isFridgeable(item)) continue;
+    const n = Math.floor(countItem(state, item) + EPS);
+    if (n <= 0) continue;
+    const r = moveToFridge(state, item, n);
+    if (r.ok) {
+      items[item] = r.moved;
+      moved += r.moved;
+    }
+  }
+  if (moved <= 0) return fail('Aucun aliment frais à ranger.');
+  return { ok: true, moved, items };
 }
 
 // Sort `qty` unités du frigo vers l'inventaire. Leur compteur reprend.

@@ -7,7 +7,7 @@ import { expiringSoon, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
 import { feedFamily, newNightStats } from './family.js';
 import { growAll, readyCrops } from './crops.js';
-import { feedLivestock, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
+import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
 import { growOrchard } from './orchard.js';
 import { finishPreparations } from './kitchen.js';
 import { refreshUnlocks } from './techtree.js';
@@ -28,9 +28,10 @@ import { noteTutorialSleep } from './alerts.js';
 // nocturne du réfrigérateur (nightPower), sa panne éventuelle (fridgeNight) et
 // enfin la péremption. Les préparations en cours se terminent avant le frigo :
 // la paille du blé qui finit de se moudre pendant la nuit sert donc à partir
-// de la nuit suivante.
+// de la nuit suivante. Juste avant la péremption, le blé de l'inventaire
+// rejoint le Silo s'il y a de la place (fillSilo) : au Silo, il ne périme pas.
 // Chaque étape reçoit l'état et le modifie.
-export const NIGHT_STEPS = [feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, autoMaintain, nightPower, fridgeNight, spoil];
+export const NIGHT_STEPS = [feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, autoMaintain, nightPower, fridgeNight, fillSilo, spoil];
 
 /* ---------- la nuit ---------- */
 

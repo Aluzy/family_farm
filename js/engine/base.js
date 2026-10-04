@@ -17,7 +17,7 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 20;
+export const STATE_VERSION = 21;
 // Version du jeu, affichée dans les Options (À propos).
 export const GAME_VERSION = '1.4.0';
 export const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)

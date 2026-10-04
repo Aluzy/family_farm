@@ -60,6 +60,7 @@ export const GAME_ACTIONS = {
   'repair': 'Réparer un appareil',
   'heal': 'Soigner un membre de la famille',
   'fridge-in': 'Utiliser le réfrigérateur',
+  'fridge-in-all': 'Utiliser le réfrigérateur',
   'fridge-out': 'Utiliser le réfrigérateur',
   'toggle': 'Allumer ou éteindre un appareil',
   'routine-toggle': 'Activer ou couper la routine familiale',
@@ -72,7 +73,7 @@ export const GAME_ACTIONS = {
 export const INTERFACE_ACTIONS = new Set([
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about',
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open', 'sell-inc',
-  'sell-dec', 'sell-max', 'reserve-inc', 'reserve-dec', 'cancel-queued', 'ack-chapter',
+  'sell-dec', 'sell-max', 'cancel-queued', 'ack-chapter',
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', // carte de la ferme : fenêtres et onglets de la maison

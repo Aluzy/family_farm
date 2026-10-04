@@ -19,12 +19,14 @@
   --danger-contrast: #ffffff;
   --shadow: 0 1px 3px rgba(44, 36, 22, 0.12);
   --radius: 12px;
+  --inv-icon-bg: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #1c1a14;
     --bg-elevated: #26231b;
+    --inv-icon-bg: #3a3428;
     --bg-header: #2c2718;
     --bg-muted: #2a271e;
     --text: #f2ecdd;
@@ -765,7 +767,59 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
   font-weight: 600;
 }
 
-.reserve { gap: 10px; }
+/* Inventaire : deux cases par rangée, de même taille et avec les mêmes lignes
+   aux mêmes hauteurs (la ligne d'état n'existe que si l'une des deux en a besoin). */
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+
+.inv-card {
+  display: grid;
+  grid-template-rows: auto;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+}
+
+.inv-card:has(.inv-status) { grid-template-rows: auto 1.4em; }
+.inv-card:has(.inv-actions) { grid-template-rows: auto 28px; }
+.inv-card:has(.inv-status):has(.inv-actions) { grid-template-rows: auto 1.4em 28px; }
+.inv-card.soon { border-color: var(--danger); }
+
+/* En haut : le cadre de l'icône, et à sa droite deux lignes de même hauteur que lui. */
+.inv-head { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
+.inv-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--inv-icon-bg);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.inv-text { display: flex; flex-direction: column; justify-content: space-around; min-width: 0; height: 42px; }
+.inv-name { display: flex; align-items: baseline; gap: 0.25em; min-width: 0; overflow: hidden; font-size: 0.92rem; font-weight: 600; line-height: 1.2; }
+.inv-nom { flex: none; white-space: nowrap; }
+.inv-qty { flex: none; font-size: 0.87em; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.inv-info { font-size: 0.8rem; line-height: 1.2; white-space: nowrap; overflow: hidden; }
+.inv-status { display: flex; align-items: center; height: 1.4em; font-size: 0.9rem; white-space: nowrap; overflow: hidden; }
+.inv-soon { color: var(--danger); font-weight: 600; }
+.inv-actions { display: flex; gap: 4px; width: 100%; }
+/* Boutons du frigo réduits d'environ 30 % (28 px de haut au lieu de 40). */
+.inv-actions .btn { flex: 1; min-width: 0; min-height: 28px; height: 28px; padding: 0 3px; border-radius: 8px; font-size: 0.65rem; white-space: nowrap; }
+.inv-all { width: 100%; margin-bottom: 20px; }
+
 .step-btn { min-width: 44px; padding: 0; font-size: 1.3rem; line-height: 1; }
 
 .plant-choice {
