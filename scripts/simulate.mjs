@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Simulation et équilibrage (Lot 10, conception sections 8.10 et 8.11).
 //
-// Comme run-tests.mjs, ce script lit le moteur (scripts/lib/engine-source.mjs)
-// et joue des parties complètes avec lui, sans interface.
+// Comme run-tests.mjs, ce script importe le moteur (js/engine/) et joue des
+// parties complètes avec lui, sans interface.
 // Le joueur automatique et ses réglages vivent dans le moteur
 // (DATA.SIMULATION et fonctions bot*/simulate*) : le script ne fait que lancer
 // les parties, écrire le CSV, le graphique, et vérifier la courbe cible.
@@ -19,7 +19,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ROOT, engineSource } from './lib/engine-source.mjs';
+import { ROOT, engineUrl } from './lib/engine-source.mjs';
 
 /* ---------- arguments ---------- */
 
@@ -36,14 +36,13 @@ if (args.includes('--aide') || args.includes('--help')) {
 /* ---------- le moteur ---------- */
 
 const racine = resolve(option('racine', ROOT));
-let source;
+let E;
 try {
-  source = engineSource(racine);
+  E = await import(engineUrl(racine));
 } catch (err) {
   console.error(`Moteur introuvable dans ${racine} : ${err.message}`);
   process.exit(2);
 }
-const E = new Function(`${source}\nreturn { DATA, simulateGame, simulationReach };`)();
 const S = E.DATA.SIMULATION;
 
 const nuits = Math.max(1, Math.floor(Number(option('nuits', S.NUITS))));

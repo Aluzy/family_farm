@@ -14,22 +14,21 @@ réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la fami
   `index.html` (page d'accueil), `jeu.html` (le jeu, dont le style est dans
   `css/` et le code dans `js/`) et `encyclopedie.html` (glossaire du jeu, généré depuis
   `encyclopedie_ferme_familiale.json` par `node build-encyclopedie.mjs`), plus `cookies.html` (politique de cookies
-  et traceurs). Elles fonctionnent ouvertes depuis le disque comme servies en HTTP.
+  et traceurs). Le jeu se sert en HTTP (voir Structure) ; les autres pages s'ouvrent aussi depuis le disque.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
 - **Carte de la ferme** : l'onglet Ferme affiche une carte en pixel art (Phaser 3,
   `vendor/phaser.min.js`, scène dans `js/farm-stage.js`, images et carte Tiled dans
-  `assets/`) ; voir [`docs/architecture-phaser.md`](docs/architecture-phaser.md). La
-  carte demande d'ouvrir le jeu en HTTP (`python3 -m http.server`) ; sans Phaser ou
-  depuis le disque, la Ferme garde sa liste classique et le jeu reste jouable.
+  `assets/`) ; voir [`docs/architecture-phaser.md`](docs/architecture-phaser.md). Sans
+  Phaser, la Ferme garde sa liste classique et le jeu reste jouable.
 
 ## Jouer
 
 ### En local
 
-Ouvrez `index.html` dans un navigateur récent (double-clic, ou glisser le fichier
-dans une fenêtre), puis cliquez sur **Jouer**. Vous pouvez aussi ouvrir
-`jeu.html` directement. Rien à installer.
+Dans le dossier du jeu : `python3 -m http.server`, puis <http://localhost:8000/> dans un
+navigateur récent, et **Jouer**. Rien à installer (le jeu ne s'ouvre pas par double-clic :
+ses modules ne se chargent qu'en HTTP).
 
 ### En ligne (GitHub Pages)
 
@@ -90,43 +89,59 @@ dépasse une minute.
 
 ### Structure
 
-`jeu.html` ne contient que la structure de la page. Elle charge, dans cet ordre :
+`jeu.html` ne contient que la structure de la page. Elle charge `css/jeu.css`, deux scripts
+classiques (`js/telemetry.js`, le suivi de session, et `vendor/phaser.min.js` +
+`js/farm-stage.js`, la carte), puis `js/main.js`, point d'entrée de **modules ES** :
 
-| Fichier | Contenu |
+| Dossier | Contenu |
 |---|---|
-| `css/jeu.css` | variables de thème (clair et sombre), puis composants |
 | `js/data.generated.js` | `RAW_DATA` : toutes les valeurs d'équilibrage, générées depuis `data/*.json` (voir Données) |
-| `js/engine.js` | `DATA` (`buildCatalog(RAW_DATA)`), puis `ENGINE` (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine) |
-| `js/telemetry.js` | suivi de session (`Telemetry.*`) |
-| `vendor/phaser.min.js`, `js/farm-stage.js` | la carte de la ferme |
-| `js/app.js` | sauvegarde, interface et boucle |
+| `js/engine/` | le moteur (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine), un module par domaine : `catalog.js` (`DATA`), `energy.js`, `inventory.js`, `crops.js`, `animals.js`, `kitchen.js`, `techtree.js`, `campaign.js`, `night.js`, `state.js` (partie neuve, migrations), `testmode.js`, `bot.js`… |
+| `js/ui/` | l'interface, un module par écran (`ferme.js`, `elevage.js`, `cuisine.js`, `marche.js`, `famille.js`…), plus `store.js` (l'état de l'interface), `render.js`, `loop.js`, `storage.js`, `actions.js` |
+| `js/main.js` | charge tous les modules, puis démarre la partie |
 
-Ce sont des scripts classiques qui partagent la portée de la page, comme quand ils
-étaient dans le même fichier : l'interface appelle les fonctions du moteur par leur nom.
+Chaque module importe ce qu'il utilise et exporte ce qu'il offre : plus aucune fonction du
+jeu n'est une variable globale. Conséquences :
+
+- **le jeu ne s'ouvre plus depuis le disque** (`file://`) : un navigateur ne charge des
+  modules qu'en HTTP. En local : `python3 -m http.server`, puis <http://localhost:8000/jeu.html>.
+  La page d'accueil, l'encyclopédie et la politique de cookies s'ouvrent toujours depuis le disque ;
+- **dans la console**, l'état et le moteur passent par `FF` : `FF.state`,
+  `FF.engine.countItem(FF.state, 'carotte')`, `FF.render()` ;
+- **une variable de l'interface écrite depuis un autre module passe par son setter**
+  (`setActiveTab('ferme')`, `setState(…)`) : un import est en lecture seule ;
+- **Node** lit les mêmes fichiers que le navigateur (`package.json` : `"type": "module"`) ;
+  `npm test` lance toutes les vérifications.
+
 `tests/engine.test.js` (les tests du moteur) n'est jamais chargé par la page.
 
-Chaque fichier est chargé avec `?v=<version du jeu>` : en changeant `GAME_VERSION`
-(dans `js/engine.js`), changez aussi ce suffixe dans `jeu.html`, sinon un joueur peut
-recevoir la nouvelle page avec un ancien script resté en cache.
-`node scripts/check-page.mjs` vérifie que les deux concordent.
+`js/main.js` est chargé avec `?v=<version du jeu>` : en changeant `GAME_VERSION`
+(dans `js/engine/base.js`), changez aussi ce suffixe dans `jeu.html`.
+`node scripts/check-page.mjs` vérifie qu'ils concordent, que chaque import mène à un
+fichier qui exporte bien le nom demandé, et qu'aucun module n'est oublié. Les modules
+importés par `main.js`, eux, n'ont pas de suffixe : après une mise à jour, le navigateur
+peut garder un ancien module en cache une dizaine de minutes (durée fixée par GitHub Pages).
 
 L'état du jeu est un seul objet JSON, versionné (migrations dans `MIGRATIONS`) ;
 l'interface ne le modifie qu'à travers les actions nommées du moteur.
 
 **Boutons et actions** : un bouton porte `data-action="nom"` ; la page n'a qu'un écouteur
-de clics, qui appelle la fonction déclarée sous ce nom dans le registre (`js/app.js`) :
+de clics (`js/ui/events.js`), qui appelle la fonction déclarée sous ce nom. Chaque écran
+déclare les siennes à la fin de son module, à côté du gabarit qui affiche le bouton :
 
 ```js
+// js/ui/cuisine.js
 registerActions({
   'mill-start': () => { /* … */ },
-  'help': (target) => openHelpModal(target.dataset.id),
+  'mill-cancel': () => { /* … */ },
 });
 ```
 
-`target` est l'élément cliqué (ses `data-*` portent les paramètres). Une action déclarée
-deux fois est refusée au chargement. Pour ajouter un bouton : son `data-action` dans le
-gabarit, sa fonction dans le registre, et son classement dans `worker/src/report.mjs`
-(action de jeu ou clic d'interface) ; `node scripts/check-actions.mjs` signale ce qui manque.
+`target` (premier argument) est l'élément cliqué (ses `data-*` portent les paramètres). Une
+action déclarée deux fois est refusée au chargement. Pour ajouter un bouton : son
+`data-action` dans le gabarit, sa fonction dans le `registerActions` du même module, et son
+classement dans `worker/src/report.mjs` (action de jeu ou clic d'interface) ;
+`node scripts/check-actions.mjs` signale ce qui manque.
 
 ### Données
 
@@ -226,7 +241,7 @@ nuits ou des saisons, aller à un chapitre, et voir l'état complet de la partie
 ### Vérifier avant de publier
 
 1. Les commandes de la section Tests passent.
-2. Ouvrir `index.html` depuis le disque, puis servi en HTTP
+2. Ouvrir le jeu servi en HTTP
    (par exemple `python3 -m http.server` et <http://localhost:8000/>) : aucune
    erreur dans la console, à 390 px et à 1 280 px de large, en thème clair et
    sombre.

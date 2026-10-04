@@ -1,12 +1,59 @@
-'use strict';
-
 /* ==========================================================================
-   Tests du moteur (js/engine.js uniquement). Petite fonction test/assert
-   maison : pas de dépendance externe. Ce fichier n'est jamais chargé par le
-   navigateur : run-tests.mjs l'exécute avec Node, à la suite du moteur, dans
-   la même portée (les tests appellent donc les fonctions du moteur par leur
-   nom).
+   Tests du moteur (js/engine/). Petite fonction test/assert maison : pas de
+   dépendance externe. Ce fichier n'est jamais chargé par le navigateur :
+   run-tests.mjs l'importe avec Node. Les fonctions du moteur utilisées sont
+   importées ci-dessous ; pour en tester une nouvelle, l'ajouter à la liste.
    ========================================================================== */
+
+import {
+  acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
+  alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
+  autonomyHistory, autonomyPercent, autoTasks, availableEnergy, averageHealth, awakeMsAtHour, awakeRequired,
+  batteryCapacity, bedtimeDue, botBuy, botDay, botFarm, botFieldTarget, botHeal, botIsFieldCrop, botMill,
+  botRaiseFunds, botRecipeValue, botSell, botSheep, botStepInfo, botWheatKept, buildCatalog, buildFridge,
+  buildMorningReport, buildPaturage, buildPoulailler, buildSerre, buildSilo, buildStation, buildVerger,
+  buyAnimal, buyAnimals, buyCow, buyDevice, buyItem, buyOrchardSlot, buyPasture, buyPrice, buyQuote,
+  buySheep, buyTech, buyTree, cancelMilling, cancelQueued, canSleep, careCost, chapterProgress,
+  chapterReached, checkMastery, childCount, cleanFirstName, clockHours, completeChapter, CONSUMERS,
+  coopCapacity, coopUpgradeCost, countItem, cowCapacity, cowCount, cowPlaces, createInitialState,
+  cropProduct, cropUnlocked, currentSeason, DATA, deliverMail, deviceStatus, dishBonus, dishEnergy,
+  dishPrice, drawEnergy, efficiency, energyStats, escapeHtml, expiringSoon, familyNeed, feedAllHens,
+  feedFamily, feedHen, feedLivestock, findDevice, findMember, findPet, findPlot, finishPreparations,
+  formatCoins, formatDuration, formatHour, formatLitres, formatLitresRate, formatNumber, formatPercent,
+  formatQty, formatSigned, formatWh, formatWhRate, freeCowPlaces, freeSheepPlaces, fridgeCount,
+  fridgeCounts, fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate, fridgeUnits,
+  GAME_VERSION, getNotifications, grantTech, growAll, growOrchard, harvest, harvestAll, harvestYield, heal,
+  healthDelta, hourOfDay, ingredientOptions, inventoryCounts, isAutomated, isBroken, isBuyable,
+  isGraineComptoir, isMature, isPerishable, isUnlocked, lastAutonomy, layEggs, loadShedding, lotsOf,
+  mailReceived, maintainCost, maintainDevice, makeDevice, makePlot, makePlots, marketCoef, marketFloor,
+  maxCows, maxSheep, maxStage, mealDue, mealOrder, memberName, memberPortrait, memberRemovalBlock,
+  memberRoom, mergeOfflineReports, migrate, migrateCropZone, migrateTechTreeV2, migrateToIntegers,
+  MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
+  newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
+  nextSeasonStart, NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
+  openFridge, openSerre, openStation, orchardFree, orchardProducesOn, orchardSlotPrice, orchardWindow,
+  ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
+  plannedAutonomy, plant, plantableCrops, plantableCropsFor, portraitEmoji, prepTimeMult,
+  productionItemKeys, productivity, purchasePrice, queueCapacity, rainNight, randomInt, RAW_DATA,
+  rawAverageHealth, readMail, readyCrops, recipeNode, recipeStatus, recipeTime, recipeUnlocked, recordNight,
+  removeMember, removePet, repairCost, repairDevice, reservableItems, routineDue, scaleEnergie,
+  seasonFactor, seasonNight, seedItem, seedStock, sellableCount, sellItem, sellPrice, serreUpgradeCost,
+  setMemberProfile, setPetProfile, setRoutine, setSeedReserve, setSemis, shear, sheepCount, sheepPlaces,
+  sheepToShear, shelfLife, siloCapacity, siloUpgradeCost, simulateFromCopy, simulateGame, simulateOffline,
+  simulatePlay, simulationReach, skipTutorial, sleep, spend, spoil, stableFree, stableOccupied, startFarm,
+  startHousehold, startLot4, startLot5, startLot6, startMilling, startRecipe, STATE_VERSION, storeEnergy,
+  storeWheat, strawMissing, strawNeed, strawStock, takeItem, takeMeal, tankCapacity, taskTimeLeft,
+  techPoints, techPrereqs, techProgress, techStatus, testAddDevice, testAddEggs, testAddFlour, testAddFood,
+  testAddHens, testAddOil, testAddPieces, testAddSeeds, testAddSheep, testAddStraw, testAddWheat,
+  testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
+  testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter, testNextSeason,
+  testRipenAll, testSetBuildingLevel5, testSetHealthZero, testSetWear, testSleepNights, testUnlockAllTechs,
+  testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockChapter, unreadMail,
+  updateChapters, updateHealth, upgradeCost, upgradeDevice, upgradePotager, upgradePoulailler, upgradeSerre,
+  upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, waterCostFor,
+  waterSeasonFactor, wheatForHens, wheatTotal, winterStatus, woolReady, yieldSeasonFactor,
+} from '../js/engine/index.js';
+
 
 const __tests = [];
 
@@ -7277,14 +7324,14 @@ test('Lot 10 : chaque nuit, la journée du joueur dure son temps d\'éveil', () 
   for (const id of ['applique', 'minimal']) {
     const s = createInitialState(1);
     const strat = DATA.SIMULATION.STRATEGIES[id];
-    // on mesure l'éveil juste avant Dormir : botDay l'a rempli, sleep() le remet à zéro
+    // on mesure l'éveil juste avant Dormir : botDay l'a rempli, sleep() le remet à zéro.
+    // La mesure est une étape de nuit ajoutée en tête : elle passe avant la remise à zéro.
     const eveil = [];
-    const sleepBefore = sleep;
-    sleep = (state) => { eveil.push(state.awakeMs); return sleepBefore(state); };
+    NIGHT_STEPS.unshift((state) => { eveil.push(state.awakeMs); });
     try {
       botDay(s, strat, {});
     } finally {
-      sleep = sleepBefore;
+      NIGHT_STEPS.shift();
     }
     assertEqual(eveil[0], strat.eveilS * 1000, `${id} : ${eveil[0]} ms d'éveil au lieu de ${strat.eveilS} s`);
     assertEqual([s.day, s.awakeMs], [2, 0]);
@@ -8362,8 +8409,5 @@ test('données : chaque culture connaît sa découpe sur la carte', () => {
   }
 });
 
-// run-tests.mjs fournit `module` : c'est lui qui lance les tests et lit
-// globalThis.__testResults.
-if (typeof module !== 'undefined' && typeof globalThis !== 'undefined') {
-  runTests();
-}
+// run-tests.mjs importe ce fichier et lit `results`.
+export const results = runTests();

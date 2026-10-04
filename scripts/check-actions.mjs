@@ -2,7 +2,7 @@
 // Vérifie que les actions de l'interface se tiennent, de bout en bout :
 //
 //   1. chaque data-action écrit dans la page a une fonction dans le registre
-//      (registerActions, js/app.js) — sinon le bouton ne fait rien ;
+//      (registerActions, dans les modules de js/ui/) — sinon le bouton ne fait rien ;
 //   2. chaque fonction du registre est appelée par au moins un data-action ;
 //   3. chaque action suivie par le suivi de session est classée dans le
 //      rapport quotidien (worker/src/report.mjs : GAME_ACTIONS ou
@@ -10,13 +10,14 @@
 //
 // Usage : node scripts/check-actions.mjs
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/engine-source.mjs';
 import { GAME_ACTIONS, INTERFACE_ACTIONS } from '../worker/src/report.mjs';
 
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
-const app = read('js/app.js');
+// Tous les modules de l'interface, bout à bout.
+const app = ['js/main.js', ...readdirSync(join(ROOT, 'js/ui')).filter((f) => f.endsWith('.js')).sort().map((f) => `js/ui/${f}`)].map(read).join('\n');
 
 /* le registre */
 const registered = new Set();
@@ -37,8 +38,7 @@ for (const src of sources) {
 // est un texte passé par l'appelant ('inv-tab', 'buy'…). On retient les textes écrits
 // ailleurs que dans le registre qui, seuls ou avec un de ces suffixes, nomment une action.
 const suffixes = [...new Set([...app.matchAll(/data-action="\$\{[^}]+\}(-[a-z]+)?"/g)].map((m) => m[1] || ''))];
-const start = app.indexOf('registerActions({');
-const outside = app.slice(0, start) + app.slice(app.indexOf('\n});', start));
+const outside = app.replace(/^registerActions\(\{\n[\s\S]*?\n\}\);/gm, '');
 for (const m of outside.matchAll(/'([a-z0-9-]+)'/g)) {
   for (const suffix of suffixes) if (registered.has(m[1] + suffix)) used.add(m[1] + suffix);
 }

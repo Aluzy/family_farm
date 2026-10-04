@@ -1,16 +1,13 @@
-// Le moteur du jeu, tel que la page le charge : les mêmes fichiers, dans le même
-// ordre que les balises <script> de jeu.html. run-tests.mjs et simulate.mjs
-// l'exécutent avec Node, sans DOM (le moteur n'en a pas besoin).
+// Où trouver le dépôt et le moteur du jeu, pour les scripts (tests, simulation,
+// vérifications). Le moteur est un ensemble de modules ES (js/engine/) : Node les
+// importe tels que le navigateur les charge.
 
-import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-// Fichiers du moteur, dans l'ordre de chargement de la page.
-export const ENGINE_FILES = ['js/data.generated.js', 'js/engine.js'];
-
-export function engineSource(root = ROOT) {
-  return ENGINE_FILES.map((f) => readFileSync(join(root, f), 'utf8')).join('\n');
+// Adresse du point d'entrée du moteur, à passer à import().
+export function engineUrl(root = ROOT) {
+  return pathToFileURL(join(root, 'js', 'engine', 'index.js')).href;
 }

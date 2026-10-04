@@ -1,0 +1,8 @@
+{
+  "name": "ferme-familiale",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/build-data.mjs --check && node test-data.mjs && node run-tests.mjs && node test-telemetry.mjs && node test-report.mjs && node scripts/check-actions.mjs && node scripts/check-page.mjs && node build-encyclopedie.mjs --check"
+  }
+}

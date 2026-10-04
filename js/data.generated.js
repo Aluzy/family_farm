@@ -1,12 +1,10 @@
-'use strict';
-
 // FICHIER GÉNÉRÉ par scripts/build-data.mjs à partir de data/*.json.
 // Ne pas le modifier : changer les fichiers JSON, puis lancer
 //   node scripts/build-data.mjs
 // Les valeurs sont celles des fichiers, avant les calculs du chargement (prix
 // de production doublés, temps de cuisson, plats) : voir buildCatalog() dans
-// js/engine.js, qui en fait DATA.
-const RAW_DATA = {
+// js/engine/catalog.js, qui en fait DATA.
+export const RAW_DATA = {
   "START": { "PIECES": 350, "DEVICE_PRICE": 0, "INVENTAIRE": { "conserve": 160, "graine_carotte": 10, "patate": 6, "graine_tomate": 4 } },
   "TIME": { "DAY_START_HOUR": 6, "SECONDS_PER_HOUR": 30, "CLOCK_SECONDS_PER_HOUR": 18, "MIN_AWAKE_S": 30, "MEAL_HOUR": 19, "NIGHT_HOUR": 22 },
   "FAMILY": {

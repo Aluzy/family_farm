@@ -1,0 +1,263 @@
+import { DATA } from '../engine/catalog.js';
+import {
+  batteryCapacity, buyDevice, efficiency, isBroken, maintainCost, needsService, nextPurchasePrice,
+  panelOutput, pumpFlow, repairCost, tankCapacity, toggleDevice, upgradeCost, upgradeDevice,
+} from '../engine/devices.js';
+import { deviceStatus, energyStats } from '../engine/energy.js';
+import { productivity } from '../engine/family.js';
+import { potagerUpgradeCost, upgradePotager } from '../engine/crops.js';
+import { isUnlocked } from '../engine/campaign.js';
+import {
+  formatCoins, formatLitres, formatLitresRate, formatNumber, formatPercent, formatWh, formatWhRate,
+} from '../engine/format.js';
+import { FERME_LINKS, setEcranFerme, state, tabAvailable, TABS } from './store.js';
+import { telView } from './consent.js';
+import { applyResult } from './game-actions.js';
+import { refresh } from './render.js';
+import {
+  coopShown, herdShown, renderAchatArbres, renderAchatPoules, renderAchatTroupeau, setStageReturn,
+  setStageWindow, stageReturn, stageWindow,
+} from './stage-windows.js';
+import { autoChip, groupButtons, plotCard, renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
+import { renderCalendar, renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
+import { renderAteliers, renderMoulin } from './cuisine.js';
+import { renderChapterBanner } from './chapitres.js';
+import { icon } from './animations.js';
+import { helpBtn, tutoTarget } from './aide.js';
+import { registerActions } from './actions.js';
+import { canPay, costLabel } from './common.js';
+
+/* ---------- Ferme : cartes et écrans de détail ---------- */
+
+const DEVICE_ICONS = { panneau: '☀️', batterie: '🔋', pompe: '⛲', moulin: '⚙️', presse: '🌻', frigo: '🧊' };
+const DEVICE_NAMES = { panneau: 'Panneau', batterie: 'Batterie', pompe: 'Pompe', moulin: 'Moulin', presse: 'Presse', frigo: 'Réfrigérateur' };
+
+export function deviceName(d) {
+  if (d.type === 'pompe' || d.type === 'moulin' || d.type === 'presse' || d.type === 'frigo') return DEVICE_NAMES[d.type];
+  const list = d.type === 'panneau' ? state.panneaux : state.batteries;
+  return `${DEVICE_NAMES[d.type]} n°${list.indexOf(d) + 1}`;
+}
+
+function alertLine(aEntretenir, enPanne) {
+  const parts = [];
+  if (enPanne) parts.push(`⛔ ${enPanne} en panne`);
+  if (aEntretenir) parts.push(`⚠️ ${aEntretenir} à entretenir`);
+  return parts.length ? `<span class="alert">${parts.join(' · ')}</span>` : '';
+}
+
+// En-tête des écrans ouverts depuis la Ferme.
+export function backToFerme() {
+  return '<div class="screen-head"><button type="button" class="btn" data-action="switch-tab" data-tab="ferme">← Ferme</button></div>';
+}
+
+// Raccourcis de la Ferme : Famille, Livre de recette, Arbre des technologies
+// (les deux derniers seulement une fois débloqués).
+function renderFermeLinks() {
+  const links = FERME_LINKS.filter((id) => tabAvailable(id))
+    .map((id) => TABS.find((t) => t.id === id))
+    .map((t) => `<button type="button" class="ferme-link" data-action="switch-tab" data-tab="${t.id}"><span aria-hidden="true">${t.icon}</span><span>${t.label}</span></button>`)
+    .join('');
+  return links ? `<nav class="ferme-links" aria-label="Raccourcis de la ferme">${links}</nav>` : '';
+}
+
+export function renderFerme() {
+  // Lot 11 : une tranche par section, toujours le même nombre de tranches (une
+  // section pas encore débloquée est vide) : chacune n'est mise à jour que si
+  // son gabarit a changé.
+  // Les achats d'animaux et d'arbres suivent leur section (comme dans les fenêtres de la
+  // carte) ; les ancres sont celles des indicateurs du bandeau et des notifications.
+  return [
+    `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}<div id="bat-calendrier" class="ancre">${renderCalendar()}</div>`,
+    renderPotager(),
+    isUnlocked(state, 'serre') ? renderSerre() : '',
+    isUnlocked(state, 'silo') ? renderSilo() : '',
+    coopShown() ? `<div id="etable-poules" class="ancre">${renderPoulailler()}</div>` : '',
+    coopShown() ? renderAchatPoules() : '',
+    herdShown() ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}</div>` : '',
+    herdShown() ? renderAchatTroupeau() : '',
+    isUnlocked(state, 'verger') ? renderVerger() : '',
+    isUnlocked(state, 'verger') ? renderAchatArbres() : '',
+    renderAteliers(),
+    typeof renderMoulin === 'function' ? renderMoulin() : '',
+    `<div id="bat-eau" class="ancre">${renderEnergieEau()}</div>`,
+  ];
+}
+
+// Cartes « Énergie et eau » : dans la liste classique de la Ferme et dans la fenêtre
+// Maison › Installations de la carte.
+export function renderEnergieEau() {
+  const e = energyStats(state), p = state.pompe, ps = deviceStatus(state, p), cap = tankCapacity(state);
+  let netText = 'Stable (0 Wh/s)';
+  if (e.net > 0) netText = `En charge (${formatWhRate(e.net, true)})`;
+  else if (e.net < 0) netText = `En décharge (${formatWhRate(e.net, true)})`;
+  const tankText = state.eauMl >= cap ? 'Réservoir plein' : `Vitesse de remplissage : ${formatLitresRate(state.flux.eau)}`;
+  return `
+    <h3 class="section-title">⚡ Énergie et eau</h3>
+    <div class="cards">
+      <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
+        <span class="card-title"><span>${icon('panneau')}Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="big">${formatWhRate(e.production)}</span>
+        <span class="muted">${e.panneauxEnMarche} panneau${e.panneauxEnMarche > 1 ? 'x' : ''} en marche sur ${e.panneauxTotal}</span>
+        ${alertLine(e.panneauxAEntretenir, e.panneauxEnPanne)}
+      </button>
+      <button type="button" class="card" data-action="open-screen" data-screen="batteries">
+        <span class="card-title"><span>${icon('batterie')}Stockage d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="big">${formatNumber(Math.floor(e.charge / 1000))} / ${formatWh(e.capacite)}</span>
+        <span class="muted">${netText}</span>
+        ${alertLine(e.batteriesAEntretenir, e.batteriesEnPanne)}
+      </button>
+      <div class="card ancre${tutoTarget('eau')}" id="dev-pompe">
+        <span class="card-title"><span>${icon('pompe')}Pompe · niveau ${p.niveau}</span><span class="chips"><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span>${helpBtn('pompe')}</span></span>
+        <span class="muted">Débit réel : <span class="num">${formatLitresRate(p.debit)}</span> (max ${formatLitresRate(pumpFlow(p))})</span>
+        <span class="muted">Consommation : <span class="num">${formatWhRate(p.conso)}</span></span>
+        ${wearHtml(p)}
+        ${deviceControls(p)}
+      </div>
+      <div class="card${tutoTarget('eau')}">
+        <span class="card-title"><span>${icon('reservoir')}Réservoir</span>${helpBtn('reservoir')}</span>
+        <span class="big">${formatNumber(Math.floor(state.eauMl / 1000))} / ${formatLitres(cap)}</span>
+        <span class="muted">${tankText}</span>
+      </div>
+      ${isUnlocked(state, 'frigo') ? renderFridgeCard() : ''}
+    </div>
+  `;
+}
+
+export function wearHtml(d) {
+  const pct = d.usure;
+  const cls = isBroken(d) ? ' bad' : needsService(d) ? ' warn' : '';
+  return `
+    <span class="muted">Usure : <span class="num">${formatNumber(pct)} %</span> · rendement ${formatNumber(efficiency(d))} %</span>
+    <span class="bar" role="progressbar" aria-label="Usure" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(d.usure)}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
+  `;
+}
+
+// Interrupteur à deux positions : rouge à l'arrêt, vert en marche, et l'état
+// est aussi écrit (la couleur n'est jamais la seule indication).
+export function switchHtml(d) {
+  const broken = isBroken(d);
+  const on = d.allume && !broken;
+  const text = broken ? 'En panne' : on ? 'Marche' : 'Arrêt';
+  return `<button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="${deviceName(d)}" data-action="toggle" data-id="${d.id}"${broken ? ' disabled' : ''}><span class="knob" aria-hidden="true"></span><span>${text}</span></button>`;
+}
+
+function deviceControls(d) {
+  const up = upgradeCost(d);
+  const maintain = maintainCost(d);
+  const repair = repairCost(d);
+  const broken = isBroken(d);
+  const upgradeBtn =
+    up === null
+      ? '<button type="button" class="btn" disabled>Niveau max</button>'
+      : `<button type="button" class="btn" data-action="upgrade" data-id="${d.id}"${canPay(up) ? '' : ' disabled'}>Améliorer (${costLabel(up)})</button>`;
+  const maintainOk = !broken && (d.usure > 0 || d.usureMs > 0) && canPay(maintain);
+  const repairOk = broken && canPay(repair);
+  return `
+    <span class="device-actions">
+      ${switchHtml(d)}
+      ${upgradeBtn}
+      <button type="button" class="btn" data-action="maintain" data-id="${d.id}"${maintainOk ? '' : ' disabled'}>Entretenir (${costLabel(maintain)})</button>
+      <button type="button" class="btn" data-action="repair" data-id="${d.id}"${repairOk ? '' : ' disabled'}>Réparer (${costLabel(repair)})</button>
+    </span>
+  `;
+}
+
+function deviceRow(d) {
+  const st = deviceStatus(state, d);
+  let detail;
+  if (d.type === 'panneau') {
+    detail = `<span class="muted">Production : <span class="num">${formatWhRate(d.prod)}</span> (max ${formatWhRate(panelOutput(d, state))})</span>`;
+  } else {
+    const cap = batteryCapacity(d);
+    let flow = 'Ni charge ni décharge';
+    if (st.code === 'decharge') flow = `Puissance soutirée : ${formatWhRate(-d.sortie, true)}`;
+    else if (st.code === 'charge') flow = `Charge : ${formatWhRate(d.entree, true)}`;
+    detail = `
+      <span class="muted">Charge : <span class="num">${formatNumber(Math.floor(d.chargeMwh / 1000))} / ${formatWh(cap)}</span></span>
+      <span class="muted">${flow}</span>`;
+  }
+  const badge = st.badge ? `<span class="chip warn">⚠️ ${st.badge}</span>` : '';
+  return `
+    <article class="card ancre" id="dev-${d.id}">
+      <span class="card-title"><span>${DEVICE_ICONS[d.type]} ${deviceName(d)} · niveau ${d.niveau}</span><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span></span>
+      ${badge}
+      ${detail}
+      ${wearHtml(d)}
+      ${deviceControls(d)}
+    </article>
+  `;
+}
+
+export function renderDeviceScreen(kind) {
+  const isPanels = kind === 'panneaux';
+  const list = isPanels ? state.panneaux : state.batteries;
+  const type = isPanels ? 'panneau' : 'batterie';
+  const e = energyStats(state);
+  const price = nextPurchasePrice(state, type);
+  const summary = isPanels
+    ? `<span class="big">${formatWhRate(e.production)}</span>
+       <span class="muted">${e.panneauxEnMarche} panneau${e.panneauxEnMarche > 1 ? 'x' : ''} en marche sur ${e.panneauxTotal}</span>`
+    : `<span class="big">${formatNumber(Math.floor(e.charge / 1000))} / ${formatWh(e.capacite)}</span>
+       <span class="muted">Total reçu : ${formatWhRate(e.entree, true)} · Total soutiré : ${formatWhRate(-e.sortie, true)}</span>`;
+  return `
+    <div class="screen-head">
+      <button type="button" class="btn" data-action="close-screen">← Ferme</button>
+      <h2>${icon(type)}${isPanels ? 'Production d\'énergie' : 'Stockage d\'énergie'}</h2>
+      ${helpBtn(type)}
+    </div>
+    <div class="stack">${summary}</div>
+    <div class="device-list">${list.map(deviceRow).join('')}</div>
+    <button type="button" class="btn primary" data-action="buy" data-type="${type}"${canPay(price) ? '' : ' disabled'}>Acheter ${isPanels ? 'un panneau' : 'une batterie'} (${formatCoins(price)} 💰)</button>
+  `;
+}
+
+/* ---------- Ferme : Zone de culture (state.potager) ---------- */
+
+export function renderPotager() {
+  const pot = state.potager;
+  const up = potagerUpgradeCost(state);
+  const prod = productivity(state);
+  const upBtn =
+    up === null
+      ? '<button type="button" class="btn" disabled>Zone de culture au niveau maximum</button>'
+      : `<button type="button" class="btn" data-action="upgrade-potager"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${pot.niveau + 1}, ${DATA.POTAGER.PARCELLES[pot.niveau]} parcelles (${costLabel(up)})</button>`;
+  return `
+    <div class="section-head">
+      <h3>${icon('potager')}${DATA.POTAGER.NOM} · niveau ${pot.niveau}</h3>
+      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ${formatPercent(prod)}</span>${helpBtn('potager')}</span>
+    </div>
+    <div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
+    <div class="row plot-foot">${groupButtons('potager')}${upBtn}</div>
+  `;
+}
+
+/* ---------- actions de cet écran (voir ui/actions.js) ---------- */
+
+registerActions({
+  'open-screen': (target) => {
+    setStageReturn(stageWindow);
+    setStageWindow(null);
+    setEcranFerme(target.dataset.screen);
+    telView();
+    refresh();
+  },
+  'close-screen': () => {
+    setEcranFerme(null);
+    setStageWindow(stageReturn);
+    setStageReturn(null);
+    telView();
+    refresh();
+  },
+  'toggle': (target) => {
+    applyResult(toggleDevice(state, target.dataset.id));
+  },
+  'upgrade': (target) => {
+    applyResult(upgradeDevice(state, target.dataset.id));
+  },
+  'buy': (target) => {
+    applyResult(buyDevice(state, target.dataset.type));
+  },
+  'upgrade-potager': () => {
+    applyResult(upgradePotager(state));
+  },
+});
