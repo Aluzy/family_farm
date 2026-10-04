@@ -1,8 +1,8 @@
 // Rapport quotidien Ferme Familiale : calcul pur (aucun accès réseau ni R2),
 // pour pouvoir le tester avec `node worker/test-report.mjs`.
 //
-// Entrée : les fichiers JSON de session écrits par le Worker (voir jeu.html,
-// bloc <script id="telemetry">). Sortie : un objet « rapport », puis son rendu
+// Entrée : les fichiers JSON de session écrits par le Worker (voir
+// js/telemetry.js). Sortie : un objet « rapport », puis son rendu
 // en texte et en HTML pour l'e-mail.
 
 const TZ = 'Europe/Paris';
@@ -12,7 +12,7 @@ const TOP_N = 10;
 const MAX_COMMENTS_SHOWN = 30;
 
 // Actions de jeu regroupées par libellé. Les clés sont les valeurs de
-// data-action de jeu.html. Une action absente de ces tableaux (nouvelle
+// data-action de js/app.js. Une action absente de ces tableaux (nouvelle
 // fonction du jeu, par exemple) apparaît dans le classement sous son nom brut :
 // rien n'est perdu en silence.
 export const GAME_ACTIONS = {

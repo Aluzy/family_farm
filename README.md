@@ -10,15 +10,15 @@ réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la fami
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
-- **Technique** : trois pages HTML autonomes, sans bibliothèque et sans étape de
-  build : `index.html` (page d'accueil), `jeu.html` (le jeu) et
-  `encyclopedie.html` (glossaire du jeu, généré depuis
+- **Technique** : des pages HTML sans bibliothèque à installer et sans étape de build :
+  `index.html` (page d'accueil), `jeu.html` (le jeu, dont le style est dans
+  `css/` et le code dans `js/`) et `encyclopedie.html` (glossaire du jeu, généré depuis
   `encyclopedie_ferme_familiale.json` par `node build-encyclopedie.mjs`), plus `cookies.html` (politique de cookies
   et traceurs). Elles fonctionnent ouvertes depuis le disque comme servies en HTTP.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
 - **Carte de la ferme** : l'onglet Ferme affiche une carte en pixel art (Phaser 3,
-  `vendor/phaser.min.js`, scène dans `farm-stage.js`, images et carte Tiled dans
+  `vendor/phaser.min.js`, scène dans `js/farm-stage.js`, images et carte Tiled dans
   `assets/`) ; voir [`docs/architecture-phaser.md`](docs/architecture-phaser.md). La
   carte demande d'ouvrir le jeu en HTTP (`python3 -m http.server`) ; sans Phaser ou
   depuis le disque, la Ferme garde sa liste classique et le jeu reste jouable.
@@ -90,14 +90,24 @@ dépasse une minute.
 
 ### Structure
 
-- `jeu.html` contient trois blocs, toujours dans cet ordre :
-  1. `<style>` : variables de thème (clair et sombre), puis composants ;
-  2. `<script id="core">` : `DATA` (toutes les valeurs d'équilibrage), puis
-     `ENGINE` (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine) ;
-  3. `<script id="telemetry">` puis `<script id="app">` : suivi de session,
-     sauvegarde, interface et boucle.
-- `tests/engine.test.js` : les tests du moteur. Ils ne sont plus dans la page :
-  le navigateur ne les télécharge pas.
+`jeu.html` ne contient que la structure de la page. Elle charge, dans cet ordre :
+
+| Fichier | Contenu |
+|---|---|
+| `css/jeu.css` | variables de thème (clair et sombre), puis composants |
+| `js/engine.js` | `DATA` (toutes les valeurs d'équilibrage), puis `ENGINE` (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine) |
+| `js/telemetry.js` | suivi de session (`Telemetry.*`) |
+| `vendor/phaser.min.js`, `js/farm-stage.js` | la carte de la ferme |
+| `js/app.js` | sauvegarde, interface et boucle |
+
+Ce sont des scripts classiques qui partagent la portée de la page, comme quand ils
+étaient dans le même fichier : l'interface appelle les fonctions du moteur par leur nom.
+`tests/engine.test.js` (les tests du moteur) n'est jamais chargé par la page.
+
+Chaque fichier est chargé avec `?v=<version du jeu>` : en changeant `GAME_VERSION`
+(dans `js/engine.js`), changez aussi ce suffixe dans `jeu.html`, sinon un joueur peut
+recevoir la nouvelle page avec un ancien script resté en cache.
+`node scripts/check-page.mjs` vérifie que les deux concordent.
 
 L'état du jeu est un seul objet JSON, versionné (migrations dans `MIGRATIONS`) ;
 l'interface ne le modifie qu'à travers les actions nommées du moteur.
@@ -109,6 +119,7 @@ node run-tests.mjs                  # moteur du jeu
 node test-telemetry.mjs             # suivi de session (rien sans consentement, retrait, limites, commentaires)
 node test-report.mjs                # rapport quotidien (calculs, Markdown, protections du Worker)
 node build-encyclopedie.mjs --check # encyclopedie.html est à jour avec son JSON
+node scripts/check-page.mjs         # jeu.html charge des fichiers qui existent, à la bonne version
 ```
 
 Node 18 ou plus récent. Tout doit passer avant un commit ; l'action GitHub
@@ -134,7 +145,7 @@ nuits ou des saisons, aller à un chapitre, et voir l'état complet de la partie
 
 ### Vérifier avant de publier
 
-1. Les quatre commandes de la section Tests passent.
+1. Les commandes de la section Tests passent.
 2. Ouvrir `index.html` depuis le disque, puis servi en HTTP
    (par exemple `python3 -m http.server` et <http://localhost:8000/>) : aucune
    erreur dans la console, à 390 px et à 1 280 px de large, en thème clair et
@@ -147,7 +158,7 @@ Confidentialité), le jeu enregistre de façon anonyme, pour l'améliorer : les 
 utilisés, les écrans consultés, le défilement et un instantané de progression à
 chaque nuit. Rien n'est stocké ni envoyé sans accord, et un signal Global Privacy
 Control ou Do Not Track du navigateur désactive tout. La politique publique est
-`cookies.html` ; le code est le bloc `<script id="telemetry">` de `jeu.html`
+`cookies.html` ; le code est `js/telemetry.js`
 (l'app l'appelle via `Telemetry.*`, jamais l'ENGINE).
 
 - **Stockage** : `sessionStorage` (`ff_sid`, `ff_t0`, `ff_data`) pour la visite,
@@ -161,7 +172,7 @@ Control ou Do Not Track du navigateur désactive tout. La politique publique est
     `node collect-server.mjs` écrit les sessions dans `./sessions/` (essais).
   - Sur tout autre domaine : rien n'est envoyé.
 - **Si vous modifiez ce qui est collecté**, mettez à jour `cookies.html` et
-  `POLICY_VERSION` dans le bloc `telemetry` : le consentement est alors redemandé.
+  `POLICY_VERSION` dans `js/telemetry.js` : le consentement est alors redemandé.
 - **Commentaires** : ⚙️ Options › « Aidez-nous à améliorer le jeu ! » ouvre un champ
   texte (1 000 signes, 3 par visite). Le commentaire est ajouté au fichier de session
   (`feedback`), donc envoyé seulement si le suivi est autorisé.

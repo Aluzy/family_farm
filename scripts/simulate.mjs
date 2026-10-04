@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Simulation et équilibrage (Lot 10, conception sections 8.10 et 8.11).
 //
-// Comme run-tests.mjs, ce script extrait le bloc <script id="core"> de
-// jeu.html et joue des parties complètes avec le vrai moteur, sans interface.
-// Le joueur automatique et ses réglages vivent dans le bloc core
+// Comme run-tests.mjs, ce script lit le moteur (scripts/lib/engine-source.mjs)
+// et joue des parties complètes avec lui, sans interface.
+// Le joueur automatique et ses réglages vivent dans le moteur
 // (DATA.SIMULATION et fonctions bot*/simulate*) : le script ne fait que lancer
 // les parties, écrire le CSV, le graphique, et vérifier la courbe cible.
 //
@@ -13,12 +13,13 @@
 //
 // Options : --nuits N (80), --graine N (1), --strategie applique|minimal|toutes,
 //           --csv fichier (simulation.csv), --svg fichier (simulation-autonomie.svg),
-//           --index chemin/vers/jeu.html, --lissage N (nuits de la moyenne mobile).
+//           --racine dossier/du/jeu (une autre copie du dépôt), --lissage N (nuits de la moyenne mobile).
 // Code de sortie : 0 si toutes les vérifications sont OK, 1 sinon.
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ROOT, engineSource } from './lib/engine-source.mjs';
 
 /* ---------- arguments ---------- */
 
@@ -32,18 +33,17 @@ if (args.includes('--aide') || args.includes('--help')) {
   process.exit(0);
 }
 
-const here = dirname(fileURLToPath(import.meta.url));
-const indexPath = resolve(option('index', resolve(here, '..', 'jeu.html')));
+/* ---------- le moteur ---------- */
 
-/* ---------- le moteur, extrait de jeu.html ---------- */
-
-const html = readFileSync(indexPath, 'utf8');
-const match = html.match(/<script id="core">([\s\S]*?)<\/script>/);
-if (!match) {
-  console.error(`Bloc <script id="core"> introuvable dans ${indexPath}`);
+const racine = resolve(option('racine', ROOT));
+let source;
+try {
+  source = engineSource(racine);
+} catch (err) {
+  console.error(`Moteur introuvable dans ${racine} : ${err.message}`);
   process.exit(2);
 }
-const E = new Function(`${match[1]}\nreturn { DATA, simulateGame, simulationReach };`)();
+const E = new Function(`${source}\nreturn { DATA, simulateGame, simulationReach };`)();
 const S = E.DATA.SIMULATION;
 
 const nuits = Math.max(1, Math.floor(Number(option('nuits', S.NUITS))));
@@ -116,7 +116,7 @@ writeFileSync(svgPath, svgAutonomie(parties));
 
 const pad = (v, n) => String(v).padStart(n);
 const affiche = [1, 5, 8, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80].filter((n) => n <= nuits);
-console.log(`Simulation : ${nuits} nuits, graine ${graine}, moteur de ${indexPath}`);
+console.log(`Simulation : ${nuits} nuits, graine ${graine}, moteur de ${racine}`);
 for (const id of ids) {
   const rows = parties[id];
   console.log(`\n== ${S.STRATEGIES[id].nom} (${S.STRATEGIES[id].eveilS} s d'éveil par jour) ==`);

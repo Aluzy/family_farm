@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Tests du suivi de session (bloc <script id="telemetry"> de jeu.html).
-// Exécute le bloc dans un contexte Node avec un navigateur simulé (stockage,
+// Tests du suivi de session (js/telemetry.js).
+// Exécute le fichier dans un contexte Node avec un navigateur simulé (stockage,
 // sendBeacon, événements) et vérifie surtout les règles de confidentialité :
 // rien n'est stocké ni envoyé sans consentement, rien après un retrait.
 //
@@ -11,10 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
-const html = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'jeu.html'), 'utf8');
-const m = html.match(/<script[^>]*\bid=["']telemetry["'][^>]*>([\s\S]*?)<\/script>/i);
-if (!m) { console.error('Bloc <script id="telemetry"> introuvable dans jeu.html'); process.exit(1); }
-const source = m[1];
+const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'js', 'telemetry.js'), 'utf8');
 
 let passed = 0;
 const failures = [];

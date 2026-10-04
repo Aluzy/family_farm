@@ -10,12 +10,13 @@ du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur
 ## 1. Découpage
 
 ```
-jeu.html
- ├─ <script id="core">    moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
- ├─ <script id="tests">   tests du moteur
- ├─ vendor/phaser.min.js  Phaser 3.90 (fichier à part, ≈ 1 Mo)
- ├─ farm-stage.js         la scène : ne connaît ni `state` ni le moteur
- └─ <script id="app">     blocs « Carte Phaser » et « Fenêtres de la carte »
+jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
+ ├─ js/engine.js          moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
+ ├─ js/telemetry.js       suivi de session
+ ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
+ ├─ js/farm-stage.js      la scène : ne connaît ni `state` ni le moteur
+ └─ js/app.js             blocs « Carte Phaser » et « Fenêtres de la carte »
+tests/engine.test.js      tests du moteur (jamais chargés par la page)
 assets/                   carte Tiled (carte_printemps.json) + images du pack
 ```
 
@@ -149,7 +150,7 @@ est celui des fonctions de rendu existantes, sans réécriture :
 ## 6. Sans Phaser
 
 `TAB_RENDERERS.ferme` affiche la liste classique (`renderFerme()`) seulement quand la carte
-n'est pas utilisable (`stageUsable()`) : `vendor/phaser.min.js` ou `farm-stage.js` absent, jeu
+n'est pas utilisable (`stageUsable()`) : `vendor/phaser.min.js` ou `js/farm-stage.js` absent, jeu
 ouvert depuis le disque (`file://` : le navigateur refuse de charger la carte), plantage au
 montage, ou scène toujours pas prête 12 s après le montage (la carte revient d'elle-même si elle
 finit par démarrer). Le jeu reste entièrement jouable dans ce cas.

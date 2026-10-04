@@ -2,7 +2,7 @@
  *
  * Règles d'architecture (voir docs/architecture-phaser.md) :
  *   1. Ce fichier ne lit JAMAIS l'état du jeu. Il reçoit un « modèle de vue »
- *      (objet simple, voir stageModel() dans jeu.html) et l'affiche.
+ *      (objet simple, voir stageModel() dans js/app.js) et l'affiche.
  *   2. Il n'écrit JAMAIS dans le jeu. Un appui sur la carte appelle
  *      bridge.act(action, données) : la page déclenche alors la même
  *      action `data-action` qu'un bouton du DOM (même code, mêmes fenêtres,

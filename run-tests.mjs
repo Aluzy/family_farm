@@ -1,49 +1,28 @@
 #!/usr/bin/env node
 // Lanceur de tests pour Ferme Familiale.
-// Lit le moteur (bloc <script id="core"> de jeu.html) et les tests
-// (tests/engine.test.js), les exécute avec Node (sans DOM, puisque le moteur
-// n'en a pas besoin), et affiche le nombre de tests passés et échoués. Code de
-// sortie non nul en cas d'échec.
+// Lit le moteur (les fichiers listés dans scripts/lib/engine-source.mjs, ceux
+// que charge jeu.html) et les tests (tests/engine.test.js), les exécute avec
+// Node (sans DOM, puisque le moteur n'en a pas besoin), et affiche le nombre de
+// tests passés et échoués. Code de sortie non nul en cas d'échec.
 //
 // Usage : node run-tests.mjs
 
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import vm from 'node:vm';
+import { ROOT, engineSource } from './scripts/lib/engine-source.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const indexPath = join(__dirname, 'jeu.html');
-
-let html;
-try {
-  html = readFileSync(indexPath, 'utf8');
-} catch (err) {
-  console.error(`Impossible de lire ${indexPath} : ${err.message}`);
-  process.exit(1);
-}
-
-function extractScript(html, id) {
-  // Capture le contenu d'une balise <script id="..." ...> ... </script>,
-  // quel que soit l'ordre ou la présence d'autres attributs (ex. type="text/plain").
-  const re = new RegExp(`<script[^>]*\\bid=["']${id}["'][^>]*>([\\s\\S]*?)<\\/script>`, 'i');
-  const match = html.match(re);
-  if (!match) {
-    console.error(`Bloc <script id="${id}"> introuvable dans jeu.html`);
+function read(label, fn) {
+  try {
+    return fn();
+  } catch (err) {
+    console.error(`Impossible de lire ${label} : ${err.message}`);
     process.exit(1);
   }
-  return match[1];
 }
 
-const coreSource = extractScript(html, 'core');
-const testsPath = join(__dirname, 'tests', 'engine.test.js');
-let testsSource;
-try {
-  testsSource = readFileSync(testsPath, 'utf8');
-} catch (err) {
-  console.error(`Impossible de lire ${testsPath} : ${err.message}`);
-  process.exit(1);
-}
+const coreSource = read('le moteur', () => engineSource());
+const testsSource = read('tests/engine.test.js', () => readFileSync(join(ROOT, 'tests', 'engine.test.js'), 'utf8'));
 
 // Le moteur et les tests sont concaténés et exécutés comme un seul script :
 // les tests appellent les fonctions du moteur par leur nom, comme le fait

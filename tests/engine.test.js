@@ -1,7 +1,7 @@
 'use strict';
 
 /* ==========================================================================
-   Tests du moteur (bloc "core" uniquement). Petite fonction test/assert
+   Tests du moteur (js/engine.js uniquement). Petite fonction test/assert
    maison : pas de dépendance externe. Ce fichier n'est jamais chargé par le
    navigateur : run-tests.mjs l'exécute avec Node, à la suite du moteur, dans
    la même portée (les tests appellent donc les fonctions du moteur par leur
