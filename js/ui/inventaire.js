@@ -46,7 +46,7 @@ function fridgeInButtons(item) {
         <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo">🧊 Tout</button>`;
 }
 
-// Une case de l'inventaire : icône, nom, quantité, puis une ligne d'état
+// Une case de l'inventaire : icône, nom et quantité (« Tomate x3 »), puis une ligne d'état
 // (ce qui périt cette nuit, ou le blé du Silo), le prix et les boutons du frigo.
 // Les cases ont toutes les mêmes lignes, vides au besoin, pour que deux cases
 // côte à côte gardent exactement la même taille et le même alignement.
@@ -69,8 +69,7 @@ function inventoryCard(item, withActions) {
   return `
     <div class="inv-card${soon > 0 ? ' soon' : ''}">
       <span class="inv-icon" aria-hidden="true">${it.icone}</span>
-      <span class="inv-name">${it.nom}</span>
-      <span class="inv-qty num" aria-label="Quantité">${formatQty(n)}</span>
+      <span class="inv-name">${it.nom} <span class="inv-qty num" aria-label="quantité ${formatQty(n)}">x${formatQty(n)}</span></span>
       <span class="inv-status">${status}</span>
       <span class="inv-info muted">${info}</span>
       ${withActions ? `<span class="inv-actions">${fridgeInButtons(item)}</span>` : ''}
