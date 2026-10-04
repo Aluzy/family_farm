@@ -1,0 +1,25 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Moteur du jeu
+        run: node run-tests.mjs
+      - name: Suivi de session
+        run: node test-telemetry.mjs
+      - name: Rapport quotidien
+        run: node test-report.mjs
+      - name: Encyclopédie à jour
+        run: node build-encyclopedie.mjs --check

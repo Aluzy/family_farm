@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Lanceur de tests pour Ferme Familiale.
-// Lit jeu.html, extrait les blocs <script id="core"> et
-// <script id="tests" type="text/plain">, les exécute avec Node (sans DOM,
-// puisque le bloc core n'en a pas besoin), et affiche le nombre de tests
-// passés et échoués. Code de sortie non nul en cas d'échec.
+// Lit le moteur (bloc <script id="core"> de jeu.html) et les tests
+// (tests/engine.test.js), les exécute avec Node (sans DOM, puisque le moteur
+// n'en a pas besoin), et affiche le nombre de tests passés et échoués. Code de
+// sortie non nul en cas d'échec.
 //
 // Usage : node run-tests.mjs
 
@@ -36,12 +36,18 @@ function extractScript(html, id) {
 }
 
 const coreSource = extractScript(html, 'core');
-const testsSource = extractScript(html, 'tests');
+const testsPath = join(__dirname, 'tests', 'engine.test.js');
+let testsSource;
+try {
+  testsSource = readFileSync(testsPath, 'utf8');
+} catch (err) {
+  console.error(`Impossible de lire ${testsPath} : ${err.message}`);
+  process.exit(1);
+}
 
-// Les deux blocs sont concaténés et exécutés comme un seul script : c'est
-// exactement ce qui se passe dans le navigateur, où les déclarations
-// top-level (const/let/function) de plusieurs <script> partagent la même
-// portée globale au sein d'une page.
+// Le moteur et les tests sont concaténés et exécutés comme un seul script :
+// les tests appellent les fonctions du moteur par leur nom, comme le fait
+// l'interface dans la page.
 const combined = `${coreSource}\n${testsSource}\n`;
 
 const sandbox = { console, module: {}, globalThis: undefined };
@@ -49,9 +55,9 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
 try {
-  vm.runInContext(combined, sandbox, { filename: 'jeu.html (core+tests)' });
+  vm.runInContext(combined, sandbox, { filename: 'moteur + tests/engine.test.js' });
 } catch (err) {
-  console.error('Erreur pendant l\'exécution des blocs core/tests :');
+  console.error('Erreur pendant l\'exécution du moteur et des tests :');
   console.error(err.stack || err.message || err);
   process.exit(1);
 }
