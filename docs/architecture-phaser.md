@@ -11,12 +11,12 @@ du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur
 
 ```
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
- ├─ js/data.generated.js  les valeurs du jeu, générées depuis data/*.json
- ├─ js/engine.js          moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
- ├─ js/telemetry.js       suivi de session
+ ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
- ├─ js/farm-stage.js      la scène : ne connaît ni `state` ni le moteur
- └─ js/app.js             blocs « Carte Phaser » et « Fenêtres de la carte »
+ ├─ js/farm-stage.js      la scène : ne connaît ni `state` ni le moteur (script classique)
+ └─ js/main.js            point d'entrée des modules ES
+     ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
+     └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
 tests/engine.test.js      tests du moteur (jamais chargés par la page)
 assets/                   carte Tiled (carte_printemps.json) + images du pack
 ```
@@ -165,7 +165,8 @@ python3 -m http.server 8771             # puis http://localhost:8771/jeu.html
 ```
 
 Depuis la console : `FarmStage.scene()` (caméra : `.cameras.main`, centre : `.cx`, `.cy`),
-`stageModel()`, `stageWindow`.
+`FF.stageModel()`, `FF.stageWindow`, `FF.state` (les modules n'ont plus de variables globales : `FF`
+est la poignée de débogage posée par `js/main.js`).
 
 ## 8. Limites connues
 

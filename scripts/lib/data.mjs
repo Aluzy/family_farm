@@ -290,14 +290,13 @@ export function format(v, { width = 150, indent = '', keyLen = 0, top = true } =
 export const GENERATED_FILE = 'js/data.generated.js';
 
 export function generatedSource(compiled) {
-  return `'use strict';
-
-// FICHIER GÉNÉRÉ par scripts/build-data.mjs à partir de data/*.json.
+  return `// FICHIER GÉNÉRÉ par scripts/build-data.mjs à partir de data/*.json.
 // Ne pas le modifier : changer les fichiers JSON, puis lancer
 //   node scripts/build-data.mjs
+// (GitHub le régénère aussi à chaque mise en ligne.)
 // Les valeurs sont celles des fichiers, avant les calculs du chargement (prix
 // de production doublés, temps de cuisson, plats) : voir buildCatalog() dans
-// js/engine.js, qui en fait DATA.
-const RAW_DATA = ${format(compiled)};
+// js/engine/catalog.js, qui en fait DATA.
+export const RAW_DATA = ${format(compiled)};
 `;
 }
