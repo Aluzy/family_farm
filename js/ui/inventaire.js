@@ -42,14 +42,15 @@ function fridgeInButtons(item) {
   if (!state.frigo.construit || !isFridgeable(item) || countItem(state, item) < 1) return '';
   const nom = DATA.items[item].nom.toLowerCase();
   return `
-      <span class="inv-actions">
         <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="1" aria-label="Ranger 1 ${nom} au frigo">🧊 1</button>
-        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo">🧊 Tout</button>
-      </span>`;
+        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo">🧊 Tout</button>`;
 }
 
-// Une case de l'inventaire : icône, nom, quantité, et ce qui périt cette nuit.
-function inventoryCard(item) {
+// Une case de l'inventaire : icône, nom, quantité, puis une ligne d'état
+// (ce qui périt cette nuit, ou le blé du Silo), le prix et les boutons du frigo.
+// Les cases ont toutes les mêmes lignes, vides au besoin, pour que deux cases
+// côte à côte gardent exactement la même taille et le même alignement.
+function inventoryCard(item, withActions) {
   const it = DATA.items[item];
   const n = countItem(state, item);
   const soon = isPerishable(item) ? expiringTonight(item) : 0;
@@ -59,18 +60,20 @@ function inventoryCard(item) {
     `💰 ${formatCoins(it.prix)}`,
     it.rachetable === false ? 'non rachetable' : '',
   ].filter(Boolean).join(' · ');
-  const silo = item === DATA.SILO.ITEM && state.silo.construit
-    ? `<span class="inv-silo muted">🛖 Silo : <span class="num">${formatQty(state.silo.ble)}</span></span>`
-    : '';
+  let status = '';
+  if (soon > 0) {
+    status = `<span class="inv-soon" title="${soon} ${unitLabel(item, soon)} ${soon > 1 ? 'périssent' : 'périt'} à la prochaine nuit"><span aria-hidden="true">⚠️</span> <span class="num">${formatQty(soon)}</span> ce soir</span>`;
+  } else if (item === DATA.SILO.ITEM && state.silo.construit) {
+    status = `<span class="muted">🛖 Silo : <span class="num">${formatQty(state.silo.ble)}</span></span>`;
+  }
   return `
     <div class="inv-card${soon > 0 ? ' soon' : ''}">
       <span class="inv-icon" aria-hidden="true">${it.icone}</span>
       <span class="inv-name">${it.nom}</span>
       <span class="inv-qty num" aria-label="Quantité">${formatQty(n)}</span>
-      ${soon > 0 ? `<span class="inv-soon" title="${soon} ${unitLabel(item, soon)} ${soon > 1 ? 'périssent' : 'périt'} à la prochaine nuit"><span aria-hidden="true">⚠️</span> <span class="num">${formatQty(soon)}</span> ce soir</span>` : ''}
-      ${silo}
+      <span class="inv-status">${status}</span>
       <span class="inv-info muted">${info}</span>
-      ${fridgeInButtons(item)}
+      ${withActions ? `<span class="inv-actions">${fridgeInButtons(item)}</span>` : ''}
     </div>`;
 }
 
@@ -113,11 +116,13 @@ export function renderInventaire() {
   }
   const items = Object.keys(DATA.items).filter((k) => tab.match(k) && countItem(state, k) > 0);
   const soon = Object.keys(expiringSoon(state)).length > 0 && tab.id === 'frais';
+  // La ligne des boutons du frigo n'existe que si au moins une case en a.
+  const withActions = items.some((k) => fridgeInButtons(k) !== '');
   return `
     <h2>📦 Inventaire</h2>
     ${subtabsHtml(tabs, tab.id, 'inv-tab')}
     ${soon ? '<p class="alert">⚠️ Une partie de tes aliments périt à la prochaine nuit.</p>' : ''}
-    ${items.length ? `<div class="inv-grid">${items.map(inventoryCard).join('')}</div>` : `<p class="hint">${tab.empty}</p>`}
+    ${items.length ? `<div class="inv-grid">${items.map((k) => inventoryCard(k, withActions)).join('')}</div>` : `<p class="hint">${tab.empty}</p>`}
     ${tab.id === 'frais' ? fridgeAllButton(items) : ''}`;
 }
 
