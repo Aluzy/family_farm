@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // Vérifie ce que jeu.html charge :
 //
-//   1. chaque fichier cité par la page existe et porte « ?v=<version du jeu> »
-//      (sinon un joueur peut recevoir la nouvelle page avec un ancien script
-//      resté en cache) ;
+//   1. chaque fichier cité par la page existe, sans suffixe « ?v= » (c'est
+//      scripts/build-site.mjs qui l'ajoute au site mis en ligne) ;
 //   2. les modules se tiennent : chaque import mène à un fichier qui existe et
 //      qui exporte bien le nom demandé (une faute de frappe dans un import
 //      empêcherait toute la page de démarrer) ;
@@ -17,17 +16,13 @@ import { ROOT } from './lib/engine-source.mjs';
 
 const errors = [];
 const html = readFileSync(join(ROOT, 'jeu.html'), 'utf8');
-const version = (readFileSync(join(ROOT, 'js/engine/base.js'), 'utf8').match(/const GAME_VERSION = '([^']+)'/) || [])[1];
-if (!version) errors.push('GAME_VERSION introuvable dans js/engine/base.js');
 
 /* 1. les fichiers de la page */
 const refs = [...html.matchAll(/<(?:script[^>]*\bsrc|link[^>]*\bhref)="([^"]+)"/g)].map((m) => m[1]);
 for (const ref of refs) {
   if (/^[a-z]+:\/\//i.test(ref)) continue;
-  const [path, query = ''] = ref.split('?');
-  if (!existsSync(join(ROOT, path))) errors.push(`${path} : fichier introuvable`);
-  // vendor/ ne change pas avec le jeu : pas de suffixe.
-  if (!path.startsWith('vendor/') && query !== `v=${version}`) errors.push(`${ref} : attendu « ${path}?v=${version} »`);
+  if (ref.includes('?')) errors.push(`${ref} : pas de suffixe « ?… » ici, il est ajouté à la construction du site`);
+  else if (!existsSync(join(ROOT, ref))) errors.push(`${ref} : fichier introuvable`);
 }
 const entry = (html.match(/<script type="module" src="([^"?]+)/) || [])[1];
 if (!entry) errors.push('jeu.html : pas de <script type="module">');
@@ -86,4 +81,4 @@ if (errors.length) {
   console.error(errors.map((e) => `✗ ${e}`).join('\n'));
   process.exit(1);
 }
-console.log(`jeu.html : ${refs.length} fichiers chargés, ${seen.size} modules reliés, version ${version}.`);
+console.log(`jeu.html : ${refs.length} fichiers chargés, ${seen.size} modules reliés.`);

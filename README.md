@@ -32,19 +32,20 @@ ses modules ne se chargent qu'en HTTP).
 
 ### En ligne (GitHub Pages)
 
-1. Poussez le dépôt sur GitHub, avec `index.html` **à la racine** de la branche `main`.
-2. Sur la page du dépôt : **Settings → Pages**.
-3. Dans **Build and deployment**, choisissez **Source : Deploy from a branch**.
-4. **Branch** : `main`, dossier **`/ (root)`**, puis **Save**.
-5. Après une à deux minutes, le site est en ligne à l'adresse
-   `https://<votre-compte>.github.io/<nom-du-depot>/` (elle s'affiche en haut de
-   la page Settings → Pages) — c'est la page d'accueil ; le jeu est à
-   `.../jeu.html` et l'encyclopédie à `.../encyclopedie.html`. Chaque
-   `git push` sur `main` met le site à jour.
+Le site est construit et publié par GitHub à chaque `git push` sur `main`
+(`.github/workflows/site.yml`) : les données sont régénérées, les tests passent, les
+modules du jeu sont regroupés en un seul fichier, puis le résultat est mis en ligne.
+Si un test échoue, rien n'est publié : le site reste sur sa version précédente, et
+GitHub prévient par e-mail. Il n'y a aucune commande à lancer.
 
-Aucun fichier de configuration n'est nécessaire pour le site : les pages n'utilisent
-que des chemins relatifs et aucun module externe. Le seul appel réseau du jeu est
-l'envoi du suivi de session, décrit ci-dessous.
+Réglage du dépôt, une seule fois : **Settings → Pages → Build and deployment →
+Source : GitHub Actions**. Le site est à l'adresse
+`https://<votre-compte>.github.io/<nom-du-depot>/` (page d'accueil) ; le jeu est à
+`.../jeu.html` et l'encyclopédie à `.../encyclopedie.html`. L'avancement de chaque mise
+en ligne se suit dans l'onglet **Actions** du dépôt.
+
+Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fabrique
+`scripts/build-site.mjs` : voir « Le site mis en ligne » plus bas.
 
 > **Sauvegardes et adresse** : la partie est enregistrée dans le navigateur
 > (`localStorage`), séparément pour chaque adresse. Une partie commencée en
@@ -103,8 +104,8 @@ classiques (`js/telemetry.js`, le suivi de session, et `vendor/phaser.min.js` +
 Chaque module importe ce qu'il utilise et exporte ce qu'il offre : plus aucune fonction du
 jeu n'est une variable globale. Conséquences :
 
-- **le jeu ne s'ouvre plus depuis le disque** (`file://`) : un navigateur ne charge des
-  modules qu'en HTTP. En local : `python3 -m http.server`, puis <http://localhost:8000/jeu.html>.
+- **tel qu'il est dans le dépôt, le jeu ne s'ouvre pas depuis le disque** (`file://`) : un
+  navigateur ne charge des modules qu'en HTTP. En local : `python3 -m http.server`, puis <http://localhost:8000/jeu.html>.
   La page d'accueil, l'encyclopédie et la politique de cookies s'ouvrent toujours depuis le disque ;
 - **dans la console**, l'état et le moteur passent par `FF` : `FF.state`,
   `FF.engine.countItem(FF.state, 'carotte')`, `FF.render()` ;
@@ -115,12 +116,23 @@ jeu n'est une variable globale. Conséquences :
 
 `tests/engine.test.js` (les tests du moteur) n'est jamais chargé par la page.
 
-`js/main.js` est chargé avec `?v=<version du jeu>` : en changeant `GAME_VERSION`
-(dans `js/engine/base.js`), changez aussi ce suffixe dans `jeu.html`.
-`node scripts/check-page.mjs` vérifie qu'ils concordent, que chaque import mène à un
-fichier qui exporte bien le nom demandé, et qu'aucun module n'est oublié. Les modules
-importés par `main.js`, eux, n'ont pas de suffixe : après une mise à jour, le navigateur
-peut garder un ancien module en cache une dizaine de minutes (durée fixée par GitHub Pages).
+`node scripts/check-page.mjs` vérifie que chaque fichier cité par la page existe, que
+chaque import mène à un fichier qui exporte bien le nom demandé, et qu'aucun module
+n'est oublié.
+
+**Le site mis en ligne** : `node scripts/build-site.mjs` (ou `npm run build`, après un
+`npm install`) fabrique `_site/`, ce que GitHub publie :
+
+- `js/jeu.bundle.js` : tous les modules regroupés en un fichier, minifié (esbuild, seule
+  dépendance du projet, et seulement pour cette étape). Le joueur charge un fichier au
+  lieu d'une cinquantaine, et reçoit toujours une version entière du jeu ;
+- `jeu.html` : la même page, qui charge ce fichier ; chaque fichier local y est suivi de
+  `?v=<empreinte de son contenu>`. Un fichier modifié change d'adresse et le navigateur le
+  recharge ; il n'y a plus de numéro à changer à la main à chaque version ;
+- les autres pages, `css/`, `assets/`, `vendor/`, copiés tels quels.
+
+Le site construit s'ouvre aussi depuis le disque (double-clic sur `_site/jeu.html`).
+Pour le voir en local comme en ligne : `python3 -m http.server -d _site`.
 
 L'état du jeu est un seul objet JSON, versionné (migrations dans `MIGRATIONS`) ;
 l'interface ne le modifie qu'à travers les actions nommées du moteur.
@@ -159,13 +171,16 @@ Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
 | `general.json` | départ, horloge, famille, marché, absence |
 | `simulation.json` | réglages du joueur automatique |
 
-Après chaque modification :
+Après chaque modification, en local :
 
 ```sh
 node scripts/build-data.mjs
 ```
 
-Le script vérifie les fichiers puis réécrit `js/data.generated.js`, que la page charge.
+Le script vérifie les fichiers puis réécrit `js/data.generated.js`, que le jeu charge.
+GitHub le relance à chaque mise en ligne : une donnée modifiée directement sur GitHub
+(depuis un téléphone, par exemple) est prise en compte sans rien lancer, et une donnée
+invalide bloque la mise en ligne au lieu de casser le jeu.
 Il refuse d'écrire si une recette cite un ingrédient ou un atelier inconnu, si une culture
 n'a pas son objet ou sa graine, si un plat porte le nom d'un objet existant, si deux
 recettes s'utilisent l'une l'autre, si une recette n'est ni libre ni débloquée par l'arbre…
@@ -207,18 +222,17 @@ fichier et 10 en jeu.
 ### Tests
 
 ```sh
-node run-tests.mjs                  # moteur du jeu
-node test-data.mjs                  # données : valides, et les erreurs possibles sont bien signalées
-node scripts/build-data.mjs --check # js/data.generated.js est à jour avec data/*.json
-node test-telemetry.mjs             # suivi de session (rien sans consentement, retrait, limites, commentaires)
-node test-report.mjs                # rapport quotidien (calculs, Markdown, protections du Worker)
-node build-encyclopedie.mjs --check # encyclopedie.html est à jour avec son JSON
-node scripts/check-page.mjs         # jeu.html charge des fichiers qui existent, à la bonne version
-node scripts/check-actions.mjs      # chaque data-action a sa fonction, et le rapport quotidien la connaît
+npm test
 ```
 
-Node 18 ou plus récent. Tout doit passer avant un commit ; l'action GitHub
-`.github/workflows/tests.yml` les relance à chaque push et à chaque pull request.
+Régénère les données et l'encyclopédie, puis lance tout : données valides
+(`test-data.mjs`), moteur (`run-tests.mjs`), suivi de session (`test-telemetry.mjs`),
+rapport quotidien (`test-report.mjs`), actions de l'interface
+(`scripts/check-actions.mjs`), modules et fichiers de la page (`scripts/check-page.mjs`).
+Chaque script se lance aussi seul avec `node`. Node 18 ou plus récent.
+
+GitHub relance ces vérifications à chaque push (`.github/workflows/site.yml`) et ne met
+le site en ligne que si elles passent toutes.
 
 ### Simulation d'équilibrage
 
@@ -240,7 +254,7 @@ nuits ou des saisons, aller à un chapitre, et voir l'état complet de la partie
 
 ### Vérifier avant de publier
 
-1. Les commandes de la section Tests passent.
+1. `npm test` passe (GitHub le vérifie de toute façon avant de publier).
 2. Ouvrir le jeu servi en HTTP
    (par exemple `python3 -m http.server` et <http://localhost:8000/>) : aucune
    erreur dans la console, à 390 px et à 1 280 px de large, en thème clair et

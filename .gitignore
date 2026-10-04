@@ -10,3 +10,7 @@ node_modules/
 sessions/
 simulation.csv
 simulation-autonomie.svg
+
+# Le site construit par scripts/build-site.mjs (publié par GitHub, jamais commité)
+_site/
+package-lock.json

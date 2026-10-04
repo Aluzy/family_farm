@@ -1,6 +1,7 @@
 // FICHIER GÉNÉRÉ par scripts/build-data.mjs à partir de data/*.json.
 // Ne pas le modifier : changer les fichiers JSON, puis lancer
 //   node scripts/build-data.mjs
+// (GitHub le régénère aussi à chaque mise en ligne.)
 // Les valeurs sont celles des fichiers, avant les calculs du chargement (prix
 // de production doublés, temps de cuisson, plats) : voir buildCatalog() dans
 // js/engine/catalog.js, qui en fait DATA.
