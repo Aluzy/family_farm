@@ -15,6 +15,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Données à jour et valides
+        run: node scripts/build-data.mjs --check
+      - name: Vérification des données
+        run: node test-data.mjs
       - name: Moteur du jeu
         run: node run-tests.mjs
       - name: Suivi de session

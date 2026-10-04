@@ -1,0 +1,151 @@
+{
+  "CHAPITRES": {
+    "//ELEMENTS": [
+      "Les séries d'affilée (« pontes », « serie100 ») et le suivi de l'hiver ne se",
+      "comptent qu'à partir du chapitre qui porte l'objectif : les nuits d'avant",
+      "ne comptent pas.",
+      "Libellé des éléments débloqués (écran de fin de chapitre et Ferme)."
+    ],
+    "ELEMENTS": {
+      "//champ": [
+        "'champ' : identifiant historique (l'ancien bâtiment Champ). Il ouvre",
+        "désormais les cultures de plein champ dans la Zone de culture."
+      ],
+      "champ": { "nom": "Cultures de plein champ", "icone": "🌾", "note": "blé pour les poules et la farine" },
+      "silo": { "nom": "Silo", "icone": "🛖", "note": "stock de blé" },
+      "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
+      "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tarte, et l'onglet Livre de recette" },
+      "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe" },
+      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches" },
+      "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
+      "tournesol": { "nom": "Tournesol", "icone": "🌻", "note": "nouvelle culture de plein champ" },
+      "//paturage": "'paturage' et 'moutons' : identifiants historiques (l'ancien Pâturage).",
+      "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
+      "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille du Moulin" },
+      "serre": { "nom": "Serre", "icone": "🏡", "note": "des légumes toute l'année" },
+      "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
+      "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
+    },
+    "liste": [
+      {
+        "titre": "L'eau et le soleil",
+        "icone": "💧",
+        "intro": "Pompe de l'eau et range de l'énergie dans tes batteries : ce sont les deux ressources de la ferme. Tes conserves nourrissent la famille pour l'instant.",
+        "debloque": [],
+        "objectifs": [
+          { "type": "litres", "cible": 50, "libelle": "Pomper 50 L au total", "unite": "L" },
+          { "type": "wh", "cible": 3000, "libelle": "Stocker 3 000 Wh dans les batteries", "unite": "Wh" }
+        ]
+      },
+      {
+        "titre": "Le premier potager",
+        "icone": "🥕",
+        "intro": "Plante, arrose, récolte : ta première production doit commencer à nourrir la famille.",
+        "debloque": [],
+        "objectifs": [
+          { "type": "carottes", "cible": 20, "libelle": "Récolter 20 carottes", "unite": "" },
+          { "type": "autonomie", "cible": 25, "libelle": "Atteindre 25 % d'autonomie", "unite": "%" }
+        ]
+      },
+      {
+        "titre": "Le poulailler",
+        "icone": "🐔",
+        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé et une famille en bonne santé.",
+        "debloque": ["champ", "silo", "poulailler"],
+        "objectifs": [
+          { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
+          { "type": "sante", "cible": 80, "libelle": "Santé moyenne d'au moins 80", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Le four et le livre de recette",
+        "icone": "🍞",
+        "intro": "Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients.",
+        "debloque": ["four", "cuisine", "moulin", "presse", "tournesol"],
+        "objectifs": [
+          { "type": "pains", "cible": 5, "recette": "pain", "libelle": "Cuire 5 pains", "unite": "" },
+          { "type": "plats", "cible": 3, "exclut": ["pain"], "libelle": "Préparer 3 plats différents (hors pain)", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Le troupeau",
+        "icone": "🐑",
+        "intro": "Des moutons pour la laine, des vaches pour le lait. Ils vivent à l'Étable et mangent chaque nuit la paille que donne le Moulin.",
+        "debloque": ["paturage", "moutons"],
+        "objectifs": [
+          { "type": "laines", "cible": 10, "libelle": "Tondre 10 laines", "unite": "" },
+          { "type": "autonomie", "cible": 60, "libelle": "Atteindre 60 % d'autonomie", "unite": "%" }
+        ]
+      },
+      {
+        "titre": "Toute l'année",
+        "icone": "❄️",
+        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir un hiver entier sans acheter de soins. Il faut être là dès la première nuit de l'hiver.",
+        "debloque": ["serre", "verger", "frigo"],
+        "objectifs": [
+          {
+            "type": "hiver",
+            "cible": 1,
+            "saison": "hiver",
+            "moyenne": 80,
+            "libelle": "Traverser un hiver complet à 80 % d'autonomie en moyenne, sans payer de soin",
+            "unite": ""
+          }
+        ]
+      },
+      {
+        "titre": "Famille autonome",
+        "icone": "🏡",
+        "intro": "Le dernier défi : nourrir la famille avec ce que produit la ferme, et rien d'autre.",
+        "debloque": [],
+        "objectifs": [{ "type": "serie100", "cible": 7, "libelle": "Atteindre 100 % d'autonomie 7 nuits d'affilée", "unite": "nuits" }]
+      }
+    ]
+  },
+  "//COURRIER": [
+    "Campagne en 7 chapitres (sections 4 et 8.10). Un chapitre atteint rend",
+    "disponibles les éléments de `debloque` ; son objectif rempli, on passe au",
+    "suivant. Le chapitre 7 rempli termine la campagne : mode libre, tout est",
+    "débloqué. Un élément absent de tous les chapitres est disponible dès le départ",
+    "(Potager niveau 1, pompe, panneaux, batteries, Marché).",
+    "",
+    "Objectifs (`type`) :",
+    "  litres    : litres pompés au total ;",
+    "  wh        : record d'énergie stockée dans les batteries, en Wh ;",
+    "  carottes  : carottes récoltées au total ;",
+    "  autonomie : autonomie de la dernière nuit, en % ;",
+    "  pontes    : nuits de ponte d'affilée (au moins un œuf pondu) ;",
+    "  sante     : santé moyenne de la famille (un malade compte pour 0) ;",
+    "  pains     : pains cuits au total (`recette` : la recette qui compte) ;",
+    "  plats     : plats différents préparés (`exclut` : recettes qui n'en font",
+    "              pas partie, ici le pain ; les transformations du Moulin et de",
+    "              la Presse n'en sont jamais) ;",
+    "  laines    : laines tondues au total ;",
+    "  hiver     : la `saison` entière (LONGUEUR nuits) traversée avec au moins",
+    "              `moyenne` % d'autonomie en moyenne, sans payer de soin ;",
+    "  serie100  : nuits d'affilée à 100 % d'autonomie.",
+    "Version 1.3 : le courrier. Une lettre arrive une seule fois, quand sa",
+    "condition est remplie (`quand.debloque` : un élément que la campagne vient",
+    "d'ouvrir, voir isUnlocked()). Ses cadeaux vont tout de suite dans",
+    "l'inventaire ; la lettre se lit dans l'onglet Notifications.",
+    "Le texte ne cite aucun prénom : il vaut pour toutes les familles."
+  ],
+  "COURRIER": {
+    "cousin_venezuela": {
+      "quand": { "debloque": "serre" },
+      "cadeaux": { "cacao": 1, "vanille": 1, "cafe": 1 },
+      "icone": "✉️",
+      "objet": "Une lettre du Venezuela",
+      "expediteur": "Cousin Mateo",
+      "lieu": "Mérida, Venezuela",
+      "texte": [
+        "Chère famille,",
+        "La nouvelle a traversé l'océan : il paraît que vous allez avoir une serre ! Ici, dans les montagnes de Mérida, on en a parlé toute la soirée sous la véranda.",
+        "Alors j'ai glissé dans l'enveloppe trois petits trésors de chez nous : une fève de cacao, une gousse de vanille et un grain de café. Dehors, chez vous, ils auraient trop froid. Mais bien à l'abri dans la serre, avec de l'eau et de la patience, ils pousseront comme ici.",
+        "Un conseil de planteur : à chaque récolte, gardez toujours de quoi replanter. La vanille est la plus lente, ne vous découragez pas.",
+        "Écrivez-moi le jour où vous boirez votre premier chocolat chaud. Je vous embrasse tous, et une caresse aux bêtes."
+      ],
+      "signature": "Votre cousin Mateo"
+    }
+  }
+}

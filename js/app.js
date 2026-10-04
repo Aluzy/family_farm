@@ -704,6 +704,14 @@ function patchAttributes(o, w) {
 
 /* ---------- Carte Phaser (voir farm-stage.js et docs/architecture-phaser.md) ---------- */
 
+// Découpe de chaque culture dans assets/crops.png (champ "sprite" de data/crops.json) :
+// la scène ne lit pas DATA, elle la reçoit au montage.
+function cropSprites() {
+  const out = {};
+  for (const [id, crop] of Object.entries(DATA.crops)) if (crop.sprite) out[id] = crop.sprite;
+  return out;
+}
+
 let stageMounted = false;
 let stageMountedAt = 0;
 let stageBroken = false; // Phaser a planté au montage : la Ferme garde sa liste classique
@@ -943,7 +951,7 @@ function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, base: 'assets/' })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, base: 'assets/', crops: cropSprites() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

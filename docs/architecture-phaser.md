@@ -11,6 +11,7 @@ du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur
 
 ```
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
+ ├─ js/data.generated.js  les valeurs du jeu, générées depuis data/*.json
  ├─ js/engine.js          moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
  ├─ js/telemetry.js       suivi de session
  ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
@@ -72,7 +73,8 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
 - **Parcelles.** Le coin haut-gauche de `zone_culture` est calé sur la grille de 16 px
   (192,176) ; les parcelles sont des tuiles jointives, 5 colonnes au plus :
   6/12/18/24/30 parcelles = 2×3, 3×4, 3×6, 4×6, 5×6 (`stageCols()`). Terre sèche ou arrosée,
-  plante à 4 phases découpées dans `crops.png` (table `CROP_SP`), balancement quand elle est mûre.
+  plante à 4 phases découpées dans `crops.png` (champ `sprite` de chaque culture dans `data/crops.json`, que la page
+  passe à `FarmStage.mount()` : `crops`), balancement quand elle est mûre.
 - **Images manquantes** : formes de secours (`makePlaceholders()`), la carte reste utilisable.
   Sans le JSON de la carte : fond uni et rectangles par défaut (`DEFAULT_OBJECTS`).
 
@@ -233,5 +235,5 @@ Depuis la console : `FarmStage.scene()` (caméra : `.cameras.main`, centre : `.c
 - **Moteur** : `deliverMail(state)`, appelée par `updateChapters()` (donc à chaque pas de jeu et à chaque nuit), fait arriver une lettre une seule fois : cadeaux dans l'inventaire, lettre dans `state.courrier` (`{ id, nuit, lu }`). `readMail()` la marque lue ; `notificationCount()` compte les lettres non lues.
 - **Parties existantes** : une partie où la Serre est déjà ouverte reçoit la lettre et ses graines au premier pas de jeu après la mise à jour.
 - **Interface** : la lettre non lue est en tête de l'onglet Notifications (« Courrier »), puis rangée en bas (« Courrier lu ») ; `openMailModal()` l'affiche comme une feuille de papier, avec un raccourci vers la Serre. À l'arrivée, une annonce cliquable s'affiche (`watchMail()`).
-- **Ajouter une lettre** : une entrée de plus dans `DATA.COURRIER` suffit ; pour une autre condition qu'un déblocage, compléter `mailDue()`.
+- **Ajouter une lettre** : une entrée de plus dans `COURRIER` (`data/campaign.json`) suffit ; pour une autre condition qu'un déblocage, compléter `mailDue()`.
 - **Sauvegardes** : format 19.

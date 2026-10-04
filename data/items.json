@@ -1,0 +1,188 @@
+{
+  "//NUTRITION": [
+    "Lot 2 : objets, cultures, potager, famille",
+    "Lot 11 (nutrition) : au chapitre §4, la valeur nutritionnelle de tous les",
+    "aliments de base existants a été augmentée de 25 % par rapport aux",
+    "valeurs d'origine (celles en commentaire, à droite de chaque objet), pour",
+    "rapprocher les plats des besoins réels de la famille (voir gratin_patates",
+    "ci-dessous). AUGMENTATION est la seule source de ce coefficient : toute",
+    "future revalorisation doit s'y référer plutôt que d'inventer un nouveau",
+    "pourcentage ailleurs. scaleEnergie() (fonctions utilitaires) applique la",
+    "règle d'arrondi centralisée (Math.round, arrondi standard au demi",
+    "supérieur) : les valeurs ci-dessous sont scaleEnergie(valeur d'origine),",
+    "vérifié par les tests DATA Lot 2 / Lot 11.",
+    "%"
+  ],
+  "NUTRITION": { "AUGMENTATION": 125 },
+  "//items": [
+    "Objets (sections 1.1, 8.1 et 8.9). energie : énergie par unité (aliments",
+    "seulement) ; prix : prix de vente fixe en pièces ; edible : la famille peut",
+    "le manger ; category : légume, fruit, plat, graine, ingrédient, produit,",
+    "conserve. nom et icone servent uniquement à l'affichage.",
+    "conservation (facultatif) : nombre de nuits hors réfrigérateur avant que l'objet périme. Sans ce champ,",
+    "l'objet ne périme jamais (blé, farine, huile, graines, laine, conserves)."
+  ],
+  "items": {
+    "//carotte": "6 × 1,25",
+    "carotte": { "nom": "Carotte", "icone": "🥕", "energie": 8, "prix": 1, "edible": true, "category": "légume", "conservation": 6 },
+    "//patate": "15 × 1,25",
+    "patate": { "nom": "Patate", "icone": "🥔", "energie": 19, "prix": 2, "edible": true, "category": "légume", "conservation": 7 },
+    "//tomate": "6 × 1,25",
+    "tomate": { "nom": "Tomate", "icone": "🍅", "energie": 8, "prix": 1, "edible": true, "category": "légume", "conservation": 5 },
+    "//courgette": "8 × 1,25",
+    "courgette": { "nom": "Courgette", "icone": "🥒", "energie": 10, "prix": 2, "edible": true, "category": "légume", "conservation": 5 },
+    "//aubergine": "8 × 1,25",
+    "aubergine": { "nom": "Aubergine", "icone": "🍆", "energie": 10, "prix": 2, "edible": true, "category": "légume", "conservation": 5 },
+    "//conserve": ["Non périssable, non rachetable au Marché (Lot 3).", "20 × 1,25"],
+    "conserve": { "nom": "Conserve", "icone": "🥫", "energie": 25, "prix": 3, "edible": true, "category": "conserve", "rachetable": false },
+    "graine_carotte": { "nom": "Graines de carotte", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "graine_tomate": { "nom": "Graines de tomate", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "graine_courgette": { "nom": "Graines de courgette", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "graine_aubergine": { "nom": "Graines d'aubergine", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "//ble": [
+      "Lot 4 : blé (stock du Silo ; un blé sert de graine), graines de tournesol",
+      "(à replanter), œuf (12,5 → 13 énergie, 6 nuits : voir CONSERVATION).",
+      "category reste « ingrédient » (Silo, Moulin, alimentation des poules,",
+      "plancher de marché ×1,2) même si le blé sert aussi de semence : voir",
+      "isGraineComptoir(), qui l'ajoute en plus à l'onglet Graines du Marché."
+    ],
+    "ble": { "nom": "Blé", "icone": "🌾", "prix": 1, "edible": false, "category": "ingrédient" },
+    "graine_tournesol": { "nom": "Graines de tournesol", "icone": "🌻", "prix": 1, "edible": false, "category": "graine" },
+    "//oeuf": "10 × 1,25 = 12,5 → 13",
+    "oeuf": { "nom": "Œuf", "icone": "🥚", "energie": 13, "prix": 2, "edible": true, "category": "produit", "conservation": 6 },
+    "//viande_mouton": [
+      "Lot 5 : fruits, farine et huile (sections 1.1 et 8.9). Les fruits viennent",
+      "du Verger (Lot 8). La farine et l'huile valent 13 d'énergie dans les plats",
+      "mais ne se mangent pas seules. Les plats cuisinés (pain compris) sont",
+      "ajoutés à cette table au chargement, à partir de `recipes` : voir",
+      "registerDishItems().",
+      "Viandes (version 1.1) : plus aucun animal ne donne de viande, et elle ne",
+      "s'achète plus au Marché (rachetable: false). Les trois objets restent",
+      "définis pour les anciennes sauvegardes qui en contiennent : la famille",
+      "peut encore les manger ou les vendre jusqu'au dernier. Leur prix est écrit",
+      "ici tel qu'il était (déjà doublé : il ne passe plus par",
+      "applyProductionPriceMultiplier(), qui ne connaît que ce que la ferme produit)."
+    ],
+    "viande_mouton": {
+      "nom": "Viande de mouton",
+      "icone": "🥩",
+      "energie": 38,
+      "prix": 10,
+      "edible": true,
+      "category": "produit",
+      "rachetable": false,
+      "conservation": 5
+    },
+    "//pomme": "8 × 1,25",
+    "pomme": { "nom": "Pomme", "icone": "🍎", "energie": 10, "prix": 2, "edible": true, "category": "fruit", "conservation": 7 },
+    "//poire": "8 × 1,25",
+    "poire": { "nom": "Poire", "icone": "🍐", "energie": 10, "prix": 2, "edible": true, "category": "fruit", "conservation": 7 },
+    "//farine": "10 × 1,25 = 12,5 → 13",
+    "farine": { "nom": "Farine", "icone": "🥣", "energie": 13, "prix": 1, "edible": false, "category": "ingrédient" },
+    "//huile": "10 × 1,25 = 12,5 → 13",
+    "huile": { "nom": "Huile de tournesol", "icone": "🛢️", "energie": 13, "prix": 4, "edible": false, "category": "ingrédient" },
+    "//laine": ["Lot 6 : laine (section 8.6). Ni périssable ni comestible : elle sert", "uniquement à la vente. Elle ne se rachète pas au Marché."],
+    "laine": { "nom": "Laine", "icone": "🧶", "prix": 6, "edible": false, "category": "produit", "rachetable": false },
+    "//oignon": [
+      "10 nouvelles cultures : Zone de culture (oignon, ail, poivron, épinard,",
+      "fraise, riz, houblon), Serre exclusivement (cacao, vanille, café). Poivron",
+      "reprend le mode « récolte » (comme tomate/courgette/aubergine) ; ail, riz,",
+      "houblon, cacao, vanille et café reprennent le mode « plant » (comme la",
+      "patate ou le blé : la récolte elle-même sert de graine, pas d'item séparé).",
+      "Cacao, vanille et café sont des cultures de rente : edible: false, donc",
+      "ignorées par planMeal()/mealOrder() (filtre déjà générique sur ce champ) —",
+      "elles ne nourrissent jamais la famille, même affamée. category:",
+      "'ingrédient' pour ces trois-là et pour le houblon, comme farine/huile",
+      "(ingrédients de recette, jamais mangés seuls ; aucun plancher de marché",
+      "spécifique n'est attaché à cette catégorie, voir DATA.MARCHE.PLANCHER)."
+    ],
+    "oignon": { "nom": "Oignon", "icone": "🧅", "energie": 6, "prix": 1, "edible": true, "category": "légume", "conservation": 6 },
+    "graine_oignon": { "nom": "Graines d'oignon", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "ail": { "nom": "Ail", "icone": "🧄", "energie": 6, "prix": 2, "edible": true, "category": "légume", "conservation": 7 },
+    "poivron": { "nom": "Poivron", "icone": "🫑", "energie": 7, "prix": 2, "edible": true, "category": "légume", "conservation": 5 },
+    "graine_poivron": { "nom": "Graines de poivron", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "epinard": {
+      "nom": "Épinard",
+      "icone": "🥬",
+      "energie": 5,
+      "prix": 1,
+      "edible": true,
+      "category": "légume",
+      "//conservation": [
+        "Épinard et fraise sont plus fragiles que les autres légumes/fruits frais.",
+        "Le riz (comme le blé) et le houblon/cacao/vanille/café (comme",
+        "farine/huile/laine, non comestibles) ne figurent pas ici : denrées sèches,",
+        "ils ne périment pas (voir shelfLife() : absent de la table = imperissable).",
+        "Le lait est fragile (même durée que l'épinard et la fraise), comme",
+        "l'ancienne viande de volaille."
+      ],
+      "conservation": 4
+    },
+    "graine_epinard": { "nom": "Graines d'épinard", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "fraise": { "nom": "Fraise", "icone": "🍓", "energie": 5, "prix": 2, "edible": true, "category": "fruit", "conservation": 4 },
+    "graine_fraise": { "nom": "Graines de fraise", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "riz": { "nom": "Riz", "icone": "🍚", "energie": 10, "prix": 1, "edible": true, "category": "légume" },
+    "houblon": { "nom": "Houblon", "icone": "🌿", "prix": 3, "edible": false, "category": "ingrédient" },
+    "cacao": { "nom": "Cacao", "icone": "🍫", "prix": 8, "edible": false, "category": "ingrédient" },
+    "vanille": { "nom": "Vanille", "icone": "🫘", "prix": 15, "edible": false, "category": "ingrédient" },
+    "cafe": { "nom": "Café", "icone": "☕", "prix": 6, "edible": false, "category": "ingrédient" },
+    "//viande_boeuf": [
+      "Anciennes viandes de bœuf et de volaille : voir la note sur viande_mouton",
+      "(restes des anciennes sauvegardes, ni produites ni rachetables).",
+      "lait : comestible et périssable comme l'œuf, un peu plus rare et cher."
+    ],
+    "viande_boeuf": {
+      "nom": "Viande de bœuf",
+      "icone": "🍖",
+      "energie": 38,
+      "prix": 10,
+      "edible": true,
+      "category": "produit",
+      "rachetable": false,
+      "conservation": 5
+    },
+    "viande_volaille": {
+      "nom": "Viande de volaille",
+      "icone": "🍗",
+      "energie": 14,
+      "prix": 6,
+      "edible": true,
+      "category": "produit",
+      "rachetable": false,
+      "conservation": 4
+    },
+    "lait": { "nom": "Lait", "icone": "🥛", "energie": 16, "prix": 4, "edible": true, "category": "produit", "conservation": 4 },
+    "//paille": [
+      "Version 1.1 : la paille. Le Moulin en rend 1 par blé moulu (voir",
+      "`recipes.farine.sousProduit`) ; les moutons et les vaches la mangent",
+      "chaque nuit (voir DATA.ANIMAUX et feedLivestock()). Elle ne périme pas, ne",
+      "se mange pas, se vend 1 pièce et ne s'achète pas au Marché : elle vient",
+      "seulement du Moulin."
+    ],
+    "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "edible": false, "category": "produit", "rachetable": false }
+  },
+  "//PLATS_RETIRES": [
+    "Plats dont la recette a été retirée en version 1.1 (ils demandaient de la",
+    "viande, qui ne se produit plus). Une ancienne sauvegarde peut encore en",
+    "avoir : ils restent des plats (mangeables, vendables, bonus de santé), avec",
+    "l'énergie et le prix qu'ils avaient, mais ne se préparent plus et ne",
+    "s'achètent pas. Ajoutés à `items` par registerDishItems()."
+  ],
+  "PLATS_RETIRES": {
+    "ragout": { "nom": "Ragoût", "icone": "🍖", "energie": 144, "prix": 36 },
+    "poivrons_farcis": { "nom": "Poivrons farcis", "icone": "🫑", "energie": 81, "prix": 26 },
+    "roti_boeuf": { "nom": "Rôti de bœuf", "icone": "🥩", "energie": 144, "prix": 36 },
+    "poulet_roti_ail": { "nom": "Poulet rôti à l'ail", "icone": "🍗", "energie": 75, "prix": 23 }
+  },
+  "CONSERVATION_CATEGORIE": { "plat": 6 },
+  "//ORIGINE": [
+    "Origine d'un lot (sert au % d'autonomie du Lot 9) : « produit » par défaut,",
+    "sauf pour les catégories listées ici (les conserves comptent comme achetées)."
+  ],
+  "ORIGINE": { "PRODUIT": "produit", "ACHETE": "acheté", "PAR_CATEGORIE": { "conserve": "acheté" } },
+  "//CONSERVATION_CATEGORIE": [
+    "Conservation en nuits hors réfrigérateur (sections 1.4 et 6.9 quinquies), pour une catégorie entière :",
+    "les plats cuisinés se gardent 6 nuits. Le champ \"conservation\" d'un objet (ci-dessus) ou d'une recette",
+    "(recipes.json) passe avant cette durée ; null y veut dire « ne périme jamais »."
+  ]
+}

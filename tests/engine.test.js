@@ -8317,6 +8317,51 @@ test('version 1.3 : une partie d\'avant la version 1.3, Serre déjà ouverte, re
   assertEqual([unreadMail(t), deliverMail(t), t.courrier.length], [[], ['cousin_venezuela'], 1]);
 });
 
+/* ---------- données : RAW_DATA (data/*.json) → DATA (buildCatalog) ---------- */
+
+test('données : buildCatalog() calcule sur une copie, RAW_DATA garde les valeurs des fichiers', () => {
+  // prix de production doublés, temps des plats divisés, plats enregistrés comme objets
+  assertEqual([RAW_DATA.items.carotte.prix, DATA.items.carotte.prix], [1, 2]);
+  assertEqual([RAW_DATA.recipes.pain.temps, DATA.recipes.pain.temps], [20, 10]);
+  assertEqual([RAW_DATA.items.pain, DATA.items.pain.plat], [undefined, true]);
+  // deux catalogues tirés des mêmes fichiers sont égaux et indépendants
+  const autre = buildCatalog(RAW_DATA);
+  assertEqual(autre, DATA);
+  autre.items.carotte.prix = 99;
+  assertEqual([DATA.items.carotte.prix, RAW_DATA.items.carotte.prix], [2, 1]);
+});
+
+test('données : l\'ordre des recettes dans le fichier ne change rien (le pain à l\'ail avant le pain)', () => {
+  const raw = JSON.parse(JSON.stringify(RAW_DATA));
+  const { pain, ...autres } = raw.recipes;
+  raw.recipes = { ...autres, pain }; // le pain en dernier : le pain à l'ail, qui l'utilise, vient avant
+  const d = buildCatalog(raw);
+  for (const id of ['pain', 'pain_ail']) {
+    assertEqual([d.items[id].energie, d.items[id].prix], [DATA.items[id].energie, DATA.items[id].prix], id);
+  }
+  // les plats restent rangés dans l'ordre des recettes
+  const plats = (data) => Object.keys(data.items).filter((id) => data.items[id].plat && !data.items[id].retire);
+  assertEqual(plats(d), Object.keys(raw.recipes).filter((id) => !raw.recipes[id].transformation));
+});
+
+test('données : deux recettes qui s\'utilisent l\'une l\'autre sont refusées', () => {
+  const raw = JSON.parse(JSON.stringify(RAW_DATA));
+  raw.recipes.pain.ingredients.push({ item: 'pain_ail', qte: 1 });
+  let message = '';
+  try {
+    buildCatalog(raw);
+  } catch (e) {
+    message = e.message;
+  }
+  assertEqual(message, 'Recettes en boucle : pain → pain_ail → pain');
+});
+
+test('données : chaque culture connaît sa découpe sur la carte', () => {
+  for (const [id, c] of Object.entries(DATA.crops)) {
+    assert(c.sprite && c.sprite.c.length === 4 && [16, 32].includes(c.sprite.h), `${id} : sprite { r, h, c }`);
+  }
+});
+
 // run-tests.mjs fournit `module` : c'est lui qui lance les tests et lit
 // globalThis.__testResults.
 if (typeof module !== 'undefined' && typeof globalThis !== 'undefined') {

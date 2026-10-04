@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 // Fichiers du moteur, dans l'ordre de chargement de la page.
-export const ENGINE_FILES = ['js/engine.js'];
+export const ENGINE_FILES = ['js/data.generated.js', 'js/engine.js'];
 
 export function engineSource(root = ROOT) {
   return ENGINE_FILES.map((f) => readFileSync(join(root, f), 'utf8')).join('\n');

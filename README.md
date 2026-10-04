@@ -10,7 +10,7 @@ réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la fami
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
-- **Technique** : des pages HTML sans bibliothèque à installer et sans étape de build :
+- **Technique** : des pages HTML sans bibliothèque à installer ni serveur :
   `index.html` (page d'accueil), `jeu.html` (le jeu, dont le style est dans
   `css/` et le code dans `js/`) et `encyclopedie.html` (glossaire du jeu, généré depuis
   `encyclopedie_ferme_familiale.json` par `node build-encyclopedie.mjs`), plus `cookies.html` (politique de cookies
@@ -95,7 +95,8 @@ dépasse une minute.
 | Fichier | Contenu |
 |---|---|
 | `css/jeu.css` | variables de thème (clair et sombre), puis composants |
-| `js/engine.js` | `DATA` (toutes les valeurs d'équilibrage), puis `ENGINE` (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine) |
+| `js/data.generated.js` | `RAW_DATA` : toutes les valeurs d'équilibrage, générées depuis `data/*.json` (voir Données) |
+| `js/engine.js` | `DATA` (`buildCatalog(RAW_DATA)`), puis `ENGINE` (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine) |
 | `js/telemetry.js` | suivi de session (`Telemetry.*`) |
 | `vendor/phaser.min.js`, `js/farm-stage.js` | la carte de la ferme |
 | `js/app.js` | sauvegarde, interface et boucle |
@@ -112,10 +113,73 @@ recevoir la nouvelle page avec un ancien script resté en cache.
 L'état du jeu est un seul objet JSON, versionné (migrations dans `MIGRATIONS`) ;
 l'interface ne le modifie qu'à travers les actions nommées du moteur.
 
+### Données
+
+Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
+
+| Fichier | Contenu |
+|---|---|
+| `items.json` | objets (aliments, graines, produits), plats retirés, durées de conservation |
+| `recipes.json` | ateliers et recettes |
+| `crops.json` | cultures, zone de culture, serre, verger, saisons |
+| `animals.json` | silo, poulailler, animaux, étable |
+| `techtree.json` | arbre des technologies |
+| `campaign.json` | chapitres et courrier |
+| `energy.json` | panneaux, batteries, pompe, usure, réfrigérateur |
+| `general.json` | départ, horloge, famille, marché, absence |
+| `simulation.json` | réglages du joueur automatique |
+
+Après chaque modification :
+
+```sh
+node scripts/build-data.mjs
+```
+
+Le script vérifie les fichiers puis réécrit `js/data.generated.js`, que la page charge.
+Il refuse d'écrire si une recette cite un ingrédient ou un atelier inconnu, si une culture
+n'a pas son objet ou sa graine, si un plat porte le nom d'un objet existant, si deux
+recettes s'utilisent l'une l'autre, si une recette n'est ni libre ni débloquée par l'arbre…
+Le message dit où (`recipes.pain.ingredients[0] : « farinee » n'est ni un objet…`).
+
+**Ajouter une recette** : une entrée dans `recipes.json` suffit pour qu'elle existe en jeu
+(objet, Livre de recette, Marché). Quelques tests du moteur comptent les recettes ou en
+fixent la liste : ils échouent tant qu'on ne les a pas mis à jour, c'est voulu.
+L'encyclopédie se complète à part.
+
+```json
+"tarte_poires": {
+  "nom": "Tarte aux poires", "icone": "🥧",
+  "station": "four", "temps": 40,
+  "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "poire", "qte": 3 }],
+  "libre": true
+}
+```
+
+- `libre: true` : disponible dès que l'atelier est construit. Sans ce champ, un nœud de
+  l'arbre doit la débloquer (`effet.recettes` dans `techtree.json`).
+- `conservation` (facultatif) : nuits avant péremption ; `null` = ne périme jamais ; sans ce
+  champ, 6 nuits comme tous les plats.
+- L'énergie et le prix du plat sont calculés depuis les ingrédients ; `energieForcee` et
+  `priceMultiplier` permettent de les fixer. Un plat peut servir d'ingrédient à un autre,
+  quel que soit l'ordre dans le fichier.
+
+**Ajouter une culture** : l'objet récolté (et sa graine) dans `items.json`, la culture dans
+`crops.json` avec son champ `sprite` (sa découpe dans `assets/crops.png`).
+
+**Notes** : JSON n'a pas de commentaires. Une clé qui commence par `//` est une note pour
+le lecteur, placée avant la clé qu'elle commente (`"//pain": "…"`) ; le script les retire.
+
+**Valeurs écrites et valeurs en jeu** : les fichiers donnent les valeurs de base. Au
+chargement, `buildCatalog()` (`js/engine.js`) en fait `DATA` : prix des productions de la
+ferme × 2, temps des plats ÷ 2, plats ajoutés aux objets. `pain.temps` vaut 20 dans le
+fichier et 10 en jeu.
+
 ### Tests
 
 ```sh
 node run-tests.mjs                  # moteur du jeu
+node test-data.mjs                  # données : valides, et les erreurs possibles sont bien signalées
+node scripts/build-data.mjs --check # js/data.generated.js est à jour avec data/*.json
 node test-telemetry.mjs             # suivi de session (rien sans consentement, retrait, limites, commentaires)
 node test-report.mjs                # rapport quotidien (calculs, Markdown, protections du Worker)
 node build-encyclopedie.mjs --check # encyclopedie.html est à jour avec son JSON
