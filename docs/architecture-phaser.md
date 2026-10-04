@@ -70,7 +70,7 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
   | `verger` | `sign.png` (pancarte) | Verger débloqué | Verger |
   | `zone_culture_1` (ou `zone_culture`) | parcelles | toujours | Zone de culture |
   | `zone_culture_2` | parcelles (8 colonnes) | Moulin débloqué | Champ |
-  | `arbre_verger_1` à `arbre_verger_12` | `basic_*` (8 images de 80×80, animé) | un arbre par arbre du Verger, dans l'ordre d'achat | Verger |
+  | `arbre_verger_1` à `arbre_verger_12` | `basic_*` (première des 8 images de 80×80, fixe) | un arbre par arbre du Verger, dans l'ordre d'achat | Verger |
 
   Un arbre pas encore adulte est dessiné à 60 % de sa taille. La carte porte aussi `silo` et
   `poulailler` : ces rectangles sont lus mais le jeu ne s'en sert pas encore.
