@@ -19,12 +19,14 @@
   --danger-contrast: #ffffff;
   --shadow: 0 1px 3px rgba(44, 36, 22, 0.12);
   --radius: 12px;
+  --inv-icon-bg: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #1c1a14;
     --bg-elevated: #26231b;
+    --inv-icon-bg: #3a3428;
     --bg-header: #2c2718;
     --bg-muted: #2a271e;
     --text: #f2ecdd;
@@ -777,27 +779,41 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
 
 .inv-card {
   display: grid;
-  grid-template-rows: auto auto 1.4em auto;
-  align-content: center;
-  justify-items: center;
-  gap: 4px;
+  grid-template-rows: auto 1.4em;
+  align-content: start;
+  gap: 8px;
   min-width: 0;
-  aspect-ratio: 1 / 1;
-  padding: 10px 8px;
+  padding: 8px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--bg-muted);
-  text-align: center;
 }
 
-.inv-card:has(.inv-actions) { grid-template-rows: auto auto 1.4em auto 40px; }
+.inv-card:has(.inv-actions) { grid-template-rows: auto 1.4em 40px; }
 .inv-card.soon { border-color: var(--danger); }
-.inv-icon { font-size: 2rem; line-height: 1.1; }
-.inv-name { font-weight: 600; overflow-wrap: anywhere; }
-.inv-qty { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.inv-status { display: flex; align-items: center; justify-content: center; height: 1.4em; font-size: 0.9rem; white-space: nowrap; }
+
+/* En haut : le cadre de l'icône, et à sa droite deux lignes de même hauteur que lui. */
+.inv-head { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
+.inv-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--inv-icon-bg);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.inv-text { display: flex; flex-direction: column; justify-content: space-around; min-width: 0; height: 42px; }
+.inv-name { display: flex; align-items: baseline; gap: 3px; min-width: 0; font-size: 0.92rem; font-weight: 600; line-height: 1.2; }
+.inv-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.inv-qty { flex: none; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.inv-info { font-size: 0.8rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inv-status { display: flex; align-items: center; height: 1.4em; font-size: 0.9rem; white-space: nowrap; overflow: hidden; }
 .inv-soon { color: var(--danger); font-weight: 600; }
-.inv-info { font-size: 0.85rem; }
 .inv-actions { display: flex; gap: 6px; width: 100%; }
 .inv-actions .btn { flex: 1; min-width: 0; min-height: 40px; padding: 0 4px; font-size: 0.9rem; white-space: nowrap; }
 .inv-all { width: 100%; margin-bottom: 20px; }

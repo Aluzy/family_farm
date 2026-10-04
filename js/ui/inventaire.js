@@ -46,8 +46,9 @@ function fridgeInButtons(item) {
         <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo">🧊 Tout</button>`;
 }
 
-// Une case de l'inventaire : icône, nom et quantité (« Tomate x3 »), puis une ligne d'état
-// (ce qui périt cette nuit, ou le blé du Silo), le prix et les boutons du frigo.
+// Une case de l'inventaire : en haut, l'icône dans son cadre et, à sa droite,
+// « Tomate x3 » puis l'énergie et le prix ; dessous, une ligne d'état (ce qui
+// périt cette nuit, ou le blé du Silo) et les boutons du frigo.
 // Les cases ont toutes les mêmes lignes, vides au besoin, pour que deux cases
 // côte à côte gardent exactement la même taille et le même alignement.
 function inventoryCard(item, withActions) {
@@ -68,10 +69,14 @@ function inventoryCard(item, withActions) {
   }
   return `
     <div class="inv-card${soon > 0 ? ' soon' : ''}">
-      <span class="inv-icon" aria-hidden="true">${it.icone}</span>
-      <span class="inv-name">${it.nom} <span class="inv-qty num" aria-label="quantité ${formatQty(n)}">x${formatQty(n)}</span></span>
+      <div class="inv-head">
+        <span class="inv-icon" aria-hidden="true">${it.icone}</span>
+        <span class="inv-text">
+          <span class="inv-name"><span class="inv-nom" title="${it.nom}">${it.nom}</span> <span class="inv-qty num" aria-label="quantité ${formatQty(n)}">x${formatQty(n)}</span></span>
+          <span class="inv-info muted">${info}</span>
+        </span>
+      </div>
       <span class="inv-status">${status}</span>
-      <span class="inv-info muted">${info}</span>
       ${withActions ? `<span class="inv-actions">${fridgeInButtons(item)}</span>` : ''}
     </div>`;
 }
