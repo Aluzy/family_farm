@@ -370,12 +370,12 @@ function renderStageNav(el) {
   morph(nav, `<div class="stage-dots" role="group" aria-label="Écrans de la carte">${dots}</div>${arrows}`);
 }
 
-// Fait glisser la carte jusqu'à un écran (0, 1 ou 2).
+// Fait glisser la carte jusqu'à un repère (0, 1 ou 2) : l'étable, la maison, le moulin et la serre.
 function stagePanToScreen(i) {
   const v = window.FarmStage ? FarmStage.view() : null;
   if (!v || !v.mobile) return;
   const n = Math.max(0, Math.min(v.ecrans - 1, Number(i) || 0));
-  FarmStage.panTo(v.min + ((v.max - v.min) * n) / (v.ecrans - 1));
+  FarmStage.panTo(v.points[n]);
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

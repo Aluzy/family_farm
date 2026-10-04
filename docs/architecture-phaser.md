@@ -18,7 +18,7 @@ jeu.html                  la page : structure seule, charge les fichiers ci-dess
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
      └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
 tests/engine.test.js      tests du moteur (jamais chargés par la page)
-assets/                   carte Tiled (carte_printemps.json) + images du pack
+assets/                   carte Tiled (carte_printemps.json, et sa source carte_printemps_elargie.tmj) + images du pack
 ```
 
 Flux de données, à sens unique dans chaque direction :
@@ -42,10 +42,12 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
 Pour ajouter un élément à la carte : un champ dans `stageModel()`, un bloc dans `sync()`,
 une action existante dans `tap()`. Jamais d'appel au moteur depuis `farm-stage.js`.
 
-## 2. La carte : 36×19 tuiles, trois écrans
+## 2. La carte : 72×57 tuiles, trois repères
 
-`assets/carte_printemps.json` est la carte Tiled du propriétaire : 36×19 tuiles de 16 px
-(576×304 px), quatre couches de tuiles et une couche d'objets `batiment`. Elle sert aux quatre
+`assets/carte_printemps.json` est la carte Tiled du propriétaire : 72×57 tuiles de 16 px
+(1152×912 px), dix couches de tuiles et une couche d'objets `batiment`. Elle est fabriquée
+depuis la carte de travail `assets/carte_printemps_elargie.tmj` (voir « Mettre la carte à
+jour »). Elle sert aux quatre
 saisons (il n'existe qu'une carte de printemps). Depuis la version 1.1.2 les bâtiments gardent
 eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`.
 
@@ -65,37 +67,55 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
   | `moulin` | `windmill_*` (4 images de 96×128, animé) | un atelier débloqué | Moulin et ateliers |
   | `serre` | `serre_*`, découpe « batiment » (verrière seule, 94×83) | Serre débloquée | Serre |
   | `verger` | `sign.png` (pancarte) | Verger débloqué | Verger |
-  | `zone_culture` | parcelles | toujours | Zone de culture |
+  | `zone_culture_1` (ou `zone_culture`) | parcelles | toujours | Zone de culture |
+
+  La carte porte aussi `zone_culture_2`, `silo`, `poulailler` et `arbre_verger_1` à
+  `arbre_verger_12` : ces rectangles sont lus mais le jeu ne s'en sert pas encore (rien n'y est
+  dessiné, rien ne s'y touche).
 
   Un bâtiment verrouillé n'est pas dessiné (l'herbe reste). `SERRE_FRAME = 'cour'` dans
   `farm-stage.js` affiche à la place la verrière avec sa cour pavée (177×144), nettement plus
   grande que le rectangle de la carte.
-- **Parcelles.** Le coin haut-gauche de `zone_culture` est calé sur la grille de 16 px
-  (192,176) ; les parcelles sont des tuiles jointives, 5 colonnes au plus :
+- **Parcelles.** Le coin haut-gauche de `zone_culture_1` est calé sur la grille de 16 px
+  (464,384) ; les parcelles sont des tuiles jointives, 5 colonnes au plus :
   6/12/18/24/30 parcelles = 2×3, 3×4, 3×6, 4×6, 5×6 (`stageCols()`). Terre sèche ou arrosée,
   plante à 4 phases découpées dans `crops.png` (champ `sprite` de chaque culture dans `data/crops.json`, que la page
   passe à `FarmStage.mount()` : `crops`), balancement quand elle est mûre.
 - **Images manquantes** : formes de secours (`makePlaceholders()`), la carte reste utilisable.
   Sans le JSON de la carte : fond uni et rectangles par défaut (`DEFAULT_OBJECTS`).
 
-### Réexporter la carte depuis Tiled
+### Mettre la carte à jour
 
-1. Ouvrir la carte, garder le jeu de tuiles `farm_spring_summer` (image
-   `farm_spring_summer.png`, 16×16, sans marge).
-2. Panneau « Jeux de tuiles » → bouton **« Intégrer le jeu de tuiles »** : Phaser et
-   `bakeGround()` ne lisent pas les `.tsx` externes.
-3. Couches de tuiles au format CSV (pas de compression). Les noms des couches de tuiles sont
-   libres, elles sont empilées dans l'ordre ; les objets doivent garder leurs noms
-   (`maison`, `grange`, `zone_culture`, `moulin`, `serre`, `verger`).
-4. Fichier → Exporter sous… → JSON, vers `assets/carte_printemps.json`.
+1. Dans Tiled, enregistrer la carte sous `assets/carte_printemps_elargie.tmj` : un seul jeu
+   de tuiles, `farm_spring_summer` (image `farm_spring_summer.png`, 16×16, sans marge), qui
+   peut rester externe (`.tsx`) ; couches de tuiles au format CSV (pas de compression) ; carte
+   non infinie.
+2. Les noms des couches de tuiles sont libres, elles sont empilées dans l'ordre. Les
+   rectangles doivent garder leurs noms : `maison`, `grange`, `zone_culture_1`, `moulin`,
+   `serre`, `verger`.
+3. `node scripts/build-map.mjs` écrit `assets/carte_printemps.json` : le jeu de tuiles y est
+   intégré (`bakeGround()` ne lit pas les `.tsx`). Le script refuse d'écrire, en disant
+   pourquoi, si un rectangle manque, si une tuile sort de la planche ou si une couche est
+   compressée.
+
+La taille de la carte est libre : le jeu la lit dans le fichier. Si elle change, reporter ses
+dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
+(`farm-stage.js`), qui servent quand le fichier ne se charge pas.
 
 ## 3. Caméra, glissement, appuis
 
-- **Zoom** = `max(hauteur zone / hauteur carte, largeur zone / largeur carte)` : les 19 rangées
-  sont visibles et la zone est entièrement couverte, sans bande. Sur un téléphone de 390 px de
-  large, on voit environ 12 tuiles : la carte fait trois écrans (étable, maison et zone de
-  culture, moulin et serre). Départ centré sur l'écran du milieu ; au redimensionnement, le
-  centre courant est conservé. La vue ne sort jamais de la carte (`setCentre()` borne le centre).
+- **Zoom** = `max(hauteur zone / (19 × 16 px), largeur zone / largeur carte)` : 19 rangées
+  sont visibles en hauteur (`VIEW_ROWS`, la hauteur de la première carte), quelle que soit la
+  taille de la carte, et la zone est entièrement couverte, sans bande. Sur un téléphone de
+  390 px de large, on voit environ 11 tuiles de large ; sur un ordinateur, une quarantaine. La
+  carte étant plus grande que la vue dans les deux sens, elle glisse aussi de haut en bas.
+- **Trois repères** (`makeScreens()`), calculés depuis les rectangles de la carte : l'étable
+  (`grange`), la maison avec la zone de culture, le moulin avec la serre. Ce sont les trois
+  points du bas de la carte : un appui y fait glisser la vue, en largeur et en hauteur ; le
+  point actif est le repère le plus proche. Départ centré sur le repère du milieu ; au
+  redimensionnement, le centre courant est conservé. La vue ne sort jamais de la carte
+  (`setCentre()` borne le centre). `panTo()` accepte un lieu (`'moulin'`, `'zone'`…) et y
+  centre la vue dans les deux sens.
 - **Densité de l'écran** : le canvas est rendu à `devicePixelRatio` (plafonné à 3) en mode
   `Scale.NONE` ; `resize()` (ResizeObserver sur la zone) tient la taille à jour. Le zoom n'étant
   pas entier, c'est ce qui garde des pixels réguliers. `roundPixels` est désactivé (des sommets
@@ -171,7 +191,11 @@ est la poignée de débogage posée par `js/main.js`).
 ## 8. Limites connues
 
 - Automne et hiver : la carte garde son apparence de printemps toute l'année (`SEASONS_ON_MAP = false` dans `farm-stage.js`) ; les images d'automne et d'hiver des bâtiments restent dans `assets/` pour le jour où les cartes de ces saisons existeront.
-- La grille 5×6 (80 px) dépasse la barrière dessinée sur la carte (64 px) et touche le chemin.
+- Sur un ordinateur, au repère du milieu, le bas du moulin dépasse sous la vue : de la maison
+  au pied du moulin, la carte fait presque 19 rangées. Il se voit en entier en glissant ou
+  depuis le troisième point.
+- `zone_culture_2`, `silo`, `poulailler` et les douze `arbre_verger_*` de la carte ne sont pas
+  encore utilisés par le jeu.
 - Les bulles d'aide « eau » et « potager » ne désignent plus rien sur la carte (leurs cibles
   sont dans la fenêtre Maison › Installations et dans la fenêtre Zone de culture).
 

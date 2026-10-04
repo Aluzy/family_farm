@@ -11,8 +11,9 @@
  *      modèle, il ne fait rien ; appelé avec un modèle différent, il crée,
  *      met à jour ou détruit exactement ce qui a changé.
  *
- * La carte (Tiled, 36×19 tuiles de 16 px) fait trois écrans de large : le zoom
- * montre toute sa hauteur et le doigt (ou la souris) la fait glisser.
+ * La carte (Tiled, 72×57 tuiles de 16 px) est plus grande que l'écran : le zoom en montre
+ * 19 rangées, et le doigt (ou la souris) la fait glisser dans les deux sens. Trois repères
+ * (l'étable, la maison, le moulin et la serre) servent de points d'arrêt.
  *
  * Par-dessus la carte, la scène pose des étiquettes en DOM (nom du bâtiment et pastille
  * « à faire », données par le modèle) qu'elle replace à chaque image, et un voile de
@@ -21,8 +22,8 @@
  * API publique : FarmStage.mount(element, { act, onView, base, crops }) puis
  *                FarmStage.update(modèle), FarmStage.show(), FarmStage.hide(),
  *                FarmStage.ready() (la scène est-elle affichable ?),
- *                FarmStage.view() (où en est la vue : écran 0, 1 ou 2, bornes),
- *                FarmStage.panTo(x ou id de bâtiment) (glisse jusque-là).
+ *                FarmStage.view() (où en est la vue : repère 0, 1 ou 2, bornes),
+ *                FarmStage.panTo(x, point { x, y } ou id de bâtiment) (glisse jusque-là).
  *                onView(vue) est appelé quand l'écran courant change, quand un bord est
  *                atteint ou quitté, et au premier glissement du joueur.
  */
@@ -41,16 +42,22 @@
     : { printemps: 'sp', ete: 'sp', automne: 'sp', hiver: 'sp' };
   // Seules les images utiles sont chargées.
   const SUFFIXES = SEASONS_ON_MAP ? ['sp', 'au', 'wi'] : ['sp'];
+  // Rangées de tuiles visibles en hauteur : la taille d'affichage ne dépend pas de la
+  // taille de la carte (19 = la hauteur de la première carte, que le jeu montrait en entier).
+  const VIEW_ROWS = 19;
+  // Rectangle de la zone de culture dans la carte : le premier nom trouvé. Les parcelles du
+  // jeu s'y posent ; `zone_culture_2` existe sur la carte mais le jeu ne s'en sert pas encore.
+  const ZONE_OBJECTS = ['zone_culture_1', 'zone_culture'];
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
-  const DEFAULT_W = 36 * T;
-  const DEFAULT_H = 19 * T;
+  const DEFAULT_W = 72 * T;
+  const DEFAULT_H = 57 * T;
   const DEFAULT_OBJECTS = {
-    maison: { x: 241.5, y: 47, width: 94, height: 95.6 },
-    grange: { x: 33, y: 61.8, width: 126, height: 81.6 },
-    zone_culture: { x: 193.7, y: 177.2, width: 61, height: 94 },
-    moulin: { x: 352, y: 159.1, width: 95.6, height: 127 },
-    serre: { x: 464.1, y: 81.6, width: 94, height: 78.3 },
-    verger: { x: 353.1, y: 111.7, width: 12.8, height: 15.9 },
+    maison: { x: 513.6, y: 239, width: 94, height: 95.6 },
+    grange: { x: 305, y: 253.8, width: 126.1, height: 81.6 },
+    zone_culture: { x: 464.5, y: 385.1, width: 78.1, height: 94 },
+    moulin: { x: 626.1, y: 412.3, width: 95.6, height: 127 },
+    serre: { x: 736.1, y: 273.6, width: 94, height: 78.3 },
+    verger: { x: 625.1, y: 303.7, width: 12.8, height: 15.9 },
   };
   // serre_*.png : deux découpes possibles (largeur × hauteur depuis le coin haut-gauche).
   //   « batiment » : la verrière seule, de la taille du rectangle `serre` de la carte ;
@@ -77,7 +84,6 @@
   const INERTIA_MS = 260;      // constante de temps de l'élan après un glissement
   const MAX_SPEED = 1.5;       // px de carte par ms
   const PAN_MS = 380;          // durée d'un déplacement demandé par panTo()
-  const SCREENS = 3;           // la carte fait trois écrans : gauche, milieu, droite
   const LABEL_GAP = 3;         // px CSS entre l'étiquette et ce qu'elle nomme
   const LABEL_HOLD_MS = 1200;  // au doigt : le nom reste affiché ce temps après le relâchement
   const GROUND_CHECK_MS = 3000; // le fond de la carte est vérifié à ce rythme (voir repairGround)
@@ -157,7 +163,8 @@
         this.lightFade = null;           // fondu en cours : { from, to, t0 }
         this.world = { w: DEFAULT_W, h: DEFAULT_H };
         this.objects = Object.assign({}, DEFAULT_OBJECTS);
-        this.grid = { x: 192, y: 176, cols: 2 };
+        this.grid = { x: 464, y: 384, cols: 2 };
+        this.screens = [];               // repères de la carte : gauche, milieu, droite (voir makeScreens)
         this.cx = DEFAULT_W / 2;         // centre de la vue, en px de carte
         this.cy = DEFAULT_H / 2;
         this.drag = null;                // glissement en cours
@@ -203,8 +210,9 @@
         const z = this.objects.zone_culture;
         this.grid.x = Math.round(z.x / T) * T;
         this.grid.y = Math.round(z.y / T) * T;
-        this.cx = this.world.w / 2;      // départ : l'écran du milieu (maison + zone de culture)
-        this.cy = this.world.h / 2;
+        this.makeScreens();
+        this.cx = this.screens[1].x;     // départ : le repère du milieu (maison + zone de culture)
+        this.cy = this.screens[1].y;
 
         const I = this.input;
         I.on('pointerdown', this.onDown, this);
@@ -285,9 +293,14 @@
         if (valid) this.world = { w: raw.width * raw.tilewidth, h: raw.height * raw.tileheight };
         this.mapRaw = valid ? raw : null;
         if (valid) {
+          const named = {};
           for (const layer of raw.layers) {
-            if (layer.type === 'objectgroup') for (const o of layer.objects || []) if (o.name) this.objects[o.name] = o;
+            if (layer.type === 'objectgroup') for (const o of layer.objects || []) if (o.name) named[o.name] = o;
           }
+          Object.assign(this.objects, named);
+          const zone = ZONE_OBJECTS.find((n) => named[n]);
+          if (zone) this.objects.zone_culture = named[zone];
+          else console.warn('[FarmStage] rectangle ' + ZONE_OBJECTS[0] + ' introuvable dans la carte : zone de culture à sa place par défaut');
           const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
           if (!set) console.warn('[FarmStage] jeu de tuiles ' + MAP.image + ' introuvable dans la carte (est-il intégré ?)');
         }
@@ -380,14 +393,15 @@
 
       /* ---------- caméra : zoom, glissement, élan ---------- */
 
-      // Zoom : toute la hauteur de la carte est visible et la zone est entièrement couverte
-      // (jamais de bande, jamais rien hors de la carte). Le centre courant est conservé.
+      // Zoom : VIEW_ROWS rangées sont visibles en hauteur (toute la carte si elle est plus
+      // petite) et la zone est entièrement couverte (jamais de bande, jamais rien hors de la
+      // carte). Le centre courant est conservé.
       fit() {
         const w = this.scale.width, h = this.scale.height;
         if (!w || !h) return;
         const cam = this.cameras.main;
         cam.setSize(w, h);
-        cam.setZoom(Math.max(h / this.world.h, w / this.world.w));
+        cam.setZoom(Math.max(h / Math.min(this.world.h, VIEW_ROWS * T), w / this.world.w));
         cam.setBounds(0, 0, this.world.w, this.world.h);
         this.setCentre(this.cx, this.cy);
       }
@@ -491,20 +505,43 @@
         if (!free || Math.hypot(this.vx, this.vy) < 0.01) this.vx = this.vy = 0;
       }
 
-      /* ---------- vue : écran courant, déplacement demandé ---------- */
+      /* ---------- vue : repère courant, déplacement demandé ---------- */
 
-      // Où en est la vue, pour la page : `ecran` = 0 (gauche), 1 (milieu) ou 2 (droite) ;
-      // `min` et `max` = bornes du centre ; `mobile` = la carte dépasse-t-elle de la zone ?
+      // Les trois repères de la carte, de gauche à droite : l'étable, la maison avec la zone de
+      // culture, le moulin avec la serre. Chacun est le centre des rectangles qu'il réunit : ils
+      // suivent la carte, où que les bâtiments y soient posés.
+      makeScreens() {
+        const centre = (...names) => {
+          const r = names.map((n) => this.objects[n]);
+          const x0 = Math.min(...r.map((o) => o.x)), x1 = Math.max(...r.map((o) => o.x + o.width));
+          const y0 = Math.min(...r.map((o) => o.y)), y1 = Math.max(...r.map((o) => o.y + o.height));
+          return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
+        };
+        this.screens = [centre('grange'), centre('maison', 'zone_culture'), centre('moulin', 'serre')];
+      }
+
+      // Bornes du centre de la vue : elle ne sort jamais de la carte.
+      bounds() {
+        const cam = this.cameras.main;
+        const vw = this.scale.width / cam.zoom, vh = this.scale.height / cam.zoom;
+        return { minX: vw / 2, maxX: this.world.w - vw / 2, minY: vh / 2, maxY: this.world.h - vh / 2 };
+      }
+
+      // Où en est la vue, pour la page : `ecran` = repère le plus proche, 0 (gauche), 1 (milieu)
+      // ou 2 (droite) ; `points` = centre de chaque repère ; `min` et `max` = bornes du centre ;
+      // `mobile` = la carte dépasse-t-elle de la zone ?
       viewInfo() {
-        const vw = this.scale.width / this.cameras.main.zoom;
-        const min = vw / 2, max = this.world.w - vw / 2;
-        const mobile = max - min > 1;
-        const f = mobile ? (this.cx - min) / (max - min) : 0.5;
+        const b = this.bounds();
+        const min = b.minX, max = b.maxX;
+        const mobile = max - min > 1 || b.maxY - b.minY > 1;
+        const xs = this.screens.map((p) => clamp(p.x, min, max));
+        let ecran = 0;
+        xs.forEach((x, i) => { if (Math.abs(this.cx - x) < Math.abs(this.cx - xs[ecran])) ecran = i; });
         return {
-          x: this.cx, min, max, mobile, ecrans: SCREENS,
-          ecran: mobile ? Math.round(f * (SCREENS - 1)) : 1,
-          gauche: mobile && this.cx > min + 1,     // il reste de la carte à gauche
-          droite: mobile && this.cx < max - 1,     // il reste de la carte à droite
+          x: this.cx, min, max, mobile, ecrans: xs.length, points: this.screens.map((p) => ({ x: p.x, y: p.y })),
+          ecran: mobile ? ecran : 1,
+          gauche: mobile && this.cx > xs[0] + 1,               // il reste un repère à gauche
+          droite: mobile && this.cx < xs[xs.length - 1] - 1,   // il reste un repère à droite
           glisse: this.dragged,
         };
       }
@@ -519,22 +556,28 @@
         bridge.onView(v);
       }
 
-      // Centre horizontal d'un lieu de la carte (bâtiment affiché ou zone de culture).
-      placeX(id) {
-        if (id === 'zone') return this.grid.x + (this.grid.cols * T) / 2;
+      // Centre d'un lieu de la carte (bâtiment affiché ou zone de culture), en px de carte.
+      place(id) {
+        if (id === 'zone') {
+          const g = this.grid;
+          const rows = Math.ceil((lastModel ? lastModel.plots.length : 0) / g.cols);
+          return { x: g.x + (g.cols * T) / 2, y: g.y + (rows * T) / 2 };
+        }
         const e = this.buildings.get(id);
-        return e ? e.sprite.x + e.sprite.width / 2 : null;
+        return e ? { x: e.sprite.x + e.sprite.width / 2, y: e.sprite.y - e.sprite.height / 2 } : null;
       }
 
-      // Glisse jusqu'à x (px de carte) ou jusqu'à un lieu ('maison', 'etable', 'zone'…).
-      // `now` : sans animation. Renvoie false si le lieu n'est pas sur la carte.
+      // Glisse jusqu'à x (px de carte, sans changer de hauteur), jusqu'à un point { x, y } ou
+      // jusqu'à un lieu ('maison', 'etable', 'zone'…). `now` : sans animation. Renvoie false si
+      // le lieu n'est pas sur la carte.
       panTo(target, now) {
-        const x = typeof target === 'number' ? target : this.placeX(target);
-        if (x === null || !Number.isFinite(x)) return false;
+        const p = typeof target === 'number' ? { x: target, y: this.cy }
+          : target && typeof target === 'object' ? target : this.place(target);
+        if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return false;
         this.vx = this.vy = 0;
-        if (now || reducedMotion()) { this.pan = null; this.setCentre(x, this.cy); return true; }
-        const v = this.viewInfo();
-        this.pan = { from: this.cx, to: clamp(x, v.min, v.max), t0: performance.now() };
+        if (now || reducedMotion()) { this.pan = null; this.setCentre(p.x, p.y); return true; }
+        const b = this.bounds();
+        this.pan = { x0: this.cx, y0: this.cy, x1: clamp(p.x, b.minX, b.maxX), y1: clamp(p.y, b.minY, b.maxY), t0: performance.now() };
         return true;
       }
 
@@ -542,7 +585,7 @@
         const p = this.pan;
         const t = Math.min(1, (performance.now() - p.t0) / PAN_MS);
         const k = 1 - Math.pow(1 - t, 3);            // départ vif, arrivée douce
-        this.setCentre(p.from + (p.to - p.from) * k, this.cy);
+        this.setCentre(p.x0 + (p.x1 - p.x0) * k, p.y0 + (p.y1 - p.y0) * k);
         if (t >= 1) this.pan = null;
       }
 
@@ -924,7 +967,7 @@
   // Où en est la vue (voir viewInfo()) ; null tant que la scène n'est pas prête.
   function view() { const s = getScene(); return s && s.ready ? s.viewInfo() : null; }
 
-  // Glisse jusqu'à x (px de carte) ou jusqu'à un lieu ; false si ce n'est pas possible.
+  // Glisse jusqu'à x (px de carte), un point { x, y } ou un lieu ; false si ce n'est pas possible.
   function panTo(target, now) { const s = getScene(); return !!(s && s.ready && s.panTo(target, now)); }
 
   global.FarmStage = { mount, update, show, hide, ready, view, panTo, scene: getScene }; // scene() : pour le débogage et les tests
