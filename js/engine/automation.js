@@ -3,7 +3,7 @@ import { EPS } from './base.js';
 import { currentSeason } from './seasons.js';
 import { allDevices, fail, maintainDevice, needsService, tankCapacity } from './devices.js';
 import { newNightStats } from './family.js';
-import { allPlots, findPlot, harvest, isMature, plant, seedItem, seedStock, water } from './crops.js';
+import { allPlots, findPlot, harvest, isMature, plant, plotZone, seedItem, seedStock, water, zone2Plots } from './crops.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
 import { canSleep } from './night.js';
@@ -68,7 +68,7 @@ export function setSemis(state, plotId, mode, culture) {
 export function autoTasks(state) {
   const rap = newAutoReport();
   const zones = [
-    { id: 'potager', plots: state.potager.parcelles },
+    { id: 'potager', plots: [...state.potager.parcelles, ...zone2Plots(state)] }, // la Zone de culture et le Champ
     { id: 'serre', plots: state.serre && state.serre.construit ? state.serre.parcelles : [] },
   ];
   const prioritaire = !!techFlag(state, 'arrosagePrioritaire');
@@ -158,11 +158,14 @@ export function routineDue(state) {
   return !!(state.routine && techFlag(state, 'routine') && canSleep(state));
 }
 
-export function waterAll(state, lieu) {
+// `zone` (facultatif) : 1 pour la Zone de culture seule, 2 pour le Champ seul.
+const inZone = (lieu, zone) => (p) => p.lieu === lieu && (!zone || plotZone(p) === Number(zone));
+
+export function waterAll(state, lieu, zone) {
   if (!(techFlag(state, 'actionsGroupees') || []).includes('arroser')) return fail('Débloque les Outils de jardin dans l\'Arbre des technologies.');
   let arrosees = 0;
   let sansEau = 0;
-  for (const p of allPlots(state).filter((x) => x.lieu === lieu && x.culture && !x.arrose && !isMature(x))) {
+  for (const p of allPlots(state).filter(inZone(lieu, zone)).filter((x) => x.culture && !x.arrose && !isMature(x))) {
     if (water(state, p.id).ok) arrosees += 1;
     else sansEau += 1;
   }
@@ -172,11 +175,11 @@ export function waterAll(state, lieu) {
 
 // Arbre v2 (Outils de jardin) : « Récolter tout » d'un lieu (au clic, avec la
 // productivité). Renvoie { ok, recoltees, items }.
-export function harvestAll(state, lieu) {
+export function harvestAll(state, lieu, zone) {
   if (!(techFlag(state, 'actionsGroupees') || []).includes('recolter')) return fail('Débloque les Outils de jardin dans l\'Arbre des technologies.');
   const items = {};
   let recoltees = 0;
-  for (const p of allPlots(state).filter((x) => x.lieu === lieu && x.culture && isMature(x))) {
+  for (const p of allPlots(state).filter(inZone(lieu, zone)).filter((x) => x.culture && isMature(x))) {
     const r = harvest(state, p.id);
     if (!r.ok) continue;
     recoltees += 1;

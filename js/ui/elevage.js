@@ -3,7 +3,7 @@ import { EPS } from '../engine/base.js';
 import { countItem } from '../engine/inventory.js';
 import { productivity } from '../engine/family.js';
 import {
-  allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, seedStock,
+  allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plotZone, seedStock,
   toggleBolting, water, waterCost, waterCostFor,
 } from '../engine/crops.js';
 import {
@@ -243,14 +243,16 @@ export function autoChip(id, title) {
   return `<span class="chip auto" title="${title}">🤖 ${taches.map((t) => noms[t]).join(', ')}</span>`;
 }
 
-// Arbre v2 (Outils de jardin) : « Arroser tout » et « Récolter tout ».
-export function groupButtons(lieu) {
+// Arbre v2 (Outils de jardin) : « Arroser tout » et « Récolter tout ». `zone` (facultatif) :
+// 1 pour la Zone de culture seule, 2 pour le Champ seul (les deux portent le lieu 'potager').
+export function groupButtons(lieu, zone) {
   const g = techFlag(state, 'actionsGroupees') || [];
   if (!g.length) return '';
-  const plots = allPlots(state).filter((p) => p.lieu === lieu);
+  const plots = allPlots(state).filter((p) => p.lieu === lieu && (!zone || plotZone(p) === zone));
+  const z = zone ? ` data-zone="${zone}"` : '';
   const aArroser = plots.filter((p) => p.culture && !p.arrose && !isMature(p)).length;
   const murs = plots.filter((p) => p.culture && isMature(p)).length;
-  return `${g.includes('arroser') ? `<button type="button" class="btn" data-action="water-all" data-lieu="${lieu}"${aArroser ? '' : ' disabled'}>💧 Arroser tout (${aArroser})</button>` : ''}${g.includes('recolter') ? `<button type="button" class="btn" data-action="harvest-all" data-lieu="${lieu}"${murs ? '' : ' disabled'}>🧺 Récolter tout (${murs})</button>` : ''}`;
+  return `${g.includes('arroser') ? `<button type="button" class="btn" data-action="water-all" data-lieu="${lieu}"${z}${aArroser ? '' : ' disabled'}>💧 Arroser tout (${aArroser})</button>` : ''}${g.includes('recolter') ? `<button type="button" class="btn" data-action="harvest-all" data-lieu="${lieu}"${z}${murs ? '' : ' disabled'}>🧺 Récolter tout (${murs})</button>` : ''}`;
 }
 
 function semisLabel(p) {
@@ -436,11 +438,11 @@ registerActions({
     if (result.ok) showToast(`✂️ Tonte : +${result.laine} 🧶`);
   },
   'water-all': (target) => {
-    const result = applyResult(waterAll(state, target.dataset.lieu));
+    const result = applyResult(waterAll(state, target.dataset.lieu, target.dataset.zone));
     if (result.ok) showToast(`💧 ${plural(result.arrosees, 'parcelle')} arrosée${result.arrosees > 1 ? 's' : ''}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
   },
   'harvest-all': (target) => {
-    const result = applyResult(harvestAll(state, target.dataset.lieu));
+    const result = applyResult(harvestAll(state, target.dataset.lieu, target.dataset.zone));
     if (result.ok) showToast(`🧺 ${itemsSummary(result.items)}`);
   },
   'semis-open': (target) => {

@@ -77,15 +77,6 @@ button {
   gap: 8px;
 }
 
-.app-title {
-  font-weight: 700;
-  font-size: 1.05rem;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
 .indicators {
   display: flex;
   align-items: center;
@@ -429,21 +420,8 @@ details.test-panel summary {
 
 /* ---------- Lot 1 : en-tête, cartes, appareils, interrupteurs, Dormir ---------- */
 
-.app-header { flex-wrap: wrap; }
-
-.indicators {
-  order: 3;
-  width: 100%;
-  justify-content: space-between;
-  gap: 8px 12px;
-}
-
 .indicator {
   white-space: nowrap;
-}
-
-@media (min-width: 640px) {
-  .indicators { justify-content: flex-start; gap: 8px 28px; }
 }
 
 .cards {
@@ -1248,16 +1226,30 @@ body.has-stage { padding-bottom: 0; }
 
 /* ---------- 1.1 : navigation de la carte (étiquettes, points, objectif, fenêtres, bandeau) ---------- */
 
-/* Bandeau : la nuit et l'heure à côté du titre ; dessous, une rangée d'indicateurs. Chaque
-   indicateur a sa valeur et, en petit, sa légende. Ceux qui mènent quelque part sont des boutons. */
-.app-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.app-clock { display: flex; align-items: stretch; gap: 12px; margin-left: auto; font-variant-numeric: tabular-nums; }
-.indicators { gap: 4px 6px; align-items: stretch; }
-.indicator { flex-direction: column; justify-content: center; gap: 1px; line-height: 1.15; }
-.ind-val { display: flex; align-items: center; gap: 4px; }
-.ind-leg { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); }
-.indicator-btn { padding: 2px 8px; border: 1px solid var(--border); background: var(--bg-elevated); box-shadow: var(--shadow); }
+/* Bandeau (version 1.4) : une seule ligne, deux fois moins haute qu'avant. Plus de titre ni
+   de légendes : six indicateurs, chacun une icône et sa valeur ; ceux qui mènent quelque part
+   sont des boutons. Les espacements sont en em : si la ligne déborde, fitIndicators()
+   (stage-windows.js) réduit le texte et tout suit. */
+.app-header { flex-wrap: nowrap; padding: 4px 8px; }
+.indicators {
+  order: 0;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.25em;
+  font-size: 0.95rem;
+  overflow: hidden;
+}
+.indicator { flex: 0 0 auto; gap: 0.15em; min-height: 44px; line-height: 1.15; }
+.indicator-btn { min-height: 36px; padding: 0 0.3em; border: 1px solid var(--border); background: var(--bg-elevated); box-shadow: var(--shadow); }
 .indicator-btn:active { transform: translateY(1px); }
+@media (min-width: 640px) {
+  .indicators { justify-content: flex-start; gap: 1.4em; }
+  .indicator-btn { padding: 0 0.6em; }
+}
 
 /* Étiquettes des bâtiments : en DOM, par-dessus le canvas, replacées à chaque image par
    farm-stage.js. Elles ne prennent pas les appuis : la carte glisse aussi quand le doigt part

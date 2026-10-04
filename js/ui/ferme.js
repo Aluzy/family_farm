@@ -5,7 +5,7 @@ import {
 } from '../engine/devices.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
 import { productivity } from '../engine/family.js';
-import { potagerUpgradeCost, upgradePotager } from '../engine/crops.js';
+import { potagerUpgradeCost, upgradePotager, zone2Plots } from '../engine/crops.js';
 import { isUnlocked } from '../engine/campaign.js';
 import {
   formatCoins, formatLitres, formatLitresRate, formatNumber, formatPercent, formatWh, formatWhRate,
@@ -69,6 +69,7 @@ export function renderFerme() {
   return [
     `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}<div id="bat-calendrier" class="ancre">${renderCalendar()}</div>`,
     renderPotager(),
+    renderZone2(),
     isUnlocked(state, 'serre') ? renderSerre() : '',
     isUnlocked(state, 'silo') ? renderSilo() : '',
     coopShown() ? `<div id="etable-poules" class="ancre">${renderPoulailler()}</div>` : '',
@@ -227,7 +228,26 @@ export function renderPotager() {
       <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ${formatPercent(prod)}</span>${helpBtn('potager')}</span>
     </div>
     <div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${groupButtons('potager')}${upBtn}</div>
+    <div class="row plot-foot">${groupButtons('potager', 1)}${upBtn}</div>
+  `;
+}
+
+/* ---------- Ferme : le Champ (state.potager.zone2), deuxième zone de culture ---------- */
+
+// Ouvert en entier avec le Moulin ; vide (aucune section) avant. Mêmes cartes de parcelle et
+// mêmes règles que la Zone de culture ; « Arroser tout » et « Récolter tout » n'agissent qu'ici.
+export function renderZone2() {
+  const Z = DATA.POTAGER.ZONE2;
+  const plots = zone2Plots(state);
+  if (!plots.length) return '';
+  const prod = productivity(state);
+  return `
+    <div class="section-head">
+      <h3><span aria-hidden="true">${Z.ICONE}</span> ${Z.NOM} · ${plots.length} parcelles</h3>
+      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ${formatPercent(prod)}</span>${helpBtn('potager')}</span>
+    </div>
+    <div class="plots">${plots.map((p, i) => plotCard(p, i + 1)).join('')}</div>
+    <div class="row plot-foot">${groupButtons('potager', 2)}</div>
   `;
 }
 

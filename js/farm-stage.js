@@ -12,8 +12,9 @@
  *      met à jour ou détruit exactement ce qui a changé.
  *
  * La carte (Tiled, 72×57 tuiles de 16 px) est plus grande que l'écran : le zoom en montre
- * 19 rangées, et le doigt (ou la souris) la fait glisser dans les deux sens. Trois repères
- * (l'étable, la maison, le moulin et la serre) servent de points d'arrêt.
+ * 21 rangées, et le doigt (ou la souris) la fait glisser dans les deux sens. Trois repères
+ * (l'étable, la maison, le moulin et la serre) servent de points d'arrêt. Elle porte deux
+ * zones de parcelles (la Zone de culture et le Champ) et les arbres du Verger.
  *
  * Par-dessus la carte, la scène pose des étiquettes en DOM (nom du bâtiment et pastille
  * « à faire », données par le modèle) qu'elle replace à chaque image, et un voile de
@@ -43,11 +44,17 @@
   // Seules les images utiles sont chargées.
   const SUFFIXES = SEASONS_ON_MAP ? ['sp', 'au', 'wi'] : ['sp'];
   // Rangées de tuiles visibles en hauteur : la taille d'affichage ne dépend pas de la
-  // taille de la carte (19 = la hauteur de la première carte, que le jeu montrait en entier).
-  const VIEW_ROWS = 19;
+  // taille de la carte. La première carte en montrait 19 ; depuis la version 1.4 le bandeau
+  // est deux fois moins haut, et la place gagnée montre deux rangées de plus, à la même échelle.
+  const VIEW_ROWS = 21;
   // Rectangle de la zone de culture dans la carte : le premier nom trouvé. Les parcelles du
-  // jeu s'y posent ; `zone_culture_2` existe sur la carte mais le jeu ne s'en sert pas encore.
+  // jeu s'y posent ; celles du Champ (modèle.plots2) se posent sur `zone_culture_2`.
   const ZONE_OBJECTS = ['zone_culture_1', 'zone_culture'];
+  // Arbres du Verger : le n-ième arbre du modèle se pose sur le rectangle `arbre_verger_n`.
+  const TREE_OBJECT = 'arbre_verger_';
+  const TREE_FRAME = { frameWidth: 80, frameHeight: 80 };   // basic_*.png : 8 images de 80×80
+  const TREE_YOUNG = 0.6;                                    // taille d'un arbre pas encore adulte
+  const TREE_BODY = 0.8;                                     // part de l'image qu'occupe l'arbre, en largeur
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
   const DEFAULT_W = 72 * T;
   const DEFAULT_H = 57 * T;
@@ -58,7 +65,11 @@
     moulin: { x: 626.1, y: 412.3, width: 95.6, height: 127 },
     serre: { x: 736.1, y: 273.6, width: 94, height: 78.3 },
     verger: { x: 625.1, y: 303.7, width: 12.8, height: 15.9 },
+    zone_culture_2: { x: 622, y: 607.6, width: 130.8, height: 128.8 },
   };
+  [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
+    [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
+    .forEach((p, i) => { DEFAULT_OBJECTS[TREE_OBJECT + (i + 1)] = { x: p[0], y: p[1], width: 63.7, height: 78.2 }; });
   // serre_*.png : deux découpes possibles (largeur × hauteur depuis le coin haut-gauche).
   //   « batiment » : la verrière seule, de la taille du rectangle `serre` de la carte ;
   //   « cour »     : la verrière et sa cour pavée (tout le haut de la planche, au-dessus des bacs).
@@ -152,6 +163,7 @@
         super('farm');
         this.plots = new Map();          // id de parcelle -> { soil, crop, key, tween }
         this.buildings = new Map();      // id de bâtiment -> { def, sprite }
+        this.trees = new Map();          // id d'arbre du Verger -> { sprite, key }
         this.labels = new Map();         // id de lieu -> étiquette DOM et son point d'ancrage
         this.hoverId = null;             // lieu survolé (souris) ou touché (doigt) : son nom s'affiche
         this.hoverUntil = 0;             // au doigt : heure à laquelle le nom s'efface
@@ -163,7 +175,8 @@
         this.lightFade = null;           // fondu en cours : { from, to, t0 }
         this.world = { w: DEFAULT_W, h: DEFAULT_H };
         this.objects = Object.assign({}, DEFAULT_OBJECTS);
-        this.grid = { x: 464, y: 384, cols: 2 };
+        this.grid = { x: 464, y: 384, cols: 2 };   // Zone de culture : coin haut-gauche et colonnes
+        this.grid2 = { x: 624, y: 608, cols: 8 };  // Champ
         this.screens = [];               // repères de la carte : gauche, milieu, droite (voir makeScreens)
         this.cx = DEFAULT_W / 2;         // centre de la vue, en px de carte
         this.cy = DEFAULT_H / 2;
@@ -189,6 +202,7 @@
           L.image('barn_' + a, 'barn_' + a + '.png');
           L.image('serre_' + a, 'serre_' + a + '.png');
           L.spritesheet('windmill_' + a, 'windmill_' + a + '.png', MILL_FRAME);
+          L.spritesheet('tree_' + a, 'basic_' + a + '.png', TREE_FRAME);
         }
       }
 
@@ -210,6 +224,9 @@
         const z = this.objects.zone_culture;
         this.grid.x = Math.round(z.x / T) * T;
         this.grid.y = Math.round(z.y / T) * T;
+        const z2 = this.objects.zone_culture_2;
+        this.grid2.x = Math.round(z2.x / T) * T;
+        this.grid2.y = Math.round(z2.y / T) * T;
         this.makeScreens();
         this.cx = this.screens[1].x;     // départ : le repère du milieu (maison + zone de culture)
         this.cy = this.screens[1].y;
@@ -250,6 +267,7 @@
         bake('ph_moulin', 96, 128, shed(0xd8c7a3, 0x6b4423, 96, 128));
         bake('ph_serre', 96, 80, shed(0x9fd3c7, 0x4f8a7a, 96, 80));
         bake('ph_verger', 17, 16, (d) => { d.fillStyle(0x6b4423).fillRect(7, 8, 3, 8); d.fillStyle(0xb98a4e).fillRect(1, 1, 15, 8); });
+        bake('ph_arbre', 80, 80, (d) => { d.fillStyle(0x6b4423).fillRect(36, 48, 8, 32); d.fillStyle(0x4f8a4a).fillCircle(40, 32, 28); });
         g.destroy();
       }
 
@@ -277,6 +295,11 @@
           const key = 'windmill_' + a;
           if (this.has(key) && !this.anims.exists(key)) {
             this.anims.create({ key, frames: this.anims.generateFrameNumbers(key, { start: 0, end: 3 }), frameRate: 5, repeat: -1 });
+          }
+          // Arbres du Verger : le feuillage bouge doucement (8 images).
+          const tree = 'tree_' + a;
+          if (this.has(tree) && !this.anims.exists(tree)) {
+            this.anims.create({ key: tree, frames: this.anims.generateFrameNumbers(tree, { start: 0, end: 7 }), frameRate: 4, repeat: -1 });
           }
         }
       }
@@ -556,11 +579,13 @@
         bridge.onView(v);
       }
 
-      // Centre d'un lieu de la carte (bâtiment affiché ou zone de culture), en px de carte.
+      // Centre d'un lieu de la carte (bâtiment affiché, Zone de culture ou Champ), en px de carte.
       place(id) {
-        if (id === 'zone') {
-          const g = this.grid;
-          const rows = Math.ceil((lastModel ? lastModel.plots.length : 0) / g.cols);
+        if (id === 'zone' || id === 'zone2') {
+          const g = id === 'zone' ? this.grid : this.grid2;
+          const plots = lastModel ? (id === 'zone' ? lastModel.plots : lastModel.plots2) || [] : [];
+          if (id === 'zone2' && !plots.length) return null;
+          const rows = Math.ceil(plots.length / g.cols);
           return { x: g.x + (g.cols * T) / 2, y: g.y + (rows * T) / 2 };
         }
         const e = this.buildings.get(id);
@@ -637,10 +662,10 @@
         L.w = 0;                                 // la taille change : à remesurer
       }
 
-      // Lieu désigné par un résultat de hitAt() : une parcelle désigne la zone de culture.
+      // Lieu désigné par un résultat de hitAt() : une parcelle désigne sa zone ('zone' ou 'zone2').
       placeOf(hit) {
         if (!hit) return null;
-        return hit.plot ? 'zone' : hit.window || null;
+        return hit.plot ? hit.zone : hit.window || null;
       }
 
       placeAt(wx, wy) { return this.placeOf(this.hitAt(wx, wy)); }
@@ -719,29 +744,43 @@
 
       /* ---------- appuis ---------- */
 
+      // Les deux zones de parcelles : la Zone de culture ('zone') et le Champ ('zone2').
+      zones(model) {
+        const m = model || lastModel;
+        return [
+          { id: 'zone', grid: this.grid, plots: m ? m.plots : [] },
+          { id: 'zone2', grid: this.grid2, plots: m ? m.plots2 || [] : [] },
+        ];
+      }
+
       // Ce qui se trouve sous un point de la carte : une parcelle (exactement sa tuile),
-      // sinon une étiquette, sinon le bâtiment le plus en avant.
+      // sinon une étiquette, sinon le bâtiment ou l'arbre le plus en avant.
       hitAt(wx, wy) {
-        const m = lastModel;
-        const g = this.grid;
-        if (m) {
+        for (const z of this.zones()) {
+          const g = z.grid;
           const col = Math.floor((wx - g.x) / T), row = Math.floor((wy - g.y) / T);
           if (col >= 0 && col < g.cols && row >= 0) {
-            const p = m.plots[row * g.cols + col];
-            if (p) return { plot: p };
+            const p = z.plots[row * g.cols + col];
+            if (p) return { plot: p, zone: z.id };
           }
         }
         const label = this.labelAt(wx, wy);
         if (label) return { window: label.window };
         const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom;
         let best = null;
-        for (const e of this.buildings.values()) {
-          const s = e.sprite;
-          const padX = Math.max(0, (min - s.width) / 2), padY = Math.max(0, (min - s.height) / 2);
-          if (wx < s.x - padX || wx > s.x + s.width + padX || wy < s.y - s.height - padY || wy > s.y + padY) continue;
-          if (!best || s.depth > best.sprite.depth) best = e;
+        // (x, y) = coin bas-gauche de la zone touchée ; w, h = sa taille.
+        const test = (x, y, w, h, depth, win) => {
+          const padX = Math.max(0, (min - w) / 2), padY = Math.max(0, (min - h) / 2);
+          if (wx < x - padX || wx > x + w + padX || wy < y - h - padY || wy > y + padY) return;
+          if (!best || depth > best.depth) best = { depth, window: win };
+        };
+        for (const e of this.buildings.values()) test(e.sprite.x, e.sprite.y, e.sprite.width, e.sprite.height, e.sprite.depth, e.def.window);
+        // Un arbre du Verger ouvre la fenêtre du Verger.
+        for (const e of this.trees.values()) {
+          const s = e.sprite, w = s.displayWidth * TREE_BODY;
+          test(s.x - w / 2, s.y, w, s.displayHeight, s.depth, 'verger');
         }
-        return best ? { window: best.def.window } : null;
+        return best ? { window: best.window } : null;
       }
 
       tap(wx, wy) {
@@ -752,7 +791,7 @@
         if (!p.culture) bridge.act('plant-open', { id: p.id });
         else if (p.mature) bridge.act('harvest', { id: p.id });
         else if (!p.arrosee) bridge.act('water', { id: p.id });
-        else bridge.act('stage-open', { window: 'zone' });   // rien à faire sur la carte : la fenêtre de la zone
+        else bridge.act('stage-open', { window: hit.zone });   // rien à faire sur la carte : la fenêtre de sa zone
       }
 
       /* ---------- synchronisation avec le jeu ---------- */
@@ -772,7 +811,7 @@
         const info = (id) => {
           const v = shown[id];
           const o = v && typeof v === 'object' ? v : { visible: !!v };
-          return (id === 'maison' || id === 'zone' || o.visible) ? o : null;
+          return (id === 'maison' || id === 'zone' || o.visible) ? o : null;   // le Champ ('zone2') : seulement une fois ouvert
         };
         for (const def of BUILDINGS) {
           const want = info(def.id);
@@ -784,28 +823,62 @@
           this.syncLabel(def.id, want, def.window, s ? s.x + s.width / 2 : 0, s ? s.y - s.height + (def.labelDown || 0) : 0);
         }
 
-        // Parcelles : on crée, met à jour, détruit. Tuiles jointives depuis le coin de zone_culture.
-        const g = this.grid;
-        g.cols = Math.max(1, model.cols | 0);
+        // Parcelles des deux zones : on crée, met à jour, détruit. Tuiles jointives depuis le
+        // coin de chaque rectangle (zone_culture_1, zone_culture_2).
+        this.grid.cols = Math.max(1, model.cols | 0);
+        this.grid2.cols = Math.max(1, model.cols2 | 0 || this.grid2.cols);
         const seen = new Set();
-        model.plots.forEach((p, i) => {
-          seen.add(p.id);
-          const x = g.x + (i % g.cols) * T + T / 2;
-          const y = g.y + Math.floor(i / g.cols) * T + T / 2;
-          let e = this.plots.get(p.id);
-          if (!e) {
-            e = { soil: this.add.image(x, y, 'ph_dry').setDepth(2), crop: null, key: '', tween: null };
-            this.plots.set(p.id, e);
-          }
-          e.soil.setPosition(x, y).setTexture(p.arrosee ? this.tex('soil_wet', 'ph_wet') : this.tex('soil_dry', 'ph_dry'));
-          this.syncCrop(e, p, x, y);
-        });
+        for (const z of this.zones(model)) {
+          const g = z.grid;
+          z.plots.forEach((p, i) => {
+            seen.add(p.id);
+            const x = g.x + (i % g.cols) * T + T / 2;
+            const y = g.y + Math.floor(i / g.cols) * T + T / 2;
+            let e = this.plots.get(p.id);
+            if (!e) {
+              e = { soil: this.add.image(x, y, 'ph_dry').setDepth(2), crop: null, key: '', tween: null };
+              this.plots.set(p.id, e);
+            }
+            e.soil.setPosition(x, y).setTexture(p.arrosee ? this.tex('soil_wet', 'ph_wet') : this.tex('soil_dry', 'ph_dry'));
+            this.syncCrop(e, p, x, y);
+          });
+          // Étiquette de la zone : calée à gauche sur les parcelles, au-dessus de la barrière.
+          this.syncLabel(z.id, info(z.id), z.id, g.x, g.y - ZONE_LABEL_UP, 'gauche');
+        }
         for (const [id, e] of this.plots) {
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
         }
-        // Étiquette de la zone de culture : calée à gauche sur les parcelles, au-dessus de la barrière.
-        this.syncLabel('zone', info('zone'), 'zone', g.x, g.y - ZONE_LABEL_UP, 'gauche');
+        this.syncTrees(model.arbres || [], sfx, seasonChanged);
         this.placeLabels();
+      }
+
+      // Arbres du Verger : le n-ième arbre se pose sur le rectangle arbre_verger_n (pied de
+      // l'image au bas du rectangle). Un arbre pas encore adulte est plus petit. Au-delà des
+      // rectangles de la carte, un arbre n'est pas dessiné.
+      syncTrees(arbres, sfx, seasonChanged) {
+        const seen = new Set();
+        arbres.forEach((a, i) => {
+          const o = this.objects[TREE_OBJECT + (i + 1)];
+          if (!o) return;
+          seen.add(a.id);
+          const key = this.tex('tree_' + sfx, this.tex('tree_sp', 'ph_arbre'));
+          let e = this.trees.get(a.id);
+          if (e && (seasonChanged || e.key !== key)) { e.sprite.destroy(); this.trees.delete(a.id); e = null; }
+          if (!e) {
+            const real = key.indexOf('ph_') !== 0;
+            const sprite = real ? this.add.sprite(0, 0, key, 0) : this.add.image(0, 0, key);
+            // Chaque arbre commence à une image différente : ils ne bougent pas tous ensemble.
+            if (real && this.anims.exists(key) && !reducedMotion()) sprite.play({ key, startFrame: i % 8 });
+            sprite.setOrigin(0.5, 1);
+            e = { sprite, key };
+            this.trees.set(a.id, e);
+          }
+          const x = Math.round(o.x + o.width / 2), y = Math.round(o.y + o.height);
+          e.sprite.setPosition(x, y).setScale(a.jeune ? TREE_YOUNG : 1).setDepth(y);
+        });
+        for (const [id, e] of this.trees) {
+          if (!seen.has(id)) { e.sprite.destroy(); this.trees.delete(id); }
+        }
       }
 
       // Pose le bas-centre de l'image sur le bas-centre du rectangle de la carte, sans sortir

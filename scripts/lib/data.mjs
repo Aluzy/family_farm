@@ -214,6 +214,14 @@ export function validateData(data) {
     }
   }
 
+  /* le Champ (deuxième zone de culture) */
+  const Z = data.POTAGER.ZONE2;
+  if (!Z || typeof Z.ID !== 'string' || !Z.ID || Z.ID === data.POTAGER.LIEU) err('POTAGER.ZONE2', 'ID manquant, ou identique à POTAGER.LIEU (les identifiants des parcelles se confondraient)');
+  else {
+    if (!(isInt(Z.PARCELLES) && Z.PARCELLES > 0 && isInt(Z.COLONNES) && Z.COLONNES > 0)) err('POTAGER.ZONE2', 'PARCELLES et COLONNES : deux entiers supérieurs à 0');
+    if (!elements.includes(Z.DEBLOCAGE)) err('POTAGER.ZONE2', `DEBLOCAGE « ${Z.DEBLOCAGE} » inconnu (CHAPITRES.ELEMENTS)`);
+  }
+
   /* le reste : chaque objet cité ailleurs doit exister */
   for (const [id, a] of Object.entries(data.VERGER.ARBRES)) needItem(`VERGER.ARBRES.${id}.fruit`, a.fruit);
   for (const [id, a] of Object.entries(data.ANIMAUX)) {

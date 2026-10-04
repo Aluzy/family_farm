@@ -5,6 +5,7 @@ import { allDevices } from '../engine/devices.js';
 import { awakeRequired } from '../engine/clock.js';
 import { planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
+import { zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
 import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
@@ -19,7 +20,7 @@ import {
   cibleAttrs, heureDuJour, horlogeEmoji, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
 } from './stage.js';
 import {
-  backToFerme, deviceName, renderDeviceScreen, renderEnergieEau, renderFerme, renderPotager,
+  backToFerme, deviceName, renderDeviceScreen, renderEnergieEau, renderFerme, renderPotager, renderZone2,
 } from './ferme.js';
 import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderCalendar, renderSerre, renderVerger } from './serre-verger-frigo.js';
@@ -38,7 +39,7 @@ import { registerActions } from './actions.js';
 // Un appui sur un bâtiment ou sur son étiquette ouvre une fenêtre dont le contenu est celui
 // des sections de la Ferme, redessiné à chaque rendu : les boutons y fonctionnent comme
 // dans la liste classique. Les fenêtres de #modal-root s'affichent par-dessus.
-export let stageWindow = null; // null, 'maison', 'etable', 'serre', 'moulin', 'verger', 'zone' ou 'chapitres'
+export let stageWindow = null; // null, 'maison', 'etable', 'serre', 'moulin', 'verger', 'zone', 'zone2' ou 'chapitres'
 export function setStageWindow(value) {
   stageWindow = value;
   return value;
@@ -151,6 +152,12 @@ export const STAGE_WINDOWS = {
     detail: () => `niveau ${state.potager.niveau}`,
     corps: () => renderPotager(),
   },
+  // Le Champ : la deuxième zone de culture, ouverte avec le Moulin.
+  zone2: {
+    nom: DATA.POTAGER.ZONE2.NOM, icone: DATA.POTAGER.ZONE2.ICONE, ok: () => zone2Plots(state).length > 0, haute: true, sansTitre: true,
+    detail: () => `${zone2Plots(state).length} parcelles`,
+    corps: () => renderZone2(),
+  },
   chapitres: { nom: 'Chapitres', icone: '📜', ok: () => true, corps: () => renderChapterBanner() },
 };
 
@@ -231,25 +238,45 @@ export function applyAnchor() {
   if (el) el.scrollIntoView({ block: 'start' });
 }
 
-// Bandeau : chaque indicateur porte sa légende ; ceux qui ont un lieu y mènent (saison →
-// calendrier, eau → Maison › Installations, autonomie → Maison › Famille).
+// Bandeau (version 1.4) : une seule ligne, sans titre ni légendes. Chaque indicateur est une
+// icône et sa valeur ; son nom est dans l'infobulle et pour les lecteurs d'écran. Ceux qui ont
+// un lieu y mènent (saison → calendrier, eau → Maison › Installations, autonomie → Maison ›
+// Famille). Le jour est le numéro de la nuit à venir (state.day) : jour 1 au départ.
 export function renderIndicators() {
   const saison = DATA.SAISONS.INFOS[currentSeason(state)];
   const heure = Math.floor(heureDuJour());
-  const cell = (icone, valeur, legende, titre) =>
-    `<span class="indicator" title="${titre}"><span class="ind-val"><span aria-hidden="true">${icone}</span>${valeur ? `<span class="num">${valeur}</span>` : ''}</span><span class="ind-leg">${legende}</span></span>`;
-  const lien = (icone, valeur, legende, titre, lieu) =>
-    `<button type="button" class="indicator indicator-btn" data-action="stage-goto" data-window="${lieu.fenetre}" data-tab="${lieu.onglet}"${lieu.ancre ? ` data-anchor="${lieu.ancre}"` : ''} title="${titre}" aria-label="${titre}"><span class="ind-val"><span aria-hidden="true">${icone}</span>${valeur ? `<span class="num">${valeur}</span>` : ''}</span><span class="ind-leg">${legende}</span></button>`;
-  // Première ligne, à côté du titre : la nuit et l'heure. Deuxième ligne : le reste.
-  morph(document.getElementById('app-clock'),
-    cell('🌙', state.day, 'Nuit', `Nuit ${state.day}`) +
-    cell(horlogeEmoji(heure), `${heure} h`, 'Heure', `Heure de la journée : ${heure} h`));
-  morph(document.getElementById('indicators'),
-    lien(saison.icone, '', saison.nom, `Saison : ${saison.nom}. Ouvrir le calendrier`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-calendrier' }) +
-    lien('💧', formatLitres(state.eauMl), 'Eau', `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +
-    cell('💰', formatCoins(state.pieces), 'Pièces', `Pièces : ${formatCoins(state.pieces)}`) +
-    lien('🌿', formatPercent(lastAutonomy(state)), 'Autonomie', `Autonomie de la dernière nuit : ${formatPercent(lastAutonomy(state))}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' })
+  const corps = (icone, valeur) => `<span aria-hidden="true">${icone}</span><span class="num" aria-hidden="true">${valeur}</span>`;
+  const cell = (icone, valeur, titre) =>
+    `<span class="indicator" title="${titre}">${corps(icone, valeur)}<span class="visually-hidden">${titre}</span></span>`;
+  const lien = (icone, valeur, titre, lieu) =>
+    `<button type="button" class="indicator indicator-btn" data-action="stage-goto" data-window="${lieu.fenetre}" data-tab="${lieu.onglet}"${lieu.ancre ? ` data-anchor="${lieu.ancre}"` : ''} title="${titre}" aria-label="${titre}">${corps(icone, valeur)}</button>`;
+  const el = document.getElementById('indicators');
+  morph(el,
+    cell('📅', `Jour ${state.day}`, `Jour ${state.day}`) +
+    lien(saison.icone, saison.nom, `Saison : ${saison.nom}. Ouvrir le calendrier`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-calendrier' }) +
+    cell(horlogeEmoji(heure), `${heure} h`, `Heure de la journée : ${heure} h`) +
+    lien('💧', formatLitres(state.eauMl), `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +
+    cell('💰', formatCoins(state.pieces), `Pièces : ${formatCoins(state.pieces)}`) +
+    lien('🌿', formatPercent(lastAutonomy(state)), `Autonomie de la dernière nuit : ${formatPercent(lastAutonomy(state))}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' })
   );
+  fitIndicators(el);
+}
+
+// Tout tient sur une ligne : si les indicateurs débordent (grands nombres, écran étroit), le
+// texte est réduit d'autant. Les espacements sont en em : la largeur suit la taille du texte,
+// à quelques pixels près (bordures des boutons), d'où un deuxième passage au besoin. Refait
+// seulement quand le texte ou la largeur change.
+const IND_MIN_PX = 9;
+function fitIndicators(el) {
+  const key = el.textContent.length + ':' + el.clientWidth;
+  if (el.__fit === key) return;
+  el.__fit = key;
+  el.style.fontSize = '';
+  let size = parseFloat(getComputedStyle(el).fontSize) || 15;
+  for (let pass = 0; pass < 4 && el.scrollWidth > el.clientWidth && size > IND_MIN_PX; pass++) {
+    size = Math.max(IND_MIN_PX, Math.floor(((size * el.clientWidth) / el.scrollWidth) * 10) / 10 - (pass ? 0.2 : 0));
+    el.style.fontSize = size + 'px';
+  }
 }
 
 export function renderTabbar() {
@@ -264,7 +291,9 @@ export function renderTabbar() {
         const label = t.id === 'notifications' && alerts > 0 ? `${t.label} (${alerts} alerte${alerts > 1 ? 's' : ''})` : t.label;
         return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
       })
-      .join('')
+      .join('') +
+      // Version 1.4 : les Options ne sont plus dans le bandeau mais ici, au bout du menu.
+      '<button type="button" class="nav-btn" id="options-btn" data-action="open-options" aria-label="Options"><span class="nav-icon" aria-hidden="true">⚙️</span><span class="nav-label">Options</span></button>'
   );
 }
 

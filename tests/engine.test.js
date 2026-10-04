@@ -25,15 +25,15 @@ import {
   GAME_VERSION, getNotifications, grantTech, growAll, growOrchard, harvest, harvestAll, harvestYield, heal,
   healthDelta, hourOfDay, ingredientOptions, inventoryCounts, isAutomated, isBroken, isBuyable,
   isGraineComptoir, isMature, isPerishable, isUnlocked, lastAutonomy, layEggs, loadShedding, lotsOf,
-  mailReceived, maintainCost, maintainDevice, makeDevice, makePlot, makePlots, marketCoef, marketFloor,
+  mailReceived, maintainCost, maintainDevice, makeDevice, makePlot, makePlots, makeZone2Plot, marketCoef, marketFloor,
   maxCows, maxSheep, maxStage, mealDue, mealOrder, memberName, memberPortrait, memberRemovalBlock,
   memberRoom, mergeOfflineReports, migrate, migrateCropZone, migrateTechTreeV2, migrateToIntegers,
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   nextSeasonStart, NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, orchardFree, orchardProducesOn, orchardSlotPrice, orchardWindow,
+  openFridge, openSerre, openStation, openZone2, orchardFree, orchardProducesOn, orchardSlotPrice, orchardWindow,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
-  plannedAutonomy, plant, plantableCrops, plantableCropsFor, portraitEmoji, prepTimeMult,
+  plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, productivity, purchasePrice, queueCapacity, rainNight, randomInt, RAW_DATA,
   rawAverageHealth, readMail, readyCrops, recipeNode, recipeStatus, recipeTime, recipeUnlocked, recordNight,
   removeMember, removePet, repairCost, repairDevice, reservableItems, routineDue, scaleEnergie,
@@ -51,7 +51,7 @@ import {
   testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockChapter, unreadMail,
   updateChapters, updateHealth, upgradeCost, upgradeDevice, upgradePotager, upgradePoulailler, upgradeSerre,
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, waterCostFor,
-  waterSeasonFactor, wheatForHens, wheatTotal, winterStatus, woolReady, yieldSeasonFactor,
+  waterSeasonFactor, wheatForHens, wheatTotal, winterStatus, woolReady, yieldSeasonFactor, zone2Plots,
 } from '../js/engine/index.js';
 
 
@@ -5806,7 +5806,7 @@ test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
   assertEqual([S.RENDEMENT_LIEU, S.EAU_LIEUX], [{ potager: 'potager' }, ['potager']]);
   assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 400, PARCELLES: [6, 9, 12, 15, 18], COUT: [0, 300, 600, 1000, 1800] });
   const V = DATA.VERGER;
-  assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 20, 50, 125]);
+  assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 12, 50, 125]);
   assertEqual([V.MATURITE, V.FRUITS, V.PERIODE], [15, 6, 3]);
   assertEqual([V.ARBRES.pommier.prix, V.ARBRES.poirier.prix], [40, 40]);
   assertEqual([V.ARBRES.pommier.fruit, V.ARBRES.poirier.fruit], ['pomme', 'poire']);
@@ -6086,19 +6086,20 @@ test('Verger : prix des emplacements supplémentaires 50 × 1,25^n arrondi à l\
   assertEqual(buyOrchardSlot(garden()).ok, false, 'sans Verger');
 });
 
-test('Verger : le nombre d\'emplacements est plafonné à 20', () => {
+// Version 1.4 : 12 emplacements, autant que de rectangles arbre_verger_n sur la carte.
+test('Verger : le nombre d\'emplacements est plafonné à 12', () => {
   const s = orchard();
   s.pieces = 10000000;
-  assertEqual(DATA.VERGER.EMPLACEMENTS_MAX, 20);
-  // 2 emplacements de départ + 18 achats = 20.
-  for (let i = 0; i < 18; i++) {
-    assert(buyOrchardSlot(s).ok, `achat ${i + 1}/18 devrait réussir`);
+  assertEqual(DATA.VERGER.EMPLACEMENTS_MAX, 12);
+  // 2 emplacements de départ + 10 achats = 12.
+  for (let i = 0; i < 10; i++) {
+    assert(buyOrchardSlot(s).ok, `achat ${i + 1}/10 devrait réussir`);
   }
-  assertEqual(s.verger.places, 20);
-  assertEqual(s.verger.achetes, 18);
+  assertEqual(s.verger.places, 12);
+  assertEqual(s.verger.achetes, 10);
   const blocked = buyOrchardSlot(s);
-  assertEqual(blocked.ok, false, 'refusé au-delà de 20 emplacements');
-  assertEqual(s.verger.places, 20, 'le plafond ne bouge pas même avec assez de pièces');
+  assertEqual(blocked.ok, false, 'refusé au-delà de 12 emplacements');
+  assertEqual(s.verger.places, 12, 'le plafond ne bouge pas même avec assez de pièces');
 });
 
 test('Verger : arbre à 40 pièces sur un emplacement libre, pommier ou poirier', () => {
@@ -7514,7 +7515,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.3.0');
+  assertEqual(GAME_VERSION, '1.4.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -8294,15 +8295,15 @@ test('version 1.2 : nom et espèce d\'un animal de compagnie, départ, identifia
 /* ---------- version 1.3 : le courrier (lettre du cousin au déblocage de la Serre) ---------- */
 
 test('version 1.3 : format 19, la boîte aux lettres commence vide et la migration l\'ajoute', () => {
-  assertEqual([STATE_VERSION, typeof MIGRATIONS[18], MIGRATIONS[19]], [19, 'function', undefined]);
+  assertEqual(typeof MIGRATIONS[18], 'function');
   const neuf = createInitialState(1);
   assertEqual([neuf.courrier, unreadMail(neuf), notificationCount(neuf) - getNotifications(neuf).length], [[], [], 0]);
   const v18 = JSON.parse(JSON.stringify(createInitialState(3)));
   v18.version = 18;
   delete v18.courrier;
-  const m = migrate({ v: 18, t: 0, s: v18 });
+  const m = MIGRATIONS[18](v18);
   assertEqual([m.version, m.courrier], [19, []]);
-  assertEqual(migrate({ v: 19, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+  assertEqual(migrate({ v: 18, t: 0, s: v18 }).courrier, [], 'la migration complète garde la boîte');
 });
 
 test('version 1.3 : la lettre du cousin est définie : Serre, 1 cacao, 1 vanille, 1 café, sans prénom de la famille', () => {
@@ -8407,6 +8408,139 @@ test('données : chaque culture connaît sa découpe sur la carte', () => {
   for (const [id, c] of Object.entries(DATA.crops)) {
     assert(c.sprite && c.sprite.c.length === 4 && [16, 32].includes(c.sprite.h), `${id} : sprite { r, h, c }`);
   }
+});
+
+/* ---------- version 1.4 : le Champ (deuxième zone de culture) et le Verger à 12 emplacements ---------- */
+
+test('version 1.4 : format 20, le Champ commence vide et la migration l\'ajoute', () => {
+  assertEqual([STATE_VERSION, typeof MIGRATIONS[19], MIGRATIONS[20]], [20, 'function', undefined]);
+  const Z = DATA.POTAGER.ZONE2;
+  assertEqual([Z.ID, Z.PARCELLES, Z.COLONNES, Z.DEBLOCAGE], ['zone2', 64, 8, 'moulin']);
+  const neuf = createInitialState(1);
+  assertEqual([neuf.potager.zone2, zone2Plots(neuf), allPlots(neuf).length], [[], [], DATA.POTAGER.PARCELLES[0]]);
+  const v19 = JSON.parse(JSON.stringify(createInitialState(3)));
+  v19.version = 19;
+  delete v19.potager.zone2;
+  const m = migrate({ v: 19, t: 0, s: v19 });
+  assertEqual([m.version, m.potager.zone2, m.potager.parcelles.length], [20, [], DATA.POTAGER.PARCELLES[0]]);
+  assertEqual(migrate({ v: 20, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+});
+
+test('version 1.4 : le Champ s\'ouvre en entier avec le Moulin, une seule fois, sans rien payer', () => {
+  const Z = DATA.POTAGER.ZONE2;
+  const avant = atChapter(unlockChapter('moulin') - 1);
+  updateChapters(avant);
+  assertEqual([isUnlocked(avant, 'moulin'), zone2Plots(avant).length], [false, 0], 'pas avant le Moulin');
+  const s = atChapter(unlockChapter('moulin'));
+  const pieces = s.pieces;
+  updateChapters(s);
+  const z = zone2Plots(s);
+  assertEqual([z.length, s.pieces, s.potager.parcelles.length], [Z.PARCELLES, pieces, DATA.POTAGER.PARCELLES[0]]);
+  assertEqual([z[0].id, z[63].id, z[0].lieu, z[0].zone, plotZone(z[0]), plotZone(s.potager.parcelles[0])], ['zone2-1', 'zone2-64', 'potager', 2, 2, 1]);
+  assertEqual(z[0], makeZone2Plot(1));
+  assertEqual(new Set(allPlots(s).map((p) => p.id)).size, allPlots(s).length, 'aucun identifiant en double');
+  assertEqual(findPlot(s, 'zone2-10'), z[9]);
+  // Une seule fois : un deuxième passage ne recrée rien et ne touche pas aux plantes.
+  addItem(s, 'ble', 5);
+  assert(plant(s, 'zone2-10', 'ble').ok, 'planter du blé dans le Champ');
+  assertEqual([openZone2(s), updateChapters(s) >= 0, zone2Plots(s).length, z[9].culture], [false, true, Z.PARCELLES, 'ble']);
+  // Agrandir la Zone de culture ne touche pas au Champ.
+  s.pieces = 10000;
+  assert(upgradePotager(s).ok, 'agrandir la zone');
+  assertEqual([s.potager.parcelles.length, zone2Plots(s).length], [DATA.POTAGER.PARCELLES[1], Z.PARCELLES]);
+});
+
+test('version 1.4 : le Champ suit les règles de la Zone de culture (cultures, eau, pousse, récolte)', () => {
+  const s = atChapter(unlockChapter('moulin'));
+  updateChapters(s);
+  assertEqual(plantableCropsFor(s, zone2Plots(s)[0].lieu), plantableCropsFor(s, 'potager'), 'mêmes cultures');
+  addItem(s, 'graines_carotte', 2);
+  assert(plant(s, 'zone2-1', 'carotte').ok && plant(s, 'potager-1', 'carotte').ok, 'une carotte dans chaque zone');
+  s.eauMl = 100000;
+  assertEqual(water(s, 'zone2-1').litres, water(s, 'potager-1').litres, 'même eau');
+  growAll(s);
+  assertEqual([findPlot(s, 'zone2-1').stade, findPlot(s, 'zone2-1').arrose], [1, false]);
+  assert(testRipenAll(s).ok !== false, 'faire mûrir');
+  assertEqual(isMature(findPlot(s, 'zone2-1')), true);
+  const r = harvest(s, 'zone2-1');
+  assertEqual([r.ok, r.items.carotte, findPlot(s, 'zone2-1').culture], [true, harvestYield(s, 'carotte', false, 'potager'), null]);
+});
+
+test('version 1.4 : « Arroser tout » et « Récolter tout » s\'adressent à une zone à la fois', () => {
+  const s = atChapter(unlockChapter('moulin'));
+  updateChapters(s);
+  grantTech(s, 'cu_outils');
+  addItem(s, 'ble', 10);
+  for (const id of ['potager-1', 'potager-2', 'zone2-1', 'zone2-2', 'zone2-3']) assert(plant(s, id, 'ble').ok, id);
+  s.eauMl = 100000;
+  assertEqual(waterAll(s, 'potager', 2), { ok: true, arrosees: 3, sansEau: 0 });
+  assertEqual(allPlots(s).filter((p) => p.arrose).map((p) => p.id), ['zone2-1', 'zone2-2', 'zone2-3']);
+  assertEqual(waterAll(s, 'potager', 1), { ok: true, arrosees: 2, sansEau: 0 });
+  assertEqual(waterAll(s, 'potager').ok, false, 'tout est arrosé');
+  testRipenAll(s);
+  assertEqual(harvestAll(s, 'potager', 1).recoltees, 2);
+  assertEqual(allPlots(s).filter((p) => p.culture).map((p) => p.id), ['zone2-1', 'zone2-2', 'zone2-3']);
+  assertEqual(harvestAll(s, 'potager', 2).recoltees, 3);
+  // sans zone : tout le lieu, comme avant
+  addItem(s, 'ble', 2);
+  assert(plant(s, 'potager-1', 'ble').ok && plant(s, 'zone2-1', 'ble').ok, 'replanter');
+  assertEqual(waterAll(s, 'potager').arrosees, 2);
+});
+
+test('version 1.4 : les automatisations et les alertes de la Zone de culture couvrent le Champ', () => {
+  const s = atChapter(unlockChapter('moulin'));
+  updateChapters(s);
+  addItem(s, 'ble', 4);
+  assert(plant(s, 'zone2-5', 'ble').ok, 'planter');
+  s.eauMl = 100000;
+  assertEqual(getNotifications(s).find((n) => n.type === 'arrosage').nombre, 1, 'une parcelle du Champ à arroser');
+  grantTech(s, 'ea_irrigation');
+  grantTech(s, 'cu_recolte_auto');
+  assertEqual(getNotifications(s).some((n) => n.type === 'arrosage'), false, 'l\'arrosage automatique la couvre');
+  assertEqual(autoTasks(s).arrosees, 1);
+  assertEqual(findPlot(s, 'zone2-5').arrose, true);
+  testRipenAll(s);
+  const rap = autoTasks(s);
+  assertEqual([rap.potager, rap.recoltes.ble > 0, findPlot(s, 'zone2-5').culture], [true, true, null]);
+});
+
+test('version 1.4 : une partie d\'avant, Moulin déjà débloqué, reçoit le Champ au premier passage', () => {
+  const s = atChapter(unlockChapter('moulin') + 1);
+  const v19 = JSON.parse(JSON.stringify(s));
+  v19.version = 19;
+  delete v19.potager.zone2;
+  const m = migrate({ v: 19, t: 0, s: v19 });
+  assertEqual(zone2Plots(m).length, 0, 'la migration ne crée rien');
+  updateChapters(m);
+  assertEqual(zone2Plots(m).length, DATA.POTAGER.ZONE2.PARCELLES);
+  // Une partie restée avant le Moulin ne reçoit rien.
+  const tot = JSON.parse(JSON.stringify(atChapter(2)));
+  tot.version = 19;
+  delete tot.potager.zone2;
+  const m2 = migrate({ v: 19, t: 0, s: tot });
+  updateChapters(m2);
+  assertEqual(zone2Plots(m2).length, 0);
+});
+
+test('version 1.4 : un Verger de plus de 12 emplacements garde ses arbres et ses fruits', () => {
+  const s = orchard();
+  s.verger.places = 15;
+  s.verger.achetes = 13;
+  s.pieces = 100000;
+  for (let i = 0; i < 15; i++) assert(buyTree(s, i % 2 ? 'poirier' : 'pommier').ok, `arbre ${i + 1}`);
+  assertEqual([s.verger.arbres.length, orchardFree(s)], [15, 0]);
+  assertEqual(buyOrchardSlot(s).ok, false, 'plus d\'emplacement à vendre au-delà de 12');
+  const v19 = JSON.parse(JSON.stringify(s));
+  v19.version = 19;
+  const m = migrate({ v: 19, t: 0, s: v19 });
+  assertEqual([m.verger.places, m.verger.arbres.length], [15, 15], 'rien n\'est retiré');
+  // Les 15 arbres, adultes, donnent tous leurs fruits une nuit de production.
+  const w = orchardWindow();
+  m.day = w.debut + DATA.VERGER.PERIODE - 1 + 40;
+  for (const t of m.verger.arbres) t.plantee = 1;
+  m.nuit = newNightStats();
+  growOrchard(m);
+  assertEqual((m.nuit.fruits.pomme || 0) + (m.nuit.fruits.poire || 0), 15 * DATA.VERGER.FRUITS);
 });
 
 // run-tests.mjs importe ce fichier et lit `results`.
