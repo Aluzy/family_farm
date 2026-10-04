@@ -1,12 +1,13 @@
 import { DATA } from '../engine/catalog.js';
-import { countItem, expiringSoon, isPerishable, lotsOf } from '../engine/inventory.js';
-import { reservableItems, setSeedReserve } from '../engine/family.js';
+import { countItem, expiringSoon, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
+import { moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { formatCoins, formatQty } from '../engine/format.js';
 import { invTab, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { renderFridgeTab } from './serre-verger-frigo.js';
-import { registerActions, sameHandler } from './actions.js';
+import { showToast } from './toasts.js';
+import { registerActions } from './actions.js';
 
 /* ---------- Inventaire ---------- */
 
@@ -28,59 +29,57 @@ export function itemsSummary(map) {
     .join(' · ');
 }
 
-// Les lots d'un item : « 6 carottes — 2 nuits », le plus ancien en premier ;
-// ce qui périt à la prochaine nuit est signalé.
-function lotListHtml(item) {
-  const lots = lotsOf(state, item);
-  if (!isPerishable(item)) return '<span class="muted">Ne périme pas</span>';
-  return `<ul class="lot-list" aria-label="Lots">${lots
-    .map((l) => {
-      const soon = l.nightsLeft === 1;
-      return `<li class="${soon ? 'soon-spoil' : ''}"><span>${l.qty} ${unitLabel(item, l.qty)} — ${nightsLabel(l.nightsLeft)}</span>${soon ? '<span aria-hidden="true">⚠️</span><span>périme à la prochaine nuit</span>' : ''}</li>`;
-    })
-    .join('')}</ul>`;
+// Quantité d'un item qui périt à la prochaine nuit (lots à qui il reste 1 nuit).
+function expiringTonight(item) {
+  return lotsOf(state, item)
+    .filter((l) => l.nightsLeft === 1)
+    .reduce((t, l) => t + l.qty, 0);
 }
 
-// Lot 8 : boutons pour ranger un aliment périssable au frigo (s'il est construit).
+// Lot 8 : boutons pour ranger un aliment au frigo (s'il est construit). Le blé
+// n'y va pas : il se garde au Silo.
 function fridgeInButtons(item) {
-  if (!state.frigo.construit || !isPerishable(item) || countItem(state, item) < 1) return '';
+  if (!state.frigo.construit || !isFridgeable(item) || countItem(state, item) < 1) return '';
+  const nom = DATA.items[item].nom.toLowerCase();
   return `
-      <span class="device-actions">
-        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="1">🧊 Ranger 1 au frigo</button>
-        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all">🧊 Tout ranger</button>
+      <span class="inv-actions">
+        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="1" aria-label="Ranger 1 ${nom} au frigo">🧊 1</button>
+        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo">🧊 Tout</button>
       </span>`;
 }
 
-function inventoryRow(item) {
+// Une case de l'inventaire : icône, nom, quantité, et ce qui périt cette nuit.
+function inventoryCard(item) {
   const it = DATA.items[item];
   const n = countItem(state, item);
-  const reservable = reservableItems().includes(item);
-  const res = state.famille.reserve[item] || 0;
+  const soon = isPerishable(item) ? expiringTonight(item) : 0;
   const info = [
-    it.energie && it.edible ? `Énergie ${it.energie}` : '',
-    it.energie && !it.edible ? `Ingrédient : compte pour ${it.energie} d'énergie dans les plats` : '',
-    `Vente ${formatCoins(it.prix)} 💰`,
+    it.energie && it.edible ? `⚡ ${it.energie}` : '',
+    it.energie && !it.edible ? `Ingrédient ⚡ ${it.energie}` : '',
+    `💰 ${formatCoins(it.prix)}`,
     it.rachetable === false ? 'non rachetable' : '',
   ].filter(Boolean).join(' · ');
-  const reserve = reservable
-    ? `
-      <div class="row reserve">
-        <span class="muted">🔒 Réserve de semences</span>
-        <button type="button" class="btn step-btn" data-action="reserve-dec" data-item="${item}" aria-label="Réduire la réserve"${res <= 0 ? ' disabled' : ''}>−</button>
-        <strong class="num">${res}</strong>
-        <button type="button" class="btn step-btn" data-action="reserve-inc" data-item="${item}" aria-label="Augmenter la réserve"${res >= n ? ' disabled' : ''}>+</button>
-      </div>
-      <span class="muted">La famille ne mange jamais ${Math.min(res, n)} de ces ${it.nom.toLowerCase()}s : ce sont tes plants.</span>`
+  const silo = item === DATA.SILO.ITEM && state.silo.construit
+    ? `<span class="inv-silo muted">🛖 Silo : <span class="num">${formatQty(state.silo.ble)}</span></span>`
     : '';
   return `
-    <div class="inv-row">
-      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="big num">${formatQty(n)}</span></div>
-      ${lotListHtml(item)}
+    <div class="inv-card${soon > 0 ? ' soon' : ''}">
+      <span class="inv-icon" aria-hidden="true">${it.icone}</span>
+      <span class="inv-name">${it.nom}</span>
+      <span class="inv-qty num" aria-label="Quantité">${formatQty(n)}</span>
+      ${soon > 0 ? `<span class="inv-soon" title="${soon} ${unitLabel(item, soon)} ${soon > 1 ? 'périssent' : 'périt'} à la prochaine nuit"><span aria-hidden="true">⚠️</span> <span class="num">${formatQty(soon)}</span> ce soir</span>` : ''}
+      ${silo}
+      <span class="inv-info muted">${info}</span>
       ${fridgeInButtons(item)}
-      <span class="muted">${info}</span>
-      ${item === DATA.SILO.ITEM && state.silo.construit ? `<span class="muted">🛖 Dans le Silo : <span class="num">${formatQty(state.silo.ble)}</span> (hors de l'inventaire)</span>` : ''}
-      ${reserve}
     </div>`;
+}
+
+// « Tout ranger » : un seul bouton pour mettre au frigo tous les aliments frais.
+function fridgeAllButton(items) {
+  if (!state.frigo.construit) return '';
+  const n = items.filter(isFridgeable).reduce((t, k) => t + countItem(state, k), 0);
+  if (n < 1) return '';
+  return `<button type="button" class="btn primary inv-all" data-action="fridge-in-all">🧊 Tout ranger au frigo (${formatQty(n)})</button>`;
 }
 
 const INVENTORY_TABS = [
@@ -112,25 +111,21 @@ export function renderInventaire() {
     ${subtabsHtml(tabs, tab.id, 'inv-tab')}
     ${renderFridgeTab()}`;
   }
-  const items = Object.keys(DATA.items).filter(
-    (k) => tab.match(k) && (countItem(state, k) > 0 || reservableItems().includes(k))
-  );
+  const items = Object.keys(DATA.items).filter((k) => tab.match(k) && countItem(state, k) > 0);
   const soon = Object.keys(expiringSoon(state)).length > 0 && tab.id === 'frais';
   return `
     <h2>📦 Inventaire</h2>
     ${subtabsHtml(tabs, tab.id, 'inv-tab')}
     ${soon ? '<p class="alert">⚠️ Une partie de tes aliments périt à la prochaine nuit.</p>' : ''}
-    <div class="inv-group">
-      ${items.length ? items.map(inventoryRow).join('') : `<p class="hint">${tab.empty}</p>`}
-    </div>`;
+    ${items.length ? `<div class="inv-grid">${items.map(inventoryCard).join('')}</div>` : `<p class="hint">${tab.empty}</p>`}
+    ${tab.id === 'frais' ? fridgeAllButton(items) : ''}`;
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
-  ...sameHandler(['reserve-inc', 'reserve-dec'], (target, e, action) => {
-    const item = target.dataset.item;
-    const now = state.famille.reserve[item] || 0;
-    applyResult(setSeedReserve(state, item, now + (action === 'reserve-inc' ? 1 : -1)));
-  }),
+  'fridge-in-all': () => {
+    const result = applyResult(moveAllToFridge(state));
+    if (result.ok) showToast(`🧊 Rangé au frigo : ${itemsSummary(result.items)}`);
+  },
 });

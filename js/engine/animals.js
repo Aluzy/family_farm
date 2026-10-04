@@ -8,9 +8,11 @@ import { bumpCounter } from './campaign.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
 
-// Le blé du Silo est un nombre à part (state.silo.ble) ; le surplus vit dans
-// l'inventaire (non périssable). Les quantités sont entières : 1 blé nourrit
-// 2 poules (voir feedHen).
+// Le blé du Silo est un nombre à part (state.silo.ble) qui ne périme jamais ;
+// le surplus vit dans l'inventaire, où il périme comme un aliment frais (voir
+// items.json) et ne se range pas au frigo. Le blé se prend donc d'abord dans
+// l'inventaire, et le Silo se remplit dès qu'il a de la place (fillSilo).
+// Les quantités sont entières : 1 blé nourrit 2 poules (voir feedHen).
 
 export function siloCapacity(state) {
   return state.silo.construit ? DATA.SILO.CAPACITE[state.silo.niveau - 1] : 0;
@@ -36,10 +38,20 @@ export function storeWheat(state, qty) {
   return { silo, inventaire };
 }
 
-// Retire exactement `qty` blé (tout ou rien), en commençant par le Silo
-// (`first` = 'silo') ou par l'inventaire (`first` = 'inventaire').
-// Renvoie true si le retrait a eu lieu.
-export function takeWheat(state, qty, first = 'silo') {
+// Fait passer le blé de l'inventaire dans le Silo, tant qu'il y a de la place
+// (le lot le plus ancien d'abord : c'est lui qui périrait le premier). Renvoie
+// la quantité rangée.
+export function fillSilo(state) {
+  const room = Math.max(0, siloCapacity(state) - state.silo.ble);
+  const n = takeItem(state, DATA.SILO.ITEM, room);
+  state.silo.ble += n;
+  return n;
+}
+
+// Retire exactement `qty` blé (tout ou rien), en commençant par l'inventaire
+// (`first` = 'inventaire', par défaut : ce blé-là périme) ou par le Silo
+// (`first` = 'silo'). Renvoie true si le retrait a eu lieu.
+export function takeWheat(state, qty, first = 'inventaire') {
   if (wheatTotal(state) + EPS < qty) return false;
   let rest = qty;
   const fromSilo = () => {
@@ -69,6 +81,7 @@ export function buildSilo(state) {
   spend(state, cost);
   s.construit = true;
   s.niveau = 1;
+  fillSilo(state);
   return { ok: true, cost };
 }
 
@@ -79,6 +92,7 @@ export function upgradeSilo(state) {
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
   state.silo.niveau += 1;
+  fillSilo(state);
   return { ok: true, cost };
 }
 
@@ -174,7 +188,7 @@ export function hensToFeed(state) {
 // Nourrit une poule (au clic). Sous productivité 1, le geste ne compte qu'avec
 // une probabilité égale à la productivité (tirage du générateur de l'état) : s'il
 // rate, rien n'est retiré du blé et la poule reste à nourrir. Le blé est pris
-// d'abord dans le Silo, puis dans l'inventaire.
+// d'abord dans l'inventaire (il y périme), puis dans le Silo.
 // Lot 7 : `auto` = true pour le nourrissage automatique du niveau 5, jamais
 // réduit par la productivité.
 export function feedHen(state, auto = false) {
@@ -189,7 +203,7 @@ export function feedHen(state, auto = false) {
     // suivantes. Ration équilibrée (arbre v2) : 2 blé pour 5 poules si possible.
     const r = henRation(state);
     const ble = wheatTotal(state) >= r.ble ? r.ble : 1;
-    takeWheat(state, ble, 'silo');
+    takeWheat(state, ble, 'inventaire');
     state.jour.ble += ble;
     p.restes = ble === r.ble ? r.poules : DATA.ANIMAUX.poule.poulesParBle;
   }
@@ -313,9 +327,9 @@ export function freeSheepPlaces(state) {
   return Math.max(0, pastureCapacity(state) - sheepCount(state));
 }
 
-// Vaches qu'on peut encore acheter. Une vache demande 3 places ; comme les
-// places s'achètent une par une (voir buyPasture()), il faut parfois en acheter
-// plusieurs avant qu'une vache tienne.
+// Vaches qu'on peut encore acheter. Une vache demande 3 places : il faut
+// parfois acheter plusieurs places à la suite (voir buyPasture()) avant qu'une
+// vache tienne.
 export function freeCowPlaces(state) {
   return Math.max(0, cowCapacity(state) - cowCount(state));
 }
@@ -344,14 +358,12 @@ export function buildPaturage(state) {
   return { ok: true, cost, places: p.places };
 }
 
-// Achète une place. Refusé s'il reste une place libre : une place n'est utile
-// que pour l'animal suivant, et son prix suit les places déjà achetées. Une
-// vache demande 3 places : tant qu'il en reste au moins une de libre (assez
-// pour un mouton), l'achat reste refusé de la même façon.
+// Achète une place. Les places s'achètent à la suite, autant que les pièces le
+// permettent, même s'il en reste de libres (une vache en demande 3) ; le prix
+// suit les places déjà achetées (voir pastureCost()).
 export function buyPasture(state) {
   const p = state.paturage;
   if (!p.construit) return fail('Prépare d\'abord l\'Étable pour les moutons et les vaches.');
-  if (freeSheepPlaces(state) > 0) return fail('Il reste de la place : achète un mouton d\'abord.');
   const cost = pastureCost(state);
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);

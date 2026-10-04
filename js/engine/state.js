@@ -278,7 +278,27 @@ export const MIGRATIONS = {
     const p = state.potager && typeof state.potager === 'object' ? state.potager : null;
     return { ...state, version: 20, ...(p ? { potager: { ...p, zone2: Array.isArray(p.zone2) ? p.zone2 : [] } } : {}) };
   },
+  // v20 → v21 : la réserve de semences disparaît de l'Inventaire (la famille
+  // peut tout manger ; les semences se rachètent au Marché), et le blé de
+  // l'inventaire périme désormais (celui du Silo, jamais).
+  20: (state) => migrateWheatAndReserve(state),
 };
+
+export function migrateWheatAndReserve(old) {
+  const state = { ...old, version: 21 };
+  if (state.famille && typeof state.famille === 'object') state.famille = { ...state.famille, reserve: {} };
+  const inv = state.inventaire && typeof state.inventaire === 'object' ? state.inventaire : null;
+  const item = DATA.SILO.ITEM;
+  if (inv && Array.isArray(inv[item])) {
+    // Le blé déjà stocké part à conservation pleine (comme s'il venait d'être récolté).
+    const life = shelfLife(item);
+    const qty = inv[item].reduce((t, l) => t + (Number(l && l.qty) || 0), 0);
+    state.inventaire = { ...inv };
+    if (qty > 0) state.inventaire[item] = [{ qty, nightsLeft: life, origin: defaultOrigin(item) }];
+    else delete state.inventaire[item];
+  }
+  return state;
+}
 
 export function migrateFamily12(old) {
   const state = { ...old, version: 18 };

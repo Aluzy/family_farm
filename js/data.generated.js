@@ -31,7 +31,7 @@ export const RAW_DATA = {
     "SOIN": { "base": 20, "croissance": 150, "SANTE": 50 },
     "BONUS_PLATS": { "PAR_PLAT": 1, "MAX": 3 },
     "RECUPERATION_MALADE": 2,
-    "RESERVE_DEPART": { "patate": 6 }
+    "RESERVE_DEPART": {}
   },
   "MARCHE": { "PLANCHER": { "defaut": 120, "graine": 200 }, "PAS": 10, "MULTIPLICATEUR_PRODUCTION": 2, "TRANSFORMATIONS_DOUBLEES": ["farine"] },
   "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },
@@ -1187,6 +1187,7 @@ export const RAW_DATA = {
     "tomate": 5,
     "courgette": 5,
     "aubergine": 5,
+    "ble": 10,
     "oeuf": 6,
     "viande_mouton": 5,
     "pomme": 7,

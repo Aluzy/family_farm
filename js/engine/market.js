@@ -4,6 +4,7 @@ import { fail, percentCeil, spend } from './devices.js';
 import { addLot, countItem, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
 import { refreshUnlocks } from './techtree.js';
+import { fillSilo } from './animals.js';
 
 /* ---------- Lot 3 : Marché ---------- */
 
@@ -65,7 +66,8 @@ export function buyQuote(state, item, qty = 1) {
 
 // Achète jusqu'à `qty` unités, une par une : le prix monte entre deux unités.
 // S'arrête quand les pièces manquent. Un item acheté arrive avec sa
-// conservation pleine et l'origine « acheté ».
+// conservation pleine et l'origine « acheté ». Le blé acheté va au Silo s'il y
+// a de la place (il n'y périme pas), le reste dans l'inventaire.
 export function buyItem(state, item, qty = 1) {
   const def = DATA.items[item];
   if (!def) return fail('Objet inconnu.');
@@ -82,6 +84,7 @@ export function buyItem(state, item, qty = 1) {
     cost += price;
   }
   if (bought === 0) return fail('Pas assez de pièces.');
+  if (item === DATA.SILO.ITEM && state.silo) fillSilo(state);
   return { ok: true, bought, cost };
 }
 

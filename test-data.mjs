@@ -50,7 +50,8 @@ test('les notes ("//clé") sont retirées à tous les niveaux', () => {
 test('compileData() : conservation et recettes libres rejoignent les tables du moteur', () => {
   const c = compileData(DATA);
   eq([c.CONSERVATION.tomate, c.CONSERVATION.pain, c.CONSERVATION.confiture_fraises], [5, 7, null]);
-  eq('ble' in c.CONSERVATION, false, 'le blé ne périme pas : absent de la table');
+  eq('farine' in c.CONSERVATION, false, 'la farine ne périme pas : absente de la table');
+  eq(c.CONSERVATION.ble, 10, 'le blé de l\'inventaire périme en 10 nuits (celui du Silo, jamais)');
   eq(['conservation' in c.items.tomate, 'conservation' in c.recipes.pain, 'libre' in c.recipes.pain], [false, false, false]);
   eq([c.techtree.RECETTES_LIBRES.includes('pain'), c.techtree.RECETTES_LIBRES.includes('pain_ail')], [true, false]);
   eq(DATA.items.tomate.conservation, 5, 'les données lues ne sont pas modifiées');

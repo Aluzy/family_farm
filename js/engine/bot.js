@@ -3,10 +3,10 @@ import { EPS } from './base.js';
 import { isBroken, upgradeCost, upgradeDevice } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { tick } from './energy.js';
-import { countItem, expiringSoon, inventoryCounts, isPerishable } from './inventory.js';
+import { countItem, expiringSoon, inventoryCounts, isFridgeable } from './inventory.js';
 import { buildFridge, fridgeCount, moveFromFridge, moveToFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
-import { planMeal, rawAverageHealth, setSeedReserve } from './family.js';
+import { planMeal, rawAverageHealth } from './family.js';
 import {
   allPlots, buildSerre, cropProduct, harvest, isMature, plant, potagerUpgradeCost, seedItem, seedStock,
   serreUpgradeCost, toggleBolting, upgradePotager, upgradeSerre, water,
@@ -382,7 +382,7 @@ export function botStore(state) {
   const f = state.frigo;
   if (!f.construit || !f.appareil.allume || isBroken(f.appareil)) return;
   for (const item of Object.keys(inventoryCounts(state))) {
-    if (!isPerishable(item)) continue;
+    if (!isFridgeable(item)) continue;
     const qty = Math.floor(countItem(state, item) - (state.famille.reserve[item] || 0) + EPS);
     if (qty >= 1) moveToFridge(state, item, qty);
   }
@@ -394,7 +394,6 @@ export function botStore(state) {
 export function botActions(state, strat, options, soir) {
   botMaintenance(state);
   botHeal(state);
-  setSeedReserve(state, 'patate', state.potager.parcelles.length - botFieldTarget(state));
   botBuy(state, strat.eveilS);
   botFarm(state);
   botHens(state);
