@@ -113,6 +113,21 @@ recevoir la nouvelle page avec un ancien script resté en cache.
 L'état du jeu est un seul objet JSON, versionné (migrations dans `MIGRATIONS`) ;
 l'interface ne le modifie qu'à travers les actions nommées du moteur.
 
+**Boutons et actions** : un bouton porte `data-action="nom"` ; la page n'a qu'un écouteur
+de clics, qui appelle la fonction déclarée sous ce nom dans le registre (`js/app.js`) :
+
+```js
+registerActions({
+  'mill-start': () => { /* … */ },
+  'help': (target) => openHelpModal(target.dataset.id),
+});
+```
+
+`target` est l'élément cliqué (ses `data-*` portent les paramètres). Une action déclarée
+deux fois est refusée au chargement. Pour ajouter un bouton : son `data-action` dans le
+gabarit, sa fonction dans le registre, et son classement dans `worker/src/report.mjs`
+(action de jeu ou clic d'interface) ; `node scripts/check-actions.mjs` signale ce qui manque.
+
 ### Données
 
 Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
@@ -184,6 +199,7 @@ node test-telemetry.mjs             # suivi de session (rien sans consentement, 
 node test-report.mjs                # rapport quotidien (calculs, Markdown, protections du Worker)
 node build-encyclopedie.mjs --check # encyclopedie.html est à jour avec son JSON
 node scripts/check-page.mjs         # jeu.html charge des fichiers qui existent, à la bonne version
+node scripts/check-actions.mjs      # chaque data-action a sa fonction, et le rapport quotidien la connaît
 ```
 
 Node 18 ou plus récent. Tout doit passer avant un commit ; l'action GitHub
@@ -249,7 +265,7 @@ par e-mail. Le rapport donne : nombre de sessions ouvertes, temps actif moyen pa
 session, temps passé par chapitre, top 10 des actions des joueurs et commentaires.
 Le calcul est dans `worker/src/report.mjs` ; les libellés des actions (`GAME_ACTIONS`)
 sont à compléter quand une action est ajoutée au jeu, faute de quoi elle apparaît sous
-son nom brut suivi de « (non répertorié) ». Installation : `worker/README.md`.
+son nom brut suivi de « (non répertorié) ». `node scripts/check-actions.mjs` signale une action non classée avant qu'elle n'arrive dans un rapport. Installation : `worker/README.md`.
 
 > **Le dépôt du jeu reste public** (GitHub Pages ne fonctionne pas sur un dépôt privé
 > avec un compte gratuit : rendre ce dépôt privé mettrait le jeu hors ligne). Les

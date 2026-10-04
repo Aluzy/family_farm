@@ -12,9 +12,11 @@ const TOP_N = 10;
 const MAX_COMMENTS_SHOWN = 30;
 
 // Actions de jeu regroupées par libellé. Les clés sont les valeurs de
-// data-action de js/app.js. Une action absente de ces tableaux (nouvelle
-// fonction du jeu, par exemple) apparaît dans le classement sous son nom brut :
-// rien n'est perdu en silence.
+// data-action, c'est-à-dire les noms du registre des actions de js/app.js.
+// Une action absente de ces tableaux apparaît dans le classement sous son nom
+// brut : rien n'est perdu en silence. `node scripts/check-actions.mjs` compare
+// ces tableaux au registre : une action ajoutée au jeu sans être classée ici,
+// ou classée ici après avoir disparu du jeu, fait échouer la vérification.
 export const GAME_ACTIONS = {
   'plant': 'Planter',
   'water': 'Arroser',
@@ -42,7 +44,6 @@ export const GAME_ACTIONS = {
   'buy-orchard-slot': 'Acheter un emplacement de verger',
   'buy-tech': 'Acquérir une technologie',
   'sleep': 'Dormir',
-  'build-champ': 'Construire un bâtiment',
   'build-serre': 'Construire un bâtiment',
   'build-poulailler': 'Construire un bâtiment',
   'build-fridge': 'Construire un bâtiment',
@@ -55,7 +56,6 @@ export const GAME_ACTIONS = {
   'upgrade-serre': 'Améliorer ou agrandir',
   'upgrade-poulailler': 'Améliorer ou agrandir',
   'upgrade-potager': 'Améliorer ou agrandir',
-  'upgrade-champ': 'Améliorer ou agrandir',
   'maintain': 'Entretenir un appareil',
   'repair': 'Réparer un appareil',
   'heal': 'Soigner un membre de la famille',
@@ -65,8 +65,6 @@ export const GAME_ACTIONS = {
   'routine-toggle': 'Activer ou couper la routine familiale',
   'bolt': 'Laisser monter en graine',
   'semis-set': 'Régler les semis automatiques',
-  'confirm-slaughter': 'Abattre un animal',
-  'confirm-slaughter-hen': 'Abattre un animal',
 };
 
 // Clics d'interface : navigation, fenêtres, réglages de quantité. Comptés à
@@ -75,7 +73,7 @@ export const INTERFACE_ACTIONS = new Set([
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about',
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open', 'sell-inc',
   'sell-dec', 'sell-max', 'reserve-inc', 'reserve-dec', 'cancel-queued', 'ack-chapter',
-  'ask-slaughter', 'ask-slaughter-hen', 'ask-new-game', 'cancel-new-game', 'copy-export',
+  'ask-new-game', 'cancel-new-game', 'copy-export',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,

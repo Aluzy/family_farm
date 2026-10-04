@@ -25,6 +25,8 @@ jobs:
         run: node test-telemetry.mjs
       - name: Rapport quotidien
         run: node test-report.mjs
+      - name: Actions de l'interface
+        run: node scripts/check-actions.mjs
       - name: Fichiers chargés par la page
         run: node scripts/check-page.mjs
       - name: Encyclopédie à jour

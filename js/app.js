@@ -4150,7 +4150,547 @@ function watchAlerts() {
   alertState = now;
 }
 
-/* ---------- délégation d'événements ---------- */
+/* ---------- registre des actions (délégation d'événements) ---------- */
+
+// Chaque valeur de data-action a sa fonction : (target, e, action) => { … }, où
+// target est l'élément qui porte data-action. Un écran déclare les siennes avec
+// registerActions({ … }) ; l'unique écouteur de clics de la page les appelle.
+// Une action déclarée deux fois est une erreur (le second écran masquerait le premier).
+const ACTIONS = {};
+
+function registerActions(handlers) {
+  for (const [name, fn] of Object.entries(handlers)) {
+    if (ACTIONS[name]) throw new Error(`Action déclarée deux fois : ${name}`);
+    ACTIONS[name] = fn;
+  }
+}
+
+// Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).
+function sameHandler(names, fn) {
+  return Object.fromEntries(names.map((name) => [name, fn]));
+}
+
+registerActions({
+  'consent-accept': () => {
+    applyConsent('granted');
+    if (document.getElementById('options-title')) openOptionsModal();
+  },
+  'consent-refuse': () => {
+    applyConsent('denied');
+    if (document.getElementById('options-title')) openOptionsModal();
+  },
+  'open-options': () => {
+    openOptionsModal();
+  },
+  'open-about': () => {
+    openAboutModal();
+  },
+  'open-feedback': () => {
+    openFeedbackZone();
+  },
+  'send-feedback': () => {
+    sendFeedback();
+  },
+  'help': (target) => {
+    openHelpModal(target.dataset.id);
+  },
+  // ----- version 1.1 : Moulin (mouture par quantité) -----
+  ...sameHandler(['mill-dec', 'mill-inc', 'mill-max'], (target, e, action) => {
+    millQty = action === 'mill-max' ? Math.floor(wheatTotal(state) + EPS) : millQuantity() + (action === 'mill-inc' ? 1 : -1);
+    refresh();
+  }),
+  'mill-start': () => {
+    const result = applyResult(startMilling(state, millQuantity()));
+    if (result.ok) {
+      syncJobs();
+      millQty = 1;
+      showToast(`⚙️ ${formatNumber(result.quantite)} blé${result.quantite > 1 ? 's' : ''} au Moulin`);
+      refresh();
+    }
+  },
+  'mill-cancel': () => {
+    const result = applyResult(cancelMilling(state));
+    if (result.ok) showToast(`🌾 ${formatNumber(result.rendu)} blé${result.rendu > 1 ? 's' : ''} repris`);
+  },
+  // ----- version 1.1 : prénom et apparence d'un membre de la famille -----
+  'member-edit': (target) => {
+    openMemberModal(target.dataset.id);
+  },
+  'member-genre': (target) => {
+    if (memberDraft) memberDraft.genre = target.dataset.genre;
+    syncMemberModal();
+  },
+  'member-teint': (target) => {
+    if (memberDraft) memberDraft.teint = Number(target.dataset.teint);
+    syncMemberModal();
+  },
+  'member-save': () => {
+    saveMemberModal();
+  },
+  // ----- version 1.2 : composition de la famille, animaux de compagnie -----
+  'member-add': (target) => {
+    const enfant = target.dataset.age === 'enfant';
+    const result = applyResult(addMember(state, enfant));
+    if (result.ok) {
+      persistState();
+      showToast(`👋 Un ${enfant ? 'enfant' : 'adulte'} rejoint la famille. Besoin : ${formatNumber(result.besoin)} énergie par jour.`);
+      openMemberModal(result.id); // tout de suite : son prénom et son apparence
+    }
+  },
+  'member-remove': () => {
+    removeMemberFromModal();
+  },
+  'pet-add': (target) => {
+    const result = applyResult(addPet(state, target.dataset.espece));
+    if (result.ok) {
+      persistState();
+      openPetModal(result.id); // tout de suite : son nom
+    }
+  },
+  'pet-edit': (target) => {
+    openPetModal(target.dataset.id);
+  },
+  'pet-espece': (target) => {
+    if (petDraft) petDraft.espece = target.dataset.espece;
+    syncPetModal();
+  },
+  'pet-save': () => {
+    savePetModal();
+  },
+  'pet-remove': () => {
+    removePetFromModal();
+  },
+  // ----- version 1.3 : courrier -----
+  'mail-open': (target) => {
+    openMailModal(target.dataset.id);
+  },
+  'test-straw': () => {
+    applyResult(testAddStraw(state));
+  },
+  'tuto-next': () => {
+    applyResult(advanceTutorial(state));
+  },
+  'tuto-skip': () => {
+    applyResult(skipTutorial(state));
+  },
+  'close-modal': (target, e) => {
+    if (e.target === target) closeModal();
+  },
+  'wake-more': (target) => {
+    const detail = document.getElementById('wake-detail');
+    if (!detail) return;
+    const open = detail.hidden; // hidden = replié : on ouvre
+    detail.hidden = !open;
+    target.setAttribute('aria-expanded', String(open));
+    target.textContent = open ? 'Voir moins' : 'Voir plus';
+  },
+  'stage-open': (target) => {
+    openStageWindow(target.dataset.window);
+  },
+  'stage-close': () => {
+    closeStageWindow();
+  },
+  'maison-tab': (target) => {
+    maisonTab = target.dataset.tab;
+    renderStageWindow();
+    refresh();
+  },
+  'stage-goto': (target) => {
+    allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
+  },
+  'aller': (target) => {
+    closeModal();
+    allerA(cibleDe(target.dataset));
+  },
+  'stage-pan': (target) => {
+    stagePanToScreen(target.dataset.ecran);
+  },
+  'switch-tab': (target) => {
+    if (FERME_LINKS.includes(target.dataset.tab) && stageUsable()) {
+      allerAuLieu('maison', target.dataset.tab);
+      return;
+    }
+    activeTab = target.dataset.tab;
+    stageWindow = null;
+    stageReturn = null;
+    ecranFerme = null;
+    telView();
+    refresh();
+  },
+  'open-screen': (target) => {
+    stageReturn = stageWindow;
+    stageWindow = null;
+    ecranFerme = target.dataset.screen;
+    telView();
+    refresh();
+  },
+  'close-screen': () => {
+    ecranFerme = null;
+    stageWindow = stageReturn;
+    stageReturn = null;
+    telView();
+    refresh();
+  },
+  'toggle': (target) => {
+    applyResult(toggleDevice(state, target.dataset.id));
+  },
+  'upgrade': (target) => {
+    applyResult(upgradeDevice(state, target.dataset.id));
+  },
+  'maintain': (target) => {
+    applyResult(maintainDevice(state, target.dataset.id));
+  },
+  'repair': (target) => {
+    applyResult(repairDevice(state, target.dataset.id));
+  },
+  'buy': (target) => {
+    applyResult(buyDevice(state, target.dataset.type));
+  },
+  'sleep': () => {
+    actionSleep();
+  },
+  'plant-open': (target) => {
+    openPlantModal(target.dataset.id);
+  },
+  'plant': (target) => {
+    closeModal();
+    applyResult(plant(state, target.dataset.id, target.dataset.crop));
+  },
+  'water': (target) => {
+    applyResult(water(state, target.dataset.id));
+  },
+  'bolt': (target) => {
+    applyResult(toggleBolting(state, target.dataset.id));
+  },
+  'harvest': (target) => {
+    const result = applyResult(harvest(state, target.dataset.id));
+    if (result.ok) showToast(harvestToast(result));
+  },
+  'upgrade-potager': () => {
+    applyResult(upgradePotager(state));
+  },
+  'build-silo': () => {
+    applyResult(buildSilo(state));
+  },
+  'upgrade-silo': () => {
+    applyResult(upgradeSilo(state));
+  },
+  'build-poulailler': () => {
+    applyResult(buildPoulailler(state));
+  },
+  'upgrade-poulailler': () => {
+    applyResult(upgradePoulailler(state));
+  },
+  'feed-hen': () => {
+    const result = applyResult(feedHen(state));
+    if (result.ok) showToast(result.compte ? '🌾 Une poule nourrie (1 blé pour 2 poules)' : 'Le geste n\'a pas compté (santé faible) : le blé est conservé, réessaie.');
+  },
+  'feed-all': () => {
+    const result = applyResult(feedAllHens(state));
+    if (result.ok) {
+      showToast(
+        result.ratees > 0
+          ? `${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}, ${result.ratees} geste${result.ratees > 1 ? 's' : ''} sans effet (santé faible) : réessaie.`
+          : `${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}.`
+      );
+    }
+  },
+  'buy-animal': (target) => {
+    const kind = target.dataset.kind;
+    const result = applyResult(buyAnimals(state, kind, animalQuantity(kind)));
+    if (result.ok) {
+      animalQuantities[kind] = 1;
+      showToast(`Acheté : ${result.bought} ${DATA.ANIMAUX[kind].icone} (−${formatCoins(result.cost)} 💰)`);
+      refresh();
+    }
+  },
+  ...sameHandler(['animal-dec', 'animal-inc', 'animal-max'], (target, e, action) => {
+    const kind = target.dataset.kind;
+    animalQuantities[kind] = action === 'animal-max' ? Math.min(BUY_MAX, animalBuyMax(state, kind)) : animalQuantity(kind) + (action === 'animal-inc' ? 1 : -1);
+    refresh();
+  }),
+  'build-paturage': () => {
+    const result = applyResult(buildPaturage(state));
+    if (result.ok) showToast(`🐑 L'Étable est prête pour les moutons et les vaches : ${formatPlaces(result.places)} (−${formatCoins(result.cost)} 💰)`);
+  },
+  'buy-pasture': () => {
+    const result = applyResult(buyPasture(state));
+    if (result.ok) showToast(`Place achetée : ${formatPlaces(result.places)} au total (−${formatCoins(result.cost)} 💰)`);
+  },
+  'shear': (target) => {
+    const result = applyResult(shear(state, target.dataset.id));
+    if (result.ok) showToast(`✂️ Tonte : +${result.laine} 🧶`);
+  },
+  'buy-tech': (target) => {
+    const id = target.dataset.id;
+    const result = applyResult(buyTech(state, id));
+    if (result.ok) showToast(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰)`);
+  },
+  'water-all': (target) => {
+    const result = applyResult(waterAll(state, target.dataset.lieu));
+    if (result.ok) showToast(`💧 ${plural(result.arrosees, 'parcelle')} arrosée${result.arrosees > 1 ? 's' : ''}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
+  },
+  'harvest-all': (target) => {
+    const result = applyResult(harvestAll(state, target.dataset.lieu));
+    if (result.ok) showToast(`🧺 ${itemsSummary(result.items)}`);
+  },
+  'cancel-queued': (target) => {
+    applyResult(cancelQueued(state, target.dataset.station, Number(target.dataset.index)));
+  },
+  'routine-toggle': (target) => {
+    applyResult(setRoutine(state, target.checked));
+  },
+  'test-tech-points': () => {
+    applyResult(testAddTechPoints(state, 10));
+  },
+  'semis-open': (target) => {
+    openSemisModal(target.dataset.id);
+  },
+  'semis-set': (target) => {
+    closeModal();
+    applyResult(setSemis(state, target.dataset.id, target.dataset.mode, target.dataset.crop));
+  },
+  'test-level5': () => {
+    const result = applyResult(testSetBuildingLevel5(state, document.getElementById('test-building').value));
+    if (result.ok) showToast('Bâtiment au niveau 5.');
+  },
+  'test-techs': () => {
+    applyResult(testUnlockAllTechs(state));
+  },
+  'build-serre': () => {
+    const result = applyResult(buildSerre(state));
+    if (result.ok) showToast(`🏡 Serre construite : ${state.serre.parcelles.length} parcelles (−${formatCoins(result.cost)} 💰)`);
+  },
+  'upgrade-serre': () => {
+    applyResult(upgradeSerre(state));
+  },
+  'build-verger': () => {
+    const result = applyResult(buildVerger(state));
+    if (result.ok) showToast(`🌳 Verger aménagé : ${state.verger.places} emplacements`);
+  },
+  'buy-orchard-slot': () => {
+    const result = applyResult(buyOrchardSlot(state));
+    if (result.ok) showToast(`Emplacement acheté : ${result.places} au total (−${formatCoins(result.cost)} 💰)`);
+  },
+  'buy-tree': (target) => {
+    const espece = target.dataset.species;
+    const result = applyResult(buyTree(state, espece));
+    if (result.ok) showToast(`${DATA.items[DATA.VERGER.ARBRES[espece].fruit].icone} ${DATA.VERGER.ARBRES[espece].nom} planté (−${formatCoins(result.cost)} 💰)`);
+  },
+  'build-fridge': () => {
+    const result = applyResult(buildFridge(state));
+    if (result.ok) showToast(`🧊 Réfrigérateur construit (−${formatCoins(result.cost)} 💰)`);
+  },
+  ...sameHandler(['fridge-in', 'fridge-out'], (target, e, action) => {
+    const item = target.dataset.item;
+    const all = target.dataset.qty === 'all';
+    const qty = all ? (action === 'fridge-in' ? countItem(state, item) : fridgeCount(state, item)) : Number(target.dataset.qty);
+    const result = applyResult(action === 'fridge-in' ? moveToFridge(state, item, qty) : moveFromFridge(state, item, qty));
+    if (result.ok) showToast(`${action === 'fridge-in' ? '🧊 Rangé' : 'Sorti'} : ${result.moved} ${DATA.items[item].icone}`);
+  }),
+  'test-next-season': () => {
+    const result = applyResult(testNextSeason(state));
+    showToast(`Saison : ${DATA.SAISONS.INFOS[result.saison].icone} ${DATA.SAISONS.INFOS[result.saison].nom} (nuit ${state.day})`);
+  },
+  'test-serre': () => {
+    applyResult(testBuildSerre(state));
+  },
+  'test-verger': () => {
+    applyResult(testBuildVerger(state));
+  },
+  'test-fridge': () => {
+    applyResult(testBuildFridge(state));
+  },
+  'test-empty-batteries': () => {
+    applyResult(testEmptyBatteries(state));
+  },
+  'test-sheep': () => {
+    applyResult(testAddSheep(state));
+  },
+  'test-wool': () => {
+    applyResult(testWoolReady(state));
+  },
+  'test-cows': () => {
+    applyResult(testAddCows(state));
+  },
+  'build-station': (target) => {
+    const id = target.dataset.station;
+    const result = applyResult(buildStation(state, id));
+    if (result.ok) {
+      const def = DATA.STATIONS[id];
+      showToast(`${def.icone} ${def.nom} construit${def.article === 'la' ? 'e' : ''} (−${formatCoins(result.cost)} 💰)${def.debloque ? ' · onglet Livre de recette débloqué !' : ''}`);
+    }
+  },
+  'start-recipe': (target) => {
+    const id = target.dataset.recipe;
+    const result = applyResult(startRecipe(state, id));
+    if (result.ok) {
+      syncJobs();
+      showToast(`${DATA.recipes[id].icone} ${DATA.recipes[id].nom} : préparation lancée`);
+    }
+  },
+  'test-stations': () => {
+    applyResult(testBuildStations(state));
+  },
+  'test-flour': () => {
+    applyResult(testAddFlour(state));
+  },
+  'test-oil': () => {
+    applyResult(testAddOil(state));
+  },
+  'test-eggs': () => {
+    applyResult(testAddEggs(state));
+  },
+  'test-wear-mill': () => {
+    applyResult(testWearMill(state));
+  },
+  'test-wheat': () => {
+    applyResult(testAddWheat(state));
+  },
+  'test-hens': () => {
+    applyResult(testAddHens(state));
+  },
+  'heal': (target) => {
+    applyResult(heal(state, target.dataset.id));
+  },
+  ...sameHandler(['reserve-inc', 'reserve-dec'], (target, e, action) => {
+    const item = target.dataset.item;
+    const now = state.famille.reserve[item] || 0;
+    applyResult(setSeedReserve(state, item, now + (action === 'reserve-inc' ? 1 : -1)));
+  }),
+  'inv-tab': (target) => {
+    invTab = target.dataset.tab;
+    refresh();
+  },
+  'comptoir-tab': (target) => {
+    comptoirTab = target.dataset.tab;
+    refresh();
+  },
+  'buy-item': (target) => {
+    const item = target.dataset.item;
+    const result = applyResult(buyItem(state, item, buyQuantity(item)));
+    if (result.ok) {
+      buyQuantities[item] = 1;
+      showToast(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
+      refresh();
+    }
+  },
+  ...sameHandler(['buy-dec', 'buy-inc', 'buy-max'], (target, e, action) => {
+    const item = target.dataset.item;
+    buyQuantities[item] = action === 'buy-max' ? buyQuote(state, item, BUY_MAX).quantite : buyQuantity(item) + (action === 'buy-inc' ? 1 : -1);
+    refresh();
+  }),
+  ...sameHandler(['sell-dec', 'sell-inc', 'sell-max'], (target, e, action) => {
+    const item = target.dataset.item;
+    const now = sellQuantity(item);
+    sellQuantities[item] = action === 'sell-max' ? sellableStock(item) : now + (action === 'sell-inc' ? 1 : -1);
+    refresh();
+  }),
+  'sell-item': (target) => {
+    const item = target.dataset.item;
+    const result = applyResult(sellItem(state, item, sellQuantity(item)));
+    if (result.ok) showToast(`Vendu : ${result.sold} ${DATA.items[item].icone} (+${formatCoins(result.gain)} 💰)`);
+  },
+  'test-food': () => {
+    applyResult(testAddFood(state));
+  },
+  'test-age': () => {
+    const result = applyResult(testAgeInventory(state));
+    const lost = itemsSummary(result.perdus);
+    showToast(lost ? `Périmés : ${lost}` : 'Rien n\'a péri.');
+  },
+  'test-seeds': () => {
+    applyResult(testAddSeeds(state));
+  },
+  'test-ripen': () => {
+    applyResult(testRipenAll(state));
+  },
+  'test-sick': () => {
+    applyResult(testSetHealthZero(state));
+  },
+  'test-add-100': () => {
+    applyResult(testAddPieces(state, 100));
+  },
+  'test-add-1000': () => {
+    applyResult(testAddPieces(state, 1000));
+  },
+  'test-add-panel': () => {
+    applyResult(testAddDevice(state, 'panneau'));
+  },
+  'test-add-battery': () => {
+    applyResult(testAddDevice(state, 'batterie'));
+  },
+  'test-fill-batteries': () => {
+    applyResult(testFillBatteries(state));
+  },
+  'test-fill-tank': () => {
+    applyResult(testFillTank(state));
+  },
+  'test-wear': () => {
+    applyResult(testSetWear(state, document.getElementById('test-device').value, DATA.WEAR.BREAKDOWN));
+  },
+  'test-skip-awake': () => {
+    applyResult(testSkipAwake(state));
+  },
+  'ack-chapter': () => {
+    closeModal();
+  },
+  'test-complete-chapter': () => {
+    const result = applyResult(testCompleteChapter(state));
+    if (result.ok) showToast(result.fini ? '🏆 Campagne terminée' : `Chapitre ${result.chapitre} atteint`);
+  },
+  'test-goto-chapter': () => {
+    const result = applyResult(testGoToChapter(state, document.getElementById('test-chapter').value));
+    if (result.ok) showToast(result.fini ? '🏆 Mode libre : tout est débloqué' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
+  },
+  'test-simulate': () => {
+    actionTestSimulate();
+  },
+  'test-nights-1': () => {
+    actionTestNights(1);
+  },
+  'test-nights-5': () => {
+    actionTestNights(5);
+  },
+  'do-export': () => {
+    const area = document.getElementById('export-area');
+    area.value = exportSaveText();
+  },
+  'copy-export': () => {
+    const area = document.getElementById('export-area');
+    if (!area.value) area.value = exportSaveText();
+    copyFromTextarea(area);
+  },
+  'do-import': () => {
+    const area = document.getElementById('import-area');
+    const ok = importSaveText(area.value);
+    showToast(ok ? 'Sauvegarde importée.' : 'Texte invalide, import annulé.');
+    if (ok) {
+      ecranFerme = null;
+      closeModal();
+      refresh();
+    }
+  },
+  // Confirmation dans la page (et non confirm()) : certains navigateurs et
+  // aperçus bloquent les boîtes de dialogue natives sans rien signaler.
+  'ask-new-game': () => {
+    document.getElementById('new-game-zone').innerHTML = `
+    <p class="alert">Toute la progression actuelle sera perdue.</p>
+    <div class="row">
+      <button class="btn danger" type="button" data-action="do-new-game">Oui, tout effacer</button>
+      <button class="btn" type="button" data-action="cancel-new-game">Annuler</button>
+    </div>`;
+  },
+  'cancel-new-game': () => {
+    document.getElementById('new-game-zone').innerHTML =
+    '<button class="btn danger" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
+  },
+  'do-new-game': () => {
+    actionNewGame();
+    closeModal();
+    showToast('Nouvelle partie lancée.');
+  },
+});
 
 document.addEventListener('click', (e) => {
   const target = e.target.closest('[data-action]');
@@ -4161,576 +4701,8 @@ document.addEventListener('click', (e) => {
   const action = target.dataset.action;
   telClick(target, action);
 
-  switch (action) {
-    case 'consent-accept':
-      applyConsent('granted');
-      if (document.getElementById('options-title')) openOptionsModal();
-      break;
-    case 'consent-refuse':
-      applyConsent('denied');
-      if (document.getElementById('options-title')) openOptionsModal();
-      break;
-    case 'open-options':
-      openOptionsModal();
-      break;
-    case 'open-about':
-      openAboutModal();
-      break;
-    case 'open-feedback':
-      openFeedbackZone();
-      break;
-    case 'send-feedback':
-      sendFeedback();
-      break;
-    case 'help':
-      openHelpModal(target.dataset.id);
-      break;
-    // ----- version 1.1 : Moulin (mouture par quantité) -----
-    case 'mill-dec':
-    case 'mill-inc':
-    case 'mill-max':
-      millQty = action === 'mill-max' ? Math.floor(wheatTotal(state) + EPS) : millQuantity() + (action === 'mill-inc' ? 1 : -1);
-      refresh();
-      break;
-    case 'mill-start': {
-      const result = applyResult(startMilling(state, millQuantity()));
-      if (result.ok) {
-        syncJobs();
-        millQty = 1;
-        showToast(`⚙️ ${formatNumber(result.quantite)} blé${result.quantite > 1 ? 's' : ''} au Moulin`);
-        refresh();
-      }
-      break;
-    }
-    case 'mill-cancel': {
-      const result = applyResult(cancelMilling(state));
-      if (result.ok) showToast(`🌾 ${formatNumber(result.rendu)} blé${result.rendu > 1 ? 's' : ''} repris`);
-      break;
-    }
-    // ----- version 1.1 : prénom et apparence d'un membre de la famille -----
-    case 'member-edit':
-      openMemberModal(target.dataset.id);
-      break;
-    case 'member-genre':
-      if (memberDraft) memberDraft.genre = target.dataset.genre;
-      syncMemberModal();
-      break;
-    case 'member-teint':
-      if (memberDraft) memberDraft.teint = Number(target.dataset.teint);
-      syncMemberModal();
-      break;
-    case 'member-save':
-      saveMemberModal();
-      break;
-    // ----- version 1.2 : composition de la famille, animaux de compagnie -----
-    case 'member-add': {
-      const enfant = target.dataset.age === 'enfant';
-      const result = applyResult(addMember(state, enfant));
-      if (result.ok) {
-        persistState();
-        showToast(`👋 Un ${enfant ? 'enfant' : 'adulte'} rejoint la famille. Besoin : ${formatNumber(result.besoin)} énergie par jour.`);
-        openMemberModal(result.id); // tout de suite : son prénom et son apparence
-      }
-      break;
-    }
-    case 'member-remove':
-      removeMemberFromModal();
-      break;
-    case 'pet-add': {
-      const result = applyResult(addPet(state, target.dataset.espece));
-      if (result.ok) {
-        persistState();
-        openPetModal(result.id); // tout de suite : son nom
-      }
-      break;
-    }
-    case 'pet-edit':
-      openPetModal(target.dataset.id);
-      break;
-    case 'pet-espece':
-      if (petDraft) petDraft.espece = target.dataset.espece;
-      syncPetModal();
-      break;
-    case 'pet-save':
-      savePetModal();
-      break;
-    case 'pet-remove':
-      removePetFromModal();
-      break;
-    // ----- version 1.3 : courrier -----
-    case 'mail-open':
-      openMailModal(target.dataset.id);
-      break;
-    case 'test-straw':
-      applyResult(testAddStraw(state));
-      break;
-    case 'tuto-next':
-      applyResult(advanceTutorial(state));
-      break;
-    case 'tuto-skip':
-      applyResult(skipTutorial(state));
-      break;
-    case 'close-modal':
-      if (e.target === target) closeModal();
-      break;
-    case 'wake-more': {
-      const detail = document.getElementById('wake-detail');
-      if (!detail) break;
-      const open = detail.hidden; // hidden = replié : on ouvre
-      detail.hidden = !open;
-      target.setAttribute('aria-expanded', String(open));
-      target.textContent = open ? 'Voir moins' : 'Voir plus';
-      break;
-    }
-    case 'stage-open':
-      openStageWindow(target.dataset.window);
-      break;
-    case 'stage-close':
-      closeStageWindow();
-      break;
-    case 'maison-tab':
-      maisonTab = target.dataset.tab;
-      renderStageWindow();
-      refresh();
-      break;
-    case 'stage-goto':
-      allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
-      break;
-    case 'aller':
-      closeModal();
-      allerA(cibleDe(target.dataset));
-      break;
-    case 'stage-pan':
-      stagePanToScreen(target.dataset.ecran);
-      break;
-    case 'switch-tab':
-      // Avec la carte, Famille, Livre de recette et Arbre des technologies sont des onglets de la Maison.
-      if (FERME_LINKS.includes(target.dataset.tab) && stageUsable()) {
-        allerAuLieu('maison', target.dataset.tab);
-        break;
-      }
-      activeTab = target.dataset.tab;
-      stageWindow = null;
-      stageReturn = null;
-      ecranFerme = null;
-      telView();
-      refresh();
-      break;
-    case 'open-screen':
-      // Depuis une fenêtre de la carte : elle se ferme le temps de l'écran de détail.
-      stageReturn = stageWindow;
-      stageWindow = null;
-      ecranFerme = target.dataset.screen;
-      telView();
-      refresh();
-      break;
-    case 'close-screen':
-      ecranFerme = null;
-      stageWindow = stageReturn;
-      stageReturn = null;
-      telView();
-      refresh();
-      break;
-    case 'toggle':
-      applyResult(toggleDevice(state, target.dataset.id));
-      break;
-    case 'upgrade':
-      applyResult(upgradeDevice(state, target.dataset.id));
-      break;
-    case 'maintain':
-      applyResult(maintainDevice(state, target.dataset.id));
-      break;
-    case 'repair':
-      applyResult(repairDevice(state, target.dataset.id));
-      break;
-    case 'buy':
-      applyResult(buyDevice(state, target.dataset.type));
-      break;
-    case 'sleep':
-      actionSleep();
-      break;
-    case 'plant-open':
-      openPlantModal(target.dataset.id);
-      break;
-    case 'plant':
-      closeModal();
-      applyResult(plant(state, target.dataset.id, target.dataset.crop));
-      break;
-    case 'water':
-      applyResult(water(state, target.dataset.id));
-      break;
-    case 'bolt':
-      applyResult(toggleBolting(state, target.dataset.id));
-      break;
-    case 'harvest': {
-      const result = applyResult(harvest(state, target.dataset.id));
-      if (result.ok) showToast(harvestToast(result));
-      break;
-    }
-    case 'upgrade-potager':
-      applyResult(upgradePotager(state));
-      break;
-    case 'build-silo':
-      applyResult(buildSilo(state));
-      break;
-    case 'upgrade-silo':
-      applyResult(upgradeSilo(state));
-      break;
-    case 'build-poulailler':
-      applyResult(buildPoulailler(state));
-      break;
-    case 'upgrade-poulailler':
-      applyResult(upgradePoulailler(state));
-      break;
-    case 'feed-hen': {
-      const result = applyResult(feedHen(state));
-      if (result.ok) showToast(result.compte ? '🌾 Une poule nourrie (1 blé pour 2 poules)' : 'Le geste n\'a pas compté (santé faible) : le blé est conservé, réessaie.');
-      break;
-    }
-    case 'feed-all': {
-      const result = applyResult(feedAllHens(state));
-      if (result.ok) {
-        showToast(
-          result.ratees > 0
-            ? `${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}, ${result.ratees} geste${result.ratees > 1 ? 's' : ''} sans effet (santé faible) : réessaie.`
-            : `${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}.`
-        );
-      }
-      break;
-    }
-    case 'buy-animal': {
-      const kind = target.dataset.kind;
-      const result = applyResult(buyAnimals(state, kind, animalQuantity(kind)));
-      if (result.ok) {
-        animalQuantities[kind] = 1;
-        showToast(`Acheté : ${result.bought} ${DATA.ANIMAUX[kind].icone} (−${formatCoins(result.cost)} 💰)`);
-        refresh();
-      }
-      break;
-    }
-    case 'animal-dec':
-    case 'animal-inc':
-    case 'animal-max': {
-      const kind = target.dataset.kind;
-      animalQuantities[kind] = action === 'animal-max' ? Math.min(BUY_MAX, animalBuyMax(state, kind)) : animalQuantity(kind) + (action === 'animal-inc' ? 1 : -1);
-      refresh();
-      break;
-    }
-    case 'build-paturage': {
-      const result = applyResult(buildPaturage(state));
-      if (result.ok) showToast(`🐑 L'Étable est prête pour les moutons et les vaches : ${formatPlaces(result.places)} (−${formatCoins(result.cost)} 💰)`);
-      break;
-    }
-    case 'buy-pasture': {
-      const result = applyResult(buyPasture(state));
-      if (result.ok) showToast(`Place achetée : ${formatPlaces(result.places)} au total (−${formatCoins(result.cost)} 💰)`);
-      break;
-    }
-    case 'shear': {
-      const result = applyResult(shear(state, target.dataset.id));
-      if (result.ok) showToast(`✂️ Tonte : +${result.laine} 🧶`);
-      break;
-    }
-    case 'buy-tech': {
-      const id = target.dataset.id;
-      const result = applyResult(buyTech(state, id));
-      if (result.ok) showToast(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰)`);
-      break;
-    }
-    case 'water-all': {
-      const result = applyResult(waterAll(state, target.dataset.lieu));
-      if (result.ok) showToast(`💧 ${plural(result.arrosees, 'parcelle')} arrosée${result.arrosees > 1 ? 's' : ''}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
-      break;
-    }
-    case 'harvest-all': {
-      const result = applyResult(harvestAll(state, target.dataset.lieu));
-      if (result.ok) showToast(`🧺 ${itemsSummary(result.items)}`);
-      break;
-    }
-    case 'cancel-queued':
-      applyResult(cancelQueued(state, target.dataset.station, Number(target.dataset.index)));
-      break;
-    case 'routine-toggle':
-      applyResult(setRoutine(state, target.checked));
-      break;
-    case 'test-tech-points':
-      applyResult(testAddTechPoints(state, 10));
-      break;
-    case 'semis-open':
-      openSemisModal(target.dataset.id);
-      break;
-    case 'semis-set':
-      closeModal();
-      applyResult(setSemis(state, target.dataset.id, target.dataset.mode, target.dataset.crop));
-      break;
-    case 'test-level5': {
-      const result = applyResult(testSetBuildingLevel5(state, document.getElementById('test-building').value));
-      if (result.ok) showToast('Bâtiment au niveau 5.');
-      break;
-    }
-    case 'test-techs':
-      applyResult(testUnlockAllTechs(state));
-      break;
-    case 'build-serre': {
-      const result = applyResult(buildSerre(state));
-      if (result.ok) showToast(`🏡 Serre construite : ${state.serre.parcelles.length} parcelles (−${formatCoins(result.cost)} 💰)`);
-      break;
-    }
-    case 'upgrade-serre':
-      applyResult(upgradeSerre(state));
-      break;
-    case 'build-verger': {
-      const result = applyResult(buildVerger(state));
-      if (result.ok) showToast(`🌳 Verger aménagé : ${state.verger.places} emplacements`);
-      break;
-    }
-    case 'buy-orchard-slot': {
-      const result = applyResult(buyOrchardSlot(state));
-      if (result.ok) showToast(`Emplacement acheté : ${result.places} au total (−${formatCoins(result.cost)} 💰)`);
-      break;
-    }
-    case 'buy-tree': {
-      const espece = target.dataset.species;
-      const result = applyResult(buyTree(state, espece));
-      if (result.ok) showToast(`${DATA.items[DATA.VERGER.ARBRES[espece].fruit].icone} ${DATA.VERGER.ARBRES[espece].nom} planté (−${formatCoins(result.cost)} 💰)`);
-      break;
-    }
-    case 'build-fridge': {
-      const result = applyResult(buildFridge(state));
-      if (result.ok) showToast(`🧊 Réfrigérateur construit (−${formatCoins(result.cost)} 💰)`);
-      break;
-    }
-    case 'fridge-in':
-    case 'fridge-out': {
-      const item = target.dataset.item;
-      const all = target.dataset.qty === 'all';
-      const qty = all ? (action === 'fridge-in' ? countItem(state, item) : fridgeCount(state, item)) : Number(target.dataset.qty);
-      const result = applyResult(action === 'fridge-in' ? moveToFridge(state, item, qty) : moveFromFridge(state, item, qty));
-      if (result.ok) showToast(`${action === 'fridge-in' ? '🧊 Rangé' : 'Sorti'} : ${result.moved} ${DATA.items[item].icone}`);
-      break;
-    }
-    case 'test-next-season': {
-      const result = applyResult(testNextSeason(state));
-      showToast(`Saison : ${DATA.SAISONS.INFOS[result.saison].icone} ${DATA.SAISONS.INFOS[result.saison].nom} (nuit ${state.day})`);
-      break;
-    }
-    case 'test-serre':
-      applyResult(testBuildSerre(state));
-      break;
-    case 'test-verger':
-      applyResult(testBuildVerger(state));
-      break;
-    case 'test-fridge':
-      applyResult(testBuildFridge(state));
-      break;
-    case 'test-empty-batteries':
-      applyResult(testEmptyBatteries(state));
-      break;
-    case 'test-sheep':
-      applyResult(testAddSheep(state));
-      break;
-    case 'test-wool':
-      applyResult(testWoolReady(state));
-      break;
-    case 'test-cows':
-      applyResult(testAddCows(state));
-      break;
-    case 'build-station': {
-      const id = target.dataset.station;
-      const result = applyResult(buildStation(state, id));
-      if (result.ok) {
-        const def = DATA.STATIONS[id];
-        showToast(`${def.icone} ${def.nom} construit${def.article === 'la' ? 'e' : ''} (−${formatCoins(result.cost)} 💰)${def.debloque ? ' · onglet Livre de recette débloqué !' : ''}`);
-      }
-      break;
-    }
-    case 'start-recipe': {
-      const id = target.dataset.recipe;
-      const result = applyResult(startRecipe(state, id));
-      if (result.ok) {
-        syncJobs();
-        showToast(`${DATA.recipes[id].icone} ${DATA.recipes[id].nom} : préparation lancée`);
-      }
-      break;
-    }
-    case 'test-stations':
-      applyResult(testBuildStations(state));
-      break;
-    case 'test-flour':
-      applyResult(testAddFlour(state));
-      break;
-    case 'test-oil':
-      applyResult(testAddOil(state));
-      break;
-    case 'test-eggs':
-      applyResult(testAddEggs(state));
-      break;
-    case 'test-wear-mill':
-      applyResult(testWearMill(state));
-      break;
-    case 'test-wheat':
-      applyResult(testAddWheat(state));
-      break;
-    case 'test-hens':
-      applyResult(testAddHens(state));
-      break;
-    case 'heal':
-      applyResult(heal(state, target.dataset.id));
-      break;
-    case 'reserve-inc':
-    case 'reserve-dec': {
-      const item = target.dataset.item;
-      const now = state.famille.reserve[item] || 0;
-      applyResult(setSeedReserve(state, item, now + (action === 'reserve-inc' ? 1 : -1)));
-      break;
-    }
-    case 'inv-tab':
-      invTab = target.dataset.tab;
-      refresh();
-      break;
-    case 'comptoir-tab':
-      comptoirTab = target.dataset.tab;
-      refresh();
-      break;
-    case 'buy-item': {
-      const item = target.dataset.item;
-      const result = applyResult(buyItem(state, item, buyQuantity(item)));
-      if (result.ok) {
-        buyQuantities[item] = 1;
-        showToast(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
-        refresh();
-      }
-      break;
-    }
-    case 'buy-dec':
-    case 'buy-inc':
-    case 'buy-max': {
-      const item = target.dataset.item;
-      buyQuantities[item] = action === 'buy-max' ? buyQuote(state, item, BUY_MAX).quantite : buyQuantity(item) + (action === 'buy-inc' ? 1 : -1);
-      refresh();
-      break;
-    }
-    case 'sell-dec':
-    case 'sell-inc':
-    case 'sell-max': {
-      const item = target.dataset.item;
-      const now = sellQuantity(item);
-      sellQuantities[item] = action === 'sell-max' ? sellableStock(item) : now + (action === 'sell-inc' ? 1 : -1);
-      refresh();
-      break;
-    }
-    case 'sell-item': {
-      const item = target.dataset.item;
-      const result = applyResult(sellItem(state, item, sellQuantity(item)));
-      if (result.ok) showToast(`Vendu : ${result.sold} ${DATA.items[item].icone} (+${formatCoins(result.gain)} 💰)`);
-      break;
-    }
-    case 'test-food':
-      applyResult(testAddFood(state));
-      break;
-    case 'test-age': {
-      const result = applyResult(testAgeInventory(state));
-      const lost = itemsSummary(result.perdus);
-      showToast(lost ? `Périmés : ${lost}` : 'Rien n\'a péri.');
-      break;
-    }
-    case 'test-seeds':
-      applyResult(testAddSeeds(state));
-      break;
-    case 'test-ripen':
-      applyResult(testRipenAll(state));
-      break;
-    case 'test-sick':
-      applyResult(testSetHealthZero(state));
-      break;
-    case 'test-add-100':
-      applyResult(testAddPieces(state, 100));
-      break;
-    case 'test-add-1000':
-      applyResult(testAddPieces(state, 1000));
-      break;
-    case 'test-add-panel':
-      applyResult(testAddDevice(state, 'panneau'));
-      break;
-    case 'test-add-battery':
-      applyResult(testAddDevice(state, 'batterie'));
-      break;
-    case 'test-fill-batteries':
-      applyResult(testFillBatteries(state));
-      break;
-    case 'test-fill-tank':
-      applyResult(testFillTank(state));
-      break;
-    case 'test-wear':
-      applyResult(testSetWear(state, document.getElementById('test-device').value, DATA.WEAR.BREAKDOWN));
-      break;
-    case 'test-skip-awake':
-      applyResult(testSkipAwake(state));
-      break;
-    case 'ack-chapter':
-      closeModal();
-      break;
-    case 'test-complete-chapter': {
-      const result = applyResult(testCompleteChapter(state));
-      if (result.ok) showToast(result.fini ? '🏆 Campagne terminée' : `Chapitre ${result.chapitre} atteint`);
-      break;
-    }
-    case 'test-goto-chapter': {
-      const result = applyResult(testGoToChapter(state, document.getElementById('test-chapter').value));
-      if (result.ok) showToast(result.fini ? '🏆 Mode libre : tout est débloqué' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
-      break;
-    }
-    case 'test-simulate':
-      actionTestSimulate();
-      break;
-    case 'test-nights-1':
-      actionTestNights(1);
-      break;
-    case 'test-nights-5':
-      actionTestNights(5);
-      break;
-    case 'do-export': {
-      const area = document.getElementById('export-area');
-      area.value = exportSaveText();
-      break;
-    }
-    case 'copy-export': {
-      const area = document.getElementById('export-area');
-      if (!area.value) area.value = exportSaveText();
-      copyFromTextarea(area);
-      break;
-    }
-    case 'do-import': {
-      const area = document.getElementById('import-area');
-      const ok = importSaveText(area.value);
-      showToast(ok ? 'Sauvegarde importée.' : 'Texte invalide, import annulé.');
-      if (ok) {
-        ecranFerme = null;
-        closeModal();
-        refresh();
-      }
-      break;
-    }
-    // Confirmation dans la page (et non confirm()) : certains navigateurs et
-    // aperçus bloquent les boîtes de dialogue natives sans rien signaler.
-    case 'ask-new-game':
-      document.getElementById('new-game-zone').innerHTML = `
-        <p class="alert">Toute la progression actuelle sera perdue.</p>
-        <div class="row">
-          <button class="btn danger" type="button" data-action="do-new-game">Oui, tout effacer</button>
-          <button class="btn" type="button" data-action="cancel-new-game">Annuler</button>
-        </div>`;
-      break;
-    case 'cancel-new-game':
-      document.getElementById('new-game-zone').innerHTML =
-        '<button class="btn danger" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
-      break;
-    case 'do-new-game':
-      actionNewGame();
-      closeModal();
-      showToast('Nouvelle partie lancée.');
-      break;
-  }
+  const run = ACTIONS[action];
+  if (run) run(target, e, action);
 });
 
 document.addEventListener('change', (e) => {
