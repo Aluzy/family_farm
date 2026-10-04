@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+*.tmp
+*.temp
+*.log
+.vscode/
+.idea/
+
+# Sorties locales : sessions reçues par collect-server.mjs, résultats de scripts/simulate.mjs
+sessions/
+simulation.csv
+simulation-autonomie.svg

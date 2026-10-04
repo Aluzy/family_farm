@@ -1,0 +1,305 @@
+{
+  "//crops": [
+    "Cultures (sections 6.3 et 8.3). stades : nuits arrosées pour mûrir ;",
+    "litres : eau par arrosage ; rendement : unités par récolte.",
+    "graines.mode :",
+    "  'recolte' : la récolte rend aussi min à max graines ;",
+    "  'plant'   : l'item récolté sert lui-même de plant (1 patate = 1 plant) ;",
+    "  'montee'  : option « monter en graine » : stadesSupp stades de plus, puis",
+    "              quantite graines à la place de la récolte.",
+    "lieux : où la culture se plante. 'potager' est l'identifiant interne de la",
+    "Zone de culture (version 1.0 : l'ancien Potager et l'ancien Champ réunis).",
+    "deblocage : élément de chapitre (DATA.CHAPITRES) à obtenir avant de pouvoir",
+    "planter la culture — voir cropUnlocked(). Les cultures de plein champ",
+    "attendent 'champ' (chapitre 3), comme à l'époque où il fallait un Champ.",
+    "sprite : le dessin de la plante sur la carte, découpé dans assets/crops.png (cases de 16 px) —",
+    "r = rangée de la base de la plante, h = hauteur du dessin (16 ou 32), c = colonnes des 4 phases.",
+    "Sans sprite, la carte affiche l'icône de la culture."
+  ],
+  "crops": {
+    "carotte": {
+      "nom": "Carotte",
+      "icone": "🥕",
+      "lieux": ["potager"],
+      "stades": 4,
+      "litres": 2,
+      "rendement": 10,
+      "graines": { "item": "graine_carotte", "mode": "montee", "stadesSupp": 2, "quantite": 6 },
+      "sprite": { "r": 1, "h": 32, "c": [0, 1, 2, 3] }
+    },
+    "patate": {
+      "nom": "Patate",
+      "icone": "🥔",
+      "lieux": ["potager"],
+      "stades": 6,
+      "litres": 3,
+      "rendement": 8,
+      "graines": { "item": "patate", "mode": "plant" },
+      "sprite": { "r": 3, "h": 32, "c": [0, 1, 2, 3] }
+    },
+    "tomate": {
+      "nom": "Tomate",
+      "icone": "🍅",
+      "lieux": ["potager", "serre"],
+      "stades": 5,
+      "litres": 3,
+      "rendement": 10,
+      "graines": { "item": "graine_tomate", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 9, "h": 32, "c": [9, 10, 12, 13] }
+    },
+    "courgette": {
+      "nom": "Courgette",
+      "icone": "🥒",
+      "lieux": ["potager", "serre"],
+      "stades": 5,
+      "litres": 4,
+      "rendement": 6,
+      "graines": { "item": "graine_courgette", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 11, "h": 16, "c": [0, 1, 3, 4] }
+    },
+    "aubergine": {
+      "nom": "Aubergine",
+      "icone": "🍆",
+      "lieux": ["potager", "serre"],
+      "stades": 6,
+      "litres": 4,
+      "rendement": 6,
+      "graines": { "item": "graine_aubergine", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 7, "h": 16, "c": [9, 10, 11, 12] }
+    },
+    "//poivron": [
+      "10 nouvelles cultures. Le poivron pousse au Potager ET en Serre, exactement",
+      "comme la tomate/courgette/aubergine ci-dessus (même mécanisme, mêmes",
+      "fonctions : plant(), harvest(), yieldSeasonFactor()/waterSeasonFactor()",
+      "n'appliquent déjà le facteur de saison que si le *lieu* de la parcelle",
+      "(pas la culture) figure dans DATA.SAISONS.RENDEMENT_LIEU / EAU_LIEUX — la",
+      "Serre n'y figure pas, donc un poivron planté en Serre ignore déjà les",
+      "saisons sans code supplémentaire)."
+    ],
+    "poivron": {
+      "nom": "Poivron",
+      "icone": "🫑",
+      "lieux": ["potager", "serre"],
+      "stades": 6,
+      "litres": 4,
+      "rendement": 6,
+      "graines": { "item": "graine_poivron", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 11, "h": 32, "c": [9, 10, 12, 13] }
+    },
+    "oignon": {
+      "nom": "Oignon",
+      "icone": "🧅",
+      "lieux": ["potager"],
+      "stades": 5,
+      "litres": 3,
+      "rendement": 8,
+      "graines": { "item": "graine_oignon", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 3, "h": 32, "c": [9, 10, 11, 12] }
+    },
+    "//ail": "1 ail = 1 plant (mode 'plant', comme la patate) : pas d'item graine séparé.",
+    "ail": {
+      "nom": "Ail",
+      "icone": "🧄",
+      "lieux": ["potager"],
+      "stades": 6,
+      "litres": 2,
+      "rendement": 6,
+      "graines": { "item": "ail", "mode": "plant" },
+      "sprite": { "r": 3, "h": 32, "c": [9, 10, 11, 12] }
+    },
+    "epinard": {
+      "nom": "Épinard",
+      "icone": "🥬",
+      "lieux": ["potager"],
+      "stades": 3,
+      "litres": 3,
+      "rendement": 8,
+      "graines": { "item": "graine_epinard", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 6, "h": 16, "c": [0, 1, 2, 4] }
+    },
+    "fraise": {
+      "nom": "Fraise",
+      "icone": "🍓",
+      "lieux": ["potager"],
+      "stades": 4,
+      "litres": 3,
+      "rendement": 10,
+      "graines": { "item": "graine_fraise", "mode": "recolte", "min": 2, "max": 3 },
+      "sprite": { "r": 4, "h": 16, "c": [9, 10, 12, 13] }
+    },
+    "//ble": [
+      "Lot 4 (cultures de plein champ). produit : l'objet récolté quand il n'a pas",
+      "le nom de la culture. Blé : 1 blé = 1 graine. Tournesol : la récolte donne",
+      "des graines, à replanter ou à presser (même ressource). Le tournesol",
+      "attend en plus son propre déblocage (chapitre 4)."
+    ],
+    "ble": {
+      "nom": "Blé",
+      "icone": "🌾",
+      "lieux": ["potager"],
+      "deblocage": "champ",
+      "stades": 7,
+      "litres": 2,
+      "rendement": 8,
+      "graines": { "item": "ble", "mode": "plant" },
+      "sprite": { "r": 6, "h": 32, "c": [9, 10, 11, 12] }
+    },
+    "tournesol": {
+      "nom": "Tournesol",
+      "icone": "🌻",
+      "lieux": ["potager"],
+      "deblocage": "champ",
+      "stades": 7,
+      "litres": 2,
+      "rendement": 9,
+      "produit": "graine_tournesol",
+      "graines": { "item": "graine_tournesol", "mode": "plant" },
+      "sprite": { "r": 13, "h": 32, "c": [0, 1, 2, 3] }
+    },
+    "//riz": [
+      "Riz : comestible directement (contrairement au blé), mais demande plus",
+      "d'eau par arrosage (4 L contre 2 L pour le blé) — voir DATA.GRID.pompe et",
+      "le point de vigilance signalé en fin de réponse au sujet du débit d'eau."
+    ],
+    "riz": {
+      "nom": "Riz",
+      "icone": "🍚",
+      "lieux": ["potager"],
+      "deblocage": "champ",
+      "stades": 8,
+      "litres": 4,
+      "rendement": 10,
+      "graines": { "item": "riz", "mode": "plant" },
+      "sprite": { "r": 6, "h": 32, "c": [9, 10, 11, 12] }
+    },
+    "houblon": {
+      "nom": "Houblon",
+      "icone": "🌿",
+      "lieux": ["potager"],
+      "deblocage": "champ",
+      "stades": 6,
+      "litres": 2,
+      "rendement": 6,
+      "graines": { "item": "houblon", "mode": "plant" },
+      "sprite": { "r": 1, "h": 32, "c": [9, 10, 11, 13] }
+    },
+    "//cacao": [
+      "Cultures de rente : lieux: ['serre'] *seul* (pas 'potager') —",
+      "plant() (voir plus haut) refuse déjà toute parcelle dont le lieu n'est pas",
+      "dans cette liste, donc aucune règle spéciale supplémentaire n'est requise",
+      "pour leur interdire la Zone de culture."
+    ],
+    "cacao": {
+      "nom": "Cacao",
+      "icone": "🍫",
+      "lieux": ["serre"],
+      "stades": 8,
+      "litres": 3,
+      "rendement": 5,
+      "graines": { "item": "cacao", "mode": "plant" },
+      "sprite": { "r": 11, "h": 32, "c": [9, 10, 12, 13] }
+    },
+    "vanille": {
+      "nom": "Vanille",
+      "icone": "🫘",
+      "lieux": ["serre"],
+      "stades": 10,
+      "litres": 2,
+      "rendement": 3,
+      "graines": { "item": "vanille", "mode": "plant" },
+      "sprite": { "r": 11, "h": 32, "c": [9, 10, 12, 13] }
+    },
+    "cafe": {
+      "nom": "Café",
+      "icone": "☕",
+      "lieux": ["serre"],
+      "stades": 8,
+      "litres": 3,
+      "rendement": 6,
+      "graines": { "item": "cafe", "mode": "plant" },
+      "sprite": { "r": 11, "h": 32, "c": [9, 10, 12, 13] }
+    }
+  },
+  "//POTAGER": [
+    "Zone de culture (section 8.3 ; version 1.0 : l'ancien Potager et l'ancien",
+    "Champ réunis en une seule zone, sans restriction de lieu). L'identifiant",
+    "interne reste 'potager' (state.potager, parcelles « potager-n ») ; le joueur",
+    "lit NOM. Parcelles par niveau (index 0 = niveau 1) et coût pour atteindre",
+    "chaque niveau (index 0 = niveau 1, non utilisé) : les anciens coûts du",
+    "Potager et du Champ additionnés."
+  ],
+  "POTAGER": { "LIEU": "potager", "NOM": "Zone de culture", "ICONE": "🌱", "PARCELLES": [6, 12, 18, 24, 30], "COUT": [0, 200, 480, 1050, 2300] },
+  "//SERRE": [
+    "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture, sans modificateur",
+    "de saison. CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",
+    "atteindre le niveau n + 1 (index 0 non utilisé). Tomate, courgette, aubergine."
+  ],
+  "SERRE": { "LIEU": "serre", "CONSTRUCTION": 400, "PARCELLES": [6, 9, 12, 15, 18], "COUT": [0, 300, 600, 1000, 1800] },
+  "//VERGER": [
+    "Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent au Marché à prix",
+    "fixe et se plantent sur un emplacement libre. Un arbre est adulte MATURITE",
+    "nuits après sa plantation ; adulte, il donne FRUITS fruits toutes les PERIODE",
+    "nuits, seulement dans la fenêtre : les `dernieresNuits` dernières nuits de",
+    "l'été et toute la saison suivante (automne). Pas d'arrosage.",
+    "CONSTRUCTION : 0 (« aménager » le Verger est gratuit : il est débloqué par le",
+    "chapitre 6, voir CHAPITRES) ; l'emplacement",
+    "supplémentaire coûte EMPLACEMENT.base × croissance^n, n étant le nombre",
+    "d'emplacements déjà achetés (ceux de départ ne comptent pas), arrondi à",
+    "l'entier supérieur. EMPLACEMENTS_MAX plafonne le nombre total d'emplacements",
+    "(départ compris) : au-delà, aucun nouvel emplacement ne peut être acheté."
+  ],
+  "VERGER": {
+    "CONSTRUCTION": 0,
+    "EMPLACEMENTS_DEPART": 2,
+    "EMPLACEMENTS_MAX": 20,
+    "EMPLACEMENT": { "base": 50, "croissance": 125 },
+    "MATURITE": 15,
+    "FRUITS": 6,
+    "PERIODE": 3,
+    "FENETRE": { "debut": { "saison": "ete", "dernieresNuits": 5 }, "fin": { "saison": "automne" } },
+    "ARBRES": {
+      "pommier": { "nom": "Pommier", "icone": "🌳", "fruit": "pomme", "prix": 40 },
+      "poirier": { "nom": "Poirier", "icone": "🌳", "fruit": "poire", "prix": 40 }
+    }
+  },
+  "//SAISONS": [
+    "Lot 8 : saisons, Serre, Verger, Réfrigérateur",
+    "Saisons légères (sections 1.4 et 6.9 ter) : 4 saisons de LONGUEUR nuits, la",
+    "saison se déduit de la nuit courante (nuit 1 = premier jour du printemps).",
+    "MODS : facteur par saison et par type de calcul (solaire : production des",
+    "panneaux ; potager : rendement d'une récolte de la Zone de culture, quelle",
+    "que soit la culture ; eau : litres par arrosage). La Serre les ignore tous.",
+    "Les animaux ne dépendent pas des saisons (version 1.1 : l'ancien facteur",
+    "« moutons » ne jouait que sur leur prise de poids, qui n'existe plus) : ni",
+    "la ponte, ni le lait, ni la laine ne changent d'une saison à l'autre."
+  ],
+  "SAISONS": {
+    "LONGUEUR": 10,
+    "ORDRE": ["printemps", "ete", "automne", "hiver"],
+    "INFOS": {
+      "printemps": { "nom": "Printemps", "icone": "🌱" },
+      "ete": { "nom": "Été", "icone": "☀️" },
+      "automne": { "nom": "Automne", "icone": "🍂" },
+      "hiver": { "nom": "Hiver", "icone": "❄️" }
+    },
+    "MODS": {
+      "//printemps": "en % : 110 = +10 %, 70 = −30 %",
+      "printemps": { "solaire": 100, "potager": 110, "eau": 100 },
+      "ete": { "solaire": 130, "potager": 100, "eau": 130 },
+      "automne": { "solaire": 90, "potager": 100, "eau": 90 },
+      "hiver": { "solaire": 70, "potager": 70, "eau": 80 }
+    },
+    "//FACTEURS": "Types de facteurs, avec leur libellé pour le calendrier.",
+    "FACTEURS": {
+      "solaire": { "nom": "Solaire", "icone": "☀️" },
+      "potager": { "nom": "Zone de culture", "icone": "🌱" },
+      "eau": { "nom": "Eau", "icone": "💧" }
+    },
+    "//RENDEMENT_LIEU": [
+      "Lieu de culture → facteur de rendement qui s'y applique. Un lieu absent",
+      "(la Serre) n'a aucun modificateur, ni de rendement ni d'eau."
+    ],
+    "RENDEMENT_LIEU": { "potager": "potager" },
+    "EAU_LIEUX": ["potager"]
+  }
+}

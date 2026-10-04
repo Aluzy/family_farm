@@ -1,0 +1,341 @@
+{
+  "//STATIONS": [
+    "Lot 5 : stations, recettes, Livre de recette",
+    "Stations (sections 1.4 et 8.7) : une seule de chaque, une préparation à la",
+    "fois, sans file d'attente. cout : prix de construction ; electrique : la",
+    "station est un appareil du parc (interrupteur, usure, panne) qui prend",
+    "whParS Wh par seconde de fonctionnement ; requiert : station à bâtir",
+    "avant ; debloque : onglets ouverts par la construction."
+  ],
+  "STATIONS": {
+    "four": { "nom": "Four", "article": "le", "icone": "🔥", "cout": 100, "electrique": false, "debloque": ["recettes"] },
+    "cuisine": { "nom": "Cuisine", "article": "la", "icone": "🍳", "cout": 150, "electrique": false, "requiert": "four" },
+    "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "cout": 120, "electrique": true, "whParS": 20 },
+    "presse": { "nom": "Presse", "article": "la", "icone": "🌻", "cout": 150, "electrique": true, "whParS": 30 }
+  },
+  "//RECETTES": [
+    "Plats (sections 1.3, 1.4 et 6.8) : énergie = somme des énergies des",
+    "ingrédients × COEF_PLAT, arrondie ; prix de vente = somme des prix × COEF_PLAT,",
+    "arrondi. L'eau compte pour ENERGIE_EAU d'énergie et PRIX_EAU pièces par litre.",
+    "PRIX_EAU (1) est ma lecture pour retrouver le prix du pain de la section 8.9",
+    "(2 farines + 1 L d'eau = 3, × 1,3 = 4) : à confirmer."
+  ],
+  "RECETTES": {
+    "COEF_PLAT": 130,
+    "ENERGIE_EAU": 0,
+    "//PRIX_EAU": "COEF_PLAT en %",
+    "PRIX_EAU": 1,
+    "//DIVISEUR_TEMPS": [
+      "Lot 14 : le temps de préparation des plats du Four et de la Cuisine est",
+      "divisé par DIVISEUR_TEMPS, puis arrondi à l'entier supérieur (Math.ceil),",
+      "une seule fois au chargement, par applyDishTimeDivisor() (juste après",
+      "DATA). Le Moulin et la Presse (transformations) ne sont pas concernés.",
+      "Les multiplicateurs de l'arbre techno (×0,8, ×0,64) s'appliquent ensuite",
+      "sur ce nouveau temps de base, via recipeTime()."
+    ],
+    "DIVISEUR_TEMPS": 2,
+    "STATIONS_TEMPS_DIVISE": ["four", "cuisine"]
+  },
+  "//recipes": [
+    "Recettes (section 1.3). ingredients : { item, qte } ou { ou: [items], qte }",
+    "(l'un OU l'autre, sans mélange) ; eau : litres pris dans le réservoir ;",
+    "temps : secondes à vitesse 1. Les transformations (transformation: true)",
+    "rendent qteSortie unités de `sortie` ; les plats rendent 1 plat du nom de la",
+    "recette et sont des aliments (bonus de santé). energieForcee (optionnel) :",
+    "override explicite de l'énergie du plat, utilisé par dishEnergy() à la",
+    "place du calcul ingrédients × COEF_PLAT — pour une recette dont l'énergie",
+    "cible ne découle pas mathématiquement de cette formule (voir gratin_patates).",
+    "Le prix de vente n'est jamais concerné : dishPrice() reste toujours calculé",
+    "depuis les ingrédients.",
+    "libre : true = recette toujours disponible dès que son atelier est construit. Sans ce champ, la recette",
+    "doit être débloquée par un nœud de l'arbre des technologies (effet.recettes, dans techtree.json).",
+    "conservation (facultatif, plats seulement) : nuits hors réfrigérateur ; null = ne périme jamais ; sans ce",
+    "champ, la durée de la catégorie « plat » (CONSERVATION_CATEGORIE, dans items.json)."
+  ],
+  "recipes": {
+    "pain": {
+      "nom": "Pain",
+      "icone": "🍞",
+      "station": "four",
+      "temps": 20,
+      "ingredients": [{ "item": "farine", "qte": 2 }],
+      "eau": 1,
+      "//priceMultiplier": [
+        "Lot 13 : le pain se vend 2 × son ancien prix (4 → 8). La farine",
+        "ayant doublé, la somme des ingrédients vaut 5 (2 × 2 + 1 L d'eau) ;",
+        "le coefficient ×1,3 donnerait 7, donc coefficient dédié 1,6 (5 × 1,6 = 8)."
+      ],
+      "priceMultiplier": 160,
+      "conservation": 7,
+      "libre": true
+    },
+    "omelette": {
+      "nom": "Omelette",
+      "icone": "🍳",
+      "station": "cuisine",
+      "temps": 15,
+      "ingredients": [{ "item": "oeuf", "qte": 3 }, { "item": "huile", "qte": 1 }],
+      "libre": true
+    },
+    "ratatouille": {
+      "nom": "Ratatouille",
+      "icone": "🍲",
+      "station": "cuisine",
+      "temps": 30,
+      "ingredients": [
+        { "item": "tomate", "qte": 1 },
+        { "item": "courgette", "qte": 1 },
+        { "item": "aubergine", "qte": 1 },
+        { "item": "huile", "qte": 1 }
+      ],
+      "libre": true
+    },
+    "//gratin_patates": [
+      "Lot 11 (nutrition) : override à 150 (energieForcee) pour qu'une unité de",
+      "gratin couvre exactement le besoin d'une journée de la famille de départ",
+      "(2 adultes + 2 enfants = familyNeed() = 150, voir DATA.FAMILY.AJ). Le",
+      "calcul ingrédients × COEF_PLAT donnerait 91 (3 patates à 19 + 1 œuf à 13,",
+      "soit 70 × 1,3), donc l'objectif est atteint via ce champ dédié plutôt",
+      "qu'en gonflant les quantités d'ingrédients (ce qui aurait changé le coût",
+      "en pièces et en temps de préparation de la recette)."
+    ],
+    "gratin_patates": {
+      "nom": "Gratin de patates",
+      "icone": "🥘",
+      "station": "four",
+      "temps": 30,
+      "ingredients": [{ "item": "patate", "qte": 3 }, { "item": "oeuf", "qte": 1 }],
+      "energieForcee": 150,
+      "libre": true
+    },
+    "//compote": [
+      "(Version 1.1 : le ragoût, les poivrons farcis, le rôti de bœuf et le poulet",
+      "rôti à l'ail ont quitté le livre : voir DATA.PLATS_RETIRES.)"
+    ],
+    "compote": {
+      "nom": "Compote",
+      "icone": "🍮",
+      "station": "cuisine",
+      "temps": 15,
+      "ingredients": [{ "ou": ["pomme", "poire"], "qte": 3 }],
+      "libre": true
+    },
+    "tarte_pommes": {
+      "nom": "Tarte aux pommes",
+      "icone": "🥧",
+      "station": "four",
+      "temps": 45,
+      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "pomme", "qte": 3 }, { "item": "oeuf", "qte": 1 }],
+      "libre": true
+    },
+    "//soupe_legumes": [
+      "Nouvelles recettes. Aucun nouvel item de base : tous les",
+      "ingrédients existent déjà (légumes/fruits du Lot « 10 nouvelles",
+      "cultures », lait, et les",
+      "cultures de rente cacao/vanille/café/houblon de la Serre/de la Zone de culture).",
+      "Énergie et prix suivent tous deux le calcul générique (recipeSum ×",
+      "COEF_PLAT, voir dishEnergy()/dishPrice()), sauf les 4 recettes « luxe »",
+      "ci-dessous qui portent priceMultiplier (voir plus bas)."
+    ],
+    "soupe_legumes": {
+      "nom": "Soupe de légumes",
+      "icone": "🍲",
+      "station": "cuisine",
+      "temps": 30,
+      "ingredients": [{ "item": "carotte", "qte": 1 }, { "item": "oignon", "qte": 1 }, { "item": "patate", "qte": 1 }],
+      "eau": 1,
+      "libre": true
+    },
+    "salade_tomates": {
+      "nom": "Salade de tomates",
+      "icone": "🥗",
+      "station": "cuisine",
+      "temps": 10,
+      "ingredients": [{ "item": "tomate", "qte": 2 }, { "item": "huile", "qte": 1 }],
+      "libre": true
+    },
+    "quiche_epinards": {
+      "nom": "Quiche aux épinards",
+      "icone": "🥧",
+      "station": "four",
+      "temps": 40,
+      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "oeuf", "qte": 2 }, { "item": "lait", "qte": 1 }, { "item": "epinard", "qte": 1 }]
+    },
+    "//fromage_frais": [
+      "Se conserve mieux que le lait cru (4 nuits, voir DATA.CONSERVATION) :",
+      "8 nuits, entre la conservation du lait et celle, indéfinie, du frigo.",
+      "🟡 Décision de game design ouverte : valeur choisie faute d'un chiffre",
+      "fourni par la demande, à ajuster si besoin."
+    ],
+    "fromage_frais": {
+      "nom": "Fromage frais",
+      "icone": "🧀",
+      "station": "cuisine",
+      "temps": 60,
+      "ingredients": [{ "item": "lait", "qte": 3 }],
+      "//conservation": [
+        "15 nouvelles recettes : le fromage frais se conserve mieux que le lait",
+        "cru (4 nuits ci-dessus), sans aller jusqu'à l'imperissable (🟡 valeur",
+        "choisie, décision de game design ouverte — voir commentaire sur la",
+        "recette DATA.recipes.fromage_frais)."
+      ],
+      "conservation": 8
+    },
+    "riz_au_lait": {
+      "nom": "Riz au lait",
+      "icone": "🍚",
+      "station": "cuisine",
+      "temps": 30,
+      "ingredients": [{ "item": "riz", "qte": 2 }, { "item": "lait", "qte": 1 }]
+    },
+    "//pain_ail": [
+      "Utilise le pain (déjà un item via registerDishItems()) comme un",
+      "ingrédient ordinaire : startRecipe()/takeIngredient() le retirent de",
+      "l'inventaire exactement comme n'importe quel autre item (voir test",
+      "dédié). Il doit rester déclaré après `pain` dans cet objet pour que",
+      "DATA.items.pain existe déjà quand dishEnergy()/dishPrice() le lisent au",
+      "chargement (registerDishItems() boucle dans l'ordre de déclaration) —",
+      "c'est déjà le cas ici, pain étant la toute première recette."
+    ],
+    "pain_ail": {
+      "nom": "Pain à l'ail",
+      "icone": "🥖",
+      "station": "four",
+      "temps": 15,
+      "ingredients": [{ "item": "pain", "qte": 1 }, { "item": "ail", "qte": 1 }, { "item": "huile", "qte": 1 }]
+    },
+    "tarte_fraises": {
+      "nom": "Tarte aux fraises",
+      "icone": "🍰",
+      "station": "four",
+      "temps": 40,
+      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "fraise", "qte": 3 }, { "item": "oeuf", "qte": 1 }]
+    },
+    "//confiture_fraises": [
+      "Se conserve bien (demande) : traitée comme une conserve, imperissable",
+      "(voir l'entrée `confiture_fraises: null` dans DATA.CONSERVATION, qui",
+      "écarte explicitement la durée par défaut de 6 nuits des plats). 🟡",
+      "Décision de game design ouverte : la demande ne chiffre pas de durée,",
+      "« imperissable » est l'interprétation la plus proche d'une confiture."
+    ],
+    "confiture_fraises": {
+      "nom": "Confiture de fraises",
+      "icone": "🍓",
+      "station": "cuisine",
+      "temps": 30,
+      "ingredients": [{ "item": "fraise", "qte": 4 }],
+      "conservation": null
+    },
+    "//chocolat_chaud": [
+      "--- Recettes de luxe (×3 sur le prix des ingrédients, énergie normale) ---",
+      "priceMultiplier (optionnel) : lu par dishPrice() à la place de",
+      "DATA.RECETTES.COEF_PLAT, sans dupliquer la formule (recipeSum() reste",
+      "le seul calcul de somme). dishEnergy() n'est pas concerné : l'énergie",
+      "continue de suivre COEF_PLAT normalement (aucune recette de luxe ne",
+      "porte energieForcee)."
+    ],
+    "chocolat_chaud": {
+      "nom": "Chocolat chaud",
+      "icone": "🍫",
+      "station": "cuisine",
+      "temps": 20,
+      "ingredients": [{ "item": "cacao", "qte": 1 }, { "item": "lait", "qte": 1 }],
+      "priceMultiplier": 300
+    },
+    "//cafe_boisson": [
+      "id « cafe_boisson » (et non « cafe ») : la recette ne doit pas",
+      "remplacer DATA.items.cafe (l'ingrédient de la Serre) dans",
+      "registerDishItems(), qui indexe chaque plat par l'id de sa recette."
+    ],
+    "cafe_boisson": {
+      "nom": "Café",
+      "icone": "☕",
+      "station": "cuisine",
+      "temps": 10,
+      "ingredients": [{ "item": "cafe", "qte": 1 }],
+      "eau": 1,
+      "priceMultiplier": 300
+    },
+    "creme_vanille": {
+      "nom": "Crème à la vanille",
+      "icone": "🍨",
+      "station": "cuisine",
+      "temps": 45,
+      "ingredients": [{ "item": "vanille", "qte": 1 }, { "item": "lait", "qte": 2 }, { "item": "oeuf", "qte": 2 }],
+      "priceMultiplier": 300
+    },
+    "//biere_artisanale": [
+      "Ne périme pas (demande) : même règle que le blé/la farine/la laine,",
+      "voir l'entrée `biere_artisanale: null` dans DATA.CONSERVATION (absent",
+      "des deux tables de péremption = imperissable ; ici on l'y met",
+      "explicitement à `null` pour écarter la durée par défaut de 6 nuits des",
+      "plats, exactement comme confiture_fraises ci-dessus)."
+    ],
+    "biere_artisanale": {
+      "nom": "Bière artisanale",
+      "icone": "🍺",
+      "station": "cuisine",
+      "temps": 60,
+      "ingredients": [{ "item": "houblon", "qte": 2 }],
+      "eau": 1,
+      "priceMultiplier": 300,
+      "//conservation": [
+        "La bière artisanale et la confiture de fraises sont des plats (donc",
+        "normalement CONSERVATION_CATEGORIE.plat = 6 nuits), mais la demande les",
+        "veut imperissables (« ne périme pas », « se conserve bien ») : une",
+        "valeur explicite à `null` ici prend le pas sur la durée par catégorie",
+        "(voir shelfLife(), qui teste `!== undefined`, pas la véracité de la",
+        "valeur), exactement comme blé/farine/huile/laine ci-dessus mais listée",
+        "explicitement puisque ces deux plats appartiendraient sinon à la",
+        "catégorie « plat » par défaut."
+      ],
+      "conservation": null
+    },
+    "//bocal_legumes": [
+      "--- Arbre v2 : Conserverie. 4 légumes d'une même sorte + 1 L d'eau → 1 bocal",
+      "qui ne périme pas ; énergie forfaitaire (🟡 à caler)."
+    ],
+    "bocal_legumes": {
+      "nom": "Bocal de légumes",
+      "icone": "🫙",
+      "station": "cuisine",
+      "temps": 60,
+      "ingredients": [{ "ou": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "poivron", "epinard"], "qte": 4 }],
+      "eau": 1,
+      "energieForcee": 40,
+      "//conservation": "Arbre v2 (Conserverie) : le bocal de légumes ne périme pas.",
+      "conservation": null
+    },
+    "//farine": [
+      "Transformations (section 8.2) : le Moulin et la Presse, appareils électriques.",
+      "Version 1.1 : moudre 1 blé rend 1 farine ET 1 paille (`sousProduit`). La",
+      "mouture ne se lance plus depuis le Livre de recette (`horsLivre`) mais",
+      "dans le Moulin lui-même, par quantité : voir startMilling(). Le temps,",
+      "l'énergie et l'usure restent ceux d'une préparation du Moulin."
+    ],
+    "farine": {
+      "nom": "Moudre du blé",
+      "icone": "⚙️",
+      "station": "moulin",
+      "temps": 5,
+      "ingredients": [{ "item": "ble", "qte": 1 }],
+      "transformation": true,
+      "sortie": "farine",
+      "qteSortie": 1,
+      "sousProduit": { "item": "paille", "qte": 1 },
+      "horsLivre": true,
+      "libre": true
+    },
+    "huile": {
+      "nom": "Presser du tournesol",
+      "icone": "🌻",
+      "station": "presse",
+      "temps": 10,
+      "ingredients": [{ "item": "graine_tournesol", "qte": 3 }],
+      "transformation": true,
+      "sortie": "huile",
+      "qteSortie": 1,
+      "libre": true
+    }
+  }
+}

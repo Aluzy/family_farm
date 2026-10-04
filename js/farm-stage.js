@@ -2,7 +2,7 @@
  *
  * Règles d'architecture (voir docs/architecture-phaser.md) :
  *   1. Ce fichier ne lit JAMAIS l'état du jeu. Il reçoit un « modèle de vue »
- *      (objet simple, voir stageModel() dans jeu.html) et l'affiche.
+ *      (objet simple, voir stageModel() dans js/app.js) et l'affiche.
  *   2. Il n'écrit JAMAIS dans le jeu. Un appui sur la carte appelle
  *      bridge.act(action, données) : la page déclenche alors la même
  *      action `data-action` qu'un bouton du DOM (même code, mêmes fenêtres,
@@ -18,7 +18,7 @@
  * « à faire », données par le modèle) qu'elle replace à chaque image, et un voile de
  * lumière qui suit l'heure du modèle (aube, plein jour, soir, nuit).
  *
- * API publique : FarmStage.mount(element, { act, onView, base }) puis
+ * API publique : FarmStage.mount(element, { act, onView, base, crops }) puis
  *                FarmStage.update(modèle), FarmStage.show(), FarmStage.hide(),
  *                FarmStage.ready() (la scène est-elle affichable ?),
  *                FarmStage.view() (où en est la vue : écran 0, 1 ou 2, bornes),
@@ -93,26 +93,10 @@
   ];
 
   // Cases de crops.png : r = rangée de la base de la plante, h = hauteur du dessin
-  // (16 ou 32), c = colonnes des 4 phases.
-  const CROP_SP = {
-    carotte:   { r: 1,  h: 32, c: [0, 1, 2, 3] },
-    patate:    { r: 3,  h: 32, c: [0, 1, 2, 3] },
-    tomate:    { r: 9,  h: 32, c: [9, 10, 12, 13] },
-    courgette: { r: 11, h: 16, c: [0, 1, 3, 4] },
-    aubergine: { r: 7,  h: 16, c: [9, 10, 11, 12] },
-    poivron:   { r: 11, h: 32, c: [9, 10, 12, 13] },
-    oignon:    { r: 3,  h: 32, c: [9, 10, 11, 12] },
-    ail:       { r: 3,  h: 32, c: [9, 10, 11, 12] },
-    epinard:   { r: 6,  h: 16, c: [0, 1, 2, 4] },
-    fraise:    { r: 4,  h: 16, c: [9, 10, 12, 13] },
-    ble:       { r: 6,  h: 32, c: [9, 10, 11, 12] },
-    tournesol: { r: 13, h: 32, c: [0, 1, 2, 3] },
-    riz:       { r: 6,  h: 32, c: [9, 10, 11, 12] },
-    houblon:   { r: 1,  h: 32, c: [9, 10, 11, 13] },
-    cacao:     { r: 11, h: 32, c: [9, 10, 12, 13] },
-    vanille:   { r: 11, h: 32, c: [9, 10, 12, 13] },
-    cafe:      { r: 11, h: 32, c: [9, 10, 12, 13] },
-  };
+  // (16 ou 32), c = colonnes des 4 phases. La table vient de la page au montage
+  // (options.crops) : elle est écrite avec les cultures, dans data/crops.json
+  // (champ "sprite"). Une culture sans découpe s'affiche avec son icône.
+  let CROP_SP = {};
 
   let game = null;
   let scene = null;
@@ -152,6 +136,7 @@
     host = element;
     bridge = options;
     const base = (options && options.base) || 'assets/';
+    CROP_SP = (options && options.crops) || {};
     labelLayer = document.createElement('div');
     labelLayer.className = 'stage-labels';
     element.appendChild(labelLayer);
@@ -260,8 +245,8 @@
         g.destroy();
       }
 
-      // Découpes définies ici, dans le code (pas de fichier JSON à charger) :
-      // crops.png, une image « culture:phase » par case ; serre_*.png, le bâtiment seul.
+      // Découpes : crops.png, une image « culture:phase » par case (table reçue au
+      // montage) ; serre_*.png, le bâtiment seul (défini ici).
       defineFrames() {
         if (this.has('crops')) {
           const t = this.textures.get('crops');

@@ -10,15 +10,15 @@ réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la fami
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
-- **Technique** : trois pages HTML autonomes, sans bibliothèque et sans étape de
-  build : `index.html` (page d'accueil), `jeu.html` (le jeu) et
-  `encyclopedie.html` (glossaire du jeu, généré depuis
+- **Technique** : des pages HTML sans bibliothèque à installer ni serveur :
+  `index.html` (page d'accueil), `jeu.html` (le jeu, dont le style est dans
+  `css/` et le code dans `js/`) et `encyclopedie.html` (glossaire du jeu, généré depuis
   `encyclopedie_ferme_familiale.json` par `node build-encyclopedie.mjs`), plus `cookies.html` (politique de cookies
   et traceurs). Elles fonctionnent ouvertes depuis le disque comme servies en HTTP.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
 - **Carte de la ferme** : l'onglet Ferme affiche une carte en pixel art (Phaser 3,
-  `vendor/phaser.min.js`, scène dans `farm-stage.js`, images et carte Tiled dans
+  `vendor/phaser.min.js`, scène dans `js/farm-stage.js`, images et carte Tiled dans
   `assets/`) ; voir [`docs/architecture-phaser.md`](docs/architecture-phaser.md). La
   carte demande d'ouvrir le jeu en HTTP (`python3 -m http.server`) ; sans Phaser ou
   depuis le disque, la Ferme garde sa liste classique et le jeu reste jouable.
@@ -88,28 +88,106 @@ dépasse une minute.
 
 ## Développer
 
-### Structure de `index.html`
+### Structure
 
-Le fichier contient quatre blocs, toujours dans cet ordre :
+`jeu.html` ne contient que la structure de la page. Elle charge, dans cet ordre :
 
-1. `<style>` : variables de thème (clair et sombre), puis composants ;
-2. `<script id="core">` : `DATA` (toutes les valeurs d'équilibrage), puis
-   `ENGINE` (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine) ;
-3. `<script id="tests" type="text/plain">` : les tests du moteur (jamais
-   exécutés par le navigateur) ;
-4. `<script id="app">` : sauvegarde, interface et boucle.
+| Fichier | Contenu |
+|---|---|
+| `css/jeu.css` | variables de thème (clair et sombre), puis composants |
+| `js/data.generated.js` | `RAW_DATA` : toutes les valeurs d'équilibrage, générées depuis `data/*.json` (voir Données) |
+| `js/engine.js` | `DATA` (`buildCatalog(RAW_DATA)`), puis `ENGINE` (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine) |
+| `js/telemetry.js` | suivi de session (`Telemetry.*`) |
+| `vendor/phaser.min.js`, `js/farm-stage.js` | la carte de la ferme |
+| `js/app.js` | sauvegarde, interface et boucle |
+
+Ce sont des scripts classiques qui partagent la portée de la page, comme quand ils
+étaient dans le même fichier : l'interface appelle les fonctions du moteur par leur nom.
+`tests/engine.test.js` (les tests du moteur) n'est jamais chargé par la page.
+
+Chaque fichier est chargé avec `?v=<version du jeu>` : en changeant `GAME_VERSION`
+(dans `js/engine.js`), changez aussi ce suffixe dans `jeu.html`, sinon un joueur peut
+recevoir la nouvelle page avec un ancien script resté en cache.
+`node scripts/check-page.mjs` vérifie que les deux concordent.
 
 L'état du jeu est un seul objet JSON, versionné (migrations dans `MIGRATIONS`) ;
 l'interface ne le modifie qu'à travers les actions nommées du moteur.
 
+### Données
+
+Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
+
+| Fichier | Contenu |
+|---|---|
+| `items.json` | objets (aliments, graines, produits), plats retirés, durées de conservation |
+| `recipes.json` | ateliers et recettes |
+| `crops.json` | cultures, zone de culture, serre, verger, saisons |
+| `animals.json` | silo, poulailler, animaux, étable |
+| `techtree.json` | arbre des technologies |
+| `campaign.json` | chapitres et courrier |
+| `energy.json` | panneaux, batteries, pompe, usure, réfrigérateur |
+| `general.json` | départ, horloge, famille, marché, absence |
+| `simulation.json` | réglages du joueur automatique |
+
+Après chaque modification :
+
+```sh
+node scripts/build-data.mjs
+```
+
+Le script vérifie les fichiers puis réécrit `js/data.generated.js`, que la page charge.
+Il refuse d'écrire si une recette cite un ingrédient ou un atelier inconnu, si une culture
+n'a pas son objet ou sa graine, si un plat porte le nom d'un objet existant, si deux
+recettes s'utilisent l'une l'autre, si une recette n'est ni libre ni débloquée par l'arbre…
+Le message dit où (`recipes.pain.ingredients[0] : « farinee » n'est ni un objet…`).
+
+**Ajouter une recette** : une entrée dans `recipes.json` suffit pour qu'elle existe en jeu
+(objet, Livre de recette, Marché). Quelques tests du moteur comptent les recettes ou en
+fixent la liste : ils échouent tant qu'on ne les a pas mis à jour, c'est voulu.
+L'encyclopédie se complète à part.
+
+```json
+"tarte_poires": {
+  "nom": "Tarte aux poires", "icone": "🥧",
+  "station": "four", "temps": 40,
+  "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "poire", "qte": 3 }],
+  "libre": true
+}
+```
+
+- `libre: true` : disponible dès que l'atelier est construit. Sans ce champ, un nœud de
+  l'arbre doit la débloquer (`effet.recettes` dans `techtree.json`).
+- `conservation` (facultatif) : nuits avant péremption ; `null` = ne périme jamais ; sans ce
+  champ, 6 nuits comme tous les plats.
+- L'énergie et le prix du plat sont calculés depuis les ingrédients ; `energieForcee` et
+  `priceMultiplier` permettent de les fixer. Un plat peut servir d'ingrédient à un autre,
+  quel que soit l'ordre dans le fichier.
+
+**Ajouter une culture** : l'objet récolté (et sa graine) dans `items.json`, la culture dans
+`crops.json` avec son champ `sprite` (sa découpe dans `assets/crops.png`).
+
+**Notes** : JSON n'a pas de commentaires. Une clé qui commence par `//` est une note pour
+le lecteur, placée avant la clé qu'elle commente (`"//pain": "…"`) ; le script les retire.
+
+**Valeurs écrites et valeurs en jeu** : les fichiers donnent les valeurs de base. Au
+chargement, `buildCatalog()` (`js/engine.js`) en fait `DATA` : prix des productions de la
+ferme × 2, temps des plats ÷ 2, plats ajoutés aux objets. `pain.temps` vaut 20 dans le
+fichier et 10 en jeu.
+
 ### Tests
 
 ```sh
-node run-tests.mjs
+node run-tests.mjs                  # moteur du jeu
+node test-data.mjs                  # données : valides, et les erreurs possibles sont bien signalées
+node scripts/build-data.mjs --check # js/data.generated.js est à jour avec data/*.json
+node test-telemetry.mjs             # suivi de session (rien sans consentement, retrait, limites, commentaires)
+node test-report.mjs                # rapport quotidien (calculs, Markdown, protections du Worker)
+node build-encyclopedie.mjs --check # encyclopedie.html est à jour avec son JSON
+node scripts/check-page.mjs         # jeu.html charge des fichiers qui existent, à la bonne version
 ```
 
-Le script extrait les blocs `core` et `tests` de `index.html` et les exécute avec
-Node (18 ou plus récent). Tous les tests doivent passer avant un commit.
+Node 18 ou plus récent. Tout doit passer avant un commit ; l'action GitHub
+`.github/workflows/tests.yml` les relance à chaque push et à chaque pull request.
 
 ### Simulation d'équilibrage
 
@@ -119,7 +197,9 @@ node scripts/simulate.mjs
 
 Un joueur automatique joue une partie complète avec les vraies actions du moteur
 et compare la courbe d'autonomie aux jalons de la conception (section 8.10). Le
-même joueur est disponible dans le mode test (bouton « Simuler 60 nuits »).
+même joueur est disponible dans le mode test (bouton « Simuler 60 nuits »). Le
+script écrit `simulation.csv` et `simulation-autonomie.svg` dans le dossier
+courant (ignorés par git).
 
 ### Mode test
 
@@ -129,7 +209,7 @@ nuits ou des saisons, aller à un chapitre, et voir l'état complet de la partie
 
 ### Vérifier avant de publier
 
-1. `node run-tests.mjs` : tous les tests passent.
+1. Les commandes de la section Tests passent.
 2. Ouvrir `index.html` depuis le disque, puis servi en HTTP
    (par exemple `python3 -m http.server` et <http://localhost:8000/>) : aucune
    erreur dans la console, à 390 px et à 1 280 px de large, en thème clair et
@@ -142,7 +222,7 @@ Confidentialité), le jeu enregistre de façon anonyme, pour l'améliorer : les 
 utilisés, les écrans consultés, le défilement et un instantané de progression à
 chaque nuit. Rien n'est stocké ni envoyé sans accord, et un signal Global Privacy
 Control ou Do Not Track du navigateur désactive tout. La politique publique est
-`cookies.html` ; le code est le bloc `<script id="telemetry">` de `jeu.html`
+`cookies.html` ; le code est `js/telemetry.js`
 (l'app l'appelle via `Telemetry.*`, jamais l'ENGINE).
 
 - **Stockage** : `sessionStorage` (`ff_sid`, `ff_t0`, `ff_data`) pour la visite,
@@ -156,7 +236,7 @@ Control ou Do Not Track du navigateur désactive tout. La politique publique est
     `node collect-server.mjs` écrit les sessions dans `./sessions/` (essais).
   - Sur tout autre domaine : rien n'est envoyé.
 - **Si vous modifiez ce qui est collecté**, mettez à jour `cookies.html` et
-  `POLICY_VERSION` dans le bloc `telemetry` : le consentement est alors redemandé.
+  `POLICY_VERSION` dans `js/telemetry.js` : le consentement est alors redemandé.
 - **Commentaires** : ⚙️ Options › « Aidez-nous à améliorer le jeu ! » ouvre un champ
   texte (1 000 signes, 3 par visite). Le commentaire est ajouté au fichier de session
   (`feedback`), donc envoyé seulement si le suivi est autorisé.
@@ -175,156 +255,6 @@ son nom brut suivi de « (non répertorié) ». Installation : `worker/README.md
 > avec un compte gratuit : rendre ce dépôt privé mettrait le jeu hors ligne). Les
 > rapports, eux, vont dans un autre dépôt, privé ; le Worker refuse de publier dans un
 > dépôt public, car le rapport contient les commentaires des joueurs.
-
-## Tests
-
-```sh
-node run-tests.mjs
-```
-
-Le script extrait les blocs `core` et `tests` de `index.html` et les exécute avec
-Node (18 ou plus récent). Tous les tests doivent passer avant un commit.
-
-### Simulation d'équilibrage
-
-```sh
-node scripts/simulate.mjs
-```
-
-Un joueur automatique joue une partie complète avec les vraies actions du moteur
-et compare la courbe d'autonomie aux jalons de la conception (section 8.10). Le
-même joueur est disponible dans le mode test (bouton « Simuler 60 nuits »).
-
-### Mode test
-
-⚙️ Options › **Activer le panneau de mode test** (désactivé par défaut) : ajouter
-des pièces, des appareils, des graines, construire les bâtiments, passer des
-nuits ou des saisons, aller à un chapitre, et voir l'état complet de la partie.
-
-### Vérifier avant de publier
-
-1. `node run-tests.mjs` : tous les tests passent.
-2. Ouvrir `index.html` depuis le disque, puis servi en HTTP
-   (par exemple `python3 -m http.server` et <http://localhost:8000/>) : aucune
-   erreur dans la console, à 390 px et à 1 280 px de large, en thème clair et
-   sombre.
-
-## Suivi de session et politique de cookies
-
-Avec l'accord du joueur (bandeau au premier chargement, réglable dans ⚙️ Options ›
-Confidentialité), le jeu enregistre de façon anonyme, pour l'améliorer : les boutons
-utilisés, les écrans consultés, le défilement et un instantané de progression à
-chaque nuit. Rien n'est stocké ni envoyé sans accord, et un signal Global Privacy
-Control ou Do Not Track du navigateur désactive tout. La politique publique est
-`cookies.html` ; le code est le bloc `<script id="telemetry">` de `jeu.html`
-(l'app l'appelle via `Telemetry.*`, jamais l'ENGINE).
-
-- **Stockage** : `sessionStorage` (`ff_sid`, `ff_t0`, `ff_data`) pour la visite,
-  `localStorage` (`ferme-consent`) pour le choix, valable 6 mois.
-- **Envoi** : un fichier JSON par session, toutes les 60 s si quelque chose a changé
-  et à la fermeture de l'onglet (`sendBeacon`).
-  - Sur `https://aluzy.github.io` : vers le Worker Cloudflare de `worker/`, qui écrit
-    `sessions/<sid>.json` dans un bucket R2 (juridiction UE). Le fichier
-    `wrangler.toml` (racine) décrit ce Worker.
-  - Ouvert en local (`file://`, `localhost`) : vers `http://127.0.0.1:8787/session`, où
-    `node collect-server.mjs` écrit les sessions dans `./sessions/` (essais).
-  - Sur tout autre domaine : rien n'est envoyé.
-- **Si vous modifiez ce qui est collecté**, mettez à jour `cookies.html` et
-  `POLICY_VERSION` dans le bloc `telemetry` : le consentement est alors redemandé.
-- **Commentaires** : ⚙️ Options › « Aidez-nous à améliorer le jeu ! » ouvre un champ
-  texte (1 000 signes, 3 par visite). Le commentaire est ajouté au fichier de session
-  (`feedback`), donc envoyé seulement si le suivi est autorisé.
-
-## Rapport quotidien
-
-Chaque jour à 13 h (heure de Paris), une action GitHub demande au Worker le rapport
-des dernières 24 h (`GET /report`, protégé par jeton) et le publie comme issue d'un
-**dépôt privé** ; GitHub prévient par e-mail. Le rapport donne : nombre de sessions
-ouvertes, temps actif moyen par session, temps passé par chapitre, top 10 des
-actions des joueurs et commentaires. Le calcul est dans `worker/src/report.mjs` ; les
-libellés des actions (`GAME_ACTIONS`) sont à compléter quand une action est ajoutée au
-jeu, faute de quoi elle apparaît sous son nom brut suivi de « (non répertorié) ».
-Installation : `worker/README.md`.
-
-> **Ne jamais publier le rapport dans un dépôt public** : il contient les commentaires
-> des joueurs. Et rendre privé le dépôt du jeu mettrait GitHub Pages hors ligne
-> (sauf abonnement GitHub Pro ou supérieur).
-
-## Tests
-
-```sh
-node run-tests.mjs
-```
-
-Le script extrait les blocs `core` et `tests` de `index.html` et les exécute avec
-Node (18 ou plus récent). Tous les tests doivent passer avant un commit.
-
-### Simulation d'équilibrage
-
-```sh
-node scripts/simulate.mjs
-```
-
-Un joueur automatique joue une partie complète avec les vraies actions du moteur
-et compare la courbe d'autonomie aux jalons de la conception (section 8.10). Le
-même joueur est disponible dans le mode test (bouton « Simuler 60 nuits »).
-
-### Mode test
-
-⚙️ Options › **Activer le panneau de mode test** (désactivé par défaut) : ajouter
-des pièces, des appareils, des graines, construire les bâtiments, passer des
-nuits ou des saisons, aller à un chapitre, et voir l'état complet de la partie.
-
-### Vérifier avant de publier
-
-1. `node run-tests.mjs` : tous les tests passent.
-2. Ouvrir `index.html` depuis le disque, puis servi en HTTP
-   (par exemple `python3 -m http.server` et <http://localhost:8000/>) : aucune
-   erreur dans la console, à 390 px et à 1 280 px de large, en thème clair et
-   sombre.
-
-## Suivi de session et politique de cookies
-
-Avec l'accord du joueur (bandeau au premier chargement, réglable dans ⚙️ Options ›
-Confidentialité), le jeu enregistre de façon anonyme, pour l'améliorer : les boutons
-utilisés, les écrans consultés, le défilement et un instantané de progression à
-chaque nuit. Rien n'est stocké ni envoyé sans accord, et un signal Global Privacy
-Control ou Do Not Track du navigateur désactive tout. La politique publique est
-`cookies.html` ; le code est le bloc `<script id="telemetry">` de `jeu.html`
-(l'app l'appelle via `Telemetry.*`, jamais l'ENGINE).
-
-- **Stockage** : `sessionStorage` (`ff_sid`, `ff_t0`, `ff_data`) pour la visite,
-  `localStorage` (`ferme-consent`) pour le choix, valable 6 mois.
-- **Envoi** : un fichier JSON par session, toutes les 60 s si quelque chose a changé
-  et à la fermeture de l'onglet (`sendBeacon`).
-  - Sur `https://aluzy.github.io` : vers le Worker Cloudflare de `worker/`, qui écrit
-    `sessions/<sid>.json` dans un bucket R2 (juridiction UE). Le fichier
-    `wrangler.toml` (racine) décrit ce Worker.
-  - Ouvert en local (`file://`, `localhost`) : vers `http://127.0.0.1:8787/session`, où
-    `node collect-server.mjs` écrit les sessions dans `./sessions/` (essais).
-  - Sur tout autre domaine : rien n'est envoyé.
-- **Si vous modifiez ce qui est collecté**, mettez à jour `cookies.html` et
-  `POLICY_VERSION` dans le bloc `telemetry` : le consentement est alors redemandé.
-- **Commentaires** : ⚙️ Options › « Aidez-nous à améliorer le jeu ! » ouvre un champ
-  texte (1 000 signes, 3 par visite). Le commentaire est ajouté au fichier de session
-  (`feedback`), donc envoyé seulement si le suivi est autorisé.
-
-## Rapport quotidien
-
-Chaque jour à 13 h (heure de Paris), le Worker lit les sessions des dernières 24 h
-dans R2 et envoie un e-mail : nombre de sessions ouvertes, temps actif moyen par
-session, temps passé par chapitre, top 10 des actions des joueurs et commentaires.
-Le calcul est dans `worker/src/report.mjs` ; les libellés des actions (`GAME_ACTIONS`)
-sont à compléter quand une action est ajoutée au jeu, faute de quoi elle apparaît sous
-son nom brut suivi de « (non répertorié) ». Installation : `worker/README.md`.
-
-## Tests
-
-```
-node run-tests.mjs        # moteur du jeu
-node test-telemetry.mjs   # suivi de session (rien sans consentement, retrait, limites, commentaires)
-node test-report.mjs      # rapport quotidien (calculs, Markdown, protections du Worker)
-```
 
 ## Crédits
 

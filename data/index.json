@@ -1,0 +1,17 @@
+{
+  "//fichiers": [
+    "Les fichiers de données du jeu, dans l'ordre où scripts/build-data.mjs les assemble.",
+    "Une clé de premier niveau (items, recipes, TIME…) n'existe que dans un seul fichier."
+  ],
+  "fichiers": [
+    "general.json",
+    "energy.json",
+    "items.json",
+    "recipes.json",
+    "crops.json",
+    "animals.json",
+    "techtree.json",
+    "campaign.json",
+    "simulation.json"
+  ]
+}

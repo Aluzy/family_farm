@@ -1,0 +1,151 @@
+{
+  "//START": "Départ de partie.",
+  "START": {
+    "PIECES": 350,
+    "//DEVICE_PRICE": [
+      "Les appareils de départ sont offerts : prix d'achat 0, donc entretien",
+      "et réparation gratuits pour eux (l'entretien vaut 20 % du prix d'achat)."
+    ],
+    "DEVICE_PRICE": 0,
+    "//INVENTAIRE": "Inventaire de départ (section 8.1) : 160 conserves = 10 nuits, plus le kit de graines.",
+    "INVENTAIRE": { "conserve": 160, "graine_carotte": 10, "patate": 6, "graine_tomate": 4 }
+  },
+  "//TIME": [
+    "Temps : la journée commence à 6 h au réveil.",
+    "SECONDS_PER_HOUR : durée d'une « heure de marche » des appareils (usure,",
+    "voir WEAR.HEURES_PAR_POINT). Ne pas la changer pour régler l'horloge.",
+    "CLOCK_SECONDS_PER_HOUR : l'horloge affichée au joueur avance d'une heure",
+    "toutes les 18 s d'éveil (version 1.1.3 ; 5 s auparavant). Voir hourOfDay()",
+    "et clockHours().",
+    "MEAL_HOUR (version 1.1.1) : à 19 h, la famille prend son repas (takeMeal()).",
+    "NIGHT_HOUR : à 22 h (version 1.1.3 ; minuit auparavant), la journée est",
+    "finie : la nuit se déroule d'elle-même si le joueur n'a pas cliqué sur",
+    "Dormir (bedtimeDue() ; c'est l'interface qui déclenche). La journée dure",
+    "donc de 6 h à 22 h : 16 heures de 18 s, soit 288 s."
+  ],
+  "TIME": { "DAY_START_HOUR": 6, "SECONDS_PER_HOUR": 30, "CLOCK_SECONDS_PER_HOUR": 18, "MIN_AWAKE_S": 30, "MEAL_HOUR": 19, "NIGHT_HOUR": 22 },
+  "//FAMILY": "Famille et santé (sections 1.1, 1.4, 6.9 et 8.8).",
+  "FAMILY": {
+    "//MEMBRES": [
+      "nom : le rôle (« Adulte 1 »), qui sert de prénom tant que le joueur n'en",
+      "a pas choisi un ; genre : le sexe de départ ('f' ou 'm')."
+    ],
+    "MEMBRES": [
+      { "id": "adulte-1", "nom": "Adulte 1", "enfant": false, "genre": "f" },
+      { "id": "adulte-2", "nom": "Adulte 2", "enfant": false, "genre": "m" },
+      { "id": "enfant-1", "nom": "Enfant 1", "enfant": true, "genre": "m" },
+      { "id": "enfant-2", "nom": "Enfant 2", "enfant": true, "genre": "f" }
+    ],
+    "//PROFIL": [
+      "Version 1.1 : chaque membre a un prénom (1 à PRENOM_MAX caractères), un",
+      "sexe et une couleur de peau, choisis par le joueur (voir setMemberProfile()).",
+      "TEINTS : indice 0 = le jaune par défaut, 1 à 5 = les cinq teintes des emojis.",
+      "PORTRAITS : l'emoji selon l'âge et le sexe ; la teinte s'y ajoute.",
+      "Le prénom est une donnée personnelle : il reste dans la sauvegarde, sur",
+      "l'appareil, et ne doit jamais partir dans le suivi de session."
+    ],
+    "PROFIL": {
+      "PRENOM_MAX": 12,
+      "GENRES": ["f", "m"],
+      "TEINTS": ["", "🏻", "🏼", "🏽", "🏾", "🏿"],
+      "PORTRAITS": { "adulte": { "f": "👩", "m": "👨" }, "enfant": { "f": "👧", "m": "👦" } }
+    },
+    "//AJ": "énergie par jour et par membre",
+    "AJ": { "adulte": 50, "enfant": 25 },
+    "//COMPOSITION": [
+      "Version 1.2 : le joueur compose sa famille. De MEMBRES_MIN à MEMBRES_MAX",
+      "membres (adultes ou enfants), dont au moins ADULTES_MIN adulte ; la partie",
+      "commence avec les quatre membres de MEMBRES. Le besoin journalier suit :",
+      "c'est la somme des AJ des membres présents (familyNeed())."
+    ],
+    "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },
+    "//COMPAGNIE": [
+      "Animaux de compagnie : jusqu'à MAX chiens ou chats. Ils ne mangent pas les",
+      "réserves de la famille et ne comptent ni dans le besoin journalier, ni dans",
+      "la santé, ni dans la productivité. Leur nom suit les règles d'un prénom."
+    ],
+    "COMPAGNIE": { "MAX": 3, "ESPECES": { "chien": { "nom": "Chien", "icone": "🐶" }, "chat": { "nom": "Chat", "icone": "🐱" } } },
+    "SANTE_DEPART": 100,
+    "SANTE_MAX": 100,
+    "//VARIATION": ["Couverture minimale du besoin (en %) → variation de santé, du palier le", "plus haut au plus bas."],
+    "VARIATION": [{ "min": 100, "delta": 5 }, { "min": 75, "delta": -5 }, { "min": 50, "delta": -10 }, { "min": 0, "delta": -20 }],
+    "//PRODUCTIVITE": "Santé moyenne minimale → productivité en % (actions au clic).",
+    "PRODUCTIVITE": [{ "min": 80, "pct": 100 }, { "min": 50, "pct": 80 }, { "min": 20, "pct": 50 }, { "min": 0, "pct": 25 }],
+    "//SOIN": "Soin : base × croissance^(soins déjà payés) ; il remet la santé à SANTE.",
+    "SOIN": { "base": 20, "croissance": 150, "SANTE": 50 },
+    "//BONUS_PLATS": "Lot 5 : bonus de santé de la nuit, +PAR_PLAT par plat différent mangé, jusqu'à MAX.",
+    "BONUS_PLATS": { "PAR_PLAT": 1, "MAX": 3 },
+    "//RECUPERATION_MALADE": [
+      "Sans soin, un malade regagne ce nombre de points par nuit où le besoin est",
+      "couvert à 100 %. Il guérit en atteignant la santé remise par un soin."
+    ],
+    "RECUPERATION_MALADE": 2,
+    "//RESERVE_DEPART": "Réserve de semences de départ : quantité par item que la famille ne mange jamais.",
+    "RESERVE_DEPART": { "patate": 6 }
+  },
+  "//MARCHE": [
+    "Marché (sections 1.3, 6.7 et 8.9). Prix d'achat = prix de vente × coefficient.",
+    "Le coefficient démarre à son plancher (1,2 ; 2,0 pour les graines), monte de",
+    "PAS par unité achetée, baisse de PAS par unité vendue sans passer sous le",
+    "plancher, et ne redescend jamais avec le temps."
+  ],
+  "MARCHE": {
+    "//PLANCHER": "en %, par catégorie d'objet",
+    "PLANCHER": { "defaut": 120, "graine": 200 },
+    "//PAS": "points de %",
+    "PAS": 10,
+    "//MULTIPLICATEUR_PRODUCTION": [
+      "Lot 12 (doublement des prix de vente des productions de la ferme) :",
+      "multiplicateur appliqué une seule fois, au chargement, au prix de",
+      "vente (DATA.items[x].prix) de chaque récolte de culture, fruit du",
+      "Verger et produit animal (œuf, lait, laine) — jamais aux",
+      "graines, aux achats du Marché qui ne sont pas des productions, aux",
+      "bâtiments/appareils/soins/services, ni aux ingrédients transformés",
+      "(farine, huile) ou aux plats cuisinés, dont le prix se calcule déjà à",
+      "partir des prix des ingrédients (voir dishPrice()) et serait donc",
+      "doublé deux fois si ce multiplicateur s'y appliquait aussi. Voir",
+      "applyProductionPriceMultiplier(), juste après DATA, qui détermine la",
+      "liste des objets concernés à partir de DATA.crops, DATA.VERGER.ARBRES",
+      "et DATA.ANIMAUX plutôt que d'une liste codée en dur ici."
+    ],
+    "MULTIPLICATEUR_PRODUCTION": 2,
+    "//TRANSFORMATIONS_DOUBLEES": [
+      "Lot 13 : la farine (transformation du blé, pas une production directe de",
+      "la ferme) reçoit elle aussi le multiplicateur ci-dessus, par choix",
+      "explicite. L'huile, autre transformation, n'y figure pas. Le pain (plat)",
+      "est réglé sur sa propre recette : voir `recipes.pain.priceMultiplier`."
+    ],
+    "TRANSFORMATIONS_DOUBLEES": ["farine"]
+  },
+  "//AUTONOMIE": [
+    "Lot 9 : autonomie et chapitres",
+    "Autonomie d'une nuit (sections 4 et 8.10) = énergie mangée qui vient de lots",
+    "d'origine « produit » ÷ besoin de la famille (150), plafonnée à 100 %. Les",
+    "conserves et les achats du Marché (origine « acheté ») n'y comptent pas.",
+    "HISTORIQUE_MAX : nombre de nuits gardées dans l'historique ; GRAPHIQUE_NUITS :",
+    "nuits tracées dans le petit graphique."
+  ],
+  "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },
+  "//HORS_LIGNE": [
+    "Lot 11 : hors-ligne et première partie",
+    "Progression hors-ligne (section 6.10). Le temps passé loin du jeu (page",
+    "fermée, ou onglet resté en arrière-plan) est simulé au retour, plafonné à",
+    "MAX_S secondes, par pas de PAS_S secondes. Seuls avancent les flux (panneaux",
+    "et batteries, pompe, moulin, presse, consommation du réfrigérateur) et les",
+    "préparations en cours ; aucune nuit ne passe. Ce temps compte comme temps",
+    "d'éveil. USURE : les appareils s'usent-ils hors-ligne ? Non (décision du",
+    "Lot 11 : 8 h réelles valent 960 heures de jeu, soit +480 points d'usure).",
+    "ECRAN_S : absence minimale, en secondes, pour afficher « Pendant votre absence… »."
+  ],
+  "HORS_LIGNE": {
+    "//MAX_S": "= 8 * 3600",
+    "MAX_S": 28800,
+    "PAS_S": 5,
+    "USURE": false,
+    "ECRAN_S": 60
+  },
+  "//REVEIL": "Résumé de réveil allégé : nombre maximal de produits listés dans « Récolte » (le reste va dans « Voir plus »).",
+  "REVEIL": { "RECOLTE_MAX": 5 },
+  "//AIDE": ["Première partie : bulles d'aide, dans cet ordre. La dernière (« dormir »)", "se ferme aussi d'elle-même à la première nuit."],
+  "AIDE": { "ETAPES": ["eau", "potager", "dormir"] }
+}

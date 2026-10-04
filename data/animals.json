@@ -1,0 +1,58 @@
+{
+  "//SILO": [
+    "Lot 4 : Silo, Poulailler",
+    "(Le Champ du Lot 4 a disparu en version 1.0 : ses cultures poussent dans la",
+    "Zone de culture, voir DATA.POTAGER et MIGRATIONS[14].)",
+    "Silo (section 8.5) : stock de blé. Construction offerte (validée) ; COUT[n]",
+    "est le prix pour atteindre le niveau n + 1. Le blé récolté y va d'abord ;",
+    "les poules y mangent d'abord. ITEM : l'objet stocké."
+  ],
+  "SILO": { "ITEM": "ble", "CONSTRUCTION": 0, "CAPACITE": [20, 50, 100, 200, 400], "COUT": [0, 30, 80, 180, 400] },
+  "//POULAILLER": "Poulailler (sections 1.3 et 8.5).",
+  "POULAILLER": { "CONSTRUCTION": 40, "CAPACITE": [4, 8, 12, 16, 24], "COUT": [0, 100, 220, 450, 900] },
+  "//ANIMAUX": [
+    "Animaux achetés au Marché (section 1.4) : prix fixes, sans revente.",
+    "Poule : 1 blé nourrit poulesParBle poules (une fois par nuit) ; une poule",
+    "nourrie pond oeufsParNuit œuf. Une ration entamée (poule impaire) est",
+    "perdue à la fin de la nuit : n poules coûtent ⌈n ÷ poulesParBle⌉ blé.",
+    "",
+    "Version 1.1 : les animaux ne sont plus jamais tués et n'ont plus de poids.",
+    "Les moutons et les vaches vivent à l'Étable et mangent de la paille :",
+    "chaque nuit, un mouton en mange pailleParNuit (1) et une vache",
+    "pailleParNuit (2), dans l'ordre de la liste (les moutons, puis les vaches),",
+    "tant qu'il en reste. Voir feedLivestock().",
+    "- Un mouton nourri voit sa laine avancer d'une nuit ; au bout de joursLaine",
+    "  nuits nourries (2), il se tond (laineParTonte laine).",
+    "- Une vache nourrie donne laitParNuit lait cette nuit-là.",
+    "- Un animal qui n'a pas mangé ne produit rien cette nuit ; il ne lui arrive",
+    "  rien d'autre.",
+    "Ces quantités sont des réglages : elles se changent ici, sans toucher au code."
+  ],
+  "ANIMAUX": {
+    "poule": { "nom": "Poule", "icone": "🐔", "prix": 15, "poulesParBle": 2, "oeufsParNuit": 1, "produit": "oeuf" },
+    "mouton": { "nom": "Mouton", "icone": "🐑", "prix": 60, "pailleParNuit": 1, "joursLaine": 2, "laineParTonte": 1, "laine": "laine" },
+    "vache": { "nom": "Vache", "icone": "🐄", "prix": 200, "pailleParNuit": 2, "laitParNuit": 1, "lait": "lait" }
+  },
+  "//PATURAGE": [
+    "Lot 6 : Étable des moutons et des vaches",
+    "Les moutons et les vaches vivent à l'Étable (version 1.1 ; l'identifiant",
+    "interne reste « paturage » : state.paturage, déblocage 'paturage'). La",
+    "place se compte en places entières : `placesDepart` places à l'ouverture",
+    "(pour `deblocage` pièces) ; un mouton prend `placesParMouton` place, une",
+    "vache `placesParVache`. Les places sont communes aux deux espèces. Une",
+    "place de plus coûte prixPlace × croissance^(n − 1), n étant le rang de",
+    "l'achat au-delà des places de départ (voir pastureCost()). Une place",
+    "achetée reste acquise. C'est le même équilibrage qu'avant la version 1.1,",
+    "où 1 place valait 5 ares (50 a au départ, 5 a par mouton, 15 a par vache).",
+    "nourriture : l'objet que mangent les moutons et les vaches."
+  ],
+  "PATURAGE": {
+    "deblocage": 150,
+    "placesDepart": 10,
+    "placesParMouton": 1,
+    "placesParVache": 3,
+    "prixPlace": 40,
+    "croissance": 120,
+    "nourriture": "paille"
+  }
+}
