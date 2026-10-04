@@ -9,6 +9,7 @@ import {
 } from './stage-windows.js';
 import { animateIn } from './animations.js';
 import { renderTutorial } from './aide.js';
+import { fitInventoryNames } from './inventaire.js';
 
 export let renderScheduled = false;
 export function setRenderScheduled(value) {
@@ -40,6 +41,7 @@ export function render() {
   renderSleepBar();
   renderStage();
   renderStageWindow();
+  fitInventoryNames();
   applyAnchor();
   renderTutorial();
   renderTestPanel();

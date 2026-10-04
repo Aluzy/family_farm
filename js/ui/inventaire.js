@@ -46,12 +46,18 @@ function fridgeInButtons(item) {
         <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo">🧊 Tout</button>`;
 }
 
+// Une case a-t-elle une ligne d'état : ce qui périt cette nuit, ou le blé du Silo ?
+function hasStatus(item) {
+  return (isPerishable(item) && expiringTonight(item) > 0) || (item === DATA.SILO.ITEM && state.silo.construit);
+}
+
 // Une case de l'inventaire : en haut, l'icône dans son cadre et, à sa droite,
 // « Tomate x3 » puis l'énergie et le prix ; dessous, une ligne d'état (ce qui
 // périt cette nuit, ou le blé du Silo) et les boutons du frigo.
-// Les cases ont toutes les mêmes lignes, vides au besoin, pour que deux cases
-// côte à côte gardent exactement la même taille et le même alignement.
-function inventoryCard(item, withActions) {
+// Deux cases côte à côte ont les mêmes lignes, vides au besoin, pour garder la
+// même taille et le même alignement ; la ligne d'état disparaît quand aucune des
+// deux n'en a besoin (withStatus).
+function inventoryCard(item, withActions, withStatus) {
   const it = DATA.items[item];
   const n = countItem(state, item);
   const soon = isPerishable(item) ? expiringTonight(item) : 0;
@@ -59,10 +65,9 @@ function inventoryCard(item, withActions) {
     it.energie && it.edible ? `⚡ ${it.energie}` : '',
     it.energie && !it.edible ? `Ingrédient ⚡ ${it.energie}` : '',
     `💰 ${formatCoins(it.prix)}`,
-    it.rachetable === false ? 'non rachetable' : '',
   ].filter(Boolean).join(' · ');
   let status = '';
-  if (soon > 0) {
+  if (withStatus && soon > 0) {
     status = `<span class="inv-soon" title="${soon} ${unitLabel(item, soon)} ${soon > 1 ? 'périssent' : 'périt'} à la prochaine nuit"><span aria-hidden="true">⚠️</span> <span class="num">${formatQty(soon)}</span> ce soir</span>`;
   } else if (item === DATA.SILO.ITEM && state.silo.construit) {
     status = `<span class="muted">🛖 Silo : <span class="num">${formatQty(state.silo.ble)}</span></span>`;
@@ -72,11 +77,11 @@ function inventoryCard(item, withActions) {
       <div class="inv-head">
         <span class="inv-icon" aria-hidden="true">${it.icone}</span>
         <span class="inv-text">
-          <span class="inv-name"><span class="inv-nom" title="${it.nom}">${it.nom}</span> <span class="inv-qty num" aria-label="quantité ${formatQty(n)}">x${formatQty(n)}</span></span>
+          <span class="inv-name"><span class="inv-nom">${it.nom}</span> <span class="inv-qty num" aria-label="quantité ${formatQty(n)}">x${formatQty(n)}</span></span>
           <span class="inv-info muted">${info}</span>
         </span>
       </div>
-      <span class="inv-status">${status}</span>
+      ${withStatus ? `<span class="inv-status">${status}</span>` : ''}
       ${withActions ? `<span class="inv-actions">${fridgeInButtons(item)}</span>` : ''}
     </div>`;
 }
@@ -108,6 +113,28 @@ export function subtabsHtml(tabs, current, action) {
     .join('')}</div>`;
 }
 
+// La ligne d'état d'une case existe si elle-même ou sa voisine de rangée (deux
+// cases par rangée) en a une.
+function rowHasStatus(items, i) {
+  const first = i - (i % 2);
+  return items.slice(first, first + 2).some(hasStatus);
+}
+
+// Les noms (et les lignes énergie · prix) trop longs pour leur case sont écrits
+// plus petit, juste assez pour tenir en entier sur leur ligne (comme fitIndicators pour le bandeau). Appelé
+// après chaque rendu : la taille dépend de la largeur réelle de la case.
+const NAME_MIN_PX = 7;
+export function fitInventoryNames(root = document) {
+  for (const el of root.querySelectorAll('.inv-name, .inv-info')) {
+    el.style.fontSize = '';
+    let size = parseFloat(getComputedStyle(el).fontSize) || 15;
+    for (let pass = 0; pass < 4 && el.scrollWidth > el.clientWidth && size > NAME_MIN_PX; pass++) {
+      size = Math.max(NAME_MIN_PX, Math.floor(((size * el.clientWidth) / el.scrollWidth) * 10) / 10 - (pass ? 0.2 : 0));
+      el.style.fontSize = `${size}px`;
+    }
+  }
+}
+
 export function renderInventaire() {
   // Lot 9 : le sous-onglet Frigo n'apparaît qu'avec le chapitre 6.
   const tabs = INVENTORY_TABS.filter((t) => t.id !== 'frigo' || isUnlocked(state, 'frigo'));
@@ -126,7 +153,7 @@ export function renderInventaire() {
     <h2>📦 Inventaire</h2>
     ${subtabsHtml(tabs, tab.id, 'inv-tab')}
     ${soon ? '<p class="alert">⚠️ Une partie de tes aliments périt à la prochaine nuit.</p>' : ''}
-    ${items.length ? `<div class="inv-grid">${items.map((k) => inventoryCard(k, withActions)).join('')}</div>` : `<p class="hint">${tab.empty}</p>`}
+    ${items.length ? `<div class="inv-grid">${items.map((k, i) => inventoryCard(k, withActions, rowHasStatus(items, i))).join('')}</div>` : `<p class="hint">${tab.empty}</p>`}
     ${tab.id === 'frais' ? fridgeAllButton(items) : ''}`;
 }
 
