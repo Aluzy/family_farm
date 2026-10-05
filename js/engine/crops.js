@@ -113,6 +113,13 @@ export function isMature(plot) {
   return !!plot.culture && plot.stade >= maxStage(plot);
 }
 
+// Graines que rend une parcelle montée en graine : la quantité de la culture + 2 par
+// niveau de « Sélection des semences » (carotte : 6, puis 8). Sert à la récolte et au
+// calcul de la montée en graine automatique.
+export function boltSeedYield(state, culture) {
+  return DATA.crops[culture].graines.quantite + 2 * techSum(state, 'grainesBonus');
+}
+
 // Rendement d'une récolte au clic (× productivité) ou automatique (× 1).
 // Lot 8 : avec `lieu`, le facteur de saison du lieu s'y applique (Zone de culture,
 // quelle que soit la culture ; jamais la Serre).
@@ -210,7 +217,7 @@ export function harvest(state, plotId, auto = false) {
     }
   };
   if (plot.montee) {
-    gain(def.graines.item, def.graines.quantite + 2 * techSum(state, 'grainesBonus'));
+    gain(def.graines.item, boltSeedYield(state, culture));
   } else {
     gain(cropProduct(culture), harvestYield(state, culture, auto, plot.lieu));
     if (def.graines.mode === 'recolte') {

@@ -187,8 +187,8 @@ flowchart LR
 |---|---|---|---|---|---|---|
 | 1 | `cu_outils` | 🧰 Outils de jardin | Temps | 1 PT + 100 💰 | — | Ajoute « Arroser tout » et « Récolter tout » au Potager, au Champ et à la Serre. |
 | 2 | `cu_semences` | 🌰 Sélection des semences | Productivité | 1 PT + 200 💰 | — | Les cultures qui rendent des graines en donnent une de plus, et une carotte montée en graine en donne 8 au lieu de 6. |
-| 3 | `cu_recolte_auto` | 🧺 Récolte automatique | Automatisation | 2 PT + 900 💰 | Outils de jardin + Potager niv. 4 | Chaque nuit, les parcelles mûres du Potager et du Champ sont récoltées automatiquement (sauf celles qui montent en graine). |
-| 4 | `semis_auto` | 🌾 Semis automatique | Automatisation | 2 PT + 1 200 💰 | Récolte automatique + Réseau d'irrigation | Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle. |
+| 3 | `cu_recolte_auto` | 🧺 Récolte automatique | Automatisation | 2 PT + 900 💰 | Outils de jardin + Potager niv. 4 | Chaque nuit, les parcelles mûres du Potager et du Champ sont récoltées automatiquement (celles montées en graine comprises, graines à la clé). |
+| 4 | `semis_auto` | 🌾 Semis automatique | Automatisation | 2 PT + 1 200 💰 | Récolte automatique + Réseau d'irrigation | Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle. Pour que les carottes, qui ne rendent pas de graines, ne manquent jamais de semences, le jeu laisse monter en graine le nombre de carottes mûres nécessaire pour couvrir toutes les parcelles à replanter ; une parcelle qui n'a pas sa graine attend, mûre. |
 | 5 | `cu_serre_auto` | 🌿 Serre autonome | Automatisation | 3 PT + 1 500 💰 | Semis automatique + Irrigation de la Serre | La Serre est récoltée et replantée automatiquement chaque nuit, avec les mêmes réglages que le semis automatique. |
 
 ### 🐔 Élevage — 4 nœuds, 6 PT, 1 700 💰

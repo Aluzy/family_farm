@@ -3,7 +3,7 @@ import { EPS } from './base.js';
 import { currentSeason } from './seasons.js';
 import { allDevices, fail, maintainDevice, needsService, tankCapacity } from './devices.js';
 import { newNightStats } from './family.js';
-import { allPlots, findPlot, harvest, isMature, plant, plotZone, seedItem, seedStock, water, zone2Plots } from './crops.js';
+import { allPlots, boltSeedYield, findPlot, harvest, isMature, maxStage, plant, plotZone, seedItem, seedStock, toggleBolting, water, zone2Plots } from './crops.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
 import { canSleep } from './night.js';
@@ -11,7 +11,7 @@ import { canSleep } from './night.js';
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
 
 export function newAutoReport() {
-  return { potager: false, serre: false, poulailler: false, arrosees: 0, sansEau: 0, recoltes: {}, semees: 0, sansGraine: 0, nourries: 0, sansBle: 0, tondus: 0 };
+  return { potager: false, serre: false, poulailler: false, arrosees: 0, sansEau: 0, recoltes: {}, semees: 0, sansGraine: 0, nourries: 0, sansBle: 0, tondus: 0, montees: 0, attendent: 0 };
 }
 
 // Tâches automatisables par lieu (arbre v2) : un lieu est « automatisé » dès
@@ -27,15 +27,22 @@ export function isAutomated(state, id) {
   return (AUTO_TACHES[id] || []).some((t) => techAuto(state, t, id));
 }
 
+// Culture que le semis automatique replante sur une parcelle dont on vient de récolter
+// `harvested` : la même, ou la culture verrouillée ; null si le semis est désactivé.
+export function replantCulture(plot, harvested) {
+  const mode = plot.semis || 'meme';
+  if (mode === 'off') return null;
+  return mode === 'verrou' && plot.verrou && DATA.crops[plot.verrou] ? plot.verrou : harvested;
+}
+
 // Semis automatique d'une parcelle qui vient d'être récoltée. Renvoie null si
 // le semis ne s'applique pas (nœud absent ou parcelle désactivée), true si la
 // parcelle est replantée, false s'il n'y a pas de graine au-delà de la réserve
 // de semences.
 export function autoReplant(state, plot, harvested) {
   if (!techAuto(state, 'semis', plot.lieu)) return null;
-  const mode = plot.semis || 'meme';
-  if (mode === 'off') return null;
-  const culture = mode === 'verrou' && plot.verrou && DATA.crops[plot.verrou] ? plot.verrou : harvested;
+  const culture = replantCulture(plot, harvested);
+  if (!culture) return null;
   if (!DATA.crops[culture].lieux.includes(plot.lieu)) return false;
   const reserve = state.famille.reserve[seedItem(culture)] || 0;
   if (seedStock(state, culture) - reserve < 1 - EPS) return false;
@@ -60,13 +67,79 @@ export function setSemis(state, plotId, mode, culture) {
   return { ok: true };
 }
 
+/* ---------- Montée en graine automatique ---------- */
+
+// Une culture qui ne rend pas ses graines à la récolte (la carotte, mode 'montee') les
+// épuise à chaque semis automatique. Le plan dit combien de parcelles mûres doivent
+// monter en graine cette nuit pour que le stock suffise à tout replanter.
+//
+//   besoin     : parcelles que le semis automatique replantera avec cette culture
+//   disponible : graines en stock au-delà de la réserve de semences
+//   attendu    : graines que rendront les parcelles déjà en montée (q chacune)
+//
+// Le stock doit couvrir le besoin :  disponible + attendu + q × n ≥ besoin. On en déduit
+// le nombre n de parcelles mûres à laisser monter en graine : n = ⌈(besoin − disponible −
+// attendu) / q⌉, au plus le nombre de parcelles mûres. Si elles ne suffisent pas, les
+// suivantes seront choisies les nuits d'après.
+// Seules les parcelles dont la récolte et le semis sont automatiques, mûres et replantées
+// avec cette même culture, peuvent monter en graine. Renvoie null pour une culture qui
+// rend ses graines à la récolte.
+export function boltingPlan(state, culture) {
+  const def = DATA.crops[culture];
+  if (!def || def.graines.mode !== 'montee') return null;
+  const q = boltSeedYield(state, culture);
+  const reserve = state.famille.reserve[seedItem(culture)] || 0;
+  let besoin = 0;
+  let enMontee = 0;
+  const candidats = [];
+  for (const p of allPlots(state)) {
+    if (!p.culture || !techAuto(state, 'recolte', p.lieu) || !techAuto(state, 'semis', p.lieu)) continue;
+    const replantee = replantCulture(p, p.culture) === culture;
+    if (replantee) besoin += 1;
+    if (p.culture !== culture) continue;
+    if (p.montee) enMontee += 1;
+    else if (replantee && isMature(p)) candidats.push(p.id);
+  }
+  const disponible = seedStock(state, culture) - reserve;
+  const attendu = q * enMontee;
+  const manque = besoin - disponible - attendu;
+  const aMonter = Math.min(candidats.length, manque > 0 ? Math.ceil(manque / q) : 0);
+  return { culture, graines: q, besoin, disponible, attendu, aMonter, parcelles: candidats.slice(0, aMonter) };
+}
+
+// Une parcelle mûre d'une culture qui ne rend pas ses graines n'est récoltée que si le
+// semis automatique peut la replanter ; sinon elle resterait vide. Elle attend, mûre,
+// que des graines arrivent : celles d'une parcelle montée en graine (voir boltingPlan).
+function waitsForSeed(state, plot) {
+  const culture = plot.culture;
+  const def = DATA.crops[culture];
+  if (!def || def.graines.mode !== 'montee' || plot.montee) return false;
+  if (!techAuto(state, 'semis', plot.lieu) || replantCulture(plot, culture) !== culture) return false;
+  const reserve = state.famille.reserve[seedItem(culture)] || 0;
+  return seedStock(state, culture) - reserve < 1 - EPS;
+}
+
+// Applique le plan de chaque culture concernée ; compte les parcelles passées en montée.
+export function autoBolting(state, rap) {
+  for (const culture of Object.keys(DATA.crops)) {
+    const plan = boltingPlan(state, culture);
+    if (!plan) continue;
+    for (const id of plan.parcelles) {
+      if (toggleBolting(state, id).ok) rap.montees += 1;
+    }
+  }
+}
+
 // Étape nocturne (juste après le repas) : automatisations du niveau 5.
-// Zone de culture et Serre : récolte des parcelles mûres (sauf celles montées en
-// graine), semis automatique, puis arrosage de toutes les parcelles plantées.
+// Zone de culture et Serre : récolte des parcelles mûres (celles qui montent en graine
+// le sont à leur tour, graines comprises), semis automatique, puis arrosage de toutes
+// les parcelles plantées. Avant la récolte, les carottes à laisser monter en graine
+// sont choisies (voir boltingPlan).
 // Poulailler : nourrissage. Rien n'est réduit par la productivité ; si l'eau ou
 // le blé manquent, on sert ce qu'on peut et le rapport le signale au réveil.
 export function autoTasks(state) {
   const rap = newAutoReport();
+  autoBolting(state, rap);
   const zones = [
     { id: 'potager', plots: [...state.potager.parcelles, ...zone2Plots(state)] }, // la Zone de culture et le Champ
     { id: 'serre', plots: state.serre && state.serre.construit ? state.serre.parcelles : [] },
@@ -78,8 +151,14 @@ export function autoTasks(state) {
     if (!recolte && !arrosage) continue;
     rap[zone.id] = true;
     if (recolte) {
-      for (const p of zone.plots) {
-        if (!p.culture || !isMature(p) || p.montee) continue;
+      // Les parcelles montées en graine d'abord : leurs graines servent aux semis des autres.
+      const ordre = zone.plots.slice().sort((x, y) => Number(!!y.montee) - Number(!!x.montee));
+      for (const p of ordre) {
+        if (!p.culture || !isMature(p)) continue;
+        if (waitsForSeed(state, p)) {
+          rap.attendent += 1;
+          continue;
+        }
         const culture = p.culture;
         const r = harvest(state, p.id, true);
         if (!r.ok) continue;
@@ -92,7 +171,7 @@ export function autoTasks(state) {
     if (arrosage) {
       let aArroser = zone.plots.filter((p) => p.culture && !p.arrose && !isMature(p));
       // Gestion intelligente de l'eau : les plantes les plus proches de la récolte d'abord.
-      if (prioritaire) aArroser = aArroser.slice().sort((x, y) => (DATA.crops[x.culture].stades - x.stade) - (DATA.crops[y.culture].stades - y.stade));
+      if (prioritaire) aArroser = aArroser.slice().sort((x, y) => (maxStage(x) - x.stade) - (maxStage(y) - y.stade));
       for (const p of aArroser) {
         if (water(state, p.id).ok) rap.arrosees += 1;
         else rap.sansEau += 1;
