@@ -178,13 +178,13 @@ export const TECHTREE_V2 = {
       branche: 'culture', palier: 3, nom: 'Récolte automatique', icone: '🧺', fonction: 'automatisation',
       pt: 2, cout: 900, requiert: [{ noeud: 'cu_outils' }, { batiment: 'potager', niveau: 4 }],
       effet: { auto: { recolte: ['potager', 'champ'] } },
-      description: 'Chaque nuit, les parcelles mûres du Potager et du Champ sont récoltées automatiquement (sauf celles qui montent en graine).',
+      description: 'Chaque nuit, les parcelles mûres du Potager et du Champ sont récoltées automatiquement (celles montées en graine comprises, graines à la clé).',
     },
     semis_auto: {
       branche: 'culture', palier: 4, nom: 'Semis automatique', icone: '🌾', fonction: 'automatisation',
       pt: 2, cout: 1200, requiert: [{ noeud: 'cu_recolte_auto' }, { noeud: 'ea_irrigation' }],
       effet: { auto: { semis: ['potager', 'champ'] } },
-      description: 'Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle.',
+      description: 'Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle. Pour que les carottes, qui ne rendent pas de graines, ne manquent jamais de semences, le jeu laisse monter en graine le nombre de carottes mûres nécessaire pour couvrir toutes les parcelles à replanter ; une parcelle qui n'a pas sa graine attend, mûre.',
     },
     cu_serre_auto: {
       branche: 'culture', palier: 5, nom: 'Serre autonome', icone: '🌿', fonction: 'automatisation',

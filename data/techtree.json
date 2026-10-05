@@ -240,7 +240,7 @@
         "cout": 900,
         "requiert": [{ "noeud": "cu_outils" }, { "batiment": "potager", "niveau": 4 }],
         "effet": { "auto": { "recolte": ["potager"] } },
-        "description": "Chaque nuit, les parcelles mûres de la Zone de culture sont récoltées automatiquement (sauf celles qui montent en graine)."
+        "description": "Chaque nuit, les parcelles mûres de la Zone de culture sont récoltées automatiquement (celles montées en graine comprises, graines à la clé)."
       },
       "semis_auto": {
         "branche": "culture",
@@ -252,7 +252,7 @@
         "cout": 1200,
         "requiert": [{ "noeud": "cu_recolte_auto" }, { "noeud": "ea_irrigation" }],
         "effet": { "auto": { "semis": ["potager"] } },
-        "description": "Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle."
+        "description": "Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle. Pour que les carottes, qui ne rendent pas de graines, ne manquent jamais de semences, le jeu laisse monter en graine le nombre de carottes mûres nécessaire pour couvrir toutes les parcelles à replanter ; une parcelle qui n'a pas sa graine attend, mûre."
       },
       "cu_serre_auto": {
         "branche": "culture",

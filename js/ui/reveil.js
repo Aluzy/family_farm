@@ -21,11 +21,13 @@ function autoLines(a) {
   const harvested = itemsSummary(a.recoltes || {});
   if (harvested) done.push(`🧺 ${harvested}`);
   if (a.semees > 0) done.push(`🌱 ${plural(a.semees, 'semis')}`);
+  if (a.montees > 0) done.push(`🥕 ${plural(a.montees, 'parcelle')} laissée${a.montees > 1 ? 's' : ''} à monter en graine`);
   if (a.poulailler) done.push(`🌾 ${plural(a.nourries, 'poule')} nourrie${a.nourries > 1 ? 's' : ''}`);
   if (a.tondus > 0) done.push(`✂️ ${plural(a.tondus, 'mouton')} tondu${a.tondus > 1 ? 's' : ''}`);
   const lines = [`<li>🤖 Automatisations : <strong>${done.join(' · ')}</strong></li>`];
   if (a.sansEau > 0) lines.push(`<li class="alert">💧 Eau insuffisante : ${plural(a.sansEau, 'parcelle')} non arrosée${a.sansEau > 1 ? 's' : ''} cette nuit.</li>`);
   if (a.sansBle > 0) lines.push(`<li class="alert">🌾 Blé insuffisant : ${plural(a.sansBle, 'poule')} non nourrie${a.sansBle > 1 ? 's' : ''}, pas d'œuf.</li>`);
+  if (a.attendent > 0) lines.push(`<li>⏳ ${plural(a.attendent, 'parcelle')} mûre${a.attendent > 1 ? 's' : ''} en attente de graines pour être replantée${a.attendent > 1 ? 's' : ''}.</li>`);
   if (a.sansGraine > 0) lines.push(`<li class="alert">🌱 Pas de graine au-delà de la réserve : ${plural(a.sansGraine, 'parcelle')} laissée${a.sansGraine > 1 ? 's' : ''} vide${a.sansGraine > 1 ? 's' : ''}.</li>`);
   return lines;
 }
