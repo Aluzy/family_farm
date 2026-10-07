@@ -24,6 +24,7 @@
  *                FarmStage.update(modèle), FarmStage.show(), FarmStage.hide(),
  *                FarmStage.ready() (la scène est-elle affichable ?),
  *                FarmStage.view() (où en est la vue : repère 0, 1 ou 2, bornes),
+ *                FarmStage.hasRoom(id) (l'intérieur d'un bâtiment peut-il être affiché ?),
  *                FarmStage.panTo(x, point { x, y } ou id de bâtiment) (glisse jusque-là).
  *                onView(vue) est appelé quand l'écran courant change, quand un bord est
  *                atteint ou quitté, et au premier glissement du joueur.
@@ -89,6 +90,18 @@
     { id: 'verger', object: 'verger', tex: 'sign', seasonal: false, window: 'verger' },
   ];
   const MILL_FRAME = { frameWidth: 96, frameHeight: 128 };
+  // Intérieurs : une petite carte Tiled à part, affichée à la place de la carte quand le
+  // joueur entre dans le bâtiment (modèle.interieur). `zones` = nom des couches d'objets dont
+  // le rectangle reçoit les parcelles, `plots` = leur liste dans le modèle, `window` = fenêtre
+  // ouverte par une parcelle où il n'y a rien à faire, `building` = bâtiment devant lequel la
+  // vue revient à la sortie.
+  const ROOMS = {
+    serre: { key: 'map_serre', json: 'serre_interieur.json', zones: /^serre_zone_(\d+)$/, plots: 'serre', window: 'serre', building: 'serre' },
+  };
+  const ROOM_GAP = 64 * T;     // les intérieurs sont posés à droite de la carte, hors de portée de la vue
+  const ROOM_SHADE = 0.45;     // assombrissement des emplacements que le joueur n'a pas encore
+  const ROOM_FADE_MS = 180;    // fondu à l'entrée et à la sortie
+  const ROOM_PAD = { top: 44, bottom: 60 };   // px CSS laissés à l'objectif (en haut) et aux boutons (en bas)
 
   const TAP_SLOP = 8;          // px CSS : au-delà, le geste est un glissement, pas un appui
   const MIN_TAP = 44;          // px CSS : taille minimale de la zone d'appui d'un bâtiment
@@ -178,6 +191,10 @@
         this.grid = { x: 464, y: 384, cols: 2 };   // Zone de culture : coin haut-gauche et colonnes
         this.grid2 = { x: 624, y: 608, cols: 8 };  // Champ
         this.screens = [];               // repères de la carte : gauche, milieu, droite (voir makeScreens)
+        this.rooms = {};                 // intérieurs disponibles (voir bakeRooms) : id -> image, zones, emplacements
+        this.room = null;                // intérieur affiché à la place de la carte (null : dehors)
+        this.roomShade = null;           // voile sur les emplacements pas encore achetés
+        this.shadeKey = '';
         this.cx = DEFAULT_W / 2;         // centre de la vue, en px de carte
         this.cy = DEFAULT_H / 2;
         this.drag = null;                // glissement en cours
@@ -196,6 +213,7 @@
         L.image('soil_wet', 'soil_wet.png');
         L.image('sign', 'sign.png');
         L.tilemapTiledJSON(MAP.key, MAP.json);
+        for (const r of Object.values(ROOMS)) L.tilemapTiledJSON(r.key, r.json);
         L.image(MAP.tiles, MAP.image);
         for (const a of SUFFIXES) {
           L.image('house_' + a, 'house_' + a + '.png');
@@ -215,6 +233,7 @@
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
         this.watchGround();
+        this.bakeRooms();
         // Voile de lumière : il couvre toute la carte, au-dessus des bâtiments et des
         // plantes, et multiplie leurs couleurs (blanc = aucun effet). Les étiquettes et les
         // boutons, en DOM, restent au-dessus et gardent leurs couleurs.
@@ -337,16 +356,15 @@
         this.paintGround();
       }
 
-      // Dessine (ou redessine) le fond dans la texture « ground », puis l'envoie à la carte
-      // graphique. Appelée au démarrage et chaque fois que le navigateur a vidé cette image.
-      paintGround() {
-        const tex = this.textures.get('ground');
+      // Dessine (ou redessine) une carte Tiled dans sa texture, puis l'envoie à la carte
+      // graphique : toutes ses couches de tuiles, sur un fond uni.
+      paintMap(key, raw, w, h, bg) {
+        const tex = this.textures.get(key);
         const ctx = tex.getContext();
-        const raw = this.mapRaw;
         ctx.imageSmoothingEnabled = false;
         ctx.globalAlpha = 1;
-        ctx.fillStyle = '#699654';
-        ctx.fillRect(0, 0, this.world.w, this.world.h);
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
         if (raw) {
           const img = this.has(MAP.tiles) ? this.textures.get(MAP.tiles).getSourceImage() : null;
           // Jeu de tuiles : celui dont l'image est la planche chargée (intégré dans le JSON).
@@ -358,6 +376,82 @@
           }
         }
         tex.refresh();
+      }
+
+      // Le fond de la carte et les intérieurs. Appelée au démarrage et chaque fois que le
+      // navigateur a vidé ces images.
+      paintGround() {
+        this.paintMap('ground', this.mapRaw, this.world.w, this.world.h, '#699654');
+        for (const r of Object.values(this.rooms)) this.paintMap(r.tex, r.raw, r.w, r.h, r.bg);
+      }
+
+      // Intérieurs (ROOMS) : chaque petite carte est dessinée dans sa propre image, posée à
+      // droite de la carte. Les rectangles de ses couches d'objets (`serre_zone_1`,
+      // `serre_zone_2`…) donnent les emplacements des parcelles, calés sur la grille de 16 px
+      // et pris rangée par rangée à travers toutes les zones : la première rangée de chaque
+      // zone, puis la deuxième… Sans le fichier, pas d'intérieur : la page garde la fenêtre
+      // du bâtiment (FarmStage.hasRoom).
+      bakeRooms() {
+        let x = Math.ceil(this.world.w / T) * T + ROOM_GAP;
+        for (const [id, def] of Object.entries(ROOMS)) {
+          const ok = this.cache.tilemap.exists(def.key) && !this.missing.has(def.key);
+          const raw = ok ? this.cache.tilemap.get(def.key).data : null;
+          if (!(raw && raw.width && raw.height && raw.tilewidth && Array.isArray(raw.layers))) continue;
+          const zones = [];
+          for (const layer of raw.layers) {
+            const m = layer.type === 'objectgroup' ? def.zones.exec(layer.name || '') : null;
+            const o = m ? (layer.objects || []).find((r) => r.width && r.height) : null;
+            if (o) {
+              zones.push({
+                n: Number(m[1]), x: x + Math.round(o.x / T) * T, y: Math.round(o.y / T) * T,
+                cols: Math.max(1, Math.round(o.width / T)), rows: Math.max(1, Math.round(o.height / T)),
+              });
+            }
+          }
+          if (!zones.length) { console.warn('[FarmStage] ' + def.json + ' : aucune zone de culture, intérieur ignoré'); continue; }
+          zones.sort((a, b) => a.n - b.n);
+          const slots = [];
+          const slotAt = new Map();
+          const rows = Math.max(...zones.map((z) => z.rows));
+          for (let r = 0; r < rows; r++) {
+            for (const z of zones) {
+              for (let c = 0; r < z.rows && c < z.cols; c++) {
+                const sx = z.x + c * T, sy = z.y + r * T;
+                slotAt.set(sx + ',' + sy, slots.length);
+                slots.push({ x: sx, y: sy });
+              }
+            }
+          }
+          const w = raw.width * raw.tilewidth, h = raw.height * raw.tileheight;
+          // Ce que la vue cadre : la carte sans sa marge unie (les tuiles du coin haut-gauche).
+          let c0 = raw.width, c1 = -1, r0 = raw.height, r1 = -1;
+          for (const layer of raw.layers) {
+            if (layer.type !== 'tilelayer' || !Array.isArray(layer.data)) continue;
+            const edge = layer.data[0];
+            layer.data.forEach((cell, i) => {
+              if (!cell || cell === edge) return;
+              const c = i % raw.width, r = Math.floor(i / raw.width);
+              if (c < c0) c0 = c; if (c > c1) c1 = c; if (r < r0) r0 = r; if (r > r1) r1 = r;
+            });
+          }
+          const view = c1 >= c0
+            ? { x: x + c0 * raw.tilewidth, y: r0 * raw.tileheight, w: (c1 - c0 + 1) * raw.tilewidth, h: (r1 - r0 + 1) * raw.tileheight }
+            : { x, y: 0, w, h };
+          const room = { id, def, raw, tex: 'room_' + id, x, y: 0, w, h, view, centre: { x: x + w / 2, y: h / 2 }, slots, slotAt, bg: '#06182a' };
+          this.textures.createCanvas(room.tex, w, h);
+          this.paintMap(room.tex, raw, w, h, room.bg);
+          // Autour de l'intérieur, l'écran prend la couleur du coin de sa carte.
+          try {
+            const px = this.textures.get(room.tex).getContext().getImageData(0, 0, 1, 1).data;
+            room.bg = '#' + [px[0], px[1], px[2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+          } catch (e) { /* couleur par défaut */ }
+          this.rooms[id] = room;
+          this.add.image(x, 0, room.tex).setOrigin(0).setDepth(0);
+          const c = this.textures.get(room.tex).getSourceImage();
+          if (c && c.addEventListener) c.addEventListener('contextrestored', () => this.repairGround(true));
+          x += w + ROOM_GAP;
+        }
+        this.roomShade = this.add.graphics().setDepth(3);
       }
 
       // Le fond a-t-il été vidé ? Il est entièrement opaque quand il est dessiné : un point
@@ -430,15 +524,31 @@
         if (!w || !h) return;
         const cam = this.cameras.main;
         cam.setSize(w, h);
-        cam.setZoom(Math.max(h / Math.min(this.world.h, VIEW_ROWS * T), w / this.world.w));
-        cam.setBounds(0, 0, this.world.w, this.world.h);
+        if (this.room) {
+          // Intérieur : il tient en entier entre l'objectif (en haut) et les boutons (en bas),
+          // centré dans cet espace. La vue n'y glisse pas (voir setCentre).
+          const v = this.room.view, dpr = pixelRatio();
+          const top = ROOM_PAD.top * dpr, bottom = ROOM_PAD.bottom * dpr;
+          cam.removeBounds();
+          cam.setZoom(Math.min(w / v.w, Math.max(h / 2, h - top - bottom) / v.h));
+          this.room.centre = { x: v.x + v.w / 2, y: v.y + v.h / 2 + (bottom - top) / 2 / cam.zoom };
+        } else {
+          cam.setZoom(Math.max(h / Math.min(this.world.h, VIEW_ROWS * T), w / this.world.w));
+          cam.setBounds(0, 0, this.world.w, this.world.h);
+        }
         this.setCentre(this.cx, this.cy);
       }
 
       // Centre la vue sur (cx, cy) sans jamais sortir de la carte. Renvoie false si la
-      // position demandée a été bornée (bord atteint).
+      // position demandée a été bornée (bord atteint). Dans un intérieur, la vue reste où
+      // fit() l'a cadrée.
       setCentre(cx, cy) {
         const cam = this.cameras.main;
+        if (this.room) {
+          this.cx = this.room.centre.x; this.cy = this.room.centre.y;
+          cam.centerOn(this.cx, this.cy);
+          return false;
+        }
         const vw = this.scale.width / cam.zoom, vh = this.scale.height / cam.zoom;
         this.cx = clamp(cx, vw / 2, this.world.w - vw / 2);
         this.cy = clamp(cy, vh / 2, this.world.h - vh / 2);
@@ -468,7 +578,7 @@
           if (!pointer.wasTouch) {
             const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
             const hit = this.hitAt(wp.x, wp.y);
-            this.game.canvas.style.cursor = hit ? 'pointer' : 'grab';
+            this.game.canvas.style.cursor = hit ? 'pointer' : this.room ? 'default' : 'grab';
             this.setHover(this.placeOf(hit));       // survol : le nom du lieu s'affiche
           }
           return;
@@ -480,8 +590,8 @@
         if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) {
           d.moved = true;
           this.setHover(null);           // on fait glisser la carte : plus de nom affiché
-          this.dragged = true;           // signalé à la page par reportView()
-          this.game.canvas.style.cursor = 'grabbing';
+          if (!this.room) this.dragged = true;   // signalé à la page par reportView()
+          if (!this.room) this.game.canvas.style.cursor = 'grabbing';
         }
         this.setCentre(d.cx - dx / zoom, d.cy - dy / zoom);
         const now = performance.now();
@@ -522,8 +632,9 @@
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
         // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false); }
-        if (this.ambient) this.ambient.update(delta);
-        this.placeLabels();
+        // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
+        if (this.ambient && !this.room) this.ambient.update(delta);
+        if (!this.room) this.placeLabels();
         this.reportView();
       }
 
@@ -553,6 +664,7 @@
       // Bornes du centre de la vue : elle ne sort jamais de la carte.
       bounds() {
         const cam = this.cameras.main;
+        if (this.room) return { minX: this.cx, maxX: this.cx, minY: this.cy, maxY: this.cy };   // vue fixe
         const vw = this.scale.width / cam.zoom, vh = this.scale.height / cam.zoom;
         return { minX: vw / 2, maxX: this.world.w - vw / 2, minY: vh / 2, maxY: this.world.h - vh / 2 };
       }
@@ -573,6 +685,7 @@
           gauche: mobile && this.cx > xs[0] + 1,               // il reste un repère à gauche
           droite: mobile && this.cx < xs[xs.length - 1] - 1,   // il reste un repère à droite
           glisse: this.dragged,
+          interieur: this.room ? this.room.id : null,
         };
       }
 
@@ -580,7 +693,7 @@
       reportView() {
         if (!bridge || !bridge.onView) return;
         const v = this.viewInfo();
-        const key = [v.ecran, v.mobile, v.gauche, v.droite, v.glisse].join();
+        const key = [v.ecran, v.mobile, v.gauche, v.droite, v.glisse, v.interieur].join();
         if (key === this.viewKey) return;
         this.viewKey = key;
         bridge.onView(v);
@@ -603,6 +716,7 @@
       // jusqu'à un lieu ('maison', 'etable', 'zone'…). `now` : sans animation. Renvoie false si
       // le lieu n'est pas sur la carte.
       panTo(target, now) {
+        if (this.room) return false;                 // dans un intérieur, la vue ne glisse pas
         const p = typeof target === 'number' ? { x: target, y: this.cy }
           : target && typeof target === 'object' ? target : this.place(target);
         if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return false;
@@ -672,7 +786,7 @@
       // Lieu désigné par un résultat de hitAt() : une parcelle désigne sa zone ('zone' ou 'zone2').
       placeOf(hit) {
         if (!hit) return null;
-        return hit.plot ? hit.zone : hit.window || null;
+        return hit.plot ? hit.place : hit.window || null;
       }
 
       placeAt(wx, wy) { return this.placeOf(this.hitAt(wx, wy)); }
@@ -751,26 +865,44 @@
 
       /* ---------- appuis ---------- */
 
-      // Les deux zones de parcelles : la Zone de culture ('zone') et le Champ ('zone2').
+      // Les zones de parcelles : la Zone de culture ('zone'), le Champ ('zone2') et les
+      // emplacements de chaque intérieur. `pos(i)` = coin haut-gauche de la i-ième parcelle
+      // (null s'il n'y a plus d'emplacement), `at(x, y)` = rang de la parcelle sous un point
+      // (-1 : aucune), `place` = lieu dont le nom s'affiche au survol, `window` = fenêtre
+      // ouverte par une parcelle où il n'y a rien à faire.
       zones(model) {
         const m = model || lastModel;
-        return [
-          { id: 'zone', grid: this.grid, plots: m ? m.plots : [] },
-          { id: 'zone2', grid: this.grid2, plots: m ? m.plots2 || [] : [] },
-        ];
+        const grid = (id, g, plots) => ({
+          id, place: id, window: id, plots,
+          pos: (i) => ({ x: g.x + (i % g.cols) * T, y: g.y + Math.floor(i / g.cols) * T }),
+          at: (wx, wy) => {
+            const col = Math.floor((wx - g.x) / T), row = Math.floor((wy - g.y) / T);
+            return col >= 0 && col < g.cols && row >= 0 ? row * g.cols + col : -1;
+          },
+        });
+        const list = [grid('zone', this.grid, m ? m.plots : []), grid('zone2', this.grid2, m ? m.plots2 || [] : [])];
+        for (const r of Object.values(this.rooms)) {
+          list.push({
+            id: 'interieur-' + r.id, place: null, window: r.def.window, plots: m ? m[r.def.plots] || [] : [],
+            pos: (i) => r.slots[i] || null,
+            at: (wx, wy) => {
+              const i = r.slotAt.get(Math.floor(wx / T) * T + ',' + Math.floor(wy / T) * T);
+              return i === undefined ? -1 : i;
+            },
+          });
+        }
+        return list;
       }
 
       // Ce qui se trouve sous un point de la carte : une parcelle (exactement sa tuile),
       // sinon une étiquette, sinon le bâtiment ou l'arbre le plus en avant.
       hitAt(wx, wy) {
         for (const z of this.zones()) {
-          const g = z.grid;
-          const col = Math.floor((wx - g.x) / T), row = Math.floor((wy - g.y) / T);
-          if (col >= 0 && col < g.cols && row >= 0) {
-            const p = z.plots[row * g.cols + col];
-            if (p) return { plot: p, zone: z.id };
-          }
+          const i = z.at(wx, wy);
+          const p = i >= 0 ? z.plots[i] : null;
+          if (p) return { plot: p, place: z.place, open: z.window };
         }
+        if (this.room) return null;                  // dans un intérieur : rien d'autre à toucher
         const label = this.labelAt(wx, wy);
         if (label) return { window: label.window };
         const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom;
@@ -799,7 +931,7 @@
         if (!p.culture) bridge.act('plant-open', { id: p.id });
         else if (p.mature) bridge.act('harvest', { id: p.id });
         else if (!p.arrosee) bridge.act('water', { id: p.id });
-        else bridge.act('stage-open', { window: hit.zone });   // rien à faire sur la carte : la fenêtre de sa zone
+        else bridge.act('stage-open', { window: hit.open });   // rien à faire sur la carte : la fenêtre de sa zone
       }
 
       /* ---------- synchronisation avec le jeu ---------- */
@@ -837,11 +969,11 @@
         this.grid2.cols = Math.max(1, model.cols2 | 0 || this.grid2.cols);
         const seen = new Set();
         for (const z of this.zones(model)) {
-          const g = z.grid;
           z.plots.forEach((p, i) => {
+            const at = z.pos(i);
+            if (!at) return;                         // plus de parcelles que d'emplacements
             seen.add(p.id);
-            const x = g.x + (i % g.cols) * T + T / 2;
-            const y = g.y + Math.floor(i / g.cols) * T + T / 2;
+            const x = at.x + T / 2, y = at.y + T / 2;
             let e = this.plots.get(p.id);
             if (!e) {
               e = { soil: this.add.image(x, y, 'ph_dry').setDepth(2), crop: null, key: '', tween: null };
@@ -851,12 +983,13 @@
             this.syncCrop(e, p, x, y);
           });
           // Étiquette de la zone : calée à gauche sur les parcelles, au-dessus de la barrière.
-          this.syncLabel(z.id, info(z.id), z.id, g.x, g.y - ZONE_LABEL_UP, 'gauche');
+          if (z.place) { const o = z.pos(0); this.syncLabel(z.id, info(z.id), z.id, o.x, o.y - ZONE_LABEL_UP, 'gauche'); }
         }
         for (const [id, e] of this.plots) {
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
         }
         this.syncTrees(model.arbres || [], sfx, seasonChanged);
+        this.syncRooms(model, force);
         // L'ambiance reçoit l'heure, la saison et les images des arbres (jamais le modèle) : elle
         // ne les anime pas, elle y fait partir feuilles et écureuils.
         if (this.ambient) {
@@ -865,6 +998,47 @@
           this.ambient.setContext({ hour: model.heure, season: model.season, trees: leafy });
         }
         this.placeLabels();
+      }
+
+      // Intérieurs : les emplacements que le joueur n'a pas encore sont assombris (sinon rien
+      // ne distingue une parcelle vide de la terre du bac), puis la vue entre ou sort selon
+      // modèle.interieur.
+      syncRooms(model, force) {
+        const rooms = Object.values(this.rooms);
+        const key = rooms.map((r) => (model[r.def.plots] || []).length).join();
+        if (key !== this.shadeKey && this.roomShade) {
+          this.shadeKey = key;
+          this.roomShade.clear();
+          for (const r of rooms) {
+            this.roomShade.fillStyle(global.Phaser.Display.Color.HexStringToColor(r.bg).color, ROOM_SHADE);
+            for (let i = (model[r.def.plots] || []).length; i < r.slots.length; i++) this.roomShade.fillRect(r.slots[i].x, r.slots[i].y, T, T);
+          }
+        }
+        const want = model.interieur && this.rooms[model.interieur] ? this.rooms[model.interieur] : null;
+        if (want !== this.room) this.setRoom(want, force);
+      }
+
+      // Entre dans un intérieur (ou en sort, `room` nul) : la vue saute, avec un court fondu.
+      // À la sortie, elle revient devant le bâtiment.
+      setRoom(room, now) {
+        const cam = this.cameras.main;
+        const left = this.room;
+        this.vx = this.vy = 0;
+        this.pan = null;
+        this.drag = null;
+        this.setHover(null);
+        if (room && !left) this.outside = { x: this.cx, y: this.cy };
+        this.room = room;
+        const back = !room && left ? this.place(left.def.building) || this.outside : null;
+        if (back) { this.cx = back.x; this.cy = back.y; }
+        cam.setBackgroundColor(room ? room.bg : '#699654');
+        labelLayer.style.visibility = room ? 'hidden' : '';
+        this.game.canvas.style.cursor = '';
+        this.fit();
+        if (!now && !reducedMotion()) {
+          const c = global.Phaser.Display.Color.HexStringToColor((room || left || { bg: '#06182a' }).bg);
+          cam.fadeIn(ROOM_FADE_MS, c.red, c.green, c.blue);
+        }
       }
 
       // Arbres du Verger : le n-ième arbre se pose sur le rectangle arbre_verger_n (pied de
@@ -1050,11 +1224,15 @@
     if (game && game.isBooted) game.loop.sleep();
   }
 
+  // L'intérieur `id` ('serre') peut-il être affiché ? Faux tant que la scène n'est pas prête,
+  // ou si sa carte n'a pas pu être chargée.
+  function hasRoom(id) { const s = getScene(); return !!(s && s.ready && s.rooms[id]); }
+
   // Où en est la vue (voir viewInfo()) ; null tant que la scène n'est pas prête.
   function view() { const s = getScene(); return s && s.ready ? s.viewInfo() : null; }
 
   // Glisse jusqu'à x (px de carte), un point { x, y } ou un lieu ; false si ce n'est pas possible.
   function panTo(target, now) { const s = getScene(); return !!(s && s.ready && s.panTo(target, now)); }
 
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, scene: getScene }; // scene() : pour le débogage et les tests
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, hasRoom, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

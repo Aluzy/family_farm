@@ -49,6 +49,42 @@ export function setStageReturn(value) {
   stageReturn = value;
   return value;
 }
+// Intérieur affiché à la place de la carte : null (dehors) ou 'serre'. On y entre en appuyant
+// sur le bâtiment une fois qu'il est construit ; ses parcelles s'y travaillent d'un appui,
+// comme celles des zones de culture. Rien n'est enregistré : c'est un état de l'affichage.
+export let stageInterior = null;
+export function setStageInterior(value) {
+  stageInterior = value;
+  return value;
+}
+const INTERIORS = { serre: { ok: () => state.serre.construit } };
+
+// L'intérieur peut-il être affiché ? Il faut le bâtiment, la carte, et que la scène ait pu
+// charger la carte de l'intérieur (sinon la fenêtre du bâtiment reste le seul accès).
+export function interiorAvailable(id) {
+  const d = INTERIORS[id];
+  return !!(d && d.ok() && stageUsable() && window.FarmStage && FarmStage.hasRoom && FarmStage.hasRoom(id));
+}
+
+export function enterInterior(id) {
+  if (!interiorAvailable(id)) return false;
+  stageInterior = id;
+  stageWindow = null;
+  stageReturn = null;
+  setLastRenderAt(0); // rendu tout de suite : la vue change sans attendre la cadence
+  refresh();
+  return true;
+}
+
+export function leaveInterior() {
+  if (!stageInterior) return;
+  stageInterior = null;
+  stageWindow = null;
+  stageReturn = null;
+  setLastRenderAt(0);
+  refresh();
+}
+
 let stageWindowShown = null; // dernière fenêtre dessinée (avec son onglet) : pour remonter en haut au changement
 let maisonTab = 'famille'; // onglet de la fenêtre Maison
 export function setMaisonTab(value) {
@@ -195,6 +231,9 @@ export function renderStageWindow() {
 
 export function openStageWindow(id) {
   if (!STAGE_WINDOWS[id] || !STAGE_WINDOWS[id].ok()) return;
+  // Un bâtiment qui a un intérieur : depuis la carte, on y entre. Une fois dedans, la même
+  // action ouvre sa fenêtre (agrandir, tout arroser, tout récolter).
+  if (INTERIORS[id] && stageInterior !== id && enterInterior(id)) return;
   stageWindow = id;
   stageReturn = null;
   renderStageWindow(); // tout de suite, sans attendre la cadence de rendu
@@ -219,9 +258,14 @@ export function allerAuLieu(fenetre, onglet, ancre) {
     setActiveTab('ferme');
     if (fenetre === 'maison' && onglet) maisonTab = onglet;
     stageWindow = STAGE_WINDOWS[fenetre] && STAGE_WINDOWS[fenetre].ok() ? fenetre : null;
+    // Un lieu qui a un intérieur : on y entre, ses parcelles sont sous les yeux. Tout autre
+    // lieu fait sortir.
+    stageInterior = INTERIORS[fenetre] && interiorAvailable(fenetre) ? fenetre : null;
+    if (stageInterior) stageWindow = null;
     if (STAGE_LIEUX.includes(fenetre)) setStagePan(fenetre);
   } else {
     stageWindow = null;
+    stageInterior = null;
     setActiveTab(fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
   }
   ancreVoulue = ancre || null;
@@ -350,6 +394,9 @@ registerActions({
   'stage-close': () => {
     closeStageWindow();
   },
+  'stage-exit': () => {
+    leaveInterior();
+  },
   'maison-tab': (target) => {
     maisonTab = target.dataset.tab;
     renderStageWindow();
@@ -366,6 +413,7 @@ registerActions({
     setActiveTab(target.dataset.tab);
     stageWindow = null;
     stageReturn = null;
+    stageInterior = null; // changer d'onglet (ou revenir sur « Ferme ») ramène à la carte
     setEcranFerme(null);
     telView();
     refresh();

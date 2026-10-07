@@ -2,7 +2,7 @@ import { setComptoirTab, setInvTab, setTestMode, testMode } from './store.js';
 import { tel, telClick } from './consent.js';
 import { scheduleRender } from './loop.js';
 import { refresh } from './render.js';
-import { closeStageWindow, stageWindow } from './stage-windows.js';
+import { closeStageWindow, leaveInterior, stageInterior, stageWindow } from './stage-windows.js';
 import { ACTIONS, registerActions } from './actions.js';
 import { closeModal } from './common.js';
 
@@ -27,7 +27,7 @@ document.addEventListener('change', (e) => {
 });
 
 // Lot 11 : Échap ferme la fenêtre ouverte (comme le bouton Fermer) ; d'abord celle de
-// #modal-root, puis la fenêtre de la carte.
+// #modal-root, puis la fenêtre de la carte, puis l'intérieur où le joueur est entré.
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (document.getElementById('modal-root').childElementCount > 0) {
@@ -36,6 +36,9 @@ document.addEventListener('keydown', (e) => {
   } else if (stageWindow) {
     e.preventDefault();
     closeStageWindow();
+  } else if (stageInterior) {
+    e.preventDefault();
+    leaveInterior();
   }
 });
 
