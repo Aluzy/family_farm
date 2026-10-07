@@ -5,6 +5,8 @@
  *     vent qui pousse les feuilles qui tombent et les papillons. Les arbres ne bougent pas.
  *   - Événements rares, tirés au sort : papillon, oiseau qui picore puis s'envole,
  *     feuille qui tombe, écureuil qui change d'arbre, lucioles au crépuscule.
+ *   - Un habitant : le chat, qui enchaîne ses activités au hasard (tirage pondéré) et dort
+ *     la nuit sur son toit.
  *
  * Règles (voir docs/vie-ambiance.md) :
  *   1. Ce fichier est facultatif : sans lui, farm-stage.js affiche la même carte, immobile.
@@ -15,11 +17,13 @@
  *   4. Aucun tirage au sort par image : la date du prochain événement de chaque type est
  *      tirée une fois, puis seulement comparée à l'horloge.
  *
- * Les bêtes sont dessinées ici, pixel par pixel (aucune image à charger) : ce sont des
- * dessins provisoires, à remplacer par de vraies planches quand elles existeront.
+ * Les bêtes de passage sont dessinées ici, pixel par pixel (aucune image à charger) : ce
+ * sont des dessins provisoires, à remplacer par de vraies planches quand elles existeront.
+ * Le chat a déjà la sienne (assets/chat.png, chargée par farm-stage.js).
  *
- * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced })
- *       → { update(dt), setContext({ hour, season, trees }), scare(x, y), spawn(type), stats() }
+ * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, cat })
+ *       → { update(dt), setContext({ hour, season, trees }), scare(x, y), spawn(type), stats(),
+ *           chat(activité) }
  */
 (function (global) {
   'use strict';
@@ -63,9 +67,47 @@
     printemps: [0x8fc46a, 0xb5d67a], ete: [0x7fb85e, 0xa9cf6c], automne: [0xe0a13a, 0xc9662a, 0xb5482a], hiver: [0x9a8f7a],
   };
 
+  // Le chat. Ce n'est pas un événement : il habite la carte, de jour comme de nuit, et il a sa
+  // vraie planche (assets/chat.png, chargée par farm-stage.js). Voir docs/vie-ambiance.md.
+  // CAT_FRAMES = ordre des cases de 16×16 de la planche (profil droit, pattes sur la dernière
+  // rangée ; le profil gauche est le même, retourné).
+  const CAT_FRAMES = ['idle', 'marche0', 'marche1', 'assis', 'leche', 'couche', 'boule0', 'boule1'];
+  // Ce qu'il peut faire après chaque activité, avec un poids : la suite est tirée une fois, à
+  // la fin de l'activité. Ajouter une activité = une ligne ici, une durée dans CAT_TIME (ou
+  // une allure dans CAT_WALK) et son image dans step().
+  const CAT_NEXT = {
+    debout: { marche: 6, assis: 2, couche: 1, course: 1 },
+    marche: { debout: 3, marche: 3, assis: 2, course: 1 },
+    course: { debout: 3, marche: 1 },
+    assis: { toilette: 3, debout: 4, couche: 2 },
+    toilette: { debout: 3, assis: 2, couche: 1 },
+    couche: { debout: 3, assis: 2, sieste: 2 },
+    sieste: { couche: 1 },
+  };
+  // Durée d'une activité sur place, en secondes, tirée à son début (une heure du jeu dure 18 s).
+  const CAT_TIME = { debout: [0.6, 2.4], assis: [3, 9], toilette: [2.5, 6], couche: [5, 14], sieste: [10, 25] };
+  // Déplacements : vitesse (px par seconde), longueur (en tuiles), pas (px parcourus par image).
+  const CAT_WALK = {
+    marche: { speed: [13, 19], tiles: [2, 6], stride: 3.2 },
+    course: { speed: [50, 70], tiles: [5, 10], stride: 6 },
+    rentre: { speed: [26, 34], stride: 4 },
+  };
+  const CAT_AGAIN = 0.3;        // poids de ce qu'il faisait juste avant : il n'y revient pas tout de suite
+  const CAT_RANGE = 14 * T;     // son territoire : rayon autour du pied de son toit
+  const CAT_ROOF = 'chat_toit'; // objet de la carte (point ou rectangle) où il dort ; sinon le toit de la maison
+  const CAT_JUMP_S = 0.55;      // durée du saut sur le toit
+
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (list) => list[(Math.random() * list.length) | 0];
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  // Tirage pondéré : { marche: 5, assis: 3 } rend « marche » cinq fois sur huit.
+  function pickWeighted(weights) {
+    let total = 0;
+    for (const k in weights) total += weights[k];
+    let r = Math.random() * total;
+    for (const k in weights) { r -= weights[k]; if (r < 0) return k; }
+    return Object.keys(weights)[0];
+  }
 
   // Vent : deux ondes qui traversent la carte d'ouest en est, modulées par une rafale lente.
   // Renvoie -1…1 ; les feuilles qui tombent et les papillons lisent tous ce même vent.
@@ -152,6 +194,7 @@
     // dur : redessiner la carte dans Tiled suffit.
     const water = [];
     const mapTrees = [];              // { x, base (y du pied), top (y du haut du feuillage), r }
+    const wood = new Set();           // cases des couches d'arbres (arbres de toutes tailles, buissons) : le chat les contourne
     (function readMap() {
       const raw = o.map;
       if (!raw || !Array.isArray(raw.layers)) return;
@@ -197,6 +240,10 @@
         } catch (e) { /* planche illisible : l'eau n'est pas reconnue, rien d'autre ne change */ }
       }
       for (const l of layers) {
+        if (!/tree|arbre/i.test(l.name || '')) continue;
+        for (let i = 0; i < W * H; i++) if (l.data[i] & 0x0fffffff) wood.add((i % W) * T + ',' + Math.floor(i / W) * T);
+      }
+      for (const l of layers) {
         if (!/tree|arbre/i.test(l.name || '') || /top|haut/i.test(l.name || '')) continue;
         const seen = new Uint8Array(W * H);
         for (let i = 0; i < W * H; i++) {
@@ -224,7 +271,7 @@
 
     // Rectangles nommés de la carte (bâtiments, zones de culture, arbres du Verger) : un
     // oiseau ne se pose pas dedans.
-    const blocked = Object.values(o.objects || {}).filter((r) => r && r.width && r.height);
+    const blocked = Object.entries(o.objects || {}).filter(([name, r]) => name !== CAT_ROOF && r && r.width && r.height).map((e) => e[1]);
     const waterSet = new Set(water.map((c) => c.x + ',' + c.y));
     function freeAt(x, y) {
       if (x < 8 || y < 8 || x > world.w - 8 || y > world.h - 8) return false;
@@ -441,6 +488,194 @@
       },
     };
 
+    /* ---------- le chat : il habite la carte ---------- */
+    // Les autres bêtes passent ; lui reste. Le jour, il enchaîne ses activités au hasard
+    // (CAT_NEXT) ; à la tombée de la nuit il rentre, saute sur son toit et y dort en boule
+    // jusqu'au matin. Comme pour les autres bêtes, tout est tiré au début de chaque activité
+    // (durée, destination, vitesse) : rien n'est tiré au sort par image.
+
+    // Son toit : l'objet `chat_toit` de la carte s'il existe, sinon l'appentis de la maison.
+    // `foot` = d'où il saute, `depth` = profondeur qui le fait passer devant le bâtiment.
+    const catHome = (function () {
+      const objs = o.objects || {};
+      const spot = objs[CAT_ROOF], house = objs.maison;
+      const roof = spot ? { x: spot.x + (spot.width || 0) / 2, y: spot.y + (spot.height || 0) / 2 }
+        : house ? { x: house.x + house.width * 0.86, y: house.y + house.height * 0.52 } : null;
+      if (!roof) return null;
+      const under = blocked.find((r) => roof.x >= r.x && roof.x <= r.x + r.width && roof.y >= r.y && roof.y <= r.y + r.height);
+      if (under) {
+        const fx = Math.min(under.x + under.width - 6, Math.max(under.x + 6, roof.x));
+        return { roof, foot: { x: fx, y: under.y + under.height + 9 }, depth: under.y + under.height + 2 };
+      }
+      // Toit dessiné dans les tuiles de la carte : il saute du premier endroit libre en dessous.
+      for (let y = roof.y + 8; y < roof.y + 6 * T; y += 4) if (freeAt(roof.x, y)) return { roof, foot: { x: roof.x, y }, depth: y };
+      return null;
+    })();
+
+    // Le trajet en ligne droite est-il libre (ni eau, ni bâtiment, ni arbre, ni buisson) ?
+    const catFree = (x, y) => freeAt(x, y) && !wood.has(Math.floor(x / T) * T + ',' + Math.floor(y / T) * T);
+    function clearWay(x0, y0, x1, y1) {
+      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 8));
+      for (let i = 1; i <= n; i++) if (!catFree(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n)) return false;
+      return true;
+    }
+    // Chemin jusqu'à un point : tout droit, sinon en deux temps (d'abord de côté, ou d'abord
+    // en hauteur). Faute de mieux, tout droit quand même : il passera derrière ce qui le gêne.
+    function wayTo(x0, y0, x1, y1) {
+      if (clearWay(x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
+      for (const c of [{ x: x1, y: y0 }, { x: x0, y: y1 }]) {
+        if (clearWay(x0, y0, c.x, c.y) && clearWay(c.x, c.y, x1, y1)) return [c, { x: x1, y: y1 }];
+      }
+      return [{ x: x1, y: y1 }];
+    }
+
+    let cat = null;
+    let catAt = null;                  // où il était quand l'ambiance a été retirée (animations réduites)
+    function makeCat() {
+      if (!o.cat || !scene.textures.exists(o.cat)) return null;   // pas de planche : pas de chat
+      const F = {};
+      CAT_FRAMES.forEach((name, i) => { F[name] = i; });
+      const centre = catHome ? catHome.foot : { x: world.w / 2, y: world.h / 2 };
+      let x = catAt ? catAt.x : centre.x, y = catAt ? catAt.y : centre.y;
+      let face = Math.random() < 0.5 ? 1 : -1;
+      let st = 'debout', before = null, age = 0, len = rand(0.5, 1.5);   // activité, celle d'avant, son âge, sa durée
+      let rise = 0;                    // secondes de la pose de passage (assis) entre couché et debout
+      let path = null, speed = 0, stride = 3, walked = 0;
+      let night = false;               // il est rentré pour la nuit (ou en chemin)
+      let jump = null;                 // saut en cours : { x0, y0, x1, y1 }
+      let stirAt = 0, stir = 0;        // sommeil : date du prochain demi-réveil, et ce qu'il en reste
+      const breath = rand(1.1, 1.6);   // sommeil : secondes par souffle
+      const s = scene.add.image(x, y, o.cat, 0).setOrigin(0.5, 1);
+      // Le jeu s'ouvre de nuit ou avant le lever du jour : il dort déjà sur son toit.
+      if (catHome && ctx.hour != null && !ctx.day && (ctx.dusk || ctx.hour < 12)) {
+        night = true; st = 'dort'; x = catHome.roof.x; y = catHome.roof.y; stirAt = rand(15, 35);
+      }
+
+      const low = (n) => n === 'couche' || n === 'sieste';
+      const upright = (n) => n === 'debout' || !!CAT_WALK[n];
+
+      function draw(frame, dy, angle) {
+        const up = st === 'saute' || st === 'descend' || st === 'dort' || st === 'reveil';
+        s.setFrame(F[frame]).setPosition(x, y + (dy || 0)).setFlipX(face < 0).setAngle(angle || 0).setDepth(up ? catHome.depth : y);
+      }
+
+      function enter(name) {
+        // Entre couché et debout, il passe un instant par la pose assise.
+        rise = (low(st) && upright(name)) || (upright(st) && low(name)) ? rand(0.25, 0.45) : 0;
+        before = st; st = name; age = 0; walked = 0;
+        if (CAT_TIME[name]) len = rand(CAT_TIME[name][0], CAT_TIME[name][1]);
+      }
+
+      // Tire une destination à quelques tuiles : libre, atteignable en ligne droite et sur son
+      // territoire. `away` (angle) : la direction dans laquelle il fuit.
+      function roam(kind, away) {
+        const W = CAT_WALK[kind];
+        const here = Math.hypot(x - centre.x, y - centre.y);
+        for (let i = 0; i < 8; i++) {
+          const d = rand(W.tiles[0], W.tiles[1]) * T;
+          const a = away == null ? rand(0, 6.283) : away + rand(-0.6, 0.6);
+          // Il est dessiné de profil : il se déplace surtout de côté.
+          const tx = x + Math.cos(a) * d, ty = y + Math.sin(a) * d * 0.5;
+          const there = Math.hypot(tx - centre.x, ty - centre.y);
+          if (there > CAT_RANGE && there > here) continue;         // il reste sur son territoire, ou il y revient
+          if (!clearWay(x, y, tx, ty)) continue;
+          path = [{ x: tx, y: ty }]; speed = rand(W.speed[0], W.speed[1]); stride = W.stride;
+          return true;
+        }
+        return false;
+      }
+
+      // Commence une activité ; un déplacement sans destination libre devient une pause.
+      function begin(name, away) {
+        if ((name === 'marche' || name === 'course') && !roam(name, away)) name = 'debout';
+        enter(name);
+      }
+
+      // La suite : tirage pondéré dans CAT_NEXT, où ce qu'il faisait juste avant pèse moins.
+      function next() {
+        if (!catHome && ctx.dusk) { enter('sieste'); return; }     // pas de toit : il dort sur place
+        const w = Object.assign({}, CAT_NEXT[st]);
+        if (before && w[before]) w[before] *= CAT_AGAIN;
+        begin(pickWeighted(w));
+      }
+
+      function goToBed() {
+        night = true;
+        path = wayTo(x, y, catHome.foot.x, catHome.foot.y);
+        speed = rand(CAT_WALK.rentre.speed[0], CAT_WALK.rentre.speed[1]); stride = CAT_WALK.rentre.stride;
+        enter('rentre');
+      }
+
+      // Avance le long du chemin, avec un départ et un arrêt progressifs. Renvoie true à l'arrivée.
+      function advance(dt) {
+        const p = path[0];
+        const dx = p.x - x, dy = p.y - y, left = Math.hypot(dx, dy);
+        const v = speed * Math.min(1, 0.3 + age * 2.5, path.length > 1 ? 1 : 0.3 + left / 12);
+        const d = Math.min(left, v * dt);
+        if (left > 0.001) { x += (dx / left) * d; y += (dy / left) * d; }
+        if (Math.abs(dx) > 1) face = dx > 0 ? 1 : -1;
+        walked += d;
+        if (left - d > 0.3) return false;
+        path.shift();
+        return !path.length;
+      }
+
+      function step(dt) {
+        age += dt;
+        if (catHome && !night && ctx.dusk && CAT_NEXT[st]) goToBed();   // la nuit tombe : il rentre
+        if (rise > 0) { rise -= dt; age = 0; draw('assis'); return; }
+        if (CAT_WALK[st]) {
+          // L'image suit la distance parcourue, pas l'horloge : les pattes ne patinent pas.
+          const done = advance(dt);
+          const k = Math.floor(walked / stride);
+          if (st === 'course') draw(k % 2 ? 'marche1' : 'marche0', -Math.abs(Math.sin((walked / stride) * Math.PI)) * 2);
+          else draw(['marche0', 'idle', 'marche1', 'idle'][k % 4]);
+          if (done && st === 'rentre') { enter('vise'); len = rand(0.5, 0.9); }
+          else if (done) next();
+        } else if (st === 'vise') {                  // ramassé au pied du mur, il vise le toit
+          draw('assis');
+          if (age >= len) { jump = { x0: x, y0: y, x1: catHome.roof.x, y1: catHome.roof.y }; enter('saute'); }
+        } else if (st === 'saute' || st === 'descend') {
+          const k = clamp01(age / CAT_JUMP_S), e = k * k * (3 - 2 * k);
+          x = jump.x0 + (jump.x1 - jump.x0) * e; y = jump.y0 + (jump.y1 - jump.y0) * e;
+          draw('marche0', -Math.sin(k * Math.PI) * 5, (st === 'saute' ? -1 : 1) * face * 28 * (1 - k));
+          if (k >= 1 && st === 'saute') { enter('dort'); stirAt = rand(15, 35); }
+          else if (k >= 1) { night = false; enter('debout'); }
+        } else if (st === 'dort') {                  // en boule : il respire, et lève parfois la tête
+          if (stir <= 0 && age >= stirAt) { stir = rand(1.5, 3); stirAt = age + stir + rand(15, 35); }
+          if (stir > 0) { stir -= dt; draw('couche'); } else draw(((age / breath) | 0) % 2 ? 'boule1' : 'boule0');
+          if (ctx.day && age > 2) { enter('reveil'); len = rand(2, 4); }
+        } else if (st === 'reveil') {                // il lève la tête, s'assoit, puis saute à terre
+          draw(age < len * 0.6 ? 'couche' : 'assis');
+          if (age >= len) { jump = { x0: x, y0: y, x1: catHome.foot.x, y1: catHome.foot.y }; enter('descend'); }
+        } else {                                     // sur place : debout, assis, toilette, couché, sieste
+          if (st === 'toilette') draw(((age / 0.28) | 0) % 2 ? 'assis' : 'leche');
+          else if (st === 'sieste') draw(((age / breath) | 0) % 2 ? 'boule1' : 'boule0');
+          else draw(st === 'assis' ? 'assis' : st === 'couche' ? 'couche' : 'idle');
+          // Sans toit, la sieste du soir dure jusqu'au matin.
+          if (age >= len && (st !== 'sieste' || catHome || ctx.day)) next();
+        }
+      }
+
+      return {
+        step,
+        // Un appui tout près : il détale à l'opposé ; endormi sur son toit, il lève juste la tête.
+        scare(px, py) {
+          const d = Math.hypot(px - x, py - y);
+          if (st === 'dort') { if (d < SCARE_R / 2 && stir <= 0) stir = rand(1.5, 3); return; }
+          if (d < SCARE_R && CAT_NEXT[st] && st !== 'course') begin('course', Math.atan2(y - py, x - px));
+        },
+        // Pour les essais : chat('toilette') lance une activité de CAT_NEXT, chat('nuit') l'envoie se coucher.
+        force(name) {
+          if (name === 'nuit' && catHome && CAT_NEXT[st]) goToBed();
+          else if (CAT_NEXT[name] && CAT_NEXT[st]) begin(name);
+          return this.info();
+        },
+        info: () => ({ etat: st, avant: before, x: Math.round(x), y: Math.round(y), nuit: night, toit: catHome ? catHome.roof : null }),
+        destroy() { catAt = CAT_NEXT[st] ? { x, y } : null; s.destroy(); },
+      };
+    }
+
     /* ---------- ordonnanceur ---------- */
 
     // Tire la date de la prochaine naissance d'un type (une seule fois, pas à chaque image).
@@ -481,6 +716,7 @@
     function start() {
       on = true;
       for (const type in EVENTS) arm(type, true);
+      cat = makeCat();
       for (let i = 0; i < 3; i++) {
         const s = scene.add.image(rand(0, world.w), rand(0, world.h), 'amb_nuage').setDepth(SHADOW_DEPTH).setTint(0x0b1d2e).setAlpha(0).setScale(rand(4, 6.5), rand(4, 6));
         clouds.push({ s, v: rand(7, 12) });
@@ -492,6 +728,7 @@
       on = false;
       for (const a of actors) a.sprites.forEach((s) => s.destroy());
       actors.length = 0;
+      if (cat) { cat.destroy(); cat = null; }
       clouds.forEach((c) => c.s.destroy()); clouds = [];
     }
 
@@ -504,11 +741,12 @@
       t += dt;
       acc += dt * 1000;
       if (acc >= TICK_MS) { tick(); acc = 0; }
-      // Par image : seulement ce qui se déplace (8 bêtes au plus, 3 ombres).
+      // Par image : seulement ce qui se déplace (8 bêtes au plus, le chat, 3 ombres).
       for (let i = actors.length - 1; i >= 0; i--) {
         const a = actors[i];
         if (a.step(dt) === false) { a.sprites.forEach((s) => s.destroy()); actors.splice(i, 1); }
       }
+      if (cat) cat.step(dt);
       for (const c of clouds) {
         const half = c.s.displayWidth / 2;
         let x = c.s.x + c.v * dt;
@@ -529,15 +767,21 @@
       if (c.trees) trees = c.trees.slice();
     }
 
-    function scare(x, y) { for (const a of actors) if (a.scare) a.scare(x, y); }
+    function scare(x, y) {
+      for (const a of actors) if (a.scare) a.scare(x, y);
+      if (cat) cat.scare(x, y);
+    }
 
     function stats() {
       const by = {};
       for (const a of actors) by[a.type] = (by[a.type] || 0) + 1;
-      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, orchard: trees.length, clock: t, next: Object.assign({}, next) };
+      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, wood: wood.size, orchard: trees.length, chat: cat ? cat.info() : null, clock: t, next: Object.assign({}, next) };
     }
 
-    return { update, setContext, scare, stats, spawn: (type) => spawn(type, true), wind: (x, y) => windAt(x, y, t), repaint };
+    return {
+      update, setContext, scare, stats, spawn: (type) => spawn(type, true), wind: (x, y) => windAt(x, y, t), repaint,
+      chat: (name) => (cat ? cat.force(name) : null),
+    };
   }
 
   global.AmbientLife = { attach, EVENTS };

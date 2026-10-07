@@ -13,7 +13,7 @@ du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
- ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage (voir docs/vie-ambiance.md)
+ ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat (voir docs/vie-ambiance.md)
  ├─ js/farm-stage.js      la scène : ne connaît ni `state` ni le moteur (script classique)
  └─ js/main.js            point d'entrée des modules ES
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
