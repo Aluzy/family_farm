@@ -1,8 +1,8 @@
 /* ambient-life.js — la vie d'ambiance de la carte (prototype).
  *
  * But : donner l'impression d'un monde vivant pour presque rien en calcul.
- *   - Micro-mouvements procéduraux, pilotés par un seul champ de vent : feuillage des
- *     arbres du Verger, ombres de nuages, reflets sur l'eau.
+ *   - Micro-mouvements procéduraux : ombres de nuages, reflets sur l'eau, et un champ de
+ *     vent qui pousse les feuilles qui tombent et les papillons. Les arbres ne bougent pas.
  *   - Événements rares, tirés au sort : papillon, oiseau qui picore puis s'envole,
  *     feuille qui tombe, écureuil qui change d'arbre, lucioles au crépuscule.
  *
@@ -25,11 +25,10 @@
   'use strict';
 
   const T = 16;
-  const TICK_MS = 100;      // décisions (événements, feuillage, reflets) : 10 fois par seconde
+  const TICK_MS = 100;      // décisions (événements, reflets) : 10 fois par seconde
   const MAX_ACTORS = 8;     // bêtes et feuilles affichées en même temps, tous types confondus
   const MARGIN = 24;        // px de carte : les bêtes naissent et disparaissent hors de la vue
   const RETRY_S = [2, 5];   // un événement qui n'a pas pu naître est retenté après ce délai
-  const TREE_FRAMES = 8;    // images du feuillage dans basic_*.png
   const SCARE_R = 48;       // px de carte : un appui plus près fait s'envoler les oiseaux
 
   // Événements : `gap` = secondes entre deux naissances (tirées une fois, voir arm()),
@@ -68,13 +67,9 @@
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (list) => list[(Math.random() * list.length) | 0];
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-  // Nombre fixe entre 0 et 1 tiré de la position : une phase propre à chaque élément, sans
-  // rien stocker (deux arbres voisins ne bougent jamais ensemble).
-  const hash2 = (x, y) => { const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453; return s - Math.floor(s); };
 
   // Vent : deux ondes qui traversent la carte d'ouest en est, modulées par une rafale lente.
-  // Renvoie -1…1 ; c'est la seule source de mouvement du feuillage, des feuilles et des
-  // papillons, d'où des rafales qui passent d'un arbre au suivant.
+  // Renvoie -1…1 ; les feuilles qui tombent et les papillons lisent tous ce même vent.
   function windAt(x, y, t) {
     const gust = 0.5 + 0.5 * Math.sin(t * 0.13 + 1.7) * Math.sin(t * 0.071);
     const wave = 0.6 * Math.sin(x * 0.012 + y * 0.004 - t * 0.9) + 0.4 * Math.sin(x * 0.031 - t * 1.7 + 2.1);
@@ -96,7 +91,7 @@
     let t = 0;                        // horloge de l'ambiance, en secondes (s'arrête avec la scène)
     let acc = 0;
     let on = false;
-    let trees = [];                   // arbres du Verger : { s (image), ph, f }
+    let trees = [];                   // images des arbres du Verger (immobiles) : feuilles et écureuils en partent
     let clouds = [];
     let sparks = [];
 
@@ -255,8 +250,7 @@
     // carte et les arbres adultes du Verger.
     function trunks() {
       const list = mapTrees.slice();
-      for (const e of trees) {
-        const s = e.s;
+      for (const s of trees) {
         if (s.active && s.scaleX >= 1) list.push({ x: s.x, base: s.y - 2, top: s.y - s.displayHeight * 0.92, r: s.displayWidth * 0.27 });
       }
       return list.filter((m) => inView(m.x, (m.base + m.top) / 2, -8));
@@ -473,15 +467,6 @@
         const s = actors[i].sprites[0];
         if (!inView(s.x, s.y, MARGIN * 3)) { actors[i].sprites.forEach((q) => q.destroy()); actors.splice(i, 1); }
       }
-      // Feuillage du Verger : l'image avance d'autant plus vite que le vent souffle sur l'arbre.
-      for (const e of trees) {
-        const s = e.s;
-        if (!s.active) continue;
-        const force = 0.5 + 0.5 * windAt(s.x, s.y, t);
-        e.f += dt * (1 + 7 * force * force);
-        const frame = (Math.floor(e.f + e.ph) % TREE_FRAMES);
-        if (frame !== e.frame) { e.frame = frame; if (inView(s.x, s.y - 40, 60)) s.setFrame(frame); }
-      }
       // Reflets sur l'eau : chacun s'allume un instant sur une case d'eau visible.
       for (const k of sparks) {
         if (k.life > 0) {
@@ -520,7 +505,6 @@
       actors.length = 0;
       clouds.forEach((c) => c.s.destroy()); clouds = [];
       sparks.forEach((k) => k.s.destroy()); sparks = [];
-      for (const e of trees) if (e.s.active) { e.s.setFrame(0); e.frame = 0; }
     }
 
     /* ---------- API ---------- */
@@ -554,10 +538,7 @@
         ctx.day = h >= 6.5 && h < 19.5;
         ctx.dusk = h >= 19.75 || h < 5;
       }
-      if (c.trees) {
-        const old = new Map(trees.map((e) => [e.s, e]));
-        trees = c.trees.map((s) => old.get(s) || { s, ph: hash2(s.x, s.y) * TREE_FRAMES, f: 0, frame: 0 });
-      }
+      if (c.trees) trees = c.trees.slice();
     }
 
     function scare(x, y) { for (const a of actors) if (a.scare) a.scare(x, y); }
