@@ -90,6 +90,9 @@
     { id: 'verger', object: 'verger', tex: 'sign', seasonal: false, window: 'verger' },
   ];
   const MILL_FRAME = { frameWidth: 96, frameHeight: 128 };
+  // chat.png : le chat de la vie d'ambiance, 8 cases de 16×16 (leur ordre : CAT_FRAMES dans
+  // js/ambient-life.js). Sans l'image, pas de chat ; rien d'autre ne change.
+  const CAT_FRAME = { frameWidth: 16, frameHeight: 16 };
   // Intérieurs : une petite carte Tiled à part, affichée à la place de la carte quand le
   // joueur entre dans le bâtiment (modèle.interieur). `zones` = nom des couches d'objets dont
   // le rectangle reçoit les parcelles, `plots` = leur liste dans le modèle, `window` = fenêtre
@@ -218,6 +221,7 @@
         L.image('soil_dry', 'soil_dry.png');
         L.image('soil_wet', 'soil_wet.png');
         L.image('sign', 'sign.png');
+        L.spritesheet('chat', 'chat.png', CAT_FRAME);
         L.tilemapTiledJSON(MAP.key, MAP.json);
         for (const r of Object.values(ROOMS)) L.tilemapTiledJSON(r.key, r.json);
         L.image(MAP.tiles, MAP.image);
@@ -267,13 +271,14 @@
         this.scale.on('resize', () => this.fit());
         this.fit();
         // Vie d'ambiance (js/ambient-life.js, facultatif) : ombres de nuages, petites bêtes de
-        // passage. Voir docs/vie-ambiance.md.
+        // passage, et le chat. Voir docs/vie-ambiance.md.
         this.ambient = null;
         if (global.AmbientLife) {
           try {
             this.ambient = global.AmbientLife.attach(this, {
               world: this.world, map: this.mapRaw, tiles: this.has(MAP.tiles) ? MAP.tiles : null,
               objects: this.objects, lightDepth: this.light.depth, reduced: reducedMotion,
+              cat: this.has('chat') ? 'chat' : null,
             });
           } catch (e) { console.warn('[FarmStage] vie d\'ambiance indisponible', e); }
         }
