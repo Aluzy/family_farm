@@ -240,8 +240,8 @@
         I.on('wheel', (p, over, dx, dy) => { this.vx = this.vy = 0; this.pan = null; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
         this.scale.on('resize', () => this.fit());
         this.fit();
-        // Vie d'ambiance (js/ambient-life.js, facultatif) : ombres de nuages, reflets sur l'eau,
-        // petites bêtes de passage. Voir docs/vie-ambiance.md.
+        // Vie d'ambiance (js/ambient-life.js, facultatif) : ombres de nuages, petites bêtes de
+        // passage. Voir docs/vie-ambiance.md.
         this.ambient = null;
         if (global.AmbientLife) {
           try {
