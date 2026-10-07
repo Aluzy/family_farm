@@ -1,7 +1,7 @@
 /* ambient-life.js — la vie d'ambiance de la carte (prototype).
  *
  * But : donner l'impression d'un monde vivant pour presque rien en calcul.
- *   - Micro-mouvements procéduraux : ombres de nuages, reflets sur l'eau, et un champ de
+ *   - Micro-mouvements procéduraux : ombres de nuages, et un champ de
  *     vent qui pousse les feuilles qui tombent et les papillons. Les arbres ne bougent pas.
  *   - Événements rares, tirés au sort : papillon, oiseau qui picore puis s'envole,
  *     feuille qui tombe, écureuil qui change d'arbre, lucioles au crépuscule.
@@ -25,7 +25,7 @@
   'use strict';
 
   const T = 16;
-  const TICK_MS = 100;      // décisions (événements, reflets) : 10 fois par seconde
+  const TICK_MS = 100;      // décisions (événements) : 10 fois par seconde
   const MAX_ACTORS = 8;     // bêtes et feuilles affichées en même temps, tous types confondus
   const MARGIN = 24;        // px de carte : les bêtes naissent et disparaissent hors de la vue
   const RETRY_S = [2, 5];   // un événement qui n'a pas pu naître est retenté après ce délai
@@ -56,7 +56,6 @@
     ecu1: ['........', 'tt...rr.', 'ttttrrkr', '.trrrrr.', '..rcc...', 'r.....r.'],
     feu0: ['.w.', 'ww.'],
     feu1: ['ww.', '.w.'],
-    eclat: ['.w.', 'www', '.w.'],
     luc: ['w'],
   };
   const BUTTERFLY_TINTS = [0xffffff, 0xffe680, 0xffb86b, 0xbfe3ff, 0xf7b6d2];
@@ -93,7 +92,6 @@
     let on = false;
     let trees = [];                   // images des arbres du Verger (immobiles) : feuilles et écureuils en partent
     let clouds = [];
-    let sparks = [];
 
     /* ---------- textures : dessinées ici, redessinées si le navigateur les vide ---------- */
 
@@ -148,7 +146,8 @@
     /* ---------- lecture de la carte : eau, arbres, endroits occupés ---------- */
 
     // Cases d'eau : la tuile la plus haute de la case est bleue (couleur moyenne de la tuile
-    // dans la planche). Arbres isolés : dans les couches dont le nom contient « tree » ou
+    // dans la planche). Elles servent seulement à ce qu'aucune bête ne se pose sur l'eau :
+    // l'eau elle-même n'est pas animée ici (la carte aura ses propres images). Arbres isolés : dans les couches dont le nom contient « tree » ou
     // « arbre », un groupe de tuiles de 3 à 5 de large et 4 à 6 de haut. Rien n'est écrit en
     // dur : redessiner la carte dans Tiled suffit.
     const water = [];
@@ -188,7 +187,7 @@
             for (const l of layers) { const gid = l.data[i] & 0x0fffffff; if (gid) { const k = kind(gid); if (k >= 0) top = k; } }
             if (top === 1) water.push({ x: (i % W) * T, y: Math.floor(i / W) * T });
           }
-        } catch (e) { /* planche illisible : pas de reflets, rien d'autre ne change */ }
+        } catch (e) { /* planche illisible : l'eau n'est pas reconnue, rien d'autre ne change */ }
       }
       for (const l of layers) {
         if (!/tree|arbre/i.test(l.name || '') || /top|haut/i.test(l.name || '')) continue;
@@ -456,7 +455,7 @@
       return true;
     }
 
-    function tick(dt) {
+    function tick() {
       for (const type in EVENTS) {
         if (t < next[type]) continue;
         if (spawn(type)) arm(type); else next[type] = t + rand(RETRY_S[0], RETRY_S[1]);
@@ -466,22 +465,6 @@
       for (let i = actors.length - 1; i >= 0; i--) {
         const s = actors[i].sprites[0];
         if (!inView(s.x, s.y, MARGIN * 3)) { actors[i].sprites.forEach((q) => q.destroy()); actors.splice(i, 1); }
-      }
-      // Reflets sur l'eau : chacun s'allume un instant sur une case d'eau visible.
-      for (const k of sparks) {
-        if (k.life > 0) {
-          k.life -= dt;
-          k.s.setAlpha(k.life > 0 ? Math.sin(Math.PI * clamp01(k.life / k.span)) * 0.85 : 0);
-        } else if (t >= k.next) {
-          k.next = t + rand(0.5, 2.4);
-          for (let i = 0; i < 6; i++) {
-            const c = pick(water);
-            if (!inView(c.x, c.y, 0)) continue;
-            k.s.setPosition(c.x + 2 + ((Math.random() * 12) | 0), c.y + 2 + ((Math.random() * 12) | 0));
-            k.life = k.span = rand(0.5, 0.9);
-            break;
-          }
-        }
       }
       // Ombres de nuages : seulement en plein jour, et elles s'effacent doucement.
       const want = ctx.day ? 0.12 : 0;
@@ -495,7 +478,6 @@
         const s = scene.add.image(rand(0, world.w), rand(0, world.h), 'amb_nuage').setDepth(SHADOW_DEPTH).setTint(0x0b1d2e).setAlpha(0).setScale(rand(4, 6.5), rand(4, 6));
         clouds.push({ s, v: rand(7, 12) });
       }
-      for (let i = 0; water.length && i < 4; i++) sparks.push({ s: sprite(0, 0, 'eclat').setDepth(1).setAlpha(0), life: 0, span: 1, next: rand(0, 2) });
     }
 
     // Tout enlever (le joueur vient de demander moins d'animations).
@@ -504,7 +486,6 @@
       for (const a of actors) a.sprites.forEach((s) => s.destroy());
       actors.length = 0;
       clouds.forEach((c) => c.s.destroy()); clouds = [];
-      sparks.forEach((k) => k.s.destroy()); sparks = [];
     }
 
     /* ---------- API ---------- */
@@ -515,7 +496,7 @@
       const dt = Math.min(delta, 50) / 1000;
       t += dt;
       acc += dt * 1000;
-      if (acc >= TICK_MS) { tick(acc / 1000); acc = 0; }
+      if (acc >= TICK_MS) { tick(); acc = 0; }
       // Par image : seulement ce qui se déplace (8 bêtes au plus, 3 ombres).
       for (let i = actors.length - 1; i >= 0; i--) {
         const a = actors[i];

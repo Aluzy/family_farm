@@ -6,10 +6,12 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
 
 ## 1. Principe
 
-- **Mouvement procédural** : ombres de nuages, reflets sur l'eau, et un seul champ de vent
+- **Mouvement procédural** : ombres de nuages, et un seul champ de vent
   (`windAt(x, y, t)`, deux ondes qui traversent la carte d'ouest en est, modulées par une rafale
   lente) qui pousse les feuilles qui tombent et dévie les papillons.
 - **Les arbres ne bougent pas**, ni ceux de la carte ni ceux du Verger : c'est voulu.
+- **L'eau n'est pas animée ici** : la prochaine carte apporte ses propres images d'eau. Les cases
+  d'eau ne servent qu'à empêcher les bêtes de s'y poser.
 - **Bêtes** : de petites machines à états, dessinées en 2 à 4 images. Chacune tire sa vitesse,
   sa phase et son amplitude à la naissance : deux papillons ne volent jamais ensemble.
 - **Événements rares** : la date de la prochaine naissance de chaque type est tirée une seule
@@ -20,7 +22,6 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
 | Élément | Comment | Quand |
 |---|---|---|
 | Ombres de nuages | 3 images agrandies qui dérivent vers l'est | de 6 h 30 à 19 h 30 |
-| Reflets sur l'eau | 4 points qui s'allument un instant sur une case d'eau visible | toujours |
 | Papillon | traverse la vue en zigzag, poussé par le vent, se pose une fois | le jour, sauf en hiver |
 | Oiseau | arrive en vol, se pose, picore et sautille, repart ; s'envole si on appuie à moins de 48 px | le jour |
 | Feuille | tombe d'un feuillage, s'efface au sol | sauf en hiver ; trois fois plus souvent en automne |
@@ -35,7 +36,7 @@ actuelle : 70 cases d'eau, 37 arbres. Renommer ces couches fait disparaître feu
 ## 3. Budget
 
 - 8 bêtes ou feuilles au plus à la fois (`MAX_ACTORS`), tous types confondus, et un plafond par type.
-- Décisions et reflets à 10 Hz (`TICK_MS`). Par image : seulement les bêtes présentes
+- Décisions à 10 Hz (`TICK_MS`). Par image : seulement les bêtes présentes
   et les 3 ombres.
 - Rien hors de la vue : une bête naît au bord de la vue et elle est retirée si le joueur fait
   glisser la carte ailleurs.
