@@ -10,7 +10,8 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
   (`windAt(x, y, t)`, deux ondes qui traversent la carte d'ouest en est, modulées par une rafale
   lente) qui pousse les feuilles qui tombent et dévie les papillons.
 - **Les arbres ne bougent pas**, ni ceux de la carte ni ceux du Verger : c'est voulu.
-- **L'eau n'est pas animée ici** : la prochaine carte apporte ses propres images d'eau. Les cases
+- **L'eau n'est pas animée ici** : c'est la carte qui l'anime, avec ses tuiles Tiled (voir
+  `makeTileAnims()` dans `farm-stage.js`). Les cases
   d'eau ne servent qu'à empêcher les bêtes de s'y poser.
 - **Bêtes** : de petites machines à états, dessinées en 2 à 4 images. Chacune tire sa vitesse,
   sa phase et son amplitude à la naissance : deux papillons ne volent jamais ensemble.
@@ -31,7 +32,7 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
 L'eau et les arbres sont lus dans la carte Tiled, rien n'est écrit en dur : une case est de l'eau
 si sa tuile la plus haute est bleue ; un arbre est un groupe de tuiles de 3 à 5 de large et de 4
 à 6 de haut dans une couche dont le nom contient `tree` ou `arbre` (sauf `top`). Sur la carte
-actuelle : 70 cases d'eau, 37 arbres. Renommer ces couches fait disparaître feuilles et écureuils.
+actuelle : 70 cases d'eau, 39 arbres. Renommer ces couches fait disparaître feuilles et écureuils.
 
 ## 3. Budget
 
