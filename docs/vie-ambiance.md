@@ -18,6 +18,7 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
 - **Événements rares** : la date de la prochaine naissance de chaque type est tirée une seule
   fois (`arm()`), puis seulement comparée à l'horloge. Aucun tirage au sort par image.
 - **Un habitant** : le chat ne passe pas, il vit sur la carte. Voir la section 3.
+- **Le troupeau** : les bêtes de l'Étable sortent le matin et rentrent le soir. Voir la section 4.
 
 ## 2. Ce qui bouge
 
@@ -30,6 +31,7 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
 | Écureuil | descend d'un arbre, court jusqu'à un autre en s'arrêtant une fois, y grimpe | le jour, sauf en hiver |
 | Lucioles | 5 points lumineux au-dessus du voile de lumière | à partir de 19 h 45, au printemps et en été |
 | Chat | marche, s'assoit, fait sa toilette, se couche, fait la sieste, court ; détale si on appuie à moins de 48 px | toute la journée ; à partir de 19 h 45 il dort sur son toit, jusqu'à 6 h 30 |
+| Troupeau | les portes de l'Étable coulissent, les bêtes sortent une à une, broutent, marchent, se couchent, donnent des coups de queue | dehors de 7 h à 20 h, si l'Étable est affichée et qu'il y a des bêtes |
 
 L'eau et les arbres sont lus dans la carte Tiled, rien n'est écrit en dur : une case est de l'eau
 si sa tuile la plus haute est bleue ; un arbre est un groupe de tuiles de 3 à 5 de large et de 4
@@ -100,44 +102,91 @@ petit bond, ou inclinées). Pour ajouter une activité : une ligne dans `CAT_NEX
 chat fait 12 pixels de long et 5 de haut dans chacune. Réduire chaque image séparément « pour
 qu'elle remplisse la case » donne un chat qui grossit et rétrécit d'une image à l'autre.
 
-## 4. Budget
+## 4. Le troupeau de l'Étable
+
+Le seul élément de l'ambiance qui dépend du jeu, et seulement par deux choses que la scène lui
+donne dans `setContext` : l'image de l'Étable (`barn`, absente tant que l'Étable n'est pas
+affichée) et le nombre de bêtes par espèce (`herd`, tiré de `animaux` dans le modèle de vue).
+Tant que l'Étable n'est pas débloquée, il n'y a donc ni porte ni bêtes, sans rien régler.
+
+**La journée** (`HERD_OUT` = 7, `HERD_IN` = 20) :
+
+- avant 7 h, les bêtes sont dans l'Étable, portes fermées ;
+- à 7 h les deux battants coulissent (deux crans de 0,3 s), puis les bêtes sortent une à une
+  (`HERD_GAP` secondes entre deux) : chacune apparaît sur le seuil et gagne une place libre de
+  l'enclos ;
+- dans l'enclos, chacune suit `HERD_NEXT`, sur le même principe que le chat : brouter (la tête
+  se relève à chaque bouchée), marcher jusqu'à une place libre voisine, rester debout avec
+  parfois deux coups de queue, se coucher et ruminer ;
+- à 20 h elles rentrent une à une, et les portes se ferment derrière la dernière ;
+- si le jeu s'ouvre en journée, elles sont déjà dans l'enclos, portes ouvertes ; une bête
+  achetée en journée sort de l'Étable ; une bête en moins disparaît.
+
+**L'enclos** : le rectangle `enclos` de la carte s'il existe, sinon la bande de 52 px devant le
+rectangle `grange` (c'est là qu'est la clôture de la carte actuelle). Les bêtes ne se posent pas
+à moins d'une longueur l'une de l'autre.
+
+**La porte** n'a pas d'image à elle : les deux images « entrouverte » et « ouverte » sont
+fabriquées au démarrage à partir de l'image de l'Étable (`BARN_DOOR` : où sont les battants dans
+`barn_*.png`, de combien ils coulissent). Changer le dessin de l'Étable demande de revoir ces
+mesures.
+
+**Une espèce** = une ligne dans `HERD` (ambient-life.js), une ligne dans `HERD_SHEETS`
+(farm-stage.js) et une planche de cases de 32×24, profil droit, sabots sur la dernière rangée.
+Pour la vache (`assets/vache.png`) :
+
+| Case | Nom | Sert à |
+|---|---|---|
+| 0 | `idle` | debout ; pas intermédiaire de la marche |
+| 1 | `queue` | coup de queue |
+| 2, 3 | `marche0`, `marche1` | marche (`marche0`, `idle`, `marche1`, `idle`) |
+| 4, 5 | `broute0`, `broute1` | tête au sol, puis relevée d'un pixel |
+| 6, 7 | `couchee0`, `couchee1` | couchée ; le mufle bouge quand elle rumine |
+
+Au plus 5 vaches sont dessinées (`max`), quel que soit le troupeau du jeu. Le modèle de vue
+compte aussi les moutons, mais ils n'ont pas encore de planche : ils ne sont pas dessinés.
+
+## 5. Budget
 
 - 8 bêtes ou feuilles au plus à la fois (`MAX_ACTORS`), tous types confondus, et un plafond par type.
 - Décisions à 10 Hz (`TICK_MS`). Par image : seulement les bêtes présentes, le chat
   et les 3 ombres.
 - Rien hors de la vue : une bête naît au bord de la vue et elle est retirée si le joueur fait
-  glisser la carte ailleurs. Seule exception, le chat : une image en plus des 8, jamais retirée
-  (une addition et un changement d'image par image affichée, 0,004 ms mesuré).
+  glisser la carte ailleurs. Exceptions : le chat (une image en plus des 8) et le troupeau (5
+  bêtes au plus, et la porte), jamais retirés. Chacun coûte une addition et un changement
+  d'image par image affichée.
 - « Réduire les animations » (`prefers-reduced-motion`) : tout est retiré.
 - Onglet autre que la Ferme : la boucle Phaser dort, donc l'ambiance aussi.
 - Mesure (Chromium sans carte graphique, budget plein, 600 images) : 0,1 ms par image en moyenne,
   0,9 ms au pire.
 
-## 5. Branchement
+## 6. Branchement
 
 `farm-stage.js` appelle l'ambiance en quatre endroits et ne dépend pas d'elle :
 
 ```
 preload() this.load.spritesheet('chat', 'chat.png', { frameWidth: 16, frameHeight: 16 })
-create()  this.ambient = AmbientLife.attach(this, { world, map, tiles, objects, lightDepth, reduced, cat })
+          this.load.spritesheet('vache', 'vache.png', { frameWidth: 32, frameHeight: 24 })
+create()  this.ambient = AmbientLife.attach(this, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
 update()  this.ambient.update(delta)
-sync()    this.ambient.setContext({ hour, season, trees })   // jamais le modèle de vue
+sync()    this.ambient.setContext({ hour, season, trees, barn, herd })   // jamais le modèle de vue
 tap()     this.ambient.scare(wx, wy)
 ```
 
 `cat` est le nom de la planche du chat si elle a été chargée. Sans `assets/chat.png`, il n'y a
-pas de chat et rien d'autre ne change.
+pas de chat et rien d'autre ne change. De même `herd` donne la planche de chaque espèce du
+troupeau : une espèce sans planche n'est pas dessinée.
 
 L'ambiance ne lit ni l'état du jeu ni le modèle de vue, et ne déclenche aucune action.
 
-## 6. Ajouter un événement
+## 7. Ajouter un événement
 
 1. Une ligne dans `EVENTS` : `gap` (secondes entre deux naissances), `max`, `when(contexte)`.
 2. Une fonction dans `MAKERS` qui renvoie `{ sprites, step(dt) }` ; `step` renvoie `false` quand
    la bête a fini, et la fonction renvoie `null` s'il n'y a pas d'endroit convenable dans la vue.
 3. Le dessin dans `ART` (une lettre par pixel) si la bête n'a pas encore d'image.
 
-## 7. Essayer
+## 8. Essayer
 
 Depuis la console, sur l'onglet Ferme :
 
@@ -147,9 +196,12 @@ a.spawn('oiseau')      // aussi : papillon, feuille, ecureuil, lucioles
 a.stats()              // bêtes présentes, date des prochaines naissances, ce que fait le chat
 a.chat('toilette')     // lance une activité du chat : debout, marche, course, assis, toilette, couche, sieste
 a.chat('nuit')         // l'envoie se coucher sur son toit (en plein jour, il se réveille aussitôt)
+a.stats().troupeau     // ce que fait chaque bête de l'Étable ; a.stats().porte : 0 fermée, 2 ouverte
 ```
 
-## 8. Limites
+Pour voir le troupeau sans jouer jusqu'à l'Étable : `FF.engine.testAddCows(FF.state); FF.render()`.
+
+## 9. Limites
 
 - **Les dessins des bêtes de passage sont provisoires**, tracés pixel par pixel dans le code. De
   vraies planches (ou un squelette pour la famille et le bétail, qui ne sont pas encore sur la
@@ -163,6 +215,13 @@ a.chat('nuit')         // l'envoie se coucher sur son toit (en plein jour, il se
   les rochers ni les barrières.
 - **Le chat n'a qu'un profil** : il se déplace surtout de côté, et un trajet presque vertical
   se fait de profil.
+- **Le troupeau** : pas d'image de passage entre debout et couchée ; deux bêtes qui marchent
+  peuvent se croiser en se traversant ; la bête qui sort apparaît en fondu sur le seuil, elle ne
+  franchit pas vraiment la porte. Avec « Réduire les animations », il n'y a ni bêtes ni porte
+  ouverte, comme pour le reste de l'ambiance.
+- **Les Étables d'automne et d'hiver** (`barn_au`, `barn_wi`, pas affichées tant que
+  `SEASONS_ON_MAP` est faux) : la porte est fabriquée avec les mêmes mesures, sans avoir été
+  regardée sur ces deux images.
 - **L'herbe et les fleurs de la carte ne bougent pas** : elles sont cuites dans l'image du fond
   (`bakeGround()`). Les animer demande de sortir leurs couches du fond et de les poser en images.
 - En dessous de 20 images par seconde, l'ambiance ralentit au lieu de sauter (`delta` plafonné à

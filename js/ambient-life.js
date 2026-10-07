@@ -7,11 +7,14 @@
  *     feuille qui tombe, écureuil qui change d'arbre, lucioles au crépuscule.
  *   - Un habitant : le chat, qui enchaîne ses activités au hasard (tirage pondéré) et dort
  *     la nuit sur son toit.
+ *   - Le troupeau de l'Étable : les portes s'ouvrent à 7 h, les bêtes sortent dans l'enclos,
+ *     broutent, se couchent, et rentrent à 20 h.
  *
  * Règles (voir docs/vie-ambiance.md) :
  *   1. Ce fichier est facultatif : sans lui, farm-stage.js affiche la même carte, immobile.
  *   2. Il ne lit ni l'état du jeu ni le modèle de vue : la scène lui donne l'heure, la
- *      saison et les arbres du Verger (setContext). Il ne déclenche aucune action du jeu.
+ *      saison, les arbres du Verger, l'image de l'Étable et le nombre de bêtes du troupeau
+ *      (setContext). Il ne déclenche aucune action du jeu.
  *   3. Budget fixe : MAX_ACTORS bêtes à la fois, décisions à 10 Hz, rien hors de la vue,
  *      rien du tout si le joueur a demandé moins d'animations.
  *   4. Aucun tirage au sort par image : la date du prochain événement de chaque type est
@@ -19,11 +22,12 @@
  *
  * Les bêtes de passage sont dessinées ici, pixel par pixel (aucune image à charger) : ce
  * sont des dessins provisoires, à remplacer par de vraies planches quand elles existeront.
- * Le chat a déjà la sienne (assets/chat.png, chargée par farm-stage.js).
+ * Le chat et la vache ont déjà la leur (assets/chat.png, assets/vache.png, chargées par
+ * farm-stage.js).
  *
- * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, cat })
- *       → { update(dt), setContext({ hour, season, trees }), scare(x, y), spawn(type), stats(),
- *           chat(activité) }
+ * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
+ *       → { update(dt), setContext({ hour, season, trees, barn, herd }), scare(x, y),
+ *           spawn(type), stats(), chat(activité) }
  */
 (function (global) {
   'use strict';
@@ -97,6 +101,30 @@
   const CAT_ROOF = 'chat_toit'; // objet de la carte (point ou rectangle) où il dort ; sinon le toit de la maison
   const CAT_JUMP_S = 0.55;      // durée du saut sur le toit
 
+  // Le troupeau de l'Étable. Le jeu dit seulement combien de bêtes il y a (setContext) ;
+  // l'ambiance ouvre les portes le matin, fait sortir les bêtes dans l'enclos, les fait
+  // brouter, et les rentre le soir. Une espèce = une ligne ici et une planche de cases de
+  // 32×24 (profil droit, sabots sur la dernière rangée), dans l'ordre de `frames`.
+  const HERD = {
+    vache: { max: 5, frames: ['idle', 'queue', 'marche0', 'marche1', 'broute0', 'broute1', 'couchee0', 'couchee1'], speed: [7, 10], stride: 2.4, half: 14 },
+  };
+  // Ce qu'une bête peut faire après chaque activité, avec un poids (comme CAT_NEXT).
+  const HERD_NEXT = {
+    debout: { broute: 6, marche: 3, couche: 1 },
+    marche: { broute: 5, debout: 2 },
+    broute: { marche: 3, debout: 2, couche: 1 },
+    couche: { debout: 1 },
+  };
+  const HERD_TIME = { debout: [1.5, 4], broute: [4, 10], couche: [8, 16] };   // secondes
+  const HERD_OUT = 7;           // heure à laquelle les portes s'ouvrent et les bêtes sortent
+  const HERD_IN = 20;           // heure à laquelle elles rentrent ; les portes se ferment derrière la dernière
+  const HERD_PEN = 'enclos';    // rectangle de la carte où elles vivent ; sinon : devant l'Étable
+  const HERD_GAP = [1.2, 2.6];  // secondes entre deux bêtes qui passent la porte
+  // La porte de l'Étable dans barn_*.png (px de l'image) : deux battants qui coulissent vers
+  // l'extérieur et découvrent l'intérieur. Les images de porte entrouverte et ouverte sont
+  // fabriquées ici à partir de l'image de l'Étable : aucune image de plus à dessiner.
+  const BARN_DOOR = { x: 20, y: 58, w: 64, h: 32, left: 36, right: 52, leaf: 16, top: 59, rows: 30, slide: 14, dark: [28, 70], lintel: [28, 60], step: 0.3 };
+
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (list) => list[(Math.random() * list.length) | 0];
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -141,7 +169,10 @@
     function canvasTexture(key, w, h, draw) {
       if (scene.textures.exists(key)) scene.textures.remove(key);
       const tex = scene.textures.createCanvas(key, w, h);
-      const paint = () => { const c = tex.getContext(); c.clearRect(0, 0, w, h); draw(c); tex.refresh(); };
+      const paint = () => {
+        if (!scene.textures.exists(key) || scene.textures.get(key) !== tex) return;   // planche refaite depuis
+        const c = tex.getContext(); c.clearRect(0, 0, w, h); draw(c); tex.refresh();
+      };
       paint();
       painters.push(paint);
       const el = tex.getSourceImage();
@@ -676,6 +707,220 @@
       };
     }
 
+    /* ---------- le troupeau : il sort de l'Étable le matin ---------- */
+    // Le nombre de bêtes vient du jeu, par la scène (setContext) ; tout le reste se passe ici.
+    // Avant HERD_OUT les bêtes sont dans l'Étable, portes fermées. À HERD_OUT les portes
+    // coulissent, les bêtes sortent une à une et vivent dans l'enclos (HERD_NEXT). À HERD_IN
+    // elles rentrent une à une, et les portes se ferment derrière la dernière.
+
+    let barn = null;                   // image de l'Étable (null : pas débloquée, ou image de secours)
+    let herdWant = {};                 // espèce → nombre de bêtes, donné par la scène
+    let herdFresh = true;              // premier peuplement : les bêtes sont déjà à leur place
+    let herdTurn = 0;                  // date à partir de laquelle la prochaine bête peut passer la porte
+    const herd = [];
+    const door = { s: null, key: '', k: 0, t: 0 };   // k : 0 fermée, 1 entrouverte, 2 ouverte
+    const pen = (function () {
+      const objs = o.objects || {};
+      const r = objs[HERD_PEN], g = objs.grange;
+      if (r && r.width && r.height) return { x: r.x, y: r.y, w: r.width, h: r.height };
+      return g ? { x: g.x + 8, y: g.y + g.height + 8, w: g.width - 16, h: 52 } : null;
+    })();
+    const herdOut = () => ctx.hour == null || (ctx.hour >= HERD_OUT && ctx.hour < HERD_IN);
+    // Le seuil : au milieu de la porte, dans l'ouverture. Une bête qui s'y tient reste dessinée
+    // devant l'Étable (voir draw()).
+    const sill = () => ({ x: barn.x + BARN_DOOR.x + BARN_DOOR.w / 2, y: barn.y - 2 });
+
+    // Fabrique les deux images de la porte (entrouverte, ouverte) dans une planche, à partir
+    // de l'image de l'Étable affichée, et pose l'image de la porte par-dessus le bâtiment.
+    function syncDoor() {
+      const D = BARN_DOOR;
+      if (!barn || !barn.active) {
+        if (door.s) { door.s.destroy(); door.s = null; }
+        door.k = 0;
+        return;
+      }
+      if (door.key !== barn.texture.key) {
+        const key = barn.texture.key;
+        if (door.s) { door.s.destroy(); door.s = null; }
+        const tex = canvasTexture('amb_porte', D.w * 2, D.h, (c) => {
+          const img = scene.textures.exists(key) ? scene.textures.get(key).getSourceImage() : null;
+          if (!img) return;
+          c.imageSmoothingEnabled = false;
+          let inside = '#4a2433', shade = '#1f1418';
+          try {
+            const g = document.createElement('canvas');
+            g.width = img.width; g.height = img.height;
+            const q = g.getContext('2d', { willReadFrequently: true });
+            q.drawImage(img, 0, 0);
+            const hex = (p) => { const d = q.getImageData(p[0], p[1], 1, 1).data; return 'rgb(' + d[0] + ',' + d[1] + ',' + d[2] + ')'; };
+            inside = hex(D.dark); shade = hex(D.lintel);
+          } catch (e) { /* image illisible : couleurs par défaut */ }
+          [D.slide / 2, D.slide].forEach((slide, n) => {
+            const ox = n * D.w - D.x, oy = -D.y;
+            c.drawImage(img, D.x, D.y, D.w, D.h, n * D.w, 0, D.w, D.h);
+            c.fillStyle = inside; c.fillRect(ox + D.left, oy + D.top, D.leaf * 2, D.rows);
+            c.fillStyle = shade; c.fillRect(ox + D.left, oy + D.top, D.leaf * 2, 2);
+            c.drawImage(img, D.left, D.top, D.leaf, D.rows, ox + D.left - slide, oy + D.top, D.leaf, D.rows);
+            c.drawImage(img, D.right, D.top, D.leaf, D.rows, ox + D.right + slide, oy + D.top, D.leaf, D.rows);
+          });
+        });
+        tex.add('p1', 0, 0, 0, D.w, D.h);
+        tex.add('p2', 0, D.w, 0, D.w, D.h);
+        door.key = key;
+      }
+      if (!door.s || !door.s.active) door.s = scene.add.image(0, 0, 'amb_porte', 'p2').setOrigin(0);
+      door.s.setPosition(barn.x + D.x, barn.y - barn.height + D.y).setDepth(barn.depth + 0.5)
+        .setVisible(door.k > 0).setFrame(door.k === 1 ? 'p1' : 'p2');
+    }
+
+    // Un endroit de l'enclos où poser ses sabots, à l'écart des autres bêtes (là où elles
+    // sont et là où elles vont). `near` : pas plus loin que cette distance.
+    function penSpot(self, half, near) {
+      let best = null;
+      for (let i = 0; i < 8; i++) {
+        let x = pen.x + half + Math.random() * Math.max(0, pen.w - 2 * half);
+        let y = pen.y + Math.random() * pen.h;
+        if (near) {
+          x = Math.min(pen.x + pen.w - half, Math.max(pen.x + half, self.x + rand(-near, near)));
+          y = Math.min(pen.y + pen.h, Math.max(pen.y, self.y + rand(-near, near) * 0.4));
+        }
+        best = { x, y };
+        if (!herd.some((b) => b !== self && b.near(x, y))) return best;
+      }
+      return best;
+    }
+
+    function makeBeast(kind, placed) {
+      const H = HERD[kind];
+      const F = {};
+      H.frames.forEach((name, i) => { F[name] = i; });
+      const me = { kind, x: 0, y: 0 };
+      let face = Math.random() < 0.5 ? 1 : -1;
+      let st = 'dedans', age = 0, len = 0, before = null;
+      let to = null, speed = 0, walked = 0;      // déplacement en cours
+      let swish = -1, nod = 1.3;                 // coup de queue (date dans l'activité), cadence quand elle broute
+      const s = scene.add.image(0, 0, o.herd[kind], 0).setOrigin(0.5, 1).setVisible(false);
+
+      function enter(name) {
+        before = st; st = name; age = 0; walked = 0;
+        if (HERD_TIME[name]) len = rand(HERD_TIME[name][0], HERD_TIME[name][1]);
+        if (name === 'debout') swish = Math.random() < 0.7 ? rand(0.2, Math.max(0.3, len - 0.8)) : -1;
+        if (name === 'broute') nod = rand(1.1, 1.7);
+      }
+      function walkTo(spot, name) { to = spot; speed = rand(H.speed[0], H.speed[1]); enter(name); }
+      function next() {
+        const w = Object.assign({}, HERD_NEXT[st] || HERD_NEXT.debout);
+        if (before && w[before]) w[before] *= CAT_AGAIN;
+        const name = pickWeighted(w);
+        if (name === 'marche') walkTo(penSpot(me, H.half, 3 * T), 'marche'); else enter(name);
+      }
+      function draw(frame, alpha) {
+        const front = barn && barn.active ? barn.depth + 0.6 : 0;
+        s.setFrame(F[frame]).setPosition(me.x, me.y).setFlipX(face < 0).setDepth(Math.max(me.y, front)).setAlpha(alpha == null ? 1 : alpha).setVisible(true);
+      }
+      function advance(dt) {
+        const dx = to.x - me.x, dy = to.y - me.y, left = Math.hypot(dx, dy), d = Math.min(left, speed * dt);
+        if (left > 0.001) { me.x += (dx / left) * d; me.y += (dy / left) * d; }
+        if (Math.abs(dx) > 1) face = dx > 0 ? 1 : -1;
+        walked += d;
+        return left - d;                         // distance restante
+      }
+      const walkFrame = () => ['marche0', 'idle', 'marche1', 'idle'][Math.floor(walked / H.stride) % 4];
+
+      if (placed) {                              // elle est déjà dans l'enclos (le jeu s'ouvre en journée)
+        const spot = penSpot(me, H.half);
+        me.x = spot.x; me.y = spot.y;
+        enter(pickWeighted({ debout: 1, broute: 3, couche: 1 }));
+        age = rand(0, len * 0.6);
+      }
+
+      me.inside = () => st === 'dedans';
+      me.state = () => st;
+      me.near = (x, y) => {
+        const hit = (p) => Math.abs(p.x - x) < H.half * 1.5 && Math.abs(p.y - y) < 7;
+        return st !== 'dedans' && (hit(me) || (to && (st === 'marche' || st === 'sort') && hit(to)));
+      };
+      me.destroy = () => s.destroy();
+      me.step = (dt, out, doorOpen) => {
+        age += dt;
+        if (st === 'dedans') {
+          // Elle attend son tour derrière la porte ouverte.
+          if (out && doorOpen && t >= herdTurn) {
+            herdTurn = t + rand(HERD_GAP[0], HERD_GAP[1]);
+            const d = sill();
+            me.x = d.x + rand(-5, 5); me.y = d.y;
+            walkTo(penSpot(me, H.half), 'sort');
+            draw('idle', 0);
+          }
+          return;
+        }
+        // Le soir, chacune rentre à son tour (une bête couchée se lève d'abord).
+        if (!out && st !== 'rentre' && t >= herdTurn) {
+          herdTurn = t + rand(HERD_GAP[0], HERD_GAP[1]);
+          walkTo(sill(), 'rentre');
+        }
+        if (st === 'sort') {                     // elle apparaît sur le seuil et gagne sa place
+          const left = advance(dt);
+          draw(walkFrame(), clamp01(age / 0.5));
+          if (left < 0.3) next();
+        } else if (st === 'rentre') {            // elle regagne le seuil et disparaît dans l'ombre
+          const left = advance(dt);
+          draw(walkFrame(), clamp01(left / 6));
+          if (left < 0.3) { st = 'dedans'; s.setVisible(false); }
+        } else if (st === 'marche') {
+          const left = advance(dt);
+          draw(walkFrame());
+          if (left < 0.3) next();
+        } else if (st === 'broute') {            // la tête au sol, relevée un instant à chaque bouchée
+          draw((age % nod) < 0.28 ? 'broute1' : 'broute0');
+          if (age >= len) next();
+        } else if (st === 'couche') {            // elle rumine : trois secondes de mâchonnement, une pause
+          draw((age % 4.5) < 3 && ((age / 0.42) | 0) % 2 ? 'couchee1' : 'couchee0');
+          if (age >= len) next();
+        } else {                                 // debout, avec parfois deux coups de queue
+          const q = age - swish;
+          draw(swish >= 0 && ((q > 0 && q < 0.22) || (q > 0.44 && q < 0.66)) ? 'queue' : 'idle');
+          if (age >= len) next();
+        }
+      };
+      return me;
+    }
+
+    // Accorde les bêtes au nombre voulu, puis fait vivre la porte et le troupeau.
+    function stepHerd(dt) {
+      if (!pen) return;
+      const out = herdOut();
+      for (const kind in HERD) {
+        const able = barn && barn.active && o.herd && o.herd[kind] && scene.textures.exists(o.herd[kind]);
+        const want = able ? Math.min(HERD[kind].max, Math.max(0, herdWant[kind] | 0)) : 0;
+        let have = 0;
+        for (let i = herd.length - 1; i >= 0; i--) {
+          if (herd[i].kind !== kind) continue;
+          if (++have > want) { herd[i].destroy(); herd.splice(i, 1); have--; }
+        }
+        // Une bête achetée en journée sort de l'Étable comme les autres le matin.
+        for (; have < want; have++) herd.push(makeBeast(kind, herdFresh && out));
+      }
+      if (!barn || !barn.active) return;
+      const roaming = herd.some((b) => !b.inside());
+      if (herdFresh) { herdFresh = false; door.k = out && herd.length ? 2 : 0; syncDoor(); }
+      // La porte : ouverte tant qu'une bête est dehors ou doit sortir ; un cran toutes les 0,3 s.
+      const goal = roaming || (out && herd.length) ? 2 : 0;
+      if (door.k !== goal) {
+        door.t += dt;
+        if (door.t >= BARN_DOOR.step) { door.t = 0; door.k += goal > door.k ? 1 : -1; syncDoor(); }
+      } else door.t = 0;
+      for (const b of herd) b.step(dt, out, door.k === 2);
+    }
+
+    function clearHerd() {
+      for (const b of herd) b.destroy();
+      herd.length = 0;
+      if (door.s) { door.s.destroy(); door.s = null; }
+      door.k = 0; door.t = 0;
+      herdFresh = true; herdTurn = 0;
+    }
+
     /* ---------- ordonnanceur ---------- */
 
     // Tire la date de la prochaine naissance d'un type (une seule fois, pas à chaque image).
@@ -729,6 +974,7 @@
       for (const a of actors) a.sprites.forEach((s) => s.destroy());
       actors.length = 0;
       if (cat) { cat.destroy(); cat = null; }
+      clearHerd();
       clouds.forEach((c) => c.s.destroy()); clouds = [];
     }
 
@@ -747,6 +993,7 @@
         if (a.step(dt) === false) { a.sprites.forEach((s) => s.destroy()); actors.splice(i, 1); }
       }
       if (cat) cat.step(dt);
+      stepHerd(dt);
       for (const c of clouds) {
         const half = c.s.displayWidth / 2;
         let x = c.s.x + c.v * dt;
@@ -765,6 +1012,9 @@
         ctx.dusk = h >= 19.75 || h < 5;
       }
       if (c.trees) trees = c.trees.slice();
+      // L'Étable (son image, ou rien tant qu'elle n'est pas affichée) et le nombre de bêtes.
+      if ('barn' in c && c.barn !== barn) { barn = c.barn || null; if (on) syncDoor(); }
+      if (c.herd) herdWant = c.herd;
     }
 
     function scare(x, y) {
@@ -775,7 +1025,7 @@
     function stats() {
       const by = {};
       for (const a of actors) by[a.type] = (by[a.type] || 0) + 1;
-      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, wood: wood.size, orchard: trees.length, chat: cat ? cat.info() : null, clock: t, next: Object.assign({}, next) };
+      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, wood: wood.size, orchard: trees.length, chat: cat ? cat.info() : null, troupeau: herd.map((b) => b.kind + ' ' + b.state() + ' ' + Math.round(b.x) + ',' + Math.round(b.y)), porte: door.k, clock: t, next: Object.assign({}, next) };
     }
 
     return {

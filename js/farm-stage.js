@@ -93,6 +93,11 @@
   // chat.png : le chat de la vie d'ambiance, 8 cases de 16×16 (leur ordre : CAT_FRAMES dans
   // js/ambient-life.js). Sans l'image, pas de chat ; rien d'autre ne change.
   const CAT_FRAME = { frameWidth: 16, frameHeight: 16 };
+  // Le troupeau de l'Étable, lui aussi animé par la vie d'ambiance : une planche par espèce
+  // (cases de 32×24, leur ordre : HERD dans js/ambient-life.js). Une espèce sans planche
+  // n'est pas dessinée.
+  const HERD_FRAME = { frameWidth: 32, frameHeight: 24 };
+  const HERD_SHEETS = { vache: 'vache.png' };
   // Intérieurs : une petite carte Tiled à part, affichée à la place de la carte quand le
   // joueur entre dans le bâtiment (modèle.interieur). `zones` = nom des couches d'objets dont
   // le rectangle reçoit les parcelles, `plots` = leur liste dans le modèle, `window` = fenêtre
@@ -222,6 +227,7 @@
         L.image('soil_wet', 'soil_wet.png');
         L.image('sign', 'sign.png');
         L.spritesheet('chat', 'chat.png', CAT_FRAME);
+        for (const [kind, file] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, file, HERD_FRAME);
         L.tilemapTiledJSON(MAP.key, MAP.json);
         for (const r of Object.values(ROOMS)) L.tilemapTiledJSON(r.key, r.json);
         L.image(MAP.tiles, MAP.image);
@@ -279,6 +285,7 @@
               world: this.world, map: this.mapRaw, tiles: this.has(MAP.tiles) ? MAP.tiles : null,
               objects: this.objects, lightDepth: this.light.depth, reduced: reducedMotion,
               cat: this.has('chat') ? 'chat' : null,
+              herd: Object.fromEntries(Object.keys(HERD_SHEETS).filter((kind) => this.has(kind)).map((kind) => [kind, kind])),
             });
           } catch (e) { console.warn('[FarmStage] vie d\'ambiance indisponible', e); }
         }
@@ -1090,11 +1097,15 @@
         this.syncTrees(model.arbres || [], sfx, seasonChanged);
         this.syncRooms(model, force);
         // L'ambiance reçoit l'heure, la saison et les images des arbres (jamais le modèle) : elle
-        // ne les anime pas, elle y fait partir feuilles et écureuils.
+        // ne les anime pas, elle y fait partir feuilles et écureuils. Elle reçoit aussi l'image
+        // de l'Étable (si elle est affichée, avec sa vraie image) et le nombre de bêtes du
+        // troupeau : elle ouvre les portes le matin et fait sortir les bêtes dans l'enclos.
         if (this.ambient) {
           const leafy = [];
           for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0) leafy.push(e.sprite);
-          this.ambient.setContext({ hour: model.heure, season: model.season, trees: leafy });
+          const etable = this.buildings.get('etable');
+          const barn = etable && etable.sprite.texture.key.indexOf('ph_') !== 0 ? etable.sprite : null;
+          this.ambient.setContext({ hour: model.heure, season: model.season, trees: leafy, barn, herd: model.animaux || {} });
         }
         this.placeLabels();
       }

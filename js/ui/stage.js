@@ -266,7 +266,9 @@ export function stageModel() {
   for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok(), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id] };
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
-  return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, serre, interieur: stageInterior, arbres, batiments };
+  // Le troupeau de l'Étable : seulement des nombres, la carte en fait des bêtes dans l'enclos.
+  const animaux = { vache: state.paturage.vaches.length, mouton: state.paturage.moutons.length };
+  return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, serre, interieur: stageInterior, arbres, batiments, animaux };
 }
 
 // Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La

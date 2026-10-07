@@ -13,7 +13,7 @@ du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
- ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat (voir docs/vie-ambiance.md)
+ ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, le troupeau (voir docs/vie-ambiance.md)
  ├─ js/farm-stage.js      la scène : ne connaît ni `state` ni le moteur (script classique)
  └─ js/main.js            point d'entrée des modules ES
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
@@ -33,7 +33,8 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
   `{ season, heure, cols, plots: [{ id, culture, icone, phase (-1, 0…3), mature, arrosee }],
   cols2, plots2 (le Champ, même forme que plots), arbres: [{ id, jeune }],
   serre (parcelles de la Serre, même forme), interieur (null ou 'serre'),
-  batiments: { etable, moulin, serre, verger, zone, zone2 } }`.
+  batiments: { etable, moulin, serre, verger, zone, zone2 },
+  animaux: { vache, mouton } (nombre de bêtes de l'Étable) }`.
 - **`sync(modèle)` est idempotent** : `render()` appelle `renderStage()` environ 5 fois par
   seconde ; un modèle identique est écarté avant la scène (comparaison de la clé JSON), un modèle
   différent crée, met à jour ou détruit exactement ce qui a changé.
