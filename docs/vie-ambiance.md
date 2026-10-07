@@ -133,7 +133,8 @@ mesures.
 
 **Une espèce** = une ligne dans `HERD` (ambient-life.js), une ligne dans `HERD_SHEETS`
 (farm-stage.js) et une planche de cases de 32×24, profil droit, sabots sur la dernière rangée.
-Pour la vache (`assets/vache.png`) :
+La vache (`assets/vache.png`, 27×17 dans sa case) et le mouton (`assets/mouton.png`, 20×14) ont
+les mêmes huit cases :
 
 | Case | Nom | Sert à |
 |---|---|---|
@@ -143,8 +144,8 @@ Pour la vache (`assets/vache.png`) :
 | 4, 5 | `broute0`, `broute1` | tête au sol, puis relevée d'un pixel |
 | 6, 7 | `couchee0`, `couchee1` | couchée ; le mufle bouge quand elle rumine |
 
-Au plus 5 vaches sont dessinées (`max`), quel que soit le troupeau du jeu. Le modèle de vue
-compte aussi les moutons, mais ils n'ont pas encore de planche : ils ne sont pas dessinés.
+Au plus 5 vaches et 6 moutons sont dessinés (`max`), quel que soit le troupeau du jeu : au-delà,
+l'enclos actuel est trop petit pour qu'ils restent à l'écart les uns des autres.
 
 ## 5. Budget
 
@@ -166,7 +167,7 @@ compte aussi les moutons, mais ils n'ont pas encore de planche : ils ne sont pas
 
 ```
 preload() this.load.spritesheet('chat', 'chat.png', { frameWidth: 16, frameHeight: 16 })
-          this.load.spritesheet('vache', 'vache.png', { frameWidth: 32, frameHeight: 24 })
+          this.load.spritesheet('vache', 'vache.png', { frameWidth: 32, frameHeight: 24 })   // et 'mouton'
 create()  this.ambient = AmbientLife.attach(this, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
 update()  this.ambient.update(delta)
 sync()    this.ambient.setContext({ hour, season, trees, barn, herd })   // jamais le modèle de vue

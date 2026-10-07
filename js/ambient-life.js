@@ -22,8 +22,8 @@
  *
  * Les bêtes de passage sont dessinées ici, pixel par pixel (aucune image à charger) : ce
  * sont des dessins provisoires, à remplacer par de vraies planches quand elles existeront.
- * Le chat et la vache ont déjà la leur (assets/chat.png, assets/vache.png, chargées par
- * farm-stage.js).
+ * Le chat, la vache et le mouton ont déjà la leur (assets/chat.png, vache.png, mouton.png,
+ * chargées par farm-stage.js).
  *
  * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
  *       → { update(dt), setContext({ hour, season, trees, barn, herd }), scare(x, y),
@@ -105,8 +105,12 @@
   // l'ambiance ouvre les portes le matin, fait sortir les bêtes dans l'enclos, les fait
   // brouter, et les rentre le soir. Une espèce = une ligne ici et une planche de cases de
   // 32×24 (profil droit, sabots sur la dernière rangée), dans l'ordre de `frames`.
+  const HERD_FRAMES = ['idle', 'queue', 'marche0', 'marche1', 'broute0', 'broute1', 'couchee0', 'couchee1'];
+  // max = bêtes dessinées au plus, speed = px par seconde, stride = px parcourus par image de
+  // marche, half = demi-longueur de la bête (pour tenir dans l'enclos et à l'écart des autres).
   const HERD = {
-    vache: { max: 5, frames: ['idle', 'queue', 'marche0', 'marche1', 'broute0', 'broute1', 'couchee0', 'couchee1'], speed: [7, 10], stride: 2.4, half: 14 },
+    vache: { max: 5, frames: HERD_FRAMES, speed: [7, 10], stride: 2.4, half: 14 },
+    mouton: { max: 6, frames: HERD_FRAMES, speed: [6, 9], stride: 2, half: 10 },
   };
   // Ce qu'une bête peut faire après chaque activité, avec un poids (comme CAT_NEXT).
   const HERD_NEXT = {

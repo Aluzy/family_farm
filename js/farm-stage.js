@@ -97,7 +97,7 @@
   // (cases de 32×24, leur ordre : HERD dans js/ambient-life.js). Une espèce sans planche
   // n'est pas dessinée.
   const HERD_FRAME = { frameWidth: 32, frameHeight: 24 };
-  const HERD_SHEETS = { vache: 'vache.png' };
+  const HERD_SHEETS = { vache: 'vache.png', mouton: 'mouton.png' };
   // Intérieurs : une petite carte Tiled à part, affichée à la place de la carte quand le
   // joueur entre dans le bâtiment (modèle.interieur). `zones` = nom des couches d'objets dont
   // le rectangle reçoit les parcelles, `plots` = leur liste dans le modèle, `window` = fenêtre
