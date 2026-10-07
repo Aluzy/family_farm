@@ -14,8 +14,8 @@ import { telView } from './consent.js';
 import { safeStorageGet, safeStorageSet } from './storage.js';
 import { morph, refresh, setLastRenderAt } from './render.js';
 import {
-  allerAuLieu, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue, setMaisonTab, setStageReturn,
-  setStageWindow, STAGE_WINDOWS,
+  allerAuLieu, interiorAvailable, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue, setMaisonTab,
+  setStageInterior, setStageReturn, setStageWindow, stageInterior, STAGE_WINDOWS,
 } from './stage-windows.js';
 import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
@@ -220,6 +220,7 @@ function allerA(c) {
     if (c.page === 'comptoir' && c.sous) setComptoirTab(c.sous);
     setStageWindow(null);
     setStageReturn(null);
+    setStageInterior(null);
     setEcranFerme(null);
   } else if (c.ecran) {
     // Écran de détail : au retour, on retombe sur Maison › Installations.
@@ -227,6 +228,7 @@ function allerA(c) {
     setMaisonTab('batiments');
     setStageReturn(stageUsable() ? 'maison' : null);
     setStageWindow(null);
+    setStageInterior(null);
     setEcranFerme(c.ecran);
   } else {
     allerAuLieu(c.fenetre, c.onglet, c.ancre);
@@ -251,6 +253,9 @@ export function stageModel() {
   // Le Champ (vide tant que le Moulin n'est pas débloqué) et les arbres du Verger, dans
   // l'ordre où ils ont été plantés : chacun prend l'emplacement suivant de la carte.
   const plots2 = zone2Plots(state).map(vue);
+  // La Serre : ses parcelles se posent dans les bacs de son intérieur (vide tant qu'elle
+  // n'est pas construite). `interieur` dit si le joueur y est entré.
+  const serre = state.serre.construit ? state.serre.parcelles.map(vue) : [];
   const arbres = isUnlocked(state, 'verger')
     ? state.verger.arbres.slice(0, STAGE_ARBRES).map((t) => ({ id: t.id, jeune: !isTreeAdult(state, t) }))
     : [];
@@ -261,7 +266,7 @@ export function stageModel() {
   for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok(), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id] };
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
-  return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, arbres, batiments };
+  return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, serre, interieur: stageInterior, arbres, batiments };
 }
 
 // Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La
@@ -304,6 +309,8 @@ export function renderStage() {
   }
   const head = document.querySelector('.app-header');
   document.documentElement.style.setProperty('--header-h', head.offsetHeight + 'px');
+  // Un intérieur qui n'existe plus (nouvelle partie, par exemple) : retour à la carte.
+  if (stageInterior && !interiorAvailable(stageInterior)) setStageInterior(null);
   FarmStage.show();
   FarmStage.update(stageModel());
   // Déplacement demandé par une notification ou un indicateur : sans animation si la carte
@@ -370,6 +377,15 @@ function renderStageNav(el) {
   const nav = el.querySelector('.stage-nav');
   const v = stageView;
   if (!nav) return;
+  // Dans un intérieur : sortir, ou ouvrir la fenêtre du bâtiment.
+  if (stageInterior) {
+    const w = STAGE_WINDOWS[stageInterior];
+    morph(nav, `<div class="stage-room-bar" role="group" aria-label="${w.nom}">
+      <button type="button" class="stage-room-btn" data-action="stage-exit" aria-label="Sortir : retour à la carte" title="Retour à la carte"><span aria-hidden="true">‹</span> Sortir</button>
+      <button type="button" class="stage-room-btn" data-action="stage-open" data-window="${stageInterior}" aria-label="${w.nom} : agrandir, tout arroser, tout récolter" title="Agrandir, tout arroser, tout récolter"><span aria-hidden="true">${w.icone}</span> Gérer</button>
+    </div>`);
+    return;
+  }
   if (!v || !v.mobile) {
     morph(nav, '');
     return;

@@ -19,7 +19,7 @@ jeu.html                  la page : structure seule, charge les fichiers ci-dess
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
      └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
 tests/engine.test.js      tests du moteur (jamais chargés par la page)
-assets/                   carte Tiled (carte_printemps.json, et sa source carte_printemps_elargie.tmj) + images du pack
+assets/                   cartes Tiled (carte_printemps.json et serre_interieur.json, et leurs sources .tmj) + images du pack
 ```
 
 Flux de données, à sens unique dans chaque direction :
@@ -32,6 +32,7 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
 - **Modèle de vue** (`stageModel()`), le seul objet que la scène reçoit :
   `{ season, heure, cols, plots: [{ id, culture, icone, phase (-1, 0…3), mature, arrosee }],
   cols2, plots2 (le Champ, même forme que plots), arbres: [{ id, jeune }],
+  serre (parcelles de la Serre, même forme), interieur (null ou 'serre'),
   batiments: { etable, moulin, serre, verger, zone, zone2 } }`.
 - **`sync(modèle)` est idempotent** : `render()` appelle `renderStage()` environ 5 fois par
   seconde ; un modèle identique est écarté avant la scène (comparaison de la clé JSON), un modèle
@@ -96,7 +97,8 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
 2. Les noms des couches de tuiles sont libres, elles sont empilées dans l'ordre. Les
    rectangles doivent garder leurs noms : `maison`, `grange`, `zone_culture_1`, `moulin`,
    `serre`, `verger`.
-3. `node scripts/build-map.mjs` écrit `assets/carte_printemps.json` : le jeu de tuiles y est
+3. `node scripts/build-map.mjs` écrit `assets/carte_printemps.json` (et, de la même façon,
+   `assets/serre_interieur.json` depuis `assets/serre_interieur.tmj`) : le jeu de tuiles y est
    intégré (`bakeGround()` ne lit pas les `.tsx`). Le script refuse d'écrire, en disant
    pourquoi, si un rectangle manque, si une tuile sort de la planche ou si une couche est
    compressée.
@@ -173,6 +175,34 @@ est celui des fonctions de rendu existantes, sans réécriture :
   d'abord celle-là.
 - Les cartes « Production / Stockage d'énergie » ouvrent leur écran de détail (`ecranFerme`) :
   la fenêtre se ferme le temps de l'écran et se rouvre au retour (`stageReturn`).
+
+## 5 bis. L'intérieur de la Serre
+
+Un appui sur la Serre, une fois construite, n'ouvre plus sa fenêtre : la vue entre dans la
+serre. Ses parcelles s'y travaillent d'un appui, avec les mêmes gestes que dans les zones de
+culture (vide → `plant-open` ; mûre → `harvest` ; sèche → `water` ; déjà arrosée → fenêtre).
+
+- **Carte** : `assets/serre_interieur.tmj` (12×19 tuiles, même planche que la carte). Les
+  rectangles des couches d'objets `serre_zone_1`, `serre_zone_2`… sont les bacs : calés sur la
+  grille de 16 px, ils donnent 5×7 et 4×7 emplacements, soit 63. Ajouter un bac = une couche
+  `serre_zone_3` avec un rectangle, puis `node scripts/build-map.mjs`.
+- **Ordre des emplacements** : rangée par rangée à travers tous les bacs (la première rangée
+  de chacun, puis la deuxième…). Avec la progression actuelle (6, 9, 12, 15, 18 parcelles),
+  9 parcelles font une rangée complète et 18 en font deux. Les emplacements que le joueur n'a
+  pas encore sont assombris : sans cela, rien ne distingue une parcelle vide de la terre du bac.
+- **Scène** (`farm-stage.js`, `ROOMS`) : l'intérieur est cuit dans sa propre image, posée à
+  droite de la carte, hors de portée de la vue. `setRoom()` y fait sauter la caméra (court
+  fondu) ; `fit()` cadre l'intérieur sans sa marge unie, entre l'objectif du chapitre et les
+  boutons. Dedans : pas de glissement, pas d'étiquettes, pas de vie d'ambiance. À la sortie,
+  la vue revient devant la Serre.
+- **Page** (`stage-windows.js`) : `stageInterior` (`null` ou `'serre'`), un état d'affichage,
+  jamais enregistré. `stage-open` sur la Serre y fait entrer ; une fois dedans, la même action
+  ouvre la fenêtre (bouton « Gérer » : agrandir, tout arroser, tout récolter). Sortie : bouton
+  « Sortir » (`stage-exit`), Échap, changement d'onglet, ou une notification qui mène ailleurs.
+  Une notification d'arrosage ou de récolte en Serre y fait entrer.
+- **Sans l'intérieur** (carte de la serre absente, Serre pas encore construite) : la fenêtre de
+  la Serre s'ouvre comme avant (`FarmStage.hasRoom('serre')`, `interiorAvailable()`).
+- Moteur et sauvegardes inchangés : mêmes parcelles (`state.serre.parcelles`), mêmes prix.
 
 ## 6. Sans Phaser
 

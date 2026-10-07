@@ -1402,6 +1402,34 @@ body.has-stage { padding-bottom: 0; }
 .stage-chip-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--bg-muted); }
 .stage-chip-bar > span { display: block; height: 100%; background: var(--accent); }
 
+/* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des trois points. */
+.stage-room-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  z-index: 6;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+.stage-room-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(28, 26, 20, 0.72);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.stage-room-btn:active { transform: translateY(1px); }
+.stage-room-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+
 /* Les trois points (un par écran de la carte) et les flèches des bords. */
 .stage-dots {
   position: absolute;
