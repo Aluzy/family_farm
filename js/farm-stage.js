@@ -52,7 +52,7 @@
   const ZONE_OBJECTS = ['zone_culture_1', 'zone_culture'];
   // Arbres du Verger : le n-ième arbre du modèle se pose sur le rectangle `arbre_verger_n`.
   const TREE_OBJECT = 'arbre_verger_';
-  const TREE_FRAME = { frameWidth: 80, frameHeight: 80 };   // basic_*.png : 8 images de 80×80 ; seule la première sert, les arbres ne bougent pas
+  const TREE_FRAME = { frameWidth: 80, frameHeight: 80 };   // basic_*.png : 8 images de 80×80 ; la première au repos, les autres quand le vent souffle (ambient-life.js)
   const TREE_YOUNG = 0.6;                                    // taille d'un arbre pas encore adulte
   const TREE_BODY = 0.8;                                     // part de l'image qu'occupe l'arbre, en largeur
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
@@ -240,6 +240,17 @@
         I.on('wheel', (p, over, dx, dy) => { this.vx = this.vy = 0; this.pan = null; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
         this.scale.on('resize', () => this.fit());
         this.fit();
+        // Vie d'ambiance (js/ambient-life.js, facultatif) : vent dans les arbres du Verger, ombres
+        // de nuages, reflets sur l'eau, petites bêtes de passage. Voir docs/vie-ambiance.md.
+        this.ambient = null;
+        if (global.AmbientLife) {
+          try {
+            this.ambient = global.AmbientLife.attach(this, {
+              world: this.world, map: this.mapRaw, tiles: this.has(MAP.tiles) ? MAP.tiles : null,
+              objects: this.objects, lightDepth: this.light.depth, reduced: reducedMotion,
+            });
+          } catch (e) { console.warn('[FarmStage] vie d\'ambiance indisponible', e); }
+        }
         this.ready = true;
         if (lastModel) this.sync(lastModel, true);
       }
@@ -511,6 +522,7 @@
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
         // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false); }
+        if (this.ambient) this.ambient.update(delta);
         this.placeLabels();
         this.reportView();
       }
@@ -779,6 +791,7 @@
       }
 
       tap(wx, wy) {
+        if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
         if (!hit) return;
         if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
@@ -844,6 +857,12 @@
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
         }
         this.syncTrees(model.arbres || [], sfx, seasonChanged);
+        // L'ambiance reçoit l'heure, la saison et les images des arbres (jamais le modèle).
+        if (this.ambient) {
+          const leafy = [];
+          for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0) leafy.push(e.sprite);
+          this.ambient.setContext({ hour: model.heure, season: model.season, trees: leafy });
+        }
         this.placeLabels();
       }
 
@@ -860,7 +879,7 @@
           let e = this.trees.get(a.id);
           if (e && (seasonChanged || e.key !== key)) { e.sprite.destroy(); this.trees.delete(a.id); e = null; }
           if (!e) {
-            // Image fixe : la première de la planche (les arbres ne sont pas animés).
+            // Première image de la planche ; la vie d'ambiance fait défiler les autres avec le vent.
             const sprite = this.add.image(0, 0, key, key.indexOf('ph_') !== 0 ? 0 : undefined);
             sprite.setOrigin(0.5, 1);
             e = { sprite, key };
