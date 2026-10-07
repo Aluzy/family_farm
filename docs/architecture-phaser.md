@@ -48,7 +48,7 @@ une action existante dans `tap()`. Jamais d'appel au moteur depuis `farm-stage.j
 ## 2. La carte : 72×57 tuiles, trois repères
 
 `assets/carte_printemps.json` est la carte Tiled du propriétaire : 72×57 tuiles de 16 px
-(1152×912 px), dix couches de tuiles et une couche d'objets `batiment`. Elle est fabriquée
+(1152×912 px), treize couches de tuiles et une couche d'objets `batiment`. Elle est fabriquée
 depuis la carte de travail `assets/carte_printemps_elargie.tmj` (voir « Mettre la carte à
 jour »). Elle sert aux quatre
 saisons (il n'existe qu'une carte de printemps). Depuis la version 1.1.2 les bâtiments gardent
@@ -59,6 +59,17 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
   (texture `ground`, profondeur 0). Pas de `TilemapLayer` : avec un zoom non entier, des tuiles
   rendues une à une laissent de fins liserés. Case 0 = vide ; les bits de retournement de Tiled
   sont gérés.
+- **Tuiles animées** (l'eau des étangs). Les animations sont celles de Tiled : elles sont
+  dans le jeu de tuiles (`farm_spring_summer.tsx`, 4 images de 400 ms par tuile) et
+  `build-map.mjs` les recopie dans le JSON. Le fond reste une image fixe, où une tuile animée
+  est dessinée avec sa première image. Par-dessus, `makeTileAnims()` pose une petite image
+  par case animée, et repose au-dessus les tuiles des couches plus hautes de la même case
+  (un roseau reste devant l'eau) : 85 images pour 64 cases animées. `stepTileAnims()` change
+  leur tuile quand la durée est écoulée ; toutes les tuiles d'un même numéro changent
+  ensemble, comme dans Tiled. Avec « réduire les animations », ces images sont masquées.
+- **Tuiles d'une autre planche.** La carte peut citer d'autres jeux de tuiles
+  (`leaves_wind`). Tant que leur image n'est pas dans `assets/`, leurs tuiles ne sont pas
+  dessinées, et `build-map.mjs` le signale.
 - **Objets lus dans la carte** (rectangles nommés de la couche d'objets). Le bas-centre de
   l'image se pose sur le bas-centre du rectangle, sans sortir de la carte ; profondeur = y du
   pied. Déplacer un rectangle dans Tiled suffit, sans toucher au code.
@@ -90,18 +101,21 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
 
 ### Mettre la carte à jour
 
-1. Dans Tiled, enregistrer la carte sous `assets/carte_printemps_elargie.tmj` : un seul jeu
-   de tuiles, `farm_spring_summer` (image `farm_spring_summer.png`, 16×16, sans marge), qui
-   peut rester externe (`.tsx`) ; couches de tuiles au format CSV (pas de compression) ; carte
-   non infinie.
+1. Dans Tiled, enregistrer la carte sous `assets/carte_printemps_elargie.tmj` : planche
+   principale `farm_spring_summer` (image `farm_spring_summer.png`, 16×16, sans marge) ;
+   couches de tuiles au format CSV (pas de compression) ; carte non infinie. Copier aussi dans
+   `assets/` les jeux de tuiles que la carte cite (`.tsx`) : c'est là que sont les animations
+   de tuiles, pas dans la carte. Seul le nom de fichier de leur image compte, l'image elle-même
+   est cherchée dans `assets/`.
 2. Les noms des couches de tuiles sont libres, elles sont empilées dans l'ordre. Les
    rectangles doivent garder leurs noms : `maison`, `grange`, `zone_culture_1`, `moulin`,
    `serre`, `verger`.
 3. `node scripts/build-map.mjs` écrit `assets/carte_printemps.json` (et, de la même façon,
-   `assets/serre_interieur.json` depuis `assets/serre_interieur.tmj`) : le jeu de tuiles y est
-   intégré (`bakeGround()` ne lit pas les `.tsx`). Le script refuse d'écrire, en disant
-   pourquoi, si un rectangle manque, si une tuile sort de la planche ou si une couche est
-   compressée.
+   `assets/serre_interieur.json` depuis `assets/serre_interieur.tmj`) : les jeux de tuiles y sont
+   intégrés avec leurs animations (`bakeGround()` ne lit pas les `.tsx`). Le script refuse
+   d'écrire, en disant pourquoi, si un rectangle manque, si un `.tsx` manque, si une tuile
+   n'appartient à aucune planche ou si une couche est compressée ; il prévient si l'image
+   d'une planche secondaire manque.
 
 La taille de la carte est libre : le jeu la lit dans le fichier. Si elle change, reporter ses
 dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`

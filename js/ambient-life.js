@@ -168,9 +168,16 @@
           g.drawImage(img, 0, 0);
           const px = g.getImageData(0, 0, img.width, img.height).data;
           const blue = new Map();     // numéro de tuile → 1 (eau), 0 (autre chose, opaque), -1 (trop transparente pour compter)
+          // Une tuile animée (l'eau de la carte) est jugée sur sa première image.
+          const first = new Map();
+          for (const tile of set.tiles || []) if (Array.isArray(tile.animation) && tile.animation.length) first.set(tile.id, tile.animation[0].tileid);
+          const count0 = set.tilecount || cols * Math.floor(img.height / T);
           const kind = (gid) => {
             if (blue.has(gid)) return blue.get(gid);
-            const n = gid - set.firstgid, x0 = (n % cols) * T, y0 = Math.floor(n / cols) * T;
+            let n = gid - set.firstgid;
+            if (n < 0 || n >= count0) { blue.set(gid, -1); return -1; }   // tuile d'une autre planche
+            if (first.has(n)) n = first.get(n);
+            const x0 = (n % cols) * T, y0 = Math.floor(n / cols) * T;
             let r = 0, b = 0, count = 0;
             for (let y = y0; y < y0 + T; y += 2) {
               for (let x = x0; x < x0 + T; x += 2) {

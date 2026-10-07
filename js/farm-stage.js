@@ -156,8 +156,11 @@
   // les pixels de la carte restent réguliers.
   function pixelRatio() { return Math.min(3, Math.max(1, global.devicePixelRatio || 1)); }
 
+  // La question est posée à chaque image (tuiles animées, vie d'ambiance) : la requête est
+  // créée une fois, sa réponse suit toute seule le réglage du système.
+  const REDUCED = global.matchMedia ? global.matchMedia('(prefers-reduced-motion: reduce)') : null;
   function reducedMotion() {
-    return !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    return !!(REDUCED && REDUCED.matches);
   }
 
   function mount(element, options) {
@@ -191,6 +194,9 @@
         this.grid = { x: 464, y: 384, cols: 2 };   // Zone de culture : coin haut-gauche et colonnes
         this.grid2 = { x: 624, y: 608, cols: 8 };  // Champ
         this.screens = [];               // repères de la carte : gauche, milieu, droite (voir makeScreens)
+        this.tileAnims = [];             // tuiles animées de la carte, par tuile (voir makeTileAnims)
+        this.tileSprites = [];           // leurs images, et celles des tuiles reposées au-dessus
+        this.tilesStill = false;         // animations réduites : ces images sont masquées
         this.rooms = {};                 // intérieurs disponibles (voir bakeRooms) : id -> image, zones, emplacements
         this.room = null;                // intérieur affiché à la place de la carte (null : dehors)
         this.roomShade = null;           // voile sur les emplacements pas encore achetés
@@ -233,6 +239,7 @@
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
         this.watchGround();
+        this.makeTileAnims();
         this.bakeRooms();
         // Voile de lumière : il couvre toute la carte, au-dessus des bâtiments et des
         // plantes, et multiplie leurs couleurs (blanc = aucun effet). Les étiquettes et les
@@ -490,15 +497,29 @@
         this.groundCheckAt = 0;
       }
 
+      // Animations de tuiles d'un jeu de tuiles (Tiled les range dans `tiles`) : numéro de
+      // tuile dans la planche -> ses images [{ tileid, duration (ms) }].
+      tileFrames(set) {
+        const out = new Map();
+        for (const t of (set && set.tiles) || []) {
+          if (Array.isArray(t.animation) && t.animation.length > 1) out.set(t.id, t.animation);
+        }
+        return out;
+      }
+
+      // Une tuile animée est dessinée dans le fond avec sa première image, comme dans Tiled
+      // à l'arrêt : c'est ce qui reste visible quand les animations sont réduites.
       drawLayer(ctx, raw, layer, set, img) {
         const tw = raw.tilewidth, th = raw.tileheight;
         const cols = set.columns || Math.floor(img.width / tw);
         const last = set.firstgid + (set.tilecount || cols * Math.floor(img.height / th));
+        const anims = this.tileFrames(set);
         ctx.globalAlpha = layer.opacity == null ? 1 : layer.opacity;
         layer.data.forEach((cell, i) => {
           const gid = cell & 0x0fffffff;                   // les bits de poids fort sont des retournements
-          if (!gid || gid < set.firstgid || gid >= last) return; // 0 = case vide
-          const n = gid - set.firstgid;
+          if (!gid || gid < set.firstgid || gid >= last) return; // 0 = case vide, ou tuile d'une autre planche
+          const a = anims.get(gid - set.firstgid);
+          const n = a ? a[0].tileid : gid - set.firstgid;
           const sx = (n % cols) * tw, sy = Math.floor(n / cols) * th;
           const dx = (i % layer.width) * tw, dy = Math.floor(i / layer.width) * th;
           const fh = cell & 0x80000000, fv = cell & 0x40000000, fd = cell & 0x20000000;
@@ -512,6 +533,78 @@
           ctx.restore();
         });
         ctx.globalAlpha = 1;
+      }
+
+      // Tuiles animées de la carte (l'eau) : les animations sont celles de Tiled, lues dans
+      // le jeu de tuiles. Le fond reste une seule image fixe ; par-dessus, chaque case animée
+      // reçoit une petite image qui change de tuile, et les tuiles des couches posées plus
+      // haut sur la même case sont reposées au-dessus, dans l'ordre des couches (un roseau
+      // reste devant l'eau). Toutes les tuiles d'un même numéro changent ensemble, comme dans
+      // Tiled : c'est ce qui donne une eau d'un seul tenant.
+      makeTileAnims() {
+        const raw = this.mapRaw;
+        if (!raw || !this.has(MAP.tiles)) return;
+        const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
+        const anims = set ? this.tileFrames(set) : new Map();
+        if (!anims.size) return;
+        const tw = raw.tilewidth, th = raw.tileheight;
+        const tex = this.textures.get(MAP.tiles);
+        const img = tex.getSourceImage();
+        const cols = set.columns || Math.floor(img.width / tw);
+        const last = set.firstgid + (set.tilecount || cols * Math.floor(img.height / th));
+        const frame = (n) => {
+          const key = 't' + n;
+          if (!tex.has(key)) tex.add(key, 0, (n % cols) * tw, Math.floor(n / cols) * th, tw, th);
+          return key;
+        };
+        const layers = raw.layers.filter((l) => l.type === 'tilelayer' && l.visible !== false && Array.isArray(l.data));
+        const groups = new Map();           // numéro de tuile animée -> { frames, ends, total, cur, sprites }
+        for (let i = 0; i < raw.width * raw.height; i++) {
+          let above = false;                 // une tuile animée a été trouvée plus bas sur cette case
+          layers.forEach((layer, li) => {
+            const cell = layer.data[i];
+            const gid = cell & 0x0fffffff;
+            if (!gid || gid < set.firstgid || gid >= last) return;
+            const n = gid - set.firstgid;
+            const a = anims.get(n);
+            if (!a && !above) return;
+            if (cell & 0x20000000) return;   // tuile tournée : elle reste telle qu'elle est dans le fond
+            above = true;
+            const s = this.add.image((i % raw.width) * tw, Math.floor(i / raw.width) * th, MAP.tiles, frame(a ? a[0].tileid : n))
+              .setOrigin(0).setDepth(0.1 + li * 0.01).setAlpha(layer.opacity == null ? 1 : layer.opacity)
+              .setFlip(!!(cell & 0x80000000), !!(cell & 0x40000000));
+            this.tileSprites.push(s);
+            if (!a) return;
+            let g = groups.get(n);
+            if (!g) {
+              let t = 0;
+              g = { frames: a.map((f) => frame(f.tileid)), ends: a.map((f) => (t += Math.max(1, f.duration))), total: t, cur: 0, sprites: [] };
+              groups.set(n, g);
+            }
+            g.sprites.push(s);
+          });
+        }
+        this.tileAnims = [...groups.values()];
+      }
+
+      // Fait avancer les tuiles animées : une comparaison par tuile animée et par image, et
+      // un changement d'image seulement quand sa durée est écoulée. Rien si le joueur a
+      // demandé moins d'animations : les images sont masquées, le fond montre la première.
+      stepTileAnims(time) {
+        const still = reducedMotion();
+        if (still !== this.tilesStill) {
+          this.tilesStill = still;
+          for (const s of this.tileSprites) s.setVisible(!still);
+        }
+        if (still) return;
+        for (const g of this.tileAnims) {
+          const t = time % g.total;
+          let k = 0;
+          while (k < g.ends.length - 1 && t >= g.ends[k]) k++;
+          if (k === g.cur) continue;
+          g.cur = k;
+          for (const s of g.sprites) s.setFrame(g.frames[k]);
+        }
       }
 
       /* ---------- caméra : zoom, glissement, élan ---------- */
@@ -629,6 +722,7 @@
         if (this.pan) this.stepPan();
         else if (this.vx || this.vy) this.stepInertia(dt);
         if (this.lightFade) this.stepLight();
+        if (this.tileAnims.length && !this.room) this.stepTileAnims(time);
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
         // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false); }
