@@ -1584,3 +1584,12 @@ main .ancre { scroll-margin-top: 150px; }
 
 /* Notifications : où mène la ligne. */
 .notif-where { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+
+/* ---------- Version 1.5 : bonheur et Ville ---------- */
+
+.pxgauge.joie i.on { background: #e8b030; box-shadow: inset 0 3px 0 #f8d878, inset 0 -3px 0 #b07a18; }
+.portrait .pxgauge { width: 100%; }
+.outing { gap: 8px; }
+.outing.done { opacity: 0.7; }
+.outing-facts { display: flex; flex-wrap: wrap; gap: 4px; }
+.outings { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }

@@ -192,6 +192,13 @@ def main():
     for n, k in enumerate(names):
         asheet.alpha_composite(art[k], ((n % ART_COLS) * ART_CELL, (n // ART_COLS) * ART_CELL))
     aversion = save_versioned(asheet, 'art.png')
+    # Dessins de la carte (« carte-nom ») : aussi enregistrés seuls, rognés, en assets/nom.png,
+    # pour que farm-stage.js les charge comme les autres images de la carte.
+    for k in names:
+        if k.startswith('carte-'):
+            im = art[k]
+            box = im.getbbox()
+            (im.crop(box) if box else im).save(os.path.join(ROOT, 'assets', k[len('carte-'):] + '.png'), optimize=True)
     fim, ftable, fh = font_sheet(collect_font())
     fversion = save_versioned(fim, 'police.png')
     js = (

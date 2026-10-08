@@ -72,7 +72,7 @@ export function horlogeEmoji(heure) {
 }
 
 // Lieux de la carte qui portent une étiquette (et une fenêtre du même nom).
-export const STAGE_LIEUX = ['maison', 'etable', 'poulailler', 'moulin', 'serre', 'verger', 'zone', 'zone2'];
+export const STAGE_LIEUX = ['maison', 'etable', 'poulailler', 'moulin', 'serre', 'verger', 'zone', 'zone2', 'ville'];
 
 // La carte a douze emplacements d'arbres (rectangles arbre_verger_1 à 12) : autant que le
 // Verger peut en compter.

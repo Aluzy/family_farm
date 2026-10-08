@@ -36,6 +36,7 @@ import './ui/famille.js';
 import './ui/notifications.js';
 import './ui/inventaire.js';
 import './ui/marche.js';
+import './ui/ville.js';
 import './ui/reveil.js';
 import './ui/chapitres.js';
 import './ui/animations.js';
