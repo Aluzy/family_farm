@@ -1,8 +1,6 @@
-# assets/icones.png : les icônes de 16×16 qui remplacent les emojis (voir js/ui/pixel-emoji.js).
-# Une lettre par pixel. Usage : python3 scripts/icones-art.py (depuis la racine du dépôt).
-# L'ordre de ORDER doit être celui de ICONES dans js/ui/pixel-emoji.js.
-from PIL import Image
-P={
+# Icônes de l'essai (lot 0) : or, eau, pousse, œuf, lait, éclair, poule, mouton.
+# Format commun à tous les fichiers art_*.py : voir scripts/icones/build.py.
+PALETTE={
  # or
  'K':'#3a2414','Y':'#fbe38a','y':'#f2c040','o':'#c7862a','O':'#8a5418',
  # eau
@@ -17,8 +15,8 @@ P={
  'h':'#3b1b2b','r':'#b8434a','R':'#6e1a22','u':'#e6e2d6','v':'#c3beb7','x':'#a69481','a':'#98a0ac','n':'#e0a23a','f':'#d0823a',
  'M':'#2b2a2e','p':'#e5e1d8','P':'#cac2b9','G':'#978f88','F':'#70747a','D':'#5f5b59','H':'#67523d',
 }
-I={}
-I['💰']=[  # une pièce d'or
+ICONS={}
+ICONS['💰']=[  # une pièce d'or
 '................',
 '.....KKKKKK.....',
 '...KKYYYYyyKK...',
@@ -36,7 +34,7 @@ I['💰']=[  # une pièce d'or
 '.....KKKKKK.....',
 '................',
 ]
-I['💧']=[
+ICONS['💧']=[
 '................',
 '.......q........',
 '......qbq.......',
@@ -54,7 +52,7 @@ I['💧']=[
 '....qqddddq.....',
 '.....qqqqq......',
 ]
-I['🌱']=[
+ICONS['🌱']=[
 '................',
 '................',
 '................',
@@ -72,7 +70,7 @@ I['🌱']=[
 '....sssssss.....',
 '................',
 ]
-I['🥚']=[
+ICONS['🥚']=[
 '................',
 '................',
 '......kkkk......',
@@ -90,7 +88,7 @@ I['🥚']=[
 '.......kk.......',
 '................',
 ]
-I['🥛']=[  # une bouteille de lait
+ICONS['🥛']=[  # une bouteille de lait
 '................',
 '......CCCC......',
 '......cccc......',
@@ -108,7 +106,7 @@ I['🥛']=[  # une bouteille de lait
 '....kkkkkkkk....',
 '................',
 ]
-I['⚡']=[
+ICONS['⚡']=[
 '................',
 '.........zzzz...',
 '........zjjjz...',
@@ -140,8 +138,8 @@ HEN=[  # la poule de poule.png (pose « idle »)
 '...f..f...',
 '..ff.ff...',
 ]
-I['🐔']=['.'*16]*2+['...'+r+'...' for r in HEN]+['.'*16]*2
-I['🐑']=[  # un mouton ramassé
+ICONS['🐔']=['.'*16]*2+['...'+r+'...' for r in HEN]+['.'*16]*2
+ICONS['🐑']=[  # un mouton ramassé
 '................',
 '................',
 '................',
@@ -159,17 +157,3 @@ I['🐑']=[  # un mouton ramassé
 '................',
 '................',
 ]
-ORDER=['💰','💧','🌱','🌾','🥕','🥚','🥛','⚡','🐔','🐑']
-def rgb(h): return tuple(int(h[i:i+2],16) for i in (1,3,5))+(255,)
-pack=Image.open('assets/crops.png').convert('RGBA')
-FROM_PACK={'🌾':(13,6),'🥕':(5,1)}   # icônes de récolte déjà dans la planche des cultures
-S=Image.new('RGBA',(16*len(ORDER),16),(0,0,0,0))
-for n,e in enumerate(ORDER):
-    if e in FROM_PACK:
-        c,r=FROM_PACK[e]; S.alpha_composite(pack.crop((c*16,r*16,c*16+16,r*16+16)),(n*16,0)); continue
-    rows=I[e]; assert len(rows)==16,(e,len(rows))
-    for y,row in enumerate(rows):
-        assert len(row)==16,(e,y,len(row),row)
-        for x,ch in enumerate(row):
-            if ch!='.': S.putpixel((n*16+x,y),rgb(P[ch]))
-S.save('assets/icones.png'); print(S.size, ''.join(ORDER))

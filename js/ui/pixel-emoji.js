@@ -2,38 +2,66 @@
 //
 // Les textes du jeu gardent leurs emojis (données, messages, aide, encyclopédie) : seul
 // l'affichage change. Un emoji connu devient <i class="px" role="img" aria-label="💰">,
-// une case de assets/icones.png (16×16, une rangée ; dessin : scripts/icones-art.py).
+// une case de 16×16 de assets/icones.png. La planche et la table (icones.generated.js) sont
+// produites par scripts/icones/build.py à partir des dessins de scripts/icones/art_*.py.
 //
 // Deux chemins :
 //   - pixelize(fragment) : appelé par morph() sur le gabarit, avant la comparaison, pour
 //     que l'ancien et le nouveau DOM aient les mêmes balises (pas de remplacement à chaque rendu) ;
 //   - watch(root) : un MutationObserver rattrape tout le reste (innerHTML directs, toasts,
-//     fenêtres, page statique).
+//     fenêtres, pages sans moteur comme l'accueil ou l'encyclopédie).
 // Ne touche ni aux attributs (title, aria-label…), ni aux <option>, <textarea>, <input>,
 // <title>, <script>, <style> : là, une image n'a pas de sens et l'emoji reste.
 //
-// Ajouter une icône : la dessiner dans scripts/icones-art.py (même rang dans ORDER), relancer
-// le script, l'ajouter à la fin de ICONES ci-dessous.
+// Une suite d'emojis (👩🏽 = portrait + teint, 👨‍👩‍👧‍👦) est une seule icône ; la plus longue
+// suite connue l'emporte. U+FE0F (« afficher en emoji ») est accepté et ignoré partout.
 
-export const ICONES = ['💰', '💧', '🌱', '🌾', '🥕', '🥚', '🥛', '⚡', '🐔', '🐑'];
+import { COLS, ICONES, VERSION } from './icones.generated.js';
 
-const INDEX = new Map(ICONES.map((e, i) => [e, i]));
-const FIND = new RegExp(`(${ICONES.join('|')})\\uFE0F?`, 'gu');
+// Toutes les pages sont à la racine du site, à côté de assets/.
+const SHEET = `assets/icones.png?v=${VERSION}`;
+const KEYS = Object.keys(ICONES).sort((a, b) => b.length - a.length);
+const pattern = (key) => Array.from(key, (c) => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\uFE0F?') + '\\uFE0F?';
+const FIND = new RegExp(KEYS.map(pattern).join('|'), 'gu');
 const TEST = new RegExp(FIND.source, 'u');
 const SKIP = new Set(['OPTION', 'TEXTAREA', 'INPUT', 'TITLE', 'SCRIPT', 'STYLE', 'SELECT']);
 
+// Feuille de style, posée une fois (la page n'a pas besoin de jeu.css).
+const CSS = `
+.px {
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  vertical-align: -0.25em;
+  background: url('${SHEET}') no-repeat;
+  background-size: calc(${COLS} * 1.25em) auto;
+  background-position: calc(var(--px-x) * -1.25em) calc(var(--px-y) * -1.25em);
+  image-rendering: pixelated;
+  font-style: normal;
+}`;
+
+function style(doc) {
+  if (!doc || !doc.head || doc.getElementById('px-style')) return;
+  const s = doc.createElement('style');
+  s.id = 'px-style';
+  s.textContent = CSS;
+  doc.head.appendChild(s);
+}
+
 function icon(doc, emoji) {
+  const key = emoji.replace(/️/g, '');
+  const n = ICONES[key];
   const i = doc.createElement('i');
   i.className = 'px';
   i.setAttribute('role', 'img');
-  i.setAttribute('aria-label', emoji);
-  i.style.setProperty('--px', INDEX.get(emoji));
+  i.setAttribute('aria-label', key);
+  i.setAttribute('style', `--px-x:${n % COLS};--px-y:${Math.floor(n / COLS)}`);
   return i;
 }
 
 function swapText(node) {
   const text = node.nodeValue;
-  if (!TEST.test(text)) return;
+  if (!text || !TEST.test(text)) return;
   const parent = node.parentNode;
   if (!parent || (parent.nodeType === 1 && (SKIP.has(parent.nodeName) || parent.isContentEditable))) return;
   const doc = node.ownerDocument;
@@ -41,7 +69,7 @@ function swapText(node) {
   let last = 0;
   for (const m of text.matchAll(FIND)) {
     if (m.index > last) frag.appendChild(doc.createTextNode(text.slice(last, m.index)));
-    frag.appendChild(icon(doc, m[1]));
+    frag.appendChild(icon(doc, m[0]));
     last = m.index + m[0].length;
   }
   if (last < text.length) frag.appendChild(doc.createTextNode(text.slice(last)));
@@ -53,6 +81,7 @@ export function pixelize(root) {
   if (!root) return;
   if (root.nodeType === 3) return swapText(root);
   const doc = root.ownerDocument || root;
+  style(document);
   const walk = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (n) => (TEST.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
   });
@@ -66,6 +95,7 @@ let observer = null;
 // Surveille `root` (par défaut le <body>) : chaque texte ajouté ou modifié est traité.
 export function watch(root = document.body) {
   if (observer || !root || typeof MutationObserver === 'undefined') return;
+  style(document);
   pixelize(root);
   observer = new MutationObserver((records) => {
     for (const r of records) {

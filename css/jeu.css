@@ -1552,18 +1552,3 @@ main .ancre { scroll-margin-top: 150px; }
 
 /* Notifications : où mène la ligne. */
 .notif-where { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
-
-/* Icônes en pixel art à la place des emojis (js/ui/pixel-emoji.js, assets/icones.png).
-   --px = rang de l'icône dans la planche ; --px-n = nombre d'icônes de la planche. */
-.px {
-  --px-n: 10;
-  display: inline-block;
-  width: 1.25em;
-  height: 1.25em;
-  vertical-align: -0.25em;
-  background: url('../assets/icones.png') no-repeat;
-  background-size: calc(var(--px-n) * 100%) 100%;
-  background-position: calc(var(--px) * 100% / (var(--px-n) - 1)) 0;
-  image-rendering: pixelated;
-  font-style: normal;
-}
