@@ -361,7 +361,7 @@ export const RAW_DATA = {
       "litres": 2,
       "rendement": 6,
       "graines": { "item": "ail", "mode": "plant" },
-      "sprite": { "r": 3, "h": 32, "c": [9, 10, 11, 12] }
+      "sprite": { "r": 17, "h": 32, "c": [4, 5, 6, 7] }
     },
     "epinard": {
       "nom": "Épinard",
