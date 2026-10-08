@@ -7,11 +7,15 @@
  *     feuille qui tombe, écureuil qui change d'arbre, lucioles au crépuscule.
  *   - Un habitant : le chat, qui enchaîne ses activités au hasard (tirage pondéré) et dort
  *     la nuit sur son toit.
+ *   - Les bêtes de la ferme : à 7 h les portes de l'Étable s'ouvrent et vaches et moutons
+ *     sortent dans l'enclos ; à 6 h la porte du Poulailler s'ouvre et les poules sortent en
+ *     liberté. Tous rentrent à 19 h.
  *
  * Règles (voir docs/vie-ambiance.md) :
  *   1. Ce fichier est facultatif : sans lui, farm-stage.js affiche la même carte, immobile.
  *   2. Il ne lit ni l'état du jeu ni le modèle de vue : la scène lui donne l'heure, la
- *      saison et les arbres du Verger (setContext). Il ne déclenche aucune action du jeu.
+ *      saison, les arbres du Verger, les images de l'Étable et du Poulailler et le nombre de
+ *      bêtes de chaque espèce (setContext). Il ne déclenche aucune action du jeu.
  *   3. Budget fixe : MAX_ACTORS bêtes à la fois, décisions à 10 Hz, rien hors de la vue,
  *      rien du tout si le joueur a demandé moins d'animations.
  *   4. Aucun tirage au sort par image : la date du prochain événement de chaque type est
@@ -19,11 +23,12 @@
  *
  * Les bêtes de passage sont dessinées ici, pixel par pixel (aucune image à charger) : ce
  * sont des dessins provisoires, à remplacer par de vraies planches quand elles existeront.
- * Le chat a déjà la sienne (assets/chat.png, chargée par farm-stage.js).
+ * Le chat, la vache, le mouton et la poule ont déjà la leur (assets/chat.png, vache.png,
+ * mouton.png, poule.png, chargées par farm-stage.js).
  *
- * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, cat })
- *       → { update(dt), setContext({ hour, season, trees }), scare(x, y), spawn(type), stats(),
- *           chat(activité) }
+ * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
+ *       → { update(dt), setContext({ hour, season, trees, folds, herd }), scare(x, y),
+ *           spawn(type), stats(), chat(activité) }
  */
 (function (global) {
   'use strict';
@@ -97,6 +102,74 @@
   const CAT_ROOF = 'chat_toit'; // objet de la carte (point ou rectangle) où il dort ; sinon le toit de la maison
   const CAT_JUMP_S = 0.55;      // durée du saut sur le toit
 
+  // Les bêtes de la ferme. Le jeu dit seulement combien il y en a (setContext) ; l'ambiance
+  // ouvre les portes le matin, fait sortir les bêtes, les fait vivre et les rentre le soir.
+  // Chaque bâtiment (FOLDS) a ses heures, sa porte et l'endroit où vivent ses bêtes ; chaque
+  // espèce (HERD) a sa planche, son allure, ce qu'elle fait (next, time) et l'image de chaque
+  // activité (pose).
+  const FOLDS = {
+    // L'Étable : vaches et moutons vivent dans l'enclos (le rectangle `enclos` de la carte,
+    // sinon la bande devant le rectangle `grange`). Ses deux battants coulissent.
+    etable: { out: 7, in: 19, door: 'coulisse', pen: 'enclos' },
+    // Le Poulailler : les poules vont et viennent librement autour, à `range` px au plus du
+    // pied de la porte. Sa planche a trois images : porte fermée, entrouverte, ouverte.
+    poulailler: { out: 6, in: 19, door: 'images', range: 5 * T },
+  };
+  const HERD_GAP = [1.2, 2.6];  // secondes entre deux bêtes qui passent la même porte
+  const DOOR_STEP = 0.3;        // secondes par cran de porte (fermée, entrouverte, ouverte)
+  // La porte de l'Étable dans barn_*.png (px de l'image) : deux battants qui coulissent vers
+  // l'extérieur et découvrent l'intérieur. Les images de porte entrouverte et ouverte sont
+  // fabriquées ici à partir de l'image de l'Étable : aucune image de plus à dessiner.
+  const BARN_DOOR = { x: 20, y: 58, w: 64, h: 32, left: 36, right: 52, leaf: 16, top: 59, rows: 30, slide: 14, dark: [28, 70], lintel: [28, 60] };
+  // Le seuil du Poulailler dans poulailler.png (px de l'image) : le bas de la porte.
+  const COOP_SILL = { x: 22, y: 43 };
+
+  // Vaches et moutons : cases de 32×24, profil droit, sabots sur la dernière rangée.
+  const GRAZER_FRAMES = ['idle', 'queue', 'marche0', 'marche1', 'broute0', 'broute1', 'couchee0', 'couchee1'];
+  const GRAZER_NEXT = {
+    debout: { broute: 6, marche: 3, couche: 1 },
+    marche: { broute: 5, debout: 2 },
+    broute: { marche: 3, debout: 2, couche: 1 },
+    couche: { debout: 1 },
+  };
+  const GRAZER_TIME = { debout: [1.5, 4], broute: [4, 10], couche: [8, 16] };   // secondes
+  // Poules : cases de 16×16, profil droit, pattes sur la dernière rangée.
+  const HEN_FRAMES = ['idle', 'picore0', 'picore1', 'marche0', 'marche1', 'gratte', 'couvee', 'ailes'];
+  const HEN_NEXT = {
+    debout: { picore: 5, marche: 4, gratte: 2, couvee: 1, ailes: 1 },
+    marche: { picore: 4, marche: 2, debout: 2, course: 1 },
+    course: { picore: 2, debout: 1 },
+    picore: { marche: 3, debout: 2, gratte: 2 },
+    gratte: { picore: 3, marche: 2 },
+    couvee: { debout: 1 },
+    ailes: { debout: 1, marche: 1 },
+  };
+  const HEN_TIME = { debout: [0.6, 2], picore: [1.5, 4], gratte: [1, 2.5], couvee: [6, 14], ailes: [0.6, 0.9] };
+
+  // L'image d'une bête selon son activité ; `b.age` est le temps passé dans l'activité, `b.nod`
+  // et `b.swish` sont tirés à son début.
+  function grazerPose(st, b) {
+    if (st === 'broute') return (b.age % b.nod) < 0.28 ? 'broute1' : 'broute0';      // la tête se relève à chaque bouchée
+    if (st === 'couche') return (b.age % 4.5) < 3 && ((b.age / 0.42) | 0) % 2 ? 'couchee1' : 'couchee0';   // elle rumine
+    const q = b.age - b.swish;                                                        // debout, parfois deux coups de queue
+    return b.swish >= 0 && ((q > 0 && q < 0.22) || (q > 0.44 && q < 0.66)) ? 'queue' : 'idle';
+  }
+  function henPose(st, b) {
+    if (st === 'picore') { const q = b.age % b.nod; return q < 0.5 ? (((q / 0.12) | 0) % 2 ? 'picore1' : 'picore0') : 'idle'; }
+    if (st === 'gratte') return ((b.age / 0.18) | 0) % 2 ? 'gratte' : 'idle';
+    if (st === 'couvee') return 'couvee';
+    if (st === 'ailes') return ((b.age / 0.1) | 0) % 2 ? 'ailes' : 'idle';
+    return 'idle';
+  }
+
+  // max = bêtes dessinées au plus ; walk = allure de chaque déplacement : vitesse (px/s), pas
+  // (px parcourus par image), portée (px) ; half = demi-longueur (pour rester à l'écart des autres).
+  const HERD = {
+    vache: { fold: 'etable', max: 5, frames: GRAZER_FRAMES, next: GRAZER_NEXT, time: GRAZER_TIME, pose: grazerPose, half: 14, walk: { marche: [7, 10, 2.4, 3 * T] } },
+    mouton: { fold: 'etable', max: 6, frames: GRAZER_FRAMES, next: GRAZER_NEXT, time: GRAZER_TIME, pose: grazerPose, half: 10, walk: { marche: [6, 9, 2, 3 * T] } },
+    poule: { fold: 'poulailler', max: 8, frames: HEN_FRAMES, next: HEN_NEXT, time: HEN_TIME, pose: henPose, half: 5, walk: { marche: [9, 14, 1.6, 2 * T], course: [30, 42, 3, 4 * T] } },
+  };
+
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (list) => list[(Math.random() * list.length) | 0];
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -141,7 +214,10 @@
     function canvasTexture(key, w, h, draw) {
       if (scene.textures.exists(key)) scene.textures.remove(key);
       const tex = scene.textures.createCanvas(key, w, h);
-      const paint = () => { const c = tex.getContext(); c.clearRect(0, 0, w, h); draw(c); tex.refresh(); };
+      const paint = () => {
+        if (!scene.textures.exists(key) || scene.textures.get(key) !== tex) return;   // planche refaite depuis
+        const c = tex.getContext(); c.clearRect(0, 0, w, h); draw(c); tex.refresh();
+      };
       paint();
       painters.push(paint);
       const el = tex.getSourceImage();
@@ -676,6 +752,247 @@
       };
     }
 
+    /* ---------- les bêtes : elles sortent le matin et rentrent le soir ---------- */
+    // Le nombre de bêtes vient du jeu, par la scène (setContext) ; tout le reste se passe ici.
+    // Avant l'heure de sortie de leur bâtiment, elles sont à l'intérieur, porte fermée. À
+    // l'heure, la porte s'ouvre, elles sortent une à une et vivent dehors (HERD[espèce].next).
+    // À l'heure de rentrer, elles rentrent une à une, et la porte se ferme derrière la dernière.
+
+    let herdWant = {};                 // espèce → nombre de bêtes, donné par la scène
+    const herd = [];
+    const folds = {};
+    for (const name in FOLDS) folds[name] = { name, def: FOLDS[name], sprite: null, fresh: true, turn: 0, k: 0, t: 0, door: null, key: '' };
+    (function () {                     // l'enclos de l'Étable
+      const objs = o.objects || {};
+      const r = objs[FOLDS.etable.pen], g = objs.grange;
+      folds.etable.pen = r && r.width && r.height ? { x: r.x, y: r.y, w: r.width, h: r.height }
+        : g ? { x: g.x + 8, y: g.y + g.height + 8, w: g.width - 16, h: 52 } : null;
+    })();
+    const foldOut = (f) => ctx.hour == null || (ctx.hour >= f.def.out && ctx.hour < f.def.in);
+    const foldUp = (f) => !!(f.sprite && f.sprite.active);
+    // Le seuil (dans l'ouverture de la porte) et le pied du bâtiment, juste devant le seuil.
+    // Une bête sur le seuil reste dessinée devant le bâtiment (voir draw()).
+    function sill(f) {
+      const b = f.sprite;
+      if (f.def.door === 'coulisse') return { x: b.x + BARN_DOOR.x + BARN_DOOR.w / 2, y: b.y - 2 };
+      return { x: b.x + COOP_SILL.x, y: b.y - b.height + COOP_SILL.y };
+    }
+    const foot = (f) => ({ x: sill(f).x, y: f.sprite.y + 6 });
+
+    // La porte. Étable : deux images (entrouverte, ouverte) fabriquées à partir de l'image du
+    // bâtiment, posées par-dessus. Poulailler : les trois images de sa planche.
+    function syncDoor(f) {
+      if (f.def.door === 'images') {
+        if (foldUp(f) && f.sprite.texture.frameTotal > 3) f.sprite.setFrame(f.k);
+        return;
+      }
+      const D = BARN_DOOR, barn = f.sprite;
+      if (!foldUp(f)) {
+        if (f.door) { f.door.destroy(); f.door = null; }
+        f.k = 0;
+        return;
+      }
+      if (f.key !== barn.texture.key) {
+        const key = barn.texture.key, tk = 'amb_porte_' + f.name;
+        if (f.door) { f.door.destroy(); f.door = null; }
+        const tex = canvasTexture(tk, D.w * 2, D.h, (c) => {
+          const img = scene.textures.exists(key) ? scene.textures.get(key).getSourceImage() : null;
+          if (!img) return;
+          c.imageSmoothingEnabled = false;
+          let inside = '#4a2433', shade = '#1f1418';
+          try {
+            const g = document.createElement('canvas');
+            g.width = img.width; g.height = img.height;
+            const q = g.getContext('2d', { willReadFrequently: true });
+            q.drawImage(img, 0, 0);
+            const hex = (p) => { const d = q.getImageData(p[0], p[1], 1, 1).data; return 'rgb(' + d[0] + ',' + d[1] + ',' + d[2] + ')'; };
+            inside = hex(D.dark); shade = hex(D.lintel);
+          } catch (e) { /* image illisible : couleurs par défaut */ }
+          [D.slide / 2, D.slide].forEach((slide, n) => {
+            const ox = n * D.w - D.x, oy = -D.y;
+            c.drawImage(img, D.x, D.y, D.w, D.h, n * D.w, 0, D.w, D.h);
+            c.fillStyle = inside; c.fillRect(ox + D.left, oy + D.top, D.leaf * 2, D.rows);
+            c.fillStyle = shade; c.fillRect(ox + D.left, oy + D.top, D.leaf * 2, 2);
+            c.drawImage(img, D.left, D.top, D.leaf, D.rows, ox + D.left - slide, oy + D.top, D.leaf, D.rows);
+            c.drawImage(img, D.right, D.top, D.leaf, D.rows, ox + D.right + slide, oy + D.top, D.leaf, D.rows);
+          });
+        });
+        tex.add('p1', 0, 0, 0, D.w, D.h);
+        tex.add('p2', 0, D.w, 0, D.w, D.h);
+        f.key = key;
+      }
+      if (!f.door || !f.door.active) f.door = scene.add.image(0, 0, 'amb_porte_' + f.name, 'p2').setOrigin(0);
+      f.door.setPosition(barn.x + D.x, barn.y - barn.height + D.y).setDepth(barn.depth + 0.5)
+        .setVisible(f.k > 0).setFrame(f.k === 1 ? 'p1' : 'p2');
+    }
+
+    // Un endroit où poser les pattes, à l'écart des autres bêtes (là où elles sont et là où
+    // elles vont). Étable : dans l'enclos. Poulailler : un endroit libre (ni eau, ni bâtiment,
+    // ni arbre) à `range` px au plus du pied de la porte, atteignable en ligne droite depuis
+    // `from`. `near` : pas plus loin que cette distance de la bête.
+    function spotFor(f, self, half, near, from) {
+      let best = null;
+      for (let i = 0; i < 10; i++) {
+        let x, y;
+        if (f.pen) {
+          const p = f.pen;
+          x = p.x + half + Math.random() * Math.max(0, p.w - 2 * half);
+          y = p.y + Math.random() * p.h;
+          if (near) {
+            x = Math.min(p.x + p.w - half, Math.max(p.x + half, self.x + rand(-near, near)));
+            y = Math.min(p.y + p.h, Math.max(p.y, self.y + rand(-near, near) * 0.4));
+          }
+        } else {
+          const home = foot(f), c = near ? self : home, r = near || f.def.range, a = rand(0, 6.283), d = rand(0.3, 1) * r;
+          x = c.x + Math.cos(a) * d; y = c.y + Math.sin(a) * d * 0.6;
+          if (Math.hypot(x - home.x, y - home.y) > f.def.range || !catFree(x, y) || (from && !clearWay(from.x, from.y, x, y))) continue;
+        }
+        best = { x, y };
+        if (!herd.some((b) => b !== self && b.near(x, y))) return best;
+      }
+      return best;
+    }
+
+    function makeBeast(kind, f, placed) {
+      const H = HERD[kind];
+      const F = {};
+      H.frames.forEach((name, i) => { F[name] = i; });
+      const me = { kind, fold: f, x: 0, y: 0, age: 0, nod: 1.3, swish: -1 };
+      let face = Math.random() < 0.5 ? 1 : -1;
+      let st = 'dedans', len = 0, before = null;
+      let path = [], speed = 0, stride = 2, walked = 0;   // déplacement en cours
+      const s = scene.add.image(0, 0, o.herd[kind], 0).setOrigin(0.5, 1).setVisible(false);
+
+      function enter(name) {
+        before = st; st = name; me.age = 0; walked = 0;
+        if (H.time[name]) len = rand(H.time[name][0], H.time[name][1]);
+        if (name === 'debout') me.swish = Math.random() < 0.7 ? rand(0.2, Math.max(0.3, len - 0.8)) : -1;
+        me.nod = rand(1.1, 1.7);
+      }
+      function walkTo(points, name, gait) {
+        const g = H.walk[gait || name] || H.walk.marche;
+        path = points.filter(Boolean); speed = rand(g[0], g[1]); stride = g[2];
+        enter(name);
+      }
+      function next() {
+        const w = Object.assign({}, H.next[st] || H.next.debout);
+        if (before && w[before]) w[before] *= CAT_AGAIN;
+        let name = pickWeighted(w);
+        if (H.walk[name]) {
+          const spot = spotFor(f, me, H.half, H.walk[name][3], me);
+          if (spot) { walkTo([spot], name); return; }
+          name = 'debout';
+        }
+        enter(name);
+      }
+      function draw(frame, alpha, dy) {
+        // Sur le seuil (en sortant ou en rentrant), la bête passe devant son bâtiment.
+        const front = (st === 'sort' || st === 'rentre') && foldUp(f) ? f.sprite.depth + 0.6 : 0;
+        s.setFrame(F[frame]).setPosition(me.x, me.y + (dy || 0)).setFlipX(face < 0).setDepth(Math.max(me.y, front))
+          .setAlpha(alpha == null ? 1 : alpha).setVisible(true);
+      }
+      // Avance le long du chemin ; renvoie la distance qui reste jusqu'au dernier point.
+      function advance(dt) {
+        const p = path[0];
+        const dx = p.x - me.x, dy = p.y - me.y, left = Math.hypot(dx, dy), d = Math.min(left, speed * dt);
+        if (left > 0.001) { me.x += (dx / left) * d; me.y += (dy / left) * d; }
+        if (Math.abs(dx) > 1) face = dx > 0 ? 1 : -1;
+        walked += d;
+        if (left - d < 0.3 && path.length > 1) { path.shift(); return Infinity; }
+        return path.length > 1 ? Infinity : left - d;
+      }
+      const walkFrame = () => (st === 'course' ? (Math.floor(walked / stride) % 2 ? 'marche1' : 'marche0')
+        : ['marche0', 'idle', 'marche1', 'idle'][Math.floor(walked / stride) % 4]);
+
+      if (placed) {                              // elle est déjà dehors (le jeu s'ouvre en journée)
+        const spot = spotFor(f, me, H.half) || foot(f);
+        me.x = spot.x; me.y = spot.y;
+        enter(pickWeighted(H.next.debout));
+        if (H.walk[st]) enter('debout');
+        me.age = rand(0, len * 0.6);
+      }
+
+      me.inside = () => st === 'dedans';
+      me.state = () => st;
+      me.near = (x, y) => {
+        const hit = (p) => Math.abs(p.x - x) < H.half * 1.5 && Math.abs(p.y - y) < 7;
+        const to = path.length ? path[path.length - 1] : null;
+        return st !== 'dedans' && (hit(me) || (to && hit(to)));
+      };
+      me.destroy = () => s.destroy();
+      me.step = (dt, out, doorOpen) => {
+        me.age += dt;
+        if (st === 'dedans') {
+          // Elle attend son tour derrière la porte ouverte, puis sort et gagne une place.
+          if (out && doorOpen && t >= f.turn) {
+            f.turn = t + rand(HERD_GAP[0], HERD_GAP[1]);
+            const d = sill(f);
+            me.x = d.x + rand(-3, 3); me.y = d.y;
+            walkTo([foot(f), spotFor(f, me, H.half, 0, foot(f))], 'sort', 'marche');
+            draw('idle', 0);
+          }
+          return;
+        }
+        // À l'heure de rentrer, chacune à son tour regagne la porte.
+        if (!out && st !== 'rentre' && t >= f.turn) {
+          f.turn = t + rand(HERD_GAP[0], HERD_GAP[1]);
+          walkTo([foot(f), sill(f)], 'rentre', 'marche');
+        }
+        if (H.walk[st] || st === 'sort' || st === 'rentre') {
+          const left = advance(dt);
+          const fade = st === 'sort' ? clamp01(me.age / 0.5) : st === 'rentre' ? clamp01(left / 6) : 1;
+          draw(walkFrame(), fade, st === 'course' ? -Math.abs(Math.sin((walked / stride) * Math.PI)) : 0);
+          if (left < 0.3) {
+            if (st === 'rentre') { st = 'dedans'; path = []; s.setVisible(false); } else next();
+          }
+          return;
+        }
+        draw(H.pose(st, me));
+        if (me.age >= len) next();
+      };
+      return me;
+    }
+
+    // Accorde les bêtes au nombre voulu, puis fait vivre les portes et les bêtes.
+    function stepHerd(dt) {
+      for (const kind in HERD) {
+        const f = folds[HERD[kind].fold];
+        const able = foldUp(f) && (f.pen || f.def.range) && o.herd && o.herd[kind] && scene.textures.exists(o.herd[kind]);
+        const want = able ? Math.min(HERD[kind].max, Math.max(0, herdWant[kind] | 0)) : 0;
+        let have = 0;
+        for (let i = herd.length - 1; i >= 0; i--) {
+          if (herd[i].kind !== kind) continue;
+          if (++have > want) { herd[i].destroy(); herd.splice(i, 1); have--; }
+        }
+        // Une bête achetée en journée sort de son bâtiment comme les autres le matin.
+        for (; have < want; have++) herd.push(makeBeast(kind, f, f.fresh && foldOut(f)));
+      }
+      for (const name in folds) {
+        const f = folds[name];
+        if (!foldUp(f)) continue;
+        const out = foldOut(f), mine = herd.filter((b) => b.fold === f);
+        if (f.fresh) { f.fresh = false; f.k = out && mine.length ? 2 : 0; syncDoor(f); }
+        // La porte : ouverte tant qu'une bête est dehors ou doit sortir ; un cran par DOOR_STEP.
+        const goal = mine.some((b) => !b.inside()) || (out && mine.length) ? 2 : 0;
+        if (f.k !== goal) {
+          f.t += dt;
+          if (f.t >= DOOR_STEP) { f.t = 0; f.k += goal > f.k ? 1 : -1; syncDoor(f); }
+        } else f.t = 0;
+        for (const b of mine) b.step(dt, out, f.k === 2);
+      }
+    }
+
+    function clearHerd() {
+      for (const b of herd) b.destroy();
+      herd.length = 0;
+      for (const name in folds) {
+        const f = folds[name];
+        f.k = 0; f.t = 0; f.fresh = true; f.turn = 0;
+        if (f.door) { f.door.destroy(); f.door = null; }
+        if (f.def.door === 'images') syncDoor(f);   // porte fermée
+      }
+    }
+
     /* ---------- ordonnanceur ---------- */
 
     // Tire la date de la prochaine naissance d'un type (une seule fois, pas à chaque image).
@@ -729,6 +1046,7 @@
       for (const a of actors) a.sprites.forEach((s) => s.destroy());
       actors.length = 0;
       if (cat) { cat.destroy(); cat = null; }
+      clearHerd();
       clouds.forEach((c) => c.s.destroy()); clouds = [];
     }
 
@@ -747,6 +1065,7 @@
         if (a.step(dt) === false) { a.sprites.forEach((s) => s.destroy()); actors.splice(i, 1); }
       }
       if (cat) cat.step(dt);
+      stepHerd(dt);
       for (const c of clouds) {
         const half = c.s.displayWidth / 2;
         let x = c.s.x + c.v * dt;
@@ -765,6 +1084,18 @@
         ctx.dusk = h >= 19.75 || h < 5;
       }
       if (c.trees) trees = c.trees.slice();
+      // L'Étable et le Poulailler (leur image, ou rien tant qu'ils ne sont pas affichés) et le
+      // nombre de bêtes de chaque espèce.
+      if (c.folds) {
+        for (const name in folds) {
+          const f = folds[name], b = c.folds[name] || null;
+          if (b === f.sprite) continue;
+          f.sprite = b;
+          if (b && f.def.door === 'images') b.setFrame(on ? f.k : 0);
+          if (on) syncDoor(f);
+        }
+      }
+      if (c.herd) herdWant = c.herd;
     }
 
     function scare(x, y) {
@@ -775,7 +1106,7 @@
     function stats() {
       const by = {};
       for (const a of actors) by[a.type] = (by[a.type] || 0) + 1;
-      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, wood: wood.size, orchard: trees.length, chat: cat ? cat.info() : null, clock: t, next: Object.assign({}, next) };
+      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, wood: wood.size, orchard: trees.length, chat: cat ? cat.info() : null, troupeau: herd.map((b) => b.kind + ' ' + b.state() + ' ' + Math.round(b.x) + ',' + Math.round(b.y)), portes: Object.fromEntries(Object.keys(folds).map((n) => [n, folds[n].k])), clock: t, next: Object.assign({}, next) };
     }
 
     return {
