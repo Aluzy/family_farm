@@ -456,7 +456,7 @@ export const RAW_DATA = {
       "litres": 3,
       "rendement": 6,
       "graines": { "item": "cafe", "mode": "plant" },
-      "sprite": { "r": 11, "h": 32, "c": [9, 10, 12, 13] }
+      "sprite": { "r": 15, "h": 32, "c": [8, 9, 10, 11] }
     }
   },
   "POTAGER": {
