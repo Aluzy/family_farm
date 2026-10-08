@@ -331,7 +331,7 @@ export const RAW_DATA = {
       "litres": 4,
       "rendement": 6,
       "graines": { "item": "graine_aubergine", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 7, "h": 16, "c": [9, 10, 11, 12] }
+      "sprite": { "r": 15, "h": 32, "c": [0, 1, 2, 3] }
     },
     "poivron": {
       "nom": "Poivron",
