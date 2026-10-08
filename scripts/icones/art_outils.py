@@ -413,27 +413,38 @@ def ciseaux():
     return compose(moitie, mirror(moitie), put={(7, 7): 'y', (8, 7): 'o', (7, 8): 'o'})
 
 
+# Roue dentée des Options : recopiée case par case du modèle choisi (8 dents, trou carré),
+# avec ses quatre teintes d'acier. Dessin direct, sans le contour automatique de compose().
+ENGRENAGE_PAL = {'K': '#212731', 'D': '#67707e', 'M': '#9ca6b6', 'L': '#e0e6f0'}
+ENGRENAGE = '''
+......KKKK......
+...KKKLLLLKKK...
+..KLLKLMMDKLLK..
+..KLMLMMMMLMDK..
+.KKKLMDDDDMDKKK.
+KLLLMDKKKKLMLLLK
+KLMMDK....KLMMDK
+.KLMDK....KLMDK.
+.KLMDK....KLMDK.
+KLMMDK....KLMMLK
+KLDDMLKKKKLMDDDK
+.KKKLMLLLLMDKKK.
+..KLMDMMMMMMLK..
+..KLDKLMMMDDK...
+...KKKLDDDKK....
+......KKKK......
+'''
+
+
 def engrenage():
-    # Six dents larges, dessinées à la main : à 16 px, huit dents fines calculées se
-    # brouillaient en un disque crénelé (bouton des Options).
-    return compose(layer(G('''
-................
-......AAAA......
-......AAAA......
-.AA..AAAAAA..AA.
-.AAAAAAAAAAAAAA.
-..AAAAAAAAAAAA..
-...AAAA..AAAA...
-...AAA....AAA...
-...AAA....AAA...
-...AAAA..AAAA...
-..AAAAAAAAAAAA..
-.AAAAAAAAAAAAAA.
-.AA..AAAAAA..AA.
-......AAAA......
-......AAAA......
-................
-''')))
+    rows = ENGRENAGE.strip().split('\n')
+    im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if ch != '.':
+                h = ENGRENAGE_PAL[ch].lstrip('#')
+                im.putpixel((x, y), tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (255,))
+    return im
 
 
 def boite_outils():
