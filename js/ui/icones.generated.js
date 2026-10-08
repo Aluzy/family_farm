@@ -1,7 +1,7 @@
 // Fichier produit par scripts/icones/build.py : ne pas modifier à la main.
 // emoji (sans U+FE0F) → rang dans assets/icones.png (COLS cases par rangée).
 // VERSION : empreinte de la planche, ajoutée à son adresse (pas de vieille planche en cache).
-export const VERSION = '192da1e760';
+export const VERSION = 'e3e09c0359';
 export const COLS = 16;
 export const ROWS = 10;
 export const ICONES = {
@@ -160,3 +160,42 @@ export const ICONES = {
 "🫘": 152,
 "🫙": 153
 };
+// Dessins de 32×32 (assets/art.png) : nom → rang, ART_COLS cases par rangée.
+export const ART_VERSION = '83e90b79b7';
+export const ART_COLS = 8;
+export const ART_ROWS = 4;
+export const ART = {
+"b-batterie": 0,
+"b-champ": 1,
+"b-cuisine": 2,
+"b-four": 3,
+"b-frigo": 4,
+"b-moulin": 5,
+"b-panneau": 6,
+"b-paturage": 7,
+"b-pompe": 8,
+"b-potager": 9,
+"b-poulailler": 10,
+"b-presse": 11,
+"b-reservoir": 12,
+"b-serre": 13,
+"b-silo": 14,
+"b-verger": 15,
+"cow": 16,
+"egg": 17,
+"hen": 18,
+"plot-soil": 19,
+"sheep-shorn": 20,
+"sheep-wool": 21,
+"sleep-off": 22,
+"sleep-on": 23,
+"tree-adult": 24,
+"tree-poirier": 25,
+"tree-pommier": 26,
+"tree-young": 27
+};
+// Police pixel (assets/police.png) : caractère → [x, largeur], hauteur POLICE_H, une rangée par couleur.
+export const POLICE_VERSION = 'e37134c69d';
+export const POLICE_W = 48;
+export const POLICE_H = 5;
+export const POLICE = {"0": [0, 3], "1": [3, 2], "2": [5, 3], "3": [8, 3], "4": [11, 3], "5": [14, 3], "6": [17, 3], "7": [20, 3], "8": [23, 3], "9": [26, 3], "#": [29, 5], "s": [34, 3], "h": [37, 3], "x": [40, 3], "/": [43, 3], " ": [46, 2]};

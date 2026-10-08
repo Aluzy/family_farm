@@ -16,6 +16,28 @@ jeu comme sur l'accueil, l'encyclopédie et la page des cookies.
 | `js/ui/pixel-emoji.js` | le remplacement à l'affichage |
 | `js/icones-page.js` | branche le remplacement sur les pages hors du jeu |
 
+## Dessins, police et jauges (sans emoji)
+
+Les illustrations qui étaient en SVG (bâtiments des Installations et des fiches d'aide, arbres
+du Verger, bêtes de l'Étable et du Poulailler) et le bouton « Dormir » sont aussi en pixel art :
+
+| Fichier | Rôle |
+|---|---|
+| `scripts/icones/art_batiments.py`, `art_verger.py`, `art_jeu.py` | dessins nommés (`ART` ou `art()`), jusqu'à 32×32 |
+| `assets/art.png` | leur planche, cases de 32×32 (produite) |
+| `assets/police.png` | la police pixel : chiffres, `#`, `s`, `h`, `x`, `/` (produite depuis `FONT` de `art_jeu.py`), une rangée sombre et une blanche |
+| `js/ui/pixel-art.js` | `artHtml(nom)`, `pxText('#12')`, `pxGauge(valeur, max, libellé)` |
+
+- Les fiches de parcelle (Zone de culture, Champ, Serre) : « #n » en police pixel, le nom et
+  l'icône de la culture, une jauge d'une case par stade (sans texte), puis des boutons d'icônes :
+  arroser 💧 (ou récolter 🧺 quand c'est mûr), automatisation 🤖 (grisé tant que le semis
+  automatique n'est pas débloqué), et 🌱 pour laisser monter en graine quand c'est possible.
+  Le détail (stade, litres, rendement) est dans le libellé des boutons et de la jauge.
+- Le Frigo reprend cette fiche : icône, nom, nombre au frais, jauge de fraîcheur du lot le plus
+  ancien, boutons pour sortir. Le détail des lots n'est plus affiché.
+- Une adresse dans une variable CSS se résout par rapport à la feuille de style : `pixel-art.js`
+  pose donc des adresses absolues (`--art-sheet`, `--font-sheet`).
+
 ## Ajouter ou retoucher une icône
 
 1. Dessiner dans le fichier `art_*.py` du thème : 16 chaînes de 16 lettres, chaque lettre

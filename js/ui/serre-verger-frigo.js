@@ -19,7 +19,9 @@ import { wearHtml } from './ferme.js';
 import { autoChip, groupButtons, plotCard } from './elevage.js';
 import { stationControls } from './cuisine.js';
 import { nightsLabel, unitLabel } from './inventaire.js';
-import { artSvg, icon, treeArt } from './animations.js';
+import { artPx, icon, treeArt } from './animations.js';
+import { pxGauge, pxText } from './pixel-art.js';
+import { shelfLife } from '../engine/inventory.js';
 import { helpBtn } from './aide.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
@@ -129,7 +131,7 @@ export function renderVerger() {
     slots.push(`
       <div class="card plot tree free">
         <span class="card-title"><span>Emplacement libre</span></span>
-        ${artSvg(['plot-soil'], 'plot-art')}
+        ${artPx(['plot-soil'], 'plot-art')}
         <span class="muted">Achète un pommier ou un poirier ci-dessous.</span>
       </div>`);
   }
@@ -191,20 +193,25 @@ export function renderFridgeCard() {
     </div>`;
 }
 
-// Frigo (Inventaire) : contenu, conservation figée, ce qu'on peut sortir.
+// Frigo (Inventaire) : une fiche par aliment, comme les parcelles : l'icône et le nom, le
+// nombre au frais en police pixel, une jauge de fraîcheur (le lot qui périmera le premier),
+// et les boutons pour sortir. Le détail des lots n'est plus affiché (trop chargé).
 function fridgeRowHtml(item) {
   const it = DATA.items[item];
   const n = fridgeCount(state, item);
-  const lots = fridgeLots(state, item)
-    .map((l) => `<li><span>${l.qty} ${unitLabel(item, l.qty)} — ${nightsLabel(l.nightsLeft)} <span class="muted">(figé)</span></span></li>`)
-    .join('');
+  const lots = fridgeLots(state, item);
+  const conservation = shelfLife(item) || 0;
+  const reste = lots.length ? Math.min(...lots.map((l) => l.nightsLeft)) : 0;
+  const jauge = conservation
+    ? pxGauge(Math.max(0, Math.min(conservation, reste)), conservation, `Fraîcheur : ${nightsLabel(reste)} pour le lot le plus ancien`, reste <= 1 ? 'low' : '')
+    : '';
   return `
-    <div class="inv-row">
-      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="big num">${formatQty(n)}</span></div>
-      <ul class="lot-list" aria-label="Lots au frigo">${lots}</ul>
-      <span class="device-actions">
+    <div class="card plot fridge-item" title="${it.nom} : ${formatQty(n)} au frais">
+      <span class="plot-head"><span class="plot-ico" aria-hidden="true">${it.icone}</span><span class="plot-name">${it.nom}</span><span class="plot-qty" role="img" aria-label="${formatQty(n)} au frais">${pxText(`x${Math.round(n)}`)}</span></span>
+      ${jauge}
+      <span class="plot-btns">
         <button type="button" class="btn" data-action="fridge-out" data-item="${item}" data-qty="1">Sortir 1</button>
-        <button type="button" class="btn" data-action="fridge-out" data-item="${item}" data-qty="all">Tout sortir</button>
+        <button type="button" class="btn" data-action="fridge-out" data-item="${item}" data-qty="all">Tout</button>
       </span>
     </div>`;
 }
@@ -224,9 +231,7 @@ export function renderFridgeTab() {
       ${!fridgeCoversNight(state) ? '<span class="alert">⚠️ La batterie ne couvrira pas la nuit.</span>' : ''}
       <span class="muted">La famille mange aussi le contenu du frigo, après ce qui est dans l'inventaire. Le Marché et les recettes utilisent l'inventaire : sors ce qu'il te faut.</span>
     </div>
-    <div class="inv-group">
-      ${items.length ? items.map(fridgeRowHtml).join('') : '<p class="hint">Le frigo est vide. Range des aliments frais depuis l\'onglet Frais.</p>'}
-    </div>`;
+    ${items.length ? `<div class="plots fridge-items">${items.map(fridgeRowHtml).join('')}</div>` : '<p class="hint">Le frigo est vide. Range des aliments frais depuis l\'onglet Frais.</p>'}`;
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

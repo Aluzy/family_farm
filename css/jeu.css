@@ -623,37 +623,32 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .sleep-fab > * { pointer-events: auto; }
 
 .sleep-fab .sleep-btn {
-  width: 56px;
-  height: 56px;
+  position: relative;
+  width: 64px;
+  height: 64px;
   padding: 0;
+  border: 0;
   border-radius: 50%;
-  border: 2px solid var(--accent);
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-weight: 700;
-  font-size: 1.05rem;
-  line-height: 1.1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  background: none;
+  color: #fff;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
 }
 
-.sleep-fab .sleep-btn:active { transform: translateY(1px); }
-
-.sleep-fab .sleep-btn:disabled {
-  border-color: var(--border);
-  background: var(--bg-elevated);
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
-
+/* Le bouton est un dessin (assets/art.png : sleep-on, sleep-off) ; en attente, les secondes
+   restantes sont écrites en police pixel par-dessus la lune grise. */
+.sleep-fab .sleep-art { --s: 64px; position: absolute; inset: 0; }
+.sleep-fab .sleep-btn:active { transform: translateY(2px); }
+.sleep-fab .sleep-btn:disabled { cursor: not-allowed; }
+.sleep-fab .sleep-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .sleep-fab .sleep-wait {
-  font-size: 0.72rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  --p: 3px;
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  transform: translateX(-50%);
+  color: #fff;
+  filter: drop-shadow(0 2px 0 #2a2d33);
 }
 
 .report-list { list-style: none; margin: 12px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -727,10 +722,25 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
   .plots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.plot { padding: 12px; gap: 6px; }
+.plot { padding: 10px; gap: 8px; }
 .plot.mature { border-color: var(--accent); border-width: 2px; }
 .plot .btn { width: 100%; padding: 0 8px; font-size: 0.92rem; }
 .plot-foot { margin-top: 12px; }
+/* Fiche de parcelle (et de frigo) : « #n » en police pixel, le nom, l'icône ; la jauge ;
+   une rangée de boutons d'icônes. */
+.plot-head { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 700; }
+.plot-num { flex: none; opacity: 0.7; }
+.plot-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plot-ico, .plot-qty { flex: none; }
+.plot-ico .px { --pxs: 32px; vertical-align: middle; }
+.plot.empty .plot-name { color: var(--text-muted); font-weight: 600; }
+.plot-btns { display: flex; gap: 6px; }
+.plot-btns .btn { flex: 1; min-width: 0; }
+.icon-btn-px { padding: 0; min-height: 44px; }
+.icon-btn-px .px { --pxs: 32px; vertical-align: middle; }
+.icon-btn-px.done { background: var(--bg-muted); box-shadow: inset 0 0 0 2px var(--accent); }
+.icon-btn-px:disabled .px { filter: grayscale(0.7); opacity: 0.6; }
+.icon-btn-px.done:disabled .px { filter: none; opacity: 1; }
 
 .portraits {
   display: grid;
@@ -1079,36 +1089,58 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
 .toast-go { display: inline-block; margin-left: 4px; font-weight: 800; }
 .wake-hour { margin: -4px 0 8px; font-size: 0.85rem; }
 
-/* ---------- Lot 11 : illustrations SVG ---------- */
+/* ---------- Dessins en pixel art (assets/art.png, js/ui/pixel-art.js) ---------- */
 
-/* Couleurs des dessins (le sprite est dans la page, les <use> en héritent). */
-:root {
-  --a-soil: #9b6a43; --a-soil2: #6f4526; --a-leaf: #5b9e3f; --a-leaf2: #3f7d2c;
-  --a-orange: #e8792b; --a-red: #d63b2f; --a-yellow: #f2c230; --a-yellow2: #b98a12;
-  --a-purple: #6b3a86; --a-green: #2f6e2a; --a-brown: #8a5a2b; --a-white: #fdfaf3;
-  --a-line: #5c4a36; --a-dark: #3b3024; --a-grey: #a9b1b6; --a-grey2: #6d777d;
-  --a-blue: #3d6fb6; --a-blue2: #9cc3ef; --a-wood: #a0703f; --a-roof: #b5452f;
-  --a-brick: #c0643f; --a-glass: #d6eef6; --a-sun: #f2a71b; --a-skin: #efc4b0;
-  --a-egg: #f6e7cc; --a-water: #4a90d9;
+/* Une case de 32×32 de la planche, affichée à la taille --s (64 px : ×2 ; 32 px : ×1).
+   --art-sheet et --art-cols sont posés par pixel-art.js (adresse avec empreinte). */
+.art {
+  --s: 64px;
+  display: block;
+  width: var(--s);
+  height: var(--s);
+  flex: none;
+  background: var(--art-sheet) no-repeat;
+  background-size: calc(var(--art-cols) * var(--s)) auto;
+  background-position: calc(var(--ax) * -1 * var(--s)) calc(var(--ay) * -1 * var(--s));
+  image-rendering: pixelated;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --a-soil: #8c613f; --a-soil2: #5e3c22; --a-white: #efe8da; --a-line: #d9ccb4;
-    --a-dark: #15110c; --a-grey: #8b949a; --a-glass: #3b5561; --a-egg: #eadbbd;
-  }
-}
-
-.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
-.art { display: block; width: 48px; height: 48px; flex: none; overflow: visible; }
-.art-icon { display: inline-block; width: 28px; height: 28px; vertical-align: -7px; margin-right: 6px; }
-.plot-art { width: 56px; height: 56px; margin: 0 auto; }
-.tree .plot-art { width: 64px; height: 64px; }
-.card-art-row { display: flex; align-items: center; gap: 10px; }
-.card-art-row .art { width: 56px; height: 56px; }
-.egg-art { width: 28px; height: 28px; }
+.art-icon { --s: 32px; display: inline-block; vertical-align: -9px; margin-right: 6px; }
+.plot-art { margin: 0 auto; }
+.card-art-row { display: flex; align-items: flex-end; gap: 10px; }
+.egg-art { --s: 32px; }
 .art-hidden { visibility: hidden; }
-.sheep .card-art-row .art { width: 64px; height: 64px; }
+
+/* Police pixel : chaque glyphe est une case de assets/police.png (rangée 0 sombre, rangée 1
+   blanche avec .light). --p : taille d'un pixel. */
+.pxt { --p: 3px; --row: 0; display: inline-flex; gap: var(--p); align-items: flex-end; vertical-align: middle; line-height: 0; }
+.pxt.light { --row: 1; }
+.pxt i {
+  display: block;
+  width: calc(var(--gw) * var(--p));
+  height: calc(var(--font-h) * var(--p));
+  background: var(--font-sheet) no-repeat;
+  background-size: calc(var(--font-w) * var(--p)) calc(var(--font-h) * 2 * var(--p));
+  background-position: calc(var(--gx) * -1 * var(--p)) calc(var(--row) * var(--font-h) * -1 * var(--p));
+  image-rendering: pixelated;
+}
+@media (prefers-color-scheme: dark) { .pxt { --row: 1; } }
+
+/* Jauge en cases : un cadre sombre de 3 px, une case par cran, pleine ou creuse. */
+.pxgauge {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: #3b2a1c;
+  box-shadow: inset 0 3px 0 #24180f;
+  height: 21px;
+  border-radius: 0;
+}
+.pxgauge i { flex: 1; background: #6a4e36; box-shadow: inset 0 3px 0 #574029; }
+.pxgauge i.on { background: #5aa83c; box-shadow: inset 0 3px 0 #8cd06a, inset 0 -3px 0 #3d7a2a; }
+.pxgauge.full i.on { background: #e0a82a; box-shadow: inset 0 3px 0 #f8d878, inset 0 -3px 0 #a8701a; }
+.pxgauge.low i.on { background: #c8503a; box-shadow: inset 0 3px 0 #ec8a6e, inset 0 -3px 0 #8a2e22; }
+.pxgauge.off i { opacity: 0.55; }
+.montee .pxgauge i.on { background: #b88ad0; box-shadow: inset 0 3px 0 #dcbcec, inset 0 -3px 0 #7e559a; }
 
 /* ---------- Lot 11 : aide des bâtiments ---------- */
 

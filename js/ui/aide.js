@@ -20,7 +20,7 @@ import { formatPlaces, formatStraw } from './elevage.js';
 import { formatFactor } from './serre-verger-frigo.js';
 import { millOutputText, stationRecipes } from './cuisine.js';
 import { nightsLabel } from './inventaire.js';
-import { artSvg, REDUCED_MOTION } from './animations.js';
+import { artPx, REDUCED_MOTION } from './animations.js';
 import { openOptionsModal } from './options.js';
 import { registerActions } from './actions.js';
 import { costLabel } from './common.js';
@@ -196,7 +196,7 @@ function openHelpModal(id) {
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" data-stop-propagation>
-        <div class="help-head">${artSvg([sym])}<h2 id="help-title">${h.nom}</h2></div>
+        <div class="help-head">${artPx([sym])}<h2 id="help-title">${h.nom}</h2></div>
         <ul class="help-list">
           <li><strong>Rôle</strong>${h.role}</li>
           <li><strong>Consommation</strong>${h.conso}</li>

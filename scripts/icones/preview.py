@@ -11,10 +11,12 @@ import unicodedata
 from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build import module_icons  # noqa: E402
+from build import module_art, module_icons  # noqa: E402
 
 
 def name(e):
+    if e.isascii():
+        return e
     return ' + '.join(unicodedata.name(c, '?').lower() for c in e if c not in '‍️')[:28]
 
 
@@ -27,6 +29,8 @@ def main(argv):
     icons = {}
     for p in argv:
         icons.update(module_icons(p))
+        for k, im in module_art(p).items():
+            icons[k] = im
     items = list(icons.items())
     per = 6
     cw, ch = 16 * 6 * 2 + 30, 16 * 6 + 60
@@ -37,10 +41,12 @@ def main(argv):
         x, y = 10 + (n % per) * cw, 10 + (n // per) * ch
         for k, bg in enumerate([(245, 239, 226, 255), (40, 52, 44, 255)]):
             box = Image.new('RGBA', (96, 96), bg)
-            box.alpha_composite(im.resize((96, 96), Image.NEAREST))
+            k3 = 96 // im.width
+            box.alpha_composite(im.resize((im.width * k3, im.height * k3), Image.NEAREST))
             sheet.alpha_composite(box, (x + k * 100, y))
         sheet.alpha_composite(Image.new('RGBA', (60, 22), (245, 239, 226, 255)), (x, y + 100))
-        sheet.alpha_composite(im, (x + 3, y + 103))
+        small = im if im.width == 16 else im.resize((16, 16), Image.NEAREST)
+        sheet.alpha_composite(small, (x + 3, y + 103))
         sheet.alpha_composite(im.resize((32, 32), Image.NEAREST), (x + 24, y + 100))
         d.text((x + 64, y + 104), name(e), fill=(0, 0, 0, 255))
     sheet.save(out)

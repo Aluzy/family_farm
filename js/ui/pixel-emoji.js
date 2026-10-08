@@ -30,12 +30,13 @@ const SKIP = new Set(['OPTION', 'TEXTAREA', 'INPUT', 'TITLE', 'SCRIPT', 'STYLE',
 const CSS = `
 .px {
   display: inline-block;
-  width: 1.25em;
-  height: 1.25em;
+  --pxs: 1.25em; /* taille de l'icône : une règle peut la changer (ex. boutons d'icônes) */
+  width: var(--pxs);
+  height: var(--pxs);
   vertical-align: -0.25em;
   background: url('${SHEET}') no-repeat;
-  background-size: calc(${COLS} * 1.25em) auto;
-  background-position: calc(var(--px-x) * -1.25em) calc(var(--px-y) * -1.25em);
+  background-size: calc(${COLS} * var(--pxs)) auto;
+  background-position: calc(var(--px-x) * -1 * var(--pxs)) calc(var(--px-y) * -1 * var(--pxs));
   image-rendering: pixelated;
   font-style: normal;
 }`;

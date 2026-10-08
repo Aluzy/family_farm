@@ -15,6 +15,7 @@ import {
 } from './store.js';
 import { telView } from './consent.js';
 import { actionSleep } from './game-actions.js';
+import { artHtml, pxText } from './pixel-art.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
 import {
   cibleAttrs, heureDuJour, horlogeEmoji, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
@@ -368,7 +369,7 @@ export function renderTabContent() {
   morphSlots(document.getElementById('tab-content'), (TAB_RENDERERS[activeTab] || TAB_RENDERERS.ferme)());
 }
 
-// Bouton « Zzz » (Dormir), en bas à droite sur tous les onglets. L'aperçu du repas est dans
+// Bouton « Dormir » (lune en pixel art), en bas à droite sur tous les onglets. L'aperçu du repas est dans
 // son libellé (title / aria-label) ; une pastille ne s'affiche que si le repas prévu est insuffisant.
 export function renderSleepBar() {
   const remaining = Math.max(1, Math.ceil((awakeRequired(state) * 1000 - state.awakeMs) / 1000));
@@ -382,7 +383,7 @@ export function renderSleepBar() {
   morph(
     document.getElementById('sleep-fab'),
     (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
-      `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}"${ok ? '' : ' disabled'}><span aria-hidden="true">Zzz</span>${ok ? '' : `<span class="sleep-wait" aria-hidden="true">${remaining} s</span>`}</button>`
+      `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}"${ok ? '' : ' disabled'}>${artHtml(ok ? 'sleep-on' : 'sleep-off', 'sleep-art')}${ok ? '' : pxText(`${remaining}s`, 'sleep-wait light')}</button>`
   );
 }
 
