@@ -33,8 +33,8 @@ du Verger, bêtes de l'Étable et du Poulailler) et le bouton « Dormir » sont 
   arroser 💧 (ou récolter 🧺 quand c'est mûr), automatisation 🤖 (grisé tant que le semis
   automatique n'est pas débloqué), et 🌱 pour laisser monter en graine quand c'est possible.
   Le détail (stade, litres, rendement) est dans le libellé des boutons et de la jauge.
-- Le Frigo reprend cette fiche : icône, nom, nombre au frais, jauge de fraîcheur du lot le plus
-  ancien, boutons pour sortir. Le détail des lots n'est plus affiché.
+- Le Frigo reprend cette fiche sans jauge : icône, nom, nombre au frais, boutons pour sortir. Au
+  frais la conservation est figée ; ce qui va périmer est encadré en rouge dans l'onglet Frais.
 - Une adresse dans une variable CSS se résout par rapport à la feuille de style : `pixel-art.js`
   pose donc des adresses absolues (`--art-sheet`, `--font-sheet`).
 

@@ -3,7 +3,7 @@ import { currentSeason, seasonFactor, seasonNight, yearNight } from '../engine/s
 import { isBroken } from '../engine/devices.js';
 import { deviceStatus } from '../engine/energy.js';
 import {
-  availableEnergy, buildFridge, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeLots, fridgeNightNeed,
+  availableEnergy, buildFridge, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeNightNeed,
   fridgeRate, fridgeUnits,
 } from '../engine/fridge.js';
 import { buildSerre, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
@@ -18,10 +18,9 @@ import { stageUsable } from './stage.js';
 import { wearHtml } from './ferme.js';
 import { autoChip, groupButtons, plotCard } from './elevage.js';
 import { stationControls } from './cuisine.js';
-import { nightsLabel, unitLabel } from './inventaire.js';
+import { nightsLabel } from './inventaire.js';
 import { artPx, icon, treeArt } from './animations.js';
-import { pxGauge, pxText } from './pixel-art.js';
-import { shelfLife } from '../engine/inventory.js';
+import { pxText } from './pixel-art.js';
 import { helpBtn } from './aide.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
@@ -193,22 +192,15 @@ export function renderFridgeCard() {
     </div>`;
 }
 
-// Frigo (Inventaire) : une fiche par aliment, comme les parcelles : l'icône et le nom, le
-// nombre au frais en police pixel, une jauge de fraîcheur (le lot qui périmera le premier),
-// et les boutons pour sortir. Le détail des lots n'est plus affiché (trop chargé).
+// Frigo (Inventaire) : une fiche par aliment, comme les parcelles : l'icône, le nom, le
+// nombre au frais en police pixel, et les boutons pour sortir. Ni jauge ni détail des lots :
+// au frais la conservation est figée, et ce qui va périmer est signalé dans l'onglet Frais.
 function fridgeRowHtml(item) {
   const it = DATA.items[item];
   const n = fridgeCount(state, item);
-  const lots = fridgeLots(state, item);
-  const conservation = shelfLife(item) || 0;
-  const reste = lots.length ? Math.min(...lots.map((l) => l.nightsLeft)) : 0;
-  const jauge = conservation
-    ? pxGauge(Math.max(0, Math.min(conservation, reste)), conservation, `Fraîcheur : ${nightsLabel(reste)} pour le lot le plus ancien`, reste <= 1 ? 'low' : '')
-    : '';
   return `
     <div class="card plot fridge-item" title="${it.nom} : ${formatQty(n)} au frais">
       <span class="plot-head"><span class="plot-ico" aria-hidden="true">${it.icone}</span><span class="plot-name">${it.nom}</span><span class="plot-qty" role="img" aria-label="${formatQty(n)} au frais">${pxText(`x${Math.round(n)}`)}</span></span>
-      ${jauge}
       <span class="plot-btns">
         <button type="button" class="btn" data-action="fridge-out" data-item="${item}" data-qty="1">Sortir 1</button>
         <button type="button" class="btn" data-action="fridge-out" data-item="${item}" data-qty="all">Tout</button>
