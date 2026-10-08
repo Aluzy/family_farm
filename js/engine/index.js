@@ -20,6 +20,7 @@ export * from './techtree.js';
 export * from './automation.js';
 export * from './campaign.js';
 export * from './night.js';
+export * from './ville.js';
 export * from './offline.js';
 export * from './alerts.js';
 export * from './testmode.js';

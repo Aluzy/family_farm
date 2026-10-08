@@ -336,6 +336,54 @@
       "sortie": "huile",
       "qteSortie": 1,
       "libre": true
+    },
+    "omelette_champignons": {
+      "nom": "Omelette aux champignons",
+      "icone": "🍄",
+      "station": "cuisine",
+      "temps": 15,
+      "ingredients": [{ "item": "oeuf", "qte": 2 }, { "item": "champignon", "qte": 2 }],
+      "libre": true
+    },
+    "poisson_grille": {
+      "nom": "Poisson grillé à l'ail",
+      "icone": "🐟",
+      "station": "cuisine",
+      "temps": 15,
+      "ingredients": [{ "item": "poisson", "qte": 1 }, { "item": "ail", "qte": 1 }],
+      "libre": true
+    },
+    "raclette": {
+      "nom": "Raclette",
+      "icone": "🫕",
+      "station": "cuisine",
+      "temps": 20,
+      "ingredients": [{ "item": "fromage_alpage", "qte": 1 }, { "item": "patate", "qte": 3 }],
+      "libre": true
+    },
+    "creme_marrons": {
+      "nom": "Crème de marrons",
+      "icone": "🌰",
+      "station": "cuisine",
+      "temps": 25,
+      "ingredients": [{ "item": "chataigne", "qte": 4 }, { "item": "sucre", "qte": 1 }],
+      "libre": true
+    },
+    "tarte_myrtilles": {
+      "nom": "Tarte aux myrtilles",
+      "icone": "🥧",
+      "station": "four",
+      "temps": 30,
+      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "myrtille", "qte": 4 }, { "item": "sucre", "qte": 1 }],
+      "libre": true
+    },
+    "pain_epices": {
+      "nom": "Pain d'épices",
+      "icone": "🍞",
+      "station": "four",
+      "temps": 30,
+      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "miel", "qte": 1 }, { "item": "epices", "qte": 1 }],
+      "libre": true
     }
   }
 }

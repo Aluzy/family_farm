@@ -6,6 +6,10 @@
    ========================================================================== */
 
 import {
+  advanceHours, applyMealHappiness, averageHappiness, buyInTown, goOut, goToTownMarket, happinessProductivity,
+  mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingStatus, townItems, townMarketOpen,
+} from '../js/engine/index.js';
+import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
   autonomyHistory, autonomyPercent, autoTasks, availableEnergy, averageHealth, awakeMsAtHour, awakeRequired,
@@ -2053,11 +2057,14 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
     conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20, oeuf: 20,
     viande_mouton: 20, pomme: 20, poire: 20, oignon: 20, ail: 20, poivron: 20, epinard: 20, fraise: 20, riz: 20,
     viande_boeuf: 20, viande_volaille: 20, lait: 20,
+    // version 1.5 : denrées de la ville et de la cueillette (le sucre et les épices ne se mangent pas)
+    poisson: 20, miel: 20, fromage_alpage: 20, champignon: 20, myrtille: 20, chataigne: 20,
     pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, tarte_pommes: 20,
     soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, fromage_frais: 20, riz_au_lait: 20,
     pain_ail: 20, tarte_fraises: 20, confiture_fraises: 20,
     chocolat_chaud: 20, cafe_boisson: 20, creme_vanille: 20, biere_artisanale: 20,
     bocal_legumes: 20,
+    omelette_champignons: 20, poisson_grille: 20, raclette: 20, creme_marrons: 20, tarte_myrtilles: 20, pain_epices: 20,
     ragout: 20, poivrons_farcis: 20, roti_boeuf: 20, poulet_roti_ail: 20,
   });
   assertEqual(countItem(s, 'paille'), 0, 'la paille n\'est pas un aliment');
@@ -2086,10 +2093,11 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
     carotte: 20, oeuf: 20, oignon: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, tarte_pommes: 20,
     soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, riz_au_lait: 20, pain_ail: 20,
     tarte_fraises: 20, chocolat_chaud: 20, cafe_boisson: 20, creme_vanille: 20,
+    omelette_champignons: 20, poisson_grille: 20, raclette: 20, creme_marrons: 20, tarte_myrtilles: 20, pain_epices: 20,
     ragout: 20, poivrons_farcis: 20, roti_boeuf: 20, poulet_roti_ail: 20,
   });
   assertEqual(inventoryCounts(s), {
-    conserve: 25, patate: 20, pomme: 20, poire: 20, ail: 20, riz: 20, pain: 20,
+    conserve: 25, patate: 20, pomme: 20, poire: 20, ail: 20, riz: 20, miel: 20, fromage_alpage: 20, chataigne: 20, pain: 20,
     fromage_frais: 20, confiture_fraises: 20, biere_artisanale: 20, bocal_legumes: 20,
   });
 });
@@ -3025,6 +3033,8 @@ const TEMPS_PLATS_AVANT_LOT_14 = {
   pain_ail: 15, tarte_fraises: 40, confiture_fraises: 30,
   chocolat_chaud: 20, cafe_boisson: 10, creme_vanille: 45, biere_artisanale: 60,
   bocal_legumes: 60,
+  // version 1.5 (ville.json) : recettes des denrées de la ville
+  omelette_champignons: 15, poisson_grille: 15, raclette: 20, creme_marrons: 25, tarte_myrtilles: 30, pain_epices: 30,
 };
 
 test('Lot 14 : temps de préparation des plats Four/Cuisine divisés par 2 (arrondi au supérieur), transformations intactes', () => {
@@ -3199,11 +3209,11 @@ test('nouvelles recettes : chacune se prépare quand ses conditions sont remplie
   }
 });
 
-test('arbre v2 : 10 recettes libres, 11 débloquées par un nœud', () => {
+test('arbre v2 : 16 recettes libres (dont 6 de la ville), 11 débloquées par un nœud', () => {
   const s = atelier();
   const libres = Object.keys(DATA.recipes).filter((id) => recipeUnlocked(s, id));
   assertEqual(libres.sort(), [...DATA.techtree.RECETTES_LIBRES].sort());
-  assertEqual(libres.length, 10);
+  assertEqual(libres.length, 16);
   assertEqual(Object.keys(DATA.recipes).length - libres.length, 11);
   for (const id of Object.keys(DATA.recipes)) assert(recipeUnlocked(s, id) || recipeNode(id), `${id} : libre ou débloquée par un nœud`);
   setInv(s, { pain: 1, ail: 1, huile: 1 });
@@ -8766,6 +8776,124 @@ test('migration v20 → v21 : la réserve de semences est vidée, le blé de l\'
   assertEqual(m.inventaire.ble, [{ qty: 5, nightsLeft: 10, origin: 'produit' }]);
   assertEqual(m.silo.ble, 12, 'le Silo ne change pas');
   assertEqual(typeof migrateWheatAndReserve, 'function');
+});
+
+
+/* ---------- version 1.5 : bonheur, sorties, marché de la ville ---------- */
+
+test('bonheur : chaque membre part à DEPART ; repas cru ou cuisiné', () => {
+  const s = garden();
+  const B = DATA.VILLE.BONHEUR;
+  for (const m of s.famille.membres) assertEqual(memberHappiness(m), B.DEPART);
+  assertEqual(happinessProductivity(s), 100, '60 : sans effet');
+  assertEqual(mealHappinessDelta({ mange: { carotte: 10 }, couverture: 100 }), B.REPAS_CRU, 'tout cru');
+  assertEqual(mealHappinessDelta({ mange: { ragout: 2 }, couverture: 100 }), B.REPAS_CRU + B.REPAS_PLATS, 'tout cuisiné');
+  assertEqual(mealHappinessDelta({ mange: { carotte: 1 }, couverture: 40 }), B.REPAS_CRU + B.FAIM, 'cru et pas assez');
+  assertEqual(mealHappinessDelta({ mange: {}, couverture: 0 }), B.REPAS_CRU + B.FAIM, 'rien mangé');
+  const d = applyMealHappiness(s, { mange: { ragout: 2 }, couverture: 100 });
+  assertEqual(d, 5);
+  assertEqual(averageHappiness(s), 65);
+  assertEqual(happinessProductivity(s), 105);
+});
+
+test('bonheur : le repas de 19 h le fait varier et le note dans state.repas', () => {
+  const s = garden();
+  setInv(s, { carotte: 40 });
+  const avant = averageHappiness(s);
+  takeMeal(s);
+  assertEqual(s.repas.bonheur, DATA.VILLE.BONHEUR.REPAS_CRU);
+  assertEqual(averageHappiness(s), avant + DATA.VILLE.BONHEUR.REPAS_CRU);
+});
+
+test('bonheur : la productivité de la santé est multipliée par celle du bonheur', () => {
+  const s = garden();
+  for (const m of s.famille.membres) m.bonheur = 90;
+  assertEqual(productivity(s), 115);
+  for (const m of s.famille.membres) m.bonheur = 10;
+  assertEqual(productivity(s), 80);
+  for (const m of s.famille.membres) m.malade = true;
+  assertEqual(happinessProductivity(s), 100, 'personne de bien portant : seule la santé compte');
+});
+
+test('sorties : prix (enfants à moitié), une fois par jour, retour avant 22 h', () => {
+  const s = garden();
+  s.pieces = 500;
+  assertEqual(outingCost(s, 'cinema'), 8 + 8 + 4 + 4, '2 adultes, 2 enfants');
+  const avant = s.famille.membres.map((m) => m.bonheur);
+  const r = goOut(s, 'cinema');
+  assertEqual(r.ok, true);
+  assertEqual(s.pieces, 500 - 24);
+  assertEqual(hourOfDay(s), 9, '6 h + 3 h');
+  s.famille.membres.forEach((m, i) => assertEqual(m.bonheur, avant[i] + 12));
+  assertEqual(outingStatus(s, 'cinema').raison, 'faite');
+  assertEqual(goOut(s, 'cinema').ok, false);
+  s.awakeMs = awakeMsAtHour(15);
+  assertEqual(outingStatus(s, 'montagne').raison, 'tard', '15 h + 8 h > 22 h');
+  assertEqual(outingStatus(s, 'foret').ok, true, '15 h + 5 h = 20 h');
+});
+
+test('sorties : les malades restent, le parc demande un enfant', () => {
+  const s = garden();
+  s.pieces = 100;
+  for (const m of s.famille.membres) if (m.enfant) m.malade = true;
+  assertEqual(outingStatus(s, 'parc').raison, 'enfants');
+  assertEqual(outingCost(s, 'cinema'), 16, 'seuls les adultes paient');
+  const enfant = s.famille.membres.find((m) => m.enfant);
+  const b = enfant.bonheur;
+  assert(goOut(s, 'cinema').ok);
+  assertEqual(enfant.bonheur, b, 'resté à la maison');
+});
+
+test('voyages : butin de la montagne, cueillette de saison en forêt', () => {
+  const s = garden();
+  s.pieces = 500;
+  setInv(s, {});
+  assert(goOut(s, 'montagne').ok);
+  assertEqual(countItem(s, 'miel'), 2);
+  assertEqual(countItem(s, 'fromage_alpage'), 2);
+  const t = garden();
+  t.day = 21; // automne
+  assertEqual(outingLoot(t, 'foret'), { champignon: 4, chataigne: 5 });
+  t.day = 11; // été
+  assertEqual(outingLoot(t, 'foret'), { myrtille: 5 });
+});
+
+test('sorties : le temps passe (les panneaux produisent), sans repas ni nuit', () => {
+  const s = garden();
+  const day = s.day;
+  advanceHours(s, 2);
+  assertEqual(s.awakeMs, 2 * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
+  assertEqual(s.day, day);
+  assertEqual(s.repas, null);
+});
+
+test('marché de la ville : ouvert après le trajet, seuls ses objets s\'y vendent', () => {
+  const s = garden();
+  s.pieces = 100;
+  assertEqual(townItems(), ['poisson', 'miel', 'fromage_alpage', 'sucre', 'epices']);
+  assertEqual(isBuyable('poisson'), false, 'pas au marché de la ferme');
+  assertEqual(buyItem(s, 'poisson', 1).ok, false);
+  assertEqual(buyInTown(s, 'poisson', 1).ok, false, 'pas encore en ville');
+  assert(goToTownMarket(s).ok);
+  assertEqual(townMarketOpen(s), true);
+  assertEqual(hourOfDay(s), 6 + DATA.VILLE.MARCHE.HEURES);
+  const r = buyInTown(s, 'poisson', 2);
+  assertEqual(r.ok, true);
+  assertEqual(countItem(s, 'poisson'), 2);
+  assertEqual(buyInTown(s, 'carotte', 1).ok, false, 'la carotte se vend à la ferme');
+  assertEqual(buyInTown(s, 'champignon', 1).ok, false, 'la cueillette ne s\'achète pas');
+});
+
+test('migration v21 → v22 : chaque membre reçoit son bonheur de départ', () => {
+  const v21 = JSON.parse(JSON.stringify(garden()));
+  v21.version = 21;
+  delete v21.ville;
+  for (const m of v21.famille.membres) delete m.bonheur;
+  const m = migrate({ v: 21, t: 0, s: v21 });
+  assertEqual(m.version, STATE_VERSION);
+  assertEqual(m.ville, { faits: {}, marche: 0 });
+  for (const x of m.famille.membres) assertEqual(x.bonheur, DATA.VILLE.BONHEUR.DEPART);
+  assertEqual(typeof migrateHappiness, 'function');
 });
 
 // run-tests.mjs importe ce fichier et lit `results`.

@@ -31,7 +31,7 @@ export function setMarketCoef(state, item, coef) {
 
 export function isBuyable(item) {
   const def = DATA.items[item];
-  return !!def && def.rachetable !== false;
+  return !!def && def.rachetable !== false && !def.ville; // version 1.5 : « ville » = marché de la ville seulement
 }
 
 export function sellPrice(item) {
@@ -68,10 +68,12 @@ export function buyQuote(state, item, qty = 1) {
 // S'arrête quand les pièces manquent. Un item acheté arrive avec sa
 // conservation pleine et l'origine « acheté ». Le blé acheté va au Silo s'il y
 // a de la place (il n'y périme pas), le reste dans l'inventaire.
-export function buyItem(state, item, qty = 1) {
+// `ville` : achat au marché de la ville (ville.js, buyInTown), le seul où se vendent les
+// objets marqués « ville ».
+export function buyItem(state, item, qty = 1, { ville = false } = {}) {
   const def = DATA.items[item];
   if (!def) return fail('Objet inconnu.');
-  if (!isBuyable(item)) return fail(`${def.nom} ne s'achète pas.`);
+  if (ville ? !def.ville || def.rachetable === false : !isBuyable(item)) return fail(`${def.nom} ne s'achète pas ici.`);
   let bought = 0;
   let cost = 0;
   for (let i = 0; i < qty; i++) {

@@ -1,4 +1,5 @@
 import { DATA } from './catalog.js';
+import { applyMealHappiness, happinessProductivity, memberHappiness } from './ville.js';
 import { EPS } from './base.js';
 import { fail, growthPrice, percentCeil, spend } from './devices.js';
 import { hourOfDay } from './clock.js';
@@ -14,7 +15,7 @@ import { autonomyPercent } from './campaign.js';
 // nom : le rôle fixe (« Adulte 1 ») ; prenom, genre, teint : le profil choisi
 // par le joueur (version 1.1), au départ le rôle, le sexe de DATA et le jaune.
 export function makeMember(def) {
-  return { id: def.id, nom: def.nom, enfant: def.enfant, sante: DATA.FAMILY.SANTE_DEPART, malade: false, ...defaultMemberProfile(def) };
+  return { id: def.id, nom: def.nom, enfant: def.enfant, sante: DATA.FAMILY.SANTE_DEPART, malade: false, bonheur: DATA.VILLE.BONHEUR.DEPART, ...defaultMemberProfile(def) };
 }
 
 /* ---------- version 1.1 : profil des membres de la famille ---------- */
@@ -144,6 +145,7 @@ export function addMember(state, enfant = false) {
   const n = nextFamilyNumber(state, type);
   const m = makeMember({ id: `${type}-${n}`, nom: `${enfant ? 'Enfant' : 'Adulte'} ${n}`, enfant: !!enfant });
   m.sante = Math.max(1, Math.min(DATA.FAMILY.SANTE_MAX, Math.floor(rawAverageHealth(state))));
+  if (f.membres.length) m.bonheur = Math.round(f.membres.reduce((t, x) => t + memberHappiness(x), 0) / f.membres.length);
   f.membres.push(m);
   return { ok: true, id: m.id, besoin: familyNeed(state) };
 }
@@ -258,12 +260,17 @@ export function averageHealth(state) {
 
 // Productivité en % (100 = pleine). Elle ne s'applique qu'aux actions au clic
 // (récolte manuelle) : jamais aux automatisations des lots suivants.
-export function productivity(state) {
+// Version 1.5 : le bonheur moyen la multiplie (happinessProductivity, ville.js).
+export function healthProductivity(state) {
   const h = averageHealth(state);
   for (const tier of DATA.FAMILY.PRODUCTIVITE) {
     if (h >= tier.min) return tier.pct;
   }
   return DATA.FAMILY.PRODUCTIVITE[DATA.FAMILY.PRODUCTIVITE.length - 1].pct;
+}
+
+export function productivity(state) {
+  return Math.round((healthProductivity(state) * happinessProductivity(state)) / 100);
 }
 
 // Variation de santé d'une nuit selon la couverture du besoin (en %, 0 à 100).
@@ -394,6 +401,7 @@ export function takeMeal(state) {
   const avant = rawAverageHealth(state);
   const bonus = dishBonus(plan.mange, state);
   const nouveaux = updateHealth(state, plan.couverture, bonus);
+  const bonheur = applyMealHappiness(state, plan); // version 1.5 : plats cuisinés → bonheur
   state.repas = {
     heure: hourOfDay(state),
     bonusPlats: bonus,
@@ -404,6 +412,7 @@ export function takeMeal(state) {
     santeAvant: avant,
     santeApres: rawAverageHealth(state),
     nouveauxMalades: nouveaux,
+    bonheur,
     energieProduit: produit,
     autonomie: autonomyPercent(produit, plan.besoin),
   };

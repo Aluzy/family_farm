@@ -162,7 +162,21 @@
       "se mange pas, se vend 1 pièce et ne s'achète pas au Marché : elle vient",
       "seulement du Moulin."
     ],
-    "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "edible": false, "category": "produit", "rachetable": false }
+    "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "edible": false, "category": "produit", "rachetable": false },
+    "//ville": [
+      "Version 1.5 (ville.json) : denrées venues de l'extérieur. \"ville\": true : elles ne",
+      "s'achètent qu'au marché de la ville, pas à celui de la ferme. La cueillette de la forêt",
+      "(champignon, myrtille, châtaigne) ne s'achète nulle part (rachetable: false) : on la",
+      "rapporte de la forêt ; le miel et le fromage d'alpage se rapportent aussi de la montagne."
+    ],
+    "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "edible": true, "category": "produit", "conservation": 2, "ville": true },
+    "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "edible": true, "category": "produit", "ville": true },
+    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 25, "prix": 5, "edible": true, "category": "produit", "conservation": 10, "ville": true },
+    "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "edible": false, "category": "ingrédient", "ville": true },
+    "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "edible": false, "category": "ingrédient", "ville": true },
+    "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "edible": true, "category": "légume", "conservation": 3, "rachetable": false },
+    "myrtille": { "nom": "Myrtille", "icone": "🫐", "energie": 5, "prix": 2, "edible": true, "category": "fruit", "conservation": 3, "rachetable": false },
+    "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "edible": true, "category": "fruit", "conservation": 12, "rachetable": false }
   },
   "//PLATS_RETIRES": [
     "Plats dont la recette a été retirée en version 1.1 (ils demandaient de la",
