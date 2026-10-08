@@ -63,6 +63,29 @@ await esbuild.build({
   logLevel: 'warning',
 });
 
+const fingerprint = (path) => createHash('sha256').update(readFileSync(path)).digest('hex').slice(0, 10);
+
+/* les autres pages : leurs icônes en pixel art (js/icones-page.js), regroupées aussi */
+const PAGE_ENTRY = 'js/icones-page.js';
+const PAGE_BUNDLE = 'js/icones.bundle.js';
+await esbuild.build({
+  entryPoints: [join(ROOT, PAGE_ENTRY)],
+  outfile: join(OUT, PAGE_BUNDLE),
+  bundle: true,
+  format: 'iife',
+  target: ['es2020'],
+  minify: true,
+  charset: 'utf8',
+  legalComments: 'none',
+  logLevel: 'warning',
+});
+const PAGE_TAG = `<script type="module" src="${PAGE_ENTRY}"></script>`;
+for (const page of PAGES.filter((p) => p !== 'jeu.html')) {
+  const src = readFileSync(join(OUT, page), 'utf8');
+  if (!src.includes(PAGE_TAG)) continue;
+  writeFileSync(join(OUT, page), src.replace(PAGE_TAG, `<script src="${PAGE_BUNDLE}?v=${fingerprint(join(OUT, PAGE_BUNDLE))}" defer></script>`));
+}
+
 /* la page du jeu */
 const MODULE_TAG = `<script type="module" src="${ENTRY}"></script>`;
 let html = readFileSync(join(OUT, 'jeu.html'), 'utf8');
@@ -73,7 +96,6 @@ if (html.split(MODULE_TAG).length !== 2) {
 html = html.replace(MODULE_TAG, `<script src="${BUNDLE}"></script>`);
 
 const errors = [];
-const fingerprint = (path) => createHash('sha256').update(readFileSync(path)).digest('hex').slice(0, 10);
 let count = 0;
 html = html.replace(/(<(?:script[^>]*\bsrc|link[^>]*\bhref)=")([^"]+)(")/g, (tag, before, ref, after) => {
   if (/^[a-z]+:\/\//i.test(ref)) return tag; // adresse externe

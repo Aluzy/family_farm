@@ -10,6 +10,7 @@ import {
 import { animateIn } from './animations.js';
 import { renderTutorial } from './aide.js';
 import { fitInventoryNames } from './inventaire.js';
+import { pixelize, watch } from './pixel-emoji.js';
 
 export let renderScheduled = false;
 export function setRenderScheduled(value) {
@@ -72,6 +73,7 @@ export function morph(target, html) {
   target.__html = html;
   const tpl = document.createElement('template');
   tpl.innerHTML = html;
+  pixelize(tpl.content); // emojis → icônes, avant la comparaison (pixel-emoji.js)
   patchChildren(target, tpl.content);
 }
 

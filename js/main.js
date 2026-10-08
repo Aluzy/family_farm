@@ -10,6 +10,7 @@ import { setTelChapter, showConsentBanner, telView } from './ui/consent.js';
 import { loadOrCreateState, persistState } from './ui/storage.js';
 import { catchUp, frame, onHide, renderLoop, setMailSeen, syncJobs } from './ui/loop.js';
 import { render } from './ui/render.js';
+import { watch as watchEmojis } from './ui/pixel-emoji.js';
 import { setAlertState } from './ui/toasts.js';
 import * as engine from './engine/index.js';
 import { stageModel } from './ui/stage.js';
@@ -47,6 +48,7 @@ import './ui/common.js';
 
 /* ---------- démarrage ---------- */
 
+watchEmojis(); // emojis → icônes en pixel art partout dans la page (pixel-emoji.js)
 setState(loadOrCreateState());
 setTelChapter(state.campagne ? state.campagne.chapitre : null);
 syncJobs();
