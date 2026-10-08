@@ -414,19 +414,26 @@ def ciseaux():
 
 
 def engrenage():
-    cx = cy = 8.0
-
-    def f(x, y):
-        dx, dy = x - cx, y - cy
-        r = math.hypot(dx, dy)
-        a = math.atan2(dy, dx) + math.pi / 8
-        dent = math.cos(8 * a) > 0.05
-        if r <= 1.7:
-            return '.'
-        if r <= 5.0 or (dent and r <= 6.6):
-            return 'A'
-        return '.'
-    return compose(geo(f))
+    # Six dents larges, dessinées à la main : à 16 px, huit dents fines calculées se
+    # brouillaient en un disque crénelé (bouton des Options).
+    return compose(layer(G('''
+................
+......AAAA......
+......AAAA......
+.AA..AAAAAA..AA.
+.AAAAAAAAAAAAAA.
+..AAAAAAAAAAAA..
+...AAAA..AAAA...
+...AAA....AAA...
+...AAA....AAA...
+...AAAA..AAAA...
+..AAAAAAAAAAAA..
+.AAAAAAAAAAAAAA.
+.AA..AAAAAA..AA.
+......AAAA......
+......AAAA......
+................
+''')))
 
 
 def boite_outils():

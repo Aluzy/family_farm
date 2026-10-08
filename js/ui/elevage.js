@@ -20,7 +20,8 @@ import { state } from './store.js';
 import { tel } from './consent.js';
 import { applyResult } from './game-actions.js';
 import { itemsSummary } from './inventaire.js';
-import { artSvg, coopArtRow, icon, plotArt } from './animations.js';
+import { artPx, coopArtRow, icon } from './animations.js';
+import { pxGauge, pxText } from './pixel-art.js';
 import { helpBtn } from './aide.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
@@ -152,7 +153,7 @@ function sheepCard(m, fed) {
   return `
     <article class="card sheep ancre${ready ? ' ready' : ''}" id="animal-${m.id}">
       <span class="card-title"><span>Mouton n°${sheepNumber(m)}</span><span class="chip${ready ? ' badge' : ''}">${ready ? '🧶 Prêt à tondre' : 'Laine en cours'}</span></span>
-      <span class="card-art-row">${artSvg([ready ? 'sheep-wool' : 'sheep-shorn'], '', `${m.id}-${ready ? 'laine' : 'tondu'}`, 'grow')}</span>
+      <span class="card-art-row">${artPx([ready ? 'sheep-wool' : 'sheep-shorn'], '', `${m.id}-${ready ? 'laine' : 'tondu'}`, 'grow')}</span>
       <span class="muted">${woolText}</span>
       <span class="bar" role="progressbar" aria-label="Laine" aria-valuemin="0" aria-valuemax="${M.joursLaine}" aria-valuenow="${m.laine}"><span class="bar-fill${ready ? '' : ' warn'}" style="width:${woolPct}%"></span></span>
       <span class="${willEat ? 'muted' : 'alert'}">${willEat ? `✅ Mangera ${formatStraw(M.pailleParNuit)} cette nuit` : '⚠️ Pas de paille pour lui cette nuit : sa laine n\'avancera pas'}</span>
@@ -169,7 +170,7 @@ function cowCard(v, fed) {
   return `
     <article class="card sheep ancre" id="animal-${v.id}">
       <span class="card-title"><span>Vache n°${cowNumber(v)}</span><span class="chip${willEat ? ' badge' : ''}">${willEat ? '🥛 Lait cette nuit' : 'Pas de lait cette nuit'}</span></span>
-      <span class="card-art-row">${artSvg(['cow'], '', v.id, 'grow')}</span>
+      <span class="card-art-row">${artPx(['cow'], '', v.id, 'grow')}</span>
       <span class="${willEat ? 'muted' : 'alert'}">${willEat ? `✅ Mangera ${formatStraw(V.pailleParNuit)} cette nuit` : `⚠️ Il lui faut ${formatStraw(V.pailleParNuit)} pour donner son lait`}</span>
     </article>`;
 }
@@ -261,53 +262,60 @@ function semisLabel(p) {
   return '🔁 Semis auto : même culture';
 }
 
-function semisButton(p) {
-  if (!techAuto(state, 'semis', p.lieu)) return '';
-  return `<button type="button" class="btn" data-action="semis-open" data-id="${p.id}">${semisLabel(p)}</button>`;
+// Bouton d'icône : l'emoji devient son icône en pixel art ; le libellé est dans title / aria-label.
+function iconBtn(emoji, label, attrs, { primary = false, done = false, disabled = false } = {}) {
+  const cls = `btn icon-btn-px${primary ? ' primary' : ''}${done ? ' done' : ''}`;
+  return `<button type="button" class="${cls}" ${attrs} title="${label}" aria-label="${label}"${disabled ? ' disabled' : ''}>${emoji}</button>`;
 }
 
+// Automatisation de la parcelle (semis automatique). Tant que l'Arbre des technologies ne
+// l'a pas débloquée, le bouton est là, grisé, pour qu'on sache qu'elle existe.
+function autoButton(p) {
+  if (!techAuto(state, 'semis', p.lieu)) {
+    return iconBtn('🤖', 'Semis automatique : à débloquer dans l\'Arbre des technologies', '', { disabled: true });
+  }
+  return iconBtn('🤖', semisLabel(p).replace(/^\S+ /, ''), `data-action="semis-open" data-id="${p.id}"`, { done: p.semis !== 'off' });
+}
+
+// Fiche d'une parcelle : « #n », la culture et son icône, une jauge en cases (une par stade,
+// sans texte) et des boutons d'icônes (arroser ou récolter, automatisation).
 export function plotCard(p, n) {
-  const seedsAvailable = plantableCropsFor(state, p.lieu).some((c) => seedStock(state, c) > 0);
+  const head = (name, emoji) =>
+    `<span class="plot-head"><span class="plot-num" role="img" aria-label="Parcelle ${n}">${pxText(`#${n}`)}</span><span class="plot-name">${name}</span>${emoji ? `<span class="plot-ico" aria-hidden="true">${emoji}</span>` : ''}</span>`;
   if (!p.culture) {
+    const seedsAvailable = plantableCropsFor(state, p.lieu).some((c) => seedStock(state, c) > 0);
     return `
-      <div class="card plot ancre" id="plot-${p.id}">
-        <span class="card-title"><span>Parcelle ${n}</span></span>
-        ${plotArt(p)}
-        <span class="muted">Vide</span>
-        <button type="button" class="btn primary" data-action="plant-open" data-id="${p.id}"${seedsAvailable ? '' : ' disabled'}>${seedsAvailable ? 'Planter' : 'Aucune graine'}</button>
-        ${semisButton(p)}
+      <div class="card plot ancre empty" id="plot-${p.id}">
+        ${head('Vide', '')}
+        ${pxGauge(0, 4, 'Parcelle vide', 'off')}
+        <span class="plot-btns">${iconBtn('🌱', seedsAvailable ? 'Planter' : 'Planter : aucune graine', `data-action="plant-open" data-id="${p.id}"`, { primary: true, disabled: !seedsAvailable })}${autoButton(p)}</span>
       </div>`;
   }
   const def = DATA.crops[p.culture];
   const max = maxStage(p);
   const mature = isMature(p);
-  const pct = Math.round((p.stade / max) * 100);
-  const stateLine = mature
-    ? (p.montee ? '🌱 Graines prêtes' : '✅ Mûre')
-    : `Stade ${p.stade} / ${max}${p.montee ? ' · monte en graine' : ''}`;
   const canBolt = def.graines.mode === 'montee' && p.stade >= def.stades;
-  const boltBtn = canBolt
-    ? `<button type="button" class="btn" data-action="bolt" data-id="${p.id}">${p.montee ? '↩ Annuler la montée en graine' : '🌱 Laisser monter en graine'}</button>`
-    : '';
-  let actions;
+  const etat = mature ? (p.montee ? 'graines prêtes' : 'mûre') : `stade ${p.stade} sur ${max}${p.montee ? ', monte en graine' : ''}`;
+  let main;
   if (mature) {
     const label = p.montee
-      ? `Récolter (+${def.graines.quantite} 🌱)`
-      : `Récolter (+${harvestYield(state, p.culture, false, p.lieu)} ${DATA.items[cropProduct(p.culture)].icone})`;
-    actions = `<button type="button" class="btn primary" data-action="harvest" data-id="${p.id}">${label}</button>${boltBtn}`;
+      ? `Récolter : +${def.graines.quantite} graines`
+      : `Récolter : +${harvestYield(state, p.culture, false, p.lieu)} ${DATA.items[cropProduct(p.culture)].nom.toLowerCase()}`;
+    main = iconBtn('🧺', label, `data-action="harvest" data-id="${p.id}"`, { primary: true });
   } else {
     const litres = waterCost(state, p);
     const noWater = state.eauMl < litres * 1000;
-    actions = `<button type="button" class="btn" data-action="water" data-id="${p.id}"${p.arrose || noWater ? ' disabled' : ''}>${p.arrose ? '💧 Arrosée' : `💧 Arroser (${formatQty(litres)} L)`}</button>${boltBtn}`;
+    const label = p.arrose ? 'Arrosée' : noWater ? `Arroser : il faut ${formatQty(litres)} L d'eau` : `Arroser (${formatQty(litres)} L)`;
+    main = iconBtn('💧', label, `data-action="water" data-id="${p.id}"`, { done: p.arrose, disabled: p.arrose || noWater });
   }
+  const bolt = canBolt
+    ? iconBtn('🌱', p.montee ? 'Monte en graine : annuler' : 'Laisser monter en graine', `data-action="bolt" data-id="${p.id}" aria-pressed="${p.montee}"`, { done: p.montee })
+    : '';
   return `
-    <div class="card plot ancre${mature ? ' mature' : ''}" id="plot-${p.id}">
-      <span class="card-title"><span>Parcelle ${n}</span><span aria-hidden="true">${def.icone}</span></span>
-      ${plotArt(p)}
-      <span class="muted">${def.nom} · ${stateLine}</span>
-      <span class="bar" role="progressbar" aria-label="Croissance" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${p.stade}"><span class="bar-fill" style="width:${pct}%"></span></span>
-      ${actions}
-      ${semisButton(p)}
+    <div class="card plot ancre${mature ? ' mature' : ''}${p.montee ? ' montee' : ''}" id="plot-${p.id}" title="${def.nom} : ${etat}">
+      ${head(def.nom, def.icone)}
+      ${pxGauge(p.stade, max, `Croissance : ${etat}`, mature ? 'full' : '')}
+      <span class="plot-btns">${main}${autoButton(p)}${bolt}</span>
     </div>`;
 }
 

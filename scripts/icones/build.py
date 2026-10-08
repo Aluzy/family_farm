@@ -11,6 +11,10 @@ Sources, dans cet ordre (une icône déjà vue n'est pas reprise) :
        ICONS   = {'💰': [16 chaînes de 16 lettres], ...}
      ou, pour les icônes calculées, une fonction icons() qui renvoie
        {'emoji': Image RGBA 16×16, ...}
+     Les dessins plus grands (bâtiments, arbres, bêtes : jusqu'à 32×32, sans emoji) vont dans
+       ART = {'b-serre': [rangées], ...}      (même PALETTE ; ART_SCALE = 2 les double)
+     ou art() qui renvoie {nom: Image}. Ils forment assets/art.png, des cases de 32×32 où
+     le dessin est centré et posé sur le bas (js/ui/animations.js, artSvg()).
   2. FROM_SHEET ci-dessous : cases reprises des planches du jeu (récoltes de crops.png…),
      pour que l'icône d'un légume soit celle qu'on voit sur la carte.
 
@@ -50,13 +54,15 @@ def rgb(h):
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
 
 
-def grid_image(name, emoji, rows, palette):
-    if len(rows) != 16:
-        sys.exit(f'{name} {emoji} : {len(rows)} rangées au lieu de 16')
-    im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+def grid_image(name, emoji, rows, palette, size=16):
+    w = size or max(len(r) for r in rows)
+    h = size or len(rows)
+    if len(rows) != h:
+        sys.exit(f'{name} {emoji} : {len(rows)} rangées au lieu de {h}')
+    im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     for y, row in enumerate(rows):
-        if len(row) != 16:
-            sys.exit(f'{name} {emoji} rangée {y} : {len(row)} lettres au lieu de 16 « {row} »')
+        if len(row) != w:
+            sys.exit(f'{name} {emoji} rangée {y} : {len(row)} lettres au lieu de {w} « {row} »')
         for x, ch in enumerate(row):
             if ch == '.' or ch == ' ':
                 continue
@@ -86,6 +92,75 @@ def module_icons(path):
     return out
 
 
+ART_CELL = 32
+ART_COLS = 8
+
+
+def module_art(path):
+    mod = load_module(path)
+    name = os.path.basename(path)
+    out = {}
+    scale = getattr(mod, 'ART_SCALE', 1)
+    raw = {}
+    if hasattr(mod, 'art'):
+        raw.update({k: im.convert('RGBA') for k, im in mod.art().items()})
+    for k, rows in getattr(mod, 'ART', {}).items():
+        raw[k] = grid_image(name, k, rows, getattr(mod, 'PALETTE', {}), size=None)
+    for k, im in raw.items():
+        if scale != 1 and k in getattr(mod, 'ART', {}):
+            im = im.resize((im.width * scale, im.height * scale), Image.NEAREST)
+        if im.width > ART_CELL or im.height > ART_CELL:
+            sys.exit(f'{name} {k} : {im.width}×{im.height}, au plus {ART_CELL}×{ART_CELL}')
+        cell = Image.new('RGBA', (ART_CELL, ART_CELL), (0, 0, 0, 0))
+        cell.alpha_composite(im, ((ART_CELL - im.width) // 2, ART_CELL - im.height))
+        out[k] = cell
+    return out
+
+
+def collect_art():
+    art = {}
+    for path in sorted(glob.glob(os.path.join(HERE, 'art_*.py'))):
+        for k, im in module_art(path).items():
+            art.setdefault(k, im)
+    return art
+
+
+def save_versioned(im, file):
+    path = os.path.join(ROOT, 'assets', file)
+    im.save(path, optimize=True)
+    with open(path, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()[:10]
+
+
+def collect_font():
+    font = {}
+    for path in sorted(glob.glob(os.path.join(HERE, 'art_*.py'))):
+        for ch, rows in getattr(load_module(path), 'FONT', {}).items():
+            font.setdefault(ch, rows)
+    return font
+
+
+FONT_COLORS = [(59, 47, 37, 255), (255, 255, 255, 255)]  # rangée 0 : texte sombre ; rangée 1 : blanc
+
+
+def font_sheet(font):
+    """Police pixel : les glyphes côte à côte, une rangée par couleur (FONT_COLORS).
+    Une image plutôt qu'un masque CSS : les masques agrandis sont lissés, pas les images."""
+    h = max(len(r) for r in font.values()) if font else 1
+    w = sum(len(r[0]) for r in font.values()) if font else 1
+    im = Image.new('RGBA', (max(1, w), h * len(FONT_COLORS)), (0, 0, 0, 0))
+    table, x = {}, 0
+    for ch, rows in font.items():
+        for k, col in enumerate(FONT_COLORS):
+            for y, row in enumerate(rows):
+                for i, c in enumerate(row):
+                    if c == '#':
+                        im.putpixel((x + i, k * h + y), col)
+        table[ch] = [x, len(rows[0])]
+        x += len(rows[0])
+    return im, table, h
+
+
 def collect():
     icons = {}
     for path in sorted(glob.glob(os.path.join(HERE, 'art_*.py'))):
@@ -108,10 +183,17 @@ def main():
     sheet = Image.new('RGBA', (COLS * 16, rows * 16), (0, 0, 0, 0))
     for n, e in enumerate(order):
         sheet.alpha_composite(icons[e], ((n % COLS) * 16, (n // COLS) * 16))
-    sheet.save(os.path.join(ROOT, 'assets', 'icones.png'), optimize=True)
+    version = save_versioned(sheet, 'icones.png')
     table = {e: n for n, e in enumerate(order)}
-    with open(os.path.join(ROOT, 'assets', 'icones.png'), 'rb') as f:
-        version = hashlib.sha256(f.read()).hexdigest()[:10]
+    art = collect_art()
+    names = sorted(art)
+    arows = max(1, (len(names) + ART_COLS - 1) // ART_COLS)
+    asheet = Image.new('RGBA', (ART_COLS * ART_CELL, arows * ART_CELL), (0, 0, 0, 0))
+    for n, k in enumerate(names):
+        asheet.alpha_composite(art[k], ((n % ART_COLS) * ART_CELL, (n // ART_COLS) * ART_CELL))
+    aversion = save_versioned(asheet, 'art.png')
+    fim, ftable, fh = font_sheet(collect_font())
+    fversion = save_versioned(fim, 'police.png')
     js = (
         '// Fichier produit par scripts/icones/build.py : ne pas modifier à la main.\n'
         '// emoji (sans U+FE0F) → rang dans assets/icones.png (COLS cases par rangée).\n'
@@ -120,10 +202,20 @@ def main():
         f'export const COLS = {COLS};\n'
         f'export const ROWS = {rows};\n'
         f'export const ICONES = {json.dumps(table, ensure_ascii=False, indent=0)};\n'
+        '// Dessins de 32×32 (assets/art.png) : nom → rang, ART_COLS cases par rangée.\n'
+        f"export const ART_VERSION = '{aversion}';\n"
+        f'export const ART_COLS = {ART_COLS};\n'
+        f'export const ART_ROWS = {arows};\n'
+        f'export const ART = {json.dumps({k: n for n, k in enumerate(names)}, ensure_ascii=False, indent=0)};\n'
+        '// Police pixel (assets/police.png) : caractère → [x, largeur], hauteur POLICE_H, une rangée par couleur.\n'
+        f"export const POLICE_VERSION = '{fversion}';\n"
+        f'export const POLICE_W = {fim.width};\n'
+        f'export const POLICE_H = {fh};\n'
+        f'export const POLICE = {json.dumps(ftable, ensure_ascii=False)};\n'
     )
     with open(os.path.join(ROOT, 'js', 'ui', 'icones.generated.js'), 'w', encoding='utf8') as f:
         f.write(js)
-    print(f'{len(order)} icônes, planche {sheet.width}×{sheet.height}')
+    print(f'{len(order)} icônes, planche {sheet.width}×{sheet.height} ; {len(names)} dessins, art.png {asheet.width}×{asheet.height}')
 
 
 if __name__ == '__main__':
