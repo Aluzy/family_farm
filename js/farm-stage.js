@@ -85,6 +85,9 @@
   const BUILDINGS = [
     { id: 'maison', object: 'maison', tex: 'house', seasonal: true, window: 'maison' },
     { id: 'etable', object: 'grange', tex: 'barn', seasonal: true, window: 'etable' },
+    // poulailler.png : trois images de 44×55 (porte fermée, entrouverte, ouverte) ; la vie
+    // d'ambiance ouvre la porte le matin pour faire sortir les poules.
+    { id: 'poulailler', object: 'poulailler', tex: 'coop', seasonal: false, window: 'poulailler', frame: 0 },
     { id: 'moulin', object: 'moulin', tex: 'windmill', seasonal: true, window: 'moulin', anim: true },
     { id: 'serre', object: 'serre', tex: 'serre', seasonal: true, window: 'serre', frame: SERRE_FRAME },
     { id: 'verger', object: 'verger', tex: 'sign', seasonal: false, window: 'verger' },
@@ -93,11 +96,15 @@
   // chat.png : le chat de la vie d'ambiance, 8 cases de 16×16 (leur ordre : CAT_FRAMES dans
   // js/ambient-life.js). Sans l'image, pas de chat ; rien d'autre ne change.
   const CAT_FRAME = { frameWidth: 16, frameHeight: 16 };
-  // Le troupeau de l'Étable, lui aussi animé par la vie d'ambiance : une planche par espèce
-  // (cases de 32×24, leur ordre : HERD dans js/ambient-life.js). Une espèce sans planche
-  // n'est pas dessinée.
-  const HERD_FRAME = { frameWidth: 32, frameHeight: 24 };
-  const HERD_SHEETS = { vache: 'vache.png', mouton: 'mouton.png' };
+  // Les bêtes de l'Étable et du Poulailler, elles aussi animées par la vie d'ambiance : une
+  // planche par espèce (fichier, taille des cases ; leur ordre : HERD dans
+  // js/ambient-life.js). Une espèce sans planche n'est pas dessinée.
+  const HERD_SHEETS = {
+    vache: ['vache.png', { frameWidth: 32, frameHeight: 24 }],
+    mouton: ['mouton.png', { frameWidth: 32, frameHeight: 24 }],
+    poule: ['poule.png', { frameWidth: 16, frameHeight: 16 }],
+  };
+  const COOP_FRAME = { frameWidth: 44, frameHeight: 55 };
   // Intérieurs : une petite carte Tiled à part, affichée à la place de la carte quand le
   // joueur entre dans le bâtiment (modèle.interieur). `zones` = nom des couches d'objets dont
   // le rectangle reçoit les parcelles, `plots` = leur liste dans le modèle, `window` = fenêtre
@@ -227,7 +234,8 @@
         L.image('soil_wet', 'soil_wet.png');
         L.image('sign', 'sign.png');
         L.spritesheet('chat', 'chat.png', CAT_FRAME);
-        for (const [kind, file] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, file, HERD_FRAME);
+        for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, file, size);
+        L.spritesheet('coop', 'poulailler.png', COOP_FRAME);
         L.tilemapTiledJSON(MAP.key, MAP.json);
         for (const r of Object.values(ROOMS)) L.tilemapTiledJSON(r.key, r.json);
         L.image(MAP.tiles, MAP.image);
@@ -315,6 +323,7 @@
         bake('ph_etable', 104, 93, shed(0x8a5a34, 0x5a3a1a, 104, 93));
         bake('ph_moulin', 96, 128, shed(0xd8c7a3, 0x6b4423, 96, 128));
         bake('ph_serre', 96, 80, shed(0x9fd3c7, 0x4f8a7a, 96, 80));
+        bake('ph_poulailler', 44, 55, shed(0xb07a4a, 0x5c2f40, 44, 55));
         bake('ph_verger', 17, 16, (d) => { d.fillStyle(0x6b4423).fillRect(7, 8, 3, 8); d.fillStyle(0xb98a4e).fillRect(1, 1, 15, 8); });
         bake('ph_arbre', 80, 80, (d) => { d.fillStyle(0x6b4423).fillRect(36, 48, 8, 32); d.fillStyle(0x4f8a4a).fillCircle(40, 32, 28); });
         g.destroy();
@@ -1098,14 +1107,14 @@
         this.syncRooms(model, force);
         // L'ambiance reçoit l'heure, la saison et les images des arbres (jamais le modèle) : elle
         // ne les anime pas, elle y fait partir feuilles et écureuils. Elle reçoit aussi l'image
-        // de l'Étable (si elle est affichée, avec sa vraie image) et le nombre de bêtes du
-        // troupeau : elle ouvre les portes le matin et fait sortir les bêtes dans l'enclos.
+        // de l'Étable et du Poulailler (s'ils sont affichés, avec leur vraie image) et le nombre
+        // de bêtes : elle ouvre les portes le matin et fait sortir les bêtes.
         if (this.ambient) {
           const leafy = [];
           for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0) leafy.push(e.sprite);
-          const etable = this.buildings.get('etable');
-          const barn = etable && etable.sprite.texture.key.indexOf('ph_') !== 0 ? etable.sprite : null;
-          this.ambient.setContext({ hour: model.heure, season: model.season, trees: leafy, barn, herd: model.animaux || {} });
+          const real = (id) => { const e = this.buildings.get(id); return e && e.sprite.texture.key.indexOf('ph_') !== 0 ? e.sprite : null; };
+          const folds = { etable: real('etable'), poulailler: real('poulailler') };
+          this.ambient.setContext({ hour: model.heure, season: model.season, trees: leafy, folds, herd: model.animaux || {} });
         }
         this.placeLabels();
       }
@@ -1190,7 +1199,7 @@
           s = this.add.sprite(0, 0, key, 0);
           if (this.anims.exists(key) && !reducedMotion()) s.play(key);
         } else {
-          s = this.add.image(0, 0, key, real && def.frame ? def.frame : undefined);
+          s = this.add.image(0, 0, key, real && def.frame != null ? def.frame : undefined);
         }
         s.setOrigin(0, 1);
         const x = clamp(Math.round(o.x + o.width / 2 - s.width / 2), 0, this.world.w - s.width);

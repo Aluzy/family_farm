@@ -39,7 +39,7 @@ import { registerActions } from './actions.js';
 // Un appui sur un bâtiment ou sur son étiquette ouvre une fenêtre dont le contenu est celui
 // des sections de la Ferme, redessiné à chaque rendu : les boutons y fonctionnent comme
 // dans la liste classique. Les fenêtres de #modal-root s'affichent par-dessus.
-export let stageWindow = null; // null, 'maison', 'etable', 'serre', 'moulin', 'verger', 'zone', 'zone2' ou 'chapitres'
+export let stageWindow = null; // null, 'maison', 'etable', 'poulailler', 'serre', 'moulin', 'verger', 'zone', 'zone2' ou 'chapitres'
 export function setStageWindow(value) {
   stageWindow = value;
   return value;
@@ -145,10 +145,15 @@ export function herdShown() {
   return isUnlocked(state, 'paturage') || state.paturage.construit || sheepCount(state) + cowCount(state) > 0;
 }
 
+// L'Étable loge les moutons et les vaches ; le Poulailler, bâtiment à part sur la carte,
+// loge les poules (l'ancre garde son ancien nom, `etable-poules`, que la page sans carte
+// utilise aussi).
 function renderEtableWindow() {
-  const poules = coopShown() ? `<div id="etable-poules" class="ancre">${renderPoulailler()}${renderAchatPoules()}</div>` : '';
-  const troupeau = herdShown() ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}${renderAchatTroupeau()}</div>` : '';
-  return poules + troupeau;
+  return herdShown() ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}${renderAchatTroupeau()}</div>` : '';
+}
+
+function renderPoulaillerWindow() {
+  return coopShown() ? `<div id="etable-poules" class="ancre">${renderPoulailler()}${renderAchatPoules()}</div>` : '';
 }
 
 // Fenêtres de la carte. Deux tailles seulement : pleine hauteur (`haute`) ou demi-hauteur.
@@ -165,8 +170,13 @@ export const STAGE_WINDOWS = {
   },
   etable: {
     nom: 'Étable', icone: '🐄',
-    ok: () => coopShown() || herdShown(),
+    ok: () => herdShown(),
     corps: () => renderEtableWindow(),
+  },
+  poulailler: {
+    nom: 'Poulailler', icone: '🐔',
+    ok: () => coopShown(),
+    corps: () => renderPoulaillerWindow(),
   },
   serre: {
     nom: 'Serre', icone: '🪴', ok: () => isUnlocked(state, 'serre'), sansTitre: true,

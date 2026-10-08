@@ -13,7 +13,7 @@ du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
- ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, le troupeau (voir docs/vie-ambiance.md)
+ ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, les bêtes de l'Étable et du Poulailler (voir docs/vie-ambiance.md)
  ├─ js/farm-stage.js      la scène : ne connaît ni `state` ni le moteur (script classique)
  └─ js/main.js            point d'entrée des modules ES
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
@@ -33,8 +33,8 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
   `{ season, heure, cols, plots: [{ id, culture, icone, phase (-1, 0…3), mature, arrosee }],
   cols2, plots2 (le Champ, même forme que plots), arbres: [{ id, jeune }],
   serre (parcelles de la Serre, même forme), interieur (null ou 'serre'),
-  batiments: { etable, moulin, serre, verger, zone, zone2 },
-  animaux: { vache, mouton } (nombre de bêtes de l'Étable) }`.
+  batiments: { etable, poulailler, moulin, serre, verger, zone, zone2 },
+  animaux: { vache, mouton, poule } (nombre de bêtes de l'Étable et du Poulailler) }`.
 - **`sync(modèle)` est idempotent** : `render()` appelle `renderStage()` environ 5 fois par
   seconde ; un modèle identique est écarté avant la scène (comparaison de la clé JSON), un modèle
   différent crée, met à jour ou détruit exactement ce qui a changé.
@@ -78,7 +78,8 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
   | Objet | Image | Affiché si | Fenêtre |
   |---|---|---|---|
   | `maison` | `house_*` | toujours | Maison |
-  | `grange` | `barn_*` (l'étable) | Poulailler ou Pâturage débloqué | Étable |
+  | `grange` | `barn_*` (l'étable) | Pâturage débloqué, ou des moutons ou des vaches | Étable |
+  | `poulailler` | `poulailler.png` (3 images de 44×55 : porte fermée, entrouverte, ouverte) | Poulailler débloqué | Poulailler |
   | `moulin` | `windmill_*` (4 images de 96×128, animé) | un atelier débloqué | Moulin et ateliers |
   | `serre` | `serre_*`, découpe « batiment » (verrière seule, 94×83) | Serre débloquée | Serre |
   | `verger` | `sign.png` (pancarte) | Verger débloqué | Verger |
@@ -86,8 +87,8 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
   | `zone_culture_2` | parcelles (8 colonnes) | Moulin débloqué | Champ |
   | `arbre_verger_1` à `arbre_verger_12` | `basic_*` (première des 8 images de 80×80, fixe) | un arbre par arbre du Verger, dans l'ordre d'achat | Verger |
 
-  Un arbre pas encore adulte est dessiné à 60 % de sa taille. La carte porte aussi `silo` et
-  `poulailler` : ces rectangles sont lus mais le jeu ne s'en sert pas encore.
+  Un arbre pas encore adulte est dessiné à 60 % de sa taille. La carte porte aussi `silo` : ce
+  rectangle est lu mais le jeu ne s'en sert pas encore.
 
   Un bâtiment verrouillé n'est pas dessiné (l'herbe reste). `SERRE_FRAME = 'cour'` dans
   `farm-stage.js` affiche à la place la verrière avec sa cour pavée (177×144), nettement plus

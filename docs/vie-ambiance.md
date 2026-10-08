@@ -18,7 +18,8 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
 - **Événements rares** : la date de la prochaine naissance de chaque type est tirée une seule
   fois (`arm()`), puis seulement comparée à l'horloge. Aucun tirage au sort par image.
 - **Un habitant** : le chat ne passe pas, il vit sur la carte. Voir la section 3.
-- **Le troupeau** : les bêtes de l'Étable sortent le matin et rentrent le soir. Voir la section 4.
+- **Les bêtes de la ferme** : celles de l'Étable et du Poulailler sortent le matin et rentrent le
+  soir. Voir la section 4.
 
 ## 2. Ce qui bouge
 
@@ -31,7 +32,8 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
 | Écureuil | descend d'un arbre, court jusqu'à un autre en s'arrêtant une fois, y grimpe | le jour, sauf en hiver |
 | Lucioles | 5 points lumineux au-dessus du voile de lumière | à partir de 19 h 45, au printemps et en été |
 | Chat | marche, s'assoit, fait sa toilette, se couche, fait la sieste, court ; détale si on appuie à moins de 48 px | toute la journée ; à partir de 19 h 45 il dort sur son toit, jusqu'à 6 h 30 |
-| Troupeau | les portes de l'Étable coulissent, les bêtes sortent une à une, broutent, marchent, se couchent, donnent des coups de queue | dehors de 7 h à 20 h, si l'Étable est affichée et qu'il y a des bêtes |
+| Vaches et moutons | les portes de l'Étable coulissent, les bêtes sortent une à une dans l'enclos, broutent, marchent, se couchent, donnent des coups de queue | dehors de 7 h à 19 h, si l'Étable est affichée et qu'il y a des bêtes |
+| Poules | la porte du Poulailler s'ouvre, les poules sortent en liberté, picorent, grattent, trottinent, se posent | dehors de 6 h à 19 h, si le Poulailler est affiché et qu'il y a des poules |
 
 L'eau et les arbres sont lus dans la carte Tiled, rien n'est écrit en dur : une case est de l'eau
 si sa tuile la plus haute est bleue ; un arbre est un groupe de tuiles de 3 à 5 de large et de 4
@@ -102,39 +104,53 @@ petit bond, ou inclinées). Pour ajouter une activité : une ligne dans `CAT_NEX
 chat fait 12 pixels de long et 5 de haut dans chacune. Réduire chaque image séparément « pour
 qu'elle remplisse la case » donne un chat qui grossit et rétrécit d'une image à l'autre.
 
-## 4. Le troupeau de l'Étable
+## 4. Les bêtes de l'Étable et du Poulailler
 
 Le seul élément de l'ambiance qui dépend du jeu, et seulement par deux choses que la scène lui
-donne dans `setContext` : l'image de l'Étable (`barn`, absente tant que l'Étable n'est pas
-affichée) et le nombre de bêtes par espèce (`herd`, tiré de `animaux` dans le modèle de vue).
-Tant que l'Étable n'est pas débloquée, il n'y a donc ni porte ni bêtes, sans rien régler.
+donne dans `setContext` : les images des deux bâtiments (`folds.etable`, `folds.poulailler`,
+absentes tant que le bâtiment n'est pas affiché) et le nombre de bêtes par espèce (`herd`, tiré
+de `animaux` dans le modèle de vue). Tant qu'un bâtiment n'est pas débloqué, il n'y a donc ni
+porte ni bêtes, sans rien régler.
 
-**La journée** (`HERD_OUT` = 7, `HERD_IN` = 20) :
+**Les deux bâtiments** (`FOLDS`) :
 
-- avant 7 h, les bêtes sont dans l'Étable, portes fermées ;
-- à 7 h les deux battants coulissent (deux crans de 0,3 s), puis les bêtes sortent une à une
-  (`HERD_GAP` secondes entre deux) : chacune apparaît sur le seuil et gagne une place libre de
-  l'enclos ;
-- dans l'enclos, chacune suit `HERD_NEXT`, sur le même principe que le chat : brouter (la tête
-  se relève à chaque bouchée), marcher jusqu'à une place libre voisine, rester debout avec
-  parfois deux coups de queue, se coucher et ruminer ;
-- à 20 h elles rentrent une à une, et les portes se ferment derrière la dernière ;
-- si le jeu s'ouvre en journée, elles sont déjà dans l'enclos, portes ouvertes ; une bête
-  achetée en journée sort de l'Étable ; une bête en moins disparaît.
+| Bâtiment | Bêtes | Sortie | Retour | Où elles vivent | Porte |
+|---|---|---|---|---|---|
+| Étable | vaches, moutons | 7 h | 19 h | l'enclos : le rectangle `enclos` de la carte, sinon la bande de 52 px devant le rectangle `grange` | deux battants qui coulissent |
+| Poulailler | poules | 6 h | 19 h | en liberté, à 5 tuiles au plus du pied de la porte, sur les cases libres (ni eau, ni bâtiment, ni arbre) | trois images dans sa planche |
 
-**L'enclos** : le rectangle `enclos` de la carte s'il existe, sinon la bande de 52 px devant le
-rectangle `grange` (c'est là qu'est la clôture de la carte actuelle). Les bêtes ne se posent pas
-à moins d'une longueur l'une de l'autre.
+**La journée** :
 
-**La porte** n'a pas d'image à elle : les deux images « entrouverte » et « ouverte » sont
-fabriquées au démarrage à partir de l'image de l'Étable (`BARN_DOOR` : où sont les battants dans
-`barn_*.png`, de combien ils coulissent). Changer le dessin de l'Étable demande de revoir ces
-mesures.
+- avant l'heure de sortie, les bêtes sont dedans, porte fermée ;
+- à l'heure, la porte s'ouvre (deux crans de 0,3 s), puis les bêtes sortent une à une
+  (`HERD_GAP` secondes entre deux) : chacune apparaît sur le seuil, descend au pied du
+  bâtiment et gagne une place libre, à l'écart des autres ;
+- dehors, chaque espèce suit son graphe, sur le même principe que le chat :
+  - vaches et moutons (`GRAZER_NEXT`) : brouter (la tête se relève à chaque bouchée), marcher
+    jusqu'à une place voisine, rester debout avec parfois deux coups de queue, se coucher et
+    ruminer ;
+  - poules (`HEN_NEXT`) : picorer par petites salves, gratter le sol, trottiner, courir, se
+    poser en boule, battre des ailes ;
+- à 19 h elles rentrent une à une, et la porte se ferme derrière la dernière ;
+- si le jeu s'ouvre pendant les heures de sortie, elles sont déjà dehors, porte ouverte ; une
+  bête achetée en journée sort de son bâtiment ; une bête en moins disparaît.
+
+**Les portes.** Celle de l'Étable n'a pas d'image à elle : les images « entrouverte » et
+« ouverte » sont fabriquées au démarrage à partir de l'image de l'Étable (`BARN_DOOR` : où sont
+les battants dans `barn_*.png`, de combien ils coulissent). Celle du Poulailler est dans sa
+planche (`assets/poulailler.png`, trois images de 44×55 : fermée, entrouverte, ouverte) ; son
+seuil est `COOP_SILL`. Changer le dessin d'un bâtiment demande de revoir ces mesures.
 
 **Une espèce** = une ligne dans `HERD` (ambient-life.js), une ligne dans `HERD_SHEETS`
-(farm-stage.js) et une planche de cases de 32×24, profil droit, sabots sur la dernière rangée.
-La vache (`assets/vache.png`, 27×17 dans sa case) et le mouton (`assets/mouton.png`, 20×14) ont
-les mêmes huit cases :
+(farm-stage.js) et une planche, profil droit, pattes sur la dernière rangée.
+
+| Espèce | Planche | Taille | Au plus |
+|---|---|---|---|
+| vache | `assets/vache.png`, cases de 32×24 | 27×17 | 5 |
+| mouton | `assets/mouton.png`, cases de 32×24 | 20×14 | 6 |
+| poule | `assets/poule.png`, cases de 16×16 | 10×12 | 8 |
+
+Vaches et moutons ont les mêmes huit cases :
 
 | Case | Nom | Sert à |
 |---|---|---|
@@ -144,8 +160,19 @@ les mêmes huit cases :
 | 4, 5 | `broute0`, `broute1` | tête au sol, puis relevée d'un pixel |
 | 6, 7 | `couchee0`, `couchee1` | couchée ; le mufle bouge quand elle rumine |
 
-Au plus 5 vaches et 6 moutons sont dessinés (`max`), quel que soit le troupeau du jeu : au-delà,
-l'enclos actuel est trop petit pour qu'ils restent à l'écart les uns des autres.
+La poule :
+
+| Case | Nom | Sert à |
+|---|---|---|
+| 0 | `idle` | debout ; pas intermédiaire de la marche |
+| 1, 2 | `picore0`, `picore1` | la tête descend, puis le bec touche le sol |
+| 3, 4 | `marche0`, `marche1` | marche et course |
+| 5 | `gratte` | une patte lancée en arrière |
+| 6 | `couvee` | posée en boule |
+| 7 | `ailes` | battement d'ailes |
+
+Au-delà du nombre « au plus », les bêtes du jeu ne sont pas dessinées : l'enclos et la zone du
+Poulailler sont trop petits pour qu'elles restent à l'écart les unes des autres.
 
 ## 5. Budget
 
@@ -153,8 +180,8 @@ l'enclos actuel est trop petit pour qu'ils restent à l'écart les uns des autre
 - Décisions à 10 Hz (`TICK_MS`). Par image : seulement les bêtes présentes, le chat
   et les 3 ombres.
 - Rien hors de la vue : une bête naît au bord de la vue et elle est retirée si le joueur fait
-  glisser la carte ailleurs. Exceptions : le chat (une image en plus des 8) et le troupeau (5
-  bêtes au plus, et la porte), jamais retirés. Chacun coûte une addition et un changement
+  glisser la carte ailleurs. Exceptions : le chat (une image en plus des 8) et les bêtes de
+  l'Étable et du Poulailler (19 au plus, et les portes), jamais retirées. Chacun coûte une addition et un changement
   d'image par image affichée.
 - « Réduire les animations » (`prefers-reduced-motion`) : tout est retiré.
 - Onglet autre que la Ferme : la boucle Phaser dort, donc l'ambiance aussi.
@@ -167,10 +194,10 @@ l'enclos actuel est trop petit pour qu'ils restent à l'écart les uns des autre
 
 ```
 preload() this.load.spritesheet('chat', 'chat.png', { frameWidth: 16, frameHeight: 16 })
-          this.load.spritesheet('vache', 'vache.png', { frameWidth: 32, frameHeight: 24 })   // et 'mouton'
+          this.load.spritesheet('vache', 'vache.png', { frameWidth: 32, frameHeight: 24 })   // et 'mouton', 'poule'
 create()  this.ambient = AmbientLife.attach(this, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
 update()  this.ambient.update(delta)
-sync()    this.ambient.setContext({ hour, season, trees, barn, herd })   // jamais le modèle de vue
+sync()    this.ambient.setContext({ hour, season, trees, folds, herd })   // jamais le modèle de vue
 tap()     this.ambient.scare(wx, wy)
 ```
 
@@ -197,10 +224,11 @@ a.spawn('oiseau')      // aussi : papillon, feuille, ecureuil, lucioles
 a.stats()              // bêtes présentes, date des prochaines naissances, ce que fait le chat
 a.chat('toilette')     // lance une activité du chat : debout, marche, course, assis, toilette, couche, sieste
 a.chat('nuit')         // l'envoie se coucher sur son toit (en plein jour, il se réveille aussitôt)
-a.stats().troupeau     // ce que fait chaque bête de l'Étable ; a.stats().porte : 0 fermée, 2 ouverte
+a.stats().troupeau     // ce que fait chaque bête ; a.stats().portes : 0 fermée, 2 ouverte
 ```
 
-Pour voir le troupeau sans jouer jusqu'à l'Étable : `FF.engine.testAddCows(FF.state); FF.render()`.
+Pour voir les bêtes sans jouer jusque-là : `FF.engine.testAddCows(FF.state); FF.render()` (et
+`testAddSheep`, `testAddHens`).
 
 ## 9. Limites
 
@@ -216,10 +244,12 @@ Pour voir le troupeau sans jouer jusqu'à l'Étable : `FF.engine.testAddCows(FF.
   les rochers ni les barrières.
 - **Le chat n'a qu'un profil** : il se déplace surtout de côté, et un trajet presque vertical
   se fait de profil.
-- **Le troupeau** : pas d'image de passage entre debout et couchée ; deux bêtes qui marchent
-  peuvent se croiser en se traversant ; la bête qui sort apparaît en fondu sur le seuil, elle ne
-  franchit pas vraiment la porte. Avec « Réduire les animations », il n'y a ni bêtes ni porte
+- **Les bêtes** : pas d'image de passage entre debout et couchée ; deux bêtes qui marchent
+  peuvent se croiser en se traversant ; une bête qui sort apparaît en fondu sur le seuil, elle
+  ne franchit pas vraiment la porte. Avec « Réduire les animations », il n'y a ni bêtes ni porte
   ouverte, comme pour le reste de l'ambiance.
+- **Le Poulailler** est posé au bas du rectangle `poulailler` de la carte ; les fleurs du décor
+  qui sont juste derrière dépassent un peu de son toit.
 - **Les Étables d'automne et d'hiver** (`barn_au`, `barn_wi`, pas affichées tant que
   `SEASONS_ON_MAP` est faux) : la porte est fabriquée avec les mêmes mesures, sans avoir été
   regardée sur ces deux images.

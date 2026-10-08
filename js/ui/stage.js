@@ -72,7 +72,7 @@ export function horlogeEmoji(heure) {
 }
 
 // Lieux de la carte qui portent une étiquette (et une fenêtre du même nom).
-export const STAGE_LIEUX = ['maison', 'etable', 'moulin', 'serre', 'verger', 'zone', 'zone2'];
+export const STAGE_LIEUX = ['maison', 'etable', 'poulailler', 'moulin', 'serre', 'verger', 'zone', 'zone2'];
 
 // La carte a douze emplacements d'arbres (rectangles arbre_verger_1 à 12) : autant que le
 // Verger peut en compter.
@@ -123,7 +123,7 @@ function parcellesAFaire(lieu, quoi, zone) {
 // nouveau : ce sont les alertes de getNotifications() et de alertSnapshot(), rangées là
 // où elles se règlent, plus les malades à soigner (Maison › Famille).
 function aFaireParLieu() {
-  const n = { maison: 0, etable: 0, moulin: 0, serre: 0, verger: 0, zone: 0, zone2: 0 };
+  const n = { maison: 0, etable: 0, poulailler: 0, moulin: 0, serre: 0, verger: 0, zone: 0, zone2: 0 };
   const snap = alertSnapshot(state);
   for (const id of snap.panne.concat(snap.entretien)) {
     const f = fenetreDeCible(lieuAppareil(id));
@@ -133,7 +133,8 @@ function aFaireParLieu() {
   if (snap.frigoCoupe) n.maison += 1;
   n.maison += state.famille.membres.filter((m) => m.malade).length;
   for (const a of getNotifications(state)) {
-    if (a.type === 'poules' || a.type === 'tonte') n.etable += a.nombre;
+    if (a.type === 'poules') n.poulailler += a.nombre;
+    if (a.type === 'tonte') n.etable += a.nombre;
   }
   n.zone = parcellesAFaire('potager', null, 1);
   n.zone2 = parcellesAFaire('potager', null, 2);
@@ -166,7 +167,7 @@ export function cibleAlerte(type, id) {
       const p = premiereParcelle(ou[0], type, ou[1]);
       return { fenetre: ou[2], ancre: p ? `plot-${p.id}` : null };
     }
-    case 'poules': return { fenetre: 'etable', ancre: 'etable-poules' };
+    case 'poules': return { fenetre: 'poulailler', ancre: 'etable-poules' };
     case 'tonte': {
       const m = state.paturage.moutons.find(woolReady);
       return { fenetre: 'etable', ancre: m ? `animal-${m.id}` : 'etable-animaux' };
@@ -266,8 +267,9 @@ export function stageModel() {
   for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok(), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id] };
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
-  // Le troupeau de l'Étable : seulement des nombres, la carte en fait des bêtes dans l'enclos.
-  const animaux = { vache: state.paturage.vaches.length, mouton: state.paturage.moutons.length };
+  // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
+  // bêtes dans l'enclos et des poules en liberté autour du Poulailler.
+  const animaux = { vache: state.paturage.vaches.length, mouton: state.paturage.moutons.length, poule: state.poulailler.poules };
   return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, serre, interieur: stageInterior, arbres, batiments, animaux };
 }
 
