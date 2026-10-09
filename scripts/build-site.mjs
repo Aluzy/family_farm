@@ -10,6 +10,9 @@
 //   - jeu.html : la même page, qui charge ce fichier, chaque fichier local suivi
 //     de « ?v=<empreinte de son contenu> ». Un fichier modifié change d'adresse,
 //     le navigateur le recharge ; un fichier inchangé reste en cache ;
+//   - js/assets-versions.js : l'empreinte de chaque fichier de assets/ (images,
+//     cartes), que js/farm-stage.js ajoute à leurs adresses (« ?v=… »). Une image
+//     ou une carte modifiée est donc rechargée, même sur un téléphone qui l'a en cache ;
 //   - les autres pages, le style, les images et Phaser, copiés tels quels.
 //
 // Les tests, les scripts, les données sources (data/) et les modules eux-mêmes
@@ -21,8 +24,8 @@
 //   python3 -m http.server -d _site  (pour voir le résultat)
 
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join, sep } from 'node:path';
 import { ROOT } from './lib/engine-source.mjs';
 
 let esbuild;
@@ -95,6 +98,25 @@ if (html.split(MODULE_TAG).length !== 2) {
 }
 html = html.replace(MODULE_TAG, `<script src="${BUNDLE}"></script>`);
 
+/* les fichiers de assets/ (images, cartes) : chargés par js/farm-stage.js, qui ajoute
+   « ?v=<empreinte> » à chaque adresse d'après la table écrite ici. Ce fichier de table
+   reçoit lui-même son empreinte plus bas, comme les autres scripts de la page. */
+const ASSET_VERSIONS = 'js/assets-versions.js';
+const STAGE_TAG = '<script src="js/farm-stage.js"></script>';
+const assetVersions = {};
+for (const name of readdirSync(join(OUT, 'assets'), { recursive: true })) {
+  const file = join(OUT, 'assets', name);
+  if (statSync(file).isFile()) assetVersions[String(name).split(sep).join('/')] = fingerprint(file);
+}
+writeFileSync(join(OUT, ASSET_VERSIONS),
+  `// Généré par scripts/build-site.mjs : empreinte du contenu de chaque fichier de assets/.\n` +
+  `window.FERME_ASSET_VERSIONS = ${JSON.stringify(assetVersions, null, 1)};\n`);
+if (html.split(STAGE_TAG).length !== 2) {
+  console.error(`✗ jeu.html : la balise ${STAGE_TAG} est attendue une fois, exactement sous cette forme.`);
+  process.exit(1);
+}
+html = html.replace(STAGE_TAG, `<script src="${ASSET_VERSIONS}"></script>\n${STAGE_TAG}`);
+
 const errors = [];
 let count = 0;
 html = html.replace(/(<(?:script[^>]*\bsrc|link[^>]*\bhref)=")([^"]+)(")/g, (tag, before, ref, after) => {
@@ -113,4 +135,4 @@ if (errors.length) {
 writeFileSync(join(OUT, 'jeu.html'), html);
 
 const ko = (f) => Math.round(statSync(join(OUT, f)).size / 1024);
-console.log(`_site/ construit : ${BUNDLE} ${ko(BUNDLE)} Ko, jeu.html ${ko('jeu.html')} Ko, ${count} fichiers suivis d'une empreinte.`);
+console.log(`_site/ construit : ${BUNDLE} ${ko(BUNDLE)} Ko, jeu.html ${ko('jeu.html')} Ko, ${count} fichiers suivis d'une empreinte, ${Object.keys(assetVersions).length} fichiers de assets/ aussi.`);
