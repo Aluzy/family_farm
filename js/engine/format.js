@@ -166,8 +166,7 @@ export function botInfraInfo(state, eveilS) {
   const needsTank = isAutomated(state, 'potager') && litres * 1000 * 100 > tankCapacity(state) * S.MARGE_EAU;
   if (pump.niveau < DATA.LEVEL_MAX && (needsFlow || needsTank)) return { cost: upgradeCost(pump), buy: () => upgradeDevice(state, pump.id) };
 
-  const worst = Math.min(...Object.values(DATA.SAISONS.MODS).map((m) => m.solaire));
-  const produced = Math.floor((state.panneaux.reduce((t, p) => t + panelOutput(p), 0) * worst) / 100) * eveilS;
+  const produced = state.panneaux.reduce((t, p) => t + panelOutput(p), 0) * eveilS;
   const need = botEnergyPerDay(state, eveilS);
   const cheapest = (type, list, grid) => {
     let best = { ratio: nextPurchasePrice(state, type) / grid[0], buy: () => buyDevice(state, type), cost: nextPurchasePrice(state, type) };

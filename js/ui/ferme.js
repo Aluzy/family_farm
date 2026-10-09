@@ -19,7 +19,7 @@ import {
   setStageWindow, stageReturn, stageWindow,
 } from './stage-windows.js';
 import { autoChip, groupButtons, plotCard, renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
-import { renderCalendar, renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
+import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin } from './cuisine.js';
 import { renderChapterBanner } from './chapitres.js';
 import { icon } from './animations.js';
@@ -67,7 +67,7 @@ export function renderFerme() {
   // Les achats d'animaux et d'arbres suivent leur section (comme dans les fenêtres de la
   // carte) ; les ancres sont celles des indicateurs du bandeau et des notifications.
   return [
-    `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}<div id="bat-calendrier" class="ancre">${renderCalendar()}</div>`,
+    `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}`,
     renderPotager(),
     renderZone2(),
     isUnlocked(state, 'serre') ? renderSerre() : '',

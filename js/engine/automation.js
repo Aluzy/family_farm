@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { currentSeason } from './seasons.js';
 import { allDevices, fail, maintainDevice, needsService, tankCapacity } from './devices.js';
 import { newNightStats } from './family.js';
 import { allPlots, boltSeedYield, findPlot, harvest, isMature, maxStage, plant, plotZone, seedItem, seedStock, toggleBolting, water, zone2Plots } from './crops.js';
@@ -196,13 +195,13 @@ export function autoTasks(state) {
   return rap;
 }
 
-// Arbre v2 (Récupérateur d'eau de pluie) : chaque nuit, des litres selon la
-// saison entrent dans le réservoir, sans électricité, dans la limite de sa place.
+// Arbre v2 (Récupérateur d'eau de pluie) : chaque nuit, `pluie` litres entrent
+// dans le réservoir, sans électricité, dans la limite de sa place.
 export function rainNight(state) {
   const pluie = techFlag(state, 'pluie');
   if (!state.nuit) state.nuit = newNightStats();
   if (!pluie) return 0;
-  const ml = Math.min((pluie[currentSeason(state)] || 0) * 1000, Math.max(0, tankCapacity(state) - state.eauMl));
+  const ml = Math.min(pluie * 1000, Math.max(0, tankCapacity(state) - state.eauMl));
   state.eauMl += ml;
   state.nuit.pluie = Math.floor(ml / 1000);
   return ml;

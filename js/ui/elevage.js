@@ -300,7 +300,7 @@ export function plotCard(p, n) {
   if (mature) {
     const label = p.montee
       ? `Récolter : +${def.graines.quantite} graines`
-      : `Récolter : +${harvestYield(state, p.culture, false, p.lieu)} ${DATA.items[cropProduct(p.culture)].nom.toLowerCase()}`;
+      : `Récolter : +${harvestYield(state, p.culture, false)} ${DATA.items[cropProduct(p.culture)].nom.toLowerCase()}`;
     main = iconBtn('🧺', label, `data-action="harvest" data-id="${p.id}"`, { primary: true });
   } else {
     const litres = waterCost(state, p);
@@ -365,7 +365,7 @@ function openPlantModal(plotId) {
       return `
         <button type="button" class="btn plant-choice" data-action="plant" data-id="${plotId}" data-crop="${c}"${n > 0 ? '' : ' disabled'}>
           <span>${def.icone} ${def.nom}</span>
-          <span class="muted">${stock} : ${formatQty(n)} · ${def.stades} nuits · ${formatQty(waterCostFor(state, c, plot.lieu))} L par arrosage</span>
+          <span class="muted">${stock} : ${formatQty(n)} · ${def.stades} nuits · ${formatQty(waterCostFor(state, c))} L par arrosage</span>
         </button>`;
     })
     .join('');

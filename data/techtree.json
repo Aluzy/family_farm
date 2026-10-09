@@ -129,8 +129,8 @@
         "pt": 2,
         "cout": 800,
         "requiert": [{ "noeud": "en_entretien_auto" }],
-        "effet": { "solaireHiver": 85 },
-        "description": "En hiver, les panneaux produisent 85 % de leur puissance au lieu de 70 %."
+        "effet": { "solaireBonus": 110 },
+        "description": "Les panneaux produisent 10 % de plus."
       },
       "//ea_econome": "💧 Eau",
       "ea_econome": {
@@ -154,8 +154,8 @@
         "pt": 1,
         "cout": 250,
         "requiert": [{ "noeud": "ea_econome" }],
-        "effet": { "pluie": { "printemps": 20, "ete": 5, "automne": 20, "hiver": 10 } },
-        "description": "Chaque nuit, de l'eau de pluie s'ajoute au réservoir sans électricité : 20 L au printemps et en automne, 10 L en hiver, 5 L en été."
+        "effet": { "pluie": 15 },
+        "description": "Chaque nuit, 15 L d'eau de pluie s'ajoutent au réservoir sans électricité."
       },
       "ea_irrigation": {
         "branche": "eau",

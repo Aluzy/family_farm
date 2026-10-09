@@ -474,24 +474,25 @@ Repère : un soir à 3 plats à +5 compense 3 nuits de baisse (−5 par nuit).
 
 ---
 
-## 11. Suppression des saisons
+## 11. Suppression des saisons ✅ (fait, version 1.6)
 
 But : un seul jeu de dessins par lieu au lieu de quatre ; le temps gagné sert à dessiner
 **3 nouvelles zones** ✅ : la **Ville**, une **grande Forêt** et une **zone de
 Montagne** (aujourd'hui des sorties sans carte, voir 6.12 de `conception.md`).
 
-À retirer ou remplacer :
+Ce qui a été retiré ou remplacé (détail dans la note v27 de `conception.md`) :
 
-| Où | Aujourd'hui | v2 |
+| Où | Avant | Version 1.6 |
 |---|---|---|
-| Cultures | facteurs de rendement et d'eau par saison | facteur 100 % partout |
-| Verger | fruits en fin d'été et en automne | fruits toute l'année (section 6.3) |
-| Serre | « des légumes toute l'année » | lieu des cultures spéciales (niveau 7) |
-| Sortie Forêt | cueillette par saison | cueillette tirée au hasard : 2 champignons, 3 myrtilles ou 3 châtaignes 🟡 |
-| Chapitre 6 « Toute l'année » | traverser un hiver | objectif à remplacer |
-| Bandeau | icône et nom de la saison | retirés |
-| Carte | `grass_*`, `*_sp/_au/_wi.png` | ne garder que le printemps |
-| Mode test | « passer une saison » | retiré |
+| Cultures, eau, soleil | facteurs par saison | aucun facteur |
+| Verger | fruits en fin d'été et en automne | 6 fruits toutes les 3 nuits toute l'année, chaque arbre à son rythme |
+| Serre | « insensible aux saisons » | inchangée ; deviendra le lieu des cultures spéciales (niveau 7) |
+| Sortie Forêt | cueillette par saison | cueillette qui tourne d'un jour à l'autre (3 champignons ; 5 myrtilles ; 2 champignons et 4 châtaignes) |
+| Chapitre 6 « Toute l'année » | traverser un hiver | 10 nuits d'affilée à 80 % d'autonomie en moyenne, sans soin |
+| Bandeau, réveil, Ferme | saison, calendrier | retirés |
+| Carte | `grass_*`, `*_au/_wi.png` | supprimés ; seul le printemps (`_sp`) reste |
+| Mode test | « Saison suivante » | retiré |
+| Arbre des technologies | Panneaux orientables (hiver 85 %), pluie selon la saison | +10 % toute l'année ; 15 L par nuit |
 
 ---
 
@@ -502,7 +503,7 @@ change, et la mise à jour de `conception.md` et du README.
 
 | Lot | Contenu | Migration |
 |---|---|---|
-| 1 | **Saisons retirées** (moteur, données, carte, bandeau) | oui (champ `saison` retiré) |
+| 1 ✅ | **Saisons retirées** (moteur, données, carte, bandeau) — fait, version 1.6 | oui (format 23) |
 | 2 | **Un panneau, une batterie**, panneau de 7 h à 19 h, réservoir séparé ; « absence » sans électricité | oui (parc → un appareil, au plus haut niveau possédé) |
 | 3 | **Niveaux et XP** : `state.xp`, `niveau()`, gains, déblocages par niveau (remplacent ceux des chapitres) | oui (XP estimée depuis le chapitre atteint) |
 | 4 | **Énergie, bonheur, endurance** ; santé et soins retirés | oui |

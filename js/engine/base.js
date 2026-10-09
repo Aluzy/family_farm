@@ -17,9 +17,9 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 22;
+export const STATE_VERSION = 23;
 // Version du jeu, affichée dans les Options (À propos).
-export const GAME_VERSION = '1.4.0';
+export const GAME_VERSION = '1.6.0';
 export const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 /* ---------- Lot 2 : aléatoire à graine (état dans state.rngSeed) ---------- */

@@ -1,5 +1,4 @@
 import { DATA } from '../engine/catalog.js';
-import { currentSeason } from '../engine/seasons.js';
 import { findDevice } from '../engine/devices.js';
 import { allPlots, isMature, maxStage, plotZone, zone2Plots } from '../engine/crops.js';
 import { isTreeAdult } from '../engine/orchard.js';
@@ -270,7 +269,7 @@ export function stageModel() {
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
   // bêtes dans l'enclos et des poules en liberté autour du Poulailler.
   const animaux = { vache: state.paturage.vaches.length, mouton: state.paturage.moutons.length, poule: state.poulailler.poules };
-  return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, serre, interieur: stageInterior, arbres, batiments, animaux };
+  return { heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, serre, interieur: stageInterior, arbres, batiments, animaux };
 }
 
 // Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La

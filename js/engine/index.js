@@ -4,7 +4,6 @@
 export { RAW_DATA } from '../data.generated.js';
 export * from './catalog.js';
 export * from './base.js';
-export * from './seasons.js';
 export * from './devices.js';
 export * from './clock.js';
 export * from './energy.js';

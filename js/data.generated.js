@@ -526,34 +526,10 @@ export const RAW_DATA = {
     "MATURITE": 15,
     "FRUITS": 6,
     "PERIODE": 3,
-    "FENETRE": { "debut": { "saison": "ete", "dernieresNuits": 5 }, "fin": { "saison": "automne" } },
     "ARBRES": {
       "pommier": { "nom": "Pommier", "icone": "🌳", "fruit": "pomme", "prix": 40 },
       "poirier": { "nom": "Poirier", "icone": "🌳", "fruit": "poire", "prix": 40 }
     }
-  },
-  "SAISONS": {
-    "LONGUEUR": 10,
-    "ORDRE": ["printemps", "ete", "automne", "hiver"],
-    "INFOS": {
-      "printemps": { "nom": "Printemps", "icone": "🌱" },
-      "ete": { "nom": "Été", "icone": "☀️" },
-      "automne": { "nom": "Automne", "icone": "🍂" },
-      "hiver": { "nom": "Hiver", "icone": "❄️" }
-    },
-    "MODS": {
-      "printemps": { "solaire": 100, "potager": 110, "eau": 100 },
-      "ete": { "solaire": 130, "potager": 100, "eau": 130 },
-      "automne": { "solaire": 90, "potager": 100, "eau": 90 },
-      "hiver": { "solaire": 70, "potager": 70, "eau": 80 }
-    },
-    "FACTEURS": {
-      "solaire": { "nom": "Solaire", "icone": "☀️" },
-      "potager": { "nom": "Zone de culture", "icone": "🌱" },
-      "eau": { "nom": "Eau", "icone": "💧" }
-    },
-    "RENDEMENT_LIEU": { "potager": "potager" },
-    "EAU_LIEUX": ["potager"]
   },
   "SILO": { "ITEM": "ble", "CONSTRUCTION": 0, "CAPACITE": [20, 50, 100, 200, 400], "COUT": [0, 30, 80, 180, 400] },
   "POULAILLER": { "CONSTRUCTION": 40, "CAPACITE": [4, 8, 12, 16, 24], "COUT": [0, 100, 220, 450, 900] },
@@ -679,8 +655,8 @@ export const RAW_DATA = {
         "pt": 2,
         "cout": 800,
         "requiert": [{ "noeud": "en_entretien_auto" }],
-        "effet": { "solaireHiver": 85 },
-        "description": "En hiver, les panneaux produisent 85 % de leur puissance au lieu de 70 %."
+        "effet": { "solaireBonus": 110 },
+        "description": "Les panneaux produisent 10 % de plus."
       },
       "ea_econome": {
         "branche": "eau",
@@ -703,8 +679,8 @@ export const RAW_DATA = {
         "pt": 1,
         "cout": 250,
         "requiert": [{ "noeud": "ea_econome" }],
-        "effet": { "pluie": { "printemps": 20, "ete": 5, "automne": 20, "hiver": 10 } },
-        "description": "Chaque nuit, de l'eau de pluie s'ajoute au réservoir sans électricité : 20 L au printemps et en automne, 10 L en hiver, 5 L en été."
+        "effet": { "pluie": 15 },
+        "description": "Chaque nuit, 15 L d'eau de pluie s'ajoutent au réservoir sans électricité."
       },
       "ea_irrigation": {
         "branche": "eau",
@@ -1111,16 +1087,16 @@ export const RAW_DATA = {
       },
       {
         "titre": "Toute l'année",
-        "icone": "❄️",
-        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir un hiver entier sans acheter de soins. Il faut être là dès la première nuit de l'hiver.",
+        "icone": "📅",
+        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris, sans acheter de soins.",
         "debloque": ["serre", "verger", "frigo"],
         "objectifs": [
           {
-            "type": "hiver",
+            "type": "tenue",
             "cible": 1,
-            "saison": "hiver",
+            "nuits": 10,
             "moyenne": 80,
-            "libelle": "Traverser un hiver complet à 80 % d'autonomie en moyenne, sans payer de soin",
+            "libelle": "Tenir 10 nuits d'affilée à 80 % d'autonomie en moyenne, sans payer de soin",
             "unite": ""
           }
         ]
@@ -1234,13 +1210,8 @@ export const RAW_DATA = {
         "heures": 5,
         "prix": 5,
         "bonheur": { "enfant": 15, "adulte": 15 },
-        "saisons": {
-          "printemps": { "champignon": 2 },
-          "ete": { "myrtille": 5 },
-          "automne": { "champignon": 4, "chataigne": 5 },
-          "hiver": { "chataigne": 2 }
-        },
-        "texte": "Le bus jusqu'à la forêt : promenade et cueillette de saison."
+        "cueillettes": [{ "champignon": 3 }, { "myrtille": 5 }, { "champignon": 2, "chataigne": 4 }],
+        "texte": "Le bus jusqu'à la forêt : promenade et cueillette du jour."
       }
     },
     "MARCHE": { "HEURES": 2, "PRIX": 3 }

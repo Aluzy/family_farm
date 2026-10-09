@@ -20,7 +20,7 @@ import {
   buySheep, buyTech, buyTree, cancelMilling, cancelQueued, canSleep, careCost, chapterProgress,
   chapterReached, checkMastery, childCount, cleanFirstName, clockHours, completeChapter, CONSUMERS,
   coopCapacity, coopUpgradeCost, countItem, cowCapacity, cowCount, cowPlaces, createInitialState,
-  cropProduct, cropUnlocked, currentSeason, DATA, deliverMail, deviceStatus, dishBonus, dishEnergy,
+  cropProduct, cropUnlocked, DATA, deliverMail, deviceStatus, dishBonus, dishEnergy,
   dishPrice, drawEnergy, efficiency, energyStats, escapeHtml, expiringSoon, familyNeed, feedAllHens,
   feedFamily, feedHen, feedLivestock, findDevice, findMember, findPet, findPlot, finishPreparations,
   formatCoins, formatDuration, formatHour, formatLitres, formatLitresRate, formatNumber, formatPercent,
@@ -34,14 +34,14 @@ import {
   memberRoom, mergeOfflineReports, migrate, migrateCropZone, migrateTechTreeV2, migrateToIntegers,
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
-  nextSeasonStart, NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, openZone2, orchardFree, orchardProducesOn, orchardSlotPrice, orchardWindow,
+  NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
+  openFridge, openSerre, openStation, openZone2, holdStatus, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, productivity, purchasePrice, queueCapacity, rainNight, randomInt, RAW_DATA,
   rawAverageHealth, readMail, readyCrops, recipeNode, recipeStatus, recipeTime, recipeUnlocked, recordNight,
   removeMember, removePet, repairCost, repairDevice, reservableItems, routineDue, scaleEnergie,
-  seasonFactor, seasonNight, seedItem, seedStock, sellableCount, sellItem, sellPrice, serreUpgradeCost,
+  seedItem, seedStock, sellableCount, sellItem, sellPrice, serreUpgradeCost,
   setMemberProfile, setPetProfile, setRoutine, setSeedReserve, setSemis, shear, sheepCount, sheepPlaces,
   sheepToShear, shelfLife, siloCapacity, siloUpgradeCost, simulateFromCopy, simulateGame, simulateOffline,
   simulatePlay, simulationReach, skipTutorial, sleep, spend, spoil, stableFree, stableOccupied, startFarm,
@@ -50,12 +50,12 @@ import {
   techPoints, techPrereqs, techProgress, techStatus, testAddDevice, testAddEggs, testAddFlour, testAddFood,
   testAddHens, testAddOil, testAddPieces, testAddSeeds, testAddSheep, testAddStraw, testAddWheat,
   testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
-  testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter, testNextSeason,
+  testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
   testRipenAll, testSetBuildingLevel5, testSetHealthZero, testSetWear, testSleepNights, testUnlockAllTechs,
   testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockChapter, unreadMail,
   updateChapters, updateHealth, upgradeCost, upgradeDevice, upgradePotager, upgradePoulailler, upgradeSerre,
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, waterCostFor,
-  waterSeasonFactor, wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, winterStatus, woolReady, yieldSeasonFactor, zone2Plots,
+  wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
 } from '../js/engine/index.js';
 
 
@@ -203,25 +203,10 @@ test('générateur aléatoire reproductible à graine égale', () => {
   assert(rngC() !== seqA[0], 'deux graines différentes ne doivent pas (en pratique) produire la même première valeur');
 });
 
-// Lots 1 à 7 : ces tests vérifient les règles de base (rendements, eau),
-// sans modificateur de saison. Les quatre saisons passent à 100 % le
-// temps du test (le printemps de la nuit 1 vaut sinon potager ×1,1,
-// et les longues séries de nuits traversent l'hiver) ; les modificateurs
-// eux-mêmes sont testés dans les tests du Lot 8.
-function neutralSeasons(fn) {
-  const saved = JSON.parse(JSON.stringify(DATA.SAISONS.MODS));
-  for (const mods of Object.values(DATA.SAISONS.MODS)) {
-    for (const k of Object.keys(mods)) mods[k] = 100;
-  }
-  try {
-    return fn();
-  } finally {
-    for (const [saison, mods] of Object.entries(saved)) Object.assign(DATA.SAISONS.MODS[saison], mods);
-  }
-}
-
+// Lots 1 à 7 : tests des règles de base. Ils neutralisaient les saisons, retirées en
+// version 1.6 ; le nom reste pour ne pas toucher à tous les tests.
 function testBase(name, fn) {
-  test(name, () => neutralSeasons(fn));
+  test(name, fn);
 }
 
 /* ---------- Lot 1 : heure, parc électrique, eau, Dormir ---------- */
@@ -2023,18 +2008,14 @@ test('les 10 nouvelles cultures : récolte stockée dans l\'inventaire, puis ven
   plantRipe(s, 'potager-1', 'oignon');
   plantRipe(s, 'potager-2', 'riz');
   plantRipe(s, 'serre-1', 'cacao');
-  // Nuit 1 = printemps : le facteur de saison de la Zone de culture est ×1,1
-  // (voir DATA.SAISONS.MODS.printemps.potager), donc 8 × 1,1 arrondi = 9 pour
-  // l'oignon et 10 × 1,1 = 11 pour le riz (version 1.0 : le riz suit la même
-  // saison que le reste de la zone) ; la Serre (jamais de saison) n'est pas
-  // affectée.
-  assertEqual(harvest(s, 'potager-1').items.oignon, 9);
-  assertEqual(harvest(s, 'potager-2').items.riz, 11);
+  // Version 1.6 : plus de saisons, le rendement de base partout (oignon 8, riz 10, cacao 5).
+  assertEqual(harvest(s, 'potager-1').items.oignon, 8);
+  assertEqual(harvest(s, 'potager-2').items.riz, 10);
   assertEqual(harvest(s, 'serre-1').items.cacao, 5);
-  assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [9, 11, 5], 'récoltes bien dans l\'inventaire');
+  assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [8, 10, 5], 'récoltes bien dans l\'inventaire');
   // Lot 12 : prix de vente doublés (oignon 2, riz 2, cacao 16).
-  assertEqual(sellItem(s, 'oignon', 9), { ok: true, sold: 9, gain: 18 });
-  assertEqual(sellItem(s, 'riz', 11), { ok: true, sold: 11, gain: 22 });
+  assertEqual(sellItem(s, 'oignon', 8), { ok: true, sold: 8, gain: 16 });
+  assertEqual(sellItem(s, 'riz', 10), { ok: true, sold: 10, gain: 20 });
   assertEqual(sellItem(s, 'cacao', 5), { ok: true, sold: 5, gain: 80 }, '5 × 16 : le cacao se vend cher, comme prévu');
   assertEqual([countItem(s, 'oignon'), countItem(s, 'riz'), countItem(s, 'cacao')], [0, 0, 0]);
 });
@@ -2276,12 +2257,11 @@ test('cultures de plein champ : la Zone de culture les fait pousser comme les l�
   assertEqual(findPlot(s, 'potager-1').stade, 7);
   assertEqual(isMature(findPlot(s, 'potager-1')), true);
   assertEqual(readyCrops(s).map((r) => [r.culture, r.nombre]), [['ble', 1], ['tournesol', 1]]);
-  // nuit 8 : encore le printemps, la zone rend ×1,1 quelle que soit la culture
-  // (8 blés → 9, 9 graines de tournesol → 10)
-  assertEqual(harvest(s, 'potager-1').items, { ble: 9 });
-  assertEqual(harvest(s, 'potager-2').items, { graine_tournesol: 10 });
+  // rendement de base : 8 blés, 9 graines de tournesol
+  assertEqual(harvest(s, 'potager-1').items, { ble: 8 });
+  assertEqual(harvest(s, 'potager-2').items, { graine_tournesol: 9 });
   assertEqual(findPlot(s, 'potager-1').culture, null, 'parcelle libérée');
-  assertEqual(countItem(s, 'graine_tournesol'), 10 + 1, 'la graine plantée est consommée : 2 − 1 + 10');
+  assertEqual(countItem(s, 'graine_tournesol'), 9 + 1, 'la graine plantée est consommée : 2 − 1 + 9');
 });
 
 test('Silo : capacité par niveau et coûts 30 / 80 / 180 / 400, construction offerte', () => {
@@ -2311,7 +2291,7 @@ test('Silo : capacité par niveau et coûts 30 / 80 / 180 / 400, construction of
 test('Silo : le blé récolté va d\'abord au Silo, le surplus déborde dans l\'inventaire', () => {
   const s = ranch();
   setInv(s, {});
-  // 3 récoltes de 9 blés (8 × 1,1 au printemps) = 27 : 20 au Silo (niveau 1), 7 dans l'inventaire
+  // 3 récoltes de 8 blés = 24 : 20 au Silo (niveau 1), 4 dans l'inventaire
   s.potager.parcelles.forEach((p, i) => {
     if (i < 3) {
       p.culture = 'ble';
@@ -2319,13 +2299,13 @@ test('Silo : le blé récolté va d\'abord au Silo, le surplus déborde dans l\'
     }
   });
   harvest(s, 'potager-1');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [9, 0]);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [8, 0]);
   harvest(s, 'potager-2');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [18, 0]);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [16, 0]);
   harvest(s, 'potager-3');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 7], 'plein à 20, surplus de 7 dans l\'inventaire');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 4], 'plein à 20, surplus de 4 dans l\'inventaire');
   assertEqual(lotsOf(s, 'ble')[0].nightsLeft, 10, 'le blé de l\'inventaire périme');
-  assertEqual(wheatTotal(s), 27);
+  assertEqual(wheatTotal(s), 24);
   // sans Silo, tout va dans l'inventaire
   const t = ranch({ silo: false });
   setInv(t, {});
@@ -2333,8 +2313,8 @@ test('Silo : le blé récolté va d\'abord au Silo, le surplus déborde dans l\'
   assertEqual([t.silo.ble, countItem(t, 'ble')], [0, 8]);
   // niveau 2 : capacité 50 ; le surplus de l'inventaire rejoint aussitôt le Silo
   upgradeSilo(s);
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [27, 0]);
-  assertEqual(storeWheat(s, 100), { silo: 23, inventaire: 100 - 23 });
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [24, 0]);
+  assertEqual(storeWheat(s, 100), { silo: 26, inventaire: 100 - 26 });
   assertEqual(s.silo.ble, 50);
 });
 
@@ -2612,15 +2592,15 @@ test('tournesol : les graines récoltées servent à semer', () => {
   const p = findPlot(s, 'potager-1');
   p.culture = 'tournesol';
   p.stade = 7;
-  // printemps : 9 × 1,1 = 10 graines dans la Zone de culture
-  assertEqual(harvest(s, 'potager-1', true).items, { graine_tournesol: 10 });
-  assertEqual(countItem(s, 'graine_tournesol'), 10);
-  assertEqual(seedStock(s, 'tournesol'), 10);
-  assertEqual(plant(s, 'potager-2', 'tournesol').ok, true);
+  // 9 graines dans la Zone de culture
+  assertEqual(harvest(s, 'potager-1', true).items, { graine_tournesol: 9 });
   assertEqual(countItem(s, 'graine_tournesol'), 9);
+  assertEqual(seedStock(s, 'tournesol'), 9);
+  assertEqual(plant(s, 'potager-2', 'tournesol').ok, true);
+  assertEqual(countItem(s, 'graine_tournesol'), 8);
   assertEqual(findPlot(s, 'potager-2').culture, 'tournesol');
   assertEqual(plant(s, 'potager-3', 'tournesol').ok, true);
-  assertEqual(countItem(s, 'graine_tournesol'), 8);
+  assertEqual(countItem(s, 'graine_tournesol'), 7);
   // sans graines, on ne sème pas
   setInv(s, {});
   assertEqual(plant(s, 'potager-4', 'tournesol').ok, false);
@@ -3259,7 +3239,7 @@ test('arbre v2 : préparations en série (file de 3 par atelier)', () => {
   assertEqual([s.stations.four.tache, s.stations.four.file], [null, []]);
 });
 
-test('arbre v2 : effets sur l\'énergie (usure, délestage, frigo, hiver, pompe)', () => {
+test('arbre v2 : effets sur l\'énergie (usure, délestage, frigo, panneaux orientables, pompe)', () => {
   // Entretien préventif : 1 point d'usure toutes les 80 s de marche au lieu de 60 s
   const s = farm();
   grantTech(s, 'en_entretien');
@@ -3267,14 +3247,13 @@ test('arbre v2 : effets sur l\'énergie (usure, délestage, frigo, hiver, pompe)
   assertEqual(s.panneaux[0].usure, 0);
   runFor(s, 20);
   assertEqual(s.panneaux[0].usure, 1);
-  // Panneaux orientables : hiver 85 % au lieu de 70 %
+  // Panneaux orientables : +10 % toute l'année (version 1.6 : plus d'hiver)
   const h = farm();
-  h.day = 31;
-  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.021));
+  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.03));
   grantTech(h, 'en_hiver');
-  assertEqual(panelOutput(h.panneaux[0], h), Math.floor((kwh(0.03) * 85) / 100));
-  h.day = 11;
-  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.039), 'l\'été n\'est pas touché');
+  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.033));
+  h.day = 31;
+  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.033), 'le même chaque nuit');
   // Réfrigérateur basse consommation : 70 %
   const f = coldRoom();
   const avant = fridgeRate(f);
@@ -3315,16 +3294,16 @@ test('arbre v2 : entretien automatique et eau de pluie la nuit', () => {
   r = sleep(s);
   assertEqual(r.entretiens.map((e) => [e.id, e.cost]), [['panneau-1', 0], ['panneau-2', 15]]);
   assertEqual([s.panneaux[0].usure, s.panneaux[1].usure, pieces - s.pieces], [0, 0, 15]);
-  // pluie : 20 L au printemps, dans la limite du réservoir
+  // pluie : 15 L chaque nuit, dans la limite du réservoir
   grantTech(s, 'ea_pluie');
   s.eauMl = ml(30);
   s.awakeMs = 30000;
   r = sleep(s);
   assertEqual([r.pluie, s.eauMl], [10, ml(40)], 'plafonné à la place libre');
   s.eauMl = 0;
-  s.day = 11; // été : 5 L
+  s.day = 11;
   s.awakeMs = 30000;
-  assertEqual(sleep(s).pluie, 5);
+  assertEqual(sleep(s).pluie, 15);
 });
 
 test('arbre v2 : effets sur les cultures et l\'élevage', () => {
@@ -4795,11 +4774,11 @@ test('automatisations : elles couvrent toute la Zone de culture, plein champ com
   const eau = s.eauMl;
   const r = sleepOnce(s);
   assertEqual(findPlot(s, 'potager-1').culture, null);
-  assertEqual(s.silo.ble, silo + 9, 'printemps : 8 × 1,1 = 9 blés, comme tout ce qui pousse dans la zone');
+  assertEqual(s.silo.ble, silo + 8, '8 blés, comme au clic');
   assertEqual(findPlot(s, 'potager-2').stade, 1);
   assertEqual(findPlot(s, 'potager-30').stade, 1);
   assertEqual(s.eauMl, eau - ml(2 + 2));
-  assertEqual([r.auto.potager, r.auto.arrosees, r.auto.recoltes.ble], [true, 2, 9]);
+  assertEqual([r.auto.potager, r.auto.arrosees, r.auto.recoltes.ble], [true, 2, 8]);
   assertEqual('champ' in r.auto, false, 'le compte rendu n\'a plus de ligne Champ');
   const t = auto5();
   testAddWheat(t, 10);
@@ -4812,7 +4791,7 @@ test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que
   // Zone de culture automatisée : riz et houblon sont arrosés et récoltés
   // automatiquement, exactement comme le blé (autoTasks() ne fait aucune
   // distinction de culture, seulement de lieu : voir zones = [potager, serre]
-  // dans autoTasks()). Printemps : ×1,1 (10 riz → 11, 6 houblons → 7).
+  // dans autoTasks()) : 10 riz, 6 houblons.
   const s = auto5('potager');
   addItem(s, 'riz', 2);
   addItem(s, 'houblon', 1);
@@ -4822,7 +4801,7 @@ test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que
   const r = sleepOnce(s);
   assertEqual(findPlot(s, 'potager-1').culture, null, 'riz mûr : récolté automatiquement');
   assertEqual(findPlot(s, 'potager-2').culture, null, 'houblon mûr : récolté automatiquement');
-  assertEqual(r.auto.recoltes, { riz: 11, houblon: 7 });
+  assertEqual(r.auto.recoltes, { riz: 10, houblon: 6 });
   assertEqual(findPlot(s, 'potager-3').stade, 1, 'riz pas mûr : arrosé, il pousse (4 L, comme au clic)');
 
   // Oignon, ail, poivron, épinard, fraise pareil.
@@ -4836,11 +4815,10 @@ test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que
   const rt = sleepOnce(t);
   assertEqual(findPlot(t, 'potager-1').culture, null);
   assertEqual(findPlot(t, 'potager-2').culture, null);
-  // Nuit 1 = printemps, facteur Potager ×1,1 (comme pour l'oignon plus haut) :
-  // 8 × 1,1 = 9 (oignon), 6 × 1,1 = 6,6 arrondi 7 (ail). L'oignon est en mode
+  // Rendement de base : 8 oignons, 6 ails. L'oignon est en mode
   // 'recolte' (comme la tomate) : la récolte rend aussi 1 à 2 graines bonus
   // (ici 2, déterministe avec la graine aléatoire n°1 utilisée par garden()).
-  assertEqual(rt.auto.recoltes, { oignon: 9, graine_oignon: 2, ail: 7 });
+  assertEqual(rt.auto.recoltes, { oignon: 8, graine_oignon: 2, ail: 6 });
   assertEqual(findPlot(t, 'potager-3').stade, 1);
 });
 
@@ -5113,7 +5091,7 @@ test('semis automatique : aussi pour le plein champ (blé), avec sa réserve', (
   sleepOnce(s);
   const p = findPlot(s, 'potager-7');
   assertEqual([p.culture, p.stade], ['ble', 1]);
-  assertEqual(wheatTotal(s), 3 - 1 + 9 - 1, 'plantation à la main, récolte (9 au printemps), semis');
+  assertEqual(wheatTotal(s), 3 - 1 + 8 - 1, 'plantation à la main, récolte (8), semis');
 });
 
 test('temps de préparation : −20 % puis encore −20 %, à tous les ateliers', () => {
@@ -5914,7 +5892,7 @@ test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage',
   assertEqual(buyTech(s, 'reveil_1').ok, true, 'la liste est recréée');
 });
 
-/* ---------- Lot 8 : saisons, Serre, Verger, Réfrigérateur ---------- */
+/* ---------- Lot 8 : Serre, Verger, Réfrigérateur (les saisons sont retirées en version 1.6) ---------- */
 
 // Aliments protégés du repas : la famille ne touche pas à ce qui est en réserve.
 function protect(s, ...items) {
@@ -5937,18 +5915,9 @@ function orchard() {
   return s;
 }
 
-test('DATA Lot 8 : saisons, Serre, Verger et Réfrigérateur', () => {
-  const S = DATA.SAISONS;
-  assertEqual(S.LONGUEUR, 10);
-  assertEqual(S.ORDRE, ['printemps', 'ete', 'automne', 'hiver']);
-  // version 1.0 : plus de facteur « champ », toute la Zone de culture suit « potager »
-  // version 1.1 : plus de facteur « moutons » (il ne jouait que sur leur prise de poids)
-  assertEqual(S.MODS.printemps, { solaire: 100, potager: 110, eau: 100 });
-  assertEqual(S.MODS.ete, { solaire: 130, potager: 100, eau: 130 });
-  assertEqual(S.MODS.automne, { solaire: 90, potager: 100, eau: 90 });
-  assertEqual(S.MODS.hiver, { solaire: 70, potager: 70, eau: 80 });
-  assertEqual(Object.keys(S.FACTEURS), ['solaire', 'potager', 'eau']);
-  assertEqual([S.RENDEMENT_LIEU, S.EAU_LIEUX], [{ potager: 'potager' }, ['potager']]);
+test('DATA Lot 8 : Serre, Verger et Réfrigérateur (plus de saisons)', () => {
+  assertEqual(DATA.SAISONS, undefined, 'version 1.6 : plus de saisons');
+  assertEqual(DATA.VERGER.FENETRE, undefined, 'les fruits viennent toute l\'année');
   assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 400, PARCELLES: [6, 9, 12, 15, 18], COUT: [0, 300, 600, 1000, 1800] });
   const V = DATA.VERGER;
   assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 12, 50, 125]);
@@ -5970,114 +5939,35 @@ test('état initial Lot 8 : Serre, Verger et Réfrigérateur à construire', () 
   assertEqual(s.frigo.construit, false);
   assertEqual(s.frigo.appareil, null);
   assertEqual(allDevices(s).some((d) => d.type === 'frigo'), false);
-  assertEqual(currentSeason(s), 'printemps');
 });
 
-/* --- saisons --- */
+/* --- version 1.6 : plus de saisons --- */
 
-test('saisons : changement aux nuits 11, 21 et 31, retour au printemps à la nuit 41', () => {
-  const at = (day) => currentSeason({ day });
-  assertEqual([1, 5, 10].map(at), ['printemps', 'printemps', 'printemps']);
-  assertEqual([11, 15, 20].map(at), ['ete', 'ete', 'ete']);
-  assertEqual([21, 25, 30].map(at), ['automne', 'automne', 'automne']);
-  assertEqual([31, 35, 40].map(at), ['hiver', 'hiver', 'hiver']);
-  assertEqual([41, 50, 51, 81].map(at), ['printemps', 'printemps', 'ete', 'printemps']);
-  assertEqual([1, 10, 11, 20, 40, 41].map((day) => seasonNight({ day })), [1, 10, 1, 10, 10, 1]);
-});
-
-test('saisons : la saison suit la nuit courante quand on dort', () => {
-  const s = garden();
-  const seen = [];
-  for (let i = 0; i < 42; i++) {
-    seen.push(currentSeason(s));
-    sleepOnce(s);
-  }
-  assertEqual(seen[0], 'printemps');
-  assertEqual([seen[9], seen[10], seen[19], seen[20], seen[29], seen[30], seen[39], seen[40]],
-    ['printemps', 'ete', 'ete', 'automne', 'automne', 'hiver', 'hiver', 'printemps']);
-  assertEqual(s.report.saison, currentSeason(s));
-});
-
-test('seasonFactor : les trois modificateurs de chaque saison', () => {
-  const s = createInitialState(1);
-  const all = (kind) => [1, 11, 21, 31].map((day) => { s.day = day; return seasonFactor(s, kind); });
-  assertEqual(all('solaire'), [100, 130, 90, 70]);
-  assertEqual(all('potager'), [110, 100, 100, 70]);
-  assertEqual(all('eau'), [100, 130, 90, 80]);
-  assertEqual(all('champ'), [undefined, undefined, undefined, undefined], 'plus de facteur champ');
-  assertEqual(all('moutons'), [undefined, undefined, undefined, undefined], 'plus de facteur moutons');
-});
-
-test('saisons : la production solaire suit la saison', () => {
-  const at = (day) => {
-    const s = farm(); // neuf à chaque saison : pas d'usure d'un test à l'autre
-    s.day = day;
-    tick(s, 1);
-    return s.panneaux[0].prod;
-  };
-  // mWh/s : 30 Wh/s × 100 / 130 / 90 / 70 %
-  assertEqual(at(1), kwh(0.03), 'printemps 100 %');
-  assertEqual(at(11), kwh(0.039), 'été 130 %');
-  assertEqual(at(21), kwh(0.027), 'automne 90 %');
-  assertEqual(at(31), kwh(0.021), 'hiver 70 %');
-});
-
-test('saisons : le rendement du potager suit la saison (10 carottes au départ)', () => {
-  const yieldAt = (day) => {
-    const s = garden();
-    s.day = day;
-    plantRipe(s, 'potager-1', 'carotte');
-    return harvest(s, 'potager-1').items.carotte;
-  };
-  assertEqual([yieldAt(1), yieldAt(11), yieldAt(21), yieldAt(31)], [11, 10, 10, 7]);
-});
-
-test('saisons : le blé suit le facteur de la Zone de culture, comme les légumes (8 blés au départ)', () => {
-  const yieldAt = (day) => {
-    const s = ranch();
-    s.day = day;
-    testAddWheat(s);
-    plantRipe(s, 'potager-1', 'ble');
-    const r = harvest(s, 'potager-1');
-    return r.items.ble;
-  };
-  // facteur « potager » : 8 × 1,1 / 1,0 / 1,0 / 0,7 = 8,8 / 8 / 8 / 5,6, arrondi
-  // (avant la version 1.0, le Champ avait le sien : 1,0 / 1,2 / 0,9 / 0,7)
-  assertEqual([yieldAt(1), yieldAt(11), yieldAt(21), yieldAt(31)], [9, 8, 8, 6]);
-  const s = ranch();
-  assertEqual([1, 11, 21, 31].map((day) => { s.day = day; return [yieldSeasonFactor(s, 'potager'), waterSeasonFactor(s, 'potager'), waterCostFor(s, 'ble', 'potager')]; }),
-    [[110, 100, 2], [100, 130, 3], [100, 90, 2], [70, 80, 2]], 'rendement et eau du blé : ceux de la zone');
-});
-
-test('saisons : l\'eau par arrosage suit la saison, la récolte automatique aussi', () => {
-  const litres = (day) => {
-    const s = garden();
-    s.day = day;
-    plant(s, 'potager-1', 'carotte');
-    const before = s.eauMl;
-    assert(water(s, 'potager-1').ok);
-    return (before - s.eauMl) / 1000;
-  };
-  // 2 L × 1 / 1,3 / 0,9 / 0,8 = 2 ; 2,6 ; 1,8 ; 1,6, arrondis au litre.
-  assertEqual([litres(1), litres(11), litres(21), litres(31)], [2, 3, 2, 2]);
-  // la récolte automatique n'est pas réduite par la santé, mais suit la saison
-  const s = garden();
-  s.day = 31;
-  assertEqual(harvestYield(s, 'carotte', true, 'potager'), 7);
-  assertEqual(harvestYield(s, 'carotte', true), 10, 'sans lieu, pas de saison');
-});
-
-test('saisons : la laine, le lait et la paille mangée ne dépendent pas de la saison', () => {
+test('version 1.6 : plus de saisons, la même production toute l\'année', () => {
   const nightAt = (day) => {
-    const s = pature();
-    s.day = day;
-    fillSheep(s, 2);
-    fillCows(s, 1);
-    setStraw(s, 4);
-    const rep = sleepOnce(s);
-    return [s.paturage.moutons.map((m) => m.laine), rep.lait, rep.etable.paille, strawStock(s)];
+    const f = farm(); // neuve à chaque fois : pas d'usure d'un test à l'autre
+    f.day = day;
+    tick(f, 1);
+    const g = garden();
+    g.day = day;
+    plantRipe(g, 'potager-1', 'carotte');
+    const carottes = harvest(g, 'potager-1').items.carotte;
+    plant(g, 'potager-2', 'carotte');
+    const eau = g.eauMl;
+    assert(water(g, 'potager-2').ok);
+    const p = pature();
+    p.day = day;
+    fillSheep(p, 2);
+    fillCows(p, 1);
+    setStraw(p, 4);
+    const rep = sleepOnce(p);
+    return [f.panneaux[0].prod, carottes, (eau - g.eauMl) / 1000, harvestYield(g, 'carotte', true), p.paturage.moutons.map((m) => m.laine), rep.lait];
   };
-  for (const day of [1, 11, 21, 31]) assertEqual(nightAt(day), [[1, 1], 1, 4, 0], `nuit ${day}`);
+  for (const day of [1, 11, 21, 31, 41]) assertEqual(nightAt(day), [kwh(0.03), 10, 2, 10, [1, 1], 1], `nuit ${day}`);
+  assertEqual([waterCostFor(ranch(), 'ble'), waterCostFor(ranch(), 'riz')], [2, 4], 'l\'eau de la culture, sans facteur');
+  const s = garden();
+  sleepOnce(s);
+  assertEqual(['saison' in s.report, 'nuitDeSaison' in s.report], [false, false], 'le réveil ne parle plus de saison');
 });
 
 /* --- Serre --- */
@@ -6170,7 +6060,7 @@ test('cultures de rente : jamais mangées par la famille, même affamée', () =>
   assertEqual([countItem(s, 'cacao'), countItem(s, 'vanille'), countItem(s, 'cafe')], [50, 50, 50], 'rien n\'est consommé');
 });
 
-test('Serre : insensible aux saisons, en été comme en hiver', () => {
+test('Serre : 3 L par arrosage et 10 tomates, chaque nuit de l\'année', () => {
   for (const day of [1, 11, 21, 31]) {
     const s = garden();
     s.pieces = 5000;
@@ -6183,11 +6073,6 @@ test('Serre : insensible aux saisons, en été comme en hiver', () => {
     findPlot(s, 'serre-1').stade = maxStage(findPlot(s, 'serre-1'));
     assertEqual(harvest(s, 'serre-1').items.tomate, 10, `10 tomates à la nuit ${day}`);
   }
-  // au même moment, le Potager subit l'hiver
-  const s = garden();
-  s.day = 31;
-  plantRipe(s, 'potager-1', 'tomate');
-  assertEqual(harvest(s, 'potager-1').items.tomate, 7);
 });
 
 test('Serre : pousse une nuit arrosée, et les récoltes prêtes la comptent', () => {
@@ -6283,7 +6168,7 @@ test('Verger : première récolte 15 nuits après la plantation', () => {
   assertEqual(countItem(s, 'pomme'), 12, 'les pommes de la nuit 24 ont déjà péri (7 nuits)');
 });
 
-test('Verger : arbre planté en début d\'année, première récolte à la nuit 18 (dans la fenêtre)', () => {
+test('Verger : arbre planté à la nuit 1, première récolte à la nuit 15, puis toutes les 3 nuits', () => {
   const s = orchard();
   protect(s, 'poire');
   buyTree(s, 'poirier');
@@ -6293,25 +6178,22 @@ test('Verger : arbre planté en début d\'année, première récolte à la nuit 
     const r = sleepOnce(s);
     if (r.fruits.poire) fruits[day] = r.fruits.poire;
   }
-  assertEqual(fruits, { 18: 6, 21: 6, 24: 6, 27: 6, 30: 6 });
+  assertEqual(fruits, { 15: 6, 18: 6, 21: 6, 24: 6, 27: 6, 30: 6 });
 });
 
-test('Verger : fenêtre de production, fin d\'été et automne, 30 fruits par an', () => {
-  assertEqual(orchardWindow(), { debut: 16, fin: 30 });
+test('Verger : version 1.6, des fruits toute l\'année, chaque arbre à son rythme', () => {
+  const tree = { id: 'arbre-9', espece: 'pommier', plantee: 1 };
   const days = [];
-  for (let d = 1; d <= 80; d++) if (orchardProducesOn(d)) days.push(d);
-  assertEqual(days, [18, 21, 24, 27, 30, 58, 61, 64, 67, 70]);
+  for (let d = 1; d <= 30; d++) if (treeProducesOn(tree, d)) days.push(d);
+  assertEqual(days, [15, 18, 21, 24, 27, 30]);
+  assertEqual(treeNextHarvest({ day: 16 }, tree), 18);
+  assertEqual(treeNextHarvest({ day: 2 }, { ...tree, plantee: 2 }), 16, 'planté nuit 2 : nuits 16, 19…');
   const s = orchard();
   protect(s, 'pomme');
   s.verger.arbres.push({ id: 'arbre-9', espece: 'pommier', plantee: -100 });
-  const seasons = { printemps: 0, ete: 0, automne: 0, hiver: 0 };
-  for (let i = 0; i < 40; i++) {
-    const saison = currentSeason(s);
-    seasons[saison] += sleepOnce(s).fruits.pomme || 0;
-  }
-  // nuit 18 (été), puis 21, 24, 27 et 30 (automne)
-  assertEqual(seasons, { printemps: 0, ete: 6, automne: 24, hiver: 0 });
-  assertEqual(seasons.ete + seasons.automne, 30, '30 fruits par an et par arbre');
+  let total = 0;
+  for (let i = 0; i < 40; i++) total += sleepOnce(s).fruits.pomme || 0;
+  assertEqual(total, 14 * 6, '40 nuits : 14 récoltes de 6 fruits (une toutes les 3 nuits)');
 });
 
 test('Verger : chaque arbre donne 6 fruits de son espèce, pas d\'arrosage', () => {
@@ -6658,7 +6540,6 @@ test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigéra
   const m = migrate({ v: 8, t: 0, s: v8 });
   assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces], [25, 321]);
-  assertEqual(currentSeason(m), 'automne');
   assertEqual(m.serre, { construit: false, niveau: 1, parcelles: [] });
   assertEqual(m.verger.places, 2);
   assertEqual(m.frigo.construit, false);
@@ -6668,17 +6549,7 @@ test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigéra
   assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }).version, STATE_VERSION);
 });
 
-test('mode test Lot 8 : saison suivante, constructions gratuites, batteries vides', () => {
-  const s = garden();
-  const seen = [];
-  for (let i = 0; i < 5; i++) {
-    testNextSeason(s);
-    seen.push([s.day, currentSeason(s)]);
-  }
-  assertEqual(seen, [[11, 'ete'], [21, 'automne'], [31, 'hiver'], [41, 'printemps'], [51, 'ete']]);
-  s.day = 5;
-  testNextSeason(s);
-  assertEqual(s.day, 11, 'depuis le milieu du printemps');
+test('mode test Lot 8 : constructions gratuites, batteries vides', () => {
   const t = farm();
   testFillBatteries(t);
   t.pieces = 0;
@@ -6696,11 +6567,10 @@ test('mode test Lot 8 : saison suivante, constructions gratuites, batteries vide
   assertEqual(t.frigo.alimente, false);
 });
 
-test('rapport de réveil Lot 8 : saison, fruits et état du frigo', () => {
+test('rapport de réveil Lot 8 : fruits et état du frigo', () => {
   const s = coldRoom();
   s.day = 10;
   const r = sleepOnce(s);
-  assertEqual([r.saison, r.nuitDeSaison], ['ete', 1]);
   assertEqual(r.frigo.construit, true);
   assertEqual(typeof r.frigo.couvreLaNuit, 'boolean');
   assertEqual(r.fruits, {});
@@ -6736,9 +6606,9 @@ test('DATA Lot 9 : sept chapitres, objectifs et déblocages', () => {
   assertEqual(L.map((c) => c.debloque), [[], [], ['champ', 'silo', 'poulailler'], ['four', 'cuisine', 'moulin', 'presse', 'tournesol'], ['paturage', 'moutons'], ['serre', 'verger', 'frigo'], []]);
   assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
     [['litres', 50], ['wh', 3000]], [['carottes', 20], ['autonomie', 25]], [['pontes', 7], ['sante', 80]],
-    [['pains', 5], ['plats', 3]], [['laines', 10], ['autonomie', 60]], [['hiver', 1]], [['serie100', 7]],
+    [['pains', 5], ['plats', 3]], [['laines', 10], ['autonomie', 60]], [['tenue', 1]], [['serie100', 7]],
   ]);
-  assertEqual(DATA.CHAPITRES.liste[5].objectifs[0].moyenne, 80);
+  assertEqual([DATA.CHAPITRES.liste[5].objectifs[0].nuits, DATA.CHAPITRES.liste[5].objectifs[0].moyenne], [10, 80]);
   assertEqual(DATA.AUTONOMIE, { HISTORIQUE_MAX: 1000, GRAPHIQUE_NUITS: 20 });
   // chaque élément débloqué est décrit, et n'apparaît que dans un chapitre
   const ids = L.flatMap((c) => c.debloque);
@@ -6751,7 +6621,7 @@ test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', ()
   const s = createInitialState(1);
   assertEqual(s.campagne, {
     chapitre: 1, fini: false, annonces: [], historique: [],
-    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, hiver: null, hiverDernier: null, hiverReussi: false },
+    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false },
   });
   assertEqual(chapterReached(s), 1);
   assertEqual(lastAutonomy(s), 0);
@@ -7078,95 +6948,78 @@ testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {
   assertEqual(s.campagne.chapitre, 6);
 });
 
-// Une nuit d'hiver avec `qty` unités de `item` (patate par défaut) produites au menu.
-function winterNights(s, count, qty, item = 'patate') {
+// `count` nuits avec `qty` unités de `item` (patate par défaut) produites au menu.
+function holdNights(s, count, qty, item = 'patate') {
   for (let i = 0; i < count; i++) nightWithProduced(s, qty, item);
 }
 
-test('chapitre 6 : un hiver complet à 80 % en moyenne, sans soin', () => {
+// Version 1.6 : l'hiver du chapitre 6 devient une série de 10 nuits d'affilée.
+test('chapitre 6 : 10 nuits d\'affilée à 80 % en moyenne, sans soin', () => {
   const s = atChapter(6);
-  s.day = 31; // première nuit de l'hiver
-  assertEqual(currentSeason(s), 'hiver');
-  winterNights(s, 9, 18); // 270 / 150 = 180 % (plafonné à 100 %)
-  assertEqual([s.campagne.chapitre, s.campagne.compteurs.hiver.nuits], [6, 9]);
-  winterNights(s, 1, 18);
+  s.day = 31;
+  holdNights(s, 9, 18); // 342 / 150 : plafonné à 100 %
+  assertEqual([s.campagne.chapitre, s.campagne.compteurs.tenue.nuits], [6, 9]);
+  holdNights(s, 1, 18);
   assertEqual(s.campagne.chapitre, 7);
-  assertEqual(s.campagne.compteurs.hiverReussi, true);
-  assertEqual(s.campagne.compteurs.hiverDernier.reussi, true);
+  assertEqual(s.campagne.compteurs.tenueReussie, true);
+  assertEqual(s.campagne.compteurs.tenueDerniere.reussi, true);
   assertEqual(s.day, 41);
 });
 
-test('chapitre 6 : une moyenne de 79 % ne suffit pas', () => {
+test('chapitre 6 : la série commence dès la première nuit du chapitre, quel que soit le jour', () => {
+  for (const day of [1, 7, 33]) {
+    const s = atChapter(6);
+    s.day = day;
+    holdNights(s, 10, 22);
+    assertEqual(s.campagne.chapitre, 7, `départ à la nuit ${day}`);
+  }
+});
+
+test('chapitre 6 : une moyenne de 76 % ne suffit pas, une nouvelle série suit aussitôt', () => {
   const s = atChapter(6);
-  s.day = 31;
-  // Lot 11 (nutrition) : patate à 19 d'énergie, 6 unités (114) restent sous 80 %.
-  winterNights(s, 10, 6); // 114 / 150 = 76 %
+  // patate à 19 d'énergie, 6 unités (114) restent sous 80 %.
+  holdNights(s, 10, 6); // 114 / 150 = 76 %
   assertEqual(s.campagne.chapitre, 6);
-  assertEqual(s.campagne.compteurs.hiverDernier.reussi, false);
-  assert(s.campagne.compteurs.hiverDernier.moyenne < 80);
+  assertEqual(s.campagne.compteurs.tenueDerniere, { moyenne: 76, sansSoin: true, reussi: false });
+  assertEqual(s.campagne.compteurs.tenue, null);
+  holdNights(s, 1, 22);
+  assertEqual(s.campagne.compteurs.tenue.nuits, 1, 'la série suivante a commencé');
+  holdNights(s, 9, 22);
+  assertEqual(s.campagne.chapitre, 7);
 });
 
 test('chapitre 6 : la moyenne compte toutes les nuits, pas seulement la dernière', () => {
   const s = atChapter(6);
-  s.day = 31;
-  winterNights(s, 5, 10); // 190 / 150 : plafonné à 100 %
-  // Lot 11 (nutrition) : courgette (10 d'énergie) donne un pourcentage exact,
-  // ce que ne permettent pas les multiples de 19 (patate).
-  winterNights(s, 5, 6, 'courgette'); // 60 / 150 = 40 %
+  holdNights(s, 5, 10); // 190 / 150 : plafonné à 100 %
+  // courgette (10 d'énergie) : un pourcentage exact
+  holdNights(s, 5, 6, 'courgette'); // 60 / 150 = 40 %
   assertEqual(s.campagne.chapitre, 6);
-  assert(near(s.campagne.compteurs.hiverDernier.moyenne, 70, 1e-6));
+  assertEqual(s.campagne.compteurs.tenueDerniere.moyenne, 70);
 });
 
-test('chapitre 6 : un soin payé pendant l\'hiver fait échouer l\'hiver', () => {
+test('chapitre 6 : un soin payé arrête la série aussitôt, la suivante peut réussir', () => {
   const s = atChapter(6);
-  s.day = 31;
-  winterNights(s, 4, 22);
+  holdNights(s, 4, 22);
   s.pieces = 500;
   s.famille.membres[0].sante = 0;
   s.famille.membres[0].malade = true;
   assert(heal(s, 'adulte-1').ok);
-  winterNights(s, 6, 22);
-  assertEqual(s.campagne.chapitre, 6);
-  assertEqual(s.campagne.compteurs.hiverDernier, { moyenne: 100, sansSoin: false, reussi: false });
+  holdNights(s, 1, 22);
+  assertEqual(s.campagne.compteurs.tenueDerniere, { moyenne: 100, sansSoin: false, reussi: false });
+  assertEqual([s.campagne.chapitre, s.campagne.compteurs.tenue], [6, null]);
+  holdNights(s, 10, 22);
+  assertEqual(s.campagne.chapitre, 7);
 });
 
-test('chapitre 6 : un soin payé le matin de la première nuit compte, celui de la veille non', () => {
+test('chapitre 6 : un soin payé le jour de la première nuit compte', () => {
   const s = atChapter(6);
-  s.day = 30;
   s.pieces = 500;
   s.famille.membres[0].sante = 0;
   s.famille.membres[0].malade = true;
-  assert(heal(s, 'adulte-1').ok); // veille de l'hiver
-  nightWithProduced(s, 22);
-  assertEqual(s.day, 31);
-  winterNights(s, 10, 22);
-  assertEqual(s.campagne.chapitre, 7, 'le soin de la veille ne compte pas');
-  const t = atChapter(6);
-  t.day = 31;
-  t.pieces = 500;
-  t.famille.membres[0].sante = 0;
-  t.famille.membres[0].malade = true;
-  assert(heal(t, 'adulte-1').ok); // premier matin de l'hiver
-  winterNights(t, 10, 22);
-  assertEqual(t.campagne.chapitre, 6, 'le soin du premier jour compte');
-});
-
-test('chapitre 6 : un hiver commencé en cours de route ne compte pas', () => {
-  const s = atChapter(6);
-  s.day = 33;
-  winterNights(s, 8, 22);
-  assertEqual(s.day, 41);
-  assertEqual([s.campagne.chapitre, s.campagne.compteurs.hiver, s.campagne.compteurs.hiverDernier], [6, null, null]);
-});
-
-test('chapitre 6 : arrivé au chapitre en pleine nuit d\'hiver, on attend le suivant', () => {
-  const s = atChapter(5);
-  s.day = 30;
-  nightWithProduced(s, 22); // dernière nuit d'automne
-  testCompleteChapter(s); // chapitre 6 atteint le matin du premier jour d'hiver
-  assertEqual([s.day, s.campagne.chapitre], [31, 6]);
-  winterNights(s, 10, 22);
-  assertEqual(s.campagne.chapitre, 7, 'un hiver suivi dès sa première nuit compte');
+  assert(heal(s, 'adulte-1').ok);
+  holdNights(s, 1, 22);
+  assertEqual(s.campagne.compteurs.tenueDerniere.sansSoin, false);
+  assertEqual(s.campagne.chapitre, 6);
 });
 
 test('chapitre 7 : 100 % pendant 7 nuits d\'affilée termine la campagne', () => {
@@ -7228,27 +7081,40 @@ test('affichage : pourcentage arrondi vers le bas, 100 % seulement à 100', () =
   assertEqual([formatPercent(0), formatPercent(37.5), formatPercent(99.99), formatPercent(100), formatPercent(undefined)], ['0\u00a0%', '37\u00a0%', '99\u00a0%', '100\u00a0%', '0\u00a0%']);
 });
 
-test('hiver : première nuit de la saison et état du suivi', () => {
-  assertEqual([nextSeasonStart(1, 'hiver'), nextSeasonStart(31, 'hiver'), nextSeasonStart(32, 'hiver'), nextSeasonStart(40, 'hiver'), nextSeasonStart(41, 'hiver'), nextSeasonStart(75, 'hiver')], [31, 31, 71, 71, 71, 111]);
+test('tenue : état du suivi pour l\'interface', () => {
   const s = atChapter(6);
-  assertEqual(winterStatus(s).etat, 'attente');
-  s.day = 31;
-  assertEqual([winterStatus(s).etat, winterStatus(s).prochaine], ['attente', 31], 'l\'hiver commence aujourd\'hui');
+  assertEqual(holdStatus(s).etat, 'attente');
   nightWithProduced(s, 22);
-  let w = winterStatus(s);
+  const w = holdStatus(s);
   assertEqual([w.etat, w.nuits, w.moyenne, w.soinPaye], ['suivi', 1, 100, false]);
   s.pieces = 500;
   s.famille.membres[1].sante = 0;
   s.famille.membres[1].malade = true;
   assert(heal(s, 'adulte-2').ok);
-  assertEqual(winterStatus(s).soinPaye, true);
-  const t = atChapter(6);
-  t.day = 33;
-  assertEqual([winterStatus(t).etat, winterStatus(t).prochaine], ['manque', 71]);
+  assertEqual(holdStatus(s).soinPaye, true);
   const u = atChapter(6);
-  u.day = 31;
-  winterNights(u, 10, 22);
-  assertEqual(winterStatus(u).etat, 'reussi');
+  holdNights(u, 10, 22);
+  assertEqual(holdStatus(u).etat, 'reussi');
+  assertEqual(holdStatus(atChapter(5)).etat, 'attente', 'avant le chapitre 6 : rien n\'est suivi');
+});
+
+test('migration v22 → v23 (version 1.6) : l\'hiver réussi devient la série réussie', () => {
+  const old = createInitialState(1);
+  old.version = 22;
+  const { tenue, tenueDerniere, tenueReussie, ...k } = old.campagne.compteurs;
+  old.campagne.compteurs = { ...k, hiver: { debut: 31, nuits: 3, somme: 300, soins: 0 }, hiverDernier: { moyenne: 90, sansSoin: true, reussi: true }, hiverReussi: true };
+  old.report = { saison: 'hiver', nuitDeSaison: 3, oeufs: 2 };
+  const m = migrate({ v: 22, t: 0, s: old });
+  assertEqual(m.version, STATE_VERSION);
+  const c = m.campagne.compteurs;
+  assertEqual([c.tenue, c.tenueDerniere, c.tenueReussie], [null, { moyenne: 90, sansSoin: true, reussi: true }, true]);
+  assertEqual(['hiver' in c, 'hiverDernier' in c, 'hiverReussi' in c], [false, false, false]);
+  assertEqual(m.report, { oeufs: 2 });
+  const fresh = createInitialState(1);
+  fresh.version = 22;
+  const { tenue: a, tenueDerniere: b, tenueReussie: d, ...k2 } = fresh.campagne.compteurs;
+  fresh.campagne.compteurs = { ...k2, hiver: null, hiverDernier: null, hiverReussi: false };
+  assertEqual(migrate({ v: 22, t: 0, s: fresh }).campagne.compteurs.tenueReussie, false);
 });
 
 /* --- annonces --- */
@@ -7406,8 +7272,7 @@ test('mode test Lot 9 : aller à un chapitre donné', () => {
 
 test('sérialisation JSON Lot 9 : la campagne fait l\'aller-retour', () => {
   const s = atChapter(6);
-  s.day = 31;
-  winterNights(s, 3, 22);
+  holdNights(s, 3, 22);
   testCompleteChapter(s);
   const copy = JSON.parse(JSON.stringify(s));
   assertEqual(copy, s);
@@ -7660,7 +7525,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.4.0');
+  assertEqual(GAME_VERSION, '1.6.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -8679,9 +8544,8 @@ test('version 1.4 : un Verger de plus de 12 emplacements garde ses arbres et ses
   v19.version = 19;
   const m = migrate({ v: 19, t: 0, s: v19 });
   assertEqual([m.verger.places, m.verger.arbres.length], [15, 15], 'rien n\'est retiré');
-  // Les 15 arbres, adultes, donnent tous leurs fruits une nuit de production.
-  const w = orchardWindow();
-  m.day = w.debut + DATA.VERGER.PERIODE - 1 + 40;
+  // Les 15 arbres, adultes et plantés la même nuit, donnent tous leurs fruits la même nuit.
+  m.day = DATA.VERGER.MATURITE + 2 * DATA.VERGER.PERIODE;
   for (const t of m.verger.arbres) t.plantee = 1;
   m.nuit = newNightStats();
   growOrchard(m);
@@ -8844,18 +8708,17 @@ test('sorties : les malades restent, le parc demande un enfant', () => {
   assertEqual(enfant.bonheur, b, 'resté à la maison');
 });
 
-test('voyages : butin de la montagne, cueillette de saison en forêt', () => {
+test('voyages : butin de la montagne, cueillette du jour en forêt', () => {
   const s = garden();
   s.pieces = 500;
   setInv(s, {});
   assert(goOut(s, 'montagne').ok);
   assertEqual(countItem(s, 'miel'), 2);
   assertEqual(countItem(s, 'fromage_alpage'), 2);
+  // version 1.6 : la cueillette de la forêt tourne d'un jour à l'autre
   const t = garden();
-  t.day = 21; // automne
-  assertEqual(outingLoot(t, 'foret'), { champignon: 4, chataigne: 5 });
-  t.day = 11; // été
-  assertEqual(outingLoot(t, 'foret'), { myrtille: 5 });
+  assertEqual([1, 2, 3, 4].map((day) => { t.day = day; return outingLoot(t, 'foret'); }),
+    [{ champignon: 3 }, { myrtille: 5 }, { champignon: 2, chataigne: 4 }, { champignon: 3 }]);
 });
 
 test('sorties : le temps passe (les panneaux produisent), sans repas ni nuit', () => {

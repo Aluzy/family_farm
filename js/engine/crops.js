@@ -1,6 +1,5 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, randomInt } from './base.js';
-import { waterSeasonFactor, yieldSeasonFactor } from './seasons.js';
 import { fail, spend } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { productivity } from './family.js';
@@ -31,7 +30,7 @@ export function allPlots(state) {
 
 // Parcelles du Champ (state.potager.zone2) : vide tant qu'il n'est pas ouvert. Elles portent
 // le lieu de la Zone de culture ('potager') : toutes ses règles s'y appliquent sans rien
-// redire (cultures, saisons, automatisations). `zone: 2` les distingue pour l'affichage.
+// redire (cultures, règles, automatisations). `zone: 2` les distingue pour l'affichage.
 export function zone2Plots(state) {
   return state.potager && Array.isArray(state.potager.zone2) ? state.potager.zone2 : [];
 }
@@ -121,24 +120,21 @@ export function boltSeedYield(state, culture) {
 }
 
 // Rendement d'une récolte au clic (× productivité) ou automatique (× 1).
-// Lot 8 : avec `lieu`, le facteur de saison du lieu s'y applique (Zone de culture,
-// quelle que soit la culture ; jamais la Serre).
-export function harvestYield(state, culture, auto = false, lieu = null) {
-  const saison = lieu ? yieldSeasonFactor(state, lieu) : 100;
+// Version 1.6 : plus de saisons, le rendement est le même partout et toute l'année.
+export function harvestYield(state, culture, auto = false) {
   const prod = auto ? 100 : productivity(state);
-  return Math.floor((DATA.crops[culture].rendement * prod * saison + 5000) / 10000);
+  return Math.floor((DATA.crops[culture].rendement * prod + 50) / 100);
 }
 
-// Eau d'un arrosage (L entiers) : celle de la culture × le facteur d'eau de la
-// saison (sauf en Serre), arrondie au litre le plus proche, 1 L au minimum.
-export function waterCostFor(state, culture, lieu) {
+// Eau d'un arrosage (L entiers) : celle de la culture, arrondie au litre le plus
+// proche, 1 L au minimum.
+export function waterCostFor(state, culture) {
   // arbre v2 : Arrosage économe et Gestion intelligente de l'eau (en %)
-  const pct = (waterSeasonFactor(state, lieu) * techPct(state, 'eauArrosage')) / 100;
-  return Math.max(1, roundPct(DATA.crops[culture].litres, pct));
+  return Math.max(1, roundPct(DATA.crops[culture].litres, techPct(state, 'eauArrosage')));
 }
 
 export function waterCost(state, plot) {
-  return waterCostFor(state, plot.culture, plot.lieu);
+  return waterCostFor(state, plot.culture);
 }
 
 // Parcelles mûres regroupées par culture et par mode : [{ culture, nombre, montee }].
@@ -219,7 +215,7 @@ export function harvest(state, plotId, auto = false) {
   if (plot.montee) {
     gain(def.graines.item, boltSeedYield(state, culture));
   } else {
-    gain(cropProduct(culture), harvestYield(state, culture, auto, plot.lieu));
+    gain(cropProduct(culture), harvestYield(state, culture, auto));
     if (def.graines.mode === 'recolte') {
       const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
       gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
@@ -264,7 +260,7 @@ export function upgradePotager(state) {
 /* ---------- Lot 8 : Serre ---------- */
 
 // state.serre = { construit, niveau, parcelles }. Mêmes règles que le Potager
-// (arrosage, pousse, récolte), sans aucun modificateur de saison.
+// (arrosage, pousse, récolte).
 
 export function serreUpgradeCost(state) {
   return state.serre.niveau >= DATA.LEVEL_MAX ? null : DATA.SERRE.COUT[state.serre.niveau];

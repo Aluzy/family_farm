@@ -3,7 +3,7 @@ import {
   testAddCows, testAddDevice, testAddEggs, testAddFlour, testAddFood, testAddHens, testAddOil,
   testAddPieces, testAddSeeds, testAddSheep, testAddStraw, testAddTechPoints, testAddWheat,
   testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
-  testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter, testNextSeason,
+  testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
   testRipenAll, testSetBuildingLevel5, testSetHealthZero, testSetWear, testSkipAwake, testSleepNights,
   testUnlockAllTechs, testWearMill, testWoolReady,
 } from '../engine/testmode.js';
@@ -117,10 +117,6 @@ registerActions({
   },
   'test-techs': () => {
     applyResult(testUnlockAllTechs(state));
-  },
-  'test-next-season': () => {
-    const result = applyResult(testNextSeason(state));
-    showToast(`Saison : ${DATA.SAISONS.INFOS[result.saison].icone} ${DATA.SAISONS.INFOS[result.saison].nom} (nuit ${state.day})`);
   },
   'test-serre': () => {
     applyResult(testBuildSerre(state));

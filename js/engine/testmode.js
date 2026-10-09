@@ -1,5 +1,4 @@
 import { DATA } from './catalog.js';
-import { currentSeason } from './seasons.js';
 import { batteryCapacity, fail, findDevice, isBroken, makeDevice, tankCapacity } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { addItem, spoil } from './inventory.js';
@@ -193,14 +192,6 @@ export function testGoToChapter(state, n) {
   c.fini = target > chapterCount();
   c.chapitre = c.fini ? chapterCount() : target;
   return { ok: true, chapitre: c.chapitre, fini: c.fini };
-}
-
-// Lot 8 : saute à la première nuit de la saison suivante (sans passer la nuit :
-// rien ne pousse, rien ne se mange).
-export function testNextSeason(state) {
-  const L = DATA.SAISONS.LONGUEUR;
-  state.day = (Math.floor((state.day - 1) / L) + 1) * L + 1;
-  return { ok: true, saison: currentSeason(state) };
 }
 
 // Lot 8 : construit gratuitement la Serre (niveau 1), le Verger et le Réfrigérateur.

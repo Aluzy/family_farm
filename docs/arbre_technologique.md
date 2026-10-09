@@ -68,7 +68,7 @@ Un seul agrégateur remplace `prepTimeMult()` et `awakeRequired()` : il parcourt
 | `tempsPrepa`, `eauArrosage`, `usure`, `kwhParLitre`, `frigoConso`, `blePoule`, `soinCout` | produit | temps, eau, usure, pompe, frigo, poules, soins | ×0,64 · ×0,765 · ×0,75 · ×0,75 · ×0,7 · ×0,8 · ×0,7 |
 | `eveilMin` | minimum | éveil minimal | 10 s |
 | `conservation`, `grainesBonus`, `recuperation` | somme | péremption, graines, santé | +1 · +1 · +1 |
-| `bonusPlatsMax`, `solaireHiver`, `croissanceSurface`, `fileAttente` | valeur du nœud | santé, saisons, pâturage, ateliers | 5 · 0,85 · 1,1 · 3 |
+| `bonusPlatsMax`, `solaireBonus`, `croissanceSurface`, `fileAttente` | valeur du nœud | santé, solaire, pâturage, ateliers | 5 · 110 % · 1,1 · 3 |
 | `auto: { tâche: [lieux] }` | union | nuit (`autoTasks`) | arrosage, récolte, semis, nourrissage, tonte |
 | `recettes` | union | Livre de recette | 16 recettes |
 | `actionsGroupees`, `pluie`, `delestage`, `entretienAuto`, `arrosagePrioritaire`, `routine` | présence | fonctions dédiées | — |
@@ -168,14 +168,14 @@ flowchart LR
 | 3 | `en_delestage` | 🎛️ Délestage intelligent | Automatisation | 1 PT + 400 💰 | Entretien préventif + 2 batteries | Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte. |
 | 3 | `en_entretien_auto` | 🛠️ Entretien automatique | Automatisation | 2 PT + 500 💰 | Entretien préventif | Chaque nuit, les appareils à 70 % d'usure ou plus sont entretenus automatiquement, au prix normal, si les pièces suffisent. |
 | 4 | `en_frigo_eco` | 🧊 Réfrigérateur basse consommation | Productivité | 1 PT + 600 💰 | Délestage intelligent + Réfrigérateur construit | Le réfrigérateur consomme 30 % d'électricité en moins. |
-| 4 | `en_hiver` | ☀️ Panneaux orientables | Productivité | 2 PT + 800 💰 | Entretien automatique | En hiver, les panneaux produisent 85 % de leur puissance au lieu de 70 %. |
+| 4 | `en_hiver` | ☀️ Panneaux orientables | Productivité | 2 PT + 800 💰 | Entretien automatique | Les panneaux produisent 10 % de plus (version 1.6 : plus d'hiver). |
 
 ### 💧 Eau — 6 nœuds, 10 PT, 3 900 💰
 
 | Palier | ID | Nœud | Fonction | Coût | Prérequis | Effet |
 |---|---|---|---|---|---|---|
 | 1 | `ea_econome` | 💧 Arrosage économe | Productivité | 1 PT + 150 💰 | Pompe niv. 2 | Chaque arrosage consomme 15 % d'eau en moins. |
-| 2 | `ea_pluie` | 🌧️ Récupérateur d'eau de pluie | Déblocage | 1 PT + 250 💰 | Arrosage économe | Chaque nuit, de l'eau de pluie s'ajoute au réservoir sans électricité : 20 L au printemps et en automne, 10 L en hiver, 5 L en été. |
+| 2 | `ea_pluie` | 🌧️ Récupérateur d'eau de pluie | Déblocage | 1 PT + 250 💰 | Arrosage économe | Chaque nuit, 15 L d'eau de pluie s'ajoutent au réservoir sans électricité. |
 | 3 | `ea_irrigation` | 🚿 Réseau d'irrigation | Automatisation | 2 PT + 900 💰 | Arrosage économe + Pompe niv. 3 + Potager niv. 3 | Chaque nuit, toutes les parcelles plantées du Potager et du Champ sont arrosées automatiquement. |
 | 3 | `ea_pompe_eco` | ⛲ Pompe à haut rendement | Productivité | 1 PT + 500 💰 | Arrosage économe + Entretien préventif | La pompe consomme 25 % d'électricité en moins par litre. |
 | 4 | `ea_serre` | 🏡 Irrigation de la Serre | Automatisation | 2 PT + 600 💰 | Réseau d'irrigation + Serre construit | Chaque nuit, les parcelles plantées de la Serre sont arrosées automatiquement. |
@@ -248,7 +248,7 @@ Dans le Livre de recette, une recette verrouillée reste visible, grisée, avec 
 | Élément | Règle | Valeurs 🟡 |
 |---|---|---|
 | **Bocal de légumes** | Cuisine, 4 légumes d'une même sorte + 1 L d'eau → 1 bocal. Ne périme pas. Nouvel item distinct de `conserve` : il compte comme **produit** pour l'autonomie (la conserve de départ reste « achetée »). | 30 s · 40 énergie · prix par la formule des plats |
-| **Eau de pluie** | Étape de nuit, avant l'arrosage automatique : ajoute des litres au réservoir, plafonnés à sa capacité, sans électricité. | 20 / 5 / 20 / 10 L selon la saison |
+| **Eau de pluie** | Étape de nuit, avant l'arrosage automatique : ajoute des litres au réservoir, plafonnés à sa capacité, sans électricité. | 15 L par nuit (version 1.6 : plus de saisons) |
 | **Actions groupées** | « Arroser tout » et « Récolter tout » par zone, au clic : une tentative par parcelle, avec la productivité de la santé comme pour les clics. | — |
 | **File de préparations** | Chaque atelier garde jusqu'à 3 préparations en attente ; les ingrédients sont retirés au moment de la mise en file ; annuler rend les ingrédients. Le hors-ligne fait avancer la file comme une préparation. | 3 places |
 | **Délestage** | Sous le seuil de charge totale des batteries, le Moulin, la Presse et la Pompe sont suspendus (pas éteints : ils reprennent seuls). | 10 % |

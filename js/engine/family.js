@@ -458,7 +458,7 @@ export function heal(state, memberId) {
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
   state.famille.soinsPayes += 1;
-  state.jour.soins = (state.jour.soins || 0) + 1; // Lot 9 : soin payé aujourd'hui (suivi de l'hiver)
+  state.jour.soins = (state.jour.soins || 0) + 1; // Lot 9 : soin payé aujourd'hui (suivi de la tenue du chapitre 6)
   m.sante = DATA.FAMILY.SOIN.SANTE;
   m.malade = false;
   return { ok: true, cost };

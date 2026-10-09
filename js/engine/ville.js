@@ -7,7 +7,6 @@ import { awakeMsAtHour, hourOfDay } from './clock.js';
 import { flowStep, wearStep } from './energy.js';
 import { refreshUnlocks } from './techtree.js';
 import { noteEnergyRecord, updateChapters } from './campaign.js';
-import { currentSeason } from './seasons.js';
 
 /* ---------- version 1.5 : bonheur, sorties et marché de la ville (data/ville.json) ---------- */
 
@@ -84,11 +83,12 @@ export function outingCost(state, id) {
   return outingMembers(state).reduce((t, m) => t + (m.enfant ? Math.ceil((s.prix * DATA.VILLE.ENFANT_PRIX) / 100) : s.prix), 0);
 }
 
-// Ce que rapporte une sortie aujourd'hui (le butin de la saison s'il y en a un).
+// Ce que rapporte une sortie aujourd'hui : son butin, ou la cueillette du jour
+// (elles tournent d'un jour à l'autre).
 export function outingLoot(state, id) {
   const s = DATA.VILLE.SORTIES[id];
   if (!s) return {};
-  if (s.saisons) return { ...(s.saisons[currentSeason(state)] || {}) };
+  if (s.cueillettes) return { ...s.cueillettes[(Math.max(1, state.day) - 1) % s.cueillettes.length] };
   return { ...(s.butin || {}) };
 }
 

@@ -79,16 +79,16 @@
       },
       {
         "titre": "Toute l'année",
-        "icone": "❄️",
-        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir un hiver entier sans acheter de soins. Il faut être là dès la première nuit de l'hiver.",
+        "icone": "📅",
+        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris, sans acheter de soins.",
         "debloque": ["serre", "verger", "frigo"],
         "objectifs": [
           {
-            "type": "hiver",
+            "type": "tenue",
             "cible": 1,
-            "saison": "hiver",
+            "nuits": 10,
             "moyenne": 80,
-            "libelle": "Traverser un hiver complet à 80 % d'autonomie en moyenne, sans payer de soin",
+            "libelle": "Tenir 10 nuits d'affilée à 80 % d'autonomie en moyenne, sans payer de soin",
             "unite": ""
           }
         ]
@@ -121,8 +121,8 @@
     "              pas partie, ici le pain ; les transformations du Moulin et de",
     "              la Presse n'en sont jamais) ;",
     "  laines    : laines tondues au total ;",
-    "  hiver     : la `saison` entière (LONGUEUR nuits) traversée avec au moins",
-    "              `moyenne` % d'autonomie en moyenne, sans payer de soin ;",
+    "  tenue     : `nuits` nuits d'affilée (version 1.6, à la place de l'hiver)",
+    "              à au moins `moyenne` % d'autonomie en moyenne, sans payer de soin ;",
     "  serie100  : nuits d'affilée à 100 % d'autonomie.",
     "Version 1.3 : le courrier. Une lettre arrive une seule fois, quand sa",
     "condition est remplie (`quand.debloque` : un élément que la campagne vient",

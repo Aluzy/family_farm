@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { currentSeason, seasonNight } from './seasons.js';
 import { allDevices, batteryCapacity, isBroken, needsService, newDayStats, tankCapacity } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { expiringSoon, spoil } from './inventory.js';
@@ -82,10 +81,8 @@ export function buildMorningReport(state) {
     pailleBesoin: strawNeed(state),
     // Lot 7 : ce que les automatisations ont fait (ou n'ont pas pu faire) cette nuit.
     auto: { ...newAutoReport(), ...(state.nuit.auto || {}), recoltes: { ...((state.nuit.auto || {}).recoltes || {}) } },
-    // Lot 8 : saison du réveil, fruits du verger, nuit du frigo (mWh prélevés,
-    // panne de froid, lots qui ont perdu une nuit) et contenu du frigo.
-    saison: currentSeason(state),
-    nuitDeSaison: seasonNight(state),
+    // Lot 8 : fruits du verger, nuit du frigo (mWh prélevés, panne de froid, lots
+    // qui ont perdu une nuit) et contenu du frigo.
     fruits: { ...(state.nuit.fruits || {}) },
     frigo: {
       construit: !!state.frigo.construit,
@@ -146,7 +143,7 @@ export function sleep(state) {
   if (!canSleep(state)) return null;
   state.nuit = newNightStats();
   for (const step of NIGHT_STEPS) step(state);
-  recordNight(state); // Lot 9 : autonomie de la nuit, séries et hiver (nuit encore = state.day)
+  recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;
   refreshUnlocks(state);

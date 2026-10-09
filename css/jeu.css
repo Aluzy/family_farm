@@ -967,8 +967,6 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
 .level-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .level-row .chip { white-space: normal; }
 .chip.auto { border-color: var(--accent); color: var(--accent); }
-.season-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.season-card .bar { margin-top: 2px; }
 .fridge.cold { border-color: var(--accent); }
 .fridge.warm { border-color: var(--danger); border-width: 2px; }
 .tree.adult { border-color: var(--accent); }

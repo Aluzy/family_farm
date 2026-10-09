@@ -58,15 +58,9 @@ function stableLines(report) {
   return lines;
 }
 
-// Lot 8 : saison du réveil, fruits du verger et nuit du frigo.
-function seasonLines(report) {
+// Lot 8 : fruits du verger et nuit du frigo.
+function orchardFridgeLines(report) {
   const lines = [];
-  const info = DATA.SAISONS.INFOS[report.saison];
-  if (info) {
-    lines.push(report.nuitDeSaison === 1
-      ? `<li>📅 <strong>Nouvelle saison : ${info.icone} ${info.nom}</strong> (nuit 1 / ${DATA.SAISONS.LONGUEUR})</li>`
-      : `<li>📅 ${info.icone} ${info.nom} · nuit ${report.nuitDeSaison} / ${DATA.SAISONS.LONGUEUR}</li>`);
-  }
   const fruits = itemsSummary(report.fruits || {});
   if (fruits) lines.push(`<li>🌳 Fruits du verger : <strong>${fruits}</strong></li>`);
   const f = report.frigo;
@@ -114,7 +108,7 @@ export function openWakeModal(report, auto = false) {
     ...autoLines(report.auto),
     report.pluie > 0 ? `<li>🌧️ Eau de pluie récupérée : <strong class="num">${formatNumber(report.pluie)} L</strong></li>` : '',
     ...(report.entretiens || []).map((e) => { const d = findDevice(state, e.id); return `<li>🛠️ Entretien automatique : ${d ? deviceName(d) : e.id} (${costLabel(e.cost)})</li>`; }),
-    ...seasonLines(report),
+    ...orchardFridgeLines(report),
     ready ? `<li>🧺 Récoltes prêtes : <strong>${ready}</strong></li>` : '<li>🌱 Aucune récolte prête pour l\'instant.</li>',
     spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
     expiring ? `<li>⏳ À manger vite, périme à la prochaine nuit : <strong>${expiring}</strong></li>` : '',

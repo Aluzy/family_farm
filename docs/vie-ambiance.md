@@ -26,11 +26,11 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
 | Élément | Comment | Quand |
 |---|---|---|
 | Ombres de nuages | 3 images agrandies qui dérivent vers l'est | de 6 h 30 à 19 h 30 |
-| Papillon | traverse la vue en zigzag, poussé par le vent, se pose une fois | le jour, sauf en hiver |
+| Papillon | traverse la vue en zigzag, poussé par le vent, se pose une fois | le jour |
 | Oiseau | arrive en vol, se pose, picore et sautille, repart ; s'envole si on appuie à moins de 48 px | le jour |
-| Feuille | tombe d'un feuillage, s'efface au sol | sauf en hiver ; trois fois plus souvent en automne |
-| Écureuil | descend d'un arbre, court jusqu'à un autre en s'arrêtant une fois, y grimpe | le jour, sauf en hiver |
-| Lucioles | 5 points lumineux au-dessus du voile de lumière | à partir de 19 h 45, au printemps et en été |
+| Feuille | tombe d'un feuillage, s'efface au sol | toute la journée |
+| Écureuil | descend d'un arbre, court jusqu'à un autre en s'arrêtant une fois, y grimpe | le jour |
+| Lucioles | 5 points lumineux au-dessus du voile de lumière | à partir de 19 h 45 |
 | Chat | marche, s'assoit, fait sa toilette, se couche, fait la sieste, court ; détale si on appuie à moins de 48 px | toute la journée ; à partir de 19 h 45 il dort sur son toit, jusqu'à 6 h 30 |
 | Vaches et moutons | les portes de l'Étable coulissent, les bêtes sortent une à une dans l'enclos, broutent, marchent, se couchent, donnent des coups de queue | dehors de 7 h à 19 h, si l'Étable est affichée et qu'il y a des bêtes |
 | Poules | la porte du Poulailler s'ouvre, les poules sortent en liberté, picorent, grattent, trottinent, se posent | dehors de 6 h à 19 h, si le Poulailler est affiché et qu'il y a des poules |
@@ -197,7 +197,7 @@ preload() this.load.spritesheet('chat', 'chat.png', { frameWidth: 16, frameHeigh
           this.load.spritesheet('vache', 'vache.png', { frameWidth: 32, frameHeight: 24 })   // et 'mouton', 'poule'
 create()  this.ambient = AmbientLife.attach(this, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
 update()  this.ambient.update(delta)
-sync()    this.ambient.setContext({ hour, season, trees, folds, herd })   // jamais le modèle de vue
+sync()    this.ambient.setContext({ hour, trees, folds, herd })   // jamais le modèle de vue
 tap()     this.ambient.scare(wx, wy)
 ```
 
@@ -250,9 +250,6 @@ Pour voir les bêtes sans jouer jusque-là : `FF.engine.testAddCows(FF.state); F
   ouverte, comme pour le reste de l'ambiance.
 - **Le Poulailler** est posé au bas du rectangle `poulailler` de la carte ; les fleurs du décor
   qui sont juste derrière dépassent un peu de son toit.
-- **Les Étables d'automne et d'hiver** (`barn_au`, `barn_wi`, pas affichées tant que
-  `SEASONS_ON_MAP` est faux) : la porte est fabriquée avec les mêmes mesures, sans avoir été
-  regardée sur ces deux images.
 - **L'herbe et les fleurs de la carte ne bougent pas** : elles sont cuites dans l'image du fond
   (`bakeGround()`). Les animer demande de sortir leurs couches du fond et de les poser en images.
 - En dessous de 20 images par seconde, l'ambiance ralentit au lieu de sauter (`delta` plafonné à

@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { currentSeason, seasonFactor } from './seasons.js';
 import { techFlag } from './techtree.js';
 
 /* ---------- appareils : fabrication et sélecteurs ---------- */
@@ -92,17 +91,16 @@ export function needsService(d) {
 }
 
 // Production d'un panneau à son niveau et son usure actuels (mWh/s entiers).
-// Lot 8 : avec `state`, le facteur solaire de la saison s'y applique.
+// Avec `state`, le bonus solaire de l'arbre (Panneaux orientables) s'y applique.
 export function panelOutput(d, state) {
   const base = Math.floor((DATA.GRID.panneau.whParS[d.niveau - 1] * 1000 * efficiency(d)) / 100);
   return state ? Math.floor((base * solarFactor(state)) / 100) : base;
 }
 
-// Facteur solaire de la saison (%) ; les Panneaux orientables relèvent l'hiver.
+// Facteur solaire (%) : 100, ou le bonus des Panneaux orientables (version 1.6 :
+// plus de saisons, le nœud donne un bonus toute l'année).
 export function solarFactor(state) {
-  const f = seasonFactor(state, 'solaire');
-  const hiver = currentSeason(state) === 'hiver' ? techFlag(state, 'solaireHiver') : null;
-  return hiver ? Math.max(f, hiver) : f;
+  return techFlag(state, 'solaireBonus') || 100;
 }
 
 // Capacité utile d'une batterie (mWh) : capacité(niveau) × rendement.

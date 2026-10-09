@@ -6,6 +6,29 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v27 (jeu 1.6) : plus de saisons** (lot 1 de la v2). Cette note **fait foi** sur
+> tout ce qui, plus bas, parle de saisons, d'hiver, de calendrier ou de modificateurs
+> saisonniers (1.4, 3, 6.9 ter, 8.2, 8.3, 8.4, 8.10…).
+> - **Cultures, eau, soleil** : plus aucun facteur ; rendement, litres par arrosage et
+>   production des panneaux sont ceux des tableaux, chaque nuit (fini le +10 % du
+>   printemps et le −30 % de l'hiver).
+> - **Verger** : un arbre donne 6 fruits la nuit de sa maturité (15 nuits après la
+>   plantation), puis toutes les 3 nuits, **toute l'année** (≈ 2 fruits par nuit au lieu
+>   de 30 par an). Chaque arbre suit son propre rythme.
+> - **Arbre des technologies** : Panneaux orientables = **+10 % de production toute
+>   l'année** (au lieu de 85 % en hiver) ; Récupérateur d'eau de pluie = **15 L par nuit**.
+> - **Chapitre 6 « Toute l'année »** : l'objectif « traverser un hiver » devient **tenir
+>   10 nuits d'affilée à 80 % d'autonomie en moyenne, sans payer de soin**. La série
+>   commence dès la première nuit du chapitre ; un soin l'arrête aussitôt ; une série
+>   ratée laisse place à une nouvelle la nuit suivante.
+> - **Sortie Forêt** : la cueillette tourne d'un jour à l'autre (3 champignons ; 5
+>   myrtilles ; 2 champignons et 4 châtaignes).
+> - **Interface** : plus de calendrier, plus de saison dans le bandeau ni au réveil, plus
+>   de bouton « Saison suivante » au mode test. Les images d'automne et d'hiver sont
+>   retirées de `assets/`.
+> - **Sauvegardes** (format 23, `migrateNoSeasons()`) : un hiver déjà réussi compte comme
+>   la série réussie ; la saison n'était pas stockée, rien d'autre à convertir.
+>
 > **v26 (jeu 1.0)** : **le Potager et le Champ deviennent une seule « Zone de
 > culture »** (🌱). Cette note **fait foi** sur tout ce qui, plus bas, parle
 > encore du Potager et du Champ comme de deux lieux.

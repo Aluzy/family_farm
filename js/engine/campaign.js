@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { seasonIndex, yearNight } from './seasons.js';
 import { fail } from './devices.js';
 import { addItem, lotsOf } from './inventory.js';
 import { fridgeLots } from './fridge.js';
@@ -16,7 +15,8 @@ import { checkMastery, grantTechPoints, techPoints } from './techtree.js';
 // n'a pas encore été vu [{ chapitre, nuit }] ; historique : autonomie de chaque
 // nuit [{ nuit, pct, energie }] ; compteurs : eau pompée (mL), record d'énergie
 // stockée (mWh), carottes récoltées, nuits de ponte d'affilée, pains cuits, plats
-// différents préparés, laines tondues, nuits à 100 % d'affilée, suivi de l'hiver.
+// différents préparés, laines tondues, nuits à 100 % d'affilée, suivi de la tenue
+// (chapitre 6).
 export function newCampaign() {
   return {
     chapitre: 1,
@@ -38,9 +38,9 @@ export function newCampaignCounters() {
     laines: 0,
     serie100: 0,
     nuits100: 0, // nuits à 100 % d'autonomie au total (jalon de maîtrise)
-    hiver: null, // hiver en cours de suivi : { debut, nuits, somme, soins }
-    hiverDernier: null, // dernier hiver terminé : { moyenne, sansSoin, reussi }
-    hiverReussi: false,
+    tenue: null, // série de nuits en cours de suivi : { debut, nuits, somme, soins }
+    tenueDerniere: null, // dernière série terminée : { moyenne, sansSoin, reussi }
+    tenueReussie: false,
   };
 }
 
@@ -184,7 +184,7 @@ export function objectiveValue(state, obj) {
     case 'pains': return k.pains;
     case 'plats': return k.plats.length;
     case 'laines': return k.laines;
-    case 'hiver': return k.hiverReussi ? 1 : 0;
+    case 'tenue': return k.tenueReussie ? 1 : 0;
     case 'serie100': return k.serie100;
     default: return 0;
   }
@@ -286,71 +286,48 @@ export function acknowledgeChapter(state) {
 
 /* -- compteurs de nuit -- */
 
-// Suivi de l'hiver du chapitre 6 : il commence à la première nuit de la saison
-// (si le chapitre est déjà atteint), doit être suivi nuit après nuit, et n'est
-// réussi que s'il compte toutes les nuits de la saison, à `moyenne` % d'autonomie
-// en moyenne, sans soin payé entre la première et la dernière nuit.
-export function trackWinter(state, pct) {
+// Suivi de la tenue du chapitre 6 (version 1.6, à la place de l'hiver) : une
+// série de `nuits` nuits commence à la première nuit où le chapitre est atteint.
+// Elle réussit si l'autonomie y vaut `moyenne` % en moyenne sans qu'aucun soin
+// ne soit payé ; un soin l'arrête aussitôt. Une série ratée laisse place à une
+// nouvelle dès la nuit suivante.
+export function trackHold(state, pct) {
   const k = state.campagne.compteurs;
-  const obj = objectiveDef('hiver');
-  if (!obj || k.hiverReussi || chapterReached(state) < objectiveChapter('hiver')) return;
-  const S = DATA.SAISONS;
-  const day = state.day;
-  if (S.ORDRE[seasonIndex(day)] !== obj.saison) {
-    k.hiver = null;
-    return;
-  }
-  const night = ((Math.max(1, day) - 1) % S.LONGUEUR) + 1;
-  // Soins déjà payés au matin de la première nuit : ceux d'aujourd'hui comptent dans l'hiver.
-  if (night === 1) k.hiver = { debut: day, nuits: 0, somme: 0, soins: state.famille.soinsPayes - (state.jour.soins || 0) };
-  const w = k.hiver;
-  if (!w || w.debut + w.nuits !== day) {
-    k.hiver = null; // hiver commencé en cours de route : il ne compte pas
-    return;
-  }
+  const obj = objectiveDef('tenue');
+  if (!obj || k.tenueReussie || chapterReached(state) < objectiveChapter('tenue')) return;
+  // Soins déjà payés au matin de la première nuit : ceux d'aujourd'hui comptent dans la série.
+  if (!k.tenue) k.tenue = { debut: state.day, nuits: 0, somme: 0, soins: state.famille.soinsPayes - (state.jour.soins || 0) };
+  const w = k.tenue;
   w.nuits += 1;
   w.somme += pct;
-  if (night < S.LONGUEUR) return;
-  const moyenne = Math.floor(w.somme / w.nuits);
   const sansSoin = state.famille.soinsPayes <= w.soins;
-  const reussi = w.nuits === S.LONGUEUR && moyenne + EPS >= obj.moyenne && sansSoin;
-  k.hiverDernier = { moyenne, sansSoin, reussi };
-  if (reussi) k.hiverReussi = true;
-  k.hiver = null;
+  if (sansSoin && w.nuits < obj.nuits) return;
+  const moyenne = Math.floor(w.somme / w.nuits);
+  const reussi = sansSoin && moyenne + EPS >= obj.moyenne;
+  k.tenueDerniere = { moyenne, sansSoin, reussi };
+  if (reussi) k.tenueReussie = true;
+  k.tenue = null;
 }
 
-// Première nuit (≥ `day`) de la saison donnée.
-export function nextSeasonStart(day, saison) {
-  const S = DATA.SAISONS;
-  const base = day - yearNight(day);
-  let start = base + S.ORDRE.indexOf(saison) * S.LONGUEUR + 1;
-  if (start < day) start += S.LONGUEUR * S.ORDRE.length;
-  return start;
-}
-
-// Où en est l'objectif de l'hiver (pour l'interface) : 'reussi', 'suivi' (hiver
-// en cours de suivi depuis sa première nuit), 'manque' (la saison est commencée
-// sans avoir été suivie : elle ne compte pas) ou 'attente' (la saison viendra).
-export function winterStatus(state) {
+// Où en est l'objectif de tenue (pour l'interface) : 'reussi', 'suivi' (série en
+// cours) ou 'attente' (la série commencera à la prochaine nuit).
+export function holdStatus(state) {
   const k = state.campagne.compteurs;
-  const obj = objectiveDef('hiver');
-  const prochaine = nextSeasonStart(state.day, obj.saison);
-  const dernier = k.hiverDernier;
-  if (k.hiverReussi) return { etat: 'reussi', prochaine, dernier };
-  if (k.hiver) {
+  const dernier = k.tenueDerniere;
+  if (k.tenueReussie) return { etat: 'reussi', dernier };
+  if (k.tenue) {
     return {
-      etat: 'suivi', prochaine, dernier, nuits: k.hiver.nuits,
-      moyenne: k.hiver.nuits ? k.hiver.somme / k.hiver.nuits : 0,
-      soinPaye: state.famille.soinsPayes > k.hiver.soins,
+      etat: 'suivi', dernier, nuits: k.tenue.nuits,
+      moyenne: k.tenue.nuits ? k.tenue.somme / k.tenue.nuits : 0,
+      soinPaye: state.famille.soinsPayes > k.tenue.soins,
     };
   }
-  const enCours = DATA.SAISONS.ORDRE[seasonIndex(state.day)] === obj.saison;
-  return { etat: enCours && prochaine !== state.day ? 'manque' : 'attente', prochaine, dernier };
+  return { etat: 'attente', dernier };
 }
 
 // Fin de la nuit (avant le passage au jour suivant) : autonomie de la nuit dans
 // l'historique, séries d'affilée (remises à zéro dès qu'une nuit les interrompt),
-// suivi de l'hiver.
+// suivi de la tenue.
 export function recordNight(state) {
   const c = state.campagne;
   if (!c) return null;
@@ -374,7 +351,7 @@ export function recordNight(state) {
       if (pt.libre % DATA.techtree.POINTS.MODE_LIBRE_NUITS_100 === 0) grantTechPoints(state, 1, 'Mode libre : nuits à 100 %');
     }
   }
-  trackWinter(state, pct);
+  trackHold(state, pct);
   return pct;
 }
 

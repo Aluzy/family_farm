@@ -71,8 +71,7 @@ export function startLot7() {
   return { technologies: [], pointsTech: newTechPoints(), routine: false };
 }
 
-// Lot 8 : Serre, Verger et Réfrigérateur, tous à construire. La saison se
-// déduit de la nuit courante : elle n'est pas stockée.
+// Lot 8 : Serre, Verger et Réfrigérateur, tous à construire.
 export function startLot8() {
   return {
     serre: { construit: false, niveau: 1, parcelles: [] },
@@ -286,7 +285,27 @@ export const MIGRATIONS = {
   20: (state) => migrateWheatAndReserve(state),
   // v21 → v22 (version 1.5) : bonheur des membres (DEPART pour chacun) et sorties en ville.
   21: (state) => migrateHappiness(state),
+  // v22 → v23 (version 1.6) : plus de saisons. L'objectif de l'hiver (chapitre 6)
+  // devient une série de nuits ; un hiver déjà réussi vaut la série réussie.
+  22: (state) => migrateNoSeasons(state),
 };
+
+export function migrateNoSeasons(old) {
+  const state = { ...old, version: 23 };
+  const c = state.campagne;
+  if (c && typeof c === 'object' && c.compteurs && typeof c.compteurs === 'object') {
+    const { hiver, hiverDernier, hiverReussi, ...k } = c.compteurs;
+    state.campagne = {
+      ...c,
+      compteurs: { ...k, tenue: null, tenueDerniere: hiverDernier && typeof hiverDernier === 'object' ? hiverDernier : null, tenueReussie: !!hiverReussi },
+    };
+  }
+  if (state.report && typeof state.report === 'object') {
+    const { saison, nuitDeSaison, ...report } = state.report;
+    state.report = report;
+  }
+  return state;
+}
 
 export function migrateHappiness(old) {
   const state = { ...old, version: 22, ville: old.ville && typeof old.ville === 'object' ? old.ville : newVille() };
@@ -616,6 +635,7 @@ export function migrateToIntegers(old) {
     k.mwhMax = 'kwhMax' in k ? Math.floor(num(k.kwhMax) * 1e6) : num(k.mwhMax);
     delete k.litres;
     delete k.kwhMax;
+    // (noms d'avant la version 1.6 : l'hiver est devenu la tenue, voir migrateNoSeasons())
     if (k.hiver && typeof k.hiver === 'object') k.hiver.somme = Math.floor(num(k.hiver.somme));
     if (k.hiverDernier) k.hiverDernier.moyenne = Math.floor(num(k.hiverDernier.moyenne));
   }

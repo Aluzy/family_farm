@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { familyNeed } from '../engine/family.js';
 import {
-  autonomyHistory, chapterCount, chapterProgress, lastAutonomy, objectiveDef, plannedAutonomy, winterStatus,
+  autonomyHistory, chapterCount, chapterProgress, lastAutonomy, objectiveDef, plannedAutonomy, holdStatus,
 } from '../engine/campaign.js';
 import { formatNumber, formatPercent } from '../engine/format.js';
 import { state } from './store.js';
@@ -20,29 +20,27 @@ export function objectiveValueText(o) {
     case 'autonomie': return `${formatPercent(o.valeur)} / ${formatNumber(o.cible)} %`;
     case 'sante': return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
     case 'pontes': case 'serie100': return `${n(o.valeur)} / ${formatNumber(o.cible)} nuits`;
-    case 'hiver': return o.ok ? '✅' : '';
+    case 'tenue': return o.ok ? '✅' : '';
     default: return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
   }
 }
 
-// Ligne d'explication sous l'objectif de l'hiver.
-function winterLine() {
-  const w = winterStatus(state);
-  const obj = objectiveDef('hiver');
-  const L = DATA.SAISONS.LONGUEUR;
+// Ligne d'explication sous l'objectif de tenue (chapitre 6).
+function holdLine() {
+  const w = holdStatus(state);
+  const obj = objectiveDef('tenue');
   const last = w.dernier && !w.dernier.reussi
-    ? ` Dernier hiver : moyenne ${formatPercent(w.dernier.moyenne)}${w.dernier.sansSoin ? '' : ', soin payé'} : raté.`
+    ? ` Dernière série : moyenne ${formatPercent(w.dernier.moyenne)}${w.dernier.sansSoin ? '' : ', soin payé'} : ratée.`
     : '';
-  if (w.etat === 'reussi') return '✅ Hiver traversé.';
+  if (w.etat === 'reussi') return '✅ Série réussie.';
   if (w.etat === 'suivi') {
-    return `❄️ Hiver suivi : nuit ${w.nuits} / ${L} · moyenne ${formatPercent(w.moyenne)} (objectif ${obj.moyenne} %)${w.soinPaye ? ' · ⚠️ un soin a été payé : cet hiver est raté.' : ''}`;
+    return `📅 Série en cours : nuit ${w.nuits} / ${obj.nuits} · moyenne ${formatPercent(w.moyenne)} (objectif ${obj.moyenne} %)${w.soinPaye ? ' · ⚠️ un soin a été payé : cette série est ratée.' : ''}`;
   }
-  if (w.etat === 'manque') return `⏳ L'hiver a commencé sans être suivi depuis sa première nuit : il ne compte pas. Prochain hiver : nuit ${w.prochaine}.${last}`;
-  return `⏳ ${w.prochaine === state.day ? 'L\'hiver commence aujourd\'hui.' : `Prochain hiver : nuit ${w.prochaine}.`}${last}`;
+  return `⏳ Une série de ${obj.nuits} nuits commence à la prochaine nuit.${last}`;
 }
 
 function objectiveHtml(o) {
-  const line = o.type === 'hiver' ? `<span class="muted">${winterLine()}</span>` : '';
+  const line = o.type === 'tenue' ? `<span class="muted">${holdLine()}</span>` : '';
   return `
     <li class="objective${o.ok ? ' ok' : ''}">
       <span class="objective-line"><span class="objective-label">${o.ok ? '✅' : '⬜'} ${o.libelle}</span><span class="objective-value">${objectiveValueText(o)}</span></span>
