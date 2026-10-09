@@ -33,7 +33,7 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
   `{ season, heure, cols, plots: [{ id, culture, icone, phase (-1, 0…3), mature, arrosee }],
   cols2, plots2 (le Champ, même forme que plots), arbres: [{ id, jeune }],
   serre (parcelles de la Serre, même forme), interieur (null ou 'serre'),
-  batiments: { etable, poulailler, moulin, serre, verger, zone, zone2 },
+  batiments: { etable, poulailler, moulin, serre, verger, zone, zone2, silo },
   animaux: { vache, mouton, poule } (nombre de bêtes de l'Étable et du Poulailler) }`.
 - **`sync(modèle)` est idempotent** : `render()` appelle `renderStage()` environ 5 fois par
   seconde ; un modèle identique est écarté avant la scène (comparaison de la clé JSON), un modèle
@@ -83,6 +83,7 @@ eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`
   | `moulin` | `windmill_*` (4 images de 96×128, animé) | un atelier débloqué | Moulin et ateliers |
   | `serre` | `serre_*`, découpe « batiment » (verrière seule, 94×83) | Serre débloquée | Serre |
   | `verger` | `sign.png` (pancarte) | Verger débloqué | Verger |
+  | `silo` | `silo.png` (28×62, dessiné par `scripts/batiments/silo.py`) | Silo débloqué ou construit | Silo |
   | `zone_culture_1` (ou `zone_culture`) | parcelles | toujours | Zone de culture |
   | `zone_culture_2` | parcelles (8 colonnes) | Moulin débloqué | Champ |
   | `arbre_verger_1` à `arbre_verger_12` | `basic_*` (première des 8 images de 80×80, fixe) | un arbre par arbre du Verger, dans l'ordre d'achat | Verger |
@@ -244,7 +245,6 @@ est la poignée de débogage posée par `js/main.js`).
 - Automne et hiver : la carte garde son apparence de printemps toute l'année (`SEASONS_ON_MAP = false` dans `farm-stage.js`) ; les images d'automne et d'hiver des bâtiments restent dans `assets/` pour le jour où les cartes de ces saisons existeront.
 - Sur un ordinateur, au repère du milieu, le pied du moulin dépasse d'une douzaine de pixels
   sous la vue. Il se voit en entier en glissant ou depuis le troisième point.
-- `silo` et `poulailler` de la carte ne sont pas encore utilisés par le jeu.
 - L'étiquette « Verger » reste sur la pancarte, près de la maison : survoler un arbre l'affiche
   là-bas, pas au-dessus des arbres.
 - Les bulles d'aide « eau » et « potager » ne désignent plus rien sur la carte (leurs cibles
