@@ -13,7 +13,7 @@ import { canPay, costLabel } from './common.js';
 
 /* ---------- Lot 7 : Arbre des technologies ---------- */
 
-// Progression d'un bâtiment ou d'un groupe d'appareils (lecture seule : les
+// Progression d'un bâtiment, d'un appareil ou des ateliers (lecture seule : les
 // améliorations se font sur les cartes des bâtiments).
 function techLevelRow(e) {
   let body;
@@ -27,11 +27,6 @@ function techLevelRow(e) {
       <span class="level-line"><span>${e.icone} ${e.nom}</span><span class="num">${built ? `niveau ${e.niveau} / ${e.max}` : 'non construit'}</span></span>
       <span class="bar" role="progressbar" aria-label="Niveau : ${e.nom}" aria-valuemin="0" aria-valuemax="${e.max}" aria-valuenow="${e.niveau}"><span class="bar-fill" style="width:${pct}%"></span></span>
       ${note}`;
-  } else if (e.type === 'appareils') {
-    const chips = e.niveaux.map((n, i) => `<span class="chip">n°${i + 1} · niv. ${n} / ${e.max}</span>`).join('');
-    body = `
-      <span class="level-line"><span>${e.icone} ${e.nom}</span><span class="num">${e.niveaux.length} appareil${e.niveaux.length > 1 ? 's' : ''}</span></span>
-      <span class="level-chips">${chips}</span>`;
   } else {
     const chips = e.ateliers.map((a) => `<span class="chip">${a.icone} ${a.nom} · ${a.construit ? 'construit' : 'à construire'}</span>`).join('');
     body = `

@@ -1,8 +1,9 @@
 import { DATA } from '../engine/catalog.js';
 import {
-  batteryCapacity, buyDevice, efficiency, isBroken, maintainCost, needsService, nextPurchasePrice,
-  panelOutput, pumpFlow, repairCost, tankCapacity, toggleDevice, upgradeCost, upgradeDevice,
+  batteryCapacity, efficiency, isBroken, maintainCost, needsService, panelOutput, pumpFlow, repairCost,
+  tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from '../engine/devices.js';
+import { hourOfDay } from '../engine/clock.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
 import { productivity } from '../engine/family.js';
 import { potagerUpgradeCost, upgradePotager, zone2Plots } from '../engine/crops.js';
@@ -30,12 +31,19 @@ import { canPay, costLabel } from './common.js';
 /* ---------- Ferme : cartes et écrans de détail ---------- */
 
 const DEVICE_ICONS = { panneau: '☀️', batterie: '🔋', pompe: '⛲', moulin: '⚙️', presse: '🌻', frigo: '🧊' };
-const DEVICE_NAMES = { panneau: 'Panneau', batterie: 'Batterie', pompe: 'Pompe', moulin: 'Moulin', presse: 'Presse', frigo: 'Réfrigérateur' };
+const DEVICE_NAMES = { panneau: 'Panneau solaire', batterie: 'Batterie', pompe: 'Pompe', moulin: 'Moulin', presse: 'Presse', frigo: 'Réfrigérateur' };
 
+// Version 1.6 : un seul appareil de chaque type, son nom suffit.
 export function deviceName(d) {
-  if (d.type === 'pompe' || d.type === 'moulin' || d.type === 'presse' || d.type === 'frigo') return DEVICE_NAMES[d.type];
-  const list = d.type === 'panneau' ? state.panneaux : state.batteries;
-  return `${DEVICE_NAMES[d.type]} n°${list.indexOf(d) + 1}`;
+  return DEVICE_NAMES[d.type];
+}
+
+// Le soleil brille-t-il à l'heure actuelle de l'horloge ?
+function sunText() {
+  const h = hourOfDay(state);
+  return h >= DATA.SOLEIL.DEBUT && h < DATA.SOLEIL.FIN
+    ? `☀️ Soleil jusqu'à ${DATA.SOLEIL.FIN} h`
+    : `🌙 Pas de soleil : le panneau produit de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h`;
 }
 
 function alertLine(aEntretenir, enPanne) {
@@ -88,6 +96,7 @@ export function renderFerme() {
 // Maison › Installations de la carte.
 export function renderEnergieEau() {
   const e = energyStats(state), p = state.pompe, ps = deviceStatus(state, p), cap = tankCapacity(state);
+  const tankUp = upgradeCost({ type: 'reservoir', niveau: state.reservoir.niveau });
   let netText = 'Stable (0 Wh/s)';
   if (e.net > 0) netText = `En charge (${formatWhRate(e.net, true)})`;
   else if (e.net < 0) netText = `En décharge (${formatWhRate(e.net, true)})`;
@@ -98,7 +107,7 @@ export function renderEnergieEau() {
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
         <span class="card-title"><span>${icon('panneau')}Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
         <span class="big">${formatWhRate(e.production)}</span>
-        <span class="muted">${e.panneauxEnMarche} panneau${e.panneauxEnMarche > 1 ? 'x' : ''} en marche sur ${e.panneauxTotal}</span>
+        <span class="muted">Panneau niveau ${state.panneaux[0].niveau} · ${sunText()}</span>
         ${alertLine(e.panneauxAEntretenir, e.panneauxEnPanne)}
       </button>
       <button type="button" class="card" data-action="open-screen" data-screen="batteries">
@@ -115,9 +124,12 @@ export function renderEnergieEau() {
         ${deviceControls(p)}
       </div>
       <div class="card${tutoTarget('eau')}">
-        <span class="card-title"><span>${icon('reservoir')}Réservoir</span>${helpBtn('reservoir')}</span>
+        <span class="card-title"><span>${icon('reservoir')}Réservoir · niveau ${state.reservoir.niveau}</span>${helpBtn('reservoir')}</span>
         <span class="big">${formatNumber(Math.floor(state.eauMl / 1000))} / ${formatLitres(cap)}</span>
         <span class="muted">${tankText}</span>
+        ${tankUp === null
+          ? '<button type="button" class="btn" disabled>Niveau max</button>'
+          : `<button type="button" class="btn" data-action="upgrade-tank"${canPay(tankUp) ? '' : ' disabled'}>Agrandir : ${formatLitres(DATA.GRID.reservoir.litres[state.reservoir.niveau] * 1000)} (${costLabel(tankUp)})</button>`}
       </div>
       ${isUnlocked(state, 'frigo') ? renderFridgeCard() : ''}
     </div>
@@ -167,7 +179,7 @@ function deviceRow(d) {
   const st = deviceStatus(state, d);
   let detail;
   if (d.type === 'panneau') {
-    detail = `<span class="muted">Production : <span class="num">${formatWhRate(d.prod)}</span> (max ${formatWhRate(panelOutput(d, state))})</span>`;
+    detail = `<span class="muted">Production : <span class="num">${formatWhRate(d.prod)}</span> (max ${formatWhRate(panelOutput(d, state))}, de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h)</span>`;
   } else {
     const cap = batteryCapacity(d);
     let flow = 'Ni charge ni décharge';
@@ -194,10 +206,9 @@ export function renderDeviceScreen(kind) {
   const list = isPanels ? state.panneaux : state.batteries;
   const type = isPanels ? 'panneau' : 'batterie';
   const e = energyStats(state);
-  const price = nextPurchasePrice(state, type);
   const summary = isPanels
     ? `<span class="big">${formatWhRate(e.production)}</span>
-       <span class="muted">${e.panneauxEnMarche} panneau${e.panneauxEnMarche > 1 ? 'x' : ''} en marche sur ${e.panneauxTotal}</span>`
+       <span class="muted">${sunText()}</span>`
     : `<span class="big">${formatNumber(Math.floor(e.charge / 1000))} / ${formatWh(e.capacite)}</span>
        <span class="muted">Total reçu : ${formatWhRate(e.entree, true)} · Total soutiré : ${formatWhRate(-e.sortie, true)}</span>`;
   return `
@@ -208,7 +219,6 @@ export function renderDeviceScreen(kind) {
     </div>
     <div class="stack">${summary}</div>
     <div class="device-list">${list.map(deviceRow).join('')}</div>
-    <button type="button" class="btn primary" data-action="buy" data-type="${type}"${canPay(price) ? '' : ' disabled'}>Acheter ${isPanels ? 'un panneau' : 'une batterie'} (${formatCoins(price)} 💰)</button>
   `;
 }
 
@@ -274,8 +284,8 @@ registerActions({
   'upgrade': (target) => {
     applyResult(upgradeDevice(state, target.dataset.id));
   },
-  'buy': (target) => {
-    applyResult(buyDevice(state, target.dataset.type));
+  'upgrade-tank': () => {
+    applyResult(upgradeTank(state));
   },
   'upgrade-potager': () => {
     applyResult(upgradePotager(state));

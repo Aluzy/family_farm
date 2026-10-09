@@ -7,7 +7,7 @@ import { mailbox } from '../engine/campaign.js';
 import { canSleep, sleep } from '../engine/night.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
-import { formatDuration, formatLitres, formatNumber, formatPercent, formatWh } from '../engine/format.js';
+import { formatDuration, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
 import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { actionSleep } from './game-actions.js';
@@ -242,8 +242,7 @@ function openAbsenceModal(r) {
   }
   const lines = [
     `<li>⏳ Absence : <strong class="num">${formatDuration(r.demande)}</strong>${r.plafonne ? ` <span class="muted">(seules les ${formatDuration(cap)} premières comptent)</span>` : ''}</li>`,
-    `<li>☀️ Énergie produite : <strong class="num">${formatWh(r.energieProduite)}</strong>${r.energiePerdue >= 1000 ? ` <span class="muted">(dont ${formatWh(r.energiePerdue)} perdus, batteries pleines)</span>` : ''}</li>`,
-    `<li>🔋 Batteries : <strong class="num">${formatNumber(Math.floor(r.energieDebut / 1000))} → ${formatNumber(Math.floor(r.energieFin / 1000))} / ${formatWh(r.capacite)}</strong></li>`,
+    // Version 1.6 : l'électricité produite et stockée ne s'affiche plus ici (Maison › Installations).
     `<li>💧 Eau pompée : <strong class="num">${formatLitres(r.eauPompee)}</strong> · réservoir <span class="num">${formatNumber(Math.floor(r.eauFin / 1000))} / ${formatLitres(r.capaciteEau)}</span></li>`,
     done ? `<li>🍳 Préparations terminées : <strong>${done}</strong></li>` : '',
     running.length ? `<li>⏳ Toujours en cours : ${running.join(' · ')}</li>` : '',

@@ -331,7 +331,10 @@ export function botRaiseFunds(state, cost) {
 export function botBuy(state, eveilS) {
   const S = DATA.SIMULATION;
   const chapitre = Math.min(chapterReached(state), chapterCount());
-  const steps = [{ type: 'infra' }, ...(S.PRIORITE[chapitre] || []), ...S.PLAN];
+  // Version 1.6 : ce qui fait avancer le chapitre passe avant les appareils (une
+  // amélioration coûte désormais 100 à 2 200 pièces ; avant, la pompe pouvait tout
+  // absorber dès l'ouverture du Champ).
+  const steps = [...(S.PRIORITE[chapitre] || []), { type: 'infra' }, ...S.PLAN];
   for (let guard = 0; guard < 40; guard++) {
     let bought = false;
     for (const step of steps) {

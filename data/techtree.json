@@ -46,12 +46,15 @@
       "paturage": { "nom": "Étable (moutons et vaches)", "icone": "🐑" },
       "four": { "nom": "Four", "icone": "🔥" },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊" },
-      "batterie": { "nom": "Batteries", "icone": "🔋" }
+      "batterie": { "nom": "Batterie", "icone": "🔋" },
+      "panneau": { "nom": "Panneau solaire", "icone": "☀️" },
+      "reservoir": { "nom": "Réservoir", "icone": "💧" }
     },
     "suivi": {
-      "panneau": { "type": "appareils", "nom": "Panneaux solaires", "icone": "☀️" },
-      "batterie": { "type": "appareils", "nom": "Batteries", "icone": "🔋" },
-      "pompe": { "type": "niveau", "nom": "Pompe et réservoir", "icone": "⛲" },
+      "panneau": { "type": "niveau", "nom": "Panneau solaire", "icone": "☀️" },
+      "batterie": { "type": "niveau", "nom": "Batterie", "icone": "🔋" },
+      "pompe": { "type": "niveau", "nom": "Pompe", "icone": "⛲" },
+      "reservoir": { "type": "niveau", "nom": "Réservoir", "icone": "💧" },
       "potager": { "type": "niveau", "nom": "Zone de culture", "icone": "🌱", "note": "arrosage et récolte automatiques" },
       "poulailler": { "type": "niveau", "nom": "Poulailler", "icone": "🐔", "note": "nourrissage automatique" },
       "silo": { "type": "niveau", "nom": "Silo", "icone": "🛖" },
@@ -59,7 +62,7 @@
     },
     "branches": [
       { "id": "energie", "nom": "Énergie", "icone": "⚡", "suivi": ["panneau", "batterie"] },
-      { "id": "eau", "nom": "Eau", "icone": "💧", "suivi": ["pompe"] },
+      { "id": "eau", "nom": "Eau", "icone": "💧", "suivi": ["pompe", "reservoir"] },
       { "id": "culture", "nom": "Culture", "icone": "🌱", "suivi": ["potager"] },
       { "id": "elevage", "nom": "Élevage", "icone": "🐔", "suivi": ["poulailler", "silo"] },
       { "id": "cuisine", "nom": "Cuisine", "icone": "🍳", "suivi": ["stations"] },
@@ -82,7 +85,7 @@
         "cout": 100,
         "requiert": [],
         "effet": { "usure": 75 },
-        "description": "Panneaux, batteries et appareils s'usent 25 % moins vite."
+        "description": "Le panneau, la batterie et les autres appareils s'usent 25 % moins vite."
       },
       "en_delestage": {
         "branche": "energie",
@@ -92,7 +95,7 @@
         "fonction": "automatisation",
         "pt": 1,
         "cout": 400,
-        "requiert": [{ "noeud": "en_entretien" }, { "appareil": "batterie", "nombre": 2 }],
+        "requiert": [{ "noeud": "en_entretien" }, { "batiment": "batterie", "niveau": 2 }],
         "effet": { "delestage": { "seuil": 10 } },
         "description": "Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte."
       },
@@ -130,7 +133,7 @@
         "cout": 800,
         "requiert": [{ "noeud": "en_entretien_auto" }],
         "effet": { "solaireBonus": 110 },
-        "description": "Les panneaux produisent 10 % de plus."
+        "description": "Le panneau produit 10 % de plus."
       },
       "//ea_econome": "💧 Eau",
       "ea_econome": {

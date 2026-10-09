@@ -69,7 +69,7 @@ function alertMessage(ev) {
   switch (ev.type) {
     case 'panne': return `⛔ ${name} en panne : il faut le réparer.`;
     case 'entretien': return `⚠️ ${name} : usure à ${formatNumber(DATA.WEAR.SERVICE_THRESHOLD)} %, pense à l'entretenir.`;
-    case 'batteriesVides': return '🔋 Batteries vides : la pompe et les ateliers attendent le soleil.';
+    case 'batteriesVides': return '🔋 Batterie vide : la pompe et les ateliers attendent le soleil.';
     case 'frigoCoupe': return '🧊 Réfrigérateur hors tension : il manque d\'énergie.';
     case 'pailleManque': return `${DATA.items[DATA.PATURAGE.nourriture].icone} Il manque de la paille pour les animaux cette nuit : mouds du blé au Moulin.`;
     default: return '';

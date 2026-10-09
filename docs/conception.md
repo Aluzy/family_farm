@@ -6,6 +6,35 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v28 (jeu 1.6) : un panneau, une batterie** (lot 2 de la v2). Cette note **fait
+> foi** sur le « parc d'appareils » (v15, 8.2, 9) et sur le réservoir qui suivait la pompe.
+> - **Un seul panneau et une seule batterie**, qui montent de niveau ; plus d'achat
+>   d'appareil supplémentaire. Panneau 40 / 90 / 160 / 260 / 400 Wh/s ; batterie
+>   6 000 / 15 000 / 30 000 / 60 000 / 100 000 Wh (`DATA.GRID`).
+> - **Le panneau ne produit qu'entre 7 h et 19 h** (`DATA.SOLEIL`) ; un pas de temps à
+>   cheval sur 7 h ou 19 h produit au prorata (`sunlitMs()`). Le soir et la nuit, la pompe
+>   et le frigo vivent sur la batterie. Une journée entière de soleil au niveau 1 donne
+>   8 640 Wh, autant que l'ancien panneau de 30 Wh/s de 6 h à 22 h. Pendant une absence,
+>   l'horloge est figée : le panneau produit si elle l'est entre 7 h et 19 h.
+> - **Le réservoir a ses propres niveaux** (40 / 80 / 160 / 300 / 500 L,
+>   `state.reservoir.niveau`, `upgradeTank()`) ; la pompe ne l'agrandit plus.
+> - **Coûts d'amélioration par appareil** (`DATA.UPGRADE_COST`, niveaux 2 à 5) : panneau
+>   150 / 400 / 900 / 2 000, batterie 180 / 450 / 1 000 / 2 200, pompe 100 / 250 / 600 /
+>   1 300, réservoir 120 / 300 / 700 / 1 500 (au lieu de 40 / 100 / 250 / 600 pour tous).
+>   Ces prix visent le départ v2 à 1 500 pièces (lot 8) ; d'ici là, avec 350 pièces au
+>   départ, le joueur automatique termine le chapitre 5 deux nuits plus tard.
+> - **Arbre** : Délestage intelligent demande une batterie de niveau 2 (au lieu de 2
+>   batteries) ; la branche Énergie suit le niveau du panneau et de la batterie, la
+>   branche Eau ceux de la pompe et du réservoir.
+> - **« Pendant votre absence »** n'affiche plus l'électricité produite ni stockée :
+>   elle se lit dans Maison › Installations.
+> - **Mode test** : plus de « +1 panneau / +1 batterie » ; « Niveau 5 » s'applique aussi
+>   au panneau, à la batterie, à la pompe et au réservoir.
+> - **Sauvegardes** (format 24, `migrateSingleDevices()`) : on garde le panneau et la
+>   batterie du plus haut niveau (à niveau égal, le moins usé) ; la batterie reçoit la
+>   charge de toutes, dans la limite de sa capacité ; les appareils retirés sont
+>   remboursés de leur prix d'achat ; le réservoir prend le niveau de la pompe.
+>
 > **v27 (jeu 1.6) : plus de saisons** (lot 1 de la v2). Cette note **fait foi** sur
 > tout ce qui, plus bas, parle de saisons, d'hiver, de calendrier ou de modificateurs
 > saisonniers (1.4, 3, 6.9 ter, 8.2, 8.3, 8.4, 8.10…).

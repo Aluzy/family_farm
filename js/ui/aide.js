@@ -54,34 +54,40 @@ function levelsNote(parcelles, nom) {
   return `Parcelles par niveau : ${listNum(parcelles, '')}. L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture) ; ils travaillent la nuit, à 100 %.`;
 }
 
+// Coûts des niveaux 2 à 5 d'un appareil : « 150 · 400 · 900 · 2 000 💰 ».
+function levelCosts(type) {
+  return listNum(DATA.UPGRADE_COST[type].slice(1), '💰');
+}
+
 // Rôle, consommation et production de chaque bâtiment, calculés depuis DATA.
 const HELP = {
   panneau: () => ({
-    nom: 'Panneaux solaires',
-    role: 'Transforment le soleil en électricité, rangée dans les batteries. Chaque panneau a son niveau, son usure et son interrupteur.',
+    nom: 'Panneau solaire',
+    role: `Transforme le soleil en électricité, rangée dans la batterie, de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h seulement. Il a son niveau, son usure et son interrupteur.`,
     conso: 'Aucune.',
     prod: `${listNum(DATA.GRID.panneau.whParS, 'Wh/s')} selon le niveau. L'usure en retire jusqu'à ${formatNumber((DATA.WEAR.BREAKDOWN * 100) / DATA.WEAR.EFFICIENCY_DIVISOR)} %. En ce moment : ${formatWhRate(energyStats(state).production)}.`,
-    note: `Un panneau de plus coûte ${formatNumber(DATA.PURCHASE.panneau.base)} 💰, +${formatNumber(DATA.PURCHASE.panneau.growth - 100)} % par panneau déjà possédé (arrondi à l'entier supérieur).`,
+    note: `Le soir et la nuit, la pompe et le réfrigérateur vivent sur la batterie. Améliorer : ${levelCosts('panneau')}.`,
   }),
   batterie: () => ({
-    nom: 'Batteries',
-    role: 'Stockent l\'électricité des panneaux. La première batterie disponible se remplit d\'abord ; la dernière remplie se vide d\'abord. Elles ne se déchargent jamais d\'elles-mêmes.',
-    conso: 'Aucune : elles alimentent la pompe, le moulin, la presse et le réfrigérateur.',
+    nom: 'Batterie',
+    role: 'Stocke l\'électricité du panneau, pour le soir et la nuit. Elle ne se décharge jamais d\'elle-même.',
+    conso: 'Aucune : elle alimente la pompe, le moulin, la presse et le réfrigérateur.',
     prod: `Capacité : ${listNum(DATA.GRID.batterie.wh, 'Wh')} selon le niveau (l'usure réduit la capacité utile). En ce moment : ${formatNumber(Math.floor(energyStats(state).charge / 1000))} / ${formatWh(energyStats(state).capacite)}.`,
-    note: `Une batterie de plus coûte ${formatNumber(DATA.PURCHASE.batterie.base)} 💰, +${formatNumber(DATA.PURCHASE.batterie.growth - 100)} % par batterie déjà possédée (arrondi à l'entier supérieur).`,
+    note: `Améliorer : ${levelCosts('batterie')}.`,
   }),
   pompe: () => ({
     nom: 'Pompe',
     role: 'Tire l\'eau du puits vers le réservoir, tant qu\'il reste de la place.',
     conso: `${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre pompé, soit ${formatWhRate(pumpFlow(state.pompe) * DATA.PUMP.WH_PAR_L)} à plein débit au niveau ${state.pompe.niveau}.`,
     prod: `Débit : ${listNum(DATA.GRID.pompe.litresPerS, 'L/s')} selon le niveau.`,
-    note: 'Sans énergie, elle attend ; avec peu d\'énergie, elle pompe au prorata.',
+    note: `Sans énergie, elle attend ; avec peu d'énergie, elle pompe au prorata. Améliorer : ${levelCosts('pompe')}.`,
   }),
   reservoir: () => ({
     nom: 'Réservoir',
     role: 'Garde l\'eau pompée pour les arrosages et le pain.',
     conso: 'Aucune.',
-    prod: `Capacité : ${listNum(DATA.GRID.pompe.reservoirL, 'L')}, selon le niveau de la pompe.`,
+    prod: `Capacité : ${listNum(DATA.GRID.reservoir.litres, 'L')} selon son niveau.`,
+    note: `Agrandir : ${levelCosts('reservoir')}.`,
   }),
   potager: () => ({
     nom: DATA.POTAGER.NOM,
@@ -204,7 +210,7 @@ function openHelpModal(id) {
 const TUTO = {
   eau: {
     titre: '💧 L\'eau et le soleil',
-    texte: () => `Les panneaux solaires chargent la batterie ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).${stageUsable() ? ' Panneaux, batterie et pompe se trouvent dans la maison : touche-la, puis ouvre « Bâtiments ».' : ''}`,
+    texte: () => `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).${stageUsable() ? ' Panneau, batterie et pompe se trouvent dans la maison : touche-la, puis ouvre « Bâtiments ».' : ''}`,
   },
   potager: {
     titre: '🌱 La zone de culture',
@@ -275,7 +281,7 @@ export function openAboutModal() {
     `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. Tu peux dormir (bouton « Zzz ») après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins ; à ${DATA.TIME.NIGHT_HOUR} h, la journée est finie et la nuit se déroule d'elle-même. L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
     `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
     `Santé : un besoin couvert à 100 % la remonte (${formatSigned(V[0].delta)}), sinon elle baisse (${V.slice(1).map((x) => formatSigned(x.delta)).join(', ')}). Une santé faible ralentit les actions au clic ; les automatisations restent à 100 %. À 0, un soin coûte ${formatNumber(F.SOIN.base)} 💰, +${formatNumber(F.SOIN.croissance - 100)} % par soin déjà payé (arrondi à l'entier supérieur).`,
-    `Énergie : panneaux → batteries → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
+    `Énergie : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
     `Marché : prix de vente fixes. Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient d'achat, chaque unité vendue en retire ${formatNumber(M.PAS)} (plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %).`,
     `Autonomie = énergie mangée produite par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
     `Arbre des technologies : ${Object.keys(DATA.techtree.noeuds).length} technologies en ${DATA.techtree.branches.length} branches, payées en points de technologie (chapitres terminés, jalons de maîtrise, mode libre) et en pièces. Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,

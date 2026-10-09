@@ -30,11 +30,11 @@
       {
         "titre": "L'eau et le soleil",
         "icone": "💧",
-        "intro": "Pompe de l'eau et range de l'énergie dans tes batteries : ce sont les deux ressources de la ferme. Tes conserves nourrissent la famille pour l'instant.",
+        "intro": "Pompe de l'eau et range de l'énergie dans ta batterie : ce sont les deux ressources de la ferme. Tes conserves nourrissent la famille pour l'instant.",
         "debloque": [],
         "objectifs": [
           { "type": "litres", "cible": 50, "libelle": "Pomper 50 L au total", "unite": "L" },
-          { "type": "wh", "cible": 3000, "libelle": "Stocker 3 000 Wh dans les batteries", "unite": "Wh" }
+          { "type": "wh", "cible": 3000, "libelle": "Stocker 3 000 Wh dans la batterie", "unite": "Wh" }
         ]
       },
       {
@@ -107,11 +107,11 @@
     "disponibles les éléments de `debloque` ; son objectif rempli, on passe au",
     "suivant. Le chapitre 7 rempli termine la campagne : mode libre, tout est",
     "débloqué. Un élément absent de tous les chapitres est disponible dès le départ",
-    "(Potager niveau 1, pompe, panneaux, batteries, Marché).",
+    "(Potager niveau 1, pompe, panneau, batterie, Marché).",
     "",
     "Objectifs (`type`) :",
     "  litres    : litres pompés au total ;",
-    "  wh        : record d'énergie stockée dans les batteries, en Wh ;",
+    "  wh        : record d'énergie stockée dans la batterie, en Wh ;",
     "  carottes  : carottes récoltées au total ;",
     "  autonomie : autonomie de la dernière nuit, en % ;",
     "  pontes    : nuits de ponte d'affilée (au moins un œuf pondu) ;",

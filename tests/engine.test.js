@@ -16,7 +16,7 @@ import {
   batteryCapacity, bedtimeDue, boltingPlan, boltSeedYield, botBuy, botDay, botFarm, botFieldTarget, botHeal, botIsFieldCrop, botMill,
   botRaiseFunds, botRecipeValue, botSell, botSheep, botStepInfo, botWheatKept, buildCatalog, buildFridge,
   buildMorningReport, buildPaturage, buildPoulailler, buildSerre, buildSilo, buildStation, buildVerger,
-  buyAnimal, buyAnimals, buyCow, buyDevice, buyItem, buyOrchardSlot, buyPasture, buyPrice, buyQuote,
+  buyAnimal, buyAnimals, buyCow, buyItem, buyOrchardSlot, buyPasture, buyPrice, buyQuote,
   buySheep, buyTech, buyTree, cancelMilling, cancelQueued, canSleep, careCost, chapterProgress,
   chapterReached, checkMastery, childCount, cleanFirstName, clockHours, completeChapter, CONSUMERS,
   coopCapacity, coopUpgradeCost, countItem, cowCapacity, cowCount, cowPlaces, createInitialState,
@@ -35,10 +35,10 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, openZone2, holdStatus, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, openZone2, holdStatus, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
-  productionItemKeys, productivity, purchasePrice, queueCapacity, rainNight, randomInt, RAW_DATA,
+  productionItemKeys, productivity, queueCapacity, rainNight, randomInt, RAW_DATA,
   rawAverageHealth, readMail, readyCrops, recipeNode, recipeStatus, recipeTime, recipeUnlocked, recordNight,
   removeMember, removePet, repairCost, repairDevice, reservableItems, routineDue, scaleEnergie,
   seedItem, seedStock, sellableCount, sellItem, sellPrice, serreUpgradeCost,
@@ -47,7 +47,7 @@ import {
   simulatePlay, simulationReach, skipTutorial, sleep, spend, spoil, stableFree, stableOccupied, startFarm,
   startHousehold, startLot4, startLot5, startLot6, startMilling, startRecipe, STATE_VERSION, storeEnergy,
   storeWheat, strawMissing, strawNeed, strawStock, takeItem, takeMeal, tankCapacity, taskTimeLeft,
-  techPoints, techPrereqs, techProgress, techStatus, testAddDevice, testAddEggs, testAddFlour, testAddFood,
+  techPoints, techPrereqs, techProgress, techStatus, testAddEggs, testAddFlour, testAddFood,
   testAddHens, testAddOil, testAddPieces, testAddSeeds, testAddSheep, testAddStraw, testAddWheat,
   testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
   testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
@@ -221,40 +221,73 @@ const kwh = (n) => Math.round(n * 1e6);
 const ml = (n) => Math.round(n * 1000);
 
 // État de test : seul le panneau produit, la pompe est coupée (sauf demande).
-function farm({ pump = false } = {}) {
+// Version 1.6 : le panneau ne produit qu'au soleil (7 h – 19 h). La partie de test
+// commence à 7 h (`sun`), pour que les tests de flux d'énergie produisent dès le
+// premier tick ; `sun: false` la laisse à 6 h, l'heure du réveil.
+function farm({ pump = false, sun = true } = {}) {
   const s = createInitialState(1);
   s.pompe.allume = pump;
+  if (sun) s.awakeMs = awakeMsAtHour(DATA.SOLEIL.DEBUT);
   return s;
 }
 
-test('DATA : grilles par niveau, coûts et départ', () => {
-  assertEqual(DATA.GRID.panneau.whParS, [30, 50, 80, 120, 180]);
-  assertEqual(DATA.GRID.batterie.wh, [5000, 10000, 20000, 40000, 80000]);
+test('DATA : grilles par niveau, coûts et départ (version 1.6 : un panneau, une batterie)', () => {
+  assertEqual(DATA.GRID.panneau.whParS, [40, 90, 160, 260, 400]);
+  assertEqual(DATA.GRID.batterie.wh, [6000, 15000, 30000, 60000, 100000]);
   assertEqual(DATA.GRID.pompe.litresPerS, [1, 2, 4, 6, 10]);
-  assertEqual(DATA.GRID.pompe.reservoirL, [40, 80, 160, 300, 500]);
-  assertEqual(DATA.UPGRADE_COST.slice(1), [40, 100, 250, 600]);
+  assertEqual(DATA.GRID.reservoir.litres, [40, 80, 160, 300, 500]);
+  assertEqual(DATA.UPGRADE_COST, {
+    panneau: [0, 150, 400, 900, 2000], batterie: [0, 180, 450, 1000, 2200],
+    pompe: [0, 100, 250, 600, 1300], reservoir: [0, 120, 300, 700, 1500],
+  });
+  assertEqual(DATA.SOLEIL, { DEBUT: 7, FIN: 19 });
+  assertEqual(DATA.PURCHASE, undefined, 'plus d\'achat d\'appareil supplémentaire');
   const s = createInitialState(1);
   assertEqual(s.panneaux.length, 1);
   assertEqual(s.batteries.length, 1);
   assertEqual(s.panneaux[0].niveau, 1);
   assertEqual(s.batteries[0].niveau, 1);
   assertEqual(s.pompe.niveau, 1);
+  assertEqual(s.reservoir, { niveau: 1 });
+  assertEqual('compteurs' in s, false);
   assertEqual(tankCapacity(s), ml(40));
   assertEqual(s.eauMl, ml(0));
 });
 
-test('production : un panneau de niveau 1 produit 0,03 kWh/s', () => {
+test('production : un panneau de niveau 1 produit 0,04 kWh/s au soleil', () => {
   const s = farm();
   tick(s, 10);
-  assertEqual(s.batteries[0].chargeMwh, kwh(0.3), `charge ${s.batteries[0].chargeMwh}`);
-  assertEqual(s.jour.produite, kwh(0.3));
+  assertEqual(s.batteries[0].chargeMwh, kwh(0.4), `charge ${s.batteries[0].chargeMwh}`);
+  assertEqual(s.jour.produite, kwh(0.4));
+});
+
+test('soleil : le panneau ne produit qu\'entre 7 h et 19 h, au prorata d\'un pas à cheval', () => {
+  const H = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  const s = farm({ sun: false }); // 6 h
+  tick(s, 10);
+  assertEqual([s.batteries[0].chargeMwh, s.panneaux[0].prod], [0, 0], 'avant 7 h : rien');
+  const t = farm({ sun: false });
+  t.awakeMs = H - 5000; // 6 h 43 : 5 s avant 7 h
+  tick(t, 10);
+  assertEqual(t.batteries[0].chargeMwh, kwh(0.2), '5 s de soleil sur 10');
+  assertEqual(t.panneaux[0].prod, kwh(0.02), 'puissance moyenne du pas');
+  const u = farm({ sun: false });
+  u.awakeMs = awakeMsAtHour(19) - 2000;
+  tick(u, 10);
+  assertEqual(u.batteries[0].chargeMwh, kwh(0.08), '2 s de soleil avant 19 h');
+  tick(u, 10);
+  assertEqual(u.batteries[0].chargeMwh, kwh(0.08), 'le soir : plus rien');
+  // une journée entière de l'horloge : 12 heures de soleil, et de même le lendemain
+  assertEqual([sunlitMs(0, H), sunlitMs(H, 1000), sunlitMs(0, 24 * H), sunlitMs(24 * H, 24 * H), sunlitMs(13 * H, 11 * H)], [0, 1000, 12 * H, 12 * H, 0]);
+  assertEqual(sunlitMs(12 * H, 2 * H), H, 'de 18 h à 20 h : une heure de soleil');
+  assertEqual(deviceStatus(s, s.panneaux[0]).code, 'marche', 'la nuit, il est en marche mais ne produit rien');
 });
 
 test('production réduite par l\'usure (rendement = 100 − ⌊usure ÷ 2⌋ %)', () => {
   const s = farm();
   s.panneaux[0].usure = 50; // rendement 75 %
   tick(s, 10);
-  assertEqual(s.batteries[0].chargeMwh, kwh(0.03 * 0.75 * 10), `charge ${s.batteries[0].chargeMwh}`);
+  assertEqual(s.batteries[0].chargeMwh, kwh(0.04 * 0.75 * 10), `charge ${s.batteries[0].chargeMwh}`);
   const t = farm();
   t.panneaux[0].usure = 99; // presque en panne : rendement 51 %
   assertEqual(efficiency(t.panneaux[0]), 51);
@@ -272,48 +305,22 @@ test('un panneau éteint ne produit rien', () => {
 test('capacité utile d\'une batterie = capacité × rendement', () => {
   const s = farm();
   s.batteries[0].usure = 99; // rendement 51 %
-  s.panneaux[0].niveau = 5; // 180 Wh/s
-  tick(s, 100); // 18 000 Wh produits, capacité utile 5 000 × 51 % = 2 550 Wh
-  assertEqual(s.batteries[0].chargeMwh, kwh(2.55), `charge ${s.batteries[0].chargeMwh}`);
+  s.panneaux[0].niveau = 5; // 400 Wh/s
+  tick(s, 100); // 40 000 Wh produits, capacité utile 6 000 × 51 % = 3 060 Wh
+  assertEqual(s.batteries[0].chargeMwh, kwh(3.06), `charge ${s.batteries[0].chargeMwh}`);
 });
 
-test('remplissage des batteries dans l\'ordre de la liste', () => {
+test('batterie : elle se remplit jusqu\'à sa capacité, rend ce qu\'elle a, coupée elle garde sa charge', () => {
   const s = farm();
-  s.pieces = 1000;
-  buyDevice(s, 'batterie');
-  const [b1, b2] = s.batteries;
-  const rest = storeEnergy(s, kwh(7));
-  assertEqual(rest, 0);
-  assertEqual(b1.chargeMwh, kwh(5), `b1 ${b1.chargeMwh}`);
-  assertEqual(b2.chargeMwh, kwh(2), `b2 ${b2.chargeMwh}`);
-  storeEnergy(s, kwh(1));
-  assertEqual(b2.chargeMwh, kwh(3));
-});
-
-test('décharge en sens inverse : la dernière remplie se vide la première', () => {
-  const s = farm();
-  s.pieces = 1000;
-  buyDevice(s, 'batterie');
-  const [b1, b2] = s.batteries;
-  storeEnergy(s, kwh(7)); // b1 = 5, b2 = 2
-  const given = drawEnergy(s, kwh(3));
-  assertEqual(given, kwh(3));
-  assertEqual(b2.chargeMwh, kwh(0), `b2 ${b2.chargeMwh}`);
-  assertEqual(b1.chargeMwh, kwh(4), `b1 ${b1.chargeMwh}`);
-});
-
-test('une batterie coupée garde sa charge sans la rendre ni la recevoir', () => {
-  const s = farm();
-  s.pieces = 1000;
-  buyDevice(s, 'batterie');
-  const [b1, b2] = s.batteries;
-  storeEnergy(s, kwh(7));
-  toggleDevice(s, b2.id);
-  assertEqual(drawEnergy(s, kwh(10)), kwh(5), 'seule b1 peut rendre');
-  assertEqual(b2.chargeMwh, kwh(2), 'b2 garde sa charge');
-  assertEqual(storeEnergy(s, kwh(1)), kwh(0));
-  assertEqual(b2.chargeMwh, kwh(2), 'b2 ne reçoit rien');
-  assertEqual(b1.chargeMwh, kwh(1));
+  const [b] = s.batteries;
+  assertEqual(storeEnergy(s, kwh(7)), kwh(1), 'au-delà de 6 000 Wh : rendu à l\'appelant (perdu)');
+  assertEqual(b.chargeMwh, kwh(6));
+  assertEqual(drawEnergy(s, kwh(3)), kwh(3));
+  assertEqual(b.chargeMwh, kwh(3));
+  toggleDevice(s, b.id);
+  assertEqual(drawEnergy(s, kwh(10)), 0, 'coupée : elle ne rend rien');
+  assertEqual(storeEnergy(s, kwh(1)), kwh(1), 'ni ne reçoit');
+  assertEqual(b.chargeMwh, kwh(3), 'elle garde sa charge');
 });
 
 test('une batterie ne se décharge jamais d\'elle-même', () => {
@@ -328,11 +335,11 @@ test('énergie perdue quand tout est plein, et le rapport la signale', () => {
   const s = farm();
   testFillBatteries(s);
   tick(s, 10);
-  assertEqual(s.jour.perdue, kwh(0.3), `perdue ${s.jour.perdue}`);
-  assertEqual(s.flux.perdue, kwh(0.03));
+  assertEqual(s.jour.perdue, kwh(0.4), `perdue ${s.jour.perdue}`);
+  assertEqual(s.flux.perdue, kwh(0.04));
   s.awakeMs = 30000;
   const report = sleep(s);
-  assertEqual(report.energiePerdue, kwh(0.3), `rapport ${report.energiePerdue}`);
+  assertEqual(report.energiePerdue, kwh(0.4), `rapport ${report.energiePerdue}`);
   assertEqual(s.jour.perdue, 0);
 });
 
@@ -340,7 +347,7 @@ test('énergie perdue quand toutes les batteries sont coupées', () => {
   const s = farm();
   toggleDevice(s, 'batterie-1');
   tick(s, 10);
-  assertEqual(s.jour.perdue, kwh(0.3));
+  assertEqual(s.jour.perdue, kwh(0.4));
   assertEqual(s.batteries[0].chargeMwh, 0);
 });
 
@@ -367,20 +374,6 @@ test('pompe au prorata quand l\'énergie manque', () => {
   assertEqual(deviceStatus(s, s.pompe).code, 'attente');
 });
 
-test('pompe : l\'énergie est prise dans les batteries en sens inverse', () => {
-  const s = farm({ pump: true });
-  toggleDevice(s, 'panneau-1');
-  s.pieces = 1000;
-  buyDevice(s, 'batterie');
-  s.batteries[0].chargeMwh = kwh(5);
-  s.batteries[1].chargeMwh = kwh(2);
-  tick(s, 10); // 0,1 kWh
-  assertEqual(s.batteries[1].chargeMwh, kwh(1.9), `b2 ${s.batteries[1].chargeMwh}`);
-  assertEqual(s.batteries[0].chargeMwh, kwh(5));
-  assertEqual(s.batteries[1].sortie, kwh(0.01), 'la batterie en décharge affiche la puissance soutirée');
-  assertEqual(deviceStatus(s, s.batteries[1]).code, 'decharge');
-});
-
 test('pompe à l\'arrêt si le réservoir est plein : rien consommé, aucune usure', () => {
   const s = farm({ pump: true });
   toggleDevice(s, 'panneau-1');
@@ -401,15 +394,22 @@ test('le réservoir ne dépasse jamais sa capacité', () => {
   assertEqual(s.eauMl, ml(40));
 });
 
-test('le réservoir suit le niveau de la pompe', () => {
+test('le réservoir a ses propres niveaux : 120 / 300 / 700 / 1 500 💰', () => {
   const s = farm();
-  s.pieces = 1000;
+  s.pieces = 10000;
+  assert(upgradeDevice(s, 'pompe').ok);
+  assertEqual(tankCapacity(s), ml(40), 'la pompe ne l\'agrandit plus');
+  const costs = [];
   for (const cap of [80, 160, 300, 500]) {
-    assert(upgradeDevice(s, 'pompe').ok);
+    costs.push(upgradeTank(s).cost);
     assertEqual(tankCapacity(s), ml(cap));
   }
-  assertEqual(upgradeDevice(s, 'pompe').ok, false);
-  assertEqual(DATA.GRID.pompe.litresPerS[s.pompe.niveau - 1], 10);
+  assertEqual(costs, [120, 300, 700, 1500]);
+  assertEqual(upgradeTank(s).ok, false, 'niveau 5 : maximum');
+  const t = farm();
+  t.pieces = 119;
+  assertEqual([upgradeTank(t).ok, t.reservoir.niveau, t.pieces], [false, 1, 119]);
+  assertEqual(DATA.GRID.pompe.litresPerS[s.pompe.niveau - 1], 2);
 });
 
 test('usure : +1 point toutes les 2 heures de fonctionnement (60 s)', () => {
@@ -460,62 +460,32 @@ test('seuil « à entretenir » à 70 % d\'usure', () => {
   assertEqual(energyStats(s).panneauxAEntretenir, 1);
 });
 
-test('coûts d\'achat croissants : 60, 72, 87 (panneau) et 80, 96 (batterie)', () => {
-  // 60 × 1,2ⁿ arrondi à l'entier supérieur : 86,4 → 87 ; 103,68 → 104.
-  assertEqual([0, 1, 2].map((n) => purchasePrice('panneau', n)), [60, 72, 87]);
-  assertEqual([0, 1].map((n) => purchasePrice('batterie', n)), [80, 96]);
-  const s = farm();
-  s.pieces = 10000;
-  const paid = [];
-  for (let i = 0; i < 3; i++) paid.push(buyDevice(s, 'panneau').price);
-  // le premier achat compte l'appareil de départ déjà possédé (n = 1)
-  assertEqual(paid, [72, 87, 104]);
-  assertEqual(s.panneaux.length, 4);
-  assertEqual(s.panneaux[3].prix, 104);
-  assertEqual(s.pieces, 10000 - 72 - 87 - 104);
-});
-
-test('achat refusé sans pièces, sans rien débiter', () => {
-  const s = farm();
-  s.pieces = 10;
-  const r = buyDevice(s, 'panneau');
-  assertEqual(r.ok, false);
-  assertEqual(s.pieces, 10);
-  assertEqual(s.panneaux.length, 1);
-  assertEqual(buyDevice(s, 'moulin').ok, false);
-});
-
-test('améliorer : coûts 40 / 100 / 250 / 600, refus sans pièces et au niveau 5', () => {
+test('améliorer : coûts propres à chaque appareil, refus sans pièces et au niveau 5', () => {
   const s = farm();
   s.pieces = 10;
   assertEqual(upgradeDevice(s, 'panneau-1').ok, false);
   assertEqual(s.panneaux[0].niveau, 1);
-  s.pieces = 1000;
+  s.pieces = 3460;
   const costs = [];
   for (let i = 0; i < 4; i++) costs.push(upgradeDevice(s, 'panneau-1').cost);
-  assertEqual(costs, [40, 100, 250, 600]);
+  assertEqual(costs, [150, 400, 900, 2000]);
   assertEqual(s.panneaux[0].niveau, 5);
   assertEqual(s.pieces, 10);
   assertEqual(upgradeDevice(s, 'panneau-1').ok, false);
   assertEqual(upgradeDevice(s, 'inconnu').ok, false);
-});
-
-test('un appareil amélioré est indépendant des autres', () => {
-  const s = farm();
-  s.pieces = 1000;
-  buyDevice(s, 'panneau');
-  upgradeDevice(s, 'panneau-2');
-  assertEqual(s.panneaux[0].niveau, 1);
-  assertEqual(s.panneaux[1].niveau, 2);
+  s.pieces = 100000;
+  const cost = (id) => { const c = []; for (let i = 0; i < 4; i++) c.push(upgradeDevice(s, id).cost); return c; };
+  assertEqual(cost('batterie-1'), [180, 450, 1000, 2200]);
+  assertEqual(cost('pompe'), [100, 250, 600, 1300]);
   tick(s, 10);
-  assertEqual(s.batteries[0].chargeMwh, kwh((0.03 + 0.05) * 10));
+  assertEqual(s.panneaux[0].prod, kwh(0.4), 'niveau 5 : 400 Wh/s');
 });
 
 test('entretien 20 % et réparation 50 % du prix d\'achat', () => {
   const s = farm();
   s.pieces = 1000;
-  buyDevice(s, 'panneau'); // payé 72
-  const p = s.panneaux[1];
+  const p = s.panneaux[0];
+  p.prix = 72; // un appareil payé 72 (le panneau de départ est offert)
   assertEqual(maintainCost(p), 15, '20 % de 72 = 14,4, arrondi à 15');
   assertEqual(repairCost(p), 36);
   // entretien : remet l'usure à 0
@@ -540,9 +510,8 @@ test('entretien 20 % et réparation 50 % du prix d\'achat', () => {
 
 test('entretien et réparation refusés sans pièces', () => {
   const s = farm();
-  s.pieces = 1000;
-  buyDevice(s, 'batterie'); // payée 96
-  const b = s.batteries[1];
+  const b = s.batteries[0];
+  b.prix = 96; // une batterie payée 96
   b.usure = 50;
   s.pieces = 5;
   assertEqual(maintainDevice(s, b.id).ok, false);
@@ -572,7 +541,7 @@ test('interrupteur : allume et éteint, id inconnu refusé', () => {
 });
 
 test('heure : suit le temps d\'éveil, 6 h au réveil, +1 h toutes les 18 s', () => {
-  const s = farm();
+  const s = farm({ sun: false });
   assertEqual(DATA.TIME.CLOCK_SECONDS_PER_HOUR, 18);
   const H = 18000;
   assertEqual(hourOfDay(s), 6);
@@ -638,7 +607,7 @@ test('horloge : l\'heure affichée ne change ni l\'usure ni le sommeil', () => {
 });
 
 test('heure : 90 ticks de 0,2 s font bien une heure de jeu (flottants)', () => {
-  const s = farm();
+  const s = farm({ sun: false });
   for (let i = 0; i < 89; i++) tick(s, 0.2);
   assertEqual(hourOfDay(s), 6);
   tick(s, 0.2);
@@ -680,21 +649,19 @@ test('sleep conserve l\'énergie stockée et l\'eau (la nuit ne produit rien)', 
 
 test('rapport de réveil : nuit, énergie, eau, appareils à entretenir ou en panne', () => {
   const s = farm();
-  s.pieces = 1000;
-  buyDevice(s, 'panneau');
   s.panneaux[0].usure = 75;
-  testSetWear(s, 'panneau-2', 100);
+  testSetWear(s, 'pompe', 100);
   s.eauMl = ml(8);
   testFillBatteries(s);
   s.awakeMs = 30000;
   const r = sleep(s);
   assertEqual(r.nuit, 2);
-  assertEqual(r.energie, kwh(5));
-  assertEqual(r.capacite, kwh(5));
+  assertEqual(r.energie, kwh(6));
+  assertEqual(r.capacite, kwh(6));
   assertEqual(r.eau, ml(8));
   assertEqual(r.capaciteEau, ml(40));
   assertEqual(r.aEntretenir.map((d) => d.id), ['panneau-1']);
-  assertEqual(r.enPanne.map((d) => d.id), ['panneau-2']);
+  assertEqual(r.enPanne.map((d) => d.id), ['pompe']);
   assertEqual(s.report, r);
 });
 
@@ -717,17 +684,15 @@ test('ordre des étapes nocturnes : dans l\'ordre, avant le changement de jour',
   }
 });
 
-test('mode test : ajout d\'appareils, remplissages, usure, nuits', () => {
+test('mode test : appareils au niveau 5, remplissages, usure, nuits', () => {
   const s = farm();
-  testAddDevice(s, 'panneau');
-  testAddDevice(s, 'batterie');
-  assertEqual(s.panneaux.length, 2);
-  assertEqual(s.batteries.length, 2);
+  for (const id of ['panneau', 'batterie', 'pompe', 'reservoir']) assert(testSetBuildingLevel5(s, id).ok, id);
+  assertEqual([s.panneaux[0].niveau, s.batteries[0].niveau, s.pompe.niveau, s.reservoir.niveau], [5, 5, 5, 5]);
   assertEqual(s.pieces, 350);
   testFillBatteries(s);
-  assertEqual(energyStats(s).charge, kwh(10));
+  assertEqual(energyStats(s).charge, kwh(100));
   testFillTank(s);
-  assertEqual(s.eauMl, ml(40));
+  assertEqual(s.eauMl, ml(500));
   testSetWear(s, 'pompe', 100);
   assertEqual(isBroken(s.pompe), true);
   testSleepNights(s, 5);
@@ -735,20 +700,12 @@ test('mode test : ajout d\'appareils, remplissages, usure, nuits', () => {
   assertEqual(s.awakeMs, 0);
 });
 
-test('un id ne se réutilise jamais après un achat', () => {
-  const s = farm();
-  s.pieces = 1000;
-  buyDevice(s, 'batterie');
-  buyDevice(s, 'batterie');
-  const ids = s.batteries.map((b) => b.id);
-  assertEqual(ids, ['batterie-1', 'batterie-2', 'batterie-3']);
-});
-
 test('sérialisation JSON aller-retour avec le parc et après plusieurs ticks', () => {
   const s = createInitialState(9);
-  s.pieces = 500;
-  buyDevice(s, 'panneau');
-  buyDevice(s, 'batterie');
+  s.pieces = 5000;
+  upgradeDevice(s, 'panneau-1');
+  upgradeTank(s);
+  s.awakeMs = awakeMsAtHour(7) - 10000; // le soleil se lève pendant ces ticks
   for (let i = 0; i < 100; i++) tick(s, 0.2);
   const copy = JSON.parse(JSON.stringify(s));
   assertEqual(copy, s);
@@ -2939,7 +2896,7 @@ test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni
   // Constructions, améliorations, animaux, arbres, soins : hors périmètre.
   assertEqual([DATA.POULAILLER.CONSTRUCTION, DATA.SERRE.CONSTRUCTION, DATA.FRIGO.CONSTRUCTION], [40, 400, 600]);
   assertEqual(DATA.STATIONS.four.cout, 100);
-  assertEqual(DATA.UPGRADE_COST, [0, 40, 100, 250, 600]);
+  assertEqual(DATA.UPGRADE_COST.panneau, [0, 150, 400, 900, 2000]);
   assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.mouton.prix, DATA.ANIMAUX.vache.prix], [15, 60, 200]);
   assertEqual([DATA.VERGER.ARBRES.pommier.prix, DATA.VERGER.ARBRES.poirier.prix], [40, 40]);
   assertEqual(DATA.FAMILY.SOIN.base, 20);
@@ -3249,11 +3206,11 @@ test('arbre v2 : effets sur l\'énergie (usure, délestage, frigo, panneaux orie
   assertEqual(s.panneaux[0].usure, 1);
   // Panneaux orientables : +10 % toute l'année (version 1.6 : plus d'hiver)
   const h = farm();
-  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.03));
+  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.04));
   grantTech(h, 'en_hiver');
-  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.033));
+  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.044));
   h.day = 31;
-  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.033), 'le même chaque nuit');
+  assertEqual(panelOutput(h.panneaux[0], h), kwh(0.044), 'le même chaque nuit');
   // Réfrigérateur basse consommation : 70 %
   const f = coldRoom();
   const avant = fridgeRate(f);
@@ -3270,7 +3227,7 @@ test('arbre v2 : effets sur l\'énergie (usure, délestage, frigo, panneaux orie
   const d = farm({ pump: true });
   toggleDevice(d, 'panneau-1');
   grantTech(d, 'en_delestage');
-  d.batteries[0].chargeMwh = kwh(0.4); // 8 % de 5 000 Wh
+  d.batteries[0].chargeMwh = kwh(0.5); // 8 % de 6 000 Wh
   tick(d, 1);
   assertEqual([d.eauMl, loadShedding(d)], [0, true]);
   d.batteries[0].chargeMwh = kwh(1);
@@ -3282,8 +3239,8 @@ test('arbre v2 : entretien automatique et eau de pluie la nuit', () => {
   const s = farm();
   s.pieces = 1000;
   setInv(s, { conserve: 200 });
-  buyDevice(s, 'panneau'); // payé 72
-  s.panneaux[1].usure = 75;
+  s.pompe.prix = 72; // une pompe payée 72
+  s.pompe.usure = 75;
   s.panneaux[0].usure = 75; // appareil de départ : entretien gratuit
   s.awakeMs = 30000;
   let r = sleep(s);
@@ -3292,8 +3249,8 @@ test('arbre v2 : entretien automatique et eau de pluie la nuit', () => {
   const pieces = s.pieces;
   s.awakeMs = 30000;
   r = sleep(s);
-  assertEqual(r.entretiens.map((e) => [e.id, e.cost]), [['panneau-1', 0], ['panneau-2', 15]]);
-  assertEqual([s.panneaux[0].usure, s.panneaux[1].usure, pieces - s.pieces], [0, 0, 15]);
+  assertEqual(r.entretiens.map((e) => [e.id, e.cost]), [['panneau-1', 0], ['pompe', 15]]);
+  assertEqual([s.panneaux[0].usure, s.pompe.usure, pieces - s.pieces], [0, 0, 15]);
   // pluie : 15 L chaque nuit, dans la limite du réservoir
   grantTech(s, 'ea_pluie');
   s.eauMl = ml(30);
@@ -3414,7 +3371,7 @@ test('arbre v2 : arrosage prioritaire quand l\'eau manque', () => {
 });
 
 test('arbre v2 : Routine familiale (réglage « Dormir tout seul »)', () => {
-  const s = farm();
+  const s = farm({ sun: false });
   assertEqual(setRoutine(s, true).ok, false, 'sans le nœud');
   assertEqual(routineDue(s), false);
   grantTech(s, 'fa_routine');
@@ -3700,7 +3657,7 @@ test('Moulin : 1 blé → 1 farine et 1 paille en 5 s, 0,02 kWh/s pris sur les b
   runFor(s, 0.4);
   assertEqual([countItem(s, 'farine'), countItem(s, 'paille')], [1, 1], '1 blé donne 1 farine et 1 paille');
   assertEqual(s.stations.moulin.tache, null);
-  assertEqual(s.batteries[0].chargeMwh, kwh(5 - 0.1), `5 s × 0,02 = 0,1 kWh : ${s.batteries[0].chargeMwh}`);
+  assertEqual(s.batteries[0].chargeMwh, kwh(6 - 0.1), `5 s × 0,02 = 0,1 kWh : ${s.batteries[0].chargeMwh}`);
   tick(s, 0.2);
   assertEqual(s.stations.moulin.appareil.conso, 0, 'libre : il ne consomme plus');
 });
@@ -3717,17 +3674,6 @@ test('Moulin : le blé se prend d\'abord dans l\'inventaire, puis dans le Silo',
   s.silo.ble = 0;
   s.stations.moulin.tache = null;
   assertEqual(startMilling(s, 1).ok, false, 'plus de blé du tout');
-});
-
-test('Moulin : mêmes règles que la pompe, batteries vidées en sens inverse', () => {
-  const s = atelier();
-  testAddDevice(s, 'batterie');
-  testFillBatteries(s);
-  setInv(s, { ble: 1 });
-  startMilling(s, 1);
-  runFor(s, 5.4);
-  assertEqual(s.batteries[1].chargeMwh, kwh(5 - 0.1), 'la dernière batterie remplie se vide d\'abord');
-  assertEqual(s.batteries[0].chargeMwh, kwh(5), 'la première reste pleine');
 });
 
 test('Moulin en pause quand l\'énergie manque, et il reprend quand elle revient', () => {
@@ -3767,7 +3713,7 @@ test('Moulin éteint : il ne progresse pas, ne consomme pas et ne s\'use pas', (
   assertEqual(s.stations.moulin.appareil.allume, false);
   runFor(s, 30);
   const m = s.stations.moulin;
-  assertEqual([m.appareil.usure, m.tache.resteMs, s.batteries[0].chargeMwh], [0, 5000, kwh(5)]);
+  assertEqual([m.appareil.usure, m.tache.resteMs, s.batteries[0].chargeMwh], [0, 5000, kwh(6)]);
   assertEqual(deviceStatus(s, m.appareil).code, 'arret');
   toggleDevice(s, 'moulin');
   runFor(s, 5.4);
@@ -3834,7 +3780,7 @@ test('Presse : 3 graines de tournesol → 1 huile en 10 s, 0,03 kWh/s', () => {
   assertEqual(s.stations.presse.appareil.conso, kwh(0.03));
   runFor(s, 0.4);
   assertEqual(countItem(s, 'huile'), 1);
-  assertEqual(s.batteries[0].chargeMwh, kwh(5 - 0.3), `10 s × 0,03 = 0,3 kWh : ${s.batteries[0].chargeMwh}`);
+  assertEqual(s.batteries[0].chargeMwh, kwh(6 - 0.3), `10 s × 0,03 = 0,3 kWh : ${s.batteries[0].chargeMwh}`);
   setInv(s, { graine_tournesol: 2 });
   assertEqual(startRecipe(s, 'huile').ok, false, 'il en faut 3');
 });
@@ -3846,7 +3792,7 @@ test('Moulin et Presse partagent les batteries : chacun tire sa part', () => {
   startRecipe(s, 'huile');
   runFor(s, 10.4);
   assertEqual([countItem(s, 'farine'), countItem(s, 'huile')], [1, 1]);
-  assertEqual(s.batteries[0].chargeMwh, kwh(5 - 0.1 - 0.3), `${s.batteries[0].chargeMwh}`);
+  assertEqual(s.batteries[0].chargeMwh, kwh(6 - 0.1 - 0.3), `${s.batteries[0].chargeMwh}`);
 });
 
 /* ---------- version 1.1 : le Moulin moud par quantité, et donne de la paille ---------- */
@@ -3875,7 +3821,7 @@ test('Moulin : moudre 3 blés donne 3 farines et 3 pailles, un blé après l\'au
   assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), millPending(s)], [3, 3, 0]);
   assertEqual([s.stations.moulin.tache, millTimeLeft(s), countItem(s, 'ble')], [null, 0, 2]);
   // 3 blés × 5 s × 0,02 kWh/s = 0,3 kWh : la même énergie que trois moutures séparées
-  assertEqual(s.batteries[0].chargeMwh, kwh(5 - 0.3));
+  assertEqual(s.batteries[0].chargeMwh, kwh(6 - 0.3));
   assertEqual(s.campagne.compteurs.plats, [], 'moudre n\'est pas préparer un plat');
 });
 
@@ -5170,10 +5116,10 @@ test('prérequis : palier, bâtiment, nœud précédent, PT et pièces', () => {
   assertEqual(buyTech(s, 'cu_recolte_auto').ok, true);
   assertEqual([s.pieces, techPoints(s).solde, techStatus(s, 'cu_recolte_auto')], [4000, 7, 'acquis']);
   assertEqual(buyTech(s, 'cu_recolte_auto').ok, false, 'déjà acquis : pas de deuxième paiement');
-  // prérequis « construit » et « appareils »
+  // prérequis « construit » et niveau d'un appareil (version 1.6 : batterie niveau 2)
   assertEqual(techPrereqs(s, 'el_ration').map((p) => p.ok), [true, false], 'Poulailler à construire');
-  assertEqual(techPrereqs(s, 'en_delestage').slice(2).map((p) => p.ok), [false], '2 batteries');
-  s.batteries.push(makeDevice('batterie', 'batterie-2', 80));
+  assertEqual(techPrereqs(s, 'en_delestage').slice(2).map((p) => [p.ok, p.texte]), [[false, '🔋 Batterie niveau 2']]);
+  s.batteries[0].niveau = 2;
   assertEqual(techPrereqs(s, 'en_delestage')[2].ok, true);
   // PT insuffisants
   techPoints(s).solde = 0;
@@ -5277,10 +5223,11 @@ test('progression affichée dans l\'arbre : niveaux des bâtiments et appareils'
   assertEqual([DATA.techtree.batiments.champ, DATA.techtree.suivi.champ], [undefined, undefined]);
   assertEqual(DATA.techtree.batiments.potager.nom, 'Zone de culture');
   const energie = techProgress(s, 'energie');
-  assertEqual(energie.map((e) => [e.cle, e.niveaux]), [['panneau', [1]], ['batterie', [1]]]);
+  assertEqual(energie.map((e) => [e.cle, e.type, e.niveau]), [['panneau', 'niveau', 1], ['batterie', 'niveau', 1]]);
   s.panneaux[0].niveau = 3;
-  assertEqual(techProgress(s, 'energie')[0].niveaux, [3]);
-  assertEqual(techProgress(s, 'eau')[0].niveau, 1);
+  assertEqual(techProgress(s, 'energie')[0].niveau, 3);
+  s.reservoir.niveau = 2;
+  assertEqual(techProgress(s, 'eau').map((e) => [e.cle, e.niveau]), [['pompe', 1], ['reservoir', 2]]);
   assertEqual(techProgress(s, 'famille'), []);
   const cuisine = techProgress(s, 'cuisine')[0];
   assertEqual(cuisine.ateliers.map((a) => a.construit), [false, false, false, false]);
@@ -5963,7 +5910,7 @@ test('version 1.6 : plus de saisons, la même production toute l\'année', () =>
     const rep = sleepOnce(p);
     return [f.panneaux[0].prod, carottes, (eau - g.eauMl) / 1000, harvestYield(g, 'carotte', true), p.paturage.moutons.map((m) => m.laine), rep.lait];
   };
-  for (const day of [1, 11, 21, 31, 41]) assertEqual(nightAt(day), [kwh(0.03), 10, 2, 10, [1, 1], 1], `nuit ${day}`);
+  for (const day of [1, 11, 21, 31, 41]) assertEqual(nightAt(day), [kwh(0.04), 10, 2, 10, [1, 1], 1], `nuit ${day}`);
   assertEqual([waterCostFor(ranch(), 'ble'), waterCostFor(ranch(), 'riz')], [2, 4], 'l\'eau de la culture, sans facteur');
   const s = garden();
   sleepOnce(s);
@@ -6245,15 +6192,12 @@ test('Réfrigérateur : consommation 5 Wh/s + 50 mWh/s par unité, prise dans le
   assertEqual(deviceStatus(s, d).code, 'marche');
 });
 
-test('Réfrigérateur : batteries en sens inverse, et il passe avant la pompe', () => {
+test('Réfrigérateur : il tire sur la batterie, et il passe avant la pompe', () => {
   assertEqual(CONSUMERS[0].id, 'frigo');
   const s = coldRoom();
-  testAddDevice(s, 'batterie');
   s.batteries[0].chargeMwh = kwh(1);
-  s.batteries[1].chargeMwh = kwh(1);
   runFor(s, 10);
-  assertEqual(s.batteries[1].chargeMwh, kwh(1 - 0.05), 'la dernière se vide d\'abord');
-  assertEqual(s.batteries[0].chargeMwh, kwh(1));
+  assertEqual(s.batteries[0].chargeMwh, kwh(1 - 0.05));
 });
 
 test('Réfrigérateur : s\'arrête quand les batteries sont vides', () => {
@@ -6724,7 +6668,7 @@ test('compteurs : litres pompés au total, record de kWh stockés', () => {
   testFillBatteries(s);
   tick(s, 0.2);
   const record = s.campagne.compteurs.mwhMax;
-  assert(record > kwh(4.99) && record <= kwh(5), `record ${record}`);
+  assert(record > kwh(5.99) && record <= kwh(6), `record ${record}`);
   testEmptyBatteries(s);
   runFor(s, 1);
   assertEqual(s.campagne.compteurs.mwhMax, record, 'un record ne redescend pas');
@@ -7098,6 +7042,35 @@ test('tenue : état du suivi pour l\'interface', () => {
   assertEqual(holdStatus(atChapter(5)).etat, 'attente', 'avant le chapitre 6 : rien n\'est suivi');
 });
 
+test('migration v23 → v24 (version 1.6) : un seul panneau, une seule batterie, un réservoir à niveaux', () => {
+  const old = createInitialState(1);
+  old.version = 23;
+  old.pieces = 100;
+  old.compteurs = { panneau: 3, batterie: 2 };
+  delete old.reservoir;
+  old.pompe.niveau = 3;
+  old.panneaux = [
+    { ...makeDevice('panneau', 'panneau-1', 0), niveau: 2, usure: 40 },
+    { ...makeDevice('panneau', 'panneau-2', 72), niveau: 3, usure: 10 },
+    { ...makeDevice('panneau', 'panneau-3', 87), niveau: 3, usure: 5 },
+  ];
+  old.batteries = [
+    { ...makeDevice('batterie', 'batterie-1', 0), chargeMwh: kwh(4) },
+    { ...makeDevice('batterie', 'batterie-2', 96), chargeMwh: kwh(4) },
+  ];
+  const m = migrate({ v: 23, t: 0, s: old });
+  assertEqual(m.version, STATE_VERSION);
+  assertEqual(m.panneaux.map((p) => [p.id, p.niveau, p.usure, p.prix]), [['panneau-1', 3, 5, 87]], 'le plus haut niveau, puis le moins usé');
+  assertEqual(m.batteries.map((b) => [b.id, b.niveau]), [['batterie-1', 1]]);
+  assertEqual(m.batteries[0].chargeMwh, kwh(6), '8 000 Wh au total, plafonnés à 6 000');
+  assertEqual(m.pieces, 100 + 0 + 72 + 96, 'les appareils retirés sont remboursés');
+  assertEqual([m.reservoir, tankCapacity(m)], [{ niveau: 3 }, ml(160)], 'le réservoir garde sa capacité');
+  assertEqual('compteurs' in m, false);
+  m.awakeMs = awakeMsAtHour(8);
+  tick(m, 1);
+  assert(sleepOnce(m) !== null, 'la partie migrée continue');
+});
+
 test('migration v22 → v23 (version 1.6) : l\'hiver réussi devient la série réussie', () => {
   const old = createInitialState(1);
   old.version = 22;
@@ -7397,8 +7370,10 @@ test('Lot 10 : au chapitre du troupeau, le joueur automatique nourrit ses mouton
   const s = createInitialState(3);
   simulatePlay(s, 'applique', 22);
   testGoToChapter(s, 5);
-  const rows = simulatePlay(s, 'applique', 22);
-  assertEqual(rows.length, 22);
+  // version 1.6 : les améliorations coûtent plus cher (100 à 2 200 pièces), le
+  // chapitre se termine vers la 24ᵉ nuit au lieu de la 22ᵉ
+  const rows = simulatePlay(s, 'applique', 25);
+  assertEqual(rows.length, 25);
   assertEqual(s.stations.moulin.construit, true, 'il a construit le Moulin');
   assert(sheepCount(s) >= 3, `il a acheté ses moutons : ${sheepCount(s)}`);
   assert(s.campagne.compteurs.laines >= 10, `laines tondues : ${s.campagne.compteurs.laines}`);
@@ -7529,7 +7504,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
-  const s = farm({ pump: true });
+  const s = farm({ pump: true, sun: false });
   const avant = s.awakeMs;
   const r = simulateOffline(s, 20 * 3600);
   assertEqual([r.demande, r.simule, r.plafonne], [72000, 28800, true]);
@@ -7551,7 +7526,7 @@ test('Lot 11 : une durée nulle, négative ou invalide ne change rien', () => {
 });
 
 test('Lot 11 : le temps hors-ligne compte comme temps d\'éveil, par pas de 5 s', () => {
-  const s = farm();
+  const s = farm({ sun: false });
   assertEqual(canSleep(s), false);
   simulateOffline(s, 7);
   assertEqual(s.awakeMs, 7000, 'un pas de 5 s puis un de 2 s');
@@ -7622,14 +7597,14 @@ test('Lot 11 : le Moulin s\'arrête hors-ligne quand les batteries sont vides', 
 });
 
 test('Lot 11 : frigo en panne si la batterie s\'est vidée pendant l\'absence', () => {
-  const s = coldRoom(); // batterie pleine (5 000 Wh), panneau coupé
+  const s = coldRoom(); // batterie pleine (6 000 Wh), panneau coupé
   addItem(s, 'carotte', 100);
   assert(moveToFridge(s, 'carotte', 100).ok);
   const avant = fridgeLots(s, 'carotte')[0].nightsLeft;
-  // 5 + 100 × 0,05 = 10 Wh/s : 5 000 Wh tiennent 500 s sur 3 600.
+  // 5 + 100 × 0,05 = 10 Wh/s : 6 000 Wh tiennent 600 s sur 3 600.
   const r = simulateOffline(s, 3600);
   assertEqual(s.frigo.alimente, false, 'plus de courant au retour');
-  assert(near(r.frigo.horsTensionS, 3100, 5), `hors tension ${r.frigo.horsTensionS} s`);
+  assert(near(r.frigo.horsTensionS, 3000, 5), `hors tension ${r.frigo.horsTensionS} s`);
   assertEqual(r.frigo.alimente, false);
   assertEqual(r.energieFin, kwh(0), 'batteries vides');
   testFillBatteries(s); // le bloc de la nuit est couvert : seule l'absence compte
@@ -7686,7 +7661,8 @@ test('Lot 11 : hors-ligne, mêmes flux que le jeu, plafonnés par les capacités
 test('Lot 11 : la progression hors-ligne compte pour les objectifs du chapitre', () => {
   const s = createInitialState(1);
   assertEqual(s.campagne.chapitre, 1);
-  s.pompe.niveau = 2; // réservoir de 80 L : on peut pomper les 50 L de l'objectif
+  s.reservoir.niveau = 2; // réservoir de 80 L : on peut pomper les 50 L de l'objectif
+  // l'horloge s'arrête à l'éveil minimal (7 h 40), au soleil : le panneau produit
   simulateOffline(s, 2 * 3600); // 50 L pompés et 3 000 Wh stockés
   assert(s.campagne.compteurs.eauMl >= ml(50), 'litres comptés');
   assert(s.campagne.compteurs.mwhMax >= kwh(3), 'record d\'énergie');
@@ -8085,13 +8061,14 @@ test('version 1.1.3 : 22 h (288 s d\'éveil) rend la nuit due ; l\'aperçu d\'au
 });
 
 test('version 1.1.1 : horloge arrêtée (résumé du réveil ouvert), les flux tournent mais l\'heure n\'avance pas', () => {
-  const s = farm({ pump: true });
+  const s = farm({ pump: true }); // 7 h : au soleil
   const eau = s.eauMl;
+  const avant = s.awakeMs;
   tick(s, 5, true);
-  assertEqual(s.awakeMs, 0);
+  assertEqual(s.awakeMs, avant);
   assert(s.eauMl !== eau || s.jour.produite > 0, 'la ferme continue de produire');
   tick(s, 5);
-  assertEqual(s.awakeMs, 5000);
+  assertEqual(s.awakeMs, avant + 5000);
 });
 
 test('version 1.1.1 : hors-ligne, l\'horloge s\'arrête à l\'éveil minimal (ni repas ni nuit pendant l\'absence)', () => {

@@ -40,13 +40,19 @@ export const RAW_DATA = {
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
   "LEVEL_MAX": 5,
   "GRID": {
-    "panneau": { "whParS": [30, 50, 80, 120, 180] },
-    "batterie": { "wh": [5000, 10000, 20000, 40000, 80000], "pleine": 98 },
-    "pompe": { "litresPerS": [1, 2, 4, 6, 10], "reservoirL": [40, 80, 160, 300, 500] }
+    "panneau": { "whParS": [40, 90, 160, 260, 400] },
+    "batterie": { "wh": [6000, 15000, 30000, 60000, 100000], "pleine": 98 },
+    "pompe": { "litresPerS": [1, 2, 4, 6, 10] },
+    "reservoir": { "litres": [40, 80, 160, 300, 500] }
   },
-  "UPGRADE_COST": [0, 40, 100, 250, 600],
+  "SOLEIL": { "DEBUT": 7, "FIN": 19 },
+  "UPGRADE_COST": {
+    "panneau": [0, 150, 400, 900, 2000],
+    "batterie": [0, 180, 450, 1000, 2200],
+    "pompe": [0, 100, 250, 600, 1300],
+    "reservoir": [0, 120, 300, 700, 1500]
+  },
   "PUMP": { "WH_PAR_L": 10 },
-  "PURCHASE": { "panneau": { "base": 60, "growth": 120 }, "batterie": { "base": 80, "growth": 120 } },
   "WEAR": { "HEURES_PAR_POINT": 2, "EFFICIENCY_DIVISOR": 200, "SERVICE_THRESHOLD": 70, "BREAKDOWN": 100, "MAINTAIN_RATE": 20, "REPAIR_RATE": 50 },
   "FRIGO": { "CONSTRUCTION": 600, "BASE_WH_S": 5, "PAR_UNITE_MWH_S": 50, "BLOC_NUIT_S": 30, "SEUIL_ALIMENTE": 50, "PERTE_NUITS": 1 },
   "NUTRITION": { "AUGMENTATION": 125 },
@@ -577,12 +583,15 @@ export const RAW_DATA = {
       "paturage": { "nom": "Étable (moutons et vaches)", "icone": "🐑" },
       "four": { "nom": "Four", "icone": "🔥" },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊" },
-      "batterie": { "nom": "Batteries", "icone": "🔋" }
+      "batterie": { "nom": "Batterie", "icone": "🔋" },
+      "panneau": { "nom": "Panneau solaire", "icone": "☀️" },
+      "reservoir": { "nom": "Réservoir", "icone": "💧" }
     },
     "suivi": {
-      "panneau": { "type": "appareils", "nom": "Panneaux solaires", "icone": "☀️" },
-      "batterie": { "type": "appareils", "nom": "Batteries", "icone": "🔋" },
-      "pompe": { "type": "niveau", "nom": "Pompe et réservoir", "icone": "⛲" },
+      "panneau": { "type": "niveau", "nom": "Panneau solaire", "icone": "☀️" },
+      "batterie": { "type": "niveau", "nom": "Batterie", "icone": "🔋" },
+      "pompe": { "type": "niveau", "nom": "Pompe", "icone": "⛲" },
+      "reservoir": { "type": "niveau", "nom": "Réservoir", "icone": "💧" },
       "potager": { "type": "niveau", "nom": "Zone de culture", "icone": "🌱", "note": "arrosage et récolte automatiques" },
       "poulailler": { "type": "niveau", "nom": "Poulailler", "icone": "🐔", "note": "nourrissage automatique" },
       "silo": { "type": "niveau", "nom": "Silo", "icone": "🛖" },
@@ -590,7 +599,7 @@ export const RAW_DATA = {
     },
     "branches": [
       { "id": "energie", "nom": "Énergie", "icone": "⚡", "suivi": ["panneau", "batterie"] },
-      { "id": "eau", "nom": "Eau", "icone": "💧", "suivi": ["pompe"] },
+      { "id": "eau", "nom": "Eau", "icone": "💧", "suivi": ["pompe", "reservoir"] },
       { "id": "culture", "nom": "Culture", "icone": "🌱", "suivi": ["potager"] },
       { "id": "elevage", "nom": "Élevage", "icone": "🐔", "suivi": ["poulailler", "silo"] },
       { "id": "cuisine", "nom": "Cuisine", "icone": "🍳", "suivi": ["stations"] },
@@ -608,7 +617,7 @@ export const RAW_DATA = {
         "cout": 100,
         "requiert": [],
         "effet": { "usure": 75 },
-        "description": "Panneaux, batteries et appareils s'usent 25 % moins vite."
+        "description": "Le panneau, la batterie et les autres appareils s'usent 25 % moins vite."
       },
       "en_delestage": {
         "branche": "energie",
@@ -618,7 +627,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 1,
         "cout": 400,
-        "requiert": [{ "noeud": "en_entretien" }, { "appareil": "batterie", "nombre": 2 }],
+        "requiert": [{ "noeud": "en_entretien" }, { "batiment": "batterie", "niveau": 2 }],
         "effet": { "delestage": { "seuil": 10 } },
         "description": "Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte."
       },
@@ -656,7 +665,7 @@ export const RAW_DATA = {
         "cout": 800,
         "requiert": [{ "noeud": "en_entretien_auto" }],
         "effet": { "solaireBonus": 110 },
-        "description": "Les panneaux produisent 10 % de plus."
+        "description": "Le panneau produit 10 % de plus."
       },
       "ea_econome": {
         "branche": "eau",
@@ -1038,11 +1047,11 @@ export const RAW_DATA = {
       {
         "titre": "L'eau et le soleil",
         "icone": "💧",
-        "intro": "Pompe de l'eau et range de l'énergie dans tes batteries : ce sont les deux ressources de la ferme. Tes conserves nourrissent la famille pour l'instant.",
+        "intro": "Pompe de l'eau et range de l'énergie dans ta batterie : ce sont les deux ressources de la ferme. Tes conserves nourrissent la famille pour l'instant.",
         "debloque": [],
         "objectifs": [
           { "type": "litres", "cible": 50, "libelle": "Pomper 50 L au total", "unite": "L" },
-          { "type": "wh", "cible": 3000, "libelle": "Stocker 3 000 Wh dans les batteries", "unite": "Wh" }
+          { "type": "wh", "cible": 3000, "libelle": "Stocker 3 000 Wh dans la batterie", "unite": "Wh" }
         ]
       },
       {

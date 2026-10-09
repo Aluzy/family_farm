@@ -6,10 +6,11 @@
 > données dans les notes) sont marquées 🟡 : elles servent de base et doivent être
 > confirmées puis vérifiées avec `scripts/simulate.mjs`.
 >
-> **Rien n'est encore codé.** Quand ce document sera validé, il remplacera dans
-> [`conception.md`](conception.md) tout ce qui le contredit (saisons, santé, parc
-> d'appareils, chapitres, réfrigérateur illimité, Zone de culture à 5 niveaux). Le plan de
-> mise en œuvre est en section 12.
+> **Avancement (section 12)** : lot 1 (saisons retirées) et lot 2 (un panneau, une
+> batterie, soleil de 7 h à 19 h, réservoir à niveaux) sont codés, version 1.6 ; leurs
+> notes v27 et v28 dans [`conception.md`](conception.md) font foi. Le reste n'est pas
+> encore codé : quand il le sera, ce document remplacera dans `conception.md` tout ce qui
+> le contredit (santé, chapitres, réfrigérateur illimité, Zone de culture à 5 niveaux).
 
 Sommaire :
 
@@ -396,7 +397,7 @@ générer en code comme les ruines (`scripts/batiments/`), en découpant la bord
 
 ---
 
-## 8. Électricité : un panneau, une batterie
+## 8. Électricité : un panneau, une batterie ✅ (fait, version 1.6)
 
 - **Un seul panneau et une seule batterie**, qui montent de niveau ; plus d'achat
   d'appareil supplémentaire (supprimer `PURCHASE`).
@@ -504,7 +505,7 @@ change, et la mise à jour de `conception.md` et du README.
 | Lot | Contenu | Migration |
 |---|---|---|
 | 1 ✅ | **Saisons retirées** (moteur, données, carte, bandeau) — fait, version 1.6 | oui (format 23) |
-| 2 | **Un panneau, une batterie**, panneau de 7 h à 19 h, réservoir séparé ; « absence » sans électricité | oui (parc → un appareil, au plus haut niveau possédé) |
+| 2 ✅ | **Un panneau, une batterie**, panneau de 7 h à 19 h, réservoir séparé ; « absence » sans électricité — fait, version 1.6 | oui (format 24) |
 | 3 | **Niveaux et XP** : `state.xp`, `niveau()`, gains, déblocages par niveau (remplacent ceux des chapitres) | oui (XP estimée depuis le chapitre atteint) |
 | 4 | **Énergie, bonheur, endurance** ; santé et soins retirés | oui |
 | 5 | **Houe** : herbe / terre, 16 dessins, plafond de tuiles | oui (parcelles existantes = terre) |
@@ -579,3 +580,32 @@ Lecture :
   (a) baisser rendements ou calories ; (b) faire grandir la famille avec les niveaux
   (plus de bouches) ; (c) exiger aussi un bonheur minimum pendant les 7 jours, donc des
   plats variés et pas seulement des carottes. **(c)** colle le mieux à la v2.
+
+### 13.4 Simulation : 4, 8, 12 et 16 conserves
+
+Même joueur automatique, moteur version 1.6 (sans saisons, un panneau au soleil de 7 h à
+19 h), 60 nuits, graines 1 à 5. Les résultats sont identiques d'une graine à l'autre ;
+ils diffèrent un peu entre le joueur appliqué (60 s d'éveil par jour) et le joueur minimal
+(30 s).
+
+| Conserves | Fin des conserves | 1re nuit à 100 % | **100 % 7 nuits d'affilée** | Nuits sans rien à manger (60 nuits) | Santé mini |
+|---|---|---|---|---|---|
+| 4 | nuit 1 | nuit 5 | **jamais** | 29 (appliqué) · 35 (minimal) | 0 |
+| 8 | nuit 2 | nuit 5 | **jamais** | 27 · 25 | 0 |
+| 12 | nuit 2 | nuit 5 | **nuit 11** | 4 (nuits 3, 4, 47, 55) · 2 (nuits 3, 4) | 0 · 40 |
+| 16 | nuit 3 | nuit 5 | **nuit 11** | 1 (nuit 4) | 50 · 60 |
+
+Lecture :
+
+- **4 et 8 conserves : la partie ne s'en remet pas.** Deux ou trois nuits sans manger font
+  tomber la santé ; la santé basse ralentit les récoltes au clic, et la famille alterne
+  ensuite nuits nourries et nuits à jeun pendant toute la partie (jusqu'à une nuit sur
+  deux). Le jalon des 7 jours n'est jamais atteint en 60 nuits.
+- **12 conserves : limite.** La famille rate les repas des nuits 3 et 4, puis se
+  rétablit ; le joueur appliqué retombe deux fois plus tard.
+- **16 conserves : le minimum sûr**, avec une seule nuit sans repas (la 4ᵉ, juste avant
+  la première récolte). **24** couvrent les 4 nuits (13.3), **40** gardent une marge.
+- Avec la jauge d'énergie de la v2 (lot 4), la santé disparaît : une nuit à jeun ne fera
+  plus chuter les récoltes de la même façon, il faudra refaire cette simulation après ce
+  lot.
+

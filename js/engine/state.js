@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { STATE_VERSION } from './base.js';
 import { newVille } from './ville.js';
-import { newDayStats, startFarm } from './devices.js';
+import { batteryCapacity, newDayStats, startFarm } from './devices.js';
 import { addItem, defaultOrigin, shelfLife } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
@@ -288,7 +288,38 @@ export const MIGRATIONS = {
   // v22 → v23 (version 1.6) : plus de saisons. L'objectif de l'hiver (chapitre 6)
   // devient une série de nuits ; un hiver déjà réussi vaut la série réussie.
   22: (state) => migrateNoSeasons(state),
+  // v23 → v24 (version 1.6, v2 lot 2) : un seul panneau, une seule batterie, un
+  // réservoir à niveaux.
+  23: (state) => migrateSingleDevices(state),
 };
+
+// Version 1.6 : on garde le panneau et la batterie du plus haut niveau (à niveau
+// égal, le moins usé) ; la batterie gardée reçoit la charge de toutes, dans la
+// limite de sa capacité. Les appareils retirés sont remboursés de leur prix
+// d'achat. Le réservoir prend le niveau de la pompe, dont il suivait la capacité.
+export function migrateSingleDevices(old) {
+  const state = { ...old, version: 24 };
+  const start = startFarm();
+  const best = (list) => list.reduce((a, d) => (d.niveau > a.niveau || (d.niveau === a.niveau && d.usure < a.usure) ? d : a));
+  let rembourse = 0;
+  const keep = (list, type) => {
+    const valid = (Array.isArray(list) ? list : []).filter((d) => d && typeof d === 'object');
+    if (!valid.length) return start[type === 'panneau' ? 'panneaux' : 'batteries'];
+    const d = best(valid);
+    for (const x of valid) if (x !== d) rembourse += Math.max(0, Math.round(Number(x.prix) || 0));
+    return [{ ...d, id: `${type}-1` }];
+  };
+  const charge = (Array.isArray(old.batteries) ? old.batteries : []).reduce((t, b) => t + (b && Number(b.chargeMwh) > 0 ? Math.floor(b.chargeMwh) : 0), 0);
+  state.panneaux = keep(old.panneaux, 'panneau');
+  state.batteries = keep(old.batteries, 'batterie');
+  state.batteries[0].chargeMwh = Math.min(charge, batteryCapacity(state.batteries[0]));
+  delete state.compteurs;
+  const pompe = state.pompe && Number.isInteger(state.pompe.niveau) ? state.pompe.niveau : 1;
+  // (avant cette version, le réservoir n'existait pas à part : il suivait la pompe)
+  state.reservoir = { niveau: Math.min(DATA.LEVEL_MAX, Math.max(1, pompe)) };
+  if (typeof state.pieces === 'number') state.pieces += rembourse;
+  return state;
+}
 
 export function migrateNoSeasons(old) {
   const state = { ...old, version: 23 };

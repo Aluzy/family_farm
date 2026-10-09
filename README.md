@@ -1,8 +1,8 @@
 # 🌾 Ferme Familiale
 
 Un *idle game* de gestion agricole familiale : une famille (quatre personnes au départ), une ferme, et un
-objectif, nourrir la famille avec ce que la ferme produit. Panneaux solaires,
-batteries, pompe, zone de culture et champ, silo, moulin et presse, poulailler,
+objectif, nourrir la famille avec ce que la ferme produit. Panneau solaire,
+batterie, pompe, réservoir, zone de culture et champ, silo, moulin et presse, poulailler,
 troupeau (poules, moutons, vaches), verger, serre, cuisine, four et réfrigérateur.
 La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
@@ -66,7 +66,7 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   s'arrête pendant le résumé du réveil et quand le jeu est fermé.
 - La nuit : les plantes arrosées gagnent un stade, les poules nourries pondent,
   les moutons et les vaches mangent leur paille (laine, lait), les aliments vieillissent.
-- L'électricité et l'eau circulent en temps réel : panneaux → batteries →
+- L'électricité et l'eau circulent en temps réel : panneau (de 7 h à 19 h) → batterie →
   pompe, moulin, presse, réfrigérateur. Les appareils s'usent quand ils tournent.
 - La **Zone de culture** s'agrandit de 6 à 30 parcelles (5 niveaux). Le **Champ**, une
   deuxième zone de 64 parcelles, s'ouvre avec le Moulin (chapitre 4) ; les arbres du
@@ -87,7 +87,7 @@ chaque bâtiment a son bouton **?** (rôle, consommation, production).
 Quand vous revenez (page rouverte, ou onglet qui repasse au premier plan), le
 temps écoulé est rattrapé, **plafonné à 8 heures**, par pas de 5 s :
 
-- avancent : panneaux et batteries, pompe, moulin, presse, préparations en cours,
+- avancent : panneau (si l'horloge s'est arrêtée entre 7 h et 19 h) et batterie, pompe, moulin, presse, préparations en cours,
   consommation du réfrigérateur ;
 - n'avancent pas : les nuits (ni pousse, ni repas, ni ponte, ni péremption) et
   l'usure des appareils ;
@@ -181,7 +181,7 @@ Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
 | `animals.json` | silo, poulailler, animaux, étable |
 | `techtree.json` | arbre des technologies |
 | `campaign.json` | chapitres et courrier |
-| `energy.json` | panneaux, batteries, pompe, usure, réfrigérateur |
+| `energy.json` | panneau, batterie, pompe, réservoir, soleil, usure, réfrigérateur |
 | `general.json` | départ, horloge, famille, marché, absence |
 | `simulation.json` | réglages du joueur automatique |
 
@@ -296,7 +296,7 @@ nuits, aller à un chapitre, et voir l'état complet de la partie.
 | Document | Contenu |
 |---|---|
 | [`docs/conception.md`](docs/conception.md) | la conception du jeu : règles, valeurs, équilibrage (fait foi) |
-| [`docs/conception-v2.md`](docs/conception-v2.md) | refonte v2 (niveaux d'XP, énergie du personnage, houe…) : les saisons sont retirées (version 1.6), le reste n'est pas encore codé |
+| [`docs/conception-v2.md`](docs/conception-v2.md) | refonte v2 (niveaux d'XP, énergie du personnage, houe…) : les saisons sont retirées et la ferme n'a plus qu'un panneau et une batterie (version 1.6), le reste n'est pas encore codé |
 | [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | la carte de la ferme : découpage, cartes Tiled, pièges à éviter |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |

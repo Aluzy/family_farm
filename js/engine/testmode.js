@@ -1,5 +1,5 @@
 import { DATA } from './catalog.js';
-import { batteryCapacity, fail, findDevice, isBroken, makeDevice, tankCapacity } from './devices.js';
+import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { addItem, spoil } from './inventory.js';
 import { openFridge } from './fridge.js';
@@ -30,6 +30,10 @@ export function testSetBuildingLevel5(state, id) {
   } else if (id === 'poulailler' || id === 'silo') {
     state[id].construit = true;
     state[id].niveau = niveau;
+  } else if (id === 'panneau' || id === 'batterie') {
+    (id === 'panneau' ? state.panneaux : state.batteries)[0].niveau = niveau;
+  } else if (id === 'pompe' || id === 'reservoir') {
+    state[id].niveau = niveau;
   } else {
     return fail('Bâtiment inconnu.');
   }
@@ -49,13 +53,6 @@ export function testUnlockAllTechs(state) {
   const tab = DATA.TECHNO.ONGLET;
   if (!state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
   return { ok: true };
-}
-
-export function testAddDevice(state, type) {
-  const n = ++state.compteurs[type];
-  const d = makeDevice(type, `${type}-${n}`, 0);
-  (type === 'panneau' ? state.panneaux : state.batteries).push(d);
-  return { ok: true, device: d };
 }
 
 export function testFillBatteries(state) {

@@ -57,7 +57,7 @@ export function getNotifications(state) {
 
   // 1 : la ferme s'arrête ou la famille risque de manquer.
   add('panne', 1, '🔧', snap.panne.length, '1 appareil en panne', '{n} appareils en panne');
-  add('batteriesVides', 1, '🔋', snap.batteriesVides ? 1 : 0, 'Batteries vides', 'Batteries vides');
+  add('batteriesVides', 1, '🔋', snap.batteriesVides ? 1 : 0, 'Batterie vide', 'Batterie vide');
   add('frigoCoupe', 1, '❄️', snap.frigoCoupe ? 1 : 0, 'Réfrigérateur sans courant', 'Réfrigérateur sans courant');
   const perissent = Object.values(expiringSoon(state)).reduce((t, n) => t + n, 0);
   add('peremption', 1, '⏳', perissent, '1 aliment périra cette nuit', '{n} aliments périront cette nuit');

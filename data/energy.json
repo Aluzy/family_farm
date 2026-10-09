@@ -1,27 +1,40 @@
 {
   "LEVEL_MAX": 5,
-  "//GRID": ["Grilles par niveau (index 0 = niveau 1), identiques pour chaque appareil", "d'un même type."],
+  "//GRID": [
+    "Grilles par niveau (index 0 = niveau 1). Version 1.6 (v2, lot 2) : un seul",
+    "panneau, une seule batterie, une pompe et un réservoir, qui montent de niveau.",
+    "Le réservoir ne suit plus le niveau de la pompe : il a ses propres niveaux."
+  ],
   "GRID": {
     "//panneau": "Énergie en entiers : Wh côté données, mWh dans l'état (1 Wh = 1 000 mWh).",
-    "panneau": { "whParS": [30, 50, 80, 120, 180] },
+    "panneau": { "whParS": [40, 90, 160, 260, 400] },
     "//batterie": [
       "pleine : part de la capacité utile au-delà de laquelle une batterie qui ne",
       "charge plus s'affiche « Pleine » (Lot 11 : sortie du moteur vers DATA).",
       "pleine en %"
     ],
-    "batterie": { "wh": [5000, 10000, 20000, 40000, 80000], "pleine": 98 },
-    "pompe": {
-      "litresPerS": [1, 2, 4, 6, 10],
-      "//reservoirL": "le réservoir suit le niveau de la pompe",
-      "reservoirL": [40, 80, 160, 300, 500]
-    }
+    "batterie": { "wh": [6000, 15000, 30000, 60000, 100000], "pleine": 98 },
+    "pompe": { "litresPerS": [1, 2, 4, 6, 10] },
+    "reservoir": { "litres": [40, 80, 160, 300, 500] }
   },
-  "//UPGRADE_COST": "Coût pour atteindre un niveau (index 0 = niveau 1, non utilisé).",
-  "UPGRADE_COST": [0, 40, 100, 250, 600],
+  "//SOLEIL": [
+    "Le panneau ne produit qu'entre DEBUT h et FIN h (heure de l'horloge du jeu).",
+    "Pendant une absence, l'horloge est figée : le panneau produit si elle est figée",
+    "entre ces deux heures."
+  ],
+  "SOLEIL": { "DEBUT": 7, "FIN": 19 },
+  "//UPGRADE_COST": [
+    "Coût pour atteindre un niveau, par appareil (index 0 = niveau 1, non utilisé :",
+    "les appareils de départ sont offerts)."
+  ],
+  "UPGRADE_COST": {
+    "panneau": [0, 150, 400, 900, 2000],
+    "batterie": [0, 180, 450, 1000, 2200],
+    "pompe": [0, 100, 250, 600, 1300],
+    "reservoir": [0, 120, 300, 700, 1500]
+  },
   "//PUMP": "10 Wh par litre, soit 10 mWh par mL",
   "PUMP": { "WH_PAR_L": 10 },
-  "//PURCHASE": "Achat d'un appareil supplémentaire : base × growth^n, n = nombre déjà possédé.",
-  "PURCHASE": { "panneau": { "base": 60, "growth": 120 }, "batterie": { "base": 80, "growth": 120 } },
   "//WEAR": [
     "Usure : en points entiers (0 à 100), +1 point toutes les HEURES_PAR_POINT",
     "heures de marche. Rendement (%) = 100 − ⌊usure × 100 ÷ EFFICIENCY_DIVISOR⌋."

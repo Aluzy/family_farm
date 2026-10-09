@@ -47,16 +47,19 @@ export function stationDevices(state) {
     .map((id) => state.stations[id].appareil);
 }
 
-// Parc et réserves de départ : 1 panneau, 1 batterie, la pompe et le réservoir.
-// Les appareils sont des listes d'objets ; la pompe est un appareil unique ;
-// le réservoir n'est pas un appareil (`eauMl` = son contenu en mL).
+// Appareils et réserves de départ : le panneau, la batterie, la pompe et le
+// réservoir. Version 1.6 : un seul panneau et une seule batterie, qui montent de
+// niveau ; `panneaux` et `batteries` restent des listes (d'un seul appareil) pour
+// que le flux d'énergie garde sa forme. Le réservoir n'est pas un appareil (ni
+// usure, ni interrupteur) : `reservoir.niveau` fixe sa capacité, `eauMl` est son
+// contenu en mL.
 export function startFarm() {
   const prix = DATA.START.DEVICE_PRICE;
   return {
-    compteurs: { panneau: 1, batterie: 1 },
     panneaux: [makeDevice('panneau', 'panneau-1', prix)],
     batteries: [makeDevice('batterie', 'batterie-1', prix)],
     pompe: makeDevice('pompe', 'pompe', prix),
+    reservoir: { niveau: 1 },
     eauMl: 0,
     flux: { perdue: 0, eau: 0 }, // mWh/s perdus, mL/s reçus par le réservoir au dernier tick
     jour: newDayStats(),
@@ -113,20 +116,25 @@ export function pumpFlow(d) {
   return Math.floor((DATA.GRID.pompe.litresPerS[d.niveau - 1] * 1000 * efficiency(d)) / 100);
 }
 
-// Capacité du réservoir (mL).
+// Capacité du réservoir (mL), selon son propre niveau.
 export function tankCapacity(state) {
-  return DATA.GRID.pompe.reservoirL[state.pompe.niveau - 1] * 1000;
+  return DATA.GRID.reservoir.litres[state.reservoir.niveau - 1] * 1000;
 }
 
-// Prix du n-ième appareil d'un type, n étant le nombre déjà possédé.
-export function purchasePrice(type, owned) {
-  const p = DATA.PURCHASE[type];
-  return growthPrice(p.base, p.growth, owned);
-}
-
-export function nextPurchasePrice(state, type) {
-  const owned = type === 'panneau' ? state.panneaux.length : state.batteries.length;
-  return purchasePrice(type, owned);
+// Part (ms) d'une période de l'horloge, de `fromMs` à `fromMs + dtMs` (temps
+// d'éveil), où le soleil brille : entre SOLEIL.DEBUT h et SOLEIL.FIN h, chaque jour
+// de l'horloge (elle repasse à 0 h si personne ne dort).
+export function sunlitMs(fromMs, dtMs) {
+  const hourMs = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  const dayMs = 24 * hourMs;
+  const debut = (DATA.SOLEIL.DEBUT - DATA.TIME.DAY_START_HOUR) * hourMs;
+  const fin = (DATA.SOLEIL.FIN - DATA.TIME.DAY_START_HOUR) * hourMs;
+  let lit = 0;
+  const end = fromMs + dtMs;
+  for (let day = Math.floor(fromMs / dayMs) * dayMs; day < end; day += dayMs) {
+    lit += Math.max(0, Math.min(end, day + fin) - Math.max(fromMs, day + debut));
+  }
+  return lit;
 }
 
 export function maintainCost(d) {
@@ -137,10 +145,11 @@ export function repairCost(d) {
   return percentCeil(d.prix, DATA.WEAR.REPAIR_RATE);
 }
 
-// Le Moulin et la Presse n'ont pas de niveaux : pas d'amélioration (null).
+// Coût du niveau suivant d'un appareil (ou du réservoir : { type: 'reservoir',
+// niveau }). Le Moulin, la Presse et le frigo n'ont pas de niveaux (null).
 export function upgradeCost(d) {
   if (!DATA.GRID[d.type]) return null;
-  return d.niveau >= DATA.LEVEL_MAX ? null : DATA.UPGRADE_COST[d.niveau];
+  return d.niveau >= DATA.LEVEL_MAX ? null : DATA.UPGRADE_COST[d.type][d.niveau];
 }
 
 // Pièces entières : tout prix calculé est arrondi à l'entier supérieur.
@@ -178,17 +187,6 @@ export function toggleDevice(state, id) {
   return { ok: true };
 }
 
-export function buyDevice(state, type) {
-  if (type !== 'panneau' && type !== 'batterie') return fail('Type d\'appareil inconnu.');
-  const price = nextPurchasePrice(state, type);
-  if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
-  spend(state, price);
-  state.compteurs[type] += 1;
-  const d = makeDevice(type, `${type}-${state.compteurs[type]}`, price);
-  (type === 'panneau' ? state.panneaux : state.batteries).push(d);
-  return { ok: true, device: d, price };
-}
-
 export function upgradeDevice(state, id) {
   const d = findDevice(state, id);
   if (!d) return fail('Appareil introuvable.');
@@ -198,6 +196,16 @@ export function upgradeDevice(state, id) {
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
   d.niveau += 1;
+  return { ok: true, cost };
+}
+
+// Le réservoir monte de niveau (version 1.6 : il ne suit plus la pompe).
+export function upgradeTank(state) {
+  const cost = upgradeCost({ type: 'reservoir', niveau: state.reservoir.niveau });
+  if (cost === null) return fail('Niveau maximum atteint.');
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  state.reservoir.niveau += 1;
   return { ok: true, cost };
 }
 

@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import {
-  testAddCows, testAddDevice, testAddEggs, testAddFlour, testAddFood, testAddHens, testAddOil,
+  testAddCows, testAddEggs, testAddFlour, testAddFood, testAddHens, testAddOil,
   testAddPieces, testAddSeeds, testAddSheep, testAddStraw, testAddTechPoints, testAddWheat,
   testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
   testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
@@ -182,12 +182,6 @@ registerActions({
   },
   'test-add-1000': () => {
     applyResult(testAddPieces(state, 1000));
-  },
-  'test-add-panel': () => {
-    applyResult(testAddDevice(state, 'panneau'));
-  },
-  'test-add-battery': () => {
-    applyResult(testAddDevice(state, 'batterie'));
   },
   'test-fill-batteries': () => {
     applyResult(testFillBatteries(state));
