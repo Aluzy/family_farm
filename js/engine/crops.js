@@ -6,6 +6,7 @@ import { productivity } from './family.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, isUnlocked } from './campaign.js';
+import { gainActionXp } from './levels.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -44,12 +45,14 @@ export function plotZone(plot) {
   return plot.zone === 2 ? 2 : 1;
 }
 
-// Le Champ s'ouvre en entier, sans rien payer, quand la campagne débloque le Moulin
-// (DATA.POTAGER.ZONE2.DEBLOCAGE). Appelée à chaque passage de updateChapters() : une
-// partie déjà plus loin le reçoit au premier pas de jeu. Renvoie true s'il vient de s'ouvrir.
+// Le Champ s'ouvre en entier, sans rien payer, quand le Moulin
+// (DATA.POTAGER.ZONE2.DEBLOCAGE) est construit (version 1.7 ; avant : dès qu'il était
+// débloqué). Appelée à chaque passage de updateChapters() : une partie déjà plus loin
+// le reçoit au premier pas de jeu. Renvoie true s'il vient de s'ouvrir.
 export function openZone2(state) {
   const Z = DATA.POTAGER.ZONE2;
-  if (!state.potager || !isUnlocked(state, Z.DEBLOCAGE)) return false;
+  const st = state.stations && state.stations[Z.DEBLOCAGE];
+  if (!state.potager || !isUnlocked(state, Z.DEBLOCAGE) || !(st && st.construit)) return false;
   if (zone2Plots(state).length >= Z.PARCELLES) return false;
   const plots = zone2Plots(state).slice();
   for (let n = plots.length + 1; n <= Z.PARCELLES; n++) plots.push(makeZone2Plot(n));
@@ -152,7 +155,8 @@ export function readyCrops(state) {
   return out;
 }
 
-export function plant(state, plotId, culture) {
+// `auto` : semis d'une automatisation (moitié de l'XP, version 1.7).
+export function plant(state, plotId, culture, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
   const def = DATA.crops[culture];
@@ -164,11 +168,13 @@ export function plant(state, plotId, culture) {
   plot.stade = 0;
   plot.arrose = false;
   plot.montee = false;
+  gainActionXp(state, 'planter', 1, auto);
   return { ok: true };
 }
 
-// Une fois par nuit et par parcelle ; consomme l'eau du réservoir.
-export function water(state, plotId) {
+// Une fois par nuit et par parcelle ; consomme l'eau du réservoir. `auto` :
+// arrosage d'une automatisation (moitié de l'XP, version 1.7).
+export function water(state, plotId, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
   if (!plot.culture) return fail('Rien n\'est planté ici.');
@@ -178,6 +184,7 @@ export function water(state, plotId) {
   if (state.eauMl < litres * 1000) return fail('Pas assez d\'eau dans le réservoir.');
   state.eauMl -= litres * 1000;
   plot.arrose = true;
+  gainActionXp(state, 'arroser', 1, auto);
   return { ok: true, litres };
 }
 
@@ -226,6 +233,7 @@ export function harvest(state, plotId, auto = false) {
   plot.arrose = false;
   plot.montee = false;
   if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9 (une carotte montée en graine ne compte pas)
+  gainActionXp(state, 'recolter', 1, auto); // version 1.7
   return { ok: true, culture, items };
 }
 

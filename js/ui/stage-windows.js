@@ -312,6 +312,7 @@ export function renderIndicators() {
   const el = document.getElementById('indicators');
   morph(el,
     cell('📅', `Jour ${state.day}`, `Jour ${state.day}`) +
+    `<button type="button" class="indicator indicator-btn" data-action="open-levels" title="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux" aria-label="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux">${corps('⭐', `Niv. ${state.progression.niveau}`)}</button>` +
     cell(horlogeEmoji(heure), `${heure} h`, `Heure de la journée : ${heure} h`) +
     lien('💧', formatLitres(state.eauMl), `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +
     cell('💰', formatCoins(state.pieces), `Pièces : ${formatCoins(state.pieces)}`) +

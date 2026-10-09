@@ -6,6 +6,37 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v29 (jeu 1.7) : niveaux d'expérience** (lot 3 de la v2, `data/niveaux.json`,
+> `js/engine/levels.js`). Cette note **fait foi** sur tout ce qui, plus bas, dit qu'un
+> chapitre débloque un bâtiment, un atelier ou une culture.
+> - **Dix niveaux** (XP cumulée 0 / 500 / 1 200 / 3 000 / 7 500 / 20 000 / 40 000 /
+>   80 000 / 180 000 / 400 000). Ils débloquent : niv. 1 carotte, patate, tomate ;
+>   niv. 2 courgette, aubergine, oignon, **Cuisine** ; niv. 3 poivron, ail, fraise, blé,
+>   **Silo**, **Poulailler** ; niv. 4 épinard, tournesol, riz, **Moulin** ; niv. 5
+>   houblon, **Four**, **Étable** ; niv. 6 **Presse**, **Verger** ; niv. 7 cacao, vanille,
+>   café, **Serre** ; niv. 8 **Réfrigérateur**. Les niveaux 9 et 10 attendent leur lot
+>   (courrier du notaire, commerce).
+> - **Le blé ne se plante qu'une fois le Silo construit** (`requiert` dans `crops.json`).
+> - **La Cuisine n'attend plus le Four** (elle arrive avant lui) et ouvre elle aussi le
+>   Livre de recette.
+> - **Le Champ s'ouvre quand le Moulin est construit** (avant : dès qu'il était débloqué).
+> - **XP** : planter 10, arroser 10, récolter 20, œuf 10, lait 30, tonte 30, plat de la
+>   Cuisine 40, plat du Four 50, blé moulu 10, huile pressée 10 🟡 (non chiffré par les
+>   notes), vente 1 par pièce. Une automatisation (arrosage, récolte, semis, tonte)
+>   rapporte 50 % de l'XP de l'action.
+> - **Chapitres** : ils ne débloquent plus rien ; terminés, ils rapportent 200 / 500 /
+>   1 000 / 2 500 / 2 000 / 4 000 / 8 000 XP (en plus des points de technologie).
+> - **Interface** : ⭐ niveau dans le bandeau (ouvre la liste des niveaux), écran
+>   « Niveau n atteint » avec ses nouveautés, récompense en XP sur la carte du chapitre.
+>   Mode test : « +1 000 XP », « Niveau suivant » ; « aller au chapitre n » place aussi
+>   au niveau qui va avec.
+> - **Rythme mesuré** (joueur automatique appliqué) : niveau 2 nuit 3, niveau 3 nuit 5,
+>   niveau 4 nuit 13, niveau 5 nuit 23, niveau 6 nuit 50, niveau 7 nuit 66.
+> - **Sauvegardes** (format 25, `migrateLevels()`) : niveau du chapitre atteint (1, 2,
+>   3, 6, 6, 8, 8, 8 pour les chapitres 1 à 7 et la campagne finie), ou plus si la
+>   partie a déjà construit ou planté quelque chose d'un niveau supérieur ; XP = le seuil
+>   de ce niveau.
+>
 > **v28 (jeu 1.6) : un panneau, une batterie** (lot 2 de la v2). Cette note **fait
 > foi** sur le « parc d'appareils » (v15, 8.2, 9) et sur le réservoir qui suivait la pompe.
 > - **Un seul panneau et une seule batterie**, qui montent de niveau ; plus d'achat

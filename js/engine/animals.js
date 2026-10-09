@@ -5,6 +5,7 @@ import { addItem, countItem, takeItem } from './inventory.js';
 import { newNightStats, productivity } from './family.js';
 import { techFlag } from './techtree.js';
 import { bumpCounter } from './campaign.js';
+import { gainActionXp } from './levels.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
 
@@ -257,6 +258,7 @@ export function layEggs(state) {
   const def = DATA.ANIMAUX.poule;
   const eggs = p.nourries * def.oeufsParNuit;
   if (eggs > 0) addItem(state, def.produit, eggs);
+  gainActionXp(state, 'oeuf', eggs); // version 1.7
   state.nuit.oeufs = eggs;
   p.nourries = 0;
   p.restes = 0; // une ration entamée ne se garde pas
@@ -489,14 +491,16 @@ export function feedLivestock(state) {
     lait += A.vache.laitParNuit;
   }
   if (lait > 0) addItem(state, A.vache.lait, lait);
+  gainActionXp(state, 'lait', lait); // version 1.7
   if (!state.nuit) state.nuit = newNightStats();
   state.nuit.lait = lait;
   state.nuit.etable = rap;
   return rap;
 }
 
-// Tonte au clic : 1 laine, le compteur repart de zéro, le mouton reste.
-export function shear(state, id) {
+// Tonte au clic : 1 laine, le compteur repart de zéro, le mouton reste. `auto` :
+// tonte planifiée (moitié de l'XP, version 1.7).
+export function shear(state, id, auto = false) {
   const m = findSheep(state, id);
   if (!m) return fail('Mouton introuvable.');
   const M = DATA.ANIMAUX.mouton;
@@ -504,5 +508,6 @@ export function shear(state, id) {
   addItem(state, M.laine, M.laineParTonte);
   m.laine = 0;
   bumpCounter(state, 'laines', M.laineParTonte); // Lot 9
+  gainActionXp(state, 'tondre', 1, auto);
   return { ok: true, laine: M.laineParTonte };
 }

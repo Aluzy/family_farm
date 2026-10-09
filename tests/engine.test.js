@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, openZone2, holdStatus, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, openZone2, holdStatus, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, productivity, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -52,7 +52,7 @@ import {
   testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
   testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
   testRipenAll, testSetBuildingLevel5, testSetHealthZero, testSetWear, testSleepNights, testUnlockAllTechs,
-  testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockChapter, unreadMail,
+  testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockLevel, unreadMail,
   updateChapters, updateHealth, upgradeCost, upgradeDevice, upgradePotager, upgradePoulailler, upgradeSerre,
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, waterCostFor,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
@@ -801,9 +801,10 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
   }
   // Version 1.0 : une seule Zone de culture (lieu 'potager'). Blé et tournesol y
   // poussent comme le reste ; seul leur déblocage ('champ', chapitre 3) les distingue.
-  for (const k of ['carotte', 'patate']) assertEqual([c[k].lieux, c[k].deblocage], [['potager'], undefined]);
+  for (const k of ['carotte', 'patate']) assertEqual([c[k].lieux, c[k].pleinChamp, c[k].requiert], [['potager'], undefined, undefined]);
   for (const k of ['tomate', 'courgette', 'aubergine']) assertEqual(c[k].lieux, ['potager', 'serre']); // Lot 8 : la Serre
-  for (const k of ['ble', 'tournesol']) assertEqual([c[k].lieux, c[k].deblocage], [['potager'], 'champ']);
+  for (const k of ['ble', 'tournesol']) assertEqual([c[k].lieux, c[k].pleinChamp], [['potager'], true]);
+  assertEqual([c.ble.requiert, c.tournesol.requiert], ['silo', undefined], 'version 1.7 : le blé attend le Silo');
   // plus aucune culture ne cite l'ancien lieu « champ »
   for (const k of Object.keys(c)) assertEqual(c[k].lieux.includes('champ'), false, `${k} : pas de lieu champ`);
 });
@@ -830,8 +831,8 @@ test('DATA « 10 cultures » : stades, eau, rendement, graines, comestibilité, 
   // 'champ'), Serre exclusivement pour cacao/vanille/café.
   for (const k of ['oignon', 'ail', 'epinard', 'fraise']) assertEqual(c[k].lieux, ['potager']);
   assertEqual(c.poivron.lieux, ['potager', 'serre']);
-  for (const k of ['riz', 'houblon']) assertEqual([c[k].lieux, c[k].deblocage], [['potager'], 'champ']);
-  for (const k of ['oignon', 'ail', 'epinard', 'fraise', 'poivron', 'cacao', 'vanille', 'cafe']) assertEqual(c[k].deblocage, undefined, `${k} : aucun déblocage requis`);
+  for (const k of ['riz', 'houblon']) assertEqual([c[k].lieux, c[k].pleinChamp], [['potager'], true]);
+  for (const k of ['oignon', 'ail', 'epinard', 'fraise', 'poivron', 'cacao', 'vanille', 'cafe']) assertEqual([c[k].pleinChamp, c[k].requiert], [undefined, undefined], `${k} : ni plein champ ni bâtiment requis`);
   for (const k of ['cacao', 'vanille', 'cafe']) assertEqual(c[k].lieux, ['serre']);
   // Comestibilité et prix de vente exactement comme demandé.
   assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz'].map((k) => [it[k].edible, it[k].energie]),
@@ -2151,15 +2152,18 @@ test('Marché – onglet Graines : les 10 nouvelles cultures', () => {
   for (const k of ['ail', 'riz', 'houblon', 'cacao', 'vanille', 'cafe']) {
     assertEqual(isGraineComptoir(k), false, `${k} ne fait pas exception, comme la patate`);
   }
-  // Aucune de ces 10 cultures n'est verrouillée par un chapitre (voir
-  // DATA.CHAPITRES.liste) : leurs graines sont donc déjà en vente dès le départ.
-  // (seedForSale(), qui applique cette même règle, vit dans le bloc de rendu
-  // et n'est pas exposée à ce banc de tests moteur : on rejoue ici sa logique —
-  // « aucune culture qui utilise cette graine n'est verrouillée ».)
+  // Version 1.7 : chaque culture a son niveau (oignon 2, poivron et fraise 3,
+  // épinard 4) ; sa graine est en vente une fois ce niveau atteint. (seedForSale(),
+  // qui applique cette règle, vit dans le bloc de rendu : on rejoue ici sa logique
+  // — « aucune culture qui utilise cette graine n'est verrouillée ».)
   const s = createInitialState(1);
   const seedLocked = (item) => Object.keys(DATA.crops).some((c) => DATA.crops[c].graines.item === item && !isUnlocked(s, c));
   for (const k of ['graine_oignon', 'graine_poivron', 'graine_epinard', 'graine_fraise']) {
-    assertEqual(seedLocked(k), false, `${k} en vente dès le départ`);
+    assertEqual(seedLocked(k), true, `${k} pas encore en vente au niveau 1`);
+  }
+  testSetLevel(s, 4);
+  for (const k of ['graine_oignon', 'graine_poivron', 'graine_epinard', 'graine_fraise']) {
+    assertEqual(seedLocked(k), false, `${k} en vente au niveau 4`);
   }
   // Achat effectif d'une graine de la nouvelle liste, comme pour les graines
   // déjà existantes.
@@ -2729,8 +2733,8 @@ test('DATA Lot 5 : stations, recettes, farine et huile', () => {
   assertEqual([S.four.cout, S.cuisine.cout, S.moulin.cout, S.presse.cout], [100, 150, 120, 150]);
   assertEqual([S.four.electrique, S.cuisine.electrique, S.moulin.electrique, S.presse.electrique], [false, false, true, true]);
   assertEqual([S.moulin.whParS, S.presse.whParS], [20, 30]);
-  assertEqual(S.cuisine.requiert, 'four');
-  assertEqual(S.four.debloque, ['recettes']);
+  assertEqual(S.cuisine.requiert, undefined, 'version 1.7 : la Cuisine (niveau 2) arrive avant le Four (niveau 5)');
+  assertEqual([S.four.debloque, S.cuisine.debloque], [['recettes'], ['recettes']]);
   const R = DATA.recipes;
   // Lot 14 : temps des plats Four/Cuisine divisés par 2, arrondis au supérieur.
   assertEqual([R.pain.station, R.pain.temps, R.pain.ingredients, R.pain.eau], ['four', 10, [{ item: 'farine', qte: 2 }], 1]);
@@ -3437,18 +3441,15 @@ test('construire le Four : 100 pièces, et l\'onglet Livre de recette s\'ouvre',
   assertEqual(buildStation(s, 'four').ok, false, 'une seule de chaque');
 });
 
-test('la Cuisine (150) se construit une fois le Four bâti', () => {
+test('la Cuisine (150) se construit sans le Four, et ouvre le Livre de recette', () => {
   const s = ranch();
-  const before = s.pieces;
-  const r = buildStation(s, 'cuisine');
-  assertEqual([r.ok, r.error], [false, 'Construis d\'abord le Four.']);
-  assertEqual(s.pieces, before, 'rien n\'est payé');
-  buildStation(s, 'four');
+  assertEqual(s.unlockedTabs.includes('recettes'), false);
   s.pieces = 149;
   assertEqual(buildStation(s, 'cuisine').ok, false, 'pas assez de pièces');
   s.pieces = 150;
   assertEqual(buildStation(s, 'cuisine').ok, true);
   assertEqual(s.pieces, 0);
+  assertEqual(s.unlockedTabs.includes('recettes'), true, 'version 1.7 : la Cuisine ouvre le Livre de recette');
   assertEqual(buildStation(s, 'cuisine').ok, false, 'une seule Cuisine');
 });
 
@@ -6529,6 +6530,13 @@ function atChapter(n) {
   return s;
 }
 
+// Version 1.7 : partie de test placée au début du niveau `n` (chapitre 1).
+function atLevel(n) {
+  const s = farm();
+  assert(testSetLevel(s, n).ok, `aller au niveau ${n}`);
+  return s;
+}
+
 // Une nuit avec exactement `qty` unités de `item` d'origine « produit » au menu
 // (jamais gardées en réserve), plus des conserves pour le reste. `item` vaut
 // patate par défaut (19 d'énergie depuis le Lot 11) ; un autre item (ex.
@@ -6544,21 +6552,17 @@ function okList(s) {
   return chapterProgress(s).objectifs.map((o) => o.ok);
 }
 
-test('DATA Lot 9 : sept chapitres, objectifs et déblocages', () => {
+test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent plus rien)', () => {
   const L = DATA.CHAPITRES.liste;
   assertEqual(L.map((c) => c.titre), ['L\'eau et le soleil', 'Le premier potager', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'Famille autonome']);
-  assertEqual(L.map((c) => c.debloque), [[], [], ['champ', 'silo', 'poulailler'], ['four', 'cuisine', 'moulin', 'presse', 'tournesol'], ['paturage', 'moutons'], ['serre', 'verger', 'frigo'], []]);
+  assertEqual(L.map((c) => c.debloque), [undefined, undefined, undefined, undefined, undefined, undefined, undefined]);
   assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
     [['litres', 50], ['wh', 3000]], [['carottes', 20], ['autonomie', 25]], [['pontes', 7], ['sante', 80]],
     [['pains', 5], ['plats', 3]], [['laines', 10], ['autonomie', 60]], [['tenue', 1]], [['serie100', 7]],
   ]);
   assertEqual([DATA.CHAPITRES.liste[5].objectifs[0].nuits, DATA.CHAPITRES.liste[5].objectifs[0].moyenne], [10, 80]);
   assertEqual(DATA.AUTONOMIE, { HISTORIQUE_MAX: 1000, GRAPHIQUE_NUITS: 20 });
-  // chaque élément débloqué est décrit, et n'apparaît que dans un chapitre
-  const ids = L.flatMap((c) => c.debloque);
-  assertEqual(new Set(ids).size, ids.length);
-  for (const id of ids) assert(DATA.CHAPITRES.ELEMENTS[id], `libellé de ${id}`);
-  assertEqual(Object.keys(DATA.CHAPITRES.ELEMENTS).sort(), [...ids].sort());
+  assertEqual(DATA.CHAPITRES.ELEMENTS, undefined, 'les libellés sont dans DATA.NIVEAUX.ELEMENTS');
 });
 
 test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', () => {
@@ -7000,25 +7004,22 @@ test('chapitres : la campagne finie ne recule pas et ne recompte rien', () => {
 });
 
 
-test('cultures plantables : le plein champ attend le chapitre 3, le tournesol le chapitre 4', () => {
-  const legumes = ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise'];
-  // Les légumes de la Zone de culture sont disponibles dès le chapitre 1, sans
-  // chapitre de déblocage dédié (voir DATA.CHAPITRES.liste[*].debloque).
-  assertEqual(plantableCropsFor(atChapter(1), 'potager'), legumes);
-  assertEqual(plantableCropsFor(atChapter(2), 'potager'), legumes, 'pas de blé avant le déblocage « champ »');
-  // Blé, riz et houblon arrivent avec le déblocage « champ » (chapitre 3) : au
-  // moment exact où il fallait autrefois construire le Champ. Le tournesol
-  // attend en plus son propre déblocage (chapitre 4).
-  assertEqual(plantableCropsFor(atChapter(3), 'potager'), [...legumes, 'ble', 'riz', 'houblon']);
-  assertEqual(plantableCropsFor(atChapter(4), 'potager'), [...legumes, 'ble', 'tournesol', 'riz', 'houblon']);
-  assertEqual(plantableCropsFor(atChapter(8), 'potager'), [...legumes, 'ble', 'tournesol', 'riz', 'houblon']);
-  assertEqual(plantableCropsFor(atChapter(8), 'champ'), [], 'le lieu « champ » n\'existe plus');
-  assertEqual(['ble', 'riz', 'houblon', 'tournesol', 'carotte'].map((c) => [2, 3, 4].map((n) => cropUnlocked(atChapter(n), c))),
-    [[false, true, true], [false, true, true], [false, true, true], [false, false, true], [true, true, true]]);
-  // la Serre n'est pas concernée : ses cultures ne demandent aucun déblocage
-  assertEqual(plantableCropsFor(atChapter(1), 'serre'), plantableCrops('serre'));
-  // libellé du déblocage pour le joueur : plus un bâtiment, des cultures
-  assertEqual(DATA.CHAPITRES.ELEMENTS.champ, { nom: 'Cultures de plein champ', icone: '🌾', note: 'blé pour les poules et la farine' });
+test('cultures plantables : chacune à son niveau, le blé attend aussi le Silo', () => {
+  const at = (n) => { const s = farm(); testSetLevel(s, n); return s; };
+  assertEqual(plantableCropsFor(at(1), 'potager'), ['carotte', 'patate', 'tomate']);
+  assertEqual(plantableCropsFor(at(2), 'potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'oignon']);
+  const n3 = at(3);
+  assertEqual(plantableCropsFor(n3, 'potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'fraise'], 'pas de blé sans Silo');
+  n3.pieces = 100;
+  assert(buildSilo(n3).ok);
+  assertEqual(plantableCropsFor(n3, 'potager').includes('ble'), true, 'Silo construit : le blé se plante');
+  const n5 = at(5);
+  buildSilo(n5);
+  assertEqual(plantableCropsFor(n5, 'potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise', 'ble', 'tournesol', 'riz', 'houblon']);
+  assertEqual(plantableCropsFor(at(6), 'serre'), ['tomate', 'courgette', 'aubergine', 'poivron'], 'cacao, vanille, café au niveau 7');
+  assertEqual(plantableCropsFor(at(7), 'serre'), plantableCrops('serre'));
+  assertEqual(plantableCropsFor(at(10), 'champ'), [], 'le lieu « champ » n\'existe plus');
+  assertEqual(['carotte', 'oignon', 'ble', 'epinard', 'houblon', 'cacao'].map(unlockLevel), [1, 2, 3, 4, 5, 7]);
 });
 
 test('affichage : pourcentage arrondi vers le bas, 100 % seulement à 100', () => {
@@ -7040,6 +7041,108 @@ test('tenue : état du suivi pour l\'interface', () => {
   holdNights(u, 10, 22);
   assertEqual(holdStatus(u).etat, 'reussi');
   assertEqual(holdStatus(atChapter(5)).etat, 'attente', 'avant le chapitre 6 : rien n\'est suivi');
+});
+
+/* ---------- version 1.7 : niveaux d'expérience ---------- */
+
+test('DATA niveaux : seuils, gains d\'XP, XP des chapitres', () => {
+  const N = DATA.NIVEAUX;
+  assertEqual(N.SEUILS, [0, 500, 1200, 3000, 7500, 20000, 40000, 80000, 180000, 400000]);
+  assertEqual(N.XP, { planter: 10, arroser: 10, recolter: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
+  assertEqual([N.AUTO, N.CHAPITRES_XP.slice(0, 4)], [50, [200, 500, 1000, 2500]]);
+  assertEqual([0, 499, 500, 1199, 1200, 400000, 10 ** 7].map(levelForXp), [1, 1, 2, 2, 3, 10, 10]);
+  assertEqual(createInitialState(1).progression, { xp: 0, niveau: 1, annonces: [] });
+  assertEqual(levelUnlocks(3), { niveau: 3, seuil: 1200, elements: ['silo', 'poulailler'], cultures: ['poivron', 'ail', 'fraise', 'ble'], note: null });
+  assertEqual([actionXp('arroser'), actionXp('arroser', 1, true), actionXp('recolter', 3, true), actionXp('inconnue')], [10, 5, 30, 0]);
+});
+
+test('XP : planter, arroser, récolter, vendre ; un niveau franchi est annoncé une fois', () => {
+  const s = garden();
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  assert(water(s, 'potager-1').ok);
+  assertEqual(s.progression.xp, 20);
+  findPlot(s, 'potager-1').stade = maxStage(findPlot(s, 'potager-1'));
+  harvest(s, 'potager-1');
+  assertEqual(s.progression.xp, 40);
+  const r = sellItem(s, 'carotte', 10); // 10 × 2 pièces
+  assertEqual([r.gain, s.progression.xp], [20, 60]);
+  assertEqual(s.progression.annonces, []);
+  assertEqual(gainXp(s, 440), [2]);
+  assertEqual([s.progression.niveau, s.progression.annonces], [2, [{ niveau: 2, nuit: 1 }]]);
+  assertEqual(levelProgress(s), { niveau: 2, xp: 500, debut: 500, fin: 1200, max: false, pct: 0, reste: 700 });
+  assertEqual(gainXp(s, 10000), [3, 4, 5], 'plusieurs niveaux d\'un coup');
+  assertEqual(s.progression.annonces.map((a) => a.niveau), [2, 3, 4, 5]);
+  assertEqual(acknowledgeLevel(s).restantes, 3);
+  assertEqual([gainXp(s, 0), gainXp(s, -5)], [[], []]);
+  testSetLevel(s, 10);
+  assertEqual(levelProgress(s).max, true);
+});
+
+test('XP : les automatisations rapportent la moitié, la nuit donne celle des œufs et du lait', () => {
+  const s = auto5('potager');
+  const xp0 = s.progression.xp;
+  plantRipe(s, 'potager-1', 'carotte'); // planté au clic : 10
+  plant(s, 'potager-2', 'carotte'); // 10
+  const r = sleepOnce(s);
+  // récolte auto 10, arrosage auto de potager-2 : 5 (pas de semis automatique ici)
+  assertEqual([r.auto.recoltes.carotte > 0, r.auto.arrosees, r.auto.semees, s.progression.xp - xp0], [true, 1, 0, 20 + 10 + 5]);
+  const p = ranch();
+  p.poulailler.poules = 2;
+  setInv(p, { ble: 5, conserve: 30 });
+  feedAllHens(p);
+  const x = p.progression.xp;
+  const n = sleepOnce(p);
+  assertEqual([n.oeufs, p.progression.xp - x], [2, 20]);
+  const v = pature();
+  fillCows(v, 1);
+  setStraw(v, 3);
+  const y = v.progression.xp;
+  assertEqual([sleepOnce(v).lait, v.progression.xp - y], [1, 30]);
+});
+
+test('XP : ateliers (Cuisine 40, Four 50, Moulin 10 par blé), tonte 30, chapitre terminé', () => {
+  const s = atelier();
+  setInv(s, { ble: 2, farine: 2, oeuf: 3, huile: 1 });
+  let x = s.progression.xp;
+  startMilling(s, 2);
+  runFor(s, 11);
+  assertEqual(s.progression.xp - x, 20, '2 blés moulus');
+  x = s.progression.xp;
+  startRecipe(s, 'pain');
+  startRecipe(s, 'omelette');
+  runFor(s, 20);
+  assertEqual(s.progression.xp - x, 50 + 40);
+  const t = pature();
+  fillSheep(t, 1);
+  testWoolReady(t);
+  x = t.progression.xp;
+  assert(shear(t, t.paturage.moutons[0].id).ok);
+  assertEqual(t.progression.xp - x, 30);
+  const c = farm();
+  x = c.progression.xp;
+  assert(testCompleteChapter(c).ok);
+  assertEqual(c.progression.xp - x, 200, 'chapitre 1 terminé : 200 XP');
+});
+
+test('migration v24 → v25 (version 1.7) : le niveau garde tout ce que les chapitres avaient débloqué', () => {
+  const at = (chapitre, fn) => {
+    const old = createInitialState(1);
+    old.version = 24;
+    delete old.progression;
+    old.campagne.chapitre = chapitre;
+    if (fn) fn(old);
+    return migrate({ v: 24, t: 0, s: old });
+  };
+  assertEqual(at(1).progression, { xp: 0, niveau: 1, annonces: [] });
+  assertEqual(at(3).progression.niveau, 3);
+  assertEqual(at(4).progression, { xp: 20000, niveau: 6, annonces: [] }, 'chapitre 4 : Four et Presse');
+  assertEqual(at(6).progression.niveau, 8);
+  assertEqual(at(7, (s) => { s.campagne.fini = true; }).progression.niveau, 8);
+  // une partie au chapitre 1 qui a déjà construit la Serre garde son niveau
+  assertEqual(at(1, (s) => { s.serre.construit = true; }).progression.niveau, 7);
+  assertEqual(at(2, (s) => { s.potager.parcelles[0].culture = 'epinard'; }).progression.niveau, 4, 'un épinard en terre');
+  const m = at(4);
+  assertEqual([m.version, isUnlocked(m, 'presse'), isUnlocked(m, 'serre')], [STATE_VERSION, true, false]);
 });
 
 test('migration v23 → v24 (version 1.6) : un seul panneau, une seule batterie, un réservoir à niveaux', () => {
@@ -7116,38 +7219,40 @@ test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres termi
 
 /* --- masquage --- */
 
-test('déblocages : chaque chapitre atteint ouvre ses éléments', () => {
-  const at = (n, id) => isUnlocked(atChapter(n), id);
-  const groups = { 3: ['champ', 'silo', 'poulailler'], 4: ['four', 'cuisine', 'moulin', 'presse', 'tournesol'], 5: ['paturage', 'moutons'], 6: ['serre', 'verger', 'frigo'] };
-  for (const [ch, ids] of Object.entries(groups)) {
+test('déblocages : chaque niveau atteint ouvre ses éléments', () => {
+  const at = (n, id) => { const s = farm(); testSetLevel(s, n); return isUnlocked(s, id); };
+  const groups = { 2: ['cuisine'], 3: ['silo', 'poulailler'], 4: ['moulin'], 5: ['four', 'paturage', 'moutons'], 6: ['presse', 'verger'], 7: ['serre'], 8: ['frigo'] };
+  for (const [niv, ids] of Object.entries(groups)) {
     for (const id of ids) {
-      assertEqual([id, ch - 1 >= 1 && at(ch - 1, id)], [id, false], `${id} masqué au chapitre ${ch - 1}`);
-      assertEqual([id, at(Number(ch), id)], [id, true], `${id} visible au chapitre ${ch}`);
-      assertEqual([id, at(7, id)], [id, true], `${id} visible ensuite`);
-      assertEqual([id, at(8, id)], [id, true], `${id} visible en mode libre`);
+      assertEqual([id, at(Number(niv) - 1, id)], [id, false], `${id} masqué au niveau ${niv - 1}`);
+      assertEqual([id, at(Number(niv), id)], [id, true], `${id} visible au niveau ${niv}`);
+      assertEqual([id, at(10, id)], [id, true], `${id} visible ensuite`);
     }
   }
-  assertEqual(['champ', 'four', 'paturage', 'serre'].map((id) => at(1, id)), [false, false, false, false]);
-  assertEqual(['champ', 'four', 'paturage', 'serre'].map((id) => at(4, id)), [true, true, false, false]);
+  // un chapitre avancé ne débloque rien par lui-même
+  const s = farm();
+  s.campagne.chapitre = 6;
+  assertEqual([isUnlocked(s, 'four'), isUnlocked(s, 'serre')], [false, false]);
 });
 
 test('déblocages : le Potager, la pompe et le Marché sont là dès le départ', () => {
-  const s = atChapter(1);
+  const s = farm();
+  assertEqual(levelReached(s), 1);
   for (const id of ['potager', 'pompe', 'panneau', 'batterie', 'comptoir']) assertEqual([id, isUnlocked(s, id)], [id, true]);
-  assertEqual(unlockChapter('potager'), 0);
-  assertEqual([unlockChapter('champ'), unlockChapter('presse'), unlockChapter('moutons'), unlockChapter('frigo')], [3, 4, 5, 6]);
+  assertEqual(unlockLevel('potager'), 1);
+  assertEqual(['cuisine', 'silo', 'moulin', 'four', 'presse', 'serre', 'frigo'].map(unlockLevel), [2, 3, 4, 5, 6, 7, 8]);
 });
 
-test('masquage : un chapitre qui avance ne détruit rien de ce que la partie possède', () => {
+test('masquage : un niveau plus bas ne détruit rien de ce que la partie possède', () => {
   const s = createInitialState(1);
   s.pieces = 5000;
   addItem(s, 'ble', 1);
   assert(plant(s, 'potager-1', 'ble').ok, 'les actions du moteur restent libres : le masquage est celui de l\'interface');
   assert(buildPoulailler(s).ok);
-  testGoToChapter(s, 1);
+  testSetLevel(s, 1);
   assertEqual([findPlot(s, 'potager-1').culture, s.poulailler.construit], ['ble', true]);
-  assertEqual([isUnlocked(s, 'champ'), isUnlocked(s, 'poulailler')], [false, false]);
-  assertEqual(plantableCropsFor(s, 'potager').includes('ble'), false, 'le blé n\'est pas proposé avant le chapitre 3');
+  assertEqual([cropUnlocked(s, 'ble'), isUnlocked(s, 'poulailler')], [false, false]);
+  assertEqual(plantableCropsFor(s, 'potager').includes('ble'), false, 'le blé n\'est pas proposé avant le niveau 3');
 });
 
 /* --- migration --- */
@@ -7221,17 +7326,18 @@ test('mode test Lot 9 : valider le chapitre en cours', () => {
   assertEqual(testCompleteChapter(s).ok, false, 'la campagne est terminée');
 });
 
-test('mode test Lot 9 : aller à un chapitre donné', () => {
+test('mode test Lot 9 : aller à un chapitre donné (et au niveau qui va avec)', () => {
   const s = createInitialState(1);
   s.campagne.compteurs.laines = 12;
   s.campagne.annonces.push({ chapitre: 1, nuit: 1 });
   assertEqual(testGoToChapter(s, 4), { ok: true, chapitre: 4, fini: false });
   assertEqual([s.campagne.compteurs.laines, s.campagne.annonces], [0, []], 'compteurs et annonces remis à zéro');
-  assertEqual([isUnlocked(s, 'four'), isUnlocked(s, 'paturage')], [true, false]);
+  assertEqual(levelReached(s), DATA.NIVEAUX.CHAPITRE_NIVEAU[3]);
+  assertEqual([isUnlocked(s, 'four'), isUnlocked(s, 'frigo')], [true, false]);
   assertEqual(testGoToChapter(s, 8), { ok: true, chapitre: 7, fini: true });
   assertEqual(isUnlocked(s, 'frigo'), true);
   assertEqual(testGoToChapter(s, 2), { ok: true, chapitre: 2, fini: false });
-  assertEqual(s.campagne.fini, false);
+  assertEqual([s.campagne.fini, levelReached(s)], [false, 2]);
   assertEqual(testGoToChapter(s, 0).ok, false);
   assertEqual(testGoToChapter(s, 9).ok, false);
   assertEqual(testGoToChapter(s, 'abc').ok, false);
@@ -7370,10 +7476,11 @@ test('Lot 10 : au chapitre du troupeau, le joueur automatique nourrit ses mouton
   const s = createInitialState(3);
   simulatePlay(s, 'applique', 22);
   testGoToChapter(s, 5);
-  // version 1.6 : les améliorations coûtent plus cher (100 à 2 200 pièces), le
-  // chapitre se termine vers la 24ᵉ nuit au lieu de la 22ᵉ
-  const rows = simulatePlay(s, 'applique', 25);
-  assertEqual(rows.length, 25);
+  // version 1.6 : les améliorations coûtent plus cher (100 à 2 200 pièces) ;
+  // version 1.7 : le Champ attend que le Moulin soit construit. Le chapitre se
+  // termine vers la 28ᵉ nuit (22ᵉ avant ces deux versions).
+  const rows = simulatePlay(s, 'applique', 30);
+  assertEqual(rows.length, 30);
   assertEqual(s.stations.moulin.construit, true, 'il a construit le Moulin');
   assert(sheepCount(s) >= 3, `il a acheté ses moutons : ${sheepCount(s)}`);
   assert(s.campagne.compteurs.laines >= 10, `laines tondues : ${s.campagne.compteurs.laines}`);
@@ -7426,12 +7533,16 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   // la part ne vaut qu'une fois les cultures de plein champ débloquées (chapitre 3)
   const cible = (chapitre, niveau) => {
     const s = atChapter(chapitre);
+    s.pieces = 5000;
+    buildSilo(s); // version 1.7 : le blé attend le Silo (refusé avant son niveau)
     while (s.potager.niveau < niveau) upgradePotager(Object.assign(s, { pieces: 5000 }));
     return botFieldTarget(s);
   };
   assertEqual([cible(2, 2), cible(3, 1), cible(3, 2), cible(3, 3), cible(3, 4), cible(3, 5)], [0, 2, 4, 7, 9, 12]);
   // chapitre 3, zone de 12 parcelles : 4 parcelles de blé, le reste en légumes
   const s = atChapter(3);
+  s.pieces = 5000;
+  buildSilo(s);
   upgradePotager(Object.assign(s, { pieces: 5000 }));
   setInv(s, { ble: 20, patate: 20, graine_carotte: 20, riz: 20, houblon: 20, graine_tournesol: 20 });
   botFarm(s);
@@ -7442,6 +7553,8 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   assertEqual(botWheatKept(s), 4, 'il garde de quoi ressemer son blé');
   // chapitre 4 avec la Presse : une parcelle de tournesol prise sur la part de plein champ
   const t = atChapter(4);
+  t.pieces = 5000;
+  buildSilo(t);
   upgradePotager(Object.assign(t, { pieces: 5000 }));
   t.stations.presse.construit = true;
   setInv(t, { ble: 20, patate: 20, graine_tournesol: 20 });
@@ -7500,7 +7613,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.6.0');
+  assertEqual(GAME_VERSION, '1.7.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -8307,11 +8420,11 @@ test('version 1.3 : la lettre du cousin est définie : Serre, 1 cacao, 1 vanille
 });
 
 test('version 1.3 : la lettre arrive quand la Serre se débloque, une seule fois, avec ses trois graines', () => {
-  const avant = atChapter(unlockChapter('serre') - 1);
+  const avant = atLevel(unlockLevel('serre') - 1);
   setInv(avant, {});
   updateChapters(avant);
   assertEqual([isUnlocked(avant, 'serre'), avant.courrier, countItem(avant, 'cacao')], [false, [], 0], 'rien avant le déblocage');
-  const s = atChapter(unlockChapter('serre'));
+  const s = atLevel(unlockLevel('serre'));
   setInv(s, {});
   s.day = 57;
   assertEqual(deliverMail(s), ['cousin_venezuela']);
@@ -8328,11 +8441,11 @@ test('version 1.3 : la lettre arrive quand la Serre se débloque, une seule fois
   assertEqual(JSON.parse(JSON.stringify(s)).courrier, s.courrier, 'le courrier se sauvegarde');
 });
 
-test('version 1.3 : la lettre arrive par le jeu lui-même, à la fin du chapitre qui ouvre la Serre', () => {
-  const s = atChapter(unlockChapter('serre') - 1);
+test('version 1.3 : la lettre arrive par le jeu lui-même, au niveau qui ouvre la Serre', () => {
+  const s = atLevel(unlockLevel('serre') - 1);
   assertEqual(s.courrier, []);
   const vanille = countItem(s, 'vanille');
-  assert(testCompleteChapter(s).ok, 'valider le chapitre');
+  gainXp(s, DATA.NIVEAUX.SEUILS[unlockLevel('serre') - 1] - s.progression.xp); // l'XP du niveau de la Serre
   tick(s, 0.2); // le pas de jeu suivant fait arriver le courrier
   assertEqual([isUnlocked(s, 'serre'), s.courrier.map((l) => l.id), countItem(s, 'vanille') - vanille], [true, ['cousin_venezuela'], 1]);
 });
@@ -8413,12 +8526,22 @@ test('version 1.4 : format 20, le Champ commence vide et la migration l\'ajoute'
   assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
 });
 
+// Version 1.7 : le Champ s'ouvre quand le Moulin est construit (son niveau atteint).
+function withMill() {
+  const s = atLevel(unlockLevel('moulin'));
+  openStation(s, 'moulin');
+  return s;
+}
+
 test('version 1.4 : le Champ s\'ouvre en entier avec le Moulin, une seule fois, sans rien payer', () => {
   const Z = DATA.POTAGER.ZONE2;
-  const avant = atChapter(unlockChapter('moulin') - 1);
+  const avant = atLevel(unlockLevel('moulin') - 1);
   updateChapters(avant);
   assertEqual([isUnlocked(avant, 'moulin'), zone2Plots(avant).length], [false, 0], 'pas avant le Moulin');
-  const s = atChapter(unlockChapter('moulin'));
+  const debloque = atLevel(unlockLevel('moulin'));
+  updateChapters(debloque);
+  assertEqual([isUnlocked(debloque, 'moulin'), zone2Plots(debloque).length], [true, 0], 'version 1.7 : débloqué ne suffit pas, il faut le construire');
+  const s = withMill();
   const pieces = s.pieces;
   updateChapters(s);
   const z = zone2Plots(s);
@@ -8438,7 +8561,7 @@ test('version 1.4 : le Champ s\'ouvre en entier avec le Moulin, une seule fois, 
 });
 
 test('version 1.4 : le Champ suit les règles de la Zone de culture (cultures, eau, pousse, récolte)', () => {
-  const s = atChapter(unlockChapter('moulin'));
+  const s = withMill();
   updateChapters(s);
   assertEqual(plantableCropsFor(s, zone2Plots(s)[0].lieu), plantableCropsFor(s, 'potager'), 'mêmes cultures');
   addItem(s, 'graines_carotte', 2);
@@ -8454,7 +8577,7 @@ test('version 1.4 : le Champ suit les règles de la Zone de culture (cultures, e
 });
 
 test('version 1.4 : « Arroser tout » et « Récolter tout » s\'adressent à une zone à la fois', () => {
-  const s = atChapter(unlockChapter('moulin'));
+  const s = withMill();
   updateChapters(s);
   grantTech(s, 'cu_outils');
   addItem(s, 'ble', 10);
@@ -8475,7 +8598,7 @@ test('version 1.4 : « Arroser tout » et « Récolter tout » s\'adressent à u
 });
 
 test('version 1.4 : les automatisations et les alertes de la Zone de culture couvrent le Champ', () => {
-  const s = atChapter(unlockChapter('moulin'));
+  const s = withMill();
   updateChapters(s);
   addItem(s, 'ble', 4);
   assert(plant(s, 'zone2-5', 'ble').ok, 'planter');
@@ -8492,7 +8615,8 @@ test('version 1.4 : les automatisations et les alertes de la Zone de culture cou
 });
 
 test('version 1.4 : une partie d\'avant, Moulin déjà débloqué, reçoit le Champ au premier passage', () => {
-  const s = atChapter(unlockChapter('moulin') + 1);
+  const s = atChapter(5); // une partie d'avant arrivée au chapitre 5, son Moulin construit
+  openStation(s, 'moulin');
   const v19 = JSON.parse(JSON.stringify(s));
   v19.version = 19;
   delete v19.potager.zone2;

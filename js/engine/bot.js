@@ -20,7 +20,7 @@ import { buildVerger, buyOrchardSlot, buyTree, orchardFree, orchardSlotPrice } f
 import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
 import { buyTech, hasTech, techPoints, techStatus } from './techtree.js';
 import {
-  chapterCount, chapterReached, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
+  chapterCount, chapterReached, cropUnlocked, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
 } from './campaign.js';
 import { sleep } from './night.js';
 import { createInitialState } from './state.js';
@@ -56,17 +56,16 @@ export function botWantsCarrots(state) {
   return state.campagne.compteurs.carottes + inGround < obj.cible;
 }
 
-// Une culture de plein champ (blé, tournesol, riz, houblon) : celles que le
-// déblocage 'champ' ouvre.
+// Une culture de plein champ (blé, tournesol, riz, houblon).
 export function botIsFieldCrop(culture) {
-  return DATA.crops[culture].deblocage === 'champ';
+  return !!DATA.crops[culture].pleinChamp;
 }
 
 // Parcelles de la Zone de culture que le joueur réserve au plein champ (blé et
-// tournesol) : PART_PLEIN_CHAMP % de la zone une fois ces cultures débloquées,
-// 0 avant.
+// tournesol) : PART_PLEIN_CHAMP % de la zone une fois le blé plantable (niveau
+// atteint et Silo construit), 0 avant.
 export function botFieldTarget(state) {
-  if (!isUnlocked(state, 'champ')) return 0;
+  if (!cropUnlocked(state, 'ble')) return 0;
   return Math.floor((state.potager.parcelles.length * DATA.SIMULATION.PART_PLEIN_CHAMP) / 100);
 }
 

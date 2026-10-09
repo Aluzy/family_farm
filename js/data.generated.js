@@ -129,7 +129,7 @@ export const RAW_DATA = {
   "ORIGINE": { "PRODUIT": "produit", "ACHETE": "acheté", "PAR_CATEGORIE": { "conserve": "acheté" } },
   "STATIONS": {
     "four": { "nom": "Four", "article": "le", "icone": "🔥", "cout": 100, "electrique": false, "debloque": ["recettes"] },
-    "cuisine": { "nom": "Cuisine", "article": "la", "icone": "🍳", "cout": 150, "electrique": false, "requiert": "four" },
+    "cuisine": { "nom": "Cuisine", "article": "la", "icone": "🍳", "cout": 150, "electrique": false, "debloque": ["recettes"] },
     "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "cout": 120, "electrique": true, "whParS": 20 },
     "presse": { "nom": "Presse", "article": "la", "icone": "🌻", "cout": 150, "electrique": true, "whParS": 30 }
   },
@@ -443,7 +443,8 @@ export const RAW_DATA = {
       "nom": "Blé",
       "icone": "🌾",
       "lieux": ["potager"],
-      "deblocage": "champ",
+      "pleinChamp": true,
+      "requiert": "silo",
       "stades": 7,
       "litres": 2,
       "rendement": 8,
@@ -454,7 +455,7 @@ export const RAW_DATA = {
       "nom": "Tournesol",
       "icone": "🌻",
       "lieux": ["potager"],
-      "deblocage": "champ",
+      "pleinChamp": true,
       "stades": 7,
       "litres": 2,
       "rendement": 9,
@@ -466,7 +467,7 @@ export const RAW_DATA = {
       "nom": "Riz",
       "icone": "🍚",
       "lieux": ["potager"],
-      "deblocage": "champ",
+      "pleinChamp": true,
       "stades": 8,
       "litres": 4,
       "rendement": 10,
@@ -477,7 +478,7 @@ export const RAW_DATA = {
       "nom": "Houblon",
       "icone": "🌿",
       "lieux": ["potager"],
-      "deblocage": "champ",
+      "pleinChamp": true,
       "stades": 6,
       "litres": 2,
       "rendement": 6,
@@ -1024,31 +1025,11 @@ export const RAW_DATA = {
     ]
   },
   "CHAPITRES": {
-    "ELEMENTS": {
-      "champ": { "nom": "Cultures de plein champ", "icone": "🌾", "note": "blé pour les poules et la farine" },
-      "silo": { "nom": "Silo", "icone": "🛖", "note": "stock de blé" },
-      "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
-      "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tarte, et l'onglet Livre de recette" },
-      "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe" },
-      "moulin": {
-        "nom": "Moulin",
-        "icone": "⚙️",
-        "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 parcelles de plus, pour le blé"
-      },
-      "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
-      "tournesol": { "nom": "Tournesol", "icone": "🌻", "note": "nouvelle culture de plein champ" },
-      "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
-      "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille du Moulin" },
-      "serre": { "nom": "Serre", "icone": "🏡", "note": "des légumes toute l'année" },
-      "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
-      "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
-    },
     "liste": [
       {
         "titre": "L'eau et le soleil",
         "icone": "💧",
         "intro": "Pompe de l'eau et range de l'énergie dans ta batterie : ce sont les deux ressources de la ferme. Tes conserves nourrissent la famille pour l'instant.",
-        "debloque": [],
         "objectifs": [
           { "type": "litres", "cible": 50, "libelle": "Pomper 50 L au total", "unite": "L" },
           { "type": "wh", "cible": 3000, "libelle": "Stocker 3 000 Wh dans la batterie", "unite": "Wh" }
@@ -1058,7 +1039,6 @@ export const RAW_DATA = {
         "titre": "Le premier potager",
         "icone": "🥕",
         "intro": "Plante, arrose, récolte : ta première production doit commencer à nourrir la famille.",
-        "debloque": [],
         "objectifs": [
           { "type": "carottes", "cible": 20, "libelle": "Récolter 20 carottes", "unite": "" },
           { "type": "autonomie", "cible": 25, "libelle": "Atteindre 25 % d'autonomie", "unite": "%" }
@@ -1068,7 +1048,6 @@ export const RAW_DATA = {
         "titre": "Le poulailler",
         "icone": "🐔",
         "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé et une famille en bonne santé.",
-        "debloque": ["champ", "silo", "poulailler"],
         "objectifs": [
           { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
           { "type": "sante", "cible": 80, "libelle": "Santé moyenne d'au moins 80", "unite": "" }
@@ -1078,7 +1057,6 @@ export const RAW_DATA = {
         "titre": "Le four et le livre de recette",
         "icone": "🍞",
         "intro": "Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients.",
-        "debloque": ["four", "cuisine", "moulin", "presse", "tournesol"],
         "objectifs": [
           { "type": "pains", "cible": 5, "recette": "pain", "libelle": "Cuire 5 pains", "unite": "" },
           { "type": "plats", "cible": 3, "exclut": ["pain"], "libelle": "Préparer 3 plats différents (hors pain)", "unite": "" }
@@ -1088,7 +1066,6 @@ export const RAW_DATA = {
         "titre": "Le troupeau",
         "icone": "🐑",
         "intro": "Des moutons pour la laine, des vaches pour le lait. Ils vivent à l'Étable et mangent chaque nuit la paille que donne le Moulin.",
-        "debloque": ["paturage", "moutons"],
         "objectifs": [
           { "type": "laines", "cible": 10, "libelle": "Tondre 10 laines", "unite": "" },
           { "type": "autonomie", "cible": 60, "libelle": "Atteindre 60 % d'autonomie", "unite": "%" }
@@ -1098,7 +1075,6 @@ export const RAW_DATA = {
         "titre": "Toute l'année",
         "icone": "📅",
         "intro": "La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris, sans acheter de soins.",
-        "debloque": ["serre", "verger", "frigo"],
         "objectifs": [
           {
             "type": "tenue",
@@ -1114,7 +1090,6 @@ export const RAW_DATA = {
         "titre": "Famille autonome",
         "icone": "🏡",
         "intro": "Le dernier défi : nourrir la famille avec ce que produit la ferme, et rien d'autre.",
-        "debloque": [],
         "objectifs": [{ "type": "serie100", "cible": 7, "libelle": "Atteindre 100 % d'autonomie 7 nuits d'affilée", "unite": "nuits" }]
       }
     ]
@@ -1136,6 +1111,54 @@ export const RAW_DATA = {
       ],
       "signature": "Votre cousin Mateo"
     }
+  },
+  "NIVEAUX": {
+    "SEUILS": [0, 500, 1200, 3000, 7500, 20000, 40000, 80000, 180000, 400000],
+    "liste": [
+      { "debloque": ["carotte", "patate", "tomate"] },
+      { "debloque": ["courgette", "aubergine", "oignon", "cuisine"] },
+      { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler"] },
+      { "debloque": ["epinard", "tournesol", "riz", "moulin"] },
+      { "debloque": ["houblon", "four", "paturage", "moutons"] },
+      { "debloque": ["presse", "verger"] },
+      { "debloque": ["cacao", "vanille", "cafe", "serre"] },
+      { "debloque": ["frigo"] },
+      { "debloque": [], "note": "à venir : le courrier du notaire" },
+      { "debloque": [], "note": "à venir : le choix d'un commerce" }
+    ],
+    "ELEMENTS": {
+      "silo": { "nom": "Silo", "icone": "🛖", "note": "stock de blé ; le blé ne se plante qu'une fois le Silo construit" },
+      "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
+      "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },
+      "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe, et le Livre de recette" },
+      "moulin": {
+        "nom": "Moulin",
+        "icone": "⚙️",
+        "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 parcelles de plus, pour le blé"
+      },
+      "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
+      "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
+      "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille du Moulin" },
+      "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
+      "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
+      "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
+    },
+    "XP": {
+      "planter": 10,
+      "arroser": 10,
+      "recolter": 20,
+      "oeuf": 10,
+      "lait": 30,
+      "tondre": 30,
+      "cuisiner": 40,
+      "cuireFour": 50,
+      "moudre": 10,
+      "presser": 10,
+      "vendre": 1
+    },
+    "AUTO": 50,
+    "CHAPITRES_XP": [200, 500, 1000, 2500, 2000, 4000, 8000],
+    "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
   },
   "VILLE": {
     "BONHEUR": {

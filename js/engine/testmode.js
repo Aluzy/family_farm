@@ -10,6 +10,7 @@ import { openStation } from './kitchen.js';
 import { grantTechPoints, refreshUnlocks } from './techtree.js';
 import { chapterCount, completeChapter, newCampaignCounters } from './campaign.js';
 import { sleep } from './night.js';
+import { gainXp, levelCount } from './levels.js';
 
 /* ---------- actions du mode test ---------- */
 
@@ -188,7 +189,23 @@ export function testGoToChapter(state, n) {
   c.annonces = [];
   c.fini = target > chapterCount();
   c.chapitre = c.fini ? chapterCount() : target;
+  // version 1.7 : et au niveau d'un joueur arrivé à ce chapitre (NIVEAUX.CHAPITRE_NIVEAU)
+  testSetLevel(state, DATA.NIVEAUX.CHAPITRE_NIVEAU[target - 1]);
   return { ok: true, chapitre: c.chapitre, fini: c.fini };
+}
+
+// Version 1.7 : place la partie au début d'un niveau (XP = son seuil), sans écran
+// d'annonce.
+export function testSetLevel(state, n) {
+  const niveau = Math.floor(Number(n));
+  if (!(niveau >= 1 && niveau <= levelCount())) return fail('Niveau inconnu.');
+  state.progression = { xp: DATA.NIVEAUX.SEUILS[niveau - 1], niveau, annonces: [] };
+  return { ok: true, niveau };
+}
+
+// Version 1.7 : +n XP (les niveaux franchis sont annoncés, comme en jeu).
+export function testAddXp(state, n = 1000) {
+  return { ok: true, niveaux: gainXp(state, n) };
 }
 
 // Lot 8 : construit gratuitement la Serre (niveau 1), le Verger et le Réfrigérateur.

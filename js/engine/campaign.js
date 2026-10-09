@@ -5,7 +5,8 @@ import { addItem, lotsOf } from './inventory.js';
 import { fridgeLots } from './fridge.js';
 import { averageHealth, planMeal } from './family.js';
 import { openZone2, plantableCrops } from './crops.js';
-import { checkMastery, grantTechPoints, techPoints } from './techtree.js';
+import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
+import { gainXp, levelReached, unlockLevel } from './levels.js';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
 
@@ -104,16 +105,18 @@ export function chapterReached(state) {
   return c.fini ? chapterCount() + 1 : c.chapitre;
 }
 
-// Numéro (1 à 7) du chapitre qui débloque cet élément ; 0 s'il est disponible dès
-// le départ.
-export function unlockChapter(id) {
-  const i = DATA.CHAPITRES.liste.findIndex((ch) => ch.debloque.includes(id));
-  return i < 0 ? 0 : i + 1;
+// Version 1.7 : un élément (bâtiment, atelier) ou une culture est débloqué par
+// un niveau d'expérience (NIVEAUX.liste), plus par un chapitre.
+export function isUnlocked(state, id) {
+  return levelReached(state) >= unlockLevel(id);
 }
 
-export function isUnlocked(state, id) {
-  return chapterReached(state) >= unlockChapter(id);
-}
+// Chapitre qui débloquait chaque élément avant la version 1.7 : sert seulement à
+// dater une très ancienne sauvegarde (inferChapter).
+const LEGACY_CHAPTER = {
+  champ: 3, silo: 3, poulailler: 3, four: 4, cuisine: 4, moulin: 4, presse: 4, tournesol: 4,
+  paturage: 5, moutons: 5, serre: 6, verger: 6, frigo: 6,
+};
 
 // Numéro du premier chapitre qui porte un objectif de ce type.
 export function objectiveChapter(type) {
@@ -128,13 +131,11 @@ export function objectiveDef(type) {
   return null;
 }
 
-// Une culture est-elle débloquée ? Il faut son propre déblocage de chapitre
-// (le tournesol n'arrive qu'au chapitre 4) et, si elle en demande un autre
-// (`deblocage` : les cultures de plein champ attendent 'champ', au chapitre 3),
-// celui-là aussi.
+// Une culture est-elle débloquée ? Il faut son niveau et, si elle demande un
+// bâtiment (`requiert` : le blé attend le Silo), que ce bâtiment soit construit.
 export function cropUnlocked(state, culture) {
-  const requis = DATA.crops[culture].deblocage;
-  return isUnlocked(state, culture) && (!requis || isUnlocked(state, requis));
+  const requis = DATA.crops[culture].requiert;
+  return isUnlocked(state, culture) && (!requis || isBuilt(state, requis));
 }
 
 // Cultures qu'on peut planter dans ce lieu avec les chapitres atteints. Comme
@@ -209,6 +210,8 @@ export function completeChapter(state) {
   c.annonces.push({ chapitre: c.chapitre, nuit: state.day });
   // Arbre v2 : chaque chapitre terminé rapporte des points de technologie.
   grantTechPoints(state, DATA.techtree.POINTS.CHAPITRES[c.chapitre - 1] || 0, `Chapitre ${c.chapitre} terminé`);
+  // Version 1.7 : et de l'expérience (le succès « chapitre n terminé »).
+  gainXp(state, DATA.NIVEAUX.CHAPITRES_XP[c.chapitre - 1] || 0);
   if (c.chapitre >= chapterCount()) c.fini = true;
   else c.chapitre += 1;
   return { ok: true, chapitre: c.chapitre, fini: c.fini };
@@ -375,7 +378,7 @@ export function ownsElement(state, id) {
   switch (id) {
     // 'champ' : l'ancien Champ construit (sauvegarde d'avant la version 15), ou
     // une culture de plein champ en terre.
-    case 'champ': return built(legacyChamp(state)) || ownedPlots(state).some((p) => p && p.culture && DATA.crops[p.culture] && DATA.crops[p.culture].deblocage === 'champ');
+    case 'champ': return built(legacyChamp(state)) || ownedPlots(state).some((p) => p && ['ble', 'riz', 'houblon'].includes(p.culture));
     case 'silo': return built(state.silo);
     case 'poulailler': return built(state.poulailler) || (state.poulailler && state.poulailler.poules > 0);
     case 'four': case 'cuisine': case 'moulin': case 'presse':
@@ -396,10 +399,8 @@ export function ownsElement(state, id) {
 // nuit ou agrandi le Potager, sinon chapitre 1.
 export function inferChapter(state) {
   let chapitre = 0;
-  for (const ch of DATA.CHAPITRES.liste) {
-    for (const id of ch.debloque) {
-      if (ownsElement(state, id)) chapitre = Math.max(chapitre, unlockChapter(id));
-    }
+  for (const [id, ch] of Object.entries(LEGACY_CHAPTER)) {
+    if (ownsElement(state, id)) chapitre = Math.max(chapitre, ch);
   }
   if (chapitre > 0) return chapitre;
   const niveau = state.potager && typeof state.potager.niveau === 'number' ? state.potager.niveau : 1;

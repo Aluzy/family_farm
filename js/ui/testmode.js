@@ -5,8 +5,9 @@ import {
   testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
   testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
   testRipenAll, testSetBuildingLevel5, testSetHealthZero, testSetWear, testSkipAwake, testSleepNights,
-  testUnlockAllTechs, testWearMill, testWoolReady,
+  testUnlockAllTechs, testWearMill, testWoolReady, testAddXp, testSetLevel,
 } from '../engine/testmode.js';
+import { levelCount } from '../engine/levels.js';
 import { formatCoins, formatNumber, formatPercent } from '../engine/format.js';
 import { simulateFromCopy, simulationReach } from '../engine/bot.js';
 import { state, testMode } from './store.js';
@@ -180,6 +181,13 @@ registerActions({
   'test-add-100': () => {
     applyResult(testAddPieces(state, 100));
   },
+  'test-add-xp': () => {
+    applyResult(testAddXp(state, 1000));
+  },
+  'test-next-level': () => {
+    const result = applyResult(testSetLevel(state, Math.min(levelCount(), state.progression.niveau + 1)));
+    if (result.ok) showToast(`Niveau ${result.niveau}`);
+  },
   'test-add-1000': () => {
     applyResult(testAddPieces(state, 1000));
   },
@@ -201,7 +209,7 @@ registerActions({
   },
   'test-goto-chapter': () => {
     const result = applyResult(testGoToChapter(state, document.getElementById('test-chapter').value));
-    if (result.ok) showToast(result.fini ? '🏆 Mode libre : tout est débloqué' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
+    if (result.ok) showToast(result.fini ? '🏆 Mode libre' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
   },
   'test-simulate': () => {
     actionTestSimulate();

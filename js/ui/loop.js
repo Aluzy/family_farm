@@ -16,6 +16,7 @@ import {
 } from './render.js';
 import { itemsSummary } from './inventaire.js';
 import { watchChapters } from './chapitres.js';
+import { watchLevels } from './niveaux.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, showToast, watchAlerts,
 } from './toasts.js';
@@ -189,6 +190,7 @@ export function frame(now) {
   if (ticked) watchAlerts();
   watchAbsence();
   watchChapters();
+  watchLevels(); // version 1.7 : après l'écran de fin de chapitre
   requestAnimationFrame(frame);
 }
 

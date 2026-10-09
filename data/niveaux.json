@@ -1,0 +1,62 @@
+{
+  "//NIVEAUX": [
+    "Version 1.7 (v2, lot 3) : niveaux d'expérience (docs/conception-v2.md, section 4).",
+    "SEUILS : XP cumulée pour atteindre chaque niveau (index 0 = niveau 1).",
+    "liste : ce que chaque niveau débloque : des éléments (ELEMENTS) ou des cultures",
+    "(clés de crops). Ce que rien ne débloque est disponible dès le départ.",
+    "Les chapitres ne débloquent plus rien : ils racontent l'histoire et rapportent",
+    "de l'XP (CHAPITRES_XP, un nombre par chapitre terminé)."
+  ],
+  "NIVEAUX": {
+    "SEUILS": [0, 500, 1200, 3000, 7500, 20000, 40000, 80000, 180000, 400000],
+    "liste": [
+      { "debloque": ["carotte", "patate", "tomate"] },
+      { "debloque": ["courgette", "aubergine", "oignon", "cuisine"] },
+      { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler"] },
+      { "debloque": ["epinard", "tournesol", "riz", "moulin"] },
+      { "debloque": ["houblon", "four", "paturage", "moutons"] },
+      { "debloque": ["presse", "verger"] },
+      { "debloque": ["cacao", "vanille", "cafe", "serre"] },
+      { "debloque": ["frigo"] },
+      { "debloque": [], "note": "à venir : le courrier du notaire" },
+      { "debloque": [], "note": "à venir : le choix d'un commerce" }
+    ],
+    "//ELEMENTS": "Libellé des éléments débloqués (écran du niveau, Ferme).",
+    "ELEMENTS": {
+      "silo": { "nom": "Silo", "icone": "🛖", "note": "stock de blé ; le blé ne se plante qu'une fois le Silo construit" },
+      "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
+      "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },
+      "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe, et le Livre de recette" },
+      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 parcelles de plus, pour le blé" },
+      "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
+      "//paturage": "'paturage' et 'moutons' : identifiants historiques (l'ancien Pâturage).",
+      "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
+      "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille du Moulin" },
+      "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
+      "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
+      "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
+    },
+    "//XP": [
+      "XP par action (section 4.2). recolter, planter, arroser, tondre : par parcelle ou",
+      "par mouton ; oeuf, lait : par unité produite la nuit ; moudre : par blé moulu ;",
+      "presser : par huile pressée ; cuisiner (Cuisine) et cuireFour (Four) : par plat",
+      "terminé ; vendre : XP par pièce gagnée. AUTO : % de l'XP quand une",
+      "automatisation fait l'action (arrosage, récolte, semis, tonte)."
+    ],
+    "XP": {
+      "planter": 10, "arroser": 10, "recolter": 20,
+      "oeuf": 10, "lait": 30, "tondre": 30,
+      "cuisiner": 40, "cuireFour": 50, "moudre": 10, "presser": 10,
+      "vendre": 1
+    },
+    "AUTO": 50,
+    "//CHAPITRES_XP": "XP du succès « chapitre n terminé » (index 0 = chapitre 1).",
+    "CHAPITRES_XP": [200, 500, 1000, 2500, 2000, 4000, 8000],
+    "//CHAPITRE_NIVEAU": [
+      "Niveau qu'une partie d'avant la version 1.7 reçoit selon le chapitre atteint",
+      "(index 0 = chapitre 1 ; dernier = campagne finie) : de quoi garder tout ce que",
+      "ses chapitres avaient débloqué. Sert aussi au mode test « aller au chapitre »."
+    ],
+    "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
+  }
+}

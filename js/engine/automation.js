@@ -45,7 +45,7 @@ export function autoReplant(state, plot, harvested) {
   if (!DATA.crops[culture].lieux.includes(plot.lieu)) return false;
   const reserve = state.famille.reserve[seedItem(culture)] || 0;
   if (seedStock(state, culture) - reserve < 1 - EPS) return false;
-  return plant(state, plot.id, culture).ok === true;
+  return plant(state, plot.id, culture, true).ok === true;
 }
 
 // Réglage du semis automatique d'une parcelle : 'meme', 'off' ou 'verrou' (avec
@@ -172,7 +172,7 @@ export function autoTasks(state) {
       // Gestion intelligente de l'eau : les plantes les plus proches de la récolte d'abord.
       if (prioritaire) aArroser = aArroser.slice().sort((x, y) => (maxStage(x) - x.stade) - (maxStage(y) - y.stade));
       for (const p of aArroser) {
-        if (water(state, p.id).ok) rap.arrosees += 1;
+        if (water(state, p.id, true).ok) rap.arrosees += 1;
         else rap.sansEau += 1;
       }
     }
@@ -189,7 +189,7 @@ export function autoTasks(state) {
   // Tonte planifiée : les moutons dont la laine est prête (avant qu'ils
   // mangent : la laine repart ainsi dès cette nuit).
   if (techAuto(state, 'tonte', 'paturage') && state.paturage && state.paturage.construit) {
-    for (const m of state.paturage.moutons) if (woolReady(m) && shear(state, m.id).ok) rap.tondus += 1;
+    for (const m of state.paturage.moutons) if (woolReady(m) && shear(state, m.id, true).ok) rap.tondus += 1;
   }
   state.nuit.auto = rap;
   return rap;

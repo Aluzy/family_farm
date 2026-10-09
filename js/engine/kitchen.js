@@ -8,6 +8,10 @@ import { productivity } from './family.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { recipeTime, techEffects, techFlag } from './techtree.js';
 import { noteRecipeDone } from './campaign.js';
+import { gainActionXp } from './levels.js';
+
+// XP d'une préparation terminée, selon l'atelier (version 1.7).
+const STATION_XP = { four: 'cuireFour', cuisine: 'cuisiner', moulin: 'moudre', presse: 'presser' };
 
 /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
 
@@ -182,6 +186,7 @@ export function completeTask(state, id) {
   if (extra) addItem(state, extra.item, extra.qte);
   st.tache = null;
   noteRecipeDone(state, recette, qty); // Lot 9
+  gainActionXp(state, STATION_XP[id] || '', 1);
   if (enAttente > 0) {
     // Moulin : le blé suivant du lot se moud à la suite.
     beginTask(state, id, recette);

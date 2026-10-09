@@ -7,8 +7,9 @@
 > confirmées puis vérifiées avec `scripts/simulate.mjs`.
 >
 > **Avancement (section 12)** : lot 1 (saisons retirées) et lot 2 (un panneau, une
-> batterie, soleil de 7 h à 19 h, réservoir à niveaux) sont codés, version 1.6 ; leurs
-> notes v27 et v28 dans [`conception.md`](conception.md) font foi. Le reste n'est pas
+> batterie, soleil de 7 h à 19 h, réservoir à niveaux) sont codés, version 1.6 ; lot 3
+> (niveaux d'expérience) est codé, version 1.7. Leurs notes v27, v28 et v29 dans
+> [`conception.md`](conception.md) font foi. Le reste n'est pas
 > encore codé : quand il le sera, ce document remplacera dans `conception.md` tout ce qui
 > le contredit (santé, chapitres, réfrigérateur illimité, Zone de culture à 5 niveaux).
 
@@ -506,7 +507,7 @@ change, et la mise à jour de `conception.md` et du README.
 |---|---|---|
 | 1 ✅ | **Saisons retirées** (moteur, données, carte, bandeau) — fait, version 1.6 | oui (format 23) |
 | 2 ✅ | **Un panneau, une batterie**, panneau de 7 h à 19 h, réservoir séparé ; « absence » sans électricité — fait, version 1.6 | oui (format 24) |
-| 3 | **Niveaux et XP** : `state.xp`, `niveau()`, gains, déblocages par niveau (remplacent ceux des chapitres) | oui (XP estimée depuis le chapitre atteint) |
+| 3 ✅ | **Niveaux et XP** : `state.progression`, gains, déblocages par niveau (remplacent ceux des chapitres) — fait, version 1.7 | oui (format 25) |
 | 4 | **Énergie, bonheur, endurance** ; santé et soins retirés | oui |
 | 5 | **Houe** : herbe / terre, 16 dessins, plafond de tuiles | oui (parcelles existantes = terre) |
 | 6 | **Frigo à capacité**, consommation par unité | oui (surplus rendu à l'inventaire) |

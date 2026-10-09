@@ -56,7 +56,7 @@ export function renderChapterBanner() {
     return `
     <div class="card chapter-card done">
       <span class="card-title"><span>🏆 Campagne terminée</span><span class="chip">Mode libre</span></span>
-      <span class="muted">La famille est autonome : tout est débloqué. Joue à ton rythme.</span>
+      <span class="muted">La famille est autonome. Continue de monter en niveau, à ton rythme.</span>
     </div>`;
   }
   const p = chapterProgress(state);
@@ -65,6 +65,7 @@ export function renderChapterBanner() {
       <span class="card-title"><span>${p.icone} ${p.titre}</span><span class="chip">Chapitre ${p.chapitre} / ${chapterCount()}</span></span>
       <span class="muted">${p.intro}</span>
       <ul class="objectives">${p.objectifs.map(objectiveHtml).join('')}</ul>
+      <span class="muted">Récompense : ⭐ ${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[p.chapitre - 1] || 0)} XP</span>
     </div>`;
 }
 
@@ -124,25 +125,18 @@ function openChapterModal() {
   const L = DATA.CHAPITRES.liste;
   const done = L[a.chapitre - 1];
   const next = L[a.chapitre] || null;
-  const news = next ? next.debloque : [];
-  const newsHtml = news.length
-    ? `<h3>✨ Nouveautés</h3><ul class="unlock-list">${news
-        .map((id) => `<li><strong>${DATA.CHAPITRES.ELEMENTS[id].icone} ${DATA.CHAPITRES.ELEMENTS[id].nom}</strong><br><span class="muted">${DATA.CHAPITRES.ELEMENTS[id].note}</span></li>`)
-        .join('')}</ul>`
-    : '';
   const body = next
-    ? `${newsHtml}
-       <h3>Chapitre ${a.chapitre + 1} : ${next.icone} ${next.titre}</h3>
+    ? `<h3>Chapitre ${a.chapitre + 1} : ${next.icone} ${next.titre}</h3>
        <p class="muted">${next.intro}</p>
        <ul class="objectives">${next.objectifs.map((o) => `<li class="objective"><span class="objective-label">⬜ ${o.libelle}</span></li>`).join('')}</ul>`
     : `<h3>🏆 Campagne terminée</h3>
-       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : tout est débloqué, joue à ton rythme. Chaque série de ${DATA.techtree.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>`;
+       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : continue de monter en niveau, à ton rythme. Chaque série de ${DATA.techtree.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>`;
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" id="chapter-modal" role="dialog" aria-modal="true" aria-labelledby="chapter-title" data-stop-propagation>
         <h2 id="chapter-title">🎉 Chapitre ${a.chapitre} terminé</h2>
         <p><strong>${done.icone} ${done.titre}</strong></p>
-        <p>🔬 +${formatNumber(DATA.techtree.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
+        <p>⭐ +${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[a.chapitre - 1] || 0)} XP · 🔬 +${formatNumber(DATA.techtree.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
         ${body}
         <button type="button" class="btn primary" data-action="ack-chapter" id="chapter-close">Continuer</button>
       </div>

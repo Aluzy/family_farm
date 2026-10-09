@@ -10,8 +10,9 @@ import { makePlot, makePlots, seedItem } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
 import { newAutoReport } from './automation.js';
-import { chapterCount, inferChapter, legacyChamp, newCampaign } from './campaign.js';
+import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
 import { newTutorial } from './alerts.js';
+import { newProgression, unlockLevel } from './levels.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -103,6 +104,7 @@ export function createInitialState(seed = 1) {
     stats: {},
     marche: {}, // Lot 3 : coefficients d'achat au-dessus de leur plancher
     ville: newVille(), // version 1.5 : sorties faites aujourd'hui, marché de la ville
+    progression: newProgression(), // version 1.7 : expérience et niveau
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
@@ -291,7 +293,29 @@ export const MIGRATIONS = {
   // v23 → v24 (version 1.6, v2 lot 2) : un seul panneau, une seule batterie, un
   // réservoir à niveaux.
   23: (state) => migrateSingleDevices(state),
+  // v24 → v25 (version 1.7, v2 lot 3) : niveaux d'expérience.
+  24: (state) => migrateLevels(state),
 };
+
+// Version 1.7 : une partie reçoit le niveau qui garde tout ce qu'elle avait
+// débloqué : celui de son chapitre (NIVEAUX.CHAPITRE_NIVEAU), ou plus si elle a
+// déjà construit un bâtiment ou planté une culture d'un niveau supérieur. Son XP
+// est le seuil de ce niveau ; aucun écran de niveau n'est annoncé.
+export function migrateLevels(old) {
+  const state = { ...old, version: 25 };
+  const c = state.campagne;
+  const chapitre = c && typeof c === 'object' ? (c.fini ? chapterCount() + 1 : Math.max(1, Math.floor(Number(c.chapitre) || 1))) : 1;
+  const N = DATA.NIVEAUX;
+  let niveau = N.CHAPITRE_NIVEAU[Math.min(chapitre, N.CHAPITRE_NIVEAU.length) - 1];
+  for (const id of Object.keys(N.ELEMENTS)) if (ownsElement(state, id)) niveau = Math.max(niveau, unlockLevel(id));
+  for (const p of ownedPlots(state)) if (p && DATA.crops[p.culture]) niveau = Math.max(niveau, unlockLevel(p.culture));
+  const list = (x) => (Array.isArray(x) ? x : []);
+  for (const p of [...list(state.potager && state.potager.zone2), ...list(state.serre && state.serre.parcelles)]) {
+    if (p && DATA.crops[p.culture]) niveau = Math.max(niveau, unlockLevel(p.culture));
+  }
+  state.progression = { xp: N.SEUILS[niveau - 1], niveau, annonces: [] };
+  return state;
+}
 
 // Version 1.6 : on garde le panneau et la batterie du plus haut niveau (à niveau
 // égal, le moins usé) ; la batterie gardée reçoit la charge de toutes, dans la

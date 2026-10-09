@@ -7,7 +7,7 @@ troupeau (poules, moutons, vaches), verger, serre, cuisine, four et réfrigérat
 La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
-- **Version** : 1.6.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
+- **Version** : 1.7.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi (autres
   documents : voir « Documentation » plus bas)
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
@@ -69,10 +69,15 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
 - L'électricité et l'eau circulent en temps réel : panneau (de 7 h à 19 h) → batterie →
   pompe, moulin, presse, réfrigérateur. Les appareils s'usent quand ils tournent.
 - La **Zone de culture** s'agrandit de 6 à 30 parcelles (5 niveaux). Le **Champ**, une
-  deuxième zone de 64 parcelles, s'ouvre avec le Moulin (chapitre 4) ; les arbres du
+  deuxième zone de 64 parcelles, s'ouvre quand le Moulin est construit ; les arbres du
   Verger (12 au plus) apparaissent sur la carte.
-- Le **Silo** (chapitre 3) stocke le blé de la ferme : de 20 à 400 selon son niveau.
-- Sept chapitres mènent à une famille **100 % autonome** : L'eau et le soleil, Le
+- Le **Silo** stocke le blé de la ferme : de 20 à 400 selon son niveau. Le blé ne se
+  plante qu'une fois le Silo construit.
+- **Dix niveaux d'expérience** (⭐ dans le bandeau) débloquent les cultures, les
+  bâtiments et les ateliers (Cuisine au niveau 2, Silo et Poulailler au 3, Moulin au 4,
+  Four et Étable au 5, Presse et Verger au 6, Serre au 7, Réfrigérateur au 8). L'XP vient
+  des actions, des ventes (1 XP par pièce) et des chapitres terminés.
+- Sept chapitres racontent l'histoire jusqu'à une famille **100 % autonome** : L'eau et le soleil, Le
   premier potager, Le poulailler, Le four et le livre de recette, Le troupeau, Toute
   l'année, Famille autonome.
 - **Pas de saisons** (version 1.6) : les cultures, l'eau, le soleil et le Verger
@@ -181,6 +186,7 @@ Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
 | `animals.json` | silo, poulailler, animaux, étable |
 | `techtree.json` | arbre des technologies |
 | `campaign.json` | chapitres et courrier |
+| `niveaux.json` | niveaux d'expérience : seuils, déblocages, XP des actions et des chapitres |
 | `energy.json` | panneau, batterie, pompe, réservoir, soleil, usure, réfrigérateur |
 | `general.json` | départ, horloge, famille, marché, absence |
 | `simulation.json` | réglages du joueur automatique |
@@ -296,7 +302,7 @@ nuits, aller à un chapitre, et voir l'état complet de la partie.
 | Document | Contenu |
 |---|---|
 | [`docs/conception.md`](docs/conception.md) | la conception du jeu : règles, valeurs, équilibrage (fait foi) |
-| [`docs/conception-v2.md`](docs/conception-v2.md) | refonte v2 (niveaux d'XP, énergie du personnage, houe…) : les saisons sont retirées et la ferme n'a plus qu'un panneau et une batterie (version 1.6), le reste n'est pas encore codé |
+| [`docs/conception-v2.md`](docs/conception-v2.md) | refonte v2 (niveaux d'XP, énergie du personnage, houe…) : saisons retirées et un seul panneau et une seule batterie (version 1.6), niveaux d'expérience (version 1.7) ; le reste n'est pas encore codé |
 | [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | la carte de la ferme : découpage, cartes Tiled, pièges à éviter |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |

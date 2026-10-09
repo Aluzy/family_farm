@@ -74,7 +74,7 @@ export const GAME_ACTIONS = {
 // Clics d'interface : navigation, fenêtres, réglages de quantité. Comptés à
 // part, jamais dans le classement des actions.
 export const INTERFACE_ACTIONS = new Set([
-  'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about',
+  'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels',
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open', 'sell-inc',
   'sell-dec', 'sell-max', 'cancel-queued', 'ack-chapter',
   'ask-new-game', 'cancel-new-game', 'copy-export',

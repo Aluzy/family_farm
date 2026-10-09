@@ -95,7 +95,9 @@ test('une nouvelle culture bien écrite passe', () => {
 refuse('culture : la récolte n\'est pas un objet', (d) => { d.crops.melon = culture({ graines: { item: 'tomate', mode: 'plant' } }); }, 'la récolte « melon » n\'est pas un objet');
 refuse('culture : graine inconnue', (d) => { avecMelon(d); delete d.items.graine_melon; d.crops.melon = culture(); }, 'graines.item « graine_melon »');
 refuse('culture : lieu inconnu', (d) => { avecMelon(d); d.crops.melon = culture({ lieux: ['verger'] }); }, 'lieux doit contenir');
-refuse('culture : déblocage inconnu', (d) => { avecMelon(d); d.crops.melon = culture({ deblocage: 'champs' }); }, 'deblocage « champs » inconnu');
+refuse('culture : bâtiment requis inconnu', (d) => { avecMelon(d); d.crops.melon = culture({ requiert: 'champs' }); }, 'requiert « champs » inconnu');
+refuse('niveaux : une culture débloquée deux fois', (d) => { d.NIVEAUX.liste[1].debloque.push('carotte'); }, '« carotte » est déjà débloqué');
+refuse('niveaux : un déblocage inconnu', (d) => { d.NIVEAUX.liste[1].debloque.push('fusee'); }, 'debloque « fusee »');
 refuse('culture : découpe incomplète', (d) => { avecMelon(d); d.crops.melon = culture({ sprite: { r: 1, h: 32, c: [0, 1, 2] } }); }, 'sprite :');
 test('culture sans découpe : un avertissement, pas une erreur', () => {
   const d = copy();
