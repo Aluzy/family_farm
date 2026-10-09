@@ -67,6 +67,9 @@
     serre: { x: 736.1, y: 273.6, width: 94, height: 78.3 },
     verger: { x: 625.1, y: 303.7, width: 12.8, height: 15.9 },
     zone_culture_2: { x: 622, y: 607.6, width: 130.8, height: 128.8 },
+    // Version 1.5 : le poteau « Ville », au bout du chemin qui quitte la ferme vers l'est.
+    // Dans Tiled : un rectangle nommé `ville` le déplace.
+    ville: { x: 1092, y: 422, width: 20, height: 24 },
     silo: { x: 656, y: 238, width: 49, height: 64 },
   };
   [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
@@ -92,6 +95,9 @@
     { id: 'moulin', object: 'moulin', tex: 'windmill', seasonal: true, window: 'moulin', anim: true },
     { id: 'serre', object: 'serre', tex: 'serre', seasonal: true, window: 'serre', frame: SERRE_FRAME },
     { id: 'verger', object: 'verger', tex: 'sign', seasonal: false, window: 'verger' },
+    // panneau_ville.png (scripts/icones/art_ville.py) : la flèche est dessinée vers la gauche,
+    // retournée ici pour montrer la sortie, à l'est.
+    { id: 'ville', object: 'ville', tex: 'panneau_ville', seasonal: false, window: 'ville', flip: true },
     // silo.png (28×62, scripts/batiments/silo.py) : sur le rectangle `silo` de la carte.
     { id: 'silo', object: 'silo', tex: 'silo', seasonal: false, window: 'silo' },
   ];
@@ -236,6 +242,7 @@
         L.image('soil_dry', 'soil_dry.png');
         L.image('soil_wet', 'soil_wet.png');
         L.image('sign', 'sign.png');
+        L.image('panneau_ville', 'panneau_ville.png');
         L.image('silo', 'silo.png');
         L.spritesheet('chat', 'chat.png', CAT_FRAME);
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, file, size);
@@ -329,6 +336,7 @@
         bake('ph_serre', 96, 80, shed(0x9fd3c7, 0x4f8a7a, 96, 80));
         bake('ph_poulailler', 44, 55, shed(0xb07a4a, 0x5c2f40, 44, 55));
         bake('ph_verger', 17, 16, (d) => { d.fillStyle(0x6b4423).fillRect(7, 8, 3, 8); d.fillStyle(0xb98a4e).fillRect(1, 1, 15, 8); });
+        bake('ph_ville', 20, 23, (d) => { d.fillStyle(0x6b4423).fillRect(9, 8, 3, 15); d.fillStyle(0xb98a4e).fillRect(0, 2, 20, 8); });
         bake('ph_silo', 28, 62, shed(0x9a6040, 0x5e3a4e, 28, 62));
         bake('ph_arbre', 80, 80, (d) => { d.fillStyle(0x6b4423).fillRect(36, 48, 8, 32); d.fillStyle(0x4f8a4a).fillCircle(40, 32, 28); });
         g.destroy();
@@ -1207,6 +1215,7 @@
           s = this.add.image(0, 0, key, real && def.frame != null ? def.frame : undefined);
         }
         s.setOrigin(0, 1);
+        if (def.flip) s.setFlipX(true);
         const x = clamp(Math.round(o.x + o.width / 2 - s.width / 2), 0, this.world.w - s.width);
         const y = clamp(Math.round(o.y + o.height), s.height, this.world.h);
         s.setPosition(Math.round(x), Math.round(y)).setDepth(Math.round(y));

@@ -103,7 +103,15 @@ export const RAW_DATA = {
       "rachetable": false
     },
     "lait": { "nom": "Lait", "icone": "🥛", "energie": 16, "prix": 4, "edible": true, "category": "produit" },
-    "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "edible": false, "category": "produit", "rachetable": false }
+    "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "edible": false, "category": "produit", "rachetable": false },
+    "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "edible": true, "category": "produit", "ville": true },
+    "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "edible": true, "category": "produit", "ville": true },
+    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 25, "prix": 5, "edible": true, "category": "produit", "ville": true },
+    "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "edible": false, "category": "ingrédient", "ville": true },
+    "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "edible": false, "category": "ingrédient", "ville": true },
+    "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "edible": true, "category": "légume", "rachetable": false },
+    "myrtille": { "nom": "Myrtille", "icone": "🫐", "energie": 5, "prix": 2, "edible": true, "category": "fruit", "rachetable": false },
+    "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "edible": true, "category": "fruit", "rachetable": false }
   },
   "PLATS_RETIRES": {
     "ragout": { "nom": "Ragoût", "icone": "🍖", "energie": 144, "prix": 36 },
@@ -280,6 +288,48 @@ export const RAW_DATA = {
       "transformation": true,
       "sortie": "huile",
       "qteSortie": 1
+    },
+    "omelette_champignons": {
+      "nom": "Omelette aux champignons",
+      "icone": "🍄",
+      "station": "cuisine",
+      "temps": 15,
+      "ingredients": [{ "item": "oeuf", "qte": 2 }, { "item": "champignon", "qte": 2 }]
+    },
+    "poisson_grille": {
+      "nom": "Poisson grillé à l'ail",
+      "icone": "🐟",
+      "station": "cuisine",
+      "temps": 15,
+      "ingredients": [{ "item": "poisson", "qte": 1 }, { "item": "ail", "qte": 1 }]
+    },
+    "raclette": {
+      "nom": "Raclette",
+      "icone": "🫕",
+      "station": "cuisine",
+      "temps": 20,
+      "ingredients": [{ "item": "fromage_alpage", "qte": 1 }, { "item": "patate", "qte": 3 }]
+    },
+    "creme_marrons": {
+      "nom": "Crème de marrons",
+      "icone": "🌰",
+      "station": "cuisine",
+      "temps": 25,
+      "ingredients": [{ "item": "chataigne", "qte": 4 }, { "item": "sucre", "qte": 1 }]
+    },
+    "tarte_myrtilles": {
+      "nom": "Tarte aux myrtilles",
+      "icone": "🥧",
+      "station": "four",
+      "temps": 30,
+      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "myrtille", "qte": 4 }, { "item": "sucre", "qte": 1 }]
+    },
+    "pain_epices": {
+      "nom": "Pain d'épices",
+      "icone": "🍞",
+      "station": "four",
+      "temps": 30,
+      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "miel", "qte": 1 }, { "item": "epices", "qte": 1 }]
     }
   },
   "crops": {
@@ -979,7 +1029,13 @@ export const RAW_DATA = {
       "soupe_legumes",
       "salade_tomates",
       "farine",
-      "huile"
+      "huile",
+      "omelette_champignons",
+      "poisson_grille",
+      "raclette",
+      "creme_marrons",
+      "tarte_myrtilles",
+      "pain_epices"
     ]
   },
   "CHAPITRES": {
@@ -1096,6 +1152,99 @@ export const RAW_DATA = {
       "signature": "Votre cousin Mateo"
     }
   },
+  "VILLE": {
+    "BONHEUR": {
+      "DEPART": 60,
+      "MAX": 100,
+      "REPAS_CRU": -3,
+      "REPAS_PLATS": 8,
+      "FAIM": -2,
+      "PRODUCTIVITE": [
+        { "min": 85, "pct": 115 },
+        { "min": 65, "pct": 105 },
+        { "min": 35, "pct": 100 },
+        { "min": 15, "pct": 90 },
+        { "min": 0, "pct": 80 }
+      ]
+    },
+    "ENFANT_PRIX": 50,
+    "SORTIES": {
+      "parc": {
+        "nom": "Parc",
+        "icone": "🛝",
+        "lieu": "ville",
+        "heures": 2,
+        "prix": 0,
+        "bonheur": { "enfant": 12, "adulte": 4 },
+        "enfants": true,
+        "texte": "Emmener les enfants jouer au parc."
+      },
+      "bibliotheque": {
+        "nom": "Bibliothèque",
+        "icone": "📚",
+        "lieu": "ville",
+        "heures": 2,
+        "prix": 0,
+        "bonheur": { "enfant": 6, "adulte": 8 },
+        "texte": "Lire, emprunter des livres."
+      },
+      "arcade": {
+        "nom": "Salle d'arcade",
+        "icone": "🕹",
+        "lieu": "ville",
+        "heures": 2,
+        "prix": 4,
+        "bonheur": { "enfant": 14, "adulte": 6 },
+        "texte": "Jeux vidéo et flippers."
+      },
+      "cinema": {
+        "nom": "Cinéma",
+        "icone": "🎬",
+        "lieu": "ville",
+        "heures": 3,
+        "prix": 8,
+        "bonheur": { "enfant": 12, "adulte": 12 },
+        "texte": "Un film en famille."
+      },
+      "amphitheatre": {
+        "nom": "Amphithéâtre",
+        "icone": "🎭",
+        "lieu": "ville",
+        "heures": 3,
+        "prix": 6,
+        "bonheur": { "enfant": 8, "adulte": 12 },
+        "texte": "Un spectacle en plein air."
+      },
+      "montagne": {
+        "nom": "Montagne",
+        "icone": "🚆",
+        "lieu": "voyage",
+        "transport": "train",
+        "heures": 8,
+        "prix": 20,
+        "bonheur": { "enfant": 20, "adulte": 20 },
+        "butin": { "miel": 2, "fromage_alpage": 2 },
+        "texte": "Le train jusqu'aux alpages : randonnée, miel et fromage d'alpage."
+      },
+      "foret": {
+        "nom": "Forêt",
+        "icone": "🚌",
+        "lieu": "voyage",
+        "transport": "bus",
+        "heures": 5,
+        "prix": 5,
+        "bonheur": { "enfant": 15, "adulte": 15 },
+        "saisons": {
+          "printemps": { "champignon": 2 },
+          "ete": { "myrtille": 5 },
+          "automne": { "champignon": 4, "chataigne": 5 },
+          "hiver": { "chataigne": 2 }
+        },
+        "texte": "Le bus jusqu'à la forêt : promenade et cueillette de saison."
+      }
+    },
+    "MARCHE": { "HEURES": 2, "PRIX": 3 }
+  },
   "SIMULATION": {
     "NUITS": 80,
     "GRAINE": 1,
@@ -1200,6 +1349,11 @@ export const RAW_DATA = {
     "viande_boeuf": 5,
     "viande_volaille": 4,
     "lait": 4,
+    "poisson": 2,
+    "fromage_alpage": 10,
+    "champignon": 3,
+    "myrtille": 3,
+    "chataigne": 12,
     "pain": 7,
     "fromage_frais": 8,
     "confiture_fraises": null,

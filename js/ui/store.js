@@ -16,6 +16,7 @@ export const TABS = [
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳' },
   { id: 'comptoir', label: 'Marché', icon: '🧺' },
+  { id: 'ville', label: 'Ville', icon: '🏙️' }, // version 1.5 : sorties, voyages, marché de la ville
   { id: 'notifications', label: 'Notifications', icon: '✉️' },
 ];
 
@@ -25,10 +26,10 @@ export const NAV_TABS = ['ferme', 'inventaire', 'comptoir', 'notifications'];
 // Écrans ouverts depuis la Ferme (raccourcis en haut de l'écran Ferme). Ils
 // restent des onglets pour le moteur et le suivi, mais n'ont pas d'icône en bas :
 // la barre garde alors « Ferme » allumé.
-export const FERME_LINKS = ['famille', 'recettes', 'techno'];
+export const FERME_LINKS = ['famille', 'recettes', 'techno', 'ville'];
 
 // Onglets toujours disponibles, sans passer par state.unlockedTabs (aucune migration).
-const ALWAYS_TABS = ['notifications'];
+const ALWAYS_TABS = ['notifications', 'ville'];
 export function tabAvailable(id) {
   return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
 }

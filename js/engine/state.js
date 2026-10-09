@@ -1,5 +1,6 @@
 import { DATA } from './catalog.js';
 import { STATE_VERSION } from './base.js';
+import { newVille } from './ville.js';
 import { newDayStats, startFarm } from './devices.js';
 import { addItem, defaultOrigin, shelfLife } from './inventory.js';
 import {
@@ -102,6 +103,7 @@ export function createInitialState(seed = 1) {
     unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'],
     stats: {},
     marche: {}, // Lot 3 : coefficients d'achat au-dessus de leur plancher
+    ville: newVille(), // version 1.5 : sorties faites aujourd'hui, marché de la ville
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
@@ -282,7 +284,18 @@ export const MIGRATIONS = {
   // peut tout manger ; les semences se rachètent au Marché), et le blé de
   // l'inventaire périme désormais (celui du Silo, jamais).
   20: (state) => migrateWheatAndReserve(state),
+  // v21 → v22 (version 1.5) : bonheur des membres (DEPART pour chacun) et sorties en ville.
+  21: (state) => migrateHappiness(state),
 };
+
+export function migrateHappiness(old) {
+  const state = { ...old, version: 22, ville: old.ville && typeof old.ville === 'object' ? old.ville : newVille() };
+  const f = state.famille;
+  if (f && typeof f === 'object' && Array.isArray(f.membres)) {
+    state.famille = { ...f, membres: f.membres.map((m) => (m && typeof m === 'object' && typeof m.bonheur !== 'number' ? { ...m, bonheur: DATA.VILLE.BONHEUR.DEPART } : m)) };
+  }
+  return state;
+}
 
 export function migrateWheatAndReserve(old) {
   const state = { ...old, version: 21 };

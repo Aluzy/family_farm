@@ -16,6 +16,7 @@ import {
 import { telView } from './consent.js';
 import { actionSleep } from './game-actions.js';
 import { artHtml, pxText } from './pixel-art.js';
+import { renderVille } from './ville.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
 import {
   cibleAttrs, heureDuJour, horlogeEmoji, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
@@ -206,6 +207,8 @@ export const STAGE_WINDOWS = {
     corps: () => renderZone2(),
   },
   chapitres: { nom: 'Chapitres', icone: '📜', ok: () => true, corps: () => renderChapterBanner() },
+  // Version 1.5 : le poteau « Ville » au bout du chemin (sorties, voyages, marché de la ville).
+  ville: { nom: 'Ville', icone: '🏙️', ok: () => true, sansTitre: true, corps: () => renderVille() },
   // Le Silo : sur la carte dès qu'il est débloqué (comme le Poulailler) ; on le construit,
   // l'agrandit et on voit son blé dans sa fenêtre.
   silo: { nom: 'Silo', icone: '🌾', ok: () => isUnlocked(state, 'silo') || state.silo.construit, sansTitre: true, corps: () => renderSilo() },
@@ -280,7 +283,7 @@ export function allerAuLieu(fenetre, onglet, ancre) {
   } else {
     stageWindow = null;
     stageInterior = null;
-    setActiveTab(fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
+    setActiveTab(fenetre === 'ville' ? 'ville' : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
   }
   ancreVoulue = ancre || null;
   telView();
@@ -365,6 +368,7 @@ const TAB_RENDERERS = {
   comptoir: () => [renderComptoir()],
   recettes: () => [backToFerme() + renderRecettes()],
   techno: () => [backToFerme() + renderTechno()],
+  ville: () => [backToFerme() + renderVille()],
   notifications: () => [renderNotifications()],
 };
 
@@ -421,7 +425,8 @@ registerActions({
   },
   'switch-tab': (target) => {
     if (FERME_LINKS.includes(target.dataset.tab) && stageUsable()) {
-      allerAuLieu('maison', target.dataset.tab);
+      if (target.dataset.tab === 'ville') allerAuLieu('ville');
+      else allerAuLieu('maison', target.dataset.tab);
       return;
     }
     setActiveTab(target.dataset.tab);

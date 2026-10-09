@@ -1154,6 +1154,42 @@ export function take(s: GameState, item: string, qty: number) {
 
 ---
 
+### 6.12 Bonheur, sorties et Ville (version 1.5)
+
+Données : `data/ville.json` (`DATA.VILLE`) ; moteur : `js/engine/ville.js` ; écran :
+`js/ui/ville.js` (fenêtre « Ville », ouverte par le poteau au bout du chemin, à l'est de la
+carte ; sans la carte, raccourci « Ville » de l'écran Ferme).
+
+**Bonheur.** Une jauge par membre, de 0 à 100 ; départ à 60 (un nouveau membre arrive au
+bonheur moyen). Chaque repas la fait varier pour toute la famille : −3 si tout est cru,
+jusqu'à +5 si tout est cuisiné (−3 + 8 × la part de l'énergie venue des plats, arrondi), −2
+de plus si le besoin n'est pas couvert. Le bonheur moyen des membres bien portants multiplie
+la productivité de la santé : 115 % dès 85, 105 % dès 65, 100 % de 35 à 64, 90 % dès 15,
+80 % en dessous.
+
+**Sorties.** Toute la famille part, sauf les malades. Une sortie avance l'horloge de sa durée
+(le temps passe comme d'habitude : panneaux, batteries, pompe, ateliers, usure ; le repas de
+19 h est pris au retour), doit finir au plus tard à 22 h et ne se fait qu'une fois par jour.
+Prix par adulte, moitié prix (arrondi au-dessus) par enfant.
+
+| Sortie | Durée | Prix | Bonheur enfant / adulte | Rapporte |
+|---|---|---|---|---|
+| Parc (il faut un enfant) | 2 h | gratuit | +12 / +4 | |
+| Bibliothèque | 2 h | gratuit | +6 / +8 | |
+| Salle d'arcade | 2 h | 4 | +14 / +6 | |
+| Cinéma | 3 h | 8 | +12 / +12 | |
+| Amphithéâtre | 3 h | 6 | +8 / +12 | |
+| Montagne (train) | 8 h | 20 | +20 / +20 | 2 miel, 2 fromage d'alpage |
+| Forêt (bus) | 5 h | 5 | +15 / +15 | printemps 2 champignons ; été 5 myrtilles ; automne 4 champignons, 5 châtaignes ; hiver 2 châtaignes |
+
+**Marché de la ville.** Un adulte y va : 2 h et 3 pièces de bus ; il reste ouvert jusqu'au
+soir. On y achète poisson, miel, fromage d'alpage, sucre et épices (`"ville": true`), qui ne
+se vendent pas au marché de la ferme (le coefficient de prix monte à chaque achat, comme à la
+ferme). La cueillette (champignon, myrtille, châtaigne) ne s'achète nulle part.
+
+**Recettes** (libres) : omelette aux champignons, poisson grillé à l'ail, raclette, crème de
+marrons (Cuisine) ; tarte aux myrtilles, pain d'épices (Four).
+
 ## 7. Feuille de route
 
 | Étape | Contenu |

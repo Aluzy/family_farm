@@ -1,4 +1,6 @@
 import { DATA } from '../engine/catalog.js';
+import { memberHappiness } from '../engine/ville.js';
+import { happinessGaugeHtml } from './ville.js';
 import { EPS } from '../engine/base.js';
 import {
   addMember, addPet, averageHealth, careCost, cleanFirstName, familyNeed, findMember, findPet, heal,
@@ -44,6 +46,8 @@ function portraitCard(m) {
       <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} énergie/jour</span>
       ${healthBarHtml(m.sante)}
       <span class="muted">Santé : <span class="num">${Math.round(m.sante)} / ${DATA.FAMILY.SANTE_MAX}</span></span>
+      ${happinessGaugeHtml(memberHappiness(m))}
+      <span class="muted">😊 Bonheur : <span class="num">${memberHappiness(m)} / ${DATA.VILLE.BONHEUR.MAX}</span></span>
       ${sick}
       <button type="button" class="btn" data-action="member-edit" data-id="${m.id}" aria-label="Modifier ${m.enfant ? 'cet enfant' : 'cet adulte'} : prénom et apparence">✏️ Modifier</button>
     </article>`;
