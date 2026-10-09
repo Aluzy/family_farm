@@ -206,6 +206,9 @@ export const STAGE_WINDOWS = {
     corps: () => renderZone2(),
   },
   chapitres: { nom: 'Chapitres', icone: '📜', ok: () => true, corps: () => renderChapterBanner() },
+  // Le Silo : sur la carte dès qu'il est débloqué (comme le Poulailler) ; on le construit,
+  // l'agrandit et on voit son blé dans sa fenêtre.
+  silo: { nom: 'Silo', icone: '🌾', ok: () => isUnlocked(state, 'silo') || state.silo.construit, sansTitre: true, corps: () => renderSilo() },
 };
 
 export function renderStageWindow() {
