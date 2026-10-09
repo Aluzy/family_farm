@@ -187,6 +187,16 @@
     return !!(REDUCED && REDUCED.matches);
   }
 
+  // Empreintes des fichiers de assets/ : « nom → empreinte de son contenu », écrites par
+  // scripts/build-site.mjs dans js/assets-versions.js (site en ligne seulement). Chaque
+  // fichier est demandé avec « ?v=<empreinte> » : modifié, il change d'adresse et le
+  // navigateur le recharge au lieu de garder l'ancien en cache. Sans ce fichier (jeu ouvert
+  // depuis le dépôt), les adresses restent sans suffixe.
+  function v(file) {
+    const versions = global.FERME_ASSET_VERSIONS;
+    return versions && versions[file] ? file + '?v=' + versions[file] : file;
+  }
+
   function mount(element, options) {
     if (!global.Phaser) return false;      // pas de Phaser : la page garde son affichage classique
     if (game) return true;
@@ -238,24 +248,24 @@
         const L = this.load;
         L.setPath(base);
         L.on('loaderror', (file) => this.missing.add(file.key));
-        L.image('crops', 'crops.png');
-        L.image('soil_dry', 'soil_dry.png');
-        L.image('soil_wet', 'soil_wet.png');
-        L.image('sign', 'sign.png');
-        L.image('panneau_ville', 'panneau_ville.png');
-        L.image('silo', 'silo.png');
-        L.spritesheet('chat', 'chat.png', CAT_FRAME);
-        for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, file, size);
-        L.spritesheet('coop', 'poulailler.png', COOP_FRAME);
-        L.tilemapTiledJSON(MAP.key, MAP.json);
-        for (const r of Object.values(ROOMS)) L.tilemapTiledJSON(r.key, r.json);
-        L.image(MAP.tiles, MAP.image);
+        L.image('crops', v('crops.png'));
+        L.image('soil_dry', v('soil_dry.png'));
+        L.image('soil_wet', v('soil_wet.png'));
+        L.image('sign', v('sign.png'));
+        L.image('panneau_ville', v('panneau_ville.png'));
+        L.image('silo', v('silo.png'));
+        L.spritesheet('chat', v('chat.png'), CAT_FRAME);
+        for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
+        L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
+        L.tilemapTiledJSON(MAP.key, v(MAP.json));
+        for (const r of Object.values(ROOMS)) L.tilemapTiledJSON(r.key, v(r.json));
+        L.image(MAP.tiles, v(MAP.image));
         for (const a of SUFFIXES) {
-          L.image('house_' + a, 'house_' + a + '.png');
-          L.image('barn_' + a, 'barn_' + a + '.png');
-          L.image('serre_' + a, 'serre_' + a + '.png');
-          L.spritesheet('windmill_' + a, 'windmill_' + a + '.png', MILL_FRAME);
-          L.spritesheet('tree_' + a, 'basic_' + a + '.png', TREE_FRAME);
+          L.image('house_' + a, v('house_' + a + '.png'));
+          L.image('barn_' + a, v('barn_' + a + '.png'));
+          L.image('serre_' + a, v('serre_' + a + '.png'));
+          L.spritesheet('windmill_' + a, v('windmill_' + a + '.png'), MILL_FRAME);
+          L.spritesheet('tree_' + a, v('basic_' + a + '.png'), TREE_FRAME);
         }
       }
 
