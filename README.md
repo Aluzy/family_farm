@@ -294,6 +294,7 @@ nuits ou des saisons, aller à un chapitre, et voir l'état complet de la partie
 | Document | Contenu |
 |---|---|
 | [`docs/conception.md`](docs/conception.md) | la conception du jeu : règles, valeurs, équilibrage (fait foi) |
+| [`docs/conception-v2.md`](docs/conception-v2.md) | proposition v2 (niveaux d'XP, énergie du personnage, houe, saisons retirées) : à valider, pas encore codée |
 | [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | la carte de la ferme : découpage, cartes Tiled, pièges à éviter |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |

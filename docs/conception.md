@@ -1,6 +1,11 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v2 en préparation** : [`conception-v2.md`](conception-v2.md) propose une refonte
+> (niveaux d'XP, jauge d'énergie à la place de la santé, houe, saisons retirées, un seul
+> panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
+> fait foi.
+>
 > **v26 (jeu 1.0)** : **le Potager et le Champ deviennent une seule « Zone de
 > culture »** (🌱). Cette note **fait foi** sur tout ce qui, plus bas, parle
 > encore du Potager et du Champ comme de deux lieux.
