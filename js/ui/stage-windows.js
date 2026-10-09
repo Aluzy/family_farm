@@ -209,6 +209,9 @@ export const STAGE_WINDOWS = {
   chapitres: { nom: 'Chapitres', icone: '📜', ok: () => true, corps: () => renderChapterBanner() },
   // Version 1.5 : le poteau « Ville » au bout du chemin (sorties, voyages, marché de la ville).
   ville: { nom: 'Ville', icone: '🏙️', ok: () => true, sansTitre: true, corps: () => renderVille() },
+  // Le Silo : sur la carte dès qu'il est débloqué (comme le Poulailler) ; on le construit,
+  // l'agrandit et on voit son blé dans sa fenêtre.
+  silo: { nom: 'Silo', icone: '🌾', ok: () => isUnlocked(state, 'silo') || state.silo.construit, sansTitre: true, corps: () => renderSilo() },
 };
 
 export function renderStageWindow() {
