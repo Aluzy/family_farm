@@ -2,12 +2,14 @@
 
 Un *idle game* de gestion agricole familiale : une famille (quatre personnes au départ), une ferme, et un
 objectif, nourrir la famille avec ce que la ferme produit. Panneaux solaires,
-batteries, pompe, zone de culture, poulailler, moutons, verger, serre, cuisine et
-réfrigérateur. La journée suit une horloge : réveil à 6 h, repas de la famille à
+batteries, pompe, zone de culture et champ, silo, moulin et presse, poulailler,
+troupeau (poules, moutons, vaches), verger, serre, cuisine, four et réfrigérateur.
+La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
 - **Version** : 1.4.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
-- **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi
+- **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi (autres
+  documents : voir « Documentation » plus bas)
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
 - **Technique** : des pages HTML sans bibliothèque à installer ni serveur :
@@ -66,9 +68,13 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   les moutons et les vaches mangent leur paille (laine, lait), les aliments vieillissent.
 - L'électricité et l'eau circulent en temps réel : panneaux → batteries →
   pompe, moulin, presse, réfrigérateur. Les appareils s'usent quand ils tournent.
-- Le **Champ**, une deuxième zone de culture de 64 parcelles, s'ouvre avec le Moulin
-  (chapitre 4) ; les arbres du Verger (12 au plus) apparaissent sur la carte.
-- Sept chapitres mènent à une famille **100 % autonome**.
+- La **Zone de culture** s'agrandit de 6 à 30 parcelles (5 niveaux). Le **Champ**, une
+  deuxième zone de 64 parcelles, s'ouvre avec le Moulin (chapitre 4) ; les arbres du
+  Verger (12 au plus) apparaissent sur la carte.
+- Le **Silo** (chapitre 3) stocke le blé de la ferme : de 20 à 400 selon son niveau.
+- Sept chapitres mènent à une famille **100 % autonome** : L'eau et le soleil, Le
+  premier potager, Le poulailler, Le four et le livre de recette, Le troupeau, Toute
+  l'année, Famille autonome.
 
 Le détail (valeurs, formules, tableau d'équilibrage) est dans la conception ; les
 règles principales sont aussi rappelées dans le jeu (⚙️ Options › À propos), et
@@ -92,9 +98,10 @@ dépasse une minute.
 
 ### Structure
 
-`jeu.html` ne contient que la structure de la page. Elle charge `css/jeu.css`, deux scripts
-classiques (`js/telemetry.js`, le suivi de session, et `vendor/phaser.min.js` +
-`js/farm-stage.js`, la carte), puis `js/main.js`, point d'entrée de **modules ES** :
+`jeu.html` ne contient que la structure de la page. Elle charge `css/jeu.css`, quatre scripts
+classiques (`js/telemetry.js`, le suivi de session ; `vendor/phaser.min.js` ; `js/ambient-life.js`,
+la vie d'ambiance de la carte, facultative ; `js/farm-stage.js`, la carte), puis `js/main.js`,
+point d'entrée de **modules ES** :
 
 | Dossier | Contenu |
 |---|---|
@@ -102,6 +109,9 @@ classiques (`js/telemetry.js`, le suivi de session, et `vendor/phaser.min.js` +
 | `js/engine/` | le moteur (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine), un module par domaine : `catalog.js` (`DATA`), `energy.js`, `inventory.js`, `crops.js`, `animals.js`, `kitchen.js`, `techtree.js`, `campaign.js`, `night.js`, `state.js` (partie neuve, migrations), `testmode.js`, `bot.js`… |
 | `js/ui/` | l'interface, un module par écran (`ferme.js`, `elevage.js`, `cuisine.js`, `marche.js`, `famille.js`…), plus `store.js` (l'état de l'interface), `render.js`, `loop.js`, `storage.js`, `actions.js` |
 | `js/main.js` | charge tous les modules, puis démarre la partie |
+| `js/farm-stage.js`, `js/ambient-life.js` | la carte Phaser de l'onglet Ferme et sa vie d'ambiance (scripts classiques, hors modules) |
+| `scripts/` | outils Node et Python : données, carte, site, vérifications, simulation, icônes (voir plus bas) |
+| `worker/`, `wrangler.toml`, `collect-server.mjs` | collecte des sessions et rapport quotidien (voir « Suivi de session ») |
 
 Chaque module importe ce qu'il utilise et exporte ce qu'il offre : plus aucune fonction du
 jeu n'est une variable globale. Conséquences :
@@ -217,7 +227,7 @@ L'encyclopédie se complète à part.
 le lecteur, placée avant la clé qu'elle commente (`"//pain": "…"`) ; le script les retire.
 
 **Valeurs écrites et valeurs en jeu** : les fichiers donnent les valeurs de base. Au
-chargement, `buildCatalog()` (`js/engine.js`) en fait `DATA` : prix des productions de la
+chargement, `buildCatalog()` (`js/engine/catalog.js`) en fait `DATA` : prix des productions de la
 ferme × 2, temps des plats ÷ 2, plats ajoutés aux objets. `pain.temps` vaut 20 dans le
 fichier et 10 en jeu.
 
@@ -235,6 +245,18 @@ Chaque script se lance aussi seul avec `node`. Node 18 ou plus récent.
 
 GitHub relance ces vérifications à chaque push (`.github/workflows/site.yml`) et ne met
 le site en ligne que si elles passent toutes.
+
+### Carte et graphismes
+
+- **Cartes Tiled** : `node scripts/build-map.mjs` fabrique `assets/carte_printemps.json` (la
+  ferme) et `assets/serre_interieur.json` (l'intérieur de la Serre) à partir des cartes de
+  travail `.tmj` et de leurs jeux de tuiles `.tsx`. À relancer après chaque modification dans
+  Tiled ; voir [`docs/architecture-phaser.md`](docs/architecture-phaser.md).
+- **Icônes en pixel art** (elles remplacent les emojis à l'affichage) : les dessins sont dans
+  `scripts/icones/art_*.py`, et `python3 scripts/icones/build.py` produit `assets/icones.png`
+  et `js/ui/icones.generated.js` (Python 3 avec Pillow). `scripts/icones/preview.py` montre un
+  aperçu d'un fichier de dessins. Détails : [`docs/icones.md`](docs/icones.md).
+- **Bâtiments dessinés en code** : `scripts/batiments/silo.py` génère `assets/silo.png`.
 
 ### Simulation d'équilibrage
 
@@ -261,6 +283,17 @@ nuits ou des saisons, aller à un chapitre, et voir l'état complet de la partie
    (par exemple `python3 -m http.server` et <http://localhost:8000/>) : aucune
    erreur dans la console, à 390 px et à 1 280 px de large, en thème clair et
    sombre.
+
+## Documentation
+
+| Document | Contenu |
+|---|---|
+| [`docs/conception.md`](docs/conception.md) | la conception du jeu : règles, valeurs, équilibrage (fait foi) |
+| [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | la carte de la ferme : découpage, cartes Tiled, pièges à éviter |
+| [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
+| [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |
+| [`docs/arbre_technologique.md`](docs/arbre_technologique.md) | proposition d'arbre des technologies v2 (`docs/techtree_v2.js`) |
+| [`worker/README.md`](worker/README.md) | installation du Worker Cloudflare et du rapport quotidien |
 
 ## Suivi de session et politique de cookies
 
