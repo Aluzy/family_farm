@@ -109,9 +109,9 @@ tenir jusqu'à la première récolte 🟡.
 | 4 | Planter du blé | — |
 | 5 | Stocker **50 blés** au Silo 🟡 | fin du chapitre 2 |
 
-> ⚠️ Les notes placent le blé et le silo au « Niveau 2 » de l'histoire, mais au **niveau
-> d'XP 3** dans le tableau des niveaux. On propose de garder le **niveau d'XP 3** et de
-> parler de **chapitres** pour l'histoire (voir section 13).
+> ✅ **Décidé** : le blé et le Silo sont au **niveau d'XP 3** (les notes les plaçaient au
+> « Niveau 2 » de l'histoire). L'histoire parle de **chapitres**, les niveaux sont ceux de
+> l'XP.
 
 ### 3.4 Succès
 
@@ -125,8 +125,8 @@ Un chapitre terminé est un succès qui rapporte de l'XP 🟡 :
 | Chapitre 4 terminé | 2 500 |
 | Chapitres suivants | ≈ 10 % du seuil du niveau suivant |
 
-Les « charités » des notes sont aussi des jalons qui rapportent de l'XP (voir section 13 :
-leur règle reste à définir).
+✅ **Décidé** : les « charités » des notes étaient les **chapitres**. Seuls l'histoire et
+ses chapitres servent de jalons.
 
 ---
 
@@ -137,18 +137,18 @@ leur règle reste à définir).
 | Niv. | XP cumulée | Débloque | Tuiles cultivables 🟡 |
 |---|---|---|---|
 | 1 | 0 | patate, tomate, carotte | 6 |
-| 2 | 500 | courgette, aubergine, oignon ; **achat de la Cuisine** | 12 |
-| 3 | 1 200 | poivron, ail, fraise, **blé** ; **réparation du Silo** ; Poulailler 🟡 | 20 |
+| 2 | 500 | courgette, aubergine, oignon ; **achat de la Cuisine** ; **huile au Marché** | 12 |
+| 3 | 1 200 | poivron, ail, fraise, **blé** ; **réparation du Silo** ; **réparation du Poulailler** | 20 |
 | 4 | 3 000 | épinard, tournesol, riz ; **réparation du Moulin** (et le Champ) | 32 |
 | 5 | 7 500 | houblon ; **achat du Four** ; **réparation de l'Étable** | 48 |
 | 6 | 20 000 | **achat de la Presse** ; **Verger** | 64 |
 | 7 | 40 000 | cacao, vanille, café ; **réparation de la Serre** | 64 (+ Serre) |
 | 8 | 80 000 | **achat du Réfrigérateur** | 64 |
-| 9 | 180 000 | à définir (section 13) | 64 |
-| 10 | 400 000 | à définir (section 13) | 64 |
+| 9 | 180 000 | **courrier du notaire : héritage de 15 000 💰** (section 4.4) | 64 |
+| 10 | 400 000 | **choix d'un commerce** : conserverie, crèmerie ou métier à tisser (section 4.5) | 64 |
 
-Le **Poulailler** n'apparaît pas dans les notes alors que les œufs rapportent de l'XP ; on
-le propose au niveau 3, avec le Silo, puisque les poules mangent du blé 🟡.
+✅ **Décidé** : le **Poulailler** (absent des notes alors que les œufs rapportent de l'XP)
+se répare au **niveau 3**, avec le Silo, puisque les poules mangent du blé.
 
 ### 4.2 Gains d'XP
 
@@ -173,6 +173,50 @@ par jour d'arrosage, et 120 XP par récolte de 6 parcelles. Le niveau 2 tombe ve
 du niveau 6, la vente (1 XP par pièce) devient la première source d'XP : à vérifier en
 simulation que les niveaux 8 à 10 ne s'atteignent pas uniquement en vendant du cacao.
 
+### 4.4 Niveau 9 : l'héritage caché ✅
+
+En atteignant le niveau 9, la famille reçoit un **courrier du notaire** :
+
+> *« Votre grand-père vous a aussi légué 15 000 pièces, faites-en bon usage ! »*
+
+- **+15 000 💰**, versés une seule fois, à l'ouverture du courrier.
+- Le courrier reste lisible dans ✉️ Notifications (ou l'historique des chapitres).
+- Ces pièces ne rapportent **pas d'XP** (seules les ventes en rapportent) 🟡 : sinon le
+  joueur gagnerait d'un coup 15 000 des 220 000 XP qui séparent les niveaux 9 et 10.
+
+### 4.5 Niveau 10 : choisir un commerce ✅
+
+Au niveau 10, le joueur choisit **un** commerce. Ce commerce prend chaque nuit une
+partie de la production de la ferme, la transforme et la **vend automatiquement** :
+c'est un revenu régulier, sans clic.
+
+| Commerce | Prend | Produit | Recette 🟡 | Vente 🟡 | Valeur des ingrédients bruts |
+|---|---|---|---|---|---|
+| 🥫 **Conserverie** | légumes (au choix du moteur : ce qui périme le plus tôt) | conserve de légumes | 4 légumes → 1 conserve | 18 💰 | ≈ 12 💰 (légume moyen ≈ 3 💰) |
+| 🧀 **Crèmerie** | lait | fromage | 3 laits → 1 fromage | 36 💰 | 24 💰 |
+| 🧵 **Métier à tisser** | laine | tissu | 2 laines → 1 tissu | 36 💰 | 24 💰 |
+
+Règles proposées 🟡 :
+
+1. **Un seul commerce, choix définitif.** Une fenêtre présente les trois avec leur
+   chiffre d'affaires estimé à partir de la production actuelle de la ferme. Pour
+   changer d'avis : 5 000 💰 (sinon le choix serait sans conséquence).
+2. **Quota** : le joueur règle dans la fenêtre du commerce combien d'unités brutes
+   partent chaque nuit (de 0 à la capacité). La famille mange **d'abord** : le commerce
+   ne prend que ce qui reste après le repas du soir.
+3. **Capacité** : 10 transformations par nuit au départ, améliorable 3 fois (20 / 35 / 50)
+   pour 3 000 / 8 000 / 20 000 💰.
+4. **Vente** : au prix fixe ci-dessus, sans passer par le Marché (le coefficient d'achat
+   et de vente n'est pas touché). Les pièces s'ajoutent au réveil, dans le résumé de la
+   nuit (« Crèmerie : 8 fromages vendus, +288 💰 »).
+5. **XP** : comme une vente, 1 XP par pièce gagnée.
+6. Le commerce **ne consomme ni énergie du personnage ni électricité** 🟡.
+7. Choisir un commerce donne un intérêt à monter la production qu'il utilise : légumes
+   pour la conserverie, vaches pour la crèmerie, moutons pour le métier à tisser.
+
+Repère : une crèmerie à 10 fromages par nuit prend 30 laits (30 vaches) et rapporte
+360 💰 par nuit, contre 240 💰 si l'on vendait le lait au Marché.
+
 ---
 
 ## 5. Énergie, bonheur et endurance
@@ -186,10 +230,9 @@ simulation que les niveaux 8 à 10 ne s'atteignent pas uniquement en vendant du 
 - Disparaissent : la santé des membres, les soins payants, le malus de productivité, le
   portrait malade.
 
-> **Nom** : le jeu appelle déjà « énergie » la valeur nutritive des aliments (« 150
-> énergies par jour ») et l'électricité est en Wh. Proposition : la jauge du personnage
-> garde le nom **Énergie ⚡**, la valeur des aliments devient **« calories » 🍽️** et
-> l'électricité reste **« électricité » (Wh)**. À confirmer.
+> ✅ **Noms décidés** : la jauge du personnage s'appelle **Énergie ⚡**, la valeur
+> nutritive des aliments devient **« calories » 🍽️** (« 150 calories par jour ») et
+> l'électricité reste **« électricité » (Wh)**.
 
 ### 5.2 Coût des actions
 
@@ -467,37 +510,44 @@ change, et la mise à jour de `conception.md` et du README.
 | 7 | **Plats et bonheur** (barème 10.2) | non |
 | 8 | **Départ v2** : 1 500 💰, configuration de la famille, chapitres 1 et 2, succès | nouvelle partie seulement |
 | 9 | **Verger au clic** et ses 4 dessins | oui |
+| 10 | **Niveaux 9 et 10** : courrier du notaire, commerce automatique | oui (`state.commerce`) |
 
 Ordre conseillé : 1 et 2 d'abord (ils simplifient le reste), puis 3 et 4 (le cœur du
-nouvel équilibre), puis 8 pour rejouer le début de partie, enfin 5, 6, 7 et 9. Le joueur
+nouvel équilibre), puis 8 pour rejouer le début de partie, enfin 5, 6, 7, 9 et 10. Le joueur
 automatique (`js/engine/bot.js`) doit suivre à chaque lot pour que `simulate.mjs` reste
 utilisable.
 
 ---
 
-## 13. Incohérences relevées et questions ouvertes
+## 13. Décisions et questions ouvertes
 
-1. **Blé et Silo** : niveau 2 dans l'histoire, niveau 3 dans le tableau. Proposition :
-   niveau 3 (section 3.3).
-2. **Huile avant la Presse** : l'omelette, la ratatouille et la salade de tomates
-   (Cuisine, niveau 2) demandent de l'huile, mais la Presse arrive au niveau 6.
-   Proposition : l'huile s'achète au Marché dès le niveau 2.
-3. **Tournesol au niveau 4, Presse au niveau 6** : pendant deux niveaux, ses graines ne
-   servent qu'à replanter ou à vendre. Acceptable, ou avancer la Presse au niveau 4.
-4. **Poulailler** absent du tableau des niveaux : proposé au niveau 3 (section 4.1).
-5. **Farine sans Four** : le Moulin (niveau 4) précède le Four (niveau 5) ; la farine ne
+### 13.1 Décidé ✅
+
+| Point | Décision |
+|---|---|
+| Blé et Silo | **niveau 3** (section 3.3) |
+| Huile avant la Presse | l'huile **s'achète au Marché dès le niveau 2** (pour l'omelette, la ratatouille, la salade de tomates) |
+| Poulailler | réparé au **niveau 3**, avec le Silo |
+| « Charités » | c'étaient les **chapitres** (section 3.4) |
+| Niveau 9 | courrier du notaire, **+15 000 💰** (section 4.4) |
+| Niveau 10 | **choix d'un commerce** : conserverie, crèmerie ou métier à tisser (section 4.5) |
+| Mot « énergie » | **Énergie** = jauge du personnage, **calories** = aliments, **électricité** = Wh |
+
+### 13.2 Encore ouvert
+
+1. **Tournesol au niveau 4, Presse au niveau 6** : pendant deux niveaux, ses graines ne
+   servent qu'à replanter ou à vendre (l'huile s'achetant au Marché, ce n'est pas
+   bloquant). Acceptable, ou avancer la Presse au niveau 4.
+2. **Farine sans Four** : le Moulin (niveau 4) précède le Four (niveau 5) ; la farine ne
    sert qu'à la vente pendant un niveau. Acceptable.
-6. **« Charités »** : terme à préciser. Dons à une association de la ville (nourriture ou
-   pièces) qui rapportent de l'XP et du bonheur ? Ou faut-il lire « défis » ?
-7. **Niveaux 9 et 10** : rien n'est débloqué. Idées : fromagerie (fromage affiné, beurre),
-   automatisations de niveau 5, nouvelle zone de carte, titre « Famille autonome ».
-8. **Niveaux 7 à 10 et tuiles** : les notes n'ajoutent plus de tuiles après le niveau 6 ;
-   la carte en compte 94 au plus (30 + 64).
-9. **Batterie au chapitre 1** : facultative pour l'arrosage de jour ; obligatoire si on
+3. **Tuiles après le niveau 6** : les notes n'en ajoutent plus ; la carte en compte 94
+   au plus (30 + 64).
+4. **Batterie au chapitre 1** : facultative pour l'arrosage de jour ; obligatoire si on
    veut pomper après 19 h. Faut-il l'imposer ?
-10. **Nom « énergie »** : trois sens dans le jeu (section 5.1).
-11. **Conserves de départ** : à garder (160) pour nourrir la famille jusqu'à la première
-    récolte ?
-12. **Autonomie** : l'objectif final « 100 % d'autonomie » reste-t-il le but du jeu, ou le
-    niveau 10 le remplace-t-il ?
-13. **3 nouvelles zones** créées grâce au temps gagné sur les saisons : lesquelles ?
+5. **Conserves de départ** : à garder (160) pour nourrir la famille jusqu'à la première
+   récolte ?
+6. **Autonomie** : l'objectif final « 100 % d'autonomie » reste-t-il le but du jeu, ou le
+   niveau 10 et son commerce le remplacent-ils ?
+7. **3 nouvelles zones** créées grâce au temps gagné sur les saisons : lesquelles ?
+8. **Commerce** (section 4.5) : recettes, prix, capacité, choix définitif et coût du
+   changement sont des propositions 🟡.
