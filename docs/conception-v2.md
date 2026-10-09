@@ -87,7 +87,7 @@ Chaque étape débloque la suivante ; aucune n'est imposée dans le temps.
 | 1 | Hériter de la ferme (texte d'ouverture) | — | réparation de la maison |
 | 2 | **Réparer la ferme** (la maison) | 650 💰 | achat du panneau, de la batterie, de la pompe |
 | 3 | Acheter le **panneau solaire** | 150 💰 | — |
-| 4 | Acheter la **batterie** | 180 💰 | (facultative pour la suite : elle sert le soir et la nuit) |
+| 4 | Acheter la **batterie** | 180 💰 | ✅ **facultative** : jamais imposée tant qu'elle n'est pas nécessaire (elle sert le soir, la nuit, puis au frigo) |
 | 5 | Acheter la **pompe** | 90 💰 | — |
 | 6 | Panneau **et** pompe achetés | — | **réservoir niveau 1**, **zone de culture**, **Marché** |
 | 7 | Acheter le **réservoir niveau 1** | 50 💰 | l'eau peut être stockée et les parcelles arrosées |
@@ -96,8 +96,8 @@ Chaque étape débloque la suivante ; aucune n'est imposée dans le temps.
 | 10 | **Première récolte** | — | fin du chapitre 1 |
 
 Budget : 1 500 − 650 − 150 − 180 − 90 − 50 − 40 = **340 💰** pour les graines et les
-premières semaines (sans la batterie : 520 💰). Les conserves de départ restent (160) pour
-tenir jusqu'à la première récolte 🟡.
+premières semaines (sans la batterie : 520 💰). **40 conserves** au départ
+pour tenir jusqu'à la première récolte (simulation en 13.3) 🟡.
 
 ### 3.3 Chapitre 2 : Le grenier (à partir du niveau 3)
 
@@ -477,7 +477,8 @@ Repère : un soir à 3 plats à +5 compense 3 nuits de baisse (−5 par nuit).
 ## 11. Suppression des saisons
 
 But : un seul jeu de dessins par lieu au lieu de quatre ; le temps gagné sert à dessiner
-**3 nouvelles zones** 🟡 (à nommer).
+**3 nouvelles zones** ✅ : la **Ville**, une **grande Forêt** et une **zone de
+Montagne** (aujourd'hui des sorties sans carte, voir 6.12 de `conception.md`).
 
 À retirer ou remplacer :
 
@@ -532,22 +533,48 @@ utilisable.
 | Niveau 9 | courrier du notaire, **+15 000 💰** (section 4.4) |
 | Niveau 10 | **choix d'un commerce** : conserverie, crèmerie ou métier à tisser (section 4.5) |
 | Mot « énergie » | **Énergie** = jauge du personnage, **calories** = aliments, **électricité** = Wh |
+| Batterie | **facultative**, jamais imposée tant qu'elle n'est pas nécessaire |
+| Plus gros jalon | **100 % d'autonomie 7 jours d'affilée** : la famille a pérennisé son installation |
+| Niveau 10 | **pas le dernier niveau** : d'autres viendront ensuite |
+| 3 nouvelles zones | **Ville**, **grande Forêt**, **Montagne** |
+| Presse (niv. 6) après le tournesol (niv. 4), Moulin (niv. 4) avant le Four (niv. 5) | **laissés tels quels** |
 
 ### 13.2 Encore ouvert
 
-1. **Tournesol au niveau 4, Presse au niveau 6** : pendant deux niveaux, ses graines ne
-   servent qu'à replanter ou à vendre (l'huile s'achetant au Marché, ce n'est pas
-   bloquant). Acceptable, ou avancer la Presse au niveau 4.
-2. **Farine sans Four** : le Moulin (niveau 4) précède le Four (niveau 5) ; la farine ne
-   sert qu'à la vente pendant un niveau. Acceptable.
-3. **Tuiles après le niveau 6** : les notes n'en ajoutent plus ; la carte en compte 94
+1. **Tuiles après le niveau 6** : les notes n'en ajoutent plus ; la carte en compte 94
    au plus (30 + 64).
-4. **Batterie au chapitre 1** : facultative pour l'arrosage de jour ; obligatoire si on
-   veut pomper après 19 h. Faut-il l'imposer ?
-5. **Conserves de départ** : à garder (160) pour nourrir la famille jusqu'à la première
-   récolte ?
-6. **Autonomie** : l'objectif final « 100 % d'autonomie » reste-t-il le but du jeu, ou le
-   niveau 10 et son commerce le remplacent-ils ?
-7. **3 nouvelles zones** créées grâce au temps gagné sur les saisons : lesquelles ?
-8. **Commerce** (section 4.5) : recettes, prix, capacité, choix définitif et coût du
+2. **Commerce** (section 4.5) : recettes, prix, capacité, choix définitif et coût du
    changement sont des propositions 🟡.
+3. **Conserves de départ et rythme de l'autonomie** : voir 13.3.
+
+### 13.3 Simulation : conserves de départ et jours avant l'autonomie
+
+Joueur automatique de `scripts/simulate.mjs` (moteur **actuel**, version 1.5 : saisons,
+santé et règles de départ d'avant la v2), 150 nuits, graines 1 à 5, joueur appliqué et
+joueur minimal. Seul le stock de conserves change. Résultats identiques pour les 5 graines
+et les 2 joueurs :
+
+| Conserves | Durée (6 par nuit) | Fin des conserves | 1re nuit à 100 % | **100 % 7 nuits d'affilée** | Nuit sans repas complet | Santé à 0 |
+|---|---|---|---|---|---|---|
+| 20 | 3 nuits | nuit 4 | nuit 5 | **nuit 11** | nuit 4 (33 % couvert) | jamais |
+| 40 | 6 nuits | jamais (la ferme prend le relais) | nuit 5 | **nuit 11** | aucune | jamais |
+| 80 | 13 nuits | jamais | nuit 5 | **nuit 11** | aucune | jamais |
+| 160 (actuel) | 26 nuits | jamais | nuit 5 | **nuit 11** | aucune | jamais |
+
+Lecture :
+
+- La première récolte (carottes, 4 nuits) nourrit toute la famille dès la **nuit 5** : il
+  suffit de couvrir **4 nuits**, soit **24 conserves**. **20** laisse un repas incomplet
+  (nuit 4), **40** suffit avec une marge, **80 et 160** ne servent qu'à être revendues.
+  Proposition : **40 conserves** au départ v2.
+- ⚠️ **Le plus gros jalon arrive trop tôt** : 100 % pendant 7 nuits dès la **nuit 11**,
+  avec 6 parcelles de carottes, alors que la conception visait la nuit 60. C'est l'effet,
+  déjà signalé en 8.10 de `conception.md`, des calories augmentées de 25 % (v17) : une
+  récolte de 6 parcelles de carottes (60 × 10 calories) couvre 4 jours de besoin
+  (150 par jour).
+- En v2, la première récolte arrive aussi vers la nuit 5 (réparations, houe et graines
+  s'achètent le jour 1), donc la conclusion sur les conserves tient. Pour que le jalon
+  reste le plus gros du jeu, il faudra le rendre plus exigeant. Pistes, à choisir :
+  (a) baisser rendements ou calories ; (b) faire grandir la famille avec les niveaux
+  (plus de bouches) ; (c) exiger aussi un bonheur minimum pendant les 7 jours, donc des
+  plats variés et pas seulement des carottes. **(c)** colle le mieux à la v2.
