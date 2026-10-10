@@ -24,14 +24,16 @@ export const RAW_DATA = {
     "AJ": { "adulte": 50, "enfant": 25 },
     "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },
     "COMPAGNIE": { "MAX": 3, "ESPECES": { "chien": { "nom": "Chien", "icone": "🐶" }, "chat": { "nom": "Chat", "icone": "🐱" } } },
-    "SANTE_DEPART": 100,
-    "SANTE_MAX": 100,
-    "VARIATION": [{ "min": 100, "delta": 5 }, { "min": 75, "delta": -5 }, { "min": 50, "delta": -10 }, { "min": 0, "delta": -20 }],
-    "PRODUCTIVITE": [{ "min": 80, "pct": 100 }, { "min": 50, "pct": 80 }, { "min": 20, "pct": 50 }, { "min": 0, "pct": 25 }],
-    "SOIN": { "base": 20, "croissance": 150, "SANTE": 50 },
-    "BONUS_PLATS": { "PAR_PLAT": 1, "MAX": 3 },
-    "RECUPERATION_MALADE": 2,
     "RESERVE_DEPART": {}
+  },
+  "PERSONNAGE": {
+    "MAX": 100,
+    "COUTS": { "planter": 3, "arroser": 2, "recolter": 4, "tondre": 8, "cuisiner": 3, "cuireFour": 3, "moudre": 1, "presser": 1 },
+    "BONHEUR_REDUCTION": 50,
+    "ENDURANCE": 3,
+    "REVEIL_BASE": 60,
+    "REVEIL_REPAS": 40,
+    "MANGER_DIVISEUR": 5
   },
   "MARCHE": { "PLANCHER": { "defaut": 120, "graine": 200 }, "PAS": 10, "MULTIPLICATEUR_PRODUCTION": 2, "TRANSFORMATIONS_DOUBLEES": ["farine"] },
   "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },
@@ -606,7 +608,7 @@ export const RAW_DATA = {
       { "id": "cuisine", "nom": "Cuisine", "icone": "🍳", "suivi": ["stations"] },
       { "id": "famille", "nom": "Famille", "icone": "👨‍👩‍👧‍👦", "suivi": [] }
     ],
-    "NOEUDS_RETIRES": { "cui_rotisserie": { "pt": 1, "cout": 300 } },
+    "NOEUDS_RETIRES": { "cui_rotisserie": { "pt": 1, "cout": 300 }, "fa_remedes": { "pt": 1, "cout": 100 }, "fa_menus": { "pt": 1, "cout": 300 } },
     "noeuds": {
       "en_entretien": {
         "branche": "energie",
@@ -944,17 +946,17 @@ export const RAW_DATA = {
         "effet": { "eveilMin": 20 },
         "description": "L'éveil minimal avant de pouvoir dormir passe de 30 s à 20 s."
       },
-      "fa_remedes": {
+      "fa_sommeil": {
         "branche": "famille",
         "palier": 1,
-        "nom": "Remèdes maison",
-        "icone": "🌿",
+        "nom": "Bon sommeil",
+        "icone": "🛏️",
         "fonction": "productivite",
         "pt": 1,
         "cout": 100,
         "requiert": [],
-        "effet": { "soinCout": 70, "recuperation": 1 },
-        "description": "Les soins coûtent 30 % de moins, et un malade regagne 3 points de santé par nuit bien nourrie au lieu de 2."
+        "effet": { "reveilEnergie": 10 },
+        "description": "Au réveil, l'énergie remonte de 10 points de plus."
       },
       "fa_cellier": {
         "branche": "famille",
@@ -968,17 +970,17 @@ export const RAW_DATA = {
         "effet": { "conservation": 1 },
         "description": "Hors réfrigérateur, tout ce qui périme se garde une nuit de plus."
       },
-      "fa_menus": {
+      "fa_gouter": {
         "branche": "famille",
         "palier": 3,
-        "nom": "Menus variés",
-        "icone": "🍽️",
+        "nom": "Goûter",
+        "icone": "🥪",
         "fonction": "productivite",
         "pt": 1,
         "cout": 300,
         "requiert": [{ "noeud": "fa_cellier" }],
-        "effet": { "bonusPlatsMax": 5 },
-        "description": "Le bonus de santé des plats différents mangés monte jusqu'à +5 par nuit au lieu de +3."
+        "effet": { "gouter": 150 },
+        "description": "Ce que tu manges dans la journée rend 50 % d'énergie en plus."
       },
       "reveil_2": {
         "branche": "famille",
@@ -1047,10 +1049,10 @@ export const RAW_DATA = {
       {
         "titre": "Le poulailler",
         "icone": "🐔",
-        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé et une famille en bonne santé.",
+        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille.",
         "objectifs": [
           { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
-          { "type": "sante", "cible": 80, "libelle": "Santé moyenne d'au moins 80", "unite": "" }
+          { "type": "autonomie", "cible": 50, "libelle": "Atteindre 50 % d'autonomie", "unite": "%" }
         ]
       },
       {
@@ -1074,14 +1076,14 @@ export const RAW_DATA = {
       {
         "titre": "Toute l'année",
         "icone": "📅",
-        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris, sans acheter de soins.",
+        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris.",
         "objectifs": [
           {
             "type": "tenue",
             "cible": 1,
             "nuits": 10,
             "moyenne": 80,
-            "libelle": "Tenir 10 nuits d'affilée à 80 % d'autonomie en moyenne, sans payer de soin",
+            "libelle": "Tenir 10 nuits d'affilée à 80 % d'autonomie en moyenne",
             "unite": ""
           }
         ]
@@ -1161,20 +1163,7 @@ export const RAW_DATA = {
     "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
   },
   "VILLE": {
-    "BONHEUR": {
-      "DEPART": 60,
-      "MAX": 100,
-      "REPAS_CRU": -3,
-      "REPAS_PLATS": 8,
-      "FAIM": -2,
-      "PRODUCTIVITE": [
-        { "min": 85, "pct": 115 },
-        { "min": 65, "pct": 105 },
-        { "min": 35, "pct": 100 },
-        { "min": 15, "pct": 90 },
-        { "min": 0, "pct": 80 }
-      ]
-    },
+    "BONHEUR": { "DEPART": 60, "MAX": 100, "REPAS_CRU": -3, "REPAS_PLATS": 8, "FAIM": -2 },
     "ENFANT_PRIX": 50,
     "SORTIES": {
       "parc": {

@@ -6,6 +6,28 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v30 (jeu 1.8) : énergie du personnage, bonheur, endurance** (lot 4 de la v2,
+> `js/engine/stamina.js`, `DATA.PERSONNAGE` dans `data/general.json`). Cette note
+> **fait foi** sur tout ce qui, plus bas, parle de santé, de malades, de soins ou de
+> productivité : **ils n'existent plus**.
+> - **Jauge d'énergie de 0 à 100** (`state.energie`, en millièmes). Chaque action au
+>   clic en coûte : planter 3, arroser 2, récolter 4, tondre 8, cuisiner 3, cuire au
+>   four 3, moudre 1 par blé, presser 1 🟡. À 0, plus d'action au clic. Les
+>   automatisations, les ateliers qui tournent seuls, les achats et les ventes sont gratuits.
+> - **Coût réel** = coût × (100 − bonheur moyen ÷ 2) % × (100 − endurance) %, arrondi au
+>   millième supérieur. **Endurance** : −3 % par niveau au-delà du premier (−27 % au niveau 10).
+> - **Réveil** : l'énergie remonte à 60 + 40 × la part du repas du soir couverte (repas
+>   complet : 100) ; une énergie plus haute est gardée. **En-cas** : un aliment mangé
+>   dans la journée (bouton « Manger » de l'Inventaire) rend ses calories ÷ 5.
+> - Les rendements et vitesses ne dépendent plus de la santé ni du bonheur (plus de
+>   productivité). Tout le monde part en sortie.
+> - **Chapitre 3** : « santé moyenne ≥ 80 » devient « 50 % d'autonomie » ; **chapitre 6** :
+>   plus de condition « sans soin ».
+> - **Arbre** : Remèdes maison et Menus variés sont retirés (remboursés), remplacés par
+>   **Bon sommeil** (P1, +10 d'énergie au réveil) et **Goûter** (P3, en-cas +50 %).
+> - Format de sauvegarde 26 (`migrateEnergy`) ; suivi de session : la nuit envoie
+>   l'énergie au lieu de la santé (politique des cookies 1.2).
+>
 > **v29 (jeu 1.7) : niveaux d'expérience** (lot 3 de la v2, `data/niveaux.json`,
 > `js/engine/levels.js`). Cette note **fait foi** sur tout ce qui, plus bas, dit qu'un
 > chapitre débloque un bâtiment, un atelier ou une culture.

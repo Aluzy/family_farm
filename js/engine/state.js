@@ -13,6 +13,7 @@ import { newAutoReport } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
+import { energyMax } from './stamina.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -34,7 +35,6 @@ export function startHousehold() {
       // enfant et à un animal (les identifiants ne sont jamais réutilisés)
       animaux: [],
       numeros: familyNumbers(DATA.FAMILY.MEMBRES, []),
-      soinsPayes: 0,
       reserve: { ...DATA.FAMILY.RESERVE_DEPART },
     },
     nuit: newNightStats(),
@@ -105,6 +105,7 @@ export function createInitialState(seed = 1) {
     marche: {}, // Lot 3 : coefficients d'achat au-dessus de leur plancher
     ville: newVille(), // version 1.5 : sorties faites aujourd'hui, marché de la ville
     progression: newProgression(), // version 1.7 : expérience et niveau
+    energie: energyMax(), // version 1.8 : l'énergie du personnage (millièmes)
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
@@ -295,7 +296,60 @@ export const MIGRATIONS = {
   23: (state) => migrateSingleDevices(state),
   // v24 → v25 (version 1.7, v2 lot 3) : niveaux d'expérience.
   24: (state) => migrateLevels(state),
+  // v25 → v26 (version 1.8, v2 lot 4) : l'énergie du personnage remplace la santé.
+  25: (state) => migrateEnergy(state),
 };
+
+// Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie
+// pleine ; les nœuds de l'arbre retirés (soins, bonus de santé) sont rendus (points
+// et pièces) ; la série du chapitre 6 en cours oublie ses soins.
+export function migrateEnergy(old) {
+  const state = { ...old, version: 26, energie: energyMax() };
+  const f = state.famille;
+  if (f && typeof f === 'object') {
+    const { soinsPayes, ...famille } = f;
+    famille.membres = (Array.isArray(f.membres) ? f.membres : []).map((m) => {
+      if (!m || typeof m !== 'object') return m;
+      const { sante, malade, ...membre } = m;
+      return membre;
+    });
+    state.famille = famille;
+  }
+  refundRetiredNodes(state);
+  const k = state.campagne && state.campagne.compteurs;
+  if (k && k.tenue && typeof k.tenue === 'object') {
+    const { soins, ...tenue } = k.tenue;
+    k.tenue = tenue;
+  }
+  if (k && k.tenueDerniere && typeof k.tenueDerniere === 'object') {
+    const { sansSoin, ...derniere } = k.tenueDerniere;
+    k.tenueDerniere = derniere;
+  }
+  if (state.jour && typeof state.jour === 'object') {
+    const { soins, ...jour } = state.jour;
+    state.jour = jour;
+  }
+  // le rapport de réveil en attente, la nuit et le repas du jour perdent leurs lignes de santé
+  for (const key of ['report', 'nuit', 'repas']) {
+    if (!state[key] || typeof state[key] !== 'object') continue;
+    const { santeAvant, santeApres, nouveauxMalades, bonusPlats, ...rest } = state[key];
+    state[key] = rest;
+  }
+  return state;
+}
+
+// Les nœuds retirés de l'arbre (NOEUDS_RETIRES) que la partie possède sont rendus :
+// leurs pièces et leurs points de technologie.
+export function refundRetiredNodes(state) {
+  if (!Array.isArray(state.technologies)) return;
+  for (const [id, n] of Object.entries(DATA.techtree.NOEUDS_RETIRES)) {
+    if (!state.technologies.includes(id)) continue;
+    state.technologies = state.technologies.filter((x) => x !== id);
+    state.pieces = Math.round((Number(state.pieces) || 0) + n.cout);
+    if (!state.pointsTech || typeof state.pointsTech !== 'object') state.pointsTech = newTechPoints();
+    state.pointsTech.solde = (Number(state.pointsTech.solde) || 0) + n.pt;
+  }
+}
 
 // Version 1.7 : une partie reçoit le niveau qui garde tout ce qu'elle avait
 // débloqué : celui de son chapitre (NIVEAUX.CHAPITRE_NIVEAU), ou plus si elle a

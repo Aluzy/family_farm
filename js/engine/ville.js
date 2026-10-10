@@ -29,18 +29,6 @@ export function averageHappiness(state) {
   return m.length ? Math.round(m.reduce((t, x) => t + memberHappiness(x), 0) / m.length) : 0;
 }
 
-// Multiplicateur de productivité (%) du bonheur moyen des membres bien portants (les malades
-// pèsent déjà sur la productivité par la santé). Personne de bien portant : sans effet.
-export function happinessProductivity(state) {
-  const m = state.famille.membres.filter((x) => !x.malade);
-  if (!m.length) return 100;
-  const avg = m.reduce((t, x) => t + memberHappiness(x), 0) / m.length;
-  for (const tier of DATA.VILLE.BONHEUR.PRODUCTIVITE) {
-    if (avg >= tier.min) return tier.pct;
-  }
-  return 100;
-}
-
 // Variation de bonheur d'un repas : REPAS_CRU tout cru, jusqu'à REPAS_CRU + REPAS_PLATS tout
 // cuisiné (au prorata de l'énergie venue des plats), FAIM en plus si le besoin n'est pas couvert.
 export function mealHappinessDelta(plan) {
@@ -71,9 +59,9 @@ function ville(state) {
   return state.ville;
 }
 
-// Les membres qui partent : tous sauf les malades.
+// Les membres qui partent : toute la famille (version 1.8 : plus de malades).
 export function outingMembers(state) {
-  return state.famille.membres.filter((m) => !m.malade);
+  return state.famille.membres.slice();
 }
 
 // Prix d'une sortie pour les membres qui partent (un enfant paie ENFANT_PRIX %).

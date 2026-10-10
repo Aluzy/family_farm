@@ -40,6 +40,7 @@ import './ui/ville.js';
 import './ui/reveil.js';
 import './ui/chapitres.js';
 import './ui/niveaux.js';
+import './ui/energie.js';
 import './ui/animations.js';
 import './ui/aide.js';
 import './ui/options.js';

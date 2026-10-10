@@ -5,11 +5,11 @@ import {
 } from '../engine/devices.js';
 import { hourOfDay } from '../engine/clock.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
-import { productivity } from '../engine/family.js';
+import { energyChip } from './energie.js';
 import { potagerUpgradeCost, upgradePotager, zone2Plots } from '../engine/crops.js';
 import { isUnlocked } from '../engine/campaign.js';
 import {
-  formatCoins, formatLitres, formatLitresRate, formatNumber, formatPercent, formatWh, formatWhRate,
+  formatCoins, formatLitres, formatLitresRate, formatNumber, formatWh, formatWhRate,
 } from '../engine/format.js';
 import { FERME_LINKS, setEcranFerme, state, tabAvailable, TABS } from './store.js';
 import { telView } from './consent.js';
@@ -227,7 +227,6 @@ export function renderDeviceScreen(kind) {
 export function renderPotager() {
   const pot = state.potager;
   const up = potagerUpgradeCost(state);
-  const prod = productivity(state);
   const upBtn =
     up === null
       ? '<button type="button" class="btn" disabled>Zone de culture au niveau maximum</button>'
@@ -235,7 +234,7 @@ export function renderPotager() {
   return `
     <div class="section-head">
       <h3>${icon('potager')}${DATA.POTAGER.NOM} · niveau ${pot.niveau}</h3>
-      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ${formatPercent(prod)}</span>${helpBtn('potager')}</span>
+      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
     <div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${groupButtons('potager', 1)}${upBtn}</div>
@@ -250,11 +249,10 @@ export function renderZone2() {
   const Z = DATA.POTAGER.ZONE2;
   const plots = zone2Plots(state);
   if (!plots.length) return '';
-  const prod = productivity(state);
   return `
     <div class="section-head">
       <h3><span aria-hidden="true">${Z.ICONE}</span> ${Z.NOM} · ${plots.length} parcelles</h3>
-      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : ne s'applique qu'aux actions au clic">Productivité ${formatPercent(prod)}</span>${helpBtn('potager')}</span>
+      <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
     <div class="plots">${plots.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${groupButtons('potager', 2)}</div>

@@ -6,28 +6,28 @@
    ========================================================================== */
 
 import {
-  advanceHours, applyMealHappiness, averageHappiness, buyInTown, goOut, goToTownMarket, happinessProductivity,
-  mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingStatus, townItems, townMarketOpen,
+  advanceHours, applyMealHappiness, averageHappiness, buyInTown, goOut, goToTownMarket,
+  mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
-  autonomyHistory, autonomyPercent, autoTasks, availableEnergy, averageHealth, awakeMsAtHour, awakeRequired,
-  batteryCapacity, bedtimeDue, boltingPlan, boltSeedYield, botBuy, botDay, botFarm, botFieldTarget, botHeal, botIsFieldCrop, botMill,
+  autonomyHistory, autonomyPercent, autoTasks, availableEnergy, awakeMsAtHour, awakeRequired,
+  batteryCapacity, bedtimeDue, boltingPlan, boltSeedYield, botBuy, botDay, botFarm, botFieldTarget, botIsFieldCrop, botMill,
   botRaiseFunds, botRecipeValue, botSell, botSheep, botStepInfo, botWheatKept, buildCatalog, buildFridge,
   buildMorningReport, buildPaturage, buildPoulailler, buildSerre, buildSilo, buildStation, buildVerger,
   buyAnimal, buyAnimals, buyCow, buyItem, buyOrchardSlot, buyPasture, buyPrice, buyQuote,
-  buySheep, buyTech, buyTree, cancelMilling, cancelQueued, canSleep, careCost, chapterProgress,
+  buySheep, buyTech, buyTree, cancelMilling, cancelQueued, canSleep, chapterProgress,
   chapterReached, checkMastery, childCount, cleanFirstName, clockHours, completeChapter, CONSUMERS,
   coopCapacity, coopUpgradeCost, countItem, cowCapacity, cowCount, cowPlaces, createInitialState,
-  cropProduct, cropUnlocked, DATA, deliverMail, deviceStatus, dishBonus, dishEnergy,
+  cropProduct, cropUnlocked, DATA, deliverMail, deviceStatus, dishEnergy,
   dishPrice, drawEnergy, efficiency, energyStats, escapeHtml, expiringSoon, familyNeed, feedAllHens,
   feedFamily, feedHen, feedLivestock, findDevice, findMember, findPet, findPlot, finishPreparations,
   formatCoins, formatDuration, formatHour, formatLitres, formatLitresRate, formatNumber, formatPercent,
   formatQty, formatSigned, formatWh, formatWhRate, freeCowPlaces, freeSheepPlaces, fridgeCount,
   fridgeCounts, fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate, fridgeUnits,
-  GAME_VERSION, getNotifications, grantTech, growAll, growOrchard, harvest, harvestAll, harvestYield, heal,
-  healthDelta, hourOfDay, ingredientOptions, inventoryCounts, isAutomated, isBroken, isBuyable,
+  GAME_VERSION, getNotifications, grantTech, growAll, growOrchard, harvest, harvestAll, harvestYield,
+  hourOfDay, ingredientOptions, inventoryCounts, isAutomated, isBroken, isBuyable,
   isGraineComptoir, isMature, isPerishable, isUnlocked, lastAutonomy, layEggs, loadShedding, lotsOf,
   mailReceived, maintainCost, maintainDevice, makeDevice, makePlot, makePlots, makeZone2Plot, marketCoef, marketFloor,
   maxCows, maxSheep, maxStage, mealDue, mealOrder, memberName, memberPortrait, memberRemovalBlock,
@@ -35,11 +35,11 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, openZone2, holdStatus, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, openZone2, holdStatus, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
-  productionItemKeys, productivity, queueCapacity, rainNight, randomInt, RAW_DATA,
-  rawAverageHealth, readMail, readyCrops, recipeNode, recipeStatus, recipeTime, recipeUnlocked, recordNight,
+  productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
+  readMail, readyCrops, recipeNode, recipeStatus, recipeTime, recipeUnlocked, recordNight,
   removeMember, removePet, repairCost, repairDevice, reservableItems, routineDue, scaleEnergie,
   seedItem, seedStock, sellableCount, sellItem, sellPrice, serreUpgradeCost,
   setMemberProfile, setPetProfile, setRoutine, setSeedReserve, setSemis, shear, sheepCount, sheepPlaces,
@@ -51,9 +51,9 @@ import {
   testAddHens, testAddOil, testAddPieces, testAddSeeds, testAddSheep, testAddStraw, testAddWheat,
   testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
   testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
-  testRipenAll, testSetBuildingLevel5, testSetHealthZero, testSetWear, testSleepNights, testUnlockAllTechs,
+  testRipenAll, testSetBuildingLevel5, testSetWear, testSleepNights, testUnlockAllTechs,
   testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockLevel, unreadMail,
-  updateChapters, updateHealth, upgradeCost, upgradeDevice, upgradePotager, upgradePoulailler, upgradeSerre,
+  updateChapters, upgradeCost, upgradeDevice, upgradePotager, upgradePoulailler, upgradeSerre,
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, waterCostFor,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
 } from '../js/engine/index.js';
@@ -753,11 +753,11 @@ function setInv(s, quantities) {
   for (const [item, n] of Object.entries(quantities)) addItem(s, item, n);
 }
 
-function setHealth(s, value) {
-  for (const m of s.famille.membres) {
-    m.sante = value;
-    m.malade = false;
-  }
+// Version 1.8 : une partie de test « infatigable », pour les tests qui enchaînent
+// beaucoup d'actions au clic sans parler d'énergie (l'énergie a ses propres tests).
+function tireless(s) {
+  s.energie = Number.MAX_SAFE_INTEGER;
+  return s;
 }
 
 test('DATA Lot 2 : objets, énergies et prix de vente', () => {
@@ -853,8 +853,8 @@ test('état initial Lot 2 : inventaire, potager de 6 parcelles, famille de 4 à 
   assertEqual(s.potager.parcelles.every((p) => p.culture === null && p.stade === 0 && !p.arrose && !p.montee), true);
   assertEqual(s.famille.membres.length, 4);
   assertEqual(s.famille.membres.filter((m) => m.enfant).length, 2);
-  assertEqual(s.famille.membres.every((m) => m.sante === 100 && m.malade === false), true);
-  assertEqual(s.famille.soinsPayes, 0);
+  assertEqual(s.famille.membres.every((m) => !('sante' in m) && !('malade' in m)), true, 'version 1.8 : plus de santé');
+  assertEqual(['soinsPayes' in s.famille, s.energie], [false, 100000], 'l\'énergie du personnage commence pleine');
 });
 
 test('inventaire : add, take et count', () => {
@@ -970,30 +970,16 @@ test('arroser une parcelle mûre est refusé (l\'eau n\'est pas gaspillée)', ()
   assertEqual(s.eauMl, ml(40));
 });
 
-testBase('récolte manuelle : rendement × productivité selon la santé', () => {
+testBase('récolte : le même rendement au clic et en automatique (version 1.8 : plus de productivité)', () => {
   const s = garden();
-  const cases = [[100, 10], [80, 10], [60, 8], [30, 5], [10, 3]]; // 10 × 1 / 1 / 0,8 / 0,5 / 0,25 (arrondi)
-  cases.forEach(([sante, attendu], i) => {
-    setHealth(s, sante);
-    const id = `potager-${i + 1}`;
-    plantRipe(s, id, 'carotte');
-    const before = countItem(s, 'carotte');
-    const r = harvest(s, id);
-    assertEqual(r.ok, true);
-    assertEqual(countItem(s, 'carotte') - before, attendu, `santé ${sante}`);
-    assertEqual(r.items.carotte, attendu);
-  });
+  plantRipe(s, 'potager-1', 'carotte');
+  assertEqual(harvest(s, 'potager-1').items.carotte, 10);
+  plantRipe(s, 'potager-2', 'carotte');
+  assertEqual(harvest(s, 'potager-2', true).items.carotte, 10);
+  assertEqual(harvestYield(s, 'carotte'), 10);
 });
 
-testBase('récolte automatique : jamais pénalisée par la santé', () => {
-  const s = garden();
-  setHealth(s, 10);
-  plantRipe(s, 'potager-1', 'carotte');
-  harvest(s, 'potager-1', true);
-  assertEqual(countItem(s, 'carotte'), 10);
-  assertEqual(harvestYield(s, 'carotte'), 3);
-  assertEqual(harvestYield(s, 'carotte', true), 10);
-});
+
 
 testBase('récolte : la parcelle est libérée, refus si pas mûre ou vide', () => {
   const s = garden();
@@ -1052,7 +1038,6 @@ test('graines rendues : montée en graine = 6 graines et aucune carotte', () => 
   assertEqual(countItem(s, 'graine_carotte'), 15, '10 − 1 plantée + 6');
   assertEqual(countItem(s, 'carotte'), 0);
   // la santé ne réduit pas les graines
-  setHealth(s, 10);
   plantRipe(s, 'potager-2', 'carotte');
   toggleBolting(s, 'potager-2');
   findPlot(s, 'potager-2').stade = 6;
@@ -1066,8 +1051,7 @@ test('graines rendues : montée en graine = 6 graines et aucune carotte', () => 
 
 testBase('graines rendues : tomate, courgette et aubergine rendent 1 à 2 graines, reproductibles', () => {
   function run(seed, culture) {
-    const s = createInitialState(seed);
-    setHealth(s, 100);
+    const s = tireless(createInitialState(seed));
     const gains = [];
     const seedName = seedItem(culture);
     addItem(s, seedName, 40);
@@ -1203,105 +1187,6 @@ test('réserve de semences (moteur) : la famille ne mange jamais la réserve', (
   assertEqual(reservableItems(), ['patate', 'ail', 'riz']);
 });
 
-test('santé : +5 à 100 %, −5 de 75 à 99 %, −10 de 50 à 74 %, −20 sous 50 %', () => {
-  // Lot 11 (nutrition) : besoin 150, conserve à 25 d'énergie (6 conserves = 150
-  // couvrent 100 %, contre 8 avant l'augmentation de +25 %).
-  const cases = [
-    [{ conserve: 6 }, 5],
-    [{ conserve: 9 }, 5],
-    [{ conserve: 5 }, -5],
-    [{ conserve: 4, carotte: 2 }, -5],
-    [{ conserve: 3 }, -10],
-    [{ conserve: 4 }, -10],
-    [{ conserve: 2 }, -20],
-    [{ conserve: 0 }, -20],
-  ];
-  for (const [quantities, delta] of cases) {
-    const s = garden();
-    setHealth(s, 60);
-    setInv(s, quantities);
-    feedFamily(s);
-    assertEqual(s.famille.membres[0].sante, 60 + delta, JSON.stringify(quantities));
-    assertEqual(s.famille.membres[3].sante, 60 + delta);
-  }
-  assertEqual([100, 99, 75, 74, 50, 49].map(healthDelta), [5, -5, -5, -10, -10, -20]);
-});
-
-test('santé : bornée entre 0 et 100, et un membre à 0 devient malade', () => {
-  const s = garden();
-  setHealth(s, 98);
-  feedFamily(s);
-  assertEqual(s.famille.membres.every((m) => m.sante === 100), true);
-  const t = garden();
-  setHealth(t, 10);
-  t.famille.membres[0].sante = 25;
-  setInv(t, {});
-  const nouveaux = feedFamily(t) && t.nuit.nouveauxMalades;
-  assertEqual(t.famille.membres[0].sante, 5);
-  assertEqual(t.famille.membres[0].malade, false);
-  assertEqual(t.famille.membres[1].sante, 0);
-  assertEqual(t.famille.membres[1].malade, true);
-  assertEqual(nouveaux, ['adulte-2', 'enfant-1', 'enfant-2'], 'des identifiants, jamais des prénoms');
-});
-
-test('productivité : 100 % à 80 et plus, 80 % de 50 à 79, 50 % de 20 à 49, 25 % sous 20', () => {
-  const s = garden();
-  const cases = [[100, 100], [80, 100], [79, 80], [50, 80], [49, 50], [20, 50], [19, 25], [0, 25]];
-  for (const [sante, pct] of cases) {
-    setHealth(s, sante);
-    assertEqual(productivity(s), pct, `santé ${sante}`);
-  }
-  assertEqual(formatPercent(80), '80\u00a0%');
-});
-
-test('productivité : un membre malade compte pour 0 dans la moyenne', () => {
-  const s = garden();
-  setHealth(s, 100);
-  const m = s.famille.membres[0];
-  m.sante = 30; // en convalescence : sa santé réelle ne compte pas
-  m.malade = true;
-  assertEqual(averageHealth(s), 75);
-  assertEqual(productivity(s), 80);
-  m.malade = false;
-  assertEqual(averageHealth(s), 82, 'moyenne entière, arrondie vers le bas : 82,5 → 82');
-  assertEqual(productivity(s), 100, 'sans la maladie, sa santé de 30 compterait : (300 + 30) ÷ 4 = 82');
-});
-
-test('soins : coût 20 × 1,5^n (20, 30, 45, 68), santé remise à 50', () => {
-  const s = garden();
-  s.pieces = 1000;
-  const costs = [];
-  for (let i = 0; i < 4; i++) {
-    const m = s.famille.membres[i];
-    m.sante = 0;
-    m.malade = true;
-    assertEqual(careCost(s), [20, 30, 45, 68][i]);
-    const r = heal(s, m.id);
-    assertEqual(r.ok, true);
-    costs.push(r.cost);
-    assertEqual([m.sante, m.malade], [50, false]);
-  }
-  assertEqual(costs, [20, 30, 45, 68]);
-  assertEqual(s.famille.soinsPayes, 4);
-  assertEqual(s.pieces, 1000 - 163);
-  assertEqual(careCost(s), 102, '20 × 1,5⁴ = 101,25, arrondi à 102');
-});
-
-test('soins : refusés sans pièces, sur un membre non malade ou inconnu', () => {
-  const s = garden();
-  const m = s.famille.membres[0];
-  assertEqual(heal(s, m.id).ok, false, 'pas malade');
-  m.sante = 0;
-  m.malade = true;
-  s.pieces = 19;
-  assertEqual(heal(s, m.id).ok, false, 'pas assez de pièces');
-  assertEqual([m.sante, m.malade, s.pieces, s.famille.soinsPayes], [0, true, 19, 0]);
-  assertEqual(heal(s, 'inconnu').ok, false);
-  s.pieces = 20;
-  assertEqual(heal(s, m.id).ok, true);
-  assertEqual(s.pieces, 0);
-});
-
 /* ---------- version 1.1 : prénom, sexe et couleur de peau de chaque membre ---------- */
 
 test('profil : au départ, chaque membre porte son rôle comme prénom, le sexe de DATA et la teinte jaune', () => {
@@ -1343,7 +1228,7 @@ test('setMemberProfile : change le prénom, le sexe et la teinte, et le portrait
   assert(setMemberProfile(s, 'enfant-2', { genre: 'm', teint: 5 }).ok);
   assertEqual(memberPortrait(s, 'enfant-2'), '👦🏿');
   // les autres membres ne bougent pas, la santé non plus
-  assertEqual([memberName(s, 'adulte-2'), memberPortrait(s, 'adulte-2'), m.sante, m.malade], ['Adulte 2', '👨', 100, false]);
+  assertEqual([memberName(s, 'adulte-2'), memberPortrait(s, 'adulte-2'), m.bonheur], ['Adulte 2', '👨', DATA.VILLE.BONHEUR.DEPART]);
 });
 
 test('setMemberProfile : prénom nettoyé, de 1 à 12 caractères', () => {
@@ -1399,14 +1284,9 @@ test('profil : le prénom sert dans les messages, mais jamais dans les comptes r
   const s = garden();
   const prenoms = ['Zélie', 'Balthazar', 'Capucine', 'Ferdinand'];
   s.famille.membres.forEach((m, i) => assert(setMemberProfile(s, m.id, { prenom: prenoms[i], teint: i + 1 }).ok));
-  assertEqual(heal(s, 'adulte-1'), { ok: false, error: 'Zélie n\'est pas malade.' });
-  // Toute la famille tombe malade : le compte rendu de la nuit porte des identifiants.
-  setHealth(s, 5);
   setInv(s, {});
   s.awakeMs = 30000;
   const report = sleep(s);
-  assertEqual(report.nouveauxMalades, ['adulte-1', 'adulte-2', 'enfant-1', 'enfant-2']);
-  assertEqual(report.nouveauxMalades.map((id) => memberName(s, id)), prenoms, 'l\'interface retrouve les prénoms au moment d\'afficher');
   // Aucun prénom dans ce que le moteur calcule pour les rapports, les alertes et la simulation.
   const sorties = JSON.stringify([report, s.nuit, getNotifications(s), alertSnapshot(s), alertEvents(alertSnapshot(createInitialState(1)), alertSnapshot(s)), buildMorningReport(s), offlineReport(s, offlineSnapshot(s), 0, 0), simulateFromCopy(s, 'minimal', 2)]);
   for (const p of prenoms) assertEqual(sorties.includes(p), false, `${p} ne sort pas du profil`);
@@ -1430,34 +1310,6 @@ test('profil : un prénom abîmé dans une sauvegarde retombe sur le rôle à l\
   assertEqual(memberPortrait(s, 'adulte-2'), '👩', 'sexe et teinte inconnus : premier sexe, jaune');
 });
 
-test('récupération sans soin : +2 par nuit à 100 %, guérison à 50, pas de gain sinon', () => {
-  const s = garden();
-  const m = s.famille.membres[0];
-  m.sante = 0;
-  m.malade = true;
-  setInv(s, { conserve: 8 });
-  feedFamily(s);
-  assertEqual([m.sante, m.malade], [2, true], '+2 au lieu de +5');
-  assertEqual(s.famille.membres[1].sante, 100);
-  // une nuit mal nourrie : pas de récupération, variation normale (bornée à 0)
-  setInv(s, { conserve: 5 });
-  feedFamily(s);
-  assertEqual([m.sante, m.malade], [0, true]);
-  // 24 nuits bien nourries : 48 points, encore malade ; la 25e → 50 : guéri
-  for (let i = 0; i < 24; i++) {
-    setInv(s, { conserve: 8 });
-    feedFamily(s);
-  }
-  assertEqual([m.sante, m.malade], [48, true]);
-  setInv(s, { conserve: 8 });
-  feedFamily(s);
-  assertEqual([m.sante, m.malade], [50, false]);
-  setInv(s, { conserve: 8 });
-  feedFamily(s);
-  assertEqual(m.sante, 55, 'guéri : la règle normale (+5) reprend');
-  assertEqual(s.famille.soinsPayes, 0, 'aucun soin payé');
-});
-
 test('ordre des étapes nocturnes : repas et santé, automatisations, pousse, ponte, paille des moutons et des vaches, préparations, puis péremption en dernier', () => {
   // Arbre v2 : la pluie avant les automatisations, l'entretien automatique
   // après les préparations et avant le bloc nocturne du frigo.
@@ -1465,7 +1317,7 @@ test('ordre des étapes nocturnes : repas et santé, automatisations, pousse, po
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
-test('Dormir : repas, santé, pousse et rapport de réveil', () => {
+test('Dormir : repas, énergie, pousse et rapport de réveil', () => {
   const s = garden();
   plant(s, 'potager-1', 'carotte');
   plant(s, 'potager-2', 'carotte');
@@ -1483,19 +1335,19 @@ test('Dormir : repas, santé, pousse et rapport de réveil', () => {
   assertEqual(r.besoin, 150);
   assertEqual(r.couverture, 100);
   assertEqual(r.mange, { patate: 6, conserve: 2 });
-  assertEqual([r.santeAvant, r.santeApres], [100, 100]);
-  assertEqual(r.nouveauxMalades, []);
+  assertEqual(r.energieReveil, 100000, 'repas complet : l\'énergie remonte à 100');
   assertEqual(r.pretes, [{ culture: 'carotte', nombre: 1, montee: false }]);
-  // une nuit sans rien à manger : −20 pour tous, et l'écran de réveil le dit
+  // une nuit sans rien à manger : l'énergie ne remonte qu'à 60, et l'écran de réveil le dit
   const t = garden();
   setInv(t, {});
+  t.energie = 0;
   t.awakeMs = 30000;
   const r2 = sleep(t);
-  assertEqual([r2.energieMangee, r2.couverture, r2.santeAvant, r2.santeApres], [0, 0, 100, 80]);
-  // et le compte rendu de la nuit repart de zéro à la nuit suivante
+  assertEqual([r2.energieMangee, r2.couverture, r2.energieReveil, t.energie], [0, 0, 60000, 60000]);
+  // une énergie déjà plus haute que celle du réveil est gardée
+  t.energie = 90000;
   t.awakeMs = 30000;
-  const r3 = sleep(t);
-  assertEqual([r3.santeAvant, r3.santeApres], [80, 60]);
+  assertEqual(sleep(t).energieReveil, 90000);
 });
 
 test('Dormir avec la réserve de semences : 10 nuits de conserves, patates jamais mangées', () => {
@@ -1514,14 +1366,12 @@ test('Dormir avec la réserve de semences : 10 nuits de conserves, patates jamai
     sleep(s);
   }
   assertEqual(countItem(s, 'conserve'), 0);
-  assertEqual(s.famille.membres.every((m) => m.sante === 100), true);
   s.awakeMs = 30000;
   const r = sleep(s); // 11e nuit : plus rien à manger hors réserve
-  assertEqual(r.energieMangee, 0);
-  assertEqual(s.famille.membres[0].sante, 80);
+  assertEqual([r.energieMangee, r.couverture], [0, 0]);
 });
 
-test('mode test Lot 2 : graines, maturité, santé à 0', () => {
+test('mode test Lot 2 : graines, maturité, énergie à 0 puis pleine', () => {
   const s = garden();
   testAddSeeds(s);
   assertEqual(countItem(s, 'graine_carotte'), 20);
@@ -1536,9 +1386,11 @@ test('mode test Lot 2 : graines, maturité, santé à 0', () => {
   testRipenAll(s);
   assertEqual(readyCrops(s).map((c) => [c.culture, c.nombre, c.montee]), [['carotte', 1, false], ['aubergine', 1, false], ['carotte', 1, true]]);
   assertEqual(s.potager.parcelles.filter((p) => !p.culture).every((p) => p.stade === 0), true);
-  testSetHealthZero(s);
-  assertEqual(s.famille.membres.every((m) => m.sante === 0 && m.malade), true);
-  assertEqual(productivity(s), 25);
+  testSetEnergyZero(s);
+  assertEqual(s.energie, 0);
+  assertEqual(plant(s, 'potager-4', 'carotte').error, 'Plus assez d\'énergie : mange quelque chose ou va dormir.');
+  testFillEnergy(s);
+  assertEqual(s.energie, energyMax());
 });
 
 test('migration v2 (Lot 1) → version courante : garde la partie, ajoute le potager, la famille et l\'inventaire', () => {
@@ -2478,75 +2330,6 @@ test('nourrissage : le blé est retiré une fois par poule et par nuit', () => {
   assertEqual([s.silo.ble, s.poulailler.restes], [9, 1], 'une poule seule entame un blé entier');
 });
 
-test('productivité < 1 : un nourrissage manuel compte avec une probabilité égale à la productivité', () => {
-  const trial = (health) => {
-    const s = ranch();
-    setHealth(s, health);
-    s.silo.ble = 400;
-    testAddHens(s, 4);
-    return s;
-  };
-  // santé 30 → productivité ×0,5
-  const s = trial(30);
-  assertEqual(productivity(s), 50);
-  let counted = 0;
-  const N = 400;
-  for (let i = 0; i < N; i++) {
-    s.poulailler.nourries = 0;
-    s.poulailler.restes = 0;
-    const wheatBefore = wheatTotal(s);
-    const r = feedHen(s);
-    assertEqual(r.ok, true);
-    if (r.compte) {
-      counted += 1;
-      assertEqual(wheatTotal(s), wheatBefore - 1, 'un geste qui compte entame un blé');
-      assertEqual(s.poulailler.nourries, 1);
-    } else {
-      assertEqual(wheatTotal(s), wheatBefore, 'un geste raté conserve le blé');
-      assertEqual(s.poulailler.nourries, 0, 'la poule reste à nourrir');
-    }
-  }
-  const rate = counted / N;
-  assert(rate > 0.42 && rate < 0.58, `taux observé ${rate}, attendu ≈ 0,5`);
-  // productivité ×0,25 (santé < 20) : environ un geste sur quatre
-  const t = trial(10);
-  assertEqual(productivity(t), 25);
-  let c2 = 0;
-  for (let i = 0; i < N; i++) {
-    t.poulailler.nourries = 0;
-    if (feedHen(t).compte) c2 += 1;
-  }
-  assert(c2 / N > 0.17 && c2 / N < 0.33, `taux observé ${c2 / N}, attendu ≈ 0,25`);
-  // productivité 1 : le geste compte toujours et le générateur n'est pas tiré
-  const u = trial(100);
-  const seedBefore = u.rngSeed;
-  assertEqual(feedHen(u).compte, true);
-  assertEqual(u.rngSeed, seedBefore, 'aucun tirage à pleine productivité');
-  // « Nourrir tout » applique la même règle poule par poule
-  const v = trial(30);
-  const all = feedAllHens(v);
-  assertEqual(all.nourries + all.ratees, 4);
-  assertEqual(v.poulailler.nourries, all.nourries);
-  assertEqual(400 - wheatTotal(v), Math.ceil(all.nourries / 2));
-});
-
-test('productivité : le tirage vient du générateur à graine de l\'état (reproductible)', () => {
-  const run = () => {
-    const s = ranch();
-    setHealth(s, 30);
-    s.silo.ble = 100;
-    s.rngSeed = 12345;
-    testAddHens(s, 4);
-    const out = [];
-    for (let i = 0; i < 30; i++) {
-      s.poulailler.nourries = 0;
-      out.push(feedHen(s).compte);
-    }
-    return out;
-  };
-  assertEqual(run(), run());
-});
-
 test('tournesol : les graines récoltées servent à semer', () => {
   const s = ranch();
   setInv(s, {});
@@ -2903,7 +2686,7 @@ test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni
   assertEqual(DATA.UPGRADE_COST.panneau, [0, 150, 400, 900, 2000]);
   assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.mouton.prix, DATA.ANIMAUX.vache.prix], [15, 60, 200]);
   assertEqual([DATA.VERGER.ARBRES.pommier.prix, DATA.VERGER.ARBRES.poirier.prix], [40, 40]);
-  assertEqual(DATA.FAMILY.SOIN.base, 20);
+  assertEqual(DATA.FAMILY.SOIN, undefined, 'version 1.8 : plus de soins');
 });
 
 test('Lot 12 : la vente crédite le nouveau montant et le Marché affiche le prix réellement payé', () => {
@@ -3323,24 +3106,16 @@ test('arbre v2 : effets sur les cultures et l\'élevage', () => {
   assertEqual([rep.auto.tondus, countItem(u, 'laine')], [2, 2]);
 });
 
-test('arbre v2 : effets sur la famille (soins, récupération, menus, cellier)', () => {
+test('arbre v2 : effets sur la famille (Bon sommeil, Goûter, Cellier)', () => {
   const s = garden();
-  assertEqual(careCost(s), 20);
-  grantTech(s, 'fa_remedes');
-  assertEqual(careCost(s), 14, '20 × 70 %');
-  s.famille.soinsPayes = 2;
-  assertEqual(careCost(s), 32, '45 × 70 % = 31,5 → 32');
-  // récupération d'un malade : 3 au lieu de 2
-  const m = s.famille.membres[0];
-  m.sante = 10;
-  m.malade = true;
-  updateHealth(s, 100, 0);
-  assertEqual(m.sante, 13);
-  // Menus variés : bonus des plats jusqu'à +5
-  const mange = { pain: 1, omelette: 1, ratatouille: 1, gratin_patates: 1, compote: 1 };
-  assertEqual(dishBonus(mange, s), 3);
-  grantTech(s, 'fa_menus');
-  assertEqual(dishBonus(mange, s), 5);
+  // Bon sommeil : +10 au réveil (repas manqué : 60 → 70 ; repas complet : 100, le maximum)
+  assertEqual(wakeEnergy(s, 0), 60000);
+  grantTech(s, 'fa_sommeil');
+  assertEqual([wakeEnergy(s, 0), wakeEnergy(s, 50), wakeEnergy(s, 100)], [70000, 90000, 100000]);
+  // Goûter : un en-cas rend 50 % de plus (gratin 150 calories → 30, puis 45)
+  assertEqual(snackEnergy(s, 'gratin_patates'), (DATA.items.gratin_patates.energie * 1000) / 5);
+  grantTech(s, 'fa_gouter');
+  assertEqual(snackEnergy(s, 'gratin_patates'), Math.floor((DATA.items.gratin_patates.energie * 1000 * 150) / 500));
   // Cellier : +1 nuit hors frigo pour ce qui périme, rien pour le reste
   grantTech(s, 'fa_cellier');
   setInv(s, {});
@@ -3349,6 +3124,7 @@ test('arbre v2 : effets sur la famille (soins, récupération, menus, cellier)',
   assertEqual([lotsOf(s, 'carotte')[0].nightsLeft, lotsOf(s, 'ble')[0].nightsLeft], [7, 11]);
   addItem(s, 'conserve', 1);
   assertEqual(lotsOf(s, 'conserve')[0].nightsLeft, null);
+  assertEqual([DATA.techtree.noeuds.fa_remedes, DATA.techtree.noeuds.fa_menus], [undefined, undefined], 'nœuds de santé retirés');
 });
 
 test('arbre v2 : arrosage prioritaire quand l\'eau manque', () => {
@@ -3558,22 +3334,6 @@ test('le Four et la Cuisine ne consomment pas d\'électricité et ne s\'usent pa
   assertEqual([s.stations.four.appareil, s.stations.cuisine.appareil], [null, null]);
 });
 
-test('la vitesse d\'une préparation suit la productivité de la famille', () => {
-  const s = atelier();
-  setHealth(s, 60); // 80 %
-  setInv(s, { farine: 2 });
-  startRecipe(s, 'pain');
-  assertEqual(taskTimeLeft(s, 'four'), 13, 'temps réel restant 10 ÷ 80 % = 12,5, arrondi à 13 s');
-  runFor(s, 10);
-  assertEqual(countItem(s, 'pain'), 0, 'pas fini à 10 s');
-  runFor(s, 2.5);
-  assertEqual(countItem(s, 'pain'), 1);
-  setHealth(s, 30); // ×0,5
-  setInv(s, { farine: 2 });
-  startRecipe(s, 'pain');
-  assertEqual(taskTimeLeft(s, 'four'), 20);
-});
-
 test('compote : 3 pommes ou 3 poires, sans les mélanger', () => {
   const s = atelier();
   setInv(s, { pomme: 2, poire: 2 });
@@ -3614,7 +3374,7 @@ test('version 1.1 : plus aucune recette ne demande de viande, les anciens plats 
   assertEqual(PLATS_RETIRES.map((id) => [DATA.items[id].energie, DATA.items[id].prix]), [[144, 36], [81, 26], [144, 36], [75, 23]], 'énergie et prix d\'avant');
   assertEqual(Object.keys(DATA.PLATS_RETIRES), PLATS_RETIRES);
   assertEqual(DATA.techtree.noeuds.cui_rotisserie, undefined, 'le nœud Rôtisserie a disparu');
-  assertEqual(DATA.techtree.NOEUDS_RETIRES, { cui_rotisserie: { pt: 1, cout: 300 } });
+  assertEqual(DATA.techtree.NOEUDS_RETIRES, { cui_rotisserie: { pt: 1, cout: 300 }, fa_remedes: { pt: 1, cout: 100 }, fa_menus: { pt: 1, cout: 300 } });
   // Les viandes : ni produites, ni achetables, mais toujours des aliments qui se vendent.
   for (const id of viandes) {
     assertEqual([DATA.items[id].edible, isBuyable(id), buyItem(garden(), id).ok], [true, false, false], id);
@@ -3626,7 +3386,6 @@ test('version 1.1 : plus aucune recette ne demande de viande, les anciens plats 
   // La famille mange encore un ancien plat et de l'ancienne viande ; les plats comptent pour le bonus.
   const plan = planMeal(s);
   assert(plan.mange.ragout === 1 || plan.mange.roti_boeuf === 1 || plan.mange.viande_mouton > 0, 'ils sont au menu');
-  assertEqual(dishBonus({ ragout: 1, roti_boeuf: 1 }), 2);
   const before = s.pieces;
   assertEqual(sellItem(s, 'viande_mouton', 2).gain, 20);
   assertEqual(sellItem(s, 'ragout', 1).gain, 36);
@@ -3927,52 +3686,6 @@ test('Moulin : la Préparation rapide raccourcit chaque blé du lot', () => {
   assertEqual([countItem(s, 'farine'), countItem(s, 'paille')], [3, 3]);
 });
 
-test('bonus de santé : +1 par plat différent mangé, plafonné à +3', () => {
-  const nuit = (inv, sante = 50) => {
-    const s = atelier();
-    setHealth(s, sante);
-    setInv(s, { conserve: 200, ...inv });
-    const plan = planMeal(s);
-    assertEqual(plan.couverture, 100);
-    sleepNow(s);
-    return s;
-  };
-  const sleepNow = (s) => {
-    s.awakeMs = 30000;
-    return sleep(s);
-  };
-  // sans plat : +5 (couverture 100 %)
-  assertEqual(nuit({}).famille.membres[0].sante, 55);
-  // un plat : +1
-  assertEqual(nuit({ omelette: 1 }).famille.membres[0].sante, 56);
-  // deux plats différents : +2 ; le pain compte comme un plat
-  assertEqual(nuit({ omelette: 1, pain: 2 }).famille.membres[0].sante, 57);
-  // un même plat en plusieurs exemplaires ne compte qu'une fois
-  assertEqual(nuit({ omelette: 4 }).famille.membres[0].sante, 56);
-  // trois plats différents (légers, tous mangés avant que le besoin soit
-  // couvert) : plafonné à +3
-  assertEqual(nuit({ pain: 1, compote: 1, omelette: 1 }).famille.membres[0].sante, 58);
-  // la santé ne dépasse jamais 100
-  assertEqual(nuit({ pain: 1, compote: 1, omelette: 1 }, 99).famille.membres[0].sante, 100);
-  // le plafond est bien +3, quel que soit le nombre de plats différents reçus
-  // (fonction pure, indépendante du besoin de la famille et donc de la nuit simulée)
-  assertEqual(dishBonus({ omelette: 1, pain: 1, ragout: 1, compote: 1, tarte_pommes: 1 }), 3, '5 plats : toujours +3');
-});
-
-test('bonus de santé : il s\'ajoute à la variation (−5 devient −4), noté au rapport de réveil', () => {
-  const s = atelier();
-  setHealth(s, 50);
-  // Lot 11 (nutrition) : omelette 68 + 3 conserves à 25 = 143 sur 150 (couverture ≈95 %).
-  setInv(s, { omelette: 1, conserve: 3 });
-  s.awakeMs = 30000;
-  const r = sleep(s);
-  assertEqual(r.bonusPlats, 1);
-  assertEqual(s.famille.membres[0].sante, 46, '−5 + 1');
-  assertEqual(r.mange.omelette, 1);
-  s.awakeMs = 30000;
-  assertEqual(sleep(s).bonusPlats, 0, 'plus de plat, plus de bonus');
-});
-
 test('Dormir : une préparation en cours se termine immédiatement', () => {
   const s = atelier();
   setInv(s, { farine: 2, ble: 1, conserve: 200 });
@@ -4099,7 +3812,7 @@ test('migration v5 (Lot 4) → v6 (puis v7) : les stations apparaissent, la part
   for (const id of ['four', 'cuisine', 'moulin', 'presse']) {
     assertEqual(m.stations[id], { construit: false, tache: null, appareil: null }, id);
   }
-  assertEqual([m.nuit.bonusPlats, m.nuit.termine], [0, {}]);
+  assertEqual(['bonusPlats' in m.nuit, m.nuit.termine], [false, {}], 'version 1.8 : plus de bonus de santé');
   assertEqual(inventoryCounts(m).conserve, 160);
   // l'état migré construit, cuisine et dort
   m.pieces = 500;
@@ -4802,26 +4515,6 @@ test('nourrissage automatique : avec la Mangeoire à trémie, et pas avant', () 
   assertEqual(s.silo.ble, 8, '4 poules : 2 blé');
   assertEqual([r2.auto.poulailler, r2.auto.nourries, r2.auto.sansBle], [true, 4, 0]);
   assertEqual(r2.bleConsomme, 2);
-});
-
-testBase('les automatisations ne sont jamais réduites par une santé basse (les gestes au clic, si)', () => {
-  const s = auto5('potager', 'poulailler');
-  testAddHens(s, 4);
-  testAddWheat(s, 10);
-  plantRipe(s, 'potager-1', 'carotte');
-  setHealth(s, 5);
-  assert(productivity(s) < 50, 'famille épuisée');
-  assertEqual(harvestYield(s, 'carotte'), 3, 'au clic : rendement réduit');
-  const r = sleepOnce(s);
-  assert(productivity(s) < 50, 'toujours épuisée au réveil');
-  assertEqual(countItem(s, 'carotte'), 10, 'récolte automatique à 100 %');
-  assertEqual(r.oeufs, 4, 'toutes les poules nourries, sans tirage raté');
-  assertEqual(r.auto.nourries, 4);
-  const t = auto5('potager');
-  plant(t, 'potager-1', 'carotte');
-  setHealth(t, 5);
-  sleepOnce(t);
-  assertEqual(findPlot(t, 'potager-1').stade, 1, 'arrosée malgré la santé basse');
 });
 
 test('eau ou blé insuffisants : les automatisations servent ce qu\'elles peuvent et le signalent', () => {
@@ -5583,8 +5276,8 @@ test('migration v15 → v16 : chaque membre de la famille reçoit son profil de 
     ['enfant-2', 'Enfant 2', 'Enfant 2', 'f', 0],
   ]);
   assertEqual(m.famille.membres.map((x) => memberPortrait(m, x.id)), ['👩', '👨', '👦', '👧']);
-  assertEqual(m.famille.membres.map((x) => [x.sante, x.malade, x.enfant]), [[100, false, false], [100, false, false], [40, false, true], [0, true, true]], 'santé et maladies gardées');
-  assertEqual(m.famille.membres, createInitialState(1).famille.membres.map((x, i) => ({ ...x, sante: [100, 100, 40, 0][i], malade: i === 3 })), 'même forme qu\'une partie neuve');
+  assertEqual(m.famille.membres.map((x) => ['sante' in x, 'malade' in x, x.enfant]), [[false, false, false], [false, false, false], [false, false, true], [false, false, true]], 'version 1.8 : la santé disparaît à la migration');
+  assertEqual(m.famille.membres, createInitialState(1).famille.membres, 'même forme qu\'une partie neuve');
   assert(setMemberProfile(m, 'adulte-1', { prenom: 'Léa', teint: 2 }).ok, 'le profil se règle ensuite normalement');
   // un membre inconnu de DATA (sauvegarde bricolée) reçoit quand même un profil valide
   const bizarre = migrate({ v: 15, t: 0, s: v15State((s) => { s.famille.membres.push({ id: 'cousin-1', nom: 'Cousin', enfant: false, sante: 80, malade: false }); }) });
@@ -5598,8 +5291,8 @@ test('migration v15 → v16 : les comptes rendus en attente nomment les nouveaux
     s.report = { nuit: 7, nouveauxMalades: ['Enfant 2', 'Inconnu'], auto: newAutoReport(), mange: {} };
   });
   const m = migrate({ v: 15, t: 0, s: v15 });
-  assertEqual(m.nuit.nouveauxMalades, ['adulte-2', 'enfant-1']);
-  assertEqual(m.report.nouveauxMalades, ['enfant-2'], 'un nom inconnu est écarté');
+  // version 1.8 : les malades disparaissent ensuite avec la santé
+  assertEqual(['nouveauxMalades' in m.nuit, 'nouveauxMalades' in m.report], [false, false]);
   assertEqual(m.report.nuit, 7, 'le reste du compte rendu en attente est gardé');
 });
 
@@ -6000,7 +5693,6 @@ test('cultures de rente : jamais mangées par la famille, même affamée', () =>
   const s = garden();
   // La famille ne possède que cacao, vanille et café : le repas doit rester vide.
   setInv(s, { cacao: 50, vanille: 50, cafe: 50 });
-  setHealth(s, 5); // famille affamée : la présence de stock ne doit rien changer
   const plan = planMeal(s);
   assertEqual(plan.mange, {}, 'aucune de ces 3 cultures ne nourrit jamais la famille');
   assertEqual(plan.couverture, 0);
@@ -6557,7 +6249,7 @@ test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent p
   assertEqual(L.map((c) => c.titre), ['L\'eau et le soleil', 'Le premier potager', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'Famille autonome']);
   assertEqual(L.map((c) => c.debloque), [undefined, undefined, undefined, undefined, undefined, undefined, undefined]);
   assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
-    [['litres', 50], ['wh', 3000]], [['carottes', 20], ['autonomie', 25]], [['pontes', 7], ['sante', 80]],
+    [['litres', 50], ['wh', 3000]], [['carottes', 20], ['autonomie', 25]], [['pontes', 7], ['autonomie', 50]],
     [['pains', 5], ['plats', 3]], [['laines', 10], ['autonomie', 60]], [['tenue', 1]], [['serie100', 7]],
   ]);
   assertEqual([DATA.CHAPITRES.liste[5].objectifs[0].nuits, DATA.CHAPITRES.liste[5].objectifs[0].moyenne], [10, 80]);
@@ -6789,8 +6481,9 @@ testBase('chapitre 2 : 25 % sans les 20 carottes ne suffit pas', () => {
   assertEqual(s.campagne.chapitre, 2);
 });
 
-testBase('chapitre 3 : 7 nuits de ponte d\'affilée et santé moyenne d\'au moins 80', () => {
+testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () => {
   const s = atChapter(3);
+  setInv(s, { carotte: 200 }); // des légumes de la ferme : la famille est nourrie par la ferme
   s.pieces = 5000;
   assert(buildSilo(s).ok);
   assert(buildPoulailler(s).ok);
@@ -6806,18 +6499,14 @@ testBase('chapitre 3 : 7 nuits de ponte d\'affilée et santé moyenne d\'au moin
   assertEqual(s.campagne.annonces.map((a) => a.chapitre), [3]);
 });
 
-test('chapitre 3 : sept nuits sans la santé requise ne suffisent pas', () => {
+test('chapitre 3 : sept nuits sans l\'autonomie requise ne suffisent pas', () => {
   const s = atChapter(3);
   s.campagne.compteurs.serieOeufs = 7;
-  setHealth(s, 79);
+  s.campagne.historique = [{ nuit: 1, pct: 49, energie: 73 }];
   assertEqual(okList(s), [true, false]);
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 3);
-  s.famille.membres[0].malade = true; // un malade compte pour 0
-  setHealth(s, 100);
-  s.famille.membres[0].malade = true;
-  assertEqual(okList(s), [true, false], '3 en pleine santé + 1 malade = 75');
-  s.famille.membres[0].malade = false;
+  s.campagne.historique.push({ nuit: 2, pct: 50, energie: 75 });
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 4);
 });
@@ -6928,7 +6617,7 @@ test('chapitre 6 : une moyenne de 76 % ne suffit pas, une nouvelle série suit a
   // patate à 19 d'énergie, 6 unités (114) restent sous 80 %.
   holdNights(s, 10, 6); // 114 / 150 = 76 %
   assertEqual(s.campagne.chapitre, 6);
-  assertEqual(s.campagne.compteurs.tenueDerniere, { moyenne: 76, sansSoin: true, reussi: false });
+  assertEqual(s.campagne.compteurs.tenueDerniere, { moyenne: 76, reussi: false });
   assertEqual(s.campagne.compteurs.tenue, null);
   holdNights(s, 1, 22);
   assertEqual(s.campagne.compteurs.tenue.nuits, 1, 'la série suivante a commencé');
@@ -6943,31 +6632,6 @@ test('chapitre 6 : la moyenne compte toutes les nuits, pas seulement la dernièr
   holdNights(s, 5, 6, 'courgette'); // 60 / 150 = 40 %
   assertEqual(s.campagne.chapitre, 6);
   assertEqual(s.campagne.compteurs.tenueDerniere.moyenne, 70);
-});
-
-test('chapitre 6 : un soin payé arrête la série aussitôt, la suivante peut réussir', () => {
-  const s = atChapter(6);
-  holdNights(s, 4, 22);
-  s.pieces = 500;
-  s.famille.membres[0].sante = 0;
-  s.famille.membres[0].malade = true;
-  assert(heal(s, 'adulte-1').ok);
-  holdNights(s, 1, 22);
-  assertEqual(s.campagne.compteurs.tenueDerniere, { moyenne: 100, sansSoin: false, reussi: false });
-  assertEqual([s.campagne.chapitre, s.campagne.compteurs.tenue], [6, null]);
-  holdNights(s, 10, 22);
-  assertEqual(s.campagne.chapitre, 7);
-});
-
-test('chapitre 6 : un soin payé le jour de la première nuit compte', () => {
-  const s = atChapter(6);
-  s.pieces = 500;
-  s.famille.membres[0].sante = 0;
-  s.famille.membres[0].malade = true;
-  assert(heal(s, 'adulte-1').ok);
-  holdNights(s, 1, 22);
-  assertEqual(s.campagne.compteurs.tenueDerniere.sansSoin, false);
-  assertEqual(s.campagne.chapitre, 6);
 });
 
 test('chapitre 7 : 100 % pendant 7 nuits d\'affilée termine la campagne', () => {
@@ -7031,12 +6695,7 @@ test('tenue : état du suivi pour l\'interface', () => {
   assertEqual(holdStatus(s).etat, 'attente');
   nightWithProduced(s, 22);
   const w = holdStatus(s);
-  assertEqual([w.etat, w.nuits, w.moyenne, w.soinPaye], ['suivi', 1, 100, false]);
-  s.pieces = 500;
-  s.famille.membres[1].sante = 0;
-  s.famille.membres[1].malade = true;
-  assert(heal(s, 'adulte-2').ok);
-  assertEqual(holdStatus(s).soinPaye, true);
+  assertEqual([w.etat, w.nuits, w.moyenne, 'soinPaye' in w], ['suivi', 1, 100, false]);
   const u = atChapter(6);
   holdNights(u, 10, 22);
   assertEqual(holdStatus(u).etat, 'reussi');
@@ -7183,7 +6842,7 @@ test('migration v22 → v23 (version 1.6) : l\'hiver réussi devient la série r
   const m = migrate({ v: 22, t: 0, s: old });
   assertEqual(m.version, STATE_VERSION);
   const c = m.campagne.compteurs;
-  assertEqual([c.tenue, c.tenueDerniere, c.tenueReussie], [null, { moyenne: 90, sansSoin: true, reussi: true }, true]);
+  assertEqual([c.tenue, c.tenueDerniere, c.tenueReussie], [null, { moyenne: 90, reussi: true }, true], 'version 1.8 : « sans soin » disparaît');
   assertEqual(['hiver' in c, 'hiverDernier' in c, 'hiverReussi' in c], [false, false, false]);
   assertEqual(m.report, { oeufs: 2 });
   const fresh = createInitialState(1);
@@ -7276,7 +6935,7 @@ test('migration v9 → v10 : une partie neuve arrive au chapitre 1', () => {
   assertEqual(m.version, STATE_VERSION);
   assertEqual([m.campagne.chapitre, m.campagne.fini, m.campagne.annonces, m.campagne.historique], [1, false, [], []]);
   assertEqual(m.campagne.compteurs, newCampaignCounters());
-  assertEqual([m.nuit.energieProduit, m.nuit.autonomie, m.jour.soins], [0, 0, 0]);
+  assertEqual([m.nuit.energieProduit, m.nuit.autonomie, 'soins' in m.jour], [0, 0, false], 'version 1.8 : plus de soins');
 });
 
 test('migration v9 → v10 : le chapitre suit ce que la partie possède', () => {
@@ -7392,8 +7051,9 @@ test('Lot 10 : une partie simulée est reproductible (même graine, même courbe
   assertEqual(a.map((r) => r.nuit), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   for (const r of a) {
     assert(r.autonomie >= 0 && r.autonomie <= 100, 'autonomie entre 0 et 100');
-    assert(r.santeMoyenne >= 0 && r.santeMoyenne <= DATA.FAMILY.SANTE_MAX);
-    assert(r.pieces >= 0 && r.conserves >= 0 && r.soinsPayes >= 0);
+    assert(r.energie >= 0 && r.energie <= DATA.PERSONNAGE.MAX, 'énergie du personnage entre 0 et le maximum');
+    assert(r.bonheur >= 0 && r.bonheur <= DATA.VILLE.BONHEUR.MAX);
+    assert(r.pieces >= 0 && r.conserves >= 0 && r.niveau >= 1);
   }
 });
 
@@ -7485,7 +7145,7 @@ test('Lot 10 : au chapitre du troupeau, le joueur automatique nourrit ses mouton
   assert(sheepCount(s) >= 3, `il a acheté ses moutons : ${sheepCount(s)}`);
   assert(s.campagne.compteurs.laines >= 10, `laines tondues : ${s.campagne.compteurs.laines}`);
   assert(chapterReached(s) >= 6, `le chapitre du troupeau est terminé : chapitre ${chapterReached(s)}`);
-  assertEqual(rows.every((r) => r.santeMin > 0), true, 'la famille reste en bonne santé');
+  assertEqual(rows.filter((r) => r.couverture <= 0).length, 0, 'la famille mange tous les soirs');
 });
 
 test('Lot 10 : simulationReach date un jalon sur la moyenne mobile', () => {
@@ -7579,16 +7239,17 @@ test('Lot 10 : le joueur ne vend des conserves que pour payer un achat, et pas s
   assertEqual(countItem(s, 'conserve'), DATA.SIMULATION.CONSERVES_GARDEES + 100 - 10);
 });
 
-test('Lot 10 : le joueur soigne un malade dès qu\'il en a les moyens', () => {
+test('Lot 10 : à court d\'énergie, le joueur mange un en-cas pris sur ce que le repas laisse', () => {
   const s = createInitialState(1);
-  s.famille.membres[0].malade = true;
-  s.famille.membres[0].sante = 0;
-  s.pieces = 0;
-  botHeal(s);
-  assertEqual(s.famille.membres[0].malade, true, 'pas de pièces, pas de soin');
-  s.pieces = careCost(s);
-  botHeal(s);
-  assertEqual([s.famille.membres[0].malade, s.famille.soinsPayes], [false, 1]);
+  s.energie = 0;
+  setInv(s, { conserve: 6 }); // juste le repas du soir (150 calories) : rien à grignoter
+  botSnack(s);
+  assertEqual([s.energie, countItem(s, 'conserve')], [0, 6], 'le repas passe avant');
+  setInv(s, { conserve: 6, carotte: 30 });
+  const repas = planMeal(s);
+  botSnack(s);
+  assert(s.energie >= actionCost(s, 'recolter'), `assez pour récolter : ${s.energie}`);
+  assertEqual(planMeal(s).couverture, repas.couverture, 'le repas du soir reste couvert');
 });
 
 test('Lot 10 : plante, arrose et récolte : les premières carottes arrivent', () => {
@@ -7613,7 +7274,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.7.0');
+  assertEqual(GAME_VERSION, '1.8.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -8071,12 +7732,12 @@ test('Résumé de réveil : quantités négatives, nulles ou produits inconnus i
   assertEqual(nightHarvest(fakeReport({ oeufs: -2, lait: 0, fruits: { inconnu: 5, pomme: 0 } })), {});
 });
 
-test('Résumé de réveil : autonomie et santé en entiers (arrondi inférieur)', () => {
-  const w = wakeSummary(fakeReport({ autonomie: 99.9, santeApres: 87.6 }));
-  assertEqual([w.autonomie, w.sante], [99, 87]);
-  const cent = wakeSummary(fakeReport({ autonomie: 100, santeApres: 100 }));
-  assertEqual([cent.autonomie, cent.sante], [100, 100]);
-  assertEqual(wakeSummary(fakeReport({ autonomie: NaN, santeApres: undefined })).autonomie, 0);
+test('Résumé de réveil : autonomie et énergie en entiers (arrondi inférieur)', () => {
+  const w = wakeSummary(fakeReport({ autonomie: 99.9, energieReveil: 87600 }));
+  assertEqual([w.autonomie, w.energie], [99, 87]);
+  const cent = wakeSummary(fakeReport({ autonomie: 100, energieReveil: 100000 }));
+  assertEqual([cent.autonomie, cent.energie], [100, 100]);
+  assertEqual(wakeSummary(fakeReport({ autonomie: NaN, energieReveil: undefined })).autonomie, 0);
 });
 
 test('Résumé de réveil : avec une vraie nuit, les œufs pondus sont dans la récolte', () => {
@@ -8088,7 +7749,7 @@ test('Résumé de réveil : avec une vraie nuit, les œufs pondus sont dans la r
   const w = wakeSummary(report);
   assertEqual(w.recolte.affiches, [{ item: 'oeuf', qte: report.oeufs }]);
   assert(report.oeufs > 0, 'la ferme a pondu');
-  assertEqual([Number.isInteger(w.autonomie), Number.isInteger(w.sante)], [true, true]);
+  assertEqual([Number.isInteger(w.autonomie), Number.isInteger(w.energie)], [true, true]);
 });
 
 /* ---------- versions 1.1.1 et 1.1.3 : repas de 19 h, nuit de 22 h, achats par quantité ---------- */
@@ -8132,7 +7793,7 @@ test('version 1.1.1 : le repas se prend à 19 h (234 s d\'éveil), une seule foi
 test('version 1.1.1 : la nuit reprend le repas de 19 h sans faire manger une deuxième fois', () => {
   const a = garden();
   const b = garden();
-  for (const s of [a, b]) { setInv(s, { conserve: 200 }); setHealth(s, 50); }
+  for (const s of [a, b]) setInv(s, { conserve: 200 });
   // a : repas à 19 h puis coucher ; b : coucher avant 19 h (le repas est pris au coucher)
   a.awakeMs = awakeMsAtHour(19);
   takeMeal(a);
@@ -8144,20 +7805,6 @@ test('version 1.1.1 : la nuit reprend le repas de 19 h sans faire manger une deu
   assertEqual(countItem(a, 'conserve'), countItem(b, 'conserve'), 'même repas dans les deux cas');
   assertEqual([ra.energieMangee, ra.couverture, ra.santeAvant, ra.santeApres, ra.autonomie], [rb.energieMangee, rb.couverture, rb.santeAvant, rb.santeApres, rb.autonomie]);
   assertEqual([a.repas, b.repas, a.awakeMs, mealDue(a)], [null, null, 0, false], 'au réveil, le repas du jour est à prendre');
-});
-
-test('version 1.1.1 : un soin payé entre le repas et la nuit figure dans la santé du réveil', () => {
-  const s = garden();
-  setInv(s, {});
-  setHealth(s, 1);
-  s.pieces = 5000;
-  s.awakeMs = awakeMsAtHour(19);
-  const r = takeMeal(s).repas;
-  assert(r.nouveauxMalades.length > 0, 'sans rien à manger, la famille tombe malade au repas');
-  for (const m of s.famille.membres) if (m.malade) assert(heal(s, m.id).ok, 'soin');
-  const rep = sleep(s);
-  assertEqual(rep.santeApres, rawAverageHealth(s));
-  assert(rep.santeApres > r.santeApres, 'la santé du réveil tient compte des soins');
 });
 
 test('version 1.1.3 : 22 h (288 s d\'éveil) rend la nuit due ; l\'aperçu d\'autonomie suit le repas pris', () => {
@@ -8264,7 +7911,7 @@ test('version 1.2 : format 18, la migration ajoute les animaux de compagnie et l
   v17.famille.membres[2].sante = 40;
   const m = migrate({ v: 17, t: 0, s: v17 });
   assertEqual([m.version, m.famille.animaux, m.famille.numeros], [STATE_VERSION, [], { adulte: 2, enfant: 2, compagnon: 0 }]);
-  assertEqual(m.famille.membres, v17.famille.membres, 'les membres ne changent pas');
+  assertEqual(m.famille.membres, v17.famille.membres.map(({ sante, malade, ...x }) => x), 'les membres ne changent pas (sauf la santé, retirée en version 1.8)');
   assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
   // une sauvegarde abîmée ne fait pas planter la migration
   for (const bad of [{ version: 17 }, { version: 17, famille: null }, { version: 17, famille: 7 }, { version: 17, famille: { membres: 'x' } }]) {
@@ -8280,7 +7927,7 @@ test('version 1.2 : ajouter des membres jusqu\'à 6, le besoin journalier suit',
   const e = addMember(s, true);
   assertEqual([e.ok, e.id, e.besoin, memberRoom(s)], [true, 'enfant-3', 225, 0]);
   const m = findMember(s, 'adulte-3');
-  assertEqual([m.nom, m.prenom, m.enfant, m.malade, m.sante, m.teint, DATA.FAMILY.PROFIL.GENRES.includes(m.genre)], ['Adulte 3', 'Adulte 3', false, false, 100, 0, true]);
+  assertEqual([m.nom, m.prenom, m.enfant, 'sante' in m, m.teint, DATA.FAMILY.PROFIL.GENRES.includes(m.genre)], ['Adulte 3', 'Adulte 3', false, false, 0, true]);
   assertEqual(findMember(s, 'enfant-3').enfant, true);
   const plein = addMember(s, true);
   assertEqual([plein.ok, s.famille.membres.length], [false, 6], 'pas de septième membre');
@@ -8293,19 +7940,16 @@ test('version 1.2 : ajouter des membres jusqu\'à 6, le besoin journalier suit',
   assertEqual([memberName(s, 'adulte-3'), memberPortrait(s, 'adulte-3')], ['Mamie', '👩\u{1F3FC}']);
 });
 
-test('version 1.2 : le nouveau membre arrive avec la santé moyenne de la famille', () => {
+test('version 1.2 : le nouveau membre arrive avec le bonheur moyen de la famille', () => {
   const s = garden();
-  setHealth(s, 60);
-  s.famille.membres[0].sante = 20;
-  const avant = rawAverageHealth(s);
+  for (const m of s.famille.membres) m.bonheur = 70;
+  s.famille.membres[0].bonheur = 30;
+  const avant = averageHappiness(s);
   addMember(s, true);
-  assertEqual([findMember(s, 'enfant-3').sante, rawAverageHealth(s)], [50, avant], 'la moyenne ne bouge pas');
-  setHealth(s, 0);
-  addMember(s, false);
-  assertEqual(findMember(s, 'adulte-3').sante, 1, 'jamais à 0 : il n\'arrive pas malade');
+  assertEqual([findMember(s, 'enfant-3').bonheur, averageHappiness(s)], [60, avant], 'la moyenne ne bouge pas');
 });
 
-test('version 1.2 : retirer un membre : au moins un membre, au moins un adulte, pas un malade', () => {
+test('version 1.2 : retirer un membre : au moins un membre, au moins un adulte', () => {
   const s = garden();
   const r = removeMember(s, 'enfant-2');
   assertEqual([r.ok, r.besoin, s.famille.membres.map((m) => m.id)], [true, 125, ['adulte-1', 'adulte-2', 'enfant-1']]);
@@ -8316,13 +7960,7 @@ test('version 1.2 : retirer un membre : au moins un membre, au moins un adulte, 
   assertEqual([removeMember(s, 'enfant-1').ok, familyNeed(s)], [true, 50]);
   const seul = removeMember(s, 'adulte-1');
   assertEqual([seul.ok, seul.error, s.famille.membres.length], [false, 'Il faut au moins un membre dans la famille.', 1]);
-  // un malade ne part pas
-  const t = garden();
-  findMember(t, 'enfant-1').malade = true;
-  findMember(t, 'enfant-1').sante = 0;
-  assertEqual([removeMember(t, 'enfant-1').ok, t.famille.membres.length], [false, 4]);
-  assert(memberRemovalBlock(t, 'enfant-1').includes('malade'), 'la raison est dite');
-  assertEqual(memberRemovalBlock(t, 'enfant-2'), '');
+  assertEqual(memberRemovalBlock(garden(), 'enfant-2'), '');
 });
 
 test('version 1.2 : un identifiant de membre n\'est jamais réutilisé, la famille se sauvegarde telle quelle', () => {
@@ -8343,7 +7981,7 @@ test('version 1.2 : une famille d\'un seul adulte vit sa nuit (besoin 50), une f
   for (const id of ['adulte-2', 'enfant-1', 'enfant-2']) assert(removeMember(s, id).ok, id);
   setInv(s, { conserve: 200 });
   const r = sleepOnce(s);
-  assertEqual([r.besoin, r.couverture, familyNeed(s), averageHealth(s)], [50, 100, 50, 100]);
+  assertEqual([r.besoin, r.couverture, familyNeed(s), r.energieReveil], [50, 100, 50, 100000]);
   const t = garden();
   addMember(t, false);
   addMember(t, false);
@@ -8352,10 +7990,10 @@ test('version 1.2 : une famille d\'un seul adulte vit sa nuit (besoin 50), une f
   assertEqual([familyNeed(t), r6.besoin, r6.couverture, t.famille.membres.length], [250, 250, 100, 6]);
 });
 
-test('version 1.2 : chiens et chats : trois au plus, hors du besoin journalier, de la santé et de la productivité', () => {
+test('version 1.2 : chiens et chats : trois au plus, hors du besoin journalier et du bonheur', () => {
   const s = garden();
   const besoin = familyNeed(s);
-  const sante = [rawAverageHealth(s), averageHealth(s), productivity(s)];
+  const sante = [averageHappiness(s), s.energie];
   assertEqual([pets(s), petRoom(s)], [[], 3]);
   const a = addPet(s, 'chien');
   const b = addPet(s, 'chat');
@@ -8364,7 +8002,7 @@ test('version 1.2 : chiens et chats : trois au plus, hors du besoin journalier, 
   assertEqual(pets(s), [{ id: 'compagnon-1', espece: 'chien', nom: 'Chien 1' }, { id: 'compagnon-2', espece: 'chat', nom: 'Chat 2' }, { id: 'compagnon-3', espece: 'chat', nom: 'Chat 3' }]);
   assertEqual([addPet(s, 'chien').ok, pets(s).length], [false, 3], 'pas de quatrième animal');
   assertEqual(addPet(garden(), 'poney').ok, false);
-  assertEqual([familyNeed(s), rawAverageHealth(s), averageHealth(s), productivity(s), s.famille.membres.length], [besoin, ...sante, 4], 'ils ne comptent pas');
+  assertEqual([familyNeed(s), averageHappiness(s), s.energie, s.famille.membres.length], [besoin, ...sante, 4], 'ils ne comptent pas');
   // la nuit ne les nourrit pas et ne les compte pas
   setInv(s, { conserve: 200 });
   const avant = countItem(s, 'conserve');
@@ -8750,7 +8388,7 @@ test('bonheur : chaque membre part à DEPART ; repas cru ou cuisiné', () => {
   const s = garden();
   const B = DATA.VILLE.BONHEUR;
   for (const m of s.famille.membres) assertEqual(memberHappiness(m), B.DEPART);
-  assertEqual(happinessProductivity(s), 100, '60 : sans effet');
+  assertEqual(happinessCostPct(s), 70, 'bonheur 60 : les actions coûtent 30 % de moins');
   assertEqual(mealHappinessDelta({ mange: { carotte: 10 }, couverture: 100 }), B.REPAS_CRU, 'tout cru');
   assertEqual(mealHappinessDelta({ mange: { ragout: 2 }, couverture: 100 }), B.REPAS_CRU + B.REPAS_PLATS, 'tout cuisiné');
   assertEqual(mealHappinessDelta({ mange: { carotte: 1 }, couverture: 40 }), B.REPAS_CRU + B.FAIM, 'cru et pas assez');
@@ -8758,7 +8396,7 @@ test('bonheur : chaque membre part à DEPART ; repas cru ou cuisiné', () => {
   const d = applyMealHappiness(s, { mange: { ragout: 2 }, couverture: 100 });
   assertEqual(d, 5);
   assertEqual(averageHappiness(s), 65);
-  assertEqual(happinessProductivity(s), 105);
+  assertEqual(happinessCostPct(s), 68);
 });
 
 test('bonheur : le repas de 19 h le fait varier et le note dans state.repas', () => {
@@ -8768,16 +8406,6 @@ test('bonheur : le repas de 19 h le fait varier et le note dans state.repas', ()
   takeMeal(s);
   assertEqual(s.repas.bonheur, DATA.VILLE.BONHEUR.REPAS_CRU);
   assertEqual(averageHappiness(s), avant + DATA.VILLE.BONHEUR.REPAS_CRU);
-});
-
-test('bonheur : la productivité de la santé est multipliée par celle du bonheur', () => {
-  const s = garden();
-  for (const m of s.famille.membres) m.bonheur = 90;
-  assertEqual(productivity(s), 115);
-  for (const m of s.famille.membres) m.bonheur = 10;
-  assertEqual(productivity(s), 80);
-  for (const m of s.famille.membres) m.malade = true;
-  assertEqual(happinessProductivity(s), 100, 'personne de bien portant : seule la santé compte');
 });
 
 test('sorties : prix (enfants à moitié), une fois par jour, retour avant 22 h', () => {
@@ -8797,16 +8425,13 @@ test('sorties : prix (enfants à moitié), une fois par jour, retour avant 22 h'
   assertEqual(outingStatus(s, 'foret').ok, true, '15 h + 5 h = 20 h');
 });
 
-test('sorties : les malades restent, le parc demande un enfant', () => {
+test('sorties : toute la famille sort ; le parc demande un enfant', () => {
   const s = garden();
   s.pieces = 100;
-  for (const m of s.famille.membres) if (m.enfant) m.malade = true;
+  assertEqual(outingMembers(s).length, s.famille.membres.length, 'version 1.8 : plus de malade qui reste à la maison');
+  for (const m of s.famille.membres.filter((x) => x.enfant)) assert(removeMember(s, m.id).ok);
   assertEqual(outingStatus(s, 'parc').raison, 'enfants');
   assertEqual(outingCost(s, 'cinema'), 16, 'seuls les adultes paient');
-  const enfant = s.famille.membres.find((m) => m.enfant);
-  const b = enfant.bonheur;
-  assert(goOut(s, 'cinema').ok);
-  assertEqual(enfant.bonheur, b, 'resté à la maison');
 });
 
 test('voyages : butin de la montagne, cueillette du jour en forêt', () => {
@@ -8861,4 +8486,84 @@ test('migration v21 → v22 : chaque membre reçoit son bonheur de départ', () 
 });
 
 // run-tests.mjs importe ce fichier et lit `results`.
+/* ---------- version 1.8 (v2, lot 4) : l'énergie du personnage ---------- */
+
+test('version 1.8 : le coût d\'une action dépend du bonheur et de l\'endurance', () => {
+  const s = garden();
+  assertEqual([energyMax(), energyLevel(s), happinessCostPct(s), enduranceReduction(s)], [100000, 100, 70, 0], 'bonheur 60 : −30 %');
+  assertEqual(actionCost(s, 'planter'), 2100);
+  assertEqual(actionCost(s, 'moudre', 4), 2800, 'moudre : par blé');
+  assertEqual(actionCost(s, 'acheter'), 0, 'ce qui n\'est pas une action au clic ne coûte rien');
+  for (const m of s.famille.membres) m.bonheur = 0;
+  assertEqual(actionCost(s, 'planter'), 3000, 'bonheur 0 : plein tarif');
+  for (const m of s.famille.membres) m.bonheur = 100;
+  assertEqual(actionCost(s, 'planter'), 1500, 'bonheur 100 : moitié prix');
+  testSetLevel(s, 10);
+  assertEqual(enduranceReduction(s), 27, '−3 % par niveau');
+  assertEqual(actionCost(s, 'planter'), Math.ceil((3000 * 50 * 73) / 10000));
+  assertEqual(actionsLeft(s, 'recolter'), Math.floor(100000 / actionCost(s, 'recolter')));
+});
+
+test('version 1.8 : sans énergie, plus d\'action au clic ; les automatisations restent gratuites', () => {
+  const s = garden();
+  const avant = s.energie;
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  assertEqual(s.energie, avant - actionCost(s, 'planter'));
+  testSetEnergyZero(s);
+  const r = water(s, 'potager-1');
+  assertEqual([r.ok, r.error || r.message || r.texte || ''].map(String)[0], 'false');
+  assertEqual(findPlot(s, 'potager-1').arrose, false, 'rien n\'est fait');
+  assert(water(s, 'potager-1', true).ok, 'l\'arrosage automatique ne demande pas d\'énergie');
+  assertEqual(s.energie, 0);
+  assert(plant(s, 'potager-2', 'carotte', true).ok);
+  testFillEnergy(s);
+  assertEqual(s.energie, energyMax());
+});
+
+test('version 1.8 : manger un aliment dans la journée rend ses calories ÷ 5', () => {
+  const s = garden();
+  assertEqual(eatSnack(s, 'carotte').ok, false, 'énergie pleine');
+  s.energie = 10000;
+  setInv(s, { carotte: 2 });
+  assertEqual(snackEnergy(s, 'carotte'), DATA.items.carotte.energie * 200);
+  const r = eatSnack(s, 'carotte');
+  assertEqual([r.ok, s.energie, countItem(s, 'carotte')], [true, 10000 + snackEnergy(s, 'carotte'), 1]);
+  assertEqual(eatSnack(s, 'graine_carotte').ok, false, 'ne se mange pas');
+  setInv(s, {});
+  assertEqual(eatSnack(s, 'carotte').ok, false, 'plus rien');
+  s.energie = energyMax() - 1;
+  setInv(s, { conserve: 1 });
+  assert(eatSnack(s, 'conserve').ok);
+  assertEqual(s.energie, energyMax(), 'jamais au-delà du maximum');
+});
+
+test('version 1.8 : le réveil remonte l\'énergie selon le repas du soir', () => {
+  const s = garden();
+  assertEqual([wakeEnergy(s, 100), wakeEnergy(s, 50), wakeEnergy(s, 0)], [100000, 80000, 60000]);
+  s.energie = 90000;
+  assertEqual(restoreEnergy(s, 0), 90000, 'une énergie plus haute est gardée');
+  s.technologies = [...(s.technologies || []), 'fa_sommeil'];
+  assertEqual(wakeEnergy(s, 0), 70000, 'Bon sommeil : +10');
+  assertEqual(wakeEnergy(s, 100), 100000, 'plafonné au maximum');
+});
+
+test('version 1.8 : migration v25 → v26 : santé, soins et nœuds retirés', () => {
+  const s = createInitialState(1);
+  const old = JSON.parse(JSON.stringify(s));
+  old.version = 25;
+  delete old.energie;
+  old.famille.soinsPayes = 3;
+  for (const m of old.famille.membres) { m.sante = 40; m.malade = true; }
+  old.technologies = ['fa_remedes', 'fa_menus'];
+  old.pieces = 10;
+  old.pointsTech = { ...old.pointsTech, solde: 0 };
+  old.nuit = { ...(old.nuit || {}), bonusPlats: 2, santeAvant: 50 };
+  const m = migrateEnergy(old);
+  assertEqual([m.version, m.energie, 'soinsPayes' in m.famille], [26, 100000, false]);
+  assertEqual(m.famille.membres.some((x) => 'sante' in x || 'malade' in x), false);
+  assertEqual([m.technologies, m.pieces, m.pointsTech.solde], [[], 410, 2], 'nœuds retirés remboursés');
+  assertEqual(['bonusPlats' in m.nuit, 'santeAvant' in m.nuit], [false, false]);
+  assertEqual(migrate({ v: 25, t: 0, s: old }).energie, 100000, 'chargement d\'une ancienne partie');
+});
+
 export const results = runTests();

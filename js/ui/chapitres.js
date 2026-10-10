@@ -18,7 +18,7 @@ export function objectiveValueText(o) {
     case 'litres': return `${n(o.valeur)} / ${formatNumber(o.cible)} L`;
     case 'wh': return `${n(o.valeur)} / ${formatNumber(o.cible)} Wh`;
     case 'autonomie': return `${formatPercent(o.valeur)} / ${formatNumber(o.cible)} %`;
-    case 'sante': return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
+    case 'bonheur': return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
     case 'pontes': case 'serie100': return `${n(o.valeur)} / ${formatNumber(o.cible)} nuits`;
     case 'tenue': return o.ok ? '✅' : '';
     default: return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
@@ -30,11 +30,11 @@ function holdLine() {
   const w = holdStatus(state);
   const obj = objectiveDef('tenue');
   const last = w.dernier && !w.dernier.reussi
-    ? ` Dernière série : moyenne ${formatPercent(w.dernier.moyenne)}${w.dernier.sansSoin ? '' : ', soin payé'} : ratée.`
+    ? ` Dernière série : moyenne ${formatPercent(w.dernier.moyenne)} : ratée.`
     : '';
   if (w.etat === 'reussi') return '✅ Série réussie.';
   if (w.etat === 'suivi') {
-    return `📅 Série en cours : nuit ${w.nuits} / ${obj.nuits} · moyenne ${formatPercent(w.moyenne)} (objectif ${obj.moyenne} %)${w.soinPaye ? ' · ⚠️ un soin a été payé : cette série est ratée.' : ''}`;
+    return `📅 Série en cours : nuit ${w.nuits} / ${obj.nuits} · moyenne ${formatPercent(w.moyenne)} (objectif ${obj.moyenne} %)`;
   }
   return `⏳ Une série de ${obj.nuits} nuits commence à la prochaine nuit.${last}`;
 }
@@ -111,7 +111,7 @@ export function renderAutonomyCard() {
     <div class="card autonomy-card">
       <span class="card-title"><span>🌿 Autonomie</span><span class="chip">${DATA.AUTONOMIE.GRAPHIQUE_NUITS} dernières nuits</span></span>
       <span class="big">${formatPercent(lastAutonomy(state))}</span>
-      <span class="muted">Dernière nuit : l'énergie mangée qui vient de la ferme, sur ${formatNumber(familyNeed(state))}. Les conserves et les achats du Marché ne comptent pas. Prévue cette nuit : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
+      <span class="muted">Dernière nuit : les calories mangées qui viennent de la ferme, sur ${formatNumber(familyNeed(state))}. Les conserves et les achats du Marché ne comptent pas. Prévue cette nuit : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
       ${autonomyChartHtml()}
     </div>`;
 }

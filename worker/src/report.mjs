@@ -61,7 +61,7 @@ export const GAME_ACTIONS = {
   'upgrade-tank': 'Améliorer ou agrandir',
   'maintain': 'Entretenir un appareil',
   'repair': 'Réparer un appareil',
-  'heal': 'Soigner un membre de la famille',
+  'eat': 'Manger un en-cas',
   'fridge-in': 'Utiliser le réfrigérateur',
   'fridge-in-all': 'Utiliser le réfrigérateur',
   'fridge-out': 'Utiliser le réfrigérateur',

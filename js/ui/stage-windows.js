@@ -1,4 +1,5 @@
 import { DATA } from '../engine/catalog.js';
+import { energyLevel } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
 import { allDevices } from '../engine/devices.js';
 import { awakeRequired } from '../engine/clock.js';
@@ -314,6 +315,7 @@ export function renderIndicators() {
     cell('📅', `Jour ${state.day}`, `Jour ${state.day}`) +
     `<button type="button" class="indicator indicator-btn" data-action="open-levels" title="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux" aria-label="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux">${corps('⭐', `Niv. ${state.progression.niveau}`)}</button>` +
     cell(horlogeEmoji(heure), `${heure} h`, `Heure de la journée : ${heure} h`) +
+    lien('⚡', String(energyLevel(state)), `Ton énergie : ${energyLevel(state)} / ${DATA.PERSONNAGE.MAX}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' }) +
     lien('💧', formatLitres(state.eauMl), `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +
     cell('💰', formatCoins(state.pieces), `Pièces : ${formatCoins(state.pieces)}`) +
     lien('🌿', formatPercent(lastAutonomy(state)), `Autonomie de la dernière nuit : ${formatPercent(lastAutonomy(state))}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' })

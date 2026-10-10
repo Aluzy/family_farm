@@ -6,8 +6,8 @@ import { techFlag } from './techtree.js';
 
 export function newDayStats() {
   // produite, perdue : mWh ; eau : mL pompés ; ble : blé mangé par les poules
-  // pendant la journée (Lot 4) ; soins : soins payés pendant la journée (Lot 9).
-  return { produite: 0, perdue: 0, eau: 0, ble: 0, soins: 0 };
+  // pendant la journée (Lot 4). Version 1.8 : plus de soins.
+  return { produite: 0, perdue: 0, eau: 0, ble: 0 };
 }
 
 // Unités entières du moteur : le temps en ms, l'énergie en mWh, l'eau en mL.

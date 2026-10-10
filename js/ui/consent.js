@@ -1,4 +1,4 @@
-import { averageHealth } from '../engine/family.js';
+import { energyLevel } from '../engine/stamina.js';
 import { lastAutonomy } from '../engine/campaign.js';
 import { activeTab, ecranFerme, state, testMode } from './store.js';
 import { openOptionsModal } from './options.js';
@@ -31,7 +31,7 @@ export function telNight(awakeSeconds) {
   const chap = state.campagne ? state.campagne.chapitre : null;
   tel('night', {
     day: state.day, chapter: chap, autonomy: lastAutonomy(state),
-    pieces: state.pieces, health: averageHealth(state), awake: awakeSeconds,
+    pieces: state.pieces, energy: energyLevel(state), awake: awakeSeconds,
   });
   if (telChapter !== null && typeof chap === 'number' && chap > telChapter) tel('chapter', chap, state.day);
   telChapter = typeof chap === 'number' ? chap : telChapter;

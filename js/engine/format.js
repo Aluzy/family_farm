@@ -5,7 +5,9 @@ import {
   repairDevice, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from './devices.js';
 import { fridgeRate } from './fridge.js';
-import { careCost, heal } from './family.js';
+import { eatSnack, planMeal } from './family.js';
+import { actionCost, energyMax } from './stamina.js';
+import { countItem } from './inventory.js';
 import { allPlots, waterCost } from './crops.js';
 import { isAutomated } from './automation.js';
 
@@ -115,7 +117,7 @@ export function formatPercent(p) {
    DATA.SIMULATION.
    ========================================================================== */
 
-/* ---------- entretien, soins, infrastructure ---------- */
+/* ---------- entretien, énergie, infrastructure ---------- */
 
 // Répare ce qui est en panne (et le rallume), entretient ce qui est usé.
 export function botMaintenance(state) {
@@ -128,10 +130,18 @@ export function botMaintenance(state) {
   }
 }
 
-// Un malade est soigné dès que les pièces le permettent.
-export function botHeal(state) {
-  for (const m of state.famille.membres) {
-    if (m.malade && state.pieces + EPS >= careCost(state)) heal(state, m.id);
+// Version 1.8 : quand l'énergie ne suffit plus pour une récolte, le joueur mange un
+// en-cas, pris seulement dans ce que le repas du soir ne mangera pas (l'aliment le
+// plus nourrissant d'abord), et jamais au-delà du maximum.
+export function botSnack(state) {
+  for (let guard = 0; guard < 10; guard++) {
+    if (state.energie >= actionCost(state, 'recolter') || state.energie >= energyMax()) return;
+    const plan = planMeal(state);
+    if (plan.couverture < 100) return;
+    const spare = Object.keys(DATA.items)
+      .filter((k) => DATA.items[k].edible && countItem(state, k) - (plan.mange[k] || 0) - (state.famille.reserve[k] || 0) >= 1)
+      .sort((a, b) => DATA.items[b].energie - DATA.items[a].energie);
+    if (!spare.length || !eatSnack(state, spare[0]).ok) return;
   }
 }
 

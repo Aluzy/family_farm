@@ -3,7 +3,8 @@ import { EPS } from './base.js';
 import { fail } from './devices.js';
 import { addItem, lotsOf } from './inventory.js';
 import { fridgeLots } from './fridge.js';
-import { averageHealth, planMeal } from './family.js';
+import { planMeal } from './family.js';
+import { averageHappiness } from './ville.js';
 import { openZone2, plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
 import { gainXp, levelReached, unlockLevel } from './levels.js';
@@ -39,7 +40,7 @@ export function newCampaignCounters() {
     laines: 0,
     serie100: 0,
     nuits100: 0, // nuits à 100 % d'autonomie au total (jalon de maîtrise)
-    tenue: null, // série de nuits en cours de suivi : { debut, nuits, somme, soins }
+    tenue: null, // série de nuits en cours de suivi : { debut, nuits, somme }
     tenueDerniere: null, // dernière série terminée : { moyenne, sansSoin, reussi }
     tenueReussie: false,
   };
@@ -181,7 +182,7 @@ export function objectiveValue(state, obj) {
     case 'carottes': return k.carottes;
     case 'autonomie': return lastAutonomy(state);
     case 'pontes': return k.serieOeufs;
-    case 'sante': return averageHealth(state);
+    case 'bonheur': return averageHappiness(state); // version 1.8 (à la place de la santé)
     case 'pains': return k.pains;
     case 'plats': return k.plats.length;
     case 'laines': return k.laines;
@@ -291,23 +292,21 @@ export function acknowledgeChapter(state) {
 
 // Suivi de la tenue du chapitre 6 (version 1.6, à la place de l'hiver) : une
 // série de `nuits` nuits commence à la première nuit où le chapitre est atteint.
-// Elle réussit si l'autonomie y vaut `moyenne` % en moyenne sans qu'aucun soin
-// ne soit payé ; un soin l'arrête aussitôt. Une série ratée laisse place à une
+// Elle réussit si l'autonomie y vaut `moyenne` % en moyenne (version 1.8 : plus de
+// soins, donc plus de condition « sans soin »). Une série ratée laisse place à une
 // nouvelle dès la nuit suivante.
 export function trackHold(state, pct) {
   const k = state.campagne.compteurs;
   const obj = objectiveDef('tenue');
   if (!obj || k.tenueReussie || chapterReached(state) < objectiveChapter('tenue')) return;
-  // Soins déjà payés au matin de la première nuit : ceux d'aujourd'hui comptent dans la série.
-  if (!k.tenue) k.tenue = { debut: state.day, nuits: 0, somme: 0, soins: state.famille.soinsPayes - (state.jour.soins || 0) };
+  if (!k.tenue) k.tenue = { debut: state.day, nuits: 0, somme: 0 };
   const w = k.tenue;
   w.nuits += 1;
   w.somme += pct;
-  const sansSoin = state.famille.soinsPayes <= w.soins;
-  if (sansSoin && w.nuits < obj.nuits) return;
+  if (w.nuits < obj.nuits) return;
   const moyenne = Math.floor(w.somme / w.nuits);
-  const reussi = sansSoin && moyenne + EPS >= obj.moyenne;
-  k.tenueDerniere = { moyenne, sansSoin, reussi };
+  const reussi = moyenne + EPS >= obj.moyenne;
+  k.tenueDerniere = { moyenne, reussi };
   if (reussi) k.tenueReussie = true;
   k.tenue = null;
 }
@@ -322,7 +321,6 @@ export function holdStatus(state) {
     return {
       etat: 'suivi', dernier, nuits: k.tenue.nuits,
       moyenne: k.tenue.nuits ? k.tenue.somme / k.tenue.nuits : 0,
-      soinPaye: state.famille.soinsPayes > k.tenue.soins,
     };
   }
   return { etat: 'attente', dernier };

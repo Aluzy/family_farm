@@ -3,7 +3,7 @@ import { EPS } from '../engine/base.js';
 import { isBroken, maintainCost, repairCost } from '../engine/devices.js';
 import { deviceStatus } from '../engine/energy.js';
 import { countItem, shelfLife } from '../engine/inventory.js';
-import { productivity } from '../engine/family.js';
+import { energyChip } from './energie.js';
 import { strawMissing, strawNeed, strawStock, wheatTotal } from '../engine/animals.js';
 import {
   buildStation, cancelMilling, cancelQueued, millPending, millTimeLeft, queueCapacity, recipeStatus,
@@ -12,7 +12,7 @@ import {
 import { recipeTime } from '../engine/techtree.js';
 import { isUnlocked } from '../engine/campaign.js';
 import {
-  formatCoins, formatDuration, formatNumber, formatPercent, formatQty, formatWhRate,
+  formatCoins, formatDuration, formatNumber, formatQty, formatWhRate,
 } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -290,11 +290,10 @@ export function renderRecettes() {
   const recipes = Object.keys(DATA.recipes)
     .filter((id) => !DATA.recipes[id].horsLivre)
     .sort((a, b) => ids.indexOf(DATA.recipes[a].station) - ids.indexOf(DATA.recipes[b].station));
-  const prod = productivity(state);
   return `
     <div class="section-head">
       <h2>📖 Livre de recette</h2>
-      <span class="chip${prod < 100 ? ' warn' : ''}" title="Productivité : la santé de la famille ralentit les préparations">Vitesse ${formatPercent(prod)}</span>
+      ${energyChip('cuisiner')}
     </div>
     <p class="muted">${queueCapacity(state) > 1 ? `Jusqu'à ${queueCapacity(state)} préparations à la suite par atelier : elles s'enchaînent sans clic, ingrédients réservés au lancement.` : 'Une seule préparation à la fois par atelier : c\'est toi qui relances (les Préparations en série de l\'Arbre des technologies ajoutent une file).'} Tout ce qui est en cours se termine pendant la nuit. Certaines recettes se débloquent dans l'Arbre des technologies. La farine se fait au Moulin, dans son propre menu.</p>
     <h3 class="section-title">Stations</h3>

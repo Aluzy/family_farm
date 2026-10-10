@@ -238,12 +238,15 @@ export function testRipenAll(state) {
   return { ok: true };
 }
 
-// Lot 2 : santé de toute la famille à 0 (tous malades).
-export function testSetHealthZero(state) {
-  for (const m of state.famille.membres) {
-    m.sante = 0;
-    m.malade = true;
-  }
+// Version 1.8 : l'énergie du personnage à 0 (à la place de « santé à 0 »).
+export function testSetEnergyZero(state) {
+  state.energie = 0;
+  return { ok: true };
+}
+
+// Version 1.8 : l'énergie du personnage au maximum.
+export function testFillEnergy(state) {
+  state.energie = DATA.PERSONNAGE.MAX * 1000;
   return { ok: true };
 }
 

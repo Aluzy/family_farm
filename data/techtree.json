@@ -72,7 +72,7 @@
       "Nœuds retirés de l'arbre, avec ce qu'ils coûtaient : une sauvegarde qui en",
       "possède un le perd à la migration et récupère ses points et ses pièces."
     ],
-    "NOEUDS_RETIRES": { "cui_rotisserie": { "pt": 1, "cout": 300 } },
+    "NOEUDS_RETIRES": { "cui_rotisserie": { "pt": 1, "cout": 300 }, "fa_remedes": { "pt": 1, "cout": 100 }, "fa_menus": { "pt": 1, "cout": 300 } },
     "noeuds": {
       "//en_entretien": "⚡ Énergie",
       "en_entretien": {
@@ -422,17 +422,17 @@
         "effet": { "eveilMin": 20 },
         "description": "L'éveil minimal avant de pouvoir dormir passe de 30 s à 20 s."
       },
-      "fa_remedes": {
+      "fa_sommeil": {
         "branche": "famille",
         "palier": 1,
-        "nom": "Remèdes maison",
-        "icone": "🌿",
+        "nom": "Bon sommeil",
+        "icone": "🛏️",
         "fonction": "productivite",
         "pt": 1,
         "cout": 100,
         "requiert": [],
-        "effet": { "soinCout": 70, "recuperation": 1 },
-        "description": "Les soins coûtent 30 % de moins, et un malade regagne 3 points de santé par nuit bien nourrie au lieu de 2."
+        "effet": { "reveilEnergie": 10 },
+        "description": "Au réveil, l'énergie remonte de 10 points de plus."
       },
       "fa_cellier": {
         "branche": "famille",
@@ -446,17 +446,17 @@
         "effet": { "conservation": 1 },
         "description": "Hors réfrigérateur, tout ce qui périme se garde une nuit de plus."
       },
-      "fa_menus": {
+      "fa_gouter": {
         "branche": "famille",
         "palier": 3,
-        "nom": "Menus variés",
-        "icone": "🍽️",
+        "nom": "Goûter",
+        "icone": "🥪",
         "fonction": "productivite",
         "pt": 1,
         "cout": 300,
         "requiert": [{ "noeud": "fa_cellier" }],
-        "effet": { "bonusPlatsMax": 5 },
-        "description": "Le bonus de santé des plats différents mangés monte jusqu'à +5 par nuit au lieu de +3."
+        "effet": { "gouter": 150 },
+        "description": "Ce que tu manges dans la journée rend 50 % d'énergie en plus."
       },
       "reveil_2": {
         "branche": "famille",

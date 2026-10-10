@@ -6,10 +6,9 @@
     "  Chaque repas la fait varier pour tous : REPAS_CRU si la famille n'a mangé que des aliments",
     "  crus, jusqu'à REPAS_CRU + REPAS_PLATS si tout le repas était cuisiné (au prorata de",
     "  l'énergie venue des plats), arrondi ; FAIM en plus si le besoin n'est pas couvert.",
-    "  PRODUCTIVITE : le bonheur moyen des membres bien portants multiplie la productivité",
-    "  de la santé, en % (premier palier dont `min` est atteint).",
+    "  Version 1.8 : le bonheur moyen réduit l'énergie que coûte chaque action (DATA.PERSONNAGE).",
     "",
-    "SORTIES : une sortie emmène toute la famille sauf les malades. Elle avance l'horloge de",
+    "SORTIES : une sortie emmène toute la famille. Elle avance l'horloge de",
     "  `heures` (le temps passe comme d'habitude : panneaux, batteries, ateliers) et doit finir",
     "  au plus tard à NIGHT_HOUR. Chacune une fois par jour au plus.",
     "  prix : pièces par adulte ; un enfant paie ENFANT_PRIX % (arrondi au-dessus).",
@@ -27,14 +26,7 @@
       "MAX": 100,
       "REPAS_CRU": -3,
       "REPAS_PLATS": 8,
-      "FAIM": -2,
-      "PRODUCTIVITE": [
-        { "min": 85, "pct": 115 },
-        { "min": 65, "pct": 105 },
-        { "min": 35, "pct": 100 },
-        { "min": 15, "pct": 90 },
-        { "min": 0, "pct": 80 }
-      ]
+      "FAIM": -2
     },
     "ENFANT_PRIX": 50,
     "SORTIES": {

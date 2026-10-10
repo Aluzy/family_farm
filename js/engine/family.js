@@ -1,21 +1,21 @@
 import { DATA } from './catalog.js';
-import { applyMealHappiness, happinessProductivity, memberHappiness } from './ville.js';
+import { applyMealHappiness, memberHappiness } from './ville.js';
 import { EPS } from './base.js';
-import { fail, growthPrice, percentCeil, spend } from './devices.js';
+import { fail } from './devices.js';
 import { hourOfDay } from './clock.js';
 import { countItem, nextExpiry, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
 import { newStableReport } from './animals.js';
-import { techFlag, techPct, techSum } from './techtree.js';
+import { energyMax, restoreEnergy, snackEnergy } from './stamina.js';
 import { newAutoReport } from './automation.js';
 import { autonomyPercent } from './campaign.js';
 
-/* ---------- Lot 2 : famille et santé ---------- */
+/* ---------- Lot 2 : famille (version 1.8 : plus de santé) ---------- */
 
 // nom : le rôle fixe (« Adulte 1 ») ; prenom, genre, teint : le profil choisi
 // par le joueur (version 1.1), au départ le rôle, le sexe de DATA et le jaune.
 export function makeMember(def) {
-  return { id: def.id, nom: def.nom, enfant: def.enfant, sante: DATA.FAMILY.SANTE_DEPART, malade: false, bonheur: DATA.VILLE.BONHEUR.DEPART, ...defaultMemberProfile(def) };
+  return { id: def.id, nom: def.nom, enfant: def.enfant, bonheur: DATA.VILLE.BONHEUR.DEPART, ...defaultMemberProfile(def) };
 }
 
 /* ---------- version 1.1 : profil des membres de la famille ---------- */
@@ -134,9 +134,8 @@ export function nextFamilyNumber(state, type) {
 }
 
 // Ajoute un membre à la famille : un adulte, ou un enfant si `enfant` est vrai.
-// Refusé au-delà de MEMBRES_MAX. Le nouveau venu arrive avec la santé moyenne
-// de la famille (au moins 1) : agrandir la famille ne soigne personne et ne
-// change pas la productivité. Son besoin s'ajoute dès le prochain repas.
+// Refusé au-delà de MEMBRES_MAX. Le nouveau venu arrive avec le bonheur moyen de
+// la famille. Son besoin s'ajoute dès le prochain repas.
 export function addMember(state, enfant = false) {
   const C = DATA.FAMILY.COMPOSITION;
   const f = state.famille;
@@ -144,22 +143,19 @@ export function addMember(state, enfant = false) {
   const type = enfant ? 'enfant' : 'adulte';
   const n = nextFamilyNumber(state, type);
   const m = makeMember({ id: `${type}-${n}`, nom: `${enfant ? 'Enfant' : 'Adulte'} ${n}`, enfant: !!enfant });
-  m.sante = Math.max(1, Math.min(DATA.FAMILY.SANTE_MAX, Math.floor(rawAverageHealth(state))));
   if (f.membres.length) m.bonheur = Math.round(f.membres.reduce((t, x) => t + memberHappiness(x), 0) / f.membres.length);
   f.membres.push(m);
   return { ok: true, id: m.id, besoin: familyNeed(state) };
 }
 
 // Pourquoi un membre ne peut pas quitter la famille (texte), ou '' s'il le peut :
-// il reste toujours MEMBRES_MIN membre dont ADULTES_MIN adulte, et un malade
-// ne part pas (ce serait un soin gratuit pour la moyenne de la famille).
+// il reste toujours MEMBRES_MIN membre dont ADULTES_MIN adulte.
 export function memberRemovalBlock(state, id) {
   const C = DATA.FAMILY.COMPOSITION;
   const m = findMember(state, id);
   if (!m) return 'Membre introuvable.';
   if (state.famille.membres.length <= C.MEMBRES_MIN) return 'Il faut au moins un membre dans la famille.';
   if (!m.enfant && adultCount(state) <= C.ADULTES_MIN) return 'Il faut au moins un adulte dans la famille.';
-  if (m.malade) return `${memberName(state, m.id)} est malade : soigne-le avant qu'il parte.`;
   return '';
 }
 
@@ -201,7 +197,7 @@ export function petIcon(espece) {
 }
 
 // Adopte un chien ou un chat : refusé au-delà de COMPAGNIE.MAX. Gratuit, et sans
-// effet sur le besoin journalier, la santé ou la productivité.
+// effet sur le besoin journalier ni sur le bonheur.
 export function addPet(state, espece) {
   const K = DATA.FAMILY.COMPAGNIE;
   if (!K.ESPECES[espece]) return fail('Cet animal ne s\'adopte pas.');
@@ -244,41 +240,6 @@ export function removePet(state, id) {
 
 export function familyNeed(state) {
   return state.famille.membres.reduce((t, m) => t + DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte'], 0);
-}
-
-// Moyenne brute des santés (sert aux comptes rendus).
-export function rawAverageHealth(state) {
-  const m = state.famille.membres;
-  return m.length ? m.reduce((t, x) => t + x.sante, 0) / m.length : 0;
-}
-
-// Santé moyenne pour la productivité : un membre malade compte pour 0.
-export function averageHealth(state) {
-  const m = state.famille.membres;
-  return m.length ? Math.floor(m.reduce((t, x) => t + (x.malade ? 0 : x.sante), 0) / m.length) : 0;
-}
-
-// Productivité en % (100 = pleine). Elle ne s'applique qu'aux actions au clic
-// (récolte manuelle) : jamais aux automatisations des lots suivants.
-// Version 1.5 : le bonheur moyen la multiplie (happinessProductivity, ville.js).
-export function healthProductivity(state) {
-  const h = averageHealth(state);
-  for (const tier of DATA.FAMILY.PRODUCTIVITE) {
-    if (h >= tier.min) return tier.pct;
-  }
-  return DATA.FAMILY.PRODUCTIVITE[DATA.FAMILY.PRODUCTIVITE.length - 1].pct;
-}
-
-export function productivity(state) {
-  return Math.round((healthProductivity(state) * happinessProductivity(state)) / 100);
-}
-
-// Variation de santé d'une nuit selon la couverture du besoin (en %, 0 à 100).
-export function healthDelta(coverage) {
-  for (const tier of DATA.FAMILY.VARIATION) {
-    if (coverage >= tier.min) return tier.delta;
-  }
-  return DATA.FAMILY.VARIATION[DATA.FAMILY.VARIATION.length - 1].delta;
 }
 
 // Aliments dans l'ordre où la famille les mange : d'abord ce qui périme le plus
@@ -343,44 +304,11 @@ export function planMeal(state) {
   };
 }
 
-// Applique la variation de santé. Un membre qui tombe à 0 devient malade ; un
-// malade regagne RECUPERATION_MALADE points par nuit couverte à 100 % (sinon il
-// subit la variation normale) et guérit en atteignant la santé d'un soin.
-// Renvoie les identifiants des membres devenus malades cette nuit (version 1.1 :
-// l'identifiant, pas le prénom, pour que le compte rendu suive un changement
-// de prénom et ne recopie jamais une donnée personnelle).
-// Lot 5 : `bonus` s'ajoute à la variation d'une nuit (plats différents mangés).
-export function updateHealth(state, coverage, bonus = 0) {
-  const F = DATA.FAMILY;
-  const delta = healthDelta(coverage) + bonus;
-  const fed = coverage >= 100;
-  const nouveaux = [];
-  for (const m of state.famille.membres) {
-    const gain = m.malade && fed ? F.RECUPERATION_MALADE + techSum(state, 'recuperation') : delta;
-    m.sante = Math.max(0, Math.min(F.SANTE_MAX, m.sante + gain));
-    if (m.malade && m.sante >= F.SOIN.SANTE) {
-      m.malade = false;
-    } else if (!m.malade && m.sante <= 0) {
-      m.malade = true;
-      nouveaux.push(m.id);
-    }
-  }
-  return nouveaux;
-}
-
 export function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 100, mange: {}, santeAvant: 0, santeApres: 0, nouveauxMalades: [], perdus: {}, oeufs: 0, lait: 0, etable: newStableReport(), bonusPlats: 0, termine: {}, auto: newAutoReport(), fruits: {}, frigo: { mwh: 0, panne: false, vieillis: false }, energieProduit: 0, autonomie: 0, pluie: 0, entretiens: [] };
+  return { besoin: 0, energie: 0, couverture: 100, mange: {}, perdus: {}, oeufs: 0, lait: 0, etable: newStableReport(), termine: {}, auto: newAutoReport(), fruits: {}, frigo: { mwh: 0, panne: false, vieillis: false }, energieProduit: 0, autonomie: 0, pluie: 0, entretiens: [] };
 }
 
-// Bonus de santé d'une nuit : +1 par plat différent mangé, jusqu'à +3.
-export function dishBonus(mange, state = null) {
-  const B = DATA.FAMILY.BONUS_PLATS;
-  const plats = Object.keys(mange).filter((item) => mange[item] > 0 && DATA.items[item].plat).length;
-  const max = state ? Math.max(B.MAX, techFlag(state, 'bonusPlatsMax') || 0) : B.MAX; // arbre v2 : Menus variés
-  return Math.min(max, plats * B.PAR_PLAT);
-}
-
-// Le repas de la famille, puis la santé. Version 1.1.1 : il se prend à 19 h
+// Le repas de la famille, puis son bonheur. Version 1.1.1 : il se prend à 19 h
 // (mealDue) ; si la famille se couche avant, il est pris au coucher (feedFamily).
 // Le compte du repas est gardé dans state.repas jusqu'à la nuit, qui le recopie
 // dans son compte rendu : un seul repas par jour, quoi qu'il arrive.
@@ -398,20 +326,13 @@ export function takeMeal(state) {
       if (p.origin === DATA.ORIGINE.PRODUIT) produit += p.qty * DATA.items[item].energie;
     }
   }
-  const avant = rawAverageHealth(state);
-  const bonus = dishBonus(plan.mange, state);
-  const nouveaux = updateHealth(state, plan.couverture, bonus);
   const bonheur = applyMealHappiness(state, plan); // version 1.5 : plats cuisinés → bonheur
   state.repas = {
     heure: hourOfDay(state),
-    bonusPlats: bonus,
     besoin: plan.besoin,
     energie: plan.energie,
     couverture: plan.couverture,
     mange: plan.mange,
-    santeAvant: avant,
-    santeApres: rawAverageHealth(state),
-    nouveauxMalades: nouveaux,
     bonheur,
     energieProduit: produit,
     autonomie: autonomyPercent(produit, plan.besoin),
@@ -420,15 +341,14 @@ export function takeMeal(state) {
 }
 
 // Première étape nocturne : le repas s'il n'a pas été pris à 19 h, puis son
-// compte recopié dans celui de la nuit. La santé « après » est celle du
-// coucher : un soin payé entre le repas et la nuit y figure.
+// compte recopié dans celui de la nuit. Version 1.8 : la couverture du repas
+// fixe l'énergie du personnage au réveil (restoreEnergy).
 export function feedFamily(state) {
   if (!state.repas) takeMeal(state);
   const { heure, ...repas } = state.repas;
   state.repas = null;
   state.nuit = {
     ...repas,
-    santeApres: rawAverageHealth(state),
     termine: {},
     perdus: {},
     oeufs: 0,
@@ -436,32 +356,28 @@ export function feedFamily(state) {
     fruits: {},
     frigo: { mwh: 0, panne: false, vieillis: false },
   };
+  restoreEnergy(state, repas.couverture);
+  state.nuit.energieReveil = state.energie;
   return state.nuit;
 }
 
-export function careCost(state) {
-  const c = DATA.FAMILY.SOIN;
-  // arbre v2 (Remèdes maison) : soins moins chers
-  return percentCeil(growthPrice(c.base, c.croissance, state.famille.soinsPayes), techPct(state, 'soinCout'));
+// Version 1.8 : manger un aliment en journée (inventaire d'abord, puis frigo) rend
+// de l'énergie au personnage (snackEnergy), jusqu'au maximum. L'aliment sort des
+// réserves : la famille ne le mangera pas ce soir.
+export function eatSnack(state, item) {
+  const def = DATA.items[item];
+  if (!def || !def.edible) return fail('Cela ne se mange pas.');
+  if ((Number(state.energie) || 0) >= energyMax()) return fail('Ton énergie est déjà au maximum.');
+  if (countItem(state, item) > 0) takeItem(state, item, 1);
+  else if (fridgeCount(state, item) > 0) takeFromFridge(state, item, 1);
+  else return fail(`Plus de ${def.nom.toLowerCase()}.`);
+  const gain = snackEnergy(state, item);
+  state.energie = Math.min(energyMax(), (Number(state.energie) || 0) + gain);
+  return { ok: true, gain, energie: state.energie };
 }
 
 export function findMember(state, id) {
   return state.famille.membres.find((m) => m.id === id) || null;
-}
-
-// Soigne un malade : coût croissant, santé remise à SOIN.SANTE.
-export function heal(state, memberId) {
-  const m = findMember(state, memberId);
-  if (!m) return fail('Membre introuvable.');
-  if (!m.malade) return fail(`${memberName(state, m.id)} n'est pas malade.`);
-  const cost = careCost(state);
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
-  state.famille.soinsPayes += 1;
-  state.jour.soins = (state.jour.soins || 0) + 1; // Lot 9 : soin payé aujourd'hui (suivi de la tenue du chapitre 6)
-  m.sante = DATA.FAMILY.SOIN.SANTE;
-  m.malade = false;
-  return { ok: true, cost };
 }
 
 // Items que la famille pourrait manger mais qui servent aussi de plants

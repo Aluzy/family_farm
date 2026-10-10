@@ -65,10 +65,10 @@ Un seul agrégateur remplace `prepTimeMult()` et `awakeRequired()` : il parcourt
 
 | Clé | Combinaison | Utilisée par | Cumul maximal |
 |---|---|---|---|
-| `tempsPrepa`, `eauArrosage`, `usure`, `kwhParLitre`, `frigoConso`, `blePoule`, `soinCout` | produit | temps, eau, usure, pompe, frigo, poules, soins | ×0,64 · ×0,765 · ×0,75 · ×0,75 · ×0,7 · ×0,8 · ×0,7 |
+| `tempsPrepa`, `eauArrosage`, `usure`, `kwhParLitre`, `frigoConso`, `blePoule` | produit | temps, eau, usure, pompe, frigo, poules | ×0,64 · ×0,765 · ×0,75 · ×0,75 · ×0,7 · ×0,8 |
 | `eveilMin` | minimum | éveil minimal | 10 s |
-| `conservation`, `grainesBonus`, `recuperation` | somme | péremption, graines, santé | +1 · +1 · +1 |
-| `bonusPlatsMax`, `solaireBonus`, `croissanceSurface`, `fileAttente` | valeur du nœud | santé, solaire, pâturage, ateliers | 5 · 110 % · 1,1 · 3 |
+| `conservation`, `grainesBonus`, `reveilEnergie` | somme | péremption, graines, énergie au réveil | +1 · +1 · +10 |
+| `gouter`, `solaireBonus`, `croissanceSurface`, `fileAttente` | valeur du nœud | en-cas, solaire, pâturage, ateliers | 150 % · 110 % · 1,1 · 3 |
 | `auto: { tâche: [lieux] }` | union | nuit (`autoTasks`) | arrosage, récolte, semis, nourrissage, tonte |
 | `recettes` | union | Livre de recette | 16 recettes |
 | `actionsGroupees`, `pluie`, `delestage`, `entretienAuto`, `arrosagePrioritaire`, `routine` | présence | fonctions dédiées | — |
@@ -121,9 +121,9 @@ flowchart LR
   end
   subgraph famille["👨‍👩‍👧‍👦 Famille"]
     reveil_1["Réveil matinal I (P1)"]
-    fa_remedes["Remèdes maison (P1)"]
+    fa_sommeil["Bon sommeil (P1)"]
     fa_cellier["Cellier (P2)"]
-    fa_menus["Menus variés (P3)"]
+    fa_gouter["Goûter (P3)"]
     reveil_2["Réveil matinal II (P3)"]
     fa_routine["Routine familiale (P5)"]
   end
@@ -150,7 +150,7 @@ flowchart LR
   cui_serie --> cui_conserverie
   fa_cellier --> cui_conserverie
   cui_laiterie --> cui_epicerie
-  fa_cellier --> fa_menus
+  fa_cellier --> fa_gouter
   reveil_1 --> reveil_2
   reveil_2 --> fa_routine
   semis_auto --> fa_routine
@@ -218,9 +218,9 @@ flowchart LR
 | Palier | ID | Nœud | Fonction | Coût | Prérequis | Effet |
 |---|---|---|---|---|---|---|
 | 1 | `reveil_1` | 🌅 Réveil matinal I | Temps | 1 PT + 200 💰 | — | L'éveil minimal avant de pouvoir dormir passe de 30 s à 20 s. |
-| 1 | `fa_remedes` | 🌿 Remèdes maison | Productivité | 1 PT + 100 💰 | — | Les soins coûtent 30 % de moins, et un malade regagne 3 points de santé par nuit bien nourrie au lieu de 2. |
+| 1 | `fa_sommeil` | 🛏️ Bon sommeil | Productivité | 1 PT + 100 💰 | — | Au réveil, l'énergie remonte de 10 points de plus. |
 | 2 | `fa_cellier` | 🏚️ Cellier | Productivité | 1 PT + 250 💰 | — | Hors réfrigérateur, tout ce qui périme se garde une nuit de plus. |
-| 3 | `fa_menus` | 🍽️ Menus variés | Productivité | 1 PT + 300 💰 | Cellier | Le bonus de santé des plats différents mangés monte jusqu'à +5 par nuit au lieu de +3. |
+| 3 | `fa_gouter` | 🥪 Goûter | Productivité | 1 PT + 300 💰 | Cellier | Ce que tu manges dans la journée rend 50 % d'énergie en plus. |
 | 3 | `reveil_2` | 🌅 Réveil matinal II | Temps | 1 PT + 500 💰 | Réveil matinal I | L'éveil minimal passe à 10 s. |
 | 5 | `fa_routine` | 🏡 Routine familiale | Automatisation | 3 PT + 2 500 💰 | Réveil matinal II + Semis automatique + Mangeoire à trémie + Entretien automatique | Option « Dormir tout seul » : jeu ouvert, la famille va se coucher d'elle-même dès que l'éveil minimal est écoulé. |
 
@@ -249,7 +249,7 @@ Dans le Livre de recette, une recette verrouillée reste visible, grisée, avec 
 |---|---|---|
 | **Bocal de légumes** | Cuisine, 4 légumes d'une même sorte + 1 L d'eau → 1 bocal. Ne périme pas. Nouvel item distinct de `conserve` : il compte comme **produit** pour l'autonomie (la conserve de départ reste « achetée »). | 30 s · 40 énergie · prix par la formule des plats |
 | **Eau de pluie** | Étape de nuit, avant l'arrosage automatique : ajoute des litres au réservoir, plafonnés à sa capacité, sans électricité. | 15 L par nuit (version 1.6 : plus de saisons) |
-| **Actions groupées** | « Arroser tout » et « Récolter tout » par zone, au clic : une tentative par parcelle, avec la productivité de la santé comme pour les clics. | — |
+| **Actions groupées** | « Arroser tout » et « Récolter tout » par zone, au clic : une tentative par parcelle, chacune payée en énergie comme un clic (version 1.8). | — |
 | **File de préparations** | Chaque atelier garde jusqu'à 3 préparations en attente ; les ingrédients sont retirés au moment de la mise en file ; annuler rend les ingrédients. Le hors-ligne fait avancer la file comme une préparation. | 3 places |
 | **Délestage** | Sous le seuil de charge totale des batteries, le Moulin, la Presse et la Pompe sont suspendus (pas éteints : ils reprennent seuls). | 10 % |
 | **Entretien automatique** | Au Dormir, chaque appareil à `SERVICE_THRESHOLD` (70 %) ou plus est entretenu si les pièces suffisent, dans l'ordre du parc ; résumé dans le rapport du réveil. | — |

@@ -4,13 +4,14 @@ import { efficiency, fail, isBroken, makeDevice, perSecond, spend, tankCapacity 
 import { drawEnergy, loadShedding } from './energy.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { availableEnergy } from './fridge.js';
-import { productivity } from './family.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { recipeTime, techEffects, techFlag } from './techtree.js';
 import { noteRecipeDone } from './campaign.js';
 import { gainActionXp } from './levels.js';
+import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
-// XP d'une préparation terminée, selon l'atelier (version 1.7).
+// XP d'une préparation terminée, et énergie pour la lancer (versions 1.7 et 1.8),
+// selon l'atelier.
 const STATION_XP = { four: 'cuireFour', cuisine: 'cuisiner', moulin: 'moudre', presse: 'presser' };
 
 /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
@@ -25,11 +26,11 @@ export function isElectricStation(id) {
   return !!DATA.STATIONS[id].electrique;
 }
 
-// Vitesse d'une préparation en % : productivité de la famille (préparations
-// lancées à la main) ; pour le Moulin et la Presse, aussi le rendement de l'usure.
+// Vitesse d'une préparation en % : 100 (version 1.8 : plus de productivité) ; pour
+// le Moulin et la Presse, le rendement de l'usure.
 export function stationSpeed(state, id) {
   const st = state.stations[id];
-  let v = productivity(state);
+  let v = 100;
   if (isElectricStation(id) && st.appareil) v = Math.floor((v * efficiency(st.appareil)) / 100);
   return v;
 }
@@ -148,6 +149,9 @@ export function startRecipe(state, id) {
   const lines = recipeLines(state, id);
   const missing = lines.find((l) => !l.ok);
   if (missing) return fail(missing.eau ? 'Pas assez d\'eau dans le réservoir.' : 'Il manque des ingrédients.');
+  const action = STATION_XP[r.station] || '';
+  if (!canAfford(state, action)) return fail(TIRED); // version 1.8
+  spendEnergy(state, action);
   const pris = [];
   for (const l of lines) {
     if (l.eau) state.eauMl = Math.max(0, state.eauMl - l.qte * 1000);
@@ -233,6 +237,8 @@ export function startMilling(state, qty = 1) {
   const recette = 'farine';
   const parBle = DATA.recipes[recette].ingredients[0].qte;
   if (wheatTotal(state) + EPS < n * parBle) return fail('Pas assez de blé.');
+  if (!canAfford(state, 'moudre', n)) return fail(TIRED); // version 1.8 : 1 par blé confié
+  spendEnergy(state, 'moudre', n);
   takeWheat(state, n * parBle, 'inventaire');
   if (st.tache) {
     st.tache.enAttente = Math.max(0, Math.floor(Number(st.tache.enAttente) || 0)) + n;

@@ -9,7 +9,7 @@ import { chapterCount, isUnlocked, plantableCropsFor } from '../engine/campaign.
 import { unlockLevel } from '../engine/levels.js';
 import { advanceTutorial, skipTutorial, tutorialStep } from '../engine/alerts.js';
 import {
-  formatDuration, formatNumber, formatQty, formatSigned, formatWh, formatWhRate,
+  formatDuration, formatNumber, formatQty, formatWh, formatWhRate,
 } from '../engine/format.js';
 import { activeTab, ecranFerme, state } from './store.js';
 import { tel } from './consent.js';
@@ -153,7 +153,7 @@ const HELP = {
     role: 'Prépare les plats mijotés. Une préparation à la fois.',
     conso: 'Pas d\'électricité.',
     prod: `${stationRecipesLine('cuisine')}.`,
-    note: `Un plat vaut ${formatNumber(DATA.RECETTES.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et chaque plat différent mangé dans la journée donne +${DATA.FAMILY.BONUS_PLATS.PAR_PLAT} de santé (jusqu'à +${DATA.FAMILY.BONUS_PLATS.MAX}). Quatre recettes de luxe (chocolat chaud, café, crème à la vanille, bière artisanale) se vendent 300 % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.RECETTES.COEF_PLAT)} %.`,
+    note: `Un plat vaut ${formatNumber(DATA.RECETTES.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et les plats cuisinés rendent la famille plus heureuse (son bonheur réduit l'énergie que coûtent tes actions). Quatre recettes de luxe (chocolat chaud, café, crème à la vanille, bière artisanale) se vendent 300 % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.RECETTES.COEF_PLAT)} %.`,
   }),
   moulin: () => ({
     nom: 'Moulin',
@@ -269,20 +269,19 @@ export function renderTutorial() {
 export function openAboutModal() {
   tel('modal', 'about');
   const F = DATA.FAMILY;
-  const V = F.VARIATION;
   const M = DATA.MARCHE;
   const adultes = F.MEMBRES.filter((m) => !m.enfant).length;
   const enfants = F.MEMBRES.length - adultes;
   const durees = [...Object.values(DATA.CONSERVATION), ...Object.values(DATA.CONSERVATION_CATEGORIE)];
   const H = DATA.HORS_LIGNE;
   const rules = [
-    `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} énergie par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
+    `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} calories par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
     `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. Tu peux dormir (bouton « Zzz ») après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins ; à ${DATA.TIME.NIGHT_HOUR} h, la journée est finie et la nuit se déroule d'elle-même. L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
     `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
-    `Santé : un besoin couvert à 100 % la remonte (${formatSigned(V[0].delta)}), sinon elle baisse (${V.slice(1).map((x) => formatSigned(x.delta)).join(', ')}). Une santé faible ralentit les actions au clic ; les automatisations restent à 100 %. À 0, un soin coûte ${formatNumber(F.SOIN.base)} 💰, +${formatNumber(F.SOIN.croissance - 100)} % par soin déjà payé (arrondi à l'entier supérieur).`,
-    `Énergie : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
+    `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}) : chaque action au clic en coûte (planter ${DATA.PERSONNAGE.COUTS.planter}, arroser ${DATA.PERSONNAGE.COUTS.arroser}, récolter ${DATA.PERSONNAGE.COUTS.recolter}…), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %) et ${DATA.PERSONNAGE.ENDURANCE} % de moins par niveau. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE}, et jusqu'à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} si le repas du soir a couvert le besoin ; un aliment mangé dans la journée rend ses calories ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}. Les automatisations ne coûtent rien.`,
+    `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
     `Marché : prix de vente fixes. Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient d'achat, chaque unité vendue en retire ${formatNumber(M.PAS)} (plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %).`,
-    `Autonomie = énergie mangée produite par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
+    `Autonomie = calories mangées produites par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
     `Arbre des technologies : ${Object.keys(DATA.techtree.noeuds).length} technologies en ${DATA.techtree.branches.length} branches, payées en points de technologie (chapitres terminés, jalons de maîtrise, mode libre) et en pièces. Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
   ];

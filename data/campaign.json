@@ -29,10 +29,10 @@
       {
         "titre": "Le poulailler",
         "icone": "🐔",
-        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé et une famille en bonne santé.",
+        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille.",
         "objectifs": [
           { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
-          { "type": "sante", "cible": 80, "libelle": "Santé moyenne d'au moins 80", "unite": "" }
+          { "type": "autonomie", "cible": 50, "libelle": "Atteindre 50 % d'autonomie", "unite": "%" }
         ]
       },
       {
@@ -56,14 +56,14 @@
       {
         "titre": "Toute l'année",
         "icone": "📅",
-        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris, sans acheter de soins.",
+        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris.",
         "objectifs": [
           {
             "type": "tenue",
             "cible": 1,
             "nuits": 10,
             "moyenne": 80,
-            "libelle": "Tenir 10 nuits d'affilée à 80 % d'autonomie en moyenne, sans payer de soin",
+            "libelle": "Tenir 10 nuits d'affilée à 80 % d'autonomie en moyenne",
             "unite": ""
           }
         ]
@@ -89,14 +89,14 @@
     "  carottes  : carottes récoltées au total ;",
     "  autonomie : autonomie de la dernière nuit, en % ;",
     "  pontes    : nuits de ponte d'affilée (au moins un œuf pondu) ;",
-    "  sante     : santé moyenne de la famille (un malade compte pour 0) ;",
+    "  bonheur   : bonheur moyen de la famille (version 1.8, à la place de la santé) ;",
     "  pains     : pains cuits au total (`recette` : la recette qui compte) ;",
     "  plats     : plats différents préparés (`exclut` : recettes qui n'en font",
     "              pas partie, ici le pain ; les transformations du Moulin et de",
     "              la Presse n'en sont jamais) ;",
     "  laines    : laines tondues au total ;",
     "  tenue     : `nuits` nuits d'affilée (version 1.6, à la place de l'hiver)",
-    "              à au moins `moyenne` % d'autonomie en moyenne, sans payer de soin ;",
+    "              à au moins `moyenne` % d'autonomie en moyenne ;",
     "  serie100  : nuits d'affilée à 100 % d'autonomie.",
     "Version 1.3 : le courrier. Une lettre arrive une seule fois, quand sa",
     "condition est remplie (`quand.debloque` : un élément que la campagne vient",

@@ -2,11 +2,11 @@ import { DATA, roundPct } from './catalog.js';
 import { EPS, randomInt } from './base.js';
 import { fail, spend } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
-import { productivity } from './family.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, isUnlocked } from './campaign.js';
 import { gainActionXp } from './levels.js';
+import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -122,11 +122,10 @@ export function boltSeedYield(state, culture) {
   return DATA.crops[culture].graines.quantite + 2 * techSum(state, 'grainesBonus');
 }
 
-// Rendement d'une récolte au clic (× productivité) ou automatique (× 1).
-// Version 1.6 : plus de saisons, le rendement est le même partout et toute l'année.
-export function harvestYield(state, culture, auto = false) {
-  const prod = auto ? 100 : productivity(state);
-  return Math.floor((DATA.crops[culture].rendement * prod + 50) / 100);
+// Rendement d'une récolte : le même au clic et en automatique (version 1.8 : plus
+// de productivité), partout et toute l'année (version 1.6 : plus de saisons).
+export function harvestYield(state, culture) {
+  return DATA.crops[culture].rendement;
 }
 
 // Eau d'un arrosage (L entiers) : celle de la culture, arrondie au litre le plus
@@ -163,11 +162,13 @@ export function plant(state, plotId, culture, auto = false) {
   if (!def) return fail('Culture inconnue.');
   if (plot.culture) return fail('Cette parcelle est déjà plantée.');
   if (!def.lieux.includes(plot.lieu)) return fail(`${def.nom} ne se plante pas ici.`);
+  if (!auto && !canAfford(state, 'planter')) return fail(TIRED); // version 1.8
   if (takeSeed(state, culture) < 1) return fail(`Pas de graines : ${def.nom}.`);
   plot.culture = culture;
   plot.stade = 0;
   plot.arrose = false;
   plot.montee = false;
+  if (!auto) spendEnergy(state, 'planter');
   gainActionXp(state, 'planter', 1, auto);
   return { ok: true };
 }
@@ -182,8 +183,10 @@ export function water(state, plotId, auto = false) {
   if (isMature(plot)) return fail('Déjà mûre, inutile d\'arroser.');
   const litres = waterCost(state, plot);
   if (state.eauMl < litres * 1000) return fail('Pas assez d\'eau dans le réservoir.');
+  if (!auto && !canAfford(state, 'arroser')) return fail(TIRED); // version 1.8
   state.eauMl -= litres * 1000;
   plot.arrose = true;
+  if (!auto) spendEnergy(state, 'arroser');
   gainActionXp(state, 'arroser', 1, auto);
   return { ok: true, litres };
 }
@@ -202,12 +205,13 @@ export function toggleBolting(state, plotId) {
 }
 
 // Récolte : la parcelle est libérée. `auto` = true pour une automatisation
-// (non pénalisée par la santé) ; le clic du joueur applique la productivité.
+// (gratuite) ; le clic du joueur coûte de l'énergie (version 1.8).
 export function harvest(state, plotId, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
   if (!plot.culture) return fail('Rien à récolter ici.');
   if (!isMature(plot)) return fail('Pas encore mûre.');
+  if (!auto && !canAfford(state, 'recolter')) return fail(TIRED); // version 1.8
   const culture = plot.culture;
   const def = DATA.crops[culture];
   const items = {};
@@ -222,7 +226,7 @@ export function harvest(state, plotId, auto = false) {
   if (plot.montee) {
     gain(def.graines.item, boltSeedYield(state, culture));
   } else {
-    gain(cropProduct(culture), harvestYield(state, culture, auto));
+    gain(cropProduct(culture), harvestYield(state, culture));
     if (def.graines.mode === 'recolte') {
       const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
       gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
@@ -233,6 +237,7 @@ export function harvest(state, plotId, auto = false) {
   plot.arrose = false;
   plot.montee = false;
   if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9 (une carotte montée en graine ne compte pas)
+  if (!auto) spendEnergy(state, 'recolter');
   gainActionXp(state, 'recolter', 1, auto); // version 1.7
   return { ok: true, culture, items };
 }

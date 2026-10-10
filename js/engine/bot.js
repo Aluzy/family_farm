@@ -6,7 +6,9 @@ import { tick } from './energy.js';
 import { countItem, expiringSoon, inventoryCounts, isFridgeable } from './inventory.js';
 import { buildFridge, fridgeCount, moveFromFridge, moveToFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
-import { planMeal, rawAverageHealth } from './family.js';
+import { planMeal } from './family.js';
+import { energyLevel } from './stamina.js';
+import { averageHappiness } from './ville.js';
 import {
   allPlots, buildSerre, cropProduct, harvest, isMature, plant, potagerUpgradeCost, seedItem, seedStock,
   serreUpgradeCost, toggleBolting, upgradePotager, upgradeSerre, water,
@@ -24,7 +26,7 @@ import {
 } from './campaign.js';
 import { sleep } from './night.js';
 import { createInitialState } from './state.js';
-import { botHeal, botInfraInfo, botMaintenance } from './format.js';
+import { botInfraInfo, botMaintenance, botSnack } from './format.js';
 
 /* ---------- cultures ---------- */
 
@@ -339,7 +341,7 @@ export function botBuy(state, eveilS) {
     for (const step of steps) {
       const info = botStepInfo(state, step, eveilS);
       if (info.done || info.locked) continue;
-      // une caisse reste en réserve pour les graines, le blé et les soins (sauf pour l'eau et l'énergie)
+      // une caisse reste en réserve pour les graines et le blé (sauf pour l'eau et l'énergie)
       const target = info.cost + (step.type === 'infra' ? 0 : S.CAISSE);
       if (state.pieces + EPS < target) botRaiseFunds(state, target);
       if (state.pieces + EPS < target) return;
@@ -395,7 +397,7 @@ export function botStore(state) {
 // Série d'actions du joueur. `soir` : dernière série avant de dormir.
 export function botActions(state, strat, options, soir) {
   botMaintenance(state);
-  botHeal(state);
+  botSnack(state);
   botBuy(state, strat.eveilS);
   botFarm(state);
   botHens(state);
@@ -432,7 +434,8 @@ export function botDay(state, strat, options) {
 
 // Joue `nuits` nuits à partir de `state` (l'appelant passe une copie : elle est
 // modifiée). Renvoie une ligne par nuit : chapitre au début de la journée,
-// autonomie et santé à la fin de la nuit, pièces et conserves au réveil.
+// autonomie à la fin de la nuit, énergie du personnage et bonheur au réveil,
+// pièces et conserves au réveil.
 // options.depannage = { item } : chaque soir, le joueur achète aussi une unité de
 // cet aliment au Marché (vérification de la section 8.11).
 export function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, options = {}) {
@@ -444,18 +447,16 @@ export function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, 
     const chapitre = chapterReached(state);
     if (options.depannage) options.depannage.dernier = null;
     botDay(state, strat, options);
-    const sante = state.famille.membres.map((m) => m.sante);
     rows.push({
       nuit,
       chapitre,
       autonomie: state.nuit.autonomie,
       couverture: state.nuit.couverture,
-      santeMoyenne: rawAverageHealth(state),
-      santeMin: Math.min(...sante),
-      malades: state.famille.membres.filter((m) => m.malade).length,
+      energie: energyLevel(state),
+      bonheur: averageHappiness(state),
+      niveau: state.progression ? state.progression.niveau : 0,
       pieces: state.pieces,
       conserves: countItem(state, 'conserve'),
-      soinsPayes: state.famille.soinsPayes,
       potager: state.potager.niveau,
       depannage: options.depannage ? options.depannage.dernier : null,
     });

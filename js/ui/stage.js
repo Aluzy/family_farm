@@ -120,7 +120,7 @@ function parcellesAFaire(lieu, quoi, zone) {
 
 // Nombre de choses à faire par lieu de la carte : la pastille des étiquettes. Rien de
 // nouveau : ce sont les alertes de getNotifications() et de alertSnapshot(), rangées là
-// où elles se règlent, plus les malades à soigner (Maison › Famille).
+// où elles se règlent.
 function aFaireParLieu() {
   const n = { maison: 0, etable: 0, poulailler: 0, moulin: 0, serre: 0, verger: 0, zone: 0, zone2: 0 };
   const snap = alertSnapshot(state);
@@ -130,7 +130,6 @@ function aFaireParLieu() {
   }
   if (snap.batteriesVides) n.maison += 1;
   if (snap.frigoCoupe) n.maison += 1;
-  n.maison += state.famille.membres.filter((m) => m.malade).length;
   for (const a of getNotifications(state)) {
     if (a.type === 'poules') n.poulailler += a.nombre;
     if (a.type === 'tonte') n.etable += a.nombre;

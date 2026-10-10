@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { countItem } from '../engine/inventory.js';
-import { productivity } from '../engine/family.js';
+import { energyChip } from './energie.js';
 import {
   allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plotZone, seedStock,
   toggleBolting, water, waterCost, waterCostFor,
@@ -15,7 +15,7 @@ import {
 import { techAuto, techFlag } from '../engine/techtree.js';
 import { AUTO_TACHES, harvestAll, isAutomated, setSemis, waterAll } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
-import { formatCoins, formatNumber, formatPercent, formatQty } from '../engine/format.js';
+import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { applyResult } from './game-actions.js';
@@ -73,7 +73,6 @@ export function renderPoulailler() {
   const cap = coopCapacity(state);
   const toFeed = hensToFeed(state);
   const noWheat = !canFeedHen(state);
-  const prod = productivity(state);
   const up = coopUpgradeCost(state);
   const upBtn =
     up === null
@@ -88,7 +87,7 @@ export function renderPoulailler() {
   return `
     <div class="section-head">
       <h3>${icon('poulailler')}Poulailler · niveau ${p.niveau}</h3>
-      <span class="chips">${autoChip('poulailler', 'Nourrit les poules tout seul, à 100 %, pendant la nuit')}<span class="chip${prod < 100 ? ' warn' : ''}" title="Un nourrissage au clic ne compte qu'avec cette probabilité">Productivité ${formatPercent(prod)}</span>${helpBtn('poulailler')}</span>
+      <span class="chips">${autoChip('poulailler', 'Nourrit les poules tout seul, à 100 %, pendant la nuit')}${helpBtn('poulailler')}</span>
     </div>
     <div class="card">
       ${coopArtRow()}
@@ -300,7 +299,7 @@ export function plotCard(p, n) {
   if (mature) {
     const label = p.montee
       ? `Récolter : +${def.graines.quantite} graines`
-      : `Récolter : +${harvestYield(state, p.culture, false)} ${DATA.items[cropProduct(p.culture)].nom.toLowerCase()}`;
+      : `Récolter : +${harvestYield(state, p.culture)} ${DATA.items[cropProduct(p.culture)].nom.toLowerCase()}`;
     main = iconBtn('🧺', label, `data-action="harvest" data-id="${p.id}"`, { primary: true });
   } else {
     const litres = waterCost(state, p);
@@ -421,16 +420,12 @@ registerActions({
   },
   'feed-hen': () => {
     const result = applyResult(feedHen(state));
-    if (result.ok) showToast(result.compte ? '🌾 Une poule nourrie (1 blé pour 2 poules)' : 'Le geste n\'a pas compté (santé faible) : le blé est conservé, réessaie.');
+    if (result.ok) showToast('🌾 Une poule nourrie (1 blé pour 2 poules)');
   },
   'feed-all': () => {
     const result = applyResult(feedAllHens(state));
     if (result.ok) {
-      showToast(
-        result.ratees > 0
-          ? `${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}, ${result.ratees} geste${result.ratees > 1 ? 's' : ''} sans effet (santé faible) : réessaie.`
-          : `${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}.`
-      );
+      showToast(`${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}.`);
     }
   },
   'build-paturage': () => {
