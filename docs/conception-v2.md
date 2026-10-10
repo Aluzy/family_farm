@@ -189,7 +189,11 @@ En atteignant le niveau 9, la famille reçoit un **courrier du notaire** :
 - Ces pièces ne rapportent **pas d'XP** (seules les ventes en rapportent) 🟡 : sinon le
   joueur gagnerait d'un coup 15 000 des 220 000 XP qui séparent les niveaux 9 et 10.
 
-### 4.5 Niveau 10 : choisir un commerce ✅
+### 4.5 Niveau 10 : choisir un commerce ✅ (fait, version 1.14)
+
+> ✅ **Fait (version 1.14)** avec les valeurs proposées ci-dessous. Le quota se règle en
+> **transformations** par nuit (0 à la capacité), pas en unités brutes. Il est dans
+> Maison › Commerce. Détail : note v36 de `conception.md`.
 
 Au niveau 10, le joueur choisit **un** commerce. Ce commerce prend chaque nuit une
 partie de la production de la ferme, la transforme et la **vend automatiquement** :
@@ -528,7 +532,7 @@ change, et la mise à jour de `conception.md` et du README.
 | 7 ✅ | **Plats et bonheur** (barème 10.2) — fait, version 1.11 | non |
 | 8 ✅ | **Départ v2** : 1 500 💰, configuration de la famille, chapitres 1 et 2, succès — fait, version 1.12 | nouvelle partie seulement (format 29) |
 | 9 ✅ | **Verger au clic** et ses 4 dessins — fait, version 1.13 | oui (format 30) |
-| 10 | **Niveaux 9 et 10** : courrier du notaire, commerce automatique | oui (`state.commerce`) |
+| 10 ✅ | **Niveaux 9 et 10** : courrier du notaire, commerce automatique — fait, version 1.14 | oui (format 31, `state.commerce`) |
 
 Ordre conseillé : 1 et 2 d'abord (ils simplifient le reste), puis 3 et 4 (le cœur du
 nouvel équilibre), puis 8 pour rejouer le début de partie, enfin 5, 6, 7, 9 et 10. Le joueur

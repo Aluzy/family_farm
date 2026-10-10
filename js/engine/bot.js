@@ -18,6 +18,7 @@ import {
   coopCapacity, coopUpgradeCost, feedAllHens, freeSheepPlaces, hensToFeed, pastureCost, shear, sheepCount,
   siloUpgradeCost, strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
 } from './animals.js';
+import { chooseCommerce, commerceStock } from './commerce.js';
 import { buildVerger, buyOrchardSlot, buyTree, harvestTree, orchardFree, orchardSlotPrice, ripeTrees } from './orchard.js';
 import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
 import { buyTech, hasTech, techPoints, techStatus } from './techtree.js';
@@ -164,6 +165,15 @@ export function botOrchard(state) {
   for (const t of ripeTrees(state)) {
     if (!harvestTree(state, t.id).ok) break;
   }
+}
+
+// Version 1.14 : au niveau 10, le joueur automatique choisit le commerce qui a le plus
+// de matière (laits, laines ou légumes, rapportés à la recette).
+export function botCommerce(state) {
+  if (state.commerce.type || !isUnlocked(state, 'commerce')) return;
+  const types = Object.keys(DATA.COMMERCE.TYPES);
+  const best = types.reduce((a, t) => (commerceStock(state, t) / DATA.COMMERCE.TYPES[t].par > commerceStock(state, a) / DATA.COMMERCE.TYPES[a].par ? t : a), types[0]);
+  chooseCommerce(state, best);
 }
 
 // Le Moulin : il moud de quoi garder un peu de farine et, surtout, de la
@@ -439,6 +449,7 @@ export function botActions(state, strat, options, soir) {
   botHens(state);
   botSheep(state);
   botOrchard(state);
+  botCommerce(state);
   botMill(state);
   botCook(state);
   if (!soir) return;

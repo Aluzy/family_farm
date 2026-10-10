@@ -18,8 +18,8 @@
       { "debloque": ["presse", "verger"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre"] },
       { "debloque": ["frigo"] },
-      { "debloque": [], "note": "à venir : le courrier du notaire" },
-      { "debloque": [], "note": "à venir : le choix d'un commerce" }
+      { "debloque": [], "note": "un courrier du notaire : l'héritage caché du grand-père" },
+      { "debloque": ["commerce"] }
     ],
     "//ELEMENTS": "Libellé des éléments débloqués (écran du niveau, Ferme).",
     "ELEMENTS": {
@@ -34,6 +34,7 @@
       "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille du Moulin" },
       "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
       "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
+      "commerce": { "nom": "Commerce", "icone": "🏪", "note": "conserverie, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production" },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
     },
     "//XP": [
@@ -64,5 +65,35 @@
       "ses chapitres avaient débloqué. Sert aussi au mode test « aller au chapitre »."
     ],
     "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
+  },
+  "//COMMERCE": [
+    "Version 1.14 (v2, lot 10) : le commerce du niveau 10 (docs/conception-v2.md, 4.5).",
+    "Un seul commerce à la fois (TYPES). Chaque nuit, après le repas du soir et la",
+    "production de la nuit, il transforme jusqu'à `quota` fois `par` unités de ce qu'il",
+    "prend (les lots qui périment le plus tôt d'abord ; seulement l'inventaire, pas le",
+    "frigo) et vend aussitôt le produit au prix `prix`, sans passer par le Marché :",
+    "1 XP par pièce, comme une vente. Ni énergie ni électricité.",
+    "CAPACITE : transformations par nuit au plus, par niveau ; COUT : prix du niveau",
+    "(index 0 = le choix, gratuit). CHANGER : prix pour changer de commerce."
+  ],
+  "COMMERCE": {
+    "CAPACITE": [10, 20, 35, 50],
+    "COUT": [0, 3000, 8000, 20000],
+    "CHANGER": 5000,
+    "TYPES": {
+      "conserverie": {
+        "nom": "Conserverie", "le": "la conserverie", "icone": "🥫", "produit": "conserve de légumes", "produits": "conserves de légumes",
+        "prend": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard"],
+        "matiere": "légumes", "par": 4, "prix": 18
+      },
+      "cremerie": {
+        "nom": "Crèmerie", "le": "la crèmerie", "icone": "🧀", "produit": "fromage", "produits": "fromages",
+        "prend": ["lait"], "matiere": "laits", "par": 3, "prix": 36
+      },
+      "tissage": {
+        "nom": "Métier à tisser", "le": "le métier à tisser", "icone": "🧵", "produit": "tissu", "produits": "tissus",
+        "prend": ["laine"], "matiere": "laines", "par": 2, "prix": 36
+      }
+    }
   }
 }

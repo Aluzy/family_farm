@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { findDevice } from '../engine/devices.js';
 import { wakeSummary } from '../engine/night.js';
 import {
-  formatLitres, formatNumber, formatPercent, formatQty, formatWh,
+  formatCoins, formatLitres, formatNumber, formatPercent, formatQty, formatWh,
 } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
@@ -62,6 +62,10 @@ function orchardFridgeLines(report) {
   const lines = [];
   const fruits = itemsSummary(report.fruits || {});
   if (fruits) lines.push(`<li>🌳 Fruits du verger : <strong>${fruits}</strong></li>`);
+  // Version 1.14 : la vente du commerce.
+  const c = report.commerce;
+  const cdef = c && c.type && DATA.COMMERCE.TYPES[c.type];
+  if (cdef && c.n > 0) lines.push(`<li>${cdef.icone} ${cdef.nom} : <strong class="num">${formatNumber(c.n)}</strong> ${c.n > 1 ? cdef.produits : cdef.produit} vendu${c.n > 1 ? 's' : ''}, <strong class="num">+${formatCoins(c.pieces)} 💰</strong></li>`);
   const f = report.frigo;
   if (f && f.construit) {
     lines.push(`<li>🧊 Frigo : <strong class="num">${formatWh(f.mwh)}</strong> prélevés pour la nuit · ${f.unites} unité${f.unites > 1 ? 's' : ''} au frais</li>`);

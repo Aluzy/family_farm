@@ -30,6 +30,7 @@ import './ui/stage-windows.js';
 import './ui/ferme.js';
 import './ui/elevage.js';
 import './ui/serre-verger-frigo.js';
+import './ui/commerce.js';
 import './ui/cuisine.js';
 import './ui/techno.js';
 import './ui/famille.js';

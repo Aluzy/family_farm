@@ -30,6 +30,7 @@ import { renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes } from './cuisine.js';
 import { renderTechno } from './techno.js';
 import { renderFamille } from './famille.js';
+import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { renderInventaire, subtabsHtml } from './inventaire.js';
 import { renderComptoir } from './marche.js';
@@ -105,6 +106,8 @@ export const MAISON_TABS = [
   { id: 'recettes', label: 'Livre de recette', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
   { id: 'batiments', label: 'Installations', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
+  // version 1.14 : le commerce du niveau 10
+  { id: 'commerce', label: 'Commerce', icon: '🏪', ok: () => isUnlocked(state, 'commerce'), corps: () => renderCommerce() },
 ];
 
 function maisonCurrentTab() {

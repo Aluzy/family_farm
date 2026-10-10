@@ -119,9 +119,27 @@
     "l'inventaire ; la lettre se lit dans l'onglet Notifications.",
     "Le texte ne cite aucun prénom : il vaut pour toutes les familles. Version 1.12 :",
     "`{nom}` y devient le nom de la famille ; `quand.depart` : la lettre arrive au",
-    "début d'une nouvelle partie, une fois la famille installée."
+    "début d'une nouvelle partie, une fois la famille installée. Version 1.14 :",
+    "`quand.niveau` : la lettre arrive au niveau d'expérience donné ; `pieces` : pièces",
+    "versées une seule fois, à l'ouverture de la lettre (sans XP)."
   ],
   "COURRIER": {
+    "notaire_legs": {
+      "quand": { "niveau": 9 },
+      "pieces": 15000,
+      "icone": "📜",
+      "objet": "Une seconde lettre du notaire",
+      "expediteur": "Maître Durand, notaire",
+      "lieu": "Étude de Saint-Aubin",
+      "texte": [
+        "Madame, Monsieur {nom},",
+        "En rangeant les papiers de votre grand-père, j'ai retrouvé une enveloppe à votre nom, cachetée de sa main.",
+        "« Votre grand-père vous a aussi légué 15 000 pièces, faites-en bon usage ! »",
+        "Il savait, je crois, que vous remettriez la ferme debout. Les pièces vous sont versées à l'ouverture de ce courrier.",
+        "Je vous prie d'agréer mes salutations distinguées."
+      ],
+      "signature": "Maître Durand"
+    },
     "notaire_heritage": {
       "quand": { "depart": true },
       "icone": "📜",
@@ -134,7 +152,8 @@
         "Je dois cependant vous prévenir : rien n'y fonctionne plus. Le toit de la maison fuit, le panneau solaire et la pompe ont été vendus, et les champs sont retournés à l'herbe.",
         "Votre grand-père vous a laissé de quoi commencer. Réparez d'abord la maison ; le reste viendra.",
         "Je vous prie d'agréer mes salutations distinguées, et mes vœux de réussite."
-      ]
+      ],
+      "signature": "Maître Durand"
     },
     "cousin_venezuela": {
       "quand": { "debloque": "serre" },

@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, orchardSlotPrice, plantTree, harvestTree, treeStage, treeAt, freeOrchardCases, ripeTrees, migrateOrchard, newTree,
+  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, orchardSlotPrice, plantTree, harvestTree, treeStage, treeAt, freeOrchardCases, ripeTrees, migrateOrchard, newTree, commerceNight, chooseCommerce, upgradeCommerce, setCommerceQuota, commerceCapacity, commerceChoiceCost, commerceBatches, newCommerce,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -1327,7 +1327,7 @@ test('profil : un prénom abîmé dans une sauvegarde retombe sur le rôle à l\
 test('ordre des étapes nocturnes : repas et santé, automatisations, pousse, ponte, paille des moutons et des vaches, préparations, puis péremption en dernier', () => {
   // Arbre v2 : la pluie avant les automatisations, l'entretien automatique
   // après les préparations et avant le bloc nocturne du frigo.
-  assertEqual(NIGHT_STEPS, [feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, autoMaintain, nightPower, fridgeNight, fillSilo, spoil]);
+  assertEqual(NIGHT_STEPS, [feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil]);
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
@@ -7334,7 +7334,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.13.0');
+  assertEqual(GAME_VERSION, '1.14.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -9012,6 +9012,102 @@ test('migration v29 → v30 : chaque arbre reçoit sa case et garde son calendri
   assertEqual(m.verger.arbres.map((t) => [t.case, t.fruits, t.prochaine]), [[0, false, 21], [1, false, 24]]);
   const all = migrate({ v: 29, t: 0, s: old });
   assertEqual(all.version, STATE_VERSION);
+});
+
+/* ---------- version 1.14 (v2, lot 10) : niveaux 9 et 10 ---------- */
+
+function atLevel10() {
+  const s = farm();
+  setInv(s, { conserve: 500 });
+  testSetLevel(s, 10);
+  s.pieces = 100000;
+  return s;
+}
+
+test('version 1.14 : au niveau 9, le notaire verse 15 000 pièces à l\'ouverture, une seule fois, sans XP', () => {
+  const s = farm();
+  testSetLevel(s, 8);
+  deliverMail(s);
+  assert(!mailReceived(s, 'notaire_legs'), 'pas avant le niveau 9');
+  testSetLevel(s, 9);
+  deliverMail(s);
+  assert(mailReceived(s, 'notaire_legs'));
+  const p = s.pieces, xp = s.progression.xp;
+  assertEqual(readMail(s, 'notaire_legs').pieces, 15000);
+  assertEqual([s.pieces - p, s.progression.xp - xp], [15000, 0]);
+  assertEqual(readMail(s, 'notaire_legs').pieces, 0, 'relue : rien de plus');
+  assertEqual(s.pieces - p, 15000);
+});
+
+test('version 1.14 : le commerce se choisit au niveau 10, le changement coûte 5 000', () => {
+  const s = farm();
+  testSetLevel(s, 9);
+  assertEqual(chooseCommerce(s, 'cremerie').ok, false, 'pas avant le niveau 10');
+  const t = atLevel10();
+  assertEqual(commerceChoiceCost(t, 'cremerie'), 0);
+  assertEqual(chooseCommerce(t, 'cremerie').cost, 0);
+  assertEqual([t.commerce.type, t.commerce.quota, commerceCapacity(t)], ['cremerie', 10, 10]);
+  assertEqual(chooseCommerce(t, 'cremerie').ok, false, 'déjà choisi');
+  const p = t.pieces;
+  assertEqual(chooseCommerce(t, 'tissage').ok, true);
+  assertEqual([t.commerce.type, p - t.pieces], ['tissage', 5000]);
+  assertEqual(chooseCommerce(t, 'boulangerie').ok, false);
+});
+
+test('version 1.14 : capacité 10 / 20 / 35 / 50 pour 3 000, 8 000, 20 000', () => {
+  const s = atLevel10();
+  assertEqual(upgradeCommerce(s).ok, false, 'sans commerce');
+  chooseCommerce(s, 'conserverie');
+  const paid = [];
+  for (let i = 0; i < 3; i++) {
+    const p = s.pieces;
+    assert(upgradeCommerce(s).ok);
+    paid.push([p - s.pieces, commerceCapacity(s)]);
+  }
+  assertEqual(paid, [[3000, 20], [8000, 35], [20000, 50]]);
+  assertEqual(s.commerce.quota, 50, 'un quota au maximum suit la capacité');
+  assertEqual(upgradeCommerce(s).ok, false, 'niveau maximum');
+  assertEqual(setCommerceQuota(s, 80).quota, 50);
+  assertEqual(setCommerceQuota(s, -3).quota, 0);
+});
+
+test('version 1.14 : la crèmerie vend chaque nuit 3 laits → 1 fromage à 36, 1 XP par pièce', () => {
+  const s = atLevel10();
+  chooseCommerce(s, 'cremerie');
+  setCommerceQuota(s, 4);
+  setInv(s, { conserve: 500, lait: 14 });
+  const p = s.pieces, xp = s.progression.xp;
+  const r = commerceNight(s);
+  assertEqual([r.n, r.pieces], [4, 144]);
+  assertEqual([countItem(s, 'lait'), s.pieces - p, s.progression.xp - xp], [2, 144, 144]);
+  const r2 = commerceNight(s);
+  assertEqual([r2.n, r2.pieces], [0, 0], 'moins de 3 laits : rien');
+});
+
+test('version 1.14 : la conserverie prend les légumes qui périment le plus tôt, après le repas', () => {
+  const s = atLevel10();
+  chooseCommerce(s, 'conserverie');
+  setCommerceQuota(s, 1);
+  setInv(s, { conserve: 500 });
+  addItem(s, 'patate', 4);
+  addItem(s, 'tomate', 4);
+  lotsOf(s, 'tomate')[0].nightsLeft = 1;
+  const r = commerceNight(s);
+  assertEqual([r.n, r.pieces, countItem(s, 'tomate'), countItem(s, 'patate')], [1, 18, 0, 4]);
+  // dans la nuit complète, la famille mange d'abord ; le rapport du réveil compte la vente
+  addItem(s, 'patate', 40);
+  const rep = sleepOnce(s);
+  assertEqual([rep.commerce.type, rep.commerce.n, rep.commerce.pieces], ['conserverie', 1, 18]);
+});
+
+test('migration v30 → v31 : un commerce vide', () => {
+  const s = farm();
+  const old = JSON.parse(JSON.stringify(s));
+  old.version = 30;
+  delete old.commerce;
+  const m = migrate({ v: 30, t: 0, s: old });
+  assertEqual(m.commerce, newCommerce());
+  assertEqual(m.version, STATE_VERSION);
 });
 
 export const results = runTests();

@@ -275,6 +275,7 @@ export function mailDue(state, def) {
   const q = def.quand || {};
   if (q.depart) return !!(state.departV2 && state.famille && state.famille.configuree);
   if (q.debloque) return !!state.campagne && isUnlocked(state, q.debloque);
+  if (q.niveau) return levelReached(state) >= q.niveau; // version 1.14
   return false;
 }
 
@@ -299,7 +300,14 @@ export function readMail(state, id) {
   const l = mailbox(state).find((x) => x.id === id);
   if (!l || !DATA.COURRIER[id]) return fail('Lettre introuvable.');
   l.lu = true;
-  return { ok: true, id };
+  // Version 1.14 : les pièces d'une lettre sont versées une fois, à l'ouverture (sans XP).
+  const pieces = DATA.COURRIER[id].pieces || 0;
+  if (pieces && !l.verse) {
+    state.pieces += pieces;
+    l.verse = true;
+    return { ok: true, id, pieces };
+  }
+  return { ok: true, id, pieces: 0 };
 }
 
 // Le joueur a vu l'écran de fin du chapitre : on l'enlève de la file.

@@ -7,7 +7,7 @@ troupeau (poules, moutons, vaches), verger, serre, cuisine, four et réfrigérat
 La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
-- **Version** : 1.13.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
+- **Version** : 1.14.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi (autres
   documents : voir « Documentation » plus bas)
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
