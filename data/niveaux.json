@@ -27,7 +27,7 @@
       "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },
       "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe, et le Livre de recette" },
-      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 cases d'herbe de plus à labourer, pour le blé" },
+      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches" },
       "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
       "//paturage": "'paturage' et 'moutons' : identifiants historiques (l'ancien Pâturage).",
       "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
@@ -53,7 +53,7 @@
     "AUTO": 50,
     "//TUILES": [
       "Version 1.9 (v2, lot 5) : plafond de tuiles de terre par niveau (index 0 =",
-      "niveau 1), Zone de culture et Champ ensemble. Au plafond, la houe ne laboure",
+      "niveau 1), toutes les terres de la carte ensemble (version 1.15). Au plafond, la houe ne laboure",
       "plus (on peut toujours reboucher une terre vide pour labourer ailleurs)."
     ],
     "TUILES": [6, 12, 20, 32, 48, 64, 64, 64, 64, 64],

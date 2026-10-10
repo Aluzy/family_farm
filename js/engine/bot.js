@@ -10,8 +10,8 @@ import { planMeal } from './family.js';
 import { actionCost, energyLevel } from './stamina.js';
 import { averageHappiness, dishHappiness } from './ville.js';
 import {
-  allPlots, buildSerre, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isMature, plant, plotAtCase, seedItem, seedStock,
-  serreUpgradeCost, soilCount, toggleBolting, upgradeSerre, water, zone2Open, zoneGrid,
+  allPlots, buildSerre, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isArable, isMature, plant, plotAtTile, seedItem, seedStock,
+  serreUpgradeCost, soilCount, toggleBolting, upgradeSerre, water,
 } from './crops.js';
 import {
   animalPrice, buildPaturage, buildPoulailler, buildSilo, buyAnimal, buyCow, buyPasture, buySheep, canFeedHen, cowCount, freeCowPlaces,
@@ -128,19 +128,30 @@ export function botFarm(state) {
   for (const p of thirsty) water(state, p.id);
 }
 
-// Version 1.9 : avec la houe, laboure les cases d'herbe jusqu'au plafond du niveau (la
-// Zone de culture d'abord, puis le Champ), en gardant de l'énergie pour trois récoltes.
+// Tuiles labourables, des plus proches de l'ancienne Zone de culture aux plus lointaines
+// (version 1.15 : le joueur automatique cultive d'un seul tenant).
+let botTilesCache = null;
+export function botTiles() {
+  if (botTilesCache) return botTilesCache;
+  const W = DATA.TERRAIN.LARGEUR, Z = DATA.TERRAIN.ZONES[1];
+  const tiles = [];
+  for (let t = 0; t < W * DATA.TERRAIN.HAUTEUR; t++) if (isArable(t)) tiles.push(t);
+  const d = (t) => Math.hypot((t % W) - (Z.X + 2), Math.floor(t / W) - (Z.Y + 2.5));
+  botTilesCache = tiles.sort((a, b) => d(a) - d(b) || a - b);
+  return botTilesCache;
+}
+
+// Version 1.9 : avec la houe, laboure des tuiles d'herbe jusqu'au plafond du niveau, en
+// gardant de l'énergie pour trois récoltes.
 export function botHoe(state) {
   if (!hasHoe(state)) return;
   const reserve = actionCost(state, 'recolter') * 3;
-  for (const zone of zone2Open(state) ? [1, 2] : [1]) {
-    for (let c = 0; c < zoneGrid(zone).cases; c++) {
-      if (plotAtCase(state, zone, c)) continue;
-      if (state.energie < reserve + actionCost(state, 'labourer')) return;
-      const st = hoeStatus(state, zone, c);
-      if (!st.ok) return;
-      hoe(state, zone, c);
-    }
+  for (const t of botTiles()) {
+    if (plotAtTile(state, t)) continue;
+    if (state.energie < reserve + actionCost(state, 'labourer')) return;
+    const st = hoeStatus(state, t);
+    if (!st.ok) return;
+    hoe(state, t);
   }
 }
 

@@ -6,6 +6,28 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
+> `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
+> sur la Zone de culture.
+> - **Plus de zones fixes** : la houe laboure **n'importe quelle tuile d'herbe foncée** de la
+>   carte. Pas sur les chemins, l'eau, les clôtures, l'herbe claire, les pierres, les arbres
+>   et les arbustes (couches de la carte), ni sous un bâtiment, ni **à moins de 8 tuiles du
+>   Poulailler**, ni aux abords de l'**Étable** et de son enclos (3 tuiles), du **Moulin** et de
+>   la **Serre** (3 tuiles), de la Maison et du Silo (1 tuile), ni dans le **Verger** (ses
+>   12 emplacements et 1 tuile autour, et 2 tuiles autour de son panneau). 953 tuiles sur
+>   4 104. Les fleurs et touffes d'herbe n'empêchent rien : elles disparaissent sous la terre.
+> - Une parcelle porte le **numéro de sa tuile** (`case` = rangée × 72 + colonne). Le plafond de
+>   tuiles par niveau ne change pas (6 … 64). Le **Champ** n'est plus une zone à part.
+> - **Carte** : la houe en main, un appui sur l'herbe laboure, sur une terre vide rebouche ;
+>   ailleurs la houe dit pourquoi elle ne laboure pas. Sans la houe, un appui sur l'herbe
+>   labourable ouvre la fenêtre de la Zone de culture (la houe y est). La terre se dessine
+>   avec `assets/terre_bords.png` (`scripts/carte/terre_bords.py`) : les 16 tuiles de la
+>   double grille, herbe transparente, posées sur n'importe quelle herbe.
+> - **Sauvegarde (format 32)** : les parcelles de la Zone de culture et du Champ prennent pour
+>   case le numéro de la tuile où elles étaient dessinées ; celles du Champ rejoignent la
+>   liste unique.
+> - Le joueur automatique laboure les tuiles les plus proches de l'ancienne Zone de culture.
+>
 > **v36 (jeu 1.14) : niveaux 9 et 10** (lot 10 de la v2, `js/engine/commerce.js`,
 > `js/ui/commerce.js`, `DATA.COMMERCE` dans `data/niveaux.json`). Cette note **fait foi**.
 > - **Niveau 9** : la lettre `notaire_legs` (« Une seconde lettre du notaire ») arrive ; ses
