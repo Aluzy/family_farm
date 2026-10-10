@@ -43,15 +43,16 @@
   // des quatre qui sont labourées. Bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche,
   // 1 bas-droite. La limite herbe / terre des tuiles passe au milieu de la tuile, donc
   // exactement au bord des cases : une case labourée reste dans sa case, et une case d'herbe
-  // entre deux terres reste de l'herbe. Les deux diagonales (6 et 9) n'ont pas de tuile :
-  // elles se composent de deux coins.
+  // entre deux terres reste de l'herbe. Les deux diagonales (6 et 9) n'ont pas de tuile
+  // dans le jeu : elles sont dans terre_diagonales.png (scripts/carte/terre_diagonales.py),
+  // deux coins d'herbe arrondis symétriques par rapport à la diagonale de la tuile.
   const ZONE_TILES = {
     herbe: 2415, terre: 1167,
     coins: {
       1: 1612, 2: 1614, 3: 1613, 4: 1762, 5: 1687, 7: 1539,
       8: 1764, 10: 1689, 11: 1537, 12: 1763, 13: 1389, 14: 1387, 15: 1688,
     },
-    diagonales: { 6: [4, 2], 9: [8, 1] },
+    diagonales: { 6: 0, 9: 1 },              // case de terre_diagonales.png
     // bordures dessinées par la carte autour de la terre d'origine : retirées des zones
     bordures: new Set([1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764]),
   };
@@ -301,6 +302,7 @@
           L.spritesheet('tree_' + a, v('basic_' + a + '.png'), TREE_FRAME);
         }
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
+        L.image('terre_diag', v('terre_diagonales.png'));
       }
 
       create() {
@@ -703,19 +705,18 @@
         const tw = raw.tilewidth, th = raw.tileheight;
         const cols = set.columns || Math.floor(img.width / tw);
         const src = (gid) => { const n = gid - set.firstgid; return [(n % cols) * tw, Math.floor(n / cols) * th]; };
+        const diag = this.has('terre_diag') ? this.textures.get('terre_diag').getSourceImage() : null;
         for (const d of dual) {
-          const pair = ZONE_TILES.diagonales[d.m];
-          if (!pair) {
+          const k = ZONE_TILES.diagonales[d.m];
+          if (k === undefined) {
             const [sx, sy] = src(ZONE_TILES.coins[d.m]);
             ctx.drawImage(img, sx, sy, tw, th, d.x, d.y, tw, th);
-            continue;
+          } else if (diag) {
+            ctx.drawImage(diag, k * tw, 0, tw, th, d.x, d.y, tw, th);
+          } else {
+            const [sx, sy] = src(ZONE_TILES.coins[15]);   // image absente : de la terre
+            ctx.drawImage(img, sx, sy, tw, th, d.x, d.y, tw, th);
           }
-          // Diagonale : la première tuile entière, puis le quart opposé de la seconde.
-          const [ax, ay] = src(ZONE_TILES.coins[pair[0]]);
-          ctx.drawImage(img, ax, ay, tw, th, d.x, d.y, tw, th);
-          const [bx, by] = src(ZONE_TILES.coins[pair[1]]);
-          const qx = pair[1] & 1 ? tw / 2 : 0, qy = tw / 2;
-          ctx.drawImage(img, bx + qx, by + qy, tw / 2, th / 2, d.x + qx, d.y + qy, tw / 2, th / 2);
         }
       }
 

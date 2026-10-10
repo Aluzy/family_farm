@@ -25,7 +25,9 @@
 > - **Terre des zones (double grille)** : les tuiles de terre se posent sur une grille décalée
 >   d'une demi-case, chacune centrée sur un coin commun à quatre cases (`ZONE_TILES`). Une case
 >   labourée reste dans sa case : deux terres séparées par une case d'herbe, ou en diagonale,
->   ne se rejoignent plus par un pont de terre.
+>   ne se rejoignent plus par un pont de terre. Deux terres en diagonale se touchent par une
+>   tuile faite pour ça (`assets/terre_diagonales.png`, `scripts/carte/terre_diagonales.py`) :
+>   deux coins d'herbe arrondis, symétriques par rapport à la diagonale de la tuile.
 > - **Sauvegarde (format 30)** : chaque arbre reçoit sa case, `fruits: false` et `prochaine`
 >   tirée de l'ancien calendrier (MATURITÉ-ième nuit puis toutes les 3 nuits).
 >
