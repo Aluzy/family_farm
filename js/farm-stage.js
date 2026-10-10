@@ -37,17 +37,22 @@
   const MAP = { key: 'map_sp', json: 'carte_printemps.json', tiles: 'tiles_sp', image: 'farm_spring_summer.png' };
 
   // Version 1.9 (la houe) : tuiles du jeu de tuiles pour les zones de culture. Toute la
-  // zone (et la rangée de cases qui l'entoure) est d'abord de l'herbe foncée ; une case
-  // labourée devient de la terre, et les cases d'herbe qui la touchent (côtés et
-  // diagonales) prennent une tuile « mi-herbe mi-terre ». Le choix se fait par les quatre
-  // coins de la case d'herbe : un coin est de la terre si une des trois autres cases qui
-  // le partagent est labourée. Bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche, 1 bas-droite.
+  // zone (et la rangée de cases qui l'entoure) est de l'herbe foncée. Version 1.13 : la
+  // terre se pose sur une grille décalée d'une demi-case (« double grille ») : chaque tuile
+  // de terre est centrée sur un coin commun à quatre cases, et son dessin dépend de celles
+  // des quatre qui sont labourées. Bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche,
+  // 1 bas-droite. La limite herbe / terre des tuiles passe au milieu de la tuile, donc
+  // exactement au bord des cases : une case labourée reste dans sa case, et une case d'herbe
+  // entre deux terres reste de l'herbe. Les deux diagonales (6 et 9) n'ont pas de tuile
+  // dans le jeu : elles sont dans terre_diagonales.png (scripts/carte/terre_diagonales.py),
+  // deux coins d'herbe arrondis symétriques par rapport à la diagonale de la tuile.
   const ZONE_TILES = {
     herbe: 2415, terre: 1167,
     coins: {
-      0: 2415, 1: 1612, 2: 1614, 3: 1613, 4: 1762, 5: 1687, 6: 1688, 7: 1539,
-      8: 1764, 9: 1688, 10: 1689, 11: 1537, 12: 1763, 13: 1389, 14: 1387, 15: 1688,
+      1: 1612, 2: 1614, 3: 1613, 4: 1762, 5: 1687, 7: 1539,
+      8: 1764, 10: 1689, 11: 1537, 12: 1763, 13: 1389, 14: 1387, 15: 1688,
     },
+    diagonales: { 6: 0, 9: 1 },              // case de terre_diagonales.png
     // bordures dessinées par la carte autour de la terre d'origine : retirées des zones
     bordures: new Set([1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764]),
   };
@@ -297,6 +302,7 @@
           L.spritesheet('tree_' + a, v('basic_' + a + '.png'), TREE_FRAME);
         }
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
+        L.image('terre_diag', v('terre_diagonales.png'));
       }
 
       create() {
@@ -594,6 +600,7 @@
         if (!raw) return null;
         const W = raw.width, H = raw.height;
         const over = new Map();
+        const dual = [];
         const zones = [[1, this.objects.zone_culture], [2, this.objects.zone_culture_2]];
         for (const [id, o] of zones) {
           if (!o) continue;
@@ -605,19 +612,19 @@
             for (let c = -1; c <= cols; c++) {
               const mc = c0 + c, mr = r0 + r;
               if (mc < 0 || mr < 0 || mc >= W || mr >= H) continue;
-              let gid;
-              if (dirt(c, r)) gid = ZONE_TILES.terre;
-              else {
-                const m = ((dirt(c - 1, r - 1) || dirt(c, r - 1) || dirt(c - 1, r)) ? 8 : 0)
-                  | ((dirt(c, r - 1) || dirt(c + 1, r - 1) || dirt(c + 1, r)) ? 4 : 0)
-                  | ((dirt(c - 1, r) || dirt(c - 1, r + 1) || dirt(c, r + 1)) ? 2 : 0)
-                  | ((dirt(c + 1, r) || dirt(c, r + 1) || dirt(c + 1, r + 1)) ? 1 : 0);
-                gid = ZONE_TILES.coins[m];
-              }
-              over.set(mr * W + mc, gid);
+              over.set(mr * W + mc, ZONE_TILES.herbe);
+            }
+          }
+          // Tuiles de terre de la double grille : une par coin de case (i, j), posée une
+          // demi-case plus haut et plus à gauche que la case (i, j).
+          for (let j = 0; j <= rows; j++) {
+            for (let i = 0; i <= cols; i++) {
+              const m = (dirt(i - 1, j - 1) ? 8 : 0) | (dirt(i, j - 1) ? 4 : 0) | (dirt(i - 1, j) ? 2 : 0) | (dirt(i, j) ? 1 : 0);
+              if (m) dual.push({ x: (c0 + i) * T - T / 2, y: (r0 + j) * T - T / 2, m });
             }
           }
         }
+        over.dual = dual;
         return over;
       }
 
@@ -631,13 +638,11 @@
         const key = [...terre[1]].sort((a, b) => a - b).join() + '|' + [...terre[2]].sort((a, b) => a - b).join();
         if (key === this.zoneKey) return;
         this.zoneKey = key;
-        const before = this.zoneOver || new Map();
         const after = this.zoneGround(terre);
         if (!after) return;
-        const changed = new Set();
-        for (const [i, gid] of after) if (before.get(i) !== gid) changed.add(i);
         this.zoneOver = after;
-        if (changed.size) this.repaintCells(changed);
+        // La terre chevauche les cases : toute la zone (et son bord) est repeinte.
+        this.repaintCells(new Set(after.keys()));
       }
 
       repaintCells(cells) {
@@ -691,6 +696,28 @@
           ctx.restore();
         });
         ctx.globalAlpha = 1;
+        if (over && sol && over.dual) this.drawZoneDirt(ctx, raw, set, img, over.dual);
+      }
+
+      // Version 1.13 : la terre des zones (double grille, voir ZONE_TILES), sur le sol et
+      // sous les couches du dessus.
+      drawZoneDirt(ctx, raw, set, img, dual) {
+        const tw = raw.tilewidth, th = raw.tileheight;
+        const cols = set.columns || Math.floor(img.width / tw);
+        const src = (gid) => { const n = gid - set.firstgid; return [(n % cols) * tw, Math.floor(n / cols) * th]; };
+        const diag = this.has('terre_diag') ? this.textures.get('terre_diag').getSourceImage() : null;
+        for (const d of dual) {
+          const k = ZONE_TILES.diagonales[d.m];
+          if (k === undefined) {
+            const [sx, sy] = src(ZONE_TILES.coins[d.m]);
+            ctx.drawImage(img, sx, sy, tw, th, d.x, d.y, tw, th);
+          } else if (diag) {
+            ctx.drawImage(diag, k * tw, 0, tw, th, d.x, d.y, tw, th);
+          } else {
+            const [sx, sy] = src(ZONE_TILES.coins[15]);   // image absente : de la terre
+            ctx.drawImage(img, sx, sy, tw, th, d.x, d.y, tw, th);
+          }
+        }
       }
 
       // Tuiles animées de la carte (l'eau) : les animations sont celles de Tiled, lues dans
