@@ -4,6 +4,7 @@ import { moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { formatCoins, formatQty } from '../engine/format.js';
 import { invTab, state } from './store.js';
+import { eatButton } from './energie.js';
 import { applyResult } from './game-actions.js';
 import { renderFridgeTab } from './serre-verger-frigo.js';
 import { showToast } from './toasts.js';
@@ -46,13 +47,18 @@ function fridgeInButtons(item) {
         <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo">🧊 Tout</button>`;
 }
 
+// Boutons d'une case : manger (version 1.8, un aliment) et ranger au frigo.
+function itemButtons(item) {
+  return `${DATA.items[item].edible ? eatButton(item) : ''}${fridgeInButtons(item)}`;
+}
+
 // Une case a-t-elle une ligne d'état : ce qui périt cette nuit, ou le blé du Silo ?
 function hasStatus(item) {
   return (isPerishable(item) && expiringTonight(item) > 0) || (item === DATA.SILO.ITEM && state.silo.construit);
 }
 
 // Une case de l'inventaire : en haut, l'icône dans son cadre et, à sa droite,
-// « Tomate x3 » puis l'énergie et le prix ; dessous, une ligne d'état (ce qui
+// « Tomate x3 » puis les calories et le prix ; dessous, une ligne d'état (ce qui
 // périt cette nuit, ou le blé du Silo) et les boutons du frigo.
 // Deux cases côte à côte ont les mêmes lignes, vides au besoin, pour garder la
 // même taille et le même alignement ; la ligne d'état disparaît quand aucune des
@@ -62,8 +68,8 @@ function inventoryCard(item, withActions, withStatus) {
   const n = countItem(state, item);
   const soon = isPerishable(item) ? expiringTonight(item) : 0;
   const info = [
-    it.energie && it.edible ? `⚡ ${it.energie}` : '',
-    it.energie && !it.edible ? `Ingrédient ⚡ ${it.energie}` : '',
+    it.energie && it.edible ? `🍽️ ${it.energie} cal` : '',
+    it.energie && !it.edible ? `Ingrédient 🍽️ ${it.energie} cal` : '',
     `💰 ${formatCoins(it.prix)}`,
   ].filter(Boolean).join(' · ');
   let status = '';
@@ -82,7 +88,7 @@ function inventoryCard(item, withActions, withStatus) {
         </span>
       </div>
       ${withStatus ? `<span class="inv-status">${status}</span>` : ''}
-      ${withActions ? `<span class="inv-actions">${fridgeInButtons(item)}</span>` : ''}
+      ${withActions ? `<span class="inv-actions">${itemButtons(item)}</span>` : ''}
     </div>`;
 }
 
@@ -158,8 +164,8 @@ export function renderInventaire() {
   }
   const items = Object.keys(DATA.items).filter((k) => tab.match(k) && countItem(state, k) > 0);
   const soon = Object.keys(expiringSoon(state)).length > 0 && tab.id === 'frais';
-  // La ligne des boutons du frigo n'existe que si au moins une case en a.
-  const withActions = items.some((k) => fridgeInButtons(k) !== '');
+  // La ligne des boutons n'existe que si au moins une case en a.
+  const withActions = items.some((k) => itemButtons(k) !== '');
   return `
     <h2>📦 Inventaire</h2>
     ${subtabsHtml(tabs, tab.id, 'inv-tab')}

@@ -181,7 +181,7 @@
   "//PLATS_RETIRES": [
     "Plats dont la recette a été retirée en version 1.1 (ils demandaient de la",
     "viande, qui ne se produit plus). Une ancienne sauvegarde peut encore en",
-    "avoir : ils restent des plats (mangeables, vendables, bonus de santé), avec",
+    "avoir : ils restent des plats (mangeables, vendables, bonheur des repas cuisinés), avec",
     "l'énergie et le prix qu'ils avaient, mais ne se préparent plus et ne",
     "s'achètent pas. Ajoutés à `items` par registerDishItems()."
   ],

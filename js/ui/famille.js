@@ -3,11 +3,12 @@ import { memberHappiness } from '../engine/ville.js';
 import { happinessGaugeHtml } from './ville.js';
 import { EPS } from '../engine/base.js';
 import {
-  addMember, addPet, averageHealth, careCost, cleanFirstName, familyNeed, findMember, findPet, heal,
+  addMember, addPet, cleanFirstName, familyNeed, findMember, findPet,
   memberName, memberPortrait, memberRemovalBlock, memberRoom, petIcon, petName, petRoom, pets, planMeal,
-  portraitEmoji, productivity, removeMember, removePet, setMemberProfile, setPetProfile,
+  portraitEmoji, removeMember, removePet, setMemberProfile, setPetProfile,
 } from '../engine/family.js';
-import { escapeHtml, formatCoins, formatNumber, formatPercent } from '../engine/format.js';
+import { escapeHtml, formatNumber } from '../engine/format.js';
+import { energyCardHtml } from './energie.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { persistState } from './storage.js';
@@ -16,7 +17,7 @@ import { refresh } from './render.js';
 import { renderAutonomyCard } from './chapitres.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
-import { canPay, closeModal } from './common.js';
+import { closeModal } from './common.js';
 
 /* ---------- Famille ---------- */
 
@@ -28,27 +29,14 @@ export function memberNameHtml(id) {
   return escapeHtml(memberName(state, id));
 }
 
-function healthBarHtml(sante) {
-  const cls = sante < 50 ? ' bad' : sante < 80 ? ' warn' : '';
-  return `<span class="bar" role="progressbar" aria-label="Santé" aria-valuemin="0" aria-valuemax="${DATA.FAMILY.SANTE_MAX}" aria-valuenow="${Math.round(sante)}"><span class="bar-fill${cls}" style="width:${sante}%"></span></span>`;
-}
-
 function portraitCard(m) {
-  const cost = careCost(state);
-  const sick = m.malade
-    ? `<span class="alert">🤒 Malade : ne compte plus dans la productivité.</span>
-       <button type="button" class="btn danger" data-action="heal" data-id="${m.id}"${canPay(cost) ? '' : ' disabled'}>Soigner (${formatCoins(cost)} 💰)</button>`
-    : '';
   return `
     <article class="card portrait">
-      <span class="portrait-emoji" aria-hidden="true">${m.malade ? '🤒' : memberPortrait(state, m.id) || '🙂'}</span>
+      <span class="portrait-emoji" aria-hidden="true">${memberPortrait(state, m.id) || '🙂'}</span>
       <span class="card-title"><span class="member-name">${memberNameHtml(m.id)}</span></span>
-      <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} énergie/jour</span>
-      ${healthBarHtml(m.sante)}
-      <span class="muted">Santé : <span class="num">${Math.round(m.sante)} / ${DATA.FAMILY.SANTE_MAX}</span></span>
+      <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} calories/jour</span>
       ${happinessGaugeHtml(memberHappiness(m))}
       <span class="muted">😊 Bonheur : <span class="num">${memberHappiness(m)} / ${DATA.VILLE.BONHEUR.MAX}</span></span>
-      ${sick}
       <button type="button" class="btn" data-action="member-edit" data-id="${m.id}" aria-label="Modifier ${m.enfant ? 'cet enfant' : 'cet adulte'} : prénom et apparence">✏️ Modifier</button>
     </article>`;
 }
@@ -79,12 +67,12 @@ function openMemberModal(id) {
     depart: false,
   };
   // Version 1.2 : le membre peut quitter la famille, sauf s'il est le dernier, le
-  // dernier adulte, ou malade (le moteur dit pourquoi).
+  // dernier adulte (le moteur dit pourquoi).
   const blocage = memberRemovalBlock(state, m.id);
   const depart = blocage
     ? `<span class="muted">${escapeHtml(blocage)}</span>`
     : `<button type="button" class="btn" data-action="member-remove" id="member-remove">Retirer de la famille</button>
-       <span class="muted">Le besoin de la famille baisse de ${DATA.FAMILY.AJ[age]} énergie par jour.</span>`;
+       <span class="muted">Le besoin de la famille baisse de ${DATA.FAMILY.AJ[age]} calories par jour.</span>`;
   const genres = P.GENRES.map((g) => `<button type="button" class="btn choice-btn" data-action="member-genre" data-genre="${g}" aria-pressed="false"><span class="choice-emoji" aria-hidden="true"></span><span>${GENRE_LABELS[age][g]}</span></button>`).join('');
   const teints = P.TEINTS.map((_, t) => `<button type="button" class="btn swatch-btn" data-action="member-teint" data-teint="${t}" aria-pressed="false" aria-label="${TEINT_LABELS[t]}" title="${TEINT_LABELS[t]}"></button>`).join('');
   document.getElementById('modal-root').innerHTML = `
@@ -201,7 +189,7 @@ function removeMemberFromModal() {
   closeModal();
   persistState();
   refresh();
-  showToast(`👋 ${nom} a quitté la famille. Besoin : ${formatNumber(result.besoin)} énergie par jour.`);
+  showToast(`👋 ${nom} a quitté la famille. Besoin : ${formatNumber(result.besoin)} calories par jour.`);
 }
 
 /* -- version 1.2 : animaux de compagnie (chiens et chats) -- */
@@ -337,8 +325,8 @@ function renderFamilyAdd() {
   const full = memberRoom(state) === 0;
   return `
     <div class="row family-add">
-      <button type="button" class="btn" data-action="member-add" data-age="adulte"${full ? ' disabled' : ''}>➕ Un adulte <span class="muted">(+${AJ.adulte} énergie/jour)</span></button>
-      <button type="button" class="btn" data-action="member-add" data-age="enfant"${full ? ' disabled' : ''}>➕ Un enfant <span class="muted">(+${AJ.enfant} énergie/jour)</span></button>
+      <button type="button" class="btn" data-action="member-add" data-age="adulte"${full ? ' disabled' : ''}>➕ Un adulte <span class="muted">(+${AJ.adulte} calories/jour)</span></button>
+      <button type="button" class="btn" data-action="member-add" data-age="enfant"${full ? ' disabled' : ''}>➕ Un enfant <span class="muted">(+${AJ.enfant} calories/jour)</span></button>
     </div>
     <p class="muted">${full ? `La famille est au complet (${C.MEMBRES_MAX} membres). ` : ''}Pour retirer quelqu'un, ouvre « Modifier » sur sa fiche.</p>`;
 }
@@ -364,28 +352,22 @@ export function renderFamille() {
   const plan = state.repas || planMeal(state);
   const shown = Math.min(plan.energie, plan.besoin);
   const short = plan.energie + EPS < plan.besoin;
-  const prod = productivity(state);
-  const avg = averageHealth(state);
   return `
     <h2>👨‍👩‍👧‍👦 Famille</h2>
-    <p class="muted family-count"><span class="num">${state.famille.membres.length} / ${DATA.FAMILY.COMPOSITION.MEMBRES_MAX}</span> membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> énergie par jour</p>
+    <p class="muted family-count"><span class="num">${state.famille.membres.length} / ${DATA.FAMILY.COMPOSITION.MEMBRES_MAX}</span> membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> calories par jour</p>
     <div class="portraits">${state.famille.membres.map(portraitCard).join('')}</div>
     ${renderFamilyAdd()}
     ${renderPets()}
     ${renderAutonomyCard()}
     <div class="cards">
+      ${energyCardHtml()}
       <div class="card">
-        <span class="card-title"><span>🍽️ ${pris ? `Repas de ${DATA.TIME.MEAL_HOUR} h : énergie mangée` : `Repas de ${DATA.TIME.MEAL_HOUR} h : énergie prévue`}</span>${pris ? '<span class="chip">✅ pris</span>' : ''}</span>
+        <span class="card-title"><span>🍽️ ${pris ? `Repas de ${DATA.TIME.MEAL_HOUR} h : calories mangées` : `Repas de ${DATA.TIME.MEAL_HOUR} h : calories prévues`}</span>${pris ? '<span class="chip">✅ pris</span>' : ''}</span>
         <span class="big">${formatNumber(shown)} / ${formatNumber(plan.besoin)}</span>
-        <span class="bar" role="progressbar" aria-label="${pris ? 'Énergie mangée' : 'Énergie prévue'}" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
+        <span class="bar" role="progressbar" aria-label="${pris ? 'Calories mangées' : 'Calories prévues'}" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
         <span class="muted">${pris
-          ? (short ? '⚠️ Le besoin n\'a pas été couvert : la santé a baissé.' : 'Le besoin a été couvert : la santé est remontée.')
-          : (short ? '⚠️ Le besoin ne sera pas couvert : la santé va baisser.' : 'Le besoin sera couvert : la santé remonte.')} La famille mange à ${DATA.TIME.MEAL_HOUR} h, ou au coucher si elle dort avant.</span>
-      </div>
-      <div class="card">
-        <span class="card-title"><span>⚙️ Productivité</span></span>
-        <span class="big">${formatPercent(prod)}</span>
-        <span class="muted">Santé moyenne : <span class="num">${formatNumber(avg)}</span> (un malade compte pour 0). Elle ne s'applique qu'aux actions au clic, comme la récolte.</span>
+          ? (short ? `⚠️ Le besoin n'a pas été couvert : ton énergie remontera moins cette nuit.` : `Le besoin a été couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)
+          : (short ? `⚠️ Le besoin ne sera pas couvert : ton énergie remontera moins cette nuit.` : `Le besoin sera couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)} La famille mange à ${DATA.TIME.MEAL_HOUR} h, ou au coucher si elle dort avant.</span>
       </div>
     </div>`;
 }
@@ -414,7 +396,7 @@ registerActions({
     const result = applyResult(addMember(state, enfant));
     if (result.ok) {
       persistState();
-      showToast(`👋 Un ${enfant ? 'enfant' : 'adulte'} rejoint la famille. Besoin : ${formatNumber(result.besoin)} énergie par jour.`);
+      showToast(`👋 Un ${enfant ? 'enfant' : 'adulte'} rejoint la famille. Besoin : ${formatNumber(result.besoin)} calories par jour.`);
       openMemberModal(result.id); // tout de suite : son prénom et son apparence
     }
   },
@@ -440,8 +422,5 @@ registerActions({
   },
   'pet-remove': () => {
     removePetFromModal();
-  },
-  'heal': (target) => {
-    applyResult(heal(state, target.dataset.id));
   },
 });

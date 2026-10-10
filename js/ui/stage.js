@@ -1,5 +1,4 @@
 import { DATA } from '../engine/catalog.js';
-import { currentSeason } from '../engine/seasons.js';
 import { findDevice } from '../engine/devices.js';
 import { allPlots, isMature, maxStage, plotZone, zone2Plots } from '../engine/crops.js';
 import { isTreeAdult } from '../engine/orchard.js';
@@ -121,7 +120,7 @@ function parcellesAFaire(lieu, quoi, zone) {
 
 // Nombre de choses à faire par lieu de la carte : la pastille des étiquettes. Rien de
 // nouveau : ce sont les alertes de getNotifications() et de alertSnapshot(), rangées là
-// où elles se règlent, plus les malades à soigner (Maison › Famille).
+// où elles se règlent.
 function aFaireParLieu() {
   const n = { maison: 0, etable: 0, poulailler: 0, moulin: 0, serre: 0, verger: 0, zone: 0, zone2: 0 };
   const snap = alertSnapshot(state);
@@ -131,7 +130,6 @@ function aFaireParLieu() {
   }
   if (snap.batteriesVides) n.maison += 1;
   if (snap.frigoCoupe) n.maison += 1;
-  n.maison += state.famille.membres.filter((m) => m.malade).length;
   for (const a of getNotifications(state)) {
     if (a.type === 'poules') n.poulailler += a.nombre;
     if (a.type === 'tonte') n.etable += a.nombre;
@@ -270,7 +268,7 @@ export function stageModel() {
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
   // bêtes dans l'enclos et des poules en liberté autour du Poulailler.
   const animaux = { vache: state.paturage.vaches.length, mouton: state.paturage.moutons.length, poule: state.poulailler.poules };
-  return { season: currentSeason(state), heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, serre, interieur: stageInterior, arbres, batiments, animaux };
+  return { heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, serre, interieur: stageInterior, arbres, batiments, animaux };
 }
 
 // Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La

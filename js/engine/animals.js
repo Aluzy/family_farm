@@ -1,10 +1,12 @@
 import { DATA } from './catalog.js';
-import { EPS, nextRandom } from './base.js';
+import { EPS } from './base.js';
 import { fail, growthPrice, spend } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
-import { newNightStats, productivity } from './family.js';
+import { newNightStats } from './family.js';
 import { techFlag } from './techtree.js';
 import { bumpCounter } from './campaign.js';
+import { gainActionXp } from './levels.js';
+import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
 
@@ -189,15 +191,13 @@ export function hensToFeed(state) {
 // une probabilité égale à la productivité (tirage du générateur de l'état) : s'il
 // rate, rien n'est retiré du blé et la poule reste à nourrir. Le blé est pris
 // d'abord dans l'inventaire (il y périme), puis dans le Silo.
-// Lot 7 : `auto` = true pour le nourrissage automatique du niveau 5, jamais
-// réduit par la productivité.
+// Lot 7 : `auto` = true pour le nourrissage automatique du niveau 5. (Version 1.8 :
+// plus de productivité, une poule nourrie à la main l'est toujours.)
 export function feedHen(state, auto = false) {
   const p = state.poulailler;
   if (p.poules <= 0) return fail('Aucune poule à nourrir.');
   if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
   if (!canFeedHen(state)) return fail('Pas assez de blé.');
-  const prod = auto ? 100 : productivity(state);
-  if (prod < 100 && Math.floor(nextRandom(state) * 100) >= prod) return { ok: true, compte: false };
   if (!(p.restes > 0)) {
     // Un blé entamé : il nourrit cette poule et laisse des rations pour les
     // suivantes. Ration équilibrée (arbre v2) : 2 blé pour 5 poules si possible.
@@ -257,6 +257,7 @@ export function layEggs(state) {
   const def = DATA.ANIMAUX.poule;
   const eggs = p.nourries * def.oeufsParNuit;
   if (eggs > 0) addItem(state, def.produit, eggs);
+  gainActionXp(state, 'oeuf', eggs); // version 1.7
   state.nuit.oeufs = eggs;
   p.nourries = 0;
   p.restes = 0; // une ration entamée ne se garde pas
@@ -489,20 +490,25 @@ export function feedLivestock(state) {
     lait += A.vache.laitParNuit;
   }
   if (lait > 0) addItem(state, A.vache.lait, lait);
+  gainActionXp(state, 'lait', lait); // version 1.7
   if (!state.nuit) state.nuit = newNightStats();
   state.nuit.lait = lait;
   state.nuit.etable = rap;
   return rap;
 }
 
-// Tonte au clic : 1 laine, le compteur repart de zéro, le mouton reste.
-export function shear(state, id) {
+// Tonte au clic : 1 laine, le compteur repart de zéro, le mouton reste. `auto` :
+// tonte planifiée (moitié de l'XP, version 1.7).
+export function shear(state, id, auto = false) {
   const m = findSheep(state, id);
   if (!m) return fail('Mouton introuvable.');
   const M = DATA.ANIMAUX.mouton;
   if (!woolReady(m)) return fail(`La laine n'est pas encore prête (${m.laine} / ${M.joursLaine} nuits nourri).`);
+  if (!auto && !canAfford(state, 'tondre')) return fail(TIRED); // version 1.8
   addItem(state, M.laine, M.laineParTonte);
   m.laine = 0;
   bumpCounter(state, 'laines', M.laineParTonte); // Lot 9
+  if (!auto) spendEnergy(state, 'tondre');
+  gainActionXp(state, 'tondre', 1, auto);
   return { ok: true, laine: M.laineParTonte };
 }

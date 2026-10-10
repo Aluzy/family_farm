@@ -2,13 +2,12 @@ import { DATA } from '../engine/catalog.js';
 import { findDevice } from '../engine/devices.js';
 import { wakeSummary } from '../engine/night.js';
 import {
-  formatLitres, formatNumber, formatPercent, formatQty, formatSigned, formatWh,
+  formatLitres, formatNumber, formatPercent, formatQty, formatWh,
 } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { deviceName } from './ferme.js';
 import { formatStraw } from './elevage.js';
-import { memberNameHtml } from './famille.js';
 import { itemsSummary } from './inventaire.js';
 import { registerActions } from './actions.js';
 import { costLabel, plural } from './common.js';
@@ -58,15 +57,9 @@ function stableLines(report) {
   return lines;
 }
 
-// Lot 8 : saison du réveil, fruits du verger et nuit du frigo.
-function seasonLines(report) {
+// Lot 8 : fruits du verger et nuit du frigo.
+function orchardFridgeLines(report) {
   const lines = [];
-  const info = DATA.SAISONS.INFOS[report.saison];
-  if (info) {
-    lines.push(report.nuitDeSaison === 1
-      ? `<li>📅 <strong>Nouvelle saison : ${info.icone} ${info.nom}</strong> (nuit 1 / ${DATA.SAISONS.LONGUEUR})</li>`
-      : `<li>📅 ${info.icone} ${info.nom} · nuit ${report.nuitDeSaison} / ${DATA.SAISONS.LONGUEUR}</li>`);
-  }
   const fruits = itemsSummary(report.fruits || {});
   if (fruits) lines.push(`<li>🌳 Fruits du verger : <strong>${fruits}</strong></li>`);
   const f = report.frigo;
@@ -101,12 +94,10 @@ export function openWakeModal(report, auto = false) {
         .join(', ')
     : '';
   const family = [
-    `<li>🍽️ Énergie mangée : <strong class="num">${formatNumber(shownEnergy)} / ${formatNumber(report.besoin)}</strong> (${covered} %)${eaten ? ` — ${eaten}` : ''}</li>`,
-    `<li>🌿 Autonomie de la nuit : <strong class="num">${formatPercent(report.autonomie)}</strong> (${formatNumber(report.energieProduit)} énergie produite par la ferme sur ${formatNumber(report.besoin)})</li>`,
-    `<li>❤️ Santé moyenne : <strong class="num">${formatNumber(report.santeAvant)} → ${formatNumber(report.santeApres)}</strong> (${formatSigned(report.santeApres - report.santeAvant)})${report.bonusPlats > 0 ? ` · bonus des plats : +${report.bonusPlats}` : ''}</li>`,
+    `<li>🍽️ Calories mangées : <strong class="num">${formatNumber(shownEnergy)} / ${formatNumber(report.besoin)}</strong> (${covered} %)${eaten ? ` — ${eaten}` : ''}</li>`,
+    `<li>🌿 Autonomie de la nuit : <strong class="num">${formatPercent(report.autonomie)}</strong> (${formatNumber(report.energieProduit)} calories produites par la ferme sur ${formatNumber(report.besoin)})</li>`,
+    `<li>⚡ Ton énergie au réveil : <strong class="num">${formatNumber(Math.floor((report.energieReveil || 0) / 1000))} / ${formatNumber(DATA.PERSONNAGE.MAX)}</strong> · 😊 bonheur ${report.bonheur >= 0 ? '+' : ''}${formatNumber(report.bonheur || 0)} au repas</li>`,
     Object.keys(report.termine).length ? `<li>🍳 Terminé pendant la nuit : <strong>${itemsSummary(report.termine)}</strong></li>` : '',
-    // Le compte rendu porte des identifiants ; le prénom est lu ici, et échappé.
-    ...report.nouveauxMalades.map((id) => `<li class="alert">🤒 ${memberNameHtml(id) || 'Quelqu\'un'} est malade : un soin est nécessaire.</li>`),
     report.poules > 0 || report.oeufs > 0
       ? `<li>🥚 Œufs pondus : <strong class="num">${formatNumber(report.oeufs)}</strong> · 🌾 Blé consommé par les poules : <strong class="num">${formatQty(report.bleConsomme)}</strong></li>`
       : '',
@@ -114,12 +105,12 @@ export function openWakeModal(report, auto = false) {
     ...autoLines(report.auto),
     report.pluie > 0 ? `<li>🌧️ Eau de pluie récupérée : <strong class="num">${formatNumber(report.pluie)} L</strong></li>` : '',
     ...(report.entretiens || []).map((e) => { const d = findDevice(state, e.id); return `<li>🛠️ Entretien automatique : ${d ? deviceName(d) : e.id} (${costLabel(e.cost)})</li>`; }),
-    ...seasonLines(report),
+    ...orchardFridgeLines(report),
     ready ? `<li>🧺 Récoltes prêtes : <strong>${ready}</strong></li>` : '<li>🌱 Aucune récolte prête pour l\'instant.</li>',
     spoiled ? `<li class="alert">🗑️ Aliments périmés cette nuit : <strong>${spoiled}</strong></li>` : '<li>✅ Rien n\'a péri cette nuit.</li>',
     expiring ? `<li>⏳ À manger vite, périme à la prochaine nuit : <strong>${expiring}</strong></li>` : '',
   ];
-  // Résumé allégé : autonomie, santé, récolte de la nuit. Tout le reste (ancien contenu du
+  // Résumé allégé : autonomie, énergie, récolte de la nuit. Tout le reste (ancien contenu du
   // réveil, inchangé) est dans « Voir plus ».
   const w = wakeSummary(report);
   const harvestName = (r) => `<span aria-hidden="true">${DATA.items[r.item].icone}</span> ${DATA.items[r.item].nom.toLowerCase()} ×${formatNumber(r.qte)}`;
@@ -136,14 +127,14 @@ export function openWakeModal(report, auto = false) {
         <p class="muted wake-hour">${auto ? `Il était ${DATA.TIME.NIGHT_HOUR}&nbsp;h : la famille est allée se coucher. ` : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
         <div class="wake-kpis">
           <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>
-          <div class="wake-kpi"><span class="muted">❤️ Santé</span><strong class="num">${formatPercent(w.sante)}</strong></div>
+          <div class="wake-kpi"><span class="muted">⚡ Énergie</span><strong class="num">${formatNumber(w.energie)} / ${formatNumber(DATA.PERSONNAGE.MAX)}</strong></div>
         </div>
         <p class="wake-harvest"><strong>🧺 Récolte</strong> : ${harvestLine}</p>
         <div id="wake-detail" hidden>
           <ul class="report-list">
             ${fullHarvest}
             ${family.join('')}
-            <li>⚡ Énergie stockée : <strong class="num">${formatNumber(Math.floor(report.energie / 1000))} / ${formatWh(report.capacite)}</strong></li>
+            <li>🔋 Électricité stockée : <strong class="num">${formatNumber(Math.floor(report.energie / 1000))} / ${formatWh(report.capacite)}</strong></li>
             <li>💧 Eau disponible : <strong class="num">${formatNumber(Math.floor(report.eau / 1000))} / ${formatLitres(report.capaciteEau)}</strong></li>
             ${report.energiePerdue >= 1000 ? `<li>☀️ Énergie perdue pendant la journée (batteries pleines) : <strong class="num">${formatWh(report.energiePerdue)}</strong></li>` : ''}
             ${problems.length ? problems.join('') : '<li>✅ Tous les appareils sont en bon état.</li>'}

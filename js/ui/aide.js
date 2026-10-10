@@ -5,11 +5,11 @@ import { awakeRequired } from '../engine/clock.js';
 import { energyStats } from '../engine/energy.js';
 import { familyNeed } from '../engine/family.js';
 import { cropProduct } from '../engine/crops.js';
-import { orchardWindow } from '../engine/orchard.js';
-import { chapterCount, isUnlocked, plantableCropsFor, unlockChapter } from '../engine/campaign.js';
+import { chapterCount, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
+import { unlockLevel } from '../engine/levels.js';
 import { advanceTutorial, skipTutorial, tutorialStep } from '../engine/alerts.js';
 import {
-  formatDuration, formatNumber, formatQty, formatSigned, formatWh, formatWhRate,
+  formatDuration, formatNumber, formatQty, formatWh, formatWhRate,
 } from '../engine/format.js';
 import { activeTab, ecranFerme, state } from './store.js';
 import { tel } from './consent.js';
@@ -17,7 +17,6 @@ import { applyResult } from './game-actions.js';
 import { morph } from './render.js';
 import { stageUsable } from './stage.js';
 import { formatPlaces, formatStraw } from './elevage.js';
-import { formatFactor } from './serre-verger-frigo.js';
 import { millOutputText, stationRecipes } from './cuisine.js';
 import { nightsLabel } from './inventaire.js';
 import { artPx, REDUCED_MOTION } from './animations.js';
@@ -28,12 +27,6 @@ import { costLabel } from './common.js';
 /* ---------- Lot 11 : aide sur chaque bâtiment ---------- */
 
 const listNum = (values, unit) => `${values.map((v) => formatNumber(v)).join(' · ')} ${unit}`;
-
-// Plage d'un facteur de saison : « −30 % à +30 % ».
-function seasonRange(kind) {
-  const f = Object.values(DATA.SAISONS.MODS).map((m) => m[kind]);
-  return `${formatFactor(Math.min(...f))} à ${formatFactor(Math.max(...f))}`;
-}
 
 function cropsLine(lieu, what) {
   return plantableCropsFor(state, lieu)
@@ -62,48 +55,51 @@ function levelsNote(parcelles, nom) {
   return `Parcelles par niveau : ${listNum(parcelles, '')}. L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture) ; ils travaillent la nuit, à 100 %.`;
 }
 
+// Coûts des niveaux 2 à 5 d'un appareil : « 150 · 400 · 900 · 2 000 💰 ».
+function levelCosts(type) {
+  return listNum(DATA.UPGRADE_COST[type].slice(1), '💰');
+}
+
 // Rôle, consommation et production de chaque bâtiment, calculés depuis DATA.
 const HELP = {
   panneau: () => ({
-    nom: 'Panneaux solaires',
-    role: 'Transforment le soleil en électricité, rangée dans les batteries. Chaque panneau a son niveau, son usure et son interrupteur.',
+    nom: 'Panneau solaire',
+    role: `Transforme le soleil en électricité, rangée dans la batterie, de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h seulement. Il a son niveau, son usure et son interrupteur.`,
     conso: 'Aucune.',
-    prod: `${listNum(DATA.GRID.panneau.whParS, 'Wh/s')} selon le niveau, ${seasonRange('solaire')} selon la saison. L'usure en retire jusqu'à ${formatNumber((DATA.WEAR.BREAKDOWN * 100) / DATA.WEAR.EFFICIENCY_DIVISOR)} %. En ce moment : ${formatWhRate(energyStats(state).production)}.`,
-    note: `Un panneau de plus coûte ${formatNumber(DATA.PURCHASE.panneau.base)} 💰, +${formatNumber(DATA.PURCHASE.panneau.growth - 100)} % par panneau déjà possédé (arrondi à l'entier supérieur).`,
+    prod: `${listNum(DATA.GRID.panneau.whParS, 'Wh/s')} selon le niveau. L'usure en retire jusqu'à ${formatNumber((DATA.WEAR.BREAKDOWN * 100) / DATA.WEAR.EFFICIENCY_DIVISOR)} %. En ce moment : ${formatWhRate(energyStats(state).production)}.`,
+    note: `Le soir et la nuit, la pompe et le réfrigérateur vivent sur la batterie. Améliorer : ${levelCosts('panneau')}.`,
   }),
   batterie: () => ({
-    nom: 'Batteries',
-    role: 'Stockent l\'électricité des panneaux. La première batterie disponible se remplit d\'abord ; la dernière remplie se vide d\'abord. Elles ne se déchargent jamais d\'elles-mêmes.',
-    conso: 'Aucune : elles alimentent la pompe, le moulin, la presse et le réfrigérateur.',
+    nom: 'Batterie',
+    role: 'Stocke l\'électricité du panneau, pour le soir et la nuit. Elle ne se décharge jamais d\'elle-même.',
+    conso: 'Aucune : elle alimente la pompe, le moulin, la presse et le réfrigérateur.',
     prod: `Capacité : ${listNum(DATA.GRID.batterie.wh, 'Wh')} selon le niveau (l'usure réduit la capacité utile). En ce moment : ${formatNumber(Math.floor(energyStats(state).charge / 1000))} / ${formatWh(energyStats(state).capacite)}.`,
-    note: `Une batterie de plus coûte ${formatNumber(DATA.PURCHASE.batterie.base)} 💰, +${formatNumber(DATA.PURCHASE.batterie.growth - 100)} % par batterie déjà possédée (arrondi à l'entier supérieur).`,
+    note: `Améliorer : ${levelCosts('batterie')}.`,
   }),
   pompe: () => ({
     nom: 'Pompe',
     role: 'Tire l\'eau du puits vers le réservoir, tant qu\'il reste de la place.',
     conso: `${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre pompé, soit ${formatWhRate(pumpFlow(state.pompe) * DATA.PUMP.WH_PAR_L)} à plein débit au niveau ${state.pompe.niveau}.`,
     prod: `Débit : ${listNum(DATA.GRID.pompe.litresPerS, 'L/s')} selon le niveau.`,
-    note: 'Sans énergie, elle attend ; avec peu d\'énergie, elle pompe au prorata.',
+    note: `Sans énergie, elle attend ; avec peu d'énergie, elle pompe au prorata. Améliorer : ${levelCosts('pompe')}.`,
   }),
   reservoir: () => ({
     nom: 'Réservoir',
     role: 'Garde l\'eau pompée pour les arrosages et le pain.',
     conso: 'Aucune.',
-    prod: `Capacité : ${listNum(DATA.GRID.pompe.reservoirL, 'L')}, selon le niveau de la pompe.`,
-    note: `L'eau d'un arrosage varie avec la saison (${seasonRange('eau')}), sauf dans la Serre.`,
+    prod: `Capacité : ${listNum(DATA.GRID.reservoir.litres, 'L')} selon son niveau.`,
+    note: `Agrandir : ${levelCosts('reservoir')}.`,
   }),
   potager: () => ({
     nom: DATA.POTAGER.NOM,
-    role: `Planter, arroser, récolter : toutes les cultures poussent ici, sur n'importe quelle parcelle. Une plante arrosée gagne un stade chaque nuit ; sans eau, elle attend. La parcelle se libère après la récolte. ${isUnlocked(state, 'champ')
-      ? 'Cultures de plein champ : le blé nourrit les poules et donne la farine, le tournesol donne l\'huile, le riz et le houblon servent en cuisine ; un blé sert aussi de graine (comme le riz et le houblon).'
-      : `Les cultures de plein champ (blé, riz, houblon) arrivent au chapitre ${unlockChapter('champ')}.`}`,
+    role: `Planter, arroser, récolter : toutes les cultures poussent ici, sur n'importe quelle parcelle. Une plante arrosée gagne un stade chaque nuit ; sans eau, elle attend. La parcelle se libère après la récolte. Chaque culture arrive à son niveau (⭐ dans le bandeau). Le blé nourrit les poules et donne la farine ; il ne se plante qu'une fois le Silo construit. Le tournesol donne l'huile, le riz et le houblon servent en cuisine.`,
     conso: `Eau par arrosage : ${cropsLine('potager', 'eau')}.`,
-    prod: `${cropsLine('potager', 'recolte')}. Saison : ${seasonRange('potager')}, pour toutes les cultures.`,
-    note: `${levelsNote(DATA.POTAGER.PARCELLES, 'la Zone de culture')} Le ${DATA.POTAGER.ZONE2.NOM}, une deuxième zone de ${DATA.POTAGER.ZONE2.PARCELLES} parcelles aux mêmes règles, s'ouvre avec le Moulin (chapitre ${unlockChapter(DATA.POTAGER.ZONE2.DEBLOCAGE)}) : de quoi cultiver beaucoup de blé.`,
+    prod: `${cropsLine('potager', 'recolte')}.`,
+    note: `${levelsNote(DATA.POTAGER.PARCELLES, 'la Zone de culture')} Le ${DATA.POTAGER.ZONE2.NOM}, une deuxième zone de ${DATA.POTAGER.ZONE2.PARCELLES} parcelles aux mêmes règles, s'ouvre avec le Moulin (niveau ${unlockLevel(DATA.POTAGER.ZONE2.DEBLOCAGE)}) : de quoi cultiver beaucoup de blé.`,
   }),
   serre: () => ({
     nom: 'Serre',
-    role: 'Des légumes toute l\'année, et trois cultures de rente (cacao, vanille, café) qu\'on ne trouve qu\'ici : la Serre ignore les saisons, à l\'eau comme à la récolte.',
+    role: 'Des légumes à l\'abri, et trois cultures de rente (cacao, vanille, café) qu\'on ne trouve qu\'ici.',
     conso: `Eau par arrosage : ${cropsLine('serre', 'eau')}.`,
     prod: `${cropsLine('serre', 'recolte')}. Cacao, vanille et café ne se mangent pas : ils servent à la vente et aux recettes de luxe.`,
     note: `Construction : ${costLabel(DATA.SERRE.CONSTRUCTION)}. Parcelles par niveau : ${listNum(DATA.SERRE.PARCELLES, '')}.`,
@@ -132,17 +128,16 @@ const HELP = {
       role: `Les moutons et les vaches vivent à l'Étable et s'achètent au Marché. Un mouton prend ${formatPlaces(P.placesParMouton)}, une vache ${formatPlaces(P.placesParVache)}. Une place achetée reste acquise.`,
       conso: `Chaque nuit, ${formatStraw(M.pailleParNuit)} par mouton et ${formatStraw(V.pailleParNuit)} par vache. La paille vient du Moulin : 1 blé moulu donne ${millOutputText()}. Elle ne s'achète pas au Marché.`,
       prod: `Un mouton nourri ${M.joursLaine} nuits donne ${M.laineParTonte} laine (à tondre). Une vache nourrie donne ${V.laitParNuit} lait la nuit même.`,
-      note: `Préparer l'Étable pour eux : ${costLabel(P.deblocage)} pour ${formatPlaces(P.placesDepart)} ; ensuite ${formatNumber(P.prixPlace)} 💰 la place, +${formatNumber(P.croissance - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre. La saison ne change rien pour eux.`,
+      note: `Préparer l'Étable pour eux : ${costLabel(P.deblocage)} pour ${formatPlaces(P.placesDepart)} ; ensuite ${formatNumber(P.prixPlace)} 💰 la place, +${formatNumber(P.croissance - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre.`,
     };
   },
   verger: () => {
     const V = DATA.VERGER;
-    const w = orchardWindow();
     return {
       nom: 'Verger',
       role: 'Pommiers et poiriers, achetés au Marché et plantés sur un emplacement libre. Ils restent en place.',
       conso: 'Aucune : pas d\'arrosage.',
-      prod: `${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, de la nuit ${w.debut} à la nuit ${w.fin} de l'année, à partir de ${nightsLabel(V.MATURITE)} après la plantation.`,
+      prod: `${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, toute l'année, à partir de ${nightsLabel(V.MATURITE)} après la plantation.`,
       note: `Emplacement supplémentaire : ${formatNumber(V.EMPLACEMENT.base)} 💰, +${formatNumber(V.EMPLACEMENT.croissance - 100)} % par emplacement déjà acheté (arrondi à l'entier supérieur).`,
     };
   },
@@ -158,7 +153,7 @@ const HELP = {
     role: 'Prépare les plats mijotés. Une préparation à la fois.',
     conso: 'Pas d\'électricité.',
     prod: `${stationRecipesLine('cuisine')}.`,
-    note: `Un plat vaut ${formatNumber(DATA.RECETTES.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et chaque plat différent mangé dans la journée donne +${DATA.FAMILY.BONUS_PLATS.PAR_PLAT} de santé (jusqu'à +${DATA.FAMILY.BONUS_PLATS.MAX}). Quatre recettes de luxe (chocolat chaud, café, crème à la vanille, bière artisanale) se vendent 300 % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.RECETTES.COEF_PLAT)} %.`,
+    note: `Un plat vaut ${formatNumber(DATA.RECETTES.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et les plats cuisinés rendent la famille plus heureuse (son bonheur réduit l'énergie que coûtent tes actions). Quatre recettes de luxe (chocolat chaud, café, crème à la vanille, bière artisanale) se vendent 300 % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.RECETTES.COEF_PLAT)} %.`,
   }),
   moulin: () => ({
     nom: 'Moulin',
@@ -214,7 +209,7 @@ function openHelpModal(id) {
 const TUTO = {
   eau: {
     titre: '💧 L\'eau et le soleil',
-    texte: () => `Les panneaux solaires chargent la batterie ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).${stageUsable() ? ' Panneaux, batterie et pompe se trouvent dans la maison : touche-la, puis ouvre « Bâtiments ».' : ''}`,
+    texte: () => `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).${stageUsable() ? ' Panneau, batterie et pompe se trouvent dans la maison : touche-la, puis ouvre « Bâtiments ».' : ''}`,
   },
   potager: {
     titre: '🌱 La zone de culture',
@@ -274,21 +269,19 @@ export function renderTutorial() {
 export function openAboutModal() {
   tel('modal', 'about');
   const F = DATA.FAMILY;
-  const V = F.VARIATION;
   const M = DATA.MARCHE;
   const adultes = F.MEMBRES.filter((m) => !m.enfant).length;
   const enfants = F.MEMBRES.length - adultes;
   const durees = [...Object.values(DATA.CONSERVATION), ...Object.values(DATA.CONSERVATION_CATEGORIE)];
   const H = DATA.HORS_LIGNE;
   const rules = [
-    `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} énergie par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
+    `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} calories par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
     `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. Tu peux dormir (bouton « Zzz ») après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins ; à ${DATA.TIME.NIGHT_HOUR} h, la journée est finie et la nuit se déroule d'elle-même. L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
     `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
-    `Santé : un besoin couvert à 100 % la remonte (${formatSigned(V[0].delta)}), sinon elle baisse (${V.slice(1).map((x) => formatSigned(x.delta)).join(', ')}). Une santé faible ralentit les actions au clic ; les automatisations restent à 100 %. À 0, un soin coûte ${formatNumber(F.SOIN.base)} 💰, +${formatNumber(F.SOIN.croissance - 100)} % par soin déjà payé (arrondi à l'entier supérieur).`,
-    `Énergie : panneaux → batteries → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
+    `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}) : chaque action au clic en coûte (planter ${DATA.PERSONNAGE.COUTS.planter}, arroser ${DATA.PERSONNAGE.COUTS.arroser}, récolter ${DATA.PERSONNAGE.COUTS.recolter}…), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %) et ${DATA.PERSONNAGE.ENDURANCE} % de moins par niveau. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE}, et jusqu'à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} si le repas du soir a couvert le besoin ; un aliment mangé dans la journée rend ses calories ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}. Les automatisations ne coûtent rien.`,
+    `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
     `Marché : prix de vente fixes. Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient d'achat, chaque unité vendue en retire ${formatNumber(M.PAS)} (plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %).`,
-    `Saisons de ${DATA.SAISONS.LONGUEUR} nuits : elles nuancent le solaire, les récoltes, l'eau et les moutons, sans rien bloquer. La Serre les ignore.`,
-    `Autonomie = énergie mangée produite par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
+    `Autonomie = calories mangées produites par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
     `Arbre des technologies : ${Object.keys(DATA.techtree.noeuds).length} technologies en ${DATA.techtree.branches.length} branches, payées en points de technologie (chapitres terminés, jalons de maîtrise, mode libre) et en pièces. Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
   ];

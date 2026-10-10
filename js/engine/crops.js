@@ -1,12 +1,12 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, randomInt } from './base.js';
-import { waterSeasonFactor, yieldSeasonFactor } from './seasons.js';
 import { fail, spend } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
-import { productivity } from './family.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, isUnlocked } from './campaign.js';
+import { gainActionXp } from './levels.js';
+import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -31,7 +31,7 @@ export function allPlots(state) {
 
 // Parcelles du Champ (state.potager.zone2) : vide tant qu'il n'est pas ouvert. Elles portent
 // le lieu de la Zone de culture ('potager') : toutes ses règles s'y appliquent sans rien
-// redire (cultures, saisons, automatisations). `zone: 2` les distingue pour l'affichage.
+// redire (cultures, règles, automatisations). `zone: 2` les distingue pour l'affichage.
 export function zone2Plots(state) {
   return state.potager && Array.isArray(state.potager.zone2) ? state.potager.zone2 : [];
 }
@@ -45,12 +45,14 @@ export function plotZone(plot) {
   return plot.zone === 2 ? 2 : 1;
 }
 
-// Le Champ s'ouvre en entier, sans rien payer, quand la campagne débloque le Moulin
-// (DATA.POTAGER.ZONE2.DEBLOCAGE). Appelée à chaque passage de updateChapters() : une
-// partie déjà plus loin le reçoit au premier pas de jeu. Renvoie true s'il vient de s'ouvrir.
+// Le Champ s'ouvre en entier, sans rien payer, quand le Moulin
+// (DATA.POTAGER.ZONE2.DEBLOCAGE) est construit (version 1.7 ; avant : dès qu'il était
+// débloqué). Appelée à chaque passage de updateChapters() : une partie déjà plus loin
+// le reçoit au premier pas de jeu. Renvoie true s'il vient de s'ouvrir.
 export function openZone2(state) {
   const Z = DATA.POTAGER.ZONE2;
-  if (!state.potager || !isUnlocked(state, Z.DEBLOCAGE)) return false;
+  const st = state.stations && state.stations[Z.DEBLOCAGE];
+  if (!state.potager || !isUnlocked(state, Z.DEBLOCAGE) || !(st && st.construit)) return false;
   if (zone2Plots(state).length >= Z.PARCELLES) return false;
   const plots = zone2Plots(state).slice();
   for (let n = plots.length + 1; n <= Z.PARCELLES; n++) plots.push(makeZone2Plot(n));
@@ -120,25 +122,21 @@ export function boltSeedYield(state, culture) {
   return DATA.crops[culture].graines.quantite + 2 * techSum(state, 'grainesBonus');
 }
 
-// Rendement d'une récolte au clic (× productivité) ou automatique (× 1).
-// Lot 8 : avec `lieu`, le facteur de saison du lieu s'y applique (Zone de culture,
-// quelle que soit la culture ; jamais la Serre).
-export function harvestYield(state, culture, auto = false, lieu = null) {
-  const saison = lieu ? yieldSeasonFactor(state, lieu) : 100;
-  const prod = auto ? 100 : productivity(state);
-  return Math.floor((DATA.crops[culture].rendement * prod * saison + 5000) / 10000);
+// Rendement d'une récolte : le même au clic et en automatique (version 1.8 : plus
+// de productivité), partout et toute l'année (version 1.6 : plus de saisons).
+export function harvestYield(state, culture) {
+  return DATA.crops[culture].rendement;
 }
 
-// Eau d'un arrosage (L entiers) : celle de la culture × le facteur d'eau de la
-// saison (sauf en Serre), arrondie au litre le plus proche, 1 L au minimum.
-export function waterCostFor(state, culture, lieu) {
+// Eau d'un arrosage (L entiers) : celle de la culture, arrondie au litre le plus
+// proche, 1 L au minimum.
+export function waterCostFor(state, culture) {
   // arbre v2 : Arrosage économe et Gestion intelligente de l'eau (en %)
-  const pct = (waterSeasonFactor(state, lieu) * techPct(state, 'eauArrosage')) / 100;
-  return Math.max(1, roundPct(DATA.crops[culture].litres, pct));
+  return Math.max(1, roundPct(DATA.crops[culture].litres, techPct(state, 'eauArrosage')));
 }
 
 export function waterCost(state, plot) {
-  return waterCostFor(state, plot.culture, plot.lieu);
+  return waterCostFor(state, plot.culture);
 }
 
 // Parcelles mûres regroupées par culture et par mode : [{ culture, nombre, montee }].
@@ -156,23 +154,28 @@ export function readyCrops(state) {
   return out;
 }
 
-export function plant(state, plotId, culture) {
+// `auto` : semis d'une automatisation (moitié de l'XP, version 1.7).
+export function plant(state, plotId, culture, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
   const def = DATA.crops[culture];
   if (!def) return fail('Culture inconnue.');
   if (plot.culture) return fail('Cette parcelle est déjà plantée.');
   if (!def.lieux.includes(plot.lieu)) return fail(`${def.nom} ne se plante pas ici.`);
+  if (!auto && !canAfford(state, 'planter')) return fail(TIRED); // version 1.8
   if (takeSeed(state, culture) < 1) return fail(`Pas de graines : ${def.nom}.`);
   plot.culture = culture;
   plot.stade = 0;
   plot.arrose = false;
   plot.montee = false;
+  if (!auto) spendEnergy(state, 'planter');
+  gainActionXp(state, 'planter', 1, auto);
   return { ok: true };
 }
 
-// Une fois par nuit et par parcelle ; consomme l'eau du réservoir.
-export function water(state, plotId) {
+// Une fois par nuit et par parcelle ; consomme l'eau du réservoir. `auto` :
+// arrosage d'une automatisation (moitié de l'XP, version 1.7).
+export function water(state, plotId, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
   if (!plot.culture) return fail('Rien n\'est planté ici.');
@@ -180,8 +183,11 @@ export function water(state, plotId) {
   if (isMature(plot)) return fail('Déjà mûre, inutile d\'arroser.');
   const litres = waterCost(state, plot);
   if (state.eauMl < litres * 1000) return fail('Pas assez d\'eau dans le réservoir.');
+  if (!auto && !canAfford(state, 'arroser')) return fail(TIRED); // version 1.8
   state.eauMl -= litres * 1000;
   plot.arrose = true;
+  if (!auto) spendEnergy(state, 'arroser');
+  gainActionXp(state, 'arroser', 1, auto);
   return { ok: true, litres };
 }
 
@@ -199,12 +205,13 @@ export function toggleBolting(state, plotId) {
 }
 
 // Récolte : la parcelle est libérée. `auto` = true pour une automatisation
-// (non pénalisée par la santé) ; le clic du joueur applique la productivité.
+// (gratuite) ; le clic du joueur coûte de l'énergie (version 1.8).
 export function harvest(state, plotId, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
   if (!plot.culture) return fail('Rien à récolter ici.');
   if (!isMature(plot)) return fail('Pas encore mûre.');
+  if (!auto && !canAfford(state, 'recolter')) return fail(TIRED); // version 1.8
   const culture = plot.culture;
   const def = DATA.crops[culture];
   const items = {};
@@ -219,7 +226,7 @@ export function harvest(state, plotId, auto = false) {
   if (plot.montee) {
     gain(def.graines.item, boltSeedYield(state, culture));
   } else {
-    gain(cropProduct(culture), harvestYield(state, culture, auto, plot.lieu));
+    gain(cropProduct(culture), harvestYield(state, culture));
     if (def.graines.mode === 'recolte') {
       const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
       gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
@@ -230,6 +237,8 @@ export function harvest(state, plotId, auto = false) {
   plot.arrose = false;
   plot.montee = false;
   if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9 (une carotte montée en graine ne compte pas)
+  if (!auto) spendEnergy(state, 'recolter');
+  gainActionXp(state, 'recolter', 1, auto); // version 1.7
   return { ok: true, culture, items };
 }
 
@@ -264,7 +273,7 @@ export function upgradePotager(state) {
 /* ---------- Lot 8 : Serre ---------- */
 
 // state.serre = { construit, niveau, parcelles }. Mêmes règles que le Potager
-// (arrosage, pousse, récolte), sans aucun modificateur de saison.
+// (arrosage, pousse, récolte).
 
 export function serreUpgradeCost(state) {
   return state.serre.niveau >= DATA.LEVEL_MAX ? null : DATA.SERRE.COUT[state.serre.niveau];

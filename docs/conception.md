@@ -1,6 +1,116 @@
 # Ferme Familiale — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **v2 en préparation** : [`conception-v2.md`](conception-v2.md) propose une refonte
+> (niveaux d'XP, jauge d'énergie à la place de la santé, houe, saisons retirées, un seul
+> panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
+> fait foi.
+>
+> **v30 (jeu 1.8) : énergie du personnage, bonheur, endurance** (lot 4 de la v2,
+> `js/engine/stamina.js`, `DATA.PERSONNAGE` dans `data/general.json`). Cette note
+> **fait foi** sur tout ce qui, plus bas, parle de santé, de malades, de soins ou de
+> productivité : **ils n'existent plus**.
+> - **Jauge d'énergie de 0 à 100** (`state.energie`, en millièmes). Chaque action au
+>   clic en coûte : planter 3, arroser 2, récolter 4, tondre 8, cuisiner 3, cuire au
+>   four 3, moudre 1 par blé, presser 1 🟡. À 0, plus d'action au clic. Les
+>   automatisations, les ateliers qui tournent seuls, les achats et les ventes sont gratuits.
+> - **Coût réel** = coût × (100 − bonheur moyen ÷ 2) % × (100 − endurance) %, arrondi au
+>   millième supérieur. **Endurance** : −3 % par niveau au-delà du premier (−27 % au niveau 10).
+> - **Réveil** : l'énergie remonte à 60 + 40 × la part du repas du soir couverte (repas
+>   complet : 100) ; une énergie plus haute est gardée. **En-cas** : un aliment mangé
+>   dans la journée (bouton « Manger » de l'Inventaire) rend ses calories ÷ 5.
+> - Les rendements et vitesses ne dépendent plus de la santé ni du bonheur (plus de
+>   productivité). Tout le monde part en sortie.
+> - **Chapitre 3** : « santé moyenne ≥ 80 » devient « 50 % d'autonomie » ; **chapitre 6** :
+>   plus de condition « sans soin ».
+> - **Arbre** : Remèdes maison et Menus variés sont retirés (remboursés), remplacés par
+>   **Bon sommeil** (P1, +10 d'énergie au réveil) et **Goûter** (P3, en-cas +50 %).
+> - Format de sauvegarde 26 (`migrateEnergy`) ; suivi de session : la nuit envoie
+>   l'énergie au lieu de la santé (politique des cookies 1.2).
+>
+> **v29 (jeu 1.7) : niveaux d'expérience** (lot 3 de la v2, `data/niveaux.json`,
+> `js/engine/levels.js`). Cette note **fait foi** sur tout ce qui, plus bas, dit qu'un
+> chapitre débloque un bâtiment, un atelier ou une culture.
+> - **Dix niveaux** (XP cumulée 0 / 500 / 1 200 / 3 000 / 7 500 / 20 000 / 40 000 /
+>   80 000 / 180 000 / 400 000). Ils débloquent : niv. 1 carotte, patate, tomate ;
+>   niv. 2 courgette, aubergine, oignon, **Cuisine** ; niv. 3 poivron, ail, fraise, blé,
+>   **Silo**, **Poulailler** ; niv. 4 épinard, tournesol, riz, **Moulin** ; niv. 5
+>   houblon, **Four**, **Étable** ; niv. 6 **Presse**, **Verger** ; niv. 7 cacao, vanille,
+>   café, **Serre** ; niv. 8 **Réfrigérateur**. Les niveaux 9 et 10 attendent leur lot
+>   (courrier du notaire, commerce).
+> - **Le blé ne se plante qu'une fois le Silo construit** (`requiert` dans `crops.json`).
+> - **La Cuisine n'attend plus le Four** (elle arrive avant lui) et ouvre elle aussi le
+>   Livre de recette.
+> - **Le Champ s'ouvre quand le Moulin est construit** (avant : dès qu'il était débloqué).
+> - **XP** : planter 10, arroser 10, récolter 20, œuf 10, lait 30, tonte 30, plat de la
+>   Cuisine 40, plat du Four 50, blé moulu 10, huile pressée 10 🟡 (non chiffré par les
+>   notes), vente 1 par pièce. Une automatisation (arrosage, récolte, semis, tonte)
+>   rapporte 50 % de l'XP de l'action.
+> - **Chapitres** : ils ne débloquent plus rien ; terminés, ils rapportent 200 / 500 /
+>   1 000 / 2 500 / 2 000 / 4 000 / 8 000 XP (en plus des points de technologie).
+> - **Interface** : ⭐ niveau dans le bandeau (ouvre la liste des niveaux), écran
+>   « Niveau n atteint » avec ses nouveautés, récompense en XP sur la carte du chapitre.
+>   Mode test : « +1 000 XP », « Niveau suivant » ; « aller au chapitre n » place aussi
+>   au niveau qui va avec.
+> - **Rythme mesuré** (joueur automatique appliqué) : niveau 2 nuit 3, niveau 3 nuit 5,
+>   niveau 4 nuit 13, niveau 5 nuit 23, niveau 6 nuit 50, niveau 7 nuit 66.
+> - **Sauvegardes** (format 25, `migrateLevels()`) : niveau du chapitre atteint (1, 2,
+>   3, 6, 6, 8, 8, 8 pour les chapitres 1 à 7 et la campagne finie), ou plus si la
+>   partie a déjà construit ou planté quelque chose d'un niveau supérieur ; XP = le seuil
+>   de ce niveau.
+>
+> **v28 (jeu 1.6) : un panneau, une batterie** (lot 2 de la v2). Cette note **fait
+> foi** sur le « parc d'appareils » (v15, 8.2, 9) et sur le réservoir qui suivait la pompe.
+> - **Un seul panneau et une seule batterie**, qui montent de niveau ; plus d'achat
+>   d'appareil supplémentaire. Panneau 40 / 90 / 160 / 260 / 400 Wh/s ; batterie
+>   6 000 / 15 000 / 30 000 / 60 000 / 100 000 Wh (`DATA.GRID`).
+> - **Le panneau ne produit qu'entre 7 h et 19 h** (`DATA.SOLEIL`) ; un pas de temps à
+>   cheval sur 7 h ou 19 h produit au prorata (`sunlitMs()`). Le soir et la nuit, la pompe
+>   et le frigo vivent sur la batterie. Une journée entière de soleil au niveau 1 donne
+>   8 640 Wh, autant que l'ancien panneau de 30 Wh/s de 6 h à 22 h. Pendant une absence,
+>   l'horloge est figée : le panneau produit si elle l'est entre 7 h et 19 h.
+> - **Le réservoir a ses propres niveaux** (40 / 80 / 160 / 300 / 500 L,
+>   `state.reservoir.niveau`, `upgradeTank()`) ; la pompe ne l'agrandit plus.
+> - **Coûts d'amélioration par appareil** (`DATA.UPGRADE_COST`, niveaux 2 à 5) : panneau
+>   150 / 400 / 900 / 2 000, batterie 180 / 450 / 1 000 / 2 200, pompe 100 / 250 / 600 /
+>   1 300, réservoir 120 / 300 / 700 / 1 500 (au lieu de 40 / 100 / 250 / 600 pour tous).
+>   Ces prix visent le départ v2 à 1 500 pièces (lot 8) ; d'ici là, avec 350 pièces au
+>   départ, le joueur automatique termine le chapitre 5 deux nuits plus tard.
+> - **Arbre** : Délestage intelligent demande une batterie de niveau 2 (au lieu de 2
+>   batteries) ; la branche Énergie suit le niveau du panneau et de la batterie, la
+>   branche Eau ceux de la pompe et du réservoir.
+> - **« Pendant votre absence »** n'affiche plus l'électricité produite ni stockée :
+>   elle se lit dans Maison › Installations.
+> - **Mode test** : plus de « +1 panneau / +1 batterie » ; « Niveau 5 » s'applique aussi
+>   au panneau, à la batterie, à la pompe et au réservoir.
+> - **Sauvegardes** (format 24, `migrateSingleDevices()`) : on garde le panneau et la
+>   batterie du plus haut niveau (à niveau égal, le moins usé) ; la batterie reçoit la
+>   charge de toutes, dans la limite de sa capacité ; les appareils retirés sont
+>   remboursés de leur prix d'achat ; le réservoir prend le niveau de la pompe.
+>
+> **v27 (jeu 1.6) : plus de saisons** (lot 1 de la v2). Cette note **fait foi** sur
+> tout ce qui, plus bas, parle de saisons, d'hiver, de calendrier ou de modificateurs
+> saisonniers (1.4, 3, 6.9 ter, 8.2, 8.3, 8.4, 8.10…).
+> - **Cultures, eau, soleil** : plus aucun facteur ; rendement, litres par arrosage et
+>   production des panneaux sont ceux des tableaux, chaque nuit (fini le +10 % du
+>   printemps et le −30 % de l'hiver).
+> - **Verger** : un arbre donne 6 fruits la nuit de sa maturité (15 nuits après la
+>   plantation), puis toutes les 3 nuits, **toute l'année** (≈ 2 fruits par nuit au lieu
+>   de 30 par an). Chaque arbre suit son propre rythme.
+> - **Arbre des technologies** : Panneaux orientables = **+10 % de production toute
+>   l'année** (au lieu de 85 % en hiver) ; Récupérateur d'eau de pluie = **15 L par nuit**.
+> - **Chapitre 6 « Toute l'année »** : l'objectif « traverser un hiver » devient **tenir
+>   10 nuits d'affilée à 80 % d'autonomie en moyenne, sans payer de soin**. La série
+>   commence dès la première nuit du chapitre ; un soin l'arrête aussitôt ; une série
+>   ratée laisse place à une nouvelle la nuit suivante.
+> - **Sortie Forêt** : la cueillette tourne d'un jour à l'autre (3 champignons ; 5
+>   myrtilles ; 2 champignons et 4 châtaignes).
+> - **Interface** : plus de calendrier, plus de saison dans le bandeau ni au réveil, plus
+>   de bouton « Saison suivante » au mode test. Les images d'automne et d'hiver sont
+>   retirées de `assets/`.
+> - **Sauvegardes** (format 23, `migrateNoSeasons()`) : un hiver déjà réussi compte comme
+>   la série réussie ; la saison n'était pas stockée, rien d'autre à convertir.
+>
 > **v26 (jeu 1.0)** : **le Potager et le Champ deviennent une seule « Zone de
 > culture »** (🌱). Cette note **fait foi** sur tout ce qui, plus bas, parle
 > encore du Potager et du Champ comme de deux lieux.

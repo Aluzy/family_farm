@@ -63,6 +63,10 @@ export function recipeTime(state, id) {
 export function buildingLevel(state, id) {
   if (id === 'potager') return state.potager.niveau;
   if (id === 'pompe') return state.pompe.niveau;
+  // version 1.6 : un seul panneau, une seule batterie ; le réservoir a ses niveaux
+  if (id === 'panneau') return state.panneaux[0].niveau;
+  if (id === 'batterie') return state.batteries[0].niveau;
+  if (id === 'reservoir') return state.reservoir.niveau;
   const b = state[id];
   return b && b.construit ? b.niveau : 0;
 }
@@ -70,7 +74,7 @@ export function buildingLevel(state, id) {
 // Un bâtiment, un atelier ou un appareil est-il construit ?
 export function isBuilt(state, id) {
   if (state.stations && state.stations[id]) return !!state.stations[id].construit;
-  if (id === 'potager' || id === 'pompe') return true;
+  if (['potager', 'pompe', 'panneau', 'batterie', 'reservoir'].includes(id)) return true;
   const b = state[id];
   return !!(b && b.construit);
 }
@@ -95,10 +99,6 @@ export function techPrereqs(state, id) {
     } else if (r.construit) {
       const b = B[r.construit];
       list.push({ ok: isBuilt(state, r.construit), texte: `${b.icone} ${b.nom} construit` });
-    } else if (r.appareil) {
-      const b = B[r.appareil];
-      const have = r.appareil === 'panneau' ? state.panneaux.length : state.batteries.length;
-      list.push({ ok: have >= r.nombre, texte: `${b.icone} ${r.nombre} ${b.nom.toLowerCase()}` });
     } else {
       const m = DATA.techtree.noeuds[r.noeud];
       list.push({ ok: hasTech(state, r.noeud), texte: `${m.icone} ${m.nom}` });
@@ -179,9 +179,7 @@ export function techProgress(state, brancheId) {
   return branche.suivi.map((cle) => {
     const def = DATA.techtree.suivi[cle];
     const e = { cle, nom: def.nom, icone: def.icone, type: def.type, note: def.note || null, max: DATA.LEVEL_MAX };
-    if (def.type === 'appareils') {
-      e.niveaux = (cle === 'panneau' ? state.panneaux : state.batteries).map((d) => d.niveau);
-    } else if (def.type === 'niveau') {
+    if (def.type === 'niveau') {
       e.niveau = buildingLevel(state, cle);
       e.automatise = isAutomated(state, cle);
     } else {

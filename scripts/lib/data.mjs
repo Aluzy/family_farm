@@ -191,7 +191,8 @@ export function validateData(data) {
   }
 
   /* cultures */
-  const elements = Object.keys(data.CHAPITRES.ELEMENTS);
+  const elements = Object.keys(data.NIVEAUX.ELEMENTS);
+  const deblocables = [...elements, ...Object.keys(crops)];
   for (const [id, c] of Object.entries(crops)) {
     const where = `crops.${id}`;
     if (typeof c.nom !== 'string' || !c.nom) err(where, 'nom manquant');
@@ -201,7 +202,7 @@ export function validateData(data) {
     }
     const recolte = c.produit || id;
     if (!(recolte in items)) err(where, `la récolte « ${recolte} » n'est pas un objet (items)${c.produit ? '' : ' : ajouter l\'objet, ou le champ "produit"'}`);
-    if (c.deblocage !== undefined && !elements.includes(c.deblocage)) err(where, `deblocage « ${c.deblocage} » inconnu (CHAPITRES.ELEMENTS)`);
+    if (c.requiert !== undefined && !elements.includes(c.requiert)) err(where, `requiert « ${c.requiert} » inconnu (NIVEAUX.ELEMENTS)`);
     const g = c.graines || {};
     if (!MODES_GRAINES.includes(g.mode)) err(where, `graines.mode « ${g.mode} » inconnu (${MODES_GRAINES.join(', ')})`);
     if (!(g.item in items)) err(where, `graines.item « ${g.item} » n'est pas un objet (items)`);
@@ -219,7 +220,7 @@ export function validateData(data) {
   if (!Z || typeof Z.ID !== 'string' || !Z.ID || Z.ID === data.POTAGER.LIEU) err('POTAGER.ZONE2', 'ID manquant, ou identique à POTAGER.LIEU (les identifiants des parcelles se confondraient)');
   else {
     if (!(isInt(Z.PARCELLES) && Z.PARCELLES > 0 && isInt(Z.COLONNES) && Z.COLONNES > 0)) err('POTAGER.ZONE2', 'PARCELLES et COLONNES : deux entiers supérieurs à 0');
-    if (!elements.includes(Z.DEBLOCAGE)) err('POTAGER.ZONE2', `DEBLOCAGE « ${Z.DEBLOCAGE} » inconnu (CHAPITRES.ELEMENTS)`);
+    if (!elements.includes(Z.DEBLOCAGE)) err('POTAGER.ZONE2', `DEBLOCAGE « ${Z.DEBLOCAGE} » inconnu (NIVEAUX.ELEMENTS)`);
   }
 
   /* le reste : chaque objet cité ailleurs doit exister */
@@ -237,11 +238,23 @@ export function validateData(data) {
     const where = `COURRIER.${id}`;
     for (const cadeau of Object.keys(lettre.cadeaux || {})) needItem(`${where}.cadeaux`, cadeau);
     const q = lettre.quand || {};
-    if (q.debloque !== undefined && !elements.includes(q.debloque)) err(where, `quand.debloque « ${q.debloque} » inconnu (CHAPITRES.ELEMENTS)`);
+    if (q.debloque !== undefined && !elements.includes(q.debloque)) err(where, `quand.debloque « ${q.debloque} » inconnu (NIVEAUX.ELEMENTS)`);
   }
-  data.CHAPITRES.liste.forEach((ch, i) => {
-    for (const e of ch.debloque || []) if (!elements.includes(e)) err(`CHAPITRES.liste[${i}]`, `debloque « ${e} » inconnu (CHAPITRES.ELEMENTS)`);
+  /* niveaux (version 1.7) : chaque élément ou culture débloqué une seule fois */
+  const N = data.NIVEAUX;
+  if (!Array.isArray(N.SEUILS) || N.SEUILS[0] !== 0 || N.SEUILS.some((x, i) => !isInt(x) || (i > 0 && x <= N.SEUILS[i - 1]))) err('NIVEAUX.SEUILS', 'des entiers croissants, le premier à 0');
+  if (!Array.isArray(N.liste) || N.liste.length !== N.SEUILS.length) err('NIVEAUX.liste', 'un niveau par seuil');
+  const vus = new Set();
+  (N.liste || []).forEach((niv, i) => {
+    for (const e of niv.debloque || []) {
+      if (!deblocables.includes(e)) err(`NIVEAUX.liste[${i}]`, `debloque « ${e} » : ni un élément (NIVEAUX.ELEMENTS) ni une culture`);
+      if (vus.has(e)) err(`NIVEAUX.liste[${i}]`, `« ${e} » est déjà débloqué par un autre niveau`);
+      vus.add(e);
+    }
   });
+  // (une culture qu'aucun niveau ne cite est disponible dès le niveau 1)
+  if (!Array.isArray(N.CHAPITRES_XP) || N.CHAPITRES_XP.length !== data.CHAPITRES.liste.length) err('NIVEAUX.CHAPITRES_XP', 'un nombre par chapitre');
+  if (!Array.isArray(N.CHAPITRE_NIVEAU) || N.CHAPITRE_NIVEAU.length !== data.CHAPITRES.liste.length + 1) err('NIVEAUX.CHAPITRE_NIVEAU', 'un niveau par chapitre, plus un pour la campagne finie');
 
   return { errors, warnings };
 }

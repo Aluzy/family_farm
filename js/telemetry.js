@@ -22,7 +22,7 @@ const Telemetry = (() => {
   const SID_KEY = 'ff_sid';            // sessionStorage : numéro de session
   const T0_KEY = 'ff_t0';              // sessionStorage : début de session
   const DATA_KEY = 'ff_data';          // sessionStorage : compteurs de la visite
-  const POLICY_VERSION = '1.1';
+  const POLICY_VERSION = '1.2';
   const CONSENT_TTL_MS = 183 * 24 * 3600 * 1000; // environ 6 mois
   const FLUSH_MS = 60000;
   const MAX_EVENTS = 400;
@@ -203,7 +203,7 @@ const Telemetry = (() => {
     if (!active || !snapshot) return;
     push('night', {
       day: num(snapshot.day), chapter: num(snapshot.chapter), autonomy: num(snapshot.autonomy),
-      pieces: num(snapshot.pieces), health: num(snapshot.health), awake: num(snapshot.awake),
+      pieces: num(snapshot.pieces), energy: num(snapshot.energy), awake: num(snapshot.awake),
     });
   }
 

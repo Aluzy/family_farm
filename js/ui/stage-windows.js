@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
+import { energyLevel } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
-import { currentSeason } from '../engine/seasons.js';
 import { allDevices } from '../engine/devices.js';
 import { awakeRequired } from '../engine/clock.js';
 import { planMeal } from '../engine/family.js';
@@ -25,7 +25,7 @@ import {
   backToFerme, deviceName, renderDeviceScreen, renderEnergieEau, renderFerme, renderPotager, renderZone2,
 } from './ferme.js';
 import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
-import { renderCalendar, renderSerre, renderVerger } from './serre-verger-frigo.js';
+import { renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes } from './cuisine.js';
 import { renderTechno } from './techno.js';
 import { renderFamille } from './famille.js';
@@ -113,9 +113,9 @@ function maisonCurrentTab() {
 
 // Onglet « Installations » de la Maison (identifiant interne : batiments) : ce qui n'a pas
 // de dessin sur la carte : ateliers (Four, Cuisine, Presse), énergie et eau,
-// Silo, calendrier. Les ancres servent aux indicateurs du bandeau (💧, saison).
+// Silo. L'ancre de l'eau sert à l'indicateur 💧 du bandeau.
 function renderBatiments() {
-  return `${renderAteliers()}<div id="bat-eau" class="ancre">${renderEnergieEau()}</div>${isUnlocked(state, 'silo') ? renderSilo() : ''}<h3 class="section-title ancre" id="bat-calendrier">📅 Calendrier</h3>${renderCalendar()}`;
+  return `${renderAteliers()}<div id="bat-eau" class="ancre">${renderEnergieEau()}</div>${isUnlocked(state, 'silo') ? renderSilo() : ''}`;
 }
 
 // Version 1.1.1 : les animaux s'achètent au Marché ; l'Étable y mène par un raccourci.
@@ -301,10 +301,9 @@ export function applyAnchor() {
 
 // Bandeau (version 1.4) : une seule ligne, sans titre ni légendes. Chaque indicateur est une
 // icône et sa valeur ; son nom est dans l'infobulle et pour les lecteurs d'écran. Ceux qui ont
-// un lieu y mènent (saison → calendrier, eau → Maison › Installations, autonomie → Maison ›
+// un lieu y mènent (eau → Maison › Installations, autonomie → Maison ›
 // Famille). Le jour est le numéro de la nuit à venir (state.day) : jour 1 au départ.
 export function renderIndicators() {
-  const saison = DATA.SAISONS.INFOS[currentSeason(state)];
   const heure = Math.floor(heureDuJour());
   const corps = (icone, valeur) => `<span aria-hidden="true">${icone}</span><span class="num" aria-hidden="true">${valeur}</span>`;
   const cell = (icone, valeur, titre) =>
@@ -314,8 +313,9 @@ export function renderIndicators() {
   const el = document.getElementById('indicators');
   morph(el,
     cell('📅', `Jour ${state.day}`, `Jour ${state.day}`) +
-    lien(saison.icone, saison.nom, `Saison : ${saison.nom}. Ouvrir le calendrier`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-calendrier' }) +
+    `<button type="button" class="indicator indicator-btn" data-action="open-levels" title="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux" aria-label="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux">${corps('⭐', `Niv. ${state.progression.niveau}`)}</button>` +
     cell(horlogeEmoji(heure), `${heure} h`, `Heure de la journée : ${heure} h`) +
+    lien('⚡', String(energyLevel(state)), `Ton énergie : ${energyLevel(state)} / ${DATA.PERSONNAGE.MAX}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' }) +
     lien('💧', formatLitres(state.eauMl), `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +
     cell('💰', formatCoins(state.pieces), `Pièces : ${formatCoins(state.pieces)}`) +
     lien('🌿', formatPercent(lastAutonomy(state)), `Autonomie de la dernière nuit : ${formatPercent(lastAutonomy(state))}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' })

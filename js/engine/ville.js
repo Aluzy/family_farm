@@ -7,7 +7,6 @@ import { awakeMsAtHour, hourOfDay } from './clock.js';
 import { flowStep, wearStep } from './energy.js';
 import { refreshUnlocks } from './techtree.js';
 import { noteEnergyRecord, updateChapters } from './campaign.js';
-import { currentSeason } from './seasons.js';
 
 /* ---------- version 1.5 : bonheur, sorties et marché de la ville (data/ville.json) ---------- */
 
@@ -28,18 +27,6 @@ function setHappiness(m, value) {
 export function averageHappiness(state) {
   const m = state.famille.membres;
   return m.length ? Math.round(m.reduce((t, x) => t + memberHappiness(x), 0) / m.length) : 0;
-}
-
-// Multiplicateur de productivité (%) du bonheur moyen des membres bien portants (les malades
-// pèsent déjà sur la productivité par la santé). Personne de bien portant : sans effet.
-export function happinessProductivity(state) {
-  const m = state.famille.membres.filter((x) => !x.malade);
-  if (!m.length) return 100;
-  const avg = m.reduce((t, x) => t + memberHappiness(x), 0) / m.length;
-  for (const tier of DATA.VILLE.BONHEUR.PRODUCTIVITE) {
-    if (avg >= tier.min) return tier.pct;
-  }
-  return 100;
 }
 
 // Variation de bonheur d'un repas : REPAS_CRU tout cru, jusqu'à REPAS_CRU + REPAS_PLATS tout
@@ -72,9 +59,9 @@ function ville(state) {
   return state.ville;
 }
 
-// Les membres qui partent : tous sauf les malades.
+// Les membres qui partent : toute la famille (version 1.8 : plus de malades).
 export function outingMembers(state) {
-  return state.famille.membres.filter((m) => !m.malade);
+  return state.famille.membres.slice();
 }
 
 // Prix d'une sortie pour les membres qui partent (un enfant paie ENFANT_PRIX %).
@@ -84,11 +71,12 @@ export function outingCost(state, id) {
   return outingMembers(state).reduce((t, m) => t + (m.enfant ? Math.ceil((s.prix * DATA.VILLE.ENFANT_PRIX) / 100) : s.prix), 0);
 }
 
-// Ce que rapporte une sortie aujourd'hui (le butin de la saison s'il y en a un).
+// Ce que rapporte une sortie aujourd'hui : son butin, ou la cueillette du jour
+// (elles tournent d'un jour à l'autre).
 export function outingLoot(state, id) {
   const s = DATA.VILLE.SORTIES[id];
   if (!s) return {};
-  if (s.saisons) return { ...(s.saisons[currentSeason(state)] || {}) };
+  if (s.cueillettes) return { ...s.cueillettes[(Math.max(1, state.day) - 1) % s.cueillettes.length] };
   return { ...(s.butin || {}) };
 }
 

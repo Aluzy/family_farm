@@ -83,8 +83,6 @@ export function applyDishTimeDivisor(data) {
   }
 }
 
-// Facteur saisonnier d'un type de calcul : 'solaire', 'potager' ou 'eau'.
-// Les calculs existants le multiplient à leur valeur de base.
 // Arrondi entier de x × pct ÷ 100 (au plus proche, demi vers le haut).
 export function roundPct(x, pct) {
   return Math.floor((x * pct + 50) / 100);

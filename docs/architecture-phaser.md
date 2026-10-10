@@ -30,7 +30,7 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
 ```
 
 - **Modèle de vue** (`stageModel()`), le seul objet que la scène reçoit :
-  `{ season, heure, cols, plots: [{ id, culture, icone, phase (-1, 0…3), mature, arrosee }],
+  `{ heure, cols, plots: [{ id, culture, icone, phase (-1, 0…3), mature, arrosee }],
   cols2, plots2 (le Champ, même forme que plots), arbres: [{ id, jeune }],
   serre (parcelles de la Serre, même forme), interieur (null ou 'serre'),
   batiments: { etable, poulailler, moulin, serre, verger, zone, zone2, silo },
@@ -51,9 +51,8 @@ une action existante dans `tap()`. Jamais d'appel au moteur depuis `farm-stage.j
 `assets/carte_printemps.json` est la carte Tiled du propriétaire : 72×57 tuiles de 16 px
 (1152×912 px), treize couches de tuiles et une couche d'objets `batiment`. Elle est fabriquée
 depuis la carte de travail `assets/carte_printemps_elargie.tmj` (voir « Mettre la carte à
-jour »). Elle sert aux quatre
-saisons (il n'existe qu'une carte de printemps). Depuis la version 1.1.2 les bâtiments gardent
-eux aussi leur image de printemps (`_sp`) toute l'année : voir `SEASONS_ON_MAP`.
+jour »). Depuis la version 1.6, le jeu n'a plus de saisons : la carte et les images des
+bâtiments sont celles du printemps (suffixe `_sp` des fichiers du pack, constante `SFX`).
 
 - **Sol cuit en une image.** Au démarrage, `bakeGround()` lit le JSON brut
   (`cache.tilemap.get(clé).data`) et dessine toutes les couches de tuiles dans un seul canvas
@@ -242,7 +241,7 @@ est la poignée de débogage posée par `js/main.js`).
 
 ## 8. Limites connues
 
-- Automne et hiver : la carte garde son apparence de printemps toute l'année (`SEASONS_ON_MAP = false` dans `farm-stage.js`) ; les images d'automne et d'hiver des bâtiments restent dans `assets/` pour le jour où les cartes de ces saisons existeront.
+- Saisons : retirées en version 1.6 ; les images d'automne et d'hiver du pack ne sont plus dans `assets/`.
 - Sur un ordinateur, au repère du milieu, le pied du moulin dépasse d'une douzaine de pixels
   sous la vue. Il se voit en entier en glissant ou depuis le troisième point.
 - L'étiquette « Verger » reste sur la pancarte, près de la maison : survoler un arbre l'affiche
@@ -316,10 +315,10 @@ est la poignée de débogage posée par `js/main.js`).
 
 ## Version 1.4 : le Champ, les arbres du Verger, le bandeau sur une ligne
 
-- **Le Champ** : la deuxième zone de culture (rectangle `zone_culture_2`, 8 × 8 = 64 parcelles) s'ouvre en entier, sans rien payer, quand le Moulin se débloque. Moteur : `openZone2(state)`, appelée par `updateChapters()` ; les parcelles sont dans `state.potager.zone2`, portent le lieu `potager` (mêmes cultures, saisons et automatisations que la Zone de culture), `zone: 2` et les identifiants `zone2-n` ; `zone2Plots()`, `plotZone()`. `waterAll()` et `harvestAll()` prennent une zone en troisième argument. Valeurs dans `DATA.POTAGER.ZONE2` (`data/crops.json`).
+- **Le Champ** : la deuxième zone de culture (rectangle `zone_culture_2`, 8 × 8 = 64 parcelles) s'ouvre en entier, sans rien payer, quand le Moulin se débloque. Moteur : `openZone2(state)`, appelée par `updateChapters()` ; les parcelles sont dans `state.potager.zone2`, portent le lieu `potager` (mêmes cultures et automatisations que la Zone de culture), `zone: 2` et les identifiants `zone2-n` ; `zone2Plots()`, `plotZone()`. `waterAll()` et `harvestAll()` prennent une zone en troisième argument. Valeurs dans `DATA.POTAGER.ZONE2` (`data/crops.json`).
 - **Sur la carte** : la scène a deux grilles (`grid`, `grid2`) et une seule table de parcelles ; `zones()` les parcourt pour l'affichage et pour les appuis. Lieu `zone2`, fenêtre `zone2` (`renderZone2()`), étiquette et pastille « à faire » propres. Les notifications d'arrosage et de récolte mènent à la Zone de culture d'abord, puis au Champ, puis à la Serre.
 - **Arbres du Verger** : `modèle.arbres` (12 au plus) ; `syncTrees()` pose le n-ième arbre sur `arbre_verger_n`. Un appui sur un arbre ouvre la fenêtre du Verger. Le Verger est limité à 12 emplacements (`DATA.VERGER.EMPLACEMENTS_MAX`) ; une partie qui en avait davantage garde ses arbres, dont 12 sont dessinés.
 - **Options** : le bouton ⚙️ quitte le bandeau pour le bout du menu du bas (`renderTabbar()`, même action `open-options`).
-- **Bandeau** : une ligne, 53 px (117 auparavant). Plus de titre, plus de légendes : 📅 Jour n, saison, heure, eau, pièces, autonomie (`renderIndicators()`). `fitIndicators()` réduit le texte si la ligne déborde. Le titre reste dans la page pour les lecteurs d'écran (`h1` masqué).
+- **Bandeau** : une ligne, 53 px (117 auparavant). Plus de titre, plus de légendes : 📅 Jour n, heure, eau, pièces, autonomie (`renderIndicators()` ; la saison en est retirée en version 1.6). `fitIndicators()` réduit le texte si la ligne déborde. Le titre reste dans la page pour les lecteurs d'écran (`h1` masqué).
 - **Sauvegardes** : format 20 (`state.potager.zone2`).
 - **Équilibrage** : `node scripts/simulate.mjs` passe de 273 à 5 045 pièces à la nuit 80, le joueur automatique plantant des légumes dans le Champ. À revoir si le Champ doit rester un champ de blé (restreindre ses cultures, ou régler le joueur automatique).

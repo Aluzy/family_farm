@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import {
   allDevices, batteryCapacity, isBroken, needsService, panelOutput, perSecond, perTick, pumpFlow,
-  tankCapacity,
+  sunlitMs, tankCapacity,
 } from './devices.js';
 import { availableEnergy, runFridge } from './fridge.js';
 import { runCooking, runElectricStation } from './kitchen.js';
@@ -125,12 +125,14 @@ export function flowStep(state, dtMs) {
   }
   state.flux.eau = 0;
 
-  // a. production : chaque panneau allumé et non en panne
+  // a. production : le panneau allumé et non en panne, seulement au soleil
+  // (version 1.6 : de 7 h à 19 h ; un pas qui chevauche 7 h ou 19 h produit au prorata)
   let produced = 0;
+  const sun = sunlitMs(state.awakeMs, dtMs);
   for (const p of state.panneaux) {
     p.prod = 0;
-    if (p.allume && !isBroken(p)) {
-      const e = perTick(panelOutput(p, state), dtMs);
+    if (p.allume && !isBroken(p) && sun > 0) {
+      const e = perTick(panelOutput(p, state), sun);
       produced += e;
       p.prod = perSecond(e, dtMs);
     }

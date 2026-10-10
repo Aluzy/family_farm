@@ -1,11 +1,13 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import {
-  allDevices, batteryCapacity, buyDevice, isBroken, maintainDevice, needsService, nextPurchasePrice,
-  panelOutput, pumpFlow, repairDevice, tankCapacity, toggleDevice, upgradeCost, upgradeDevice,
+  allDevices, batteryCapacity, isBroken, maintainDevice, needsService, panelOutput, pumpFlow,
+  repairDevice, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from './devices.js';
 import { fridgeRate } from './fridge.js';
-import { careCost, heal } from './family.js';
+import { eatSnack, planMeal } from './family.js';
+import { actionCost, energyMax } from './stamina.js';
+import { countItem } from './inventory.js';
 import { allPlots, waterCost } from './crops.js';
 import { isAutomated } from './automation.js';
 
@@ -115,7 +117,7 @@ export function formatPercent(p) {
    DATA.SIMULATION.
    ========================================================================== */
 
-/* ---------- entretien, soins, infrastructure ---------- */
+/* ---------- entretien, énergie, infrastructure ---------- */
 
 // Répare ce qui est en panne (et le rallume), entretient ce qui est usé.
 export function botMaintenance(state) {
@@ -128,10 +130,18 @@ export function botMaintenance(state) {
   }
 }
 
-// Un malade est soigné dès que les pièces le permettent.
-export function botHeal(state) {
-  for (const m of state.famille.membres) {
-    if (m.malade && state.pieces + EPS >= careCost(state)) heal(state, m.id);
+// Version 1.8 : quand l'énergie ne suffit plus pour une récolte, le joueur mange un
+// en-cas, pris seulement dans ce que le repas du soir ne mangera pas (l'aliment le
+// plus nourrissant d'abord), et jamais au-delà du maximum.
+export function botSnack(state) {
+  for (let guard = 0; guard < 10; guard++) {
+    if (state.energie >= actionCost(state, 'recolter') || state.energie >= energyMax()) return;
+    const plan = planMeal(state);
+    if (plan.couverture < 100) return;
+    const spare = Object.keys(DATA.items)
+      .filter((k) => DATA.items[k].edible && countItem(state, k) - (plan.mange[k] || 0) - (state.famille.reserve[k] || 0) >= 1)
+      .sort((a, b) => DATA.items[b].energie - DATA.items[a].energie);
+    if (!spare.length || !eatSnack(state, spare[0]).ok) return;
   }
 }
 
@@ -154,33 +164,29 @@ export function botEnergyPerDay(state, eveilS) {
   return mwh;
 }
 
-// Pompe, panneaux et batteries : le joueur ne laisse pas la ferme manquer d'eau
-// ni d'énergie (au pire de l'année : l'hiver). Renvoie la prochaine amélioration
-// nécessaire { cost, buy }, ou { done: true }. Pour l'énergie, il choisit le moyen
-// le moins cher d'ajouter de la puissance : améliorer un appareil ou en acheter un.
+// Pompe, réservoir, panneau et batterie : le joueur ne laisse pas la ferme manquer
+// d'eau ni d'énergie. Version 1.6 : un seul appareil de chaque, qu'il améliore ; le
+// panneau ne produit qu'au soleil (de 7 h à 19 h), sur la part ensoleillée de son
+// temps d'éveil. Renvoie la prochaine amélioration nécessaire { cost, buy }, ou
+// { done: true }.
 export function botInfraInfo(state, eveilS) {
   const S = DATA.SIMULATION;
   const litres = botWaterPerDay(state);
   const pump = state.pompe;
   const needsFlow = litres * 1000 * 100 > pumpFlow(pump) * eveilS * S.MARGE_EAU;
+  if (pump.niveau < DATA.LEVEL_MAX && needsFlow) return { cost: upgradeCost(pump), buy: () => upgradeDevice(state, pump.id) };
   const needsTank = isAutomated(state, 'potager') && litres * 1000 * 100 > tankCapacity(state) * S.MARGE_EAU;
-  if (pump.niveau < DATA.LEVEL_MAX && (needsFlow || needsTank)) return { cost: upgradeCost(pump), buy: () => upgradeDevice(state, pump.id) };
+  if (state.reservoir.niveau < DATA.LEVEL_MAX && needsTank) {
+    return { cost: upgradeCost({ type: 'reservoir', niveau: state.reservoir.niveau }), buy: () => upgradeTank(state) };
+  }
 
-  const worst = Math.min(...Object.values(DATA.SAISONS.MODS).map((m) => m.solaire));
-  const produced = Math.floor((state.panneaux.reduce((t, p) => t + panelOutput(p), 0) * worst) / 100) * eveilS;
+  const panel = state.panneaux[0];
+  const produced = Math.floor((panelOutput(panel) * sunlitMs(0, eveilS * 1000)) / 1000);
   const need = botEnergyPerDay(state, eveilS);
-  const cheapest = (type, list, grid) => {
-    let best = { ratio: nextPurchasePrice(state, type) / grid[0], buy: () => buyDevice(state, type), cost: nextPurchasePrice(state, type) };
-    for (const d of list) {
-      if (d.niveau >= DATA.LEVEL_MAX) continue;
-      const cost = upgradeCost(d);
-      const ratio = cost / (grid[d.niveau] - grid[d.niveau - 1]);
-      if (ratio < best.ratio) best = { ratio, buy: () => upgradeDevice(state, d.id), cost };
-    }
-    return best;
-  };
-  if (produced * 100 < need * S.MARGE_ENERGIE) return cheapest('panneau', state.panneaux, DATA.GRID.panneau.whParS);
-  const capacity = state.batteries.reduce((t, b) => t + batteryCapacity(b), 0);
-  if (capacity * 100 < need * S.MARGE_BATTERIE) return cheapest('batterie', state.batteries, DATA.GRID.batterie.wh);
+  if (panel.niveau < DATA.LEVEL_MAX && produced * 100 < need * S.MARGE_ENERGIE) return { cost: upgradeCost(panel), buy: () => upgradeDevice(state, panel.id) };
+  const battery = state.batteries[0];
+  if (battery.niveau < DATA.LEVEL_MAX && batteryCapacity(battery) * 100 < need * S.MARGE_BATTERIE) {
+    return { cost: upgradeCost(battery), buy: () => upgradeDevice(state, battery.id) };
+  }
   return { done: true };
 }

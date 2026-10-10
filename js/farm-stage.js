@@ -33,17 +33,12 @@
   'use strict';
 
   const T = 16;
-  // Une seule carte pour l'instant (printemps), utilisée aux quatre saisons.
+  // Version 1.6 : plus de saisons, une seule carte (celle du printemps).
   const MAP = { key: 'map_sp', json: 'carte_printemps.json', tiles: 'tiles_sp', image: 'farm_spring_summer.png' };
-  // Version 1.1.2 : la carte garde la même apparence toute l'année (celle du printemps), pour
-  // que les bâtiments restent assortis au décor. Quand les cartes d'automne et d'hiver
-  // existeront, passer SEASONS_ON_MAP à true : les bâtiments suivront de nouveau la saison.
-  const SEASONS_ON_MAP = false;
-  const SEASON_SUFFIX = SEASONS_ON_MAP
-    ? { printemps: 'sp', ete: 'sp', automne: 'au', hiver: 'wi' }
-    : { printemps: 'sp', ete: 'sp', automne: 'sp', hiver: 'sp' };
-  // Seules les images utiles sont chargées.
-  const SUFFIXES = SEASONS_ON_MAP ? ['sp', 'au', 'wi'] : ['sp'];
+  // Les images des bâtiments et des arbres du pack portent un suffixe de saison : seul
+  // celui du printemps (« sp ») est chargé et utilisé.
+  const SFX = 'sp';
+  const SUFFIXES = [SFX];
   // Rangées de tuiles visibles en hauteur : la taille d'affichage ne dépend pas de la
   // taille de la carte. La première carte en montrait 19 ; depuis la version 1.4 le bandeau
   // est deux fois moins haut, et la place gagnée montre deux rangées de plus, à la même échelle.
@@ -79,27 +74,27 @@
   //   « batiment » : la verrière seule, de la taille du rectangle `serre` de la carte ;
   //   « cour »     : la verrière et sa cour pavée (tout le haut de la planche, au-dessus des bacs).
   const SERRE_FRAMES = {
-    batiment: { sp: [94, 83], au: [93, 83], wi: [94, 83] },
-    cour: { sp: [177, 144], au: [176, 145], wi: [177, 144] },
+    batiment: { sp: [94, 83] },
+    cour: { sp: [177, 144] },
   };
   const SERRE_FRAME = 'batiment';
   // Bâtiments : `object` = rectangle nommé de la carte (le bas-centre de l'image se pose sur
   // le bas-centre du rectangle), `window` = fenêtre ouverte par un appui. La maison est
   // toujours là ; les autres n'apparaissent que si modèle.batiments[id].visible est vrai.
   const BUILDINGS = [
-    { id: 'maison', object: 'maison', tex: 'house', seasonal: true, window: 'maison' },
-    { id: 'etable', object: 'grange', tex: 'barn', seasonal: true, window: 'etable' },
+    { id: 'maison', object: 'maison', tex: 'house', suffixed: true, window: 'maison' },
+    { id: 'etable', object: 'grange', tex: 'barn', suffixed: true, window: 'etable' },
     // poulailler.png : trois images de 44×55 (porte fermée, entrouverte, ouverte) ; la vie
     // d'ambiance ouvre la porte le matin pour faire sortir les poules.
-    { id: 'poulailler', object: 'poulailler', tex: 'coop', seasonal: false, window: 'poulailler', frame: 0 },
-    { id: 'moulin', object: 'moulin', tex: 'windmill', seasonal: true, window: 'moulin', anim: true },
-    { id: 'serre', object: 'serre', tex: 'serre', seasonal: true, window: 'serre', frame: SERRE_FRAME },
-    { id: 'verger', object: 'verger', tex: 'sign', seasonal: false, window: 'verger' },
+    { id: 'poulailler', object: 'poulailler', tex: 'coop', suffixed: false, window: 'poulailler', frame: 0 },
+    { id: 'moulin', object: 'moulin', tex: 'windmill', suffixed: true, window: 'moulin', anim: true },
+    { id: 'serre', object: 'serre', tex: 'serre', suffixed: true, window: 'serre', frame: SERRE_FRAME },
+    { id: 'verger', object: 'verger', tex: 'sign', suffixed: false, window: 'verger' },
     // panneau_ville.png (scripts/icones/art_ville.py) : la flèche est dessinée vers la gauche,
     // retournée ici pour montrer la sortie, à l'est.
-    { id: 'ville', object: 'ville', tex: 'panneau_ville', seasonal: false, window: 'ville', flip: true },
+    { id: 'ville', object: 'ville', tex: 'panneau_ville', suffixed: false, window: 'ville', flip: true },
     // silo.png (28×62, scripts/batiments/silo.py) : sur le rectangle `silo` de la carte.
-    { id: 'silo', object: 'silo', tex: 'silo', seasonal: false, window: 'silo' },
+    { id: 'silo', object: 'silo', tex: 'silo', suffixed: false, window: 'silo' },
   ];
   const MILL_FRAME = { frameWidth: 96, frameHeight: 128 };
   // chat.png : le chat de la vie d'ambiance, 8 cases de 16×16 (leur ordre : CAT_FRAMES dans
@@ -1076,14 +1071,14 @@
 
       sync(model, force) {
         if (!this.ready) return;
-        const sfx = SEASON_SUFFIX[model.season] || 'sp';
-        const seasonChanged = force || this.sfx !== sfx;
+        const sfx = SFX;
+        const rebuild = force || this.sfx !== sfx;   // premier affichage ou affichage forcé
         this.sfx = sfx;
 
         // Lumière de l'heure : en fondu, sauf au premier affichage.
         if (force || model.heure !== this.hour) { this.hour = model.heure; this.setLight(model.heure, force); }
 
-        // Bâtiments : présents seulement si le jeu les a débloqués ; image de la saison.
+        // Bâtiments : présents seulement si le jeu les a débloqués.
         // modèle.batiments[id] = { visible, nom, badge } (ou un simple booléen).
         const shown = model.batiments || {};
         const info = (id) => {
@@ -1094,7 +1089,7 @@
         for (const def of BUILDINGS) {
           const want = info(def.id);
           const e = this.buildings.get(def.id);
-          if (e && (!want || seasonChanged)) { e.sprite.destroy(); this.buildings.delete(def.id); }
+          if (e && (!want || rebuild)) { e.sprite.destroy(); this.buildings.delete(def.id); }
           if (want && !this.buildings.has(def.id)) this.buildings.set(def.id, { def, sprite: this.makeBuilding(def, sfx) });
           // Étiquette : centrée au-dessus de l'image.
           const s = want ? this.buildings.get(def.id).sprite : null;
@@ -1126,9 +1121,9 @@
         for (const [id, e] of this.plots) {
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
         }
-        this.syncTrees(model.arbres || [], sfx, seasonChanged);
+        this.syncTrees(model.arbres || [], sfx, rebuild);
         this.syncRooms(model, force);
-        // L'ambiance reçoit l'heure, la saison et les images des arbres (jamais le modèle) : elle
+        // L'ambiance reçoit l'heure et les images des arbres (jamais le modèle) : elle
         // ne les anime pas, elle y fait partir feuilles et écureuils. Elle reçoit aussi l'image
         // de l'Étable et du Poulailler (s'ils sont affichés, avec leur vraie image) et le nombre
         // de bêtes : elle ouvre les portes le matin et fait sortir les bêtes.
@@ -1137,7 +1132,7 @@
           for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0) leafy.push(e.sprite);
           const real = (id) => { const e = this.buildings.get(id); return e && e.sprite.texture.key.indexOf('ph_') !== 0 ? e.sprite : null; };
           const folds = { etable: real('etable'), poulailler: real('poulailler') };
-          this.ambient.setContext({ hour: model.heure, season: model.season, trees: leafy, folds, herd: model.animaux || {} });
+          this.ambient.setContext({ hour: model.heure, trees: leafy, folds, herd: model.animaux || {} });
         }
         this.placeLabels();
       }
@@ -1186,7 +1181,7 @@
       // Arbres du Verger : le n-ième arbre se pose sur le rectangle arbre_verger_n (pied de
       // l'image au bas du rectangle). Un arbre pas encore adulte est plus petit. Au-delà des
       // rectangles de la carte, un arbre n'est pas dessiné.
-      syncTrees(arbres, sfx, seasonChanged) {
+      syncTrees(arbres, sfx, rebuild) {
         const seen = new Set();
         arbres.forEach((a, i) => {
           const o = this.objects[TREE_OBJECT + (i + 1)];
@@ -1194,7 +1189,7 @@
           seen.add(a.id);
           const key = this.tex('tree_' + sfx, this.tex('tree_sp', 'ph_arbre'));
           let e = this.trees.get(a.id);
-          if (e && (seasonChanged || e.key !== key)) { e.sprite.destroy(); this.trees.delete(a.id); e = null; }
+          if (e && (rebuild || e.key !== key)) { e.sprite.destroy(); this.trees.delete(a.id); e = null; }
           if (!e) {
             // Image fixe : la première de la planche (les arbres ne sont pas animés).
             const sprite = this.add.image(0, 0, key, key.indexOf('ph_') !== 0 ? 0 : undefined);
@@ -1214,8 +1209,8 @@
       // de la carte. Profondeur = y du pied : ce qui est plus bas passe devant.
       makeBuilding(def, sfx) {
         const o = this.objects[def.object] || DEFAULT_OBJECTS[def.object];
-        const wanted = def.seasonal ? def.tex + '_' + sfx : def.tex;
-        const key = this.tex(wanted, this.tex(def.seasonal ? def.tex + '_sp' : def.tex, 'ph_' + def.id));
+        const wanted = def.suffixed ? def.tex + '_' + sfx : def.tex;
+        const key = this.tex(wanted, this.tex(def.suffixed ? def.tex + '_sp' : def.tex, 'ph_' + def.id));
         const real = key.indexOf('ph_') !== 0;
         let s;
         if (def.anim && real) {

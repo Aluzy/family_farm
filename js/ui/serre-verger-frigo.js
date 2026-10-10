@@ -1,5 +1,4 @@
 import { DATA } from '../engine/catalog.js';
-import { currentSeason, seasonFactor, seasonNight, yearNight } from '../engine/seasons.js';
 import { isBroken } from '../engine/devices.js';
 import { deviceStatus } from '../engine/energy.js';
 import {
@@ -8,7 +7,7 @@ import {
 } from '../engine/fridge.js';
 import { buildSerre, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
 import {
-  buildVerger, buyOrchardSlot, isTreeAdult, orchardFree, orchardProducesOn, orchardSlotPrice, orchardWindow,
+  buildVerger, buyOrchardSlot, isTreeAdult, orchardFree, orchardSlotPrice,
   treeAge, treeNextHarvest,
 } from '../engine/orchard.js';
 import { formatCoins, formatNumber, formatQty, formatWh, formatWhRate } from '../engine/format.js';
@@ -26,39 +25,7 @@ import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
 import { canPay, costLabel } from './common.js';
 
-/* ---------- Lot 8 : calendrier, Serre, Verger, Réfrigérateur ---------- */
-
-// Facteur de saison en % : « +10 % », « −30 % », « 0 % ».
-export function formatFactor(f) {
-  const d = f - 100;
-  return d === 0 ? '0 %' : `${d > 0 ? '+' : '−'}${Math.abs(d)} %`;
-}
-
-// Calendrier : saison, nuit x / 10, et les modificateurs de la saison (en vert
-// ce qui aide, en rouge ce qui freine ; la couleur n'est jamais la seule
-// indication : le facteur est écrit).
-export function renderCalendar() {
-  const S = DATA.SAISONS;
-  const id = currentSeason(state);
-  const info = S.INFOS[id];
-  const n = seasonNight(state);
-  const chips = Object.keys(S.FACTEURS)
-    .map((kind) => {
-      const f = seasonFactor(state, kind);
-      const cls = f > 100 ? ' auto' : f < 100 ? ' warn' : '';
-      const sign = f > 100 ? '▲ ' : f < 100 ? '▼ ' : '';
-      const k = S.FACTEURS[kind];
-      return `<span class="chip${cls}" title="${k.nom} ${formatFactor(f)}"><span aria-hidden="true">${k.icone}</span> ${k.nom} ${sign}${formatFactor(f)}</span>`;
-    })
-    .join('');
-  return `
-    <div class="card season-card">
-      <span class="card-title"><span>${info.icone} ${info.nom}</span><span class="chip">Nuit ${n} / ${S.LONGUEUR}</span></span>
-      <span class="bar" role="progressbar" aria-label="Avancement de la saison" aria-valuemin="0" aria-valuemax="${S.LONGUEUR}" aria-valuenow="${n}"><span class="bar-fill" style="width:${Math.round((n / S.LONGUEUR) * 100)}%"></span></span>
-      <span class="season-chips">${chips}</span>
-      <span class="muted">Les modificateurs jouent sur la Zone de culture, l'eau des arrosages et le solaire. La Serre et les animaux les ignorent.</span>
-    </div>`;
-}
+/* ---------- Lot 8 : Serre, Verger, Réfrigérateur ---------- */
 
 export function renderSerre() {
   const g = state.serre;
@@ -67,7 +34,7 @@ export function renderSerre() {
     return `
       <div class="section-head"><h3>${icon('serre')}Serre</h3>${helpBtn('serre')}</div>
       <div class="card">
-        <span class="muted">Tomate, courgette, aubergine et poivron, plus trois cultures de rente exclusives à la Serre (cacao, vanille, café) : ${DATA.SERRE.PARCELLES[0]} parcelles au départ, +${DATA.SERRE.PARCELLES[1] - DATA.SERRE.PARCELLES[0]} par niveau. Aucun modificateur de saison : ni l'hiver ni l'été n'y changent rien.</span>
+        <span class="muted">Tomate, courgette, aubergine et poivron, plus trois cultures de rente exclusives à la Serre (cacao, vanille, café) : ${DATA.SERRE.PARCELLES[0]} parcelles au départ, +${DATA.SERRE.PARCELLES[1] - DATA.SERRE.PARCELLES[0]} par niveau.</span>
         <button type="button" class="btn primary" data-action="build-serre"${canPay(cost) ? '' : ' disabled'}>Construire la Serre (${costLabel(cost)})</button>
       </div>`;
   }
@@ -79,7 +46,7 @@ export function renderSerre() {
   return `
     <div class="section-head">
       <h3>${icon('serre')}Serre · niveau ${g.niveau}</h3>
-      <span class="chips">${autoChip('serre', 'Travaille tout seul, à 100 %, pendant la nuit')}<span class="chip" title="La Serre ignore les modificateurs de saison">🌡️ Sans saison</span>${helpBtn('serre')}</span>
+      <span class="chips">${autoChip('serre', 'Travaille tout seul, à 100 %, pendant la nuit')}${helpBtn('serre')}</span>
     </div>
     <div class="plots">${g.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${groupButtons('serre')}${upBtn}</div>
@@ -93,7 +60,6 @@ function treeCard(tree) {
   const age = Math.min(V.MATURITE, treeAge(state, tree));
   const adult = isTreeAdult(state, tree);
   const next = treeNextHarvest(state, tree);
-  const inWindow = orchardProducesOn(state.day);
   let line;
   if (!adult) line = `Jeune plant : ${age} / ${V.MATURITE} nuits`;
   else line = 'Adulte';
@@ -104,7 +70,7 @@ function treeCard(tree) {
       ${treeArt(tree)}
       <span class="muted">${line}${adult ? ` · ${V.FRUITS} ${fruit.nom.toLowerCase()}s par récolte` : ''}</span>
       <span class="bar" role="progressbar" aria-label="Croissance" aria-valuemin="0" aria-valuemax="${V.MATURITE}" aria-valuenow="${age}"><span class="bar-fill" style="width:${Math.round((age / V.MATURITE) * 100)}%"></span></span>
-      <span class="muted">${when}${inWindow && adult ? ' · 🍎 en saison' : ''}</span>
+      <span class="muted">${when}</span>
     </div>`;
 }
 
@@ -116,12 +82,10 @@ export function renderVerger() {
     return `
       <div class="section-head"><h3>${icon('verger')}Verger</h3>${helpBtn('verger')}</div>
       <div class="card">
-        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Pommiers et poiriers s'achètent ici, au Verger, sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne, ${V.MATURITE} nuits après la plantation.</span>
+        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Pommiers et poiriers s'achètent ici, au Verger, sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, toute l'année, à partir de ${V.MATURITE} nuits après la plantation.</span>
         <button type="button" class="btn primary" data-action="build-verger"${canPay(cost) ? '' : ' disabled'}>Aménager le Verger (${costLabel(cost)})</button>
       </div>`;
   }
-  const w = orchardWindow();
-  const L = DATA.SAISONS.LONGUEUR;
   const price = orchardSlotPrice(state);
   const free = orchardFree(state);
   const slots = [];
@@ -134,8 +98,6 @@ export function renderVerger() {
         <span class="muted">Achète un pommier ou un poirier ci-dessous.</span>
       </div>`);
   }
-  const nightOfYear = yearNight(state.day);
-  const season = nightOfYear >= w.debut && nightOfYear <= w.fin ? '🍎 Les fruits sont de saison.' : `Les fruits arrivent de la nuit ${w.debut} à la nuit ${w.fin} de l'année (l'année compte ${L * DATA.SAISONS.ORDRE.length} nuits).`;
   const atMax = v.places >= V.EMPLACEMENTS_MAX;
   return `
     <div class="section-head">
@@ -144,7 +106,7 @@ export function renderVerger() {
     </div>
     <div class="plots">${slots.join('')}</div>
     <div class="card">
-      <span class="muted">${season}</span>
+      <span class="muted">Un arbre adulte donne ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, toute l'année.</span>
       ${atMax
         ? `<span class="muted">Le Verger a atteint sa taille maximale (${V.EMPLACEMENTS_MAX} emplacements).</span>`
         : `<button type="button" class="btn" data-action="buy-orchard-slot"${canPay(price) ? '' : ' disabled'}>Acheter un emplacement (${costLabel(price)})</button>`}

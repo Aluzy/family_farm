@@ -9,9 +9,10 @@
     "              quantite graines à la place de la récolte.",
     "lieux : où la culture se plante. 'potager' est l'identifiant interne de la",
     "Zone de culture (version 1.0 : l'ancien Potager et l'ancien Champ réunis).",
-    "deblocage : élément de chapitre (DATA.CHAPITRES) à obtenir avant de pouvoir",
-    "planter la culture — voir cropUnlocked(). Les cultures de plein champ",
-    "attendent 'champ' (chapitre 3), comme à l'époque où il fallait un Champ.",
+    "Le niveau qui débloque chaque culture est dans NIVEAUX.liste (version 1.7).",
+    "pleinChamp : culture de plein champ (blé, tournesol, riz, houblon), pour le",
+    "joueur automatique. requiert : bâtiment à construire avant de planter (le",
+    "blé attend le Silo) — voir cropUnlocked().",
     "sprite : le dessin de la plante sur la carte, découpé dans assets/crops.png (cases de 16 px) —",
     "r = rangée de la base de la plante, h = hauteur du dessin (16 ou 32), c = colonnes des 4 phases.",
     "Sans sprite, la carte affiche l'icône de la culture."
@@ -67,15 +68,7 @@
       "graines": { "item": "graine_aubergine", "mode": "recolte", "min": 1, "max": 2 },
       "sprite": { "r": 15, "h": 32, "c": [0, 1, 2, 3] }
     },
-    "//poivron": [
-      "10 nouvelles cultures. Le poivron pousse au Potager ET en Serre, exactement",
-      "comme la tomate/courgette/aubergine ci-dessus (même mécanisme, mêmes",
-      "fonctions : plant(), harvest(), yieldSeasonFactor()/waterSeasonFactor()",
-      "n'appliquent déjà le facteur de saison que si le *lieu* de la parcelle",
-      "(pas la culture) figure dans DATA.SAISONS.RENDEMENT_LIEU / EAU_LIEUX — la",
-      "Serre n'y figure pas, donc un poivron planté en Serre ignore déjà les",
-      "saisons sans code supplémentaire)."
-    ],
+    "//poivron": "Le poivron pousse dans la Zone de culture ET en Serre, comme la tomate, la courgette et l'aubergine.",
     "poivron": {
       "nom": "Poivron",
       "icone": "🫑",
@@ -130,14 +123,15 @@
     "//ble": [
       "Lot 4 (cultures de plein champ). produit : l'objet récolté quand il n'a pas",
       "le nom de la culture. Blé : 1 blé = 1 graine. Tournesol : la récolte donne",
-      "des graines, à replanter ou à presser (même ressource). Le tournesol",
-      "attend en plus son propre déblocage (chapitre 4)."
+      "des graines, à replanter ou à presser (même ressource). Le blé ne se",
+      "plante qu'une fois le Silo construit."
     ],
     "ble": {
       "nom": "Blé",
       "icone": "🌾",
       "lieux": ["potager"],
-      "deblocage": "champ",
+      "pleinChamp": true,
+      "requiert": "silo",
       "stades": 7,
       "litres": 2,
       "rendement": 8,
@@ -148,7 +142,7 @@
       "nom": "Tournesol",
       "icone": "🌻",
       "lieux": ["potager"],
-      "deblocage": "champ",
+      "pleinChamp": true,
       "stades": 7,
       "litres": 2,
       "rendement": 9,
@@ -165,7 +159,7 @@
       "nom": "Riz",
       "icone": "🍚",
       "lieux": ["potager"],
-      "deblocage": "champ",
+      "pleinChamp": true,
       "stades": 8,
       "litres": 4,
       "rendement": 10,
@@ -176,7 +170,7 @@
       "nom": "Houblon",
       "icone": "🌿",
       "lieux": ["potager"],
-      "deblocage": "champ",
+      "pleinChamp": true,
       "stades": 6,
       "litres": 2,
       "rendement": 6,
@@ -233,7 +227,7 @@
     "de la carte). Il s'ouvre en entier, sans rien payer, avec DEBLOCAGE (le",
     "Moulin) : PARCELLES parcelles sur COLONNES colonnes, pour cultiver beaucoup",
     "de blé (animaux, paille). Mêmes règles que la Zone de culture, dont ses",
-    "parcelles portent le lieu ('potager') : mêmes cultures, mêmes saisons,",
+    "parcelles portent le lieu ('potager') : mêmes cultures, mêmes règles,",
     "mêmes automatisations. Leurs identifiants sont « ID-n » et elles portent",
     "zone: 2 ; elles sont rangées dans state.potager.zone2."
   ],
@@ -242,17 +236,16 @@
     "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "PARCELLES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
   },
   "//SERRE": [
-    "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture, sans modificateur",
-    "de saison. CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",
+    "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture.",
+    "CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",
     "atteindre le niveau n + 1 (index 0 non utilisé). Tomate, courgette, aubergine."
   ],
   "SERRE": { "LIEU": "serre", "CONSTRUCTION": 400, "PARCELLES": [6, 9, 12, 15, 18], "COUT": [0, 300, 600, 1000, 1800] },
   "//VERGER": [
     "Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent au Marché à prix",
     "fixe et se plantent sur un emplacement libre. Un arbre est adulte MATURITE",
-    "nuits après sa plantation ; adulte, il donne FRUITS fruits toutes les PERIODE",
-    "nuits, seulement dans la fenêtre : les `dernieresNuits` dernières nuits de",
-    "l'été et toute la saison suivante (automne). Pas d'arrosage.",
+    "nuits après sa plantation ; adulte, il donne FRUITS fruits cette nuit-là puis",
+    "toutes les PERIODE nuits, toute l'année (version 1.6 : plus de saisons). Pas d'arrosage.",
     "CONSTRUCTION : 0 (« aménager » le Verger est gratuit : il est débloqué par le",
     "chapitre 6, voir CHAPITRES) ; l'emplacement",
     "supplémentaire coûte EMPLACEMENT.base × croissance^n, n étant le nombre",
@@ -268,50 +261,9 @@
     "MATURITE": 15,
     "FRUITS": 6,
     "PERIODE": 3,
-    "FENETRE": { "debut": { "saison": "ete", "dernieresNuits": 5 }, "fin": { "saison": "automne" } },
     "ARBRES": {
       "pommier": { "nom": "Pommier", "icone": "🌳", "fruit": "pomme", "prix": 40 },
       "poirier": { "nom": "Poirier", "icone": "🌳", "fruit": "poire", "prix": 40 }
     }
-  },
-  "//SAISONS": [
-    "Lot 8 : saisons, Serre, Verger, Réfrigérateur",
-    "Saisons légères (sections 1.4 et 6.9 ter) : 4 saisons de LONGUEUR nuits, la",
-    "saison se déduit de la nuit courante (nuit 1 = premier jour du printemps).",
-    "MODS : facteur par saison et par type de calcul (solaire : production des",
-    "panneaux ; potager : rendement d'une récolte de la Zone de culture, quelle",
-    "que soit la culture ; eau : litres par arrosage). La Serre les ignore tous.",
-    "Les animaux ne dépendent pas des saisons (version 1.1 : l'ancien facteur",
-    "« moutons » ne jouait que sur leur prise de poids, qui n'existe plus) : ni",
-    "la ponte, ni le lait, ni la laine ne changent d'une saison à l'autre."
-  ],
-  "SAISONS": {
-    "LONGUEUR": 10,
-    "ORDRE": ["printemps", "ete", "automne", "hiver"],
-    "INFOS": {
-      "printemps": { "nom": "Printemps", "icone": "🌱" },
-      "ete": { "nom": "Été", "icone": "☀️" },
-      "automne": { "nom": "Automne", "icone": "🍂" },
-      "hiver": { "nom": "Hiver", "icone": "❄️" }
-    },
-    "MODS": {
-      "//printemps": "en % : 110 = +10 %, 70 = −30 %",
-      "printemps": { "solaire": 100, "potager": 110, "eau": 100 },
-      "ete": { "solaire": 130, "potager": 100, "eau": 130 },
-      "automne": { "solaire": 90, "potager": 100, "eau": 90 },
-      "hiver": { "solaire": 70, "potager": 70, "eau": 80 }
-    },
-    "//FACTEURS": "Types de facteurs, avec leur libellé pour le calendrier.",
-    "FACTEURS": {
-      "solaire": { "nom": "Solaire", "icone": "☀️" },
-      "potager": { "nom": "Zone de culture", "icone": "🌱" },
-      "eau": { "nom": "Eau", "icone": "💧" }
-    },
-    "//RENDEMENT_LIEU": [
-      "Lieu de culture → facteur de rendement qui s'y applique. Un lieu absent",
-      "(la Serre) n'a aucun modificateur, ni de rendement ni d'eau."
-    ],
-    "RENDEMENT_LIEU": { "potager": "potager" },
-    "EAU_LIEUX": ["potager"]
   }
 }

@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { yearNight } from './seasons.js';
 import { fail, growthPrice, spend } from './devices.js';
 import { addItem } from './inventory.js';
 
@@ -76,44 +75,31 @@ export function isTreeAdult(state, tree) {
   return treeAge(state, tree) >= DATA.VERGER.MATURITE;
 }
 
-// Fenêtre de production, en numéros de nuit de l'année (1 à 40) : les dernières
-// nuits de l'été, puis toute la saison de fin (l'automne).
-export function orchardWindow() {
-  const S = DATA.SAISONS;
-  const W = DATA.VERGER.FENETRE;
-  const debut = S.ORDRE.indexOf(W.debut.saison) * S.LONGUEUR + (S.LONGUEUR - W.debut.dernieresNuits) + 1;
-  const fin = (S.ORDRE.indexOf(W.fin.saison) + 1) * S.LONGUEUR;
-  return { debut, fin };
-}
-
-// Un arbre adulte donne ses fruits la PERIODE-ième nuit de la fenêtre, puis
-// toutes les PERIODE nuits : nuits 18, 21, 24, 27 et 30 de l'année.
-export function orchardProducesOn(day) {
-  const w = orchardWindow();
-  const y = yearNight(day);
-  if (y < w.debut || y > w.fin) return false;
-  return (y - w.debut + 1) % DATA.VERGER.PERIODE === 0;
+// Version 1.6 : plus de saisons, un arbre donne ses fruits toute l'année. Il les
+// donne la nuit qui complète sa MATURITÉ-ième nuit depuis la plantation, puis
+// toutes les PERIODE nuits (planté nuit 1 : nuits 15, 18, 21…).
+export function treeProducesOn(tree, day) {
+  const age = day - tree.plantee + 1;
+  return age >= DATA.VERGER.MATURITE && (age - DATA.VERGER.MATURITE) % DATA.VERGER.PERIODE === 0;
 }
 
 // Nuit (numéro absolu) de la prochaine récolte d'un arbre, à partir de la nuit
-// courante comprise : la première nuit de production où il aura MATURITÉ nuits.
+// courante comprise.
 export function treeNextHarvest(state, tree) {
-  for (let d = state.day; d < state.day + 3 * DATA.SAISONS.LONGUEUR * DATA.SAISONS.ORDRE.length; d++) {
-    if (orchardProducesOn(d) && d - tree.plantee + 1 >= DATA.VERGER.MATURITE) return d;
+  for (let d = state.day; d < state.day + DATA.VERGER.MATURITE + DATA.VERGER.PERIODE; d++) {
+    if (treeProducesOn(tree, d)) return d;
   }
   return null;
 }
 
-// Étape nocturne (après les moutons) : les arbres adultes donnent leurs fruits
-// dans la fenêtre de production. Ils sont adultes à la nuit qui complète leur
-// MATURITÉ-ième nuit depuis la plantation.
+// Étape nocturne (après les moutons) : les arbres dont c'est la nuit donnent
+// leurs fruits.
 export function growOrchard(state) {
   const v = state.verger;
   if (!v || !v.construit) return;
   if (!state.nuit.fruits) state.nuit.fruits = {};
-  if (!orchardProducesOn(state.day)) return;
   for (const tree of v.arbres) {
-    if (state.day - tree.plantee + 1 < DATA.VERGER.MATURITE) continue;
+    if (!treeProducesOn(tree, state.day)) continue;
     const fruit = DATA.VERGER.ARBRES[tree.espece].fruit;
     addItem(state, fruit, DATA.VERGER.FRUITS);
     state.nuit.fruits[fruit] = (state.nuit.fruits[fruit] || 0) + DATA.VERGER.FRUITS;

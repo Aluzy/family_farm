@@ -57,7 +57,7 @@ Types acceptés (le moteur gère déjà les deux premiers, en ET) :
 | Nœud | `{ noeud }` | Réseau d'irrigation |
 | Niveau de bâtiment | `{ batiment, niveau }` | Pompe niv. 3 |
 | Construit | `{ construit }` | Serre, Pâturage, Four, Réfrigérateur |
-| Parc d'appareils | `{ appareil, nombre }` | 2 batteries |
+| Niveau d'un appareil | `{ batiment, niveau }` (version 1.6 : plus de parc) | batterie niveau 2 |
 
 ### 2.5 Effets
 
@@ -65,10 +65,10 @@ Un seul agrégateur remplace `prepTimeMult()` et `awakeRequired()` : il parcourt
 
 | Clé | Combinaison | Utilisée par | Cumul maximal |
 |---|---|---|---|
-| `tempsPrepa`, `eauArrosage`, `usure`, `kwhParLitre`, `frigoConso`, `blePoule`, `soinCout` | produit | temps, eau, usure, pompe, frigo, poules, soins | ×0,64 · ×0,765 · ×0,75 · ×0,75 · ×0,7 · ×0,8 · ×0,7 |
+| `tempsPrepa`, `eauArrosage`, `usure`, `kwhParLitre`, `frigoConso`, `blePoule` | produit | temps, eau, usure, pompe, frigo, poules | ×0,64 · ×0,765 · ×0,75 · ×0,75 · ×0,7 · ×0,8 |
 | `eveilMin` | minimum | éveil minimal | 10 s |
-| `conservation`, `grainesBonus`, `recuperation` | somme | péremption, graines, santé | +1 · +1 · +1 |
-| `bonusPlatsMax`, `solaireHiver`, `croissanceSurface`, `fileAttente` | valeur du nœud | santé, saisons, pâturage, ateliers | 5 · 0,85 · 1,1 · 3 |
+| `conservation`, `grainesBonus`, `reveilEnergie` | somme | péremption, graines, énergie au réveil | +1 · +1 · +10 |
+| `gouter`, `solaireBonus`, `croissanceSurface`, `fileAttente` | valeur du nœud | en-cas, solaire, pâturage, ateliers | 150 % · 110 % · 1,1 · 3 |
 | `auto: { tâche: [lieux] }` | union | nuit (`autoTasks`) | arrosage, récolte, semis, nourrissage, tonte |
 | `recettes` | union | Livre de recette | 16 recettes |
 | `actionsGroupees`, `pluie`, `delestage`, `entretienAuto`, `arrosagePrioritaire`, `routine` | présence | fonctions dédiées | — |
@@ -121,9 +121,9 @@ flowchart LR
   end
   subgraph famille["👨‍👩‍👧‍👦 Famille"]
     reveil_1["Réveil matinal I (P1)"]
-    fa_remedes["Remèdes maison (P1)"]
+    fa_sommeil["Bon sommeil (P1)"]
     fa_cellier["Cellier (P2)"]
-    fa_menus["Menus variés (P3)"]
+    fa_gouter["Goûter (P3)"]
     reveil_2["Réveil matinal II (P3)"]
     fa_routine["Routine familiale (P5)"]
   end
@@ -150,7 +150,7 @@ flowchart LR
   cui_serie --> cui_conserverie
   fa_cellier --> cui_conserverie
   cui_laiterie --> cui_epicerie
-  fa_cellier --> fa_menus
+  fa_cellier --> fa_gouter
   reveil_1 --> reveil_2
   reveil_2 --> fa_routine
   semis_auto --> fa_routine
@@ -165,17 +165,17 @@ flowchart LR
 | Palier | ID | Nœud | Fonction | Coût | Prérequis | Effet |
 |---|---|---|---|---|---|---|
 | 1 | `en_entretien` | 🔧 Entretien préventif | Productivité | 1 PT + 100 💰 | — | Panneaux, batteries et appareils s'usent 25 % moins vite. |
-| 3 | `en_delestage` | 🎛️ Délestage intelligent | Automatisation | 1 PT + 400 💰 | Entretien préventif + 2 batteries | Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte. |
+| 3 | `en_delestage` | 🎛️ Délestage intelligent | Automatisation | 1 PT + 400 💰 | Entretien préventif + batterie niveau 2 | Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte. |
 | 3 | `en_entretien_auto` | 🛠️ Entretien automatique | Automatisation | 2 PT + 500 💰 | Entretien préventif | Chaque nuit, les appareils à 70 % d'usure ou plus sont entretenus automatiquement, au prix normal, si les pièces suffisent. |
 | 4 | `en_frigo_eco` | 🧊 Réfrigérateur basse consommation | Productivité | 1 PT + 600 💰 | Délestage intelligent + Réfrigérateur construit | Le réfrigérateur consomme 30 % d'électricité en moins. |
-| 4 | `en_hiver` | ☀️ Panneaux orientables | Productivité | 2 PT + 800 💰 | Entretien automatique | En hiver, les panneaux produisent 85 % de leur puissance au lieu de 70 %. |
+| 4 | `en_hiver` | ☀️ Panneaux orientables | Productivité | 2 PT + 800 💰 | Entretien automatique | Les panneaux produisent 10 % de plus (version 1.6 : plus d'hiver). |
 
 ### 💧 Eau — 6 nœuds, 10 PT, 3 900 💰
 
 | Palier | ID | Nœud | Fonction | Coût | Prérequis | Effet |
 |---|---|---|---|---|---|---|
 | 1 | `ea_econome` | 💧 Arrosage économe | Productivité | 1 PT + 150 💰 | Pompe niv. 2 | Chaque arrosage consomme 15 % d'eau en moins. |
-| 2 | `ea_pluie` | 🌧️ Récupérateur d'eau de pluie | Déblocage | 1 PT + 250 💰 | Arrosage économe | Chaque nuit, de l'eau de pluie s'ajoute au réservoir sans électricité : 20 L au printemps et en automne, 10 L en hiver, 5 L en été. |
+| 2 | `ea_pluie` | 🌧️ Récupérateur d'eau de pluie | Déblocage | 1 PT + 250 💰 | Arrosage économe | Chaque nuit, 15 L d'eau de pluie s'ajoutent au réservoir sans électricité. |
 | 3 | `ea_irrigation` | 🚿 Réseau d'irrigation | Automatisation | 2 PT + 900 💰 | Arrosage économe + Pompe niv. 3 + Potager niv. 3 | Chaque nuit, toutes les parcelles plantées du Potager et du Champ sont arrosées automatiquement. |
 | 3 | `ea_pompe_eco` | ⛲ Pompe à haut rendement | Productivité | 1 PT + 500 💰 | Arrosage économe + Entretien préventif | La pompe consomme 25 % d'électricité en moins par litre. |
 | 4 | `ea_serre` | 🏡 Irrigation de la Serre | Automatisation | 2 PT + 600 💰 | Réseau d'irrigation + Serre construit | Chaque nuit, les parcelles plantées de la Serre sont arrosées automatiquement. |
@@ -218,9 +218,9 @@ flowchart LR
 | Palier | ID | Nœud | Fonction | Coût | Prérequis | Effet |
 |---|---|---|---|---|---|---|
 | 1 | `reveil_1` | 🌅 Réveil matinal I | Temps | 1 PT + 200 💰 | — | L'éveil minimal avant de pouvoir dormir passe de 30 s à 20 s. |
-| 1 | `fa_remedes` | 🌿 Remèdes maison | Productivité | 1 PT + 100 💰 | — | Les soins coûtent 30 % de moins, et un malade regagne 3 points de santé par nuit bien nourrie au lieu de 2. |
+| 1 | `fa_sommeil` | 🛏️ Bon sommeil | Productivité | 1 PT + 100 💰 | — | Au réveil, l'énergie remonte de 10 points de plus. |
 | 2 | `fa_cellier` | 🏚️ Cellier | Productivité | 1 PT + 250 💰 | — | Hors réfrigérateur, tout ce qui périme se garde une nuit de plus. |
-| 3 | `fa_menus` | 🍽️ Menus variés | Productivité | 1 PT + 300 💰 | Cellier | Le bonus de santé des plats différents mangés monte jusqu'à +5 par nuit au lieu de +3. |
+| 3 | `fa_gouter` | 🥪 Goûter | Productivité | 1 PT + 300 💰 | Cellier | Ce que tu manges dans la journée rend 50 % d'énergie en plus. |
 | 3 | `reveil_2` | 🌅 Réveil matinal II | Temps | 1 PT + 500 💰 | Réveil matinal I | L'éveil minimal passe à 10 s. |
 | 5 | `fa_routine` | 🏡 Routine familiale | Automatisation | 3 PT + 2 500 💰 | Réveil matinal II + Semis automatique + Mangeoire à trémie + Entretien automatique | Option « Dormir tout seul » : jeu ouvert, la famille va se coucher d'elle-même dès que l'éveil minimal est écoulé. |
 
@@ -248,8 +248,8 @@ Dans le Livre de recette, une recette verrouillée reste visible, grisée, avec 
 | Élément | Règle | Valeurs 🟡 |
 |---|---|---|
 | **Bocal de légumes** | Cuisine, 4 légumes d'une même sorte + 1 L d'eau → 1 bocal. Ne périme pas. Nouvel item distinct de `conserve` : il compte comme **produit** pour l'autonomie (la conserve de départ reste « achetée »). | 30 s · 40 énergie · prix par la formule des plats |
-| **Eau de pluie** | Étape de nuit, avant l'arrosage automatique : ajoute des litres au réservoir, plafonnés à sa capacité, sans électricité. | 20 / 5 / 20 / 10 L selon la saison |
-| **Actions groupées** | « Arroser tout » et « Récolter tout » par zone, au clic : une tentative par parcelle, avec la productivité de la santé comme pour les clics. | — |
+| **Eau de pluie** | Étape de nuit, avant l'arrosage automatique : ajoute des litres au réservoir, plafonnés à sa capacité, sans électricité. | 15 L par nuit (version 1.6 : plus de saisons) |
+| **Actions groupées** | « Arroser tout » et « Récolter tout » par zone, au clic : une tentative par parcelle, chacune payée en énergie comme un clic (version 1.8). | — |
 | **File de préparations** | Chaque atelier garde jusqu'à 3 préparations en attente ; les ingrédients sont retirés au moment de la mise en file ; annuler rend les ingrédients. Le hors-ligne fait avancer la file comme une préparation. | 3 places |
 | **Délestage** | Sous le seuil de charge totale des batteries, le Moulin, la Presse et la Pompe sont suspendus (pas éteints : ils reprennent seuls). | 10 % |
 | **Entretien automatique** | Au Dormir, chaque appareil à `SERVICE_THRESHOLD` (70 %) ou plus est entretenu si les pièces suffisent, dans l'ordre du parc ; résumé dans le rapport du réveil. | — |

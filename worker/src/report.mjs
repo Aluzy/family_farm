@@ -34,7 +34,6 @@ export const GAME_ACTIONS = {
   'ville-go': 'Partir en sortie ou en voyage',
   'ville-market': 'Aller au marché de la ville',
   'ville-buy': 'Acheter au marché de la ville',
-  'buy': 'Acheter un panneau ou une batterie',
   'buy-pasture': 'Acheter une place à l\'Étable',
   'mill-start': 'Moudre du blé au Moulin',
   'mill-cancel': 'Moudre du blé au Moulin',
@@ -59,9 +58,10 @@ export const GAME_ACTIONS = {
   'upgrade-serre': 'Améliorer ou agrandir',
   'upgrade-poulailler': 'Améliorer ou agrandir',
   'upgrade-potager': 'Améliorer ou agrandir',
+  'upgrade-tank': 'Améliorer ou agrandir',
   'maintain': 'Entretenir un appareil',
   'repair': 'Réparer un appareil',
-  'heal': 'Soigner un membre de la famille',
+  'eat': 'Manger un en-cas',
   'fridge-in': 'Utiliser le réfrigérateur',
   'fridge-in-all': 'Utiliser le réfrigérateur',
   'fridge-out': 'Utiliser le réfrigérateur',
@@ -74,7 +74,7 @@ export const GAME_ACTIONS = {
 // Clics d'interface : navigation, fenêtres, réglages de quantité. Comptés à
 // part, jamais dans le classement des actions.
 export const INTERFACE_ACTIONS = new Set([
-  'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about',
+  'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels',
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open', 'sell-inc',
   'sell-dec', 'sell-max', 'cancel-queued', 'ack-chapter',
   'ask-new-game', 'cancel-new-game', 'copy-export',

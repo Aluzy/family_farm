@@ -46,12 +46,15 @@
       "paturage": { "nom": "Étable (moutons et vaches)", "icone": "🐑" },
       "four": { "nom": "Four", "icone": "🔥" },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊" },
-      "batterie": { "nom": "Batteries", "icone": "🔋" }
+      "batterie": { "nom": "Batterie", "icone": "🔋" },
+      "panneau": { "nom": "Panneau solaire", "icone": "☀️" },
+      "reservoir": { "nom": "Réservoir", "icone": "💧" }
     },
     "suivi": {
-      "panneau": { "type": "appareils", "nom": "Panneaux solaires", "icone": "☀️" },
-      "batterie": { "type": "appareils", "nom": "Batteries", "icone": "🔋" },
-      "pompe": { "type": "niveau", "nom": "Pompe et réservoir", "icone": "⛲" },
+      "panneau": { "type": "niveau", "nom": "Panneau solaire", "icone": "☀️" },
+      "batterie": { "type": "niveau", "nom": "Batterie", "icone": "🔋" },
+      "pompe": { "type": "niveau", "nom": "Pompe", "icone": "⛲" },
+      "reservoir": { "type": "niveau", "nom": "Réservoir", "icone": "💧" },
       "potager": { "type": "niveau", "nom": "Zone de culture", "icone": "🌱", "note": "arrosage et récolte automatiques" },
       "poulailler": { "type": "niveau", "nom": "Poulailler", "icone": "🐔", "note": "nourrissage automatique" },
       "silo": { "type": "niveau", "nom": "Silo", "icone": "🛖" },
@@ -59,7 +62,7 @@
     },
     "branches": [
       { "id": "energie", "nom": "Énergie", "icone": "⚡", "suivi": ["panneau", "batterie"] },
-      { "id": "eau", "nom": "Eau", "icone": "💧", "suivi": ["pompe"] },
+      { "id": "eau", "nom": "Eau", "icone": "💧", "suivi": ["pompe", "reservoir"] },
       { "id": "culture", "nom": "Culture", "icone": "🌱", "suivi": ["potager"] },
       { "id": "elevage", "nom": "Élevage", "icone": "🐔", "suivi": ["poulailler", "silo"] },
       { "id": "cuisine", "nom": "Cuisine", "icone": "🍳", "suivi": ["stations"] },
@@ -69,7 +72,7 @@
       "Nœuds retirés de l'arbre, avec ce qu'ils coûtaient : une sauvegarde qui en",
       "possède un le perd à la migration et récupère ses points et ses pièces."
     ],
-    "NOEUDS_RETIRES": { "cui_rotisserie": { "pt": 1, "cout": 300 } },
+    "NOEUDS_RETIRES": { "cui_rotisserie": { "pt": 1, "cout": 300 }, "fa_remedes": { "pt": 1, "cout": 100 }, "fa_menus": { "pt": 1, "cout": 300 } },
     "noeuds": {
       "//en_entretien": "⚡ Énergie",
       "en_entretien": {
@@ -82,7 +85,7 @@
         "cout": 100,
         "requiert": [],
         "effet": { "usure": 75 },
-        "description": "Panneaux, batteries et appareils s'usent 25 % moins vite."
+        "description": "Le panneau, la batterie et les autres appareils s'usent 25 % moins vite."
       },
       "en_delestage": {
         "branche": "energie",
@@ -92,7 +95,7 @@
         "fonction": "automatisation",
         "pt": 1,
         "cout": 400,
-        "requiert": [{ "noeud": "en_entretien" }, { "appareil": "batterie", "nombre": 2 }],
+        "requiert": [{ "noeud": "en_entretien" }, { "batiment": "batterie", "niveau": 2 }],
         "effet": { "delestage": { "seuil": 10 } },
         "description": "Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte."
       },
@@ -129,8 +132,8 @@
         "pt": 2,
         "cout": 800,
         "requiert": [{ "noeud": "en_entretien_auto" }],
-        "effet": { "solaireHiver": 85 },
-        "description": "En hiver, les panneaux produisent 85 % de leur puissance au lieu de 70 %."
+        "effet": { "solaireBonus": 110 },
+        "description": "Le panneau produit 10 % de plus."
       },
       "//ea_econome": "💧 Eau",
       "ea_econome": {
@@ -154,8 +157,8 @@
         "pt": 1,
         "cout": 250,
         "requiert": [{ "noeud": "ea_econome" }],
-        "effet": { "pluie": { "printemps": 20, "ete": 5, "automne": 20, "hiver": 10 } },
-        "description": "Chaque nuit, de l'eau de pluie s'ajoute au réservoir sans électricité : 20 L au printemps et en automne, 10 L en hiver, 5 L en été."
+        "effet": { "pluie": 15 },
+        "description": "Chaque nuit, 15 L d'eau de pluie s'ajoutent au réservoir sans électricité."
       },
       "ea_irrigation": {
         "branche": "eau",
@@ -419,17 +422,17 @@
         "effet": { "eveilMin": 20 },
         "description": "L'éveil minimal avant de pouvoir dormir passe de 30 s à 20 s."
       },
-      "fa_remedes": {
+      "fa_sommeil": {
         "branche": "famille",
         "palier": 1,
-        "nom": "Remèdes maison",
-        "icone": "🌿",
+        "nom": "Bon sommeil",
+        "icone": "🛏️",
         "fonction": "productivite",
         "pt": 1,
         "cout": 100,
         "requiert": [],
-        "effet": { "soinCout": 70, "recuperation": 1 },
-        "description": "Les soins coûtent 30 % de moins, et un malade regagne 3 points de santé par nuit bien nourrie au lieu de 2."
+        "effet": { "reveilEnergie": 10 },
+        "description": "Au réveil, l'énergie remonte de 10 points de plus."
       },
       "fa_cellier": {
         "branche": "famille",
@@ -443,17 +446,17 @@
         "effet": { "conservation": 1 },
         "description": "Hors réfrigérateur, tout ce qui périme se garde une nuit de plus."
       },
-      "fa_menus": {
+      "fa_gouter": {
         "branche": "famille",
         "palier": 3,
-        "nom": "Menus variés",
-        "icone": "🍽️",
+        "nom": "Goûter",
+        "icone": "🥪",
         "fonction": "productivite",
         "pt": 1,
         "cout": 300,
         "requiert": [{ "noeud": "fa_cellier" }],
-        "effet": { "bonusPlatsMax": 5 },
-        "description": "Le bonus de santé des plats différents mangés monte jusqu'à +5 par nuit au lieu de +3."
+        "effet": { "gouter": 150 },
+        "description": "Ce que tu manges dans la journée rend 50 % d'énergie en plus."
       },
       "reveil_2": {
         "branche": "famille",

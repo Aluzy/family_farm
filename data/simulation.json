@@ -13,7 +13,7 @@
     "//LISSAGE": "nuits de la moyenne mobile qui sert à dater un jalon d'autonomie",
     "LISSAGE": 7,
     "STRATEGIES": { "applique": { "nom": "Joueur appliqué", "eveilS": 60 }, "minimal": { "nom": "Joueur minimal", "eveilS": 30 } },
-    "//CAISSE": ["Ce que le joueur garde ou vise.", "pièces gardées en réserve (graines, blé, soins) : les achats du plan ne les touchent pas"],
+    "//CAISSE": ["Ce que le joueur garde ou vise.", "pièces gardées en réserve (graines, blé) : les achats du plan ne les touchent pas"],
     "CAISSE": 20,
     "//CONSERVES_GARDEES": "il ne vend des conserves que pour payer un achat, jamais sous ce stock",
     "CONSERVES_GARDEES": 96,

@@ -24,7 +24,7 @@
     "donc de 6 h à 22 h : 16 heures de 18 s, soit 288 s."
   ],
   "TIME": { "DAY_START_HOUR": 6, "SECONDS_PER_HOUR": 30, "CLOCK_SECONDS_PER_HOUR": 18, "MIN_AWAKE_S": 30, "MEAL_HOUR": 19, "NIGHT_HOUR": 22 },
-  "//FAMILY": "Famille et santé (sections 1.1, 1.4, 6.9 et 8.8).",
+  "//FAMILY": "Famille (sections 1.1, 1.4, 6.9 et 8.8 ; version 1.8 : plus de santé).",
   "FAMILY": {
     "//MEMBRES": [
       "nom : le rôle (« Adulte 1 »), qui sert de prénom tant que le joueur n'en",
@@ -62,26 +62,29 @@
     "//COMPAGNIE": [
       "Animaux de compagnie : jusqu'à MAX chiens ou chats. Ils ne mangent pas les",
       "réserves de la famille et ne comptent ni dans le besoin journalier, ni dans",
-      "la santé, ni dans la productivité. Leur nom suit les règles d'un prénom."
+      "le bonheur. Leur nom suit les règles d'un prénom."
     ],
     "COMPAGNIE": { "MAX": 3, "ESPECES": { "chien": { "nom": "Chien", "icone": "🐶" }, "chat": { "nom": "Chat", "icone": "🐱" } } },
-    "SANTE_DEPART": 100,
-    "SANTE_MAX": 100,
-    "//VARIATION": ["Couverture minimale du besoin (en %) → variation de santé, du palier le", "plus haut au plus bas."],
-    "VARIATION": [{ "min": 100, "delta": 5 }, { "min": 75, "delta": -5 }, { "min": 50, "delta": -10 }, { "min": 0, "delta": -20 }],
-    "//PRODUCTIVITE": "Santé moyenne minimale → productivité en % (actions au clic).",
-    "PRODUCTIVITE": [{ "min": 80, "pct": 100 }, { "min": 50, "pct": 80 }, { "min": 20, "pct": 50 }, { "min": 0, "pct": 25 }],
-    "//SOIN": "Soin : base × croissance^(soins déjà payés) ; il remet la santé à SANTE.",
-    "SOIN": { "base": 20, "croissance": 150, "SANTE": 50 },
-    "//BONUS_PLATS": "Lot 5 : bonus de santé de la nuit, +PAR_PLAT par plat différent mangé, jusqu'à MAX.",
-    "BONUS_PLATS": { "PAR_PLAT": 1, "MAX": 3 },
-    "//RECUPERATION_MALADE": [
-      "Sans soin, un malade regagne ce nombre de points par nuit où le besoin est",
-      "couvert à 100 %. Il guérit en atteignant la santé remise par un soin."
-    ],
-    "RECUPERATION_MALADE": 2,
     "//RESERVE_DEPART": "Réserve de semences de départ : quantité par item que la famille ne mange jamais. Vide depuis la suppression de la réserve dans l'Inventaire (les semences se rachètent au Marché).",
     "RESERVE_DEPART": {}
+  },
+  "//PERSONNAGE": [
+    "Version 1.8 (v2, lot 4) : l'énergie du personnage (docs/conception-v2.md, section 5).",
+    "Une jauge de 0 à MAX, stockée en millièmes (state.energie). Chaque action au clic",
+    "coûte COUTS[action] × (100 − bonheur moyen × BONHEUR_REDUCTION ÷ 100) % ×",
+    "(100 − ENDURANCE × (niveau − 1)) %, arrondi au millième supérieur. À 0, plus",
+    "d'action au clic. Au réveil, l'énergie remonte à REVEIL_BASE + REVEIL_REPAS ×",
+    "couverture du repas du soir (en %), si elle était plus basse. Manger en journée",
+    "rend les calories de l'aliment ÷ MANGER_DIVISEUR."
+  ],
+  "PERSONNAGE": {
+    "MAX": 100,
+    "COUTS": { "planter": 3, "arroser": 2, "recolter": 4, "tondre": 8, "cuisiner": 3, "cuireFour": 3, "moudre": 1, "presser": 1 },
+    "BONHEUR_REDUCTION": 50,
+    "ENDURANCE": 3,
+    "REVEIL_BASE": 60,
+    "REVEIL_REPAS": 40,
+    "MANGER_DIVISEUR": 5
   },
   "//MARCHE": [
     "Marché (sections 1.3, 6.7 et 8.9). Prix d'achat = prix de vente × coefficient.",
@@ -100,7 +103,7 @@
       "vente (DATA.items[x].prix) de chaque récolte de culture, fruit du",
       "Verger et produit animal (œuf, lait, laine) — jamais aux",
       "graines, aux achats du Marché qui ne sont pas des productions, aux",
-      "bâtiments/appareils/soins/services, ni aux ingrédients transformés",
+      "bâtiments/appareils/services, ni aux ingrédients transformés",
       "(farine, huile) ou aux plats cuisinés, dont le prix se calcule déjà à",
       "partir des prix des ingrédients (voir dishPrice()) et serait donc",
       "doublé deux fois si ce multiplicateur s'y appliquait aussi. Voir",
@@ -130,8 +133,8 @@
     "Lot 11 : hors-ligne et première partie",
     "Progression hors-ligne (section 6.10). Le temps passé loin du jeu (page",
     "fermée, ou onglet resté en arrière-plan) est simulé au retour, plafonné à",
-    "MAX_S secondes, par pas de PAS_S secondes. Seuls avancent les flux (panneaux",
-    "et batteries, pompe, moulin, presse, consommation du réfrigérateur) et les",
+    "MAX_S secondes, par pas de PAS_S secondes. Seuls avancent les flux (panneau",
+    "et batterie, pompe, moulin, presse, consommation du réfrigérateur) et les",
     "préparations en cours ; aucune nuit ne passe. Ce temps compte comme temps",
     "d'éveil. USURE : les appareils s'usent-ils hors-ligne ? Non (décision du",
     "Lot 11 : 8 h réelles valent 960 heures de jeu, soit +480 points d'usure).",

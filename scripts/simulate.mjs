@@ -64,12 +64,12 @@ for (const id of ids) parties[id] = E.simulateGame(id, nuits, graine);
 
 /* ---------- CSV ---------- */
 
-const entete = ['strategie', 'nuit', 'chapitre', 'autonomie_pct', 'sante_moyenne', 'sante_min', 'pieces', 'conserves', 'soins_payes', 'couverture_pct', 'potager_niveau'];
+const entete = ['strategie', 'nuit', 'chapitre', 'autonomie_pct', 'energie', 'bonheur', 'niveau', 'pieces', 'conserves', 'couverture_pct', 'potager_niveau'];
 const num = (x, d = 2) => String(Math.round(x * 10 ** d) / 10 ** d);
 const lignes = [entete.join(',')];
 for (const id of ids) {
   for (const r of parties[id]) {
-    lignes.push([id, r.nuit, r.chapitre, num(r.autonomie), num(r.santeMoyenne), r.santeMin, num(r.pieces), r.conserves, r.soinsPayes, num(r.couverture * 100), r.potager].join(','));
+    lignes.push([id, r.nuit, r.chapitre, num(r.autonomie), r.energie, num(r.bonheur), r.niveau, num(r.pieces), r.conserves, num(r.couverture * 100), r.potager].join(','));
   }
 }
 const csvPath = resolve(option('csv', 'simulation.csv'));
@@ -119,20 +119,20 @@ console.log(`Simulation : ${nuits} nuits, graine ${graine}, moteur de ${racine}`
 for (const id of ids) {
   const rows = parties[id];
   console.log(`\n== ${S.STRATEGIES[id].nom} (${S.STRATEGIES[id].eveilS} s d'éveil par jour) ==`);
-  console.log(' nuit  chap  autonomie  santé(moy/min)  pièces  conserves  soins');
+  console.log(' nuit  chap  autonomie  énergie  bonheur  niveau  pièces  conserves');
   for (const n of affiche) {
     const r = rows[n - 1];
-    console.log(`${pad(r.nuit, 5)}${pad(r.chapitre, 6)}${pad(num(r.autonomie, 0) + ' %', 11)}${pad(num(r.santeMoyenne, 0) + '/' + r.santeMin, 16)}${pad(num(r.pieces, 0), 8)}${pad(r.conserves, 11)}${pad(r.soinsPayes, 7)}`);
+    console.log(`${pad(r.nuit, 5)}${pad(r.chapitre, 6)}${pad(num(r.autonomie, 0) + ' %', 11)}${pad(r.energie, 9)}${pad(num(r.bonheur, 0), 9)}${pad(r.niveau, 8)}${pad(num(r.pieces, 0), 8)}${pad(r.conserves, 11)}`);
   }
   const debutChap = [];
   for (let c = 2; c <= 8; c++) {
     const r = rows.find((q) => q.chapitre >= c);
     if (r) debutChap.push(`${c === 8 ? 'libre' : 'ch' + c}@${r.nuit}`);
   }
-  const zero = rows.filter((r) => r.santeMin <= 0);
+  const zero = rows.filter((r) => r.couverture <= 0);
   const fin = rows.find((r) => r.conserves === 0);
   console.log(`Chapitres atteints : ${debutChap.length ? debutChap.join(' ') : 'aucun au-delà du 1'}`);
-  console.log(`Conserves épuisées : ${fin ? 'nuit ' + fin.nuit : 'jamais'} · santé à 0 : ${zero.length ? zero.length + ' nuit(s), dès la nuit ' + zero[0].nuit : 'jamais'} · soins payés : ${rows[rows.length - 1].soinsPayes}`);
+  console.log(`Conserves épuisées : ${fin ? 'nuit ' + fin.nuit : 'jamais'} · nuits sans repas : ${zero.length ? zero.length + ', dès la nuit ' + zero[0].nuit : 'aucune'} · bonheur final : ${num(rows[rows.length - 1].bonheur, 0)}`);
 }
 
 /* ---------- vérifications (joueur appliqué) ---------- */
@@ -158,12 +158,12 @@ if (!parties.applique) {
     `Zone de culture niveau 2 : ${p2 ? 'nuit ' + p2.nuit : 'jamais achetée'} ; conserves épuisées : ${finConserves ? 'nuit ' + finConserves.nuit : 'jamais'}.`,
   );
 
-  // 2. Aucune santé à 0
-  const zero = rows.filter((r) => r.santeMin <= 0);
+  // 2. Aucune nuit sans repas (version 1.8 : à la place de « aucune santé à 0 »)
+  const zero = rows.filter((r) => r.couverture <= 0);
   verifie(
-    'Aucune santé à 0 pour le joueur appliqué',
+    'Aucune nuit sans repas pour le joueur appliqué',
     zero.length === 0,
-    zero.length ? `Un membre de la famille tombe à 0 dès la nuit ${zero[0].nuit} (${zero.length} nuit(s) sur ${rows.length}) ; santé mini ${Math.min(...rows.map((r) => r.santeMin))}.` : `Santé mini sur la partie : ${Math.min(...rows.map((r) => r.santeMin))}.`,
+    zero.length ? `La famille ne mange rien dès la nuit ${zero[0].nuit} (${zero.length} nuit(s) sur ${rows.length}).` : `Bonheur mini sur la partie : ${num(Math.min(...rows.map((r) => r.bonheur)), 0)}.`,
   );
 
   // 3. Courbe d'autonomie (jalons de la section 8.10)

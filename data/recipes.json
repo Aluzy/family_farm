@@ -9,7 +9,7 @@
   ],
   "STATIONS": {
     "four": { "nom": "Four", "article": "le", "icone": "🔥", "cout": 100, "electrique": false, "debloque": ["recettes"] },
-    "cuisine": { "nom": "Cuisine", "article": "la", "icone": "🍳", "cout": 150, "electrique": false, "requiert": "four" },
+    "cuisine": { "nom": "Cuisine", "article": "la", "icone": "🍳", "cout": 150, "electrique": false, "debloque": ["recettes"] },
     "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "cout": 120, "electrique": true, "whParS": 20 },
     "presse": { "nom": "Presse", "article": "la", "icone": "🌻", "cout": 150, "electrique": true, "whParS": 30 }
   },
@@ -41,7 +41,7 @@
     "(l'un OU l'autre, sans mélange) ; eau : litres pris dans le réservoir ;",
     "temps : secondes à vitesse 1. Les transformations (transformation: true)",
     "rendent qteSortie unités de `sortie` ; les plats rendent 1 plat du nom de la",
-    "recette et sont des aliments (bonus de santé). energieForcee (optionnel) :",
+    "recette et sont des aliments (bonheur des repas cuisinés). energieForcee (optionnel) :",
     "override explicite de l'énergie du plat, utilisé par dishEnergy() à la",
     "place du calcul ingrédients × COEF_PLAT — pour une recette dont l'énergie",
     "cible ne découle pas mathématiquement de cette formule (voir gratin_patates).",

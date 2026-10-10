@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { familyNeed } from '../engine/family.js';
 import {
-  autonomyHistory, chapterCount, chapterProgress, lastAutonomy, objectiveDef, plannedAutonomy, winterStatus,
+  autonomyHistory, chapterCount, chapterProgress, lastAutonomy, objectiveDef, plannedAutonomy, holdStatus,
 } from '../engine/campaign.js';
 import { formatNumber, formatPercent } from '../engine/format.js';
 import { state } from './store.js';
@@ -18,31 +18,29 @@ export function objectiveValueText(o) {
     case 'litres': return `${n(o.valeur)} / ${formatNumber(o.cible)} L`;
     case 'wh': return `${n(o.valeur)} / ${formatNumber(o.cible)} Wh`;
     case 'autonomie': return `${formatPercent(o.valeur)} / ${formatNumber(o.cible)} %`;
-    case 'sante': return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
+    case 'bonheur': return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
     case 'pontes': case 'serie100': return `${n(o.valeur)} / ${formatNumber(o.cible)} nuits`;
-    case 'hiver': return o.ok ? '✅' : '';
+    case 'tenue': return o.ok ? '✅' : '';
     default: return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
   }
 }
 
-// Ligne d'explication sous l'objectif de l'hiver.
-function winterLine() {
-  const w = winterStatus(state);
-  const obj = objectiveDef('hiver');
-  const L = DATA.SAISONS.LONGUEUR;
+// Ligne d'explication sous l'objectif de tenue (chapitre 6).
+function holdLine() {
+  const w = holdStatus(state);
+  const obj = objectiveDef('tenue');
   const last = w.dernier && !w.dernier.reussi
-    ? ` Dernier hiver : moyenne ${formatPercent(w.dernier.moyenne)}${w.dernier.sansSoin ? '' : ', soin payé'} : raté.`
+    ? ` Dernière série : moyenne ${formatPercent(w.dernier.moyenne)} : ratée.`
     : '';
-  if (w.etat === 'reussi') return '✅ Hiver traversé.';
+  if (w.etat === 'reussi') return '✅ Série réussie.';
   if (w.etat === 'suivi') {
-    return `❄️ Hiver suivi : nuit ${w.nuits} / ${L} · moyenne ${formatPercent(w.moyenne)} (objectif ${obj.moyenne} %)${w.soinPaye ? ' · ⚠️ un soin a été payé : cet hiver est raté.' : ''}`;
+    return `📅 Série en cours : nuit ${w.nuits} / ${obj.nuits} · moyenne ${formatPercent(w.moyenne)} (objectif ${obj.moyenne} %)`;
   }
-  if (w.etat === 'manque') return `⏳ L'hiver a commencé sans être suivi depuis sa première nuit : il ne compte pas. Prochain hiver : nuit ${w.prochaine}.${last}`;
-  return `⏳ ${w.prochaine === state.day ? 'L\'hiver commence aujourd\'hui.' : `Prochain hiver : nuit ${w.prochaine}.`}${last}`;
+  return `⏳ Une série de ${obj.nuits} nuits commence à la prochaine nuit.${last}`;
 }
 
 function objectiveHtml(o) {
-  const line = o.type === 'hiver' ? `<span class="muted">${winterLine()}</span>` : '';
+  const line = o.type === 'tenue' ? `<span class="muted">${holdLine()}</span>` : '';
   return `
     <li class="objective${o.ok ? ' ok' : ''}">
       <span class="objective-line"><span class="objective-label">${o.ok ? '✅' : '⬜'} ${o.libelle}</span><span class="objective-value">${objectiveValueText(o)}</span></span>
@@ -58,7 +56,7 @@ export function renderChapterBanner() {
     return `
     <div class="card chapter-card done">
       <span class="card-title"><span>🏆 Campagne terminée</span><span class="chip">Mode libre</span></span>
-      <span class="muted">La famille est autonome : tout est débloqué. Joue à ton rythme.</span>
+      <span class="muted">La famille est autonome. Continue de monter en niveau, à ton rythme.</span>
     </div>`;
   }
   const p = chapterProgress(state);
@@ -67,6 +65,7 @@ export function renderChapterBanner() {
       <span class="card-title"><span>${p.icone} ${p.titre}</span><span class="chip">Chapitre ${p.chapitre} / ${chapterCount()}</span></span>
       <span class="muted">${p.intro}</span>
       <ul class="objectives">${p.objectifs.map(objectiveHtml).join('')}</ul>
+      <span class="muted">Récompense : ⭐ ${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[p.chapitre - 1] || 0)} XP</span>
     </div>`;
 }
 
@@ -112,7 +111,7 @@ export function renderAutonomyCard() {
     <div class="card autonomy-card">
       <span class="card-title"><span>🌿 Autonomie</span><span class="chip">${DATA.AUTONOMIE.GRAPHIQUE_NUITS} dernières nuits</span></span>
       <span class="big">${formatPercent(lastAutonomy(state))}</span>
-      <span class="muted">Dernière nuit : l'énergie mangée qui vient de la ferme, sur ${formatNumber(familyNeed(state))}. Les conserves et les achats du Marché ne comptent pas. Prévue cette nuit : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
+      <span class="muted">Dernière nuit : les calories mangées qui viennent de la ferme, sur ${formatNumber(familyNeed(state))}. Les conserves et les achats du Marché ne comptent pas. Prévue cette nuit : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
       ${autonomyChartHtml()}
     </div>`;
 }
@@ -126,25 +125,18 @@ function openChapterModal() {
   const L = DATA.CHAPITRES.liste;
   const done = L[a.chapitre - 1];
   const next = L[a.chapitre] || null;
-  const news = next ? next.debloque : [];
-  const newsHtml = news.length
-    ? `<h3>✨ Nouveautés</h3><ul class="unlock-list">${news
-        .map((id) => `<li><strong>${DATA.CHAPITRES.ELEMENTS[id].icone} ${DATA.CHAPITRES.ELEMENTS[id].nom}</strong><br><span class="muted">${DATA.CHAPITRES.ELEMENTS[id].note}</span></li>`)
-        .join('')}</ul>`
-    : '';
   const body = next
-    ? `${newsHtml}
-       <h3>Chapitre ${a.chapitre + 1} : ${next.icone} ${next.titre}</h3>
+    ? `<h3>Chapitre ${a.chapitre + 1} : ${next.icone} ${next.titre}</h3>
        <p class="muted">${next.intro}</p>
        <ul class="objectives">${next.objectifs.map((o) => `<li class="objective"><span class="objective-label">⬜ ${o.libelle}</span></li>`).join('')}</ul>`
     : `<h3>🏆 Campagne terminée</h3>
-       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : tout est débloqué, joue à ton rythme. Chaque série de ${DATA.techtree.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>`;
+       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : continue de monter en niveau, à ton rythme. Chaque série de ${DATA.techtree.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>`;
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" id="chapter-modal" role="dialog" aria-modal="true" aria-labelledby="chapter-title" data-stop-propagation>
         <h2 id="chapter-title">🎉 Chapitre ${a.chapitre} terminé</h2>
         <p><strong>${done.icone} ${done.titre}</strong></p>
-        <p>🔬 +${formatNumber(DATA.techtree.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
+        <p>⭐ +${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[a.chapitre - 1] || 0)} XP · 🔬 +${formatNumber(DATA.techtree.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
         ${body}
         <button type="button" class="btn primary" data-action="ack-chapter" id="chapter-close">Continuer</button>
       </div>

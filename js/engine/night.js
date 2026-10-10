@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { currentSeason, seasonNight } from './seasons.js';
 import { allDevices, batteryCapacity, isBroken, needsService, newDayStats, tankCapacity } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { expiringSoon, spoil } from './inventory.js';
@@ -16,7 +15,7 @@ import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
-// repas et santé, puis pousse. Lot 4 : la ponte. Lot 5 : les préparations en
+// repas (version 1.8 : énergie au réveil), puis pousse. Lot 4 : la ponte. Lot 5 : les préparations en
 // cours se terminent (après le repas du soir : un plat fini pendant la nuit se
 // mange dès le repas suivant). Lot 6, revu en version 1.1 : les moutons et les
 // vaches mangent leur paille juste après la ponte (feedLivestock) ; ceux qui ont
@@ -50,14 +49,13 @@ export function buildMorningReport(state) {
     capaciteEau: tankCapacity(state),
     aEntretenir: allDevices(state).filter(needsService).map(aSurveiller),
     enPanne: allDevices(state).filter(isBroken).map(aSurveiller),
-    // Lot 2 : repas, santé et récoltes prêtes.
+    // Lot 2 : repas et récoltes prêtes ; version 1.8 : énergie du personnage au réveil.
     besoin: state.nuit.besoin,
     energieMangee: state.nuit.energie,
     couverture: state.nuit.couverture,
     mange: { ...state.nuit.mange },
-    santeAvant: state.nuit.santeAvant,
-    santeApres: state.nuit.santeApres,
-    nouveauxMalades: [...state.nuit.nouveauxMalades],
+    energieReveil: state.energie,
+    bonheur: state.nuit.bonheur || 0,
     pretes: readyCrops(state),
     // Lot 3 : ce qui a péri cette nuit, et ce qui périra à la prochaine.
     perimes: { ...(state.nuit.perdus || {}) },
@@ -66,8 +64,7 @@ export function buildMorningReport(state) {
     oeufs: state.nuit.oeufs || 0,
     bleConsomme: state.jour.ble || 0,
     poules: state.poulailler.poules,
-    // Lot 5 : bonus de santé des plats mangés, préparations terminées pendant la nuit.
-    bonusPlats: state.nuit.bonusPlats || 0,
+    // Lot 5 : préparations terminées pendant la nuit.
     termine: { ...(state.nuit.termine || {}) },
     // Lot 6 : moutons présents et moutons dont la laine est prête à tondre.
     moutons: state.paturage.moutons.length,
@@ -82,10 +79,8 @@ export function buildMorningReport(state) {
     pailleBesoin: strawNeed(state),
     // Lot 7 : ce que les automatisations ont fait (ou n'ont pas pu faire) cette nuit.
     auto: { ...newAutoReport(), ...(state.nuit.auto || {}), recoltes: { ...((state.nuit.auto || {}).recoltes || {}) } },
-    // Lot 8 : saison du réveil, fruits du verger, nuit du frigo (mWh prélevés,
-    // panne de froid, lots qui ont perdu une nuit) et contenu du frigo.
-    saison: currentSeason(state),
-    nuitDeSaison: seasonNight(state),
+    // Lot 8 : fruits du verger, nuit du frigo (mWh prélevés, panne de froid, lots
+    // qui ont perdu une nuit) et contenu du frigo.
     fruits: { ...(state.nuit.fruits || {}) },
     frigo: {
       construit: !!state.frigo.construit,
@@ -133,10 +128,11 @@ export function wakeHarvestList(report, limite = DATA.REVEIL.RECOLTE_MAX) {
 }
 
 // Les deux indicateurs du résumé de réveil, en entiers (arrondi à l'unité inférieure,
-// comme formatPercent) : autonomie de la nuit et santé moyenne de la famille, en %.
+// comme formatPercent) : autonomie de la nuit, en %, et énergie du personnage au
+// réveil (version 1.8, à la place de la santé moyenne).
 export function wakeSummary(report) {
   const floor = (x) => Math.floor((Number(x) || 0) + EPS);
-  return { autonomie: floor(report.autonomie), sante: floor(report.santeApres), recolte: wakeHarvestList(report) };
+  return { autonomie: floor(report.autonomie), energie: floor((Number(report.energieReveil) || 0) / 1000), recolte: wakeHarvestList(report) };
 }
 
 // Ne fait rien tant que l'éveil minimal n'est pas atteint (renvoie null).
@@ -146,7 +142,7 @@ export function sleep(state) {
   if (!canSleep(state)) return null;
   state.nuit = newNightStats();
   for (const step of NIGHT_STEPS) step(state);
-  recordNight(state); // Lot 9 : autonomie de la nuit, séries et hiver (nuit encore = state.day)
+  recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;
   refreshUnlocks(state);

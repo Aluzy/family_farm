@@ -14,7 +14,7 @@
  * Règles (voir docs/vie-ambiance.md) :
  *   1. Ce fichier est facultatif : sans lui, farm-stage.js affiche la même carte, immobile.
  *   2. Il ne lit ni l'état du jeu ni le modèle de vue : la scène lui donne l'heure, la
- *      saison, les arbres du Verger, les images de l'Étable et du Poulailler et le nombre de
+ *      les arbres du Verger, les images de l'Étable et du Poulailler et le nombre de
  *      bêtes de chaque espèce (setContext). Il ne déclenche aucune action du jeu.
  *   3. Budget fixe : MAX_ACTORS bêtes à la fois, décisions à 10 Hz, rien hors de la vue,
  *      rien du tout si le joueur a demandé moins d'animations.
@@ -27,7 +27,7 @@
  * mouton.png, poule.png, chargées par farm-stage.js).
  *
  * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
- *       → { update(dt), setContext({ hour, season, trees, folds, herd }), scare(x, y),
+ *       → { update(dt), setContext({ hour, trees, folds, herd }), scare(x, y),
  *           spawn(type), stats(), chat(activité) }
  */
 (function (global) {
@@ -41,15 +41,15 @@
   const SCARE_R = 48;       // px de carte : un appui plus près fait s'envoler les oiseaux
 
   // Événements : `gap` = secondes entre deux naissances (tirées une fois, voir arm()),
-  // `max` = nombre à la fois, `when` = conditions (c = contexte : heure, saison, jour…),
+  // `max` = nombre à la fois, `when` = conditions (c = contexte : heure, jour, crépuscule),
   // `rate` = facteur sur `gap` selon le contexte. Ajouter un événement = une ligne ici et
   // une fonction dans MAKERS.
   const EVENTS = {
-    papillon: { gap: [7, 20], max: 3, when: (c) => c.day && c.season !== 'hiver' },
+    papillon: { gap: [7, 20], max: 3, when: (c) => c.day },
     oiseau: { gap: [14, 38], max: 2, when: (c) => c.day },
-    feuille: { gap: [6, 16], max: 3, when: (c) => c.season !== 'hiver', rate: (c) => (c.season === 'automne' ? 0.3 : 1) },
-    ecureuil: { gap: [45, 120], max: 1, when: (c) => c.day && c.season !== 'hiver' },
-    lucioles: { gap: [8, 22], max: 2, when: (c) => c.dusk && (c.season === 'printemps' || c.season === 'ete') },
+    feuille: { gap: [6, 16], max: 3, when: () => true },
+    ecureuil: { gap: [45, 120], max: 1, when: (c) => c.day },
+    lucioles: { gap: [8, 22], max: 2, when: (c) => c.dusk },
   };
 
   // Dessins : une lettre = un pixel (voir PALETTE), « . » = vide.
@@ -68,9 +68,8 @@
     luc: ['w'],
   };
   const BUTTERFLY_TINTS = [0xffffff, 0xffe680, 0xffb86b, 0xbfe3ff, 0xf7b6d2];
-  const LEAF_TINTS = {
-    printemps: [0x8fc46a, 0xb5d67a], ete: [0x7fb85e, 0xa9cf6c], automne: [0xe0a13a, 0xc9662a, 0xb5482a], hiver: [0x9a8f7a],
-  };
+  // Version 1.6 : plus de saisons, des feuilles vertes toute l'année.
+  const LEAF_TINTS = [0x8fc46a, 0xb5d67a, 0x7fb85e, 0xa9cf6c];
 
   // Le chat. Ce n'est pas un événement : il habite la carte, de jour comme de nuit, et il a sa
   // vraie planche (assets/chat.png, chargée par farm-stage.js). Voir docs/vie-ambiance.md.
@@ -199,7 +198,7 @@
     const SHADOW_DEPTH = LIGHT - 3;   // ombres de nuages : sur tout, sous ce qui vole
     const FLY_DEPTH = LIGHT - 2;      // ce qui vole passe devant les bâtiments, sous le voile de lumière
 
-    const ctx = { hour: null, season: 'printemps', day: true, dusk: false };
+    const ctx = { hour: null, day: true, dusk: false };
     const actors = [];
     const next = {};                  // type d'événement → date (s) de la prochaine naissance
     let t = 0;                        // horloge de l'ambiance, en secondes (s'arrête avec la scène)
@@ -481,7 +480,7 @@
         const tree = pick(list);
         let x = tree.x + rand(-1, 1) * tree.r, y = tree.top + (tree.base - tree.top) * rand(0.25, 0.5);
         const ground = tree.base + rand(-2, 8);
-        const s = sprite(x, y, 'feu0').setDepth(ground + 1).setTint(pick(LEAF_TINTS[ctx.season] || LEAF_TINTS.printemps)).setAlpha(0);
+        const s = sprite(x, y, 'feu0').setDepth(ground + 1).setTint(pick(LEAF_TINTS)).setAlpha(0);
         const fall = rand(9, 14), ph = rand(0, 6.28);
         let age = 0, landed = 0;
         return {
@@ -1074,9 +1073,8 @@
       }
     }
 
-    // La scène dit l'heure (0 à 24), la saison et les images des arbres du Verger.
+    // La scène dit l'heure (0 à 24) et les images des arbres du Verger.
     function setContext(c) {
-      if (c.season) ctx.season = c.season;
       if ('hour' in c) {
         ctx.hour = c.hour;
         const h = c.hour == null ? 12 : c.hour;

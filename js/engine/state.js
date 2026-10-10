@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { STATE_VERSION } from './base.js';
 import { newVille } from './ville.js';
-import { newDayStats, startFarm } from './devices.js';
+import { batteryCapacity, newDayStats, startFarm } from './devices.js';
 import { addItem, defaultOrigin, shelfLife } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
@@ -10,8 +10,10 @@ import { makePlot, makePlots, seedItem } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
 import { newAutoReport } from './automation.js';
-import { chapterCount, inferChapter, legacyChamp, newCampaign } from './campaign.js';
+import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
 import { newTutorial } from './alerts.js';
+import { newProgression, unlockLevel } from './levels.js';
+import { energyMax } from './stamina.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -33,7 +35,6 @@ export function startHousehold() {
       // enfant et à un animal (les identifiants ne sont jamais réutilisés)
       animaux: [],
       numeros: familyNumbers(DATA.FAMILY.MEMBRES, []),
-      soinsPayes: 0,
       reserve: { ...DATA.FAMILY.RESERVE_DEPART },
     },
     nuit: newNightStats(),
@@ -71,8 +72,7 @@ export function startLot7() {
   return { technologies: [], pointsTech: newTechPoints(), routine: false };
 }
 
-// Lot 8 : Serre, Verger et Réfrigérateur, tous à construire. La saison se
-// déduit de la nuit courante : elle n'est pas stockée.
+// Lot 8 : Serre, Verger et Réfrigérateur, tous à construire.
 export function startLot8() {
   return {
     serre: { construit: false, niveau: 1, parcelles: [] },
@@ -104,6 +104,8 @@ export function createInitialState(seed = 1) {
     stats: {},
     marche: {}, // Lot 3 : coefficients d'achat au-dessus de leur plancher
     ville: newVille(), // version 1.5 : sorties faites aujourd'hui, marché de la ville
+    progression: newProgression(), // version 1.7 : expérience et niveau
+    energie: energyMax(), // version 1.8 : l'énergie du personnage (millièmes)
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
@@ -286,7 +288,133 @@ export const MIGRATIONS = {
   20: (state) => migrateWheatAndReserve(state),
   // v21 → v22 (version 1.5) : bonheur des membres (DEPART pour chacun) et sorties en ville.
   21: (state) => migrateHappiness(state),
+  // v22 → v23 (version 1.6) : plus de saisons. L'objectif de l'hiver (chapitre 6)
+  // devient une série de nuits ; un hiver déjà réussi vaut la série réussie.
+  22: (state) => migrateNoSeasons(state),
+  // v23 → v24 (version 1.6, v2 lot 2) : un seul panneau, une seule batterie, un
+  // réservoir à niveaux.
+  23: (state) => migrateSingleDevices(state),
+  // v24 → v25 (version 1.7, v2 lot 3) : niveaux d'expérience.
+  24: (state) => migrateLevels(state),
+  // v25 → v26 (version 1.8, v2 lot 4) : l'énergie du personnage remplace la santé.
+  25: (state) => migrateEnergy(state),
 };
+
+// Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie
+// pleine ; les nœuds de l'arbre retirés (soins, bonus de santé) sont rendus (points
+// et pièces) ; la série du chapitre 6 en cours oublie ses soins.
+export function migrateEnergy(old) {
+  const state = { ...old, version: 26, energie: energyMax() };
+  const f = state.famille;
+  if (f && typeof f === 'object') {
+    const { soinsPayes, ...famille } = f;
+    famille.membres = (Array.isArray(f.membres) ? f.membres : []).map((m) => {
+      if (!m || typeof m !== 'object') return m;
+      const { sante, malade, ...membre } = m;
+      return membre;
+    });
+    state.famille = famille;
+  }
+  refundRetiredNodes(state);
+  const k = state.campagne && state.campagne.compteurs;
+  if (k && k.tenue && typeof k.tenue === 'object') {
+    const { soins, ...tenue } = k.tenue;
+    k.tenue = tenue;
+  }
+  if (k && k.tenueDerniere && typeof k.tenueDerniere === 'object') {
+    const { sansSoin, ...derniere } = k.tenueDerniere;
+    k.tenueDerniere = derniere;
+  }
+  if (state.jour && typeof state.jour === 'object') {
+    const { soins, ...jour } = state.jour;
+    state.jour = jour;
+  }
+  // le rapport de réveil en attente, la nuit et le repas du jour perdent leurs lignes de santé
+  for (const key of ['report', 'nuit', 'repas']) {
+    if (!state[key] || typeof state[key] !== 'object') continue;
+    const { santeAvant, santeApres, nouveauxMalades, bonusPlats, ...rest } = state[key];
+    state[key] = rest;
+  }
+  return state;
+}
+
+// Les nœuds retirés de l'arbre (NOEUDS_RETIRES) que la partie possède sont rendus :
+// leurs pièces et leurs points de technologie.
+export function refundRetiredNodes(state) {
+  if (!Array.isArray(state.technologies)) return;
+  for (const [id, n] of Object.entries(DATA.techtree.NOEUDS_RETIRES)) {
+    if (!state.technologies.includes(id)) continue;
+    state.technologies = state.technologies.filter((x) => x !== id);
+    state.pieces = Math.round((Number(state.pieces) || 0) + n.cout);
+    if (!state.pointsTech || typeof state.pointsTech !== 'object') state.pointsTech = newTechPoints();
+    state.pointsTech.solde = (Number(state.pointsTech.solde) || 0) + n.pt;
+  }
+}
+
+// Version 1.7 : une partie reçoit le niveau qui garde tout ce qu'elle avait
+// débloqué : celui de son chapitre (NIVEAUX.CHAPITRE_NIVEAU), ou plus si elle a
+// déjà construit un bâtiment ou planté une culture d'un niveau supérieur. Son XP
+// est le seuil de ce niveau ; aucun écran de niveau n'est annoncé.
+export function migrateLevels(old) {
+  const state = { ...old, version: 25 };
+  const c = state.campagne;
+  const chapitre = c && typeof c === 'object' ? (c.fini ? chapterCount() + 1 : Math.max(1, Math.floor(Number(c.chapitre) || 1))) : 1;
+  const N = DATA.NIVEAUX;
+  let niveau = N.CHAPITRE_NIVEAU[Math.min(chapitre, N.CHAPITRE_NIVEAU.length) - 1];
+  for (const id of Object.keys(N.ELEMENTS)) if (ownsElement(state, id)) niveau = Math.max(niveau, unlockLevel(id));
+  for (const p of ownedPlots(state)) if (p && DATA.crops[p.culture]) niveau = Math.max(niveau, unlockLevel(p.culture));
+  const list = (x) => (Array.isArray(x) ? x : []);
+  for (const p of [...list(state.potager && state.potager.zone2), ...list(state.serre && state.serre.parcelles)]) {
+    if (p && DATA.crops[p.culture]) niveau = Math.max(niveau, unlockLevel(p.culture));
+  }
+  state.progression = { xp: N.SEUILS[niveau - 1], niveau, annonces: [] };
+  return state;
+}
+
+// Version 1.6 : on garde le panneau et la batterie du plus haut niveau (à niveau
+// égal, le moins usé) ; la batterie gardée reçoit la charge de toutes, dans la
+// limite de sa capacité. Les appareils retirés sont remboursés de leur prix
+// d'achat. Le réservoir prend le niveau de la pompe, dont il suivait la capacité.
+export function migrateSingleDevices(old) {
+  const state = { ...old, version: 24 };
+  const start = startFarm();
+  const best = (list) => list.reduce((a, d) => (d.niveau > a.niveau || (d.niveau === a.niveau && d.usure < a.usure) ? d : a));
+  let rembourse = 0;
+  const keep = (list, type) => {
+    const valid = (Array.isArray(list) ? list : []).filter((d) => d && typeof d === 'object');
+    if (!valid.length) return start[type === 'panneau' ? 'panneaux' : 'batteries'];
+    const d = best(valid);
+    for (const x of valid) if (x !== d) rembourse += Math.max(0, Math.round(Number(x.prix) || 0));
+    return [{ ...d, id: `${type}-1` }];
+  };
+  const charge = (Array.isArray(old.batteries) ? old.batteries : []).reduce((t, b) => t + (b && Number(b.chargeMwh) > 0 ? Math.floor(b.chargeMwh) : 0), 0);
+  state.panneaux = keep(old.panneaux, 'panneau');
+  state.batteries = keep(old.batteries, 'batterie');
+  state.batteries[0].chargeMwh = Math.min(charge, batteryCapacity(state.batteries[0]));
+  delete state.compteurs;
+  const pompe = state.pompe && Number.isInteger(state.pompe.niveau) ? state.pompe.niveau : 1;
+  // (avant cette version, le réservoir n'existait pas à part : il suivait la pompe)
+  state.reservoir = { niveau: Math.min(DATA.LEVEL_MAX, Math.max(1, pompe)) };
+  if (typeof state.pieces === 'number') state.pieces += rembourse;
+  return state;
+}
+
+export function migrateNoSeasons(old) {
+  const state = { ...old, version: 23 };
+  const c = state.campagne;
+  if (c && typeof c === 'object' && c.compteurs && typeof c.compteurs === 'object') {
+    const { hiver, hiverDernier, hiverReussi, ...k } = c.compteurs;
+    state.campagne = {
+      ...c,
+      compteurs: { ...k, tenue: null, tenueDerniere: hiverDernier && typeof hiverDernier === 'object' ? hiverDernier : null, tenueReussie: !!hiverReussi },
+    };
+  }
+  if (state.report && typeof state.report === 'object') {
+    const { saison, nuitDeSaison, ...report } = state.report;
+    state.report = report;
+  }
+  return state;
+}
 
 export function migrateHappiness(old) {
   const state = { ...old, version: 22, ville: old.ville && typeof old.ville === 'object' ? old.ville : newVille() };
@@ -616,6 +744,7 @@ export function migrateToIntegers(old) {
     k.mwhMax = 'kwhMax' in k ? Math.floor(num(k.kwhMax) * 1e6) : num(k.mwhMax);
     delete k.litres;
     delete k.kwhMax;
+    // (noms d'avant la version 1.6 : l'hiver est devenu la tenue, voir migrateNoSeasons())
     if (k.hiver && typeof k.hiver === 'object') k.hiver.somme = Math.floor(num(k.hiver.somme));
     if (k.hiverDernier) k.hiverDernier.moyenne = Math.floor(num(k.hiverDernier.moyenne));
   }

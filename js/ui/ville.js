@@ -2,9 +2,10 @@ import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
 import { buyPrice } from '../engine/market.js';
 import {
-  averageHappiness, buyInTown, goOut, goToTownMarket, happinessProductivity, outingCost, outingLoot,
+  averageHappiness, buyInTown, goOut, goToTownMarket, outingCost, outingLoot,
   outingMembers, outingStatus, townItems, townMarketOpen, townMarketStatus,
 } from '../engine/ville.js';
+import { happinessCostPct } from '../engine/stamina.js';
 import { formatCoins, formatNumber } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -80,13 +81,11 @@ export function renderVille() {
   const enVille = ids.filter((id) => DATA.VILLE.SORTIES[id].lieu === 'ville');
   const voyages = ids.filter((id) => DATA.VILLE.SORTIES[id].lieu === 'voyage');
   const avg = averageHappiness(state);
-  const partants = outingMembers(state).length;
-  const total = state.famille.membres.length;
   return `
-    <div class="section-head"><h3>🏙️ Ville</h3><span class="chip" title="Productivité due au bonheur">😊 ${avg} · productivité ×${formatNumber(happinessProductivity(state) / 100)}</span></div>
+    <div class="section-head"><h3>🏙️ Ville</h3><span class="chip" title="Le bonheur réduit l'énergie dépensée par chaque action">😊 ${avg} · actions −${formatNumber(100 - happinessCostPct(state))} % d'énergie</span></div>
     <div class="card">
       ${happinessGaugeHtml(avg, 'Bonheur moyen de la famille')}
-      <span class="muted">Le bonheur monte avec les plats cuisinés et les sorties ; il baisse un peu chaque soir de repas cru. Toute la famille part en sortie${partants < total ? ` (sauf ${total - partants} malade${total - partants > 1 ? 's' : ''}, qui reste${total - partants > 1 ? 'nt' : ''} à la maison)` : ''} ; le temps passe pendant ce temps (retour avant ${DATA.TIME.NIGHT_HOUR} h). Une fois par jour pour chaque sortie.</span>
+      <span class="muted">Le bonheur monte avec les plats cuisinés et les sorties ; il baisse un peu chaque soir de repas cru. Toute la famille part en sortie ; le temps passe pendant ce temps (retour avant ${DATA.TIME.NIGHT_HOUR} h). Une fois par jour pour chaque sortie.</span>
     </div>
     <h3 class="section-title">Sorties en ville</h3>
     <div class="plots outings">${enVille.map(outingCard).join('')}</div>

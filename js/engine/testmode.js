@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
-import { currentSeason } from './seasons.js';
-import { batteryCapacity, fail, findDevice, isBroken, makeDevice, tankCapacity } from './devices.js';
+import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { addItem, spoil } from './inventory.js';
 import { openFridge } from './fridge.js';
@@ -11,6 +10,7 @@ import { openStation } from './kitchen.js';
 import { grantTechPoints, refreshUnlocks } from './techtree.js';
 import { chapterCount, completeChapter, newCampaignCounters } from './campaign.js';
 import { sleep } from './night.js';
+import { gainXp, levelCount } from './levels.js';
 
 /* ---------- actions du mode test ---------- */
 
@@ -31,6 +31,10 @@ export function testSetBuildingLevel5(state, id) {
   } else if (id === 'poulailler' || id === 'silo') {
     state[id].construit = true;
     state[id].niveau = niveau;
+  } else if (id === 'panneau' || id === 'batterie') {
+    (id === 'panneau' ? state.panneaux : state.batteries)[0].niveau = niveau;
+  } else if (id === 'pompe' || id === 'reservoir') {
+    state[id].niveau = niveau;
   } else {
     return fail('Bâtiment inconnu.');
   }
@@ -50,13 +54,6 @@ export function testUnlockAllTechs(state) {
   const tab = DATA.TECHNO.ONGLET;
   if (!state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
   return { ok: true };
-}
-
-export function testAddDevice(state, type) {
-  const n = ++state.compteurs[type];
-  const d = makeDevice(type, `${type}-${n}`, 0);
-  (type === 'panneau' ? state.panneaux : state.batteries).push(d);
-  return { ok: true, device: d };
 }
 
 export function testFillBatteries(state) {
@@ -192,15 +189,23 @@ export function testGoToChapter(state, n) {
   c.annonces = [];
   c.fini = target > chapterCount();
   c.chapitre = c.fini ? chapterCount() : target;
+  // version 1.7 : et au niveau d'un joueur arrivé à ce chapitre (NIVEAUX.CHAPITRE_NIVEAU)
+  testSetLevel(state, DATA.NIVEAUX.CHAPITRE_NIVEAU[target - 1]);
   return { ok: true, chapitre: c.chapitre, fini: c.fini };
 }
 
-// Lot 8 : saute à la première nuit de la saison suivante (sans passer la nuit :
-// rien ne pousse, rien ne se mange).
-export function testNextSeason(state) {
-  const L = DATA.SAISONS.LONGUEUR;
-  state.day = (Math.floor((state.day - 1) / L) + 1) * L + 1;
-  return { ok: true, saison: currentSeason(state) };
+// Version 1.7 : place la partie au début d'un niveau (XP = son seuil), sans écran
+// d'annonce.
+export function testSetLevel(state, n) {
+  const niveau = Math.floor(Number(n));
+  if (!(niveau >= 1 && niveau <= levelCount())) return fail('Niveau inconnu.');
+  state.progression = { xp: DATA.NIVEAUX.SEUILS[niveau - 1], niveau, annonces: [] };
+  return { ok: true, niveau };
+}
+
+// Version 1.7 : +n XP (les niveaux franchis sont annoncés, comme en jeu).
+export function testAddXp(state, n = 1000) {
+  return { ok: true, niveaux: gainXp(state, n) };
 }
 
 // Lot 8 : construit gratuitement la Serre (niveau 1), le Verger et le Réfrigérateur.
@@ -233,12 +238,15 @@ export function testRipenAll(state) {
   return { ok: true };
 }
 
-// Lot 2 : santé de toute la famille à 0 (tous malades).
-export function testSetHealthZero(state) {
-  for (const m of state.famille.membres) {
-    m.sante = 0;
-    m.malade = true;
-  }
+// Version 1.8 : l'énergie du personnage à 0 (à la place de « santé à 0 »).
+export function testSetEnergyZero(state) {
+  state.energie = 0;
+  return { ok: true };
+}
+
+// Version 1.8 : l'énergie du personnage au maximum.
+export function testFillEnergy(state) {
+  state.energie = DATA.PERSONNAGE.MAX * 1000;
   return { ok: true };
 }
 

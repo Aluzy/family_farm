@@ -5,6 +5,7 @@ import { addLot, countItem, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
 import { refreshUnlocks } from './techtree.js';
 import { fillSilo } from './animals.js';
+import { gainActionXp } from './levels.js';
 
 /* ---------- Lot 3 : Marché ---------- */
 
@@ -109,6 +110,7 @@ export function sellItem(state, item, qty) {
   if (n <= 0) return fail('Rien à vendre.');
   const gain = n * sellPrice(item);
   state.pieces += gain;
+  gainActionXp(state, 'vendre', gain); // version 1.7 : 1 XP par pièce gagnée
   setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);
   refreshUnlocks(state);
   return { ok: true, sold: n, gain };

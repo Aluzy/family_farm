@@ -72,7 +72,7 @@ function makeBrowser(env = {}) {
   return { T, ctx, local, session, beacons, fetches, handlers };
 }
 
-const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.1', ...over });
+const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.2', ...over });
 
 test('sans choix : statut « unknown », aucun stockage, aucun envoi', () => {
   const b = makeBrowser();
@@ -140,7 +140,7 @@ test('compteurs de clics, onglets, modales, nuit et chapitre', () => {
   b.T.click('plant', 'carotte/p1');
   b.T.deadClick({ tagName: 'DIV', className: 'panel x' });
   b.T.modal('options');
-  b.T.night({ day: 3, chapter: 1, autonomy: 42.456, pieces: 120, health: 88, awake: 31 });
+  b.T.night({ day: 3, chapter: 1, autonomy: 42.456, pieces: 120, energy: 88, awake: 31 });
   b.T.chapter(2, 3);
   b.T.alert('panne');
   b.T._flush(false);
@@ -150,7 +150,7 @@ test('compteurs de clics, onglets, modales, nuit et chapitre', () => {
   eq(p.counters.modals, { options: 1 });
   eq(p.counters.tabs.ferme.views, 1);
   const night = p.events.find((e) => e.type === 'night');
-  eq([night.day, night.chapter, night.autonomy, night.pieces, night.health, night.awake], [3, 1, 42.46, 120, 88, 31]);
+  eq([night.day, night.chapter, night.autonomy, night.pieces, night.energy, night.awake], [3, 1, 42.46, 120, 88, 31]);
   assert(p.events.some((e) => e.type === 'chapter' && e.chapter === 2));
   assert(p.events.some((e) => e.type === 'alert' && e.kind === 'panne'));
   assert(p.events.some((e) => e.type === 'click' && e.action === 'plant' && e.detail === 'carotte/p1'));
