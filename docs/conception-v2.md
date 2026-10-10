@@ -568,6 +568,29 @@ utilisable.
    changement sont des propositions 🟡.
 3. **Conserves de départ et rythme de l'autonomie** : voir 13.3.
 
+### 13.4 Simulation sur 400 nuits (version 1.14) : rythme des niveaux 🟡
+
+`node scripts/simulate.mjs --nuits 400 --strategie applique --graine N` (et `minimal`),
+après la remise à niveau du joueur automatique (version 1.14 : il ouvre son courrier,
+varie ses cultures, cuisine avant les travaux des champs, achète au Marché l'huile et la
+farine qui manquent, prépare les plats jamais faits pour le chapitre 4, puis achète
+vaches, arbres et agrandissements du commerce). Nuit où chaque niveau est atteint :
+
+| Joueur | Graine | 6 | 7 | 8 | **9** | **10** | Mode libre | Bonheur moyen |
+|---|---|---|---|---|---|---|---|---|
+| appliqué (60 s) | 1 | 44 | 62 | 83 | **134** | **229** | 80 | 82 |
+| appliqué | 2 | 44 | 63 | 87 | **135** | **229** | 88 | 81 |
+| appliqué | 3 | 43 | 62 | 80 | **130** | **224** | 80 | 84 |
+| minimal (30 s) | 1 | 56 | 99 | 161 | **232** | **332** | 116 | 73 |
+| minimal | 2 | 56 | 105 | 177 | **287** | **387** | 122 | 52 |
+| minimal | 3 | 43 | 65 | 95 | **146** | **245** | 82 | 85 |
+
+Le niveau 9 tombe environ 50 nuits après le niveau 8, le niveau 10 environ 95 nuits après
+le niveau 9 (joueur appliqué). Au niveau 10, la conserverie (choisie par le joueur
+automatique) vend 20 à 24 conserves par nuit, soit 360 à 430 💰. Le joueur automatique
+finit son plan d'achats vers la nuit 150 et accumule ensuite les pièces (110 000 💰 à la
+nuit 400) : il manque des dépenses de fin de partie.
+
 ### 13.3 Simulation : conserves de départ et jours avant l'autonomie
 
 Joueur automatique de `scripts/simulate.mjs` (moteur **actuel**, version 1.5 : saisons,

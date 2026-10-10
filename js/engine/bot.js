@@ -14,16 +14,17 @@ import {
   serreUpgradeCost, soilCount, toggleBolting, upgradeSerre, water, zone2Open, zoneGrid,
 } from './crops.js';
 import {
-  animalPrice, buildPaturage, buildPoulailler, buildSilo, buyAnimal, buyPasture, buySheep, canFeedHen,
+  animalPrice, buildPaturage, buildPoulailler, buildSilo, buyAnimal, buyCow, buyPasture, buySheep, canFeedHen, cowCount, freeCowPlaces,
   coopCapacity, coopUpgradeCost, feedAllHens, freeSheepPlaces, hensToFeed, pastureCost, shear, sheepCount,
   siloUpgradeCost, strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
 } from './animals.js';
-import { chooseCommerce, commerceStock } from './commerce.js';
+import { chooseCommerce, commerceStock, commerceUpgradeCost, upgradeCommerce } from './commerce.js';
 import { buildVerger, buyOrchardSlot, buyTree, harvestTree, orchardFree, orchardSlotPrice, ripeTrees } from './orchard.js';
 import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
 import { buyTech, hasTech, techPoints, techStatus } from './techtree.js';
 import {
   chapterCount, chapterReached, cropUnlocked, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
+  readMail, unreadMail,
 } from './campaign.js';
 import { sleep } from './night.js';
 import { createNewGame, buyStarter, houseRepaired, repairHouse, starterBlock } from './depart.js';
@@ -89,7 +90,13 @@ export function botPickCrop(state, plot) {
     }
   }
   // Le reste de la zone (et la Serre) nourrit la famille : les légumes, pas le plein champ.
-  const foods = options.filter((c) => !botIsFieldCrop(c) && DATA.items[cropProduct(c)].edible).sort((a, b) => botCropScore(b) - botCropScore(a));
+  // Version 1.14 : le joueur varie ses cultures (des plats variés font le bonheur) : la
+  // culture la moins présente (en terre et en stock) passe devant, la plus nourrissante
+  // à égalité.
+  const presence = (c) => allPlots(state).filter((p) => p.culture === c).length
+    + countItem(state, cropProduct(c)) / Math.max(1, DATA.crops[c].rendement * S.DIVERSITE_STOCK);
+  const foods = options.filter((c) => !botIsFieldCrop(c) && DATA.items[cropProduct(c)].edible)
+    .sort((a, b) => presence(a) - presence(b) || botCropScore(b) - botCropScore(a));
   // l'objectif du chapitre 2 demande des carottes : elles passent devant
   if (botWantsCarrots(state)) foods.sort((a, b) => (b === 'carotte') - (a === 'carotte'));
   return foods.find((c) => botHasSeed(state, c)) || null;
@@ -167,6 +174,11 @@ export function botOrchard(state) {
   }
 }
 
+// Version 1.14 : le joueur ouvre son courrier (l'héritage du niveau 9 est versé à l'ouverture).
+export function botMail(state) {
+  for (const l of unreadMail(state)) readMail(state, l.id);
+}
+
 // Version 1.14 : au niveau 10, le joueur automatique choisit le commerce qui a le plus
 // de matière (laits, laines ou légumes, rapportés à la recette).
 export function botCommerce(state) {
@@ -234,6 +246,13 @@ export function botRecipeValue(state, id) {
     }
     return 0;
   }
+  // version 1.14 : un plat jamais préparé passe devant tant que le chapitre en cours
+  // demande des plats différents
+  const plats = objectiveDef('plats');
+  if (plats && chapterReached(state) === objectiveChapter('plats') && !(plats.exclut || []).includes(id)
+    && !state.campagne.compteurs.plats.includes(id)) {
+    return (2 * S.PRIORITE_BONHEUR) / r.temps;
+  }
   // version 1.11 : sous le bonheur visé, un plat qui manque au repas du soir passe avant
   // tout (le meilleur bonheur d'abord), même s'il ne rapporte rien
   if (averageHappiness(state) < S.BONHEUR_CIBLE && botSpare(state, id) < 1 && dishHappiness(id) > 0) {
@@ -263,8 +282,20 @@ export function botStartRecipe(state, id) {
   return startRecipe(state, id).ok === true;
 }
 
+// Version 1.14 : l'huile et la farine qui manquent aux plats s'achètent au Marché.
+export function botBuyStaples(state) {
+  if (!farmOpen(state)) return;
+  for (const [item, a] of Object.entries(DATA.SIMULATION.ACHATS_CUISINE)) {
+    for (let i = 0; i < a.stock && countItem(state, item) + fridgeCount(state, item) < a.stock; i++) {
+      if (!isBuyable(item) || buyPrice(state, item) > a.prixMax + EPS || state.pieces + EPS < buyPrice(state, item) + DATA.SIMULATION.CAISSE) break;
+      if (!buyItem(state, item, 1).ok) break;
+    }
+  }
+}
+
 export function botCook(state) {
   if (!state.stations) return;
+  botBuyStaples(state);
   for (const station of Object.keys(DATA.STATIONS)) {
     const st = state.stations[station];
     if (!st.construit || st.tache) continue;
@@ -329,6 +360,20 @@ export function botStepInfo(state, step, eveilS) {
       if (sheepCount(state) >= step.n) return { done: true };
       if (freeSheepPlaces(state) <= 0) return { cost: pastureCost(state), buy: () => buyPasture(state) };
       return { cost: animalPrice('mouton'), buy: () => buySheep(state) };
+    }
+    // version 1.14 : des vaches pour le lait, et le commerce agrandi
+    case 'vaches': {
+      if (!isUnlocked(state, 'moutons')) return { locked: true };
+      const p = state.paturage;
+      if (!p.construit) return { cost: DATA.PATURAGE.deblocage, buy: () => buildPaturage(state) };
+      if (cowCount(state) >= step.n) return { done: true };
+      if (freeCowPlaces(state) <= 0) return { cost: pastureCost(state), buy: () => buyPasture(state) };
+      return { cost: animalPrice('vache'), buy: () => buyCow(state) };
+    }
+    case 'commerce': {
+      if (!state.commerce.type) return { locked: true };
+      if (state.commerce.niveau >= step.niveau) return { done: true };
+      return { cost: commerceUpgradeCost(state), buy: () => upgradeCommerce(state) };
     }
     case 'serre':
       if (!isUnlocked(state, 'serre')) return { locked: true };
@@ -442,8 +487,13 @@ export function botStore(state) {
 // Série d'actions du joueur. `soir` : dernière série avant de dormir.
 export function botActions(state, strat, options, soir) {
   botMaintenance(state);
+  botMail(state);
   botSnack(state);
   botBuy(state, strat.eveilS);
+  // version 1.14 : les plats d'abord (quelques points d'énergie) : sans eux, plus de
+  // bonheur, et chaque action coûte jusqu'au double ; une grande ferme épuisait l'énergie
+  // avant la cuisine.
+  botCook(state);
   botFarm(state);
   botHoe(state);
   botHens(state);
