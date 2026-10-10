@@ -1161,6 +1161,8 @@
           // version 1.9 : en mode houe, une case de zone (herbe ou terre) se laboure ou se rebouche
           if (hoeing && z.zone) return { hoe: { zone: z.zone, case: i }, place: z.place };
           if (p) return { plot: p, place: z.place, open: z.window };
+          // version 1.12 : une case d'herbe d'une zone ouvre la fenêtre de la zone (et sa houe)
+          if (z.zone) return { window: z.window, place: z.place };
         }
         if (this.room) return null;                  // dans un intérieur : rien d'autre à toucher
         const label = this.labelAt(wx, wy);

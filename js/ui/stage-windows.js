@@ -220,7 +220,7 @@ export const STAGE_WINDOWS = {
     corps: () => renderVerger() + renderAchatArbres(),
   },
   zone: {
-    nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => farmOpen(state), haute: true, sansTitre: true, // version 1.12
+    nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => true, haute: true, sansTitre: true, // version 1.12 : toujours sur la carte, même en herbe
     detail: () => `${state.potager.parcelles.length} parcelles`,
     corps: () => renderPotager(),
   },
