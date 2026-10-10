@@ -1230,7 +1230,6 @@
           // Étiquette de la zone : calée à gauche sur les parcelles, au-dessus de la barrière.
           if (z.place) { const o = z.pos(0); this.syncLabel(z.id, info(z.id), z.id, o.x, o.y - ZONE_LABEL_UP, 'gauche'); }
         }
-        this.syncHoeGrid(model);
         for (const [id, e] of this.plots) {
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
         }
@@ -1366,27 +1365,6 @@
           e.tween = this.tweens.add({ targets: e.crop, angle: { from: -4, to: 4 }, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
         }
         if (e.crop && !p.mature && e.tween) { e.tween.stop(); e.tween = null; e.crop.setAngle(0); }
-      }
-
-      // Version 1.9 : en mode houe, le contour de chaque case des zones (herbe comprise) est
-      // tracé, pour voir où la houe peut labourer.
-      syncHoeGrid(model) {
-        const on = !!model.houe && !this.room;
-        const key = on ? [model.cases, model.zone2 ? model.cases2 : 0, this.grid.cols, this.grid2.cols].join() : '';
-        if (key === this.hoeKey) return;
-        this.hoeKey = key;
-        if (!this.hoeGrid) this.hoeGrid = this.add.graphics().setDepth(1.95);
-        const g = this.hoeGrid;
-        g.clear();
-        if (!on) return;
-        g.lineStyle(1, 0xfff3c4, 0.7);
-        for (const z of this.zones(model)) {
-          if (!z.zone) continue;
-          for (let i = 0; i < z.cases; i++) {
-            const o = z.pos(i);
-            g.strokeRect(o.x + 0.5, o.y + 0.5, T - 1, T - 1);
-          }
-        }
       }
 
       destroyPlot(e) {

@@ -24,7 +24,8 @@
 >   la touche (côtés et diagonales) prend une tuile **mi-herbe mi-terre**, choisie par ses
 >   quatre coins (un coin est de la terre si une des cases qui le partagent est labourée) :
 >   bords et coins extérieurs 1612–1764, coins intérieurs 1387 / 1389 / 1537 / 1539.
->   En mode houe, le contour des cases s'affiche.
+>   Aucun quadrillage n'est tracé sur la carte : en mode houe, seul le bouton « Houe » du
+>   haut de la carte le rappelle.
 > - Partie neuve : 6 cases en terre (un bloc de 3 × 2), sans houe. Ancienne partie : ses
 >   parcelles restent de la terre, posées dans l'ordre, et la **houe est offerte** ;
 >   au-delà du plafond rien n'est retiré.
