@@ -156,6 +156,8 @@ export function memberRemovalBlock(state, id) {
   if (!m) return 'Membre introuvable.';
   if (state.famille.membres.length <= C.MEMBRES_MIN) return 'Il faut au moins un membre dans la famille.';
   if (!m.enfant && adultCount(state) <= C.ADULTES_MIN) return 'Il faut au moins un adulte dans la famille.';
+  // version 1.12 : le personnage principal reste (on en choisit d'abord un autre)
+  if (state.famille.principal === id) return 'C\'est le personnage principal : choisis d\'abord un autre adulte.';
   return '';
 }
 

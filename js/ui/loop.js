@@ -1,4 +1,6 @@
 import { DATA, recipeOutput } from '../engine/catalog.js';
+import { setupPending } from '../engine/depart.js';
+import { watchSetup } from './depart.js';
 import { bedtimeDue, mealDue } from '../engine/clock.js';
 import { tick } from '../engine/energy.js';
 import { takeMeal } from '../engine/family.js';
@@ -173,7 +175,7 @@ export function frame(now) {
   if (elapsed > MAX_FRAME_MS) elapsed = MAX_FRAME_MS;
   accumulatorMs += elapsed;
   let ticked = false;
-  const horlogeArretee = wakeModalOpen();
+  const horlogeArretee = wakeModalOpen() || setupPending(state); // version 1.12 : pas d'heure avant le départ
   while (accumulatorMs >= TICK_MS) {
     tick(state, TICK_MS / 1000, horlogeArretee);
     accumulatorMs -= TICK_MS;
@@ -181,6 +183,7 @@ export function frame(now) {
     scheduleRender();
   }
   simulatedAt = wall;
+  watchSetup(); // version 1.12 : la configuration de la famille passe avant tout
   watchTechPoints();
   watchRoutine();
   watchDay();

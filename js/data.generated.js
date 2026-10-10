@@ -7,6 +7,20 @@
 // js/engine/catalog.js, qui en fait DATA.
 export const RAW_DATA = {
   "START": { "PIECES": 350, "DEVICE_PRICE": 0, "INVENTAIRE": { "conserve": 160, "graine_carotte": 10, "patate": 6, "graine_tomate": 4 } },
+  "DEPART": {
+    "PIECES": 1500,
+    "INVENTAIRE": { "conserve": 40 },
+    "MAISON": 650,
+    "ACHATS": { "panneau": 150, "batterie": 180, "pompe": 90, "reservoir": 50 },
+    "NOM": "Martin",
+    "NOM_MIN": 2,
+    "NOM_MAX": 20,
+    "HISTOIRE": [
+      "Printemps 2021. Après des mois enfermés dans un appartement trop petit, la famille {nom} décide de tout quitter.",
+      "Le grand-père, disparu l'hiver dernier, leur a laissé sa ferme : quelques hectares au bout d'un chemin de terre, une maison aux volets fermés, un moulin qui ne tourne plus. « Elle n'attend que vous », disait sa dernière lettre.",
+      "Les cartons sont dans le coffre. Il est temps de redonner vie à la ferme."
+    ]
+  },
   "TIME": { "DAY_START_HOUR": 6, "SECONDS_PER_HOUR": 30, "CLOCK_SECONDS_PER_HOUR": 18, "MIN_AWAKE_S": 30, "MEAL_HOUR": 19, "NIGHT_HOUR": 22 },
   "FAMILY": {
     "MEMBRES": [
@@ -1041,21 +1055,28 @@ export const RAW_DATA = {
   "CHAPITRES": {
     "liste": [
       {
-        "titre": "L'eau et le soleil",
-        "icone": "💧",
-        "intro": "Pompe de l'eau et range de l'énergie dans ta batterie : ce sont les deux ressources de la ferme. Tes conserves nourrissent la famille pour l'instant.",
+        "titre": "L'héritage",
+        "icone": "🏚️",
+        "intro": "La ferme du grand-père est à vous, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
-          { "type": "litres", "cible": 50, "libelle": "Pomper 50 L au total", "unite": "L" },
-          { "type": "wh", "cible": 3000, "libelle": "Stocker 3 000 Wh dans la batterie", "unite": "Wh" }
+          { "type": "maison", "cible": 1, "libelle": "Réparer la maison", "unite": "" },
+          { "type": "panneau", "cible": 1, "libelle": "Acheter le panneau solaire", "unite": "" },
+          { "type": "pompe", "cible": 1, "libelle": "Acheter la pompe", "unite": "" },
+          { "type": "reservoir", "cible": 1, "libelle": "Acheter le réservoir", "unite": "" },
+          { "type": "houe", "cible": 1, "libelle": "Acheter une houe au Marché", "unite": "" },
+          { "type": "recoltes", "cible": 1, "libelle": "Faire une première récolte", "unite": "" }
         ]
       },
       {
-        "titre": "Le premier potager",
-        "icone": "🥕",
-        "intro": "Plante, arrose, récolte : ta première production doit commencer à nourrir la famille.",
+        "titre": "Le grenier",
+        "icone": "🌾",
+        "intro": "De nouvelles cultures, un Silo à réparer et du blé à rentrer : le grenier de la ferme se remplit.",
         "objectifs": [
-          { "type": "carottes", "cible": 20, "libelle": "Récolter 20 carottes", "unite": "" },
-          { "type": "autonomie", "cible": 25, "libelle": "Atteindre 25 % d'autonomie", "unite": "%" }
+          { "type": "niveau", "cible": 2, "libelle": "Atteindre le niveau 2", "unite": "" },
+          { "type": "cultures", "cible": 4, "libelle": "Récolter 4 cultures différentes", "unite": "" },
+          { "type": "silo", "cible": 1, "libelle": "Réparer le Silo (niveau 3)", "unite": "" },
+          { "type": "semisBle", "cible": 1, "libelle": "Planter du blé", "unite": "" },
+          { "type": "siloBle", "cible": 50, "libelle": "Stocker 50 blés au Silo", "unite": "" }
         ]
       },
       {
@@ -1109,6 +1130,20 @@ export const RAW_DATA = {
     ]
   },
   "COURRIER": {
+    "notaire_heritage": {
+      "quand": { "depart": true },
+      "icone": "📜",
+      "objet": "Une lettre du notaire",
+      "expediteur": "Maître Durand, notaire",
+      "lieu": "Étude de Saint-Aubin",
+      "texte": [
+        "Madame, Monsieur {nom},",
+        "J'ai l'honneur de vous confirmer que la ferme de votre grand-père vous revient désormais : la maison, les terres, le moulin et les dépendances.",
+        "Je dois cependant vous prévenir : rien n'y fonctionne plus. Le toit de la maison fuit, le panneau solaire et la pompe ont été vendus, et les champs sont retournés à l'herbe.",
+        "Votre grand-père vous a laissé de quoi commencer. Réparez d'abord la maison ; le reste viendra.",
+        "Je vous prie d'agréer mes salutations distinguées, et mes vœux de réussite."
+      ]
+    },
     "cousin_venezuela": {
       "quand": { "debloque": "serre" },
       "cadeaux": { "cacao": 1, "vanille": 1, "cafe": 1 },
@@ -1289,8 +1324,14 @@ export const RAW_DATA = {
     "MARGE_ENERGIE": 150,
     "MARGE_BATTERIE": 70,
     "PRIORITE": {
-      "1": [],
-      "2": [{ "type": "houe" }],
+      "1": [
+        { "type": "maison" },
+        { "type": "achat", "id": "panneau" },
+        { "type": "achat", "id": "pompe" },
+        { "type": "achat", "id": "reservoir" },
+        { "type": "houe" }
+      ],
+      "2": [{ "type": "houe" }, { "type": "silo", "niveau": 2 }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
       "4": [
         { "type": "station", "id": "four" },
@@ -1304,6 +1345,7 @@ export const RAW_DATA = {
     },
     "PLAN": [
       { "type": "houe" },
+      { "type": "achat", "id": "batterie" },
       { "type": "poulailler", "niveau": 1 },
       { "type": "silo", "niveau": 1 },
       { "type": "poules", "n": 4 },

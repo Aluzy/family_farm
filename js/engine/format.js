@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import {
-  allDevices, batteryCapacity, isBroken, maintainDevice, needsService, panelOutput, pumpFlow,
+  allDevices, batteryCapacity, farmOpen, isBroken, isOwned, maintainDevice, needsService, panelOutput, pumpFlow,
   repairDevice, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from './devices.js';
 import { fridgeRate } from './fridge.js';
@@ -171,6 +171,8 @@ export function botEnergyPerDay(state, eveilS) {
 // { done: true }.
 export function botInfraInfo(state, eveilS) {
   const S = DATA.SIMULATION;
+  // version 1.12 : rien à améliorer avant d'avoir acheté le panneau, la pompe et le réservoir
+  if (!farmOpen(state) || !isOwned(state.reservoir)) return { locked: true };
   const litres = botWaterPerDay(state);
   const pump = state.pompe;
   const needsFlow = litres * 1000 * 100 > pumpFlow(pump) * eveilS * S.MARGE_EAU;
@@ -185,7 +187,7 @@ export function botInfraInfo(state, eveilS) {
   const need = botEnergyPerDay(state, eveilS);
   if (panel.niveau < DATA.LEVEL_MAX && produced * 100 < need * S.MARGE_ENERGIE) return { cost: upgradeCost(panel), buy: () => upgradeDevice(state, panel.id) };
   const battery = state.batteries[0];
-  if (battery.niveau < DATA.LEVEL_MAX && batteryCapacity(battery) * 100 < need * S.MARGE_BATTERIE) {
+  if (isOwned(battery) && battery.niveau < DATA.LEVEL_MAX && batteryCapacity(battery) * 100 < need * S.MARGE_BATTERIE) {
     return { cost: upgradeCost(battery), buy: () => upgradeDevice(state, battery.id) };
   }
   return { done: true };

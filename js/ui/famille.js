@@ -9,6 +9,8 @@ import {
 } from '../engine/family.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { energyCardHtml } from './energie.js';
+import { familyNameHtml } from './depart.js';
+import { mainCharacter } from '../engine/depart.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { persistState } from './storage.js';
@@ -35,9 +37,11 @@ function portraitCard(m) {
       <span class="portrait-emoji" aria-hidden="true">${memberPortrait(state, m.id) || '🙂'}</span>
       <span class="card-title"><span class="member-name">${memberNameHtml(m.id)}</span></span>
       <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} calories/jour</span>
+      ${mainCharacter(state) && mainCharacter(state).id === m.id ? '<span class="chip auto">⭐ Personnage principal</span>' : ''}
       ${happinessGaugeHtml(memberHappiness(m))}
       <span class="muted">😊 Bonheur : <span class="num">${memberHappiness(m)} / ${DATA.VILLE.BONHEUR.MAX}</span></span>
       <button type="button" class="btn" data-action="member-edit" data-id="${m.id}" aria-label="Modifier ${m.enfant ? 'cet enfant' : 'cet adulte'} : prénom et apparence">✏️ Modifier</button>
+      ${!m.enfant && !(mainCharacter(state) && mainCharacter(state).id === m.id) ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}">⭐ Personnage principal</button>` : ''}
     </article>`;
 }
 
@@ -353,7 +357,7 @@ export function renderFamille() {
   const shown = Math.min(plan.energie, plan.besoin);
   const short = plan.energie + EPS < plan.besoin;
   return `
-    <h2>👨‍👩‍👧‍👦 Famille</h2>
+    <h2>👨‍👩‍👧‍👦 Famille${familyNameHtml() ? ` ${familyNameHtml()}` : ''}</h2>
     <p class="muted family-count"><span class="num">${state.famille.membres.length} / ${DATA.FAMILY.COMPOSITION.MEMBRES_MAX}</span> membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> calories par jour</p>
     <div class="portraits">${state.famille.membres.map(portraitCard).join('')}</div>
     ${renderFamilyAdd()}

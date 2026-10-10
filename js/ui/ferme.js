@@ -1,13 +1,14 @@
 import { DATA } from '../engine/catalog.js';
 import {
-  batteryCapacity, efficiency, isBroken, maintainCost, needsService, panelOutput, pumpFlow, repairCost,
-  tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
+  batteryCapacity, efficiency, isBroken, isOwned, maintainCost, needsService, panelOutput, pumpFlow, repairCost,
+  starterOf, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from '../engine/devices.js';
 import { hourOfDay } from '../engine/clock.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
 import { energyChip } from './energie.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { hoePanelHtml } from './houe.js';
+import { renderStarterCards } from './depart.js';
 import { isUnlocked } from '../engine/campaign.js';
 import {
   formatCoins, formatLitres, formatLitresRate, formatNumber, formatWh, formatWhRate,
@@ -102,28 +103,32 @@ export function renderEnergieEau() {
   if (e.net > 0) netText = `En charge (${formatWhRate(e.net, true)})`;
   else if (e.net < 0) netText = `En décharge (${formatWhRate(e.net, true)})`;
   const tankText = state.eauMl >= cap ? 'Réservoir plein' : `Vitesse de remplissage : ${formatLitresRate(state.flux.eau)}`;
-  return `
-    <h3 class="section-title">⚡ Énergie et eau</h3>
-    <div class="cards">
+  // version 1.12 : la maison à réparer et les appareils à acheter passent en premier ;
+  // un appareil pas encore acheté n'a pas de carte
+  const owned = (t) => isOwned(starterOf(state, t));
+  const panneauCard = owned('panneau') ? `
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
         <span class="card-title"><span>${icon('panneau')}Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
         <span class="big">${formatWhRate(e.production)}</span>
         <span class="muted">Panneau niveau ${state.panneaux[0].niveau} · ${sunText()}</span>
         ${alertLine(e.panneauxAEntretenir, e.panneauxEnPanne)}
-      </button>
+      </button>` : '';
+  const batterieCard = owned('batterie') ? `
       <button type="button" class="card" data-action="open-screen" data-screen="batteries">
         <span class="card-title"><span>${icon('batterie')}Stockage d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
         <span class="big">${formatNumber(Math.floor(e.charge / 1000))} / ${formatWh(e.capacite)}</span>
         <span class="muted">${netText}</span>
         ${alertLine(e.batteriesAEntretenir, e.batteriesEnPanne)}
-      </button>
+      </button>` : '';
+  const pompeCard = owned('pompe') ? `
       <div class="card ancre${tutoTarget('eau')}" id="dev-pompe">
         <span class="card-title"><span>${icon('pompe')}Pompe · niveau ${p.niveau}</span><span class="chips"><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span>${helpBtn('pompe')}</span></span>
         <span class="muted">Débit réel : <span class="num">${formatLitresRate(p.debit)}</span> (max ${formatLitresRate(pumpFlow(p))})</span>
         <span class="muted">Consommation : <span class="num">${formatWhRate(p.conso)}</span></span>
         ${wearHtml(p)}
         ${deviceControls(p)}
-      </div>
+      </div>` : '';
+  const reservoirCard = owned('reservoir') ? `
       <div class="card${tutoTarget('eau')}">
         <span class="card-title"><span>${icon('reservoir')}Réservoir · niveau ${state.reservoir.niveau}</span>${helpBtn('reservoir')}</span>
         <span class="big">${formatNumber(Math.floor(state.eauMl / 1000))} / ${formatLitres(cap)}</span>
@@ -131,7 +136,15 @@ export function renderEnergieEau() {
         ${tankUp === null
           ? '<button type="button" class="btn" disabled>Niveau max</button>'
           : `<button type="button" class="btn" data-action="upgrade-tank"${canPay(tankUp) ? '' : ' disabled'}>Agrandir : ${formatLitres(DATA.GRID.reservoir.litres[state.reservoir.niveau] * 1000)} (${costLabel(tankUp)})</button>`}
-      </div>
+      </div>` : '';
+  return `
+    <h3 class="section-title">⚡ Énergie et eau</h3>
+    <div class="cards">
+      ${renderStarterCards()}
+      ${panneauCard}
+      ${batterieCard}
+      ${pompeCard}
+      ${reservoirCard}
       ${isUnlocked(state, 'frigo') ? renderFridgeCard() : ''}
     </div>
   `;

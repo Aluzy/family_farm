@@ -64,8 +64,9 @@
       "Un élément pas encore débloqué par un chapitre est sauté."
     ],
     "PRIORITE": {
-      "1": [],
-      "2": [{ "type": "houe" }],
+      "1": [{ "type": "maison" }, { "type": "achat", "id": "panneau" }, { "type": "achat", "id": "pompe" }, { "type": "achat", "id": "reservoir" }, { "type": "houe" }],
+      "//1": "version 1.12 : le départ v2 (maison, panneau, pompe, réservoir, houe) ; la batterie (facultative) vient avec le plan",
+      "2": [{ "type": "houe" }, { "type": "silo", "niveau": 2 }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
       "4": [
         { "type": "station", "id": "four" },
@@ -80,6 +81,7 @@
     },
     "PLAN": [
       { "type": "houe" },
+      { "type": "achat", "id": "batterie" },
       { "type": "poulailler", "niveau": 1 },
       { "type": "silo", "niveau": 1 },
       { "type": "poules", "n": 4 },

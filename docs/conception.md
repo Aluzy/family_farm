@@ -6,6 +6,29 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v34 (jeu 1.12) : le départ v2** (lot 8 de la v2, `DATA.DEPART`, `js/engine/depart.js`,
+> `js/ui/depart.js`). Cette note **fait foi** sur le départ de partie et les chapitres 1 et 2.
+> - **Avant la première journée** : écran « Votre famille » (nom de famille de 2 à 20
+>   signes, membres, personnage principal : un adulte, celui qui dépense l'énergie), puis
+>   le texte d'ouverture (section 3.1) et la **lettre du notaire** (Notifications). L'horloge
+>   attend la fin de la configuration. Les animaux s'adoptent ensuite dans la Famille.
+> - **Départ** : 1 500 💰, 40 conserves, rien d'autre. La maison est **délabrée** (650 💰 à
+>   réparer) ; panneau (150), pompe (90), réservoir (50) et batterie (180, facultative) sont
+>   **à acheter** (Maison › Installations), une fois la maison réparée. **Panneau et pompe**
+>   ouvrent la Zone de culture, le Marché et l'achat du réservoir. Aucune case en terre,
+>   pas de houe ni de graines.
+> - **Sans batterie** (ou batterie pleine), la production du panneau alimente directement
+>   les appareils du moment (pompe, ateliers) au lieu d'être perdue.
+> - **Carte** : les bâtiments pas encore réparés ou construits se dessinent délabrés
+>   (`*_ruine.png`) ; la Zone de culture n'apparaît qu'une fois la ferme ouverte.
+> - **Chapitre 1 « L'héritage »** : réparer la maison, acheter panneau, pompe, réservoir,
+>   houe, faire une première récolte. **Chapitre 2 « Le grenier »** : niveau 2, 4 cultures
+>   différentes récoltées, Silo réparé (niveau 3), du blé planté, 50 blés au Silo (il faut
+>   donc l'agrandir au niveau 2). Les chapitres 3 à 7 ne changent pas.
+> - Une partie en cours (format 29, `migrateDepart`) est déjà installée : sa maison est
+>   réparée, ses appareils achetés ; elle reçoit un nom vide et son premier adulte comme
+>   personnage principal.
+>
 > **v33 (jeu 1.11) : plats et bonheur** (lot 7 de la v2, `DATA.VILLE.BONHEUR`,
 > `dishHappiness()` de `js/engine/ville.js`). Cette note **fait foi** sur la règle « −3 si
 > tout est cru, jusqu'à +5 si tout est cuisiné », qui disparaît.

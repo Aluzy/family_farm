@@ -1,4 +1,5 @@
 import { DATA } from '../engine/catalog.js';
+import { houseRepaired } from '../engine/depart.js';
 import { findDevice } from '../engine/devices.js';
 import { allPlots, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { isTreeAdult } from '../engine/orchard.js';
@@ -258,7 +259,7 @@ export function stageModel() {
   // toujours là), avec leur nom et le nombre de choses à y faire.
   const aFaire = aFaireParLieu();
   const batiments = {};
-  for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok(), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id] };
+  for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok(), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id], ruine: buildingInRuins(id) };
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
@@ -269,6 +270,19 @@ export function stageModel() {
     heure, cols: P.COLONNES, cases: P.CASES, plots, cols2: P.ZONE2.COLONNES, cases2: P.ZONE2.CASES, zone2: zone2Open(state), plots2,
     houe: hoeMode && !!state.potager.houe, serre, interieur: stageInterior, arbres, batiments, animaux,
   };
+}
+
+// Version 1.12 : un bâtiment pas encore réparé ou construit se dessine délabré.
+function buildingInRuins(id) {
+  switch (id) {
+    case 'maison': return !houseRepaired(state);
+    case 'etable': return !state.paturage.construit;
+    case 'poulailler': return !state.poulailler.construit;
+    case 'moulin': return !(state.stations && state.stations.moulin && state.stations.moulin.construit);
+    case 'serre': return !state.serre.construit;
+    case 'silo': return !state.silo.construit;
+    default: return false;
+  }
 }
 
 // Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La

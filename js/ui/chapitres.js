@@ -21,6 +21,10 @@ export function objectiveValueText(o) {
     case 'bonheur': return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
     case 'pontes': case 'serie100': return `${n(o.valeur)} / ${formatNumber(o.cible)} nuits`;
     case 'tenue': return o.ok ? '✅' : '';
+    // version 1.12 : étapes faites ou pas (maison, achats, houe, Silo, premier semis ou récolte)
+    case 'maison': case 'panneau': case 'pompe': case 'reservoir': case 'houe': case 'silo':
+      return o.ok ? '✅' : '';
+    case 'niveau': return `niv. ${n(o.valeur)} / ${formatNumber(o.cible)}`;
     default: return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
   }
 }

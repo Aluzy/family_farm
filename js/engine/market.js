@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, percentCeil, spend } from './devices.js';
+import { fail, farmOpen, percentCeil, spend } from './devices.js';
 import { addLot, countItem, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
 import { refreshUnlocks } from './techtree.js';
@@ -74,6 +74,7 @@ export function buyQuote(state, item, qty = 1) {
 export function buyItem(state, item, qty = 1, { ville = false } = {}) {
   const def = DATA.items[item];
   if (!def) return fail('Objet inconnu.');
+  if (!ville && !farmOpen(state)) return fail(MARKET_CLOSED);
   if (ville ? !def.ville || def.rachetable === false : !isBuyable(item)) return fail(`${def.nom} ne s'achète pas ici.`);
   let bought = 0;
   let cost = 0;
@@ -100,9 +101,13 @@ export function sellableCount(state, item) {
 // chaque unité vendue retire un pas au coefficient, sans passer sous le plancher.
 // Les articles rangés au frigo se vendent aussi : on vend d'abord ce qui est
 // dans l'inventaire (il périt), puis ce qui est au frais.
+// Version 1.12 : le Marché de la ferme ouvre quand le panneau et la pompe sont achetés.
+export const MARKET_CLOSED = 'Le Marché ouvre quand le panneau solaire et la pompe sont installés.';
+
 export function sellItem(state, item, qty) {
   const def = DATA.items[item];
   if (!def) return fail('Objet inconnu.');
+  if (!farmOpen(state)) return fail(MARKET_CLOSED);
   const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
   const fromInventory = takeItem(state, item, wanted);
   const fromFridge = wanted - fromInventory > 0 ? takeFromFridge(state, item, wanted - fromInventory) : 0;

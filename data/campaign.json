@@ -9,21 +9,28 @@
     ],
     "liste": [
       {
-        "titre": "L'eau et le soleil",
-        "icone": "💧",
-        "intro": "Pompe de l'eau et range de l'énergie dans ta batterie : ce sont les deux ressources de la ferme. Tes conserves nourrissent la famille pour l'instant.",
+        "titre": "L'héritage",
+        "icone": "🏚️",
+        "intro": "La ferme du grand-père est à vous, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
-          { "type": "litres", "cible": 50, "libelle": "Pomper 50 L au total", "unite": "L" },
-          { "type": "wh", "cible": 3000, "libelle": "Stocker 3 000 Wh dans la batterie", "unite": "Wh" }
+          { "type": "maison", "cible": 1, "libelle": "Réparer la maison", "unite": "" },
+          { "type": "panneau", "cible": 1, "libelle": "Acheter le panneau solaire", "unite": "" },
+          { "type": "pompe", "cible": 1, "libelle": "Acheter la pompe", "unite": "" },
+          { "type": "reservoir", "cible": 1, "libelle": "Acheter le réservoir", "unite": "" },
+          { "type": "houe", "cible": 1, "libelle": "Acheter une houe au Marché", "unite": "" },
+          { "type": "recoltes", "cible": 1, "libelle": "Faire une première récolte", "unite": "" }
         ]
       },
       {
-        "titre": "Le premier potager",
-        "icone": "🥕",
-        "intro": "Plante, arrose, récolte : ta première production doit commencer à nourrir la famille.",
+        "titre": "Le grenier",
+        "icone": "🌾",
+        "intro": "De nouvelles cultures, un Silo à réparer et du blé à rentrer : le grenier de la ferme se remplit.",
         "objectifs": [
-          { "type": "carottes", "cible": 20, "libelle": "Récolter 20 carottes", "unite": "" },
-          { "type": "autonomie", "cible": 25, "libelle": "Atteindre 25 % d'autonomie", "unite": "%" }
+          { "type": "niveau", "cible": 2, "libelle": "Atteindre le niveau 2", "unite": "" },
+          { "type": "cultures", "cible": 4, "libelle": "Récolter 4 cultures différentes", "unite": "" },
+          { "type": "silo", "cible": 1, "libelle": "Réparer le Silo (niveau 3)", "unite": "" },
+          { "type": "semisBle", "cible": 1, "libelle": "Planter du blé", "unite": "" },
+          { "type": "siloBle", "cible": 50, "libelle": "Stocker 50 blés au Silo", "unite": "" }
         ]
       },
       {
@@ -84,6 +91,14 @@
     "(Potager niveau 1, pompe, panneau, batterie, Marché).",
     "",
     "Objectifs (`type`) :",
+    "  version 1.12 (v2, lot 8), chapitres 1 et 2 :",
+    "  maison, panneau, pompe, reservoir, houe : 1 une fois réparée ou achetée ;",
+    "  recoltes  : récoltes faites au total (une parcelle récoltée = 1) ;",
+    "  niveau    : niveau d'expérience atteint ;",
+    "  cultures  : cultures différentes récoltées ;",
+    "  silo      : 1 une fois le Silo construit (réparé) ;",
+    "  semisBle  : semis de blé faits au total ;",
+    "  siloBle   : blé stocké au Silo en ce moment ;",
     "  litres    : litres pompés au total ;",
     "  wh        : record d'énergie stockée dans la batterie, en Wh ;",
     "  carottes  : carottes récoltées au total ;",
@@ -102,9 +117,25 @@
     "condition est remplie (`quand.debloque` : un élément que la campagne vient",
     "d'ouvrir, voir isUnlocked()). Ses cadeaux vont tout de suite dans",
     "l'inventaire ; la lettre se lit dans l'onglet Notifications.",
-    "Le texte ne cite aucun prénom : il vaut pour toutes les familles."
+    "Le texte ne cite aucun prénom : il vaut pour toutes les familles. Version 1.12 :",
+    "`{nom}` y devient le nom de la famille ; `quand.depart` : la lettre arrive au",
+    "début d'une nouvelle partie, une fois la famille installée."
   ],
   "COURRIER": {
+    "notaire_heritage": {
+      "quand": { "depart": true },
+      "icone": "📜",
+      "objet": "Une lettre du notaire",
+      "expediteur": "Maître Durand, notaire",
+      "lieu": "Étude de Saint-Aubin",
+      "texte": [
+        "Madame, Monsieur {nom},",
+        "J'ai l'honneur de vous confirmer que la ferme de votre grand-père vous revient désormais : la maison, les terres, le moulin et les dépendances.",
+        "Je dois cependant vous prévenir : rien n'y fonctionne plus. Le toit de la maison fuit, le panneau solaire et la pompe ont été vendus, et les champs sont retournés à l'herbe.",
+        "Votre grand-père vous a laissé de quoi commencer. Réparez d'abord la maison ; le reste viendra.",
+        "Je vous prie d'agréer mes salutations distinguées, et mes vœux de réussite."
+      ]
+    },
     "cousin_venezuela": {
       "quand": { "debloque": "serre" },
       "cadeaux": { "cacao": 1, "vanille": 1, "cafe": 1 },

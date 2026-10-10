@@ -3,6 +3,8 @@ import {
   actionCost, actionsLeft, energyLevel, enduranceReduction, happinessCostPct, snackEnergy,
 } from '../engine/stamina.js';
 import { eatSnack } from '../engine/family.js';
+import { mainCharacter } from '../engine/depart.js';
+import { memberNameHtml } from './famille.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { showToast } from './toasts.js';
@@ -39,7 +41,7 @@ export function energyCardHtml() {
   const costs = Object.entries(P.COUTS).map(([a, c]) => `${ACTION_LABELS[a] || a} ${formatEnergy(actionCost(state, a))}${actionCost(state, a) !== c * 1000 ? ` (${c})` : ''}`).join(' · ');
   return `
     <div class="card">
-      <span class="card-title"><span>⚡ Énergie</span><span class="num">${e} / ${max}</span></span>
+      <span class="card-title"><span>⚡ Énergie${mainCharacter(state) ? ` de ${memberNameHtml(mainCharacter(state).id)}` : ''}</span><span class="num">${e} / ${max}</span></span>
       <span class="bar" role="progressbar" aria-label="Énergie" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${e}"><span class="bar-fill${pct < 20 ? ' warn' : ''}" style="width:${pct}%"></span></span>
       <span class="muted">Chaque action au clic en dépense ; à 0, plus d'action jusqu'à un en-cas ou une nuit. Ce qui tourne seul (automatisations, ateliers, panneau) n'en coûte pas.</span>
       <span class="muted">Coût actuel : ${costs}.</span>

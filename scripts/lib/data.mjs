@@ -239,6 +239,7 @@ export function validateData(data) {
     for (const champ of ['produit', 'laine', 'lait']) if (a[champ] !== undefined) needItem(`ANIMAUX.${id}.${champ}`, a[champ]);
   }
   for (const id of Object.keys(data.START.INVENTAIRE)) needItem('START.INVENTAIRE', id);
+  for (const id of Object.keys(data.DEPART.INVENTAIRE)) needItem('DEPART.INVENTAIRE', id); // version 1.12
   for (const id of Object.keys(data.FAMILY.RESERVE_DEPART)) needItem('FAMILY.RESERVE_DEPART', id);
   for (const id of data.MARCHE.TRANSFORMATIONS_DOUBLEES) needItem('MARCHE.TRANSFORMATIONS_DOUBLEES', id);
   for (const id of Object.keys(data.PLATS_RETIRES)) {

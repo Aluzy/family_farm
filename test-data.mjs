@@ -109,7 +109,7 @@ test('culture sans découpe : un avertissement, pas une erreur', () => {
 
 /* ---------- ce que les autres tables citent ---------- */
 
-refuse('courrier : cadeau inconnu', (d) => { Object.values(d.COURRIER)[0].cadeaux.mangue = 1; }, '« mangue »');
+refuse('courrier : cadeau inconnu', (d) => { d.COURRIER.cousin_venezuela.cadeaux.mangue = 1; }, '« mangue »');
 refuse('inventaire de départ : objet inconnu', (d) => { d.START.INVENTAIRE.graine_melon = 2; }, 'START.INVENTAIRE : « graine_melon »');
 refuse('animal : produit inconnu', (d) => { d.ANIMAUX.poule.produit = 'oeufs'; }, 'ANIMAUX.poule.produit : « oeufs »');
 

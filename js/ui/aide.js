@@ -1,6 +1,7 @@
 import { DATA, ingredientOptions } from '../engine/catalog.js';
+import { houseRepaired } from '../engine/depart.js';
 import { GAME_VERSION, STATE_VERSION } from '../engine/base.js';
-import { pumpFlow } from '../engine/devices.js';
+import { farmOpen, pumpFlow } from '../engine/devices.js';
 import { awakeRequired } from '../engine/clock.js';
 import { energyStats } from '../engine/energy.js';
 import { familyNeed } from '../engine/family.js';
@@ -205,7 +206,11 @@ function openHelpModal(id) {
 const TUTO = {
   eau: {
     titre: '💧 L\'eau et le soleil',
-    texte: () => `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).${stageUsable() ? ' Panneau, batterie et pompe se trouvent dans la maison : touche-la, puis ouvre « Bâtiments ».' : ''}`,
+    // version 1.12 : dans une nouvelle partie, tant que la ferme n'est pas installée, la bulle
+    // dit par où commencer
+    texte: () => (!farmOpen(state)
+      ? `Rien ne fonctionne encore : ${houseRepaired(state) ? 'achète le panneau solaire et la pompe' : `répare d'abord la maison (${formatNumber(DATA.DEPART.MAISON)} 💰), puis achète le panneau solaire et la pompe`}${stageUsable() ? ' : touche la maison, puis ouvre « Installations »' : ' (Ferme › Énergie et eau)'}. Ils ouvrent la Zone de culture et le Marché ; le réservoir garde ensuite l'eau pour arroser.`
+      : `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.PUMP.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : son niveau est aussi en haut de l'écran (💧).${stageUsable() ? ' Panneau, batterie et pompe se trouvent dans la maison : touche-la, puis ouvre « Installations ».' : ''}`),
   },
   potager: {
     titre: '🌱 La zone de culture',
