@@ -3,7 +3,7 @@ import { isBroken } from '../engine/devices.js';
 import { deviceStatus } from '../engine/energy.js';
 import {
   availableEnergy, buildFridge, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeNightNeed,
-  fridgeRate, fridgeUnits,
+  fridgeCapacity, fridgeRate, fridgeUnits, fridgeUpgradeCost, upgradeFridge,
 } from '../engine/fridge.js';
 import { buildSerre, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
 import {
@@ -129,7 +129,7 @@ export function renderFridgeCard() {
     return `
       <div class="card">
         <span class="card-title"><span>${icon('frigo')}Réfrigérateur</span><span class="chips"><span class="chip">Non construit</span>${helpBtn('frigo')}</span></span>
-        <span class="muted">Les aliments rangés au frigo ne vieillissent plus. Capacité illimitée, mais il consomme en permanence : ${formatNumber(DATA.FRIGO.BASE_WH_S)} Wh/s + ${formatNumber(DATA.FRIGO.PAR_UNITE_MWH_S)} mWh/s par unité stockée. Appareil électrique : interrupteur, usure, pannes.</span>
+        <span class="muted">Les aliments rangés au frigo ne vieillissent plus. Il contient ${formatNumber(DATA.FRIGO.CAPACITE[0])} unités (jusqu'à ${formatNumber(DATA.FRIGO.CAPACITE[DATA.FRIGO.CAPACITE.length - 1])} en l'améliorant) et consomme ${formatNumber(DATA.FRIGO.PAR_UNITE_MWH_S)} mWh/s par unité stockée (rien s'il est vide). Appareil électrique : interrupteur, usure, pannes.</span>
         <button type="button" class="btn primary" data-action="build-fridge"${canPay(cost) ? '' : ' disabled'}>Construire le Réfrigérateur (${costLabel(cost)})</button>
       </div>`;
   }
@@ -147,11 +147,29 @@ export function renderFridgeCard() {
       <span class="card-title"><span>${icon('frigo')}${fridgeIcon()} Réfrigérateur</span><span class="chips"><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span>${helpBtn('frigo')}</span></span>
       ${badge}
       <span class="big">${formatWhRate(d.conso)}</span>
-      <span class="muted">Consommation à pleine charge : <span class="num">${formatWhRate(fridgeRate(state))}</span> · ${fridgeUnits(state)} unité${fridgeUnits(state) > 1 ? 's' : ''} au frais (onglet Inventaire › Frigo)</span>
+      <span class="muted">Consommation : <span class="num">${formatWhRate(fridgeRate(state))}</span> (${formatNumber(DATA.FRIGO.PAR_UNITE_MWH_S)} mWh/s par unité) · onglet Inventaire › Frigo</span>
+      ${fridgeFillHtml()}
       ${alert}
+      ${fridgeUpgradeHtml()}
       ${wearHtml(d)}
       ${stationControls(d)}
     </div>`;
+}
+
+// Version 1.10 : remplissage du frigo (unités / capacité) et amélioration.
+function fridgeFillHtml() {
+  const n = fridgeUnits(state);
+  const cap = fridgeCapacity(state);
+  const pct = cap ? Math.round((n * 100) / cap) : 0;
+  return `<span>Niveau ${state.frigo.niveau} · <span class="num">${n} / ${cap}</span> unités au frais</span>
+      <span class="bar" role="progressbar" aria-label="Remplissage du frigo" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${n}"><span class="bar-fill${n >= cap ? ' warn' : ''}" style="width:${pct}%"></span></span>`;
+}
+
+function fridgeUpgradeHtml() {
+  const cost = fridgeUpgradeCost(state);
+  if (cost === null) return '<span class="muted">Niveau maximum.</span>';
+  const next = DATA.FRIGO.CAPACITE[state.frigo.niveau];
+  return `<button type="button" class="btn" data-action="upgrade-fridge"${canPay(cost) ? '' : ' disabled'}>Agrandir : ${next} unités (${costLabel(cost)})</button>`;
 }
 
 // Frigo (Inventaire) : une fiche par aliment, comme les parcelles : l'icône, le nom, le
@@ -180,7 +198,7 @@ export function renderFridgeTab() {
   const ok = fridgeIcon() === '❄️';
   return `
     <div class="card fridge ${ok ? 'cold' : 'warm'}">
-      <span class="card-title"><span>${fridgeIcon()} Réfrigérateur</span><span class="chip">${fridgeUnits(state)} unité${fridgeUnits(state) > 1 ? 's' : ''}</span></span>
+      <span class="card-title"><span>${fridgeIcon()} Réfrigérateur</span><span class="chip${fridgeUnits(state) >= fridgeCapacity(state) ? ' warn' : ''}">${fridgeUnits(state)} / ${fridgeCapacity(state)}</span></span>
       <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : '⚠️ Pas alimenté : si le froid manque plus de la moitié de l\'éveil, ou toute la nuit, chaque lot perd une nuit.'} Consommation : <span class="num">${formatWhRate(fridgeRate(state))}</span>.</span>
       ${!fridgeCoversNight(state) ? '<span class="alert">⚠️ La batterie ne couvrira pas la nuit.</span>' : ''}
       <span class="muted">La famille mange aussi le contenu du frigo, après ce qui est dans l'inventaire. Le Marché et les recettes utilisent l'inventaire : sors ce qu'il te faut.</span>
@@ -205,6 +223,10 @@ registerActions({
   'buy-orchard-slot': () => {
     const result = applyResult(buyOrchardSlot(state));
     if (result.ok) showToast(`Emplacement acheté : ${result.places} au total (−${formatCoins(result.cost)} 💰)`);
+  },
+  'upgrade-fridge': () => {
+    const result = applyResult(upgradeFridge(state));
+    if (result.ok) showToast(`🧊 Réfrigérateur niveau ${result.niveau} : ${result.capacite} unités (−${formatCoins(result.cost)} 💰)`);
   },
   'build-fridge': () => {
     const result = applyResult(buildFridge(state));

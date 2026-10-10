@@ -51,8 +51,10 @@
   },
   "//FRIGO": [
     "Réfrigérateur (sections 1.3, 1.4, 6.9 quater et 8.2) : appareil électrique du",
-    "parc (interrupteur, usure, panne à 100 %), capacité illimitée. Consommation :",
-    "BASE (Wh/s) + PAR_UNITE (mWh/s) × unités stockées. Au Dormir, BLOC_NUIT_S secondes",
+    "parc (interrupteur, usure, panne à 100 %). Version 1.10 (v2, lot 6) : capacité",
+    "limitée, CAPACITE[n] unités au niveau n + 1 ; COUT[n] est le prix pour atteindre",
+    "le niveau n + 1 (index 0 non utilisé). Consommation : BASE (Wh/s) + PAR_UNITE",
+    "(mWh/s) × unités stockées (BASE à 0 : un frigo vide ne consomme rien). Au Dormir, BLOC_NUIT_S secondes",
     "de consommation sont prélevées d'un bloc. Si le frigo a été alimenté moins de",
     "SEUIL_ALIMENTE du temps d'éveil (ou en cas de panne nocturne), chaque lot du",
     "frigo perd PERTE_NUITS nuit de conservation."
@@ -60,9 +62,11 @@
   "FRIGO": {
     "CONSTRUCTION": 600,
     "//BASE_WH_S": "Wh par seconde",
-    "BASE_WH_S": 5,
+    "BASE_WH_S": 0,
     "//PAR_UNITE_MWH_S": "mWh par seconde et par unité stockée",
-    "PAR_UNITE_MWH_S": 50,
+    "PAR_UNITE_MWH_S": 100,
+    "CAPACITE": [25, 40, 60, 90, 120],
+    "COUT": [0, 300, 700, 1500, 3000],
     "BLOC_NUIT_S": 30,
     "//SEUIL_ALIMENTE": "%",
     "SEUIL_ALIMENTE": 50,

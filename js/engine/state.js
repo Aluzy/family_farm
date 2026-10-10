@@ -2,7 +2,8 @@ import { DATA } from './catalog.js';
 import { STATE_VERSION } from './base.js';
 import { newVille } from './ville.js';
 import { batteryCapacity, newDayStats, startFarm } from './devices.js';
-import { addItem, defaultOrigin, shelfLife } from './inventory.js';
+import { addItem, defaultOrigin, lotRank, shelfLife } from './inventory.js';
+import { pushLots } from './fridge.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
 } from './family.js';
@@ -77,7 +78,7 @@ export function startLot8() {
   return {
     serre: { construit: false, niveau: 1, parcelles: [] },
     verger: { construit: false, places: DATA.VERGER.EMPLACEMENTS_DEPART, achetes: 0, compteur: 0, arbres: [] },
-    frigo: { construit: false, appareil: null, items: {}, alimenteMs: 0, eveilMs: 0, panneNuit: false, alimente: true },
+    frigo: { construit: false, niveau: 1, appareil: null, items: {}, alimenteMs: 0, eveilMs: 0, panneNuit: false, alimente: true },
   };
 }
 
@@ -299,11 +300,49 @@ export const MIGRATIONS = {
   // v25 → v26 (version 1.8, v2 lot 4) : l'énergie du personnage remplace la santé.
   25: (state) => migrateEnergy(state),
   26: (state) => migrateHoe(state),
+  27: (state) => migrateFridgeCapacity(state),
 };
 
 // Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie
 // pleine ; les nœuds de l'arbre retirés (soins, bonus de santé) sont rendus (points
 // et pièces) ; la série du chapitre 6 en cours oublie ses soins.
+// Version 1.10 (v2, lot 6) : le frigo a une capacité (niveau 1 : DATA.FRIGO.CAPACITE[0]).
+// Un frigo déjà construit passe au niveau 1 ; il garde ce qui périme le plus tôt et le
+// surplus revient dans l'inventaire, avec sa conservation.
+export function migrateFridgeCapacity(old) {
+  const state = { ...old, version: 28 };
+  const f = state.frigo;
+  if (!f || typeof f !== 'object') return state;
+  state.frigo = { ...f, niveau: 1, items: { ...(f.items && typeof f.items === 'object' ? f.items : {}) } };
+  if (!state.frigo.construit) return state;
+  const all = [];
+  for (const [item, lots] of Object.entries(state.frigo.items)) {
+    if (!Array.isArray(lots)) continue;
+    for (const lot of lots) if (lot && lot.qty > 0) all.push({ item, lot: { ...lot } });
+  }
+  all.sort((a, b) => lotRank(a.lot) - lotRank(b.lot));
+  let room = DATA.FRIGO.CAPACITE[0];
+  const keep = {};
+  const back = {};
+  for (const { item, lot } of all) {
+    const n = Math.min(lot.qty, room);
+    room -= n;
+    if (n > 0) (keep[item] = keep[item] || []).push({ ...lot, qty: n });
+    if (lot.qty - n > 0) (back[item] = back[item] || []).push({ ...lot, qty: lot.qty - n });
+  }
+  // les aliments gardent leur ordre d'avant
+  state.frigo.items = Object.fromEntries(Object.keys(state.frigo.items).filter((k) => keep[k]).map((k) => [k, keep[k]]));
+  if (Object.keys(back).length) {
+    state.inventaire = { ...(state.inventaire || {}) };
+    for (const [item, lots] of Object.entries(back)) {
+      const inv = Array.isArray(state.inventaire[item]) ? state.inventaire[item].map((l) => ({ ...l })) : [];
+      pushLots(inv, lots);
+      state.inventaire[item] = inv;
+    }
+  }
+  return state;
+}
+
 // Version 1.9 (v2, lot 5) : la Zone de culture n'a plus de niveaux, c'est une grille de
 // cases. Les parcelles existantes restent de la terre, posées dans l'ordre sur les
 // premières cases (comme la carte les dessinait) ; celles du Champ aussi. Une ancienne

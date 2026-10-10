@@ -6,6 +6,21 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v32 (jeu 1.10) : réfrigérateur à capacité** (lot 6 de la v2, `DATA.FRIGO`,
+> `js/engine/fridge.js`). Cette note **fait foi** sur tout ce qui, plus bas, parle d'un
+> réfrigérateur à capacité illimitée ou d'une consommation de base.
+> - **Capacité par niveau** : 25 / 40 / 60 / 90 / 120 unités ; améliorations 300 / 700 /
+>   1 500 / 3 000 💰 🟡 (`upgradeFridge`, carte du frigo dans Maison › Installations).
+> - **Plein** : « Ranger » est grisé ; « Ranger » range ce qui tient ; « Tout ranger » range
+>   d'abord ce qui périme le plus tôt (et garde la réserve de semences pour le joueur
+>   simulé).
+> - **Consommation** proportionnelle au stock : 100 mWh/s par unité 🟡, plus de part
+>   fixe (frigo vide = 0 ; niveau 5 plein = 12 Wh/s). Bloc de nuit et perte d'une nuit
+>   de conservation inchangés.
+> - Format de sauvegarde 28 (`migrateFridgeCapacity`) : un frigo déjà construit passe au
+>   niveau 1 ; il garde les 25 unités qui périment le plus tôt et le surplus revient dans
+>   l'inventaire, avec sa conservation.
+>
 > **v31 (jeu 1.9) : la houe** (lot 5 de la v2, `DATA.HOUE`, `NIVEAUX.TUILES`, fonctions
 > `hoe()`, `soilMask()` de `js/engine/crops.js`). Cette note **fait foi** sur tout ce qui,
 > plus bas, parle d'agrandir la Zone de culture en pièces ou d'un Champ ouvert en entier.

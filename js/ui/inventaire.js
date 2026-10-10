@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { countItem, expiringSoon, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
-import { moveAllToFridge } from '../engine/fridge.js';
+import { fridgeCapacity, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { formatCoins, formatQty } from '../engine/format.js';
 import { invTab, state } from './store.js';
@@ -42,9 +42,11 @@ function expiringTonight(item) {
 function fridgeInButtons(item) {
   if (!state.frigo.construit || !isFridgeable(item) || countItem(state, item) < 1) return '';
   const nom = DATA.items[item].nom.toLowerCase();
+  // version 1.10 : grisés quand le frigo est plein
+  const off = fridgeRoom(state) < 1 ? ' disabled title="Le frigo est plein"' : '';
   return `
-        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="1" aria-label="Ranger 1 ${nom} au frigo">🧊 1</button>
-        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo">🧊 Tout</button>`;
+        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="1" aria-label="Ranger 1 ${nom} au frigo"${off}>🧊 1</button>
+        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo"${off}>🧊 Tout</button>`;
 }
 
 // Boutons d'une case : manger (version 1.8, un aliment) et ranger au frigo.
@@ -97,7 +99,9 @@ function fridgeAllButton(items) {
   if (!state.frigo.construit) return '';
   const n = items.filter(isFridgeable).reduce((t, k) => t + countItem(state, k), 0);
   if (n < 1) return '';
-  return `<button type="button" class="btn primary inv-all" data-action="fridge-in-all">🧊 Tout ranger au frigo (${formatQty(n)})</button>`;
+  const room = fridgeRoom(state);
+  if (room < 1) return `<button type="button" class="btn inv-all" disabled>🧊 Frigo plein (${fridgeUnits(state)} / ${fridgeCapacity(state)})</button>`;
+  return `<button type="button" class="btn primary inv-all" data-action="fridge-in-all">🧊 Tout ranger au frigo (${formatQty(Math.min(n, room))}${n > room ? ` sur ${formatQty(n)}` : ''})</button>`;
 }
 
 const INVENTORY_TABS = [
@@ -179,6 +183,6 @@ export function renderInventaire() {
 registerActions({
   'fridge-in-all': () => {
     const result = applyResult(moveAllToFridge(state));
-    if (result.ok) showToast(`🧊 Rangé au frigo : ${itemsSummary(result.items)}`);
+    if (result.ok) showToast(`🧊 Rangé au frigo : ${itemsSummary(result.items)}${result.reste ? ` · frigo plein, ${formatQty(result.reste)} restent dehors` : ''}`);
   },
 });

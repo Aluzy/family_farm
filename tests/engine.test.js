@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, TIRED, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, holdStatus, TIRED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -5369,7 +5369,8 @@ test('migration v15 → v16 : la viande et les anciens plats de l\'inventaire et
   });
   const m = migrate({ v: 15, t: 0, s: v15 });
   assertEqual(m.inventaire, v15.inventaire, 'rien n\'est retiré de l\'inventaire');
-  assertEqual(m.frigo.items, v15.frigo.items, 'ni du frigo');
+  assertEqual(m.frigo.items, v15.frigo.items, 'ni du frigo (4 unités : elles tiennent au niveau 1)');
+  assertEqual(m.frigo.niveau, 1, 'version 1.10 : le frigo a un niveau');
   assertEqual(m.marche, { viande_mouton: 150 });
   for (const id of ['viande_mouton', 'viande_boeuf', 'viande_volaille', 'ragout', 'poulet_roti_ail', 'roti_boeuf', 'poivrons_farcis']) {
     assertEqual([!!DATA.items[id], DATA.items[id].edible], [true, true], id);
@@ -5543,10 +5544,14 @@ function protect(s, ...items) {
   for (const item of items) s.famille.reserve[item] = 99999;
 }
 
-function coldRoom({ charge = true } = {}) {
+// Version 1.10 : un frigo vide ne consomme rien ; il est construit au niveau 5 (120 unités)
+// avec `lest` épinards au frais (50 : 5 Wh/s, l'ancienne consommation de base).
+function coldRoom({ charge = true, lest = 50 } = {}) {
   const s = farm();
   s.pieces = 5000;
   assert(buildFridge(s).ok, 'construire le Réfrigérateur');
+  s.frigo.niveau = DATA.FRIGO.CAPACITE.length;
+  if (lest) s.frigo.items.epinard = [{ qty: lest, nightsLeft: shelfLife('epinard'), origin: defaultOrigin('epinard') }];
   if (charge) testFillBatteries(s);
   s.panneaux[0].allume = false; // seul le frigo consomme, rien ne recharge
   return s;
@@ -5573,7 +5578,8 @@ test('DATA Lot 8 : Serre, Verger et Réfrigérateur (plus de saisons)', () => {
     assertEqual([DATA.items[fruit].energie, DATA.items[fruit].prix, shelfLife(fruit)], [scaleEnergie(8), 4, 7]);
   }
   const F = DATA.FRIGO;
-  assertEqual([F.CONSTRUCTION, F.BASE_WH_S, F.PAR_UNITE_MWH_S, F.BLOC_NUIT_S, F.SEUIL_ALIMENTE], [600, 5, 50, 30, 50]);
+  assertEqual([F.CONSTRUCTION, F.BASE_WH_S, F.PAR_UNITE_MWH_S, F.BLOC_NUIT_S, F.SEUIL_ALIMENTE], [600, 0, 100, 30, 50], 'version 1.10 : rien à vide, 100 mWh/s par unité');
+  assertEqual([F.CAPACITE, F.COUT], [[25, 40, 60, 90, 120], [0, 300, 700, 1500, 3000]]);
 });
 
 test('état initial Lot 8 : Serre, Verger et Réfrigérateur à construire', () => {
@@ -5873,12 +5879,12 @@ test('Réfrigérateur : 600 pièces, appareil du parc avec interrupteur, usure e
   assertEqual(repairCost(d), 300);
 });
 
-test('Réfrigérateur : consommation 5 Wh/s + 50 mWh/s par unité, prise dans les batteries', () => {
-  const s = coldRoom();
-  assertEqual(fridgeRate(s), kwh(0.005));
+test('Réfrigérateur : consommation 100 mWh/s par unité (rien à vide), prise dans les batteries', () => {
+  assertEqual(fridgeRate(coldRoom({ lest: 0 })), 0, 'version 1.10 : un frigo vide ne consomme rien');
+  const s = coldRoom({ lest: 0 });
   setInv(s, { carotte: 100 });
   moveToFridge(s, 'carotte', 100);
-  assertEqual(fridgeRate(s), kwh(0.01), '100 unités : 0,005 + 0,005');
+  assertEqual(fridgeRate(s), kwh(0.01), '100 unités × 100 mWh/s');
   const before = s.batteries[0].chargeMwh;
   runFor(s, 10);
   assertEqual(before - s.batteries[0].chargeMwh, kwh(0.1), 'soit 100 Wh en 10 s');
@@ -5939,7 +5945,7 @@ test('Réfrigérateur : usure jusqu\'à la panne à 100 %', () => {
 });
 
 test('déplacer des aliments : inventaire ↔ frigo, lots et conservation gardés', () => {
-  const s = coldRoom();
+  const s = coldRoom({ lest: 0 });
   setInv(s, { carotte: 4, conserve: 10 });
   s.inventaire.carotte[0].nightsLeft = 2; // vieux lot
   addLot(s, 'carotte', 6, 'acheté'); // lot frais, autre origine
@@ -6028,14 +6034,14 @@ test('panne nocturne : le bloc de 30 s n\'est pas couvert, la nuit compte comme 
 });
 
 test('consommation nocturne : 30 s de consommation prélevées d\'un coup', () => {
-  const s = coldRoom();
+  const s = coldRoom({ lest: 0 });
   setInv(s, { carotte: 100, conserve: 500 });
   moveToFridge(s, 'carotte', 100);
   s.frigo.alimenteMs = 30000;
   s.frigo.eveilMs = 30000;
   s.batteries[0].chargeMwh = kwh(5);
   const need = fridgeNightNeed(s);
-  assertEqual(need, kwh(0.3), '(5 000 + 100 × 50) mWh/s × 30 s = 300 Wh');
+  assertEqual(need, kwh(0.3), '100 unités × 100 mWh/s × 30 s = 300 Wh');
   sleepOnce(s);
   assertEqual(s.batteries[0].chargeMwh, kwh(4.7), `4,7 kWh restants, obtenu ${s.batteries[0].chargeMwh}`);
   assertEqual(s.report.frigo.panne, false);
@@ -6110,7 +6116,7 @@ test('la famille mange le contenu du frigo, après l\'inventaire', () => {
 });
 
 test('la réserve de semences compte le frigo : on ne mange pas ce qui est réservé', () => {
-  const s = coldRoom();
+  const s = coldRoom({ lest: 0 });
   setInv(s, {});
   addItem(s, 'patate', 10);
   moveToFridge(s, 'patate', 10);
@@ -6203,6 +6209,10 @@ test('mode test Lot 8 : constructions gratuites, batteries vides', () => {
   testEmptyBatteries(t);
   t.panneaux[0].allume = false;
   assertEqual(availableEnergy(t), 0);
+  runFor(t, 1);
+  assertEqual(t.frigo.alimente, true, 'version 1.10 : vide, il ne demande rien');
+  addItem(t, 'carotte', 1);
+  moveToFridge(t, 'carotte', 1);
   runFor(t, 1);
   assertEqual(t.frigo.alimente, false);
 });
@@ -7291,7 +7301,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.9.0');
+  assertEqual(GAME_VERSION, '1.10.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -7388,11 +7398,11 @@ test('Lot 11 : le Moulin s\'arrête hors-ligne quand les batteries sont vides', 
 });
 
 test('Lot 11 : frigo en panne si la batterie s\'est vidée pendant l\'absence', () => {
-  const s = coldRoom(); // batterie pleine (6 000 Wh), panneau coupé
+  const s = coldRoom({ lest: 0 }); // batterie pleine (6 000 Wh), panneau coupé
   addItem(s, 'carotte', 100);
   assert(moveToFridge(s, 'carotte', 100).ok);
   const avant = fridgeLots(s, 'carotte')[0].nightsLeft;
-  // 5 + 100 × 0,05 = 10 Wh/s : 6 000 Wh tiennent 600 s sur 3 600.
+  // 100 × 0,1 = 10 Wh/s : 6 000 Wh tiennent 600 s sur 3 600.
   const r = simulateOffline(s, 3600);
   assertEqual(s.frigo.alimente, false, 'plus de courant au retour');
   assert(near(r.frigo.horsTensionS, 3000, 5), `hors tension ${r.frigo.horsTensionS} s`);
@@ -8364,7 +8374,8 @@ test('« Tout ranger » : tous les aliments frais vont au frigo en une fois, sau
   s.pieces = 1000;
   buildFridge(s);
   const r = moveAllToFridge(s);
-  assertEqual([r.ok, r.moved, r.items], [true, 5, { carotte: 3, tomate: 2 }]);
+  assertEqual([r.ok, r.moved, r.reste], [true, 5, 0]);
+  assertEqual([r.items.carotte, r.items.tomate], [3, 2]);
   assertEqual(inventoryCounts(s), { ble: 4, conserve: 10 });
   assertEqual([fridgeCount(s, 'carotte'), fridgeCount(s, 'tomate')], [3, 2]);
   assertEqual(moveAllToFridge(s).ok, false, 'plus rien à ranger');
@@ -8653,6 +8664,78 @@ test('version 1.9 : migration v26 → v27 : les parcelles prennent une case, la 
   const full = migrate({ v: 26, t: 0, s: old });
   assertEqual([full.version, full.potager.parcelles.length], [STATE_VERSION, 12]);
   assert(sleepOnce(full) !== null, 'la partie migrée passe la nuit');
+});
+
+/* ---------- version 1.10 (v2, lot 6) : le frigo à capacité ---------- */
+
+test('version 1.10 : le frigo contient 25 unités au niveau 1 ; ranger s\'arrête quand il est plein', () => {
+  const s = ranch();
+  s.pieces = 1000;
+  assertEqual(fridgeCapacity(s), 0, 'pas construit');
+  buildFridge(s);
+  assertEqual([s.frigo.niveau, fridgeCapacity(s), fridgeRoom(s)], [1, 25, 25]);
+  setInv(s, { carotte: 30 });
+  const r = moveToFridge(s, 'carotte', 30);
+  assertEqual([r.ok, r.moved, r.reste, fridgeUnits(s), countItem(s, 'carotte')], [true, 25, 5, 25, 5], 'ce qui tient');
+  const plein = moveToFridge(s, 'carotte', 1);
+  assertEqual([plein.ok, plein.error], [false, 'Le frigo est plein (25 unités).']);
+  assertEqual(moveAllToFridge(s).error, 'Le frigo est plein (25 unités).');
+  assert(moveFromFridge(s, 'carotte', 2).ok);
+  assertEqual(moveAllToFridge(s).moved, 2, 'la place libérée se reprend');
+});
+
+test('version 1.10 : « Tout ranger » range d\'abord ce qui périme le plus tôt et garde la réserve', () => {
+  const s = ranch();
+  s.pieces = 1000;
+  buildFridge(s);
+  setInv(s, { carotte: 20, tomate: 10, patate: 6 });
+  s.inventaire.tomate[0].nightsLeft = 1;
+  s.inventaire.carotte[0].nightsLeft = 5;
+  s.inventaire.patate[0].nightsLeft = 2;
+  const r = moveAllToFridge(s, { patate: 6 });
+  assertEqual([r.moved, r.reste], [25, 5]);
+  assertEqual([fridgeCount(s, 'tomate'), fridgeCount(s, 'patate'), fridgeCount(s, 'carotte')], [10, 0, 15], 'tomates (1 nuit) puis carottes ; les patates de semence restent');
+});
+
+test('version 1.10 : améliorer le frigo (300 / 700 / 1 500 / 3 000) ; la consommation suit le contenu', () => {
+  const s = ranch();
+  s.pieces = 10000;
+  assertEqual(upgradeFridge(s).ok, false, 'pas construit');
+  buildFridge(s);
+  const caps = [];
+  const costs = [];
+  while (fridgeUpgradeCost(s) !== null) {
+    const r = upgradeFridge(s);
+    costs.push(r.cost);
+    caps.push(fridgeCapacity(s));
+  }
+  assertEqual([costs, caps, s.frigo.niveau], [[300, 700, 1500, 3000], [40, 60, 90, 120], 5]);
+  assertEqual(upgradeFridge(s).error, 'Niveau maximum atteint.');
+  assertEqual(fridgeRate(s), 0);
+  setInv(s, { carotte: 120 });
+  moveToFridge(s, 'carotte', 120);
+  assertEqual(fridgeRate(s), 12000, 'plein au niveau 5 : 12 Wh/s');
+});
+
+test('version 1.10 : migration v27 → v28 : le frigo passe au niveau 1, le surplus revient à l\'inventaire', () => {
+  const s = ranch();
+  s.pieces = 1000;
+  buildFridge(s);
+  const old = JSON.parse(JSON.stringify(s));
+  old.version = 27;
+  delete old.frigo.niveau;
+  old.frigo.items = {
+    carotte: [{ qty: 20, nightsLeft: 4, origin: 'produit' }],
+    tomate: [{ qty: 15, nightsLeft: 2, origin: 'produit' }],
+  };
+  old.inventaire = { carotte: [{ qty: 3, nightsLeft: 4, origin: 'produit' }] };
+  const m = migrateFridgeCapacity(old);
+  assertEqual([m.version, m.frigo.niveau], [28, 1]);
+  assertEqual([fridgeCount(m, 'tomate'), fridgeCount(m, 'carotte'), fridgeUnits(m)], [15, 10, 25], 'ce qui périme le plus tôt reste au frais');
+  assertEqual(countItem(m, 'carotte'), 13, 'le surplus rejoint l\'inventaire, avec sa conservation');
+  assertEqual(lotsOf(m, 'carotte').map((l) => l.nightsLeft), [4]);
+  const neuf = migrate({ v: 27, t: 0, s: JSON.parse(JSON.stringify(createInitialState(1))) });
+  assertEqual([neuf.version, neuf.frigo.niveau, neuf.frigo.construit], [STATE_VERSION, 1, false]);
 });
 
 export const results = runTests();

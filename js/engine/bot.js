@@ -3,8 +3,8 @@ import { EPS } from './base.js';
 import { isBroken, upgradeCost, upgradeDevice } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { tick } from './energy.js';
-import { countItem, expiringSoon, inventoryCounts, isFridgeable } from './inventory.js';
-import { buildFridge, fridgeCount, moveFromFridge, moveToFridge } from './fridge.js';
+import { countItem, expiringSoon } from './inventory.js';
+import { buildFridge, fridgeCount, fridgeLevel, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, upgradeFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
 import { planMeal } from './family.js';
 import { actionCost, energyLevel } from './stamina.js';
@@ -318,7 +318,9 @@ export function botStepInfo(state, step, eveilS) {
     }
     case 'frigo':
       if (!isUnlocked(state, 'frigo')) return { locked: true };
-      return state.frigo.construit ? { done: true } : { cost: DATA.FRIGO.CONSTRUCTION, buy: () => buildFridge(state) };
+      if (!state.frigo.construit) return { cost: DATA.FRIGO.CONSTRUCTION, buy: () => buildFridge(state) };
+      // version 1.10 : un niveau de frigo visé (capacité)
+      return fridgeLevel(state) >= (step.niveau || 1) ? { done: true } : { cost: fridgeUpgradeCost(state), buy: () => upgradeFridge(state) };
     case 'pompe':
       if (chapterReached(state) < 4) return { locked: true }; // d'abord les achats essentiels
       if (state.pompe.niveau < step.niveau && !hasTech(state, step.niveau === 2 ? 'cu_outils' : 'ea_econome')) return { locked: true }; // après le nœud précédent
@@ -375,8 +377,8 @@ export function botBuy(state, eveilS) {
 // le blé en trop et la paille en trop. Avec un réfrigérateur en marche, on range au lieu de vendre.
 export function botSell(state) {
   const S = DATA.SIMULATION;
-  const cold = state.frigo.construit && state.frigo.appareil.allume && !isBroken(state.frigo.appareil);
-  if (!cold) {
+  // version 1.10 : le frigo a une capacité ; ce qui n'y tient pas et périrait se vend
+  {
     const plan = planMeal(state);
     const expiring = expiringSoon(state);
     for (const item of Object.keys(expiring)) {
@@ -397,15 +399,12 @@ export function botSell(state) {
   if (farine >= 1) sellItem(state, 'farine', farine);
 }
 
-// Range au frais tout ce qui périme (sauf la réserve de semences).
+// Range au frais ce qui périme (sauf la réserve de semences), tant qu'il y a de la
+// place : d'abord ce qui périme le plus tôt.
 export function botStore(state) {
   const f = state.frigo;
   if (!f.construit || !f.appareil.allume || isBroken(f.appareil)) return;
-  for (const item of Object.keys(inventoryCounts(state))) {
-    if (!isFridgeable(item)) continue;
-    const qty = Math.floor(countItem(state, item) - (state.famille.reserve[item] || 0) + EPS);
-    if (qty >= 1) moveToFridge(state, item, qty);
-  }
+  moveAllToFridge(state, state.famille.reserve || {});
 }
 
 /* ---------- une journée, une partie ---------- */
@@ -422,6 +421,7 @@ export function botActions(state, strat, options, soir) {
   botMill(state);
   botCook(state);
   if (!soir) return;
+  botStore(state); // version 1.10 : ranger d'abord, vendre ce qui n'a pas tenu au frais
   botSell(state);
   botBuy(state, strat.eveilS);
   if (options.depannage) {

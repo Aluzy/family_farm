@@ -56,7 +56,16 @@ export const RAW_DATA = {
   },
   "PUMP": { "WH_PAR_L": 10 },
   "WEAR": { "HEURES_PAR_POINT": 2, "EFFICIENCY_DIVISOR": 200, "SERVICE_THRESHOLD": 70, "BREAKDOWN": 100, "MAINTAIN_RATE": 20, "REPAIR_RATE": 50 },
-  "FRIGO": { "CONSTRUCTION": 600, "BASE_WH_S": 5, "PAR_UNITE_MWH_S": 50, "BLOC_NUIT_S": 30, "SEUIL_ALIMENTE": 50, "PERTE_NUITS": 1 },
+  "FRIGO": {
+    "CONSTRUCTION": 600,
+    "BASE_WH_S": 0,
+    "PAR_UNITE_MWH_S": 100,
+    "CAPACITE": [25, 40, 60, 90, 120],
+    "COUT": [0, 300, 700, 1500, 3000],
+    "BLOC_NUIT_S": 30,
+    "SEUIL_ALIMENTE": 50,
+    "PERTE_NUITS": 1
+  },
   "NUTRITION": { "AUGMENTATION": 125 },
   "items": {
     "carotte": { "nom": "Carotte", "icone": "🥕", "energie": 8, "prix": 1, "edible": true, "category": "légume" },
@@ -1311,6 +1320,7 @@ export const RAW_DATA = {
       { "type": "arbres", "n": 2 },
       { "type": "serre", "niveau": 1 },
       { "type": "frigo" },
+      { "type": "frigo", "niveau": 2 },
       { "type": "tech", "id": "semis_auto" },
       { "type": "tech", "id": "cui_laiterie" },
       { "type": "tech", "id": "el_tonte" },

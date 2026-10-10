@@ -65,7 +65,7 @@ registerActions({
     const all = target.dataset.qty === 'all';
     const qty = all ? (action === 'fridge-in' ? countItem(state, item) : fridgeCount(state, item)) : Number(target.dataset.qty);
     const result = applyResult(action === 'fridge-in' ? moveToFridge(state, item, qty) : moveFromFridge(state, item, qty));
-    if (result.ok) showToast(`${action === 'fridge-in' ? '🧊 Rangé' : 'Sorti'} : ${result.moved} ${DATA.items[item].icone}`);
+    if (result.ok) showToast(`${action === 'fridge-in' ? '🧊 Rangé' : 'Sorti'} : ${result.moved} ${DATA.items[item].icone}${result.reste ? ` (frigo plein : ${result.reste} restent dehors)` : ''}`);
   }),
   'do-new-game': () => {
     actionNewGame();

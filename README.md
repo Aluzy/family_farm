@@ -7,7 +7,7 @@ troupeau (poules, moutons, vaches), verger, serre, cuisine, four et réfrigérat
 La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
-- **Version** : 1.9.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
+- **Version** : 1.10.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi (autres
   documents : voir « Documentation » plus bas)
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
@@ -68,6 +68,8 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   les moutons et les vaches mangent leur paille (laine, lait), les aliments vieillissent.
 - L'électricité et l'eau circulent en temps réel : panneau (de 7 h à 19 h) → batterie →
   pompe, moulin, presse, réfrigérateur. Les appareils s'usent quand ils tournent.
+- Le **réfrigérateur** contient 25 à 120 unités selon son niveau et consomme selon
+  son contenu (100 mWh/s par unité, rien à vide).
 - La **Zone de culture** est une grille de 30 cases (6 en terre au départ) ; le **Champ**,
   64 cases, s'ouvre quand le Moulin est construit. La **houe** (Marché, 40 💰) change
   l'herbe en terre (5 d'énergie, 10 XP) ou rebouche une terre vide ; le nombre de tuiles

@@ -167,10 +167,10 @@ const HELP = {
   }),
   frigo: () => ({
     nom: 'Réfrigérateur',
-    role: 'Les aliments rangés au frais ne vieillissent plus, tant qu\'il est alimenté. Capacité illimitée.',
-    conso: `${formatNumber(DATA.FRIGO.BASE_WH_S)} Wh/s + ${formatNumber(DATA.FRIGO.PAR_UNITE_MWH_S)} mWh/s par unité stockée, jour et nuit. Au Dormir, ${DATA.FRIGO.BLOC_NUIT_S} s de consommation sont prélevées d'un coup pour la nuit.`,
+    role: `Les aliments rangés au frais ne vieillissent plus, tant qu'il est alimenté. Capacité : ${DATA.FRIGO.CAPACITE.join(' / ')} unités selon le niveau ; plein, « Ranger » est grisé et « Tout ranger » range d'abord ce qui périme le plus tôt.`,
+    conso: `${formatNumber(DATA.FRIGO.PAR_UNITE_MWH_S)} mWh/s par unité stockée (rien s'il est vide), jour et nuit. Au Dormir, ${DATA.FRIGO.BLOC_NUIT_S} s de consommation sont prélevées d'un coup pour la nuit.`,
     prod: 'Du froid : aucune péremption au frigo.',
-    note: `S'il manque de courant plus de ${formatNumber(DATA.FRIGO.SEUIL_ALIMENTE * 100)} % de la journée, ou pendant la nuit, chaque lot perd ${nightsLabel(DATA.FRIGO.PERTE_NUITS)} de conservation.`,
+    note: `S'il manque de courant plus de ${formatNumber(DATA.FRIGO.SEUIL_ALIMENTE)} % de la journée, ou pendant la nuit, chaque lot perd ${nightsLabel(DATA.FRIGO.PERTE_NUITS)} de conservation.`,
   }),
 };
 

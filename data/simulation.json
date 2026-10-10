@@ -108,6 +108,7 @@
       { "type": "arbres", "n": 2 },
       { "type": "serre", "niveau": 1 },
       { "type": "frigo" },
+      { "type": "frigo", "niveau": 2 },
       { "type": "tech", "id": "semis_auto" },
       { "type": "tech", "id": "cui_laiterie" },
       { "type": "tech", "id": "el_tonte" },
