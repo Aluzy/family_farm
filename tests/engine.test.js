@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -224,6 +224,13 @@ const ml = (n) => Math.round(n * 1000);
 // Version 1.6 : le panneau ne produit qu'au soleil (7 h – 19 h). La partie de test
 // commence à 7 h (`sun`), pour que les tests de flux d'énergie produisent dès le
 // premier tick ; `sun: false` la laisse à 6 h, l'heure du réveil.
+// Version 1.12 : un bâtiment ne se construit pas avant son niveau ; les aides de test
+// montent la partie au niveau qu'il faut (sans XP, sans écran de niveau).
+function reach(s, id) {
+  s.progression.niveau = Math.max(s.progression.niveau, unlockLevel(id));
+  return s;
+}
+
 function farm({ pump = false, sun = true } = {}) {
   const s = createInitialState(1);
   s.pompe.allume = pump;
@@ -1818,7 +1825,7 @@ test('vente : retire les lots les plus anciens, refuse sans stock et ignore les 
 test('les 10 nouvelles cultures : récolte stockée dans l\'inventaire, puis vendable', () => {
   const s = garden();
   s.pieces = 5000;
-  buildSerre(s);
+  buildSerre(reach(s, 'serre'));
   addItem(s, 'graine_oignon', 1);
   addItem(s, 'riz', 1);
   addItem(s, 'cacao', 1);
@@ -1955,8 +1962,8 @@ test('sérialisation JSON : lots et coefficients font l\'aller-retour', () => {
 function ranch({ silo = true, coop = true } = {}) {
   const s = garden();
   s.pieces = 5000;
-  if (silo) assert(buildSilo(s).ok, 'construire le Silo');
-  if (coop) assert(buildPoulailler(s).ok, 'construire le Poulailler');
+  if (silo) assert(buildSilo(reach(s, 'silo')).ok, 'construire le Silo');
+  if (coop) assert(buildPoulailler(reach(s, 'poulailler')).ok, 'construire le Poulailler');
   return s;
 }
 
@@ -2083,9 +2090,9 @@ test('cultures de plein champ : la Zone de culture les fait pousser comme les l�
 test('Silo : capacité par niveau et coûts 30 / 80 / 180 / 400, construction offerte', () => {
   const s = garden();
   s.pieces = 0;
-  assertEqual(buildSilo(s).ok, true, 'la construction est gratuite');
+  assertEqual(buildSilo(reach(s, 'silo')).ok, true, 'la construction est gratuite');
   assertEqual(s.pieces, 0);
-  assertEqual(buildSilo(s).ok, false);
+  assertEqual(buildSilo(reach(s, 'silo')).ok, false);
   assertEqual(siloCapacity(s), 20);
   const seen = [];
   s.pieces = 1000;
@@ -2099,7 +2106,7 @@ test('Silo : capacité par niveau et coûts 30 / 80 / 180 / 400, construction of
   assertEqual(upgradeSilo(s).ok, false, 'niveau maximum');
   const t = garden();
   assertEqual(upgradeSilo(t).ok, false, 'pas avant la construction');
-  buildSilo(t);
+  buildSilo(reach(t, 'silo'));
   t.pieces = 29;
   assertEqual(upgradeSilo(t).ok, false, 'pas assez de pièces');
 });
@@ -2176,12 +2183,12 @@ test('blé entier : 1 blé nourrit 2 poules, une ration entamée ne revient pas 
 test('Poulailler : construction 40, capacité 4 / 8 / 12 / 16 / 24 aux coûts 100 / 220 / 450 / 900', () => {
   const s = garden();
   s.pieces = 39;
-  assertEqual(buildPoulailler(s).ok, false);
+  assertEqual(buildPoulailler(reach(s, 'poulailler')).ok, false);
   assertEqual(upgradePoulailler(s).ok, false, 'pas avant la construction');
   s.pieces = 40;
-  assertEqual(buildPoulailler(s).ok, true);
+  assertEqual(buildPoulailler(reach(s, 'poulailler')).ok, true);
   assertEqual([s.pieces, coopCapacity(s)], [0, 4]);
-  assertEqual(buildPoulailler(s).ok, false);
+  assertEqual(buildPoulailler(reach(s, 'poulailler')).ok, false);
   s.pieces = 5000;
   const seen = [];
   while (coopUpgradeCost(s) !== null) {
@@ -2415,7 +2422,7 @@ test('migration v4 (Lot 3) → v5 : Silo et Poulailler apparaissent (plus de Cha
   assertEqual(inventoryCounts(m).conserve, 160);
   // l'état migré tourne, construit et pond
   m.pieces = 500;
-  assertEqual(buildPoulailler(m).ok, true);
+  assertEqual(buildPoulailler(reach(m, 'poulailler')).ok, true);
   buyAnimal(m, 'poule');
   m.silo.ble = 0;
   setInv(m, { ble: 2, conserve: 200 });
@@ -2500,7 +2507,7 @@ test('rapport de réveil Lot 4 : œufs pondus et blé consommé', () => {
 // pleines, réservoir plein, panneau coupé (l'énergie ne bouge que par les consommateurs).
 function atelier({ stations = ['four', 'cuisine', 'moulin', 'presse'] } = {}) {
   const s = ranch();
-  for (const id of stations) assert(buildStation(s, id).ok, `construire ${id}`);
+  for (const id of stations) assert(buildStation(reach(s, id), id).ok, `construire ${id}`);
   s.pieces = 1000;
   setInv(s, {});
   testFillBatteries(s);
@@ -2719,7 +2726,7 @@ test('Lot 12 : la vente crédite le nouveau montant et le Marché affiche le pri
 test('Marché : les articles rangés au frigo se vendent aussi (l\'inventaire part d\'abord)', () => {
   const s = garden();
   s.pieces = 1000;
-  buildFridge(s);
+  buildFridge(reach(s, 'frigo'));
   setInv(s, { carotte: 5 });
   assert(moveToFridge(s, 'carotte', 3).ok, 'ranger 3 carottes');
   assertEqual([countItem(s, 'carotte'), fridgeCount(s, 'carotte'), sellableCount(s, 'carotte')], [2, 3, 5]);
@@ -2738,7 +2745,7 @@ test('Marché : les articles rangés au frigo se vendent aussi (l\'inventaire pa
   // Le coefficient d'achat baisse comme pour une vente ordinaire.
   const t = garden();
   t.pieces = 1000;
-  buildFridge(t);
+  buildFridge(reach(t, 'frigo'));
   buyItem(t, 'tomate', 3);
   moveToFridge(t, 'tomate', 3);
   assertEqual(marketCoef(t, 'tomate'), 150);
@@ -3211,32 +3218,32 @@ test('état initial Lot 5 : quatre stations à construire, libres, sans appareil
 test('construire le Four : 100 pièces, et l\'onglet Livre de recette s\'ouvre', () => {
   const s = ranch();
   s.pieces = 100;
-  const r = buildStation(s, 'four');
+  const r = buildStation(reach(s, 'four'), 'four');
   assertEqual([r.ok, r.cost, s.pieces], [true, 100, 0]);
   assertEqual(s.stations.four.construit, true);
   assertEqual(s.unlockedTabs.includes('recettes'), true, 'onglet ouvert par le Four');
   assertEqual(s.unlockedTabs.filter((t) => t === 'recettes').length, 1);
   assertEqual(allDevices(s).length, 3, 'le Four n\'est pas un appareil électrique');
-  assertEqual(buildStation(s, 'four').ok, false, 'une seule de chaque');
+  assertEqual(buildStation(reach(s, 'four'), 'four').ok, false, 'une seule de chaque');
 });
 
 test('la Cuisine (150) se construit sans le Four, et ouvre le Livre de recette', () => {
   const s = ranch();
   assertEqual(s.unlockedTabs.includes('recettes'), false);
   s.pieces = 149;
-  assertEqual(buildStation(s, 'cuisine').ok, false, 'pas assez de pièces');
+  assertEqual(buildStation(reach(s, 'cuisine'), 'cuisine').ok, false, 'pas assez de pièces');
   s.pieces = 150;
-  assertEqual(buildStation(s, 'cuisine').ok, true);
+  assertEqual(buildStation(reach(s, 'cuisine'), 'cuisine').ok, true);
   assertEqual(s.pieces, 0);
   assertEqual(s.unlockedTabs.includes('recettes'), true, 'version 1.7 : la Cuisine ouvre le Livre de recette');
-  assertEqual(buildStation(s, 'cuisine').ok, false, 'une seule Cuisine');
+  assertEqual(buildStation(reach(s, 'cuisine'), 'cuisine').ok, false, 'une seule Cuisine');
 });
 
 test('le Moulin (120) et la Presse (150) se construisent sans le Four et rejoignent le parc', () => {
   const s = ranch();
   s.pieces = 270;
-  assertEqual(buildStation(s, 'moulin').ok, true);
-  assertEqual(buildStation(s, 'presse').ok, true);
+  assertEqual(buildStation(reach(s, 'moulin'), 'moulin').ok, true);
+  assertEqual(buildStation(reach(s, 'presse'), 'presse').ok, true);
   assertEqual(s.pieces, 0);
   assertEqual(s.unlockedTabs.includes('recettes'), false, 'seul le Four ouvre l\'onglet');
   assertEqual(allDevices(s).map((d) => d.id), ['panneau-1', 'batterie-1', 'pompe', 'moulin', 'presse']);
@@ -3741,10 +3748,10 @@ test('onglet Livre de recette : ouvert par le Four, jamais avant', () => {
   const s = createInitialState(1);
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir']);
   s.pieces = 500;
-  buildStation(s, 'moulin');
-  buildStation(s, 'presse');
+  buildStation(reach(s, 'moulin'), 'moulin');
+  buildStation(reach(s, 'presse'), 'presse');
   assertEqual(s.unlockedTabs.includes('recettes'), false);
-  buildStation(s, 'four');
+  buildStation(reach(s, 'four'), 'four');
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes']);
 });
 
@@ -3819,7 +3826,7 @@ test('migration v5 (Lot 4) → v6 (puis v7) : les stations apparaissent, la part
   assertEqual(inventoryCounts(m).conserve, 160);
   // l'état migré construit, cuisine et dort
   m.pieces = 500;
-  assertEqual(buildStation(m, 'four').ok, true);
+  assertEqual(buildStation(reach(m, 'four'), 'four').ok, true);
   assertEqual(m.unlockedTabs.includes('recettes'), true);
   addItem(m, 'farine', 2);
   assertEqual(startRecipe(m, 'pain').ok, false, 'le réservoir de cette sauvegarde est vide');
@@ -3846,7 +3853,7 @@ test('migration v0 → version courante : les chaînes mènent au Lot 5', () => 
 function pature({ built = true } = {}) {
   const s = garden();
   s.pieces = 5000;
-  if (built) assert(buildPaturage(s).ok, 'ouvrir l\'Étable');
+  if (built) assert(buildPaturage(reach(s, 'paturage')).ok, 'ouvrir l\'Étable');
   return s;
 }
 
@@ -3900,13 +3907,13 @@ test('état initial Lot 6 : Étable à ouvrir, sans place, mouton ni vache', () 
 test('Étable : ouverte aux moutons et aux vaches pour 150 pièces, 10 places', () => {
   const s = garden();
   s.pieces = 149;
-  assertEqual(buildPaturage(s).ok, false, 'refusé sans 150 pièces');
+  assertEqual(buildPaturage(reach(s, 'paturage')).ok, false, 'refusé sans 150 pièces');
   assertEqual([s.pieces, s.paturage.construit, s.paturage.places], [149, false, 0]);
   s.pieces = 150;
-  assertEqual(buildPaturage(s), { ok: true, cost: 150, places: 10 });
+  assertEqual(buildPaturage(reach(s, 'paturage')), { ok: true, cost: 150, places: 10 });
   assertEqual([s.pieces, s.paturage.construit, s.paturage.places], [0, true, 10]);
   assertEqual([pastureCapacity(s), freeSheepPlaces(s), cowCapacity(s), stableFree(s)], [10, 10, 3, 10]);
-  assertEqual(buildPaturage(s).ok, false, 'une seule fois');
+  assertEqual(buildPaturage(reach(s, 'paturage')).ok, false, 'une seule fois');
   // même équilibrage qu'avant : 1 place = 5 ares d'autrefois, une vache en prend 3
   assertEqual([maxSheep(10), maxSheep(11), maxSheep(1), maxSheep(0)], [10, 11, 1, 0]);
   assertEqual([maxCows(10), maxCows(9), maxCows(3), maxCows(2)], [3, 3, 1, 0]);
@@ -3916,7 +3923,7 @@ test('mouton : 60 pièces, refusé sans Étable ouverte ni pièces, sans poids',
   const s = pature({ built: false });
   const r = buySheep(s);
   assertEqual([r.ok, s.pieces], [false, 5000], 'l\'Étable n\'est pas prête');
-  buildPaturage(s);
+  buildPaturage(reach(s, 'paturage'));
   s.pieces = 59;
   assertEqual(buySheep(s).ok, false, 'pas assez de pièces');
   assertEqual(sheepCount(s), 0);
@@ -3966,7 +3973,7 @@ test('places : 40, 48 puis 58 pièces pour les 11ᵉ, 12ᵉ et 13ᵉ places', ()
 test('places : refusée sans Étable ouverte ou sans pièces ; sinon à la suite, même s\'il en reste de libres', () => {
   const s = pature({ built: false });
   assertEqual(buyPasture(s).ok, false, 'l\'Étable n\'est pas prête');
-  buildPaturage(s);
+  buildPaturage(reach(s, 'paturage'));
   assertEqual(s.paturage.places, 10);
   fillSheep(s, 10);
   s.pieces = 39;
@@ -4206,7 +4213,7 @@ test('mode test Lot 6 : +3 moutons, laine prête, +20 pailles', () => {
 test('vache : 200 pièces, refusée sans Étable ouverte ni 3 places libres, sans poids', () => {
   const s = pature({ built: false });
   assertEqual(buyCow(s).ok, false, 'l\'Étable n\'est pas prête');
-  buildPaturage(s);
+  buildPaturage(reach(s, 'paturage'));
   s.pieces = 199;
   assertEqual(buyCow(s).ok, false, 'pas assez de pièces');
   s.pieces = 5000;
@@ -4279,7 +4286,7 @@ test('migration v6 (Lot 5) → v7 : l\'Étable des moutons apparaît à ouvrir, 
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   assertEqual(inventoryCounts(m).conserve, 160);
   m.pieces = 500;
-  assertEqual(buildPaturage(m).ok, true);
+  assertEqual(buildPaturage(reach(m, 'paturage')).ok, true);
   assertEqual(buySheep(m).ok, true);
   m.awakeMs = 30000;
   assertEqual(sleep(m).moutons, 1);
@@ -4488,7 +4495,7 @@ test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que
 test('Serre : automatisée seulement par ses nœuds (Irrigation de la Serre, Serre autonome)', () => {
   const s = garden();
   s.pieces = 5000;
-  buildSerre(s);
+  buildSerre(reach(s, 'serre'));
   s.serre.niveau = DATA.LEVEL_MAX;
   addItem(s, 'cacao', 3);
   plantRipe(s, 'serre-1', 'cacao');
@@ -5551,7 +5558,7 @@ function protect(s, ...items) {
 function coldRoom({ charge = true, lest = 50 } = {}) {
   const s = farm();
   s.pieces = 5000;
-  assert(buildFridge(s).ok, 'construire le Réfrigérateur');
+  assert(buildFridge(reach(s, 'frigo')).ok, 'construire le Réfrigérateur');
   s.frigo.niveau = DATA.FRIGO.CAPACITE.length;
   if (lest) s.frigo.items.epinard = [{ qty: lest, nightsLeft: shelfLife('epinard'), origin: defaultOrigin('epinard') }];
   if (charge) testFillBatteries(s);
@@ -5562,7 +5569,7 @@ function coldRoom({ charge = true, lest = 50 } = {}) {
 function orchard() {
   const s = garden();
   s.pieces = 5000;
-  assert(buildVerger(s).ok, 'aménager le Verger');
+  assert(buildVerger(reach(s, 'verger')).ok, 'aménager le Verger');
   return s;
 }
 
@@ -5627,13 +5634,13 @@ test('version 1.6 : plus de saisons, la même production toute l\'année', () =>
 test('Serre : 400 pièces, 6 parcelles, refus sans pièces ou si déjà construite', () => {
   const s = garden();
   s.pieces = 399;
-  assertEqual(buildSerre(s).ok, false);
+  assertEqual(buildSerre(reach(s, 'serre')).ok, false);
   s.pieces = 400;
-  const r = buildSerre(s);
+  const r = buildSerre(reach(s, 'serre'));
   assertEqual([r.ok, r.cost, s.pieces], [true, 400, 0]);
   assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, 1, 6]);
   assertEqual(s.serre.parcelles.every((p) => p.lieu === 'serre'), true);
-  assertEqual(buildSerre(s).ok, false);
+  assertEqual(buildSerre(reach(s, 'serre')).ok, false);
   assertEqual(allPlots(s).length, 12, '6 du Potager et 6 de la Serre');
   assertEqual(findPlot(s, 'serre-3').lieu, 'serre');
 });
@@ -5641,7 +5648,7 @@ test('Serre : 400 pièces, 6 parcelles, refus sans pièces ou si déjà construi
 test('Serre : +3 parcelles par niveau, 300 / 600 / 1 000 / 1 800 pièces', () => {
   const s = garden();
   s.pieces = 100000;
-  buildSerre(s);
+  buildSerre(reach(s, 'serre'));
   const seen = [];
   for (let i = 0; i < 4; i++) {
     const cost = serreUpgradeCost(s);
@@ -5658,7 +5665,7 @@ test('Serre : +3 parcelles par niveau, 300 / 600 / 1 000 / 1 800 pièces', () =>
 test('Serre : tomate, courgette, aubergine, poivron, cacao, vanille, café', () => {
   const s = garden();
   s.pieces = 5000;
-  buildSerre(s);
+  buildSerre(reach(s, 'serre'));
   upgradeSerre(s); // niveau 2 : 9 parcelles, assez pour tout planter en même temps
   testAddSeeds(s);
   const toPlant = ['tomate', 'courgette', 'aubergine', 'poivron', 'cacao', 'vanille', 'cafe'];
@@ -5682,7 +5689,7 @@ test('cultures de rente : cacao, vanille et café exclusivement en Serre', () =>
   // fonction de plantation qui porte la règle.
   const s = garden();
   s.pieces = 5000;
-  buildSerre(s);
+  buildSerre(reach(s, 'serre'));
   addItem(s, 'cacao', 5);
   addItem(s, 'vanille', 5);
   addItem(s, 'cafe', 5);
@@ -5715,7 +5722,7 @@ test('Serre : 3 L par arrosage et 10 tomates, chaque nuit de l\'année', () => {
   for (const day of [1, 11, 21, 31]) {
     const s = garden();
     s.pieces = 5000;
-    buildSerre(s);
+    buildSerre(reach(s, 'serre'));
     s.day = day;
     plant(s, 'serre-1', 'tomate');
     const before = s.eauMl;
@@ -5729,7 +5736,7 @@ test('Serre : 3 L par arrosage et 10 tomates, chaque nuit de l\'année', () => {
 test('Serre : pousse une nuit arrosée, et les récoltes prêtes la comptent', () => {
   const s = garden();
   s.pieces = 5000;
-  buildSerre(s);
+  buildSerre(reach(s, 'serre'));
   plant(s, 'serre-1', 'tomate');
   water(s, 'serre-1');
   sleepOnce(s);
@@ -5743,7 +5750,7 @@ test('Serre : pousse une nuit arrosée, et les récoltes prêtes la comptent', (
 test('Verger : 2 emplacements au départ, aucun arbre', () => {
   const s = orchard();
   assertEqual([s.verger.construit, s.verger.places, s.verger.arbres.length, orchardFree(s)], [true, 2, 0, 2]);
-  assertEqual(buildVerger(s).ok, false, 'déjà aménagé');
+  assertEqual(buildVerger(reach(s, 'verger')).ok, false, 'déjà aménagé');
   assertEqual(buyTree(garden(), 'pommier').ok, false, 'sans Verger');
 });
 
@@ -5868,11 +5875,11 @@ test('Verger : chaque arbre donne 6 fruits de son espèce, pas d\'arrosage', () 
 test('Réfrigérateur : 600 pièces, appareil du parc avec interrupteur, usure et panne', () => {
   const s = farm();
   s.pieces = 599;
-  assertEqual(buildFridge(s).ok, false);
+  assertEqual(buildFridge(reach(s, 'frigo')).ok, false);
   s.pieces = 700;
-  const r = buildFridge(s);
+  const r = buildFridge(reach(s, 'frigo'));
   assertEqual([r.ok, r.cost, s.pieces], [true, 600, 100]);
-  assertEqual(buildFridge(s).ok, false, 'déjà construit');
+  assertEqual(buildFridge(reach(s, 'frigo')).ok, false, 'déjà construit');
   const d = findDevice(s, 'frigo');
   assertEqual([d.type, d.allume, d.usure, d.prix], ['frigo', true, 0, 600]);
   assertEqual(allDevices(s).includes(d), true);
@@ -6163,8 +6170,8 @@ test('ordre nocturne complet : verger avant le frigo, péremption après', () =>
 test('sérialisation JSON : Serre, Verger et Réfrigérateur font l\'aller-retour', () => {
   const s = coldRoom();
   s.pieces = 9999;
-  buildSerre(s);
-  buildVerger(s);
+  buildSerre(reach(s, 'serre'));
+  buildVerger(reach(s, 'verger'));
   buyTree(s, 'pommier');
   setInv(s, { carotte: 5, conserve: 500 });
   moveToFridge(s, 'carotte', 5);
@@ -6444,7 +6451,7 @@ test('compteurs : laines tondues, pains cuits, plats différents', () => {
 });
 
 function fillSheepAfterPasture(s) {
-  assert(buildPaturage(s).ok, 'débloquer le Pâturage');
+  assert(buildPaturage(reach(s, 'paturage')).ok, 'débloquer le Pâturage');
   fillSheep(s, 2);
 }
 
@@ -6491,7 +6498,7 @@ testBase('version 1.12 : chapitre 2 « Le grenier » : niveau 2, 4 cultures, Sil
   assertEqual(okList(s).slice(0, 2), [true, true], 'quatre cultures différentes');
   testSetLevel(s, 3);
   s.pieces = 5000;
-  assert(buildSilo(s).ok);
+  assert(buildSilo(reach(s, 'silo')).ok);
   addItem(s, 'ble', 5);
   assert(plant(s, 'potager-1', 'ble').ok);
   assertEqual(okList(s), [true, true, true, true, false]);
@@ -6518,8 +6525,8 @@ testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () =>
   const s = atChapter(3);
   setInv(s, { carotte: 200 }); // des légumes de la ferme : la famille est nourrie par la ferme
   s.pieces = 5000;
-  assert(buildSilo(s).ok);
-  assert(buildPoulailler(s).ok);
+  assert(buildSilo(reach(s, 'silo')).ok);
+  assert(buildPoulailler(reach(s, 'poulailler')).ok);
   for (let i = 0; i < 4; i++) assert(buyAnimal(s, 'poule').ok);
   testAddWheat(s, 50);
   for (let night = 1; night <= 7; night++) {
@@ -6547,8 +6554,8 @@ test('chapitre 3 : sept nuits sans l\'autonomie requise ne suffisent pas', () =>
 testBase('remise à zéro : une nuit sans œuf casse la série de ponte', () => {
   const s = atChapter(3);
   s.pieces = 5000;
-  assert(buildSilo(s).ok);
-  assert(buildPoulailler(s).ok);
+  assert(buildSilo(reach(s, 'silo')).ok);
+  assert(buildPoulailler(reach(s, 'poulailler')).ok);
   for (let i = 0; i < 4; i++) assert(buyAnimal(s, 'poule').ok);
   testAddWheat(s, 50);
   for (let night = 1; night <= 3; night++) {
@@ -6708,10 +6715,10 @@ test('cultures plantables : chacune à son niveau, le blé attend aussi le Silo'
   const n3 = at(3);
   assertEqual(plantableCropsFor(n3, 'potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'fraise'], 'pas de blé sans Silo');
   n3.pieces = 100;
-  assert(buildSilo(n3).ok);
+  assert(buildSilo(reach(n3, 'silo')).ok);
   assertEqual(plantableCropsFor(n3, 'potager').includes('ble'), true, 'Silo construit : le blé se plante');
   const n5 = at(5);
-  buildSilo(n5);
+  buildSilo(reach(n5, 'silo'));
   assertEqual(plantableCropsFor(n5, 'potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise', 'ble', 'tournesol', 'riz', 'houblon']);
   assertEqual(plantableCropsFor(at(6), 'serre'), ['tomate', 'courgette', 'aubergine', 'poivron'], 'cacao, vanille, café au niveau 7');
   assertEqual(plantableCropsFor(at(7), 'serre'), plantableCrops('serre'));
@@ -6944,7 +6951,7 @@ test('masquage : un niveau plus bas ne détruit rien de ce que la partie possèd
   s.pieces = 5000;
   addItem(s, 'ble', 1);
   assert(plant(s, 'potager-1', 'ble').ok, 'les actions du moteur restent libres : le masquage est celui de l\'interface');
-  assert(buildPoulailler(s).ok);
+  assert(buildPoulailler(reach(s, 'poulailler')).ok);
   testSetLevel(s, 1);
   assertEqual([findPlot(s, 'potager-1').culture, s.poulailler.construit], ['ble', true]);
   assertEqual([cropUnlocked(s, 'ble'), isUnlocked(s, 'poulailler')], [false, false]);
@@ -7253,7 +7260,7 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   // chapitre 3, zone de 12 parcelles : 4 parcelles de blé, le reste en légumes
   const s = atChapter(3);
   s.pieces = 5000;
-  buildSilo(s);
+  buildSilo(reach(s, 'silo'));
   growZone(s, 12);
   setInv(s, { ble: 20, patate: 20, graine_carotte: 20, riz: 20, houblon: 20, graine_tournesol: 20 });
   botFarm(s);
@@ -7265,7 +7272,7 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   // chapitre 4 avec la Presse : une parcelle de tournesol prise sur la part de plein champ
   const t = atChapter(4);
   t.pieces = 5000;
-  buildSilo(t);
+  buildSilo(reach(t, 'silo'));
   growZone(t, 12);
   t.stations.presse.construit = true;
   setInv(t, { ble: 20, patate: 20, graine_tournesol: 20 });
@@ -7928,7 +7935,7 @@ test('version 1.1.1 : animaux achetés par quantité, dans la limite des places 
   s.pieces = 20;
   assertEqual([animalBuyMax(s, 'mouton'), animalRoom(s, 'mouton')], [0, 0], 'pas d\'Étable : pas de mouton');
   s.pieces = 5000;
-  assert(buildPaturage(s).ok, 'préparer l\'Étable');
+  assert(buildPaturage(reach(s, 'paturage')).ok, 'préparer l\'Étable');
   s.pieces = 130;
   assertEqual(animalBuyMax(s, 'mouton'), 2, '130 pièces = 2 moutons à 60');
   const m = buyAnimals(s, 'mouton', 9);
@@ -7939,7 +7946,7 @@ test('version 1.1.1 : animaux achetés par quantité, dans la limite des places 
 test('version 1.1.1 : sans mouton ni vache, jamais d\'alerte de paille', () => {
   const s = ranch();
   s.pieces = 5000;
-  assert(buildPaturage(s).ok, 'préparer l\'Étable');
+  assert(buildPaturage(reach(s, 'paturage')).ok, 'préparer l\'Étable');
   setStraw(s, 0);
   assertEqual([strawNeed(s), strawMissing(s), alertSnapshot(s).pailleManque], [0, 0, false]);
   assertEqual(getNotifications(s).filter((n) => n.type === 'paille'), []);
@@ -8387,7 +8394,7 @@ test('blé : le Silo se remplit avec le blé de l\'inventaire (la nuit, à l\'am
 test('blé : il ne va pas au frigo (sa place est au Silo)', () => {
   const s = ranch();
   s.pieces = 1000;
-  buildFridge(s);
+  buildFridge(reach(s, 'frigo'));
   setInv(s, { ble: 4, carotte: 3 });
   assertEqual([isFridgeable('ble'), isFridgeable('carotte'), isFridgeable('conserve')], [false, true, false]);
   assertEqual(moveToFridge(s, 'ble', 2).ok, false);
@@ -8399,7 +8406,7 @@ test('« Tout ranger » : tous les aliments frais vont au frigo en une fois, sau
   setInv(s, { carotte: 3, tomate: 2, ble: 4, conserve: 10 });
   assertEqual(moveAllToFridge(s).ok, false, 'pas de frigo');
   s.pieces = 1000;
-  buildFridge(s);
+  buildFridge(reach(s, 'frigo'));
   const r = moveAllToFridge(s);
   assertEqual([r.ok, r.moved, r.reste], [true, 5, 0]);
   assertEqual([r.items.carotte, r.items.tomate], [3, 2]);
@@ -8699,7 +8706,7 @@ test('version 1.10 : le frigo contient 25 unités au niveau 1 ; ranger s\'arrêt
   const s = ranch();
   s.pieces = 1000;
   assertEqual(fridgeCapacity(s), 0, 'pas construit');
-  buildFridge(s);
+  buildFridge(reach(s, 'frigo'));
   assertEqual([s.frigo.niveau, fridgeCapacity(s), fridgeRoom(s)], [1, 25, 25]);
   setInv(s, { carotte: 30 });
   const r = moveToFridge(s, 'carotte', 30);
@@ -8714,7 +8721,7 @@ test('version 1.10 : le frigo contient 25 unités au niveau 1 ; ranger s\'arrêt
 test('version 1.10 : « Tout ranger » range d\'abord ce qui périme le plus tôt et garde la réserve', () => {
   const s = ranch();
   s.pieces = 1000;
-  buildFridge(s);
+  buildFridge(reach(s, 'frigo'));
   setInv(s, { carotte: 20, tomate: 10, patate: 6 });
   s.inventaire.tomate[0].nightsLeft = 1;
   s.inventaire.carotte[0].nightsLeft = 5;
@@ -8728,7 +8735,7 @@ test('version 1.10 : améliorer le frigo (300 / 700 / 1 500 / 3 000) ; la consom
   const s = ranch();
   s.pieces = 10000;
   assertEqual(upgradeFridge(s).ok, false, 'pas construit');
-  buildFridge(s);
+  buildFridge(reach(s, 'frigo'));
   const caps = [];
   const costs = [];
   while (fridgeUpgradeCost(s) !== null) {
@@ -8747,7 +8754,7 @@ test('version 1.10 : améliorer le frigo (300 / 700 / 1 500 / 3 000) ; la consom
 test('version 1.10 : migration v27 → v28 : le frigo passe au niveau 1, le surplus revient à l\'inventaire', () => {
   const s = ranch();
   s.pieces = 1000;
-  buildFridge(s);
+  buildFridge(reach(s, 'frigo'));
   const old = JSON.parse(JSON.stringify(s));
   old.version = 27;
   delete old.frigo.niveau;
@@ -8903,6 +8910,21 @@ test('version 1.12 : planche d\'avatars : 5 coiffures par âge, choisies dans la
   assertEqual(setMemberProfile(s, 'adulte-1', { style: 5 }).error, 'Coiffure inconnue.');
   assert(setMemberProfile(s, 'adulte-1', { style: 0 }).ok);
   assertEqual('style' in findMember(s, 'adulte-1'), false, 'la coiffure 0 n\'est pas écrite');
+});
+
+test('version 1.12 : un bâtiment ne se répare ni ne se construit avant son niveau', () => {
+  const s = createNewGame(1, { nom: 'Test' });
+  s.pieces = 100000;
+  const refus = [
+    ['silo', () => buildSilo(s)], ['poulailler', () => buildPoulailler(s)], ['paturage', () => buildPaturage(s)],
+    ['serre', () => buildSerre(s)], ['frigo', () => buildFridge(s)], ['verger', () => buildVerger(s)],
+    ['four', () => buildStation(s, 'four')], ['moulin', () => buildStation(s, 'moulin')],
+  ];
+  for (const [id, f] of refus) assertEqual(f().error, `Disponible au niveau ${unlockLevel(id)}.`, id);
+  assertEqual([s.pieces, s.silo.construit, s.stations.four.construit], [100000, false, false], 'rien n\'est payé');
+  assertEqual(levelBlock(s, 'cuisine'), 'Disponible au niveau 2.');
+  testSetLevel(s, 3);
+  assertEqual([levelBlock(s, 'silo'), buildSilo(s).ok], ['', true]);
 });
 
 export const results = runTests();

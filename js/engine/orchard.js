@@ -1,3 +1,4 @@
+import { levelBlock } from './levels.js';
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, growthPrice, spend } from './devices.js';
@@ -25,6 +26,8 @@ export function orchardSlotPrice(state) {
 export function buildVerger(state) {
   const v = state.verger;
   if (v.construit) return fail('Le Verger est déjà aménagé.');
+  const lock = levelBlock(state, 'verger'); // version 1.12 : pas avant son niveau
+  if (lock) return fail(lock);
   const cost = DATA.VERGER.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
