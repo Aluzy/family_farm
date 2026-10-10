@@ -154,22 +154,6 @@ export function hoe(state, zone, kase) {
   return { ok: true, action: 'labourer', plot };
 }
 
-// Dessin d'une tuile de terre : ses côtés qui touchent de la terre (masque de 4 bits :
-// 1 haut, 2 droite, 4 bas, 8 gauche). Les autres côtés touchent l'herbe : une bordure.
-export function soilMask(state, zone, kase) {
-  const g = zoneGrid(zone);
-  const col = kase % g.cols;
-  const rows = Math.ceil(g.cases / g.cols);
-  const row = Math.floor(kase / g.cols);
-  const soil = (c) => c >= 0 && c < g.cases && !!plotAtCase(state, zone, c);
-  let m = 0;
-  if (row > 0 && soil(kase - g.cols)) m |= 1;
-  if (col < g.cols - 1 && soil(kase + 1)) m |= 2;
-  if (row < rows - 1 && soil(kase + g.cols)) m |= 4;
-  if (col > 0 && soil(kase - 1)) m |= 8;
-  return m;
-}
-
 // Zone d'une parcelle de la Zone de culture : 1 (la zone du départ) ou 2 (le Champ).
 export function plotZone(plot) {
   return plot.zone === 2 ? 2 : 1;

@@ -18,9 +18,13 @@
 >   (gratuit, sans XP) ; une terre plantée ne se rebouche pas.
 > - **Plafond de tuiles de terre** (Zone de culture et Champ ensemble) par niveau :
 >   6 / 12 / 20 / 32 / 48 / 64 (64 à partir du niveau 6) 🟡.
-> - **Dessin** : chaque terre a 16 dessins selon ses 4 voisines (bordure côté herbe,
->   ouverte côté terre), faits à partir de `soil_dry.png` / `soil_wet.png` ; les cases
->   d'herbe ont leur tuile ; en mode houe, le contour des cases s'affiche.
+> - **Dessin** (tuiles du jeu de tuiles de la carte) : toute la zone et sa rangée de bord
+>   sont d'abord de l'**herbe foncée** (2415) ; l'ancienne terre et ses bordures sont
+>   retirées. Une case labourée devient de la **terre** (1167), et chaque case d'herbe qui
+>   la touche (côtés et diagonales) prend une tuile **mi-herbe mi-terre**, choisie par ses
+>   quatre coins (un coin est de la terre si une des cases qui le partagent est labourée) :
+>   bords et coins extérieurs 1612–1764, coins intérieurs 1387 / 1389 / 1537 / 1539.
+>   En mode houe, le contour des cases s'affiche.
 > - Partie neuve : 6 cases en terre (un bloc de 3 × 2), sans houe. Ancienne partie : ses
 >   parcelles restent de la terre, posées dans l'ordre, et la **houe est offerte** ;
 >   au-delà du plafond rien n'est retiré.

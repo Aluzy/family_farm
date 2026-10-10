@@ -340,6 +340,12 @@ dessin 🟡.
 
 ## 7. La houe et les tuiles voisines ✅ (fait, version 1.9)
 
+> ✅ **Décidé (version 1.9)** : c'est finalement l'« alternative » ci-dessous qui est
+> retenue, avec les tuiles du jeu de tuiles : la zone est de l'herbe foncée, la case
+> labourée devient de la terre et ce sont les **cases d'herbe voisines** qui prennent une
+> tuile mi-herbe mi-terre (bords, coins extérieurs et intérieurs). Voir la note v31 de
+> `conception.md`.
+
 ### 7.1 Réponse : quelles règles pour les tuiles voisines ?
 
 **Proposition retenue : la bordure est dessinée sur la tuile de terre, l'herbe ne change

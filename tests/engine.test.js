@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, TIRED, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, soilMask, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, holdStatus, TIRED, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -8625,21 +8625,6 @@ test('version 1.9 : reboucher une terre vide est gratuit et rend la place ; une 
   assertEqual(plotAtCase(s, 1, 4).id, 'potager-7', 'jamais un identifiant déjà pris');
   plant(s, 'potager-2', 'carotte');
   assertEqual(hoe(s, 1, 1).ok, false, 'terre plantée');
-});
-
-test('version 1.9 : le dessin d\'une terre suit ses quatre voisines (16 masques)', () => {
-  const s = garden();
-  // départ : cases 0, 1, 2 (rangée 1) et 5, 6, 7 (rangée 2) sur 5 colonnes
-  assertEqual([0, 1, 2, 5, 6, 7].map((c) => soilMask(s, 1, c)), [2 | 4, 2 | 4 | 8, 4 | 8, 1 | 2, 1 | 2 | 8, 1 | 8]);
-  s.potager.houe = true;
-  testSetLevel(s, 2);
-  hoe(s, 1, 3);
-  assertEqual([soilMask(s, 1, 2), soilMask(s, 1, 3)], [2 | 4 | 8, 8], 'les côtés communs s\'ouvrent');
-  hoe(s, 1, 4);
-  assertEqual(soilMask(s, 1, 4), 8, 'bord droit de la grille : pas de voisine à droite');
-  hoe(s, 1, 9);
-  assertEqual(soilMask(s, 1, 4), 8 | 4, 'la case 9 est sous la 4');
-  assertEqual(soilMask(s, 1, 5), 1 | 2, 'la case 4 n\'est pas à gauche de la 5 (autre rangée)');
 });
 
 test('version 1.9 : le plafond compte la Zone de culture et le Champ ensemble', () => {

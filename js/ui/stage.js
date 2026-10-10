@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { findDevice } from '../engine/devices.js';
-import { allPlots, isMature, maxStage, plotZone, soilCap, soilCount, soilMask, zone2Open, zone2Plots } from '../engine/crops.js';
+import { allPlots, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { isTreeAdult } from '../engine/orchard.js';
 import { woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
@@ -242,8 +242,8 @@ export function stageModel() {
     const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
     return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: !!p.arrose };
   };
-  // version 1.9 : chaque parcelle de zone a sa case et le dessin de ses bords
-  const zoneVue = (zone) => (p) => ({ ...vue(p), case: p.case, bord: soilMask(state, zone, p.case) });
+  // version 1.9 : chaque parcelle de zone a sa case ; la carte en tire la terre et ses bordures
+  const zoneVue = () => (p) => ({ ...vue(p), case: p.case });
   const plots = state.potager.parcelles.map(zoneVue(1));
   // Le Champ (vide tant que le Moulin n'est pas débloqué) et les arbres du Verger, dans
   // l'ordre où ils ont été plantés : chacun prend l'emplacement suivant de la carte.
