@@ -39,6 +39,37 @@ export function fridgeUnits(state) {
   return Object.values(fridgeCounts(state)).reduce((t, n) => t + n, 0);
 }
 
+/* ---------- version 1.10 (v2, lot 6) : capacité par niveau ---------- */
+
+export function fridgeLevel(state) {
+  return state.frigo && state.frigo.construit ? Math.max(1, Number(state.frigo.niveau) || 1) : 0;
+}
+
+// Unités que le frigo peut contenir (0 s'il n'est pas construit).
+export function fridgeCapacity(state) {
+  const n = fridgeLevel(state);
+  return n ? DATA.FRIGO.CAPACITE[Math.min(n, DATA.FRIGO.CAPACITE.length) - 1] : 0;
+}
+
+export function fridgeRoom(state) {
+  return Math.max(0, fridgeCapacity(state) - fridgeUnits(state));
+}
+
+export function fridgeUpgradeCost(state) {
+  const n = fridgeLevel(state);
+  return !n || n >= DATA.FRIGO.CAPACITE.length ? null : DATA.FRIGO.COUT[n];
+}
+
+export function upgradeFridge(state) {
+  if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
+  const cost = fridgeUpgradeCost(state);
+  if (cost === null) return fail('Niveau maximum atteint.');
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  state.frigo.niveau = fridgeLevel(state) + 1;
+  return { ok: true, cost, niveau: state.frigo.niveau, capacite: fridgeCapacity(state) };
+}
+
 // Consommation du frigo en marche (mWh/s) : base + une part par unité stockée.
 export function fridgeRate(state) {
   const F = DATA.FRIGO;
@@ -113,8 +144,11 @@ export function moveToFridge(state, item, qty) {
   if (!DATA.items[item]) return fail('Objet inconnu.');
   if (!isPerishable(item)) return fail(`${DATA.items[item].nom} ne périme pas : inutile de le ranger au frais.`);
   if (!isFridgeable(item)) return fail(`${DATA.items[item].nom} ne se range pas au frigo : sa place est au Silo.`);
-  const n = Math.min(Math.floor(Number(qty)) || 0, Math.floor(countItem(state, item) + EPS));
-  if (n <= 0) return fail('Rien à ranger.');
+  const asked = Math.min(Math.floor(Number(qty)) || 0, Math.floor(countItem(state, item) + EPS));
+  if (asked <= 0) return fail('Rien à ranger.');
+  // version 1.10 : seulement ce qui tient
+  const n = Math.min(asked, fridgeRoom(state));
+  if (n <= 0) return fail(`Le frigo est plein (${fridgeCapacity(state)} unités).`);
   const inv = lotsOf(state, item);
   const pulled = pullLots(inv, n);
   const kept = inv.filter((l) => l.qty > 0);
@@ -123,28 +157,45 @@ export function moveToFridge(state, item, qty) {
   const lots = fridgeLots(state, item);
   pushLots(lots, pulled);
   state.frigo.items[item] = lots;
-  return { ok: true, moved: n };
+  return { ok: true, moved: n, reste: asked - n };
 }
 
-// « Tout ranger » : range au frigo tous les aliments frais de l'inventaire qui
-// peuvent y aller (voir isFridgeable). Renvoie { ok, moved, items } où items =
-// { item: quantité rangée }.
-export function moveAllToFridge(state) {
+// « Tout ranger » : range au frigo les aliments frais de l'inventaire qui peuvent y
+// aller (voir isFridgeable), tant qu'il y a de la place : d'abord ce qui périme le plus
+// tôt (version 1.10). `garder` : { item: quantité } à laisser dans l'inventaire.
+// Renvoie { ok, moved, items, reste } où items = { item: quantité rangée } et reste =
+// les unités qui n'ont pas trouvé de place.
+export function moveAllToFridge(state, garder = {}) {
   if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
-  const items = {};
-  let moved = 0;
+  const lots = [];
+  let total = 0;
   for (const item of Object.keys(state.inventaire)) {
     if (!isFridgeable(item)) continue;
-    const n = Math.floor(countItem(state, item) + EPS);
-    if (n <= 0) continue;
-    const r = moveToFridge(state, item, n);
+    let libre = Math.floor(countItem(state, item) - (garder[item] || 0) + EPS);
+    if (libre <= 0) continue;
+    total += libre;
+    // les lots les plus anciens partent les premiers (comme moveToFridge)
+    for (const lot of lotsOf(state, item)) {
+      if (libre <= 0) break;
+      const n = Math.min(Math.floor(lot.qty + EPS), libre);
+      if (n > 0) lots.push({ item, n, rang: lotRank(lot) });
+      libre -= n;
+    }
+  }
+  if (total <= 0) return fail('Aucun aliment frais à ranger.');
+  if (fridgeRoom(state) <= 0) return fail(`Le frigo est plein (${fridgeCapacity(state)} unités).`);
+  lots.sort((a, b) => a.rang - b.rang);
+  const items = {};
+  let moved = 0;
+  for (const l of lots) {
+    if (fridgeRoom(state) <= 0) break;
+    const r = moveToFridge(state, l.item, l.n);
     if (r.ok) {
-      items[item] = r.moved;
+      items[l.item] = (items[l.item] || 0) + r.moved;
       moved += r.moved;
     }
   }
-  if (moved <= 0) return fail('Aucun aliment frais à ranger.');
-  return { ok: true, moved, items };
+  return { ok: true, moved, items, reste: total - moved };
 }
 
 // Sort `qty` unités du frigo vers l'inventaire. Leur compteur reprend.
@@ -258,6 +309,7 @@ export function buildFridge(state) {
 export function openFridge(state) {
   const f = state.frigo;
   f.construit = true;
+  if (!f.niveau) f.niveau = 1;
   if (!f.appareil) f.appareil = makeDevice('frigo', 'frigo', DATA.FRIGO.CONSTRUCTION);
   f.alimente = true;
 }

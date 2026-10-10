@@ -963,7 +963,7 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
 .prereqs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 0.95rem; }
 .prereqs .missing { color: var(--danger); font-weight: 600; }
 .level-row { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border-radius: var(--radius); border: 1px dashed var(--border); }
-.level-row .level-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-weight: 600; }
+.level-row .level-line, .card .level-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-weight: 600; }
 .level-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .level-row .chip { white-space: normal; }
 .chip.auto { border-color: var(--accent); color: var(--accent); }
