@@ -234,7 +234,11 @@
     "de blé (animaux, paille). Mêmes règles que la Zone de culture, dont ses",
     "parcelles portent le lieu ('potager') : mêmes cultures, mêmes règles,",
     "mêmes automatisations. Leurs identifiants sont « ID-n » et elles portent",
-    "zone: 2 ; elles sont rangées dans state.potager.zone2."
+    "zone: 2 ; elles sont rangées dans state.potager.zone2.",
+    "Version 1.15 : plus de zones fixes : la houe laboure toute tuile labourable de la carte",
+    "(DATA.TERRAIN, data/terrain.json). Une parcelle porte le numéro de sa tuile (`case`) ;",
+    "CASES, COLONNES, DEPART et ZONE2 ne servent plus qu'à retrouver la tuile d'une ancienne",
+    "case (sauvegardes, parcelles de départ)."
   ],
   "POTAGER": {
     "LIEU": "potager", "NOM": "Zone de culture", "ICONE": "🌱", "COLONNES": 5, "CASES": 30, "DEPART": [0, 1, 2, 5, 6, 7],

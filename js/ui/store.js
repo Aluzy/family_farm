@@ -49,7 +49,7 @@ export function setEcranFerme(value) {
   ecranFerme = value;
   return value;
 }
-// Version 1.9 : mode houe (Zone de culture et Champ) : un appui sur une case laboure ou rebouche.
+// Version 1.9 : mode houe ; version 1.15 : un appui sur une tuile d'herbe de la carte laboure, sur une terre vide rebouche.
 export let hoeMode = false;
 export function setHoeMode(value) {
   hoeMode = value;

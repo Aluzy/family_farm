@@ -36,25 +36,21 @@
   // Version 1.6 : plus de saisons, une seule carte (celle du printemps).
   const MAP = { key: 'map_sp', json: 'carte_printemps.json', tiles: 'tiles_sp', image: 'farm_spring_summer.png' };
 
-  // Version 1.9 (la houe) : tuiles du jeu de tuiles pour les zones de culture. Toute la
-  // zone (et la rangée de cases qui l'entoure) est de l'herbe foncée. Version 1.13 : la
-  // terre se pose sur une grille décalée d'une demi-case (« double grille ») : chaque tuile
-  // de terre est centrée sur un coin commun à quatre cases, et son dessin dépend de celles
-  // des quatre qui sont labourées. Bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche,
-  // 1 bas-droite. La limite herbe / terre des tuiles passe au milieu de la tuile, donc
-  // exactement au bord des cases : une case labourée reste dans sa case, et une case d'herbe
-  // entre deux terres reste de l'herbe. Les deux diagonales (6 et 9) n'ont pas de tuile
-  // dans le jeu : elles sont dans terre_diagonales.png (scripts/carte/terre_diagonales.py),
-  // deux coins d'herbe arrondis symétriques par rapport à la diagonale de la tuile.
+  // Version 1.9 (la houe), 1.13 (double grille), 1.15 (partout sur la carte) : la terre
+  // labourée se pose sur une grille décalée d'une demi-case : chaque tuile de terre est
+  // centrée sur un coin commun à quatre tuiles de la carte, et son dessin dépend de celles
+  // des quatre qui sont labourées (bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche,
+  // 1 bas-droite). La limite herbe / terre passe au bord des tuiles : une tuile labourée
+  // reste dans sa tuile. Les 16 dessins sont dans terre_bords.png (scripts/carte/
+  // terre_bords.py), leur herbe rendue transparente : la terre se pose sur n'importe quelle
+  // herbe. Les anciennes zones de culture (zone_culture_1 / zone_culture_2) avaient un sol de
+  // terre : il redevient de l'herbe tant qu'il n'est pas labouré ; leur ancienne bordure
+  // (couche ZONE_TILES.couche) n'est plus dessinée.
   const ZONE_TILES = {
     herbe: 2415, terre: 1167,
-    coins: {
-      1: 1612, 2: 1614, 3: 1613, 4: 1762, 5: 1687, 7: 1539,
-      8: 1764, 10: 1689, 11: 1537, 12: 1763, 13: 1389, 14: 1387, 15: 1688,
-    },
-    diagonales: { 6: 0, 9: 1 },              // case de terre_diagonales.png
-    // bordures dessinées par la carte autour de la terre d'origine : retirées des zones
-    bordures: new Set([1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764]),
+    couche: 'zone_culture_edge',
+    // couche des fleurs et touffes d'herbe : rien n'en reste sur une tuile labourée
+    plantes: 'plantes_pierres',
   };
   // Les images des bâtiments et des arbres du pack portent un suffixe de saison : seul
   // celui du printemps (« sp ») est chargé et utilisé.
@@ -255,8 +251,7 @@
         this.lightFade = null;           // fondu en cours : { from, to, t0 }
         this.world = { w: DEFAULT_W, h: DEFAULT_H };
         this.objects = Object.assign({}, DEFAULT_OBJECTS);
-        this.grid = { x: 464, y: 384, cols: 2 };   // Zone de culture : coin haut-gauche et colonnes
-        this.grid2 = { x: 624, y: 608, cols: 8 };  // Champ
+        this.grid = { x: 0, y: 0, cols: 72 };       // version 1.15 : la carte entière (tuile = rangée × colonnes + colonne)
         this.screens = [];               // repères de la carte : gauche, milieu, droite (voir makeScreens)
         this.tileAnims = [];             // tuiles animées de la carte, par tuile (voir makeTileAnims)
         this.tileSprites = [];           // leurs images, et celles des tuiles reposées au-dessus
@@ -302,7 +297,7 @@
           L.spritesheet('tree_' + a, v('basic_' + a + '.png'), TREE_FRAME);
         }
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
-        L.image('terre_diag', v('terre_diagonales.png'));
+        L.image('terre_bords', v('terre_bords.png'));
       }
 
       create() {
@@ -322,12 +317,6 @@
         this.light = this.add.rectangle(0, 0, this.world.w, this.world.h, 0xffffff)
           .setOrigin(0).setDepth(1e6).setBlendMode(global.Phaser.BlendModes.MULTIPLY).setVisible(false);
 
-        const z = this.objects.zone_culture;
-        this.grid.x = Math.round(z.x / T) * T;
-        this.grid.y = Math.round(z.y / T) * T;
-        const z2 = this.objects.zone_culture_2;
-        this.grid2.x = Math.round(z2.x / T) * T;
-        this.grid2.y = Math.round(z2.y / T) * T;
         this.makeScreens();
         this.cx = this.screens[1].x;     // départ : le repère du milieu (maison + zone de culture)
         this.cy = this.screens[1].y;
@@ -440,7 +429,8 @@
           const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
           if (!set) console.warn('[FarmStage] jeu de tuiles ' + MAP.image + ' introuvable dans la carte (est-il intégré ?)');
         }
-        this.zoneOver = this.zoneGround(null);   // version 1.9 : les zones commencent en herbe
+        this.zoneOver = this.zoneGround();   // version 1.9 : les anciennes zones commencent en herbe
+        this.dirt = new Set();                // version 1.15 : tuiles labourées de la carte
         this.zoneKey = '';
         this.textures.createCanvas('ground', this.world.w, this.world.h);
         this.paintGround();
@@ -592,57 +582,53 @@
 
       // Une tuile animée est dessinée dans le fond avec sa première image, comme dans Tiled
       // à l'arrêt : c'est ce qui reste visible quand les animations sont réduites.
-      // Version 1.9 : cases (index dans la carte) des deux zones et de leur rangée de bord,
-      // calées sur les rectangles zone_culture_1 / zone_culture_2. `terre` : pour chaque zone
-      // (1, 2), les numéros de case labourés. Renvoie la table index -> tuile de sol.
-      zoneGround(terre) {
+      // Sol des anciennes zones de culture : leur terre d'origine redevient de l'herbe (la
+      // terre labourée se pose par-dessus, voir drawZoneDirt). Table index -> tuile de sol.
+      zoneGround() {
         const raw = this.mapRaw;
         if (!raw) return null;
         const W = raw.width, H = raw.height;
         const over = new Map();
-        const dual = [];
-        const zones = [[1, this.objects.zone_culture], [2, this.objects.zone_culture_2]];
-        for (const [id, o] of zones) {
-          if (!o) continue;
+        const sol = raw.layers.find((l) => l.type === 'tilelayer');
+        for (const o of [this.objects.zone_culture, this.objects.zone_culture_2]) {
+          if (!o || !sol) continue;
           const c0 = Math.round(o.x / T), r0 = Math.round(o.y / T);
           const cols = Math.max(1, Math.round(o.width / T)), rows = Math.max(1, Math.round(o.height / T));
-          const set = terre && terre[id] ? terre[id] : new Set();
-          const dirt = (c, r) => c >= 0 && c < cols && r >= 0 && r < rows && set.has(r * cols + c);
-          for (let r = -1; r <= rows; r++) {
-            for (let c = -1; c <= cols; c++) {
-              const mc = c0 + c, mr = r0 + r;
-              if (mc < 0 || mr < 0 || mc >= W || mr >= H) continue;
-              over.set(mr * W + mc, ZONE_TILES.herbe);
-            }
-          }
-          // Tuiles de terre de la double grille : une par coin de case (i, j), posée une
-          // demi-case plus haut et plus à gauche que la case (i, j).
-          for (let j = 0; j <= rows; j++) {
-            for (let i = 0; i <= cols; i++) {
-              const m = (dirt(i - 1, j - 1) ? 8 : 0) | (dirt(i, j - 1) ? 4 : 0) | (dirt(i - 1, j) ? 2 : 0) | (dirt(i, j) ? 1 : 0);
-              if (m) dual.push({ x: (c0 + i) * T - T / 2, y: (r0 + j) * T - T / 2, m });
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              const i = (r0 + r) * W + c0 + c;
+              if (c0 + c < W && r0 + r < H && (sol.data[i] & 0x0fffffff) === ZONE_TILES.terre) over.set(i, ZONE_TILES.herbe);
             }
           }
         }
-        over.dual = dual;
         return over;
       }
 
-      // Recalcule le sol des zones quand la terre change, et repeint seulement les cases dont
-      // la tuile change.
+      // Version 1.15 : la terre suit les parcelles (leur tuile) ; seules les tuiles qui
+      // changent, et leurs voisines (la terre déborde d'une demi-tuile), sont repeintes.
       syncZoneGround(model) {
-        const terre = {
-          1: new Set((model.plots || []).map((p) => p.case).filter((c) => typeof c === 'number')),
-          2: new Set(model.zone2 ? (model.plots2 || []).map((p) => p.case).filter((c) => typeof c === 'number') : []),
-        };
-        const key = [...terre[1]].sort((a, b) => a - b).join() + '|' + [...terre[2]].sort((a, b) => a - b).join();
+        const raw = this.mapRaw;
+        if (!raw) return;
+        const W = raw.width;
+        const now = new Set((model.plots || []).map((p) => p.case).filter((c) => typeof c === 'number'));
+        const key = [...now].sort((a, b) => a - b).join();
         if (key === this.zoneKey) return;
         this.zoneKey = key;
-        const after = this.zoneGround(terre);
-        if (!after) return;
-        this.zoneOver = after;
-        // La terre chevauche les cases : toute la zone (et son bord) est repeinte.
-        this.repaintCells(new Set(after.keys()));
+        const changed = [];
+        for (const t of now) if (!this.dirt.has(t)) changed.push(t);
+        for (const t of this.dirt) if (!now.has(t)) changed.push(t);
+        this.dirt = now;
+        const cells = new Set();
+        for (const t of changed) {
+          const c = t % W, r = Math.floor(t / W);
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const cc = c + dc, rr = r + dr;
+              if (cc >= 0 && rr >= 0 && cc < W && rr < raw.height) cells.add(rr * W + cc);
+            }
+          }
+        }
+        if (cells.size) this.repaintCells(cells);
       }
 
       repaintCells(cells) {
@@ -669,16 +655,17 @@
         const cols = set.columns || Math.floor(img.width / tw);
         const last = set.firstgid + (set.tilecount || cols * Math.floor(img.height / th));
         const anims = this.tileFrames(set);
-        const over = raw === this.mapRaw && this.zoneOver ? this.zoneOver : null;
+        const ferme = raw === this.mapRaw;
+        const over = ferme && this.zoneOver ? this.zoneOver : null;
         const sol = layer === raw.layers.find((l) => l.type === 'tilelayer');
+        if (ferme && layer.name === ZONE_TILES.couche) return;              // l'ancienne bordure des zones
+        const dirt = ferme && layer.name === ZONE_TILES.plantes ? this.dirt : null;
         ctx.globalAlpha = layer.opacity == null ? 1 : layer.opacity;
         layer.data.forEach((orig, i) => {
           if (only && !only.has(i)) return;
+          if (dirt && dirt.has(i)) return;                                  // les fleurs labourées
           let cell = orig;
-          if (over && over.has(i)) {
-            if (sol) cell = over.get(i);                                        // le sol de la zone
-            else if (ZONE_TILES.bordures.has(cell & 0x0fffffff)) return;       // l'ancienne bordure
-          }
+          if (sol && over && over.has(i)) cell = over.get(i);               // le sol des anciennes zones
           const gid = cell & 0x0fffffff;                   // les bits de poids fort sont des retournements
           if (!gid || gid < set.firstgid || gid >= last) return; // 0 = case vide, ou tuile d'une autre planche
           const a = anims.get(gid - set.firstgid);
@@ -696,28 +683,34 @@
           ctx.restore();
         });
         ctx.globalAlpha = 1;
-        if (over && sol && over.dual) this.drawZoneDirt(ctx, raw, set, img, over.dual);
+        if (ferme && sol) this.drawZoneDirt(ctx, raw, only);
       }
 
-      // Version 1.13 : la terre des zones (double grille, voir ZONE_TILES), sur le sol et
-      // sous les couches du dessus.
-      drawZoneDirt(ctx, raw, set, img, dual) {
-        const tw = raw.tilewidth, th = raw.tileheight;
-        const cols = set.columns || Math.floor(img.width / tw);
-        const src = (gid) => { const n = gid - set.firstgid; return [(n % cols) * tw, Math.floor(n / cols) * th]; };
-        const diag = this.has('terre_diag') ? this.textures.get('terre_diag').getSourceImage() : null;
-        for (const d of dual) {
-          const k = ZONE_TILES.diagonales[d.m];
-          if (k === undefined) {
-            const [sx, sy] = src(ZONE_TILES.coins[d.m]);
-            ctx.drawImage(img, sx, sy, tw, th, d.x, d.y, tw, th);
-          } else if (diag) {
-            ctx.drawImage(diag, k * tw, 0, tw, th, d.x, d.y, tw, th);
-          } else {
-            const [sx, sy] = src(ZONE_TILES.coins[15]);   // image absente : de la terre
-            ctx.drawImage(img, sx, sy, tw, th, d.x, d.y, tw, th);
-          }
+      // La terre labourée (double grille, voir ZONE_TILES), sur le sol et sous les couches du
+      // dessus. `only` : repeinture partielle, découpée sur ces tuiles.
+      drawZoneDirt(ctx, raw, only) {
+        if (!this.dirt || !this.dirt.size || !this.has('terre_bords')) return;
+        const W = raw.width, tw = raw.tilewidth, th = raw.tileheight;
+        const img = this.textures.get('terre_bords').getSourceImage();
+        const has = (c, r) => c >= 0 && r >= 0 && c < W && this.dirt.has(r * W + c);
+        // coins (c, r) = coin haut-gauche de la tuile (c, r) : ceux des tuiles concernées
+        const corners = new Set();
+        for (const t of only || this.dirt) {
+          const c = t % W, r = Math.floor(t / W);
+          for (const [dc, dr] of [[0, 0], [1, 0], [0, 1], [1, 1]]) corners.add((r + dr) * (W + 1) + c + dc);
         }
+        if (only) {
+          ctx.save();
+          ctx.beginPath();
+          for (const t of only) ctx.rect((t % W) * tw, Math.floor(t / W) * th, tw, th);
+          ctx.clip();
+        }
+        for (const k of corners) {
+          const c = k % (W + 1), r = Math.floor(k / (W + 1));
+          const m = (has(c - 1, r - 1) ? 8 : 0) | (has(c, r - 1) ? 4 : 0) | (has(c - 1, r) ? 2 : 0) | (has(c, r) ? 1 : 0);
+          if (m) ctx.drawImage(img, m * tw, 0, tw, th, c * tw - tw / 2, r * th - th / 2, tw, th);
+        }
+        if (only) ctx.restore();
       }
 
       // Tuiles animées de la carte (l'eau) : les animations sont celles de Tiled, lues dans
@@ -980,13 +973,13 @@
 
       // Centre d'un lieu de la carte (bâtiment affiché, Zone de culture ou Champ), en px de carte.
       place(id) {
-        if (id === 'zone' || id === 'zone2') {
-          const g = id === 'zone' ? this.grid : this.grid2;
-          if (id === 'zone2' && !(lastModel && lastModel.zone2)) return null;
-          const cases = lastModel ? (id === 'zone' ? lastModel.cases : lastModel.cases2) || 0 : 0;
-          const rows = Math.max(1, Math.ceil(cases / g.cols));
-          return { x: g.x + (g.cols * T) / 2, y: g.y + (rows * T) / 2 };
+        // version 1.15 : la Zone de culture couvre toute la carte ; son repère reste
+        // l'ancienne zone (rectangle zone_culture_1), près de la maison
+        if (id === 'zone') {
+          const z = this.objects.zone_culture;
+          return z ? { x: z.x + z.width / 2, y: z.y + z.height / 2 } : null;
         }
+        if (id === 'zone2') return null;
         const e = this.buildings.get(id);
         return e ? { x: e.sprite.x + e.sprite.width / 2, y: e.sprite.y - e.sprite.height / 2 } : null;
       }
@@ -1166,7 +1159,6 @@
         });
         const list = [
           grid('zone', this.grid, m ? m.plots : [], 1, m ? m.cases || 0 : 0),
-          grid('zone2', this.grid2, m ? m.plots2 || [] : [], 2, m && m.zone2 ? m.cases2 || 0 : 0),
         ];
         for (const r of Object.values(this.rooms)) {
           list.push({
@@ -1182,19 +1174,29 @@
         return list;
       }
 
+      // Version 1.15 : la tuile peut-elle être labourée (modèle.terrain, une chaîne par rangée) ?
+      arable(i) {
+        const t = lastModel && lastModel.terrain;
+        const W = this.grid.cols;
+        const row = t && t[Math.floor(i / W)];
+        return !!row && row[i % W] === '#';
+      }
+
       // Ce qui se trouve sous un point de la carte : une parcelle (exactement sa tuile),
       // sinon une étiquette, sinon le bâtiment ou l'arbre le plus en avant.
       hitAt(wx, wy) {
         const hoeing = !!(lastModel && lastModel.houe);
+        let herbe = null;                            // une tuile labourable sous le doigt
+        let refus = null;                            // en mode houe : une tuile qui ne se laboure pas
         for (const z of this.zones()) {
           const i = z.at(wx, wy);
           if (i < 0) continue;
+          if (hoeing && z.zone) refus = { hoe: { zone: z.zone, case: i }, place: z.place };
           const p = z.plots.find((q, k) => z.slot(q, k) === i) || null;
-          // version 1.9 : en mode houe, une case de zone (herbe ou terre) se laboure ou se rebouche
-          if (hoeing && z.zone) return { hoe: { zone: z.zone, case: i }, place: z.place };
+          // version 1.15 : en mode houe, toute tuile labourable (ou terre) se laboure ou se rebouche
+          if (hoeing && z.zone && (p || this.arable(i))) return { hoe: { zone: z.zone, case: i }, place: z.place };
           if (p) return { plot: p, place: z.place, open: z.window };
-          // version 1.12 : une case d'herbe d'une zone ouvre la fenêtre de la zone (et sa houe)
-          if (z.zone) return { window: z.window, place: z.place };
+          if (z.zone && this.arable(i)) herbe = { window: z.window, place: z.place };
         }
         if (this.room) return null;                  // dans un intérieur : rien d'autre à toucher
         const label = this.labelAt(wx, wy);
@@ -1221,7 +1223,9 @@
           if (best.tree.fruits) return { treeHarvest: best.tree.id };
           if (best.tree.libre) return { treeSlot: best.tree.case };
         }
-        return best ? { window: best.window } : null;
+        // version 1.15 : l'herbe labourable ouvre la fenêtre de la Zone de culture (et sa houe)
+        // en mode houe, une tuile qui ne se laboure pas dit pourquoi (le moteur refuse)
+        return best ? { window: best.window } : herbe || refus;
       }
 
       tap(wx, wy) {
@@ -1271,7 +1275,6 @@
         // Parcelles des deux zones : on crée, met à jour, détruit. Tuiles jointives depuis le
         // coin de chaque rectangle (zone_culture_1, zone_culture_2).
         this.grid.cols = Math.max(1, model.cols | 0);
-        this.grid2.cols = Math.max(1, model.cols2 | 0 || this.grid2.cols);
         const seen = new Set();
         for (const z of this.zones(model)) {
           z.plots.forEach((p, i) => {
@@ -1288,7 +1291,9 @@
             this.syncCrop(e, p, x, y);
           });
           // Étiquette de la zone : calée à gauche sur les parcelles, au-dessus de la barrière.
-          if (z.place) { const o = z.pos(0); this.syncLabel(z.id, info(z.id), z.id, o.x, o.y - ZONE_LABEL_UP, 'gauche'); }
+          // version 1.15 : sur l'ancienne Zone de culture, près de la maison
+          const o = z.place && this.objects.zone_culture;
+          if (o) this.syncLabel(z.id, info(z.id), z.id, Math.round(o.x / T) * T, Math.round(o.y / T) * T - ZONE_LABEL_UP, 'gauche');
         }
         for (const [id, e] of this.plots) {
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }

@@ -3,7 +3,7 @@ import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './dev
 import { awakeRequired } from './clock.js';
 import { addItem, spoil } from './inventory.js';
 import { openFridge } from './fridge.js';
-import { allPlots, makePlot, makeZone2Plot, maxStage, openSerre, seedItem, zone2Plots, zoneGrid } from './crops.js';
+import { allPlots, makePlot, maxStage, openSerre, seedItem, zoneTile } from './crops.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { openVerger } from './orchard.js';
 import { openStation } from './kitchen.js';
@@ -24,17 +24,19 @@ export function testAddPieces(state, amount) {
 // payer : le bâtiment est construit s'il ne l'était pas et ses parcelles ou sa
 // capacité suivent le niveau.
 // Version 1.9 : toutes les cases d'une zone en terre (sans plafond, énergie ni XP), avec la houe.
+// Version 1.15 : les cases de l'ancienne zone (1 : 30 tuiles, 2 : les 64 du Champ), sur la carte.
 export function testHoeAll(state, zone = 1) {
   state.potager.houe = true;
-  const list = zone === 2 ? zone2Plots(state).slice() : state.potager.parcelles;
-  let n = list.reduce((m, p) => Math.max(m, Number((/-(\d+)$/.exec(p.id) || [0, 0])[1])), 0);
-  for (let c = 0; c < zoneGrid(zone).cases; c++) {
-    if (list.some((p) => p.case === c)) continue;
+  const list = state.potager.parcelles;
+  let n = list.reduce((m, p) => Math.max(m, Number((/^potager-(\d+)$/.exec(p.id) || [0, 0])[1])), 0);
+  const cases = zone === 2 ? DATA.POTAGER.ZONE2.CASES : DATA.POTAGER.CASES;
+  for (let c = 0; c < cases; c++) {
+    const tile = zoneTile(zone, c);
+    if (list.some((p) => p.case === tile)) continue;
     n += 1;
-    list.push({ ...(zone === 2 ? makeZone2Plot(n) : makePlot(n)), case: c });
+    list.push({ ...makePlot(n), case: tile });
   }
   list.sort((a, b) => a.case - b.case);
-  if (zone === 2) state.potager.zone2 = list;
   return { ok: true };
 }
 

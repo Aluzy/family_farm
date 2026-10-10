@@ -14,6 +14,7 @@
     "campaign.json",
     "niveaux.json",
     "ville.json",
-    "simulation.json"
+    "simulation.json",
+    "terrain.json"
   ]
 }

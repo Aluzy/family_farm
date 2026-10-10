@@ -247,9 +247,6 @@ export function stageModel() {
   // version 1.9 : chaque parcelle de zone a sa case ; la carte en tire la terre et ses bordures
   const zoneVue = () => (p) => ({ ...vue(p), case: p.case });
   const plots = state.potager.parcelles.map(zoneVue(1));
-  // Le Champ (vide tant que le Moulin n'est pas débloqué) et les arbres du Verger, dans
-  // l'ordre où ils ont été plantés : chacun prend l'emplacement suivant de la carte.
-  const plots2 = zone2Plots(state).map(zoneVue(2));
   // La Serre : ses parcelles se posent dans les bacs de son intérieur (vide tant qu'elle
   // n'est pas construite). `interieur` dit si le joueur y est entré.
   const serre = state.serre.construit ? state.serre.parcelles.map(vue) : [];
@@ -275,9 +272,11 @@ export function stageModel() {
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
   // bêtes dans l'enclos et des poules en liberté autour du Poulailler.
   const animaux = { vache: state.paturage.vaches.length, mouton: state.paturage.moutons.length, poule: state.poulailler.poules };
-  const P = DATA.POTAGER;
+  // Version 1.15 : une parcelle porte le numéro de sa tuile sur la carte ; `terrain` dit
+  // quelles tuiles la houe peut labourer (une chaîne par rangée, « # » labourable).
+  const T = DATA.TERRAIN;
   return {
-    heure, cols: P.COLONNES, cases: P.CASES, plots, cols2: P.ZONE2.COLONNES, cases2: P.ZONE2.CASES, zone2: zone2Open(state), plots2,
+    heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
     houe: hoeMode && !!state.potager.houe, serre, interieur: stageInterior, arbres, batiments, animaux,
   };
 }
@@ -390,7 +389,7 @@ function chapterChipHtml() {
 // Version 1.9 : en mode houe, un bouton sur la carte rappelle les tuiles et range la houe.
 function hoeChipHtml() {
   if (!hoeMode || !state.potager.houe || stageInterior) return '';
-  return `<button type="button" class="stage-chip hoe" data-action="hoe-toggle" aria-pressed="true" aria-label="Houe en main : ${soilCount(state)} tuiles sur ${soilCap(state)}. Ranger la houe" title="Touche une case d'herbe de la Zone de culture ou du Champ pour la labourer"><span class="stage-chip-pill"><span aria-hidden="true">${DATA.HOUE.ICONE}</span><span class="stage-chip-text">Houe</span><span class="stage-chip-val num">${soilCount(state)} / ${soilCap(state)}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+  return `<button type="button" class="stage-chip hoe" data-action="hoe-toggle" aria-pressed="true" aria-label="Houe en main : ${soilCount(state)} tuiles sur ${soilCap(state)}. Ranger la houe" title="Touche une tuile d'herbe de la carte pour la labourer"><span class="stage-chip-pill"><span aria-hidden="true">${DATA.HOUE.ICONE}</span><span class="stage-chip-text">Houe</span><span class="stage-chip-val num">${soilCount(state)} / ${soilCap(state)}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
 }
 
 function renderStageHud(el) {

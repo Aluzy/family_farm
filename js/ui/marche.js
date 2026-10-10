@@ -218,7 +218,7 @@ function hoeShopRow() {
   const owned = hasHoe(state);
   return `
     <div class="card row-card">
-      <span><span aria-hidden="true">${H.ICONE}</span> <strong>${H.NOM}</strong> <span class="muted">· change l'herbe de la Zone de culture et du Champ en terre</span></span>
+      <span><span aria-hidden="true">${H.ICONE}</span> <strong>${H.NOM}</strong> <span class="muted">· change l'herbe de la carte en terre à cultiver</span></span>
       ${owned ? '<span class="chip auto">Déjà achetée</span>' : `<button type="button" class="btn" data-action="buy-hoe"${canPay(H.PRIX) ? '' : ' disabled'}>Acheter (${formatCoins(H.PRIX)} 💰)</button>`}
     </div>`;
 }

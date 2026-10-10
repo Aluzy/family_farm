@@ -7,7 +7,7 @@ import { pushLots } from './fridge.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
 } from './family.js';
-import { makePlot, seedItem, startPlots } from './crops.js';
+import { makePlot, seedItem, startPlots, zoneTile } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
 import { newCommerce } from './commerce.js';
@@ -311,6 +311,7 @@ export const MIGRATIONS = {
   28: (state) => migrateDepart(state),
   29: (state) => migrateOrchard(state),
   30: (state) => ({ ...state, version: 31, commerce: state.commerce && typeof state.commerce === 'object' ? state.commerce : newCommerce() }),
+  31: (state) => migrateFreeSoil(state),
 };
 
 // Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie
@@ -321,6 +322,24 @@ export const MIGRATIONS = {
 // `achete`, pas de `maison`) ; elle reçoit un nom vide (l'interface dit « la famille »),
 // son premier adulte comme personnage principal, et les compteurs des nouveaux
 // chapitres 1 et 2 (récoltes et semis comptent à partir de maintenant).
+// Version 1.15 : la houe laboure partout sur la carte. Les parcelles de la Zone de culture
+// et du Champ prennent pour case le numéro de leur tuile sur la carte (là où elles étaient
+// déjà dessinées) ; celles du Champ rejoignent la liste unique (state.potager.parcelles).
+export function migrateFreeSoil(old) {
+  const state = { ...old, version: 32 };
+  const p = state.potager;
+  if (!p || typeof p !== 'object') return state;
+  const list = (l) => (Array.isArray(l) ? l : []);
+  const move = (zone) => (q, i) => {
+    const { zone: _z, ...rest } = q;
+    return { ...rest, case: zoneTile(zone, Number.isInteger(q.case) ? q.case : i) };
+  };
+  const parcelles = [...list(p.parcelles).map(move(1)), ...list(p.zone2).map(move(2))];
+  parcelles.sort((a, b) => a.case - b.case);
+  state.potager = { ...p, parcelles, zone2: [] };
+  return state;
+}
+
 // Version 1.13 (v2, lot 9) : chaque arbre a sa case et ses fruits attendent la
 // cueillette. `prochaine` reprend l'ancien calendrier (MATURITÉ-ième nuit, puis toutes
 // les PERIODE nuits) à partir de la nuit en cours.

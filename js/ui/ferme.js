@@ -238,19 +238,17 @@ export function renderDeviceScreen(kind) {
 /* ---------- Ferme : Zone de culture (state.potager) ---------- */
 
 // Version 1.9 : plus d'agrandissement en pièces ; la houe laboure l'herbe (plafond de tuiles
-// par niveau). En mode houe, la grille des cases remplace les cartes des parcelles.
+// par niveau). Version 1.15 : partout sur la carte (une seule Zone de culture).
 export function renderPotager() {
   const pot = state.potager;
-  const plots = hoeMode && pot.houe
-    ? ''
-    : `<div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
+  const plots = `<div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${groupButtons('potager', 1)}</div>`;
   return `
     <div class="section-head">
       <h3>${icon('potager')}${DATA.POTAGER.NOM} · ${pot.parcelles.length} parcelles</h3>
       <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
-    ${hoePanelHtml(1)}
+    ${hoePanelHtml()}
     ${plots}
   `;
 }
@@ -275,7 +273,7 @@ export function renderZone2() {
       <h3><span aria-hidden="true">${Z.ICONE}</span> ${Z.NOM} · ${plots.length} parcelles</h3>
       <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
-    ${hoePanelHtml(2)}
+    ${hoePanelHtml()}
     ${list}
   `;
 }
