@@ -37,6 +37,11 @@ export function startHousehold() {
       animaux: [],
       numeros: familyNumbers(DATA.FAMILY.MEMBRES, []),
       reserve: { ...DATA.FAMILY.RESERVE_DEPART },
+      // version 1.12 : nom de famille, personnage principal, configuration faite
+      // (une nouvelle partie part de createNewGame, qui ouvre l'écran de configuration)
+      nom: '',
+      principal: DATA.FAMILY.MEMBRES.find((m) => !m.enfant).id,
+      configuree: true,
     },
     nuit: newNightStats(),
   };
@@ -301,11 +306,40 @@ export const MIGRATIONS = {
   25: (state) => migrateEnergy(state),
   26: (state) => migrateHoe(state),
   27: (state) => migrateFridgeCapacity(state),
+  28: (state) => migrateDepart(state),
 };
 
 // Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie
 // pleine ; les nœuds de l'arbre retirés (soins, bonus de santé) sont rendus (points
 // et pièces) ; la série du chapitre 6 en cours oublie ses soins.
+// Version 1.12 (v2, lot 8) : nom de famille et personnage principal. Une partie en cours
+// est déjà installée : sa maison est réparée et ses appareils achetés (pas de champ
+// `achete`, pas de `maison`) ; elle reçoit un nom vide (l'interface dit « la famille »),
+// son premier adulte comme personnage principal, et les compteurs des nouveaux
+// chapitres 1 et 2 (récoltes et semis comptent à partir de maintenant).
+export function migrateDepart(old) {
+  const state = { ...old, version: 29 };
+  const f = state.famille;
+  if (f && typeof f === 'object') {
+    const membres = Array.isArray(f.membres) ? f.membres : [];
+    const adulte = membres.find((m) => m && !m.enfant) || membres[0];
+    state.famille = {
+      ...f,
+      nom: typeof f.nom === 'string' ? f.nom : '',
+      principal: f.principal || (adulte ? adulte.id : null),
+      configuree: true,
+    };
+  }
+  const k = state.campagne && state.campagne.compteurs;
+  if (k && typeof k === 'object') {
+    state.campagne = {
+      ...state.campagne,
+      compteurs: { ...k, recoltes: k.recoltes || 0, cultures: Array.isArray(k.cultures) ? k.cultures : [], semisBle: k.semisBle || 0 },
+    };
+  }
+  return state;
+}
+
 // Version 1.10 (v2, lot 6) : le frigo a une capacité (niveau 1 : DATA.FRIGO.CAPACITE[0]).
 // Un frigo déjà construit passe au niveau 1 ; il garde ce qui périme le plus tôt et le
 // surplus revient dans l'inventaire, avec sa conservation.

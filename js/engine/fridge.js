@@ -79,7 +79,8 @@ export function fridgeRate(state) {
 
 // Énergie que les batteries en service peuvent fournir (mWh).
 export function availableEnergy(state) {
-  return state.batteries.reduce((t, b) => (b.allume && !isBroken(b) ? t + b.chargeMwh : t), 0);
+  const direct = state.flux && state.flux.direct > 0 ? state.flux.direct : 0; // version 1.12
+  return direct + state.batteries.reduce((t, b) => (b.allume && !isBroken(b) ? t + b.chargeMwh : t), 0);
 }
 
 // Besoin du bloc nocturne (mWh) et batterie suffisante pour la nuit ?

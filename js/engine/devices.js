@@ -67,6 +67,30 @@ export function startFarm() {
   };
 }
 
+/* ---------- version 1.12 (v2, lot 8) : appareils de départ à acheter ---------- */
+
+// Le panneau, la batterie, la pompe et le réservoir d'une nouvelle partie portent
+// `achete: false` jusqu'à leur achat (voir depart.js) ; une ancienne partie ou une
+// partie de test n'a pas ce champ : tout y est acheté.
+export function starterOf(state, type) {
+  if (type === 'panneau') return state.panneaux[0];
+  if (type === 'batterie') return state.batteries[0];
+  if (type === 'pompe') return state.pompe;
+  if (type === 'reservoir') return state.reservoir;
+  return null;
+}
+
+export function isOwned(obj) {
+  return !!obj && obj.achete !== false;
+}
+
+// Panneau ET pompe achetés : la Zone de culture, le Marché et le réservoir s'ouvrent.
+export function farmOpen(state) {
+  return isOwned(starterOf(state, 'panneau')) && isOwned(starterOf(state, 'pompe'));
+}
+
+export const NOT_OWNED = 'Cet appareil n\'est pas encore acheté.';
+
 // Lot 8 : le réfrigérateur est un appareil du parc une fois construit.
 export function fridgeDevices(state) {
   return state.frigo && state.frigo.construit && state.frigo.appareil ? [state.frigo.appareil] : [];
@@ -118,6 +142,7 @@ export function pumpFlow(d) {
 
 // Capacité du réservoir (mL), selon son propre niveau.
 export function tankCapacity(state) {
+  if (!isOwned(state.reservoir)) return 0; // version 1.12 : pas encore acheté
   return DATA.GRID.reservoir.litres[state.reservoir.niveau - 1] * 1000;
 }
 
@@ -181,6 +206,7 @@ export function spend(state, cost) {
 export function toggleDevice(state, id) {
   const d = findDevice(state, id);
   if (!d) return fail('Appareil introuvable.');
+  if (!isOwned(d)) return fail(NOT_OWNED);
   if (isBroken(d)) return fail('Appareil en panne : il faut le réparer.');
   d.allume = !d.allume;
   if (!d.allume && (d.type === 'moulin' || d.type === 'presse' || d.type === 'frigo')) d.conso = 0;
@@ -190,6 +216,7 @@ export function toggleDevice(state, id) {
 export function upgradeDevice(state, id) {
   const d = findDevice(state, id);
   if (!d) return fail('Appareil introuvable.');
+  if (!isOwned(d)) return fail(NOT_OWNED);
   if (!DATA.GRID[d.type]) return fail('Cet appareil n\'a pas de niveaux.');
   const cost = upgradeCost(d);
   if (cost === null) return fail('Niveau maximum atteint.');
@@ -201,6 +228,7 @@ export function upgradeDevice(state, id) {
 
 // Le réservoir monte de niveau (version 1.6 : il ne suit plus la pompe).
 export function upgradeTank(state) {
+  if (!isOwned(state.reservoir)) return fail('Le réservoir n\'est pas encore acheté.');
   const cost = upgradeCost({ type: 'reservoir', niveau: state.reservoir.niveau });
   if (cost === null) return fail('Niveau maximum atteint.');
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');

@@ -10,7 +10,8 @@
 > batterie, soleil de 7 h à 19 h, réservoir à niveaux) sont codés, version 1.6 ; lot 3
 > (niveaux d'expérience) est codé, version 1.7 ; lot 4 (énergie, bonheur, endurance,
 > santé retirée) est codé, version 1.8 ; lot 5 (houe) est codé, version 1.9 ; lot 6 (frigo à capacité) est codé,
-> version 1.10 ; lot 7 (plats et bonheur) est codé, version 1.11. Leurs notes v27 à v33 dans
+> version 1.10 ; lot 7 (plats et bonheur) est codé, version 1.11 ; lot 8 (départ v2) est codé, version 1.12.
+> Leurs notes v27 à v34 dans
 > [`conception.md`](conception.md) font foi. Le reste n'est pas
 > encore codé : quand il le sera, ce document remplacera dans `conception.md` tout ce qui
 > le contredit (chapitres).
@@ -51,7 +52,7 @@ Sommaire :
 
 ---
 
-## 2. Avant la partie : configurer sa famille
+## 2. Avant la partie : configurer sa famille ✅ (fait, version 1.12)
 
 Écran unique avant la première journée (et seulement pour une nouvelle partie).
 
@@ -59,14 +60,14 @@ Sommaire :
 |---|---|---|
 | Nom de famille | texte, 2 à 20 signes | affiché dans le bandeau et les lettres de l'histoire |
 | Nombre de membres | 1 à 6, au moins un adulte (règle actuelle) | + jusqu'à 3 chiens ou chats (règle actuelle) |
-| Pour chaque membre | prénom, adulte / enfant, **avatar** | avatars : planche de portraits pixel art (8 adultes, 8 enfants 🟡) |
+| Pour chaque membre | prénom, adulte / enfant, **avatar** | avatars : planche de portraits pixel art ✅ : 5 coiffures (dont blond) × 2 sexes par âge, soit 10 adultes et 10 enfants, dans les 6 couleurs de peau |
 | Personnage principal | un des adultes | c'est lui qui porte la jauge d'énergie et fait les actions |
 
 Le besoin alimentaire de la famille (50 par adulte, 25 par enfant) ne change pas.
 
 ---
 
-## 3. Histoire : chapitres 1 et 2
+## 3. Histoire : chapitres 1 et 2 ✅ (fait, version 1.12)
 
 Les chapitres de l'histoire ne débloquent plus rien par eux-mêmes : **les déblocages
 viennent des niveaux d'XP** (section 4). L'histoire guide le joueur et rapporte de l'XP à
@@ -520,7 +521,7 @@ change, et la mise à jour de `conception.md` et du README.
 | 5 ✅ | **Houe** : herbe / terre, 16 dessins, plafond de tuiles — fait, version 1.9 | oui (format 27 ; parcelles existantes = terre) |
 | 6 ✅ | **Frigo à capacité**, consommation par unité — fait, version 1.10 | oui (format 28 ; surplus rendu à l'inventaire) |
 | 7 ✅ | **Plats et bonheur** (barème 10.2) — fait, version 1.11 | non |
-| 8 | **Départ v2** : 1 500 💰, configuration de la famille, chapitres 1 et 2, succès | nouvelle partie seulement |
+| 8 ✅ | **Départ v2** : 1 500 💰, configuration de la famille, chapitres 1 et 2, succès — fait, version 1.12 | nouvelle partie seulement (format 29) |
 | 9 | **Verger au clic** et ses 4 dessins | oui |
 | 10 | **Niveaux 9 et 10** : courrier du notaire, commerce automatique | oui (`state.commerce`) |
 

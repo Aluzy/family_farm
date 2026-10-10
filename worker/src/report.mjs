@@ -39,6 +39,10 @@ export const GAME_ACTIONS = {
   'mill-cancel': 'Moudre du blé au Moulin',
   'member-save': 'Personnaliser un membre de la famille',
   'member-add': 'Ajouter un membre à la famille',
+  'repair-house': 'Réparer la maison',
+  'buy-starter': 'Acheter un appareil de départ',
+  'main-character': 'Choisir le personnage principal',
+  'setup-start': 'Commencer la partie (famille configurée)',
   'member-remove': 'Retirer un membre de la famille',
   'pet-add': 'Adopter un animal de compagnie',
   'pet-save': 'Personnaliser un animal de compagnie',
@@ -88,7 +92,7 @@ export const INTERFACE_ACTIONS = new Set([
   'stage-goto', 'stage-pan', 'aller', 'comptoir-tab', 'inv-tab',
   'mill-dec', 'mill-inc', 'mill-max', 'buy-dec', 'buy-inc', 'buy-max',
   'animal-dec', 'animal-inc', 'animal-max',
-  'member-edit', 'member-genre', 'member-teint', 'wake-more',
+  'member-edit', 'member-genre', 'member-teint', 'member-style', 'wake-more',
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
   'mail-open', // version 1.3 : ouvrir une lettre du courrier
   'stage-exit', // intérieur de la Serre : en sortir

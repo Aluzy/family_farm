@@ -113,6 +113,17 @@
     { id: 'silo', object: 'silo', tex: 'silo', suffixed: false, window: 'silo' },
   ];
   const MILL_FRAME = { frameWidth: 96, frameHeight: 128 };
+  // Version 1.12 : images délabrées (scripts/batiments/ruines.py), montrées tant que le
+  // bâtiment n'est pas réparé ou construit (modèle.batiments[id].ruine). Même taille et
+  // même découpe que l'image d'origine.
+  const RUINES = {
+    maison: { key: 'house_sp_ruine', file: 'house_sp_ruine.png' },
+    etable: { key: 'barn_sp_ruine', file: 'barn_sp_ruine.png' },
+    moulin: { key: 'windmill_sp_ruine', file: 'windmill_sp_ruine.png', sheet: 'mill', frame: 0 },
+    serre: { key: 'serre_sp_ruine', file: 'serre_sp_ruine.png', frame: 'batiment' },
+    poulailler: { key: 'poulailler_ruine', file: 'poulailler_ruine.png', sheet: 'coop', frame: 0 },
+    silo: { key: 'silo_ruine', file: 'silo_ruine.png' },
+  };
   // chat.png : le chat de la vie d'ambiance, 8 cases de 16×16 (leur ordre : CAT_FRAMES dans
   // js/ambient-life.js). Sans l'image, pas de chat ; rien d'autre ne change.
   const CAT_FRAME = { frameWidth: 16, frameHeight: 16 };
@@ -268,6 +279,10 @@
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
+        for (const r of Object.values(RUINES)) {
+          if (r.sheet) L.spritesheet(r.key, v(r.file), r.sheet === 'mill' ? MILL_FRAME : COOP_FRAME);
+          else L.image(r.key, v(r.file));
+        }
         L.tilemapTiledJSON(MAP.key, v(MAP.json));
         for (const r of Object.values(ROOMS)) L.tilemapTiledJSON(r.key, v(r.json));
         L.image(MAP.tiles, v(MAP.image));
@@ -372,12 +387,13 @@
             sp.c.forEach((col, phase) => t.add(name + ':' + phase, 0, col * T, (sp.r + 1) * T - sp.h, T, sp.h));
           }
         }
-        for (const a of SUFFIXES) {
+        for (const a of [...SUFFIXES, 'sp_ruine']) {
           if (!this.has('serre_' + a)) continue;
           const t = this.textures.get('serre_' + a);
           const img = t.getSourceImage();
           for (const [name, sizes] of Object.entries(SERRE_FRAMES)) {
-            t.add(name, 0, 0, 0, Math.min(sizes[a][0], img.width), Math.min(sizes[a][1], img.height));
+            const sz = sizes[a] || sizes.sp; // la serre délabrée a la découpe de la serre de printemps
+            t.add(name, 0, 0, 0, Math.min(sz[0], img.width), Math.min(sz[1], img.height));
           }
         }
       }
@@ -1196,13 +1212,13 @@
         const info = (id) => {
           const v = shown[id];
           const o = v && typeof v === 'object' ? v : { visible: !!v };
-          return (id === 'maison' || id === 'zone' || o.visible) ? o : null;   // le Champ ('zone2') : seulement une fois ouvert
+          return (id === 'maison' || o.visible) ? o : null;   // version 1.12 : la Zone de culture aussi, une fois la ferme ouverte
         };
         for (const def of BUILDINGS) {
           const want = info(def.id);
           const e = this.buildings.get(def.id);
-          if (e && (!want || rebuild)) { e.sprite.destroy(); this.buildings.delete(def.id); }
-          if (want && !this.buildings.has(def.id)) this.buildings.set(def.id, { def, sprite: this.makeBuilding(def, sfx) });
+          if (e && (!want || rebuild || !!want.ruine !== !!e.ruine)) { e.sprite.destroy(); this.buildings.delete(def.id); }
+          if (want && !this.buildings.has(def.id)) this.buildings.set(def.id, { def, ruine: !!want.ruine, sprite: this.makeBuilding(def, sfx, !!want.ruine) });
           // Étiquette : centrée au-dessus de l'image.
           const s = want ? this.buildings.get(def.id).sprite : null;
           this.syncLabel(def.id, want, def.window, s ? s.x + s.width / 2 : 0, s ? s.y - s.height + (def.labelDown || 0) : 0);
@@ -1320,13 +1336,16 @@
 
       // Pose le bas-centre de l'image sur le bas-centre du rectangle de la carte, sans sortir
       // de la carte. Profondeur = y du pied : ce qui est plus bas passe devant.
-      makeBuilding(def, sfx) {
+      makeBuilding(def, sfx, ruine) {
         const o = this.objects[def.object] || DEFAULT_OBJECTS[def.object];
         const wanted = def.suffixed ? def.tex + '_' + sfx : def.tex;
-        const key = this.tex(wanted, this.tex(def.suffixed ? def.tex + '_sp' : def.tex, 'ph_' + def.id));
+        const r = ruine && RUINES[def.id] && this.has(RUINES[def.id].key) ? RUINES[def.id] : null;
+        const key = r ? r.key : this.tex(wanted, this.tex(def.suffixed ? def.tex + '_sp' : def.tex, 'ph_' + def.id));
         const real = key.indexOf('ph_') !== 0;
         let s;
-        if (def.anim && real) {
+        if (r) {
+          s = this.add.image(0, 0, key, r.frame != null ? r.frame : undefined);   // délabré : immobile
+        } else if (def.anim && real) {
           s = this.add.sprite(0, 0, key, 0);
           if (this.anims.exists(key) && !reducedMotion()) s.play(key);
         } else {

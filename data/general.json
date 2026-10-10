@@ -10,6 +10,29 @@
     "//INVENTAIRE": "Inventaire de départ (section 8.1) : 160 conserves = 10 nuits, plus le kit de graines.",
     "INVENTAIRE": { "conserve": 160, "graine_carotte": 10, "patate": 6, "graine_tomate": 4 }
   },
+  "//DEPART": [
+    "Version 1.12 (v2, lot 8) : départ d'une nouvelle partie (docs/conception-v2.md,",
+    "sections 2 et 3). La famille arrive à la ferme du grand-père : la maison est à",
+    "réparer (MAISON pièces), puis on achète le panneau, la batterie (facultative) et",
+    "la pompe (ACHATS) ; panneau ET pompe achetés ouvrent la Zone de culture, le",
+    "Marché et l'achat du réservoir. Aucune case en terre, pas de houe, pas de graines :",
+    "seulement INVENTAIRE. NOM : nom de famille proposé ; NOM_MIN / NOM_MAX : sa longueur."
+  ],
+  "DEPART": {
+    "PIECES": 1500,
+    "INVENTAIRE": { "conserve": 40 },
+    "MAISON": 650,
+    "ACHATS": { "panneau": 150, "batterie": 180, "pompe": 90, "reservoir": 50 },
+    "NOM": "Martin",
+    "NOM_MIN": 2,
+    "NOM_MAX": 20,
+    "//HISTOIRE": "Texte d'ouverture (section 3.1), montré une fois la famille installée ; {nom} : le nom de famille.",
+    "HISTOIRE": [
+      "Printemps 2021. Après des mois enfermés dans un appartement trop petit, la famille {nom} décide de tout quitter.",
+      "Le grand-père, disparu l'hiver dernier, leur a laissé sa ferme : quelques hectares au bout d'un chemin de terre, une maison aux volets fermés, un moulin qui ne tourne plus. « Elle n'attend que vous », disait sa dernière lettre.",
+      "Les cartons sont dans le coffre. Il est temps de redonner vie à la ferme."
+    ]
+  },
   "//TIME": [
     "Temps : la journée commence à 6 h au réveil.",
     "SECONDS_PER_HOUR : durée d'une « heure de marche » des appareils (usure,",
@@ -41,6 +64,9 @@
       "sexe et une couleur de peau, choisis par le joueur (voir setMemberProfile()).",
       "TEINTS : indice 0 = le jaune par défaut, 1 à 5 = les cinq teintes des emojis.",
       "PORTRAITS : l'emoji selon l'âge et le sexe ; la teinte s'y ajoute.",
+      "Version 1.12 : STYLES, la coiffure (planche d'avatars, scripts/icones/art_gens.py) : cinq",
+      "par âge ; l'emoji devient portrait + teinte + ZWJ + STYLES[age][n] (rien pour la coiffure 0).",
+      "STYLE_NOMS : leur libellé.",
       "Le prénom est une donnée personnelle : il reste dans la sauvegarde, sur",
       "l'appareil, et ne doit jamais partir dans le suivi de session."
     ],
@@ -48,7 +74,9 @@
       "PRENOM_MAX": 12,
       "GENRES": ["f", "m"],
       "TEINTS": ["", "🏻", "🏼", "🏽", "🏾", "🏿"],
-      "PORTRAITS": { "adulte": { "f": "👩", "m": "👨" }, "enfant": { "f": "👧", "m": "👦" } }
+      "PORTRAITS": { "adulte": { "f": "👩", "m": "👨" }, "enfant": { "f": "👧", "m": "👦" } },
+      "STYLES": { "adulte": ["", "🦰", "🦱", "🦳", "👱"], "enfant": ["", "🦰", "🦱", "🧢", "👱"] },
+      "STYLE_NOMS": { "adulte": ["Classique", "Roux", "Frisé", "Cheveux gris", "Blond"], "enfant": ["Classique", "Roux", "Frisé", "Casquette", "Blond"] }
     },
     "//AJ": "énergie par jour et par membre",
     "AJ": { "adulte": 50, "enfant": 25 },

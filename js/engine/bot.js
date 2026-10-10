@@ -1,6 +1,6 @@
 import { DATA, dishPrice, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
-import { isBroken, upgradeCost, upgradeDevice } from './devices.js';
+import { farmOpen, isBroken, isOwned, starterOf, upgradeCost, upgradeDevice } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { tick } from './energy.js';
 import { countItem, expiringSoon } from './inventory.js';
@@ -25,7 +25,7 @@ import {
   chapterCount, chapterReached, cropUnlocked, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
 } from './campaign.js';
 import { sleep } from './night.js';
-import { createInitialState } from './state.js';
+import { createNewGame, buyStarter, houseRepaired, repairHouse, starterBlock } from './depart.js';
 import { botInfraInfo, botMaintenance, botSnack } from './format.js';
 
 /* ---------- cultures ---------- */
@@ -269,8 +269,16 @@ export function botStepInfo(state, step, eveilS) {
   switch (step.type) {
     case 'infra':
       return botInfraInfo(state, eveilS);
+    // version 1.12 (v2, lot 8) : la maison à réparer, les appareils de départ à acheter
+    case 'maison':
+      return houseRepaired(state) ? { done: true } : { cost: DATA.DEPART.MAISON, buy: () => repairHouse(state) };
+    case 'achat':
+      if (isOwned(starterOf(state, step.id))) return { done: true };
+      if (starterBlock(state, step.id)) return { locked: true };
+      return { cost: DATA.DEPART.ACHATS[step.id], buy: () => buyStarter(state, step.id) };
     case 'houe':
-      return hasHoe(state) ? { done: true } : { cost: DATA.HOUE.PRIX, buy: () => buyHoe(state) };
+      if (hasHoe(state)) return { done: true };
+      return farmOpen(state) ? { cost: DATA.HOUE.PRIX, buy: () => buyHoe(state) } : { locked: true };
     case 'silo':
       if (!isUnlocked(state, 'silo')) return { locked: true };
       if (built(state.silo)) return { done: true };
@@ -488,7 +496,8 @@ export function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, 
 
 // Partie neuve de `nights` nuits, jouée par la stratégie donnée.
 export function simulateGame(strategyId, nights = DATA.SIMULATION.NUITS, seed = DATA.SIMULATION.GRAINE, options = {}) {
-  return simulatePlay(createInitialState(seed), strategyId, nights, options);
+  // version 1.12 : le départ d'une nouvelle partie (maison à réparer, appareils à acheter)
+  return simulatePlay(createNewGame(seed, { nom: 'Simulation' }), strategyId, nights, options);
 }
 
 // Première nuit où l'autonomie lissée (moyenne des LISSAGE dernières nuits) atteint `pct`, ou null.

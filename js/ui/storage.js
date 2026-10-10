@@ -1,4 +1,5 @@
-import { createInitialState, migrate } from '../engine/state.js';
+import { migrate } from '../engine/state.js';
+import { createNewGame } from '../engine/depart.js';
 import { SAVE_KEY, setState, state } from './store.js';
 import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop.js';
 import { showToast } from './toasts.js';
@@ -27,14 +28,14 @@ export function safeStorageSet(key, value) {
 export function loadOrCreateState() {
   setSimulatedAt(Date.now());
   const raw = safeStorageGet(SAVE_KEY);
-  if (!raw) return createInitialState(makeSeed());
+  if (!raw) return createNewGame(makeSeed());
   try {
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return createInitialState(makeSeed());
+    if (!parsed || typeof parsed !== 'object') return createNewGame(makeSeed());
     if (typeof parsed.t === 'number' && Number.isFinite(parsed.t)) setSimulatedAt(parsed.t);
     return migrate(parsed);
   } catch (e) {
-    return createInitialState(makeSeed());
+    return createNewGame(makeSeed());
   }
 }
 

@@ -4,11 +4,13 @@ import { happinessGaugeHtml } from './ville.js';
 import { EPS } from '../engine/base.js';
 import {
   addMember, addPet, cleanFirstName, familyNeed, findMember, findPet,
-  memberName, memberPortrait, memberRemovalBlock, memberRoom, petIcon, petName, petRoom, pets, planMeal,
+  memberName, memberPortrait, memberRemovalBlock, memberStyle, memberRoom, petIcon, petName, petRoom, pets, planMeal,
   portraitEmoji, removeMember, removePet, setMemberProfile, setPetProfile,
 } from '../engine/family.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { energyCardHtml } from './energie.js';
+import { familyNameHtml } from './depart.js';
+import { mainCharacter } from '../engine/depart.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { persistState } from './storage.js';
@@ -35,9 +37,11 @@ function portraitCard(m) {
       <span class="portrait-emoji" aria-hidden="true">${memberPortrait(state, m.id) || '🙂'}</span>
       <span class="card-title"><span class="member-name">${memberNameHtml(m.id)}</span></span>
       <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} calories/jour</span>
+      ${mainCharacter(state) && mainCharacter(state).id === m.id ? '<span class="chip auto">⭐ Personnage principal</span>' : ''}
       ${happinessGaugeHtml(memberHappiness(m))}
       <span class="muted">😊 Bonheur : <span class="num">${memberHappiness(m)} / ${DATA.VILLE.BONHEUR.MAX}</span></span>
       <button type="button" class="btn" data-action="member-edit" data-id="${m.id}" aria-label="Modifier ${m.enfant ? 'cet enfant' : 'cet adulte'} : prénom et apparence">✏️ Modifier</button>
+      ${!m.enfant && !(mainCharacter(state) && mainCharacter(state).id === m.id) ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}">⭐ Personnage principal</button>` : ''}
     </article>`;
 }
 
@@ -64,6 +68,7 @@ function openMemberModal(id) {
     enfant: !!m.enfant,
     genre: P.GENRES.includes(m.genre) ? m.genre : P.GENRES[0],
     teint: Number.isInteger(m.teint) && m.teint >= 0 && m.teint < P.TEINTS.length ? m.teint : 0,
+    style: memberStyle(m), // version 1.12 : la coiffure (planche d'avatars)
     depart: false,
   };
   // Version 1.2 : le membre peut quitter la famille, sauf s'il est le dernier, le
@@ -74,6 +79,7 @@ function openMemberModal(id) {
     : `<button type="button" class="btn" data-action="member-remove" id="member-remove">Retirer de la famille</button>
        <span class="muted">Le besoin de la famille baisse de ${DATA.FAMILY.AJ[age]} calories par jour.</span>`;
   const genres = P.GENRES.map((g) => `<button type="button" class="btn choice-btn" data-action="member-genre" data-genre="${g}" aria-pressed="false"><span class="choice-emoji" aria-hidden="true"></span><span>${GENRE_LABELS[age][g]}</span></button>`).join('');
+  const styles = P.STYLES[age].map((_, n) => `<button type="button" class="btn swatch-btn" data-action="member-style" data-style="${n}" aria-pressed="false" aria-label="${P.STYLE_NOMS[age][n]}" title="${P.STYLE_NOMS[age][n]}"></button>`).join('');
   const teints = P.TEINTS.map((_, t) => `<button type="button" class="btn swatch-btn" data-action="member-teint" data-teint="${t}" aria-pressed="false" aria-label="${TEINT_LABELS[t]}" title="${TEINT_LABELS[t]}"></button>`).join('');
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
@@ -91,6 +97,10 @@ function openMemberModal(id) {
           <div class="stack member-field" role="group" aria-label="${m.enfant ? 'Fille ou garçon' : 'Femme ou homme'}">
             <strong>${m.enfant ? 'Fille ou garçon' : 'Femme ou homme'}</strong>
             <div class="row choice-row">${genres}</div>
+          </div>
+          <div class="stack member-field" role="group" aria-label="Coiffure">
+            <strong>Coiffure</strong>
+            <div class="row swatch-row">${styles}</div>
           </div>
           <div class="stack member-field" role="group" aria-label="Couleur de peau">
             <strong>Couleur de peau</strong>
@@ -121,20 +131,26 @@ function syncMemberModal() {
   const input = document.getElementById('member-prenom');
   if (!d || !input) return;
   const typed = cleanFirstName(input.value);
-  document.getElementById('member-preview-emoji').textContent = portraitEmoji(d.enfant, d.genre, d.teint);
+  document.getElementById('member-preview-emoji').textContent = portraitEmoji(d.enfant, d.genre, d.teint, d.style);
   // textContent : le prénom tapé s'affiche comme du texte, jamais comme du HTML
   document.getElementById('member-preview-name').textContent = typed || '…';
   for (const b of root.querySelectorAll('[data-action="member-genre"]')) {
     const g = b.dataset.genre;
     b.setAttribute('aria-pressed', String(g === d.genre));
     b.classList.toggle('active', g === d.genre);
-    b.querySelector('.choice-emoji').textContent = portraitEmoji(d.enfant, g, d.teint);
+    b.querySelector('.choice-emoji').textContent = portraitEmoji(d.enfant, g, d.teint, d.style);
+  }
+  for (const b of root.querySelectorAll('[data-action="member-style"]')) {
+    const n = Number(b.dataset.style);
+    b.setAttribute('aria-pressed', String(n === d.style));
+    b.classList.toggle('active', n === d.style);
+    b.textContent = portraitEmoji(d.enfant, d.genre, d.teint, n);
   }
   for (const b of root.querySelectorAll('[data-action="member-teint"]')) {
     const t = Number(b.dataset.teint);
     b.setAttribute('aria-pressed', String(t === d.teint));
     b.classList.toggle('active', t === d.teint);
-    b.textContent = portraitEmoji(d.enfant, d.genre, t);
+    b.textContent = portraitEmoji(d.enfant, d.genre, t, d.style);
   }
   const error = document.getElementById('member-error');
   if (error) error.hidden = true;
@@ -146,7 +162,7 @@ function saveMemberModal() {
   const d = memberDraft;
   const input = document.getElementById('member-prenom');
   if (!d || !input) return;
-  const result = setMemberProfile(state, d.id, { prenom: input.value, genre: d.genre, teint: d.teint });
+  const result = setMemberProfile(state, d.id, { prenom: input.value, genre: d.genre, teint: d.teint, style: d.style });
   if (!result.ok) {
     const error = document.getElementById('member-error');
     if (error) {
@@ -353,7 +369,7 @@ export function renderFamille() {
   const shown = Math.min(plan.energie, plan.besoin);
   const short = plan.energie + EPS < plan.besoin;
   return `
-    <h2>👨‍👩‍👧‍👦 Famille</h2>
+    <h2>👨‍👩‍👧‍👦 Famille${familyNameHtml() ? ` ${familyNameHtml()}` : ''}</h2>
     <p class="muted family-count"><span class="num">${state.famille.membres.length} / ${DATA.FAMILY.COMPOSITION.MEMBRES_MAX}</span> membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> calories par jour</p>
     <div class="portraits">${state.famille.membres.map(portraitCard).join('')}</div>
     ${renderFamilyAdd()}
@@ -381,6 +397,10 @@ registerActions({
   },
   'member-genre': (target) => {
     if (memberDraft) memberDraft.genre = target.dataset.genre;
+    syncMemberModal();
+  },
+  'member-style': (target) => {
+    if (memberDraft) memberDraft.style = Number(target.dataset.style);
     syncMemberModal();
   },
   'member-teint': (target) => {

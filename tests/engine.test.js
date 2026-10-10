@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, TIRED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, holdStatus, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -6261,10 +6261,12 @@ function okList(s) {
 
 test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent plus rien)', () => {
   const L = DATA.CHAPITRES.liste;
-  assertEqual(L.map((c) => c.titre), ['L\'eau et le soleil', 'Le premier potager', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'Famille autonome']);
+  assertEqual(L.map((c) => c.titre), ['L\'héritage', 'Le grenier', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'Famille autonome']);
   assertEqual(L.map((c) => c.debloque), [undefined, undefined, undefined, undefined, undefined, undefined, undefined]);
   assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
-    [['litres', 50], ['wh', 3000]], [['carottes', 20], ['autonomie', 25]], [['pontes', 7], ['autonomie', 50]],
+    [['maison', 1], ['panneau', 1], ['pompe', 1], ['reservoir', 1], ['houe', 1], ['recoltes', 1]],
+    [['niveau', 2], ['cultures', 4], ['silo', 1], ['semisBle', 1], ['siloBle', 50]],
+    [['pontes', 7], ['autonomie', 50]],
     [['pains', 5], ['plats', 3]], [['laines', 10], ['autonomie', 60]], [['tenue', 1]], [['serie100', 7]],
   ]);
   assertEqual([DATA.CHAPITRES.liste[5].objectifs[0].nuits, DATA.CHAPITRES.liste[5].objectifs[0].moyenne], [10, 80]);
@@ -6276,7 +6278,7 @@ test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', ()
   const s = createInitialState(1);
   assertEqual(s.campagne, {
     chapitre: 1, fini: false, annonces: [], historique: [],
-    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false },
+    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false, recoltes: 0, cultures: [], semisBle: 0 },
   });
   assertEqual(chapterReached(s), 1);
   assertEqual(lastAutonomy(s), 0);
@@ -6448,52 +6450,68 @@ function fillSheepAfterPasture(s) {
 
 /* --- objectifs de chapitre --- */
 
-test('chapitre 1 : pomper 50 L et stocker 3 000 Wh', () => {
-  const s = atChapter(1);
-  s.pompe.allume = true;
-  runFor(s, 50); // le réservoir (40 L) se remplit, pas plus
-  assertEqual(s.campagne.compteurs.eauMl, ml(40));
-  assertEqual(okList(s), [false, false]);
-  s.eauMl = ml(0); // l'eau a servi
-  runFor(s, 12);
-  assertEqual(okList(s), [true, false], 'plus de 50 L, mais moins de 3 000 Wh');
+test('version 1.12 : chapitre 1 « L\'héritage » : maison, panneau, pompe, réservoir, houe, première récolte', () => {
+  const s = createNewGame(1, { nom: 'Martin' });
+  assertEqual([s.campagne.chapitre, okList(s)], [1, [false, false, false, false, false, false]]);
+  assert(repairHouse(s).ok);
+  assert(buyStarter(s, 'panneau').ok);
+  assert(buyStarter(s, 'pompe').ok);
+  assertEqual(okList(s), [true, true, true, false, false, false]);
+  assert(buyStarter(s, 'reservoir').ok);
+  assert(buyHoe(s).ok);
+  assertEqual(okList(s), [true, true, true, true, true, false]);
+  tireless(s);
+  testSetLevel(s, 1);
+  assert(hoe(s, 1, 0).ok);
+  addItem(s, 'graine_carotte', 1);
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  findPlot(s, 'potager-1').stade = maxStage(findPlot(s, 'potager-1'));
   assertEqual(s.campagne.chapitre, 1);
-  testFillBatteries(s);
-  tick(s, 0.2);
-  assertEqual(s.campagne.chapitre, 2, 'objectif rempli : chapitre suivant');
-  assertEqual(s.campagne.annonces, [{ chapitre: 1, nuit: 1 }]);
+  assert(harvest(s, 'potager-1').ok);
+  updateChapters(s);
+  assertEqual(s.campagne.chapitre, 2, 'la première récolte termine le chapitre');
+  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [1]);
 });
 
-test('chapitre 1 : 3 kWh sans 50 L ne suffit pas', () => {
-  const s = atChapter(1);
-  testFillBatteries(s);
-  tick(s, 0.2);
-  assertEqual(okList(s), [false, true]);
-  assertEqual(s.campagne.chapitre, 1);
+test('version 1.12 : la batterie est facultative au chapitre 1', () => {
+  const ids = DATA.CHAPITRES.liste[0].objectifs.map((o) => o.type);
+  assertEqual(ids, ['maison', 'panneau', 'pompe', 'reservoir', 'houe', 'recoltes']);
+  assertEqual(ids.includes('batterie'), false);
 });
 
-testBase('chapitre 2 : 20 carottes et 25 % d\'autonomie', () => {
+testBase('version 1.12 : chapitre 2 « Le grenier » : niveau 2, 4 cultures, Silo, blé semé, 50 blés au Silo', () => {
   const s = atChapter(2);
-  for (let i = 1; i <= 2; i++) {
+  testSetLevel(s, 2);
+  assertEqual(okList(s), [true, false, false, false, false]);
+  addItem(s, 'graine_courgette', 1);
+  for (const [i, c] of [[1, 'carotte'], [2, 'patate'], [3, 'tomate'], [4, 'courgette']].entries()) {
+    plantRipe(s, `potager-${c[0]}`, c[1]);
+    assert(harvest(s, `potager-${c[0]}`).ok, `récolte ${i}`);
+  }
+  assertEqual(okList(s).slice(0, 2), [true, true], 'quatre cultures différentes');
+  testSetLevel(s, 3);
+  s.pieces = 5000;
+  assert(buildSilo(s).ok);
+  addItem(s, 'ble', 5);
+  assert(plant(s, 'potager-1', 'ble').ok);
+  assertEqual(okList(s), [true, true, true, true, false]);
+  storeWheat(s, 50);
+  updateChapters(s);
+  assertEqual([s.silo.ble, s.campagne.chapitre], [20, 2], 'Silo de niveau 1 : 20 blés au plus');
+  assert(upgradeSilo(s).ok);
+  storeWheat(s, 30);
+  updateChapters(s);
+  assertEqual(s.campagne.chapitre, 3);
+});
+
+testBase('version 1.12 : chapitre 2 : la même culture récoltée quatre fois ne compte qu\'une fois', () => {
+  const s = atChapter(2);
+  for (let i = 1; i <= 4; i++) {
     plantRipe(s, `potager-${i}`, 'carotte');
     assert(harvest(s, `potager-${i}`).ok);
   }
-  updateChapters(s);
-  assertEqual(okList(s), [true, false]);
-  assertEqual(s.campagne.chapitre, 2);
-  // Lot 11 (nutrition) : patate à 19 d'énergie (au lieu de 15).
-  nightWithProduced(s, 1); // 19 / 150 ≈ 12,67 %, arrondi vers le bas
-  assertEqual([lastAutonomy(s), okList(s)], [12, [true, false]]);
-  nightWithProduced(s, 2); // 38 / 150 ≈ 25,33 %
-  assertEqual(s.campagne.chapitre, 3);
-  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [2]);
-});
-
-testBase('chapitre 2 : 25 % sans les 20 carottes ne suffit pas', () => {
-  const s = atChapter(2);
-  nightWithProduced(s, 6);
-  assertEqual(okList(s), [false, true]);
-  assertEqual(s.campagne.chapitre, 2);
+  assertEqual([s.campagne.compteurs.recoltes, s.campagne.compteurs.cultures], [4, ['carotte']]);
+  assertEqual(okList(s)[1], false);
 });
 
 testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () => {
@@ -6754,6 +6772,7 @@ test('XP : planter, arroser, récolter, vendre ; un niveau franchi est annoncé 
 
 test('XP : les automatisations rapportent la moitié, la nuit donne celle des œufs et du lait', () => {
   const s = auto5('potager');
+  s.campagne.chapitre = 3; // version 1.12 : la récolte ne termine pas le chapitre 1 (son XP fausserait le compte)
   const xp0 = s.progression.xp;
   plantRipe(s, 'potager-1', 'carotte'); // planté au clic : 10
   plant(s, 'potager-2', 'carotte'); // 10
@@ -6886,7 +6905,10 @@ test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres termi
   s.famille.reserve = {};
   // Lot 11 (nutrition) : patate à 19 d'énergie, 6 unités (114) sous le besoin (150).
   setInv(s, { patate: 6, conserve: 10 });
-  s.campagne.compteurs.carottes = 20;
+  // version 1.12 : tout le chapitre 2 est rempli juste avant la nuit
+  s.progression.niveau = 3;
+  Object.assign(s.campagne.compteurs, { cultures: ['carotte', 'patate', 'tomate', 'courgette'], semisBle: 1 });
+  Object.assign(s.silo, { construit: true, ble: 50 });
   const r = sleepOnce(s);
   assertEqual([r.autonomie, r.energieProduit, r.chapitre, r.chapitresTermines], [76, 114, 3, [2]]);
 });
@@ -7284,8 +7306,8 @@ test('Lot 10 : à court d\'énergie, le joueur mange un en-cas pris sur ce que l
 test('Lot 10 : plante, arrose et récolte : les premières carottes arrivent', () => {
   const s = createInitialState(1);
   const strat = DATA.SIMULATION.STRATEGIES.applique;
-  for (let i = 0; i < 6; i++) botDay(s, strat, {});
-  assert(s.campagne.compteurs.carottes > 0 || countItem(s, 'patate') > 0 || countItem(s, 'carotte') > 0, 'la ferme a produit');
+  for (let i = 0; i < 9; i++) botDay(s, strat, {});
+  assert(s.campagne.compteurs.recoltes > 0, 'la ferme a produit');
   assert(s.campagne.compteurs.eauMl > 0, 'la pompe a tourné');
 });
 
@@ -7303,7 +7325,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.11.0');
+  assertEqual(GAME_VERSION, '1.12.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -7464,9 +7486,12 @@ test('Lot 11 : hors-ligne, mêmes flux que le jeu, plafonnés par les capacités
 test('Lot 11 : la progression hors-ligne compte pour les objectifs du chapitre', () => {
   const s = createInitialState(1);
   assertEqual(s.campagne.chapitre, 1);
+  // version 1.12 : chapitre 1 « L'héritage » rempli, sauf ce que la nuit hors-ligne vérifie
+  s.potager.houe = true;
+  s.campagne.compteurs.recoltes = 1;
   s.reservoir.niveau = 2; // réservoir de 80 L : on peut pomper les 50 L de l'objectif
   // l'horloge s'arrête à l'éveil minimal (7 h 40), au soleil : le panneau produit
-  simulateOffline(s, 2 * 3600); // 50 L pompés et 3 000 Wh stockés
+  simulateOffline(s, 2 * 3600); // 50 L pompés et 3 000 Wh stockés ; les chapitres sont relus
   assert(s.campagne.compteurs.eauMl >= ml(50), 'litres comptés');
   assert(s.campagne.compteurs.mwhMax >= kwh(3), 'record d\'énergie');
   assertEqual(s.campagne.chapitre, 2);
@@ -8772,6 +8797,112 @@ test('version 1.11 : le repas commence par un exemplaire des trois meilleurs pla
   setInv(t, { carotte: 40 });
   t.famille.reserve = {};
   assertEqual(Object.keys(planMeal(t).mange), ['carotte'], 'sans plat : rien ne change');
+});
+
+/* ---------- version 1.12 (v2, lot 8) : le départ d'une nouvelle partie ---------- */
+
+test('version 1.12 : une nouvelle partie : 1 500 pièces, 40 conserves, tout est à réparer ou à acheter', () => {
+  const s = createNewGame(1);
+  assertEqual([s.pieces, inventoryCounts(s), s.potager.parcelles, s.potager.houe], [1500, { conserve: 40 }, [], false]);
+  assertEqual([houseRepaired(s), farmOpen(s), tankCapacity(s), s.unlockedTabs.includes('comptoir')], [false, false, 0, false]);
+  assertEqual(['panneau', 'batterie', 'pompe', 'reservoir'].map((t) => isOwned(starterOf(s, t))), [false, false, false, false]);
+  assertEqual([s.panneaux[0].allume, s.pompe.allume, s.batteries[0].allume], [false, false, false]);
+  assertEqual([setupPending(s), s.famille.nom, mainCharacter(s).id], [true, DATA.DEPART.NOM, 'adulte-1']);
+  assertEqual(toggleDevice(s, 'pompe').ok, false, 'pas encore achetée');
+  assertEqual(upgradeDevice(s, 'panneau-1').ok, false);
+  assertEqual(upgradeTank(s).ok, false);
+  assertEqual(buyItem(s, 'graine_carotte', 1).error, MARKET_CLOSED);
+  assertEqual(sellItem(s, 'conserve', 1).error, MARKET_CLOSED);
+  assertEqual(buyHoe(s).ok, false);
+  runFor(s, 60);
+  assertEqual([s.eauMl, s.batteries[0].chargeMwh], [0, 0], 'rien ne tourne');
+  // une partie de test (createInitialState) a tout : panneau, pompe, Marché
+  const t = createInitialState(1);
+  assertEqual([houseRepaired(t), farmOpen(t), setupPending(t)], [true, true, false]);
+});
+
+test('version 1.12 : réparer la maison (650), puis acheter panneau (150), pompe (90), réservoir (50), batterie (180)', () => {
+  const s = createNewGame(1);
+  assertEqual(starterBlock(s, 'panneau'), 'Répare d\'abord la maison.');
+  assertEqual(buyStarter(s, 'panneau').ok, false);
+  assertEqual(repairHouse(s).cost, 650);
+  assertEqual(repairHouse(s).ok, false, 'une seule fois');
+  assertEqual(starterBlock(s, 'reservoir'), 'Achète d\'abord le panneau et la pompe.');
+  assertEqual(buyStarter(s, 'panneau').cost, 150);
+  assertEqual(farmOpen(s), false);
+  const r = buyStarter(s, 'pompe');
+  assertEqual([r.cost, r.ouvert, farmOpen(s), s.unlockedTabs.includes('comptoir')], [90, true, true, true], 'panneau et pompe : la ferme s\'ouvre');
+  assertEqual(buyStarter(s, 'reservoir').cost, 50);
+  assertEqual(tankCapacity(s), DATA.GRID.reservoir.litres[0] * 1000);
+  assertEqual([s.pieces, isOwned(s.batteries[0])], [1500 - 650 - 150 - 90 - 50, false], 'la batterie reste facultative');
+  assertEqual(buyStarter(s, 'batterie').cost, 180);
+  assertEqual([s.batteries[0].allume, s.batteries[0].prix, buyStarter(s, 'batterie').ok], [true, 180, false]);
+  assertEqual(buyStarter(s, 'frigo').ok, false);
+  s.pieces = 10;
+  const u = createNewGame(2);
+  u.pieces = 600;
+  assertEqual(repairHouse(u).error, 'Pas assez de pièces.');
+  // une fois achetés, panneau et pompe tournent
+  const v = createNewGame(3);
+  repairHouse(v);
+  buyStarter(v, 'panneau');
+  buyStarter(v, 'pompe');
+  buyStarter(v, 'reservoir');
+  runFor(v, 60);
+  assert(v.eauMl > 0, 'la pompe remplit le réservoir');
+});
+
+test('version 1.12 : configurer la famille : nom, personnage principal, membres', () => {
+  const s = createNewGame(1);
+  assertEqual(setFamilyName(s, ' x ').ok, false, 'trop court');
+  assertEqual(setFamilyName(s, 'a'.repeat(21)).ok, false, 'trop long');
+  assertEqual(setFamilyName(s, '  Dupont   Moreau ').nom, 'Dupont Moreau');
+  assertEqual(setMainCharacter(s, 'enfant-1').error, 'Le personnage principal est un adulte.');
+  assert(setMainCharacter(s, 'adulte-2').ok);
+  assertEqual(memberRemovalBlock(s, 'adulte-2'), 'C\'est le personnage principal : choisis d\'abord un autre adulte.');
+  assert(removeMember(s, 'adulte-1').ok, 'l\'autre adulte peut partir');
+  assertEqual(mailReceived(s, 'notaire_heritage'), false);
+  assert(finishSetup(s).ok);
+  assertEqual([setupPending(s), familyName(s), mainCharacter(s).id], [false, 'Dupont Moreau', 'adulte-2']);
+  assertEqual(mailReceived(s, 'notaire_heritage'), true, 'la lettre du notaire arrive');
+  assertEqual(finishSetup(s).ok, false);
+  const t = createNewGame(1, { nom: 'Leroy', principal: 'adulte-2' });
+  assertEqual([setupPending(t), familyName(t), mainCharacter(t).id], [false, 'Leroy', 'adulte-2']);
+  assertEqual(mailReceived(createInitialState(1), 'notaire_heritage'), false, 'pas de lettre dans une partie de test');
+});
+
+test('version 1.12 : migration v28 → v29 : une partie en cours est déjà installée', () => {
+  const old = JSON.parse(JSON.stringify(createInitialState(1)));
+  old.version = 28;
+  for (const k of ['nom', 'principal', 'configuree']) delete old.famille[k];
+  for (const k of ['recoltes', 'cultures', 'semisBle']) delete old.campagne.compteurs[k];
+  const m = migrateDepart(old);
+  assertEqual([m.version, m.famille.nom, m.famille.principal, m.famille.configuree], [29, '', 'adulte-1', true]);
+  assertEqual([m.campagne.compteurs.recoltes, m.campagne.compteurs.cultures, m.campagne.compteurs.semisBle], [0, [], 0]);
+  assertEqual([houseRepaired(m), farmOpen(m), mailReceived(m, 'notaire_heritage')], [true, true, false]);
+  const full = migrate({ v: 28, t: 0, s: old });
+  assertEqual([full.version, setupPending(full)], [STATE_VERSION, false]);
+});
+
+test('version 1.12 : le joueur automatique part du départ v2 et termine le chapitre 1', () => {
+  const rows = simulateGame('applique', 10);
+  assert(rows.some((r) => r.chapitre >= 2), `chapitres : ${rows.map((r) => r.chapitre).join(',')}`);
+});
+
+test('version 1.12 : planche d\'avatars : 5 coiffures par âge, choisies dans la fiche du membre', () => {
+  const P = DATA.FAMILY.PROFIL;
+  assertEqual([P.STYLES.adulte.length, P.STYLES.enfant.length, P.STYLE_NOMS.adulte, P.STYLE_NOMS.enfant], [5, 5, ['Classique', 'Roux', 'Frisé', 'Cheveux gris', 'Blond'], ['Classique', 'Roux', 'Frisé', 'Casquette', 'Blond']]);
+  assertEqual(portraitEmoji(true, 'f', 5, 4), '👧🏿\u200D👱', 'blonde');
+  assertEqual(portraitEmoji(false, 'f', 0), '👩', 'coiffure 0 : le portrait d\'avant');
+  assertEqual(portraitEmoji(false, 'f', 3, 1), '👩🏽‍🦰');
+  assertEqual(portraitEmoji(true, 'm', 0, 3), '👦‍🧢');
+  const s = createInitialState(1);
+  assertEqual(memberStyle(findMember(s, 'adulte-1')), 0);
+  assert(setMemberProfile(s, 'adulte-1', { style: 2 }).ok);
+  assertEqual([findMember(s, 'adulte-1').style, memberPortrait(s, 'adulte-1')], [2, '👩‍🦱']);
+  assertEqual(setMemberProfile(s, 'adulte-1', { style: 5 }).error, 'Coiffure inconnue.');
+  assert(setMemberProfile(s, 'adulte-1', { style: 0 }).ok);
+  assertEqual('style' in findMember(s, 'adulte-1'), false, 'la coiffure 0 n\'est pas écrite');
 });
 
 export const results = runTests();

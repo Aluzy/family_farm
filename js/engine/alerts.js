@@ -7,7 +7,7 @@ import { allPlots, isMature } from './crops.js';
 import { hensToFeed, sheepToShear, strawMissing } from './animals.js';
 import { techAuto } from './techtree.js';
 import { unreadMail } from './campaign.js';
-import { createInitialState } from './state.js';
+import { createNewGame } from './depart.js';
 
 /* ---------- Lot 11 : alertes (notifications de l'interface) ---------- */
 
@@ -124,8 +124,9 @@ export function noteTutorialSleep(state) {
 
 // Nouvelle partie depuis les Options : état de départ, mais un joueur qui a déjà
 // vu les bulles d'aide ne les revoit pas (elles sont pour la première partie).
+// Version 1.12 : une nouvelle partie part du départ v2 (configuration de la famille d'abord).
 export function newGameFrom(previous, seed) {
-  const s = createInitialState(seed);
+  const s = createNewGame(seed);
   if (previous && previous.aide && previous.aide.fini) s.aide = { ...previous.aide };
   return s;
 }

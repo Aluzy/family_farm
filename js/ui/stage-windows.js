@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { energyLevel } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
-import { allDevices } from '../engine/devices.js';
+import { allDevices, farmOpen } from '../engine/devices.js';
 import { awakeRequired } from '../engine/clock.js';
 import { planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
@@ -196,7 +196,7 @@ export const STAGE_WINDOWS = {
     corps: () => renderVerger() + renderAchatArbres(),
   },
   zone: {
-    nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => true, haute: true, sansTitre: true,
+    nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => farmOpen(state), haute: true, sansTitre: true, // version 1.12
     detail: () => `${state.potager.parcelles.length} parcelles`,
     corps: () => renderPotager(),
   },

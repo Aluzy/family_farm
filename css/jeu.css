@@ -1618,3 +1618,29 @@ main .ancre { scroll-margin-top: 150px; }
 .hoe-cell:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
 
 .stage-chip.hoe { margin-left: auto; flex: 0 0 auto; }
+
+/* ---------- version 1.12 : départ d'une nouvelle partie ---------- */
+
+.setup-members { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.setup-member {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.setup-member .portrait-emoji { font-size: 1.8rem; line-height: 1; }
+.setup-member .row { gap: 6px; flex-wrap: nowrap; }
+.setup-member .btn { min-width: 44px; }
+.story-modal p { line-height: 1.5; }
+.starter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px dashed var(--border);
+}

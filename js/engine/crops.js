@@ -1,10 +1,10 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, randomInt } from './base.js';
-import { fail, spend } from './devices.js';
+import { fail, farmOpen, spend } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { techPct, techSum } from './techtree.js';
-import { bumpCounter, isUnlocked } from './campaign.js';
+import { bumpCounter, isUnlocked, noteCropHarvested } from './campaign.js';
 import { gainActionXp, levelReached } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
@@ -89,6 +89,7 @@ export function hasHoe(state) {
 // Achat de la houe au Marché (une seule fois).
 export function buyHoe(state) {
   if (hasHoe(state)) return fail('Tu as déjà une houe.');
+  if (!farmOpen(state)) return fail('La houe s\'achète au Marché, qui ouvre avec le panneau et la pompe.');
   const cost = DATA.HOUE.PRIX;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
@@ -272,6 +273,7 @@ export function plant(state, plotId, culture, auto = false) {
   plot.montee = false;
   if (!auto) spendEnergy(state, 'planter');
   gainActionXp(state, 'planter', 1, auto);
+  if (culture === DATA.SILO.ITEM) bumpCounter(state, 'semisBle', 1); // version 1.12 : chapitre 2
   return { ok: true };
 }
 
@@ -329,6 +331,7 @@ export function harvest(state, plotId, auto = false) {
     gain(def.graines.item, boltSeedYield(state, culture));
   } else {
     gain(cropProduct(culture), harvestYield(state, culture));
+    noteCropHarvested(state, culture); // version 1.12 : chapitres 1 et 2
     if (def.graines.mode === 'recolte') {
       const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
       gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));

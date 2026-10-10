@@ -1,4 +1,5 @@
 import { DATA } from '../engine/catalog.js';
+import { withFamilyName } from './depart.js';
 import { mailbox, mailReceived, readMail } from '../engine/campaign.js';
 import { getNotifications } from '../engine/alerts.js';
 import { formatNumber } from '../engine/format.js';
@@ -62,7 +63,7 @@ function openMailModal(id) {
       <div class="modal letter" role="dialog" aria-modal="true" aria-labelledby="mail-title" data-stop-propagation>
         <p class="letter-place">${def.lieu}</p>
         <h2 id="mail-title">${def.icone} ${def.objet}</h2>
-        <div class="letter-body">${def.texte.map((p) => `<p>${p}</p>`).join('')}</div>
+        <div class="letter-body">${def.texte.map((p) => `<p>${withFamilyName(p)}</p>`).join('')}</div>
         <p class="letter-sign">${def.signature}</p>
         ${cadeaux ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${cadeaux}</span><span class="muted">Déjà rangés dans ton inventaire.${serre ? ' Ils se plantent dans la Serre, et nulle part ailleurs.' : ''}</span></div>` : ''}
         <div class="row">

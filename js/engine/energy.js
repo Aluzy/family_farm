@@ -33,6 +33,13 @@ export function storeEnergy(state, energy) {
 // Tous les consommateurs (pompe, puis moulin, presse, réfrigérateur) passent ici.
 export function drawEnergy(state, energy) {
   let rest = energy;
+  // version 1.12 : d'abord la production du moment qui n'a pas trouvé de place en batterie
+  // (pas de batterie achetée, ou batterie pleine) : le panneau alimente directement
+  const direct = state.flux && state.flux.direct > 0 ? Math.min(state.flux.direct, rest) : 0;
+  if (direct > 0) {
+    state.flux.direct -= direct;
+    rest -= direct;
+  }
   for (let i = state.batteries.length - 1; i >= 0; i--) {
     if (rest <= 0) break;
     const b = state.batteries[i];
@@ -138,14 +145,17 @@ export function flowStep(state, dtMs) {
     }
   }
 
-  // b. stockage : batteries remplies l'une après l'autre ; le reste est perdu
-  const lost = storeEnergy(state, produced);
+  // b. stockage : batteries remplies l'une après l'autre ; version 1.12 : le reste
+  // alimente directement les consommateurs de ce pas, puis il est perdu
+  state.flux.direct = storeEnergy(state, produced);
   state.jour.produite += produced;
+
+  // c. consommation : chaque consommateur tire sur ce reste, puis sur les batteries
+  for (const c of CONSUMERS) c.run(state, dtMs);
+  const lost = Math.max(0, state.flux.direct);
+  state.flux.direct = 0;
   state.jour.perdue += lost;
   state.flux.perdue = perSecond(lost, dtMs);
-
-  // c. consommation : chaque consommateur tire sur les batteries (sens inverse)
-  for (const c of CONSUMERS) c.run(state, dtMs);
 
   // c bis. Lot 5 : le Four et la Cuisine n'ont pas besoin d'électricité
   runCooking(state, dtMs);

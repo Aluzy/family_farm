@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { fail } from './devices.js';
+import { fail, isOwned, starterOf } from './devices.js';
 import { addItem, lotsOf } from './inventory.js';
 import { fridgeLots } from './fridge.js';
 import { planMeal } from './family.js';
@@ -43,6 +43,9 @@ export function newCampaignCounters() {
     tenue: null, // série de nuits en cours de suivi : { debut, nuits, somme }
     tenueDerniere: null, // dernière série terminée : { moyenne, sansSoin, reussi }
     tenueReussie: false,
+    recoltes: 0, // version 1.12 : récoltes faites au total
+    cultures: [], // cultures différentes récoltées
+    semisBle: 0, // semis de blé
   };
 }
 
@@ -145,6 +148,15 @@ export function plantableCropsFor(state, lieu) {
   return plantableCrops(lieu).filter((c) => cropUnlocked(state, c));
 }
 
+// Version 1.12 : une culture récoltée (objectif « cultures différentes »).
+export function noteCropHarvested(state, culture) {
+  const c = state.campagne;
+  if (!c) return;
+  c.compteurs.recoltes = (c.compteurs.recoltes || 0) + 1;
+  if (!Array.isArray(c.compteurs.cultures)) c.compteurs.cultures = [];
+  if (!c.compteurs.cultures.includes(culture)) c.compteurs.cultures.push(culture);
+}
+
 export function bumpCounter(state, key, amount) {
   const c = state.campagne;
   if (c && amount > 0) c.compteurs[key] = (c.compteurs[key] || 0) + amount;
@@ -188,6 +200,16 @@ export function objectiveValue(state, obj) {
     case 'laines': return k.laines;
     case 'tenue': return k.tenueReussie ? 1 : 0;
     case 'serie100': return k.serie100;
+    // version 1.12 (v2, lot 8) : chapitres 1 et 2
+    case 'maison': return !(state.maison && state.maison.reparee === false) ? 1 : 0;
+    case 'panneau': case 'pompe': case 'reservoir': return isOwned(starterOf(state, obj.type)) ? 1 : 0;
+    case 'houe': return state.potager && state.potager.houe ? 1 : 0;
+    case 'recoltes': return k.recoltes || 0;
+    case 'niveau': return levelReached(state);
+    case 'cultures': return Array.isArray(k.cultures) ? k.cultures.length : 0;
+    case 'silo': return state.silo && state.silo.construit ? 1 : 0;
+    case 'semisBle': return k.semisBle || 0;
+    case 'siloBle': return state.silo ? Math.floor(state.silo.ble || 0) : 0;
     default: return 0;
   }
 }
@@ -251,6 +273,7 @@ export function unreadMail(state) {
 // La condition d'une lettre est-elle remplie ?
 export function mailDue(state, def) {
   const q = def.quand || {};
+  if (q.depart) return !!(state.departV2 && state.famille && state.famille.configuree);
   if (q.debloque) return !!state.campagne && isUnlocked(state, q.debloque);
   return false;
 }

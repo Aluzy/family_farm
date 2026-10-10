@@ -47,11 +47,18 @@ export function validFirstName(text) {
 // Emoji d'un portrait : 👩 / 👨 pour un adulte, 👧 / 👦 pour un enfant, suivi de
 // la teinte choisie (rien pour le jaune par défaut). Des valeurs inconnues
 // retombent sur le premier sexe et le jaune.
-export function portraitEmoji(enfant, genre, teint) {
+export function portraitEmoji(enfant, genre, teint, style = 0) {
   const P = DATA.FAMILY.PROFIL;
   const set = P.PORTRAITS[enfant ? 'enfant' : 'adulte'];
   const base = set[genre] || set[P.GENRES[0]];
-  return base + (P.TEINTS[teint] || '');
+  // version 1.12 : la coiffure (planche d'avatars), jointe par un ZWJ
+  const comp = (P.STYLES[enfant ? 'enfant' : 'adulte'] || [])[style] || '';
+  return base + (P.TEINTS[teint] || '') + (comp ? '\u200D' + comp : '');
+}
+
+// Coiffure d'un membre (0 si elle n'a jamais été choisie).
+export function memberStyle(m) {
+  return m && Number.isInteger(m.style) && m.style >= 0 && m.style < DATA.FAMILY.PROFIL.STYLES.adulte.length ? m.style : 0;
 }
 
 // Prénom affiché d'un membre : celui choisi, sinon son rôle. Texte brut : à
@@ -66,10 +73,10 @@ export function memberName(state, id) {
 export function memberPortrait(state, id) {
   const m = findMember(state, id);
   if (!m) return '';
-  return portraitEmoji(m.enfant, m.genre, m.teint);
+  return portraitEmoji(m.enfant, m.genre, m.teint, memberStyle(m));
 }
 
-// Change le profil d'un membre : { prenom, genre, teint }. Un champ absent
+// Change le profil d'un membre : { prenom, genre, teint, style }. Un champ absent
 // garde sa valeur. Tout est vérifié avant de rien modifier : prénom de 1 à
 // PRENOM_MAX caractères (nettoyé), genre 'f' ou 'm', teinte entière de 0 à 5.
 export function setMemberProfile(state, id, profil) {
@@ -77,7 +84,7 @@ export function setMemberProfile(state, id, profil) {
   const m = findMember(state, id);
   if (!m) return fail('Membre introuvable.');
   if (!profil || typeof profil !== 'object') return fail('Profil invalide.');
-  const next = { prenom: m.prenom, genre: m.genre, teint: m.teint };
+  const next = { prenom: m.prenom, genre: m.genre, teint: m.teint, style: memberStyle(m) };
   if (profil.prenom !== undefined) {
     if (typeof profil.prenom !== 'string' || cleanFirstName(profil.prenom) === '') return fail('Écris un prénom.');
     if (!validFirstName(profil.prenom)) return fail(`Le prénom doit faire ${P.PRENOM_MAX} caractères au plus.`);
@@ -91,9 +98,15 @@ export function setMemberProfile(state, id, profil) {
     if (!Number.isInteger(profil.teint) || profil.teint < 0 || profil.teint >= P.TEINTS.length) return fail('Couleur inconnue.');
     next.teint = profil.teint;
   }
+  if (profil.style !== undefined) {
+    if (!Number.isInteger(profil.style) || profil.style < 0 || profil.style >= P.STYLES.adulte.length) return fail('Coiffure inconnue.');
+    next.style = profil.style;
+  }
   m.prenom = next.prenom;
   m.genre = next.genre;
   m.teint = next.teint;
+  if (next.style) m.style = next.style;
+  else delete m.style;
   return { ok: true, id: m.id };
 }
 
@@ -156,6 +169,8 @@ export function memberRemovalBlock(state, id) {
   if (!m) return 'Membre introuvable.';
   if (state.famille.membres.length <= C.MEMBRES_MIN) return 'Il faut au moins un membre dans la famille.';
   if (!m.enfant && adultCount(state) <= C.ADULTES_MIN) return 'Il faut au moins un adulte dans la famille.';
+  // version 1.12 : le personnage principal reste (on en choisit d'abord un autre)
+  if (state.famille.principal === id) return 'C\'est le personnage principal : choisis d\'abord un autre adulte.';
   return '';
 }
 
