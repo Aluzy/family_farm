@@ -120,6 +120,238 @@ PORTRAITS['garcon'] = [  # 👦 cheveux courts en épi, petite taille, tee-shirt
 
 EMOJI_PORTRAIT = {'femme': '\U0001F469', 'homme': '\U0001F468', 'fille': '\U0001F467', 'garcon': '\U0001F466'}
 
+# --- Version 1.12 : la planche d'avatars. Quatre coiffures par personnage (femme, homme,
+# fille, garçon), soit 8 avatars d'adultes et 8 d'enfants, chacun dans les 6 teints.
+# Coiffure 0 : le portrait ci-dessus ; 1 : roux ; 2 : frisé ; 3 : cheveux gris et lunettes
+# (adultes) ou casquette (enfants). L'emoji de l'icône : portrait + teint + ZWJ + COIFFURES[n]
+# (les composants de cheveux des emojis, 🧢 pour la casquette) ; data/general.json
+# (FAMILY.PROFIL.STYLES) en garde la liste.
+COIFFURES = {
+    'adulte': ['', '\U0001F9B0', '\U0001F9B1', '\U0001F9B3'],
+    'enfant': ['', '\U0001F9B0', '\U0001F9B1', '\U0001F9E2'],
+}
+VARIANTES = {}
+# ---------------- FEMME ----------------
+# 1 : rousse, cheveux longs, haut vert (même coupe que la base)
+# 2 : frisée, gros volume
+VARIANTES[('femme', 2)] = [
+    '..KK.KKKKKK.KK..',
+    '.KHhKHhHHhhKhhK.',
+    'KHhhhHhhhhhhHhhK',
+    'KhHhHhhhhhhhhHhK',
+    'KhhHhhSSShhhhhhK',
+    'KhHhhSSsssshhHhK',
+    'KhhhhSeSseshhhhK',
+    'KhHhhpSssszhhHhK',
+    'KhhhhsSmmszhhhhK',
+    '.KhHhkssszkhHhK.',
+    '.KhhhhkszkhhhhK.',
+    '..KKDDkzzkDDKK..',
+    '.DDccccsscCCCdD.',
+    '.DcccCCCCCCCCdD.',
+    '.DcCCCCCCCCCCdD.',
+    '.DcCCCCCCCCCCdD.',
+]
+# 3 : cheveux gris en chignon, lunettes, gilet violet
+VARIANTES[('femme', 3)] = [
+    '......KKKK......',
+    '.....KHHhhK.....',
+    '....KKHhhhKK....',
+    '...KHHhhhhhhK...',
+    '...KHhSSShhhK...',
+    '...KhSSsssshK...',
+    '...GGGGsGGGGk...',
+    '...kGeGssGeGk...',
+    '...kpSGmmGzpk...',
+    '....kSssszk.....',
+    '.....kszk.......',
+    '...DDkzzkDD.....',
+    '..DccsssccCdD...',
+    '.DccCCCCCCCCdD..',
+    '.DcCCCCCCCCCCdD.',
+    '.DcCCCCCCCCCCdD.',
+]
+# ---------------- HOMME ----------------
+# 1 : roux, sans barbe, chemise verte
+VARIANTES[('homme', 1)] = [
+    '................',
+    '....KKKKKKKK....',
+    '...KHHHhhhhhK...',
+    '...KHhhhhhhhK...',
+    '...KhSSShhhhK...',
+    '...kSSSssssSk...',
+    '...kSeSsseszk...',
+    '...kpSssssszp...',
+    '...kSSsmmszzk...',
+    '....kSssssszk...',
+    '.....kkzzkk.....',
+    '.DDDDkzzzzkDDDD.',
+    'DccccDkzzkDCCCdD',
+    'DcCCCCDkkDCCCCdD',
+    'DcCCCCCDDCCCCCdD',
+    'DcCCCCCCCCCCCddD',
+]
+# 2 : frisé, tee-shirt orange
+VARIANTES[('homme', 2)] = [
+    '...KK.KKKK.KK...',
+    '..KHhKHhhHKhhK..',
+    '..KhHhhhhhhhHK..',
+    '..KHhhhhhhhhhK..',
+    '...KhSSShhhhK...',
+    '...kSSSssssSk...',
+    '...kSeSsseszk...',
+    '...kpSssssszp...',
+    '...kSSsmmszzk...',
+    '....kSssssszk...',
+    '.....kkzzkk.....',
+    '.DDDDkzzzzkDDDD.',
+    'DccccDkzzkDCCCdD',
+    'DcCCCCDDDDCCCCdD',
+    'DcCCCCCCCCCCCCdD',
+    'DcCCCCCCCCCCCddD',
+]
+# 3 : cheveux gris, lunettes, moustache, veste marron
+VARIANTES[('homme', 3)] = [
+    '................',
+    '....KKKKKKKK....',
+    '...KHHhhhhhhK...',
+    '...KHh....hhK...',
+    '...KhSSSSSShK...',
+    '...kSSSssssSk...',
+    '...GGGGsGGGGk...',
+    '...kGeGssGeGk...',
+    '...kSGhhhhGzk...',
+    '....kSsmmszk....',
+    '.....kkzzkk.....',
+    '.DDDDkzzzzkDDDD.',
+    'DccccDkwwkDCCCdD',
+    'DcCCCCDwwDCCCCdD',
+    'DcCCCCCDDCCCCCdD',
+    'DcCCCCCCCCCCCddD',
+]
+# ---------------- FILLE ----------------
+# 1 : rousse à couettes (même dessin, autres couleurs)
+# 2 : frisée
+VARIANTES[('fille', 2)] = [
+    '................',
+    '...KK.KKKK.KK...',
+    '..KHhKHhhhKhhK..',
+    '.KHhhhhhhhhhhHK.',
+    '.KhHhhhhhhhhhhK.',
+    'KhhHhhSShhhHhhhK',
+    'KhHhhSSsssshhHhK',
+    'KhhhhSeSseshhhhK',
+    '.KhHkpSssszpkHK.',
+    '.KhhK.kSmmszkhK.',
+    '..KK...kkkkk.K..',
+    '.......kzk......',
+    '.....DDDDDDD....',
+    '....DcccCCCdD...',
+    '...DccCCCCCCdD..',
+    '...DcCCCCCCCdD..',
+]
+# 3 : casquette (Q visière, q ombre), cheveux longs dessous
+VARIANTES[('fille', 3)] = [
+    '................',
+    '................',
+    '.....QQQQQQ.....',
+    '....QqQQQQQQ....',
+    '...QQQQQQQQQQQq.',
+    '...KHhhSShhhK...',
+    '..KHhSSsssshK...',
+    '..KhhSeSseshK...',
+    '..KhhpSssszpK...',
+    '..Khh.kSmmszk...',
+    '..Khh..kkkkk....',
+    '...KK..kzk......',
+    '.....DDDDDDD....',
+    '....DcccCCCdD...',
+    '...DccCCCCCCdD..',
+    '...DcCCCCCCCdD..',
+]
+# ---------------- GARÇON ----------------
+# 1 : roux (même dessin)
+# 2 : frisé
+VARIANTES[('garcon', 2)] = [
+    '................',
+    '................',
+    '....KK.KK.KK....',
+    '...KHhKHhKhhK...',
+    '..KHhhhhhhhhHK..',
+    '..KhHhhhhhhhhK..',
+    '...KHhSShhhhK...',
+    '...kSSSssssSk...',
+    '...kSeSsseszk...',
+    '...kpSssssszp...',
+    '....kSsmmszk....',
+    '.....kkzzkk.....',
+    '....DDkzzkDD....',
+    '...DccDkkDCCD...',
+    '..DccCCCCCCCdD..',
+    '..DcCCCCCCCCdD..',
+]
+# 3 : casquette rouge
+VARIANTES[('garcon', 3)] = [
+    '................',
+    '................',
+    '.....QQQQQQ.....',
+    '....QqQQQQQQ....',
+    '...QQQQQQQQQQQq.',
+    '...KHhSShhhhK...',
+    '...kSSSssssSk...',
+    '...kSeSsseszk...',
+    '...kpSssssszp...',
+    '....kSsmmszk....',
+    '.....kkzzkk.....',
+    '......kzk.......',
+    '....DDkzzkDD....',
+    '...DccDkkDCCD...',
+    '..DccCCCCCCCdD..',
+    '..DcCCCCCCCCdD..',
+]
+
+# Une grille absente : le dessin de la coiffure 0, avec les couleurs de la coiffure.
+CHEVEUX_ROUX = {'K': '#5a1a08', 'h': '#c0481c', 'H': '#e87a3a'}
+CHEVEUX_FRISES = {'K': '#140a04', 'h': '#2e1a0e', 'H': '#4e3220'}
+CHEVEUX_GRIS = {'K': '#4a4a52', 'h': '#a4a4ac', 'H': '#dcdce4'}
+# Vêtements (et lunettes G, col w, casquette Q/q) de chaque coiffure
+HABITS_VARIANTES = {
+    ('femme', 1): {'D': '#14402a', 'c': '#7ad09a', 'C': '#3a9a5e', 'd': '#246a40'},
+    ('femme', 2): {'D': '#5a3a08', 'c': '#ffe07a', 'C': '#f0b030', 'd': '#b87a1a'},
+    ('femme', 3): {'D': '#3a1a4a', 'c': '#c89ae0', 'C': '#8a5ab0', 'd': '#5e3a80', 'G': '#2a2a30'},
+    ('homme', 1): {'D': '#1f4a22', 'c': '#8cd06a', 'C': '#4a9a3a', 'd': '#2f6e2c'},
+    ('homme', 2): {'D': '#5a2a08', 'c': '#ffb070', 'C': '#f07a30', 'd': '#b84a14'},
+    ('homme', 3): {'D': '#3a2410', 'c': '#c89a6a', 'C': '#8a5e34', 'd': '#5e3e20', 'G': '#2a2a30', 'w': '#f4f4f4'},
+    ('fille', 1): {'D': '#0e3e46', 'c': '#7ad8e0', 'C': '#2aa8b8', 'd': '#1a7480', 'r': '#f0d040', 'R': '#9a7a10'},
+    ('fille', 2): {'D': '#3a1a4a', 'c': '#e0a8f0', 'C': '#a860c8', 'd': '#743a90', 'r': '#e04a6a', 'R': '#8a1a34'},
+    ('fille', 3): {'D': '#5a2a08', 'c': '#ffe48a', 'C': '#f2c040', 'd': '#c7862a', 'Q': '#3a7ad8', 'q': '#1a4a9a'},
+    ('garcon', 1): {'D': '#5a2a08', 'c': '#ffb070', 'C': '#f07a30', 'd': '#b84a14'},
+    ('garcon', 2): {'D': '#163a5c', 'c': '#7cc0f0', 'C': '#4aa0e0', 'd': '#2a70b0'},
+    ('garcon', 3): {'D': '#1f4a22', 'c': '#8cd06a', 'C': '#4a9a3a', 'd': '#2f6e2c', 'Q': '#d83a3a', 'q': '#8a1a1a'},
+}
+
+
+def coiffure_cheveux(nom, style, t):
+    if style == 1:
+        return CHEVEUX_ROUX
+    if style == 2:
+        return CHEVEUX_FRISES
+    if style == 3 and nom in ('femme', 'homme'):
+        return CHEVEUX_GRIS
+    return CHEVEUX_FONCES[t] or CHEVEUX[nom]
+
+
+def avatar(nom, style, t):
+    if style == 0:
+        return portrait(nom, t)
+    pal = {}
+    pal.update(PEAUX[t])
+    pal.update(coiffure_cheveux(nom, style, t))
+    pal.update(HABITS[nom])
+    pal.update(HABITS_VARIANTES[(nom, style)])
+    return render(VARIANTES.get((nom, style), PORTRAITS[nom]), pal)
+
+
 # --- Visages ronds (jaune doré, contour brun) et horloges
 PALETTE = {
     'K': '#3a2414', 'Y': '#fbe38a', 'y': '#f2c040', 'o': '#c7862a', 'O': '#8a5418',
@@ -434,8 +666,10 @@ def horloge(h):
 def icons():
     out = {}
     for nom in ('femme', 'homme', 'fille', 'garcon'):
+        age = 'enfant' if nom in ('fille', 'garcon') else 'adulte'
         for t, mod in enumerate(TEINTS):
-            out[EMOJI_PORTRAIT[nom] + mod] = portrait(nom, t)
+            for style, comp in enumerate(COIFFURES[age]):
+                out[EMOJI_PORTRAIT[nom] + mod + (ZWJ + comp if comp else '')] = avatar(nom, style, t)
     out['\U0001F468' + ZWJ + '\U0001F469' + ZWJ + '\U0001F467' + ZWJ + '\U0001F466'] = famille()
     out['👋'] = render(MAIN, PEAUX[0])
     for i in range(12):

@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, holdStatus, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -8887,6 +8887,21 @@ test('version 1.12 : migration v28 → v29 : une partie en cours est déjà inst
 test('version 1.12 : le joueur automatique part du départ v2 et termine le chapitre 1', () => {
   const rows = simulateGame('applique', 10);
   assert(rows.some((r) => r.chapitre >= 2), `chapitres : ${rows.map((r) => r.chapitre).join(',')}`);
+});
+
+test('version 1.12 : planche d\'avatars : 4 coiffures par âge, choisies dans la fiche du membre', () => {
+  const P = DATA.FAMILY.PROFIL;
+  assertEqual([P.STYLES.adulte.length, P.STYLES.enfant.length, P.STYLE_NOMS.adulte, P.STYLE_NOMS.enfant], [4, 4, ['Classique', 'Roux', 'Frisé', 'Cheveux gris'], ['Classique', 'Roux', 'Frisé', 'Casquette']]);
+  assertEqual(portraitEmoji(false, 'f', 0), '👩', 'coiffure 0 : le portrait d\'avant');
+  assertEqual(portraitEmoji(false, 'f', 3, 1), '👩🏽‍🦰');
+  assertEqual(portraitEmoji(true, 'm', 0, 3), '👦‍🧢');
+  const s = createInitialState(1);
+  assertEqual(memberStyle(findMember(s, 'adulte-1')), 0);
+  assert(setMemberProfile(s, 'adulte-1', { style: 2 }).ok);
+  assertEqual([findMember(s, 'adulte-1').style, memberPortrait(s, 'adulte-1')], [2, '👩‍🦱']);
+  assertEqual(setMemberProfile(s, 'adulte-1', { style: 4 }).error, 'Coiffure inconnue.');
+  assert(setMemberProfile(s, 'adulte-1', { style: 0 }).ok);
+  assertEqual('style' in findMember(s, 'adulte-1'), false, 'la coiffure 0 n\'est pas écrite');
 });
 
 export const results = runTests();

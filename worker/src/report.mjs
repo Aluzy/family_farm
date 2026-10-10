@@ -92,7 +92,7 @@ export const INTERFACE_ACTIONS = new Set([
   'stage-goto', 'stage-pan', 'aller', 'comptoir-tab', 'inv-tab',
   'mill-dec', 'mill-inc', 'mill-max', 'buy-dec', 'buy-inc', 'buy-max',
   'animal-dec', 'animal-inc', 'animal-max',
-  'member-edit', 'member-genre', 'member-teint', 'wake-more',
+  'member-edit', 'member-genre', 'member-teint', 'member-style', 'wake-more',
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
   'mail-open', // version 1.3 : ouvrir une lettre du courrier
   'stage-exit', // intérieur de la Serre : en sortir

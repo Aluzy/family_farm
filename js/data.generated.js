@@ -33,7 +33,9 @@ export const RAW_DATA = {
       "PRENOM_MAX": 12,
       "GENRES": ["f", "m"],
       "TEINTS": ["", "🏻", "🏼", "🏽", "🏾", "🏿"],
-      "PORTRAITS": { "adulte": { "f": "👩", "m": "👨" }, "enfant": { "f": "👧", "m": "👦" } }
+      "PORTRAITS": { "adulte": { "f": "👩", "m": "👨" }, "enfant": { "f": "👧", "m": "👦" } },
+      "STYLES": { "adulte": ["", "🦰", "🦱", "🦳"], "enfant": ["", "🦰", "🦱", "🧢"] },
+      "STYLE_NOMS": { "adulte": ["Classique", "Roux", "Frisé", "Cheveux gris"], "enfant": ["Classique", "Roux", "Frisé", "Casquette"] }
     },
     "AJ": { "adulte": 50, "enfant": 25 },
     "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },
