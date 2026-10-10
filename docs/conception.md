@@ -22,6 +22,10 @@
 > - **Récolte du verger** (nœud `cu_verger_auto`, Culture palier 4, 2 PT, 800 💰) : les arbres
 >   en fruits sont cueillis la nuit, à moitié de l'XP, sans énergie ; le réveil les compte
 >   dans « Fruits du verger ». L'arbre compte désormais 34 nœuds et 52 PT.
+> - **Terre des zones (double grille)** : les tuiles de terre se posent sur une grille décalée
+>   d'une demi-case, chacune centrée sur un coin commun à quatre cases (`ZONE_TILES`). Une case
+>   labourée reste dans sa case : deux terres séparées par une case d'herbe, ou en diagonale,
+>   ne se rejoignent plus par un pont de terre.
 > - **Sauvegarde (format 30)** : chaque arbre reçoit sa case, `fruits: false` et `prochaine`
 >   tirée de l'ancien calendrier (MATURITÉ-ième nuit puis toutes les 3 nuits).
 >
