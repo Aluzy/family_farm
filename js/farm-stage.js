@@ -35,6 +35,22 @@
   const T = 16;
   // Version 1.6 : plus de saisons, une seule carte (celle du printemps).
   const MAP = { key: 'map_sp', json: 'carte_printemps.json', tiles: 'tiles_sp', image: 'farm_spring_summer.png' };
+
+  // Version 1.9 (la houe) : tuiles du jeu de tuiles pour les zones de culture. Toute la
+  // zone (et la rangée de cases qui l'entoure) est d'abord de l'herbe foncée ; une case
+  // labourée devient de la terre, et les cases d'herbe qui la touchent (côtés et
+  // diagonales) prennent une tuile « mi-herbe mi-terre ». Le choix se fait par les quatre
+  // coins de la case d'herbe : un coin est de la terre si une des trois autres cases qui
+  // le partagent est labourée. Bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche, 1 bas-droite.
+  const ZONE_TILES = {
+    herbe: 2415, terre: 1167,
+    coins: {
+      0: 2415, 1: 1612, 2: 1614, 3: 1613, 4: 1762, 5: 1687, 6: 1688, 7: 1539,
+      8: 1764, 9: 1688, 10: 1689, 11: 1537, 12: 1763, 13: 1389, 14: 1387, 15: 1688,
+    },
+    // bordures dessinées par la carte autour de la terre d'origine : retirées des zones
+    bordures: new Set([1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764]),
+  };
   // Les images des bâtiments et des arbres du pack portent un suffixe de saison : seul
   // celui du printemps (« sp ») est chargé et utilisé.
   const SFX = 'sp';
@@ -398,6 +414,8 @@
           const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
           if (!set) console.warn('[FarmStage] jeu de tuiles ' + MAP.image + ' introuvable dans la carte (est-il intégré ?)');
         }
+        this.zoneOver = this.zoneGround(null);   // version 1.9 : les zones commencent en herbe
+        this.zoneKey = '';
         this.textures.createCanvas('ground', this.world.w, this.world.h);
         this.paintGround();
       }
@@ -548,13 +566,94 @@
 
       // Une tuile animée est dessinée dans le fond avec sa première image, comme dans Tiled
       // à l'arrêt : c'est ce qui reste visible quand les animations sont réduites.
-      drawLayer(ctx, raw, layer, set, img) {
+      // Version 1.9 : cases (index dans la carte) des deux zones et de leur rangée de bord,
+      // calées sur les rectangles zone_culture_1 / zone_culture_2. `terre` : pour chaque zone
+      // (1, 2), les numéros de case labourés. Renvoie la table index -> tuile de sol.
+      zoneGround(terre) {
+        const raw = this.mapRaw;
+        if (!raw) return null;
+        const W = raw.width, H = raw.height;
+        const over = new Map();
+        const zones = [[1, this.objects.zone_culture], [2, this.objects.zone_culture_2]];
+        for (const [id, o] of zones) {
+          if (!o) continue;
+          const c0 = Math.round(o.x / T), r0 = Math.round(o.y / T);
+          const cols = Math.max(1, Math.round(o.width / T)), rows = Math.max(1, Math.round(o.height / T));
+          const set = terre && terre[id] ? terre[id] : new Set();
+          const dirt = (c, r) => c >= 0 && c < cols && r >= 0 && r < rows && set.has(r * cols + c);
+          for (let r = -1; r <= rows; r++) {
+            for (let c = -1; c <= cols; c++) {
+              const mc = c0 + c, mr = r0 + r;
+              if (mc < 0 || mr < 0 || mc >= W || mr >= H) continue;
+              let gid;
+              if (dirt(c, r)) gid = ZONE_TILES.terre;
+              else {
+                const m = ((dirt(c - 1, r - 1) || dirt(c, r - 1) || dirt(c - 1, r)) ? 8 : 0)
+                  | ((dirt(c, r - 1) || dirt(c + 1, r - 1) || dirt(c + 1, r)) ? 4 : 0)
+                  | ((dirt(c - 1, r) || dirt(c - 1, r + 1) || dirt(c, r + 1)) ? 2 : 0)
+                  | ((dirt(c + 1, r) || dirt(c, r + 1) || dirt(c + 1, r + 1)) ? 1 : 0);
+                gid = ZONE_TILES.coins[m];
+              }
+              over.set(mr * W + mc, gid);
+            }
+          }
+        }
+        return over;
+      }
+
+      // Recalcule le sol des zones quand la terre change, et repeint seulement les cases dont
+      // la tuile change.
+      syncZoneGround(model) {
+        const terre = {
+          1: new Set((model.plots || []).map((p) => p.case).filter((c) => typeof c === 'number')),
+          2: new Set(model.zone2 ? (model.plots2 || []).map((p) => p.case).filter((c) => typeof c === 'number') : []),
+        };
+        const key = [...terre[1]].sort((a, b) => a - b).join() + '|' + [...terre[2]].sort((a, b) => a - b).join();
+        if (key === this.zoneKey) return;
+        this.zoneKey = key;
+        const before = this.zoneOver || new Map();
+        const after = this.zoneGround(terre);
+        if (!after) return;
+        const changed = new Set();
+        for (const [i, gid] of after) if (before.get(i) !== gid) changed.add(i);
+        this.zoneOver = after;
+        if (changed.size) this.repaintCells(changed);
+      }
+
+      repaintCells(cells) {
+        const raw = this.mapRaw;
+        if (!raw || !this.has(MAP.tiles)) return;
+        const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
+        if (!set) return;
+        const tex = this.textures.get('ground');
+        const ctx = tex.getContext();
+        const img = this.textures.get(MAP.tiles).getSourceImage();
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = '#699654';
+        for (const i of cells) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
+        for (const layer of raw.layers) {
+          if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, set, img, cells);
+        }
+        tex.refresh();
+      }
+
+      // `only` : seulement ces cases (repeinture partielle). Sur la carte de la ferme, les
+      // cases des zones de culture suivent zoneOver (voir zoneGround).
+      drawLayer(ctx, raw, layer, set, img, only) {
         const tw = raw.tilewidth, th = raw.tileheight;
         const cols = set.columns || Math.floor(img.width / tw);
         const last = set.firstgid + (set.tilecount || cols * Math.floor(img.height / th));
         const anims = this.tileFrames(set);
+        const over = raw === this.mapRaw && this.zoneOver ? this.zoneOver : null;
+        const sol = layer === raw.layers.find((l) => l.type === 'tilelayer');
         ctx.globalAlpha = layer.opacity == null ? 1 : layer.opacity;
-        layer.data.forEach((cell, i) => {
+        layer.data.forEach((orig, i) => {
+          if (only && !only.has(i)) return;
+          let cell = orig;
+          if (over && over.has(i)) {
+            if (sol) cell = over.get(i);                                        // le sol de la zone
+            else if (ZONE_TILES.bordures.has(cell & 0x0fffffff)) return;       // l'ancienne bordure
+          }
           const gid = cell & 0x0fffffff;                   // les bits de poids fort sont des retournements
           if (!gid || gid < set.firstgid || gid >= last) return; // 0 = case vide, ou tuile d'une autre planche
           const a = anims.get(gid - set.firstgid);
@@ -836,9 +935,9 @@
       place(id) {
         if (id === 'zone' || id === 'zone2') {
           const g = id === 'zone' ? this.grid : this.grid2;
-          const plots = lastModel ? (id === 'zone' ? lastModel.plots : lastModel.plots2) || [] : [];
-          if (id === 'zone2' && !plots.length) return null;
-          const rows = Math.ceil(plots.length / g.cols);
+          if (id === 'zone2' && !(lastModel && lastModel.zone2)) return null;
+          const cases = lastModel ? (id === 'zone' ? lastModel.cases : lastModel.cases2) || 0 : 0;
+          const rows = Math.max(1, Math.ceil(cases / g.cols));
           return { x: g.x + (g.cols * T) / 2, y: g.y + (rows * T) / 2 };
         }
         const e = this.buildings.get(id);
@@ -919,7 +1018,7 @@
       // Lieu désigné par un résultat de hitAt() : une parcelle désigne sa zone ('zone' ou 'zone2').
       placeOf(hit) {
         if (!hit) return null;
-        return hit.plot ? hit.place : hit.window || null;
+        return hit.plot || hit.hoe ? hit.place : hit.window || null;
       }
 
       placeAt(wx, wy) { return this.placeOf(this.hitAt(wx, wy)); }
@@ -1005,18 +1104,26 @@
       // ouverte par une parcelle où il n'y a rien à faire.
       zones(model) {
         const m = model || lastModel;
-        const grid = (id, g, plots) => ({
-          id, place: id, window: id, plots,
+        // Version 1.9 : chaque parcelle a sa case (p.case) dans une grille fixe de `cases`
+        // cases ; une case sans parcelle est de l'herbe, que la houe peut labourer.
+        const grid = (id, g, plots, zone, cases) => ({
+          id, place: id, window: id, plots, zone, cases,
+          slot: (p, i) => (typeof p.case === 'number' ? p.case : i),
           pos: (i) => ({ x: g.x + (i % g.cols) * T, y: g.y + Math.floor(i / g.cols) * T }),
           at: (wx, wy) => {
             const col = Math.floor((wx - g.x) / T), row = Math.floor((wy - g.y) / T);
-            return col >= 0 && col < g.cols && row >= 0 ? row * g.cols + col : -1;
+            const i = col >= 0 && col < g.cols && row >= 0 ? row * g.cols + col : -1;
+            return i < cases ? i : -1;
           },
         });
-        const list = [grid('zone', this.grid, m ? m.plots : []), grid('zone2', this.grid2, m ? m.plots2 || [] : [])];
+        const list = [
+          grid('zone', this.grid, m ? m.plots : [], 1, m ? m.cases || 0 : 0),
+          grid('zone2', this.grid2, m ? m.plots2 || [] : [], 2, m && m.zone2 ? m.cases2 || 0 : 0),
+        ];
         for (const r of Object.values(this.rooms)) {
           list.push({
             id: 'interieur-' + r.id, place: null, window: r.def.window, plots: m ? m[r.def.plots] || [] : [],
+            slot: (p, i) => i,
             pos: (i) => r.slots[i] || null,
             at: (wx, wy) => {
               const i = r.slotAt.get(Math.floor(wx / T) * T + ',' + Math.floor(wy / T) * T);
@@ -1030,9 +1137,13 @@
       // Ce qui se trouve sous un point de la carte : une parcelle (exactement sa tuile),
       // sinon une étiquette, sinon le bâtiment ou l'arbre le plus en avant.
       hitAt(wx, wy) {
+        const hoeing = !!(lastModel && lastModel.houe);
         for (const z of this.zones()) {
           const i = z.at(wx, wy);
-          const p = i >= 0 ? z.plots[i] : null;
+          if (i < 0) continue;
+          const p = z.plots.find((q, k) => z.slot(q, k) === i) || null;
+          // version 1.9 : en mode houe, une case de zone (herbe ou terre) se laboure ou se rebouche
+          if (hoeing && z.zone) return { hoe: { zone: z.zone, case: i }, place: z.place };
           if (p) return { plot: p, place: z.place, open: z.window };
         }
         if (this.room) return null;                  // dans un intérieur : rien d'autre à toucher
@@ -1060,6 +1171,7 @@
         const hit = this.hitAt(wx, wy);
         if (!hit) return;
         if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
+        if (hit.hoe) { bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         const p = hit.plot;
         if (!p.culture) bridge.act('plant-open', { id: p.id });
         else if (p.mature) bridge.act('harvest', { id: p.id });
@@ -1103,7 +1215,7 @@
         const seen = new Set();
         for (const z of this.zones(model)) {
           z.plots.forEach((p, i) => {
-            const at = z.pos(i);
+            const at = z.pos(z.slot(p, i));
             if (!at) return;                         // plus de parcelles que d'emplacements
             seen.add(p.id);
             const x = at.x + T / 2, y = at.y + T / 2;
@@ -1118,9 +1230,11 @@
           // Étiquette de la zone : calée à gauche sur les parcelles, au-dessus de la barrière.
           if (z.place) { const o = z.pos(0); this.syncLabel(z.id, info(z.id), z.id, o.x, o.y - ZONE_LABEL_UP, 'gauche'); }
         }
+        this.syncHoeGrid(model);
         for (const [id, e] of this.plots) {
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
         }
+        this.syncZoneGround(model);
         this.syncTrees(model.arbres || [], sfx, rebuild);
         this.syncRooms(model, force);
         // L'ambiance reçoit l'heure et les images des arbres (jamais le modèle) : elle
@@ -1252,6 +1366,27 @@
           e.tween = this.tweens.add({ targets: e.crop, angle: { from: -4, to: 4 }, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
         }
         if (e.crop && !p.mature && e.tween) { e.tween.stop(); e.tween = null; e.crop.setAngle(0); }
+      }
+
+      // Version 1.9 : en mode houe, le contour de chaque case des zones (herbe comprise) est
+      // tracé, pour voir où la houe peut labourer.
+      syncHoeGrid(model) {
+        const on = !!model.houe && !this.room;
+        const key = on ? [model.cases, model.zone2 ? model.cases2 : 0, this.grid.cols, this.grid2.cols].join() : '';
+        if (key === this.hoeKey) return;
+        this.hoeKey = key;
+        if (!this.hoeGrid) this.hoeGrid = this.add.graphics().setDepth(1.95);
+        const g = this.hoeGrid;
+        g.clear();
+        if (!on) return;
+        g.lineStyle(1, 0xfff3c4, 0.7);
+        for (const z of this.zones(model)) {
+          if (!z.zone) continue;
+          for (let i = 0; i < z.cases; i++) {
+            const o = z.pos(i);
+            g.strokeRect(o.x + 0.5, o.y + 0.5, T - 1, T - 1);
+          }
+        }
       }
 
       destroyPlot(e) {

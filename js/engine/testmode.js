@@ -3,7 +3,7 @@ import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './dev
 import { awakeRequired } from './clock.js';
 import { addItem, spoil } from './inventory.js';
 import { openFridge } from './fridge.js';
-import { allPlots, makePlot, maxStage, openSerre, seedItem } from './crops.js';
+import { allPlots, makePlot, makeZone2Plot, maxStage, openSerre, seedItem, zone2Plots, zoneGrid } from './crops.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { openVerger } from './orchard.js';
 import { openStation } from './kitchen.js';
@@ -23,11 +23,26 @@ export function testAddPieces(state, amount) {
 // Lot 7 : met un bâtiment au niveau 5 (potager, poulailler, silo), sans
 // payer : le bâtiment est construit s'il ne l'était pas et ses parcelles ou sa
 // capacité suivent le niveau.
+// Version 1.9 : toutes les cases d'une zone en terre (sans plafond, énergie ni XP), avec la houe.
+export function testHoeAll(state, zone = 1) {
+  state.potager.houe = true;
+  const list = zone === 2 ? zone2Plots(state).slice() : state.potager.parcelles;
+  let n = list.reduce((m, p) => Math.max(m, Number((/-(\d+)$/.exec(p.id) || [0, 0])[1])), 0);
+  for (let c = 0; c < zoneGrid(zone).cases; c++) {
+    if (list.some((p) => p.case === c)) continue;
+    n += 1;
+    list.push({ ...(zone === 2 ? makeZone2Plot(n) : makePlot(n)), case: c });
+  }
+  list.sort((a, b) => a.case - b.case);
+  if (zone === 2) state.potager.zone2 = list;
+  return { ok: true };
+}
+
 export function testSetBuildingLevel5(state, id) {
   const niveau = DATA.LEVEL_MAX;
   if (id === 'potager') {
-    state.potager.niveau = niveau;
-    for (let n = state.potager.parcelles.length + 1; n <= DATA.POTAGER.PARCELLES[niveau - 1]; n++) state.potager.parcelles.push(makePlot(n));
+    // version 1.9 : toute la Zone de culture en terre (au-delà du plafond), avec la houe
+    testHoeAll(state, 1);
   } else if (id === 'poulailler' || id === 'silo') {
     state[id].construit = true;
     state[id].niveau = niveau;

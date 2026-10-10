@@ -55,7 +55,7 @@
       "batterie": { "type": "niveau", "nom": "Batterie", "icone": "🔋" },
       "pompe": { "type": "niveau", "nom": "Pompe", "icone": "⛲" },
       "reservoir": { "type": "niveau", "nom": "Réservoir", "icone": "💧" },
-      "potager": { "type": "niveau", "nom": "Zone de culture", "icone": "🌱", "note": "arrosage et récolte automatiques" },
+      "potager": { "type": "tuiles", "nom": "Zone de culture", "icone": "🌱", "note": "arrosage et récolte automatiques" },
       "poulailler": { "type": "niveau", "nom": "Poulailler", "icone": "🐔", "note": "nourrissage automatique" },
       "silo": { "type": "niveau", "nom": "Silo", "icone": "🛖" },
       "stations": { "type": "stations", "nom": "Ateliers", "icone": "🍞" }
@@ -168,7 +168,7 @@
         "fonction": "automatisation",
         "pt": 2,
         "cout": 900,
-        "requiert": [{ "noeud": "ea_econome" }, { "batiment": "pompe", "niveau": 3 }, { "batiment": "potager", "niveau": 3 }],
+        "requiert": [{ "noeud": "ea_econome" }, { "batiment": "pompe", "niveau": 3 }, { "tuiles": 18 }],
         "effet": { "auto": { "arrosage": ["potager"] } },
         "description": "Chaque nuit, toutes les parcelles plantées de la Zone de culture sont arrosées automatiquement."
       },
@@ -241,7 +241,7 @@
         "fonction": "automatisation",
         "pt": 2,
         "cout": 900,
-        "requiert": [{ "noeud": "cu_outils" }, { "batiment": "potager", "niveau": 4 }],
+        "requiert": [{ "noeud": "cu_outils" }, { "tuiles": 24 }],
         "effet": { "auto": { "recolte": ["potager"] } },
         "description": "Chaque nuit, les parcelles mûres de la Zone de culture sont récoltées automatiquement (celles montées en graine comprises, graines à la clé)."
       },

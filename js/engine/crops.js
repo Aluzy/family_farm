@@ -5,7 +5,7 @@ import { addItem, countItem, takeItem } from './inventory.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, isUnlocked } from './campaign.js';
-import { gainActionXp } from './levels.js';
+import { gainActionXp, levelReached } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
@@ -40,25 +40,127 @@ export function makeZone2Plot(n) {
   return { ...makePlot(n), id: `${DATA.POTAGER.ZONE2.ID}-${n}`, zone: 2 };
 }
 
+/* ---------- version 1.9 (v2, lot 5) : la houe ---------- */
+
+// Chaque zone est une grille fixe de cases (DATA.POTAGER.CASES sur COLONNES, le Champ :
+// ZONE2.CASES sur ZONE2.COLONNES). Une case est de l'herbe, ou de la terre : une
+// parcelle, qui porte son numéro de case (`case`). Les parcelles d'une zone sont
+// rangées par case.
+export function zoneGrid(zone) {
+  const Z = zone === 2 ? DATA.POTAGER.ZONE2 : DATA.POTAGER;
+  return { cols: Z.COLONNES, cases: Z.CASES };
+}
+
+function zoneList(state, zone) {
+  return zone === 2 ? zone2Plots(state) : state.potager.parcelles;
+}
+
+// Parcelle (terre) d'une case, ou null (herbe).
+export function plotAtCase(state, zone, kase) {
+  return zoneList(state, zone).find((p) => p.case === kase) || null;
+}
+
+// Parcelles de départ d'une partie neuve : les cases DEPART, « potager-1 » à « potager-n ».
+export function startPlots() {
+  return DATA.POTAGER.DEPART.map((c, i) => ({ ...makePlot(i + 1), case: c }));
+}
+
+// Tuiles de terre de la ferme (Zone de culture et Champ) et plafond du niveau.
+export function soilCount(state) {
+  return state.potager ? state.potager.parcelles.length + zone2Plots(state).length : 0;
+}
+
+export function soilCap(state) {
+  const T = DATA.NIVEAUX.TUILES;
+  return T[Math.min(T.length, Math.max(1, levelReached(state))) - 1];
+}
+
+// Tuiles de plus au niveau suivant (0 au dernier niveau ou si rien ne change).
+export function soilCapNext(state) {
+  const T = DATA.NIVEAUX.TUILES;
+  const n = Math.max(1, levelReached(state));
+  return n >= T.length ? 0 : Math.max(0, T[n] - T[n - 1]);
+}
+
+export function hasHoe(state) {
+  return !!(state.potager && state.potager.houe);
+}
+
+// Achat de la houe au Marché (une seule fois).
+export function buyHoe(state) {
+  if (hasHoe(state)) return fail('Tu as déjà une houe.');
+  const cost = DATA.HOUE.PRIX;
+  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  spend(state, cost);
+  state.potager.houe = true;
+  return { ok: true, cost };
+}
+
+// Le Champ est-il ouvert (le Moulin débloqué et construit) ?
+export function zone2Open(state) {
+  const Z = DATA.POTAGER.ZONE2;
+  const st = state.stations && state.stations[Z.DEBLOCAGE];
+  return !!(state.potager && isUnlocked(state, Z.DEBLOCAGE) && st && st.construit) || zone2Plots(state).length > 0;
+}
+
+// Ce que fait la houe sur une case : { action: 'labourer' | 'reboucher' | null, ok, raison }.
+export function hoeStatus(state, zone, kase) {
+  const g = zoneGrid(zone);
+  if (!Number.isInteger(kase) || kase < 0 || kase >= g.cases) return { action: null, ok: false, raison: 'Case inconnue.' };
+  if (zone === 2 && !zone2Open(state)) return { action: null, ok: false, raison: `Le ${DATA.POTAGER.ZONE2.NOM} s'ouvre avec le Moulin.` };
+  if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).` };
+  const p = plotAtCase(state, zone, kase);
+  if (p) {
+    if (p.culture) return { action: null, ok: false, raison: 'Terre plantée : récolte d\'abord.' };
+    return { action: 'reboucher', ok: true, raison: '' };
+  }
+  const cap = soilCap(state);
+  if (soilCount(state) >= cap) {
+    const plus = soilCapNext(state);
+    return { action: 'labourer', ok: false, raison: `Plafond atteint : ${cap} tuiles au niveau ${levelReached(state)}.${plus ? ` Niveau suivant : +${plus} tuiles.` : ''}` };
+  }
+  if (!canAfford(state, 'labourer')) return { action: 'labourer', ok: false, raison: TIRED };
+  return { action: 'labourer', ok: true, raison: '' };
+}
+
+// Numéro libre pour l'identifiant d'une nouvelle parcelle (« potager-n », « zone2-n »).
+function nextPlotNumber(list) {
+  let n = 0;
+  for (const p of list) {
+    const m = /-(\d+)$/.exec(p.id);
+    if (m) n = Math.max(n, Number(m[1]));
+  }
+  return n + 1;
+}
+
+// Un clic avec la houe : laboure une case d'herbe (énergie, XP) ou rebouche une terre
+// vide (gratuit). Renvoie { ok, action, plot }.
+export function hoe(state, zone, kase) {
+  const st = hoeStatus(state, zone, kase);
+  if (!st.ok) return fail(st.raison);
+  const list = zoneList(state, zone);
+  if (st.action === 'reboucher') {
+    const i = list.findIndex((p) => p.case === kase);
+    const [plot] = list.splice(i, 1);
+    return { ok: true, action: 'reboucher', plot };
+  }
+  const n = nextPlotNumber(list);
+  const plot = zone === 2 ? { ...makeZone2Plot(n), case: kase } : { ...makePlot(n), case: kase };
+  list.push(plot);
+  list.sort((a, b) => a.case - b.case);
+  if (zone === 2) state.potager.zone2 = list;
+  spendEnergy(state, 'labourer');
+  gainActionXp(state, 'labourer');
+  return { ok: true, action: 'labourer', plot };
+}
+
 // Zone d'une parcelle de la Zone de culture : 1 (la zone du départ) ou 2 (le Champ).
 export function plotZone(plot) {
   return plot.zone === 2 ? 2 : 1;
 }
 
-// Le Champ s'ouvre en entier, sans rien payer, quand le Moulin
-// (DATA.POTAGER.ZONE2.DEBLOCAGE) est construit (version 1.7 ; avant : dès qu'il était
-// débloqué). Appelée à chaque passage de updateChapters() : une partie déjà plus loin
-// le reçoit au premier pas de jeu. Renvoie true s'il vient de s'ouvrir.
-export function openZone2(state) {
-  const Z = DATA.POTAGER.ZONE2;
-  const st = state.stations && state.stations[Z.DEBLOCAGE];
-  if (!state.potager || !isUnlocked(state, Z.DEBLOCAGE) || !(st && st.construit)) return false;
-  if (zone2Plots(state).length >= Z.PARCELLES) return false;
-  const plots = zone2Plots(state).slice();
-  for (let n = plots.length + 1; n <= Z.PARCELLES; n++) plots.push(makeZone2Plot(n));
-  state.potager.zone2 = plots;
-  return true;
-}
+// Version 1.9 : le Champ s'ouvre avec le Moulin (zone2Open) en cases d'herbe, que la
+// houe laboure ; il ne crée plus ses 64 parcelles d'un coup.
 
 export function findPlot(state, id) {
   return allPlots(state).find((p) => p.id === id) || null;
@@ -253,21 +355,6 @@ export function growAll(state) {
     if (p.arrose && p.stade < maxStage(p)) p.stade += 1;
     p.arrose = false;
   }
-}
-
-export function potagerUpgradeCost(state) {
-  return state.potager.niveau >= DATA.LEVEL_MAX ? null : DATA.POTAGER.COUT[state.potager.niveau];
-}
-
-export function upgradePotager(state) {
-  const cost = potagerUpgradeCost(state);
-  if (cost === null) return fail('Niveau maximum atteint.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
-  state.potager.niveau += 1;
-  const target = DATA.POTAGER.PARCELLES[state.potager.niveau - 1];
-  for (let n = state.potager.parcelles.length + 1; n <= target; n++) state.potager.parcelles.push(makePlot(n));
-  return { ok: true, cost };
 }
 
 /* ---------- Lot 8 : Serre ---------- */

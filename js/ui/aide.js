@@ -51,10 +51,6 @@ function stationRecipesLine(id) {
     .join(' ; ');
 }
 
-function levelsNote(parcelles, nom) {
-  return `Parcelles par niveau : ${listNum(parcelles, '')}. L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture) ; ils travaillent la nuit, à 100 %.`;
-}
-
 // Coûts des niveaux 2 à 5 d'un appareil : « 150 · 400 · 900 · 2 000 💰 ».
 function levelCosts(type) {
   return listNum(DATA.UPGRADE_COST[type].slice(1), '💰');
@@ -95,7 +91,7 @@ const HELP = {
     role: `Planter, arroser, récolter : toutes les cultures poussent ici, sur n'importe quelle parcelle. Une plante arrosée gagne un stade chaque nuit ; sans eau, elle attend. La parcelle se libère après la récolte. Chaque culture arrive à son niveau (⭐ dans le bandeau). Le blé nourrit les poules et donne la farine ; il ne se plante qu'une fois le Silo construit. Le tournesol donne l'huile, le riz et le houblon servent en cuisine.`,
     conso: `Eau par arrosage : ${cropsLine('potager', 'eau')}.`,
     prod: `${cropsLine('potager', 'recolte')}.`,
-    note: `${levelsNote(DATA.POTAGER.PARCELLES, 'la Zone de culture')} Le ${DATA.POTAGER.ZONE2.NOM}, une deuxième zone de ${DATA.POTAGER.ZONE2.PARCELLES} parcelles aux mêmes règles, s'ouvre avec le Moulin (niveau ${unlockLevel(DATA.POTAGER.ZONE2.DEBLOCAGE)}) : de quoi cultiver beaucoup de blé.`,
+    note: `La zone est une grille de ${DATA.POTAGER.CASES} cases : de l'herbe, que la houe (Marché, ${DATA.HOUE.PRIX} 💰) change en terre, ${DATA.PERSONNAGE.COUTS.labourer} d'énergie la case ; une terre vide se rebouche gratuitement. Le nombre de tuiles de terre est plafonné par le niveau (${DATA.NIVEAUX.TUILES.filter((x, i, a) => a.indexOf(x) === i).join(' / ')}). Le ${DATA.POTAGER.ZONE2.NOM}, une deuxième zone de ${DATA.POTAGER.ZONE2.CASES} cases aux mêmes règles et sous le même plafond, s'ouvre avec le Moulin (niveau ${unlockLevel(DATA.POTAGER.ZONE2.DEBLOCAGE)}) : de quoi cultiver beaucoup de blé. L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture) ; ils travaillent la nuit, à 100 %.`,
   }),
   serre: () => ({
     nom: 'Serre',

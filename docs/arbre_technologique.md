@@ -55,6 +55,7 @@ Types acceptés (le moteur gère déjà les deux premiers, en ET) :
 | Type | Forme | Exemple |
 |---|---|---|
 | Nœud | `{ noeud }` | Réseau d'irrigation |
+| Tuiles de terre (version 1.9) | `{ tuiles }` | 18 tuiles de terre (Zone de culture et Champ) |
 | Niveau de bâtiment | `{ batiment, niveau }` | Pompe niv. 3 |
 | Construit | `{ construit }` | Serre, Pâturage, Four, Réfrigérateur |
 | Niveau d'un appareil | `{ batiment, niveau }` (version 1.6 : plus de parc) | batterie niveau 2 |
@@ -176,7 +177,7 @@ flowchart LR
 |---|---|---|---|---|---|---|
 | 1 | `ea_econome` | 💧 Arrosage économe | Productivité | 1 PT + 150 💰 | Pompe niv. 2 | Chaque arrosage consomme 15 % d'eau en moins. |
 | 2 | `ea_pluie` | 🌧️ Récupérateur d'eau de pluie | Déblocage | 1 PT + 250 💰 | Arrosage économe | Chaque nuit, 15 L d'eau de pluie s'ajoutent au réservoir sans électricité. |
-| 3 | `ea_irrigation` | 🚿 Réseau d'irrigation | Automatisation | 2 PT + 900 💰 | Arrosage économe + Pompe niv. 3 + Potager niv. 3 | Chaque nuit, toutes les parcelles plantées du Potager et du Champ sont arrosées automatiquement. |
+| 3 | `ea_irrigation` | 🚿 Réseau d'irrigation | Automatisation | 2 PT + 900 💰 | Arrosage économe + Pompe niv. 3 + 18 tuiles de terre (version 1.9 ; avant : Potager niv. 3) | Chaque nuit, toutes les parcelles plantées du Potager et du Champ sont arrosées automatiquement. |
 | 3 | `ea_pompe_eco` | ⛲ Pompe à haut rendement | Productivité | 1 PT + 500 💰 | Arrosage économe + Entretien préventif | La pompe consomme 25 % d'électricité en moins par litre. |
 | 4 | `ea_serre` | 🏡 Irrigation de la Serre | Automatisation | 2 PT + 600 💰 | Réseau d'irrigation + Serre construit | Chaque nuit, les parcelles plantées de la Serre sont arrosées automatiquement. |
 | 5 | `ea_gestion` | 📟 Gestion intelligente de l'eau | Automatisation | 3 PT + 1 500 💰 | Irrigation de la Serre + Délestage intelligent | Quand l'eau manque, l'arrosage automatique sert d'abord les plantes les plus proches de la récolte. Chaque arrosage consomme encore 10 % d'eau en moins. |
@@ -187,7 +188,7 @@ flowchart LR
 |---|---|---|---|---|---|---|
 | 1 | `cu_outils` | 🧰 Outils de jardin | Temps | 1 PT + 100 💰 | — | Ajoute « Arroser tout » et « Récolter tout » au Potager, au Champ et à la Serre. |
 | 2 | `cu_semences` | 🌰 Sélection des semences | Productivité | 1 PT + 200 💰 | — | Les cultures qui rendent des graines en donnent une de plus, et une carotte montée en graine en donne 8 au lieu de 6. |
-| 3 | `cu_recolte_auto` | 🧺 Récolte automatique | Automatisation | 2 PT + 900 💰 | Outils de jardin + Potager niv. 4 | Chaque nuit, les parcelles mûres du Potager et du Champ sont récoltées automatiquement (celles montées en graine comprises, graines à la clé). |
+| 3 | `cu_recolte_auto` | 🧺 Récolte automatique | Automatisation | 2 PT + 900 💰 | Outils de jardin + 24 tuiles de terre (version 1.9 ; avant : Potager niv. 4) | Chaque nuit, les parcelles mûres du Potager et du Champ sont récoltées automatiquement (celles montées en graine comprises, graines à la clé). |
 | 4 | `semis_auto` | 🌾 Semis automatique | Automatisation | 2 PT + 1 200 💰 | Récolte automatique + Réseau d'irrigation | Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle. Pour que les carottes, qui ne rendent pas de graines, ne manquent jamais de semences, le jeu laisse monter en graine le nombre de carottes mûres nécessaire pour couvrir toutes les parcelles à replanter ; une parcelle qui n'a pas sa graine attend, mûre. |
 | 5 | `cu_serre_auto` | 🌿 Serre autonome | Automatisation | 3 PT + 1 500 💰 | Semis automatique + Irrigation de la Serre | La Serre est récoltée et replantée automatiquement chaque nuit, avec les mêmes réglages que le semis automatique. |
 

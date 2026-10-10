@@ -62,7 +62,7 @@
     ],
     "PRIORITE": {
       "1": [],
-      "2": [{ "type": "potager", "niveau": 2 }],
+      "2": [{ "type": "houe" }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
       "4": [
         { "type": "station", "id": "four" },
@@ -76,11 +76,10 @@
       "//5": "le Moulin d'abord : sans lui pas de paille, donc ni laine ni lait"
     },
     "PLAN": [
-      { "type": "potager", "niveau": 2 },
+      { "type": "houe" },
       { "type": "poulailler", "niveau": 1 },
       { "type": "silo", "niveau": 1 },
       { "type": "poules", "n": 4 },
-      { "type": "potager", "niveau": 3 },
       { "type": "poulailler", "niveau": 2 },
       { "type": "poules", "n": 8 },
       { "type": "silo", "niveau": 2 },
@@ -99,7 +98,6 @@
       { "type": "tech", "id": "ea_irrigation" },
       { "type": "poulailler", "niveau": 3 },
       { "type": "tech", "id": "el_mangeoire" },
-      { "type": "potager", "niveau": 4 },
       { "type": "tech", "id": "cu_recolte_auto" },
       { "type": "tech", "id": "cui_boulangerie" },
       { "type": "tech", "id": "prepa_1" },
@@ -113,7 +111,6 @@
       { "type": "tech", "id": "semis_auto" },
       { "type": "tech", "id": "cui_laiterie" },
       { "type": "tech", "id": "el_tonte" },
-      { "type": "potager", "niveau": 5 },
       { "type": "arbres", "n": 4 },
       { "type": "moutons", "n": 6 },
       { "type": "poules", "n": 16 },

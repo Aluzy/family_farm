@@ -178,6 +178,7 @@ export function validateData(data) {
       if (req.noeud !== undefined && !techtree.noeuds[req.noeud]) err(where, `requiert le nœud « ${req.noeud} », qui n'existe pas`);
       if (req.noeud === id) err(where, 'un nœud ne peut pas se demander lui-même');
       if (req.batiment !== undefined && !techtree.batiments[req.batiment]) err(where, `requiert le bâtiment « ${req.batiment} », absent de techtree.batiments`);
+      if (req.tuiles !== undefined && !(Number.isInteger(req.tuiles) && req.tuiles > 0)) err(where, 'requiert des tuiles : un entier supérieur à 0');
     }
     for (const rid of (n.effet && n.effet.recettes) || []) {
       if (!recipes[rid]) err(where, `débloque la recette « ${rid} », qui n'existe pas`);
@@ -219,9 +220,18 @@ export function validateData(data) {
   const Z = data.POTAGER.ZONE2;
   if (!Z || typeof Z.ID !== 'string' || !Z.ID || Z.ID === data.POTAGER.LIEU) err('POTAGER.ZONE2', 'ID manquant, ou identique à POTAGER.LIEU (les identifiants des parcelles se confondraient)');
   else {
-    if (!(isInt(Z.PARCELLES) && Z.PARCELLES > 0 && isInt(Z.COLONNES) && Z.COLONNES > 0)) err('POTAGER.ZONE2', 'PARCELLES et COLONNES : deux entiers supérieurs à 0');
+    if (!(isInt(Z.CASES) && Z.CASES > 0 && isInt(Z.COLONNES) && Z.COLONNES > 0)) err('POTAGER.ZONE2', 'CASES et COLONNES : deux entiers supérieurs à 0');
     if (!elements.includes(Z.DEBLOCAGE)) err('POTAGER.ZONE2', `DEBLOCAGE « ${Z.DEBLOCAGE} » inconnu (NIVEAUX.ELEMENTS)`);
   }
+
+  /* version 1.9 : la grille de la Zone de culture et le plafond de tuiles */
+  const P = data.POTAGER;
+  if (!(isInt(P.CASES) && P.CASES > 0 && isInt(P.COLONNES) && P.COLONNES > 0)) err('POTAGER', 'CASES et COLONNES : deux entiers supérieurs à 0');
+  if (!Array.isArray(P.DEPART) || P.DEPART.some((c, i) => !isInt(c) || c < 0 || c >= P.CASES || P.DEPART.indexOf(c) !== i)) err('POTAGER.DEPART', 'des cases distinctes de la grille');
+  if (!(data.HOUE && isInt(data.HOUE.PRIX) && data.HOUE.PRIX >= 0)) err('HOUE', 'PRIX : un entier positif');
+  const TU = data.NIVEAUX.TUILES;
+  if (!Array.isArray(TU) || TU.length !== data.NIVEAUX.SEUILS.length || TU.some((x, i) => !isInt(x) || (i > 0 && x < TU[i - 1]))) err('NIVEAUX.TUILES', 'un entier par niveau, jamais en baisse');
+  else if (TU[0] < P.DEPART.length) err('NIVEAUX.TUILES', 'le premier plafond doit contenir les tuiles de départ');
 
   /* le reste : chaque objet cité ailleurs doit exister */
   for (const [id, a] of Object.entries(data.VERGER.ARBRES)) needItem(`VERGER.ARBRES.${id}.fruit`, a.fruit);

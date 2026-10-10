@@ -49,6 +49,12 @@ export function setEcranFerme(value) {
   ecranFerme = value;
   return value;
 }
+// Version 1.9 : mode houe (Zone de culture et Champ) : un appui sur une case laboure ou rebouche.
+export let hoeMode = false;
+export function setHoeMode(value) {
+  hoeMode = value;
+  return value;
+}
 export let testMode = false;
 export function setTestMode(value) {
   testMode = value;

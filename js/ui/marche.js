@@ -5,7 +5,7 @@ import { fridgeCount } from '../engine/fridge.js';
 import {
   buyItem, buyPrice, buyQuote, isBuyable, marketCoef, sellableCount, sellItem,
 } from '../engine/market.js';
-import { isGraineComptoir, seedItem } from '../engine/crops.js';
+import { hasHoe, isGraineComptoir, seedItem } from '../engine/crops.js';
 import {
   animalBuyMax, animalPrice, buyAnimals, coopCapacity, cowCapacity, cowCount, freeCowPlaces,
   freeSheepPlaces, pastureCapacity, pastureCost, sheepCount,
@@ -250,6 +250,17 @@ function seedForSale(item) {
   return !Object.keys(DATA.crops).some((c) => seedItem(c) === item && !isUnlocked(state, c));
 }
 
+// Version 1.9 : la houe, outil acheté une seule fois (en tête de l'onglet Acheter).
+function hoeShopRow() {
+  const H = DATA.HOUE;
+  const owned = hasHoe(state);
+  return `
+    <div class="card row-card">
+      <span><span aria-hidden="true">${H.ICONE}</span> <strong>${H.NOM}</strong> <span class="muted">· change l'herbe de la Zone de culture et du Champ en terre</span></span>
+      ${owned ? '<span class="chip auto">Déjà achetée</span>' : `<button type="button" class="btn" data-action="buy-hoe"${canPay(H.PRIX) ? '' : ' disabled'}>Acheter (${formatCoins(H.PRIX)} 💰)</button>`}
+    </div>`;
+}
+
 export function renderComptoir() {
   const tabs = COMPTOIR_TABS.filter((t) => t.ok());
   const tab = tabs.find((t) => t.id === comptoirTab) || tabs[0];
@@ -262,6 +273,7 @@ export function renderComptoir() {
   } else if (tab.id === 'acheter') {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine');
     body = `
+      ${hoeShopRow()}
       <p class="muted">Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'animaux') {

@@ -218,23 +218,36 @@
     "Zone de culture (section 8.3 ; version 1.0 : l'ancien Potager et l'ancien",
     "Champ réunis en une seule zone, sans restriction de lieu). L'identifiant",
     "interne reste 'potager' (state.potager, parcelles « potager-n ») ; le joueur",
-    "lit NOM. Parcelles par niveau (index 0 = niveau 1) et coût pour atteindre",
-    "chaque niveau (index 0 = niveau 1, non utilisé) : les anciens coûts du",
-    "Potager et du Champ additionnés."
+    "lit NOM.",
+    "Version 1.9 (v2, lot 5) : la zone ne s'agrandit plus en pièces. C'est une",
+    "grille fixe de CASES cases sur COLONNES colonnes (rectangle zone_culture_1 de",
+    "la carte) : de l'herbe, que la houe change en terre (une parcelle). Le nombre",
+    "de tuiles de terre (Zone de culture et Champ ensemble) est plafonné par le",
+    "niveau (NIVEAUX.TUILES). DEPART : cases déjà en terre dans une partie neuve",
+    "(les parcelles potager-1 à potager-6). PARCELLES_V1 : anciennes capacités par",
+    "niveau, lues seulement par les migrations des anciennes sauvegardes."
   ],
   "//POTAGER.ZONE2": [
     "Version 1.4 : le Champ, deuxième zone de culture (rectangle zone_culture_2",
     "de la carte). Il s'ouvre en entier, sans rien payer, avec DEBLOCAGE (le",
-    "Moulin) : PARCELLES parcelles sur COLONNES colonnes, pour cultiver beaucoup",
+    "Moulin) : CASES cases d'herbe sur COLONNES colonnes, pour cultiver beaucoup",
     "de blé (animaux, paille). Mêmes règles que la Zone de culture, dont ses",
     "parcelles portent le lieu ('potager') : mêmes cultures, mêmes règles,",
     "mêmes automatisations. Leurs identifiants sont « ID-n » et elles portent",
     "zone: 2 ; elles sont rangées dans state.potager.zone2."
   ],
   "POTAGER": {
-    "LIEU": "potager", "NOM": "Zone de culture", "ICONE": "🌱", "PARCELLES": [6, 12, 18, 24, 30], "COUT": [0, 200, 480, 1050, 2300],
-    "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "PARCELLES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
+    "LIEU": "potager", "NOM": "Zone de culture", "ICONE": "🌱", "COLONNES": 5, "CASES": 30, "DEPART": [0, 1, 2, 5, 6, 7],
+    "PARCELLES_V1": [6, 12, 18, 24, 30],
+    "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "CASES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
   },
+  "//HOUE": [
+    "Version 1.9 (v2, lot 5) : la houe, achetée une fois au Marché (PRIX). Avec elle,",
+    "un clic sur une case d'herbe la laboure (terre : une parcelle vide), un clic sur",
+    "une terre vide la rebouche (herbe, gratuit, sans XP). Coût en énergie :",
+    "PERSONNAGE.COUTS.labourer ; XP : NIVEAUX.XP.labourer."
+  ],
+  "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
   "//SERRE": [
     "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture.",
     "CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",

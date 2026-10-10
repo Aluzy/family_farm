@@ -3,6 +3,7 @@ import { EPS } from './base.js';
 import { fail, spend } from './devices.js';
 import { isAutomated } from './automation.js';
 import { chapterCount } from './campaign.js';
+import { soilCap, soilCount } from './crops.js';
 
 /* ---------- Lot 7 : arbre des technologies (v2) ---------- */
 
@@ -61,7 +62,6 @@ export function recipeTime(state, id) {
 
 // Niveau d'un bâtiment (0 s'il n'est pas construit).
 export function buildingLevel(state, id) {
-  if (id === 'potager') return state.potager.niveau;
   if (id === 'pompe') return state.pompe.niveau;
   // version 1.6 : un seul panneau, une seule batterie ; le réservoir a ses niveaux
   if (id === 'panneau') return state.panneaux[0].niveau;
@@ -96,6 +96,9 @@ export function techPrereqs(state, id) {
     if (r.batiment) {
       const b = B[r.batiment];
       list.push({ ok: buildingLevel(state, r.batiment) >= r.niveau, texte: `${b.icone} ${b.nom} niveau ${r.niveau}` });
+    } else if (r.tuiles) {
+      // version 1.9 : un nombre de tuiles de terre (à la place d'un niveau de la Zone de culture)
+      list.push({ ok: soilCount(state) >= r.tuiles, texte: `🟫 ${r.tuiles} tuiles de terre` });
     } else if (r.construit) {
       const b = B[r.construit];
       list.push({ ok: isBuilt(state, r.construit), texte: `${b.icone} ${b.nom} construit` });
@@ -181,6 +184,12 @@ export function techProgress(state, brancheId) {
     const e = { cle, nom: def.nom, icone: def.icone, type: def.type, note: def.note || null, max: DATA.LEVEL_MAX };
     if (def.type === 'niveau') {
       e.niveau = buildingLevel(state, cle);
+      e.automatise = isAutomated(state, cle);
+    } else if (def.type === 'tuiles') {
+      // version 1.9 : la Zone de culture n'a plus de niveau : ses tuiles de terre
+      // (Champ compris) sur le plafond du niveau du joueur
+      e.tuiles = soilCount(state);
+      e.max = Math.max(e.tuiles, soilCap(state));
       e.automatise = isAutomated(state, cle);
     } else {
       e.ateliers = Object.keys(DATA.STATIONS).map((id) => ({
