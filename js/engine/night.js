@@ -8,6 +8,7 @@ import { feedFamily, newNightStats } from './family.js';
 import { growAll, readyCrops } from './crops.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
 import { growOrchard } from './orchard.js';
+import { commerceNight } from './commerce.js';
 import { finishPreparations } from './kitchen.js';
 import { refreshUnlocks } from './techtree.js';
 import { autoMaintain, autoTasks, newAutoReport, rainNight } from './automation.js';
@@ -30,7 +31,7 @@ import { noteTutorialSleep } from './alerts.js';
 // de la nuit suivante. Juste avant la péremption, le blé de l'inventaire
 // rejoint le Silo s'il y a de la place (fillSilo) : au Silo, il ne périme pas.
 // Chaque étape reçoit l'état et le modifie.
-export const NIGHT_STEPS = [feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, autoMaintain, nightPower, fridgeNight, fillSilo, spoil];
+export const NIGHT_STEPS = [feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil];
 
 /* ---------- la nuit ---------- */
 
@@ -82,6 +83,8 @@ export function buildMorningReport(state) {
     // Lot 8 : fruits du verger, nuit du frigo (mWh prélevés, panne de froid, lots
     // qui ont perdu une nuit) et contenu du frigo.
     fruits: { ...(state.nuit.fruits || {}) },
+    // Version 1.14 : ce que le commerce a vendu cette nuit.
+    commerce: { type: null, n: 0, pieces: 0, ...(state.nuit.commerce || {}) },
     frigo: {
       construit: !!state.frigo.construit,
       mwh: (state.nuit.frigo || {}).mwh || 0,

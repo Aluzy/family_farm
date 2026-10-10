@@ -1161,6 +1161,22 @@ export const RAW_DATA = {
     ]
   },
   "COURRIER": {
+    "notaire_legs": {
+      "quand": { "niveau": 9 },
+      "pieces": 15000,
+      "icone": "📜",
+      "objet": "Une seconde lettre du notaire",
+      "expediteur": "Maître Durand, notaire",
+      "lieu": "Étude de Saint-Aubin",
+      "texte": [
+        "Madame, Monsieur {nom},",
+        "En rangeant les papiers de votre grand-père, j'ai retrouvé une enveloppe à votre nom, cachetée de sa main.",
+        "« Votre grand-père vous a aussi légué 15 000 pièces, faites-en bon usage ! »",
+        "Il savait, je crois, que vous remettriez la ferme debout. Les pièces vous sont versées à l'ouverture de ce courrier.",
+        "Je vous prie d'agréer mes salutations distinguées."
+      ],
+      "signature": "Maître Durand"
+    },
     "notaire_heritage": {
       "quand": { "depart": true },
       "icone": "📜",
@@ -1173,7 +1189,8 @@ export const RAW_DATA = {
         "Je dois cependant vous prévenir : rien n'y fonctionne plus. Le toit de la maison fuit, le panneau solaire et la pompe ont été vendus, et les champs sont retournés à l'herbe.",
         "Votre grand-père vous a laissé de quoi commencer. Réparez d'abord la maison ; le reste viendra.",
         "Je vous prie d'agréer mes salutations distinguées, et mes vœux de réussite."
-      ]
+      ],
+      "signature": "Maître Durand"
     },
     "cousin_venezuela": {
       "quand": { "debloque": "serre" },
@@ -1203,8 +1220,8 @@ export const RAW_DATA = {
       { "debloque": ["presse", "verger"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre"] },
       { "debloque": ["frigo"] },
-      { "debloque": [], "note": "à venir : le courrier du notaire" },
-      { "debloque": [], "note": "à venir : le choix d'un commerce" }
+      { "debloque": [], "note": "un courrier du notaire : l'héritage caché du grand-père" },
+      { "debloque": ["commerce"] }
     ],
     "ELEMENTS": {
       "silo": { "nom": "Silo", "icone": "🛖", "note": "stock de blé ; le blé ne se plante qu'une fois le Silo construit" },
@@ -1221,6 +1238,11 @@ export const RAW_DATA = {
       "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille du Moulin" },
       "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
       "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
+      "commerce": {
+        "nom": "Commerce",
+        "icone": "🏪",
+        "note": "conserverie, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production"
+      },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
     },
     "XP": {
@@ -1242,6 +1264,46 @@ export const RAW_DATA = {
     "TUILES": [6, 12, 20, 32, 48, 64, 64, 64, 64, 64],
     "CHAPITRES_XP": [200, 500, 1000, 2500, 2000, 4000, 8000],
     "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
+  },
+  "COMMERCE": {
+    "CAPACITE": [10, 20, 35, 50],
+    "COUT": [0, 3000, 8000, 20000],
+    "CHANGER": 5000,
+    "TYPES": {
+      "conserverie": {
+        "nom": "Conserverie",
+        "le": "la conserverie",
+        "icone": "🥫",
+        "produit": "conserve de légumes",
+        "produits": "conserves de légumes",
+        "prend": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard"],
+        "matiere": "légumes",
+        "par": 4,
+        "prix": 18
+      },
+      "cremerie": {
+        "nom": "Crèmerie",
+        "le": "la crèmerie",
+        "icone": "🧀",
+        "produit": "fromage",
+        "produits": "fromages",
+        "prend": ["lait"],
+        "matiere": "laits",
+        "par": 3,
+        "prix": 36
+      },
+      "tissage": {
+        "nom": "Métier à tisser",
+        "le": "le métier à tisser",
+        "icone": "🧵",
+        "produit": "tissu",
+        "produits": "tissus",
+        "prend": ["laine"],
+        "matiere": "laines",
+        "par": 2,
+        "prix": 36
+      }
+    }
   },
   "VILLE": {
     "BONHEUR": {

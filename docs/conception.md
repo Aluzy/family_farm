@@ -6,6 +6,27 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v36 (jeu 1.14) : niveaux 9 et 10** (lot 10 de la v2, `js/engine/commerce.js`,
+> `js/ui/commerce.js`, `DATA.COMMERCE` dans `data/niveaux.json`). Cette note **fait foi**.
+> - **Niveau 9** : la lettre `notaire_legs` (« Une seconde lettre du notaire ») arrive ; ses
+>   **15 000 💰** sont versés une seule fois, **à l'ouverture** de la lettre, sans XP
+>   (`quand.niveau`, `pieces` dans `COURRIER`). La première lettre du notaire reçoit aussi sa
+>   signature (elle manquait).
+> - **Niveau 10** : onglet **Maison › Commerce**. Trois commerces : Conserverie (4 légumes →
+>   1 conserve de légumes, 18 💰), Crèmerie (3 laits → 1 fromage, 36 💰), Métier à tisser
+>   (2 laines → 1 tissu, 36 💰). Le premier choix est gratuit et se confirme ; en changer
+>   coûte 5 000 💰 (le niveau du commerce reste). Chaque carte estime la vente par nuit
+>   (vaches, moutons, ou légumes en stock).
+> - **Chaque nuit**, après le repas, la production de la nuit et les préparations
+>   (`commerceNight`, avant l'entretien et le frigo), le commerce fait jusqu'à `quota`
+>   transformations avec l'inventaire (pas le frigo), en prenant les lots qui périment le
+>   plus tôt, et vend aussitôt : pièces et 1 XP par pièce, ni énergie ni électricité, sans
+>   toucher au coefficient du Marché. Le réveil l'annonce (« Crèmerie : 8 fromages vendus,
+>   +288 💰 »).
+> - **Capacité** : 10 / 20 / 35 / 50 transformations par nuit, pour 3 000 / 8 000 / 20 000 💰.
+>   Le quota (0 à la capacité) se règle par − / + / Max ; un quota au maximum suit la capacité.
+> - **Sauvegarde (format 31)** : `state.commerce = { type: null, niveau: 1, quota: 10 }`.
+>
 > **v35 (jeu 1.13) : le Verger au clic** (lot 9 de la v2, `js/engine/orchard.js`,
 > `assets/verger.png` dessiné par `scripts/verger/arbres.py`). Cette note **fait foi** sur le Verger.
 > - **Planter** : chaque arbre occupe une **case** du Verger (0 à emplacements − 1), qui est

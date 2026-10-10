@@ -10,6 +10,7 @@ import {
 import { makePlot, seedItem, startPlots } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
+import { newCommerce } from './commerce.js';
 import { newAutoReport } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
 import { newTutorial } from './alerts.js';
@@ -83,6 +84,7 @@ export function startLot8() {
   return {
     serre: { construit: false, niveau: 1, parcelles: [] },
     verger: { construit: false, places: DATA.VERGER.EMPLACEMENTS_DEPART, achetes: 0, compteur: 0, arbres: [] },
+    commerce: newCommerce(), // version 1.14 : le commerce du niveau 10
     frigo: { construit: false, niveau: 1, appareil: null, items: {}, alimenteMs: 0, eveilMs: 0, panneNuit: false, alimente: true },
   };
 }
@@ -308,6 +310,7 @@ export const MIGRATIONS = {
   27: (state) => migrateFridgeCapacity(state),
   28: (state) => migrateDepart(state),
   29: (state) => migrateOrchard(state),
+  30: (state) => ({ ...state, version: 31, commerce: state.commerce && typeof state.commerce === 'object' ? state.commerce : newCommerce() }),
 };
 
 // Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie

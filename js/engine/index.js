@@ -29,3 +29,4 @@ export * from './testmode.js';
 export * from './state.js';
 export * from './format.js';
 export * from './bot.js';
+export * from './commerce.js';

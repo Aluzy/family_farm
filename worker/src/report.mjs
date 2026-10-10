@@ -31,6 +31,11 @@ export const GAME_ACTIONS = {
   'buy-item': 'Acheter un produit ou une graine',
   'buy-animal': 'Acheter un animal',
   'plant-tree': 'Planter un arbre',
+  'commerce-choose': 'Choisir un commerce',
+  'commerce-upgrade': 'Agrandir le commerce',
+  'commerce-quota-dec': 'Régler le commerce',
+  'commerce-quota-inc': 'Régler le commerce',
+  'commerce-quota-max': 'Régler le commerce',
   'harvest-tree': 'Cueillir un arbre',
   'ville-go': 'Partir en sortie ou en voyage',
   'ville-market': 'Aller au marché de la ville',
@@ -84,7 +89,7 @@ export const GAME_ACTIONS = {
 export const INTERFACE_ACTIONS = new Set([
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels',
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open', 'sell-inc',
-  'sell-dec', 'sell-max', 'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel',
+  'sell-dec', 'sell-max', 'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel', 'commerce-pick', 'commerce-cancel',
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', // carte de la ferme : fenêtres et onglets de la maison

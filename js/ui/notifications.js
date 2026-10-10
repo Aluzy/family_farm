@@ -51,8 +51,9 @@ function openMailModal(id) {
   tel('modal', 'mail');
   // L'annonce d'arrivée n'a plus lieu d'être : elle cacherait le bas de la lettre.
   for (const t of document.querySelectorAll('#toast-root .toast.lettre')) t.remove();
-  readMail(state, id);
+  const lu = readMail(state, id);
   persistState();
+  const pieces = lu && lu.ok ? lu.pieces : 0; // version 1.14 : l'héritage versé à l'ouverture
   const cadeaux = Object.entries(def.cadeaux || {})
     .map(([item, n]) => `${formatNumber(n)} <span aria-hidden="true">${DATA.items[item].icone}</span> ${DATA.items[item].nom}`)
     .join(' · ');
@@ -65,6 +66,7 @@ function openMailModal(id) {
         <h2 id="mail-title">${def.icone} ${def.objet}</h2>
         <div class="letter-body">${def.texte.map((p) => `<p>${withFamilyName(p)}</p>`).join('')}</div>
         <p class="letter-sign">${def.signature}</p>
+        ${DATA.COURRIER[id].pieces ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${formatNumber(DATA.COURRIER[id].pieces)} <span aria-hidden="true">💰</span> pièces</span><span class="muted">${pieces ? 'Versées à l\'instant.' : 'Déjà versées.'}</span></div>` : ''}
         ${cadeaux ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${cadeaux}</span><span class="muted">Déjà rangés dans ton inventaire.${serre ? ' Ils se plantent dans la Serre, et nulle part ailleurs.' : ''}</span></div>` : ''}
         <div class="row">
           ${serre ? `<button type="button" class="btn primary" ${cibleAttrs({ fenetre: 'serre' })}>Aller à la Serre</button>` : ''}
