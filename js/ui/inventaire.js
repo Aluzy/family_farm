@@ -1,4 +1,5 @@
 import { DATA } from '../engine/catalog.js';
+import { dishHappiness } from '../engine/ville.js';
 import { countItem, expiringSoon, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
 import { fridgeCapacity, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
@@ -72,6 +73,7 @@ function inventoryCard(item, withActions, withStatus) {
   const info = [
     it.energie && it.edible ? `🍽️ ${it.energie} cal` : '',
     it.energie && !it.edible ? `Ingrédient 🍽️ ${it.energie} cal` : '',
+    dishHappiness(item) ? `😊 +${dishHappiness(item)}` : '',
     `💰 ${formatCoins(it.prix)}`,
   ].filter(Boolean).join(' · ');
   let status = '';

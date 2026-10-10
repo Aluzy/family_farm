@@ -1,4 +1,4 @@
-import { DATA } from './catalog.js';
+import { DATA, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, spend } from './devices.js';
 import { addLot } from './inventory.js';
@@ -29,19 +29,34 @@ export function averageHappiness(state) {
   return m.length ? Math.round(m.reduce((t, x) => t + memberHappiness(x), 0) / m.length) : 0;
 }
 
-// Variation de bonheur d'un repas : REPAS_CRU tout cru, jusqu'à REPAS_CRU + REPAS_PLATS tout
-// cuisiné (au prorata de l'énergie venue des plats), FAIM en plus si le besoin n'est pas couvert.
+// Variation de bonheur d'un repas (version 1.11) : DECLIN chaque nuit, plus le bonheur des
+// plats différents mangés (au plus PLATS_MAX, les meilleurs), FAIM en plus si le besoin
+// n'est pas couvert. Les aliments crus ne donnent rien.
 export function mealHappinessDelta(plan) {
   const B = DATA.VILLE.BONHEUR;
-  let plats = 0;
-  let total = 0;
-  for (const [item, n] of Object.entries(plan.mange || {})) {
-    const e = DATA.items[item].energie * n;
-    total += e;
-    if (DATA.items[item].plat) plats += e;
-  }
-  const part = total > 0 ? plats / total : 0;
-  return Math.round(B.REPAS_CRU + B.REPAS_PLATS * part) + (plan.couverture < 100 ? B.FAIM : 0);
+  const valeurs = Object.keys(plan.mange || {})
+    .filter((item) => (plan.mange[item] || 0) > 0)
+    .map(dishHappiness)
+    .filter((v) => v > 0)
+    .sort((a, b) => b - a)
+    .slice(0, B.PLATS_MAX);
+  return B.DECLIN + valeurs.reduce((t, v) => t + v, 0) + (plan.couverture < 100 ? B.FAIM : 0);
+}
+
+// Version 1.11 (v2, lot 7) : bonheur que rend un plat (0 pour un aliment cru) : la base de
+// son atelier (Cuisine ou Four), + HUILE_FRUIT s'il contient de l'huile ou un fruit, +
+// SPECIALES.bonus s'il contient du cacao, du café ou de la vanille. Un ingrédient « l'un ou
+// l'autre » compte si toutes ses options comptent.
+export function dishHappiness(item) {
+  const B = DATA.VILLE.BONHEUR;
+  const def = DATA.items[item];
+  if (!def || !def.plat) return 0;
+  const r = DATA.recipes[item];
+  if (!r || !(r.station in B.PLATS)) return B.PLATS.cuisine;
+  const all = (ing, test) => ingredientOptions(ing).every(test);
+  const huileFruit = r.ingredients.some((ing) => all(ing, (x) => x === 'huile' || (DATA.items[x] && DATA.items[x].category === 'fruit')));
+  const speciale = r.ingredients.some((ing) => all(ing, (x) => B.SPECIALES.items.includes(x)));
+  return B.PLATS[r.station] + (huileFruit ? B.HUILE_FRUIT : 0) + (speciale ? B.SPECIALES.bonus : 0);
 }
 
 // Applique la variation du repas à toute la famille ; renvoie la variation.

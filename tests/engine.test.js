@@ -7,7 +7,7 @@
 
 import {
   advanceHours, applyMealHappiness, averageHappiness, buyInTown, goOut, goToTownMarket,
-  mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
+  dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
@@ -5378,15 +5378,17 @@ test('migration v15 → v16 : la viande et les anciens plats de l\'inventaire et
   // la famille les mange (ce qui périme le plus tôt d'abord)
   const plan = planMeal(m);
   assertEqual(plan.couverture, 100);
-  assert(plan.mange.poulet_roti_ail === 1 && plan.mange.viande_mouton > 0, `au menu : ${JSON.stringify(plan.mange)}`);
+  assert(plan.mange.poulet_roti_ail === 1 && plan.mange.ragout === 1, `version 1.11 : les plats d'abord, au menu : ${JSON.stringify(plan.mange)}`);
   const rep = sleepOnce(m);
   assertEqual([rep.couverture, rep.autonomie > 0], [100, true]);
   // et ils se vendent, au prix d'avant
   m.pieces = 0;
   assertEqual(sellItem(m, 'viande_boeuf', 4).gain, 40);
-  assertEqual(sellItem(m, 'ragout', 2).gain, 72);
-  assertEqual(sellItem(m, 'roti_boeuf', 3).gain, 108, 'même rangé au frigo');
-  assertEqual(m.pieces, 220);
+  assertEqual(sellItem(m, 'ragout', 1).gain, 36, 'version 1.11 : l\'autre a été mangé (les plats d\'abord)');
+  const roti = fridgeCount(m, 'roti_boeuf');
+  assert(roti >= 2, `rôtis restants : ${roti}`);
+  assertEqual(sellItem(m, 'roti_boeuf', roti).gain, 36 * roti, 'même rangé au frigo');
+  assertEqual(m.pieces, 76 + 36 * roti);
   // mais on ne peut plus en refaire ni en racheter
   assertEqual(buyItem(m, 'viande_boeuf', 1).ok, false);
   assertEqual(startRecipe(m, 'roti_boeuf').ok, false);
@@ -7301,7 +7303,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.10.0');
+  assertEqual(GAME_VERSION, '1.11.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -8415,14 +8417,14 @@ test('bonheur : chaque membre part à DEPART ; repas cru ou cuisiné', () => {
   const B = DATA.VILLE.BONHEUR;
   for (const m of s.famille.membres) assertEqual(memberHappiness(m), B.DEPART);
   assertEqual(happinessCostPct(s), 70, 'bonheur 60 : les actions coûtent 30 % de moins');
-  assertEqual(mealHappinessDelta({ mange: { carotte: 10 }, couverture: 100 }), B.REPAS_CRU, 'tout cru');
-  assertEqual(mealHappinessDelta({ mange: { ragout: 2 }, couverture: 100 }), B.REPAS_CRU + B.REPAS_PLATS, 'tout cuisiné');
-  assertEqual(mealHappinessDelta({ mange: { carotte: 1 }, couverture: 40 }), B.REPAS_CRU + B.FAIM, 'cru et pas assez');
-  assertEqual(mealHappinessDelta({ mange: {}, couverture: 0 }), B.REPAS_CRU + B.FAIM, 'rien mangé');
-  const d = applyMealHappiness(s, { mange: { ragout: 2 }, couverture: 100 });
-  assertEqual(d, 5);
-  assertEqual(averageHappiness(s), 65);
-  assertEqual(happinessCostPct(s), 68);
+  assertEqual(mealHappinessDelta({ mange: { carotte: 10 }, couverture: 100 }), -5, 'version 1.11 : tout cru, la baisse de la nuit');
+  assertEqual(mealHappinessDelta({ mange: { gratin_patates: 2 }, couverture: 100 }), -5 + 5, 'un plat du Four');
+  assertEqual(mealHappinessDelta({ mange: { carotte: 1 }, couverture: 40 }), -5 + B.FAIM, 'cru et pas assez');
+  assertEqual(mealHappinessDelta({ mange: {}, couverture: 0 }), -5 + B.FAIM, 'rien mangé');
+  const d = applyMealHappiness(s, { mange: { tarte_pommes: 1, pain: 1, omelette: 1 }, couverture: 100 });
+  assertEqual(d, -5 + 7 + 5 + 5);
+  assertEqual(averageHappiness(s), 72);
+  assertEqual(happinessCostPct(s), 64);
 });
 
 test('bonheur : le repas de 19 h le fait varier et le note dans state.repas', () => {
@@ -8430,8 +8432,8 @@ test('bonheur : le repas de 19 h le fait varier et le note dans state.repas', ()
   setInv(s, { carotte: 40 });
   const avant = averageHappiness(s);
   takeMeal(s);
-  assertEqual(s.repas.bonheur, DATA.VILLE.BONHEUR.REPAS_CRU);
-  assertEqual(averageHappiness(s), avant + DATA.VILLE.BONHEUR.REPAS_CRU);
+  assertEqual(s.repas.bonheur, DATA.VILLE.BONHEUR.DECLIN);
+  assertEqual(averageHappiness(s), avant + DATA.VILLE.BONHEUR.DECLIN);
 });
 
 test('sorties : prix (enfants à moitié), une fois par jour, retour avant 22 h', () => {
@@ -8736,6 +8738,40 @@ test('version 1.10 : migration v27 → v28 : le frigo passe au niveau 1, le surp
   assertEqual(lotsOf(m, 'carotte').map((l) => l.nightsLeft), [4]);
   const neuf = migrate({ v: 27, t: 0, s: JSON.parse(JSON.stringify(createInitialState(1))) });
   assertEqual([neuf.version, neuf.frigo.niveau, neuf.frigo.construit], [STATE_VERSION, 1, false]);
+});
+
+/* ---------- version 1.11 (v2, lot 7) : plats et bonheur ---------- */
+
+test('version 1.11 : barème du bonheur des plats (atelier, huile ou fruit, cultures spéciales)', () => {
+  const B = DATA.VILLE.BONHEUR;
+  assertEqual([B.DECLIN, B.PLATS, B.HUILE_FRUIT, B.SPECIALES, B.PLATS_MAX, B.REPAS_CRU, B.REPAS_PLATS], [-5, { cuisine: 3, four: 5 }, 2, { items: ['cacao', 'cafe', 'vanille'], bonus: 4 }, 3, undefined, undefined]);
+  const table = (ids) => ids.map(dishHappiness);
+  assertEqual(table(['soupe_legumes', 'fromage_frais', 'bocal_legumes', 'biere_artisanale']), [3, 3, 3, 3], 'Cuisine');
+  assertEqual(table(['omelette', 'salade_tomates', 'compote', 'confiture_fraises', 'creme_marrons']), [5, 5, 5, 5, 5], 'Cuisine + huile ou fruit');
+  assertEqual(table(['pain', 'gratin_patates', 'quiche_epinards', 'pain_epices']), [5, 5, 5, 5], 'Four');
+  assertEqual(table(['pain_ail', 'tarte_pommes', 'tarte_fraises', 'tarte_myrtilles']), [7, 7, 7, 7], 'Four + huile ou fruit');
+  assertEqual(table(['chocolat_chaud', 'cafe_boisson', 'creme_vanille']), [7, 7, 7], 'cultures spéciales');
+  assertEqual(table(['carotte', 'farine', 'huile', 'conserve']), [0, 0, 0, 0], 'ni cru ni transformation');
+  assertEqual(dishHappiness('ragout'), 3, 'un ancien plat sans recette compte comme la Cuisine');
+});
+
+test('version 1.11 : au plus trois plats différents comptent, les meilleurs', () => {
+  const plan = { mange: { pain: 2, tarte_pommes: 1, chocolat_chaud: 1, soupe_legumes: 3, omelette: 1, carotte: 5 }, couverture: 100 };
+  assertEqual(mealHappinessDelta(plan), -5 + 7 + 7 + 5);
+});
+
+test('version 1.11 : le repas commence par un exemplaire des trois meilleurs plats, même au-delà du besoin', () => {
+  const s = garden();
+  setInv(s, { gratin_patates: 5, pain: 3, soupe_legumes: 2, omelette: 2, carotte: 40 });
+  const plan = planMeal(s);
+  assertEqual([plan.mange.gratin_patates >= 1, plan.mange.pain, plan.mange.omelette, plan.mange.soupe_legumes], [true, 1, 1, undefined]);
+  assertEqual(mealHappinessDelta(plan), -5 + 5 + 5 + 5);
+  takeMeal(s);
+  assertEqual(averageHappiness(s), DATA.VILLE.BONHEUR.DEPART + 10);
+  const t = garden();
+  setInv(t, { carotte: 40 });
+  t.famille.reserve = {};
+  assertEqual(Object.keys(planMeal(t).mange), ['carotte'], 'sans plat : rien ne change');
 });
 
 export const results = runTests();

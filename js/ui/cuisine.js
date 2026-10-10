@@ -11,6 +11,7 @@ import {
 } from '../engine/kitchen.js';
 import { recipeTime } from '../engine/techtree.js';
 import { isUnlocked } from '../engine/campaign.js';
+import { dishHappiness } from '../engine/ville.js';
 import {
   formatCoins, formatDuration, formatNumber, formatQty, formatWhRate,
 } from '../engine/format.js';
@@ -250,7 +251,8 @@ function recipeMeta(id) {
   const out = DATA.items[recipeOutput(id)];
   if (r.transformation) return `→ ${recipeOutputQty(id)} ${out.icone} ${out.nom.toLowerCase()}`;
   const life = shelfLife(id);
-  return `⚡ ${out.energie} énergie · 💰 ${formatCoins(out.prix)} · se garde ${nightsLabel(life)}`;
+  const joie = dishHappiness(recipeOutput(id));
+  return `🍽️ ${out.energie} cal${joie ? ` · 😊 +${joie} bonheur` : ''} · 💰 ${formatCoins(out.prix)} · se garde ${nightsLabel(life)}`;
 }
 
 function recipeCard(id) {

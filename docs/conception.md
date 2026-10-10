@@ -6,6 +6,22 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v33 (jeu 1.11) : plats et bonheur** (lot 7 de la v2, `DATA.VILLE.BONHEUR`,
+> `dishHappiness()` de `js/engine/ville.js`). Cette note **fait foi** sur la règle « −3 si
+> tout est cru, jusqu'à +5 si tout est cuisiné », qui disparaît.
+> - Chaque nuit, le bonheur de chacun **baisse de 5** 🟡 ; la faim (repas pas couvert) retire
+>   encore 2.
+> - Il **remonte avec les plats** du repas : on compte au plus **3 plats différents**, les
+>   meilleurs. Barème : Cuisine **+3**, Four **+5** ; **+2** avec de l'huile ou un fruit
+>   (une fois) ; **+4** avec du cacao, du café ou de la vanille. Les aliments crus ne donnent
+>   rien. Un ancien plat sans recette compte comme la Cuisine.
+> - **Le repas commence par un exemplaire de chacun des 3 meilleurs plats disponibles**,
+>   même si le premier suffit à couvrir le besoin (sinon un gratin à 150 calories nourrit
+>   seul la famille et la règle des 3 plats ne servirait jamais) ; il complète ensuite
+>   comme avant (ce qui périme le plus tôt).
+> - Interface : le bonheur d'un plat s'affiche dans le Livre de recette et l'Inventaire.
+> - Joueur simulé : sous un bonheur de 80, il cuisine d'abord les plats qui manquent.
+>
 > **v32 (jeu 1.10) : réfrigérateur à capacité** (lot 6 de la v2, `DATA.FRIGO`,
 > `js/engine/fridge.js`). Cette note **fait foi** sur tout ce qui, plus bas, parle d'un
 > réfrigérateur à capacité illimitée ou d'une consommation de base.

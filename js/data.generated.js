@@ -1177,7 +1177,16 @@ export const RAW_DATA = {
     "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
   },
   "VILLE": {
-    "BONHEUR": { "DEPART": 60, "MAX": 100, "REPAS_CRU": -3, "REPAS_PLATS": 8, "FAIM": -2 },
+    "BONHEUR": {
+      "DEPART": 60,
+      "MAX": 100,
+      "DECLIN": -5,
+      "PLATS": { "cuisine": 3, "four": 5 },
+      "HUILE_FRUIT": 2,
+      "SPECIALES": { "items": ["cacao", "cafe", "vanille"], "bonus": 4 },
+      "PLATS_MAX": 3,
+      "FAIM": -2
+    },
     "ENFANT_PRIX": 50,
     "SORTIES": {
       "parc": {
@@ -1264,6 +1273,8 @@ export const RAW_DATA = {
     "GRAINES_CAROTTE": 6,
     "PART_PLEIN_CHAMP": 40,
     "PARCELLES_TOURNESOL": 1,
+    "BONHEUR_CIBLE": 80,
+    "PRIORITE_BONHEUR": 1000,
     "BLE_JOURS_GARDES": 3,
     "BLE_MAX": 40,
     "STOCK_FARINE": 4,

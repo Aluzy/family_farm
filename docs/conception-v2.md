@@ -10,7 +10,7 @@
 > batterie, soleil de 7 h à 19 h, réservoir à niveaux) sont codés, version 1.6 ; lot 3
 > (niveaux d'expérience) est codé, version 1.7 ; lot 4 (énergie, bonheur, endurance,
 > santé retirée) est codé, version 1.8 ; lot 5 (houe) est codé, version 1.9 ; lot 6 (frigo à capacité) est codé,
-> version 1.10. Leurs notes v27 à v32 dans
+> version 1.10 ; lot 7 (plats et bonheur) est codé, version 1.11. Leurs notes v27 à v33 dans
 > [`conception.md`](conception.md) font foi. Le reste n'est pas
 > encore codé : quand il le sera, ce document remplacera dans `conception.md` tout ce qui
 > le contredit (chapitres).
@@ -453,7 +453,7 @@ ferme, puis menu Installations).
 
 ---
 
-## 10. Plats et bonheur
+## 10. Plats et bonheur ✅ (fait, version 1.11)
 
 ### 10.1 Règles (des notes)
 
@@ -519,7 +519,7 @@ change, et la mise à jour de `conception.md` et du README.
 | 4 ✅ | **Énergie, bonheur, endurance** ; santé et soins retirés — fait, version 1.8 | oui (format 26) |
 | 5 ✅ | **Houe** : herbe / terre, 16 dessins, plafond de tuiles — fait, version 1.9 | oui (format 27 ; parcelles existantes = terre) |
 | 6 ✅ | **Frigo à capacité**, consommation par unité — fait, version 1.10 | oui (format 28 ; surplus rendu à l'inventaire) |
-| 7 | **Plats et bonheur** (barème 10.2) | non |
+| 7 ✅ | **Plats et bonheur** (barème 10.2) — fait, version 1.11 | non |
 | 8 | **Départ v2** : 1 500 💰, configuration de la famille, chapitres 1 et 2, succès | nouvelle partie seulement |
 | 9 | **Verger au clic** et ses 4 dessins | oui |
 | 10 | **Niveaux 9 et 10** : courrier du notaire, commerce automatique | oui (`state.commerce`) |
