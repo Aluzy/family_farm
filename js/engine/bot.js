@@ -8,7 +8,7 @@ import { buildFridge, fridgeCount, fridgeLevel, fridgeUpgradeCost, moveAllToFrid
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
 import { planMeal } from './family.js';
 import { actionCost, energyLevel } from './stamina.js';
-import { averageHappiness } from './ville.js';
+import { averageHappiness, dishHappiness } from './ville.js';
 import {
   allPlots, buildSerre, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isMature, plant, plotAtCase, seedItem, seedStock,
   serreUpgradeCost, soilCount, toggleBolting, upgradeSerre, water, zone2Open, zoneGrid,
@@ -216,6 +216,11 @@ export function botRecipeValue(state, id) {
       return countItem(state, 'huile') < S.STOCK_HUILE && spare >= r.ingredients[0].qte ? 1 / r.temps : 0;
     }
     return 0;
+  }
+  // version 1.11 : sous le bonheur visé, un plat qui manque au repas du soir passe avant
+  // tout (le meilleur bonheur d'abord), même s'il ne rapporte rien
+  if (averageHappiness(state) < S.BONHEUR_CIBLE && botSpare(state, id) < 1 && dishHappiness(id) > 0) {
+    return (S.PRIORITE_BONHEUR + dishHappiness(id)) / r.temps;
   }
   let cost = (r.eau || 0) * DATA.RECETTES.PRIX_EAU;
   r.ingredients.forEach((ing, i) => { cost += DATA.items[items[i]].prix * ing.qte; });

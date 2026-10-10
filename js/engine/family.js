@@ -1,5 +1,5 @@
 import { DATA } from './catalog.js';
-import { applyMealHappiness, memberHappiness } from './ville.js';
+import { applyMealHappiness, dishHappiness, memberHappiness } from './ville.js';
 import { EPS } from './base.js';
 import { fail } from './devices.js';
 import { hourOfDay } from './clock.js';
@@ -286,7 +286,23 @@ export function planMeal(state) {
   let covered = 0;
   const mange = {};
   const froid = {};
-  for (const entry of mealEntries(state)) {
+  const entries = mealEntries(state);
+  // Version 1.11 : d'abord un exemplaire de chacun des PLATS_MAX meilleurs plats (ceux qui
+  // rendent le plus de bonheur), même si le premier suffit à couvrir le besoin : la famille
+  // goûte à tout ; puis le reste dans l'ordre habituel.
+  const vus = new Set();
+  const plats = entries
+    .filter((e) => dishHappiness(e.item) > 0)
+    .sort((a, b) => dishHappiness(b.item) - dishHappiness(a.item))
+    .filter((e) => (vus.has(e.item) ? false : vus.add(e.item)))
+    .slice(0, DATA.VILLE.BONHEUR.PLATS_MAX);
+  for (const entry of plats) {
+    mange[entry.item] = (mange[entry.item] || 0) + 1;
+    if (entry.froid) froid[entry.item] = (froid[entry.item] || 0) + 1;
+    entry.spare -= 1;
+    covered += DATA.items[entry.item].energie;
+  }
+  for (const entry of entries) {
     if (covered >= need - EPS) break;
     const energy = DATA.items[entry.item].energie;
     const n = Math.min(entry.spare, Math.ceil((need - covered) / energy - EPS));
