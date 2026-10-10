@@ -27,6 +27,15 @@ function techLevelRow(e) {
       <span class="level-line"><span>${e.icone} ${e.nom}</span><span class="num">${built ? `niveau ${e.niveau} / ${e.max}` : 'non construit'}</span></span>
       <span class="bar" role="progressbar" aria-label="Niveau : ${e.nom}" aria-valuemin="0" aria-valuemax="${e.max}" aria-valuenow="${e.niveau}"><span class="bar-fill" style="width:${pct}%"></span></span>
       ${note}`;
+  } else if (e.type === 'tuiles') {
+    const pct = Math.round((e.tuiles / Math.max(1, e.max)) * 100);
+    const note = e.note
+      ? `<span class="chip${e.automatise ? ' auto' : ''}">${e.automatise ? '🤖 Automatisé' : 'Pas encore automatisé'} : ${e.note}</span>`
+      : '';
+    body = `
+      <span class="level-line"><span>${e.icone} ${e.nom}</span><span class="num">${e.tuiles} / ${e.max} tuiles</span></span>
+      <span class="bar" role="progressbar" aria-label="Tuiles de terre : ${e.nom}" aria-valuemin="0" aria-valuemax="${e.max}" aria-valuenow="${e.tuiles}"><span class="bar-fill" style="width:${pct}%"></span></span>
+      ${note}`;
   } else {
     const chips = e.ateliers.map((a) => `<span class="chip">${a.icone} ${a.nom} · ${a.construit ? 'construit' : 'à construire'}</span>`).join('');
     body = `

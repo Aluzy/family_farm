@@ -27,7 +27,7 @@
       "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },
       "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe, et le Livre de recette" },
-      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 parcelles de plus, pour le blé" },
+      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 cases d'herbe de plus à labourer, pour le blé" },
       "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
       "//paturage": "'paturage' et 'moutons' : identifiants historiques (l'ancien Pâturage).",
       "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
@@ -44,12 +44,18 @@
       "automatisation fait l'action (arrosage, récolte, semis, tonte)."
     ],
     "XP": {
-      "planter": 10, "arroser": 10, "recolter": 20,
+      "labourer": 10, "planter": 10, "arroser": 10, "recolter": 20,
       "oeuf": 10, "lait": 30, "tondre": 30,
       "cuisiner": 40, "cuireFour": 50, "moudre": 10, "presser": 10,
       "vendre": 1
     },
     "AUTO": 50,
+    "//TUILES": [
+      "Version 1.9 (v2, lot 5) : plafond de tuiles de terre par niveau (index 0 =",
+      "niveau 1), Zone de culture et Champ ensemble. Au plafond, la houe ne laboure",
+      "plus (on peut toujours reboucher une terre vide pour labourer ailleurs)."
+    ],
+    "TUILES": [6, 12, 20, 32, 48, 64, 64, 64, 64, 64],
     "//CHAPITRES_XP": "XP du succès « chapitre n terminé » (index 0 = chapitre 1).",
     "CHAPITRES_XP": [200, 500, 1000, 2500, 2000, 4000, 8000],
     "//CHAPITRE_NIVEAU": [

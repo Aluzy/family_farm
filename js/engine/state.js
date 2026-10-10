@@ -6,7 +6,7 @@ import { addItem, defaultOrigin, shelfLife } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
 } from './family.js';
-import { makePlot, makePlots, seedItem } from './crops.js';
+import { makePlot, seedItem, startPlots } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
 import { newAutoReport } from './automation.js';
@@ -28,7 +28,7 @@ export function startInventory() {
 export function startHousehold() {
   return {
     inventaire: startInventory(),
-    potager: { niveau: 1, parcelles: makePlots(DATA.POTAGER.PARCELLES[0]), zone2: [] },
+    potager: { parcelles: startPlots(), zone2: [], houe: false },
     famille: {
       membres: DATA.FAMILY.MEMBRES.map(makeMember),
       // version 1.2 : animaux de compagnie, et dernier numéro donné à un adulte, à un
@@ -298,11 +298,36 @@ export const MIGRATIONS = {
   24: (state) => migrateLevels(state),
   // v25 → v26 (version 1.8, v2 lot 4) : l'énergie du personnage remplace la santé.
   25: (state) => migrateEnergy(state),
+  26: (state) => migrateHoe(state),
 };
 
 // Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie
 // pleine ; les nœuds de l'arbre retirés (soins, bonus de santé) sont rendus (points
 // et pièces) ; la série du chapitre 6 en cours oublie ses soins.
+// Version 1.9 (v2, lot 5) : la Zone de culture n'a plus de niveaux, c'est une grille de
+// cases. Les parcelles existantes restent de la terre, posées dans l'ordre sur les
+// premières cases (comme la carte les dessinait) ; celles du Champ aussi. Une ancienne
+// partie reçoit la houe (elle avait déjà agrandi sa zone en pièces). Au-delà du plafond
+// de son niveau, rien n'est retiré : la houe attend simplement que la place revienne.
+export function migrateHoe(old) {
+  const state = { ...old, version: 27 };
+  const p = state.potager;
+  if (p && typeof p === 'object') {
+    // une parcelle qui a déjà une case valide (et unique) la garde ; sinon, dans l'ordre
+    const place = (list, cases) => {
+      const plots = (Array.isArray(list) ? list : []).filter((x) => x && typeof x === 'object').slice(0, cases);
+      const valid = plots.every((x, i) => Number.isInteger(x.case) && x.case >= 0 && x.case < cases && plots.findIndex((y) => y.case === x.case) === i);
+      return plots.map((x, i) => ({ ...x, case: valid ? x.case : i })).sort((a, b) => a.case - b.case);
+    };
+    const { niveau, ...potager } = p;
+    potager.parcelles = place(p.parcelles, DATA.POTAGER.CASES);
+    potager.zone2 = place(p.zone2, DATA.POTAGER.ZONE2.CASES);
+    potager.houe = true;
+    state.potager = potager;
+  }
+  return state;
+}
+
 export function migrateEnergy(old) {
   const state = { ...old, version: 26, energie: energyMax() };
   const f = state.famille;
@@ -584,7 +609,7 @@ export function migrateRules11(old) {
 export function migrateCropZone(old) {
   const state = JSON.parse(JSON.stringify(old));
   const P = DATA.POTAGER;
-  const max = P.PARCELLES[P.PARCELLES.length - 1];
+  const max = P.PARCELLES_V1[P.PARCELLES_V1.length - 1];
   const plotsOf = (b) => (b && Array.isArray(b.parcelles) ? b.parcelles.filter((p) => p && typeof p === 'object') : []);
   const potager = state.potager && typeof state.potager === 'object' ? state.potager : {};
   let plots = [...plotsOf(potager), ...plotsOf(legacyChamp(state))];
@@ -600,9 +625,9 @@ export function migrateCropZone(old) {
     }
     plots = plots.filter((p, i) => gardees.has(i));
   }
-  const niveau = Math.max(1, P.PARCELLES.findIndex((n) => n >= plots.length) + 1);
+  const niveau = Math.max(1, P.PARCELLES_V1.findIndex((n) => n >= plots.length) + 1);
   const parcelles = [];
-  for (let n = 1; n <= P.PARCELLES[niveau - 1]; n++) {
+  for (let n = 1; n <= P.PARCELLES_V1[niveau - 1]; n++) {
     const neuve = makePlot(n);
     parcelles.push(n <= plots.length ? { ...neuve, ...plots[n - 1], id: neuve.id, lieu: neuve.lieu } : neuve);
   }

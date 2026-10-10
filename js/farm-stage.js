@@ -334,6 +334,12 @@
           d.fillStyle(0x5a3a1a).fillRect(Math.round(w / 2) - 7, h - 30, 14, 30);
         };
         bake('ph_dry', 16, 16, (d) => { d.fillStyle(0x8b5a2b).fillRect(0, 0, 16, 16); d.fillStyle(0x7a4d24).fillRect(0, 5, 16, 2).fillRect(0, 11, 16, 2); });
+        // Version 1.9 : l'herbe d'une case de zone pas encore labourée (couleurs de l'herbe de la carte)
+        bake('grass_case', 16, 16, (d) => {
+          d.fillStyle(0x21533c).fillRect(0, 0, 16, 16);
+          d.fillStyle(0x285d3d).fillRect(1, 2, 3, 1).fillRect(9, 5, 4, 1).fillRect(4, 10, 3, 1).fillRect(11, 13, 3, 1).fillRect(13, 1, 2, 1);
+          d.fillStyle(0x3c6d3a).fillRect(2, 1, 1, 1).fillRect(10, 4, 1, 1).fillRect(5, 9, 1, 1).fillRect(12, 12, 1, 1).fillRect(7, 14, 1, 1);
+        });
         bake('ph_wet', 16, 16, (d) => { d.fillStyle(0x5b3a1c).fillRect(0, 0, 16, 16); d.fillStyle(0x4a2f16).fillRect(0, 5, 16, 2).fillRect(0, 11, 16, 2); });
         bake('ph_maison', 93, 97, shed(0xc9a26b, 0xa8472f, 93, 97));
         bake('ph_etable', 104, 93, shed(0x8a5a34, 0x5a3a1a, 104, 93));
@@ -836,9 +842,9 @@
       place(id) {
         if (id === 'zone' || id === 'zone2') {
           const g = id === 'zone' ? this.grid : this.grid2;
-          const plots = lastModel ? (id === 'zone' ? lastModel.plots : lastModel.plots2) || [] : [];
-          if (id === 'zone2' && !plots.length) return null;
-          const rows = Math.ceil(plots.length / g.cols);
+          if (id === 'zone2' && !(lastModel && lastModel.zone2)) return null;
+          const cases = lastModel ? (id === 'zone' ? lastModel.cases : lastModel.cases2) || 0 : 0;
+          const rows = Math.max(1, Math.ceil(cases / g.cols));
           return { x: g.x + (g.cols * T) / 2, y: g.y + (rows * T) / 2 };
         }
         const e = this.buildings.get(id);
@@ -919,7 +925,7 @@
       // Lieu désigné par un résultat de hitAt() : une parcelle désigne sa zone ('zone' ou 'zone2').
       placeOf(hit) {
         if (!hit) return null;
-        return hit.plot ? hit.place : hit.window || null;
+        return hit.plot || hit.hoe ? hit.place : hit.window || null;
       }
 
       placeAt(wx, wy) { return this.placeOf(this.hitAt(wx, wy)); }
@@ -1005,18 +1011,26 @@
       // ouverte par une parcelle où il n'y a rien à faire.
       zones(model) {
         const m = model || lastModel;
-        const grid = (id, g, plots) => ({
-          id, place: id, window: id, plots,
+        // Version 1.9 : chaque parcelle a sa case (p.case) dans une grille fixe de `cases`
+        // cases ; une case sans parcelle est de l'herbe, que la houe peut labourer.
+        const grid = (id, g, plots, zone, cases) => ({
+          id, place: id, window: id, plots, zone, cases,
+          slot: (p, i) => (typeof p.case === 'number' ? p.case : i),
           pos: (i) => ({ x: g.x + (i % g.cols) * T, y: g.y + Math.floor(i / g.cols) * T }),
           at: (wx, wy) => {
             const col = Math.floor((wx - g.x) / T), row = Math.floor((wy - g.y) / T);
-            return col >= 0 && col < g.cols && row >= 0 ? row * g.cols + col : -1;
+            const i = col >= 0 && col < g.cols && row >= 0 ? row * g.cols + col : -1;
+            return i < cases ? i : -1;
           },
         });
-        const list = [grid('zone', this.grid, m ? m.plots : []), grid('zone2', this.grid2, m ? m.plots2 || [] : [])];
+        const list = [
+          grid('zone', this.grid, m ? m.plots : [], 1, m ? m.cases || 0 : 0),
+          grid('zone2', this.grid2, m ? m.plots2 || [] : [], 2, m && m.zone2 ? m.cases2 || 0 : 0),
+        ];
         for (const r of Object.values(this.rooms)) {
           list.push({
             id: 'interieur-' + r.id, place: null, window: r.def.window, plots: m ? m[r.def.plots] || [] : [],
+            slot: (p, i) => i,
             pos: (i) => r.slots[i] || null,
             at: (wx, wy) => {
               const i = r.slotAt.get(Math.floor(wx / T) * T + ',' + Math.floor(wy / T) * T);
@@ -1030,9 +1044,13 @@
       // Ce qui se trouve sous un point de la carte : une parcelle (exactement sa tuile),
       // sinon une étiquette, sinon le bâtiment ou l'arbre le plus en avant.
       hitAt(wx, wy) {
+        const hoeing = !!(lastModel && lastModel.houe);
         for (const z of this.zones()) {
           const i = z.at(wx, wy);
-          const p = i >= 0 ? z.plots[i] : null;
+          if (i < 0) continue;
+          const p = z.plots.find((q, k) => z.slot(q, k) === i) || null;
+          // version 1.9 : en mode houe, une case de zone (herbe ou terre) se laboure ou se rebouche
+          if (hoeing && z.zone) return { hoe: { zone: z.zone, case: i }, place: z.place };
           if (p) return { plot: p, place: z.place, open: z.window };
         }
         if (this.room) return null;                  // dans un intérieur : rien d'autre à toucher
@@ -1060,6 +1078,7 @@
         const hit = this.hitAt(wx, wy);
         if (!hit) return;
         if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
+        if (hit.hoe) { bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         const p = hit.plot;
         if (!p.culture) bridge.act('plant-open', { id: p.id });
         else if (p.mature) bridge.act('harvest', { id: p.id });
@@ -1103,7 +1122,7 @@
         const seen = new Set();
         for (const z of this.zones(model)) {
           z.plots.forEach((p, i) => {
-            const at = z.pos(i);
+            const at = z.pos(z.slot(p, i));
             if (!at) return;                         // plus de parcelles que d'emplacements
             seen.add(p.id);
             const x = at.x + T / 2, y = at.y + T / 2;
@@ -1112,15 +1131,17 @@
               e = { soil: this.add.image(x, y, 'ph_dry').setDepth(2), crop: null, key: '', tween: null };
               this.plots.set(p.id, e);
             }
-            e.soil.setPosition(x, y).setTexture(p.arrosee ? this.tex('soil_wet', 'ph_wet') : this.tex('soil_dry', 'ph_dry'));
+            e.soil.setPosition(x, y).setTexture(typeof p.bord === 'number' ? this.soilTex(!!p.arrosee, p.bord) : p.arrosee ? this.tex('soil_wet', 'ph_wet') : this.tex('soil_dry', 'ph_dry'));
             this.syncCrop(e, p, x, y);
           });
           // Étiquette de la zone : calée à gauche sur les parcelles, au-dessus de la barrière.
           if (z.place) { const o = z.pos(0); this.syncLabel(z.id, info(z.id), z.id, o.x, o.y - ZONE_LABEL_UP, 'gauche'); }
         }
+        this.syncHoeGrid(model);
         for (const [id, e] of this.plots) {
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
         }
+        this.syncGrass(model);
         this.syncTrees(model.arbres || [], sfx, rebuild);
         this.syncRooms(model, force);
         // L'ambiance reçoit l'heure et les images des arbres (jamais le modèle) : elle
@@ -1252,6 +1273,83 @@
           e.tween = this.tweens.add({ targets: e.crop, angle: { from: -4, to: 4 }, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
         }
         if (e.crop && !p.mature && e.tween) { e.tween.stop(); e.tween = null; e.crop.setAngle(0); }
+      }
+
+      // Version 1.9 : dessin d'une tuile de terre selon ses voisines. `bord` = côtés ouverts
+      // sur de la terre (1 haut, 2 droite, 4 bas, 8 gauche) ; les autres côtés touchent
+      // l'herbe et portent une bordure. Les 16 dessins (× sec / mouillé) sont faits à la
+      // demande à partir de soil_dry.png / soil_wet.png (ou du dessin de secours) : sur un
+      // côté ouvert, la bordure de l'image est recouverte par l'intérieur de la tuile.
+      soilTex(wet, bord) {
+        const base = wet ? this.tex('soil_wet', 'ph_wet') : this.tex('soil_dry', 'ph_dry');
+        const key = base + '_b' + bord;
+        if (this.textures.exists(key)) return key;
+        const src = this.textures.get(base).getSourceImage();
+        const ct = this.textures.createCanvas(key, T, T);
+        if (!ct) return base;
+        const c = ct.getContext();
+        c.imageSmoothingEnabled = false;
+        c.drawImage(src, 0, 0, T, T);
+        const E = 2;   // épaisseur de la bordure de l'image
+        // côtés ouverts : on recopie une bande intérieure par-dessus la bordure
+        if (bord & 1) c.drawImage(ct.canvas, 0, E, T, E, 0, 0, T, E);
+        if (bord & 4) c.drawImage(ct.canvas, 0, T - 2 * E, T, E, 0, T - E, T, E);
+        if (bord & 8) c.drawImage(ct.canvas, E, 0, E, T, 0, 0, E, T);
+        if (bord & 2) c.drawImage(ct.canvas, T - 2 * E, 0, E, T, T - E, 0, E, T);
+        // côtés fermés : un liseré sombre contre l'herbe, et une ombre juste dedans
+        c.fillStyle = wet ? 'rgba(40,28,18,0.85)' : 'rgba(92,62,36,0.9)';
+        if (!(bord & 1)) c.fillRect(0, 0, T, 1);
+        if (!(bord & 4)) c.fillRect(0, T - 1, T, 1);
+        if (!(bord & 8)) c.fillRect(0, 0, 1, T);
+        if (!(bord & 2)) c.fillRect(T - 1, 0, 1, T);
+        c.fillStyle = 'rgba(0,0,0,0.12)';
+        if (!(bord & 1)) c.fillRect(0, 1, T, 1);
+        if (!(bord & 8)) c.fillRect(1, 0, 1, T);
+        ct.refresh();
+        return key;
+      }
+
+      // Version 1.9 : les cases de zone sans parcelle sont de l'herbe (le sol de la carte y est
+      // de la terre battue) : une tuile d'herbe par case libre.
+      syncGrass(model) {
+        if (!this.grass) this.grass = new Map();
+        const want = new Set();
+        for (const z of this.zones(model)) {
+          if (!z.zone) continue;
+          const taken = new Set(z.plots.map((p, i) => z.slot(p, i)));
+          for (let i = 0; i < z.cases; i++) {
+            if (taken.has(i)) continue;
+            const k = z.zone + ':' + i;
+            want.add(k);
+            if (this.grass.has(k)) continue;
+            const o = z.pos(i);
+            this.grass.set(k, this.add.image(o.x + T / 2, o.y + T / 2, 'grass_case').setDepth(1.9));
+          }
+        }
+        for (const [k, img] of this.grass) {
+          if (!want.has(k)) { img.destroy(); this.grass.delete(k); }
+        }
+      }
+
+      // Version 1.9 : en mode houe, le contour de chaque case des zones (herbe comprise) est
+      // tracé, pour voir où la houe peut labourer.
+      syncHoeGrid(model) {
+        const on = !!model.houe && !this.room;
+        const key = on ? [model.cases, model.zone2 ? model.cases2 : 0, this.grid.cols, this.grid2.cols].join() : '';
+        if (key === this.hoeKey) return;
+        this.hoeKey = key;
+        if (!this.hoeGrid) this.hoeGrid = this.add.graphics().setDepth(1.95);
+        const g = this.hoeGrid;
+        g.clear();
+        if (!on) return;
+        g.lineStyle(1, 0xfff3c4, 0.7);
+        for (const z of this.zones(model)) {
+          if (!z.zone) continue;
+          for (let i = 0; i < z.cases; i++) {
+            const o = z.pos(i);
+            g.strokeRect(o.x + 0.5, o.y + 0.5, T - 1, T - 1);
+          }
+        }
       }
 
       destroyPlot(e) {

@@ -6,6 +6,28 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v31 (jeu 1.9) : la houe** (lot 5 de la v2, `DATA.HOUE`, `NIVEAUX.TUILES`, fonctions
+> `hoe()`, `soilMask()` de `js/engine/crops.js`). Cette note **fait foi** sur tout ce qui,
+> plus bas, parle d'agrandir la Zone de culture en pièces ou d'un Champ ouvert en entier.
+> - La **Zone de culture** est une grille fixe de **30 cases** (5 × 6) ; le **Champ**,
+>   ouvert avec le Moulin, une grille de **64 cases** (8 × 8). Une case est de l'herbe ou
+>   de la terre (une parcelle, qui porte son numéro de case). Plus de niveaux ni de coûts
+>   d'agrandissement.
+> - La **houe** s'achète une fois au Marché (**40 💰** 🟡). Houe en main, un appui sur une
+>   herbe la **laboure** (5 d'énergie, 10 XP) ; sur une terre vide, la **rebouche**
+>   (gratuit, sans XP) ; une terre plantée ne se rebouche pas.
+> - **Plafond de tuiles de terre** (Zone de culture et Champ ensemble) par niveau :
+>   6 / 12 / 20 / 32 / 48 / 64 (64 à partir du niveau 6) 🟡.
+> - **Dessin** : chaque terre a 16 dessins selon ses 4 voisines (bordure côté herbe,
+>   ouverte côté terre), faits à partir de `soil_dry.png` / `soil_wet.png` ; les cases
+>   d'herbe ont leur tuile ; en mode houe, le contour des cases s'affiche.
+> - Partie neuve : 6 cases en terre (un bloc de 3 × 2), sans houe. Ancienne partie : ses
+>   parcelles restent de la terre, posées dans l'ordre, et la **houe est offerte** ;
+>   au-delà du plafond rien n'est retiré.
+> - Arbre : Réseau d'irrigation et Récolte automatique demandent **18 / 24 tuiles de
+>   terre** (au lieu des niveaux 3 / 4 de la zone).
+> - Format de sauvegarde 27 (`migrateHoe`).
+>
 > **v30 (jeu 1.8) : énergie du personnage, bonheur, endurance** (lot 4 de la v2,
 > `js/engine/stamina.js`, `DATA.PERSONNAGE` dans `data/general.json`). Cette note
 > **fait foi** sur tout ce qui, plus bas, parle de santé, de malades, de soins ou de

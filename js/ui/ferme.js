@@ -6,12 +6,13 @@ import {
 import { hourOfDay } from '../engine/clock.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
 import { energyChip } from './energie.js';
-import { potagerUpgradeCost, upgradePotager, zone2Plots } from '../engine/crops.js';
+import { zone2Open, zone2Plots } from '../engine/crops.js';
+import { hoePanelHtml } from './houe.js';
 import { isUnlocked } from '../engine/campaign.js';
 import {
   formatCoins, formatLitres, formatLitresRate, formatNumber, formatWh, formatWhRate,
 } from '../engine/format.js';
-import { FERME_LINKS, setEcranFerme, state, tabAvailable, TABS } from './store.js';
+import { FERME_LINKS, hoeMode, setEcranFerme, state, tabAvailable, TABS } from './store.js';
 import { telView } from './consent.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
@@ -224,38 +225,46 @@ export function renderDeviceScreen(kind) {
 
 /* ---------- Ferme : Zone de culture (state.potager) ---------- */
 
+// Version 1.9 : plus d'agrandissement en pièces ; la houe laboure l'herbe (plafond de tuiles
+// par niveau). En mode houe, la grille des cases remplace les cartes des parcelles.
 export function renderPotager() {
   const pot = state.potager;
-  const up = potagerUpgradeCost(state);
-  const upBtn =
-    up === null
-      ? '<button type="button" class="btn" disabled>Zone de culture au niveau maximum</button>'
-      : `<button type="button" class="btn" data-action="upgrade-potager"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${pot.niveau + 1}, ${DATA.POTAGER.PARCELLES[pot.niveau]} parcelles (${costLabel(up)})</button>`;
+  const plots = hoeMode && pot.houe
+    ? ''
+    : `<div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
+    <div class="row plot-foot">${groupButtons('potager', 1)}</div>`;
   return `
     <div class="section-head">
-      <h3>${icon('potager')}${DATA.POTAGER.NOM} · niveau ${pot.niveau}</h3>
+      <h3>${icon('potager')}${DATA.POTAGER.NOM} · ${pot.parcelles.length} parcelles</h3>
       <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
-    <div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${groupButtons('potager', 1)}${upBtn}</div>
+    ${hoePanelHtml(1)}
+    ${plots}
   `;
 }
 
 /* ---------- Ferme : le Champ (state.potager.zone2), deuxième zone de culture ---------- */
 
-// Ouvert en entier avec le Moulin ; vide (aucune section) avant. Mêmes cartes de parcelle et
-// mêmes règles que la Zone de culture ; « Arroser tout » et « Récolter tout » n'agissent qu'ici.
+// Ouvert avec le Moulin, en herbe (version 1.9) ; aucune section avant. Mêmes cartes de
+// parcelle et mêmes règles que la Zone de culture ; « Arroser tout » et « Récolter tout »
+// n'agissent qu'ici.
 export function renderZone2() {
   const Z = DATA.POTAGER.ZONE2;
+  if (!zone2Open(state)) return '';
   const plots = zone2Plots(state);
-  if (!plots.length) return '';
+  const list = hoeMode && state.potager.houe
+    ? ''
+    : plots.length
+      ? `<div class="plots">${plots.map((p, i) => plotCard(p, i + 1)).join('')}</div>
+    <div class="row plot-foot">${groupButtons('potager', 2)}</div>`
+      : '<p class="muted">Tout est en herbe : prends la houe pour labourer.</p>';
   return `
     <div class="section-head">
       <h3><span aria-hidden="true">${Z.ICONE}</span> ${Z.NOM} · ${plots.length} parcelles</h3>
       <span class="chips">${autoChip('potager', 'Arrose et récolte tout seul, à 100 %, pendant la nuit')}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
-    <div class="plots">${plots.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${groupButtons('potager', 2)}</div>
+    ${hoePanelHtml(2)}
+    ${list}
   `;
 }
 
@@ -284,8 +293,5 @@ registerActions({
   },
   'upgrade-tank': () => {
     applyResult(upgradeTank(state));
-  },
-  'upgrade-potager': () => {
-    applyResult(upgradePotager(state));
   },
 });

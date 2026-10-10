@@ -64,12 +64,12 @@ for (const id of ids) parties[id] = E.simulateGame(id, nuits, graine);
 
 /* ---------- CSV ---------- */
 
-const entete = ['strategie', 'nuit', 'chapitre', 'autonomie_pct', 'energie', 'bonheur', 'niveau', 'pieces', 'conserves', 'couverture_pct', 'potager_niveau'];
+const entete = ['strategie', 'nuit', 'chapitre', 'autonomie_pct', 'energie', 'bonheur', 'niveau', 'pieces', 'conserves', 'couverture_pct', 'tuiles'];
 const num = (x, d = 2) => String(Math.round(x * 10 ** d) / 10 ** d);
 const lignes = [entete.join(',')];
 for (const id of ids) {
   for (const r of parties[id]) {
-    lignes.push([id, r.nuit, r.chapitre, num(r.autonomie), r.energie, num(r.bonheur), r.niveau, num(r.pieces), r.conserves, num(r.couverture * 100), r.potager].join(','));
+    lignes.push([id, r.nuit, r.chapitre, num(r.autonomie), r.energie, num(r.bonheur), r.niveau, num(r.pieces), r.conserves, num(r.couverture * 100), r.tuiles].join(','));
   }
 }
 const csvPath = resolve(option('csv', 'simulation.csv'));
@@ -149,13 +149,13 @@ if (!parties.applique) {
 } else {
   const rows = parties.applique;
 
-  // 1. Zone de culture (state.potager) niveau 2 avant la fin des conserves
-  const p2 = rows.find((r) => r.potager >= 2);
+  // 1. Version 1.9 : 12 tuiles de terre (le plafond du niveau 2) avant la fin des conserves
+  const p2 = rows.find((r) => r.tuiles >= E.DATA.NIVEAUX.TUILES[1]);
   const finConserves = rows.find((r) => r.conserves === 0);
   verifie(
-    'Zone de culture niveau 2 achetée avant la fin des conserves',
+    `${E.DATA.NIVEAUX.TUILES[1]} tuiles de terre avant la fin des conserves`,
     !!p2 && (!finConserves || p2.nuit <= finConserves.nuit),
-    `Zone de culture niveau 2 : ${p2 ? 'nuit ' + p2.nuit : 'jamais achetée'} ; conserves épuisées : ${finConserves ? 'nuit ' + finConserves.nuit : 'jamais'}.`,
+    `${E.DATA.NIVEAUX.TUILES[1]} tuiles labourées : ${p2 ? 'nuit ' + p2.nuit : 'jamais'} ; conserves épuisées : ${finConserves ? 'nuit ' + finConserves.nuit : 'jamais'}.`,
   );
 
   // 2. Aucune nuit sans repas (version 1.8 : à la place de « aucune santé à 0 »)

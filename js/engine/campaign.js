@@ -5,7 +5,7 @@ import { addItem, lotsOf } from './inventory.js';
 import { fridgeLots } from './fridge.js';
 import { planMeal } from './family.js';
 import { averageHappiness } from './ville.js';
-import { openZone2, plantableCrops } from './crops.js';
+import { plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
 import { gainXp, levelReached, unlockLevel } from './levels.js';
 
@@ -230,7 +230,6 @@ export function updateChapters(state) {
   }
   checkMastery(state); // Arbre v2 : jalons de maîtrise
   deliverMail(state); // version 1.3 : le courrier que ce stade de la partie fait arriver
-  openZone2(state); // version 1.4 : le Champ s'ouvre avec le Moulin
   return done;
 }
 

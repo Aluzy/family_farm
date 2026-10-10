@@ -13,7 +13,7 @@ import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
   autonomyHistory, autonomyPercent, autoTasks, availableEnergy, awakeMsAtHour, awakeRequired,
-  batteryCapacity, bedtimeDue, boltingPlan, boltSeedYield, botBuy, botDay, botFarm, botFieldTarget, botIsFieldCrop, botMill,
+  batteryCapacity, bedtimeDue, boltingPlan, boltSeedYield, botBuy, botDay, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill,
   botRaiseFunds, botRecipeValue, botSell, botSheep, botStepInfo, botWheatKept, buildCatalog, buildFridge,
   buildMorningReport, buildPaturage, buildPoulailler, buildSerre, buildSilo, buildStation, buildVerger,
   buyAnimal, buyAnimals, buyCow, buyItem, buyOrchardSlot, buyPasture, buyPrice, buyQuote,
@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, openZone2, holdStatus, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, holdStatus, TIRED, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, soilMask, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -53,7 +53,7 @@ import {
   testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
   testRipenAll, testSetBuildingLevel5, testSetWear, testSleepNights, testUnlockAllTechs,
   testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockLevel, unreadMail,
-  updateChapters, upgradeCost, upgradeDevice, upgradePotager, upgradePoulailler, upgradeSerre,
+  updateChapters, upgradeCost, upgradeDevice, upgradePoulailler, upgradeSerre,
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, waterCostFor,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
 } from '../js/engine/index.js';
@@ -760,6 +760,27 @@ function tireless(s) {
   return s;
 }
 
+// Version 1.9 : le Champ n'a plus ses 64 parcelles d'office ; pour les tests qui en ont
+// besoin, il est labouré en entier dès qu'il est ouvert (mode test).
+function openZone2(s) {
+  if (!zone2Open(s) || zone2Plots(s).length >= DATA.POTAGER.ZONE2.CASES) return false;
+  testHoeAll(s, 2);
+  return true;
+}
+
+// Version 1.9 : la Zone de culture ne s'agrandit plus en pièces ; les tests qui veulent
+// plus de parcelles les labourent (mode test : sans plafond, énergie ni XP).
+function growZone(s, total) {
+  s.potager.houe = true;
+  for (let c = 0; s.potager.parcelles.length < total && c < DATA.POTAGER.CASES; c++) {
+    if (plotAtCase(s, 1, c)) continue;
+    const n = s.potager.parcelles.length + 1;
+    s.potager.parcelles.push({ ...makePlot(n), case: c });
+  }
+  s.potager.parcelles.sort((a, b) => a.case - b.case);
+  return s;
+}
+
 test('DATA Lot 2 : objets, énergies et prix de vente', () => {
   const it = DATA.items;
   // Lot 11 (nutrition) : +25 % par rapport aux valeurs d'origine (6, 15, 6, 8,
@@ -848,7 +869,7 @@ test('état initial Lot 2 : inventaire, potager de 6 parcelles, famille de 4 à 
   const s = createInitialState(1);
   assertEqual(inventoryCounts(s), { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 });
   assertEqual(s.pieces, 350);
-  assertEqual(s.potager.niveau, 1);
+  assertEqual([s.potager.parcelles.map((p) => p.case), s.potager.houe, 'niveau' in s.potager], [[0, 1, 2, 5, 6, 7], false, false], 'version 1.9 : 6 cases en terre, pas encore de houe');
   assertEqual(s.potager.parcelles.length, 6);
   assertEqual(s.potager.parcelles.every((p) => p.culture === null && p.stade === 0 && !p.arrose && !p.montee), true);
   assertEqual(s.famille.membres.length, 4);
@@ -1087,33 +1108,19 @@ test('aléatoire à graine : nextRandom suit mulberry32 et vit dans l\'état', (
   }
 });
 
-test('Zone de culture : 6 / 12 / 18 / 24 / 30 parcelles, coûts 200 / 480 / 1 050 / 2 300', () => {
+test('version 1.9 : la Zone de culture, grille de 30 cases ; plafond de tuiles par niveau', () => {
   assertEqual([DATA.POTAGER.LIEU, DATA.POTAGER.NOM, DATA.POTAGER.ICONE], ['potager', 'Zone de culture', '🌱']);
-  assertEqual(DATA.POTAGER.PARCELLES, [6, 12, 18, 24, 30]);
-  assertEqual(DATA.POTAGER.COUT, [0, 200, 480, 1050, 2300]);
+  assertEqual([DATA.POTAGER.COLONNES, DATA.POTAGER.CASES, DATA.POTAGER.ZONE2.COLONNES, DATA.POTAGER.ZONE2.CASES], [5, 30, 8, 64]);
+  assertEqual([DATA.POTAGER.PARCELLES, DATA.POTAGER.COUT], [undefined, undefined], 'plus d\'agrandissement en pièces');
   assertEqual(DATA.CHAMP, undefined, 'le Champ n\'existe plus comme bâtiment');
+  assertEqual(DATA.NIVEAUX.TUILES, [6, 12, 20, 32, 48, 64, 64, 64, 64, 64]);
   const s = garden();
-  s.pieces = 10;
-  assertEqual(upgradePotager(s).ok, false, 'pas assez de pièces');
-  assertEqual(s.potager.niveau, 1);
-  assertEqual(s.pieces, 10);
-  s.pieces = 5000;
-  plant(s, 'potager-1', 'carotte');
-  const costs = [];
-  const counts = [];
-  for (let i = 0; i < 4; i++) {
-    costs.push(upgradePotager(s).cost);
-    counts.push(s.potager.parcelles.length);
-  }
-  assertEqual(costs, [200, 480, 1050, 2300]);
-  assertEqual(counts, [12, 18, 24, 30]);
-  assertEqual(s.potager.niveau, 5);
-  assertEqual(s.pieces, 5000 - 4030);
-  assertEqual(upgradePotager(s).ok, false, 'niveau maximum');
-  assertEqual(findPlot(s, 'potager-1').culture, 'carotte', 'les parcelles existantes sont conservées');
-  assertEqual(new Set(s.potager.parcelles.map((p) => p.id)).size, 30, 'ids uniques');
-  assertEqual(s.potager.parcelles.map((p) => p.lieu).every((l) => l === 'potager'), true);
-  assertEqual(s.potager.parcelles[29].id, 'potager-30');
+  assertEqual([soilCount(s), soilCap(s), soilCapNext(s)], [6, 6, 6]);
+  testSetLevel(s, 5);
+  assertEqual([soilCap(s), soilCapNext(s)], [48, 16]);
+  testSetLevel(s, 10);
+  assertEqual([soilCap(s), soilCapNext(s)], [64, 0]);
+  assertEqual(new Set(startPlots().map((p) => p.id)).size, 6);
 });
 
 test('famille : besoin = 50 par adulte + 25 par enfant = 150', () => {
@@ -2040,13 +2047,9 @@ test('le Champ n\'existe plus : ni état, ni actions, une seule zone qui grandit
   assertEqual(allPlots(s).map((p) => p.id), ['potager-1', 'potager-2', 'potager-3', 'potager-4', 'potager-5', 'potager-6']);
   assertEqual(allPlots(s).every((p) => p.lieu === 'potager'), true);
   assertEqual(findPlot(s, 'champ-1'), null, 'aucune parcelle « champ-n »');
-  // les 6 parcelles de plus du niveau 2 remplacent l'ancien Champ (4 parcelles pour 60 pièces)
-  s.pieces = 199;
-  assertEqual(upgradePotager(s).ok, false, 'agrandissement refusé sans 200 pièces');
-  s.pieces = 200;
-  assertEqual(upgradePotager(s).ok, true);
-  assertEqual([s.pieces, s.potager.niveau, s.potager.parcelles.length], [0, 2, 12]);
-  assertEqual(s.potager.parcelles.slice(6).map((p) => [p.id, p.lieu]), [7, 8, 9, 10, 11, 12].map((n) => [`potager-${n}`, 'potager']));
+  // version 1.9 : la zone grandit à la houe
+  growZone(s, 12);
+  assertEqual(s.potager.parcelles.filter((p) => !DATA.POTAGER.DEPART.includes(p.case)).map((p) => [p.id, p.lieu]), [7, 8, 9, 10, 11, 12].map((n) => [`potager-${n}`, 'potager']));
 });
 
 test('cultures de plein champ : la Zone de culture les fait pousser comme les légumes (planter, arroser, pousser, récolter)', () => {
@@ -2405,7 +2408,7 @@ test('migration v4 (Lot 3) → v5 : Silo et Poulailler apparaissent (plus de Cha
   assertEqual([m.day, m.pieces], [12, 321]);
   assertEqual(m.marche, { carotte: 150 }, 'coefficient converti en %');
   assertEqual('champ' in m, false, 'aucun Champ n\'est créé : la Zone de culture le remplace');
-  assertEqual([m.potager.niveau, m.potager.parcelles.length], [1, 6]);
+  assertEqual([m.potager.parcelles.length, 'niveau' in m.potager], [6, false]);
   assertEqual(m.silo, { construit: false, niveau: 1, ble: 0 });
   assertEqual(m.poulailler, { construit: false, niveau: 1, poules: 0, nourries: 0, restes: 0 });
   assertEqual([m.jour.ble, m.nuit.oeufs], [0, 0]);
@@ -4793,7 +4796,7 @@ test('éveil minimal : 30 s, puis 20 s, puis 10 s', () => {
 test('prérequis : palier, bâtiment, nœud précédent, PT et pièces', () => {
   const s = createInitialState(1);
   s.pieces = 5000;
-  // cu_recolte_auto : palier 3 (chapitre 4), Outils de jardin, Potager niveau 4
+  // cu_recolte_auto : palier 3 (chapitre 4), Outils de jardin, 24 tuiles de terre
   assertEqual(techStatus(s, 'cu_recolte_auto'), 'verrouille');
   assertEqual(techPrereqs(s, 'cu_recolte_auto').map((p) => p.ok), [false, false, false]);
   s.campagne.chapitre = 4;
@@ -4803,9 +4806,10 @@ test('prérequis : palier, bâtiment, nœud précédent, PT et pièces', () => {
   assertEqual([refus.ok, s.pieces, s.technologies, techPoints(s).solde], [false, 5000, [], 10]);
   assertEqual(buyTech(s, 'cu_outils').ok, true);
   assertEqual([s.pieces, techPoints(s).solde], [4900, 9], '1 PT + 100 💰');
-  s.potager.niveau = 3;
-  assertEqual(buyTech(s, 'cu_recolte_auto').ok, false, 'niveau 3 ne suffit pas');
-  s.potager.niveau = 4;
+  growZone(s, 23);
+  assertEqual(buyTech(s, 'cu_recolte_auto').ok, false, '23 tuiles ne suffisent pas');
+  assertEqual(techPrereqs(s, 'cu_recolte_auto')[2].texte, '🟫 24 tuiles de terre', 'version 1.9 : des tuiles à la place du niveau 4 de la zone');
+  growZone(s, 24);
   assertEqual(techStatus(s, 'cu_recolte_auto'), 'disponible');
   assertEqual(buyTech(s, 'cu_recolte_auto').ok, true);
   assertEqual([s.pieces, techPoints(s).solde, techStatus(s, 'cu_recolte_auto')], [4000, 7, 'acquis']);
@@ -4854,7 +4858,7 @@ test('onglet Arbre des technologies : ajouté la première fois qu\'on possède 
 test('mode test Lot 7 : un bâtiment au niveau 5, tous les nœuds débloqués', () => {
   const s = createInitialState(1);
   assertEqual(testSetBuildingLevel5(s, 'potager').ok, true);
-  assertEqual([s.potager.niveau, s.potager.parcelles.length], [5, 30]);
+  assertEqual([s.potager.parcelles.length, 'niveau' in s.potager], [30, false]);
   assertEqual(s.pieces, 350, 'sans rien payer');
   assertEqual(testSetBuildingLevel5(s, 'champ').ok, false, 'le Champ n\'est plus un bâtiment');
   assertEqual(s.champ, undefined);
@@ -4913,7 +4917,7 @@ test('progression affichée dans l\'arbre : niveaux des bâtiments et appareils'
   const s = auto5('potager');
   const culture = techProgress(s, 'culture');
   // une seule ligne : la Zone de culture (l'ancien Champ n'est plus suivi)
-  assertEqual(culture.map((e) => [e.cle, e.nom, e.niveau, e.automatise]), [['potager', 'Zone de culture', 5, true]]);
+  assertEqual(culture.map((e) => [e.cle, e.nom, e.type, e.tuiles, e.max, e.automatise]), [['potager', 'Zone de culture', 'tuiles', 30, 30, true]], 'version 1.9 : les tuiles de terre, plus de niveau');
   assertEqual([DATA.techtree.batiments.champ, DATA.techtree.suivi.champ], [undefined, undefined]);
   assertEqual(DATA.techtree.batiments.potager.nom, 'Zone de culture');
   const energie = techProgress(s, 'energie');
@@ -4947,8 +4951,8 @@ test('migration v7 (Lot 6) → v8 : technologies vides, réglage de semis sur ch
   assertEqual(m.potager.parcelles.every((p) => p.semis === 'meme' && p.verrou === null), true);
   // v15 : la parcelle de l'ancien Champ a rejoint la zone (6 + 1 = 7 parcelles : niveau 2, 12 parcelles)
   assertEqual('champ' in m, false);
-  assertEqual([m.potager.niveau, m.potager.parcelles.length], [2, 12]);
-  assertEqual(m.potager.parcelles[6], { id: 'potager-7', lieu: 'potager', culture: 'ble', stade: 3, arrose: true, montee: false, semis: 'meme', verrou: null });
+  assertEqual([m.potager.parcelles.length, 'niveau' in m.potager], [12, false]);
+  assertEqual(m.potager.parcelles[6], { id: 'potager-7', lieu: 'potager', culture: 'ble', stade: 3, arrose: true, montee: false, semis: 'meme', verrou: null, case: 6 });
   assertEqual(m.nuit.auto, newAutoReport());
   tick(m, 0.2);
   assertEqual(m.unlockedTabs.includes('techno'), true, '900 pièces');
@@ -5098,7 +5102,7 @@ function v14State({ potager = 1, champ = 0 } = {}, mutate) {
 
 // Ce qu'une parcelle porte, sans son identifiant ni son lieu (que la fusion renumérote).
 function plotContent(p) {
-  const { id, lieu, ...reste } = p;
+  const { id, lieu, case: kase, ...reste } = p;
   return reste;
 }
 
@@ -5113,20 +5117,19 @@ test('migration v14 → v15 : Champ non construit, le Potager devient la Zone de
   assertEqual(m.version, STATE_VERSION);
   assertEqual('champ' in m, false, 'state.champ a disparu');
   // 12 parcelles possédées : niveau 2 de la zone (12 parcelles), rien à compléter
-  assertEqual([m.potager.niveau, m.potager.parcelles.length], [2, 12]);
+  assertEqual([m.potager.parcelles.length, 'niveau' in m.potager], [12, false]);
   assertEqual(m.potager.parcelles.map((p) => p.id), Array.from({ length: 12 }, (_, i) => `potager-${i + 1}`));
   assertEqual(m.potager.parcelles.map(plotContent), v14.potager.parcelles.map(plotContent), 'chaque parcelle garde tout ce qu\'elle portait');
   assertEqual([m.pieces, m.inventaire, m.campagne], [432, v14.inventaire, v14.campagne], 'rien d\'autre ne bouge');
   assertEqual(m.nuit.auto, newAutoReport(), 'le compte rendu n\'a plus de ligne Champ');
   // niveau de la zone = le plus petit dont la capacité (6 / 12 / 18 / 24 / 30) contient les parcelles possédées
-  const zone = (potager) => { const z = migrate({ v: 14, t: 0, s: v14State({ potager }) }).potager; return [z.niveau, z.parcelles.length]; };
-  assertEqual([1, 2, 3, 4, 5].map(zone), [[1, 6], [2, 12], [2, 12], [3, 18], [4, 24]]);
+  const zone = (potager) => migrate({ v: 14, t: 0, s: v14State({ potager }) }).potager.parcelles.length;
+  assertEqual([1, 2, 3, 4, 5].map(zone), [6, 12, 12, 18, 24]);
   // les parcelles ajoutées pour compléter le niveau sont vides, et la partie continue
   const z = migrate({ v: 14, t: 0, s: v14State({ potager: 2 }) });
-  assertEqual(z.potager.parcelles.slice(9), [makePlot(10), makePlot(11), makePlot(12)]);
+  assertEqual(z.potager.parcelles.slice(9), [9, 10, 11].map((c) => ({ ...makePlot(c + 1), case: c })));
   assert(sleepOnce(z) !== null, 'la partie migrée passe la nuit');
-  assertEqual(upgradePotager(Object.assign(z, { pieces: 5000 })).cost, 480, 'la zone s\'agrandit ensuite au nouveau tarif');
-  assertEqual(z.potager.parcelles.length, 18);
+  assertEqual([z.potager.houe, 'niveau' in z.potager], [true, false], 'version 1.9 : la zone ne s\'agrandit plus en pièces ; la houe est offerte');
 });
 
 test('migration v14 → v15 : Champ construit avec des cultures, tout est regroupé dans la zone', () => {
@@ -5145,15 +5148,15 @@ test('migration v14 → v15 : Champ construit avec des cultures, tout est regrou
   const m = migrate({ v: 14, t: 0, s: v14 });
   assertEqual([m.version, 'champ' in m], [STATE_VERSION, false]);
   // 9 + 6 = 15 parcelles : niveau 3 (18 parcelles), 3 parcelles vides en plus
-  assertEqual([m.potager.niveau, m.potager.parcelles.length], [3, 18]);
+  assertEqual([m.potager.parcelles.length, 'niveau' in m.potager], [18, false]);
   assertEqual(m.potager.parcelles.map((p) => p.id), Array.from({ length: 18 }, (_, i) => `potager-${i + 1}`));
   assertEqual(m.potager.parcelles.every((p) => p.lieu === 'potager'), true, 'le lieu « champ » a disparu');
   // d'abord les parcelles du Potager, puis celles du Champ, dans leur ordre, avec tous leurs champs
   assertEqual(m.potager.parcelles.slice(0, 15).map(plotContent), [...v14.potager.parcelles, ...v14.champ.parcelles].map(plotContent));
-  assertEqual(m.potager.parcelles[9], { id: 'potager-10', lieu: 'potager', culture: 'ble', stade: 5, arrose: true, montee: false, semis: 'meme', verrou: null });
-  assertEqual(m.potager.parcelles[10], { id: 'potager-11', lieu: 'potager', culture: 'tournesol', stade: 7, arrose: false, montee: false, semis: 'verrou', verrou: 'tournesol' });
-  assertEqual(m.potager.parcelles[12], { id: 'potager-13', lieu: 'potager', culture: 'riz', stade: 2, arrose: false, montee: false, semis: 'verrou', verrou: 'ble', note: 'champ libre' }, 'même un champ inconnu est gardé');
-  assertEqual(m.potager.parcelles.slice(15), [makePlot(16), makePlot(17), makePlot(18)]);
+  assertEqual(m.potager.parcelles[9], { id: 'potager-10', lieu: 'potager', culture: 'ble', stade: 5, arrose: true, montee: false, semis: 'meme', verrou: null, case: 9 });
+  assertEqual(m.potager.parcelles[10], { id: 'potager-11', lieu: 'potager', culture: 'tournesol', stade: 7, arrose: false, montee: false, semis: 'verrou', verrou: 'tournesol', case: 10 });
+  assertEqual(m.potager.parcelles[12], { id: 'potager-13', lieu: 'potager', culture: 'riz', stade: 2, arrose: false, montee: false, semis: 'verrou', verrou: 'ble', note: 'champ libre', case: 12 }, 'même un champ inconnu est gardé');
+  assertEqual(m.potager.parcelles.slice(15), [15, 16, 17].map((c) => ({ ...makePlot(c + 1), case: c })));
   assertEqual(m.inventaire, v14.inventaire, 'aucun remboursement : rien n\'a été retiré');
   // ce qui était rangé sous la clé « champ » rejoint la zone
   assertEqual([m.nuit.auto.potager, 'champ' in m.nuit.auto, m.nuit.auto.arrosees], [true, false, 3]);
@@ -5190,7 +5193,7 @@ test('migration v14 → v15 : plus de 30 parcelles, on en garde 30 et chaque pla
   const before = [...v14.potager.parcelles, ...v14.champ.parcelles];
   const m = migrate({ v: 14, t: 0, s: v14 });
   assertEqual([m.version, 'champ' in m], [STATE_VERSION, false]);
-  assertEqual([m.potager.niveau, m.potager.parcelles.length], [5, 30]);
+  assertEqual([m.potager.parcelles.length, 'niveau' in m.potager], [30, false]);
   assertEqual(m.potager.parcelles.map((p) => p.id), Array.from({ length: 30 }, (_, i) => `potager-${i + 1}`));
   assertEqual(m.potager.parcelles.every((p) => p.lieu === 'potager' && p.culture !== null), true, 'les 30 parcelles gardées sont toutes plantées');
   // les parcelles gardées restent dans l'ordre, avec tout ce qu'elles portaient
@@ -5210,7 +5213,7 @@ test('migration v14 → v15 : plus de 30 parcelles, on en garde 30 et chaque pla
     for (const p of [...s.potager.parcelles, ...s.champ.parcelles]) Object.assign(p, { culture: 'patate', stade: 1 });
     s.inventaire = {};
   }) });
-  assertEqual([pile.potager.niveau, pile.potager.parcelles.length, pile.inventaire], [5, 30, {}]);
+  assertEqual([pile.potager.parcelles.length, pile.inventaire], [30, {}]);
   assertEqual(pile.potager.parcelles.map((p) => p.culture), [...Array(29).fill('patate'), null]);
 });
 
@@ -5248,7 +5251,7 @@ test('migration v15 → v16 : une partie sans animaux ne perd ni ne gagne rien',
   const v15 = v15State((s) => { s.pieces = 432; s.day = 12; });
   const m = migrate({ v: 15, t: 0, s: v15 });
   assertEqual(m.version, STATE_VERSION);
-  assertEqual([m.pieces, m.day, m.inventaire, m.campagne, m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, v15.campagne, v15.potager, v15.technologies, v15.pointsTech]);
+  assertEqual([m.pieces, m.day, m.inventaire, m.campagne, m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, v15.campagne, { ...v15.potager, houe: true }, v15.technologies, v15.pointsTech]);
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   assertEqual(countItem(m, 'paille'), 0, 'pas d\'animaux : pas de paille offerte');
   assertEqual(m.nuit.etable, newStableReport());
@@ -5501,7 +5504,7 @@ test('migration v14 → v15 : chaque champ de chaque parcelle est conservé, que
     const m = migrate({ v: 14, t: 0, s: v14 });
     const planted = m.potager.parcelles.filter((p) => p.culture);
     assertEqual(planted.map(plotContent), before.filter((p) => p.culture).map(plotContent), `potager ${potager}, champ ${champ} : les parcelles plantées`);
-    assertEqual(m.potager.parcelles.length, DATA.POTAGER.PARCELLES[m.potager.niveau - 1], 'la zone est pleine à son niveau');
+    assert(DATA.POTAGER.PARCELLES_V1.includes(m.potager.parcelles.length), 'la zone est pleine à son ancien niveau');
     assert(m.potager.parcelles.length >= Math.min(30, before.length), 'aucune parcelle possédée n\'est perdue (30 au plus)');
     assertEqual(new Set(m.potager.parcelles.map((p) => p.id)).size, m.potager.parcelles.length, 'identifiants uniques');
     assertEqual(m.potager.parcelles.map((p) => p.id), m.potager.parcelles.map((_, i) => makePlot(i + 1).id), 'numérotés comme makePlot()');
@@ -5515,7 +5518,7 @@ test('migration v14 → v15 : chaque champ de chaque parcelle est conservé, que
   const vide = v14State();
   delete vide.potager.parcelles;
   const mv = migrate({ v: 14, t: 0, s: vide });
-  assertEqual([mv.potager.niveau, mv.potager.parcelles], [1, makePlots(6)]);
+  assertEqual(mv.potager.parcelles, makePlots(6).map((p, i) => ({ ...p, case: i })));
 });
 
 test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage', () => {
@@ -6707,7 +6710,7 @@ test('tenue : état du suivi pour l\'interface', () => {
 test('DATA niveaux : seuils, gains d\'XP, XP des chapitres', () => {
   const N = DATA.NIVEAUX;
   assertEqual(N.SEUILS, [0, 500, 1200, 3000, 7500, 20000, 40000, 80000, 180000, 400000]);
-  assertEqual(N.XP, { planter: 10, arroser: 10, recolter: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
+  assertEqual(N.XP, { labourer: 10, planter: 10, arroser: 10, recolter: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
   assertEqual([N.AUTO, N.CHAPITRES_XP.slice(0, 4)], [50, [200, 500, 1000, 2500]]);
   assertEqual([0, 499, 500, 1199, 1200, 400000, 10 ** 7].map(levelForXp), [1, 1, 2, 2, 3, 10, 10]);
   assertEqual(createInitialState(1).progression, { xp: 0, niveau: 1, annonces: [] });
@@ -7171,17 +7174,31 @@ test('Lot 10 : le joueur vend ce qui périt demain et que le repas ne mangera pa
   assert(s.pieces > piecesAvant, 'la vente rapporte des pièces');
 });
 
-test('Lot 10 : le joueur n\'achète le Potager niveau 2 qu\'en gardant sa caisse', () => {
+test('Lot 10 : le joueur n\'achète la houe qu\'en gardant sa caisse', () => {
   const s = createInitialState(1);
   s.inventaire = {};
-  const cout = DATA.POTAGER.COUT[1];
+  const cout = DATA.HOUE.PRIX;
   s.pieces = cout + DATA.SIMULATION.CAISSE - 1;
   botBuy(s, 60);
-  assertEqual(s.potager.niveau, 1, 'il lui manque une pièce pour garder la caisse');
+  assertEqual(hasHoe(s), false, 'il lui manque une pièce pour garder la caisse');
   s.pieces = cout + DATA.SIMULATION.CAISSE;
   botBuy(s, 60);
-  assertEqual(s.potager.niveau, 2);
+  assertEqual(hasHoe(s), true);
   assertEqual(s.pieces, DATA.SIMULATION.CAISSE);
+});
+
+test('version 1.9 : le joueur automatique laboure jusqu\'au plafond, en gardant de l\'énergie', () => {
+  const s = createInitialState(1);
+  s.potager.houe = true;
+  testSetLevel(s, 2);
+  botHoe(s);
+  assertEqual(soilCount(s), 12, 'plafond du niveau 2');
+  const t = createInitialState(1);
+  t.potager.houe = true;
+  testSetLevel(t, 3);
+  t.energie = actionCost(t, 'recolter') * 3 + actionCost(t, 'labourer') * 2;
+  botHoe(t);
+  assertEqual(soilCount(t), 8, 'deux labours, puis il garde de quoi récolter');
 });
 
 test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ (blé, tournesol)', () => {
@@ -7189,13 +7206,13 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   assertEqual(S.PART_PLEIN_CHAMP, 40);
   // plus d'étape « champ » : la zone grandit par les étapes « potager »
   assertEqual([...S.PLAN, ...Object.values(S.PRIORITE).flat()].some((e) => e.type === 'champ'), false);
-  assertEqual(S.PLAN.filter((e) => e.type === 'potager').map((e) => e.niveau), [2, 3, 4, 5]);
+  assertEqual([S.PLAN.some((e) => e.type === 'potager'), S.PLAN.filter((e) => e.type === 'houe').length], [false, 1], 'version 1.9 : la houe à la place des agrandissements');
   // la part ne vaut qu'une fois les cultures de plein champ débloquées (chapitre 3)
   const cible = (chapitre, niveau) => {
     const s = atChapter(chapitre);
     s.pieces = 5000;
     buildSilo(s); // version 1.7 : le blé attend le Silo (refusé avant son niveau)
-    while (s.potager.niveau < niveau) upgradePotager(Object.assign(s, { pieces: 5000 }));
+    growZone(s, DATA.POTAGER.PARCELLES_V1[niveau - 1]);
     return botFieldTarget(s);
   };
   assertEqual([cible(2, 2), cible(3, 1), cible(3, 2), cible(3, 3), cible(3, 4), cible(3, 5)], [0, 2, 4, 7, 9, 12]);
@@ -7203,7 +7220,7 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   const s = atChapter(3);
   s.pieces = 5000;
   buildSilo(s);
-  upgradePotager(Object.assign(s, { pieces: 5000 }));
+  growZone(s, 12);
   setInv(s, { ble: 20, patate: 20, graine_carotte: 20, riz: 20, houblon: 20, graine_tournesol: 20 });
   botFarm(s);
   const cultures = (st) => st.potager.parcelles.map((p) => p.culture);
@@ -7215,7 +7232,7 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   const t = atChapter(4);
   t.pieces = 5000;
   buildSilo(t);
-  upgradePotager(Object.assign(t, { pieces: 5000 }));
+  growZone(t, 12);
   t.stations.presse.construit = true;
   setInv(t, { ble: 20, patate: 20, graine_tournesol: 20 });
   botFarm(t);
@@ -7274,7 +7291,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.8.0');
+  assertEqual(GAME_VERSION, '1.9.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -8153,14 +8170,14 @@ test('données : chaque culture connaît sa découpe sur la carte', () => {
 test('version 1.4 : format 20, le Champ commence vide et la migration l\'ajoute', () => {
   assertEqual([typeof MIGRATIONS[19], STATE_VERSION >= 20], ['function', true]);
   const Z = DATA.POTAGER.ZONE2;
-  assertEqual([Z.ID, Z.PARCELLES, Z.COLONNES, Z.DEBLOCAGE], ['zone2', 64, 8, 'moulin']);
+  assertEqual([Z.ID, Z.CASES, Z.COLONNES, Z.DEBLOCAGE], ['zone2', 64, 8, 'moulin']);
   const neuf = createInitialState(1);
-  assertEqual([neuf.potager.zone2, zone2Plots(neuf), allPlots(neuf).length], [[], [], DATA.POTAGER.PARCELLES[0]]);
+  assertEqual([neuf.potager.zone2, zone2Plots(neuf), allPlots(neuf).length], [[], [], 6]);
   const v19 = JSON.parse(JSON.stringify(createInitialState(3)));
   v19.version = 19;
   delete v19.potager.zone2;
   const m = migrate({ v: 19, t: 0, s: v19 });
-  assertEqual([m.version, m.potager.zone2, m.potager.parcelles.length], [STATE_VERSION, [], DATA.POTAGER.PARCELLES[0]]);
+  assertEqual([m.version, m.potager.zone2, m.potager.parcelles.length], [STATE_VERSION, [], 6]);
   assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
 });
 
@@ -8171,36 +8188,32 @@ function withMill() {
   return s;
 }
 
-test('version 1.4 : le Champ s\'ouvre en entier avec le Moulin, une seule fois, sans rien payer', () => {
-  const Z = DATA.POTAGER.ZONE2;
+test('version 1.9 : le Champ s\'ouvre avec le Moulin, en herbe, et se laboure à la houe', () => {
   const avant = atLevel(unlockLevel('moulin') - 1);
   updateChapters(avant);
-  assertEqual([isUnlocked(avant, 'moulin'), zone2Plots(avant).length], [false, 0], 'pas avant le Moulin');
+  assertEqual([isUnlocked(avant, 'moulin'), zone2Open(avant)], [false, false], 'pas avant le Moulin');
   const debloque = atLevel(unlockLevel('moulin'));
   updateChapters(debloque);
-  assertEqual([isUnlocked(debloque, 'moulin'), zone2Plots(debloque).length], [true, 0], 'version 1.7 : débloqué ne suffit pas, il faut le construire');
+  assertEqual([isUnlocked(debloque, 'moulin'), zone2Open(debloque)], [true, false], 'version 1.7 : débloqué ne suffit pas, il faut le construire');
   const s = withMill();
   const pieces = s.pieces;
   updateChapters(s);
-  const z = zone2Plots(s);
-  assertEqual([z.length, s.pieces, s.potager.parcelles.length], [Z.PARCELLES, pieces, DATA.POTAGER.PARCELLES[0]]);
-  assertEqual([z[0].id, z[63].id, z[0].lieu, z[0].zone, plotZone(z[0]), plotZone(s.potager.parcelles[0])], ['zone2-1', 'zone2-64', 'potager', 2, 2, 1]);
-  assertEqual(z[0], makeZone2Plot(1));
+  assertEqual([zone2Open(s), zone2Plots(s).length, s.pieces], [true, 0, pieces], 'ouvert, rien de labouré, rien payé');
+  s.potager.houe = true;
+  tireless(s);
+  const r = hoe(s, 2, 10);
+  assertEqual([r.ok, r.plot.id, r.plot.case, r.plot.zone, r.plot.lieu, plotZone(r.plot)], [true, 'zone2-1', 10, 2, 'potager', 2]);
+  assertEqual(findPlot(s, 'zone2-1'), r.plot);
   assertEqual(new Set(allPlots(s).map((p) => p.id)).size, allPlots(s).length, 'aucun identifiant en double');
-  assertEqual(findPlot(s, 'zone2-10'), z[9]);
-  // Une seule fois : un deuxième passage ne recrée rien et ne touche pas aux plantes.
   addItem(s, 'ble', 5);
-  assert(plant(s, 'zone2-10', 'ble').ok, 'planter du blé dans le Champ');
-  assertEqual([openZone2(s), updateChapters(s) >= 0, zone2Plots(s).length, z[9].culture], [false, true, Z.PARCELLES, 'ble']);
-  // Agrandir la Zone de culture ne touche pas au Champ.
-  s.pieces = 10000;
-  assert(upgradePotager(s).ok, 'agrandir la zone');
-  assertEqual([s.potager.parcelles.length, zone2Plots(s).length], [DATA.POTAGER.PARCELLES[1], Z.PARCELLES]);
+  assert(plant(s, 'zone2-1', 'ble').ok, 'planter du blé dans le Champ');
+  assertEqual(hoe(s, 2, 10).ok, false, 'une terre plantée ne se rebouche pas');
 });
 
 test('version 1.4 : le Champ suit les règles de la Zone de culture (cultures, eau, pousse, récolte)', () => {
   const s = withMill();
   updateChapters(s);
+  openZone2(s); // version 1.9 : le Champ labouré en entier (mode test)
   assertEqual(plantableCropsFor(s, zone2Plots(s)[0].lieu), plantableCropsFor(s, 'potager'), 'mêmes cultures');
   addItem(s, 'graines_carotte', 2);
   assert(plant(s, 'zone2-1', 'carotte').ok && plant(s, 'potager-1', 'carotte').ok, 'une carotte dans chaque zone');
@@ -8217,6 +8230,7 @@ test('version 1.4 : le Champ suit les règles de la Zone de culture (cultures, e
 test('version 1.4 : « Arroser tout » et « Récolter tout » s\'adressent à une zone à la fois', () => {
   const s = withMill();
   updateChapters(s);
+  openZone2(s); // version 1.9 : le Champ labouré en entier (mode test)
   grantTech(s, 'cu_outils');
   addItem(s, 'ble', 10);
   for (const id of ['potager-1', 'potager-2', 'zone2-1', 'zone2-2', 'zone2-3']) assert(plant(s, id, 'ble').ok, id);
@@ -8238,6 +8252,7 @@ test('version 1.4 : « Arroser tout » et « Récolter tout » s\'adressent à u
 test('version 1.4 : les automatisations et les alertes de la Zone de culture couvrent le Champ', () => {
   const s = withMill();
   updateChapters(s);
+  openZone2(s); // version 1.9 : le Champ labouré en entier (mode test)
   addItem(s, 'ble', 4);
   assert(plant(s, 'zone2-5', 'ble').ok, 'planter');
   s.eauMl = 100000;
@@ -8261,14 +8276,14 @@ test('version 1.4 : une partie d\'avant, Moulin déjà débloqué, reçoit le Ch
   const m = migrate({ v: 19, t: 0, s: v19 });
   assertEqual(zone2Plots(m).length, 0, 'la migration ne crée rien');
   updateChapters(m);
-  assertEqual(zone2Plots(m).length, DATA.POTAGER.ZONE2.PARCELLES);
+  assertEqual([zone2Open(m), zone2Plots(m).length], [true, 0], 'version 1.9 : le Champ ouvert, en herbe');
   // Une partie restée avant le Moulin ne reçoit rien.
   const tot = JSON.parse(JSON.stringify(atChapter(2)));
   tot.version = 19;
   delete tot.potager.zone2;
   const m2 = migrate({ v: 19, t: 0, s: tot });
   updateChapters(m2);
-  assertEqual(zone2Plots(m2).length, 0);
+  assertEqual([zone2Open(m2), zone2Plots(m2).length], [false, 0]);
 });
 
 test('version 1.4 : un Verger de plus de 12 emplacements garde ses arbres et ses fruits', () => {
@@ -8564,6 +8579,95 @@ test('version 1.8 : migration v25 → v26 : santé, soins et nœuds retirés', (
   assertEqual([m.technologies, m.pieces, m.pointsTech.solde], [[], 410, 2], 'nœuds retirés remboursés');
   assertEqual(['bonusPlats' in m.nuit, 'santeAvant' in m.nuit], [false, false]);
   assertEqual(migrate({ v: 25, t: 0, s: old }).energie, 100000, 'chargement d\'une ancienne partie');
+});
+
+/* ---------- version 1.9 (v2, lot 5) : la houe ---------- */
+
+test('version 1.9 : la houe s\'achète une fois au Marché', () => {
+  const s = garden();
+  assertEqual([hasHoe(s), DATA.HOUE.PRIX], [false, 40]);
+  s.pieces = 39;
+  assertEqual(buyHoe(s).ok, false, 'pas assez de pièces');
+  s.pieces = 100;
+  assertEqual([buyHoe(s).cost, s.pieces, hasHoe(s)], [40, 60, true]);
+  assertEqual([buyHoe(s).ok, s.pieces], [false, 60], 'une seule houe');
+});
+
+test('version 1.9 : labourer une case d\'herbe coûte de l\'énergie et rapporte de l\'XP, dans le plafond', () => {
+  const s = garden();
+  testSetLevel(s, 2);
+  assertEqual(hoe(s, 1, 3).error, `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).`);
+  s.potager.houe = true;
+  const [e, xp] = [s.energie, s.progression.xp];
+  const r = hoe(s, 1, 3);
+  assertEqual([r.ok, r.action, r.plot.id, r.plot.case, soilCount(s)], [true, 'labourer', 'potager-7', 3, 7]);
+  assertEqual([e - s.energie, s.progression.xp - xp], [actionCost(s, 'labourer'), actionXp('labourer')]);
+  assertEqual(s.potager.parcelles.map((p) => p.case), [0, 1, 2, 3, 5, 6, 7], 'rangées par case');
+  assert(plant(tireless(s), 'potager-7', 'carotte').ok, 'la nouvelle terre se plante');
+  for (const c of [4, 8, 9, 10, 11]) assert(hoe(s, 1, c).ok, `case ${c}`);
+  const plein = hoeStatus(s, 1, 12);
+  assertEqual([plein.ok, plein.raison], [false, 'Plafond atteint : 12 tuiles au niveau 2. Niveau suivant : +8 tuiles.']);
+  assertEqual([hoe(s, 1, 30).ok, hoe(s, 1, -1).ok, hoe(s, 2, 0).ok], [false, false, false], 'hors de la grille, Champ fermé');
+  s.energie = 0;
+  testSetLevel(s, 3);
+  assertEqual(hoe(s, 1, 12).error, TIRED);
+});
+
+test('version 1.9 : reboucher une terre vide est gratuit et rend la place ; une terre plantée reste', () => {
+  const s = garden();
+  s.potager.houe = true;
+  const [e, xp] = [s.energie, s.progression.xp];
+  assertEqual(hoeStatus(s, 1, 0).action, 'reboucher');
+  const r = hoe(s, 1, 0);
+  assertEqual([r.ok, r.action, r.plot.id, soilCount(s), s.energie, s.progression.xp], [true, 'reboucher', 'potager-1', 5, e, xp]);
+  assertEqual(findPlot(s, 'potager-1'), null);
+  assert(hoe(s, 1, 4).ok, 'la place rendue se laboure ailleurs');
+  assertEqual(plotAtCase(s, 1, 4).id, 'potager-7', 'jamais un identifiant déjà pris');
+  plant(s, 'potager-2', 'carotte');
+  assertEqual(hoe(s, 1, 1).ok, false, 'terre plantée');
+});
+
+test('version 1.9 : le dessin d\'une terre suit ses quatre voisines (16 masques)', () => {
+  const s = garden();
+  // départ : cases 0, 1, 2 (rangée 1) et 5, 6, 7 (rangée 2) sur 5 colonnes
+  assertEqual([0, 1, 2, 5, 6, 7].map((c) => soilMask(s, 1, c)), [2 | 4, 2 | 4 | 8, 4 | 8, 1 | 2, 1 | 2 | 8, 1 | 8]);
+  s.potager.houe = true;
+  testSetLevel(s, 2);
+  hoe(s, 1, 3);
+  assertEqual([soilMask(s, 1, 2), soilMask(s, 1, 3)], [2 | 4 | 8, 8], 'les côtés communs s\'ouvrent');
+  hoe(s, 1, 4);
+  assertEqual(soilMask(s, 1, 4), 8, 'bord droit de la grille : pas de voisine à droite');
+  hoe(s, 1, 9);
+  assertEqual(soilMask(s, 1, 4), 8 | 4, 'la case 9 est sous la 4');
+  assertEqual(soilMask(s, 1, 5), 1 | 2, 'la case 4 n\'est pas à gauche de la 5 (autre rangée)');
+});
+
+test('version 1.9 : le plafond compte la Zone de culture et le Champ ensemble', () => {
+  const s = withMill();
+  updateChapters(s);
+  tireless(s);
+  s.potager.houe = true;
+  growZone(s, 30);
+  testSetLevel(s, 4);
+  assertEqual([soilCount(s), soilCap(s)], [30, 32]);
+  assert(hoe(s, 2, 0).ok && hoe(s, 2, 1).ok);
+  assertEqual([soilCount(s), hoeStatus(s, 2, 2).ok], [32, false]);
+  assertEqual(zoneGrid(2), { cols: 8, cases: 64 });
+});
+
+test('version 1.9 : migration v26 → v27 : les parcelles prennent une case, la houe est offerte', () => {
+  const s = createInitialState(1);
+  const old = JSON.parse(JSON.stringify(s));
+  old.version = 26;
+  old.potager = { niveau: 2, parcelles: makePlots(12), zone2: [makeZone2Plot(1), makeZone2Plot(2)] };
+  old.potager.parcelles[3].culture = 'carotte';
+  const m = migrateHoe(old);
+  assertEqual([m.version, 'niveau' in m.potager, m.potager.houe], [27, false, true]);
+  assertEqual(m.potager.parcelles.map((p) => p.case), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  assertEqual([m.potager.parcelles[3].culture, m.potager.zone2.map((p) => p.case)], ['carotte', [0, 1]]);
+  const full = migrate({ v: 26, t: 0, s: old });
+  assertEqual([full.version, full.potager.parcelles.length], [STATE_VERSION, 12]);
+  assert(sleepOnce(full) !== null, 'la partie migrée passe la nuit');
 });
 
 export const results = runTests();

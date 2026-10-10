@@ -1591,3 +1591,30 @@ main .ancre { scroll-margin-top: 150px; }
 .outing.done { opacity: 0.7; }
 .outing-facts { display: flex; flex-wrap: wrap; gap: 4px; }
 .outings { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+
+/* ---------- version 1.9 : la houe (Zone de culture et Champ) ---------- */
+
+.hoe-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+.hoe-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr));
+  gap: 3px;
+  max-width: 360px;
+}
+.hoe-cell {
+  aspect-ratio: 1;
+  min-height: 36px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.hoe-cell.herbe { background: #7aa857; }
+.hoe-cell.terre { background: #ae8d62; }
+.hoe-cell.plantee { background: #8a6a46; cursor: default; }
+.hoe-cell[aria-disabled="true"] { opacity: 0.55; }
+.hoe-cell:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+.stage-chip.hoe { margin-left: auto; flex: 0 0 auto; }

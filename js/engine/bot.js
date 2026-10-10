@@ -7,11 +7,11 @@ import { countItem, expiringSoon, inventoryCounts, isFridgeable } from './invent
 import { buildFridge, fridgeCount, moveFromFridge, moveToFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
 import { planMeal } from './family.js';
-import { energyLevel } from './stamina.js';
+import { actionCost, energyLevel } from './stamina.js';
 import { averageHappiness } from './ville.js';
 import {
-  allPlots, buildSerre, cropProduct, harvest, isMature, plant, potagerUpgradeCost, seedItem, seedStock,
-  serreUpgradeCost, toggleBolting, upgradePotager, upgradeSerre, water,
+  allPlots, buildSerre, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isMature, plant, plotAtCase, seedItem, seedStock,
+  serreUpgradeCost, soilCount, toggleBolting, upgradeSerre, water, zone2Open, zoneGrid,
 } from './crops.js';
 import {
   animalPrice, buildPaturage, buildPoulailler, buildSilo, buyAnimal, buyPasture, buySheep, canFeedHen,
@@ -118,6 +118,22 @@ export function botFarm(state) {
   const thirsty = allPlots(state).filter((p) => p.culture && !p.arrose && !isMature(p));
   thirsty.sort((a, b) => b.stade - a.stade);
   for (const p of thirsty) water(state, p.id);
+}
+
+// Version 1.9 : avec la houe, laboure les cases d'herbe jusqu'au plafond du niveau (la
+// Zone de culture d'abord, puis le Champ), en gardant de l'énergie pour trois récoltes.
+export function botHoe(state) {
+  if (!hasHoe(state)) return;
+  const reserve = actionCost(state, 'recolter') * 3;
+  for (const zone of zone2Open(state) ? [1, 2] : [1]) {
+    for (let c = 0; c < zoneGrid(zone).cases; c++) {
+      if (plotAtCase(state, zone, c)) continue;
+      if (state.energie < reserve + actionCost(state, 'labourer')) return;
+      const st = hoeStatus(state, zone, c);
+      if (!st.ok) return;
+      hoe(state, zone, c);
+    }
+  }
 }
 
 /* ---------- animaux ---------- */
@@ -248,8 +264,8 @@ export function botStepInfo(state, step, eveilS) {
   switch (step.type) {
     case 'infra':
       return botInfraInfo(state, eveilS);
-    case 'potager':
-      return state.potager.niveau >= step.niveau ? { done: true } : { cost: potagerUpgradeCost(state), buy: () => upgradePotager(state) };
+    case 'houe':
+      return hasHoe(state) ? { done: true } : { cost: DATA.HOUE.PRIX, buy: () => buyHoe(state) };
     case 'silo':
       if (!isUnlocked(state, 'silo')) return { locked: true };
       if (built(state.silo)) return { done: true };
@@ -400,6 +416,7 @@ export function botActions(state, strat, options, soir) {
   botSnack(state);
   botBuy(state, strat.eveilS);
   botFarm(state);
+  botHoe(state);
   botHens(state);
   botSheep(state);
   botMill(state);
@@ -457,7 +474,7 @@ export function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, 
       niveau: state.progression ? state.progression.niveau : 0,
       pieces: state.pieces,
       conserves: countItem(state, 'conserve'),
-      potager: state.potager.niveau,
+      tuiles: soilCount(state),
       depannage: options.depannage ? options.depannage.dernier : null,
     });
   }

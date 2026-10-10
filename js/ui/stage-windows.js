@@ -5,7 +5,7 @@ import { allDevices } from '../engine/devices.js';
 import { awakeRequired } from '../engine/clock.js';
 import { planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
-import { zone2Plots } from '../engine/crops.js';
+import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
 import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
@@ -197,12 +197,12 @@ export const STAGE_WINDOWS = {
   },
   zone: {
     nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => true, haute: true, sansTitre: true,
-    detail: () => `niveau ${state.potager.niveau}`,
+    detail: () => `${state.potager.parcelles.length} parcelles`,
     corps: () => renderPotager(),
   },
   // Le Champ : la deuxième zone de culture, ouverte avec le Moulin.
   zone2: {
-    nom: DATA.POTAGER.ZONE2.NOM, icone: DATA.POTAGER.ZONE2.ICONE, ok: () => zone2Plots(state).length > 0, haute: true, sansTitre: true,
+    nom: DATA.POTAGER.ZONE2.NOM, icone: DATA.POTAGER.ZONE2.ICONE, ok: () => zone2Open(state), haute: true, sansTitre: true,
     detail: () => `${zone2Plots(state).length} parcelles`,
     corps: () => renderZone2(),
   },

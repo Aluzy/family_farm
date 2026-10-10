@@ -9,10 +9,11 @@
 > **Avancement (section 12)** : lot 1 (saisons retirées) et lot 2 (un panneau, une
 > batterie, soleil de 7 h à 19 h, réservoir à niveaux) sont codés, version 1.6 ; lot 3
 > (niveaux d'expérience) est codé, version 1.7 ; lot 4 (énergie, bonheur, endurance,
-> santé retirée) est codé, version 1.8. Leurs notes v27 à v30 dans
+> santé retirée) est codé, version 1.8 ; lot 5 (houe) est codé, version 1.9. Leurs notes
+> v27 à v31 dans
 > [`conception.md`](conception.md) font foi. Le reste n'est pas
 > encore codé : quand il le sera, ce document remplacera dans `conception.md` tout ce qui
-> le contredit (chapitres, réfrigérateur illimité, Zone de culture à 5 niveaux).
+> le contredit (chapitres, réfrigérateur illimité).
 
 Sommaire :
 
@@ -337,7 +338,7 @@ dessin 🟡.
 
 ---
 
-## 7. La houe et les tuiles voisines
+## 7. La houe et les tuiles voisines ✅ (fait, version 1.9)
 
 ### 7.1 Réponse : quelles règles pour les tuiles voisines ?
 
@@ -510,7 +511,7 @@ change, et la mise à jour de `conception.md` et du README.
 | 2 ✅ | **Un panneau, une batterie**, panneau de 7 h à 19 h, réservoir séparé ; « absence » sans électricité — fait, version 1.6 | oui (format 24) |
 | 3 ✅ | **Niveaux et XP** : `state.progression`, gains, déblocages par niveau (remplacent ceux des chapitres) — fait, version 1.7 | oui (format 25) |
 | 4 ✅ | **Énergie, bonheur, endurance** ; santé et soins retirés — fait, version 1.8 | oui (format 26) |
-| 5 | **Houe** : herbe / terre, 16 dessins, plafond de tuiles | oui (parcelles existantes = terre) |
+| 5 ✅ | **Houe** : herbe / terre, 16 dessins, plafond de tuiles — fait, version 1.9 | oui (format 27 ; parcelles existantes = terre) |
 | 6 | **Frigo à capacité**, consommation par unité | oui (surplus rendu à l'inventaire) |
 | 7 | **Plats et bonheur** (barème 10.2) | non |
 | 8 | **Départ v2** : 1 500 💰, configuration de la famille, chapitres 1 et 2, succès | nouvelle partie seulement |

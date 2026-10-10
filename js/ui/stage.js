@@ -1,13 +1,13 @@
 import { DATA } from '../engine/catalog.js';
 import { findDevice } from '../engine/devices.js';
-import { allPlots, isMature, maxStage, plotZone, zone2Plots } from '../engine/crops.js';
+import { allPlots, isMature, maxStage, plotZone, soilCap, soilCount, soilMask, zone2Open, zone2Plots } from '../engine/crops.js';
 import { isTreeAdult } from '../engine/orchard.js';
 import { woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import {
-  activeTab, ecranFerme, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
+  activeTab, ecranFerme, hoeMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { safeStorageGet, safeStorageSet } from './storage.js';
@@ -50,12 +50,6 @@ export function stageUsable() {
 // de détail). Sans Phaser, la Ferme garde sa liste classique.
 export function stageActive() {
   return stageUsable() && activeTab === 'ferme' && ecranFerme === null;
-}
-
-// Colonnes de la zone de culture selon le nombre de parcelles : 6, 12, 18, 24, 30 parcelles =
-// 2×3, 3×4, 3×6, 4×6, 5×6 (colonnes × rangées), à partir du coin de `zone_culture` de la carte.
-function stageCols(n) {
-  return n <= 6 ? 2 : n <= 18 ? 3 : n <= 24 ? 4 : 5;
 }
 
 // Heure du jour, de 0 à 24 (fractionnaire) : la journée commence à DAY_START_HOUR au réveil,
@@ -248,10 +242,12 @@ export function stageModel() {
     const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
     return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: !!p.arrose };
   };
-  const plots = state.potager.parcelles.map(vue);
+  // version 1.9 : chaque parcelle de zone a sa case et le dessin de ses bords
+  const zoneVue = (zone) => (p) => ({ ...vue(p), case: p.case, bord: soilMask(state, zone, p.case) });
+  const plots = state.potager.parcelles.map(zoneVue(1));
   // Le Champ (vide tant que le Moulin n'est pas débloqué) et les arbres du Verger, dans
   // l'ordre où ils ont été plantés : chacun prend l'emplacement suivant de la carte.
-  const plots2 = zone2Plots(state).map(vue);
+  const plots2 = zone2Plots(state).map(zoneVue(2));
   // La Serre : ses parcelles se posent dans les bacs de son intérieur (vide tant qu'elle
   // n'est pas construite). `interieur` dit si le joueur y est entré.
   const serre = state.serre.construit ? state.serre.parcelles.map(vue) : [];
@@ -268,7 +264,11 @@ export function stageModel() {
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
   // bêtes dans l'enclos et des poules en liberté autour du Poulailler.
   const animaux = { vache: state.paturage.vaches.length, mouton: state.paturage.moutons.length, poule: state.poulailler.poules };
-  return { heure, cols: stageCols(plots.length), plots, cols2: DATA.POTAGER.ZONE2.COLONNES, plots2, serre, interieur: stageInterior, arbres, batiments, animaux };
+  const P = DATA.POTAGER;
+  return {
+    heure, cols: P.COLONNES, cases: P.CASES, plots, cols2: P.ZONE2.COLONNES, cases2: P.ZONE2.CASES, zone2: zone2Open(state), plots2,
+    houe: hoeMode && !!state.potager.houe, serre, interieur: stageInterior, arbres, batiments, animaux,
+  };
 }
 
 // Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La
@@ -363,13 +363,19 @@ function chapterChipHtml() {
   return `<button type="button" class="stage-chip" data-action="stage-open" data-window="chapitres" aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. Ouvrir les chapitres" title="Chapitre ${p.chapitre} : ${p.titre}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span><span class="stage-chip-text">${o.libelle}</span><span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
 }
 
+// Version 1.9 : en mode houe, un bouton sur la carte rappelle les tuiles et range la houe.
+function hoeChipHtml() {
+  if (!hoeMode || !state.potager.houe || stageInterior) return '';
+  return `<button type="button" class="stage-chip hoe" data-action="hoe-toggle" aria-pressed="true" aria-label="Houe en main : ${soilCount(state)} tuiles sur ${soilCap(state)}. Ranger la houe" title="Touche une case d'herbe de la Zone de culture ou du Champ pour la labourer"><span class="stage-chip-pill"><span aria-hidden="true">${DATA.HOUE.ICONE}</span><span class="stage-chip-text">Houe</span><span class="stage-chip-val num">${soilCount(state)} / ${soilCap(state)}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+}
+
 function renderStageHud(el) {
   let hud = el.querySelector('.stage-hud');
   if (!hud) {
     el.insertAdjacentHTML('beforeend', '<div class="stage-hud"></div><div class="stage-nav"></div>');
     hud = el.querySelector('.stage-hud');
   }
-  morph(hud, chapterChipHtml());
+  morph(hud, chapterChipHtml() + hoeChipHtml());
   if (!stageView) stageView = FarmStage.view();
   renderStageNav(el);
 }

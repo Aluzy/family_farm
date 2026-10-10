@@ -28,7 +28,7 @@ export const RAW_DATA = {
   },
   "PERSONNAGE": {
     "MAX": 100,
-    "COUTS": { "planter": 3, "arroser": 2, "recolter": 4, "tondre": 8, "cuisiner": 3, "cuireFour": 3, "moudre": 1, "presser": 1 },
+    "COUTS": { "labourer": 5, "planter": 3, "arroser": 2, "recolter": 4, "tondre": 8, "cuisiner": 3, "cuireFour": 3, "moudre": 1, "presser": 1 },
     "BONHEUR_REDUCTION": 50,
     "ENDURANCE": 3,
     "REVEIL_BASE": 60,
@@ -522,10 +522,13 @@ export const RAW_DATA = {
     "LIEU": "potager",
     "NOM": "Zone de culture",
     "ICONE": "🌱",
-    "PARCELLES": [6, 12, 18, 24, 30],
-    "COUT": [0, 200, 480, 1050, 2300],
-    "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "PARCELLES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
+    "COLONNES": 5,
+    "CASES": 30,
+    "DEPART": [0, 1, 2, 5, 6, 7],
+    "PARCELLES_V1": [6, 12, 18, 24, 30],
+    "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "CASES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
   },
+  "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
   "SERRE": { "LIEU": "serre", "CONSTRUCTION": 400, "PARCELLES": [6, 9, 12, 15, 18], "COUT": [0, 300, 600, 1000, 1800] },
   "VERGER": {
     "CONSTRUCTION": 0,
@@ -595,7 +598,7 @@ export const RAW_DATA = {
       "batterie": { "type": "niveau", "nom": "Batterie", "icone": "🔋" },
       "pompe": { "type": "niveau", "nom": "Pompe", "icone": "⛲" },
       "reservoir": { "type": "niveau", "nom": "Réservoir", "icone": "💧" },
-      "potager": { "type": "niveau", "nom": "Zone de culture", "icone": "🌱", "note": "arrosage et récolte automatiques" },
+      "potager": { "type": "tuiles", "nom": "Zone de culture", "icone": "🌱", "note": "arrosage et récolte automatiques" },
       "poulailler": { "type": "niveau", "nom": "Poulailler", "icone": "🐔", "note": "nourrissage automatique" },
       "silo": { "type": "niveau", "nom": "Silo", "icone": "🛖" },
       "stations": { "type": "stations", "nom": "Ateliers", "icone": "🍞" }
@@ -702,7 +705,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 900,
-        "requiert": [{ "noeud": "ea_econome" }, { "batiment": "pompe", "niveau": 3 }, { "batiment": "potager", "niveau": 3 }],
+        "requiert": [{ "noeud": "ea_econome" }, { "batiment": "pompe", "niveau": 3 }, { "tuiles": 18 }],
         "effet": { "auto": { "arrosage": ["potager"] } },
         "description": "Chaque nuit, toutes les parcelles plantées de la Zone de culture sont arrosées automatiquement."
       },
@@ -774,7 +777,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 900,
-        "requiert": [{ "noeud": "cu_outils" }, { "batiment": "potager", "niveau": 4 }],
+        "requiert": [{ "noeud": "cu_outils" }, { "tuiles": 24 }],
         "effet": { "auto": { "recolte": ["potager"] } },
         "description": "Chaque nuit, les parcelles mûres de la Zone de culture sont récoltées automatiquement (celles montées en graine comprises, graines à la clé)."
       },
@@ -1136,7 +1139,7 @@ export const RAW_DATA = {
       "moulin": {
         "nom": "Moulin",
         "icone": "⚙️",
-        "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 parcelles de plus, pour le blé"
+        "note": "farine, et paille pour les moutons et les vaches ; le Champ s'ouvre avec lui : 64 cases d'herbe de plus à labourer, pour le blé"
       },
       "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
       "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
@@ -1146,6 +1149,7 @@ export const RAW_DATA = {
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
     },
     "XP": {
+      "labourer": 10,
       "planter": 10,
       "arroser": 10,
       "recolter": 20,
@@ -1159,6 +1163,7 @@ export const RAW_DATA = {
       "vendre": 1
     },
     "AUTO": 50,
+    "TUILES": [6, 12, 20, 32, 48, 64, 64, 64, 64, 64],
     "CHAPITRES_XP": [200, 500, 1000, 2500, 2000, 4000, 8000],
     "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
   },
@@ -1265,7 +1270,7 @@ export const RAW_DATA = {
     "MARGE_BATTERIE": 70,
     "PRIORITE": {
       "1": [],
-      "2": [{ "type": "potager", "niveau": 2 }],
+      "2": [{ "type": "houe" }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
       "4": [
         { "type": "station", "id": "four" },
@@ -1278,11 +1283,10 @@ export const RAW_DATA = {
       "7": []
     },
     "PLAN": [
-      { "type": "potager", "niveau": 2 },
+      { "type": "houe" },
       { "type": "poulailler", "niveau": 1 },
       { "type": "silo", "niveau": 1 },
       { "type": "poules", "n": 4 },
-      { "type": "potager", "niveau": 3 },
       { "type": "poulailler", "niveau": 2 },
       { "type": "poules", "n": 8 },
       { "type": "silo", "niveau": 2 },
@@ -1297,7 +1301,6 @@ export const RAW_DATA = {
       { "type": "tech", "id": "ea_irrigation" },
       { "type": "poulailler", "niveau": 3 },
       { "type": "tech", "id": "el_mangeoire" },
-      { "type": "potager", "niveau": 4 },
       { "type": "tech", "id": "cu_recolte_auto" },
       { "type": "tech", "id": "cui_boulangerie" },
       { "type": "tech", "id": "prepa_1" },
@@ -1311,7 +1314,6 @@ export const RAW_DATA = {
       { "type": "tech", "id": "semis_auto" },
       { "type": "tech", "id": "cui_laiterie" },
       { "type": "tech", "id": "el_tonte" },
-      { "type": "potager", "niveau": 5 },
       { "type": "arbres", "n": 4 },
       { "type": "moutons", "n": 6 },
       { "type": "poules", "n": 16 },
