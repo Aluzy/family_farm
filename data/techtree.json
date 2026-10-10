@@ -46,6 +46,7 @@
       "paturage": { "nom": "Étable (moutons et vaches)", "icone": "🐑" },
       "four": { "nom": "Four", "icone": "🔥" },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊" },
+      "verger": { "nom": "Verger", "icone": "🌳" },
       "batterie": { "nom": "Batterie", "icone": "🔋" },
       "panneau": { "nom": "Panneau solaire", "icone": "☀️" },
       "reservoir": { "nom": "Réservoir", "icone": "💧" }
@@ -268,6 +269,19 @@
         "requiert": [{ "noeud": "semis_auto" }, { "noeud": "ea_serre" }],
         "effet": { "auto": { "recolte": ["serre"], "semis": ["serre"] } },
         "description": "La Serre est récoltée et replantée automatiquement chaque nuit, avec les mêmes réglages que le semis automatique."
+      },
+      "//cu_verger_auto": "Version 1.13 (v2, lot 9) : les arbres en fruits sont cueillis la nuit.",
+      "cu_verger_auto": {
+        "branche": "culture",
+        "palier": 4,
+        "nom": "Récolte du verger",
+        "icone": "🍎",
+        "fonction": "automatisation",
+        "pt": 2,
+        "cout": 800,
+        "requiert": [{ "noeud": "cu_recolte_auto" }, { "construit": "verger" }],
+        "effet": { "auto": { "recolte": ["verger"] } },
+        "description": "Chaque nuit, les arbres du Verger en fruits sont cueillis automatiquement (moitié de l'XP)."
       },
       "//el_ration": "🐔 Élevage",
       "el_ration": {

@@ -65,7 +65,10 @@
   // Arbres du Verger : le n-ième arbre du modèle se pose sur le rectangle `arbre_verger_n`.
   const TREE_OBJECT = 'arbre_verger_';
   const TREE_FRAME = { frameWidth: 80, frameHeight: 80 };   // basic_*.png : 8 images de 80×80 ; seule la première sert, les arbres ne bougent pas
-  const TREE_YOUNG = 0.6;                                    // taille d'un arbre pas encore adulte
+  // Version 1.13 : verger.png, 6 images de 80×80 : emplacement libre, jeune arbre, arbuste,
+  // arbre, pommier en fruits, poirier en fruits (scripts/verger/arbres.py).
+  const ORCHARD_FRAMES = { libre: 0, jeune: 1, arbuste: 2, arbre: 3, pommier: 4, poirier: 5 };
+  const ORCHARD_ADULT = 3;                                   // à partir de l'arbre : feuilles et écureuils
   const TREE_BODY = 0.8;                                     // part de l'image qu'occupe l'arbre, en largeur
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
   const DEFAULT_W = 72 * T;
@@ -235,7 +238,7 @@
         super('farm');
         this.plots = new Map();          // id de parcelle -> { soil, crop, key, tween }
         this.buildings = new Map();      // id de bâtiment -> { def, sprite }
-        this.trees = new Map();          // id d'arbre du Verger -> { sprite, key }
+        this.trees = new Map();          // case du Verger -> { sprite, key, a } (arbre ou emplacement libre)
         this.labels = new Map();         // id de lieu -> étiquette DOM et son point d'ancrage
         this.hoverId = null;             // lieu survolé (souris) ou touché (doigt) : son nom s'affiche
         this.hoverUntil = 0;             // au doigt : heure à laquelle le nom s'efface
@@ -293,6 +296,7 @@
           L.spritesheet('windmill_' + a, v('windmill_' + a + '.png'), MILL_FRAME);
           L.spritesheet('tree_' + a, v('basic_' + a + '.png'), TREE_FRAME);
         }
+        L.spritesheet('verger', v('verger.png'), TREE_FRAME);
       }
 
       create() {
@@ -1034,6 +1038,7 @@
       // Lieu désigné par un résultat de hitAt() : une parcelle désigne sa zone ('zone' ou 'zone2').
       placeOf(hit) {
         if (!hit) return null;
+        if (hit.treeHarvest || hit.treeSlot !== undefined) return 'verger';
         return hit.plot || hit.hoe ? hit.place : hit.window || null;
       }
 
@@ -1176,10 +1181,18 @@
           if (!best || depth > best.depth) best = { depth, window: win };
         };
         for (const e of this.buildings.values()) test(e.sprite.x, e.sprite.y, e.sprite.width, e.sprite.height, e.sprite.depth, e.def.window);
-        // Un arbre du Verger ouvre la fenêtre du Verger.
+        // Version 1.13 : un arbre en fruits se cueille, un emplacement libre propose de
+        // planter ; un autre arbre ouvre la fenêtre du Verger.
         for (const e of this.trees.values()) {
           const s = e.sprite, w = s.displayWidth * TREE_BODY;
-          test(s.x - w / 2, s.y, w, s.displayHeight, s.depth, 'verger');
+          const b = e.key === 'verger' ? this.orchardBox(e) : { w, h: s.displayHeight };
+          const before = best;
+          test(s.x - b.w / 2, s.y, b.w, b.h, s.depth, 'verger');
+          if (best !== before) best.tree = e.a;
+        }
+        if (best && best.tree) {
+          if (best.tree.fruits) return { treeHarvest: best.tree.id };
+          if (best.tree.libre) return { treeSlot: best.tree.case };
         }
         return best ? { window: best.window } : null;
       }
@@ -1190,6 +1203,8 @@
         if (!hit) return;
         if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
+        if (hit.treeHarvest) { bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }
+        if (hit.treeSlot !== undefined) { bridge.act('tree-slot', { case: hit.treeSlot }); return; }
         const p = hit.plot;
         if (!p.culture) bridge.act('plant-open', { id: p.id });
         else if (p.mature) bridge.act('harvest', { id: p.id });
@@ -1260,7 +1275,7 @@
         // de bêtes : elle ouvre les portes le matin et fait sortir les bêtes.
         if (this.ambient) {
           const leafy = [];
-          for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0) leafy.push(e.sprite);
+          for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0 && e.a.dessin >= ORCHARD_ADULT) leafy.push(e.sprite);
           const real = (id) => { const e = this.buildings.get(id); return e && e.sprite.texture.key.indexOf('ph_') !== 0 ? e.sprite : null; };
           const folds = { etable: real('etable'), poulailler: real('poulailler') };
           this.ambient.setContext({ hour: model.heure, trees: leafy, folds, herd: model.animaux || {} });
@@ -1309,31 +1324,45 @@
         }
       }
 
-      // Arbres du Verger : le n-ième arbre se pose sur le rectangle arbre_verger_n (pied de
-      // l'image au bas du rectangle). Un arbre pas encore adulte est plus petit. Au-delà des
-      // rectangles de la carte, un arbre n'est pas dessiné.
+      // Arbres du Verger (version 1.13) : chaque case du Verger (arbre ou emplacement libre)
+      // se pose sur le rectangle arbre_verger_<case + 1>, pied au bas du rectangle, avec le
+      // dessin de son stade. Au-delà des rectangles de la carte, rien n'est dessiné.
+      // modèle.arbres[] = { case, id, libre, fruits, dessin } (dessin : ORCHARD_FRAMES).
       syncTrees(arbres, sfx, rebuild) {
         const seen = new Set();
-        arbres.forEach((a, i) => {
-          const o = this.objects[TREE_OBJECT + (i + 1)];
-          if (!o) return;
-          seen.add(a.id);
-          const key = this.tex('tree_' + sfx, this.tex('tree_sp', 'ph_arbre'));
-          let e = this.trees.get(a.id);
-          if (e && (rebuild || e.key !== key)) { e.sprite.destroy(); this.trees.delete(a.id); e = null; }
+        const own = this.has('verger');
+        for (const a of arbres) {
+          const o = this.objects[TREE_OBJECT + (a.case + 1)];
+          if (!o) continue;
+          seen.add(a.case);
+          const key = own ? 'verger' : a.libre ? null : this.tex('tree_' + sfx, this.tex('tree_sp', 'ph_arbre'));
+          let e = this.trees.get(a.case);
+          if (e && (rebuild || e.key !== key)) { e.sprite.destroy(); this.trees.delete(a.case); e = null; }
+          if (!key) continue;
           if (!e) {
-            // Image fixe : la première de la planche (les arbres ne sont pas animés).
             const sprite = this.add.image(0, 0, key, key.indexOf('ph_') !== 0 ? 0 : undefined);
             sprite.setOrigin(0.5, 1);
-            e = { sprite, key };
-            this.trees.set(a.id, e);
+            e = { sprite, key, a };
+            this.trees.set(a.case, e);
           }
+          e.a = a;
+          if (own) e.sprite.setFrame(a.dessin);
           const x = Math.round(o.x + o.width / 2), y = Math.round(o.y + o.height);
-          e.sprite.setPosition(x, y).setScale(a.jeune ? TREE_YOUNG : 1).setDepth(y);
-        });
-        for (const [id, e] of this.trees) {
-          if (!seen.has(id)) { e.sprite.destroy(); this.trees.delete(id); }
+          e.sprite.setPosition(x, y).setDepth(y);
         }
+        for (const [c, e] of this.trees) {
+          if (!seen.has(c)) { e.sprite.destroy(); this.trees.delete(c); }
+        }
+      }
+
+      // Zone touchable d'une case du Verger : la taille du dessin (les petits dessins
+      // n'occupent que le bas de leur image de 80×80).
+      orchardBox(e) {
+        const d = e.a ? e.a.dessin : ORCHARD_FRAMES.arbre;
+        if (d === ORCHARD_FRAMES.libre) return { w: 28, h: 12 };
+        if (d === ORCHARD_FRAMES.jeune) return { w: 18, h: 24 };
+        if (d === ORCHARD_FRAMES.arbuste) return { w: 32, h: 34 };
+        return { w: e.sprite.displayWidth * TREE_BODY, h: e.sprite.displayHeight };
       }
 
       // Pose le bas-centre de l'image sur le bas-centre du rectangle de la carte, sans sortir

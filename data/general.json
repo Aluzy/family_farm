@@ -107,7 +107,7 @@
   ],
   "PERSONNAGE": {
     "MAX": 100,
-    "COUTS": { "labourer": 5, "planter": 3, "arroser": 2, "recolter": 4, "tondre": 8, "cuisiner": 3, "cuireFour": 3, "moudre": 1, "presser": 1 },
+    "COUTS": { "labourer": 5, "planter": 3, "arroser": 2, "recolter": 4, "cueillir": 4, "tondre": 8, "cuisiner": 3, "cuireFour": 3, "moudre": 1, "presser": 1 },
     "BONHEUR_REDUCTION": 50,
     "ENDURANCE": 3,
     "REVEIL_BASE": 60,

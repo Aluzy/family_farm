@@ -18,7 +18,7 @@ import { telView } from './consent.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import {
-  coopShown, herdShown, renderAchatArbres, renderAchatPoules, renderAchatTroupeau, setStageReturn,
+  coopShown, herdShown, renderAchatPoules, renderAchatTroupeau, setStageReturn,
   setStageWindow, stageReturn, stageWindow,
 } from './stage-windows.js';
 import { autoChip, groupButtons, plotCard, renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
@@ -87,7 +87,6 @@ export function renderFerme() {
     herdShown() ? `<div id="etable-troupeau" class="ancre">${renderPaturage()}</div>` : '',
     herdShown() ? renderAchatTroupeau() : '',
     isUnlocked(state, 'verger') ? renderVerger() : '',
-    isUnlocked(state, 'verger') ? renderAchatArbres() : '',
     renderAteliers(),
     typeof renderMoulin === 'function' ? renderMoulin() : '',
     `<div id="bat-eau" class="ancre">${renderEnergieEau()}</div>`,

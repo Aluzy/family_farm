@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { houseRepaired } from '../engine/depart.js';
 import { findDevice } from '../engine/devices.js';
 import { allPlots, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
-import { isTreeAdult } from '../engine/orchard.js';
+import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
 import { woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
@@ -132,6 +132,7 @@ function aFaireParLieu() {
   n.zone = parcellesAFaire('potager', null, 1);
   n.zone2 = parcellesAFaire('potager', null, 2);
   n.serre = parcellesAFaire('serre');
+  n.verger = ripeTrees(state).length; // version 1.13 : arbres en fruits à cueillir
   return n;
 }
 
@@ -252,9 +253,17 @@ export function stageModel() {
   // La Serre : ses parcelles se posent dans les bacs de son intérieur (vide tant qu'elle
   // n'est pas construite). `interieur` dit si le joueur y est entré.
   const serre = state.serre.construit ? state.serre.parcelles.map(vue) : [];
-  const arbres = isUnlocked(state, 'verger')
-    ? state.verger.arbres.slice(0, STAGE_ARBRES).map((t) => ({ id: t.id, jeune: !isTreeAdult(state, t) }))
-    : [];
+  // Version 1.13 : chaque case achetée du Verger, arbre ou emplacement libre, avec son
+  // dessin (0 libre, 1 jeune arbre, 2 arbuste, 3 arbre, 4 pommier et 5 poirier en fruits).
+  const arbres = [];
+  if (isUnlocked(state, 'verger') && state.verger.construit) {
+    for (let c = 0; c < Math.min(state.verger.places, STAGE_ARBRES); c++) {
+      const t = treeAt(state, c);
+      if (!t) { arbres.push({ case: c, libre: true, dessin: 0 }); continue; }
+      const st = treeStage(state, t);
+      arbres.push({ case: c, id: t.id, fruits: !!t.fruits, dessin: st < 3 ? st + 1 : t.espece === 'poirier' ? 5 : 4 });
+    }
+  }
   // Lieux étiquetés : seulement ceux que le jeu a débloqués (la maison et la zone sont
   // toujours là), avec leur nom et le nombre de choses à y faire.
   const aFaire = aFaireParLieu();

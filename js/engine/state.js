@@ -307,6 +307,7 @@ export const MIGRATIONS = {
   26: (state) => migrateHoe(state),
   27: (state) => migrateFridgeCapacity(state),
   28: (state) => migrateDepart(state),
+  29: (state) => migrateOrchard(state),
 };
 
 // Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie
@@ -317,6 +318,24 @@ export const MIGRATIONS = {
 // `achete`, pas de `maison`) ; elle reçoit un nom vide (l'interface dit « la famille »),
 // son premier adulte comme personnage principal, et les compteurs des nouveaux
 // chapitres 1 et 2 (récoltes et semis comptent à partir de maintenant).
+// Version 1.13 (v2, lot 9) : chaque arbre a sa case et ses fruits attendent la
+// cueillette. `prochaine` reprend l'ancien calendrier (MATURITÉ-ième nuit, puis toutes
+// les PERIODE nuits) à partir de la nuit en cours.
+export function migrateOrchard(old) {
+  const state = { ...old, version: 30 };
+  const v = state.verger;
+  if (!v || typeof v !== 'object' || !Array.isArray(v.arbres)) return state;
+  const V = DATA.VERGER;
+  const day = Number(state.day) || 1;
+  const arbres = v.arbres.map((t, i) => {
+    let prochaine = t.plantee + V.MATURITE - 1;
+    if (prochaine < day) prochaine += Math.ceil((day - prochaine) / V.PERIODE) * V.PERIODE;
+    return { ...t, case: i, fruits: false, prochaine };
+  });
+  state.verger = { ...v, places: Math.max(v.places || 0, arbres.length), arbres };
+  return state;
+}
+
 export function migrateDepart(old) {
   const state = { ...old, version: 29 };
   const f = state.famille;

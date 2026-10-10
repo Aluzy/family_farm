@@ -18,7 +18,7 @@ import {
   coopCapacity, coopUpgradeCost, feedAllHens, freeSheepPlaces, hensToFeed, pastureCost, shear, sheepCount,
   siloUpgradeCost, strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
 } from './animals.js';
-import { buildVerger, buyOrchardSlot, buyTree, orchardFree, orchardSlotPrice } from './orchard.js';
+import { buildVerger, buyOrchardSlot, buyTree, harvestTree, orchardFree, orchardSlotPrice, ripeTrees } from './orchard.js';
 import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
 import { buyTech, hasTech, techPoints, techStatus } from './techtree.js';
 import {
@@ -156,6 +156,13 @@ export function botSheep(state) {
   if (!p.construit) return;
   for (const m of p.moutons) {
     if (woolReady(m)) shear(state, m.id);
+  }
+}
+
+// Version 1.13 : cueille les arbres en fruits du Verger.
+export function botOrchard(state) {
+  for (const t of ripeTrees(state)) {
+    if (!harvestTree(state, t.id).ok) break;
   }
 }
 
@@ -431,6 +438,7 @@ export function botActions(state, strat, options, soir) {
   botHoe(state);
   botHens(state);
   botSheep(state);
+  botOrchard(state);
   botMill(state);
   botCook(state);
   if (!soir) return;

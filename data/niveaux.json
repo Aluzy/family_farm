@@ -44,7 +44,7 @@
       "automatisation fait l'action (arrosage, récolte, semis, tonte)."
     ],
     "XP": {
-      "labourer": 10, "planter": 10, "arroser": 10, "recolter": 20,
+      "labourer": 10, "planter": 10, "arroser": 10, "recolter": 20, "cueillir": 20,
       "oeuf": 10, "lait": 30, "tondre": 30,
       "cuisiner": 40, "cuireFour": 50, "moudre": 10, "presser": 10,
       "vendre": 1

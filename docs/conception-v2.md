@@ -322,7 +322,12 @@ Les 17 cultures du jeu sont toutes placées (pas de nouvelle culture à créer) 
 > d'abord le Silo ». Dans le code, la culture `ble` passe de `deblocage: "champ"` à une
 > double condition : niveau 3 et `silo` réparé.
 
-### 6.3 Verger (niveau 6)
+### 6.3 Verger (niveau 6) ✅ (fait, version 1.13)
+
+> ✅ **Fait (version 1.13)** : comme décrit ci-dessous, 5 nuits par dessin. L'automatisation
+> est un nouveau nœud de l'Arbre des technologies, « Récolte du verger » (Culture, palier 4,
+> 2 PT, 800 💰, après la Récolte automatique et le Verger aménagé). Détail : note v35 de
+> `conception.md`.
 
 1. Clic sur une **tuile de verger libre** → fenêtre « Choisir un arbre » (pommier,
    poirier ; prix et délai affichés).
@@ -522,7 +527,7 @@ change, et la mise à jour de `conception.md` et du README.
 | 6 ✅ | **Frigo à capacité**, consommation par unité — fait, version 1.10 | oui (format 28 ; surplus rendu à l'inventaire) |
 | 7 ✅ | **Plats et bonheur** (barème 10.2) — fait, version 1.11 | non |
 | 8 ✅ | **Départ v2** : 1 500 💰, configuration de la famille, chapitres 1 et 2, succès — fait, version 1.12 | nouvelle partie seulement (format 29) |
-| 9 | **Verger au clic** et ses 4 dessins | oui |
+| 9 ✅ | **Verger au clic** et ses 4 dessins — fait, version 1.13 | oui (format 30) |
 | 10 | **Niveaux 9 et 10** : courrier du notaire, commerce automatique | oui (`state.commerce`) |
 
 Ordre conseillé : 1 et 2 d'abord (ils simplifient le reste), puis 3 et 4 (le cœur du

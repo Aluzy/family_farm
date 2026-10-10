@@ -6,6 +6,25 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v35 (jeu 1.13) : le Verger au clic** (lot 9 de la v2, `js/engine/orchard.js`,
+> `assets/verger.png` dessiné par `scripts/verger/arbres.py`). Cette note **fait foi** sur le Verger.
+> - **Planter** : chaque arbre occupe une **case** du Verger (0 à emplacements − 1), qui est
+>   aussi son rectangle `arbre_verger_<case + 1>` sur la carte. Un appui sur un emplacement
+>   libre (la butte de terre sur la carte, ou « Planter un arbre » dans la fenêtre) ouvre
+>   « Choisir un arbre » (pommier ou poirier, prix et délai) ; « Planter » paie l'arbre.
+>   Les arbres ne s'achètent plus au Marché.
+> - **4 dessins** : jeune arbre, arbuste, arbre (`NUITS_STADE` = 5 nuits chacun), puis arbre
+>   en fruits (pommes rouges ou poires jaunes), la nuit qui complète sa 15ᵉ nuit.
+> - **Les fruits attendent sur l'arbre** (plus d'ajout automatique à l'inventaire) : un appui
+>   sur l'arbre en fruits les cueille (6 fruits, 4 énergie « cueillir », 20 XP). L'arbre
+>   redevient « arbre » et redonne ses fruits 3 nuits plus tard (`prochaine` = nuit de ses
+>   prochains fruits). La pastille du Verger compte les arbres en fruits.
+> - **Récolte du verger** (nœud `cu_verger_auto`, Culture palier 4, 2 PT, 800 💰) : les arbres
+>   en fruits sont cueillis la nuit, à moitié de l'XP, sans énergie ; le réveil les compte
+>   dans « Fruits du verger ». L'arbre compte désormais 34 nœuds et 52 PT.
+> - **Sauvegarde (format 30)** : chaque arbre reçoit sa case, `fruits: false` et `prochaine`
+>   tirée de l'ancien calendrier (MATURITÉ-ième nuit puis toutes les 3 nuits).
+>
 > **v34 (jeu 1.12) : le départ v2** (lot 8 de la v2, `DATA.DEPART`, `js/engine/depart.js`,
 > `js/ui/depart.js`). Cette note **fait foi** sur le départ de partie et les chapitres 1 et 2.
 > - **Avant la première journée** : écran « Votre famille » (nom de famille de 2 à 20
