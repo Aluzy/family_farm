@@ -34,6 +34,13 @@ export function unlockLevel(id) {
   return i < 0 ? 1 : i + 1;
 }
 
+// Version 1.12 : pourquoi un élément (bâtiment, atelier) ne peut pas encore être réparé ou
+// construit : '' si le niveau est atteint, sinon « Disponible au niveau n. ».
+export function levelBlock(state, id) {
+  const n = unlockLevel(id);
+  return levelReached(state) >= n ? '' : `Disponible au niveau ${n}.`;
+}
+
 // XP de l'action : DATA.NIVEAUX.XP[action] × n, à AUTO % quand une automatisation
 // la fait (arrondi vers le bas).
 export function actionXp(action, n = 1, auto = false) {

@@ -5,7 +5,7 @@ import { addItem, countItem, takeItem } from './inventory.js';
 import { newNightStats } from './family.js';
 import { techFlag } from './techtree.js';
 import { bumpCounter } from './campaign.js';
-import { gainActionXp } from './levels.js';
+import { gainActionXp, levelBlock } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
@@ -78,6 +78,8 @@ export function takeWheat(state, qty, first = 'inventaire') {
 export function buildSilo(state) {
   const s = state.silo;
   if (s.construit) return fail('Le Silo est déjà construit.');
+  const lock = levelBlock(state, 'silo'); // version 1.12 : pas avant son niveau
+  if (lock) return fail(lock);
   const cost = DATA.SILO.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
@@ -111,6 +113,8 @@ export function coopUpgradeCost(state) {
 export function buildPoulailler(state) {
   const p = state.poulailler;
   if (p.construit) return fail('Le Poulailler est déjà construit.');
+  const lock = levelBlock(state, 'poulailler'); // version 1.12 : pas avant son niveau
+  if (lock) return fail(lock);
   const cost = DATA.POULAILLER.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
@@ -351,6 +355,8 @@ export function pastureCost(state) {
 export function buildPaturage(state) {
   const p = state.paturage;
   if (p.construit) return fail('L\'Étable accueille déjà les moutons et les vaches.');
+  const lock = levelBlock(state, 'paturage'); // version 1.12 : pas avant son niveau
+  if (lock) return fail(lock);
   const cost = DATA.PATURAGE.deblocage;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);

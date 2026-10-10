@@ -1,3 +1,4 @@
+import { levelBlock } from './levels.js';
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, isBroken, makeDevice, perSecond, perTick, spend } from './devices.js';
@@ -299,6 +300,8 @@ export function fridgeNight(state) {
 export function buildFridge(state) {
   const f = state.frigo;
   if (f.construit) return fail('Le Réfrigérateur est déjà construit.');
+  const lock = levelBlock(state, 'frigo'); // version 1.12 : pas avant son niveau
+  if (lock) return fail(lock);
   const cost = DATA.FRIGO.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);

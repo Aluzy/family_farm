@@ -15,7 +15,7 @@ import { safeStorageGet, safeStorageSet } from './storage.js';
 import { morph, refresh, setLastRenderAt } from './render.js';
 import {
   allerAuLieu, interiorAvailable, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue, setMaisonTab,
-  setStageInterior, setStageReturn, setStageWindow, stageInterior, STAGE_WINDOWS,
+  setStageInterior, setStageReturn, setStageWindow, stageInterior, STAGE_WINDOWS, windowLocked,
 } from './stage-windows.js';
 import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
@@ -259,7 +259,8 @@ export function stageModel() {
   // toujours là), avec leur nom et le nombre de choses à y faire.
   const aFaire = aFaireParLieu();
   const batiments = {};
-  for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok(), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id], ruine: buildingInRuins(id) };
+  // version 1.12 : les bâtiments verrouillés sont aussi sur la carte (délabrés)
+  for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok() || windowLocked(id), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id], ruine: buildingInRuins(id) };
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des

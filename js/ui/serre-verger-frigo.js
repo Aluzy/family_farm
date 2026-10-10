@@ -35,7 +35,7 @@ export function renderSerre() {
       <div class="section-head"><h3>${icon('serre')}Serre</h3>${helpBtn('serre')}</div>
       <div class="card">
         <span class="muted">Tomate, courgette, aubergine et poivron, plus trois cultures de rente exclusives à la Serre (cacao, vanille, café) : ${DATA.SERRE.PARCELLES[0]} parcelles au départ, +${DATA.SERRE.PARCELLES[1] - DATA.SERRE.PARCELLES[0]} par niveau.</span>
-        <button type="button" class="btn primary" data-action="build-serre"${canPay(cost) ? '' : ' disabled'}>Construire la Serre (${costLabel(cost)})</button>
+        <button type="button" class="btn primary" data-action="build-serre"${canPay(cost) ? '' : ' disabled'}>Réparer la Serre (${costLabel(cost)})</button>
       </div>`;
   }
   const up = serreUpgradeCost(state);

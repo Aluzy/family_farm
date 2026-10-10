@@ -3,6 +3,7 @@ import {
   buyHoe, hasHoe, hoe, hoeStatus, plotAtCase, soilCap, soilCapNext, soilCount, zoneGrid,
 } from '../engine/crops.js';
 import { levelReached } from '../engine/levels.js';
+import { farmOpen } from '../engine/devices.js';
 import { actionCost } from '../engine/stamina.js';
 import { formatCoins } from '../engine/format.js';
 import { hoeMode, setHoeMode, state } from './store.js';
@@ -29,10 +30,12 @@ export function soilLine() {
 export function hoePanelHtml(zone) {
   const H = DATA.HOUE;
   if (!hasHoe(state)) {
+    // version 1.12 : avant le panneau et la pompe, le Marché (et donc la houe) est fermé
+    const ouvert = farmOpen(state);
     return `
       <div class="hoe-bar">
-        <span class="muted">${H.ICONE} Une <strong>houe</strong> change l'herbe en terre à cultiver.</span>
-        <button type="button" class="btn" data-action="buy-hoe"${canPay(H.PRIX) ? '' : ' disabled'}>Acheter la houe (${formatCoins(H.PRIX)} 💰)</button>
+        <span class="muted">${H.ICONE} Une <strong>houe</strong> change l'herbe en terre à cultiver.${ouvert ? '' : ' Elle s\'achète au Marché, qui ouvre quand le panneau solaire et la pompe sont installés (Maison › Installations).'}</span>
+        <button type="button" class="btn" data-action="buy-hoe"${ouvert && canPay(H.PRIX) ? '' : ' disabled'}>Acheter la houe (${formatCoins(H.PRIX)} 💰)</button>
       </div>`;
   }
   const bar = `

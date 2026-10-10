@@ -7,6 +7,7 @@ import { planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
+import { unlockLevel } from '../engine/levels.js';
 import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
@@ -139,6 +140,29 @@ export function renderAchatArbres() {
 // Une partie peut avoir des animaux avant que le chapitre n'ouvre leur logement (mode
 // test, sauvegarde modifiée) : l'Étable et ses sections existent alors quand même, pour
 // qu'aucun animal ne soit caché (et qu'aucune alerte ne parle d'animaux invisibles).
+// Version 1.12 : les bâtiments de la carte sont là dès le départ, délabrés. Tant que leur
+// niveau n'est pas atteint, leur fenêtre dit seulement à quel niveau on pourra les réparer.
+// fenêtre → élément débloqué par un niveau (DATA.NIVEAUX.liste).
+export const LOCKED_BUILDINGS = { etable: 'paturage', poulailler: 'poulailler', moulin: 'moulin', serre: 'serre', silo: 'silo' };
+
+// La fenêtre `id` est-elle celle d'un bâtiment encore verrouillé (montré, mais pas réparable) ?
+export function windowLocked(id) {
+  const w = STAGE_WINDOWS[id];
+  return !!(w && LOCKED_BUILDINGS[id] && !w.ok());
+}
+
+function lockedBody(id) {
+  const el = LOCKED_BUILDINGS[id];
+  const def = DATA.NIVEAUX.ELEMENTS[el] || {};
+  const n = unlockLevel(el);
+  return `
+    <div class="card locked-building">
+      <span class="card-title"><span>🏚️ ${STAGE_WINDOWS[id].nom} délabré${id === 'serre' || id === 'etable' ? 'e' : ''}</span><span class="chip">🔒 niveau ${n}</span></span>
+      <span class="muted">Le bâtiment du grand-père attend des jours meilleurs. Il se répare à partir du <strong>niveau ${n}</strong> (tu es au niveau ${state.progression ? state.progression.niveau : 1}).</span>
+      ${def.note ? `<span class="muted">Une fois réparé : ${def.note}.</span>` : ''}
+    </div>`;
+}
+
 export function coopShown() {
   return isUnlocked(state, 'poulailler') || state.poulailler.construit;
 }
@@ -196,7 +220,7 @@ export const STAGE_WINDOWS = {
     corps: () => renderVerger() + renderAchatArbres(),
   },
   zone: {
-    nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => farmOpen(state), haute: true, sansTitre: true, // version 1.12
+    nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => true, haute: true, sansTitre: true, // version 1.12 : toujours sur la carte, même en herbe
     detail: () => `${state.potager.parcelles.length} parcelles`,
     corps: () => renderPotager(),
   },
@@ -217,7 +241,7 @@ export const STAGE_WINDOWS = {
 export function renderStageWindow() {
   const root = document.getElementById('window-root');
   const w = stageWindow ? STAGE_WINDOWS[stageWindow] : null;
-  if (stageWindow && (!w || !w.ok() || !stageActive())) stageWindow = null;
+  if (stageWindow && (!w || !(w.ok() || windowLocked(stageWindow)) || !stageActive())) stageWindow = null;
   if (!stageWindow) {
     if (root.childElementCount) morph(root, '');
     stageWindowShown = null;
@@ -232,8 +256,8 @@ export function renderStageWindow() {
           <h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>
           <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer la fenêtre" title="Fermer">✕</button>
         </header>
-        ${w.onglets ? `<div class="window-tabs">${w.onglets()}</div>` : ''}
-        <div class="window-body${w.sansTitre ? ' sans-titre' : ''}">${w.corps()}</div>
+        ${w.onglets && !windowLocked(stageWindow) ? `<div class="window-tabs">${w.onglets()}</div>` : ''}
+        <div class="window-body${w.sansTitre ? ' sans-titre' : ''}">${windowLocked(stageWindow) ? lockedBody(stageWindow) : w.corps()}</div>
       </section>
     </div>`);
   // Autre fenêtre ou autre onglet : le contenu repart du haut ; à l'ouverture, le focus va sur ✕.
@@ -247,7 +271,14 @@ export function renderStageWindow() {
 }
 
 export function openStageWindow(id) {
-  if (!STAGE_WINDOWS[id] || !STAGE_WINDOWS[id].ok()) return;
+  if (!STAGE_WINDOWS[id] || !(STAGE_WINDOWS[id].ok() || windowLocked(id))) return;
+  if (windowLocked(id)) { // version 1.12 : un bâtiment verrouillé n'ouvre que sa fiche
+    stageWindow = id;
+    stageReturn = null;
+    renderStageWindow();
+    refresh();
+    return;
+  }
   // Un bâtiment qui a un intérieur : depuis la carte, on y entre. Une fois dedans, la même
   // action ouvre sa fenêtre (agrandir, tout arroser, tout récolter).
   if (INTERIORS[id] && stageInterior !== id && enterInterior(id)) return;

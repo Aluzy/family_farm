@@ -68,7 +68,7 @@ function stationBuildCard(id) {
       <span class="card-title"><span>${icon(id)}${def.nom}</span><span class="chips"><span class="chip">Non construit</span>${helpBtn(id)}</span></span>
       <span class="muted">${stationBlurb(id)}</span>
       ${blocked ? `<span class="alert">Construis d'abord ${need.article} ${need.nom}.</span>` : ''}
-      <button type="button" class="btn primary" data-action="build-station" data-station="${id}"${!blocked && canPay(def.cout) ? '' : ' disabled'}>Construire ${def.article} ${def.nom} (${costLabel(def.cout)})</button>
+      <button type="button" class="btn primary" data-action="build-station" data-station="${id}"${!blocked && canPay(def.cout) ? '' : ' disabled'}>${id === 'moulin' ? 'Réparer' : 'Construire'} ${def.article} ${def.nom} (${costLabel(def.cout)})</button>
     </div>`;
 }
 

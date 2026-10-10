@@ -19,8 +19,13 @@
 >   pas de houe ni de graines.
 > - **Sans batterie** (ou batterie pleine), la production du panneau alimente directement
 >   les appareils du moment (pompe, ateliers) au lieu d'être perdue.
-> - **Carte** : les bâtiments pas encore réparés ou construits se dessinent délabrés
->   (`*_ruine.png`) ; la Zone de culture n'apparaît qu'une fois la ferme ouverte.
+> - **Carte** : **tous les bâtiments** (Étable, Poulailler, Moulin, Serre, Silo) sont sur la
+>   carte dès le début, délabrés (`*_ruine.png`) tant qu'ils ne sont pas réparés. Avant leur
+>   niveau, un appui ouvre seulement leur fiche (« se répare à partir du niveau n ») et le
+>   moteur refuse de les réparer ou construire (`levelBlock`) ; ensuite leur fenêtre propose
+>   « Réparer ». La Zone de culture (et le Champ, une fois ouvert) est **cliquable dès le
+>   début** : un appui sur une case d'herbe ouvre sa fenêtre, d'où l'on achète ou prend la
+>   houe (l'achat attend que le panneau et la pompe ouvrent le Marché).
 > - **Chapitre 1 « L'héritage »** : réparer la maison, acheter panneau, pompe, réservoir,
 >   houe, faire une première récolte. **Chapitre 2 « Le grenier »** : niveau 2, 4 cultures
 >   différentes récoltées, Silo réparé (niveau 3), du blé planté, 50 blés au Silo (il faut

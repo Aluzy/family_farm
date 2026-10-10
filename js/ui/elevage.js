@@ -37,7 +37,7 @@ export function renderSilo() {
       <div class="section-head"><h3>${icon('silo')}Silo</h3>${helpBtn('silo')}</div>
       <div class="card">
         <span class="muted">Le blé récolté y est rangé d'abord ; les poules y mangent d'abord. Capacité de départ : ${DATA.SILO.CAPACITE[0]} blés.</span>
-        <button type="button" class="btn primary" data-action="build-silo"${canPay(cost) ? '' : ' disabled'}>Construire le Silo (${costLabel(cost)})</button>
+        <button type="button" class="btn primary" data-action="build-silo"${canPay(cost) ? '' : ' disabled'}>Réparer le Silo (${costLabel(cost)})</button>
       </div>`;
   }
   const cap = siloCapacity(state);
@@ -67,7 +67,7 @@ export function renderPoulailler() {
       <div class="section-head"><h3>${icon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
       <div class="card">
         <span class="muted">1 blé nourrit ${DATA.ANIMAUX.poule.poulesParBle} poules pour la nuit ; une poule nourrie pond 1 œuf. Capacité de départ : ${DATA.POULAILLER.CAPACITE[0]} poules. Les poules s'achètent au Marché.</span>
-        <button type="button" class="btn primary" data-action="build-poulailler"${canPay(cost) ? '' : ' disabled'}>Construire le Poulailler (${costLabel(cost)})</button>
+        <button type="button" class="btn primary" data-action="build-poulailler"${canPay(cost) ? '' : ' disabled'}>Réparer le Poulailler (${costLabel(cost)})</button>
       </div>`;
   }
   const cap = coopCapacity(state);

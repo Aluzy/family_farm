@@ -5,7 +5,7 @@ import { addItem, countItem, takeItem } from './inventory.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, isUnlocked, noteCropHarvested } from './campaign.js';
-import { gainActionXp, levelReached } from './levels.js';
+import { gainActionXp, levelBlock, levelReached } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
@@ -372,6 +372,8 @@ export function serreUpgradeCost(state) {
 export function buildSerre(state) {
   const g = state.serre;
   if (g.construit) return fail('La Serre est déjà construite.');
+  const lock = levelBlock(state, 'serre'); // version 1.12 : pas avant son niveau
+  if (lock) return fail(lock);
   const cost = DATA.SERRE.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
   spend(state, cost);
