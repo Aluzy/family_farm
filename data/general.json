@@ -64,7 +64,7 @@
       "sexe et une couleur de peau, choisis par le joueur (voir setMemberProfile()).",
       "TEINTS : indice 0 = le jaune par défaut, 1 à 5 = les cinq teintes des emojis.",
       "PORTRAITS : l'emoji selon l'âge et le sexe ; la teinte s'y ajoute.",
-      "Version 1.12 : STYLES, la coiffure (planche d'avatars, scripts/icones/art_gens.py) : quatre",
+      "Version 1.12 : STYLES, la coiffure (planche d'avatars, scripts/icones/art_gens.py) : cinq",
       "par âge ; l'emoji devient portrait + teinte + ZWJ + STYLES[age][n] (rien pour la coiffure 0).",
       "STYLE_NOMS : leur libellé.",
       "Le prénom est une donnée personnelle : il reste dans la sauvegarde, sur",
@@ -75,8 +75,8 @@
       "GENRES": ["f", "m"],
       "TEINTS": ["", "🏻", "🏼", "🏽", "🏾", "🏿"],
       "PORTRAITS": { "adulte": { "f": "👩", "m": "👨" }, "enfant": { "f": "👧", "m": "👦" } },
-      "STYLES": { "adulte": ["", "🦰", "🦱", "🦳"], "enfant": ["", "🦰", "🦱", "🧢"] },
-      "STYLE_NOMS": { "adulte": ["Classique", "Roux", "Frisé", "Cheveux gris"], "enfant": ["Classique", "Roux", "Frisé", "Casquette"] }
+      "STYLES": { "adulte": ["", "🦰", "🦱", "🦳", "👱"], "enfant": ["", "🦰", "🦱", "🧢", "👱"] },
+      "STYLE_NOMS": { "adulte": ["Classique", "Roux", "Frisé", "Cheveux gris", "Blond"], "enfant": ["Classique", "Roux", "Frisé", "Casquette", "Blond"] }
     },
     "//AJ": "énergie par jour et par membre",
     "AJ": { "adulte": 50, "enfant": 25 },

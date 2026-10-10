@@ -25,10 +25,10 @@
 >   houe, faire une première récolte. **Chapitre 2 « Le grenier »** : niveau 2, 4 cultures
 >   différentes récoltées, Silo réparé (niveau 3), du blé planté, 50 blés au Silo (il faut
 >   donc l'agrandir au niveau 2). Les chapitres 3 à 7 ne changent pas.
-> - **Planche d'avatars** : quatre coiffures par âge (adultes : classique, roux, frisé,
->   cheveux gris et lunettes ; enfants : classique, roux, frisé, casquette), pour chaque
->   sexe et chacune des 6 couleurs de peau, soit 8 avatars d'adultes et 8 d'enfants par
->   couleur de peau (96 portraits, `scripts/icones/art_gens.py`). Le membre garde son choix
+> - **Planche d'avatars** : cinq coiffures par âge (adultes : classique, roux, frisé,
+>   cheveux gris et lunettes, blond ; enfants : classique, roux, frisé, casquette, blond),
+>   pour chaque sexe et chacune des 6 couleurs de peau, soit 10 avatars d'adultes et 10
+>   d'enfants par couleur de peau (120 portraits, `scripts/icones/art_gens.py`). Le membre garde son choix
 >   dans `style` (absent = coiffure 0) ; la fiche du membre propose « Coiffure ».
 > - Une partie en cours (format 29, `migrateDepart`) est déjà installée : sa maison est
 >   réparée, ses appareils achetés ; elle reçoit un nom vide et son premier adulte comme

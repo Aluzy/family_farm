@@ -8889,9 +8889,10 @@ test('version 1.12 : le joueur automatique part du départ v2 et termine le chap
   assert(rows.some((r) => r.chapitre >= 2), `chapitres : ${rows.map((r) => r.chapitre).join(',')}`);
 });
 
-test('version 1.12 : planche d\'avatars : 4 coiffures par âge, choisies dans la fiche du membre', () => {
+test('version 1.12 : planche d\'avatars : 5 coiffures par âge, choisies dans la fiche du membre', () => {
   const P = DATA.FAMILY.PROFIL;
-  assertEqual([P.STYLES.adulte.length, P.STYLES.enfant.length, P.STYLE_NOMS.adulte, P.STYLE_NOMS.enfant], [4, 4, ['Classique', 'Roux', 'Frisé', 'Cheveux gris'], ['Classique', 'Roux', 'Frisé', 'Casquette']]);
+  assertEqual([P.STYLES.adulte.length, P.STYLES.enfant.length, P.STYLE_NOMS.adulte, P.STYLE_NOMS.enfant], [5, 5, ['Classique', 'Roux', 'Frisé', 'Cheveux gris', 'Blond'], ['Classique', 'Roux', 'Frisé', 'Casquette', 'Blond']]);
+  assertEqual(portraitEmoji(true, 'f', 5, 4), '👧🏿\u200D👱', 'blonde');
   assertEqual(portraitEmoji(false, 'f', 0), '👩', 'coiffure 0 : le portrait d\'avant');
   assertEqual(portraitEmoji(false, 'f', 3, 1), '👩🏽‍🦰');
   assertEqual(portraitEmoji(true, 'm', 0, 3), '👦‍🧢');
@@ -8899,7 +8900,7 @@ test('version 1.12 : planche d\'avatars : 4 coiffures par âge, choisies dans la
   assertEqual(memberStyle(findMember(s, 'adulte-1')), 0);
   assert(setMemberProfile(s, 'adulte-1', { style: 2 }).ok);
   assertEqual([findMember(s, 'adulte-1').style, memberPortrait(s, 'adulte-1')], [2, '👩‍🦱']);
-  assertEqual(setMemberProfile(s, 'adulte-1', { style: 4 }).error, 'Coiffure inconnue.');
+  assertEqual(setMemberProfile(s, 'adulte-1', { style: 5 }).error, 'Coiffure inconnue.');
   assert(setMemberProfile(s, 'adulte-1', { style: 0 }).ok);
   assertEqual('style' in findMember(s, 'adulte-1'), false, 'la coiffure 0 n\'est pas écrite');
 });

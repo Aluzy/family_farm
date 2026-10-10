@@ -60,7 +60,7 @@ Sommaire :
 |---|---|---|
 | Nom de famille | texte, 2 à 20 signes | affiché dans le bandeau et les lettres de l'histoire |
 | Nombre de membres | 1 à 6, au moins un adulte (règle actuelle) | + jusqu'à 3 chiens ou chats (règle actuelle) |
-| Pour chaque membre | prénom, adulte / enfant, **avatar** | avatars : planche de portraits pixel art (8 adultes, 8 enfants) ✅ : 4 coiffures × 2 sexes par âge, dans les 6 couleurs de peau |
+| Pour chaque membre | prénom, adulte / enfant, **avatar** | avatars : planche de portraits pixel art ✅ : 5 coiffures (dont blond) × 2 sexes par âge, soit 10 adultes et 10 enfants, dans les 6 couleurs de peau |
 | Personnage principal | un des adultes | c'est lui qui porte la jauge d'énergie et fait les actions |
 
 Le besoin alimentaire de la famille (50 par adulte, 25 par enfant) ne change pas.

@@ -123,12 +123,12 @@ EMOJI_PORTRAIT = {'femme': '\U0001F469', 'homme': '\U0001F468', 'fille': '\U0001
 # --- Version 1.12 : la planche d'avatars. Quatre coiffures par personnage (femme, homme,
 # fille, garçon), soit 8 avatars d'adultes et 8 d'enfants, chacun dans les 6 teints.
 # Coiffure 0 : le portrait ci-dessus ; 1 : roux ; 2 : frisé ; 3 : cheveux gris et lunettes
-# (adultes) ou casquette (enfants). L'emoji de l'icône : portrait + teint + ZWJ + COIFFURES[n]
+# (adultes) ou casquette (enfants) ; 4 : blond (même coupe que la coiffure 0, composant 👱). L'emoji de l'icône : portrait + teint + ZWJ + COIFFURES[n]
 # (les composants de cheveux des emojis, 🧢 pour la casquette) ; data/general.json
 # (FAMILY.PROFIL.STYLES) en garde la liste.
 COIFFURES = {
-    'adulte': ['', '\U0001F9B0', '\U0001F9B1', '\U0001F9B3'],
-    'enfant': ['', '\U0001F9B0', '\U0001F9B1', '\U0001F9E2'],
+    'adulte': ['', '\U0001F9B0', '\U0001F9B1', '\U0001F9B3', '\U0001F471'],
+    'enfant': ['', '\U0001F9B0', '\U0001F9B1', '\U0001F9E2', '\U0001F471'],
 }
 VARIANTES = {}
 # ---------------- FEMME ----------------
@@ -314,6 +314,7 @@ VARIANTES[('garcon', 3)] = [
 CHEVEUX_ROUX = {'K': '#5a1a08', 'h': '#c0481c', 'H': '#e87a3a'}
 CHEVEUX_FRISES = {'K': '#140a04', 'h': '#2e1a0e', 'H': '#4e3220'}
 CHEVEUX_GRIS = {'K': '#4a4a52', 'h': '#a4a4ac', 'H': '#dcdce4'}
+CHEVEUX_BLONDS = {'K': '#7a5414', 'h': '#e2b840', 'H': '#fff0a0'}
 # Vêtements (et lunettes G, col w, casquette Q/q) de chaque coiffure
 HABITS_VARIANTES = {
     ('femme', 1): {'D': '#14402a', 'c': '#7ad09a', 'C': '#3a9a5e', 'd': '#246a40'},
@@ -328,6 +329,10 @@ HABITS_VARIANTES = {
     ('garcon', 1): {'D': '#5a2a08', 'c': '#ffb070', 'C': '#f07a30', 'd': '#b84a14'},
     ('garcon', 2): {'D': '#163a5c', 'c': '#7cc0f0', 'C': '#4aa0e0', 'd': '#2a70b0'},
     ('garcon', 3): {'D': '#1f4a22', 'c': '#8cd06a', 'C': '#4a9a3a', 'd': '#2f6e2c', 'Q': '#d83a3a', 'q': '#8a1a1a'},
+    ('femme', 4): {'D': '#163a5c', 'c': '#7cc0f0', 'C': '#4aa0e0', 'd': '#2a70b0'},
+    ('homme', 4): {'D': '#4a1418', 'c': '#e2707a', 'C': '#b8434a', 'd': '#8a2a32'},
+    ('fille', 4): {'D': '#1f4a22', 'c': '#8cd06a', 'C': '#4a9a3a', 'd': '#2f6e2c', 'r': '#4aa0e0', 'R': '#163a5c'},
+    ('garcon', 4): {'D': '#3a1a4a', 'c': '#e0a8f0', 'C': '#a860c8', 'd': '#743a90'},
 }
 
 
@@ -338,6 +343,8 @@ def coiffure_cheveux(nom, style, t):
         return CHEVEUX_FRISES
     if style == 3 and nom in ('femme', 'homme'):
         return CHEVEUX_GRIS
+    if style == 4:
+        return CHEVEUX_BLONDS
     return CHEVEUX_FONCES[t] or CHEVEUX[nom]
 
 
