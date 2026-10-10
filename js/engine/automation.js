@@ -20,6 +20,7 @@ export const AUTO_TACHES = {
   serre: ['arrosage', 'recolte', 'semis'],
   poulailler: ['nourrissage'],
   paturage: ['tonte'],
+  verger: ['recolte'], // version 1.13 : la Récolte du verger (dans growOrchard)
 };
 
 export function isAutomated(state, id) {

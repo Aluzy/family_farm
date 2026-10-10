@@ -12,7 +12,7 @@ import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
 import {
-  activeTab, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setEcranFerme, state, tabAvailable, TABS,
+  activeTab, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { actionSleep } from './game-actions.js';
@@ -32,7 +32,7 @@ import { renderTechno } from './techno.js';
 import { renderFamille } from './famille.js';
 import { renderNotifications } from './notifications.js';
 import { renderInventaire, subtabsHtml } from './inventaire.js';
-import { renderArbres, renderComptoir } from './marche.js';
+import { renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
@@ -133,9 +133,6 @@ export function renderAchatTroupeau() {
   return state.paturage.construit ? lienMarcheAnimaux('Acheter des moutons et des vaches') : '';
 }
 
-export function renderAchatArbres() {
-  return state.verger.construit ? renderArbres() : '';
-}
 
 // Une partie peut avoir des animaux avant que le chapitre n'ouvre leur logement (mode
 // test, sauvegarde modifiée) : l'Étable et ses sections existent alors quand même, pour
@@ -217,7 +214,7 @@ export const STAGE_WINDOWS = {
   verger: {
     nom: 'Verger', icone: '🍎', ok: () => isUnlocked(state, 'verger'), sansTitre: true,
     detail: () => (state.verger.construit ? `${state.verger.arbres.length} / ${state.verger.places} emplacements` : ''),
-    corps: () => renderVerger() + renderAchatArbres(),
+    corps: () => renderVerger(),
   },
   zone: {
     nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => true, haute: true, sansTitre: true, // version 1.12 : toujours sur la carte, même en herbe
@@ -290,6 +287,7 @@ export function openStageWindow(id) {
 
 export function closeStageWindow() {
   stageWindow = null;
+  setVergerCase(null); // version 1.13 : le choix d'un arbre se referme avec la fenêtre
   stageReturn = null;
   renderStageWindow();
   refresh();

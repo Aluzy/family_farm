@@ -264,7 +264,13 @@
     "supplémentaire coûte EMPLACEMENT.base × croissance^n, n étant le nombre",
     "d'emplacements déjà achetés (ceux de départ ne comptent pas), arrondi à",
     "l'entier supérieur. EMPLACEMENTS_MAX plafonne le nombre total d'emplacements",
-    "(départ compris) : au-delà, aucun nouvel emplacement ne peut être acheté."
+    "(départ compris) : au-delà, aucun nouvel emplacement ne peut être acheté.",
+    "Version 1.13 (v2, lot 9) : un arbre se plante sur un emplacement libre du Verger",
+    "(appui sur l'emplacement, choix de l'arbre). Il passe par 4 dessins (STADES) :",
+    "NUITS_STADE nuits par dessin jusqu'à l'arbre adulte, puis « en fruits ». Les fruits",
+    "attendent sur l'arbre : récolte au clic (énergie et XP « cueillir ») ou par",
+    "l'automatisation « Récolte du verger » (moitié de l'XP). Après une récolte, l'arbre",
+    "redonne ses fruits PERIODE nuits plus tard."
   ],
   "VERGER": {
     "CONSTRUCTION": 0,
@@ -274,6 +280,8 @@
     "MATURITE": 15,
     "FRUITS": 6,
     "PERIODE": 3,
+    "NUITS_STADE": 5,
+    "STADES": ["Jeune arbre", "Arbuste", "Arbre", "Arbre en fruits"],
     "ARBRES": {
       "pommier": { "nom": "Pommier", "icone": "🌳", "fruit": "pomme", "prix": 40 },
       "poirier": { "nom": "Poirier", "icone": "🌳", "fruit": "poire", "prix": 40 }

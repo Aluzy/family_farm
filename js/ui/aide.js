@@ -132,9 +132,9 @@ const HELP = {
     const V = DATA.VERGER;
     return {
       nom: 'Verger',
-      role: 'Pommiers et poiriers, achetés au Marché et plantés sur un emplacement libre. Ils restent en place.',
-      conso: 'Aucune : pas d\'arrosage.',
-      prod: `${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, toute l'année, à partir de ${nightsLabel(V.MATURITE)} après la plantation.`,
+      role: 'Pommiers et poiriers : appuie sur un emplacement libre (sur la carte ou ici) et choisis l\'arbre. Il pousse en 4 dessins (jeune arbre, arbuste, arbre, arbre en fruits) et reste en place.',
+      conso: `Aucune : pas d'arrosage. Cueillir un arbre en fruits coûte ${formatNumber(DATA.PERSONNAGE.COUTS.cueillir)} énergie (rien avec la Récolte du verger de l'Arbre des technologies).`,
+      prod: `${V.FRUITS} fruits ${nightsLabel(V.MATURITE)} après la plantation, puis ${V.PERIODE} nuits après chaque cueillette, toute l'année. Les fruits attendent sur l'arbre : un appui sur l'arbre les cueille.`,
       note: `Emplacement supplémentaire : ${formatNumber(V.EMPLACEMENT.base)} 💰, +${formatNumber(V.EMPLACEMENT.croissance - 100)} % par emplacement déjà acheté (arrondi à l'entier supérieur).`,
     };
   },

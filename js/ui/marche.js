@@ -10,7 +10,6 @@ import {
   animalBuyMax, animalPrice, buyAnimals, coopCapacity, cowCapacity, cowCount, freeCowPlaces,
   freeSheepPlaces, pastureCapacity, pastureCost, sheepCount,
 } from '../engine/animals.js';
-import { buyTree, orchardFree, orchardSlotPrice } from '../engine/orchard.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { animalQuantities, BUY_MAX, buyQuantities, comptoirTab, sellQuantities, state } from './store.js';
@@ -27,7 +26,7 @@ import { canPay, costLabel } from './common.js';
 
 // Version 1.1.1 : les animaux s'achètent de nouveau au Marché (onglet Animaux, dès que le
 // Poulailler ou l'Étable existe dans la partie) ; l'Étable y mène par un raccourci. Les
-// arbres s'achètent au Verger (voir renderArbres).
+// arbres se plantent au Verger (version 1.13 : appui sur un emplacement libre).
 const COMPTOIR_TABS = [
   { id: 'vendre', label: 'Vendre', icon: '💰', ok: () => true },
   { id: 'acheter', label: 'Acheter', icon: '🛒', ok: () => true },
@@ -208,43 +207,6 @@ function renderAnimaux(especes = ['poule', 'mouton', 'vache']) {
     ${html}`;
 }
 
-// Lot 8 : achat des arbres (au Verger), pommier et poirier à prix fixe sur un emplacement libre.
-function renderTreeRow(espece) {
-  const def = DATA.VERGER.ARBRES[espece];
-  const fruit = DATA.items[def.fruit];
-  const v = state.verger;
-  let note;
-  let ok = true;
-  if (!v.construit) {
-    note = '⚠️ Aménage d\'abord le Verger (onglet Ferme).';
-    ok = false;
-  } else if (orchardFree(state) <= 0) {
-    note = v.places >= DATA.VERGER.EMPLACEMENTS_MAX
-      ? '⚠️ Le Verger est plein et a atteint sa taille maximale.'
-      : `⚠️ Le Verger est plein : achète un emplacement (${costLabel(orchardSlotPrice(state))}).`;
-    ok = false;
-  } else {
-    note = `Emplacements libres : ${orchardFree(state)}.`;
-  }
-  return `
-    <div class="shop-row${ok ? '' : ' unavailable'}">
-      <div class="inv-main"><span><span aria-hidden="true">${fruit.icone}</span> ${def.nom}</span><span class="muted">Arbres : <span class="num">${v.arbres.filter((t) => t.espece === espece).length}</span></span></div>
-      <span class="muted">Prix fixe : <strong class="num">${formatCoins(def.prix)} 💰</strong> · ${fruit.nom.toLowerCase()}s (${fruit.energie} énergie, vente ${formatCoins(fruit.prix)} 💰) · première récolte ${DATA.VERGER.MATURITE} nuits après la plantation.</span>
-      <span class="muted">${note}</span>
-      <button type="button" class="btn primary" data-action="buy-tree" data-species="${espece}"${ok && canPay(def.prix) ? '' : ' disabled'}>Acheter un ${def.nom.toLowerCase()} (${formatCoins(def.prix)} 💰)</button>
-    </div>`;
-}
-
-// Bloc d'achat affiché au Verger, sous les emplacements (l'achat d'un emplacement est
-// déjà dans la section du Verger).
-export function renderArbres() {
-  const V = DATA.VERGER;
-  return `
-    <h3 class="section-title">🛒 Acheter des arbres</h3>
-    <p class="muted">Prix fixe. Un arbre se plante sur un emplacement libre et ne s'arrose pas : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits pendant la fin de l'été et l'automne.</p>
-    ${Object.keys(V.ARBRES).map(renderTreeRow).join('')}`;
-}
-
 // Une graine dont la culture n'est pas encore débloquée (tournesol) n'est pas en vente.
 function seedForSale(item) {
   return !Object.keys(DATA.crops).some((c) => seedItem(c) === item && !isUnlocked(state, c));
@@ -307,11 +269,6 @@ registerActions({
     animalQuantities[kind] = action === 'animal-max' ? Math.min(BUY_MAX, animalBuyMax(state, kind)) : animalQuantity(kind) + (action === 'animal-inc' ? 1 : -1);
     refresh();
   }),
-  'buy-tree': (target) => {
-    const espece = target.dataset.species;
-    const result = applyResult(buyTree(state, espece));
-    if (result.ok) showToast(`${DATA.items[DATA.VERGER.ARBRES[espece].fruit].icone} ${DATA.VERGER.ARBRES[espece].nom} planté (−${formatCoins(result.cost)} 💰)`);
-  },
   'buy-item': (target) => {
     const item = target.dataset.item;
     const result = applyResult(buyItem(state, item, buyQuantity(item)));

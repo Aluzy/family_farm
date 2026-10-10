@@ -47,7 +47,18 @@ export const RAW_DATA = {
   },
   "PERSONNAGE": {
     "MAX": 100,
-    "COUTS": { "labourer": 5, "planter": 3, "arroser": 2, "recolter": 4, "tondre": 8, "cuisiner": 3, "cuireFour": 3, "moudre": 1, "presser": 1 },
+    "COUTS": {
+      "labourer": 5,
+      "planter": 3,
+      "arroser": 2,
+      "recolter": 4,
+      "cueillir": 4,
+      "tondre": 8,
+      "cuisiner": 3,
+      "cuireFour": 3,
+      "moudre": 1,
+      "presser": 1
+    },
     "BONHEUR_REDUCTION": 50,
     "ENDURANCE": 3,
     "REVEIL_BASE": 60,
@@ -566,6 +577,8 @@ export const RAW_DATA = {
     "MATURITE": 15,
     "FRUITS": 6,
     "PERIODE": 3,
+    "NUITS_STADE": 5,
+    "STADES": ["Jeune arbre", "Arbuste", "Arbre", "Arbre en fruits"],
     "ARBRES": {
       "pommier": { "nom": "Pommier", "icone": "🌳", "fruit": "pomme", "prix": 40 },
       "poirier": { "nom": "Poirier", "icone": "🌳", "fruit": "poire", "prix": 40 }
@@ -617,6 +630,7 @@ export const RAW_DATA = {
       "paturage": { "nom": "Étable (moutons et vaches)", "icone": "🐑" },
       "four": { "nom": "Four", "icone": "🔥" },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊" },
+      "verger": { "nom": "Verger", "icone": "🌳" },
       "batterie": { "nom": "Batterie", "icone": "🔋" },
       "panneau": { "nom": "Panneau solaire", "icone": "☀️" },
       "reservoir": { "nom": "Réservoir", "icone": "💧" }
@@ -832,6 +846,18 @@ export const RAW_DATA = {
         "requiert": [{ "noeud": "semis_auto" }, { "noeud": "ea_serre" }],
         "effet": { "auto": { "recolte": ["serre"], "semis": ["serre"] } },
         "description": "La Serre est récoltée et replantée automatiquement chaque nuit, avec les mêmes réglages que le semis automatique."
+      },
+      "cu_verger_auto": {
+        "branche": "culture",
+        "palier": 4,
+        "nom": "Récolte du verger",
+        "icone": "🍎",
+        "fonction": "automatisation",
+        "pt": 2,
+        "cout": 800,
+        "requiert": [{ "noeud": "cu_recolte_auto" }, { "construit": "verger" }],
+        "effet": { "auto": { "recolte": ["verger"] } },
+        "description": "Chaque nuit, les arbres du Verger en fruits sont cueillis automatiquement (moitié de l'XP)."
       },
       "el_ration": {
         "branche": "elevage",
@@ -1202,6 +1228,7 @@ export const RAW_DATA = {
       "planter": 10,
       "arroser": 10,
       "recolter": 20,
+      "cueillir": 20,
       "oeuf": 10,
       "lait": 30,
       "tondre": 30,

@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, treeProducesOn, orchardSlotPrice,
+  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtCase, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, zoneGrid, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, orchardSlotPrice, plantTree, harvestTree, treeStage, treeAt, freeOrchardCases, ripeTrees, migrateOrchard, newTree,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -4334,12 +4334,12 @@ function techReady(s, pt = 99) {
   return s;
 }
 
-test('DATA arbre v2 : 33 nœuds, 6 branches, paliers, points et prérequis cohérents', () => {
+test('DATA arbre v2 : 34 nœuds, 6 branches, paliers, points et prérequis cohérents', () => {
   assertEqual(DATA.AUTOMATISATION, undefined, 'plus d\'automatisation par le niveau 5');
   assertEqual(DATA.TECHNO, { ONGLET: 'techno', SEUIL_PIECES: 100 });
   const T = DATA.techtree;
   const N = T.noeuds;
-  assertEqual(Object.keys(N).length, 33); // 34 avant la version 1.1 (la Rôtisserie a disparu avec la viande)
+  assertEqual(Object.keys(N).length, 34); // 34 avant la version 1.1 (la Rôtisserie a disparu avec la viande), 33 puis 34 avec la Récolte du verger (1.13)
   assertEqual(T.branches.map((b) => b.nom), ['Énergie', 'Eau', 'Culture', 'Élevage', 'Cuisine', 'Famille']);
   assertEqual(Object.keys(T.PALIERS).map((p) => T.PALIERS[p].chapitre), [1, 3, 4, 5, 7]);
   assertEqual(T.POINTS.CHAPITRES, [2, 3, 3, 4, 4, 5, 5]);
@@ -4361,7 +4361,7 @@ test('DATA arbre v2 : 33 nœuds, 6 branches, paliers, points et prérequis cohé
       if (r.batiment || r.construit || r.appareil) assert(T.batiments[r.batiment || r.construit || r.appareil], `${id} : bâtiment connu`);
     }
   }
-  assertEqual(pt, 50, '50 PT pour tout l\'arbre');
+  assertEqual(pt, 52, '52 PT pour tout l\'arbre (50 avant la Récolte du verger, version 1.13)');
 });
 
 test('état initial Lot 7 : aucune technologie, semis réglé sur « même culture »', () => {
@@ -4432,7 +4432,7 @@ test('automatisations : elles couvrent toute la Zone de culture, plein champ com
   const N = DATA.techtree.noeuds;
   assertEqual([N.ea_irrigation.effet.auto, N.cu_recolte_auto.effet.auto, N.semis_auto.effet.auto],
     [{ arrosage: ['potager'] }, { recolte: ['potager'] }, { semis: ['potager'] }]);
-  assertEqual(Object.keys(AUTO_TACHES), ['potager', 'serre', 'poulailler', 'paturage']);
+  assertEqual(Object.keys(AUTO_TACHES), ['potager', 'serre', 'poulailler', 'paturage', 'verger']);
   assertEqual(newAutoReport(), { potager: false, serre: false, poulailler: false, arrosees: 0, sansEau: 0, recoltes: {}, semees: 0, sansGraine: 0, nourries: 0, sansBle: 0, tondus: 0, montees: 0, attendent: 0 });
   const s = auto5('potager');
   testAddWheat(s, 10);
@@ -5811,6 +5811,7 @@ test('Verger : arbre à 40 pièces sur un emplacement libre, pommier ou poirier'
 
 test('Verger : première récolte 15 nuits après la plantation', () => {
   const s = orchard();
+  grantTech(s, 'cu_verger_auto'); // version 1.13 : cueillis la nuit
   protect(s, 'pomme');
   s.day = 10;
   buyTree(s, 'pommier');
@@ -5828,6 +5829,7 @@ test('Verger : première récolte 15 nuits après la plantation', () => {
 
 test('Verger : arbre planté à la nuit 1, première récolte à la nuit 15, puis toutes les 3 nuits', () => {
   const s = orchard();
+  grantTech(s, 'cu_verger_auto');
   protect(s, 'poire');
   buyTree(s, 'poirier');
   const fruits = {};
@@ -5840,13 +5842,11 @@ test('Verger : arbre planté à la nuit 1, première récolte à la nuit 15, pui
 });
 
 test('Verger : version 1.6, des fruits toute l\'année, chaque arbre à son rythme', () => {
-  const tree = { id: 'arbre-9', espece: 'pommier', plantee: 1 };
-  const days = [];
-  for (let d = 1; d <= 30; d++) if (treeProducesOn(tree, d)) days.push(d);
-  assertEqual(days, [15, 18, 21, 24, 27, 30]);
-  assertEqual(treeNextHarvest({ day: 16 }, tree), 18);
-  assertEqual(treeNextHarvest({ day: 2 }, { ...tree, plantee: 2 }), 16, 'planté nuit 2 : nuits 16, 19…');
+  const tree = newTree('arbre-9', 'pommier', 1, 0);
+  assertEqual(treeNextHarvest({ day: 2 }, tree), 15);
+  assertEqual(treeNextHarvest({ day: 2 }, newTree('arbre-9', 'pommier', 2, 0)), 16, 'planté nuit 2 : nuit 16');
   const s = orchard();
+  grantTech(s, 'cu_verger_auto');
   protect(s, 'pomme');
   s.verger.arbres.push({ id: 'arbre-9', espece: 'pommier', plantee: -100 });
   let total = 0;
@@ -5856,6 +5856,7 @@ test('Verger : version 1.6, des fruits toute l\'année, chaque arbre à son ryth
 
 test('Verger : chaque arbre donne 6 fruits de son espèce, pas d\'arrosage', () => {
   const s = orchard();
+  grantTech(s, 'cu_verger_auto');
   protect(s, 'pomme', 'poire');
   s.verger.arbres.push({ id: 'arbre-1', espece: 'pommier', plantee: -50 }, { id: 'arbre-2', espece: 'poirier', plantee: -50 });
   s.day = 18;
@@ -6152,6 +6153,7 @@ test('ordre nocturne complet : verger avant le frigo, péremption après', () =>
   protect(s, 'pomme');
   setInv(s, { carotte: 2, conserve: 500 });
   s.verger.construit = true;
+  grantTech(s, 'cu_verger_auto');
   s.verger.arbres.push({ id: 'arbre-1', espece: 'pommier', plantee: -50 });
   s.day = 18;
   moveToFridge(s, 'carotte', 2);
@@ -6747,7 +6749,7 @@ test('tenue : état du suivi pour l\'interface', () => {
 test('DATA niveaux : seuils, gains d\'XP, XP des chapitres', () => {
   const N = DATA.NIVEAUX;
   assertEqual(N.SEUILS, [0, 500, 1200, 3000, 7500, 20000, 40000, 80000, 180000, 400000]);
-  assertEqual(N.XP, { labourer: 10, planter: 10, arroser: 10, recolter: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
+  assertEqual(N.XP, { labourer: 10, planter: 10, arroser: 10, recolter: 20, cueillir: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
   assertEqual([N.AUTO, N.CHAPITRES_XP.slice(0, 4)], [50, [200, 500, 1000, 2500]]);
   assertEqual([0, 499, 500, 1199, 1200, 400000, 10 ** 7].map(levelForXp), [1, 1, 2, 2, 3, 10, 10]);
   assertEqual(createInitialState(1).progression, { xp: 0, niveau: 1, annonces: [] });
@@ -7332,7 +7334,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.12.0');
+  assertEqual(GAME_VERSION, '1.13.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -8344,7 +8346,8 @@ test('version 1.4 : un Verger de plus de 12 emplacements garde ses arbres et ses
   assertEqual([m.verger.places, m.verger.arbres.length], [15, 15], 'rien n\'est retiré');
   // Les 15 arbres, adultes et plantés la même nuit, donnent tous leurs fruits la même nuit.
   m.day = DATA.VERGER.MATURITE + 2 * DATA.VERGER.PERIODE;
-  for (const t of m.verger.arbres) t.plantee = 1;
+  for (const t of m.verger.arbres) { t.plantee = 1; t.prochaine = m.day; }
+  grantTech(m, 'cu_verger_auto');
   m.nuit = newNightStats();
   growOrchard(m);
   assertEqual((m.nuit.fruits.pomme || 0) + (m.nuit.fruits.poire || 0), 15 * DATA.VERGER.FRUITS);
@@ -8925,6 +8928,90 @@ test('version 1.12 : un bâtiment ne se répare ni ne se construit avant son niv
   assertEqual(levelBlock(s, 'cuisine'), 'Disponible au niveau 2.');
   testSetLevel(s, 3);
   assertEqual([levelBlock(s, 'silo'), buildSilo(s).ok], ['', true]);
+});
+
+/* ---------- version 1.13 (v2, lot 9) : le Verger au clic ---------- */
+
+test('version 1.13 : un arbre se plante sur la case choisie du Verger', () => {
+  const s = orchard();
+  s.pieces = 200;
+  assertEqual(freeOrchardCases(s), [0, 1]);
+  const r = plantTree(s, 'poirier', 1);
+  assertEqual([r.ok, r.case, s.pieces], [true, 1, 160]);
+  assertEqual(treeAt(s, 1).espece, 'poirier');
+  assertEqual(plantTree(s, 'pommier', 1).ok, false, 'case déjà prise');
+  assertEqual(plantTree(s, 'pommier', 2).ok, false, 'case non achetée');
+  assertEqual(buyTree(s, 'pommier').case, 0, 'sans case : la première libre');
+  assertEqual(freeOrchardCases(s), []);
+});
+
+test('version 1.13 : 4 dessins, 5 nuits par dessin, puis des fruits qui attendent', () => {
+  const s = orchard();
+  protect(s, 'pomme');
+  plantTree(s, 'pommier', 0);
+  const t = s.verger.arbres[0];
+  const stades = [];
+  for (let n = 0; n <= 16; n++) {
+    stades.push(treeStage(s, t));
+    sleepOnce(s);
+  }
+  assertEqual(stades, [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3]);
+  assertEqual(countItem(s, 'pomme'), 0, 'rien n\'arrive seul dans l\'inventaire');
+  assertEqual(ripeTrees(s).length, 1);
+});
+
+test('version 1.13 : la cueillette au clic coûte de l\'énergie et rapporte 20 XP, fruits 3 nuits plus tard', () => {
+  const s = orchard();
+  protect(s, 'poire');
+  plantTree(s, 'poirier', 0);
+  const t = s.verger.arbres[0];
+  t.fruits = true;
+  const xp = s.progression.xp;
+  const e = s.energie;
+  const r = harvestTree(s, t.id);
+  assertEqual([r.ok, r.qty, countItem(s, 'poire')], [true, 6, 6]);
+  assertEqual(s.progression.xp - xp, 20);
+  assert(s.energie < e, 'énergie dépensée');
+  assertEqual([t.fruits, treeStage(s, t)], [false, 0], 'jeune planté du jour : repasse au dessin de son âge');
+  assertEqual(harvestTree(s, t.id).ok, false, 'plus de fruits');
+  t.plantee = -40; // adulte
+  const day = s.day;
+  t.fruits = true;
+  harvestTree(s, t.id);
+  assertEqual(treeStage(s, t), 2, 'repasse à « arbre »');
+  for (let i = 0; i < 2; i++) sleepOnce(s);
+  assertEqual(t.fruits, false);
+  sleepOnce(s);
+  assertEqual([t.fruits, s.day], [true, day + 3], 'en fruits 3 nuits plus tard');
+  s.energie = 0;
+  assertEqual(harvestTree(s, t.id).ok, false, 'sans énergie');
+});
+
+test('version 1.13 : Récolte du verger, cueillette la nuit à moitié de l\'XP', () => {
+  const s = orchard();
+  protect(s, 'pomme');
+  grantTech(s, 'cu_verger_auto');
+  plantTree(s, 'pommier', 0);
+  s.verger.arbres[0].prochaine = s.day;
+  const xp = s.progression.xp;
+  const r = sleepOnce(s);
+  assertEqual([r.fruits.pomme, countItem(s, 'pomme'), s.verger.arbres[0].fruits], [6, 6, false]);
+  assert(s.progression.xp - xp >= 10, 'XP de la cueillette automatique');
+  assertEqual(DATA.techtree.noeuds.cu_verger_auto.effet, { auto: { recolte: ['verger'] } });
+});
+
+test('migration v29 → v30 : chaque arbre reçoit sa case et garde son calendrier', () => {
+  const s = orchard();
+  s.day = 20;
+  const old = JSON.parse(JSON.stringify(s));
+  old.version = 29;
+  old.verger.arbres = [{ id: 'arbre-1', espece: 'pommier', plantee: 1 }, { id: 'arbre-2', espece: 'poirier', plantee: 10 }];
+  const m = migrateOrchard(old);
+  assertEqual(m.version, 30);
+  // arbre 1 : nuits 15, 18, 21… → 21 ; arbre 2 : nuit 24
+  assertEqual(m.verger.arbres.map((t) => [t.case, t.fruits, t.prochaine]), [[0, false, 21], [1, false, 24]]);
+  const all = migrate({ v: 29, t: 0, s: old });
+  assertEqual(all.version, STATE_VERSION);
 });
 
 export const results = runTests();

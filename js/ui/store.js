@@ -55,6 +55,12 @@ export function setHoeMode(value) {
   hoeMode = value;
   return value;
 }
+// Version 1.13 : case du Verger dont on choisit l'arbre (null : aucun choix ouvert).
+export let vergerCase = null;
+export function setVergerCase(value) {
+  vergerCase = value;
+  return value;
+}
 export let testMode = false;
 export function setTestMode(value) {
   testMode = value;

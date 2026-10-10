@@ -7,11 +7,13 @@ import {
 } from '../engine/fridge.js';
 import { buildSerre, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
 import {
-  buildVerger, buyOrchardSlot, isTreeAdult, orchardFree, orchardSlotPrice,
-  treeAge, treeNextHarvest,
+  buildVerger, buyOrchardSlot, harvestTree, isTreeAdult, orchardSlotPrice, plantTree,
+  treeAge, treeAt, treeNextHarvest, treeStageName,
 } from '../engine/orchard.js';
+import { canAfford } from '../engine/stamina.js';
+import { techAuto } from '../engine/techtree.js';
 import { formatCoins, formatNumber, formatQty, formatWh, formatWhRate } from '../engine/format.js';
-import { state } from './store.js';
+import { setVergerCase, state, vergerCase } from './store.js';
 import { applyResult } from './game-actions.js';
 import { stageUsable } from './stage.js';
 import { wearHtml } from './ferme.js';
@@ -23,6 +25,8 @@ import { pxText } from './pixel-art.js';
 import { helpBtn } from './aide.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
+import { refresh } from './render.js';
+import { openStageWindow, stageWindow } from './stage-windows.js';
 import { canPay, costLabel } from './common.js';
 
 /* ---------- Lot 8 : Serre, Verger, Réfrigérateur ---------- */
@@ -53,6 +57,8 @@ export function renderSerre() {
   `;
 }
 
+// Version 1.13 (v2, lot 9) : une carte par case du Verger. Un arbre montre son dessin,
+// sa croissance et, en fruits, le bouton « Cueillir » ; une case libre propose de planter.
 function treeCard(tree) {
   const V = DATA.VERGER;
   const def = V.ARBRES[tree.espece];
@@ -60,17 +66,50 @@ function treeCard(tree) {
   const age = Math.min(V.MATURITE, treeAge(state, tree));
   const adult = isTreeAdult(state, tree);
   const next = treeNextHarvest(state, tree);
-  let line;
-  if (!adult) line = `Jeune plant : ${age} / ${V.MATURITE} nuits`;
-  else line = 'Adulte';
-  const when = next === null ? '' : next === state.day ? 'Prochaine récolte : cette nuit' : `Prochaine récolte : nuit ${next} (dans ${nightsLabel(next - state.day)})`;
+  const stade = treeStageName(state, tree);
+  let foot;
+  if (tree.fruits) {
+    foot = `<button type="button" class="btn primary" data-action="harvest-tree" data-id="${tree.id}"${canAfford(state, 'cueillir') ? '' : ' disabled'}>Cueillir ${V.FRUITS} ${fruit.icone}</button>`;
+  } else {
+    foot = `<span class="muted">${next === state.day ? 'Fruits cette nuit' : `Fruits nuit ${next} (dans ${nightsLabel(next - state.day)})`}</span>`;
+  }
   return `
-    <div class="card plot tree${adult ? ' adult' : ''}">
+    <div class="card plot tree${adult ? ' adult' : ''}${tree.fruits ? ' ready' : ''}">
       <span class="card-title"><span>${def.nom}</span><span aria-hidden="true">${fruit.icone}</span></span>
       ${treeArt(tree)}
-      <span class="muted">${line}${adult ? ` · ${V.FRUITS} ${fruit.nom.toLowerCase()}s par récolte` : ''}</span>
-      <span class="bar" role="progressbar" aria-label="Croissance" aria-valuemin="0" aria-valuemax="${V.MATURITE}" aria-valuenow="${age}"><span class="bar-fill" style="width:${Math.round((age / V.MATURITE) * 100)}%"></span></span>
-      <span class="muted">${when}</span>
+      <span class="muted">${stade}${adult ? '' : ` · ${age} / ${V.MATURITE} nuits`}</span>
+      ${adult ? '' : `<span class="bar" role="progressbar" aria-label="Croissance" aria-valuemin="0" aria-valuemax="${V.MATURITE}" aria-valuenow="${age}"><span class="bar-fill" style="width:${Math.round((age / V.MATURITE) * 100)}%"></span></span>`}
+      ${foot}
+    </div>`;
+}
+
+function freeCard(c) {
+  return `
+    <div class="card plot tree free">
+      <span class="card-title"><span>Emplacement ${c + 1}</span></span>
+      ${artPx(['plot-soil'], 'plot-art')}
+      <button type="button" class="btn" data-action="tree-slot" data-case="${c}">Planter un arbre</button>
+    </div>`;
+}
+
+// « Choisir un arbre » : ouvert par un appui sur un emplacement libre (carte ou fenêtre).
+function treeChoice() {
+  const c = vergerCase;
+  if (c === null || c >= state.verger.places || treeAt(state, c)) return '';
+  const V = DATA.VERGER;
+  const rows = Object.entries(V.ARBRES).map(([espece, def]) => {
+    const fruit = DATA.items[def.fruit];
+    return `
+      <div class="shop-row">
+        <div class="inv-main"><span><span aria-hidden="true">${fruit.icone}</span> ${def.nom}</span><span class="muted">${formatCoins(def.prix)} 💰</span></div>
+        <span class="muted">Premiers fruits ${V.MATURITE} nuits après la plantation (${V.STADES.slice(0, 3).join(', ').toLowerCase()}, ${V.NUITS_STADE} nuits chacun), puis ${V.FRUITS} ${fruit.nom.toLowerCase()}s toutes les ${V.PERIODE} nuits.</span>
+        <button type="button" class="btn primary" data-action="plant-tree" data-species="${espece}" data-case="${c}"${canPay(def.prix) ? '' : ' disabled'}>Planter un ${def.nom.toLowerCase()} (${formatCoins(def.prix)} 💰)</button>
+      </div>`;
+  }).join('');
+  return `
+    <div class="card tree-choice">
+      <span class="card-title"><span>🌱 Choisir un arbre · emplacement ${c + 1}</span><button type="button" class="icon-btn" data-action="tree-slot-cancel" aria-label="Fermer le choix" title="Fermer">✕</button></span>
+      ${rows}
     </div>`;
 }
 
@@ -82,31 +121,27 @@ export function renderVerger() {
     return `
       <div class="section-head"><h3>${icon('verger')}Verger</h3>${helpBtn('verger')}</div>
       <div class="card">
-        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Pommiers et poiriers s'achètent ici, au Verger, sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, toute l'année, à partir de ${V.MATURITE} nuits après la plantation.</span>
+        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Appuie sur un emplacement pour y planter un pommier ou un poirier, sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, toute l'année, à partir de ${V.MATURITE} nuits après la plantation.</span>
         <button type="button" class="btn primary" data-action="build-verger"${canPay(cost) ? '' : ' disabled'}>Aménager le Verger (${costLabel(cost)})</button>
       </div>`;
   }
   const price = orchardSlotPrice(state);
-  const free = orchardFree(state);
   const slots = [];
-  for (const t of v.arbres) slots.push(treeCard(t));
-  for (let i = 0; i < free; i++) {
-    slots.push(`
-      <div class="card plot tree free">
-        <span class="card-title"><span>Emplacement libre</span></span>
-        ${artPx(['plot-soil'], 'plot-art')}
-        <span class="muted">Achète un pommier ou un poirier ci-dessous.</span>
-      </div>`);
+  for (let c = 0; c < v.places; c++) {
+    const t = treeAt(state, c);
+    slots.push(t ? treeCard(t) : freeCard(c));
   }
   const atMax = v.places >= V.EMPLACEMENTS_MAX;
+  const auto = techAuto(state, 'recolte', 'verger');
   return `
     <div class="section-head">
       <h3>${icon('verger')}Verger · ${v.arbres.length} / ${v.places} emplacements</h3>
-      ${helpBtn('verger')}
+      <span class="chips">${auto ? autoChip('verger', 'Les arbres en fruits sont cueillis la nuit (Récolte du verger)') : ''}${helpBtn('verger')}</span>
     </div>
+    ${treeChoice()}
     <div class="plots">${slots.join('')}</div>
     <div class="card">
-      <span class="muted">Un arbre adulte donne ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, toute l'année.</span>
+      <span class="muted">Un arbre adulte se couvre de ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits après la cueillette, toute l'année.${auto ? '' : ' Ils attendent sur l\'arbre que tu les cueilles.'}</span>
       ${atMax
         ? `<span class="muted">Le Verger a atteint sa taille maximale (${V.EMPLACEMENTS_MAX} emplacements).</span>`
         : `<button type="button" class="btn" data-action="buy-orchard-slot"${canPay(price) ? '' : ' disabled'}>Acheter un emplacement (${costLabel(price)})</button>`}
@@ -219,6 +254,28 @@ registerActions({
   'build-verger': () => {
     const result = applyResult(buildVerger(state));
     if (result.ok) showToast(`🌳 Verger aménagé : ${state.verger.places} emplacements`);
+  },
+  // Version 1.13 : un emplacement libre (carte ou fenêtre) ouvre le choix de l'arbre.
+  'tree-slot': (target) => {
+    setVergerCase(Number(target.dataset.case));
+    if (stageWindow !== 'verger') openStageWindow('verger');
+    else refresh();
+  },
+  'tree-slot-cancel': () => {
+    setVergerCase(null);
+    refresh();
+  },
+  'plant-tree': (target) => {
+    const espece = target.dataset.species;
+    const result = applyResult(plantTree(state, espece, Number(target.dataset.case)));
+    if (result.ok) {
+      setVergerCase(null);
+      showToast(`🌱 ${DATA.VERGER.ARBRES[espece].nom} planté (−${formatCoins(result.cost)} 💰)`);
+    }
+  },
+  'harvest-tree': (target) => {
+    const result = applyResult(harvestTree(state, target.dataset.id));
+    if (result.ok) showToast(`+${result.qty} ${DATA.items[result.item].icone}`);
   },
   'buy-orchard-slot': () => {
     const result = applyResult(buyOrchardSlot(state));

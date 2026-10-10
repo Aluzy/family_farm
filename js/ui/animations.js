@@ -1,5 +1,5 @@
 import { artHtml } from './pixel-art.js';
-import { isTreeAdult } from '../engine/orchard.js';
+import { treeStage } from '../engine/orchard.js';
 import { state } from './store.js';
 
 /* ---------- Lot 11 : illustrations et animations ---------- */
@@ -27,9 +27,11 @@ export function coopArtRow() {
   return `<span class="card-art-row">${artPx(['hen'])}${artPx(['egg'], `egg-art${laid > 0 ? '' : ' art-hidden'}`, `ponte-${laid > 0 ? state.day : 0}`, 'lay')}${laid > 0 ? `<span class="muted">+${laid} œuf${laid > 1 ? 's' : ''} cette nuit</span>` : ''}</span>`;
 }
 
+// Version 1.13 : le dessin suit le stade (jeune arbre, arbuste, arbre, arbre en fruits).
 export function treeArt(tree) {
-  const adult = isTreeAdult(state, tree);
-  return artPx([adult ? `tree-${tree.espece}` : 'tree-young'], 'plot-art', `${tree.id}-${adult ? 'adulte' : 'jeune'}`, 'grow');
+  const st = treeStage(state, tree);
+  const art = st === 0 ? 'tree-young' : st < 3 ? 'tree-adult' : `tree-${tree.espece}`;
+  return artPx([art], `plot-art${st === 1 ? ' tree-small' : ''}`, `${tree.id}-${st}`, 'grow');
 }
 
 export const REDUCED_MOTION = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
