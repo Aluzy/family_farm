@@ -598,6 +598,26 @@
         return over;
       }
 
+      // Version 1.15 : en mode houe, une grille vert clair transparente sur les tuiles que la
+      // houe peut labourer ; rien hors du mode houe (l'image est détruite).
+      syncHoeGrid(tiles) {
+        const key = tiles ? tiles.join() : '';
+        if (key === this.hoeGridKey) return;
+        this.hoeGridKey = key;
+        if (this.hoeGrid) { this.hoeGrid.destroy(); this.hoeGrid = null; }
+        if (!tiles || !tiles.length) return;
+        const W = this.grid.cols;
+        const g = this.add.graphics().setDepth(1.5);       // sur le sol, sous les parcelles (2)
+        g.fillStyle(0xb6f08c, 0.28);
+        g.lineStyle(1, 0xd8ffbe, 0.55);
+        for (const t of tiles) {
+          const x = (t % W) * T, y = Math.floor(t / W) * T;
+          g.fillRect(x + 1, y + 1, T - 2, T - 2);
+          g.strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
+        }
+        this.hoeGrid = g;
+      }
+
       // Version 1.15 : la terre suit les parcelles (leur tuile) ; seules les tuiles qui
       // changent, et leurs voisines (leur bordure), sont repeintes.
       syncZoneGround(model) {
@@ -1295,6 +1315,7 @@
           if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
         }
         this.syncZoneGround(model);
+        this.syncHoeGrid(model.labourables);
         this.syncTrees(model.arbres || [], sfx, rebuild);
         this.syncRooms(model, force);
         // L'ambiance reçoit l'heure et les images des arbres (jamais le modèle) : elle
