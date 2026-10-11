@@ -652,11 +652,47 @@ def nenuphars():
 
 # ================================================================ feuillage
 
-def foliage(cv, blobs, tones, seed, fruit=None, flowers=None):
-    """Feuillage en amas superposés : chaque boule est éclairée en haut à gauche (normale mêlée
-    à celle du houppier entier), les boules du haut passent devant et ombrent celles du dessous ;
-    creux sombres, quelques touches d'indigo A0 dans la moitié basse et droite ; bord d'ombre
-    cerné, bord éclairé ouvert. `tones` : [ombre profonde, ombre, base, lumière, reflet]."""
+def houppier(seed, cx, cy, rx, ry, n, rmin, rmax, tufts, tuft_r):
+    """Houppier foisonnant : `n` touffes (rayon `rmin` à `rmax`, plus grosses au cœur) semées
+    dans l'ellipse (cx, cy, rx, ry), et `tufts` petites touffes sur le pourtour qui festonnent
+    la silhouette. Rangées du bas vers le haut : celles du haut passent devant."""
+    r = rng('houppier', seed)
+    blobs = []
+    for _ in range(3000):
+        if len(blobs) >= n:
+            break
+        a = r.random() * 2 * math.pi
+        d = math.sqrt(r.random())
+        rad = rmax - (rmax - rmin) * d + r.uniform(-0.6, 0.6)
+        x = cx + math.cos(a) * d * (rx - rad)
+        y = cy + math.sin(a) * d * (ry - rad)
+        if all(math.hypot(x - bx, y - by) > 0.55 * (rad + br) for bx, by, br in blobs):
+            blobs.append((x, y, rad))
+    for i in range(tufts):
+        a = 2 * math.pi * (i + r.uniform(0, 0.7)) / tufts
+        rad = r.uniform(*tuft_r)
+        blobs.append((cx + math.cos(a) * (rx - rad * 0.7), cy + math.sin(a) * (ry - rad * 0.7), rad))
+    blobs.sort(key=lambda b: -b[1])
+    fond = []                                             # touffes de fond, derrière : aucun trou
+    for gy in range(-2, 3):
+        for gx in range(-2, 3):
+            x, y = cx + gx * (rx - rmax) / 2.4, cy + gy * (ry - rmax) / 2.4
+            if (gx / 2.4) ** 2 + (gy / 2.4) ** 2 <= 1:
+                fond.append((x, y, rmax))
+    fond.sort(key=lambda b: -b[1])
+    return fond + blobs
+
+
+# petites feuilles posées sur les aplats : trois pixels, la pointe vers le haut
+FEUILLES = (((0, 0), (1, 0), (1, -1)), ((0, 0), (1, 0), (0, -1)), ((0, 0), (0, -1), (1, -1)))
+
+
+def foliage(cv, blobs, tones, seed, fruit=None, flowers=None, local=0.5):
+    """Feuillage en touffes superposées : chaque touffe est éclairée en haut à gauche (normale
+    mêlée à celle du houppier entier), les touffes du haut passent devant et ombrent celles du
+    dessous ; dessous de chaque touffe foncé, petites feuilles claires sur les aplats éclairés et
+    sombres dans l'ombre, creux d'indigo A0 ; bord d'ombre cerné, bord éclairé ouvert.
+    `tones` : [ombre profonde, ombre, base, lumière, reflet]."""
     X0 = min(cx - r for cx, cy, r in blobs); X1 = max(cx + r for cx, cy, r in blobs)
     Y0 = min(cy - r for cx, cy, r in blobs); Y1 = max(cy + r for cx, cy, r in blobs)
     CX, CY, RX, RY = (X0 + X1) / 2, (Y0 + Y1) / 2, (X1 - X0) / 2, (Y1 - Y0) / 2
@@ -664,41 +700,60 @@ def foliage(cv, blobs, tones, seed, fruit=None, flowers=None):
     def owner(x, y):
         k = None
         for i, (cx, cy, r) in enumerate(blobs):
+            if abs(x + 0.5 - cx) > r + 1 or abs(y + 0.5 - cy) > r + 1:
+                continue
             a = math.atan2(y + 0.5 - cy, x + 0.5 - cx)
-            if math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= r * (1 + 0.07 * math.cos(5 * a + i)):   # bord dentelé
+            if math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= r * (1 + 0.1 * math.cos(5 * a + i * 1.7)):   # bord dentelé
                 k = i
         return k
     own = {(x, y): owner(x, y) for y in range(cv.h) for x in range(cv.w)}
     inside = lambda x, y: own.get((x, y)) is not None
+    lvl = {}
     for (x, y), k in own.items():
         if k is None:
             continue
         cx, cy, r = blobs[k]
-        nx = 0.7 * (x + 0.5 - cx) / r + 0.5 * (x + 0.5 - CX) / RX
-        ny = 0.7 * (y + 0.5 - cy) / r + 0.62 * (y + 0.5 - CY) / RY        # le bas du houppier fonce
-        lv = level(nx, ny, 0.05)
+        nx = local * (x + 0.5 - cx) / r + 0.7 * (x + 0.5 - CX) / RX
+        ny = local * (y + 0.5 - cy) / r + 0.8 * (y + 0.5 - CY) / RY        # le bas du houppier fonce
+        lv = level(nx, ny, 0.08)
         if own.get((x, y + 2)) != k and lv > 1:
-            lv -= 1                                       # dessous de la boule : un cran plus sombre
+            lv -= 1                                       # dessous de la touffe : un cran plus sombre
         feuille = FEUILLES_AMAS[(y + seed) % 16][(x + seed * 3) % 16]
-        if 1 <= lv <= 3 and feuille > 0.86:
+        if 1 <= lv <= 3 and feuille > 0.88:
             lv += 1                                       # amas de feuilles qui accrochent la lumière
-        elif 2 <= lv <= 3 and feuille < 0.12:
+        elif 2 <= lv <= 3 and feuille < 0.1:
             lv -= 1                                       # amas de feuilles dans l'ombre
-        for dd in (1, 2):                                     # ombre d'une boule de devant
+        for dd in (1, 2):                                     # ombre d'une touffe de devant
             q = own.get((x - dd, y - dd))
             if q is not None and q > k:
                 lv = 0 if dd == 1 else min(lv, 1)
                 break
+        lvl[(x, y)] = lv
+    r = rng('feuillage', seed)
+    for gy in range(0, cv.h, 5):                              # petites feuilles, une par case de 6 × 5
+        for gx in range(0, cv.w, 6):
+            x, y = gx + r.randint(0, 5), gy + r.randint(0, 4)
+            shape = r.choice(FEUILLES)
+            cells = [(x + dx, y + dy) for dx, dy in shape]
+            if not all(own.get(c) == own.get((x, y)) and c in lvl for c in cells):
+                continue
+            lv = lvl[(x, y)]
+            if any(lvl[c] != lv for c in cells):
+                continue
+            new = lv + 1 if lv == 3 or lv == 2 and r.random() < 0.5 else lv - 1 if lv == 1 and r.random() < 0.4 else None
+            if new is not None:
+                for c in cells:
+                    lvl[c] = new
+    for (x, y), lv in lvl.items():
         cv.put(x, y, tones[lv])
     outline_feuillage(cv, inside, tones[0], tones[1], seed)
-    r = rng('feuillage', seed)
     deep = sorted((x, y) for (x, y), k in own.items() if k is not None and cv.get(x, y)[:3] == PAL[tones[0]]
-                  and x > CX and y > CY)
-    for _ in range(2):                                        # touches d'indigo au creux
+                  and x > CX and y > CY and inside(x + 1, y + 1) and inside(x - 1, y - 1))
+    for _ in range(max(2, len(blobs) // 8)):                  # touches d'indigo au creux
         if deep:
             x, y = r.choice(deep)
             for p in amas(r, x, y, r.randint(2, 4)):
-                if inside(*p):
+                if inside(*p) and inside(p[0] + 1, p[1] + 1):
                     cv.put(*p, 'A0')
     pts = sorted(p for p, k in own.items() if k is not None and inside(p[0] + 1, p[1] + 1) and inside(p[0] - 1, p[1] - 1))
     if fruit:
@@ -722,10 +777,11 @@ V_RAMP_CLAIR = ['V2', 'V5', 'V8', 'V10', 'V11']
 
 
 def buisson(kind):
-    """Buisson 32 × 26 dans 32 × 32 : trois ou quatre amas, les plus clairs en haut à gauche,
-    pas de tronc ni d'ombre de contact."""
+    """Buisson 32 × 26 dans 32 × 32 : une douzaine de touffes festonnées, les plus claires en
+    haut à gauche, pas de tronc."""
     cv = Canvas(32, 32)
-    blobs = [(16, 23, 9), (8, 21, 7), (24, 21, 7), (13, 14, 7.5), (20, 14, 7)]
+    blobs = houppier({'vert': 1, 'baies': 2, 'fleuri': 3, 'roses': 4}[kind], 16, 20, 14.5, 10.5,
+                     7, 3.2, 5.5, 12, (2.0, 3.0))
     if kind == 'vert':
         foliage(cv, blobs, V_RAMP, 1)
     elif kind == 'baies':
@@ -735,7 +791,7 @@ def buisson(kind):
     elif kind == 'roses':
         foliage(cv, blobs, V_RAMP, 4, flowers=(('A8', 'A7'), 8))
     ombre_pied(cv, 16, 13, 31, 2)
-    return cv.im
+    return ancrer(cv.im)
 
 
 def arbuste():
@@ -748,23 +804,70 @@ def arbuste():
     return cv.im
 
 
-def trunk(cv, x0, top, bot, w=7, forks=True, ramp=('W4', 'W3', 'W2', 'W1'), outline='W0'):
-    """Tronc de 6 à 8 px : flanc gauche éclairé, droite dans l'ombre ; contour ; racines ; deux
-    fourches qui partent dans le feuillage."""
-    pts = set()
+# ================================================================ troncs et branches
+
+EVASEMENT = ([0, 0, 1, 1, 2, 4], [0, 1, 1, 2, 3, 5])      # pied : surplus à gauche, à droite (6 rangées)
+
+
+def trunk(cv, x0, top, bot, w=7, ramp=('W4', 'W3', 'W2', 'W1'), outline='W0', lean=0, seed=0, marks=None):
+    """Tronc : pied évasé et dissymétrique dont les racines s'écartent (la dernière rangée ne
+    garde que leurs pointes), légère inclinaison vers le haut, flanc gauche éclairé, droite
+    dans l'ombre, stries d'écorce en amas ; contour continu. Renvoie le centre du haut."""
+    s = w / 7
+    rows = {}
     for y in range(top, bot + 1):
-        spread = 2 if y > bot - 2 else 1 if y > bot - 4 else 0
-        for x in range(x0 - spread, x0 + w + spread):
+        t = (bot - y) / max(1, bot - top)
+        off = round(lean * t * t)
+        fr = bot - y
+        el = round(EVASEMENT[0][5 - fr] * s) if fr < 6 else 0
+        er = round(EVASEMENT[1][5 - fr] * s) if fr < 6 else 0
+        rows[y] = (x0 + off - el, x0 + off + w + er - 1)
+    pts = set()
+    for y, (a, b) in rows.items():
+        for x in range(a, b + 1):
             pts.add((x, y))
-    if forks:
-        for k in range(9):
-            pts.add((x0 + 1 - k // 2, top - k)); pts.add((x0 + 2 - k // 2, top - k))
-            pts.add((x0 + w - 2 + k // 2, top - k)); pts.add((x0 + w - 3 + k // 2, top - k))
+    a, b = rows[bot]                                           # pointes des racines, creux entre elles
+    for x in range(a, b + 1):
+        tip = x <= a + max(1, round(2 * s)) - 1 or x >= b - max(1, round(2 * s)) + 1 or x0 + 1 <= x <= x0 + w - 2
+        if not tip:
+            pts.discard((x, bot))
     outline_construit(cv, lambda x, y: (x, y) in pts, outline)
     for (x, y) in pts:
-        k = (x - x0) / w
-        cv.put(x, y, ramp[0] if k < 0.2 else ramp[1] if k < 0.55 else ramp[2] if k < 0.85 else ramp[3])
-    return pts
+        a, b = rows[y]
+        k = (x - a + 0.5) / (b - a + 1)
+        cv.put(x, y, ramp[0] if k < 0.22 else ramp[1] if k < 0.55 else ramp[2] if k < 0.82 else ramp[3])
+    r = rng('ecorce', seed)
+    for _ in range(max(2, (bot - top) // 4)):                  # stries d'écorce
+        y = r.randint(top, bot - 3)
+        a, b = rows[y]
+        x = r.randint(a + 1, max(a + 1, b - 2))
+        for yy in range(y, y + r.randint(2, 4)):
+            if (x, yy) in pts:
+                cv.put(x, yy, marks or ramp[2] if (x - rows[yy][0]) / (rows[yy][1] - rows[yy][0] + 1) < 0.55 else ramp[3])
+    return (rows[top][0] + rows[top][1]) / 2
+
+
+def branches(cv, base, limbs, ramp=('W3', 'W2', 'W1'), outline='W0', only=None, upto=1.0):
+    """Branches qui partent du haut du tronc vers (x, y), en s'affinant de `t` à 1 px : dessus
+    éclairé, dessous dans l'ombre et cerné. `only` : couleurs sur lesquelles seulement on peint
+    (pour qu'elles paraissent dans les creux sombres du feuillage)."""
+    bx, by = base
+    allowed = None if only is None else {PAL[c] for c in only}
+
+    def put(x, y, c):
+        if allowed is None or cv.get(x, y)[:3] in allowed and cv.get(x, y)[3] == 255:
+            cv.put(x, y, c)
+    for x1, y1, t in limbs:
+        n = max(abs(x1 - bx), abs(y1 - by), 1)
+        for i in range(int(n * upto) + 1):
+            f = i / n
+            x = round(bx + (x1 - bx) * f)
+            y = round(by + (y1 - by) * f - 2 * math.sin(math.pi * f))     # légère courbe vers le haut
+            th = max(1, round(t - (t - 1) * f))
+            for j in range(th):
+                put(x, y + j, ramp[0] if j == 0 and th > 1 else ramp[1] if j < th - 1 or th == 1 else ramp[2])
+            if th > 1 or f < 0.8:
+                put(x, y + th, outline)
 
 
 def ombre_pied(cv, cx, rx, bottom, rows=3):
@@ -772,39 +875,57 @@ def ombre_pied(cv, cx, rx, bottom, rows=3):
     rangées : une flaque courte, jamais d'ombre portée longue."""
     from pastoral import OMBRE_CONTACT
     for y in range(bottom - rows + 1, bottom + 1):
-        k = (bottom - y) / rows
         for x in range(int(cx - rx), int(cx + rx) + 1):
             if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - bottom - 0.5) / (rows + 0.5)) ** 2 <= 1:
                 if 0 <= x < cv.w and 0 <= y < cv.h and cv.px[x, y][3] == 0:
                     cv.px[x, y] = OMBRE_CONTACT
 
 
-def ombre_tronc(cv, x0, w, y0, rows=3):
-    """Le haut du tronc, sous le feuillage, est dans l'ombre du houppier."""
-    for y in range(y0, y0 + rows):
-        for x in range(x0, x0 + w):
-            if cv.get(x, y)[:3] in (PAL['W4'], PAL['W3'], PAL['C1'], PAL['C0']):
+def ombre_tronc(cv, own, x0, x1, rows=3, lit=('W4', 'W3', 'C1', 'C0')):
+    """Le haut du tronc, juste sous le feuillage, est dans l'ombre du houppier."""
+    lit = {PAL[c] for c in lit}
+    for x in range(x0, x1 + 1):
+        ys = [y for (xx, y), k in own.items() if xx == x and k is not None]
+        if not ys:
+            continue
+        y0 = max(ys) + 1
+        for y in range(y0, y0 + rows):
+            if cv.get(x, y)[:3] in lit:
                 cv.put(x, y, 'W1' if y < y0 + rows - 1 else 'W2')
 
 
+def arbre_feuillu(cv, seed, trunk_args, limbs, crown, tones, fruit=None, flowers=None,
+                  bramp=('W3', 'W2', 'W1'), boutline='W0', bark=None):
+    """Tronc, branches, houppier foisonnant, branches revues dans les creux sombres."""
+    W = cv.w
+    top = trunk(cv, *trunk_args[:4], **trunk_args[4])
+    base = (round(top), trunk_args[1] + 1)
+    branches(cv, base, limbs, bramp, boutline)
+    own = foliage(cv, houppier(seed, *crown), tones, seed, fruit=fruit, flowers=flowers)
+    branches(cv, base, limbs, (bramp[1], bramp[2], boutline), boutline, only=(tones[0], 'A0'), upto=0.7)
+    x0, w = trunk_args[0], trunk_args[3]
+    ombre_tronc(cv, own, x0 - 2, x0 + w + 2)
+    ombre_pied(cv, W / 2, W * 0.19, cv.h - 1)
+    return own
+
+
 def arbre(kind):
-    """Arbre adulte, gabarit 80 × 80 : houppier aux deux tiers de la hauteur, tronc de 7 px dont
-    les fourches se voient dans le feuillage ; l'ombre du houppier sur le haut du tronc, une
-    flaque d'ombre au pied."""
+    """Arbre adulte, gabarit 80 × 80 : houppier large et foisonnant (une trentaine de touffes)
+    qui déborde sur ses voisins pour former une canopée ; tronc incliné au pied évasé, dont les
+    branches se voient sous le feuillage et dans ses creux ; ombre du houppier sur le haut du
+    tronc, flaque d'ombre au pied."""
     cv = Canvas(80, 80)
-    trunk(cv, 37, 54, 79)
-    # du bas vers le haut : les boules du haut passent devant et ombrent celles du dessous
-    blobs = [(40, 50, 11), (25, 45, 11), (55, 45, 11), (40, 37, 14), (28, 30, 11), (52, 30, 11),
-             (40, 21, 12), (32, 14, 9), (48, 14, 9)]
+    seed = {'feuillu': 10, 'fruits': 11, 'fleurs': 12}[kind]
+    limbs = [(22, 45, 3), (59, 44, 3), (28, 32, 2), (52, 30, 2), (41, 18, 2)]
+    crown = (40, 28, 38, 26, 26, 5.0, 9.0, 26, (3.0, 4.5))
     if kind == 'feuillu':
-        foliage(cv, blobs, V_RAMP, 10)
+        arbre_feuillu(cv, seed, (36, 60, 79, 7, {'lean': 1, 'seed': seed}), limbs, crown, V_RAMP)
     elif kind == 'fruits':
-        foliage(cv, blobs, V_RAMP, 11, fruit=(('A7', 'W0'), 18))
-    elif kind == 'fleurs':
-        foliage(cv, blobs, V_RAMP_CLAIR, 12, flowers=(('A3', 'A8'), 46))
-    trunk(cv, 37, 61, 79, forks=False)                    # le pied repasse devant le feuillage
-    ombre_tronc(cv, 37, 7, 61)
-    ombre_pied(cv, 40.5, 15, 79)
+        arbre_feuillu(cv, seed, (36, 60, 79, 7, {'lean': 1, 'seed': seed}), limbs, crown, V_RAMP,
+                      fruit=(('A7', 'W0'), 22))
+    elif kind == 'fleurs':  # noqa
+        arbre_feuillu(cv, seed, (36, 60, 79, 7, {'lean': -1, 'seed': seed}), limbs, crown, V_RAMP_CLAIR,
+                      flowers=(('A3', 'A8'), 52))
     return cv.im
 
 
@@ -812,60 +933,54 @@ def chene_jeune(size):
     """Chêne plus jeune : 48 × 48 (moyen) ou 32 × 32 (jeune)."""
     cv = Canvas(size, size)
     if size == 48:
-        trunk(cv, 22, 34, 47, 5, forks=True)
-        blobs = [(24, 31, 8), (15, 27, 7), (33, 27, 7), (24, 21, 9), (18, 14, 7), (30, 14, 7), (24, 9, 6)]
-        foliage(cv, blobs, V_RAMP, 20)
-        trunk(cv, 22, 38, 47, 5, forks=False)
-        ombre_tronc(cv, 22, 5, 38, 2)
-        ombre_pied(cv, 24.5, 10, 47)
+        arbre_feuillu(cv, 20, (21, 40, 47, 5, {'lean': 1, 'seed': 20}),
+                      [(12, 30, 2), (36, 29, 2), (18, 17, 1), (31, 15, 1)],
+                      (24, 20, 23, 18, 14, 3.5, 6.5, 16, (2.2, 3.2)), V_RAMP)
     else:
-        trunk(cv, 15, 22, 31, 3, forks=False)
-        blobs = [(16, 19, 6), (10, 16, 5), (22, 16, 5), (16, 11, 6), (16, 6, 4)]
-        foliage(cv, blobs, V_RAMP, 21)
-        trunk(cv, 15, 25, 31, 3, forks=False)
-        ombre_tronc(cv, 15, 3, 25, 2)
-        ombre_pied(cv, 16.5, 7, 31, 2)
-    return cv.im
+        arbre_feuillu(cv, 21, (14, 26, 31, 4, {'lean': 1, 'seed': 21}),
+                      [(8, 19, 1), (24, 18, 1)],
+                      (16, 13, 15, 12, 8, 3.0, 4.8, 12, (1.8, 2.6)), V_RAMP)
+    return ancrer(cv.im)
 
 
 def bouleau():
-    """Bouleau 64 × 64 : tronc fin et clair (C1, C0) marqué de traits sombres, houppier léger en
-    petits amas clairs ; contour du tronc R1."""
+    """Bouleau 64 × 64 : tronc fin et clair (C1, C0) marqué de traits sombres, branches fines et
+    sombres, houppier léger en petites touffes claires ; contour du tronc R1."""
     cv = Canvas(64, 64)
-    pts = trunk(cv, 30, 22, 63, 4, forks=True, ramp=('C1', 'C1', 'C0', 'C0'), outline='R1')
+    arbre_feuillu(cv, 30, (30, 48, 63, 4, {'lean': 2, 'seed': 30, 'ramp': ('C1', 'C1', 'C0', 'C0'),
+                                           'outline': 'R1', 'marks': 'R1'}),
+                  [(18, 34, 2), (46, 32, 2), (24, 19, 1), (42, 17, 1), (33, 10, 1)],
+                  (32, 24, 25, 22, 22, 3.5, 6.0, 22, (2.2, 3.2)), ['V2', 'V5', 'V8', 'V10', 'V11'],
+                  bramp=('C0', 'R1', 'R1'), boutline='N0')
     r = rng('bouleau')
-    for y in range(26, 62, 4):                            # marques de l'écorce
+    for y in range(48, 61, 4):                                # lenticelles sous le houppier
         x = 30 + r.randint(0, 2)
-        cv.put(x, y, 'R1'); cv.put(x + 1, y, 'R1')
-    blobs = [(32, 38, 7), (22, 34, 7), (42, 33, 7), (27, 26, 8), (38, 24, 8), (32, 17, 8), (24, 15, 6), (40, 14, 6),
-             (32, 8, 6)]
-    foliage(cv, blobs, ['V2', 'V5', 'V8', 'V10', 'V11'], 30)
-    trunk(cv, 30, 44, 63, 4, forks=False, ramp=('C1', 'C1', 'C0', 'C0'), outline='R1')
-    for y in range(47, 62, 5):
-        cv.put(31, y, 'R1'); cv.put(32, y, 'R1')
-    ombre_tronc(cv, 30, 4, 44, 2)
-    ombre_pied(cv, 32, 10, 63)
+        if cv.get(x, y)[:3] in (PAL['C1'], PAL['C0']):
+            cv.put(x, y, 'R1'); cv.put(x + 1, y, 'R1')
     return cv.im
 
 
 def saule():
-    """Saule pleureur 80 × 80 : un dôme de feuillage d'où pendent des rideaux de rameaux (V6, V8,
-    pointes V10), plus sombres à droite ; tronc trapu."""
+    """Saule pleureur 80 × 80 : un dôme de touffes d'où pendent des rideaux de rameaux (V6, V8,
+    pointes V10), plus sombres à droite ; tronc trapu au pied évasé."""
     cv = Canvas(80, 80)
-    trunk(cv, 36, 58, 79, 8, forks=True)
-    dome = [(40, 40, 14), (26, 38, 11), (54, 38, 11), (40, 28, 12), (31, 22, 9), (49, 22, 9)]
+    top = trunk(cv, 36, 56, 79, 8, lean=1, seed=40)
+    limbs = [(16, 38, 3), (64, 36, 3), (28, 26, 2), (52, 24, 2)]
+    branches(cv, (round(top), 58), limbs)
+    dome = houppier(40, 40, 32, 34, 18, 18, 4.5, 8.5, 22, (3.0, 4.0))
     own = foliage(cv, dome, V_RAMP, 40)
+    branches(cv, (round(top), 58), limbs, ('W2', 'W1', 'W0'), only=('V1', 'A0'), upto=0.7)
     r = rng('saule')
-    for x in range(12, 69):                               # rideaux de rameaux, avec des trouées
+    for x in range(8, 73):                                # rideaux de rameaux, avec des trouées
         if x % 6 == 5:
             continue
         base = max((y for y in range(80) if own.get((x, y)) is not None), default=None)
         if base is None:
             continue
-        ln = r.randint(16, 28) - abs(x - 40) // 3
+        ln = r.randint(14, 26) - abs(x - 40) // 3
         for k in range(-2, max(4, ln)):
             y = base + k
-            if y >= 76:
+            if y >= 75:
                 break
             if k == ln - 1:
                 col = 'V10'
@@ -876,91 +991,95 @@ def saule():
             else:
                 col = 'V2' if (k // 3 + x) % 3 else 'V1'
             cv.put(x, y, col)
-    for y in range(74, 80):                               # le pied du tronc, entre les rideaux
-        for x in range(36, 44):
-            cv.put(x, y, 'W4' if x == 36 else 'W3' if x < 40 else 'W2' if x < 43 else 'W1')
-    cv.vline(35, 74, 79, 'W0'); cv.vline(44, 74, 79, 'W0')
-    ombre_pied(cv, 40, 16, 79)
+    sub = Canvas(80, 80)                                  # le pied du tronc repasse devant les rideaux
+    trunk(sub, 36, 56, 79, 8, lean=1, seed=40)
+    for y in range(73, 80):
+        for x in range(80):
+            if sub.px[x, y][3]:
+                cv.px[x, y] = sub.px[x, y]
+    ombre_pied(cv, 40, 17, 79)
     return cv.im
 
 
 def arbre_sombre():
-    """Arbre sombre 64 × 64 : houppier dense et rond, tons profonds (V0 à V6), creux indigo."""
+    """Arbre sombre 64 × 64 : houppier dense et rond, tons profonds (V0 à V7), creux indigo."""
     cv = Canvas(64, 64)
-    trunk(cv, 29, 44, 63, 6, forks=True)
-    blobs = [(32, 40, 10), (20, 36, 9), (44, 36, 9), (32, 29, 12), (23, 22, 9), (41, 22, 9), (32, 13, 10)]
-    foliage(cv, blobs, ['V0', 'V1', 'V3', 'V5', 'V7'], 50)
-    trunk(cv, 29, 50, 63, 6, forks=False)
-    ombre_tronc(cv, 29, 6, 50, 2)
-    ombre_pied(cv, 32, 12, 63)
+    arbre_feuillu(cv, 50, (29, 51, 63, 6, {'lean': -1, 'seed': 50}),
+                  [(15, 38, 3), (50, 37, 3), (22, 25, 2), (43, 23, 2), (32, 14, 2)],
+                  (32, 25, 31, 23, 22, 4.5, 8.0, 22, (2.6, 3.8)), ['V0', 'V1', 'V3', 'V5', 'V7'])
     return cv.im
+
+
+def sapin_etages(cv, tiers, seed, tones=('V0', 'V2', 'V4', 'V6', 'V8')):
+    """Étages d'un sapin : chaque étage porte trois groupes de branches — à gauche (éclairé),
+    au milieu, à droite (dans l'ombre) — séparés par des sillons sombres et terminés chacun par
+    une pointe, ce qui festonne le bas de l'étage ; l'étage du dessus ombre celui du dessous ;
+    bord d'ombre cerné, bord éclairé ouvert."""
+    D = 3                                                  # profondeur des creux entre les pointes
+
+    def tier_of(x, y):
+        for i, (cx, top, half, bot) in enumerate(tiers):
+            if not top <= y + 0.5 <= bot:
+                continue
+            w = half * (y + 0.5 - top) / (bot - top) + 1
+            rb = (x + 0.5 - cx) / (half + 1)              # position sous l'étage, de -1 à 1
+            if abs(x + 0.5 - cx) > w:
+                continue
+            a = abs(rb)
+            if a < 0.85:
+                bot_eff = bot - D * math.sin(math.pi * a / 0.85) ** 2
+            else:
+                bot_eff = bot - D * (a - 0.85) / 0.15
+            if y + 0.5 <= bot_eff:
+                return i, w, rb
+        return None, 0, 0
+    own = {(x, y): tier_of(x, y) for y in range(cv.h) for x in range(cv.w)}
+    inside = lambda x, y: own.get((x, y), (None,))[0] is not None
+    for (x, y), (i, w, rb) in own.items():
+        if i is None:
+            continue
+        cx, top, half, bot = tiers[i]
+        g = 0 if rb < -0.36 else 1 if rb <= 0.36 else 2         # groupe : gauche, milieu, droite
+        lv = (3, 2, 1)[g]
+        centre = (-0.68, 0, 0.68)[g]
+        gr = (rb - centre) / 0.32                              # position dans le groupe, de -1 à 1
+        if gr < -0.35:
+            lv += 1                                            # chaque groupe a son flanc éclairé
+        elif gr > 0.55:
+            lv -= 1
+        f = (y + 0.5 - top) / (bot - top)
+        if f < 0.3 and g != 2:
+            lv = max(lv, 3)                                    # haut de l'étage, près du tronc : clair
+        dx = x + 0.5 - cx
+        sillon = f > 0.35 and abs(abs(dx) - 0.38 * w) < 0.6         # sillon entre deux groupes
+        lv = max(0, min(4, lv))
+        for dd in (1, 2):
+            above = own.get((x, y - dd), (None,))[0]
+            if above is not None and above < i:
+                lv = 0 if dd == 1 else min(lv, 1)
+                break
+        if sillon and lv > 0:
+            cv.put(x, y, 'V1' if dx < 0 else tones[0])
+        else:
+            cv.put(x, y, tones[lv])
+    outline_feuillage(cv, inside, tones[0], tones[1], seed)
+    return own
 
 
 def sapin_jeune():
     """Jeune sapin 32 × 48."""
     cv = Canvas(32, 48)
-    trunk(cv, 14, 41, 47, 4, forks=False)
-    tiers = [(16, 3, 4, 14), (16, 10, 8, 26), (16, 19, 12, 41)]
-
-    def tier_of(x, y):
-        for i, (cx, top, half, bot) in enumerate(tiers):
-            if top <= y + 0.5 <= bot:
-                w = half * (y + 0.5 - top) / (bot - top) + 1
-                if abs(x + 0.5 - cx) <= w:
-                    return i, w
-        return None, 0
-    own = {(x, y): tier_of(x, y) for y in range(48) for x in range(32)}
-    tones = ['V0', 'V2', 'V4', 'V6', 'V8']
-    for (x, y), (i, w) in own.items():
-        if i is None:
-            continue
-        cx, top, half, bot = tiers[i]
-        rel = (x + 0.5 - cx) / max(1, w)
-        lv = 4 if rel < -0.65 else 3 if rel < -0.2 else 2 if rel < 0.35 else 1
-        if y + 0.5 > bot - 2:
-            lv = min(lv, 1)
-        for dd in (1, 2):
-            above = own.get((x, y - dd), (None, 0))[0]
-            if above is not None and above < i:
-                lv = 0
-                break
-        cv.put(x, y, tones[lv])
-    outline_feuillage(cv, lambda x, y: own.get((x, y), (None, 0))[0] is not None, 'V0', 'V1', 6)
+    trunk(cv, 14, 38, 47, 4, seed=6)
+    sapin_etages(cv, [(16, 2, 5, 15), (16, 9, 9, 27), (16, 18, 13, 42)], 6)
     ombre_pied(cv, 16, 8, 47)
     return cv.im
 
 
 def sapin():
-    """Sapin 48 × 64 : étages de branches, chaque étage ombre celui du dessous ; flanc gauche
-    éclairé ; bord d'ombre cerné, bord éclairé ouvert."""
+    """Sapin 48 × 64 : quatre étages de branches, trois groupes par étage ; pied évasé."""
     cv = Canvas(48, 64)
-    trunk(cv, 21, 56, 63, 6, forks=False)
-    tiers = [(24, 2, 5, 16), (24, 11, 10, 28), (24, 22, 15, 42), (24, 34, 20, 56)]
-
-    def tier_of(x, y):
-        for i, (cx, top, half, bot) in enumerate(tiers):
-            if top <= y + 0.5 <= bot:
-                w = half * (y + 0.5 - top) / (bot - top) + 1
-                if abs(x + 0.5 - cx) <= w:
-                    return i, w
-        return None, 0
-    own = {(x, y): tier_of(x, y) for y in range(64) for x in range(48)}
-    tones = ['V0', 'V2', 'V4', 'V6', 'V8']
-    for (x, y), (i, w) in own.items():
-        if i is None:
-            continue
-        cx, top, half, bot = tiers[i]
-        rel = (x + 0.5 - cx) / max(1, w)
-        lv = 4 if rel < -0.65 else 3 if rel < -0.2 else 2 if rel < 0.35 else 1
-        if y + 0.5 > bot - 2:
-            lv = min(lv, 1)
-        for dd in (1, 2):
-            above = own.get((x, y - dd), (None, 0))[0]
-            if above is not None and above < i:
-                lv = 0
-                break
-        cv.put(x, y, tones[lv])
-    outline_feuillage(cv, lambda x, y: own.get((x, y), (None, 0))[0] is not None, 'V0', 'V1', 5)
+    trunk(cv, 21, 52, 63, 6, seed=5)
+    sapin_etages(cv, [(24, 1, 6, 16), (24, 9, 11, 29), (24, 19, 16, 43), (24, 30, 21, 57)], 5)
     ombre_pied(cv, 24, 11, 63)
     return cv.im
 
