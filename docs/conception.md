@@ -56,6 +56,9 @@
 >   et l'aide attendent qu'aucune fenêtre ne soit ouverte (`js/ui/calme.js`). L'heure ne tourne
 >   ni pendant l'histoire ni pendant les bulles « L'eau et le soleil » et « La zone de
 >   culture » ; elle tourne pendant « Dormir », qui attend que « Zzz » s'active.
+>- **Aide, étape 2 (FLU-19)** : « La zone de culture » dit d'acheter la houe au Marché, de la
+>   prendre (bouton ⛏️), de toucher l'herbe foncée pour labourer, puis de planter et d'arroser
+>   la terre labourée ; plus de « parcelle sous la barrière ».
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

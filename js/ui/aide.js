@@ -5,7 +5,7 @@ import { farmOpen, pumpFlow } from '../engine/devices.js';
 import { awakeRequired } from '../engine/clock.js';
 import { energyStats } from '../engine/energy.js';
 import { familyNeed } from '../engine/family.js';
-import { cropProduct } from '../engine/crops.js';
+import { cropProduct, hasHoe } from '../engine/crops.js';
 import { chapterCount, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { unlockLevel } from '../engine/levels.js';
 import { advanceTutorial, skipTutorial, tutorialStep } from '../engine/alerts.js';
@@ -215,7 +215,10 @@ const TUTO = {
   },
   potager: {
     titre: '🌱 La zone de culture',
-    texte: () => `${stageUsable() ? 'Touche une parcelle vide (le carré de terre sous la barrière) pour planter, puis touche-la encore pour l\'arroser' : 'Touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade chaque nuit : les carottes sont mûres en ${nightsLabel(DATA.crops.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante.' : 'Après la récolte, replante.'}`,
+    // FLU-19 : plus de parcelle avant le labour ; on achète la houe, on laboure, puis on plante
+    texte: () => `${hasHoe(state) ? 'Ta houe' : `Achète d'abord la houe au Marché (${formatNumber(DATA.HOUE.PRIX)} 💰) : elle`} change l'herbe en terre. ${stageUsable()
+      ? `Prends-la (bouton ${DATA.HOUE.ICONE} en bas à droite) et touche l'herbe foncée (les cases vertes) pour labourer. Range-la, puis touche une terre labourée pour planter, et touche-la encore pour l'arroser`
+      : 'Laboure, puis touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade chaque nuit : les carottes sont mûres en ${nightsLabel(DATA.crops.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante.' : 'Après la récolte, replante.'}`,
   },
   dormir: {
     titre: '😴 Dormir',
