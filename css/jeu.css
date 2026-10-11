@@ -1224,6 +1224,9 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
 .more > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
 .more[open] > summary { margin-bottom: 8px; }
 
+.market-help > summary { font-weight: 400; gap: 8px; }
+.help-q { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 2px solid currentColor; font-weight: 700; }
+
 .tuto-ring {
   outline: 3px solid var(--accent);
   outline-offset: 3px;

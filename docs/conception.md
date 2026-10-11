@@ -81,6 +81,8 @@
 >   coûtent 30 % d'énergie en moins », puis le repas. Graphique d'autonomie, formules,
 >   coûts de chaque action et endurance sont dans « En savoir plus », fermé par défaut.
 >   Un bloc « En savoir plus » ouvert le reste aux rendus suivants.
+>- **Marché sans cours d'économie (FLU-25)** : chaque article n'affiche que son prix ; les
+>   explications (coefficients, planchers) sont derrière « ? Comment les prix changent ».
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

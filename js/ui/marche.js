@@ -217,6 +217,11 @@ function hoeShopRow() {
     </div>`;
 }
 
+// FLU-25 : l'économie du Marché (coefficients, planchers) est derrière un bouton « ? ».
+function marketHelp(texte) {
+  return `<details class="more market-help"><summary><span class="help-q" aria-hidden="true">?</span> Comment les prix changent</summary><p class="muted">${texte}</p></details>`;
+}
+
 export function renderComptoir() {
   const tabs = COMPTOIR_TABS.filter((t) => t.ok());
   const tab = tabs.find((t) => t.id === comptoirTab) || tabs[0];
@@ -224,7 +229,8 @@ export function renderComptoir() {
   if (tab.id === 'vendre') {
     const items = Object.keys(DATA.items).filter((k) => sellableCount(state, k) > 0);
     body = `
-      <p class="muted">Prix de vente fixes. Les articles rangés au frigo se vendent aussi (l'inventaire part en premier). Chaque unité vendue baisse de ${formatNumber(DATA.MARCHE.PAS)} points le coefficient d'achat de l'objet, sans passer sous son plancher.</p>
+      <p class="muted">Les articles rangés au frigo se vendent aussi.</p>
+      ${marketHelp(`Prix de vente fixes. L'inventaire part en premier, puis le frigo. Chaque unité vendue baisse de ${formatNumber(DATA.MARCHE.PAS)} points le coefficient d'achat de l'objet, sans passer sous son plancher.`)}
       ${items.length ? items.map(sellRow).join('') : '<p class="hint">Tu n\'as rien à vendre pour l\'instant.</p>'}`;
   } else if (tab.id === 'acheter') {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine');
@@ -232,14 +238,15 @@ export function renderComptoir() {
     const chapitre = !hasHoe(state) ? '<p class="row"><button type="button" class="btn small" data-action="aller" data-window="chapitres">📜 Voir le chapitre</button></p>' : '';
     body = `
       ${chapitre}${hoeShopRow()}
-      <p class="muted">Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
+      ${marketHelp(`Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.`)}
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'animaux') {
     body = renderAnimaux();
   } else {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = `
-      <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Produire tes propres graines reste plus rentable. Le blé, la patate et les autres cultures qui se plantent d'elles-mêmes (on plante une patate pour en récolter d'autres) gardent leur prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et restent aussi dans l'onglet Acheter.</p>
+      <p class="muted"><span class="chip badge">dépannage</span> Les graines coûtent cher : produire les tiennes reste plus rentable.</p>
+      ${marketHelp(`Les graines s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Le blé, la patate et les autres cultures qui se plantent d'elles-mêmes (on plante une patate pour en récolter d'autres) gardent leur prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et restent aussi dans l'onglet Acheter.`)}
       ${items.map(buyRow).join('')}`;
   }
   return `
