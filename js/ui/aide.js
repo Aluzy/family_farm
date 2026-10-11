@@ -6,15 +6,16 @@ import { awakeRequired } from '../engine/clock.js';
 import { energyStats } from '../engine/energy.js';
 import { familyNeed } from '../engine/family.js';
 import { cropProduct, hasHoe } from '../engine/crops.js';
-import { chapterCount, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
+import { chapterCount, chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
+import { setupPending } from '../engine/depart.js';
 import { unlockLevel } from '../engine/levels.js';
 import { advanceTutorial, skipTutorial, tutorialStep } from '../engine/alerts.js';
 import {
   formatDuration, formatNumber, formatQty, formatWh, formatWhRate,
 } from '../engine/format.js';
-import { activeTab, ecranFerme, state } from './store.js';
+import { activeTab, ecranFerme, hoeMode, state } from './store.js';
 import { tel } from './consent.js';
-import { consentBannerPending, consentBannerShown, letterToastShown, uiCalm } from './calme.js';
+import { consentBannerPending, consentBannerShown, letterToastShown, storyOpen, uiCalm } from './calme.js';
 import { applyResult } from './game-actions.js';
 import { morph } from './render.js';
 import { stageUsable } from './stage.js';
@@ -244,6 +245,7 @@ export function tutoTarget(step) {
 }
 
 export function renderTutorial() {
+  renderGuide();
   const root = document.getElementById('tuto-root');
   const step = visibleTutorial();
   document.body.classList.toggle('has-tuto', !!step);
@@ -268,6 +270,65 @@ export function renderTutorial() {
     const target = document.querySelector('.tuto-target');
     // La cible monte en haut de l'écran (sous l'en-tête) : la bulle, en bas, ne la cache pas.
     if (target && step !== 'dormir') target.scrollIntoView({ block: 'start', behavior: REDUCED_MOTION && REDUCED_MOTION.matches ? 'auto' : 'smooth' });
+  }
+}
+
+/* ---------- FLU-20 : l'aide montre l'élément à toucher ---------- */
+
+// Pendant les bulles « L'eau et le soleil » et « La zone de culture », un seul élément porte
+// un anneau animé : le bouton qui fait avancer l'objectif du chapitre en cours s'il est à
+// l'écran, sinon la puce d'objectif (qui y mène, FLU-01). L'anneau suit l'état de la partie :
+// il avance dès que l'objectif est atteint. Avec la houe en main, ce sont les cases vertes.
+const GUIDE_BOUTONS = {
+  maison: ['[data-action="repair-house"]'],
+  panneau: ['[data-action="buy-starter"][data-id="panneau"]'],
+  pompe: ['[data-action="buy-starter"][data-id="pompe"]'],
+  reservoir: ['[data-action="buy-starter"][data-id="reservoir"]'],
+  houe: ['[data-action="buy-hoe"]'],
+  labours: ['.hoe-fab'],
+  semis: ['#modal-root [data-action="plant"]:not([disabled])', '[data-action="plant-open"]:not([disabled])'],
+  arrosees: ['[data-action="water"]:not([disabled])'],
+  recoltes: ['[data-action="harvest"]'],
+};
+
+function shown(el) {
+  return !!el && el.offsetParent !== null;
+}
+
+function guideElement() {
+  const step = tutorialStep(state);
+  if (step !== 'eau' && step !== 'potager') return null;
+  if (!stageUsable() || setupPending(state) || storyOpen() || consentBannerShown() || consentBannerPending()) return null;
+  const c = state.campagne;
+  if (!c || c.fini || c.chapitre !== 1) return null;
+  const o = chapterProgress(state).objectifs.find((x) => !x.ok);
+  if (!o || !GUIDE_BOUTONS[o.type]) return null;
+  for (const sel of GUIDE_BOUTONS[o.type]) {
+    const el = [...document.querySelectorAll(sel)].find(shown);
+    if (el) return el;
+  }
+  if (o.type === 'labours' && hoeMode) return null; // les cases vertes de la carte
+  const modal = document.getElementById('modal-root');
+  if (modal && modal.childElementCount) return null;
+  const chip = document.querySelector('.stage-chip:not(.hoe):not(.done)');
+  if (shown(chip)) return chip;
+  // ailleurs (Marché, Inventaire…) : le retour à la Ferme
+  const ferme = document.querySelector('.nav-btn[data-tab="ferme"]');
+  return shown(ferme) ? ferme : null;
+}
+
+let guided = null;
+function renderGuide() {
+  const el = guideElement();
+  for (const old of document.querySelectorAll('.tuto-ring')) if (old !== el) old.classList.remove('tuto-ring');
+  if (!el) {
+    guided = null;
+    return;
+  }
+  el.classList.add('tuto-ring');
+  if (guided !== el) {
+    guided = el;
+    el.scrollIntoView({ block: 'nearest', behavior: REDUCED_MOTION && REDUCED_MOTION.matches ? 'auto' : 'smooth' });
   }
 }
 

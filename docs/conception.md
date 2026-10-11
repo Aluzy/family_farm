@@ -66,6 +66,12 @@
 >   « Arroser » ouvrent la fiche des parcelles. Le chapitre rapporte toujours 200 XP.
 >   Sauvegarde v34 : une partie qui a déjà labouré, planté ou arrosé (ou récolté, ou dépassé
 >   le chapitre 1) a ces étapes validées d'office.
+>- **L'aide montre où toucher (FLU-20)** : pendant les bulles « L'eau et le soleil » et « La
+>   zone de culture », un seul élément porte un anneau animé (immobile si les animations sont
+>   réduites) : le bouton qui fait avancer l'objectif du chapitre 1 s'il est à l'écran
+>   (Réparer, Acheter le panneau, la pompe, le réservoir, la houe, ⛏️, Planter, Arroser,
+>   Récolter), sinon la puce d'objectif, sinon l'onglet Ferme. Il avance tout seul quand
+>   l'objectif est atteint ; houe en main, ce sont les cases vertes. « Passer l'aide » reste.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

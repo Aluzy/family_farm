@@ -1210,6 +1210,18 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   animation: tuto-pulse 1.6s ease-in-out infinite;
 }
 
+.tuto-ring {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  animation: tuto-ring 1.2s ease-in-out infinite;
+}
+
+/* FLU-20 : l'anneau qui montre l'élément à toucher (immobile si les animations sont réduites) */
+@keyframes tuto-ring {
+  0%, 100% { outline-offset: 3px; outline-color: var(--accent); }
+  50% { outline-offset: 7px; outline-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+}
+
 @keyframes tuto-pulse {
   0%, 100% { outline-color: var(--accent); }
   50% { outline-color: transparent; }
