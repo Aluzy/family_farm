@@ -36,19 +36,22 @@
   // Version 1.6 : plus de saisons, une seule carte (celle du printemps).
   const MAP = { key: 'map_sp', json: 'carte_printemps.json', tiles: 'tiles_sp', image: 'farm_spring_summer.png' };
 
-  // Version 1.9 (la houe), 1.13 (double grille), 1.15 (partout sur la carte) : la terre
-  // labourée se pose sur une grille décalée d'une demi-case : chaque tuile de terre est
-  // centrée sur un coin commun à quatre tuiles de la carte, et son dessin dépend de celles
-  // des quatre qui sont labourées (bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche,
-  // 1 bas-droite). La limite herbe / terre passe au bord des tuiles : une tuile labourée
-  // reste dans sa tuile. Les 16 dessins sont dans terre_bords.png (scripts/carte/
-  // terre_bords.py), leur herbe rendue transparente : la terre se pose sur n'importe quelle
-  // herbe. Les anciennes zones de culture (zone_culture_1 / zone_culture_2) avaient un sol de
-  // terre : il redevient de l'herbe tant qu'il n'est pas labouré ; leur ancienne bordure
-  // (couche ZONE_TILES.couche) n'est plus dessinée.
+  // Version 1.9 (la houe), 1.15 (partout sur la carte) : comme sur la planche du jeu de
+  // tuiles, une tuile labourée est toute en terre et les tuiles d'herbe qui la touchent
+  // (côtés et diagonales) portent sa bordure mi-herbe mi-terre. Le dessin d'une bordure
+  // dépend de ses quatre coins : un coin est de la terre si une des trois autres tuiles qui
+  // le partagent est labourée (bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche,
+  // 1 bas-droite ; 15 = la terre elle-même). Le moteur refuse un labour dont une bordure ne
+  // pourrait pas se dessiner (soilLayoutOk). Les 16 dessins sont dans terre_bords.png
+  // (scripts/carte/terre_bords.py), leur herbe rendue transparente. Les anciennes zones de
+  // culture (zone_culture_1 / zone_culture_2) avaient un sol de terre : il redevient de
+  // l'herbe tant qu'il n'est pas labouré ; leur ancienne bordure (couche ZONE_TILES.couche)
+  // n'est plus dessinée.
   const ZONE_TILES = {
     herbe: 2415, terre: 1167,
     couche: 'zone_culture_edge',
+    // bordures de terre des anciennes zones, posées aussi dans les autres couches : jamais dessinées
+    bordures: new Set([1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764]),
     // couche des fleurs et touffes d'herbe : rien n'en reste sur une tuile labourée
     plantes: 'plantes_pierres',
   };
@@ -582,30 +585,21 @@
 
       // Une tuile animée est dessinée dans le fond avec sa première image, comme dans Tiled
       // à l'arrêt : c'est ce qui reste visible quand les animations sont réduites.
-      // Sol des anciennes zones de culture : leur terre d'origine redevient de l'herbe (la
-      // terre labourée se pose par-dessus, voir drawZoneDirt). Table index -> tuile de sol.
+      // Sol des anciennes zones de culture : leur terre d'origine (dans les rectangles et
+      // autour, la seule terre du sol de la carte) redevient de l'herbe ; la terre labourée se
+      // pose par-dessus (voir drawZoneDirt). Table index -> tuile de sol.
       zoneGround() {
         const raw = this.mapRaw;
         if (!raw) return null;
-        const W = raw.width, H = raw.height;
         const over = new Map();
         const sol = raw.layers.find((l) => l.type === 'tilelayer');
-        for (const o of [this.objects.zone_culture, this.objects.zone_culture_2]) {
-          if (!o || !sol) continue;
-          const c0 = Math.round(o.x / T), r0 = Math.round(o.y / T);
-          const cols = Math.max(1, Math.round(o.width / T)), rows = Math.max(1, Math.round(o.height / T));
-          for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-              const i = (r0 + r) * W + c0 + c;
-              if (c0 + c < W && r0 + r < H && (sol.data[i] & 0x0fffffff) === ZONE_TILES.terre) over.set(i, ZONE_TILES.herbe);
-            }
-          }
-        }
+        if (!sol) return over;
+        sol.data.forEach((g, i) => { if ((g & 0x0fffffff) === ZONE_TILES.terre) over.set(i, ZONE_TILES.herbe); });
         return over;
       }
 
       // Version 1.15 : la terre suit les parcelles (leur tuile) ; seules les tuiles qui
-      // changent, et leurs voisines (la terre déborde d'une demi-tuile), sont repeintes.
+      // changent, et leurs voisines (leur bordure), sont repeintes.
       syncZoneGround(model) {
         const raw = this.mapRaw;
         if (!raw) return;
@@ -666,6 +660,7 @@
           if (dirt && dirt.has(i)) return;                                  // les fleurs labourées
           let cell = orig;
           if (sol && over && over.has(i)) cell = over.get(i);               // le sol des anciennes zones
+          else if (ferme && !sol && ZONE_TILES.bordures.has(cell & 0x0fffffff)) return; // leur bordure
           const gid = cell & 0x0fffffff;                   // les bits de poids fort sont des retournements
           if (!gid || gid < set.firstgid || gid >= last) return; // 0 = case vide, ou tuile d'une autre planche
           const a = anims.get(gid - set.firstgid);
@@ -686,31 +681,32 @@
         if (ferme && sol) this.drawZoneDirt(ctx, raw, only);
       }
 
-      // La terre labourée (double grille, voir ZONE_TILES), sur le sol et sous les couches du
-      // dessus. `only` : repeinture partielle, découpée sur ces tuiles.
+      // La terre labourée (voir ZONE_TILES), sur le sol et sous les couches du dessus : une
+      // tuile labourée est toute en terre, une tuile d'herbe voisine porte la bordure de ses
+      // coins. `only` : repeinture partielle (ces tuiles seulement).
       drawZoneDirt(ctx, raw, only) {
         if (!this.dirt || !this.dirt.size || !this.has('terre_bords')) return;
-        const W = raw.width, tw = raw.tilewidth, th = raw.tileheight;
+        const W = raw.width, H = raw.height, tw = raw.tilewidth, th = raw.tileheight;
         const img = this.textures.get('terre_bords').getSourceImage();
-        const has = (c, r) => c >= 0 && r >= 0 && c < W && this.dirt.has(r * W + c);
-        // coins (c, r) = coin haut-gauche de la tuile (c, r) : ceux des tuiles concernées
-        const corners = new Set();
-        for (const t of only || this.dirt) {
+        const dirt = this.dirt;
+        const at = (c, r) => c >= 0 && r >= 0 && c < W && r < H && dirt.has(r * W + c);
+        let cells = only;
+        if (!cells) {
+          cells = new Set();
+          for (const t of dirt) {
+            const c = t % W, r = Math.floor(t / W);
+            for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if (c + dc >= 0 && c + dc < W && r + dr >= 0 && r + dr < H) cells.add(t + dr * W + dc);
+          }
+        }
+        for (const t of cells) {
           const c = t % W, r = Math.floor(t / W);
-          for (const [dc, dr] of [[0, 0], [1, 0], [0, 1], [1, 1]]) corners.add((r + dr) * (W + 1) + c + dc);
+          const m = dirt.has(t) ? 15
+            : ((at(c - 1, r - 1) || at(c, r - 1) || at(c - 1, r)) ? 8 : 0)
+            | ((at(c, r - 1) || at(c + 1, r - 1) || at(c + 1, r)) ? 4 : 0)
+            | ((at(c - 1, r) || at(c - 1, r + 1) || at(c, r + 1)) ? 2 : 0)
+            | ((at(c + 1, r) || at(c, r + 1) || at(c + 1, r + 1)) ? 1 : 0);
+          if (m) ctx.drawImage(img, m * tw, 0, tw, th, c * tw, r * th, tw, th);
         }
-        if (only) {
-          ctx.save();
-          ctx.beginPath();
-          for (const t of only) ctx.rect((t % W) * tw, Math.floor(t / W) * th, tw, th);
-          ctx.clip();
-        }
-        for (const k of corners) {
-          const c = k % (W + 1), r = Math.floor(k / (W + 1));
-          const m = (has(c - 1, r - 1) ? 8 : 0) | (has(c, r - 1) ? 4 : 0) | (has(c - 1, r) ? 2 : 0) | (has(c, r) ? 1 : 0);
-          if (m) ctx.drawImage(img, m * tw, 0, tw, th, c * tw - tw / 2, r * th - th / 2, tw, th);
-        }
-        if (only) ctx.restore();
       }
 
       // Tuiles animées de la carte (l'eau) : les animations sont celles de Tiled, lues dans

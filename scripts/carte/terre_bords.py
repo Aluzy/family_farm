@@ -1,17 +1,16 @@
-# assets/terre_bords.png : la terre labourée de la carte, posée par-dessus l'herbe
-# (version 1.15, « double grille », voir ZONE_TILES dans js/farm-stage.js).
+# assets/terre_bords.png : la terre labourée de la carte et ses bordures, posées par-dessus
+# l'herbe (version 1.15, voir ZONE_TILES dans js/farm-stage.js).
 #
 #   python3 scripts/carte/terre_bords.py            écrit assets/terre_bords.png
 #   python3 scripts/carte/terre_bords.py --apercu   écrit aussi apercu_terre_bords.png
 #
-# 16 cases de 16×16, une par masque de coins (bits : 8 haut-gauche, 4 haut-droite,
-# 2 bas-gauche, 1 bas-droite = coin labouré). Chaque case reprend la tuile de terre du jeu
-# de tuiles pour ce masque, et son herbe devient transparente : la terre se pose ainsi sur
-# n'importe quelle herbe de la carte (claire ou foncée) sans y laisser de carré d'herbe foncée.
-# Les deux diagonales (6 et 9), absentes du jeu de tuiles, réunissent deux coins d'herbe
-# arrondis symétriques par rapport à la diagonale de la tuile (6 : herbe en haut à gauche,
-# tuile 1539, et en bas à droite, tuile 1387 ; 9 : en haut à droite, 1537, et en bas à
-# gauche, 1389).
+# 16 cases de 16×16, une par masque de coins d'une tuile (bits : 8 haut-gauche, 4 haut-droite,
+# 2 bas-gauche, 1 bas-droite = coin de terre ; 15 : la tuile labourée). Chaque case reprend la
+# tuile du jeu de tuiles pour ce masque, et son herbe devient transparente : la terre se pose
+# ainsi sur l'herbe de la carte sans y laisser de carré d'une autre herbe. Les deux
+# diagonales (6 et 9), absentes du jeu de tuiles, réunissent deux coins d'herbe arrondis
+# symétriques par rapport à la diagonale de la tuile (6 : herbe en haut à gauche, tuile 1539,
+# et en bas à droite, tuile 1387 ; 9 : en haut à droite, 1537, et en bas à gauche, 1389).
 import os
 import sys
 
