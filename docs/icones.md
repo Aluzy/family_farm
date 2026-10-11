@@ -19,7 +19,8 @@ jeu comme sur l'accueil, l'encyclopédie et la page des cookies.
 ## Dessins, police et jauges (sans emoji)
 
 Les illustrations qui étaient en SVG (bâtiments des Installations et des fiches d'aide, arbres
-du Verger, bêtes de l'Étable et du Poulailler) et le bouton « Dormir » sont aussi en pixel art :
+du Verger, bêtes de l'Étable et du Poulailler) et les boutons ronds « Dormir » et « Prendre la houe »
+sont aussi en pixel art :
 
 | Fichier | Rôle |
 |---|---|

@@ -1,5 +1,5 @@
 # Icônes du lot « outils et technique » : livre, parchemin, rapport, courrier, boîtes aux
-# lettres, outils (marteau, clé, ciseaux, engrenage, boîte à outils), énergie et électronique
+# lettres, outils (marteau, clé, houe, ciseaux, engrenage, boîte à outils), énergie et électronique
 # (batterie, tableau de commande, capteur), arrosage automatique, microscope, éprouvette, robot.
 # Format commun : voir scripts/icones/build.py.
 #
@@ -390,6 +390,30 @@ def marteau_cle():
         return 'A' if abs(u) <= 3.4 and abs(v) <= 1.5 else '.'
     cl = cle_geo((4.6, 4.6), (12.8, 12.8), rh=4.2, rw=1.05)
     return compose(geo(manche), geo(tete), cl)
+
+
+# Houe (⛏ dans les textes : le sens du jeu l'emporte sur la pioche d'Unicode), la même que
+# celle du bouton rond « Prendre la houe » (scripts/icones/art_jeu.py) : manche de bois en
+# diagonale, col d'acier, lame verticale qui s'évase vers le tranchant, en « 7 ».
+def houe():
+    def manche(x, y):
+        d, t = seg_dist(x, y, 2.0, 14.0, 9.5, 6.5)
+        return 'W' if d <= 0.95 else '.'
+    lame = G('''
+................
+................
+................
+..........AAA...
+.........AAAAA..
+........AA.AAA..
+...........AAA..
+...........AAA..
+...........AAA..
+...........AAA..
+..........AAAAA.
+..........AAAAA.
+''')
+    return compose(geo(manche), lame)
 
 
 def ciseaux():
@@ -783,6 +807,7 @@ def icons():
         '📬': boite(True),
         '🛠': marteau_cle(),
         '🔧': cle(),
+        '⛏': houe(),
         '✂': ciseaux(),
         '⚙': engrenage(),
         '🧰': boite_outils(),

@@ -447,7 +447,7 @@ export function renderSleepBar() {
   const label = `${ok ? 'Dormir' : `Dormir (dans ${remaining} s)`}. ${meal}`;
   // FLU-05 : houe achetée et rangée, un bouton rond la met en main depuis la carte
   const houe = state.potager.houe && !hoeMode && activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior
-    ? `<button type="button" class="hoe-fab" data-action="hoe-toggle" aria-label="Prendre la houe" title="Prendre la houe">${DATA.HOUE.ICONE}</button>`
+    ? `<button type="button" class="hoe-fab" data-action="hoe-toggle" aria-label="Prendre la houe" title="Prendre la houe">${artHtml('hoe-btn', 'hoe-art')}</button>`
     : '';
   morph(
     document.getElementById('sleep-fab'),
