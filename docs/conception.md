@@ -111,6 +111,8 @@
 >- **Pompe sans réservoir (FLU-34)** : panneau et pompe achetés, réservoir pas encore : la
 >   pompe dit « Pas encore de réservoir » (plus « Réservoir plein »).
 >- **Pastille des Notifications (FLU-35)** : non reproduit en 1.15, rien changé.
+>- **Chapitres (FLU-36)** : une tâche oui/non (cible 1 : réparer, acheter…) n'a que sa case,
+>   sans barre de progression.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
