@@ -1488,7 +1488,7 @@ body.has-stage { padding-bottom: 0; }
   left: calc(8px + env(safe-area-inset-left));
   right: calc(64px + env(safe-area-inset-right)); /* la jauge d'énergie, à droite */
   top: auto;
-  bottom: 104px; /* en bas, au-dessus de la flèche « ⌄ », des trois points et du bouton « Zzz » */
+  bottom: 84px; /* en bas, au-dessus de la flèche « ⌄ » et des boutons ronds (Zzz, houe) ; la jauge d'énergie est à droite */
   z-index: 6;
   display: flex;
   pointer-events: none;
@@ -1532,7 +1532,7 @@ body.has-stage { padding-bottom: 0; }
 .stage-chip-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--bg-muted); }
 .stage-chip-bar > span { display: block; height: 100%; background: var(--accent); }
 
-/* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des trois points. */
+/* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des flèches. */
 .stage-room-bar {
   position: absolute;
   left: 50%;
@@ -1560,41 +1560,7 @@ body.has-stage { padding-bottom: 0; }
 .stage-room-btn:active { transform: translateY(1px); }
 .stage-room-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 
-/* Les trois points (un par écran de la carte) et les flèches des bords. */
-.stage-dots {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  z-index: 6;
-  transform: translateX(-50%);
-  display: flex;
-}
-.stage-dots::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  top: 50%;
-  height: 22px;
-  margin-top: -11px;
-  border-radius: 999px;
-  background: rgba(28, 26, 20, 0.5);
-}
-.stage-dot {
-  position: relative;
-  width: 36px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.stage-dot > span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, 0.5); transition: transform 0.15s, background 0.15s; }
-.stage-dot.active > span { background: #ffffff; transform: scale(1.35); }
-.stage-dot:focus-visible { outline: 3px solid var(--color-sun); outline-offset: -6px; border-radius: 999px; }
+/* Les flèches des bords de la carte. */
 .stage-arrow {
   position: absolute;
   top: 27%; /* au-dessus de la zone de culture, sous la ligne de l'objectif */
@@ -1789,7 +1755,7 @@ main .ancre { scroll-margin-top: 150px; }
 /* FLU-07 : chevron « la carte continue vers le bas », en bas au milieu de la carte */
 .stage-arrow.bas {
   top: auto;
-  bottom: 56px;
+  bottom: 4px;
   left: 50%;
   width: 56px;
   height: 44px;
