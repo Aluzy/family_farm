@@ -290,6 +290,13 @@ main {
   color: var(--danger-contrast);
 }
 
+/* FLU-38 : action rare et destructrice, en contour seulement */
+.btn.danger-outline {
+  background: transparent;
+  border: 2px solid var(--danger);
+  color: var(--danger);
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

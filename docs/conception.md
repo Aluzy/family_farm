@@ -114,6 +114,8 @@
 >- **Chapitres (FLU-36)** : une tâche oui/non (cible 1 : réparer, acheter…) n'a que sa case,
 >   sans barre de progression.
 >- **Pastille « à faire » de la carte (FLU-37)** : même dessin, mais le bouton mesure 44 × 44 px.
+>- **Options (FLU-38)** : export et import dans un bloc replié « 💾 Sauvegarde » ;
+>   « Recommencer à zéro » tout en bas, en bouton à contour rouge, avec la même confirmation.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

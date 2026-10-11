@@ -292,7 +292,8 @@ const GUIDE_BOUTONS = {
 };
 
 function shown(el) {
-  return !!el && el.offsetParent !== null;
+  if (!el) return false;
+  return typeof el.checkVisibility === 'function' ? el.checkVisibility() : el.offsetParent !== null;
 }
 
 function guideElement() {

@@ -70,27 +70,24 @@ export function openOptionsModal() {
               <button class="btn" type="button" data-action="open-about">ℹ️ Règles principales et version</button>
             </div>
           </div>
-          <div class="stack">
-            <strong>Exporter la sauvegarde</strong>
-            <textarea id="export-area" rows="4" readonly></textarea>
-            <div class="row">
-              <button class="btn" type="button" data-action="do-export">Générer</button>
-              <button class="btn" type="button" data-action="copy-export">Copier</button>
+          <details class="more">
+            <summary>💾 Sauvegarde</summary>
+            <div class="stack">
+              <strong>Exporter la sauvegarde</strong>
+              <textarea id="export-area" rows="4" readonly></textarea>
+              <div class="row">
+                <button class="btn" type="button" data-action="do-export">Générer</button>
+                <button class="btn" type="button" data-action="copy-export">Copier</button>
+              </div>
             </div>
-          </div>
-          <div class="stack">
-            <strong>Importer une sauvegarde</strong>
-            <textarea id="import-area" rows="4" placeholder="Coller le texte exporté ici"></textarea>
-            <div class="row">
-              <button class="btn" type="button" data-action="do-import">Importer</button>
+            <div class="stack">
+              <strong>Importer une sauvegarde</strong>
+              <textarea id="import-area" rows="4" placeholder="Coller le texte exporté ici"></textarea>
+              <div class="row">
+                <button class="btn" type="button" data-action="do-import">Importer</button>
+              </div>
             </div>
-          </div>
-          <div class="stack">
-            <strong>Nouvelle partie</strong>
-            <div class="row" id="new-game-zone">
-              <button class="btn danger" type="button" data-action="ask-new-game">Recommencer à zéro</button>
-            </div>
-          </div>
+          </details>
           <div class="stack">
             <strong>Ton avis</strong>
             <div class="row">
@@ -106,10 +103,17 @@ export function openOptionsModal() {
               Activer le panneau de mode test
             </label>
           </div>
+          <div class="stack">
+            <strong>Nouvelle partie</strong>
+            <div class="row" id="new-game-zone">
+              <button class="btn danger-outline" type="button" data-action="ask-new-game">Recommencer à zéro</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   `;
+  // FLU-38 : sauvegarde repliée, « Recommencer à zéro » en bas, en contour rouge
   document.getElementById('export-area').addEventListener('click', (e) => e.target.select());
 }
 

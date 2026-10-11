@@ -63,6 +63,6 @@ registerActions({
   },
   'cancel-new-game': () => {
     document.getElementById('new-game-zone').innerHTML =
-    '<button class="btn danger" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
+    '<button class="btn danger-outline" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
   },
 });
