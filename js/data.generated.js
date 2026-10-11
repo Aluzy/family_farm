@@ -1095,6 +1095,9 @@ export const RAW_DATA = {
           { "type": "pompe", "cible": 1, "libelle": "Acheter la pompe", "unite": "" },
           { "type": "reservoir", "cible": 1, "libelle": "Acheter le réservoir", "unite": "" },
           { "type": "houe", "cible": 1, "libelle": "Acheter une houe au Marché", "unite": "" },
+          { "type": "labours", "cible": 6, "libelle": "Labourer 6 tuiles", "unite": "" },
+          { "type": "semis", "cible": 6, "libelle": "Planter 6 parcelles", "unite": "" },
+          { "type": "arrosees", "cible": 6, "libelle": "Arroser tes parcelles", "unite": "" },
           { "type": "recoltes", "cible": 1, "libelle": "Faire une première récolte", "unite": "" }
         ]
       },

@@ -393,6 +393,10 @@ const OBJECTIF_CIBLES = {
   recoltes: { fenetre: 'zone' },
   cultures: { fenetre: 'zone' },
   semisBle: { fenetre: 'zone' },
+  // FLU-42 : labourer → la houe en main ; planter et arroser → la fiche des parcelles
+  labours: 'houe',
+  semis: { fenetre: 'zone' },
+  arrosees: { fenetre: 'zone' },
   silo: { fenetre: 'silo' },
   siloBle: { fenetre: 'silo' },
   pains: { fenetre: 'maison', onglet: 'batiments' },
@@ -404,6 +408,7 @@ const OBJECTIF_CIBLES = {
 export function objectifAttrs(type) {
   const c = OBJECTIF_CIBLES[type];
   if (c === 'niveaux') return 'data-action="open-levels"';
+  if (c === 'houe') return 'data-action="hoe-take"';
   if (c) return cibleAttrs(c);
   return 'data-action="stage-open" data-window="chapitres"';
 }

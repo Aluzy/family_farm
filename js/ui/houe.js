@@ -57,6 +57,18 @@ registerActions({
     const r = applyResult(buyHoe(state));
     if (r.ok) showToast(`${DATA.HOUE.ICONE} Houe achetée : sur la carte, touche le bouton ${DATA.HOUE.ICONE} près de la lune pour labourer.`);
   },
+  // FLU-42 : la puce « Labourer 6 tuiles » met la houe en main (sans la ranger si elle y est)
+  'hoe-take': () => {
+    if (!hasHoe(state)) {
+      showToast(`Il te faut une houe (${formatCoins(DATA.HOUE.PRIX)} 💰).`);
+      return;
+    }
+    if (!hoeMode) setHoeMode(true);
+    if (!state.potager.houeVue) state.potager.houeVue = true;
+    showHoeHint();
+    if (stageWindow) closeStageWindow();
+    else refresh();
+  },
   'hoe-toggle': () => {
     if (!hasHoe(state)) {
       showToast(`Il te faut une houe (${formatCoins(DATA.HOUE.PRIX)} 💰).`);

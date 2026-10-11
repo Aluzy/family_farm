@@ -59,6 +59,13 @@
 >- **Aide, étape 2 (FLU-19)** : « La zone de culture » dit d'acheter la houe au Marché, de la
 >   prendre (bouton ⛏️), de toucher l'herbe foncée pour labourer, puis de planter et d'arroser
 >   la terre labourée ; plus de « parcelle sous la barrière ».
+>- **Chapitre 1, trois étapes (FLU-42)** : entre « Acheter une houe au Marché » et « Faire une
+>   première récolte » : « Labourer 6 tuiles » (tuiles labourées au total), « Planter 6
+>   parcelles » (semis au total) et « Arroser tes parcelles » (6 parcelles arrosées le même
+>   jour, au moins une fois). La puce « Labourer » met la houe en main ; « Planter » et
+>   « Arroser » ouvrent la fiche des parcelles. Le chapitre rapporte toujours 200 XP.
+>   Sauvegarde v34 : une partie qui a déjà labouré, planté ou arrosé (ou récolté, ou dépassé
+>   le chapitre 1) a ces étapes validées d'office.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

@@ -54,7 +54,7 @@ import {
   testRipenAll, testSetBuildingLevel5, testSetWear, testSleepNights, testUnlockAllTechs,
   testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockLevel, unreadMail,
   updateChapters, upgradeCost, upgradeDevice, upgradePoulailler, upgradeSerre,
-  upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor,
+  upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
 } from '../js/engine/index.js';
 
@@ -5136,7 +5136,7 @@ test('migration v14 → v15 : Champ non construit, le Potager devient la Zone de
   assertEqual([m.potager.parcelles.length, 'niveau' in m.potager], [12, false]);
   assertEqual(m.potager.parcelles.map((p) => p.id), Array.from({ length: 12 }, (_, i) => `potager-${i + 1}`));
   assertEqual(m.potager.parcelles.map(plotContent), v14.potager.parcelles.map(plotContent), 'chaque parcelle garde tout ce qu\'elle portait');
-  assertEqual([m.pieces, m.inventaire, m.campagne], [432, v14.inventaire, v14.campagne], 'rien d\'autre ne bouge');
+  assertEqual([m.pieces, m.inventaire, m.campagne], [432, v14.inventaire, chapter1StepsDone(v14.campagne)], 'rien d\'autre ne bouge (FLU-42 : étapes du chapitre 1 validées)');
   assertEqual(m.nuit.auto, newAutoReport(), 'le compte rendu n\'a plus de ligne Champ');
   // niveau de la zone = le plus petit dont la capacité (6 / 12 / 18 / 24 / 30) contient les parcelles possédées
   const zone = (potager) => migrate({ v: 14, t: 0, s: v14State({ potager }) }).potager.parcelles.length;
@@ -5267,7 +5267,7 @@ test('migration v15 → v16 : une partie sans animaux ne perd ni ne gagne rien',
   const v15 = v15State((s) => { s.pieces = 432; s.day = 12; });
   const m = migrate({ v: 15, t: 0, s: v15 });
   assertEqual(m.version, STATE_VERSION);
-  assertEqual([m.pieces, m.day, m.inventaire, m.campagne, m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, v15.campagne, { ...v15.potager, houe: true, houeVue: true, parcelles: v15.potager.parcelles.map((p, i) => ({ ...p, case: zoneTile(1, i) })) }, v15.technologies, v15.pointsTech]);
+  assertEqual([m.pieces, m.day, m.inventaire, m.campagne, m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, chapter1StepsDone(v15.campagne), { ...v15.potager, houe: true, houeVue: true, parcelles: v15.potager.parcelles.map((p, i) => ({ ...p, case: zoneTile(1, i) })) }, v15.technologies, v15.pointsTech]);
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   assertEqual(countItem(m, 'paille'), 0, 'pas d\'animaux : pas de paille offerte');
   assertEqual(m.nuit.etable, newStableReport());
@@ -6282,7 +6282,7 @@ test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent p
   assertEqual(L.map((c) => c.titre), ['L\'héritage', 'Le grenier', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'Famille autonome']);
   assertEqual(L.map((c) => c.debloque), [undefined, undefined, undefined, undefined, undefined, undefined, undefined]);
   assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
-    [['maison', 1], ['panneau', 1], ['pompe', 1], ['reservoir', 1], ['houe', 1], ['recoltes', 1]],
+    [['maison', 1], ['panneau', 1], ['pompe', 1], ['reservoir', 1], ['houe', 1], ['labours', 6], ['semis', 6], ['arrosees', 6], ['recoltes', 1]],
     [['niveau', 2], ['cultures', 4], ['silo', 1], ['semisBle', 1], ['siloBle', 50]],
     [['pontes', 7], ['autonomie', 50]],
     [['pains', 5], ['plats', 3]], [['laines', 10], ['autonomie', 60]], [['tenue', 1]], [['serie100', 7]],
@@ -6296,7 +6296,7 @@ test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', ()
   const s = createInitialState(1);
   assertEqual(s.campagne, {
     chapitre: 1, fini: false, annonces: [], historique: [],
-    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false, recoltes: 0, cultures: [], semisBle: 0 },
+    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false, recoltes: 0, cultures: [], semisBle: 0, labours: 0, semis: 0, arroseesMax: 0 },
   });
   assertEqual(chapterReached(s), 1);
   assertEqual(lastAutonomy(s), 0);
@@ -6468,32 +6468,68 @@ function fillSheepAfterPasture(s) {
 
 /* --- objectifs de chapitre --- */
 
-test('version 1.12 : chapitre 1 « L\'héritage » : maison, panneau, pompe, réservoir, houe, première récolte', () => {
+test('version 1.12 : chapitre 1 « L\'héritage » : maison, panneau, pompe, réservoir, houe, labour, semis, arrosage, première récolte', () => {
   const s = createNewGame(1, { nom: 'Martin' });
-  assertEqual([s.campagne.chapitre, okList(s)], [1, [false, false, false, false, false, false]]);
+  const non = Array(9).fill(false);
+  assertEqual([s.campagne.chapitre, okList(s)], [1, non]);
   assert(repairHouse(s).ok);
   assert(buyStarter(s, 'panneau').ok);
   assert(buyStarter(s, 'pompe').ok);
-  assertEqual(okList(s), [true, true, true, false, false, false]);
+  assertEqual(okList(s), [true, true, true, false, false, false, false, false, false]);
   assert(buyStarter(s, 'reservoir').ok);
   assert(buyHoe(s).ok);
-  assertEqual(okList(s), [true, true, true, true, true, false]);
+  assertEqual(okList(s), [true, true, true, true, true, false, false, false, false]);
   tireless(s);
   testSetLevel(s, 1);
-  assert(hoe(s, zoneTile(1, 0)).ok);
-  addItem(s, 'graine_carotte', 1);
-  assert(plant(s, 'potager-1', 'carotte').ok);
-  findPlot(s, 'potager-1').stade = maxStage(findPlot(s, 'potager-1'));
+  // FLU-42 : labourer 6 tuiles, planter 6 parcelles, les arroser le même jour
+  for (const i of [0, 1, 2, 3, 5, 6]) assert(hoe(s, zoneTile(1, i)).ok, `labour ${i}`); // la case 4 : bordure impossible
+  assertEqual(objectiveValue(s, { type: 'labours' }), 6);
+  assertEqual(okList(s).slice(5), [true, false, false, false]);
+  addItem(s, 'graine_carotte', 6);
+  const ids = s.potager.parcelles.map((p) => p.id);
+  for (const id of ids) assert(plant(s, id, 'carotte').ok, `semis ${id}`);
+  assertEqual(okList(s).slice(5), [true, true, false, false]);
+  s.eauMl = 1000 * 1000;
+  for (const id of ids.slice(0, 5)) assert(water(s, id).ok, `arrosage ${id}`);
+  assertEqual([objectiveValue(s, { type: 'arrosees' }), okList(s)[7]], [5, false], '5 parcelles arrosées : pas encore');
+  assert(water(s, ids[5]).ok);
+  assertEqual(okList(s).slice(5), [true, true, true, false]);
+  // la nuit sèche les parcelles, l'objectif reste acquis (record)
+  for (const p of s.potager.parcelles) p.arrose = false;
+  assertEqual(okList(s)[7], true);
+  findPlot(s, ids[0]).stade = maxStage(findPlot(s, ids[0]));
   assertEqual(s.campagne.chapitre, 1);
-  assert(harvest(s, 'potager-1').ok);
+  assert(harvest(s, ids[0]).ok);
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 2, 'la première récolte termine le chapitre');
   assertEqual(s.campagne.annonces.map((a) => a.chapitre), [1]);
+  assertEqual(DATA.NIVEAUX.CHAPITRES_XP[0], 200, 'la récompense du chapitre 1 ne change pas');
+});
+
+test('FLU-42 : migration v33 → v34, une partie qui a déjà labouré, planté ou arrosé ne recule pas', () => {
+  const base = createNewGame(1, { nom: 'Martin' });
+  const v33 = (mutate) => {
+    const s = JSON.parse(JSON.stringify(base));
+    s.version = 33;
+    for (const k of ['labours', 'semis', 'arroseesMax']) delete s.campagne.compteurs[k];
+    mutate(s);
+    return migrate({ v: 33, t: 0, s });
+  };
+  const k = (m) => [m.campagne.compteurs.labours, m.campagne.compteurs.semis, m.campagne.compteurs.arroseesMax];
+  assertEqual(k(v33(() => {})), [0, 0, 0], 'rien fait : tout reste à faire');
+  const plot = (extra) => ({ ...makePlot(1), case: zoneTile(1, 0), ...extra });
+  assertEqual(k(v33((s) => { s.potager.parcelles = [plot()]; })), [6, 0, 0], 'déjà labouré');
+  assertEqual(k(v33((s) => { s.potager.parcelles = [plot({ culture: 'carotte' })]; })), [6, 6, 0], 'déjà planté');
+  assertEqual(k(v33((s) => { s.potager.parcelles = [plot({ culture: 'carotte', arrose: true })]; })), [6, 6, 6], 'déjà arrosé');
+  assertEqual(k(v33((s) => { s.campagne.compteurs.recoltes = 1; })), [6, 6, 6], 'déjà récolté');
+  assertEqual(k(v33((s) => { s.campagne.chapitre = 3; })), [6, 6, 6], 'chapitre 1 dépassé');
+  const m = v33((s) => { s.potager.parcelles = [plot({ culture: 'carotte', arrose: true })]; });
+  assertEqual([m.version, m.campagne.chapitre], [STATE_VERSION, 1]);
 });
 
 test('version 1.12 : la batterie est facultative au chapitre 1', () => {
   const ids = DATA.CHAPITRES.liste[0].objectifs.map((o) => o.type);
-  assertEqual(ids, ['maison', 'panneau', 'pompe', 'reservoir', 'houe', 'recoltes']);
+  assertEqual(ids, ['maison', 'panneau', 'pompe', 'reservoir', 'houe', 'labours', 'semis', 'arrosees', 'recoltes']);
   assertEqual(ids.includes('batterie'), false);
 });
 
@@ -6989,7 +7025,8 @@ test('migration v9 → v10 : une partie neuve arrive au chapitre 1', () => {
   const m = migrate({ v: 9, t: 0, s: v9State() });
   assertEqual(m.version, STATE_VERSION);
   assertEqual([m.campagne.chapitre, m.campagne.fini, m.campagne.annonces, m.campagne.historique], [1, false, [], []]);
-  assertEqual(m.campagne.compteurs, newCampaignCounters());
+  // FLU-42 : la partie a déjà ses parcelles (anciennes versions) : « Labourer 6 tuiles » est fait
+  assertEqual(m.campagne.compteurs, { ...newCampaignCounters(), labours: 6 });
   assertEqual([m.nuit.energieProduit, m.nuit.autonomie, 'soins' in m.jour], [0, 0, false], 'version 1.8 : plus de soins');
 });
 
@@ -7506,7 +7543,7 @@ test('Lot 11 : la progression hors-ligne compte pour les objectifs du chapitre',
   assertEqual(s.campagne.chapitre, 1);
   // version 1.12 : chapitre 1 « L'héritage » rempli, sauf ce que la nuit hors-ligne vérifie
   s.potager.houe = true;
-  s.campagne.compteurs.recoltes = 1;
+  Object.assign(s.campagne.compteurs, { recoltes: 1, labours: 6, semis: 6, arroseesMax: 6 });
   s.reservoir.niveau = 2; // réservoir de 80 L : on peut pomper les 50 L de l'objectif
   // l'horloge s'arrête à l'éveil minimal (7 h 40), au soleil : le panneau produit
   simulateOffline(s, 2 * 3600); // 50 L pompés et 3 000 Wh stockés ; les chapitres sont relus
@@ -9154,5 +9191,11 @@ test('FLU-09 : « Planter partout » plante les parcelles vides dans la limite d
   setInv(ver, { conserve: 100, graine_poivron: 6 });
   assertEqual(plantAll(ver, 'potager', 'poivron').ok, false, 'culture pas encore débloquée');
 });
+
+// FLU-42 : une partie migrée qui avait déjà labouré, planté et arrosé (ou dépassé le
+// chapitre 1) a les trois nouvelles étapes du chapitre 1 validées.
+function chapter1StepsDone(c) {
+  return { ...c, compteurs: { ...c.compteurs, labours: 6, semis: 6, arroseesMax: 6 } };
+}
 
 export const results = runTests();

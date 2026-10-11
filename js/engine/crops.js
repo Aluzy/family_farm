@@ -4,7 +4,7 @@ import { fail, farmOpen, spend } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { techPct, techSum } from './techtree.js';
-import { bumpCounter, isUnlocked, noteCropHarvested } from './campaign.js';
+import { bumpCounter, isUnlocked, noteCropHarvested, noteWatered } from './campaign.js';
 import { gainActionXp, levelBlock, levelReached } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
@@ -235,6 +235,7 @@ export function hoe(state, tile) {
   list.sort((a, b) => a.case - b.case);
   spendEnergy(state, 'labourer');
   gainActionXp(state, 'labourer');
+  bumpCounter(state, 'labours', 1); // FLU-42 : chapitre 1
   return { ok: true, action: 'labourer', plot };
 }
 
@@ -366,6 +367,7 @@ export function plant(state, plotId, culture, auto = false) {
   if (!auto) spendEnergy(state, 'planter');
   gainActionXp(state, 'planter', 1, auto);
   if (culture === DATA.SILO.ITEM) bumpCounter(state, 'semisBle', 1); // version 1.12 : chapitre 2
+  bumpCounter(state, 'semis', 1); // FLU-42 : chapitre 1
   return { ok: true };
 }
 
@@ -384,6 +386,7 @@ export function water(state, plotId, auto = false) {
   plot.arrose = true;
   if (!auto) spendEnergy(state, 'arroser');
   gainActionXp(state, 'arroser', 1, auto);
+  noteWatered(state, allPlots(state).filter((p) => p.arrose).length); // FLU-42 : chapitre 1
   return { ok: true, litres };
 }
 

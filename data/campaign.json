@@ -18,6 +18,9 @@
           { "type": "pompe", "cible": 1, "libelle": "Acheter la pompe", "unite": "" },
           { "type": "reservoir", "cible": 1, "libelle": "Acheter le réservoir", "unite": "" },
           { "type": "houe", "cible": 1, "libelle": "Acheter une houe au Marché", "unite": "" },
+          { "type": "labours", "cible": 6, "libelle": "Labourer 6 tuiles", "unite": "" },
+          { "type": "semis", "cible": 6, "libelle": "Planter 6 parcelles", "unite": "" },
+          { "type": "arrosees", "cible": 6, "libelle": "Arroser tes parcelles", "unite": "" },
           { "type": "recoltes", "cible": 1, "libelle": "Faire une première récolte", "unite": "" }
         ]
       },
@@ -94,6 +97,9 @@
     "  version 1.12 (v2, lot 8), chapitres 1 et 2 :",
     "  maison, panneau, pompe, reservoir, houe : 1 une fois réparée ou achetée ;",
     "  recoltes  : récoltes faites au total (une parcelle récoltée = 1) ;",
+    "  labours   : tuiles labourées au total (FLU-42) ;",
+    "  semis     : semis faits au total, toutes cultures (FLU-42) ;",
+    "  arrosees  : record de parcelles arrosées le même jour (FLU-42) ;",
     "  niveau    : niveau d'expérience atteint ;",
     "  cultures  : cultures différentes récoltées ;",
     "  silo      : 1 une fois le Silo construit (réparé) ;",

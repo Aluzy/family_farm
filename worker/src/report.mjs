@@ -73,6 +73,7 @@ export const GAME_ACTIONS = {
   'buy-hoe': 'Acheter la houe',
   'hoe': 'Labourer ou reboucher à la houe',
   'hoe-toggle': 'Prendre ou ranger la houe',
+  'hoe-take': 'Prendre la houe (objectif du chapitre)',
   'upgrade-tank': 'Améliorer ou agrandir',
   'upgrade-fridge': 'Améliorer ou agrandir',
   'maintain': 'Entretenir un appareil',
