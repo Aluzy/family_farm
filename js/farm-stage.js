@@ -181,6 +181,7 @@
   const PAN_MS = 380;          // durée d'un déplacement demandé par panTo()
   const LABEL_GAP = 3;         // px CSS entre l'étiquette et ce qu'elle nomme
   const LABEL_HOLD_MS = 1200;  // au doigt : le nom reste affiché ce temps après le relâchement
+  const LONG_PRESS_MS = 450;   // appui maintenu sur la citerne : sa bulle (litres) s'affiche
   const GROUND_CHECK_MS = 3000; // le fond de la carte est vérifié à ce rythme (voir repairGround)
   const ZONE_LABEL_UP = 14;    // px de carte : l'étiquette de la zone passe au-dessus de la barrière
   const LIGHT_MS = 1200;       // fondu entre deux lumières (un quart d'heure de jeu dure à peu près autant)
@@ -884,6 +885,62 @@
           // FLU-12 : houe en main, un glissement parti d'une case verte laboure les cases traversées
           labour: this.labourStart(wp.x, wp.y),
         };
+        // Appui maintenu sur la citerne : une bulle dit combien de litres elle contient.
+        if (!this.drag.labour && this.onTank(wp.x, wp.y)) {
+          const d = this.drag;
+          d.holdTimer = setTimeout(() => {
+            if (this.drag !== d || d.moved) return;
+            d.held = true;
+            this.setHover(null);
+            this.showTankTip(true);
+          }, LONG_PRESS_MS);
+        }
+      }
+
+      // Le point (wx, wy) est-il sur la citerne (zone d'appui élargie à 44 px CSS) ?
+      onTank(wx, wy) {
+        const s = this.tank;
+        if (!s || this.room) return false;
+        const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom;
+        const w = Math.max(s.width, min), h = Math.max(s.height, min);
+        const cx = s.x + s.width / 2, cy = s.y - s.height / 2;
+        return Math.abs(wx - cx) <= w / 2 && Math.abs(wy - cy) <= h / 2;
+      }
+
+      // Bulle de la citerne (DOM, par-dessus le canvas), replacée à chaque image tant qu'elle est visible.
+      showTankTip(on) {
+        if (!on) {
+          if (this.tankTip) this.tankTip.hidden = true;
+          this.tankTipUntil = 0;
+          return;
+        }
+        if (!this.tankTip) {
+          const el = document.createElement('div');
+          el.className = 'stage-tip';
+          el.setAttribute('role', 'status');
+          labelLayer.appendChild(el);
+          this.tankTip = el;
+        }
+        this.tankTip.hidden = false;
+        this.tankTipUntil = 0;
+        this.syncTankTip();
+      }
+
+      syncTankTip() {
+        const el = this.tankTip;
+        if (!el || el.hidden) return;
+        const text = (lastModel && lastModel.citerneTexte) || '';
+        if (!text || !this.tank) { this.showTankTip(false); return; }
+        if (el.textContent !== text) el.textContent = text;
+        const dpr = pixelRatio();
+        const cam = this.cameras.main;
+        const k = cam.zoom / dpr;
+        const left = this.cx - this.scale.width / cam.zoom / 2;
+        const top = this.cy - this.scale.height / cam.zoom / 2;
+        const x = (this.tank.x + this.tank.width / 2 - left) * k - el.offsetWidth / 2;
+        const y = Math.max(0, (this.tank.y - this.tank.height - top) * k - el.offsetHeight - LABEL_GAP * 2);
+        const maxX = this.scale.width / dpr - el.offsetWidth - 4;
+        el.style.transform = 'translate(' + Math.round(Math.max(4, Math.min(x, maxX))) + 'px,' + Math.round(y) + 'px)';
       }
 
       onMove(pointer) {
@@ -907,8 +964,10 @@
           if (d.moved) this.labourTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
           return;
         }
+        if (d.held) return;              // bulle de la citerne : la carte ne bouge pas
         if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) {
           d.moved = true;
+          clearTimeout(d.holdTimer);
           this.setHover(null);           // on fait glisser la carte : plus de nom affiché
           if (!this.room) this.dragged = true;   // signalé à la page par reportView()
           if (!this.room) this.game.canvas.style.cursor = 'grabbing';
@@ -928,6 +987,12 @@
         if (!d || d.id !== pointer.id) return;
         this.drag = null;
         this.game.canvas.style.cursor = '';
+        clearTimeout(d.holdTimer);
+        if (d.held) {
+          // La bulle reste un instant après le relâchement ; l'appui n'ouvre rien.
+          this.tankTipUntil = performance.now() + LABEL_HOLD_MS;
+          return;
+        }
         // Au doigt, rien ne « survole » : le nom reste un instant, puis s'efface.
         if (pointer.wasTouch && this.hoverId) this.hoverUntil = performance.now() + LABEL_HOLD_MS;
         if (d.labour && d.moved) {
@@ -956,6 +1021,8 @@
         if (this.lightFade) this.stepLight();
         if (this.tileAnims.length && !this.room) this.stepTileAnims(time);
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
+        if (this.tankTipUntil && performance.now() >= this.tankTipUntil) this.showTankTip(false);
+        this.syncTankTip();
         // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false); }
         // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.

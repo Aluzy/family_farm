@@ -1296,6 +1296,7 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   touch-action: none; /* le doigt fait glisser la carte, pas la page */
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none; /* appui long (citerne) : pas de menu du système */
 }
 #farm-stage[hidden] { display: none; }
 /* La taille réelle du canvas (× densité de l'écran) est gérée par farm-stage.js. */
@@ -1440,7 +1441,7 @@ body.has-stage { padding-bottom: 0; }
   position: absolute;
   top: 2px;
   left: calc(8px + env(safe-area-inset-left));
-  right: calc(8px + env(safe-area-inset-right));
+  right: calc(16px + var(--hud-w, 170px) + env(safe-area-inset-right)); /* à gauche de la carte flottante (.hud) */
   z-index: 6;
   display: flex;
   pointer-events: none;
@@ -1772,3 +1773,122 @@ main .ancre { scroll-margin-top: 150px; }
 .lot-row .lot-price { justify-self: end; font-weight: 700; }
 .lot-row .lot-btns { grid-column: 1 / -1; display: flex; gap: 8px; }
 .lot-row .lot-btn { flex: 1 1 0; min-height: 44px; min-width: 44px; }
+
+/* ---------- Carte flottante (jour, heure, pièces) et jauge d'énergie, façon Stardew Valley ----------
+   Sur tous les écrans, au-dessus de la carte de la ferme et sous les fenêtres (window-layer,
+   modal-root). Légèrement transparentes : la carte reste visible dessous. */
+.hud {
+  position: fixed;
+  top: calc(var(--header-h) + 8px);
+  right: calc(8px + env(safe-area-inset-right));
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  pointer-events: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.1;
+  color: #4a2a10;
+  font-variant-numeric: tabular-nums;
+}
+.hud-row { display: flex; gap: 3px; }
+.hud-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 9px;
+  background: rgba(255, 230, 178, 0.82);
+  border: 3px solid #8a5a34;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 2px 4px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+}
+.hud-money .hud-cell { color: #8a2e22; }
+
+.hud-energy {
+  position: fixed;
+  right: calc(12px + env(safe-area-inset-right));
+  bottom: calc(var(--dock) + 88px); /* au-dessus du bouton « Zzz » (64 px) */
+  z-index: 45;
+}
+.hud-energy-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 44px; /* zone d'appui */
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+.hud-energy-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 6px; }
+.hud-energy-label {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  background: rgba(255, 230, 178, 0.88);
+  border: 3px solid #8a5a34;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+.hud-energy-bar {
+  position: relative;
+  display: block;
+  width: 26px;
+  height: 120px;
+  background: rgba(74, 42, 16, 0.55);
+  border: 3px solid #8a5a34;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9);
+  overflow: hidden;
+}
+.hud-energy-fill {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  max-height: calc(100% - 4px);
+  background: #5ad23c;
+  box-shadow: inset 3px 0 0 #8cec6a;
+  transition: height 0.3s;
+}
+.hud-energy-fill.mid { background: #e8b030; box-shadow: inset 3px 0 0 #f8d878; }
+.hud-energy-fill.low { background: #c8503a; box-shadow: inset 3px 0 0 #ec8a6e; }
+@media (prefers-reduced-motion: reduce) { .hud-energy-fill { transition: none; } }
+/* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante et la jauge
+   restent visibles par-dessus, à 80 % de transparence, et laissent passer les appuis. */
+.hud, .hud-energy { transition: opacity 0.2s; }
+body:has(.window-layer) :is(.hud, .hud-energy),
+body:has(#modal-root > *) :is(.hud, .hud-energy) { z-index: 95; opacity: 0.2; pointer-events: none; }
+body:has(.window-layer) .hud-energy-btn,
+body:has(#modal-root > *) .hud-energy-btn { pointer-events: none; }
+/* Écrans sans carte : le contenu commence sous la carte flottante (sauf si l'écran est
+   assez large pour qu'elle tienne à côté). */
+body:not(.has-stage) main { padding-top: 84px; }
+@media (min-width: 1120px) { body:not(.has-stage) main { padding-top: 16px; } }
+
+/* Bulle de la citerne (appui long sur la carte) : combien de litres elle contient. */
+.stage-tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 3px solid #8a5a34;
+  background: rgba(255, 230, 178, 0.92);
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: #4a2a10;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  will-change: transform;
+}
+.stage-tip[hidden] { display: none; }

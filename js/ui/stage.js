@@ -1,4 +1,5 @@
 import { DATA } from '../engine/catalog.js';
+import { formatLitres } from '../engine/format.js';
 import { houseRepaired } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { allPlots, hoeableTiles, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
@@ -286,9 +287,11 @@ export function stageModel() {
   // La citerne (le réservoir), une fois achetée : son tube de niveau, vide (0) à plein (4).
   const cap = tankCapacity(state);
   const citerne = isOwned(starterOf(state, 'reservoir')) ? (cap > 0 ? Math.round((Math.min(state.eauMl, cap) * 4) / cap) : 0) : -1;
+  // Appui long sur la citerne : une bulle dit combien de litres elle contient.
+  const citerneTexte = citerne >= 0 ? `💧 ${formatLitres(Math.min(state.eauMl, cap))} / ${formatLitres(cap)}` : '';
   return {
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
-    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne,
+    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte,
   };
 }
 
