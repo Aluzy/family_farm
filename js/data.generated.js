@@ -1088,7 +1088,7 @@ export const RAW_DATA = {
       {
         "titre": "L'héritage",
         "icone": "🏚️",
-        "intro": "La ferme du grand-père est à vous, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
+        "intro": "La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
           { "type": "maison", "cible": 1, "libelle": "Réparer la maison", "unite": "" },
           { "type": "panneau", "cible": 1, "libelle": "Acheter le panneau solaire", "unite": "" },

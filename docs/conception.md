@@ -100,6 +100,10 @@
 >   voyages dans un bloc replié.
 >- **Barre d'XP (FLU-30)** : la puce « ⭐ Niv. » du bandeau porte une fine barre vers le
 >   niveau suivant ; son nom pour les lecteurs d'écran dit « Niveau 1 : 10 / 500 XP ».
+>- **Tutoiement (FLU-31)** : tout le jeu et la page d'accueil tutoient (« Ta famille », « Pendant
+>   ton absence… », « Aide-nous à améliorer le jeu ! »). Restent au vouvoiement : la lettre du
+>   notaire, le bandeau et la page des cookies (et les réglages de confidentialité), et le
+>   « vous » pluriel quand une lettre ou l'histoire s'adresse à toute la famille.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
