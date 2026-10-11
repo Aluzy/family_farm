@@ -2,9 +2,9 @@ import { DATA } from '../engine/catalog.js';
 import { energyLevel } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
 import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
-import { houseRepaired } from '../engine/depart.js';
+import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { awakeRequired } from '../engine/clock.js';
-import { planMeal } from '../engine/family.js';
+import { memberPortrait, planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
@@ -32,7 +32,7 @@ import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes } from './cuisine.js';
 import { renderTechno } from './techno.js';
-import { renderFamille } from './famille.js';
+import { memberNameHtml, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { renderInventaire, subtabsHtml } from './inventaire.js';
@@ -345,37 +345,38 @@ export function applyAnchor() {
   if (el) el.scrollIntoView({ block: 'start' });
 }
 
-// Bandeau (version 1.4) : une seule ligne, sans titre ni légendes. Chaque indicateur est une
-// icône et sa valeur ; son nom est dans l'infobulle et pour les lecteurs d'écran. Ceux qui ont
-// un lieu y mènent (eau → Maison › Installations, autonomie → Maison ›
-// Famille). Le jour est le numéro de la nuit à venir (state.day) : jour 1 au départ.
-// FLU-30 : la puce « Niv. » porte une fine barre de progression vers le niveau suivant.
-function niveauHtml(corps) {
+// Carte du joueur, en haut à gauche (elle remplace le bandeau du haut) : le portrait du
+// personnage principal, son prénom dessous, puis le niveau (avec sa barre vers le niveau
+// suivant, FLU-30 ; ouvre les niveaux) et l'autonomie de la dernière nuit (ouvre la Famille).
+// Le prénom est saisi par le joueur : escapeHtml (memberNameHtml), jamais dans un data-*.
+let playerHeight = 0;
+export function renderIndicators() {
+  const m = mainCharacter(state);
   const p = levelProgress(state);
   const xp = p.max ? `${formatNumber(p.xp)} XP, niveau maximal` : `${formatNumber(p.xp)} / ${formatNumber(p.fin)} XP`;
-  const titre = `Niveau ${p.niveau} : ${xp}. Voir les niveaux`;
-  return `<button type="button" class="indicator indicator-btn level-ind" data-action="open-levels" title="${titre}" aria-label="${titre}">${corps('⭐', `Niv. ${p.niveau}`)}<span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>`;
-}
-
-export function renderIndicators() {
-  const corps = (icone, valeur) => `<span aria-hidden="true">${icone}</span><span class="num" aria-hidden="true">${valeur}</span>`;
-  const lien = (icone, valeur, titre, lieu) =>
-    `<button type="button" class="indicator indicator-btn" data-action="stage-goto" data-window="${lieu.fenetre}" data-tab="${lieu.onglet}"${lieu.ancre ? ` data-anchor="${lieu.ancre}"` : ''} title="${titre}" aria-label="${titre}">${corps(icone, valeur)}</button>`;
-  const el = document.getElementById('indicators');
-  // Jour, heure, pièces et énergie sont dans la carte et la jauge flottantes (renderHud) ;
-  // l'eau, dans la bulle de la citerne (appui long sur la carte).
+  const niveau = `Niveau ${p.niveau} : ${xp}. Voir les niveaux`;
+  const auto = formatPercent(lastAutonomy(state));
+  const autoTitre = `Autonomie de la dernière nuit : ${auto}. Ouvrir la Famille`;
+  const famille = 'data-action="stage-goto" data-window="maison" data-tab="famille"';
+  const el = document.getElementById('player-card');
   morph(el,
-    niveauHtml(corps) +
-    lien('🌿', formatPercent(lastAutonomy(state)), `Autonomie de la dernière nuit : ${formatPercent(lastAutonomy(state))}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' })
+    `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
+      `<span class="player-portrait" aria-hidden="true">${m ? memberPortrait(state, m.id) || '🙂' : '🙂'}</span>` +
+      `<span class="player-name">${m ? memberNameHtml(m.id) : ''}</span></button>` +
+    `<button type="button" class="player-line level-ind" data-action="open-levels" title="${niveau}" aria-label="${niveau}"><span aria-hidden="true">⭐</span><span class="num" aria-hidden="true">Niv. ${p.niveau}</span><span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>` +
+    `<button type="button" class="player-line" ${famille} title="${autoTitre}" aria-label="${autoTitre}"><span aria-hidden="true">🌿</span><span class="num" aria-hidden="true">${auto}</span></button>`
   );
-  fitIndicators(el);
+  // La puce des chapitres (sur la carte) et le contenu des autres écrans commencent sous la carte du joueur.
+  if (el.offsetHeight && el.offsetHeight !== playerHeight) {
+    playerHeight = el.offsetHeight;
+    document.documentElement.style.setProperty('--player-h', playerHeight + 'px');
+  }
   renderHud();
 }
 
 // Carte flottante en haut à droite (comme dans Stardew Valley) : le jour et l'heure côte à
 // côte, les pièces dessous ; et, en bas à droite, la jauge verticale de l'énergie, qui ouvre
 // la Famille. L'heure avance par tranches de 10 minutes.
-let hudWidth = 0;
 function renderHud() {
   const h = heureDuJour();
   const heure = Math.floor(h);
@@ -385,12 +386,6 @@ function renderHud() {
     `<span class="hud-row"><span class="hud-cell">Jour <span class="num">${state.day}</span></span><span class="hud-cell"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span></span>` +
     `<span class="hud-row hud-money"><span class="hud-cell"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces</span></span></span>`
   );
-  // La puce d'objectif de la carte (.stage-hud) s'arrête à gauche de la carte flottante.
-  const hud = document.getElementById('hud');
-  if (hud.offsetWidth && hud.offsetWidth !== hudWidth) {
-    hudWidth = hud.offsetWidth;
-    document.documentElement.style.setProperty('--hud-w', hudWidth + 'px');
-  }
   const e = energyLevel(state);
   const max = DATA.PERSONNAGE.MAX;
   const pct = Math.max(0, Math.min(100, Math.round((e / max) * 100)));
@@ -402,23 +397,6 @@ function renderHud() {
     `<span class="hud-energy-label" aria-hidden="true">⚡</span>` +
     `<span class="hud-energy-bar" aria-hidden="true"><span class="hud-energy-fill${cls}" style="height:${pct}%"></span></span></button>`
   );
-}
-
-// Tout tient sur une ligne : si les indicateurs débordent (grands nombres, écran étroit), le
-// texte est réduit d'autant. Les espacements sont en em : la largeur suit la taille du texte,
-// à quelques pixels près (bordures des boutons), d'où un deuxième passage au besoin. Refait
-// seulement quand le texte ou la largeur change.
-const IND_MIN_PX = 9;
-function fitIndicators(el) {
-  const key = el.textContent.length + ':' + el.clientWidth;
-  if (el.__fit === key) return;
-  el.__fit = key;
-  el.style.fontSize = '';
-  let size = parseFloat(getComputedStyle(el).fontSize) || 15;
-  for (let pass = 0; pass < 4 && el.scrollWidth > el.clientWidth && size > IND_MIN_PX; pass++) {
-    size = Math.max(IND_MIN_PX, Math.floor(((size * el.clientWidth) / el.scrollWidth) * 10) / 10 - (pass ? 0.2 : 0));
-    el.style.fontSize = size + 'px';
-  }
 }
 
 export function renderTabbar() {

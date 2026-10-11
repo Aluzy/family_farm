@@ -355,8 +355,6 @@ export function renderStage() {
     if (window.FarmStage) FarmStage.hide();
     return;
   }
-  const head = document.querySelector('.app-header');
-  document.documentElement.style.setProperty('--header-h', head.offsetHeight + 'px');
   // Un intérieur qui n'existe plus (nouvelle partie, par exemple) : retour à la carte.
   if (stageInterior && !interiorAvailable(stageInterior)) setStageInterior(null);
   FarmStage.show();
