@@ -154,10 +154,11 @@
  <tile id="165"><properties><property name="nom" value="cloture_milieu"/></properties></tile>
  <tile id="166"><properties><property name="nom" value="cloture_droite"/></properties></tile>
  <tile id="167"><properties><property name="nom" value="cloture_poteau"/></properties></tile>
- <tile id="168"><properties><property name="nom" value="petit_rocher"/></properties></tile>
- <tile id="169"><properties><property name="nom" value="roseaux"/></properties></tile>
- <tile id="170"><properties><property name="nom" value="arbuste"/></properties></tile>
- <tile id="171"><properties><property name="nom" value="nenuphars"/></properties></tile>
+ <tile id="168"><properties><property name="nom" value="cloture_verticale"/></properties></tile>
+ <tile id="169"><properties><property name="nom" value="petit_rocher"/></properties></tile>
+ <tile id="170"><properties><property name="nom" value="roseaux"/></properties></tile>
+ <tile id="171"><properties><property name="nom" value="arbuste"/></properties></tile>
+ <tile id="172"><properties><property name="nom" value="nenuphars"/></properties></tile>
  <tile id="176"><properties><property name="nom" value="rocher_0_0"/></properties></tile>
  <tile id="177"><properties><property name="nom" value="rocher_1_0"/></properties></tile>
  <tile id="178"><properties><property name="nom" value="souche_0_0"/></properties></tile>

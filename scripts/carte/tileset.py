@@ -418,16 +418,9 @@ def micro(kind):
         cv.hline(5, 9, 13, 'B1')
         ombre_contact(cv, 4, 10, 14, 1)
     elif kind == 'caillou':
-        # 13 × 8 au plus, R1 à R3, bord d'ombre N2, ombre de contact
-        def inside(x, y):
-            return ((x + 0.5 - 7.5) / 6) ** 2 + ((y + 0.5 - 10) / 3.4) ** 2 <= 1
-        for y in range(T):
-            for x in range(T):
-                if inside(x, y):
-                    lv = level((x + 0.5 - 7.5) / 6, (y + 0.5 - 10) / 3.4)
-                    cv.put(x, y, 'R3' if lv >= 3 else 'R2' if lv == 2 else 'R1')
-        outline_cote_ombre(cv, inside, 'N2')
-        ombre_contact(cv, 3, 12, 14, 1)
+        # deux cailloux à facettes, R1 à R3, bord d'ombre N2, ombre de contact
+        sh = pierre(cv, 6, 13, 4, 2.4, 2, 20, n=6) | pierre(cv, 11.5, 14, 2.6, 1.7, 1.2, 21, n=5)
+        ombre_contact(cv, 2, 14, assise(sh) - 1, 1)
     elif kind == 'feuilles':
         for cx, cy, c1, c2 in ((4, 5, 'A6', 'W3'), (11, 9, 'A4', 'A6'), (6, 12, 'A6', 'W3')):
             cv.put(cx, cy, c1); cv.put(cx + 1, cy, c1); cv.put(cx + 1, cy - 1, c1); cv.put(cx, cy + 1, c2)
@@ -436,41 +429,136 @@ def micro(kind):
 
 # ================================================================ objets
 
+LUM3 = (-0.62, -0.3, 0.72)          # vers la lumière en 3D : haut-gauche et d'au-dessus
+
+
+def pierre(cv, cx, by, rx, ry, hz, seed, moss=False, n=8):
+    """Pierre en vue de trois quarts : une assise irrégulière de `n` sommets posée au sol, un
+    plateau plus étroit, décalé vers le haut-gauche et levé de `hz` à l'écran ; les faces entre
+    les deux reçoivent la lumière selon leur normale 3D (par rang : R3, R2, R1), le plateau est
+    clair (R3) ; arête du plateau, fissure, reflet R0 au bas du côté ombre, mousse éventuelle ;
+    bord d'ombre N2. Renvoie la forme (ensemble de pixels)."""
+    r = rng('pierre', seed)
+    cy = by - ry
+    base, top = [], []
+    sx, sy = -rx * r.uniform(0.08, 0.2), -ry * r.uniform(0.1, 0.25)
+    for i in range(n):
+        a = 2 * math.pi * (i + r.uniform(-0.22, 0.22)) / n
+        k = r.uniform(0.82, 1.0)
+        x, y = cx + math.cos(a) * rx * k, cy + math.sin(a) * ry * k
+        base.append((x, min(y, by)))
+        kt = r.uniform(0.58, 0.78)
+        top.append((cx + sx + math.cos(a) * rx * k * kt, cy + sy + math.sin(a) * ry * k * kt))
+    P = lambda x, y, z: (x, y - z)                         # projection : la hauteur monte à l'écran
+
+    def poly_in(poly, x, y):
+        c = False
+        for i in range(len(poly)):
+            (x1, y1), (x2, y2) = poly[i], poly[i - 1]
+            if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+                c = not c
+        return c
+    faces = []
+    for i in range(n):
+        j = (i + 1) % n
+        g = [(base[i][0], base[i][1], 0), (base[j][0], base[j][1], 0), (top[j][0], top[j][1], hz), (top[i][0], top[i][1], hz)]
+        u = [g[1][k] - g[0][k] for k in range(3)]; v = [g[3][k] - g[0][k] for k in range(3)]
+        nx, ny, nz = u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]
+        if nz < 0:
+            nx, ny, nz = -nx, -ny, -nz
+        ln = math.sqrt(nx * nx + ny * ny + nz * nz) or 1
+        d = (nx * LUM3[0] + ny * LUM3[1] + nz * LUM3[2]) / ln
+        faces.append(((base[i][1] + base[j][1]) / 2, [P(*q) for q in g], d))
+    rank = sorted(range(n), key=lambda t: -faces[t][2])
+    tone = {}
+    for k, t in enumerate(rank):
+        f = k / n
+        tone[t] = 'R3' if f < 0.25 else 'R2' if f < 0.6 else 'R1'
+    own = {}
+    X0, X1 = int(cx - rx - 2), int(cx + rx + 3)
+    Y0, Y1 = int(cy - ry - hz - 2), int(by) + 1
+    for t in sorted(range(n), key=lambda t: faces[t][0]):          # du fond vers le devant
+        for y in range(Y0, Y1):
+            for x in range(X0, X1):
+                if poly_in(faces[t][1], x + 0.5, y + 0.5):
+                    own[(x, y)] = t
+    plateau = [P(x, y, hz) for x, y in top]
+    for y in range(Y0, Y1):
+        for x in range(X0, X1):
+            if poly_in(plateau, x + 0.5, y + 0.5):
+                own[(x, y)] = -1
+    inside = lambda x, y: (x, y) in own
+    for (x, y), t in own.items():
+        cv.put(x, y, 'R3' if t == -1 else tone[t])
+    for (x, y), t in own.items():                         # arête du plateau sur une face claire
+        if t != -1 and tone[t] == 'R3' and any(own.get((x + dx, y + dy)) == -1 for dx, dy in ((1, 0), (0, -1), (1, -1))):
+            cv.put(x, y, 'R2')
+    pl = sorted(p for p, t in own.items() if t == -1)
+    if len(pl) > 12:                                      # fissure sur le plateau
+        x, y = pl[len(pl) // 2]
+        for k in range(r.randint(2, 4)):
+            if own.get((x + k // 2, y + k)) is not None:
+                cv.put(x + k // 2, y + k, 'R1')
+    faces_px = {}
+    for q, t in own.items():
+        if t != -1:
+            faces_px.setdefault(tone[t], []).append(q)
+    for c, grain in (('R1', 'R2'), ('R2', 'R1')):         # grain de la roche : amas d'un ton voisin
+        cand = sorted(q for q in faces_px.get(c, []) if inside(q[0] + 1, q[1] + 1) and inside(q[0] - 1, q[1] - 1))
+        cset = set(cand)
+        for _ in range(len(cand) // 24):                  # strates : traits horizontaux de 2 à 4 px
+            x, y = r.choice(cand)
+            for k in range(r.randint(2, 4)):
+                if (x + k, y) in cset:
+                    cv.put(x + k, y, grain)
+    outline_cote_ombre(cv, inside, 'N2')
+    low = sorted(((x, y) for (x, y) in own if not inside(x, y + 1) and x > cx), key=lambda p: -p[0])
+    for x, y in low[1:1 + max(1, int(rx / 3))]:           # reflet violet au bas du côté ombre
+        if inside(x, y - 1) and inside(x - 1, y - 1):
+            cv.put(x, y - 1, 'R0')
+    if moss and pl:
+        for _ in range(2):
+            x, y = r.choice(pl)
+            for q in amas(r, x, y, r.randint(3, 6)):
+                if own.get(q) == -1:
+                    cv.put(*q, 'V6' if q[0] < cx else 'V4')
+    return set(own)
+
+
+def assise(shape):
+    """Rangée du bas de la forme : là où l'ombre de contact commence."""
+    return max(y for x, y in shape) + 1
+
+
+def herbe_au_pied(cv, shape, seed, n=3):
+    """Quelques brins d'herbe qui montent devant l'assise : l'objet est posé dans l'herbe."""
+    r = rng('herbe-pied', seed)
+    base = sorted((x, y) for (x, y) in shape if (x, y + 1) not in shape)
+    for _ in range(n):
+        if not base:
+            return
+        x, y = r.choice(base)
+        h = r.randint(2, 3)
+        for k in range(h):
+            cv.put(x, y - k, 'V5' if k == h - 1 else 'V4')
+        cv.put(x + 1, y, 'V4')
+
+
 def rocher(w=32, h=32, big=True):
-    """Rocher (organique dur) : plans anguleux séparés par des fissures ; plans du haut et de
-    gauche en R3, base R2, ombre R1 ; bord d'ombre et fissures N2 ; reflet R0 de 2 à 4 px côté
-    ombre ; ombre de contact."""
+    """Rocher (organique dur) : un bloc à facettes (crête au haut-gauche, assise aplatie) et, pour
+    le grand, une pierre plus petite blottie contre lui ; mousse sur le dessus, herbe au pied,
+    ombre de contact."""
     cv = Canvas(w, h)
     if big:
-        cx, cy, rx, ry = w / 2, h - 11.5, 12.5, 9
+        s1 = pierre(cv, 23, h - 3, 6, 3.5, 3, 11, n=7)
+        s2 = pierre(cv, 14, h - 3, 11.5, 6.5, 7, 10, moss=True, n=9)
+        shape = s1 | s2
+        ombre_contact(cv, 3, 29, assise(shape) - 1, 2)
+        herbe_au_pied(cv, shape, 1, 4)
     else:
-        cx, cy, rx, ry = w / 2, h - 6.5, 6.5, 4.6
-
-    def inside(x, y):
-        a = math.atan2(y + 0.5 - cy, x + 0.5 - cx)
-        k = 1 + 0.08 * math.cos(3 * a + 0.6) + 0.05 * math.cos(5 * a)
-        return ((x + 0.5 - cx) / (rx * k)) ** 2 + ((y + 0.5 - cy) / (ry * k)) ** 2 <= 1 and y + 0.5 <= cy + ry * 0.75
-
-    for y in range(h):
-        for x in range(w):
-            if not inside(x, y):
-                continue
-            nx, ny = (x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry
-            a = math.atan2(ny, nx)
-            facet = round(a / (math.pi / 3)) * (math.pi / 3)        # plans anguleux
-            mag = min(1, math.hypot(nx, ny))
-            lv = level(math.cos(facet) * mag, math.sin(facet) * mag - 0.25)
-            cv.put(x, y, 'R3' if lv >= 3 else 'R2' if lv == 2 else 'R1')
-    for k in range(int(rx * 0.7)):                                     # fissures
-        cv.put(int(cx) + k // 2, int(cy - ry * 0.5) + k, 'N2')
-    if big:
-        for k in range(5):
-            cv.put(int(cx - rx * 0.45) + k, int(cy + 1) + k // 3, 'N2')
-    outline_cote_ombre(cv, inside, 'N2')
-    pts = [(x, y) for y in range(h) for x in range(w) if inside(x, y) and not inside(x + 1, y + 1) and x > cx and y > cy - 1]
-    for x, y in pts[: 4 if big else 2]:                                # reflet violet côté ombre
-        cv.put(x - 1, y - 1, 'R0')
-    ombre_contact(cv, int(cx - rx * 0.8), int(cx + rx * 0.8), int(cy + ry * 0.75) + 1, 2)
+        shape = pierre(cv, 8, h - 3, 6, 3.6, 3.5, 12, n=7)
+        ombre_contact(cv, 2, 14, assise(shape) - 1, 2)
+        herbe_au_pied(cv, shape, 2, 2)
     return ancrer(cv.im)
 
 
@@ -598,31 +686,74 @@ def foin():
 
 
 def cloture(part):
-    """Clôture (construit, module de 16 × 16) : piquets de 3 px tous les 8 px, 14 px de haut,
-    deux lisses ; contour W0. Les lisses rejoignent le module voisin."""
+    """Clôture rustique (construit, module de 16 × 16) : un piquet de 4 px par module, tête
+    chanfreinée et hauteur un peu inégale, deux lisses clouées devant qui fléchissent entre les
+    piquets ; fil du bois en amas, clous, herbe et ombre de contact au pied ; contour W0. Les
+    lisses rejoignent le module voisin (même hauteur aux deux bords)."""
     cv = Canvas(16, 16)
-    posts = {'gauche': [3, 11], 'milieu': [3, 11], 'droite': [3, 11], 'poteau': [6]}[part]
-    a = 3 if part == 'gauche' else 0
-    b = 13 if part == 'droite' else 15
-    rails = set()
+    if part == 'verticale':
+        return cloture_verticale()
+    tete = {'gauche': 2, 'milieu': 3, 'droite': 2, 'poteau': 2}[part]
+    post = set()
+    for x in range(6, 10):
+        top = tete + (1 if x in (6, 9) else 0)               # tête chanfreinée
+        for y in range(top, 16):
+            post.add((x, y))
+    a = 6 if part == 'gauche' else 0
+    b = 9 if part == 'droite' else 15
+    rails = {}
     if part != 'poteau':
-        for y in (5, 6, 10, 11):
-            for x in range(a, b + 1):
-                rails.add((x, y))
-    post_px = {(x, y) for px_ in posts for x in range(px_, px_ + 3) for y in range(2, 16)}
-    shape = rails | post_px
+        for x in range(a, b + 1):
+            sag = 1 if x < 3 or x > 12 else 0                 # la lisse fléchit entre deux piquets
+            for y0 in (5, 10):
+                rails[(x, y0 + sag)] = 0
+                rails[(x, y0 + sag + 1)] = 1
+    shape = post | set(rails)
     outline_construit(cv, lambda x, y: (x, y) in shape, 'W0')
-    for (x, y) in rails:
-        cv.put(x, y, 'W4' if y in (5, 10) else 'W3')
-    for (x, y) in post_px:
-        k = min(x - px_ for px_ in posts if px_ <= x)
-        cv.put(x, y, 'W4' if k == 0 or y == 2 else 'W3' if k == 1 else 'W2')
-    if part in ('milieu', 'droite'):                       # raccord à gauche : pas de contour
-        for y in (5, 6, 10, 11):
-            cv.put(0, y, 'W4' if y in (5, 10) else 'W3')
-    if part in ('milieu', 'gauche'):
-        for y in (5, 6, 10, 11):
-            cv.put(15, y, 'W4' if y in (5, 10) else 'W3')
+    for (x, y) in post:
+        k = x - 6
+        cv.put(x, y, 'W4' if y <= tete + 1 and k in (1, 2) else ('W4', 'W3', 'W2', 'W1')[k])
+    cv.vline(7, 7, 9, 'W2'); cv.vline(8, 12, 14, 'W2')        # fil du bois
+    for (x, y), row in rails.items():
+        cv.put(x, y, 'W4' if row == 0 else 'W2')
+    if part != 'poteau':
+        for x in range(a + 2, b - 1):                         # fil des lisses
+            if (x * 7 + 3) % 11 < 3 and (x, 6) in rails and rails[(x, 6)] == 1:
+                cv.put(x, 6, 'W3')
+            if (x * 5 + 1) % 13 < 3 and (x, 11) in rails and rails[(x, 11)] == 1:
+                cv.put(x, 11, 'W3')
+        cv.put(7, 5, 'R2'); cv.put(8, 10, 'R2')               # clous
+    if part in ('milieu', 'droite'):                          # raccord à gauche : pas de contour
+        for (x, y), row in rails.items():
+            if x == 0:
+                cv.put(0, y - 1 if row == 0 else y + 1, 'W0')
+    for x, h in ((5, 2), (10, 1), (11, 2)):                    # herbe au pied
+        for k in range(h):
+            cv.put(x, 15 - k, 'V5' if k == h - 1 else 'V4')
+    ombre_contact(cv, 3, 12, 15, 1)
+    return cv.im
+
+
+def cloture_verticale():
+    """Clôture qui file vers le bas (module de 16 × 16) : les lisses vues par la tranche, deux
+    planches étroites qui descendent du piquet du dessus, et le piquet de ce module (plus bas,
+    pour la perspective) ; contour W0."""
+    cv = Canvas(16, 16)
+    rail = {(x, y) for x in (6, 9) for y in range(0, 9)} | {(x, y) for x in (7, 8) for y in range(0, 9)}
+    post = {(x, y) for x in range(6, 10) for y in range(6 + (1 if x in (6, 9) else 0), 16)}
+    shape = rail | post
+    outline_construit(cv, lambda x, y: (x, y) in shape, 'W0')
+    for (x, y) in rail:
+        cv.put(x, y, ('W4', 'W3', 'W2', 'W1')[x - 6] if y % 5 else 'W2')
+    cv.hline(6, 9, 3, 'W0')                                    # joint entre les deux lisses
+    for (x, y) in post:
+        cv.put(x, y, 'W4' if y <= 7 and x in (7, 8) else ('W4', 'W3', 'W2', 'W1')[x - 6])
+    cv.vline(7, 10, 12, 'W2')
+    cv.put(7, 8, 'R2')
+    for x, h in ((5, 2), (10, 1), (11, 2)):
+        for k in range(h):
+            cv.put(x, 15 - k, 'V5' if k == h - 1 else 'V4')
+    ombre_contact(cv, 3, 12, 15, 1)
     return cv.im
 
 
@@ -1134,7 +1265,7 @@ def build():
         famille = 'organique' if k in ('champignon', 'champignons_bruns', 'caillou') else 'feuillage' if k in ('trefle', 'fougere') else 'terrain'
         sprites[f'micro_{famille}_{k.replace("_", "-")}_16x16.png'] = im
     im = caisse(); tiles.append(('caisse', im)); sprites['objet_construit_caisse_16x16.png'] = im
-    for p in ('gauche', 'milieu', 'droite', 'poteau'):
+    for p in ('gauche', 'milieu', 'droite', 'poteau', 'verticale'):
         im = cloture(p); tiles.append((f'cloture_{p}', im)); sprites[f'objet_construit_cloture-{p}_16x16.png'] = im
     im = rocher(16, 16, big=False); tiles.append(('petit_rocher', im)); sprites['objet_organique_petit-rocher_16x16.png'] = im
     im = roseaux(); tiles.append(('roseaux', im)); sprites['micro_feuillage_roseaux_16x16.png'] = im

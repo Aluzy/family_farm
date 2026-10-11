@@ -271,7 +271,9 @@ def main():
     fence = {p for p, g in objets.items() if g in CLOTURE}
     for (cx, cy) in fence:
         lft, rgt = (cx - 1, cy) in fence, (cx + 1, cy) in fence
-        nm = 'cloture_milieu' if lft and rgt else 'cloture_droite' if lft else 'cloture_gauche' if rgt else 'cloture_poteau'
+        up = (cx, cy - 1) in fence
+        nm = ('cloture_milieu' if lft and rgt else 'cloture_droite' if lft else 'cloture_gauche' if rgt
+              else 'cloture_verticale' if up else 'cloture_poteau')
         sprites.append(((cy + 1) * T, tile(nm), cx * T, cy * T))
     for group, nm in ((BUISSONS, None), (ROCHERS, 'rocher'), (TONNEAU, 'tonneau'), (CAISSES, 'caisse'), (BUCHE, 'buche')):
         cells = [p for p, g in objets.items() if g in group]
