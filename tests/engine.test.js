@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtTile, zoneTile, isArable, canBorder, borderMask, migrateFreeSoil, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, orchardSlotPrice, plantTree, harvestTree, treeStage, treeAt, freeOrchardCases, ripeTrees, migrateOrchard, newTree, commerceNight, chooseCommerce, upgradeCommerce, setCommerceQuota, commerceCapacity, commerceChoiceCost, commerceBatches, newCommerce,
+  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtTile, zoneTile, isArable, canBorder, hoeableTiles, borderMask, migrateFreeSoil, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, orchardSlotPrice, plantTree, harvestTree, treeStage, treeAt, freeOrchardCases, ripeTrees, migrateOrchard, newTree, commerceNight, chooseCommerce, upgradeCommerce, setCommerceQuota, commerceCapacity, commerceChoiceCost, commerceBatches, newCommerce,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -9095,6 +9095,20 @@ test('version 1.15 : la terre déborde en bordure sur les 8 tuiles voisines, qui
   // un écart de deux tuiles ne se comble pas (chaque labour laisserait une herbe seule)
   assert(hoe(s, champ(5, 0)).ok);
   assertEqual([hoeStatus(s, champ(3, 0)).ok, hoeStatus(s, champ(4, 0)).ok], [false, false]);
+});
+
+test('version 1.15 : la grille de la houe montre exactement les tuiles que la houe accepte', () => {
+  const s = garden();
+  s.potager.houe = true;
+  tireless(s);
+  testSetLevel(s, 6);
+  assert(hoe(s, champ(0, 0)).ok);
+  const tiles = hoeableTiles(s);
+  assert(tiles.length > 100);
+  assertEqual(tiles.includes(champ(0, 0)), false, 'pas une terre déjà labourée');
+  assertEqual(tiles.includes(champ(2, 0)), false, 'pas une tuile qui laisserait une herbe seule');
+  assertEqual(tiles.includes(champ(1, 0)), true, 'la voisine, oui');
+  for (const t of tiles.slice(0, 40)) assertEqual(hoeStatus(s, t).ok, true, `tuile ${t}`);
 });
 
 export const results = runTests();

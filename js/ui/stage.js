@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { houseRepaired } from '../engine/depart.js';
 import { findDevice } from '../engine/devices.js';
-import { allPlots, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
+import { allPlots, hoeableTiles, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
 import { woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
@@ -275,10 +275,20 @@ export function stageModel() {
   // Version 1.15 : une parcelle porte le numéro de sa tuile sur la carte ; `terrain` dit
   // quelles tuiles la houe peut labourer (une chaîne par rangée, « # » labourable).
   const T = DATA.TERRAIN;
+  const houe = hoeMode && !!state.potager.houe;
   return {
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
-    houe: hoeMode && !!state.potager.houe, serre, interieur: stageInterior, arbres, batiments, animaux,
+    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux,
   };
+}
+
+// Version 1.15 : tuiles que la houe peut labourer (la grille verte de la carte en mode houe),
+// recalculées seulement quand la terre change.
+let labourablesCache = { key: null, tiles: null };
+function labourables() {
+  const key = state.potager.parcelles.map((p) => p.case).join();
+  if (labourablesCache.key !== key) labourablesCache = { key, tiles: hoeableTiles(state) };
+  return labourablesCache.tiles;
 }
 
 // Version 1.12 : un bâtiment pas encore réparé ou construit se dessine délabré.

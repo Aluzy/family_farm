@@ -115,6 +115,23 @@ export function soilLayoutOk(state, tile, labour) {
   return badBorders(dirt, tile) <= before;
 }
 
+// Version 1.15 : tuiles d'herbe que la houe peut labourer maintenant, pour le dessin (hors
+// plafond et énergie, qui se disent au moment du labour) : labourables, sans terre, et dont
+// les bordures se dessineraient.
+export function hoeableTiles(state) {
+  const T = DATA.TERRAIN;
+  const dirt = new Set(state.potager.parcelles.map((p) => p.case));
+  const out = [];
+  for (let t = 0; t < T.LARGEUR * T.HAUTEUR; t++) {
+    if (dirt.has(t) || !isArable(t)) continue;
+    const before = badBorders(dirt, t);
+    dirt.add(t);
+    if (badBorders(dirt, t) <= before) out.push(t);
+    dirt.delete(t);
+  }
+  return out;
+}
+
 export const SOIL_LAYOUT_REFUS = 'La terre déborde en bordure sur les 8 tuiles autour : elles doivent pouvoir devenir mi-herbe mi-terre (pas de chemin, d\'eau, de pierre ni d\'arbre à côté, et pas une seule tuile d\'herbe prise entre deux terres).';
 
 // Tuile d'une case des anciennes zones (1 : la Zone de culture, 2 : le Champ) : sauvegardes

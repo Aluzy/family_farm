@@ -27,6 +27,8 @@
 >   reboucher). L'herbe des abords des bâtiments et du Verger porte une bordure sans se
 >   labourer (« + » dans `data/terrain.json`). Les parties d'avant gardent leurs terres ;
 >   seules les nouvelles bordures impossibles sont refusées.
+> - **Grille de la houe** : houe en main, une grille vert clair transparente couvre les tuiles
+>   que la houe peut labourer (`hoeableTiles`) ; elle disparaît quand on range la houe.
 > - **Carte** : la houe en main, un appui sur l'herbe laboure, sur une terre vide rebouche ;
 >   ailleurs la houe dit pourquoi elle ne laboure pas. Sans la houe, un appui sur l'herbe
 >   labourable ouvre la fenêtre de la Zone de culture (la houe y est). La terre et ses
