@@ -226,6 +226,55 @@ def gable_roof(cv, ridge, x_left, x_right, top, thick, roof='prune'):
     return left, right
 
 
+def toit_3d(cv, R, xl, xr, ey, ay, D, roof='prune'):
+    """Toit à pignon sur rue, vu de trois quarts : le pignon avant (rives de (xl, ey) au
+    faîte (R, ay) puis à (xr, ey)) et, derrière, les deux pans qui filent vers le fond sur `D`
+    px (le faîtage monte à la verticale de l'écran). Pan gauche éclairé, pan droit dans l'ombre ;
+    rangs de tuiles parallèles au faîtage (donc verticaux à l'écran), joints décalés ; égout
+    plus sombre ; faîtage de bois ; planche de rive de 2 px à l'avant.
+    Renvoie `pan(x, y)` → (côté, s, z) ou None : s de 0 (égout) à 1 (faîte), z la profondeur."""
+    pr = roof == 'prune'
+    T = {'g': ('N2', 'N3', 'N1'), 'd': ('N1', 'N2', 'N0')} if pr else \
+        {'g': ('W3', 'W4', 'W2'), 'd': ('W2', 'W3', 'W1')}
+
+    def pan(x, y):
+        if xl <= x < R:
+            side, s = 'g', (x + 0.5 - xl) / (R - xl)
+        elif R < x <= xr:
+            side, s = 'd', (xr + 0.5 - x) / (xr - R)
+        else:
+            return None
+        yf = ey + s * (ay - ey)                               # rive avant à cette colonne
+        z = yf - (y + 0.5)
+        if 0 <= z <= D:
+            return side, s, z
+        return None
+    for y in range(cv.h):
+        for x in range(cv.w):
+            q = pan(x, y)
+            if q is None:
+                continue
+            side, s, z = q
+            base, light, dark = T[side]
+            w = s * ((R - xl) if side == 'g' else (xr - R))
+            col = int(w / 5)                                  # rang de tuiles (vertical à l'écran)
+            c = base
+            if w % 5 < 1:
+                c = dark
+            elif (z + (col % 2) * 4) % 8 < 1:
+                c = dark                                      # joint entre deux tuiles du rang
+            elif w % 5 >= 4 and side == 'g':
+                c = light                                     # arête éclairée de chaque rang
+            if s < 0.05:
+                c = dark                                      # l'égout
+            if z < 2:
+                c = ('W4' if z < 1 else 'W2') if side == 'g' else ('W2' if z < 1 else 'W1')   # planche de rive
+            cv.put(x, y, c)
+    for y in range(int(ay - D), int(ay) + 1):                 # faîtage de bois
+        cv.put(R, y, 'W4' if y < ay - 1 else 'W3')
+    return pan
+
+
 def gable_wall(cv, ridge, x0, x1, top_y, bottom_y, timber=True):
     """Pignon : enduit P4 sous les pans, bande C0 sous la sous-face (ombre de surplomb),
     colombage W3 (sablière et deux poteaux)."""
@@ -251,9 +300,9 @@ def maison():
     terrasse et marches."""
     cv = Canvas(96, 96)
     R = 38                                                   # faîtage
-    gable_wall(cv, R, 10, 66, 33, 50)
-    window8(cv, R - 4, 38)
-    left, right = gable_roof(cv, R, 5, 70, 2, 30)
+    gable_wall(cv, R, 9, 67, 23, 50)
+    window8(cv, R - 4, 36)
+    toit_3d(cv, R, 5, 70, 40, 22, 20)
     # annexe à droite
     for y in range(39, 52):
         for x in range(71, 94):
@@ -300,30 +349,41 @@ def maison():
 
 
 def panneaux_toit(n):
-    """Panneaux solaires sur le pan droit de la maison (32 × 48, posés au point (39, 2)) : cellules
-    A0 (indigo) quadrillées de A1, reflet A3, cadre R2 et R1 ; ils suivent la pente du toit."""
+    """Panneaux solaires sur le pan droit de la maison (32 × 48, posés au point (39, 2)) : chaque
+    panneau suit le pan vu de trois quarts (bords parallèles à la rive et au faîtage) ; cellules
+    A0 quadrillées de A1, reflet A3, cadre R3 côté faîte et fond, R1 côté égout et avant."""
     cv = Canvas(32, 48)
-    OX, OY, R = 39, 2, 38
-    places = [(1, 0), (1, 1), (1, 2), (0, 0), (0, 1), (0, 2)][:n]
-    for row, col in places:
-        x0 = 41 + col * 10
-        for dx in range(9):
-            x = x0 + dx
-            top = 2 + (x - R - 1) // 2 + (6 if row == 0 else 18)
-            for dy in range(10):
-                y = top + dy
-                if dx == 0 or dy == 0:
+    OX, OY = 39, 2
+    R, XR, EY, AY = 38, 70, 40, 22
+    places = [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2)][:n]
+    W = XR - R
+    for row, col in places:                                  # row 0 : près du faîte ; col : vers le fond
+        s0, s1 = (0.93, 0.55) if row == 0 else (0.5, 0.12)
+        z0, z1 = 3 + col * 5.6, 3 + col * 5.6 + 4.6
+        for x in range(R + 1, XR + 1):
+            s_ = (XR + 0.5 - x) / W
+            if not (s1 <= s_ <= s0):
+                continue
+            yf = EY + s_ * (AY - EY)
+            for y in range(int(yf - z1) - 1, int(yf - z0) + 2):
+                z = yf - (y + 0.5)
+                if not (z0 <= z <= z1):
+                    continue
+                es0, es1, ez0, ez1 = (s0 - s_) * W, (s_ - s1) * W, z - z0, z1 - z
+                if es0 < 1 or ez1 < 0.9:
                     c = 'R3'
-                elif dx == 8 or dy == 9:
+                elif es1 < 1 or ez0 < 0.9:
                     c = 'R1'
-                elif dx == 4 or dy in (3, 6):
+                elif int(es1) % 4 == 0 or int(ez0) % 3 == 0:
                     c = 'A1'
                 else:
                     c = 'A0'
                 cv.put(x - OX, y - OY, c)
-        for dx, dy in ((1, 1), (2, 1), (1, 2)):
-            x = x0 + dx
-            cv.put(x - OX, 2 + (x - R - 1) // 2 + (6 if row == 0 else 18) + dy - OY, 'A3')
+        x = round(XR + 0.5 - (s0 - 0.1) * W)                  # reflet près du faîte
+        y = round(EY + (s0 - 0.1) * (AY - EY) - z1 + 2)
+        for dx, dy in ((0, 0), (0, 1), (1, 1)):
+            if cv.get(x + dx - OX, y + dy - OY)[:3] == PAL['A0']:
+                cv.put(x + dx - OX, y + dy - OY, 'A3')
     return cv.im
 
 
@@ -334,18 +394,18 @@ def etable():
     murs de planches verticales, grande double porte à écharpes, deux baies sombres."""
     cv = Canvas(112, 96)
     R = 56
-    gable_wall(cv, R, 12, 100, 32, 56)
-    for y in range(40, 56):                                   # croix du pignon
-        t = (y - 40) / 15
+    gable_wall(cv, R, 6, 106, 33, 56)
+    for y in range(44, 56):                                   # croix du pignon
+        t = (y - 44) / 11
         for s in (-1, 1):
             x = round(R + s * (9 + t * 24))
             cv.put(x, y, 'W3'); cv.put(x + 1, y, 'W2')
-    for y in range(41, 52):                                   # lucarne ronde
+    for y in range(40, 51):                                   # lucarne ronde
         for x in range(49, 64):
-            d = math.hypot(x + 0.5 - (R + 0.5), (y + 0.5 - 46.5) * 1.1)
+            d = math.hypot(x + 0.5 - (R + 0.5), (y + 0.5 - 45.5) * 1.1)
             if d <= 5.4:
                 cv.put(x, y, 'W0' if d > 4.4 else 'B0' if y > 45 else 'N1')
-    gable_roof(cv, R, 3, 108, 2, 29, 'brun')
+    toit_3d(cv, R, 3, 108, 57, 30, 27, 'brun')
     # poutre
     cv.rect(3, 57, 108, 59, 'W3')
     cv.hline(3, 108, 57, 'W4')
@@ -383,12 +443,12 @@ def poulailler(porte):
     entrouverte, ouverte), pilotis et rampe."""
     cv = Canvas(48, 64)
     R = 24
-    for y in range(22, 50):                                   # mur
+    for y in range(25, 50):                                   # mur
         for x in range(7, 41):
-            cv.put(x, y, 'C0' if y < 25 else 'P4')
-    cv.vline(7, 22, 49, 'W3'); cv.vline(40, 22, 49, 'W3')
+            cv.put(x, y, 'C0' if y < 28 else 'P4')
+    cv.vline(7, 25, 49, 'W3'); cv.vline(40, 25, 49, 'W3')
     cv.hline(7, 40, 35, 'W3'); cv.hline(7, 40, 49, 'W2')
-    window8(cv, 28, 25)
+    window8(cv, 28, 28)
 
     def door_shape(x, y):
         return 14 <= x <= 24 and 37 <= y <= 49 and (y >= 42 or math.hypot(x + 0.5 - 19.5, y + 0.5 - 42) <= 5.5)
@@ -409,7 +469,8 @@ def poulailler(porte):
             if not door_shape(x, y) and any(door_shape(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))) and y < 50:
                 cv.put(x, y, 'W0')
     # toit prune à deux pans débordants
-    left, right = gable_roof(cv, R, 2, 45, 2, 17)
+    gable_wall(cv, R, 8, 39, 15, 25, timber=False)
+    toit_3d(cv, R, 2, 45, 26, 15, 13)
     # pilotis et rampe
     for fx in (9, 37):
         cv.rect(fx, 50, fx + 2, 63, 'W2')

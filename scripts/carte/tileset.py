@@ -279,10 +279,12 @@ def tache_paves(c, variant=0):
 
 
 def tache_eau(c, frame=0):
-    """Eau et sa berge, fond transparent, du dehors vers le large : herbe humide (V2, par amas),
-    dessus de berge (T3, T2, T1), face de la berge au nord (W2, W1), écume brisée (E4), eau peu
-    profonde claire (E3 et E2 mêlés) avec quelques galets côté sud, eau profonde (E1, stries E0)
-    sous la berge nord, puis l'eau (E2, tirets E3)."""
+    """Plan d'eau en creux, vu de trois quarts, fond transparent. L'eau est plus bas que le sol :
+    au nord, on voit la face de la berge (lèvre d'herbe qui déborde, puis strates T2, T1, W2,
+    W1, racines et cailloux), et sous elle son reflet sombre dans l'eau (E0, E1) ; à l'ouest,
+    une face étroite dans l'ombre (W1, W2) ; à l'est, une face étroite éclairée (T2, T3) ; au
+    sud, seulement la lèvre de la berge, avec un liseré d'écume. Plus loin : eau peu profonde
+    claire (E3, E2) et galets côté sud, puis l'eau (E2, tirets E3)."""
     cv = Canvas(T, T)
     if not any(c):
         return cv.im
@@ -291,38 +293,56 @@ def tache_eau(c, frame=0):
             d = corner_field(x, y, c)
             u, gx, gy = along(c, x, y)
             n = math.hypot(gx, gy) or 1
-            north = -gy / n > 0.55
+            nn, ne = max(0.0, -gy / n), gx / n                 # part « berge nord », côté est (+) / ouest (−)
             south = gy / n > 0.55
-            side = abs(gx / n) > 0.55
             a = AMAS[y][x]
-            if d > 0:
-                if north:
-                    if d <= 4:
-                        cv.put(x, y, 'W1' if d <= 1.5 else 'W2')                     # face de la berge
-                    elif d <= 7 + (a - 0.5) * 2:
-                        cv.put(x, y, 'T1' if d > 6 else 'T2' if a < 0.55 else 'T3')  # dessus, lèvre
-                    elif d <= 10 and AMAS2[y][x] > 0.6:
-                        cv.put(x, y, 'V2')                                          # herbe humide
-                else:
-                    if d <= 3 + (a - 0.5) * 2:
-                        cv.put(x, y, 'T3' if south and d < 1.6 else 'T2' if a < 0.6 else 'T1')
-                    elif d <= 4.5 + BRINS[u] * 0.5:
-                        cv.put(x, y, 'T1')
-                    elif d <= 7.5 and AMAS2[y][x] > 0.62:
-                        cv.put(x, y, 'V2')
+            th = 11 * nn ** 1.5 + 3.5 * abs(ne)                  # hauteur de la face visible (unités du champ)
+            if d > 0:                                            # au-dessus de l'eau : lèvre et herbe humide
+                if d <= 2.5 + (a - 0.5) * 2:
+                    cv.put(x, y, 'T3' if a < 0.5 else 'T2')
+                elif d <= 4 + BRINS[u] * 0.5:
+                    cv.put(x, y, 'T1' if not nn > 0.5 else 'T2')
+                elif d <= 7.5 and AMAS2[y][x] > 0.6:
+                    cv.put(x, y, 'V2')
                 continue
             depth = -d
+            if depth < th:                                       # la face de la berge
+                k = depth / th
+                if nn > 0.5:
+                    if k < 0.18 + BRINS[u] * 0.08:
+                        col = 'V4' if BRINS[u] else 'V2'            # l'herbe déborde sur la face
+                    elif k < 0.45:
+                        col = 'T2' if a < 0.6 else 'T1'
+                    elif k < 0.75:
+                        col = 'T1' if a < 0.5 else 'W2'
+                    else:
+                        col = 'W1' if a > 0.25 else 'W0'
+                    if 0.4 < k < 0.9 and AMAS2[y][x] > 0.86:
+                        col = 'B1' if a > 0.5 else 'B2'              # cailloux pris dans la berge
+                    if 0.3 < k < 0.8 and (x * 5 + y) % 13 == 0:
+                        col = 'W0'                                   # racine
+                elif ne < 0:
+                    col = 'W1' if k > 0.5 else 'W2'                  # face ouest : dans l'ombre
+                else:
+                    col = 'T2' if k > 0.5 else 'T3'                  # face est : éclairée
+                cv.put(x, y, col)
+                continue
+            depth -= th                                          # profondeur sous le pied de la face
             col = 'E2'
-            if depth <= 1:
-                col = 'E4' if a > 0.3 and (not side or y % 2 == 0) else 'E3'               # écume brisée
-            elif north and depth <= 7:
-                col = 'E1' if not (depth > 5.5 and a > 0.6) else 'E2'                     # eau profonde
-                if depth > 2.5 and (x + y * 3) % 11 == 0:
+            if nn > 0.5 and depth <= 5:
+                col = 'E0' if depth <= 2 else 'E1'               # reflet de la berge, puis eau profonde
+                if depth > 2 and depth < 5 and a > 0.75:
                     col = 'E0'
+                if depth > 4 and a > 0.6:
+                    col = 'E2'
+            elif depth <= 1.2 and nn <= 0.5:
+                col = 'E4' if a > 0.3 and (south or y % 2 == 0) else 'E3'   # écume au pied
+            elif ne < -0.5 and depth <= 3:
+                col = 'E1'                                       # ombre de la face ouest sur l'eau
             elif depth <= 3.5 + (a - 0.5) * 2:
-                col = 'E3' if a > 0.45 else 'E2'                                           # peu profonde
+                col = 'E3' if a > 0.45 else 'E2'                 # peu profonde
                 if south and depth <= 3 and AMAS2[y][x] > 0.85:
-                    col = 'B2' if a > 0.7 else 'B1'                                        # galets
+                    col = 'B2' if a > 0.7 else 'B1'              # galets
             cv.put(x, y, col)
             if col == 'E2':
                 for x0, yy, k, cc in water_dashes(frame):
