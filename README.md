@@ -277,6 +277,8 @@ le site en ligne que si elles passent toutes.
   acheté (un panneau de plus par niveau : 2 au niveau 1, 6 au niveau 5).
 - **Puits et pompe** : `python3 scripts/batiments/puits.py` génère `assets/puits.png`, le puits
   à droite de la maison, toujours là ; la pompe s'y ajoute une fois achetée.
+- **Citerne** : `python3 scripts/batiments/citerne.py` génère `assets/citerne.png`, la citerne
+  (le réservoir) à droite de la pompe, une fois achetée ; son tube de niveau suit l'eau du réservoir.
 - **Bâtiments délabrés** (début de partie, avant réparation) : `python3 scripts/batiments/ruines.py`
   écrit `assets/<image>_ruine.png` pour la maison, l'étable, le moulin, la serre, le poulailler et
   le silo, à partir des images d'origine (même taille, mêmes cases : chacune remplace l'originale
