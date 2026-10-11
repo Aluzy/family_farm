@@ -1,0 +1,1064 @@
+{
+  "schema": "family-farm-taches/1",
+  "titre": "Fluidité du jeu : tâches pour Claude Code",
+  "source": "Audit d'ergonomie v1.14 du 10 octobre 2026 et liste « Family Farm — Tâches de fluidité » du 11 octobre 2026",
+  "depot": "Aluzy/family_farm",
+  "base": {
+    "branche": "main",
+    "commit": "a2e570f",
+    "version": "1.15.0",
+    "verification": "Chaque constat revérifié sur main a2e570f (v1.15.0) : lecture du code et partie neuve rejouée dans Chromium à 390 × 844 px, tactile."
+  },
+  "mode_emploi": [
+    "Traiter les tâches dans l'ordre du tableau `taches`. Ne commencer une tâche que si toutes celles de `depend_de` sont faites.",
+    "Sauter les tâches dont `statut` vaut `non_reproduit`. Pour `partiel`, ne coder que ce que disent les `consignes`.",
+    "Une tâche = une branche (`branche`), un ou plusieurs commits, une PR. Les tâches d'un même `lot` peuvent partager une PR si elles sont petites.",
+    "Avant de coder : relire les fichiers de `fichiers` et vérifier que le `constat` est toujours vrai sur la branche courante. S'il ne l'est plus, marquer la tâche `deja_fait` ou l'adapter, et le dire dans la PR.",
+    "Une tâche marquée `decision_requise` ne se code pas avant la réponse de l'auteur : poser la question et passer à la suivante.",
+    "À la fin de chaque tâche : lancer toutes les commandes de `regles_communes.tests`, puis vérifier chaque ligne de `acceptation`."
+  ],
+  "regles_communes": {
+    "tests": [
+      "npm test"
+    ],
+    "verification_visuelle": "Ouvrir jeu.html servi en HTTP (python3 -m http.server) à 390 × 844 px et à 1 280 × 800 px, en nouvelle partie : aucune erreur dans la console.",
+    "contraintes": [
+      "Ne modifier aucune valeur d'équilibrage (data/*.json : prix, coûts, XP, durées) sauf si la tâche le dit.",
+      "Textes de l'interface en français, au tutoiement, sauf la lettre du notaire (vouvoiement d'un personnage).",
+      "Toute nouvelle action de l'interface passe par le registre d'actions : `node scripts/check-actions.mjs` doit rester au vert.",
+      "Garder les étiquettes aria-label et des cibles tactiles d'au moins 44 × 44 px.",
+      "Si l'état sauvegardé change de forme : ajouter une migration (MIGRATIONS) et un test.",
+      "Noter chaque changement visible pour le joueur dans docs/conception.md (nouvelle note vNN) et, si besoin, dans le README."
+    ],
+    "messages_de_commit": "En français, à l'impératif présent, comme l'historique du dépôt (ex. « Houe : … »)."
+  },
+  "mesure": {
+    "reference_v1_14": {
+      "touches_jusqua_6_parcelles_plantees_arrosees": 52,
+      "touches_par_journee_entretien": 8
+    },
+    "cible": {
+      "touches_jusqua_6_parcelles_plantees_arrosees": 30,
+      "touches_par_journee_entretien": 5
+    },
+    "protocole": "Nouvelle partie à 390 × 844 px, joueur qui connaît le chemin : compter chaque touche depuis « Partir pour la ferme » jusqu'à 6 parcelles de carottes plantées et arrosées.",
+    "estimation_v1_15": {
+      "touches_jusqua_6_parcelles_plantees_arrosees": 53,
+      "note": "La houe se prend maintenant en touchant deux fois l'herbe (fiche Zone de culture), puis on laboure sur la carte : même ordre de grandeur qu'en v1.14."
+    }
+  },
+  "lots": [
+    {
+      "id": "L1",
+      "nom": "Repères et raccourcis",
+      "ordre": 1
+    },
+    {
+      "id": "L2",
+      "nom": "Moins de touches",
+      "ordre": 2
+    },
+    {
+      "id": "L3",
+      "nom": "Démarrage",
+      "ordre": 2
+    },
+    {
+      "id": "L4",
+      "nom": "Information au bon moment",
+      "ordre": 3
+    },
+    {
+      "id": "L5",
+      "nom": "Petites corrections",
+      "ordre": 3
+    },
+    {
+      "id": "L6",
+      "nom": "Vérification",
+      "ordre": 4
+    }
+  ],
+  "taches": [
+    {
+      "id": "FLU-01",
+      "lot": "L1",
+      "titre": "L'objectif du chapitre ouvre l'action, pas la liste des chapitres",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/objectif-action",
+      "fichiers": [
+        "js/ui/stage.js",
+        "js/ui/stage-windows.js",
+        "js/ui/chapitres.js",
+        "data/campaign.json"
+      ],
+      "constat": "La puce d'objectif (js/ui/stage.js, vers la ligne 396) porte data-action=\"stage-open\" data-window=\"chapitres\" : toucher « Réparer la maison » ouvre la liste des chapitres.",
+      "consignes": [
+        "Créer une table type d'objectif → destination, par exemple : maison, panneau, pompe, reservoir → allerAuLieu('maison', 'installations') ; houe → Marché, onglet Acheter ; recoltes, cultures, semisBle → parcelles ; silo, siloBle → fenêtre du Silo ; plats, pains → cuisine ; niveau → fenêtre Niveaux ; autres types → liste des chapitres (comportement actuel).",
+        "Réutiliser allerAuLieu(fenetre, onglet) de js/ui/stage-windows.js plutôt qu'un nouveau chemin.",
+        "Garder l'accès à la liste : un lien « Voir le chapitre » dans la fenêtre ouverte, ou un appui long sur la puce.",
+        "Mettre à jour l'aria-label de la puce : « …. Y aller » au lieu de « Ouvrir les chapitres »."
+      ],
+      "acceptation": [
+        "Nouvelle partie : toucher la puce « Réparer la maison » ouvre la fiche Maison sur l'onglet Installations.",
+        "Après l'achat du réservoir, la puce « Acheter une houe au Marché » ouvre le Marché sur l'onglet Acheter.",
+        "La liste des chapitres reste accessible en une touche depuis la fenêtre ouverte.",
+        "Un objectif de type inconnu ouvre toujours la liste des chapitres."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-41",
+      "lot": "L1",
+      "titre": "Puce d'objectif lisible quand la puce Houe est affichée",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/objectif-action",
+      "fichiers": [
+        "js/ui/stage.js",
+        "css/jeu.css"
+      ],
+      "statut": "a_faire",
+      "constat": "Houe en main à 390 px, la puce d'objectif est coupée en « Faire une première … 0 / 1 » pour laisser la place à la puce « Houe 0 / 6 ✕ ».",
+      "consignes": [
+        "Houe en main : réduire la puce d'objectif à son icône et à sa valeur (« 🏚️ 0 / 1 ›»), ou placer la puce Houe sur une seconde ligne.",
+        "Aucun texte coupé par des points de suspension à 360 et 390 px."
+      ],
+      "acceptation": [
+        "Houe en main à 360 et 390 px : aucune des deux puces n'affiche de points de suspension."
+      ]
+    },
+    {
+      "id": "FLU-02",
+      "lot": "L1",
+      "titre": "Un bâtiment s'ouvre en une seule touche",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/une-touche",
+      "fichiers": [
+        "js/farm-stage.js"
+      ],
+      "constat": "Au doigt, la première touche sur un lieu n'affiche que son nom (LABEL_HOLD_MS = 1200 dans js/farm-stage.js) ; la deuxième ouvre la fiche. Vrai aussi en v1.15 pour l'herbe : deux touches sur n'importe quelle herbe ouvrent la fiche Zone de culture.",
+      "consignes": [
+        "Au doigt (pointer.wasTouch), une touche brève sur un lieu ouvre directement sa fiche et affiche son nom en même temps.",
+        "Garder le comportement souris (survol = nom, clic = fiche).",
+        "Un glissement de carte ne doit toujours pas ouvrir de fiche (seuil de déplacement existant)."
+      ],
+      "acceptation": [
+        "À 390 px avec écran tactile émulé, une seule touche sur la maison ouvre la fiche Maison.",
+        "Faire glisser la carte en partant d'un bâtiment ne l'ouvre pas."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-03",
+      "lot": "L1",
+      "titre": "La fiche Maison s'ouvre là où il y a à faire",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/maison-onglet",
+      "fichiers": [
+        "js/ui/stage-windows.js"
+      ],
+      "constat": "let maisonTab = 'famille' (ligne 93) : la fiche s'ouvre sur Famille même quand la maison est à réparer.",
+      "consignes": [
+        "Quand la fiche Maison s'ouvre sans onglet demandé : choisir Installations si la maison n'est pas réparée ou si panneau, pompe ou réservoir manquent ; sinon le dernier onglet choisi par le joueur (défaut Famille)."
+      ],
+      "acceptation": [
+        "Nouvelle partie : ouvrir la maison affiche Installations.",
+        "Une fois panneau, pompe et réservoir achetés, la maison rouvre sur le dernier onglet utilisé."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-04",
+      "lot": "L1",
+      "titre": "Onglets de la Maison lisibles en entier à 390 px",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/maison-onglet",
+      "fichiers": [
+        "js/ui/stage-windows.js",
+        "css/jeu.css"
+      ],
+      "constat": "À 390 px, les onglets s'affichent « Fa… », « Arbre des techn… », « Installa… ».",
+      "consignes": [
+        "Libellés courts : « Famille », « Techno », « Énergie » (l'aria-label garde le nom complet).",
+        "Vérifier qu'aucun texte n'est coupé à 360 px de large."
+      ],
+      "acceptation": [
+        "À 360 et 390 px, les trois onglets sont lisibles sans points de suspension."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-05",
+      "lot": "L1",
+      "titre": "Bouton « Prendre la houe » sur la carte",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/houe-carte",
+      "fichiers": [
+        "js/ui/stage.js",
+        "js/ui/houe.js",
+        "js/ui/stage-windows.js"
+      ],
+      "constat": "Après l'achat, le message dit « Houe achetée : touche « Prendre la houe » pour labourer » (js/ui/houe.js, ligne 57), mais ce bouton n'existe que dans la fiche Zone de culture, qu'on n'ouvre qu'en touchant deux fois de l'herbe. Houe en main, une puce « Houe 0 / 6 ✕ » s'affiche déjà en haut de la carte (js/ui/stage.js, ligne 402).",
+      "consignes": [
+        "Dès que la houe est achetée et tant qu'elle n'est pas en main, afficher sur la carte un bouton rond « ⛏️ » près du bouton Dormir, avec l'aria-label « Prendre la houe ».",
+        "Il appelle la même action hoe-toggle ; houe en main, la puce existante prend le relais."
+      ],
+      "acceptation": [
+        "Houe achetée : depuis la carte, une touche suffit pour avoir la houe en main.",
+        "Houe non achetée : le bouton n'apparaît pas.",
+        "Le message affiché après l'achat de la houe désigne un bouton visible à l'écran."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-06",
+      "lot": "L1",
+      "titre": "Montrer où labourer au premier usage de la houe",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [
+        "FLU-05"
+      ],
+      "branche": "fluidite/houe-carte",
+      "fichiers": [
+        "js/ui/houe.js",
+        "js/farm-stage.js",
+        "data/terrain.json"
+      ],
+      "constat": "Fait en v1.15 : houe en main, une grille vert clair montre les tuiles labourables, dont un grand bloc visible depuis l'écran principal sous la clôture. Manque : aucune indication la première fois que la houe est en main (la fiche se ferme et le texte d'explication disparaît avec elle).",
+      "consignes": [
+        "À la première prise de houe de la partie (drapeau dans l'état, avec migration), afficher une fois la bulle « Touche une case verte pour la labourer » près de la puce Houe.",
+        "Si aucune case labourable n'est visible à l'écran à ce moment, faire glisser la carte vers la plus proche."
+      ],
+      "acceptation": [
+        "Nouvelle partie, première houe en main : la bulle s'affiche une fois, puis plus jamais, même après rechargement."
+      ],
+      "statut": "partiel"
+    },
+    {
+      "id": "FLU-07",
+      "lot": "L1",
+      "titre": "Annoncer que la carte défile vers le bas",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/carte-defilement",
+      "fichiers": [
+        "js/farm-stage.js",
+        "css/jeu.css"
+      ],
+      "constat": "Les 3 points en bas de la carte n'annoncent que gauche, milieu, droite alors que la carte défile aussi verticalement. Moins gênant depuis la v1.15 : la grille labourable est visible sans défiler.",
+      "consignes": [
+        "À la première ouverture de la carte, un léger mouvement vers le bas puis retour (désactivé si prefers-reduced-motion).",
+        "Ou un chevron discret en bas de la carte quand du contenu existe en dessous."
+      ],
+      "acceptation": [
+        "Un nouveau joueur voit, sans lire d'aide, que la carte continue vers le bas.",
+        "Rien ne bouge avec prefers-reduced-motion: reduce."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-08",
+      "lot": "L1",
+      "titre": "Barre du bas stable",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/barre-stable",
+      "fichiers": [
+        "js/ui/render.js",
+        "css/jeu.css"
+      ],
+      "constat": "L'onglet Marché apparaît après l'achat du panneau et de la pompe et décale Notifications et Options.",
+      "consignes": [
+        "Afficher Marché dès le départ, grisé avec un cadenas et l'aria-label « Marché : s'ouvre avec le panneau et la pompe » ; une touche affiche ce message."
+      ],
+      "acceptation": [
+        "Les 5 onglets du bas gardent la même position du début à la fin de la partie."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-09",
+      "lot": "L2",
+      "titre": "« Planter partout »",
+      "gain": "fort",
+      "effort": "moyen",
+      "depend_de": [],
+      "branche": "fluidite/planter-partout",
+      "fichiers": [
+        "js/ui/ferme.js",
+        "js/ui/elevage.js",
+        "js/engine/",
+        "tests/engine.test.js"
+      ],
+      "constat": "Planter demande 2 touches par parcelle (bouton pousse, puis choix de la graine).",
+      "consignes": [
+        "Ajouter au moteur une action nommée qui plante une culture sur toutes les parcelles vides d'un lieu, dans la limite des graines en stock, de l'énergie et du niveau ; elle renvoie le nombre planté et la raison d'arrêt.",
+        "Coût en énergie et XP identiques à N plantations à la main.",
+        "Dans la liste des parcelles : bouton « 🌱 Planter partout (N vides) » qui ouvre le même choix de graine que pour une parcelle.",
+        "Tests du moteur : stock insuffisant, énergie insuffisante, culture verrouillée."
+      ],
+      "acceptation": [
+        "6 parcelles vides et 6 graines de carotte : 2 touches plantent les 6.",
+        "4 graines pour 6 parcelles : 4 sont plantées et un message le dit.",
+        "npm test au vert avec les nouveaux tests."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-10",
+      "lot": "L2",
+      "titre": "« Arroser tout » et « Récolter tout » dès le niveau 1",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/arroser-tout",
+      "fichiers": [
+        "js/ui/elevage.js",
+        "data/techtree.json",
+        "docs/techtree_v2.js",
+        "docs/conception.md"
+      ],
+      "constat": "groupButtons(lieu, zone) (js/ui/elevage.js, vers la ligne 248) n'affiche rien tant que techFlag(state, 'actionsGroupees') est vide, c'est-à-dire avant la technologie « Outils de jardin ».",
+      "consignes": [
+        "Afficher « Arroser tout » et « Récolter tout » sans condition de technologie ; coût en eau, énergie et XP identiques aux actions à la main.",
+        "Dans l'Arbre des technologies, remplacer l'effet devenu inutile par l'arrosage automatique de nuit (ou réduire le coût en énergie des actions groupées) ; noter le choix dans docs/conception.md.",
+        "Si l'état sauvegardé référence actionsGroupees : garder la compatibilité (migration ou valeur ignorée)."
+      ],
+      "acceptation": [
+        "Niveau 1, 6 carottes plantées non arrosées : une touche les arrose toutes.",
+        "Une ancienne sauvegarde qui avait acheté « Outils de jardin » se charge sans erreur.",
+        "node scripts/simulate.mjs ne change pas de verdict à cause de cette tâche (le joueur simulé n'utilise pas l'interface)."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-11",
+      "lot": "L2",
+      "titre": "Coût affiché sur les actions groupées",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [
+        "FLU-09",
+        "FLU-10"
+      ],
+      "branche": "fluidite/arroser-tout",
+      "fichiers": [
+        "js/ui/elevage.js",
+        "js/ui/ferme.js"
+      ],
+      "constat": "Les boutons groupés n'indiquent que le nombre de parcelles.",
+      "consignes": [
+        "Libellé : « 💧 Arroser tout (6 · 12 L · ⚡ 8) » ; bouton désactivé avec une phrase visible si l'eau ou l'énergie manque (« Il manque 4 L d'eau »)."
+      ],
+      "acceptation": [
+        "Réservoir à 5 L pour 12 L nécessaires : le bouton est désactivé et le manque est écrit."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-12",
+      "lot": "L2",
+      "titre": "Labourer en glissant le doigt",
+      "gain": "moyen",
+      "effort": "moyen",
+      "depend_de": [
+        "FLU-05"
+      ],
+      "branche": "fluidite/labour-glisse",
+      "fichiers": [
+        "js/farm-stage.js",
+        "js/ui/houe.js"
+      ],
+      "constat": "Houe en main, chaque tuile demande une touche ; glisser déplace la carte.",
+      "consignes": [
+        "Houe en main : un glissement qui commence sur une tuile labourable laboure chaque tuile traversée (dans la limite du plafond et de l'énergie) ; un glissement qui commence ailleurs déplace la carte.",
+        "Un seul rendu et une seule sauvegarde à la fin du geste."
+      ],
+      "acceptation": [
+        "Houe en main, un glissement sur 6 tuiles d'herbe foncée en laboure 6.",
+        "Sans houe, le glissement déplace toujours la carte."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-13",
+      "lot": "L2",
+      "titre": "Le Marché s'ouvre sur l'onglet utile",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/marche",
+      "fichiers": [
+        "js/ui/marche.js",
+        "js/ui/store.js"
+      ],
+      "constat": "comptoirTab s'ouvre sur Vendre, même quand le joueur vient acheter la houe.",
+      "consignes": [
+        "À l'ouverture du Marché sans onglet demandé : Acheter si la houe manque ; Graines si au moins une parcelle est vide et qu'aucune graine n'est en stock ; sinon le dernier onglet utilisé."
+      ],
+      "acceptation": [
+        "Nouvelle partie, installations achetées : le Marché s'ouvre sur Acheter, la houe en tête."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-14",
+      "lot": "L2",
+      "titre": "Achat par lot au Marché",
+      "gain": "moyen",
+      "effort": "moyen",
+      "depend_de": [
+        "FLU-13"
+      ],
+      "branche": "fluidite/marche",
+      "fichiers": [
+        "js/ui/marche.js",
+        "css/jeu.css"
+      ],
+      "constat": "Chaque article a 5 commandes (−, quantité, +, Max, Acheter) : 15 articles font une page très longue.",
+      "consignes": [
+        "Une ligne par article : nom, prix, puis boutons « ×1 », « ×5 », « ×10 » (désactivés si l'argent manque). Même chose pour Vendre avec « Tout »."
+      ],
+      "acceptation": [
+        "Acheter 6 graines de carotte prend 2 touches (×5 puis ×1).",
+        "La hauteur de l'onglet Acheter à 390 px baisse d'au moins un tiers."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-15",
+      "lot": "L2",
+      "titre": "Plants de patate achetables au niveau 1",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/marche",
+      "fichiers": [
+        "data/crops.json",
+        "data/items.json",
+        "js/ui/marche.js"
+      ],
+      "constat": "La patate est une culture du niveau 1 mais l'onglet Graines ne propose que carotte et tomate ; le choix « Patate · Plants : 0 » ne peut jamais servir au début.",
+      "decision_requise": "Prix des plants de patate : même règle que les autres graines (coefficient de départ 200 %) ? Réponse par défaut si l'auteur ne répond pas : oui.",
+      "consignes": [
+        "Ajouter les plants de patate à l'onglet Graines dès le niveau 1, avec la règle de prix des graines."
+      ],
+      "acceptation": [
+        "Niveau 1 : l'onglet Graines propose carotte, patate et tomate."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-16",
+      "lot": "L2",
+      "titre": "« Arroser tout » dans le résumé du réveil",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [
+        "FLU-10"
+      ],
+      "branche": "fluidite/arroser-tout",
+      "fichiers": [
+        "js/ui/reveil.js"
+      ],
+      "constat": "Chaque matin il faut fermer le résumé, retrouver les parcelles et les arroser une à une.",
+      "consignes": [
+        "Quand des parcelles ont soif, ajouter au résumé un bouton « 💧 Arroser tout (N) » qui arrose et ferme le résumé."
+      ],
+      "acceptation": [
+        "Matin avec 6 parcelles à arroser : 1 touche depuis le résumé les arrose toutes."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-17",
+      "lot": "L3",
+      "titre": "Une seule fenêtre à la fois au démarrage",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/demarrage",
+      "fichiers": [
+        "js/ui/depart.js",
+        "js/ui/consent.js",
+        "js/ui/aide.js",
+        "js/ui/toasts.js"
+      ],
+      "constat": "Après « Partir pour la ferme », l'histoire, le message de la lettre, l'aide et le bandeau cookies sont affichés en même temps, les uns sur les autres.",
+      "consignes": [
+        "Enchaîner : écran Famille → histoire → carte seule (500 ms) → bandeau cookies (s'il doit s'afficher) → aide.",
+        "Le bandeau cookies et l'aide attendent que #modal-root soit vide."
+      ],
+      "acceptation": [
+        "Nouvelle partie : à aucun moment deux fenêtres ou bandeaux ne se recouvrent avant la première action."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-18",
+      "lot": "L3",
+      "titre": "Le message de la lettre ne recouvre plus l'histoire",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [
+        "FLU-17"
+      ],
+      "branche": "fluidite/demarrage",
+      "fichiers": [
+        "js/ui/toasts.js",
+        "js/ui/depart.js"
+      ],
+      "constat": "Le message « Une lettre du notaire est arrivée ! » s'affiche par-dessus le texte de l'histoire, qui dit déjà la même chose.",
+      "consignes": [
+        "Ne pas afficher ce message tant que l'histoire est ouverte ; l'afficher après « En route » seulement si la lettre n'est pas lue."
+      ],
+      "acceptation": [
+        "Capture de l'histoire à 390 px : aucun message ne recouvre le texte."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-19",
+      "lot": "L3",
+      "titre": "Aide mise à jour pour la houe (v2)",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/aide-v2",
+      "fichiers": [
+        "js/ui/aide.js"
+      ],
+      "constat": "Étape 2 de l'aide (js/ui/aide.js, ligne 217) : « Touche une parcelle vide (le carré de terre sous la barrière) pour planter » — il n'y a plus de parcelle avant le labour.",
+      "consignes": [
+        "Réécrire l'étape : acheter la houe au Marché, la prendre, toucher l'herbe foncée pour labourer, puis planter et arroser ; garder la variante sans carte (stageUsable() faux)."
+      ],
+      "acceptation": [
+        "Le texte de l'aide ne mentionne plus de parcelle existante avant le labour.",
+        "Les deux variantes (avec et sans carte) sont à jour."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-42",
+      "lot": "L3",
+      "titre": "Objectifs intermédiaires entre la houe et la première récolte",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [
+        "FLU-01"
+      ],
+      "branche": "fluidite/chapitre1",
+      "fichiers": [
+        "data/campaign.json",
+        "js/ui/chapitres.js",
+        "js/engine/"
+      ],
+      "statut": "a_faire",
+      "constat": "Chapitre 1 : après « Acheter une houe au Marché », l'objectif suivant est directement « Faire une première récolte 0 / 1 », 4 nuits plus tard. Rien ne guide le labour, le semis ni l'arrosage, et la puce d'objectif ne mène nulle part d'utile pendant ces 4 jours.",
+      "decision_requise": "Ajouter 3 objectifs au chapitre 1 (« Labourer 6 tuiles », « Planter 6 parcelles », « Arroser tes parcelles ») ? Cela change l'XP gagnée par les objectifs : garder la récompense du chapitre identique (200 XP) ? Réponse par défaut si l'auteur ne répond pas : oui aux deux.",
+      "consignes": [
+        "Ajouter les types d'objectif nécessaires au moteur s'ils n'existent pas (tuiles labourées, parcelles plantées, parcelles arrosées dans la journée), avec tests.",
+        "Insérer les 3 objectifs entre « Acheter une houe » et « Faire une première récolte » dans data/campaign.json ; brancher leur destination dans la table de FLU-01 (labourer → houe en main ; planter et arroser → fiche des parcelles).",
+        "Migration : une partie en cours qui a déjà labouré, planté ou arrosé valide ces objectifs d'office."
+      ],
+      "acceptation": [
+        "Nouvelle partie : après l'achat de la houe, la puce d'objectif affiche « Labourer 6 tuiles 0 / 6 ».",
+        "Une sauvegarde de la v1.15 en cours de chapitre 1 se charge et ne recule pas d'objectif.",
+        "node scripts/simulate.mjs : mêmes verdicts qu'avant la tâche."
+      ]
+    },
+    {
+      "id": "FLU-20",
+      "lot": "L3",
+      "titre": "Aide qui pointe l'élément à toucher",
+      "gain": "fort",
+      "effort": "moyen",
+      "depend_de": [
+        "FLU-17",
+        "FLU-19"
+      ],
+      "branche": "fluidite/aide-pointe",
+      "fichiers": [
+        "js/ui/aide.js",
+        "js/ui/common.js",
+        "css/jeu.css"
+      ],
+      "constat": "L'aide décrit en 3 bulles où aller (« touche la maison, puis ouvre Installations ») ; tutoTarget() existe déjà pour marquer des éléments.",
+      "consignes": [
+        "Chaque étape met en évidence un seul élément (anneau animé via tutoTarget) et avance quand le joueur le touche ou que l'objectif est atteint.",
+        "Garder « Passer l'aide » ; respecter prefers-reduced-motion."
+      ],
+      "acceptation": [
+        "Nouvelle partie : en suivant seulement les éléments mis en évidence, on répare la maison, achète panneau, pompe, réservoir et houe, et laboure une tuile."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-21",
+      "lot": "L3",
+      "titre": "L'horloge s'arrête pendant l'aide",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/demarrage",
+      "fichiers": [
+        "js/ui/loop.js",
+        "js/engine/alerts.js"
+      ],
+      "constat": "Le temps de jeu avance pendant que l'aide est affichée (18 s par heure) : l'heure passe de 6 h à 7 h avant la première action. Dans js/ui/loop.js, tutorialStep() ne bloque que le coucher automatique de 22 h (watchDay), pas l'horloge.",
+      "consignes": [
+        "Arrêter l'avancée du temps de jeu tant qu'une bulle d'aide est affichée."
+      ],
+      "acceptation": [
+        "Lire les 3 bulles d'aide pendant 2 minutes laisse l'horloge à 6 h."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-22",
+      "lot": "L3",
+      "titre": "Bouton « ⭐ » de l'écran Famille nommé",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/demarrage",
+      "fichiers": [
+        "js/ui/depart.js"
+      ],
+      "constat": "Sur l'écran « Votre famille », le bouton qui choisit le personnage principal n'affiche qu'une étoile.",
+      "consignes": [
+        "Libellé visible « ⭐ Principal » (aria-label inchangé)."
+      ],
+      "acceptation": [
+        "À 390 px, le libellé tient sur la ligne du membre."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-23",
+      "lot": "L4",
+      "titre": "Puces d'énergie écrites en mots",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/infos",
+      "fichiers": [
+        "js/ui/energie.js",
+        "js/ui/ferme.js",
+        "js/ui/houe.js"
+      ],
+      "constat": "energyChip affiche « ⚡100 · −1,4 » et la houe « ⚡−3,5 », sans mot.",
+      "consignes": [
+        "« ⚡ 100 · arroser : 1 » et « ⚡ labourer : 4 » ; coût arrondi à l'entier supérieur à l'affichage, le calcul gardant ses millièmes."
+      ],
+      "acceptation": [
+        "Aucune puce d'énergie n'affiche de décimale ni de nombre sans mot."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-24",
+      "lot": "L4",
+      "titre": "Fiche Famille allégée",
+      "gain": "moyen",
+      "effort": "moyen",
+      "depend_de": [
+        "FLU-23"
+      ],
+      "branche": "fluidite/infos",
+      "fichiers": [
+        "js/ui/famille.js"
+      ],
+      "constat": "La fiche Famille dépasse 1 000 px : membres, animaux, graphique d'autonomie, formule d'énergie, liste de 10 coûts à la décimale, bonheur « −30 % ».",
+      "consignes": [
+        "En haut : membres avec énergie et bonheur ; puis une ligne « Bonheur : tes actions coûtent 30 % de moins ».",
+        "Formules, liste des coûts et graphique dans un bloc <details> « En savoir plus », fermé par défaut."
+      ],
+      "acceptation": [
+        "À 390 px, membres et énergie tiennent dans le premier écran de la fiche.",
+        "Le mot « −30 % » n'apparaît plus sans explication."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-25",
+      "lot": "L4",
+      "titre": "Marché sans explication d'économie visible",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [
+        "FLU-14"
+      ],
+      "branche": "fluidite/marche",
+      "fichiers": [
+        "js/ui/marche.js"
+      ],
+      "constat": "Chaque onglet commence par un paragraphe sur les coefficients, et chaque article affiche « coefficient 120 % · vente 2 ».",
+      "consignes": [
+        "Paragraphes et coefficients déplacés derrière un bouton « ? » ; chaque article n'affiche que son prix."
+      ],
+      "acceptation": [
+        "Le mot « coefficient » n'est plus visible sans toucher « ? »."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-26",
+      "lot": "L4",
+      "titre": "Installations épurées",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/infos",
+      "fichiers": [
+        "js/ui/energie.js",
+        "js/ui/ferme.js"
+      ],
+      "constat": "La pompe neuve affiche « Entretenir (18) » et « Réparer (45) » à 0 % d'usure ; la production s'affiche en « Wh/s ».",
+      "consignes": [
+        "« Entretenir » seulement au-delà de 0 % d'usure, « Réparer » seulement si l'appareil est en panne ou au-delà du seuil de réparation existant.",
+        "Remplacer « 40 Wh/s » par une jauge ou « assez pour la pompe » ; garder les valeurs dans « ? »."
+      ],
+      "acceptation": [
+        "Pompe neuve : ni « Entretenir » ni « Réparer » visibles.",
+        "« Wh/s » n'apparaît plus hors de l'aide."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-27",
+      "lot": "L4",
+      "titre": "Boutons robot masqués tant que le semis automatique est verrouillé",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/infos",
+      "fichiers": [
+        "js/ui/ferme.js"
+      ],
+      "constat": "Vérifié en v1.15 : 6 parcelles labourées affichent 6 boutons robot grisés « Semis automatique : à débloquer dans l'Arbre des technologies ».",
+      "consignes": [
+        "Ne pas afficher ce bouton avant le déblocage ; la carte de parcelle garde sa hauteur."
+      ],
+      "acceptation": [
+        "Niveau 1 : aucun bouton robot sur les parcelles."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-28",
+      "lot": "L4",
+      "titre": "Arbre des technologies dévoilé progressivement",
+      "gain": "moyen",
+      "effort": "moyen",
+      "depend_de": [],
+      "branche": "fluidite/techno",
+      "fichiers": [
+        "js/ui/techno.js",
+        "js/ui/stage-windows.js"
+      ],
+      "constat": "L'onglet Techno est visible dès le premier jour avec 0 PT et environ 3 600 px de cartes.",
+      "consignes": [
+        "Masquer l'onglet tant que le joueur n'a gagné aucun PT ; l'annoncer par un message au premier PT.",
+        "Grouper les technologies par branche dans des blocs repliés, la branche contenant une technologie achetable ouverte."
+      ],
+      "acceptation": [
+        "Jour 1 : pas d'onglet Techno.",
+        "Après le premier PT : l'onglet apparaît et sa hauteur repliée est inférieure à 1 200 px à 390 px."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-29",
+      "lot": "L4",
+      "titre": "Niveaux et Ville limités aux prochains paliers",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/infos",
+      "fichiers": [
+        "js/ui/niveaux.js",
+        "js/ui/ville.js"
+      ],
+      "constat": "La fenêtre Niveaux liste les 10 niveaux dès le niveau 1 ; la fiche Ville dépasse 2 000 px.",
+      "consignes": [
+        "Niveaux : niveau en cours et les deux suivants, puis « Voir tous les niveaux ». Ville : sorties d'abord, voyages repliés."
+      ],
+      "acceptation": [
+        "Niveau 1 : la fenêtre Niveaux montre les niveaux 1 à 3 et un bouton pour le reste."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-30",
+      "lot": "L4",
+      "titre": "Barre d'XP sous « Niv. »",
+      "gain": "moyen",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/infos",
+      "fichiers": [
+        "js/ui/render.js",
+        "css/jeu.css"
+      ],
+      "constat": "La puce « Niv. 1 » de la barre du haut ne montre pas la progression vers le niveau suivant.",
+      "consignes": [
+        "Fine barre de progression en bas de la puce (comme stage-chip-bar) ; aria-label avec « 180 / 500 XP »."
+      ],
+      "acceptation": [
+        "Après le premier labour, la barre de la puce Niv. a avancé."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-31",
+      "lot": "L5",
+      "titre": "Tutoiement partout",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/corrections",
+      "fichiers": [
+        "js/ui/depart.js",
+        "js/ui/consent.js",
+        "cookies.html",
+        "index.html"
+      ],
+      "constat": "« Votre famille », le bandeau cookies et « Pendant votre absence » vouvoient ; l'aide et les fiches tutoient.",
+      "decision_requise": "Tu ou vous dans tout le jeu ? Réponse par défaut si l'auteur ne répond pas : tu, sauf la lettre du notaire.",
+      "consignes": [
+        "Rechercher « votre », « vous », « Votre » dans js/ et les pages ; passer au registre choisi, sauf la lettre du notaire et la politique de cookies si elle doit rester formelle."
+      ],
+      "acceptation": [
+        "grep -rni \"\\bvous\\b\\|\\bvotre\\b\" js/ ne trouve plus que la lettre du notaire."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-32",
+      "lot": "L5",
+      "titre": "Labour dans la liste des gains d'XP",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/corrections",
+      "fichiers": [
+        "js/ui/niveaux.js"
+      ],
+      "constat": "Le texte de la fenêtre Niveaux (ligne 78) commence à « planter » ; data/niveaux.json donne pourtant labourer : 10 XP.",
+      "consignes": [
+        "Ajouter « labourer ${xp.labourer} XP » en tête de liste."
+      ],
+      "acceptation": [
+        "La fenêtre Niveaux cite le labour et sa valeur lue dans les données."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-33",
+      "lot": "L5",
+      "titre": "Fenêtre Niveaux ouverte sur le niveau en cours, sans fausses cases",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [
+        "FLU-29"
+      ],
+      "branche": "fluidite/corrections",
+      "fichiers": [
+        "js/ui/niveaux.js",
+        "css/jeu.css"
+      ],
+      "constat": "La fenêtre Niveaux s'ouvre avec le focus sur « Fermer » (id levels-close) et défilée à 1 377 px sur 2 094, c'est-à-dire sur les niveaux 6 à 10. Chaque en-tête de niveau porte un carré vide dessiné qui ressemble à une case à cocher.",
+      "consignes": [
+        "Placer le focus sur le titre de la fenêtre et faire défiler jusqu'au niveau en cours.",
+        "Remplacer le carré vide par une coche ✓ pour les niveaux atteints et rien pour les autres."
+      ],
+      "acceptation": [
+        "À l'ouverture, le niveau en cours est visible en haut de la fenêtre."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-34",
+      "lot": "L5",
+      "titre": "« Réservoir plein » seulement si le réservoir existe",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/corrections",
+      "fichiers": [
+        "js/ui/ferme.js"
+      ],
+      "constat": "Panneau et pompe achetés, réservoir non acheté : la carte Pompe affiche « Réservoir plein » et « Débit réel : 0 L/s » (vérifié en v1.15).",
+      "consignes": [
+        "Si le réservoir n'est pas acheté : « Pas encore de réservoir »."
+      ],
+      "acceptation": [
+        "Panneau et pompe achetés, réservoir non acheté : la carte Pompe n'affiche pas « Réservoir plein »."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-35",
+      "lot": "L5",
+      "titre": "Pastille des Notifications après lecture",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/corrections",
+      "fichiers": [
+        "js/ui/notifications.js",
+        "js/ui/render.js"
+      ],
+      "constat": "Non reproduit en v1.15 : après lecture de la lettre, la pastille disparaît et ne revient pas le lendemain. L'observation de l'audit v1.14 venait probablement d'une sauvegarde prise avant la lecture.",
+      "consignes": [
+        "Reproduire (nouvelle partie, lire la lettre, dormir) ; si la pastille compte autre chose, l'afficher dans l'onglet ; sinon corriger le compteur."
+      ],
+      "acceptation": [
+        "Après lecture de tous les messages, la pastille disparaît, y compris le lendemain."
+      ],
+      "statut": "non_reproduit"
+    },
+    {
+      "id": "FLU-36",
+      "lot": "L5",
+      "titre": "Tâches oui/non du chapitre sans barre de progression",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/corrections",
+      "fichiers": [
+        "js/ui/chapitres.js"
+      ],
+      "constat": "Chaque objectif à cible 1 (« Réparer la maison », « Acheter la pompe ») affiche une barre de progression vide sous sa case dans la fiche Chapitres.",
+      "consignes": [
+        "Pas de barre quand cible === 1."
+      ],
+      "acceptation": [
+        "Chapitre 1 : seules les cases sont affichées pour les 5 premiers objectifs."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-37",
+      "lot": "L5",
+      "titre": "Pastille de parcelles à faire : cible tactile de 44 px",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/corrections",
+      "fichiers": [
+        "js/farm-stage.js",
+        "css/jeu.css"
+      ],
+      "constat": "La pastille « Zone de culture : 6 à faire » mesure 19 × 19 px.",
+      "consignes": [
+        "Garder le dessin, agrandir la zone tactile à 44 × 44 px (padding transparent)."
+      ],
+      "acceptation": [
+        "Le bouton mesure au moins 44 × 44 px (getBoundingClientRect)."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-38",
+      "lot": "L5",
+      "titre": "Options : sauvegarde repliée, « Recommencer » moins visible",
+      "gain": "faible",
+      "effort": "faible",
+      "depend_de": [],
+      "branche": "fluidite/corrections",
+      "fichiers": [
+        "js/ui/options.js",
+        "css/jeu.css"
+      ],
+      "constat": "Les zones de texte d'export et d'import occupent l'écran ; « Recommencer à zéro » est le bouton plein le plus visible.",
+      "consignes": [
+        "Export et import dans un bloc <details> « Sauvegarde » ; « Recommencer à zéro » en bas, en bouton contour rouge, avec la confirmation existante."
+      ],
+      "acceptation": [
+        "À l'ouverture des Options, aucune zone de texte n'est visible."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-39",
+      "lot": "L6",
+      "titre": "Mesurer les touches avant et après",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [
+        "FLU-01",
+        "FLU-02",
+        "FLU-03",
+        "FLU-05",
+        "FLU-09",
+        "FLU-10",
+        "FLU-13",
+        "FLU-17",
+        "FLU-42"
+      ],
+      "branche": "fluidite/mesure",
+      "fichiers": [
+        "scripts/"
+      ],
+      "constat": "Référence v1.14 : environ 52 touches jusqu'à 6 parcelles plantées et arrosées.",
+      "consignes": [
+        "Écrire scripts/mesure-touches.mjs (Playwright, Chromium déjà installé, 390 × 844 px, écran tactile) qui joue le parcours de `mesure.protocole` en touchant les éléments visibles comme un joueur et compte les touches.",
+        "Ne pas l'ajouter à npm test ; documenter la commande dans le README (section Développer)."
+      ],
+      "acceptation": [
+        "Le script affiche le nombre de touches et finit sans erreur.",
+        "Résultat inférieur à 30, noté dans la PR."
+      ],
+      "statut": "a_faire"
+    },
+    {
+      "id": "FLU-40",
+      "lot": "L6",
+      "titre": "Préparer le test sans aide avec les bêta-testeuses",
+      "gain": "fort",
+      "effort": "faible",
+      "depend_de": [
+        "FLU-39"
+      ],
+      "branche": null,
+      "fichiers": [],
+      "constat": "Les obstacles ont été relevés par un script qui connaissait le chemin.",
+      "consignes": [
+        "Rédiger docs/test-utilisateur.md : consignes à lire à la testeuse, tâches à donner (« fais ta première récolte »), grille de notes (temps, hésitations de plus de 5 s, questions posées). Tâche humaine ensuite : faire passer le test sur un vrai téléphone."
+      ],
+      "acceptation": [
+        "docs/test-utilisateur.md existe et tient sur une page."
+      ],
+      "statut": "a_faire"
+    }
+  ],
+  "version_liste": 2,
+  "verifie_le": "2026-10-11 08:55 (Europe/Paris)",
+  "changements_v2": [
+    "Aucun commit depuis la v1 de la liste (main toujours a2e570f) : les écarts viennent des constats repris de l'audit v1.14, revérifiés sur la v1.15.",
+    "Champ `statut` ajouté à chaque tâche : a_faire, partiel, non_reproduit.",
+    "FLU-35 (pastille des Notifications) : non reproduit en v1.15, à ignorer.",
+    "FLU-06 : partiel, la grille vert clair de la v1.15 montre déjà où labourer depuis l'écran principal ; reste la bulle de premier usage.",
+    "FLU-07 : gain abaissé, la grille labourable est visible sans défiler.",
+    "FLU-02, FLU-05, FLU-21, FLU-33, FLU-34 : constats précisés (comportement réel mesuré).",
+    "Nouvelles tâches : FLU-41 (puce d'objectif tronquée à côté de la puce Houe), FLU-42 (aucun objectif entre l'achat de la houe et la première récolte).",
+    "`mode_emploi` : sauter les tâches au statut non_reproduit."
+  ]
+}
