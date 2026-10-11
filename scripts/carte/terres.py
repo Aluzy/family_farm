@@ -42,7 +42,9 @@ BATIMENTS = {
     'verger': 2,        # le panneau du Verger
 }
 # Rectangles de tuiles interdits en plus (x0, y0, x1, y1 inclus), en tuiles de 16 px.
-ENCLOS = []
+ENCLOS = [
+    (38, 18, 40, 20),   # le puits, à droite de la maison (DEFAULT_OBJECTS.puits dans js/farm-stage.js)
+]
 
 
 def main():

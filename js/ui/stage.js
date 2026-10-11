@@ -280,9 +280,11 @@ export function stageModel() {
   // niveau (2 au niveau 1, 6 au niveau 5).
   const panneau = starterOf(state, 'panneau');
   const panneaux = isOwned(panneau) ? panneau.niveau + 1 : 0;
+  // Le puits à droite de la maison : la pompe s'y ajoute une fois achetée.
+  const pompe = isOwned(starterOf(state, 'pompe'));
   return {
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
-    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux,
+    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe,
   };
 }
 
