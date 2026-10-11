@@ -72,6 +72,7 @@
 >   (Réparer, Acheter le panneau, la pompe, le réservoir, la houe, ⛏️, Planter, Arroser,
 >   Récolter), sinon la puce d'objectif, sinon l'onglet Ferme. Il avance tout seul quand
 >   l'objectif est atteint ; houe en main, ce sont les cases vertes. « Passer l'aide » reste.
+>- **Écran Famille (FLU-22)** : le bouton du personnage principal s'écrit « ⭐ Principal ».
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

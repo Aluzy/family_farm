@@ -88,7 +88,7 @@ function setupMemberRow(m) {
       <span class="portrait-emoji" aria-hidden="true">${memberPortrait(state, m.id) || '🙂'}</span>
       <span class="setup-member-name"><strong class="member-name">${memberNameHtml(m.id)}</strong><br><span class="muted">${m.enfant ? 'Enfant' : 'Adulte'}${isMain ? ' · ⭐ personnage principal' : ''}</span></span>
       <span class="row">
-        ${!m.enfant && !isMain ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" title="Choisir comme personnage principal">⭐</button>` : ''}
+        ${!m.enfant && !isMain ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" title="Choisir comme personnage principal" aria-label="Choisir comme personnage principal">⭐ Principal</button>` : ''}
         <button type="button" class="btn" data-action="member-edit" data-id="${m.id}">✏️</button>
       </span>
     </li>`;
