@@ -115,6 +115,9 @@
 >- **Chapitres (FLU-36)** : une tâche oui/non (cible 1 : réparer, acheter…) n'a que sa case,
 >   sans barre de progression.
 >- **Pastille « à faire » de la carte (FLU-37)** : même dessin, mais le bouton mesure 44 × 44 px.
+>- **Test sans aide (FLU-40)** : [`docs/test-utilisateur.md`](test-utilisateur.md) : consignes à
+>   lire, 5 tâches, grille de notes (durée, hésitations de plus de 5 s, questions). Reste à le
+>   faire passer aux bêta-testeuses sur un vrai téléphone.
 >- **Mesure (FLU-39)** : `node scripts/mesure-touches.mjs` compte **22 touches** d'une nouvelle
 >   partie à 6 parcelles de carottes plantées et arrosées (52 en 1.14, cible 30). En suivant
 >   seulement l'anneau de l'aide (FLU-20), on arrive au même résultat : l'anneau montre ✕

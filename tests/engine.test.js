@@ -7390,7 +7390,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.15.0');
+  assertEqual(GAME_VERSION, '1.16.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
