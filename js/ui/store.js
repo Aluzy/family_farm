@@ -76,7 +76,10 @@ export function setComptoirTab(value) {
   comptoirTab = value;
   return value;
 }
-export const sellQuantities = {}; // quantité choisie par item dans l'onglet Vendre
-export const buyQuantities = {}; // quantité choisie par item dans les onglets Acheter et Graines
+export let comptoirTabChoisi = 'vendre'; // FLU-13 : le dernier onglet du Marché choisi par le joueur
+export function setComptoirTabChoisi(value) {
+  comptoirTabChoisi = value;
+  return value;
+}
 export const animalQuantities = {}; // quantité choisie par espèce dans l'onglet Animaux
 export const BUY_MAX = 99; // plus grande quantité qu'on peut choisir d'acheter en une fois

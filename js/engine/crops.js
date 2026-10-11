@@ -265,8 +265,20 @@ export function cropProduct(culture) {
 // rien retirer à sa présence dans l'onglet Acheter. On ne généralise pas ce
 // cas à toute culture en mode « plant » (ex. la patate) : seul le blé est
 // concerné par cette règle.
+// FLU-15 : une culture qui se plante d'elle-même (la patate, l'ail, le riz…) a sa place
+// dans l'onglet Graines, à son prix habituel.
 export function isGraineComptoir(item) {
-  return DATA.items[item].category === 'graine' || item === DATA.SILO.ITEM;
+  return DATA.items[item].category === 'graine' || item === DATA.SILO.ITEM
+    || Object.values(DATA.crops).some((c) => c.graines.item === item && c.graines.mode === 'plant');
+}
+
+// FLU-15 : ce qu'on plante pour une culture, en toutes lettres (« Graines », ou l'objet
+// lui-même : « Patates »).
+export function seedLabel(culture) {
+  const g = DATA.crops[culture].graines;
+  if (DATA.items[g.item].category === 'graine') return 'Graines';
+  const nom = DATA.items[g.item].nom;
+  return /s$/.test(nom) ? nom : `${nom}s`;
 }
 
 // Graines disponibles pour semer une culture. Le blé sert de graine : celui de

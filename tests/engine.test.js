@@ -1995,10 +1995,11 @@ test('Marché – onglet Graines : isGraineComptoir()', () => {
   for (const k of ['graine_carotte', 'graine_tomate', 'graine_courgette', 'graine_aubergine']) {
     assertEqual(isGraineComptoir(k), true, k);
   }
-  // On ne généralise pas aux autres cultures « mode: plant » (la patate reste
-  // hors de l'onglet Graines : seul le blé fait exception) ni aux items qui
-  // partagent juste la catégorie « ingrédient ».
-  assertEqual(isGraineComptoir('patate'), false, 'la patate ne fait pas exception, contrairement au blé');
+  // Version 1.16 (FLU-15) : les cultures qui se plantent d'elles-mêmes (on plante une
+  // patate pour en récolter d'autres) sont dans l'onglet Graines, à leur prix habituel ;
+  // pas les items qui partagent juste la catégorie « ingrédient ».
+  assertEqual(isGraineComptoir('patate'), true, 'la patate se plante : onglet Graines');
+  assertEqual(marketFloor('patate'), DATA.MARCHE.PLANCHER.defaut, 'à son prix habituel');
   assertEqual(isGraineComptoir('farine'), false);
   assertEqual(isGraineComptoir('huile'), false);
   assertEqual(isGraineComptoir('carotte'), false);
@@ -2011,12 +2012,11 @@ test('Marché – onglet Graines : les 10 nouvelles cultures', () => {
   for (const k of ['graine_oignon', 'graine_poivron', 'graine_epinard', 'graine_fraise']) {
     assertEqual(isGraineComptoir(k), true, k);
   }
-  // ail, riz, houblon, cacao, vanille, café sont en mode 'plant' : comme la
-  // patate (et contrairement au blé), ils ne font pas exception et restent hors
-  // de l'onglet Graines — ils s'achètent via l'onglet Acheter s'ils sont
-  // rachetables (voir isBuyable()).
+  // ail, riz, houblon, cacao, vanille, café sont en mode 'plant' : comme la patate
+  // (version 1.16, FLU-15), ils sont dans l'onglet Graines (quand leur culture est
+  // débloquée), à leur prix habituel.
   for (const k of ['ail', 'riz', 'houblon', 'cacao', 'vanille', 'cafe']) {
-    assertEqual(isGraineComptoir(k), false, `${k} ne fait pas exception, comme la patate`);
+    assertEqual(isGraineComptoir(k), true, `${k} se plante, comme la patate`);
   }
   // Version 1.7 : chaque culture a son niveau (oignon 2, poivron et fraise 3,
   // épinard 4) ; sa graine est en vente une fois ce niveau atteint. (seedForSale(),

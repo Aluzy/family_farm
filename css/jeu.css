@@ -1712,3 +1712,10 @@ main .ancre { scroll-margin-top: 150px; }
 
 /* FLU-11 : ce qui manque pour une action groupée, écrit sous les boutons */
 .group-note { flex: 1 0 100%; color: var(--color-danger, #b3261e); font-weight: 600; }
+
+/* FLU-14 : une ligne par article au Marché, des boutons de lot */
+.shop-row.lot-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 8px; }
+.lot-row .lot-name { min-width: 0; }
+.lot-row .lot-price { justify-self: end; font-weight: 700; }
+.lot-row .lot-btns { grid-column: 1 / -1; display: flex; gap: 8px; }
+.lot-row .lot-btn { flex: 1 1 0; min-height: 44px; min-width: 44px; }

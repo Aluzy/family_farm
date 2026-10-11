@@ -1,4 +1,4 @@
-import { setComptoirTab, setInvTab, setTestMode, testMode } from './store.js';
+import { setComptoirTab, setComptoirTabChoisi, setInvTab, setTestMode, testMode } from './store.js';
 import { tel, telClick } from './consent.js';
 import { scheduleRender } from './loop.js';
 import { refresh } from './render.js';
@@ -58,6 +58,7 @@ registerActions({
   },
   'comptoir-tab': (target) => {
     setComptoirTab(target.dataset.tab);
+    setComptoirTabChoisi(target.dataset.tab);
     refresh();
   },
   'cancel-new-game': () => {

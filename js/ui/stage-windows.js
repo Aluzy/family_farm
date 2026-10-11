@@ -13,7 +13,7 @@ import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
 import {
-  activeTab, ecranFerme, FERME_LINKS, hoeMode, NAV_TABS, setActiveTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
+  activeTab, ecranFerme, FERME_LINKS, hoeMode, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { showToast } from './toasts.js';
@@ -36,7 +36,7 @@ import { renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { renderInventaire, subtabsHtml } from './inventaire.js';
-import { renderComptoir } from './marche.js';
+import { comptoirTabAOuvrir, renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
@@ -488,6 +488,7 @@ registerActions({
       return;
     }
     setActiveTab(target.dataset.tab);
+    if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
     stageWindow = null;
     stageReturn = null;
     stageInterior = null; // changer d'onglet (ou revenir sur « Ferme ») ramène à la carte

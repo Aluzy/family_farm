@@ -43,6 +43,13 @@
 > - **Labour en glissant (FLU-12)** : houe en main, un glissement qui part d'une case verte
 >   laboure chaque case verte traversée (marquées pendant le geste, labourées au relâchement,
 >   jusqu'au plafond ou à court d'énergie) ; un glissement qui part ailleurs déplace la carte.
+> - **Marché (FLU-13, FLU-14, FLU-15)** : il s'ouvre sur Acheter tant que la houe manque, sur
+>   Graines si une parcelle est vide sans aucune graine en stock, sinon sur le dernier onglet
+>   choisi. Une ligne par article, avec des boutons de lot : ×1, ×5, ×10 à l'achat (le total
+>   exact est dans l'infobulle), ×1, ×5, Tout à la vente ; l'onglet Acheter est deux fois
+>   moins haut. Les cultures qui se plantent d'elles-mêmes (on plante une patate pour en
+>   récolter d'autres ; aussi l'ail, le riz, le houblon…) sont dans l'onglet Graines, à leur
+>   prix habituel, et le choix de culture écrit « Patates en stock » (plus « Plants »).
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

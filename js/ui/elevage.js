@@ -5,7 +5,7 @@ import { energyChip, formatEnergy } from './energie.js';
 import { actionCost } from '../engine/stamina.js';
 import {
   allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plotZone, seedStock,
-  toggleBolting, water, waterCost, waterCostFor,
+  toggleBolting, water, waterCost, waterCostFor, seedLabel,
 } from '../engine/crops.js';
 import {
   buildPaturage, buildPoulailler, buildSilo, buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
@@ -289,7 +289,7 @@ function openPlantAllModal(lieu, zone) {
     .map((c) => {
       const def = DATA.crops[c];
       const n = seedStock(state, c);
-      const stock = def.graines.mode === 'plant' ? 'Plants' : 'Graines';
+      const stock = seedLabel(c);
       return `
         <button type="button" class="btn plant-choice" data-action="plant-all" data-lieu="${lieu}"${z} data-crop="${c}"${n >= 1 ? '' : ' disabled'}>
           <span>${def.icone} ${def.nom}</span>
@@ -386,7 +386,7 @@ function openSemisModal(plotId) {
   };
   const locks = plantableCropsFor(state, plot.lieu).map((c) => {
     const def = DATA.crops[c];
-    return choice('verrou', c, `🔒 Toujours ${def.icone} ${def.nom}`, `${def.graines.mode === 'plant' ? 'Plants' : 'Graines'} en stock : ${formatQty(seedStock(state, c))}`);
+    return choice('verrou', c, `🔒 Toujours ${def.icone} ${def.nom}`, `${seedLabel(c)} en stock : ${formatQty(seedStock(state, c))}`);
   });
   const root = document.getElementById('modal-root');
   root.innerHTML = `
@@ -414,7 +414,7 @@ function openPlantModal(plotId) {
     .map((c) => {
       const def = DATA.crops[c];
       const n = seedStock(state, c);
-      const stock = def.graines.mode === 'plant' ? 'Plants' : 'Graines';
+      const stock = seedLabel(c);
       return `
         <button type="button" class="btn plant-choice" data-action="plant" data-id="${plotId}" data-crop="${c}"${n > 0 ? '' : ' disabled'}>
           <span>${def.icone} ${def.nom}</span>

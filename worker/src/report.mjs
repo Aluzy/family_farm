@@ -91,15 +91,15 @@ export const GAME_ACTIONS = {
 // part, jamais dans le classement des actions.
 export const INTERFACE_ACTIONS = new Set([
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels',
-  'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open', 'sell-inc',
-  'sell-dec', 'sell-max', 'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel', 'commerce-pick', 'commerce-cancel',
+  'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open',
+  'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel', 'commerce-pick', 'commerce-cancel',
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
   // réglages de quantité (Moulin, achats), fiche d'un membre de la famille
   'stage-goto', 'stage-pan', 'stage-pan-down', 'market-locked', 'plant-all-open', 'aller', 'comptoir-tab', 'inv-tab',
-  'mill-dec', 'mill-inc', 'mill-max', 'buy-dec', 'buy-inc', 'buy-max',
+  'mill-dec', 'mill-inc', 'mill-max',
   'animal-dec', 'animal-inc', 'animal-max',
   'member-edit', 'member-genre', 'member-teint', 'member-style', 'wake-more',
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
