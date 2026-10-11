@@ -67,8 +67,8 @@ function openLevelsModal(tous = false) {
   for (let n = debut; n <= fin; n++) {
     const done = n <= p.niveau;
     rows.push(`
-      <li class="objective${done ? ' ok' : ''}">
-        <span class="objective-line"><span class="objective-label">${done ? '✅' : '⬜'} Niveau ${n}</span><span class="objective-value">${formatNumber(DATA.NIVEAUX.SEUILS[n - 1])} XP</span></span>
+      <li class="objective${done ? ' ok' : ''}${n === p.niveau ? ' current' : ''}" id="level-${n}">
+        <span class="objective-line"><span class="objective-label">${done ? '<span class="level-check" aria-hidden="true">✓</span><span class="visually-hidden">Atteint :</span> ' : ''}Niveau ${n}${n === p.niveau ? ' <span class="chip">en cours</span>' : ''}</span><span class="objective-value">${formatNumber(DATA.NIVEAUX.SEUILS[n - 1])} XP</span></span>
         ${unlocksHtml(n)}
       </li>`);
   }
@@ -76,15 +76,18 @@ function openLevelsModal(tous = false) {
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="levels-title" data-stop-propagation>
-        <h2 id="levels-title">⭐ Niveaux</h2>
+        <h2 id="levels-title" tabindex="-1">⭐ Niveaux</h2>
         <div class="stack">${levelBarHtml()}</div>
-        <p class="muted">L'expérience vient de tes actions : planter ${xp.planter} XP, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée au Marché ; et de chaque chapitre terminé. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
+        <p class="muted">L'expérience vient de tes actions : labourer ${xp.labourer} XP, planter ${xp.planter}, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée au Marché ; et de chaque chapitre terminé. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
         <ul class="objectives">${rows.join('')}</ul>
         ${tous || (debut === 1 && fin === levelCount()) ? '' : `<p class="row"><button type="button" class="btn" data-action="levels-all">Voir tous les niveaux (${levelCount()})</button></p>`}
         <button type="button" class="btn primary" data-action="close-modal" id="levels-close">Fermer</button>
       </div>
     </div>`;
-  document.getElementById('levels-close').focus();
+  // FLU-33 : le focus sur le titre, et le niveau en cours en haut de la fenêtre
+  document.getElementById('levels-title').focus();
+  const cur = document.getElementById(`level-${p.niveau}`);
+  if (cur && tous) cur.scrollIntoView({ block: 'start' });
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

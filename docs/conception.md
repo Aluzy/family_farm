@@ -104,6 +104,10 @@
 >   ton absence… », « Aide-nous à améliorer le jeu ! »). Restent au vouvoiement : la lettre du
 >   notaire, le bandeau et la page des cookies (et les réglages de confidentialité), et le
 >   « vous » pluriel quand une lettre ou l'histoire s'adresse à toute la famille.
+>- **Fenêtre Niveaux (FLU-32, FLU-33)** : la liste des gains d'XP commence par « labourer
+>   10 XP » (lu dans les données). À l'ouverture, le focus va sur le titre ; le niveau en cours
+>   (« en cours ») est en haut de la liste, et « Voir tous les niveaux » y fait défiler. Une
+>   coche ✓ marque les niveaux atteints, rien les autres (plus de carré vide).
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
