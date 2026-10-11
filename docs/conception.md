@@ -40,6 +40,9 @@
 >   moins (`groupeEconome`), au lieu de les débloquer. Le joueur automatique ne les utilise pas.
 > - **Réveil (FLU-16)** : quand des parcelles de la Zone de culture ont soif, le résumé du
 >   réveil propose « 💧 Arroser tout (N) », qui les arrose et ferme le résumé.
+> - **Labour en glissant (FLU-12)** : houe en main, un glissement qui part d'une case verte
+>   laboure chaque case verte traversée (marquées pendant le geste, labourées au relâchement,
+>   jusqu'au plafond ou à court d'énergie) ; un glissement qui part ailleurs déplace la carte.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

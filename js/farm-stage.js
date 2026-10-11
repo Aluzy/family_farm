@@ -855,6 +855,8 @@
           id: pointer.id, x: pointer.x, y: pointer.y, cx: this.cx, cy: this.cy,
           wx: wp.x, wy: wp.y, moved: false, vx: 0, vy: 0,
           lastX: pointer.x, lastY: pointer.y, lastT: performance.now(),
+          // FLU-12 : houe en main, un glissement parti d'une case verte laboure les cases traversées
+          labour: this.labourStart(wp.x, wp.y),
         };
       }
 
@@ -874,6 +876,11 @@
         if (!pointer.isDown) { this.drag = null; return; }   // relâché hors de la page
         const zoom = this.cameras.main.zoom;
         const dx = pointer.x - d.x, dy = pointer.y - d.y;
+        if (d.labour) {
+          if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; this.setHover(null); }
+          if (d.moved) this.labourTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
+          return;
+        }
         if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) {
           d.moved = true;
           this.setHover(null);           // on fait glisser la carte : plus de nom affiché
@@ -897,6 +904,11 @@
         this.game.canvas.style.cursor = '';
         // Au doigt, rien ne « survole » : le nom reste un instant, puis s'efface.
         if (pointer.wasTouch && this.hoverId) this.hoverUntil = performance.now() + LABEL_HOLD_MS;
+        if (d.labour && d.moved) {
+          this.clearLabourMarks();
+          if (d.labour.tiles.length) bridge.act('hoe-many', { cases: d.labour.tiles.join(',') });
+          return;
+        }
         if (!d.moved) {
           // Appui : la vue revient où elle était (elle a pu bouger de quelques pixels).
           this.setCentre(d.cx, d.cy);
@@ -1189,6 +1201,40 @@
           });
         }
         return list;
+      }
+
+      // FLU-12 : un glissement qui part d'une case verte (labourable maintenant) laboure les
+      // cases vertes traversées : elles sont marquées pendant le geste, puis envoyées toutes
+      // ensemble au relâchement (un seul rendu, une seule sauvegarde).
+      labourStart(wx, wy) {
+        const m = lastModel;
+        if (!m || !m.houe || this.room || !m.labourables) return null;
+        const W = this.grid.cols;
+        const t = Math.floor(wy / T) * W + Math.floor(wx / T);
+        const ok = new Set(m.labourables);
+        if (!ok.has(t)) return null;
+        return { ok, tiles: [], seen: new Set(), last: { x: wx, y: wy }, marks: [] };
+      }
+
+      labourTo(d, wp) {
+        const L = d.labour, W = this.grid.cols;
+        const steps = Math.max(1, Math.ceil(Math.hypot(wp.x - L.last.x, wp.y - L.last.y) / 4));
+        for (let k = 0; k <= steps; k++) {
+          const x = L.last.x + ((wp.x - L.last.x) * k) / steps, y = L.last.y + ((wp.y - L.last.y) * k) / steps;
+          const t = Math.floor(y / T) * W + Math.floor(x / T);
+          if (L.seen.has(t)) continue;
+          L.seen.add(t);
+          if (!L.ok.has(t)) continue;
+          L.tiles.push(t);
+          L.marks.push(this.add.rectangle((t % W) * T + T / 2, Math.floor(t / W) * T + T / 2, T - 2, T - 2, 0x8a5a2b, 0.55).setDepth(1.6));
+        }
+        L.last = { x: wp.x, y: wp.y };
+        this.labourMarks = L.marks;
+      }
+
+      clearLabourMarks() {
+        for (const r of this.labourMarks || []) r.destroy();
+        this.labourMarks = null;
       }
 
       // Version 1.15 : la tuile peut-elle être labourée (modèle.terrain, une chaîne par rangée) ?

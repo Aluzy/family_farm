@@ -4,7 +4,7 @@ import {
 } from '../engine/crops.js';
 import { levelReached } from '../engine/levels.js';
 import { farmOpen } from '../engine/devices.js';
-import { actionCost } from '../engine/stamina.js';
+import { actionCost, TIRED } from '../engine/stamina.js';
 import { formatCoins } from '../engine/format.js';
 import { hoeMode, setHoeMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -74,5 +74,21 @@ registerActions({
   },
   'hoe': (target) => {
     applyResult(hoe(state, Number(target.dataset.case)));
+  },
+  // FLU-12 : les cases traversées d'un glissement, labourées dans l'ordre ; on s'arrête au
+  // plafond ou à court d'énergie. Un seul rendu à la fin.
+  'hoe-many': (target) => {
+    const tiles = String(target.dataset.cases || '').split(',').map(Number).filter((t) => Number.isInteger(t));
+    let n = 0;
+    let raison = '';
+    for (const t of tiles) {
+      const r = hoe(state, t);
+      if (r.ok) { n += 1; continue; }
+      raison = raison || r.error;
+      if (r.error === TIRED || /Plafond/.test(r.error)) break;
+    }
+    refresh();
+    if (n) showToast(`${DATA.HOUE.ICONE} ${n} tuile${n > 1 ? 's' : ''} labourée${n > 1 ? 's' : ''}${raison ? ` · ${raison}` : ''}`);
+    else if (raison) showToast(raison);
   },
 });
