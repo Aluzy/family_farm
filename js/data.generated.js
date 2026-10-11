@@ -386,7 +386,7 @@ export const RAW_DATA = {
       "lieux": ["potager"],
       "stades": 4,
       "litres": 2,
-      "rendement": 10,
+      "rendement": 6,
       "graines": { "item": "graine_carotte", "mode": "recolte", "min": 1, "max": 2 },
       "sprite": { "r": 1, "h": 32, "c": [0, 1, 2, 3] }
     },

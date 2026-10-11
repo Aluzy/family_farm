@@ -831,7 +831,7 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
   ]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].stades), [4, 6, 5, 5, 6]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].litres), [2, 3, 3, 4, 4]);
-  assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].rendement), [10, 8, 10, 6, 6]);
+  assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].rendement), [6, 8, 10, 6, 6]);
   assertEqual(c.patate.graines.mode, 'plant');
   for (const k of ['carotte', 'tomate', 'courgette', 'aubergine']) {
     assertEqual([c[k].graines.mode, c[k].graines.min, c[k].graines.max], ['recolte', 1, 2]);
@@ -1010,10 +1010,10 @@ test('arroser une parcelle mûre est refusé (l\'eau n\'est pas gaspillée)', ()
 testBase('récolte : le même rendement au clic et en automatique (version 1.8 : plus de productivité)', () => {
   const s = garden();
   plantRipe(s, 'potager-1', 'carotte');
-  assertEqual(harvest(s, 'potager-1').items.carotte, 10);
+  assertEqual(harvest(s, 'potager-1').items.carotte, 6);
   plantRipe(s, 'potager-2', 'carotte');
-  assertEqual(harvest(s, 'potager-2', true).items.carotte, 10);
-  assertEqual(harvestYield(s, 'carotte'), 10);
+  assertEqual(harvest(s, 'potager-2', true).items.carotte, 6);
+  assertEqual(harvestYield(s, 'carotte'), 6);
 });
 
 
@@ -4368,8 +4368,8 @@ testBase('récolte automatique : parcelles mûres seulement, carottes et graines
   const graines = countItem(s, 'graine_carotte');
   const r = sleepOnce(s);
   assertEqual(findPlot(s, 'potager-1').culture, null, 'mûre : récoltée, parcelle libérée');
-  assertEqual(countItem(s, 'carotte'), 10);
-  assertEqual(r.auto.recoltes.carotte, 10);
+  assertEqual(countItem(s, 'carotte'), 6);
+  assertEqual(r.auto.recoltes.carotte, 6);
   const g = r.auto.recoltes.graine_carotte;
   assert(g === 1 || g === 2, `1 ou 2 graines, obtenu ${g}`);
   assertEqual(countItem(s, 'graine_carotte'), graines + g);
@@ -4556,7 +4556,7 @@ testBase('semis automatique : sans graine en stock, les carottes récoltées ren
   const r = autoTasks(s);
   const plots = ['potager-1', 'potager-2', 'potager-3'].map((id) => findPlot(s, id));
   assertEqual(plots.every((p) => p.culture === 'carotte' && p.stade === 0), true, 'chaque récolte rend au moins une graine : tout est replanté');
-  assertEqual([countItem(s, 'carotte'), r.semees, r.sansGraine], [30, 3, 0]);
+  assertEqual([countItem(s, 'carotte'), r.semees, r.sansGraine], [18, 3, 0]);
   assertEqual(countItem(s, 'graine_carotte'), r.recoltes.graine_carotte - 3);
 });
 
@@ -5469,7 +5469,7 @@ test('version 1.6 : plus de saisons, la même production toute l\'année', () =>
     const rep = sleepOnce(p);
     return [f.panneaux[0].prod, carottes, (eau - g.eauMl) / 1000, harvestYield(g, 'carotte', true), p.paturage.moutons.map((m) => m.laine), rep.lait];
   };
-  for (const day of [1, 11, 21, 31, 41]) assertEqual(nightAt(day), [kwh(0.04), 10, 2, 10, [1, 1], 1], `nuit ${day}`);
+  for (const day of [1, 11, 21, 31, 41]) assertEqual(nightAt(day), [kwh(0.04), 6, 2, 6, [1, 1], 1], `nuit ${day}`);
   assertEqual([waterCostFor(ranch(), 'ble'), waterCostFor(ranch(), 'riz')], [2, 4], 'l\'eau de la culture, sans facteur');
   const s = garden();
   sleepOnce(s);
@@ -6247,13 +6247,13 @@ testBase('compteurs : carottes récoltées', () => {
   const s = garden();
   plantRipe(s, 'potager-1', 'carotte');
   assert(harvest(s, 'potager-1').ok);
-  assertEqual(s.campagne.compteurs.carottes, 10);
+  assertEqual(s.campagne.compteurs.carottes, 6);
   plantRipe(s, 'potager-2', 'tomate');
   assert(harvest(s, 'potager-2').ok);
-  assertEqual(s.campagne.compteurs.carottes, 10, 'une tomate n\'est pas une carotte');
+  assertEqual(s.campagne.compteurs.carottes, 6, 'une tomate n\'est pas une carotte');
   plantRipe(s, 'potager-3', 'carotte');
   assert(harvest(s, 'potager-3').ok);
-  assertEqual(s.campagne.compteurs.carottes, 20, 'les graines rendues ne comptent pas');
+  assertEqual(s.campagne.compteurs.carottes, 12, 'les graines rendues ne comptent pas');
 });
 
 testBase('compteurs : une récolte automatique compte aussi', () => {
@@ -6262,7 +6262,7 @@ testBase('compteurs : une récolte automatique compte aussi', () => {
   plantRipe(s, 'potager-1', 'carotte');
   const r = harvest(s, 'potager-1', true);
   assertEqual(r.ok, true);
-  assertEqual(s.campagne.compteurs.carottes, 10);
+  assertEqual(s.campagne.compteurs.carottes, 6);
 });
 
 test('compteurs : laines tondues, pains cuits, plats différents', () => {
@@ -6645,10 +6645,10 @@ test('XP : planter, arroser, récolter, vendre ; un niveau franchi est annoncé 
   findPlot(s, 'potager-1').stade = maxStage(findPlot(s, 'potager-1'));
   harvest(s, 'potager-1');
   assertEqual(s.progression.xp, 40);
-  const r = sellItem(s, 'carotte', 10); // 10 × 2 pièces
-  assertEqual([r.gain, s.progression.xp], [20, 60]);
+  const r = sellItem(s, 'carotte', 6); // 6 × 2 pièces
+  assertEqual([r.gain, s.progression.xp], [12, 52]);
   assertEqual(s.progression.annonces, []);
-  assertEqual(gainXp(s, 440), [2]);
+  assertEqual(gainXp(s, 448), [2]);
   assertEqual([s.progression.niveau, s.progression.annonces], [2, [{ niveau: 2, nuit: 1 }]]);
   assertEqual(levelProgress(s), { niveau: 2, xp: 500, debut: 500, fin: 1200, max: false, pct: 0, reste: 700 });
   assertEqual(gainXp(s, 10000), [3, 4, 5], 'plusieurs niveaux d\'un coup');
