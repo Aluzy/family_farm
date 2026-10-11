@@ -4,8 +4,6 @@ import {
   actionCost, actionsLeft, energyLevel, enduranceReduction, happinessCostPct, snackEnergy,
 } from '../engine/stamina.js';
 import { eatSnack } from '../engine/family.js';
-import { mainCharacter } from '../engine/depart.js';
-import { memberNameHtml } from './famille.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { showToast } from './toasts.js';
@@ -37,30 +35,17 @@ export function energyChip(action) {
   return `<span class="chip${low ? ' warn' : ''}" title="${title}">⚡ ${e}${cost > 0 ? ` · ${ACTION_LABELS[action] || action} : ${formatEnergy(cost)}` : ''}</span>`;
 }
 
-// Carte « Énergie » (Famille). FLU-24 : en haut, la jauge et ce que le bonheur change, en
-// mots ; formules, coûts et endurance dans energyDetailsHtml() (« En savoir plus »).
-export function energyCardHtml() {
-  const e = energyLevel(state);
-  const max = DATA.PERSONNAGE.MAX;
-  const pct = Math.round((e / max) * 100);
-  const reduc = 100 - happinessCostPct(state);
-  const bonheur = reduc > 0 ? `tes actions coûtent ${reduc} % d'énergie en moins` : 'il ne change pas encore le coût de tes actions';
-  return `
-    <div class="card">
-      <span class="card-title"><span>⚡ Énergie${mainCharacter(state) ? ` de ${memberNameHtml(mainCharacter(state).id)}` : ''}</span><span class="num">${e} / ${max}</span></span>
-      <span class="bar" role="progressbar" aria-label="Énergie" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${e}"><span class="bar-fill${pct < 20 ? ' warn' : ''}" style="width:${pct}%"></span></span>
-      <span>😊 Bonheur de la famille : ${bonheur}.</span>
-    </div>`;
-}
-
 export function energyDetailsHtml() {
   const P = DATA.PERSONNAGE;
   const endu = enduranceReduction(state);
+  const reduc = 100 - happinessCostPct(state);
+  const bonheur = reduc > 0 ? `tes actions coûtent ${reduc} % d'énergie en moins` : 'il ne change pas encore le coût de tes actions';
   const costs = Object.entries(P.COUTS).map(([a]) => `${ACTION_LABELS[a] || a} ${formatEnergy(actionCost(state, a))}`).join(' · ');
   return `
     <div class="card">
       <span class="card-title"><span>⚡ L'énergie en détail</span></span>
       <span class="muted">Chaque action au clic en dépense ; à 0, plus d'action jusqu'à un en-cas ou une nuit. Ce qui tourne seul (automatisations, ateliers, panneau) n'en coûte pas.</span>
+      <span>😊 Bonheur de la famille : ${bonheur}.</span>
       <span class="muted">Ce que coûte chaque action maintenant : ${costs}.</span>
       <span class="level-line"><span>💪 Endurance : avec ton niveau, tes actions coûtent</span><span class="num">${endu} % de moins</span></span>
       <span class="bar" role="progressbar" aria-label="Endurance" aria-valuemin="0" aria-valuemax="${P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1)}" aria-valuenow="${endu}"><span class="bar-fill" style="width:${Math.round((endu * 100) / (P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1)))}%"></span></span>

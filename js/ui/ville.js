@@ -20,8 +20,11 @@ import { pxGauge } from './pixel-art.js';
 // Jauge de bonheur (10 cases) : rouge en dessous de 35, dorée à partir de 85.
 export function happinessGaugeHtml(value, label = 'Bonheur') {
   const v = Math.round(value);
-  const cls = v < 35 ? 'low' : v >= 85 ? 'full' : 'joie';
-  return pxGauge(Math.round(v / 10), 10, `${label} : ${v} sur ${DATA.VILLE.BONHEUR.MAX}`, cls);
+  // Couleur selon le remplissage : vert à 65 % et plus, jaune de 20 à 64 %, rouge en dessous.
+  const pct = (v * 100) / DATA.VILLE.BONHEUR.MAX;
+  const cls = pct >= 65 ? '' : pct >= 20 ? 'joie' : 'low';
+  // au moins une case allumée dès que le bonheur n'est pas nul : le rouge reste visible
+  return pxGauge(v > 0 ? Math.max(1, Math.round(v / 10)) : 0, 10, `${label} : ${v} sur ${DATA.VILLE.BONHEUR.MAX}`, cls);
 }
 
 function lootLabel(loot) {
