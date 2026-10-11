@@ -13,7 +13,7 @@ import { canAfford, spendEnergy, TIRED } from './stamina.js';
 export function makePlot(n, lieu = DATA.POTAGER.LIEU) {
   // Lot 7 : semis = réglage du semis automatique de la parcelle ('meme' : même
   // culture que la récolte, 'verrou' : toujours `verrou`, 'off' : désactivé).
-  return { id: `${lieu}-${n}`, lieu, culture: null, stade: 0, arrose: false, montee: false, semis: 'meme', verrou: null };
+  return { id: `${lieu}-${n}`, lieu, culture: null, stade: 0, arrose: false, semis: 'meme', verrou: null };
 }
 
 export function makePlots(count, lieu = DATA.POTAGER.LIEU) {
@@ -301,21 +301,13 @@ export function plantableCrops(lieu) {
   return Object.keys(DATA.crops).filter((c) => DATA.crops[c].lieux.includes(lieu));
 }
 
-// Dernier stade d'une plante : la montée en graine de la carotte en ajoute.
+// Dernier stade d'une plante.
 export function maxStage(plot) {
-  const def = DATA.crops[plot.culture];
-  return def.stades + (plot.montee ? def.graines.stadesSupp : 0);
+  return DATA.crops[plot.culture].stades;
 }
 
 export function isMature(plot) {
   return !!plot.culture && plot.stade >= maxStage(plot);
-}
-
-// Graines que rend une parcelle montée en graine : la quantité de la culture + 2 par
-// niveau de « Sélection des semences » (carotte : 6, puis 8). Sert à la récolte et au
-// calcul de la montée en graine automatique.
-export function boltSeedYield(state, culture) {
-  return DATA.crops[culture].graines.quantite + 2 * techSum(state, 'grainesBonus');
 }
 
 // Rendement d'une récolte : le même au clic et en automatique (version 1.8 : plus
@@ -335,14 +327,14 @@ export function waterCost(state, plot) {
   return waterCostFor(state, plot.culture);
 }
 
-// Parcelles mûres regroupées par culture et par mode : [{ culture, nombre, montee }].
+// Parcelles mûres regroupées par culture : [{ culture, nombre }].
 export function readyCrops(state) {
   const out = [];
   for (const p of allPlots(state)) {
     if (!isMature(p)) continue;
-    let e = out.find((x) => x.culture === p.culture && x.montee === p.montee);
+    let e = out.find((x) => x.culture === p.culture);
     if (!e) {
-      e = { culture: p.culture, nombre: 0, montee: p.montee };
+      e = { culture: p.culture, nombre: 0 };
       out.push(e);
     }
     e.nombre += 1;
@@ -363,7 +355,6 @@ export function plant(state, plotId, culture, auto = false) {
   plot.culture = culture;
   plot.stade = 0;
   plot.arrose = false;
-  plot.montee = false;
   if (!auto) spendEnergy(state, 'planter');
   gainActionXp(state, 'planter', 1, auto);
   if (culture === DATA.SILO.ITEM) bumpCounter(state, 'semisBle', 1); // version 1.12 : chapitre 2
@@ -390,19 +381,6 @@ export function water(state, plotId, auto = false) {
   return { ok: true, litres };
 }
 
-// Carotte seulement, et seulement une fois mûre : elle reste alors 2 stades de
-// plus et rend des graines au lieu de carottes. Rebasculer annule.
-export function toggleBolting(state, plotId) {
-  const plot = findPlot(state, plotId);
-  if (!plot) return fail('Parcelle introuvable.');
-  if (!plot.culture) return fail('Rien n\'est planté ici.');
-  const def = DATA.crops[plot.culture];
-  if (def.graines.mode !== 'montee') return fail(`${def.nom} ne monte pas en graine.`);
-  if (plot.stade < def.stades) return fail('Pas encore mûre.');
-  plot.montee = !plot.montee;
-  return { ok: true, montee: plot.montee };
-}
-
 // Récolte : la parcelle est libérée. `auto` = true pour une automatisation
 // (gratuite) ; le clic du joueur coûte de l'énergie (version 1.8).
 export function harvest(state, plotId, auto = false) {
@@ -422,21 +400,16 @@ export function harvest(state, plotId, auto = false) {
       items[item] = (items[item] || 0) + qty;
     }
   };
-  if (plot.montee) {
-    gain(def.graines.item, boltSeedYield(state, culture));
-  } else {
-    gain(cropProduct(culture), harvestYield(state, culture));
-    noteCropHarvested(state, culture); // version 1.12 : chapitres 1 et 2
-    if (def.graines.mode === 'recolte') {
-      const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
-      gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
-    }
+  gain(cropProduct(culture), harvestYield(state, culture));
+  noteCropHarvested(state, culture); // version 1.12 : chapitres 1 et 2
+  if (def.graines.mode === 'recolte') {
+    const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
+    gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
   }
   plot.culture = null;
   plot.stade = 0;
   plot.arrose = false;
-  plot.montee = false;
-  if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9 (une carotte montée en graine ne compte pas)
+  if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9
   if (!auto) spendEnergy(state, 'recolter');
   gainActionXp(state, 'recolter', 1, auto); // version 1.7
   return { ok: true, culture, items };

@@ -5,7 +5,7 @@ import { energyChip, formatEnergy } from './energie.js';
 import { actionCost } from '../engine/stamina.js';
 import {
   allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plotZone, seedStock,
-  toggleBolting, water, waterCost, waterCostFor, seedLabel,
+  water, waterCost, waterCostFor, seedLabel,
 } from '../engine/crops.js';
 import {
   buildPaturage, buildPoulailler, buildSilo, buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
@@ -347,13 +347,10 @@ export function plotCard(p, n) {
   const def = DATA.crops[p.culture];
   const max = maxStage(p);
   const mature = isMature(p);
-  const canBolt = def.graines.mode === 'montee' && p.stade >= def.stades;
-  const etat = mature ? (p.montee ? 'graines prêtes' : 'mûre') : `stade ${p.stade} sur ${max}${p.montee ? ', monte en graine' : ''}`;
+  const etat = mature ? 'mûre' : `stade ${p.stade} sur ${max}`;
   let main;
   if (mature) {
-    const label = p.montee
-      ? `Récolter : +${def.graines.quantite} graines`
-      : `Récolter : +${harvestYield(state, p.culture)} ${DATA.items[cropProduct(p.culture)].nom.toLowerCase()}`;
+    const label = `Récolter : +${harvestYield(state, p.culture)} ${DATA.items[cropProduct(p.culture)].nom.toLowerCase()}`;
     main = iconBtn('🧺', label, `data-action="harvest" data-id="${p.id}"`, { primary: true });
   } else {
     const litres = waterCost(state, p);
@@ -361,14 +358,11 @@ export function plotCard(p, n) {
     const label = p.arrose ? 'Arrosée' : noWater ? `Arroser : il faut ${formatQty(litres)} L d'eau` : `Arroser (${formatQty(litres)} L)`;
     main = iconBtn('💧', label, `data-action="water" data-id="${p.id}"`, { done: p.arrose, disabled: p.arrose || noWater });
   }
-  const bolt = canBolt
-    ? iconBtn('🌱', p.montee ? 'Monte en graine : annuler' : 'Laisser monter en graine', `data-action="bolt" data-id="${p.id}" aria-pressed="${p.montee}"`, { done: p.montee })
-    : '';
   return `
-    <div class="card plot ancre${mature ? ' mature' : ''}${p.montee ? ' montee' : ''}" id="plot-${p.id}" title="${def.nom} : ${etat}">
+    <div class="card plot ancre${mature ? ' mature' : ''}" id="plot-${p.id}" title="${def.nom} : ${etat}">
       ${head(def.nom, def.icone)}
       ${pxGauge(p.stade, max, `Croissance : ${etat}`, mature ? 'full' : '')}
-      <span class="plot-btns">${main}${autoButton(p)}${bolt}</span>
+      <span class="plot-btns">${main}${autoButton(p)}</span>
     </div>`;
 }
 
@@ -452,9 +446,6 @@ registerActions({
   },
   'water': (target) => {
     applyResult(water(state, target.dataset.id));
-  },
-  'bolt': (target) => {
-    applyResult(toggleBolting(state, target.dataset.id));
   },
   'harvest': (target) => {
     const result = applyResult(harvest(state, target.dataset.id));

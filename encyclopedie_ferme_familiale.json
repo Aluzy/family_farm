@@ -38,7 +38,7 @@
       "icone": "🌾",
       "nom": "Cultures & plantes",
       "entrees": [
-        { "id": "carotte", "terme": "Carotte", "description": "Légume de la zone de culture qui atteint sa maturité en 4 stades de croissance (un par nuit arrosée). Peut aussi être laissée à monter en graine plutôt que récoltée pour se nourrir.", "liens": ["potager"] },
+        { "id": "carotte", "terme": "Carotte", "description": "Légume de la zone de culture qui atteint sa maturité en 4 stades de croissance (un par nuit arrosée). Sa récolte rend aussi 1 à 2 graines de carotte.", "liens": ["potager"] },
         { "id": "patate", "terme": "Patate", "description": "Légume de la zone de culture qui atteint sa maturité en 6 stades. Une patate récoltée peut directement être replantée comme un plant.", "liens": ["potager"] },
         { "id": "tomate", "terme": "Tomate", "description": "Légume qui peut être cultivé aussi bien dans la zone de culture qu'en serre, en 5 stades.", "liens": ["potager", "serre"] },
         { "id": "courgette", "terme": "Courgette", "description": "Légume qui peut être cultivé aussi bien dans la zone de culture qu'en serre, en 5 stades.", "liens": ["potager", "serre"] },

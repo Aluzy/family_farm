@@ -386,8 +386,8 @@ export const RAW_DATA = {
       "lieux": ["potager"],
       "stades": 4,
       "litres": 2,
-      "rendement": 10,
-      "graines": { "item": "graine_carotte", "mode": "montee", "stadesSupp": 2, "quantite": 6 },
+      "rendement": 6,
+      "graines": { "item": "graine_carotte", "mode": "recolte", "min": 1, "max": 2 },
       "sprite": { "r": 1, "h": 32, "c": [0, 1, 2, 3] }
     },
     "patate": {
@@ -809,7 +809,7 @@ export const RAW_DATA = {
         "cout": 200,
         "requiert": [],
         "effet": { "grainesBonus": 1 },
-        "description": "Les cultures qui rendent des graines en donnent une de plus, et une carotte montée en graine en donne 8 au lieu de 6."
+        "description": "Les cultures qui rendent des graines en donnent une de plus."
       },
       "cu_recolte_auto": {
         "branche": "culture",
@@ -821,7 +821,7 @@ export const RAW_DATA = {
         "cout": 900,
         "requiert": [{ "noeud": "cu_outils" }, { "tuiles": 24 }],
         "effet": { "auto": { "recolte": ["potager"] } },
-        "description": "Chaque nuit, les parcelles mûres de la Zone de culture sont récoltées automatiquement (celles montées en graine comprises, graines à la clé)."
+        "description": "Chaque nuit, les parcelles mûres de la Zone de culture sont récoltées automatiquement."
       },
       "semis_auto": {
         "branche": "culture",
@@ -833,7 +833,7 @@ export const RAW_DATA = {
         "cout": 1200,
         "requiert": [{ "noeud": "cu_recolte_auto" }, { "noeud": "ea_irrigation" }],
         "effet": { "auto": { "semis": ["potager"] } },
-        "description": "Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle. Pour que les carottes, qui ne rendent pas de graines, ne manquent jamais de semences, le jeu laisse monter en graine le nombre de carottes mûres nécessaire pour couvrir toutes les parcelles à replanter ; une parcelle qui n'a pas sa graine attend, mûre."
+        "description": "Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle."
       },
       "cu_serre_auto": {
         "branche": "culture",
@@ -1398,7 +1398,6 @@ export const RAW_DATA = {
     "CONSERVES_GARDEES": 96,
     "PRIX_GRAINE_MAX": 4,
     "ETALEMENT_JOURS": 1,
-    "GRAINES_CAROTTE": 6,
     "PART_PLEIN_CHAMP": 40,
     "PARCELLES_TOURNESOL": 2,
     "DIVERSITE_STOCK": 2,
