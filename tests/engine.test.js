@@ -393,6 +393,16 @@ test('pompe à l\'arrêt si le réservoir est plein : rien consommé, aucune usu
   assertEqual(deviceStatus(s, s.pompe).code, 'plein');
 });
 
+test('FLU-34 : panneau et pompe achetés sans réservoir, la pompe n\'affiche pas « Réservoir plein »', () => {
+  const s = createNewGame(1, { nom: 'Martin' });
+  assert(repairHouse(s).ok);
+  assert(buyStarter(s, 'panneau').ok);
+  assert(buyStarter(s, 'pompe').ok);
+  assertEqual(deviceStatus(s, s.pompe), { code: 'sansreservoir', label: 'Pas encore de réservoir', badge: '' });
+  assert(buyStarter(s, 'reservoir').ok);
+  assert(deviceStatus(s, s.pompe).code !== 'sansreservoir', 'réservoir acheté : statut habituel');
+});
+
 test('le réservoir ne dépasse jamais sa capacité', () => {
   const s = farm({ pump: true });
   s.eauMl = ml(39.95);

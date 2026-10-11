@@ -108,6 +108,9 @@
 >   10 XP » (lu dans les données). À l'ouverture, le focus va sur le titre ; le niveau en cours
 >   (« en cours ») est en haut de la liste, et « Voir tous les niveaux » y fait défiler. Une
 >   coche ✓ marque les niveaux atteints, rien les autres (plus de carré vide).
+>- **Pompe sans réservoir (FLU-34)** : panneau et pompe achetés, réservoir pas encore : la
+>   pompe dit « Pas encore de réservoir » (plus « Réservoir plein »).
+>- **Pastille des Notifications (FLU-35)** : non reproduit en 1.15, rien changé.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
