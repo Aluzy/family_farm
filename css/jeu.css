@@ -1684,3 +1684,23 @@ main .ancre { scroll-margin-top: 150px; }
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
+
+/* FLU-07 : chevron « la carte continue vers le bas », en bas au milieu de la carte */
+.stage-arrow.bas {
+  top: auto;
+  bottom: 56px;
+  left: 50%;
+  width: 56px;
+  height: 44px;
+  margin: 0 0 0 -28px;
+  justify-content: center;
+  align-items: flex-end;
+}
+.stage-arrow.bas > span { width: 48px; height: 24px; border-radius: 12px 12px 0 0; padding: 0 0 6px; font-size: 1.4rem; animation-name: stage-arrow-bas; }
+@keyframes stage-arrow-bas {
+  0%, 100% { transform: translateY(0); opacity: 0.85; }
+  50% { transform: translateY(3px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-arrow.bas > span { animation: none; }
+}

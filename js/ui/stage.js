@@ -482,7 +482,9 @@ function renderStageNav(el) {
   const arrows = stageDragged
     ? ''
     : (v.gauche ? fleche('gauche', Math.max(0, v.ecran - 1), '‹', 'La carte continue à gauche') : '') +
-      (v.droite ? fleche('droite', Math.min(v.ecrans - 1, v.ecran + 1), '›', 'La carte continue à droite') : '');
+      (v.droite ? fleche('droite', Math.min(v.ecrans - 1, v.ecran + 1), '›', 'La carte continue à droite') : '') +
+      // FLU-07 : un chevron discret annonce que la carte continue aussi vers le bas
+      (v.bas ? '<button type="button" class="stage-arrow bas" data-action="stage-pan-down" aria-label="La carte continue vers le bas" title="La carte continue vers le bas"><span aria-hidden="true">⌄</span></button>' : '');
   morph(nav, `<div class="stage-dots" role="group" aria-label="Écrans de la carte">${dots}</div>${arrows}`);
 }
 
@@ -506,5 +508,12 @@ registerActions({
   },
   'stage-pan': (target) => {
     stagePanToScreen(target.dataset.ecran);
+  },
+  // FLU-07 : descend d'une demi-hauteur de vue
+  'stage-pan-down': () => {
+    const s = window.FarmStage && FarmStage.scene();
+    if (!s || !s.ready) return;
+    const cam = s.cameras.main;
+    FarmStage.panTo({ x: cam.worldView.centerX, y: cam.worldView.centerY + cam.worldView.height / 2 });
   },
 });

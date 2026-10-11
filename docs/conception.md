@@ -25,6 +25,9 @@
 >   Dormir la met en main en une touche. La première fois de la partie (`potager.houeVue`,
 >   format 33), une bulle « Touche une case verte pour la labourer » s'affiche 8 s sous la
 >   puce Houe, et la carte glisse vers la case verte la plus proche si aucune n'est visible.
+> - **Carte (FLU-07)** : tant que le joueur n'a pas fait glisser la carte, un chevron ⌄ en bas
+>   annonce qu'elle continue vers le bas (comme les flèches ‹ › des côtés) ; le toucher la
+>   fait descendre d'une demi-hauteur. Immobile avec « réduire les animations ».
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

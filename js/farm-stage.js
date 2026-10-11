@@ -973,6 +973,7 @@
           gauche: mobile && this.cx > xs[0] + 1,               // il reste un repère à gauche
           droite: mobile && this.cx < xs[xs.length - 1] - 1,   // il reste un repère à droite
           glisse: this.dragged,
+          bas: mobile && this.cy < b.maxY - 1,                // FLU-07 : la carte continue vers le bas
           interieur: this.room ? this.room.id : null,
         };
       }
@@ -981,7 +982,7 @@
       reportView() {
         if (!bridge || !bridge.onView) return;
         const v = this.viewInfo();
-        const key = [v.ecran, v.mobile, v.gauche, v.droite, v.glisse, v.interieur].join();
+        const key = [v.ecran, v.mobile, v.gauche, v.droite, v.bas, v.glisse, v.interieur].join();
         if (key === this.viewKey) return;
         this.viewKey = key;
         bridge.onView(v);
