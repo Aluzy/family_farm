@@ -34,8 +34,13 @@ export function memberNameHtml(id) {
 // « Modifier la famille » : les boutons ✏️, ⭐ et l'ajout de membres n'apparaissent
 // qu'en mode modification, pour garder la fiche lisible.
 let familyEditing = false;
-// Bouton « ? » de la ration quotidienne : l'explication sous la jauge, repliée par défaut.
-let rationHelpOpen = false;
+// Boutons « ? » (ration quotidienne, animaux de compagnie) : les explications sont
+// repliées par défaut ; on retient celles que le joueur a ouvertes.
+const helpOpen = new Set();
+
+function helpToggleHtml(id, label) {
+  return `<button type="button" class="btn help-btn" data-action="family-help" data-help="${id}" aria-expanded="${helpOpen.has(id)}" aria-controls="${id}-help" aria-label="Aide : ${label}">?</button>`;
+}
 
 // FLU-24 : une ligne par membre (portrait, nom, bonheur, boutons) : toute la famille
 // tient dans le premier écran de la fiche.
@@ -365,8 +370,8 @@ function renderPets() {
     .map(([k, e]) => `<button type="button" class="btn" data-action="pet-add" data-espece="${k}"${full ? ' disabled' : ''}><span aria-hidden="true">${e.icone}</span> Adopter un ${e.nom.toLowerCase()}</button>`)
     .join('');
   return `
-    <h3 class="section-title">🐾 Animaux de compagnie · <span class="num">${list.length} / ${K.MAX}</span></h3>
-    <p class="muted">Un chien ou un chat tient compagnie à la famille. Il ne mange pas ses réserves : il ne compte pas dans le besoin journalier.</p>
+    <h3 class="section-title help-title"><span>🐾 Animaux de compagnie · <span class="num">${list.length} / ${K.MAX}</span></span>${helpToggleHtml('pets', 'animaux de compagnie')}</h3>
+    <p class="muted" id="pets-help"${helpOpen.has('pets') ? '' : ' hidden'}>Un chien ou un chat tient compagnie à la famille. Il ne mange pas ses réserves : il ne compte pas dans le besoin journalier.</p>
     ${list.length ? `<div class="portraits">${list.map(petCard).join('')}</div>` : ''}
     <div class="row family-add">${boutons}</div>
     ${full ? `<p class="muted">${K.MAX} animaux de compagnie au plus.</p>` : ''}`;
@@ -385,9 +390,9 @@ export function renderFamille() {
     ${familyEditing ? renderFamilyAdd() : ''}
     <div class="cards">
       <div class="card">
-        <span class="card-title ration-title"><span>🍽️ Ration quotidienne : <span class="num">${formatNumber(shown)} / ${formatNumber(plan.besoin)}</span></span><span class="row ration-title-end">${pris ? '<span class="chip">✅ prise</span>' : ''}<button type="button" class="btn help-btn" data-action="ration-help" aria-expanded="${rationHelpOpen}" aria-controls="ration-help" aria-label="Aide : ration quotidienne">?</button></span></span>
+        <span class="card-title ration-title"><span>🍽️ Ration quotidienne : <span class="num">${formatNumber(shown)} / ${formatNumber(plan.besoin)}</span></span><span class="row ration-title-end">${pris ? '<span class="chip">✅ prise</span>' : ''}${helpToggleHtml('ration', 'ration quotidienne')}</span></span>
         <span class="bar" role="progressbar" aria-label="${pris ? 'Calories mangées' : 'Calories prévues'}" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
-        <span class="muted" id="ration-help"${rationHelpOpen ? '' : ' hidden'}>${pris ? 'Calories mangées' : 'Calories prévues'} pour un besoin de ${formatNumber(familyNeed(state))} calories par jour. ${pris
+        <span class="muted" id="ration-help"${helpOpen.has('ration') ? '' : ' hidden'}>${pris ? 'Calories mangées' : 'Calories prévues'} pour un besoin de ${formatNumber(familyNeed(state))} calories par jour. ${pris
           ? (short ? `⚠️ Le besoin n'a pas été couvert : ton énergie remontera moins cette nuit.` : `Le besoin a été couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)
           : (short ? `⚠️ Le besoin ne sera pas couvert : ton énergie remontera moins cette nuit.` : `Le besoin sera couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)} La famille mange à ${DATA.TIME.MEAL_HOUR} h, ou au coucher si elle dort avant.</span>
       </div>
@@ -407,8 +412,10 @@ registerActions({
     familyEditing = !familyEditing;
     refresh();
   },
-  'ration-help': () => {
-    rationHelpOpen = !rationHelpOpen;
+  'family-help': (target) => {
+    const id = target.dataset.help;
+    if (helpOpen.has(id)) helpOpen.delete(id);
+    else helpOpen.add(id);
     refresh();
   },
   // ----- version 1.1 : prénom et apparence d'un membre de la famille -----

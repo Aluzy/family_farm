@@ -384,6 +384,7 @@ textarea, input[type="text"] {
 .family-edit-btn { margin: 0 0 8px; }
 .ration-title-end { gap: 6px; align-items: center; flex-wrap: nowrap; }
 .ration-title .num { white-space: nowrap; }
+.help-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .family-add { gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
 .family-add .btn { flex: 1 1 150px; }
 .member-leave { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); gap: 6px; }
