@@ -89,6 +89,11 @@
     // Dans Tiled : un rectangle nommé `ville` le déplace.
     ville: { x: 1092, y: 422, width: 20, height: 24 },
     silo: { x: 656, y: 238, width: 49, height: 64 },
+    // Le puits, à droite de la maison (sur ses abords, que la houe ne laboure pas). Dans
+    // Tiled : un rectangle nommé `puits` le déplace.
+    puits: { x: 610, y: 298, width: 34, height: 38 },
+    // La citerne, juste à droite de la pompe du puits (son tuyau rejoint le moteur).
+    citerne: { x: 643, y: 302, width: 24, height: 34 },
   };
   [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
     [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
@@ -120,6 +125,16 @@
     { id: 'silo', object: 'silo', tex: 'silo', suffixed: false, window: 'silo' },
   ];
   const MILL_FRAME = { frameWidth: 96, frameHeight: 128 };
+  // panneaux_toit.png (scripts/batiments/panneaux_toit.py) : les panneaux solaires sur le
+  // versant droit du toit de la maison, 6 images de 32×47 (la n-ième porte n panneaux),
+  // posées au point (x, y) de house_sp.png. modèle.panneaux = nombre de panneaux (0 : aucun).
+  const ROOF_PANELS = { key: 'panneaux_toit', file: 'panneaux_toit.png', frame: { frameWidth: 32, frameHeight: 47 }, x: 37, y: 2, max: 6 };
+  // puits.png (scripts/batiments/puits.py) : 2 images de 34×40, le vieux puits seul (0) puis
+  // avec la pompe achetée (1). modèle.pompe = la pompe est achetée.
+  const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 34, frameHeight: 40 }, object: 'puits' };
+  // citerne.png (scripts/batiments/citerne.py) : 5 images de 24×34, le tube de niveau vide
+  // (0) jusqu'à plein (4). modèle.citerne = cette image, ou -1 tant que le réservoir n'est pas acheté.
+  const TANK = { key: 'citerne', file: 'citerne.png', frame: { frameWidth: 24, frameHeight: 34 }, object: 'citerne', max: 4 };
   // Version 1.12 : images délabrées (scripts/batiments/ruines.py), montrées tant que le
   // bâtiment n'est pas réparé ou construit (modèle.batiments[id].ruine). Même taille et
   // même découpe que l'image d'origine.
@@ -242,6 +257,9 @@
         super('farm');
         this.plots = new Map();          // id de parcelle -> { soil, crop, key, tween }
         this.buildings = new Map();      // id de bâtiment -> { def, sprite }
+        this.roofPanels = null;          // panneaux solaires sur le toit de la maison (image)
+        this.well = null;                // le puits, et la pompe une fois achetée (image)
+        this.tank = null;                // la citerne, une fois achetée (image)
         this.trees = new Map();          // case du Verger -> { sprite, key, a } (arbre ou emplacement libre)
         this.labels = new Map();         // id de lieu -> étiquette DOM et son point d'ancrage
         this.hoverId = null;             // lieu survolé (souris) ou touché (doigt) : son nom s'affiche
@@ -285,6 +303,9 @@
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
+        L.spritesheet(ROOF_PANELS.key, v(ROOF_PANELS.file), ROOF_PANELS.frame);
+        L.spritesheet(WELL.key, v(WELL.file), WELL.frame);
+        L.spritesheet(TANK.key, v(TANK.file), TANK.frame);
         for (const r of Object.values(RUINES)) {
           if (r.sheet) L.spritesheet(r.key, v(r.file), r.sheet === 'mill' ? MILL_FRAME : COOP_FRAME);
           else L.image(r.key, v(r.file));
@@ -1334,6 +1355,9 @@
           const s = want ? this.buildings.get(def.id).sprite : null;
           this.syncLabel(def.id, want, def.window, s ? s.x + s.width / 2 : 0, s ? s.y - s.height + (def.labelDown || 0) : 0);
         }
+        this.syncRoofPanels(model.panneaux | 0);
+        this.syncWell(!!model.pompe);
+        this.syncTank(model.citerne == null ? -1 : model.citerne | 0);
 
         // Parcelles des deux zones : on crée, met à jour, détruit. Tuiles jointives depuis le
         // coin de chaque rectangle (zone_culture_1, zone_culture_2).
@@ -1459,6 +1483,49 @@
         if (d === ORCHARD_FRAMES.jeune) return { w: 18, h: 24 };
         if (d === ORCHARD_FRAMES.arbuste) return { w: 32, h: 34 };
         return { w: e.sprite.displayWidth * TREE_BODY, h: e.sprite.displayHeight };
+      }
+
+      // Panneaux solaires sur le versant droit du toit : seulement sur la vraie image de la
+      // maison réparée (ni ruine, ni dessin de secours), juste devant elle.
+      syncRoofPanels(n) {
+        const e = this.buildings.get('maison');
+        const house = e && !e.ruine && e.sprite.texture.key.indexOf('house_') === 0 ? e.sprite : null;
+        if (!house || n <= 0 || !this.has(ROOF_PANELS.key)) {
+          if (this.roofPanels) { this.roofPanels.destroy(); this.roofPanels = null; }
+          return;
+        }
+        if (!this.roofPanels) this.roofPanels = this.add.image(0, 0, ROOF_PANELS.key, 0).setOrigin(0);
+        this.roofPanels.setFrame(Math.min(n, ROOF_PANELS.max) - 1)
+          .setPosition(house.x + ROOF_PANELS.x, house.y - house.height + ROOF_PANELS.y)
+          .setDepth(house.depth + 0.5);
+      }
+
+      // Le puits est toujours là ; la pompe s'y ajoute une fois achetée. Comme un bâtiment :
+      // bas-centre de l'image sur le bas-centre du rectangle, profondeur = y du pied.
+      syncWell(pompe) {
+        if (!this.has(WELL.key)) return;
+        if (!this.well) this.well = this.placeProp(WELL);
+        this.well.setFrame(pompe ? 1 : 0);
+      }
+
+      // La citerne, une fois le réservoir acheté : l'eau monte dans son tube de niveau.
+      syncTank(niveau) {
+        if (niveau < 0 || !this.has(TANK.key)) {
+          if (this.tank) { this.tank.destroy(); this.tank = null; }
+          return;
+        }
+        if (!this.tank) this.tank = this.placeProp(TANK);
+        this.tank.setFrame(Math.min(niveau, TANK.max));
+      }
+
+      // Image d'une planche posée comme un bâtiment sur le rectangle `def.object`.
+      placeProp(def) {
+        const o = this.objects[def.object] || DEFAULT_OBJECTS[def.object];
+        const w = def.frame.frameWidth;
+        const h = def.frame.frameHeight;
+        const x = clamp(Math.round(o.x + o.width / 2 - w / 2), 0, this.world.w - w);
+        const y = clamp(Math.round(o.y + o.height), h, this.world.h);
+        return this.add.image(x, y, def.key, 0).setOrigin(0, 1).setDepth(y);
       }
 
       // Pose le bas-centre de l'image sur le bas-centre du rectangle de la carte, sans sortir

@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { houseRepaired } from '../engine/depart.js';
-import { findDevice } from '../engine/devices.js';
+import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { allPlots, hoeableTiles, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
 import { woolReady } from '../engine/animals.js';
@@ -276,9 +276,18 @@ export function stageModel() {
   // quelles tuiles la houe peut labourer (une chaîne par rangée, « # » labourable).
   const T = DATA.TERRAIN;
   const houe = hoeMode && !!state.potager.houe;
+  // Panneaux solaires sur le toit de la maison une fois le panneau acheté : un de plus par
+  // niveau (2 au niveau 1, 6 au niveau 5).
+  const panneau = starterOf(state, 'panneau');
+  const panneaux = isOwned(panneau) ? panneau.niveau + 1 : 0;
+  // Le puits à droite de la maison : la pompe s'y ajoute une fois achetée.
+  const pompe = isOwned(starterOf(state, 'pompe'));
+  // La citerne (le réservoir), une fois achetée : son tube de niveau, vide (0) à plein (4).
+  const cap = tankCapacity(state);
+  const citerne = isOwned(starterOf(state, 'reservoir')) ? (cap > 0 ? Math.round((Math.min(state.eauMl, cap) * 4) / cap) : 0) : -1;
   return {
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
-    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux,
+    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, citerne,
   };
 }
 
