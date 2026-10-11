@@ -46,8 +46,7 @@ function portraitCard(m) {
       <span class="portrait-emoji" aria-hidden="true">${memberPortrait(state, m.id) || '🙂'}</span>
       <span class="member-row-text">
         <strong class="member-name">${memberNameHtml(m.id)}</strong>${main ? ' <span class="chip auto">⭐ Principal</span>' : ''}
-        <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} calories/jour</span>
-        <span class="member-row-joy">${happinessGaugeHtml(memberHappiness(m))}<span class="muted num">😊 ${memberHappiness(m)} / ${DATA.VILLE.BONHEUR.MAX}</span></span>
+        <span class="member-row-joy">${happinessGaugeHtml(memberHappiness(m))}<span aria-hidden="true">😊</span></span>
       </span>
       ${familyEditing ? `<span class="member-row-btns">
         ${!m.enfant && !main ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" aria-label="Choisir comme personnage principal" title="Choisir comme personnage principal">⭐</button>` : ''}
