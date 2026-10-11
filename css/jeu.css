@@ -1409,6 +1409,8 @@ body.has-stage { padding-bottom: 0; }
 .stage-label:not(.show) .stage-label-name { display: none; }
 .stage-label:not(.show):not(.todo) { opacity: 0; }
 .stage-label:not(.show) .stage-label-badge { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); border: 1px solid #ffffff; }
+/* FLU-37 : la pastille seule garde son dessin, mais sa zone tactile fait 44 × 44 px */
+.stage-label.todo:not(.show) { min-width: 44px; min-height: 44px; justify-content: center; }
 .stage-label:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .stage-label-badge {
   min-width: 17px;
