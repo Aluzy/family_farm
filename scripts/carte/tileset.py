@@ -97,7 +97,7 @@ PAVES = {
 }
 
 
-def stone(cv, x0, y0, w, h, wrap=True):
+def stone(cv, x0, y0, w, h, wrap=True, sunk=False):
     """Une pierre : coins arrondis, dessus P4 et P3, corps P2, dessous P1 et P0 sur 2 px.
     Avec `wrap`, elle se coupe au bord de la tuile et reprend de l'autre côté (remplissage) ;
     sinon seuls ses pixels dans la tuile sont posés (taches)."""
@@ -118,6 +118,8 @@ def stone(cv, x0, y0, w, h, wrap=True):
                 c = 'P0' if yy == h - 2 else 'P1'
             else:
                 c = 'P1' if xx == w - 2 else 'P2'
+            if sunk:                                       # pierre enfoncée : un cran plus sombre
+                c = {'P4': 'P3', 'P3': 'P2', 'P2': 'P1', 'P1': 'P0', 'P0': 'P0'}[c]
             cv.put(x, y, c)
 
 
@@ -170,8 +172,6 @@ def corner_field(x, y, c):
 
 # brins : hauteur (0 à 3 px) selon la position le long du bord, période 16 ; 1 px de large
 BRINS = [0, 2, 0, 0, 3, 1, 0, 0, 2, 0, 1, 0, 0, 3, 0, 1]
-JAG1 = [0, 1, 1, 0, -1, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0, 0]       # frange 1 → frange 2 (amas)
-JAG2 = [1, 0, -1, -2, -1, 0, 2, 2, 1, 0, -1, 0, 1, 2, 1, 0]        # frange 2 → centre
 
 
 def along(c, x, y):
@@ -181,62 +181,108 @@ def along(c, x, y):
     return (x if abs(gy) >= abs(gx) else y) % 16, gx, gy
 
 
-SOLS = {
-    # sol : (frange 1, frange 2, centre)
-    'herbe_moyenne': ('V4', 'V5', 'V6'),
-    'herbe_claire': ('V5', 'V7', 'V8'),
-    'terre': ('T0', 'T2', 'T3'),
+def cluster_map(seed, n=30):
+    """Carte d'amas de 16 × 16, périodique : chaque pixel appartient à l'amas de la graine la plus
+    proche (sur la tuile répétée), et chaque amas (6 à 10 px) porte une valeur entre 0 et 1,
+    réparties uniformément. Elle sert à fondre deux tons par amas, jamais pixel par pixel."""
+    r = random.Random(seed)
+    seeds = [(r.random() * 16, r.random() * 16, (i + r.random()) / n) for i in range(n)]
+    m = [[0.0] * 16 for _ in range(16)]
+    for y in range(16):
+        for x in range(16):
+            best = None
+            for sx, sy, v in seeds:
+                dx = min(abs(x + 0.5 - sx), 16 - abs(x + 0.5 - sx))
+                dy = min(abs(y + 0.5 - sy), 16 - abs(y + 0.5 - sy))
+                dd = dx * dx + dy * dy
+                if best is None or dd < best[0]:
+                    best = (dd, v)
+            m[y][x] = best[1]
+    return m
+
+
+AMAS = cluster_map('amas')
+AMAS2 = cluster_map('amas2')
+AMAS_FIN = cluster_map('amas-fin', 64)          # amas d'environ 4 px, pour la présence du sol
+
+# Fondu d'un sol posé sur l'herbe sombre, sur toute la tuile de bord : la part du sol `p`
+# monte doucement de 0 (8 px dehors) à 1 (8 px dedans). Un pixel est au sol si la valeur de son
+# amas est sous `p` : au-dehors, des amas épars de plus en plus serrés ; au-dedans, des îlots
+# d'herbe qui se raréfient. Les pixels du sol prennent les tons de frange selon `p`, puis le
+# centre. La carte d'amas est la même pour toutes les tuiles : aucune couture.
+FONDUS = {
+    # sol : tons de frange du bord vers le centre
+    'herbe_moyenne': ['V4', 'V5'],
+    'herbe_claire': ['V5', 'V6', 'V7'],
+    'terre': ['T1', 'T2'],                 # pas de T0 : il redessinerait une ligne de bord
 }
+BRIN = {'herbe_moyenne': None, 'herbe_claire': None, 'terre': ('V4', 'V5')}   # brins d'herbe qui mordent dedans
+LARGEUR_FONDU = 16.0   # en unités du champ (2 par pixel) : toute la tuile de bord, 8 px de part et d'autre
+
+
+def part_du_sol(d):
+    t = min(1.0, max(0.0, (LARGEUR_FONDU - d) / (2 * LARGEUR_FONDU)))
+    return t * t * (3 - 2 * t)
 
 
 def tache_sol(name, c):
-    """Tache d'herbe ou de terre, fond transparent : brins de la frange 1 qui débordent, puis
-    les deux tons de frange par amas, puis le centre (avec sa texture)."""
-    f1, f2, centre = SOLS[name]
+    """Tache d'herbe ou de terre, fond transparent, fondue dans l'herbe sombre par amas (voir
+    FONDUS) ; pour la terre, des brins d'herbe mordent en plus sur le bord."""
     cv = Canvas(T, T)
     if not any(c):
         return cv.im
-    tex = fill_terre() if name == 'terre' else fill_grass(centre, 0)
-    tpx = tex.load()
+    tex = (fill_terre() if name == 'terre' else fill_grass({'herbe_moyenne': 'V6', 'herbe_claire': 'V8'}[name], 0)).load()
+    tons = FONDUS[name]
     for y in range(T):
         for x in range(T):
             d = corner_field(x, y, c)
+            p = part_du_sol(d)
+            if p <= 0 or AMAS_FIN[y][x] * 0.92 + 0.04 >= p:
+                continue                                         # l'herbe du dessous paraît
+            # ton selon la profondeur dans le sol (2 unités par pixel), décalé par amas
+            depth = -d + (AMAS[y][x] - 0.5) * 6
+            k = int((depth + 4) / 4.5)
+            if k < len(tons):
+                cv.put(x, y, tons[max(0, k)])
+            else:
+                cv.px[x, y] = tex[x, y]
             u, gx, gy = along(c, x, y)
-            if d <= -6 + JAG2[u]:
-                cv.px[x, y] = tpx[x, y]
-            elif d <= -2 + JAG1[u]:
-                cv.put(x, y, f2)
-            elif d <= 1:
-                cv.put(x, y, f1)
-            elif d <= 1 + 2 * BRINS[u] and d <= 8:
-                cv.put(x, y, f1)                       # brin
+            brin = BRIN[name]
+            if brin and -6 < d <= 0 and BRINS[u] and d > -2 * BRINS[u]:
+                cv.put(x, y, brin[1] if d > -2 * BRINS[u] + 1 else brin[0])   # brin d'herbe
     return cv.im
 
 
 def tache_paves(c, variant=0):
-    """Pavés posés sur le sol : les pierres du motif (et celles des tuiles voisines qui
-    débordent) dont le centre, ramené au bord de la tuile, est dans la tache ; seuls leurs
-    pixels dans la tuile sont posés. L'herbe paraît dans les joints et autour."""
+    """Pavés posés sur le sol, fondus au bord : au cœur, toutes les pierres ; vers le bord,
+    des pierres plus rares et enfoncées (plus sombres) ; au-dehors, quelques cailloux épars.
+    L'herbe paraît dans les joints et autour."""
     cv = Canvas(T, T)
     if not any(c):
         return cv.im
+    r = random.Random(f'paves-{c}-{variant}')
     for x0, y0, w, h in PAVES[variant]:
         for ox in (-16, 0, 16):
             for oy in (-16, 0, 16):
                 sx, sy = x0 % 16 + ox, y0 % 16 + oy
-                cx, cy = sx + w / 2 - 0.5, sy + h / 2 - 0.5
                 if not (-w < sx < T and -h < sy < T):
                     continue
+                cx, cy = sx + w / 2 - 0.5, sy + h / 2 - 0.5
                 kx, ky = min(15, max(0, cx)), min(15, max(0, cy))
-                if corner_field(kx, ky, c) <= -1.5:
-                    stone(cv, sx, sy, w, h, wrap=False)
+                d = corner_field(kx, ky, c)
+                keep = (x0 * 7 + y0 * 13) % 10 / 10                # le même choix des deux côtés d'un bord
+                if d <= -6 or (d <= -1.5 and keep < 0.75):
+                    stone(cv, sx, sy, w, h, wrap=False, sunk=d > -6)
+                elif d <= 3 and keep < 0.3:
+                    stone(cv, sx + 2, sy + 1, max(4, w - 4), max(3, h - 2), wrap=False, sunk=True)
     return cv.im
 
 
 def tache_eau(c, frame=0):
-    """Eau et sa berge, fond transparent. Berge nord : dessus (T2, lèvre T1) et face (W2, W1)
-    sur 7 à 9 px, écume E4, puis une bande d'eau profonde E1 de 6 à 8 px. Berges latérales et
-    sud : le dessus seul, 4 à 5 px, écume verticale (1 px sur 2) sur les côtés."""
+    """Eau et sa berge, fond transparent, du dehors vers le large : herbe humide (V2, par amas),
+    dessus de berge (T3, T2, T1), face de la berge au nord (W2, W1), écume brisée (E4), eau peu
+    profonde claire (E3 et E2 mêlés) avec quelques galets côté sud, eau profonde (E1, stries E0)
+    sous la berge nord, puis l'eau (E2, tirets E3)."""
     cv = Canvas(T, T)
     if not any(c):
         return cv.im
@@ -245,23 +291,38 @@ def tache_eau(c, frame=0):
             d = corner_field(x, y, c)
             u, gx, gy = along(c, x, y)
             n = math.hypot(gx, gy) or 1
-            north = -gy / n > 0.55          # le bord regarde vers le haut : berge nord
+            north = -gy / n > 0.55
+            south = gy / n > 0.55
             side = abs(gx / n) > 0.55
+            a = AMAS[y][x]
             if d > 0:
                 if north:
                     if d <= 4:
-                        cv.put(x, y, 'W1' if d <= 1.5 else 'W2')          # face de la berge
-                    elif d <= 7 + (BRINS[u] > 1):
-                        cv.put(x, y, 'T1' if d > 6 else 'T2')             # dessus, lèvre
-                elif d <= 4 + (BRINS[u] > 1):
-                    cv.put(x, y, 'T1' if d > 3 else 'T2')                 # dessus seul
+                        cv.put(x, y, 'W1' if d <= 1.5 else 'W2')                     # face de la berge
+                    elif d <= 7 + (a - 0.5) * 2:
+                        cv.put(x, y, 'T1' if d > 6 else 'T2' if a < 0.55 else 'T3')  # dessus, lèvre
+                    elif d <= 10 and AMAS2[y][x] > 0.6:
+                        cv.put(x, y, 'V2')                                          # herbe humide
+                else:
+                    if d <= 3 + (a - 0.5) * 2:
+                        cv.put(x, y, 'T3' if south and d < 1.6 else 'T2' if a < 0.6 else 'T1')
+                    elif d <= 4.5 + BRINS[u] * 0.5:
+                        cv.put(x, y, 'T1')
+                    elif d <= 7.5 and AMAS2[y][x] > 0.62:
+                        cv.put(x, y, 'V2')
                 continue
             depth = -d
             col = 'E2'
             if depth <= 1:
-                col = 'E4' if not side or y % 2 == 0 else 'E3'            # écume
+                col = 'E4' if a > 0.3 and (not side or y % 2 == 0) else 'E3'               # écume brisée
             elif north and depth <= 7:
-                col = 'E1'                                                 # eau profonde
+                col = 'E1' if not (depth > 5.5 and a > 0.6) else 'E2'                     # eau profonde
+                if depth > 2.5 and (x + y * 3) % 11 == 0:
+                    col = 'E0'
+            elif depth <= 3.5 + (a - 0.5) * 2:
+                col = 'E3' if a > 0.45 else 'E2'                                           # peu profonde
+                if south and depth <= 3 and AMAS2[y][x] > 0.85:
+                    col = 'B2' if a > 0.7 else 'B1'                                        # galets
             cv.put(x, y, col)
             if col == 'E2':
                 for x0, yy, k, cc in water_dashes(frame):
@@ -275,22 +336,72 @@ CORNERS = [(tl, tr, bl, br) for tl in (0, 1) for tr in (0, 1) for bl in (0, 1) f
 
 # ================================================================ micro-décor
 
+FLEURS = {
+    # nom : (pétales éclairés, pétales à l'ombre, cœur)
+    'fleurs_blanches': ('A3', 'A2', 'A6'), 'fleurs_jaunes': ('A4', 'A5', 'A6'), 'fleurs_lavande': ('A2', 'A1', 'A6'),
+    'marguerites': ('A3', 'A2', 'A4'), 'coquelicots': ('A7', 'A7', 'W0'), 'bleuets': ('A9', 'A1', 'A0'),
+    'roses': ('A8', 'A8', 'A2'),
+}
+
+
 def micro(kind):
     cv = Canvas(T, T)
     if kind == 'touffes':
         touffe(cv, 2, 9); touffe(cv, 9, 13)
     elif kind == 'touffes_claires':
         touffe(cv, 3, 10, 'V7', 'V8'); touffe(cv, 9, 6, 'V7', 'V8')
-    elif kind.startswith('fleurs'):
-        petal = {'fleurs_blanches': ('A3', 'A2'), 'fleurs_jaunes': ('A4', 'A5'), 'fleurs_lavande': ('A2', 'A1')}[kind]
-        for cx, cy in ((4, 6), (11, 10)):
+    elif kind in FLEURS:
+        lit, shade, heart = FLEURS[kind]
+        for cx, cy in ((4, 6), (11, 10), (7, 12))[: 2 if kind != 'marguerites' else 3]:
             cv.vline(cx, cy + 2, cy + 5, 'V6')               # tige
-            cv.put(cx + 1, cy + 4, 'V6')
+            cv.put(cx + 1, cy + 4, 'V5')
             for dx, dy in ((-2, 0), (1, 0), (-1, -2), (-1, 1)):  # pétales de 2 × 2
                 for ex in (0, 1):
                     for ey in (0, 1):
-                        cv.put(cx + dx + ex, cy + dy + ey - 1, petal[0] if dy <= 0 else petal[1])
-            cv.put(cx, cy, 'A6')                             # cœur
+                        cv.put(cx + dx + ex, cy + dy + ey - 1, lit if dy <= 0 and dx < 1 else shade)
+            cv.put(cx, cy, heart)                            # cœur
+    elif kind == 'lavande':
+        for x0, h in ((4, 9), (7, 11), (10, 8), (12, 10)):
+            cv.vline(x0, 15 - h + 4, 15, 'V5')
+            for k in range(4):                                # épi
+                cv.put(x0, 15 - h + k, 'A1' if k % 2 else 'A2')
+                if k % 2 == 0:
+                    cv.put(x0 + 1, 15 - h + k + 1, 'A1')
+    elif kind == 'chardon':
+        cv.vline(8, 7, 15, 'V5')
+        for dx, y in ((-3, 12), (2, 11), (-2, 9), (3, 13)):   # feuilles piquantes
+            cv.hline(min(8, 8 + dx), max(8, 8 + dx), y, 'V6')
+            cv.put(8 + dx, y - 1, 'V8')
+        cv.rect(6, 4, 9, 6, 'A8'); cv.hline(6, 9, 3, 'A2'); cv.put(7, 4, 'A2')
+        cv.hline(6, 9, 7, 'V2')
+    elif kind == 'pissenlit':
+        for cx, cy, puff in ((5, 8, False), (11, 6, True)):
+            cv.vline(cx, cy + 2, 15, 'V6')
+            if puff:
+                for dx, dy in ((-1, -1), (1, -1), (-1, 1), (1, 1), (0, -2), (-2, 0), (2, 0), (0, 0)):
+                    cv.put(cx + dx, cy + dy, 'A3' if dy <= 0 else 'A2')
+            else:
+                cv.rect(cx - 1, cy - 1, cx + 1, cy + 1, 'A4'); cv.put(cx + 1, cy + 1, 'A6')
+        cv.hline(3, 7, 14, 'V5'); cv.put(2, 13, 'V6'); cv.put(8, 13, 'V6')
+    elif kind == 'fougere':
+        for ang, ln in ((-2.2, 7), (-1.6, 8), (-1.0, 7), (-0.5, 6), (-2.7, 6)):
+            for k in range(ln):
+                x = round(8 + math.cos(ang) * k * 0.9)
+                y = round(14 + math.sin(ang) * k)
+                cv.put(x, y, 'V8' if ang < -1.3 else 'V6')
+                if k % 2 == 1 and k < ln - 1:                 # folioles
+                    cv.put(x + (1 if ang > -1.6 else -1), y, 'V5')
+    elif kind == 'herbes_hautes':
+        for x0, h, c in ((3, 9, 'V5'), (5, 11, 'V7'), (8, 12, 'V5'), (10, 9, 'V7'), (12, 10, 'V5')):
+            for k in range(h):
+                cv.put(x0 + (k > h - 3) * (1 if x0 > 7 else -1), 15 - k, c if k < h - 2 else 'V9')
+    elif kind == 'champignons_bruns':
+        for cx, cy, w in ((5, 11, 3), (11, 13, 2)):
+            for k in range(2):
+                cv.hline(cx - w + k, cx + w - k, cy - 1 - k, 'B2' if k else 'B1')
+            cv.put(cx - w + 1, cy - 2, 'C1')
+            cv.vline(cx, cy, cy + 2, 'C1')
+        ombre_contact(cv, 3, 13, 15, 1)
     elif kind == 'trefle':
         for cx, cy in ((5, 7), (11, 11)):
             for dx, dy in ((-1, -1), (1, -1), (0, 1)):
@@ -563,9 +674,16 @@ def foliage(cv, blobs, tones, seed, fruit=None, flowers=None):
         if k is None:
             continue
         cx, cy, r = blobs[k]
-        nx = 0.75 * (x + 0.5 - cx) / r + 0.45 * (x + 0.5 - CX) / RX
-        ny = 0.75 * (y + 0.5 - cy) / r + 0.45 * (y + 0.5 - CY) / RY
-        lv = level(nx, ny)
+        nx = 0.7 * (x + 0.5 - cx) / r + 0.5 * (x + 0.5 - CX) / RX
+        ny = 0.7 * (y + 0.5 - cy) / r + 0.62 * (y + 0.5 - CY) / RY        # le bas du houppier fonce
+        lv = level(nx, ny, 0.05)
+        if own.get((x, y + 2)) != k and lv > 1:
+            lv -= 1                                       # dessous de la boule : un cran plus sombre
+        feuille = FEUILLES_AMAS[(y + seed) % 16][(x + seed * 3) % 16]
+        if 1 <= lv <= 3 and feuille > 0.86:
+            lv += 1                                       # amas de feuilles qui accrochent la lumière
+        elif 2 <= lv <= 3 and feuille < 0.12:
+            lv -= 1                                       # amas de feuilles dans l'ombre
         for dd in (1, 2):                                     # ombre d'une boule de devant
             q = own.get((x - dd, y - dd))
             if q is not None and q > k:
@@ -592,12 +710,13 @@ def foliage(cv, blobs, tones, seed, fruit=None, flowers=None):
         for _ in range(flowers[1]):
             x, y = r.choice(pts)
             lit = cv.get(x, y)[:3] in (PAL[tones[3]], PAL[tones[4]])
-            for p in amas(r, x, y, r.randint(2, 4)):
+            for p in amas(r, x, y, r.randint(2, 5)):
                 if inside(*p):
                     cv.put(*p, flowers[0][0] if lit else flowers[0][1])
     return own
 
 
+FEUILLES_AMAS = cluster_map('feuilles', 40)        # amas de feuilles, pour casser les grands aplats
 V_RAMP = ['V1', 'V2', 'V6', 'V8', 'V10']         # ombre profonde, ombre, base, lumière, reflet
 V_RAMP_CLAIR = ['V2', 'V5', 'V8', 'V10', 'V11']
 
@@ -613,12 +732,25 @@ def buisson(kind):
         foliage(cv, blobs, V_RAMP, 2, fruit=(('A7', 'W0'), 7))
     elif kind == 'fleuri':
         foliage(cv, blobs, V_RAMP, 3, flowers=(('A3', 'A2'), 6))
+    elif kind == 'roses':
+        foliage(cv, blobs, V_RAMP, 4, flowers=(('A8', 'A7'), 8))
+    ombre_pied(cv, 16, 13, 31, 2)
     return cv.im
 
 
-def trunk(cv, x0, top, bot, w=7, forks=True):
-    """Tronc de 6 à 8 px : flanc gauche W4, milieu W3, droite W2 puis W1 ; contour W0 ;
-    racines ; deux fourches qui partent dans le feuillage."""
+def arbuste():
+    """Petit arbuste 16 × 16 : trois amas sur un pied court."""
+    cv = Canvas(16, 16)
+    cv.vline(7, 12, 15, 'W2'); cv.vline(8, 12, 15, 'W1')
+    foliage(cv, [(8, 10, 4.5), (5, 8, 3), (11, 8, 3), (8, 5, 3.5)], V_RAMP, 7)
+    cv.vline(7, 14, 15, 'W2'); cv.vline(8, 14, 15, 'W1')
+    ombre_pied(cv, 8, 5, 15, 1)
+    return cv.im
+
+
+def trunk(cv, x0, top, bot, w=7, forks=True, ramp=('W4', 'W3', 'W2', 'W1'), outline='W0'):
+    """Tronc de 6 à 8 px : flanc gauche éclairé, droite dans l'ombre ; contour ; racines ; deux
+    fourches qui partent dans le feuillage."""
     pts = set()
     for y in range(top, bot + 1):
         spread = 2 if y > bot - 2 else 1 if y > bot - 4 else 0
@@ -628,16 +760,37 @@ def trunk(cv, x0, top, bot, w=7, forks=True):
         for k in range(9):
             pts.add((x0 + 1 - k // 2, top - k)); pts.add((x0 + 2 - k // 2, top - k))
             pts.add((x0 + w - 2 + k // 2, top - k)); pts.add((x0 + w - 3 + k // 2, top - k))
-    outline_construit(cv, lambda x, y: (x, y) in pts, 'W0')
+    outline_construit(cv, lambda x, y: (x, y) in pts, outline)
     for (x, y) in pts:
         k = (x - x0) / w
-        cv.put(x, y, 'W4' if k < 0.2 else 'W3' if k < 0.55 else 'W2' if k < 0.85 else 'W1')
+        cv.put(x, y, ramp[0] if k < 0.2 else ramp[1] if k < 0.55 else ramp[2] if k < 0.85 else ramp[3])
     return pts
+
+
+def ombre_pied(cv, cx, rx, bottom, rows=3):
+    """Ombre au sol autour du pied (prune translucide), sur les pixels transparents des dernières
+    rangées : une flaque courte, jamais d'ombre portée longue."""
+    from pastoral import OMBRE_CONTACT
+    for y in range(bottom - rows + 1, bottom + 1):
+        k = (bottom - y) / rows
+        for x in range(int(cx - rx), int(cx + rx) + 1):
+            if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - bottom - 0.5) / (rows + 0.5)) ** 2 <= 1:
+                if 0 <= x < cv.w and 0 <= y < cv.h and cv.px[x, y][3] == 0:
+                    cv.px[x, y] = OMBRE_CONTACT
+
+
+def ombre_tronc(cv, x0, w, y0, rows=3):
+    """Le haut du tronc, sous le feuillage, est dans l'ombre du houppier."""
+    for y in range(y0, y0 + rows):
+        for x in range(x0, x0 + w):
+            if cv.get(x, y)[:3] in (PAL['W4'], PAL['W3'], PAL['C1'], PAL['C0']):
+                cv.put(x, y, 'W1' if y < y0 + rows - 1 else 'W2')
 
 
 def arbre(kind):
     """Arbre adulte, gabarit 80 × 80 : houppier aux deux tiers de la hauteur, tronc de 7 px dont
-    les fourches se voient dans le feuillage ; pas d'ombre de contact."""
+    les fourches se voient dans le feuillage ; l'ombre du houppier sur le haut du tronc, une
+    flaque d'ombre au pied."""
     cv = Canvas(80, 80)
     trunk(cv, 37, 54, 79)
     # du bas vers le haut : les boules du haut passent devant et ombrent celles du dessous
@@ -648,8 +801,132 @@ def arbre(kind):
     elif kind == 'fruits':
         foliage(cv, blobs, V_RAMP, 11, fruit=(('A7', 'W0'), 18))
     elif kind == 'fleurs':
-        foliage(cv, blobs, V_RAMP_CLAIR, 12, flowers=(('A3', 'A8'), 22))
+        foliage(cv, blobs, V_RAMP_CLAIR, 12, flowers=(('A3', 'A8'), 46))
     trunk(cv, 37, 61, 79, forks=False)                    # le pied repasse devant le feuillage
+    ombre_tronc(cv, 37, 7, 61)
+    ombre_pied(cv, 40.5, 15, 79)
+    return cv.im
+
+
+def chene_jeune(size):
+    """Chêne plus jeune : 48 × 48 (moyen) ou 32 × 32 (jeune)."""
+    cv = Canvas(size, size)
+    if size == 48:
+        trunk(cv, 22, 34, 47, 5, forks=True)
+        blobs = [(24, 31, 8), (15, 27, 7), (33, 27, 7), (24, 21, 9), (18, 14, 7), (30, 14, 7), (24, 9, 6)]
+        foliage(cv, blobs, V_RAMP, 20)
+        trunk(cv, 22, 38, 47, 5, forks=False)
+        ombre_tronc(cv, 22, 5, 38, 2)
+        ombre_pied(cv, 24.5, 10, 47)
+    else:
+        trunk(cv, 15, 22, 31, 3, forks=False)
+        blobs = [(16, 19, 6), (10, 16, 5), (22, 16, 5), (16, 11, 6), (16, 6, 4)]
+        foliage(cv, blobs, V_RAMP, 21)
+        trunk(cv, 15, 25, 31, 3, forks=False)
+        ombre_tronc(cv, 15, 3, 25, 2)
+        ombre_pied(cv, 16.5, 7, 31, 2)
+    return cv.im
+
+
+def bouleau():
+    """Bouleau 64 × 64 : tronc fin et clair (C1, C0) marqué de traits sombres, houppier léger en
+    petits amas clairs ; contour du tronc R1."""
+    cv = Canvas(64, 64)
+    pts = trunk(cv, 30, 22, 63, 4, forks=True, ramp=('C1', 'C1', 'C0', 'C0'), outline='R1')
+    r = rng('bouleau')
+    for y in range(26, 62, 4):                            # marques de l'écorce
+        x = 30 + r.randint(0, 2)
+        cv.put(x, y, 'R1'); cv.put(x + 1, y, 'R1')
+    blobs = [(32, 38, 7), (22, 34, 7), (42, 33, 7), (27, 26, 8), (38, 24, 8), (32, 17, 8), (24, 15, 6), (40, 14, 6),
+             (32, 8, 6)]
+    foliage(cv, blobs, ['V2', 'V5', 'V8', 'V10', 'V11'], 30)
+    trunk(cv, 30, 44, 63, 4, forks=False, ramp=('C1', 'C1', 'C0', 'C0'), outline='R1')
+    for y in range(47, 62, 5):
+        cv.put(31, y, 'R1'); cv.put(32, y, 'R1')
+    ombre_tronc(cv, 30, 4, 44, 2)
+    ombre_pied(cv, 32, 10, 63)
+    return cv.im
+
+
+def saule():
+    """Saule pleureur 80 × 80 : un dôme de feuillage d'où pendent des rideaux de rameaux (V6, V8,
+    pointes V10), plus sombres à droite ; tronc trapu."""
+    cv = Canvas(80, 80)
+    trunk(cv, 36, 58, 79, 8, forks=True)
+    dome = [(40, 40, 14), (26, 38, 11), (54, 38, 11), (40, 28, 12), (31, 22, 9), (49, 22, 9)]
+    own = foliage(cv, dome, V_RAMP, 40)
+    r = rng('saule')
+    for x in range(12, 69):                               # rideaux de rameaux, avec des trouées
+        if x % 6 == 5:
+            continue
+        base = max((y for y in range(80) if own.get((x, y)) is not None), default=None)
+        if base is None:
+            continue
+        ln = r.randint(16, 28) - abs(x - 40) // 3
+        for k in range(-2, max(4, ln)):
+            y = base + k
+            if y >= 76:
+                break
+            if k == ln - 1:
+                col = 'V10'
+            elif x < 34:
+                col = 'V8' if (k // 3 + x) % 3 else 'V6'
+            elif x < 48:
+                col = 'V6' if (k // 3 + x) % 3 else 'V5'
+            else:
+                col = 'V2' if (k // 3 + x) % 3 else 'V1'
+            cv.put(x, y, col)
+    for y in range(74, 80):                               # le pied du tronc, entre les rideaux
+        for x in range(36, 44):
+            cv.put(x, y, 'W4' if x == 36 else 'W3' if x < 40 else 'W2' if x < 43 else 'W1')
+    cv.vline(35, 74, 79, 'W0'); cv.vline(44, 74, 79, 'W0')
+    ombre_pied(cv, 40, 16, 79)
+    return cv.im
+
+
+def arbre_sombre():
+    """Arbre sombre 64 × 64 : houppier dense et rond, tons profonds (V0 à V6), creux indigo."""
+    cv = Canvas(64, 64)
+    trunk(cv, 29, 44, 63, 6, forks=True)
+    blobs = [(32, 40, 10), (20, 36, 9), (44, 36, 9), (32, 29, 12), (23, 22, 9), (41, 22, 9), (32, 13, 10)]
+    foliage(cv, blobs, ['V0', 'V1', 'V3', 'V5', 'V7'], 50)
+    trunk(cv, 29, 50, 63, 6, forks=False)
+    ombre_tronc(cv, 29, 6, 50, 2)
+    ombre_pied(cv, 32, 12, 63)
+    return cv.im
+
+
+def sapin_jeune():
+    """Jeune sapin 32 × 48."""
+    cv = Canvas(32, 48)
+    trunk(cv, 14, 41, 47, 4, forks=False)
+    tiers = [(16, 3, 4, 14), (16, 10, 8, 26), (16, 19, 12, 41)]
+
+    def tier_of(x, y):
+        for i, (cx, top, half, bot) in enumerate(tiers):
+            if top <= y + 0.5 <= bot:
+                w = half * (y + 0.5 - top) / (bot - top) + 1
+                if abs(x + 0.5 - cx) <= w:
+                    return i, w
+        return None, 0
+    own = {(x, y): tier_of(x, y) for y in range(48) for x in range(32)}
+    tones = ['V0', 'V2', 'V4', 'V6', 'V8']
+    for (x, y), (i, w) in own.items():
+        if i is None:
+            continue
+        cx, top, half, bot = tiers[i]
+        rel = (x + 0.5 - cx) / max(1, w)
+        lv = 4 if rel < -0.65 else 3 if rel < -0.2 else 2 if rel < 0.35 else 1
+        if y + 0.5 > bot - 2:
+            lv = min(lv, 1)
+        for dd in (1, 2):
+            above = own.get((x, y - dd), (None, 0))[0]
+            if above is not None and above < i:
+                lv = 0
+                break
+        cv.put(x, y, tones[lv])
+    outline_feuillage(cv, lambda x, y: own.get((x, y), (None, 0))[0] is not None, 'V0', 'V1', 6)
+    ombre_pied(cv, 16, 8, 47)
     return cv.im
 
 
@@ -684,6 +961,7 @@ def sapin():
                 break
         cv.put(x, y, tones[lv])
     outline_feuillage(cv, lambda x, y: own.get((x, y), (None, 0))[0] is not None, 'V0', 'V1', 5)
+    ombre_pied(cv, 24, 11, 63)
     return cv.im
 
 
@@ -722,34 +1000,44 @@ def build():
         rows_wang[sol] = len(tiles)
         for c, im in zip(CORNERS, ims):
             tiles.append((f'{sol}_{"".join(map(str, c))}', im))
-            sprites[f'tuile_transition_{sol.replace("_", "-")}-{"".join(map(str, c))}_16x16.png'] = im
+            classe = 'relief' if sol == 'eau' else 'tuile'
+            sprites[f'{classe}_transition_{sol.replace("_", "-")}-{"".join(map(str, c))}_16x16.png'] = im
     eau_rows = [rows_wang['eau']]
     for f in (1, 2):
         eau_rows.append(len(tiles))
         for c, im in zip(CORNERS, eau_frames[f]):
             tiles.append((f'eau_{"".join(map(str, c))}_image{f}', im))
-    for k in ('touffes', 'touffes_claires', 'fleurs_blanches', 'fleurs_jaunes', 'fleurs_lavande', 'trefle',
-              'champignon', 'caillou', 'feuilles'):
+    for k in ('touffes', 'touffes_claires', 'herbes_hautes', 'fougere', 'trefle', 'fleurs_blanches', 'fleurs_jaunes',
+              'fleurs_lavande', 'marguerites', 'coquelicots', 'bleuets', 'roses', 'lavande', 'chardon', 'pissenlit',
+              'champignon', 'champignons_bruns', 'caillou', 'feuilles'):
         im = micro(k)
         tiles.append((k, im))
-        famille = 'organique' if k in ('champignon', 'caillou') else 'feuillage' if k == 'trefle' else 'terrain'
+        famille = 'organique' if k in ('champignon', 'champignons_bruns', 'caillou') else 'feuillage' if k in ('trefle', 'fougere') else 'terrain'
         sprites[f'micro_{famille}_{k.replace("_", "-")}_16x16.png'] = im
     im = caisse(); tiles.append(('caisse', im)); sprites['objet_construit_caisse_16x16.png'] = im
     for p in ('gauche', 'milieu', 'droite', 'poteau'):
         im = cloture(p); tiles.append((f'cloture_{p}', im)); sprites[f'objet_construit_cloture-{p}_16x16.png'] = im
     im = rocher(16, 16, big=False); tiles.append(('petit_rocher', im)); sprites['objet_organique_petit-rocher_16x16.png'] = im
     im = roseaux(); tiles.append(('roseaux', im)); sprites['micro_feuillage_roseaux_16x16.png'] = im
+    im = arbuste(); tiles.append(('arbuste', im)); sprites['arbre_feuillage_arbuste_16x16.png'] = im
     im = nenuphars(); tiles.append(('nenuphars', im)); sprites['micro_feuillage_nenuphars_16x16.png'] = im
     big = [('rocher', rocher(), 'objet_organique_rocher_32x32.png'), ('souche', souche(), 'objet_organique_souche_32x32.png'),
            ('tonneau', tonneau(), 'objet_construit_tonneau_32x32.png'),
            ('buisson_vert', buisson('vert'), 'arbre_feuillage_buisson-vert_32x32.png'),
            ('buisson_baies', buisson('baies'), 'arbre_feuillage_buisson-baies_32x32.png'),
            ('buisson_fleuri', buisson('fleuri'), 'arbre_feuillage_buisson-fleuri_32x32.png'),
+           ('buisson_roses', buisson('roses'), 'arbre_feuillage_buisson-roses_32x32.png'),
+           ('chene_jeune', chene_jeune(32), 'arbre_feuillage_chene-jeune_32x32.png'),
+           ('sapin_jeune', sapin_jeune(), 'arbre_feuillage_sapin-jeune_32x48.png'),
+           ('chene_moyen', chene_jeune(48), 'arbre_feuillage_chene-moyen_48x48.png'),
            ('buche', buche(), 'objet_organique_buche_32x16.png'), ('foin', foin(), 'objet_construit_foin_32x16.png'),
            ('sapin', sapin(), 'arbre_feuillage_sapin_48x64.png'),
            ('arbre_feuillu', arbre('feuillu'), 'arbre_feuillage_feuillu_80x80.png'),
            ('arbre_fruits', arbre('fruits'), 'arbre_feuillage_fruits_80x80.png'),
-           ('arbre_fleurs', arbre('fleurs'), 'arbre_feuillage_fleurs_80x80.png')]
+           ('arbre_fleurs', arbre('fleurs'), 'arbre_feuillage_fleurs_80x80.png'),
+           ('saule', saule(), 'arbre_feuillage_saule_80x80.png'),
+           ('bouleau', bouleau(), 'arbre_feuillage_bouleau_64x64.png'),
+           ('arbre_sombre', arbre_sombre(), 'arbre_feuillage_arbre-sombre_64x64.png')]
     for nm, im, qa_name in big:
         sprites[qa_name] = im
     grid, names = {}, {}

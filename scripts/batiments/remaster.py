@@ -27,7 +27,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 ASSETS = os.path.join(ROOT, 'assets')
 sys.path.insert(0, os.path.join(ROOT, 'scripts'))
-from pastoral import PAL, Canvas, amas, level, outline_feuillage, qa  # noqa: E402
+from pastoral import OMBRE_CONTACT, PAL, Canvas, amas, level, outline_feuillage, qa  # noqa: E402
 
 PRUNE = {'o': 'N0', 's': 'N1', 'm': 'N2', 'l': 'N3'}          # toiture des maisons
 BRUN = {'o': 'W0', 's': 'W1', 'm': 'W2', 'l': 'W3', 'h': 'W4'}  # bardeaux bruns
@@ -41,21 +41,25 @@ def roof_color(rr, x, lit, roof='prune', t=0.5):
     position de 0 (faîtage) à 1 (égout). Le pan s'assombrit vers l'égout."""
     row, k = divmod(int(rr), 5)
     if roof == 'prune':
+        if t > 0.94:
+            return 'N0'                                        # épaisseur du débord, vue par-dessous
         if k == 4 or (x + (row % 2) * 5) % 10 == 0:
             return 'N0'                                        # joints
-        if t > 0.86:
+        if t > 0.84:
             return 'N1'                                        # dernier rang, sous son débord
         if lit:
-            return 'N3' if k == 0 and t < 0.7 else 'N2'
-        return 'N2' if k == 0 and t < 0.5 else 'N1'
+            return 'N3' if k == 0 or (k == 1 and t < 0.4) else 'N2'
+        return 'N2' if k == 0 and t < 0.45 else 'N1'
     # bardeaux bruns
+    if t > 0.94:
+        return 'W0'
     if k == 4 or (x + (row % 2) * 5) % 10 == 0:
         return 'W1'
-    if t > 0.86:
+    if t > 0.84:
         return 'W1'
     if lit:
-        return 'W4' if k == 0 and t < 0.6 else 'W3'
-    return 'W3' if k == 0 and t < 0.5 else 'W2'
+        return 'W4' if k == 0 or (k == 1 and t < 0.4) else 'W3'
+    return 'W3' if k == 0 and t < 0.45 else 'W2'
 
 
 def planks(cv, x0, y0, x1, y1, vertical=True, width=4, base='W3', seed=0):
@@ -147,6 +151,34 @@ def ivy(cv, cx, cy, rx, ry, seed=0):
     outline_feuillage(cv, inside, 'V1', 'V2', seed)
 
 
+def remonter(cv, n):
+    """Remonte le dessin de `n` px (ses `n` premières rangées doivent être vides), pour laisser
+    la place de l'ombre au sol sous le pied."""
+    im = cv.im.crop((0, n, cv.w, cv.h))
+    cv.im = Image.new('RGBA', (cv.w, cv.h), (0, 0, 0, 0))
+    cv.im.paste(im, (0, 0))
+    cv.px = cv.im.load()
+
+
+def ombre_sol(cv, rows=2, bande=10, extra=()):
+    """Ombre au sol (prune translucide, guide : ombre de contact) : sous chaque colonne dont le
+    bas touche la bande du sol (les `bande` dernières rangées), sur `rows` rangées transparentes ;
+    `extra` : flaques (cx, rx, bas) au pied des parties posées sur des piliers."""
+    for x in range(cv.w):
+        low = max((y for y in range(cv.h) if cv.px[x, y][3] == 255), default=None)
+        if low is None or low < cv.h - bande:
+            continue
+        for y in range(low + 1, min(cv.h, low + 1 + rows)):
+            if cv.px[x, y][3] == 0:
+                cv.px[x, y] = OMBRE_CONTACT
+    for cx, rx, bottom in extra:
+        for y in range(bottom - 2, bottom + 1):
+            for x in range(int(cx - rx), int(cx + rx) + 1):
+                if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - bottom - 0.5) / 3.5) ** 2 <= 1:
+                    if 0 <= x < cv.w and 0 <= y < cv.h and cv.px[x, y][3] == 0:
+                        cv.px[x, y] = OMBRE_CONTACT
+
+
 def outline_by_material(cv):
     """Contour continu de 1 px autour de la silhouette, du ton le plus sombre de la matière
     voisine : N0 pour la toiture, V1 pour le verre et le feuillage, W0 pour le reste."""
@@ -203,7 +235,7 @@ def gable_wall(cv, ridge, x0, x1, top_y, bottom_y, timber=True):
         for x in range(cv.w):
             if inside(x, y):
                 t = y - (top_y + abs(x - ridge) // 2)
-                cv.put(x, y, 'C0' if t < 2 else 'P4')
+                cv.put(x, y, 'C0' if t < 3 else 'P4')         # ombre de surplomb sous les pans
     if timber:
         cv.hline(x0, x1, bottom_y, 'W3')
         cv.hline(x0, x1, bottom_y - 1, 'W2')
@@ -235,7 +267,7 @@ def maison():
     # façade : enduit et colombage, à l'ombre de l'auvent en haut
     for y in range(61, 81):
         for x in range(5, 91):
-            cv.put(x, y, 'C0' if y < 63 else 'P4')
+            cv.put(x, y, 'C0' if y < 64 or y == 79 else 'P4')   # ombre de l'auvent, pied du mur
     for bx in (5, 30, 59, 90):
         cv.vline(bx, 61, 80, 'W3')
     cv.hline(5, 90, 80, 'W2')
@@ -263,6 +295,7 @@ def maison():
         cv.hline(x0, x1, y0, 'W4')
         cv.hline(x0, x1, y0 + 3, 'W1')
     outline_by_material(cv)
+    ombre_sol(cv)                                             # sous la terrasse, entre les pieds
     return cv.im
 
 
@@ -339,6 +372,7 @@ def etable():
     cv.box(37, 61, 74, 93, 'W0')
     cv.hline(3, 108, 93, 'W1')
     outline_by_material(cv)
+    ombre_sol(cv)
     return cv.im
 
 
@@ -384,6 +418,7 @@ def poulailler(porte):
         x, y = 19 + i, 50 + i * 0.9
         cv.put(x, int(y), 'W4'); cv.put(x, int(y) + 1, 'W3'); cv.put(x, int(y) + 2, 'W1')
     outline_by_material(cv)
+    ombre_sol(cv, extra=((24, 20, 63),))                      # sous le poulailler, entre ses pilotis
     return cv.im
 
 
@@ -443,6 +478,7 @@ def moulin(n):
             if d <= 3.2:
                 cv.put(x, y, 'W0' if d > 2.3 else 'W4' if x < HX and y < HY else 'W3')
     outline_by_material(cv)
+    ombre_sol(cv, extra=((48, 28, 127),))
     return cv.im
 
 
@@ -534,6 +570,8 @@ def serre():
     cv.hline(CX0, CX1, 78, 'G0')
     cv.hline(0, 95, 79, 'V1')
     outline_by_material(cv)
+    remonter(cv, 2)
+    ombre_sol(cv)
     return cv.im
 
 
@@ -561,6 +599,8 @@ def silo():
                 c = roof_color(rr, x, rel < 0, 'prune', rr / 18)
                 cv.put(x, y, c)
     outline_by_material(cv)
+    remonter(cv, 1)
+    ombre_sol(cv)
     return cv.im
 
 
@@ -624,6 +664,7 @@ def puits(kind):
         cv.hline(CX + 6, PX + 1, 30, 'R3'); cv.hline(CX + 6, PX + 1, 31, 'R1')
         cv.vline(CX + 6, 27, 31, 'R2')
     outline_by_material(cv)
+    ombre_sol(cv, rows=1)
     return cv.im
 
 
@@ -652,6 +693,7 @@ def citerne(niveau):
     planks(cv, 3, 40, 28, 45, False, 3, 'W3')                 # socle
     cv.hline(0, 4, 17, 'R3'); cv.hline(0, 4, 18, 'R1')        # arrivée du tuyau de la pompe
     outline_by_material(cv)
+    ombre_sol(cv)
     return cv.im
 
 

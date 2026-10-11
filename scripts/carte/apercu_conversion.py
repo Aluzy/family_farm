@@ -172,8 +172,8 @@ def tree_bases(m, sets):
             while top > 0 and any(px[xx, (top - 1) * T + 8][3] for xx in range(cx * T, cx * T + T)):
                 top -= 1
             sombre = bool(n) and rs / n < 72 and bs / n <= 74
-            if y - top <= 2:
-                kind = 'jeune'                  # petit arbre rond (stade jeune de l'original)
+            if y - top <= 2 and y < H - 3:
+                kind = 'jeune'                  # petit arbre rond (au bord du bas, l'arbre est coupé : adulte)
             elif sombre and ws[3] < 0.6 * ws[1]:
                 kind = 'sapin'                  # houppier sombre qui s'affine vers le haut
             else:
@@ -252,13 +252,13 @@ def main():
     for (cx, cy), g in objets.items():
         nm = None
         if g in FLEURS_BLANCHES:
-            nm = 'fleurs_blanches'
+            nm = r.choice(['fleurs_blanches', 'marguerites', 'marguerites', 'coquelicots', 'roses'])
         elif g in FLEURS_LAVANDE:
-            nm = 'fleurs_lavande'
+            nm = r.choice(['fleurs_lavande', 'lavande', 'bleuets', 'chardon'])
         elif g in FLEURS_JAUNES:
-            nm = 'fleurs_jaunes'
+            nm = r.choice(['fleurs_jaunes', 'pissenlit'])
         elif g in TOUFFES:
-            nm = r.choice(['touffes', 'touffes', 'trefle'])
+            nm = r.choice(['touffes', 'touffes', 'herbes_hautes', 'fougere', 'trefle', 'touffes_claires'])
         elif g in FEUILLES:
             nm = 'feuilles'
         elif g in ROSEAUX:
@@ -278,21 +278,28 @@ def main():
         for comp in components(cells):
             bx = (min(x for x, y in comp) + max(x for x, y in comp) + 1) * T // 2
             by = (max(y for x, y in comp) + 1) * T
-            name = nm or r.choice(['buisson_vert', 'buisson_vert', 'buisson_baies', 'buisson_fleuri'])
+            name = nm or r.choice(['buisson_vert', 'buisson_vert', 'buisson_baies', 'buisson_fleuri', 'buisson_roses'])
             im = tile(name) if name == 'caisse' else block(name)
             sprites.append((by, im, bx - im.width // 2, by - im.height))
     bases = tree_bases(m, sets)
     for bx, by in tree_layer_bushes(m, bases):
         if labels.get((bx // T, by // T - 1)) in ('terre', 'paves', 'eau'):
             continue                                        # pas de buisson dans un champ ni un chemin
-        im = block(r.choice(['buisson_vert', 'buisson_vert', 'buisson_baies', 'buisson_fleuri']))
+        nm = r.choice(['buisson_vert', 'buisson_vert', 'buisson_baies', 'buisson_fleuri', 'buisson_roses', 'arbuste'])
+        im = tile(nm) if nm == 'arbuste' else block(nm)
         sprites.append((by, im, bx - im.width // 2, by - im.height))
+    def pres_de_l_eau(cx, cy):
+        return any(labels.get((cx + dx, cy + dy)) == 'eau' for dx in range(-4, 5) for dy in range(-3, 4))
     for cx, cy, kind in bases:
         if kind == 'jeune':
-            nm = r.choice(['buisson_vert', 'buisson_vert', 'buisson_baies'])      # pas encore d'arbre jeune
+            nm = r.choice(['chene_jeune', 'chene_jeune', 'chene_moyen', 'arbuste'])
+        elif kind == 'sapin':
+            nm = r.choice(['sapin', 'sapin', 'sapin_jeune'])
+        elif pres_de_l_eau(cx, cy) and r.random() < 0.6:
+            nm = 'saule'
         else:
-            nm = 'sapin' if kind == 'sapin' else r.choices(['arbre_feuillu', 'arbre_fruits', 'arbre_fleurs'], [7, 2, 1])[0]
-        im = block(nm)
+            nm = r.choices(['arbre_feuillu', 'arbre_sombre', 'bouleau', 'arbre_fruits', 'arbre_fleurs'], [6, 3, 2, 2, 1])[0]
+        im = tile(nm) if nm == 'arbuste' else block(nm)
         bx, by = cx * T + T // 2, (cy + 1) * T
         sprites.append((by, im, bx - im.width // 2, by - im.height))
     # bâtiments
