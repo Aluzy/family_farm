@@ -964,6 +964,12 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
 .branch { margin: 8px 0 22px; }
 .branch-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; }
 .branch-head h3 { margin: 0; font-size: 1.1rem; }
+/* FLU-28 : branches repliables */
+summary.branch-head { cursor: pointer; list-style: none; min-height: 44px; flex-wrap: wrap; }
+summary.branch-head::-webkit-details-marker { display: none; }
+summary.branch-head h3::before { content: '▸'; display: inline-block; margin-right: 6px; transition: transform 0.15s; }
+.branch[open] > summary.branch-head h3::before { transform: rotate(90deg); }
+.branch:not([open]) { margin-bottom: 8px; }
 .branch-nodes { display: flex; flex-direction: column; gap: 12px; }
 .tech-node .desc { font-size: 0.95rem; }
 .tech-node.available { border-color: var(--accent); border-width: 2px; background: var(--bg-elevated); }

@@ -90,6 +90,11 @@
 >   valeurs en Wh/s ne restent que dans l'aide « ? » de chaque appareil.
 >- **Parcelles (FLU-27)** : le bouton 🤖 du semis automatique n'apparaît qu'une fois la
 >   technologie débloquée.
+>- **Arbre des technologies dévoilé (FLU-28)** : l'onglet Techno de la Maison n'apparaît
+>   qu'au premier point de technologie gagné, annoncé par « 🌳 L'Arbre des technologies est
+>   ouvert… » (le message y mène). Chaque branche est un bloc repliable, fermé sauf la
+>   première qui a une technologie à acquérir (« ✨ À acquérir ») ; tout replié, l'arbre fait
+>   moins de 700 px à 390 px. Ouvert ou fermé par le joueur, un bloc le reste.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

@@ -98,23 +98,28 @@ function masteryHtml() {
 export function renderTechno() {
   const pt = techPoints(state);
   const P = DATA.techtree.POINTS;
+  let ouverte = false; // FLU-28 : une seule branche ouverte, la première où acquérir
   const branches = DATA.techtree.branches.map((b) => {
     const nodes = Object.keys(DATA.techtree.noeuds)
       .filter((id) => DATA.techtree.noeuds[id].branche === b.id)
       .sort((x, y) => DATA.techtree.noeuds[x].palier - DATA.techtree.noeuds[y].palier);
     const progress = techProgress(state, b.id).map(techLevelRow).join('');
     const owned = nodes.filter((id) => hasTech(state, id)).length;
+    // FLU-28 : chaque branche est repliée, sauf celle qui a une technologie achetable
+    const achetable = nodes.some((id) => techStatus(state, id) === 'disponible' && pt.solde >= DATA.techtree.noeuds[id].pt && canPay(DATA.techtree.noeuds[id].cout));
+    const open = achetable && !ouverte;
+    if (open) ouverte = true;
     return `
-      <section class="branch" aria-label="Branche ${b.nom}">
-        <div class="branch-head">
+      <details class="branch"${open ? ' open' : ''} aria-label="Branche ${b.nom}">
+        <summary class="branch-head">
           <h3>${b.icone} ${b.nom}</h3>
-          <span class="chips">${branchEffectChip(b.id)}<span class="chip">${owned} / ${nodes.length} acquis</span></span>
-        </div>
+          <span class="chips">${achetable ? '<span class="chip">✨ À acquérir</span>' : ''}${branchEffectChip(b.id)}<span class="chip">${owned} / ${nodes.length} acquis</span></span>
+        </summary>
         <div class="branch-nodes">
           ${progress}
           ${nodes.map(techNodeCard).join('')}
         </div>
-      </section>`;
+      </details>`;
   });
   const libre = state.campagne && state.campagne.fini
     ? ` En mode libre, +1 PT toutes les ${P.MODE_LIBRE_NUITS_100} nuits à 100 % d'autonomie.`

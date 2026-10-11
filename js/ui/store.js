@@ -31,7 +31,14 @@ export const FERME_LINKS = ['famille', 'recettes', 'techno', 'ville'];
 // Onglets toujours disponibles, sans passer par state.unlockedTabs (aucune migration).
 const ALWAYS_TABS = ['notifications', 'ville'];
 export function tabAvailable(id) {
+  // FLU-28 : l'Arbre des technologies se montre au premier point de technologie gagné
+  if (id === 'techno' && !techTreeShown()) return false;
   return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
+}
+
+export function techTreeShown() {
+  const pt = state.pointsTech;
+  return !!((pt && pt.gagnes > 0) || (Array.isArray(state.technologies) && state.technologies.length));
 }
 
 export let state = null;
