@@ -19,3 +19,7 @@ __pycache__/
 # Aperçus des scripts de dessin (option --apercu)
 apercu_*.png
 demo_*.png
+
+# Sorties du contrôle qualité des sprites (option --qa)
+qa_tileset/
+qa_batiments/

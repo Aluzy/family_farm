@@ -1,26 +1,27 @@
-# assets/tileset_ferme.png : un nouveau jeu de tuiles de 16 px pour la carte de la ferme, dans le
-# style des bâtiments redessinés (scripts/batiments/) : formes nettes, 3 à 5 teintes par matière,
-# contour d'un pixel dans une teinte sombre de chaque matière, lumière en haut à gauche, pas de
-# bruit ni de tramage. Plus vivant que farm_spring_summer : herbe plus chaude et variée, fleurs de
-# plusieurs couleurs, arbres fruitiers et en fleur, eau animée.
+# Jeu de tuiles de la carte de la ferme, dessiné en code d'après le guide graphique
+# (docs/direction-artistique/guide-graphique-pastoral.md) : palette fermée de 60 couleurs,
+# lumière haut-gauche en aplats durs, contour selon la famille, textures en amas, ombre de
+# contact translucide sous les objets posés.
 #
-#   python3 scripts/carte/tileset.py            écrit assets/tileset_ferme.png et .tsx
-#   python3 scripts/carte/tileset.py --demo     écrit aussi demo_tileset.png : une scène faite
-#                                               uniquement de ces tuiles
+#   python3 scripts/carte/tileset.py           écrit assets/tileset_ferme.png, .tsx et .json
+#   python3 scripts/carte/tileset.py --demo    écrit aussi demo_tileset.png (une scène faite de
+#                                              ces tuiles)
+#   python3 scripts/carte/tileset.py --qa      passe chaque sprite au contrôle du guide
+#                                              (scripts/qa_sprites.py)
 #
-# Contenu (16 tuiles par rangée ; l'emplacement exact de chaque élément est dans TUILES, et
-# dans le .tsx : propriété « nom » de chaque tuile) :
-#   - herbe : 8 variantes de sol, à mélanger au hasard ;
-#   - détails posés sur l'herbe (calque au-dessus du sol) : touffes, trèfle, fleurs (blanches,
-#     jaunes, rouges, bleues, mauves), champignons, cailloux, feuilles mortes ;
-#   - 4 terrains raccordés à l'herbe par les coins (16 tuiles chacun, jeux de Wang « coins » du
-#     .tsx, pour peindre au pinceau de terrain dans Tiled) : prairie claire, chemin de terre,
-#     pavés, eau (3 images animées). Les bords suivent des courbes douces, sans couture d'une
-#     tuile à l'autre ;
-#   - au bord de l'eau : roseaux, nénuphars ;
-#   - arbres (3×3 tuiles) : chêne, pommier, cerisier en fleur ; sapin (2×3) ;
-#   - buissons, rochers, souche, rondin, clôture de bois (bouts, milieu, poteau, montant,
-#     portillon), tonneau, caisse, botte de foin.
+# Contenu :
+#   - remplissages (16×16, se raccordent à eux-mêmes) : herbe sombre V3 (aplat et variantes à
+#     touffes), herbe moyenne V6, herbe claire V8, terre T3 à chevrons, pavés (3 variantes),
+#     eau E2 (3 images, jouées 0-1-2-1) ;
+#   - taches et trous à fond transparent, à poser sur n'importe quel sol (16 tuiles par sol,
+#     rangées par combinaison de coins, jeux de Wang « coins » du .tsx) : herbe moyenne, herbe
+#     claire, terre, pavés (l'herbe paraît dans les joints), eau avec ses berges. Tuile de bord :
+#     4 px vides, 9 px de bande (brins de 1 px, deux tons de frange), 3 px pleins ;
+#   - micro-décor (16×16, sans collision) : touffes, fleurs, trèfle, champignon, caillou,
+#     feuilles ;
+#   - objets : rochers, souche, bûche, tonneau, caisse, foin, clôture (piquet de 3 px tous les
+#     8 px, 14 px de haut), plantes d'eau ;
+#   - buissons (32×32) et arbres adultes (80×80) : feuillu, en fleurs, en fruits ; sapin.
 import json
 import math
 import os
@@ -29,697 +30,814 @@ import sys
 
 from PIL import Image
 
-T = 16
-COLS = 16
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
-ASSETS = os.path.join(ROOT, 'assets')
+sys.path.insert(0, os.path.join(ROOT, 'scripts'))
+from pastoral import (PAL, Canvas, amas, level, ombre_contact, outline_construit,  # noqa: E402
+                      outline_cote_ombre, outline_feuillage, qa)
+
+T = 16
+COLS = 16
 NAME = 'tileset_ferme'
-
-P = {
-    # herbe : vert chaud et franc
-    'go': (34, 72, 44), 'gd': (52, 108, 58), 'gm': (68, 132, 66), 'gl': (96, 160, 78), 'gh': (140, 192, 96),
-    # prairie claire
-    'mo': (70, 110, 50), 'md': (112, 158, 72), 'mm': (140, 182, 86), 'ml': (172, 206, 108), 'mh': (206, 226, 142),
-    # terre battue
-    'do': (86, 56, 36), 'dd': (124, 86, 54), 'dm': (156, 114, 72), 'dl': (184, 142, 94), 'dh': (210, 172, 122),
-    # pavés (la pierre du puits, un peu plus chaude)
-    'so': (58, 48, 46), 'sj': (96, 86, 78), 'sd': (122, 114, 104), 'sm': (150, 142, 128), 'sl': (178, 170, 152), 'sh': (204, 198, 180),
-    # eau
-    'wo': (26, 52, 84), 'wd': (42, 94, 144), 'wm': (60, 128, 182), 'wl': (104, 172, 218), 'wh': (200, 236, 250),
-    # feuillage des arbres
-    'fo': (22, 50, 32), 'fd': (38, 86, 46), 'fm': (58, 120, 56), 'fl': (90, 156, 70), 'fh': (140, 196, 92),
-    # sapin (plus bleuté)
-    'po': (16, 40, 34), 'pd': (28, 70, 52), 'pm': (40, 98, 66), 'pl': (64, 132, 82), 'ph': (104, 168, 104),
-    # fleurs de cerisier
-    'ko': (110, 52, 78), 'kd': (196, 104, 140), 'km': (232, 148, 176), 'kl': (248, 196, 212), 'kh': (255, 236, 242),
-    # écorce, bois
-    'bo': (48, 28, 20), 'bd': (78, 48, 30), 'bm': (108, 70, 42), 'bl': (138, 96, 60), 'bh': (166, 124, 82),
-    # bois clair (clôture, caisse)
-    'eo': (74, 46, 26), 'ed': (128, 84, 48), 'em': (164, 116, 70), 'el': (196, 150, 98), 'eh': (220, 182, 130),
-    # roche
-    'ro': (44, 44, 50), 'rd': (88, 90, 96), 'rm': (120, 122, 126), 'rl': (156, 158, 160), 'rh': (196, 198, 196),
-    # fleurs et fruits
-    'white': (248, 248, 240), 'white2': (214, 218, 222), 'yellow': (250, 214, 72), 'yellow2': (210, 160, 40),
-    'red': (226, 66, 60), 'red2': (150, 34, 40), 'blue': (110, 150, 240), 'blue2': (60, 86, 180),
-    'mauve': (184, 120, 220), 'mauve2': (118, 70, 160), 'heart': (250, 200, 70),
-    'shroom': (214, 72, 56), 'shroom2': (140, 36, 34), 'stem': (236, 226, 204),
-    'leaf': (210, 140, 52), 'leaf2': (168, 90, 36),
-    # foin
-    'ho': (110, 80, 30), 'hd': (186, 146, 60), 'hm': (220, 184, 84), 'hl': (240, 214, 120),
-}
-
-
-def rgba(c):
-    return (P[c] if isinstance(c, str) else c) + (255,)
-
-
-class Tile:
-    """Une ou plusieurs tuiles (w × h tuiles) dessinées sur une seule image."""
-
-    def __init__(self, w=1, h=1):
-        self.W, self.H = w * T, h * T
-        self.im = Image.new('RGBA', (self.W, self.H), (0, 0, 0, 0))
-        self.px = self.im.load()
-
-    def put(self, x, y, c):
-        x, y = int(x), int(y)
-        if 0 <= x < self.W and 0 <= y < self.H:
-            self.px[x, y] = rgba(c)
-
-    def opaque(self, x, y):
-        return 0 <= x < self.W and 0 <= y < self.H and self.px[x, y][3] > 0
-
-    def shape(self, inside, color, outline=None):
-        pts = [(x, y) for y in range(self.H) for x in range(self.W) if inside(x + 0.5, y + 0.5)]
-        s = set(pts)
-        if outline:
-            for x, y in pts:
-                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    q = (x + dx, y + dy)
-                    if q not in s:
-                        self.put(q[0], q[1], outline)
-        for x, y in pts:
-            self.put(x, y, color(x, y))
-        return s
+ASSETS = os.path.join(ROOT, 'assets')
 
 
 def rng(*k):
     return random.Random('-'.join(map(str, k)))
 
 
-# ---------------------------------------------------------------- herbe
+def ancrer(im):
+    """Pose le sprite au ras du bas de son gabarit (guide : pivot en bas au centre, une rangée
+    vide au plus sous le pied, ombre de contact comprise)."""
+    box = im.getbbox()
+    if not box:
+        return im
+    out = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    out.paste(im.crop(box), (box[0], im.height - (box[3] - box[1])))
+    return out
 
-def grass_base(t, variant):
-    """Sol d'herbe : un vert uni, quelques touffes en V, plus claires sur le dessus. Les touffes
-    restent à l'intérieur de la tuile : deux tuiles côte à côte se raccordent toujours."""
-    for y in range(T):
-        for x in range(T):
-            t.put(x, y, 'gm')
-    r = rng('herbe', variant)
-    n = [2, 3, 1, 3, 2, 3, 4, 0][variant]
-    spots = []
-    for _ in range(n):
-        for _try in range(20):
-            x, y = r.randint(1, 13), r.randint(2, 14)
-            if all(abs(x - a) + abs(y - b) > 4 for a, b in spots):
-                spots.append((x, y))
-                break
+
+# ================================================================ remplissages
+
+def touffe(cv, x, y, a='V4', b='V5'):
+    """Touffe de trois brins en V (guide : 14 × 8 au plus, tons V4 et V5)."""
+    for dx, h, c in ((0, 2, a), (2, 3, b), (4, 2, a)):
+        for k in range(h):
+            xx = x + dx + (0 if dx == 2 else (-1 if dx == 0 else 1)) * (k // 2)
+            cv.put(xx, y - k, c)
+
+
+def fill_grass(base, variant, tufts=('V4', 'V5')):
+    cv = Canvas(T, T)
+    cv.rect(0, 0, T - 1, T - 1, base)
+    spots = {0: [], 1: [(3, 7)], 2: [(9, 5), (2, 13)], 3: [(5, 11), (11, 8)]}[variant]
     for x, y in spots:
-        tuft(t, x, y, r.random() < 0.5)
-    if variant in (5, 6):                         # quelques taches plus sombres
-        for _ in range(2):
-            x, y = r.randint(2, 12), r.randint(2, 12)
-            for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1), (2, 1)):
-                if t.px[x + dx, y + dy][:3] == P['gm']:
-                    t.put(x + dx, y + dy, 'gd')
+        touffe(cv, x, y, *tufts)
+    return cv.im
 
 
-def tuft(t, x, y, big=False):
-    t.put(x, y, 'gd')
-    t.put(x + 2, y, 'gd')
-    t.put(x + 1, y + 1, 'gd')
-    t.put(x, y - 1, 'gl')
-    t.put(x + 2, y - 1, 'gl')
-    if big:
-        t.put(x + 1, y - 1, 'gd')
-        t.put(x + 1, y - 2, 'gh')
+def fill_terre():
+    """Terre de chemin : chevrons T2 sur T3, période de 16 px, un caillou T1."""
+    cv = Canvas(T, T)
+    cv.rect(0, 0, T - 1, T - 1, 'T3')
+    for cx, cy in ((4, 4), (12, 9), (5, 13)):
+        for k in range(3):
+            cv.put(cx - k, cy + k // 2 + (k > 0), 'T2')
+            cv.put(cx + k, cy + k // 2 + (k > 0), 'T2')
+    cv.put(10, 3, 'T1'); cv.put(11, 3, 'T1'); cv.put(10, 4, 'T1')
+    return cv.im
 
 
-# ---------------------------------------------------------------- détails sur l'herbe
-
-def deco(kind, variant=0):
-    t = Tile()
-    r = rng('deco', kind, variant)
-    if kind == 'touffes':
-        for x, y, b in ((3, 7, True), (9, 11, False), (11, 5, True)):
-            tuft(t, x, y, b)
-            t.put(x + 1, y + 2, 'go')
-    elif kind == 'herbes_hautes':
-        for x0 in (4, 7, 10):
-            h = r.randint(6, 9)
-            for i in range(h):
-                xx = x0 + (1 if i > h - 3 and x0 == 4 else -1 if i > h - 3 and x0 == 10 else 0)
-                t.put(xx, 13 - i, 'gh' if i > h - 3 else 'gl' if i > 2 else 'gd')
-            t.put(x0 + 1, 13, 'go')
-            t.put(x0 - 1, 13, 'go')
-    elif kind == 'trefle':
-        for cx, cy in ((5, 6), (10, 10)):
-            for dx, dy in ((0, -1), (-1, 0), (1, 0)):
-                t.put(cx + dx, cy + dy, 'gl')
-                t.put(cx + dx * 2, cy + dy * 2 - (1 if dy == 0 else 0), 'gl')
-            t.put(cx, cy, 'gd')
-            t.put(cx, cy + 1, 'gd')
-            t.put(cx, cy + 2, 'go')
-    elif kind.startswith('fleurs_'):
-        col = kind.split('_')[1]
-        c1, c2 = {'blanches': ('white', 'white2'), 'jaunes': ('yellow', 'yellow2'), 'rouges': ('red', 'red2'),
-                  'bleues': ('blue', 'blue2'), 'mauves': ('mauve', 'mauve2')}[col]
-        pos = [(4, 5), (10, 4), (7, 10), (12, 11), (3, 12)][: 3 + variant]
-        for cx, cy in pos:
-            t.put(cx, cy + 1, 'gd')                    # tige
-            t.put(cx, cy + 2, 'gd')
-            t.put(cx - 1, cy + 2, 'gl')
-            for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
-                t.put(cx + dx, cy + dy, c1)
-            t.put(cx + 1, cy + 1, c2)
-            t.put(cx, cy, 'heart' if col != 'jaunes' else 'yellow2')
-            t.put(cx, cy + 3, 'go')
-    elif kind == 'champignons':
-        for cx, cy, s in ((5, 9, 2), (10, 11, 1)):
-            for dx in range(-s, s + 1):
-                t.put(cx + dx, cy - 1, 'shroom')
-            for dx in range(-s + 1, s):
-                t.put(cx + dx, cy - 2, 'shroom')
-            t.put(cx - s + 1, cy - 2, 'white')
-            t.put(cx, cy - 1, 'white') if s == 2 else None
-            for dx in range(-s - 1, s + 2):
-                t.put(cx + dx, cy, 'shroom2' if abs(dx) == s + 1 else 'shroom2')
-            t.put(cx, cy, 'stem')
-            t.put(cx, cy + 1, 'stem')
-            t.put(cx, cy + 2, 'go')
-    elif kind == 'cailloux':
-        for cx, cy, w in ((4, 9, 3), (10, 6, 2), (11, 12, 2)):
-            t.shape(lambda x, y: ((x - cx) / w) ** 2 + ((y - cy) / (w * 0.7)) ** 2 <= 1,
-                    lambda x, y: 'rh' if y < cy - 0.5 and x < cx else 'rl' if y < cy else 'rm', 'ro')
-    elif kind == 'feuilles':
-        for cx, cy in ((4, 5), (11, 8), (6, 12)):
-            t.put(cx, cy, 'leaf')
-            t.put(cx + 1, cy, 'leaf')
-            t.put(cx + 1, cy - 1, 'leaf')
-            t.put(cx + 2, cy - 1, 'leaf2')
-            t.put(cx, cy + 1, 'leaf2')
-    return t.im
+# pavés : pierres arrondies de 6 à 8 px, deux par rangée, rangées décalées ; une pierre
+# chevauche chaque bord de la tuile (raccord sans couture) ; 3 variantes
+PAVES = {
+    0: [(3, 15, 8, 5), (11, 15, 8, 5), (7, 4, 8, 5), (15, 4, 8, 5), (4, 9, 8, 6), (12, 9, 8, 6)],
+    1: [(2, 15, 9, 5), (11, 15, 7, 5), (6, 4, 7, 5), (13, 4, 9, 5), (5, 9, 8, 6), (13, 9, 7, 6)],
+    2: [(4, 15, 7, 5), (11, 15, 9, 5), (8, 4, 8, 5), (16, 4, 8, 5), (3, 9, 9, 6), (12, 9, 7, 6)],
+}
 
 
-# ---------------------------------------------------------------- terrains raccordés (coins)
+def stone(cv, x0, y0, w, h, wrap=True):
+    """Une pierre : coins arrondis, dessus P4 et P3, corps P2, dessous P1 et P0 sur 2 px.
+    Avec `wrap`, elle se coupe au bord de la tuile et reprend de l'autre côté (remplissage) ;
+    sinon seuls ses pixels dans la tuile sont posés (taches)."""
+    for yy in range(h - 1):
+        for xx in range(w - 1):
+            if (xx in (0, w - 2)) and (yy in (0, h - 2)):
+                continue
+            x, y = x0 + xx, y0 + yy
+            if wrap:
+                x, y = x % T, y % T
+            elif not (0 <= x < T and 0 <= y < T):
+                continue
+            if yy == 0:
+                c = 'P4'
+            elif yy == 1 and xx < w - 3:
+                c = 'P3'
+            elif yy >= h - 3:
+                c = 'P0' if yy == h - 2 else 'P1'
+            else:
+                c = 'P1' if xx == w - 2 else 'P2'
+            cv.put(x, y, c)
 
-def periodic_wobble(x, y, seed):
-    """Bruit doux de période 16 : identique sur les deux bords d'une tuile, donc sans couture."""
-    return 0.5 * math.sin(2 * math.pi * ((x + 0.5) / 16 + seed)) + 0.5 * math.sin(2 * math.pi * ((y + 0.5) / 16 + seed * 1.7))
+
+def fill_paves(variant, cv=None):
+    cv = cv or Canvas(T, T)
+    for x0, y0, w, h in PAVES[variant]:
+        stone(cv, x0, y0, w, h)
+    return cv.im
 
 
-def skeleton_distance(px_, py_, pts, value):
-    """Distance au squelette des coins de valeur `value` : ces coins et les bords qui en joignent
-    deux."""
+def water_dashes(frame):
+    """Tirets de reflet (E3) et stries (E0) de l'eau, période 16 ; 3 images : quelques tirets
+    glissent d'un pixel (environ 5 % des pixels changent)."""
+    s = frame
+    return [(2 + s, 3, 3, 'E3'), (10 - s, 6, 4, 'E3'), (5, 10, 2, 'E3'), (11 + s, 13, 3, 'E3'),
+            (1, 8, 2, 'E0'), (8, 12, 3, 'E0')]
+
+
+def fill_eau(frame):
+    cv = Canvas(T, T)
+    cv.rect(0, 0, T - 1, T - 1, 'E2')
+    for x0, y, n, c in water_dashes(frame):
+        for k in range(n):
+            cv.put((x0 + k) % T, y, c)
+    return cv.im
+
+
+# ================================================================ taches et trous
+
+def skeleton(px_, py_, pts, value):
     best = 99.0
     for (cx, cy), v in pts.items():
         if v == value:
             best = min(best, math.hypot(px_ - cx, py_ - cy))
-    for (a, b) in (((0, 0), (16, 0)), ((0, 16), (16, 16)), ((0, 0), (0, 16)), ((16, 0), (16, 16))):
+    for a, b in (((0, 0), (16, 0)), ((0, 16), (16, 16)), ((0, 0), (0, 16)), ((16, 0), (16, 16))):
         if pts[a] == value and pts[b] == value:
             best = min(best, abs(py_ - a[1]) if a[1] == b[1] else abs(px_ - a[0]))
     return best
 
 
-def corner_field(x, y, tl, tr, bl, br):
-    """Champ signé : négatif dans le terrain. Le bord passe à égale distance des coins du terrain
-    et des coins d'herbe (avec les bords qui joignent deux coins de même nature). Sur un bord de
-    tuile, seuls comptent les deux coins de ce bord : deux tuiles voisines se raccordent toujours.
-    Coins sortants arrondis, coins rentrants creusés en courbe."""
-    px_, py_ = x + 0.5, y + 0.5
+def corner_field(x, y, c):
+    """Champ signé (négatif dans le sol) : le bord passe à égale distance des coins du sol et
+    des autres coins. Sur un bord de tuile, seuls comptent les deux coins de ce bord : deux
+    tuiles voisines se raccordent toujours. Coins sortants arrondis, coins rentrants en courbe.
+    Sur une tuile de bord droit : 4 px vides (champ > 8), bande de 9 px, 3 px pleins (< -10)."""
+    tl, tr, bl, br = c
     pts = {(0, 0): tl, (16, 0): tr, (0, 16): bl, (16, 16): br}
-    return skeleton_distance(px_, py_, pts, 1) - skeleton_distance(px_, py_, pts, 0)
+    return skeleton(x + 0.5, y + 0.5, pts, 1) - skeleton(x + 0.5, y + 0.5, pts, 0)
 
 
-def fill_meadow(x, y, frame=0):
-    """Prairie : herbe claire, de rares brins plus clairs et quelques fleurs."""
-    if (x, y) in ((3, 4), (11, 9), (6, 13)):
-        return 'mh'
-    if (x, y) in ((4, 4), (12, 9)):
-        return 'md'
-    if (x, y) == (13, 3):
-        return 'yellow'
-    if (x, y) == (8, 7):
-        return 'white'
-    return 'mm'
+# brins : hauteur (0 à 3 px) selon la position le long du bord, période 16 ; 1 px de large
+BRINS = [0, 2, 0, 0, 3, 1, 0, 0, 2, 0, 1, 0, 0, 3, 0, 1]
+JAG1 = [0, 1, 1, 0, -1, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0, 0]       # frange 1 → frange 2 (amas)
+JAG2 = [1, 0, -1, -2, -1, 0, 2, 2, 1, 0, -1, 0, 1, 2, 1, 0]        # frange 2 → centre
 
 
-def fill_dirt(x, y, frame=0):
-    """Terre battue : unie, avec deux petits cailloux et une ornière plus sombre."""
-    if (x, y) in ((4, 5), (11, 12)):
-        return 'dh'
-    if (x, y) in ((4, 6), (5, 6), (11, 13), (12, 13)):
-        return 'dd'
-    if y == 9 and 7 <= x <= 10:
-        return 'dd'
-    return 'dm'
+def along(c, x, y):
+    """Coordonnée le long du bord : x pour un bord plutôt horizontal, y sinon."""
+    f = lambda a, b: corner_field(a, b, c)
+    gx, gy = f(x + 1, y) - f(x - 1, y), f(x, y + 1) - f(x, y - 1)
+    return (x if abs(gy) >= abs(gx) else y) % 16, gx, gy
 
 
-# pavés : un motif de pierres arrondies de période 16
-COBBLES = [(3, 3, 3.2, 2.6), (10, 2, 3.4, 2.4), (14.5, 7, 2.4, 2.6), (6, 8, 3.0, 2.6), (1, 9, 1.8, 2.4),
-           (11, 11, 3.2, 2.6), (3.5, 13.5, 3.0, 2.2), (8.5, 14.5, 2.0, 1.6), (15, 14, 1.6, 2.0)]
-
-
-def fill_cobble(x, y, frame=0):
-    for cx, cy, rx, ry in COBBLES:
-        for ox in (-16, 0, 16):
-            for oy in (-16, 0, 16):
-                d = ((x + 0.5 - cx - ox) / rx) ** 2 + ((y + 0.5 - cy - oy) / ry) ** 2
-                if d <= 1:
-                    if d > 0.72:
-                        return 'sd' if (x + 0.5 - cx - ox) + (y + 0.5 - cy - oy) > 0 else 'sm'
-                    return 'sh' if (x + 0.5 - cx - ox) + (y + 0.5 - cy - oy) < -1.6 else 'sl'
-    return 'sj'
-
-
-def fill_water(x, y, frame=0):
-    # vaguelettes : petits traits clairs qui glissent d'une image à l'autre (période 16)
-    xx = (x + frame * 5) % 16
-    for (wx, wy, n) in ((2, 3, 3), (9, 6, 4), (4, 11, 3), (12, 13, 2)):
-        if y == wy and wx <= xx < wx + n:
-            return 'wl'
-    if (xx, y) in ((10, 5), (5, 10)) and frame == 1:
-        return 'wh'
-    return 'wm'
-
-
-TERRAINS = {
-    'prairie': {'fill': fill_meadow, 'rim_in': 'ml', 'rim_out': 'gd', 'line': 'mo', 'seed': 0.1},
-    'terre': {'fill': fill_dirt, 'rim_in': 'dd', 'rim_out': 'gd', 'line': 'do', 'seed': 0.4},
-    'paves': {'fill': fill_cobble, 'rim_in': 'sm', 'rim_out': 'gd', 'line': 'so', 'seed': 0.7},
-    'eau': {'fill': fill_water, 'rim_in': 'wd', 'rim_out': 'dl', 'line': 'wo', 'seed': 0.9},
+SOLS = {
+    # sol : (frange 1, frange 2, centre)
+    'herbe_moyenne': ('V4', 'V5', 'V6'),
+    'herbe_claire': ('V5', 'V7', 'V8'),
+    'terre': ('T0', 'T2', 'T3'),
 }
 
 
-def terrain_tile(name, tl, tr, bl, br, frame=0):
-    """Tuile du terrain `name` sur l'herbe ; tl, tr, bl, br : chaque coin est-il du terrain ?"""
-    cfg = TERRAINS[name]
-    t = Tile()
-    grass_base(t, 0)
-    if not (tl or tr or bl or br):
-        return t.im
+def tache_sol(name, c):
+    """Tache d'herbe ou de terre, fond transparent : brins de la frange 1 qui débordent, puis
+    les deux tons de frange par amas, puis le centre (avec sa texture)."""
+    f1, f2, centre = SOLS[name]
+    cv = Canvas(T, T)
+    if not any(c):
+        return cv.im
+    tex = fill_terre() if name == 'terre' else fill_grass(centre, 0)
+    tpx = tex.load()
     for y in range(T):
         for x in range(T):
-            d = corner_field(x, y, tl, tr, bl, br) + 1.4 * periodic_wobble(x, y, cfg['seed'])
-            if d <= 0:
-                if d > -2:
-                    c = cfg['line']                      # bord : contour sombre
-                elif d > -4.4:
-                    c = cfg['rim_in']                    # liseré intérieur
-                else:
-                    c = cfg['fill'](x, y, frame)
-                t.put(x, y, c)
-            elif d < 3.2:
-                if name == 'eau':
-                    t.put(x, y, 'dl' if d < 1.8 else 'dd')     # berge de terre autour de l'eau
-                else:
-                    t.put(x, y, cfg['rim_out'])                # herbe plus sombre au bord
-    return t.im
+            d = corner_field(x, y, c)
+            u, gx, gy = along(c, x, y)
+            if d <= -6 + JAG2[u]:
+                cv.px[x, y] = tpx[x, y]
+            elif d <= -2 + JAG1[u]:
+                cv.put(x, y, f2)
+            elif d <= 1:
+                cv.put(x, y, f1)
+            elif d <= 1 + 2 * BRINS[u] and d <= 8:
+                cv.put(x, y, f1)                       # brin
+    return cv.im
 
 
-# ---------------------------------------------------------------- plantes de l'eau
-
-def roseaux():
-    t = Tile()
-    for x0, h in ((4, 11), (7, 13), (10, 9), (12, 12)):
-        for i in range(h):
-            t.put(x0, 15 - i, 'gl' if i < h - 3 else 'gh')
-        t.put(x0, 15 - h, 'bm')                         # massette
-        t.put(x0, 16 - h, 'bd')
-        t.put(x0, 17 - h, 'bd')
-        t.put(x0 + 1, 16 - h, 'bo')
-        t.put(x0 + 1, 15, 'go')
-    return t.im
-
-
-def nenuphars():
-    t = Tile()
-    for cx, cy, r in ((5, 6, 3.2), (11, 11, 2.6)):
-        t.shape(lambda x, y: math.hypot(x - cx, y - cy) <= r and not (x > cx and abs(y - cy) < 0.8),
-                lambda x, y: 'gh' if x + y < cx + cy - 1 else 'gl', 'gd')
-    t.put(5, 5, 'kl')
-    t.put(4, 5, 'km')
-    t.put(5, 4, 'km')
-    return t.im
+def tache_paves(c, variant=0):
+    """Pavés posés sur le sol : les pierres du motif (et celles des tuiles voisines qui
+    débordent) dont le centre, ramené au bord de la tuile, est dans la tache ; seuls leurs
+    pixels dans la tuile sont posés. L'herbe paraît dans les joints et autour."""
+    cv = Canvas(T, T)
+    if not any(c):
+        return cv.im
+    for x0, y0, w, h in PAVES[variant]:
+        for ox in (-16, 0, 16):
+            for oy in (-16, 0, 16):
+                sx, sy = x0 % 16 + ox, y0 % 16 + oy
+                cx, cy = sx + w / 2 - 0.5, sy + h / 2 - 0.5
+                if not (-w < sx < T and -h < sy < T):
+                    continue
+                kx, ky = min(15, max(0, cx)), min(15, max(0, cy))
+                if corner_field(kx, ky, c) <= -1.5:
+                    stone(cv, sx, sy, w, h, wrap=False)
+    return cv.im
 
 
-# ---------------------------------------------------------------- arbres
-
-def canopy(t, blobs, pal, fruit=None):
-    """Feuillage fait de boules qui se chevauchent : chacune éclairée en haut à gauche."""
-    o, d, m, l, h = pal
-    def inside(x, y):
-        return any(math.hypot(x - cx, (y - cy) * 1.05) <= r for cx, cy, r in blobs)
-    def color(x, y):
-        best = None
-        for cx, cy, r in blobs:
-            dd = math.hypot(x + 0.5 - cx, (y + 0.5 - cy) * 1.05)
-            if dd <= r:
-                tt = ((x + 0.5 - cx) + (y + 0.5 - cy)) / r
-                c = h if tt < -0.95 else l if tt < -0.25 else m if tt < 0.55 else d
-                best = c                                   # la dernière boule passe devant
-        return best
-    s = t.shape(inside, color, o)
-    if fruit:
-        r = rng('fruit', len(blobs), fruit[0])
-        pts = sorted(s)
-        for _ in range(fruit[2]):
-            x, y = r.choice(pts)
-            if t.opaque(x + 1, y + 1) and t.opaque(x - 1, y):
-                t.put(x, y, fruit[0])
-                t.put(x + 1, y, fruit[1])
-                t.put(x, y + 1, fruit[1])
-
-
-def trunk(t, x0, y0, y1, w=4):
-    for y in range(y0, y1 + 1):
-        for x in range(x0, x0 + w):
-            k = x - x0
-            t.put(x, y, 'bl' if k == 0 else 'bd' if k == w - 1 else 'bm')
-        t.put(x0 - 1, y, 'bo')
-        t.put(x0 + w, y, 'bo')
-    for x in range(x0 - 2, x0 + w + 2):                  # racines
-        t.put(x, y1 + 1, 'bo')
-    t.put(x0 - 1, y1, 'bm')
-    t.put(x0 + w, y1, 'bd')
+def tache_eau(c, frame=0):
+    """Eau et sa berge, fond transparent. Berge nord : dessus (T2, lèvre T1) et face (W2, W1)
+    sur 7 à 9 px, écume E4, puis une bande d'eau profonde E1 de 6 à 8 px. Berges latérales et
+    sud : le dessus seul, 4 à 5 px, écume verticale (1 px sur 2) sur les côtés."""
+    cv = Canvas(T, T)
+    if not any(c):
+        return cv.im
+    for y in range(T):
+        for x in range(T):
+            d = corner_field(x, y, c)
+            u, gx, gy = along(c, x, y)
+            n = math.hypot(gx, gy) or 1
+            north = -gy / n > 0.55          # le bord regarde vers le haut : berge nord
+            side = abs(gx / n) > 0.55
+            if d > 0:
+                if north:
+                    if d <= 4:
+                        cv.put(x, y, 'W1' if d <= 1.5 else 'W2')          # face de la berge
+                    elif d <= 7 + (BRINS[u] > 1):
+                        cv.put(x, y, 'T1' if d > 6 else 'T2')             # dessus, lèvre
+                elif d <= 4 + (BRINS[u] > 1):
+                    cv.put(x, y, 'T1' if d > 3 else 'T2')                 # dessus seul
+                continue
+            depth = -d
+            col = 'E2'
+            if depth <= 1:
+                col = 'E4' if not side or y % 2 == 0 else 'E3'            # écume
+            elif north and depth <= 7:
+                col = 'E1'                                                 # eau profonde
+            cv.put(x, y, col)
+            if col == 'E2':
+                for x0, yy, k, cc in water_dashes(frame):
+                    if yy == y and (x - x0) % 16 < k:
+                        cv.put(x, y, cc)
+    return cv.im
 
 
-def arbre(kind):
-    t = Tile(3, 3)
-    trunk(t, 22, 30, 44)
-    blobs = [(24, 22, 13), (14, 26, 9), (34, 26, 9), (18, 15, 9), (30, 15, 9), (24, 10, 8), (24, 28, 9)]
-    if kind == 'chene':
-        canopy(t, blobs, ('fo', 'fd', 'fm', 'fl', 'fh'))
-    elif kind == 'pommier':
-        canopy(t, blobs, ('fo', 'fd', 'fm', 'fl', 'fh'), ('red', 'red2', 26))
-    elif kind == 'cerisier':
-        canopy(t, blobs, ('ko', 'kd', 'km', 'kl', 'kh'))
-        r = rng('petales')
-        for _ in range(6):                               # quelques pétales tombés au pied
-            t.put(r.randint(10, 38), r.randint(44, 46), 'kl')
-    return t.im
+CORNERS = [(tl, tr, bl, br) for tl in (0, 1) for tr in (0, 1) for bl in (0, 1) for br in (0, 1)]
 
 
-def sapin():
-    t = Tile(2, 3)
-    trunk(t, 14, 38, 44, 4)
-    tiers = [(16, 2, 4, 12), (16, 10, 8, 22), (16, 18, 12, 32), (16, 26, 15, 40)]
-    def inside(x, y):
-        for cx, top, half, bot in tiers:
-            if top <= y <= bot:
-                w = half * (y - top) / (bot - top) + 1
-                if abs(x - cx) <= w:
-                    return True
-        return False
-    def color(x, y):
-        for cx, top, half, bot in reversed(tiers):
-            if top <= y + 0.5 <= bot:
-                w = half * (y + 0.5 - top) / (bot - top) + 1
-                if abs(x + 0.5 - cx) <= w:
-                    rel = (x + 0.5 - cx) / max(1, w)
-                    if y + 0.5 > bot - 2:
-                        return 'pd'
-                    return 'ph' if rel < -0.6 else 'pl' if rel < -0.1 else 'pm' if rel < 0.5 else 'pd'
-        return 'pm'
-    t.shape(inside, color, 'po')
-    return t.im
+# ================================================================ micro-décor
+
+def micro(kind):
+    cv = Canvas(T, T)
+    if kind == 'touffes':
+        touffe(cv, 2, 9); touffe(cv, 9, 13)
+    elif kind == 'touffes_claires':
+        touffe(cv, 3, 10, 'V7', 'V8'); touffe(cv, 9, 6, 'V7', 'V8')
+    elif kind.startswith('fleurs'):
+        petal = {'fleurs_blanches': ('A3', 'A2'), 'fleurs_jaunes': ('A4', 'A5'), 'fleurs_lavande': ('A2', 'A1')}[kind]
+        for cx, cy in ((4, 6), (11, 10)):
+            cv.vline(cx, cy + 2, cy + 5, 'V6')               # tige
+            cv.put(cx + 1, cy + 4, 'V6')
+            for dx, dy in ((-2, 0), (1, 0), (-1, -2), (-1, 1)):  # pétales de 2 × 2
+                for ex in (0, 1):
+                    for ey in (0, 1):
+                        cv.put(cx + dx + ex, cy + dy + ey - 1, petal[0] if dy <= 0 else petal[1])
+            cv.put(cx, cy, 'A6')                             # cœur
+    elif kind == 'trefle':
+        for cx, cy in ((5, 7), (11, 11)):
+            for dx, dy in ((-1, -1), (1, -1), (0, 1)):
+                cv.put(cx + dx, cy + dy, 'V8'); cv.put(cx + dx + (1 if dx >= 0 else -1), cy + dy, 'V6')
+            cv.put(cx, cy, 'V5'); cv.put(cx, cy + 2, 'V5')
+    elif kind == 'champignon':
+        # chapeau A7 (baie) taché de C1, pied C1 et C0, ombre de contact
+        for y, (a, b) in enumerate(((5, 9), (4, 10), (3, 11), (3, 11))):
+            for x in range(a, b + 1):
+                cv.put(x, 5 + y, 'A8' if x < 6 or y == 0 else 'A7')
+        cv.hline(3, 11, 9, 'W0')
+        cv.put(6, 6, 'C1'); cv.put(9, 7, 'C1'); cv.put(5, 8, 'C1')
+        cv.rect(6, 10, 8, 12, 'C1'); cv.vline(8, 10, 12, 'C0')
+        cv.hline(5, 9, 13, 'B1')
+        ombre_contact(cv, 4, 10, 14, 1)
+    elif kind == 'caillou':
+        # 13 × 8 au plus, R1 à R3, bord d'ombre N2, ombre de contact
+        def inside(x, y):
+            return ((x + 0.5 - 7.5) / 6) ** 2 + ((y + 0.5 - 10) / 3.4) ** 2 <= 1
+        for y in range(T):
+            for x in range(T):
+                if inside(x, y):
+                    lv = level((x + 0.5 - 7.5) / 6, (y + 0.5 - 10) / 3.4)
+                    cv.put(x, y, 'R3' if lv >= 3 else 'R2' if lv == 2 else 'R1')
+        outline_cote_ombre(cv, inside, 'N2')
+        ombre_contact(cv, 3, 12, 14, 1)
+    elif kind == 'feuilles':
+        for cx, cy, c1, c2 in ((4, 5, 'A6', 'W3'), (11, 9, 'A4', 'A6'), (6, 12, 'A6', 'W3')):
+            cv.put(cx, cy, c1); cv.put(cx + 1, cy, c1); cv.put(cx + 1, cy - 1, c1); cv.put(cx, cy + 1, c2)
+    return ancrer(cv.im)
 
 
-def buisson(kind):
-    t = Tile()
-    blobs = [(8, 10, 5.5), (5, 9, 3.6), (11, 9, 3.6), (8, 6, 4)]
-    if kind == 'vert':
-        canopy(t, blobs, ('fo', 'fd', 'fm', 'fl', 'fh'))
-    elif kind == 'baies':
-        canopy(t, blobs, ('fo', 'fd', 'fm', 'fl', 'fh'), ('blue', 'blue2', 7))
-    elif kind == 'fleuri':
-        canopy(t, blobs, ('fo', 'fd', 'fm', 'fl', 'fh'), ('kl', 'km', 8))
-    elif kind == 'petit':
-        canopy(t, [(8, 11, 4), (6, 10, 2.8), (10, 10, 2.8)], ('fo', 'fd', 'fm', 'fl', 'fh'))
-    return t.im
+# ================================================================ objets
 
-
-# ---------------------------------------------------------------- rochers, bois, objets
-
-def rocher(big=False):
-    t = Tile(2 if big else 1, 1)
+def rocher(w=32, h=32, big=True):
+    """Rocher (organique dur) : plans anguleux séparés par des fissures ; plans du haut et de
+    gauche en R3, base R2, ombre R1 ; bord d'ombre et fissures N2 ; reflet R0 de 2 à 4 px côté
+    ombre ; ombre de contact."""
+    cv = Canvas(w, h)
     if big:
-        blobs = [(12, 10, 8, 5.5), (21, 11, 6, 4.2)]
+        cx, cy, rx, ry = w / 2, h - 11.5, 12.5, 9
     else:
-        blobs = [(8, 10, 5.5, 4.2)]
+        cx, cy, rx, ry = w / 2, h - 6.5, 6.5, 4.6
+
     def inside(x, y):
-        return any(((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1 for cx, cy, rx, ry in blobs)
-    def color(x, y):
-        for cx, cy, rx, ry in reversed(blobs):
-            if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1:
-                tt = (x + 0.5 - cx) / rx + (y + 0.5 - cy) / ry
-                return 'rh' if tt < -0.9 else 'rl' if tt < -0.1 else 'rm' if tt < 0.7 else 'rd'
-    t.shape(inside, color, 'ro')
-    # une fissure et un peu de mousse
-    t.put(int(blobs[0][0]) + 1, int(blobs[0][1]) - 1, 'rd')
-    t.put(int(blobs[0][0]) + 2, int(blobs[0][1]), 'rd')
-    t.put(int(blobs[0][0]) - 3, int(blobs[0][1]) - 3, 'gl')
-    t.put(int(blobs[0][0]) - 2, int(blobs[0][1]) - 3, 'gl')
-    return t.im
+        a = math.atan2(y + 0.5 - cy, x + 0.5 - cx)
+        k = 1 + 0.08 * math.cos(3 * a + 0.6) + 0.05 * math.cos(5 * a)
+        return ((x + 0.5 - cx) / (rx * k)) ** 2 + ((y + 0.5 - cy) / (ry * k)) ** 2 <= 1 and y + 0.5 <= cy + ry * 0.75
+
+    for y in range(h):
+        for x in range(w):
+            if not inside(x, y):
+                continue
+            nx, ny = (x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry
+            a = math.atan2(ny, nx)
+            facet = round(a / (math.pi / 3)) * (math.pi / 3)        # plans anguleux
+            mag = min(1, math.hypot(nx, ny))
+            lv = level(math.cos(facet) * mag, math.sin(facet) * mag - 0.25)
+            cv.put(x, y, 'R3' if lv >= 3 else 'R2' if lv == 2 else 'R1')
+    for k in range(int(rx * 0.7)):                                     # fissures
+        cv.put(int(cx) + k // 2, int(cy - ry * 0.5) + k, 'N2')
+    if big:
+        for k in range(5):
+            cv.put(int(cx - rx * 0.45) + k, int(cy + 1) + k // 3, 'N2')
+    outline_cote_ombre(cv, inside, 'N2')
+    pts = [(x, y) for y in range(h) for x in range(w) if inside(x, y) and not inside(x + 1, y + 1) and x > cx and y > cy - 1]
+    for x, y in pts[: 4 if big else 2]:                                # reflet violet côté ombre
+        cv.put(x - 1, y - 1, 'R0')
+    ombre_contact(cv, int(cx - rx * 0.8), int(cx + rx * 0.8), int(cy + ry * 0.75) + 1, 2)
+    return ancrer(cv.im)
 
 
 def souche():
-    t = Tile()
-    for y in range(8, 14):
-        for x in range(3, 13):
-            k = x - 3
-            t.put(x, y, 'bl' if k < 2 else 'bd' if k > 7 else 'bm')
-    t.shape(lambda x, y: ((x - 8) / 5.2) ** 2 + ((y - 8) / 2.4) ** 2 <= 1,
-            lambda x, y: 'eh' if math.hypot(x - 8, (y - 8) * 2) < 1.5 else 'el' if math.hypot(x - 8, (y - 8) * 2) < 3.5 else 'em', None)
-    for x in range(2, 14):
-        t.put(x, 14, 'bo')
-    for y in range(7, 14):
-        t.put(2, y, 'bo')
-        t.put(13, y, 'bo')
-    for x in range(4, 12):
-        t.put(x, 5, 'bo')
-    t.put(1, 14, 'bo'); t.put(14, 14, 'bo')
-    return t.im
+    """Souche (organique) : écorce W, dessus annelé B2/B1, contour côté ombre N2."""
+    cv = Canvas(32, 32)
+    x0, x1, y0, y1 = 9, 22, 19, 28
+
+    def body(x, y):
+        return x0 <= x <= x1 and y0 <= y <= y1 or (y1 < y <= y1 + 1 and x0 - 2 <= x <= x1 + 2)
+
+    for y in range(y0, y1 + 2):
+        for x in range(x0 - 2, x1 + 3):
+            if body(x, y):
+                k = (x - x0) / (x1 - x0)
+                cv.put(x, y, 'W4' if k < 0.2 else 'W3' if k < 0.6 else 'W2' if k < 0.9 else 'W1')
+    for x in (12, 16, 19):                                   # veines d'écorce
+        cv.vline(x, y0 + 3, y0 + 7, 'W1')
+
+    def top(x, y):
+        return ((x + 0.5 - 15.5) / 7) ** 2 + ((y + 0.5 - y0) / 2.6) ** 2 <= 1
+    for y in range(y0 - 3, y0 + 3):
+        for x in range(x0 - 1, x1 + 2):
+            if top(x, y):
+                rr = math.hypot((x + 0.5 - 15.5) / 7, (y + 0.5 - y0) / 2.6)
+                cv.put(x, y, 'B2' if rr > 0.75 or 0.35 < rr < 0.5 else 'B1')
+    outline_cote_ombre(cv, lambda x, y: body(x, y) or top(x, y), 'N2')
+    ombre_contact(cv, x0 - 2, x1 + 2, y1 + 2, 2)
+    return cv.im
 
 
-def rondin():
-    t = Tile(2, 1)
-    for y in range(6, 13):
-        for x in range(4, 28):
-            k = y - 6
-            t.put(x, y, 'bl' if k < 2 else 'bd' if k > 4 else 'bm')
-    for x in range(4, 28):
-        t.put(x, 5, 'bo'); t.put(x, 13, 'bo')
-    t.shape(lambda x, y: ((x - 27.5) / 2.6) ** 2 + ((y - 9.5) / 4.2) ** 2 <= 1,
-            lambda x, y: 'eh' if abs(x - 27.5) + abs(y - 9.5) < 2 else 'el', 'bo')
-    for x in (10, 18):                                  # nœuds
-        t.put(x, 9, 'bo'); t.put(x + 1, 9, 'bd')
-    return t.im
+def buche():
+    """Bûche couchée (organique), 32 × 16 : bout coupé à gauche (B2/B1, face à la lumière),
+    écorce W éclairée par le haut, contour côté ombre N2."""
+    cv = Canvas(32, 16)
 
+    def body(x, y):
+        return 7 <= x <= 28 and 5 <= y <= 12
 
-def cloture(part):
-    t = Tile()
-    def post(x0):
-        for y in range(3, 15):
-            t.put(x0, y, 'el'); t.put(x0 + 1, y, 'ed')
-        t.put(x0, 2, 'eo'); t.put(x0 + 1, 2, 'eo')
-        for y in range(2, 16):
-            t.put(x0 - 1, y, 'eo'); t.put(x0 + 2, y, 'eo')
-        t.put(x0, 15, 'eo'); t.put(x0 + 1, 15, 'eo')
-    def rail(x0, x1, y):
-        for x in range(x0, x1 + 1):
-            t.put(x, y - 1, 'eo'); t.put(x, y, 'eh'); t.put(x, y + 1, 'em'); t.put(x, y + 2, 'eo')
-    if part in ('milieu', 'gauche', 'droite'):
-        x0 = 0 if part != 'gauche' else 7
-        x1 = 15 if part != 'droite' else 8
-        rail(x0, x1, 5)
-        rail(x0, x1, 10)
-        post(7)
-    elif part == 'poteau':
-        post(7)
-    elif part == 'montant':
-        for y in range(0, 16):
-            t.put(6, y, 'eo'); t.put(7, y, 'el'); t.put(8, y, 'ed'); t.put(9, y, 'eo')
-    elif part == 'portillon':
-        rail(0, 15, 4)
-        rail(0, 15, 11)
-        for i in range(12):                              # écharpe en diagonale
-            x, y = 2 + i, 12 - i * 0.7
-            t.put(x, int(y), 'el'); t.put(x, int(y) + 1, 'ed')
-        post(0)
-        post(14)
-    return t.im
+    for y in range(5, 13):
+        for x in range(7, 29):
+            k = (y - 5) / 7
+            cv.put(x, y, 'W4' if k < 0.25 else 'W3' if k < 0.6 else 'W2' if k < 0.85 else 'W1')
+    for x in (12, 18, 23):
+        cv.hline(x, x + 3, 8, 'W2')
+
+    def end(x, y):
+        return ((x + 0.5 - 6) / 2.6) ** 2 + ((y + 0.5 - 9) / 4.2) ** 2 <= 1
+    for y in range(4, 14):
+        for x in range(2, 10):
+            if end(x, y):
+                rr = math.hypot((x + 0.5 - 6) / 2.6, (y + 0.5 - 9) / 4.2)
+                cv.put(x, y, 'B2' if rr > 0.6 or (x < 6 and y < 9) else 'B1')
+    outline_cote_ombre(cv, lambda x, y: body(x, y) or end(x, y), 'N2')
+    ombre_contact(cv, 4, 27, 14, 2)
+    return ancrer(cv.im)
 
 
 def tonneau():
-    t = Tile()
+    """Tonneau (construit), 18 × 24 dans 32 × 32 : couvercle visible (un cinquième de la
+    hauteur), douelles W, cerclages W1, contour continu W0, ombre de contact."""
+    cv = Canvas(32, 32)
+    top, bot, lid = 7, 29, 11
+
     def inside(x, y):
-        return 3 <= y <= 15 and abs(x - 8) <= 4.2 + 1.1 * math.sin(math.pi * (y - 3) / 12)
-    def color(x, y):
-        rel = (x + 0.5 - 8) / 5
-        if y in (5, 12):
-            return 'rd' if rel > 0.2 else 'rl'          # cerclages de fer
-        return 'bh' if rel < -0.55 else 'bl' if rel < -0.1 else 'bm' if rel < 0.5 else 'bd'
-    t.shape(inside, color, 'bo')
-    for x in range(5, 12):
-        t.put(x, 3, 'bd')
-    t.put(6, 3, 'bm'); t.put(7, 3, 'bm')
-    return t.im
+        if not top <= y <= bot:
+            return False
+        bulge = 1.2 * math.sin(math.pi * (y - top) / (bot - top))
+        return 8 - bulge <= x <= 23 + bulge
+
+    for y in range(top, bot + 1):
+        for x in range(32):
+            if not inside(x, y):
+                continue
+            if y < lid:
+                cv.put(x, y, 'W2' if y == lid - 1 else 'W4' if y == top or x < 13 else 'B2')   # couvercle
+                continue
+            bulge = 1.2 * math.sin(math.pi * (y - top) / (bot - top))
+            k = (x - (8 - bulge)) / (15 + 2 * bulge)
+            c = 'W4' if k < 0.18 else 'W3' if k < 0.55 else 'W2' if k < 0.85 else 'W1'
+            if (x - 8) % 4 == 3 and 0.1 < k < 0.9 and c != 'W1':
+                c = 'W2'                                                    # joints des douelles
+            if y in (lid + 3, bot - 4):
+                c = 'W1'                                                    # cerclages
+            cv.put(x, y, c)
+    outline_construit(cv, inside, 'W0')
+    ombre_contact(cv, 8, 23, bot + 2, 2)
+    return cv.im
 
 
 def caisse():
-    t = Tile()
-    for y in range(3, 15):
-        for x in range(2, 14):
-            k = (y - 3) % 4
-            t.put(x, y, 'ed' if k == 3 else 'eh' if k == 0 else 'el')
-    for i in range(12):
-        t.put(2 + i, 3 + i, 'em'); t.put(3 + i, 3 + i, 'ed')
-    for x in range(2, 14):
-        t.put(x, 3, 'eh')
-    for y in range(3, 15):
-        t.put(2, y, 'el'); t.put(13, y, 'ed')
-    for x in range(1, 15):
-        t.put(x, 2, 'eo'); t.put(x, 15, 'eo')
-    for y in range(2, 16):
-        t.put(1, y, 'eo'); t.put(14, y, 'eo')
-    return t.im
+    """Caisse (construit), 16 × 16 : dessus clair, planches, écharpe, contour W0."""
+    cv = Canvas(16, 16)
+    cv.rect(2, 4, 13, 13, 'W3')
+    cv.rect(2, 2, 13, 3, 'W4')                                  # dessus
+    for y in (6, 10):
+        cv.hline(2, 13, y, 'W2')                                # joints de planches
+    for k in range(10):                                         # écharpe
+        cv.put(3 + k, max(4, 13 - k), 'W4')
+        cv.put(4 + k, max(4, 13 - k), 'W2')
+    cv.vline(13, 4, 13, 'W2')
+    outline_construit(cv, lambda x, y: 2 <= x <= 13 and 2 <= y <= 13, 'W0')
+    ombre_contact(cv, 2, 13, 15, 1)
+    return cv.im
 
 
 def foin():
-    t = Tile()
+    """Botte de foin (construit, paille) 32 × 16 : A4 et A5, liens W2, contour W1."""
+    cv = Canvas(32, 16)
+
     def inside(x, y):
-        return 4 <= y <= 14 and 1 <= x <= 14 and not ((x < 2.5 or x > 13.5) and (y < 5.5 or y > 13.5))
-    def color(x, y):
-        if y in (7, 11):
-            return 'ho'                                  # liens
-        k = (x * 3 + y) % 5
-        return 'hl' if y < 6 or k == 0 else 'hm' if x < 11 else 'hd'
-    t.shape(inside, color, 'ho')
-    return t.im
+        return 3 <= x <= 28 and 3 <= y <= 13 and not ((x < 5 or x > 26) and (y < 5 or y > 11))
+    for y in range(16):
+        for x in range(32):
+            if inside(x, y):
+                c = 'A4' if y < 6 else 'A5' if y < 11 else 'A6'
+                if (x - 3) % 6 == 0 and 5 < y < 12:
+                    c = 'A5'                                   # brins en amas verticaux
+                if x in (10, 21):
+                    c = 'W2'                                   # liens
+                cv.put(x, y, c)
+    outline_construit(cv, inside, 'W1')
+    ombre_contact(cv, 4, 27, 15, 1)
+    return cv.im
 
 
-# ---------------------------------------------------------------- planche
+def cloture(part):
+    """Clôture (construit, module de 16 × 16) : piquets de 3 px tous les 8 px, 14 px de haut,
+    deux lisses ; contour W0. Les lisses rejoignent le module voisin."""
+    cv = Canvas(16, 16)
+    posts = {'gauche': [3, 11], 'milieu': [3, 11], 'droite': [3, 11], 'poteau': [6]}[part]
+    a = 3 if part == 'gauche' else 0
+    b = 13 if part == 'droite' else 15
+    rails = set()
+    if part != 'poteau':
+        for y in (5, 6, 10, 11):
+            for x in range(a, b + 1):
+                rails.add((x, y))
+    post_px = {(x, y) for px_ in posts for x in range(px_, px_ + 3) for y in range(2, 16)}
+    shape = rails | post_px
+    outline_construit(cv, lambda x, y: (x, y) in shape, 'W0')
+    for (x, y) in rails:
+        cv.put(x, y, 'W4' if y in (5, 10) else 'W3')
+    for (x, y) in post_px:
+        k = min(x - px_ for px_ in posts if px_ <= x)
+        cv.put(x, y, 'W4' if k == 0 or y == 2 else 'W3' if k == 1 else 'W2')
+    if part in ('milieu', 'droite'):                       # raccord à gauche : pas de contour
+        for y in (5, 6, 10, 11):
+            cv.put(0, y, 'W4' if y in (5, 10) else 'W3')
+    if part in ('milieu', 'gauche'):
+        for y in (5, 6, 10, 11):
+            cv.put(15, y, 'W4' if y in (5, 10) else 'W3')
+    return cv.im
 
-CORNER_ORDER = [(tl, tr, bl, br) for tl in (0, 1) for tr in (0, 1) for bl in (0, 1) for br in (0, 1)]
 
+def roseaux():
+    cv = Canvas(16, 16)
+    for x0, hgt in ((4, 11), (7, 13), (10, 9), (12, 12)):
+        cv.vline(x0, 15 - hgt + 3, 15, 'V5')
+        cv.vline(x0 + 1 if x0 < 12 else x0 - 1, 15 - hgt // 2, 15, 'V2')
+        cv.rect(x0, 15 - hgt, x0, 15 - hgt + 2, 'W2')     # massette
+        cv.put(x0, 15 - hgt, 'W3')
+    return cv.im
+
+
+def nenuphars():
+    cv = Canvas(16, 16)
+    for cx, cy, r in ((5, 6, 3.4), (11, 11, 2.8)):
+        def inside(x, y, cx=cx, cy=cy, r=r):
+            return math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= r and not (x + 0.5 > cx and abs(y + 0.5 - cy) < 0.9)
+        for y in range(16):
+            for x in range(16):
+                if inside(x, y):
+                    cv.put(x, y, 'V8' if (x + 0.5 - cx) + (y + 0.5 - cy) < -1 else 'V6')
+        outline_cote_ombre(cv, inside, 'V2')
+    cv.rect(4, 4, 5, 5, 'A8'); cv.put(4, 4, 'A2')
+    return ancrer(cv.im)
+
+
+# ================================================================ feuillage
+
+def foliage(cv, blobs, tones, seed, fruit=None, flowers=None):
+    """Feuillage en amas superposés : chaque boule est éclairée en haut à gauche (normale mêlée
+    à celle du houppier entier), les boules du haut passent devant et ombrent celles du dessous ;
+    creux sombres, quelques touches d'indigo A0 dans la moitié basse et droite ; bord d'ombre
+    cerné, bord éclairé ouvert. `tones` : [ombre profonde, ombre, base, lumière, reflet]."""
+    X0 = min(cx - r for cx, cy, r in blobs); X1 = max(cx + r for cx, cy, r in blobs)
+    Y0 = min(cy - r for cx, cy, r in blobs); Y1 = max(cy + r for cx, cy, r in blobs)
+    CX, CY, RX, RY = (X0 + X1) / 2, (Y0 + Y1) / 2, (X1 - X0) / 2, (Y1 - Y0) / 2
+
+    def owner(x, y):
+        k = None
+        for i, (cx, cy, r) in enumerate(blobs):
+            a = math.atan2(y + 0.5 - cy, x + 0.5 - cx)
+            if math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= r * (1 + 0.07 * math.cos(5 * a + i)):   # bord dentelé
+                k = i
+        return k
+    own = {(x, y): owner(x, y) for y in range(cv.h) for x in range(cv.w)}
+    inside = lambda x, y: own.get((x, y)) is not None
+    for (x, y), k in own.items():
+        if k is None:
+            continue
+        cx, cy, r = blobs[k]
+        nx = 0.75 * (x + 0.5 - cx) / r + 0.45 * (x + 0.5 - CX) / RX
+        ny = 0.75 * (y + 0.5 - cy) / r + 0.45 * (y + 0.5 - CY) / RY
+        lv = level(nx, ny)
+        for dd in (1, 2):                                     # ombre d'une boule de devant
+            q = own.get((x - dd, y - dd))
+            if q is not None and q > k:
+                lv = 0 if dd == 1 else min(lv, 1)
+                break
+        cv.put(x, y, tones[lv])
+    outline_feuillage(cv, inside, tones[0], tones[1], seed)
+    r = rng('feuillage', seed)
+    deep = sorted((x, y) for (x, y), k in own.items() if k is not None and cv.get(x, y)[:3] == PAL[tones[0]]
+                  and x > CX and y > CY)
+    for _ in range(2):                                        # touches d'indigo au creux
+        if deep:
+            x, y = r.choice(deep)
+            for p in amas(r, x, y, r.randint(2, 4)):
+                if inside(*p):
+                    cv.put(*p, 'A0')
+    pts = sorted(p for p, k in own.items() if k is not None and inside(p[0] + 1, p[1] + 1) and inside(p[0] - 1, p[1] - 1))
+    if fruit:
+        for _ in range(fruit[1]):
+            x, y = r.choice(pts)
+            cv.rect(x, y, x + 1, y + 1, fruit[0][0])
+            cv.put(x + 1, y + 1, fruit[0][1])
+    if flowers:
+        for _ in range(flowers[1]):
+            x, y = r.choice(pts)
+            lit = cv.get(x, y)[:3] in (PAL[tones[3]], PAL[tones[4]])
+            for p in amas(r, x, y, r.randint(2, 4)):
+                if inside(*p):
+                    cv.put(*p, flowers[0][0] if lit else flowers[0][1])
+    return own
+
+
+V_RAMP = ['V1', 'V2', 'V6', 'V8', 'V10']         # ombre profonde, ombre, base, lumière, reflet
+V_RAMP_CLAIR = ['V2', 'V5', 'V8', 'V10', 'V11']
+
+
+def buisson(kind):
+    """Buisson 32 × 26 dans 32 × 32 : trois ou quatre amas, les plus clairs en haut à gauche,
+    pas de tronc ni d'ombre de contact."""
+    cv = Canvas(32, 32)
+    blobs = [(16, 23, 9), (8, 21, 7), (24, 21, 7), (13, 14, 7.5), (20, 14, 7)]
+    if kind == 'vert':
+        foliage(cv, blobs, V_RAMP, 1)
+    elif kind == 'baies':
+        foliage(cv, blobs, V_RAMP, 2, fruit=(('A7', 'W0'), 7))
+    elif kind == 'fleuri':
+        foliage(cv, blobs, V_RAMP, 3, flowers=(('A3', 'A2'), 6))
+    return cv.im
+
+
+def trunk(cv, x0, top, bot, w=7, forks=True):
+    """Tronc de 6 à 8 px : flanc gauche W4, milieu W3, droite W2 puis W1 ; contour W0 ;
+    racines ; deux fourches qui partent dans le feuillage."""
+    pts = set()
+    for y in range(top, bot + 1):
+        spread = 2 if y > bot - 2 else 1 if y > bot - 4 else 0
+        for x in range(x0 - spread, x0 + w + spread):
+            pts.add((x, y))
+    if forks:
+        for k in range(9):
+            pts.add((x0 + 1 - k // 2, top - k)); pts.add((x0 + 2 - k // 2, top - k))
+            pts.add((x0 + w - 2 + k // 2, top - k)); pts.add((x0 + w - 3 + k // 2, top - k))
+    outline_construit(cv, lambda x, y: (x, y) in pts, 'W0')
+    for (x, y) in pts:
+        k = (x - x0) / w
+        cv.put(x, y, 'W4' if k < 0.2 else 'W3' if k < 0.55 else 'W2' if k < 0.85 else 'W1')
+    return pts
+
+
+def arbre(kind):
+    """Arbre adulte, gabarit 80 × 80 : houppier aux deux tiers de la hauteur, tronc de 7 px dont
+    les fourches se voient dans le feuillage ; pas d'ombre de contact."""
+    cv = Canvas(80, 80)
+    trunk(cv, 37, 54, 79)
+    # du bas vers le haut : les boules du haut passent devant et ombrent celles du dessous
+    blobs = [(40, 50, 11), (25, 45, 11), (55, 45, 11), (40, 37, 14), (28, 30, 11), (52, 30, 11),
+             (40, 21, 12), (32, 14, 9), (48, 14, 9)]
+    if kind == 'feuillu':
+        foliage(cv, blobs, V_RAMP, 10)
+    elif kind == 'fruits':
+        foliage(cv, blobs, V_RAMP, 11, fruit=(('A7', 'W0'), 18))
+    elif kind == 'fleurs':
+        foliage(cv, blobs, V_RAMP_CLAIR, 12, flowers=(('A3', 'A8'), 22))
+    trunk(cv, 37, 61, 79, forks=False)                    # le pied repasse devant le feuillage
+    return cv.im
+
+
+def sapin():
+    """Sapin 48 × 64 : étages de branches, chaque étage ombre celui du dessous ; flanc gauche
+    éclairé ; bord d'ombre cerné, bord éclairé ouvert."""
+    cv = Canvas(48, 64)
+    trunk(cv, 21, 56, 63, 6, forks=False)
+    tiers = [(24, 2, 5, 16), (24, 11, 10, 28), (24, 22, 15, 42), (24, 34, 20, 56)]
+
+    def tier_of(x, y):
+        for i, (cx, top, half, bot) in enumerate(tiers):
+            if top <= y + 0.5 <= bot:
+                w = half * (y + 0.5 - top) / (bot - top) + 1
+                if abs(x + 0.5 - cx) <= w:
+                    return i, w
+        return None, 0
+    own = {(x, y): tier_of(x, y) for y in range(64) for x in range(48)}
+    tones = ['V0', 'V2', 'V4', 'V6', 'V8']
+    for (x, y), (i, w) in own.items():
+        if i is None:
+            continue
+        cx, top, half, bot = tiers[i]
+        rel = (x + 0.5 - cx) / max(1, w)
+        lv = 4 if rel < -0.65 else 3 if rel < -0.2 else 2 if rel < 0.35 else 1
+        if y + 0.5 > bot - 2:
+            lv = min(lv, 1)
+        for dd in (1, 2):
+            above = own.get((x, y - dd), (None, 0))[0]
+            if above is not None and above < i:
+                lv = 0
+                break
+        cv.put(x, y, tones[lv])
+    outline_feuillage(cv, lambda x, y: own.get((x, y), (None, 0))[0] is not None, 'V0', 'V1', 5)
+    return cv.im
+
+
+# ================================================================ assemblage
 
 def build():
-    items = []          # (nom, image, largeur en tuiles, hauteur en tuiles)
-    for v in range(8):
-        t = Tile()
-        grass_base(t, v)
-        items.append((f'herbe_{v}', t.im, 1, 1))
-    for k, v in (('touffes', 0), ('herbes_hautes', 0), ('trefle', 0), ('fleurs_blanches', 0), ('fleurs_blanches', 2),
-                 ('fleurs_jaunes', 0), ('fleurs_jaunes', 2), ('fleurs_rouges', 1), ('fleurs_bleues', 1),
-                 ('fleurs_mauves', 1), ('champignons', 0), ('cailloux', 0), ('feuilles', 0)):
-        items.append((f'{k}_{v}', deco(k, v), 1, 1))
-    items.append(('roseaux', roseaux(), 1, 1))
-    items.append(('nenuphars', nenuphars(), 1, 1))
-    for b in ('vert', 'baies', 'fleuri', 'petit'):
-        items.append((f'buisson_{b}', buisson(b), 1, 1))
-    items.append(('rocher', rocher(), 1, 1))
-    items.append(('souche', souche(), 1, 1))
-    items.append(('tonneau', tonneau(), 1, 1))
-    items.append(('caisse', caisse(), 1, 1))
-    items.append(('foin', foin(), 1, 1))
-    for p in ('gauche', 'milieu', 'droite', 'poteau', 'montant', 'portillon'):
-        items.append((f'cloture_{p}', cloture(p), 1, 1))
-    items.append(('grand_rocher', rocher(True), 2, 1))
-    items.append(('rondin', rondin(), 2, 1))
-    terr = []
-    for name in TERRAINS:
-        frames = 3 if name == 'eau' else 1
-        for f in range(frames):
-            row = [terrain_tile(name, *c, frame=f) for c in CORNER_ORDER]
-            terr.append((name, f, row))
-    big = [('chene', arbre('chene'), 3, 3), ('pommier', arbre('pommier'), 3, 3), ('cerisier', arbre('cerisier'), 3, 3),
-           ('sapin', sapin(), 2, 3)]
-
-    # placement : les terrains d'abord (une rangée de 16 par terrain et par image), puis les
-    # grands éléments côte à côte, puis les petites tuiles
-    grid = {}
-    names = {}
-    tiles_meta = {}
-    row = 0
-    for name, f, tl in terr:
-        for i, im in enumerate(tl):
-            grid[(i, row)] = im
-            c = CORNER_ORDER[i]
-            names[(i, row)] = f'{name}_{"".join(map(str, c))}' + (f'_image{f}' if f else '')
-        tiles_meta[(name, f)] = row
-        row += 1
-    x = 0
-    for nm, im, w, h in big:
+    """Rassemble tout sur une planche de 16 colonnes ; renvoie (planche, index nom → case,
+    blocs des grands éléments, sprites nommés pour le contrôle)."""
+    tiles = []          # (nom, image 16×16)
+    sprites = {}        # nom de fichier attendu par qa_sprites.py → image
+    for v in range(4):
+        im = fill_grass('V3', v)
+        tiles.append((f'herbe_sombre_{v}', im)); sprites[f'tuile_terrain_herbe-sombre-{v}_16x16.png'] = im
+    for base, nom, tufts in (('V6', 'herbe_moyenne', ('V4', 'V5')), ('V8', 'herbe_claire', ('V7', 'V9'))):
+        for v in (0, 1, 2):
+            im = fill_grass(base, v, tufts)
+            tiles.append((f'{nom}_{v}', im)); sprites[f'tuile_terrain_{nom.replace("_", "-")}-{v}_16x16.png'] = im
+    im = fill_terre()
+    tiles.append(('terre', im)); sprites['tuile_terrain_terre_16x16.png'] = im
+    for v in range(3):
+        cv = Canvas(T, T)
+        cv.rect(0, 0, T - 1, T - 1, 'V3')
+        im = fill_paves(v, cv=cv)
+        tiles.append((f'paves_{v}', im)); sprites[f'tuile_terrain_paves-{v}_16x16.png'] = im
+    for f in range(3):
+        im = fill_eau(f)
+        tiles.append((f'eau_image{f}', im)); sprites[f'tuile_terrain_eau-{f}_16x16.png'] = im
+    wang = {sol: [tache_sol(sol, c) for c in CORNERS] for sol in ('herbe_moyenne', 'herbe_claire', 'terre')}
+    wang['paves'] = [tache_paves(c) for c in CORNERS]
+    eau_frames = [[tache_eau(c, f) for c in CORNERS] for f in range(3)]
+    wang['eau'] = eau_frames[0]
+    rows_wang = {}
+    for sol, ims in wang.items():
+        while len(tiles) % COLS:                       # chaque sol commence une rangée
+            tiles.append((None, None))
+        rows_wang[sol] = len(tiles)
+        for c, im in zip(CORNERS, ims):
+            tiles.append((f'{sol}_{"".join(map(str, c))}', im))
+            sprites[f'tuile_transition_{sol.replace("_", "-")}-{"".join(map(str, c))}_16x16.png'] = im
+    eau_rows = [rows_wang['eau']]
+    for f in (1, 2):
+        eau_rows.append(len(tiles))
+        for c, im in zip(CORNERS, eau_frames[f]):
+            tiles.append((f'eau_{"".join(map(str, c))}_image{f}', im))
+    for k in ('touffes', 'touffes_claires', 'fleurs_blanches', 'fleurs_jaunes', 'fleurs_lavande', 'trefle',
+              'champignon', 'caillou', 'feuilles'):
+        im = micro(k)
+        tiles.append((k, im))
+        famille = 'organique' if k in ('champignon', 'caillou') else 'feuillage' if k == 'trefle' else 'terrain'
+        sprites[f'micro_{famille}_{k.replace("_", "-")}_16x16.png'] = im
+    im = caisse(); tiles.append(('caisse', im)); sprites['objet_construit_caisse_16x16.png'] = im
+    for p in ('gauche', 'milieu', 'droite', 'poteau'):
+        im = cloture(p); tiles.append((f'cloture_{p}', im)); sprites[f'objet_construit_cloture-{p}_16x16.png'] = im
+    im = rocher(16, 16, big=False); tiles.append(('petit_rocher', im)); sprites['objet_organique_petit-rocher_16x16.png'] = im
+    im = roseaux(); tiles.append(('roseaux', im)); sprites['micro_feuillage_roseaux_16x16.png'] = im
+    im = nenuphars(); tiles.append(('nenuphars', im)); sprites['micro_feuillage_nenuphars_16x16.png'] = im
+    big = [('rocher', rocher(), 'objet_organique_rocher_32x32.png'), ('souche', souche(), 'objet_organique_souche_32x32.png'),
+           ('tonneau', tonneau(), 'objet_construit_tonneau_32x32.png'),
+           ('buisson_vert', buisson('vert'), 'arbre_feuillage_buisson-vert_32x32.png'),
+           ('buisson_baies', buisson('baies'), 'arbre_feuillage_buisson-baies_32x32.png'),
+           ('buisson_fleuri', buisson('fleuri'), 'arbre_feuillage_buisson-fleuri_32x32.png'),
+           ('buche', buche(), 'objet_organique_buche_32x16.png'), ('foin', foin(), 'objet_construit_foin_32x16.png'),
+           ('sapin', sapin(), 'arbre_feuillage_sapin_48x64.png'),
+           ('arbre_feuillu', arbre('feuillu'), 'arbre_feuillage_feuillu_80x80.png'),
+           ('arbre_fruits', arbre('fruits'), 'arbre_feuillage_fruits_80x80.png'),
+           ('arbre_fleurs', arbre('fleurs'), 'arbre_feuillage_fleurs_80x80.png')]
+    for nm, im, qa_name in big:
+        sprites[qa_name] = im
+    grid, names = {}, {}
+    for i, (nm, im) in enumerate(tiles):
+        if im is not None:
+            grid[(i % COLS, i // COLS)] = im
+            names[(i % COLS, i // COLS)] = nm
+    row = (len(tiles) + COLS - 1) // COLS
+    x, row_h, blocks = 0, 0, {}
+    for nm, im, _ in big:
+        w, h = im.width // T, im.height // T
+        if x + w > COLS:
+            x, row, row_h = 0, row + row_h, 0
+        blocks[nm] = (x, row, w, h)
         for ty in range(h):
             for tx in range(w):
                 grid[(x + tx, row + ty)] = im.crop((tx * T, ty * T, tx * T + T, ty * T + T))
                 names[(x + tx, row + ty)] = f'{nm}_{tx}_{ty}'
         x += w
-    row += 3
-    x = 0
-    for nm, im, w, h in items:
-        if x + w > COLS:
-            x, row = 0, row + 1
-        for tx in range(w):
-            grid[(x + tx, row)] = im.crop((tx * T, 0, tx * T + T, T))
-            names[(x + tx, row)] = nm if w == 1 else f'{nm}_{tx}'
-        x += w
-    rows = row + 1
+        row_h = max(row_h, h)
+    rows = row + row_h
     sheet = Image.new('RGBA', (COLS * T, rows * T), (0, 0, 0, 0))
     for (cx, cy), im in grid.items():
         sheet.alpha_composite(im, (cx * T, cy * T))
     sheet.save(os.path.join(ASSETS, NAME + '.png'))
     index = {nm: cy * COLS + cx for (cx, cy), nm in names.items()}
-    write_tsx(rows, index, tiles_meta)
-    print(f'assets/{NAME}.png : {COLS}×{rows} tuiles ({len(names)} dessinées)')
-    return sheet, index, tiles_meta
+    write_tsx(rows, index, rows_wang, eau_rows, [index[f'eau_image{f}'] for f in range(3)])
+    with open(os.path.join(ASSETS, NAME + '.json'), 'w', encoding='utf8') as f:
+        json.dump({'//': 'Jeu de tuiles de la ferme (scripts/carte/tileset.py) : nom → numéro de case (rangée × 16 + colonne) ; '
+                         'les grands éléments → [colonne, rangée, largeur, hauteur] en cases.',
+                   'tuiles': index, 'blocs': blocks}, f, ensure_ascii=False, indent=0)
+        f.write('\n')
+    print(f'assets/{NAME}.png : {COLS}×{rows} cases')
+    return sheet, index, blocks, sprites
 
 
-def write_tsx(rows, index, tiles_meta):
-    """Jeu de tuiles Tiled : nom de chaque tuile, animation de l'eau, un jeu de Wang « coins »
-    par terrain (couleur 1 : l'herbe, couleur 2 : le terrain)."""
-    lines = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        f'<tileset version="1.10" tiledversion="1.10.2" name="{NAME}" tilewidth="{T}" tileheight="{T}" '
-        f'tilecount="{COLS * rows}" columns="{COLS}">',
-        f' <image source="{NAME}.png" width="{COLS * T}" height="{rows * T}"/>',
-    ]
-    water_rows = [tiles_meta[('eau', f)] for f in range(3)]
+def write_tsx(rows, index, rows_wang, eau_rows, eau_fill):
+    colors = {'herbe_moyenne': '#407f4f', 'herbe_claire': '#6a9755', 'terre': '#ae8e61', 'paves': '#b7ac91', 'eau': '#5b9daf'}
+    out = ['<?xml version="1.0" encoding="UTF-8"?>',
+           f'<tileset version="1.10" tiledversion="1.10.2" name="{NAME}" tilewidth="{T}" tileheight="{T}" tilecount="{COLS * rows}" columns="{COLS}">',
+           f' <image source="{NAME}.png" width="{COLS * T}" height="{rows * T}"/>']
+    seq = lambda ids: ''.join(f'<frame tileid="{t}" duration="300"/>' for t in ids)
     for nm, i in sorted(index.items(), key=lambda kv: kv[1]):
         anim = ''
-        cy, cx = divmod(i, COLS)
-        if cy == water_rows[0]:
-            frames = ''.join(f'<frame tileid="{r * COLS + cx}" duration="420"/>' for r in water_rows)
-            anim = f'<animation>{frames}</animation>'
-        lines.append(f' <tile id="{i}"><properties><property name="nom" value="{nm}"/></properties>{anim}</tile>')
-    lines.append(' <wangsets>')
-    for name in TERRAINS:
-        row = tiles_meta[(name, 0)]
-        lines.append(f'  <wangset name="{name}" type="corner" tile="{row * COLS + 15}">')
-        lines.append('   <wangcolor name="herbe" color="#448442" tile="-1" probability="1"/>')
-        lines.append(f'   <wangcolor name="{name}" color="#{ {"prairie": "aed06c", "terre": "9c7248", "paves": "968e80", "eau": "3c80b6"}[name] }" tile="-1" probability="1"/>')
-        for i, (tl, tr, bl, br) in enumerate(CORNER_ORDER):
+        if i == eau_fill[0]:
+            anim = f'<animation>{seq([eau_fill[0], eau_fill[1], eau_fill[2], eau_fill[1]])}</animation>'
+        elif eau_rows[0] <= i < eau_rows[0] + 16:
+            k = i - eau_rows[0]
+            ids = [eau_rows[0] + k, eau_rows[1] + k, eau_rows[2] + k]
+            anim = f'<animation>{seq([ids[0], ids[1], ids[2], ids[1]])}</animation>'
+        out.append(f' <tile id="{i}"><properties><property name="nom" value="{nm}"/></properties>{anim}</tile>')
+    out.append(' <wangsets>')
+    for sol, start in rows_wang.items():
+        out.append(f'  <wangset name="{sol}" type="corner" tile="{start + 15}">')
+        out.append('   <wangcolor name="fond" color="#226152" tile="-1" probability="1"/>')
+        out.append(f'   <wangcolor name="{sol}" color="{colors[sol]}" tile="-1" probability="1"/>')
+        for k, (tl, tr, bl, br) in enumerate(CORNERS):
             c = lambda b: 2 if b else 1
-            # wangid : haut, haut-droite, droite, bas-droite, bas, bas-gauche, gauche, haut-gauche
-            lines.append(f'   <wangtile tileid="{row * COLS + i}" wangid="0,{c(tr)},0,{c(br)},0,{c(bl)},0,{c(tl)}"/>')
-        lines.append('  </wangset>')
-    lines.append(' </wangsets>')
-    lines.append('</tileset>')
+            out.append(f'   <wangtile tileid="{start + k}" wangid="0,{c(tr)},0,{c(br)},0,{c(bl)},0,{c(tl)}"/>')
+        out.append('  </wangset>')
+    out += [' </wangsets>', '</tileset>']
     with open(os.path.join(ASSETS, NAME + '.tsx'), 'w', encoding='utf8') as f:
-        f.write('\n'.join(lines) + '\n')
+        f.write('\n'.join(out) + '\n')
 
 
-# ---------------------------------------------------------------- scène de démonstration
+# ================================================================ scène de démonstration
 
-def demo(sheet, index, tiles_meta, W=48, H=30):
-    """Une scène faite uniquement de ces tuiles : prairie, chemin, pavés, mare, arbres, clôture."""
+def demo(sheet, index, blocks, W=48, H=30):
     r = random.Random(7)
+
     def tile(nm):
         i = index[nm]
-        cy, cx = divmod(i, COLS)
-        return sheet.crop((cx * T, cy * T, cx * T + T, cy * T + T))
+        return sheet.crop(((i % COLS) * T, (i // COLS) * T, (i % COLS) * T + T, (i // COLS) * T + T))
+
+    def block(nm):
+        x, y, w, h = blocks[nm]
+        return sheet.crop((x * T, y * T, (x + w) * T, (y + h) * T))
     out = Image.new('RGBA', (W * T, H * T))
-    # coins de terrain : une grille (W+1)×(H+1) par terrain
-    def blob(cx, cy, rx, ry, wob=0.25, seed=0):
+
+    def blob(cx, cy, rx, ry, seed):
         rr = random.Random(seed)
-        ph = [rr.random() * 6 for _ in range(3)]
+        ph = [rr.random() * 6 for _ in range(2)]
         def f(x, y):
             a = math.atan2(y - cy, x - cx)
-            k = 1 + wob * (math.sin(3 * a + ph[0]) * 0.5 + math.sin(5 * a + ph[1]) * 0.3)
+            k = 1 + 0.22 * math.sin(3 * a + ph[0]) + 0.12 * math.sin(5 * a + ph[1])
             return ((x - cx) / (rx * k)) ** 2 + ((y - cy) / (ry * k)) ** 2 <= 1
         return f
+
     def path(points, width):
         def f(x, y):
             for (ax, ay), (bx, by) in zip(points, points[1:]):
@@ -729,96 +847,84 @@ def demo(sheet, index, tiles_meta, W=48, H=30):
                     return True
             return False
         return f
-    corners = {
-        'prairie': [blob(10, 8, 7, 5, seed=1), blob(36, 22, 8, 5, seed=2), blob(40, 5, 5, 3, seed=3)],
-        'terre': [path([(0, 15), (14, 15), (20, 19), (34, 19)], 1.2)],
-        'paves': [path([(26, 0), (26, 9), (47, 9)], 1.1)],
-        'eau': [blob(13, 24, 6, 3.5, wob=0.3, seed=4)],
-    }
-    grids = {k: [[any(f(x, y) for f in fs) for x in range(W + 1)] for y in range(H + 1)] for k, fs in corners.items()}
+    layers = [
+        ('herbe_moyenne', [blob(12, 8, 9, 6, 1), blob(38, 23, 9, 6, 2)]),
+        ('herbe_claire', [blob(11, 8, 5, 3.4, 3), blob(39, 23, 5, 3, 4), blob(41, 5, 4, 2.6, 5)]),
+        ('eau', [blob(13, 23, 6, 3.6, 6)]),
+        ('terre', [path([(0, 15), (14, 15), (20, 18), (34, 18)], 1.25)]),
+        ('paves', [path([(26, 0), (26, 9), (47, 9)], 1.2)]),
+    ]
+    grids = {k: [[any(f(x, y) for f in fs) for x in range(W + 1)] for y in range(H + 1)] for k, fs in layers}
     for y in range(H):
         for x in range(W):
-            base = tile(f'herbe_{r.choice([0, 0, 0, 1, 2, 3, 4, 5, 6, 7])}')
-            out.alpha_composite(base, (x * T, y * T))
-            for name in ('prairie', 'terre', 'paves', 'eau'):
-                g = grids[name]
+            out.alpha_composite(tile(f'herbe_sombre_{r.choice([0, 0, 0, 0, 1, 2, 3])}'), (x * T, y * T))
+            for sol, _ in layers:
+                g = grids[sol]
                 c = (g[y][x], g[y][x + 1], g[y + 1][x], g[y + 1][x + 1])
                 if any(c):
-                    nm = f'{name}_{"".join(str(int(b)) for b in c)}'
-                    out.alpha_composite(tile(nm), (x * T, y * T))
-    occupied = set()
-    def free(x, y, w=1, h=1):
-        for yy in range(y, y + h):
-            for xx in range(x, x + w):
-                if not (0 <= xx < W and 0 <= yy < H) or (xx, yy) in occupied:
-                    return False
-                for name in ('terre', 'paves', 'eau'):
-                    g = grids[name]
-                    if g[yy][xx] or g[yy][xx + 1] or g[yy + 1][xx] or g[yy + 1][xx + 1]:
-                        return False
+                    out.alpha_composite(tile(f'{sol}_{"".join(str(int(b)) for b in c)}'), (x * T, y * T))
+    occ = set()
+
+    def free(x, y):
+        if not (0 <= x < W and 0 <= y < H) or (x, y) in occ:
+            return False
+        for sol in ('terre', 'paves', 'eau'):
+            g = grids[sol]
+            if g[y][x] or g[y][x + 1] or g[y + 1][x] or g[y + 1][x + 1]:
+                return False
         return True
-    def place(nm, x, y, w=1, h=1):
-        for ty in range(h):
-            for tx in range(w):
-                out.alpha_composite(tile(f'{nm}_{tx}_{ty}' if w * h > 1 and f'{nm}_{tx}_{ty}' in index else
-                                         f'{nm}_{tx}' if w > 1 else nm), ((x + tx) * T, (y + ty) * T))
-                occupied.add((x + tx, y + ty))
-    # au bord de l'eau
-    for x in range(W):
-        for y in range(H):
-            g = grids['eau']
+
+    g = grids['eau']
+    for y in range(H):
+        for x in range(W):
             c = (g[y][x], g[y][x + 1], g[y + 1][x], g[y + 1][x + 1])
-            if all(c) and r.random() < 0.09:
+            if all(c) and r.random() < 0.08:
                 out.alpha_composite(tile('nenuphars'), (x * T, y * T))
-            elif any(c) and not all(c) and r.random() < 0.3 and (c[2] and c[3]):
-                out.alpha_composite(tile('roseaux'), (x * T, (y - 1) * T))
-    # arbres en lisière et quelques isolés
-    plan = []
-    for x in range(0, W, 3):
-        plan.append((r.choice(['chene', 'chene', 'pommier', 'cerisier']), x, -1 if x % 2 else 0))
-    plan += [('sapin', 30, 12), ('chene', 2, 2), ('pommier', 20, 3), ('cerisier', 41, 13), ('sapin', 44, 24),
-             ('chene', 3, 17), ('pommier', 28, 23)]
-    for nm, x, y in plan:
-        w, h = (2, 3) if nm == 'sapin' else (3, 3)
-        if y < 0 or free(x, y, w, h):
-            for ty in range(h):
-                for tx in range(w):
-                    if 0 <= y + ty < H and 0 <= x + tx < W:
-                        out.alpha_composite(tile(f'{nm}_{tx}_{ty}'), ((x + tx) * T, (y + ty) * T))
-                        occupied.add((x + tx, y + ty))
-    # clôture autour d'un enclos, avec un portillon
-    fx0, fx1, fy = 32, 40, 15
-    for x in range(fx0, fx1 + 1):
-        nm = 'cloture_gauche' if x == fx0 else 'cloture_droite' if x == fx1 else 'cloture_portillon' if x == 36 else 'cloture_milieu'
-        if free(x, fy):
-            place(nm, x, fy)
-    # détails et objets
-    decos = ['touffes_0'] * 5 + ['herbes_hautes_0'] * 3 + ['trefle_0'] * 2 + ['fleurs_blanches_0', 'fleurs_blanches_2',
-             'fleurs_jaunes_0', 'fleurs_jaunes_2', 'fleurs_rouges_1', 'fleurs_bleues_1', 'fleurs_mauves_1',
-             'champignons_0', 'cailloux_0', 'feuilles_0']
-    for _ in range(170):
+    for x in range(-2, W, 4):                                  # lisière d'arbres en haut
+        nm = r.choice(['arbre_feuillu', 'arbre_feuillu', 'arbre_fruits', 'arbre_fleurs'])
+        out.alpha_composite(block(nm), (x * T, (-2 - (x // 4) % 2) * T))
+    for nm, x, y in (('arbre_feuillu', 0, 15), ('arbre_fruits', 17, 1), ('sapin', 29, 11), ('arbre_fleurs', 41, 11),
+                     ('sapin', 44, 24), ('arbre_feuillu', 27, 22)):
+        _, _, w, h = blocks[nm]
+        if free(x + w // 2, y + h - 1):
+            out.alpha_composite(block(nm), (x * T, y * T))
+            occ.add((x + w // 2, y + h - 1))
+    for x in range(32, 41):                                    # clôture
+        nm = 'cloture_gauche' if x == 32 else 'cloture_droite' if x == 40 else 'cloture_milieu'
+        if free(x, 15):
+            out.alpha_composite(tile(nm), (x * T, 15 * T)); occ.add((x, 15))
+    micro_k = ['touffes'] * 4 + ['touffes_claires', 'fleurs_blanches', 'fleurs_jaunes', 'fleurs_lavande', 'trefle',
+               'champignon', 'caillou', 'feuilles']
+    for _ in range(W * H // 10):                               # environ un élément pour 10 cases
         x, y = r.randrange(W), r.randrange(H)
         if free(x, y):
-            place(r.choice(decos), x, y)
-    for nm in ['buisson_vert'] * 6 + ['buisson_baies'] * 3 + ['buisson_fleuri'] * 3 + ['buisson_petit'] * 4 + \
-              ['rocher'] * 3 + ['souche', 'tonneau', 'caisse', 'foin', 'foin']:
-        for _ in range(30):
+            out.alpha_composite(tile(r.choice(micro_k)), (x * T, y * T)); occ.add((x, y))
+    for nm, n in (('buisson_vert', 5), ('buisson_baies', 2), ('buisson_fleuri', 2), ('rocher', 2), ('souche', 1),
+                  ('tonneau', 1), ('buche', 1), ('foin', 2)):
+        for _ in range(n):
+            for _try in range(40):
+                _, _, w, h = blocks[nm]
+                x, y = r.randrange(W - w + 1), r.randrange(H - h + 1)
+                if all(free(xx, y + h - 1) for xx in range(x, x + w)):
+                    out.alpha_composite(block(nm), (x * T, y * T))
+                    for xx in range(x, x + w):
+                        occ.add((xx, y + h - 1))
+                    break
+    for nm in ('petit_rocher', 'caisse', 'caisse'):
+        for _try in range(40):
             x, y = r.randrange(W), r.randrange(H)
             if free(x, y):
-                place(nm, x, y)
-                break
-    for nm in ('grand_rocher', 'rondin'):
-        for _ in range(40):
-            x, y = r.randrange(W - 1), r.randrange(H)
-            if free(x, y, 2, 1):
-                place(nm, x, y, 2, 1)
+                out.alpha_composite(tile(nm), (x * T, y * T)); occ.add((x, y))
                 break
     return out
 
 
 if __name__ == '__main__':
-    sheet, index, meta = build()
+    sheet, index, blocks, sprites = build()
     if '--demo' in sys.argv:
-        d = demo(sheet, index, meta)
-        d.save(os.path.join(ROOT, 'demo_tileset.png'))
+        demo(sheet, index, blocks).save(os.path.join(ROOT, 'demo_tileset.png'))
         print('demo_tileset.png')
+    if '--qa' in sys.argv:
+        rejets, rapport = qa(sprites, os.path.join(ROOT, 'qa_tileset'))
+        print(rapport)
+        print(f'{len(sprites) - rejets}/{len(sprites)} sprites conformes')
