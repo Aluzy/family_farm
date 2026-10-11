@@ -33,7 +33,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts'))
-from pastoral import (PAL, Canvas, amas, level, ombre_contact, outline_construit,  # noqa: E402
+from pastoral import (OMBRE_CONTACT, PAL, Canvas, amas, level, ombre_contact, outline_construit,  # noqa: E402
                       outline_cote_ombre, outline_feuillage, qa)
 
 T = 16
@@ -419,8 +419,8 @@ def micro(kind):
         ombre_contact(cv, 4, 10, 14, 1)
     elif kind == 'caillou':
         # deux cailloux à facettes, R1 à R3, bord d'ombre N2, ombre de contact
-        sh = pierre(cv, 6, 13, 4, 2.4, 2, 20, n=6) | pierre(cv, 11.5, 14, 2.6, 1.7, 1.2, 21, n=5)
-        ombre_contact(cv, 2, 14, assise(sh) - 1, 1)
+        pierre(cv, 11, 13, 2.6, 1.7, 1.2, 21, n=5)
+        pierre(cv, 5.5, 13, 4, 2.4, 2, 20, n=6)
     elif kind == 'feuilles':
         for cx, cy, c1, c2 in ((4, 5, 'A6', 'W3'), (11, 9, 'A4', 'A6'), (6, 12, 'A6', 'W3')):
             cv.put(cx, cy, c1); cv.put(cx + 1, cy, c1); cv.put(cx + 1, cy - 1, c1); cv.put(cx, cy + 1, c2)
@@ -522,7 +522,44 @@ def pierre(cv, cx, by, rx, ry, hz, seed, moss=False, n=8):
             for q in amas(r, x, y, r.randint(3, 6)):
                 if own.get(q) == -1:
                     cv.put(*q, 'V6' if q[0] < cx else 'V4')
+    ombre_portee(cv, base + [(x + 1.2, y + 1.2) for x, y in base] + [(x + hz * 0.95, y + hz * 0.55) for x, y in top], set(own))
     return set(own)
+
+
+SOMBRIR = {'R3': 'R2', 'R2': 'R1', 'R1': 'N2', 'B2': 'B1', 'B1': 'R1', 'V6': 'V4', 'V5': 'V3', 'V4': 'V3'}
+
+
+def ombre_portee(cv, pts, mine):
+    """Ombre portée d'un volume : l'enveloppe convexe de son pied et de ses points hauts projetés
+    au sol vers le bas-droite (lumière haut-gauche). Sur le sol (pixels transparents) elle prend
+    la prune translucide ; sur un autre objet déjà peint, elle l'assombrit d'un ton."""
+    pts = sorted(set((round(x, 2), round(y, 2)) for x, y in pts))
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lower, upper = [], []
+    for q in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], q) <= 0:
+            lower.pop()
+        lower.append(q)
+    for q in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], q) <= 0:
+            upper.pop()
+        upper.append(q)
+    hull = lower[:-1] + upper[:-1]
+    inv = {PAL[k]: v for k, v in SOMBRIR.items()}
+    for y in range(int(min(q[1] for q in hull)), int(max(q[1] for q in hull)) + 1):
+        for x in range(int(min(q[0] for q in hull)), int(max(q[0] for q in hull)) + 2):
+            px_, py_ = x + 0.5, y + 0.5
+            sides = [cross(hull[i], hull[(i + 1) % len(hull)], (px_, py_)) for i in range(len(hull))]
+            if all(v >= 0 for v in sides) or all(v <= 0 for v in sides):
+                if (x, y) in mine or not (0 <= x < cv.w and 0 <= y < cv.h):
+                    continue
+                c = cv.px[x, y]
+                if c[3] == 0:
+                    cv.px[x, y] = OMBRE_CONTACT
+                elif c[3] == 255 and c[:3] in inv:
+                    cv.put(x, y, inv[c[:3]])
 
 
 def assise(shape):
@@ -550,14 +587,12 @@ def rocher(w=32, h=32, big=True):
     ombre de contact."""
     cv = Canvas(w, h)
     if big:
-        s1 = pierre(cv, 23, h - 3, 6, 3.5, 3, 11, n=7)
-        s2 = pierre(cv, 14, h - 3, 11.5, 6.5, 7, 10, moss=True, n=9)
+        s1 = pierre(cv, 23, h - 4, 6, 3.5, 3, 11, n=7)
+        s2 = pierre(cv, 13, h - 4, 11.5, 6.5, 7, 10, moss=True, n=9)
         shape = s1 | s2
-        ombre_contact(cv, 3, 29, assise(shape) - 1, 2)
         herbe_au_pied(cv, shape, 1, 4)
     else:
-        shape = pierre(cv, 8, h - 3, 6, 3.6, 3.5, 12, n=7)
-        ombre_contact(cv, 2, 14, assise(shape) - 1, 2)
+        shape = pierre(cv, 7, h - 4, 5.5, 3.4, 3.5, 12, n=7)
         herbe_au_pied(cv, shape, 2, 2)
     return ancrer(cv.im)
 
@@ -735,25 +770,31 @@ def cloture(part):
 
 
 def cloture_verticale():
-    """Clôture qui file vers le bas (module de 16 × 16) : les lisses vues par la tranche, deux
-    planches étroites qui descendent du piquet du dessus, et le piquet de ce module (plus bas,
-    pour la perspective) ; contour W0."""
+    """Clôture qui file vers le bas (module de 16 × 16), vue comme une clôture qui s'éloigne :
+    deux lisses courent d'un piquet à l'autre, l'une sur la face ouest des piquets (éclairée),
+    l'autre sur la face est (dans l'ombre) ; entre elles on voit l'herbe. Le piquet, court, est
+    pris entre les deux lisses : on voit sa tête qui les relie, puis sa face avant jusqu'au sol.
+    L'ombre de la lisse est tombe à droite sur l'herbe. Les lisses touchent le haut et le bas du
+    module : les modules s'empilent sans couture."""
     cv = Canvas(16, 16)
-    rail = {(x, y) for x in (6, 9) for y in range(0, 9)} | {(x, y) for x in (7, 8) for y in range(0, 9)}
-    post = {(x, y) for x in range(6, 10) for y in range(6 + (1 if x in (6, 9) else 0), 16)}
-    shape = rail | post
-    outline_construit(cv, lambda x, y: (x, y) in shape, 'W0')
-    for (x, y) in rail:
-        cv.put(x, y, ('W4', 'W3', 'W2', 'W1')[x - 6] if y % 5 else 'W2')
-    cv.hline(6, 9, 3, 'W0')                                    # joint entre les deux lisses
-    for (x, y) in post:
-        cv.put(x, y, 'W4' if y <= 7 and x in (7, 8) else ('W4', 'W3', 'W2', 'W1')[x - 6])
-    cv.vline(7, 10, 12, 'W2')
-    cv.put(7, 8, 'R2')
-    for x, h in ((5, 2), (10, 1), (11, 2)):
+    for y in range(16):                                        # ombre de la lisse est sur le sol
+        cv.px[13, y] = OMBRE_CONTACT
+    for y in range(16):
+        cv.put(2, y, 'W0'); cv.put(12, y, 'W0')                # contour extérieur des lisses
+        cv.put(3, y, 'W4'); cv.put(4, y, 'W3')                 # lisse ouest, éclairée
+        cv.put(10, y, 'W2'); cv.put(11, y, 'W1')               # lisse est, dans l'ombre
+        if y % 8 == 2:
+            cv.put(4, y, 'W2'); cv.put(11, y, 'W0')            # fil du bois
+    # piquet : tête (rangées 7 et 8) qui relie les lisses, face avant (rangées 9 à 15)
+    cv.hline(5, 9, 6, 'W0')
+    cv.hline(5, 9, 7, 'W4'); cv.hline(5, 9, 8, 'W3')
+    for y in range(9, 16):
+        cv.put(6, y, 'W3'); cv.put(7, y, 'W2'); cv.put(8, y, 'W1')
+    cv.put(7, 12, 'W1')
+    cv.put(4, 8, 'R2'); cv.put(10, 8, 'R2')                     # clous
+    for x, h in ((1, 2), (14, 1), (15, 2)):
         for k in range(h):
             cv.put(x, 15 - k, 'V5' if k == h - 1 else 'V4')
-    ombre_contact(cv, 3, 12, 15, 1)
     return cv.im
 
 

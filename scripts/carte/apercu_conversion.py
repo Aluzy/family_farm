@@ -233,6 +233,18 @@ def main():
 
     r = random.Random(3)
     labels = ground_labels(m, sets)
+    # Les anciennes zones de culture (près de la ferme et du moulin) redeviennent de l'herbe,
+    # comme dans le jeu (js/farm-stage.js, ZONE_TILES) : le joueur laboure les tuiles qu'il veut.
+    for l in m['layers']:
+        if l['type'] != 'objectgroup':
+            continue
+        for o in l['objects']:
+            if not o['name'].startswith('zone_culture'):
+                continue
+            for cy in range(int(o['y'] // T) - 1, int((o['y'] + o['height']) // T) + 2):
+                for cx in range(int(o['x'] // T) - 1, int((o['x'] + o['width']) // T) + 2):
+                    if labels.get((cx, cy)) == 'terre':
+                        labels[(cx, cy)] = 'herbe_sombre'
     out = Image.new('RGBA', (W * T, H * T))
     order = ['herbe_moyenne', 'herbe_claire', 'terre', 'eau', 'paves']
     grids = {sol: corner_grid(labels, sol, W, H) for sol in order}

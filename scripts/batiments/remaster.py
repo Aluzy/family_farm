@@ -577,37 +577,140 @@ def serre():
 
 # ================================================================ silo, puits, citerne
 
+# ================================================================ volumes ronds
+
+def ellipse_e(dx, rx, ry):
+    """Demi-hauteur de l'ellipse (rx, ry) à la distance `dx` du centre."""
+    q = 1 - (dx / rx) ** 2
+    return ry * math.sqrt(q) if q > 0 else 0.0
+
+
+def cylindre(cv, cx, y_top, y_bot, rx, ry, paint):
+    """Fût de cylindre vu de trois quarts : ses bords haut et bas sont des demi-ellipses
+    (centres y_top et y_bot), le bas s'arrondit vers le spectateur. `paint(x, y, u, v, lv)`
+    reçoit la position sur la surface : `u` la longueur d'arc depuis le bord gauche (les motifs
+    se resserrent donc vers les bords), `v` la hauteur depuis le bord haut, `lv` le niveau de
+    lumière (flanc gauche éclairé). Renvoie les pixels peints."""
+    pts = set()
+    for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+        dx = x + 0.5 - cx
+        if abs(dx) > rx:
+            continue
+        e = ellipse_e(dx, rx, ry)
+        ang = math.asin(max(-1, min(1, dx / rx)))
+        u = rx * (ang + math.pi / 2)
+        for y in range(int(y_top + e), int(y_bot + e) + 1):
+            if y + 0.5 < y_top + e or y + 0.5 > y_bot + e + 0.5:
+                continue
+            lv = level(math.sin(ang) * 1.05, 0.05)
+            paint(x, y, u, y + 0.5 - (y_top + e), lv)
+            pts.add((x, y))
+    return pts
+
+
+def disque(cx, cy, rx, ry):
+    """Pixels de l'ellipse pleine (cx, cy, rx, ry)."""
+    return {(x, y) for y in range(int(cy - ry) - 1, int(cy + ry) + 2) for x in range(int(cx - rx) - 1, int(cx + rx) + 2)
+            if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1}
+
+
+def pierres_rondes(bh=4, bw=6):
+    """Peinture d'un mur de pierres rond : rangs courbes de `bh` px, blocs de `bw` px d'arc
+    (plus étroits vers les bords), joints B0 ; face éclairée B2, base B1, ombre R1."""
+    def paint(x, y, u, v, lv, cv=None):
+        row, k = divmod(int(v), bh)
+        kx = (u + (row % 2) * bw / 2) % bw
+        if k == bh - 1 or kx < 1:
+            c = 'B0'
+        elif lv >= 3:
+            c = 'B2' if k == 0 or kx < 2 or lv == 4 else 'B1'
+        elif lv == 2:
+            c = 'B2' if k == 0 and kx < 3 else 'B1'
+        else:
+            c = 'B1' if k == 0 and lv == 1 else 'R1'
+        return c
+    return paint
+
+
+def ombre_ronde(cv, cx, cy, rx, ry):
+    """Ombre au sol d'un objet rond : l'ellipse de son pied, poussée vers le bas-droite (lumière
+    haut-gauche), sur les pixels transparents seulement."""
+    for (x, y) in disque(cx + 2.5, cy + 1.2, rx + 1.5, ry + 1):
+        if 0 <= x < cv.w and 0 <= y < cv.h and cv.px[x, y][3] == 0:
+            cv.px[x, y] = OMBRE_CONTACT
+
+
 def silo():
-    """Silo (32 × 64) : toit conique prune, fût de douelles de bois, soubassement de pierres."""
+    """Silo (32 × 64) : un cylindre de douelles de bois (plus étroites vers les bords, cerclages
+    courbes), posé sur un soubassement rond de pierres un peu plus large ; toit conique prune
+    dont le bord avant suit l'ellipse, avec un débord ; ombre ronde au sol."""
     cv = Canvas(32, 64)
-    stones(cv, 3, 52, 28, 63, 6, 4, seed=2)
-    for y in range(18, 52):
-        for x in range(4, 28):
-            k = (x - 4) / 23
-            c = 'W4' if k < 0.15 else 'W3' if k < 0.55 else 'W2' if k < 0.85 else 'W1'
-            if (x - 4) % 4 == 3 and c != 'W1':
-                c = 'W2'
-            cv.put(x, y, c)
-    for y in (26, 42):
-        cv.hline(4, 27, y, 'W1')
-    for y in range(2, 20):
-        half = (y - 2) * 0.8 + 1
+    CX = 16
+    pierre = pierres_rondes(4, 6)
+    cylindre(cv, CX, 50, 57, 13, 4.5, lambda x, y, u, v, lv: cv.put(x, y, pierre(x, y, u, v, lv)))
+
+    def bois(x, y, u, v, lv):
+        k = u % 4
+        c = ('W1', 'W2', 'W3', 'W4', 'W4')[lv]
+        if k < 0.9:
+            c = 'W1' if lv >= 2 else 'W0'                       # joint entre deux douelles
+        if int(v) in (8, 22):
+            c = 'W0' if lv <= 1 else 'W1'                       # cerclages
+        cv.put(x, y, c)
+    cylindre(cv, CX, 18, 47, 12, 4, bois)
+    for x in range(CX - 12, CX + 13):                           # dessus du soubassement, devant le fût
+        dx = x + 0.5 - CX
+        e1, e2 = ellipse_e(dx, 13, 4.5), ellipse_e(dx, 12, 4)
+        for y in range(int(47 + e2) + 1, int(50 + e1) + 1):
+            if abs(dx) <= 12.5:
+                cv.put(x, y, 'B2' if dx < 4 else 'B1')
+    # toit conique : sommet (CX, 1), base elliptique centrée en y = 19, débord de 2 px
+    RX, RY, AY, BY = 14.5, 5, 1, 19
+    for y in range(AY, BY + 7):
         for x in range(32):
-            rel = (x + 0.5 - 16) / half
-            if abs(rel) <= 1:
-                rr = y - 2
-                c = roof_color(rr, x, rel < 0, 'prune', rr / 18)
-                cv.put(x, y, c)
+            dx = x + 0.5 - CX
+            t = (y + 0.5 - AY) / (BY - AY)                      # 0 au sommet, 1 à la base
+            if t <= 0:
+                continue
+            half = RX * min(1, t)
+            if abs(dx) > half:
+                continue
+            bottom = BY + ellipse_e(dx, RX, RY)
+            if y + 0.5 > bottom:
+                continue
+            ang = math.asin(max(-1, min(1, dx / RX)))
+            u = RX * (ang + math.pi / 2)
+            near_edge = bottom - (y + 0.5) < 1.2
+            rel = dx / max(1, half)
+            lv = level(rel, -0.3)
+            row = int((y + 0.5 - AY) / 3)
+            if near_edge:
+                c = 'N0'                                        # épaisseur du débord
+            elif (u * 0.9 + row * 2) % 5 < 1 and t > 0.2:
+                c = 'N0' if lv <= 1 else 'N1'                   # joints des bardeaux
+            else:
+                c = ('N1', 'N1', 'N2', 'N3', 'N3')[lv]
+            cv.put(x, y, c)
+    for x in range(CX - 12, CX + 13):                           # ombre du débord sur le haut du fût
+        dx = x + 0.5 - CX
+        y0 = int(BY + ellipse_e(dx, RX, RY)) + 1
+        for y in (y0, y0 + 1):
+            c = cv.get(x, y)[:3]
+            if c in (PAL['W4'], PAL['W3']):
+                cv.put(x, y, 'W2')
+            elif c == PAL['W2']:
+                cv.put(x, y, 'W1')
     outline_by_material(cv)
-    remonter(cv, 1)
-    ombre_sol(cv)
+    ombre_ronde(cv, CX, 57.5, 13, 4.5)
     return cv.im
 
 
 def puits(kind):
-    """Puits (48 × 48) : margelle de pierres, eau sombre, deux poteaux, treuil, seau, toit prune.
-    `kind` : 'puits' (seul), 'tuyau' (avec le tuyau de la pompe), 'pompe' (la pompe seule, posée
-    par-dessus ; acier non observé dans le guide : rampe de la roche R)."""
+    """Puits (48 × 48) : margelle ronde de pierres (rangs courbes, bas arrondi vers le
+    spectateur), dessus en couronne autour de l'eau sombre, deux poteaux posés sur la margelle,
+    treuil, seau, toit prune ; ombre ronde au sol. `kind` : 'puits' (seul), 'tuyau' (avec le
+    tuyau de la pompe), 'pompe' (la pompe seule, posée par-dessus ; acier non observé dans le
+    guide : rampe de la roche R)."""
     cv = Canvas(48, 48)
     CX = 21                                                    # puits et pompe ensemble : centrés
     PX = CX + 15                                               # bord gauche de la pompe
@@ -625,34 +728,34 @@ def puits(kind):
                 if not shape(x, y) and any(shape(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
                     cv.put(x, y, 'N2')
         return cv.im
-    # margelle : cylindre de pierres
-    for y in range(28, 47):
-        for x in range(CX - 12, CX + 13):
-            if abs(x + 0.5 - (CX + 0.5)) > 12:
-                continue
-            row = (y - 28) // 4
-            k = (y - 28) % 4
-            kx = (x + (row % 2) * 3) % 6
-            rel = (x + 0.5 - CX) / 12
-            if k == 3 or kx == 5:
-                c = 'B0'
-            elif rel < -0.4 or k == 0:
-                c = 'B2'
+    C = CX + 0.5
+    RX, RY, YT, YB = 12.5, 4.5, 30, 41
+    pierre = pierres_rondes(4, 6)
+    cylindre(cv, C, YT, YB, RX, RY, lambda x, y, u, v, lv: cv.put(x, y, pierre(x, y, u, v, lv)))
+    top = disque(C, YT, RX, RY)                                 # dessus : couronne de pierres
+    eau = disque(C, YT + 0.3, RX - 3, RY - 1.6)
+    for (x, y) in top:
+        dx = x + 0.5 - C
+        if (x, y) in eau:
+            d = y + 0.5 - (YT + 0.3 - ellipse_e(dx, RX - 3, RY - 1.6))
+            if d < 1.5:
+                cv.put(x, y, 'B1' if dx < 2 else 'R1')         # paroi du fond, vue de face
+            elif d < 3:
+                cv.put(x, y, 'B0')                              # la paroi plonge dans l'ombre
             else:
-                c = 'B1'
+                cv.put(x, y, 'E1' if -6 < dx < -2 else 'E0')    # l'eau, tout au fond, un reflet
+        else:
+            ang = math.atan2((y + 0.5 - YT) / RY, dx / RX)
+            seg = int((ang + math.pi) / (2 * math.pi) * 14)
+            joint = abs(((ang + math.pi) / (2 * math.pi) * 14) - round((ang + math.pi) / (2 * math.pi) * 14)) < 0.08
+            c = 'B0' if joint else 'B2' if dx < 3 or y + 0.5 < YT else 'B1'
             cv.put(x, y, c)
-    for x in range(CX - 11, CX + 12):                          # ouverture : eau sombre
-        for y in range(25, 30):
-            if ((x + 0.5 - (CX + 0.5)) / 10) ** 2 + ((y + 0.5 - 27.5) / 2.4) ** 2 <= 1:
-                cv.put(x, y, 'E0' if y < 28 else 'E1')
-    for x in range(CX - 12, CX + 13):
-        cv.put(x, 24 if abs(x - CX) < 9 else 25, 'B2')
-    # poteaux, treuil, corde, seau
-    for px_ in (CX - 11, CX + 10):
-        cv.vline(px_, 9, 26, 'W4'); cv.vline(px_ + 1, 9, 26, 'W2')
-    cv.hline(CX - 10, CX + 10, 13, 'W3'); cv.hline(CX - 10, CX + 10, 14, 'W1')
-    cv.vline(CX, 15, 18, 'W1')
-    cv.rect(CX - 2, 19, CX + 2, 22, 'W3'); cv.hline(CX - 2, CX + 2, 19, 'W4'); cv.hline(CX - 2, CX + 2, 22, 'W1')
+    # poteaux posés sur la margelle, treuil, corde, seau
+    for px_ in (CX - 10, CX + 9):
+        cv.vline(px_, 9, 30, 'W4'); cv.vline(px_ + 1, 9, 30, 'W2')
+    cv.hline(CX - 9, CX + 9, 13, 'W3'); cv.hline(CX - 9, CX + 9, 14, 'W1')
+    cv.vline(CX, 15, 22, 'W1')
+    cv.rect(CX - 2, 23, CX + 2, 26, 'W3'); cv.hline(CX - 2, CX + 2, 23, 'W4'); cv.hline(CX - 2, CX + 2, 26, 'W1')
     # toit prune
     for y in range(1, 10):
         half = (y - 1) * 1.7 + 1
@@ -661,29 +764,32 @@ def puits(kind):
             if abs(rel) <= 1:
                 cv.put(x, y, roof_color(y - 1, x, rel < 0, 'prune', (y - 1) / 9))
     if kind == 'tuyau':
-        cv.hline(CX + 6, PX + 1, 30, 'R3'); cv.hline(CX + 6, PX + 1, 31, 'R1')
-        cv.vline(CX + 6, 27, 31, 'R2')
+        cv.hline(CX + 12, PX + 1, 34, 'R3'); cv.hline(CX + 12, PX + 1, 35, 'R1')
+        cv.vline(CX + 11, 33, 35, 'R2')
     outline_by_material(cv)
-    ombre_sol(cv, rows=1)
+    ombre_ronde(cv, C, YB, RX, RY)
     return cv.im
 
 
 def citerne(niveau):
-    """Citerne (32 × 48) : cuve de tôle (rampe de la roche, l'acier n'est pas observé), cerclages,
-    tube de niveau (verre G, eau E1 et E2), socle de planches ; `niveau` de 0 (vide) à 4 (plein)."""
+    """Citerne (32 × 48) : cuve ronde de tôle (rampe de la roche, l'acier n'est pas observé),
+    couvercle elliptique vu de dessus, cerclages courbes, tube de niveau (verre G, eau E1 et
+    E2), socle de planches ; `niveau` de 0 (vide) à 4 (plein)."""
     cv = Canvas(32, 48)
-    for y in range(10, 40):
-        for x in range(5, 26):
-            k = (x - 5) / 20
-            c = 'R3' if k < 0.2 else 'R2' if k < 0.65 else 'R1'
-            if y in (18, 30):
-                c = 'R1'                                               # cerclages
-            cv.put(x, y, c)
-    for x in range(5, 26):                                     # couvercle, vu de dessus
-        for y in range(6, 10):
-            cv.put(x, y, 'R3' if x < 15 else 'R2')
-    cv.rect(12, 4, 18, 6, 'R2'); cv.hline(12, 18, 4, 'R3')
-    g0, g1 = 13, 36                                            # tube de niveau
+    C, RX, RY = 15.5, 10.5, 3.5
+
+    def tole(x, y, u, v, lv):
+        c = ('R1', 'R1', 'R2', 'R3', 'R3')[lv]
+        if int(v) in (8, 20):
+            c = 'R1' if lv >= 2 else 'W0'                       # cerclages
+        cv.put(x, y, c)
+    cylindre(cv, C, 9, 36, RX, RY, tole)
+    for (x, y) in disque(C, 9, RX, RY):                         # couvercle
+        cv.put(x, y, 'R3' if x + 0.5 < C + 2 else 'R2')
+    for (x, y) in disque(C, 7.5, 3.5, 1.4):                     # trappe
+        cv.put(x, y, 'R2' if x + 0.5 < C else 'R1')
+    cv.hline(13, 18, 6, 'R3')
+    g0, g1 = 14, 36                                            # tube de niveau
     plein = round((g1 - g0 + 1) * niveau / 4)
     for y in range(g0, g1 + 1):
         filled = y > g1 - plein
@@ -691,7 +797,7 @@ def citerne(niveau):
         cv.put(20, y, 'E1' if filled else 'G3')
     cv.box(18, g0 - 1, 21, g1 + 1, 'W0')
     planks(cv, 3, 40, 28, 45, False, 3, 'W3')                 # socle
-    cv.hline(0, 4, 17, 'R3'); cv.hline(0, 4, 18, 'R1')        # arrivée du tuyau de la pompe
+    cv.hline(0, 5, 17, 'R3'); cv.hline(0, 5, 18, 'R1')        # arrivée du tuyau de la pompe
     outline_by_material(cv)
     ombre_sol(cv)
     return cv.im
