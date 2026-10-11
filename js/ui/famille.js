@@ -34,6 +34,8 @@ export function memberNameHtml(id) {
 // « Modifier la famille » : les boutons ✏️, ⭐ et l'ajout de membres n'apparaissent
 // qu'en mode modification, pour garder la fiche lisible.
 let familyEditing = false;
+// « Ajouter ou modifier un animal » : de même pour les animaux de compagnie.
+let petsEditing = false;
 // Boutons « ? » (ration quotidienne, animaux de compagnie) : les explications sont
 // repliées par défaut ; on retient celles que le joueur a ouvertes.
 const helpOpen = new Set();
@@ -235,8 +237,8 @@ function petCard(a) {
     <article class="card portrait pet">
       <span class="portrait-emoji" aria-hidden="true">${petIcon(a.espece)}</span>
       <span class="card-title"><span class="member-name">${petNameHtml(a.id)}</span></span>
-      <span class="muted">${e ? e.nom : 'Animal'} · ne compte pas dans le besoin</span>
-      <button type="button" class="btn" data-action="pet-edit" data-id="${a.id}" aria-label="Modifier cet animal : nom et espèce">✏️ Modifier</button>
+      <span class="muted">${e ? e.nom : 'Animal'}</span>
+      ${petsEditing ? `<button type="button" class="btn" data-action="pet-edit" data-id="${a.id}" aria-label="Modifier cet animal : nom et espèce">✏️ Modifier</button>` : ''}
     </article>`;
 }
 
@@ -372,9 +374,10 @@ function renderPets() {
   return `
     <h3 class="section-title help-title"><span>🐾 Animaux de compagnie · <span class="num">${list.length} / ${K.MAX}</span></span>${helpToggleHtml('pets', 'animaux de compagnie')}</h3>
     <p class="muted" id="pets-help"${helpOpen.has('pets') ? '' : ' hidden'}>Un chien ou un chat tient compagnie à la famille. Il ne mange pas ses réserves : il ne compte pas dans le besoin journalier.</p>
+    <button type="button" class="btn${petsEditing ? ' primary' : ''} family-edit-btn" data-action="pets-edit" aria-pressed="${petsEditing}">${petsEditing ? '✅ Terminer' : '🐾 Ajouter ou modifier un animal'}</button>
     ${list.length ? `<div class="portraits">${list.map(petCard).join('')}</div>` : ''}
-    <div class="row family-add">${boutons}</div>
-    ${full ? `<p class="muted">${K.MAX} animaux de compagnie au plus.</p>` : ''}`;
+    ${petsEditing ? `<div class="row family-add">${boutons}</div>
+    ${full ? `<p class="muted">${K.MAX} animaux de compagnie au plus.</p>` : ''}` : ''}`;
 }
 
 export function renderFamille() {
@@ -410,6 +413,10 @@ export function renderFamille() {
 registerActions({
   'family-edit': () => {
     familyEditing = !familyEditing;
+    refresh();
+  },
+  'pets-edit': () => {
+    petsEditing = !petsEditing;
     refresh();
   },
   'family-help': (target) => {
