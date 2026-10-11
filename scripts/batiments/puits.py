@@ -1,4 +1,4 @@
-# assets/puits.png : le puits de la ferme, à droite de la maison, 2 images de 34×40 :
+# assets/puits.png : le puits de la ferme, en haut à gauche du Moulin, 2 images de 34×40 :
 #   0 : le vieux puits seul (margelle de pierres, deux poteaux, toit de bardeaux, seau) ;
 #   1 : le même, avec la pompe électrique achetée, posée à sa droite, son tuyau plongé dans le puits.
 # Toit aux couleurs de celui de la maison. Lumière à gauche.
@@ -38,11 +38,6 @@ def frame(pompe):
         d = (x - CX) / (RX + 0.5)
         return ry * math.sqrt(max(0.0, 1 - d * d))
 
-    # ombre au sol
-    for x in range(0, W):
-        for y in range(34, 40):
-            if ((x - (CX + 3)) / 15) ** 2 + ((y - 37) / 2.6) ** 2 <= 1:
-                put(x, y, (24, 44, 30), 90)
     # margelle : cylindre de pierres en rangées de 3 px, joints décalés
     for x in range(CX - RX, CX + RX + 1):
         y0 = round(TOP + half(x, RY))

@@ -280,7 +280,7 @@ export function stageModel() {
   // niveau (2 au niveau 1, 6 au niveau 5).
   const panneau = starterOf(state, 'panneau');
   const panneaux = isOwned(panneau) ? panneau.niveau + 1 : 0;
-  // Le puits à droite de la maison : la pompe s'y ajoute une fois achetée.
+  // Le puits, en haut à gauche du Moulin : la pompe s'y ajoute une fois achetée.
   const pompe = isOwned(starterOf(state, 'pompe'));
   // La citerne (le réservoir), une fois achetée : son tube de niveau, vide (0) à plein (4).
   const cap = tankCapacity(state);

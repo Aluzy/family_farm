@@ -89,11 +89,11 @@
     // Dans Tiled : un rectangle nommé `ville` le déplace.
     ville: { x: 1092, y: 422, width: 20, height: 24 },
     silo: { x: 656, y: 238, width: 49, height: 64 },
-    // Le puits, à droite de la maison (sur ses abords, que la houe ne laboure pas). Dans
-    // Tiled : un rectangle nommé `puits` le déplace.
-    puits: { x: 610, y: 298, width: 34, height: 38 },
+    // Le puits, en haut à gauche du Moulin, sous le chemin (sur ses abords, que la houe ne
+    // laboure pas). Dans Tiled : un rectangle nommé `puits` le déplace.
+    puits: { x: 596, y: 390, width: 34, height: 38 },
     // La citerne, juste à droite de la pompe du puits (son tuyau rejoint le moteur).
-    citerne: { x: 643, y: 302, width: 24, height: 34 },
+    citerne: { x: 629, y: 394, width: 24, height: 34 },
   };
   [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
     [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
