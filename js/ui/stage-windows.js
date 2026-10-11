@@ -402,25 +402,52 @@ function renderHud() {
   );
 }
 
+// Menu latéral rabattable, à gauche de l'écran (il remplace le menu du bas) : les icônes
+// les unes au-dessus des autres, dans le cadre bois des cartes. Fermé, il ne dépasse que sa
+// languette (un triangle en pixel art pointé vers la droite, et le nombre d'alertes). Il se
+// referme dès qu'on choisit une entrée, ou avec Échap.
+export let menuOpen = false;
+export function setMenuOpen(open) {
+  menuOpen = !!open;
+  renderTabbar();
+}
+let menuClickBound = false;
+
+// Triangle en pixel art (5 × 9 pixels), pointé vers la droite.
+const MENU_ARROW = '<svg class="side-tab-arrow" viewBox="0 0 5 9" width="10" height="18" aria-hidden="true" shape-rendering="crispEdges">' +
+  '<rect x="0" y="0" width="1" height="9"/><rect x="1" y="1" width="1" height="7"/><rect x="2" y="2" width="1" height="5"/><rect x="3" y="3" width="1" height="3"/><rect x="4" y="4" width="1" height="1"/></svg>';
+
 export function renderTabbar() {
   const current = FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
+  const nav = document.getElementById('bottom-nav');
+  if (!menuClickBound) {
+    menuClickBound = true;
+    // choisir une entrée referme le menu (l'action, elle, passe par le registre comme d'habitude)
+    nav.addEventListener('click', (e) => { if (menuOpen && e.target.closest('.nav-btn')) setMenuOpen(false); });
+  }
+  document.getElementById('side-menu').classList.toggle('open', menuOpen);
+  nav.inert = !menuOpen;
+  const tab = document.getElementById('side-tab');
+  tab.setAttribute('aria-expanded', String(menuOpen));
+  tab.setAttribute('aria-label', menuOpen ? 'Fermer le menu' : `Ouvrir le menu${alerts > 0 ? ` (${alerts} alerte${alerts > 1 ? 's' : ''})` : ''}`);
+  morph(tab, MENU_ARROW + (alerts > 0 && !menuOpen ? `<span class="side-tab-badge" aria-hidden="true">${alerts > 9 ? '9+' : alerts}</span>` : ''));
   morph(
-    document.getElementById('bottom-nav'),
+    nav,
     NAV_TABS.map((id) => TABS.find((t) => t.id === id))
       // FLU-08 : le Marché est là dès le départ (verrouillé) : les onglets ne bougent jamais
       .filter((t) => tabAvailable(t.id) || t.id === 'comptoir')
       .map((t) => {
         if (!tabAvailable(t.id)) {
-          return `<button type="button" class="nav-btn locked" data-action="market-locked" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
+          return `<button type="button" class="nav-btn locked" data-action="market-locked" title="${t.label}" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
         }
         const badge = t.id === 'notifications' && alerts > 0 ? `<span class="nav-badge" aria-hidden="true">${alerts}</span>` : '';
         const label = t.id === 'notifications' && alerts > 0 ? `${t.label} (${alerts} alerte${alerts > 1 ? 's' : ''})` : t.label;
-        return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
+        return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" title="${t.label}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
       })
       .join('') +
       // Version 1.4 : les Options ne sont plus dans le bandeau mais ici, au bout du menu.
-      '<button type="button" class="nav-btn" id="options-btn" data-action="open-options" aria-label="Options"><span class="nav-icon" aria-hidden="true">⚙️</span><span class="nav-label">Options</span></button>'
+      '<button type="button" class="nav-btn" id="options-btn" data-action="open-options" title="Options" aria-label="Options"><span class="nav-icon" aria-hidden="true">⚙️</span><span class="nav-label">Options</span></button>'
   );
 }
 
@@ -490,6 +517,9 @@ registerActions({
     maisonTabChoisi = maisonTab;
     renderStageWindow();
     refresh();
+  },
+  'menu-toggle': () => {
+    setMenuOpen(!menuOpen);
   },
   'market-locked': () => {
     showToast(`🔒 ${MARKET_CLOSED}`);

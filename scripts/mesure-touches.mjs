@@ -104,6 +104,7 @@ try {
     await touch('[data-action="buy-item"][data-item="graine_carotte"][data-q="5"]', 'Acheter 5 graines de carotte');
     await touch('[data-action="buy-item"][data-item="graine_carotte"][data-q="1"]', 'Acheter 1 graine de carotte');
   }
+  await touch('#side-tab', 'Ouvrir le menu (languette à gauche)');
   await touch('.nav-btn[data-tab="ferme"]', 'Retour à la Ferme');
   await page.waitForTimeout(600);
   await touch('.stage-chip:not(.hoe)', 'Puce « Labourer 6 tuiles » (houe en main)');

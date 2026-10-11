@@ -19,6 +19,7 @@ import { consentBannerPending, consentBannerShown, letterToastShown, storyOpen, 
 import { applyResult } from './game-actions.js';
 import { morph } from './render.js';
 import { stageUsable } from './stage.js';
+import { menuOpen } from './stage-windows.js';
 import { formatPlaces, formatStraw } from './elevage.js';
 import { millOutputText, stationRecipes } from './cuisine.js';
 import { nightsLabel } from './inventaire.js';
@@ -305,6 +306,12 @@ function shown(el) {
   return typeof el.checkVisibility === 'function' ? el.checkVisibility() : el.offsetParent !== null;
 }
 
+// Un bouton du menu latéral fermé : c'est d'abord sa languette qu'il faut toucher.
+function viaMenu(el) {
+  if (!el || menuOpen || !el.closest('#bottom-nav')) return el;
+  return document.getElementById('side-tab');
+}
+
 function guideElement() {
   const step = tutorialStep(state);
   if (step !== 'eau' && step !== 'potager') return null;
@@ -318,7 +325,7 @@ function guideElement() {
   const liste = sansGraines && !document.querySelector('#modal-root .modal') ? GUIDE_GRAINES : GUIDE_BOUTONS[o.type];
   for (const sel of liste) {
     const el = [...document.querySelectorAll(sel)].find(shown);
-    if (el) return el;
+    if (el) return viaMenu(el);
   }
   // le bouton est là mais grisé (pas encore d'eau…) : on attend, sans tourner en rond
   if (liste.some((sel) => [...document.querySelectorAll(sel.replace(/:not\(\[disabled\]\)/g, ''))].some(shown))) return null;
@@ -333,7 +340,7 @@ function guideElement() {
   if (shown(close)) return close;
   // ailleurs (Marché, Inventaire…) : le retour à la Ferme
   const ferme = document.querySelector('.nav-btn[data-tab="ferme"]');
-  return shown(ferme) ? ferme : null;
+  return shown(ferme) ? viaMenu(ferme) : null;
 }
 
 // Un autre élément (une fenêtre de la carte) est par-dessus le centre de `el`.
