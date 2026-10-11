@@ -43,12 +43,13 @@ function holdLine() {
   return `⏳ Une série de ${obj.nuits} nuits commence à la prochaine nuit.${last}`;
 }
 
+// FLU-36 : une tâche oui/non (cible 1) n'a que sa case, sans barre de progression.
 function objectiveHtml(o) {
   const line = o.type === 'tenue' ? `<span class="muted">${holdLine()}</span>` : '';
   return `
     <li class="objective${o.ok ? ' ok' : ''}">
       <span class="objective-line"><span class="objective-label">${o.ok ? '✅' : '⬜'} ${o.libelle}</span><span class="objective-value">${objectiveValueText(o)}</span></span>
-      <span class="bar" role="progressbar" aria-label="${o.libelle}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(o.ratio * 100)}"><span class="bar-fill${o.ok ? '' : ' warn'}" style="width:${Math.round(o.ratio * 100)}%"></span></span>
+      ${o.cible === 1 ? '' : `<span class="bar" role="progressbar" aria-label="${o.libelle}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(o.ratio * 100)}"><span class="bar-fill${o.ok ? '' : ' warn'}" style="width:${Math.round(o.ratio * 100)}%"></span></span>`}
       ${line}
     </li>`;
 }

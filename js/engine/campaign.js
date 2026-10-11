@@ -46,6 +46,9 @@ export function newCampaignCounters() {
     recoltes: 0, // version 1.12 : récoltes faites au total
     cultures: [], // cultures différentes récoltées
     semisBle: 0, // semis de blé
+    labours: 0, // FLU-42 : tuiles labourées au total
+    semis: 0, // semis faits au total (toutes cultures)
+    arroseesMax: 0, // record de parcelles arrosées le même jour
   };
 }
 
@@ -157,6 +160,12 @@ export function noteCropHarvested(state, culture) {
   if (!c.compteurs.cultures.includes(culture)) c.compteurs.cultures.push(culture);
 }
 
+// FLU-42 : record de parcelles arrosées en même temps (un arrosage vaut pour la journée).
+export function noteWatered(state, count) {
+  const c = state.campagne;
+  if (c && count > (c.compteurs.arroseesMax || 0)) c.compteurs.arroseesMax = count;
+}
+
 export function bumpCounter(state, key, amount) {
   const c = state.campagne;
   if (c && amount > 0) c.compteurs[key] = (c.compteurs[key] || 0) + amount;
@@ -210,6 +219,10 @@ export function objectiveValue(state, obj) {
     case 'silo': return state.silo && state.silo.construit ? 1 : 0;
     case 'semisBle': return k.semisBle || 0;
     case 'siloBle': return state.silo ? Math.floor(state.silo.ble || 0) : 0;
+    // FLU-42 : chapitre 1, entre la houe et la première récolte
+    case 'labours': return k.labours || 0;
+    case 'semis': return k.semis || 0;
+    case 'arrosees': return k.arroseesMax || 0;
     default: return 0;
   }
 }

@@ -8,7 +8,7 @@ import {
   portraitEmoji, removeMember, removePet, setMemberProfile, setPetProfile,
 } from '../engine/family.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
-import { energyCardHtml } from './energie.js';
+import { energyCardHtml, energyDetailsHtml } from './energie.js';
 import { familyNameHtml } from './depart.js';
 import { mainCharacter } from '../engine/depart.js';
 import { state } from './store.js';
@@ -31,18 +31,23 @@ export function memberNameHtml(id) {
   return escapeHtml(memberName(state, id));
 }
 
+// FLU-24 : une ligne par membre (portrait, nom, bonheur, boutons) : toute la famille et
+// l'énergie tiennent dans le premier écran de la fiche.
 function portraitCard(m) {
+  const main = mainCharacter(state) && mainCharacter(state).id === m.id;
   return `
-    <article class="card portrait">
+    <li class="card member-row">
       <span class="portrait-emoji" aria-hidden="true">${memberPortrait(state, m.id) || '🙂'}</span>
-      <span class="card-title"><span class="member-name">${memberNameHtml(m.id)}</span></span>
-      <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} calories/jour</span>
-      ${mainCharacter(state) && mainCharacter(state).id === m.id ? '<span class="chip auto">⭐ Personnage principal</span>' : ''}
-      ${happinessGaugeHtml(memberHappiness(m))}
-      <span class="muted">😊 Bonheur : <span class="num">${memberHappiness(m)} / ${DATA.VILLE.BONHEUR.MAX}</span></span>
-      <button type="button" class="btn" data-action="member-edit" data-id="${m.id}" aria-label="Modifier ${m.enfant ? 'cet enfant' : 'cet adulte'} : prénom et apparence">✏️ Modifier</button>
-      ${!m.enfant && !(mainCharacter(state) && mainCharacter(state).id === m.id) ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}">⭐ Personnage principal</button>` : ''}
-    </article>`;
+      <span class="member-row-text">
+        <strong class="member-name">${memberNameHtml(m.id)}</strong>${main ? ' <span class="chip auto">⭐ Principal</span>' : ''}
+        <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} calories/jour</span>
+        <span class="member-row-joy">${happinessGaugeHtml(memberHappiness(m))}<span class="muted num">😊 ${memberHappiness(m)} / ${DATA.VILLE.BONHEUR.MAX}</span></span>
+      </span>
+      <span class="member-row-btns">
+        ${!m.enfant && !main ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" aria-label="Choisir comme personnage principal">⭐ Principal</button>` : ''}
+        <button type="button" class="btn" data-action="member-edit" data-id="${m.id}" aria-label="Modifier ${m.enfant ? 'cet enfant' : 'cet adulte'} : prénom et apparence">✏️</button>
+      </span>
+    </li>`;
 }
 
 /* -- version 1.1 : fenêtre « Modifier » d'un membre (prénom, sexe, couleur de peau) -- */
@@ -371,10 +376,7 @@ export function renderFamille() {
   return `
     <h2>👨‍👩‍👧‍👦 Famille${familyNameHtml() ? ` ${familyNameHtml()}` : ''}</h2>
     <p class="muted family-count"><span class="num">${state.famille.membres.length} / ${DATA.FAMILY.COMPOSITION.MEMBRES_MAX}</span> membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> calories par jour</p>
-    <div class="portraits">${state.famille.membres.map(portraitCard).join('')}</div>
-    ${renderFamilyAdd()}
-    ${renderPets()}
-    ${renderAutonomyCard()}
+    <ul class="member-rows">${state.famille.membres.map(portraitCard).join('')}</ul>
     <div class="cards">
       ${energyCardHtml()}
       <div class="card">
@@ -385,7 +387,14 @@ export function renderFamille() {
           ? (short ? `⚠️ Le besoin n'a pas été couvert : ton énergie remontera moins cette nuit.` : `Le besoin a été couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)
           : (short ? `⚠️ Le besoin ne sera pas couvert : ton énergie remontera moins cette nuit.` : `Le besoin sera couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)} La famille mange à ${DATA.TIME.MEAL_HOUR} h, ou au coucher si elle dort avant.</span>
       </div>
-    </div>`;
+    </div>
+    ${renderFamilyAdd()}
+    ${renderPets()}
+    <details class="more">
+      <summary>En savoir plus</summary>
+      ${renderAutonomyCard()}
+      <div class="cards">${energyDetailsHtml()}</div>
+    </details>`;
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

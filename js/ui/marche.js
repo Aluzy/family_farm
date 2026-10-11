@@ -5,14 +5,14 @@ import { fridgeCount } from '../engine/fridge.js';
 import {
   buyItem, buyPrice, buyQuote, isBuyable, marketCoef, sellableCount, sellItem,
 } from '../engine/market.js';
-import { hasHoe, isGraineComptoir, seedItem } from '../engine/crops.js';
+import { hasHoe, isGraineComptoir, seedItem, seedStock } from '../engine/crops.js';
 import {
   animalBuyMax, animalPrice, buyAnimals, coopCapacity, cowCapacity, cowCount, freeCowPlaces,
   freeSheepPlaces, pastureCapacity, pastureCost, sheepCount,
 } from '../engine/animals.js';
-import { isUnlocked } from '../engine/campaign.js';
+import { isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
-import { animalQuantities, BUY_MAX, buyQuantities, comptoirTab, sellQuantities, state } from './store.js';
+import { animalQuantities, BUY_MAX, comptoirTab, comptoirTabChoisi, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { coopShown, herdShown } from './stage-windows.js';
@@ -34,13 +34,7 @@ const COMPTOIR_TABS = [
   { id: 'animaux', label: 'Animaux', icon: '🐔', ok: () => isUnlocked(state, 'poulailler') || isUnlocked(state, 'moutons') || coopShown() || herdShown() },
 ];
 
-// Quantité choisie pour un achat : entre 1 et ce que les pièces permettent (au moins 1,
-// pour que la ligne reste lisible même sans pièces).
-function buyQuantity(item) {
-  const max = Math.max(1, buyQuote(state, item, BUY_MAX).quantite);
-  return Math.max(1, Math.min(max, buyQuantities[item] || 1));
-}
-
+// Quantité d'animaux choisie : entre 1 et ce que les pièces et les places permettent.
 function animalQuantity(kind) {
   const max = Math.max(1, Math.min(BUY_MAX, animalBuyMax(state, kind)));
   return Math.max(1, Math.min(max, animalQuantities[kind] || 1));
@@ -60,46 +54,46 @@ function sellableStock(item) {
   return Math.floor(sellableCount(state, item) + EPS);
 }
 
-// Quantité choisie pour la vente, toujours entre 1 et le stock.
-function sellQuantity(item) {
-  const stock = sellableStock(item);
-  return Math.max(1, Math.min(stock, sellQuantities[item] || 1));
+// FLU-13 : onglet du Marché à l'ouverture, quand aucun n'est demandé : Acheter tant que la
+// houe manque ; Graines si une parcelle est vide et qu'aucune graine n'est en stock ; sinon
+// le dernier onglet choisi par le joueur.
+export function comptoirTabAOuvrir() {
+  if (!hasHoe(state)) return 'acheter';
+  const vide = state.potager.parcelles.some((p) => !p.culture);
+  const graines = plantableCropsFor(state, DATA.POTAGER.LIEU).some((c) => seedStock(state, c) >= 1);
+  if (vide && !graines) return 'graines';
+  return comptoirTabChoisi;
 }
 
+// FLU-14 : une ligne par article, des boutons de lot (×1, ×5, Tout) au lieu de − / + / Max.
 function sellRow(item) {
   const it = DATA.items[item];
   const stock = sellableStock(item);
-  const q = sellQuantity(item);
+  const lot = (q, txt) => `<button type="button" class="btn lot-btn" data-action="sell-item" data-item="${item}" data-q="${q}" aria-label="Vendre ${q} ${it.nom.toLowerCase()} (+${formatCoins(q * it.prix)} 💰)"${q <= stock ? '' : ' disabled'}>${txt}</button>`;
   return `
-    <div class="shop-row">
-      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatQty(sellableCount(state, item))}</span>${fridgeCount(state, item) > 0 ? ` <span class="chip">❄️ dont ${formatQty(fridgeCount(state, item))} au frigo</span>` : ''}</span></div>
-      <span class="muted">Prix de vente : <strong class="num">${formatCoins(it.prix)} 💰</strong> l'unité (fixe)</span>
-      <div class="row qty-row">
-        <button type="button" class="btn step-btn" data-action="sell-dec" data-item="${item}" aria-label="Vendre une unité de moins"${q <= 1 ? ' disabled' : ''}>−</button>
-        <strong class="num qty">${q}</strong>
-        <button type="button" class="btn step-btn" data-action="sell-inc" data-item="${item}" aria-label="Vendre une unité de plus"${q >= stock ? ' disabled' : ''}>+</button>
-        <button type="button" class="btn" data-action="sell-max" data-item="${item}"${q >= stock ? ' disabled' : ''}>Tout</button>
-        <button type="button" class="btn primary sell-go" data-action="sell-item" data-item="${item}">Vendre ${q} (+${formatCoins(q * it.prix)} 💰)</button>
-      </div>
+    <div class="shop-row lot-row">
+      <span class="lot-name"><span aria-hidden="true">${it.icone}</span> ${it.nom} <span class="muted">· <span class="num">${formatQty(sellableCount(state, item))}</span>${fridgeCount(state, item) > 0 ? ' ❄️' : ''}</span></span>
+      <span class="lot-price num">${formatCoins(it.prix)} 💰</span>
+      <span class="lot-btns">${stock >= 1 ? lot(1, '×1') : ''}${stock >= 5 ? lot(5, '×5') : ''}${stock >= 1 ? lot(stock, `Tout (${stock})`) : ''}</span>
     </div>`;
 }
 
-// Version 1.1.1 : on choisit la quantité. Le total affiché est le vrai prix : il tient
-// compte de la hausse du prix à chaque unité (buyQuote).
+// Version 1.1.1 / FLU-14 : achat par lot (×1, ×5, ×10). Le prix monte à chaque unité : le
+// total de chaque lot est le vrai prix (buyQuote), dans l'infobulle et pour les lecteurs d'écran.
 function buyRow(item) {
   const it = DATA.items[item];
   const price = buyPrice(state, item);
-  const coef = marketCoef(state, item);
-  const max = buyQuote(state, item, BUY_MAX).quantite;
-  const q = buyQuantity(item);
-  const total = max > 0 ? buyQuote(state, item, q).cout : price;
+  const lot = (q) => {
+    const quote = buyQuote(state, item, q);
+    const ok = quote.quantite >= q;
+    const cout = ok ? quote.cout : buyQuote(state, item, q).cout;
+    return `<button type="button" class="btn lot-btn" data-action="buy-item" data-item="${item}" data-q="${q}" aria-label="Acheter ${q} ${it.nom.toLowerCase()}${ok ? ` (−${formatCoins(cout)} 💰)` : ' : pas assez de pièces'}" title="${ok ? `−${formatCoins(cout)} 💰` : 'Pas assez de pièces'}"${ok ? '' : ' disabled'}>×${q}</button>`;
+  };
   return `
-    <div class="shop-row">
-      <div class="inv-main"><span><span aria-hidden="true">${it.icone}</span> ${it.nom}</span><span class="muted">En stock : <span class="num">${formatQty(countItem(state, item))}</span></span></div>
-      <span class="muted">Prochaine unité : <strong class="num">${formatCoins(price)} 💰</strong> · coefficient <span class="num">${formatNumber(coef)} %</span> · vente ${formatCoins(it.prix)} 💰</span>
-      <div class="row qty-row">${qtyButtons('buy', `data-item="${item}"`, q, max, 'une unité')}
-        <button type="button" class="btn primary sell-go" data-action="buy-item" data-item="${item}"${max > 0 ? '' : ' disabled'}>Acheter ${q} (−${formatCoins(total)} 💰)</button>
-      </div>
+    <div class="shop-row lot-row">
+      <span class="lot-name"><span aria-hidden="true">${it.icone}</span> ${it.nom} <span class="muted">· <span class="num">${formatQty(countItem(state, item))}</span></span></span>
+      <span class="lot-price num">${formatCoins(price)} 💰</span>
+      <span class="lot-btns">${lot(1)}${lot(5)}${lot(10)}</span>
     </div>`;
 }
 
@@ -223,6 +217,11 @@ function hoeShopRow() {
     </div>`;
 }
 
+// FLU-25 : l'économie du Marché (coefficients, planchers) est derrière un bouton « ? ».
+function marketHelp(texte) {
+  return `<details class="more market-help"><summary><span class="help-q" aria-hidden="true">?</span> Comment les prix changent</summary><p class="muted">${texte}</p></details>`;
+}
+
 export function renderComptoir() {
   const tabs = COMPTOIR_TABS.filter((t) => t.ok());
   const tab = tabs.find((t) => t.id === comptoirTab) || tabs[0];
@@ -230,20 +229,24 @@ export function renderComptoir() {
   if (tab.id === 'vendre') {
     const items = Object.keys(DATA.items).filter((k) => sellableCount(state, k) > 0);
     body = `
-      <p class="muted">Prix de vente fixes. Les articles rangés au frigo se vendent aussi (l'inventaire part en premier). Chaque unité vendue baisse de ${formatNumber(DATA.MARCHE.PAS)} points le coefficient d'achat de l'objet, sans passer sous son plancher.</p>
+      <p class="muted">Les articles rangés au frigo se vendent aussi.</p>
+      ${marketHelp(`Prix de vente fixes. L'inventaire part en premier, puis le frigo. Chaque unité vendue baisse de ${formatNumber(DATA.MARCHE.PAS)} points le coefficient d'achat de l'objet, sans passer sous son plancher.`)}
       ${items.length ? items.map(sellRow).join('') : '<p class="hint">Tu n\'as rien à vendre pour l\'instant.</p>'}`;
   } else if (tab.id === 'acheter') {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine');
+    // FLU-01 : la puce d'objectif « Acheter une houe » mène ici ; le chapitre reste à une touche
+    const chapitre = !hasHoe(state) ? '<p class="row"><button type="button" class="btn small" data-action="aller" data-window="chapitres">📜 Voir le chapitre</button></p>' : '';
     body = `
-      ${hoeShopRow()}
-      <p class="muted">Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
+      ${chapitre}${hoeShopRow()}
+      ${marketHelp(`Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.`)}
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'animaux') {
     body = renderAnimaux();
   } else {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = `
-      <p class="muted"><span class="chip badge">dépannage</span> Les graines s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Produire tes propres graines reste plus rentable. Le blé fait exception : c'est aussi la ressource du Silo, du Moulin et des poules, donc il garde son prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et reste également listé dans l'onglet Acheter.</p>
+      <p class="muted"><span class="chip badge">dépannage</span> Les graines coûtent cher : produire les tiennes reste plus rentable.</p>
+      ${marketHelp(`Les graines s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Le blé, la patate et les autres cultures qui se plantent d'elles-mêmes (on plante une patate pour en récolter d'autres) gardent leur prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et restent aussi dans l'onglet Acheter.`)}
       ${items.map(buyRow).join('')}`;
   }
   return `
@@ -271,27 +274,15 @@ registerActions({
   }),
   'buy-item': (target) => {
     const item = target.dataset.item;
-    const result = applyResult(buyItem(state, item, buyQuantity(item)));
+    const result = applyResult(buyItem(state, item, Math.max(1, Number(target.dataset.q) || 1)));
     if (result.ok) {
-      buyQuantities[item] = 1;
       showToast(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
       refresh();
     }
   },
-  ...sameHandler(['buy-dec', 'buy-inc', 'buy-max'], (target, e, action) => {
-    const item = target.dataset.item;
-    buyQuantities[item] = action === 'buy-max' ? buyQuote(state, item, BUY_MAX).quantite : buyQuantity(item) + (action === 'buy-inc' ? 1 : -1);
-    refresh();
-  }),
-  ...sameHandler(['sell-dec', 'sell-inc', 'sell-max'], (target, e, action) => {
-    const item = target.dataset.item;
-    const now = sellQuantity(item);
-    sellQuantities[item] = action === 'sell-max' ? sellableStock(item) : now + (action === 'sell-inc' ? 1 : -1);
-    refresh();
-  }),
   'sell-item': (target) => {
     const item = target.dataset.item;
-    const result = applyResult(sellItem(state, item, sellQuantity(item)));
+    const result = applyResult(sellItem(state, item, Math.max(1, Number(target.dataset.q) || 1)));
     if (result.ok) showToast(`Vendu : ${result.sold} ${DATA.items[item].icone} (+${formatCoins(result.gain)} 💰)`);
   },
 });

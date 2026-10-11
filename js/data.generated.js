@@ -796,8 +796,8 @@ export const RAW_DATA = {
         "pt": 1,
         "cout": 100,
         "requiert": [],
-        "effet": { "actionsGroupees": ["arroser", "recolter"] },
-        "description": "Ajoute « Arroser tout » et « Récolter tout » à la Zone de culture et à la Serre."
+        "effet": { "groupeEconome": 25 },
+        "description": "« Planter partout », « Arroser tout » et « Récolter tout » coûtent 25 % d'énergie en moins."
       },
       "cu_semences": {
         "branche": "culture",
@@ -1088,13 +1088,16 @@ export const RAW_DATA = {
       {
         "titre": "L'héritage",
         "icone": "🏚️",
-        "intro": "La ferme du grand-père est à vous, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
+        "intro": "La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
           { "type": "maison", "cible": 1, "libelle": "Réparer la maison", "unite": "" },
           { "type": "panneau", "cible": 1, "libelle": "Acheter le panneau solaire", "unite": "" },
           { "type": "pompe", "cible": 1, "libelle": "Acheter la pompe", "unite": "" },
           { "type": "reservoir", "cible": 1, "libelle": "Acheter le réservoir", "unite": "" },
           { "type": "houe", "cible": 1, "libelle": "Acheter une houe au Marché", "unite": "" },
+          { "type": "labours", "cible": 6, "libelle": "Labourer 6 tuiles", "unite": "" },
+          { "type": "semis", "cible": 6, "libelle": "Planter 6 parcelles", "unite": "" },
+          { "type": "arrosees", "cible": 6, "libelle": "Arroser tes parcelles", "unite": "" },
           { "type": "recoltes", "cible": 1, "libelle": "Faire une première récolte", "unite": "" }
         ]
       },

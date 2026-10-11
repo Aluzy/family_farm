@@ -11,7 +11,7 @@ import { hoePanelHtml } from './houe.js';
 import { renderStarterCards } from './depart.js';
 import { isUnlocked } from '../engine/campaign.js';
 import {
-  formatCoins, formatLitres, formatLitresRate, formatNumber, formatWh, formatWhRate,
+  formatCoins, formatLitres, formatLitresRate, formatNumber, formatWh,
 } from '../engine/format.js';
 import { FERME_LINKS, hoeMode, setEcranFerme, state, tabAvailable, TABS } from './store.js';
 import { telView } from './consent.js';
@@ -46,6 +46,25 @@ function sunText() {
   return h >= DATA.SOLEIL.DEBUT && h < DATA.SOLEIL.FIN
     ? `☀️ Soleil jusqu'à ${DATA.SOLEIL.FIN} h`
     : `🌙 Pas de soleil : le panneau produit de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h`;
+}
+
+// FLU-26 : la production en mots et en jauge (les valeurs en Wh/s restent dans l'aide « ? »).
+function powerGauge(prod, max) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((prod / max) * 100))) : 0;
+  return `<span class="bar" role="progressbar" aria-label="Production : ${pct} % du maximum" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span class="bar-fill" style="width:${pct}%"></span></span>`;
+}
+
+function powerVerdict(e) {
+  const p = state.pompe;
+  const pompe = isOwned(starterOf(state, 'pompe')) && p.allume && !isBroken(p);
+  if (e.production <= 0) return e.charge > 0 ? 'La batterie prend le relais.' : 'Les appareils attendent le soleil.';
+  if (pompe && p.debit > 0 && p.debit + 1 < pumpFlow(p)) return '⚠️ Pas assez pour la pompe à plein débit.';
+  if (pompe && p.debit > 0) return '✅ Assez pour la pompe.';
+  return e.net > 0 ? '✅ Le surplus charge la batterie.' : '✅ Assez pour les appareils en marche.';
+}
+
+function panelsMax() {
+  return state.panneaux.reduce((t, d) => t + (d.allume && !isBroken(d) ? panelOutput(d, state) : 0), 0);
 }
 
 function alertLine(aEntretenir, enPanne) {
@@ -98,9 +117,9 @@ export function renderFerme() {
 export function renderEnergieEau() {
   const e = energyStats(state), p = state.pompe, ps = deviceStatus(state, p), cap = tankCapacity(state);
   const tankUp = upgradeCost({ type: 'reservoir', niveau: state.reservoir.niveau });
-  let netText = 'Stable (0 Wh/s)';
-  if (e.net > 0) netText = `En charge (${formatWhRate(e.net, true)})`;
-  else if (e.net < 0) netText = `En décharge (${formatWhRate(e.net, true)})`;
+  let netText = 'Ni charge ni décharge';
+  if (e.net > 0) netText = 'En charge';
+  else if (e.net < 0) netText = 'En décharge';
   const tankText = state.eauMl >= cap ? 'Réservoir plein' : `Vitesse de remplissage : ${formatLitresRate(state.flux.eau)}`;
   // version 1.12 : la maison à réparer et les appareils à acheter passent en premier ;
   // un appareil pas encore acheté n'a pas de carte
@@ -108,7 +127,8 @@ export function renderEnergieEau() {
   const panneauCard = owned('panneau') ? `
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
         <span class="card-title"><span>${icon('panneau')}Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
-        <span class="big">${formatWhRate(e.production)}</span>
+        <span>${powerVerdict(e)}</span>
+        ${powerGauge(e.production, panelsMax())}
         <span class="muted">Panneau niveau ${state.panneaux[0].niveau} · ${sunText()}</span>
         ${alertLine(e.panneauxAEntretenir, e.panneauxEnPanne)}
       </button>` : '';
@@ -123,7 +143,6 @@ export function renderEnergieEau() {
       <div class="card ancre${tutoTarget('eau')}" id="dev-pompe">
         <span class="card-title"><span>${icon('pompe')}Pompe · niveau ${p.niveau}</span><span class="chips"><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span>${helpBtn('pompe')}</span></span>
         <span class="muted">Débit réel : <span class="num">${formatLitresRate(p.debit)}</span> (max ${formatLitresRate(pumpFlow(p))})</span>
-        <span class="muted">Consommation : <span class="num">${formatWhRate(p.conso)}</span></span>
         ${wearHtml(p)}
         ${deviceControls(p)}
       </div>` : '';
@@ -178,12 +197,14 @@ function deviceControls(d) {
       : `<button type="button" class="btn" data-action="upgrade" data-id="${d.id}"${canPay(up) ? '' : ' disabled'}>Améliorer (${costLabel(up)})</button>`;
   const maintainOk = !broken && (d.usure > 0 || d.usureMs > 0) && canPay(maintain);
   const repairOk = broken && canPay(repair);
+  // FLU-26 : « Entretenir » seulement s'il y a de l'usure, « Réparer » seulement en panne
+  const maintainBtn = !broken && d.usure > 0 ? `<button type="button" class="btn" data-action="maintain" data-id="${d.id}"${maintainOk ? '' : ' disabled'}>Entretenir (${costLabel(maintain)})</button>` : '';
+  const repairBtn = broken ? `<button type="button" class="btn" data-action="repair" data-id="${d.id}"${repairOk ? '' : ' disabled'}>Réparer (${costLabel(repair)})</button>` : '';
   return `
     <span class="device-actions">
       ${switchHtml(d)}
       ${upgradeBtn}
-      <button type="button" class="btn" data-action="maintain" data-id="${d.id}"${maintainOk ? '' : ' disabled'}>Entretenir (${costLabel(maintain)})</button>
-      <button type="button" class="btn" data-action="repair" data-id="${d.id}"${repairOk ? '' : ' disabled'}>Réparer (${costLabel(repair)})</button>
+      ${maintainBtn}${repairBtn}
     </span>
   `;
 }
@@ -192,12 +213,12 @@ function deviceRow(d) {
   const st = deviceStatus(state, d);
   let detail;
   if (d.type === 'panneau') {
-    detail = `<span class="muted">Production : <span class="num">${formatWhRate(d.prod)}</span> (max ${formatWhRate(panelOutput(d, state))}, de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h)</span>`;
+    detail = `<span class="muted">Production, de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h :</span>${powerGauge(d.prod, panelOutput(d, state))}`;
   } else {
     const cap = batteryCapacity(d);
     let flow = 'Ni charge ni décharge';
-    if (st.code === 'decharge') flow = `Puissance soutirée : ${formatWhRate(-d.sortie, true)}`;
-    else if (st.code === 'charge') flow = `Charge : ${formatWhRate(d.entree, true)}`;
+    if (st.code === 'decharge') flow = 'Elle alimente les appareils';
+    else if (st.code === 'charge') flow = 'Elle se charge';
     detail = `
       <span class="muted">Charge : <span class="num">${formatNumber(Math.floor(d.chargeMwh / 1000))} / ${formatWh(cap)}</span></span>
       <span class="muted">${flow}</span>`;
@@ -220,10 +241,11 @@ export function renderDeviceScreen(kind) {
   const type = isPanels ? 'panneau' : 'batterie';
   const e = energyStats(state);
   const summary = isPanels
-    ? `<span class="big">${formatWhRate(e.production)}</span>
+    ? `<span>${powerVerdict(e)}</span>
+       ${powerGauge(e.production, panelsMax())}
        <span class="muted">${sunText()}</span>`
     : `<span class="big">${formatNumber(Math.floor(e.charge / 1000))} / ${formatWh(e.capacite)}</span>
-       <span class="muted">Total reçu : ${formatWhRate(e.entree, true)} · Total soutiré : ${formatWhRate(-e.sortie, true)}</span>`;
+       <span class="muted">${e.net > 0 ? 'En charge' : e.net < 0 ? 'En décharge' : 'Ni charge ni décharge'}</span>`;
   return `
     <div class="screen-head">
       <button type="button" class="btn" data-action="close-screen">← Ferme</button>

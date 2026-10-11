@@ -6,6 +6,126 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v38 (jeu 1.16) : fluidité** (tâches de `docs/taches-fluidite.json`). Cette note **fait
+> foi** sur les raccourcis et l'ergonomie qu'elle décrit.
+> - **Puce d'objectif (FLU-01)** : elle mène là où l'objectif se fait (`OBJECTIF_CIBLES` dans
+>   `js/ui/stage.js`) : maison, panneau, pompe, réservoir, plats et pains → Maison ›
+>   Installations ; houe → Marché › Acheter ; récoltes, cultures, semis de blé → Zone de
+>   culture ; Silo → fenêtre du Silo ; niveau → fenêtre Niveaux ; tout autre objectif → la
+>   liste des chapitres. Chaque fenêtre de la carte a un bouton 📜 « Voir le chapitre »
+>   (et le Marché, tant que la houe n'est pas achetée).
+> - **Houe en main (FLU-41)**, la puce d'objectif se réduit à son icône et à sa valeur.
+> - **Une touche (FLU-02)** : déjà le cas en v1.15 (une touche ouvre la fiche d'un lieu, un
+>   glissement n'ouvre rien) ; rien à changer.
+> - **Maison (FLU-03, FLU-04)** : elle s'ouvre sur Installations tant que la maison est à
+>   réparer ou que le panneau, la pompe ou le réservoir manquent, sinon sur le dernier onglet
+>   choisi. Onglets courts : Famille, Recettes, Techno, Énergie (le nom complet reste dans
+>   l'infobulle et pour les lecteurs d'écran).
+> - **Houe (FLU-05, FLU-06)** : houe achetée et rangée, un bouton rond ⛏️ à gauche du bouton
+>   Dormir la met en main en une touche. La première fois de la partie (`potager.houeVue`,
+>   format 33), une bulle « Touche une case verte pour la labourer » s'affiche 8 s sous la
+>   puce Houe, et la carte glisse vers la case verte la plus proche si aucune n'est visible.
+> - **Carte (FLU-07)** : tant que le joueur n'a pas fait glisser la carte, un chevron ⌄ en bas
+>   annonce qu'elle continue vers le bas (comme les flèches ‹ › des côtés) ; le toucher la
+>   fait descendre d'une demi-hauteur. Immobile avec « réduire les animations ».
+> - **Barre du bas (FLU-08)** : le Marché y est dès le départ, grisé avec un cadenas tant que
+>   le panneau et la pompe ne sont pas installés (une touche le dit) : les 5 onglets ne
+>   bougent plus.
+> - **Actions groupées (FLU-09, FLU-10, FLU-11)** : sous les parcelles, dès le niveau 1,
+>   « 🌱 Planter partout (N vides) » (même choix de graine que pour une parcelle, puis toutes
+>   les parcelles vides dans la limite des graines et de l'énergie ; `plantAll`), « 💧 Arroser
+>   tout (N · L · ⚡) » et « 🧺 Récolter tout (N · ⚡) ». Mêmes eau, énergie et XP qu'à la main ;
+>   un bouton qui ne peut pas servir est grisé et une phrase dit ce qui manque.
+>   **Outils de jardin** (arbre, `cu_outils`) : ces actions groupées coûtent 25 % d'énergie en
+>   moins (`groupeEconome`), au lieu de les débloquer. Le joueur automatique ne les utilise pas.
+> - **Réveil (FLU-16)** : quand des parcelles de la Zone de culture ont soif, le résumé du
+>   réveil propose « 💧 Arroser tout (N) », qui les arrose et ferme le résumé.
+> - **Labour en glissant (FLU-12)** : houe en main, un glissement qui part d'une case verte
+>   laboure chaque case verte traversée (marquées pendant le geste, labourées au relâchement,
+>   jusqu'au plafond ou à court d'énergie) ; un glissement qui part ailleurs déplace la carte.
+> - **Marché (FLU-13, FLU-14, FLU-15)** : il s'ouvre sur Acheter tant que la houe manque, sur
+>   Graines si une parcelle est vide sans aucune graine en stock, sinon sur le dernier onglet
+>   choisi. Une ligne par article, avec des boutons de lot : ×1, ×5, ×10 à l'achat (le total
+>   exact est dans l'infobulle), ×1, ×5, Tout à la vente ; l'onglet Acheter est deux fois
+>   moins haut. Les cultures qui se plantent d'elles-mêmes (on plante une patate pour en
+>   récolter d'autres ; aussi l'ail, le riz, le houblon…) sont dans l'onglet Graines, à leur
+>   prix habituel, et le choix de culture écrit « Patates en stock » (plus « Plants »).
+>- **Démarrage (FLU-17, FLU-18, FLU-21)** : une seule fenêtre à la fois. Famille → histoire →
+>   carte seule une demi-seconde → bandeau des cookies (s'il faut le demander) → annonce de la
+>   lettre du notaire (seulement si elle n'est pas lue) → bulle d'aide. Le bandeau, l'annonce
+>   et l'aide attendent qu'aucune fenêtre ne soit ouverte (`js/ui/calme.js`). L'heure ne tourne
+>   ni pendant l'histoire ni pendant qu'on lit les bulles avant de jouer : elle reprend dès la
+>   maison réparée (sinon, bulle ouverte, il resterait 6 h, sans soleil ni eau), et tourne
+>   toujours pendant « Dormir », qui attend que « Zzz » s'active.
+>- **Aide, étape 2 (FLU-19)** : « La zone de culture » dit d'acheter la houe au Marché, de la
+>   prendre (bouton ⛏️), de toucher l'herbe foncée pour labourer, puis de planter et d'arroser
+>   la terre labourée ; plus de « parcelle sous la barrière ».
+>- **Chapitre 1, trois étapes (FLU-42)** : entre « Acheter une houe au Marché » et « Faire une
+>   première récolte » : « Labourer 6 tuiles » (tuiles labourées au total), « Planter 6
+>   parcelles » (semis au total) et « Arroser tes parcelles » (6 parcelles arrosées le même
+>   jour, au moins une fois). La puce « Labourer » met la houe en main ; « Planter » et
+>   « Arroser » ouvrent la fiche des parcelles. Le chapitre rapporte toujours 200 XP.
+>   Sauvegarde v34 : une partie qui a déjà labouré, planté ou arrosé (ou récolté, ou dépassé
+>   le chapitre 1) a ces étapes validées d'office.
+>- **L'aide montre où toucher (FLU-20)** : pendant les bulles « L'eau et le soleil » et « La
+>   zone de culture », un seul élément porte un anneau animé (immobile si les animations sont
+>   réduites) : le bouton qui fait avancer l'objectif du chapitre 1 s'il est à l'écran
+>   (Réparer, Acheter le panneau, la pompe, le réservoir, la houe, ⛏️, Planter, Arroser,
+>   Récolter), sinon la puce d'objectif, sinon l'onglet Ferme. Il avance tout seul quand
+>   l'objectif est atteint ; houe en main, ce sont les cases vertes. « Passer l'aide » reste.
+>- **Écran Famille (FLU-22)** : le bouton du personnage principal s'écrit « ⭐ Principal ».
+>- **Énergie en mots (FLU-23)** : « ⚡ 100 · arroser : 1 », « ⚡ labourer : 4 ». Un coût
+>   d'énergie s'affiche arrondi à l'entier supérieur, un gain à l'entier inférieur ; le calcul
+>   garde ses millièmes.
+>- **Fiche Famille allégée (FLU-24)** : une ligne par membre (portrait, nom, calories,
+>   bonheur, ⭐ Principal, ✏️), puis l'énergie avec « Bonheur de la famille : tes actions
+>   coûtent 30 % d'énergie en moins », puis le repas. Graphique d'autonomie, formules,
+>   coûts de chaque action et endurance sont dans « En savoir plus », fermé par défaut.
+>   Un bloc « En savoir plus » ouvert le reste aux rendus suivants.
+>- **Marché sans cours d'économie (FLU-25)** : chaque article n'affiche que son prix ; les
+>   explications (coefficients, planchers) sont derrière « ? Comment les prix changent ».
+>- **Installations épurées (FLU-26)** : « Entretenir » n'apparaît qu'avec de l'usure, « Réparer »
+>   qu'en panne. La production s'écrit en mots (« ✅ Assez pour la pompe », « ⚠️ Pas assez
+>   pour la pompe à plein débit », « Les appareils attendent le soleil ») avec une jauge par
+>   rapport au maximum des panneaux ; la batterie dit « En charge » ou « En décharge ». Les
+>   valeurs en Wh/s ne restent que dans l'aide « ? » de chaque appareil.
+>- **Parcelles (FLU-27)** : le bouton 🤖 du semis automatique n'apparaît qu'une fois la
+>   technologie débloquée.
+>- **Arbre des technologies dévoilé (FLU-28)** : l'onglet Techno de la Maison n'apparaît
+>   qu'au premier point de technologie gagné, annoncé par « 🌳 L'Arbre des technologies est
+>   ouvert… » (le message y mène). Chaque branche est un bloc repliable, fermé sauf la
+>   première qui a une technologie à acquérir (« ✨ À acquérir ») ; tout replié, l'arbre fait
+>   moins de 700 px à 390 px. Ouvert ou fermé par le joueur, un bloc le reste.
+>- **Niveaux et Ville (FLU-29)** : la fenêtre Niveaux montre le niveau en cours et les deux
+>   suivants, puis « Voir tous les niveaux (10) ». Dans la Ville, les sorties d'abord, les
+>   voyages dans un bloc replié.
+>- **Barre d'XP (FLU-30)** : la puce « ⭐ Niv. » du bandeau porte une fine barre vers le
+>   niveau suivant ; son nom pour les lecteurs d'écran dit « Niveau 1 : 10 / 500 XP ».
+>- **Tutoiement (FLU-31)** : tout le jeu et la page d'accueil tutoient (« Ta famille », « Pendant
+>   ton absence… », « Aide-nous à améliorer le jeu ! »). Restent au vouvoiement : la lettre du
+>   notaire, le bandeau et la page des cookies (et les réglages de confidentialité), et le
+>   « vous » pluriel quand une lettre ou l'histoire s'adresse à toute la famille.
+>- **Fenêtre Niveaux (FLU-32, FLU-33)** : la liste des gains d'XP commence par « labourer
+>   10 XP » (lu dans les données). À l'ouverture, le focus va sur le titre ; le niveau en cours
+>   (« en cours ») est en haut de la liste, et « Voir tous les niveaux » y fait défiler. Une
+>   coche ✓ marque les niveaux atteints, rien les autres (plus de carré vide).
+>- **Pompe sans réservoir (FLU-34)** : panneau et pompe achetés, réservoir pas encore : la
+>   pompe dit « Pas encore de réservoir » (plus « Réservoir plein »).
+>- **Pastille des Notifications (FLU-35)** : non reproduit en 1.15, rien changé.
+>- **Chapitres (FLU-36)** : une tâche oui/non (cible 1 : réparer, acheter…) n'a que sa case,
+>   sans barre de progression.
+>- **Pastille « à faire » de la carte (FLU-37)** : même dessin, mais le bouton mesure 44 × 44 px.
+>- **Test sans aide (FLU-40)** : [`docs/test-utilisateur.md`](test-utilisateur.md) : consignes à
+>   lire, 5 tâches, grille de notes (durée, hésitations de plus de 5 s, questions). Reste à le
+>   faire passer aux bêta-testeuses sur un vrai téléphone.
+>- **Mesure (FLU-39)** : `node scripts/mesure-touches.mjs` compte **22 touches** d'une nouvelle
+>   partie à 6 parcelles de carottes plantées et arrosées (52 en 1.14, cible 30). En suivant
+>   seulement l'anneau de l'aide (FLU-20), on arrive au même résultat : l'anneau montre ✕
+>   quand la puce d'objectif est sous une fenêtre, le Marché › Graines (×10) quand il n'y a
+>   pas de graines, et attend quand le bouton est grisé (pas encore d'eau).
+>- **Options (FLU-38)** : export et import dans un bloc replié « 💾 Sauvegarde » ;
+>   « Recommencer à zéro » tout en bas, en bouton à contour rouge, avec la même confirmation.
+>
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
 > sur la Zone de culture.

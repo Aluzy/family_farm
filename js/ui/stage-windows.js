@@ -1,20 +1,23 @@
 import { DATA } from '../engine/catalog.js';
 import { energyLevel } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
-import { allDevices, farmOpen } from '../engine/devices.js';
+import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
+import { houseRepaired } from '../engine/depart.js';
 import { awakeRequired } from '../engine/clock.js';
 import { planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
-import { unlockLevel } from '../engine/levels.js';
+import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
 import {
-  activeTab, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
+  activeTab, ecranFerme, FERME_LINKS, hoeMode, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
+import { showToast } from './toasts.js';
+import { MARKET_CLOSED } from '../engine/market.js';
 import { actionSleep } from './game-actions.js';
 import { artHtml, pxText } from './pixel-art.js';
 import { renderVille } from './ville.js';
@@ -33,7 +36,7 @@ import { renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { renderInventaire, subtabsHtml } from './inventaire.js';
-import { renderComptoir } from './marche.js';
+import { comptoirTabAOuvrir, renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
@@ -91,9 +94,17 @@ export function leaveInterior() {
 
 let stageWindowShown = null; // dernière fenêtre dessinée (avec son onglet) : pour remonter en haut au changement
 let maisonTab = 'famille'; // onglet de la fenêtre Maison
+let maisonTabChoisi = 'famille'; // FLU-03 : le dernier onglet que le joueur a choisi
 export function setMaisonTab(value) {
   maisonTab = value;
   return value;
+}
+
+// FLU-03 : la Maison s'ouvre là où il y a à faire : Installations tant que la maison est à
+// réparer ou que le panneau, la pompe ou le réservoir manquent ; sinon le dernier onglet choisi.
+function maisonTabAOuvrir() {
+  const manque = !houseRepaired(state) || ['panneau', 'pompe', 'reservoir'].some((id) => !isOwned(starterOf(state, id)));
+  return manque ? 'batiments' : maisonTabChoisi;
 }
 let ancreVoulue = null; // id de l'élément à amener en haut au prochain rendu (calendrier, eau…)
 export function setAncreVoulue(value) {
@@ -102,10 +113,11 @@ export function setAncreVoulue(value) {
 }
 
 export const MAISON_TABS = [
+  // FLU-04 : `court` s'affiche sur l'onglet, `label` reste le nom complet (infobulle, lecteurs d'écran)
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), corps: () => renderFamille() },
-  { id: 'recettes', label: 'Livre de recette', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
-  { id: 'techno', label: 'Arbre des technologies', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
-  { id: 'batiments', label: 'Installations', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
+  { id: 'recettes', label: 'Livre de recette', court: 'Recettes', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
+  { id: 'techno', label: 'Arbre des technologies', court: 'Techno', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
+  { id: 'batiments', label: 'Installations', court: 'Énergie', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
   // version 1.14 : le commerce du niveau 10
   { id: 'commerce', label: 'Commerce', icon: '🏪', ok: () => isUnlocked(state, 'commerce'), corps: () => renderCommerce() },
 ];
@@ -254,6 +266,7 @@ export function renderStageWindow() {
       <section class="stage-window ${w.haute ? 'tall' : 'half'}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
         <header class="window-head">
           <h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>
+          ${stageWindow !== 'chapitres' ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
           <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer la fenêtre" title="Fermer">✕</button>
         </header>
         ${w.onglets && !windowLocked(stageWindow) ? `<div class="window-tabs">${w.onglets()}</div>` : ''}
@@ -282,6 +295,7 @@ export function openStageWindow(id) {
   // Un bâtiment qui a un intérieur : depuis la carte, on y entre. Une fois dedans, la même
   // action ouvre sa fenêtre (agrandir, tout arroser, tout récolter).
   if (INTERIORS[id] && stageInterior !== id && enterInterior(id)) return;
+  if (id === 'maison') maisonTab = maisonTabAOuvrir();
   stageWindow = id;
   stageReturn = null;
   renderStageWindow(); // tout de suite, sans attendre la cadence de rendu
@@ -335,6 +349,14 @@ export function applyAnchor() {
 // icône et sa valeur ; son nom est dans l'infobulle et pour les lecteurs d'écran. Ceux qui ont
 // un lieu y mènent (eau → Maison › Installations, autonomie → Maison ›
 // Famille). Le jour est le numéro de la nuit à venir (state.day) : jour 1 au départ.
+// FLU-30 : la puce « Niv. » porte une fine barre de progression vers le niveau suivant.
+function niveauHtml(corps) {
+  const p = levelProgress(state);
+  const xp = p.max ? `${formatNumber(p.xp)} XP, niveau maximal` : `${formatNumber(p.xp)} / ${formatNumber(p.fin)} XP`;
+  const titre = `Niveau ${p.niveau} : ${xp}. Voir les niveaux`;
+  return `<button type="button" class="indicator indicator-btn level-ind" data-action="open-levels" title="${titre}" aria-label="${titre}">${corps('⭐', `Niv. ${p.niveau}`)}<span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>`;
+}
+
 export function renderIndicators() {
   const heure = Math.floor(heureDuJour());
   const corps = (icone, valeur) => `<span aria-hidden="true">${icone}</span><span class="num" aria-hidden="true">${valeur}</span>`;
@@ -345,7 +367,7 @@ export function renderIndicators() {
   const el = document.getElementById('indicators');
   morph(el,
     cell('📅', `Jour ${state.day}`, `Jour ${state.day}`) +
-    `<button type="button" class="indicator indicator-btn" data-action="open-levels" title="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux" aria-label="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux">${corps('⭐', `Niv. ${state.progression.niveau}`)}</button>` +
+    niveauHtml(corps) +
     cell(horlogeEmoji(heure), `${heure} h`, `Heure de la journée : ${heure} h`) +
     lien('⚡', String(energyLevel(state)), `Ton énergie : ${energyLevel(state)} / ${DATA.PERSONNAGE.MAX}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' }) +
     lien('💧', formatLitres(state.eauMl), `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +
@@ -378,8 +400,12 @@ export function renderTabbar() {
   morph(
     document.getElementById('bottom-nav'),
     NAV_TABS.map((id) => TABS.find((t) => t.id === id))
-      .filter((t) => tabAvailable(t.id))
+      // FLU-08 : le Marché est là dès le départ (verrouillé) : les onglets ne bougent jamais
+      .filter((t) => tabAvailable(t.id) || t.id === 'comptoir')
       .map((t) => {
+        if (!tabAvailable(t.id)) {
+          return `<button type="button" class="nav-btn locked" data-action="market-locked" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
+        }
         const badge = t.id === 'notifications' && alerts > 0 ? `<span class="nav-badge" aria-hidden="true">${alerts}</span>` : '';
         const label = t.id === 'notifications' && alerts > 0 ? `${t.label} (${alerts} alerte${alerts > 1 ? 's' : ''})` : t.label;
         return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
@@ -419,9 +445,13 @@ export function renderSleepBar() {
   const meal = `${state.repas ? `Repas pris à ${DATA.TIME.MEAL_HOUR} h` : `Repas prévu à ${DATA.TIME.MEAL_HOUR} h`} : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
   const ok = canSleep(state);
   const label = `${ok ? 'Dormir' : `Dormir (dans ${remaining} s)`}. ${meal}`;
+  // FLU-05 : houe achetée et rangée, un bouton rond la met en main depuis la carte
+  const houe = state.potager.houe && !hoeMode && activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior
+    ? `<button type="button" class="hoe-fab" data-action="hoe-toggle" aria-label="Prendre la houe" title="Prendre la houe">${DATA.HOUE.ICONE}</button>`
+    : '';
   morph(
     document.getElementById('sleep-fab'),
-    (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
+    houe + (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
       `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}"${ok ? '' : ' disabled'}>${artHtml(ok ? 'sleep-on' : 'sleep-off', 'sleep-art')}${ok ? '' : pxText(`${remaining}s`, 'sleep-wait light')}</button>`
   );
 }
@@ -449,8 +479,12 @@ registerActions({
   },
   'maison-tab': (target) => {
     maisonTab = target.dataset.tab;
+    maisonTabChoisi = maisonTab;
     renderStageWindow();
     refresh();
+  },
+  'market-locked': () => {
+    showToast(`🔒 ${MARKET_CLOSED}`);
   },
   'stage-goto': (target) => {
     allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
@@ -462,6 +496,7 @@ registerActions({
       return;
     }
     setActiveTab(target.dataset.tab);
+    if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
     stageWindow = null;
     stageReturn = null;
     stageInterior = null; // changer d'onglet (ou revenir sur « Ferme ») ramène à la carte

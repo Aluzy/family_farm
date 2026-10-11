@@ -3,7 +3,7 @@ import { isBroken } from '../engine/devices.js';
 import { deviceStatus } from '../engine/energy.js';
 import {
   availableEnergy, buildFridge, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeNightNeed,
-  fridgeCapacity, fridgeRate, fridgeUnits, fridgeUpgradeCost, upgradeFridge,
+  fridgeCapacity, fridgeUnits, fridgeUpgradeCost, upgradeFridge,
 } from '../engine/fridge.js';
 import { buildSerre, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
 import {
@@ -12,7 +12,7 @@ import {
 } from '../engine/orchard.js';
 import { canAfford } from '../engine/stamina.js';
 import { techAuto } from '../engine/techtree.js';
-import { formatCoins, formatNumber, formatQty, formatWh, formatWhRate } from '../engine/format.js';
+import { formatCoins, formatNumber, formatQty, formatWh } from '../engine/format.js';
 import { setVergerCase, state, vergerCase } from './store.js';
 import { applyResult } from './game-actions.js';
 import { stageUsable } from './stage.js';
@@ -164,7 +164,7 @@ export function renderFridgeCard() {
     return `
       <div class="card">
         <span class="card-title"><span>${icon('frigo')}Réfrigérateur</span><span class="chips"><span class="chip">Non construit</span>${helpBtn('frigo')}</span></span>
-        <span class="muted">Les aliments rangés au frigo ne vieillissent plus. Il contient ${formatNumber(DATA.FRIGO.CAPACITE[0])} unités (jusqu'à ${formatNumber(DATA.FRIGO.CAPACITE[DATA.FRIGO.CAPACITE.length - 1])} en l'améliorant) et consomme ${formatNumber(DATA.FRIGO.PAR_UNITE_MWH_S)} mWh/s par unité stockée (rien s'il est vide). Appareil électrique : interrupteur, usure, pannes.</span>
+        <span class="muted">Les aliments rangés au frigo ne vieillissent plus. Il contient ${formatNumber(DATA.FRIGO.CAPACITE[0])} unités (jusqu'à ${formatNumber(DATA.FRIGO.CAPACITE[DATA.FRIGO.CAPACITE.length - 1])} en l'améliorant) et consomme un peu de courant par unité stockée (rien s'il est vide). Appareil électrique : interrupteur, usure, pannes.</span>
         <button type="button" class="btn primary" data-action="build-fridge"${canPay(cost) ? '' : ' disabled'}>Construire le Réfrigérateur (${costLabel(cost)})</button>
       </div>`;
   }
@@ -181,8 +181,7 @@ export function renderFridgeCard() {
     <div class="card fridge ancre ${ok ? 'cold' : 'warm'}" id="dev-frigo">
       <span class="card-title"><span>${icon('frigo')}${fridgeIcon()} Réfrigérateur</span><span class="chips"><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span>${helpBtn('frigo')}</span></span>
       ${badge}
-      <span class="big">${formatWhRate(d.conso)}</span>
-      <span class="muted">Consommation : <span class="num">${formatWhRate(fridgeRate(state))}</span> (${formatNumber(DATA.FRIGO.PAR_UNITE_MWH_S)} mWh/s par unité) · onglet Inventaire › Frigo</span>
+      <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté.'} · onglet Inventaire › Frigo</span>
       ${fridgeFillHtml()}
       ${alert}
       ${fridgeUpgradeHtml()}
@@ -234,7 +233,7 @@ export function renderFridgeTab() {
   return `
     <div class="card fridge ${ok ? 'cold' : 'warm'}">
       <span class="card-title"><span>${fridgeIcon()} Réfrigérateur</span><span class="chip${fridgeUnits(state) >= fridgeCapacity(state) ? ' warn' : ''}">${fridgeUnits(state)} / ${fridgeCapacity(state)}</span></span>
-      <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : '⚠️ Pas alimenté : si le froid manque plus de la moitié de l\'éveil, ou toute la nuit, chaque lot perd une nuit.'} Consommation : <span class="num">${formatWhRate(fridgeRate(state))}</span>.</span>
+      <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : '⚠️ Pas alimenté : si le froid manque plus de la moitié de l\'éveil, ou toute la nuit, chaque lot perd une nuit.'}</span>
       ${!fridgeCoversNight(state) ? '<span class="alert">⚠️ La batterie ne couvrira pas la nuit.</span>' : ''}
       <span class="muted">La famille mange aussi le contenu du frigo, après ce qui est dans l'inventaire. Le Marché et les recettes utilisent l'inventaire : sors ce qu'il te faut.</span>
     </div>

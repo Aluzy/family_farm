@@ -381,7 +381,41 @@ function stageOnView(v) {
   if (el && !el.hidden) renderStageNav(el);
 }
 
+// Fluidité (FLU-01) : la puce d'objectif mène là où l'objectif se fait. Type d'objectif →
+// cible (voir cibleAttrs) ; 'niveaux' : la fenêtre Niveaux ; un type absent : la liste des
+// chapitres.
+const OBJECTIF_CIBLES = {
+  maison: { fenetre: 'maison', onglet: 'batiments' },
+  panneau: { fenetre: 'maison', onglet: 'batiments' },
+  pompe: { fenetre: 'maison', onglet: 'batiments' },
+  reservoir: { fenetre: 'maison', onglet: 'batiments' },
+  houe: { page: 'comptoir', sous: 'acheter' },
+  recoltes: { fenetre: 'zone' },
+  cultures: { fenetre: 'zone' },
+  semisBle: { fenetre: 'zone' },
+  // FLU-42 : labourer → la houe en main ; planter et arroser → la fiche des parcelles
+  labours: 'houe',
+  semis: { fenetre: 'zone' },
+  arrosees: { fenetre: 'zone' },
+  silo: { fenetre: 'silo' },
+  siloBle: { fenetre: 'silo' },
+  pains: { fenetre: 'maison', onglet: 'batiments' },
+  plats: { fenetre: 'maison', onglet: 'batiments' },
+  niveau: 'niveaux',
+};
+
+// Attributs du bouton qui mène à l'objectif `type`.
+export function objectifAttrs(type) {
+  const c = OBJECTIF_CIBLES[type];
+  if (c === 'niveaux') return 'data-action="open-levels"';
+  if (c === 'houe') return 'data-action="hoe-take"';
+  if (c) return cibleAttrs(c);
+  return 'data-action="stage-open" data-window="chapitres"';
+}
+
 // Objectif en cours, en une ligne : le premier objectif pas encore atteint du chapitre.
+// Houe en main (FLU-41), la puce se réduit à son icône et à sa valeur, pour laisser la
+// place à la puce de la houe.
 function chapterChipHtml() {
   const c = state.campagne;
   if (c.fini) {
@@ -393,13 +427,26 @@ function chapterChipHtml() {
   const valeur = objectiveValueText(o);
   const pct = Math.round(o.ratio * 100);
   const suite = p.objectifs.length > 1 ? `, objectif ${Math.min(faits + 1, p.objectifs.length)} sur ${p.objectifs.length}` : '';
-  return `<button type="button" class="stage-chip" data-action="stage-open" data-window="chapitres" aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. Ouvrir les chapitres" title="Chapitre ${p.chapitre} : ${p.titre}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span><span class="stage-chip-text">${o.libelle}</span><span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
+  const compacte = hoeMode && state.potager.houe && !stageInterior;
+  const vers = OBJECTIF_CIBLES[o.type] ? 'Y aller' : 'Ouvrir les chapitres';
+  return `<button type="button" class="stage-chip${compacte ? ' compact' : ''}" ${objectifAttrs(o.type)} aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. ${vers}" title="Chapitre ${p.chapitre} : ${p.titre} — ${o.libelle}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span>${compacte ? '' : `<span class="stage-chip-text">${o.libelle}</span>`}<span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
 }
 
 // Version 1.9 : en mode houe, un bouton sur la carte rappelle les tuiles et range la houe.
+// FLU-06 : la première fois que la houe est en main, une bulle dit quoi faire (quelques secondes).
+let hoeHintUntil = 0;
+export function showHoeHint() {
+  hoeHintUntil = Date.now() + 8000;
+  const tiles = labourables();
+  // sur la carte, après le rendu : glisse vers les cases vertes si aucune n'est visible
+  setTimeout(() => { if (window.FarmStage && FarmStage.showTiles) FarmStage.showTiles(tiles); }, 50);
+}
+
 function hoeChipHtml() {
+  if (!hoeMode) hoeHintUntil = 0;                 // la houe rangée, la bulle ne revient pas
   if (!hoeMode || !state.potager.houe || stageInterior) return '';
-  return `<button type="button" class="stage-chip hoe" data-action="hoe-toggle" aria-pressed="true" aria-label="Houe en main : ${soilCount(state)} tuiles sur ${soilCap(state)}. Ranger la houe" title="Touche une tuile d'herbe de la carte pour la labourer"><span class="stage-chip-pill"><span aria-hidden="true">${DATA.HOUE.ICONE}</span><span class="stage-chip-text">Houe</span><span class="stage-chip-val num">${soilCount(state)} / ${soilCap(state)}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+  const bulle = Date.now() < hoeHintUntil ? '<span class="hoe-hint" role="status">Touche une case verte pour la labourer</span>' : '';
+  return `<button type="button" class="stage-chip hoe" data-action="hoe-toggle" aria-pressed="true" aria-label="Houe en main : ${soilCount(state)} tuiles sur ${soilCap(state)}. Ranger la houe" title="Touche une tuile d'herbe de la carte pour la labourer"><span class="stage-chip-pill"><span aria-hidden="true">${DATA.HOUE.ICONE}</span><span class="stage-chip-text">Houe</span><span class="stage-chip-val num">${soilCount(state)} / ${soilCap(state)}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>${bulle}`;
 }
 
 function renderStageHud(el) {
@@ -440,7 +487,9 @@ function renderStageNav(el) {
   const arrows = stageDragged
     ? ''
     : (v.gauche ? fleche('gauche', Math.max(0, v.ecran - 1), '‹', 'La carte continue à gauche') : '') +
-      (v.droite ? fleche('droite', Math.min(v.ecrans - 1, v.ecran + 1), '›', 'La carte continue à droite') : '');
+      (v.droite ? fleche('droite', Math.min(v.ecrans - 1, v.ecran + 1), '›', 'La carte continue à droite') : '') +
+      // FLU-07 : un chevron discret annonce que la carte continue aussi vers le bas
+      (v.bas ? '<button type="button" class="stage-arrow bas" data-action="stage-pan-down" aria-label="La carte continue vers le bas" title="La carte continue vers le bas"><span aria-hidden="true">⌄</span></button>' : '');
   morph(nav, `<div class="stage-dots" role="group" aria-label="Écrans de la carte">${dots}</div>${arrows}`);
 }
 
@@ -464,5 +513,12 @@ registerActions({
   },
   'stage-pan': (target) => {
     stagePanToScreen(target.dataset.ecran);
+  },
+  // FLU-07 : descend d'une demi-hauteur de vue
+  'stage-pan-down': () => {
+    const s = window.FarmStage && FarmStage.scene();
+    if (!s || !s.ready) return;
+    const cam = s.cameras.main;
+    FarmStage.panTo({ x: cam.worldView.centerX, y: cam.worldView.centerY + cam.worldView.height / 2 });
   },
 });

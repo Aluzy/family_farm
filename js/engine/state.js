@@ -30,7 +30,7 @@ export function startInventory() {
 export function startHousehold() {
   return {
     inventaire: startInventory(),
-    potager: { parcelles: startPlots(), zone2: [], houe: false },
+    potager: { parcelles: startPlots(), zone2: [], houe: false, houeVue: false },
     famille: {
       membres: DATA.FAMILY.MEMBRES.map(makeMember),
       // version 1.2 : animaux de compagnie, et dernier numéro donné à un adulte, à un
@@ -312,7 +312,36 @@ export const MIGRATIONS = {
   29: (state) => migrateOrchard(state),
   30: (state) => ({ ...state, version: 31, commerce: state.commerce && typeof state.commerce === 'object' ? state.commerce : newCommerce() }),
   31: (state) => migrateFreeSoil(state),
+  // FLU-06 : la bulle de la première houe en main ne s'affiche pas à qui a déjà labouré
+  32: (state) => ({ ...state, version: 33, ...(state.potager && typeof state.potager === 'object' ? { potager: { ...state.potager, houeVue: !!(state.potager.houe && Array.isArray(state.potager.parcelles) && state.potager.parcelles.length) } } : {}) }),
+  33: (state) => migrateChapter1Steps(state),
 };
+
+// FLU-42 : trois objectifs entrent au chapitre 1 (labourer, planter, arroser). Une partie
+// qui a déjà labouré, planté ou arrosé (ou qui a dépassé le chapitre 1) les a validés
+// d'office : elle ne recule pas d'objectif.
+function migrateChapter1Steps(state) {
+  const c = state.campagne;
+  if (!c || typeof c !== 'object' || !c.compteurs || typeof c.compteurs !== 'object') return { ...state, version: 34 };
+  const k = c.compteurs;
+  const cible = (type) => (DATA.CHAPITRES.liste[0].objectifs.find((o) => o.type === type) || { cible: 0 }).cible;
+  const plots = Object.values(state).flatMap((v) => (v && typeof v === 'object' && Array.isArray(v.parcelles) ? v.parcelles : []));
+  const passe = c.fini || c.chapitre > 1 || (k.recoltes || 0) > 0;
+  const fait = (deja, type) => (passe || deja ? cible(type) : 0);
+  return {
+    ...state,
+    version: 34,
+    campagne: {
+      ...c,
+      compteurs: {
+        ...k,
+        labours: Math.max(k.labours || 0, fait(plots.length > 0, 'labours')),
+        semis: Math.max(k.semis || 0, fait(plots.some((p) => p.culture), 'semis')),
+        arroseesMax: Math.max(k.arroseesMax || 0, fait(plots.some((p) => p.arrose), 'arrosees')),
+      },
+    },
+  };
+}
 
 // Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie
 // pleine ; les nœuds de l'arbre retirés (soins, bonus de santé) sont rendus (points

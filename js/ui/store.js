@@ -31,7 +31,14 @@ export const FERME_LINKS = ['famille', 'recettes', 'techno', 'ville'];
 // Onglets toujours disponibles, sans passer par state.unlockedTabs (aucune migration).
 const ALWAYS_TABS = ['notifications', 'ville'];
 export function tabAvailable(id) {
+  // FLU-28 : l'Arbre des technologies se montre au premier point de technologie gagné
+  if (id === 'techno' && !techTreeShown()) return false;
   return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
+}
+
+export function techTreeShown() {
+  const pt = state.pointsTech;
+  return !!((pt && pt.gagnes > 0) || (Array.isArray(state.technologies) && state.technologies.length));
 }
 
 export let state = null;
@@ -76,7 +83,10 @@ export function setComptoirTab(value) {
   comptoirTab = value;
   return value;
 }
-export const sellQuantities = {}; // quantité choisie par item dans l'onglet Vendre
-export const buyQuantities = {}; // quantité choisie par item dans les onglets Acheter et Graines
+export let comptoirTabChoisi = 'vendre'; // FLU-13 : le dernier onglet du Marché choisi par le joueur
+export function setComptoirTabChoisi(value) {
+  comptoirTabChoisi = value;
+  return value;
+}
 export const animalQuantities = {}; // quantité choisie par espèce dans l'onglet Animaux
 export const BUY_MAX = 99; // plus grande quantité qu'on peut choisir d'acheter en une fois

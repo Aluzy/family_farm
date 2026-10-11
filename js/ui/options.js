@@ -10,21 +10,21 @@ import { closeModal } from './common.js';
 
 /* ---------- options (modale) ---------- */
 
-// Contenu de la zone « Aidez-nous à améliorer le jeu ! » : le commentaire part
+// Contenu de la zone « Aide-nous à améliorer le jeu ! » : le commentaire part
 // avec la session de suivi, donc seulement si le joueur a autorisé le suivi.
 function feedbackZoneHtml() {
   const st = Telemetry.status();
   if (st === 'granted' && Telemetry.isActive()) {
     return `<div class="stack">
-      <label for="feedback-text" class="muted">Une idée, un problème, un passage trop difficile ? Écrivez-nous. N'indiquez aucune donnée personnelle.</label>
-      <textarea id="feedback-text" rows="4" maxlength="1000" placeholder="Votre commentaire"></textarea>
+      <label for="feedback-text" class="muted">Une idée, un problème, un passage trop difficile ? Écris-nous. N'indique aucune donnée personnelle.</label>
+      <textarea id="feedback-text" rows="4" maxlength="1000" placeholder="Ton commentaire"></textarea>
       <div class="row"><button class="btn primary" type="button" data-action="send-feedback">Envoyer</button></div>
     </div>`;
   }
   if (st === 'optout') {
-    return '<p class="muted">Votre navigateur demande de ne pas être suivi : l\'envoi de commentaires est indisponible.</p>';
+    return '<p class="muted">Ton navigateur demande de ne pas être suivi : l\'envoi de commentaires est indisponible.</p>';
   }
-  return '<p class="muted">Votre commentaire est transmis avec la session de suivi anonyme. Pour en envoyer un, autorisez d\'abord le suivi dans la rubrique « Confidentialité » ci-dessous.</p>';
+  return '<p class="muted">Ton commentaire est transmis avec la session de suivi anonyme. Pour en envoyer un, autorise d\'abord le suivi dans la rubrique « Confidentialité » ci-dessous.</p>';
 }
 
 function openFeedbackZone() {
@@ -44,9 +44,9 @@ function sendFeedback() {
   if (result === 'ok') {
     const zone = document.getElementById('feedback-zone');
     if (zone) zone.innerHTML = '';
-    showToast('Merci pour votre commentaire !');
+    showToast('Merci pour ton commentaire !');
   } else if (result === 'empty') {
-    showToast('Écrivez votre commentaire avant de l\'envoyer.');
+    showToast('Écris ton commentaire avant de l\'envoyer.');
   } else if (result === 'limit') {
     showToast('Nombre maximal de commentaires atteint pour cette visite.');
   } else {
@@ -70,31 +70,28 @@ export function openOptionsModal() {
               <button class="btn" type="button" data-action="open-about">ℹ️ Règles principales et version</button>
             </div>
           </div>
-          <div class="stack">
-            <strong>Exporter la sauvegarde</strong>
-            <textarea id="export-area" rows="4" readonly></textarea>
-            <div class="row">
-              <button class="btn" type="button" data-action="do-export">Générer</button>
-              <button class="btn" type="button" data-action="copy-export">Copier</button>
+          <details class="more">
+            <summary>💾 Sauvegarde</summary>
+            <div class="stack">
+              <strong>Exporter la sauvegarde</strong>
+              <textarea id="export-area" rows="4" readonly></textarea>
+              <div class="row">
+                <button class="btn" type="button" data-action="do-export">Générer</button>
+                <button class="btn" type="button" data-action="copy-export">Copier</button>
+              </div>
             </div>
-          </div>
-          <div class="stack">
-            <strong>Importer une sauvegarde</strong>
-            <textarea id="import-area" rows="4" placeholder="Coller le texte exporté ici"></textarea>
-            <div class="row">
-              <button class="btn" type="button" data-action="do-import">Importer</button>
+            <div class="stack">
+              <strong>Importer une sauvegarde</strong>
+              <textarea id="import-area" rows="4" placeholder="Coller le texte exporté ici"></textarea>
+              <div class="row">
+                <button class="btn" type="button" data-action="do-import">Importer</button>
+              </div>
             </div>
-          </div>
+          </details>
           <div class="stack">
-            <strong>Nouvelle partie</strong>
-            <div class="row" id="new-game-zone">
-              <button class="btn danger" type="button" data-action="ask-new-game">Recommencer à zéro</button>
-            </div>
-          </div>
-          <div class="stack">
-            <strong>Votre avis</strong>
+            <strong>Ton avis</strong>
             <div class="row">
-              <button class="btn" type="button" data-action="open-feedback">💬 Aidez-nous à améliorer le jeu !</button>
+              <button class="btn" type="button" data-action="open-feedback">💬 Aide-nous à améliorer le jeu !</button>
             </div>
             <div id="feedback-zone"></div>
           </div>
@@ -106,10 +103,17 @@ export function openOptionsModal() {
               Activer le panneau de mode test
             </label>
           </div>
+          <div class="stack">
+            <strong>Nouvelle partie</strong>
+            <div class="row" id="new-game-zone">
+              <button class="btn danger-outline" type="button" data-action="ask-new-game">Recommencer à zéro</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   `;
+  // FLU-38 : sauvegarde repliée, « Recommencer à zéro » en bas, en contour rouge
   document.getElementById('export-area').addEventListener('click', (e) => e.target.select());
 }
 

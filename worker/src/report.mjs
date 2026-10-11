@@ -31,6 +31,9 @@ export const GAME_ACTIONS = {
   'buy-item': 'Acheter un produit ou une graine',
   'buy-animal': 'Acheter un animal',
   'plant-tree': 'Planter un arbre',
+  'plant-all': 'Planter partout',
+  'hoe-many': 'Labourer en glissant',
+  'wake-water': 'Arroser tout (réveil)',
   'commerce-choose': 'Choisir un commerce',
   'commerce-upgrade': 'Agrandir le commerce',
   'commerce-quota-dec': 'Régler le commerce',
@@ -70,6 +73,7 @@ export const GAME_ACTIONS = {
   'buy-hoe': 'Acheter la houe',
   'hoe': 'Labourer ou reboucher à la houe',
   'hoe-toggle': 'Prendre ou ranger la houe',
+  'hoe-take': 'Prendre la houe (objectif du chapitre)',
   'upgrade-tank': 'Améliorer ou agrandir',
   'upgrade-fridge': 'Améliorer ou agrandir',
   'maintain': 'Entretenir un appareil',
@@ -87,16 +91,16 @@ export const GAME_ACTIONS = {
 // Clics d'interface : navigation, fenêtres, réglages de quantité. Comptés à
 // part, jamais dans le classement des actions.
 export const INTERFACE_ACTIONS = new Set([
-  'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels',
-  'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open', 'sell-inc',
-  'sell-dec', 'sell-max', 'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel', 'commerce-pick', 'commerce-cancel',
+  'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all',
+  'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open',
+  'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel', 'commerce-pick', 'commerce-cancel',
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
   // réglages de quantité (Moulin, achats), fiche d'un membre de la famille
-  'stage-goto', 'stage-pan', 'aller', 'comptoir-tab', 'inv-tab',
-  'mill-dec', 'mill-inc', 'mill-max', 'buy-dec', 'buy-inc', 'buy-max',
+  'stage-goto', 'stage-pan', 'stage-pan-down', 'market-locked', 'plant-all-open', 'aller', 'comptoir-tab', 'inv-tab',
+  'mill-dec', 'mill-inc', 'mill-max',
   'animal-dec', 'animal-inc', 'animal-max',
   'member-edit', 'member-genre', 'member-teint', 'member-style', 'wake-more',
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie

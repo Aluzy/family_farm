@@ -1,4 +1,4 @@
-import { setComptoirTab, setInvTab, setTestMode, testMode } from './store.js';
+import { setComptoirTab, setComptoirTabChoisi, setInvTab, setTestMode, testMode } from './store.js';
 import { tel, telClick } from './consent.js';
 import { scheduleRender } from './loop.js';
 import { refresh } from './render.js';
@@ -58,10 +58,11 @@ registerActions({
   },
   'comptoir-tab': (target) => {
     setComptoirTab(target.dataset.tab);
+    setComptoirTabChoisi(target.dataset.tab);
     refresh();
   },
   'cancel-new-game': () => {
     document.getElementById('new-game-zone').innerHTML =
-    '<button class="btn danger" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
+    '<button class="btn danger-outline" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
   },
 });

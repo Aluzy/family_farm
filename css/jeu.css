@@ -290,6 +290,13 @@ main {
   color: var(--danger-contrast);
 }
 
+/* FLU-38 : action rare et destructrice, en contour seulement */
+.btn.danger-outline {
+  background: transparent;
+  border: 2px solid var(--danger);
+  color: var(--danger);
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -753,6 +760,16 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
   .portraits { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
+.member-rows { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.member-row { flex-direction: row; align-items: center; gap: 10px; padding: 8px 10px; }
+.member-row .portrait-emoji { font-size: 1.9rem; flex: none; }
+.member-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.member-row-text .chip { align-self: flex-start; }
+.member-row-joy { display: flex; align-items: center; gap: 6px; }
+.member-row-joy .pxgauge { width: 96px; flex: none; }
+.member-row-joy .num { white-space: nowrap; }
+.member-row-btns { display: flex; flex-direction: column; gap: 4px; flex: none; align-items: flex-end; }
+.member-row-btns .btn { min-width: 44px; padding: 0 10px; }
 .portrait { align-items: flex-start; }
 .portrait .btn { width: 100%; padding: 0 8px; font-size: 0.92rem; }
 .portrait-emoji { font-size: 2.2rem; line-height: 1.1; }
@@ -954,6 +971,12 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
 .branch { margin: 8px 0 22px; }
 .branch-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; }
 .branch-head h3 { margin: 0; font-size: 1.1rem; }
+/* FLU-28 : branches repliables */
+summary.branch-head { cursor: pointer; list-style: none; min-height: 44px; flex-wrap: wrap; }
+summary.branch-head::-webkit-details-marker { display: none; }
+summary.branch-head h3::before { content: '▸'; display: inline-block; margin-right: 6px; transition: transform 0.15s; }
+.branch[open] > summary.branch-head h3::before { transform: rotate(90deg); }
+.branch:not([open]) { margin-bottom: 8px; }
 .branch-nodes { display: flex; flex-direction: column; gap: 12px; }
 .tech-node .desc { font-size: 0.95rem; }
 .tech-node.available { border-color: var(--accent); border-width: 2px; background: var(--bg-elevated); }
@@ -988,6 +1011,12 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
   cursor: pointer;
 }
 .indicator-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+.level-check { color: var(--accent); font-weight: 700; }
+#levels-title:focus { outline: none; }
+/* FLU-30 : progression vers le niveau suivant, sous « Niv. » */
+.level-ind { position: relative; overflow: hidden; }
+.level-ind-bar { position: absolute; left: 4px; right: 4px; bottom: 3px; height: 3px; border-radius: 2px; background: var(--bg-muted); }
+.level-ind-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
 .chapter-card { border-color: var(--accent); border-width: 2px; background: var(--bg-elevated); margin-bottom: 12px; }
 .chapter-card.done { border-color: var(--color-sun-dark); }
 .objectives { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -1210,6 +1239,25 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   animation: tuto-pulse 1.6s ease-in-out infinite;
 }
 
+.more { margin-top: 12px; }
+.more > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+.more[open] > summary { margin-bottom: 8px; }
+
+.market-help > summary { font-weight: 400; gap: 8px; }
+.help-q { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 2px solid currentColor; font-weight: 700; }
+
+.tuto-ring {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  animation: tuto-ring 1.2s ease-in-out infinite;
+}
+
+/* FLU-20 : l'anneau qui montre l'élément à toucher (immobile si les animations sont réduites) */
+@keyframes tuto-ring {
+  0%, 100% { outline-offset: 3px; outline-color: var(--accent); }
+  50% { outline-offset: 7px; outline-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+}
+
 @keyframes tuto-pulse {
   0%, 100% { outline-color: var(--accent); }
   50% { outline-color: transparent; }
@@ -1368,6 +1416,8 @@ body.has-stage { padding-bottom: 0; }
 .stage-label:not(.show) .stage-label-name { display: none; }
 .stage-label:not(.show):not(.todo) { opacity: 0; }
 .stage-label:not(.show) .stage-label-badge { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); border: 1px solid #ffffff; }
+/* FLU-37 : la pastille seule garde son dessin, mais sa zone tactile fait 44 × 44 px */
+.stage-label.todo:not(.show) { min-width: 44px; min-height: 44px; justify-content: center; }
 .stage-label:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .stage-label-badge {
   min-width: 17px;
@@ -1618,6 +1668,8 @@ main .ancre { scroll-margin-top: 150px; }
 .hoe-cell:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
 
 .stage-chip.hoe { margin-left: auto; flex: 0 0 auto; }
+/* FLU-41 : houe en main, la puce d'objectif se réduit à son icône et sa valeur */
+.stage-chip.compact { flex: 0 0 auto; }
 
 /* ---------- version 1.12 : départ d'une nouvelle partie ---------- */
 
@@ -1644,3 +1696,76 @@ main .ancre { scroll-margin-top: 150px; }
   padding: 8px 0;
   border-top: 1px dashed var(--border);
 }
+
+/* FLU-01 : le bouton « Voir le chapitre » se range à côté de ✕ */
+.window-head .window-chapter { margin-left: auto; margin-right: 8px; }
+
+/* FLU-05 : bouton rond « Prendre la houe », à gauche du bouton Dormir */
+.sleep-fab .hoe-fab {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 2px solid rgba(44, 36, 22, 0.45);
+  border-radius: 50%;
+  background: rgba(255, 250, 238, 0.95);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+.sleep-fab .hoe-fab:active { transform: translateY(2px); }
+.sleep-fab .hoe-fab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+
+/* FLU-06 : bulle de la première houe en main, sous la puce Houe */
+.stage-hud { flex-wrap: wrap; }
+.hoe-hint {
+  flex: 1 0 100%;
+  align-self: flex-end;
+  margin-top: 6px;
+  margin-left: auto;
+  max-width: 240px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-align: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+/* FLU-07 : chevron « la carte continue vers le bas », en bas au milieu de la carte */
+.stage-arrow.bas {
+  top: auto;
+  bottom: 56px;
+  left: 50%;
+  width: 56px;
+  height: 44px;
+  margin: 0 0 0 -28px;
+  justify-content: center;
+  align-items: flex-end;
+}
+.stage-arrow.bas > span { width: 48px; height: 24px; border-radius: 12px 12px 0 0; padding: 0 0 6px; font-size: 1.4rem; animation-name: stage-arrow-bas; }
+@keyframes stage-arrow-bas {
+  0%, 100% { transform: translateY(0); opacity: 0.85; }
+  50% { transform: translateY(3px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-arrow.bas > span { animation: none; }
+}
+
+/* FLU-08 : onglet Marché verrouillé (avant le panneau et la pompe) */
+.nav-btn.locked { opacity: 0.55; }
+.nav-btn.locked .nav-icon { position: relative; }
+.nav-btn .nav-lock { position: absolute; right: -10px; bottom: -4px; font-size: 0.8rem; }
+
+/* FLU-11 : ce qui manque pour une action groupée, écrit sous les boutons */
+.group-note { flex: 1 0 100%; color: var(--color-danger, #b3261e); font-weight: 600; }
+
+/* FLU-14 : une ligne par article au Marché, des boutons de lot */
+.shop-row.lot-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 8px; }
+.lot-row .lot-name { min-width: 0; }
+.lot-row .lot-price { justify-self: end; font-weight: 700; }
+.lot-row .lot-btns { grid-column: 1 / -1; display: flex; gap: 8px; }
+.lot-row .lot-btn { flex: 1 1 0; min-height: 44px; min-width: 44px; }

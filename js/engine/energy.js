@@ -240,7 +240,9 @@ export function deviceStatus(state, d) {
     else if (d.conso > 0) { code = 'marche'; label = 'En marche'; }
     else { code = 'attente'; label = 'En pause : énergie manquante'; }
   } else {
-    if (state.eauMl >= tankCapacity(state)) { code = 'plein'; label = 'Réservoir plein'; }
+    // FLU-34 : pompe achetée sans réservoir : rien à remplir, mais pas « plein »
+    if (state.reservoir && state.reservoir.achete === false) { code = 'sansreservoir'; label = 'Pas encore de réservoir'; }
+    else if (state.eauMl >= tankCapacity(state)) { code = 'plein'; label = 'Réservoir plein'; }
     else if (d.debit > 0) { code = 'marche'; label = 'En marche'; }
     else { code = 'attente'; label = 'En attente d\'énergie'; }
   }

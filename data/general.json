@@ -166,7 +166,7 @@
     "préparations en cours ; aucune nuit ne passe. Ce temps compte comme temps",
     "d'éveil. USURE : les appareils s'usent-ils hors-ligne ? Non (décision du",
     "Lot 11 : 8 h réelles valent 960 heures de jeu, soit +480 points d'usure).",
-    "ECRAN_S : absence minimale, en secondes, pour afficher « Pendant votre absence… »."
+    "ECRAN_S : absence minimale, en secondes, pour afficher « Pendant ton absence… »."
   ],
   "HORS_LIGNE": {
     "//MAX_S": "= 8 * 3600",

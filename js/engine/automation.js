@@ -3,6 +3,7 @@ import { EPS } from './base.js';
 import { allDevices, fail, maintainDevice, needsService, tankCapacity } from './devices.js';
 import { newNightStats } from './family.js';
 import { allPlots, boltSeedYield, findPlot, harvest, isMature, maxStage, plant, plotZone, seedItem, seedStock, toggleBolting, water, zone2Plots } from './crops.js';
+import { plantableCropsFor } from './campaign.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
 import { canSleep } from './night.js';
@@ -240,30 +241,66 @@ export function routineDue(state) {
 // `zone` (facultatif) : 1 pour la Zone de culture seule, 2 pour le Champ seul.
 const inZone = (lieu, zone) => (p) => p.lieu === lieu && (!zone || plotZone(p) === Number(zone));
 
+// Fluidité (FLU-10) : disponible dès le niveau 1, même eau, énergie et XP qu'à la main.
+// Arbre v2 (Outils de jardin) : ces actions groupées coûtent `groupeEconome` % d'énergie en
+// moins (rendus après coup).
+function groupDiscount(state, before) {
+  const pct = techFlag(state, 'groupeEconome') || 0;
+  const spent = before - (Number(state.energie) || 0);
+  if (pct > 0 && spent > 0) state.energie += Math.floor((spent * pct) / 100);
+}
+
 export function waterAll(state, lieu, zone) {
-  if (!(techFlag(state, 'actionsGroupees') || []).includes('arroser')) return fail('Débloque les Outils de jardin dans l\'Arbre des technologies.');
+  const before = Number(state.energie) || 0;
   let arrosees = 0;
   let sansEau = 0;
+  let raison = '';
   for (const p of allPlots(state).filter(inZone(lieu, zone)).filter((x) => x.culture && !x.arrose && !isMature(x))) {
-    if (water(state, p.id).ok) arrosees += 1;
-    else sansEau += 1;
+    const r = water(state, p.id);
+    if (r.ok) arrosees += 1;
+    else { sansEau += 1; raison = raison || r.error; }
   }
+  groupDiscount(state, before);
   if (arrosees === 0 && sansEau === 0) return fail('Rien à arroser.');
-  return { ok: true, arrosees, sansEau };
+  if (arrosees === 0) return fail(raison);
+  return { ok: true, arrosees, sansEau, raison };
+}
+
+// FLU-09 : « Planter partout » : la même culture sur toutes les parcelles vides d'un lieu
+// (d'une zone), dans la limite des graines, de l'énergie et du niveau. Même énergie et XP
+// que N plantations à la main. Renvoie { ok, plantees, vides, raison } (raison de l'arrêt).
+export function plantAll(state, lieu, culture, zone) {
+  if (!DATA.crops[culture]) return fail('Culture inconnue.');
+  if (!plantableCropsFor(state, lieu).includes(culture)) return fail(`${DATA.crops[culture].nom} ne se plante pas encore ici.`);
+  const vides = allPlots(state).filter(inZone(lieu, zone)).filter((x) => !x.culture);
+  if (!vides.length) return fail('Aucune parcelle vide.');
+  const before = Number(state.energie) || 0;
+  let plantees = 0;
+  let raison = '';
+  for (const p of vides) {
+    const r = plant(state, p.id, culture);
+    if (!r.ok) { raison = r.error; break; }
+    plantees += 1;
+  }
+  groupDiscount(state, before);
+  if (!plantees) return fail(raison);
+  return { ok: true, plantees, vides: vides.length, raison };
 }
 
 // Arbre v2 (Outils de jardin) : « Récolter tout » d'un lieu (au clic, avec la
 // productivité). Renvoie { ok, recoltees, items }.
 export function harvestAll(state, lieu, zone) {
-  if (!(techFlag(state, 'actionsGroupees') || []).includes('recolter')) return fail('Débloque les Outils de jardin dans l\'Arbre des technologies.');
+  const before = Number(state.energie) || 0;
   const items = {};
   let recoltees = 0;
+  let raison = '';
   for (const p of allPlots(state).filter(inZone(lieu, zone)).filter((x) => x.culture && isMature(x))) {
     const r = harvest(state, p.id);
-    if (!r.ok) continue;
+    if (!r.ok) { raison = raison || r.error; continue; }
     recoltees += 1;
     for (const [item, qty] of Object.entries(r.items)) items[item] = (items[item] || 0) + qty;
   }
-  if (recoltees === 0) return fail('Rien à récolter.');
+  groupDiscount(state, before);
+  if (recoltees === 0) return fail(raison || 'Rien à récolter.');
   return { ok: true, recoltees, items };
 }

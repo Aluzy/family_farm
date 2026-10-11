@@ -7,7 +7,7 @@ troupeau (poules, moutons, vaches), verger, serre, cuisine, four et réfrigérat
 La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
-- **Version** : 1.15.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
+- **Version** : 1.16.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi (autres
   documents : voir « Documentation » plus bas)
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
@@ -289,6 +289,18 @@ et compare la courbe d'autonomie aux jalons de la conception (section 8.10). Le
 même joueur est disponible dans le mode test (bouton « Simuler 60 nuits »). Le
 script écrit `simulation.csv` et `simulation-autonomie.svg` dans le dossier
 courant (ignorés par git).
+
+### Mesure des touches (fluidité)
+
+```sh
+node scripts/mesure-touches.mjs
+```
+
+Joue une nouvelle partie dans Chromium (Playwright, écran tactile de 390 × 844 px), comme un
+joueur qui connaît le chemin, en touchant les éléments visibles : depuis « Partir pour la
+ferme » jusqu'à 6 parcelles de carottes plantées et arrosées. Affiche chaque touche et leur
+nombre (un glissement de la houe compte pour une ; attendre que la pompe remplisse le
+réservoir ne compte pas). Pas dans `npm test`. Version 1.16 : 22 touches (52 en 1.14).
 
 ### Mode test
 
