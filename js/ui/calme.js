@@ -1,4 +1,4 @@
-import { setupPending } from '../engine/depart.js';
+import { houseRepaired, setupPending } from '../engine/depart.js';
 import { state } from './store.js';
 
 /* ---------- Fluidité (FLU-17, FLU-18) : une seule fenêtre à la fois au démarrage ---------- */
@@ -37,10 +37,12 @@ export function tutorialShown() {
   return document.body.classList.contains('has-tuto');
 }
 
-// FLU-21 : l'horloge s'arrête pendant une bulle d'aide, sauf « dormir » : celle-ci attend
-// justement que le temps d'éveil soit passé pour que « Zzz » s'active.
+// FLU-21 : l'horloge s'arrête pendant qu'on lit les bulles d'aide, avant de jouer : dès que
+// la maison est réparée, le temps reprend (le soleil fait tourner la pompe ; sinon le joueur
+// qui garde la bulle ouverte resterait à 6 h, sans eau). Jamais pendant « dormir », qui
+// attend justement que le temps d'éveil soit passé.
 export function tutorialStopsClock() {
-  return tutorialShown() && !document.querySelector('#tuto-root .tuto-dormir');
+  return tutorialShown() && !houseRepaired(state) && !document.querySelector('#tuto-root .tuto-dormir');
 }
 
 // Bandeau des cookies demandé au chargement : il attend le calme (FLU-17).

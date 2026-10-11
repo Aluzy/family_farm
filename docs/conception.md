@@ -54,8 +54,9 @@
 >   carte seule une demi-seconde → bandeau des cookies (s'il faut le demander) → annonce de la
 >   lettre du notaire (seulement si elle n'est pas lue) → bulle d'aide. Le bandeau, l'annonce
 >   et l'aide attendent qu'aucune fenêtre ne soit ouverte (`js/ui/calme.js`). L'heure ne tourne
->   ni pendant l'histoire ni pendant les bulles « L'eau et le soleil » et « La zone de
->   culture » ; elle tourne pendant « Dormir », qui attend que « Zzz » s'active.
+>   ni pendant l'histoire ni pendant qu'on lit les bulles avant de jouer : elle reprend dès la
+>   maison réparée (sinon, bulle ouverte, il resterait 6 h, sans soleil ni eau), et tourne
+>   toujours pendant « Dormir », qui attend que « Zzz » s'active.
 >- **Aide, étape 2 (FLU-19)** : « La zone de culture » dit d'acheter la houe au Marché, de la
 >   prendre (bouton ⛏️), de toucher l'herbe foncée pour labourer, puis de planter et d'arroser
 >   la terre labourée ; plus de « parcelle sous la barrière ».
@@ -114,6 +115,11 @@
 >- **Chapitres (FLU-36)** : une tâche oui/non (cible 1 : réparer, acheter…) n'a que sa case,
 >   sans barre de progression.
 >- **Pastille « à faire » de la carte (FLU-37)** : même dessin, mais le bouton mesure 44 × 44 px.
+>- **Mesure (FLU-39)** : `node scripts/mesure-touches.mjs` compte **22 touches** d'une nouvelle
+>   partie à 6 parcelles de carottes plantées et arrosées (52 en 1.14, cible 30). En suivant
+>   seulement l'anneau de l'aide (FLU-20), on arrive au même résultat : l'anneau montre ✕
+>   quand la puce d'objectif est sous une fenêtre, le Marché › Graines (×10) quand il n'y a
+>   pas de graines, et attend quand le bouton est grisé (pas encore d'eau).
 >- **Options (FLU-38)** : export et import dans un bloc replié « 💾 Sauvegarde » ;
 >   « Recommencer à zéro » tout en bas, en bouton à contour rouge, avec la même confirmation.
 >

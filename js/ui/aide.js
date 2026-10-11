@@ -5,7 +5,7 @@ import { farmOpen, pumpFlow } from '../engine/devices.js';
 import { awakeRequired } from '../engine/clock.js';
 import { energyStats } from '../engine/energy.js';
 import { familyNeed } from '../engine/family.js';
-import { cropProduct, hasHoe } from '../engine/crops.js';
+import { cropProduct, hasHoe, seedStock } from '../engine/crops.js';
 import { chapterCount, chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { setupPending } from '../engine/depart.js';
 import { unlockLevel } from '../engine/levels.js';
@@ -217,7 +217,7 @@ const TUTO = {
   potager: {
     titre: '🌱 La zone de culture',
     // FLU-19 : plus de parcelle avant le labour ; on achète la houe, on laboure, puis on plante
-    texte: () => `${hasHoe(state) ? 'Ta houe' : `Achète d'abord la houe au Marché (${formatNumber(DATA.HOUE.PRIX)} 💰) : elle`} change l'herbe en terre. ${stageUsable()
+    texte: () => `${hasHoe(state) ? 'Ta houe' : `Achète d'abord la houe au Marché (${formatNumber(DATA.HOUE.PRIX)} 💰) : elle`} change l'herbe en terre ; les graines s'achètent dans l'onglet Graines du Marché. ${stageUsable()
       ? `Prends-la (bouton ${DATA.HOUE.ICONE} en bas à droite) et touche l'herbe foncée (les cases vertes) pour labourer. Range-la, puis touche une terre labourée pour planter, et touche-la encore pour l'arroser`
       : 'Laboure, puis touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade chaque nuit : les carottes sont mûres en ${nightsLabel(DATA.crops.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante.' : 'Après la récolte, replante.'}`,
   },
@@ -286,10 +286,19 @@ const GUIDE_BOUTONS = {
   reservoir: ['[data-action="buy-starter"][data-id="reservoir"]'],
   houe: ['[data-action="buy-hoe"]'],
   labours: ['.hoe-fab'],
-  semis: ['#modal-root [data-action="plant"]:not([disabled])', '[data-action="plant-open"]:not([disabled])'],
-  arrosees: ['[data-action="water"]:not([disabled])'],
+  semis: ['#modal-root [data-action="plant-all"][data-crop="carotte"]:not([disabled])', '#modal-root [data-action="plant"]:not([disabled])', '[data-action="plant-all-open"]:not([disabled])', '[data-action="plant-open"]:not([disabled])'],
+  arrosees: ['[data-action="water-all"]:not([disabled])', '[data-action="water"]:not([disabled])'],
   recoltes: ['[data-action="harvest"]'],
 };
+
+const GUIDE_GRAINES = [
+  '[data-action="buy-item"][data-item="graine_carotte"][data-q="10"]:not([disabled])',
+  '[data-action="buy-item"][data-item="graine_carotte"][data-q="5"]:not([disabled])',
+  '[data-action="buy-item"][data-item="graine_carotte"]:not([disabled])',
+  '[data-action="comptoir-tab"][data-tab="graines"]',
+  '.nav-btn[data-tab="comptoir"]',
+  '#stage-window-close',
+];
 
 function shown(el) {
   if (!el) return false;
@@ -304,18 +313,34 @@ function guideElement() {
   if (!c || c.fini || c.chapitre !== 1) return null;
   const o = chapterProgress(state).objectifs.find((x) => !x.ok);
   if (!o || !GUIDE_BOUTONS[o.type]) return null;
-  for (const sel of GUIDE_BOUTONS[o.type]) {
+  // Planter sans aucune graine : d'abord le Marché, onglet Graines
+  const sansGraines = o.type === 'semis' && !plantableCropsFor(state, 'potager').some((c) => seedStock(state, c) > 0);
+  const liste = sansGraines && !document.querySelector('#modal-root .modal') ? GUIDE_GRAINES : GUIDE_BOUTONS[o.type];
+  for (const sel of liste) {
     const el = [...document.querySelectorAll(sel)].find(shown);
     if (el) return el;
   }
+  // le bouton est là mais grisé (pas encore d'eau…) : on attend, sans tourner en rond
+  if (liste.some((sel) => [...document.querySelectorAll(sel.replace(/:not\(\[disabled\]\)/g, ''))].some(shown))) return null;
   if (o.type === 'labours' && hoeMode) return null; // les cases vertes de la carte
+  if (sansGraines) return null;
   const modal = document.getElementById('modal-root');
   if (modal && modal.childElementCount) return null;
   const chip = document.querySelector('.stage-chip:not(.hoe):not(.done)');
-  if (shown(chip)) return chip;
+  if (shown(chip) && !covered(chip)) return chip;
+  // la puce est sous une fenêtre de la carte : d'abord la fermer
+  const close = document.getElementById('stage-window-close');
+  if (shown(close)) return close;
   // ailleurs (Marché, Inventaire…) : le retour à la Ferme
   const ferme = document.querySelector('.nav-btn[data-tab="ferme"]');
   return shown(ferme) ? ferme : null;
+}
+
+// Un autre élément (une fenêtre de la carte) est par-dessus le centre de `el`.
+function covered(el) {
+  const r = el.getBoundingClientRect();
+  const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  return !!top && !el.contains(top);
 }
 
 let guided = null;
