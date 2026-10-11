@@ -38,6 +38,8 @@
 >   un bouton qui ne peut pas servir est grisé et une phrase dit ce qui manque.
 >   **Outils de jardin** (arbre, `cu_outils`) : ces actions groupées coûtent 25 % d'énergie en
 >   moins (`groupeEconome`), au lieu de les débloquer. Le joueur automatique ne les utilise pas.
+> - **Réveil (FLU-16)** : quand des parcelles de la Zone de culture ont soif, le résumé du
+>   réveil propose « 💧 Arroser tout (N) », qui les arrose et ferme le résumé.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

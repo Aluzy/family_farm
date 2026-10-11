@@ -10,7 +10,11 @@ import { deviceName } from './ferme.js';
 import { formatStraw } from './elevage.js';
 import { itemsSummary } from './inventaire.js';
 import { registerActions } from './actions.js';
-import { costLabel, plural } from './common.js';
+import { closeModal, costLabel, plural } from './common.js';
+import { applyResult } from './game-actions.js';
+import { showToast } from './toasts.js';
+import { waterAll } from '../engine/automation.js';
+import { allPlots, isMature } from '../engine/crops.js';
 
 // Lignes du réveil pour les automatisations (Lot 7) : ce qui a été fait, puis ce qui a manqué.
 function autoLines(a) {
@@ -124,6 +128,8 @@ export function openWakeModal(report, auto = false) {
   const fullHarvest = w.recolte.reste.length
     ? `<li>🧺 Récolte complète de la nuit : <strong>${[...w.recolte.affiches, ...w.recolte.reste].map(harvestName).join(', ')}</strong></li>`
     : '';
+  // FLU-16 : parcelles de la Zone de culture qui ont soif ce matin
+  const soif = allPlots(state).filter((p) => p.lieu === DATA.POTAGER.LIEU && p.culture && !p.arrose && !isMature(p)).length;
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
@@ -146,6 +152,7 @@ export function openWakeModal(report, auto = false) {
         </div>
         <div class="row wake-actions">
           <button type="button" class="btn btn-pill" data-action="wake-more" id="wake-more" aria-expanded="false" aria-controls="wake-detail">Voir plus</button>
+          ${soif ? `<button type="button" class="btn btn-pill" data-action="wake-water">💧 Arroser tout (${soif})</button>` : ''}
           <button type="button" class="btn primary btn-pill" data-action="close-modal" id="wake-close">Bonne journée</button>
         </div>
       </div>
@@ -157,6 +164,12 @@ export function openWakeModal(report, auto = false) {
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
+  // FLU-16 : arrose toutes les parcelles de la Zone de culture qui ont soif, et ferme le résumé
+  'wake-water': () => {
+    const result = applyResult(waterAll(state, 'potager'));
+    closeModal();
+    if (result.ok) showToast(`💧 ${plural(result.arrosees, 'parcelle')} arrosée${result.arrosees > 1 ? 's' : ''}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
+  },
   'wake-more': (target) => {
     const detail = document.getElementById('wake-detail');
     if (!detail) return;

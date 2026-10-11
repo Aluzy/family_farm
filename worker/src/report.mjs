@@ -32,6 +32,7 @@ export const GAME_ACTIONS = {
   'buy-animal': 'Acheter un animal',
   'plant-tree': 'Planter un arbre',
   'plant-all': 'Planter partout',
+  'wake-water': 'Arroser tout (réveil)',
   'commerce-choose': 'Choisir un commerce',
   'commerce-upgrade': 'Agrandir le commerce',
   'commerce-quota-dec': 'Régler le commerce',
