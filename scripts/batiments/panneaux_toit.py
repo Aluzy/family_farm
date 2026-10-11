@@ -17,7 +17,6 @@ ROWS = [5, 18]          # décalage sous le bord haut du toit de chaque rangée
 PLACES = [(1, 0), (1, 1), (1, 2), (0, 0), (0, 1), (0, 2)]
 
 C = {
-    'ombre': (60, 17, 35),       # l'ombre portée sur les bardeaux (le contour sombre du toit)
     'cadre': (52, 56, 66),
     'cadre_l': (96, 104, 118),   # cadre éclairé (côté gauche et haut)
     'cell': (38, 64, 112),
@@ -35,11 +34,9 @@ def draw_panel(px, x0, row):
     for dx in range(PW):
         x = x0 + dx
         top = OY + shear(x) + ROWS[row]
-        for dy in range(PH + 1):
+        for dy in range(PH):
             y = top + dy
-            if dy == PH:
-                c = 'ombre'
-            elif dx == 0 or dy == 0:
+            if dx == 0 or dy == 0:
                 c = 'cadre_l'
             elif dx == PW - 1 or dy == PH - 1:
                 c = 'cadre'

@@ -37,11 +37,6 @@ def frame(niveau):
         d = (x - CX) / ((X1 - X0) / 2 + 0.5)
         return RY * math.sqrt(max(0.0, 1 - d * d))
 
-    # ombre au sol
-    for x in range(W):
-        for y in range(29, H):
-            if ((x - 13) / 12) ** 2 + ((y - 32) / 2.2) ** 2 <= 1:
-                put(x, y, (24, 44, 30), 90)
     # socle de bois
     for x in range(X0 - 1, X1 + 2):
         for y in range(28, 32):
