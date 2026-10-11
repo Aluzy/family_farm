@@ -276,7 +276,8 @@ le site en ligne que si elles passent toutes.
   `assets/panneaux_toit.png`, posé sur le versant droit du toit de la maison une fois le panneau
   acheté (un panneau de plus par niveau : 2 au niveau 1, 6 au niveau 5).
 - **Puits et pompe** : `python3 scripts/batiments/puits.py` génère `assets/puits.png`, le puits
-  en haut à gauche du Moulin, sous le chemin, toujours là ; la pompe s'y ajoute une fois achetée.
+  en haut à gauche du Moulin, sous le chemin, toujours là ; la pompe s'y ajoute une fois achetée
+  et vibre légèrement quand elle tourne.
 - **Citerne** : `python3 scripts/batiments/citerne.py` génère `assets/citerne.png`, la citerne
   (le réservoir) à droite de la pompe, une fois achetée ; son tube de niveau suit l'eau du réservoir.
 - **Bâtiments délabrés** (début de partie, avant réparation) : `python3 scripts/batiments/ruines.py`

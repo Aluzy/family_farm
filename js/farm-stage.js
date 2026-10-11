@@ -129,9 +129,12 @@
   // versant droit du toit de la maison, 6 images de 32×47 (la n-ième porte n panneaux),
   // posées au point (x, y) de house_sp.png. modèle.panneaux = nombre de panneaux (0 : aucun).
   const ROOF_PANELS = { key: 'panneaux_toit', file: 'panneaux_toit.png', frame: { frameWidth: 32, frameHeight: 47 }, x: 37, y: 2, max: 6 };
-  // puits.png (scripts/batiments/puits.py) : 2 images de 34×40, le vieux puits seul (0) puis
-  // avec la pompe achetée (1). modèle.pompe = la pompe est achetée.
-  const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 34, frameHeight: 40 }, object: 'puits' };
+  // puits.png (scripts/batiments/puits.py) : 3 images de 34×40, le vieux puits seul (0), le
+  // puits avec le tuyau de la pompe (1), la pompe seule (2), posée par-dessus une fois achetée.
+  // modèle.pompe = la pompe est achetée ; modèle.pompeEnMarche = elle tourne (elle vibre alors
+  // d'un pixel vers la droite, toutes les PUMP_SHAKE_MS).
+  const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 34, frameHeight: 40 }, object: 'puits', frames: { puits: 0, tuyau: 1, pompe: 2 } };
+  const PUMP_SHAKE_MS = 70;
   // citerne.png (scripts/batiments/citerne.py) : 5 images de 24×34, le tube de niveau vide
   // (0) jusqu'à plein (4). modèle.citerne = cette image, ou -1 tant que le réservoir n'est pas acheté.
   const TANK = { key: 'citerne', file: 'citerne.png', frame: { frameWidth: 24, frameHeight: 34 }, object: 'citerne', max: 4 };
@@ -258,7 +261,9 @@
         this.plots = new Map();          // id de parcelle -> { soil, crop, key, tween }
         this.buildings = new Map();      // id de bâtiment -> { def, sprite }
         this.roofPanels = null;          // panneaux solaires sur le toit de la maison (image)
-        this.well = null;                // le puits, et la pompe une fois achetée (image)
+        this.well = null;                // le puits (image)
+        this.pump = null;                // la pompe, une fois achetée (image), et sa vibration :
+        this.pumpShake = null;           //   minuterie qui la décale d'un pixel quand elle tourne
         this.tank = null;                // la citerne, une fois achetée (image)
         this.trees = new Map();          // case du Verger -> { sprite, key, a } (arbre ou emplacement libre)
         this.labels = new Map();         // id de lieu -> étiquette DOM et son point d'ancrage
@@ -1356,7 +1361,7 @@
           this.syncLabel(def.id, want, def.window, s ? s.x + s.width / 2 : 0, s ? s.y - s.height + (def.labelDown || 0) : 0);
         }
         this.syncRoofPanels(model.panneaux | 0);
-        this.syncWell(!!model.pompe);
+        this.syncWell(!!model.pompe, !!model.pompeEnMarche);
         this.syncTank(model.citerne == null ? -1 : model.citerne | 0);
 
         // Parcelles des deux zones : on crée, met à jour, détruit. Tuiles jointives depuis le
@@ -1502,10 +1507,29 @@
 
       // Le puits est toujours là ; la pompe s'y ajoute une fois achetée. Comme un bâtiment :
       // bas-centre de l'image sur le bas-centre du rectangle, profondeur = y du pied.
-      syncWell(pompe) {
+      // En marche, la pompe vibre : un pixel à droite, puis à sa place, et ainsi de suite.
+      syncWell(pompe, enMarche) {
         if (!this.has(WELL.key)) return;
+        const F = WELL.frames;
         if (!this.well) this.well = this.placeProp(WELL);
-        this.well.setFrame(pompe ? 1 : 0);
+        this.well.setFrame(pompe ? F.tuyau : F.puits);
+        if (pompe && !this.pump) {
+          this.pump = this.add.image(this.well.x, this.well.y, WELL.key, F.pompe).setOrigin(0, 1).setDepth(this.well.depth + 0.1);
+        } else if (!pompe && this.pump) {
+          this.pump.destroy();
+          this.pump = null;
+        }
+        const shake = !!this.pump && enMarche && !reducedMotion();
+        if (shake && !this.pumpShake) {
+          this.pumpShake = this.time.addEvent({
+            delay: PUMP_SHAKE_MS, loop: true,
+            callback: () => { if (this.pump) this.pump.x = this.pump.x === this.well.x ? this.well.x + 1 : this.well.x; },
+          });
+        } else if (!shake && this.pumpShake) {
+          this.pumpShake.remove();
+          this.pumpShake = null;
+          if (this.pump) this.pump.x = this.well.x;
+        }
       }
 
       // La citerne, une fois le réservoir acheté : l'eau monte dans son tube de niveau.

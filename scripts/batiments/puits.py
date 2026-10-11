@@ -1,6 +1,9 @@
-# assets/puits.png : le puits de la ferme, en haut à gauche du Moulin, 2 images de 34×40 :
+# assets/puits.png : le puits de la ferme, en haut à gauche du Moulin, 3 images de 34×40 :
 #   0 : le vieux puits seul (margelle de pierres, deux poteaux, toit de bardeaux, seau) ;
-#   1 : le même, avec la pompe électrique achetée, posée à sa droite, son tuyau plongé dans le puits.
+#   1 : le même, avec le tuyau de la pompe plongé dans le puits ;
+#   2 : la pompe électrique seule, posée à droite du puits (par-dessus l'image 1 une fois la
+#       pompe achetée ; la carte la fait vibrer d'un pixel vers la droite quand elle tourne).
+#       Le tuyau de l'image 1 court sous son bord gauche : décalée, elle reste raccordée.
 # Toit aux couleurs de celui de la maison. Lumière à gauche.
 from PIL import Image
 import math
@@ -26,13 +29,17 @@ TOP, BOT = 24, 34  # centre de l'ellipse du haut de la margelle, et du bas
 RX, RY = 10, 4
 
 
-def frame(pompe):
+def frame(kind):
     im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     px = im.load()
 
     def put(x, y, c, a=255):
         if 0 <= x < W and 0 <= y < H:
             px[x, y] = (C[c] if isinstance(c, str) else c) + (a,)
+
+    if kind == 'pompe':
+        draw_pump(put)
+        return im
 
     def half(x, ry):
         d = (x - CX) / (RX + 0.5)
@@ -93,34 +100,37 @@ def frame(pompe):
                 put(x, y, 'rd'); continue
             put(x, y, 'rl' if x < CX - 2 else 'rm' if x <= CX + 2 else 'rd')
         put(CX, y, 'rj')   # faîtage
-    if pompe:
+    if kind == 'tuyau':
         # tuyau : de la pompe au bord du puits, puis dedans
         for x in range(CX + 4, 27):
             put(x, 26, 'tl'); put(x, 27, 'tu')
         for y in range(TOP, 27):
             put(CX + 4, y, 'tu')
-        # corps de la pompe
-        for x in range(25, 33):
-            for y in range(25, 36):
-                if x in (25, 32) or y in (25, 35):
-                    put(x, y, 'po')
-                elif y == 28:
-                    put(x, y, 'pd')
-                else:
-                    put(x, y, 'pl' if x == 26 else 'pm' if x < 31 else 'pd')
-        # moteur sur le dessus
-        for x in range(26, 32):
-            for y in range(21, 25):
-                put(x, y, 'po' if y == 21 or x in (26, 31) else 'pl' if x == 27 else 'pm')
-        for y in (22, 23):
-            put(29, y, 'pd')
-        put(30, 31, 'voyant')
     return im
 
 
-sheet = Image.new('RGBA', (W * 2, H), (0, 0, 0, 0))
-sheet.paste(frame(False), (0, 0))
-sheet.paste(frame(True), (W, 0))
+def draw_pump(put):
+    # corps de la pompe
+    for x in range(25, 33):
+        for y in range(25, 36):
+            if x in (25, 32) or y in (25, 35):
+                put(x, y, 'po')
+            elif y == 28:
+                put(x, y, 'pd')
+            else:
+                put(x, y, 'pl' if x == 26 else 'pm' if x < 31 else 'pd')
+    # moteur sur le dessus
+    for x in range(26, 32):
+        for y in range(21, 25):
+            put(x, y, 'po' if y == 21 or x in (26, 31) else 'pl' if x == 27 else 'pm')
+    for y in (22, 23):
+        put(29, y, 'pd')
+    put(30, 31, 'voyant')
+
+
+sheet = Image.new('RGBA', (W * 3, H), (0, 0, 0, 0))
+for n, kind in enumerate(('puits', 'tuyau', 'pompe')):
+    sheet.paste(frame(kind), (n * W, 0))
 out = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'puits.png'))
 sheet.save(out)
-print('assets/puits.png : 2 images de', W, '×', H)
+print('assets/puits.png : 3 images de', W, '×', H)
