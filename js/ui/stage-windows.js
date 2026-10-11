@@ -346,8 +346,9 @@ export function applyAnchor() {
 }
 
 // Carte du joueur, en haut à gauche (elle remplace le bandeau du haut) : le portrait du
-// personnage principal, son prénom dessous, puis le niveau (avec sa barre vers le niveau
-// suivant, FLU-30 ; ouvre les niveaux) et l'autonomie de la dernière nuit (ouvre la Famille).
+// personnage principal, son prénom dessous, puis sur une même ligne le niveau (avec sa barre
+// vers le niveau suivant, FLU-30 ; ouvre les niveaux) et l'autonomie de la dernière nuit
+// (ouvre la Famille).
 // Le prénom est saisi par le joueur : escapeHtml (memberNameHtml), jamais dans un data-*.
 let playerHeight = 0;
 export function renderIndicators() {
@@ -363,10 +364,12 @@ export function renderIndicators() {
     `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
       `<span class="player-portrait" aria-hidden="true">${m ? memberPortrait(state, m.id) || '🙂' : '🙂'}</span>` +
       `<span class="player-name">${m ? memberNameHtml(m.id) : ''}</span></button>` +
+    `<span class="player-stats">` +
     `<button type="button" class="player-line level-ind" data-action="open-levels" title="${niveau}" aria-label="${niveau}"><span aria-hidden="true">⭐</span><span class="num" aria-hidden="true">Niv. ${p.niveau}</span><span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>` +
-    `<button type="button" class="player-line" ${famille} title="${autoTitre}" aria-label="${autoTitre}"><span aria-hidden="true">🌿</span><span class="num" aria-hidden="true">${auto}</span></button>`
+    `<button type="button" class="player-line" ${famille} title="${autoTitre}" aria-label="${autoTitre}"><span aria-hidden="true">🌿</span><span class="num" aria-hidden="true">${auto}</span></button>` +
+    `</span>`
   );
-  // La puce des chapitres (sur la carte) et le contenu des autres écrans commencent sous la carte du joueur.
+  // Le contenu des écrans sans carte commence sous la carte du joueur.
   if (el.offsetHeight && el.offsetHeight !== playerHeight) {
     playerHeight = el.offsetHeight;
     document.documentElement.style.setProperty('--player-h', playerHeight + 'px');

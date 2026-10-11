@@ -1441,9 +1441,9 @@ body.has-stage { padding-bottom: 0; }
   position: absolute;
   top: 2px;
   left: calc(8px + env(safe-area-inset-left));
-  right: auto;
-  max-width: calc(100% - 16px);
-  top: calc(var(--player-h, 110px) + 14px + env(safe-area-inset-top)); /* sous la carte du joueur */
+  right: calc(64px + env(safe-area-inset-right)); /* la jauge d'énergie, à droite */
+  top: auto;
+  bottom: 104px; /* en bas, au-dessus de la flèche « ⌄ », des trois points et du bouton « Zzz » */
   z-index: 6;
   display: flex;
   pointer-events: none;
@@ -1723,11 +1723,11 @@ main .ancre { scroll-margin-top: 150px; }
 .sleep-fab .hoe-fab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 
 /* FLU-06 : bulle de la première houe en main, sous la puce Houe */
-.stage-hud { flex-wrap: wrap; }
+.stage-hud { flex-wrap: wrap-reverse; align-items: flex-end; } /* la bulle passe au-dessus de la puce */
 .hoe-hint {
   flex: 1 0 100%;
   align-self: flex-end;
-  margin-top: 6px;
+  margin-bottom: 6px;
   margin-left: auto;
   max-width: 240px;
   padding: 8px 12px;
@@ -1908,7 +1908,7 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
   align-items: stretch;
   gap: 2px;
   min-width: 76px;
-  max-width: 120px;
+  max-width: 150px;
   padding: 4px;
   background: rgba(255, 230, 178, 0.82);
   border: 3px solid #8a5a34;
@@ -1939,10 +1939,13 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
   justify-content: center;
   gap: 3px;
   min-height: 26px;
-  border-top: 1px solid rgba(138, 90, 52, 0.45) !important;
+  flex: 1 1 auto;
+  padding: 0 4px !important;
   overflow: hidden;
 }
-.player-line.level-ind { padding-bottom: 4px !important; }
+.player-stats { display: flex; align-items: stretch; border-top: 1px solid rgba(138, 90, 52, 0.45); }
+.player-stats .player-line + .player-line { border-left: 1px solid rgba(138, 90, 52, 0.45) !important; }
+.player-line.level-ind { padding-bottom: 4px !important; white-space: nowrap; }
 .player-card button:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; border-radius: 4px; }
 body:has(.window-layer) .player-card,
 body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-events: none; }
