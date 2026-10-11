@@ -2,9 +2,9 @@ import { DATA } from '../engine/catalog.js';
 import { energyLevel } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
 import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
-import { houseRepaired } from '../engine/depart.js';
+import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { awakeRequired } from '../engine/clock.js';
-import { planMeal } from '../engine/family.js';
+import { memberPortrait, planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
@@ -32,7 +32,7 @@ import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes } from './cuisine.js';
 import { renderTechno } from './techno.js';
-import { renderFamille } from './famille.js';
+import { memberNameHtml, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { renderInventaire, subtabsHtml } from './inventaire.js';
@@ -345,37 +345,41 @@ export function applyAnchor() {
   if (el) el.scrollIntoView({ block: 'start' });
 }
 
-// Bandeau (version 1.4) : une seule ligne, sans titre ni légendes. Chaque indicateur est une
-// icône et sa valeur ; son nom est dans l'infobulle et pour les lecteurs d'écran. Ceux qui ont
-// un lieu y mènent (eau → Maison › Installations, autonomie → Maison ›
-// Famille). Le jour est le numéro de la nuit à venir (state.day) : jour 1 au départ.
-// FLU-30 : la puce « Niv. » porte une fine barre de progression vers le niveau suivant.
-function niveauHtml(corps) {
+// Carte du joueur, en haut à gauche (elle remplace le bandeau du haut) : le portrait du
+// personnage principal, son prénom dessous, puis sur une même ligne le niveau (avec sa barre
+// vers le niveau suivant, FLU-30 ; ouvre les niveaux) et l'autonomie de la dernière nuit
+// (ouvre la Famille).
+// Le prénom est saisi par le joueur : escapeHtml (memberNameHtml), jamais dans un data-*.
+let playerHeight = 0;
+export function renderIndicators() {
+  const m = mainCharacter(state);
   const p = levelProgress(state);
   const xp = p.max ? `${formatNumber(p.xp)} XP, niveau maximal` : `${formatNumber(p.xp)} / ${formatNumber(p.fin)} XP`;
-  const titre = `Niveau ${p.niveau} : ${xp}. Voir les niveaux`;
-  return `<button type="button" class="indicator indicator-btn level-ind" data-action="open-levels" title="${titre}" aria-label="${titre}">${corps('⭐', `Niv. ${p.niveau}`)}<span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>`;
-}
-
-export function renderIndicators() {
-  const corps = (icone, valeur) => `<span aria-hidden="true">${icone}</span><span class="num" aria-hidden="true">${valeur}</span>`;
-  const lien = (icone, valeur, titre, lieu) =>
-    `<button type="button" class="indicator indicator-btn" data-action="stage-goto" data-window="${lieu.fenetre}" data-tab="${lieu.onglet}"${lieu.ancre ? ` data-anchor="${lieu.ancre}"` : ''} title="${titre}" aria-label="${titre}">${corps(icone, valeur)}</button>`;
-  const el = document.getElementById('indicators');
-  // Jour, heure, pièces et énergie sont dans la carte et la jauge flottantes (renderHud) ;
-  // l'eau, dans la bulle de la citerne (appui long sur la carte).
+  const niveau = `Niveau ${p.niveau} : ${xp}. Voir les niveaux`;
+  const auto = formatPercent(lastAutonomy(state));
+  const autoTitre = `Autonomie de la dernière nuit : ${auto}. Ouvrir la Famille`;
+  const famille = 'data-action="stage-goto" data-window="maison" data-tab="famille"';
+  const el = document.getElementById('player-card');
   morph(el,
-    niveauHtml(corps) +
-    lien('🌿', formatPercent(lastAutonomy(state)), `Autonomie de la dernière nuit : ${formatPercent(lastAutonomy(state))}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' })
+    `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
+      `<span class="player-portrait" aria-hidden="true">${m ? memberPortrait(state, m.id) || '🙂' : '🙂'}</span>` +
+      `<span class="player-name">${m ? memberNameHtml(m.id) : ''}</span></button>` +
+    `<span class="player-stats">` +
+    `<button type="button" class="player-line level-ind" data-action="open-levels" title="${niveau}" aria-label="${niveau}"><span aria-hidden="true">⭐</span><span class="num" aria-hidden="true">Niv. ${p.niveau}</span><span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>` +
+    `<button type="button" class="player-line" ${famille} title="${autoTitre}" aria-label="${autoTitre}"><span aria-hidden="true">🌿</span><span class="num" aria-hidden="true">${auto}</span></button>` +
+    `</span>`
   );
-  fitIndicators(el);
+  // Le contenu des écrans sans carte commence sous la carte du joueur.
+  if (el.offsetHeight && el.offsetHeight !== playerHeight) {
+    playerHeight = el.offsetHeight;
+    document.documentElement.style.setProperty('--player-h', playerHeight + 'px');
+  }
   renderHud();
 }
 
 // Carte flottante en haut à droite (comme dans Stardew Valley) : le jour et l'heure côte à
 // côte, les pièces dessous ; et, en bas à droite, la jauge verticale de l'énergie, qui ouvre
 // la Famille. L'heure avance par tranches de 10 minutes.
-let hudWidth = 0;
 function renderHud() {
   const h = heureDuJour();
   const heure = Math.floor(h);
@@ -385,12 +389,6 @@ function renderHud() {
     `<span class="hud-row"><span class="hud-cell">Jour <span class="num">${state.day}</span></span><span class="hud-cell"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span></span>` +
     `<span class="hud-row hud-money"><span class="hud-cell"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces</span></span></span>`
   );
-  // La puce d'objectif de la carte (.stage-hud) s'arrête à gauche de la carte flottante.
-  const hud = document.getElementById('hud');
-  if (hud.offsetWidth && hud.offsetWidth !== hudWidth) {
-    hudWidth = hud.offsetWidth;
-    document.documentElement.style.setProperty('--hud-w', hudWidth + 'px');
-  }
   const e = energyLevel(state);
   const max = DATA.PERSONNAGE.MAX;
   const pct = Math.max(0, Math.min(100, Math.round((e / max) * 100)));
@@ -404,42 +402,52 @@ function renderHud() {
   );
 }
 
-// Tout tient sur une ligne : si les indicateurs débordent (grands nombres, écran étroit), le
-// texte est réduit d'autant. Les espacements sont en em : la largeur suit la taille du texte,
-// à quelques pixels près (bordures des boutons), d'où un deuxième passage au besoin. Refait
-// seulement quand le texte ou la largeur change.
-const IND_MIN_PX = 9;
-function fitIndicators(el) {
-  const key = el.textContent.length + ':' + el.clientWidth;
-  if (el.__fit === key) return;
-  el.__fit = key;
-  el.style.fontSize = '';
-  let size = parseFloat(getComputedStyle(el).fontSize) || 15;
-  for (let pass = 0; pass < 4 && el.scrollWidth > el.clientWidth && size > IND_MIN_PX; pass++) {
-    size = Math.max(IND_MIN_PX, Math.floor(((size * el.clientWidth) / el.scrollWidth) * 10) / 10 - (pass ? 0.2 : 0));
-    el.style.fontSize = size + 'px';
-  }
+// Menu latéral rabattable, à gauche de l'écran (il remplace le menu du bas) : les icônes
+// les unes au-dessus des autres, dans le cadre bois des cartes. Fermé, il ne dépasse que sa
+// languette (un triangle en pixel art pointé vers la droite, et le nombre d'alertes). Il se
+// referme dès qu'on choisit une entrée, ou avec Échap.
+export let menuOpen = false;
+export function setMenuOpen(open) {
+  menuOpen = !!open;
+  renderTabbar();
 }
+let menuClickBound = false;
+
+// Triangle en pixel art (5 × 9 pixels), pointé vers la droite.
+const MENU_ARROW = '<svg class="side-tab-arrow" viewBox="0 0 5 9" width="10" height="18" aria-hidden="true" shape-rendering="crispEdges">' +
+  '<rect x="0" y="0" width="1" height="9"/><rect x="1" y="1" width="1" height="7"/><rect x="2" y="2" width="1" height="5"/><rect x="3" y="3" width="1" height="3"/><rect x="4" y="4" width="1" height="1"/></svg>';
 
 export function renderTabbar() {
   const current = FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
+  const nav = document.getElementById('bottom-nav');
+  if (!menuClickBound) {
+    menuClickBound = true;
+    // choisir une entrée referme le menu (l'action, elle, passe par le registre comme d'habitude)
+    nav.addEventListener('click', (e) => { if (menuOpen && e.target.closest('.nav-btn')) setMenuOpen(false); });
+  }
+  document.getElementById('side-menu').classList.toggle('open', menuOpen);
+  nav.inert = !menuOpen;
+  const tab = document.getElementById('side-tab');
+  tab.setAttribute('aria-expanded', String(menuOpen));
+  tab.setAttribute('aria-label', menuOpen ? 'Fermer le menu' : `Ouvrir le menu${alerts > 0 ? ` (${alerts} alerte${alerts > 1 ? 's' : ''})` : ''}`);
+  morph(tab, MENU_ARROW + (alerts > 0 && !menuOpen ? `<span class="side-tab-badge" aria-hidden="true">${alerts > 9 ? '9+' : alerts}</span>` : ''));
   morph(
-    document.getElementById('bottom-nav'),
+    nav,
     NAV_TABS.map((id) => TABS.find((t) => t.id === id))
       // FLU-08 : le Marché est là dès le départ (verrouillé) : les onglets ne bougent jamais
       .filter((t) => tabAvailable(t.id) || t.id === 'comptoir')
       .map((t) => {
         if (!tabAvailable(t.id)) {
-          return `<button type="button" class="nav-btn locked" data-action="market-locked" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
+          return `<button type="button" class="nav-btn locked" data-action="market-locked" title="${t.label}" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
         }
         const badge = t.id === 'notifications' && alerts > 0 ? `<span class="nav-badge" aria-hidden="true">${alerts}</span>` : '';
         const label = t.id === 'notifications' && alerts > 0 ? `${t.label} (${alerts} alerte${alerts > 1 ? 's' : ''})` : t.label;
-        return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
+        return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" title="${t.label}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
       })
       .join('') +
       // Version 1.4 : les Options ne sont plus dans le bandeau mais ici, au bout du menu.
-      '<button type="button" class="nav-btn" id="options-btn" data-action="open-options" aria-label="Options"><span class="nav-icon" aria-hidden="true">⚙️</span><span class="nav-label">Options</span></button>'
+      '<button type="button" class="nav-btn" id="options-btn" data-action="open-options" title="Options" aria-label="Options"><span class="nav-icon" aria-hidden="true">⚙️</span><span class="nav-label">Options</span></button>'
   );
 }
 
@@ -509,6 +517,9 @@ registerActions({
     maisonTabChoisi = maisonTab;
     renderStageWindow();
     refresh();
+  },
+  'menu-toggle': () => {
+    setMenuOpen(!menuOpen);
   },
   'market-locked': () => {
     showToast(`🔒 ${MARKET_CLOSED}`);

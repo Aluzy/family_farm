@@ -116,47 +116,92 @@ main {
   margin: 0 auto;
 }
 
-/* Barre de menu du bas : fixée ; le bouton « Zzz » flotte juste au-dessus, à droite. */
-:root { --dock: calc(60px + env(safe-area-inset-bottom)); }
+/* Menu latéral rabattable, à gauche (il remplace le menu du bas) : les icônes les unes
+   au-dessus des autres, dans le cadre bois des cartes flottantes. Fermé, il glisse hors de
+   l'écran et n'en dépasse que sa languette (triangle en pixel art pointé vers la droite).
+   --dock : ce qui reste en bas de l'écran (la zone sûre des téléphones à encoche). */
+:root { --dock: env(safe-area-inset-bottom, 0px); --menu-tab: 22px; }
 
-.bottom-nav {
+.side-menu {
   position: fixed;
   left: 0;
-  right: 0;
-  bottom: 0;
+  top: 50%;
   z-index: 55;
   display: flex;
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--bg-elevated);
-  border-top: 1px solid var(--border);
+  align-items: center;
+  transform: translate(calc(-100% + var(--menu-tab)), -50%);
+  transition: transform 0.2s ease-out;
 }
+.side-menu.open { transform: translate(0, -50%); }
+@media (prefers-reduced-motion: reduce) { .side-menu { transition: none; } }
 
-.nav-btn {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 60px;
+.bottom-nav {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  padding: 6px 6px 6px calc(6px + env(safe-area-inset-left));
+  background: rgba(255, 230, 178, 0.82);
+  border: 3px solid #8a5a34;
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.side-menu:not(.open) .bottom-nav { visibility: hidden; transition: visibility 0s 0.2s; }
+
+.nav-btn {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 4px 2px;
-  border: 0;
-  border-top: 3px solid transparent;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
   background: transparent;
-  color: var(--text-muted);
+  color: #4a2a10;
   font: inherit;
   cursor: pointer;
 }
+.nav-btn.active { background: rgba(138, 90, 52, 0.22); border-color: #8a5a34; }
+.nav-btn:active { transform: translateY(1px); }
+.nav-icon { position: relative; font-size: 1.6rem; line-height: 1; }
+.nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } /* icônes seules : le nom est dans l'infobulle */
 
-.nav-btn.active {
-  color: var(--accent);
-  border-top-color: var(--accent);
-  background: var(--bg-muted);
+/* La languette : collée au bord droit du menu, elle dépasse seule de l'écran quand il est fermé. */
+.side-tab {
+  position: relative;
+  width: var(--menu-tab);
+  height: 56px;
+  margin-left: -3px; /* recouvre la bordure du menu : un seul cadre */
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 230, 178, 0.88);
+  border: 3px solid #8a5a34;
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  box-shadow: inset -2px 0 0 rgba(217, 160, 102, 0.9), 2px 2px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
 }
-
-.nav-icon { position: relative; font-size: 1.5rem; line-height: 1; }
-.nav-label { font-size: 0.75rem; font-weight: 600; }
+.side-tab::after { content: ""; position: absolute; inset: -6px -16px -6px 0; } /* zone d'appui de 44 px environ */
+.side-tab-arrow { fill: #6b3f1c; transition: transform 0.2s; }
+.side-menu.open .side-tab-arrow { transform: scaleX(-1); } /* ouvert : le triangle montre le sens de la fermeture */
+.side-tab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+.side-tab-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--danger-contrast);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
 
 .nav-badge {
   position: absolute;
@@ -1283,7 +1328,7 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   }
 }
 /* ---------- Carte Phaser : zone entre le bandeau et le menu du bas ---------- */
-:root { --header-h: 56px; }
+:root { --header-h: 0px; } /* plus de bandeau en haut : la carte occupe tout l'écran */
 #farm-stage {
   position: fixed;
   left: 0;
@@ -1441,7 +1486,9 @@ body.has-stage { padding-bottom: 0; }
   position: absolute;
   top: 2px;
   left: calc(8px + env(safe-area-inset-left));
-  right: calc(16px + var(--hud-w, 170px) + env(safe-area-inset-right)); /* à gauche de la carte flottante (.hud) */
+  right: calc(64px + env(safe-area-inset-right)); /* la jauge d'énergie, à droite */
+  top: auto;
+  bottom: 84px; /* en bas, au-dessus de la flèche « ⌄ » et des boutons ronds (Zzz, houe) ; la jauge d'énergie est à droite */
   z-index: 6;
   display: flex;
   pointer-events: none;
@@ -1485,7 +1532,7 @@ body.has-stage { padding-bottom: 0; }
 .stage-chip-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--bg-muted); }
 .stage-chip-bar > span { display: block; height: 100%; background: var(--accent); }
 
-/* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des trois points. */
+/* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des flèches. */
 .stage-room-bar {
   position: absolute;
   left: 50%;
@@ -1513,41 +1560,7 @@ body.has-stage { padding-bottom: 0; }
 .stage-room-btn:active { transform: translateY(1px); }
 .stage-room-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 
-/* Les trois points (un par écran de la carte) et les flèches des bords. */
-.stage-dots {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  z-index: 6;
-  transform: translateX(-50%);
-  display: flex;
-}
-.stage-dots::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  top: 50%;
-  height: 22px;
-  margin-top: -11px;
-  border-radius: 999px;
-  background: rgba(28, 26, 20, 0.5);
-}
-.stage-dot {
-  position: relative;
-  width: 36px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.stage-dot > span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, 0.5); transition: transform 0.15s, background 0.15s; }
-.stage-dot.active > span { background: #ffffff; transform: scale(1.35); }
-.stage-dot:focus-visible { outline: 3px solid var(--color-sun); outline-offset: -6px; border-radius: 999px; }
+/* Les flèches des bords de la carte. */
 .stage-arrow {
   position: absolute;
   top: 27%; /* au-dessus de la zone de culture, sous la ligne de l'objectif */
@@ -1721,11 +1734,11 @@ main .ancre { scroll-margin-top: 150px; }
 .sleep-fab .hoe-fab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 
 /* FLU-06 : bulle de la première houe en main, sous la puce Houe */
-.stage-hud { flex-wrap: wrap; }
+.stage-hud { flex-wrap: wrap-reverse; align-items: flex-end; } /* la bulle passe au-dessus de la puce */
 .hoe-hint {
   flex: 1 0 100%;
   align-self: flex-end;
-  margin-top: 6px;
+  margin-bottom: 6px;
   margin-left: auto;
   max-width: 240px;
   padding: 8px 12px;
@@ -1742,7 +1755,7 @@ main .ancre { scroll-margin-top: 150px; }
 /* FLU-07 : chevron « la carte continue vers le bas », en bas au milieu de la carte */
 .stage-arrow.bas {
   top: auto;
-  bottom: 56px;
+  bottom: 4px;
   left: 50%;
   width: 56px;
   height: 44px;
@@ -1779,7 +1792,7 @@ main .ancre { scroll-margin-top: 150px; }
    modal-root). Légèrement transparentes : la carte reste visible dessous. */
 .hud {
   position: fixed;
-  top: calc(var(--header-h) + 8px);
+  top: calc(8px + env(safe-area-inset-top));
   right: calc(8px + env(safe-area-inset-right));
   z-index: 45;
   display: flex;
@@ -1870,7 +1883,7 @@ body:has(.window-layer) .hud-energy-btn,
 body:has(#modal-root > *) .hud-energy-btn { pointer-events: none; }
 /* Écrans sans carte : le contenu commence sous la carte flottante (sauf si l'écran est
    assez large pour qu'elle tienne à côté). */
-body:not(.has-stage) main { padding-top: 84px; }
+body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + env(safe-area-inset-top)); }
 @media (min-width: 1120px) { body:not(.has-stage) main { padding-top: 16px; } }
 
 /* Bulle de la citerne (appui long sur la carte) : combien de litres elle contient. */
@@ -1892,3 +1905,58 @@ body:not(.has-stage) main { padding-top: 84px; }
   will-change: transform;
 }
 .stage-tip[hidden] { display: none; }
+
+/* ---------- Carte du joueur, en haut à gauche (remplace le bandeau du haut) ----------
+   Portrait du personnage principal, prénom, niveau (avec sa barre) et autonomie, dans le
+   même cadre bois que la carte flottante de droite (.hud). */
+.player-card {
+  position: fixed;
+  top: calc(8px + env(safe-area-inset-top));
+  left: calc(8px + env(safe-area-inset-left));
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 76px;
+  max-width: 150px;
+  padding: 4px;
+  background: rgba(255, 230, 178, 0.82);
+  border: 3px solid #8a5a34;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 2px 4px rgba(0, 0, 0, 0.25);
+  color: #4a2a10;
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  transition: opacity 0.2s;
+}
+.player-card button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.player-head { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 0 !important; }
+.player-portrait { font-size: 1.8rem; line-height: 1; }
+.player-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-line {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 26px;
+  flex: 1 1 auto;
+  padding: 0 4px !important;
+  overflow: hidden;
+}
+.player-stats { display: flex; align-items: stretch; border-top: 1px solid rgba(138, 90, 52, 0.45); }
+.player-stats .player-line + .player-line { border-left: 1px solid rgba(138, 90, 52, 0.45) !important; }
+.player-line.level-ind { padding-bottom: 4px !important; white-space: nowrap; }
+.player-card button:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; border-radius: 4px; }
+body:has(.window-layer) .player-card,
+body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-events: none; }

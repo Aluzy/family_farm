@@ -355,8 +355,6 @@ export function renderStage() {
     if (window.FarmStage) FarmStage.hide();
     return;
   }
-  const head = document.querySelector('.app-header');
-  document.documentElement.style.setProperty('--header-h', head.offsetHeight + 'px');
   // Un intérieur qui n'existe plus (nouvelle partie, par exemple) : retour à la carte.
   if (stageInterior && !interiorAvailable(stageInterior)) setStageInterior(null);
   FarmStage.show();
@@ -370,7 +368,7 @@ export function renderStage() {
   renderStageHud(el);
 }
 
-/* Par-dessus la carte (DOM) : l'objectif du chapitre en haut, les trois points en bas, et
+/* Par-dessus la carte (DOM) : l'objectif du chapitre en bas, et
    une flèche sur chaque bord tant que le joueur n'a pas fait glisser la carte. */
 
 const STAGE_DRAG_KEY = 'ferme-carte-glissee';
@@ -473,7 +471,7 @@ function renderStageHud(el) {
   renderStageNav(el);
 }
 
-// Les trois points (écran de gauche, du milieu, de droite) et les flèches des bords.
+// Les flèches des bords (tant que le joueur n'a pas fait glisser la carte).
 function renderStageNav(el) {
   const nav = el.querySelector('.stage-nav');
   const v = stageView;
@@ -491,10 +489,6 @@ function renderStageNav(el) {
     morph(nav, '');
     return;
   }
-  const noms = ['Écran de gauche : l\'étable', 'Écran du milieu : la maison', 'Écran de droite : le moulin et la serre'];
-  const dots = noms
-    .map((nom, i) => `<button type="button" class="stage-dot${i === v.ecran ? ' active' : ''}" data-action="stage-pan" data-ecran="${i}" aria-label="${nom}" title="${nom}"${i === v.ecran ? ' aria-current="true"' : ''}><span aria-hidden="true"></span></button>`)
-    .join('');
   const fleche = (cote, ecran, signe, nom) =>
     `<button type="button" class="stage-arrow ${cote}" data-action="stage-pan" data-ecran="${ecran}" aria-label="${nom}" title="${nom}"><span aria-hidden="true">${signe}</span></button>`;
   const arrows = stageDragged
@@ -503,7 +497,7 @@ function renderStageNav(el) {
       (v.droite ? fleche('droite', Math.min(v.ecrans - 1, v.ecran + 1), '›', 'La carte continue à droite') : '') +
       // FLU-07 : un chevron discret annonce que la carte continue aussi vers le bas
       (v.bas ? '<button type="button" class="stage-arrow bas" data-action="stage-pan-down" aria-label="La carte continue vers le bas" title="La carte continue vers le bas"><span aria-hidden="true">⌄</span></button>' : '');
-  morph(nav, `<div class="stage-dots" role="group" aria-label="Écrans de la carte">${dots}</div>${arrows}`);
+  morph(nav, arrows);
 }
 
 // Fait glisser la carte jusqu'à un repère (0, 1 ou 2) : l'étable, la maison, le moulin et la serre.

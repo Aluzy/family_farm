@@ -2,7 +2,7 @@ import { setComptoirTab, setComptoirTabChoisi, setInvTab, setTestMode, testMode 
 import { tel, telClick } from './consent.js';
 import { scheduleRender } from './loop.js';
 import { refresh } from './render.js';
-import { closeStageWindow, leaveInterior, stageInterior, stageWindow } from './stage-windows.js';
+import { closeStageWindow, leaveInterior, menuOpen, setMenuOpen, stageInterior, stageWindow } from './stage-windows.js';
 import { ACTIONS, registerActions } from './actions.js';
 import { closeModal } from './common.js';
 
@@ -30,7 +30,10 @@ document.addEventListener('change', (e) => {
 // #modal-root, puis la fenêtre de la carte, puis l'intérieur où le joueur est entré.
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (document.getElementById('modal-root').childElementCount > 0) {
+  if (menuOpen) {
+    e.preventDefault();
+    setMenuOpen(false);
+  } else if (document.getElementById('modal-root').childElementCount > 0) {
     e.preventDefault();
     closeModal();
   } else if (stageWindow) {
