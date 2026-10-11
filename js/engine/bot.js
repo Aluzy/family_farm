@@ -150,6 +150,7 @@ export function botHoe(state) {
     if (plotAtTile(state, t)) continue;
     if (state.energie < reserve + actionCost(state, 'labourer')) return;
     const st = hoeStatus(state, t);
+    if (!st.ok && st.dessin) continue; // version 1.15 : sa bordure ne se dessinerait pas
     if (!st.ok) return;
     hoe(state, t);
   }

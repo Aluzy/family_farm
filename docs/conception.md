@@ -15,14 +15,24 @@
 >   Poulailler**, ni aux abords de l'**Étable** et de son enclos (3 tuiles), du **Moulin** et de
 >   la **Serre** (3 tuiles), de la Maison et du Silo (1 tuile), ni dans le **Verger** (ses
 >   12 emplacements et 1 tuile autour, et 2 tuiles autour de son panneau). 953 tuiles sur
->   4 104. Les fleurs et touffes d'herbe n'empêchent rien : elles disparaissent sous la terre.
+>   4 104 (989 avec les anciennes zones redevenues herbe). Les fleurs et touffes d'herbe n'empêchent rien : elles disparaissent sous la terre.
 > - Une parcelle porte le **numéro de sa tuile** (`case` = rangée × 72 + colonne). Le plafond de
 >   tuiles par niveau ne change pas (6 … 64). Le **Champ** n'est plus une zone à part.
+> - **Bordures (comme sur la planche du jeu de tuiles)** : une tuile labourée est toute en
+>   terre, et les 8 tuiles d'herbe qui la touchent portent sa bordure mi-herbe mi-terre (dessin
+>   choisi par ses 4 coins). Un labour (ou un rebouchage) est **refusé** si une de ces
+>   bordures ne peut pas se dessiner : elle tomberait sur un chemin, de l'eau, une pierre, un
+>   arbre ou de l'herbe claire, ou une tuile d'herbe se retrouverait prise entre deux terres.
+>   Conséquence : un écart d'une ou deux tuiles entre deux terres ne se comble pas (il faut
+>   reboucher). L'herbe des abords des bâtiments et du Verger porte une bordure sans se
+>   labourer (« + » dans `data/terrain.json`). Les parties d'avant gardent leurs terres ;
+>   seules les nouvelles bordures impossibles sont refusées.
 > - **Carte** : la houe en main, un appui sur l'herbe laboure, sur une terre vide rebouche ;
 >   ailleurs la houe dit pourquoi elle ne laboure pas. Sans la houe, un appui sur l'herbe
->   labourable ouvre la fenêtre de la Zone de culture (la houe y est). La terre se dessine
->   avec `assets/terre_bords.png` (`scripts/carte/terre_bords.py`) : les 16 tuiles de la
->   double grille, herbe transparente, posées sur n'importe quelle herbe.
+>   labourable ouvre la fenêtre de la Zone de culture (la houe y est). La terre et ses
+>   bordures se dessinent avec `assets/terre_bords.png` (`scripts/carte/terre_bords.py`) :
+>   16 tuiles, herbe transparente. La terre d'origine des anciennes zones (sol et bordures
+>   dessinées dans la carte) n'est plus dessinée.
 > - **Sauvegarde (format 32)** : les parcelles de la Zone de culture et du Champ prennent pour
 >   case le numéro de la tuile où elles étaient dessinées ; celles du Champ rejoignent la
 >   liste unique.

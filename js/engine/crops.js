@@ -50,11 +50,72 @@ export function terrainSize() {
   return { largeur: DATA.TERRAIN.LARGEUR, hauteur: DATA.TERRAIN.HAUTEUR };
 }
 
-export function isArable(tile) {
+function terrainChar(tile) {
   const T = DATA.TERRAIN;
-  if (!Number.isInteger(tile) || tile < 0 || tile >= T.LARGEUR * T.HAUTEUR) return false;
-  return T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR] === '#';
+  if (!Number.isInteger(tile) || tile < 0 || tile >= T.LARGEUR * T.HAUTEUR) return '.';
+  return T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
 }
+
+export function isArable(tile) {
+  return terrainChar(tile) === '#';
+}
+
+// Version 1.15 : la tuile peut-elle porter une bordure mi-herbe mi-terre (herbe foncée,
+// labourable ou aux abords d'un bâtiment) ?
+export function canBorder(tile) {
+  const ch = terrainChar(tile);
+  return ch === '#' || ch === '+';
+}
+
+// Dessin d'une tuile d'herbe à côté de la terre (comme sur la planche du jeu de tuiles) :
+// ses quatre coins, chacun de terre si une des trois autres tuiles qui le partagent est
+// labourée. Bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche, 1 bas-droite. 0 : herbe
+// seule ; 15 (terre aux quatre coins, une tuile d'herbe prise entre deux terres) n'a pas de
+// dessin. `dirt` : l'ensemble des tuiles labourées.
+export function borderMask(dirt, tile) {
+  const W = DATA.TERRAIN.LARGEUR;
+  const c = tile % W;
+  const at = (dc, dr) => {
+    const cc = c + dc;
+    return cc >= 0 && cc < W && dirt.has(tile + dr * W + dc);
+  };
+  return ((at(-1, -1) || at(0, -1) || at(-1, 0)) ? 8 : 0)
+    | ((at(0, -1) || at(1, -1) || at(1, 0)) ? 4 : 0)
+    | ((at(-1, 0) || at(-1, 1) || at(0, 1)) ? 2 : 0)
+    | ((at(1, 0) || at(0, 1) || at(1, 1)) ? 1 : 0);
+}
+
+// Tuiles d'herbe autour de `tile` (elle comprise) dont la bordure ne peut pas se dessiner :
+// une bordure sur un chemin, de l'eau, une pierre, un arbre (canBorder), ou une herbe prise
+// entre deux terres (masque 15).
+function badBorders(dirt, tile) {
+  const W = DATA.TERRAIN.LARGEUR, H = DATA.TERRAIN.HAUTEUR;
+  const c = tile % W, r = Math.floor(tile / W);
+  let n = 0;
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const cc = c + dc, rr = r + dr;
+      if (cc < 0 || rr < 0 || cc >= W || rr >= H) { n += dirt.has(tile) ? 1 : 0; continue; }
+      const t = rr * W + cc;
+      if (dirt.has(t)) continue;
+      const m = borderMask(dirt, t);
+      if (m && (m === 15 || !canBorder(t))) n += 1;
+    }
+  }
+  return n;
+}
+
+// Le dessin autour de `tile` reste-t-il possible si on la laboure (`labour`) ou la rebouche ?
+// Une partie d'avant la règle peut avoir déjà des bordures impossibles : on n'en refuse
+// que de nouvelles.
+export function soilLayoutOk(state, tile, labour) {
+  const dirt = new Set(state.potager.parcelles.map((p) => p.case));
+  const before = badBorders(dirt, tile);
+  if (labour) dirt.add(tile); else dirt.delete(tile);
+  return badBorders(dirt, tile) <= before;
+}
+
+export const SOIL_LAYOUT_REFUS = 'La terre déborde en bordure sur les 8 tuiles autour : elles doivent pouvoir devenir mi-herbe mi-terre (pas de chemin, d\'eau, de pierre ni d\'arbre à côté, et pas une seule tuile d\'herbe prise entre deux terres).';
 
 // Tuile d'une case des anciennes zones (1 : la Zone de culture, 2 : le Champ) : sauvegardes
 // d'avant la version 1.15, parcelles de départ, tests.
@@ -118,8 +179,10 @@ export function hoeStatus(state, tile) {
   if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).` };
   if (p) {
     if (p.culture) return { action: null, ok: false, raison: 'Terre plantée : récolte d\'abord.' };
+    if (!soilLayoutOk(state, tile, false)) return { action: 'reboucher', ok: false, raison: SOIL_LAYOUT_REFUS, dessin: true };
     return { action: 'reboucher', ok: true, raison: '' };
   }
+  if (!soilLayoutOk(state, tile, true)) return { action: 'labourer', ok: false, raison: SOIL_LAYOUT_REFUS, dessin: true };
   const cap = soilCap(state);
   if (soilCount(state) >= cap) {
     const plus = soilCapNext(state);

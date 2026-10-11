@@ -35,7 +35,7 @@ import {
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtTile, zoneTile, isArable, migrateFreeSoil, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, orchardSlotPrice, plantTree, harvestTree, treeStage, treeAt, freeOrchardCases, ripeTrees, migrateOrchard, newTree, commerceNight, chooseCommerce, upgradeCommerce, setCommerceQuota, commerceCapacity, commerceChoiceCost, commerceBatches, newCommerce,
+  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtTile, zoneTile, isArable, canBorder, borderMask, migrateFreeSoil, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, orchardSlotPrice, plantTree, harvestTree, treeStage, treeAt, freeOrchardCases, ripeTrees, migrateOrchard, newTree, commerceNight, chooseCommerce, upgradeCommerce, setCommerceQuota, commerceCapacity, commerceChoiceCost, commerceBatches, newCommerce,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
@@ -8543,24 +8543,28 @@ test('version 1.9 : la houe s\'achète une fois au Marché', () => {
   assertEqual([buyHoe(s).ok, s.pieces], [false, 60], 'une seule houe');
 });
 
+// Version 1.15 : le milieu de l'ancien Champ, de l'herbe tout autour (les bordures s'y
+// dessinent) ; (c, r) de 0 à 5.
+const champ = (c, r) => zoneTile(2, (r + 1) * 8 + c + 1);
+
 test('version 1.9 : labourer une case d\'herbe coûte de l\'énergie et rapporte de l\'XP, dans le plafond', () => {
   const s = garden();
   testSetLevel(s, 2);
-  assertEqual(hoe(s, zoneTile(1, 3)).error, `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).`);
+  assertEqual(hoe(s, champ(0, 0)).error, `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).`);
   s.potager.houe = true;
   const [e, xp] = [s.energie, s.progression.xp];
-  const r = hoe(s, zoneTile(1, 3));
-  assertEqual([r.ok, r.action, r.plot.id, r.plot.case, soilCount(s)], [true, 'labourer', 'potager-7', zoneTile(1, 3), 7]);
+  const r = hoe(s, champ(0, 0));
+  assertEqual([r.ok, r.action, r.plot.id, r.plot.case, soilCount(s)], [true, 'labourer', 'potager-7', champ(0, 0), 7]);
   assertEqual([e - s.energie, s.progression.xp - xp], [actionCost(s, 'labourer'), actionXp('labourer')]);
-  assertEqual(s.potager.parcelles.map((p) => p.case), [0, 1, 2, 3, 5, 6, 7].map((c) => zoneTile(1, c)), 'rangées par tuile');
+  assertEqual(s.potager.parcelles.map((p) => p.case), [...[0, 1, 2, 5, 6, 7].map((c) => zoneTile(1, c)), champ(0, 0)], 'rangées par tuile');
   assert(plant(tireless(s), 'potager-7', 'carotte').ok, 'la nouvelle terre se plante');
-  for (const c of [4, 8, 9, 10, 11]) assert(hoe(s, zoneTile(1, c)).ok, `case ${c}`);
-  const plein = hoeStatus(s, zoneTile(1, 12));
+  for (const [c, r2] of [[1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]) assert(hoe(s, champ(c, r2)).ok, `tuile ${c},${r2}`);
+  const plein = hoeStatus(s, champ(3, 0));
   assertEqual([plein.ok, plein.raison], [false, 'Plafond atteint : 12 tuiles au niveau 2. Niveau suivant : +8 tuiles.']);
   assertEqual([hoe(s, 0).ok, hoe(s, -1).ok, hoe(s, 1e6).ok], [false, false, false], 'hors de l\'herbe ou de la carte');
   s.energie = 0;
   testSetLevel(s, 3);
-  assertEqual(hoe(s, zoneTile(1, 12)).error, TIRED);
+  assertEqual(hoe(s, champ(3, 0)).error, TIRED);
 });
 
 test('version 1.9 : reboucher une terre vide est gratuit et rend la place ; une terre plantée reste', () => {
@@ -8571,8 +8575,8 @@ test('version 1.9 : reboucher une terre vide est gratuit et rend la place ; une 
   const r = hoe(s, zoneTile(1, 0));
   assertEqual([r.ok, r.action, r.plot.id, soilCount(s), s.energie, s.progression.xp], [true, 'reboucher', 'potager-1', 5, e, xp]);
   assertEqual(findPlot(s, 'potager-1'), null);
-  assert(hoe(s, zoneTile(1, 4)).ok, 'la place rendue se laboure ailleurs');
-  assertEqual(plotAtTile(s, zoneTile(1, 4)).id, 'potager-7', 'jamais un identifiant déjà pris');
+  assert(hoe(s, champ(0, 0)).ok, 'la place rendue se laboure ailleurs');
+  assertEqual(plotAtTile(s, champ(0, 0)).id, 'potager-7', 'jamais un identifiant déjà pris');
   plant(s, 'potager-2', 'carotte');
   assertEqual(hoe(s, zoneTile(1, 1)).ok, false, 'terre plantée');
 });
@@ -8584,8 +8588,8 @@ test('version 1.9 : le plafond compte toutes les terres de la carte', () => {
   growZone(s, 30);
   testSetLevel(s, 4);
   assertEqual([soilCount(s), soilCap(s)], [30, 32]);
-  assert(hoe(s, zoneTile(2, 0)).ok && hoe(s, zoneTile(2, 1)).ok);
-  assertEqual([soilCount(s), hoeStatus(s, zoneTile(2, 2)).ok], [32, false]);
+  assert(hoe(s, champ(0, 0)).ok && hoe(s, champ(1, 0)).ok);
+  assertEqual([soilCount(s), hoeStatus(s, champ(2, 0)).ok], [32, false]);
 });
 
 test('version 1.9 : migration v26 → v27 : les parcelles prennent une case, la houe est offerte', () => {
@@ -9022,7 +9026,10 @@ test('version 1.15 : la houe laboure n\'importe quelle tuile d\'herbe de la cart
   s.potager.houe = true;
   tireless(s);
   testSetLevel(s, 2);
-  const loin = arables[arables.length - 1]; // tout en bas de la carte, loin de l'ancienne zone
+  // tout en bas de la carte, loin de l'ancienne zone, avec de l'herbe tout autour
+  const W = T.LARGEUR;
+  const ouvert = (t) => [-W - 1, -W, -W + 1, -1, 1, W - 1, W, W + 1].every((d) => canBorder(t + d));
+  const loin = arables.filter(ouvert).pop();
   const r = hoe(s, loin);
   assertEqual([r.ok, r.plot.case, plotAtTile(s, loin).id], [true, loin, 'potager-7']);
   assert(plant(s, 'potager-7', 'carotte').ok, 'elle se plante comme les autres');
@@ -9055,6 +9062,39 @@ test('migration v31 → v32 : les terres de la Zone de culture et du Champ garde
   assertEqual([m.potager.zone2, findPlot(m, 'zone2-1').culture, 'zone' in findPlot(m, 'zone2-1')], [[], 'ble', false]);
   assert(m.potager.parcelles.every((p) => isArable(p.case)), 'toutes sur de l\'herbe labourable');
   assert(sleepOnce(m) !== null);
+});
+
+test('version 1.15 : la terre déborde en bordure sur les 8 tuiles voisines, qui doivent pouvoir la porter', () => {
+  const s = garden();
+  s.potager.houe = true;
+  tireless(s);
+  testSetLevel(s, 6);
+  assert(hoe(s, champ(0, 0)).ok);
+  const ecart = hoeStatus(s, champ(2, 0));
+  assertEqual([ecart.ok, ecart.dessin], [false, true], 'une seule tuile d\'herbe entre deux terres : refusé');
+  assert(/mi-herbe mi-terre/.test(ecart.raison));
+  assert(hoe(s, champ(1, 1)).ok, 'en diagonale, collée : la bordure en coin existe');
+  assert(hoe(s, champ(3, 3)).ok, 'en diagonale à une tuile : la tuile diagonale existe');
+  assert(hoe(s, champ(1, 0)).ok, 'l\'écart se comble : une tuile de plus, pas de pont');
+  const dirt = new Set(s.potager.parcelles.map((p) => p.case));
+  assertEqual(borderMask(dirt, champ(2, 2)), 9, 'herbe entre deux terres en diagonale');
+  // au bord d'un chemin : la bordure tomberait sur le chemin
+  const W = DATA.TERRAIN.LARGEUR;
+  let bord = -1;
+  for (let t = 0; t < W * DATA.TERRAIN.HAUTEUR && bord < 0; t++) {
+    if (isArable(t) && !canBorder(t + 1) && !plotAtTile(s, t)) bord = t;
+  }
+  assert(bord >= 0);
+  const st = hoeStatus(s, bord);
+  assertEqual([st.ok, st.dessin], [false, true], 'à côté d\'une tuile qui ne porte pas de bordure : refusé');
+  // reboucher ne laisse pas de tuile d'herbe prise entre deux terres
+  assert(hoe(s, champ(2, 0)).ok, 'la rangée 0,0 – 2,0');
+  assertEqual(hoeStatus(s, champ(1, 0)).ok, false, 'reboucher le milieu laisserait une herbe entre deux terres');
+  assertEqual(hoeStatus(s, champ(2, 0)).action, 'reboucher');
+  assertEqual(hoeStatus(s, champ(2, 0)).ok, true, 'reboucher un bout : permis');
+  // un écart de deux tuiles ne se comble pas (chaque labour laisserait une herbe seule)
+  assert(hoe(s, champ(5, 0)).ok);
+  assertEqual([hoeStatus(s, champ(3, 0)).ok, hoeStatus(s, champ(4, 0)).ok], [false, false]);
 });
 
 export const results = runTests();

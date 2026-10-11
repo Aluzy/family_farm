@@ -23,6 +23,9 @@ CARTE = os.path.join(ROOT, 'assets', 'carte_printemps.json')
 
 # Sol d'herbe foncée (et la terre des anciennes zones de culture).
 HERBE = {2415, 101, 579, 563, 102, 100, 259, 260, 261, 334, 335, 336, 409, 410, 411, 1167}
+# Bordures de terre des anciennes zones de culture (couches « zone_culture_edge » et
+# « contour_herbe ») : le jeu ne les dessine plus, elles ne couvrent rien.
+BORDURES = {1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764}
 # Couches dont la moindre tuile rend la case non labourable.
 COUVRANTES = ['decor', 'contour_herbe', 'animation_eau', 'water_shine', 'layer_tree_4', 'layer_tree_3',
               'layer_tree_2', 'layer_tree_1', 'layer_tree_top', 'falling_leaves']
@@ -62,7 +65,7 @@ def main():
 
     def gid(name, i):
         g = layers[name]['data'][i] & 0x0fffffff if name in layers else 0
-        return 0 if g and vide(g) else g
+        return 0 if g and (vide(g) or (name != 'ground' and g in BORDURES)) else g
 
     def dist_rect(c, r, o):
         # distance (en tuiles) du centre de la case au rectangle de l'objet
@@ -101,12 +104,16 @@ def main():
     for z, (nom, cols) in {'1': ('zone_culture_1', 5), '2': ('zone_culture_2', 8)}.items():
         o = objets[nom]
         zones[z] = {'X': round(o['x'] / T), 'Y': round(o['y'] / T), 'COLONNES': cols}
-    rows = [''.join('#' if ok[r * W + c] else '.' for c in range(W)) for r in range(H)]
+    # « + » : herbe foncée qui ne se laboure pas (abords d'un bâtiment, Verger), mais qui peut
+    # porter la bordure mi-herbe mi-terre d'une tuile labourée voisine.
+    car = lambda i: '#' if ok[i] else '+' if raison[i] in ('batiment', 'verger', 'enclos') else '.'
+    rows = [''.join(car(r * W + c) for c in range(W)) for r in range(H)]
     out = {
         '//TERRAIN': [
             'Version 1.15 : tuiles labourables de la carte de la ferme, écrit par',
             'scripts/carte/terres.py (ne pas modifier à la main). LIGNES : une chaîne par',
-            'rangée de tuiles, « # » labourable, « . » non. Numéro de tuile = rangée × LARGEUR + colonne.',
+            'rangée de tuiles, « # » labourable, « + » herbe qui ne se laboure pas mais peut porter',
+            'une bordure mi-herbe mi-terre, « . » ni l\'un ni l\'autre. Numéro de tuile = rangée × LARGEUR + colonne.',
             'ZONES : coin (X, Y, en tuiles) et colonnes des anciennes zones de culture (1 : la Zone de',
             'culture, 2 : le Champ), pour convertir une ancienne case en tuile.'
         ],
