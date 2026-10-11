@@ -358,23 +358,43 @@ function niveauHtml(corps) {
 }
 
 export function renderIndicators() {
-  const heure = Math.floor(heureDuJour());
   const corps = (icone, valeur) => `<span aria-hidden="true">${icone}</span><span class="num" aria-hidden="true">${valeur}</span>`;
-  const cell = (icone, valeur, titre) =>
-    `<span class="indicator" title="${titre}">${corps(icone, valeur)}<span class="visually-hidden">${titre}</span></span>`;
   const lien = (icone, valeur, titre, lieu) =>
     `<button type="button" class="indicator indicator-btn" data-action="stage-goto" data-window="${lieu.fenetre}" data-tab="${lieu.onglet}"${lieu.ancre ? ` data-anchor="${lieu.ancre}"` : ''} title="${titre}" aria-label="${titre}">${corps(icone, valeur)}</button>`;
   const el = document.getElementById('indicators');
+  // Jour, heure, pièces et énergie sont dans la carte et la jauge flottantes (renderHud).
   morph(el,
-    cell('📅', `Jour ${state.day}`, `Jour ${state.day}`) +
     niveauHtml(corps) +
-    cell(horlogeEmoji(heure), `${heure} h`, `Heure de la journée : ${heure} h`) +
-    lien('⚡', String(energyLevel(state)), `Ton énergie : ${energyLevel(state)} / ${DATA.PERSONNAGE.MAX}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' }) +
     lien('💧', formatLitres(state.eauMl), `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +
-    cell('💰', formatCoins(state.pieces), `Pièces : ${formatCoins(state.pieces)}`) +
     lien('🌿', formatPercent(lastAutonomy(state)), `Autonomie de la dernière nuit : ${formatPercent(lastAutonomy(state))}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' })
   );
   fitIndicators(el);
+  renderHud();
+}
+
+// Carte flottante en haut à droite (comme dans Stardew Valley) : le jour et l'heure côte à
+// côte, les pièces dessous ; et, en bas à droite, la jauge verticale de l'énergie, qui ouvre
+// la Famille. L'heure avance par tranches de 10 minutes.
+function renderHud() {
+  const h = heureDuJour();
+  const heure = Math.floor(h);
+  const minutes = Math.floor((h - heure) * 6) * 10;
+  const horaire = `${heure} h ${String(minutes).padStart(2, '0')}`;
+  morph(document.getElementById('hud'),
+    `<span class="hud-row"><span class="hud-cell">Jour <span class="num">${state.day}</span></span><span class="hud-cell"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span></span>` +
+    `<span class="hud-row hud-money"><span class="hud-cell"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces</span></span></span>`
+  );
+  const e = energyLevel(state);
+  const max = DATA.PERSONNAGE.MAX;
+  const pct = Math.max(0, Math.min(100, Math.round((e / max) * 100)));
+  // mêmes seuils que la jauge de bonheur : vert à 65 % et plus, jaune de 20 à 64 %, rouge en dessous
+  const cls = pct >= 65 ? '' : pct >= 20 ? ' mid' : ' low';
+  const titre = `Ton énergie : ${e} / ${max}. Ouvrir la Famille`;
+  morph(document.getElementById('hud-energy'),
+    `<button type="button" class="hud-energy-btn" data-action="stage-goto" data-window="maison" data-tab="famille" title="${titre}" aria-label="${titre}">` +
+    `<span class="hud-energy-label" aria-hidden="true">E</span>` +
+    `<span class="hud-energy-bar" aria-hidden="true"><span class="hud-energy-fill${cls}" style="height:${pct}%"></span></span></button>`
+  );
 }
 
 // Tout tient sur une ligne : si les indicateurs débordent (grands nombres, écran étroit), le
