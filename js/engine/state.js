@@ -30,7 +30,7 @@ export function startInventory() {
 export function startHousehold() {
   return {
     inventaire: startInventory(),
-    potager: { parcelles: startPlots(), zone2: [], houe: false },
+    potager: { parcelles: startPlots(), zone2: [], houe: false, houeVue: false },
     famille: {
       membres: DATA.FAMILY.MEMBRES.map(makeMember),
       // version 1.2 : animaux de compagnie, et dernier numéro donné à un adulte, à un
@@ -312,6 +312,8 @@ export const MIGRATIONS = {
   29: (state) => migrateOrchard(state),
   30: (state) => ({ ...state, version: 31, commerce: state.commerce && typeof state.commerce === 'object' ? state.commerce : newCommerce() }),
   31: (state) => migrateFreeSoil(state),
+  // FLU-06 : la bulle de la première houe en main ne s'affiche pas à qui a déjà labouré
+  32: (state) => ({ ...state, version: 33, ...(state.potager && typeof state.potager === 'object' ? { potager: { ...state.potager, houeVue: !!(state.potager.houe && Array.isArray(state.potager.parcelles) && state.potager.parcelles.length) } } : {}) }),
 };
 
 // Version 1.8 : plus de santé ni de soins ; le personnage commence avec son énergie

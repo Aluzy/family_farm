@@ -13,6 +13,7 @@ import { formatEnergy } from './energie.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeStageWindow, stageWindow } from './stage-windows.js';
+import { showHoeHint } from './stage.js';
 import { canPay } from './common.js';
 
 /* ---------- version 1.9 (v2, lot 5) : la houe ---------- */
@@ -54,7 +55,7 @@ export function hoePanelHtml() {
 registerActions({
   'buy-hoe': () => {
     const r = applyResult(buyHoe(state));
-    if (r.ok) showToast(`${DATA.HOUE.ICONE} Houe achetée : touche « Prendre la houe » pour labourer.`);
+    if (r.ok) showToast(`${DATA.HOUE.ICONE} Houe achetée : sur la carte, touche le bouton ${DATA.HOUE.ICONE} près de la lune pour labourer.`);
   },
   'hoe-toggle': () => {
     if (!hasHoe(state)) {
@@ -62,6 +63,11 @@ registerActions({
       return;
     }
     setHoeMode(!hoeMode);
+    // FLU-06 : la première houe en main de la partie, une bulle montre quoi faire
+    if (hoeMode && !state.potager.houeVue) {
+      state.potager.houeVue = true;
+      showHoeHint();
+    }
     // version 1.15 : la houe prise, on retourne sur la carte pour labourer
     if (hoeMode && stageWindow) closeStageWindow();
     else refresh();

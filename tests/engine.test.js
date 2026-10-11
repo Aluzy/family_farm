@@ -5258,7 +5258,7 @@ test('migration v15 → v16 : une partie sans animaux ne perd ni ne gagne rien',
   const v15 = v15State((s) => { s.pieces = 432; s.day = 12; });
   const m = migrate({ v: 15, t: 0, s: v15 });
   assertEqual(m.version, STATE_VERSION);
-  assertEqual([m.pieces, m.day, m.inventaire, m.campagne, m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, v15.campagne, { ...v15.potager, houe: true, parcelles: v15.potager.parcelles.map((p, i) => ({ ...p, case: zoneTile(1, i) })) }, v15.technologies, v15.pointsTech]);
+  assertEqual([m.pieces, m.day, m.inventaire, m.campagne, m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, v15.campagne, { ...v15.potager, houe: true, houeVue: true, parcelles: v15.potager.parcelles.map((p, i) => ({ ...p, case: zoneTile(1, i) })) }, v15.technologies, v15.pointsTech]);
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   assertEqual(countItem(m, 'paille'), 0, 'pas d\'animaux : pas de paille offerte');
   assertEqual(m.nuit.etable, newStableReport());
@@ -9109,6 +9109,19 @@ test('version 1.15 : la grille de la houe montre exactement les tuiles que la ho
   assertEqual(tiles.includes(champ(2, 0)), false, 'pas une tuile qui laisserait une herbe seule');
   assertEqual(tiles.includes(champ(1, 0)), true, 'la voisine, oui');
   for (const t of tiles.slice(0, 40)) assertEqual(hoeStatus(s, t).ok, true, `tuile ${t}`);
+});
+
+test('migration v32 → v33 (FLU-06) : la bulle de la houe n\'est pas remontrée à qui a déjà labouré', () => {
+  const s = garden();
+  const old = JSON.parse(JSON.stringify(s));
+  old.version = 32;
+  delete old.potager.houeVue;
+  old.potager.houe = true;
+  assertEqual(migrate({ v: 32, t: 0, s: old }).potager.houeVue, true);
+  const neuve = JSON.parse(JSON.stringify(old));
+  neuve.potager.houe = false;
+  assertEqual(migrate({ v: 32, t: 0, s: neuve }).potager.houeVue, false);
+  assertEqual(createInitialState(1).potager.houeVue, false);
 });
 
 export const results = runTests();

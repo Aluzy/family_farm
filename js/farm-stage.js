@@ -1584,5 +1584,22 @@
   // Glisse jusqu'à x (px de carte), un point { x, y } ou un lieu ; false si ce n'est pas possible.
   function panTo(target, now) { const s = getScene(); return !!(s && s.ready && s.panTo(target, now)); }
 
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, hasRoom, scene: getScene }; // scene() : pour le débogage et les tests
+  // FLU-06 : si aucune de ces tuiles (numéros de tuile de la carte) n'est à l'écran, glisse
+  // jusqu'à la plus proche du centre. Renvoie true si la vue bouge.
+  function showTiles(tiles) {
+    const s = getScene();
+    if (!s || !s.ready || s.room || !tiles || !tiles.length) return false;
+    const v = s.cameras.main.worldView, W = s.grid.cols;
+    const centre = (t) => ({ x: (t % W) * T + T / 2, y: Math.floor(t / W) * T + T / 2 });
+    if (tiles.some((t) => { const p = centre(t); return v.contains(p.x, p.y); })) return false;
+    let best = null;
+    for (const t of tiles) {
+      const p = centre(t);
+      const d = Math.hypot(p.x - v.centerX, p.y - v.centerY);
+      if (!best || d < best.d) best = { d, p };
+    }
+    return s.panTo(best.p, false);
+  }
+
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

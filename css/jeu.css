@@ -1649,3 +1649,38 @@ main .ancre { scroll-margin-top: 150px; }
 
 /* FLU-01 : le bouton « Voir le chapitre » se range à côté de ✕ */
 .window-head .window-chapter { margin-left: auto; margin-right: 8px; }
+
+/* FLU-05 : bouton rond « Prendre la houe », à gauche du bouton Dormir */
+.sleep-fab .hoe-fab {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 2px solid rgba(44, 36, 22, 0.45);
+  border-radius: 50%;
+  background: rgba(255, 250, 238, 0.95);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+.sleep-fab .hoe-fab:active { transform: translateY(2px); }
+.sleep-fab .hoe-fab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+
+/* FLU-06 : bulle de la première houe en main, sous la puce Houe */
+.stage-hud { flex-wrap: wrap; }
+.hoe-hint {
+  flex: 1 0 100%;
+  align-self: flex-end;
+  margin-top: 6px;
+  margin-left: auto;
+  max-width: 240px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-align: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}

@@ -428,9 +428,20 @@ function chapterChipHtml() {
 }
 
 // Version 1.9 : en mode houe, un bouton sur la carte rappelle les tuiles et range la houe.
+// FLU-06 : la première fois que la houe est en main, une bulle dit quoi faire (quelques secondes).
+let hoeHintUntil = 0;
+export function showHoeHint() {
+  hoeHintUntil = Date.now() + 8000;
+  const tiles = labourables();
+  // sur la carte, après le rendu : glisse vers les cases vertes si aucune n'est visible
+  setTimeout(() => { if (window.FarmStage && FarmStage.showTiles) FarmStage.showTiles(tiles); }, 50);
+}
+
 function hoeChipHtml() {
+  if (!hoeMode) hoeHintUntil = 0;                 // la houe rangée, la bulle ne revient pas
   if (!hoeMode || !state.potager.houe || stageInterior) return '';
-  return `<button type="button" class="stage-chip hoe" data-action="hoe-toggle" aria-pressed="true" aria-label="Houe en main : ${soilCount(state)} tuiles sur ${soilCap(state)}. Ranger la houe" title="Touche une tuile d'herbe de la carte pour la labourer"><span class="stage-chip-pill"><span aria-hidden="true">${DATA.HOUE.ICONE}</span><span class="stage-chip-text">Houe</span><span class="stage-chip-val num">${soilCount(state)} / ${soilCap(state)}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+  const bulle = Date.now() < hoeHintUntil ? '<span class="hoe-hint" role="status">Touche une case verte pour la labourer</span>' : '';
+  return `<button type="button" class="stage-chip hoe" data-action="hoe-toggle" aria-pressed="true" aria-label="Houe en main : ${soilCount(state)} tuiles sur ${soilCap(state)}. Ranger la houe" title="Touche une tuile d'herbe de la carte pour la labourer"><span class="stage-chip-pill"><span aria-hidden="true">${DATA.HOUE.ICONE}</span><span class="stage-chip-text">Houe</span><span class="stage-chip-val num">${soilCount(state)} / ${soilCap(state)}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>${bulle}`;
 }
 
 function renderStageHud(el) {

@@ -21,6 +21,10 @@
 >   réparer ou que le panneau, la pompe ou le réservoir manquent, sinon sur le dernier onglet
 >   choisi. Onglets courts : Famille, Recettes, Techno, Énergie (le nom complet reste dans
 >   l'infobulle et pour les lecteurs d'écran).
+> - **Houe (FLU-05, FLU-06)** : houe achetée et rangée, un bouton rond ⛏️ à gauche du bouton
+>   Dormir la met en main en une touche. La première fois de la partie (`potager.houeVue`,
+>   format 33), une bulle « Touche une case verte pour la labourer » s'affiche 8 s sous la
+>   puce Houe, et la carte glisse vers la case verte la plus proche si aucune n'est visible.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

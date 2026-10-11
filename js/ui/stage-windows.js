@@ -13,7 +13,7 @@ import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
 import {
-  activeTab, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
+  activeTab, ecranFerme, FERME_LINKS, hoeMode, NAV_TABS, setActiveTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { actionSleep } from './game-actions.js';
@@ -431,9 +431,13 @@ export function renderSleepBar() {
   const meal = `${state.repas ? `Repas pris à ${DATA.TIME.MEAL_HOUR} h` : `Repas prévu à ${DATA.TIME.MEAL_HOUR} h`} : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
   const ok = canSleep(state);
   const label = `${ok ? 'Dormir' : `Dormir (dans ${remaining} s)`}. ${meal}`;
+  // FLU-05 : houe achetée et rangée, un bouton rond la met en main depuis la carte
+  const houe = state.potager.houe && !hoeMode && activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior
+    ? `<button type="button" class="hoe-fab" data-action="hoe-toggle" aria-label="Prendre la houe" title="Prendre la houe">${DATA.HOUE.ICONE}</button>`
+    : '';
   morph(
     document.getElementById('sleep-fab'),
-    (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
+    houe + (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
       `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}"${ok ? '' : ' disabled'}>${artHtml(ok ? 'sleep-on' : 'sleep-off', 'sleep-art')}${ok ? '' : pxText(`${remaining}s`, 'sleep-wait light')}</button>`
   );
 }
