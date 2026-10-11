@@ -50,6 +50,12 @@
 >   moins haut. Les cultures qui se plantent d'elles-mêmes (on plante une patate pour en
 >   récolter d'autres ; aussi l'ail, le riz, le houblon…) sont dans l'onglet Graines, à leur
 >   prix habituel, et le choix de culture écrit « Patates en stock » (plus « Plants »).
+>- **Démarrage (FLU-17, FLU-18, FLU-21)** : une seule fenêtre à la fois. Famille → histoire →
+>   carte seule une demi-seconde → bandeau des cookies (s'il faut le demander) → annonce de la
+>   lettre du notaire (seulement si elle n'est pas lue) → bulle d'aide. Le bandeau, l'annonce
+>   et l'aide attendent qu'aucune fenêtre ne soit ouverte (`js/ui/calme.js`). L'heure ne tourne
+>   ni pendant l'histoire ni pendant les bulles « L'eau et le soleil » et « La zone de
+>   culture » ; elle tourne pendant « Dormir », qui attend que « Zzz » s'active.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

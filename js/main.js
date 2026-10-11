@@ -6,7 +6,7 @@ import { GAME_VERSION } from './engine/base.js';
 import { chapterCount, mailbox } from './engine/campaign.js';
 import { alertSnapshot } from './engine/alerts.js';
 import { AUTOSAVE_MS, setState, state } from './ui/store.js';
-import { setTelChapter, showConsentBanner, telView } from './ui/consent.js';
+import {setTelChapter, telView} from './ui/consent.js';
 import { loadOrCreateState, persistState } from './ui/storage.js';
 import { catchUp, frame, onHide, renderLoop, setMailSeen, syncJobs } from './ui/loop.js';
 import { render } from './ui/render.js';
@@ -15,6 +15,7 @@ import { setAlertState } from './ui/toasts.js';
 import * as engine from './engine/index.js';
 import { stageModel } from './ui/stage.js';
 import { stageWindow } from './ui/stage-windows.js';
+import { wantConsentBanner } from './ui/calme.js';
 
 // Chaque écran s'inscrit en se chargeant (ses actions, ses écouteurs) : ils sont tous
 // chargés ici, qu'un autre module les importe ou non.
@@ -78,7 +79,8 @@ render();
 
 // Suivi de session : démarre seulement si le joueur a déjà accepté ; sinon on le lui demande.
 try {
-  if (Telemetry.init({ version: GAME_VERSION }) === 'unknown') showConsentBanner();
+  // FLU-17 : le bandeau attend que l'écran soit calme (histoire refermée, carte seule)
+  if (Telemetry.init({ version: GAME_VERSION }) === 'unknown') wantConsentBanner();
   telView();
 } catch (e) { /* le suivi ne doit jamais empêcher de jouer */ }
 

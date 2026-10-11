@@ -14,6 +14,7 @@ import {
 } from '../engine/format.js';
 import { activeTab, ecranFerme, state } from './store.js';
 import { tel } from './consent.js';
+import { consentBannerPending, consentBannerShown, letterToastShown, uiCalm } from './calme.js';
 import { applyResult } from './game-actions.js';
 import { morph } from './render.js';
 import { stageUsable } from './stage.js';
@@ -225,9 +226,11 @@ const TUTO = {
 let tutoShown = null; // bulle affichée au dernier rendu (pour faire défiler vers sa cible)
 
 // Bulle visible maintenant : « dormir » partout, les autres sur la Ferme.
+// FLU-17 : l'aide attend que l'écran soit calme et que le bandeau des cookies soit parti.
 function visibleTutorial() {
   const step = tutorialStep(state);
   if (!step) return null;
+  if (!uiCalm() || consentBannerShown() || consentBannerPending() || letterToastShown()) return null;
   if (step === 'dormir') return step;
   return activeTab === 'ferme' && !ecranFerme ? step : null;
 }
@@ -249,7 +252,7 @@ export function renderTutorial() {
   const t = TUTO[step];
   const n = DATA.AIDE.ETAPES.indexOf(step) + 1;
   morph(root, `
-    <section class="tuto${step === 'dormir' ? '' : ' up'}" aria-labelledby="tuto-title">
+    <section class="tuto tuto-${step}${step === 'dormir' ? '' : ' up'}" aria-labelledby="tuto-title">
       <h2 id="tuto-title"><span>${t.titre}</span><span class="muted num">${n} / ${DATA.AIDE.ETAPES.length}</span></h2>
       <p>${t.texte()}</p>
       <div class="row">

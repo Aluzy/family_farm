@@ -12,6 +12,8 @@ import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
 import { formatDuration, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
 import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
+import { showConsentBanner } from './consent.js';
+import { consentBannerDue, consentBannerPending, consentBannerShown, storyOpen, tutorialStopsClock, uiCalm } from './calme.js';
 import { actionSleep } from './game-actions.js';
 import {
   lastRenderAt, refresh, render, renderScheduled, setLastRenderAt, setRenderScheduled,
@@ -91,6 +93,9 @@ export function setMailSeen(value) {
 
 function watchMail() {
   const box = mailbox(state);
+  // FLU-18 : une lettre s'annonce quand l'écran est calme (pas sur l'histoire, ni sur le
+  // bandeau des cookies) ; elle n'est annoncée que si elle n'est pas déjà lue
+  if (mailSeen !== null && (!uiCalm() || consentBannerShown() || consentBannerPending())) return;
   // Première fois, ou partie remplacée (nouvelle partie, import) : rien à annoncer.
   if (mailSeen === null || box.length < mailSeen.size) {
     mailSeen = new Set(box.map((l) => l.id));
@@ -175,7 +180,8 @@ export function frame(now) {
   if (elapsed > MAX_FRAME_MS) elapsed = MAX_FRAME_MS;
   accumulatorMs += elapsed;
   let ticked = false;
-  const horlogeArretee = wakeModalOpen() || setupPending(state); // version 1.12 : pas d'heure avant le départ
+  // version 1.12 : pas d'heure avant le départ ; FLU-21 : ni pendant l'histoire ou une bulle d'aide
+  const horlogeArretee = wakeModalOpen() || setupPending(state) || storyOpen() || tutorialStopsClock();
   while (accumulatorMs >= TICK_MS) {
     tick(state, TICK_MS / 1000, horlogeArretee);
     accumulatorMs -= TICK_MS;
@@ -184,6 +190,7 @@ export function frame(now) {
   }
   simulatedAt = wall;
   watchSetup(); // version 1.12 : la configuration de la famille passe avant tout
+  if (consentBannerDue()) showConsentBanner(); // FLU-17 : après l'histoire, la carte seule 500 ms
   watchTechPoints();
   watchRoutine();
   watchDay();
