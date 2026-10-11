@@ -11,7 +11,7 @@ import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js
 import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
-import { formatCoins, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
+import { formatCoins, formatNumber, formatPercent } from '../engine/format.js';
 import {
   activeTab, ecranFerme, FERME_LINKS, hoeMode, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
@@ -362,10 +362,10 @@ export function renderIndicators() {
   const lien = (icone, valeur, titre, lieu) =>
     `<button type="button" class="indicator indicator-btn" data-action="stage-goto" data-window="${lieu.fenetre}" data-tab="${lieu.onglet}"${lieu.ancre ? ` data-anchor="${lieu.ancre}"` : ''} title="${titre}" aria-label="${titre}">${corps(icone, valeur)}</button>`;
   const el = document.getElementById('indicators');
-  // Jour, heure, pièces et énergie sont dans la carte et la jauge flottantes (renderHud).
+  // Jour, heure, pièces et énergie sont dans la carte et la jauge flottantes (renderHud) ;
+  // l'eau, dans la bulle de la citerne (appui long sur la carte).
   morph(el,
     niveauHtml(corps) +
-    lien('💧', formatLitres(state.eauMl), `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +
     lien('🌿', formatPercent(lastAutonomy(state)), `Autonomie de la dernière nuit : ${formatPercent(lastAutonomy(state))}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' })
   );
   fitIndicators(el);
@@ -375,6 +375,7 @@ export function renderIndicators() {
 // Carte flottante en haut à droite (comme dans Stardew Valley) : le jour et l'heure côte à
 // côte, les pièces dessous ; et, en bas à droite, la jauge verticale de l'énergie, qui ouvre
 // la Famille. L'heure avance par tranches de 10 minutes.
+let hudWidth = 0;
 function renderHud() {
   const h = heureDuJour();
   const heure = Math.floor(h);
@@ -384,6 +385,12 @@ function renderHud() {
     `<span class="hud-row"><span class="hud-cell">Jour <span class="num">${state.day}</span></span><span class="hud-cell"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span></span>` +
     `<span class="hud-row hud-money"><span class="hud-cell"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces</span></span></span>`
   );
+  // La puce d'objectif de la carte (.stage-hud) s'arrête à gauche de la carte flottante.
+  const hud = document.getElementById('hud');
+  if (hud.offsetWidth && hud.offsetWidth !== hudWidth) {
+    hudWidth = hud.offsetWidth;
+    document.documentElement.style.setProperty('--hud-w', hudWidth + 'px');
+  }
   const e = energyLevel(state);
   const max = DATA.PERSONNAGE.MAX;
   const pct = Math.max(0, Math.min(100, Math.round((e / max) * 100)));

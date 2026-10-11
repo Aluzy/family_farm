@@ -1296,6 +1296,7 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   touch-action: none; /* le doigt fait glisser la carte, pas la page */
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none; /* appui long (citerne) : pas de menu du système */
 }
 #farm-stage[hidden] { display: none; }
 /* La taille réelle du canvas (× densité de l'écran) est gérée par farm-stage.js. */
@@ -1440,7 +1441,7 @@ body.has-stage { padding-bottom: 0; }
   position: absolute;
   top: 2px;
   left: calc(8px + env(safe-area-inset-left));
-  right: calc(8px + env(safe-area-inset-right));
+  right: calc(16px + var(--hud-w, 170px) + env(safe-area-inset-right)); /* à gauche de la carte flottante (.hud) */
   z-index: 6;
   display: flex;
   pointer-events: none;
@@ -1871,3 +1872,23 @@ body:has(#modal-root > *) .hud-energy-btn { pointer-events: none; }
    assez large pour qu'elle tienne à côté). */
 body:not(.has-stage) main { padding-top: 84px; }
 @media (min-width: 1120px) { body:not(.has-stage) main { padding-top: 16px; } }
+
+/* Bulle de la citerne (appui long sur la carte) : combien de litres elle contient. */
+.stage-tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 3px solid #8a5a34;
+  background: rgba(255, 230, 178, 0.92);
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: #4a2a10;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  will-change: transform;
+}
+.stage-tip[hidden] { display: none; }
