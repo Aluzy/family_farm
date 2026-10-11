@@ -1704,3 +1704,8 @@ main .ancre { scroll-margin-top: 150px; }
 @media (prefers-reduced-motion: reduce) {
   .stage-arrow.bas > span { animation: none; }
 }
+
+/* FLU-08 : onglet Marché verrouillé (avant le panneau et la pompe) */
+.nav-btn.locked { opacity: 0.55; }
+.nav-btn.locked .nav-icon { position: relative; }
+.nav-btn .nav-lock { position: absolute; right: -10px; bottom: -4px; font-size: 0.8rem; }

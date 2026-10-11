@@ -28,6 +28,9 @@
 > - **Carte (FLU-07)** : tant que le joueur n'a pas fait glisser la carte, un chevron ⌄ en bas
 >   annonce qu'elle continue vers le bas (comme les flèches ‹ › des côtés) ; le toucher la
 >   fait descendre d'une demi-hauteur. Immobile avec « réduire les animations ».
+> - **Barre du bas (FLU-08)** : le Marché y est dès le départ, grisé avec un cadenas tant que
+>   le panneau et la pompe ne sont pas installés (une touche le dit) : les 5 onglets ne
+>   bougent plus.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

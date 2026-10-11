@@ -16,6 +16,8 @@ import {
   activeTab, ecranFerme, FERME_LINKS, hoeMode, NAV_TABS, setActiveTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
+import { showToast } from './toasts.js';
+import { MARKET_CLOSED } from '../engine/market.js';
 import { actionSleep } from './game-actions.js';
 import { artHtml, pxText } from './pixel-art.js';
 import { renderVille } from './ville.js';
@@ -390,8 +392,12 @@ export function renderTabbar() {
   morph(
     document.getElementById('bottom-nav'),
     NAV_TABS.map((id) => TABS.find((t) => t.id === id))
-      .filter((t) => tabAvailable(t.id))
+      // FLU-08 : le Marché est là dès le départ (verrouillé) : les onglets ne bougent jamais
+      .filter((t) => tabAvailable(t.id) || t.id === 'comptoir')
       .map((t) => {
+        if (!tabAvailable(t.id)) {
+          return `<button type="button" class="nav-btn locked" data-action="market-locked" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
+        }
         const badge = t.id === 'notifications' && alerts > 0 ? `<span class="nav-badge" aria-hidden="true">${alerts}</span>` : '';
         const label = t.id === 'notifications' && alerts > 0 ? `${t.label} (${alerts} alerte${alerts > 1 ? 's' : ''})` : t.label;
         return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
@@ -468,6 +474,9 @@ registerActions({
     maisonTabChoisi = maisonTab;
     renderStageWindow();
     refresh();
+  },
+  'market-locked': () => {
+    showToast(`🔒 ${MARKET_CLOSED}`);
   },
   'stage-goto': (target) => {
     allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
