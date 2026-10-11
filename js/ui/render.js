@@ -126,6 +126,8 @@ function patchChildren(from, to) {
 
 function patchAttributes(o, w) {
   for (const a of Array.from(o.attributes)) {
+    // un bloc <details> ouvert par le joueur le reste d'un rendu à l'autre
+    if (a.name === 'open' && o.tagName === 'DETAILS') continue;
     if (!w.hasAttribute(a.name)) o.removeAttribute(a.name);
   }
   for (const a of Array.from(w.attributes)) {

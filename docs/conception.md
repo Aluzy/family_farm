@@ -76,6 +76,11 @@
 >- **Énergie en mots (FLU-23)** : « ⚡ 100 · arroser : 1 », « ⚡ labourer : 4 ». Un coût
 >   d'énergie s'affiche arrondi à l'entier supérieur, un gain à l'entier inférieur ; le calcul
 >   garde ses millièmes.
+>- **Fiche Famille allégée (FLU-24)** : une ligne par membre (portrait, nom, calories,
+>   bonheur, ⭐ Principal, ✏️), puis l'énergie avec « Bonheur de la famille : tes actions
+>   coûtent 30 % d'énergie en moins », puis le repas. Graphique d'autonomie, formules,
+>   coûts de chaque action et endurance sont dans « En savoir plus », fermé par défaut.
+>   Un bloc « En savoir plus » ouvert le reste aux rendus suivants.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

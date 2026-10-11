@@ -753,6 +753,16 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
   .portraits { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
+.member-rows { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.member-row { flex-direction: row; align-items: center; gap: 10px; padding: 8px 10px; }
+.member-row .portrait-emoji { font-size: 1.9rem; flex: none; }
+.member-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.member-row-text .chip { align-self: flex-start; }
+.member-row-joy { display: flex; align-items: center; gap: 6px; }
+.member-row-joy .pxgauge { width: 96px; flex: none; }
+.member-row-joy .num { white-space: nowrap; }
+.member-row-btns { display: flex; flex-direction: column; gap: 4px; flex: none; align-items: flex-end; }
+.member-row-btns .btn { min-width: 44px; padding: 0 10px; }
 .portrait { align-items: flex-start; }
 .portrait .btn { width: 100%; padding: 0 8px; font-size: 0.92rem; }
 .portrait-emoji { font-size: 2.2rem; line-height: 1.1; }
@@ -1209,6 +1219,10 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   border-radius: var(--radius);
   animation: tuto-pulse 1.6s ease-in-out infinite;
 }
+
+.more { margin-top: 12px; }
+.more > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+.more[open] > summary { margin-bottom: 8px; }
 
 .tuto-ring {
   outline: 3px solid var(--accent);
