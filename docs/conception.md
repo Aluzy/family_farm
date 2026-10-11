@@ -73,6 +73,9 @@
 >   Récolter), sinon la puce d'objectif, sinon l'onglet Ferme. Il avance tout seul quand
 >   l'objectif est atteint ; houe en main, ce sont les cases vertes. « Passer l'aide » reste.
 >- **Écran Famille (FLU-22)** : le bouton du personnage principal s'écrit « ⭐ Principal ».
+>- **Énergie en mots (FLU-23)** : « ⚡ 100 · arroser : 1 », « ⚡ labourer : 4 ». Un coût
+>   d'énergie s'affiche arrondi à l'entier supérieur, un gain à l'entier inférieur ; le calcul
+>   garde ses millièmes.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

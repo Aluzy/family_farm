@@ -44,7 +44,7 @@ export function hoePanelHtml() {
     <div class="hoe-bar">
       <button type="button" class="btn${hoeMode ? ' primary' : ''}" data-action="hoe-toggle" aria-pressed="${hoeMode}">${H.ICONE} ${hoeMode ? 'Ranger la houe' : 'Prendre la houe'}</button>
       ${soilLine()}
-      <span class="chip" title="Labourer une case d'herbe">⚡ −${formatEnergy(actionCost(state, 'labourer'))}</span>
+      <span class="chip" title="Énergie pour labourer une case d'herbe">⚡ labourer : ${formatEnergy(actionCost(state, 'labourer'))}</span>
     </div>`;
   return `${bar}
     <p class="muted">${hoeMode ? 'La houe est en main : sur la carte, touche' : 'Avec la houe en main, touche sur la carte'} n'importe quelle tuile d'herbe pour la labourer, une terre vide pour la reboucher (gratuit). Pas sur les chemins, l'eau, les pierres, les arbres, ni aux abords du Poulailler, de l'Étable, du Moulin, de la Serre et du Verger.</p>`;

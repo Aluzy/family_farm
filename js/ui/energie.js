@@ -1,4 +1,5 @@
 import { DATA } from '../engine/catalog.js';
+import { formatNumber } from '../engine/format.js';
 import {
   actionCost, actionsLeft, energyLevel, enduranceReduction, happinessCostPct, snackEnergy,
 } from '../engine/stamina.js';
@@ -13,9 +14,14 @@ import { registerActions } from './actions.js';
 /* ---------- version 1.8 : l'énergie du personnage ---------- */
 
 // Énergie en points, avec une décimale quand il le faut (« 1,5 »).
+// FLU-23 : un coût s'affiche arrondi à l'entier supérieur (le calcul garde ses millièmes) ;
+// un gain, à l'entier inférieur. Jamais de décimale.
 export function formatEnergy(milli) {
-  const n = Math.round(milli / 100) / 10;
-  return n.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+  return formatNumber(Math.ceil(Math.round(milli) / 1000));
+}
+
+export function formatEnergyGain(milli) {
+  return formatNumber(Math.floor(Math.round(milli) / 1000));
 }
 
 // Puce d'énergie des écrans d'action : énergie restante, et ce que coûte l'action
@@ -27,7 +33,8 @@ export function energyChip(action) {
   const title = cost > 0
     ? `Énergie : ${e} / ${DATA.PERSONNAGE.MAX}. Cette action en coûte ${formatEnergy(cost)}.`
     : `Énergie : ${e} / ${DATA.PERSONNAGE.MAX}.`;
-  return `<span class="chip${low ? ' warn' : ''}" title="${title}">⚡ ${e}${cost > 0 ? ` · −${formatEnergy(cost)}` : ''}</span>`;
+  // FLU-23 : « ⚡ 100 · arroser : 1 », en mots
+  return `<span class="chip${low ? ' warn' : ''}" title="${title}">⚡ ${e}${cost > 0 ? ` · ${ACTION_LABELS[action] || action} : ${formatEnergy(cost)}` : ''}</span>`;
 }
 
 // Carte « Énergie » (Famille) : jauge, ce qui la remplit, bonheur et endurance.
@@ -62,7 +69,7 @@ export function eatButton(item) {
   const def = DATA.items[item];
   if (!def || !def.edible) return '';
   const gain = snackEnergy(state, item);
-  return `<button type="button" class="btn" data-action="eat" data-item="${item}" title="Manger : +${formatEnergy(gain)} énergie">🍴 +${formatEnergy(gain)} ⚡</button>`;
+  return `<button type="button" class="btn" data-action="eat" data-item="${item}" title="Manger : +${formatEnergyGain(gain)} énergie">🍴 +${formatEnergyGain(gain)} ⚡</button>`;
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
@@ -70,6 +77,6 @@ export function eatButton(item) {
 registerActions({
   'eat': (target) => {
     const r = applyResult(eatSnack(state, target.dataset.item));
-    if (r && r.ok) showToast(`⚡ +${formatEnergy(r.gain)} énergie`);
+    if (r && r.ok) showToast(`⚡ +${formatEnergyGain(r.gain)} énergie`);
   },
 });
