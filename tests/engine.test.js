@@ -13,7 +13,7 @@ import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
   autonomyHistory, autonomyPercent, autoTasks, availableEnergy, awakeMsAtHour, awakeRequired,
-  batteryCapacity, bedtimeDue, boltingPlan, boltSeedYield, botBuy, botDay, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill,
+  batteryCapacity, bedtimeDue, botBuy, botDay, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill,
   botRaiseFunds, botRecipeValue, botSell, botSheep, botStepInfo, botWheatKept, buildCatalog, buildFridge,
   buildMorningReport, buildPaturage, buildPoulailler, buildSerre, buildSilo, buildStation, buildVerger,
   buyAnimal, buyAnimals, buyCow, buyItem, buyOrchardSlot, buyPasture, buyPrice, buyQuote,
@@ -52,7 +52,7 @@ import {
   testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
   testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
   testRipenAll, testSetBuildingLevel5, testSetWear, testSleepNights, testUnlockAllTechs,
-  testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockLevel, unreadMail,
+  testWearMill, testWoolReady, tick, toggleDevice, tutorialStep, unlockLevel, unreadMail,
   updateChapters, upgradeCost, upgradeDevice, upgradePoulailler, upgradeSerre,
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
@@ -832,9 +832,8 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].stades), [4, 6, 5, 5, 6]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].litres), [2, 3, 3, 4, 4]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].rendement), [10, 8, 10, 6, 6]);
-  assertEqual(c.carotte.graines, { item: 'graine_carotte', mode: 'montee', stadesSupp: 2, quantite: 6 });
   assertEqual(c.patate.graines.mode, 'plant');
-  for (const k of ['tomate', 'courgette', 'aubergine']) {
+  for (const k of ['carotte', 'tomate', 'courgette', 'aubergine']) {
     assertEqual([c[k].graines.mode, c[k].graines.min, c[k].graines.max], ['recolte', 1, 2]);
   }
   // Version 1.0 : une seule Zone de culture (lieu 'potager'). Blé et tournesol y
@@ -888,7 +887,7 @@ test('état initial Lot 2 : inventaire, potager de 6 parcelles, famille de 4 à 
   assertEqual(s.pieces, 350);
   assertEqual([s.potager.parcelles.map((p) => p.case), s.potager.houe, 'niveau' in s.potager], [[0, 1, 2, 5, 6, 7].map((c) => zoneTile(1, c)), false, false], 'version 1.9 : 6 cases en terre, pas encore de houe');
   assertEqual(s.potager.parcelles.length, 6);
-  assertEqual(s.potager.parcelles.every((p) => p.culture === null && p.stade === 0 && !p.arrose && !p.montee), true);
+  assertEqual(s.potager.parcelles.every((p) => p.culture === null && p.stade === 0 && !p.arrose), true);
   assertEqual(s.famille.membres.length, 4);
   assertEqual(s.famille.membres.filter((m) => m.enfant).length, 2);
   assertEqual(s.famille.membres.every((m) => !('sante' in m) && !('malade' in m)), true, 'version 1.8 : plus de santé');
@@ -917,7 +916,7 @@ test('planter : consomme une graine, refus sans graine, sur parcelle occupée ou
   assertEqual(plant(s, 'potager-1', 'carotte').ok, true);
   assertEqual(countItem(s, 'graine_carotte'), 9);
   const p = findPlot(s, 'potager-1');
-  assertEqual([p.culture, p.stade, p.arrose, p.montee], ['carotte', 0, false, false]);
+  assertEqual([p.culture, p.stade, p.arrose], ['carotte', 0, false]);
   assertEqual(plant(s, 'potager-1', 'tomate').ok, false, 'parcelle occupée');
   assertEqual(countItem(s, 'graine_tomate'), 4);
   assertEqual(plant(s, 'potager-2', 'courgette').ok, false, 'pas de graines de courgette');
@@ -1029,65 +1028,12 @@ testBase('récolte : la parcelle est libérée, refus si pas mûre ou vide', () 
   const r = harvest(s, 'potager-1');
   assertEqual(r.ok, true);
   assertEqual(countItem(s, 'patate'), 13, '5 restantes + 8 récoltées, aucune graine en plus');
-  assertEqual([p.culture, p.stade, p.arrose, p.montee], [null, 0, false, false]);
+  assertEqual([p.culture, p.stade, p.arrose], [null, 0, false]);
   assertEqual(harvest(s, 'potager-1').ok, false, 'parcelle vide');
   assertEqual(plant(s, 'potager-1', 'carotte').ok, true, 'on peut replanter');
 });
 
-test('montée en graine : carotte seulement, mûre seulement, 2 stades de plus', () => {
-  const s = garden();
-  plant(s, 'potager-1', 'carotte');
-  assertEqual(toggleBolting(s, 'potager-1').ok, false, 'pas encore mûre');
-  const p = findPlot(s, 'potager-1');
-  p.stade = 4;
-  assertEqual(toggleBolting(s, 'potager-1').ok, true);
-  assertEqual(p.montee, true);
-  assertEqual(maxStage(p), 6);
-  assertEqual(isMature(p), false, 'elle doit rester 2 stades de plus');
-  assertEqual(harvest(s, 'potager-1').ok, false);
-  for (let i = 0; i < 2; i++) {
-    assertEqual(water(s, 'potager-1').ok, true);
-    growAll(s);
-  }
-  assertEqual(p.stade, 6);
-  assertEqual(isMature(p), true);
-  water(s, 'potager-1');
-  growAll(s);
-  assertEqual(p.stade, 6, 'pas au-delà du dernier stade');
-  // autres cultures et parcelle vide : refusé
-  plantRipe(s, 'potager-2', 'patate');
-  assertEqual(toggleBolting(s, 'potager-2').ok, false);
-  assertEqual(toggleBolting(s, 'potager-3').ok, false);
-  // rebasculer annule : la carotte est de nouveau mûre au stade 4
-  const q = plantRipe(s, 'potager-4', 'carotte');
-  toggleBolting(s, 'potager-4');
-  assertEqual(isMature(q), false);
-  toggleBolting(s, 'potager-4');
-  assertEqual([q.montee, isMature(q)], [false, true]);
-});
-
-test('graines rendues : montée en graine = 6 graines et aucune carotte', () => {
-  const s = garden();
-  plantRipe(s, 'potager-1', 'carotte');
-  toggleBolting(s, 'potager-1');
-  findPlot(s, 'potager-1').stade = 6;
-  const r = harvest(s, 'potager-1');
-  assertEqual(r.items, { graine_carotte: 6 });
-  assertEqual(countItem(s, 'graine_carotte'), 15, '10 − 1 plantée + 6');
-  assertEqual(countItem(s, 'carotte'), 0);
-  // la santé ne réduit pas les graines
-  plantRipe(s, 'potager-2', 'carotte');
-  toggleBolting(s, 'potager-2');
-  findPlot(s, 'potager-2').stade = 6;
-  assertEqual(harvest(s, 'potager-2').items, { graine_carotte: 6 });
-  // récolte normale de carotte : aucune graine
-  plantRipe(s, 'potager-3', 'carotte');
-  const before = countItem(s, 'graine_carotte');
-  harvest(s, 'potager-3');
-  assertEqual(countItem(s, 'graine_carotte'), before);
-});
-
-testBase('graines rendues : tomate, courgette et aubergine rendent 1 à 2 graines, reproductibles', () => {
+testBase('graines rendues : carotte, tomate, courgette et aubergine rendent 1 à 2 graines, reproductibles', () => {
   function run(seed, culture) {
     const s = tireless(createInitialState(seed));
     const gains = [];
@@ -1104,7 +1050,7 @@ testBase('graines rendues : tomate, courgette et aubergine rendent 1 à 2 graine
     }
     return gains;
   }
-  for (const culture of ['tomate', 'courgette', 'aubergine']) {
+  for (const culture of ['carotte', 'tomate', 'courgette', 'aubergine']) {
     const a = run(7, culture);
     assert(a.every((g) => g === 1 || g === 2), `${culture} : 1 ou 2 graines, obtenu ${a}`);
     assert(a.includes(1) && a.includes(2), `${culture} : les deux valeurs sortent`);
@@ -1360,7 +1306,7 @@ test('Dormir : repas, énergie, pousse et rapport de réveil', () => {
   assertEqual(r.couverture, 100);
   assertEqual(r.mange, { patate: 6, conserve: 2 });
   assertEqual(r.energieReveil, 100000, 'repas complet : l\'énergie remonte à 100');
-  assertEqual(r.pretes, [{ culture: 'carotte', nombre: 1, montee: false }]);
+  assertEqual(r.pretes, [{ culture: 'carotte', nombre: 1 }]);
   // une nuit sans rien à manger : l'énergie ne remonte qu'à 60, et l'écran de réveil le dit
   const t = garden();
   setInv(t, {});
@@ -1406,9 +1352,8 @@ test('mode test Lot 2 : graines, maturité, énergie à 0 puis pleine', () => {
   plant(s, 'potager-1', 'carotte');
   plant(s, 'potager-2', 'aubergine');
   plantRipe(s, 'potager-3', 'carotte');
-  toggleBolting(s, 'potager-3');
   testRipenAll(s);
-  assertEqual(readyCrops(s).map((c) => [c.culture, c.nombre, c.montee]), [['carotte', 1, false], ['aubergine', 1, false], ['carotte', 1, true]]);
+  assertEqual(readyCrops(s).map((c) => [c.culture, c.nombre]), [['carotte', 2], ['aubergine', 1]]);
   assertEqual(s.potager.parcelles.filter((p) => !p.culture).every((p) => p.stade === 0), true);
   testSetEnergyZero(s);
   assertEqual(s.energie, 0);
@@ -3099,15 +3044,14 @@ test('arbre v2 : effets sur les cultures et l\'élevage', () => {
   const e1 = o.energie;
   assert(waterAll(o, 'potager').ok);
   assertEqual(e1 - o.energie, 2 * actionCost(o, 'arroser') - Math.floor((2 * actionCost(o, 'arroser') * 25) / 100), 'Outils de jardin : −25 %');
-  // Sélection des semences : +1 graine, carotte montée en graine 8 au lieu de 6
+  // Sélection des semences : +1 graine (carotte : 2 à 3 au lieu de 1 à 2)
   const m = garden();
   grantTech(m, 'cu_semences');
   plantRipe(m, 'potager-1', 'carotte');
-  toggleBolting(m, 'potager-1');
-  testRipenAll(m);
   const avant = countItem(m, 'graine_carotte');
-  assertEqual(harvest(m, 'potager-1').items.graine_carotte, 8);
-  assertEqual(countItem(m, 'graine_carotte') - avant, 8);
+  const gagnees = harvest(m, 'potager-1').items.graine_carotte;
+  assert(gagnees === 2 || gagnees === 3, `2 ou 3 graines, obtenu ${gagnees}`);
+  assertEqual(countItem(m, 'graine_carotte') - avant, gagnees);
   // Ration équilibrée : 2 blé pour 5 poules
   const r = ranch();
   grantTech(r, 'el_ration');
@@ -4414,31 +4358,21 @@ test('arrosage automatique : une parcelle déjà arrosée à la main n\'est pas 
   const rap = autoTasks(s);
   assertEqual(rap.arrosees, 1);
   assertEqual(s.eauMl, eau - ml(2));
-  const t = auto5('potager');
-  plantRipe(t, 'potager-1', 'carotte');
-  t.potager.parcelles[0].montee = true; // maturité repoussée de 2 stades : elle a soif
-  assertEqual(autoTasks(t).arrosees, 1);
 });
 
-testBase('récolte automatique : parcelles mûres seulement, celles montées en graine comprises (graines à la clé)', () => {
+testBase('récolte automatique : parcelles mûres seulement, carottes et graines à la clé', () => {
   const s = auto5('potager');
   plantRipe(s, 'potager-1', 'carotte');
-  plantRipe(s, 'potager-2', 'carotte');
-  findPlot(s, 'potager-2').montee = true; // 6 stades demandés : à 4 sur 6, pas encore mûre en graine
   plant(s, 'potager-3', 'carotte');
   findPlot(s, 'potager-3').stade = 2;
-  plantRipe(s, 'potager-4', 'carotte');
-  findPlot(s, 'potager-4').montee = true;
-  findPlot(s, 'potager-4').stade = 6; // montée et mûre : récoltée aussi
   const graines = countItem(s, 'graine_carotte');
   const r = sleepOnce(s);
   assertEqual(findPlot(s, 'potager-1').culture, null, 'mûre : récoltée, parcelle libérée');
   assertEqual(countItem(s, 'carotte'), 10);
-  assertEqual([r.auto.recoltes.carotte, r.auto.recoltes.graine_carotte], [10, 6]);
-  assertEqual(findPlot(s, 'potager-4').culture, null, 'montée en graine et mûre : récoltée, 6 graines');
-  assertEqual(countItem(s, 'graine_carotte'), graines + 6);
-  assertEqual(findPlot(s, 'potager-2').culture, 'carotte', 'montée en graine mais pas encore mûre : elle continue de pousser');
-  assertEqual(findPlot(s, 'potager-2').stade, 5);
+  assertEqual(r.auto.recoltes.carotte, 10);
+  const g = r.auto.recoltes.graine_carotte;
+  assert(g === 1 || g === 2, `1 ou 2 graines, obtenu ${g}`);
+  assertEqual(countItem(s, 'graine_carotte'), graines + g);
   assertEqual(findPlot(s, 'potager-3').stade, 3, 'pas mûre : arrosée, elle pousse');
   const t = auto5();
   plantRipe(t, 'potager-1', 'carotte');
@@ -4452,7 +4386,7 @@ test('automatisations : elles couvrent toute la Zone de culture, plein champ com
   assertEqual([N.ea_irrigation.effet.auto, N.cu_recolte_auto.effet.auto, N.semis_auto.effet.auto],
     [{ arrosage: ['potager'] }, { recolte: ['potager'] }, { semis: ['potager'] }]);
   assertEqual(Object.keys(AUTO_TACHES), ['potager', 'serre', 'poulailler', 'paturage', 'verger']);
-  assertEqual(newAutoReport(), { potager: false, serre: false, poulailler: false, arrosees: 0, sansEau: 0, recoltes: {}, semees: 0, sansGraine: 0, nourries: 0, sansBle: 0, tondus: 0, montees: 0, attendent: 0 });
+  assertEqual(newAutoReport(), { potager: false, serre: false, poulailler: false, arrosees: 0, sansEau: 0, recoltes: {}, semees: 0, sansGraine: 0, nourries: 0, sansBle: 0, tondus: 0 });
   const s = auto5('potager');
   testAddWheat(s, 10);
   addItem(s, 'graine_carotte', 1);
@@ -4579,7 +4513,7 @@ testBase('semis automatique : replante la même culture, arrosée dans la foulé
   assertEqual(countItem(s, 'patate'), 8 - 1, 'la famille a mangé les 5 patates du stock, le semis en prend 1');
   const p2 = findPlot(s, 'potager-2');
   assertEqual([p2.culture, p2.stade], ['carotte', 1], 'une graine de carotte de l\'inventaire');
-  assertEqual(countItem(s, 'graine_carotte'), 10 - 1 - 1, 'une pour la plantation à la main, une pour le semis');
+  assertEqual(countItem(s, 'graine_carotte'), 10 - 1 + r.auto.recoltes.graine_carotte - 1, 'une pour la plantation à la main, celles de la récolte, une pour le semis');
   assertEqual(r.auto.semees, 2);
 });
 
@@ -4609,127 +4543,21 @@ test('semis automatique : sans graine, la parcelle reste vide et le rapport le d
   setSemis(s, 'potager-1', 'verrou', 'carotte'); // des carottes à semer, mais aucune graine de carotte
   const r = autoTasks(s);
   assertEqual(findPlot(s, 'potager-1').culture, null, 'pas de graine de carotte : rien à semer');
-  assertEqual([r.semees, r.sansGraine, r.montees], [0, 1, 0], 'aucune carotte en terre : rien à faire monter en graine');
+  assertEqual([r.semees, r.sansGraine], [0, 1]);
 });
 
-/* ---------- Montée en graine automatique ---------- */
-
-// `n` parcelles de carottes mûres (potager-1 à potager-n) et exactement `graines` graines de carotte en stock.
-function ripeCarrots(s, n, graines) {
-  addItem(s, 'graine_carotte', n); // de quoi planter les n parcelles
-  for (let i = 1; i <= n; i++) plantRipe(s, `potager-${i}`, 'carotte');
-  const reste = countItem(s, 'graine_carotte');
-  if (reste > 0) takeItem(s, 'graine_carotte', reste);
-  if (graines > 0) addItem(s, 'graine_carotte', graines);
-}
-
-function autoSeeding() {
+testBase('semis automatique : sans graine en stock, les carottes récoltées rendent leurs graines et se replantent', () => {
   const s = auto5('potager');
   grantTech(s, 'semis_auto');
-  return s;
-}
-
-const carrotPlots = (s, n) => Array.from({ length: n }, (_, i) => findPlot(s, `potager-${i + 1}`));
-
-testBase('montée en graine automatique : sans graine, la carotte mûre monte en graine au lieu de vider la parcelle', () => {
-  const s = autoSeeding();
-  ripeCarrots(s, 1, 0);
+  addItem(s, 'graine_carotte', 3);
+  for (let i = 1; i <= 3; i++) plantRipe(s, `potager-${i}`, 'carotte');
+  const reste = countItem(s, 'graine_carotte');
+  if (reste > 0) takeItem(s, 'graine_carotte', reste);
   const r = autoTasks(s);
-  const p = findPlot(s, 'potager-1');
-  assertEqual([p.culture, p.montee, isMature(p)], ['carotte', true, false], 'elle reste 2 stades de plus, arrosée au passage');
-  assertEqual(countItem(s, 'carotte'), 0, 'rien n\'est récolté : elle rendra des graines');
-  assertEqual([r.montees, r.semees, r.sansGraine, r.attendent], [1, 0, 0, 0]);
-});
-
-testBase('montée en graine automatique : 6 parcelles, aucune graine : une carotte monte, les 5 autres attendent, puis tout est replanté', () => {
-  const s = autoSeeding();
-  ripeCarrots(s, 6, 0);
-  assertEqual(boltingPlan(s, 'carotte'), { culture: 'carotte', graines: 6, besoin: 6, disponible: 0, attendu: 0, aMonter: 1, parcelles: ['potager-1'] });
-  const nuit1 = autoTasks(s);
-  const plots = carrotPlots(s, 6);
-  assertEqual(plots.map((p) => p.montee), [true, false, false, false, false, false]);
-  assertEqual(plots.slice(1).every((p) => p.culture === 'carotte' && isMature(p)), true, 'sans graine pour les replanter, elles attendent mûres');
-  assertEqual([countItem(s, 'carotte'), nuit1.montees, nuit1.attendent, nuit1.sansGraine], [0, 1, 5, 0], 'aucune parcelle vidée');
-  // une nuit plus tard, la parcelle montée est mûre : ses 6 graines replantent les 6 parcelles
-  plots[0].stade = maxStage(plots[0]);
-  const nuit2 = autoTasks(s);
-  assertEqual(plots.every((p) => p.culture === 'carotte' && !p.montee && p.stade <= 1), true, 'les 6 parcelles sont replantées');
-  assertEqual(countItem(s, 'graine_carotte'), 0, '6 graines rendues, 6 semées');
-  assertEqual([countItem(s, 'carotte'), nuit2.semees, nuit2.attendent, nuit2.sansGraine, nuit2.montees], [50, 6, 0, 0, 0]);
-});
-
-testBase('montée en graine automatique : le stock couvre déjà les parcelles, rien ne monte en graine', () => {
-  const s = autoSeeding();
-  ripeCarrots(s, 6, 6);
-  assertEqual(boltingPlan(s, 'carotte').aMonter, 0);
-  const r = autoTasks(s);
-  assertEqual(carrotPlots(s, 6).some((p) => p.montee), false);
-  assertEqual([countItem(s, 'carotte'), countItem(s, 'graine_carotte'), r.semees, r.montees, r.attendent], [60, 0, 6, 0, 0]);
-});
-
-testBase('montée en graine automatique : stock partiel, juste ce qu\'il faut monte en graine, le reste attend', () => {
-  const s = autoSeeding();
-  ripeCarrots(s, 6, 3); // il manque 3 graines : 1 parcelle montée en rend 6
-  assertEqual(boltingPlan(s, 'carotte').aMonter, 1);
-  const r = autoTasks(s);
-  const plots = carrotPlots(s, 6);
-  assertEqual(plots.map((p) => p.montee), [true, false, false, false, false, false]);
-  assertEqual([countItem(s, 'carotte'), countItem(s, 'graine_carotte'), r.semees, r.attendent], [30, 0, 3, 2], '3 récoltées et replantées avec les 3 graines, 2 attendent');
-  assertEqual(plots.slice(1, 4).every((p) => p.stade <= 1), true);
-  assertEqual(plots.slice(4).every((p) => isMature(p)), true);
-});
-
-testBase('montée en graine automatique : les graines d\'une parcelle déjà en montée comptent, sans nouvelle montée', () => {
-  const s = autoSeeding();
-  ripeCarrots(s, 6, 0);
-  const p1 = findPlot(s, 'potager-1');
-  p1.montee = true; // déjà en route : 6 graines attendues pour 6 parcelles
-  assertEqual(boltingPlan(s, 'carotte'), { culture: 'carotte', graines: 6, besoin: 6, disponible: 0, attendu: 6, aMonter: 0, parcelles: [] });
-  const r = autoTasks(s);
-  assertEqual([r.montees, r.attendent], [0, 5]);
-  assertEqual(carrotPlots(s, 6).filter((p) => p.montee).length, 1);
-});
-
-testBase('montée en graine automatique : la réserve de semences n\'est pas comptée, et le bonus de graines oui', () => {
-  const s = autoSeeding();
-  ripeCarrots(s, 6, 6);
-  setSeedReserve(s, 'graine_carotte', 2); // 6 − 2 = 4 graines disponibles pour 6 parcelles
-  assertEqual(boltingPlan(s, 'carotte').aMonter, 1);
-  assertEqual(boltSeedYield(s, 'carotte'), 6);
-  grantTech(s, 'cu_semences');
-  assertEqual(boltSeedYield(s, 'carotte'), 8, 'Sélection des semences : 8 graines par carotte montée');
-  assertEqual(boltingPlan(s, 'carotte').graines, 8);
-});
-
-testBase('montée en graine automatique : plusieurs parcelles montent quand le manque dépasse une montée', () => {
-  const s = autoSeeding();
-  ripeCarrots(s, 14, 0); // 14 graines manquent : ⌈14 / 6⌉ = 3 parcelles
-  assertEqual(boltingPlan(s, 'carotte').aMonter, 3);
-  const r = autoTasks(s);
-  assertEqual([r.montees, r.attendent], [3, 11]);
-  assertEqual(carrotPlots(s, 14).filter((p) => p.montee).length, 3);
-});
-
-testBase('montée en graine automatique : seules comptent les parcelles que le semis automatique replante en carottes', () => {
-  const s = autoSeeding();
-  ripeCarrots(s, 6, 0);
-  for (const id of ['potager-4', 'potager-5', 'potager-6']) setSemis(s, id, 'off');
-  assertEqual(boltingPlan(s, 'carotte').besoin, 3, 'les parcelles désactivées ne sont pas à replanter');
-  const r = autoTasks(s);
-  assertEqual(carrotPlots(s, 6).map((p) => p.montee), [true, false, false, false, false, false]);
-  assertEqual([findPlot(s, 'potager-4').culture, findPlot(s, 'potager-5').culture, findPlot(s, 'potager-6').culture], [null, null, null], 'désactivées : récoltées, laissées vides, jamais montées');
-  assertEqual([countItem(s, 'carotte'), r.montees, r.attendent], [30, 1, 2]);
-});
-
-testBase('montée en graine automatique : sans récolte ni semis automatiques, rien ne change', () => {
-  const s = auto5('potager'); // récolte et arrosage automatiques, mais pas le semis
-  ripeCarrots(s, 6, 0);
-  assertEqual(boltingPlan(s, 'carotte').aMonter, 0);
-  const r = autoTasks(s);
-  assertEqual([countItem(s, 'carotte'), r.montees, r.attendent], [60, 0, 0], 'toutes récoltées normalement');
-  const t = createInitialState(1); // aucune automatisation
-  assertEqual(boltingPlan(t, 'carotte').aMonter, 0);
-  assertEqual(boltingPlan(t, 'patate'), null, 'la patate rend ses graines à la récolte');
+  const plots = ['potager-1', 'potager-2', 'potager-3'].map((id) => findPlot(s, id));
+  assertEqual(plots.every((p) => p.culture === 'carotte' && p.stade === 0), true, 'chaque récolte rend au moins une graine : tout est replanté');
+  assertEqual([countItem(s, 'carotte'), r.semees, r.sansGraine], [30, 3, 0]);
+  assertEqual(countItem(s, 'graine_carotte'), r.recoltes.graine_carotte - 3);
 });
 
 test('semis automatique : option par parcelle (désactiver, verrouiller une culture)', () => {
@@ -4969,7 +4797,7 @@ test('migration v7 (Lot 6) → v8 : technologies vides, réglage de semis sur ch
     delete p.verrou;
   }
   delete v7.nuit.auto;
-  v7.champ = { construit: true, niveau: 1, parcelles: [{ id: 'champ-1', lieu: 'champ', culture: 'ble', stade: 3, arrose: true, montee: false }] };
+  v7.champ = { construit: true, niveau: 1, parcelles: [{ id: 'champ-1', lieu: 'champ', culture: 'ble', stade: 3, arrose: true }] };
   const m = migrate({ v: 7, t: 0, s: v7 });
   assertEqual(m.version, STATE_VERSION);
   assertEqual([m.day, m.pieces], [40, 900]);
@@ -4978,7 +4806,7 @@ test('migration v7 (Lot 6) → v8 : technologies vides, réglage de semis sur ch
   // v15 : la parcelle de l'ancien Champ a rejoint la zone (6 + 1 = 7 parcelles : niveau 2, 12 parcelles)
   assertEqual('champ' in m, false);
   assertEqual([m.potager.parcelles.length, 'niveau' in m.potager], [12, false]);
-  assertEqual(m.potager.parcelles[6], { id: 'potager-7', lieu: 'potager', culture: 'ble', stade: 3, arrose: true, montee: false, semis: 'meme', verrou: null, case: zoneTile(1, 6) });
+  assertEqual(m.potager.parcelles[6], { id: 'potager-7', lieu: 'potager', culture: 'ble', stade: 3, arrose: true, semis: 'meme', verrou: null, case: zoneTile(1, 6) });
   assertEqual(m.nuit.auto, newAutoReport());
   tick(m, 0.2);
   assertEqual(m.unlockedTabs.includes('techno'), true, '900 pièces');
@@ -5113,7 +4941,7 @@ test('migration v13 → v14 : PT des chapitres faits, automatisations et recette
 // à construire). `potager` et `champ` : niveaux d'alors (champ 0 : pas construit).
 function v14State({ potager = 1, champ = 0 } = {}, mutate) {
   const anciennes = { potager: [6, 9, 12, 16, 20], champ: [4, 6, 9, 12, 16] };
-  const plots = (n, lieu) => Array.from({ length: n }, (_, i) => ({ id: `${lieu}-${i + 1}`, lieu, culture: null, stade: 0, arrose: false, montee: false, semis: 'meme', verrou: null }));
+  const plots = (n, lieu) => Array.from({ length: n }, (_, i) => ({ id: `${lieu}-${i + 1}`, lieu, culture: null, stade: 0, arrose: false, semis: 'meme', verrou: null }));
   const s = createInitialState(6);
   s.potager = { niveau: potager, parcelles: plots(anciennes.potager[potager - 1], 'potager') };
   s.champ = champ > 0
@@ -5160,7 +4988,7 @@ test('migration v14 → v15 : Champ non construit, le Potager devient la Zone de
 
 test('migration v14 → v15 : Champ construit avec des cultures, tout est regroupé dans la zone', () => {
   const v14 = v14State({ potager: 2, champ: 2 }, (s) => {
-    Object.assign(s.potager.parcelles[0], { culture: 'carotte', stade: 4, montee: true });
+    Object.assign(s.potager.parcelles[0], { culture: 'carotte', stade: 4 });
     Object.assign(s.potager.parcelles[8], { culture: 'tomate', stade: 1, arrose: true, semis: 'off' });
     Object.assign(s.champ.parcelles[0], { culture: 'ble', stade: 5, arrose: true });
     Object.assign(s.champ.parcelles[1], { culture: 'tournesol', stade: 7, semis: 'verrou', verrou: 'tournesol' });
@@ -5179,9 +5007,9 @@ test('migration v14 → v15 : Champ construit avec des cultures, tout est regrou
   assertEqual(m.potager.parcelles.every((p) => p.lieu === 'potager'), true, 'le lieu « champ » a disparu');
   // d'abord les parcelles du Potager, puis celles du Champ, dans leur ordre, avec tous leurs champs
   assertEqual(m.potager.parcelles.slice(0, 15).map(plotContent), [...v14.potager.parcelles, ...v14.champ.parcelles].map(plotContent));
-  assertEqual(m.potager.parcelles[9], { id: 'potager-10', lieu: 'potager', culture: 'ble', stade: 5, arrose: true, montee: false, semis: 'meme', verrou: null, case: zoneTile(1, 9) });
-  assertEqual(m.potager.parcelles[10], { id: 'potager-11', lieu: 'potager', culture: 'tournesol', stade: 7, arrose: false, montee: false, semis: 'verrou', verrou: 'tournesol', case: zoneTile(1, 10) });
-  assertEqual(m.potager.parcelles[12], { id: 'potager-13', lieu: 'potager', culture: 'riz', stade: 2, arrose: false, montee: false, semis: 'verrou', verrou: 'ble', note: 'champ libre', case: zoneTile(1, 12) }, 'même un champ inconnu est gardé');
+  assertEqual(m.potager.parcelles[9], { id: 'potager-10', lieu: 'potager', culture: 'ble', stade: 5, arrose: true, semis: 'meme', verrou: null, case: zoneTile(1, 9) });
+  assertEqual(m.potager.parcelles[10], { id: 'potager-11', lieu: 'potager', culture: 'tournesol', stade: 7, arrose: false, semis: 'verrou', verrou: 'tournesol', case: zoneTile(1, 10) });
+  assertEqual(m.potager.parcelles[12], { id: 'potager-13', lieu: 'potager', culture: 'riz', stade: 2, arrose: false, semis: 'verrou', verrou: 'ble', note: 'champ libre', case: zoneTile(1, 12) }, 'même un champ inconnu est gardé');
   assertEqual(m.potager.parcelles.slice(15), [15, 16, 17].map((c) => ({ ...makePlot(c + 1), case: zoneTile(1, c) })));
   assertEqual(m.inventaire, v14.inventaire, 'aucun remboursement : rien n\'a été retiré');
   // ce qui était rangé sous la clé « champ » rejoint la zone
@@ -5526,7 +5354,7 @@ test('migration v14 → v15 : chaque champ de chaque parcelle est conservé, que
     const v14 = v14State({ potager, champ }, (s) => {
       // une parcelle sur deux est plantée : il reste toujours assez de parcelles vides à retirer
       [...s.potager.parcelles, ...s.champ.parcelles].forEach((p, i) => {
-        if (i % 2 === 0) Object.assign(p, { culture: p.lieu === 'champ' ? 'ble' : 'carotte', stade: 1 + (i % 4), arrose: i % 4 === 0, montee: false, semis: ['meme', 'off', 'verrou'][i % 3], verrou: i % 3 === 2 ? 'carotte' : null });
+        if (i % 2 === 0) Object.assign(p, { culture: p.lieu === 'champ' ? 'ble' : 'carotte', stade: 1 + (i % 4), arrose: i % 4 === 0, semis: ['meme', 'off', 'verrou'][i % 3], verrou: i % 3 === 2 ? 'carotte' : null });
       });
     });
     const before = [...v14.potager.parcelles, ...v14.champ.parcelles];
@@ -5761,7 +5589,7 @@ test('Serre : pousse une nuit arrosée, et les récoltes prêtes la comptent', (
   sleepOnce(s);
   assertEqual(findPlot(s, 'serre-1').stade, 1);
   findPlot(s, 'serre-1').stade = 5;
-  assertEqual(readyCrops(s), [{ culture: 'tomate', nombre: 1, montee: false }]);
+  assertEqual(readyCrops(s), [{ culture: 'tomate', nombre: 1 }]);
 });
 
 /* --- Verger --- */
@@ -6415,7 +6243,7 @@ test('compteurs : litres pompés au total, record de kWh stockés', () => {
   assertEqual(s.campagne.compteurs.mwhMax, record, 'un record ne redescend pas');
 });
 
-testBase('compteurs : carottes récoltées (la carotte montée en graine ne compte pas)', () => {
+testBase('compteurs : carottes récoltées', () => {
   const s = garden();
   plantRipe(s, 'potager-1', 'carotte');
   assert(harvest(s, 'potager-1').ok);
@@ -6423,12 +6251,9 @@ testBase('compteurs : carottes récoltées (la carotte montée en graine ne comp
   plantRipe(s, 'potager-2', 'tomate');
   assert(harvest(s, 'potager-2').ok);
   assertEqual(s.campagne.compteurs.carottes, 10, 'une tomate n\'est pas une carotte');
-  assert(plant(s, 'potager-3', 'carotte').ok);
-  findPlot(s, 'potager-3').stade = DATA.crops.carotte.stades;
-  assert(toggleBolting(s, 'potager-3').ok);
-  findPlot(s, 'potager-3').stade = maxStage(findPlot(s, 'potager-3'));
+  plantRipe(s, 'potager-3', 'carotte');
   assert(harvest(s, 'potager-3').ok);
-  assertEqual(s.campagne.compteurs.carottes, 10, 'graines : pas de carottes');
+  assertEqual(s.campagne.compteurs.carottes, 20, 'les graines rendues ne comptent pas');
 });
 
 testBase('compteurs : une récolte automatique compte aussi', () => {

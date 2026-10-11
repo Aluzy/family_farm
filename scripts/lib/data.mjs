@@ -63,7 +63,7 @@ export function loadData(root = ROOT) {
 
 const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'conserve'];
 const LIEUX = ['potager', 'serre'];
-const MODES_GRAINES = ['recolte', 'plant', 'montee'];
+const MODES_GRAINES = ['recolte', 'plant'];
 
 const isInt = (n) => Number.isInteger(n);
 const isDish = (data, id) => !!data.recipes[id] && !data.recipes[id].transformation;
@@ -208,7 +208,6 @@ export function validateData(data) {
     if (!MODES_GRAINES.includes(g.mode)) err(where, `graines.mode « ${g.mode} » inconnu (${MODES_GRAINES.join(', ')})`);
     if (!(g.item in items)) err(where, `graines.item « ${g.item} » n'est pas un objet (items)`);
     if (g.mode === 'recolte' && !(isInt(g.min) && isInt(g.max) && g.min >= 0 && g.max >= g.min)) err(where, 'graines.min et graines.max : deux entiers, min ≤ max');
-    if (g.mode === 'montee' && !(isInt(g.stadesSupp) && isInt(g.quantite))) err(where, 'graines.stadesSupp et graines.quantite : deux entiers');
     const s = c.sprite;
     if (!s) warn(where, 'pas de sprite : la carte affichera l\'icône à la place d\'un dessin');
     else if (!(isInt(s.r) && [16, 32].includes(s.h) && Array.isArray(s.c) && s.c.length === 4 && s.c.every(isInt))) {

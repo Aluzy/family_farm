@@ -11,7 +11,7 @@ import { actionCost, energyLevel } from './stamina.js';
 import { averageHappiness, dishHappiness } from './ville.js';
 import {
   allPlots, buildSerre, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isArable, isMature, plant, plotAtTile, seedItem, seedStock,
-  serreUpgradeCost, soilCount, toggleBolting, upgradeSerre, water,
+  serreUpgradeCost, soilCount, upgradeSerre, water,
 } from './crops.js';
 import {
   animalPrice, buildPaturage, buildPoulailler, buildSilo, buyAnimal, buyCow, buyPasture, buySheep, canFeedHen, cowCount, freeCowPlaces,
@@ -56,7 +56,7 @@ export function botHasSeed(state, culture) {
 export function botWantsCarrots(state) {
   const obj = objectiveDef('carottes');
   if (!obj || chapterReached(state) > objectiveChapter('carottes')) return false;
-  const inGround = allPlots(state).filter((p) => p.culture === 'carotte' && !p.montee).length * DATA.crops.carotte.rendement;
+  const inGround = allPlots(state).filter((p) => p.culture === 'carotte').length * DATA.crops.carotte.rendement;
   return state.campagne.compteurs.carottes + inGround < obj.cible;
 }
 
@@ -102,16 +102,10 @@ export function botPickCrop(state, plot) {
   return foods.find((c) => botHasSeed(state, c)) || null;
 }
 
-// Récolte, replante, arrose. Une carotte mûre monte en graine quand la réserve
-// de graines de carotte descend sous la cible.
+// Récolte, replante, arrose.
 export function botFarm(state) {
   const S = DATA.SIMULATION;
   for (const p of allPlots(state)) {
-    if (p.culture === 'carotte' && !p.montee && p.stade >= DATA.crops.carotte.stades) {
-      const bolting = allPlots(state).filter((x) => x.culture === 'carotte' && x.montee).length;
-      const seeds = seedStock(state, 'carotte') + bolting * DATA.crops.carotte.graines.quantite;
-      if (seeds < S.GRAINES_CAROTTE) toggleBolting(state, p.id);
-    }
     if (isMature(p)) harvest(state, p.id);
     if (!p.culture) {
       // On étale les semis sur plusieurs jours : une ferme plantée d'un coup est

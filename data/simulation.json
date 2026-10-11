@@ -21,8 +21,6 @@
     "PRIX_GRAINE_MAX": 4,
     "//ETALEMENT_JOURS": "les semis d'un lieu s'étalent sur ce nombre de jours (1 : on replante dès la récolte)",
     "ETALEMENT_JOURS": 1,
-    "//GRAINES_CAROTTE": "sous ce stock, une carotte mûre monte en graine",
-    "GRAINES_CAROTTE": 6,
     "//PART_PLEIN_CHAMP": [
       "Part (en %) des parcelles de la Zone de culture que le joueur réserve aux",
       "cultures de plein champ (blé, tournesol) dès qu'elles sont débloquées : à",

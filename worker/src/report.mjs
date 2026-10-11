@@ -84,7 +84,6 @@ export const GAME_ACTIONS = {
   'fridge-out': 'Utiliser le réfrigérateur',
   'toggle': 'Allumer ou éteindre un appareil',
   'routine-toggle': 'Activer ou couper la routine familiale',
-  'bolt': 'Laisser monter en graine',
   'semis-set': 'Régler les semis automatiques',
 };
 

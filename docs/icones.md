@@ -31,7 +31,7 @@ du Verger, bêtes de l'Étable et du Poulailler) et le bouton « Dormir » sont 
 - Les fiches de parcelle (Zone de culture, Champ, Serre) : « #n » en police pixel, le nom et
   l'icône de la culture, une jauge d'une case par stade (sans texte), puis des boutons d'icônes :
   arroser 💧 (ou récolter 🧺 quand c'est mûr), automatisation 🤖 (grisé tant que le semis
-  automatique n'est pas débloqué), et 🌱 pour laisser monter en graine quand c'est possible.
+  automatique n'est pas débloqué).
   Le détail (stade, litres, rendement) est dans le libellé des boutons et de la jauge.
 - Le Frigo reprend cette fiche sans jauge : icône, nom, nombre au frais, boutons pour sortir. Au
   frais la conservation est figée ; ce qui va périmer est encadré en rouge dans l'onglet Frais.

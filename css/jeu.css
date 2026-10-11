@@ -1167,7 +1167,6 @@ details.test-panel summary { min-height: 44px; display: flex; align-items: cente
 .pxgauge.full i.on { background: #e0a82a; box-shadow: inset 0 3px 0 #f8d878, inset 0 -3px 0 #a8701a; }
 .pxgauge.low i.on { background: #c8503a; box-shadow: inset 0 3px 0 #ec8a6e, inset 0 -3px 0 #8a2e22; }
 .pxgauge.off i { opacity: 0.55; }
-.montee .pxgauge i.on { background: #b88ad0; box-shadow: inset 0 3px 0 #dcbcec, inset 0 -3px 0 #7e559a; }
 
 /* ---------- Lot 11 : aide des bâtiments ---------- */
 
