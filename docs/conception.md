@@ -6,6 +6,16 @@
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci
 > fait foi.
 >
+> **v38 (jeu 1.16) : fluidité** (tâches de `docs/taches-fluidite.json`). Cette note **fait
+> foi** sur les raccourcis et l'ergonomie qu'elle décrit.
+> - **Puce d'objectif (FLU-01)** : elle mène là où l'objectif se fait (`OBJECTIF_CIBLES` dans
+>   `js/ui/stage.js`) : maison, panneau, pompe, réservoir, plats et pains → Maison ›
+>   Installations ; houe → Marché › Acheter ; récoltes, cultures, semis de blé → Zone de
+>   culture ; Silo → fenêtre du Silo ; niveau → fenêtre Niveaux ; tout autre objectif → la
+>   liste des chapitres. Chaque fenêtre de la carte a un bouton 📜 « Voir le chapitre »
+>   (et le Marché, tant que la houe n'est pas achetée).
+> - **Houe en main (FLU-41)**, la puce d'objectif se réduit à son icône et à sa valeur.
+>
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
 > sur la Zone de culture.

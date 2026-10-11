@@ -234,8 +234,10 @@ export function renderComptoir() {
       ${items.length ? items.map(sellRow).join('') : '<p class="hint">Tu n\'as rien à vendre pour l\'instant.</p>'}`;
   } else if (tab.id === 'acheter') {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine');
+    // FLU-01 : la puce d'objectif « Acheter une houe » mène ici ; le chapitre reste à une touche
+    const chapitre = !hasHoe(state) ? '<p class="row"><button type="button" class="btn small" data-action="aller" data-window="chapitres">📜 Voir le chapitre</button></p>' : '';
     body = `
-      ${hoeShopRow()}
+      ${chapitre}${hoeShopRow()}
       <p class="muted">Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas.</p>
       ${items.map(buyRow).join('')}`;
   } else if (tab.id === 'animaux') {

@@ -381,7 +381,36 @@ function stageOnView(v) {
   if (el && !el.hidden) renderStageNav(el);
 }
 
+// Fluidité (FLU-01) : la puce d'objectif mène là où l'objectif se fait. Type d'objectif →
+// cible (voir cibleAttrs) ; 'niveaux' : la fenêtre Niveaux ; un type absent : la liste des
+// chapitres.
+const OBJECTIF_CIBLES = {
+  maison: { fenetre: 'maison', onglet: 'batiments' },
+  panneau: { fenetre: 'maison', onglet: 'batiments' },
+  pompe: { fenetre: 'maison', onglet: 'batiments' },
+  reservoir: { fenetre: 'maison', onglet: 'batiments' },
+  houe: { page: 'comptoir', sous: 'acheter' },
+  recoltes: { fenetre: 'zone' },
+  cultures: { fenetre: 'zone' },
+  semisBle: { fenetre: 'zone' },
+  silo: { fenetre: 'silo' },
+  siloBle: { fenetre: 'silo' },
+  pains: { fenetre: 'maison', onglet: 'batiments' },
+  plats: { fenetre: 'maison', onglet: 'batiments' },
+  niveau: 'niveaux',
+};
+
+// Attributs du bouton qui mène à l'objectif `type`.
+export function objectifAttrs(type) {
+  const c = OBJECTIF_CIBLES[type];
+  if (c === 'niveaux') return 'data-action="open-levels"';
+  if (c) return cibleAttrs(c);
+  return 'data-action="stage-open" data-window="chapitres"';
+}
+
 // Objectif en cours, en une ligne : le premier objectif pas encore atteint du chapitre.
+// Houe en main (FLU-41), la puce se réduit à son icône et à sa valeur, pour laisser la
+// place à la puce de la houe.
 function chapterChipHtml() {
   const c = state.campagne;
   if (c.fini) {
@@ -393,7 +422,9 @@ function chapterChipHtml() {
   const valeur = objectiveValueText(o);
   const pct = Math.round(o.ratio * 100);
   const suite = p.objectifs.length > 1 ? `, objectif ${Math.min(faits + 1, p.objectifs.length)} sur ${p.objectifs.length}` : '';
-  return `<button type="button" class="stage-chip" data-action="stage-open" data-window="chapitres" aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. Ouvrir les chapitres" title="Chapitre ${p.chapitre} : ${p.titre}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span><span class="stage-chip-text">${o.libelle}</span><span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
+  const compacte = hoeMode && state.potager.houe && !stageInterior;
+  const vers = OBJECTIF_CIBLES[o.type] ? 'Y aller' : 'Ouvrir les chapitres';
+  return `<button type="button" class="stage-chip${compacte ? ' compact' : ''}" ${objectifAttrs(o.type)} aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. ${vers}" title="Chapitre ${p.chapitre} : ${p.titre} — ${o.libelle}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span>${compacte ? '' : `<span class="stage-chip-text">${o.libelle}</span>`}<span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
 }
 
 // Version 1.9 : en mode houe, un bouton sur la carte rappelle les tuiles et range la houe.

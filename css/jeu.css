@@ -1618,6 +1618,8 @@ main .ancre { scroll-margin-top: 150px; }
 .hoe-cell:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
 
 .stage-chip.hoe { margin-left: auto; flex: 0 0 auto; }
+/* FLU-41 : houe en main, la puce d'objectif se réduit à son icône et sa valeur */
+.stage-chip.compact { flex: 0 0 auto; }
 
 /* ---------- version 1.12 : départ d'une nouvelle partie ---------- */
 

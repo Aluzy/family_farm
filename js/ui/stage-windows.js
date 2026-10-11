@@ -254,6 +254,7 @@ export function renderStageWindow() {
       <section class="stage-window ${w.haute ? 'tall' : 'half'}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
         <header class="window-head">
           <h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>
+          ${stageWindow !== 'chapitres' ? '<button type="button" class="icon-btn" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
           <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer la fenêtre" title="Fermer">✕</button>
         </header>
         ${w.onglets && !windowLocked(stageWindow) ? `<div class="window-tabs">${w.onglets()}</div>` : ''}
