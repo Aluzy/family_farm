@@ -83,6 +83,11 @@
 >   Un bloc « En savoir plus » ouvert le reste aux rendus suivants.
 >- **Marché sans cours d'économie (FLU-25)** : chaque article n'affiche que son prix ; les
 >   explications (coefficients, planchers) sont derrière « ? Comment les prix changent ».
+>- **Installations épurées (FLU-26)** : « Entretenir » n'apparaît qu'avec de l'usure, « Réparer »
+>   qu'en panne. La production s'écrit en mots (« ✅ Assez pour la pompe », « ⚠️ Pas assez
+>   pour la pompe à plein débit », « Les appareils attendent le soleil ») avec une jauge par
+>   rapport au maximum des panneaux ; la batterie dit « En charge » ou « En décharge ». Les
+>   valeurs en Wh/s ne restent que dans l'aide « ? » de chaque appareil.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

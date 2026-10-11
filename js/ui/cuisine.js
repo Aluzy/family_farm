@@ -13,7 +13,7 @@ import { recipeTime } from '../engine/techtree.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { dishHappiness } from '../engine/ville.js';
 import {
-  formatCoins, formatDuration, formatNumber, formatQty, formatWhRate,
+  formatCoins, formatDuration, formatNumber, formatQty,
 } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -53,7 +53,7 @@ function stationBlurb(id) {
   const def = DATA.STATIONS[id];
   const names = stationRecipes(id).map((r) => DATA.recipes[r].nom.toLowerCase()).join(', ');
   const power = def.electrique
-    ? ` Appareil électrique : ${formatNumber(def.whParS)} Wh/s en marche, avec interrupteur, usure et pannes.`
+    ? ' Appareil électrique : il consomme du courant en marche, avec interrupteur, usure et pannes.'
     : ' Pas d\'électricité.';
   if (id === 'moulin') return `Moud le blé : 1 blé donne ${millOutputText()}. La paille nourrit les moutons et les vaches. Le blé se moud ici même, dans le Moulin.${power}`;
   return `${names.charAt(0).toUpperCase()}${names.slice(1)}.${power}${id === 'four' ? ' Le construire ouvre l\'onglet Livre de recette.' : ''}`;
@@ -183,7 +183,7 @@ export function renderMoulin() {
       <div class="card ancre" id="moulin-appareil">
         <span class="card-title"><span>⚡ Appareil</span><span class="chip${ds.code === 'panne' ? ' panne' : ''}">${ds.label}</span></span>
         ${ds.badge ? `<span class="chip warn">⚠️ ${ds.badge}</span>` : ''}
-        <span class="muted">Consommation : <span class="num">${formatWhRate(d.conso)}</span> (${formatNumber(def.whParS)} Wh/s quand il tourne). Sans énergie, il attend.</span>
+        <span class="muted">${d.conso > 0 ? 'Il tourne et consomme du courant.' : 'Il ne consomme du courant que quand il tourne.'} Sans énergie, il attend.</span>
         ${wearHtml(d)}
         ${stationControls(d)}
       </div>
@@ -197,11 +197,13 @@ export function stationControls(d) {
   const broken = isBroken(d);
   const maintainOk = !broken && (d.usure > 0 || d.usureMs > 0) && canPay(maintain);
   const repairOk = broken && canPay(repair);
+  // FLU-26 : « Entretenir » seulement s'il y a de l'usure, « Réparer » seulement en panne
+  const maintainBtn = !broken && d.usure > 0 ? `<button type="button" class="btn" data-action="maintain" data-id="${d.id}"${maintainOk ? '' : ' disabled'}>Entretenir (${costLabel(maintain)})</button>` : '';
+  const repairBtn = broken ? `<button type="button" class="btn" data-action="repair" data-id="${d.id}"${repairOk ? '' : ' disabled'}>Réparer (${costLabel(repair)})</button>` : '';
   return `
     <span class="device-actions">
       ${switchHtml(d)}
-      <button type="button" class="btn" data-action="maintain" data-id="${d.id}"${maintainOk ? '' : ' disabled'}>Entretenir (${costLabel(maintain)})</button>
-      <button type="button" class="btn" data-action="repair" data-id="${d.id}"${repairOk ? '' : ' disabled'}>Réparer (${costLabel(repair)})</button>
+      ${maintainBtn}${repairBtn}
     </span>`;
 }
 
@@ -233,7 +235,7 @@ function stationCard(id) {
     const d = st.appareil;
     const ds = deviceStatus(state, d);
     power = `
-      <span class="muted">${ds.label}${ds.badge ? ` · ⚠️ ${ds.badge}` : ''} · <span class="num">${formatWhRate(d.conso)}</span> (${formatNumber(def.whParS)} en marche)</span>
+      <span class="muted">${ds.label}${ds.badge ? ` · ⚠️ ${ds.badge}` : ''} · ${d.conso > 0 ? 'consomme du courant' : 'ne consomme rien'}</span>
       ${wearHtml(d)}
       ${stationControls(d)}`;
   }
@@ -275,7 +277,7 @@ function recipeCard(id) {
   } else if (status.code === 'absente') reason = `<span class="alert">Construis d'abord ${sdef.article} ${sdef.nom}.</span>`;
   else if (status.code === 'occupee') reason = `<span class="alert">${sdef.nom} : ${sdef.article === 'la' ? 'occupée' : 'occupé'}, attends la fin de la préparation.</span>`;
   else if (status.code === 'manque') reason = '<span class="alert">Il manque des ingrédients.</span>';
-  const power = sdef.electrique ? ` · ${formatNumber(sdef.whParS)} Wh/s` : '';
+  const power = sdef.electrique ? ' · électrique' : '';
   return `
     <article class="card recipe ${status.ok ? 'ready' : 'unavailable'}">
       <span class="card-title"><span>${r.icone} ${r.nom}</span><span class="chip">${sdef.icone} ${sdef.nom} · ${formatNumber(recipeTime(state, id))} s</span></span>
