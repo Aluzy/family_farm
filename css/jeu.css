@@ -1004,6 +1004,10 @@ summary.branch-head h3::before { content: '▸'; display: inline-block; margin-r
   cursor: pointer;
 }
 .indicator-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+/* FLU-30 : progression vers le niveau suivant, sous « Niv. » */
+.level-ind { position: relative; overflow: hidden; }
+.level-ind-bar { position: absolute; left: 4px; right: 4px; bottom: 3px; height: 3px; border-radius: 2px; background: var(--bg-muted); }
+.level-ind-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
 .chapter-card { border-color: var(--accent); border-width: 2px; background: var(--bg-elevated); margin-bottom: 12px; }
 .chapter-card.done { border-color: var(--color-sun-dark); }
 .objectives { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }

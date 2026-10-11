@@ -8,7 +8,7 @@ import { planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
-import { unlockLevel } from '../engine/levels.js';
+import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
@@ -349,6 +349,14 @@ export function applyAnchor() {
 // icône et sa valeur ; son nom est dans l'infobulle et pour les lecteurs d'écran. Ceux qui ont
 // un lieu y mènent (eau → Maison › Installations, autonomie → Maison ›
 // Famille). Le jour est le numéro de la nuit à venir (state.day) : jour 1 au départ.
+// FLU-30 : la puce « Niv. » porte une fine barre de progression vers le niveau suivant.
+function niveauHtml(corps) {
+  const p = levelProgress(state);
+  const xp = p.max ? `${formatNumber(p.xp)} XP, niveau maximal` : `${formatNumber(p.xp)} / ${formatNumber(p.fin)} XP`;
+  const titre = `Niveau ${p.niveau} : ${xp}. Voir les niveaux`;
+  return `<button type="button" class="indicator indicator-btn level-ind" data-action="open-levels" title="${titre}" aria-label="${titre}">${corps('⭐', `Niv. ${p.niveau}`)}<span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>`;
+}
+
 export function renderIndicators() {
   const heure = Math.floor(heureDuJour());
   const corps = (icone, valeur) => `<span aria-hidden="true">${icone}</span><span class="num" aria-hidden="true">${valeur}</span>`;
@@ -359,7 +367,7 @@ export function renderIndicators() {
   const el = document.getElementById('indicators');
   morph(el,
     cell('📅', `Jour ${state.day}`, `Jour ${state.day}`) +
-    `<button type="button" class="indicator indicator-btn" data-action="open-levels" title="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux" aria-label="Niveau ${state.progression.niveau} : ${formatNumber(state.progression.xp)} XP. Voir les niveaux">${corps('⭐', `Niv. ${state.progression.niveau}`)}</button>` +
+    niveauHtml(corps) +
     cell(horlogeEmoji(heure), `${heure} h`, `Heure de la journée : ${heure} h`) +
     lien('⚡', String(energyLevel(state)), `Ton énergie : ${energyLevel(state)} / ${DATA.PERSONNAGE.MAX}. Ouvrir la Famille`, { fenetre: 'maison', onglet: 'famille' }) +
     lien('💧', formatLitres(state.eauMl), `Eau du réservoir : ${formatLitres(state.eauMl)}. Ouvrir l'énergie et l'eau`, { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' }) +

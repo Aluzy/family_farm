@@ -98,6 +98,8 @@
 >- **Niveaux et Ville (FLU-29)** : la fenêtre Niveaux montre le niveau en cours et les deux
 >   suivants, puis « Voir tous les niveaux (10) ». Dans la Ville, les sorties d'abord, les
 >   voyages dans un bloc replié.
+>- **Barre d'XP (FLU-30)** : la puce « ⭐ Niv. » du bandeau porte une fine barre vers le
+>   niveau suivant ; son nom pour les lecteurs d'écran dit « Niveau 1 : 10 / 500 XP ».
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
