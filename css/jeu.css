@@ -1833,9 +1833,8 @@ main .ancre { scroll-margin-top: 150px; }
   background: rgba(255, 230, 178, 0.88);
   border: 3px solid #8a5a34;
   border-radius: 5px;
-  color: #b07a18;
-  font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 .hud-energy-bar {
   position: relative;
@@ -1861,6 +1860,13 @@ main .ancre { scroll-margin-top: 150px; }
 .hud-energy-fill.mid { background: #e8b030; box-shadow: inset 3px 0 0 #f8d878; }
 .hud-energy-fill.low { background: #c8503a; box-shadow: inset 3px 0 0 #ec8a6e; }
 @media (prefers-reduced-motion: reduce) { .hud-energy-fill { transition: none; } }
+/* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante et la jauge
+   restent visibles par-dessus, à 80 % de transparence, et laissent passer les appuis. */
+.hud, .hud-energy { transition: opacity 0.2s; }
+body:has(.window-layer) :is(.hud, .hud-energy),
+body:has(#modal-root > *) :is(.hud, .hud-energy) { z-index: 95; opacity: 0.2; pointer-events: none; }
+body:has(.window-layer) .hud-energy-btn,
+body:has(#modal-root > *) .hud-energy-btn { pointer-events: none; }
 /* Écrans sans carte : le contenu commence sous la carte flottante (sauf si l'écran est
    assez large pour qu'elle tienne à côté). */
 body:not(.has-stage) main { padding-top: 84px; }

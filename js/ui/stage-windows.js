@@ -392,7 +392,7 @@ function renderHud() {
   const titre = `Ton énergie : ${e} / ${max}. Ouvrir la Famille`;
   morph(document.getElementById('hud-energy'),
     `<button type="button" class="hud-energy-btn" data-action="stage-goto" data-window="maison" data-tab="famille" title="${titre}" aria-label="${titre}">` +
-    `<span class="hud-energy-label" aria-hidden="true">E</span>` +
+    `<span class="hud-energy-label" aria-hidden="true">⚡</span>` +
     `<span class="hud-energy-bar" aria-hidden="true"><span class="hud-energy-fill${cls}" style="height:${pct}%"></span></span></button>`
   );
 }
