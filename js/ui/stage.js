@@ -282,12 +282,13 @@ export function stageModel() {
   const panneaux = isOwned(panneau) ? panneau.niveau + 1 : 0;
   // Le puits, en haut à gauche du Moulin : la pompe s'y ajoute une fois achetée.
   const pompe = isOwned(starterOf(state, 'pompe'));
+  const pompeEnMarche = pompe && state.pompe.debit > 0; // elle remplit la citerne : elle vibre
   // La citerne (le réservoir), une fois achetée : son tube de niveau, vide (0) à plein (4).
   const cap = tankCapacity(state);
   const citerne = isOwned(starterOf(state, 'reservoir')) ? (cap > 0 ? Math.round((Math.min(state.eauMl, cap) * 4) / cap) : 0) : -1;
   return {
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
-    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, citerne,
+    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne,
   };
 }
 
