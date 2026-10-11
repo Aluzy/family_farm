@@ -762,39 +762,44 @@ def cloture(part):
         for (x, y), row in rails.items():
             if x == 0:
                 cv.put(0, y - 1 if row == 0 else y + 1, 'W0')
-    for x, h in ((5, 2), (10, 1), (11, 2)):                    # herbe au pied
-        for k in range(h):
-            cv.put(x, 15 - k, 'V5' if k == h - 1 else 'V4')
     ombre_contact(cv, 3, 12, 15, 1)
+    touffe_pied(cv, 3, 15, 4); touffe_pied(cv, 10, 15, 5)        # herbe au pied
+    if part != 'poteau':
+        touffe_pied(cv, 13, 15, 6); touffe_pied(cv, 0, 15, 7)
     return cv.im
 
 
+def touffe_pied(cv, x, y, seed):
+    """Touffe d'herbe de 3 à 4 brins au pied d'un piquet (V4 à V6, la pointe claire)."""
+    r = rng('touffe-pied', seed, x, y)
+    for k, dx in enumerate((0, 1, 2)):
+        h = r.randint(3, 4) if k != 1 else r.randint(4, 6)
+        for j in range(h):
+            if cv.get(x + dx, y - j)[3] == 0 or cv.get(x + dx, y - j)[3] < 255:
+                cv.put(x + dx, y - j, 'V8' if j == h - 1 else 'V5' if j < 2 else 'V6')
+
+
 def cloture_verticale():
-    """Clôture qui file vers le bas (module de 16 × 16), vue comme une clôture qui s'éloigne :
-    deux lisses courent d'un piquet à l'autre, l'une sur la face ouest des piquets (éclairée),
-    l'autre sur la face est (dans l'ombre) ; entre elles on voit l'herbe. Le piquet, court, est
-    pris entre les deux lisses : on voit sa tête qui les relie, puis sa face avant jusqu'au sol.
-    L'ombre de la lisse est tombe à droite sur l'herbe. Les lisses touchent le haut et le bas du
-    module : les modules s'empilent sans couture."""
+    """Clôture qui file vers le bas (module de 16 × 16), comme celle du jeu de tuiles
+    d'origine : une colonne étroite de 4 px où se suivent la lisse, vue de bout et dans l'ombre
+    (W1, une arête W2), et la tête du piquet suivant (chapeau W4, face éclairée à gauche) ;
+    touffes d'herbe des deux côtés au pied du piquet ; contour W0, ombre à droite. Le haut et
+    le bas du module se raccordent."""
     cv = Canvas(16, 16)
-    for y in range(16):                                        # ombre de la lisse est sur le sol
-        cv.px[13, y] = OMBRE_CONTACT
+    col = {(x, y) for x in range(6, 10) for y in range(7, 16)} | {(x, y) for x in (7, 8) for y in range(7)}
+    outline_construit(cv, lambda x, y: (x, y) in col, 'W0')
     for y in range(16):
-        cv.put(2, y, 'W0'); cv.put(12, y, 'W0')                # contour extérieur des lisses
-        cv.put(3, y, 'W4'); cv.put(4, y, 'W3')                 # lisse ouest, éclairée
-        cv.put(10, y, 'W2'); cv.put(11, y, 'W1')               # lisse est, dans l'ombre
-        if y % 8 == 2:
-            cv.put(4, y, 'W2'); cv.put(11, y, 'W0')            # fil du bois
-    # piquet : tête (rangées 7 et 8) qui relie les lisses, face avant (rangées 9 à 15)
-    cv.hline(5, 9, 6, 'W0')
-    cv.hline(5, 9, 7, 'W4'); cv.hline(5, 9, 8, 'W3')
-    for y in range(9, 16):
-        cv.put(6, y, 'W3'); cv.put(7, y, 'W2'); cv.put(8, y, 'W1')
-    cv.put(7, 12, 'W1')
-    cv.put(4, 8, 'R2'); cv.put(10, 8, 'R2')                     # clous
-    for x, h in ((1, 2), (14, 1), (15, 2)):
-        for k in range(h):
-            cv.put(x, 15 - k, 'V5' if k == h - 1 else 'V4')
+        cv.px[10 if y < 7 else 11, y] = OMBRE_CONTACT
+        if y < 7:                                            # la lisse, plus étroite que le piquet
+            cv.put(7, y, 'W3'); cv.put(8, y, 'W1')
+        else:                                                # le piquet
+            for x in range(6, 10):
+                cv.put(x, y, ('W4', 'W3', 'W2', 'W1')[x - 6])
+    cv.hline(6, 9, 7, 'W0')                                  # dessus du piquet
+    cv.put(7, 8, 'W4'); cv.put(8, 8, 'W4')
+    cv.vline(7, 11, 13, 'W2')                                # fil du bois
+    cv.put(8, 4, 'R2')                                       # clou
+    touffe_pied(cv, 3, 15, 1); touffe_pied(cv, 11, 15, 2)
     return cv.im
 
 

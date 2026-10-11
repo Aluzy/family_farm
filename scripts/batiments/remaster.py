@@ -424,38 +424,143 @@ def poulailler(porte):
 
 # ================================================================ le moulin (96 × 128 × 4)
 
+K_ELL = 0.3                                                   # vue de trois quarts : ry = 0,3 × rx
+
+
+def revolution(cv, cx, profil, paint, pente=0.0):
+    """Surface de révolution vue de trois quarts (fût, tronc de cône, dôme) : `profil(h)`
+    donne, pour h de 0 (haut) à 1 (bas), le centre vertical et le rayon de la section ; chaque
+    section est une ellipse aplatie (K_ELL), seule sa moitié avant se voit. `paint(x, y, u, v,
+    lv, t)` reçoit l'angle `t` (−π/2 à gauche, 0 devant, π/2 à droite), `u` la longueur d'arc,
+    `v` = h, le niveau de lumière `lv` (flanc gauche éclairé ; `pente` > 0 éclaire une surface
+    tournée vers le ciel, comme un toit). Renvoie {pixel: (t, h)}."""
+    y0, r0 = profil(0)
+    y1, r1 = profil(1)
+    nh = int(abs(y1 - y0) * 3) + 4
+    seen = {}
+    for i in range(nh + 1):
+        h = i / nh
+        yc, r = profil(h)
+        nt = int(r * 6) + 8
+        for j in range(nt + 1):
+            t = -math.pi / 2 + math.pi * j / nt
+            x = int(math.floor(cx + r * math.sin(t)))
+            y = int(math.floor(yc + r * K_ELL * math.cos(t)))
+            seen[(x, y)] = (t, h, r)
+    for (x, y), (t, h, r) in seen.items():
+        lv = level(math.sin(t) * 1.05, -pente - 0.05 + 0.25 * (1 - math.cos(t)) * 0)
+        paint(x, y, r * (t + math.pi / 2), h, lv, t)
+    return {k: v[:2] for k, v in seen.items()}
+
+
+ASSOMBRIR = {'C1': 'P4', 'P4': 'C0', 'P3': 'C0', 'C0': 'P1', 'P1': 'P0', 'B2': 'B1', 'B1': 'R1', 'R1': 'B0',
+             'W4': 'W2', 'W3': 'W2', 'W2': 'W1', 'W1': 'W0', 'G3': 'G1', 'G2': 'G1', 'G1': 'G0'}
+
+
+def assombrir(cv, x, y):
+    """Un ton plus sombre, dans la même matière (ombre portée)."""
+    c = cv.get(x, y)
+    if c[3] != 255:
+        return
+    for k, v in ASSOMBRIR.items():
+        if c[:3] == PAL[k]:
+            cv.put(x, y, v)
+            return
+
+
 def moulin(n):
-    """Moulin : soubassement de pierres et porte, corps d'enduit à colombage et fenêtres,
-    balcon, chapeau de bardeaux bruns, quatre ailes de toile (C1, C0) sur un treillis de bois
-    W3, tournant d'un huitième de tour par image."""
+    """Moulin, volume de révolution : soubassement rond de pierres (rangs courbes), tour
+    d'enduit qui s'affine vers le haut, colombages qui suivent la courbure, fenêtres en
+    retrait, galerie ronde de planches avec sa balustrade, chapeau en dôme de bardeaux avec
+    son débord et l'ombre qu'il jette sur la tour ; quatre ailes de toile (C1, C0) sur un
+    treillis W3, au bout d'un arbre qui sort du chapeau, tournant d'un huitième de tour par
+    image ; les ailes portent leur ombre sur la tour ; ombre ronde au sol."""
     cv = Canvas(96, 128)
-    HX, HY = 48, 42
-    stones(cv, 26, 90, 69, 127, seed=1)
-    door(cv, 42, 112, 12, 16, window=False)
-    ivy(cv, 30, 116, 5, 9, 3)
-    ivy(cv, 66, 121, 5, 6, 8)
-    for y in range(48, 87):                                   # corps
-        for x in range(30, 66):
-            cv.put(x, y, 'C0' if y < 51 or x > 60 else 'P4')
-    for bx in (30, 47, 65):
-        cv.vline(bx, 48, 86, 'W3')
-    cv.hline(30, 65, 67, 'W3')
-    cv.hline(30, 65, 86, 'W2')
-    window8(cv, 35, 71)
-    window8(cv, 53, 71)
-    window8(cv, 53, 54)
-    cv.rect(24, 87, 71, 89, 'W3')                             # balcon
-    cv.hline(24, 71, 87, 'W4')
-    cv.hline(24, 71, 89, 'W1')
-    # chapeau
-    for y in range(26, 48):
-        half = 12 + (y - 26) * 0.55
-        for x in range(96):
-            if abs(x + 0.5 - 48) <= half:
-                cv.put(x, y, roof_color(y - 26, x, x < 48, 'brun', (y - 26) / 22))
-    # ailes
+    CX = 48
+    pierre = pierres_rondes(4, 7)
+    # soubassement : de y 96 (r 19) à y 117 (r 20)
+    revolution(cv, CX, lambda h: (96 + 21 * h, 19 + 1.2 * h),
+               lambda x, y, u, v, lv, t: cv.put(x, y, pierre(x, y, u, (v * 21) + 0.5, lv)))
+    # tour d'enduit : de y 54 (r 14) à y 95 (r 17)
+    ENDUIT = ('P1', 'C0', 'P3', 'P4', 'C1')
+
+    def enduit(x, y, u, v, lv, t):
+        c = ENDUIT[lv]
+        if any(abs(t - a) < 0.07 for a in (-1.05, -0.35, 0.35, 1.05)) or abs(v - 0.5) < 0.018:
+            c = 'W3' if lv >= 2 else 'W2'                      # colombages : ils suivent la courbe
+        cv.put(x, y, c)
+    revolution(cv, CX, lambda h: (54 + 41 * h, 14 + 3 * h), enduit)
+    # fenêtres en retrait, plus étroites vers les bords
+    for t0, yw in ((-0.75, 60), (0.1, 60), (-0.2, 74), (0.75, 74)):
+        xc = CX + 15 * math.sin(t0)
+        w = max(4, round(8 * math.cos(t0)))
+        x0 = round(xc - w / 2)
+        yy = yw + round(15 * K_ELL * math.cos(t0))
+        cv.rect(x0 - 1, yy - 1, x0 + w, yy + 8, 'W1')        # encadrement
+        cv.rect(x0, yy, x0 + w - 1, yy + 7, 'G2')
+        cv.hline(x0, x0 + w - 1, yy, 'G0'); cv.vline(x0, yy, yy + 7, 'G0')   # ébrasement dans l'ombre
+        cv.hline(x0 + 1, x0 + w - 1, yy + 1, 'G1')
+        if w >= 6:
+            cv.vline(x0 + w // 2, yy + 1, yy + 7, 'W2'); cv.hline(x0 + 1, x0 + w - 1, yy + 4, 'W2')
+        cv.put(x0 + 1 + (w > 5), yy + 2, 'G3')
+        cv.hline(x0 - 1, x0 + w, yy + 8, 'W3')              # appui
+    # galerie ronde à y 93 : plancher (dessus et tranche), balustrade sur la moitié avant
+    RG = 24
+    for (x, y) in disque(CX, 93, RG, RG * K_ELL):
+        d = math.hypot((x + 0.5 - CX) / RG, (y + 0.5 - 93) / (RG * K_ELL))
+        tour = ((x + 0.5 - CX) / 17.2) ** 2 + ((y + 0.5 - 93) / (17.2 * K_ELL)) ** 2 < 1 and y + 0.5 < 93
+        if tour:
+            continue                                            # la tour passe derrière la galerie
+        cv.put(x, y, 'W4' if x < CX - 6 else 'W3' if x < CX + 10 else 'W2')
+        if int(math.atan2(y + 0.5 - 93, (x + 0.5 - CX) / 3.3) * 6) % 2 == 0 and d > 0.4:
+            cv.put(x, y, 'W3' if x < CX + 10 else 'W1')         # planches rayonnantes
+    for x in range(CX - RG, CX + RG + 1):                       # tranche du plancher
+        dx = x + 0.5 - CX
+        e = ellipse_e(dx, RG, RG * K_ELL)
+        for k in range(2):
+            cv.put(x, int(93 + e) + 1 + k, 'W1' if dx < 10 else 'W0')
+    for i in range(13):                                         # balustrade : poteaux et lisse
+        t = -math.pi / 2 + math.pi * (i + 0.5) / 13
+        x = int(CX + (RG - 1.5) * math.sin(t))
+        y = int(93 + (RG - 1.5) * K_ELL * math.cos(t))
+        cv.vline(x, y - 5, y, 'W3' if t < 0.3 else 'W2')
+    for x in range(CX - RG + 2, CX + RG - 1):
+        dx = x + 0.5 - CX
+        y = int(93 + ellipse_e(dx, RG - 1.5, (RG - 1.5) * K_ELL)) - 5
+        cv.put(x, y, 'W4' if dx < -4 else 'W3' if dx < 10 else 'W2')
+    # porte cintrée, en retrait, et sa marche
+    cv.rect(41, 106, 54, 123, 'B0')
+    for y in range(107, 124):
+        for x in range(42, 54):
+            if y < 112 and math.hypot(x + 0.5 - 48, (y + 0.5 - 112) * 1.2) > 6:
+                continue
+            cv.put(x, y, 'W1' if x < 44 or y < 109 else 'W3' if (x - 42) % 4 else 'W2')
+    cv.put(51, 116, 'A4')
+    for (x, y) in disque(48, 124.5, 9, 2):
+        cv.put(x, y, 'B2' if x < 48 else 'B1')
+    ivy(cv, 31, 119, 4, 6, 3)
+    ivy(cv, 66, 121, 4, 4, 8)
+    # chapeau en dôme : du sommet (y 22) à la base (y 50, r 19), débord sur la tour
+    def bardeau(x, y, u, v, lv, t):
+        row = int(v * 28 / 4)
+        if v > 0.93:
+            c = 'W0' if v > 0.97 else 'W1'                      # épaisseur du débord
+        elif (v * 28) % 4 < 1 or (u + row * 4) % 8 < 1:
+            c = ('W0', 'W1', 'W2', 'W2', 'W3')[lv]              # rangs et joints des bardeaux
+        else:
+            c = ('W1', 'W2', 'W3', 'W4', 'W4')[lv]
+        cv.put(x, y, c)
+    revolution(cv, CX, lambda h: (22 + 28 * h, 1.5 + 17.5 * math.sqrt(h)), bardeau, pente=0.35)
+    for x in range(CX - 18, CX + 19):                           # ombre du débord sur la tour
+        dx = x + 0.5 - CX
+        y0 = int(50 + ellipse_e(dx, 19, 19 * K_ELL)) + 1
+        for y in range(y0, y0 + 3):
+            assombrir(cv, x, y)
+    # ailes, au bout de l'arbre qui sort du chapeau
+    HX, HY = 48, 46
+    cv.rect(HX - 1, HY - 1, HX + 1, HY + 4, 'W2'); cv.vline(HX - 1, HY - 1, HY + 4, 'W3')
     a0 = n * math.pi / 8
-    L, W0, W1 = 40, 2.0, 9.0
+    L, W0_, W1_ = 40, 2.0, 9.0
     shapes = {}
     for y in range(128):
         for x in range(96):
@@ -467,9 +572,13 @@ def moulin(n):
                 if 3 <= u <= L:
                     if abs(v) <= 0.9:
                         shapes[(x, y)] = 'W3'                  # longeron
-                    elif W0 <= v <= W1 and u >= 8:
-                        lattice = int(u) % 6 == 0 or abs(v - (W0 + W1) / 2) < 0.5
+                    elif W0_ <= v <= W1_ and u >= 8:
+                        lattice = int(u) % 6 == 0 or abs(v - (W0_ + W1_) / 2) < 0.5
                         shapes[(x, y)] = 'W2' if lattice else ('C1' if v < 5 else 'C0')
+    for (x, y) in shapes:                                       # ombre des ailes sur la tour
+        q = (x + 3, y + 4)
+        if q not in shapes:
+            assombrir(cv, *q)
     for (x, y), c in shapes.items():
         cv.put(x, y, c)
     for y in range(HY - 3, HY + 4):                           # moyeu
@@ -478,99 +587,148 @@ def moulin(n):
             if d <= 3.2:
                 cv.put(x, y, 'W0' if d > 2.3 else 'W4' if x < HX and y < HY else 'W3')
     outline_by_material(cv)
-    ombre_sol(cv, extra=((48, 28, 127),))
+    ombre_ronde(cv, CX, 118, 20.5, 6)
     return cv.im
 
 
 # ================================================================ la serre (96 × 80)
 
 def serre():
-    """Serre : pavillon central en ogive entre deux ailes vitrées ; panneaux de verre G2 entre des
-    montants de 1 px G0, reflets diagonaux G3, touches A1, ombre G1 sous les traverses ; plantes
-    derrière les vitres ; contour V1. Posée à même le sol."""
+    """Serre en volume : deux ailes en retrait (leur pied est plus haut que celui du pavillon)
+    sous des toits de verre en croupe vus de dessus (pan avant éclairé, petits-bois qui
+    convergent vers la croupe, faîtage), un pavillon central qui avance, coiffé d'un dôme dont
+    les côtes s'incurvent ; montants épais (ombre de chaque montant sur la vitre), traverses qui
+    ombrent le dessous, intérieur visible (cadres du mur du fond, plantes sur deux rangs, table) ;
+    le pavillon jette son ombre sur l'aile droite ; contour V1. Posée à même le sol."""
     cv = Canvas(96, 80)
+    WB, PB = 75, 78                                           # pieds des ailes et du pavillon
 
-    def pane(x0, y0, x1, y1, plants=0.0, seed=0):
+    def interieur(x0, y0, x1, y1, seed, plantes=True):
+        """Vitre et ce qu'on voit derrière : cadres du mur du fond (plus haut), plantes."""
         for y in range(y0, y1 + 1):
             for x in range(x0, x1 + 1):
-                cv.put(x, y, 'G1' if y == y0 else 'G2')
-        if plants:
-            top = y1 - round((y1 - y0) * plants)
-            for x in range(x0, x1 + 1):
-                yy = top + round(1.5 * math.sin((x + seed) * 1.3))
-                for y in range(max(y0 + 1, yy), y1 + 1):
-                    cv.put(x, y, 'V8' if y == max(y0 + 1, yy) else 'V6' if y < yy + 3 else 'V2')
-        for y in range(y0 + 1, y1 + 1):                       # reflet diagonal
+                cv.put(x, y, 'G2')
+        for x in range(x0, x1 + 1):                           # mur du fond : montants vus à travers
+            if (x - x0 + seed) % 7 == 3:
+                cv.vline(x, y0, y1, 'G1')
+        back = y1 - round((y1 - y0) * 0.5)                    # rang du fond : plus haut, plus sombre
+        front = y1 - round((y1 - y0) * 0.3)
+        for x in range(x0, x1 + 1 if plantes else x0):
+            yb = back + round(1.6 * math.sin((x + seed) * 0.9))
+            for y in range(max(y0 + 1, yb), y1 + 1):
+                cv.put(x, y, 'V2' if y > yb else 'V6')
+            yf = front + round(1.5 * math.sin((x + seed) * 1.4 + 1))
+            for y in range(max(y0 + 1, yf), y1 - 2):
+                cv.put(x, y, 'V8' if y == yf else 'V6' if y < yf + 3 else 'V2')
+            cv.put(x, y1 - 2, 'W2'); cv.put(x, y1 - 1, 'W1')    # table de culture
+        for y in range(y0, y1 + 1):                           # reflet diagonal
             for x in range(x0, x1 + 1):
                 d = (x - x0) + (y - y0)
-                if d in (3 + seed % 3, 4 + seed % 3):
-                    if cv.get(x, y)[:3] == PAL['G2']:
-                        cv.put(x, y, 'G3')
+                if d in (3 + seed % 3, 4 + seed % 3) and cv.get(x, y)[:3] in (PAL['G2'], PAL['G1']):
+                    cv.put(x, y, 'G3')
         cv.put(x0, y0 + 2, 'A1')
 
-    def wing(x0, x1, seed):
-        for y in range(16, 26):                               # toit de verre
-            for x in range(x0, x1 + 1):
-                cv.put(x, y, 'G3' if y < 19 else 'G2')
-        for x in range(x0, x1 + 1, 5):
-            cv.vline(x, 16, 25, 'G0')
-        cv.hline(x0, x1, 26, 'G0'); cv.hline(x0, x1, 27, 'V1')   # chéneau
+    def montants(x0, x1, xs, y0, y1):
+        for x in xs:
+            cv.vline(x, y0, y1, 'G0')
+            for y in range(y0, y1 + 1):                       # ombre du montant sur la vitre
+                if x + 1 <= x1 and cv.get(x + 1, y)[:3] in (PAL['G2'], PAL['G3']):
+                    cv.put(x + 1, y, 'G1')
+
+    def aile(x0, x1, outer, seed):
+        EAVE, RIDGE, HIP = 27, 13, 9
+        # toit en croupe : pan avant (trapèze), faîtage, petits-bois qui convergent
+        for y in range(RIDGE, EAVE + 1):
+            f = (y - RIDGE) / (EAVE - RIDGE)                  # 0 au faîtage, 1 à l'égout
+            inset = round(HIP * (1 - f))
+            a = x0 + inset if outer == 'g' else x0
+            b = x1 - inset if outer == 'd' else x1
+            for x in range(a, b + 1):
+                c = 'G3' if f < 0.3 else 'G2' if f < 0.85 else 'G1'
+                cv.put(x, y, c)
+            for k in range(0, 7):                             # petits-bois
+                xa = x0 + (x1 - x0) * k / 6
+                xr = x0 + HIP + (x1 - x0 - HIP) * k / 6 if outer == 'g' else x0 + (x1 - HIP - x0) * k / 6
+                x = round(xr + (xa - xr) * f)
+                if a <= x <= b:
+                    cv.put(x, y, 'G0')
+                    if x + 1 <= b and f > 0.1:
+                        cv.put(x + 1, y, 'G1' if f > 0.5 else 'G2')
+            cv.put(a, y, 'G0'); cv.put(b, y, 'G0')            # arêtiers
+        ra = x0 + HIP if outer == 'g' else x0
+        rb = x1 - HIP if outer == 'd' else x1
+        cv.hline(ra, rb, RIDGE, 'G0')
+        cv.hline(ra, rb, RIDGE - 1, 'V1')                     # crête du faîtage
+        for x in range(ra + 2, rb - 1, 5):
+            cv.put(x, RIDGE - 2, 'V1')
+        cv.hline(x0, x1, EAVE + 1, 'G0'); cv.hline(x0, x1, EAVE + 2, 'V1')   # chéneau
+        # façade : imposte, traverse, grandes vitres
         w = (x1 - x0) // 3
         for i in range(3):
-            a, b = x0 + i * w, x0 + (i + 1) * w if i < 2 else x1
-            pane(a + 1, 28, b - 1, 35, 0, seed + i)
-            pane(a + 1, 37, b - 1, 77, 0.45, seed * 7 + i * 3)
-            cv.vline(a, 28, 78, 'G0')
-        cv.vline(x1, 28, 78, 'G0')
+            aa, bb = x0 + i * w, x0 + (i + 1) * w if i < 2 else x1
+            interieur(aa + 1, EAVE + 3, bb - 1, 35, seed + i, plantes=False)
+            interieur(aa + 1, 37, bb - 1, WB - 1, seed * 7 + i * 3)
+        for y in (EAVE + 3, EAVE + 4):                        # ombre du chéneau sur la façade
+            for x in range(x0, x1 + 1):
+                assombrir(cv, x, y)
         cv.hline(x0, x1, 36, 'G0')
-        cv.hline(x0, x1, 78, 'G0')
-        cv.hline(x0, x1, 79, 'V1')
+        for x in range(x0, x1 + 1):
+            assombrir(cv, x, 37)                              # ombre de la traverse
+        montants(x0, x1, [x0 + i * w for i in range(3)] + [x1], EAVE + 3, WB)
+        cv.hline(x0, x1, WB, 'G0')
+        cv.hline(x0, x1, WB + 1, 'V1')                        # solin, au ras du sol
 
-    wing(1, 29, 1)
-    wing(66, 94, 2)
-    # pavillon central : ogive
+    aile(1, 31, 'g', 1)
+    aile(64, 94, 'd', 2)
+    # pavillon central : dôme sur une corniche, façade qui avance
     CX0, CX1, MID = 30, 65, 47.5
-    for y in range(4, 28):
-        r = 27.0
-        half = (CX1 - CX0) / 2
-        dy = 27 - y
-        if dy > r:
-            continue
-        hw = MID - (MID - half + r - math.sqrt(max(0, r * r - dy * dy)))
+    RX, TOP, BASE = 17.5, 4, 28
+    for y in range(TOP, BASE + 1):
         for x in range(CX0, CX1 + 1):
-            d = abs(x + 0.5 - (MID + 0.5))
-            if d <= hw - 1:
-                cv.put(x, y, 'G3' if (x < MID and y < 14) else 'G2' if x < MID + 6 else 'G1')
-            elif d <= hw:
-                cv.put(x, y, 'G0')
-    for y in range(5, 28):
-        cv.put(int(MID), y, 'G0'); cv.put(int(MID) + 1, y, 'G0')
-    for x in range(CX0 + 3, CX1 - 2):                         # traverse courbe
-        d = abs(x + 0.5 - (MID + 0.5))
-        cv.put(x, 15 + round((d / 17.5) ** 2 * 5), 'G0')
+            dx = (x + 0.5 - (MID + 0.5)) / RX
+            dy = (BASE - (y + 0.5)) / (BASE - TOP)
+            q = dx * dx + dy * dy
+            if q > 1:
+                continue
+            nz = math.sqrt(max(0, 1 - q))
+            lv = level(dx * 1.1, -dy * 0.9 + 0.15)
+            c = ('G0', 'G1', 'G2', 'G3', 'G3')[lv]
+            if q > 0.9:
+                c = 'G0'                                      # bord du dôme
+            t = math.asin(max(-1, min(1, dx / math.sqrt(max(1e-6, 1 - dy * dy)))))
+            if any(abs(t - c0) < 0.09 for c0 in (-1.0, -0.33, 0.33, 1.0)) and dy < 0.96:
+                c = 'G0'                                      # côtes qui s'incurvent vers le sommet
+            if abs(dy - 0.45) < 0.035:
+                c = 'G0'                                      # anneau
+            cv.put(x, y, c)
     cv.put(int(MID), 2, 'A4'); cv.put(int(MID), 3, 'A6'); cv.put(int(MID) + 1, 3, 'A6')   # épi
-    cv.hline(CX0, CX1, 28, 'G0'); cv.hline(CX0, CX1, 29, 'V1')
-    pane(CX0 + 1, 30, CX0 + 8, 77, 0.45, 11)
-    pane(CX1 - 8, 30, CX1 - 1, 77, 0.45, 4)
-    for x in (CX0, CX0 + 9, CX1 - 9, CX1):
-        cv.vline(x, 30, 78, 'G0')
-    # imposte et double porte vitrée
-    for y in range(31, 40):
+    cv.hline(CX0 - 1, CX1 + 1, BASE, 'G0'); cv.hline(CX0 - 1, CX1 + 1, BASE + 1, 'V1')    # corniche
+    interieur(CX0 + 1, 31, CX0 + 8, PB - 1, 11)
+    interieur(CX1 - 8, 31, CX1 - 1, PB - 1, 4)
+    for y in (31, 32):
+        for x in range(CX0, CX1 + 1):
+            assombrir(cv, x, y)
+    montants(CX0, CX1, [CX0, CX0 + 9, CX1 - 9, CX1], 30, PB)
+    # imposte et double porte vitrée, en retrait (ébrasement dans l'ombre en haut et à gauche)
+    for y in range(31, 41):
         for x in range(CX0 + 10, CX1 - 9):
-            d = math.hypot(x + 0.5 - (MID + 0.5), (y + 0.5 - 40) * 1.2)
+            d = math.hypot(x + 0.5 - (MID + 0.5), (y + 0.5 - 41) * 1.2)
             if d <= 8:
-                cv.put(x, y, 'G0' if d > 7 else 'G3' if x < MID else 'G2')
-    cv.hline(CX0 + 10, CX1 - 10, 40, 'G0')
+                cv.put(x, y, 'G0' if d > 7 else 'G3' if x < MID - 2 else 'G2')
+    cv.hline(CX0 + 10, CX1 - 10, 41, 'G0')
     for a, b in ((CX0 + 10, int(MID)), (int(MID) + 1, CX1 - 10)):
-        pane(a + 1, 42, b - 1, 70, 0, a)
-        cv.rect(a + 1, 71, b - 1, 77, 'G0')
+        interieur(a + 1, 43, b - 1, 70, a, plantes=False)
+        cv.rect(a + 1, 71, b - 1, PB - 1, 'G0')
         cv.hline(a + 1, b - 1, 71, 'G1')
-        cv.box(a, 41, b, 78, 'G0')
+        cv.box(a, 42, b, PB, 'G0')
+        cv.hline(a + 1, b - 1, 43, 'G0'); cv.vline(a + 1, 43, 70, 'G1')   # ébrasement
     cv.put(int(MID) - 2, 58, 'A4'); cv.put(int(MID) + 3, 58, 'A4')
-    cv.hline(CX0, CX1, 78, 'G0')
-    cv.hline(0, 95, 79, 'V1')
+    cv.hline(CX0, CX1, PB, 'G0')
+    cv.hline(CX0, CX1, PB + 1, 'V1')
+    for x in range(CX1 + 1, CX1 + 5):                         # ombre du pavillon sur l'aile droite
+        for y in range(BASE + 2, WB + 1):
+            assombrir(cv, x, y)
     outline_by_material(cv)
-    remonter(cv, 2)
     ombre_sol(cv)
     return cv.im
 
@@ -777,6 +935,15 @@ def citerne(niveau):
     E2), socle de planches ; `niveau` de 0 (vide) à 4 (plein)."""
     cv = Canvas(32, 48)
     C, RX, RY = 15.5, 10.5, 3.5
+    # socle rond de planches : dessus elliptique, tranche aux planches verticales
+    def planche(x, y, u, v, lv):
+        c = 'W3' if lv >= 3 else 'W1'
+        if u % 3 < 0.8:
+            c = 'W1' if lv >= 3 else 'W0'
+        cv.put(x, y, c)
+    cylindre(cv, C, 37, 41.5, 12.5, 4.2, planche)
+    for (x, y) in disque(C, 37, 12.5, 4.2):
+        cv.put(x, y, 'W3' if x + 0.5 < C + 5 else 'W1')
 
     def tole(x, y, u, v, lv):
         c = ('R1', 'R1', 'R2', 'R3', 'R3')[lv]
@@ -796,10 +963,9 @@ def citerne(niveau):
         cv.put(19, y, 'E2' if filled else 'G3')
         cv.put(20, y, 'E1' if filled else 'G3')
     cv.box(18, g0 - 1, 21, g1 + 1, 'W0')
-    planks(cv, 3, 40, 28, 45, False, 3, 'W3')                 # socle
     cv.hline(0, 5, 17, 'R3'); cv.hline(0, 5, 18, 'R1')        # arrivée du tuyau de la pompe
     outline_by_material(cv)
-    ombre_sol(cv)
+    ombre_ronde(cv, C, 41.5, 12.5, 4.2)
     return cv.im
 
 
