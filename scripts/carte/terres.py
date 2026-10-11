@@ -43,7 +43,7 @@ BATIMENTS = {
 }
 # Rectangles de tuiles interdits en plus (x0, y0, x1, y1 inclus), en tuiles de 16 px.
 ENCLOS = [
-    (38, 18, 41, 20),   # le puits et la citerne, à droite de la maison (DEFAULT_OBJECTS.puits et .citerne dans js/farm-stage.js)
+    (37, 24, 40, 26),   # le puits et la citerne, en haut à gauche du Moulin (DEFAULT_OBJECTS.puits et .citerne dans js/farm-stage.js)
 ]
 
 

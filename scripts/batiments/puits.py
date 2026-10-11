@@ -1,4 +1,4 @@
-# assets/puits.png : le puits de la ferme, à droite de la maison, 2 images de 34×40 :
+# assets/puits.png : le puits de la ferme, en haut à gauche du Moulin, 2 images de 34×40 :
 #   0 : le vieux puits seul (margelle de pierres, deux poteaux, toit de bardeaux, seau) ;
 #   1 : le même, avec la pompe électrique achetée, posée à sa droite, son tuyau plongé dans le puits.
 # Toit aux couleurs de celui de la maison. Lumière à gauche.
