@@ -57,11 +57,14 @@ export function watchLevels() {
 }
 
 // Tous les niveaux : seuil, déblocages, atteint ou non.
-function openLevelsModal() {
+// FLU-29 : le niveau en cours et les deux suivants ; « Voir tous les niveaux » pour le reste.
+function openLevelsModal(tous = false) {
   tel('modal', 'levels');
   const p = levelProgress(state);
   const rows = [];
-  for (let n = 1; n <= levelCount(); n++) {
+  const debut = tous ? 1 : p.niveau;
+  const fin = tous ? levelCount() : Math.min(levelCount(), p.niveau + 2);
+  for (let n = debut; n <= fin; n++) {
     const done = n <= p.niveau;
     rows.push(`
       <li class="objective${done ? ' ok' : ''}">
@@ -77,6 +80,7 @@ function openLevelsModal() {
         <div class="stack">${levelBarHtml()}</div>
         <p class="muted">L'expérience vient de tes actions : planter ${xp.planter} XP, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée au Marché ; et de chaque chapitre terminé. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
         <ul class="objectives">${rows.join('')}</ul>
+        ${tous || (debut === 1 && fin === levelCount()) ? '' : `<p class="row"><button type="button" class="btn" data-action="levels-all">Voir tous les niveaux (${levelCount()})</button></p>`}
         <button type="button" class="btn primary" data-action="close-modal" id="levels-close">Fermer</button>
       </div>
     </div>`;
@@ -88,5 +92,8 @@ function openLevelsModal() {
 registerActions({
   'open-levels': () => {
     openLevelsModal();
+  },
+  'levels-all': () => {
+    openLevelsModal(true);
   },
 });

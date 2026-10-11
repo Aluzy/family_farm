@@ -95,6 +95,9 @@
 >   ouvert… » (le message y mène). Chaque branche est un bloc repliable, fermé sauf la
 >   première qui a une technologie à acquérir (« ✨ À acquérir ») ; tout replié, l'arbre fait
 >   moins de 700 px à 390 px. Ouvert ou fermé par le joueur, un bloc le reste.
+>- **Niveaux et Ville (FLU-29)** : la fenêtre Niveaux montre le niveau en cours et les deux
+>   suivants, puis « Voir tous les niveaux (10) ». Dans la Ville, les sorties d'abord, les
+>   voyages dans un bloc replié.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

@@ -89,8 +89,10 @@ export function renderVille() {
     </div>
     <h3 class="section-title">Sorties en ville</h3>
     <div class="plots outings">${enVille.map(outingCard).join('')}</div>
-    <h3 class="section-title">Voyages</h3>
-    <div class="plots outings">${voyages.map(outingCard).join('')}</div>
+    <details class="more">
+      <summary>✈️ Voyages (${voyages.length})</summary>
+      <div class="plots outings">${voyages.map(outingCard).join('')}</div>
+    </details>
     <h3 class="section-title">🧺 Marché de la ville</h3>
     ${townMarketHtml()}`;
 }
