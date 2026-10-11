@@ -1,0 +1,67 @@
+{
+ "//": "Planche des bâtiments redessinés (scripts/batiments/remaster.py) : nom → coin haut-gauche de la première image, taille d'une image, nombre d'images ; les images d'un bâtiment se suivent vers la droite, à 2 px d'écart.",
+ "ecart": 2,
+ "maison": {
+  "x": 0,
+  "y": 0,
+  "w": 93,
+  "h": 97,
+  "images": 1
+ },
+ "etable": {
+  "x": 95,
+  "y": 0,
+  "w": 104,
+  "h": 93,
+  "images": 1
+ },
+ "moulin": {
+  "x": 0,
+  "y": 99,
+  "w": 96,
+  "h": 128,
+  "images": 4
+ },
+ "serre": {
+  "x": 392,
+  "y": 99,
+  "w": 94,
+  "h": 83,
+  "images": 1
+ },
+ "poulailler": {
+  "x": 0,
+  "y": 229,
+  "w": 44,
+  "h": 55,
+  "images": 3
+ },
+ "silo": {
+  "x": 138,
+  "y": 229,
+  "w": 28,
+  "h": 62,
+  "images": 1
+ },
+ "puits": {
+  "x": 168,
+  "y": 229,
+  "w": 34,
+  "h": 40,
+  "images": 3
+ },
+ "citerne": {
+  "x": 276,
+  "y": 229,
+  "w": 24,
+  "h": 34,
+  "images": 5
+ },
+ "panneaux_toit": {
+  "x": 0,
+  "y": 293,
+  "w": 32,
+  "h": 47,
+  "images": 6
+ }
+}

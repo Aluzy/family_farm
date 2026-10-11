@@ -5,8 +5,8 @@
 # gauche, pas de bruit ni de tramage.
 #
 # Pavillon central en ogive (verrière cintrée, épi de faîtage, double porte vitrée) entre deux
-# ailes vitrées à toit de verre ; ossature de fer peinte en vert ; soubassement de pierres comme
-# la margelle du puits ; des plantes se devinent derrière les vitres.
+# ailes vitrées à toit de verre ; ossature de fer peinte en vert, posée à même le sol ; des plantes
+# se devinent derrière les vitres.
 #
 #   python3 scripts/batiments/serre.py            écrit assets/serre_essai.png
 #   python3 scripts/batiments/serre.py --apercu   écrit aussi apercu_serre.png (l'original et
@@ -25,8 +25,6 @@ C = {
     'gd': (112, 162, 164), 'gm': (150, 198, 196), 'gl': (192, 228, 222), 'gh': (234, 248, 244),
     # plantes derrière le verre (teintes passées par la vitre)
     'pd': (60, 116, 84), 'pm': (86, 146, 96), 'pl': (126, 180, 112),
-    # pierres (comme la margelle du puits)
-    'so': (50, 40, 44), 'sj': (70, 64, 62), 'sd': (96, 92, 88), 'sm': (124, 120, 112), 'sl': (156, 152, 140), 'sh': (184, 180, 166),
     # laiton (poignées, épi)
     'yo': (74, 48, 20), 'ym': (200, 150, 60), 'yl': (244, 214, 120),
 }
@@ -97,29 +95,10 @@ def outline_rect(x0, y0, x1, y1, c='fo'):
         put(x1, y, c)
 
 
-# ---------------------------------------------------------------- soubassement de pierres
-
-BASE_Y0, BASE_Y1 = 72, 82
-
-
-def stones(x0, x1):
-    for y in range(BASE_Y0, BASE_Y1 + 1):
-        row = (y - BASE_Y0 - 1) // 3
-        for x in range(x0, x1 + 1):
-            if y in (BASE_Y0, BASE_Y1) or x in (x0, x1):
-                put(x, y, 'so')
-                continue
-            if (y - BASE_Y0 - 1) % 3 == 2 or (x + (row % 2) * 4) % 8 == 0:
-                put(x, y, 'sj')
-                continue
-            t = (x - x0) / max(1, x1 - x0)
-            put(x, y, 'sh' if y == BASE_Y0 + 1 else 'sl' if t < 0.3 else 'sm' if t < 0.75 else 'sd')
-
-
 # ---------------------------------------------------------------- les ailes
 
 WING_ROOF_Y0, WING_ROOF_Y1 = 14, 26     # toit de verre (vu de face : une bande inclinée)
-WALL_Y0, WALL_Y1 = 27, 71
+WALL_Y0, WALL_Y1 = 27, 80      # le mur vitré descend jusqu'au sol, sur une traverse de fer
 
 
 def wing(x0, x1, seed):
@@ -276,11 +255,6 @@ def pavilion():
 wing(1, CX0 - 1, 1)
 wing(CX1 + 1, W - 2, 2)
 pavilion()
-stones(0, W - 1)
-# marche devant la porte
-for x in range(CX0 + 10, CX1 - 9):
-    put(x, BASE_Y0, 'sh')
-    put(x, BASE_Y0 + 1, 'sl')
 
 out = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'serre_essai.png'))
 im.save(out)
