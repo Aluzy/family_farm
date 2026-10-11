@@ -120,7 +120,7 @@ export function subtabsHtml(tabs, current, action) {
   return `<div class="subtabs${tabs.length > 3 ? ' compact' : ''}" role="group" aria-label="Sections">${tabs
     .map(
       (t) =>
-        `<button type="button" class="subtab-btn${t.id === current ? ' active' : ''}" data-action="${action}" data-tab="${t.id}" aria-pressed="${t.id === current}" title="${t.label}"><span class="subtab-icon" aria-hidden="true">${t.icon}</span><span class="subtab-label">${t.label}</span></button>`
+        `<button type="button" class="subtab-btn${t.id === current ? ' active' : ''}" data-action="${action}" data-tab="${t.id}" aria-pressed="${t.id === current}" title="${t.label}"${t.court ? ` aria-label="${t.label}"` : ''}><span class="subtab-icon" aria-hidden="true">${t.icon}</span><span class="subtab-label">${t.court || t.label}</span></button>`
     )
     .join('')}</div>`;
 }

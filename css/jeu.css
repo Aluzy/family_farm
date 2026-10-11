@@ -1646,3 +1646,6 @@ main .ancre { scroll-margin-top: 150px; }
   padding: 8px 0;
   border-top: 1px dashed var(--border);
 }
+
+/* FLU-01 : le bouton « Voir le chapitre » se range à côté de ✕ */
+.window-head .window-chapter { margin-left: auto; margin-right: 8px; }

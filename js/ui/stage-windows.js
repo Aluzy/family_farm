@@ -1,7 +1,8 @@
 import { DATA } from '../engine/catalog.js';
 import { energyLevel } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
-import { allDevices, farmOpen } from '../engine/devices.js';
+import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
+import { houseRepaired } from '../engine/depart.js';
 import { awakeRequired } from '../engine/clock.js';
 import { planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
@@ -91,9 +92,17 @@ export function leaveInterior() {
 
 let stageWindowShown = null; // dernière fenêtre dessinée (avec son onglet) : pour remonter en haut au changement
 let maisonTab = 'famille'; // onglet de la fenêtre Maison
+let maisonTabChoisi = 'famille'; // FLU-03 : le dernier onglet que le joueur a choisi
 export function setMaisonTab(value) {
   maisonTab = value;
   return value;
+}
+
+// FLU-03 : la Maison s'ouvre là où il y a à faire : Installations tant que la maison est à
+// réparer ou que le panneau, la pompe ou le réservoir manquent ; sinon le dernier onglet choisi.
+function maisonTabAOuvrir() {
+  const manque = !houseRepaired(state) || ['panneau', 'pompe', 'reservoir'].some((id) => !isOwned(starterOf(state, id)));
+  return manque ? 'batiments' : maisonTabChoisi;
 }
 let ancreVoulue = null; // id de l'élément à amener en haut au prochain rendu (calendrier, eau…)
 export function setAncreVoulue(value) {
@@ -102,10 +111,11 @@ export function setAncreVoulue(value) {
 }
 
 export const MAISON_TABS = [
+  // FLU-04 : `court` s'affiche sur l'onglet, `label` reste le nom complet (infobulle, lecteurs d'écran)
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), corps: () => renderFamille() },
-  { id: 'recettes', label: 'Livre de recette', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
-  { id: 'techno', label: 'Arbre des technologies', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
-  { id: 'batiments', label: 'Installations', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
+  { id: 'recettes', label: 'Livre de recette', court: 'Recettes', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
+  { id: 'techno', label: 'Arbre des technologies', court: 'Techno', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
+  { id: 'batiments', label: 'Installations', court: 'Énergie', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
   // version 1.14 : le commerce du niveau 10
   { id: 'commerce', label: 'Commerce', icon: '🏪', ok: () => isUnlocked(state, 'commerce'), corps: () => renderCommerce() },
 ];
@@ -254,7 +264,7 @@ export function renderStageWindow() {
       <section class="stage-window ${w.haute ? 'tall' : 'half'}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
         <header class="window-head">
           <h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>
-          ${stageWindow !== 'chapitres' ? '<button type="button" class="icon-btn" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
+          ${stageWindow !== 'chapitres' ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
           <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer la fenêtre" title="Fermer">✕</button>
         </header>
         ${w.onglets && !windowLocked(stageWindow) ? `<div class="window-tabs">${w.onglets()}</div>` : ''}
@@ -283,6 +293,7 @@ export function openStageWindow(id) {
   // Un bâtiment qui a un intérieur : depuis la carte, on y entre. Une fois dedans, la même
   // action ouvre sa fenêtre (agrandir, tout arroser, tout récolter).
   if (INTERIORS[id] && stageInterior !== id && enterInterior(id)) return;
+  if (id === 'maison') maisonTab = maisonTabAOuvrir();
   stageWindow = id;
   stageReturn = null;
   renderStageWindow(); // tout de suite, sans attendre la cadence de rendu
@@ -450,6 +461,7 @@ registerActions({
   },
   'maison-tab': (target) => {
     maisonTab = target.dataset.tab;
+    maisonTabChoisi = maisonTab;
     renderStageWindow();
     refresh();
   },

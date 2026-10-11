@@ -15,6 +15,12 @@
 >   liste des chapitres. Chaque fenêtre de la carte a un bouton 📜 « Voir le chapitre »
 >   (et le Marché, tant que la houe n'est pas achetée).
 > - **Houe en main (FLU-41)**, la puce d'objectif se réduit à son icône et à sa valeur.
+> - **Une touche (FLU-02)** : déjà le cas en v1.15 (une touche ouvre la fiche d'un lieu, un
+>   glissement n'ouvre rien) ; rien à changer.
+> - **Maison (FLU-03, FLU-04)** : elle s'ouvre sur Installations tant que la maison est à
+>   réparer ou que le panneau, la pompe ou le réservoir manquent, sinon sur le dernier onglet
+>   choisi. Onglets courts : Famille, Recettes, Techno, Énergie (le nom complet reste dans
+>   l'infobulle et pour les lecteurs d'écran).
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
