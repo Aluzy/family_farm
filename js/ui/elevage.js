@@ -324,9 +324,9 @@ function iconBtn(emoji, label, attrs, { primary = false, done = false, disabled 
 // Automatisation de la parcelle (semis automatique). Tant que l'Arbre des technologies ne
 // l'a pas débloquée, le bouton est là, grisé, pour qu'on sache qu'elle existe.
 function autoButton(p) {
-  if (!techAuto(state, 'semis', p.lieu)) {
-    return iconBtn('🤖', 'Semis automatique : à débloquer dans l\'Arbre des technologies', '', { disabled: true });
-  }
+  // FLU-27 : rien tant que le semis automatique n'est pas débloqué (la carte garde sa hauteur :
+  // le bouton principal reste sur la ligne)
+  if (!techAuto(state, 'semis', p.lieu)) return '';
   return iconBtn('🤖', semisLabel(p).replace(/^\S+ /, ''), `data-action="semis-open" data-id="${p.id}"`, { done: p.semis !== 'off' });
 }
 

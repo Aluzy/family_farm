@@ -88,6 +88,8 @@
 >   pour la pompe à plein débit », « Les appareils attendent le soleil ») avec une jauge par
 >   rapport au maximum des panneaux ; la batterie dit « En charge » ou « En décharge ». Les
 >   valeurs en Wh/s ne restent que dans l'aide « ? » de chaque appareil.
+>- **Parcelles (FLU-27)** : le bouton 🤖 du semis automatique n'apparaît qu'une fois la
+>   technologie débloquée.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**
