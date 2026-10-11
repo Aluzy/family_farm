@@ -31,6 +31,13 @@
 > - **Barre du bas (FLU-08)** : le Marché y est dès le départ, grisé avec un cadenas tant que
 >   le panneau et la pompe ne sont pas installés (une touche le dit) : les 5 onglets ne
 >   bougent plus.
+> - **Actions groupées (FLU-09, FLU-10, FLU-11)** : sous les parcelles, dès le niveau 1,
+>   « 🌱 Planter partout (N vides) » (même choix de graine que pour une parcelle, puis toutes
+>   les parcelles vides dans la limite des graines et de l'énergie ; `plantAll`), « 💧 Arroser
+>   tout (N · L · ⚡) » et « 🧺 Récolter tout (N · ⚡) ». Mêmes eau, énergie et XP qu'à la main ;
+>   un bouton qui ne peut pas servir est grisé et une phrase dit ce qui manque.
+>   **Outils de jardin** (arbre, `cu_outils`) : ces actions groupées coûtent 25 % d'énergie en
+>   moins (`groupeEconome`), au lieu de les débloquer. Le joueur automatique ne les utilise pas.
 >
 > **v37 (jeu 1.15) : la houe sur toute la carte** (`data/terrain.json` écrit par
 > `scripts/carte/terres.py`, `js/engine/crops.js`, `js/farm-stage.js`). Cette note **fait foi**

@@ -1,7 +1,8 @@
 import { DATA } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { countItem } from '../engine/inventory.js';
-import { energyChip } from './energie.js';
+import { energyChip, formatEnergy } from './energie.js';
+import { actionCost } from '../engine/stamina.js';
 import {
   allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plotZone, seedStock,
   toggleBolting, water, waterCost, waterCostFor,
@@ -13,7 +14,7 @@ import {
   strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
 } from '../engine/animals.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
-import { AUTO_TACHES, harvestAll, isAutomated, setSemis, waterAll } from '../engine/automation.js';
+import { AUTO_TACHES, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { state } from './store.js';
@@ -245,14 +246,67 @@ export function autoChip(id, title) {
 
 // Arbre v2 (Outils de jardin) : « Arroser tout » et « Récolter tout ». `zone` (facultatif) :
 // 1 pour la Zone de culture seule, 2 pour le Champ seul (les deux portent le lieu 'potager').
+// Fluidité (FLU-09, FLU-10, FLU-11) : « Planter partout », « Arroser tout » et « Récolter
+// tout », dès le niveau 1, avec leur coût (eau, énergie) ; un bouton qui ne peut pas servir
+// dit pourquoi, en toutes lettres.
 export function groupButtons(lieu, zone) {
-  const g = techFlag(state, 'actionsGroupees') || [];
-  if (!g.length) return '';
   const plots = allPlots(state).filter((p) => p.lieu === lieu && (!zone || plotZone(p) === zone));
   const z = zone ? ` data-zone="${zone}"` : '';
-  const aArroser = plots.filter((p) => p.culture && !p.arrose && !isMature(p)).length;
+  const vides = plots.filter((p) => !p.culture).length;
+  const aArroser = plots.filter((p) => p.culture && !p.arrose && !isMature(p));
   const murs = plots.filter((p) => p.culture && isMature(p)).length;
-  return `${g.includes('arroser') ? `<button type="button" class="btn" data-action="water-all" data-lieu="${lieu}"${z}${aArroser ? '' : ' disabled'}>💧 Arroser tout (${aArroser})</button>` : ''}${g.includes('recolter') ? `<button type="button" class="btn" data-action="harvest-all" data-lieu="${lieu}"${z}${murs ? '' : ' disabled'}>🧺 Récolter tout (${murs})</button>` : ''}`;
+  const remise = (n) => n - Math.floor((n * (techFlag(state, 'groupeEconome') || 0)) / 100);
+  const btns = [];
+  const notes = [];
+  if (vides) {
+    btns.push(`<button type="button" class="btn" data-action="plant-all-open" data-lieu="${lieu}"${z}>🌱 Planter partout (${vides} vide${vides > 1 ? 's' : ''})</button>`);
+  }
+  if (aArroser.length) {
+    const litres = aArroser.reduce((t, p) => t + waterCost(state, p), 0);
+    const energie = remise(aArroser.length * actionCost(state, 'arroser'));
+    const eau = state.eauMl / 1000;
+    let manque = '';
+    if (eau + 1e-9 < litres) manque = `Il manque ${formatQty(litres - eau)} L d'eau pour tout arroser.`;
+    else if ((Number(state.energie) || 0) < energie) manque = `Il manque ${formatEnergy(energie - (Number(state.energie) || 0))} d'énergie pour tout arroser.`;
+    btns.push(`<button type="button" class="btn" data-action="water-all" data-lieu="${lieu}"${z}${manque ? ' disabled' : ''}>💧 Arroser tout (${aArroser.length} · ${formatQty(litres)} L · ⚡ ${formatEnergy(energie)})</button>`);
+    if (manque) notes.push(manque);
+  }
+  if (murs) {
+    const energie = remise(murs * actionCost(state, 'recolter'));
+    const manque = (Number(state.energie) || 0) < energie ? `Il manque ${formatEnergy(energie - (Number(state.energie) || 0))} d'énergie pour tout récolter.` : '';
+    btns.push(`<button type="button" class="btn" data-action="harvest-all" data-lieu="${lieu}"${z}${manque ? ' disabled' : ''}>🧺 Récolter tout (${murs} · ⚡ ${formatEnergy(energie)})</button>`);
+    if (manque) notes.push(manque);
+  }
+  return btns.join('') + notes.map((n) => `<span class="muted group-note">${n}</span>`).join('');
+}
+
+// FLU-09 : choix de la culture pour toutes les parcelles vides d'un lieu (d'une zone).
+function openPlantAllModal(lieu, zone) {
+  tel('modal', 'plant');
+  const vides = allPlots(state).filter((p) => p.lieu === lieu && (!zone || plotZone(p) === Number(zone)) && !p.culture).length;
+  const z = zone ? ` data-zone="${zone}"` : '';
+  const rows = plantableCropsFor(state, lieu)
+    .map((c) => {
+      const def = DATA.crops[c];
+      const n = seedStock(state, c);
+      const stock = def.graines.mode === 'plant' ? 'Plants' : 'Graines';
+      return `
+        <button type="button" class="btn plant-choice" data-action="plant-all" data-lieu="${lieu}"${z} data-crop="${c}"${n >= 1 ? '' : ' disabled'}>
+          <span>${def.icone} ${def.nom}</span>
+          <span class="muted">${stock} : ${formatQty(n)} pour ${vides} parcelle${vides > 1 ? 's' : ''} · ${def.stades} nuits · ⚡ ${formatEnergy(Math.min(vides, Math.floor(n)) * actionCost(state, 'planter'))}</span>
+        </button>`;
+    })
+    .join('');
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="plant-title" data-stop-propagation>
+        <h2 id="plant-title">🌱 Planter partout</h2>
+        <p class="muted">La même culture sur les ${vides} parcelle${vides > 1 ? 's' : ''} vide${vides > 1 ? 's' : ''}, autant que tes graines et ton énergie le permettent.</p>
+        <div class="stack">${rows}</div>
+        <button type="button" class="btn" data-action="close-modal">Annuler</button>
+      </div>
+    </div>
+  `;
 }
 
 function semisLabel(p) {
@@ -439,6 +493,19 @@ registerActions({
   'shear': (target) => {
     const result = applyResult(shear(state, target.dataset.id));
     if (result.ok) showToast(`✂️ Tonte : +${result.laine} 🧶`);
+  },
+  'plant-all-open': (target) => {
+    openPlantAllModal(target.dataset.lieu, target.dataset.zone);
+  },
+  'plant-all': (target) => {
+    closeModal();
+    const zone = target.dataset.zone ? Number(target.dataset.zone) : undefined;
+    const result = applyResult(plantAll(state, target.dataset.lieu, target.dataset.crop, zone));
+    if (result.ok) {
+      const def = DATA.crops[target.dataset.crop];
+      const reste = result.vides - result.plantees;
+      showToast(`🌱 ${plural(result.plantees, 'parcelle')} de ${def.nom.toLowerCase()} plantée${result.plantees > 1 ? 's' : ''}${reste ? ` · ${reste} restée${reste > 1 ? 's' : ''} vide${reste > 1 ? 's' : ''} : ${result.raison}` : ''}`);
+    }
   },
   'water-all': (target) => {
     const result = applyResult(waterAll(state, target.dataset.lieu, target.dataset.zone));

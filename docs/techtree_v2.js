@@ -165,8 +165,8 @@ export const TECHTREE_V2 = {
     cu_outils: {
       branche: 'culture', palier: 1, nom: 'Outils de jardin', icone: '🧰', fonction: 'temps',
       pt: 1, cout: 100, requiert: [],
-      effet: { actionsGroupees: ['arroser', 'recolter'] },
-      description: 'Ajoute « Arroser tout » et « Récolter tout » au Potager, au Champ et à la Serre.',
+      effet: { groupeEconome: 25 },
+      description: '« Planter partout », « Arroser tout » et « Récolter tout » coûtent 25 % d\'énergie en moins.',
     },
     cu_semences: {
       branche: 'culture', palier: 2, nom: 'Sélection des semences', icone: '🌰', fonction: 'productivite',

@@ -1709,3 +1709,6 @@ main .ancre { scroll-margin-top: 150px; }
 .nav-btn.locked { opacity: 0.55; }
 .nav-btn.locked .nav-icon { position: relative; }
 .nav-btn .nav-lock { position: absolute; right: -10px; bottom: -4px; font-size: 0.8rem; }
+
+/* FLU-11 : ce qui manque pour une action groupée, écrit sous les boutons */
+.group-note { flex: 1 0 100%; color: var(--color-danger, #b3261e); font-weight: 600; }

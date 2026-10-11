@@ -796,8 +796,8 @@ export const RAW_DATA = {
         "pt": 1,
         "cout": 100,
         "requiert": [],
-        "effet": { "actionsGroupees": ["arroser", "recolter"] },
-        "description": "Ajoute « Arroser tout » et « Récolter tout » à la Zone de culture et à la Serre."
+        "effet": { "groupeEconome": 25 },
+        "description": "« Planter partout », « Arroser tout » et « Récolter tout » coûtent 25 % d'énergie en moins."
       },
       "cu_semences": {
         "branche": "culture",

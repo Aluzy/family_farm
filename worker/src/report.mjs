@@ -31,6 +31,7 @@ export const GAME_ACTIONS = {
   'buy-item': 'Acheter un produit ou une graine',
   'buy-animal': 'Acheter un animal',
   'plant-tree': 'Planter un arbre',
+  'plant-all': 'Planter partout',
   'commerce-choose': 'Choisir un commerce',
   'commerce-upgrade': 'Agrandir le commerce',
   'commerce-quota-dec': 'Régler le commerce',
@@ -95,7 +96,7 @@ export const INTERFACE_ACTIONS = new Set([
   'stage-open', 'stage-close', 'maison-tab', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
   // réglages de quantité (Moulin, achats), fiche d'un membre de la famille
-  'stage-goto', 'stage-pan', 'stage-pan-down', 'market-locked', 'aller', 'comptoir-tab', 'inv-tab',
+  'stage-goto', 'stage-pan', 'stage-pan-down', 'market-locked', 'plant-all-open', 'aller', 'comptoir-tab', 'inv-tab',
   'mill-dec', 'mill-inc', 'mill-max', 'buy-dec', 'buy-inc', 'buy-max',
   'animal-dec', 'animal-inc', 'animal-max',
   'member-edit', 'member-genre', 'member-teint', 'member-style', 'wake-more',

@@ -54,7 +54,7 @@ import {
   testRipenAll, testSetBuildingLevel5, testSetWear, testSleepNights, testUnlockAllTechs,
   testWearMill, testWoolReady, tick, toggleBolting, toggleDevice, tutorialStep, unlockLevel, unreadMail,
   updateChapters, upgradeCost, upgradeDevice, upgradePoulailler, upgradeSerre,
-  upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, waterCostFor,
+  upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
 } from '../js/engine/index.js';
 
@@ -3069,17 +3069,26 @@ test('arbre v2 : effets sur les cultures et l\'élevage', () => {
   grantTech(s, 'ea_gestion');
   assertEqual(waterCostFor(s, 'courgette', 'potager'), 3, '4 × 76 % = 3,04 → 3');
   assertEqual(waterCostFor(s, 'carotte', 'potager'), 2, '2 × 76 % = 1,52 → 2');
-  // Outils de jardin : Arroser tout, Récolter tout
+  // Fluidité (FLU-10) : Arroser tout, Récolter tout dès le départ ; Outils de jardin :
+  // 25 % d'énergie en moins sur ces actions groupées
   const g = garden();
   testAddSeeds(g);
   plant(g, 'potager-1', 'carotte');
   plant(g, 'potager-2', 'carotte');
   plantRipe(g, 'potager-3', 'patate');
-  assertEqual(waterAll(g, 'potager').ok, false, 'sans le nœud');
-  grantTech(g, 'cu_outils');
-  assertEqual(waterAll(g, 'potager'), { ok: true, arrosees: 2, sansEau: 0 });
+  const e0 = g.energie;
+  assertEqual(waterAll(g, 'potager'), { ok: true, arrosees: 2, sansEau: 0, raison: '' }, 'sans le nœud');
+  assertEqual(e0 - g.energie, 2 * actionCost(g, 'arroser'), 'même énergie qu\'à la main');
   assertEqual(harvestAll(g, 'potager').recoltees, 1);
   assertEqual(harvestAll(g, 'potager').ok, false, 'plus rien de mûr');
+  const o = garden();
+  testAddSeeds(o);
+  grantTech(o, 'cu_outils');
+  plant(o, 'potager-1', 'carotte');
+  plant(o, 'potager-2', 'carotte');
+  const e1 = o.energie;
+  assert(waterAll(o, 'potager').ok);
+  assertEqual(e1 - o.energie, 2 * actionCost(o, 'arroser') - Math.floor((2 * actionCost(o, 'arroser') * 25) / 100), 'Outils de jardin : −25 %');
   // Sélection des semences : +1 graine, carotte montée en graine 8 au lieu de 6
   const m = garden();
   grantTech(m, 'cu_semences');
@@ -9122,6 +9131,28 @@ test('migration v32 → v33 (FLU-06) : la bulle de la houe n\'est pas remontrée
   neuve.potager.houe = false;
   assertEqual(migrate({ v: 32, t: 0, s: neuve }).potager.houeVue, false);
   assertEqual(createInitialState(1).potager.houeVue, false);
+});
+
+test('FLU-09 : « Planter partout » plante les parcelles vides dans la limite des graines, de l\'énergie et du niveau', () => {
+  const s = garden();
+  setInv(s, { conserve: 100, graine_carotte: 6 });
+  const e = s.energie, xp = s.progression.xp;
+  const r = plantAll(s, 'potager', 'carotte');
+  assertEqual([r.ok, r.plantees, r.vides], [true, 6, 6]);
+  assertEqual([e - s.energie, s.progression.xp - xp], [6 * actionCost(s, 'planter'), 6 * actionXp('planter')], 'comme 6 plantations à la main');
+  assertEqual(plantAll(s, 'potager', 'carotte').ok, false, 'plus de parcelle vide');
+  const peu = garden();
+  setInv(peu, { conserve: 100, graine_carotte: 4 });
+  const r2 = plantAll(peu, 'potager', 'carotte');
+  assertEqual([r2.ok, r2.plantees, r2.vides, /graines/i.test(r2.raison)], [true, 4, 6, true], 'stock insuffisant');
+  const las = garden();
+  setInv(las, { conserve: 100, graine_carotte: 6 });
+  las.energie = actionCost(las, 'planter') * 2;
+  const r3 = plantAll(las, 'potager', 'carotte');
+  assertEqual([r3.plantees, r3.raison], [2, TIRED], 'énergie insuffisante');
+  const ver = garden();
+  setInv(ver, { conserve: 100, graine_poivron: 6 });
+  assertEqual(plantAll(ver, 'potager', 'poivron').ok, false, 'culture pas encore débloquée');
 });
 
 export const results = runTests();
