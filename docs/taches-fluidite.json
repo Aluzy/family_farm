@@ -107,7 +107,7 @@
         "La liste des chapitres reste accessible en une touche depuis la fenêtre ouverte.",
         "Un objectif de type inconnu ouvre toujours la liste des chapitres."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-41",
@@ -121,7 +121,7 @@
         "js/ui/stage.js",
         "css/jeu.css"
       ],
-      "statut": "a_faire",
+      "statut": "fait",
       "constat": "Houe en main à 390 px, la puce d'objectif est coupée en « Faire une première … 0 / 1 » pour laisser la place à la puce « Houe 0 / 6 ✕ ».",
       "consignes": [
         "Houe en main : réduire la puce d'objectif à son icône et à sa valeur (« 🏚️ 0 / 1 ›»), ou placer la puce Houe sur une seconde ligne.",
@@ -152,7 +152,7 @@
         "À 390 px avec écran tactile émulé, une seule touche sur la maison ouvre la fiche Maison.",
         "Faire glisser la carte en partant d'un bâtiment ne l'ouvre pas."
       ],
-      "statut": "a_faire"
+      "statut": "deja_fait"
     },
     {
       "id": "FLU-03",
@@ -173,7 +173,7 @@
         "Nouvelle partie : ouvrir la maison affiche Installations.",
         "Une fois panneau, pompe et réservoir achetés, la maison rouvre sur le dernier onglet utilisé."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-04",
@@ -195,7 +195,7 @@
       "acceptation": [
         "À 360 et 390 px, les trois onglets sont lisibles sans points de suspension."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-05",
@@ -220,7 +220,7 @@
         "Houe non achetée : le bouton n'apparaît pas.",
         "Le message affiché après l'achat de la houe désigne un bouton visible à l'écran."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-06",
@@ -245,7 +245,7 @@
       "acceptation": [
         "Nouvelle partie, première houe en main : la bulle s'affiche une fois, puis plus jamais, même après rechargement."
       ],
-      "statut": "partiel"
+      "statut": "fait"
     },
     {
       "id": "FLU-07",
@@ -268,7 +268,7 @@
         "Un nouveau joueur voit, sans lire d'aide, que la carte continue vers le bas.",
         "Rien ne bouge avec prefers-reduced-motion: reduce."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-08",
@@ -289,7 +289,7 @@
       "acceptation": [
         "Les 5 onglets du bas gardent la même position du début à la fin de la partie."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-09",
@@ -317,7 +317,7 @@
         "4 graines pour 6 parcelles : 4 sont plantées et un message le dit.",
         "npm test au vert avec les nouveaux tests."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-10",
@@ -344,7 +344,7 @@
         "Une ancienne sauvegarde qui avait acheté « Outils de jardin » se charge sans erreur.",
         "node scripts/simulate.mjs ne change pas de verdict à cause de cette tâche (le joueur simulé n'utilise pas l'interface)."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-11",
@@ -368,7 +368,7 @@
       "acceptation": [
         "Réservoir à 5 L pour 12 L nécessaires : le bouton est désactivé et le manque est écrit."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-12",
@@ -393,7 +393,7 @@
         "Houe en main, un glissement sur 6 tuiles d'herbe foncée en laboure 6.",
         "Sans houe, le glissement déplace toujours la carte."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-13",
@@ -414,7 +414,7 @@
       "acceptation": [
         "Nouvelle partie, installations achetées : le Marché s'ouvre sur Acheter, la houe en tête."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-14",
@@ -438,7 +438,7 @@
         "Acheter 6 graines de carotte prend 2 touches (×5 puis ×1).",
         "La hauteur de l'onglet Acheter à 390 px baisse d'au moins un tiers."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-15",
@@ -461,7 +461,7 @@
       "acceptation": [
         "Niveau 1 : l'onglet Graines propose carotte, patate et tomate."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-16",
@@ -483,7 +483,7 @@
       "acceptation": [
         "Matin avec 6 parcelles à arroser : 1 touche depuis le résumé les arrose toutes."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-17",
@@ -507,7 +507,7 @@
       "acceptation": [
         "Nouvelle partie : à aucun moment deux fenêtres ou bandeaux ne se recouvrent avant la première action."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-18",
@@ -530,7 +530,7 @@
       "acceptation": [
         "Capture de l'histoire à 390 px : aucun message ne recouvre le texte."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-19",
@@ -551,7 +551,7 @@
         "Le texte de l'aide ne mentionne plus de parcelle existante avant le labour.",
         "Les deux variantes (avec et sans carte) sont à jour."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-42",
@@ -568,7 +568,7 @@
         "js/ui/chapitres.js",
         "js/engine/"
       ],
-      "statut": "a_faire",
+      "statut": "fait",
       "constat": "Chapitre 1 : après « Acheter une houe au Marché », l'objectif suivant est directement « Faire une première récolte 0 / 1 », 4 nuits plus tard. Rien ne guide le labour, le semis ni l'arrosage, et la puce d'objectif ne mène nulle part d'utile pendant ces 4 jours.",
       "decision_requise": "Ajouter 3 objectifs au chapitre 1 (« Labourer 6 tuiles », « Planter 6 parcelles », « Arroser tes parcelles ») ? Cela change l'XP gagnée par les objectifs : garder la récompense du chapitre identique (200 XP) ? Réponse par défaut si l'auteur ne répond pas : oui aux deux.",
       "consignes": [
@@ -606,7 +606,7 @@
       "acceptation": [
         "Nouvelle partie : en suivant seulement les éléments mis en évidence, on répare la maison, achète panneau, pompe, réservoir et houe, et laboure une tuile."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-21",
@@ -627,7 +627,7 @@
       "acceptation": [
         "Lire les 3 bulles d'aide pendant 2 minutes laisse l'horloge à 6 h."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-22",
@@ -647,7 +647,7 @@
       "acceptation": [
         "À 390 px, le libellé tient sur la ligne du membre."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-23",
@@ -669,7 +669,7 @@
       "acceptation": [
         "Aucune puce d'énergie n'affiche de décimale ni de nombre sans mot."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-24",
@@ -693,7 +693,7 @@
         "À 390 px, membres et énergie tiennent dans le premier écran de la fiche.",
         "Le mot « −30 % » n'apparaît plus sans explication."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-25",
@@ -715,7 +715,7 @@
       "acceptation": [
         "Le mot « coefficient » n'est plus visible sans toucher « ? »."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-26",
@@ -738,7 +738,7 @@
         "Pompe neuve : ni « Entretenir » ni « Réparer » visibles.",
         "« Wh/s » n'apparaît plus hors de l'aide."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-27",
@@ -758,7 +758,7 @@
       "acceptation": [
         "Niveau 1 : aucun bouton robot sur les parcelles."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-28",
@@ -781,7 +781,7 @@
         "Jour 1 : pas d'onglet Techno.",
         "Après le premier PT : l'onglet apparaît et sa hauteur repliée est inférieure à 1 200 px à 390 px."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-29",
@@ -802,7 +802,7 @@
       "acceptation": [
         "Niveau 1 : la fenêtre Niveaux montre les niveaux 1 à 3 et un bouton pour le reste."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-30",
@@ -823,7 +823,7 @@
       "acceptation": [
         "Après le premier labour, la barre de la puce Niv. a avancé."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-31",
@@ -847,7 +847,7 @@
       "acceptation": [
         "grep -rni \"\\bvous\\b\\|\\bvotre\\b\" js/ ne trouve plus que la lettre du notaire."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-32",
@@ -867,7 +867,7 @@
       "acceptation": [
         "La fenêtre Niveaux cite le labour et sa valeur lue dans les données."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-33",
@@ -891,7 +891,7 @@
       "acceptation": [
         "À l'ouverture, le niveau en cours est visible en haut de la fenêtre."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-34",
@@ -911,7 +911,7 @@
       "acceptation": [
         "Panneau et pompe achetés, réservoir non acheté : la carte Pompe n'affiche pas « Réservoir plein »."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-35",
@@ -952,7 +952,7 @@
       "acceptation": [
         "Chapitre 1 : seules les cases sont affichées pour les 5 premiers objectifs."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-37",
@@ -973,7 +973,7 @@
       "acceptation": [
         "Le bouton mesure au moins 44 × 44 px (getBoundingClientRect)."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-38",
@@ -994,7 +994,7 @@
       "acceptation": [
         "À l'ouverture des Options, aucune zone de texte n'est visible."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-39",
@@ -1026,7 +1026,7 @@
         "Le script affiche le nombre de touches et finit sans erreur.",
         "Résultat inférieur à 30, noté dans la PR."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     },
     {
       "id": "FLU-40",
@@ -1046,7 +1046,7 @@
       "acceptation": [
         "docs/test-utilisateur.md existe et tient sur une page."
       ],
-      "statut": "a_faire"
+      "statut": "fait"
     }
   ],
   "version_liste": 2,
