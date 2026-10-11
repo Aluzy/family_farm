@@ -1699,19 +1699,20 @@ main .ancre { scroll-margin-top: 150px; }
 /* FLU-01 : le bouton « Voir le chapitre » se range à côté de ✕ */
 .window-head .window-chapter { margin-left: auto; margin-right: 8px; }
 
-/* FLU-05 : bouton rond « Prendre la houe », à gauche du bouton Dormir */
+/* FLU-05 : bouton rond « Prendre la houe », à gauche du bouton Dormir. Comme lui, c'est un
+   dessin (assets/art.png : hoe-btn), à la même taille pour garder des pixels entiers. */
 .sleep-fab .hoe-fab {
-  width: 52px;
-  height: 52px;
+  position: relative;
+  width: 64px;
+  height: 64px;
   padding: 0;
-  border: 2px solid rgba(44, 36, 22, 0.45);
+  border: 0;
   border-radius: 50%;
-  background: rgba(255, 250, 238, 0.95);
-  font-size: 1.6rem;
-  line-height: 1;
+  background: none;
   cursor: pointer;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
 }
+.sleep-fab .hoe-art { --s: 64px; position: absolute; inset: 0; }
 .sleep-fab .hoe-fab:active { transform: translateY(2px); }
 .sleep-fab .hoe-fab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 
