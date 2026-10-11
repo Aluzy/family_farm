@@ -120,6 +120,10 @@
     { id: 'silo', object: 'silo', tex: 'silo', suffixed: false, window: 'silo' },
   ];
   const MILL_FRAME = { frameWidth: 96, frameHeight: 128 };
+  // panneaux_toit.png (scripts/batiments/panneaux_toit.py) : les panneaux solaires sur le
+  // versant droit du toit de la maison, 6 images de 32×47 (la n-ième porte n panneaux),
+  // posées au point (x, y) de house_sp.png. modèle.panneaux = nombre de panneaux (0 : aucun).
+  const ROOF_PANELS = { key: 'panneaux_toit', file: 'panneaux_toit.png', frame: { frameWidth: 32, frameHeight: 47 }, x: 37, y: 2, max: 6 };
   // Version 1.12 : images délabrées (scripts/batiments/ruines.py), montrées tant que le
   // bâtiment n'est pas réparé ou construit (modèle.batiments[id].ruine). Même taille et
   // même découpe que l'image d'origine.
@@ -242,6 +246,7 @@
         super('farm');
         this.plots = new Map();          // id de parcelle -> { soil, crop, key, tween }
         this.buildings = new Map();      // id de bâtiment -> { def, sprite }
+        this.roofPanels = null;          // panneaux solaires sur le toit de la maison (image)
         this.trees = new Map();          // case du Verger -> { sprite, key, a } (arbre ou emplacement libre)
         this.labels = new Map();         // id de lieu -> étiquette DOM et son point d'ancrage
         this.hoverId = null;             // lieu survolé (souris) ou touché (doigt) : son nom s'affiche
@@ -285,6 +290,7 @@
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
+        L.spritesheet(ROOF_PANELS.key, v(ROOF_PANELS.file), ROOF_PANELS.frame);
         for (const r of Object.values(RUINES)) {
           if (r.sheet) L.spritesheet(r.key, v(r.file), r.sheet === 'mill' ? MILL_FRAME : COOP_FRAME);
           else L.image(r.key, v(r.file));
@@ -1334,6 +1340,7 @@
           const s = want ? this.buildings.get(def.id).sprite : null;
           this.syncLabel(def.id, want, def.window, s ? s.x + s.width / 2 : 0, s ? s.y - s.height + (def.labelDown || 0) : 0);
         }
+        this.syncRoofPanels(model.panneaux | 0);
 
         // Parcelles des deux zones : on crée, met à jour, détruit. Tuiles jointives depuis le
         // coin de chaque rectangle (zone_culture_1, zone_culture_2).
@@ -1459,6 +1466,21 @@
         if (d === ORCHARD_FRAMES.jeune) return { w: 18, h: 24 };
         if (d === ORCHARD_FRAMES.arbuste) return { w: 32, h: 34 };
         return { w: e.sprite.displayWidth * TREE_BODY, h: e.sprite.displayHeight };
+      }
+
+      // Panneaux solaires sur le versant droit du toit : seulement sur la vraie image de la
+      // maison réparée (ni ruine, ni dessin de secours), juste devant elle.
+      syncRoofPanels(n) {
+        const e = this.buildings.get('maison');
+        const house = e && !e.ruine && e.sprite.texture.key.indexOf('house_') === 0 ? e.sprite : null;
+        if (!house || n <= 0 || !this.has(ROOF_PANELS.key)) {
+          if (this.roofPanels) { this.roofPanels.destroy(); this.roofPanels = null; }
+          return;
+        }
+        if (!this.roofPanels) this.roofPanels = this.add.image(0, 0, ROOF_PANELS.key, 0).setOrigin(0);
+        this.roofPanels.setFrame(Math.min(n, ROOF_PANELS.max) - 1)
+          .setPosition(house.x + ROOF_PANELS.x, house.y - house.height + ROOF_PANELS.y)
+          .setDepth(house.depth + 0.5);
       }
 
       // Pose le bas-centre de l'image sur le bas-centre du rectangle de la carte, sans sortir

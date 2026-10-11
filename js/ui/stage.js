@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { houseRepaired } from '../engine/depart.js';
-import { findDevice } from '../engine/devices.js';
+import { findDevice, isOwned, starterOf } from '../engine/devices.js';
 import { allPlots, hoeableTiles, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
 import { woolReady } from '../engine/animals.js';
@@ -276,9 +276,13 @@ export function stageModel() {
   // quelles tuiles la houe peut labourer (une chaîne par rangée, « # » labourable).
   const T = DATA.TERRAIN;
   const houe = hoeMode && !!state.potager.houe;
+  // Panneaux solaires sur le toit de la maison une fois le panneau acheté : un de plus par
+  // niveau (2 au niveau 1, 6 au niveau 5).
+  const panneau = starterOf(state, 'panneau');
+  const panneaux = isOwned(panneau) ? panneau.niveau + 1 : 0;
   return {
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
-    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux,
+    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux,
   };
 }
 
