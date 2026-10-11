@@ -8,7 +8,7 @@ import {
   portraitEmoji, removeMember, removePet, setMemberProfile, setPetProfile,
 } from '../engine/family.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
-import { energyCardHtml, energyDetailsHtml } from './energie.js';
+import { energyDetailsHtml } from './energie.js';
 import { familyNameHtml } from './depart.js';
 import { mainCharacter } from '../engine/depart.js';
 import { state } from './store.js';
@@ -31,8 +31,14 @@ export function memberNameHtml(id) {
   return escapeHtml(memberName(state, id));
 }
 
-// FLU-24 : une ligne par membre (portrait, nom, bonheur, boutons) : toute la famille et
-// l'énergie tiennent dans le premier écran de la fiche.
+// « Modifier la famille » : les boutons ✏️, ⭐ et l'ajout de membres n'apparaissent
+// qu'en mode modification, pour garder la fiche lisible.
+let familyEditing = false;
+// Bouton « ? » de la ration quotidienne : l'explication sous la jauge, repliée par défaut.
+let rationHelpOpen = false;
+
+// FLU-24 : une ligne par membre (portrait, nom, bonheur, boutons) : toute la famille
+// tient dans le premier écran de la fiche.
 function portraitCard(m) {
   const main = mainCharacter(state) && mainCharacter(state).id === m.id;
   return `
@@ -43,10 +49,10 @@ function portraitCard(m) {
         <span class="muted">${m.enfant ? 'Enfant' : 'Adulte'} · ${DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte']} calories/jour</span>
         <span class="member-row-joy">${happinessGaugeHtml(memberHappiness(m))}<span class="muted num">😊 ${memberHappiness(m)} / ${DATA.VILLE.BONHEUR.MAX}</span></span>
       </span>
-      <span class="member-row-btns">
-        ${!m.enfant && !main ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" aria-label="Choisir comme personnage principal">⭐ Principal</button>` : ''}
+      ${familyEditing ? `<span class="member-row-btns">
+        ${!m.enfant && !main ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" aria-label="Choisir comme personnage principal" title="Choisir comme personnage principal">⭐</button>` : ''}
         <button type="button" class="btn" data-action="member-edit" data-id="${m.id}" aria-label="Modifier ${m.enfant ? 'cet enfant' : 'cet adulte'} : prénom et apparence">✏️</button>
-      </span>
+      </span>` : ''}
     </li>`;
 }
 
@@ -349,7 +355,7 @@ function renderFamilyAdd() {
       <button type="button" class="btn" data-action="member-add" data-age="adulte"${full ? ' disabled' : ''}>➕ Un adulte <span class="muted">(+${AJ.adulte} calories/jour)</span></button>
       <button type="button" class="btn" data-action="member-add" data-age="enfant"${full ? ' disabled' : ''}>➕ Un enfant <span class="muted">(+${AJ.enfant} calories/jour)</span></button>
     </div>
-    <p class="muted">${full ? `La famille est au complet (${C.MEMBRES_MAX} membres). ` : ''}Pour retirer quelqu'un, ouvre « Modifier » sur sa fiche.</p>`;
+    <p class="muted">${full ? `La famille est au complet (${C.MEMBRES_MAX} membres). ` : ''}Pour retirer quelqu'un, ouvre sa fiche (✏️).</p>`;
 }
 
 function renderPets() {
@@ -375,20 +381,18 @@ export function renderFamille() {
   const short = plan.energie + EPS < plan.besoin;
   return `
     <h2>👨‍👩‍👧‍👦 Famille${familyNameHtml() ? ` ${familyNameHtml()}` : ''}</h2>
-    <p class="muted family-count"><span class="num">${state.famille.membres.length} / ${DATA.FAMILY.COMPOSITION.MEMBRES_MAX}</span> membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> calories par jour</p>
+    <button type="button" class="btn${familyEditing ? ' primary' : ''} family-edit-btn" data-action="family-edit" aria-pressed="${familyEditing}">${familyEditing ? '✅ Terminer' : '✏️ Modifier la famille'}</button>
     <ul class="member-rows">${state.famille.membres.map(portraitCard).join('')}</ul>
+    ${familyEditing ? renderFamilyAdd() : ''}
     <div class="cards">
-      ${energyCardHtml()}
       <div class="card">
-        <span class="card-title"><span>🍽️ ${pris ? `Repas de ${DATA.TIME.MEAL_HOUR} h : calories mangées` : `Repas de ${DATA.TIME.MEAL_HOUR} h : calories prévues`}</span>${pris ? '<span class="chip">✅ pris</span>' : ''}</span>
-        <span class="big">${formatNumber(shown)} / ${formatNumber(plan.besoin)}</span>
+        <span class="card-title ration-title"><span>🍽️ Ration quotidienne : <span class="num">${formatNumber(shown)} / ${formatNumber(plan.besoin)}</span></span><span class="row ration-title-end">${pris ? '<span class="chip">✅ prise</span>' : ''}<button type="button" class="btn help-btn" data-action="ration-help" aria-expanded="${rationHelpOpen}" aria-controls="ration-help" aria-label="Aide : ration quotidienne">?</button></span></span>
         <span class="bar" role="progressbar" aria-label="${pris ? 'Calories mangées' : 'Calories prévues'}" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
-        <span class="muted">${pris
+        <span class="muted" id="ration-help"${rationHelpOpen ? '' : ' hidden'}>${pris ? 'Calories mangées' : 'Calories prévues'} pour un besoin de ${formatNumber(familyNeed(state))} calories par jour. ${pris
           ? (short ? `⚠️ Le besoin n'a pas été couvert : ton énergie remontera moins cette nuit.` : `Le besoin a été couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)
           : (short ? `⚠️ Le besoin ne sera pas couvert : ton énergie remontera moins cette nuit.` : `Le besoin sera couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)} La famille mange à ${DATA.TIME.MEAL_HOUR} h, ou au coucher si elle dort avant.</span>
       </div>
     </div>
-    ${renderFamilyAdd()}
     ${renderPets()}
     <details class="more">
       <summary>En savoir plus</summary>
@@ -400,6 +404,14 @@ export function renderFamille() {
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
+  'family-edit': () => {
+    familyEditing = !familyEditing;
+    refresh();
+  },
+  'ration-help': () => {
+    rationHelpOpen = !rationHelpOpen;
+    refresh();
+  },
   // ----- version 1.1 : prénom et apparence d'un membre de la famille -----
   'member-edit': (target) => {
     openMemberModal(target.dataset.id);

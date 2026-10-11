@@ -381,7 +381,9 @@ textarea, input[type="text"] {
 .mill-stock { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 1.05rem; }
 
 /* Version 1.2 : composer la famille, animaux de compagnie. */
-.family-count { margin: 0 0 10px; }
+.family-edit-btn { margin: 0 0 8px; }
+.ration-title-end { gap: 6px; align-items: center; flex-wrap: nowrap; }
+.ration-title .num { white-space: nowrap; }
 .family-add { gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
 .family-add .btn { flex: 1 1 150px; }
 .member-leave { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); gap: 6px; }
@@ -768,7 +770,7 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
 .member-row-joy { display: flex; align-items: center; gap: 6px; }
 .member-row-joy .pxgauge { width: 96px; flex: none; }
 .member-row-joy .num { white-space: nowrap; }
-.member-row-btns { display: flex; flex-direction: column; gap: 4px; flex: none; align-items: flex-end; }
+.member-row-btns { display: flex; flex-direction: row; gap: 4px; flex: none; align-items: flex-end; }
 .member-row-btns .btn { min-width: 44px; padding: 0 10px; }
 .portrait { align-items: flex-start; }
 .portrait .btn { width: 100%; padding: 0 8px; font-size: 0.92rem; }
