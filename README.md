@@ -112,9 +112,10 @@ dépasse une minute.
 
 ### Structure
 
-`jeu.html` ne contient que la structure de la page. Elle charge `css/jeu.css`, quatre scripts
+`jeu.html` ne contient que la structure de la page. Elle charge `css/jeu.css`, cinq scripts
 classiques (`js/telemetry.js`, le suivi de session ; `vendor/phaser.min.js` ; `js/ambient-life.js`,
-la vie d'ambiance de la carte, facultative ; `js/farm-stage.js`, la carte), puis `js/main.js`,
+la vie d'ambiance de la carte, facultative ; `js/fermier.js`, le personnage, facultatif ;
+`js/farm-stage.js`, la carte), puis `js/main.js`,
 point d'entrée de **modules ES** :
 
 | Dossier | Contenu |
@@ -123,7 +124,7 @@ point d'entrée de **modules ES** :
 | `js/engine/` | le moteur (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine), un module par domaine : `catalog.js` (`DATA`), `energy.js`, `inventory.js`, `crops.js`, `animals.js`, `kitchen.js`, `techtree.js`, `campaign.js`, `night.js`, `state.js` (partie neuve, migrations), `testmode.js`, `bot.js`… |
 | `js/ui/` | l'interface, un module par écran (`ferme.js`, `elevage.js`, `cuisine.js`, `marche.js`, `famille.js`…), plus `store.js` (l'état de l'interface), `render.js`, `loop.js`, `storage.js`, `actions.js` |
 | `js/main.js` | charge tous les modules, puis démarre la partie |
-| `js/farm-stage.js`, `js/ambient-life.js` | la carte Phaser de l'onglet Ferme et sa vie d'ambiance (scripts classiques, hors modules) |
+| `js/farm-stage.js`, `js/ambient-life.js`, `js/fermier.js` | la carte Phaser de l'onglet Ferme, sa vie d'ambiance et le personnage (scripts classiques, hors modules ; voir docs/personnage.md) |
 | `scripts/` | outils Node et Python : données, carte, site, vérifications, simulation, icônes (voir plus bas) |
 | `worker/`, `wrangler.toml`, `collect-server.mjs` | collecte des sessions et rapport quotidien (voir « Suivi de session ») |
 

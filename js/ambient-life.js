@@ -1109,6 +1109,8 @@
 
     return {
       update, setContext, scare, stats, spawn: (type) => spawn(type, true), wind: (x, y) => windAt(x, y, t), repaint,
+      // L'eau et les arbres lus dans la carte : le personnage (js/fermier.js) les contourne.
+      ground: () => ({ water: waterSet, trees: mapTrees }),
       chat: (name) => (cat ? cat.force(name) : null),
     };
   }
