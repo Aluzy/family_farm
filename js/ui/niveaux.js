@@ -39,7 +39,7 @@ function openLevelUpModal() {
   tel('modal', 'level');
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" id="level-modal" role="dialog" aria-modal="true" aria-labelledby="level-title" data-stop-propagation>
+      <div class="modal bois" id="level-modal" role="dialog" aria-modal="true" aria-labelledby="level-title" data-stop-propagation>
         <h2 id="level-title">⭐ Niveau ${a.niveau} atteint</h2>
         ${unlocksHtml(a.niveau) ? `<h3>✨ Nouveautés</h3>${unlocksHtml(a.niveau)}` : '<p class="muted">Rien de nouveau à ce niveau.</p>'}
         <div class="stack">${levelBarHtml()}</div>
@@ -75,7 +75,7 @@ function openLevelsModal(tous = false) {
   const xp = DATA.NIVEAUX.XP;
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="levels-title" data-stop-propagation>
+      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="levels-title" data-stop-propagation>
         <h2 id="levels-title" tabindex="-1">⭐ Niveaux</h2>
         <div class="stack">${levelBarHtml()}</div>
         <p class="muted">L'expérience vient de tes actions : labourer ${xp.labourer} XP, planter ${xp.planter}, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée au Marché ; et de chaque chapitre terminé. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
