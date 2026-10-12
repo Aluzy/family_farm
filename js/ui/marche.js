@@ -11,6 +11,8 @@ import {
   freeSheepPlaces, pastureCapacity, pastureCost, sheepCount,
 } from '../engine/animals.js';
 import { isUnlocked, plantableCropsFor } from '../engine/campaign.js';
+import { buyFurniture, furnitureCount, furnitureMax } from '../engine/meubles.js';
+import { houseRepaired } from '../engine/depart.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { BUY_MAX, comptoirTab, comptoirTabChoisi, state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -33,7 +35,22 @@ const COMPTOIR_TABS = [
   { id: 'acheter', label: 'Acheter', icon: '🛒', ok: () => true },
   { id: 'graines', label: 'Graines', icon: '🌱', ok: () => true },
   { id: 'animaux', label: 'Animaux', icon: '🐔', ok: () => isUnlocked(state, 'poulailler') || isUnlocked(state, 'moutons') || coopShown() || herdShown() },
+  // Meubles de la maison (data/meubles.json) : l'onglet porte le dessin du canapé
+  { id: 'meubles', label: 'Meubles', icon: '🛋️', img: 'canape', ok: () => true },
 ];
+
+// Dessin d'un meuble (assets/meuble_<id>.png), avec l'empreinte du fichier sur le site en ligne.
+function meubleSrc(id) {
+  const file = `meuble_${id}.png`;
+  const versions = window.FERME_ASSET_VERSIONS;
+  return `assets/${file}${versions && versions[file] ? `?v=${versions[file]}` : ''}`;
+}
+
+function meubleImg(id, cls = 'meuble-img') {
+  return `<img class="${cls}" src="${meubleSrc(id)}" alt="" draggable="false">`;
+}
+
+const PIECES = { cuisine: 'la cuisine', salon: 'le salon', chambre: 'la chambre' };
 
 // Seules les unités entières se vendent (un demi-blé reste en stock).
 function sellableStock(item) {
@@ -70,6 +87,7 @@ function helpText(tab) {
   if (tab === 'vendre') return `Les articles rangés au frigo se vendent aussi. Prix de vente fixes : l'inventaire part en premier, puis le frigo. Chaque unité vendue baisse de ${formatNumber(DATA.MARCHE.PAS)} points le coefficient d'achat de l'objet, sans passer sous son plancher.`;
   if (tab === 'acheter') return `Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas. La houe, elle, s'achète une seule fois.`;
   if (tab === 'graines') return `Dépannage : les graines coûtent cher, produire les tiennes reste plus rentable. Elles s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Le blé, la patate et les autres cultures qui se plantent d'elles-mêmes (on plante une patate pour en récolter d'autres) gardent leur prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et restent dans l'onglet Acheter.`;
+  if (tab === 'meubles') return 'Les meubles s\'installent dans la maison, chacun à sa place : la cuisine, le salon ou la chambre. À l\'achat, ils donnent un peu de bonheur à chaque membre de la famille, une seule fois. Une chaise et un lit par personne (lits d\'adulte et d\'enfant selon la famille). Prix fixes ; un meuble ne se revend pas.';
   return 'Prix fixe, quel que soit leur nombre. Un animal ne se revend pas. Les poules, les moutons et les vaches vivent à l\'Étable.';
 }
 
@@ -77,7 +95,7 @@ function helpText(tab) {
 export function marketTabsHtml() {
   const cur = currentTab().id;
   return `<div class="inv-tabs" role="group" aria-label="Rayons du Marché">${marketTabs()
-    .map((t) => `<button type="button" class="inv-tab${t.id === cur ? ' active' : ''}" data-action="comptoir-tab" data-tab="${t.id}" aria-pressed="${t.id === cur}" title="${t.label}" aria-label="${t.label}"><span aria-hidden="true">${t.icon}</span></button>`)
+    .map((t) => `<button type="button" class="inv-tab${t.id === cur ? ' active' : ''}" data-action="comptoir-tab" data-tab="${t.id}" aria-pressed="${t.id === cur}" title="${t.label}" aria-label="${t.label}">${t.img ? meubleImg(t.img, 'meuble-tab') : `<span aria-hidden="true">${t.icon}</span>`}</button>`)
     .join('')}<button type="button" class="btn help-btn shop-help" data-action="market-help" aria-label="Aide : ${currentTab().label}" title="Comment ça marche">?</button></div>`;
 }
 
@@ -147,6 +165,19 @@ function animalInfo(kind) {
 
 const ESPECES = ['poule', 'mouton', 'vache'];
 
+// Un meuble : son dessin, son prix tant qu'on peut encore en acheter, et en bas à droite
+// combien on en a (« 2/4 ») ou ✅ s'il ne s'achète qu'une fois et qu'on l'a.
+function meubleSlot(id) {
+  const def = DATA.MEUBLES[id];
+  const n = furnitureCount(state, id);
+  const max = furnitureMax(state, id);
+  const plein = n >= max;
+  const unique = !def.max;
+  const coin = unique ? (n ? '<span aria-hidden="true">✅</span>' : '') : pxText(`${n}/${max}`, 'light');
+  return shopSlot(meubleImg(id), def.nom, `data-mode="meuble" data-item="${id}"`, plein ? null : def.prix, coin, !plein && state.pieces < def.prix,
+    `${def.nom} : ${plein ? (unique ? 'déjà dans la maison' : `${n} sur ${max}, complet`) : `${formatCoins(def.prix)} pièces${unique ? '' : `, ${n} sur ${max}`}`}`);
+}
+
 function animalSlot(kind) {
   const a = animalInfo(kind);
   if (!a) return '';
@@ -193,6 +224,8 @@ export function renderComptoir(fenetre = false) {
     body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
   } else if (tab.id === 'animaux') {
     body = slotsHtml(ESPECES.map(animalSlot), 'Aucun animal à vendre pour l\'instant.');
+  } else if (tab.id === 'meubles') {
+    body = slotsHtml(Object.keys(DATA.MEUBLES).map(meubleSlot), '');
   } else {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = slotsHtml(items.map((k) => buySlot(k, 'graines')), 'Aucune graine en vente.');
@@ -215,6 +248,23 @@ function lotBtn(attrs, q, label, total, ok) {
 }
 
 function shopBodyHtml(o) {
+  if (o.mode === 'meuble') {
+    const def = DATA.MEUBLES[o.id];
+    const n = furnitureCount(state, o.id);
+    const max = furnitureMax(state, o.id);
+    let why = '';
+    if (!houseRepaired(state)) why = 'Répare d\'abord la maison.';
+    else if (n >= max) why = def.max ? `Tu en as un pour chacun (${max}).` : 'Il est déjà dans la maison.';
+    else if (state.pieces < def.prix) why = 'Pas assez de pièces.';
+    return `
+      <div class="item-head"><span class="item-icon" aria-hidden="true">${meubleImg(o.id, 'meuble-big')}</span><span class="item-title"><strong id="item-title">${def.nom}</strong><span class="num">${formatCoins(def.prix)} 💰${def.max ? ` · ${n} / ${max}` : ''}</span></span></div>
+      <ul class="item-lines">
+        <li>😊 +${def.bonheur} bonheur pour chaque membre de la famille, une fois</li>
+        <li>🏠 S'installe dans ${PIECES[def.piece] || 'la maison'}${def.max === 'membres' ? ' : une chaise par personne' : def.max === 'adultes' ? ' : un lit par adulte' : def.max === 'enfants' ? ' : un lit par enfant' : ''}.</li>
+        ${why ? `<li>${why}</li>` : ''}
+      </ul>
+      <div class="row item-actions"><button type="button" class="btn primary" data-action="buy-meuble" data-item="${o.id}"${why ? ' disabled' : ''}>Acheter (−${formatCoins(def.prix)} 💰)</button></div>`;
+  }
   if (o.mode === 'houe') {
     const H = DATA.HOUE;
     const owned = hasHoe(state);
@@ -311,6 +361,14 @@ registerActions({
   'market-subtab': (target) => {
     sousRayon = target.dataset.tab;
     refresh();
+  },
+  'buy-meuble': (target) => {
+    const id = target.dataset.item;
+    const result = applyResult(buyFurniture(state, id));
+    if (result.ok) {
+      const def = DATA.MEUBLES[id];
+      showToast(`🏠 ${def.nom} : installé dans ${PIECES[def.piece] || 'la maison'} (−${formatCoins(result.cost)} 💰${result.bonheur ? ` · 😊 +${result.bonheur}` : ''})`);
+    }
   },
   'market-help': () => {
     openHelpModal();

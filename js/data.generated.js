@@ -1388,6 +1388,21 @@ export const RAW_DATA = {
     },
     "MARCHE": { "HEURES": 2, "PRIX": 3 }
   },
+  "MEUBLES": {
+    "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },
+    "table": { "nom": "Table", "piece": "cuisine", "prix": 90, "bonheur": 3 },
+    "tapis_1": { "nom": "Tapis tressé", "piece": "salon", "prix": 40, "bonheur": 2 },
+    "tapis_2": { "nom": "Tapis rouge", "piece": "chambre", "prix": 50, "bonheur": 2 },
+    "tapis_3": { "nom": "Tapis bleu", "piece": "cuisine", "prix": 60, "bonheur": 2 },
+    "lit_adulte": { "nom": "Lit adulte", "piece": "chambre", "prix": 120, "bonheur": 4, "max": "adultes" },
+    "lit_enfant": { "nom": "Lit enfant", "piece": "chambre", "prix": 90, "bonheur": 4, "max": "enfants" },
+    "chevet": { "nom": "Table de chevet", "piece": "chambre", "prix": 35, "bonheur": 1 },
+    "canape": { "nom": "Canapé", "piece": "salon", "prix": 150, "bonheur": 4 },
+    "table_basse": { "nom": "Table basse", "piece": "salon", "prix": 60, "bonheur": 2 },
+    "tableau_1": { "nom": "Tableau : la ferme", "piece": "salon", "prix": 45, "bonheur": 2 },
+    "tableau_2": { "nom": "Tableau : le bouquet", "piece": "salon", "prix": 55, "bonheur": 2 },
+    "tableau_3": { "nom": "Tableau : la mer", "piece": "chambre", "prix": 70, "bonheur": 3 }
+  },
   "SIMULATION": {
     "NUITS": 80,
     "GRAINE": 1,

@@ -1,10 +1,13 @@
-# Meubles de l'intérieur de la maison (assets/maison_interieur.json) : chacun ouvre sa fenêtre.
-#   assets/meuble_four.png    : le four à pain, voûte de pierre, feu dans la gueule (32×40)
-#   assets/meuble_cuisine.png : le fourneau sur son meuble de cuisine, marmite fumante (32×34)
-#   assets/meuble_frigo.png   : le réfrigérateur blanc à deux portes (20×38)
-# Vus de face, posés contre le mur du fond ; lumière à gauche.
+# Meubles de l'intérieur de la maison (assets/maison_interieur.json), un fichier
+# assets/meuble_<nom>.png chacun :
+#   - les appareils, qui ouvrent leur fenêtre : four (four à pain voûté, feu dans la gueule),
+#     cuisine (fourneau sur son meuble, marmite fumante), frigo (réfrigérateur à deux portes) ;
+#   - le décor de la cuisine : evier, plan (plan de travail), fenetre, plante ;
+#   - les meubles du Marché (data/meubles.json) : chaise, table, tapis_1 à 3, lit_adulte,
+#     lit_enfant, chevet, canape, table_basse, tableau_1 à 3.
+# Vus de face (les tapis : de dessus), posés contre le mur du fond ; lumière à gauche.
 #
-#   python3 scripts/batiments/meubles.py            écrit les trois images
+#   python3 scripts/batiments/meubles.py            écrit les images
 #   python3 scripts/batiments/meubles.py --apercu   écrit aussi apercu_meubles.png (agrandi)
 import math
 import os
@@ -28,7 +31,37 @@ C = {
     'r0': (92, 24, 28), 'r1': (150, 44, 44), 'r2': (196, 76, 64), 's': (236, 240, 244),
     # frigo
     'b0': (150, 156, 164), 'b1': (196, 202, 206), 'b2': (228, 232, 232), 'b3': (250, 250, 246), 'ch': (176, 184, 192),
+    # eau, ciel, verre
+    'e0': (52, 104, 156), 'e1': (96, 156, 208), 'e2': (168, 212, 240),
+    # végétal, terre cuite
+    'g0': (24, 74, 40), 'g1': (46, 118, 58), 'g2': (88, 160, 72), 'g3': (150, 200, 96), 't0': (130, 60, 36), 't1': (178, 92, 52), 't2': (212, 132, 80),
+    # tissus : rouge, bleu, vert, jaune, crème
+    'R0': (110, 30, 36), 'R1': (164, 50, 52), 'R2': (210, 92, 80),
+    'B0': (30, 52, 104), 'B1': (52, 92, 160), 'B2': (110, 150, 210),
+    'V0': (40, 82, 56), 'V1': (66, 124, 80), 'V2': (112, 168, 110),
+    'J0': (176, 124, 32), 'J1': (226, 176, 60), 'J2': (248, 216, 120),
+    'c0': (196, 176, 140), 'c1': (226, 210, 176), 'c2': (246, 238, 214),
+    'o0': (140, 96, 28), 'o1': (204, 152, 52), 'o2': (240, 204, 104),   # dorure des cadres
 }
+
+
+def rect(put, x0, y0, x1, y1, k):
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            put(x, y, k)
+
+
+def cabinet(put, W, top, H, wood=('w1', 'w2', 'w3')):
+    """Meuble bas de cuisine : deux portes, poignées, de top à H - 1."""
+    d, m, l = wood
+    rect(put, 1, top, W - 2, H - 2, m)
+    rect(put, 1, top, 2, H - 2, d)
+    rect(put, 1, H - 2, W - 2, H - 2, d)
+    mid = W // 2
+    rect(put, mid - 1, top, mid, H - 2, 'w0')
+    for x in (3, W - 4):
+        rect(put, x, top + 2, x, H - 4, l)
+    put(mid - 3, top + 4, 'i3'); put(mid + 2, top + 4, 'i3')
 
 
 def canvas(w, h):
@@ -187,22 +220,248 @@ def frigo():
     return im
 
 
+def plan():
+    W, H = 32, 22
+    im = canvas(W, H)
+    put, _ = painter(im)
+    cabinet(put, W, 6, H)
+    rect(put, 0, 4, W - 1, 4, 'w4')
+    rect(put, 0, 5, W - 1, 5, 'w3')
+    rect(put, 5, 1, 15, 3, 'w4')                      # planche à découper
+    rect(put, 5, 3, 15, 3, 'w3')
+    rect(put, 8, 0, 11, 1, 'g2')                      # une courgette posée dessus
+    rect(put, 20, 2, 26, 3, 'b1')                     # couteau
+    rect(put, 20, 2, 22, 3, 'w1')
+    outline(im)
+    return im
+
+
+def evier():
+    W, H = 32, 22
+    im = canvas(W, H)
+    put, _ = painter(im)
+    cabinet(put, W, 6, H)
+    rect(put, 0, 4, W - 1, 4, 'w4')
+    rect(put, 0, 5, W - 1, 5, 'w3')
+    rect(put, 6, 3, 25, 5, 'b1')                      # bac en inox
+    rect(put, 7, 4, 24, 4, 'e1')                      # l'eau
+    rect(put, 15, 0, 16, 3, 'ch')                     # robinet
+    rect(put, 15, 0, 19, 0, 'ch')
+    put(19, 1, 'e1')
+    outline(im)
+    return im
+
+
+def fenetre():
+    W, H = 24, 18
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 0, 0, W - 1, H - 1, 'w2')
+    rect(put, 2, 2, W - 3, H - 4, 'e2')
+    rect(put, 2, 9, W - 3, H - 4, 'e1')               # le ciel plus bleu en bas, une colline
+    rect(put, 2, 11, W - 3, H - 4, 'g2')
+    rect(put, 11, 2, 12, H - 4, 'w2')                 # croisillons
+    rect(put, 2, 8, W - 3, 8, 'w2')
+    rect(put, 0, H - 3, W - 1, H - 1, 'w4')           # rebord
+    put(4, 4, 'b3'); put(5, 4, 'b3'); put(15, 5, 'b3')
+    outline(im)
+    return im
+
+
+def plante():
+    W, H = 16, 24
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 4, 16, 11, 22, 't1')                    # pot de terre cuite
+    rect(put, 3, 15, 12, 16, 't2')
+    rect(put, 10, 17, 11, 22, 't0')
+    leaves = [(7, 2), (5, 4), (10, 4), (3, 7), (12, 7), (6, 7), (9, 8), (4, 11), (11, 11), (7, 11)]
+    for i, (cx, cy) in enumerate(leaves):
+        for y in range(cy - 2, cy + 3):
+            for x in range(cx - 1, cx + 2):
+                put(x, y, 'g2' if (x + y + i) % 3 else 'g3')
+        put(cx - 1, cy + 2, 'g1')
+    rect(put, 7, 8, 8, 15, 'g1')
+    outline(im)
+    return im
+
+
+def chaise():
+    W, H = 12, 20
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 1, 0, 10, 8, 'w2')                      # dossier à barreaux
+    rect(put, 3, 2, 3, 7, 'w1'); rect(put, 6, 2, 6, 7, 'w1'); rect(put, 9, 2, 9, 6, 'w1')
+    rect(put, 0, 9, 11, 11, 'w3')                     # assise
+    rect(put, 1, 12, 2, 19, 'w1'); rect(put, 9, 12, 10, 19, 'w1')
+    outline(im)
+    return im
+
+
+def table():
+    W, H = 40, 22
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 0, 4, W - 1, 8, 'w3')                   # plateau
+    rect(put, 0, 4, W - 1, 4, 'w4')
+    rect(put, 1, 8, W - 2, 9, 'w1')
+    rect(put, 2, 10, 4, 21, 'w2'); rect(put, W - 5, 10, W - 3, 21, 'w2')
+    rect(put, 16, 1, 22, 3, 'c2')                     # une nappe pliée, un bol de fruits
+    rect(put, 26, 1, 31, 3, 't1'); put(27, 0, 'R1'); put(29, 0, 'J1')
+    outline(im)
+    return im
+
+
+def tapis(n):
+    W, H = (40, 22) if n != 2 else (48, 26)
+    im = canvas(W, H)
+    put, _ = painter(im)
+    cx, cy = (W - 1) / 2, (H - 1) / 2
+    for y in range(H):
+        for x in range(W):
+            if n == 1:                                # tapis tressé ovale, beige
+                d = ((x - cx) / (W / 2)) ** 2 + ((y - cy) / (H / 2)) ** 2
+                if d > 1:
+                    continue
+                ring = int(d * 5)
+                put(x, y, ('c2', 'c1', 'c0', 'c1', 'c0')[ring % 5])
+            elif n == 2:                              # tapis rouge à motif, franges
+                if x in (0, W - 1):
+                    if y % 2 == 0:
+                        put(x, y, 'c1')
+                    continue
+                k = 'R1'
+                if 3 <= x <= W - 4 and 3 <= y <= H - 4:
+                    k = 'R2' if (abs(x - cx) + abs(y - cy)) % 6 < 2 else 'R1'
+                else:
+                    k = 'J1' if (x + y) % 4 == 0 else 'R0'
+                put(x, y, k)
+            else:                                     # tapis bleu rayé
+                k = 'B1' if (y // 3) % 2 else 'B2'
+                if y in (1, H - 2):
+                    k = 'c2'
+                put(x, y, k)
+    outline(im)
+    return im
+
+
+def lit(enfant):
+    W, H = (16, 26) if enfant else (20, 32)
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 0, 0, W - 1, 4, 'w2')                   # tête de lit
+    rect(put, 0, 0, W - 1, 0, 'w3')
+    rect(put, 1, 5, W - 2, H - 3, 'c2')               # drap
+    rect(put, 3, 6, W - 4, 9, 'b3')                   # oreiller
+    rect(put, 3, 9, W - 4, 9, 'b1')
+    cover = ('J1', 'J2', 'J0') if enfant else ('V1', 'V2', 'V0')
+    rect(put, 1, 12, W - 2, H - 3, cover[0])          # couverture
+    rect(put, 1, 12, W - 2, 13, cover[1])
+    for y in range(15, H - 3, 4):
+        for x in range(3, W - 3, 4):
+            put(x, y, cover[1] if enfant else cover[2])
+    rect(put, 0, H - 2, W - 1, H - 1, 'w1')           # pied de lit
+    outline(im)
+    return im
+
+
+def chevet():
+    W, H = 12, 20
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 1, 8, 10, 18, 'w2')
+    rect(put, 0, 7, 11, 8, 'w3')
+    rect(put, 2, 11, 9, 11, 'w1'); put(6, 13, 'i3')
+    rect(put, 4, 2, 7, 5, 'J2')                       # lampe
+    rect(put, 5, 6, 6, 6, 'i2')
+    outline(im)
+    return im
+
+
+def canape():
+    W, H = 44, 24
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 3, 0, W - 4, 11, 'V1')                  # dossier
+    rect(put, 3, 0, W - 4, 1, 'V2')
+    rect(put, 0, 6, 4, 20, 'V0'); rect(put, W - 5, 6, W - 1, 20, 'V0')   # accoudoirs
+    rect(put, 0, 6, 4, 7, 'V2')
+    for x0 in (5, 17, 29):                            # trois coussins
+        rect(put, x0, 11, x0 + 10, 17, 'V2')
+        rect(put, x0, 17, x0 + 10, 17, 'V1')
+    rect(put, 5, 18, W - 6, 20, 'V0')
+    rect(put, 2, 21, 3, 23, 'w1'); rect(put, W - 4, 21, W - 3, 23, 'w1')
+    outline(im)
+    return im
+
+
+def table_basse():
+    W, H = 30, 12
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 0, 2, W - 1, 5, 'w3')
+    rect(put, 0, 2, W - 1, 2, 'w4')
+    rect(put, 2, 6, 3, 11, 'w1'); rect(put, W - 4, 6, W - 3, 11, 'w1')
+    rect(put, 10, 0, 13, 1, 'c2')                     # une tasse, un livre
+    rect(put, 18, 0, 23, 1, 'R1')
+    outline(im)
+    return im
+
+
+def tableau(n):
+    W, H = {1: (20, 14), 2: (14, 18), 3: (22, 14)}[n]
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 0, 0, W - 1, H - 1, 'o1')               # cadre doré
+    rect(put, 0, 0, W - 1, 0, 'o2'); rect(put, 0, H - 1, W - 1, H - 1, 'o0')
+    if n == 1:                                        # la ferme : ciel, colline, maison rouge
+        rect(put, 2, 2, W - 3, 7, 'e2')
+        rect(put, 2, 8, W - 3, H - 3, 'g2')
+        rect(put, 11, 5, 15, 9, 'R1'); rect(put, 11, 4, 15, 4, 'R0'); put(13, 8, 'w0')
+        put(4, 3, 'J2'); put(5, 3, 'J2')
+    elif n == 2:                                      # bouquet de fleurs dans un vase
+        rect(put, 2, 2, W - 3, H - 3, 'c1')
+        rect(put, 5, 10, 8, H - 4, 'B1')
+        for (x, y, k) in ((4, 4, 'R2'), (7, 3, 'J1'), (9, 5, 'R1'), (6, 6, 'B2'), (3, 7, 'J2'), (9, 8, 'R2')):
+            rect(put, x, y, x + 1, y + 1, k)
+        rect(put, 6, 7, 7, 9, 'g1')
+    else:                                             # la mer : ciel, vagues, voilier
+        rect(put, 2, 2, W - 3, 6, 'e2')
+        rect(put, 2, 7, W - 3, H - 3, 'e0')
+        for x in range(2, W - 2, 3):
+            put(x, 8, 'e1'); put(x + 1, 10, 'e1')
+        rect(put, 12, 3, 12, 7, 'w1'); rect(put, 13, 3, 15, 6, 'c2'); rect(put, 10, 7, 15, 7, 'w2')
+        put(5, 3, 'J2')
+    outline(im)
+    return im
+
+
 def main():
-    out = {'meuble_four.png': four(), 'meuble_cuisine.png': cuisine(), 'meuble_frigo.png': frigo()}
+    images = {
+        'four': four(), 'cuisine': cuisine(), 'frigo': frigo(),
+        'evier': evier(), 'plan': plan(), 'fenetre': fenetre(), 'plante': plante(),
+        'chaise': chaise(), 'table': table(), 'tapis_1': tapis(1), 'tapis_2': tapis(2), 'tapis_3': tapis(3),
+        'lit_adulte': lit(False), 'lit_enfant': lit(True), 'chevet': chevet(), 'canape': canape(),
+        'table_basse': table_basse(), 'tableau_1': tableau(1), 'tableau_2': tableau(2), 'tableau_3': tableau(3),
+    }
+    out = {f'meuble_{k}.png': im for k, im in images.items()}
     for name, im in out.items():
         im.save(os.path.join(ROOT, 'assets', name), optimize=True)
     if '--apercu' in sys.argv:
-        k = 6
-        W = sum(im.width for im in out.values()) * k + 40
-        H = max(im.height for im in out.values()) * k
-        ap = Image.new('RGBA', (W, H), (152, 124, 88, 255))
-        x = 0
-        for im in out.values():
-            big = im.resize((im.width * k, im.height * k), Image.NEAREST)
-            ap.alpha_composite(big, (x, H - big.height))
-            x += big.width + 20
+        k = 4
+        per = 7
+        rows = [list(out.values())[i:i + per] for i in range(0, len(out), per)]
+        W = max(sum(im.width * k + 16 for im in r) for r in rows)
+        RH = max(im.height for im in out.values()) * k + 16
+        ap = Image.new('RGBA', (W, RH * len(rows)), (152, 124, 88, 255))
+        for j, r in enumerate(rows):
+            x = 0
+            for im in r:
+                big = im.resize((im.width * k, im.height * k), Image.NEAREST)
+                ap.alpha_composite(big, (x, (j + 1) * RH - 8 - big.height))
+                x += big.width + 16
         ap.save(os.path.join(ROOT, 'apercu_meubles.png'))
-    print('meubles de la maison : ' + ', '.join(out))
+    print(f'meubles de la maison : {len(out)} images')
 
 
 if __name__ == '__main__':

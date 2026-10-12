@@ -2,6 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { formatLitres } from '../engine/format.js';
 import { houseRepaired } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
+import { furnitureCount } from '../engine/meubles.js';
 import { allPlots, hoeableTiles, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
 import { woolReady } from '../engine/animals.js';
@@ -297,7 +298,17 @@ export function stageModel() {
     four: meuble(isUnlocked(state, 'four'), state.stations.four.construit),
     cuisine: meuble(isUnlocked(state, 'cuisine'), state.stations.cuisine.construit),
     frigo: meuble(isUnlocked(state, 'frigo'), state.frigo.construit),
+    // le décor de la cuisine, toujours là
+    evier: { dessin: 'evier' }, plan: { dessin: 'plan' }, fenetre: { dessin: 'fenetre' }, plante: { dessin: 'plante' },
   };
+  // Meubles achetés au Marché : chacun à sa place (chaise_1…, lit_1… : les lits d'adulte d'abord).
+  for (const id of Object.keys(DATA.MEUBLES)) {
+    const n = furnitureCount(state, id);
+    if (id === 'chaise') for (let i = 1; i <= n; i++) meubles[`chaise_${i}`] = { dessin: 'chaise' };
+    else if (!id.startsWith('lit_') && n > 0) meubles[id] = { dessin: id };
+  }
+  const lits = [...Array(furnitureCount(state, 'lit_adulte')).fill('lit_adulte'), ...Array(furnitureCount(state, 'lit_enfant')).fill('lit_enfant')];
+  lits.forEach((dessin, i) => { meubles[`lit_${i + 1}`] = { dessin }; });
   // Appui long sur la citerne : une bulle dit combien de litres elle contient.
   const citerneTexte = citerne >= 0 ? `💧 ${formatLitres(Math.min(state.eauMl, cap))} / ${formatLitres(cap)}` : '';
   return {

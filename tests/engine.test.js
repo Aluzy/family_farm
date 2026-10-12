@@ -20,6 +20,7 @@ import {
   buySheep, buyTech, buyTree, cancelMilling, cancelQueued, canSleep, chapterProgress,
   chapterReached, checkMastery, childCount, cleanFirstName, clockHours, completeChapter, CONSUMERS,
   coopCapacity, coopUpgradeCost, countItem, cowCapacity, cowCount, cowPlaces, createInitialState,
+  buyFurniture, furnitureCount, furnitureMax,
   cropProduct, cropUnlocked, DATA, deliverMail, deviceStatus, dishEnergy,
   dishPrice, drawEnergy, efficiency, energyStats, escapeHtml, expiringSoon, familyNeed, feedAllHens,
   feedFamily, feedHen, feedLivestock, findDevice, findMember, findPet, findPlot, finishPreparations,
@@ -9025,6 +9026,25 @@ test('FLU-09 : « Planter partout » plante les parcelles vides dans la limite d
   const ver = garden();
   setInv(ver, { conserve: 100, graine_poivron: 6 });
   assertEqual(plantAll(ver, 'potager', 'poivron').ok, false, 'culture pas encore débloquée');
+});
+
+test('meubles : achat au Marché, limites selon la famille, bonheur une fois', () => {
+  const s = createInitialState();
+  s.pieces = 10000;
+  s.maison = { reparee: false };
+  assertEqual(buyFurniture(s, 'table').ok, false, 'maison à réparer');
+  s.maison.reparee = true;
+  s.famille.membres.forEach((m) => { m.bonheur = 50; });
+  const r = buyFurniture(s, 'canape');
+  assertEqual([r.ok, s.pieces, furnitureCount(s, 'canape'), s.famille.membres.every((m) => m.bonheur === 50 + DATA.MEUBLES.canape.bonheur)], [true, 10000 - DATA.MEUBLES.canape.prix, 1, true]);
+  assertEqual(buyFurniture(s, 'canape').ok, false, 'un seul canapé');
+  // lits : un par adulte, un par enfant (famille de départ : 2 + 2)
+  assertEqual([furnitureMax(s, 'lit_adulte'), furnitureMax(s, 'lit_enfant'), furnitureMax(s, 'chaise')], [2, 2, 4]);
+  assert(buyFurniture(s, 'lit_enfant').ok && buyFurniture(s, 'lit_enfant').ok);
+  assertEqual(buyFurniture(s, 'lit_enfant').ok, false, 'deux enfants, deux lits');
+  s.pieces = 0;
+  assertEqual(buyFurniture(s, 'table').error, 'Pas assez de pièces.');
+  assertEqual(furnitureCount(createInitialState(), 'table'), 0);
 });
 
 // FLU-42 : une partie migrée qui avait déjà labouré, planté et arrosé (ou dépassé le

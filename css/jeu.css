@@ -2181,3 +2181,10 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
 }
 .shop-subtab.active { background: #8a5a34; color: #fff4dc; }
 .shop-subtab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; }
+/* Meubles au Marché : leur dessin (assets/meuble_*.png) dans la case, l'onglet et la fiche. */
+.meuble-img { max-width: 44px; max-height: 38px; image-rendering: pixelated; margin-top: 6px; }
+.meuble-tab { max-width: 34px; max-height: 26px; image-rendering: pixelated; }
+.meuble-big { max-width: 56px; max-height: 56px; image-rendering: pixelated; }
+/* En-tête des fenêtres flottantes (Inventaire, Marché) : jusqu'à cinq onglets, le « ? » et ✕ sur une ligne. */
+.window-head .inv-tabs { gap: 3px; flex-wrap: nowrap; }
+.window-head .inv-tab { width: 40px; }
