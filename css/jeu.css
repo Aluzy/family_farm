@@ -1874,13 +1874,14 @@ main .ancre { scroll-margin-top: 150px; }
 .hud-energy-fill.mid { background: #e8b030; box-shadow: inset 3px 0 0 #f8d878; }
 .hud-energy-fill.low { background: #c8503a; box-shadow: inset 3px 0 0 #ec8a6e; }
 @media (prefers-reduced-motion: reduce) { .hud-energy-fill { transition: none; } }
-/* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante et la jauge
-   restent visibles par-dessus, à 80 % de transparence, et laissent passer les appuis. */
+/* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante reste
+   visible par-dessus, à 80 % de transparence, et laisse passer les appuis. */
 .hud, .hud-energy { transition: opacity 0.2s; }
-body:has(.window-layer) :is(.hud, .hud-energy),
-body:has(#modal-root > *) :is(.hud, .hud-energy) { z-index: 95; opacity: 0.2; pointer-events: none; }
-body:has(.window-layer) .hud-energy-btn,
-body:has(#modal-root > *) .hud-energy-btn { pointer-events: none; }
+body:has(.window-layer) .hud,
+body:has(#modal-root > *) .hud { z-index: 95; opacity: 0.2; pointer-events: none; }
+/* La jauge d'énergie, elle, disparaît : elle passerait sur le contenu du menu. */
+body:has(.window-layer) .hud-energy,
+body:has(#modal-root > *) .hud-energy { visibility: hidden; }
 /* Écrans sans carte : le contenu commence sous la carte flottante (sauf si l'écran est
    assez large pour qu'elle tienne à côté). */
 body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + env(safe-area-inset-top)); }
@@ -1960,3 +1961,30 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 .player-card button:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; border-radius: 4px; }
 body:has(.window-layer) .player-card,
 body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-events: none; }
+
+/* ---------- Fenêtre de la Famille : le cadre bois des cartes flottantes ----------
+   Les couleurs de l'interface sont redéfinies dans la fenêtre (crème et bois, en clair comme
+   en sombre) : cartes, boutons et textes suivent. */
+.stage-window.bois {
+  --bg: rgba(250, 232, 196, 0.97);
+  --bg-elevated: #fff4dc;
+  --bg-header: rgba(232, 196, 140, 0.6);
+  --bg-muted: rgba(255, 230, 178, 0.82);
+  --border: #c9965e;
+  --text: #4a2a10;
+  --text-muted: #7a5434;
+  background: var(--bg);
+  color: var(--text);
+  border: 3px solid #8a5a34;
+  border-bottom: 0;
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 -4px 24px rgba(0, 0, 0, 0.3);
+}
+.stage-window.bois .window-head { border-bottom: 3px solid #8a5a34; }
+.stage-window.bois .card {
+  border: 3px solid #8a5a34;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+.stage-window.bois .btn:not(.primary):not(.danger) { border: 2px solid #8a5a34; background: #fff1d2; }
+.stage-window.bois .more > summary { color: var(--text); }
+@media (min-width: 640px) { .stage-window.bois { border-bottom: 3px solid #8a5a34; } } /* fenêtre centrée : cadre complet */

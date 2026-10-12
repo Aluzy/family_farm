@@ -202,6 +202,7 @@ export function cibleNom(c) {
   if (c.page) return TABS.find((t) => t.id === c.page).label;
   if (c.ecran) return c.ecran === 'panneaux' ? 'Panneaux solaires' : 'Batteries';
   if (!stageUsable()) return 'Ferme';
+  if (c.fenetre === 'maison' && c.onglet === 'famille') return STAGE_WINDOWS.famille.nom; // ancienne cible
   const w = STAGE_WINDOWS[c.fenetre];
   const onglet = c.fenetre === 'maison' && c.onglet ? MAISON_TABS.find((t) => t.id === c.onglet) : null;
   return onglet ? `${w.nom} › ${onglet.label}` : w.nom;
