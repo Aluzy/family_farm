@@ -419,7 +419,7 @@ export function openAboutModal() {
   ];
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="about-title" data-stop-propagation>
+      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="about-title" data-stop-propagation>
         <h2 id="about-title">ℹ️ À propos</h2>
         <p class="about-version"><strong>Ferme Familiale</strong> · version ${GAME_VERSION} <span class="muted">(format de sauvegarde ${STATE_VERSION})</span></p>
         <h3>Règles principales</h3>

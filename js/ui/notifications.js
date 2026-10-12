@@ -22,7 +22,8 @@ function mailRow(l) {
   return `<li><button type="button" class="notif mail${l.lu ? ' lu' : ''}" data-action="mail-open" data-id="${l.id}" aria-label="${def.objet}, de ${def.expediteur}${l.lu ? '' : ' (non lue)'}. Ouvrir la lettre"><span class="notif-icon" aria-hidden="true">${l.lu ? '📭' : '📬'}</span><span class="notif-text">${def.objet}${l.lu ? '' : '<span class="mail-new">Nouveau</span>'}<span class="notif-where">De : ${def.expediteur} · reçue la nuit ${formatNumber(l.nuit)}</span></span><span class="notif-go" aria-hidden="true">›</span></button></li>`;
 }
 
-export function renderNotifications() {
+// fenetre : dans la fenêtre flottante de la carte (son titre est dans l'en-tête).
+export function renderNotifications(fenetre = false) {
   const list = getNotifications(state);
   const lettres = mailbox(state).filter((l) => DATA.COURRIER[l.id]);
   const aLire = lettres.filter((l) => !l.lu);
@@ -36,7 +37,7 @@ export function renderNotifications() {
     .join('');
   // Le courrier à lire passe en premier ; les lettres déjà lues restent en bas, pour les relire.
   return `
-    <h2>✉️ Notifications</h2>
+    ${fenetre ? '' : '<h2>✉️ Notifications</h2>'}
     ${aLire.length ? `<h3 class="section-title">📬 Courrier</h3><ul class="notif-list">${aLire.map(mailRow).join('')}</ul>` : ''}
     ${list.length
       ? `<p class="hint${aLire.length ? ' mail-title' : ''}">${list.length} chose${list.length > 1 ? 's' : ''} à voir aujourd'hui.</p><ul class="notif-list">${items}</ul>`
