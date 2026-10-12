@@ -2201,3 +2201,22 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
 .animal-card.ready { border-color: var(--color-sun); }
 .animal-card.hungry { border-color: var(--danger); }
 .help-emoji { font-size: 32px; line-height: 1; }
+
+/* ---------- Comptes (un appui sur les pièces) : une addition, total en bas ---------- */
+.hud-money { pointer-events: auto; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+.hud-money:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 6px; }
+.compta { list-style: none; margin: 12px 0; padding: 0; max-height: 55vh; overflow-y: auto; }
+.compta-ligne { display: flex; justify-content: space-between; gap: 12px; padding: 4px 2px; border-bottom: 1px dashed var(--border); }
+.compta-ligne .num { white-space: nowrap; font-weight: 700; }
+.compta-ligne .gain { color: #2f6b2a; }
+.compta-ligne .perte { color: #a3322a; }
+.compta-jour { margin-top: 10px; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); }
+.compta-avant { color: var(--text-muted); }
+.compta-vide { padding: 8px 2px; }
+.compta-total {
+  position: sticky; bottom: 0;
+  margin-top: 6px; padding-top: 8px;
+  border-top: 3px double #8a5a34; border-bottom: 0;
+  background: var(--bg);
+  font-weight: 800; font-size: 1.1rem;
+}

@@ -82,7 +82,7 @@ export function buildSilo(state) {
   if (lock) return fail(lock);
   const cost = DATA.SILO.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Réparation du Silo');
   s.construit = true;
   s.niveau = 1;
   fillSilo(state);
@@ -94,7 +94,7 @@ export function upgradeSilo(state) {
   const cost = siloUpgradeCost(state);
   if (cost === null) return fail('Niveau maximum atteint.');
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Silo agrandi');
   state.silo.niveau += 1;
   fillSilo(state);
   return { ok: true, cost };
@@ -117,7 +117,7 @@ export function buildPoulailler(state) {
   if (lock) return fail(lock);
   const cost = DATA.POULAILLER.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Poulailler');
   p.construit = true;
   p.niveau = 1;
   return { ok: true, cost };
@@ -128,7 +128,7 @@ export function upgradePoulailler(state) {
   const cost = coopUpgradeCost(state);
   if (cost === null) return fail('Niveau maximum atteint.');
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Poulailler agrandi');
   state.poulailler.niveau += 1;
   return { ok: true, cost };
 }
@@ -149,7 +149,7 @@ export function buyAnimal(state, kind) {
   if (p.poules >= coopCapacity(state)) return fail('Le Poulailler est plein.');
   const price = animalPrice(kind);
   if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
-  spend(state, price);
+  spend(state, price, 'Achat : Poule');
   p.poules += 1;
   return { ok: true, cost: price };
 }
@@ -359,7 +359,7 @@ export function buildPaturage(state) {
   if (lock) return fail(lock);
   const cost = DATA.PATURAGE.deblocage;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Étable préparée');
   p.construit = true;
   p.places = DATA.PATURAGE.placesDepart;
   return { ok: true, cost, places: p.places };
@@ -373,7 +373,7 @@ export function buyPasture(state) {
   if (!p.construit) return fail('Prépare d\'abord l\'Étable pour les moutons et les vaches.');
   const cost = pastureCost(state);
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Place à l\'Étable');
   p.places += 1;
   return { ok: true, cost, places: p.places };
 }
@@ -392,7 +392,7 @@ export function buySheep(state) {
   if (freeSheepPlaces(state) <= 0) return fail('L\'Étable est pleine : achète une place de plus.');
   const price = animalPrice('mouton');
   if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
-  spend(state, price);
+  spend(state, price, 'Achat : Mouton');
   const sheep = makeSheep(state);
   p.moutons.push(sheep);
   return { ok: true, cost: price, id: sheep.id };
@@ -419,7 +419,7 @@ export function buyCow(state) {
   }
   const price = animalPrice('vache');
   if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
-  spend(state, price);
+  spend(state, price, 'Achat : Vache');
   const cow = makeCow(state);
   p.vaches.push(cow);
   return { ok: true, cost: price, id: cow.id };

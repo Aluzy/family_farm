@@ -114,6 +114,7 @@ export function createInitialState(seed = 1) {
     ville: newVille(), // version 1.5 : sorties faites aujourd'hui, marché de la ville
     progression: newProgression(), // version 1.7 : expérience et niveau
     energie: energyMax(), // version 1.8 : l'énergie du personnage (millièmes)
+    compta: [], // les Comptes : gains et dépenses récents (voir compta.js)
     meubles: {}, // meubles de la maison achetés au Marché (absent dans une ancienne sauvegarde : aucun)
     ...startFarm(),
     ...startHousehold(),

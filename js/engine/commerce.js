@@ -1,6 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, spend } from './devices.js';
+import { earn } from './compta.js';
 import { countItem, lotRank, lotsOf, takeItem } from './inventory.js';
 import { gainActionXp } from './levels.js';
 import { isUnlocked } from './campaign.js';
@@ -49,7 +50,7 @@ export function chooseCommerce(state, type) {
   const cost = commerceChoiceCost(state, type);
   if (cost === null) return fail(`${def.le[0].toUpperCase()}${def.le.slice(1)} est déjà ton commerce.`);
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  if (cost) spend(state, cost);
+  if (cost) spend(state, cost, `Commerce : ${def.nom}`);
   const premier = !state.commerce.type;
   state.commerce.type = type;
   if (premier) state.commerce.quota = commerceCapacity(state);
@@ -61,7 +62,7 @@ export function upgradeCommerce(state) {
   const cost = commerceUpgradeCost(state);
   if (cost === null) return fail('Le commerce est au niveau maximum.');
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Commerce agrandi');
   const plein = state.commerce.quota >= commerceCapacity(state);
   state.commerce.niveau += 1;
   if (plein) state.commerce.quota = commerceCapacity(state); // un quota au maximum suit la capacité
@@ -107,7 +108,7 @@ export function commerceNight(state) {
     reste -= takeItem(state, best.item, Math.min(reste, lot.qty));
   }
   const pieces = n * def.prix;
-  state.pieces += pieces;
+  earn(state, pieces, `Ventes : ${def.nom}`, n);
   gainActionXp(state, 'vendre', pieces);
   rap.n = n;
   rap.pieces = pieces;

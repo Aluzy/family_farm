@@ -1,6 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, farmOpen, percentCeil, spend } from './devices.js';
+import { earn } from './compta.js';
 import { addLot, countItem, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
 import { refreshUnlocks } from './techtree.js';
@@ -81,7 +82,7 @@ export function buyItem(state, item, qty = 1, { ville = false } = {}) {
   for (let i = 0; i < qty; i++) {
     const price = buyPrice(state, item);
     if (state.pieces + EPS < price) break;
-    spend(state, price);
+    spend(state, price, `${ville ? 'Achat en ville' : 'Achat'} : ${def.nom}`);
     addLot(state, item, 1, DATA.ORIGINE.ACHETE);
     setMarketCoef(state, item, marketCoef(state, item) + DATA.MARCHE.PAS);
     bought += 1;
@@ -114,7 +115,7 @@ export function sellItem(state, item, qty) {
   const n = fromInventory + fromFridge;
   if (n <= 0) return fail('Rien à vendre.');
   const gain = n * sellPrice(item);
-  state.pieces += gain;
+  earn(state, gain, `Vente : ${def.nom}`, n);
   gainActionXp(state, 'vendre', gain); // version 1.7 : 1 XP par pièce gagnée
   setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);
   refreshUnlocks(state);

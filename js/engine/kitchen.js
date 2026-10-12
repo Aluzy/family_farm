@@ -340,7 +340,7 @@ export function buildStation(state, id) {
     return fail(`Construis d'abord ${need.article} ${need.nom}.`);
   }
   if (state.pieces + EPS < def.cout) return fail('Pas assez de pièces.');
-  spend(state, def.cout);
+  spend(state, def.cout, `Construction : ${def.nom}`);
   openStation(state, id);
   return { ok: true, cost: def.cout };
 }

@@ -66,7 +66,7 @@ export function upgradeFridge(state) {
   const cost = fridgeUpgradeCost(state);
   if (cost === null) return fail('Niveau maximum atteint.');
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Amélioration : Réfrigérateur');
   state.frigo.niveau = fridgeLevel(state) + 1;
   return { ok: true, cost, niveau: state.frigo.niveau, capacite: fridgeCapacity(state) };
 }
@@ -304,7 +304,7 @@ export function buildFridge(state) {
   if (lock) return fail(lock);
   const cost = DATA.FRIGO.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Achat : Réfrigérateur');
   openFridge(state);
   return { ok: true, cost };
 }
