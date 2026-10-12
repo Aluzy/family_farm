@@ -282,12 +282,12 @@ export const STAGE_WINDOWS = {
     corps: () => renderFamille(),
   },
   etable: {
-    nom: 'Étable', icone: '🐄',
+    nom: 'Étable', icone: '🐄', bois: true,
     ok: () => herdShown(),
     corps: () => renderEtableWindow(),
   },
   poulailler: {
-    nom: 'Poulailler', icone: '🐔',
+    nom: 'Poulailler', icone: '🐔', bois: true,
     ok: () => coopShown(),
     corps: () => renderPoulaillerWindow(),
   },
@@ -298,7 +298,7 @@ export const STAGE_WINDOWS = {
   },
   // Le Moulin : on y fait la farine (renderMoulin). Les autres ateliers sont dans la Maison.
   moulin: {
-    nom: 'Moulin', icone: '⚙️', ok: () => isUnlocked(state, 'moulin'),
+    nom: 'Moulin', icone: '⚙️', ok: () => isUnlocked(state, 'moulin'), bois: true,
     corps: () => (typeof renderMoulin === 'function' ? renderMoulin() : renderAteliers()),
   },
   verger: {

@@ -2188,3 +2188,15 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
 /* En-tête des fenêtres flottantes (Inventaire, Marché) : jusqu'à cinq onglets, le « ? » et ✕ sur une ligne. */
 .window-head .inv-tabs { gap: 3px; flex-wrap: nowrap; }
 .window-head .inv-tab { width: 40px; }
+
+/* Étable : les animaux en cartes carrées, deux par rangée (le dessin, le nom, l'état). */
+.animal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+.animal-card { aspect-ratio: 1; align-items: center; justify-content: center; text-align: center; gap: 4px; padding: 8px; }
+.animal-card .animal-art { display: flex; justify-content: center; min-height: 48px; }
+.animal-card strong { font-size: 0.95rem; }
+.animal-card .animal-state { font-size: 0.82rem; color: var(--text-muted); }
+.animal-card .animal-state.alert { color: var(--danger); font-weight: 700; }
+.animal-card .bar { width: 100%; }
+.animal-card .btn { min-height: 36px; width: 100%; }
+.animal-card.ready { border-color: var(--color-sun); }
+.animal-card.hungry { border-color: var(--danger); }

@@ -9,7 +9,7 @@ import {
 } from '../engine/crops.js';
 import {
   buildPaturage, buildPoulailler, buildSilo, buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
-  cowCount, feedAllHens, feedHen, freeCowPlaces, freeSheepPlaces, hensToFeed, pastureCost, shear,
+  cowCount, feedAllHens, feedHen, freeSheepPlaces, hensToFeed, pastureCost, shear,
   sheepCount, sheepToShear, siloCapacity, siloUpgradeCost, stableOccupied, strawMissing, strawNeed,
   strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
 } from '../engine/animals.js';
@@ -67,7 +67,6 @@ export function renderPoulailler() {
     return `
       <div class="section-head"><h3>${icon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
       <div class="card">
-        <span class="muted">1 blé nourrit ${DATA.ANIMAUX.poule.poulesParBle} poules pour la nuit ; une poule nourrie pond 1 œuf. Capacité de départ : ${DATA.POULAILLER.CAPACITE[0]} poules. Les poules s'achètent au Marché.</span>
         <button type="button" class="btn primary" data-action="build-poulailler"${canPay(cost) ? '' : ' disabled'}>Réparer le Poulailler (${costLabel(cost)})</button>
       </div>`;
   }
@@ -79,12 +78,13 @@ export function renderPoulailler() {
     up === null
       ? '<button type="button" class="btn" disabled>Poulailler au niveau maximum</button>'
       : `<button type="button" class="btn" data-action="upgrade-poulailler"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${p.niveau + 1}, ${DATA.POULAILLER.CAPACITE[p.niveau]} poules (${costLabel(up)})</button>`;
+  // Une ligne d'état, courte ; les règles (rations, ponte, niveaux) sont dans « ? ».
   let hint;
-  if (p.poules === 0) hint = 'Aucune poule : achètes-en au Marché (onglet Animaux).';
-  else if (toFeed === 0) hint = '✅ Toutes les poules sont nourries : elles pondront cette nuit.';
-  else if (isAutomated(state, 'poulailler')) hint = `🤖 Nourrissage automatique : les poules restantes seront nourries cette nuit avec le blé disponible (${formatQty(wheatTotal(state))}).`;
-  else if (noWheat) hint = '⚠️ Pas assez de blé pour nourrir une poule.';
-  else hint = `Une poule non nourrie ne pond pas. Blé disponible : ${formatQty(wheatTotal(state))}.`;
+  if (p.poules === 0) hint = '<span class="muted">Aucune poule : achètes-en au Marché.</span>';
+  else if (toFeed === 0) hint = '<span class="muted">✅ Toutes nourries : elles pondront cette nuit.</span>';
+  else if (isAutomated(state, 'poulailler')) hint = '<span class="muted">🤖 Nourries toutes seules cette nuit.</span>';
+  else if (noWheat) hint = '<span class="alert">⚠️ Pas assez de blé.</span>';
+  else hint = '';
   return `
     <div class="section-head">
       <h3>${icon('poulailler')}Poulailler · niveau ${p.niveau}</h3>
@@ -92,10 +92,9 @@ export function renderPoulailler() {
     </div>
     <div class="card">
       ${coopArtRow()}
-      <span class="big" aria-label="Poules nourries sur total">🥚 ${p.nourries} / ${p.poules} nourries</span>
-      <span class="muted">Poules : <span class="num">${p.poules} / ${cap}</span> · 1 blé pour ${DATA.ANIMAUX.poule.poulesParBle} poules${p.restes > 0 ? ` (ration entamée : encore ${p.restes})` : ''}</span>
+      <span class="card-title"><span class="big" aria-label="Poules nourries sur total">🥚 ${p.nourries} / ${p.poules} nourries</span><span class="chips"><span class="chip num" title="Poules sur places">🐔 ${p.poules} / ${cap}</span><span class="chip num" title="Blé disponible">🌾 ${formatQty(wheatTotal(state))}</span></span></span>
       <span class="bar" role="progressbar" aria-label="Poules nourries" aria-valuemin="0" aria-valuemax="${p.poules}" aria-valuenow="${p.nourries}"><span class="bar-fill" style="width:${p.poules ? Math.round((p.nourries / p.poules) * 100) : 0}%"></span></span>
-      <span class="muted">${hint}</span>
+      ${hint}
       <span class="device-actions">
         <button type="button" class="btn primary" data-action="feed-all"${toFeed > 0 && !noWheat ? '' : ' disabled'}>🌾 Nourrir tout</button>
         <button type="button" class="btn" data-action="feed-hen"${toFeed > 0 && !noWheat ? '' : ' disabled'}>Nourrir une poule</button>
@@ -144,59 +143,57 @@ function strawPlan() {
   return fed;
 }
 
+// Les animaux de l'Étable en cartes carrées, deux par rangée : le dessin, le nom, ce qu'il
+// donne cette nuit (laine qui avance, lait) et, pour un mouton prêt, « Tondre ». Les règles
+// (paille, laine, lait) sont dans « ? ».
 function sheepCard(m, fed) {
   const M = DATA.ANIMAUX.mouton;
   const ready = woolReady(m);
   const woolPct = Math.round((m.laine / M.joursLaine) * 100);
-  const woolText = ready ? 'Laine prête' : `Laine : ${m.laine} / ${M.joursLaine} nuits nourri`;
   const willEat = fed.has(m.id);
+  const etat = ready ? '🧶 Prêt à tondre' : willEat ? `Laine ${m.laine} / ${M.joursLaine}` : '⚠️ Sans paille';
   return `
-    <article class="card sheep ancre${ready ? ' ready' : ''}" id="animal-${m.id}">
-      <span class="card-title"><span>Mouton n°${sheepNumber(m)}</span><span class="chip${ready ? ' badge' : ''}">${ready ? '🧶 Prêt à tondre' : 'Laine en cours'}</span></span>
-      <span class="card-art-row">${artPx([ready ? 'sheep-wool' : 'sheep-shorn'], '', `${m.id}-${ready ? 'laine' : 'tondu'}`, 'grow')}</span>
-      <span class="muted">${woolText}</span>
-      <span class="bar" role="progressbar" aria-label="Laine" aria-valuemin="0" aria-valuemax="${M.joursLaine}" aria-valuenow="${m.laine}"><span class="bar-fill${ready ? '' : ' warn'}" style="width:${woolPct}%"></span></span>
-      <span class="${willEat ? 'muted' : 'alert'}">${willEat ? `✅ Mangera ${formatStraw(M.pailleParNuit)} cette nuit` : '⚠️ Pas de paille pour lui cette nuit : sa laine n\'avancera pas'}</span>
-      <span class="device-actions">
-        <button type="button" class="btn primary" data-action="shear" data-id="${m.id}"${ready ? '' : ' disabled'}>✂️ Tondre</button>
-      </span>
+    <article class="card animal-card ancre${ready ? ' ready' : ''}${willEat || ready ? '' : ' hungry'}" id="animal-${m.id}" title="${ready ? 'Laine prête' : `Laine : ${m.laine} / ${M.joursLaine} nuits nourri${willEat ? '' : ' · pas de paille pour lui cette nuit'}`}">
+      <span class="animal-art">${artPx([ready ? 'sheep-wool' : 'sheep-shorn'], '', `${m.id}-${ready ? 'laine' : 'tondu'}`, 'grow')}</span>
+      <strong>Mouton n°${sheepNumber(m)}</strong>
+      <span class="animal-state${willEat || ready ? '' : ' alert'}">${etat}</span>
+      ${ready
+        ? `<button type="button" class="btn primary" data-action="shear" data-id="${m.id}">✂️ Tondre</button>`
+        : `<span class="bar" role="progressbar" aria-label="Laine" aria-valuemin="0" aria-valuemax="${M.joursLaine}" aria-valuenow="${m.laine}"><span class="bar-fill warn" style="width:${woolPct}%"></span></span>`}
     </article>`;
 }
 
 // Carte d'une vache : pas de laine, son lait vient la nuit même où elle mange.
 function cowCard(v, fed) {
-  const V = DATA.ANIMAUX.vache;
   const willEat = fed.has(v.id);
   return `
-    <article class="card sheep ancre" id="animal-${v.id}">
-      <span class="card-title"><span>Vache n°${cowNumber(v)}</span><span class="chip${willEat ? ' badge' : ''}">${willEat ? '🥛 Lait cette nuit' : 'Pas de lait cette nuit'}</span></span>
-      <span class="card-art-row">${artPx(['cow'], '', v.id, 'grow')}</span>
-      <span class="${willEat ? 'muted' : 'alert'}">${willEat ? `✅ Mangera ${formatStraw(V.pailleParNuit)} cette nuit` : `⚠️ Il lui faut ${formatStraw(V.pailleParNuit)} pour donner son lait`}</span>
+    <article class="card animal-card ancre${willEat ? '' : ' hungry'}" id="animal-${v.id}">
+      <span class="animal-art">${artPx(['cow'], '', v.id, 'grow')}</span>
+      <strong>Vache n°${cowNumber(v)}</strong>
+      <span class="animal-state${willEat ? '' : ' alert'}">${willEat ? '🥛 Lait cette nuit' : '⚠️ Sans paille'}</span>
     </article>`;
 }
 
 // Section « Moutons et vaches » de l'Étable. (Le nom de la fonction et
-// state.paturage sont historiques.)
+// state.paturage sont historiques.) L'essentiel seulement : places, paille, animaux ; les
+// règles sont dans « ? ».
 export function renderPaturage() {
   const p = state.paturage;
   const P = DATA.PATURAGE;
   const M = DATA.ANIMAUX.mouton;
   const V = DATA.ANIMAUX.vache;
   const straw = DATA.items[P.nourriture];
-  const rules = `Chaque nuit, un mouton mange ${formatStraw(M.pailleParNuit)} et une vache ${formatStraw(V.pailleParNuit)}. La paille vient du Moulin : 1 blé moulu donne 1 farine et 1 paille. Un mouton nourri ${M.joursLaine} nuits donne ${M.laineParTonte} laine ; une vache nourrie donne ${V.laitParNuit} lait la nuit même.`;
   if (!p.construit) {
     const cost = P.deblocage;
     return `
       <div class="section-head"><h3>${icon('paturage')}Moutons et vaches</h3>${helpBtn('paturage')}</div>
       <div class="card">
-        <span class="muted">Les moutons et les vaches vivent à l'Étable : ${formatPlaces(P.placesDepart)} au départ, ${formatPlaces(P.placesParMouton)} par mouton, ${formatPlaces(P.placesParVache)} par vache. ${rules} Sans paille, un animal ne produit rien cette nuit-là, et rien d'autre ne lui arrive. Les moutons et les vaches s'achètent au Marché.</span>
         <button type="button" class="btn primary" data-action="build-paturage"${canPay(cost) ? '' : ' disabled'}>Préparer ${formatPlaces(P.placesDepart)} pour les moutons et les vaches (${costLabel(cost)})</button>
       </div>`;
   }
   const sCount = sheepCount(state);
   const cCount = cowCount(state);
   const sFree = freeSheepPlaces(state);
-  const cFree = freeCowPlaces(state);
   const cost = pastureCost(state);
   const occupied = stableOccupied(state);
   const pct = p.places > 0 ? Math.min(100, Math.round((occupied / p.places) * 100)) : 0;
@@ -205,14 +202,9 @@ export function renderPaturage() {
   const stock = strawStock(state);
   const missing = strawMissing(state);
   const fed = strawPlan();
-  let hint;
-  if (sCount === 0 && cCount === 0) hint = 'Aucun animal : achètes-en au Marché (onglet Animaux).';
-  else if (sFree === 0) hint = `⚠️ Plus de place : achète des places (une vache en demande ${P.placesParVache}).`;
-  else hint = `${formatPlaces(sFree)} libre${sFree > 1 ? 's' : ''} : de quoi accueillir ${sFree} mouton${sFree > 1 ? 's' : ''}${cFree > 0 ? ` ou ${cFree} vache${cFree > 1 ? 's' : ''}` : ''}.`;
-  let strawHint;
-  if (need === 0) strawHint = 'Pas d\'animaux à nourrir pour l\'instant.';
-  else if (missing > 0) strawHint = `⚠️ Il manque ${formatStraw(missing)} pour cette nuit : mouds du blé au Moulin. Les animaux sans paille ne donneront rien cette nuit (ils mangent dans l'ordre de la liste).`;
-  else strawHint = `✅ Assez de paille pour cette nuit${stock >= need * 2 ? ` (il y en a pour ${formatNumber(Math.floor(stock / need))} nuits)` : ''}.`;
+  let hint = '';
+  if (sCount === 0 && cCount === 0) hint = '<span class="muted">Aucun animal : achètes-en au Marché.</span>';
+  else if (sFree === 0) hint = '<span class="alert">⚠️ Plus de place : achètes-en une.</span>';
   // Les places s'achètent à la suite, tant que les pièces suffisent (voir buyPasture()).
   const buyOk = canPay(cost);
   return `
@@ -221,19 +213,16 @@ export function renderPaturage() {
       <span class="chips">${autoChip('paturage', 'Tond tout seul les moutons dont la laine est prête, pendant la nuit')}${ready > 0 ? `<span class="chip badge">🧶 ${ready} à tondre</span>` : ''}${helpBtn('paturage')}</span>
     </div>
     <div class="card">
-      <span class="big" aria-label="Moutons et vaches">${M.icone} ${sCount} mouton${sCount > 1 ? 's' : ''} · ${V.icone} ${cCount} vache${cCount > 1 ? 's' : ''}</span>
+      <span class="card-title"><span class="big" aria-label="Moutons et vaches">${M.icone} ${sCount} · ${V.icone} ${cCount}</span><span class="chip num" title="Places occupées">${formatNumber(occupied)} / ${formatNumber(p.places)} places</span></span>
       <span class="bar" role="progressbar" aria-label="Places occupées" aria-valuemin="0" aria-valuemax="${p.places}" aria-valuenow="${occupied}"><span class="bar-fill${sFree === 0 ? ' warn' : ''}" style="width:${pct}%"></span></span>
-      <span class="muted">Places : <span class="num">${formatNumber(occupied)} / ${formatNumber(p.places)}</span> · ${formatPlaces(P.placesParMouton)} par mouton, ${formatPlaces(P.placesParVache)} par vache. Une place achetée reste acquise.</span>
-      <span class="muted">${hint}</span>
+      ${hint}
       <button type="button" class="btn" data-action="buy-pasture"${buyOk ? '' : ' disabled'}>Acheter une place (${costLabel(cost)})</button>
     </div>
     <div class="card ancre" id="etable-paille">
-      <span class="card-title"><span><span aria-hidden="true">${straw.icone}</span> Paille</span><span class="chip${missing > 0 ? ' warn' : ''}">${missing > 0 ? `⚠️ il en manque ${formatNumber(missing)}` : 'en stock'}</span></span>
-      <span class="big" aria-label="Paille en stock sur paille mangée cette nuit">${formatQty(stock)} / ${formatQty(need)} pour cette nuit</span>
-      <span class="${missing > 0 ? 'alert' : 'muted'}">${strawHint}</span>
-      <span class="muted">${rules}</span>
+      <span class="card-title"><span><span aria-hidden="true">${straw.icone}</span> Paille : <span class="num">${formatQty(stock)} / ${formatQty(need)}</span> pour cette nuit</span><span class="chip${missing > 0 ? ' warn' : ''}">${missing > 0 ? `⚠️ il en manque ${formatNumber(missing)}` : '✅ assez'}</span></span>
+      ${missing > 0 ? '<span class="alert">Mouds du blé au Moulin : 1 blé donne 1 paille.</span>' : ''}
     </div>
-    ${sCount + cCount > 0 ? `<div class="cards sheep-list ancre" id="etable-animaux">${p.moutons.map((m) => sheepCard(m, fed)).join('')}${p.vaches.map((v) => cowCard(v, fed)).join('')}</div>` : ''}`;
+    ${sCount + cCount > 0 ? `<div class="animal-grid ancre" id="etable-animaux">${p.moutons.map((m) => sheepCard(m, fed)).join('')}${p.vaches.map((v) => cowCard(v, fed)).join('')}</div>` : ''}`;
 }
 
 // Pastille « Automatique » : les tâches que l'Arbre des technologies automatise ici.
