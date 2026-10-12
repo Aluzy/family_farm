@@ -15,7 +15,7 @@ import { telView } from './consent.js';
 import { safeStorageGet, safeStorageSet } from './storage.js';
 import { morph, refresh, setLastRenderAt } from './render.js';
 import {
-  allerAuLieu, interiorAvailable, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue, setMaisonTab,
+  allerAuLieu, interiorAvailable, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue,
   setStageInterior, setStageReturn, setStageWindow, stageInterior, STAGE_WINDOWS, windowLocked,
 } from './stage-windows.js';
 import { renderMoulin } from './cuisine.js';
@@ -88,13 +88,13 @@ function moulinSurPlace() {
 // Où se règle un appareil (panne, entretien) : sa propre carte.
 function lieuAppareil(id) {
   const d = id ? findDevice(state, id) : null;
-  const eau = isOwned(starterOf(state, 'pompe')) ? { fenetre: 'eau' } : { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' };
+  const eau = isOwned(starterOf(state, 'pompe')) ? { fenetre: 'eau' } : { fenetre: 'installations', ancre: 'bat-eau' };
   if (!d) return eau;
   if (d.type === 'panneau') return { ecran: 'panneaux', ancre: `dev-${d.id}` };
   if (d.type === 'batterie') return { ecran: 'batteries', ancre: `dev-${d.id}` };
   if (d.type === 'moulin' && moulinSurPlace()) return { fenetre: 'moulin', ancre: 'moulin-appareil' };
   if (d.type === 'moulin' || d.type === 'presse') return { fenetre: 'maison', onglet: 'recettes', ancre: `station-${d.type}` };
-  if (d.type === 'frigo') return { fenetre: 'maison', onglet: 'batiments', ancre: 'dev-frigo' };
+  if (d.type === 'frigo') return { fenetre: 'installations', ancre: 'dev-frigo' };
   if (d.type === 'pompe') return { fenetre: 'eau', ancre: 'dev-pompe' };
   return eau;
 }
@@ -154,7 +154,7 @@ export function cibleAlerte(type, id) {
     case 'peremption': return { page: 'inventaire', sous: 'frais' };
     case 'panne': case 'entretien': return lieuAppareil(id || alertSnapshot(state)[type][0]);
     case 'batteriesVides': return { ecran: 'batteries' };
-    case 'frigoCoupe': return { fenetre: 'maison', onglet: 'batiments', ancre: 'dev-frigo' };
+    case 'frigoCoupe': return { fenetre: 'installations', ancre: 'dev-frigo' };
     case 'arrosage': case 'recolte': {
       // La Zone de culture d'abord, puis le Champ, puis la Serre.
       const ou = parcellesAFaire('potager', type, 1) > 0 ? ['potager', 1, 'zone']
@@ -204,6 +204,7 @@ export function cibleNom(c) {
   if (c.ecran) return c.ecran === 'panneaux' ? 'Panneaux solaires' : 'Batteries';
   if (!stageUsable()) return 'Ferme';
   if (c.fenetre === 'maison' && (c.onglet === 'famille' || c.onglet === 'techno')) return STAGE_WINDOWS[c.onglet].nom; // ancienne cible
+  if (c.fenetre === 'maison' && c.onglet === 'batiments') return STAGE_WINDOWS.installations.nom;
   const w = STAGE_WINDOWS[c.fenetre];
   const onglet = c.fenetre === 'maison' && c.onglet ? MAISON_TABS.find((t) => t.id === c.onglet) : null;
   return onglet ? `${w.nom} › ${onglet.label}` : w.nom;
@@ -223,9 +224,8 @@ function allerA(c) {
   } else if (c.ecran) {
     // Écran de détail : au retour, on retombe sur Maison › Installations.
     setActiveTab('ferme');
-    setMaisonTab('batiments');
     // au retour d'un écran de détail (panneaux, batteries) : la fenêtre Énergie
-    setStageReturn(stageUsable() ? (STAGE_WINDOWS.energie.ok() ? 'energie' : 'maison') : null);
+    setStageReturn(stageUsable() ? (STAGE_WINDOWS.energie.ok() ? 'energie' : 'installations') : null);
     setStageWindow(null);
     setStageInterior(null);
     setEcranFerme(c.ecran);
@@ -399,10 +399,10 @@ function stageOnView(v) {
 // cible (voir cibleAttrs) ; 'niveaux' : la fenêtre Niveaux ; un type absent : la liste des
 // chapitres.
 const OBJECTIF_CIBLES = {
-  maison: { fenetre: 'maison', onglet: 'batiments' },
-  panneau: { fenetre: 'maison', onglet: 'batiments' },
-  pompe: { fenetre: 'maison', onglet: 'batiments' },
-  reservoir: { fenetre: 'maison', onglet: 'batiments' },
+  maison: { fenetre: 'installations' },
+  panneau: { fenetre: 'installations' },
+  pompe: { fenetre: 'installations' },
+  reservoir: { fenetre: 'installations' },
   houe: { page: 'comptoir', sous: 'acheter' },
   recoltes: { fenetre: 'zone' },
   cultures: { fenetre: 'zone' },
@@ -413,8 +413,8 @@ const OBJECTIF_CIBLES = {
   arrosees: { fenetre: 'zone' },
   silo: { fenetre: 'silo' },
   siloBle: { fenetre: 'silo' },
-  pains: { fenetre: 'maison', onglet: 'batiments' },
-  plats: { fenetre: 'maison', onglet: 'batiments' },
+  pains: { fenetre: 'installations' },
+  plats: { fenetre: 'installations' },
   niveau: 'niveaux',
 };
 

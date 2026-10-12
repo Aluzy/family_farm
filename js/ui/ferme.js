@@ -135,11 +135,12 @@ export function renderEauFenetre() {
   return `<div class="cards">${p.pompe}${p.reservoir}</div>`;
 }
 
-// Maison › Installations, avec la carte : la maison à réparer, les appareils à acheter, le frigo.
+// Fenêtre Installations, avec la carte : la maison à réparer, les appareils à acheter, le frigo
+// (la fenêtre porte déjà le titre).
 export function renderInstallationsMaison() {
   const p = energieEauParts();
   const cards = `${p.starters}${p.frigo}`;
-  return cards.trim() ? `<h3 class="section-title">🏠 Installations</h3><div class="cards">${cards}</div>` : '';
+  return cards.trim() ? `<div class="cards">${cards}</div>` : '';
 }
 
 function energieEauParts() {

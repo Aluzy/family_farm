@@ -42,7 +42,7 @@ export function render() {
     setStageWindow(propre || 'maison');
   }
   // Avec la carte, l'Inventaire et le Marché sont des fenêtres flottantes par-dessus elle.
-  if ((activeTab === 'inventaire' || activeTab === 'comptoir') && stageUsable()) {
+  if (['installations', 'inventaire', 'comptoir'].includes(activeTab) && stageUsable()) {
     setStageWindow(activeTab);
     setActiveTab('ferme');
     setEcranFerme(null);

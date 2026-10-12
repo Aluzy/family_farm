@@ -257,7 +257,7 @@ function openAbsenceModal(r) {
   }
   const lines = [
     `<li>⏳ Absence : <strong class="num">${formatDuration(r.demande)}</strong>${r.plafonne ? ` <span class="muted">(seules les ${formatDuration(cap)} premières comptent)</span>` : ''}</li>`,
-    // Version 1.6 : l'électricité produite et stockée ne s'affiche plus ici (Maison › Installations).
+    // Version 1.6 : l'électricité produite et stockée ne s'affiche plus ici (fenêtre Énergie).
     `<li>💧 Eau pompée : <strong class="num">${formatLitres(r.eauPompee)}</strong> · réservoir <span class="num">${formatNumber(Math.floor(r.eauFin / 1000))} / ${formatLitres(r.capaciteEau)}</span></li>`,
     done ? `<li>🍳 Préparations terminées : <strong>${done}</strong></li>` : '',
     running.length ? `<li>⏳ Toujours en cours : ${running.join(' · ')}</li>` : '',

@@ -42,7 +42,7 @@ const STARTER_LABELS = {
   batterie: { icone: '🔋', nom: 'Batterie (facultative)', note: 'garde l\'électricité pour le soir et la nuit' },
 };
 
-// Maison › Installations, avant tout : la maison à réparer, puis les appareils à acheter.
+// Fenêtre Installations, avant tout : la maison à réparer, puis les appareils à acheter.
 export function renderStarterCards() {
   if (!houseRepaired(state)) {
     const cost = DATA.DEPART.MAISON;

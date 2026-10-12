@@ -109,7 +109,7 @@ function fridgeAllButton(items) {
 function fridgeSlots() {
   const f = state.frigo;
   if (!f.construit) {
-    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans la Maison, onglet Installations' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
+    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans les Installations (🏗️, dans le menu)' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
   }
   const counts = fridgeCounts(state);
   const items = Object.keys(DATA.items).filter((k) => counts[k] > 0);

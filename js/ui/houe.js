@@ -36,7 +36,7 @@ export function hoePanelHtml() {
     const ouvert = farmOpen(state);
     return `
       <div class="hoe-bar">
-        <span class="muted">${H.ICONE} Une <strong>houe</strong> change l'herbe en terre à cultiver.${ouvert ? '' : ' Elle s\'achète au Marché, qui ouvre quand le panneau solaire et la pompe sont installés (Maison › Installations).'}</span>
+        <span class="muted">${H.ICONE} Une <strong>houe</strong> change l'herbe en terre à cultiver.${ouvert ? '' : ' Elle s\'achète au Marché, qui ouvre quand le panneau solaire et la pompe sont installés (🏗️ Installations, dans le menu).'}</span>
         <button type="button" class="btn" data-action="buy-hoe"${ouvert && canPay(H.PRIX) ? '' : ' disabled'}>Acheter la houe (${formatCoins(H.PRIX)} 💰)</button>
       </div>`;
   }
