@@ -31,13 +31,13 @@ import {
   renderInstallationsMaison, renderPotager, renderZone2,
 } from './ferme.js';
 import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
-import { renderSerre, renderVerger } from './serre-verger-frigo.js';
-import { renderAteliers, renderMoulin, renderRecettes } from './cuisine.js';
+import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
+import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
 import { renderTechno } from './techno.js';
 import { memberNameHtml, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
-import { inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
+import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
@@ -66,7 +66,15 @@ export function setStageInterior(value) {
   stageInterior = value;
   return value;
 }
-const INTERIORS = { serre: { ok: () => state.serre.construit } };
+// Intérieurs : la Serre (ses parcelles) et, une fois réparée, la maison (ses meubles : four,
+// cuisine, réfrigérateur, chacun ouvre sa fenêtre). `gerer` : ce qu'ouvre le bouton « Gérer ».
+const INTERIORS = {
+  serre: { ok: () => state.serre.construit, gerer: 'agrandir, tout arroser, tout récolter' },
+  maison: { ok: () => houseRepaired(state), gerer: 'livre de recette, commerce, installations' },
+};
+export function interiorHelp(id) {
+  return INTERIORS[id] ? INTERIORS[id].gerer : '';
+}
 
 // L'intérieur peut-il être affiché ? Il faut le bâtiment, la carte, et que la scène ait pu
 // charger la carte de l'intérieur (sinon la fenêtre du bâtiment reste le seul accès).
@@ -130,7 +138,9 @@ function lieuFamille(fenetre, onglet) {
   if (onglet === 'famille' || onglet === 'techno') return onglet;
   // les Installations ont quitté la Maison (onglet « batiments » des anciennes cibles)
   if (onglet === 'batiments') return 'installations';
-  return onglet ? (MAISON_TABS.some((t) => t.id === onglet && t.ok()) ? 'maison' : 'installations') : maisonOuInstallations();
+  if (onglet) return MAISON_TABS.some((t) => t.id === onglet && t.ok()) ? 'maison' : 'installations';
+  // la maison réparée : on y entre (voir allerAuLieu)
+  return interiorAvailable('maison') ? 'maison' : maisonOuInstallations();
 }
 
 function maisonCurrentTab() {
@@ -241,6 +251,19 @@ export const STAGE_WINDOWS = {
     nom: 'Eau', icone: '💧', ok: () => isOwned(starterOf(state, 'pompe')) || isOwned(starterOf(state, 'reservoir')), bois: true,
     corps: () => renderEauFenetre(),
   },
+  // Meubles de la maison (intérieur) : chacun ouvre sa fenêtre, dans le cadre bois.
+  four: {
+    nom: 'Four', icone: '🔥', ok: () => isUnlocked(state, 'four') || state.stations.four.construit, bois: true,
+    corps: () => renderStationFenetre('four'),
+  },
+  cuisine: {
+    nom: 'Cuisine', icone: '🍳', ok: () => isUnlocked(state, 'cuisine') || state.stations.cuisine.construit, bois: true,
+    corps: () => renderStationFenetre('cuisine'),
+  },
+  frigo: {
+    nom: 'Réfrigérateur', icone: '🧊', ok: () => isUnlocked(state, 'frigo') || state.frigo.construit, bois: true,
+    corps: () => `<div class="cards">${renderFridgeCard()}</div>${state.frigo.construit ? fridgeSlots() : ''}`,
+  },
   // Installations (menu latéral ; la maison aussi tant qu'elle est à réparer et la ferme à
   // équiper) : la maison, les appareils à acheter, les ateliers, le frigo, le Silo.
   installations: {
@@ -338,7 +361,6 @@ export function renderStageWindow() {
 }
 
 export function openStageWindow(id) {
-  if (id === 'maison') id = maisonOuInstallations();
   if (!STAGE_WINDOWS[id] || !(STAGE_WINDOWS[id].ok() || windowLocked(id))) return;
   if (windowLocked(id)) { // version 1.12 : un bâtiment verrouillé n'ouvre que sa fiche
     stageWindow = id;
@@ -350,6 +372,8 @@ export function openStageWindow(id) {
   // Un bâtiment qui a un intérieur : depuis la carte, on y entre. Une fois dedans, la même
   // action ouvre sa fenêtre (agrandir, tout arroser, tout récolter).
   if (INTERIORS[id] && stageInterior !== id && enterInterior(id)) return;
+  // la Maison (de l'intérieur, « Gérer ») : ses onglets, ou les Installations s'il n'y en a pas
+  if (id === 'maison') id = maisonOuInstallations();
   if (id === 'maison') maisonTab = maisonTabChoisi;
   stageWindow = id;
   stageReturn = null;
@@ -379,7 +403,8 @@ export function allerAuLieu(fenetre, onglet, ancre) {
     stageWindow = STAGE_WINDOWS[fenetre] && STAGE_WINDOWS[fenetre].ok() ? fenetre : null;
     // Un lieu qui a un intérieur : on y entre, ses parcelles sont sous les yeux. Tout autre
     // lieu fait sortir.
-    stageInterior = INTERIORS[fenetre] && interiorAvailable(fenetre) ? fenetre : null;
+    // un onglet de la Maison demandé (Livre de recette…) : sa fenêtre, sans entrer
+    stageInterior = INTERIORS[fenetre] && !(fenetre === 'maison' && onglet) && interiorAvailable(fenetre) ? fenetre : null;
     if (stageInterior) stageWindow = null;
     if (STAGE_LIEUX.includes(fenetre)) setStagePan(fenetre);
   } else {

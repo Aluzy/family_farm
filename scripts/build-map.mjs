@@ -2,6 +2,7 @@
 //
 //   assets/carte_printemps_elargie.tmj → assets/carte_printemps.json   (la carte de la ferme)
 //   assets/serre_interieur.tmj         → assets/serre_interieur.json   (l'intérieur de la Serre)
+//   assets/maison_interieur.tmj        → assets/maison_interieur.json  (l'intérieur de la maison)
 //
 //   node scripts/build-map.mjs
 //
@@ -32,6 +33,13 @@ const MAPS = [
     target: 'assets/serre_interieur.json',
     // Couches d'objets dont le rectangle reçoit les parcelles (voir ROOMS et bakeRooms()).
     zoneLayers: /^serre_zone_\d+$/,
+  },
+  {
+    source: 'assets/maison_interieur.tmj',
+    target: 'assets/maison_interieur.json',
+    // Couche d'objets « meubles » : un rectangle par meuble (voir ROOMS et bakeRooms()), et
+    // le rectangle « vue » : ce que la vue cadre en entrant (sans lui, toute la maison).
+    places: ['four', 'cuisine', 'frigo'],
   },
 ];
 

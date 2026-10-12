@@ -288,6 +288,15 @@ function recipeCard(id) {
     </article>`;
 }
 
+// Fenêtre d'un meuble de la maison (four, cuisine) : l'atelier (à construire, ou ce qui y
+// cuit), puis ses recettes, qu'on lance d'ici comme depuis le Livre de recette.
+export function renderStationFenetre(id) {
+  const recipes = Object.keys(DATA.recipes).filter((r) => DATA.recipes[r].station === id && !DATA.recipes[r].horsLivre);
+  return `
+    <div class="cards">${stationCard(id)}</div>
+    ${state.stations[id].construit && recipes.length ? `<h3 class="section-title">Recettes</h3><div class="recipes">${recipes.map(recipeCard).join('')}</div>` : ''}`;
+}
+
 export function renderRecettes() {
   // Le Moulin et sa mouture n'y figurent pas : le blé se moud dans le Moulin (renderMoulin()).
   const ids = bookStations();
