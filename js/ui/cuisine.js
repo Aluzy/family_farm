@@ -37,7 +37,7 @@ export function stationRecipes(id) {
 
 // Ateliers dont les préparations se lancent depuis le Livre de recette : tous,
 // sauf le Moulin, qui a son propre menu (voir renderMoulin()).
-function bookStations() {
+export function bookStations() {
   return Object.keys(DATA.STATIONS).filter((id) => !stationRecipes(id).every((r) => DATA.recipes[r].horsLivre));
 }
 
@@ -248,7 +248,7 @@ function stationCard(id) {
     </div>`;
 }
 
-function recipeMeta(id) {
+export function recipeMeta(id) {
   const r = DATA.recipes[id];
   const out = DATA.items[recipeOutput(id)];
   if (r.transformation) return `→ ${recipeOutputQty(id)} ${out.icone} ${out.nom.toLowerCase()}`;
@@ -299,6 +299,7 @@ export function renderRecettes() {
       <h2>📖 Livre de recette</h2>
       ${energyChip('cuisiner')}
     </div>
+    <p><button type="button" class="btn book-open-btn" data-action="book-open">📖 Feuilleter le livre <span class="chip">essai</span></button></p>
     <p class="muted">${queueCapacity(state) > 1 ? `Jusqu'à ${queueCapacity(state)} préparations à la suite par atelier : elles s'enchaînent sans clic, ingrédients réservés au lancement.` : 'Une seule préparation à la fois par atelier : c\'est toi qui relances (les Préparations en série de l\'Arbre des technologies ajoutent une file).'} Tout ce qui est en cours se termine pendant la nuit. Certaines recettes se débloquent dans l'Arbre des technologies. La farine se fait au Moulin, dans son propre menu.</p>
     <h3 class="section-title">Stations</h3>
     <div class="cards">${ids.map(stationCard).join('')}</div>

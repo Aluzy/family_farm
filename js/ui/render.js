@@ -11,6 +11,7 @@ import { animateIn } from './animations.js';
 import { renderTutorial } from './aide.js';
 import { fitInventoryNames } from './inventaire.js';
 import { pixelize, watch } from './pixel-emoji.js';
+import { renderRecipeBook } from './livre.js';
 
 export let renderScheduled = false;
 export function setRenderScheduled(value) {
@@ -47,6 +48,7 @@ export function render() {
   fitInventoryNames();
   applyAnchor();
   renderTutorial();
+  renderRecipeBook();
   renderTestPanel();
 }
 
