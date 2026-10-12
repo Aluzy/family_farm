@@ -25,7 +25,7 @@ import { nightsLabel } from './inventaire.js';
 import { icon } from './animations.js';
 import { helpBtn } from './aide.js';
 import { showToast } from './toasts.js';
-import { registerActions, sameHandler } from './actions.js';
+import { registerActions } from './actions.js';
 import { canPay, costLabel } from './common.js';
 
 /* ---------- Lot 5 : ateliers (Ferme) et Livre de recette ---------- */
@@ -96,19 +96,10 @@ export function renderAteliers() {
 
 /* ---------- version 1.1 : le menu du Moulin ---------- */
 
-// Quantité de blé choisie dans le menu du Moulin (réglage d'écran, pas sauvegardé).
-let millQty = 1;
-
-// La quantité choisie, toujours entre 1 et le blé disponible (1 s'il n'y en a pas).
-function millQuantity() {
-  const stock = Math.floor(wheatTotal(state) + EPS);
-  return Math.max(1, Math.min(stock, Math.floor(millQty) || 1));
-}
-
 // Corps du menu du Moulin : pas encore construit, son bouton de construction ;
-// construit, le blé disponible (inventaire et Silo), le choix de la quantité,
-// « Moudre », la farine et la paille en stock, puis l'état de l'appareil
-// (énergie, usure, interrupteur) comme pour les autres appareils.
+// construit, le blé disponible (inventaire et Silo), « Moudre » par lot (×1, ×5, ×10), la
+// farine et la paille en stock, puis l'état de l'appareil (énergie, usure, interrupteur).
+// Les règles (ce que donne un blé, la nuit, le Silo) sont dans « ? ».
 export function renderMoulin() {
   if (!isUnlocked(state, 'moulin')) return '';
   const def = DATA.STATIONS.moulin;
@@ -120,8 +111,6 @@ export function renderMoulin() {
   }
   const r = DATA.recipes.farine;
   const wheat = Math.floor(wheatTotal(state) + EPS);
-  const silo = state.silo.construit ? state.silo.ble : 0;
-  const q = millQuantity();
   const d = st.appareil;
   const ds = deviceStatus(state, d);
   const job = st.tache;
@@ -143,12 +132,10 @@ export function renderMoulin() {
   } else {
     work = '<span class="muted">Le Moulin est prêt.</span>';
   }
-  let strawNote = '';
-  if (need > 0) {
-    strawNote = missing > 0
-      ? `<span class="alert">⚠️ Tes animaux mangent ${formatStraw(need)} par nuit : il en manque ${formatNumber(missing)} pour cette nuit.</span>`
-      : `<span class="muted">✅ Tes animaux mangent ${formatStraw(need)} par nuit : le stock suffit pour cette nuit.</span>`;
-  }
+  const strawNote = need > 0 && missing > 0
+    ? `<span class="alert">⚠️ Il manque ${formatStraw(missing)} pour les animaux cette nuit.</span>`
+    : '';
+  const lot = (n) => `<button type="button" class="btn lot-btn${n === 1 ? ' primary' : ''}" data-action="mill-start" data-q="${n}"${wheat >= n ? '' : ' disabled'}><span>×${n}</span><small>${formatNumber(n * each)} s</small></button>`;
   const stopped = !d.allume || isBroken(d);
   const chip = job ? '<span class="chip">⏳ En marche</span>' : '<span class="chip">✅ Libre</span>';
   return `
@@ -158,32 +145,20 @@ export function renderMoulin() {
     </div>
     <div class="cards">
       <div class="card station mill ancre${job ? ' busy' : ''}" id="moulin-moudre">
-        <span class="card-title"><span>🌾 Moudre du blé</span><span class="chip">${formatNumber(each)} s par blé</span></span>
-        <span class="muted">1 blé donne ${millOutputText()}. Tout se fait ici : choisis combien de blés moudre.</span>
-        <span class="big" aria-label="Blé disponible">🌾 ${formatQty(wheat)} blé${wheat > 1 ? 's' : ''} disponible${wheat > 1 ? 's' : ''}</span>
-        ${silo > 0 ? `<span class="muted">Dont ${formatQty(silo)} dans le Silo (le Moulin prend d'abord le blé de l'inventaire).</span>` : ''}
-        <div class="row qty-row">
-          <button type="button" class="btn step-btn" data-action="mill-dec" aria-label="Moudre un blé de moins"${q <= 1 ? ' disabled' : ''}>−</button>
-          <strong class="num qty">${formatNumber(q)}</strong>
-          <button type="button" class="btn step-btn" data-action="mill-inc" aria-label="Moudre un blé de plus"${q >= wheat ? ' disabled' : ''}>+</button>
-          <button type="button" class="btn" data-action="mill-max"${q >= wheat ? ' disabled' : ''}>Tout</button>
-          <button type="button" class="btn primary sell-go" data-action="mill-start"${wheat >= 1 ? '' : ' disabled'}>Moudre ${formatNumber(q)} blé${q > 1 ? 's' : ''}</button>
-        </div>
+        <span class="card-title"><span>🌾 Moudre : <span class="num">${formatQty(wheat)}</span> blé${wheat > 1 ? 's' : ''}</span><span class="chip">${formatNumber(each)} s par blé</span></span>
+        <div class="row item-actions lot-btns">${lot(1)}${lot(5)}${lot(10)}</div>
         ${wheat < 1 ? '<span class="alert">Pas de blé à moudre : récolte du blé, ou achètes-en au Marché.</span>' : ''}
         ${stopped && (job || wheat >= 1) ? `<span class="alert">${isBroken(d) ? '⛔ Le Moulin est en panne : il faut le réparer.' : '⚠️ Le Moulin est arrêté : remets-le en marche.'}</span>` : ''}
         ${work}
-        <span class="muted">La nuit, le blé en train d'être moulu se termine ; le reste reprend au réveil.</span>
       </div>
       <div class="card">
         <span class="card-title"><span>📦 En stock</span></span>
         <span class="mill-stock"><span><span aria-hidden="true">${flour.icone}</span> ${flour.nom} : <strong class="num">${formatQty(countItem(state, r.sortie))}</strong></span><span><span aria-hidden="true">${straw.icone}</span> ${straw.nom} : <strong class="num">${formatQty(strawStock(state))}</strong></span></span>
-        <span class="muted">La farine sert au pain et aux tartes. La paille nourrit les moutons et les vaches.</span>
         ${strawNote}
       </div>
       <div class="card ancre" id="moulin-appareil">
         <span class="card-title"><span>⚡ Appareil</span><span class="chip${ds.code === 'panne' ? ' panne' : ''}">${ds.label}</span></span>
         ${ds.badge ? `<span class="chip warn">⚠️ ${ds.badge}</span>` : ''}
-        <span class="muted">${d.conso > 0 ? 'Il tourne et consomme du courant.' : 'Il ne consomme du courant que quand il tourne.'} Sans énergie, il attend.</span>
         ${wearHtml(d)}
         ${stationControls(d)}
       </div>
@@ -320,15 +295,11 @@ export function renderRecettes() {
 
 registerActions({
   // ----- version 1.1 : Moulin (mouture par quantité) -----
-  ...sameHandler(['mill-dec', 'mill-inc', 'mill-max'], (target, e, action) => {
-    millQty = action === 'mill-max' ? Math.floor(wheatTotal(state) + EPS) : millQuantity() + (action === 'mill-inc' ? 1 : -1);
-    refresh();
-  }),
-  'mill-start': () => {
-    const result = applyResult(startMilling(state, millQuantity()));
+  // « Moudre » par lot : ×1, ×5, ×10 blés (data-q)
+  'mill-start': (target) => {
+    const result = applyResult(startMilling(state, Math.max(1, Number(target.dataset.q) || 1)));
     if (result.ok) {
       syncJobs();
-      millQty = 1;
       showToast(`⚙️ ${formatNumber(result.quantite)} blé${result.quantite > 1 ? 's' : ''} au Moulin`);
       refresh();
     }

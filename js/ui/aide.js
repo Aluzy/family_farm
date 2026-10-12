@@ -157,7 +157,7 @@ const HELP = {
   }),
   moulin: () => ({
     nom: 'Moulin',
-    role: 'Moud le blé en farine et en paille. Tout se fait dans le Moulin lui-même : tu choisis combien de blés moudre, puis « Moudre ». Appareil électrique : interrupteur, usure, pannes.',
+    role: 'Moud le blé en farine et en paille. Tout se fait dans le Moulin lui-même : « Moudre » 1, 5 ou 10 blés. Appareil électrique : interrupteur, usure, pannes. Il ne consomme du courant que quand il tourne.',
     conso: `${formatNumber(DATA.STATIONS.moulin.whParS)} Wh/s pendant qu'il tourne, et ${formatQty(DATA.recipes.farine.ingredients[0].qte)} blé par mouture (celui de l'inventaire d'abord, puis celui du Silo).`,
     prod: `1 blé donne ${millOutputText()}, en ${formatQty(DATA.recipes.farine.temps)} s. La farine sert au pain et aux tartes ; la paille nourrit les moutons et les vaches.`,
     note: 'Les blés sont moulus un par un. Sans énergie, le Moulin attend. La nuit, le blé en train d\'être moulu se termine ; ceux qui attendent reprennent au réveil. Tu peux reprendre le blé en attente.',
@@ -190,7 +190,7 @@ function openHelpModal(id) {
   const sym = id === 'reservoir' ? 'b-reservoir' : `b-${id}`;
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" data-stop-propagation>
+      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="help-title" data-stop-propagation>
         <div class="help-head">${artPx([sym])}<h2 id="help-title">${h.nom}</h2></div>
         <ul class="help-list">
           <li><strong>Rôle</strong>${h.role}</li>
