@@ -155,6 +155,9 @@
   // fermier.png : le personnage (js/fermier.js), cases de 16×32 ; leurs noms dans fermier.json
   // (scripts/personnage/fermier.py). Sans eux, pas de personnage ; rien d'autre ne change.
   const FERMIER_FRAME = { frameWidth: 16, frameHeight: 32 };
+  // La planche du personnage : la fermière (fermier.png existe aussi). Le choix du personnage
+  // est désactivé pour l'instant : c'est toujours elle.
+  const PERSONNAGE = 'fermiere';
   // Les bêtes de l'Étable et du Poulailler, elles aussi animées par la vie d'ambiance : une
   // planche par espèce (fichier, taille des cases ; leur ordre : HERD dans
   // js/ambient-life.js). Une espèce sans planche n'est pas dessinée.
@@ -324,8 +327,8 @@
         L.image('panneau_ville', v('panneau_ville.png'));
         L.image('silo', v('silo.png'));
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
-        L.spritesheet('fermier', v('fermier.png'), FERMIER_FRAME);
-        L.json('fermier_cases', v('fermier.json'));
+        L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
+        L.json('fermier_cases', v(PERSONNAGE + '.json'));
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
         L.spritesheet(ROOF_PANELS.key, v(ROOF_PANELS.file), ROOF_PANELS.frame);

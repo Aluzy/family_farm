@@ -1,10 +1,19 @@
-# Le personnage de la carte (version provisoire), une planche assets/fermier.png de cases
-# 16 × 32 px, et assets/fermier.json qui donne le nom de chaque case (dans l'ordre de la
-# planche, 8 cases par rangée).
+# Les personnages de la carte (version provisoire). Pour chacun (VARIANTES) : une planche
+# assets/<nom>.png de cases 16 × 32 px, assets/<nom>.json qui donne le nom de chaque case (dans
+# l'ordre de la planche, 8 cases par rangée), et assets/portrait_<nom>.png (20 × 20 : la tête et
+# les épaules de face, pour la carte du joueur en haut à gauche).
+#   fermier     : chapeau de paille, cheveux courts, chemise rouge, salopette bleue ;
+#   fermiere    : chapeau à ruban rose, cheveux longs auburn, chemisier vert, salopette bleue ;
+#   papi        : cheveux gris courts, barbe, chemise à carreaux rouge, pantalon brun ;
+#   jeune_homme : peau foncée, casquette verte, chemise en jean, pantalon sombre ;
+#   rousse      : cheveux roux longs, taches de rousseur, haut jaune à rayures ;
+#   lunettes    : peau mate, cheveux blonds aux épaules, lunettes, chemisier lilas ;
+#   garcon      : peau mate, cheveux bruns, chapeau de paille à ruban rouge, haut orange.
+# Les cinq derniers suivent les portraits de assets/portraits (scripts/personnage/portraits.py).
 #
 # Trois vues : « bas » (de face), « haut » (de dos), « cote » (de profil, tourné vers la
-# droite ; la carte le retourne pour la gauche). Il porte un chapeau de paille, une chemise
-# rouge et une salopette bleue. Lumière en haut à gauche, contour sombre ajouté à la fin.
+# droite ; la carte le retourne pour la gauche). Lumière en haut à gauche, contour sombre
+# ajouté à la fin.
 #
 # Cases :
 #   idle_<vue>_0..1          debout, il respire
@@ -18,7 +27,7 @@
 #   ramasse_0..2             de profil, il ramasse un œuf dans la paille
 #
 #   python3 scripts/personnage/fermier.py            écrit les images
-#   python3 scripts/personnage/fermier.py --apercu   écrit aussi apercu_fermier.png (agrandi)
+#   python3 scripts/personnage/fermier.py --apercu   écrit aussi apercu_<nom>.png (agrandi)
 import json
 import os
 import sys
@@ -45,7 +54,61 @@ C = {
     'bk': (176, 121, 62), 'bk2': (130, 86, 42),          # panier
     'eg': (251, 243, 224),                               # œuf
     'sd': (120, 84, 40),                                 # graine
+    'ck': (232, 140, 120),                               # joues
+    'rx': (204, 120, 84), 'gl': (40, 40, 48),            # taches de rousseur, lunettes
+    'br': (214, 214, 208), 'bm': (150, 120, 110),        # barbe, bouche dans la barbe
+    'cp': (60, 120, 70), 'cp2': (40, 86, 50), 'cpb': (230, 230, 220),   # casquette
+    'sp': (236, 214, 190),                               # carreaux
 }
+BASE = dict(C)
+
+# Chaque personnage : ses couleurs (à la place de celles de C) et son style.
+#   cheveux  : 'courts', 'mi' (aux épaules) ou 'longs' (dans le dos)
+#   chapeau  : 'paille', 'casquette' ou None (on voit les cheveux sur le dessus)
+#   barbe, lunettes, rousseur, joues : vrai ou faux ; motif : None, 'carreaux' ou 'rayures'
+# Les cinq derniers suivent les portraits de assets/portraits (scripts/personnage/portraits.py).
+PEAU_CLAIRE = {'sk': (240, 196, 160), 'sk2': (196, 150, 118)}
+PEAU_MATE = {'sk': (198, 142, 96), 'sk2': (150, 100, 64)}
+PEAU_FONCEE = {'sk': (124, 80, 50), 'sk2': (88, 54, 32)}
+VARIANTES = {
+    'fermier': {'couleurs': {}, 'cheveux': 'courts', 'chapeau': 'paille'},
+    'fermiere': {
+        'couleurs': {'hr': (164, 84, 42), 'hr2': (120, 56, 28), 'bd': (214, 96, 140),
+                     'sh': (104, 166, 96), 'sh2': (68, 120, 64)},
+        'cheveux': 'longs', 'chapeau': 'paille', 'joues': True,
+    },
+    'papi': {
+        'couleurs': {**PEAU_CLAIRE, 'hr': (200, 200, 194), 'hr2': (150, 150, 146), 'br': (214, 214, 208), 'bm': (150, 120, 110),
+                     'sh': (206, 74, 58), 'sh2': (150, 42, 34), 'sp': (236, 214, 190),
+                     'ov': (120, 84, 52), 'ov2': (88, 60, 36)},
+        'cheveux': 'courts', 'chapeau': None, 'barbe': True, 'motif': 'carreaux',
+    },
+    'jeune_homme': {
+        'couleurs': {**PEAU_FONCEE, 'hr': (60, 52, 48), 'hr2': (36, 30, 28),
+                     'cp': (60, 120, 70), 'cp2': (40, 86, 50), 'cpb': (230, 230, 220),
+                     'sh': (98, 134, 190), 'sh2': (58, 88, 140),
+                     'ov': (52, 56, 70), 'ov2': (36, 38, 50), 'bt': (40, 36, 34), 'bt2': (26, 24, 22)},
+        'cheveux': 'courts', 'chapeau': 'casquette',
+    },
+    'rousse': {
+        'couleurs': {**PEAU_CLAIRE, 'hr': (206, 104, 44), 'hr2': (160, 70, 28), 'rx': (204, 120, 84),
+                     'sh': (246, 214, 96), 'sh2': (206, 160, 40)},
+        'cheveux': 'longs', 'chapeau': None, 'rousseur': True, 'motif': 'rayures',
+    },
+    'lunettes': {
+        'couleurs': {**PEAU_MATE, 'hr': (236, 200, 104), 'hr2': (196, 154, 64), 'gl': (40, 40, 48),
+                     'sh': (204, 174, 224), 'sh2': (150, 110, 172),
+                     'ov': (90, 90, 104), 'ov2': (64, 64, 76)},
+        'cheveux': 'mi', 'chapeau': None, 'lunettes': True,
+    },
+    'garcon': {
+        'couleurs': {**PEAU_MATE, 'hr': (110, 70, 36), 'hr2': (74, 46, 22), 'bd': (176, 52, 44),
+                     'sh': (238, 148, 74), 'sh2': (196, 102, 40),
+                     'ov': (84, 120, 60), 'ov2': (60, 90, 42)},
+        'cheveux': 'courts', 'chapeau': 'paille',
+    },
+}
+STYLE = {}         # le style du personnage en cours de dessin
 
 
 class Canvas:
@@ -108,8 +171,33 @@ def legs(cv, vue, walk, squat):
         cv.rect(x, 29 - up, x + 2, 30 - up, 'bt')
 
 
+def couvre_chef(cv, vue, b):
+    """Chapeau de paille, casquette, ou les cheveux du dessus de la tête."""
+    chap = STYLE.get('chapeau')
+    if chap == 'paille':
+        cv.rect(5, 6 + b, 10, 9 + b, 'st')
+        cv.rect(5, 9 + b, 10, 9 + b, 'bd')
+        cv.rect(3, 10 + b, 13 if vue == 'cote' else 12, 10 + b, 'st2')
+        cv.rect(6, 6 + b, 8, 6 + b, 'st')
+    elif chap == 'casquette':
+        cv.rect(5, 8 + b, 10, 10 + b, 'cp')
+        cv.rect(6, 7 + b, 9, 7 + b, 'cp')
+        cv.put(7, 7 + b, 'cpb')
+        if vue == 'bas':
+            cv.rect(4, 10 + b, 11, 10 + b, 'cp2')       # la visière, de face
+        elif vue == 'cote':
+            cv.rect(9, 10 + b, 13, 10 + b, 'cp2')       # la visière, devant
+    else:
+        cv.rect(5, 9 + b, 10, 10 + b, 'hr')
+        cv.rect(6, 8 + b, 9, 8 + b, 'hr')
+        cv.rect(9, 9 + b, 10, 10 + b, 'hr2')
+        cv.put(6, 9 + b, 'hr2' if vue == 'haut' else 'hr')
+
+
 def body(cv, vue, b):
-    """Torse, tête et chapeau ; b : décalage vertical (respiration, pas, accroupi)."""
+    """Torse, tête et couvre-chef ; b : décalage vertical (respiration, pas, accroupi)."""
+    cheveux = STYLE.get('cheveux', 'courts')
+    bas = {'longs': 18, 'mi': 16}.get(cheveux)          # où s'arrêtent les cheveux longs
     if vue == 'cote':
         cv.rect(6, 17 + b, 10, 19 + b, 'sh')
         cv.rect(6, 20 + b, 10, 24 + b, 'ov')
@@ -121,10 +209,22 @@ def body(cv, vue, b):
         cv.put(7, 15 + b, 'hr2')
         cv.put(9, 13 + b, 'ey')
         cv.put(8, 15 + b, 'sk2')
-        cv.rect(5, 6 + b, 10, 9 + b, 'st')              # chapeau
-        cv.rect(5, 9 + b, 10, 9 + b, 'bd')
-        cv.rect(3, 10 + b, 13, 10 + b, 'st2')
-        cv.rect(6, 6 + b, 8, 6 + b, 'st')
+        if bas:                                         # la queue de cheval, dans le dos
+            cv.rect(5, 11 + b, 6, bas + b, 'hr')
+            cv.rect(5, bas - 1 + b, 6, bas + 1 + b, 'hr2')
+        if STYLE.get('joues'):
+            cv.put(9, 14 + b, 'ck')
+        if STYLE.get('rousseur'):
+            cv.put(8, 14 + b, 'rx')
+            cv.put(10, 14 + b, 'rx')
+        if STYLE.get('barbe'):
+            cv.rect(7, 14 + b, 10, 16 + b, 'br')
+            cv.put(11, 14 + b, 'sk')
+            cv.put(9, 15 + b, 'bm')
+        if STYLE.get('lunettes'):
+            cv.put(8, 13 + b, 'gl')
+            cv.put(10, 13 + b, 'gl')
+        couvre_chef(cv, vue, b)
         return
     cv.rect(5, 17 + b, 10, 19 + b, 'sh')
     cv.rect(5, 20 + b, 10, 24 + b, 'ov')
@@ -139,6 +239,25 @@ def body(cv, vue, b):
         cv.put(6, 13 + b, 'ey')
         cv.put(9, 13 + b, 'ey')
         cv.rect(6, 15 + b, 9, 15 + b, 'sk2')
+        if bas:                                         # cheveux sur les épaules
+            cv.rect(4, 11 + b, 5, bas + b, 'hr')
+            cv.rect(10, 11 + b, 11, bas + b, 'hr')
+            cv.put(4, bas + b, 'hr2')
+            cv.put(11, bas + b, 'hr2')
+        if STYLE.get('joues'):
+            cv.put(6, 14 + b, 'ck')
+            cv.put(9, 14 + b, 'ck')
+        if STYLE.get('rousseur'):
+            for x in (6, 7, 9):
+                cv.put(x, 14 + b, 'rx')
+        if STYLE.get('barbe'):
+            cv.rect(5, 14 + b, 10, 16 + b, 'br')
+            cv.rect(7, 14 + b, 8, 14 + b, 'sk')         # sous le nez
+            cv.rect(7, 15 + b, 8, 15 + b, 'bm')         # la bouche dans la barbe
+            cv.rect(6, 17 + b, 9, 17 + b, 'br')
+        if STYLE.get('lunettes'):
+            for x in (5, 7, 8, 10):
+                cv.put(x, 13 + b, 'gl')
     else:                                               # de dos : bretelles et cheveux
         cv.put(6, 17 + b, 'ov')
         cv.put(9, 17 + b, 'ov')
@@ -147,10 +266,28 @@ def body(cv, vue, b):
         cv.rect(5, 11 + b, 10, 15 + b, 'hr')
         cv.rect(6, 14 + b, 9, 15 + b, 'hr2')
         cv.rect(6, 16 + b, 9, 16 + b, 'sk2')
-    cv.rect(5, 6 + b, 10, 9 + b, 'st')
-    cv.rect(5, 9 + b, 10, 9 + b, 'bd')
-    cv.rect(3, 10 + b, 12, 10 + b, 'st2')
-    cv.rect(5, 6 + b, 7, 6 + b, 'st')
+        if bas:                                         # les cheveux tombent dans le dos
+            cv.rect(5, 11 + b, 10, bas + 1 + b, 'hr')
+            cv.rect(6, bas - 1 + b, 9, bas + 1 + b, 'hr2')
+        if STYLE.get('lunettes'):
+            cv.put(4, 13 + b, 'gl')                     # les branches
+            cv.put(11, 13 + b, 'gl')
+    couvre_chef(cv, vue, b)
+
+
+def motif(cv):
+    """Carreaux ou rayures sur la chemise (pas sur les manches dans l'ombre)."""
+    m = STYLE.get('motif')
+    if not m:
+        return
+    for y in range(H):
+        for x in range(W):
+            if cv.px[y][x] != 'sh':
+                continue
+            if m == 'carreaux' and (x % 4 == 1 or y % 4 == 1):
+                cv.px[y][x] = 'sp'
+            elif m == 'rayures' and y % 2 == 0:
+                cv.px[y][x] = 'sh2'
 
 
 def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None):
@@ -173,6 +310,7 @@ def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None):
         arm(cv, 11, 18 + b + squat, rh[0], rh[1])
     if after:
         after(cv)
+    motif(cv)
     cv.outline()
     return cv
 
@@ -282,22 +420,36 @@ def render(cv):
     return im
 
 
-def main():
+def ecrire(nom):
     F = frames()
     names = list(F)
     rows = (len(names) + COLS - 1) // COLS
     sheet = Image.new('RGBA', (COLS * W, rows * H), (0, 0, 0, 0))
     for i, n in enumerate(names):
         sheet.paste(render(F[n]), ((i % COLS) * W, (i // COLS) * H))
-    sheet.save(os.path.join(ROOT, 'assets', 'fermier.png'))
-    with open(os.path.join(ROOT, 'assets', 'fermier.json'), 'w', encoding='utf-8') as f:
+    sheet.save(os.path.join(ROOT, 'assets', f'{nom}.png'))
+    with open(os.path.join(ROOT, 'assets', f'{nom}.json'), 'w', encoding='utf-8') as f:
         json.dump({'frameWidth': W, 'frameHeight': H, 'frames': names}, f, ensure_ascii=False, indent=0)
         f.write('\n')
-    print(f'assets/fermier.png : {len(names)} cases de {W} × {H} px ({COLS} par rangée)')
+    # Portrait : la tête et les épaules de face (debout), dans un carré de 20 × 20.
+    face = Image.new('RGBA', (W + 4, H), (0, 0, 0, 0))
+    face.paste(render(F['idle_bas_0']), (2, 0))
+    face.crop((0, 4, W + 4, 24)).save(os.path.join(ROOT, 'assets', f'portrait_{nom}.png'))
+    print(f'assets/{nom}.png : {len(names)} cases de {W} × {H} px ({COLS} par rangée), et portrait_{nom}.png')
     if '--apercu' in sys.argv:
         bg = Image.new('RGBA', sheet.size, (126, 170, 92, 255))
         bg.alpha_composite(sheet)
-        bg.resize((sheet.width * 5, sheet.height * 5), Image.NEAREST).save(os.path.join(ROOT, 'apercu_fermier.png'))
+        bg.resize((sheet.width * 5, sheet.height * 5), Image.NEAREST).save(os.path.join(ROOT, f'apercu_{nom}.png'))
+
+
+def main():
+    for nom, v in VARIANTES.items():
+        C.clear()
+        C.update(BASE)
+        C.update(v['couleurs'])
+        STYLE.clear()
+        STYLE.update({k: v[k] for k in v if k != 'couleurs'})
+        ecrire(nom)
 
 
 if __name__ == '__main__':
