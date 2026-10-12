@@ -130,7 +130,7 @@ export function openWakeModal(report, auto = false) {
   const soif = allPlots(state).filter((p) => p.lieu === DATA.POTAGER.LIEU && p.culture && !p.arrose && !isMature(p)).length;
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
+      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
         <h2 id="wake-title">🌅 Réveil : nuit ${report.nuit}</h2>
         <p class="muted wake-hour">${auto ? `Il était ${DATA.TIME.NIGHT_HOUR}&nbsp;h : la famille est allée se coucher. ` : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
         <div class="wake-kpis">
