@@ -38,7 +38,11 @@ export const RAW_DATA = {
       "STYLE_NOMS": {
         "adulte": ["Classique", "Roux", "Frisé", "Cheveux gris", "Blond"],
         "enfant": ["Classique", "Roux", "Frisé", "Casquette", "Blond"]
-      }
+      },
+      "PERSOS": 50,
+      "PERSO_DEFAUT": { "f": 1, "m": 7 },
+      "PERSOS_ENFANT": 50,
+      "PERSO_DEFAUT_ENFANT": { "f": 2, "m": 1 }
     },
     "AJ": { "adulte": 50, "enfant": 25 },
     "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },

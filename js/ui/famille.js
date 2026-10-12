@@ -4,8 +4,8 @@ import { happinessGaugeHtml } from './ville.js';
 import { EPS } from '../engine/base.js';
 import {
   addMember, addPet, cleanFirstName, familyNeed, findMember, findPet,
-  memberName, memberPortrait, memberRemovalBlock, memberStyle, memberRoom, petIcon, petName, petRoom, pets, planMeal,
-  portraitEmoji, removeMember, removePet, setMemberProfile, setPetProfile,
+  memberName, memberPerso, memberRemovalBlock, memberRoom, persoMax, petIcon, petName, petRoom, pets, planMeal,
+  removeMember, removePet, setMemberProfile, setPetProfile,
 } from '../engine/family.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { energyDetailsHtml } from './energie.js';
@@ -44,13 +44,23 @@ function helpToggleHtml(id, label) {
   return `<button type="button" class="btn help-btn" data-action="family-help" data-help="${id}" aria-expanded="${helpOpen.has(id)}" aria-controls="${id}-help" aria-label="Aide : ${label}">?</button>`;
 }
 
+// Version 1.17 : le portrait d'un membre est celui de son personnage, 16 × 16 agrandi sans
+// flou : assets/portraits/perso_XX.png pour un adulte, enfant_XX.png pour un enfant.
+export function persoSrc(n, enfant = false) {
+  return `assets/portraits/${enfant ? 'enfant' : 'perso'}_${String(n).padStart(2, '0')}.png`;
+}
+export function memberAvatarHtml(id) {
+  const m = findMember(state, id);
+  return `<img class="portrait-px" src="${persoSrc(memberPerso(m), !!(m && m.enfant))}" alt="" width="16" height="16">`;
+}
+
 // FLU-24 : une ligne par membre (portrait, nom, bonheur, boutons) : toute la famille
 // tient dans le premier écran de la fiche.
 function portraitCard(m) {
   const main = mainCharacter(state) && mainCharacter(state).id === m.id;
   return `
     <li class="card member-row">
-      <span class="portrait-emoji" aria-hidden="true">${memberPortrait(state, m.id) || '🙂'}</span>
+      ${memberAvatarHtml(m.id)}
       <span class="member-row-text">
         <strong class="member-name">${memberNameHtml(m.id)}</strong>${main ? ' <span class="chip auto">⭐ Principal</span>' : ''}
         <span class="member-row-joy">${happinessGaugeHtml(memberHappiness(m))}<span aria-hidden="true">😊</span></span>
@@ -62,17 +72,11 @@ function portraitCard(m) {
     </li>`;
 }
 
-/* -- version 1.1 : fenêtre « Modifier » d'un membre (prénom, sexe, couleur de peau) -- */
+/* -- version 1.1 : fenêtre « Modifier » d'un membre (prénom et apparence) -- */
 
 // Choix en cours dans la fenêtre (rien n'est changé avant « Enregistrer »). Le
 // prénom, lui, reste dans le champ de saisie jusqu'à l'enregistrement.
-let memberDraft = null; // { id, enfant, genre, teint, depart } (depart : le joueur a demandé le départ, on attend sa confirmation)
-
-const GENRE_LABELS = {
-  adulte: { f: 'Femme', m: 'Homme' },
-  enfant: { f: 'Fille', m: 'Garçon' },
-};
-const TEINT_LABELS = ['Jaune (par défaut)', 'Peau claire', 'Peau assez claire', 'Peau moyenne', 'Peau assez foncée', 'Peau foncée'];
+let memberDraft = null; // { id, enfant, perso, depart } (depart : le joueur a demandé le départ, on attend sa confirmation)
 
 function openMemberModal(id) {
   const m = findMember(state, id);
@@ -83,9 +87,7 @@ function openMemberModal(id) {
   memberDraft = {
     id: m.id,
     enfant: !!m.enfant,
-    genre: P.GENRES.includes(m.genre) ? m.genre : P.GENRES[0],
-    teint: Number.isInteger(m.teint) && m.teint >= 0 && m.teint < P.TEINTS.length ? m.teint : 0,
-    style: memberStyle(m), // version 1.12 : la coiffure (planche d'avatars)
+    perso: memberPerso(m), // version 1.17 : son personnage, parmi ceux de son âge
     depart: false,
   };
   // Version 1.2 : le membre peut quitter la famille, sauf s'il est le dernier, le
@@ -95,15 +97,16 @@ function openMemberModal(id) {
     ? `<span class="muted">${escapeHtml(blocage)}</span>`
     : `<button type="button" class="btn" data-action="member-remove" id="member-remove">Retirer de la famille</button>
        <span class="muted">Le besoin de la famille baisse de ${DATA.FAMILY.AJ[age]} calories par jour.</span>`;
-  const genres = P.GENRES.map((g) => `<button type="button" class="btn choice-btn" data-action="member-genre" data-genre="${g}" aria-pressed="false"><span class="choice-emoji" aria-hidden="true"></span><span>${GENRE_LABELS[age][g]}</span></button>`).join('');
-  const styles = P.STYLES[age].map((_, n) => `<button type="button" class="btn swatch-btn" data-action="member-style" data-style="${n}" aria-pressed="false" aria-label="${P.STYLE_NOMS[age][n]}" title="${P.STYLE_NOMS[age][n]}"></button>`).join('');
-  const teints = P.TEINTS.map((_, t) => `<button type="button" class="btn swatch-btn" data-action="member-teint" data-teint="${t}" aria-pressed="false" aria-label="${TEINT_LABELS[t]}" title="${TEINT_LABELS[t]}"></button>`).join('');
+  // Version 1.17 : l'apparence est un des personnages de son âge (elle remplace le sexe, la
+  // coiffure et la teinte des anciens portraits emoji).
+  const persos = Array.from({ length: persoMax(m) }, (_, i) => i + 1)
+    .map((n) => `<button type="button" class="btn perso-btn" data-action="member-perso" data-perso="${n}" aria-pressed="false" aria-label="Personnage ${n}" title="Personnage ${n}"><img src="${persoSrc(n, !!m.enfant)}" alt="" width="16" height="16"></button>`).join('');
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal member-modal" role="dialog" aria-modal="true" aria-labelledby="member-title" data-stop-propagation>
         <h2 id="member-title">✏️ Modifier : ${escapeHtml(m.nom)}</h2>
         <div class="member-preview" aria-live="polite">
-          <span class="portrait-emoji" id="member-preview-emoji" aria-hidden="true"></span>
+          <img class="portrait-px" id="member-preview-perso" src="" alt="" width="16" height="16">
           <strong class="member-name" id="member-preview-name"></strong>
         </div>
         <div class="stack">
@@ -111,17 +114,9 @@ function openMemberModal(id) {
             <label for="member-prenom"><strong>Prénom</strong> <span class="muted">(${P.PRENOM_MAX} caractères au plus)</span></label>
             <input type="text" id="member-prenom" class="member-input" maxlength="${P.PRENOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${memberNameHtml(m.id)}">
           </div>
-          <div class="stack member-field" role="group" aria-label="${m.enfant ? 'Fille ou garçon' : 'Femme ou homme'}">
-            <strong>${m.enfant ? 'Fille ou garçon' : 'Femme ou homme'}</strong>
-            <div class="row choice-row">${genres}</div>
-          </div>
-          <div class="stack member-field" role="group" aria-label="Coiffure">
-            <strong>Coiffure</strong>
-            <div class="row swatch-row">${styles}</div>
-          </div>
-          <div class="stack member-field" role="group" aria-label="Couleur de peau">
-            <strong>Couleur de peau</strong>
-            <div class="row swatch-row">${teints}</div>
+          <div class="stack member-field" role="group" aria-label="Personnage">
+            <strong>Personnage</strong>
+            <div class="perso-grid">${persos}</div>
           </div>
           <p class="muted">Le prénom reste sur cet appareil, dans ta sauvegarde : il n'est jamais envoyé.</p>
           <p class="alert" id="member-error" role="alert" hidden></p>
@@ -140,35 +135,22 @@ function openMemberModal(id) {
   input.select();
 }
 
-// Met à jour l'aperçu, les deux boutons de sexe et les six pastilles de teinte
-// d'après les choix en cours, sans toucher au champ du prénom.
+// Met à jour l'aperçu et la grille des personnages d'après le choix en cours, sans toucher au
+// champ du prénom.
 function syncMemberModal() {
   const d = memberDraft;
   const root = document.getElementById('modal-root');
   const input = document.getElementById('member-prenom');
   if (!d || !input) return;
   const typed = cleanFirstName(input.value);
-  document.getElementById('member-preview-emoji').textContent = portraitEmoji(d.enfant, d.genre, d.teint, d.style);
+  document.getElementById('member-preview-perso').src = persoSrc(d.perso, d.enfant);
+  for (const b of root.querySelectorAll('[data-action="member-perso"]')) {
+    const n = Number(b.dataset.perso);
+    b.setAttribute('aria-pressed', String(n === d.perso));
+    b.classList.toggle('active', n === d.perso);
+  }
   // textContent : le prénom tapé s'affiche comme du texte, jamais comme du HTML
   document.getElementById('member-preview-name').textContent = typed || '…';
-  for (const b of root.querySelectorAll('[data-action="member-genre"]')) {
-    const g = b.dataset.genre;
-    b.setAttribute('aria-pressed', String(g === d.genre));
-    b.classList.toggle('active', g === d.genre);
-    b.querySelector('.choice-emoji').textContent = portraitEmoji(d.enfant, g, d.teint, d.style);
-  }
-  for (const b of root.querySelectorAll('[data-action="member-style"]')) {
-    const n = Number(b.dataset.style);
-    b.setAttribute('aria-pressed', String(n === d.style));
-    b.classList.toggle('active', n === d.style);
-    b.textContent = portraitEmoji(d.enfant, d.genre, d.teint, n);
-  }
-  for (const b of root.querySelectorAll('[data-action="member-teint"]')) {
-    const t = Number(b.dataset.teint);
-    b.setAttribute('aria-pressed', String(t === d.teint));
-    b.classList.toggle('active', t === d.teint);
-    b.textContent = portraitEmoji(d.enfant, d.genre, t, d.style);
-  }
   const error = document.getElementById('member-error');
   if (error) error.hidden = true;
 }
@@ -179,7 +161,7 @@ function saveMemberModal() {
   const d = memberDraft;
   const input = document.getElementById('member-prenom');
   if (!d || !input) return;
-  const result = setMemberProfile(state, d.id, { prenom: input.value, genre: d.genre, teint: d.teint, style: d.style });
+  const result = setMemberProfile(state, d.id, { prenom: input.value, perso: d.perso });
   if (!result.ok) {
     const error = document.getElementById('member-error');
     if (error) {
@@ -429,16 +411,8 @@ registerActions({
   'member-edit': (target) => {
     openMemberModal(target.dataset.id);
   },
-  'member-genre': (target) => {
-    if (memberDraft) memberDraft.genre = target.dataset.genre;
-    syncMemberModal();
-  },
-  'member-style': (target) => {
-    if (memberDraft) memberDraft.style = Number(target.dataset.style);
-    syncMemberModal();
-  },
-  'member-teint': (target) => {
-    if (memberDraft) memberDraft.teint = Number(target.dataset.teint);
+  'member-perso': (target) => {
+    if (memberDraft) memberDraft.perso = Number(target.dataset.perso);
     syncMemberModal();
   },
   'member-save': () => {

@@ -58,7 +58,11 @@ C = {
     'rx': (204, 120, 84), 'gl': (40, 40, 48),            # taches de rousseur, lunettes
     'br': (214, 214, 208), 'bm': (150, 120, 110),        # barbe, bouche dans la barbe
     'cp': (60, 120, 70), 'cp2': (40, 86, 50), 'cpb': (230, 230, 220),   # casquette
-    'sp': (236, 214, 190),                               # carreaux
+    'sp': (236, 214, 190),                               # carreaux, pois
+    'bn': (196, 52, 44), 'bn2': (141, 37, 31),           # bonnet
+    'be': (40, 40, 46), 'ba': (196, 52, 44),             # béret, bandeau (et rubans des tresses)
+    'fl': (232, 120, 170), 'fc': (236, 200, 60),         # fleur
+    'yo': (236, 200, 60),                                # boucles d'oreilles
 }
 BASE = dict(C)
 
@@ -67,6 +71,7 @@ BASE = dict(C)
 #   chapeau  : 'paille', 'casquette' ou None (on voit les cheveux sur le dessus)
 #   barbe, lunettes, rousseur, joues : vrai ou faux ; motif : None, 'carreaux' ou 'rayures'
 # Les cinq derniers suivent les portraits de assets/portraits (scripts/personnage/portraits.py).
+# Les 50 du catalogue (scripts/personnage/catalogue.py) passent par variante_catalogue().
 PEAU_CLAIRE = {'sk': (240, 196, 160), 'sk2': (196, 150, 118)}
 PEAU_MATE = {'sk': (198, 142, 96), 'sk2': (150, 100, 64)}
 PEAU_FONCEE = {'sk': (124, 80, 50), 'sk2': (88, 54, 32)}
@@ -109,6 +114,27 @@ VARIANTES = {
     },
 }
 STYLE = {}         # le style du personnage en cours de dessin
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import catalogue  # noqa: E402  (les 50 personnages du catalogue)
+
+
+def variante_catalogue(d):
+    """Couleurs et style d'un personnage du catalogue (scripts/personnage/catalogue.py)."""
+    peau, hr = catalogue.PEAU[d['peau']], catalogue.CHEVEUX[d['cheveux']]
+    hab, a = catalogue.HABITS[d['habit']], d['accessoire']
+    couleurs = {
+        'sk': peau['f'], 'sk2': peau['j'], 'hr': hr['b'], 'hr2': hr['c'], 'br': hr['b'], 'bm': hr['d'],
+        'sh': hab['n'], 'sh2': hab['m'], 'sp': (200, 60, 60) if d['habit'] == 'blanc' else (244, 240, 228),
+        'ov': d['bas'][0], 'ov2': d['bas'][1],
+        'bd': a, 'cp': a, 'cp2': catalogue.fonce(a), 'bn': a, 'bn2': catalogue.fonce(a), 'be': a, 'ba': a, 'fl': a,
+    }
+    if a in (catalogue.ACCESSOIRES['jaune'], catalogue.ACCESSOIRES['blanc']):
+        couleurs['fc'] = (232, 120, 60)
+    style = {'cheveux': d['coupe'], 'chapeau': d['chapeau'], 'motif': d['motif']}
+    for x in d['details']:
+        style[x] = True
+    return {'couleurs': couleurs, **style}
 
 
 class Canvas:
@@ -187,17 +213,45 @@ def couvre_chef(cv, vue, b):
             cv.rect(4, 10 + b, 11, 10 + b, 'cp2')       # la visière, de face
         elif vue == 'cote':
             cv.rect(9, 10 + b, 13, 10 + b, 'cp2')       # la visière, devant
+    elif chap == 'bonnet':
+        cv.rect(5, 7 + b, 10, 10 + b, 'bn')
+        cv.rect(6, 6 + b, 9, 6 + b, 'bn')
+        cv.rect(4 if vue != 'cote' else 5, 10 + b, 11, 10 + b, 'bn2')   # le revers
+        for x in (6, 9):
+            cv.put(x, 8 + b, 'bn2')                     # les côtes de la laine
+    elif chap == 'beret':
+        cv.rect(4, 8 + b, 11, 9 + b, 'be')
+        cv.rect(5, 7 + b, 10, 7 + b, 'be')
+        cv.put(8, 6 + b, 'be')                          # la queue
     else:
-        cv.rect(5, 9 + b, 10, 10 + b, 'hr')
-        cv.rect(6, 8 + b, 9, 8 + b, 'hr')
-        cv.rect(9, 9 + b, 10, 10 + b, 'hr2')
-        cv.put(6, 9 + b, 'hr2' if vue == 'haut' else 'hr')
+        if STYLE.get('cheveux') == 'chauve':            # le crâne, une couronne de cheveux autour
+            cv.rect(6, 8 + b, 9, 10 + b, 'sk')
+            cv.rect(5, 9 + b, 5, 10 + b, 'sk')
+            cv.rect(10, 9 + b, 10, 10 + b, 'sk2')
+        else:
+            cv.rect(5, 9 + b, 10, 10 + b, 'hr')
+            cv.rect(6, 8 + b, 9, 8 + b, 'hr')
+            cv.rect(9, 9 + b, 10, 10 + b, 'hr2')
+            cv.put(6, 9 + b, 'hr2' if vue == 'haut' else 'hr')
+        if chap == 'bandeau':
+            cv.rect(5, 10 + b, 10, 10 + b, 'ba')
+            if vue == 'haut':
+                cv.put(8, 11 + b, 'ba')                 # le nœud et ses pans
+                cv.put(9, 12 + b, 'ba')
+            elif vue == 'cote':
+                cv.put(5, 11 + b, 'ba')
+                cv.put(4, 12 + b, 'ba')
+        elif chap == 'fleur':
+            fx = 6 if vue == 'cote' else 10
+            for (dx, dy) in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+                cv.put(fx + dx, 9 + b + dy, 'fl')
+            cv.put(fx, 9 + b, 'fc')
 
 
 def body(cv, vue, b):
     """Torse, tête et couvre-chef ; b : décalage vertical (respiration, pas, accroupi)."""
     cheveux = STYLE.get('cheveux', 'courts')
-    bas = {'longs': 18, 'mi': 16}.get(cheveux)          # où s'arrêtent les cheveux longs
+    bas = {'longs': 18, 'mi': 16, 'carre': 15, 'frange': 18, 'frange_carre': 15}.get(cheveux)   # où s'arrêtent les cheveux longs
     if vue == 'cote':
         cv.rect(6, 17 + b, 10, 19 + b, 'sh')
         cv.rect(6, 20 + b, 10, 24 + b, 'ov')
@@ -224,6 +278,18 @@ def body(cv, vue, b):
         if STYLE.get('lunettes'):
             cv.put(8, 13 + b, 'gl')
             cv.put(10, 13 + b, 'gl')
+        if STYLE.get('moustache'):
+            cv.rect(9, 15 + b, 10, 15 + b, 'br')
+        if STYLE.get('boucles'):
+            cv.put(7, 15 + b, 'yo')
+        if cheveux == 'couettes':                       # une tresse dans le dos
+            cv.rect(5, 12 + b, 5, 17 + b, 'hr')
+            cv.put(5, 18 + b, 'ba')
+        elif cheveux == 'chignon':                      # le chignon, derrière la tête
+            cv.rect(4, 10 + b, 5, 12 + b, 'hr')
+            cv.put(4, 10 + b, 'hr2')
+        elif cheveux == 'chauve':
+            cv.rect(6, 11 + b, 7, 11 + b, 'sk')
         couvre_chef(cv, vue, b)
         return
     cv.rect(5, 17 + b, 10, 19 + b, 'sh')
@@ -258,6 +324,21 @@ def body(cv, vue, b):
         if STYLE.get('lunettes'):
             for x in (5, 7, 8, 10):
                 cv.put(x, 13 + b, 'gl')
+        if STYLE.get('moustache'):
+            cv.rect(6, 15 + b, 9, 15 + b, 'br')
+        if cheveux in ('frange', 'frange_carre'):
+            cv.rect(6, 12 + b, 9, 12 + b, 'hr')         # la frange sur le front
+        elif cheveux == 'couettes':                     # deux tresses devant les épaules
+            for x in (4, 11):
+                cv.rect(x, 12 + b, x, 17 + b, 'hr')
+                cv.put(x, 18 + b, 'ba')
+        elif cheveux == 'chignon':
+            cv.rect(7, 8 + b, 8, 8 + b, 'hr2')          # le haut du chignon dépasse
+        elif cheveux == 'chauve':
+            cv.rect(6, 11 + b, 9, 11 + b, 'sk')
+        if STYLE.get('boucles'):
+            cv.put(4, 15 + b, 'yo')
+            cv.put(11, 15 + b, 'yo')
     else:                                               # de dos : bretelles et cheveux
         cv.put(6, 17 + b, 'ov')
         cv.put(9, 17 + b, 'ov')
@@ -272,6 +353,15 @@ def body(cv, vue, b):
         if STYLE.get('lunettes'):
             cv.put(4, 13 + b, 'gl')                     # les branches
             cv.put(11, 13 + b, 'gl')
+        if cheveux == 'couettes':
+            for x in (5, 10):
+                cv.rect(x, 15 + b, x, 18 + b, 'hr')
+                cv.put(x, 19 + b, 'ba')
+        elif cheveux == 'chignon':
+            cv.rect(6, 11 + b, 9, 13 + b, 'hr')
+            cv.rect(7, 12 + b, 8, 12 + b, 'hr2')
+        elif cheveux == 'chauve':
+            cv.rect(6, 11 + b, 9, 12 + b, 'sk')
     couvre_chef(cv, vue, b)
 
 
@@ -288,6 +378,8 @@ def motif(cv):
                 cv.px[y][x] = 'sp'
             elif m == 'rayures' and y % 2 == 0:
                 cv.px[y][x] = 'sh2'
+            elif m == 'pois' and (x + 2 * y) % 4 == 0:
+                cv.px[y][x] = 'sp'
 
 
 def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None):
@@ -420,17 +512,20 @@ def render(cv):
     return im
 
 
-def ecrire(nom):
+def ecrire(nom, dossier='assets', portrait=True, cases=True):
     F = frames()
     names = list(F)
     rows = (len(names) + COLS - 1) // COLS
     sheet = Image.new('RGBA', (COLS * W, rows * H), (0, 0, 0, 0))
     for i, n in enumerate(names):
         sheet.paste(render(F[n]), ((i % COLS) * W, (i // COLS) * H))
-    sheet.save(os.path.join(ROOT, 'assets', f'{nom}.png'))
-    with open(os.path.join(ROOT, 'assets', f'{nom}.json'), 'w', encoding='utf-8') as f:
-        json.dump({'frameWidth': W, 'frameHeight': H, 'frames': names}, f, ensure_ascii=False, indent=0)
-        f.write('\n')
+    sheet.save(os.path.join(ROOT, dossier, f'{nom}.png'))
+    if cases:
+        with open(os.path.join(ROOT, dossier, f'{nom if dossier == "assets" else "cases"}.json'), 'w', encoding='utf-8') as f:
+            json.dump({'frameWidth': W, 'frameHeight': H, 'frames': names}, f, ensure_ascii=False, indent=0)
+            f.write('\n')
+    if not portrait:
+        return
     # Portrait : la tête et les épaules de face (debout), dans un carré de 20 × 20.
     face = Image.new('RGBA', (W + 4, H), (0, 0, 0, 0))
     face.paste(render(F['idle_bas_0']), (2, 0))
@@ -442,14 +537,24 @@ def ecrire(nom):
         bg.resize((sheet.width * 5, sheet.height * 5), Image.NEAREST).save(os.path.join(ROOT, f'apercu_{nom}.png'))
 
 
+def dessiner(v):
+    C.clear()
+    C.update(BASE)
+    C.update(v['couleurs'])
+    STYLE.clear()
+    STYLE.update({k: v[k] for k in v if k != 'couleurs'})
+
+
 def main():
     for nom, v in VARIANTES.items():
-        C.clear()
-        C.update(BASE)
-        C.update(v['couleurs'])
-        STYLE.clear()
-        STYLE.update({k: v[k] for k in v if k != 'couleurs'})
+        dessiner(v)
         ecrire(nom)
+    # Les 50 du catalogue : assets/personnages/perso_XX.png, les noms des cases (les mêmes pour
+    # tous) dans assets/personnages/cases.json ; leur portrait est dans assets/portraits.
+    os.makedirs(os.path.join(ROOT, 'assets', 'personnages'), exist_ok=True)
+    for i, (nom, d) in enumerate(catalogue.personnages()):
+        dessiner(variante_catalogue(d))
+        ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=(i == 0))
 
 
 if __name__ == '__main__':

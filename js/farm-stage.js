@@ -1500,6 +1500,7 @@
           const s = want ? this.buildings.get(def.id).sprite : null;
           this.syncLabel(def.id, want, def.window, s ? s.x + s.width / 2 : 0, s ? s.y - s.height + (def.labelDown || 0) : 0);
         }
+        this.syncPerso(model.perso | 0);
         this.syncRoofPanels(model.panneaux | 0);
         this.syncWell(!!model.pompe, !!model.pompeEnMarche);
         this.syncTank(model.citerne == null ? -1 : model.citerne | 0);
@@ -1546,6 +1547,19 @@
           this.ambient.setContext({ hour: model.heure, trees: leafy, folds, herd: model.animaux || {} });
         }
         this.placeLabels();
+      }
+
+      // Version 1.17 : le personnage du joueur, un des 50 du catalogue (assets/personnages). Sa
+      // planche est chargée la première fois qu'il est choisi ; d'ici là, la fermière.
+      syncPerso(n) {
+        if (!this.fermier || !n || n === this.persoN) return;
+        this.persoN = n;
+        const key = 'perso_' + n;
+        const apply = () => { if (this.persoN === n && this.has(key)) this.fermier.setSheet(key); };
+        if (this.textures.exists(key)) { apply(); return; }
+        this.load.spritesheet(key, v('personnages/perso_' + String(n).padStart(2, '0') + '.png'), FERMIER_FRAME);
+        this.load.once('complete', apply);
+        this.load.start();
       }
 
       // Meuble d'un intérieur sous le doigt (zone d'appui élargie à 44 px CSS) : sa fenêtre.

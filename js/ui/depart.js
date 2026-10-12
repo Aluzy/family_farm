@@ -4,13 +4,13 @@ import {
   buyStarter, familyName, finishSetup, houseRepaired, mainCharacter, repairHouse, setFamilyName,
   setMainCharacter, setupPending, starterBlock,
 } from '../engine/depart.js';
-import { familyNeed, memberPortrait } from '../engine/family.js';
+import { familyNeed } from '../engine/family.js';
 import { escapeHtml, formatCoins, formatNumber } from '../engine/format.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
-import { memberNameHtml } from './famille.js';
+import { memberAvatarHtml, memberNameHtml } from './famille.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
 import { canPay, closeModal, costLabel } from './common.js';
@@ -89,7 +89,7 @@ function setupMemberRow(m) {
   const isMain = main && main.id === m.id;
   return `
     <li class="setup-member">
-      <span class="portrait-emoji" aria-hidden="true">${memberPortrait(state, m.id) || '🙂'}</span>
+      ${memberAvatarHtml(m.id)}
       <span class="setup-member-name"><strong class="member-name">${memberNameHtml(m.id)}</strong><br><span class="muted">${m.enfant ? 'Enfant' : 'Adulte'}${isMain ? ' · ⭐ personnage principal' : ''}</span></span>
       <span class="row">
         ${CHOIX_PRINCIPAL && !m.enfant && !isMain ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" title="Choisir comme personnage principal" aria-label="Choisir comme personnage principal">⭐ Principal</button>` : ''}

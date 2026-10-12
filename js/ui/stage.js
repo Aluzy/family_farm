@@ -1,9 +1,10 @@
 import { DATA } from '../engine/catalog.js';
 import { formatLitres } from '../engine/format.js';
-import { houseRepaired } from '../engine/depart.js';
+import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
+import { memberPerso } from '../engine/family.js';
 import { allPlots, hoeableTiles, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
 import { woolReady } from '../engine/animals.js';
@@ -320,6 +321,8 @@ export function stageModel() {
   // geste du joueur), les œufs de la nuit, la préparation en cours, le contenu du frigo.
   const cuisson = ['cuisine', 'four'].find((id) => state.stations[id] && state.stations[id].construit && state.stations[id].tache) || null;
   return {
+    // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
+    perso: memberPerso(mainCharacter(state)),
     jour: state.day, oeufs: (state.nuit && state.nuit.oeufs) || 0, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
     houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,

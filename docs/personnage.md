@@ -11,11 +11,30 @@ px, 8 par rangée), `assets/<nom>.json` (le nom de chaque case, dans l'ordre) et
 `scripts/personnage/fermier.py` (`--apercu` écrit aussi les planches agrandies) ; les deux
 planches ont les mêmes cases, seules les couleurs et le style changent.
 
-**Pour l'instant, c'est toujours la fermière** (`PERSONNAGE` dans `js/farm-stage.js`) : sur la
-carte, et son portrait dans la carte du joueur, en haut à gauche. Le choix du personnage
-principal (⭐) est masqué à l'écran du début de partie (`CHOIX_PRINCIPAL` dans
-`js/ui/depart.js`) : c'est le premier adulte. Trois vues : `bas` (de face), `haut` (de dos),
-`cote` (profil tourné vers la droite, retourné pour la gauche).
+**Le catalogue** : 50 personnages de plus, `perso_01` à `perso_50`, décrits dans
+`scripts/personnage/catalogue.py` (peau, cheveux, coupe, couvre-chef, détails, habit, motif).
+`scripts/personnage/portraits.py` en tire leur portrait 16 × 16 (`assets/portraits/perso_XX.png`),
+`scripts/personnage/fermier.py` leur planche de 70 cases (`assets/personnages/perso_XX.png`, les
+noms des cases, les mêmes pour tous, dans `assets/personnages/cases.json`). Coupes : longs, mi,
+carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; sur la tête : chapeau de
+paille, casquette, bonnet, béret, bandeau, fleur ; détails : barbe, moustache, lunettes, taches de
+rousseur, boucles d'oreilles ; habits unis, à rayures, à carreaux ou à pois.
+
+**Les adultes de la famille** (version 1.17) ont l'apparence d'un de ces 50 personnages : dans la
+fiche d'un adulte (✏️), la grille « Personnage » remplace le sexe, la coiffure et la teinte des
+emojis (`member.perso`, 1 à 50 ; sans choix, `PERSO_DEFAUT` selon le sexe : 1 pour une femme, 7
+pour un homme). Leur portrait s'affiche dans l'écran de départ, la Famille et la carte du joueur ;
+**sur la carte de la ferme, c'est celui du personnage principal** (le premier adulte : son choix
+est masqué à l'écran de départ, `CHOIX_PRINCIPAL` dans `js/ui/depart.js`) :
+`modèle.perso`, sa planche est chargée à la demande (`syncPerso`).
+
+**Les enfants** ont de même un des 50 portraits d'enfants (`assets/portraits/enfant_XX.png`,
+dérivés de `modele_enfant.png` par `scripts/personnage/portraits_enfants.py` ; 9 coupes, chapeaux,
+nœud, serre-tête, fleur, lunettes, taches de rousseur, joues roses, pansement, salopette). Leur
+fiche a la même grille ; sans choix, `PERSO_DEFAUT_ENFANT` (1 pour un garçon, 2 pour une fille).
+Ils ne sont pas encore sur la carte : pas de planche d'enfant.
+
+Avant que la planche choisie soit chargée, la carte montre la fermière.
 
 | Cases | Pour |
 |---|---|
