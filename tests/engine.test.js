@@ -2647,7 +2647,7 @@ test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni
   // Prix d'achat des graines au Marché : prix inchangé × plancher 2,0.
   assertEqual(buyPrice(garden(), 'graine_carotte'), 2);
   // Constructions, améliorations, animaux, arbres, soins : hors périmètre.
-  assertEqual([DATA.POULAILLER.CONSTRUCTION, DATA.SERRE.CONSTRUCTION, DATA.FRIGO.CONSTRUCTION], [40, 400, 600]);
+  assertEqual([DATA.POULAILLER.CONSTRUCTION, DATA.SERRE.CONSTRUCTION, DATA.FRIGO.CONSTRUCTION], [40, 1000, 600]); // Serre : toute sa terre, prix relevé
   assertEqual(DATA.STATIONS.four.cout, 100);
   assertEqual(DATA.UPGRADE_COST.panneau, [0, 150, 400, 900, 2000]);
   assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.mouton.prix, DATA.ANIMAUX.vache.prix], [15, 60, 200]);
@@ -5424,7 +5424,7 @@ function orchard() {
 test('DATA Lot 8 : Serre, Verger et Réfrigérateur (plus de saisons)', () => {
   assertEqual(DATA.SAISONS, undefined, 'version 1.6 : plus de saisons');
   assertEqual(DATA.VERGER.FENETRE, undefined, 'les fruits viennent toute l\'année');
-  assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 400, PARCELLES: [15, 27, 39, 51, 63], COUT: [0, 300, 600, 1000, 1800] });
+  assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 1000, PARCELLES: [15, 27, 39, 51, 63], COUT: [0, 900, 1800, 3000, 5400] });
   const V = DATA.VERGER;
   assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 12, 50, 125]);
   assertEqual([V.MATURITE, V.FRUITS, V.PERIODE], [15, 6, 3]);
@@ -5479,13 +5479,13 @@ test('version 1.6 : plus de saisons, la même production toute l\'année', () =>
 
 /* --- Serre --- */
 
-test('Serre : 400 pièces, 15 parcelles, refus sans pièces ou si déjà construite', () => {
+test('Serre : 1 000 pièces, 15 parcelles, refus sans pièces ou si déjà construite', () => {
   const s = garden();
-  s.pieces = 399;
+  s.pieces = 999;
   assertEqual(buildSerre(reach(s, 'serre')).ok, false);
-  s.pieces = 400;
+  s.pieces = 1000;
   const r = buildSerre(reach(s, 'serre'));
-  assertEqual([r.ok, r.cost, s.pieces], [true, 400, 0]);
+  assertEqual([r.ok, r.cost, s.pieces], [true, 1000, 0]);
   assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, 1, 15]);
   assertEqual(s.serre.parcelles.every((p) => p.lieu === 'serre'), true);
   assertEqual(buildSerre(reach(s, 'serre')).ok, false);
@@ -5493,7 +5493,7 @@ test('Serre : 400 pièces, 15 parcelles, refus sans pièces ou si déjà constru
   assertEqual(findPlot(s, 'serre-3').lieu, 'serre');
 });
 
-test('Serre : +12 parcelles par niveau jusqu\'à toute sa terre (63), 300 / 600 / 1 000 / 1 800 pièces', () => {
+test('Serre : +12 parcelles par niveau jusqu\'à toute sa terre (63), 900 / 1 800 / 3 000 / 5 400 pièces', () => {
   const s = garden();
   s.pieces = 100000;
   buildSerre(reach(s, 'serre'));
@@ -5504,7 +5504,7 @@ test('Serre : +12 parcelles par niveau jusqu\'à toute sa terre (63), 300 / 600 
     assert(upgradeSerre(s).ok);
     seen.push([s.serre.niveau, s.serre.parcelles.length, before - s.pieces, cost]);
   }
-  assertEqual(seen, [[2, 27, 300, 300], [3, 39, 600, 600], [4, 51, 1000, 1000], [5, 63, 1800, 1800]]);
+  assertEqual(seen, [[2, 27, 900, 900], [3, 39, 1800, 1800], [4, 51, 3000, 3000], [5, 63, 5400, 5400]]);
   assertEqual(serreUpgradeCost(s), null);
   assertEqual(upgradeSerre(s).ok, false, 'niveau maximum');
   assertEqual(upgradeSerre(garden()).ok, false, 'pas construite');

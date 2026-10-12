@@ -568,7 +568,7 @@ export const RAW_DATA = {
     "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "CASES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
   },
   "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
-  "SERRE": { "LIEU": "serre", "CONSTRUCTION": 400, "PARCELLES": [15, 27, 39, 51, 63], "COUT": [0, 300, 600, 1000, 1800] },
+  "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [15, 27, 39, 51, 63], "COUT": [0, 900, 1800, 3000, 5400] },
   "VERGER": {
     "CONSTRUCTION": 0,
     "EMPLACEMENTS_DEPART": 2,
