@@ -11,6 +11,7 @@ export const RENDER_THROTTLE_MS = 200; // ~5 fois par seconde
 
 export const TABS = [
   { id: 'ferme', label: 'Ferme', icon: '🏠' },
+  { id: 'installations', label: 'Installations', icon: '🏗️' }, // fenêtre de la carte (menu latéral)
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦' },
   { id: 'inventaire', label: 'Inventaire', icon: '📦' },
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
@@ -20,8 +21,9 @@ export const TABS = [
   { id: 'notifications', label: 'Notifications', icon: '✉️' },
 ];
 
-// Barre de menu du bas : quatre destinations, côte à côte.
-export const NAV_TABS = ['ferme', 'inventaire', 'comptoir', 'notifications'];
+// Menu latéral : les destinations, les unes au-dessus des autres (l'Arbre des technologies
+// n'y apparaît qu'au premier point de technologie, FLU-28).
+export const NAV_TABS = ['ferme', 'installations', 'inventaire', 'comptoir', 'techno', 'notifications'];
 
 // Écrans ouverts depuis la Ferme (raccourcis en haut de l'écran Ferme). Ils
 // restent des onglets pour le moteur et le suivi, mais n'ont pas d'icône en bas :
@@ -29,7 +31,7 @@ export const NAV_TABS = ['ferme', 'inventaire', 'comptoir', 'notifications'];
 export const FERME_LINKS = ['famille', 'recettes', 'techno', 'ville'];
 
 // Onglets toujours disponibles, sans passer par state.unlockedTabs (aucune migration).
-const ALWAYS_TABS = ['notifications', 'ville'];
+const ALWAYS_TABS = ['notifications', 'ville', 'installations'];
 export function tabAvailable(id) {
   // FLU-28 : l'Arbre des technologies se montre au premier point de technologie gagné
   if (id === 'techno' && !techTreeShown()) return false;

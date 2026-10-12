@@ -91,7 +91,7 @@
 >   valeurs en Wh/s ne restent que dans l'aide « ? » de chaque appareil.
 >- **Parcelles (FLU-27)** : le bouton 🤖 du semis automatique n'apparaît qu'une fois la
 >   technologie débloquée.
->- **Arbre des technologies dévoilé (FLU-28)** : l'onglet Techno de la Maison n'apparaît
+>- **Arbre des technologies dévoilé (FLU-28)** : l'Arbre (autrefois onglet Techno de la Maison, aujourd'hui 🌳 dans le menu latéral) n'apparaît
 >   qu'au premier point de technologie gagné, annoncé par « 🌳 L'Arbre des technologies est
 >   ouvert… » (le message y mène). Chaque branche est un bloc repliable, fermé sauf la
 >   première qui a une technologie à acquérir (« ✨ À acquérir ») ; tout replié, l'arbre fait

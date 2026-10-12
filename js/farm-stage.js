@@ -1366,6 +1366,14 @@
           if (!best || depth > best.depth) best = { depth, window: win };
         };
         for (const e of this.buildings.values()) test(e.sprite.x, e.sprite.y, e.sprite.width, e.sprite.height, e.sprite.depth, e.def.window);
+        // Les panneaux solaires du toit ouvrent la fenêtre Énergie ; la pompe du puits et la
+        // citerne, la fenêtre Eau (devant la maison et les autres bâtiments : profondeur +1).
+        if (this.roofPanels) {
+          const r = this.roofPanels;
+          test(r.x, r.y + r.height, r.width, r.height, r.depth + 1, 'energie');
+        }
+        if (this.pump && this.well) test(this.well.x, this.well.y, this.well.width, this.well.height, this.well.depth + 1, 'eau');
+        if (this.tank) test(this.tank.x, this.tank.y, this.tank.width, this.tank.height, this.tank.depth + 1, 'eau');
         // Version 1.13 : un arbre en fruits se cueille, un emplacement libre propose de
         // planter ; un autre arbre ouvre la fenêtre du Verger.
         for (const e of this.trees.values()) {

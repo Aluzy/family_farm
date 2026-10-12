@@ -27,7 +27,8 @@ import {
   cibleAttrs, heureDuJour, horlogeEmoji, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
 } from './stage.js';
 import {
-  backToFerme, deviceName, renderDeviceScreen, renderEnergieEau, renderFerme, renderPotager, renderZone2,
+  backToFerme, deviceName, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
+  renderInstallationsMaison, renderPotager, renderZone2,
 } from './ferme.js';
 import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderSerre, renderVerger } from './serre-verger-frigo.js';
@@ -94,18 +95,19 @@ export function leaveInterior() {
 }
 
 let stageWindowShown = null; // dernière fenêtre dessinée (avec son onglet) : pour remonter en haut au changement
-let maisonTab = 'batiments'; // onglet de la fenêtre Maison
-let maisonTabChoisi = 'batiments'; // FLU-03 : le dernier onglet que le joueur a choisi
+let maisonTab = 'recettes'; // onglet de la fenêtre Maison
+let maisonTabChoisi = 'recettes'; // FLU-03 : le dernier onglet que le joueur a choisi
 export function setMaisonTab(value) {
   maisonTab = value;
   return value;
 }
 
-// FLU-03 : la Maison s'ouvre là où il y a à faire : Installations tant que la maison est à
-// réparer ou que le panneau, la pompe ou le réservoir manquent ; sinon le dernier onglet choisi.
-function maisonTabAOuvrir() {
+// FLU-03 : la Maison s'ouvre là où il y a à faire : les Installations (leur propre fenêtre,
+// aussi au menu latéral) tant que la maison est à réparer ou que le panneau, la pompe ou le
+// réservoir manquent, ou tant que la Maison n'a aucun onglet ; sinon le dernier onglet choisi.
+function maisonOuInstallations() {
   const manque = !houseRepaired(state) || ['panneau', 'pompe', 'reservoir'].some((id) => !isOwned(starterOf(state, id)));
-  return manque ? 'batiments' : maisonTabChoisi;
+  return manque || !MAISON_TABS.some((t) => t.ok()) ? 'installations' : 'maison';
 }
 let ancreVoulue = null; // id de l'élément à amener en haut au prochain rendu (calendrier, eau…)
 export function setAncreVoulue(value) {
@@ -116,16 +118,19 @@ export function setAncreVoulue(value) {
 export const MAISON_TABS = [
   // FLU-04 : `court` s'affiche sur l'onglet, `label` reste le nom complet (infobulle, lecteurs d'écran)
   { id: 'recettes', label: 'Livre de recette', court: 'Recettes', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
-  { id: 'techno', label: 'Arbre des technologies', court: 'Techno', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
-  { id: 'batiments', label: 'Installations', court: 'Énergie', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
   // version 1.14 : le commerce du niveau 10
   { id: 'commerce', label: 'Commerce', icon: '🏪', ok: () => isUnlocked(state, 'commerce'), corps: () => renderCommerce() },
 ];
 
-// La Famille n'est plus un onglet de la Maison : elle a sa fenêtre, ouverte par la carte du
-// joueur. Une ancienne cible « Maison › Famille » (notification sauvegardée) y mène aussi.
+// La Famille et l'Arbre des technologies ne sont plus des onglets de la Maison : la Famille a
+// sa fenêtre (carte du joueur), l'Arbre la sienne (menu latéral). Une ancienne cible
+// « Maison › Famille » ou « Maison › Techno » (notification sauvegardée) y mène aussi.
 function lieuFamille(fenetre, onglet) {
-  return fenetre === 'maison' && onglet === 'famille' ? 'famille' : fenetre;
+  if (fenetre !== 'maison') return fenetre;
+  if (onglet === 'famille' || onglet === 'techno') return onglet;
+  // les Installations ont quitté la Maison (onglet « batiments » des anciennes cibles)
+  if (onglet === 'batiments') return 'installations';
+  return onglet ? (MAISON_TABS.some((t) => t.id === onglet && t.ok()) ? 'maison' : 'installations') : maisonOuInstallations();
 }
 
 function maisonCurrentTab() {
@@ -133,11 +138,11 @@ function maisonCurrentTab() {
   return tabs.find((t) => t.id === maisonTab) || tabs[0];
 }
 
-// Onglet « Installations » de la Maison (identifiant interne : batiments) : ce qui n'a pas
+// Fenêtre « Installations » (autrefois onglet « batiments » de la Maison) : ce qui n'a pas
 // de dessin sur la carte : ateliers (Four, Cuisine, Presse), énergie et eau,
 // Silo. L'ancre de l'eau sert à l'indicateur 💧 du bandeau.
 function renderBatiments() {
-  return `${renderAteliers()}<div id="bat-eau" class="ancre">${renderEnergieEau()}</div>${isUnlocked(state, 'silo') ? renderSilo() : ''}`;
+  return `${renderAteliers()}<div id="bat-eau" class="ancre">${renderInstallationsMaison()}</div>${isUnlocked(state, 'silo') ? renderSilo() : ''}`;
 }
 
 // Version 1.1.1 : les animaux s'achètent au Marché ; l'Étable y mène par un raccourci.
@@ -226,6 +231,27 @@ export const STAGE_WINDOWS = {
     enTete: () => marketTabsHtml(),
     corps: () => renderComptoir(true),
   },
+  // Énergie (un appui sur les panneaux solaires du toit) et Eau (sur la pompe du puits ou la
+  // citerne) : leurs appareils, dès qu'ils sont achetés (les achats se font dans la Maison).
+  energie: {
+    nom: 'Énergie', icone: '⚡', ok: () => isOwned(starterOf(state, 'panneau')), bois: true,
+    corps: () => renderEnergieFenetre(),
+  },
+  eau: {
+    nom: 'Eau', icone: '💧', ok: () => isOwned(starterOf(state, 'pompe')) || isOwned(starterOf(state, 'reservoir')), bois: true,
+    corps: () => renderEauFenetre(),
+  },
+  // Installations (menu latéral ; la maison aussi tant qu'elle est à réparer et la ferme à
+  // équiper) : la maison, les appareils à acheter, les ateliers, le frigo, le Silo.
+  installations: {
+    nom: 'Installations', icone: '🏗️', ok: () => true, haute: true, bois: true,
+    corps: () => renderBatiments(),
+  },
+  // Arbre des technologies (menu latéral, dès le premier point) : dans le cadre bois.
+  techno: {
+    nom: 'Arbre des technologies', icone: '🌳', ok: () => tabAvailable('techno'), haute: true, sansTitre: true, bois: true,
+    corps: () => renderTechno(),
+  },
   // Fenêtre de la Famille (carte du joueur, en haut à gauche) : dans le cadre bois des cartes.
   famille: {
     nom: 'Famille', icone: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), haute: true, sansTitre: true, bois: true,
@@ -278,6 +304,8 @@ export const STAGE_WINDOWS = {
 
 export function renderStageWindow() {
   const root = document.getElementById('window-root');
+  // une Maison sans onglet ouvert (Livre de recette, Commerce) : ce sont les Installations
+  if (stageWindow === 'maison' && !MAISON_TABS.some((t) => t.ok())) stageWindow = 'installations';
   const w = stageWindow ? STAGE_WINDOWS[stageWindow] : null;
   if (stageWindow && (!w || !(w.ok() || windowLocked(stageWindow)) || !stageActive())) stageWindow = null;
   if (!stageWindow) {
@@ -310,6 +338,7 @@ export function renderStageWindow() {
 }
 
 export function openStageWindow(id) {
+  if (id === 'maison') id = maisonOuInstallations();
   if (!STAGE_WINDOWS[id] || !(STAGE_WINDOWS[id].ok() || windowLocked(id))) return;
   if (windowLocked(id)) { // version 1.12 : un bâtiment verrouillé n'ouvre que sa fiche
     stageWindow = id;
@@ -321,7 +350,7 @@ export function openStageWindow(id) {
   // Un bâtiment qui a un intérieur : depuis la carte, on y entre. Une fois dedans, la même
   // action ouvre sa fenêtre (agrandir, tout arroser, tout récolter).
   if (INTERIORS[id] && stageInterior !== id && enterInterior(id)) return;
-  if (id === 'maison') maisonTab = maisonTabAOuvrir();
+  if (id === 'maison') maisonTab = maisonTabChoisi;
   stageWindow = id;
   stageReturn = null;
   renderStageWindow(); // tout de suite, sans attendre la cadence de rendu
@@ -356,7 +385,7 @@ export function allerAuLieu(fenetre, onglet, ancre) {
   } else {
     stageWindow = null;
     stageInterior = null;
-    setActiveTab(fenetre === 'ville' ? 'ville' : ['famille', 'inventaire', 'comptoir'].includes(fenetre) && tabAvailable(fenetre) ? fenetre : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
+    setActiveTab(fenetre === 'ville' ? 'ville' : ['famille', 'inventaire', 'comptoir', 'techno'].includes(fenetre) && tabAvailable(fenetre) ? fenetre : fenetre === 'installations' ? 'ferme' : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
   }
   ancreVoulue = ancre || null;
   telView();
@@ -445,7 +474,7 @@ const MENU_ARROW = '<svg class="side-tab-arrow" viewBox="0 0 5 9" width="10" hei
   '<rect x="0" y="0" width="1" height="9"/><rect x="1" y="1" width="1" height="7"/><rect x="2" y="2" width="1" height="5"/><rect x="3" y="3" width="1" height="3"/><rect x="4" y="4" width="1" height="1"/></svg>';
 
 export function renderTabbar() {
-  const current = stageWindow === 'inventaire' || stageWindow === 'comptoir' ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
+  const current = ['installations', 'inventaire', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
   const nav = document.getElementById('bottom-nav');
   if (!menuClickBound) {
@@ -466,7 +495,7 @@ export function renderTabbar() {
       // Ferme reste une liste et garde sa maison)
       .map((t) => (t.id === 'ferme' && stageUsable() ? { ...t, label: 'Carte de la ferme', icon: '🗺️' } : t))
       // FLU-08 : le Marché est là dès le départ (verrouillé) : les onglets ne bougent jamais
-      .filter((t) => tabAvailable(t.id) || t.id === 'comptoir')
+      .filter((t) => (tabAvailable(t.id) || t.id === 'comptoir') && (t.id !== 'installations' || stageUsable()))
       .map((t) => {
         if (!tabAvailable(t.id)) {
           return `<button type="button" class="nav-btn locked" data-action="market-locked" title="${t.label}" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
@@ -559,7 +588,7 @@ registerActions({
   },
   'switch-tab': (target) => {
     // L'Inventaire et le Marché, avec la carte, sont des fenêtres flottantes par-dessus elle.
-    if ((target.dataset.tab === 'inventaire' || target.dataset.tab === 'comptoir') && stageUsable()) {
+    if (['installations', 'inventaire', 'comptoir', 'techno'].includes(target.dataset.tab) && stageUsable()) {
       if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
       allerAuLieu(target.dataset.tab);
       return;

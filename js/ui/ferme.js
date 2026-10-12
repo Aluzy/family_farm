@@ -112,9 +112,38 @@ export function renderFerme() {
   ];
 }
 
-// Cartes « Énergie et eau » : dans la liste classique de la Ferme et dans la fenêtre
-// Maison › Installations de la carte.
+// Cartes « Énergie et eau », réparties : sur la carte, ⚡ Énergie (panneaux du toit) et
+// 💧 Eau (pompe du puits, citerne) ont leur fenêtre ; la Maison garde les achats de départ et
+// le frigo. Sans la carte, tout reste ensemble dans la liste de la Ferme.
 export function renderEnergieEau() {
+  const p = energieEauParts();
+  return `
+    <h3 class="section-title">⚡ Énergie et eau</h3>
+    <div class="cards">
+      ${p.starters}${p.panneau}${p.batterie}${p.pompe}${p.reservoir}${p.frigo}
+    </div>
+  `;
+}
+
+export function renderEnergieFenetre() {
+  const p = energieEauParts();
+  return `<div class="cards">${p.panneau}${p.batterie}</div>`;
+}
+
+export function renderEauFenetre() {
+  const p = energieEauParts();
+  return `<div class="cards">${p.pompe}${p.reservoir}</div>`;
+}
+
+// Fenêtre Installations, avec la carte : la maison à réparer, les appareils à acheter, le frigo
+// (la fenêtre porte déjà le titre).
+export function renderInstallationsMaison() {
+  const p = energieEauParts();
+  const cards = `${p.starters}${p.frigo}`;
+  return cards.trim() ? `<div class="cards">${cards}</div>` : '';
+}
+
+function energieEauParts() {
   const e = energyStats(state), p = state.pompe, ps = deviceStatus(state, p), cap = tankCapacity(state);
   const tankUp = upgradeCost({ type: 'reservoir', niveau: state.reservoir.niveau });
   let netText = 'Ni charge ni décharge';
@@ -155,17 +184,14 @@ export function renderEnergieEau() {
           ? '<button type="button" class="btn" disabled>Niveau max</button>'
           : `<button type="button" class="btn" data-action="upgrade-tank"${canPay(tankUp) ? '' : ' disabled'}>Agrandir : ${formatLitres(DATA.GRID.reservoir.litres[state.reservoir.niveau] * 1000)} (${costLabel(tankUp)})</button>`}
       </div>` : '';
-  return `
-    <h3 class="section-title">⚡ Énergie et eau</h3>
-    <div class="cards">
-      ${renderStarterCards()}
-      ${panneauCard}
-      ${batterieCard}
-      ${pompeCard}
-      ${reservoirCard}
-      ${isUnlocked(state, 'frigo') ? renderFridgeCard() : ''}
-    </div>
-  `;
+  return {
+    starters: renderStarterCards(),
+    panneau: panneauCard,
+    batterie: batterieCard,
+    pompe: pompeCard,
+    reservoir: reservoirCard,
+    frigo: isUnlocked(state, 'frigo') ? renderFridgeCard() : '',
+  };
 }
 
 export function wearHtml(d) {

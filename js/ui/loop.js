@@ -118,8 +118,8 @@ function watchTechPoints() {
   if (!pt || !pt.annonces || !pt.annonces.length) return;
   const premier = pt.gagnes > 0 && pt.gagnes === pt.annonces.reduce((t, a) => t + a.pt, 0);
   for (const a of pt.annonces.splice(0)) showToast(`🔬 +${formatNumber(a.pt)} PT : ${a.raison}`);
-  // FLU-28 : le premier point ouvre l'onglet Techno de la Maison
-  if (premier) notify('🌳 L\'Arbre des technologies est ouvert : dépense tes points dans la Maison, onglet Techno.', 'info', { fenetre: 'maison', onglet: 'techno' });
+  // FLU-28 : le premier point fait apparaître l'Arbre des technologies dans le menu latéral
+  if (premier) notify('🌳 L\'Arbre des technologies est ouvert : dépense tes points depuis le menu (🌳).', 'info', { fenetre: 'techno' });
   persistState();
 }
 
@@ -257,7 +257,7 @@ function openAbsenceModal(r) {
   }
   const lines = [
     `<li>⏳ Absence : <strong class="num">${formatDuration(r.demande)}</strong>${r.plafonne ? ` <span class="muted">(seules les ${formatDuration(cap)} premières comptent)</span>` : ''}</li>`,
-    // Version 1.6 : l'électricité produite et stockée ne s'affiche plus ici (Maison › Installations).
+    // Version 1.6 : l'électricité produite et stockée ne s'affiche plus ici (fenêtre Énergie).
     `<li>💧 Eau pompée : <strong class="num">${formatLitres(r.eauPompee)}</strong> · réservoir <span class="num">${formatNumber(Math.floor(r.eauFin / 1000))} / ${formatLitres(r.capaciteEau)}</span></li>`,
     done ? `<li>🍳 Préparations terminées : <strong>${done}</strong></li>` : '',
     running.length ? `<li>⏳ Toujours en cours : ${running.join(' · ')}</li>` : '',

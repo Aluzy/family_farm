@@ -30,18 +30,19 @@ export function setLastRenderAt(value) {
 export function render() {
   // Un onglet non débloqué (sauvegarde importée, par exemple) retombe sur la Ferme.
   if (!tabAvailable(activeTab)) setActiveTab('ferme');
-  // Avec la carte, Famille, Livre de recette et Arbre des technologies n'existent que
-  // comme onglets de la fenêtre Maison : une page ouverte avant que la carte soit prête y est ramenée.
+  // Avec la carte, Famille, Livre de recette et Arbre des technologies n'existent que comme
+  // fenêtres de la carte : une page ouverte avant que la carte soit prête y est ramenée.
   if (FERME_LINKS.includes(activeTab) && stageUsable()) {
-    // La Ville a sa propre fenêtre (le poteau au bout du chemin) ; les autres sont dans la Maison.
-    const ville = activeTab === 'ville';
-    if (!ville) setMaisonTab(activeTab);
+    // La Ville (le poteau au bout du chemin), la Famille et l'Arbre des technologies ont leur
+    // propre fenêtre ; le Livre de recette est dans la Maison.
+    const propre = ['ville', 'famille', 'techno'].includes(activeTab) ? activeTab : null;
+    if (!propre) setMaisonTab(activeTab);
     setActiveTab('ferme');
     setEcranFerme(null);
-    setStageWindow(ville ? 'ville' : 'maison');
+    setStageWindow(propre || 'maison');
   }
   // Avec la carte, l'Inventaire et le Marché sont des fenêtres flottantes par-dessus elle.
-  if ((activeTab === 'inventaire' || activeTab === 'comptoir') && stageUsable()) {
+  if (['installations', 'inventaire', 'comptoir'].includes(activeTab) && stageUsable()) {
     setStageWindow(activeTab);
     setActiveTab('ferme');
     setEcranFerme(null);

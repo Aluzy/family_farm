@@ -157,6 +157,20 @@ function animalSlot(kind) {
     `${def.nom} : ${formatCoins(price)} pièces, ${a.compte} sur ${a.cap}`);
 }
 
+// Le rayon Acheter a deux sous-rayons : Ingrédients (la houe en tête, légumes, fruits,
+// œufs, lait, farine…) et Plats (ce que cuisinent le Four et la Cuisine).
+const SOUS_RAYONS = [
+  { id: 'ingredients', label: 'Ingrédients', icon: '🥕', match: (k) => DATA.items[k].category !== 'plat' },
+  { id: 'plats', label: 'Plats', icon: '🍲', match: (k) => DATA.items[k].category === 'plat' },
+];
+let sousRayon = 'ingredients';
+
+function sousRayonsHtml() {
+  return `<div class="shop-subtabs" role="group" aria-label="Sous-rayons">${SOUS_RAYONS
+    .map((r) => `<button type="button" class="shop-subtab${r.id === sousRayon ? ' active' : ''}" data-action="market-subtab" data-tab="${r.id}" aria-pressed="${r.id === sousRayon}"><span aria-hidden="true">${r.icon}</span> ${r.label}</button>`)
+    .join('')}</div>`;
+}
+
 function slotsHtml(slots, empty) {
   const html = slots.join('');
   return html ? `<div class="inv-slots">${html}</div>` : `<p class="hint">${empty}</p>`;
@@ -170,10 +184,13 @@ export function renderComptoir(fenetre = false) {
     const items = Object.keys(DATA.items).filter((k) => sellableCount(state, k) > 0);
     body = slotsHtml(items.map(sellSlot), 'Tu n\'as rien à vendre pour l\'instant.');
   } else if (tab.id === 'acheter') {
-    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine');
-    // FLU-01 : la puce d'objectif « Acheter une houe » mène ici ; le chapitre reste à une touche
+    // FLU-01 : la puce d'objectif « Acheter une houe » mène ici (Ingrédients, le sous-rayon
+    // par défaut, a la houe en tête) ; le chapitre reste à une touche
+    const rayon = SOUS_RAYONS.find((r) => r.id === sousRayon);
+    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine' && rayon.match(k));
     const chapitre = !hasHoe(state) ? '<p class="row"><button type="button" class="btn small" data-action="aller" data-window="chapitres">📜 Voir le chapitre</button></p>' : '';
-    body = `${chapitre}${slotsHtml([hoeSlot(), ...items.map((k) => buySlot(k, 'acheter'))], '')}`;
+    const slots = items.map((k) => buySlot(k, 'acheter'));
+    body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
   } else if (tab.id === 'animaux') {
     body = slotsHtml(ESPECES.map(animalSlot), 'Aucun animal à vendre pour l\'instant.');
   } else {
@@ -290,6 +307,10 @@ function openHelpModal() {
 registerActions({
   'shop-item': (target) => {
     openShopModal(target.dataset.mode, target.dataset.item || target.dataset.kind);
+  },
+  'market-subtab': (target) => {
+    sousRayon = target.dataset.tab;
+    refresh();
   },
   'market-help': () => {
     openHelpModal();
