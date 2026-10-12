@@ -36,7 +36,7 @@ export function hoePanelHtml() {
     const ouvert = farmOpen(state);
     return `
       <div class="hoe-bar">
-        <span class="muted">${H.ICONE} Une <strong>houe</strong> change l'herbe en terre à cultiver.${ouvert ? '' : ' Elle s\'achète au Marché, qui ouvre quand le panneau solaire et la pompe sont installés (🏗️ Installations, dans le menu).'}</span>
+        ${ouvert ? '' : '<span class="muted">Marché fermé : installe le panneau et la pompe.</span>'}
         <button type="button" class="btn" data-action="buy-hoe"${ouvert && canPay(H.PRIX) ? '' : ' disabled'}>Acheter la houe (${formatCoins(H.PRIX)} 💰)</button>
       </div>`;
   }
@@ -46,8 +46,7 @@ export function hoePanelHtml() {
       ${soilLine()}
       <span class="chip" title="Énergie pour labourer une case d'herbe">⚡ labourer : ${formatEnergy(actionCost(state, 'labourer'))}</span>
     </div>`;
-  return `${bar}
-    <p class="muted">${hoeMode ? 'La houe est en main : sur la carte, touche' : 'Avec la houe en main, touche sur la carte'} n'importe quelle tuile d'herbe pour la labourer, une terre vide pour la reboucher (gratuit). Pas sur les chemins, l'eau, les pierres, les arbres, ni aux abords du Poulailler, de l'Étable, du Moulin, de la Serre et du Verger.</p>`;
+  return `${bar}${hoeMode ? '\n    <p class="muted">Touche l\'herbe sur la carte pour labourer.</p>' : ''}`;
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

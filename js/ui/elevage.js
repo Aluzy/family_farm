@@ -37,7 +37,6 @@ export function renderSilo() {
     return `
       <div class="section-head"><h3>${icon('silo')}Silo</h3>${helpBtn('silo')}</div>
       <div class="card">
-        <span class="muted">Le blé récolté y est rangé d'abord ; les poules y mangent d'abord. Capacité de départ : ${DATA.SILO.CAPACITE[0]} blés.</span>
         <button type="button" class="btn primary" data-action="build-silo"${canPay(cost) ? '' : ' disabled'}>Réparer le Silo (${costLabel(cost)})</button>
       </div>`;
   }
@@ -55,7 +54,7 @@ export function renderSilo() {
     <div class="card">
       <span class="big">${formatQty(s.ble)} / ${formatNumber(cap)} 🌾</span>
       <span class="bar" role="progressbar" aria-label="Remplissage du Silo" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${Math.round(s.ble)}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
-      <span class="muted">${s.ble >= cap - EPS ? 'Silo plein : le surplus de blé va dans l\'inventaire.' : 'Le blé récolté est rangé ici en premier.'}${surplus > 0 ? ` Inventaire : ${formatQty(surplus)} blé${surplus > 1 ? 's' : ''}.` : ''}</span>
+      ${s.ble >= cap - EPS || surplus > 0 ? `<span class="chips">${s.ble >= cap - EPS ? '<span class="chip warn">Silo plein</span>' : ''}${surplus > 0 ? `<span class="chip">🎒 ${formatQty(surplus)} 🌾</span>` : ''}</span>` : ''}
       ${upBtn}
     </div>`;
 }

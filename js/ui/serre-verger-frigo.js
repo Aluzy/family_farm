@@ -36,7 +36,6 @@ export function renderSerre() {
     return `
       <div class="section-head"><h3>${icon('serre')}Serre</h3>${helpBtn('serre')}</div>
       <div class="card">
-        <span class="muted">Tomate, courgette, aubergine et poivron, plus trois cultures de rente exclusives à la Serre (cacao, vanille, café) : ${DATA.SERRE.PARCELLES[0]} parcelles au départ, +${DATA.SERRE.PARCELLES[1] - DATA.SERRE.PARCELLES[0]} par niveau.</span>
         <button type="button" class="btn primary" data-action="build-serre"${canPay(cost) ? '' : ' disabled'}>Réparer la Serre (${costLabel(cost)})</button>
       </div>`;
   }
@@ -100,7 +99,6 @@ function treeChoice() {
     return `
       <div class="shop-row">
         <div class="inv-main"><span><span aria-hidden="true">${fruit.icone}</span> ${def.nom}</span><span class="muted">${formatCoins(def.prix)} 💰</span></div>
-        <span class="muted">Premiers fruits ${V.MATURITE} nuits après la plantation (${V.STADES.slice(0, 3).join(', ').toLowerCase()}, ${V.NUITS_STADE} nuits chacun), puis ${V.FRUITS} ${fruit.nom.toLowerCase()}s toutes les ${V.PERIODE} nuits.</span>
         <button type="button" class="btn primary" data-action="plant-tree" data-species="${espece}" data-case="${c}"${canPay(def.prix) ? '' : ' disabled'}>Planter un ${def.nom.toLowerCase()} (${formatCoins(def.prix)} 💰)</button>
       </div>`;
   }).join('');
@@ -119,7 +117,6 @@ export function renderVerger() {
     return `
       <div class="section-head"><h3>${icon('verger')}Verger</h3>${helpBtn('verger')}</div>
       <div class="card">
-        <span class="muted">${V.EMPLACEMENTS_DEPART} emplacements au départ. Appuie sur un emplacement pour y planter un pommier ou un poirier, sans arrosage : ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits, toute l'année, à partir de ${V.MATURITE} nuits après la plantation.</span>
         <button type="button" class="btn primary" data-action="build-verger"${canPay(cost) ? '' : ' disabled'}>Aménager le Verger (${costLabel(cost)})</button>
       </div>`;
   }
@@ -139,7 +136,6 @@ export function renderVerger() {
     ${treeChoice()}
     <div class="plots">${slots.join('')}</div>
     <div class="card">
-      <span class="muted">Un arbre adulte se couvre de ${V.FRUITS} fruits toutes les ${V.PERIODE} nuits après la cueillette, toute l'année.${auto ? '' : ' Ils attendent sur l\'arbre que tu les cueilles.'}</span>
       ${atMax
         ? `<span class="muted">Le Verger a atteint sa taille maximale (${V.EMPLACEMENTS_MAX} emplacements).</span>`
         : `<button type="button" class="btn" data-action="buy-orchard-slot"${canPay(price) ? '' : ' disabled'}>Acheter un emplacement (${costLabel(price)})</button>`}

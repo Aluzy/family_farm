@@ -2200,3 +2200,4 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
 .animal-card .btn { min-height: 36px; width: 100%; }
 .animal-card.ready { border-color: var(--color-sun); }
 .animal-card.hungry { border-color: var(--danger); }
+.help-emoji { font-size: 32px; line-height: 1; }

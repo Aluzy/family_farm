@@ -14,6 +14,7 @@ import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
 import { canPay } from './common.js';
 import { pxGauge } from './pixel-art.js';
+import { helpBtn } from './aide.js';
 
 /* ---------- version 1.5 : la Ville (sorties, voyages, marché de la ville) ---------- */
 
@@ -46,8 +47,7 @@ function outingCard(id) {
   const label = s.transport ? `Prendre le ${s.transport}` : 'Y aller';
   return `
     <div class="card outing${st.raison === 'faite' ? ' done' : ''}">
-      <span class="plot-head"><span class="plot-ico" aria-hidden="true">${s.icone}</span><span class="plot-name">${s.nom}</span></span>
-      <span class="muted">${s.texte}</span>
+      <span class="plot-head" title="${s.texte}"><span class="plot-ico" aria-hidden="true">${s.icone}</span><span class="plot-name">${s.nom}</span></span>
       <span class="outing-facts"><span class="chip">⏳ ${s.heures} h</span><span class="chip">${prix}</span><span class="chip">${gainLabel(s)}</span></span>
       ${loot ? `<span class="muted">Rapporte : ${loot}</span>` : ''}
       <button type="button" class="btn${st.ok ? ' primary' : ''}" data-action="ville-go" data-id="${id}"${st.ok ? '' : ' disabled'} title="${st.ok ? '' : st.texte}">${st.ok ? label : st.texte}</button>
@@ -60,7 +60,6 @@ function townMarketHtml() {
     const st = townMarketStatus(state);
     return `
       <div class="card">
-        <span class="muted">Poisson, miel, fromage d'alpage, sucre et épices : introuvables au marché de la ferme. Un adulte y va (${M.HEURES} h aller-retour, ${formatCoins(M.PRIX)} 💰 de bus) ; le marché reste ouvert jusqu'au soir.</span>
         <button type="button" class="btn${st.ok ? ' primary' : ''}" data-action="ville-market"${st.ok ? '' : ' disabled'}>${st.ok ? `🚌 Aller au marché (${M.HEURES} h, ${formatCoins(M.PRIX)} 💰)` : st.texte}</button>
       </div>`;
   }
@@ -85,10 +84,9 @@ export function renderVille() {
   const voyages = ids.filter((id) => DATA.VILLE.SORTIES[id].lieu === 'voyage');
   const avg = averageHappiness(state);
   return `
-    <div class="section-head"><h3>🏙️ Ville</h3><span class="chip" title="Le bonheur réduit l'énergie dépensée par chaque action">😊 ${avg} · actions −${formatNumber(100 - happinessCostPct(state))} % d'énergie</span></div>
+    <div class="section-head"><h3>🏙️ Ville</h3><span class="chip" title="Le bonheur réduit l'énergie dépensée par chaque action">😊 ${avg} · actions −${formatNumber(100 - happinessCostPct(state))} % d'énergie</span>${helpBtn('ville')}</div>
     <div class="card">
       ${happinessGaugeHtml(avg, 'Bonheur moyen de la famille')}
-      <span class="muted">Le bonheur monte avec les plats cuisinés et les sorties ; il baisse un peu chaque soir de repas cru. Toute la famille part en sortie ; le temps passe pendant ce temps (retour avant ${DATA.TIME.NIGHT_HOUR} h). Une fois par jour pour chaque sortie.</span>
     </div>
     <h3 class="section-title">Sorties en ville</h3>
     <div class="plots outings">${enVille.map(outingCard).join('')}</div>
