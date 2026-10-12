@@ -36,7 +36,7 @@ import { renderTechno } from './techno.js';
 import { memberNameHtml, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
-import { renderInventaire, subtabsHtml } from './inventaire.js';
+import { inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
 import { comptoirTabAOuvrir, renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
@@ -212,6 +212,13 @@ export const STAGE_WINDOWS = {
     onglets: () => subtabsHtml(MAISON_TABS.filter((t) => t.ok()), maisonCurrentTab().id, 'maison-tab'),
     corps: () => maisonCurrentTab().corps(),
   },
+  // Inventaire (menu latéral) : fenêtre flottante dans le cadre bois ; en-tête : les onglets
+  // en icônes seules, à la place du titre.
+  inventaire: {
+    nom: 'Inventaire', icone: '📦', ok: () => tabAvailable('inventaire'), bois: true, flottante: true,
+    enTete: () => inventoryTabsHtml(),
+    corps: () => renderInventaire(true),
+  },
   // Fenêtre de la Famille (carte du joueur, en haut à gauche) : dans le cadre bois des cartes.
   famille: {
     nom: 'Famille', icone: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), haute: true, sansTitre: true, bois: true,
@@ -273,12 +280,12 @@ export function renderStageWindow() {
   }
   const detail = w.detail ? w.detail() : '';
   morph(root, `
-    <div class="window-layer">
+    <div class="window-layer${w.flottante ? ' flottante' : ''}">
       <div class="window-backdrop" data-action="stage-close"></div>
-      <section class="stage-window ${w.haute ? 'tall' : 'half'}${w.bois ? ' bois' : ''}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
+      <section class="stage-window ${w.flottante ? 'flottante' : w.haute ? 'tall' : 'half'}${w.bois ? ' bois' : ''}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
         <header class="window-head">
-          <h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>
-          ${stageWindow !== 'chapitres' ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
+          ${w.enTete ? `<h2 id="stage-window-title" class="visually-hidden">${w.nom}</h2>${w.enTete()}` : `<h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>`}
+          ${stageWindow !== 'chapitres' && !w.enTete ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
           <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer la fenêtre" title="Fermer">✕</button>
         </header>
         ${w.onglets && !windowLocked(stageWindow) ? `<div class="window-tabs">${w.onglets()}</div>` : ''}
@@ -342,7 +349,7 @@ export function allerAuLieu(fenetre, onglet, ancre) {
   } else {
     stageWindow = null;
     stageInterior = null;
-    setActiveTab(fenetre === 'ville' ? 'ville' : fenetre === 'famille' && tabAvailable('famille') ? 'famille' : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
+    setActiveTab(fenetre === 'ville' ? 'ville' : (fenetre === 'famille' || fenetre === 'inventaire') && tabAvailable(fenetre) ? fenetre : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
   }
   ancreVoulue = ancre || null;
   telView();
@@ -431,7 +438,7 @@ const MENU_ARROW = '<svg class="side-tab-arrow" viewBox="0 0 5 9" width="10" hei
   '<rect x="0" y="0" width="1" height="9"/><rect x="1" y="1" width="1" height="7"/><rect x="2" y="2" width="1" height="5"/><rect x="3" y="3" width="1" height="3"/><rect x="4" y="4" width="1" height="1"/></svg>';
 
 export function renderTabbar() {
-  const current = FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
+  const current = stageWindow === 'inventaire' ? 'inventaire' : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
   const nav = document.getElementById('bottom-nav');
   if (!menuClickBound) {
@@ -544,6 +551,11 @@ registerActions({
     allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
   },
   'switch-tab': (target) => {
+    // L'Inventaire, avec la carte, est une fenêtre flottante par-dessus elle.
+    if (target.dataset.tab === 'inventaire' && stageUsable()) {
+      allerAuLieu('inventaire');
+      return;
+    }
     if (FERME_LINKS.includes(target.dataset.tab) && stageUsable()) {
       if (target.dataset.tab === 'ville') allerAuLieu('ville');
       else allerAuLieu('maison', target.dataset.tab);

@@ -9,7 +9,7 @@ import {
 } from './stage-windows.js';
 import { animateIn } from './animations.js';
 import { renderTutorial } from './aide.js';
-import { fitInventoryNames } from './inventaire.js';
+import { renderItemModal } from './inventaire.js';
 import { pixelize, watch } from './pixel-emoji.js';
 import { renderRecipeBook } from './livre.js';
 
@@ -39,16 +39,22 @@ export function render() {
     setEcranFerme(null);
     setStageWindow(ville ? 'ville' : 'maison');
   }
+  // Avec la carte, l'Inventaire est une fenêtre flottante par-dessus elle.
+  if (activeTab === 'inventaire' && stageUsable()) {
+    setActiveTab('ferme');
+    setEcranFerme(null);
+    setStageWindow('inventaire');
+  }
   renderIndicators();
   renderTabbar();
   renderTabContent();
   renderSleepBar();
   renderStage();
   renderStageWindow();
-  fitInventoryNames();
   applyAnchor();
   renderTutorial();
   renderRecipeBook();
+  renderItemModal();
   renderTestPanel();
 }
 

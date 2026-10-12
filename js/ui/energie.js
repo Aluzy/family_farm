@@ -59,11 +59,11 @@ const ACTION_LABELS = {
 };
 
 // Bouton « Manger » d'un aliment de l'Inventaire (ce qu'il rendrait).
-export function eatButton(item) {
+export function eatButton(item, texte = '') {
   const def = DATA.items[item];
   if (!def || !def.edible) return '';
   const gain = snackEnergy(state, item);
-  return `<button type="button" class="btn" data-action="eat" data-item="${item}" title="Manger : +${formatEnergyGain(gain)} énergie">🍴 +${formatEnergyGain(gain)} ⚡</button>`;
+  return `<button type="button" class="btn" data-action="eat" data-item="${item}" title="Manger : +${formatEnergyGain(gain)} énergie">🍴 ${texte ? `${texte} · ` : ''}+${formatEnergyGain(gain)} ⚡</button>`;
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
