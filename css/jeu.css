@@ -1874,13 +1874,14 @@ main .ancre { scroll-margin-top: 150px; }
 .hud-energy-fill.mid { background: #e8b030; box-shadow: inset 3px 0 0 #f8d878; }
 .hud-energy-fill.low { background: #c8503a; box-shadow: inset 3px 0 0 #ec8a6e; }
 @media (prefers-reduced-motion: reduce) { .hud-energy-fill { transition: none; } }
-/* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante et la jauge
-   restent visibles par-dessus, à 80 % de transparence, et laissent passer les appuis. */
+/* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante reste
+   visible par-dessus, à 80 % de transparence, et laisse passer les appuis. */
 .hud, .hud-energy { transition: opacity 0.2s; }
-body:has(.window-layer) :is(.hud, .hud-energy),
-body:has(#modal-root > *) :is(.hud, .hud-energy) { z-index: 95; opacity: 0.2; pointer-events: none; }
-body:has(.window-layer) .hud-energy-btn,
-body:has(#modal-root > *) .hud-energy-btn { pointer-events: none; }
+body:has(.window-layer) .hud,
+body:has(#modal-root > *) .hud { z-index: 95; opacity: 0.2; pointer-events: none; }
+/* La jauge d'énergie, elle, disparaît : elle passerait sur le contenu du menu. */
+body:has(.window-layer) .hud-energy,
+body:has(#modal-root > *) .hud-energy { visibility: hidden; }
 /* Écrans sans carte : le contenu commence sous la carte flottante (sauf si l'écran est
    assez large pour qu'elle tienne à côté). */
 body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + env(safe-area-inset-top)); }
