@@ -449,7 +449,8 @@ export function renderIndicators() {
   const el = document.getElementById('player-card');
   morph(el,
     `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
-      // le portrait du personnage du joueur (version 1.17 : celui choisi dans sa fiche)
+      // le portrait du personnage du joueur (version 1.17 : celui choisi dans sa fiche ; le
+      // personnage principal est toujours un adulte)
       `<img class="player-portrait" src="${m && memberPerso(m) ? persoSrc(memberPerso(m)) : 'assets/portrait_fermiere.png'}" alt="" width="48" height="48">` +
       `<span class="player-name">${m ? memberNameHtml(m.id) : ''}</span></button>` +
     `<span class="player-stats">` +

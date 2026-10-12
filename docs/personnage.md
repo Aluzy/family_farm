@@ -26,8 +26,13 @@ emojis (`member.perso`, 1 à 50 ; sans choix, `PERSO_DEFAUT` selon le sexe : 1 p
 pour un homme). Leur portrait s'affiche dans l'écran de départ, la Famille et la carte du joueur ;
 **sur la carte de la ferme, c'est celui du personnage principal** (le premier adulte : son choix
 est masqué à l'écran de départ, `CHOIX_PRINCIPAL` dans `js/ui/depart.js`) :
-`modèle.perso`, sa planche est chargée à la demande (`syncPerso`). Les enfants gardent leurs
-emojis.
+`modèle.perso`, sa planche est chargée à la demande (`syncPerso`).
+
+**Les enfants** ont de même un des 50 portraits d'enfants (`assets/portraits/enfant_XX.png`,
+dérivés de `modele_enfant.png` par `scripts/personnage/portraits_enfants.py` ; 9 coupes, chapeaux,
+nœud, serre-tête, fleur, lunettes, taches de rousseur, joues roses, pansement, salopette). Leur
+fiche a la même grille ; sans choix, `PERSO_DEFAUT_ENFANT` (1 pour un garçon, 2 pour une fille).
+Ils ne sont pas encore sur la carte : pas de planche d'enfant.
 
 Avant que la planche choisie soit chargée, la carte montre la fermière.
 

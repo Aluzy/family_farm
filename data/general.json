@@ -70,7 +70,8 @@
       "Version 1.17 : un adulte a l'apparence d'un des PERSOS personnages du catalogue",
       "(assets/portraits/perso_XX.png, assets/personnages/perso_XX.png ; voir memberPerso()).",
       "PERSO_DEFAUT : celui d'un adulte qui n'en a pas encore choisi, selon son sexe.",
-      "Les enfants gardent leur portrait emoji (sexe, coiffure, teinte).",
+      "Un enfant a l'apparence d'un des PERSOS_ENFANT portraits d'enfants",
+      "(assets/portraits/enfant_XX.png) ; PERSO_DEFAUT_ENFANT : son défaut, selon son sexe.",
       "Le prénom est une donnée personnelle : il reste dans la sauvegarde, sur",
       "l'appareil, et ne doit jamais partir dans le suivi de session."
     ],
@@ -82,7 +83,9 @@
       "STYLES": { "adulte": ["", "🦰", "🦱", "🦳", "👱"], "enfant": ["", "🦰", "🦱", "🧢", "👱"] },
       "STYLE_NOMS": { "adulte": ["Classique", "Roux", "Frisé", "Cheveux gris", "Blond"], "enfant": ["Classique", "Roux", "Frisé", "Casquette", "Blond"] },
       "PERSOS": 50,
-      "PERSO_DEFAUT": { "f": 1, "m": 7 }
+      "PERSO_DEFAUT": { "f": 1, "m": 7 },
+      "PERSOS_ENFANT": 50,
+      "PERSO_DEFAUT_ENFANT": { "f": 2, "m": 1 }
     },
     "//AJ": "énergie par jour et par membre",
     "AJ": { "adulte": 50, "enfant": 25 },

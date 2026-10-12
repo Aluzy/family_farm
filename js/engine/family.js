@@ -61,14 +61,21 @@ export function memberStyle(m) {
   return m && Number.isInteger(m.style) && m.style >= 0 && m.style < DATA.FAMILY.PROFIL.STYLES.adulte.length ? m.style : 0;
 }
 
-// Version 1.17 : l'apparence d'un adulte, un des personnages du catalogue (1 à PERSOS :
-// assets/portraits/perso_XX.png, et sa planche pour la carte). Sans choix (ancienne partie,
-// nouvel adulte), celui de PERSO_DEFAUT selon son sexe. 0 pour un enfant (portrait emoji).
+// Version 1.17 : l'apparence d'un membre, un des personnages du catalogue : pour un adulte,
+// 1 à PERSOS (assets/portraits/perso_XX.png, et sa planche pour la carte) ; pour un enfant,
+// 1 à PERSOS_ENFANT (assets/portraits/enfant_XX.png). Sans choix (ancienne partie, nouveau
+// membre), le défaut de son âge selon son sexe. 0 sans membre.
 export function memberPerso(m) {
-  if (!m || m.enfant) return 0;
+  if (!m) return 0;
   const P = DATA.FAMILY.PROFIL;
-  if (Number.isInteger(m.perso) && m.perso >= 1 && m.perso <= P.PERSOS) return m.perso;
-  return P.PERSO_DEFAUT[m.genre] || P.PERSO_DEFAUT[P.GENRES[0]];
+  if (Number.isInteger(m.perso) && m.perso >= 1 && m.perso <= persoMax(m)) return m.perso;
+  const def = m.enfant ? P.PERSO_DEFAUT_ENFANT : P.PERSO_DEFAUT;
+  return def[m.genre] || def[P.GENRES[0]];
+}
+
+// Nombre de personnages au choix pour ce membre (selon son âge).
+export function persoMax(m) {
+  return m && m.enfant ? DATA.FAMILY.PROFIL.PERSOS_ENFANT : DATA.FAMILY.PROFIL.PERSOS;
 }
 
 // Prénom affiché d'un membre : celui choisi, sinon son rôle. Texte brut : à
@@ -86,7 +93,7 @@ export function memberPortrait(state, id) {
   return portraitEmoji(m.enfant, m.genre, m.teint, memberStyle(m));
 }
 
-// Change le profil d'un membre : { prenom, genre, teint, style, perso } (perso : adultes seulement). Un champ absent
+// Change le profil d'un membre : { prenom, genre, teint, style, perso }. Un champ absent
 // garde sa valeur. Tout est vérifié avant de rien modifier : prénom de 1 à
 // PRENOM_MAX caractères (nettoyé), genre 'f' ou 'm', teinte entière de 0 à 5.
 export function setMemberProfile(state, id, profil) {
@@ -113,7 +120,7 @@ export function setMemberProfile(state, id, profil) {
     next.style = profil.style;
   }
   if (profil.perso !== undefined) {
-    if (m.enfant || !Number.isInteger(profil.perso) || profil.perso < 1 || profil.perso > P.PERSOS) return fail('Personnage inconnu.');
+    if (!Number.isInteger(profil.perso) || profil.perso < 1 || profil.perso > persoMax(m)) return fail('Personnage inconnu.');
     next.perso = profil.perso;
   }
   m.prenom = next.prenom;

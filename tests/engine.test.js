@@ -9086,18 +9086,20 @@ test('Comptes : chaque gain et dépense est noté ; même libellé le même jour
   assertEqual(comptaRecente(vieille).lignes, [], 'ancienne sauvegarde : rien de noté');
 });
 
-test('Personnages (version 1.17) : un adulte choisit un des 50 personnages ; défaut selon son sexe ; pas pour un enfant', () => {
+test('Personnages (version 1.17) : adultes et enfants choisissent un des 50 personnages de leur âge ; défaut selon le sexe', () => {
   const s = createInitialState();
   const P = DATA.FAMILY.PROFIL;
   const adulte = s.famille.membres.find((m) => !m.enfant);
   const enfant = s.famille.membres.find((m) => m.enfant);
   assertEqual(memberPerso(adulte), P.PERSO_DEFAUT[adulte.genre], 'pas encore choisi : le défaut');
-  assertEqual(memberPerso(enfant), 0, 'un enfant garde son emoji');
+  assertEqual(memberPerso(enfant), P.PERSO_DEFAUT_ENFANT[enfant.genre], 'un enfant : le défaut des enfants');
   assert(setMemberProfile(s, adulte.id, { perso: 23 }).ok);
   assertEqual(memberPerso(adulte), 23);
   assertEqual(setMemberProfile(s, adulte.id, { perso: P.PERSOS + 1 }).error, 'Personnage inconnu.');
   assertEqual(setMemberProfile(s, adulte.id, { perso: 0 }).error, 'Personnage inconnu.');
-  assertEqual(setMemberProfile(s, enfant.id, { perso: 3 }).error, 'Personnage inconnu.');
+  assert(setMemberProfile(s, enfant.id, { perso: P.PERSOS_ENFANT }).ok);
+  assertEqual(memberPerso(enfant), P.PERSOS_ENFANT);
+  assertEqual(setMemberProfile(s, enfant.id, { perso: P.PERSOS_ENFANT + 1 }).error, 'Personnage inconnu.');
   assert(setMemberProfile(s, adulte.id, { prenom: 'Lou' }).ok);
   assertEqual(memberPerso(adulte), 23, 'un autre changement garde le personnage');
 });
