@@ -10,6 +10,7 @@ import {
 import { animateIn } from './animations.js';
 import { renderTutorial } from './aide.js';
 import { renderItemModal } from './inventaire.js';
+import { renderShopModal } from './marche.js';
 import { pixelize, watch } from './pixel-emoji.js';
 import { renderRecipeBook } from './livre.js';
 
@@ -39,11 +40,11 @@ export function render() {
     setEcranFerme(null);
     setStageWindow(ville ? 'ville' : 'maison');
   }
-  // Avec la carte, l'Inventaire est une fenêtre flottante par-dessus elle.
-  if (activeTab === 'inventaire' && stageUsable()) {
+  // Avec la carte, l'Inventaire et le Marché sont des fenêtres flottantes par-dessus elle.
+  if ((activeTab === 'inventaire' || activeTab === 'comptoir') && stageUsable()) {
+    setStageWindow(activeTab);
     setActiveTab('ferme');
     setEcranFerme(null);
-    setStageWindow('inventaire');
   }
   renderIndicators();
   renderTabbar();
@@ -55,6 +56,7 @@ export function render() {
   renderTutorial();
   renderRecipeBook();
   renderItemModal();
+  renderShopModal();
   renderTestPanel();
 }
 

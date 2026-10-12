@@ -37,7 +37,7 @@ import { memberNameHtml, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
-import { comptoirTabAOuvrir, renderComptoir } from './marche.js';
+import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
@@ -219,6 +219,13 @@ export const STAGE_WINDOWS = {
     enTete: () => inventoryTabsHtml(),
     corps: () => renderInventaire(true),
   },
+  // Marché (menu latéral) : fenêtre flottante comme l'Inventaire ; en-tête : les rayons en
+  // icônes seules et le « ? » du rayon ouvert.
+  comptoir: {
+    nom: 'Marché', icone: '🧺', ok: () => tabAvailable('comptoir'), bois: true, flottante: true,
+    enTete: () => marketTabsHtml(),
+    corps: () => renderComptoir(true),
+  },
   // Fenêtre de la Famille (carte du joueur, en haut à gauche) : dans le cadre bois des cartes.
   famille: {
     nom: 'Famille', icone: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), haute: true, sansTitre: true, bois: true,
@@ -349,7 +356,7 @@ export function allerAuLieu(fenetre, onglet, ancre) {
   } else {
     stageWindow = null;
     stageInterior = null;
-    setActiveTab(fenetre === 'ville' ? 'ville' : (fenetre === 'famille' || fenetre === 'inventaire') && tabAvailable(fenetre) ? fenetre : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
+    setActiveTab(fenetre === 'ville' ? 'ville' : ['famille', 'inventaire', 'comptoir'].includes(fenetre) && tabAvailable(fenetre) ? fenetre : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
   }
   ancreVoulue = ancre || null;
   telView();
@@ -438,7 +445,7 @@ const MENU_ARROW = '<svg class="side-tab-arrow" viewBox="0 0 5 9" width="10" hei
   '<rect x="0" y="0" width="1" height="9"/><rect x="1" y="1" width="1" height="7"/><rect x="2" y="2" width="1" height="5"/><rect x="3" y="3" width="1" height="3"/><rect x="4" y="4" width="1" height="1"/></svg>';
 
 export function renderTabbar() {
-  const current = stageWindow === 'inventaire' ? 'inventaire' : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
+  const current = stageWindow === 'inventaire' || stageWindow === 'comptoir' ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
   const nav = document.getElementById('bottom-nav');
   if (!menuClickBound) {
@@ -551,9 +558,10 @@ registerActions({
     allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
   },
   'switch-tab': (target) => {
-    // L'Inventaire, avec la carte, est une fenêtre flottante par-dessus elle.
-    if (target.dataset.tab === 'inventaire' && stageUsable()) {
-      allerAuLieu('inventaire');
+    // L'Inventaire et le Marché, avec la carte, sont des fenêtres flottantes par-dessus elle.
+    if ((target.dataset.tab === 'inventaire' || target.dataset.tab === 'comptoir') && stageUsable()) {
+      if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
+      allerAuLieu(target.dataset.tab);
       return;
     }
     if (FERME_LINKS.includes(target.dataset.tab) && stageUsable()) {

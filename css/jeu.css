@@ -2143,3 +2143,26 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
 .book-turn:disabled { opacity: 0.4; }
 .book-count { font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .book-leaf { animation: none; } }
+
+/* ---------- Marché en cases (comme l'Inventaire) ----------
+   Le prix en haut à gauche (police pixel et pièce), la quantité en bas à droite ; une case
+   grisée : on ne peut pas l'acheter (pièces, places) ou plus rien à vendre. */
+.shop-slot-price {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  filter: drop-shadow(1px 1px 0 #2a1a0e) drop-shadow(-1px 0 0 #2a1a0e);
+}
+.shop-slot-price .pxt { --p: 2px; }
+.shop-coin .px { --pxs: 10px; vertical-align: top; }
+.shop-slot .inv-slot-icon { margin-top: 6px; }
+.shop-slot .inv-slot-qty .px { --pxs: 14px; vertical-align: top; }
+.shop-slot.off { opacity: 0.5; }
+.window-head .shop-help { flex: none; margin-left: auto; }
+.window-head .inv-tabs { align-items: center; }
+/* Fiche d'un article : un bouton par lot, le total dessous. */
+.lot-btns .lot-btn { flex: 1 1 0; min-width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 4px 6px; line-height: 1.15; }
+.lot-btns .lot-btn small { font-weight: 600; font-size: 0.75rem; }
