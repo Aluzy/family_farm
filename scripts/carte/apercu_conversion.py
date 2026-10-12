@@ -209,6 +209,99 @@ def corner_grid(labels, sol, W, H):
     return g
 
 
+# ================================================================ ombres et occlusion (à la composition)
+
+OMBRE_RGB = (44, 15, 40)          # la prune des ombres de contact du guide (S0 translucide)
+
+
+def plus_sombre():
+    """Couleur de la palette → le cran plus sombre de la même famille (V3 → V2, W4 → W3…)."""
+    sys.path.insert(0, os.path.join(ROOT, 'scripts'))
+    from pastoral import PAL
+    m = {}
+    for k, v in PAL.items():
+        fam, i = k[0], k[1:]
+        if not i.isdigit() or fam in 'AS':
+            continue
+        d = f'{fam}{int(i) - 1}'
+        if k == 'R1':
+            d = 'N2'
+        if d in PAL and k != 'R0':
+            m[v] = PAL[d]
+    return m
+
+
+def ombres_et_occlusion(out, sprites):
+    """Pose les sprites, triés par leur pied, avec :
+    - sous chaque arbre, l'ombre de son houppier au sol : une ellipse en deux paliers (cœur plus
+      dense, bord léger), poussée vers le bas-droite (lumière haut-gauche) ;
+    - pour les bâtiments, les objets et les buissons, l'ombre portée de leur silhouette, décalée
+      vers le bas-droite et limitée au bas du sprite : seul un liseré dépasse à droite et dessous ;
+    - l'occlusion là où un sprite passe devant un autre : sur 2 px autour de sa silhouette, ce
+      qui est derrière (un autre sprite, pas le sol) prend le cran plus sombre de sa couleur.
+    Rien ne bouge et aucune silhouette ne change : on n'assombrit que des pixels déjà posés."""
+    import numpy as np
+    W, H = out.size
+    ombre = np.zeros((H, W), np.uint8)
+
+    def poser(mask, x, y, a):
+        h, w = mask.shape
+        x0, y0, x1, y1 = max(0, x), max(0, y), min(W, x + w), min(H, y + h)
+        if x0 >= x1 or y0 >= y1:
+            return
+        sub = mask[y0 - y:y1 - y, x0 - x:x1 - x]
+        zone = ombre[y0:y1, x0:x1]
+        np.maximum(zone, np.where(sub, a, 0).astype(np.uint8), out=zone)
+    for by, im, x, y, kind in sprites:
+        al = np.array(im)[..., 3]
+        h, w = al.shape
+        if kind == 'arbre':
+            cols = np.nonzero((al[: int(h * 0.7)] == 255).any(axis=0))[0]
+            if not len(cols):
+                continue
+            cx = x + (cols.min() + cols.max()) / 2 + 3
+            rx = (cols.max() - cols.min()) * 0.42
+            ry = max(3.0, rx * 0.3)
+            yy, xx = np.mgrid[0:int(2 * ry) + 4, 0:int(2 * rx) + 4]
+            q = ((xx + 0.5 - rx - 2) / rx) ** 2 + ((yy + 0.5 - ry - 2) / ry) ** 2
+            ox, oy = int(cx - rx - 2), int(by - 1 - ry - 2)
+            poser(q <= 1, ox, oy, 38)
+            poser(q <= 0.45, ox, oy, 70)
+        elif kind in ('batiment', 'objet', 'arbre_bas'):
+            dx, dy, part = (4, 2, 0.45) if kind == 'batiment' else (2, 1, 0.5)
+            mask = al == 255
+            mask[: int(h * (1 - part))] = False
+            poser(mask, x + dx, y + dy, 75)
+    px = np.array(out).astype(np.int32)
+    a = ombre[..., None].astype(np.int32)
+    px[..., :3] = (px[..., :3] * (255 - a) + np.array(OMBRE_RGB) * a) // 255
+    from PIL import Image
+    out.paste(Image.fromarray(px.astype(np.uint8), 'RGBA'))
+    sombre = plus_sombre()
+    occ = np.zeros((H, W), bool)
+    for by, im, x, y, kind in sprites:
+        al = np.array(im)[..., 3]
+        h, w = al.shape
+        m = np.zeros((H, W), bool)
+        x0, y0, x1, y1 = max(0, x), max(0, y), min(W, x + w), min(H, y + h)
+        m[y0:y1, x0:x1] = al[y0 - y:y1 - y, x0 - x:x1 - x] == 255
+        if kind != 'cloture':
+            ring = m.copy()
+            for _ in range(2):
+                g = ring.copy()
+                g[1:] |= ring[:-1]; g[:-1] |= ring[1:]; g[:, 1:] |= ring[:, :-1]; g[:, :-1] |= ring[:, 1:]
+                ring = g
+            ring &= ~m & occ
+            if ring.any():
+                pxo = out.load()
+                for yy, xx in zip(*np.nonzero(ring)):
+                    c = pxo[int(xx), int(yy)]
+                    d = sombre.get(c[:3])
+                    if d:
+                        pxo[int(xx), int(yy)] = d + (c[3],)
+        out.alpha_composite(im, (x, y))
+        occ |= m
+
 def main():
     m, sets = load_map()
     W, H = m['width'], m['height']
@@ -286,7 +379,7 @@ def main():
         up = (cx, cy - 1) in fence
         nm = ('cloture_milieu' if lft and rgt else 'cloture_droite' if lft else 'cloture_gauche' if rgt
               else 'cloture_verticale' if up else 'cloture_poteau')
-        sprites.append(((cy + 1) * T, tile(nm), cx * T, cy * T))
+        sprites.append(((cy + 1) * T, tile(nm), cx * T, cy * T, 'cloture'))
     for group, nm in ((BUISSONS, None), (ROCHERS, 'rocher'), (TONNEAU, 'tonneau'), (CAISSES, 'caisse'), (BUCHE, 'buche')):
         cells = [p for p, g in objets.items() if g in group]
         for comp in components(cells):
@@ -294,14 +387,14 @@ def main():
             by = (max(y for x, y in comp) + 1) * T
             name = nm or r.choice(['buisson_vert', 'buisson_vert', 'buisson_baies', 'buisson_fleuri', 'buisson_roses'])
             im = tile(name) if name == 'caisse' else block(name)
-            sprites.append((by, im, bx - im.width // 2, by - im.height))
+            sprites.append((by, im, bx - im.width // 2, by - im.height, 'arbre_bas' if nm is None else 'objet'))
     bases = tree_bases(m, sets)
     for bx, by in tree_layer_bushes(m, bases):
         if labels.get((bx // T, by // T - 1)) in ('terre', 'paves', 'eau'):
             continue                                        # pas de buisson dans un champ ni un chemin
         nm = r.choice(['buisson_vert', 'buisson_vert', 'buisson_baies', 'buisson_fleuri', 'buisson_roses', 'arbuste'])
         im = tile(nm) if nm == 'arbuste' else block(nm)
-        sprites.append((by, im, bx - im.width // 2, by - im.height))
+        sprites.append((by, im, bx - im.width // 2, by - im.height, 'arbre_bas'))
     def pres_de_l_eau(cx, cy):
         return any(labels.get((cx + dx, cy + dy)) == 'eau' for dx in range(-4, 5) for dy in range(-3, 4))
     for cx, cy, kind in bases:
@@ -315,7 +408,7 @@ def main():
             nm = r.choices(['arbre_feuillu', 'arbre_sombre', 'bouleau', 'arbre_fruits', 'arbre_fleurs'], [6, 3, 2, 2, 1])[0]
         im = tile(nm) if nm == 'arbuste' else block(nm)
         bx, by = cx * T + T // 2, (cy + 1) * T
-        sprites.append((by, im, bx - im.width // 2, by - im.height))
+        sprites.append((by, im, bx - im.width // 2, by - im.height, 'arbre_bas' if nm == 'arbuste' else 'arbre'))
     # bâtiments
     objs = {o['name']: o for l in m['layers'] if l['type'] == 'objectgroup' for o in l['objects']}
     objs['puits'] = {'x': 596, 'y': 390, 'width': 34, 'height': 38}
@@ -330,9 +423,8 @@ def main():
         o = objs[obj]
         x = round(o['x'] + o['width'] / 2 - im.width / 2)
         y = round(o['y'] + o['height'])
-        sprites.append((y, im, x, y - im.height))
-    for by, im, x, y in sorted(sprites, key=lambda s: s[0]):
-        out.alpha_composite(im, (x, y))
+        sprites.append((y, im, x, y - im.height, 'batiment'))
+    ombres_et_occlusion(out, sorted(sprites, key=lambda s: s[0]))
     out.save(os.path.join(ROOT, 'apercu_carte_apres.png'))
     # l'original, pour comparer (bâtiments d'origine compris)
     avant = render(m, sets, {l['name'] for l in m['layers'] if l['type'] == 'tilelayer'} - {'falling_leaves'})

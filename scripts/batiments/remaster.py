@@ -284,7 +284,7 @@ def gable_wall(cv, ridge, x0, x1, top_y, bottom_y, timber=True):
         for x in range(cv.w):
             if inside(x, y):
                 t = y - (top_y + abs(x - ridge) // 2)
-                cv.put(x, y, 'C0' if t < 3 else 'P4')         # ombre de surplomb sous les pans
+                cv.put(x, y, 'P1' if t < 1 else 'C0' if t < 3 else 'P4')   # occlusion sous la rive, en paliers
     if timber:
         cv.hline(x0, x1, bottom_y, 'W3')
         cv.hline(x0, x1, bottom_y - 1, 'W2')
@@ -316,7 +316,7 @@ def maison():
     # façade : enduit et colombage, à l'ombre de l'auvent en haut
     for y in range(61, 81):
         for x in range(5, 91):
-            cv.put(x, y, 'C0' if y < 64 or y == 79 else 'P4')   # ombre de l'auvent, pied du mur
+            cv.put(x, y, 'P1' if y == 61 else 'C0' if y < 64 or y == 79 else 'P4')   # occlusion sous l'auvent, pied du mur
     for bx in (5, 30, 59, 90):
         cv.vline(bx, 61, 80, 'W3')
     cv.hline(5, 90, 80, 'W2')
@@ -445,7 +445,7 @@ def poulailler(porte):
     R = 24
     for y in range(25, 50):                                   # mur
         for x in range(7, 41):
-            cv.put(x, y, 'C0' if y < 28 else 'P4')
+            cv.put(x, y, 'P1' if y == 25 else 'C0' if y < 28 else 'P4')
     cv.vline(7, 25, 49, 'W3'); cv.vline(40, 25, 49, 'W3')
     cv.hline(7, 40, 35, 'W3'); cv.hline(7, 40, 49, 'W2')
     window8(cv, 28, 28)

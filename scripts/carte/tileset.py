@@ -941,8 +941,21 @@ def foliage(cv, blobs, tones, seed, fruit=None, flowers=None, local=0.5):
             if new is not None:
                 for c in cells:
                     lvl[c] = new
+    for (x, y), lv in list(lvl.items()):                       # liseré éclairé : le bord haut-gauche d'une
+        k = own[(x, y)]                                       # touffe qui passe devant une autre
+        if 1 <= lv <= 3 and any(own.get((x + dx, y + dy)) is not None and own[(x + dx, y + dy)] < k
+                                for dx, dy in ((-1, 0), (0, -1), (-1, -1))):
+            lvl[(x, y)] = lv + 1
+    mid = MI_TON.get((tones[1], tones[2]))
+    sun = SOLEIL.get(tones[4])
     for (x, y), lv in lvl.items():
-        cv.put(x, y, tones[lv])
+        c = tones[lv]
+        f = FEUILLES_AMAS[(y + seed * 5) % 16][(x + seed) % 16]
+        if mid and lv == 2 and f < 0.45 and any(lvl.get((x + dx, y + dy), 9) <= 1 for dx, dy in ((1, 0), (0, 1), (1, 1))):
+            c = mid                                           # passage ombre → ton moyen, par amas
+        elif sun and lv == 4 and f > 0.5 and (x + 0.5 - CX) / RX + (y + 0.5 - CY) / RY < -0.5:
+            c = sun                                           # plein soleil : le vert tire vers le jaune
+        cv.put(x, y, c)
     outline_feuillage(cv, inside, tones[0], tones[1], seed)
     deep = sorted((x, y) for (x, y), k in own.items() if k is not None and cv.get(x, y)[:3] == PAL[tones[0]]
                   and x > CX and y > CY and inside(x + 1, y + 1) and inside(x - 1, y - 1))
@@ -969,6 +982,10 @@ def foliage(cv, blobs, tones, seed, fruit=None, flowers=None, local=0.5):
 
 
 FEUILLES_AMAS = cluster_map('feuilles', 40)        # amas de feuilles, pour casser les grands aplats
+# ton intermédiaire entre l'ombre et le ton moyen (passage en paliers), et ton de plein soleil,
+# un cran plus chaud que le reflet (glissement de teinte vers le jaune)
+MI_TON = {('V2', 'V6'): 'V4', ('V5', 'V8'): 'V6', ('V1', 'V3'): 'V2'}
+SOLEIL = {'V10': 'V11', 'V7': 'V9'}
 V_RAMP = ['V1', 'V2', 'V6', 'V8', 'V10']         # ombre profonde, ombre, base, lumière, reflet
 V_RAMP_CLAIR = ['V2', 'V5', 'V8', 'V10', 'V11']
 
@@ -1257,6 +1274,8 @@ def sapin_etages(cv, tiers, seed, tones=('V0', 'V2', 'V4', 'V6', 'V8')):
                 break
         if sillon and lv > 0:
             cv.put(x, y, 'V1' if dx < 0 else tones[0])
+        elif lv >= 3 and g == 0 and own.get((x, y - 1), (None,))[0] != i:
+            cv.put(x, y, 'V10')                                # arête du groupe éclairé, en plein soleil
         else:
             cv.put(x, y, tones[lv])
     outline_feuillage(cv, inside, tones[0], tones[1], seed)
