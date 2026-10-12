@@ -285,7 +285,7 @@ const GUIDE_BOUTONS = {
   panneau: ['[data-action="buy-starter"][data-id="panneau"]'],
   pompe: ['[data-action="buy-starter"][data-id="pompe"]'],
   reservoir: ['[data-action="buy-starter"][data-id="reservoir"]'],
-  houe: ['[data-action="buy-hoe"]'],
+  houe: ['[data-action="buy-hoe"]', '[data-action="shop-item"][data-kind="houe"]'],
   labours: ['.hoe-fab'],
   semis: ['#modal-root [data-action="plant-all"][data-crop="carotte"]:not([disabled])', '#modal-root [data-action="plant"]:not([disabled])', '[data-action="plant-all-open"]:not([disabled])', '[data-action="plant-open"]:not([disabled])'],
   arrosees: ['[data-action="water-all"]:not([disabled])', '[data-action="water"]:not([disabled])'],
@@ -296,6 +296,7 @@ const GUIDE_GRAINES = [
   '[data-action="buy-item"][data-item="graine_carotte"][data-q="10"]:not([disabled])',
   '[data-action="buy-item"][data-item="graine_carotte"][data-q="5"]:not([disabled])',
   '[data-action="buy-item"][data-item="graine_carotte"]:not([disabled])',
+  '[data-action="shop-item"][data-item="graine_carotte"]', // Marché en cases : d'abord la fiche
   '[data-action="comptoir-tab"][data-tab="graines"]',
   '.nav-btn[data-tab="comptoir"]',
   '#stage-window-close',
@@ -322,7 +323,7 @@ function guideElement() {
   if (!o || !GUIDE_BOUTONS[o.type]) return null;
   // Planter sans aucune graine : d'abord le Marché, onglet Graines
   const sansGraines = o.type === 'semis' && !plantableCropsFor(state, 'potager').some((c) => seedStock(state, c) > 0);
-  const liste = sansGraines && !document.querySelector('#modal-root .modal') ? GUIDE_GRAINES : GUIDE_BOUTONS[o.type];
+  const liste = sansGraines && !document.querySelector('#modal-root .modal:not(.shop-modal)') ? GUIDE_GRAINES : GUIDE_BOUTONS[o.type];
   for (const sel of liste) {
     const el = [...document.querySelectorAll(sel)].find(shown);
     if (el) return viaMenu(el);

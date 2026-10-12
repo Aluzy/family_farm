@@ -14,7 +14,7 @@ import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeStageWindow, stageWindow } from './stage-windows.js';
 import { showHoeHint } from './stage.js';
-import { canPay } from './common.js';
+import { canPay, closeModal } from './common.js';
 
 /* ---------- version 1.9 (v2, lot 5) : la houe ---------- */
 
@@ -55,6 +55,8 @@ export function hoePanelHtml() {
 registerActions({
   'buy-hoe': () => {
     const r = applyResult(buyHoe(state));
+    // achetée depuis sa fiche du Marché : la fiche se ferme (un outil ne s'achète qu'une fois)
+    if (r.ok && document.querySelector('#modal-root .shop-modal')) closeModal();
     if (r.ok) showToast(`${DATA.HOUE.ICONE} Houe achetée : sur la carte, touche le bouton ${DATA.HOUE.ICONE} près de la lune pour labourer.`);
   },
   // FLU-42 : la puce « Labourer 6 tuiles » met la houe en main (sans la ranger si elle y est)

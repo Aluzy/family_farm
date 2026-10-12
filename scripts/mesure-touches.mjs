@@ -95,17 +95,19 @@ try {
   await touch('[data-action="buy-starter"][data-id="reservoir"]', 'Acheter le réservoir');
   await touch('#stage-window-close', 'Fermer la Maison (la puce est dessous)');
   await touch('.stage-chip:not(.hoe)', 'Puce « Acheter une houe »');
-  await touch('[data-action="buy-hoe"]', 'Acheter la houe');
+  await touch('[data-action="shop-item"][data-kind="houe"]', 'Case de la houe');
+  await touch('[data-action="buy-hoe"]', 'Acheter la houe (la fiche se ferme)');
   // une nouvelle partie n'a pas de graines : 10 graines de carotte, d'un coup si possible
   await touch('[data-action="comptoir-tab"][data-tab="graines"]', 'Onglet Graines');
+  await touch('[data-action="shop-item"][data-item="graine_carotte"]', 'Case des graines de carotte');
   const dix = page.locator('[data-action="buy-item"][data-item="graine_carotte"][data-q="10"]');
   if (await dix.isEnabled()) await touch('[data-action="buy-item"][data-item="graine_carotte"][data-q="10"]', 'Acheter 10 graines de carotte');
   else {
     await touch('[data-action="buy-item"][data-item="graine_carotte"][data-q="5"]', 'Acheter 5 graines de carotte');
     await touch('[data-action="buy-item"][data-item="graine_carotte"][data-q="1"]', 'Acheter 1 graine de carotte');
   }
-  await touch('#side-tab', 'Ouvrir le menu (languette à gauche)');
-  await touch('.nav-btn[data-tab="ferme"]', 'Retour à la Ferme');
+  await touch('#modal-root [data-action="close-modal"].btn', 'Fermer la fiche');
+  await touch('#stage-window-close', 'Fermer le Marché (retour à la carte)');
   await page.waitForTimeout(600);
   await touch('.stage-chip:not(.hoe)', 'Puce « Labourer 6 tuiles » (houe en main)');
   await page.waitForTimeout(800);

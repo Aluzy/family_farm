@@ -88,5 +88,4 @@ export function setComptoirTabChoisi(value) {
   comptoirTabChoisi = value;
   return value;
 }
-export const animalQuantities = {}; // quantité choisie par espèce dans l'onglet Animaux
 export const BUY_MAX = 99; // plus grande quantité qu'on peut choisir d'acheter en une fois
