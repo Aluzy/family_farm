@@ -32,7 +32,7 @@ export function buildVerger(state) {
   if (lock) return fail(lock);
   const cost = DATA.VERGER.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Verger');
   openVerger(state);
   return { ok: true, cost };
 }
@@ -49,7 +49,7 @@ export function buyOrchardSlot(state) {
   if (v.places >= DATA.VERGER.EMPLACEMENTS_MAX) return fail('Le Verger a atteint sa taille maximale (' + DATA.VERGER.EMPLACEMENTS_MAX + ' emplacements).');
   const cost = orchardSlotPrice(state);
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Emplacement du Verger');
   v.places += 1;
   v.achetes += 1;
   return { ok: true, cost, places: v.places };
@@ -81,7 +81,7 @@ export function plantTree(state, espece, c = null) {
   if (!Number.isInteger(ou) || ou < 0 || ou >= v.places) return fail('Emplacement introuvable.');
   if (treeAt(state, ou)) return fail('Un arbre pousse déjà ici.');
   if (state.pieces + EPS < def.prix) return fail('Pas assez de pièces.');
-  spend(state, def.prix);
+  spend(state, def.prix, `Achat : ${def.nom}`);
   v.compteur += 1;
   const tree = newTree(`arbre-${v.compteur}`, espece, state.day, ou);
   v.arbres.push(tree);

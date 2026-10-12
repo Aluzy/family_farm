@@ -1,6 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { techFlag } from './techtree.js';
+import { noteCompta } from './compta.js';
 
 /* ---------- appareils : fabrication et sélecteurs ---------- */
 
@@ -199,8 +200,16 @@ export function fail(error) {
   return { ok: false, error };
 }
 
-export function spend(state, cost) {
+// Toute dépense passe par ici, avec son libellé pour les Comptes (compta.js).
+export function spend(state, cost, libelle = 'Dépense') {
   state.pieces = Math.round(state.pieces - cost);
+  noteCompta(state, -cost, libelle);
+}
+
+// Nom d'un appareil, pour les libellés des Comptes.
+const DEVICE_LABELS = { panneau: 'Panneau solaire', batterie: 'Batterie', pompe: 'Pompe', reservoir: 'Réservoir', moulin: 'Moulin', presse: 'Presse', frigo: 'Réfrigérateur' };
+export function deviceLabel(type) {
+  return DEVICE_LABELS[type] || type;
 }
 
 export function toggleDevice(state, id) {
@@ -221,7 +230,7 @@ export function upgradeDevice(state, id) {
   const cost = upgradeCost(d);
   if (cost === null) return fail('Niveau maximum atteint.');
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, `Amélioration : ${deviceLabel(d.type)}`);
   d.niveau += 1;
   return { ok: true, cost };
 }
@@ -232,7 +241,7 @@ export function upgradeTank(state) {
   const cost = upgradeCost({ type: 'reservoir', niveau: state.reservoir.niveau });
   if (cost === null) return fail('Niveau maximum atteint.');
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Amélioration : Réservoir');
   state.reservoir.niveau += 1;
   return { ok: true, cost };
 }
@@ -244,7 +253,7 @@ export function maintainDevice(state, id) {
   if (d.usure <= 0 && !(d.usureMs > 0)) return fail('Cet appareil n\'est pas usé.');
   const cost = maintainCost(d);
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, `Entretien : ${deviceLabel(d.type)}`);
   d.usure = 0;
   d.usureMs = 0;
   return { ok: true, cost };
@@ -258,7 +267,7 @@ export function repairDevice(state, id) {
   if (!isBroken(d)) return fail('Cet appareil n\'est pas en panne.');
   const cost = repairCost(d);
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, `Réparation : ${deviceLabel(d.type)}`);
   d.usure = 0;
   d.usureMs = 0;
   d.allume = false;

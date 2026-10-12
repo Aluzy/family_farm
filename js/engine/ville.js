@@ -139,7 +139,7 @@ export function goOut(state, id) {
   const s = DATA.VILLE.SORTIES[id];
   const cost = outingCost(state, id);
   const partants = outingMembers(state);
-  spend(state, cost);
+  spend(state, cost, `Sortie : ${s.nom}`);
   ville(state).faits[id] = state.day;
   advanceHours(state, s.heures);
   const gains = {};
@@ -173,7 +173,7 @@ export function goToTownMarket(state) {
   const st = townMarketStatus(state);
   if (!st.ok) return fail(st.texte);
   const M = DATA.VILLE.MARCHE;
-  spend(state, M.PRIX);
+  spend(state, M.PRIX, 'Bus pour le marché de la ville');
   advanceHours(state, M.HEURES);
   ville(state).marche = state.day;
   return { ok: true, cost: M.PRIX, heures: M.HEURES };

@@ -9,6 +9,7 @@ import {
   advanceHours, applyMealHappiness, averageHappiness, buyInTown, goOut, goToTownMarket,
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
+import { comptaRecente, COMPTA_MAX, earn, noteCompta } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -9064,5 +9065,25 @@ test('migration v34 → v35 : une Serre construite reçoit les parcelles de son 
 function chapter1StepsDone(c) {
   return { ...c, compteurs: { ...c.compteurs, labours: 6, semis: 6, arroseesMax: 6 } };
 }
+
+test('Comptes : chaque gain et dépense est noté ; même libellé le même jour : une ligne ; solde d\'avant + somme = pièces', () => {
+  const s = createInitialState();
+  s.pieces = 1000;
+  s.maison = { reparee: true };
+  assert(buyFurniture(s, 'chaise').ok && buyFurniture(s, 'chaise').ok);
+  earn(s, 50, 'Vente : Carotte', 5);
+  const c = comptaRecente(s);
+  assertEqual(c.lignes.map((l) => [l.libelle, l.montant, l.n]), [[`Meuble : ${DATA.MEUBLES.chaise.nom}`, -2 * DATA.MEUBLES.chaise.prix, 2], ['Vente : Carotte', 50, 5]]);
+  assertEqual([c.avant, c.total], [1000, s.pieces]);
+  s.day += 1;
+  earn(s, 10, 'Vente : Carotte');
+  assertEqual(comptaRecente(s).lignes.length, 3, 'un autre jour : une autre ligne');
+  for (let i = 0; i < COMPTA_MAX + 5; i++) noteCompta(s, i % 2 ? 1 : -1, 'x' + i);
+  const d = comptaRecente(s);
+  assertEqual([d.lignes.length, d.avant + d.lignes.reduce((a, l) => a + l.montant, 0)], [COMPTA_MAX, s.pieces]);
+  const vieille = createInitialState();
+  delete vieille.compta;
+  assertEqual(comptaRecente(vieille).lignes, [], 'ancienne sauvegarde : rien de noté');
+});
 
 export const results = runTests();

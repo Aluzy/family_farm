@@ -1,5 +1,6 @@
 import { DATA } from './catalog.js';
 import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './devices.js';
+import { noteCompta } from './compta.js';
 import { awakeRequired } from './clock.js';
 import { addItem, spoil } from './inventory.js';
 import { openFridge } from './fridge.js';
@@ -16,6 +17,7 @@ import { gainXp, levelCount } from './levels.js';
 
 export function testAddPieces(state, amount) {
   state.pieces = Math.round(state.pieces + amount);
+  noteCompta(state, Math.round(amount), 'Mode test');
   refreshUnlocks(state);
   return { ok: true };
 }

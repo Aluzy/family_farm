@@ -31,3 +31,4 @@ export * from './format.js';
 export * from './bot.js';
 export * from './commerce.js';
 export * from './meubles.js';
+export * from './compta.js';

@@ -1,6 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, isOwned, starterOf } from './devices.js';
+import { earn } from './compta.js';
 import { addItem, lotsOf } from './inventory.js';
 import { fridgeLots } from './fridge.js';
 import { planMeal } from './family.js';
@@ -316,7 +317,7 @@ export function readMail(state, id) {
   // Version 1.14 : les pièces d'une lettre sont versées une fois, à l'ouverture (sans XP).
   const pieces = DATA.COURRIER[id].pieces || 0;
   if (pieces && !l.verse) {
-    state.pieces += pieces;
+    earn(state, pieces, `Lettre : ${DATA.COURRIER[id].expediteur || 'courrier'}`);
     l.verse = true;
     return { ok: true, id, pieces };
   }

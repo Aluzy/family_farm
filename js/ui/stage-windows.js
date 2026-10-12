@@ -474,7 +474,7 @@ function renderHud() {
   const horaire = `${heure} h ${String(minutes).padStart(2, '0')}`;
   morph(document.getElementById('hud'),
     `<span class="hud-row"><span class="hud-cell">Jour <span class="num">${state.day}</span></span><span class="hud-cell"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span></span>` +
-    `<span class="hud-row hud-money"><span class="hud-cell"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces</span></span></span>`
+    `<button type="button" class="hud-row hud-money" data-action="open-compta" title="Voir les comptes"><span class="hud-cell"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces. Voir les comptes</span></span></button>`
   );
   const e = energyLevel(state);
   const max = DATA.PERSONNAGE.MAX;

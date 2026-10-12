@@ -178,7 +178,7 @@ export function buyHoe(state) {
   if (!farmOpen(state)) return fail('La houe s\'achète au Marché, qui ouvre avec le panneau et la pompe.');
   const cost = DATA.HOUE.PRIX;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Achat : Houe');
   state.potager.houe = true;
   return { ok: true, cost };
 }
@@ -444,7 +444,7 @@ export function buildSerre(state) {
   if (lock) return fail(lock);
   const cost = DATA.SERRE.CONSTRUCTION;
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Serre');
   openSerre(state);
   return { ok: true, cost };
 }
@@ -463,7 +463,7 @@ export function upgradeSerre(state) {
   const cost = serreUpgradeCost(state);
   if (cost === null) return fail('Niveau maximum atteint.');
   if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost);
+  spend(state, cost, 'Serre agrandie');
   g.niveau += 1;
   const target = DATA.SERRE.PARCELLES[g.niveau - 1];
   for (let n = g.parcelles.length + 1; n <= target; n++) g.parcelles.push(makePlot(n, DATA.SERRE.LIEU));

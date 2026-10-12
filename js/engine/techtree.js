@@ -143,7 +143,7 @@ export function buyTech(state, id) {
   const pt = techPoints(state);
   if (pt.solde < n.pt) return fail('Pas assez de points de technologie.');
   if (state.pieces + EPS < n.cout) return fail('Pas assez de pièces.');
-  spend(state, n.cout);
+  spend(state, n.cout, `Technologie : ${n.nom || id}`);
   pt.solde -= n.pt;
   if (!Array.isArray(state.technologies)) state.technologies = [];
   state.technologies.push(id);
