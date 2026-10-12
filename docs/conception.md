@@ -1700,7 +1700,7 @@ Graines de légumes : vente 1 💰 ; achat en dépannage au coefficient 2,0 (soi
 
 | Autre | Valeur |
 |---|---|
-| Serre (construction) | 400 💰, 6 parcelles, +3 par niveau (300 / 600 / 1 000 / 1 800 💰) |
+| Serre (construction) | 1 000 💰, 15 parcelles, +12 par niveau jusqu'à toute sa terre (63) (900 / 1 800 / 3 000 / 5 400 💰) |
 | Semis automatique (nœud techno) | 1 500 💰, prérequis Potager niv. 5 |
 
 **Le Champ (version 1.4).** Une deuxième zone de culture, le rectangle `zone_culture_2` de la carte : **64 parcelles** (8 × 8), ouvertes **d'un coup et sans rien payer** quand le **Moulin** se débloque (chapitre 4) ; une partie déjà plus loin le reçoit au premier pas de jeu. Mêmes cultures et mêmes règles que la Zone de culture (eau, saisons, automatisations, « Arroser tout » et « Récolter tout », qui agissent zone par zone). But : cultiver beaucoup de blé, pour les poules et pour la paille des moutons et des vaches. Valeurs dans `DATA.POTAGER.ZONE2` ; parcelles dans `state.potager.zone2` (lieu `potager`, identifiants `zone2-n`). **Équilibrage à surveiller** : toutes les cultures y étant permises, le joueur automatique y plante des légumes et finit la simulation de 80 nuits avec environ 5 000 💰 au lieu de 270.

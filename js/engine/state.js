@@ -316,7 +316,19 @@ export const MIGRATIONS = {
   // FLU-06 : la bulle de la première houe en main ne s'affiche pas à qui a déjà labouré
   32: (state) => ({ ...state, version: 33, ...(state.potager && typeof state.potager === 'object' ? { potager: { ...state.potager, houeVue: !!(state.potager.houe && Array.isArray(state.potager.parcelles) && state.potager.parcelles.length) } } : {}) }),
   33: (state) => migrateChapter1Steps(state),
+  // v34 → v35 : la Serre cultive toute sa terre (63 cases) ; ses niveaux ont plus de
+  // parcelles (15 → 63 au lieu de 6 → 18) : une Serre construite reçoit celles de son niveau.
+  34: (state) => migrateSerreSoil(state),
 };
+
+export function migrateSerreSoil(old) {
+  const g = old.serre;
+  if (!g || typeof g !== 'object' || !g.construit || !Array.isArray(g.parcelles)) return { ...old, version: 35 };
+  const niveau = Math.max(1, Math.min(DATA.SERRE.PARCELLES.length, g.niveau | 0 || 1));
+  const parcelles = [...g.parcelles];
+  for (let n = parcelles.length + 1; n <= DATA.SERRE.PARCELLES[niveau - 1]; n++) parcelles.push(makePlot(n, DATA.SERRE.LIEU));
+  return { ...old, serre: { ...g, parcelles }, version: 35 };
+}
 
 // FLU-42 : trois objectifs entrent au chapitre 1 (labourer, planter, arroser). Une partie
 // qui a déjà labouré, planté ou arrosé (ou qui a dépassé le chapitre 1) les a validés
