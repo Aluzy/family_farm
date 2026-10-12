@@ -373,7 +373,7 @@ function openSemisModal(plotId) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="semis-title" data-stop-propagation>
+      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="semis-title" data-stop-propagation>
         <h2 id="semis-title">🔁 Semis automatique</h2>
         <p class="muted">Après une récolte automatique, cette parcelle est replantée si une graine reste au-delà de la réserve de semences.</p>
         <div class="stack">

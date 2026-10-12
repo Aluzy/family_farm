@@ -59,7 +59,7 @@ export function openOptionsModal() {
   const root = document.getElementById('modal-root');
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="options-title" data-stop-propagation>
+      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="options-title" data-stop-propagation>
         <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
         <h2 id="options-title">⚙️ Options</h2>
         <p class="muted about-version">Ferme Familiale · version ${GAME_VERSION}</p>

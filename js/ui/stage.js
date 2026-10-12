@@ -214,6 +214,10 @@ export function cibleNom(c) {
 // Va à une cible : ouvre le bon menu et amène la ligne concernée en haut.
 function allerA(c) {
   if (!c) return;
+  if (c.page === 'notifications' && stageUsable()) {
+    allerAuLieu('notifications');
+    return;
+  }
   if (c.page) {
     setActiveTab(tabAvailable(c.page) ? c.page : 'ferme');
     if (c.page === 'inventaire' && c.sous) setInvTab(c.sous);

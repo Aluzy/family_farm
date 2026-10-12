@@ -242,6 +242,11 @@ export const STAGE_WINDOWS = {
     enTete: () => marketTabsHtml(),
     corps: () => renderComptoir(true),
   },
+  // Notifications (menu latéral) : fenêtre flottante dans le cadre bois, comme l'Inventaire.
+  notifications: {
+    nom: 'Notifications', icone: '✉️', ok: () => true, flottante: true,
+    corps: () => renderNotifications(true),
+  },
   // Énergie (un appui sur les panneaux solaires du toit) et Eau (sur la pompe du puits ou la
   // citerne) : leurs appareils, dès qu'ils sont achetés (les achats se font dans la Maison).
   energie: {
@@ -614,7 +619,7 @@ registerActions({
   },
   'switch-tab': (target) => {
     // L'Inventaire et le Marché, avec la carte, sont des fenêtres flottantes par-dessus elle.
-    if (['installations', 'inventaire', 'comptoir', 'techno'].includes(target.dataset.tab) && stageUsable()) {
+    if (['installations', 'inventaire', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
       if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
       allerAuLieu(target.dataset.tab);
       return;
