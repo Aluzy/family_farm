@@ -161,7 +161,7 @@ function playMealScene(repas) {
   const mange = itemsSummary(repas.mange);
   const complet = repas.couverture >= 100;
   const suite = complet ? 'Tout le monde a mangé à sa faim.' : `Repas insuffisant : ${formatNumber(Math.min(repas.energie, repas.besoin))} / ${formatNumber(repas.besoin)} calories, ton énergie remontera moins cette nuit.`;
-  notify(`🍽️ ${DATA.TIME.MEAL_HOUR} h : la famille passe à table${mange ? ` (${mange})` : ''}. ${suite}`, complet ? 'repas' : 'alerte', { fenetre: 'maison', onglet: 'famille' });
+  notify(`🍽️ ${DATA.TIME.MEAL_HOUR} h : la famille passe à table${mange ? ` (${mange})` : ''}. ${suite}`, complet ? 'repas' : 'alerte', { fenetre: 'famille' });
 }
 
 // Le résumé du réveil est-il à l'écran ? Tant qu'il l'est, l'horloge reste à 6 h.

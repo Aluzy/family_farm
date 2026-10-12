@@ -3,6 +3,7 @@ import { energyLevel } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
 import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
+import { familyNameHtml } from './depart.js';
 import { awakeRequired } from '../engine/clock.js';
 import { memberPortrait, planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
@@ -93,8 +94,8 @@ export function leaveInterior() {
 }
 
 let stageWindowShown = null; // dernière fenêtre dessinée (avec son onglet) : pour remonter en haut au changement
-let maisonTab = 'famille'; // onglet de la fenêtre Maison
-let maisonTabChoisi = 'famille'; // FLU-03 : le dernier onglet que le joueur a choisi
+let maisonTab = 'batiments'; // onglet de la fenêtre Maison
+let maisonTabChoisi = 'batiments'; // FLU-03 : le dernier onglet que le joueur a choisi
 export function setMaisonTab(value) {
   maisonTab = value;
   return value;
@@ -114,13 +115,18 @@ export function setAncreVoulue(value) {
 
 export const MAISON_TABS = [
   // FLU-04 : `court` s'affiche sur l'onglet, `label` reste le nom complet (infobulle, lecteurs d'écran)
-  { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), corps: () => renderFamille() },
   { id: 'recettes', label: 'Livre de recette', court: 'Recettes', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
   { id: 'techno', label: 'Arbre des technologies', court: 'Techno', icon: '🌳', ok: () => tabAvailable('techno'), corps: () => renderTechno() },
   { id: 'batiments', label: 'Installations', court: 'Énergie', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
   // version 1.14 : le commerce du niveau 10
   { id: 'commerce', label: 'Commerce', icon: '🏪', ok: () => isUnlocked(state, 'commerce'), corps: () => renderCommerce() },
 ];
+
+// La Famille n'est plus un onglet de la Maison : elle a sa fenêtre, ouverte par la carte du
+// joueur. Une ancienne cible « Maison › Famille » (notification sauvegardée) y mène aussi.
+function lieuFamille(fenetre, onglet) {
+  return fenetre === 'maison' && onglet === 'famille' ? 'famille' : fenetre;
+}
 
 function maisonCurrentTab() {
   const tabs = MAISON_TABS.filter((t) => t.ok());
@@ -206,6 +212,12 @@ export const STAGE_WINDOWS = {
     onglets: () => subtabsHtml(MAISON_TABS.filter((t) => t.ok()), maisonCurrentTab().id, 'maison-tab'),
     corps: () => maisonCurrentTab().corps(),
   },
+  // Fenêtre de la Famille (carte du joueur, en haut à gauche) : dans le cadre bois des cartes.
+  famille: {
+    nom: 'Famille', icone: '👨‍👩‍👧‍👦', ok: () => tabAvailable('famille'), haute: true, sansTitre: true, bois: true,
+    detail: () => familyNameHtml(),
+    corps: () => renderFamille(),
+  },
   etable: {
     nom: 'Étable', icone: '🐄',
     ok: () => herdShown(),
@@ -263,7 +275,7 @@ export function renderStageWindow() {
   morph(root, `
     <div class="window-layer">
       <div class="window-backdrop" data-action="stage-close"></div>
-      <section class="stage-window ${w.haute ? 'tall' : 'half'}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
+      <section class="stage-window ${w.haute ? 'tall' : 'half'}${w.bois ? ' bois' : ''}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
         <header class="window-head">
           <h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>
           ${stageWindow !== 'chapitres' ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
@@ -315,6 +327,7 @@ export function closeStageWindow() {
 // Sans la carte, ce sont les pages classiques : Famille, Livre de recette, Arbre des
 // technologies, ou la liste de la Ferme.
 export function allerAuLieu(fenetre, onglet, ancre) {
+  fenetre = lieuFamille(fenetre, onglet);
   setEcranFerme(null);
   stageReturn = null;
   if (stageUsable()) {
@@ -329,7 +342,7 @@ export function allerAuLieu(fenetre, onglet, ancre) {
   } else {
     stageWindow = null;
     stageInterior = null;
-    setActiveTab(fenetre === 'ville' ? 'ville' : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
+    setActiveTab(fenetre === 'ville' ? 'ville' : fenetre === 'famille' && tabAvailable('famille') ? 'famille' : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
   }
   ancreVoulue = ancre || null;
   telView();
@@ -358,7 +371,7 @@ export function renderIndicators() {
   const niveau = `Niveau ${p.niveau} : ${xp}. Voir les niveaux`;
   const auto = formatPercent(lastAutonomy(state));
   const autoTitre = `Autonomie de la dernière nuit : ${auto}. Ouvrir la Famille`;
-  const famille = 'data-action="stage-goto" data-window="maison" data-tab="famille"';
+  const famille = 'data-action="stage-goto" data-window="famille"';
   const el = document.getElementById('player-card');
   morph(el,
     `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
@@ -396,7 +409,7 @@ function renderHud() {
   const cls = pct >= 65 ? '' : pct >= 20 ? ' mid' : ' low';
   const titre = `Ton énergie : ${e} / ${max}. Ouvrir la Famille`;
   morph(document.getElementById('hud-energy'),
-    `<button type="button" class="hud-energy-btn" data-action="stage-goto" data-window="maison" data-tab="famille" title="${titre}" aria-label="${titre}">` +
+    `<button type="button" class="hud-energy-btn" data-action="stage-goto" data-window="famille" title="${titre}" aria-label="${titre}">` +
     `<span class="hud-energy-label" aria-hidden="true">⚡</span>` +
     `<span class="hud-energy-bar" aria-hidden="true"><span class="hud-energy-fill${cls}" style="height:${pct}%"></span></span></button>`
   );
