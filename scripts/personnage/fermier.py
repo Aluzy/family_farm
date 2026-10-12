@@ -1,10 +1,13 @@
-# Le personnage de la carte (version provisoire), une planche assets/fermier.png de cases
-# 16 × 32 px, et assets/fermier.json qui donne le nom de chaque case (dans l'ordre de la
-# planche, 8 cases par rangée).
+# Les personnages de la carte (version provisoire). Pour chacun (VARIANTES) : une planche
+# assets/<nom>.png de cases 16 × 32 px, assets/<nom>.json qui donne le nom de chaque case (dans
+# l'ordre de la planche, 8 cases par rangée), et assets/portrait_<nom>.png (20 × 20 : la tête et
+# les épaules de face, pour la carte du joueur en haut à gauche).
+#   fermier  : chapeau de paille, cheveux courts, chemise rouge, salopette bleue ;
+#   fermiere : chapeau à ruban rose, cheveux longs auburn, chemisier vert, salopette bleue.
 #
 # Trois vues : « bas » (de face), « haut » (de dos), « cote » (de profil, tourné vers la
-# droite ; la carte le retourne pour la gauche). Il porte un chapeau de paille, une chemise
-# rouge et une salopette bleue. Lumière en haut à gauche, contour sombre ajouté à la fin.
+# droite ; la carte le retourne pour la gauche). Lumière en haut à gauche, contour sombre
+# ajouté à la fin.
 #
 # Cases :
 #   idle_<vue>_0..1          debout, il respire
@@ -18,7 +21,7 @@
 #   ramasse_0..2             de profil, il ramasse un œuf dans la paille
 #
 #   python3 scripts/personnage/fermier.py            écrit les images
-#   python3 scripts/personnage/fermier.py --apercu   écrit aussi apercu_fermier.png (agrandi)
+#   python3 scripts/personnage/fermier.py --apercu   écrit aussi apercu_<nom>.png (agrandi)
 import json
 import os
 import sys
@@ -45,7 +48,23 @@ C = {
     'bk': (176, 121, 62), 'bk2': (130, 86, 42),          # panier
     'eg': (251, 243, 224),                               # œuf
     'sd': (120, 84, 40),                                 # graine
+    'ck': (232, 140, 120),                               # joues
 }
+BASE = dict(C)
+
+# Chaque personnage : ses couleurs (à la place de celles de C) et ses cheveux.
+VARIANTES = {
+    'fermier': {'couleurs': {}, 'longs': False},
+    'fermiere': {
+        'couleurs': {
+            'hr': (164, 84, 42), 'hr2': (120, 56, 28),
+            'bd': (214, 96, 140),
+            'sh': (104, 166, 96), 'sh2': (68, 120, 64),
+        },
+        'longs': True,
+    },
+}
+LONGS = False      # cheveux longs (le personnage en cours de dessin)
 
 
 class Canvas:
@@ -121,6 +140,10 @@ def body(cv, vue, b):
         cv.put(7, 15 + b, 'hr2')
         cv.put(9, 13 + b, 'ey')
         cv.put(8, 15 + b, 'sk2')
+        if LONGS:                                       # la queue de cheval, dans le dos
+            cv.rect(5, 11 + b, 6, 18 + b, 'hr')
+            cv.rect(5, 17 + b, 6, 19 + b, 'hr2')
+            cv.put(9, 14 + b, 'ck')
         cv.rect(5, 6 + b, 10, 9 + b, 'st')              # chapeau
         cv.rect(5, 9 + b, 10, 9 + b, 'bd')
         cv.rect(3, 10 + b, 13, 10 + b, 'st2')
@@ -139,6 +162,13 @@ def body(cv, vue, b):
         cv.put(6, 13 + b, 'ey')
         cv.put(9, 13 + b, 'ey')
         cv.rect(6, 15 + b, 9, 15 + b, 'sk2')
+        if LONGS:                                       # cheveux sur les épaules, joues roses
+            cv.rect(4, 11 + b, 5, 18 + b, 'hr')
+            cv.rect(10, 11 + b, 11, 18 + b, 'hr')
+            cv.put(4, 18 + b, 'hr2')
+            cv.put(11, 18 + b, 'hr2')
+            cv.put(6, 14 + b, 'ck')
+            cv.put(9, 14 + b, 'ck')
     else:                                               # de dos : bretelles et cheveux
         cv.put(6, 17 + b, 'ov')
         cv.put(9, 17 + b, 'ov')
@@ -147,6 +177,9 @@ def body(cv, vue, b):
         cv.rect(5, 11 + b, 10, 15 + b, 'hr')
         cv.rect(6, 14 + b, 9, 15 + b, 'hr2')
         cv.rect(6, 16 + b, 9, 16 + b, 'sk2')
+        if LONGS:                                       # les cheveux tombent dans le dos
+            cv.rect(5, 11 + b, 10, 19 + b, 'hr')
+            cv.rect(6, 17 + b, 9, 19 + b, 'hr2')
     cv.rect(5, 6 + b, 10, 9 + b, 'st')
     cv.rect(5, 9 + b, 10, 9 + b, 'bd')
     cv.rect(3, 10 + b, 12, 10 + b, 'st2')
@@ -282,22 +315,36 @@ def render(cv):
     return im
 
 
-def main():
+def ecrire(nom):
     F = frames()
     names = list(F)
     rows = (len(names) + COLS - 1) // COLS
     sheet = Image.new('RGBA', (COLS * W, rows * H), (0, 0, 0, 0))
     for i, n in enumerate(names):
         sheet.paste(render(F[n]), ((i % COLS) * W, (i // COLS) * H))
-    sheet.save(os.path.join(ROOT, 'assets', 'fermier.png'))
-    with open(os.path.join(ROOT, 'assets', 'fermier.json'), 'w', encoding='utf-8') as f:
+    sheet.save(os.path.join(ROOT, 'assets', f'{nom}.png'))
+    with open(os.path.join(ROOT, 'assets', f'{nom}.json'), 'w', encoding='utf-8') as f:
         json.dump({'frameWidth': W, 'frameHeight': H, 'frames': names}, f, ensure_ascii=False, indent=0)
         f.write('\n')
-    print(f'assets/fermier.png : {len(names)} cases de {W} × {H} px ({COLS} par rangée)')
+    # Portrait : la tête et les épaules de face (debout), dans un carré de 20 × 20.
+    face = Image.new('RGBA', (W + 4, H), (0, 0, 0, 0))
+    face.paste(render(F['idle_bas_0']), (2, 0))
+    face.crop((0, 4, W + 4, 24)).save(os.path.join(ROOT, 'assets', f'portrait_{nom}.png'))
+    print(f'assets/{nom}.png : {len(names)} cases de {W} × {H} px ({COLS} par rangée), et portrait_{nom}.png')
     if '--apercu' in sys.argv:
         bg = Image.new('RGBA', sheet.size, (126, 170, 92, 255))
         bg.alpha_composite(sheet)
-        bg.resize((sheet.width * 5, sheet.height * 5), Image.NEAREST).save(os.path.join(ROOT, 'apercu_fermier.png'))
+        bg.resize((sheet.width * 5, sheet.height * 5), Image.NEAREST).save(os.path.join(ROOT, f'apercu_{nom}.png'))
+
+
+def main():
+    global LONGS
+    for nom, v in VARIANTES.items():
+        C.clear()
+        C.update(BASE)
+        C.update(v['couleurs'])
+        LONGS = v['longs']
+        ecrire(nom)
 
 
 if __name__ == '__main__':

@@ -5,9 +5,16 @@ facultatifs : sans eux, la carte s'affiche comme avant.
 
 ## L'image
 
-`assets/fermier.png` : cases de 16 × 32 px, 8 par rangée ; leurs noms, dans l'ordre, sont dans
-`assets/fermier.json`. Les deux fichiers sont écrits par `scripts/personnage/fermier.py`
-(`--apercu` écrit aussi une planche agrandie). Trois vues : `bas` (de face), `haut` (de dos),
+Deux personnages : `fermier` et `fermiere`. Pour chacun, `assets/<nom>.png` (cases de 16 × 32
+px, 8 par rangée), `assets/<nom>.json` (le nom de chaque case, dans l'ordre) et
+`assets/portrait_<nom>.png` (20 × 20, la tête et les épaules de face). Tout est écrit par
+`scripts/personnage/fermier.py` (`--apercu` écrit aussi les planches agrandies) ; les deux
+planches ont les mêmes cases, seules les couleurs et les cheveux changent.
+
+**Pour l'instant, c'est toujours la fermière** (`PERSONNAGE` dans `js/farm-stage.js`) : sur la
+carte, et son portrait dans la carte du joueur, en haut à gauche. Le choix du personnage
+principal (⭐) est masqué à l'écran du début de partie (`CHOIX_PRINCIPAL` dans
+`js/ui/depart.js`) : c'est le premier adulte. Trois vues : `bas` (de face), `haut` (de dos),
 `cote` (profil tourné vers la droite, retourné pour la gauche).
 
 | Cases | Pour |

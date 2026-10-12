@@ -80,6 +80,10 @@ export function renderStarterCards() {
 
 let setupNameDraft = null; // nom tapé, gardé quand on ouvre la fiche d'un membre
 
+// Choisir le personnage principal (⭐) : désactivé pour l'instant, c'est toujours le premier
+// adulte, dessiné en fermière sur la carte et dans la carte du joueur.
+const CHOIX_PRINCIPAL = false;
+
 function setupMemberRow(m) {
   const main = mainCharacter(state);
   const isMain = main && main.id === m.id;
@@ -88,7 +92,7 @@ function setupMemberRow(m) {
       <span class="portrait-emoji" aria-hidden="true">${memberPortrait(state, m.id) || '🙂'}</span>
       <span class="setup-member-name"><strong class="member-name">${memberNameHtml(m.id)}</strong><br><span class="muted">${m.enfant ? 'Enfant' : 'Adulte'}${isMain ? ' · ⭐ personnage principal' : ''}</span></span>
       <span class="row">
-        ${!m.enfant && !isMain ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" title="Choisir comme personnage principal" aria-label="Choisir comme personnage principal">⭐ Principal</button>` : ''}
+        ${CHOIX_PRINCIPAL && !m.enfant && !isMain ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" title="Choisir comme personnage principal" aria-label="Choisir comme personnage principal">⭐ Principal</button>` : ''}
         <button type="button" class="btn" data-action="member-edit" data-id="${m.id}">✏️</button>
       </span>
     </li>`;
@@ -104,7 +108,7 @@ export function openSetupModal() {
     <div class="modal-backdrop">
       <div class="modal setup-modal" id="setup-modal" role="dialog" aria-modal="true" aria-labelledby="setup-title">
         <h2 id="setup-title">🏡 Ta famille</h2>
-        <p class="muted">Avant de partir pour la ferme du grand-père : le nom de la famille, ses membres, et qui tient la ferme au quotidien (le personnage principal, qui dépense l'énergie à chaque action).</p>
+        <p class="muted">${CHOIX_PRINCIPAL ? 'Avant de partir pour la ferme du grand-père : le nom de la famille, ses membres, et qui tient la ferme au quotidien (le personnage principal, qui dépense l\'énergie à chaque action).' : 'Avant de partir pour la ferme du grand-père : le nom de la famille et ses membres. Le personnage principal (⭐), qui tient la ferme au quotidien, est le premier adulte.'}</p>
         <div class="stack member-field">
           <label for="setup-nom"><strong>Nom de famille</strong> <span class="muted">(${D.NOM_MIN} à ${D.NOM_MAX} signes)</span></label>
           <input type="text" id="setup-nom" class="member-input" maxlength="${D.NOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${escapeHtml(nom)}">
