@@ -842,58 +842,108 @@ body { padding-bottom: calc(88px + var(--dock)); } /* menu du bas + bouton « Zz
   font-weight: 600;
 }
 
-/* Inventaire : deux cases par rangée, de même taille et avec les mêmes lignes
-   aux mêmes hauteurs (la ligne d'état n'existe que si l'une des deux en a besoin). */
-.inv-grid {
+/* Inventaire en cases, comme un sac de jeu vidéo : le dessin de l'objet, sa quantité en
+   police pixel en bas à droite ; un point rouge si une partie périt cette nuit. */
+.inv-slots {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 12px 0 16px;
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  gap: 6px;
+  margin: 4px 0 14px;
 }
-
-.inv-card {
-  display: grid;
-  grid-template-rows: auto;
-  align-content: start;
-  gap: 8px;
+.inv-slot {
+  position: relative;
+  aspect-ratio: 1;
   min-width: 0;
-  padding: 8px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--bg-muted);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 3px solid #8a5a34;
+  border-radius: 6px;
+  background: rgba(122, 82, 50, 0.22);
+  box-shadow: inset 2px 2px 0 rgba(58, 36, 20, 0.35), inset -2px -2px 0 rgba(255, 244, 220, 0.5);
+  cursor: pointer;
 }
+.inv-slot:active { transform: translateY(1px); }
+.inv-slot:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; }
+.inv-slot-icon { font-size: 2rem; line-height: 1; }
+.inv-slot-icon .px { --pxs: 32px; vertical-align: top; } /* 16 px doublés : des pixels entiers */
+.inv-slot-qty { position: absolute; right: 3px; bottom: 3px; filter: drop-shadow(1px 1px 0 #2a1a0e) drop-shadow(-1px 0 0 #2a1a0e); }
+.inv-slot-qty .pxt { --p: 2px; }
+.inv-slot.soon { border-color: var(--danger); }
+.inv-slot-soon { position: absolute; top: 3px; left: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px #fff4dc; }
+.inv-fridge { margin: 0 0 8px; font-weight: 700; }
+.inv-fridge.warm { color: var(--danger); }
+.inv-all { width: 100%; margin-bottom: 8px; }
 
-.inv-card:has(.inv-status) { grid-template-rows: auto 1.4em; }
-.inv-card:has(.inv-actions) { grid-template-rows: auto 28px; }
-.inv-card:has(.inv-status):has(.inv-actions) { grid-template-rows: auto 1.4em 28px; }
-.inv-card.soon { border-color: var(--danger); }
+/* Les onglets de l'inventaire : des icônes seules, en haut de la fenêtre. */
+.inv-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+.window-head .inv-tabs { margin: 0; flex: 1 1 auto; min-width: 0; }
+.inv-tab {
+  width: 46px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.inv-tab .px { --pxs: 32px; vertical-align: top; }
+.inv-tab.active { border-color: #8a5a34; background: rgba(138, 90, 52, 0.22); }
+.inv-tab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; }
 
-/* En haut : le cadre de l'icône, et à sa droite deux lignes de même hauteur que lui. */
-.inv-head { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
-.inv-icon {
+/* Fenêtre flottante (l'Inventaire) : centrée, sans toucher les bords, hauteur selon le contenu. */
+.window-layer.flottante { align-items: center; padding: 16px 12px; }
+.stage-window.flottante {
+  height: auto;
+  max-height: min(78vh, 560px);
+  max-height: min(78dvh, 560px);
+  max-width: 460px;
+  border-radius: 8px;
+}
+.stage-window.bois.flottante { border-bottom: 3px solid #8a5a34; }
+.stage-window.flottante .window-head { min-height: 0; padding: 6px 8px 6px 10px; }
+
+/* Fiche d'un objet de l'inventaire, et toute fenêtre de dialogue « bois » : le cadre des cartes. */
+.modal.bois {
+  --bg: rgba(250, 232, 196, 0.98);
+  --bg-elevated: #fff4dc;
+  --bg-muted: rgba(255, 230, 178, 0.82);
+  --border: #c9965e;
+  --text: #4a2a10;
+  --text-muted: #7a5434;
+  background: var(--bg);
+  color: var(--text);
+  border: 3px solid #8a5a34;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.modal.bois .btn:not(.primary):not(.danger) { border: 2px solid #8a5a34; background: #fff1d2; }
+.item-modal { max-width: 360px; }
+.modal-backdrop:has(.item-modal) { align-items: center; padding: 16px; } /* une carte au milieu de l'écran */
+.modal-backdrop:has(.item-modal) .modal { border-radius: 8px; }
+.item-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.item-icon {
   flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 9px;
-  border: 1px solid var(--border);
-  background: var(--inv-icon-bg);
-  font-size: 1.5rem;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #8a5a34;
+  border-radius: 6px;
+  background: rgba(122, 82, 50, 0.22);
+  font-size: 2.6rem;
   line-height: 1;
 }
-.inv-text { display: flex; flex-direction: column; justify-content: space-around; min-width: 0; height: 42px; }
-.inv-name { display: flex; align-items: baseline; gap: 0.25em; min-width: 0; overflow: hidden; font-size: 0.92rem; font-weight: 600; line-height: 1.2; }
-.inv-nom { flex: none; white-space: nowrap; }
-.inv-qty { flex: none; font-size: 0.87em; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.inv-info { font-size: 0.8rem; line-height: 1.2; white-space: nowrap; overflow: hidden; }
-.inv-status { display: flex; align-items: center; height: 1.4em; font-size: 0.9rem; white-space: nowrap; overflow: hidden; }
-.inv-soon { color: var(--danger); font-weight: 600; }
-.inv-actions { display: flex; gap: 4px; width: 100%; }
-/* Boutons du frigo réduits d'environ 30 % (28 px de haut au lieu de 40). */
-.inv-actions .btn { flex: 1; min-width: 0; min-height: 28px; height: 28px; padding: 0 3px; border-radius: 8px; font-size: 0.65rem; white-space: nowrap; }
-.inv-all { width: 100%; margin-bottom: 20px; }
+.item-icon .px { --pxs: 48px; vertical-align: top; }
+.item-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.item-title strong { font-size: 1.15rem; }
+.item-lines { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.92rem; }
+.item-actions { gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.item-actions .btn { flex: 1 1 auto; }
 
 .step-btn { min-width: 44px; padding: 0; font-size: 1.3rem; line-height: 1; }
 

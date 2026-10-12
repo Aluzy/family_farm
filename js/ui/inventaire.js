@@ -1,13 +1,18 @@
 import { DATA } from '../engine/catalog.js';
 import { dishHappiness } from '../engine/ville.js';
-import { countItem, expiringSoon, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
-import { fridgeCapacity, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
+import { countItem, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
+import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
-import { formatCoins, formatQty } from '../engine/format.js';
+import { formatQty } from '../engine/format.js';
 import { invTab, state } from './store.js';
 import { eatButton } from './energie.js';
 import { applyResult } from './game-actions.js';
-import { renderFridgeTab } from './serre-verger-frigo.js';
+import { fridgeIcon } from './serre-verger-frigo.js';
+import { pxText } from './pixel-art.js';
+import { tel } from './consent.js';
+import { morph } from './render.js';
+import { stageUsable } from './stage.js';
+import { closeModal, costLabel } from './common.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
 
@@ -38,74 +43,6 @@ function expiringTonight(item) {
     .reduce((t, l) => t + l.qty, 0);
 }
 
-// Lot 8 : boutons pour ranger un aliment au frigo (s'il est construit). Le blé
-// n'y va pas : il se garde au Silo.
-function fridgeInButtons(item) {
-  if (!state.frigo.construit || !isFridgeable(item) || countItem(state, item) < 1) return '';
-  const nom = DATA.items[item].nom.toLowerCase();
-  // version 1.10 : grisés quand le frigo est plein
-  const off = fridgeRoom(state) < 1 ? ' disabled title="Le frigo est plein"' : '';
-  return `
-        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="1" aria-label="Ranger 1 ${nom} au frigo"${off}>🧊 1</button>
-        <button type="button" class="btn" data-action="fridge-in" data-item="${item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo"${off}>🧊 Tout</button>`;
-}
-
-// Boutons d'une case : manger (version 1.8, un aliment) et ranger au frigo.
-function itemButtons(item) {
-  return `${DATA.items[item].edible ? eatButton(item) : ''}${fridgeInButtons(item)}`;
-}
-
-// Une case a-t-elle une ligne d'état : ce qui périt cette nuit, ou le blé du Silo ?
-function hasStatus(item) {
-  return (isPerishable(item) && expiringTonight(item) > 0) || (item === DATA.SILO.ITEM && state.silo.construit);
-}
-
-// Une case de l'inventaire : en haut, l'icône dans son cadre et, à sa droite,
-// « Tomate x3 » puis les calories et le prix ; dessous, une ligne d'état (ce qui
-// périt cette nuit, ou le blé du Silo) et les boutons du frigo.
-// Deux cases côte à côte ont les mêmes lignes, vides au besoin, pour garder la
-// même taille et le même alignement ; la ligne d'état disparaît quand aucune des
-// deux n'en a besoin (withStatus).
-function inventoryCard(item, withActions, withStatus) {
-  const it = DATA.items[item];
-  const n = countItem(state, item);
-  const soon = isPerishable(item) ? expiringTonight(item) : 0;
-  const info = [
-    it.energie && it.edible ? `🍽️ ${it.energie} cal` : '',
-    it.energie && !it.edible ? `Ingrédient 🍽️ ${it.energie} cal` : '',
-    dishHappiness(item) ? `😊 +${dishHappiness(item)}` : '',
-    `💰 ${formatCoins(it.prix)}`,
-  ].filter(Boolean).join(' · ');
-  let status = '';
-  if (withStatus && soon > 0) {
-    status = `<span class="inv-soon" title="${soon} ${unitLabel(item, soon)} ${soon > 1 ? 'périssent' : 'périt'} à la prochaine nuit"><span aria-hidden="true">⚠️</span> <span class="num">${formatQty(soon)}</span> ce soir</span>`;
-  } else if (item === DATA.SILO.ITEM && state.silo.construit) {
-    status = `<span class="muted">🛖 Silo : <span class="num">${formatQty(state.silo.ble)}</span></span>`;
-  }
-  return `
-    <div class="inv-card${soon > 0 ? ' soon' : ''}">
-      <div class="inv-head">
-        <span class="inv-icon" aria-hidden="true">${it.icone}</span>
-        <span class="inv-text">
-          <span class="inv-name"><span class="inv-nom">${it.nom}</span> <span class="inv-qty num" aria-label="quantité ${formatQty(n)}">x${formatQty(n)}</span></span>
-          <span class="inv-info muted">${info}</span>
-        </span>
-      </div>
-      ${withStatus ? `<span class="inv-status">${status}</span>` : ''}
-      ${withActions ? `<span class="inv-actions">${itemButtons(item)}</span>` : ''}
-    </div>`;
-}
-
-// « Tout ranger » : un seul bouton pour mettre au frigo tous les aliments frais.
-function fridgeAllButton(items) {
-  if (!state.frigo.construit) return '';
-  const n = items.filter(isFridgeable).reduce((t, k) => t + countItem(state, k), 0);
-  if (n < 1) return '';
-  const room = fridgeRoom(state);
-  if (room < 1) return `<button type="button" class="btn inv-all" disabled>🧊 Frigo plein (${fridgeUnits(state)} / ${fridgeCapacity(state)})</button>`;
-  return `<button type="button" class="btn primary inv-all" data-action="fridge-in-all">🧊 Tout ranger au frigo (${formatQty(Math.min(n, room))}${n > room ? ` sur ${formatQty(n)}` : ''})</button>`;
-}
-
 const INVENTORY_TABS = [
   { id: 'frais', label: 'Frais', icon: '🥕', match: (k) => isPerishable(k), empty: 'Aucun aliment frais pour l\'instant.' },
   { id: 'frigo', label: 'Frigo', icon: '🧊', match: () => false, empty: '' },
@@ -125,64 +62,154 @@ export function subtabsHtml(tabs, current, action) {
     .join('')}</div>`;
 }
 
-// La ligne d'état d'une case existe si elle-même ou sa voisine de rangée (deux
-// cases par rangée) en a une.
-function rowHasStatus(items, i) {
-  const first = i - (i % 2);
-  return items.slice(first, first + 2).some(hasStatus);
+/* -- Inventaire en cases (comme un sac de jeu vidéo) : le dessin de chaque objet, sa
+   quantité en bas à droite, rien d'autre. Un appui ouvre sa fiche (manger, ranger au frigo,
+   sortir du frigo). Les prix ne s'affichent qu'au Marché. -- */
+
+function inventoryTabs() {
+  // Lot 9 : l'onglet Frigo n'apparaît qu'avec le chapitre 6.
+  return INVENTORY_TABS.filter((t) => t.id !== 'frigo' || isUnlocked(state, 'frigo'));
 }
 
-// Ajuste une ligne trop longue pour sa case : sa police est réduite juste
-// assez pour qu'elle tienne en entier (comme fitIndicators pour le bandeau).
-// Renvoie la taille retenue, en px.
-const FIT_MIN_PX = 7;
-function fitLine(el) {
-  el.style.fontSize = '';
-  let size = parseFloat(getComputedStyle(el).fontSize) || 15;
-  for (let pass = 0; pass < 4 && el.scrollWidth > el.clientWidth && size > FIT_MIN_PX; pass++) {
-    size = Math.max(FIT_MIN_PX, Math.floor(((size * el.clientWidth) / el.scrollWidth) * 10) / 10 - (pass ? 0.2 : 0));
-    el.style.fontSize = `${size}px`;
-  }
-  return size;
+function currentTab() {
+  const tabs = inventoryTabs();
+  return tabs.find((t) => t.id === invTab) || tabs[0];
 }
 
-// Appelé après chaque rendu (la taille dépend de la largeur réelle des cases).
-// Les noms d'une même grille ont tous la même taille : celle du nom qui doit
-// être le plus réduit pour tenir. Les lignes énergie · prix s'ajustent une à une.
-export function fitInventoryNames(root = document) {
-  for (const grid of root.querySelectorAll('.inv-grid')) {
-    const names = [...grid.querySelectorAll('.inv-name')];
-    const size = Math.min(...names.map(fitLine));
-    for (const el of names) el.style.fontSize = `${size}px`;
-    for (const el of grid.querySelectorAll('.inv-info')) fitLine(el);
-  }
+// Les onglets, en icônes seules (le nom est dans l'infobulle et pour les lecteurs d'écran).
+export function inventoryTabsHtml() {
+  const cur = currentTab().id;
+  return `<div class="inv-tabs" role="group" aria-label="Sections de l'inventaire">${inventoryTabs()
+    .map((t) => `<button type="button" class="inv-tab${t.id === cur ? ' active' : ''}" data-action="inv-tab" data-tab="${t.id}" aria-pressed="${t.id === cur}" title="${t.label}" aria-label="${t.label}"><span aria-hidden="true">${t.icon}</span></button>`)
+    .join('')}</div>`;
 }
 
-export function renderInventaire() {
-  // Lot 9 : le sous-onglet Frigo n'apparaît qu'avec le chapitre 6.
-  const tabs = INVENTORY_TABS.filter((t) => t.id !== 'frigo' || isUnlocked(state, 'frigo'));
-  const tab = tabs.find((t) => t.id === invTab) || tabs[0];
-  if (tab.id === 'frigo') {
-    return `
-    <h2>📦 Inventaire</h2>
-    ${subtabsHtml(tabs, tab.id, 'inv-tab')}
-    ${renderFridgeTab()}`;
+// Une case : le dessin, la quantité (police pixel, en bas à droite), et un point rouge si
+// une partie périt à la prochaine nuit. `lieu` : 'sac' (l'inventaire) ou 'frigo'.
+function slotHtml(item, n, lieu) {
+  const it = DATA.items[item];
+  const soon = lieu === 'sac' && isPerishable(item) ? expiringTonight(item) : 0;
+  const label = `${it.nom} : ${formatQty(n)}${lieu === 'frigo' ? ' au frais' : ''}${soon ? `, dont ${formatQty(soon)} ${soon > 1 ? 'périssent' : 'périt'} cette nuit` : ''}`;
+  return `<button type="button" class="inv-slot${soon ? ' soon' : ''}" data-action="inv-item" data-item="${item}" data-lieu="${lieu}" title="${it.nom}" aria-label="${label}">` +
+    `<span class="inv-slot-icon" aria-hidden="true">${it.icone}</span>` +
+    `<span class="inv-slot-qty">${pxText(String(Math.round(n)), 'light')}</span>` +
+    `${soon ? '<span class="inv-slot-soon" aria-hidden="true"></span>' : ''}</button>`;
+}
+
+// « Tout ranger » : un seul bouton pour mettre au frigo tous les aliments frais.
+function fridgeAllButton(items) {
+  if (!state.frigo.construit) return '';
+  const n = items.filter(isFridgeable).reduce((t, k) => t + countItem(state, k), 0);
+  if (n < 1) return '';
+  const room = fridgeRoom(state);
+  if (room < 1) return `<button type="button" class="btn inv-all" disabled>🧊 Frigo plein (${fridgeUnits(state)} / ${fridgeCapacity(state)})</button>`;
+  return `<button type="button" class="btn primary inv-all" data-action="fridge-in-all">🧊 Tout ranger au frigo (${formatQty(Math.min(n, room))}${n > room ? ` sur ${formatQty(n)}` : ''})</button>`;
+}
+
+function fridgeSlots() {
+  const f = state.frigo;
+  if (!f.construit) {
+    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans la Maison, onglet Énergie' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
   }
-  const items = Object.keys(DATA.items).filter((k) => tab.match(k) && countItem(state, k) > 0);
-  const soon = Object.keys(expiringSoon(state)).length > 0 && tab.id === 'frais';
-  // La ligne des boutons n'existe que si au moins une case en a.
-  const withActions = items.some((k) => itemButtons(k) !== '');
+  const counts = fridgeCounts(state);
+  const items = Object.keys(DATA.items).filter((k) => counts[k] > 0);
+  const ok = fridgeIcon() === '❄️';
   return `
-    <h2>📦 Inventaire</h2>
-    ${subtabsHtml(tabs, tab.id, 'inv-tab')}
-    ${soon ? '<p class="alert">⚠️ Une partie de tes aliments périt à la prochaine nuit.</p>' : ''}
-    ${items.length ? `<div class="inv-grid">${items.map((k, i) => inventoryCard(k, withActions, rowHasStatus(items, i))).join('')}</div>` : `<p class="hint">${tab.empty}</p>`}
+    <p class="inv-fridge${ok ? '' : ' warm'}" title="${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté : chaque lot peut perdre une nuit.'}"><span aria-hidden="true">${fridgeIcon()}</span> <span class="num">${fridgeUnits(state)} / ${fridgeCapacity(state)}</span>${ok ? '' : ' · ⚠️ pas alimenté'}${!fridgeCoversNight(state) ? ' · ⚠️ la batterie ne couvrira pas la nuit' : ''}</p>
+    ${items.length ? `<div class="inv-slots">${items.map((k) => slotHtml(k, counts[k], 'frigo')).join('')}</div>` : '<p class="hint">Le frigo est vide.</p>'}`;
+}
+
+// `fenetre` : dans la fenêtre flottante de la carte, les onglets sont dans son en-tête.
+export function renderInventaire(fenetre = false) {
+  const tab = currentTab();
+  const head = fenetre ? '' : `<h2>📦 Inventaire</h2>${inventoryTabsHtml()}`;
+  if (tab.id === 'frigo') return `${head}${fridgeSlots()}`;
+  const items = Object.keys(DATA.items).filter((k) => tab.match(k) && countItem(state, k) > 0);
+  return `${head}
+    ${items.length ? `<div class="inv-slots">${items.map((k) => slotHtml(k, countItem(state, k), 'sac')).join('')}</div>` : `<p class="hint">${tab.empty}</p>`}
     ${tab.id === 'frais' ? fridgeAllButton(items) : ''}`;
+}
+
+/* -- Fiche d'un objet (fenêtre de dialogue, cadre bois) : ce qu'il est, et ce qu'on peut
+   en faire selon l'onglet : manger, ranger au frigo (Frais) ; sortir du frigo (Frigo). -- */
+
+let itemOpen = null; // { item, lieu }
+
+function itemQty(o) {
+  return o.lieu === 'frigo' ? fridgeCount(state, o.item) : countItem(state, o.item);
+}
+
+function itemBodyHtml(o) {
+  const it = DATA.items[o.item];
+  const n = itemQty(o);
+  const nom = it.nom.toLowerCase();
+  const lines = [];
+  if (it.energie) lines.push(`🍽️ ${it.energie} cal${it.edible ? '' : ' (ingrédient)'}`);
+  if (dishHappiness(o.item)) lines.push(`😊 +${dishHappiness(o.item)} bonheur`);
+  if (o.lieu === 'sac' && isPerishable(o.item)) {
+    const soon = expiringTonight(o.item);
+    const lots = lotsOf(state, o.item).map((l) => `${formatQty(l.qty)} : encore ${nightsLabel(l.nightsLeft)}`).join(' · ');
+    if (lots) lines.push(`⏳ ${lots}`);
+    if (soon) lines.push(`⚠️ ${formatQty(soon)} ${soon > 1 ? 'périssent' : 'périt'} cette nuit`);
+  }
+  if (o.lieu === 'frigo') lines.push('🧊 Au frais : il ne vieillit pas tant que le frigo est alimenté.');
+  if (o.item === DATA.SILO.ITEM && state.silo.construit) lines.push(`🛖 Silo : ${formatQty(state.silo.ble)}`);
+  if (it.category === 'graine') lines.push('🌱 Se sème dans la Zone de culture.');
+  let actions = '';
+  if (o.lieu === 'frigo') {
+    actions = `
+      <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="1">Sortir 1</button>
+      <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="all">Tout sortir</button>`;
+  } else {
+    if (it.edible) actions += eatButton(o.item, 'Manger');
+    if (state.frigo.construit && isFridgeable(o.item)) {
+      const off = fridgeRoom(state) < 1 ? ' disabled title="Le frigo est plein"' : '';
+      actions += `
+      <button type="button" class="btn" data-action="fridge-in" data-item="${o.item}" data-qty="1" aria-label="Ranger 1 ${nom} au frigo"${off}>🧊 Ranger 1</button>
+      <button type="button" class="btn" data-action="fridge-in" data-item="${o.item}" data-qty="all" aria-label="Ranger tout ${nom} au frigo"${off}>🧊 Tout ranger</button>`;
+    }
+  }
+  return `
+    <div class="item-head">
+      <span class="item-icon" aria-hidden="true">${it.icone}</span>
+      <span class="item-title"><strong id="item-title">${it.nom}</strong><span class="num">${o.lieu === 'frigo' ? 'Au frigo' : 'Quantité'} : ${formatQty(n)}</span></span>
+    </div>
+    ${lines.length ? `<ul class="item-lines">${lines.map((l) => `<li>${l}</li>`).join('')}</ul>` : ''}
+    ${actions ? `<div class="row item-actions">${actions}</div>` : ''}`;
+}
+
+function openItemModal(item, lieu) {
+  if (!DATA.items[item]) return;
+  itemOpen = { item, lieu: lieu === 'frigo' ? 'frigo' : 'sac' };
+  tel('modal', 'item');
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" data-action="close-modal">
+      <div class="modal bois item-modal" role="dialog" aria-modal="true" aria-labelledby="item-title" data-stop-propagation>
+        <div class="item-body"></div>
+        <div class="row"><button type="button" class="btn" data-action="close-modal">Fermer</button></div>
+      </div>
+    </div>`;
+  renderItemModal();
+}
+
+// Appelé à chaque rendu : la fiche suit le jeu ; elle se ferme quand l'objet n'est plus là.
+export function renderItemModal() {
+  const body = document.querySelector('#modal-root .item-modal .item-body');
+  if (!body || !itemOpen) return;
+  if (itemQty(itemOpen) <= 0) {
+    itemOpen = null;
+    closeModal();
+    return;
+  }
+  morph(body, itemBodyHtml(itemOpen));
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
+  'inv-item': (target) => {
+    openItemModal(target.dataset.item, target.dataset.lieu);
+  },
   'fridge-in-all': () => {
     const result = applyResult(moveAllToFridge(state));
     if (result.ok) showToast(`🧊 Rangé au frigo : ${itemsSummary(result.items)}${result.reste ? ` · frigo plein, ${formatQty(result.reste)} restent dehors` : ''}`);

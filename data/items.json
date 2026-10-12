@@ -35,10 +35,10 @@
     "aubergine": { "nom": "Aubergine", "icone": "🍆", "energie": 10, "prix": 2, "edible": true, "category": "légume", "conservation": 5 },
     "//conserve": ["Non périssable, non rachetable au Marché (Lot 3).", "20 × 1,25"],
     "conserve": { "nom": "Conserve", "icone": "🥫", "energie": 25, "prix": 3, "edible": true, "category": "conserve", "rachetable": false },
-    "graine_carotte": { "nom": "Graines de carotte", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
-    "graine_tomate": { "nom": "Graines de tomate", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
-    "graine_courgette": { "nom": "Graines de courgette", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
-    "graine_aubergine": { "nom": "Graines d'aubergine", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "graine_carotte": { "nom": "Graines de carotte", "icone": "🌱‍🥕", "prix": 1, "edible": false, "category": "graine" },
+    "graine_tomate": { "nom": "Graines de tomate", "icone": "🌱‍🍅", "prix": 1, "edible": false, "category": "graine" },
+    "graine_courgette": { "nom": "Graines de courgette", "icone": "🌱‍🥒", "prix": 1, "edible": false, "category": "graine" },
+    "graine_aubergine": { "nom": "Graines d'aubergine", "icone": "🌱‍🍆", "prix": 1, "edible": false, "category": "graine" },
     "//ble": [
       "Lot 4 : blé (stock du Silo ; un blé sert de graine), graines de tournesol",
       "(à replanter), œuf (12,5 → 13 énergie, 6 nuits : voir CONSERVATION).",
@@ -50,7 +50,7 @@
       "est le Silo (voir isFridgeable())."
     ],
     "ble": { "nom": "Blé", "icone": "🌾", "prix": 1, "edible": false, "category": "ingrédient", "conservation": 10 },
-    "graine_tournesol": { "nom": "Graines de tournesol", "icone": "🌻", "prix": 1, "edible": false, "category": "graine" },
+    "graine_tournesol": { "nom": "Graines de tournesol", "icone": "🌱‍🌻", "prix": 1, "edible": false, "category": "graine" },
     "//oeuf": "10 × 1,25 = 12,5 → 13",
     "oeuf": { "nom": "Œuf", "icone": "🥚", "energie": 13, "prix": 2, "edible": true, "category": "produit", "conservation": 6 },
     "//viande_mouton": [
@@ -100,10 +100,10 @@
       "spécifique n'est attaché à cette catégorie, voir DATA.MARCHE.PLANCHER)."
     ],
     "oignon": { "nom": "Oignon", "icone": "🧅", "energie": 6, "prix": 1, "edible": true, "category": "légume", "conservation": 6 },
-    "graine_oignon": { "nom": "Graines d'oignon", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "graine_oignon": { "nom": "Graines d'oignon", "icone": "🌱‍🧅", "prix": 1, "edible": false, "category": "graine" },
     "ail": { "nom": "Ail", "icone": "🧄", "energie": 6, "prix": 2, "edible": true, "category": "légume", "conservation": 7 },
     "poivron": { "nom": "Poivron", "icone": "🫑", "energie": 7, "prix": 2, "edible": true, "category": "légume", "conservation": 5 },
-    "graine_poivron": { "nom": "Graines de poivron", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "graine_poivron": { "nom": "Graines de poivron", "icone": "🌱‍🫑", "prix": 1, "edible": false, "category": "graine" },
     "epinard": {
       "nom": "Épinard",
       "icone": "🥬",
@@ -121,9 +121,9 @@
       ],
       "conservation": 4
     },
-    "graine_epinard": { "nom": "Graines d'épinard", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "graine_epinard": { "nom": "Graines d'épinard", "icone": "🌱‍🥬", "prix": 1, "edible": false, "category": "graine" },
     "fraise": { "nom": "Fraise", "icone": "🍓", "energie": 5, "prix": 2, "edible": true, "category": "fruit", "conservation": 4 },
-    "graine_fraise": { "nom": "Graines de fraise", "icone": "🌱", "prix": 1, "edible": false, "category": "graine" },
+    "graine_fraise": { "nom": "Graines de fraise", "icone": "🌱‍🍓", "prix": 1, "edible": false, "category": "graine" },
     "riz": { "nom": "Riz", "icone": "🍚", "energie": 10, "prix": 1, "edible": true, "category": "légume" },
     "houblon": { "nom": "Houblon", "icone": "🌿", "prix": 3, "edible": false, "category": "ingrédient" },
     "cacao": { "nom": "Cacao", "icone": "🍫", "prix": 8, "edible": false, "category": "ingrédient" },

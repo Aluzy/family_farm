@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { isBroken } from '../engine/devices.js';
 import { deviceStatus } from '../engine/energy.js';
 import {
-  availableEnergy, buildFridge, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeNightNeed,
+  availableEnergy, buildFridge, fridgeCoversNight, fridgeNightNeed,
   fridgeCapacity, fridgeUnits, fridgeUpgradeCost, upgradeFridge,
 } from '../engine/fridge.js';
 import { buildSerre, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
@@ -12,16 +12,14 @@ import {
 } from '../engine/orchard.js';
 import { canAfford } from '../engine/stamina.js';
 import { techAuto } from '../engine/techtree.js';
-import { formatCoins, formatNumber, formatQty, formatWh } from '../engine/format.js';
+import { formatCoins, formatNumber, formatWh } from '../engine/format.js';
 import { setVergerCase, state, vergerCase } from './store.js';
 import { applyResult } from './game-actions.js';
-import { stageUsable } from './stage.js';
 import { wearHtml } from './ferme.js';
 import { autoChip, groupButtons, plotCard } from './elevage.js';
 import { stationControls } from './cuisine.js';
 import { nightsLabel } from './inventaire.js';
 import { artPx, icon, treeArt } from './animations.js';
-import { pxText } from './pixel-art.js';
 import { helpBtn } from './aide.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
@@ -150,7 +148,7 @@ export function renderVerger() {
 }
 
 // ❄️ quand le frigo est alimenté ; ⚠️ en panne, éteint ou hors tension.
-function fridgeIcon() {
+export function fridgeIcon() {
   const f = state.frigo;
   if (!f.construit) return '';
   const d = f.appareil;
@@ -204,40 +202,6 @@ function fridgeUpgradeHtml() {
   if (cost === null) return '<span class="muted">Niveau maximum.</span>';
   const next = DATA.FRIGO.CAPACITE[state.frigo.niveau];
   return `<button type="button" class="btn" data-action="upgrade-fridge"${canPay(cost) ? '' : ' disabled'}>Agrandir : ${next} unités (${costLabel(cost)})</button>`;
-}
-
-// Frigo (Inventaire) : une fiche par aliment, comme les parcelles : l'icône, le nom, le
-// nombre au frais en police pixel, et les boutons pour sortir. Ni jauge ni détail des lots :
-// au frais la conservation est figée, et ce qui va périmer est signalé dans l'onglet Frais.
-function fridgeRowHtml(item) {
-  const it = DATA.items[item];
-  const n = fridgeCount(state, item);
-  return `
-    <div class="card plot fridge-item" title="${it.nom} : ${formatQty(n)} au frais">
-      <span class="plot-head"><span class="plot-ico" aria-hidden="true">${it.icone}</span><span class="plot-name">${it.nom}</span><span class="plot-qty" role="img" aria-label="${formatQty(n)} au frais">${pxText(`x${Math.round(n)}`)}</span></span>
-      <span class="plot-btns">
-        <button type="button" class="btn" data-action="fridge-out" data-item="${item}" data-qty="1">Sortir 1</button>
-        <button type="button" class="btn" data-action="fridge-out" data-item="${item}" data-qty="all">Tout</button>
-      </span>
-    </div>`;
-}
-
-export function renderFridgeTab() {
-  const f = state.frigo;
-  if (!f.construit) {
-    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans la Maison, onglet Installations' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
-  }
-  const counts = fridgeCounts(state);
-  const items = Object.keys(DATA.items).filter((k) => counts[k] > 0);
-  const ok = fridgeIcon() === '❄️';
-  return `
-    <div class="card fridge ${ok ? 'cold' : 'warm'}">
-      <span class="card-title"><span>${fridgeIcon()} Réfrigérateur</span><span class="chip${fridgeUnits(state) >= fridgeCapacity(state) ? ' warn' : ''}">${fridgeUnits(state)} / ${fridgeCapacity(state)}</span></span>
-      <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : '⚠️ Pas alimenté : si le froid manque plus de la moitié de l\'éveil, ou toute la nuit, chaque lot perd une nuit.'}</span>
-      ${!fridgeCoversNight(state) ? '<span class="alert">⚠️ La batterie ne couvrira pas la nuit.</span>' : ''}
-      <span class="muted">La famille mange aussi le contenu du frigo, après ce qui est dans l'inventaire. Le Marché et les recettes utilisent l'inventaire : sors ce qu'il te faut.</span>
-    </div>
-    ${items.length ? `<div class="plots fridge-items">${items.map(fridgeRowHtml).join('')}</div>` : '<p class="hint">Le frigo est vide. Range des aliments frais depuis l\'onglet Frais.</p>'}`;
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

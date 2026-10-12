@@ -17,6 +17,7 @@ Sources, dans cet ordre (une icône déjà vue n'est pas reprise) :
      le dessin est centré et posé sur le bas (js/ui/animations.js, artSvg()).
   2. FROM_SHEET ci-dessous : cases reprises des planches du jeu (récoltes de crops.png…),
      pour que l'icône d'un légume soit celle qu'on voit sur la carte.
+  3. derived(icônes) dans un art_*.py : icônes faites à partir des autres (sachets de graines).
 
 L'emoji est écrit sans U+FE0F (le sélecteur est ignoré à l'affichage). Une suite d'emojis
 (👨‍👩‍👧‍👦, 👩🏽) est une seule icône.
@@ -173,6 +174,13 @@ def collect():
         if sheet not in sheets:
             sheets[sheet] = Image.open(os.path.join(ROOT, 'assets', sheet)).convert('RGBA')
         icons[e] = sheets[sheet].crop((c * 16, r * 16, c * 16 + 16, r * 16 + 16))
+    # 3. Icônes dérivées d'autres icônes (sachets de graines : art_graines.py) : une fonction
+    #    derived(icônes) qui renvoie {emoji: Image 16×16}.
+    for path in sorted(glob.glob(os.path.join(HERE, 'art_*.py'))):
+        mod = load_module(path)
+        if hasattr(mod, 'derived'):
+            for e, im in mod.derived(dict(icons)).items():
+                icons.setdefault(e.replace('️', ''), im.convert('RGBA'))
     return icons
 
 
