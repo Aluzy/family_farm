@@ -67,6 +67,10 @@
       "Version 1.12 : STYLES, la coiffure (planche d'avatars, scripts/icones/art_gens.py) : cinq",
       "par âge ; l'emoji devient portrait + teinte + ZWJ + STYLES[age][n] (rien pour la coiffure 0).",
       "STYLE_NOMS : leur libellé.",
+      "Version 1.17 : un adulte a l'apparence d'un des PERSOS personnages du catalogue",
+      "(assets/portraits/perso_XX.png, assets/personnages/perso_XX.png ; voir memberPerso()).",
+      "PERSO_DEFAUT : celui d'un adulte qui n'en a pas encore choisi, selon son sexe.",
+      "Les enfants gardent leur portrait emoji (sexe, coiffure, teinte).",
       "Le prénom est une donnée personnelle : il reste dans la sauvegarde, sur",
       "l'appareil, et ne doit jamais partir dans le suivi de session."
     ],
@@ -76,7 +80,9 @@
       "TEINTS": ["", "🏻", "🏼", "🏽", "🏾", "🏿"],
       "PORTRAITS": { "adulte": { "f": "👩", "m": "👨" }, "enfant": { "f": "👧", "m": "👦" } },
       "STYLES": { "adulte": ["", "🦰", "🦱", "🦳", "👱"], "enfant": ["", "🦰", "🦱", "🧢", "👱"] },
-      "STYLE_NOMS": { "adulte": ["Classique", "Roux", "Frisé", "Cheveux gris", "Blond"], "enfant": ["Classique", "Roux", "Frisé", "Casquette", "Blond"] }
+      "STYLE_NOMS": { "adulte": ["Classique", "Roux", "Frisé", "Cheveux gris", "Blond"], "enfant": ["Classique", "Roux", "Frisé", "Casquette", "Blond"] },
+      "PERSOS": 50,
+      "PERSO_DEFAUT": { "f": 1, "m": 7 }
     },
     "//AJ": "énergie par jour et par membre",
     "AJ": { "adulte": 50, "enfant": 25 },

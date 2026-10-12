@@ -476,6 +476,12 @@
       // Pour les essais : fermier('oeufs') l'envoie au Poulailler.
       force(name) { if (name === 'oeufs') { eggsDue = true; } return this.info(); },
       destroy() { s.destroy(); if (inside.s) inside.s.destroy(); holds.clear(); },
+      // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
+      setSheet(key) {
+        o.sheet = key;
+        s.setTexture(key, s.frame ? s.frame.name : 0);
+        if (inside.s) inside.s.setTexture(key, inside.s.frame ? inside.s.frame.name : 0);
+      },
     };
   }
 

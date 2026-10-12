@@ -100,7 +100,7 @@ export const INTERFACE_ACTIONS = new Set([
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
   // réglages de quantité (Moulin, achats), fiche d'un membre de la famille
   'stage-goto', 'stage-pan', 'stage-pan-down', 'market-locked', 'plant-all-open', 'aller', 'comptoir-tab', 'inv-tab',
-  'member-edit', 'member-genre', 'member-teint', 'member-style', 'wake-more',
+  'member-edit', 'member-genre', 'member-teint', 'member-style', 'member-perso', 'wake-more',
   'family-edit', 'family-help', 'pets-edit', 'menu-toggle', 'book-open', 'book-next', 'book-prev', 'book-goto', // essai : le Livre de recette en livre
   'inv-item', // Inventaire : fiche d'un objet
   'shop-item', 'market-help', 'market-subtab', // Marché : fiche d'un article, aide de l'onglet // Famille : mode modification, aide de la ration quotidienne

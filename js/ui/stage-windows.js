@@ -5,7 +5,7 @@ import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { familyNameHtml } from './depart.js';
 import { awakeRequired } from '../engine/clock.js';
-import { planMeal } from '../engine/family.js';
+import { memberPerso, planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
@@ -34,7 +34,7 @@ import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
 import { renderTechno } from './techno.js';
-import { memberNameHtml, renderFamille } from './famille.js';
+import { memberNameHtml, persoSrc, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
@@ -449,9 +449,8 @@ export function renderIndicators() {
   const el = document.getElementById('player-card');
   morph(el,
     `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
-      // le portrait de la fermière de la carte (scripts/personnage/fermier.py) ; le choix du
-      // personnage est désactivé pour l'instant
-      '<img class="player-portrait" src="assets/portrait_fermiere.png" alt="" width="40" height="40">' +
+      // le portrait du personnage du joueur (version 1.17 : celui choisi dans sa fiche)
+      `<img class="player-portrait" src="${m && memberPerso(m) ? persoSrc(memberPerso(m)) : 'assets/portrait_fermiere.png'}" alt="" width="48" height="48">` +
       `<span class="player-name">${m ? memberNameHtml(m.id) : ''}</span></button>` +
     `<span class="player-stats">` +
     `<button type="button" class="player-line level-ind" data-action="open-levels" title="${niveau}" aria-label="${niveau}"><span aria-hidden="true">⭐</span><span class="num" aria-hidden="true">Niv. ${p.niveau}</span><span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>` +

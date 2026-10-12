@@ -1992,7 +1992,7 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
   cursor: pointer;
 }
 .player-head { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 0 !important; }
-.player-portrait { display: block; width: 40px; height: 40px; image-rendering: pixelated; }
+.player-portrait { display: block; width: 48px; height: 48px; image-rendering: pixelated; }
 .player-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player-line {
   position: relative;
@@ -2220,3 +2220,13 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
   background: var(--bg);
   font-weight: 800; font-size: 1.1rem;
 }
+
+/* ---------- Version 1.17 : les adultes ont l'apparence d'un personnage du catalogue ----------
+   Portraits 16 × 16 agrandis sans flou (assets/portraits/perso_XX.png). */
+.portrait-px { display: block; flex: none; width: 48px; height: 48px; image-rendering: pixelated; border-radius: 6px; background: #e6d6b4; }
+.member-row .portrait-px, .setup-member .portrait-px { width: 40px; height: 40px; }
+.member-preview .portrait-px { width: 64px; height: 64px; }
+.perso-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; max-height: 240px; overflow-y: auto; padding: 2px; }
+.perso-btn { padding: 2px; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.perso-btn img { width: 32px; height: 32px; image-rendering: pixelated; }
+.perso-btn.active { outline: 3px solid var(--color-sun); outline-offset: 0; }

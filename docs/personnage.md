@@ -20,11 +20,16 @@ carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; s
 paille, casquette, bonnet, béret, bandeau, fleur ; détails : barbe, moustache, lunettes, taches de
 rousseur, boucles d'oreilles ; habits unis, à rayures, à carreaux ou à pois.
 
-**Pour l'instant, c'est toujours la fermière** (`PERSONNAGE` dans `js/farm-stage.js`) : sur la
-carte, et son portrait dans la carte du joueur, en haut à gauche. Le choix du personnage
-principal (⭐) est masqué à l'écran du début de partie (`CHOIX_PRINCIPAL` dans
-`js/ui/depart.js`) : c'est le premier adulte. Trois vues : `bas` (de face), `haut` (de dos),
-`cote` (profil tourné vers la droite, retourné pour la gauche).
+**Les adultes de la famille** (version 1.17) ont l'apparence d'un de ces 50 personnages : dans la
+fiche d'un adulte (✏️), la grille « Personnage » remplace le sexe, la coiffure et la teinte des
+emojis (`member.perso`, 1 à 50 ; sans choix, `PERSO_DEFAUT` selon le sexe : 1 pour une femme, 7
+pour un homme). Leur portrait s'affiche dans l'écran de départ, la Famille et la carte du joueur ;
+**sur la carte de la ferme, c'est celui du personnage principal** (le premier adulte : son choix
+est masqué à l'écran de départ, `CHOIX_PRINCIPAL` dans `js/ui/depart.js`) :
+`modèle.perso`, sa planche est chargée à la demande (`syncPerso`). Les enfants gardent leurs
+emojis.
+
+Avant que la planche choisie soit chargée, la carte montre la fermière.
 
 | Cases | Pour |
 |---|---|

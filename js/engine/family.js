@@ -61,6 +61,16 @@ export function memberStyle(m) {
   return m && Number.isInteger(m.style) && m.style >= 0 && m.style < DATA.FAMILY.PROFIL.STYLES.adulte.length ? m.style : 0;
 }
 
+// Version 1.17 : l'apparence d'un adulte, un des personnages du catalogue (1 à PERSOS :
+// assets/portraits/perso_XX.png, et sa planche pour la carte). Sans choix (ancienne partie,
+// nouvel adulte), celui de PERSO_DEFAUT selon son sexe. 0 pour un enfant (portrait emoji).
+export function memberPerso(m) {
+  if (!m || m.enfant) return 0;
+  const P = DATA.FAMILY.PROFIL;
+  if (Number.isInteger(m.perso) && m.perso >= 1 && m.perso <= P.PERSOS) return m.perso;
+  return P.PERSO_DEFAUT[m.genre] || P.PERSO_DEFAUT[P.GENRES[0]];
+}
+
 // Prénom affiché d'un membre : celui choisi, sinon son rôle. Texte brut : à
 // passer par escapeHtml() avant de l'écrire dans une page.
 export function memberName(state, id) {
@@ -76,7 +86,7 @@ export function memberPortrait(state, id) {
   return portraitEmoji(m.enfant, m.genre, m.teint, memberStyle(m));
 }
 
-// Change le profil d'un membre : { prenom, genre, teint, style }. Un champ absent
+// Change le profil d'un membre : { prenom, genre, teint, style, perso } (perso : adultes seulement). Un champ absent
 // garde sa valeur. Tout est vérifié avant de rien modifier : prénom de 1 à
 // PRENOM_MAX caractères (nettoyé), genre 'f' ou 'm', teinte entière de 0 à 5.
 export function setMemberProfile(state, id, profil) {
@@ -102,11 +112,16 @@ export function setMemberProfile(state, id, profil) {
     if (!Number.isInteger(profil.style) || profil.style < 0 || profil.style >= P.STYLES.adulte.length) return fail('Coiffure inconnue.');
     next.style = profil.style;
   }
+  if (profil.perso !== undefined) {
+    if (m.enfant || !Number.isInteger(profil.perso) || profil.perso < 1 || profil.perso > P.PERSOS) return fail('Personnage inconnu.');
+    next.perso = profil.perso;
+  }
   m.prenom = next.prenom;
   m.genre = next.genre;
   m.teint = next.teint;
   if (next.style) m.style = next.style;
   else delete m.style;
+  if (next.perso) m.perso = next.perso;
   return { ok: true, id: m.id };
 }
 

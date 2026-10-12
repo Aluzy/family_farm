@@ -9,7 +9,7 @@ import {
   advanceHours, applyMealHappiness, averageHappiness, buyInTown, goOut, goToTownMarket,
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
-import { comptaRecente, COMPTA_MAX, earn, noteCompta } from '../js/engine/index.js';
+import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -9084,6 +9084,22 @@ test('Comptes : chaque gain et dépense est noté ; même libellé le même jour
   const vieille = createInitialState();
   delete vieille.compta;
   assertEqual(comptaRecente(vieille).lignes, [], 'ancienne sauvegarde : rien de noté');
+});
+
+test('Personnages (version 1.17) : un adulte choisit un des 50 personnages ; défaut selon son sexe ; pas pour un enfant', () => {
+  const s = createInitialState();
+  const P = DATA.FAMILY.PROFIL;
+  const adulte = s.famille.membres.find((m) => !m.enfant);
+  const enfant = s.famille.membres.find((m) => m.enfant);
+  assertEqual(memberPerso(adulte), P.PERSO_DEFAUT[adulte.genre], 'pas encore choisi : le défaut');
+  assertEqual(memberPerso(enfant), 0, 'un enfant garde son emoji');
+  assert(setMemberProfile(s, adulte.id, { perso: 23 }).ok);
+  assertEqual(memberPerso(adulte), 23);
+  assertEqual(setMemberProfile(s, adulte.id, { perso: P.PERSOS + 1 }).error, 'Personnage inconnu.');
+  assertEqual(setMemberProfile(s, adulte.id, { perso: 0 }).error, 'Personnage inconnu.');
+  assertEqual(setMemberProfile(s, enfant.id, { perso: 3 }).error, 'Personnage inconnu.');
+  assert(setMemberProfile(s, adulte.id, { prenom: 'Lou' }).ok);
+  assertEqual(memberPerso(adulte), 23, 'un autre changement garde le personnage');
 });
 
 export const results = runTests();
