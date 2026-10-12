@@ -396,3 +396,25 @@ for (x, y), (t, d) in crayon.items():
     else:
         cv[y][x] = 'P' if d < 0.6 else 'Q'
 ICONS['✏'] = rows(cv)
+
+# ---------------------------------------------------------------- 🗺 carte (menu : retour à la carte de la ferme)
+# Une carte dépliée en trois volets (plis en zigzag) : prés, rivière et un chemin pointillé
+# jusqu'à la croix rouge.
+ICONS['🗺'] = [
+    '................',
+    '.KKKKK....KKKKK.',
+    '.KmmgKKKKKKgmmK.',
+    '.KmgggKeeeKgbbK.',
+    '.KgggbKeEtKbbgK.',
+    '.KggbbKetEKbggK.',
+    '.KgbbgKeeeKggmK.',
+    '.KbbggKetEKgrgK.',
+    '.KbgmgKEteKrgrK.',
+    '.KbgggKeeEKgrgK.',
+    '.KgmggKetEKggmK.',
+    '.KggmgKEteKgmgK.',
+    '.KKKKKKeeeKKKKK.',
+    '......KKKKK.....',
+    '................',
+    '................',
+]

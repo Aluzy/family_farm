@@ -448,6 +448,9 @@ export function renderTabbar() {
   morph(
     nav,
     NAV_TABS.map((id) => TABS.find((t) => t.id === id))
+      // « Ferme » ramène sur la carte de la ferme : son bouton est une carte (sans Phaser, la
+      // Ferme reste une liste et garde sa maison)
+      .map((t) => (t.id === 'ferme' && stageUsable() ? { ...t, label: 'Carte de la ferme', icon: '🗺️' } : t))
       // FLU-08 : le Marché est là dès le départ (verrouillé) : les onglets ne bougent jamais
       .filter((t) => tabAvailable(t.id) || t.id === 'comptoir')
       .map((t) => {
