@@ -118,8 +118,8 @@ function watchTechPoints() {
   if (!pt || !pt.annonces || !pt.annonces.length) return;
   const premier = pt.gagnes > 0 && pt.gagnes === pt.annonces.reduce((t, a) => t + a.pt, 0);
   for (const a of pt.annonces.splice(0)) showToast(`🔬 +${formatNumber(a.pt)} PT : ${a.raison}`);
-  // FLU-28 : le premier point ouvre l'onglet Techno de la Maison
-  if (premier) notify('🌳 L\'Arbre des technologies est ouvert : dépense tes points dans la Maison, onglet Techno.', 'info', { fenetre: 'maison', onglet: 'techno' });
+  // FLU-28 : le premier point fait apparaître l'Arbre des technologies dans le menu latéral
+  if (premier) notify('🌳 L\'Arbre des technologies est ouvert : dépense tes points depuis le menu (🌳).', 'info', { fenetre: 'techno' });
   persistState();
 }
 

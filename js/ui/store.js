@@ -20,8 +20,9 @@ export const TABS = [
   { id: 'notifications', label: 'Notifications', icon: '✉️' },
 ];
 
-// Barre de menu du bas : quatre destinations, côte à côte.
-export const NAV_TABS = ['ferme', 'inventaire', 'comptoir', 'notifications'];
+// Menu latéral : les destinations, les unes au-dessus des autres (l'Arbre des technologies
+// n'y apparaît qu'au premier point de technologie, FLU-28).
+export const NAV_TABS = ['ferme', 'inventaire', 'comptoir', 'techno', 'notifications'];
 
 // Écrans ouverts depuis la Ferme (raccourcis en haut de l'écran Ferme). Ils
 // restent des onglets pour le moteur et le suivi, mais n'ont pas d'icône en bas :
