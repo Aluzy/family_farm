@@ -88,14 +88,15 @@ function moulinSurPlace() {
 // Où se règle un appareil (panne, entretien) : sa propre carte.
 function lieuAppareil(id) {
   const d = id ? findDevice(state, id) : null;
-  if (!d) return { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' };
+  const eau = isOwned(starterOf(state, 'pompe')) ? { fenetre: 'eau' } : { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' };
+  if (!d) return eau;
   if (d.type === 'panneau') return { ecran: 'panneaux', ancre: `dev-${d.id}` };
   if (d.type === 'batterie') return { ecran: 'batteries', ancre: `dev-${d.id}` };
   if (d.type === 'moulin' && moulinSurPlace()) return { fenetre: 'moulin', ancre: 'moulin-appareil' };
   if (d.type === 'moulin' || d.type === 'presse') return { fenetre: 'maison', onglet: 'recettes', ancre: `station-${d.type}` };
   if (d.type === 'frigo') return { fenetre: 'maison', onglet: 'batiments', ancre: 'dev-frigo' };
-  if (d.type === 'pompe') return { fenetre: 'maison', onglet: 'batiments', ancre: 'dev-pompe' };
-  return { fenetre: 'maison', onglet: 'batiments', ancre: 'bat-eau' };
+  if (d.type === 'pompe') return { fenetre: 'eau', ancre: 'dev-pompe' };
+  return eau;
 }
 
 // Fenêtre de la carte où ranger une cible (pour les pastilles des étiquettes).
@@ -223,7 +224,8 @@ function allerA(c) {
     // Écran de détail : au retour, on retombe sur Maison › Installations.
     setActiveTab('ferme');
     setMaisonTab('batiments');
-    setStageReturn(stageUsable() ? 'maison' : null);
+    // au retour d'un écran de détail (panneaux, batteries) : la fenêtre Énergie
+    setStageReturn(stageUsable() ? (STAGE_WINDOWS.energie.ok() ? 'energie' : 'maison') : null);
     setStageWindow(null);
     setStageInterior(null);
     setEcranFerme(c.ecran);

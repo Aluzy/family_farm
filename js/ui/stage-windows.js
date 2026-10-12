@@ -27,7 +27,8 @@ import {
   cibleAttrs, heureDuJour, horlogeEmoji, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
 } from './stage.js';
 import {
-  backToFerme, deviceName, renderDeviceScreen, renderEnergieEau, renderFerme, renderPotager, renderZone2,
+  backToFerme, deviceName, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
+  renderInstallationsMaison, renderPotager, renderZone2,
 } from './ferme.js';
 import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderSerre, renderVerger } from './serre-verger-frigo.js';
@@ -116,7 +117,7 @@ export function setAncreVoulue(value) {
 export const MAISON_TABS = [
   // FLU-04 : `court` s'affiche sur l'onglet, `label` reste le nom complet (infobulle, lecteurs d'écran)
   { id: 'recettes', label: 'Livre de recette', court: 'Recettes', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
-  { id: 'batiments', label: 'Installations', court: 'Énergie', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
+  { id: 'batiments', label: 'Installations', court: 'Installations', icon: '🏗️', ok: () => true, corps: () => renderBatiments() },
   // version 1.14 : le commerce du niveau 10
   { id: 'commerce', label: 'Commerce', icon: '🏪', ok: () => isUnlocked(state, 'commerce'), corps: () => renderCommerce() },
 ];
@@ -137,7 +138,7 @@ function maisonCurrentTab() {
 // de dessin sur la carte : ateliers (Four, Cuisine, Presse), énergie et eau,
 // Silo. L'ancre de l'eau sert à l'indicateur 💧 du bandeau.
 function renderBatiments() {
-  return `${renderAteliers()}<div id="bat-eau" class="ancre">${renderEnergieEau()}</div>${isUnlocked(state, 'silo') ? renderSilo() : ''}`;
+  return `${renderAteliers()}<div id="bat-eau" class="ancre">${renderInstallationsMaison()}</div>${isUnlocked(state, 'silo') ? renderSilo() : ''}`;
 }
 
 // Version 1.1.1 : les animaux s'achètent au Marché ; l'Étable y mène par un raccourci.
@@ -225,6 +226,16 @@ export const STAGE_WINDOWS = {
     nom: 'Marché', icone: '🧺', ok: () => tabAvailable('comptoir'), bois: true, flottante: true,
     enTete: () => marketTabsHtml(),
     corps: () => renderComptoir(true),
+  },
+  // Énergie (un appui sur les panneaux solaires du toit) et Eau (sur la pompe du puits ou la
+  // citerne) : leurs appareils, dès qu'ils sont achetés (les achats se font dans la Maison).
+  energie: {
+    nom: 'Énergie', icone: '⚡', ok: () => isOwned(starterOf(state, 'panneau')), bois: true,
+    corps: () => renderEnergieFenetre(),
+  },
+  eau: {
+    nom: 'Eau', icone: '💧', ok: () => isOwned(starterOf(state, 'pompe')) || isOwned(starterOf(state, 'reservoir')), bois: true,
+    corps: () => renderEauFenetre(),
   },
   // Arbre des technologies (menu latéral, dès le premier point) : dans le cadre bois.
   techno: {
