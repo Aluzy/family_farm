@@ -1,0 +1,61 @@
+# Le personnage de la carte (version provisoire)
+
+Tout est dans `js/fermier.js`, chargé avant `js/farm-stage.js`. Le fichier et son image sont
+facultatifs : sans eux, la carte s'affiche comme avant.
+
+## L'image
+
+`assets/fermier.png` : cases de 16 × 32 px, 8 par rangée ; leurs noms, dans l'ordre, sont dans
+`assets/fermier.json`. Les deux fichiers sont écrits par `scripts/personnage/fermier.py`
+(`--apercu` écrit aussi une planche agrandie). Trois vues : `bas` (de face), `haut` (de dos),
+`cote` (profil tourné vers la droite, retourné pour la gauche).
+
+| Cases | Pour |
+|---|---|
+| `idle_<vue>_0..1` | debout, il respire |
+| `marche_<vue>_0..3` | marcher (l'image suit la distance parcourue) |
+| `houe_<vue>_0..3` | labourer ; la case change au coup (image 3) |
+| `plante_<vue>_0..2` | planter (et récolter) |
+| `arrose_<vue>_0..2` | arroser |
+| `panier_<vue>_0..3` | marcher avec le panier d'œufs |
+| `cuisine_0..3`, `frigo_0..2`, `ramasse_0..2` | cuisiner, ouvrir le frigo, ramasser un œuf |
+
+Une vraie planche remplacera celle-ci : il suffit de garder les mêmes noms de cases (ou d'en
+ajouter : le JSON donne l'ordre).
+
+## Ce qu'il fait
+
+- **Le jour** (de 6 h à 21 h 30) il sort de la maison et flâne devant ; le soir il rentre et
+  disparaît derrière la porte.
+- **Les gestes du joueur.** La carte compare deux modèles de vue qui se suivent, le même jour :
+  une case qui devient de la terre (ou redevient de l'herbe), une graine, un arrosage ou une
+  récolte est un geste. Il va à la case (à sa gauche, tourné vers elle) et fait le geste. Le jeu
+  a déjà changé : la carte garde l'ancien dessin de la case (« retenue ») jusqu'au coup de houe
+  ou au geste de la main. Pour un geste sur beaucoup de cases (« Arroser tout », un glissement
+  de houe), il va aux 4 plus proches ; les autres changent en cascade après son dernier geste.
+  Une retenue ne dure jamais plus de 9 s. Une case loin de lui (plus de 24 tuiles de chemin) :
+  il y apparaît directement.
+- **Le matin**, s'il y a eu des œufs, il traverse la ferme jusqu'au Poulailler, les ramasse et
+  revient avec son panier.
+- **Dans la maison** (l'intérieur) : il cuisine devant la Cuisine (ou le Four) tant qu'une
+  préparation est en cours ; quand le contenu du réfrigérateur change, il va l'ouvrir.
+- **Animations réduites** : ni marche ni retenue ; il se pose directement où il travaille.
+
+Le modèle de vue lui donne `jour`, `oeufs` (les œufs de la nuit), `cuisson` (`'cuisine'`,
+`'four'` ou `null`) et `frigo` (les unités au frais), en plus des parcelles.
+
+## Chemin
+
+A\* sur les cases de la carte (8 directions), puis le chemin est tendu (il va tout droit tant
+que rien ne le gêne). Bloqué : les rectangles nommés des bâtiments, l'eau et les pieds des
+arbres (lus par `js/ambient-life.js`, `ground()`). Les zones de culture restent libres.
+
+## Limites
+
+- Image provisoire, dessinée par un script.
+- Il ne voit ni les barrières ni les rochers du décor (comme le chat).
+- Un seul personnage : la famille n'est pas encore sur la carte.
+- Dehors et dans la maison, ce sont deux images : on ne voit jamais les deux à la fois.
+
+Pour les essais : `FarmStage.scene().fermier.info()`, et `.force('oeufs')` l'envoie au
+Poulailler.

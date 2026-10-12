@@ -152,6 +152,9 @@
   // chat.png : le chat de la vie d'ambiance, 8 cases de 16×16 (leur ordre : CAT_FRAMES dans
   // js/ambient-life.js). Sans l'image, pas de chat ; rien d'autre ne change.
   const CAT_FRAME = { frameWidth: 16, frameHeight: 16 };
+  // fermier.png : le personnage (js/fermier.js), cases de 16×32 ; leurs noms dans fermier.json
+  // (scripts/personnage/fermier.py). Sans eux, pas de personnage ; rien d'autre ne change.
+  const FERMIER_FRAME = { frameWidth: 16, frameHeight: 32 };
   // Les bêtes de l'Étable et du Poulailler, elles aussi animées par la vie d'ambiance : une
   // planche par espèce (fichier, taille des cases ; leur ordre : HERD dans
   // js/ambient-life.js). Une espèce sans planche n'est pas dessinée.
@@ -321,6 +324,8 @@
         L.image('panneau_ville', v('panneau_ville.png'));
         L.image('silo', v('silo.png'));
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
+        L.spritesheet('fermier', v('fermier.png'), FERMIER_FRAME);
+        L.json('fermier_cases', v('fermier.json'));
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
         L.spritesheet(ROOF_PANELS.key, v(ROOF_PANELS.file), ROOF_PANELS.frame);
@@ -387,6 +392,20 @@
               herd: Object.fromEntries(Object.keys(HERD_SHEETS).filter((kind) => this.has(kind)).map((kind) => [kind, kind])),
             });
           } catch (e) { console.warn('[FarmStage] vie d\'ambiance indisponible', e); }
+        }
+        // Le personnage (js/fermier.js, facultatif) : il refait sur la carte les gestes du joueur.
+        this.fermier = null;
+        const cases = this.cache.json.get('fermier_cases');
+        if (global.Fermier && this.has('fermier') && cases && Array.isArray(cases.frames)) {
+          try {
+            this.fermier = global.Fermier.attach(this, {
+              sheet: 'fermier', frames: cases.frames, world: this.world, objects: this.objects, reduced: reducedMotion,
+              ground: () => (this.ambient && this.ambient.ground ? this.ambient.ground() : null),
+              cols: () => this.grid.cols,
+              outside: () => !this.room,
+              resync: () => { if (this.rawModel) this.sync(this.rawModel); },
+            });
+          } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
         }
         this.ready = true;
         if (lastModel) this.sync(lastModel, true);
@@ -1061,6 +1080,7 @@
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false); }
         // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
         if (this.ambient && !this.room) this.ambient.update(delta);
+        if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
         if (!this.room) this.placeLabels();
         this.reportView();
       }
@@ -1449,6 +1469,10 @@
 
       sync(model, force) {
         if (!this.ready) return;
+        // Le personnage compare ce modèle au précédent : une case qu'il n'a pas encore
+        // travaillée garde son ancien dessin (voir js/fermier.js).
+        this.rawModel = model;
+        if (this.fermier) model = this.fermier.filter(model);
         const sfx = SFX;
         const rebuild = force || this.sfx !== sfx;   // premier affichage ou affichage forcé
         this.sfx = sfx;
