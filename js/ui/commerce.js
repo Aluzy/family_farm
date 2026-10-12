@@ -11,6 +11,7 @@ import { refresh } from './render.js';
 import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
 import { canPay, costLabel } from './common.js';
+import { helpBtn } from './aide.js';
 
 /* ---------- version 1.14 (v2, lot 10) : le commerce (Maison › Commerce) ---------- */
 
@@ -71,8 +72,8 @@ function currentCard() {
   const n = commerceBatches(state);
   return `
     <div class="card">
-      <span class="card-title"><span><span aria-hidden="true">${def.icone}</span> ${def.nom} · niveau ${c.niveau}</span></span>
-      <span class="muted">Chaque nuit, après le repas de la famille, ${recette(def)}. Ni énergie ni électricité ; 1 XP par pièce.</span>
+      <span class="card-title"><span><span aria-hidden="true">${def.icone}</span> ${def.nom} · niveau ${c.niveau}</span>${helpBtn('commerce')}</span>
+      <span class="muted">${recette(def)}</span>
       <div class="row qty-row">
         <span>Par nuit : <strong class="num">${formatNumber(c.quota)}</strong> / ${formatNumber(cap)} ${def.produits}</span>
         <button type="button" class="btn small" data-action="commerce-quota-dec"${c.quota > 0 ? '' : ' disabled'} aria-label="Un de moins">−</button>
@@ -90,7 +91,7 @@ export function renderCommerce() {
   const types = Object.keys(DATA.COMMERCE.TYPES);
   if (!state.commerce.type) {
     return `
-      <p class="muted">Un commerce transforme chaque nuit une partie de la production de la ferme et la vend tout seul, sans passer par le Marché. Choisis-en un : le choix est définitif (en changer coûte ${formatCoins(DATA.COMMERCE.CHANGER)} 💰).</p>
+      <div class="section-head"><h3>Choisir un commerce</h3>${helpBtn('commerce')}</div>
       ${types.map(choiceCard).join('')}`;
   }
   return `

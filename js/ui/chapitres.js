@@ -9,6 +9,7 @@ import { state } from './store.js';
 import { tel } from './consent.js';
 import { registerActions } from './actions.js';
 import { closeModal } from './common.js';
+import { helpBtn } from './aide.js';
 
 /* ---------- Lot 9 : chapitres, autonomie, graphique ---------- */
 
@@ -60,17 +61,14 @@ export function renderChapterBanner() {
   if (c.fini) {
     return `
     <div class="card chapter-card done">
-      <span class="card-title"><span>🏆 Campagne terminée</span><span class="chip">Mode libre</span></span>
-      <span class="muted">La famille est autonome. Continue de monter en niveau, à ton rythme.</span>
+      <span class="card-title"><span>🏆 Campagne terminée</span><span class="chips"><span class="chip">Mode libre</span>${helpBtn('chapitres')}</span></span>
     </div>`;
   }
   const p = chapterProgress(state);
   return `
     <div class="card chapter-card">
-      <span class="card-title"><span>${p.icone} ${p.titre}</span><span class="chip">Chapitre ${p.chapitre} / ${chapterCount()}</span></span>
-      <span class="muted">${p.intro}</span>
+      <span class="card-title"><span>${p.icone} ${p.titre}</span><span class="chips"><span class="chip">${p.chapitre} / ${chapterCount()}</span><span class="chip" title="Récompense du chapitre">⭐ ${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[p.chapitre - 1] || 0)} XP</span>${helpBtn('chapitres')}</span></span>
       <ul class="objectives">${p.objectifs.map(objectiveHtml).join('')}</ul>
-      <span class="muted">Récompense : ⭐ ${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[p.chapitre - 1] || 0)} XP</span>
     </div>`;
 }
 

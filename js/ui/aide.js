@@ -102,7 +102,7 @@ const HELP = {
     role: 'Des légumes à l\'abri, et trois cultures de rente (cacao, vanille, café) qu\'on ne trouve qu\'ici.',
     conso: `Eau par arrosage : ${cropsLine('serre', 'eau')}.`,
     prod: `${cropsLine('serre', 'recolte')}. Cacao, vanille et café ne se mangent pas : ils servent à la vente et aux recettes de luxe.`,
-    note: `Construction : ${costLabel(DATA.SERRE.CONSTRUCTION)}. Parcelles par niveau : ${listNum(DATA.SERRE.PARCELLES, '')}.`,
+    note: `Construction : ${costLabel(DATA.SERRE.CONSTRUCTION)}. Parcelles par niveau : ${listNum(DATA.SERRE.PARCELLES, '')} ; agrandir : ${listNum(DATA.SERRE.COUT.slice(1), '💰')}.`,
   }),
   silo: () => ({
     nom: 'Silo',
@@ -169,6 +169,34 @@ const HELP = {
     prod: `${stationRecipesLine('presse')}.`,
     note: 'Sans énergie, la préparation se met en pause.',
   }),
+  ville: () => {
+    const M = DATA.VILLE.MARCHE;
+    return {
+      nom: 'Ville',
+      icone: '🏙️',
+      lignes: [
+        ['Bonheur', 'Il monte avec les plats cuisinés et les sorties ; il baisse un peu chaque soir de repas cru. Plus la famille est heureuse, moins tes actions coûtent d\'énergie.'],
+        ['Sorties', `Toute la famille part ; le temps passe pendant la sortie (retour avant ${DATA.TIME.NIGHT_HOUR} h). Chaque sortie se fait une fois par jour. Les voyages sont plus longs et plus chers.`],
+        ['Marché de la ville', `Poisson, miel, fromage d'alpage, sucre et épices : introuvables au marché de la ferme. Un adulte y va (${M.HEURES} h aller-retour, ${formatNumber(M.PRIX)} 💰 de bus) ; le marché reste ouvert jusqu'au soir.`],
+      ],
+    };
+  },
+  chapitres: () => {
+    const c = state.campagne;
+    const lignes = [['Chapitres', `La campagne compte ${chapterCount()} chapitres. Remplis tous les objectifs d'un chapitre pour passer au suivant et gagner son XP.`]];
+    if (!c.fini) lignes.push(['Ce chapitre', chapterProgress(state).intro]);
+    else lignes.push(['Mode libre', 'La famille est autonome. Continue de monter en niveau, à ton rythme.']);
+    return { nom: 'Chapitres', icone: '📜', lignes };
+  },
+  commerce: () => ({
+    nom: 'Commerce',
+    icone: '🏪',
+    lignes: [
+      ['Rôle', 'Un commerce transforme chaque nuit, après le repas de la famille, une partie de la production de la ferme et la vend tout seul, sans passer par le Marché.'],
+      ['Coût', 'Ni énergie ni électricité ; chaque pièce vendue rapporte 1 XP.'],
+      ['Choix', `Le premier choix est gratuit. En changer coûte ensuite ${formatNumber(DATA.COMMERCE.CHANGER)} 💰.`],
+    ],
+  }),
   frigo: () => ({
     nom: 'Réfrigérateur',
     role: `Les aliments rangés au frais ne vieillissent plus, tant qu'il est alimenté. Capacité : ${DATA.FRIGO.CAPACITE.join(' / ')} unités selon le niveau ; plein, « Ranger » est grisé et « Tout ranger » range d'abord ce qui périme le plus tôt.`,
@@ -191,12 +219,14 @@ function openHelpModal(id) {
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="help-title" data-stop-propagation>
-        <div class="help-head">${artPx([sym])}<h2 id="help-title">${h.nom}</h2></div>
+        <div class="help-head">${h.icone ? `<span class="help-emoji" aria-hidden="true">${h.icone}</span>` : artPx([sym])}<h2 id="help-title">${h.nom}</h2></div>
         <ul class="help-list">
-          <li><strong>Rôle</strong>${h.role}</li>
+          ${h.lignes
+            ? h.lignes.map(([titre, texte]) => `<li><strong>${titre}</strong>${texte}</li>`).join('')
+            : `<li><strong>Rôle</strong>${h.role}</li>
           <li><strong>Consommation</strong>${h.conso}</li>
           <li><strong>Production</strong>${h.prod}</li>
-          ${h.note ? `<li><strong>Bon à savoir</strong>${h.note}</li>` : ''}
+          ${h.note ? `<li><strong>Bon à savoir</strong>${h.note}</li>` : ''}`}
         </ul>
         <button type="button" class="btn primary" data-action="close-modal" id="help-close">Compris</button>
       </div>
