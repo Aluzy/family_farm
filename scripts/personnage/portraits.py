@@ -1,4 +1,6 @@
-# Portraits 16 × 16 des personnages, dérivés du portrait modèle (assets/portraits/modele.png :
+# Portraits 16 × 16 des personnages, dérivés du portrait modèle. Cinq personnages nommés
+# (PERSONNAGES, plus bas) et les 50 du catalogue (scripts/personnage/catalogue.py,
+# perso_01 à perso_50) (assets/portraits/modele.png :
 # la jeune femme aux cheveux châtains et au chemisier vert). Chaque variante part de la grille
 # du modèle et la transforme : couleurs (peau, cheveux, vêtement), coupe de cheveux, barbe,
 # lunettes, taches de rousseur, chapeau ou casquette, motif du vêtement. Le contour est
@@ -10,6 +12,9 @@ import os
 import sys
 
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import catalogue  # noqa: E402  (les 50 personnages du catalogue)
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 DIR = os.path.join(ROOT, 'assets', 'portraits')
@@ -306,6 +311,45 @@ def image(g, pal):
     return im
 
 
+COUPES = {
+    'longs': lambda g: g,
+    'mi': lambda g: cheveux_courts(g, 8),
+    'carre': lambda g: cheveux_courts(g, 9),
+    'courts': lambda g: cheveux_courts(g, 6),
+    'frange': lambda g: frange(g),
+    'frange_carre': lambda g: frange(cheveux_courts(g, 9)),
+    'couettes': lambda g: couettes(g),
+    'chignon': lambda g: chignon(cheveux_courts(g, 8)),
+    'chauve': lambda g: cheveux_courts(chauve(g), 6),
+}
+COUVRE_CHEFS = {None: lambda g: g, 'paille': chapeau, 'casquette': casquette, 'bonnet': bonnet,
+                'beret': beret, 'bandeau': bandeau, 'fleur': fleur}
+DETAILS = {'barbe': barbe, 'moustache': moustache, 'lunettes': lunettes, 'rousseur': rousseur, 'boucles': boucles}
+MOTIFS = {None: lambda g: g, 'rayures': rayures, 'carreaux': carreaux, 'pois': pois}
+
+
+def portrait_catalogue(base, pal0, d):
+    """Le portrait d'un personnage du catalogue (scripts/personnage/catalogue.py)."""
+    g = COUPES[d['coupe']](copie(base))
+    g = COUVRE_CHEFS[d['chapeau']](g)
+    for x in d['details']:
+        g = DETAILS[x](g)
+    g = MOTIFS[d['motif']](g)
+    g = contour(g)
+    pal = dict(pal0)
+    pal.update(catalogue.PEAU[d['peau']]); pal.update(catalogue.CHEVEUX[d['cheveux']]); pal.update(catalogue.HABITS[d['habit']]); pal.update(EXTRA)
+    a = d['accessoire']
+    pal.update({'C': a, 'D': catalogue.fonce(a), 'W': a, 'X': catalogue.fonce(a), 'V': a, 'H': a, 'F': a, 'B': a,
+                'Y': (236, 200, 60)})
+    if d['chapeau'] == 'fleur' and a in (catalogue.ACCESSOIRES['jaune'], catalogue.ACCESSOIRES['blanc']):
+        pal['Y'] = (232, 120, 60)                       # le cœur de la fleur
+    if d['motif'] in ('pois', 'carreaux'):
+        pal['P'] = (200, 60, 60) if d['habit'] == 'blanc' else (244, 240, 228)
+    h = catalogue.CHEVEUX[d['cheveux']]
+    pal['q'] = h['b']; pal['Q'] = h['d']                # barbe et moustache : la couleur des cheveux
+    return image(g, pal)
+
+
 def main():
     base, pal0 = lire_modele()
     images = [('modele', image(base, pal0))]
@@ -316,12 +360,18 @@ def main():
         im = image(g, pal)
         im.save(os.path.join(DIR, f'{nom}.png'))
         images.append((nom, im))
+    for nom, d in catalogue.personnages():
+        im = portrait_catalogue(base, pal0, d)
+        im.save(os.path.join(DIR, f'{nom}.png'))
+        images.append((nom, im))
     print(f'assets/portraits : {len(images) - 1} portraits dérivés du modèle')
     if '--apercu' in sys.argv:
         S, M = 10, 8
-        sheet = Image.new('RGBA', (len(images) * (N * S + M) + M, N * S + 2 * M), (230, 214, 180, 255))
+        cols = 14
+        rows = (len(images) + cols - 1) // cols
+        sheet = Image.new('RGBA', (cols * (N * S + M) + M, rows * (N * S + M) + M), (230, 214, 180, 255))
         for i, (_, im) in enumerate(images):
-            sheet.alpha_composite(im.resize((N * S, N * S), Image.NEAREST), (M + i * (N * S + M), M))
+            sheet.alpha_composite(im.resize((N * S, N * S), Image.NEAREST), (M + (i % cols) * (N * S + M), M + (i // cols) * (N * S + M)))
         sheet.save(os.path.join(ROOT, 'apercu_portraits.png'))
 
 

@@ -11,6 +11,15 @@ px, 8 par rangée), `assets/<nom>.json` (le nom de chaque case, dans l'ordre) et
 `scripts/personnage/fermier.py` (`--apercu` écrit aussi les planches agrandies) ; les deux
 planches ont les mêmes cases, seules les couleurs et le style changent.
 
+**Le catalogue** : 50 personnages de plus, `perso_01` à `perso_50`, décrits dans
+`scripts/personnage/catalogue.py` (peau, cheveux, coupe, couvre-chef, détails, habit, motif).
+`scripts/personnage/portraits.py` en tire leur portrait 16 × 16 (`assets/portraits/perso_XX.png`),
+`scripts/personnage/fermier.py` leur planche de 70 cases (`assets/personnages/perso_XX.png`, les
+noms des cases, les mêmes pour tous, dans `assets/personnages/cases.json`). Coupes : longs, mi,
+carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; sur la tête : chapeau de
+paille, casquette, bonnet, béret, bandeau, fleur ; détails : barbe, moustache, lunettes, taches de
+rousseur, boucles d'oreilles ; habits unis, à rayures, à carreaux ou à pois.
+
 **Pour l'instant, c'est toujours la fermière** (`PERSONNAGE` dans `js/farm-stage.js`) : sur la
 carte, et son portrait dans la carte du joueur, en haut à gauche. Le choix du personnage
 principal (⭐) est masqué à l'écran du début de partie (`CHOIX_PRINCIPAL` dans
