@@ -216,6 +216,7 @@ function renderPoulaillerWindow() {
 }
 
 // Fenêtres de la carte. Deux tailles seulement : pleine hauteur (`haute`) ou demi-hauteur.
+// Toutes sont dans le cadre bois des cartes (`bois: false` pour s'en passer).
 //   nom      : le lieu, tel qu'il est écrit sur son étiquette ;
 //   detail   : complément du titre (niveau, emplacements) ;
 //   sansTitre: le premier titre du contenu répète le titre de la fenêtre, il est masqué (CSS) ;
@@ -340,7 +341,7 @@ export function renderStageWindow() {
   morph(root, `
     <div class="window-layer${w.flottante ? ' flottante' : ''}">
       <div class="window-backdrop" data-action="stage-close"></div>
-      <section class="stage-window ${w.flottante ? 'flottante' : w.haute ? 'tall' : 'half'}${w.bois ? ' bois' : ''}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
+      <section class="stage-window ${w.flottante ? 'flottante' : w.haute ? 'tall' : 'half'}${w.bois === false ? '' : ' bois'}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
         <header class="window-head">
           ${w.enTete ? `<h2 id="stage-window-title" class="visually-hidden">${w.nom}</h2>${w.enTete()}` : `<h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>`}
           ${stageWindow !== 'chapitres' && !w.enTete ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
