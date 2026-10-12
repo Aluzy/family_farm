@@ -106,7 +106,7 @@ function fridgeAllButton(items) {
   return `<button type="button" class="btn primary inv-all" data-action="fridge-in-all">🧊 Tout ranger au frigo (${formatQty(Math.min(n, room))}${n > room ? ` sur ${formatQty(n)}` : ''})</button>`;
 }
 
-function fridgeSlots() {
+export function fridgeSlots() {
   const f = state.frigo;
   if (!f.construit) {
     return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans les Installations (🏗️, dans le menu)' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;

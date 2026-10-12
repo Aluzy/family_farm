@@ -165,10 +165,16 @@
   // joueur entre dans le bâtiment (modèle.interieur). `zones` = nom des couches d'objets dont
   // le rectangle reçoit les parcelles, `plots` = leur liste dans le modèle, `window` = fenêtre
   // ouverte par une parcelle où il n'y a rien à faire, `building` = bâtiment devant lequel la
-  // vue revient à la sortie.
+  // vue revient à la sortie. `props` = couche d'objets dont chaque rectangle nommé reçoit un
+  // meuble (MEUBLES) : un appui sur le meuble ouvre la fenêtre de ce nom.
   const ROOMS = {
     serre: { key: 'map_serre', json: 'serre_interieur.json', zones: /^serre_zone_(\d+)$/, plots: 'serre', window: 'serre', building: 'serre' },
+    maison: { key: 'map_maison', json: 'maison_interieur.json', props: 'meubles', window: 'maison', building: 'maison' },
   };
+  // Meubles de la maison (scripts/batiments/meubles.py) : posés en bas au centre de leur
+  // rectangle. modèle.meubles[nom] : 0 absent, 1 en filigrane (pas encore construit), 2 construit.
+  const MEUBLES = { four: 'meuble_four.png', cuisine: 'meuble_cuisine.png', frigo: 'meuble_frigo.png' };
+  const MEUBLE_GHOST = 0.35;
   const ROOM_GAP = 64 * T;     // les intérieurs sont posés à droite de la carte, hors de portée de la vue
   const ROOM_SHADE = 0.45;     // assombrissement des emplacements que le joueur n'a pas encore
   const ROOM_FADE_MS = 180;    // fondu à l'entrée et à la sortie
@@ -318,6 +324,7 @@
         }
         L.tilemapTiledJSON(MAP.key, v(MAP.json));
         for (const r of Object.values(ROOMS)) L.tilemapTiledJSON(r.key, v(r.json));
+        for (const [name, file] of Object.entries(MEUBLES)) L.image('meuble_' + name, v(file));
         L.image(MAP.tiles, v(MAP.image));
         for (const a of SUFFIXES) {
           L.image('house_' + a, v('house_' + a + '.png'));
@@ -508,8 +515,18 @@
           const raw = ok ? this.cache.tilemap.get(def.key).data : null;
           if (!(raw && raw.width && raw.height && raw.tilewidth && Array.isArray(raw.layers))) continue;
           const zones = [];
+          const props = [];
+          let vue = null;                            // rectangle « vue » : ce que la vue cadre
           for (const layer of raw.layers) {
-            const m = layer.type === 'objectgroup' ? def.zones.exec(layer.name || '') : null;
+            for (const o of layer.type === 'objectgroup' ? layer.objects || [] : []) {
+              if (o.name === 'vue' && o.width && o.height) vue = { x: x + o.x, y: o.y, w: o.width, h: o.height };
+            }
+            if (def.props && layer.type === 'objectgroup' && layer.name === def.props) {
+              for (const o of layer.objects || []) {
+                if (o.name && o.name !== 'vue' && o.width && o.height) props.push({ name: o.name, x: x + o.x, y: o.y, w: o.width, h: o.height, sprite: null });
+              }
+            }
+            const m = def.zones && layer.type === 'objectgroup' ? def.zones.exec(layer.name || '') : null;
             const o = m ? (layer.objects || []).find((r) => r.width && r.height) : null;
             if (o) {
               zones.push({
@@ -518,7 +535,8 @@
               });
             }
           }
-          if (!zones.length) { console.warn('[FarmStage] ' + def.json + ' : aucune zone de culture, intérieur ignoré'); continue; }
+          if (def.zones && !zones.length) { console.warn('[FarmStage] ' + def.json + ' : aucune zone de culture, intérieur ignoré'); continue; }
+          if (def.props && !props.length) { console.warn('[FarmStage] ' + def.json + ' : aucun meuble, intérieur ignoré'); continue; }
           zones.sort((a, b) => a.n - b.n);
           const slots = [];
           const slotAt = new Map();
@@ -544,10 +562,10 @@
               if (c < c0) c0 = c; if (c > c1) c1 = c; if (r < r0) r0 = r; if (r > r1) r1 = r;
             });
           }
-          const view = c1 >= c0
+          const view = vue || (c1 >= c0
             ? { x: x + c0 * raw.tilewidth, y: r0 * raw.tileheight, w: (c1 - c0 + 1) * raw.tilewidth, h: (r1 - r0 + 1) * raw.tileheight }
-            : { x, y: 0, w, h };
-          const room = { id, def, raw, tex: 'room_' + id, x, y: 0, w, h, view, centre: { x: x + w / 2, y: h / 2 }, slots, slotAt, bg: '#06182a' };
+            : { x, y: 0, w, h });
+          const room = { id, def, raw, tex: 'room_' + id, x, y: 0, w, h, view, centre: { x: x + w / 2, y: h / 2 }, slots, slotAt, props, bg: '#06182a' };
           this.textures.createCanvas(room.tex, w, h);
           this.paintMap(room.tex, raw, w, h, room.bg);
           // Autour de l'intérieur, l'écran prend la couleur du coin de sa carte.
@@ -1283,6 +1301,7 @@
           grid('zone', this.grid, m ? m.plots : [], 1, m ? m.cases || 0 : 0),
         ];
         for (const r of Object.values(this.rooms)) {
+          if (!r.def.plots) continue;                // un intérieur sans parcelles (la maison)
           list.push({
             id: 'interieur-' + r.id, place: null, window: r.def.window, plots: m ? m[r.def.plots] || [] : [],
             slot: (p, i) => i,
@@ -1354,7 +1373,7 @@
           if (p) return { plot: p, place: z.place, open: z.window };
           if (z.zone && this.arable(i)) herbe = { window: z.window, place: z.place };
         }
-        if (this.room) return null;                  // dans un intérieur : rien d'autre à toucher
+        if (this.room) return this.propAt(wx, wy);   // dans un intérieur : ses meubles, rien d'autre
         const label = this.labelAt(wx, wy);
         if (label) return { window: label.window };
         const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom;
@@ -1483,6 +1502,39 @@
         this.placeLabels();
       }
 
+      // Meuble d'un intérieur sous le doigt (zone d'appui élargie à 44 px CSS) : sa fenêtre.
+      propAt(wx, wy) {
+        const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom;
+        let best = null;
+        for (const p of this.room.props || []) {
+          const s = p.sprite;
+          if (!s || !s.visible) continue;
+          const w = Math.max(s.width, min), h = Math.max(s.height, min);
+          const cx = s.x, cy = s.y - s.height / 2;
+          if (Math.abs(wx - cx) <= w / 2 && Math.abs(wy - cy) <= h / 2 && (!best || s.depth > best.depth)) best = s;
+        }
+        return best ? { window: best.getData('meuble') } : null;
+      }
+
+      // Meubles des intérieurs : absents, en filigrane ou construits (modèle.meubles).
+      syncFurniture(meubles) {
+        for (const r of Object.values(this.rooms)) {
+          for (const p of r.props || []) {
+            const st = (meubles && meubles[p.name]) | 0;
+            const key = 'meuble_' + p.name;
+            if (!st || !this.has(key)) {
+              if (p.sprite) { p.sprite.destroy(); p.sprite = null; }
+              continue;
+            }
+            if (!p.sprite) {
+              p.sprite = this.add.image(Math.round(p.x + p.w / 2), p.y + p.h, key).setOrigin(0.5, 1).setDepth(p.y + p.h);
+              p.sprite.setData('meuble', p.name);
+            }
+            p.sprite.setAlpha(st === 1 ? MEUBLE_GHOST : 1);
+          }
+        }
+      }
+
       // Intérieurs : les emplacements que le joueur n'a pas encore sont assombris (sinon rien
       // ne distingue une parcelle vide de la terre du bac), puis la vue entre ou sort selon
       // modèle.interieur.
@@ -1497,6 +1549,7 @@
             for (let i = (model[r.def.plots] || []).length; i < r.slots.length; i++) this.roomShade.fillRect(r.slots[i].x, r.slots[i].y, T, T);
           }
         }
+        this.syncFurniture(model.meubles);
         const want = model.interieur && this.rooms[model.interieur] ? this.rooms[model.interieur] : null;
         if (want !== this.room) this.setRoom(want, force);
       }

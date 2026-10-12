@@ -15,7 +15,7 @@ import { telView } from './consent.js';
 import { safeStorageGet, safeStorageSet } from './storage.js';
 import { morph, refresh, setLastRenderAt } from './render.js';
 import {
-  allerAuLieu, interiorAvailable, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue,
+  allerAuLieu, interiorAvailable, interiorHelp, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue,
   setStageInterior, setStageReturn, setStageWindow, stageInterior, STAGE_WINDOWS, windowLocked,
 } from './stage-windows.js';
 import { renderMoulin } from './cuisine.js';
@@ -290,11 +290,19 @@ export function stageModel() {
   // La citerne (le réservoir), une fois achetée : son tube de niveau, vide (0) à plein (4).
   const cap = tankCapacity(state);
   const citerne = isOwned(starterOf(state, 'reservoir')) ? (cap > 0 ? Math.round((Math.min(state.eauMl, cap) * 4) / cap) : 0) : -1;
+  // Meubles de l'intérieur de la maison : 0 absent (pas encore débloqué), 1 en filigrane (à
+  // construire : un appui ouvre sa fiche), 2 construit.
+  const meuble = (shown, built) => (built ? 2 : shown ? 1 : 0);
+  const meubles = {
+    four: meuble(isUnlocked(state, 'four'), state.stations.four.construit),
+    cuisine: meuble(isUnlocked(state, 'cuisine'), state.stations.cuisine.construit),
+    frigo: meuble(isUnlocked(state, 'frigo'), state.frigo.construit),
+  };
   // Appui long sur la citerne : une bulle dit combien de litres elle contient.
   const citerneTexte = citerne >= 0 ? `💧 ${formatLitres(Math.min(state.eauMl, cap))} / ${formatLitres(cap)}` : '';
   return {
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
-    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte,
+    houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -484,7 +492,7 @@ function renderStageNav(el) {
     const w = STAGE_WINDOWS[stageInterior];
     morph(nav, `<div class="stage-room-bar" role="group" aria-label="${w.nom}">
       <button type="button" class="stage-room-btn" data-action="stage-exit" aria-label="Sortir : retour à la carte" title="Retour à la carte"><span aria-hidden="true">‹</span> Sortir</button>
-      <button type="button" class="stage-room-btn" data-action="stage-open" data-window="${stageInterior}" aria-label="${w.nom} : agrandir, tout arroser, tout récolter" title="Agrandir, tout arroser, tout récolter"><span aria-hidden="true">${w.icone}</span> Gérer</button>
+      <button type="button" class="stage-room-btn" data-action="stage-open" data-window="${stageInterior}" aria-label="${w.nom} : ${interiorHelp(stageInterior)}" title="${interiorHelp(stageInterior)}"><span aria-hidden="true">${w.icone}</span> Gérer</button>
     </div>`);
     return;
   }
