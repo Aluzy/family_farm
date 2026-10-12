@@ -165,6 +165,93 @@ def couettes(g):
     return g
 
 
+def moustache(g):
+    for x in range(4, 9):
+        if g[8][x] in SKIN:
+            g[8][x] = 'q'
+    return g
+
+
+def frange(g):
+    """Une frange sur le front."""
+    for x in range(4, 9):
+        g[3][x] = 'b' if x % 2 else 'c'
+    return g
+
+
+def chignon(g):
+    """Un chignon en haut à droite de la tête."""
+    for (x, y) in ((12, 0), (13, 0), (12, 1), (13, 1), (14, 1), (13, 2), (14, 2)):
+        g[y][x] = 'b' if (x + y) % 2 else 'c'
+    return g
+
+
+def chauve(g):
+    """Le dessus du crâne dégarni : il reste une couronne de cheveux sur les côtés."""
+    for y in range(0, 3):
+        for x in range(N):
+            if g[y][x] in HAIR:
+                g[y][x] = 'e' if y < 2 and 5 <= x <= 8 else 'f'
+    for x in range(3, 13):
+        if g[3][x] in HAIR and 4 <= x <= 10:
+            g[3][x] = 'f'
+    return g
+
+
+def bonnet(g):
+    """Bonnet de laine à revers, sur le haut de la tête."""
+    for y in range(0, 4):
+        for x in range(2, 14):
+            if y == 0 and not 4 <= x <= 11:
+                continue
+            g[y][x] = 'X' if y == 3 else ('W' if (x + y) % 3 else 'X')
+    g[0][3] = 'a'; g[0][12] = 'a'
+    return g
+
+
+def beret(g):
+    """Béret penché vers la droite."""
+    for x in range(4, 14):
+        g[1][x] = 'V'
+        g[2][x] = 'V'
+    for x in range(3, 15):
+        g[2][x] = 'V'
+    g[0][8] = 'V'                                       # la queue du béret
+    return g
+
+
+def bandeau(g):
+    """Bandeau noué dans les cheveux."""
+    for x in range(1, 15):
+        if g[2][x] in HAIR:
+            g[2][x] = 'H'
+    g[3][14] = 'H'
+    g[4][15] = 'H'
+    return g
+
+
+def fleur(g):
+    """Une fleur piquée dans les cheveux, à droite."""
+    for (x, y) in ((11, 1), (13, 1), (12, 0), (12, 2)):
+        g[y][x] = 'F'
+    g[1][12] = 'Y'
+    return g
+
+
+def boucles(g):
+    """Boucles d'oreilles (visibles quand les cheveux sont courts)."""
+    g[9][10] = 'Y'
+    return g
+
+
+def pois(g):
+    for y in range(10, N):
+        for x in range(N):
+            if g[y][x] in 'nm' and (x + 2 * y) % 4 == 0:
+                g[y][x] = 'P'
+    return g
+
+
 # ---------- les personnages ----------
 
 PEAUX = {
