@@ -267,7 +267,7 @@ function openAbsenceModal(r) {
   ];
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="absence-title" data-stop-propagation>
+      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="absence-title" data-stop-propagation>
         <h2 id="absence-title">⏳ Pendant ton absence…</h2>
         <ul class="report-list">${lines.join('')}</ul>
         <button type="button" class="btn primary" data-action="close-modal" id="absence-close">Reprendre</button>
