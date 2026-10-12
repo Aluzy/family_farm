@@ -1,0 +1,67 @@
+{
+ "//": "Planche des bâtiments (scripts/batiments/remaster.py) : nom → coin haut-gauche de la première image, taille d'une image, nombre d'images ; les images d'un bâtiment se suivent vers la droite, à 2 px d'écart. panneaux_toit se pose au point (39, 2) de la maison.",
+ "ecart": 2,
+ "maison": {
+  "x": 0,
+  "y": 0,
+  "w": 96,
+  "h": 96,
+  "images": 1
+ },
+ "etable": {
+  "x": 98,
+  "y": 0,
+  "w": 112,
+  "h": 96,
+  "images": 1
+ },
+ "moulin": {
+  "x": 0,
+  "y": 98,
+  "w": 96,
+  "h": 128,
+  "images": 4
+ },
+ "serre": {
+  "x": 392,
+  "y": 98,
+  "w": 96,
+  "h": 80,
+  "images": 1
+ },
+ "poulailler": {
+  "x": 0,
+  "y": 228,
+  "w": 48,
+  "h": 64,
+  "images": 3
+ },
+ "silo": {
+  "x": 150,
+  "y": 228,
+  "w": 32,
+  "h": 64,
+  "images": 1
+ },
+ "puits": {
+  "x": 184,
+  "y": 228,
+  "w": 48,
+  "h": 48,
+  "images": 3
+ },
+ "citerne": {
+  "x": 334,
+  "y": 228,
+  "w": 32,
+  "h": 48,
+  "images": 5
+ },
+ "panneaux_toit": {
+  "x": 0,
+  "y": 294,
+  "w": 32,
+  "h": 48,
+  "images": 6
+ }
+}

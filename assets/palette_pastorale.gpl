@@ -1,0 +1,64 @@
+GIMP Palette
+Name: Pastoral 60
+Columns: 10
+#
+  1  48  62	V0 pétrole, contour
+ 10  74  77	V1 ombre profonde
+ 19  82  64	V2 ombre
+ 34  97  82	V3 SOL SOMBRE
+ 43 109  82	V4 touffe 1
+ 49 120  78	V5 touffe 2
+ 64 127  79	V6 feuillage
+ 96 127  62	V7 olive
+106 151  85	V8 HERBE CLAIRE
+123 159  88	V9 demi-clair
+142 169  99	V10 lumière
+154 173 118	V11 reflet
+ 22 102 130	E0 strie sombre
+ 43 128 159	E1 eau profonde
+ 91 157 175	E2 EAU, base
+132 186 200	E3 reflet
+177 202 207	E4 écume
+130  91  63	T0 ombre de contact
+150 112  73	T1 motif sombre
+162 127  88	T2 motif
+174 142  97	T3 TERRE, base
+145 110  85	P0 dessous
+162 135 104	P1 ombre
+177 160 125	P2 demi-ton
+183 172 145	P3 base
+193 184 163	P4 dessus
+ 66  22  28	W0 contour
+ 82  49  40	W1 ombre
+ 96  64  49	W2 demi-ombre
+109  79  59	W3 base
+130 106  79	W4 lumière
+ 55  32  26	B0 creux
+139 118  92	B1 pierre, base
+157 142 121	B2 pierre, lumière
+ 60  16  36	N0 joint, contour
+ 71  23  42	N1 ombre
+ 73  37  52	N2 PRUNE, base
+ 91  43  55	N3 lumière
+ 93  66  91	R0 reflet violet
+101  88  78	R1 ombre chaude
+128 127 126	R2 base
+157 157 154	R3 lumière
+175 156 136	C0 enduit, ombre
+200 196 192	C1 éclat
+ 25 100  76	G0 montant
+ 66 145 133	G1 vitre, ombre
+123 172 160	G2 vitre, base
+157 188 181	G3 vitre, lumière
+ 41  60 118	A0 indigo d'ombre
+118 134 203	A1 bleu lavande
+179 178 208	A2 lavande
+212 215 224	A3 blanc bleuté
+217 196 128	A4 jaune paille
+199 192 121	A5 jaune-vert
+178 138  77	A6 ocre
+110  23  21	A7 rouge baie
+146  56  79	A8 rose radis
+ 63 148 177	A9 bleu vif
+ 37  64  64	S0 ombre de contact
+ 28  22  22	S1 encre

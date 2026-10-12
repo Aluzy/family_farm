@@ -1,0 +1,48 @@
+{
+  "style": {"nom": "pastoral_16", "vue": "dessus_trois_quarts", "source": "mesure_des_captures"},
+  "grille": {"case_px": 16, "echelle_source": 1, "agrandissement": "entier_plus_proche_voisin", "alpha": "binaire", "pivot": "bas_centre"},
+  "palette": {
+    "taille": 60,
+    "rampes": {
+      "vegetal": {"V0": "#01303E", "V1": "#0A4A4D", "V2": "#135240", "V3": "#226152", "V4": "#2B6D52", "V5": "#31784E", "V6": "#407F4F", "V7": "#607F3E", "V8": "#6A9755", "V9": "#7B9F58", "V10": "#8EA963", "V11": "#9AAD76"},
+      "eau": {"E0": "#166682", "E1": "#2B809F", "E2": "#5B9DAF", "E3": "#84BAC8", "E4": "#B1CACF"},
+      "terre": {"T0": "#825B3F", "T1": "#967049", "T2": "#A27F58", "T3": "#AE8E61"},
+      "pave": {"P0": "#916E55", "P1": "#A28768", "P2": "#B1A07D", "P3": "#B7AC91", "P4": "#C1B8A3"},
+      "bois": {"W0": "#42161C", "W1": "#523128", "W2": "#604031", "W3": "#6D4F3B", "W4": "#826A4F"},
+      "beige": {"B0": "#37201A", "B1": "#8B765C", "B2": "#9D8E79"},
+      "prune": {"N0": "#3C1024", "N1": "#47172A", "N2": "#492534", "N3": "#5B2B37"},
+      "roche": {"R0": "#5D425B", "R1": "#65584E", "R2": "#807F7E", "R3": "#9D9D9A"},
+      "enduit": {"C0": "#AF9C88", "C1": "#C8C4C0"},
+      "verre": {"G0": "#19644C", "G1": "#429185", "G2": "#7BACA0", "G3": "#9DBCB5"},
+      "accent": {"A0": "#293C76", "A1": "#7686CB", "A2": "#B3B2D0", "A3": "#D4D7E0", "A4": "#D9C480", "A5": "#C7C079", "A6": "#B28A4D", "A7": "#6E1715", "A8": "#92384F", "A9": "#3F94B1"},
+      "service": {"S0": "#254040", "S1": "#1C1616"}
+    },
+    "bases": {"sol_sombre": "V3", "herbe_claire": "V8", "terre": "T3", "eau": "E2", "prune": "N2"},
+    "sombre_chaud": ["N0", "N1", "N2", "W0"], "sombre_froid": ["V0", "V1"],
+    "ombre_contact": {"herbe_sombre": "S0", "terre": "T0", "herbe_claire": "V6", "paves": "P1"},
+    "limites": {"valeur_max": 0.88, "saturation_max_tons_clairs": 0.70, "accents_part_max_scene": 0.02, "accents_par_sprite_max": 2}
+  },
+  "budget_couleurs": {"tuile": 5, "micro": 6, "objet": 8, "arbre": 12, "batiment": 16},
+  "gabarits_px": {"tuile": [16, 16], "micro": [16, 16], "culture": [16, 32], "petit_objet": [16, 16], "objet": [32, 32], "arbuste": [32, 48], "arbre": [48, 64], "batiment": [96, 112]},
+  "lumiere": {"direction": "haut_gauche", "niveaux": [3, 5], "ombres": "dures",
+              "parts": {"lumieres": [0.30, 0.40], "base": [0.25, 0.30], "ombres": [0.30, 0.40]},
+              "ombre_contact_px": [1, 2], "ombre_portee_longue": false},
+  "contour": {
+    "construit": {"mode": "continu", "epaisseur_px": 1, "couleurs": ["W0", "N0", "V1"]},
+    "organique": {"mode": "cote_ombre", "epaisseur_px": 1, "couleurs": ["N2"]},
+    "feuillage": {"mode": "aucun", "creux": ["V0", "V1", "A0"]},
+    "terrain": {"mode": "aucun"}
+  },
+  "texture": {"amas_px": [2, 12], "pixel_isole": ["brin", "reflet_eau", "clou", "coeur_fleur"], "damier": "interdit_hors_verre", "lissage": false},
+  "transitions": {"bande_px": [11, 13], "brin_largeur_px": [1, 2], "brin_hauteur_px": [1, 3], "densite": [0.9, 0.1],
+                  "herbe_sombre_vers_claire": ["V3", "V4", "V5", "V8"], "herbe_claire_vers_terre": ["V8", "V10", "T2", "T3"]},
+  "eau": {"bandes": ["dessus_berge", "face_berge", "ecume", "eau_profonde", "eau_base"], "berge_nord_px": [7, 9], "berge_laterale_px": [4, 5],
+          "eau_profonde_px": [6, 8], "reflets_part": [0.04, 0.06], "tiret_px": [2, 5]},
+  "tuiles": {"frontieres": ["eau_herbe", "herbe_claire_herbe_sombre", "terre_herbe_claire", "paves_herbe_sombre"],
+             "pieces": {"remplissage": 3, "bord": 4, "coin_sortant": 4, "coin_rentrant": 4}, "raccord": true},
+  "transformations": {"permises": ["decalage_pixel", "miroir_horizontal_tuiles_plates"], "interdites": ["rotation_libre", "echelle_non_entiere", "interpolation"]},
+  "interdits": ["noir_pur", "blanc_pur", "degrade_continu", "flou", "lissage", "damier", "bruit_pixel", "pixels_melanges", "contour_2px", "lumiere_multiple", "couleur_hors_palette"],
+  "controle": {"contour_construit_min": 0.95, "contour_organique_eclaire_max": 0.25, "contour_organique_ombre_min": 0.50, "lisere_feuillage_max": 0.60,
+               "pixels_isoles_max": 0.10, "decalage_lumiere_max_px": 0.15, "raccord_facteur": 1.5, "raccord_marge": 8},
+  "non_observe": ["interface", "animation", "typographie", "metal", "feu", "glace", "cristal"]
+}
