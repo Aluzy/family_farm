@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { allDevices, batteryCapacity, isBroken, needsService, newDayStats, tankCapacity } from './devices.js';
-import { awakeRequired } from './clock.js';
+import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
 import { expiringSoon, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
 import { feedFamily, newNightStats } from './family.js';
@@ -140,10 +140,57 @@ export function wakeSummary(report) {
 }
 
 // Ne fait rien tant que l'éveil minimal n'est pas atteint (renvoie null).
-// Sinon : étapes nocturnes dans l'ordre, jour suivant, éveil remis à 0
-// (l'heure repart à 6 h), rapport de réveil.
+// Sinon : toute la nuit d'un coup (runNight), et l'on est réveillé à 6 h. Le jeu ouvert
+// passe plutôt par la nuit qui défile (startNight) ; sleep() sert au joueur automatique et
+// aux essais.
 export function sleep(state) {
   if (!canSleep(state)) return null;
+  const report = runNight(state);
+  state.nuitEnCours = null;
+  return report;
+}
+
+// Version 1.19 : la nuit défile. À 22 h, la famille va dormir (startNight) ; à minuit, toute
+// la nuit se calcule comme avant (runNight : repas, automatisations dont la récolte, pousse,
+// ponte…, jour suivant) ; à 6 h, réveil (state.reveil : la page montre le résumé). Le bouton
+// nuit saute ce qui reste (skipNight). Pendant la nuit, rien d'autre n'avance (voir tick).
+export function startNight(state) {
+  if (nightActive(state) || !bedtimeDue(state)) return false;
+  state.nuitEnCours = { ms: 0, minuit: false };
+  return true;
+}
+
+// Avance la nuit de `dtMs` ; renvoie 'minuit' si la nuit vient d'être calculée, 'reveil' si
+// elle vient de finir (les deux à la fois : 'reveil'), sinon null.
+export function advanceNight(state, dtMs) {
+  if (!nightActive(state)) return null;
+  const n = state.nuitEnCours;
+  n.ms = Math.min(nightLengthMs(), n.ms + Math.max(0, Number(dtMs) || 0));
+  let event = null;
+  if (!n.minuit && n.ms >= midnightMs()) {
+    n.minuit = true;
+    runNight(state);
+    event = 'minuit';
+  }
+  if (n.ms >= nightLengthMs()) {
+    state.nuitEnCours = null;
+    state.reveil = true;
+    event = 'reveil';
+  }
+  return event;
+}
+
+// Le bouton nuit : ce qui reste de la nuit passe d'un coup (minuit compris). Renvoie le
+// rapport de réveil, ou null s'il n'y a pas de nuit en cours.
+export function skipNight(state) {
+  if (!nightActive(state)) return null;
+  advanceNight(state, nightLengthMs());
+  return state.report;
+}
+
+// Les étapes nocturnes dans l'ordre, jour suivant, éveil remis à 0 (l'heure du jour
+// repart à 6 h), rapport de réveil.
+export function runNight(state) {
   state.nuit = newNightStats();
   for (const step of NIGHT_STEPS) step(state);
   recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)

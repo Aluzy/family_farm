@@ -1,7 +1,8 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { batteryCapacity, tankCapacity } from './devices.js';
-import { awakeRequired } from './clock.js';
+import { awakeRequired, nightActive, nightLengthMs } from './clock.js';
+import { advanceNight } from './night.js';
 import { flowStep, wearStep } from './energy.js';
 import { inventoryCounts } from './inventory.js';
 import { millPending, millTimeLeft, taskTimeLeft } from './kitchen.js';
@@ -93,8 +94,15 @@ export function simulateOffline(state, seconds) {
   const demande = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
   const simule = Math.min(demande, H.MAX_S);
   const before = offlineSnapshot(state);
-  const eveilMax = Math.max(state.awakeMs, awakeRequired(state) * 1000);
   let left = Math.round(simule * 1000);
+  // Version 1.19 : parti en pleine nuit, la nuit continue (minuit compris) ; le reste de
+  // l'absence suit la règle habituelle à partir du réveil.
+  if (nightActive(state)) {
+    const reste = nightLengthMs() - state.nuitEnCours.ms;
+    advanceNight(state, left);
+    left = Math.max(0, left - reste);
+  }
+  const eveilMax = Math.max(state.awakeMs, awakeRequired(state) * 1000);
   while (left > 0) {
     const dtMs = Math.min(H.PAS_S * 1000, left);
     flowStep(state, dtMs);

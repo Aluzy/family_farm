@@ -657,7 +657,14 @@ export const RAW_DATA = {
       { "id": "cuisine", "nom": "Cuisine", "icone": "🍳", "suivi": ["stations"] },
       { "id": "famille", "nom": "Famille", "icone": "👨‍👩‍👧‍👦", "suivi": [] }
     ],
-    "NOEUDS_RETIRES": { "cui_rotisserie": { "pt": 1, "cout": 300 }, "fa_remedes": { "pt": 1, "cout": 100 }, "fa_menus": { "pt": 1, "cout": 300 } },
+    "NOEUDS_RETIRES": {
+      "cui_rotisserie": { "pt": 1, "cout": 300 },
+      "fa_remedes": { "pt": 1, "cout": 100 },
+      "fa_menus": { "pt": 1, "cout": 300 },
+      "reveil_1": { "pt": 1, "cout": 200 },
+      "reveil_2": { "pt": 1, "cout": 500 },
+      "fa_routine": { "pt": 3, "cout": 2500 }
+    },
     "noeuds": {
       "en_entretien": {
         "branche": "energie",
@@ -995,18 +1002,6 @@ export const RAW_DATA = {
         "effet": { "recettes": ["chocolat_chaud", "cafe_boisson", "creme_vanille", "biere_artisanale"] },
         "description": "Recettes de luxe en Cuisine : chocolat chaud, café, crème à la vanille, bière artisanale."
       },
-      "reveil_1": {
-        "branche": "famille",
-        "palier": 1,
-        "nom": "Réveil matinal I",
-        "icone": "🌅",
-        "fonction": "temps",
-        "pt": 1,
-        "cout": 200,
-        "requiert": [],
-        "effet": { "eveilMin": 20 },
-        "description": "L'éveil minimal avant de pouvoir dormir passe de 30 s à 20 s."
-      },
       "fa_sommeil": {
         "branche": "famille",
         "palier": 1,
@@ -1042,30 +1037,6 @@ export const RAW_DATA = {
         "requiert": [{ "noeud": "fa_cellier" }],
         "effet": { "gouter": 150 },
         "description": "Ce que tu manges dans la journée rend 50 % d'énergie en plus."
-      },
-      "reveil_2": {
-        "branche": "famille",
-        "palier": 3,
-        "nom": "Réveil matinal II",
-        "icone": "🌅",
-        "fonction": "temps",
-        "pt": 1,
-        "cout": 500,
-        "requiert": [{ "noeud": "reveil_1" }],
-        "effet": { "eveilMin": 10 },
-        "description": "L'éveil minimal passe à 10 s."
-      },
-      "fa_routine": {
-        "branche": "famille",
-        "palier": 5,
-        "nom": "Routine familiale",
-        "icone": "🏡",
-        "fonction": "automatisation",
-        "pt": 3,
-        "cout": 2500,
-        "requiert": [{ "noeud": "reveil_2" }, { "noeud": "semis_auto" }, { "noeud": "el_mangeoire" }, { "noeud": "en_entretien_auto" }],
-        "effet": { "routine": true },
-        "description": "Option « Dormir tout seul » : jeu ouvert, la famille va se coucher d'elle-même dès que l'éveil minimal est écoulé."
       }
     },
     "RECETTES_LIBRES": [

@@ -75,8 +75,7 @@ export function startLot6() {
 
 // Lot 7 : aucune technologie acquise au départ.
 export function startLot7() {
-  // routine : réglage « Dormir tout seul » (Routine familiale, arbre v2).
-  return { technologies: [], pointsTech: newTechPoints(), routine: false };
+  return { technologies: [], pointsTech: newTechPoints() };
 }
 
 // Lot 8 : Serre, Verger et Réfrigérateur, tous à construire.
@@ -320,7 +319,18 @@ export const MIGRATIONS = {
   // v34 → v35 : la Serre cultive toute sa terre (63 cases) ; ses niveaux ont plus de
   // parcelles (15 → 63 au lieu de 6 → 18) : une Serre construite reçoit celles de son niveau.
   34: (state) => migrateSerreSoil(state),
+  // v35 → v36 (version 1.19) : la nuit défile et le bouton nuit ne sert que la nuit.
+  // Réveil matinal I et II et Routine familiale sont retirés (remboursés), avec le
+  // réglage « Dormir tout seul ».
+  35: (state) => migrateNightClock(state),
 };
+
+export function migrateNightClock(old) {
+  const { routine, ...state } = old;
+  state.version = 36;
+  refundRetiredNodes(state);
+  return state;
+}
 
 export function migrateSerreSoil(old) {
   const g = old.serre;

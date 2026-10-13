@@ -288,7 +288,7 @@ est la poignée de débogage posée par `js/main.js`).
 
 - `DATA.TIME.CLOCK_SECONDS_PER_HOUR` passe de 5 à 18 s et `DATA.TIME.NIGHT_HOUR` de 24 à 22 : la journée dure 16 heures de 18 s, soit 288 s. Le repas reste à 19 h (234 s après le réveil).
 - À 22 h, la nuit se lance d'elle-même (`bedtimeDue()`, ex-`midnightDue()`), avec les mêmes attentes qu'avant : fenêtre ouverte, aide de la première partie.
-- Le joueur peut toujours dormir plus tôt : l'éveil minimal reste de 30 s (`MIN_AWAKE_S`), soit 7 h 40 à l'horloge.
+- Version 1.19 : la nuit défile de 22 h à 6 h (`state.nuitEnCours`) ; à minuit, elle se calcule d'un coup (`runNight`) ; le bouton « Zzz » n'apparaît que la nuit et saute ce qui reste (`skipNight`). La nuit, les actions de jeu sont bloquées (`NUIT_BLOQUEES`, `js/ui/actions.js`).
 - Pas de changement de format de sauvegarde : l'heure se déduit de `state.awakeMs`. Une partie enregistrée en cours de journée reprend à l'heure qui correspond au même temps d'éveil avec la nouvelle durée.
 
 ## Version 1.1.4 : le fond de la carte au retour d'une absence

@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { maintainDevice, repairDevice } from '../engine/devices.js';
 import { countItem } from '../engine/inventory.js';
 import { fridgeCount, moveFromFridge, moveToFridge } from '../engine/fridge.js';
-import { sleep } from '../engine/night.js';
+import { skipNight, startNight } from '../engine/night.js';
 import { newGameFrom } from '../engine/alerts.js';
 import { setActiveTab, setEcranFerme, setState, state } from './store.js';
 import { telNight } from './consent.js';
@@ -35,20 +35,34 @@ export function applyResult(result) {
   return result;
 }
 
-// `auto` : la nuit s'est lancée d'elle-même à 22 h (voir watchDay).
-export function actionSleep(auto = false) {
-  const awakeBefore = Math.round(state.awakeMs / 1000);
-  const report = sleep(state);
+// Version 1.19 : le bouton « Zzz » (la nuit seulement) saute ce qui reste de la nuit,
+// minuit compris ; le résumé du réveil s'ouvre aussitôt.
+export function actionSleep() {
+  const report = skipNight(state);
   if (!report) {
-    showToast('Encore un peu d\'éveil avant de dormir.');
+    showToast(`Le bouton nuit sert la nuit, de ${DATA.TIME.NIGHT_HOUR} h à ${DATA.TIME.DAY_START_HOUR} h.`);
     refresh();
     return;
   }
+  wakeUp();
+}
+
+// Version 1.19 : 22 h, la famille va dormir ; la nuit défile (voir startNight).
+export function actionNightStart() {
+  const awakeBefore = Math.round(state.awakeMs / 1000);
+  if (!startNight(state)) return;
   telNight(awakeBefore);
+  persistState();
+  refresh();
+}
+
+// 6 h (ou nuit sautée) : le résumé du réveil.
+export function wakeUp() {
+  state.reveil = false;
   syncJobs(); // les préparations terminées pendant la nuit ne sont pas annoncées par un toast
   persistState(); // sauvegarde après chaque nuit
   refresh();
-  openWakeModal(report, auto);
+  if (state.report) openWakeModal(state.report, true);
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

@@ -21,6 +21,7 @@ export function awakeRequired(state) {
 // la lance, l'horloge repasse à 0 h et continue. (L'usure des appareils a sa
 // propre « heure de marche », SECONDS_PER_HOUR : voir wearStep().)
 export function hourOfDay(state) {
+  if (nightActive(state)) return Math.floor(clockHours(state));
   const hours = Math.floor(state.awakeMs / (DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000));
   return (DATA.TIME.DAY_START_HOUR + hours) % 24;
 }
@@ -28,10 +29,31 @@ export function hourOfDay(state) {
 // La même heure avec sa partie décimale, dans [0, 24) : 6,5 pour 6 h 30. Sert à
 // dessiner l'horloge et la lumière du jour sans à-coups.
 export function clockHours(state) {
+  if (nightActive(state)) {
+    const h = DATA.TIME.NIGHT_HOUR + state.nuitEnCours.ms / (DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
+    return h >= 24 ? h - 24 : h;
+  }
   const ms = Math.max(0, Number(state.awakeMs) || 0);
   const perDay = 24 * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
   const h = DATA.TIME.DAY_START_HOUR + (ms % perDay) / (DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
   return h >= 24 ? h - 24 : h;
+}
+
+/* ---------- version 1.19 : la nuit défile ---------- */
+
+// De NIGHT_HOUR (22 h) à DAY_START_HOUR (6 h), la nuit passe à la vitesse du jour :
+// state.nuitEnCours = { ms (temps de nuit écoulé depuis 22 h), minuit (la nuit est-elle
+// déjà calculée ?) }, null le jour. Voir startNight(), advanceNight() et skipNight().
+export function nightActive(state) {
+  return !!(state && state.nuitEnCours && Number.isFinite(state.nuitEnCours.ms));
+}
+
+// Durée de toute la nuit (22 h → 6 h) et moment de minuit, en ms de nuit.
+export function nightLengthMs() {
+  return (24 - DATA.TIME.NIGHT_HOUR + DATA.TIME.DAY_START_HOUR) * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+}
+export function midnightMs() {
+  return (24 - DATA.TIME.NIGHT_HOUR) * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
 }
 
 // Temps d'éveil (ms) auquel l'horloge marque `hour` heures (19 h → 65 000 ms).

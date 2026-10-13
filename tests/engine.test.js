@@ -42,9 +42,9 @@ import {
   plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
   readMail, readyCrops, recipeNode, recipeStatus, recipeTime, recipeUnlocked, recordNight,
-  removeMember, removePet, repairCost, repairDevice, reservableItems, routineDue, scaleEnergie,
+  removeMember, removePet, repairCost, repairDevice, reservableItems, scaleEnergie,
   seedItem, seedStock, sellableCount, sellItem, sellPrice, serreUpgradeCost,
-  setMemberProfile, setPetProfile, setRoutine, setSeedReserve, setSemis, shear, sheepCount, sheepPlaces,
+  setMemberProfile, setPetProfile, setSeedReserve, setSemis, shear, sheepCount, sheepPlaces,
   sheepToShear, shelfLife, siloCapacity, siloUpgradeCost, simulateFromCopy, simulateGame, simulateOffline,
   simulatePlay, simulationReach, skipTutorial, sleep, spend, spoil, stableFree, stableOccupied, startFarm,
   startHousehold, startLot4, startLot5, startLot6, startMilling, startRecipe, STATE_VERSION, storeEnergy,
@@ -59,6 +59,7 @@ import {
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
   collectLeftovers, pickUp, piles,
+  advanceNight, midnightMs, nightActive, nightLengthMs, skipNight, startNight,
 } from '../js/engine/index.js';
 
 
@@ -3126,18 +3127,13 @@ test('arbre v2 : arrosage prioritaire quand l\'eau manque', () => {
   assertEqual([findPlot(t, 'potager-1').stade, findPlot(t, 'potager-2').stade], [0, 4], 'la plus proche de la récolte d\'abord');
 });
 
-test('arbre v2 : Routine familiale (réglage « Dormir tout seul »)', () => {
-  const s = farm({ sun: false });
-  assertEqual(setRoutine(s, true).ok, false, 'sans le nœud');
-  assertEqual(routineDue(s), false);
-  grantTech(s, 'fa_routine');
-  assertEqual(setRoutine(s, true).ok, true);
-  assertEqual(routineDue(s), false, 'éveil minimal pas encore écoulé');
-  s.awakeMs = awakeRequired(s) * 1000;
-  assertEqual(routineDue(s), true);
-  setRoutine(s, false);
-  assertEqual(routineDue(s), false, 'désactivée');
-  assertEqual(createInitialState(1).routine, false);
+test('version 1.19 : Réveil matinal I et II et Routine familiale sont retirés, remboursés, avec le réglage « Dormir tout seul »', () => {
+  const vieille = { ...createInitialState(1), version: 35, technologies: ['reveil_1', 'reveil_2', 'fa_routine', 'fa_sommeil'], routine: true, pieces: 10 };
+  vieille.pointsTech = { ...vieille.pointsTech, solde: 0 };
+  const m = migrate({ v: 35, t: 0, s: vieille });
+  assertEqual([m.version, m.technologies, m.routine, m.pieces, m.pointsTech.solde], [STATE_VERSION, ['fa_sommeil'], undefined, 10 + 200 + 500 + 2500, 1 + 1 + 3]);
+  for (const id of ['reveil_1', 'reveil_2', 'fa_routine']) assertEqual(DATA.techtree.noeuds[id], undefined, id);
+  assertEqual(createInitialState(1).routine, undefined);
 });
 
 test('Pain à l\'ail : retire bien 1 pain du stock, comme n\'importe quel autre ingrédient', () => {
@@ -3350,7 +3346,7 @@ test('version 1.1 : plus aucune recette ne demande de viande, les anciens plats 
   assertEqual(PLATS_RETIRES.map((id) => [DATA.items[id].energie, DATA.items[id].prix]), [[144, 36], [81, 26], [144, 36], [75, 23]], 'énergie et prix d\'avant');
   assertEqual(Object.keys(DATA.PLATS_RETIRES), PLATS_RETIRES);
   assertEqual(DATA.techtree.noeuds.cui_rotisserie, undefined, 'le nœud Rôtisserie a disparu');
-  assertEqual(DATA.techtree.NOEUDS_RETIRES, { cui_rotisserie: { pt: 1, cout: 300 }, fa_remedes: { pt: 1, cout: 100 }, fa_menus: { pt: 1, cout: 300 } });
+  assertEqual(DATA.techtree.NOEUDS_RETIRES, { cui_rotisserie: { pt: 1, cout: 300 }, fa_remedes: { pt: 1, cout: 100 }, fa_menus: { pt: 1, cout: 300 }, reveil_1: { pt: 1, cout: 200 }, reveil_2: { pt: 1, cout: 500 }, fa_routine: { pt: 3, cout: 2500 } });
   // Les viandes : ni produites, ni achetables, mais toujours des aliments qui se vendent.
   for (const id of viandes) {
     assertEqual([DATA.items[id].edible, isBuyable(id), buyItem(garden(), id).ok], [true, false, false], id);
@@ -4300,20 +4296,19 @@ function techReady(s, pt = 99) {
   return s;
 }
 
-test('DATA arbre v2 : 34 nœuds, 6 branches, paliers, points et prérequis cohérents', () => {
+test('DATA arbre v2 : 31 nœuds, 6 branches, paliers, points et prérequis cohérents', () => {
   assertEqual(DATA.AUTOMATISATION, undefined, 'plus d\'automatisation par le niveau 5');
   assertEqual(DATA.TECHNO, { ONGLET: 'techno', SEUIL_PIECES: 100 });
   const T = DATA.techtree;
   const N = T.noeuds;
-  assertEqual(Object.keys(N).length, 34); // 34 avant la version 1.1 (la Rôtisserie a disparu avec la viande), 33 puis 34 avec la Récolte du verger (1.13)
+  assertEqual(Object.keys(N).length, 31); // 34 avant la version 1.1 (la Rôtisserie a disparu avec la viande), 33 puis 34 avec la Récolte du verger (1.13), 31 sans Réveil matinal I et II ni Routine familiale (1.19)
   assertEqual(T.branches.map((b) => b.nom), ['Énergie', 'Eau', 'Culture', 'Élevage', 'Cuisine', 'Famille']);
   assertEqual(Object.keys(T.PALIERS).map((p) => T.PALIERS[p].chapitre), [1, 3, 4, 5, 7]);
   assertEqual(T.POINTS.CHAPITRES, [2, 3, 3, 4, 4, 5, 5]);
   assertEqual(T.POINTS.MAITRISE.length, 6);
   // les anciens identifiants restent, pour les sauvegardes
-  for (const id of ['semis_auto', 'prepa_1', 'prepa_2', 'reveil_1', 'reveil_2']) assert(N[id], id);
+  for (const id of ['semis_auto', 'prepa_1', 'prepa_2']) assert(N[id], id);
   assertEqual([N.prepa_1.effet.tempsPrepa, N.prepa_2.effet.tempsPrepa], [80, 80]);
-  assertEqual([N.reveil_1.effet.eveilMin, N.reveil_2.effet.eveilMin], [20, 10]);
   let pt = 0;
   for (const [id, n] of Object.entries(N)) {
     assert(T.branches.some((b) => b.id === n.branche), `branche de ${id}`);
@@ -4327,7 +4322,7 @@ test('DATA arbre v2 : 34 nœuds, 6 branches, paliers, points et prérequis cohé
       if (r.batiment || r.construit || r.appareil) assert(T.batiments[r.batiment || r.construit || r.appareil], `${id} : bâtiment connu`);
     }
   }
-  assertEqual(pt, 52, '52 PT pour tout l\'arbre (50 avant la Récolte du verger, version 1.13)');
+  assertEqual(pt, 47, '47 PT pour tout l\'arbre (50 avant la Récolte du verger, version 1.13 ; 52 avant le retrait de Réveil matinal I et II et de la Routine familiale, version 1.19)');
 });
 
 test('état initial Lot 7 : aucune technologie, semis réglé sur « même culture »', () => {
@@ -4626,28 +4621,14 @@ test('temps de préparation : la préparation lancée prend le temps réduit, ce
   assertEqual(countItem(s, 'pain'), 2, 'finie à 8 s au lieu de 10');
 });
 
-test('éveil minimal : 30 s, puis 20 s, puis 10 s', () => {
+test('éveil minimal : 30 s (version 1.19 : plus de technologie pour le raccourcir)', () => {
   const s = farm();
   assertEqual(awakeRequired(s), 30);
   s.awakeMs = 20000;
   assertEqual(canSleep(s), false);
-  s.pieces = 5000;
-  techReady(s);
-  assert(buyTech(s, 'reveil_1').ok);
-  assertEqual(awakeRequired(s), 20);
-  assertEqual(canSleep(s), true);
-  s.awakeMs = 19900;
-  assertEqual(canSleep(s), false);
-  assert(buyTech(s, 'reveil_2').ok);
-  assertEqual(awakeRequired(s), 10);
-  s.awakeMs = 10000;
-  assertEqual(canSleep(s), true);
-  assert(sleep(s) !== null, 'on peut dormir dès 10 s');
-  s.awakeMs = 9000;
   assertEqual(sleep(s), null);
-  const t = farm();
-  t.technologies.push('reveil_2');
-  assertEqual(awakeRequired(t), 10, 'le plus bas des paliers acquis compte');
+  s.awakeMs = 30000;
+  assert(sleep(s) !== null, 'on peut dormir dès 30 s (joueur automatique, essais)');
 });
 
 test('prérequis : palier, bâtiment, nœud précédent, PT et pièces', () => {
@@ -4678,12 +4659,12 @@ test('prérequis : palier, bâtiment, nœud précédent, PT et pièces', () => {
   assertEqual(techPrereqs(s, 'en_delestage')[2].ok, true);
   // PT insuffisants
   techPoints(s).solde = 0;
-  assertEqual(buyTech(s, 'reveil_1').error, 'Pas assez de points de technologie.');
+  assertEqual(buyTech(s, 'fa_sommeil').error, 'Pas assez de points de technologie.');
   techPoints(s).solde = 1;
-  s.pieces = 199;
-  assertEqual(buyTech(s, 'reveil_1').error, 'Pas assez de pièces.');
-  s.pieces = 200;
-  assertEqual(buyTech(s, 'reveil_1').ok, true);
+  s.pieces = 99;
+  assertEqual(buyTech(s, 'fa_sommeil').error, 'Pas assez de pièces.');
+  s.pieces = 100;
+  assertEqual(buyTech(s, 'fa_sommeil').ok, true);
   assertEqual([s.pieces, techPoints(s).solde], [0, 0]);
   assertEqual(buyTech(s, 'inconnue').ok, false);
 });
@@ -4729,7 +4710,7 @@ test('mode test Lot 7 : un bâtiment au niveau 5, tous les nœuds débloqués', 
   assertEqual([isAutomated(s, 'potager'), isAutomated(s, 'serre'), isAutomated(s, 'poulailler'), isAutomated(s, 'paturage')], [true, true, true, true]);
   assertEqual(s.technologies.slice().sort(), Object.keys(DATA.techtree.noeuds).sort());
   assertEqual(s.unlockedTabs.includes('techno'), true);
-  assertEqual([awakeRequired(s), prepTimeMult(s)], [10, 64]);
+  assertEqual([awakeRequired(s), prepTimeMult(s)], [30, 64]);
   const t = JSON.parse(JSON.stringify(s));
   assertEqual(t, s, 'l\'état reste sérialisable');
 });
@@ -5383,17 +5364,16 @@ test('migration v14 → v15 : chaque champ de chaque parcelle est conservé, que
 
 test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage', () => {
   const s = createInitialState(1);
-  s.technologies = ['reveil_1', 'nexiste_pas'];
-  assertEqual(ownedTechs(s), ['reveil_1']);
-  assertEqual(awakeRequired(s), 20);
-  assertEqual(prepTimeMult(s), 100);
+  s.technologies = ['prepa_1', 'nexiste_pas'];
+  assertEqual(ownedTechs(s), ['prepa_1']);
+  assertEqual(prepTimeMult(s), 80);
   delete s.technologies;
-  assertEqual(awakeRequired(s), 30);
+  assertEqual(prepTimeMult(s), 100);
   techPoints(s).solde = 1;
   s.pieces = 0; // isole ce test du montant de départ pour vérifier le refus faute de pièces
-  assertEqual(buyTech(s, 'reveil_1').ok, false, 'pas assez de pièces');
+  assertEqual(buyTech(s, 'fa_sommeil').ok, false, 'pas assez de pièces');
   s.pieces = 400;
-  assertEqual(buyTech(s, 'reveil_1').ok, true, 'la liste est recréée');
+  assertEqual(buyTech(s, 'fa_sommeil').ok, true, 'la liste est recréée');
 });
 
 /* ---------- Lot 8 : Serre, Verger, Réfrigérateur (les saisons sont retirées en version 1.6) ---------- */
@@ -9143,6 +9123,45 @@ test('Ramassage (version 1.18) : les œufs attendent au Poulailler, le lait et l
   assertEqual(piles(s).map((p) => p.id), ['poulailler']);
   assertEqual(pickUp(s, 'poulailler').items[oeuf], 2 * DATA.ANIMAUX.poule.oeufsParNuit);
   assertEqual(countItem(s, oeuf), avant + 2 * DATA.ANIMAUX.poule.oeufsParNuit);
+});
+
+test('Nuit qui défile (version 1.19) : 22 h → minuit (la nuit se calcule) → 6 h (réveil)', () => {
+  const s = createInitialState(1);
+  const H = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  s.awakeMs = awakeMsAtHour(21);
+  assertEqual(startNight(s), false, 'pas avant 22 h');
+  s.awakeMs = awakeMsAtHour(22);
+  assertEqual(startNight(s), true);
+  assertEqual([nightActive(s), hourOfDay(s), s.day], [true, 22, 1]);
+  const eau = s.eauMl;
+  tick(s, 1);
+  assertEqual([s.nuitEnCours.ms, s.eauMl, s.awakeMs], [1000, eau, awakeMsAtHour(22)], 'la nuit, seule l\'heure avance');
+  tick(s, 1, true);
+  assertEqual(s.nuitEnCours.ms, 1000, 'horloge arrêtée : la nuit attend');
+  assertEqual(advanceNight(s, H), null, '23 h');
+  assertEqual([hourOfDay(s), s.day], [23, 1]);
+  assertEqual(advanceNight(s, H), 'minuit');
+  assertEqual([hourOfDay(s), s.day, s.awakeMs, s.nuitEnCours.minuit, !!s.report], [0, 2, 0, true, true], 'minuit : la nuit est calculée, jour suivant');
+  assertEqual(advanceNight(s, 5 * H), null, '5 h');
+  assertEqual(hourOfDay(s), 5);
+  assertEqual(advanceNight(s, 2 * H), 'reveil');
+  assertEqual([nightActive(s), s.reveil, hourOfDay(s), s.day], [false, true, 6, 2], 'réveil à 6 h, une seule nuit');
+  assertEqual([midnightMs(), nightLengthMs()], [2 * H, 8 * H]);
+});
+
+test('Nuit qui défile (version 1.19) : le bouton nuit saute ce qui reste, minuit compris ; une absence la termine', () => {
+  const s = createInitialState(1);
+  s.awakeMs = awakeMsAtHour(22);
+  assertEqual(skipNight(s), null, 'pas de nuit en cours');
+  startNight(s);
+  advanceNight(s, 1000);
+  const r = skipNight(s);
+  assertEqual([!!r, s.day, nightActive(s), s.reveil, hourOfDay(s)], [true, 2, false, true, 6]);
+  const t = createInitialState(1);
+  t.awakeMs = awakeMsAtHour(22);
+  startNight(t);
+  simulateOffline(t, 3600);
+  assertEqual([t.day, nightActive(t), t.reveil], [2, false, true], 'parti la nuit : réveillé au retour');
 });
 
 export const results = runTests();

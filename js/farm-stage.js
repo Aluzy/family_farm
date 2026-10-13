@@ -1040,7 +1040,7 @@
             labelLayer.appendChild(el);
             B = { el, id: p.id, texte: null, w: 0, h: 0, tr: '' };
             // Au clavier (le doigt et la souris passent par la carte : hitAt) ;
-            el.addEventListener('click', () => { if (this.fermier) this.fermier.fetch(B.id); });
+            el.addEventListener('click', () => { if (this.fermier && !(lastModel && lastModel.nuit)) this.fermier.fetch(B.id); });
             this.piles.set(p.id, B);
           }
           B.p = p;
@@ -1593,7 +1593,7 @@
         if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
         if (!hit) return;
-        if (hit.pile) { if (this.fermier) this.fermier.fetch(hit.pile); return; }
+        if (hit.pile) { if (this.fermier && !(lastModel && lastModel.nuit)) this.fermier.fetch(hit.pile); return; }   // la nuit, la famille dort
         if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         if (hit.treeHarvest) { bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }

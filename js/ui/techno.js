@@ -3,7 +3,6 @@ import { awakeRequired } from '../engine/clock.js';
 import {
   buyTech, hasTech, masteryValue, prepTimeMult, techFlag, techPoints, techPrereqs, techProgress, techStatus,
 } from '../engine/techtree.js';
-import { setRoutine } from '../engine/automation.js';
 import { formatCoins, formatNumber, formatPercent, formatQty } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -124,16 +123,12 @@ export function renderTechno() {
   const libre = state.campagne && state.campagne.fini
     ? ` En mode libre, +1 PT toutes les ${P.MODE_LIBRE_NUITS_100} nuits à 100 % d'autonomie.`
     : '';
-  const routine = techFlag(state, 'routine')
-    ? `<label class="row check-row"><input type="checkbox" data-action="routine-toggle"${state.routine ? ' checked' : ''}> 🏡 Routine familiale : la famille va dormir toute seule dès que l'éveil minimal est écoulé (jeu ouvert seulement).</label>`
-    : '';
   return `
     <div class="section-head">
       <h2>🌳 Arbre des technologies</h2>
       <span class="chips"><span class="chip" title="Points de technologie disponibles">🔬 ${formatNumber(pt.solde)} PT</span><span class="chip" title="Pièces disponibles">💰 ${formatCoins(state.pieces)}</span></span>
     </div>
     <p class="muted">Chaque technologie coûte des points de technologie (PT) et des pièces, et s'ouvre à un palier de la campagne. Les chapitres terminés rapportent des PT (${P.CHAPITRES.join(' · ')}), comme les jalons de maîtrise ci-dessous.${libre} Tu as gagné ${formatNumber(pt.gagnes)} PT en tout.</p>
-    ${routine}
     <details class="card">
       <summary><strong>🏅 Jalons de maîtrise</strong> <span class="muted">(${pt.maitrise.length} / ${P.MAITRISE.length})</span></summary>
       ${masteryHtml()}
@@ -148,8 +143,5 @@ registerActions({
     const id = target.dataset.id;
     const result = applyResult(buyTech(state, id));
     if (result.ok) showToast(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰)`);
-  },
-  'routine-toggle': (target) => {
-    applyResult(setRoutine(state, target.checked));
   },
 });

@@ -2,7 +2,6 @@ import { DATA, ingredientOptions } from '../engine/catalog.js';
 import { houseRepaired } from '../engine/depart.js';
 import { GAME_VERSION, STATE_VERSION } from '../engine/base.js';
 import { farmOpen, pumpFlow } from '../engine/devices.js';
-import { awakeRequired } from '../engine/clock.js';
 import { energyStats } from '../engine/energy.js';
 import { familyNeed } from '../engine/family.js';
 import { cropProduct, hasHoe, seedStock } from '../engine/crops.js';
@@ -254,7 +253,7 @@ const TUTO = {
   },
   dormir: {
     titre: '😴 Dormir',
-    texte: () => `Le bouton « Zzz », en bas à droite, s'active après ${formatNumber(awakeRequired(state))} s d'éveil. À ${DATA.TIME.MEAL_HOUR} h la famille mange ; à ${DATA.TIME.NIGHT_HOUR} h, tout le monde va se coucher. La nuit, les plantes arrosées poussent.`,
+    texte: () => `À ${DATA.TIME.MEAL_HOUR} h la famille mange ; à ${DATA.TIME.NIGHT_HOUR} h, tout le monde va se coucher et la nuit défile jusqu'à ${DATA.TIME.DAY_START_HOUR} h. À minuit, les plantes arrosées poussent et les poules pondent. Pendant la nuit, le bouton « Zzz », en bas à droite, la fait passer d'un coup.`,
   },
 };
 
@@ -408,7 +407,7 @@ export function openAboutModal() {
   const H = DATA.HORS_LIGNE;
   const rules = [
     `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} calories par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
-    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. Tu peux dormir (bouton « Zzz ») après ${DATA.TIME.MIN_AWAKE_S} s d'éveil au moins ; à ${DATA.TIME.NIGHT_HOUR} h, la journée est finie et la nuit se déroule d'elle-même. L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
+    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. À ${DATA.TIME.NIGHT_HOUR} h, elle va dormir et la nuit défile à la même vitesse : on ne peut plus rien faire à la ferme. À minuit, la nuit passe (pousse, ponte, lait, récolte automatique…) et le jour change ; à ${DATA.TIME.DAY_START_HOUR} h, c'est le réveil. Pendant la nuit, le bouton « Zzz » la fait passer d'un coup. L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
     `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
     `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}) : chaque action au clic en coûte (planter ${DATA.PERSONNAGE.COUTS.planter}, arroser ${DATA.PERSONNAGE.COUTS.arroser}, récolter ${DATA.PERSONNAGE.COUTS.recolter}…), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %) et ${DATA.PERSONNAGE.ENDURANCE} % de moins par niveau. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE}, et jusqu'à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} si le repas du soir a couvert le besoin ; un aliment mangé dans la journée rend ses calories ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}. Les automatisations ne coûtent rien.`,
     `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,

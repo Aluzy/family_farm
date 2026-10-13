@@ -4,13 +4,12 @@ import { EPS } from '../engine/base.js';
 import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { familyNameHtml } from './depart.js';
-import { awakeRequired } from '../engine/clock.js';
+import { nightActive } from '../engine/clock.js';
 import { memberPerso, planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
 import { levelProgress, unlockLevel } from '../engine/levels.js';
-import { canSleep } from '../engine/night.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatNumber, formatPercent } from '../engine/format.js';
 import {
@@ -20,7 +19,7 @@ import { telView } from './consent.js';
 import { showToast } from './toasts.js';
 import { MARKET_CLOSED } from '../engine/market.js';
 import { actionSleep } from './game-actions.js';
-import { artHtml, pxText } from './pixel-art.js';
+import { artHtml } from './pixel-art.js';
 import { renderVille } from './ville.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
 import {
@@ -574,14 +573,16 @@ export function renderTabContent() {
 // Bouton « Dormir » (lune en pixel art), en bas à droite sur tous les onglets. L'aperçu du repas est dans
 // son libellé (title / aria-label) ; une pastille ne s'affiche que si le repas prévu est insuffisant.
 export function renderSleepBar() {
-  const remaining = Math.max(1, Math.ceil((awakeRequired(state) * 1000 - state.awakeMs) / 1000));
+  // Version 1.19 : le bouton « Zzz » n'est là que la nuit (de 22 h à 6 h) ; il saute ce qui reste.
+  const nuit = nightActive(state);
   // Après 19 h, le repas est pris : on montre ce qui a été mangé, plus ce qui est prévu.
   const plan = state.repas || planMeal(state);
   const short = plan.energie + EPS < plan.besoin;
   const eaten = `${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)}`;
   const meal = `${state.repas ? `Repas pris à ${DATA.TIME.MEAL_HOUR} h` : `Repas prévu à ${DATA.TIME.MEAL_HOUR} h`} : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
-  const ok = canSleep(state);
-  const label = `${ok ? 'Dormir' : `Dormir (dans ${remaining} s)`}. ${meal}`;
+  const label = state.nuitEnCours && state.nuitEnCours.minuit
+    ? `Passer la nuit : réveil à ${DATA.TIME.DAY_START_HOUR} h`
+    : `Passer la nuit : réveil à ${DATA.TIME.DAY_START_HOUR} h. ${meal}`;
   // FLU-05 : houe achetée et rangée, un bouton rond la met en main depuis la carte
   const houe = state.potager.houe && !hoeMode && activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior
     ? `<button type="button" class="hoe-fab" data-action="hoe-toggle" aria-label="Prendre la houe" title="Prendre la houe">${artHtml('hoe-btn', 'hoe-art')}</button>`
@@ -589,7 +590,7 @@ export function renderSleepBar() {
   morph(
     document.getElementById('sleep-fab'),
     houe + (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
-      `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}"${ok ? '' : ' disabled'}>${artHtml(ok ? 'sleep-on' : 'sleep-off', 'sleep-art')}${ok ? '' : pxText(`${remaining}s`, 'sleep-wait light')}</button>`
+      (nuit ? `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}">${artHtml('sleep-on', 'sleep-art')}</button>` : '')
   );
 }
 

@@ -1,5 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { formatLitres } from '../engine/format.js';
+import { clockHours, nightActive } from '../engine/clock.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
@@ -61,8 +62,7 @@ export function stageActive() {
 // Heure du jour, de 0 à 24 (fractionnaire) : la journée commence à DAY_START_HOUR au réveil,
 // puis une heure passe toutes les CLOCK_SECONDS_PER_HOUR secondes d'éveil (18 s).
 export function heureDuJour() {
-  const parHeure = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
-  return (DATA.TIME.DAY_START_HOUR + state.awakeMs / parHeure) % 24;
+  return clockHours(state); // version 1.19 : la nuit défile aussi (22 h → 6 h)
 }
 
 // Cadran d'horloge de l'heure entière : 🕐 (1 h) à 🕛 (12 h), le même le matin et le soir.
@@ -329,6 +329,8 @@ export function stageModel() {
   // case ; arbre : sa case du Verger ; Poulailler, Étable), avec le texte de sa bulle.
   const ramasser = piles(state).map((p) => ({ id: p.id, lieu: p.lieu, ref: p.ref, texte: itemsBulle(p.items) }));
   return {
+    // version 1.19 : la nuit (22 h → 6 h), la famille dort : la carte ne fait rien faire
+    nuit: nightActive(state),
     ramasser,
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
     perso: memberPerso(mainCharacter(state)),

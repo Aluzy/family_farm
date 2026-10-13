@@ -1,20 +1,18 @@
 import { DATA, recipeOutput } from '../engine/catalog.js';
 import { setupPending } from '../engine/depart.js';
 import { watchSetup } from './depart.js';
-import { bedtimeDue, mealDue } from '../engine/clock.js';
+import { bedtimeDue, mealDue, nightActive } from '../engine/clock.js';
 import { tick } from '../engine/energy.js';
 import { takeMeal } from '../engine/family.js';
-import { routineDue } from '../engine/automation.js';
 import { mailbox } from '../engine/campaign.js';
-import { canSleep, sleep } from '../engine/night.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
-import { formatDuration, formatLitres, formatNumber, formatPercent } from '../engine/format.js';
+import { formatDuration, formatLitres, formatNumber } from '../engine/format.js';
 import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
 import { consentBannerDue, consentBannerPending, consentBannerShown, storyOpen, tutorialStopsClock, uiCalm } from './calme.js';
-import { actionSleep } from './game-actions.js';
+import { actionNightStart, wakeUp } from './game-actions.js';
 import {
   lastRenderAt, refresh, render, renderScheduled, setLastRenderAt, setRenderScheduled,
 } from './render.js';
@@ -123,25 +121,14 @@ function watchTechPoints() {
   persistState();
 }
 
-// Arbre v2 (Routine familiale) : la famille se couche d'elle-même, jeu ouvert,
-// dès que l'éveil minimal est écoulé et qu'aucune fenêtre n'attend le joueur.
-function watchRoutine() {
-  if (!routineDue(state)) return;
-  if (document.getElementById('modal-root').childElementCount > 0) return;
-  const report = sleep(state);
-  if (!report) return;
-  syncJobs();
-  persistState();
-  refresh();
-  showToast(`🌙 Routine : la famille a dormi. Nuit ${report.nuit} · autonomie ${formatPercent(report.autonomie)}`);
-}
-
 // La journée suit l'horloge : de 6 h à 22 h, 18 s par heure. À 19 h, la famille prend
-// son repas. À 22 h, si personne n'a cliqué sur « Zzz », la nuit se déroule d'elle-même
-// et le résumé habituel s'affiche (il est alors 6 h). Jeu ouvert seulement : une absence
-// n'avance l'horloge que jusqu'à l'éveil minimal (voir simulateOffline). La nuit attend
-// qu'une fenêtre ouverte soit refermée, et ne se lance pas tant que l'aide de la première
-// partie est affichée (le joueur lit).
+// son repas. Version 1.19 : à 22 h, la famille va dormir et la nuit défile à la même
+// vitesse (tick : seule l'heure avance) ; à minuit, la nuit se calcule (récolte automatique
+// comprise) et le jour change ; à 6 h, le résumé du réveil s'affiche. Le bouton « Zzz » saute
+// ce qui reste. Jeu ouvert seulement : une absence n'avance l'horloge du jour que jusqu'à
+// l'éveil minimal (voir simulateOffline). La nuit attend qu'une fenêtre ouverte soit
+// refermée, et ne commence pas tant qu'une bulle d'aide de la première partie est affichée
+// (le joueur lit), sauf celle qui explique la nuit.
 function watchDay() {
   if (mealDue(state)) {
     const r = takeMeal(state);
@@ -149,11 +136,20 @@ function watchDay() {
     refresh();
     if (r.ok) playMealScene(r.repas);
   }
+  if (state.reveil && !document.getElementById('modal-root').childElementCount) wakeUp();
+  if (nightActive(state)) {
+    // minuit vient de passer : les préparations finies dans la nuit, sans toast
+    if (state.nuitEnCours.minuit && !midnightSeen) { midnightSeen = true; syncJobs(); persistState(); scheduleRender(); }
+    return;
+  }
+  midnightSeen = false;
   if (!bedtimeDue(state)) return;
   if (document.getElementById('modal-root').childElementCount > 0) return;
-  if (tutorialStep(state)) return;
-  actionSleep(true);
+  const step = tutorialStep(state);
+  if (step && step !== 'dormir') return;
+  actionNightStart();
 }
+let midnightSeen = false;
 
 // Le repas de 19 h. Pour l'instant, une annonce (un appui mène à la Famille) ; plus
 // tard, une petite cinématique se jouera ici.
@@ -195,7 +191,6 @@ export function frame(now) {
   watchSetup(); // version 1.12 : la configuration de la famille passe avant tout
   if (consentBannerDue()) showConsentBanner(); // FLU-17 : après l'histoire, la carte seule 500 ms
   watchTechPoints();
-  watchRoutine();
   watchDay();
   watchMail();
   watchPreparations();
@@ -262,7 +257,7 @@ function openAbsenceModal(r) {
     done ? `<li>🍳 Préparations terminées : <strong>${done}</strong></li>` : '',
     running.length ? `<li>⏳ Toujours en cours : ${running.join(' · ')}</li>` : '',
     fridge,
-    `<li>🌙 Aucune nuit n'est passée : l'horloge s'arrête quand le jeu est fermé, et les cultures, les animaux et la famille t'attendent.${canSleep(state) ? ' Tu peux dormir dès maintenant.' : ''}</li>`,
+    `<li>🌙 Aucune nuit n'est passée : l'horloge s'arrête quand le jeu est fermé, et les cultures, les animaux et la famille t'attendent.</li>`,
     DATA.HORS_LIGNE.USURE ? '' : '<li class="muted">🛠️ Les appareils ne se sont pas usés pendant ton absence.</li>',
   ];
   document.getElementById('modal-root').innerHTML = `
