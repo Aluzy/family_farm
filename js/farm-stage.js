@@ -69,6 +69,12 @@
   // Rectangle de la zone de culture dans la carte : le premier nom trouvé. Les parcelles du
   // jeu s'y posent ; celles du Champ (modèle.plots2) se posent sur `zone_culture_2`.
   const ZONE_OBJECTS = ['zone_culture_1', 'zone_culture'];
+  // Essai d'effet 3D sur un arbre de la carte (scripts/carte/arbre_3d.py) : le feuillu à
+  // gauche de la Grange n'est plus dans les couches d'arbres de la carte, il est dessiné à
+  // part, avec son volume et son ombre portée, juste au-dessus du sol. (tx, ty) : sa case en
+  // haut à gauche ; (mx, my) : la marge de l'image autour des 4 × 5 tuiles, pour l'ombre.
+  const ARBRE_3D = { key: 'arbre_3d', file: 'arbre_3d.png', tx: 13, ty: 21, mx: 4, my: 2 };
+
   // Arbres du Verger : le n-ième arbre du modèle se pose sur le rectangle `arbre_verger_n`.
   const TREE_OBJECT = 'arbre_verger_';
   const TREE_FRAME = { frameWidth: 80, frameHeight: 80 };   // basic_*.png : 8 images de 80×80 ; seule la première sert, les arbres ne bougent pas
@@ -361,6 +367,7 @@
         }
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
         L.image('terre_bords', v('terre_bords.png'));
+        L.image(ARBRE_3D.key, v(ARBRE_3D.file));
       }
 
       create() {
@@ -371,6 +378,10 @@
         this.defineAnims();
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
+        if (this.has(ARBRE_3D.key)) {
+          const T = this.mapRaw ? this.mapRaw.tilewidth : 16;
+          this.add.image(ARBRE_3D.tx * T - ARBRE_3D.mx, ARBRE_3D.ty * T - ARBRE_3D.my, ARBRE_3D.key).setOrigin(0).setDepth(0.5);
+        }
         this.watchGround();
         this.makeTileAnims();
         this.bakeRooms();
