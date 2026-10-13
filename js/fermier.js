@@ -421,10 +421,13 @@
       }
       return best;
     }
+    // Version 1.19 : envoyé quelque part par le joueur (double appui), il flâne là-bas
+    // plutôt que devant la porte, jusqu'à ce qu'il rentre le soir.
+    let roamAt = null;
     function roam() {
-      const d = door();
+      const d = roamAt || door();
       for (let i = 0; i < 8; i++) {
-        const tx = d.x + rand(-ROAM, ROAM), ty = d.y + rand(T, ROAM);
+        const tx = d.x + rand(-ROAM, ROAM), ty = d.y + (roamAt ? rand(-ROAM, ROAM) : rand(T, ROAM));
         if (!freeAt(tx, ty)) continue;
         const w = walkTo(tx, ty);
         w.idle = true;
@@ -443,6 +446,7 @@
         return;
       }
       if (!outHours && !home && shown) {
+        roamAt = null;
         const d = door();
         jobs.push(walkTo(d.x, d.y));
         jobs.push(once(() => { face = 'haut'; vanish(); home = true; }));
@@ -456,6 +460,35 @@
         if (Math.random() < 0.5 && !reduced()) roam();   // animations réduites : il ne se déplace pas pour rien
         else jobs.push(wait(rand(2, 5)));
       }
+    }
+
+    // Le point libre le plus proche de (tx, ty) (6 cases au plus), null s'il n'y en a pas.
+    function nearestFree(tx, ty) {
+      if (!blocked) buildGrid();
+      if (freeAt(tx, ty)) return { x: tx, y: ty };
+      const [c0, r0] = cellOf(tx, ty);
+      let best = null, bd = Infinity;
+      for (let r = r0 - 6; r <= r0 + 6; r++) {
+        for (let c = c0 - 6; c <= c0 + 6; c++) {
+          if (!free(c, r)) continue;
+          const px = c * T + T / 2, py = r * T + T - 2, dd = Math.hypot(px - tx, py - ty);
+          if (dd < bd) { bd = dd; best = { x: px, y: py }; }
+        }
+      }
+      return best;
+    }
+
+    // Version 1.19 : le joueur l'envoie en (tx, ty) (double appui sur la carte). Il y va avant
+    // le reste (ses gestes en attente suivent), y souffle un instant, puis flâne autour.
+    // Renvoie le point où il va, ou null.
+    function goTo(tx, ty) {
+      const spot = nearestFree(Math.max(0, Math.min(world.w - 1, tx)), Math.max(1, Math.min(world.h - 1, ty)));
+      if (!spot) return null;
+      if (job && job.idle) job = null;
+      jobs = [walkTo(spot.x, spot.y, { far: true }), wait(rand(3, 5))].concat(jobs.filter((j) => !j.idle));
+      roamAt = spot;
+      idleAge = 0;
+      return spot;
     }
 
     /* ---------- dans la maison ---------- */
@@ -547,6 +580,7 @@
       info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, jobs: jobs.length + (job ? 1 : 0), retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
       // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
       fetch: (id) => fetch(id, true),
+      goTo,
       // Où il est (pour la bulle « +x ») : ses pieds, ou null s'il n'est pas sur la carte.
       pos: () => (shown && !home ? { x, y } : null),
       destroy() { s.destroy(); if (inside.s) inside.s.destroy(); holds.clear(); },
