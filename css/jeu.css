@@ -1783,6 +1783,29 @@ main .ancre { scroll-margin-top: 150px; }
 .sleep-fab .hoe-fab:active { transform: translateY(2px); }
 .sleep-fab .hoe-fab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 
+/* Fenêtre Outils (double appui sur le bouton rond) : l'outil choisi va sur le bouton */
+.tool-choices { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 14px; }
+.tool-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 12px 6px 6px;
+  border: 2px solid #8a5a34;
+  border-radius: 8px;
+  background: #fff1d2;
+  color: #3a2414;
+  font: inherit;
+  text-align: left;
+}
+button.tool-choice { cursor: pointer; }
+.tool-choice.active { border-color: var(--color-leaf-dark); box-shadow: 0 0 0 2px var(--color-leaf); background: #eaf5d8; }
+.tool-choice.off { opacity: 0.6; }
+.tool-choice:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+.tool-choice-art { --s: 64px; margin: -8px 0; } /* pixels entiers, comme le bouton rond */
+.tool-choice-text { display: flex; flex-direction: column; }
+.tool-choice-text small { opacity: 0.8; }
+
 /* FLU-06 : bulle de la première houe en main, sous la puce Houe */
 .stage-hud { flex-wrap: wrap-reverse; align-items: flex-end; } /* la bulle passe au-dessus de la puce */
 .hoe-hint {

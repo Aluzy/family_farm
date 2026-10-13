@@ -76,7 +76,9 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
 - La **Zone de culture** est une grille de 30 cases ; le **Champ**,
   64 cases, s'ouvre quand le Moulin est construit. La **houe** (Marché, 40 💰) change
   l'herbe en terre (5 d'énergie, 10 XP) ou rebouche une terre vide ; le nombre de tuiles
-  de terre est plafonné par le niveau (6 à 64). Les arbres du Verger (12 au plus)
+  de terre est plafonné par le niveau (6 à 64). La **hache** et la **pioche** (Marché, 60 💰
+  chacune) n'ont encore rien à couper ni à casser. Le bouton rond de la carte porte l'outil
+  choisi : un appui s'en sert, un double appui ouvre la fenêtre **Outils** pour en changer. Les arbres du Verger (12 au plus)
   apparaissent sur la carte.
 - Le **Silo** stocke le blé de la ferme : de 20 à 400 selon son niveau. Le blé ne se
   plante qu'une fois le Silo construit.

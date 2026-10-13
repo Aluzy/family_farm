@@ -99,13 +99,53 @@ def sleep_button(pal, zs):
 
 
 # Bouton « Prendre la houe » : disque de 28 px vert prairie, houe en diagonale (manche de
-# bois du bas à gauche vers le haut à droite, lame de métal perpendiculaire au bout).
+# bois du bas à gauche vers le haut à droite, lame de métal perpendiculaire au bout). Le même
+# disque porte la hache (axe-btn) ou la pioche (pick-btn) quand elles sont l'outil choisi.
 HOE_BTN = {'line': '#1d331b', 'dark': '#2e5529', 'mid': '#3e7236', 'light': '#548e48', 'rim': '#7fb466',
            'wo': '#4a2a14', 'wd': '#7c4e26', 'wm': '#a8703c', 'wl': '#cf9656',
            'mo': '#262a32', 'md': '#6c747e', 'mm': '#9aa3ad', 'ml': '#d6dce2'}
 
 
-def hoe_button(pal):
+def tool_shape(kind, x, y):
+    """Forme de l'outil sur le bouton rond : 'w' (bois), 'm' (métal) ou None."""
+    ax, ay, bx, by = 5.5, 22.5, 15.5, 12.5          # manche, du bas à gauche vers le haut à droite
+    if kind == 'pioche':
+        bx, by = 16.5, 11.5
+    vx, vy = bx - ax, by - ay
+    L = math.hypot(vx, vy)
+    t = max(0.0, min(1.0, ((x - ax) * vx + (y - ay) * vy) / (L * L)))
+    manche = math.hypot(x - (ax + t * vx), y - (ay + t * vy)) <= 1.05
+    if kind == 'hache':
+        # repère du fer : u le long du manche depuis son bout (vers le bas), v vers le haut à gauche
+        u = -((x - bx) * vx + (y - by) * vy) / L
+        v = ((x - bx) * vy - (y - by) * vx) / L
+        if 0 <= v <= 8.0 - 0.05 * (u - 1.4) ** 2 and -0.6 - v * 0.5 <= u <= 3.4 + v * 0.5:
+            return 'm'                               # la lame, qui s'évase vers son tranchant arrondi
+        if -3.0 <= v < 0 and -0.6 <= u <= 2.6:
+            return 'm'                               # le talon, de l'autre côté du manche
+        return 'w' if manche else None
+    if kind == 'pioche':
+        # fer en croissant, en travers du bout du manche, pointes vers le bas
+        cx, cy, r = bx - 7.8, by + 7.8, 11.2
+        d = math.hypot(x - cx, y - cy)
+        ang = math.atan2(-(y - cy), x - cx) - math.pi / 4      # 0 : dans l'axe du manche
+        if abs(ang) <= 0.78:
+            ep = 1.7 * (1 - abs(ang) / 0.78) + 0.45
+            if abs(d - r) <= ep:
+                return 'm'
+        return 'w' if manche else None
+    # la houe : col de métal au bout, lame verticale qui pend vers le sol et s'évase vers son
+    # tranchant (la houe vue de côté, en « 7 »)
+    if (x, y) in {(15, 11), (16, 11), (16, 10), (17, 10), (17, 9), (18, 9)}:
+        return 'm'
+    if 9 <= y <= 15 and 19 <= x <= 21:
+        return 'm'
+    if 16 <= y <= 17 and 18 <= x <= 22:
+        return 'm'                                   # le tranchant, plus large
+    return 'w' if manche else None
+
+
+def hoe_button(pal, kind='houe'):
     S = 28
     c = (S - 1) / 2
     im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
@@ -127,33 +167,12 @@ def hoe_button(pal):
                 else:
                     col = pal['mid']
             im.putpixel((x, y), rgb(col))
-    # formes : manche (segment épais), col de métal au bout, lame verticale qui pend vers le sol
-    # et s'évase vers son tranchant (la houe vue de côté, en « 7 »)
-    ax, ay, bx, by = 5.5, 22.5, 15.5, 12.5          # manche, du bas à gauche vers le haut à droite
-
-    def manche(x, y):
-        vx, vy = bx - ax, by - ay
-        t = max(0.0, min(1.0, ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy)))
-        return math.hypot(x - (ax + t * vx), y - (ay + t * vy)) <= 1.05
-
-    col_metal = {(15, 11), (16, 11), (16, 10), (17, 10), (17, 9), (18, 9)}
-
-    def lame(x, y):
-        if (x, y) in col_metal:
-            return True
-        if 9 <= y <= 15:
-            return 19 <= x <= 21
-        if 16 <= y <= 17:
-            return 18 <= x <= 22                     # le tranchant, plus large
-        return False
-
     shape = {}
     for y in range(S):
         for x in range(S):
-            if lame(x, y):
-                shape[(x, y)] = 'm'
-            elif manche(x, y):
-                shape[(x, y)] = 'w'
+            k = tool_shape(kind, x, y)
+            if k:
+                shape[(x, y)] = k
     for (x, y), k in shape.items():
         hi = (x - 1, y) not in shape or (x, y - 1) not in shape     # bord éclairé (haut, gauche)
         lo = (x + 1, y) not in shape or (x, y + 1) not in shape     # bord dans l'ombre
@@ -182,6 +201,8 @@ def art():
         'sleep-on': sleep_button(SLEEP_ON, True),
         'sleep-off': sleep_button(SLEEP_OFF, False),
         'hoe-btn': hoe_button(HOE_BTN),
+        'axe-btn': hoe_button(HOE_BTN, 'hache'),
+        'pick-btn': hoe_button(HOE_BTN, 'pioche'),
     }
 
 

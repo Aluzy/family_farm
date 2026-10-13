@@ -6,6 +6,7 @@ import {
   buyItem, buyPrice, buyQuote, isBuyable, sellableCount, sellItem,
 } from '../engine/market.js';
 import { hasHoe, isGraineComptoir, seedItem, seedStock } from '../engine/crops.js';
+import { hasTool, toolDef } from '../engine/outils.js';
 import {
   animalBuyMax, animalPrice, buyAnimals, coopCapacity, cowCapacity, cowCount, freeCowPlaces,
   freeSheepPlaces, pastureCapacity, pastureCost, sheepCount,
@@ -132,6 +133,19 @@ function hoeSlot() {
     `${H.NOM} : ${owned ? 'déjà achetée' : `${formatCoins(H.PRIX)} pièces`}`);
 }
 
+// La hache et la pioche, après la houe : achetées une fois, comme elle.
+function toolSlot(id) {
+  const def = toolDef(id);
+  const owned = hasTool(state, id);
+  return shopSlot(def.ICONE, def.NOM, `data-mode="outil" data-kind="${id}"`, owned ? null : def.PRIX, owned ? '<span aria-hidden="true">✅</span>' : '', !owned && !canPay(def.PRIX),
+    `${def.NOM} : ${owned ? 'déjà achetée' : `${formatCoins(def.PRIX)} pièces`}`);
+}
+
+const OUTILS_DESCRIPTIONS = {
+  hache: 'Pour couper le bois (rien à couper sur la ferme pour l\'instant).',
+  pioche: 'Pour casser les pierres (rien à casser sur la ferme pour l\'instant).',
+};
+
 /* -- Les animaux : ce qu'ils deviennent dans la fiche (prix fixe, besoins, places). -- */
 
 // { compte, cap, ok, note, infos } d'une espèce, ou null si elle n'est pas au Marché.
@@ -221,7 +235,7 @@ export function renderComptoir(fenetre = false) {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine' && rayon.match(k));
     const chapitre = !hasHoe(state) ? '<p class="row"><button type="button" class="btn small" data-action="aller" data-window="chapitres">📜 Voir le chapitre</button></p>' : '';
     const slots = items.map((k) => buySlot(k, 'acheter'));
-    body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
+    body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('hache'), toolSlot('pioche'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
   } else if (tab.id === 'animaux') {
     body = slotsHtml(ESPECES.map(animalSlot), 'Aucun animal à vendre pour l\'instant.');
   } else if (tab.id === 'meubles') {
@@ -241,7 +255,7 @@ function seedForSale(item) {
 /* -- Fiche d'un article (fenêtre de dialogue, cadre bois) : ses infos et les boutons de lot,
    chacun avec son total. Elle suit le jeu à chaque rendu (renderShopModal). -- */
 
-let shopOpen = null; // { mode, id } — mode : vendre, acheter, graines, houe, animal
+let shopOpen = null; // { mode, id } — mode : vendre, acheter, graines, houe, outil, animal
 
 function lotBtn(attrs, q, label, total, ok) {
   return `<button type="button" class="btn lot-btn" ${attrs} data-q="${q}"${ok ? '' : ' disabled'}><span>${label}</span><small class="num">${total}</small></button>`;
@@ -272,6 +286,14 @@ function shopBodyHtml(o) {
       <div class="item-head"><span class="item-icon" aria-hidden="true">${H.ICONE}</span><span class="item-title"><strong id="item-title">${H.NOM}</strong><span>${owned ? 'Déjà achetée' : `${formatCoins(H.PRIX)} 💰`}</span></span></div>
       <ul class="item-lines"><li>Change l'herbe de la carte en terre à cultiver.</li><li>Outil acheté une seule fois.</li></ul>
       ${owned ? '' : `<div class="row item-actions"><button type="button" class="btn primary" data-action="buy-hoe"${canPay(H.PRIX) ? '' : ' disabled'}>Acheter (−${formatCoins(H.PRIX)} 💰)</button></div>`}`;
+  }
+  if (o.mode === 'outil') {
+    const def = toolDef(o.id);
+    const owned = hasTool(state, o.id);
+    return `
+      <div class="item-head"><span class="item-icon" aria-hidden="true">${def.ICONE}</span><span class="item-title"><strong id="item-title">${def.NOM}</strong><span>${owned ? 'Déjà achetée' : `${formatCoins(def.PRIX)} 💰`}</span></span></div>
+      <ul class="item-lines"><li>${OUTILS_DESCRIPTIONS[o.id]}</li><li>Double appui sur le bouton rond de la carte : la fenêtre Outils, pour la choisir.</li><li>Outil acheté une seule fois.</li></ul>
+      ${owned ? '' : `<div class="row item-actions"><button type="button" class="btn primary" data-action="buy-tool" data-outil="${o.id}"${canPay(def.PRIX) ? '' : ' disabled'}>Acheter (−${formatCoins(def.PRIX)} 💰)</button></div>`}`;
   }
   if (o.mode === 'animal') {
     const def = DATA.ANIMAUX[o.id];

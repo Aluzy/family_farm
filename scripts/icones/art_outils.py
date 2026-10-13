@@ -1,5 +1,5 @@
 # Icônes du lot « outils et technique » : livre, parchemin, rapport, courrier, boîtes aux
-# lettres, outils (marteau, clé, houe, ciseaux, engrenage, boîte à outils), énergie et électronique
+# lettres, outils (marteau, clé, houe, hache, pioche, ciseaux, engrenage, boîte à outils), énergie et électronique
 # (batterie, tableau de commande, capteur), arrosage automatique, microscope, éprouvette, robot.
 # Format commun : voir scripts/icones/build.py.
 #
@@ -416,6 +416,44 @@ def houe():
     return compose(geo(manche), lame)
 
 
+# Hache (🪓), la même que celle du bouton rond quand elle est l'outil choisi : manche de bois
+# en diagonale, fer d'acier en travers du bout, lame évasée vers le haut à gauche.
+def hache():
+    def manche(x, y):
+        d, t = seg_dist(x, y, 2.5, 14.0, 11.5, 5.0)
+        return 'W' if d <= 0.95 else '.'
+    fer = G('''
+................
+.....AA.........
+....AAAA........
+...AAAAAA.......
+...AAAAAAA......
+....AAAAAAA.....
+.....AAAAAA.....
+.......AAAA.....
+........AA......
+''')
+    return compose(geo(manche), fer)
+
+
+# Pioche (⚒ dans les textes : ⛏ est déjà la houe) : manche de bois en diagonale, fer
+# d'acier en croissant en travers du bout, deux pointes vers le bas.
+def pioche():
+    def manche(x, y):
+        d, t = seg_dist(x, y, 2.5, 14.0, 10.5, 6.0)
+        return 'W' if d <= 0.95 else '.'
+    fer = G('''
+................
+.....AAAA.......
+...AAAAAAAA.....
+..AAA....AAAA...
+.AA.........AA..
+.A...........AA.
+..............A.
+''')
+    return compose(geo(manche), fer)
+
+
 def ciseaux():
     moitie = G('''
 ................
@@ -808,6 +846,8 @@ def icons():
         '🛠': marteau_cle(),
         '🔧': cle(),
         '⛏': houe(),
+        '🪓': hache(),
+        '⚒': pioche(),
         '✂': ciseaux(),
         '⚙': engrenage(),
         '🧰': boite_outils(),
