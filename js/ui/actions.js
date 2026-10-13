@@ -20,7 +20,7 @@ export function registerActions(handlers) {
 // vérifie que chaque action de jeu du rapport est dans l'une des deux listes.
 export const NUIT_PERMISES = new Set([
   'sleep', 'wake-water', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
-  'pet-add', 'pet-save', 'pet-remove',
+  'pet-add', 'pet-save', 'pet-remove', 'tool-select',
 ]);
 export const NUIT_BLOQUEES = new Set([
   'plant', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
@@ -28,7 +28,7 @@ export const NUIT_BLOQUEES = new Set([
   'commerce-upgrade', 'commerce-quota-dec', 'commerce-quota-inc', 'commerce-quota-max', 'harvest-tree', 'ville-go',
   'ville-market', 'ville-buy', 'buy-pasture', 'mill-start', 'mill-cancel', 'repair-house', 'buy-starter',
   'buy-orchard-slot', 'buy-tech', 'build-serre', 'build-poulailler', 'build-fridge', 'build-verger', 'build-silo',
-  'build-paturage', 'build-station', 'upgrade', 'upgrade-silo', 'upgrade-serre', 'upgrade-poulailler', 'buy-hoe',
+  'build-paturage', 'build-station', 'upgrade', 'upgrade-silo', 'upgrade-serre', 'upgrade-poulailler', 'buy-hoe', 'buy-tool',
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',
   'fridge-in-all', 'fridge-out', 'toggle', 'semis-set',
 ]);

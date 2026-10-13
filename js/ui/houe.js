@@ -3,6 +3,7 @@ import {
   buyHoe, hasHoe, hoe, soilCap, soilCapNext, soilCount,
 } from '../engine/crops.js';
 import { levelReached } from '../engine/levels.js';
+import { selectTool } from '../engine/outils.js';
 import { farmOpen } from '../engine/devices.js';
 import { actionCost, TIRED } from '../engine/stamina.js';
 import { formatCoins } from '../engine/format.js';
@@ -53,7 +54,10 @@ export function hoePanelHtml() {
 
 registerActions({
   'buy-hoe': () => {
-    const r = applyResult(buyHoe(state));
+    const r = buyHoe(state);
+    // la houe achetée va sur le bouton rond (le chapitre 1 et l'aide parlent du bouton ⛏)
+    if (r.ok) selectTool(state, 'houe');
+    applyResult(r);
     // achetée depuis sa fiche du Marché : la fiche se ferme (un outil ne s'achète qu'une fois)
     if (r.ok && document.querySelector('#modal-root .shop-modal')) closeModal();
     if (r.ok) showToast(`${DATA.HOUE.ICONE} Houe achetée : sur la carte, touche le bouton ${DATA.HOUE.ICONE} près de la lune pour labourer.`);

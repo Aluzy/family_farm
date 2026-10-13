@@ -41,6 +41,7 @@ import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js'
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
+import { toolFabHtml } from './outils.js';
 
 /* ---------- Fenêtres de la carte ---------- */
 
@@ -583,10 +584,9 @@ export function renderSleepBar() {
   const label = state.nuitEnCours && state.nuitEnCours.minuit
     ? `Passer la nuit : réveil à ${DATA.TIME.DAY_START_HOUR} h`
     : `Passer la nuit : réveil à ${DATA.TIME.DAY_START_HOUR} h. ${meal}`;
-  // FLU-05 : houe achetée et rangée, un bouton rond la met en main depuis la carte
-  const houe = state.potager.houe && !hoeMode && activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior
-    ? `<button type="button" class="hoe-fab" data-action="hoe-toggle" aria-label="Prendre la houe" title="Prendre la houe">${artHtml('hoe-btn', 'hoe-art')}</button>`
-    : '';
+  // FLU-05 : houe achetée et rangée, un bouton rond la met en main depuis la carte. Il porte
+  // l'outil choisi (houe, hache ou pioche) ; un double appui ouvre la fenêtre Outils.
+  const houe = !hoeMode && activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior ? toolFabHtml() : '';
   morph(
     document.getElementById('sleep-fab'),
     houe + (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +

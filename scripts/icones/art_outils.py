@@ -1,5 +1,5 @@
 # Icônes du lot « outils et technique » : livre, parchemin, rapport, courrier, boîtes aux
-# lettres, outils (marteau, clé, houe, ciseaux, engrenage, boîte à outils), énergie et électronique
+# lettres, outils (marteau, clé, houe, hache, pioche, ciseaux, engrenage, boîte à outils), énergie et électronique
 # (batterie, tableau de commande, capteur), arrosage automatique, microscope, éprouvette, robot.
 # Format commun : voir scripts/icones/build.py.
 #
@@ -40,6 +40,7 @@ FIX = {
     'p': ('#f0a0a0', None),
     'u': ('#d8e0e8', None), 's': ('#64707e', None), 'i': ('#dfe7ef', None),
     'b': ('#9ad0f4', '#163a5c'), 'd': ('#2a70b0', '#163a5c'),
+    '5': ('#f4f8fb', '#1e2833'),  # tranchant d'acier poli (hache, pioche)
 }
 del FIX['Y']
 
@@ -414,6 +415,52 @@ def houe():
 ..........AAAAA.
 ''')
     return compose(geo(manche), lame)
+
+
+# Hache (🪓), comme sur le bouton rond quand elle est l'outil choisi : manche de bois en
+# diagonale, fer d'acier en travers de son bout, lame évasée vers le haut à gauche jusqu'à
+# un tranchant arrondi et poli, talon court de l'autre côté du manche.
+def hache():
+    ax, ay, bx, by = 2.6, 14.4, 11.2, 6.2               # manche, du bas à gauche à l'œil
+    vx, vy = bx - ax, by - ay
+    L = math.hypot(vx, vy)
+
+    def manche(x, y):
+        d, t = seg_dist(x, y, ax, ay, bx + 0.8, by - 0.8)
+        return 'W' if d <= 0.95 else '.'
+
+    def fer(x, y):
+        u = -((x - bx) * vx + (y - by) * vy) / L        # le long du manche, vers le bas
+        v = ((x - bx) * vy - (y - by) * vx) / L         # vers le haut à gauche
+        edge = 5.0 - 0.1 * (u - 0.9) ** 2
+        if 0 <= v <= edge and -0.7 - v * 0.5 <= u <= 2.3 + v * 0.45:
+            return '5' if v > edge - 1.1 else 'A'
+        if -1.9 <= v < 0 and -0.4 <= u <= 2.2:
+            return 'A'                                   # le talon
+        return '.'
+    return compose(geo(manche), geo(fer))
+
+
+# Pioche (⚒ dans les textes : ⛏ est déjà la houe), comme sur le bouton rond : manche de
+# bois en diagonale, fer d'acier en croissant en travers de son bout, épais au milieu et
+# effilé vers les deux pointes.
+def pioche():
+    ax, ay, bx, by = 2.6, 14.4, 10.6, 6.4               # manche, du bas à gauche au fer
+    cx, cy, r = bx - 6.6, by + 6.6, 10.4                # cercle du croissant
+
+    def manche(x, y):
+        d, t = seg_dist(x, y, ax, ay, bx, by)
+        return 'W' if d <= 0.95 else '.'
+
+    def fer(x, y):
+        d = math.hypot(x - cx, y - cy)
+        ang = math.atan2(-(y - cy), x - cx) - math.pi / 4   # 0 : dans l'axe du manche
+        if abs(ang) <= 0.8:
+            ep = 1.45 * (1 - abs(ang) / 0.8) ** 0.8 + 0.3   # demi-épaisseur
+            if abs(d - r) <= ep:
+                return 'A'
+        return '.'
+    return compose(geo(manche), geo(fer))
 
 
 def ciseaux():
@@ -808,6 +855,8 @@ def icons():
         '🛠': marteau_cle(),
         '🔧': cle(),
         '⛏': houe(),
+        '🪓': hache(),
+        '⚒': pioche(),
         '✂': ciseaux(),
         '⚙': engrenage(),
         '🧰': boite_outils(),

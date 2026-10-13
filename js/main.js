@@ -45,6 +45,7 @@ import './ui/chapitres.js';
 import './ui/niveaux.js';
 import './ui/energie.js';
 import './ui/houe.js';
+import './ui/outils.js';
 import './ui/depart.js';
 import './ui/animations.js';
 import './ui/aide.js';

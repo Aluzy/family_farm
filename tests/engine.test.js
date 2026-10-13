@@ -10,6 +10,7 @@ import {
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
+import { buyTool, hasTool, OUTILS, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -8405,6 +8406,35 @@ test('version 1.9 : la houe s\'achète une fois au Marché', () => {
   s.pieces = 100;
   assertEqual([buyHoe(s).cost, s.pieces, hasHoe(s)], [40, 60, true]);
   assertEqual([buyHoe(s).ok, s.pieces], [false, 60], 'une seule houe');
+});
+
+/* ---------- les outils : hache, pioche et outil du bouton rond ---------- */
+
+test('outils : la hache et la pioche s\'achètent une fois au Marché ; l\'outil choisi va sur le bouton', () => {
+  const s = garden();
+  assertEqual([selectedTool(s), ownedTools(s), 'outils' in s], [null, [], false], 'au départ : aucun outil, rien d\'enregistré');
+  assertEqual(selectTool(s, 'hache').ok, false, 'pas de hache : on ne la choisit pas');
+  s.pieces = DATA.HACHE.PRIX - 1;
+  assertEqual(buyTool(s, 'hache').ok, false, 'pas assez de pièces');
+  s.pieces = 1000;
+  assertEqual([buyTool(s, 'hache').cost, s.pieces, hasTool(s, 'hache'), selectedTool(s)], [DATA.HACHE.PRIX, 1000 - DATA.HACHE.PRIX, true, 'hache'], 'le premier outil va sur le bouton');
+  assertEqual(buyTool(s, 'hache').ok, false, 'une seule hache');
+  assertEqual([buyTool(s, 'houe').ok, hasHoe(s), selectedTool(s)], [true, true, 'hache'], 'la houe passe par buyHoe ; le choix ne change pas');
+  assertEqual([buyTool(s, 'pioche').ok, ownedTools(s)], [true, ['houe', 'hache', 'pioche']]);
+  assertEqual([selectTool(s, 'pioche').ok, selectedTool(s)], [true, 'pioche']);
+  assertEqual(selectTool(s, 'marteau').ok, false, 'outil inconnu');
+  assertEqual(OUTILS.map((id) => toolDef(id).ICONE), ['⛏️', '🪓', '⚒️']);
+});
+
+test('outils : une partie avec la houe seule l\'a sur le bouton ; le Marché fermé ne vend pas la hache', () => {
+  const s = garden();
+  s.potager.houe = true;
+  assertEqual(selectedTool(s), 'houe');
+  s.outils = { hache: false, pioche: false, choisi: 'pioche' };
+  assertEqual(selectedTool(s), 'houe', 'un outil choisi qu\'on n\'a pas revient à la houe');
+  const t = createInitialState(1);
+  t.pieces = 1000;
+  assertEqual(buyTool(t, 'hache').ok, farmOpen(t), 'le Marché ouvre avec le panneau et la pompe');
 });
 
 // Version 1.15 : le milieu de l'ancien Champ, de l'herbe tout autour (les bordures s'y
