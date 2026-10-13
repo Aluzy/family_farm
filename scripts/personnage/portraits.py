@@ -330,6 +330,11 @@ MOTIFS = {None: lambda g: g, 'rayures': rayures, 'carreaux': carreaux, 'pois': p
 
 def portrait_catalogue(base, pal0, d):
     """Le portrait d'un personnage du catalogue (scripts/personnage/catalogue.py)."""
+    return image(*grille_catalogue(base, pal0, d))
+
+
+def grille_catalogue(base, pal0, d):
+    """La grille (lettres) et la palette du portrait d'un personnage du catalogue."""
     g = COUPES[d['coupe']](copie(base))
     g = COUVRE_CHEFS[d['chapeau']](g)
     for x in d['details']:
@@ -347,7 +352,7 @@ def portrait_catalogue(base, pal0, d):
         pal['P'] = (200, 60, 60) if d['habit'] == 'blanc' else (244, 240, 228)
     h = catalogue.CHEVEUX[d['cheveux']]
     pal['q'] = h['b']; pal['Q'] = h['d']                # barbe et moustache : la couleur des cheveux
-    return image(g, pal)
+    return g, pal
 
 
 def main():
