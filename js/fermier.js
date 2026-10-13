@@ -397,7 +397,7 @@
       return p ? { x: Math.round(p.x + p.w / 2), y: Math.round(p.y + p.h + 9) } : null;
     }
     function stepInside(room, dt) {
-      if (!inside.s) inside.s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1);
+      if (!inside.s) inside.s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1).setScale(o.scale || 1);
       const S = inside.s;
       const rest = { x: Math.round(room.view.x + room.view.w * 0.5), y: Math.round(room.view.y + room.view.h * 0.7) };
       if (inside.at !== room.id) { inside.at = room.id; inside.x = rest.x; inside.y = rest.y; inside.mode = 'idle'; inside.t = 0; frigoDue = false; }
@@ -477,10 +477,12 @@
       force(name) { if (name === 'oeufs') { eggsDue = true; } return this.info(); },
       destroy() { s.destroy(); if (inside.s) inside.s.destroy(); holds.clear(); },
       // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
-      setSheet(key) {
+      // scale : 0.5 pour une planche en résolution double (même taille sur la carte).
+      setSheet(key, scale = 1) {
         o.sheet = key;
-        s.setTexture(key, s.frame ? s.frame.name : 0);
-        if (inside.s) inside.s.setTexture(key, inside.s.frame ? inside.s.frame.name : 0);
+        o.scale = scale;
+        s.setTexture(key, s.frame ? s.frame.name : 0).setScale(scale);
+        if (inside.s) inside.s.setTexture(key, inside.s.frame ? inside.s.frame.name : 0).setScale(scale);
       },
     };
   }

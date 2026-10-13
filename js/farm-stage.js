@@ -158,6 +158,10 @@
   // La planche du personnage : la fermière (fermier.png existe aussi). Le choix du personnage
   // est désactivé pour l'instant : c'est toujours elle.
   const PERSONNAGE = 'fermiere';
+  // Essai : ces personnages du catalogue ont aussi une planche en résolution double
+  // (assets/personnages_hd, cases de 32 × 64) ; la carte la préfère.
+  const PERSOS_HD = [1, 5, 10, 22, 44];
+  const FERMIER_FRAME_HD = { frameWidth: 32, frameHeight: 64 };
   // Les bêtes de l'Étable et du Poulailler, elles aussi animées par la vie d'ambiance : une
   // planche par espèce (fichier, taille des cases ; leur ordre : HERD dans
   // js/ambient-life.js). Une espèce sans planche n'est pas dessinée.
@@ -1554,10 +1558,14 @@
       syncPerso(n) {
         if (!this.fermier || !n || n === this.persoN) return;
         this.persoN = n;
-        const key = 'perso_' + n;
-        const apply = () => { if (this.persoN === n && this.has(key)) this.fermier.setSheet(key); };
+        // Essai de résolution double (scripts/personnage/hd.py) : cases de 32 × 64 affichées à
+        // demi-échelle, donc à la même taille sur la carte, avec des pixels deux fois plus fins.
+        const hd = PERSOS_HD.includes(n);
+        const key = (hd ? 'perso_hd_' : 'perso_') + n;
+        const apply = () => { if (this.persoN === n && this.has(key)) this.fermier.setSheet(key, hd ? 0.5 : 1); };
         if (this.textures.exists(key)) { apply(); return; }
-        this.load.spritesheet(key, v('personnages/perso_' + String(n).padStart(2, '0') + '.png'), FERMIER_FRAME);
+        const file = 'personnages' + (hd ? '_hd' : '') + '/perso_' + String(n).padStart(2, '0') + '.png';
+        this.load.spritesheet(key, v(file), hd ? FERMIER_FRAME_HD : FERMIER_FRAME);
         this.load.once('complete', apply);
         this.load.start();
       }
