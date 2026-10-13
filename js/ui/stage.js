@@ -11,11 +11,12 @@ import { woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
+import { pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import {
   activeTab, ecranFerme, hoeMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
-import { safeStorageGet, safeStorageSet } from './storage.js';
+import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
 import { morph, refresh, setLastRenderAt } from './render.js';
 import {
   allerAuLieu, interiorAvailable, interiorHelp, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue,
@@ -322,15 +323,44 @@ export function stageModel() {
   // Appui long sur la citerne : une bulle dit combien de litres elle contient.
   const citerneTexte = citerne >= 0 ? `💧 ${formatLitres(Math.min(state.eauMl, cap))} / ${formatLitres(cap)}` : '';
   // Pour le personnage (js/fermier.js) : le jour (une case qui change le même jour est un
-  // geste du joueur), les œufs de la nuit, la préparation en cours, le contenu du frigo.
+  // geste du joueur), la préparation en cours, le contenu du frigo.
   const cuisson = ['cuisine', 'four'].find((id) => state.stations[id] && state.stations[id].construit && state.stations[id].tache) || null;
+  // Version 1.18 : ce qui attend que le personnage le ramasse, à sa place (parcelle : sa
+  // case ; arbre : sa case du Verger ; Poulailler, Étable), avec le texte de sa bulle.
+  const ramasser = piles(state).map((p) => ({ id: p.id, lieu: p.lieu, ref: p.ref, texte: itemsBulle(p.items) }));
   return {
+    ramasser,
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
     perso: memberPerso(mainCharacter(state)),
-    jour: state.day, oeufs: (state.nuit && state.nuit.oeufs) || 0, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
+    jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
     houe, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
+}
+
+// Texte d'une bulle : « 🥕 6 🌱 2 » (les emojis deviennent des icônes à l'affichage).
+function itemsBulle(items) {
+  return Object.entries(items || {}).filter(([item, qty]) => DATA.items[item] && qty > 0)
+    .map(([item, qty]) => `${DATA.items[item].icone} ${qty}`).join(' ');
+}
+
+// Version 1.18 : le personnage de la carte ramasse ce qui est produit. Sans lui (pas de
+// carte, ou une carte prête mais sans personnage), tout va directement à l'inventaire, et
+// ce qui attendait encore y entre.
+function syncRamassage() {
+  const on = stageUsable() && (!FarmStage.ready() || FarmStage.hasFermier());
+  state.ramassage = on;
+  if (!on && piles(state).length) pickUpAll(state);
+}
+
+// Le personnage prend un tas (appelé par la carte, jamais par un bouton) : renvoie ce qu'il
+// contenait ({ item: qté }), ou null s'il n'y avait plus rien.
+function stagePickup(id) {
+  const r = pickUp(state, id);
+  if (!r.ok) return null;
+  persistState();
+  refresh();
+  return r.items;
 }
 
 // Version 1.15 : tuiles que la houe peut labourer (la grille verte de la carte en mode houe),
@@ -369,6 +399,7 @@ function stageAct(action, data) {
 }
 
 export function renderStage() {
+  syncRamassage();
   const el = document.getElementById('farm-stage');
   let on = stageActive();
   const wasOn = stageMounted && !el.hidden; // la carte était-elle déjà à l'écran ?
@@ -378,7 +409,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, base: 'assets/', crops: cropSprites() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, icone: (item) => (DATA.items[item] ? DATA.items[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

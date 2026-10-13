@@ -58,6 +58,7 @@ import {
   updateChapters, upgradeCost, upgradeDevice, upgradePoulailler, upgradeSerre,
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
+  collectLeftovers, pickUp, piles,
 } from '../js/engine/index.js';
 
 
@@ -1282,10 +1283,10 @@ test('profil : un prénom abîmé dans une sauvegarde retombe sur le rôle à l\
   assertEqual(memberPortrait(s, 'adulte-2'), '👩', 'sexe et teinte inconnus : premier sexe, jaune');
 });
 
-test('ordre des étapes nocturnes : repas et santé, automatisations, pousse, ponte, paille des moutons et des vaches, préparations, puis péremption en dernier', () => {
+test('ordre des étapes nocturnes : ce qui reste à ramasser, repas et santé, automatisations, pousse, ponte, paille des moutons et des vaches, préparations, puis péremption en dernier', () => {
   // Arbre v2 : la pluie avant les automatisations, l'entretien automatique
   // après les préparations et avant le bloc nocturne du frigo.
-  assertEqual(NIGHT_STEPS, [feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil]);
+  assertEqual(NIGHT_STEPS, [collectLeftovers, feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil]);
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
@@ -9102,6 +9103,46 @@ test('Personnages (version 1.17) : adultes et enfants choisissent un des 50 pers
   assertEqual(setMemberProfile(s, enfant.id, { perso: P.PERSOS_ENFANT + 1 }).error, 'Personnage inconnu.');
   assert(setMemberProfile(s, adulte.id, { prenom: 'Lou' }).ok);
   assertEqual(memberPerso(adulte), 23, 'un autre changement garde le personnage');
+});
+
+testBase('Ramassage (version 1.18) : avec le personnage, la récolte au clic attend sur sa case ; l\'automatique et la nuit vont à l\'inventaire', () => {
+  const s = garden();
+  const avant = countItem(s, 'carotte');
+  plantRipe(s, 'potager-1', 'carotte');
+  assertEqual(harvest(s, 'potager-1').aRamasser, false, 'sans personnage : directement');
+  assertEqual(countItem(s, 'carotte'), avant + 6);
+  s.ramassage = true;
+  plantRipe(s, 'potager-1', 'carotte');
+  plantRipe(s, 'potager-2', 'carotte');
+  const c = findPlot(s, 'potager-1').case;
+  assertEqual(harvest(s, 'potager-1').aRamasser, true);
+  assertEqual(countItem(s, 'carotte'), avant + 6, 'pas encore dans l\'inventaire');
+  assertEqual(piles(s).map((p) => [p.id, p.lieu, p.ref, p.items.carotte]), [[`parcelle:${c}`, 'parcelle', c, 6]]);
+  assertEqual(harvest(s, 'potager-2', true).aRamasser, false, 'automatisation : directement');
+  assertEqual(countItem(s, 'carotte'), avant + 12);
+  const r = pickUp(s, `parcelle:${c}`);
+  assertEqual([r.ok, r.items.carotte, countItem(s, 'carotte'), piles(s).length], [true, 6, avant + 18, 0]);
+  assertEqual(pickUp(s, `parcelle:${c}`).ok, false, 'déjà ramassé');
+  // Le soir, ce qui traîne est rentré.
+  plantRipe(s, 'potager-1', 'carotte');
+  harvest(s, 'potager-1');
+  assertEqual(collectLeftovers(s).carotte, 6);
+  assertEqual([piles(s).length, countItem(s, 'carotte')], [0, avant + 24]);
+});
+
+test('Ramassage (version 1.18) : les œufs attendent au Poulailler, le lait et la laine à l\'Étable', () => {
+  const s = createInitialState(1);
+  s.ramassage = true;
+  s.poulailler.construit = true;
+  s.poulailler.poules = 2;
+  s.poulailler.nourries = 2;
+  const oeuf = DATA.ANIMAUX.poule.produit;
+  const avant = countItem(s, oeuf);
+  assertEqual(layEggs(s), 2 * DATA.ANIMAUX.poule.oeufsParNuit);
+  assertEqual(countItem(s, oeuf), avant, 'au Poulailler');
+  assertEqual(piles(s).map((p) => p.id), ['poulailler']);
+  assertEqual(pickUp(s, 'poulailler').items[oeuf], 2 * DATA.ANIMAUX.poule.oeufsParNuit);
+  assertEqual(countItem(s, oeuf), avant + 2 * DATA.ANIMAUX.poule.oeufsParNuit);
 });
 
 export const results = runTests();

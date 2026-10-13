@@ -589,5 +589,7 @@ export function simulationReach(rows, pct) {
 // Joue `nights` nuits sur une COPIE de la partie (la partie en cours n'est pas
 // touchée) : sert au bouton du mode test.
 export function simulateFromCopy(state, strategyId = 'applique', nights = 60) {
-  return simulatePlay(JSON.parse(JSON.stringify(state)), strategyId, nights);
+  const copy = JSON.parse(JSON.stringify(state));
+  copy.ramassage = false; // version 1.18 : le joueur automatique n'a pas de personnage qui ramasse
+  return simulatePlay(copy, strategyId, nights);
 }

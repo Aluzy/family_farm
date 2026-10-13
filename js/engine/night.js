@@ -14,6 +14,7 @@ import { refreshUnlocks } from './techtree.js';
 import { autoMaintain, autoTasks, newAutoReport, rainNight } from './automation.js';
 import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
+import { collectLeftovers } from './ramassage.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // repas (version 1.8 : énergie au réveil), puis pousse. Lot 4 : la ponte. Lot 5 : les préparations en
@@ -31,7 +32,7 @@ import { noteTutorialSleep } from './alerts.js';
 // de la nuit suivante. Juste avant la péremption, le blé de l'inventaire
 // rejoint le Silo s'il y a de la place (fillSilo) : au Silo, il ne périme pas.
 // Chaque étape reçoit l'état et le modifie.
-export const NIGHT_STEPS = [feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil];
+export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil];
 
 /* ---------- la nuit ---------- */
 

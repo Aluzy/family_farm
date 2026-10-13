@@ -61,14 +61,30 @@ ajouter : le JSON donne l'ordre).
   de houe), il va aux 4 plus proches ; les autres changent en cascade après son dernier geste.
   Une retenue ne dure jamais plus de 9 s. Une case loin de lui (plus de 24 tuiles de chemin) :
   il y apparaît directement.
-- **Le matin**, s'il y a eu des œufs, il traverse la ferme jusqu'au Poulailler, les ramasse et
-  revient avec son panier.
+- **Il ramasse** (version 1.18). L'inventaire est celui du personnage principal : ce qui est
+  produit n'y entre que quand il le prend. Une récolte au clic sur la carte (une case, « Récolter
+  tout », un arbre du Verger), une tonte au clic, les œufs et le lait de la nuit attendent à leur
+  place (`state.aRamasser`, `js/engine/ramassage.js`). Une récolte se ramasse au geste même ;
+  le reste, il va le chercher dès qu'il est libre et dehors (le plus proche d'abord), ou tout de
+  suite quand le joueur appuie sur sa bulle (« 🥚 6 » au-dessus du Poulailler, « 🥛 2 🧶 1 » au-dessus
+  de l'Étable, « 🍎 4 » sur l'arbre…), même la nuit. Au Poulailler et à l'Étable, il remplit son
+  panier et le rapporte devant la maison. À chaque prise, une bulle « +6 🥕 » monte au-dessus de
+  lui, reste un instant puis s'estompe ; une prise qui arrive avant qu'elle ait disparu s'y
+  additionne.
+- **Ce qui ne l'attend pas** : les automatisations (récolte et tonte de nuit, Arbre des
+  technologies), la Serre, et tout quand la carte n'a pas de personnage (pas de carte, joueur
+  automatique, essais du moteur) : directement dans l'inventaire (`state.ramassage` faux, réglé
+  par la page à chaque rendu ; ce qui attendait y entre alors). Au début de chaque nuit, ce qui
+  traîne encore est rentré (`collectLeftovers`, première étape nocturne) : rien ne se perd et
+  les repas de la nuit le trouvent.
 - **Dans la maison** (l'intérieur) : il cuisine devant la Cuisine (ou le Four) tant qu'une
   préparation est en cours ; quand le contenu du réfrigérateur change, il va l'ouvrir.
 - **Animations réduites** : ni marche ni retenue ; il se pose directement où il travaille.
 
-Le modèle de vue lui donne `jour`, `oeufs` (les œufs de la nuit), `cuisson` (`'cuisine'`,
-`'four'` ou `null`) et `frigo` (les unités au frais), en plus des parcelles.
+Le modèle de vue lui donne `jour`, `cuisson` (`'cuisine'`, `'four'` ou `null`), `frigo` (les
+unités au frais) et `ramasser` (les tas : `{ id, lieu, ref, texte }`), en plus des parcelles. Il
+prend un tas par `o.pickup(id, fin)` (`FarmStage.mount(…, { pickup })`, qui appelle `pickUp()` du
+moteur hors de la boucle d'image) et montre la bulle par `o.gain(items)`.
 
 ## Chemin
 
@@ -83,5 +99,5 @@ arbres (lus par `js/ambient-life.js`, `ground()`). Les zones de culture restent 
 - Un seul personnage : la famille n'est pas encore sur la carte.
 - Dehors et dans la maison, ce sont deux images : on ne voit jamais les deux à la fois.
 
-Pour les essais : `FarmStage.scene().fermier.info()`, et `.force('oeufs')` l'envoie au
-Poulailler.
+Pour les essais : `FarmStage.scene().fermier.info()` (dont `aRamasser` et `prevus`), et
+`.fetch('poulailler')` l'envoie chercher un tas, comme un appui sur sa bulle.

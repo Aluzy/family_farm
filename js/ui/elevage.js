@@ -437,7 +437,8 @@ registerActions({
   },
   'harvest': (target) => {
     const result = applyResult(harvest(state, target.dataset.id));
-    if (result.ok) showToast(harvestToast(result));
+    // version 1.18 : ce qui attend le personnage s'annonce par sa bulle, au ramassage
+    if (result.ok && !result.aRamasser) showToast(harvestToast(result));
   },
   'build-silo': () => {
     applyResult(buildSilo(state));
@@ -471,7 +472,7 @@ registerActions({
   },
   'shear': (target) => {
     const result = applyResult(shear(state, target.dataset.id));
-    if (result.ok) showToast(`✂️ Tonte : +${result.laine} 🧶`);
+    if (result.ok && !result.aRamasser) showToast(`✂️ Tonte : +${result.laine} 🧶`);
   },
   'plant-all-open': (target) => {
     openPlantAllModal(target.dataset.lieu, target.dataset.zone);
@@ -492,7 +493,7 @@ registerActions({
   },
   'harvest-all': (target) => {
     const result = applyResult(harvestAll(state, target.dataset.lieu, target.dataset.zone));
-    if (result.ok) showToast(`🧺 ${itemsSummary(result.items)}`);
+    if (result.ok && !result.aRamasser) showToast(`🧺 ${itemsSummary(result.items)}`);
   },
   'semis-open': (target) => {
     openSemisModal(target.dataset.id);
