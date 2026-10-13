@@ -197,7 +197,9 @@
   const ROOM_FADE_MS = 180;    // fondu à l'entrée et à la sortie
   const ROOM_PAD = { top: 44, bottom: 60 };   // px CSS laissés à l'objectif (en haut) et aux boutons (en bas)
 
-  const TAP_SLOP = 8;          // px CSS : au-delà, le geste est un glissement, pas un appui
+  const TAP_SLOP = 8;
+  const DOUBLE_TAP_MS = 300;   // deux appuis rapprochés sur l'herbe ou un chemin : le personnage y va
+  const DOUBLE_TAP_PX = 30;    // px CSS entre les deux appuis, au plus          // px CSS : au-delà, le geste est un glissement, pas un appui
   const MIN_TAP = 44;          // px CSS : taille minimale de la zone d'appui d'un bâtiment
   const INERTIA_MS = 260;      // constante de temps de l'élan après un glissement
   const MAX_SPEED = 1.5;       // px de carte par ms
@@ -1552,7 +1554,7 @@
           // version 1.15 : en mode houe, toute tuile labourable (ou terre) se laboure ou se rebouche
           if (hoeing && z.zone && (p || this.arable(i))) return { hoe: { zone: z.zone, case: i }, place: z.place };
           if (p) return { plot: p, place: z.place, open: z.window };
-          if (z.zone && this.arable(i)) herbe = { window: z.window, place: z.place };
+          if (z.zone && this.arable(i)) herbe = { window: z.window, place: z.place, herbe: true };
         }
         if (this.room) return this.propAt(wx, wy);   // dans un intérieur : ses meubles, rien d'autre
         const label = this.labelAt(wx, wy);
@@ -1595,6 +1597,24 @@
       tap(wx, wy) {
         if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
+        // Version 1.19 : dehors, un double appui sur l'herbe ou un chemin y envoie le personnage.
+        // Sur l'herbe labourable, l'appui simple (la fenêtre de la Zone de culture) attend donc
+        // DOUBLE_TAP_MS de voir s'il n'est pas suivi d'un second.
+        if (!this.room && (!hit || hit.herbe)) {
+          const now = performance.now(), prev = this.lastTap;
+          const near = prev && Math.hypot(wx - prev.x, wy - prev.y) <= (DOUBLE_TAP_PX * pixelRatio()) / this.cameras.main.zoom;
+          if (prev && now - prev.t <= DOUBLE_TAP_MS && near) {
+            clearTimeout(prev.timer);
+            this.lastTap = null;
+            this.goHere(wx, wy);
+            return;
+          }
+          if (prev) clearTimeout(prev.timer);
+          const tapNow = { t: now, x: wx, y: wy, timer: 0 };
+          if (hit) tapNow.timer = setTimeout(() => { if (this.lastTap === tapNow) this.lastTap = null; bridge.act('stage-open', { window: hit.window }); }, DOUBLE_TAP_MS);
+          this.lastTap = tapNow;
+          return;
+        }
         if (!hit) return;
         if (hit.pile) { if (this.fermier && !(lastModel && lastModel.nuit)) this.fermier.fetch(hit.pile); return; }   // la nuit, la famille dort
         if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
@@ -1606,6 +1626,17 @@
         else if (p.mature) bridge.act('harvest', { id: p.id });
         else if (!p.arrosee) bridge.act('water', { id: p.id });
         else bridge.act('stage-open', { window: hit.open });   // rien à faire sur la carte : la fenêtre de sa zone
+      }
+
+      // Le personnage va au point (wx, wy) de la carte ; un rond marque un instant l'arrivée.
+      // La nuit, la famille dort : rien.
+      goHere(wx, wy) {
+        if (!this.fermier || (lastModel && lastModel.nuit)) return;
+        const at = this.fermier.goTo(wx, wy);
+        if (!at) return;
+        const g = this.add.graphics().setDepth(at.y - 1);
+        g.lineStyle(1, 0xfff1d2, 0.95).strokeEllipse(at.x, at.y - 1, 12, 6);
+        this.tweens.add({ targets: g, alpha: 0, duration: reducedMotion() ? 300 : 900, ease: 'Quad.easeIn', onComplete: () => g.destroy() });
       }
 
       /* ---------- synchronisation avec le jeu ---------- */

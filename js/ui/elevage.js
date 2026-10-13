@@ -287,7 +287,7 @@ function openPlantAllModal(lieu, zone) {
     .join('');
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="plant-title" data-stop-propagation>
+      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="plant-title" data-stop-propagation>
         <h2 id="plant-title">🌱 Planter partout</h2>
         <p class="muted">La même culture sur les ${vides} parcelle${vides > 1 ? 's' : ''} vide${vides > 1 ? 's' : ''}, autant que tes graines et ton énergie le permettent.</p>
         <div class="stack">${rows}</div>
@@ -407,7 +407,7 @@ function openPlantModal(plotId) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="plant-title" data-stop-propagation>
+      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="plant-title" data-stop-propagation>
         <h2 id="plant-title">🌱 Planter</h2>
         <p class="muted">Choisis ce que tu plantes sur cette parcelle.</p>
         <div class="stack">${rows}</div>
