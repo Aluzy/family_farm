@@ -453,6 +453,8 @@
         return;
       }
       if (inside.s) { inside.s.setVisible(false); inside.at = null; }
+      // Retour sur la carte : une pièce l'avait caché ; il réapparaît où il en était.
+      if (shown && !s.visible) s.setVisible(true);
       if (fade) {
         alpha = Math.max(0, Math.min(1, alpha + (fade * dt) / FADE_S));
         if (alpha >= 1 && fade > 0) fade = 0;
