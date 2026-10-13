@@ -1,10 +1,16 @@
 /* fermier.js — le personnage de la carte (version provisoire).
  *
  * Il habite la maison : le jour il en sort, flâne devant, et fait sur la carte ce que le
- * joueur vient de faire (labourer, planter, arroser, récolter). Le soir il rentre. Le matin,
- * s'il y a eu des œufs, il va les chercher au Poulailler et revient avec son panier. Dans
+ * joueur vient de faire (labourer, planter, arroser, récolter). Le soir il rentre. Dans
  * l'intérieur de la maison, il cuisine quand une préparation est en cours et ouvre le
  * réfrigérateur quand son contenu change.
+ *
+ * Version 1.18 : il ramasse. Ce qui est produit attend à sa place (modèle.ramasser : une
+ * récolte sur sa case, un arbre cueilli, les œufs au Poulailler, le lait et la laine à
+ * l'Étable) et n'entre dans l'inventaire que quand il le prend (o.pickup). Une récolte se
+ * ramasse au geste même ; le reste, il va le chercher dès qu'il est libre et dehors, ou
+ * tout de suite quand le joueur appuie sur sa bulle (fetch). À chaque prise, une bulle
+ * « +6 🥕 » monte au-dessus de lui (o.gain) ; des prises rapprochées s'y additionnent.
  *
  * Comme le reste de la carte, il ne lit jamais l'état du jeu : il compare deux modèles de vue
  * qui se suivent (filter). Une parcelle qui change le même jour (une case labourée, une graine,
@@ -16,8 +22,8 @@
  * (scripts/personnage/fermier.py). Sans elles, pas de personnage : rien d'autre ne change.
  * Animations réduites : pas de marche ni de retenue ; il se pose directement où il travaille.
  *
- * API : Fermier.attach(scène, { sheet, frames, world, objects, ground, reduced, resync })
- *       → { filter(modèle), update(delta, intérieur), info(), destroy() }
+ * API : Fermier.attach(scène, { sheet, frames, world, objects, ground, reduced, resync, pickup, gain })
+ *       → { filter(modèle), update(delta, intérieur), fetch(id), pos(), info(), destroy() }
  */
 (function (global) {
   'use strict';
@@ -245,6 +251,18 @@
       if (o.resync) o.resync();
     }
 
+    /* ---------- ce qu'il ramasse ---------- */
+
+    let pilesNow = new Map();       // tas à ramasser du dernier modèle : id → { id, lieu, ref }
+    const claimed = new Set();      // tas qu'il a déjà prévu d'aller prendre
+    // Il prend le tas `id` : le jeu le met dans l'inventaire, la bulle « +x » monte.
+    function take(id) {
+      claimed.delete(id);
+      if (!pilesNow.has(id) || !o.pickup) return;
+      pilesNow.delete(id);
+      o.pickup(id, (items) => { if (items && o.gain) o.gain(items); });
+    }
+
     // Où se tenir pour travailler la case c : à sa gauche (tourné vers la droite), sinon à sa droite.
     function standFor(c) {
       const p = tileXY(c);
@@ -270,6 +288,7 @@
         const p = tileXY(c); px = p.x; py = p.y;
       }
       const visits = order.slice(0, MAX_VISITS), rest = order.slice(MAX_VISITS);
+      if (type === 'recolter') order.forEach((c) => claimed.add(`parcelle:${c}`));
       visits.forEach((c, n) => {
         const st = standFor(c);
         jobs.push(walkTo(st.x, st.y));
@@ -277,8 +296,11 @@
           face: st.face, flip: st.flip,
           onHit: () => {
             release(c);
+            if (type === 'recolter') take(`parcelle:${c}`);
             // Après le dernier geste, les autres cases changent une à une autour de lui.
-            if (n === visits.length - 1) rest.forEach((r, k) => setTimeout(() => release(r), (k + 1) * CASCADE_MS));
+            if (n === visits.length - 1) {
+              rest.forEach((r, k) => setTimeout(() => { release(r); if (type === 'recolter') take(`parcelle:${r}`); }, (k + 1) * CASCADE_MS));
+            }
           },
         }));
       });
@@ -308,22 +330,25 @@
     function filter(model) {
       const raw = model;
       ctx.hour = raw.heure == null ? 12 : raw.heure;
-      const morning = prevRaw && raw.jour != null && prevRaw.jour != null && raw.jour > prevRaw.jour;
-      if (morning && raw.oeufs > 0 && raw.animaux && raw.animaux.poule > 0) eggsDue = true;
+      pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));
+      for (const id of [...claimed]) if (!pilesNow.has(id)) claimed.delete(id);
       if (prevRaw && raw.jour === prevRaw.jour && o.outside()) {
         const found = diff(prevRaw, raw);
         if (reduced()) holds.clear();
         else {
           // Trop de retard : ce qui attend encore se montre tout de suite.
-          if (jobs.length > 3 * MAX_VISITS * 2) { jobs = []; holds.forEach((h, c) => { if (!Object.values(found).some((l) => l.includes(c))) holds.delete(c); }); }
+          if (jobs.length > 3 * MAX_VISITS * 2) { jobs = []; claimed.clear(); holds.forEach((h, c) => { if (!Object.values(found).some((l) => l.includes(c))) holds.delete(c); }); }
           for (const type of ['labourer', 'planter', 'arroser', 'recolter']) if (found[type]) queueGeste(type, found[type]);
         }
         if (reduced()) for (const type of Object.keys(found)) { const st = standFor(found[type][0]); x = st.x; y = st.y; face = st.face; flip = st.flip; appear(); }
+        if (reduced() && found.recolter) found.recolter.forEach((c) => take(`parcelle:${c}`));
       }
       if (prevRaw && raw.frigo !== prevRaw.frigo && raw.jour === prevRaw.jour) frigoDue = true;
       cooking = raw.cuisson || null;
       prevRaw = raw;
-      if (!holds.size) return raw;
+      // Une récolte qu'il va prendre au geste (case retenue ou prévue) n'a pas de bulle.
+      const shownPiles = (raw.ramasser || []).filter((p) => !(p.lieu === 'parcelle' && (holds.has(p.ref) || claimed.has(p.id))));
+      if (!holds.size) return shownPiles.length === (raw.ramasser || []).length ? raw : Object.assign({}, raw, { ramasser: shownPiles });
       const plots = [];
       const seen = new Set();
       for (const p of raw.plots || []) {
@@ -333,23 +358,68 @@
         else if (!h.view.none) plots.push(h.view);
       }
       for (const [c, h] of holds) if (!seen.has(c) && !h.view.none) plots.push(h.view);
-      return Object.assign({}, raw, { plots });
+      return Object.assign({}, raw, { plots, ramasser: shownPiles });
     }
 
     /* ---------- la journée ---------- */
 
-    let eggsDue = false;
-    function morningEggs() {
-      eggsDue = false;
-      const spot = coopSpot();
-      if (!spot) return;
-      jobs.push(walkTo(spot.x, spot.y, { far: true }));
-      jobs.push(act('ramasse', { face: 'cote', flip: false }));
-      jobs.push(once(() => { basket = true; }));
-      const d = door();
-      jobs.push(walkTo(d.x, d.y + 4, { basket: true, far: true }));
-      jobs.push(once(() => { basket = false; }));
-      jobs.push(wait(0.6));
+    // Où se tenir pour prendre un tas, et le geste : au Poulailler et à l'Étable, il remplit
+    // son panier et le rapporte devant la maison ; à un arbre ou sur une case, il se baisse.
+    function barnSpot() {
+      const b = sprite('etable');
+      if (!b || b.texture.key.indexOf('ph_') === 0) return null;
+      return { x: Math.round(b.x + b.width * 0.5), y: Math.round(b.y + 6) };
+    }
+    function treeSpot(c) {
+      const r = (o.objects || {})['arbre_verger_' + (c + 1)];
+      return r ? { x: Math.round(r.x + r.width / 2 - 12), y: Math.round(r.y + r.height + 2), face: 'cote', flip: false } : null;
+    }
+    // Les tâches pour aller prendre le tas `p` (false : on ne sait pas où il est).
+    function fetchJobs(p) {
+      const list = [];
+      if (p.lieu === 'poulailler' || p.lieu === 'etable') {
+        const spot = p.lieu === 'poulailler' ? coopSpot() : barnSpot();
+        if (!spot) return false;
+        list.push(walkTo(spot.x, spot.y, { far: true }));
+        list.push(act('ramasse', { face: 'cote', flip: false }));
+        list.push(once(() => { take(p.id); basket = true; }));
+        const d = door();
+        list.push(walkTo(d.x, d.y + 4, { basket: true, far: true }));
+        list.push(once(() => { basket = false; }));
+      } else {
+        const st = p.lieu === 'arbre' ? treeSpot(p.ref) : Number.isInteger(p.ref) ? standFor(p.ref) : null;
+        if (!st) return false;
+        list.push(walkTo(st.x, st.y));
+        list.push(act('recolter', { face: st.face, flip: st.flip, onHit: () => take(p.id) }));
+        list.push(once(() => take(p.id)));
+      }
+      list.push(wait(0.6));
+      return list;
+    }
+    // Va chercher le tas `id`. `now` : le joueur a appuyé sur sa bulle, il y va avant le reste.
+    function fetch(id, now) {
+      const p = pilesNow.get(id);
+      if (!p || claimed.has(id)) return false;
+      if (reduced()) { take(id); return true; }
+      const list = fetchJobs(p);
+      if (!list) { take(id); return true; }   // pas d'endroit où aller : il le prend de loin
+      claimed.add(id);
+      if (now) {
+        if (job && job.idle) job = null;
+        jobs = list.concat(jobs.filter((j) => !j.idle));
+      } else jobs.push(...list);
+      return true;
+    }
+    // Le tas le plus proche qu'il n'a pas encore prévu d'aller prendre.
+    function nextPile() {
+      let best = null, bd = Infinity;
+      for (const p of pilesNow.values()) {
+        if (claimed.has(p.id)) continue;
+        const at = p.lieu === 'poulailler' ? coopSpot() : p.lieu === 'etable' ? barnSpot() : p.lieu === 'arbre' ? treeSpot(p.ref) : Number.isInteger(p.ref) ? tileXY(p.ref) : null;
+        const d = at ? Math.hypot(at.x - x, at.y - y) : 0;
+        if (d < bd) { bd = d; best = p; }
+      }
+      return best;
     }
     function roam() {
       const d = door();
@@ -370,7 +440,6 @@
         x = d.x; y = d.y; face = 'bas'; flip = false;
         appear();
         jobs.push(walkTo(d.x, d.y + T));
-        if (eggsDue) morningEggs();
         return;
       }
       if (!outHours && !home && shown) {
@@ -380,7 +449,8 @@
         jobs.push(wait(FADE_S));
         return;
       }
-      if (shown && eggsDue) { morningEggs(); return; }
+      // Libre et dehors : il va chercher ce qui attend.
+      if (shown && outHours) { const p = nextPile(); if (p && fetch(p.id)) return; }
       if (shown) {
         idleAge = 0; idleLen = rand(5, 12);
         if (Math.random() < 0.5 && !reduced()) roam();   // animations réduites : il ne se déplace pas pour rien
@@ -468,15 +538,17 @@
       if (!shown) { schedule(); return; }
       idleAge += dt;
       draw(`idle_${face}_${Math.floor(idleAge / BREATH_S) % 2}`);
-      if (idleAge >= idleLen || ctx.hour < OUT[0] || ctx.hour >= OUT[1] || eggsDue) schedule();
+      if (idleAge >= idleLen || ctx.hour < OUT[0] || ctx.hour >= OUT[1] || nextPile()) schedule();
     }
 
     return {
       filter,
       update,
-      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, jobs: jobs.length + (job ? 1 : 0), retenues: [...holds.keys()], cuisson: cooking }),
-      // Pour les essais : fermier('oeufs') l'envoie au Poulailler.
-      force(name) { if (name === 'oeufs') { eggsDue = true; } return this.info(); },
+      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, jobs: jobs.length + (job ? 1 : 0), retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
+      // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
+      fetch: (id) => fetch(id, true),
+      // Où il est (pour la bulle « +x ») : ses pieds, ou null s'il n'est pas sur la carte.
+      pos: () => (shown && !home ? { x, y } : null),
       destroy() { s.destroy(); if (inside.s) inside.s.destroy(); holds.clear(); },
       // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
       setSheet(key) {

@@ -1,8 +1,9 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, randomInt } from './base.js';
 import { fail, farmOpen, spend } from './devices.js';
-import { addItem, countItem, takeItem } from './inventory.js';
-import { storeWheat, takeWheat, wheatTotal } from './animals.js';
+import { countItem, takeItem } from './inventory.js';
+import { takeWheat, wheatTotal } from './animals.js';
+import { deposit } from './ramassage.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, isUnlocked, noteCropHarvested, noteWatered } from './campaign.js';
 import { gainActionXp, levelBlock, levelReached } from './levels.js';
@@ -393,12 +394,7 @@ export function harvest(state, plotId, auto = false) {
   const def = DATA.crops[culture];
   const items = {};
   const gain = (item, qty) => {
-    if (qty > 0) {
-      // Le blé récolté va d'abord au Silo, le surplus dans l'inventaire.
-      if (item === DATA.SILO.ITEM) storeWheat(state, qty);
-      else addItem(state, item, qty);
-      items[item] = (items[item] || 0) + qty;
-    }
+    if (qty > 0) items[item] = (items[item] || 0) + qty;
   };
   gain(cropProduct(culture), harvestYield(state, culture));
   noteCropHarvested(state, culture); // version 1.12 : chapitres 1 et 2
@@ -406,13 +402,17 @@ export function harvest(state, plotId, auto = false) {
     const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
     gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
   }
+  // Version 1.18 : au clic, sur la carte, la récolte reste sur sa case jusqu'à ce que le
+  // personnage la ramasse ; sinon (automatisation, Serre, sans carte) elle va à l'inventaire
+  // (le blé d'abord au Silo).
+  const aRamasser = deposit(state, 'parcelle', plot.case, items, !auto && plot.lieu === 'potager' && Number.isInteger(plot.case));
   plot.culture = null;
   plot.stade = 0;
   plot.arrose = false;
   if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9
   if (!auto) spendEnergy(state, 'recolter');
   gainActionXp(state, 'recolter', 1, auto); // version 1.7
-  return { ok: true, culture, items };
+  return { ok: true, culture, items, aRamasser };
 }
 
 // Deuxième étape nocturne : +1 stade si la parcelle a été arrosée (jusqu'au

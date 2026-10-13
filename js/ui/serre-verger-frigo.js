@@ -234,7 +234,7 @@ registerActions({
   },
   'harvest-tree': (target) => {
     const result = applyResult(harvestTree(state, target.dataset.id));
-    if (result.ok) showToast(`+${result.qty} ${DATA.items[result.item].icone}`);
+    if (result.ok && !result.aRamasser) showToast(`+${result.qty} ${DATA.items[result.item].icone}`);
   },
   'buy-orchard-slot': () => {
     const result = applyResult(buyOrchardSlot(state));

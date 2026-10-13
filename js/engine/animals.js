@@ -2,6 +2,7 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, growthPrice, spend } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
+import { deposit } from './ramassage.js';
 import { newNightStats } from './family.js';
 import { techFlag } from './techtree.js';
 import { bumpCounter } from './campaign.js';
@@ -260,7 +261,8 @@ export function layEggs(state) {
   const p = state.poulailler;
   const def = DATA.ANIMAUX.poule;
   const eggs = p.nourries * def.oeufsParNuit;
-  if (eggs > 0) addItem(state, def.produit, eggs);
+  // version 1.18 : les œufs attendent au Poulailler que le personnage vienne les chercher
+  if (eggs > 0) deposit(state, 'poulailler', null, { [def.produit]: eggs });
   gainActionXp(state, 'oeuf', eggs); // version 1.7
   state.nuit.oeufs = eggs;
   p.nourries = 0;
@@ -495,7 +497,7 @@ export function feedLivestock(state) {
     rap.vachesNourries += 1;
     lait += A.vache.laitParNuit;
   }
-  if (lait > 0) addItem(state, A.vache.lait, lait);
+  if (lait > 0) deposit(state, 'etable', null, { [A.vache.lait]: lait }); // version 1.18 : à l'Étable
   gainActionXp(state, 'lait', lait); // version 1.7
   if (!state.nuit) state.nuit = newNightStats();
   state.nuit.lait = lait;
@@ -511,10 +513,10 @@ export function shear(state, id, auto = false) {
   const M = DATA.ANIMAUX.mouton;
   if (!woolReady(m)) return fail(`La laine n'est pas encore prête (${m.laine} / ${M.joursLaine} nuits nourri).`);
   if (!auto && !canAfford(state, 'tondre')) return fail(TIRED); // version 1.8
-  addItem(state, M.laine, M.laineParTonte);
+  const aRamasser = deposit(state, 'etable', null, { [M.laine]: M.laineParTonte }, !auto); // version 1.18
   m.laine = 0;
   bumpCounter(state, 'laines', M.laineParTonte); // Lot 9
   if (!auto) spendEnergy(state, 'tondre');
   gainActionXp(state, 'tondre', 1, auto);
-  return { ok: true, laine: M.laineParTonte };
+  return { ok: true, laine: M.laineParTonte, aRamasser };
 }

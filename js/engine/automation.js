@@ -222,13 +222,15 @@ export function harvestAll(state, lieu, zone) {
   const items = {};
   let recoltees = 0;
   let raison = '';
+  let aRamasser = false; // version 1.18 : au moins une récolte attend le personnage
   for (const p of allPlots(state).filter(inZone(lieu, zone)).filter((x) => x.culture && isMature(x))) {
     const r = harvest(state, p.id);
     if (!r.ok) { raison = raison || r.error; continue; }
     recoltees += 1;
+    if (r.aRamasser) aRamasser = true;
     for (const [item, qty] of Object.entries(r.items)) items[item] = (items[item] || 0) + qty;
   }
   groupDiscount(state, before);
   if (recoltees === 0) return fail(raison || 'Rien à récolter.');
-  return { ok: true, recoltees, items };
+  return { ok: true, recoltees, items, aRamasser };
 }

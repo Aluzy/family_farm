@@ -20,14 +20,17 @@
  * « à faire », données par le modèle) qu'elle replace à chaque image, et un voile de
  * lumière qui suit l'heure du modèle (aube, plein jour, soir, nuit).
  *
- * API publique : FarmStage.mount(element, { act, onView, base, crops }) puis
+ * API publique : FarmStage.mount(element, { act, onView, pickup, icone, base, crops }) puis
  *                FarmStage.update(modèle), FarmStage.show(), FarmStage.hide(),
  *                FarmStage.ready() (la scène est-elle affichable ?),
  *                FarmStage.view() (où en est la vue : repère 0, 1 ou 2, bornes),
  *                FarmStage.hasRoom(id) (l'intérieur d'un bâtiment peut-il être affiché ?),
+ *                FarmStage.hasFermier() (le personnage est-il là pour ramasser ?),
  *                FarmStage.panTo(x, point { x, y } ou id de bâtiment) (glisse jusque-là).
  *                onView(vue) est appelé quand l'écran courant change, quand un bord est
  *                atteint ou quitté, et au premier glissement du joueur.
+ *                Version 1.18 : pickup(id) met un tas « à ramasser » dans l'inventaire et
+ *                renvoie son contenu ({ item: qté }) ; icone(item) donne son emoji.
  */
 (function (global) {
   'use strict';
@@ -201,6 +204,8 @@
   const PAN_MS = 380;          // durée d'un déplacement demandé par panTo()
   const LABEL_GAP = 3;         // px CSS entre l'étiquette et ce qu'elle nomme
   const LABEL_HOLD_MS = 1200;  // au doigt : le nom reste affiché ce temps après le relâchement
+  const GAIN_HOLD_MS = 1200;    // bulle « +x » au-dessus du personnage : elle reste, puis…
+  const GAIN_FADE_MS = 1400;    // … s'estompe lentement (une prise pendant ce temps s'y ajoute)
   const LONG_PRESS_MS = 450;   // appui maintenu sur la citerne : sa bulle (litres) s'affiche
   const GROUND_CHECK_MS = 3000; // le fond de la carte est vérifié à ce rythme (voir repairGround)
   const ZONE_LABEL_UP = 14;    // px de carte : l'étiquette de la zone passe au-dessus de la barrière
@@ -407,6 +412,10 @@
               cols: () => this.grid.cols,
               outside: () => !this.room,
               resync: () => { if (this.rawModel) this.sync(this.rawModel); },
+              // Version 1.18 : il prend un tas (le jeu le met dans l'inventaire), hors de sa
+              // boucle d'image ; puis la bulle « +x » monte au-dessus de lui.
+              pickup: (id, done) => setTimeout(() => done(bridge && bridge.pickup ? bridge.pickup(id) : null), 0),
+              gain: (items) => this.showGain(items),
             });
           } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
         }
@@ -998,6 +1007,128 @@
         el.style.transform = 'translate(' + Math.round(Math.max(4, Math.min(x, maxX))) + 'px,' + Math.round(y) + 'px)';
       }
 
+      /* ---------- version 1.18 : ce qui attend d'être ramassé ---------- */
+
+      // Point de la carte au-dessus duquel se pose la bulle d'un tas (null : rien de dessiné).
+      pileAnchor(p) {
+        if (p.lieu === 'parcelle' && Number.isInteger(p.ref)) {
+          const cols = this.grid.cols || 1;
+          return { x: (p.ref % cols) * T + T / 2, y: Math.floor(p.ref / cols) * T + 2 };
+        }
+        if (p.lieu === 'arbre') {
+          const e = this.trees.get(p.ref);
+          const o = this.objects[TREE_OBJECT + (p.ref + 1)];
+          if (e) return { x: e.sprite.x, y: e.sprite.y - Math.round(e.sprite.height * 0.55) };
+          return o ? { x: o.x + o.width / 2, y: o.y + o.height / 2 } : null;
+        }
+        const b = this.buildings.get(p.lieu);
+        // sur le bâtiment, sous son étiquette
+        return b ? { x: b.sprite.x + b.sprite.width / 2, y: b.sprite.y - Math.round(b.sprite.height * 0.45) } : null;
+      }
+
+      // Une bulle par tas (DOM, par-dessus le canvas) : « 🥚 6 ». Un appui l'envoie la chercher.
+      syncPiles(list) {
+        if (!this.piles) this.piles = new Map();
+        const seen = new Set();
+        for (const p of list) {
+          seen.add(p.id);
+          let B = this.piles.get(p.id);
+          if (!B) {
+            const el = document.createElement('button');
+            el.type = 'button';
+            el.className = 'stage-bubble';
+            labelLayer.appendChild(el);
+            B = { el, id: p.id, texte: null, w: 0, h: 0, tr: '' };
+            // Au clavier (le doigt et la souris passent par la carte : hitAt) ;
+            el.addEventListener('click', () => { if (this.fermier) this.fermier.fetch(B.id); });
+            this.piles.set(p.id, B);
+          }
+          B.p = p;
+          if (B.texte !== p.texte) {
+            B.texte = p.texte;
+            B.el.textContent = p.texte;
+            B.el.setAttribute('aria-label', 'À ramasser : ' + p.texte);
+            B.w = 0;
+          }
+        }
+        for (const [id, B] of this.piles) if (!seen.has(id)) { B.el.remove(); this.piles.delete(id); }
+      }
+
+      // Repère de l'écran : px CSS par px de carte, coin haut-gauche de la vue.
+      screenFrame() {
+        const cam = this.cameras.main;
+        return { k: cam.zoom / pixelRatio(), left: this.cx - this.scale.width / cam.zoom / 2, top: this.cy - this.scale.height / cam.zoom / 2 };
+      }
+
+      placePiles() {
+        if (!this.piles || !this.piles.size) return;
+        const f = this.screenFrame();
+        for (const B of this.piles.values()) {
+          const a = this.room ? null : this.pileAnchor(B.p);
+          B.at = a;
+          if (!a) { if (!B.el.hidden) B.el.hidden = true; continue; }
+          if (B.el.hidden) { B.el.hidden = false; B.w = 0; }
+          if (!B.w) { B.w = B.el.offsetWidth; B.h = B.el.offsetHeight; if (!B.w) continue; }
+          const tr = 'translate(' + Math.round((a.x - f.left) * f.k - B.w / 2) + 'px,' + Math.round((a.y - f.top) * f.k - B.h) + 'px)';
+          if (tr !== B.tr) { B.tr = tr; B.el.style.transform = tr; }
+        }
+      }
+
+      // Bulle sous un point de la carte (zone d'appui élargie à 44 px CSS au besoin).
+      pileAt(wx, wy) {
+        if (!this.piles) return null;
+        const f = this.screenFrame();
+        for (const B of this.piles.values()) {
+          if (!B.at || !B.w || B.el.hidden) continue;
+          const w = Math.max(B.w, MIN_TAP) / f.k, h = Math.max(B.h, MIN_TAP) / f.k;
+          const cy = B.at.y - B.h / f.k / 2;
+          if (Math.abs(wx - B.at.x) <= w / 2 && Math.abs(wy - cy) <= h / 2) return B;
+        }
+        return null;
+      }
+
+      // Bulle « +6 🥕 » au-dessus du personnage : elle reste un instant puis s'estompe ; une
+      // prise qui arrive avant qu'elle ait disparu s'y additionne.
+      showGain(items) {
+        const now = performance.now();
+        if (!this.gain) {
+          const el = document.createElement('div');
+          el.className = 'stage-gain';
+          el.setAttribute('role', 'status');
+          labelLayer.appendChild(el);
+          this.gain = { el, items: {}, until: 0, fadeAt: 0, w: 0 };
+        }
+        const G = this.gain;
+        if (now >= G.until) G.items = {};
+        for (const [item, qty] of Object.entries(items || {})) if (qty > 0) G.items[item] = (G.items[item] || 0) + qty;
+        const icone = (bridge && bridge.icone) || ((item) => item);
+        const texte = Object.entries(G.items).map(([item, qty]) => '+' + qty + ' ' + icone(item)).join('  ');
+        if (!texte) return;
+        G.el.textContent = texte;
+        G.el.hidden = false;
+        G.el.classList.remove('fade');
+        G.fadeAt = now + GAIN_HOLD_MS;
+        G.until = G.fadeAt + GAIN_FADE_MS;
+        G.w = 0;
+        this.placeGain();
+      }
+
+      placeGain() {
+        const G = this.gain;
+        if (!G || G.el.hidden) return;
+        const now = performance.now();
+        const at = this.fermier && !this.room ? this.fermier.pos() : null;
+        if (!at || now >= G.until) { G.el.hidden = true; G.el.classList.remove('fade'); G.until = 0; return; }
+        if (now >= G.fadeAt && !G.el.classList.contains('fade')) G.el.classList.add('fade');
+        if (!G.w) { G.w = G.el.offsetWidth; G.h = G.el.offsetHeight; }
+        const f = this.screenFrame();
+        // elle monte doucement pendant qu'elle s'estompe
+        const rise = now >= G.fadeAt ? ((now - G.fadeAt) / GAIN_FADE_MS) * 10 : 0;
+        const x = Math.round((at.x - f.left) * f.k - G.w / 2);
+        const y = Math.round((at.y - 34 - f.top) * f.k - G.h - rise);
+        G.el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+      }
+
       onMove(pointer) {
         const d = this.drag;
         if (!d) {
@@ -1085,6 +1216,8 @@
         if (this.ambient && !this.room) this.ambient.update(delta);
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
         if (!this.room) this.placeLabels();
+        this.placePiles();
+        this.placeGain();
         this.reportView();
       }
 
@@ -1405,6 +1538,9 @@
         const hoeing = !!(lastModel && lastModel.houe);
         let herbe = null;                            // une tuile labourable sous le doigt
         let refus = null;                            // en mode houe : une tuile qui ne se laboure pas
+        // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
+        const pile = !this.room && !hoeing ? this.pileAt(wx, wy) : null;
+        if (pile) return { pile: pile.id };
         for (const z of this.zones()) {
           const i = z.at(wx, wy);
           if (i < 0) continue;
@@ -1457,6 +1593,7 @@
         if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
         if (!hit) return;
+        if (hit.pile) { if (this.fermier) this.fermier.fetch(hit.pile); return; }
         if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         if (hit.treeHarvest) { bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }
@@ -1534,6 +1671,7 @@
         this.syncZoneGround(model);
         this.syncHoeGrid(model.labourables);
         this.syncTrees(model.arbres || [], sfx, rebuild);
+        this.syncPiles(model.ramasser || []);
         this.syncRooms(model, force);
         // L'ambiance reçoit l'heure et les images des arbres (jamais le modèle) : elle
         // ne les anime pas, elle y fait partir feuilles et écureuils. Elle reçoit aussi l'image
@@ -1910,6 +2048,8 @@
   // L'intérieur `id` ('serre') peut-il être affiché ? Faux tant que la scène n'est pas prête,
   // ou si sa carte n'a pas pu être chargée.
   function hasRoom(id) { const s = getScene(); return !!(s && s.ready && s.rooms[id]); }
+  // Version 1.18 : la carte a-t-elle son personnage (c'est lui qui ramasse) ?
+  function hasFermier() { const s = getScene(); return !!(s && s.ready && s.fermier); }
 
   // Où en est la vue (voir viewInfo()) ; null tant que la scène n'est pas prête.
   function view() { const s = getScene(); return s && s.ready ? s.viewInfo() : null; }
@@ -1934,5 +2074,5 @@
     return s.panTo(best.p, false);
   }
 
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, scene: getScene }; // scene() : pour le débogage et les tests
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

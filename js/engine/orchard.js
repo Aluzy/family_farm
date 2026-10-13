@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, growthPrice, spend } from './devices.js';
-import { addItem } from './inventory.js';
+import { deposit } from './ramassage.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { gainActionXp, levelBlock } from './levels.js';
 import { techAuto } from './techtree.js';
@@ -138,14 +138,14 @@ export function harvestTree(state, id, auto = false) {
   if (!auto && !canAfford(state, 'cueillir')) return fail(TIRED);
   const V = DATA.VERGER;
   const fruit = V.ARBRES[tree.espece].fruit;
-  addItem(state, fruit, V.FRUITS);
+  const aRamasser = deposit(state, 'arbre', tree.case, { [fruit]: V.FRUITS }, !auto && Number.isInteger(tree.case)); // version 1.18
   tree.fruits = false;
   // Cueilli dans la journée : les nuits d'aujourd'hui, de demain et d'après-demain ;
   // cueilli la nuit : les trois nuits suivantes.
   tree.prochaine = state.day + V.PERIODE - (auto ? 0 : 1);
   if (!auto) spendEnergy(state, 'cueillir');
   gainActionXp(state, 'cueillir', 1, auto);
-  return { ok: true, item: fruit, qty: V.FRUITS };
+  return { ok: true, item: fruit, qty: V.FRUITS, aRamasser };
 }
 
 // Étape nocturne (après les moutons) : les arbres dont c'est la nuit se couvrent de
