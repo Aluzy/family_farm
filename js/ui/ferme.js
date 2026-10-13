@@ -18,9 +18,10 @@ import { telView } from './consent.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import {
-  coopShown, herdShown, renderAchatPoules, renderAchatTroupeau, setStageReturn,
+  coopShown, herdShown, openStageWindow, renderAchatPoules, renderAchatTroupeau, setStageReturn,
   setStageWindow, stageReturn, stageWindow,
 } from './stage-windows.js';
+import { stageUsable } from './stage.js';
 import { autoChip, groupButtons, plotCard, renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin } from './cuisine.js';
@@ -261,10 +262,11 @@ function deviceRow(d) {
   `;
 }
 
-export function renderDeviceScreen(kind) {
+// Panneaux solaires ou batteries : le résumé, puis la carte de chaque appareil (usure,
+// entretien, réparation, amélioration).
+function deviceDetail(kind) {
   const isPanels = kind === 'panneaux';
   const list = isPanels ? state.panneaux : state.batteries;
-  const type = isPanels ? 'panneau' : 'batterie';
   const e = energyStats(state);
   const summary = isPanels
     ? `<span>${powerVerdict(e)}</span>
@@ -273,13 +275,35 @@ export function renderDeviceScreen(kind) {
     : `<span class="big">${formatNumber(Math.floor(e.charge / 1000))} / ${formatWh(e.capacite)}</span>
        <span class="muted">${e.net > 0 ? 'En charge' : e.net < 0 ? 'En décharge' : 'Ni charge ni décharge'}</span>`;
   return `
+    <div class="stack">${summary}</div>
+    <div class="device-list">${list.map(deviceRow).join('')}</div>
+  `;
+}
+
+// Sans la carte : écran de détail de la Ferme, avec son retour.
+export function renderDeviceScreen(kind) {
+  const isPanels = kind === 'panneaux';
+  const type = isPanels ? 'panneau' : 'batterie';
+  return `
     <div class="screen-head">
       <button type="button" class="btn" data-action="close-screen">← Ferme</button>
       <h2>${icon(type)}${isPanels ? 'Production d\'énergie' : 'Stockage d\'énergie'}</h2>
       ${helpBtn(type)}
     </div>
-    <div class="stack">${summary}</div>
-    <div class="device-list">${list.map(deviceRow).join('')}</div>
+    ${deviceDetail(kind)}
+  `;
+}
+
+// Avec la carte : fenêtre dans le cadre bois (elle porte déjà le titre) ; « ‹ Énergie »
+// ramène à la fenêtre d'où l'on vient.
+export function renderDeviceFenetre(kind) {
+  const type = kind === 'panneaux' ? 'panneau' : 'batterie';
+  return `
+    <div class="section-head">
+      <button type="button" class="btn" data-action="stage-open" data-window="energie">‹ Énergie</button>
+      <span class="chips">${helpBtn(type)}</span>
+    </div>
+    ${deviceDetail(kind)}
   `;
 }
 
@@ -330,6 +354,12 @@ export function renderZone2() {
 
 registerActions({
   'open-screen': (target) => {
+    // Avec la carte : la fenêtre du même nom, dans le cadre bois.
+    if (stageUsable()) {
+      openStageWindow(target.dataset.screen);
+      telView();
+      return;
+    }
     setStageReturn(stageWindow);
     setStageWindow(null);
     setEcranFerme(target.dataset.screen);
