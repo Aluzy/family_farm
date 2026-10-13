@@ -14,6 +14,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/engine-source.mjs';
 import { GAME_ACTIONS, INTERFACE_ACTIONS } from '../worker/src/report.mjs';
+import { NUIT_BLOQUEES, NUIT_PERMISES } from '../js/ui/actions.js';
 
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 // Tous les modules de l'interface, bout à bout.
@@ -57,6 +58,12 @@ for (const a of [...registered].filter(tracked).sort()) {
 for (const a of [...classified].sort()) {
   if (!registered.has(a)) errors.push(`worker/src/report.mjs classe « ${a} », qui n'existe plus dans le jeu`);
 }
+// Version 1.19 : la nuit, chaque action de jeu est soit bloquée, soit permise (js/ui/actions.js).
+for (const a of Object.keys(GAME_ACTIONS)) {
+  if (!NUIT_BLOQUEES.has(a) && !NUIT_PERMISES.has(a)) errors.push(`« ${a} » (action de jeu) n'est ni dans NUIT_BLOQUEES ni dans NUIT_PERMISES (js/ui/actions.js) : que fait-elle la nuit ?`);
+  if (NUIT_BLOQUEES.has(a) && NUIT_PERMISES.has(a)) errors.push(`« ${a} » est à la fois bloquée et permise la nuit`);
+}
+for (const a of [...NUIT_BLOQUEES, ...NUIT_PERMISES]) if (!registered.has(a)) errors.push(`js/ui/actions.js nomme « ${a} » pour la nuit, qui n'existe plus dans le jeu`);
 for (const a of Object.keys(GAME_ACTIONS)) {
   if (INTERFACE_ACTIONS.has(a)) errors.push(`« ${a} » est à la fois dans GAME_ACTIONS et INTERFACE_ACTIONS`);
 }

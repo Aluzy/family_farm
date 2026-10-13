@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './devices.js';
 import { noteCompta } from './compta.js';
-import { awakeRequired } from './clock.js';
+import { awakeMsAtHour } from './clock.js';
 import { addItem, spoil } from './inventory.js';
 import { openFridge } from './fridge.js';
 import { allPlots, makePlot, maxStage, openSerre, seedItem, zoneTile } from './crops.js';
@@ -94,8 +94,10 @@ export function testSetWear(state, id, usure) {
   return { ok: true };
 }
 
+// Version 1.19 : l'horloge saute à 21 h 50 (la nuit commence peu après).
 export function testSkipAwake(state) {
-  state.awakeMs = Math.max(state.awakeMs, awakeRequired(state) * 1000);
+  if (state.nuitEnCours) return fail('C\'est déjà la nuit.');
+  state.awakeMs = Math.max(state.awakeMs, awakeMsAtHour(DATA.TIME.NIGHT_HOUR) - DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000 / 6);
   return { ok: true };
 }
 

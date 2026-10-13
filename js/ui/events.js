@@ -1,9 +1,11 @@
-import { setComptoirTab, setComptoirTabChoisi, setInvTab, setTestMode, testMode } from './store.js';
+import { setComptoirTab, setComptoirTabChoisi, setInvTab, setTestMode, state, testMode } from './store.js';
+import { nightActive } from '../engine/clock.js';
+import { showToast } from './toasts.js';
 import { tel, telClick } from './consent.js';
 import { scheduleRender } from './loop.js';
 import { refresh } from './render.js';
 import { closeStageWindow, leaveInterior, menuOpen, setMenuOpen, stageInterior, stageWindow } from './stage-windows.js';
-import { ACTIONS, registerActions } from './actions.js';
+import { ACTIONS, NUIT_BLOQUEES, registerActions } from './actions.js';
 import { closeModal } from './common.js';
 
 document.addEventListener('click', (e) => {
@@ -15,6 +17,11 @@ document.addEventListener('click', (e) => {
   const action = target.dataset.action;
   telClick(target, action);
 
+  // Version 1.19 : la nuit, la famille dort ; la ferme attend le matin.
+  if (nightActive(state) && NUIT_BLOQUEES.has(action)) {
+    showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).');
+    return;
+  }
   const run = ACTIONS[action];
   if (run) run(target, e, action);
 });

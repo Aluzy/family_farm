@@ -6,7 +6,6 @@ import { allPlots, findPlot, harvest, isMature, maxStage, plant, plotZone, seedI
 import { plantableCropsFor } from './campaign.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
-import { canSleep } from './night.js';
 
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
 
@@ -153,19 +152,6 @@ export function autoMaintain(state) {
 
 // Arbre v2 (Outils de jardin) : « Arroser tout » d'un lieu (au clic : chaque
 // parcelle compte comme un arrosage manuel). Renvoie { ok, arrosees, sansEau }.
-// Arbre v2 (Routine familiale) : réglage « Dormir tout seul ».
-export function setRoutine(state, on) {
-  if (on && !techFlag(state, 'routine')) return fail('Débloque la Routine familiale dans l\'Arbre des technologies.');
-  state.routine = !!on;
-  return { ok: true, routine: state.routine };
-}
-
-// La famille va-t-elle se coucher toute seule maintenant ? (jeu ouvert seulement :
-// l'interface l'appelle à chaque image ; le hors-ligne ne fait passer aucune nuit)
-export function routineDue(state) {
-  return !!(state.routine && techFlag(state, 'routine') && canSleep(state));
-}
-
 // `zone` (facultatif) : 1 pour la Zone de culture seule, 2 pour le Champ seul.
 const inZone = (lieu, zone) => (p) => p.lieu === lieu && (!zone || plotZone(p) === Number(zone));
 
