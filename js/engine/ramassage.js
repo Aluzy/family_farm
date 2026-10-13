@@ -18,7 +18,8 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem } from './inventory.js';
-import { storeWheat } from './animals.js';
+import { shear, storeWheat, woolReady } from './animals.js';
+import { TIRED } from './stamina.js';
 
 export const LIEUX_RAMASSAGE = ['parcelle', 'arbre', 'poulailler', 'etable'];
 
@@ -68,6 +69,23 @@ export function pickUp(state, id) {
   delete state.aRamasser[id];
   for (const [item, qty] of Object.entries(pile.items)) give(state, item, qty);
   return { ok: true, lieu: pile.lieu, items: { ...pile.items } };
+}
+
+// Version 1.19 : le joueur envoie le personnage au Poulailler ou à l'Étable (double appui) ; ils
+// ne se vident plus d'eux-mêmes. Au Poulailler, il prend les œufs ; à l'Étable, il tond d'abord
+// les moutons prêts (chaque tonte coûte son énergie, comme le bouton « Tondre » ; à court
+// d'énergie, il s'arrête), puis prend le lait et la laine. Renvoie { ok, items, fatigue }.
+export function collectAt(state, lieu) {
+  let fatigue = false;
+  if (lieu === 'etable' && state.paturage) {
+    for (const m of state.paturage.moutons) {
+      if (!woolReady(m)) continue;
+      if (!shear(state, m.id).ok) { fatigue = true; break; }
+    }
+  }
+  const r = pickUp(state, lieu);
+  if (!r.ok) return fatigue ? fail(TIRED) : r;
+  return { ...r, fatigue };
 }
 
 // Tout ce qui attend entre dans l'inventaire. Renvoie { item: qté }.

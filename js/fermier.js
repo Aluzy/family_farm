@@ -374,32 +374,51 @@
       const r = (o.objects || {})['arbre_verger_' + (c + 1)];
       return r ? { x: Math.round(r.x + r.width / 2 - 12), y: Math.round(r.y + r.height + 2), face: 'cote', flip: false } : null;
     }
-    // Les tâches pour aller prendre le tas `p` (false : on ne sait pas où il est).
+    // Version 1.19 : le Poulailler et l'Étable ne se vident pas d'eux-mêmes ; le joueur l'y
+    // envoie (double appui sur le bâtiment, ou appui sur sa bulle). Il y va, remplit son panier
+    // (o.collect : les œufs ; le lait, et il tond les moutons prêts) et le rapporte devant la
+    // maison.
+    const isBuilding = (lieu) => lieu === 'poulailler' || lieu === 'etable';
+    function gather(lieu) {
+      claimed.delete(lieu);
+      pilesNow.delete(lieu);
+      if (o.collect) o.collect(lieu, (items) => { if (items && o.gain) o.gain(items); });
+    }
+    function collect(lieu) {
+      if (!isBuilding(lieu) || !pilesNow.has(lieu) || claimed.has(lieu)) return false;
+      const spot = lieu === 'poulailler' ? coopSpot() : barnSpot();
+      if (reduced() || !spot) { gather(lieu); return true; }
+      claimed.add(lieu);
+      const d = door();
+      const list = [
+        walkTo(spot.x, spot.y, { far: true }),
+        act('ramasse', { face: 'cote', flip: false }),
+        once(() => { gather(lieu); basket = true; }),
+        walkTo(d.x, d.y + 4, { basket: true, far: true }),
+        once(() => { basket = false; }),
+        wait(0.6),
+      ];
+      if (job && job.idle) job = null;
+      jobs = list.concat(jobs.filter((j) => !j.idle));
+      return true;
+    }
+    // Les tâches pour aller prendre le tas `p` d'une case ou d'un arbre (false : on ne sait
+    // pas où il est).
     function fetchJobs(p) {
-      const list = [];
-      if (p.lieu === 'poulailler' || p.lieu === 'etable') {
-        const spot = p.lieu === 'poulailler' ? coopSpot() : barnSpot();
-        if (!spot) return false;
-        list.push(walkTo(spot.x, spot.y, { far: true }));
-        list.push(act('ramasse', { face: 'cote', flip: false }));
-        list.push(once(() => { take(p.id); basket = true; }));
-        const d = door();
-        list.push(walkTo(d.x, d.y + 4, { basket: true, far: true }));
-        list.push(once(() => { basket = false; }));
-      } else {
-        const st = p.lieu === 'arbre' ? treeSpot(p.ref) : Number.isInteger(p.ref) ? standFor(p.ref) : null;
-        if (!st) return false;
-        list.push(walkTo(st.x, st.y));
-        list.push(act('recolter', { face: st.face, flip: st.flip, onHit: () => take(p.id) }));
-        list.push(once(() => take(p.id)));
-      }
-      list.push(wait(0.6));
-      return list;
+      const st = p.lieu === 'arbre' ? treeSpot(p.ref) : Number.isInteger(p.ref) ? standFor(p.ref) : null;
+      if (!st) return false;
+      return [
+        walkTo(st.x, st.y),
+        act('recolter', { face: st.face, flip: st.flip, onHit: () => take(p.id) }),
+        once(() => take(p.id)),
+        wait(0.6),
+      ];
     }
     // Va chercher le tas `id`. `now` : le joueur a appuyé sur sa bulle, il y va avant le reste.
     function fetch(id, now) {
       const p = pilesNow.get(id);
       if (!p || claimed.has(id)) return false;
+      if (isBuilding(p.lieu)) return collect(p.lieu);
       if (reduced()) { take(id); return true; }
       const list = fetchJobs(p);
       if (!list) { take(id); return true; }   // pas d'endroit où aller : il le prend de loin
@@ -414,7 +433,7 @@
     function nextPile() {
       let best = null, bd = Infinity;
       for (const p of pilesNow.values()) {
-        if (claimed.has(p.id)) continue;
+        if (claimed.has(p.id) || isBuilding(p.lieu)) continue;   // le Poulailler et l'Étable : sur demande
         const at = p.lieu === 'poulailler' ? coopSpot() : p.lieu === 'etable' ? barnSpot() : p.lieu === 'arbre' ? treeSpot(p.ref) : Number.isInteger(p.ref) ? tileXY(p.ref) : null;
         const d = at ? Math.hypot(at.x - x, at.y - y) : 0;
         if (d < bd) { bd = d; best = p; }
@@ -581,6 +600,8 @@
       // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
       fetch: (id) => fetch(id, true),
       goTo,
+      // Double appui sur le Poulailler ou l'Étable : il va y ramasser (false : rien à prendre).
+      collect,
       // Où il est (pour la bulle « +x ») : ses pieds, ou null s'il n'est pas sur la carte.
       pos: () => (shown && !home ? { x, y } : null),
       destroy() { s.destroy(); if (inside.s) inside.s.destroy(); holds.clear(); },

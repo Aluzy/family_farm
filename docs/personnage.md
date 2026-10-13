@@ -71,6 +71,12 @@ ajouter : le JSON donne l'ordre).
   panier et le rapporte devant la maison. À chaque prise, une bulle « +6 🥕 » monte au-dessus de
   lui, reste un instant puis s'estompe ; une prise qui arrive avant qu'elle ait disparu s'y
   additionne.
+- **Poulailler et Étable** (version 1.19) : ils ne se vident plus d'eux-mêmes. Un double appui
+  sur le bâtiment (ou un appui sur sa bulle) l'y envoie (`collect`) : au Poulailler, il prend les
+  œufs ; à l'Étable, il tond les moutons prêts (énergie de la tonte, comme le bouton « Tondre » ;
+  la laine prête s'annonce dans la bulle de l'Étable) puis prend lait et laine (`collectAt` du
+  moteur). Rien à y prendre : le double appui ouvre la fenêtre du bâtiment. L'appui simple ouvre
+  toujours la fenêtre, 300 ms plus tard.
 - **Ce qui ne l'attend pas** : les automatisations (récolte et tonte de nuit, Arbre des
   technologies), la Serre, et tout quand la carte n'a pas de personnage (pas de carte, joueur
   automatique, essais du moteur) : directement dans l'inventaire (`state.ramassage` faux, réglé

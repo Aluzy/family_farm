@@ -8,11 +8,13 @@ import { fridgeUnits } from '../engine/fridge.js';
 import { memberPerso } from '../engine/family.js';
 import { allPlots, hoeableTiles, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
-import { woolReady } from '../engine/animals.js';
+import { sheepToShear, woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
-import { pickUp, pickUpAll, piles } from '../engine/ramassage.js';
+import { collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
+import { TIRED } from '../engine/stamina.js';
+import { showToast } from './toasts.js';
 import {
   activeTab, ecranFerme, hoeMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
 } from './store.js';
@@ -327,7 +329,18 @@ export function stageModel() {
   const cuisson = ['cuisine', 'four'].find((id) => state.stations[id] && state.stations[id].construit && state.stations[id].tache) || null;
   // Version 1.18 : ce qui attend que le personnage le ramasse, à sa place (parcelle : sa
   // case ; arbre : sa case du Verger ; Poulailler, Étable), avec le texte de sa bulle.
-  const ramasser = piles(state).map((p) => ({ id: p.id, lieu: p.lieu, ref: p.ref, texte: itemsBulle(p.items) }));
+  const tas = piles(state);
+  // Version 1.19 : la laine des moutons prêts à tondre s'annonce dans la bulle de l'Étable (le
+  // personnage les tond quand le joueur l'y envoie).
+  const M = DATA.ANIMAUX.mouton;
+  const tondre = state.paturage && state.paturage.construit ? sheepToShear(state) * M.laineParTonte : 0;
+  if (tondre > 0) {
+    const e = tas.find((p) => p.id === 'etable');
+    const items = { ...(e ? e.items : {}) };
+    items[M.laine] = (items[M.laine] || 0) + tondre;
+    if (e) e.items = items; else tas.push({ id: 'etable', lieu: 'etable', ref: null, items });
+  }
+  const ramasser = tas.map((p) => ({ id: p.id, lieu: p.lieu, ref: p.ref, texte: itemsBulle(p.items) }));
   return {
     // version 1.19 : la nuit (22 h → 6 h), la famille dort : la carte ne fait rien faire
     nuit: nightActive(state),
@@ -363,6 +376,16 @@ function stagePickup(id) {
   persistState();
   refresh();
   return r.items;
+}
+
+// Version 1.19 : le personnage est au Poulailler ou à l'Étable (envoyé par un double appui) :
+// il prend ce qui l'attend (et tond les moutons prêts). Renvoie ce qu'il a pris, ou null.
+function stageCollect(lieu) {
+  const r = collectAt(state, lieu);
+  if (r.ok && r.fatigue) showToast(TIRED);
+  else if (!r.ok && r.error === TIRED) showToast(TIRED);
+  if (r.ok || r.error === TIRED) { persistState(); refresh(); }
+  return r.ok ? r.items : null;
 }
 
 // Version 1.15 : tuiles que la houe peut labourer (la grille verte de la carte en mode houe),
@@ -411,7 +434,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, icone: (item) => (DATA.items[item] ? DATA.items[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, icone: (item) => (DATA.items[item] ? DATA.items[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
