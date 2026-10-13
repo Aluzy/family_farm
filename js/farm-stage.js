@@ -69,12 +69,6 @@
   // Rectangle de la zone de culture dans la carte : le premier nom trouvé. Les parcelles du
   // jeu s'y posent ; celles du Champ (modèle.plots2) se posent sur `zone_culture_2`.
   const ZONE_OBJECTS = ['zone_culture_1', 'zone_culture'];
-  // Essai d'effet 3D sur un arbre de la carte (scripts/carte/arbre_3d.py) : le feuillu à
-  // gauche de la Grange n'est plus dans les couches d'arbres de la carte, il est dessiné à
-  // part, avec son volume et son ombre portée, juste au-dessus du sol. (tx, ty) : sa case en
-  // haut à gauche ; (mx, my) : la marge de l'image autour des 4 × 5 tuiles, pour l'ombre.
-  const ARBRE_3D = { key: 'arbre_3d', file: 'arbre_3d.png', tx: 13, ty: 21, mx: 4, my: 2 };
-
   // Arbres du Verger : le n-ième arbre du modèle se pose sur le rectangle `arbre_verger_n`.
   const TREE_OBJECT = 'arbre_verger_';
   const TREE_FRAME = { frameWidth: 80, frameHeight: 80 };   // basic_*.png : 8 images de 80×80 ; seule la première sert, les arbres ne bougent pas
@@ -83,6 +77,12 @@
   const ORCHARD_FRAMES = { libre: 0, jeune: 1, arbuste: 2, arbre: 3, pommier: 4, poirier: 5 };
   const ORCHARD_ADULT = 3;                                   // à partir de l'arbre : feuilles et écureuils
   const TREE_BODY = 0.8;                                     // part de l'image qu'occupe l'arbre, en largeur
+  // Ombres portées des arbres (scripts/carte/arbres_3d.py) : celles des arbres de la carte,
+  // une image de la taille de la carte posée sur le sol (les arbres eux-mêmes en sont exclus),
+  // et celle d'un arbre adulte du Verger, posée sous lui ; (dx, dy) : son coin haut-gauche par
+  // rapport au pied de l'arbre (milieu du bas de son image).
+  const SHADOWS = { key: 'ombres_arbres', file: 'ombres_arbres.png', depth: 0.05 };
+  const TREE_SHADOW = { key: 'ombre_arbre', file: 'ombre_arbre.png', dx: -16, dy: -8 };
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
   const DEFAULT_W = 72 * T;
   const DEFAULT_H = 57 * T;
@@ -366,8 +366,9 @@
           L.spritesheet('tree_' + a, v('basic_' + a + '.png'), TREE_FRAME);
         }
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
+        L.image(SHADOWS.key, v(SHADOWS.file));
+        L.image(TREE_SHADOW.key, v(TREE_SHADOW.file));
         L.image('terre_bords', v('terre_bords.png'));
-        L.image(ARBRE_3D.key, v(ARBRE_3D.file));
       }
 
       create() {
@@ -378,10 +379,7 @@
         this.defineAnims();
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
-        if (this.has(ARBRE_3D.key)) {
-          const T = this.mapRaw ? this.mapRaw.tilewidth : 16;
-          this.add.image(ARBRE_3D.tx * T - ARBRE_3D.mx, ARBRE_3D.ty * T - ARBRE_3D.my, ARBRE_3D.key).setOrigin(0).setDepth(0.5);
-        }
+        if (this.has(SHADOWS.key)) this.add.image(0, 0, SHADOWS.key).setOrigin(0).setDepth(SHADOWS.depth);
         this.watchGround();
         this.makeTileAnims();
         this.bakeRooms();
@@ -1853,7 +1851,7 @@
           seen.add(a.case);
           const key = own ? 'verger' : a.libre ? null : this.tex('tree_' + sfx, this.tex('tree_sp', 'ph_arbre'));
           let e = this.trees.get(a.case);
-          if (e && (rebuild || e.key !== key)) { e.sprite.destroy(); this.trees.delete(a.case); e = null; }
+          if (e && (rebuild || e.key !== key)) { e.sprite.destroy(); if (e.shadow) e.shadow.destroy(); this.trees.delete(a.case); e = null; }
           if (!key) continue;
           if (!e) {
             const sprite = this.add.image(0, 0, key, key.indexOf('ph_') !== 0 ? 0 : undefined);
@@ -1865,9 +1863,14 @@
           if (own) e.sprite.setFrame(a.dessin);
           const x = Math.round(o.x + o.width / 2), y = Math.round(o.y + o.height);
           e.sprite.setPosition(x, y).setDepth(y);
+          // un arbre adulte a son ombre portée, sur le sol
+          const ombre = this.has(TREE_SHADOW.key) && (!own || a.dessin >= ORCHARD_ADULT);
+          if (ombre && !e.shadow) e.shadow = this.add.image(0, 0, TREE_SHADOW.key).setOrigin(0).setDepth(SHADOWS.depth);
+          if (!ombre && e.shadow) { e.shadow.destroy(); e.shadow = null; }
+          if (e.shadow) e.shadow.setPosition(x + TREE_SHADOW.dx, y + TREE_SHADOW.dy);
         }
         for (const [c, e] of this.trees) {
-          if (!seen.has(c)) { e.sprite.destroy(); this.trees.delete(c); }
+          if (!seen.has(c)) { e.sprite.destroy(); if (e.shadow) e.shadow.destroy(); this.trees.delete(c); }
         }
       }
 
