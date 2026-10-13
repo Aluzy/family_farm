@@ -204,6 +204,9 @@
   const PAN_MS = 380;          // durée d'un déplacement demandé par panTo()
   const LABEL_GAP = 3;         // px CSS entre l'étiquette et ce qu'elle nomme
   const LABEL_HOLD_MS = 1200;  // au doigt : le nom reste affiché ce temps après le relâchement
+  // Bulles (assets/bulle.png, au double) : la pointe est à BUBBLE_TIP_X px CSS du bord gauche
+  // et BUBBLE_TIP_Y px au-dessus du bas.
+  const BUBBLE_TIP_X = 15, BUBBLE_TIP_Y = 2;
   const GAIN_HOLD_MS = 1200;    // bulle « +x » au-dessus du personnage : elle reste, puis…
   const GAIN_FADE_MS = 1400;    // … s'estompe lentement (une prise pendant ce temps s'y ajoute)
   const LONG_PRESS_MS = 450;   // appui maintenu sur la citerne : sa bulle (litres) s'affiche
@@ -1069,7 +1072,7 @@
           if (!a) { if (!B.el.hidden) B.el.hidden = true; continue; }
           if (B.el.hidden) { B.el.hidden = false; B.w = 0; }
           if (!B.w) { B.w = B.el.offsetWidth; B.h = B.el.offsetHeight; if (!B.w) continue; }
-          const tr = 'translate(' + Math.round((a.x - f.left) * f.k - B.w / 2) + 'px,' + Math.round((a.y - f.top) * f.k - B.h) + 'px)';
+          const tr = 'translate(' + Math.round((a.x - f.left) * f.k - BUBBLE_TIP_X) + 'px,' + Math.round((a.y - f.top) * f.k - B.h + BUBBLE_TIP_Y) + 'px)';
           if (tr !== B.tr) { B.tr = tr; B.el.style.transform = tr; }
         }
       }
@@ -1081,8 +1084,8 @@
         for (const B of this.piles.values()) {
           if (!B.at || !B.w || B.el.hidden) continue;
           const w = Math.max(B.w, MIN_TAP) / f.k, h = Math.max(B.h, MIN_TAP) / f.k;
-          const cy = B.at.y - B.h / f.k / 2;
-          if (Math.abs(wx - B.at.x) <= w / 2 && Math.abs(wy - cy) <= h / 2) return B;
+          const cx = B.at.x + (B.w / 2 - BUBBLE_TIP_X) / f.k, cy = B.at.y - (B.h / 2 - BUBBLE_TIP_Y) / f.k;
+          if (Math.abs(wx - cx) <= w / 2 && Math.abs(wy - cy) <= h / 2) return B;
         }
         return null;
       }
@@ -1124,8 +1127,8 @@
         const f = this.screenFrame();
         // elle monte doucement pendant qu'elle s'estompe
         const rise = now >= G.fadeAt ? ((now - G.fadeAt) / GAIN_FADE_MS) * 10 : 0;
-        const x = Math.round((at.x - f.left) * f.k - G.w / 2);
-        const y = Math.round((at.y - 34 - f.top) * f.k - G.h - rise);
+        const x = Math.round((at.x - f.left) * f.k - BUBBLE_TIP_X);
+        const y = Math.round((at.y - 34 - f.top) * f.k - G.h + BUBBLE_TIP_Y - rise);
         G.el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
       }
 

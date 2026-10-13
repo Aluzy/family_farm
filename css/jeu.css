@@ -1959,8 +1959,10 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 
 /* Version 1.18 : bulles de bande dessinée sur la carte. .stage-bubble : ce qui attend d'être
    ramassé, au-dessus de sa place (un appui y envoie le personnage) ; .stage-gain : ce qu'il
-   vient de prendre, au-dessus de lui, qui s'estompe lentement. Même cadre bois que .stage-tip,
-   avec une pointe vers le bas. */
+   vient de prendre, au-dessus de lui, qui s'estompe lentement. Le dessin : assets/bulle.png
+   (16 × 16, pointe en bas à gauche), en neuf morceaux au double de sa taille : les coins et la
+   pointe restent tels quels, le milieu s'étire à la taille du texte. La pointe (colonne 7 de
+   l'image, soit 15 px du bord gauche) se pose sur le point de la carte (voir farm-stage.js). */
 .stage-bubble,
 .stage-gain {
   position: absolute;
@@ -1969,34 +1971,21 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 7px;
-  border-radius: 10px;
-  border: 2px solid #8a5a34;
-  background: #fff1d2;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
-  color: #4a2a10;
+  padding: 0 2px;
+  border-style: solid;
+  border-width: 10px 12px 14px 16px;
+  border-image: url('../assets/bulle.png') 5 6 7 8 fill / 10px 12px 14px 16px stretch;
+  background: none;
+  image-rendering: pixelated;
+  color: #2c2416;
   font: inherit;
   font-size: 0.8rem;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.2;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
   will-change: transform;
-}
-.stage-bubble::after,
-.stage-gain::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -7px;
-  width: 8px;
-  height: 8px;
-  margin-left: -5px;
-  background: inherit;
-  border-right: 2px solid #8a5a34;
-  border-bottom: 2px solid #8a5a34;
-  transform: rotate(45deg);
 }
 .stage-bubble:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .stage-gain { opacity: 1; }
