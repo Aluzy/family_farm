@@ -228,6 +228,10 @@ function allerA(c) {
     setStageReturn(null);
     setStageInterior(null);
     setEcranFerme(null);
+  } else if (c.ecran && stageUsable()) {
+    // Avec la carte : la fenêtre des panneaux ou des batteries, dans le cadre bois.
+    allerAuLieu(c.ecran, null, c.ancre);
+    return;
   } else if (c.ecran) {
     // Écran de détail : au retour, on retombe sur Maison › Installations.
     setActiveTab('ferme');

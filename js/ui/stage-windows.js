@@ -27,7 +27,7 @@ import {
   cibleAttrs, heureDuJour, horlogeEmoji, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
 } from './stage.js';
 import {
-  backToFerme, deviceName, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
+  backToFerme, deviceName, renderDeviceFenetre, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
   renderInstallationsMaison, renderPotager, renderZone2,
 } from './ferme.js';
 import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
@@ -252,6 +252,16 @@ export const STAGE_WINDOWS = {
   energie: {
     nom: 'Énergie', icone: '⚡', ok: () => isOwned(starterOf(state, 'panneau')), bois: true,
     corps: () => renderEnergieFenetre(),
+  },
+  // Panneaux solaires et batteries : un appui sur leur carte de la fenêtre Énergie (ou une
+  // alerte d'entretien, de panne) ; usure, entretien, réparation et amélioration.
+  panneaux: {
+    nom: 'Production d\'énergie', icone: '☀️', ok: () => isOwned(starterOf(state, 'panneau')), bois: true,
+    corps: () => renderDeviceFenetre('panneaux'),
+  },
+  batteries: {
+    nom: 'Stockage d\'énergie', icone: '🔋', ok: () => isOwned(starterOf(state, 'batterie')), bois: true,
+    corps: () => renderDeviceFenetre('batteries'),
   },
   eau: {
     nom: 'Eau', icone: '💧', ok: () => isOwned(starterOf(state, 'pompe')) || isOwned(starterOf(state, 'reservoir')), bois: true,
