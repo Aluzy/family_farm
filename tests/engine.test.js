@@ -59,7 +59,7 @@ import {
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
   collectLeftovers, pickUp, piles,
-  advanceNight, midnightMs, nightActive, nightLengthMs, skipNight, startNight,
+  advanceNight, midnightMs, nightActive, nightLengthMs, skipNight, startNight, collectAt, deposit,
 } from '../js/engine/index.js';
 
 
@@ -9162,6 +9162,25 @@ test('Nuit qui défile (version 1.19) : le bouton nuit saute ce qui reste, minui
   startNight(t);
   simulateOffline(t, 3600);
   assertEqual([t.day, nightActive(t), t.reveil], [2, false, true], 'parti la nuit : réveillé au retour');
+});
+
+test('Ramassage (version 1.19) : à l\'Étable, le personnage tond les moutons prêts puis prend lait et laine ; au Poulailler, les œufs', () => {
+  const s = createInitialState(1);
+  s.ramassage = true;
+  testAddSheep(s, 2);
+  testWoolReady(s);
+  const M = DATA.ANIMAUX.mouton;
+  deposit(s, 'etable', null, { [DATA.ANIMAUX.vache.lait]: 2 });
+  const laine = countItem(s, M.laine);
+  const r = collectAt(s, 'etable');
+  assertEqual([r.ok, r.fatigue, r.items[M.laine], r.items[DATA.ANIMAUX.vache.lait]], [true, false, 2 * M.laineParTonte, 2]);
+  assertEqual([countItem(s, M.laine), woolReady(s.paturage.moutons[0]), piles(s).length], [laine + 2 * M.laineParTonte, false, 0]);
+  assertEqual(collectAt(s, 'etable').ok, false, 'plus rien');
+  testWoolReady(s);
+  testSetEnergyZero(s);
+  assertEqual(collectAt(s, 'etable').error, TIRED, 'pas d\'énergie pour tondre');
+  deposit(s, 'poulailler', null, { [DATA.ANIMAUX.poule.produit]: 3 });
+  assertEqual(collectAt(s, 'poulailler').items[DATA.ANIMAUX.poule.produit], 3);
 });
 
 export const results = runTests();

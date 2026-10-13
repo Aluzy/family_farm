@@ -421,6 +421,8 @@
               // boucle d'image ; puis la bulle « +x » monte au-dessus de lui.
               pickup: (id, done) => setTimeout(() => done(bridge && bridge.pickup ? bridge.pickup(id) : null), 0),
               gain: (items) => this.showGain(items),
+              // Version 1.19 : au Poulailler ou à l'Étable, il prend ce qui l'attend.
+              collect: (lieu, done) => setTimeout(() => done(bridge && bridge.collect ? bridge.collect(lieu) : null), 0),
             });
           } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
         }
@@ -1597,16 +1599,19 @@
       tap(wx, wy) {
         if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
-        // Version 1.19 : dehors, un double appui sur l'herbe ou un chemin y envoie le personnage.
-        // Sur l'herbe labourable, l'appui simple (la fenêtre de la Zone de culture) attend donc
-        // DOUBLE_TAP_MS de voir s'il n'est pas suivi d'un second.
-        if (!this.room && (!hit || hit.herbe)) {
+        // Version 1.19 : dehors, un double appui sur l'herbe ou un chemin y envoie le personnage ;
+        // sur le Poulailler ou l'Étable, il va y ramasser (œufs ; lait et laine). L'appui simple
+        // (la fenêtre de la Zone de culture, du bâtiment) attend donc DOUBLE_TAP_MS de voir s'il
+        // n'est pas suivi d'un second.
+        const farmyard = hit && (hit.window === 'poulailler' || hit.window === 'etable') ? hit.window : null;
+        if (!this.room && (!hit || hit.herbe || farmyard)) {
           const now = performance.now(), prev = this.lastTap;
           const near = prev && Math.hypot(wx - prev.x, wy - prev.y) <= (DOUBLE_TAP_PX * pixelRatio()) / this.cameras.main.zoom;
           if (prev && now - prev.t <= DOUBLE_TAP_MS && near) {
             clearTimeout(prev.timer);
             this.lastTap = null;
-            this.goHere(wx, wy);
+            if (farmyard) this.goCollect(farmyard, hit.window);
+            else this.goHere(wx, wy);
             return;
           }
           if (prev) clearTimeout(prev.timer);
@@ -1626,6 +1631,14 @@
         else if (p.mature) bridge.act('harvest', { id: p.id });
         else if (!p.arrosee) bridge.act('water', { id: p.id });
         else bridge.act('stage-open', { window: hit.open });   // rien à faire sur la carte : la fenêtre de sa zone
+      }
+
+      // Version 1.19 : le personnage va ramasser au Poulailler ou à l'Étable. Rien à y prendre :
+      // la fenêtre du bâtiment s'ouvre, comme un appui simple. La nuit, la famille dort.
+      goCollect(lieu, win) {
+        if (lastModel && lastModel.nuit) return;
+        if (this.fermier && this.fermier.collect(lieu)) return;
+        bridge.act('stage-open', { window: win });
       }
 
       // Le personnage va au point (wx, wy) de la carte ; un rond marque un instant l'arrivée.
