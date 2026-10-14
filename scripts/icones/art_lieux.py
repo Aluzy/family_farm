@@ -196,6 +196,25 @@ ICONS['🧺'] = [  # panier en osier
 '................',
 ]
 
+ICONS['🏪'] = [  # commerce : enseigne en bois, store rayé, vitrine et porte
+'................',
+'..KKKKKKKKKKKK..',
+'..KUuuuuuuuuuK..',
+'..KKKKKKKKKKKK..',
+'.Kc%%cc%%cc%%cK.',
+'.Kc%%cc%%cc%%cK.',
+'.KKKKKKKKKKKKKK.',
+'..KccccccccccK..',
+'..KqqqqcKKKKcK..',
+'..KqBbqcKutKcK..',
+'..KqbdqcKtsKcK..',
+'..KqqqqcKtsKcK..',
+'..KqqqqcKtsKcK..',
+'..KCCCCCKtsKCK..',
+'..KKKKKKKKKKKK..',
+'................',
+]
+
 ICONS['📦'] = [  # carton fermé, ruban adhésif
 '................',
 '....OOOOOOOOOOO.',
