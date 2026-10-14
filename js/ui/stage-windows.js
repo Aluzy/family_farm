@@ -13,7 +13,7 @@ import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatNumber, formatPercent } from '../engine/format.js';
 import {
-  activeTab, axeMode, ecranFerme, FERME_LINKS, hoeMode, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
+  activeTab, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { showToast } from './toasts.js';
@@ -41,7 +41,7 @@ import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js'
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
-import { toolFabHtml } from './outils.js';
+import { toolBarHtml, toolbarOpen } from './outils.js';
 
 /* ---------- Fenêtres de la carte ---------- */
 
@@ -584,12 +584,17 @@ export function renderSleepBar() {
   const label = state.nuitEnCours && state.nuitEnCours.minuit
     ? `Passer la nuit : réveil à ${DATA.TIME.DAY_START_HOUR} h`
     : `Passer la nuit : réveil à ${DATA.TIME.DAY_START_HOUR} h. ${meal}`;
-  // FLU-05 : houe achetée et rangée, un bouton rond la met en main depuis la carte. Il porte
-  // l'outil choisi (houe, hache ou pioche) ; un double appui ouvre la fenêtre Outils.
-  const houe = !hoeMode && !axeMode && activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior ? toolFabHtml() : '';
+  // La barre d'outils (houe, pioche, hache, canne à pêche), en bas de la carte de la ferme,
+  // sans fenêtre ouverte, dès qu'un outil est acheté (elle remplace le bouton rond de FLU-05).
+  const outils = activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior ? toolBarHtml() : '';
+  const barre = document.getElementById('tool-bar');
+  morph(barre, outils);
+  barre.hidden = !outils;
+  barre.classList.toggle('open', toolbarOpen);
+  document.body.classList.toggle('has-toolbar', !!outils);
   morph(
     document.getElementById('sleep-fab'),
-    houe + (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
+    (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
       (nuit ? `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}">${artHtml('sleep-on', 'sleep-art')}</button>` : '')
   );
 }

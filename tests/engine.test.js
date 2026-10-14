@@ -8408,7 +8408,7 @@ test('version 1.9 : la houe s\'achète une fois au Marché', () => {
   assertEqual([buyHoe(s).ok, s.pieces], [false, 60], 'une seule houe');
 });
 
-/* ---------- les outils : hache, pioche et outil du bouton rond ---------- */
+/* ---------- les outils : pioche, hache, canne à pêche et outil choisi ---------- */
 
 test('outils : la hache et la pioche s\'achètent une fois au Marché ; l\'outil choisi va sur le bouton', () => {
   const s = garden();
@@ -8420,10 +8420,11 @@ test('outils : la hache et la pioche s\'achètent une fois au Marché ; l\'outil
   assertEqual([buyTool(s, 'hache').cost, s.pieces, hasTool(s, 'hache'), selectedTool(s)], [DATA.HACHE.PRIX, 1000 - DATA.HACHE.PRIX, true, 'hache'], 'le premier outil va sur le bouton');
   assertEqual(buyTool(s, 'hache').ok, false, 'une seule hache');
   assertEqual([buyTool(s, 'houe').ok, hasHoe(s), selectedTool(s)], [true, true, 'hache'], 'la houe passe par buyHoe ; le choix ne change pas');
-  assertEqual([buyTool(s, 'pioche').ok, ownedTools(s)], [true, ['houe', 'hache', 'pioche']]);
+  assertEqual([buyTool(s, 'pioche').ok, ownedTools(s)], [true, ['houe', 'pioche', 'hache']], 'dans l\'ordre de la barre d\'outils');
+  assertEqual([buyTool(s, 'canne').ok, hasTool(s, 'canne'), ownedTools(s)], [true, true, ['houe', 'pioche', 'hache', 'canne']], 'la canne à pêche, quatrième outil');
   assertEqual([selectTool(s, 'pioche').ok, selectedTool(s)], [true, 'pioche']);
   assertEqual(selectTool(s, 'marteau').ok, false, 'outil inconnu');
-  assertEqual(OUTILS.map((id) => toolDef(id).ICONE), ['⛏️', '🪓', '⚒️']);
+  assertEqual(OUTILS.map((id) => toolDef(id).ICONE), ['⛏️', '⚒️', '🪓', '🎣']);
 });
 
 test('outils : une partie avec la houe seule l\'a sur le bouton ; le Marché fermé ne vend pas la hache', () => {

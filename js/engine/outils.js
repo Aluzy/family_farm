@@ -6,14 +6,15 @@ import { addItem } from './inventory.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
-/* ---------- les outils : houe, hache, pioche ---------- */
+/* ---------- les outils : houe, pioche, hache, canne à pêche ---------- */
 
-// La houe garde sa place (state.potager.houe) ; la hache et la pioche, achetées une fois au
-// Marché, sont dans state.outils, avec l'outil choisi pour le bouton rond de la carte. Le
-// champ n'existe qu'une fois un outil acheté ou choisi : une partie sans lui n'a que la houe.
-export const OUTILS = ['houe', 'hache', 'pioche'];
+// La houe garde sa place (state.potager.houe) ; la hache, la pioche et la canne à pêche,
+// achetées une fois au Marché, sont dans state.outils, avec le dernier outil choisi. Le champ
+// n'existe qu'une fois un outil acheté ou choisi : une partie sans lui n'a que la houe.
+// L'ordre est celui de la barre d'outils de la carte.
+export const OUTILS = ['houe', 'pioche', 'hache', 'canne'];
 
-const CLES = { houe: 'HOUE', hache: 'HACHE', pioche: 'PIOCHE' };
+const CLES = { houe: 'HOUE', hache: 'HACHE', pioche: 'PIOCHE', canne: 'CANNE' };
 
 // { NOM, ICONE, PRIX } d'un outil, ou null.
 export function toolDef(id) {
@@ -29,8 +30,8 @@ export function ownedTools(state) {
   return OUTILS.filter((id) => hasTool(state, id));
 }
 
-// L'outil du bouton rond : celui choisi s'il est à nous, sinon le premier qu'on a (la houe
-// d'abord), sinon null.
+// Le dernier outil choisi (barre d'outils) s'il est à nous, sinon le premier qu'on a (la
+// houe d'abord), sinon null.
 export function selectedTool(state) {
   const choisi = state.outils && state.outils.choisi;
   if (choisi && hasTool(state, choisi)) return choisi;
@@ -38,12 +39,12 @@ export function selectedTool(state) {
 }
 
 function outils(state) {
-  if (!state.outils || typeof state.outils !== 'object') state.outils = { hache: false, pioche: false, choisi: 'houe' };
+  if (!state.outils || typeof state.outils !== 'object') state.outils = { hache: false, pioche: false, canne: false, choisi: 'houe' };
   return state.outils;
 }
 
 // Achat d'un outil au Marché (une seule fois chacun). Le premier outil acheté devient celui
-// du bouton rond s'il n'y en avait pas.
+// choisi s'il n'y en avait pas.
 export function buyTool(state, id) {
   const def = toolDef(id);
   if (!def) return fail('Outil inconnu.');
@@ -59,7 +60,7 @@ export function buyTool(state, id) {
   return { ok: true, cost: def.PRIX };
 }
 
-// Choisit l'outil du bouton rond (fenêtre Outils).
+// Choisit un outil (un appui dans la barre d'outils).
 export function selectTool(state, id) {
   const def = toolDef(id);
   if (!def) return fail('Outil inconnu.');

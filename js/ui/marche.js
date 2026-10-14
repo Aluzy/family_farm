@@ -133,7 +133,7 @@ function hoeSlot() {
     `${H.NOM} : ${owned ? 'déjà achetée' : `${formatCoins(H.PRIX)} pièces`}`);
 }
 
-// La hache et la pioche, après la houe : achetées une fois, comme elle.
+// La pioche, la hache et la canne à pêche, après la houe : achetées une fois, comme elle.
 function toolSlot(id) {
   const def = toolDef(id);
   const owned = hasTool(state, id);
@@ -144,6 +144,7 @@ function toolSlot(id) {
 const OUTILS_DESCRIPTIONS = {
   hache: 'Coupe les arbres de la carte : du bois 🪵 à chaque coup (3 coups par arbre et par jour).',
   pioche: 'Pour casser les pierres (rien à casser sur la ferme pour l\'instant).',
+  canne: 'Pour pêcher dans les mares (rien à pêcher sur la ferme pour l\'instant).',
 };
 
 /* -- Les animaux : ce qu'ils deviennent dans la fiche (prix fixe, besoins, places). -- */
@@ -235,7 +236,7 @@ export function renderComptoir(fenetre = false) {
     const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine' && rayon.match(k));
     const chapitre = !hasHoe(state) ? '<p class="row"><button type="button" class="btn small" data-action="aller" data-window="chapitres">📜 Voir le chapitre</button></p>' : '';
     const slots = items.map((k) => buySlot(k, 'acheter'));
-    body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('hache'), toolSlot('pioche'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
+    body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('pioche'), toolSlot('hache'), toolSlot('canne'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
   } else if (tab.id === 'animaux') {
     body = slotsHtml(ESPECES.map(animalSlot), 'Aucun animal à vendre pour l\'instant.');
   } else if (tab.id === 'meubles') {
@@ -292,7 +293,7 @@ function shopBodyHtml(o) {
     const owned = hasTool(state, o.id);
     return `
       <div class="item-head"><span class="item-icon" aria-hidden="true">${def.ICONE}</span><span class="item-title"><strong id="item-title">${def.NOM}</strong><span>${owned ? 'Déjà achetée' : `${formatCoins(def.PRIX)} 💰`}</span></span></div>
-      <ul class="item-lines"><li>${OUTILS_DESCRIPTIONS[o.id]}</li><li>Double appui sur le bouton rond de la carte : la fenêtre Outils, pour la choisir.</li><li>Outil acheté une seule fois.</li></ul>
+      <ul class="item-lines"><li>${OUTILS_DESCRIPTIONS[o.id]}</li><li>Elle va dans la barre d'outils, en bas de la carte : un appui la prend en main.</li><li>Outil acheté une seule fois.</li></ul>
       ${owned ? '' : `<div class="row item-actions"><button type="button" class="btn primary" data-action="buy-tool" data-outil="${o.id}"${canPay(def.PRIX) ? '' : ' disabled'}>Acheter (−${formatCoins(def.PRIX)} 💰)</button></div>`}`;
   }
   if (o.mode === 'animal') {

@@ -251,9 +251,10 @@
   ],
   "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
   "//OUTILS": [
-    "La hache et la pioche s'achètent une fois au Marché, comme la houe. Un double appui",
-    "sur le bouton rond de l'outil (en bas à droite de la carte) ouvre la fenêtre Outils,",
-    "qui choisit l'outil de ce bouton. ⚒ est la pioche dans les textes (⛏ est la houe)."
+    "La hache, la pioche et la canne à pêche s'achètent une fois au Marché, comme la houe.",
+    "Les outils achetés vont dans la barre d'outils, en bas de la carte : un appui sur un",
+    "outil le prend en main (un second appui le range). ⚒ est la pioche dans les textes",
+    "(⛏ est la houe)."
   ],
   "//HACHE": [
     "La hache en main, un appui sur un arbre de la carte le fait couper : BOIS bois dans",
@@ -262,6 +263,7 @@
   ],
   "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "COUPES": 3 },
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60 },
+  "CANNE": { "NOM": "Canne à pêche", "ICONE": "🎣", "PRIX": 60 },
   "//SERRE": [
     "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture.",
     "CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",
