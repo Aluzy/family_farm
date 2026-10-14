@@ -4,8 +4,9 @@
 #                                                et assets/ombres_arbres.png
 #   python3 scripts/carte/carte_v2.py --apercu   écrit aussi apercu_carte_v2.png (la carte)
 #
-# Puis : node scripts/build-map.mjs (la carte du jeu) et python3 scripts/carte/terres.py (la
-# terre labourable). Prérequis : la planche agrandie (scripts/carte/planche_v2.py).
+# Puis : python3 scripts/carte/planche_v2.py (elle reçoit assets/barrieres.png, écrit ici),
+# node scripts/build-map.mjs (la carte du jeu) et python3 scripts/carte/terres.py (la terre
+# labourable).
 #
 # Part de la carte d'origine, conservée dans scripts/carte/originaux/carte_printemps_elargie_v1.tmj
 # (on peut relancer le script : il repart toujours d'elle). Chaque case est lue sur le sol
@@ -17,7 +18,8 @@
 #   - « contour_herbe » les rives des cases d'eau (bordées d'herbe, ou de sable près d'un chemin) ;
 #   - « plantes_pierres » ce qu'elle avait (fleurs, pierres), plus des herbes hautes et des fleurs
 #                       semées sur l'herbe, des mauvaises herbes sur la terre ;
-#   - « decor »         les objets d'origine (clôtures, tonneau…) sur l'herbe ;
+#   - « decor »         les objets d'origine (tonneau…) sur l'herbe, et les barrières, refaites
+#                       avec les pièces des nouveaux modèles (scripts/carte/barrieres.py) ;
 #   - couches d'arbres  chaque feuillu devient l'arbre clair, chaque sapin le pin, chaque buisson
 #                       un buisson clair, posés en tuiles, pied au même endroit (à la case près) ;
 #                       deux dessins qui se touchent vont dans deux couches (des couches
@@ -37,6 +39,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arbres_3d as A3  # noqa: E402  (les pieds des arbres)
+import barrieres as BA  # noqa: E402  (les barrières)
 import planche_v2 as PV  # noqa: E402  (où sont les nouvelles tuiles)
 
 ROOT = PV.ROOT
@@ -49,6 +52,8 @@ ANCIEN = 3375                 # tuiles de la planche d'origine
 TERRE_ZONE = 1167             # le sol des anciennes zones de culture (montrées en herbe)
 # les bordures de terre des anciennes zones de culture : le jeu ne les dessine plus (herbe)
 BORDURES = {1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764}
+# les barrières de la planche d'origine (et leur portail) : remplacées par celles de barrieres.py
+BARRIERES_V1 = {915, 916, 917, 990, 992, 1065, 1066, 1067, 839}
 SAPIN = (9, 4, 3, 4)          # le sapin dans la planche d'origine (colonne, rangée, l, h)
 SOL = ['ground', 'decor', 'contour_herbe', 'animation_eau', 'water_shine']
 ARBRES = ['layer_tree_4', 'layer_tree_3', 'layer_tree_2', 'layer_tree_1']     # du fond vers l'avant
@@ -259,6 +264,8 @@ def main():
                 continue
             if nom in SOL and nom != 'decor':
                 data[i] = 0                                    # sol, bordures, ancienne eau : refaits
+            elif g in BARRIERES_V1:
+                data[i] = 0                                    # les barrières : refaites (plus bas)
             elif i in retires.get(nom, ()):
                 data[i] = 0
             elif nom in ('decor', 'plantes_pierres') + tuple(ARBRES) and plaque(g):
@@ -268,8 +275,19 @@ def main():
         nouvelles[nom] = data
     nouvelles['ground'] = ground
     nouvelles['contour_herbe'] = rives
+    # les barrières : dessinées avec les nouvelles pièces, découpées en tuiles, sur « decor »
+    HERBES = {PV.gid('herbe_deco', k) for k in range(16 * 10)} | {399, 177, 175, 394, 400, 396, 397, 398, 322, 100, 101, 102, 320}
+    cases, uniques = BA.tuiles(BA.dessiner(W, H), W, H)
+    _, _, _, bw, bh, _ = PV.BLOCS['barrieres']
+    BA.planche(uniques, bw, bh)
+    for i, k in cases.items():
+        assert not nouvelles['decor'][i], f'case {i % W},{i // W} : déjà un décor sous la barrière'
+        nouvelles['decor'][i] = PV.gid('barrieres', k)
+        if nouvelles['plantes_pierres'][i] in HERBES:
+            nouvelles['plantes_pierres'][i] = 0                # ni herbe haute ni fleur sur la barrière
+    print(f'barrières : {len(cases)} cases, {len(uniques)} tuiles (assets/barrieres.png)')
     for i, g in enumerate(semis):
-        if g and not nouvelles['plantes_pierres'][i]:
+        if g and not nouvelles['plantes_pierres'][i] and not nouvelles['decor'][i]:
             nouvelles['plantes_pierres'][i] = g
     # le devant des troncs des arbres retirés (touffes d'herbe de layer_tree_top)
     tous_retires = set().union(*[v for k, v in retires.items() if k.startswith('layer_tree')]) if retires else set()

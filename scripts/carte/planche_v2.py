@@ -36,6 +36,7 @@ BLOCS = {
     'pin': ('pin_clair_sp.png', 52, 50, 4, 4, (0, 0, 64, 64)),          # la 1re image : le pin sur 64 × 64
     'buisson_rond': ('arbre_clair.png', 57, 50, 3, 2, (48, 32, 48, 32)),
     'buisson_large': ('arbre_clair.png', 61, 50, 3, 2, (96, 32, 48, 32)),
+    'barrieres': ('barrieres.png', 48, 54, 27, 7, (0, 0, 432, 112)),       # écrit par carte_v2.py
 }
 EAU_TUILES, EAU_IMAGES, EAU_DUREE = 32, 8, 160     # voir scripts/carte/eau.py
 
