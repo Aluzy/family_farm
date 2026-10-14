@@ -14,6 +14,8 @@
 #     tronc s'éclaircit un peu ; le relief du dessin est gardé ;
 #   1 un buisson rond (trois bosses), 2 un buisson large (six bosses) : des dômes éclairés en
 #     haut à gauche, du feuillage de l'arbre éclairci, contour sombre ; l'arbre aussi a un contour.
+# assets/pin_clair.png : le pin (scripts/carte/originaux/pin_modele.png, 58 × 64) harmonisé de
+# la même façon, sur une rampe un peu plus froide et profonde (un conifère, même famille).
 # Les ombres portées ne sont pas dans les dessins : le jeu (ou la carte) les pose au sol.
 import colorsys
 import math
@@ -32,6 +34,11 @@ CW, CH = 48, 64
 RAMPE = [(6, 40, 8), (12, 66, 6), (22, 96, 6), (44, 128, 8), (74, 160, 10), (106, 190, 16),
          (140, 220, 36), (178, 244, 84)]
 CONTOUR = (6, 40, 8)
+# Le pin : une rampe un peu plus froide et plus profonde (un conifère), de la même famille.
+RAMPE_PIN = [(4, 34, 18), (8, 56, 28), (14, 82, 36), (28, 112, 42), (52, 142, 48), (86, 174, 58),
+             (124, 206, 80), (164, 232, 118)]
+MODELE_PIN = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'pin_modele.png')
+SORTIE_PIN = os.path.join(ROOT, 'assets', 'pin_clair.png')
 BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
 
 
@@ -39,24 +46,27 @@ def hls(c):
     return colorsys.rgb_to_hls(*(v / 255 for v in c))
 
 
-def vert(c):
+def vert(c, hmax=170):
     h, l, s = hls(c)
-    return 70 / 360 <= h <= 170 / 360 or (l < 0.05)
+    return 70 / 360 <= h <= hmax / 360 or (l < 0.05)
 
 
-def sur_rampe(t):
-    t = max(0.0, min(1.0, t)) * (len(RAMPE) - 1)
-    i = min(len(RAMPE) - 2, int(t))
+def sur_rampe(t, rampe=None):
+    rampe = rampe or RAMPE
+    t = max(0.0, min(1.0, t)) * (len(rampe) - 1)
+    i = min(len(rampe) - 2, int(t))
     f = t - i
-    return tuple(round(a * (1 - f) + b * f) for a, b in zip(RAMPE[i], RAMPE[i + 1]))
+    return tuple(round(a * (1 - f) + b * f) for a, b in zip(rampe[i], rampe[i + 1]))
 
 
-def eclaircir(modele):
+def eclaircir(modele, rampe=None, hmax=170, clarte=(0.08, 0.92, 0.85)):
     """L'arbre éclairci : les verts répartis sur la rampe selon leur rang de luminosité
-    (l'ordre des tons, donc le relief, est gardé), le tronc un peu plus clair et plus chaud."""
+    (l'ordre des tons, donc le relief, est gardé), le tronc un peu plus clair et plus chaud.
+    hmax : la teinte la plus bleue encore comptée comme feuillage (le pin est bleuté) ;
+    clarte : (départ, étendue, courbe) de la place sur la rampe selon le rang."""
     px = modele.load()
     w, h = modele.size
-    verts = sorted({px[x, y][:3] for y in range(h) for x in range(w) if px[x, y][3] and vert(px[x, y][:3])},
+    verts = sorted({px[x, y][:3] for y in range(h) for x in range(w) if px[x, y][3] and vert(px[x, y][:3], hmax)},
                    key=lambda c: hls(c)[1])
     rang = {c: i / max(1, len(verts) - 1) for i, c in enumerate(verts)}
     out = Image.new('RGBA', (w, h))
@@ -68,7 +78,7 @@ def eclaircir(modele):
                 continue
             c = p[:3]
             if c in rang:
-                n = sur_rampe(0.08 + 0.92 * rang[c] ** 0.85)
+                n = sur_rampe(clarte[0] + clarte[1] * rang[c] ** clarte[2], rampe)
             else:                                   # le tronc : plus clair, plus chaud
                 hh, l, s = hls(c)
                 r, g, b = colorsys.hls_to_rgb(hh, min(0.62, l * 1.35 + 0.04), min(1, s * 1.1))
@@ -150,14 +160,20 @@ def main():
     img = planche(modele)
     img.save(SORTIE)
     print('assets/arbre_clair.png : arbre, buisson rond, buisson large (cases de 48 × 64)')
+    pin0 = Image.open(MODELE_PIN).convert('RGBA')
+    pin = contour(eclaircir(pin0, RAMPE_PIN, 200, (0.04, 0.82, 1.2)))      # un peu plus sombre que le feuillu
+    pin.save(SORTIE_PIN)
+    print(f'assets/pin_clair.png : le pin harmonisé ({pin.width} × {pin.height}, pied au milieu du bas)')
     if '--apercu' in sys.argv:
         herbe = Image.open(os.path.join(ROOT, 'assets', 'herbe_chemin.png')).convert('RGBA')
-        fond = Image.new('RGBA', (CW * 4, CH))
+        fond = Image.new('RGBA', (CW * 4 + 2 * 60, CH))
         for y in range(0, CH, 16):
-            for x in range(0, CW * 4, 16):
+            for x in range(0, fond.width, 16):
                 fond.paste(herbe.crop((x % 256, 0, x % 256 + 16, 16)), (x, y))
         fond.alpha_composite(modele, (0, 0))
         fond.alpha_composite(img, (CW, 0))
+        fond.alpha_composite(pin0, (CW * 4, 0))
+        fond.alpha_composite(pin, (CW * 4 + 60, 0))
         fond.resize((fond.width * 5, fond.height * 5), Image.NEAREST).save(os.path.join(ROOT, 'apercu_arbre_clair.png'))
         print('apercu_arbre_clair.png')
 
