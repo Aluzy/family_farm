@@ -1,6 +1,4 @@
 import { DATA } from '../engine/catalog.js';
-import { memberHappiness } from '../engine/ville.js';
-import { happinessGaugeHtml } from './ville.js';
 import { EPS } from '../engine/base.js';
 import {
   addMember, addPet, cleanFirstName, familyNeed, findMember, findPet,
@@ -54,7 +52,7 @@ export function memberAvatarHtml(id) {
   return `<img class="portrait-px" src="${persoSrc(memberPerso(m), !!(m && m.enfant))}" alt="" width="16" height="16">`;
 }
 
-// FLU-24 : une ligne par membre (portrait, nom, bonheur, boutons) : toute la famille
+// FLU-24 : une carte par membre (portrait, nom, boutons), deux par ligne : toute la famille
 // tient dans le premier écran de la fiche.
 function portraitCard(m) {
   const main = mainCharacter(state) && mainCharacter(state).id === m.id;
@@ -63,7 +61,6 @@ function portraitCard(m) {
       ${memberAvatarHtml(m.id)}
       <span class="member-row-text">
         <strong class="member-name">${memberNameHtml(m.id)}</strong>${main ? ' <span class="chip auto">⭐ Principal</span>' : ''}
-        <span class="member-row-joy">${happinessGaugeHtml(memberHappiness(m))}<span aria-hidden="true">😊</span></span>
       </span>
       ${familyEditing ? `<span class="member-row-btns">
         ${!m.enfant && !main ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" aria-label="Choisir comme personnage principal" title="Choisir comme personnage principal">⭐</button>` : ''}
