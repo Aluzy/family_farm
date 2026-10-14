@@ -13,10 +13,14 @@
 # posent sur un calque d'eau : l'eau est transparente.
 #
 # La perspective est celle du modèle (vue de 3/4, lumière en haut à gauche) :
-#   - rive sud (la terre au-dessus de l'eau) : la berge haute du modèle, puis l'écume ;
+#   - rive sud (la terre au-dessus de l'eau) : la berge haute du modèle, puis l'écume et une
+#     bande d'eau claire (peu profonde) à son pied ;
 #   - rive nord (l'eau au-dessus de la terre) : on ne voit que le bord du dessus, un liseré clair ;
 #   - rives est et ouest : un flanc étroit, clair à l'ouest (vers la lumière), sombre à l'est ;
-#   - l'écume borde l'eau partout.
+#   - partout : le sable mouillé au bord, quelques cailloux, l'écume, puis une seconde ligne
+#     d'écume en pointillé un peu plus loin dans l'eau.
+# Autour d'un coin isolé (une avancée de terre, une anse), la rive est une courbe (quart
+# d'ellipse) : le contour de l'eau est arrondi, pas en escalier.
 # Raccords : la rive croise chaque côté d'une tuile toujours au même endroit (selon que la terre
 # est en haut ou en bas, à gauche ou à droite), et la texture de la berge dépend de la colonne :
 # deux tuiles qui partagent un côté se rejoignent.
@@ -37,14 +41,20 @@ FLANC_CLAIR = [(232, 186, 15), (218, 173, 14)]     # flanc ouest (vers la lumiè
 FLANC_SOMBRE = [(162, 129, 10), (134, 106, 8)]     # flanc est (dans l'ombre)
 BORD_NORD = (204, 162, 13)    # rive nord : l'arête du dessus, sous le liseré
 # Rive sud : l'eau commence à la rangée EAU_SUD - FESTON[x] (le feston du modèle aux deux bouts).
-EAU_SUD = 14
+EAU_SUD = 12                  # deux rangées plus haut que le modèle : l'eau claire tient dessous
 FESTON = [2, 1, 1] + [0] * 11 + [1, 2]
 # Rive nord : l'eau occupe les rangées < EAU_NORD. Rives est et ouest : les colonnes >= EAU_EST
 # et < EAU_OUEST.
-EAU_NORD = 3
-EAU_EST = 13
-EAU_OUEST = 3
+# Au milieu des côtés : une rive en diagonale ondule doucement au lieu de faire des marches.
+# Seule la rive sud passe plus bas : la berge haute du modèle doit tenir au-dessus de l'eau.
+EAU_NORD = 8
+EAU_EST = 8
+EAU_OUEST = 8
 BERGE = 12                    # hauteur de la berge du modèle (rangées 2 à 13)
+MOUILLE = (214, 168, 14)      # le sable mouillé, au bord de l'eau
+CAILLOU, CAILLOU_OMBRE = (214, 200, 168), (150, 120, 40)
+CLAIRE = (196, 226, 236, 150)  # l'eau peu profonde au pied de la berge (posée sur l'eau)
+BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
 
 
 def berge(modele):
@@ -60,50 +70,77 @@ def berge(modele):
     return tex
 
 
+def passages(n):
+    """Où la rive croise chaque côté de la tuile n. Le long d'un côté horizontal, elle dépend
+    de ce qui est à gauche et à droite ; le long d'un côté vertical, de ce qui est en haut et
+    en bas : deux tuiles qui partagent un côté le voient de la même façon."""
+    tl, tr, bl, br = [(n >> k) & 1 for k in (3, 2, 1, 0)]           # 1 = terre
+    hx = lambda g, d: EAU_EST if g and not d else EAU_OUEST           # terre à gauche : l'eau dès EAU_EST
+    vy = lambda h, b, x: EAU_SUD - FESTON[x] if h and not b else EAU_NORD
+    return {
+        'haut': hx(tl, tr) if tl != tr else None, 'bas': hx(bl, br) if bl != br else None,
+        'gauche': vy(tl, bl, 0) if tl != bl else None, 'droite': vy(tr, br, T - 1) if tr != br else None,
+    }
+
+
 def eau(n):
-    """Masque de l'eau de la tuile n : un rectangle par coin d'eau, qui s'étend jusqu'au coin
-    voisin s'il est aussi de l'eau, sinon jusqu'au point de passage de la rive sur ce côté."""
-    tl, tr, bl, br = [(n >> k) & 1 for k in (3, 2, 1, 0)]          # 1 = terre
-    m = [[False] * T for _ in range(T)]
+    """Masque de l'eau de la tuile n. Une rive droite quand deux coins voisins sont de l'eau
+    (ou de la terre) ; autour d'un coin isolé (le seul de sa sorte, ou deux en diagonale), une
+    rive courbe en quart d'ellipse, du passage sur un côté au passage sur l'autre."""
+    tl, tr, bl, br = coins = [(n >> k) & 1 for k in (3, 2, 1, 0)]
+    P = passages(n)
+    terre = sum(coins)
+    m = [[not coins[(y >= 8) * 2 + (x >= 8)] for x in range(T)] for y in range(T)]
+    if terre in (0, 4):
+        return m
+    # les coins isolés : la sorte la moins nombreuse (l'eau, à égalité : la terre reste d'un tenant)
+    isole = 1 if terre == 1 else 0 if terre == 3 else (0 if tl == br else None)
+    if isole is None:
+        # deux coins voisins de chaque sorte : une rive droite
+        for y in range(T):
+            for x in range(T):
+                if P['gauche'] is not None:               # rive horizontale (terre en haut ou en bas)
+                    lim = EAU_SUD - FESTON[x] if tl else EAU_NORD
+                    m[y][x] = (y >= lim) if tl else (y < lim)
+                else:                                     # rive verticale
+                    m[y][x] = (x >= EAU_EST) if tl else (x < EAU_OUEST)
+        return m
+    p = 2.3
     for y in range(T):
         for x in range(T):
-            gauche, haut = x < 8, y < 8
-            coin = {(True, True): tl, (False, True): tr, (True, False): bl, (False, False): br}[(gauche, haut)]
-            if coin:
-                continue
-            # le voisin horizontal et le voisin vertical de ce coin d'eau
-            vh = {(True, True): tr, (False, True): tl, (True, False): br, (False, False): bl}[(gauche, haut)]
-            vv = {(True, True): bl, (False, True): br, (True, False): tl, (False, False): tr}[(gauche, haut)]
-            # jusqu'où va l'eau le long du côté horizontal (en x) et du côté vertical (en y)
-            if vh:                         # la terre de l'autre côté : la rive passe à EAU_EST / EAU_OUEST
-                okx = x >= EAU_EST if not gauche else x < EAU_OUEST
-            else:
-                okx = True
-            if vv:                         # terre au-dessus (rive sud) ou en dessous (rive nord)
-                oky = y >= EAU_SUD - FESTON[x] if not haut else y < EAU_NORD
-            else:
-                oky = True
-            m[y][x] = okx and oky
+            dedans = False
+            for k, (cx, cy) in enumerate(((0, 0), (T, 0), (0, T), (T, T))):
+                if coins[k] != isole:
+                    continue
+                ex = P['haut'] if cy == 0 else P['bas']
+                ey = P['gauche'] if cx == 0 else P['droite']
+                rx, ry = abs(ex - cx), abs(ey - cy)
+                d = (abs(x + 0.5 - cx) / rx) ** p + (abs(y + 0.5 - cy) / ry) ** p
+                if d <= 1:
+                    dedans = True
+            m[y][x] = dedans if isole == 0 else not dedans
     return m
 
 
 def tuile(n, tex):
+    """La tuile n : le masque de l'eau, puis la terre (sable, berge, flancs, bord mouillé,
+    cailloux) et l'eau (écume, seconde ligne d'écume, eau claire au pied de la berge)."""
     m = eau(n)
     out = Image.new('RGBA', (T, T), (0, 0, 0, 0))
     W = lambda x, y: m[y][x] if 0 <= x < T and 0 <= y < T else None
+    pres = lambda x, y, r: any(W(x + dx, y + dy) for dx in range(-r, r + 1) for dy in range(-r, r + 1))
+    berge_px = set()
     for y in range(T):
         for x in range(T):
             if m[y][x]:
-                # l'écume : l'eau qui touche la terre
-                if any(W(x + dx, y + dy) is False for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                    out.putpixel((x, y), ECUME + (255,))
                 continue
             c = SABLE
-            # berge : de l'eau juste en dessous, à moins de BERGE pixels
-            # (la rangée de texture suit la rangée du modèle : le feston relève l'eau, pas la berge)
+            # berge : de l'eau juste en dessous, à moins de BERGE pixels (la rangée de texture
+            # suit la rangée du modèle : le feston relève l'eau, pas la berge)
             k = next((k for k in range(1, BERGE + 1) if W(x, y + k)), None)
-            if k is not None and BERGE - k - FESTON[x] >= 0:
+            if k is not None and BERGE - k - FESTON[x] >= 0 and (k > 2 or not (W(x - 1, y) or W(x + 1, y))):
                 c = tex[BERGE - k - FESTON[x]][x]
+                berge_px.add((x, y))
             elif W(x + 1, y) or W(x + 2, y):
                 c = FLANC_SOMBRE[0 if W(x + 2, y) and not W(x + 1, y) else 1]      # flanc est
             elif W(x - 1, y) or W(x - 2, y):
@@ -112,7 +149,33 @@ def tuile(n, tex):
                 c = LISERE                                                         # rive nord
             elif W(x, y - 2):
                 c = BORD_NORD
-            out.putpixel((x, y), c + (255,))
+            elif pres(x, y, 1):
+                c = MOUILLE                                                        # sable mouillé
+            elif pres(x, y, 4) and (x * 7 + y * 13 + n * 5) % 23 == 0 and 1 <= x < T - 2 and 1 <= y < T - 2:
+                out.putpixel((x + 1, y + 1), CAILLOU_OMBRE + (255,))               # un caillou
+                c = CAILLOU
+            if out.getpixel((x, y))[3] == 0 or c != SABLE:
+                out.putpixel((x, y), c + (255,))
+    # l'eau : écume au contact, puis un anneau d'eau peu profonde (plus claire, tramée), puis
+    # une seconde ligne d'écume en pointillé ; sous la berge, l'eau claire est plus large
+    terre_px = [(x, y) for y in range(T) for x in range(T) if not m[y][x]]
+    for y in range(T):
+        for x in range(T):
+            if not m[y][x]:
+                continue
+            if any(W(x + dx, y + dy) is False for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                out.putpixel((x, y), ECUME + (255,))
+                continue
+            d = min((max(abs(x - a), abs(y - b)) for a, b in terre_px), default=99)
+            sous_berge = any((x, y - k) in berge_px for k in range(1, 5))
+            if d == 2 or (sous_berge and d <= 3):
+                if BAYER[y % 4][x % 4] < 12:
+                    out.putpixel((x, y), CLAIRE)
+            elif d == 3 or (sous_berge and d == 4):
+                if BAYER[y % 4][x % 4] < 5:
+                    out.putpixel((x, y), CLAIRE)
+            elif d == 4 and (x + y) % 3 == 0:
+                out.putpixel((x, y), ECUME[:3] + (190,))
     return out
 
 
@@ -144,36 +207,26 @@ def tsx(img):
 
 
 def apercu(img):
-    """Une petite carte : un lac avec une île et une anse, sur une eau bleue, agrandie × 4."""
-    carte_txt = [
-        '##################',
-        '##################',
-        '######.....#######',
-        '####..........####',
-        '###............###',
-        '###.....##.....###',
-        '##.....####.....##',
-        '##.....###......##',
-        '###............###',
-        '####..........####',
-        '#####...##...#####',
-        '#####...##...#####',
-        '##################',
-        '##################',
-    ]
-    H, W = len(carte_txt), len(carte_txt[0])
-    terre = lambda x, y: carte_txt[min(H - 1, max(0, y))][min(W - 1, max(0, x))] == '#'
-    out = Image.new('RGBA', ((W - 1) * T, (H - 1) * T))
-    # l'eau dessous : un bleu à petites vagues
+    """Une petite carte : une mare ronde et irrégulière avec une île, sur une eau bleue,
+    agrandie × 4, à côté de la planche."""
+    import math
+    W, H = 22, 16
+    def terre(x, y):
+        a = math.atan2(y - 7.5, x - 10.5)
+        r = math.hypot((x - 10.5) / 1.25, y - 7.5)
+        bord = 5.4 + 0.8 * math.sin(3 * a) + 0.5 * math.cos(5 * a + 1)
+        ile = math.hypot(x - 12, (y - 8) * 1.2) < 2.3
+        return r > bord or ile
+    out = Image.new('RGBA', (W * T, H * T))
     for y in range(out.height):
         for x in range(out.width):
             v = (x * 3 + y * 7) % 23 == 0 or (x * 5 + y * 2) % 31 == 0
             out.putpixel((x, y), (120, 190, 235, 255) if v else (60, 150, 210, 255))
-    for ty in range(H - 1):
-        for tx in range(W - 1):
+    for ty in range(H):
+        for tx in range(W):
             n = (terre(tx, ty) << 3) | (terre(tx + 1, ty) << 2) | (terre(tx, ty + 1) << 1) | terre(tx + 1, ty + 1)
             out.alpha_composite(img.crop(((n % 4) * T, (n // 4) * T, (n % 4 + 1) * T, (n // 4 + 1) * T)), (tx * T, ty * T))
-    z = 4
+    z = 3
     a = out.resize((out.width * z, out.height * z), Image.NEAREST)
     fond = Image.new('RGBA', img.size, (60, 150, 210, 255))
     fond.alpha_composite(img)
