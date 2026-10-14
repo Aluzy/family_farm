@@ -1,0 +1,127 @@
+# Les barrières de bois du décor version 2, dessinées avec les pièces des modèles.
+#
+# Modèles : scripts/carte/originaux/barriere_*.png (40 × 48) — de petits enclos :
+#   barriere_fermee.png           l'enclos fermé (les pièces de base) ;
+#   barriere_portail_ferme.png    un portail à deux battants, fermé, sur le devant ;
+#   barriere_portail_ouvert.png   le même, ouvert ; barriere_portillon*.png : un portillon sur le côté.
+# Les poteaux du devant et du fond font 5 px de large, un tous les PAS px, avec trois lisses
+# (rangées 35 à 37 du modèle) ; les côtés empilent des tronçons de poteau de TRONCON px.
+#
+# Utilisé par scripts/carte/carte_v2.py : chaque barrière de la carte (BARRIERES) y est dessinée
+# au pixel près, puis découpée en tuiles de 16 px (les tuiles identiques une seule fois) :
+# assets/barrieres.png (bloc « barrieres » de scripts/carte/planche_v2.py).
+import os
+
+from PIL import Image
+
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+ORIG = os.path.join(ROOT, 'scripts', 'carte', 'originaux')
+SORTIE = os.path.join(ROOT, 'assets', 'barrieres.png')
+T = 16
+PAS = 9            # d'un poteau au suivant, devant et au fond
+TRONCON = 10       # un tronçon de poteau sur les côtés
+HAUT_DEVANT = 15   # un poteau du devant, du chapeau au pied
+
+# Les barrières de la carte (en tuiles) :
+#   ('enclos', x0, y0, x1, y1, portail) : côtés aux colonnes x0 et x1, du haut de la rangée y0
+#     (contre un bâtiment : pas de barrière au fond) au devant, dans la rangée y1 ; portail :
+#     None, ou la colonne de tuile autour de laquelle centrer le portail à deux battants ;
+#   ('rangee', x0, x1, y) : une barrière droite de la colonne x0 à x1, dans la rangée y.
+BARRIERES = [
+    ('enclos', 19, 20, 27, 25, 23.5),       # l'enclos de l'Étable
+    ('rangee', 29, 33, 22),                 # devant la maison
+]
+
+
+def modele(nom):
+    return Image.open(os.path.join(ORIG, nom)).convert('RGBA')
+
+
+def pieces():
+    m = modele('barriere_fermee.png')
+    p = modele('barriere_portail_ferme.png')
+    return {
+        'coin_g': m.crop((1, 31, 6, 46)),            # poteau d'angle du devant, à gauche
+        'coin_d': m.crop((28, 31, 33, 46)),          # à droite
+        'poteau': m.crop((10, 31, 15, 46)),          # poteau du devant
+        'lisses': m.crop((6, 31, 10, 46)),           # entre deux poteaux : les lisses seules
+        'chapeau': m.crop((1, 1, 6, 2)),             # le haut d'un côté (rangée « fff »)
+        'troncon': m.crop((1, 12, 6, 22)),           # un tronçon de côté (chapeau, puis le bois)
+        'portail': p.crop((1, 31, 33, 47)),          # deux poteaux et le portail fermé, 3 pas
+    }
+
+
+def devant(img, P, x0, y, n, portail=None, coins=True):
+    """La barrière du devant : n pas depuis le poteau x0 (px), pied à la rangée y (px) ;
+    portail : le pas où commence le portail (3 pas), ou None."""
+    haut = y - HAUT_DEVANT + 1
+    for k in range(n):
+        img.alpha_composite(P['lisses'], (x0 + k * PAS + 5, haut))
+    for k in range(n + 1):
+        if portail is not None and portail < k < portail + 3:
+            continue
+        piece = P['coin_g'] if coins and k == 0 else P['coin_d'] if coins and k == n else P['poteau']
+        img.alpha_composite(piece, (x0 + k * PAS, haut))
+    if portail is not None:
+        img.alpha_composite(P['portail'], (x0 + portail * PAS, haut))
+
+
+def cote(img, P, x, y_haut, y_devant):
+    """Un côté : le chapeau à y_haut, puis des tronçons jusqu'au poteau d'angle du devant."""
+    img.alpha_composite(P['chapeau'], (x, y_haut))
+    y = y_haut + 1
+    fin = y_devant - HAUT_DEVANT + 1
+    while y < fin:
+        t = P['troncon'].crop((0, 0, 5, min(TRONCON, fin - y)))
+        img.alpha_composite(t, (x, y))
+        y += TRONCON
+
+
+def dessiner(W, H):
+    """Toutes les barrières de BARRIERES sur une image de la taille de la carte (W × H tuiles)."""
+    P = pieces()
+    img = Image.new('RGBA', (W * T, H * T))
+    for b in BARRIERES:
+        if b[0] == 'enclos':
+            _, x0, y0, x1, y1, portail = b
+            g = x0 * T + 5
+            n = round((x1 - x0) * T / PAS)
+            pied = y1 * T + 14
+            haut = pied - HAUT_DEVANT + 1 - TRONCON * round((pied - HAUT_DEVANT + 1 - y0 * T) / TRONCON) - 1
+            cote(img, P, g, haut, pied)
+            cote(img, P, g + n * PAS, haut, pied)
+            p = None
+            if portail is not None:
+                p = round(((portail * T) - g) / PAS - 1.5)
+            devant(img, P, g, pied, n, p)
+        else:
+            _, x0, x1, y = b
+            g = x0 * T + 3
+            n = round((x1 + 1 - x0) * T / PAS) - 1
+            devant(img, P, g, y * T + 14, n)
+    return img
+
+
+def tuiles(img, W, H):
+    """Découpe en tuiles : {case: numéro de tuile dans la planche}, et les tuiles (uniques)."""
+    uniques, index, cases = [], {}, {}
+    for ty in range(H):
+        for tx in range(W):
+            t = img.crop((tx * T, ty * T, tx * T + T, ty * T + T))
+            if not t.getbbox():
+                continue
+            cle = t.tobytes()
+            if cle not in index:
+                index[cle] = len(uniques)
+                uniques.append(t)
+            cases[ty * W + tx] = index[cle]
+    return cases, uniques
+
+
+def planche(uniques, cols, rangs):
+    assert len(uniques) <= cols * rangs, f'{len(uniques)} tuiles de barrière : la planche en tient {cols * rangs}'
+    out = Image.new('RGBA', (cols * T, rangs * T))
+    for k, t in enumerate(uniques):
+        out.paste(t, ((k % cols) * T, (k // cols) * T))
+    out.save(SORTIE)
+    return out
