@@ -3,6 +3,8 @@
    window, au stockage ou à l'horloge.
    ========================================================================== */
 
+import { isUnlocked } from '../engine/campaign.js';
+
 export const SAVE_KEY = 'ferme-save';
 export const TICK_MS = 200;
 export const MAX_FRAME_MS = 1000;
@@ -11,7 +13,8 @@ export const RENDER_THROTTLE_MS = 200; // ~5 fois par seconde
 
 export const TABS = [
   { id: 'ferme', label: 'Ferme', icon: '🏠' },
-  { id: 'installations', label: 'Installations', icon: '🏗️' }, // fenêtre de la carte (menu latéral)
+  { id: 'installations', label: 'Installations', icon: '🏗️' }, // fenêtre de la carte (ouverte depuis la carte)
+  { id: 'commerce', label: 'Commerce', icon: '🏪' }, // version 1.14 : fenêtre de la carte (menu latéral), au niveau du commerce
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦' },
   { id: 'inventaire', label: 'Inventaire', icon: '📦' },
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
@@ -22,8 +25,9 @@ export const TABS = [
 ];
 
 // Menu latéral : les destinations, les unes au-dessus des autres (l'Arbre des technologies
-// n'y apparaît qu'au premier point de technologie, FLU-28).
-export const NAV_TABS = ['ferme', 'installations', 'inventaire', 'comptoir', 'techno', 'notifications'];
+// n'y apparaît qu'au premier point de technologie, FLU-28 ; le Commerce, au niveau qui le
+// débloque). Les Installations n'y sont plus : tout ce qu'elles contiennent s'ouvre depuis la carte.
+export const NAV_TABS = ['ferme', 'commerce', 'inventaire', 'comptoir', 'techno', 'notifications'];
 
 // Écrans ouverts depuis la Ferme (raccourcis en haut de l'écran Ferme). Ils
 // restent des onglets pour le moteur et le suivi, mais n'ont pas d'icône en bas :
@@ -35,6 +39,7 @@ const ALWAYS_TABS = ['notifications', 'ville', 'installations'];
 export function tabAvailable(id) {
   // FLU-28 : l'Arbre des technologies se montre au premier point de technologie gagné
   if (id === 'techno' && !techTreeShown()) return false;
+  if (id === 'commerce') return isUnlocked(state, 'commerce');
   return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
 }
 

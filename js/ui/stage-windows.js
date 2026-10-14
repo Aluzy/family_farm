@@ -287,6 +287,12 @@ export const STAGE_WINDOWS = {
     nom: 'Installations', icone: '🏗️', ok: () => true, haute: true, bois: true,
     corps: () => renderBatiments(),
   },
+  // Commerce (menu latéral, au niveau qui le débloque) : la conserverie, la crèmerie ou le
+  // tissage, son niveau et ses quotas ; aussi un onglet de la Maison.
+  commerce: {
+    nom: 'Commerce', icone: '🏪', ok: () => isUnlocked(state, 'commerce'), haute: true, bois: true,
+    corps: () => renderCommerce(),
+  },
   // Arbre des technologies (menu latéral, dès le premier point) : dans le cadre bois.
   techno: {
     nom: 'Arbre des technologies', icone: '🌳', ok: () => tabAvailable('techno'), haute: true, sansTitre: true, bois: true,
@@ -531,7 +537,7 @@ const MENU_ARROW = '<svg class="side-tab-arrow" viewBox="0 0 5 9" width="10" hei
   '<rect x="0" y="0" width="1" height="9"/><rect x="1" y="1" width="1" height="7"/><rect x="2" y="2" width="1" height="5"/><rect x="3" y="3" width="1" height="3"/><rect x="4" y="4" width="1" height="1"/></svg>';
 
 export function renderTabbar() {
-  const current = ['installations', 'inventaire', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
+  const current = ['commerce', 'inventaire', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
   const nav = document.getElementById('bottom-nav');
   if (!menuClickBound) {
@@ -552,7 +558,7 @@ export function renderTabbar() {
       // Ferme reste une liste et garde sa maison)
       .map((t) => (t.id === 'ferme' && stageUsable() ? { ...t, label: 'Carte de la ferme', icon: '🗺️' } : t))
       // FLU-08 : le Marché est là dès le départ (verrouillé) : les onglets ne bougent jamais
-      .filter((t) => (tabAvailable(t.id) || t.id === 'comptoir') && (t.id !== 'installations' || stageUsable()))
+      .filter((t) => tabAvailable(t.id) || t.id === 'comptoir')
       .map((t) => {
         if (!tabAvailable(t.id)) {
           return `<button type="button" class="nav-btn locked" data-action="market-locked" title="${t.label}" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
@@ -576,6 +582,7 @@ const TAB_RENDERERS = {
   inventaire: () => [renderInventaire()],
   comptoir: () => [renderComptoir()],
   recettes: () => [backToFerme() + renderRecettes()],
+  commerce: () => [backToFerme() + renderCommerce()],
   techno: () => [backToFerme() + renderTechno()],
   ville: () => [backToFerme() + renderVille()],
   notifications: () => [renderNotifications()],
@@ -651,7 +658,7 @@ registerActions({
   },
   'switch-tab': (target) => {
     // L'Inventaire et le Marché, avec la carte, sont des fenêtres flottantes par-dessus elle.
-    if (['installations', 'inventaire', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
+    if (['installations', 'commerce', 'inventaire', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
       if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
       allerAuLieu(target.dataset.tab);
       return;
