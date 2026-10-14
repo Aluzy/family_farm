@@ -21,6 +21,7 @@ import { MARKET_CLOSED } from '../engine/market.js';
 import { actionSleep } from './game-actions.js';
 import { artHtml } from './pixel-art.js';
 import { renderVille } from './ville.js';
+import { averageHappiness } from '../engine/ville.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
 import {
   cibleAttrs, heureDuJour, horlogeEmoji, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
@@ -477,9 +478,9 @@ export function renderIndicators() {
   renderHud();
 }
 
-// Extension de la carte du joueur, collée à sa droite sur un fond bois uni : la jauge
-// d'énergie et celle d'endurance (réduction du coût des actions, qui grandit avec le niveau),
-// verticales, côte à côte. Elles ouvrent la Famille.
+// Extension de la carte du joueur, collée à sa droite sur un fond bois uni : les jauges
+// d'énergie, d'endurance (réduction du coût des actions, qui grandit avec le niveau) et de
+// bonheur de la famille, verticales, côte à côte. Elles ouvrent la Famille.
 function playerGaugesHtml() {
   const P = DATA.PERSONNAGE;
   const e = energyLevel(state);
@@ -489,36 +490,28 @@ function playerGaugesHtml() {
   const endu = enduranceReduction(state);
   const enduMax = P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1);
   const dPct = enduMax > 0 ? Math.max(0, Math.min(100, Math.round((endu * 100) / enduMax))) : 0;
-  const titre = `Énergie : ${e} / ${P.MAX}. Endurance : tes actions coûtent ${endu} % de moins. Ouvrir la Famille`;
+  const bonheur = Math.max(0, Math.min(100, averageHappiness(state)));
+  const bCls = bonheur >= 65 ? '' : bonheur >= 20 ? ' mid' : ' low';
+  const titre = `Énergie : ${e} / ${P.MAX}. Endurance : tes actions coûtent ${endu} % de moins. Bonheur de la famille : ${bonheur} %. Ouvrir la Famille`;
   const jauge = (icone, cls, pct) =>
     `<span class="player-gauge"><span class="player-gauge-icon">${icone}</span>` +
     `<span class="player-gauge-bar"><span class="player-gauge-fill${cls}" style="height:${pct}%"></span></span></span>`;
   return `<button type="button" class="player-gauges" data-action="stage-goto" data-window="famille" title="${titre}" aria-label="${titre}">` +
-    `<span class="player-gauges-in" aria-hidden="true">${jauge('⚡', eCls, ePct)}${jauge('💪', ' endu', dPct)}</span></button>`;
+    `<span class="player-gauges-in" aria-hidden="true">${jauge('⚡', eCls, ePct)}${jauge('💪', ' endu', dPct)}${jauge('😊', bCls, bonheur)}</span></button>`;
 }
 
-// Carte flottante en haut à droite (comme dans Stardew Valley) : le jour et l'heure côte à
-// côte, les pièces dessous ; et, en bas à droite, la jauge verticale de l'énergie, qui ouvre
-// la Famille. L'heure avance par tranches de 10 minutes.
+// Carte flottante en haut à droite (comme dans Stardew Valley), dans le même cadre que la
+// carte du joueur : le jour, l'heure dessous, puis les pièces (qui ouvrent les comptes).
+// L'heure avance par tranches de 10 minutes.
 function renderHud() {
   const h = heureDuJour();
   const heure = Math.floor(h);
   const minutes = Math.floor((h - heure) * 6) * 10;
   const horaire = `${heure} h ${String(minutes).padStart(2, '0')}`;
   morph(document.getElementById('hud'),
-    `<span class="hud-row"><span class="hud-cell">Jour <span class="num">${state.day}</span></span><span class="hud-cell"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span></span>` +
-    `<button type="button" class="hud-row hud-money" data-action="open-compta" title="Voir les comptes"><span class="hud-cell"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces. Voir les comptes</span></span></button>`
-  );
-  const e = energyLevel(state);
-  const max = DATA.PERSONNAGE.MAX;
-  const pct = Math.max(0, Math.min(100, Math.round((e / max) * 100)));
-  // mêmes seuils que la jauge de bonheur : vert à 65 % et plus, jaune de 20 à 64 %, rouge en dessous
-  const cls = pct >= 65 ? '' : pct >= 20 ? ' mid' : ' low';
-  const titre = `Ton énergie : ${e} / ${max}. Ouvrir la Famille`;
-  morph(document.getElementById('hud-energy'),
-    `<button type="button" class="hud-energy-btn" data-action="stage-goto" data-window="famille" title="${titre}" aria-label="${titre}">` +
-    `<span class="hud-energy-label" aria-hidden="true">⚡</span>` +
-    `<span class="hud-energy-bar" aria-hidden="true"><span class="hud-energy-fill${cls}" style="height:${pct}%"></span></span></button>`
+    `<span class="hud-line hud-day">Jour <span class="num">${state.day}</span></span>` +
+    `<span class="hud-line"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span>` +
+    `<button type="button" class="hud-line hud-money" data-action="open-compta" title="Voir les comptes"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces. Voir les comptes</span></button>`
   );
 }
 
