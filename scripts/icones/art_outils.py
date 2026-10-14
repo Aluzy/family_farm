@@ -1,5 +1,5 @@
 # Icônes du lot « outils et technique » : livre, parchemin, rapport, courrier, boîtes aux
-# lettres, outils (marteau, clé, houe, hache, pioche, ciseaux, engrenage, boîte à outils), énergie et électronique
+# lettres, outils (marteau, clé, houe, hache, pioche, canne à pêche, ciseaux, engrenage, boîte à outils), énergie et électronique
 # (batterie, tableau de commande, capteur), arrosage automatique, microscope, éprouvette, robot.
 # Format commun : voir scripts/icones/build.py.
 #
@@ -463,6 +463,39 @@ def pioche():
     return compose(geo(manche), geo(fer))
 
 
+# Canne à pêche (🎣) : une longue canne de bois en diagonale, du bas à gauche (la poignée,
+# plus épaisse, avec le moulinet d'acier) au scion en haut à droite ; la ligne pend du scion
+# jusqu'au bouchon rouge et blanc.
+def canne():
+    ax, ay, bx, by = 1.6, 14.6, 13.6, 1.8                # du talon au scion
+
+    def bois(x, y):
+        d, t = seg_dist(x, y, ax, ay, bx, by)
+        return 'W' if d <= (1.0 if t < 0.3 else 0.62) else '.'
+
+    def moulinet(x, y):
+        return 'A' if math.hypot(x - 5.2, y - 12.4) <= 1.35 else '.'
+
+    bouchon = G('''
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+.............RR.
+.............RR.
+.............PP.
+.............PP.
+''')
+    put = {(14, y): 'u' for y in range(2, 10)}
+    return compose(geo(bois), geo(moulinet), bouchon, put=put)
+
+
 def ciseaux():
     moitie = G('''
 ................
@@ -857,6 +890,7 @@ def icons():
         '⛏': houe(),
         '🪓': hache(),
         '⚒': pioche(),
+        '🎣': canne(),
         '✂': ciseaux(),
         '⚙': engrenage(),
         '🧰': boite_outils(),

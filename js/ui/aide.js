@@ -315,7 +315,7 @@ const GUIDE_BOUTONS = {
   pompe: ['[data-action="buy-starter"][data-id="pompe"]'],
   reservoir: ['[data-action="buy-starter"][data-id="reservoir"]'],
   houe: ['[data-action="buy-hoe"]', '[data-action="shop-item"][data-kind="houe"]'],
-  labours: ['.hoe-fab'],
+  labours: ['.tool-slot[data-outil="houe"]'],
   semis: ['#modal-root [data-action="plant-all"][data-crop="carotte"]:not([disabled])', '#modal-root [data-action="plant"]:not([disabled])', '[data-action="plant-all-open"]:not([disabled])', '[data-action="plant-open"]:not([disabled])'],
   arrosees: ['[data-action="water-all"]:not([disabled])', '[data-action="water"]:not([disabled])'],
   recoltes: ['[data-action="harvest"]'],

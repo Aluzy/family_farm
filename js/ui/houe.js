@@ -55,12 +55,12 @@ export function hoePanelHtml() {
 registerActions({
   'buy-hoe': () => {
     const r = buyHoe(state);
-    // la houe achetée va sur le bouton rond (le chapitre 1 et l'aide parlent du bouton ⛏)
+    // la houe achetée devient l'outil choisi (elle va dans la barre d'outils de la carte)
     if (r.ok) selectTool(state, 'houe');
     applyResult(r);
     // achetée depuis sa fiche du Marché : la fiche se ferme (un outil ne s'achète qu'une fois)
     if (r.ok && document.querySelector('#modal-root .shop-modal')) closeModal();
-    if (r.ok) showToast(`${DATA.HOUE.ICONE} Houe achetée : sur la carte, touche le bouton ${DATA.HOUE.ICONE} près de la lune pour labourer.`);
+    if (r.ok) showToast(`${DATA.HOUE.ICONE} Houe achetée : sur la carte, touche la houe dans la barre d'outils, en bas, pour labourer.`);
   },
   // FLU-42 : la puce « Labourer 6 tuiles » met la houe en main (sans la ranger si elle y est)
   'hoe-take': () => {

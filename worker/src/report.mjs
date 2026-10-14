@@ -75,8 +75,8 @@ export const GAME_ACTIONS = {
   'hoe': 'Labourer ou reboucher à la houe',
   'hoe-toggle': 'Prendre ou ranger la houe',
   'hoe-take': 'Prendre la houe (objectif du chapitre)',
-  'buy-tool': 'Acheter un outil (hache, pioche)',
-  'tool-select': 'Choisir l\'outil du bouton rond',
+  'buy-tool': 'Acheter un outil (pioche, hache, canne à pêche)',
+  'tool-use': 'Prendre ou ranger un outil (barre d\'outils)',
   'axe-toggle': 'Ranger la hache',
   'upgrade-tank': 'Améliorer ou agrandir',
   'upgrade-fridge': 'Améliorer ou agrandir',
@@ -109,7 +109,7 @@ export const INTERFACE_ACTIONS = new Set([
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
   'mail-open', // version 1.3 : ouvrir une lettre du courrier
   'stage-exit', // intérieur de la Serre : en sortir
-  'tool-fab', // bouton rond de l'outil : un appui le sert, deux ouvrent la fenêtre Outils
+  'toolbar-toggle', // la barre d'outils de la carte : la ranger, la sortir
 ]);
 
 // Signaux utiles à la décision, affichés à part.
