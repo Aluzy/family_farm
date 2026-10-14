@@ -1,5 +1,5 @@
 import { DATA } from '../engine/catalog.js';
-import { energyLevel } from '../engine/stamina.js';
+import { energyLevel, enduranceReduction } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
 import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
@@ -466,7 +466,8 @@ export function renderIndicators() {
     `<span class="player-stats">` +
     `<button type="button" class="player-line level-ind" data-action="open-levels" title="${niveau}" aria-label="${niveau}"><span aria-hidden="true">⭐</span><span class="num" aria-hidden="true">Niv. ${p.niveau}</span><span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>` +
     `<button type="button" class="player-line" ${famille} title="${autoTitre}" aria-label="${autoTitre}"><span aria-hidden="true">🌿</span><span class="num" aria-hidden="true">${auto}</span></button>` +
-    `</span>`
+    `</span>` +
+    playerGaugesHtml()
   );
   // Le contenu des écrans sans carte commence sous la carte du joueur.
   if (el.offsetHeight && el.offsetHeight !== playerHeight) {
@@ -474,6 +475,26 @@ export function renderIndicators() {
     document.documentElement.style.setProperty('--player-h', playerHeight + 'px');
   }
   renderHud();
+}
+
+// Extension de la carte du joueur, collée à sa droite sur un fond bois uni : la jauge
+// d'énergie et celle d'endurance (réduction du coût des actions, qui grandit avec le niveau),
+// verticales, côte à côte. Elles ouvrent la Famille.
+function playerGaugesHtml() {
+  const P = DATA.PERSONNAGE;
+  const e = energyLevel(state);
+  const ePct = Math.max(0, Math.min(100, Math.round((e / P.MAX) * 100)));
+  // mêmes seuils que la jauge de bonheur : vert à 65 % et plus, jaune de 20 à 64 %, rouge en dessous
+  const eCls = ePct >= 65 ? '' : ePct >= 20 ? ' mid' : ' low';
+  const endu = enduranceReduction(state);
+  const enduMax = P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1);
+  const dPct = enduMax > 0 ? Math.max(0, Math.min(100, Math.round((endu * 100) / enduMax))) : 0;
+  const titre = `Énergie : ${e} / ${P.MAX}. Endurance : tes actions coûtent ${endu} % de moins. Ouvrir la Famille`;
+  const jauge = (icone, cls, pct) =>
+    `<span class="player-gauge"><span class="player-gauge-icon">${icone}</span>` +
+    `<span class="player-gauge-bar"><span class="player-gauge-fill${cls}" style="height:${pct}%"></span></span></span>`;
+  return `<button type="button" class="player-gauges" data-action="stage-goto" data-window="famille" title="${titre}" aria-label="${titre}">` +
+    `<span class="player-gauges-in" aria-hidden="true">${jauge('⚡', eCls, ePct)}${jauge('💪', ' endu', dPct)}</span></button>`;
 }
 
 // Carte flottante en haut à droite (comme dans Stardew Valley) : le jour et l'heure côte à

@@ -2031,6 +2031,57 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 .player-card button:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; border-radius: 4px; }
 body:has(.window-layer) .player-card,
 body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-events: none; }
+/* Extension de la carte du joueur : collée à sa droite, sur toute sa hauteur, un fond uni de
+   la couleur du cadre bois ; la jauge d'énergie (⚡) et celle d'endurance (💪), verticales. */
+.player-card .player-gauges {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: calc(100% - 1px);
+  display: flex;
+  padding: 5px 7px 5px 5px !important;
+  background: #8a5a34 !important;
+  border-radius: 0 10px 10px 0;
+  box-shadow: inset -2px 0 0 #6e4426, inset 0 2px 0 #a8744a, 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+.player-gauges-in { display: flex; gap: 5px; height: 100%; }
+.player-gauge { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+.player-gauge-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 20px;
+  background: #ffe6b2;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 2px #d9a066;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+.player-gauge-bar {
+  position: relative;
+  flex: 1 1 auto;
+  width: 14px;
+  min-height: 40px;
+  background: #4a2a10;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 2px #d9a066;
+  overflow: hidden;
+}
+.player-gauge-fill {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  max-height: calc(100% - 6px);
+  border-radius: 4px;
+  background: #5ad23c;
+  box-shadow: inset 2px 0 0 #8cec6a;
+  transition: height 0.3s;
+}
+.player-gauge-fill.mid { background: #e8b030; box-shadow: inset 2px 0 0 #f8d878; }
+.player-gauge-fill.low { background: #c8503a; box-shadow: inset 2px 0 0 #ec8a6e; }
+.player-gauge-fill.endu { background: #3a8ad2; box-shadow: inset 2px 0 0 #7ec0f0; }
+@media (prefers-reduced-motion: reduce) { .player-gauge-fill { transition: none; } }
 
 /* ---------- Fenêtre de la Famille : le cadre bois des cartes flottantes ----------
    Les couleurs de l'interface sont redéfinies dans la fenêtre (crème et bois, en clair comme
