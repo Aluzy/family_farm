@@ -16,6 +16,8 @@
 #     haut à gauche, du feuillage de l'arbre éclairci, contour sombre ; l'arbre aussi a un contour.
 # assets/pin_clair.png : le pin (scripts/carte/originaux/pin_modele.png, 58 × 64) harmonisé de
 # la même façon, sur une rampe un peu plus froide et profonde (un conifère, même famille).
+# assets/arbre_clair_sp.png et assets/pin_clair_sp.png : 8 images de balancement (le coup de
+# hache) de l'arbre (48 × 64) et du pin (centré sur 64 × 64).
 # Les ombres portées ne sont pas dans les dessins : le jeu (ou la carte) les pose au sol.
 import colorsys
 import math
@@ -155,6 +157,22 @@ def planche(modele):
     return out
 
 
+# Le balancement sous un coup de hache : 8 images ; le haut de l'arbre se décale de AMPLITUDES[k]
+# pixels, de moins en moins en descendant, le tronc (sous `fixe`) ne bouge pas.
+AMPLITUDES = [0, 1, 2, 2, 1, 0, -1, 0]
+
+
+def balancement(img, fixe):
+    w, h = img.size
+    out = Image.new('RGBA', (w * len(AMPLITUDES), h))
+    for k, a in enumerate(AMPLITUDES):
+        for y in range(h):
+            dx = round(a * max(0.0, 1 - y / fixe)) if y < fixe else 0
+            ligne = img.crop((0, y, w, y + 1))
+            out.alpha_composite(ligne, (k * w + dx, y)) if 0 <= dx < w or dx < 0 else None
+    return out
+
+
 def main():
     modele = Image.open(MODELE).convert('RGBA')
     img = planche(modele)
@@ -164,6 +182,12 @@ def main():
     pin = contour(eclaircir(pin0, RAMPE_PIN, 200, (0.04, 0.82, 1.2)))      # un peu plus sombre que le feuillu
     pin.save(SORTIE_PIN)
     print(f'assets/pin_clair.png : le pin harmonisé ({pin.width} × {pin.height}, pied au milieu du bas)')
+    # les feuilles de balancement (hache) : l'arbre (48 × 64), le pin centré sur 64 × 64
+    balancement(img.crop((0, 0, CW, CH)), 46).save(os.path.join(ROOT, 'assets', 'arbre_clair_sp.png'))
+    pin64 = Image.new('RGBA', (64, 64))
+    pin64.alpha_composite(pin, ((64 - pin.width) // 2, 64 - pin.height))
+    balancement(pin64, 54).save(os.path.join(ROOT, 'assets', 'pin_clair_sp.png'))
+    print('assets/arbre_clair_sp.png, assets/pin_clair_sp.png : 8 images de balancement chacune')
     if '--apercu' in sys.argv:
         herbe = Image.open(os.path.join(ROOT, 'assets', 'herbe_chemin.png')).convert('RGBA')
         fond = Image.new('RGBA', (CW * 4 + 2 * 60, CH))

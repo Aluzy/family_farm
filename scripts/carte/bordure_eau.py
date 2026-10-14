@@ -7,6 +7,8 @@
 # l'eau en dessous : le dessus de la terre (sable), la berge qui descend (liseré clair en haut,
 # texture ocre), une ligne d'écume blanche festonnée aux deux bouts, puis l'eau (transparente).
 #
+# assets/bordure_eau_herbe.png : les mêmes rives bordées d'herbe (une rangée de 16 tuiles par
+# teinte d'herbe de herbe_chemin, la tuile n au rang n de sa rangée).
 # La planche : 16 tuiles (4 × 4), une par combinaison de coins terre / eau (« coins de Wang ») :
 # la tuile n a de la terre au coin haut-gauche si n & 8, haut-droit si n & 4, bas-gauche si
 # n & 2, bas-droit si n & 1. La tuile 15 est la terre pleine, la tuile 0 l'eau (vide). Elles se
@@ -28,6 +30,8 @@ import os
 import sys
 
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 MODELE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'bordure_eau.png')
@@ -122,10 +126,17 @@ def eau(n):
     return m
 
 
-def tuile(n, tex):
+def tuile(n, tex, sol=None):
     """La tuile n : le masque de l'eau, puis la terre (sable, berge, flancs, bord mouillé,
-    cailloux) et l'eau (écume, seconde ligne d'écume, eau claire au pied de la berge)."""
+    cailloux) et l'eau (écume, seconde ligne d'écume, eau claire au pied de la berge).
+    sol : None (le sable du modèle) ou une herbe {'herbe': image 16 × 16, 'mouille', 'lisere',
+    'bord'} : le dessus de la terre est alors cette herbe, son bord plus sombre au contact."""
     m = eau(n)
+    dessus = (lambda x, y: sol['herbe'].getpixel((x, y))[:3]) if sol else (lambda x, y: SABLE)
+    mouille = sol['mouille'] if sol else MOUILLE
+    lisere = sol['lisere'] if sol else LISERE
+    bord_nord = sol['bord'] if sol else BORD_NORD
+    flanc_clair = sol['flanc'] if sol else FLANC_CLAIR
     out = Image.new('RGBA', (T, T), (0, 0, 0, 0))
     W = lambda x, y: m[y][x] if 0 <= x < T and 0 <= y < T else None
     pres = lambda x, y, r: any(W(x + dx, y + dy) for dx in range(-r, r + 1) for dy in range(-r, r + 1))
@@ -134,7 +145,7 @@ def tuile(n, tex):
         for x in range(T):
             if m[y][x]:
                 continue
-            c = SABLE
+            c = dessus(x, y)
             # berge : de l'eau juste en dessous, à moins de BERGE pixels (la rangée de texture
             # suit la rangée du modèle : le feston relève l'eau, pas la berge)
             k = next((k for k in range(1, BERGE + 1) if W(x, y + k)), None)
@@ -144,17 +155,17 @@ def tuile(n, tex):
             elif W(x + 1, y) or W(x + 2, y):
                 c = FLANC_SOMBRE[0 if W(x + 2, y) and not W(x + 1, y) else 1]      # flanc est
             elif W(x - 1, y) or W(x - 2, y):
-                c = FLANC_CLAIR[1 if W(x - 1, y) else 0]                          # flanc ouest
+                c = flanc_clair[1 if W(x - 1, y) else 0]                          # flanc ouest
             elif W(x, y - 1):
-                c = LISERE                                                         # rive nord
+                c = lisere                                                         # rive nord
             elif W(x, y - 2):
-                c = BORD_NORD
+                c = bord_nord
             elif pres(x, y, 1):
-                c = MOUILLE                                                        # sable mouillé
+                c = mouille                                                        # bord mouillé
             elif pres(x, y, 4) and (x * 7 + y * 13 + n * 5) % 23 == 0 and 1 <= x < T - 2 and 1 <= y < T - 2:
                 out.putpixel((x + 1, y + 1), CAILLOU_OMBRE + (255,))               # un caillou
                 c = CAILLOU
-            if out.getpixel((x, y))[3] == 0 or c != SABLE:
+            if out.getpixel((x, y))[3] == 0 or c != dessus(x, y):
                 out.putpixel((x, y), c + (255,))
     # l'eau : écume au contact, puis un anneau d'eau peu profonde (plus claire, tramée), puis
     # une seconde ligne d'écume en pointillé ; sous la berge, l'eau claire est plus large
@@ -184,6 +195,23 @@ def planche(modele):
     out = Image.new('RGBA', (4 * T, 4 * T), (0, 0, 0, 0))
     for n in range(16):
         out.paste(tuile(n, tex), ((n % 4) * T, (n // 4) * T))
+    return out
+
+
+def planche_herbe(modele):
+    """Les mêmes rives, bordées d'herbe : une rangée de 16 tuiles par teinte d'herbe de
+    herbe_chemin (le dessus de la terre est une tuile d'herbe de cette teinte, le bord plus
+    sombre au contact de l'eau, le liseré nord plus clair)."""
+    import herbe_chemin as HC
+    hc = Image.open(HC.SORTIE + '.png').convert('RGBA')
+    tex = berge(modele)
+    nh = len(HC.TEINTES_HERBE)
+    out = Image.new('RGBA', (16 * T, nh * T), (0, 0, 0, 0))
+    for h, t in enumerate(HC.TEINTES_HERBE):
+        sol = {'flanc': [(190, 151, 12), (176, 140, 11)], 'mouille': HC.teinte((82, 137, 4), t), 'lisere': HC.teinte((150, 238, 52), t), 'bord': HC.teinte((64, 120, 6), t)}
+        for n in range(16):
+            sol['herbe'] = hc.crop((n * T, h * T, (n + 1) * T, (h + 1) * T))
+            out.paste(tuile(n, tex, sol), (n * T, h * T))
     return out
 
 
@@ -244,6 +272,8 @@ def main():
     with open(SORTIE + '.tsx', 'w', encoding='utf-8') as f:
         f.write(tsx(img))
     print('assets/bordure_eau.png : 4 × 4 tuiles ; assets/bordure_eau.tsx')
+    planche_herbe(modele).save(SORTIE + '_herbe.png')
+    print('assets/bordure_eau_herbe.png : les rives bordées d\'herbe, 16 tuiles par teinte d\'herbe')
     if '--apercu' in sys.argv:
         apercu(img).save(os.path.join(ROOT, 'apercu_bordure_eau.png'))
         print('apercu_bordure_eau.png')

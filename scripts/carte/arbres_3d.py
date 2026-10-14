@@ -12,7 +12,9 @@
 #   - ombres_arbres.png : les ombres portées des arbres de la carte, une image de la taille
 #     de la carte que js/farm-stage.js pose sur le sol (sous les arbres, qui en sont exclus) ;
 #   - ombre_arbre.png : l'ombre d'un arbre seul, posée sous les arbres du Verger.
-# Puis refaire assets/verger.png (python3 scripts/verger/arbres.py), qui part de basic_sp.png.
+# Puis refaire assets/verger.png (python3 scripts/verger/arbres.py), qui part de basic_sp.png,
+# et la planche agrandie (python3 scripts/carte/planche_v2.py) : ce script n'écrit que ses 45
+# premières rangées.
 #
 # La lumière vient du haut à gauche, comme sur toute la carte. Le dessin garde ses pixels et
 # ses couleurs : chaque pixel prend une autre couleur de sa famille (feuillage, tronc), plus
@@ -35,7 +37,12 @@ from PIL import Image
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 ORIG = os.path.join(ROOT, 'scripts', 'carte', 'originaux')
 ASSETS = os.path.join(ROOT, 'assets')
-CARTE = os.path.join(ASSETS, 'carte_printemps_elargie.tmj')
+# La carte d'origine (avant la version 2 du décor, scripts/carte/carte_v2.py) : ses arbres
+# disent quelles tuiles de la planche refaire.
+CARTE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'carte_printemps_elargie_v1.tmj')
+if not os.path.exists(CARTE):
+    CARTE = os.path.join(ASSETS, 'carte_printemps_elargie.tmj')
+CARTE_JEU = os.path.join(ASSETS, 'carte_printemps_elargie.tmj')
 T = 16
 COLS = 75                                   # colonnes de la planche
 TRONC_MIN = 100                             # pixels de tronc d'un groupe de tuiles d'arbre
@@ -451,9 +458,13 @@ def main():
         sprites[nom] = refaire_sprites(sprites0[nom], taille, pal)
         sprites[nom].save(os.path.join(ASSETS, nom))
         print(f'assets/{nom} : {sprites0[nom].width // taille[0]} images refaites')
-    ombres, n = ombres_carte(m, planche)
-    ombres.save(os.path.join(ASSETS, 'ombres_arbres.png'))
-    print(f'assets/ombres_arbres.png : {n} arbres')
+    if CARTE != CARTE_JEU:
+        # la carte du jeu est celle de la version 2 : ses ombres viennent de carte_v2.py
+        print('assets/ombres_arbres.png : inchangé (carte version 2 : voir scripts/carte/carte_v2.py)')
+    else:
+        ombres, n = ombres_carte(m, planche)
+        ombres.save(os.path.join(ASSETS, 'ombres_arbres.png'))
+        print(f'assets/ombres_arbres.png : {n} arbres')
     seule = ombre_seule(sprites['basic_sp.png'], SPRITES['basic_sp.png'])
     if seule:
         seule[0].save(os.path.join(ASSETS, 'ombre_arbre.png'))

@@ -23,6 +23,11 @@ CARTE = os.path.join(ROOT, 'assets', 'carte_printemps.json')
 
 # Sol d'herbe foncée (et la terre des anciennes zones de culture).
 HERBE = {2415, 101, 579, 563, 102, 100, 259, 260, 261, 334, 335, 336, 409, 410, 411, 1167}
+# La planche agrandie (version 2 du décor, scripts/carte/planche_v2.py) : l'herbe de herbe_chemin
+# (rangées 0 à 3, pleine ; 13 à 15, raccords entre deux teintes d'herbe).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import planche_v2 as PV  # noqa: E402
+HERBE |= {PV.gid('herbe_chemin', r * 16 + k) for r in (0, 1, 2, 3, 13, 14, 15) for k in range(16)}
 # Bordures de terre des anciennes zones de culture (couches « zone_culture_edge » et
 # « contour_herbe ») : le jeu ne les dessine plus, elles ne couvrent rien.
 BORDURES = {1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764}
@@ -31,6 +36,8 @@ COUVRANTES = ['decor', 'contour_herbe', 'animation_eau', 'water_shine', 'layer_t
               'layer_tree_2', 'layer_tree_1', 'layer_tree_top', 'falling_leaves']
 # Couche « plantes_pierres » : ce qui reste labourable (fleurs, touffes d'herbe, brindilles).
 PLANTES_OK = {399, 177, 175, 394, 400, 396, 397, 398, 322, 1509, 1508, 1433, 247, 100, 101, 102, 320}
+# … et les herbes hautes, fleurs et mauvaises herbes de herbe_deco.
+PLANTES_OK |= {PV.gid('herbe_deco', k) for k in range(16 * 10)}
 # Bâtiments : leur rectangle est interdit, plus `marge` tuiles autour (rayon, distance au rectangle).
 BATIMENTS = {
     'poulailler': 8,    # « dans un rayon de 8 tuiles du poulailler »
@@ -78,6 +85,8 @@ def main():
 
     # Arbres du Verger : leurs rectangles et une tuile autour.
     verger = [o for n, o in objets.items() if n.startswith('arbre_verger_')]
+    # les couches d'arbres ajoutées par scripts/carte/carte_v2.py (layer_tree_0, layer_tree_0b…)
+    couvrantes = COUVRANTES + [n for n in layers if n.startswith('layer_tree') and n not in COUVRANTES]
     ok = []
     raison = []
     for i in range(W * H):
@@ -85,7 +94,7 @@ def main():
         why = None
         if gid('ground', i) not in HERBE:
             why = 'sol'
-        elif any(gid(n, i) for n in COUVRANTES):
+        elif any(gid(n, i) for n in couvrantes):
             why = 'decor'
         elif gid('plantes_pierres', i) and gid('plantes_pierres', i) not in PLANTES_OK:
             why = 'pierre'
@@ -140,7 +149,7 @@ def apercu(d, ok, raison):
             continue
         for i, g in enumerate(l['data']):
             g &= 0x0fffffff
-            if not g or g > 3375:
+            if not g or g > cols * (sheet.height // T):
                 continue
             n = g - 1
             im.alpha_composite(sheet.crop(((n % cols) * T, (n // cols) * T, (n % cols) * T + T, (n // cols) * T + T)), ((i % W) * T, (i // W) * T))
