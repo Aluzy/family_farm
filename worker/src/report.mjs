@@ -77,6 +77,7 @@ export const GAME_ACTIONS = {
   'hoe-take': 'Prendre la houe (objectif du chapitre)',
   'buy-tool': 'Acheter un outil (hache, pioche)',
   'tool-select': 'Choisir l\'outil du bouton rond',
+  'axe-toggle': 'Ranger la hache',
   'upgrade-tank': 'Améliorer ou agrandir',
   'upgrade-fridge': 'Améliorer ou agrandir',
   'maintain': 'Entretenir un appareil',

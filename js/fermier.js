@@ -43,6 +43,7 @@
   // Gestes : images (suffixe de la vue), durée de chacune (s), image du coup (la case change).
   const ACTS = {
     labourer: { anim: 'houe', frames: [0, 1, 2, 3, 3], dur: [0.14, 0.16, 0.08, 0.12, 0.18], hit: 3 },
+    couper: { anim: 'hache', frames: [0, 1, 1, 2, 3, 3], dur: [0.12, 0.16, 0.1, 0.06, 0.1, 0.24], hit: 4 },
     planter: { anim: 'plante', frames: [0, 1, 2, 2], dur: [0.14, 0.16, 0.18, 0.14], hit: 2 },
     arroser: { anim: 'arrose', frames: [0, 1, 2, 1, 2], dur: [0.14, 0.14, 0.2, 0.1, 0.24], hit: 2 },
     recolter: { anim: 'plante', frames: [1, 2, 1, 0], dur: [0.14, 0.2, 0.14, 0.12], hit: 2 },
@@ -510,6 +511,25 @@
       return spot;
     }
 
+    // La hache en main, le joueur a touché un arbre : il va se placer à côté du tronc (à
+    // gauche, sinon à droite), tourné vers lui, et donne un coup de hache. onHit : au coup.
+    // Renvoie false s'il n'y a pas de place près du tronc (onHit est alors appelé tout de suite).
+    function chop(foot, onHit) {
+      if (!blocked) buildGrid();
+      const sides = [{ x: foot.x - 11, flip: false }, { x: foot.x + 11, flip: true }];
+      let spot = null, side = sides[0];
+      for (const sd of sides) { if (freeAt(sd.x, foot.y + 1)) { spot = { x: sd.x, y: foot.y + 1 }; side = sd; break; } }
+      if (!spot) {
+        spot = nearestFree(foot.x - 11, foot.y + 1);
+        if (spot) side = spot.x <= foot.x ? sides[0] : sides[1];
+      }
+      if (!spot) { if (onHit) onHit(); return false; }
+      if (job && job.idle) job = null;
+      jobs = [walkTo(spot.x, spot.y), act('couper', { face: 'cote', flip: side.flip, onHit }), wait(rand(0.4, 1))].concat(jobs.filter((j) => !j.idle));
+      idleAge = 0;
+      return true;
+    }
+
     /* ---------- dans la maison ---------- */
 
     const inside = { s: null, x: 0, y: 0, face: 'bas', job: null, at: null, frigoT: 0, t: 0 };
@@ -600,6 +620,8 @@
       // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
       fetch: (id) => fetch(id, true),
       goTo,
+      // La hache : couper l'arbre dont le pied est en `foot` ({ x, y }).
+      chop,
       // Double appui sur le Poulailler ou l'Étable : il va y ramasser (false : rien à prendre).
       collect,
       // Où il est (pour la bulle « +x ») : ses pieds, ou null s'il n'est pas sur la carte.

@@ -10,7 +10,7 @@ import {
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
-import { buyTool, hasTool, OUTILS, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
+import { buyTool, chopsLeft, chopTree, hasTool, OUTILS, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -6613,7 +6613,7 @@ test('tenue : état du suivi pour l\'interface', () => {
 test('DATA niveaux : seuils, gains d\'XP, XP des chapitres', () => {
   const N = DATA.NIVEAUX;
   assertEqual(N.SEUILS, [0, 500, 1200, 3000, 7500, 20000, 40000, 80000, 180000, 400000]);
-  assertEqual(N.XP, { labourer: 10, planter: 10, arroser: 10, recolter: 20, cueillir: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
+  assertEqual(N.XP, { labourer: 10, couper: 10, planter: 10, arroser: 10, recolter: 20, cueillir: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
   assertEqual([N.AUTO, N.CHAPITRES_XP.slice(0, 4)], [50, [200, 500, 1000, 2500]]);
   assertEqual([0, 499, 500, 1199, 1200, 400000, 10 ** 7].map(levelForXp), [1, 1, 2, 2, 3, 10, 10]);
   assertEqual(createInitialState(1).progression, { xp: 0, niveau: 1, annonces: [] });
@@ -8435,6 +8435,22 @@ test('outils : une partie avec la houe seule l\'a sur le bouton ; le Marché fer
   const t = createInitialState(1);
   t.pieces = 1000;
   assertEqual(buyTool(t, 'hache').ok, farmOpen(t), 'le Marché ouvre avec le panneau et la pompe');
+});
+
+test('hache : un coup sur un arbre donne du bois, de l\'XP, coûte de l\'énergie ; COUPES par arbre et par jour', () => {
+  const s = garden();
+  assertEqual(chopTree(s, '14,25').error, `Il te faut une hache (Marché, ${DATA.HACHE.PRIX} 💰).`);
+  s.outils = { hache: true, pioche: false, choisi: 'hache' };
+  const [e, xp] = [s.energie, s.progression.xp];
+  const r = chopTree(s, '14,25');
+  assertEqual([r.ok, r.bois, countItem(s, 'bois'), s.energie, s.progression.xp - xp], [true, DATA.HACHE.BOIS, DATA.HACHE.BOIS, e - actionCost(s, 'couper'), DATA.NIVEAUX.XP.couper]);
+  for (let k = 1; k < DATA.HACHE.COUPES; k++) chopTree(s, '14,25');
+  assertEqual([chopsLeft(s, '14,25'), chopTree(s, '14,25').ok, chopTree(s, '20,30').ok], [0, false, true], 'un autre arbre donne encore');
+  s.day += 1;
+  assertEqual(chopsLeft(s, '14,25'), DATA.HACHE.COUPES, 'le lendemain, l\'arbre donne de nouveau');
+  s.energie = 0;
+  assertEqual(chopTree(s, '14,25').error, TIRED);
+  assertEqual([DATA.items.bois.category, isBuyable('bois')], ['produit', false], 'le bois se vend, ne se rachète pas');
 });
 
 // Version 1.15 : le milieu de l'ancien Champ, de l'herbe tout autour (les bordures s'y

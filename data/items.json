@@ -86,6 +86,8 @@
     "huile": { "nom": "Huile de tournesol", "icone": "🛢️", "energie": 13, "prix": 4, "edible": false, "category": "ingrédient" },
     "//laine": ["Lot 6 : laine (section 8.6). Ni périssable ni comestible : elle sert", "uniquement à la vente. Elle ne se rachète pas au Marché."],
     "laine": { "nom": "Laine", "icone": "🧶", "prix": 6, "edible": false, "category": "produit", "rachetable": false },
+    "//bois": ["Le bois des arbres de la carte, coupé à la hache (HACHE). Ni périssable ni comestible :", "il se vend. Il ne se rachète pas au Marché."],
+    "bois": { "nom": "Bois", "icone": "🪵", "prix": 2, "edible": false, "category": "produit", "rachetable": false },
     "//oignon": [
       "10 nouvelles cultures : Zone de culture (oignon, ail, poivron, épinard,",
       "fraise, riz, houblon), Serre exclusivement (cacao, vanille, café). Poivron",

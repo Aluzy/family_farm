@@ -228,6 +228,8 @@ export function validateData(data) {
   if (!(isInt(P.CASES) && P.CASES > 0 && isInt(P.COLONNES) && P.COLONNES > 0)) err('POTAGER', 'CASES et COLONNES : deux entiers supérieurs à 0');
   if (!Array.isArray(P.DEPART) || P.DEPART.some((c, i) => !isInt(c) || c < 0 || c >= P.CASES || P.DEPART.indexOf(c) !== i)) err('POTAGER.DEPART', 'des cases distinctes de la grille');
   if (!(data.HOUE && isInt(data.HOUE.PRIX) && data.HOUE.PRIX >= 0)) err('HOUE', 'PRIX : un entier positif');
+  if (!(isInt(data.HACHE && data.HACHE.BOIS) && data.HACHE.BOIS > 0 && isInt(data.HACHE.COUPES) && data.HACHE.COUPES > 0)) err('HACHE', 'BOIS et COUPES : deux entiers supérieurs à 0');
+  needItem('HACHE (bois)', 'bois');
   for (const k of ['HACHE', 'PIOCHE']) if (!(data[k] && isInt(data[k].PRIX) && data[k].PRIX >= 0 && data[k].NOM && data[k].ICONE)) err(k, 'NOM, ICONE et PRIX (un entier positif)');
   const TU = data.NIVEAUX.TUILES;
   if (!Array.isArray(TU) || TU.length !== data.NIVEAUX.SEUILS.length || TU.some((x, i) => !isInt(x) || (i > 0 && x < TU[i - 1]))) err('NIVEAUX.TUILES', 'un entier par niveau, jamais en baisse');
