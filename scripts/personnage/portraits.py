@@ -5,9 +5,9 @@
 # du modèle et la transforme : couleurs (peau, cheveux, vêtement), coupe de cheveux, barbe,
 # lunettes, taches de rousseur, chapeau ou casquette, motif du vêtement. Le contour est
 # refait à la fin autour de la nouvelle silhouette.
-# Les hommes (cheveux courts ou crâne dégarni, voir homme()) partent du modèle d'homme
-# (assets/portraits/modele_homme.png) ; leur barbe et leur moustache viennent du modèle barbu
-# (modele_homme_barbu.png).
+# Version 2 : tous partent du modèle d'homme (assets/portraits/modele_homme.png) ; la barbe et
+# la moustache viennent du modèle barbu (modele_homme_barbu.png), les cheveux longs (avant la
+# coupe) de la chevelure du modèle d'origine, posée autour du visage (cheveux_longs()).
 #
 #   python3 scripts/personnage/portraits.py            écrit assets/portraits/<nom>.png
 #   python3 scripts/personnage/portraits.py --apercu   écrit aussi apercu_portraits.png (agrandi)
@@ -328,9 +328,18 @@ def chauve_homme(g):
     return g
 
 
-def homme(d):
-    """Un homme du catalogue : cheveux courts ou crâne dégarni, sans boucles d'oreilles."""
-    return d['coupe'] in ('courts', 'chauve') and 'boucles' not in d['details']
+CHEVEUX_LONGS = []  # la chevelure du modèle d'origine (lire_modele) : [(x, y, lettre)]
+VISAGE = set('fpkghiuv')
+
+
+def cheveux_longs(g):
+    """Les cheveux longs sur le modèle d'homme : la chevelure du modèle d'origine (la jeune
+    femme), posée autour du visage, qui reste celui du modèle d'homme. Les coupes (COUPES) la
+    raccourcissent ensuite."""
+    for (x, y, c) in CHEVEUX_LONGS:
+        if g[y][x] not in VISAGE:
+            g[y][x] = c
+    return g
 
 
 def melange(a, b, t=0.5):
@@ -376,15 +385,15 @@ EXTRA = {
 }
 
 PERSONNAGES = {
-    'papi': {'peau': 'claire', 'cheveux': 'gris', 'habit': 'rouge', 'homme': True,
+    'papi': {'peau': 'claire', 'cheveux': 'gris', 'habit': 'rouge',
              'faire': lambda g: carreaux(barbe_homme(g))},
-    'jeune_homme': {'peau': 'foncee', 'cheveux': 'noirs', 'habit': 'jean', 'homme': True,
+    'jeune_homme': {'peau': 'foncee', 'cheveux': 'noirs', 'habit': 'jean',
                     'faire': lambda g: casquette(g)},
     'rousse': {'peau': 'claire', 'cheveux': 'roux', 'habit': 'jaune',
-               'faire': lambda g: couettes(rayures(rousseur(g)))},
+               'faire': lambda g: couettes(rayures(rousseur(cheveux_longs(g))))},
     'lunettes': {'peau': 'mate', 'cheveux': 'blonds', 'habit': 'lilas',
-                 'faire': lambda g: lunettes(cheveux_courts(g, 9))},
-    'garcon': {'peau': 'mate', 'cheveux': 'bruns', 'habit': 'orange', 'homme': True,
+                 'faire': lambda g: lunettes(cheveux_courts(cheveux_longs(g), 9))},
+    'garcon': {'peau': 'mate', 'cheveux': 'bruns', 'habit': 'orange',
                'faire': lambda g: chapeau(g)},
 }
 
@@ -416,20 +425,19 @@ DETAILS = {'barbe': barbe, 'moustache': moustache, 'lunettes': lunettes, 'rousse
 MOTIFS = {None: lambda g: g, 'rayures': rayures, 'carreaux': carreaux, 'pois': pois}
 
 
-COUPES_HOMME = {'courts': lambda g: g, 'chauve': chauve_homme}
+# Sur le modèle d'homme : les coupes courtes telles quelles, les autres sur les cheveux longs.
+COUPES_HOMME = {k: (lambda f: lambda g: f(cheveux_longs(g)))(f) for k, f in COUPES.items()}
+COUPES_HOMME.update({'courts': lambda g: g, 'chauve': chauve_homme})
 DETAILS_HOMME = dict(DETAILS, barbe=barbe_homme, moustache=moustache_homme)
 
 
-def portrait_catalogue(base, pal0, d, hommes=None):
-    """Le portrait d'un personnage du catalogue (scripts/personnage/catalogue.py). Un homme
-    (homme()) part du modèle d'homme : hommes = (grille, palette)."""
-    h = hommes and homme(d)
-    if h:
-        base, pal0 = hommes
-    g = (COUPES_HOMME if h else COUPES)[d['coupe']](copie(base))
+def portrait_catalogue(base, pal0, d):
+    """Le portrait d'un personnage du catalogue (scripts/personnage/catalogue.py), sur le
+    modèle d'homme (base, pal0)."""
+    g = COUPES_HOMME[d['coupe']](copie(base))
     g = COUVRE_CHEFS[d['chapeau']](g)
     for x in d['details']:
-        g = (DETAILS_HOMME if h else DETAILS)[x](g)
+        g = DETAILS_HOMME[x](g)
     g = MOTIFS[d['motif']](g)
     g = contour(g)
     pal = dict(pal0)
@@ -443,8 +451,7 @@ def portrait_catalogue(base, pal0, d, hommes=None):
         pal['P'] = (200, 60, 60) if d['habit'] == 'blanc' else (244, 240, 228)
     c = catalogue.CHEVEUX[d['cheveux']]
     pal['q'] = c['b']; pal['Q'] = c['d']                # barbe et moustache : la couleur des cheveux
-    if h:
-        teintes_homme(pal)
+    teintes_homme(pal)
     return image(g, pal)
 
 
@@ -452,19 +459,18 @@ def main():
     base, pal0 = lire_modele()
     base_h, pal_h, poils = lire_hommes()
     POILS.update(poils)
+    CHEVEUX_LONGS.extend((x, y, base[y][x]) for y in range(N) for x in range(N) if base[y][x] in HAIR)
     images = [('modele', image(base, pal0)), ('modele_homme', image(base_h, pal_h))]
     for nom, p in PERSONNAGES.items():
-        h = p.get('homme')
-        pal = dict(pal_h if h else pal0)
+        pal = dict(pal_h)
         pal.update(PEAUX[p['peau']]); pal.update(CHEVEUX[p['cheveux']]); pal.update(HABITS[p['habit']]); pal.update(EXTRA)
-        if h:
-            teintes_homme(pal)
-        g = contour(p['faire'](copie(base_h if h else base)))
+        teintes_homme(pal)
+        g = contour(p['faire'](copie(base_h)))
         im = image(g, pal)
         im.save(os.path.join(DIR, f'{nom}.png'))
         images.append((nom, im))
     for nom, d in catalogue.personnages():
-        im = portrait_catalogue(base, pal0, d, (base_h, pal_h))
+        im = portrait_catalogue(base_h, pal_h, d)
         im.save(os.path.join(DIR, f'{nom}.png'))
         images.append((nom, im))
     print(f'assets/portraits : {len(images) - 2} portraits dérivés des modèles')

@@ -1,6 +1,6 @@
 # Portraits 16 × 16 des enfants, dérivés du portrait modèle d'enfant
 # (assets/portraits/modele_enfant.png : l'enfant aux cheveux châtains et au t-shirt vert) ; les
-# garçons (voir garcon()) partent du modèle de garçon (assets/portraits/modele_garcon.png).
+# enfants partent tous (version 2) du modèle de garçon (assets/portraits/modele_garcon.png).
 # Même méthode que scripts/personnage/portraits.py pour les adultes : chaque enfant part de la
 # grille du modèle et la transforme (couleurs, coupe, couvre-chef, détails, motif), puis le
 # contour est refait. Les couleurs de peau, de cheveux, d'habits et d'accessoires sont celles
@@ -76,8 +76,9 @@ def lire_garcon():
 
 
 def garcon(d):
-    """Un garçon : cheveux courts, en épis, une mèche, ou une frange sans rien dans les cheveux."""
-    return d['coupe'] in ('court', 'herisse', 'meche') or (d['coupe'] == 'frange' and d['chapeau'] is None)
+    """Version 2 : tous les enfants partent du modèle de garçon (coupes, couvre-chefs et
+    détails se posent dessus)."""
+    return True
 
 
 def copie(g):
