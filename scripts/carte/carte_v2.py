@@ -111,6 +111,10 @@ def main():
         return (math.sin(x * 0.21 + 1.3) + math.sin(y * 0.17 + 0.4) + math.sin((x + y) * 0.11 + 2.1)) / 3
 
     TEINTE = {(x, y): (0 if bruit(x, y) < 0.15 else 1 if bruit(x, y) < 0.55 else 2) for y in range(H + 1) for x in range(W + 1)}
+    # autour de l'eau, une seule teinte : la rive d'herbe est d'une teinte, ses coins aussi
+    for (x, y) in TEINTE:
+        if any(classe.get((x + dx, y + dy)) == 'eau' for dx in (-1, 0) for dy in (-1, 0)):
+            TEINTE[(x, y)] = 0
     PROF = {(x, y): S[(x, y)] == 'eau' and all(S.get((x + dx, y + dy), 'eau') == 'eau' for dx in range(-2, 3) for dy in range(-2, 3))
             for y in range(H + 1) for x in range(W + 1)}
 

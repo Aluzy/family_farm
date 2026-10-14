@@ -5,6 +5,9 @@
 # du modèle et la transforme : couleurs (peau, cheveux, vêtement), coupe de cheveux, barbe,
 # lunettes, taches de rousseur, chapeau ou casquette, motif du vêtement. Le contour est
 # refait à la fin autour de la nouvelle silhouette.
+# Version 2 : tous partent du modèle d'homme (assets/portraits/modele_homme.png) ; la barbe et
+# la moustache viennent du modèle barbu (modele_homme_barbu.png), les cheveux longs (avant la
+# coupe) de la chevelure du modèle d'origine, posée autour du visage (cheveux_longs()).
 #
 #   python3 scripts/personnage/portraits.py            écrit assets/portraits/<nom>.png
 #   python3 scripts/personnage/portraits.py --apercu   écrit aussi apercu_portraits.png (agrandi)
@@ -43,6 +46,42 @@ def lire_modele():
             g[y][x] = ROLES[p[:3]]
             pal[ROLES[p[:3]]] = p[:3]
     return g, pal
+
+
+# Les hommes (version 2) : assets/portraits/modele_homme.png (cheveux châtains coiffés sur le
+# côté, yeux verts, chemise verte) et modele_homme_barbu.png (le même, barbu : la barbe des
+# hommes, détail « barbe », est la différence entre les deux). Mêmes lettres que la femme, plus :
+# p l'arête du nez (entre peau et bouche), u v l'iris (vert), w l'ombre du col, q la barbe.
+ROLES_HOMME = {
+    (7, 5, 2): 'a',
+    (135, 96, 44): 'b', (79, 58, 30): 'c', (67, 48, 21): 'd',
+    (240, 185, 141): 'f', (240, 170, 116): 'p', (238, 160, 98): 'k',
+    (41, 41, 40): 'g', (236, 236, 236): 'h', (197, 194, 194): 'i', (72, 111, 80): 'u', (63, 97, 70): 'v',
+    (36, 52, 22): 'l', (136, 169, 108): 'm', (185, 231, 146): 'n', (105, 135, 79): 'w',
+    (200, 150, 87): 'q',
+}
+
+
+def lire(fichier, roles):
+    im = Image.open(os.path.join(DIR, fichier)).convert('RGBA')
+    g = [['.'] * N for _ in range(N)]
+    pal = {}
+    for y in range(N):
+        for x in range(N):
+            p = im.getpixel((x, y))
+            if p[3]:
+                g[y][x] = roles[p[:3]]
+                pal[roles[p[:3]]] = p[:3]
+    return g, pal
+
+
+def lire_hommes():
+    """Le modèle d'homme, et la barbe : les cases où le barbu diffère (case -> lettre)."""
+    g, pal = lire('modele_homme.png', ROLES_HOMME)
+    gb, palb = lire('modele_homme_barbu.png', ROLES_HOMME)
+    pal.update(palb)
+    poils = {(x, y): gb[y][x] for y in range(N) for x in range(N) if gb[y][x] != g[y][x]}
+    return g, pal, poils
 
 
 def copie(g):
@@ -257,6 +296,64 @@ def pois(g):
     return g
 
 
+# ---------- les hommes ----------
+
+POILS = {}          # la barbe du modèle barbu (lire_hommes)
+
+
+def barbe_homme(g):
+    for (x, y), c in POILS.items():
+        g[y][x] = c
+    return g
+
+
+def moustache_homme(g):
+    """La moustache : la rangée de la barbe au-dessus de la bouche."""
+    haut = min(y for (_, y) in POILS)
+    for (x, y), c in POILS.items():
+        if y == haut:
+            g[y][x] = c
+    return g
+
+
+def chauve_homme(g):
+    """Le crâne dégarni : le dessus des cheveux devient de la peau, il reste les côtés."""
+    for y in range(1, 3):
+        for x in range(N):
+            if g[y][x] in HAIR:
+                g[y][x] = 'f'
+    for x in range(5, 9):
+        if g[3][x] in HAIR:
+            g[3][x] = 'f'
+    return g
+
+
+CHEVEUX_LONGS = []  # la chevelure du modèle d'origine (lire_modele) : [(x, y, lettre)]
+VISAGE = set('fpkghiuv')
+
+
+def cheveux_longs(g):
+    """Les cheveux longs sur le modèle d'homme : la chevelure du modèle d'origine (la jeune
+    femme), posée autour du visage, qui reste celui du modèle d'homme. Les coupes (COUPES) la
+    raccourcissent ensuite."""
+    for (x, y, c) in CHEVEUX_LONGS:
+        if g[y][x] not in VISAGE:
+            g[y][x] = c
+    return g
+
+
+def melange(a, b, t=0.5):
+    return tuple(round(u * (1 - t) + v * t) for u, v in zip(a, b))
+
+
+def teintes_homme(pal):
+    """Les couleurs propres au modèle d'homme, tirées de la palette du personnage."""
+    pal['p'] = melange(pal['f'], pal['k'])
+    pal['w'] = melange(pal['m'], pal['l'], 0.35)
+    pal['q'] = tuple(min(255, round(v * 1.45 + 6)) for v in pal['b'])      # la barbe, plus claire
+    return pal
+
+
 # ---------- les personnages ----------
 
 PEAUX = {
@@ -289,15 +386,15 @@ EXTRA = {
 
 PERSONNAGES = {
     'papi': {'peau': 'claire', 'cheveux': 'gris', 'habit': 'rouge',
-             'faire': lambda g: carreaux(barbe(cheveux_courts(g, 6)))},
+             'faire': lambda g: carreaux(barbe_homme(g))},
     'jeune_homme': {'peau': 'foncee', 'cheveux': 'noirs', 'habit': 'jean',
-                    'faire': lambda g: casquette(cheveux_courts(g, 6))},
+                    'faire': lambda g: casquette(g)},
     'rousse': {'peau': 'claire', 'cheveux': 'roux', 'habit': 'jaune',
-               'faire': lambda g: couettes(rayures(rousseur(g)))},
+               'faire': lambda g: couettes(rayures(rousseur(cheveux_longs(g))))},
     'lunettes': {'peau': 'mate', 'cheveux': 'blonds', 'habit': 'lilas',
-                 'faire': lambda g: lunettes(cheveux_courts(g, 9))},
+                 'faire': lambda g: lunettes(cheveux_courts(cheveux_longs(g), 9))},
     'garcon': {'peau': 'mate', 'cheveux': 'bruns', 'habit': 'orange',
-               'faire': lambda g: chapeau(cheveux_courts(g, 6))},
+               'faire': lambda g: chapeau(g)},
 }
 
 
@@ -328,12 +425,19 @@ DETAILS = {'barbe': barbe, 'moustache': moustache, 'lunettes': lunettes, 'rousse
 MOTIFS = {None: lambda g: g, 'rayures': rayures, 'carreaux': carreaux, 'pois': pois}
 
 
+# Sur le modèle d'homme : les coupes courtes telles quelles, les autres sur les cheveux longs.
+COUPES_HOMME = {k: (lambda f: lambda g: f(cheveux_longs(g)))(f) for k, f in COUPES.items()}
+COUPES_HOMME.update({'courts': lambda g: g, 'chauve': chauve_homme})
+DETAILS_HOMME = dict(DETAILS, barbe=barbe_homme, moustache=moustache_homme)
+
+
 def portrait_catalogue(base, pal0, d):
-    """Le portrait d'un personnage du catalogue (scripts/personnage/catalogue.py)."""
-    g = COUPES[d['coupe']](copie(base))
+    """Le portrait d'un personnage du catalogue (scripts/personnage/catalogue.py), sur le
+    modèle d'homme (base, pal0)."""
+    g = COUPES_HOMME[d['coupe']](copie(base))
     g = COUVRE_CHEFS[d['chapeau']](g)
     for x in d['details']:
-        g = DETAILS[x](g)
+        g = DETAILS_HOMME[x](g)
     g = MOTIFS[d['motif']](g)
     g = contour(g)
     pal = dict(pal0)
@@ -345,26 +449,31 @@ def portrait_catalogue(base, pal0, d):
         pal['Y'] = (232, 120, 60)                       # le cœur de la fleur
     if d['motif'] in ('pois', 'carreaux'):
         pal['P'] = (200, 60, 60) if d['habit'] == 'blanc' else (244, 240, 228)
-    h = catalogue.CHEVEUX[d['cheveux']]
-    pal['q'] = h['b']; pal['Q'] = h['d']                # barbe et moustache : la couleur des cheveux
+    c = catalogue.CHEVEUX[d['cheveux']]
+    pal['q'] = c['b']; pal['Q'] = c['d']                # barbe et moustache : la couleur des cheveux
+    teintes_homme(pal)
     return image(g, pal)
 
 
 def main():
     base, pal0 = lire_modele()
-    images = [('modele', image(base, pal0))]
+    base_h, pal_h, poils = lire_hommes()
+    POILS.update(poils)
+    CHEVEUX_LONGS.extend((x, y, base[y][x]) for y in range(N) for x in range(N) if base[y][x] in HAIR)
+    images = [('modele', image(base, pal0)), ('modele_homme', image(base_h, pal_h))]
     for nom, p in PERSONNAGES.items():
-        pal = dict(pal0)
+        pal = dict(pal_h)
         pal.update(PEAUX[p['peau']]); pal.update(CHEVEUX[p['cheveux']]); pal.update(HABITS[p['habit']]); pal.update(EXTRA)
-        g = contour(p['faire'](copie(base)))
+        teintes_homme(pal)
+        g = contour(p['faire'](copie(base_h)))
         im = image(g, pal)
         im.save(os.path.join(DIR, f'{nom}.png'))
         images.append((nom, im))
     for nom, d in catalogue.personnages():
-        im = portrait_catalogue(base, pal0, d)
+        im = portrait_catalogue(base_h, pal_h, d)
         im.save(os.path.join(DIR, f'{nom}.png'))
         images.append((nom, im))
-    print(f'assets/portraits : {len(images) - 1} portraits dérivés du modèle')
+    print(f'assets/portraits : {len(images) - 2} portraits dérivés des modèles')
     if '--apercu' in sys.argv:
         S, M = 10, 8
         cols = 14

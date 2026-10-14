@@ -331,7 +331,7 @@
         this.grid = { x: 0, y: 0, cols: 72 };       // version 1.15 : la carte entière (tuile = rangée × colonnes + colonne)
         this.screens = [];               // repères de la carte : gauche, milieu, droite (voir makeScreens)
         this.tileAnims = [];             // tuiles animées de la carte, par tuile (voir makeTileAnims)
-        this.tileSprites = [];           // leurs images, et celles des tuiles reposées au-dessus
+        this.tileSprites = [];           // les images des étendues de cases animées (voir makeTileAnims)
         this.tilesStill = false;         // animations réduites : ces images sont masquées
         this.rooms = {};                 // intérieurs disponibles (voir bakeRooms) : id -> image, zones, emplacements
         this.room = null;                // intérieur affiché à la place de la carte (null : dehors)
@@ -572,6 +572,7 @@
       paintGround() {
         this.paintMap('ground', this.mapRaw, this.world.w, this.world.h, '#699654');
         for (const r of Object.values(this.rooms)) this.paintMap(r.tex, r.raw, r.w, r.h, r.bg);
+        for (const a of this.animAreas || []) this.paintAnimArea(a);
       }
 
       // Intérieurs (ROOMS) : chaque petite carte est dessinée dans sa propre image, posée à
@@ -779,11 +780,15 @@
           if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, set, img, cells);
         }
         tex.refresh();
+        for (const a of this.animAreas || []) {           // une étendue d'eau animée touchée
+          for (const i of cells) if (a.cells.has(i)) { this.paintAnimArea(a); break; }
+        }
       }
 
-      // `only` : seulement ces cases (repeinture partielle). Sur la carte de la ferme, les
+      // `only` : seulement ces cases (repeinture partielle) ; `cur` : l'image du moment des
+      // tuiles animées (numéro -> image), sinon leur première. Sur la carte de la ferme, les
       // cases des zones de culture suivent zoneOver (voir zoneGround).
-      drawLayer(ctx, raw, layer, set, img, only) {
+      drawLayer(ctx, raw, layer, set, img, only, cur) {
         const tw = raw.tilewidth, th = raw.tileheight;
         const cols = set.columns || Math.floor(img.width / tw);
         const last = set.firstgid + (set.tilecount || cols * Math.floor(img.height / th));
@@ -805,7 +810,7 @@
           const gid = cell & 0x0fffffff;                   // les bits de poids fort sont des retournements
           if (!gid || gid < set.firstgid || gid >= last) return; // 0 = case vide, ou tuile d'une autre planche
           const a = anims.get(gid - set.firstgid);
-          const n = a ? a[0].tileid : gid - set.firstgid;
+          const n = a ? (cur && cur.has(gid - set.firstgid) ? cur.get(gid - set.firstgid) : a[0].tileid) : gid - set.firstgid;
           const sx = (n % cols) * tw, sy = Math.floor(n / cols) * th;
           const dx = (i % layer.width) * tw, dy = Math.floor(i / layer.width) * th;
           const fh = cell & 0x80000000, fv = cell & 0x40000000, fd = cell & 0x20000000;
@@ -851,60 +856,97 @@
       }
 
       // Tuiles animées de la carte (l'eau) : les animations sont celles de Tiled, lues dans
-      // le jeu de tuiles. Le fond reste une seule image fixe ; par-dessus, chaque case animée
-      // reçoit une petite image qui change de tuile, et les tuiles des couches posées plus
-      // haut sur la même case sont reposées au-dessus, dans l'ordre des couches (un roseau
-      // reste devant l'eau). Toutes les tuiles d'un même numéro changent ensemble, comme dans
-      // Tiled : c'est ce qui donne une eau d'un seul tenant.
+      // le jeu de tuiles. Le fond reste une seule image fixe ; par-dessus, chaque étendue de
+      // cases animées (une mare, avec ses rives) a sa propre image, repeinte case par case
+      // avec toutes ses couches (un roseau reste devant l'eau) quand une de ses tuiles change
+      // d'image. Une seule image par étendue, et non une par case : au zoom non entier (sur
+      // un téléphone), des images de tuiles voisines laissaient voir des filets d'un pixel
+      // entre elles. Toutes les tuiles d'un même numéro changent ensemble, comme dans Tiled.
       makeTileAnims() {
         const raw = this.mapRaw;
         if (!raw || !this.has(MAP.tiles)) return;
         const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
         const anims = set ? this.tileFrames(set) : new Map();
         if (!anims.size) return;
-        const tw = raw.tilewidth, th = raw.tileheight;
-        const tex = this.textures.get(MAP.tiles);
-        const img = tex.getSourceImage();
+        const W = raw.width, H = raw.height, tw = raw.tilewidth, th = raw.tileheight;
+        const img = this.textures.get(MAP.tiles).getSourceImage();
         const cols = set.columns || Math.floor(img.width / tw);
         const last = set.firstgid + (set.tilecount || cols * Math.floor(img.height / th));
-        const frame = (n) => {
-          const key = 't' + n;
-          if (!tex.has(key)) tex.add(key, 0, (n % cols) * tw, Math.floor(n / cols) * th, tw, th);
-          return key;
-        };
         const layers = raw.layers.filter((l) => l.type === 'tilelayer' && l.visible !== false && Array.isArray(l.data));
-        const groups = new Map();           // numéro de tuile animée -> { frames, ends, total, cur, sprites }
-        for (let i = 0; i < raw.width * raw.height; i++) {
-          let above = false;                 // une tuile animée a été trouvée plus bas sur cette case
-          layers.forEach((layer, li) => {
-            const cell = layer.data[i];
-            const gid = cell & 0x0fffffff;
-            if (!gid || gid < set.firstgid || gid >= last) return;
+        const groups = new Map();           // numéro de tuile animée -> { ends, total, cur, ids }
+        const cellGroups = new Map();       // case -> numéros des tuiles animées qu'elle porte
+        for (let i = 0; i < W * H; i++) {
+          for (const layer of layers) {
+            const gid = layer.data[i] & 0x0fffffff;
+            if (!gid || gid < set.firstgid || gid >= last) continue;
             const n = gid - set.firstgid;
             const a = anims.get(n);
-            if (!a && !above) return;
-            if (cell & 0x20000000) return;   // tuile tournée : elle reste telle qu'elle est dans le fond
-            above = true;
-            const s = this.add.image((i % raw.width) * tw, Math.floor(i / raw.width) * th, MAP.tiles, frame(a ? a[0].tileid : n))
-              .setOrigin(0).setDepth(0.1 + li * 0.01).setAlpha(layer.opacity == null ? 1 : layer.opacity)
-              .setFlip(!!(cell & 0x80000000), !!(cell & 0x40000000));
-            this.tileSprites.push(s);
-            if (!a) return;
-            let g = groups.get(n);
-            if (!g) {
+            if (!a) continue;
+            if (!groups.has(n)) {
               let t = 0;
-              g = { frames: a.map((f) => frame(f.tileid)), ends: a.map((f) => (t += Math.max(1, f.duration))), total: t, cur: 0, sprites: [] };
-              groups.set(n, g);
+              groups.set(n, { n, ids: a.map((f) => f.tileid), ends: a.map((f) => (t += Math.max(1, f.duration))), total: t, cur: 0 });
             }
-            g.sprites.push(s);
-          });
+            if (!cellGroups.has(i)) cellGroups.set(i, new Set());
+            cellGroups.get(i).add(n);
+          }
+        }
+        // les étendues : cases animées voisines (en comptant les diagonales)
+        const seen = new Set();
+        const areas = [];
+        for (const i0 of cellGroups.keys()) {
+          if (seen.has(i0)) continue;
+          const cells = new Set(), stack = [i0], ns = new Set();
+          seen.add(i0);
+          let c0 = W, c1 = 0, r0 = H, r1 = 0;
+          while (stack.length) {
+            const i = stack.pop(), c = i % W, r = (i / W) | 0;
+            cells.add(i);
+            for (const n of cellGroups.get(i)) ns.add(n);
+            c0 = Math.min(c0, c); c1 = Math.max(c1, c); r0 = Math.min(r0, r); r1 = Math.max(r1, r);
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const cc = c + dc, rr = r + dr, j = rr * W + cc;
+                if (cc >= 0 && rr >= 0 && cc < W && rr < H && !seen.has(j) && cellGroups.has(j)) { seen.add(j); stack.push(j); }
+              }
+            }
+          }
+          const key = 'eau_anim_' + areas.length;
+          if (this.textures.exists(key)) this.textures.remove(key);
+          const tex = this.textures.createCanvas(key, (c1 - c0 + 1) * tw, (r1 - r0 + 1) * th);
+          const sprite = this.add.image(c0 * tw, r0 * th, key).setOrigin(0).setDepth(0.1);
+          areas.push({ cells, groups: ns, x: c0 * tw, y: r0 * th, tex, sprite });
         }
         this.tileAnims = [...groups.values()];
+        this.animAreas = areas;
+        this.tileSprites = areas.map((a) => a.sprite);
+        for (const a of areas) this.paintAnimArea(a);
       }
 
-      // Fait avancer les tuiles animées : une comparaison par tuile animée et par image, et
-      // un changement d'image seulement quand sa durée est écoulée. Rien si le joueur a
-      // demandé moins d'animations : les images sont masquées, le fond montre la première.
+      // Repeint une étendue de cases animées : chaque case, toutes ses couches, chaque tuile
+      // animée à son image du moment.
+      paintAnimArea(area) {
+        const raw = this.mapRaw;
+        const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
+        if (!set) return;
+        const img = this.textures.get(MAP.tiles).getSourceImage();
+        const cur = new Map(this.tileAnims.map((g) => [g.n, g.ids[g.cur]]));
+        const ctx = area.tex.getContext();
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, area.tex.width, area.tex.height);
+        ctx.save();
+        ctx.translate(-area.x, -area.y);
+        ctx.fillStyle = '#699654';
+        for (const i of area.cells) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
+        for (const layer of raw.layers) {
+          if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, set, img, area.cells, cur);
+        }
+        ctx.restore();
+        area.tex.refresh();
+      }
+
+      // Fait avancer les tuiles animées : une comparaison par tuile animée et par image ; une
+      // étendue n'est repeinte que si l'une de ses tuiles a changé d'image. Rien si le joueur
+      // a demandé moins d'animations : les images sont masquées, le fond montre la première.
       stepTileAnims(time) {
         const still = reducedMotion();
         if (still !== this.tilesStill) {
@@ -912,13 +954,18 @@
           for (const s of this.tileSprites) s.setVisible(!still);
         }
         if (still) return;
+        const changed = new Set();
         for (const g of this.tileAnims) {
           const t = time % g.total;
           let k = 0;
           while (k < g.ends.length - 1 && t >= g.ends[k]) k++;
           if (k === g.cur) continue;
           g.cur = k;
-          for (const s of g.sprites) s.setFrame(g.frames[k]);
+          changed.add(g.n);
+        }
+        if (!changed.size) return;
+        for (const a of this.animAreas || []) {
+          for (const n of a.groups) if (changed.has(n)) { this.paintAnimArea(a); break; }
         }
       }
 

@@ -1,5 +1,6 @@
 # Portraits 16 × 16 des enfants, dérivés du portrait modèle d'enfant
-# (assets/portraits/modele_enfant.png : le garçon aux cheveux châtains et au t-shirt vert).
+# (assets/portraits/modele_enfant.png : l'enfant aux cheveux châtains et au t-shirt vert) ; les
+# enfants partent tous (version 2) du modèle de garçon (assets/portraits/modele_garcon.png).
 # Même méthode que scripts/personnage/portraits.py pour les adultes : chaque enfant part de la
 # grille du modèle et la transforme (couleurs, coupe, couvre-chef, détails, motif), puis le
 # contour est refait. Les couleurs de peau, de cheveux, d'habits et d'accessoires sont celles
@@ -46,6 +47,38 @@ def lire_modele():
                 g[y][x] = ROLES[p[:3]]
                 pal[ROLES[p[:3]]] = p[:3]
     return g, pal
+
+
+# Les garçons (version 2) : assets/portraits/modele_garcon.png (cheveux châtains coiffés sur
+# le côté, sourcils, t-shirt vert). Mêmes lettres, plus p le sourcil (la couleur des cheveux,
+# entre clair et ombre). Ses yeux sont une rangée plus bas que ceux du modèle d'enfant : les
+# détails du visage ont leur propre place (DETAILS_GARCON).
+ROLES_GARCON = {
+    (7, 5, 2): 'a',
+    (135, 96, 44): 'b', (79, 58, 30): 'c', (67, 48, 21): 'd', (122, 85, 35): 'p',
+    (240, 185, 141): 'f', (189, 107, 84): 'k',
+    (41, 41, 40): 'g', (236, 236, 236): 'h', (197, 194, 194): 'i',
+    (36, 52, 22): 'l', (136, 169, 108): 'm', (185, 231, 146): 'n',
+}
+
+
+def lire_garcon():
+    im = Image.open(os.path.join(DIR, 'modele_garcon.png')).convert('RGBA')
+    g = [['.'] * N for _ in range(N)]
+    pal = {}
+    for y in range(N):
+        for x in range(N):
+            p = im.getpixel((x, y))
+            if p[3]:
+                g[y][x] = ROLES_GARCON[p[:3]]
+                pal[ROLES_GARCON[p[:3]]] = p[:3]
+    return g, pal
+
+
+def garcon(d):
+    """Version 2 : tous les enfants partent du modèle de garçon (coupes, couvre-chefs et
+    détails se posent dessus)."""
+    return True
 
 
 def copie(g):
@@ -230,6 +263,45 @@ def salopette(g):
 DETAILS = {'lunettes': lunettes, 'rousseur': rousseur, 'joues': joues, 'pansement': pansement, 'salopette': salopette}
 
 
+# les détails du visage du garçon (ses yeux : rangée 7, colonnes 4-5 et 7-8)
+def lunettes_garcon(g):
+    put(g, [(4, 6), (5, 6), (7, 6), (8, 6), (3, 7), (6, 7), (9, 7)], 'G')
+    return g
+
+
+def rousseur_garcon(g):
+    put(g, [(4, 9), (8, 9), (7, 10)], 'R')
+    return g
+
+
+def joues_garcon(g):
+    put(g, [(7, 9), (8, 9)], 'K')
+    return g
+
+
+def pansement_garcon(g):
+    put(g, [(7, 9), (8, 9)], 'Z')
+    return g
+
+
+def meche_garcon(g):
+    """La mèche plus longue, qui barre le front."""
+    put(g, [(4, 5), (5, 5), (6, 5), (7, 5)], 'b')
+    put(g, [(3, 6)], 'b')
+    return g
+
+
+def frange_garcon(g):
+    put(g, [(x, 5) for x in range(4, 9)], 'b')
+    put(g, [(5, 5), (7, 5)], 'c')
+    return g
+
+
+DETAILS_GARCON = dict(DETAILS, lunettes=lunettes_garcon, rousseur=rousseur_garcon, joues=joues_garcon,
+                      pansement=pansement_garcon)
+COUPES_GARCON = dict(COUPES, meche=meche_garcon, frange=frange_garcon)
+
+
 # ---------- motifs ----------
 
 def motif(g, m):
@@ -323,12 +395,17 @@ def enfants():
     return out
 
 
-def portrait(base, pal0, d):
-    g = COUPES[d['coupe']](copie(base))
+def portrait(base, pal0, d, garcons=None):
+    """Le portrait d'un enfant ; un garçon (garcon()) part du modèle de garçon : garcons =
+    (grille, palette)."""
+    gar = garcons and garcon(d)
+    if gar:
+        base, pal0 = garcons
+    g = (COUPES_GARCON if gar else COUPES)[d['coupe']](copie(base))
     g = COUVRE_CHEFS[d['chapeau']](g)
     g = motif(g, d['motif'])
     for x in d['details']:
-        g = DETAILS[x](g)
+        g = (DETAILS_GARCON if gar else DETAILS)[x](g)
     g = contour(g)
     pal = dict(pal0)
     pal.update(catalogue.PEAU[d['peau']]); pal.update(catalogue.CHEVEUX[d['cheveux']]); pal.update(catalogue.HABITS[d['habit']])
@@ -336,6 +413,9 @@ def portrait(base, pal0, d):
     a = d['accessoire']
     pal.update({'B': a, 'C': a, 'D': catalogue.fonce(a), 'W': a, 'X': catalogue.fonce(a), 'H': a, 'F': a})
     pal['O'], pal['P'] = d['bas'][0], ((200, 60, 60) if d['habit'] == 'blanc' else (244, 240, 228))
+    if gar:
+        c = catalogue.CHEVEUX[d['cheveux']]
+        pal['p'] = tuple((u + v) // 2 for u, v in zip(c['b'], c['c']))      # les sourcils
     if d['chapeau'] == 'fleur' and a in (catalogue.ACCESSOIRES['jaune'], catalogue.ACCESSOIRES['blanc']):
         pal['Y'] = (232, 120, 60)
     im = Image.new('RGBA', (N, N), (0, 0, 0, 0))
@@ -348,9 +428,10 @@ def portrait(base, pal0, d):
 
 def main():
     base, pal0 = lire_modele()
+    garcons = lire_garcon()
     images = []
     for nom, d in enfants():
-        im = portrait(base, pal0, d)
+        im = portrait(base, pal0, d, garcons)
         im.save(os.path.join(DIR, f'{nom}.png'))
         images.append(im)
     print(f'assets/portraits : {len(images)} portraits d\'enfants dérivés du modèle')

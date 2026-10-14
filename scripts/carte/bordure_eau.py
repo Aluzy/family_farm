@@ -8,7 +8,8 @@
 # texture ocre), une ligne d'écume blanche festonnée aux deux bouts, puis l'eau (transparente).
 #
 # assets/bordure_eau_herbe.png : les mêmes rives bordées d'herbe (une rangée de 16 tuiles par
-# teinte d'herbe de herbe_chemin, la tuile n au rang n de sa rangée).
+# teinte d'herbe de herbe_chemin, la tuile n au rang n de sa rangée). La berge haute y est une
+# courte berge de terre (FACE), qui s'arrondit à ses bouts ; les flancs sont d'herbe sombre.
 # La planche : 16 tuiles (4 × 4), une par combinaison de coins terre / eau (« coins de Wang ») :
 # la tuile n a de la terre au coin haut-gauche si n & 8, haut-droit si n & 4, bas-gauche si
 # n & 2, bas-droit si n & 1. La tuile 15 est la terre pleine, la tuile 0 l'eau (vide). Elles se
@@ -55,6 +56,11 @@ EAU_NORD = 8
 EAU_EST = 8
 EAU_OUEST = 8
 BERGE = 12                    # hauteur de la berge du modèle (rangées 2 à 13)
+# Rive d'herbe : une berge de terre de FACE pixels (du ras de l'eau vers le haut : du plus
+# sombre au plus clair), plus basse vers ses bouts (ARRONDI : à 1, 2, 3 colonnes du bout).
+TERRE = [(66, 44, 26), (92, 62, 34), (114, 80, 42), (132, 96, 50), (146, 110, 56)]
+FACE = 5
+ARRONDI = [1, 3, 4]
 MOUILLE = (214, 168, 14)      # le sable mouillé, au bord de l'eau
 CAILLOU, CAILLOU_OMBRE = (214, 200, 168), (150, 120, 40)
 CLAIRE = (196, 226, 236, 150)  # l'eau peu profonde au pied de la berge (posée sur l'eau)
@@ -137,6 +143,18 @@ def tuile(n, tex, sol=None):
     lisere = sol['lisere'] if sol else LISERE
     bord_nord = sol['bord'] if sol else BORD_NORD
     flanc_clair = sol['flanc'] if sol else FLANC_CLAIR
+    flanc_sombre = sol['flanc_sombre'] if sol else FLANC_SOMBRE
+
+    def face(x, yeau):
+        """Hauteur de la berge de la rive d'herbe à la colonne x (l'eau commence à la rangée
+        yeau) : FACE au milieu, plus basse vers ses bouts (là où la colonne voisine n'a plus
+        d'eau dessous), pour que l'herbe s'arrondisse sur la berge au lieu d'un angle droit.
+        Hors de la tuile, on prolonge sa colonne du bord."""
+        eau_dessous = lambda cx: any(W(min(T - 1, max(0, cx)), yeau - 1 + j) for j in range(1, 3))
+        for d in range(1, len(ARRONDI) + 1):
+            if not eau_dessous(x - d) or not eau_dessous(x + d):
+                return ARRONDI[d - 1]
+        return FACE
     out = Image.new('RGBA', (T, T), (0, 0, 0, 0))
     W = lambda x, y: m[y][x] if 0 <= x < T and 0 <= y < T else None
     pres = lambda x, y, r: any(W(x + dx, y + dy) for dx in range(-r, r + 1) for dy in range(-r, r + 1))
@@ -149,11 +167,18 @@ def tuile(n, tex, sol=None):
             # berge : de l'eau juste en dessous, à moins de BERGE pixels (la rangée de texture
             # suit la rangée du modèle : le feston relève l'eau, pas la berge)
             k = next((k for k in range(1, BERGE + 1) if W(x, y + k)), None)
-            if k is not None and BERGE - k - FESTON[x] >= 0 and (k > 2 or not (W(x - 1, y) or W(x + 1, y))):
+            if sol and k is not None and k <= face(x, y + k) and (k > 2 or not (W(x - 1, y) or W(x + 1, y))):
+                # rive d'herbe : une courte berge de terre, plus sombre au ras de l'eau
+                i = min(len(TERRE) - 1, (k - 1) * len(TERRE) // FACE)
+                if (x * 3 + k * 5 + n) % 7 == 0 and i:
+                    i -= 1
+                c = TERRE[i]
+                berge_px.add((x, y))
+            elif not sol and k is not None and BERGE - k - FESTON[x] >= 0 and (k > 2 or not (W(x - 1, y) or W(x + 1, y))):
                 c = tex[BERGE - k - FESTON[x]][x]
                 berge_px.add((x, y))
             elif W(x + 1, y) or W(x + 2, y):
-                c = FLANC_SOMBRE[0 if W(x + 2, y) and not W(x + 1, y) else 1]      # flanc est
+                c = flanc_sombre[0 if W(x + 2, y) and not W(x + 1, y) else 1]      # flanc est
             elif W(x - 1, y) or W(x - 2, y):
                 c = flanc_clair[1 if W(x - 1, y) else 0]                          # flanc ouest
             elif W(x, y - 1):
@@ -208,7 +233,10 @@ def planche_herbe(modele):
     nh = len(HC.TEINTES_HERBE)
     out = Image.new('RGBA', (16 * T, nh * T), (0, 0, 0, 0))
     for h, t in enumerate(HC.TEINTES_HERBE):
-        sol = {'flanc': [(190, 151, 12), (176, 140, 11)], 'mouille': HC.teinte((82, 137, 4), t), 'lisere': HC.teinte((150, 238, 52), t), 'bord': HC.teinte((64, 120, 6), t)}
+        bord = HC.teinte((64, 120, 6), t)
+        sombre = tuple(round(v * 0.72) for v in bord)
+        sol = {'flanc': [HC.teinte((82, 137, 4), t), bord], 'flanc_sombre': [bord, sombre],
+               'mouille': HC.teinte((82, 137, 4), t), 'lisere': HC.teinte((150, 238, 52), t), 'bord': bord}
         for n in range(16):
             sol['herbe'] = hc.crop((n * T, h * T, (n + 1) * T, (h + 1) * T))
             out.paste(tuile(n, tex, sol), (n * T, h * T))
