@@ -1,5 +1,5 @@
 # Lot « nature » : tournesol, arbre, herbes, soleil, lune, lever du jour, pluie, flocon, feu,
-# feuilles d'automne, châtaigne, plante en pot, poire, aubergine, ail, vanille, paille, glaçon.
+# feuilles d'automne, bûche, châtaigne, plante en pot, poire, aubergine, ail, vanille, paille, glaçon.
 # Format commun à tous les fichiers art_*.py : voir scripts/icones/build.py.
 #
 # Les grilles ci-dessous ne donnent que le REMPLISSAGE : le contour de 1 px est ajouté
@@ -458,6 +458,27 @@ ICONS['🪹'] = contour(grille([
     '.yyyyoryyyyroyy.',
     '.oyyyyryoyyryyo.',
     '.ooooooooooooOO.',
+    '................',
+    '................',
+    '................',
+]))
+
+# ---------------------------------------------------------------- bois (une bûche)
+# Couchée, l'écorce sur le dessus et devant, le bout coupé à gauche avec ses cernes.
+ICONS['🪵'] = contour(grille([
+    '................',
+    '................',
+    '................',
+    '................',
+    '....TTTTTTTTTT..',
+    '..00TtTTtTTTtTT.',
+    '.0-0-ttsttttstt.',
+    '.0-U-0tststtsts.',
+    '.0-U-0sttstsstt.',
+    '.0-0-0tsttsstst.',
+    '..0-0ssssssssss.',
+    '...00kkkkkkkkk..',
+    '................',
     '................',
     '................',
     '................',

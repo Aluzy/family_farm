@@ -77,8 +77,10 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   64 cases, s'ouvre quand le Moulin est construit. La **houe** (Marché, 40 💰) change
   l'herbe en terre (5 d'énergie, 10 XP) ou rebouche une terre vide ; le nombre de tuiles
   de terre est plafonné par le niveau (6 à 64). La **hache** et la **pioche** (Marché, 60 💰
-  chacune) n'ont encore rien à couper ni à casser. Le bouton rond de la carte porte l'outil
-  choisi : un appui s'en sert, un double appui ouvre la fenêtre **Outils** pour en changer. Les arbres du Verger (12 au plus)
+  chacune) : la hache en main, un appui sur un arbre de la carte le fait couper (1 bois 🪵,
+  6 d'énergie, 10 XP ; 3 coups par arbre et par jour) ; la pioche n'a encore rien à casser.
+  Le bouton rond de la carte porte l'outil choisi : un appui le prend en main, un double
+  appui ouvre la fenêtre **Outils** pour en changer. Les arbres du Verger (12 au plus)
   apparaissent sur la carte.
 - Le **Silo** stocke le blé de la ferme : de 20 à 400 selon son niveau. Le blé ne se
   plante qu'une fois le Silo construit.

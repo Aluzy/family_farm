@@ -13,7 +13,7 @@ import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatNumber, formatPercent } from '../engine/format.js';
 import {
-  activeTab, ecranFerme, FERME_LINKS, hoeMode, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
+  activeTab, axeMode, ecranFerme, FERME_LINKS, hoeMode, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { showToast } from './toasts.js';
@@ -586,7 +586,7 @@ export function renderSleepBar() {
     : `Passer la nuit : réveil à ${DATA.TIME.DAY_START_HOUR} h. ${meal}`;
   // FLU-05 : houe achetée et rangée, un bouton rond la met en main depuis la carte. Il porte
   // l'outil choisi (houe, hache ou pioche) ; un double appui ouvre la fenêtre Outils.
-  const houe = !hoeMode && activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior ? toolFabHtml() : '';
+  const houe = !hoeMode && !axeMode && activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior ? toolFabHtml() : '';
   morph(
     document.getElementById('sleep-fab'),
     houe + (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +

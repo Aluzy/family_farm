@@ -52,6 +52,7 @@ export const RAW_DATA = {
   "PERSONNAGE": {
     "MAX": 100,
     "COUTS": {
+      "couper": 6,
       "labourer": 5,
       "planter": 3,
       "arroser": 2,
@@ -129,6 +130,7 @@ export const RAW_DATA = {
     "farine": { "nom": "Farine", "icone": "🥣", "energie": 13, "prix": 1, "edible": false, "category": "ingrédient" },
     "huile": { "nom": "Huile de tournesol", "icone": "🛢️", "energie": 13, "prix": 4, "edible": false, "category": "ingrédient" },
     "laine": { "nom": "Laine", "icone": "🧶", "prix": 6, "edible": false, "category": "produit", "rachetable": false },
+    "bois": { "nom": "Bois", "icone": "🪵", "prix": 2, "edible": false, "category": "produit", "rachetable": false },
     "oignon": { "nom": "Oignon", "icone": "🧅", "energie": 6, "prix": 1, "edible": true, "category": "légume" },
     "graine_oignon": { "nom": "Graines d'oignon", "icone": "🌱‍🧅", "prix": 1, "edible": false, "category": "graine" },
     "ail": { "nom": "Ail", "icone": "🧄", "energie": 6, "prix": 2, "edible": true, "category": "légume" },
@@ -572,7 +574,7 @@ export const RAW_DATA = {
     "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "CASES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
   },
   "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
-  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60 },
+  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "COUPES": 3 },
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60 },
   "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [15, 27, 39, 51, 63], "COUT": [0, 900, 1800, 3000, 5400] },
   "VERGER": {
@@ -1223,6 +1225,7 @@ export const RAW_DATA = {
     },
     "XP": {
       "labourer": 10,
+      "couper": 10,
       "planter": 10,
       "arroser": 10,
       "recolter": 20,

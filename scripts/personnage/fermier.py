@@ -25,6 +25,7 @@
 #   cuisine_0..3             de dos, il remue la marmite
 #   frigo_0..2               de dos, il ouvre le réfrigérateur et se penche
 #   ramasse_0..2             de profil, il ramasse un œuf dans la paille
+#   hache_cote_0..3          couper du bois : prêt, hache levée, élan, coup dans le tronc
 #
 #   python3 scripts/personnage/fermier.py            écrit les images
 #   python3 scripts/personnage/fermier.py --apercu   écrit aussi apercu_<nom>.png (agrandi)
@@ -499,6 +500,13 @@ def frames():
     F['ramasse_0'] = figure('cote', hands=((9, 21), (6, 22)), before=basket(3, 21))
     F['ramasse_1'] = figure('cote', squat=2, hands=((12, 27), (6, 24)), before=basket(3, 23))
     F['ramasse_2'] = figure('cote', squat=2, hands=((10, 23), (6, 24)), before=basket(3, 23, 3), after=lambda cv: cv.put(11, 22, 'eg'))
+    # couper du bois, de profil (le tronc à droite) : prêt, hache levée derrière l'épaule,
+    # élan, coup dans le tronc à hauteur de hanche (fer de 2 × 3 au bout du manche)
+    head = lambda x, y: [(x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1), (x, y + 2), (x + 1, y + 2)]
+    F['hache_cote_0'] = figure('cote', hands=((10, 21), (9, 22)), after=hoe(10, 21, 13, 15, head(13, 13)))
+    F['hache_cote_1'] = figure('cote', b=-1, hands=((8, 12), (7, 13)), after=hoe(8, 12, 4, 6, head(2, 4)))
+    F['hache_cote_2'] = figure('cote', hands=((10, 14), (9, 15)), after=hoe(10, 14, 13, 10, head(13, 8)))
+    F['hache_cote_3'] = figure('cote', hands=((11, 20), (10, 20)), after=hoe(11, 20, 14, 20, head(14, 18)))
     return F
 
 

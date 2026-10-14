@@ -62,6 +62,14 @@ export function setEcranFerme(value) {
 export let hoeMode = false;
 export function setHoeMode(value) {
   hoeMode = value;
+  if (value) axeMode = false;                       // un seul outil en main
+  return value;
+}
+// La hache en main : un appui sur un arbre de la carte le fait couper (du bois).
+export let axeMode = false;
+export function setAxeMode(value) {
+  axeMode = value;
+  if (value) hoeMode = false;
   return value;
 }
 // Version 1.13 : case du Verger dont on choisit l'arbre (null : aucun choix ouvert).

@@ -77,6 +77,23 @@
   const ORCHARD_FRAMES = { libre: 0, jeune: 1, arbuste: 2, arbre: 3, pommier: 4, poirier: 5 };
   const ORCHARD_ADULT = 3;                                   // à partir de l'arbre : feuilles et écureuils
   const TREE_BODY = 0.8;                                     // part de l'image qu'occupe l'arbre, en largeur
+  // Ombres portées des arbres (scripts/carte/arbres_3d.py) : celles des arbres de la carte,
+  // une image de la taille de la carte posée sur le sol (les arbres eux-mêmes en sont exclus),
+  // et celle d'un arbre adulte du Verger, posée sous lui ; (dx, dy) : son coin haut-gauche par
+  // rapport au pied de l'arbre (milieu du bas de son image).
+  // Arbres de la carte (couches layer_tree_*, sauf layer_tree_top) qui se coupent à la hache :
+  // un arbre est un groupe de cases voisines d'une même couche. Les deux arbres du pack qui ont
+  // une feuille de sprites (le feuillu, le sapin) tremblent sous le coup avec elle : `box`, leur
+  // place dans la planche (colonne, rangée, largeur, hauteur, en tuiles) ; `dx, dy`, le coin
+  // de l'image de la feuille par rapport au coin haut-gauche de l'arbre ; `frames`, les images
+  // jouées. Les autres arbres tremblent d'un pixel, de gauche à droite.
+  const CHOP_TREES = {
+    feuillu: { box: [12, 0, 4, 5], key: 'tree_sp', dx: -8, dy: 1, frames: [0, 1, 2, 1, 2, 3, 4, 5, 6, 7, 0] },
+    sapin: { box: [9, 4, 3, 4], key: 'pine_sp', dx: -5, dy: 0, frames: [0, 1, 2, 1, 2, 1, 0] },
+  };
+  const CHOP_FPS = 12;
+  const SHADOWS = { key: 'ombres_arbres', file: 'ombres_arbres.png', depth: 0.05 };
+  const TREE_SHADOW = { key: 'ombre_arbre', file: 'ombre_arbre.png', dx: -16, dy: -8 };
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
   const DEFAULT_W = 72 * T;
   const DEFAULT_H = 57 * T;
@@ -360,6 +377,9 @@
           L.spritesheet('tree_' + a, v('basic_' + a + '.png'), TREE_FRAME);
         }
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
+        L.image(SHADOWS.key, v(SHADOWS.file));
+        L.spritesheet('pine_sp', v('pine_sp.png'), { frameWidth: 58, frameHeight: 64 });
+        L.image(TREE_SHADOW.key, v(TREE_SHADOW.file));
         L.image('terre_bords', v('terre_bords.png'));
       }
 
@@ -371,6 +391,7 @@
         this.defineAnims();
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
+        if (this.has(SHADOWS.key)) this.add.image(0, 0, SHADOWS.key).setOrigin(0).setDepth(SHADOWS.depth);
         this.watchGround();
         this.makeTileAnims();
         this.bakeRooms();
@@ -767,10 +788,12 @@
         const sol = layer === raw.layers.find((l) => l.type === 'tilelayer');
         if (ferme && layer.name === ZONE_TILES.couche) return;              // l'ancienne bordure des zones
         const dirt = ferme && layer.name === ZONE_TILES.plantes ? this.dirt : null;
+        const hid = this.hiddenTrees ? this.hiddenTrees.get(layer) : null;  // un arbre qui tremble (sa feuille de sprites le montre)
         ctx.globalAlpha = layer.opacity == null ? 1 : layer.opacity;
         layer.data.forEach((orig, i) => {
           if (only && !only.has(i)) return;
           if (dirt && dirt.has(i)) return;                                  // les fleurs labourées
+          if (hid && hid.has(i)) return;
           let cell = orig;
           if (sol && over && over.has(i)) cell = over.get(i);               // le sol des anciennes zones
           else if (ferme && !sol && ZONE_TILES.bordures.has(cell & 0x0fffffff)) return; // leur bordure
@@ -1559,6 +1582,11 @@
           if (z.zone && this.arable(i)) herbe = { window: z.window, place: z.place, herbe: true };
         }
         if (this.room) return this.propAt(wx, wy);   // dans un intérieur : ses meubles, rien d'autre
+        // la hache en main : un arbre de la carte sous le doigt se coupe
+        if (lastModel && lastModel.hache) {
+          const arbre = this.mapTreeAt(wx, wy);
+          if (arbre) return { chop: arbre };
+        }
         const label = this.labelAt(wx, wy);
         if (label) return { window: label.window };
         const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom;
@@ -1624,6 +1652,7 @@
         if (hit.pile) { if (this.fermier && !(lastModel && lastModel.nuit)) this.fermier.fetch(hit.pile); return; }   // la nuit, la famille dort
         if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
+        if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.treeHarvest) { bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }
         if (hit.treeSlot !== undefined) { bridge.act('tree-slot', { case: hit.treeSlot }); return; }
         const p = hit.plot;
@@ -1631,6 +1660,134 @@
         else if (p.mature) bridge.act('harvest', { id: p.id });
         else if (!p.arrosee) bridge.act('water', { id: p.id });
         else bridge.act('stage-open', { window: hit.open });   // rien à faire sur la carte : la fenêtre de sa zone
+      }
+
+      /* ---------- la hache : les arbres de la carte ---------- */
+
+      // Les arbres de la carte, lus une fois dans ses couches d'arbres : { id, layer, cells,
+      // x0, y0, x1, y1 (bornes en px), foot: { x, y }, kind }. id : « colonne,rangée » de la
+      // case du pied (ce que le jeu enregistre pour compter les coups du jour).
+      mapTrees() {
+        if (this.treeList) return this.treeList;
+        const list = [];
+        const raw = this.mapRaw;
+        if (!raw) return (this.treeList = list);
+        const W = raw.width, H = raw.height, T = raw.tilewidth;
+        const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
+        const cols = set ? set.columns || 75 : 75;
+        const first = set ? set.firstgid : 1;
+        const kindOf = (n) => {
+          const c = n % cols, r = Math.floor(n / cols);
+          for (const [k, d] of Object.entries(CHOP_TREES)) {
+            const [bc, br, bw, bh] = d.box;
+            if (c >= bc && c < bc + bw && r >= br && r < br + bh) return { kind: k, c: c - bc, r: r - br };
+          }
+          return null;
+        };
+        for (const layer of raw.layers) {
+          if (layer.type !== 'tilelayer' || !Array.isArray(layer.data) || !/tree|arbre/i.test(layer.name || '') || /top|haut/i.test(layer.name || '')) continue;
+          const seen = new Uint8Array(W * H);
+          const gidAt = (i) => layer.data[i] & 0x0fffffff;
+          for (let i0 = 0; i0 < W * H; i0++) {
+            if (seen[i0] || !gidAt(i0)) continue;
+            const cells = [], stack = [i0];
+            seen[i0] = 1;
+            let c0 = W, c1 = 0, r0 = H, r1 = 0;
+            while (stack.length) {
+              const i = stack.pop(), c = i % W, r = (i / W) | 0;
+              cells.push(i);
+              c0 = Math.min(c0, c); c1 = Math.max(c1, c); r0 = Math.min(r0, r); r1 = Math.max(r1, r);
+              for (const j of [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, i - W, i + W]) {
+                if (j >= 0 && j < W * H && !seen[j] && gidAt(j)) { seen[j] = 1; stack.push(j); }
+              }
+            }
+            const w = c1 - c0 + 1, h = r1 - r0 + 1;
+            if (w < 2 || w > 6 || h < 3 || h > 7) continue;            // buissons, souches, forêts soudées
+            const foot = cells.filter((i) => ((i / W) | 0) === r1).map((i) => i % W);
+            const fx = (Math.min(...foot) + Math.max(...foot) + 1) / 2 * T;
+            // l'arbre du pack (feuillu, sapin) : son coin haut-gauche, d'après une de ses tuiles
+            let kind = null, ox = 0, oy = 0;
+            for (const i of cells) {
+              const k = kindOf(gidAt(i) - first);
+              if (k) { kind = k.kind; ox = ((i % W) - k.c) * T; oy = (((i / W) | 0) - k.r) * T; break; }
+            }
+            list.push({
+              id: Math.floor(fx / T) + ',' + r1, layer, cells: new Set(cells),
+              x0: c0 * T, y0: r0 * T, x1: (c1 + 1) * T, y1: (r1 + 1) * T,
+              foot: { x: fx, y: (r1 + 1) * T - 3 }, kind, ox, oy,
+            });
+          }
+        }
+        return (this.treeList = list);
+      }
+
+      // L'arbre sous le point (wx, wy) : le plus en avant (pied le plus bas) dont le houppier
+      // ou le tronc contient le point.
+      mapTreeAt(wx, wy) {
+        let best = null;
+        for (const t of this.mapTrees()) {
+          if (wx < t.x0 + 4 || wx > t.x1 - 4 || wy < t.y0 + 4 || wy > t.y1) continue;
+          if (!best || t.foot.y > best.foot.y) best = t;
+        }
+        return best;
+      }
+
+      // Un coup de hache sur l'arbre `t` : le jeu donne le bois tout de suite (bridge.chop) ;
+      // le personnage va au tronc, frappe, et au coup l'arbre tremble et « +1 🪵 » monte.
+      chop(t) {
+        const got = bridge && bridge.chop ? bridge.chop(t.id) : null;
+        if (!got) return;
+        const hit = () => { this.shakeTree(t); this.showGain(got); };
+        if (!this.fermier || !this.fermier.chop(t.foot, hit)) hit();
+      }
+
+      // L'arbre tremble : celui du pack joue sa feuille de sprites (l'arbre de la carte est
+      // masqué le temps de l'animation), les autres bougent d'un pixel de gauche à droite.
+      shakeTree(t) {
+        if (t.shaking) return;
+        const d = t.kind ? CHOP_TREES[t.kind] : null;
+        if (d && this.has(d.key) && !reducedMotion()) {
+          t.shaking = true;
+          if (!this.hiddenTrees) this.hiddenTrees = new Map();
+          this.hiddenTrees.set(t.layer, t.cells);
+          this.repaintCells(t.cells);
+          const s = this.add.sprite(t.ox + d.dx, t.oy + d.dy, d.key, d.frames[0]).setOrigin(0).setDepth(0.5);
+          let k = 0;
+          const timer = this.time.addEvent({
+            delay: 1000 / CHOP_FPS, repeat: d.frames.length - 1,
+            callback: () => {
+              k += 1;
+              if (k < d.frames.length) { s.setFrame(d.frames[k]); return; }
+              s.destroy();
+              this.hiddenTrees.delete(t.layer);
+              this.repaintCells(t.cells);
+              t.shaking = false;
+              timer.remove();
+            },
+          });
+          return;
+        }
+        if (reducedMotion()) return;
+        // sans feuille de sprites : on décale d'un pixel la part du sol qui le porte
+        t.shaking = true;
+        const g = this.textures.get('ground').getSourceImage();
+        const tex = 'arbre_secoue';
+        if (this.textures.exists(tex)) this.textures.remove(tex);
+        const w = t.x1 - t.x0, h = t.y1 - t.y0;
+        const c = this.textures.createCanvas(tex, w, h);
+        c.getContext().drawImage(g, t.x0, t.y0, w, h, 0, 0, w, h);
+        c.refresh();
+        const img = this.add.image(t.x0, t.y0, tex).setOrigin(0).setDepth(0.5);
+        const xs = [1, -1, 1, -1, 0];
+        let k = 0;
+        const timer = this.time.addEvent({
+          delay: 70, repeat: xs.length - 1,
+          callback: () => {
+            img.x = t.x0 + xs[k];
+            k += 1;
+            if (k >= xs.length) { img.destroy(); t.shaking = false; timer.remove(); }
+          },
+        });
       }
 
       // Version 1.19 : le personnage va ramasser au Poulailler ou à l'Étable. Rien à y prendre :
@@ -1842,7 +1999,7 @@
           seen.add(a.case);
           const key = own ? 'verger' : a.libre ? null : this.tex('tree_' + sfx, this.tex('tree_sp', 'ph_arbre'));
           let e = this.trees.get(a.case);
-          if (e && (rebuild || e.key !== key)) { e.sprite.destroy(); this.trees.delete(a.case); e = null; }
+          if (e && (rebuild || e.key !== key)) { e.sprite.destroy(); if (e.shadow) e.shadow.destroy(); this.trees.delete(a.case); e = null; }
           if (!key) continue;
           if (!e) {
             const sprite = this.add.image(0, 0, key, key.indexOf('ph_') !== 0 ? 0 : undefined);
@@ -1854,9 +2011,14 @@
           if (own) e.sprite.setFrame(a.dessin);
           const x = Math.round(o.x + o.width / 2), y = Math.round(o.y + o.height);
           e.sprite.setPosition(x, y).setDepth(y);
+          // un arbre adulte a son ombre portée, sur le sol
+          const ombre = this.has(TREE_SHADOW.key) && (!own || a.dessin >= ORCHARD_ADULT);
+          if (ombre && !e.shadow) e.shadow = this.add.image(0, 0, TREE_SHADOW.key).setOrigin(0).setDepth(SHADOWS.depth);
+          if (!ombre && e.shadow) { e.shadow.destroy(); e.shadow = null; }
+          if (e.shadow) e.shadow.setPosition(x + TREE_SHADOW.dx, y + TREE_SHADOW.dy);
         }
         for (const [c, e] of this.trees) {
-          if (!seen.has(c)) { e.sprite.destroy(); this.trees.delete(c); }
+          if (!seen.has(c)) { e.sprite.destroy(); if (e.shadow) e.shadow.destroy(); this.trees.delete(c); }
         }
       }
 

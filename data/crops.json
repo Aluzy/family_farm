@@ -255,7 +255,12 @@
     "sur le bouton rond de l'outil (en bas à droite de la carte) ouvre la fenêtre Outils,",
     "qui choisit l'outil de ce bouton. ⚒ est la pioche dans les textes (⛏ est la houe)."
   ],
-  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60 },
+  "//HACHE": [
+    "La hache en main, un appui sur un arbre de la carte le fait couper : BOIS bois dans",
+    "l'inventaire, PERSONNAGE.COUTS.couper d'énergie, NIVEAUX.XP.couper d'XP. Un arbre donne",
+    "au plus COUPES coups par jour ; il ne tombe pas (la forêt reste)."
+  ],
+  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "COUPES": 3 },
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60 },
   "//SERRE": [
     "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture.",

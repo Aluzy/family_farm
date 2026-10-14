@@ -2,6 +2,9 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, farmOpen, spend } from './devices.js';
 import { buyHoe, hasHoe } from './crops.js';
+import { addItem } from './inventory.js';
+import { gainActionXp } from './levels.js';
+import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 /* ---------- les outils : houe, hache, pioche ---------- */
 
@@ -63,4 +66,37 @@ export function selectTool(state, id) {
   if (!hasTool(state, id)) return fail(`Il te faut une ${def.NOM.toLowerCase()} (Marché, ${def.PRIX} 💰).`);
   outils(state).choisi = id;
   return { ok: true, outil: id };
+}
+
+/* ---------- la hache : couper un arbre de la carte ---------- */
+
+// Les arbres de la carte n'existent que dans la carte (ses couches d'arbres) : le moteur ne
+// connaît d'eux qu'un identifiant donné par la carte (« x,y » de la case du pied). Chacun
+// donne au plus HACHE.COUPES coups par jour ; il ne tombe pas.
+function coupes(state) {
+  const o = outils(state);
+  if (!o.coupes || o.coupes.jour !== state.day) o.coupes = { jour: state.day, arbres: {} };
+  return o.coupes;
+}
+
+// Coups de hache que l'arbre `id` peut encore recevoir aujourd'hui.
+export function chopsLeft(state, id) {
+  const c = state.outils && state.outils.coupes;
+  const faits = c && c.jour === state.day ? c.arbres[id] || 0 : 0;
+  return Math.max(0, DATA.HACHE.COUPES - faits);
+}
+
+// Un coup de hache sur l'arbre `id` : HACHE.BOIS bois dans l'inventaire, de l'énergie, de l'XP.
+export function chopTree(state, id) {
+  const H = DATA.HACHE;
+  if (!hasTool(state, 'hache')) return fail(`Il te faut une hache (Marché, ${H.PRIX} 💰).`);
+  if (typeof id !== 'string' || !id) return fail('Touche un arbre pour le couper.');
+  if (chopsLeft(state, id) <= 0) return fail('Cet arbre a assez donné aujourd\'hui : essaie un autre arbre, ou reviens demain.');
+  if (!canAfford(state, 'couper')) return fail(TIRED);
+  const c = coupes(state);
+  c.arbres[id] = (c.arbres[id] || 0) + 1;
+  addItem(state, 'bois', H.BOIS);
+  spendEnergy(state, 'couper');
+  gainActionXp(state, 'couper');
+  return { ok: true, bois: H.BOIS, reste: chopsLeft(state, id) };
 }

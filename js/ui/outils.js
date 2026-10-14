@@ -1,7 +1,7 @@
 import { nightActive } from '../engine/clock.js';
-import { buyTool, hasTool, OUTILS, selectedTool, selectTool, toolDef } from '../engine/outils.js';
+import { buyTool, chopTree, hasTool, OUTILS, selectedTool, selectTool, toolDef } from '../engine/outils.js';
 import { formatCoins } from '../engine/format.js';
-import { hoeMode, setHoeMode, state } from './store.js';
+import { axeMode, hoeMode, setAxeMode, setHoeMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
@@ -9,6 +9,8 @@ import { ACTIONS, registerActions } from './actions.js';
 import { artHtml } from './pixel-art.js';
 import { tel } from './consent.js';
 import { closeModal } from './common.js';
+import { persistState } from './storage.js';
+import { closeStageWindow, stageInterior, stageWindow } from './stage-windows.js';
 
 /* ---------- les outils : le bouton rond de la carte et la fenêtre Outils ---------- */
 
@@ -21,9 +23,8 @@ let fabTimer = null;
 // Le dessin du bouton rond de chaque outil (assets/art.png).
 const BOUTONS = { houe: 'hoe-btn', hache: 'axe-btn', pioche: 'pick-btn' };
 
-// Ce que fait un appui avec la hache ou la pioche : rien à couper ni à casser pour l'instant.
+// Ce que fait un appui avec la pioche : rien à casser pour l'instant.
 const EN_MAIN = {
-  hache: 'il n\'y a encore rien à couper sur la ferme',
   pioche: 'il n\'y a encore rien à casser sur la ferme',
 };
 
@@ -46,8 +47,36 @@ function useSelectedTool() {
     else ACTIONS['hoe-toggle']();
     return;
   }
+  if (id === 'hache') {
+    if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return; }
+    setAxeMode(!axeMode);
+    if (axeMode) showToast(`${DATA_ICONE('hache')} Hache en main : touche un arbre de la carte pour le couper.`);
+    if (axeMode && stageWindow) closeStageWindow();
+    else refresh();
+    return;
+  }
   const def = toolDef(id);
   showToast(`${def.ICONE} ${def.NOM} en main : ${EN_MAIN[id]}. Double appui sur le bouton pour changer d'outil.`);
+}
+
+const DATA_ICONE = (id) => toolDef(id).ICONE;
+
+// La puce « Hache en main » de la carte (à la place du bouton rond) : la toucher range la hache.
+export function axeChipHtml() {
+  if (!axeMode || !hasTool(state, 'hache') || stageInterior) return '';
+  return `<button type="button" class="stage-chip hoe axe" data-action="axe-toggle" aria-pressed="true" aria-label="Hache en main : touche un arbre pour le couper. Ranger la hache" title="Touche un arbre de la carte pour le couper"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('hache')}</span><span class="stage-chip-text">Hache</span><span class="stage-chip-val num">🪵</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+}
+
+// La carte (farm-stage.js) : la hache en main, le joueur a touché l'arbre `id`. Le bois entre
+// dans l'inventaire tout de suite ; la carte montre ensuite le personnage qui coupe. Renvoie
+// ce qu'il a coupé ({ bois: n }), ou null (la nuit, sans énergie, arbre épuisé : un message).
+export function chopFromStage(id) {
+  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return null; }
+  const r = chopTree(state, id);
+  if (!r.ok) { showToast(r.error); return null; }
+  persistState();
+  refresh();
+  return { bois: r.bois };
 }
 
 function toolRow(id) {
@@ -92,11 +121,16 @@ registerActions({
       useSelectedTool();
     }, DOUBLE_TAP_MS);
   },
+  'axe-toggle': () => {
+    setAxeMode(false);
+    refresh();
+  },
   'tool-select': (target) => {
     const id = target.dataset.outil;
     const r = applyResult(selectTool(state, id));
     if (!r.ok) return;
     if (id !== 'houe' && hoeMode) setHoeMode(false);
+    if (id !== 'hache' && axeMode) setAxeMode(false);
     closeModal();
     refresh();
     const def = toolDef(id);
