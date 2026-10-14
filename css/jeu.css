@@ -1820,9 +1820,10 @@ main .ancre { scroll-margin-top: 150px; }
 .lot-row .lot-btns { grid-column: 1 / -1; display: flex; gap: 8px; }
 .lot-row .lot-btn { flex: 1 1 0; min-height: 44px; min-width: 44px; }
 
-/* ---------- Carte flottante (jour, heure, pièces) et jauge d'énergie, façon Stardew Valley ----------
+/* ---------- Carte flottante (jour, heure, pièces), façon Stardew Valley ----------
    Sur tous les écrans, au-dessus de la carte de la ferme et sous les fenêtres (window-layer,
-   modal-root). Légèrement transparentes : la carte reste visible dessous. */
+   modal-root). Même cadre bois que la carte du joueur, légèrement transparent : la carte
+   reste visible dessous. Le jour, l'heure dessous, puis les pièces. */
 .hud {
   position: fixed;
   top: calc(8px + env(safe-area-inset-top));
@@ -1830,91 +1831,37 @@ main .ancre { scroll-margin-top: 150px; }
   z-index: 45;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
+  align-items: stretch;
+  min-width: 76px;
+  padding: 4px;
+  background: rgba(255, 230, 178, 0.82);
+  border: 3px solid #8a5a34;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 2px 4px rgba(0, 0, 0, 0.25);
   pointer-events: none;
   font-weight: 700;
   font-size: 0.95rem;
   line-height: 1.1;
   color: #4a2a10;
   font-variant-numeric: tabular-nums;
+  transition: opacity 0.2s;
 }
-.hud-row { display: flex; gap: 3px; }
-.hud-cell {
-  display: inline-flex;
+.hud-line {
+  display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 5px 9px;
-  background: rgba(255, 230, 178, 0.82);
-  border: 3px solid #8a5a34;
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9), 0 2px 4px rgba(0, 0, 0, 0.25);
+  justify-content: center;
+  gap: 3px;
+  min-height: 26px;
+  padding: 0 6px;
   white-space: nowrap;
 }
-.hud-money .hud-cell { color: #8a2e22; }
-
-.hud-energy {
-  position: fixed;
-  right: calc(12px + env(safe-area-inset-right));
-  bottom: calc(var(--dock) + 88px); /* au-dessus du bouton « Zzz » (64 px) */
-  z-index: 45;
-}
-.hud-energy-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  width: 44px; /* zone d'appui */
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
-}
-.hud-energy-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 6px; }
-.hud-energy-label {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 24px;
-  background: rgba(255, 230, 178, 0.88);
-  border: 3px solid #8a5a34;
-  border-radius: 5px;
-  font-size: 0.8rem;
-  line-height: 1;
-}
-.hud-energy-bar {
-  position: relative;
-  display: block;
-  width: 26px;
-  height: 120px;
-  background: rgba(74, 42, 16, 0.55);
-  border: 3px solid #8a5a34;
-  border-radius: 5px;
-  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9);
-  overflow: hidden;
-}
-.hud-energy-fill {
-  position: absolute;
-  left: 2px;
-  right: 2px;
-  bottom: 2px;
-  max-height: calc(100% - 4px);
-  background: #5ad23c;
-  box-shadow: inset 3px 0 0 #8cec6a;
-  transition: height 0.3s;
-}
-.hud-energy-fill.mid { background: #e8b030; box-shadow: inset 3px 0 0 #f8d878; }
-.hud-energy-fill.low { background: #c8503a; box-shadow: inset 3px 0 0 #ec8a6e; }
-@media (prefers-reduced-motion: reduce) { .hud-energy-fill { transition: none; } }
+.hud-line + .hud-line { border-top: 1px solid rgba(138, 90, 52, 0.45); }
+.hud-day { font-size: 1.05rem; }
+.hud .hud-money { width: 100%; padding: 0 6px; color: #8a2e22; }
 /* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante reste
    visible par-dessus, à 80 % de transparence, et laisse passer les appuis. */
-.hud, .hud-energy { transition: opacity 0.2s; }
 body:has(.window-layer) .hud,
 body:has(#modal-root > *) .hud { z-index: 95; opacity: 0.2; pointer-events: none; }
-/* La jauge d'énergie, elle, disparaît : elle passerait sur le contenu du menu. */
-body:has(.window-layer) .hud-energy,
-body:has(#modal-root > *) .hud-energy { visibility: hidden; }
 /* Écrans sans carte : le contenu commence sous la carte flottante (sauf si l'écran est
    assez large pour qu'elle tienne à côté). */
 body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + env(safe-area-inset-top)); }
@@ -2031,6 +1978,57 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 .player-card button:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; border-radius: 4px; }
 body:has(.window-layer) .player-card,
 body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-events: none; }
+/* Extension de la carte du joueur : collée à sa droite, sur toute sa hauteur, un fond uni de
+   la couleur du cadre bois ; la jauge d'énergie (⚡) et celle d'endurance (💪), verticales. */
+.player-card .player-gauges {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: calc(100% - 1px);
+  display: flex;
+  padding: 5px 7px 5px 5px !important;
+  background: #8a5a34 !important;
+  border-radius: 0 10px 10px 0;
+  box-shadow: inset -2px 0 0 #6e4426, inset 0 2px 0 #a8744a, 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+.player-gauges-in { display: flex; gap: 5px; height: 100%; }
+.player-gauge { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+.player-gauge-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 20px;
+  background: #ffe6b2;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 2px #d9a066;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+.player-gauge-bar {
+  position: relative;
+  flex: 1 1 auto;
+  width: 14px;
+  min-height: 40px;
+  background: #4a2a10;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 2px #d9a066;
+  overflow: hidden;
+}
+.player-gauge-fill {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  max-height: calc(100% - 6px);
+  border-radius: 4px;
+  background: #5ad23c;
+  box-shadow: inset 2px 0 0 #8cec6a;
+  transition: height 0.3s;
+}
+.player-gauge-fill.mid { background: #e8b030; box-shadow: inset 2px 0 0 #f8d878; }
+.player-gauge-fill.low { background: #c8503a; box-shadow: inset 2px 0 0 #ec8a6e; }
+.player-gauge-fill.endu { background: #3a8ad2; box-shadow: inset 2px 0 0 #7ec0f0; }
+@media (prefers-reduced-motion: reduce) { .player-gauge-fill { transition: none; } }
 
 /* ---------- Fenêtre de la Famille : le cadre bois des cartes flottantes ----------
    Les couleurs de l'interface sont redéfinies dans la fenêtre (crème et bois, en clair comme
