@@ -27,9 +27,14 @@ HAUT_DEVANT = 15   # un poteau du devant, du chapeau au pied
 #     (contre un bâtiment : pas de barrière au fond) au devant, dans la rangée y1 ; portail :
 #     None, ou la colonne de tuile autour de laquelle centrer le portail à deux battants ;
 #   ('rangee', x0, x1, y) : une barrière droite de la colonne x0 à x1, dans la rangée y.
+#   fond (enclos seulement) : None, ou (gauche, droite, pied) en px : le bâtiment contre lequel
+#     l'enclos s'appuie (le bas de ses murs) ; une barrière de fond relie chaque côté au mur,
+#     pour qu'il ne reste aucun passage.
+# L'Étable : barn_sp.png (104 × 93, murs des colonnes 4 à 99) posée bas-centre sur le rectangle
+# `grange` de la carte (x 304,98, largeur 126,13, bas à y 335,45) : murs de x 320 à 415.
 BARRIERES = [
-    ('enclos', 19, 20, 27, 25, 23.5),       # l'enclos de l'Étable
-    ('rangee', 29, 33, 22),                 # devant la maison
+    ('enclos', 19, 20, 27, 25, 23.5, (320, 415, 334)),     # l'enclos de l'Étable
+    ('rangee', 29, 33, 22),                                # devant la maison
 ]
 
 
@@ -40,7 +45,7 @@ TEINTES = {
     (34, 24, 16): (70, 46, 28), (44, 30, 18): (92, 60, 32), (66, 45, 26): (122, 84, 40),
     (77, 52, 30): (140, 98, 46), (99, 65, 38): (150, 106, 52), (104, 74, 55): (160, 120, 72),
     (116, 83, 62): (170, 130, 80), (137, 113, 84): (196, 164, 110), (171, 124, 93): (214, 170, 118),
-    (62, 62, 61): (84, 84, 88),                  # les gonds
+    (84, 60, 45): (146, 104, 58), (62, 62, 61): (84, 84, 88),     # cadre du portail, gonds
 }
 
 
@@ -84,9 +89,11 @@ def devant(img, P, x0, y, n, portail=None, coins=True):
         img.alpha_composite(P['portail'], (x0 + portail * PAS, haut))
 
 
-def cote(img, P, x, y_haut, y_devant):
-    """Un côté : le chapeau à y_haut, puis des tronçons jusqu'au poteau d'angle du devant."""
-    img.alpha_composite(P['chapeau'], (x, y_haut))
+def cote(img, P, x, y_haut, y_devant, chapeau=True):
+    """Un côté : le chapeau à y_haut (sans chapeau : il part du pied d'un poteau d'angle du
+    fond), puis des tronçons jusqu'au poteau d'angle du devant."""
+    if chapeau:
+        img.alpha_composite(P['chapeau'], (x, y_haut))
     y = y_haut + 1
     fin = y_devant - HAUT_DEVANT + 1
     while y < fin:
@@ -101,13 +108,25 @@ def dessiner(W, H):
     img = Image.new('RGBA', (W * T, H * T))
     for b in BARRIERES:
         if b[0] == 'enclos':
-            _, x0, y0, x1, y1, portail = b
+            _, x0, y0, x1, y1, portail, fond = b
             g = x0 * T + 5
             n = round((x1 - x0) * T / PAS)
+            d = g + n * PAS
             pied = y1 * T + 14
-            haut = pied - HAUT_DEVANT + 1 - TRONCON * round((pied - HAUT_DEVANT + 1 - y0 * T) / TRONCON) - 1
-            cote(img, P, g, haut, pied)
-            cote(img, P, g + n * PAS, haut, pied)
+            if fond:
+                # le fond : du côté gauche au mur, du mur au côté droit ; les poteaux du côté
+                # droit partent du côté (au pas), ceux qui tombent sous le mur sont cachés par lui
+                bg, bd, pf = fond
+                ng = max(1, -(-(bg - g) // PAS))
+                nd = max(1, -(-(d - bd) // PAS))
+                devant(img, P, g, pf, ng)
+                devant(img, P, d - nd * PAS, pf, nd)
+                cote(img, P, g, pf, pied, chapeau=False)
+                cote(img, P, d, pf, pied, chapeau=False)
+            else:
+                haut = pied - HAUT_DEVANT + 1 - TRONCON * round((pied - HAUT_DEVANT + 1 - y0 * T) / TRONCON) - 1
+                cote(img, P, g, haut, pied)
+                cote(img, P, d, haut, pied)
             p = None
             if portail is not None:
                 p = round(((portail * T) - g) / PAS - 1.5)
