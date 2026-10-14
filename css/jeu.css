@@ -2252,11 +2252,11 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
 .perso-btn.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
 
 /* La barre d'outils (js/ui/outils.js) : en bas au milieu de la carte, le dessin du modèle
-   (48 × 9 pixels, ici --u px chacun) dans le bois et le fond des fenêtres ; une case par
-   outil, posée sur sa case du dessin (--x : sa colonne). Rangée, elle glisse sous le bord de
-   l'écran et n'en dépasse que sa languette. */
+   (44 × 9 pixels, ici --u px chacun) dans les couleurs du menu ; une case par outil, posée
+   sur sa case du dessin (--x : sa colonne), l'outil dessiné à 32 px. Rangée, elle glisse sous
+   le bord de l'écran et n'en dépasse que sa languette. */
 .tool-bar {
-  --u: 5px;
+  --u: 7.5px;
   position: fixed;
   left: 50%;
   bottom: calc(var(--dock) + 6px);
@@ -2296,21 +2296,24 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
 /* La languette, au-dessus du milieu de la barre : le même bois, le même fond. */
 .tool-bar-tab {
   position: relative;
-  width: 44px;
-  height: 18px;
+  width: 60px;
+  height: 24px;
   margin-bottom: -3px; /* posée sur le bois de la barre : un seul cadre */
   padding: 0;
   display: grid;
   place-items: center;
-  background: #fae8c4;
+  background: rgba(255, 230, 178, 0.88);
   border: 3px solid #8a5a34;
   border-bottom: 0;
   border-radius: 8px 8px 0 0;
+  box-shadow: inset 0 2px 0 rgba(217, 160, 102, 0.9);
   cursor: pointer;
 }
-.tool-bar-tab::after { content: ""; position: absolute; inset: -14px -4px -6px; } /* zone d'appui de 44 px environ */
+.tool-bar-tab::after { content: ""; position: absolute; inset: -12px 0 -6px; } /* zone d'appui de 44 px environ */
 .tool-bar-arrow { fill: #6b3f1c; transition: transform 0.2s; }
 .tool-bar:not(.open) .tool-bar-arrow { transform: scaleY(-1); } /* rangée : le triangle montre le sens où elle ressort */
 .tool-bar-tab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 /* Avec la barre, le chevron « la carte continue vers le bas » passe au-dessus d'elle. */
-body.has-toolbar .stage-arrow.bas { bottom: calc(9 * 5px + 40px); }
+body.has-toolbar .stage-arrow.bas { bottom: calc(9 * 7.5px + 46px); }
+/* … et le bouton Dormir (la nuit) aussi, pour ne pas la couvrir sur un téléphone. */
+body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
