@@ -22,8 +22,8 @@ const EN_MAIN = {
   canne: 'il n\'y a encore rien à pêcher sur la ferme',
 };
 
-// Le dessin de la barre (le modèle, en pixels de la planche) : # le bois (la bordure des
-// fenêtres), o une case (le fond des fenêtres), g le clou doré. U : la taille d'un pixel.
+// Le dessin de la barre (le modèle, en pixels) : # le bois, o une case, g le clou ; les
+// couleurs sont celles du menu (COULEURS).
 const BARRE = [
   '........####################################....',
   '.......###ooooo####ooooo####ooooo####ooooo###...',
@@ -35,28 +35,52 @@ const BARRE = [
   '.......###ooooo####ooooo####ooooo####ooooo###...',
   '........####################################....',
 ];
-const BARRE_COULEURS = { '#': '#8a5a34', o: '#fae8c4', g: '#d9a066' };
-const CASE_EN_MAIN = '#ffd98a';            // la case de l'outil en main
+// Les couleurs du menu (css/jeu.css, .bottom-nav) : sa bordure de bois autour, son fond crème
+// dedans ; une case, le fond un peu foncé des boutons du menu, cerclée de bois clair (de bois
+// sombre et plus claire pour l'outil en main) ; le clou, le filet doré du menu.
+const COULEURS = {
+  bord: '#8a5a34',
+  fond: 'rgba(255, 230, 178, 0.9)',
+  case: '#ead0a0',
+  caseBord: '#c9965e',
+  enMain: '#fbd98c',
+  enMainBord: '#8a5a34',
+  clou: '#d9a066',
+};
 const CASE = { x: 9, y: 1, w: 7, h: 7, pas: 9 };     // la case k : x + k × pas
 const BORD = 4;                            // les colonnes vides à gauche du dessin
 
-// Le dessin, en rectangles d'un pixel de haut (le bois par morceaux, les cases pixel par
-// pixel) ; la case `active` (son rang) plus claire.
+// Le bois du modèle : son contour (au bord du dessin) prend la bordure du menu, le reste son
+// fond ; une case, son pourtour (les pixels qui touchent le bois) et son intérieur.
+const PIX = (() => {
+  const H = BARRE.length, W = BARRE[0].length;
+  const at = (x, y) => (x >= 0 && y >= 0 && x < W && y < H ? BARRE[y][x] : '.');
+  const voisins = (x, y) => [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
+  return BARRE.map((row, y) => Array.from(row, (c, x) => {
+    if (c === '.') return null;
+    if (c === 'g') return 'clou';
+    const v = voisins(x, y).map(([a, b]) => at(a, b));
+    if (c === 'o') return v.some((t) => t !== 'o') ? 'caseBord' : 'case';
+    return v.includes('.') ? 'bord' : 'fond';
+  }));
+})();
+
+// Le dessin, en rectangles d'un pixel de haut (par morceaux de même couleur) ; la case
+// `active` (son rang) plus claire.
 function barreSvg(active) {
   const rects = [];
-  BARRE.forEach((row, y) => {
+  PIX.forEach((row, y) => {
+    const teinte = (x) => {
+      const t = row[x];
+      if (t !== 'case' && t !== 'caseBord') return t;
+      if (Math.floor((x - CASE.x) / CASE.pas) !== active) return t;
+      return t === 'case' ? 'enMain' : 'enMainBord';
+    };
     for (let x = 0; x < row.length;) {
-      const c = row[x];
+      const t = teinte(x);
       let n = 1;
-      while (x + n < row.length && row[x + n] === c) n++;
-      if (c === 'o') {
-        for (let i = x; i < x + n; i++) {
-          const k = Math.floor((i - CASE.x) / CASE.pas);
-          rects.push(`<rect x="${i}" y="${y}" width="1" height="1" fill="${k === active ? CASE_EN_MAIN : BARRE_COULEURS.o}"/>`);
-        }
-      } else if (c !== '.') {
-        rects.push(`<rect x="${x}" y="${y}" width="${n}" height="1" fill="${BARRE_COULEURS[c]}"/>`);
-      }
+      while (x + n < row.length && teinte(x + n) === t) n++;
+      if (t) rects.push(`<rect x="${x}" y="${y}" width="${n}" height="1" fill="${COULEURS[t]}"/>`);
       x += n;
     }
   });
@@ -65,7 +89,7 @@ function barreSvg(active) {
 
 // Triangle de la languette (5 × 3 pixels), pointé vers le bas (barre ouverte : le sens où
 // elle se range) ; retourné quand la barre est rangée.
-const BARRE_FLECHE = '<svg class="tool-bar-arrow" viewBox="0 0 5 3" width="15" height="9" aria-hidden="true" shape-rendering="crispEdges">' +
+const BARRE_FLECHE = '<svg class="tool-bar-arrow" viewBox="0 0 5 3" width="20" height="12" aria-hidden="true" shape-rendering="crispEdges">' +
   '<rect x="0" y="0" width="5" height="1"/><rect x="1" y="1" width="3" height="1"/><rect x="2" y="2" width="1" height="1"/></svg>';
 
 // L'outil en main (la houe ou la hache), ou null.
