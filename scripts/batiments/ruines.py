@@ -15,8 +15,9 @@
 #   fissure(), toile(), herbes(), mousse().
 # Le hasard est fixe (graine par bâtiment) : relancer le script redonne les mêmes images.
 #
-# Images d'origine : pack "Farm – 4 Seasons 16x16 Tileset" (antarcticbees), silo.png et
-# poulailler.png du dépôt. Seules les images de printemps (_sp) sont faites : la carte garde
+# Images d'origine : celles de scripts/batiments/style_v2.py (la ferme, l'étable, le moulin et
+# le poulailler du décor version 2), le pack "Farm – 4 Seasons 16x16 Tileset" (antarcticbees)
+# pour la serre, silo.png du dépôt. Lancer style_v2.py avant ce script. Seules les images de printemps (_sp) sont faites : la carte garde
 # l'apparence du printemps toute l'année (SEASONS_ON_MAP dans js/farm-stage.js).
 import colorsys
 import os
@@ -24,6 +25,11 @@ import random
 import sys
 
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from style_v2 import TOIT  # noqa: E402
+
+TOITS = set(TOIT)
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 ASSETS = os.path.join(ROOT, 'assets')
@@ -200,37 +206,42 @@ class Ruine:
         return nom
 
 
-# Couleurs : un pixel « de toit » est un prune sombre (maison, étable : bardeaux).
-def prune(c):
-    r, g, b = c[:3]
-    return 40 <= r <= 115 and g < 80 and b >= g and r > g
+# Couleurs : un pixel « de toit » est l'un des oranges des bardeaux (style_v2.TOIT), repéré
+# sur l'image d'origine (avant vieillissement).
+def orange(c):
+    return tuple(c[:3]) in TOITS
 
 
 def maison():
-    """house_sp.png (93×97) : grand toit prune, pignon clair avec une fenêtre, toit bas du
-    porche, porte au centre, fenêtre à droite, terrasse de planches."""
+    """house_sp.png (94×97, la ferme du décor version 2, scripts/batiments/style_v2.py) :
+    grand toit orange à deux pentes, pignon de planches dorées avec une fenêtre à volets
+    turquoise, auvent orange au-dessus du rez-de-chaussée, annexe à droite, deux fenêtres à
+    volets, porte au centre, terrasse de planches grises sur pilotis."""
     m = Ruine('house_sp.png', 11)
     m.vieillir()
-    toit = lambda x, y: prune(m.get(x, y))
+    toit = lambda x, y: orange(m.orig.getpixel((x, y))) if 0 <= x < m.W and 0 <= y < m.H else False
     # bardeaux arrachés : en marches, comme les rangées du toit ; chevrons verticaux dedans
-    m.trou([(15, 19, 8, 3), (11, 22, 11, 3), (13, 25, 8, 3), (16, 28, 4, 2)], pente=(0, 1), ecart=3, dedans=toit)
-    m.trou([(54, 29, 6, 3), (55, 32, 5, 3)], pente=(0, 1), ecart=3, dedans=toit)
-    m.trou([(76, 44, 4, 5)], pente=(0, 1), ecart=3, dedans=toit)     # toit bas de droite
-    m.trou([(10, 56, 6, 3)], pente=(0, 1), ecart=3, dedans=toit)     # toit du porche
+    m.trou([(12, 20, 8, 3), (9, 23, 11, 3), (11, 26, 8, 3), (14, 29, 4, 2)], pente=(0, 1), ecart=3, dedans=toit)
+    m.trou([(52, 24, 6, 3), (53, 27, 6, 3), (55, 30, 3, 2)], pente=(0, 1), ecart=3, dedans=toit)
+    m.trou([(80, 44, 5, 5)], pente=(0, 1), ecart=3, dedans=toit)     # toit de l'annexe
+    m.trou([(14, 55, 6, 3)], pente=(1, 0), ecart=3, dedans=toit)     # auvent
+    m.trou([(60, 56, 4, 3)], pente=(1, 0), ecart=3, dedans=toit)
     # bardeaux isolés tombés : petites fentes sans charpente visible
-    for (x, y) in ((31, 12), (8, 36), (46, 22), (62, 40), (27, 33)):
+    for (x, y) in ((28, 10), (6, 36), (44, 16), (62, 38), (24, 34), (88, 54)):
         m.trou([(x, y, 3, 2)], ecart=99, dedans=toit)
-    m.vitre(29, 40, 40, 49)                               # fenêtre du pignon
-    m.vitre(60, 64, 71, 75)                               # fenêtre de droite
-    m.clouer(59, 66, 72, 73)                              # planche en travers
-    m.clouer(37, 66, 47, 76)                              # porte condamnée : planches en croix
-    m.clouer(37, 75, 47, 67)
+    m.vitre(32, 40, 40, 48)                               # fenêtre du pignon
+    m.vitre(63, 66, 73, 76)                               # fenêtre de droite
+    m.clouer(61, 68, 75, 73)                              # planche en travers
+    m.deplacer(11, 66, 15, 77, 0, 2)                      # un volet de gauche pend
+    m.clouer(38, 67, 48, 78)                              # porte condamnée : planches en croix
+    m.clouer(38, 77, 48, 68)
     m.planche_h(8, 83, 22, 85)                            # planches manquantes de la terrasse
-    m.planche_h(62, 86, 70, 88)
-    m.fissure([(33, 35), (35, 38), (34, 41)])
-    m.toile(29, 40, 1, 1, 3)
-    m.mousse(6, 44, 30, 50, 0.22, dedans=toit)
-    m.herbes(2, 90, 96, hmax=4, densite=0.35)
+    m.planche_h(62, 85, 72, 87)
+    m.fissure([(20, 42), (22, 45), (21, 48)])
+    m.toile(32, 40, 1, 1, 3)
+    m.mousse(4, 30, 30, 48, 0.18, dedans=toit)
+    m.mousse(4, 56, 70, 62, 0.12, dedans=toit)
+    m.herbes(2, 92, 96, hmax=4, densite=0.35)
     return m
 
 
@@ -240,8 +251,7 @@ def etable():
     m = Ruine('barn_sp.png', 23)
     m.vieillir()
     def toit(x, y):
-        c = m.get(x, y)
-        return sum(c[:3]) / 3 < 125 and (y < 57 or x < 14 or x > 90)
+        return 0 <= x < m.W and 0 <= y < m.H and orange(m.orig.getpixel((x, y)))
     m.trou([(22, 23, 8, 3), (19, 26, 11, 3), (21, 29, 7, 3), (23, 32, 3, 2)], pente=(0, 1), ecart=3, dedans=toit)
     m.trou([(70, 29, 7, 3), (71, 32, 7, 3), (73, 35, 4, 2)], pente=(0, 1), ecart=3, dedans=toit)
     m.trou([(92, 52, 6, 4)], pente=(0, 1), ecart=3, dedans=toit)
@@ -365,7 +375,7 @@ def poulailler():
     dégâts sur les trois cases, porte comprise."""
     m = Ruine('poulailler.png', 53)
     m.vieillir()
-    toit = lambda x, y: prune(m.get(x, y)) and y % 55 < 30
+    toit = lambda x, y: 0 <= x < m.W and 0 <= y < m.H and orange(m.orig.getpixel((x, y))) and y % 55 < 30
     for i in range(3):
         o = i * 44
         m.trou([(o + 8, 10, 6, 3), (o + 6, 13, 7, 3), (o + 8, 16, 4, 2)], pente=(0, 1), ecart=3, dedans=toit)
