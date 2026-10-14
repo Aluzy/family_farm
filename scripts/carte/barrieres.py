@@ -33,8 +33,26 @@ BARRIERES = [
 ]
 
 
+# Les bois des modèles, éclaircis vers les bois du décor version 2 (planches dorées et cadres
+# bruns des bâtiments, scripts/batiments/style_v2.py) : chaque ton prend sa place, dans le même
+# ordre, du contour au reflet du chapeau.
+TEINTES = {
+    (34, 24, 16): (70, 46, 28), (44, 30, 18): (92, 60, 32), (66, 45, 26): (122, 84, 40),
+    (77, 52, 30): (140, 98, 46), (99, 65, 38): (150, 106, 52), (104, 74, 55): (160, 120, 72),
+    (116, 83, 62): (170, 130, 80), (137, 113, 84): (196, 164, 110), (171, 124, 93): (214, 170, 118),
+    (62, 62, 61): (84, 84, 88),                  # les gonds
+}
+
+
 def modele(nom):
-    return Image.open(os.path.join(ORIG, nom)).convert('RGBA')
+    im = Image.open(os.path.join(ORIG, nom)).convert('RGBA')
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            p = px[x, y]
+            if p[3]:
+                px[x, y] = TEINTES.get(p[:3], p[:3]) + (p[3],)
+    return im
 
 
 def pieces():
