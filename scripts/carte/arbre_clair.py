@@ -16,8 +16,8 @@
 #     haut à gauche, du feuillage de l'arbre éclairci, contour sombre ; l'arbre aussi a un contour.
 # assets/pin_clair.png : le pin (scripts/carte/originaux/pin_modele.png, 58 × 64) harmonisé de
 # la même façon, sur une rampe un peu plus froide et profonde (un conifère, même famille).
-# assets/arbre_clair_sp.png et assets/pin_clair_sp.png : 8 images de balancement (le coup de
-# hache) de l'arbre (48 × 64) et du pin (centré sur 64 × 64).
+# assets/arbre_clair_sp.png et assets/pin_clair_sp.png : 3 images d'inclinaison (le coup de
+# hache) de l'arbre (48 × 64) et du pin (centré sur 64 × 64), avec une marge de chaque côté.
 # Les ombres portées ne sont pas dans les dessins : le jeu (ou la carte) les pose au sol.
 import colorsys
 import math
@@ -157,19 +157,28 @@ def planche(modele):
     return out
 
 
-# Le balancement sous un coup de hache : 8 images ; le haut de l'arbre se décale de AMPLITUDES[k]
-# pixels, de moins en moins en descendant, le tronc (sous `fixe`) ne bouge pas.
-AMPLITUDES = [0, 1, 2, 2, 1, 0, -1, 0]
+# L'inclinaison sous un coup de hache : l'arbre reste d'un seul bloc et penche, autour de son
+# pied, d'INCLINAISON degrés. Trois images : droit, penché à droite, penché à gauche (le jeu les
+# enchaîne : droite, milieu, gauche, milieu, droite, milieu ; CHOP_TREES dans farm-stage.js).
+# Chaque image a MARGE px de plus de chaque côté : le houppier penché ne sort pas du cadre.
+# La rotation se fait sur l'image agrandie ROT fois puis réduite (pas de pixels arrachés).
+INCLINAISON = 3.5
+MARGE = 4
+ROT = 8
 
 
-def balancement(img, fixe):
+def inclinaison(img, pied_y):
     w, h = img.size
-    out = Image.new('RGBA', (w * len(AMPLITUDES), h))
-    for k, a in enumerate(AMPLITUDES):
-        for y in range(h):
-            dx = round(a * max(0.0, 1 - y / fixe)) if y < fixe else 0
-            ligne = img.crop((0, y, w, y + 1))
-            out.alpha_composite(ligne, (k * w + dx, y)) if 0 <= dx < w or dx < 0 else None
+    W = w + 2 * MARGE
+    out = Image.new('RGBA', (W * 3, h))
+    for k, angle in enumerate((0, -INCLINAISON, INCLINAISON)):        # PIL : un angle positif tourne vers la gauche
+        cadre = Image.new('RGBA', (W, h))
+        cadre.alpha_composite(img, (MARGE, 0))
+        if angle:
+            grand = cadre.resize((W * ROT, h * ROT), Image.NEAREST)
+            grand = grand.rotate(angle, resample=Image.NEAREST, center=(W * ROT / 2, pied_y * ROT))
+            cadre = grand.resize((W, h), Image.NEAREST)
+        out.alpha_composite(cadre, (k * W, 0))
     return out
 
 
@@ -182,12 +191,13 @@ def main():
     pin = contour(eclaircir(pin0, RAMPE_PIN, 200, (0.04, 0.82, 1.2)))      # un peu plus sombre que le feuillu
     pin.save(SORTIE_PIN)
     print(f'assets/pin_clair.png : le pin harmonisé ({pin.width} × {pin.height}, pied au milieu du bas)')
-    # les feuilles de balancement (hache) : l'arbre (48 × 64), le pin centré sur 64 × 64
-    balancement(img.crop((0, 0, CW, CH)), 46).save(os.path.join(ROOT, 'assets', 'arbre_clair_sp.png'))
+    # les feuilles d'inclinaison (hache) : l'arbre (48 × 64), le pin centré sur 64 × 64 ; pied
+    # au bas de l'image
+    inclinaison(img.crop((0, 0, CW, CH)), CH - 2).save(os.path.join(ROOT, 'assets', 'arbre_clair_sp.png'))
     pin64 = Image.new('RGBA', (64, 64))
     pin64.alpha_composite(pin, ((64 - pin.width) // 2, 64 - pin.height))
-    balancement(pin64, 54).save(os.path.join(ROOT, 'assets', 'pin_clair_sp.png'))
-    print('assets/arbre_clair_sp.png, assets/pin_clair_sp.png : 8 images de balancement chacune')
+    inclinaison(pin64, 62).save(os.path.join(ROOT, 'assets', 'pin_clair_sp.png'))
+    print(f'assets/arbre_clair_sp.png, assets/pin_clair_sp.png : 3 images (droit, à droite, à gauche), {MARGE} px de marge')
     if '--apercu' in sys.argv:
         herbe = Image.open(os.path.join(ROOT, 'assets', 'herbe_chemin.png')).convert('RGBA')
         fond = Image.new('RGBA', (CW * 4 + 2 * 60, CH))
