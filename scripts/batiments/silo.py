@@ -1,16 +1,17 @@
 # assets/silo.png : le Silo de la carte, 28×62, dessiné à la main d'après l'image de référence : toit en dôme de bardeaux au
-# bord bombé, aux tons des toits des autres bâtiments (TOIT de scripts/batiments/style_v2.py), fût de planches verticales,
+# bord bombé, aux couleurs de la serre comme les autres bâtiments (PALETTE_SERRE de scripts/batiments/style_v2.py), fût de planches verticales,
 # collier de pierres claires en bas. Lumière à gauche. Puis python3 scripts/batiments/ruines.py (silo_ruine.png).
 from PIL import Image
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from style_v2 import TOIT  # noqa: E402
+from style_v2 import PALETTE_SERRE as PS  # noqa: E402
+TOIT = PS['toit']
 W, H = 28, 62
 C = {
  'out': tuple(round(c * 0.7) for c in TOIT[0]),
  'rj': TOIT[0], 'rd': TOIT[2], 'rm': TOIT[3], 'rl': TOIT[4], 'rh': TOIT[5],
- 'wo': (48, 22, 18), 'ws': (82, 40, 26), 'wd': (128, 72, 42), 'wm': (156, 94, 58), 'wl': (176, 114, 72), 'wh': (190, 128, 84),
- 'so': (92, 64, 48), 'sj': (178, 160, 128), 'sd': (200, 186, 152), 'sm': (222, 210, 180), 'sl': (240, 232, 208),
+ 'wo': PS['cadre'][0], 'ws': PS['bois'][0], 'wd': PS['bois'][1], 'wm': PS['bois'][2], 'wl': PS['bois'][3], 'wh': PS['bois'][4],
+ 'so': PS['pierre'][0], 'sj': PS['pierre'][2], 'sd': PS['pierre'][3], 'sm': PS['pierre'][4], 'sl': (225, 217, 202),
 }
 im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
 px = im.load()
