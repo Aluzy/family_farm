@@ -32,7 +32,7 @@ HERBE |= {PV.gid('herbe_chemin', r * 16 + k) for r in (0, 1, 2, 3, 13, 14, 15) f
 # « contour_herbe ») : le jeu ne les dessine plus, elles ne couvrent rien.
 BORDURES = {1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764}
 # Couches dont la moindre tuile rend la case non labourable.
-COUVRANTES = ['decor', 'contour_herbe', 'animation_eau', 'water_shine', 'layer_tree_4', 'layer_tree_3',
+COUVRANTES = ['decor', 'barrieres', 'barrieres_portail', 'contour_herbe', 'animation_eau', 'water_shine', 'layer_tree_4', 'layer_tree_3',
               'layer_tree_2', 'layer_tree_1', 'layer_tree_top', 'falling_leaves']
 # Couche « plantes_pierres » : ce qui reste labourable (fleurs, touffes d'herbe, brindilles).
 PLANTES_OK = {399, 177, 175, 394, 400, 396, 397, 398, 322, 1509, 1508, 1433, 247, 100, 101, 102, 320}

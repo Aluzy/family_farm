@@ -271,6 +271,11 @@
     const mapTrees = [];              // { x, base (y du pied), top (y du haut du feuillage), r }
     const mapBushes = [];             // buissons : { x0, x1 (bords), base (y du pied) }
     const wood = new Set();           // cases des couches d'arbres (arbres de toutes tailles, buissons) : le chat les contourne
+    // cases des barrières (couches « barrieres… » de la carte) : aucune bête ne s'y pose ni n'y
+    // marche ; fenceWalls : les mêmes sans l'ouverture des portails (« barrieres_portail ») — le
+    // personnage, lui, passe le portail
+    const fence = new Set();
+    const fenceWalls = [];
     (function readMap() {
       const raw = o.map;
       if (!raw || !Array.isArray(raw.layers)) return;
@@ -320,6 +325,16 @@
         for (let i = 0; i < W * H; i++) if (l.data[i] & 0x0fffffff) wood.add((i % W) * T + ',' + Math.floor(i / W) * T);
       }
       for (const l of layers) {
+        if (!/barri/i.test(l.name || '')) continue;
+        const gate = /portail/i.test(l.name || '');
+        for (let i = 0; i < W * H; i++) {
+          if (!(l.data[i] & 0x0fffffff)) continue;
+          const x = (i % W) * T, y = Math.floor(i / W) * T;
+          fence.add(x + ',' + y);
+          if (!gate) fenceWalls.push({ x, y });
+        }
+      }
+      for (const l of layers) {
         if (!/tree|arbre/i.test(l.name || '') || /top|haut/i.test(l.name || '')) continue;
         const seen = new Uint8Array(W * H);
         for (let i = 0; i < W * H; i++) {
@@ -350,9 +365,14 @@
     // oiseau ne se pose pas dedans.
     const blocked = Object.entries(o.objects || {}).filter(([name, r]) => name !== CAT_ROOF && r && r.width && r.height).map((e) => e[1]);
     const waterSet = new Set(water.map((c) => c.x + ',' + c.y));
+    // Sur une barrière ou tout contre : les pattes (le pied en x, y), à `half` px près de chaque
+    // côté et un peu au-dessus (le corps).
+    const fenceCell = (x, y) => fence.has(Math.floor(x / T) * T + ',' + Math.floor(y / T) * T);
+    const onFence = (x, y, half) => fence.size > 0 && [x - half, x, x + half].some((a) => fenceCell(a, y) || fenceCell(a, y - 6));
     function freeAt(x, y) {
       if (x < 8 || y < 8 || x > world.w - 8 || y > world.h - 8) return false;
       if (waterSet.has(Math.floor(x / T) * T + ',' + Math.floor(y / T) * T)) return false;
+      if (onFence(x, y, 4)) return false;
       for (const r of blocked) if (x > r.x - 8 && x < r.x + r.width + 8 && y > r.y - 8 && y < r.y + r.height + 8) return false;
       for (const m of mapTrees) if (Math.abs(x - m.x) < m.r + 10 && y > m.top && y < m.base + 4) return false;
       return true;
@@ -843,6 +863,7 @@
             x = Math.min(p.x + p.w - half, Math.max(p.x + half, self.x + rand(-near, near)));
             y = Math.min(p.y + p.h, Math.max(p.y, self.y + rand(-near, near) * 0.4));
           }
+          if (onFence(x, y, half)) continue;           // l'enclos et ses barrières : jamais dessus
         } else {
           const home = foot(f), c = near ? self : home, r = near || f.def.range, a = rand(0, 6.283), d = rand(0.3, 1) * r;
           x = c.x + Math.cos(a) * d; y = c.y + Math.sin(a) * d * 0.6;
@@ -1112,7 +1133,7 @@
     return {
       update, setContext, scare, stats, spawn: (type) => spawn(type, true), wind: (x, y) => windAt(x, y, t), repaint,
       // L'eau et les arbres lus dans la carte : le personnage (js/fermier.js) les contourne.
-      ground: () => ({ water: waterSet, trees: mapTrees, bushes: mapBushes }),
+      ground: () => ({ water: waterSet, trees: mapTrees, bushes: mapBushes, fences: fenceWalls }),
       chat: (name) => (cat ? cat.force(name) : null),
     };
   }

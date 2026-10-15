@@ -18,8 +18,12 @@
 #   - « contour_herbe » les rives des cases d'eau (bordées d'herbe, ou de sable près d'un chemin) ;
 #   - « plantes_pierres » ce qu'elle avait (fleurs, pierres), plus des herbes hautes et des fleurs
 #                       semées sur l'herbe, des mauvaises herbes sur la terre ;
-#   - « decor »         les objets d'origine (tonneau…) sur l'herbe, et les barrières, refaites
-#                       avec les pièces des nouveaux modèles (scripts/carte/barrieres.py) ;
+#   - « decor »         les objets d'origine (tonneau…) sur l'herbe ;
+#   - « barrieres »     les barrières, refaites avec les pièces des nouveaux modèles
+#                       (scripts/carte/barrieres.py), et « barrieres_portail » : les cases de
+#                       l'ouverture d'un portail (le personnage y passe, pas les bêtes) ; deux
+#                       couches juste après « decor ». Le jeu les range comme les arbres (le
+#                       personnage passe derrière) et personne ne marche dessus ;
 #   - couches d'arbres  chaque feuillu devient l'arbre clair, chaque sapin le pin, chaque buisson
 #                       un buisson clair, posés en tuiles, pied au même endroit (à la case près) ;
 #                       deux dessins qui se touchent vont dans deux couches (des couches
@@ -56,6 +60,7 @@ BORDURES = {1612, 1613, 1614, 1687, 1688, 1689, 1762, 1763, 1764}
 BARRIERES_V1 = {915, 916, 917, 990, 992, 1065, 1066, 1067, 839}
 SAPIN = (9, 4, 3, 4)          # le sapin dans la planche d'origine (colonne, rangée, l, h)
 SOL = ['ground', 'decor', 'contour_herbe', 'animation_eau', 'water_shine']
+BARRIERES = ['barrieres', 'barrieres_portail']          # les couches des barrières (après « decor »)
 ARBRES = ['layer_tree_4', 'layer_tree_3', 'layer_tree_2', 'layer_tree_1']     # du fond vers l'avant
 
 
@@ -275,19 +280,22 @@ def main():
         nouvelles[nom] = data
     nouvelles['ground'] = ground
     nouvelles['contour_herbe'] = rives
-    # les barrières : dessinées avec les nouvelles pièces, découpées en tuiles, sur « decor »
+    # les barrières : dessinées avec les nouvelles pièces, découpées en tuiles, sur leurs couches
     HERBES = {PV.gid('herbe_deco', k) for k in range(16 * 10)} | {399, 177, 175, 394, 400, 396, 397, 398, 322, 100, 101, 102, 320}
     cases, uniques = BA.tuiles(BA.dessiner(W, H), W, H)
     _, _, _, bw, bh, _ = PV.BLOCS['barrieres']
     BA.planche(uniques, bw, bh)
+    portails = BA.portails(W)
+    for nom in BARRIERES:
+        nouvelles[nom] = [0] * (W * H)
     for i, k in cases.items():
         assert not nouvelles['decor'][i], f'case {i % W},{i // W} : déjà un décor sous la barrière'
-        nouvelles['decor'][i] = PV.gid('barrieres', k)
+        nouvelles[BARRIERES[1] if i in portails else BARRIERES[0]][i] = PV.gid('barrieres', k)
         if nouvelles['plantes_pierres'][i] in HERBES:
             nouvelles['plantes_pierres'][i] = 0                # ni herbe haute ni fleur sur la barrière
     print(f'barrières : {len(cases)} cases, {len(uniques)} tuiles (assets/barrieres.png)')
     for i, g in enumerate(semis):
-        if g and not nouvelles['plantes_pierres'][i] and not nouvelles['decor'][i]:
+        if g and not nouvelles['plantes_pierres'][i] and not nouvelles['decor'][i] and i not in cases:
             nouvelles['plantes_pierres'][i] = g
     # le devant des troncs des arbres retirés (touffes d'herbe de layer_tree_top)
     tous_retires = set().union(*[v for k, v in retires.items() if k.startswith('layer_tree')]) if retires else set()
@@ -349,6 +357,10 @@ def main():
         if l['type'] == 'tilelayer':
             l = dict(l, data=nouvelles[l['name']])
         sortie['layers'].append(l)
+        if l.get('name') == 'decor':
+            for nom in BARRIERES:
+                sortie['layers'].append(dict(l, name=nom, id=prochain, data=nouvelles[nom]))
+                prochain += 1
         if l.get('name') == 'layer_tree_1':
             for nom in ordre[len(ARBRES):]:
                 sortie['layers'].append(dict(l, name=nom, id=prochain, data=nouvelles[nom]))

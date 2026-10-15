@@ -139,6 +139,21 @@ def dessiner(W, H):
     return img
 
 
+def portails(W):
+    """Les cases (numéros dans la carte de W tuiles de large) tout entières dans l'ouverture d'un
+    portail, entre ses deux poteaux : le personnage y passe (il ouvre le portail), pas les bêtes."""
+    out = set()
+    for b in BARRIERES:
+        if b[0] != 'enclos' or b[5] is None:
+            continue
+        _, x0, _, _, y1, portail, _ = b
+        g = x0 * T + 5
+        p = round(((portail * T) - g) / PAS - 1.5)
+        a, z = g + p * PAS + 5, g + (p + 3) * PAS          # entre les deux poteaux du portail
+        out |= {y1 * W + tx for tx in range(-(-a // T), z // T)}
+    return out
+
+
 def tuiles(img, W, H):
     """Découpe en tuiles : {case: numéro de tuile dans la planche}, et les tuiles (uniques)."""
     uniques, index, cases = [], {}, {}
