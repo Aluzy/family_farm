@@ -60,7 +60,7 @@ import {
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
   collectLeftovers, pickUp, piles,
-  advanceNight, midnightMs, nightActive, nightLengthMs, skipNight, startNight, collectAt, deposit,
+  advanceNight, asleep, goToSleep, midnightMs, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
 } from '../js/engine/index.js';
 
 
@@ -9345,6 +9345,21 @@ test('Nuit qui défile (version 1.19) : le bouton nuit saute ce qui reste, minui
   startNight(t);
   simulateOffline(t, 3600);
   assertEqual([t.day, nightActive(t), t.reveil], [2, false, true], 'parti la nuit : réveillé au retour');
+});
+
+test('Dormir : on ne dort que la nuit ; couché, la nuit défile en accéléré (4 s par heure) jusqu\'au réveil', () => {
+  const s = createInitialState(1);
+  s.awakeMs = awakeMsAtHour(15);
+  assertEqual([goToSleep(s).ok, asleep(s), nightSpeed(s)], [false, false, 1], 'le jour, on ne dort pas');
+  s.awakeMs = awakeMsAtHour(22);
+  startNight(s);
+  tick(s, 4);
+  assertEqual(hourOfDay(s), 22, 'éveillé : 4 s de nuit ne font pas une heure');
+  assertEqual([goToSleep(s).ok, asleep(s)], [true, true]);
+  tick(s, 4);
+  assertEqual(hourOfDay(s), 23, 'endormi : une heure toutes les 4 s');
+  for (let i = 0; i < 7 * 4 * 10; i++) tick(s, 0.1);
+  assertEqual([nightActive(s), asleep(s), s.reveil, s.day, hourOfDay(s)], [false, false, true, 2, 6], 'réveil à 6 h, le sommeil fini');
 });
 
 test('Ramassage (version 1.19) : à l\'Étable, le personnage tond les moutons prêts puis prend lait et laine ; au Poulailler, les œufs', () => {

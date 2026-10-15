@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { maintainDevice, repairDevice } from '../engine/devices.js';
 import { countItem } from '../engine/inventory.js';
 import { fridgeCount, moveFromFridge, moveToFridge } from '../engine/fridge.js';
-import { skipNight, startNight } from '../engine/night.js';
+import { goToSleep, startNight } from '../engine/night.js';
 import { newGameFrom } from '../engine/alerts.js';
 import { setActiveTab, setCoucher, setEcranFerme, setState, state } from './store.js';
 import { telNight } from './consent.js';
@@ -35,16 +35,14 @@ export function applyResult(result) {
   return result;
 }
 
-// Version 1.19 : le bouton « Zzz » (la nuit seulement) saute ce qui reste de la nuit,
-// minuit compris ; le résumé du réveil s'ouvre aussitôt.
+// Le personnage dort (dans son lit, voir actionGoToBed) : la nuit ne passe plus d'un coup,
+// elle défile en accéléré (TIME.SLEEP_SECONDS_PER_HOUR) jusqu'au réveil de 6 h. On ne dort
+// que la nuit.
 export function actionSleep() {
-  const report = skipNight(state);
-  if (!report) {
-    showToast(`Le bouton nuit sert la nuit, de ${DATA.TIME.NIGHT_HOUR} h à ${DATA.TIME.DAY_START_HOUR} h.`);
-    refresh();
-    return;
-  }
-  wakeUp();
+  const r = goToSleep(state);
+  if (!r.ok) showToast(r.error);
+  else persistState();
+  refresh();
 }
 
 // Version 1.19 : 22 h, la famille va dormir ; la nuit défile (voir startNight).

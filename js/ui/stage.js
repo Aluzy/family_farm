@@ -15,6 +15,7 @@ import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { TIRED } from '../engine/stamina.js';
 import { brokenRocks } from '../engine/outils.js';
+import { asleep } from '../engine/night.js';
 import { showToast } from './toasts.js';
 import {
   activeTab, axeMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
@@ -357,8 +358,10 @@ export function stageModel() {
   return {
     // version 1.19 : la nuit (22 h → 6 h), la famille dort : la carte ne fait rien faire
     nuit: nightActive(state),
-    // le joueur a appuyé sur « Dormir » : le personnage va à son lit (js/fermier.js)
-    coucher: coucher && nightActive(state),
+    // le joueur a appuyé sur « Dormir » : le personnage va à son lit (js/fermier.js) ; il y
+    // dort (la nuit défile en accéléré), même quand on regarde la carte de la ferme
+    coucher: (coucher || asleep(state)) && nightActive(state),
+    dort: asleep(state),
     ramasser,
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
     perso: memberPerso(mainCharacter(state)),

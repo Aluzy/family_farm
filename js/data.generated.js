@@ -21,7 +21,15 @@ export const RAW_DATA = {
       "Les cartons sont dans le coffre. Il est temps de redonner vie à la ferme."
     ]
   },
-  "TIME": { "DAY_START_HOUR": 6, "SECONDS_PER_HOUR": 30, "CLOCK_SECONDS_PER_HOUR": 18, "MIN_AWAKE_S": 30, "MEAL_HOUR": 19, "NIGHT_HOUR": 22 },
+  "TIME": {
+    "DAY_START_HOUR": 6,
+    "SECONDS_PER_HOUR": 30,
+    "CLOCK_SECONDS_PER_HOUR": 18,
+    "MIN_AWAKE_S": 30,
+    "MEAL_HOUR": 19,
+    "NIGHT_HOUR": 22,
+    "SLEEP_SECONDS_PER_HOUR": 4
+  },
   "FAMILY": {
     "MEMBRES": [
       { "id": "adulte-1", "nom": "Adulte 1", "enfant": false, "genre": "f" },

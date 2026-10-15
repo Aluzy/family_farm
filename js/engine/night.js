@@ -181,6 +181,25 @@ export function advanceNight(state, dtMs) {
   return event;
 }
 
+// « Dormir » : le personnage dort dans son lit, la nuit défile en accéléré (une heure toutes
+// les TIME.SLEEP_SECONDS_PER_HOUR secondes au lieu de CLOCK_SECONDS_PER_HOUR) jusqu'au réveil.
+// On ne dort que la nuit.
+export function goToSleep(state) {
+  if (!nightActive(state)) return { ok: false, error: `On ne dort que la nuit, de ${DATA.TIME.NIGHT_HOUR} h à ${DATA.TIME.DAY_START_HOUR} h.` };
+  state.nuitEnCours.dort = true;
+  return { ok: true };
+}
+
+// Le personnage dort-il dans son lit ?
+export function asleep(state) {
+  return nightActive(state) && !!state.nuitEnCours.dort;
+}
+
+// Vitesse de la nuit : 1 (elle défile à l'heure de l'horloge), plus quand il dort.
+export function nightSpeed(state) {
+  return asleep(state) ? DATA.TIME.CLOCK_SECONDS_PER_HOUR / DATA.TIME.SLEEP_SECONDS_PER_HOUR : 1;
+}
+
 // Le bouton nuit : ce qui reste de la nuit passe d'un coup (minuit compris). Renvoie le
 // rapport de réveil, ou null s'il n'y a pas de nuit en cours.
 export function skipNight(state) {

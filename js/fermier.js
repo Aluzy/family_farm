@@ -9,7 +9,8 @@
  * « Dormir » (modèle.coucher) : il marche alors jusqu'à la porte de la maison (goHome), entre,
  * va à son lit (la place lit_1 de l'intérieur : le premier lit d'adulte, sinon une paillasse)
  * et s'y couche, debout entre le lit et sa couverture (meuble_<lit>_drap posé par-dessus lui),
- * des « Z » au-dessus de la tête. Quand il dort, o.asleep() : la nuit passe.
+ * des « Z » au-dessus de la tête. Quand il dort, o.asleep() : la nuit défile en accéléré
+ * (modèle.dort) ; il reste couché, même si le joueur sort regarder la carte, jusqu'au réveil.
  *
  * Il n'est jamais à deux endroits à la fois : dehors, dans la maison ou dans la Serre (where).
  * Quand le joueur entre dans un intérieur, il y va : ce qu'il faisait dehors s'arrête, il
@@ -378,6 +379,7 @@
       const raw = model;
       ctx.hour = raw.heure == null ? 12 : raw.heure;
       ctx.coucher = !!raw.coucher;
+      ctx.dort = !!raw.dort;
       pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));
       for (const id of [...claimed]) if (!pilesNow.has(id)) claimed.delete(id);
       if (prevRaw && raw.jour === prevRaw.jour && o.outside()) {
@@ -505,6 +507,15 @@
     }
     function schedule() {
       const outHours = ctx.hour >= OUT[0] && ctx.hour < OUT[1];
+      // Il dort (sans passer par l'intérieur : maison en ruine) : il rentre se coucher.
+      if (ctx.dort && !home && shown) {
+        roamAt = null;
+        const d = door();
+        jobs.push(walkTo(d.x, d.y));
+        jobs.push(once(() => { face = 'haut'; vanish(); home = true; where = 'maison'; }));
+        jobs.push(wait(FADE_S));
+        return;
+      }
       if (outHours && home) {
         const d = door();
         x = d.x; y = d.y; face = 'bas'; flip = false;
@@ -781,7 +792,7 @@
       stepZ(inside.x, inside.y - 32 + 5, inside.sleep);
       if (!inside.slept && inside.sleep >= (reduced() ? 0.8 : ASLEEP_S)) {
         inside.slept = true;
-        if (o.asleep) o.asleep();
+        if (o.asleep && !ctx.dort) o.asleep();   // il s'endort : la nuit défile en accéléré
       }
     }
     // Il se lève : au pied du lit, sans couverture ni « Z ».
@@ -849,6 +860,8 @@
         getUp();
       }
       if (bed) { want = bed.side; busy = true; frigoDue = false; if (inside.mode === 'frigo') inside.mode = 'idle'; }
+      // il dort déjà (on revient dans la maison, ou deuxième appui sur « Dormir ») : au lit tout de suite
+      if (bed && ctx.dort && inside.mode !== 'lit') { inside.x = bed.side.x; inside.y = bed.side.y; inside.path = []; inside.goal = { x: bed.side.x, y: bed.side.y }; inside.alpha = 1; }
       else if (frigoDue) { want = propSpot(room, 'frigo'); if (want) { inside.mode = 'frigo'; inside.t = 0; } frigoDue = false; }
       if (bed) { /* il va au lit */ }
       else if (inside.mode === 'frigo') { want = propSpot(room, 'frigo'); busy = !!want; }
@@ -929,7 +942,7 @@
       if (!shown) { schedule(); return; }
       idleAge += dt;
       draw(`idle_${face}_${Math.floor(idleAge / BREATH_S) % 2}`);
-      if (idleAge >= idleLen || nextPile()) schedule();
+      if (idleAge >= idleLen || nextPile() || ctx.dort) schedule();
     }
 
     return {
