@@ -2,8 +2,10 @@ import { DATA } from '../engine/catalog.js';
 import { findDevice } from '../engine/devices.js';
 import { wakeSummary } from '../engine/night.js';
 import {
-  formatCoins, formatLitres, formatNumber, formatPercent, formatQty, formatWh,
+  formatCoins, formatDay, formatLitres, formatNumber, formatPercent, formatQty, formatWh,
 } from '../engine/format.js';
+import { moonPhase } from '../engine/lune.js';
+import { moonEffect } from './calendrier.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { deviceName } from './ferme.js';
@@ -127,11 +129,14 @@ export function openWakeModal(report, auto = false) {
     ? `<li>🧺 Récolte complète de la nuit : <strong>${[...w.recolte.affiches, ...w.recolte.reste].map(harvestName).join(', ')}</strong></li>`
     : '';
   // FLU-16 : parcelles de la Zone de culture qui ont soif ce matin
+  // la lune du jour qui commence (report.nuit : la nuit qui vient de finir)
+  const lune = moonPhase(report.nuit + 1);
   const soif = allPlots(state).filter((p) => p.lieu === DATA.POTAGER.LIEU && p.culture && !p.arrose && !isMature(p)).length;
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
-        <h2 id="wake-title">🌅 Réveil : nuit ${report.nuit}</h2>
+        <h2 id="wake-title">🌅 Réveil : ${formatDay(report.nuit + 1)}</h2>
+        <p class="wake-moon"><span aria-hidden="true">${lune.icone}</span> <strong>${lune.nom}</strong> : ${moonEffect(lune)}.</p>
         <p class="muted wake-hour">${auto ? `Il était ${DATA.TIME.NIGHT_HOUR}&nbsp;h : la famille est allée se coucher. ` : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
         <div class="wake-kpis">
           <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>

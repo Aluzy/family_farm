@@ -11,7 +11,9 @@ import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
 import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { notificationCount } from '../engine/alerts.js';
-import { formatCoins, formatNumber, formatPercent } from '../engine/format.js';
+import { formatCoins, formatDay, formatNumber, formatPercent, weekdayShort } from '../engine/format.js';
+import { dayOfMonth, monthName, moonPhase } from '../engine/lune.js';
+import { renderCalendrier } from './calendrier.js';
 import {
   activeTab, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
@@ -293,6 +295,11 @@ export const STAGE_WINDOWS = {
     nom: 'Commerce', icone: '🏪', ok: () => isUnlocked(state, 'commerce'), haute: true, bois: true,
     corps: () => renderCommerce(),
   },
+  // Calendrier lunaire (carte en haut à droite) : le mois, ses phases de lune et leurs effets.
+  calendrier: {
+    nom: 'Calendrier', icone: '📅', ok: () => true, bois: true,
+    corps: () => renderCalendrier(),
+  },
   // Arbre des technologies (menu latéral, dès le premier point) : dans le cadre bois.
   techno: {
     nom: 'Arbre des technologies', icone: '🌳', ok: () => tabAvailable('techno'), haute: true, sansTitre: true, bois: true,
@@ -507,15 +514,19 @@ function playerGaugesHtml() {
 }
 
 // Carte flottante en haut à droite (comme dans Stardew Valley), dans le même cadre que la
-// carte du joueur : le jour, l'heure dessous, puis les pièces (qui ouvrent les comptes).
+// carte du joueur : la phase de la lune, le jour de la semaine et du mois (« 🌒 Lun. 8 »), le
+// mois du calendrier lunaire dessous (un appui ouvre le Calendrier), puis l'heure, puis les pièces (qui ouvrent les comptes).
 // L'heure avance par tranches de 10 minutes.
 function renderHud() {
   const h = heureDuJour();
   const heure = Math.floor(h);
   const minutes = Math.floor((h - heure) * 6) * 10;
   const horaire = `${heure} h ${String(minutes).padStart(2, '0')}`;
+  const lune = moonPhase(state.day);
   morph(document.getElementById('hud'),
-    `<span class="hud-line hud-day">Jour <span class="num">${state.day}</span></span>` +
+    `<button type="button" class="hud-date" data-action="stage-goto" data-window="calendrier" title="Calendrier" aria-label="${formatDay(state.day)}, ${lune.nom.toLowerCase()}. Ouvrir le calendrier">` +
+      `<span class="hud-day" aria-hidden="true">${lune.icone} ${weekdayShort(state.day)} <span class="num">${dayOfMonth(state.day)}</span></span>` +
+      `<span class="hud-month" aria-hidden="true">${monthName(state.day)}</span></button>` +
     `<span class="hud-line"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span>` +
     `<button type="button" class="hud-line hud-money" data-action="open-compta" title="Voir les comptes"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces. Voir les comptes</span></button>`
   );

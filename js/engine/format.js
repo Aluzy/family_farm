@@ -1,5 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
+import { dayOfMonth, monthName, yearNumber } from './lune.js';
 import {
   allDevices, batteryCapacity, farmOpen, isBroken, isOwned, maintainDevice, needsService, panelOutput, pumpFlow,
   repairDevice, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
@@ -107,6 +108,32 @@ export function formatPercent(p) {
   return `${formatNumber(Math.floor((Number(p) || 0) + EPS))}\u00a0%`;
 }
 
+
+// Jours de la semaine : le jour 1 de la partie est un lundi, puis la semaine tourne (le
+// jour 8 est un lundi, le jour 14 un dimanche). Les noms sont en minuscules, comme dans une
+// phrase ; weekdayName(day, true) met la majuscule, weekdayShort donne l'abréviation.
+export const JOURS_SEMAINE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+function weekdayIndex(day) {
+  return (Math.max(1, Math.floor(Number(day) || 1)) - 1) % 7;
+}
+
+export function weekdayName(day, majuscule = false) {
+  const nom = JOURS_SEMAINE[weekdayIndex(day)];
+  return majuscule ? nom[0].toUpperCase() + nom.slice(1) : nom;
+}
+
+// « Lun. », « Mar. »…
+export function weekdayShort(day) {
+  return `${weekdayName(day, true).slice(0, 3)}.`;
+}
+
+// La date du calendrier lunaire : « Mardi 9 Solaria », avec l'année à partir de l'an 2
+// (« Lundi 1 Solaria, an 2 »).
+export function formatDay(day) {
+  const an = yearNumber(day);
+  return `${weekdayName(day, true)} ${dayOfMonth(day)} ${monthName(day)}${an > 1 ? `, an ${an}` : ''}`;
+}
 
 /* ==========================================================================
    Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et

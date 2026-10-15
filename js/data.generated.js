@@ -593,6 +593,20 @@ export const RAW_DATA = {
       "poirier": { "nom": "Poirier", "icone": "🌳", "fruit": "poire", "prix": 40 }
     }
   },
+  "LUNE": {
+    "JOURS_MOIS": 14,
+    "MOIS": ["Solaria", "Florea", "Halima", "Verdia", "Pluvia", "Zephyria", "Frutera", "Granaria", "Messidia", "Aurea", "Solena", "Silentia"],
+    "PHASES": [
+      { "id": "croissante", "nom": "Lune croissante", "icone": "🌒", "jours": 5 },
+      { "id": "pleine", "nom": "Pleine lune", "icone": "🌕", "jours": 2 },
+      { "id": "decroissante", "nom": "Lune décroissante", "icone": "🌘", "jours": 5 },
+      { "id": "nouvelle", "nom": "Nouvelle lune", "icone": "🌑", "jours": 2 }
+    ],
+    "POUSSE_CHANCE": 25,
+    "POUSSE_NOUVELLE": 0,
+    "RECOLTE_PLEINE": 150,
+    "EAU_DECROISSANTE": 75
+  },
   "SILO": { "ITEM": "ble", "CONSTRUCTION": 0, "CAPACITE": [20, 50, 100, 200, 400], "COUT": [0, 30, 80, 180, 400] },
   "POULAILLER": { "CONSTRUCTION": 40, "CAPACITE": [4, 8, 12, 16, 24], "COUT": [0, 100, 220, 450, 900] },
   "ANIMAUX": {
