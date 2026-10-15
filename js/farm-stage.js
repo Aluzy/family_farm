@@ -97,6 +97,8 @@
     pin_clair: { box: [52, 50, 4, 4], key: 'pin_clair_sp', dx: -4, dy: 0, fps: 9, frames: [1, 0, 2, 0, 1, 0] },
   };
   const CHOP_FPS = 12;
+  // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
+  const OCCLUDER_ALPHA = 0.6;
   const SHADOWS = { key: 'ombres_arbres', file: 'ombres_arbres.png', depth: 0.05 };
   const TREE_SHADOW = { key: 'ombre_arbre', file: 'ombre_arbre.png', dx: -16, dy: -8 };
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
@@ -541,11 +543,105 @@
           const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
           if (!set) console.warn('[FarmStage] jeu de tuiles ' + MAP.image + ' introuvable dans la carte (est-il intégré ?)');
         }
+        this.findOccluders();                 // les arbres et les buissons : des images à part (voir plus bas)
         this.zoneOver = this.zoneGround();   // version 1.9 : les anciennes zones commencent en herbe
         this.dirt = new Set();                // version 1.15 : tuiles labourées de la carte
         this.zoneKey = '';
         this.textures.createCanvas('ground', this.world.w, this.world.h);
         this.paintGround();
+        this.makeOccluders();
+      }
+
+      /* ---------- les arbres et les buissons, devant ou derrière le personnage ---------- */
+
+      // Chaque arbre ou buisson de la carte (un groupe de cases voisines d'une couche d'arbres,
+      // sauf layer_tree_top) n'est pas dessiné dans le fond : il a sa propre image, rangée selon
+      // son pied comme le personnage et les bêtes (profondeur = y du pied). Qui passe derrière
+      // est donc caché par lui ; l'arbre devient alors un peu transparent (OCCLUDER_ALPHA) pour
+      // qu'on le voie passer. this.occluded : couche -> cases retirées du fond.
+      findOccluders() {
+        this.occluders = [];
+        this.occluded = new Map();
+        const raw = this.mapRaw;
+        if (!raw) return;
+        const W = raw.width, H = raw.height, T = raw.tilewidth;
+        for (const layer of raw.layers) {
+          if (layer.type !== 'tilelayer' || !Array.isArray(layer.data) || layer.visible === false) continue;
+          if (!/tree|arbre/i.test(layer.name || '') || /top|haut/i.test(layer.name || '')) continue;
+          const gidAt = (i) => layer.data[i] & 0x0fffffff;
+          const seen = new Uint8Array(W * H);
+          const all = new Set();
+          for (let i0 = 0; i0 < W * H; i0++) {
+            if (seen[i0] || !gidAt(i0)) continue;
+            const cells = [], stack = [i0];
+            seen[i0] = 1;
+            let c0 = W, c1 = 0, r0 = H, r1 = 0;
+            while (stack.length) {
+              const i = stack.pop(), c = i % W, r = (i / W) | 0;
+              cells.push(i);
+              all.add(i);
+              c0 = Math.min(c0, c); c1 = Math.max(c1, c); r0 = Math.min(r0, r); r1 = Math.max(r1, r);
+              for (const j of [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, i - W, i + W]) {
+                if (j >= 0 && j < W * H && !seen[j] && gidAt(j)) { seen[j] = 1; stack.push(j); }
+              }
+            }
+            this.occluders.push({ layer, cells: new Set(cells), x: c0 * T, y: r0 * T, w: (c1 - c0 + 1) * T, h: (r1 - r0 + 1) * T, foot: (r1 + 1) * T - 3, img: null });
+          }
+          this.occluded.set(layer, all);
+        }
+      }
+
+      // Les images des arbres et des buissons (après le fond : la planche est chargée).
+      makeOccluders() {
+        const raw = this.mapRaw;
+        if (!raw || !this.has(MAP.tiles)) return;
+        const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
+        if (!set) return;
+        const img = this.textures.get(MAP.tiles).getSourceImage();
+        this.occluders.forEach((o, k) => {
+          const key = 'arbre_occ_' + k;
+          if (this.textures.exists(key)) this.textures.remove(key);
+          o.tex = this.textures.createCanvas(key, o.w, o.h);
+          this.paintOccluder(o, raw, set, img);
+          o.img = this.add.image(o.x, o.y, key).setOrigin(0).setDepth(o.foot);
+          o.alpha = 1;
+        });
+      }
+
+      paintOccluder(o, raw, set, img) {
+        const ctx = o.tex.getContext();
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, o.w, o.h);
+        ctx.save();
+        ctx.translate(-o.x, -o.y);
+        this.drawLayer(ctx, raw, o.layer, set, img, o.cells, null, true);
+        ctx.restore();
+        o.tex.refresh();
+      }
+
+      // À chaque image : l'arbre devant le personnage (son pied plus bas que celui du
+      // personnage) et qui le recouvre devient transparent, doucement ; les autres redeviennent
+      // opaques.
+      stepOccluders(dt) {
+        if (!this.occluders || !this.occluders.length) return;
+        const p = this.fermier && !this.room ? this.fermier.pos() : null;
+        const k = Math.min(1, dt / 120);
+        for (const o of this.occluders) {
+          if (!o.img) continue;
+          const derriere = p && p.y < o.foot && p.x + 6 > o.x && p.x - 6 < o.x + o.w && p.y > o.y + 4 && p.y - 28 < o.y + o.h;
+          const want = derriere ? OCCLUDER_ALPHA : 1;
+          if (o.alpha === want) continue;
+          o.alpha = Math.abs(want - o.alpha) < 0.02 ? want : o.alpha + (want - o.alpha) * k;
+          o.img.setAlpha(o.alpha);
+          if (o.shake) o.shake.setAlpha(o.alpha);
+        }
+      }
+
+      // L'image de l'arbre `t` (mapTrees) : celle qui contient sa première case.
+      occluderOf(t) {
+        if (!this.occluders) return null;
+        const i = t.cells.values().next().value;
+        return this.occluders.find((o) => o.layer === t.layer && o.cells.has(i)) || null;
       }
 
       // Dessine (ou redessine) une carte Tiled dans sa texture, puis l'envoie à la carte
@@ -789,9 +885,10 @@
       }
 
       // `only` : seulement ces cases (repeinture partielle) ; `cur` : l'image du moment des
-      // tuiles animées (numéro -> image), sinon leur première. Sur la carte de la ferme, les
+      // tuiles animées (numéro -> image), sinon leur première ; `arbre` : dessiner aussi les
+      // cases des arbres (l'image d'un arbre, voir findOccluders). Sur la carte de la ferme, les
       // cases des zones de culture suivent zoneOver (voir zoneGround).
-      drawLayer(ctx, raw, layer, set, img, only, cur) {
+      drawLayer(ctx, raw, layer, set, img, only, cur, arbre) {
         const tw = raw.tilewidth, th = raw.tileheight;
         const cols = set.columns || Math.floor(img.width / tw);
         const last = set.firstgid + (set.tilecount || cols * Math.floor(img.height / th));
@@ -801,7 +898,8 @@
         const sol = layer === raw.layers.find((l) => l.type === 'tilelayer');
         if (ferme && layer.name === ZONE_TILES.couche) return;              // l'ancienne bordure des zones
         const dirt = ferme && layer.name === ZONE_TILES.plantes ? this.dirt : null;
-        const hid = this.hiddenTrees ? this.hiddenTrees.get(layer) : null;  // un arbre qui tremble (sa feuille de sprites le montre)
+        // les arbres et buissons ont leur image (findOccluders) : pas dans le fond
+        const hid = !arbre && ferme && this.occluded ? this.occluded.get(layer) : null;
         ctx.globalAlpha = layer.opacity == null ? 1 : layer.opacity;
         layer.data.forEach((orig, i) => {
           if (only && !only.has(i)) return;
@@ -1300,6 +1398,7 @@
         // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
         if (this.ambient && !this.room) this.ambient.update(delta);
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
+        this.stepOccluders(delta);
         if (!this.room) this.placeLabels();
         this.placePiles();
         this.placeGain();
@@ -1795,17 +1894,19 @@
         if (!this.fermier || !this.fermier.chop(t.foot, hit)) hit();
       }
 
-      // L'arbre tremble : celui du pack joue sa feuille de sprites (l'arbre de la carte est
-      // masqué le temps de l'animation), les autres bougent d'un pixel de gauche à droite.
+      // L'arbre tremble : celui qui a une feuille de sprites la joue (l'image de l'arbre est
+      // masquée le temps de l'animation), les autres bougent d'un pixel de gauche à droite.
       shakeTree(t) {
         if (t.shaking) return;
         const d = t.kind ? CHOP_TREES[t.kind] : null;
-        if (d && this.has(d.key) && !reducedMotion()) {
+        const o = this.occluderOf(t);
+        if (!o || !o.img || reducedMotion()) return;
+        if (d && this.has(d.key)) {
+          // l'image de l'arbre laisse la place à sa feuille, à la même profondeur
           t.shaking = true;
-          if (!this.hiddenTrees) this.hiddenTrees = new Map();
-          this.hiddenTrees.set(t.layer, t.cells);
-          this.repaintCells(t.cells);
-          const s = this.add.sprite(t.ox + d.dx, t.oy + d.dy, d.key, d.frames[0]).setOrigin(0).setDepth(0.5);
+          o.img.setVisible(false);
+          const s = this.add.sprite(t.ox + d.dx, t.oy + d.dy, d.key, d.frames[0]).setOrigin(0).setDepth(o.foot).setAlpha(o.alpha);
+          o.shake = s;
           let k = 0;
           const timer = this.time.addEvent({
             delay: 1000 / (d.fps || CHOP_FPS), repeat: d.frames.length - 1,
@@ -1813,33 +1914,24 @@
               k += 1;
               if (k < d.frames.length) { s.setFrame(d.frames[k]); return; }
               s.destroy();
-              this.hiddenTrees.delete(t.layer);
-              this.repaintCells(t.cells);
+              o.shake = null;
+              o.img.setVisible(true);
               t.shaking = false;
               timer.remove();
             },
           });
           return;
         }
-        if (reducedMotion()) return;
-        // sans feuille de sprites : on décale d'un pixel la part du sol qui le porte
+        // sans feuille de sprites : l'image de l'arbre bouge d'un pixel de gauche à droite
         t.shaking = true;
-        const g = this.textures.get('ground').getSourceImage();
-        const tex = 'arbre_secoue';
-        if (this.textures.exists(tex)) this.textures.remove(tex);
-        const w = t.x1 - t.x0, h = t.y1 - t.y0;
-        const c = this.textures.createCanvas(tex, w, h);
-        c.getContext().drawImage(g, t.x0, t.y0, w, h, 0, 0, w, h);
-        c.refresh();
-        const img = this.add.image(t.x0, t.y0, tex).setOrigin(0).setDepth(0.5);
         const xs = [1, -1, 1, -1, 0];
         let k = 0;
         const timer = this.time.addEvent({
           delay: 70, repeat: xs.length - 1,
           callback: () => {
-            img.x = t.x0 + xs[k];
+            o.img.x = o.x + xs[k];
             k += 1;
-            if (k >= xs.length) { img.destroy(); t.shaking = false; timer.remove(); }
+            if (k >= xs.length) { t.shaking = false; timer.remove(); }
           },
         });
       }
