@@ -3,7 +3,7 @@ import {
   batteryCapacity, efficiency, isBroken, isOwned, maintainCost, needsService, panelOutput, pumpFlow, repairCost,
   starterOf, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from '../engine/devices.js';
-import { hourOfDay } from '../engine/clock.js';
+import { hourOfDay, nightActive } from '../engine/clock.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
 import { energyChip } from './energie.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
@@ -11,7 +11,7 @@ import { hoePanelHtml } from './houe.js';
 import { renderStarterCards } from './depart.js';
 import { isUnlocked } from '../engine/campaign.js';
 import {
-  formatCoins, formatLitres, formatLitresRate, formatNumber, formatWh,
+  formatCoins, formatLitres, formatLitresRate, formatNumber, formatWh, formatWhRate,
 } from '../engine/format.js';
 import { FERME_LINKS, hoeMode, setEcranFerme, state, tabAvailable, TABS } from './store.js';
 import { telView } from './consent.js';
@@ -26,6 +26,9 @@ import { autoChip, groupButtons, plotCard, renderPaturage, renderPoulailler, ren
 import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin } from './cuisine.js';
 import { renderChapterBanner } from './chapitres.js';
+import {
+  robotAutonomy, robotBattery, robotBusy, robotChargePct, robotOn, robotTaskCapacity, robotTasksLeft, upgradeRobotBattery,
+} from '../engine/automation.js';
 import { icon } from './animations.js';
 import { helpBtn, tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
@@ -121,7 +124,7 @@ export function renderEnergieEau() {
   return `
     <h3 class="section-title">⚡ Énergie et eau</h3>
     <div class="cards">
-      ${p.starters}${p.panneau}${p.batterie}${p.pompe}${p.reservoir}${p.frigo}
+      ${p.starters}${p.panneau}${p.batterie}${p.pompe}${p.reservoir}${p.frigo}${p.robot}
     </div>
   `;
 }
@@ -186,6 +189,7 @@ function energieEauParts() {
           : `<button type="button" class="btn" data-action="upgrade-tank"${canPay(tankUp) ? '' : ' disabled'}>Agrandir : ${formatLitres(DATA.GRID.reservoir.litres[state.reservoir.niveau] * 1000)} (${costLabel(tankUp)})</button>`}
       </div>` : '';
   return {
+    robot: renderRobotCard(),
     starters: renderStarterCards(),
     panneau: panneauCard,
     batterie: batterieCard,
@@ -193,6 +197,38 @@ function energieEauParts() {
     reservoir: reservoirCard,
     frigo: isUnlocked(state, 'frigo') ? renderFridgeCard() : '',
   };
+}
+
+// Le robot de la ferme (récolte et semis automatiques) : sa batterie, ce qu'il fait, son
+// autonomie et l'achat d'un palier de plus. Sur la carte : un appui sur lui ou sur sa station.
+export function renderRobotCard() {
+  if (!robotOn(state)) return '';
+  const B = DATA.ROBOT.BATTERIE, bat = robotBattery(state), r = state.robot;
+  const pct = robotChargePct(state);
+  const aujourdhui = r && r.jour === state.day;
+  let etat = 'Au repos à sa station : sa liste du jour est faite.';
+  if (aujourdhui && r.charge) etat = `🔋 Sa batterie s'est vidée : il se recharge et reprendra sa liste à ${DATA.ROBOT.BATTERIE.REPRISE} %.`;
+  else if (robotBusy(state)) etat = `🤖 Au travail : tâche ${r.i + 1} / ${r.taches.length}.`;
+  else if (!aujourdhui) etat = `À sa station : il dresse sa liste à ${DATA.ROBOT.HEURE} h.`;
+  let charge = 'Pas de charge en ce moment : pas assez d\'électricité';
+  if (bat.conso > 0) charge = `⚡ En charge : ${formatWhRate(bat.conso)}`;
+  else if (pct >= 100) charge = 'Batterie pleine';
+  else if (robotBusy(state)) charge = 'il se rechargera à sa station';
+  else if (nightActive(state)) charge = 'il se recharge cette nuit';
+  const cls = pct < 20 ? ' bad' : pct < 40 ? ' warn' : '';
+  const max = bat.paliers >= B.PALIERS_MAX;
+  const btn = max
+    ? '<button type="button" class="btn" disabled>Autonomie maximale</button>'
+    : `<button type="button" class="btn" data-action="robot-autonomie"${canPay(B.PALIER_PRIX) ? '' : ' disabled'}>Autonomie +${B.PALIER_PCT} % (${costLabel(B.PALIER_PRIX)})</button>`;
+  return `
+      <div class="card ancre" id="dev-robot">
+        <span class="card-title"><span><span aria-hidden="true">🤖</span> Robot de la ferme</span><span class="chip">🔋 ${formatNumber(pct)} %</span></span>
+        <span class="bar" role="progressbar" aria-label="Batterie du robot" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
+        <span class="muted">Encore <span class="num">${formatNumber(robotTasksLeft(state))}</span> tâches · ${charge}</span>
+        <span>${etat}</span>
+        <span class="muted">Autonomie : <span class="num">${formatNumber(robotAutonomy(state))} %</span>, soit ${formatNumber(robotTaskCapacity(state))} tâches batterie pleine. Sa station, à côté de la maison, le recharge sur l'électricité de la ferme (${formatNumber(B.WH_TACHE)} Wh par tâche).</span>
+        <span class="device-actions">${btn}</span>
+      </div>`;
 }
 
 export function wearHtml(d) {
@@ -381,5 +417,8 @@ registerActions({
   },
   'upgrade-tank': () => {
     applyResult(upgradeTank(state));
+  },
+  'robot-autonomie': () => {
+    applyResult(upgradeRobotBattery(state));
   },
 });

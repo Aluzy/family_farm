@@ -60,7 +60,7 @@ import {
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
   collectLeftovers, pickUp, piles,
-  absoluteHours, advanceNight, growDue, irrigate, robotStep, robotTrip, asleep, goToSleep, midnightMs, sleepTarget, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
+  absoluteHours, advanceNight, growDue, irrigate, robotStep, robotTrip, robotNight, robotBattery, robotCapacity, robotTaskCapacity, robotChargePct, runRobotCharge, upgradeRobotBattery, asleep, goToSleep, midnightMs, sleepTarget, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
 } from '../js/engine/index.js';
 
 
@@ -1303,7 +1303,7 @@ test('profil : un prénom abîmé dans une sauvegarde retombe sur le rôle à l\
 test('ordre des étapes nocturnes : ce qui reste à ramasser, repas et santé, automatisations, ponte (la pousse suit l\'horloge), paille des moutons et des vaches, préparations, puis péremption en dernier', () => {
   // Arbre v2 : la pluie avant les automatisations, l'entretien automatique
   // après les préparations et avant le bloc nocturne du frigo.
-  assertEqual(NIGHT_STEPS, [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil]);
+  assertEqual(NIGHT_STEPS, [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil]);
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 
@@ -4603,6 +4603,71 @@ testBase('semis automatique : replante la même culture, arrosée dans la foulé
   assertEqual(countItem(s, 'graine_carotte'), 10 - 1 + s.robot.recoltes.graine_carotte - 1, 'une pour la plantation à la main, celles de la récolte, une pour le semis');
   assertEqual(s.robot.semees, 2);
   assertEqual(s.robot.taches.map((x) => x.t), ['recolter', 'planter', 'recolter', 'planter'], 'chaque parcelle récoltée est replantée juste après');
+});
+
+testBase('robot : sa batterie tient ROBOT.BATTERIE.TACHES tâches ; vide, il rentre à sa station et repart rechargé', () => {
+  const B = DATA.ROBOT.BATTERIE;
+  const s = auto5('potager');
+  assertEqual([robotTaskCapacity(s), robotChargePct(s)], [B.TACHES, 100], 'neuve : pleine, 100 % d\'autonomie');
+  plantRipe(s, 'potager-1', 'patate');
+  plantRipe(s, 'potager-2', 'carotte');
+  plantRipe(s, 'potager-3', 'patate');
+  robotBattery(s).mwh = 2 * B.WH_TACHE * 1000;                 // de quoi faire deux tâches
+  s.awakeMs = awakeMsAtHour(12);
+  robotStep(s);
+  assertEqual([s.robot.i, s.robot.charge, robotBattery(s).mwh], [2, true, 0], 'deux récoltes, puis il rentre se recharger');
+  assertEqual(findPlot(s, 'potager-3').culture, 'patate', 'la troisième attend');
+  // à sa station, il prend l'électricité de la ferme
+  testFillBatteries(s);
+  runRobotCharge(s, 10000);
+  assertEqual(robotBattery(s).mwh, B.CHARGE_WH_S * 1000 * 10, 'CHARGE_WH_S Wh par seconde');
+  robotStep(s);
+  assertEqual(s.robot.charge, true, 'pas encore assez chargé pour repartir');
+  robotBattery(s).mwh = robotCapacity(s);
+  robotStep(s);
+  assertEqual([s.robot.charge, s.robot.base, s.robot.debut], [false, 2, absoluteHours(s)], 'rechargé : il repart de sa station');
+  s.awakeMs = awakeMsAtHour(14);
+  robotStep(s);
+  assertEqual([s.robot.i, findPlot(s, 'potager-3').culture], [3, null]);
+});
+
+testBase('robot : la station ne charge pas pendant le travail ; la nuit, il se recharge sur les batteries', () => {
+  const B = DATA.ROBOT.BATTERIE;
+  const s = auto5('potager');
+  plantRipe(s, 'potager-1', 'patate');
+  testFillBatteries(s);
+  robotBattery(s).mwh = robotCapacity(s) - 5000;
+  s.awakeMs = awakeMsAtHour(DATA.ROBOT.HEURE);
+  robotStep(s);
+  runRobotCharge(s, 1000);
+  assertEqual(robotBattery(s).mwh, robotCapacity(s) - 5000, 'en route vers la parcelle : rien');
+  robotBattery(s).mwh = 0;
+  const avant = s.batteries.reduce((t, b) => t + b.chargeMwh, 0);
+  s.nuit = s.nuit || {};
+  const pris = robotNight(s);
+  assertEqual([pris, robotChargePct(s)], [robotCapacity(s), 100]);
+  assertEqual(s.batteries.reduce((t, b) => t + b.chargeMwh, 0), avant - robotCapacity(s), 'pris sur les batteries');
+  testEmptyBatteries(s);
+  robotBattery(s).mwh = 0;
+  assertEqual(robotNight(s), 0, 'batteries vides : rien');
+  assert(B.TACHES > 0);
+});
+
+testBase('robot : un palier d\'autonomie coûte PALIER_PRIX pièces et ajoute PALIER_PCT %', () => {
+  const B = DATA.ROBOT.BATTERIE;
+  const t = ranch();
+  assertEqual(upgradeRobotBattery(t).ok, false, 'sans robot : rien à améliorer');
+  const s = auto5('potager');
+  s.pieces = B.PALIER_PRIX - 1;
+  assertEqual(upgradeRobotBattery(s).ok, false, 'pas assez de pièces');
+  s.pieces = B.PALIER_PRIX * 2;
+  const r = upgradeRobotBattery(s);
+  assertEqual([r.ok, r.autonomie, s.pieces, robotBattery(s).paliers], [true, 100 + B.PALIER_PCT, B.PALIER_PRIX, 1]);
+  assertEqual(robotCapacity(s), Math.round(B.TACHES * B.WH_TACHE * 1000 * (100 + B.PALIER_PCT) / 100));
+  assertEqual(robotTaskCapacity(s), Math.floor(B.TACHES * (100 + B.PALIER_PCT) / 100));
+  robotBattery(s).paliers = B.PALIERS_MAX;
+  s.pieces = B.PALIER_PRIX;
+  assertEqual(upgradeRobotBattery(s).ok, false, 'au maximum');
 });
 
 testBase('robot : à 6 h il dresse sa liste, puis fait chaque tâche après son trajet et ROBOT.MINUTES de travail', () => {

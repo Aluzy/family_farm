@@ -1,6 +1,8 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { allDevices, fail, maintainDevice, needsService, tankCapacity } from './devices.js';
+import { allDevices, fail, maintainDevice, needsService, perSecond, perTick, spend, tankCapacity } from './devices.js';
+import { drawEnergy, loadShedding } from './energy.js';
+import { availableEnergy } from './fridge.js';
 import { newNightStats } from './family.js';
 import { allPlots, findPlot, harvest, isMature, maxStage, plant, plotZone, seedItem, seedStock, water, zone2Plots } from './crops.js';
 import { plantableCropsFor } from './campaign.js';
@@ -102,7 +104,9 @@ export function irrigate(state) {
 // replanter) et l'exécute dans l'ordre : pour chaque tâche, il roule jusqu'à la parcelle
 // (robotTrip, à ROBOT.VITESSE tuiles par minute d'horloge) puis travaille ROBOT.MINUTES minutes.
 // state.robot = { jour, taches: [{ t: 'recolter' | 'planter', id, c }], i (tâches faites),
-// debut (heure absolue du début de la tâche en cours), recoltes, semees, sansGraine, dernier }.
+// debut (heure absolue du début de la tâche en cours), recoltes, semees, sansGraine, dernier,
+// charge (rentré se recharger), base (la tâche qui part de sa station), pannes }.
+// Chaque tâche faite vide sa batterie (robotBattery) ; vide, il rentre à sa station.
 // La carte le montre aller de parcelle en parcelle. Appelée à chaque pas d'horloge, le jour.
 export function robotOn(state) {
   return ['potager', 'serre'].some((l) => techAuto(state, 'recolte', l) || techAuto(state, 'semis', l));
@@ -133,9 +137,101 @@ function robotSpot(state, id) {
 // depuis sa base pour la première, puis le travail au bras).
 export function robotTrip(state, r, i) {
   const R = DATA.ROBOT;
-  const a = i > 0 ? robotSpot(state, r.taches[i - 1].id) : R.BASE;
+  const a = i > 0 && i !== r.base ? robotSpot(state, r.taches[i - 1].id) : R.BASE;
   const b = robotSpot(state, r.taches[i].id);
   return { route: Math.hypot(b[0] - a[0], b[1] - a[1]) / R.VITESSE / 60, travail: R.MINUTES / 60 };
+}
+
+/* ---------- la batterie du robot et sa station de charge ---------- */
+
+// state.robotBatterie = { mwh (sa charge), paliers (d'autonomie achetés), conso (mWh/s pris
+// à la station au dernier pas) } ; créée pleine au premier besoin.
+export function robotBattery(state) {
+  if (!state.robotBatterie || typeof state.robotBatterie !== 'object') state.robotBatterie = { mwh: null, paliers: 0, conso: 0 };
+  const b = state.robotBatterie;
+  b.paliers = Math.max(0, Math.min(DATA.ROBOT.BATTERIE.PALIERS_MAX, Math.floor(Number(b.paliers) || 0)));
+  if (!Number.isFinite(b.mwh)) b.mwh = robotCapacity(state);
+  b.mwh = Math.max(0, Math.min(robotCapacity(state), b.mwh));
+  return b;
+}
+
+// L'autonomie, en % (100 + PALIER_PCT par palier acheté).
+export function robotAutonomy(state) {
+  const B = DATA.ROBOT.BATTERIE;
+  const n = state.robotBatterie ? Math.floor(Number(state.robotBatterie.paliers) || 0) : 0;
+  return 100 + B.PALIER_PCT * Math.max(0, Math.min(B.PALIERS_MAX, n));
+}
+
+// La capacité de sa batterie (mWh) et ce qu'elle tient de tâches, pleine.
+export function robotCapacity(state) {
+  const B = DATA.ROBOT.BATTERIE;
+  return Math.round((B.TACHES * B.WH_TACHE * 1000 * robotAutonomy(state)) / 100);
+}
+
+export function robotTaskCapacity(state) {
+  return Math.floor(robotCapacity(state) / (DATA.ROBOT.BATTERIE.WH_TACHE * 1000) + EPS);
+}
+
+// Sa charge, en % de sa capacité (arrondi vers le bas), et les tâches qu'elle tient encore.
+export function robotChargePct(state) {
+  const b = robotBattery(state);
+  return Math.floor((b.mwh * 100) / robotCapacity(state) + EPS);
+}
+
+export function robotTasksLeft(state) {
+  return Math.floor(robotBattery(state).mwh / (DATA.ROBOT.BATTERIE.WH_TACHE * 1000) + EPS);
+}
+
+// Il a du travail en cours (il n'est pas à sa station) : sa liste du jour est commencée, pas
+// finie, et il n'est pas rentré se recharger.
+export function robotBusy(state) {
+  const r = state.robot;
+  if (nightActive(state) || !robotOn(state) || !r || r.jour !== state.day || r.charge) return false;
+  return r.i < r.taches.length && absoluteHours(state) + EPS >= ((Number(state.day) || 1) - 1) * 24 + DATA.ROBOT.HEURE;
+}
+
+// Consommateur d'électricité (energy.js, CONSUMERS) : à sa station, il recharge sa batterie
+// (CHARGE_WH_S Wh/s, dans la limite de l'énergie disponible et de la place).
+export function runRobotCharge(state, dtMs) {
+  if (!robotOn(state)) return;
+  const b = robotBattery(state);
+  b.conso = 0;
+  if (robotBusy(state) || loadShedding(state)) return;
+  const room = robotCapacity(state) - b.mwh;
+  if (room <= 0) return;
+  const want = Math.min(room, perTick(DATA.ROBOT.BATTERIE.CHARGE_WH_S * 1000, dtMs), availableEnergy(state));
+  if (want <= 0) return;
+  const got = drawEnergy(state, want);
+  b.mwh += got;
+  b.conso = perSecond(got, dtMs);
+}
+
+// Étape nocturne (après le frigo) : la nuit, il se recharge sur les batteries de la ferme, autant
+// qu'elles le peuvent. Rapport : state.nuit.robot (mWh pris).
+export function robotNight(state) {
+  if (!robotOn(state)) return 0;
+  const b = robotBattery(state);
+  const want = Math.min(robotCapacity(state) - b.mwh, availableEnergy(state));
+  if (want <= 0) return 0;
+  const saved = state.batteries.map((x) => x.sortie);
+  const got = drawEnergy(state, want);
+  state.batteries.forEach((x, i) => { x.sortie = saved[i]; });
+  b.mwh += got;
+  if (state.nuit) state.nuit.robot = got;
+  return got;
+}
+
+// Un palier d'autonomie de plus (+PALIER_PCT %, PALIER_PRIX pièces) : la batterie grandit, la
+// place gagnée est vide.
+export function upgradeRobotBattery(state) {
+  const B = DATA.ROBOT.BATTERIE;
+  if (!robotOn(state)) return fail('Il faut d\'abord le robot (récolte ou semis automatiques).');
+  const b = robotBattery(state);
+  if (b.paliers >= B.PALIERS_MAX) return fail('Autonomie maximale atteinte.');
+  if (state.pieces + EPS < B.PALIER_PRIX) return fail('Pas assez de pièces.');
+  spend(state, B.PALIER_PRIX, 'Robot : autonomie');
+  b.paliers += 1;
+  return { ok: true, cost: B.PALIER_PRIX, autonomie: robotAutonomy(state) };
 }
 
 function robotDo(state, r, tache) {
@@ -170,10 +266,26 @@ export function robotStep(state) {
     r = state.robot = { jour: state.day, taches: robotTasks(state), i: 0, debut: debutJour, recoltes: {}, semees: 0, sansGraine: 0, dernier: null };
   }
   let n = 0;
+  const B = DATA.ROBOT.BATTERIE;
+  const bat = robotBattery(state);
+  // rentré se recharger : il repart (de sa station) quand sa batterie est assez pleine
+  if (r.charge) {
+    if (bat.mwh * 100 + EPS < robotCapacity(state) * B.REPRISE) return 0;
+    r.charge = false;
+    r.base = r.i;
+    r.debut = now;
+  }
   while (r.i < r.taches.length) {
+    // pas assez de batterie pour cette tâche : il rentre à sa station
+    if (bat.mwh + EPS < B.WH_TACHE * 1000) {
+      r.charge = true;
+      r.pannes = (r.pannes || 0) + 1;
+      break;
+    }
     const d = robotTrip(state, r, r.i);
     if (now + EPS < r.debut + d.route + d.travail) break;
     robotDo(state, r, r.taches[r.i]);
+    bat.mwh = Math.max(0, bat.mwh - B.WH_TACHE * 1000);
     r.i += 1;
     r.debut += d.route + d.travail;
     n += 1;

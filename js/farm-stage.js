@@ -153,9 +153,13 @@
   // descend le bras ; sa base : `dock` px à côté de la porte de la maison (ROBOT.BASE du
   // moteur). Au-dessus de lui, une bulle : la tâche et son rang. `speed` : px/s sans modèle ;
   // `catchUp` : s, le moins de temps pour rattraper un retard.
+  // Sa station de charge (scripts/batiments/station_robot.py, 5 images : 0 au repos, 1-4 en
+  // charge, une toutes les `period` s) se tient `station` px à gauche de sa base ; quand il s'y
+  // recharge, sa bulle montre sa batterie. Un appui sur lui ou sur elle ouvre sa fenêtre.
   const ROBOT = {
     key: 'robot', file: 'robot.png', frame: { frameWidth: 14, frameHeight: 16 },
-    speed: 27, catchUp: 0.6, dock: { dx: -34, dy: 12 }, icone: { recolter: '🧺', planter: '🌱' },
+    speed: 27, catchUp: 0.6, dock: { dx: -30, dy: 12 }, icone: { recolter: '🧺', planter: '🌱' },
+    station: { key: 'station_robot', file: 'station_robot.png', frame: { frameWidth: 12, frameHeight: 22 }, dx: -12, dy: -1, period: 0.45 },
   };
   // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
   const OCCLUDER_ALPHA = 0.6;
@@ -471,6 +475,7 @@
         }
         L.spritesheet(SPRINKLER.key, v(SPRINKLER.file), SPRINKLER.frame);
         L.spritesheet(ROBOT.key, v(ROBOT.file), ROBOT.frame);
+        L.spritesheet(ROBOT.station.key, v(ROBOT.station.file), ROBOT.station.frame);
         for (const name of MEUBLES) L.image('meuble_' + name, v('meuble_' + name + '.png'));
         for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
         L.image(MAP.tiles, v(MAP.image));
@@ -2166,6 +2171,13 @@
           test(r.x, r.y + r.height, r.width, r.height, r.depth + 1, 'energie');
         }
         if (this.pump && this.well) test(this.well.x, this.well.y, this.well.width, this.well.height, this.well.depth + 1, 'eau');
+        // le robot et sa station de charge : sa fenêtre (batterie, autonomie)
+        if (this.bot) {
+          const b = this.bot.img;
+          test(b.x - b.width / 2, b.y, b.width, b.height, b.depth + 1, 'robot');
+          const st = this.bot.station;
+          if (st) test(st.x - st.width / 2, st.y, st.width, st.height, st.depth + 1, 'robot');
+        }
         if (this.tank) test(this.tank.x, this.tank.y, this.tank.width, this.tank.height, this.tank.depth + 1, 'eau');
         // Version 1.13 : un arbre en fruits se cueille, un emplacement libre propose de
         // planter ; un autre arbre ouvre la fenêtre du Verger.
@@ -2384,17 +2396,22 @@
       // Le robot : le modèle (robotModel dans js/ui/stage.js), et l'instant où il est arrivé (la
       // tâche avance entre deux modèles au rythme de l'horloge).
       syncRobot(m) {
-        if (!m) { if (this.bot) { this.bot.img.destroy(); this.bot.el.remove(); this.bot = null; } return; }
+        if (!m) {
+          if (this.bot) { this.bot.img.destroy(); if (this.bot.station) this.bot.station.destroy(); this.bot.el.remove(); this.bot = null; }
+          return;
+        }
         if (!this.bot) {
           if (!this.has(ROBOT.key)) return;
           const d = this.robotDock();
           const img = this.add.sprite(d.x, d.y, ROBOT.key, 5).setOrigin(0.5, 1).setDepth(d.y);
+          const S = ROBOT.station;
+          const station = this.has(S.key) ? this.add.sprite(d.x + S.dx, d.y + S.dy, S.key, 0).setOrigin(0.5, 1).setDepth(d.y + S.dy) : null;
           const el = document.createElement('div');
           el.className = 'stage-gain stage-robot';
           el.setAttribute('aria-hidden', 'true');
           el.hidden = true;
           labelLayer.appendChild(el);
-          this.bot = { img, el, x: d.x, y: d.y, m: null, at: 0, n: 0, roll: 0, w: 0, h: 0, txt: '' };
+          this.bot = { img, station, el, x: d.x, y: d.y, m: null, at: 0, n: 0, roll: 0, w: 0, h: 0, txt: '' };
         }
         const B = this.bot;
         B.m = m;
@@ -2446,8 +2463,21 @@
           const txt = ROBOT.icone[m.t] + ' ' + m.n + '/' + m.total;
           if (txt !== B.txt) { B.txt = txt; B.el.textContent = txt; B.w = 0; }
         } else {
-          // la liste est faite : il rentre à sa base
+          // la liste est faite, ou sa batterie est vide : il rentre à sa station
           move = toward(this.robotDock(), Infinity);
+        }
+        // à sa station : elle le recharge (la jauge monte, la lumière clignote) ; sa bulle, sa batterie
+        const dock = this.robotDock();
+        const docked = !move || Math.hypot(dock.x - B.x, dock.y - B.y) < 1;
+        const charging = !!(m && m.enCharge && docked && m.etat !== 'travail');
+        const empty = !!(m && m.etat === 'charge' && docked);      // batterie vide : sa bulle, même sans courant
+        if (B.station) {
+          const sf = charging ? 1 + (reducedMotion() ? 3 : Math.floor(performance.now() / 1000 / ROBOT.station.period) % 4) : 0;
+          B.station.setFrame(sf).setPosition(dock.x + ROBOT.station.dx, dock.y + ROBOT.station.dy).setDepth(dock.y + ROBOT.station.dy).setVisible(!this.room);
+        }
+        if (charging || empty) {
+          const txt = (charging ? '⚡ ' : '🔋 ') + m.batterie + ' %';
+          if (txt !== B.txt) { B.txt = txt; B.el.textContent = txt; B.w = 0; }
         }
         if (move) {
           const moved = Math.hypot(move.x - B.x, move.y - B.y);
@@ -2459,7 +2489,7 @@
         if (frame >= 2 && frame <= 4) B.img.setFlipX(false);   // le bras vers la parcelle, à sa droite
         B.img.setFrame(frame).setPosition(Math.round(B.x), Math.round(B.y)).setDepth(B.y).setVisible(!this.room);
         // la bulle de sa tâche
-        const show = !this.room && m && m.etat === 'travail';
+        const show = !this.room && m && (m.etat === 'travail' || charging || empty);
         B.el.hidden = !show;
         if (!show) return;
         if (!B.w) { B.w = B.el.offsetWidth; B.h = B.el.offsetHeight; }
