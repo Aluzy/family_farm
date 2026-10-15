@@ -6,14 +6,15 @@
 #
 # Puis python3 scripts/batiments/ruines.py : les versions à réparer partent de ces images.
 #
-# La ferme : scripts/batiments/originaux/ferme_modele.png (94 × 97), telle quelle — toit
-# orange, murs de planches dorées, volets et vitres turquoise, terrasse de planches grises.
+# La ferme : scripts/batiments/originaux/ferme_modele.png (94 × 97), telle quelle sauf le toit
+# (son orange adouci en brun rouge, TOIT) — murs de planches dorées, volets et vitres turquoise, terrasse de planches grises.
 # L'étable, le moulin et le poulailler en dérivent : on part des images d'origine (pack
 # « Farm – 4 Seasons », gardées dans originaux/*_v1.png ; même taille, mêmes cases, donc mêmes
 # animations dans le jeu), et chaque matière prend la palette de la ferme. Une matière est un
 # ensemble de pixels (une couleur d'origine, éventuellement limitée à une zone) ; ses couleurs
 # se rangent par luminosité et prennent, dans cet ordre, les tons de la rampe de la ferme.
 # Le relief du dessin (ses ombres, ses lumières) est donc gardé.
+import colorsys
 import os
 import sys
 
@@ -24,7 +25,20 @@ ORIG = os.path.join(ROOT, 'scripts', 'batiments', 'originaux')
 ASSETS = os.path.join(ROOT, 'assets')
 
 # Les rampes de la ferme (du plus sombre au plus clair), relevées sur ferme_modele.png.
-TOIT = [(120, 60, 10), (142, 75, 12), (157, 85, 16), (225, 120, 22), (229, 136, 49), (238, 160, 82)]
+TOIT_MODELE = [(120, 60, 10), (142, 75, 12), (157, 85, 16), (225, 120, 22), (229, 136, 49), (238, 160, 82)]
+# Le toit adouci, en brun rouge sombre : chaque ton du modèle (orange vif), sa teinte décalée
+# de TOIT_REGLAGE[0] degrés (négatif : vers le rouge), sa saturation et sa luminosité
+# multipliées par TOIT_REGLAGE[1] et TOIT_REGLAGE[2]. La ferme (le modèle) prend aussi ces tons.
+TOIT_REGLAGE = (-12, 0.70, 0.72)
+
+
+def ton_toit(c):
+    h, s, v = colorsys.rgb_to_hsv(*(x / 255 for x in c))
+    h = (h + TOIT_REGLAGE[0] / 360) % 1
+    return tuple(round(x * 255) for x in colorsys.hsv_to_rgb(h, s * TOIT_REGLAGE[1], v * TOIT_REGLAGE[2]))
+
+
+TOIT = [ton_toit(c) for c in TOIT_MODELE]
 BOIS = [(71, 48, 27), (110, 72, 26), (137, 87, 30), (156, 111, 25), (182, 156, 79)]
 CADRE = [(62, 38, 32), (82, 48, 40), (96, 63, 49), (108, 78, 58), (119, 92, 69)]
 TURQUOISE = [(14, 68, 62), (45, 146, 142), (36, 172, 166), (101, 202, 198), (188, 234, 232)]
@@ -134,9 +148,22 @@ def moulin():
     ])
 
 
+def ferme():
+    """house_sp.png : la ferme du modèle telle quelle, son toit dans les tons de TOIT."""
+    img = Image.open(os.path.join(ORIG, 'ferme_modele.png')).convert('RGBA')
+    table = dict(zip(TOIT_MODELE, TOIT))
+    px = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            c = px[x, y]
+            if c[3] and c[:3] in table:
+                px[x, y] = table[c[:3]] + (c[3],)
+    return img
+
+
 def main():
     faits = {
-        'house_sp.png': Image.open(os.path.join(ORIG, 'ferme_modele.png')).convert('RGBA'),
+        'house_sp.png': ferme(),
         'barn_sp.png': etable(),
         'windmill_sp.png': moulin(),
         'poulailler.png': poulailler(),
