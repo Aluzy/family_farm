@@ -121,12 +121,11 @@
   [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
     [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
     .forEach((p, i) => { DEFAULT_OBJECTS[TREE_OBJECT + (i + 1)] = { x: p[0], y: p[1], width: 63.7, height: 78.2 }; });
-  // serre_*.png : deux découpes possibles (largeur × hauteur depuis le coin haut-gauche).
-  //   « batiment » : la verrière seule, de la taille du rectangle `serre` de la carte ;
-  //   « cour »     : la verrière et sa cour pavée (tout le haut de la planche, au-dessus des bacs).
+  // serre_*.png : la découpe du bâtiment (largeur × hauteur depuis le coin haut-gauche).
+  //   « batiment » : la serre du décor version 2 (scripts/batiments/style_v2.py), 96 × 81, sur
+  //   le rectangle `serre` de la carte.
   const SERRE_FRAMES = {
-    batiment: { sp: [94, 83] },
-    cour: { sp: [177, 144] },
+    batiment: { sp: [96, 81] },
   };
   const SERRE_FRAME = 'batiment';
   // Bâtiments : `object` = rectangle nommé de la carte (le bas-centre de l'image se pose sur

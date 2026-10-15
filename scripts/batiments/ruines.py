@@ -349,24 +349,31 @@ def moulin():
 
 
 def serre():
-    """serre_sp.png (planche de 177×272) : seule la découpe « batiment » (la verrière, 94×83
-    en haut à gauche) est abîmée ; le reste de la planche ne change pas. Carreaux brisés,
-    vitres fendues, verre terni, plantes qui envahissent le bas."""
+    """serre_sp.png (96×81, scripts/batiments/style_v2.py) : toit de lattes claires (rangées 19
+    à 37), bandeau vitré (40 à 43), vitres des deux ailes et double porte vitrée (46 à 70) dans
+    un cadre de bois, soubassement de planches. Lattes du toit arrachées, carreaux brisés,
+    porte condamnée, plantes qui envahissent le bas."""
     m = Ruine('serre_sp.png', 41)
-    B = (94, 83)
-    m.vieillir(sat=0.6, lum=0.9, crasse=0.08, x1=B[0], y1=B[1])
-    for r in ((6, 42, 11, 53), (18, 56, 25, 67), (36, 44, 43, 57), (53, 58, 60, 69), (70, 22, 76, 33),
-              (80, 46, 87, 58), (40, 18, 47, 30), (10, 24, 15, 35), (84, 24, 90, 34), (24, 44, 29, 52)):
+    m.vieillir(sat=0.6, lum=0.9, crasse=0.08)
+    toit = lambda x, y: 22 <= y <= 37
+    m.trou([(10, 24, 6, 4), (8, 28, 9, 4), (11, 32, 4, 3)], pente=(1, 0), ecart=4, dedans=toit)
+    m.trou([(70, 22, 5, 4), (68, 26, 8, 4)], pente=(1, 0), ecart=4, dedans=toit)
+    for (x, y) in ((40, 25), (55, 30), (86, 33), (26, 34)):
+        m.trou([(x, y, 3, 3)], ecart=99, dedans=toit)
+    # carreaux brisés : les ailes (vitres entre les montants), le bandeau, la porte
+    for r in ((9, 46, 12, 58), (19, 52, 22, 65), (24, 46, 27, 56), (73, 46, 76, 60), (83, 54, 86, 65),
+              (88, 46, 90, 53), (14, 40, 22, 43), (70, 40, 78, 43), (41, 46, 46, 58), (58, 50, 63, 62)):
         m.vitre(*r)
-    verre_sombre = (52, 70, 72)
-    m.fissure([(14, 58), (16, 61), (15, 64), (17, 67)], verre_sombre)
-    m.fissure([(46, 60), (48, 63), (47, 67)], verre_sombre)
-    m.fissure([(72, 50), (74, 53), (73, 57), (75, 60)], verre_sombre)
-    m.fissure([(55, 8), (57, 11), (56, 14)], verre_sombre)
-    m.toile(4, 41, 1, 1, 4)
-    m.toile(89, 41, -1, 1, 4)
-    m.mousse(2, 66, 92, 82, 0.18)
-    m.herbes(1, 93, 82, hmax=7, densite=0.5)
+    m.clouer(32, 52, 63, 58)                             # la porte condamnée
+    m.planche_h(8, 74, 20, 76)                           # planches du soubassement manquantes
+    m.planche_h(72, 74, 84, 76)
+    verre_sombre = (70, 64, 52)
+    m.fissure([(15, 48), (16, 52), (15, 56)], verre_sombre)
+    m.fissure([(79, 56), (80, 60), (79, 64)], verre_sombre)
+    m.toile(5, 46, 1, 1, 4)
+    m.toile(90, 46, -1, 1, 4)
+    m.mousse(1, 66, 94, 78, 0.18)
+    m.herbes(1, 94, 79, hmax=6, densite=0.5)
     return m
 
 
