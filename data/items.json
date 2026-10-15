@@ -89,6 +89,9 @@
     "//bois": ["Le bois des arbres de la carte, coupé à la hache (HACHE). Ni périssable ni comestible :", "il se vend. Il ne se rachète pas au Marché."],
     "bois": { "nom": "Bois", "icone": "🪵", "prix": 2, "edible": false, "category": "produit", "rachetable": false },
     "//pierre": ["La pierre des rochers de la carte, cassés à la pioche (PIOCHE). Ni périssable ni comestible :", "elle se vend. Elle ne se rachète pas au Marché."],
+    "//truite": ["Les poissons de l'étang et de la mare de la ferme, pêchés à la canne (CANNE) :", "frais (ils se gardent 2 nuits), ils se mangent ou se vendent ; ils ne se rachètent pas.", "Le « poisson » de la ville (plus bas) reste à part."],
+    "truite": { "nom": "Truite", "icone": "🐟‍🌈", "energie": 25, "prix": 4, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
+    "brochet": { "nom": "Brochet", "icone": "🐟‍🦷", "energie": 38, "prix": 7, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
     "//oignon": [
       "10 nouvelles cultures : Zone de culture (oignon, ail, poivron, épinard,",

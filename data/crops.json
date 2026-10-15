@@ -270,7 +270,19 @@
     "une de ses tuiles (elles se labourent en attendant) : il réessaie alors chaque matin."
   ],
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "COUPS": 3, "RETOUR": [1, 3] },
-  "CANNE": { "NOM": "Canne à pêche", "ICONE": "🎣", "PRIX": 60 },
+  "//CANNE": [
+    "La canne à pêche en main, un appui sur l'eau de la carte y fait pêcher : le personnage va",
+    "sur la rive, lance et attend la touche. Chaque lancer coûte PERSONNAGE.COUTS.pecher",
+    "d'énergie ; une prise rapporte NIVEAUX.XP.pecher d'XP. PRISES[eau] : chances (en %) de",
+    "prendre chaque poisson à un lancer (le reste : rien ne mord). « etang » : le grand étang",
+    "(profond, le brochet y vit) ; « mare » : la petite mare. JOUR[eau] : prises au plus par",
+    "jour dans chaque eau (ensuite, le poisson se fait rare jusqu'au lendemain)."
+  ],
+  "CANNE": {
+    "NOM": "Canne à pêche", "ICONE": "🎣", "PRIX": 60,
+    "PRISES": { "etang": { "truite": 50, "brochet": 25 }, "mare": { "truite": 55, "brochet": 5 } },
+    "JOUR": { "etang": 6, "mare": 3 }
+  },
   "//SERRE": [
     "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture.",
     "CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",

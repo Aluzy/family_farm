@@ -50,12 +50,22 @@
   const ACTS = {
     labourer: { anim: 'houe', frames: [0, 1, 2, 3, 3], dur: [0.14, 0.16, 0.08, 0.12, 0.18], hit: 3 },
     couper: { anim: 'hache', frames: [0, 1, 1, 2, 3, 3], dur: [0.12, 0.16, 0.1, 0.06, 0.1, 0.24], hit: 4 },
+    lancer: { anim: 'peche', frames: [0, 1, 1, 2], dur: [0.25, 0.22, 0.1, 0.2], hit: 3 },
+    ferrer: { anim: 'peche', frames: [3, 3, 0], dur: [0.12, 0.4, 0.25], hit: 1 },
     piocher: { anim: 'pioche', frames: [0, 1, 1, 2, 3, 3], dur: [0.12, 0.18, 0.1, 0.06, 0.12, 0.26], hit: 4 },
     planter: { anim: 'plante', frames: [0, 1, 2, 2], dur: [0.14, 0.16, 0.18, 0.14], hit: 2 },
     arroser: { anim: 'arrose', frames: [0, 1, 2, 1, 2], dur: [0.14, 0.14, 0.2, 0.1, 0.24], hit: 2 },
     recolter: { anim: 'plante', frames: [1, 2, 1, 0], dur: [0.14, 0.2, 0.14, 0.12], hit: 2 },
     ramasse: { anim: 'ramasse', frames: [0, 1, 2, 1, 2, 0], dur: [0.2, 0.2, 0.3, 0.2, 0.3, 0.2], hit: -1 },
     frigo: { anim: 'frigo', frames: [0, 1, 2, 2, 1, 0], dur: [0.2, 0.25, 0.9, 0.3, 0.25, 0.2], hit: -1 },
+  };
+
+  // Le bout de la canne à pêche dans chaque image peche_<vue>_<n> (x, y dans la case de
+  // 16 × 32, voir scripts/personnage/fermier.py) : le fil part de là.
+  const PECHE_BOUT = {
+    cote: [[15, 8], [1, 3], [15, 13], [13, 2]],
+    bas: [[14, 9], [13, 1], [15, 27], [15, 4]],
+    haut: [[14, 8], [13, 29], [15, 5], [14, 1]],
   };
 
   const rand = (a, b) => a + Math.random() * (b - a);
@@ -161,7 +171,9 @@
       const k = F[name];
       if (k !== undefined) s.setFrame(k);
     }
+    let drawn = '';
     function draw(name) {
+      drawn = name;
       frame(name);
       s.setPosition(Math.round(x), Math.round(y)).setFlipX(flip).setDepth(y).setAlpha(alpha);
     }
@@ -552,6 +564,37 @@
       return true;
     }
 
+    // La canne à pêche en main, le joueur a touché l'eau : il va sur la rive en `spot`, tourné
+    // vers l'eau (`face`, `flip`), lance (hooks.cast), attend la touche `wait` secondes
+    // (hooks.bite), puis ferre (hooks.reel). Renvoie false s'il ne peut pas y aller.
+    function fish(spot, face, flip, sec, hooks) {
+      if (!blocked) buildGrid();
+      if (!freeAt(spot.x, spot.y)) return false;
+      if (job && job.idle) job = null;
+      let t = 0;
+      const hold = {
+        start() {},
+        step(dt) {
+          t += dt;
+          draw(`peche_${face}_2`);
+          if (t < sec) return false;
+          if (hooks.bite) hooks.bite();
+          return true;
+        },
+      };
+      jobs = [walkTo(spot.x, spot.y), act('lancer', { face, flip, onHit: hooks.cast }), hold, act('ferrer', { face, flip, onHit: hooks.reel }), wait(rand(0.6, 1.2))]
+        .concat(jobs.filter((j) => !j.idle));
+      idleAge = 0;
+      return true;
+    }
+    // Le bout de la canne, en px de carte, s'il pêche (image peche_…), sinon null.
+    function rodTip() {
+      const m = /^peche_(cote|bas|haut)_(\d)$/.exec(drawn);
+      if (!m || !shown || home) return null;
+      const [fx, fy] = PECHE_BOUT[m[1]][+m[2]];
+      return { x: flip ? Math.round(x) + 8 - fx - 0.5 : Math.round(x) - 8 + fx + 0.5, y: Math.round(y) - 32 + fy + 0.5, face: m[1] };
+    }
+
     /* ---------- dans un intérieur ---------- */
 
     // La porte (dehors) d'un bâtiment qui a un intérieur.
@@ -776,6 +819,11 @@
       chop,
       // La pioche : casser le rocher dont le pied est en `foot`, de demi-largeur `half`.
       mine,
+      // La canne à pêche : pêcher depuis `spot`, et où est le bout de la canne.
+      fish,
+      rodTip,
+      // Peut-il se tenir en (x, y) (ses pieds) ?
+      standable: (px, py) => { if (!blocked) buildGrid(); return freeAt(px, py); },
       // Le sol a changé (un rocher cassé) : la grille des cases libres est refaite.
       regrid() { buildGrid(); },
       // Double appui sur le Poulailler ou l'Étable : il va y ramasser (false : rien à prendre).

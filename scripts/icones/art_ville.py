@@ -195,6 +195,48 @@ ICONS['🐟'] = [  # poisson bleu argenté
     '................',
 ]
 
+# Truite arc-en-ciel (pêchée dans l'étang et la mare de la ferme) : dos vert olive moucheté de
+# noir, bande rose sur le flanc, ventre blanc, queue en éventail.
+ICONS['🐟‍🌈'] = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '.....GGGGGG.....',
+    '...GGgkglgkgG.GG',
+    '..GlgglgglkglGlG',
+    '.GklgppppppplGgG',
+    '.GgpprpprpppGGlG',
+    '..GWWWWWWWWWGGgG',
+    '...GGWWWWWGG..GG',
+    '.....GGGGGG.....',
+    '................',
+    '................',
+    '................',
+    '................',
+]
+
+# Brochet (l'étang de la ferme) : long et fin, museau en bec de canard, dos vert sombre tacheté
+# de jaune pâle, ventre crème, nageoires et queue vers l'arrière.
+ICONS['🐟‍🦷'] = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.......GG.......',
+    '...GGGGggGGGG.GG',
+    'GGGgkgLgYgLgYGgG',
+    'GwgggYgLgYggggGG',
+    '.GGCCCCCCCCCGGgG',
+    '...GGGGGGGGGG.GG',
+    '.......GG.......',
+    '................',
+    '................',
+    '................',
+    '................',
+]
+
 ICONS['🍯'] = [  # pot de miel, couvercle en tissu à carreaux, étiquette
     '................',
     '...RRRRRRRRRR...',

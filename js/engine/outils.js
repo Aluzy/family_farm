@@ -1,5 +1,5 @@
 import { DATA } from './catalog.js';
-import { EPS, randomInt } from './base.js';
+import { EPS, nextRandom, randomInt } from './base.js';
 import { fail, farmOpen, spend } from './devices.js';
 import { buyHoe, hasHoe, rockGone } from './crops.js';
 import { addItem } from './inventory.js';
@@ -162,4 +162,47 @@ export function respawnRocks(state) {
     revenus.push(id);
   }
   return revenus;
+}
+
+/* ---------- la canne à pêche : l'étang et la mare de la carte ---------- */
+
+// La carte dit dans quelle eau on pêche (« etang » ou « mare », voir CANNE.PRISES). Chaque eau
+// donne au plus CANNE.JOUR[eau] prises par jour (state.outils.peche).
+function peche(state) {
+  const o = outils(state);
+  if (!o.peche || o.peche.jour !== state.day) o.peche = { jour: state.day, prises: {} };
+  return o.peche;
+}
+
+// Prises que l'eau `eau` peut encore donner aujourd'hui.
+export function fishLeft(state, eau) {
+  const J = DATA.CANNE.JOUR[eau];
+  if (!J) return 0;
+  const p = state.outils && state.outils.peche;
+  const faites = p && p.jour === state.day ? p.prises[eau] || 0 : 0;
+  return Math.max(0, J - faites);
+}
+
+// Un lancer dans l'eau `eau` : de l'énergie, puis peut-être un poisson (tiré selon
+// CANNE.PRISES[eau]) dans l'inventaire, avec de l'XP. { ok, poisson: id ou null, reste }.
+export function castLine(state, eau) {
+  const C = DATA.CANNE;
+  if (!hasTool(state, 'canne')) return fail(`Il te faut une canne à pêche (Marché, ${C.PRIX} 💰).`);
+  const chances = C.PRISES[eau];
+  if (!chances) return fail('Touche l\'eau de l\'étang ou de la mare pour y pêcher.');
+  if (fishLeft(state, eau) <= 0) return fail(`Le poisson se fait rare ${eau === 'mare' ? 'dans la mare' : 'dans l\'étang'} aujourd'hui : essaie l'autre eau, ou reviens demain.`);
+  if (!canAfford(state, 'pecher')) return fail(TIRED);
+  spendEnergy(state, 'pecher');
+  let tirage = nextRandom(state) * 100, poisson = null;
+  for (const [item, pct] of Object.entries(chances)) {
+    if (tirage < pct) { poisson = item; break; }
+    tirage -= pct;
+  }
+  if (poisson) {
+    const p = peche(state);
+    p.prises[eau] = (p.prises[eau] || 0) + 1;
+    addItem(state, poisson, 1);
+    gainActionXp(state, 'pecher');
+  }
+  return { ok: true, poisson, reste: fishLeft(state, eau) };
 }

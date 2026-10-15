@@ -54,6 +54,7 @@ export const RAW_DATA = {
     "COUTS": {
       "couper": 6,
       "piocher": 6,
+      "pecher": 4,
       "labourer": 5,
       "planter": 3,
       "arroser": 2,
@@ -132,6 +133,8 @@ export const RAW_DATA = {
     "huile": { "nom": "Huile de tournesol", "icone": "🛢️", "energie": 13, "prix": 4, "edible": false, "category": "ingrédient" },
     "laine": { "nom": "Laine", "icone": "🧶", "prix": 6, "edible": false, "category": "produit", "rachetable": false },
     "bois": { "nom": "Bois", "icone": "🪵", "prix": 2, "edible": false, "category": "produit", "rachetable": false },
+    "truite": { "nom": "Truite", "icone": "🐟‍🌈", "energie": 25, "prix": 4, "edible": true, "category": "produit", "rachetable": false },
+    "brochet": { "nom": "Brochet", "icone": "🐟‍🦷", "energie": 38, "prix": 7, "edible": true, "category": "produit", "rachetable": false },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
     "oignon": { "nom": "Oignon", "icone": "🧅", "energie": 6, "prix": 1, "edible": true, "category": "légume" },
     "graine_oignon": { "nom": "Graines d'oignon", "icone": "🌱‍🧅", "prix": 1, "edible": false, "category": "graine" },
@@ -578,7 +581,13 @@ export const RAW_DATA = {
   "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
   "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "COUPES": 3 },
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "COUPS": 3, "RETOUR": [1, 3] },
-  "CANNE": { "NOM": "Canne à pêche", "ICONE": "🎣", "PRIX": 60 },
+  "CANNE": {
+    "NOM": "Canne à pêche",
+    "ICONE": "🎣",
+    "PRIX": 60,
+    "PRISES": { "etang": { "truite": 50, "brochet": 25 }, "mare": { "truite": 55, "brochet": 5 } },
+    "JOUR": { "etang": 6, "mare": 3 }
+  },
   "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "COUT": [0, 900, 1800, 3000, 5400] },
   "VERGER": {
     "CONSTRUCTION": 0,
@@ -1244,6 +1253,7 @@ export const RAW_DATA = {
       "labourer": 10,
       "couper": 10,
       "piocher": 10,
+      "pecher": 15,
       "planter": 10,
       "arroser": 10,
       "recolter": 20,
@@ -1594,6 +1604,8 @@ export const RAW_DATA = {
     "viande_mouton": 5,
     "pomme": 7,
     "poire": 7,
+    "truite": 2,
+    "brochet": 2,
     "oignon": 6,
     "ail": 7,
     "poivron": 5,
