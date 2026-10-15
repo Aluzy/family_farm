@@ -108,6 +108,35 @@ export function formatPercent(p) {
 }
 
 
+// Jours de la semaine : le jour 1 de la partie est un lundi, puis la semaine tourne (le
+// jour 8 est un lundi, le jour 14 un dimanche). Les noms sont en minuscules, comme dans une
+// phrase ; weekdayName(day, true) met la majuscule, weekdayShort donne l'abréviation.
+export const JOURS_SEMAINE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+function weekdayIndex(day) {
+  return (Math.max(1, Math.floor(Number(day) || 1)) - 1) % 7;
+}
+
+export function weekdayName(day, majuscule = false) {
+  const nom = JOURS_SEMAINE[weekdayIndex(day)];
+  return majuscule ? nom[0].toUpperCase() + nom.slice(1) : nom;
+}
+
+// « Lun. », « Mar. »…
+export function weekdayShort(day) {
+  return `${weekdayName(day, true).slice(0, 3)}.`;
+}
+
+// Numéro de la semaine (1 pour les jours 1 à 7).
+export function weekNumber(day) {
+  return Math.floor((Math.max(1, Math.floor(Number(day) || 1)) - 1) / 7) + 1;
+}
+
+// « Lundi · jour 8 »
+export function formatDay(day) {
+  return `${weekdayName(day, true)} · jour ${formatNumber(Math.max(1, Math.floor(Number(day) || 1)))}`;
+}
+
 /* ==========================================================================
    Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et
    8.11). Le joueur automatique joue avec les vraies actions du moteur, sans

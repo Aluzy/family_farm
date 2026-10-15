@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { findDevice } from '../engine/devices.js';
 import { wakeSummary } from '../engine/night.js';
 import {
-  formatCoins, formatLitres, formatNumber, formatPercent, formatQty, formatWh,
+  formatCoins, formatDay, formatLitres, formatNumber, formatPercent, formatQty, formatWh,
 } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
@@ -131,7 +131,7 @@ export function openWakeModal(report, auto = false) {
   root.innerHTML = `
     <div class="modal-backdrop" data-action="close-modal">
       <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
-        <h2 id="wake-title">🌅 Réveil : nuit ${report.nuit}</h2>
+        <h2 id="wake-title">🌅 Réveil : ${formatDay(report.nuit + 1)}</h2>
         <p class="muted wake-hour">${auto ? `Il était ${DATA.TIME.NIGHT_HOUR}&nbsp;h : la famille est allée se coucher. ` : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
         <div class="wake-kpis">
           <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>

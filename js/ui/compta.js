@@ -1,5 +1,5 @@
 import { comptaRecente } from '../engine/compta.js';
-import { formatNumber, formatSigned } from '../engine/format.js';
+import { formatDay, formatNumber, formatSigned } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { registerActions } from './actions.js';
@@ -15,7 +15,7 @@ function comptaHtml() {
   for (const l of lignes) {
     if (l.jour !== jour) {
       jour = l.jour;
-      rows.push(`<li class="compta-jour">Jour ${formatNumber(jour)}</li>`);
+      rows.push(`<li class="compta-jour">${formatDay(jour)}</li>`);
     }
     rows.push(`<li class="compta-ligne"><span>${l.libelle}${l.n > 1 ? ` <span class="muted">× ${formatNumber(l.n)}</span>` : ''}</span><span class="num ${l.montant > 0 ? 'gain' : 'perte'}">${formatSigned(l.montant)}</span></li>`);
   }

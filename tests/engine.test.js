@@ -26,8 +26,8 @@ import {
   cropProduct, cropUnlocked, DATA, deliverMail, deviceStatus, dishEnergy,
   dishPrice, drawEnergy, efficiency, energyStats, escapeHtml, expiringSoon, familyNeed, feedAllHens,
   feedFamily, feedHen, feedLivestock, findDevice, findMember, findPet, findPlot, finishPreparations,
-  formatCoins, formatDuration, formatHour, formatLitres, formatLitresRate, formatNumber, formatPercent,
-  formatQty, formatSigned, formatWh, formatWhRate, freeCowPlaces, freeSheepPlaces, fridgeCount,
+  formatCoins, formatDay, formatDuration, formatHour, formatLitres, formatLitresRate, formatNumber, formatPercent,
+  formatQty, formatSigned, formatWh, formatWhRate, weekdayName, weekdayShort, weekNumber, freeCowPlaces, freeSheepPlaces, fridgeCount,
   fridgeCounts, fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate, fridgeUnits,
   GAME_VERSION, getNotifications, grantTech, growAll, growOrchard, harvest, harvestAll, harvestYield,
   hourOfDay, ingredientOptions, inventoryCounts, isAutomated, isBroken, isBuyable,
@@ -9228,6 +9228,13 @@ test('Ramassage (version 1.19) : à l\'Étable, le personnage tond les moutons p
   assertEqual(collectAt(s, 'etable').error, TIRED, 'pas d\'énergie pour tondre');
   deposit(s, 'poulailler', null, { [DATA.ANIMAUX.poule.produit]: 3 });
   assertEqual(collectAt(s, 'poulailler').items[DATA.ANIMAUX.poule.produit], 3);
+});
+
+test('Jours de la semaine : le jour 1 est un lundi, la semaine tourne', () => {
+  assertEqual([1, 2, 6, 7, 8, 14, 15].map((d) => weekdayName(d)), ['lundi', 'mardi', 'samedi', 'dimanche', 'lundi', 'dimanche', 'lundi']);
+  assertEqual([weekdayName(3, true), weekdayShort(1), weekdayShort(7)], ['Mercredi', 'Lun.', 'Dim.']);
+  assertEqual([1, 7, 8, 14, 15].map(weekNumber), [1, 1, 2, 2, 3]);
+  assertEqual([formatDay(8), formatDay(undefined), weekdayName(0)], ['Lundi · jour 8', 'Lundi · jour 1', 'lundi']);
 });
 
 export const results = runTests();

@@ -11,7 +11,7 @@ import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
 import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { notificationCount } from '../engine/alerts.js';
-import { formatCoins, formatNumber, formatPercent } from '../engine/format.js';
+import { formatCoins, formatNumber, formatPercent, weekdayName, weekdayShort, weekNumber } from '../engine/format.js';
 import {
   activeTab, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
@@ -507,7 +507,7 @@ function playerGaugesHtml() {
 }
 
 // Carte flottante en haut à droite (comme dans Stardew Valley), dans le même cadre que la
-// carte du joueur : le jour, l'heure dessous, puis les pièces (qui ouvrent les comptes).
+// carte du joueur : le jour de la semaine et le numéro du jour (« Lun. 8 »), l'heure dessous, puis les pièces (qui ouvrent les comptes).
 // L'heure avance par tranches de 10 minutes.
 function renderHud() {
   const h = heureDuJour();
@@ -515,7 +515,7 @@ function renderHud() {
   const minutes = Math.floor((h - heure) * 6) * 10;
   const horaire = `${heure} h ${String(minutes).padStart(2, '0')}`;
   morph(document.getElementById('hud'),
-    `<span class="hud-line hud-day">Jour <span class="num">${state.day}</span></span>` +
+    `<span class="hud-line hud-day"><span aria-hidden="true">${weekdayShort(state.day)} <span class="num">${state.day}</span></span><span class="visually-hidden">${weekdayName(state.day, true)}, jour ${state.day}, semaine ${weekNumber(state.day)}</span></span>` +
     `<span class="hud-line"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span>` +
     `<button type="button" class="hud-line hud-money" data-action="open-compta" title="Voir les comptes"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces. Voir les comptes</span></button>`
   );
