@@ -99,7 +99,8 @@ export function irrigate(state) {
 // Le robot de la ferme : avec la récolte ou le semis automatiques, tous les jours à
 // ROBOT.HEURE (6 h) il dresse sa liste de tâches (récolter chaque parcelle mûre de la Zone de
 // culture et de la Serre ; après chaque récolte, si le semis automatique est acquis, la
-// replanter) et l'exécute dans l'ordre, une tâche toutes les ROBOT.MINUTES minutes d'horloge.
+// replanter) et l'exécute dans l'ordre : pour chaque tâche, il roule jusqu'à la parcelle
+// (robotTrip, à ROBOT.VITESSE tuiles par minute d'horloge) puis travaille ROBOT.MINUTES minutes.
 // state.robot = { jour, taches: [{ t: 'recolter' | 'planter', id, c }], i (tâches faites),
 // debut (heure absolue du début de la tâche en cours), recoltes, semees, sansGraine, dernier }.
 // La carte le montre aller de parcelle en parcelle. Appelée à chaque pas d'horloge, le jour.
@@ -115,6 +116,26 @@ function robotTasks(state) {
     for (const p of allPlots(state)) if (p.lieu === lieu && p.culture && isMature(p)) taches.push({ t: 'recolter', id: p.id });
   }
   return taches;
+}
+
+// Où il se tient pour une parcelle (en tuiles) : à gauche de sa case dans la Zone de culture,
+// devant la porte de la Serre pour celles de la Serre.
+function robotSpot(state, id) {
+  const p = findPlot(state, id);
+  if (p && p.lieu === 'potager' && Number.isInteger(p.case)) {
+    const W = DATA.TERRAIN.LARGEUR;
+    return [(p.case % W) - 0.2, Math.floor(p.case / W) + 0.95];
+  }
+  return DATA.ROBOT.SERRE;
+}
+
+// La tâche i : { route, travail } en heures d'horloge (le trajet depuis la tâche d'avant, ou
+// depuis sa base pour la première, puis le travail au bras).
+export function robotTrip(state, r, i) {
+  const R = DATA.ROBOT;
+  const a = i > 0 ? robotSpot(state, r.taches[i - 1].id) : R.BASE;
+  const b = robotSpot(state, r.taches[i].id);
+  return { route: Math.hypot(b[0] - a[0], b[1] - a[1]) / R.VITESSE / 60, travail: R.MINUTES / 60 };
 }
 
 function robotDo(state, r, tache) {
@@ -148,12 +169,13 @@ export function robotStep(state) {
   if (!r || r.jour !== state.day) {
     r = state.robot = { jour: state.day, taches: robotTasks(state), i: 0, debut: debutJour, recoltes: {}, semees: 0, sansGraine: 0, dernier: null };
   }
-  const pas = R.MINUTES / 60;
   let n = 0;
-  while (r.i < r.taches.length && now + EPS >= r.debut + pas) {
+  while (r.i < r.taches.length) {
+    const d = robotTrip(state, r, r.i);
+    if (now + EPS < r.debut + d.route + d.travail) break;
     robotDo(state, r, r.taches[r.i]);
     r.i += 1;
-    r.debut += pas;
+    r.debut += d.route + d.travail;
     n += 1;
   }
   return n;

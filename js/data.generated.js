@@ -60,7 +60,7 @@ export const RAW_DATA = {
     "COMPAGNIE": { "MAX": 3, "ESPECES": { "chien": { "nom": "Chien", "icone": "🐶" }, "chat": { "nom": "Chat", "icone": "🐱" } } },
     "RESERVE_DEPART": {}
   },
-  "ROBOT": { "HEURE": 6, "MINUTES": 6 },
+  "ROBOT": { "HEURE": 6, "MINUTES": 4, "VITESSE": 0.5, "BASE": [32.9, 16.1], "SERRE": [48.9, 17.6] },
   "PERSONNAGE": {
     "MAX": 100,
     "COUTS": {

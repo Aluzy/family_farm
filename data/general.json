@@ -118,9 +118,11 @@
   "//ROBOT": [
     "Le robot de la ferme (récolte et semis automatiques, Arbre des technologies) : tous les jours",
     "à HEURE, il dresse sa liste de tâches (récolter les parcelles mûres, puis les replanter) et",
-    "les fait une à une, une toutes les MINUTES minutes d'horloge (robotStep)."
+    "les fait une à une (robotStep). Chaque tâche : rouler jusqu'à la parcelle, à VITESSE tuiles par",
+    "minute d'horloge, puis MINUTES minutes de travail au bras. BASE (sa place, près de la porte de",
+    "la maison) et SERRE (devant la porte de la Serre) : en tuiles (colonne, rangée), comme sur la carte."
   ],
-  "ROBOT": { "HEURE": 6, "MINUTES": 6 },
+  "ROBOT": { "HEURE": 6, "MINUTES": 4, "VITESSE": 0.5, "BASE": [32.9, 16.1], "SERRE": [48.9, 17.6] },
   "//PERSONNAGE": [
     "Version 1.8 (v2, lot 4) : l'énergie du personnage (docs/conception-v2.md, section 5).",
     "Une jauge de 0 à MAX, stockée en millièmes (state.energie). Chaque action au clic",

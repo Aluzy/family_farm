@@ -149,11 +149,13 @@
   };
   // Le robot de la ferme (scripts/batiments/robot.py, 6 images : 0-1 roule, 2-4 le bras
   // descend, 5 au repos ; le bas des chenilles en bas au milieu). Pendant une tâche, il roule
-  // jusqu'à la parcelle pendant `walk` de son temps puis descend le bras ; sa base : `dock` px
-  // à côté de la porte de la maison. Au-dessus de lui, une bulle : la tâche et son rang.
+  // jusqu'à la parcelle (la part `route` de son temps, à sa vitesse : voir robotModel) puis
+  // descend le bras ; sa base : `dock` px à côté de la porte de la maison (ROBOT.BASE du
+  // moteur). Au-dessus de lui, une bulle : la tâche et son rang. `speed` : px/s sans modèle ;
+  // `catchUp` : s, le moins de temps pour rattraper un retard.
   const ROBOT = {
     key: 'robot', file: 'robot.png', frame: { frameWidth: 14, frameHeight: 16 },
-    walk: 0.55, speed: 46, dock: { dx: -34, dy: 12 }, icone: { recolter: '🧺', planter: '🌱' },
+    speed: 27, catchUp: 0.6, dock: { dx: -34, dy: 12 }, icone: { recolter: '🧺', planter: '🌱' },
   };
   // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
   const OCCLUDER_ALPHA = 0.6;
@@ -2383,11 +2385,9 @@
           el.setAttribute('aria-hidden', 'true');
           el.hidden = true;
           labelLayer.appendChild(el);
-          this.bot = { img, el, x: d.x, y: d.y, m: null, at: 0, n: 0, from: null, roll: 0, w: 0, h: 0, txt: '' };
+          this.bot = { img, el, x: d.x, y: d.y, m: null, at: 0, n: 0, roll: 0, w: 0, h: 0, txt: '' };
         }
         const B = this.bot;
-        // une nouvelle tâche : il part d'où il est
-        if (m.etat === 'travail' && (!B.m || B.m.etat !== 'travail' || B.m.n !== m.n)) B.from = { x: B.x, y: B.y };
         B.m = m;
         B.at = performance.now();
       }
@@ -2417,23 +2417,28 @@
         if (!B) return;
         const m = B.m;
         let frame = 5, move = null;
+        // il roule à vitesse constante (m.vitesse px/s) : le moteur compte le trajet dans la
+        // durée de la tâche (part `route`) ; en retard (page cachée), il rattrape plus vite
+        const v = (m && m.vitesse) || ROBOT.speed;
+        const toward = (to, t) => {
+          const dx = to.x - B.x, dy = to.y - B.y, l = Math.hypot(dx, dy);
+          if (l <= 0.5) return null;
+          const st = Math.min(l, Math.max(v, l / Math.max(ROBOT.catchUp, t)) * dt / 1000);
+          return { x: B.x + (dx / l) * st, y: B.y + (dy / l) * st };
+        };
         if (m && m.etat === 'travail') {
           const prog = Math.min(1, m.prog + (performance.now() - B.at) / 1000 / Math.max(0.1, m.dureeS));
-          const to = this.robotSpot(m.a), from = B.from || { x: B.x, y: B.y };
-          const k = Math.min(1, prog / ROBOT.walk);
-          const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;   // départ et arrivée en douceur
-          move = { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
-          if (k >= 1) {
-            const w = (prog - ROBOT.walk) / (1 - ROBOT.walk);           // le bras : descend, serre, remonte
+          const route = m.route == null ? 0.5 : m.route;
+          move = toward(this.robotSpot(m.a), (route - prog) * m.dureeS);
+          if (!move && prog >= route) {
+            const w = (prog - route) / Math.max(0.01, 1 - route);    // le bras : descend, serre, remonte
             frame = [2, 3, 4, 4, 3, 2][Math.min(5, Math.floor(w * 6))];
           }
           const txt = ROBOT.icone[m.t] + ' ' + m.n + '/' + m.total;
           if (txt !== B.txt) { B.txt = txt; B.el.textContent = txt; B.w = 0; }
         } else {
           // la liste est faite : il rentre à sa base
-          const d = this.robotDock(), dx = d.x - B.x, dy = d.y - B.y, l = Math.hypot(dx, dy);
-          const st = Math.min(l, (ROBOT.speed * dt) / 1000);
-          if (l > 0.5) move = { x: B.x + (dx / l) * st, y: B.y + (dy / l) * st };
+          move = toward(this.robotDock(), Infinity);
         }
         if (move) {
           const moved = Math.hypot(move.x - B.x, move.y - B.y);
