@@ -1,10 +1,14 @@
-# assets/silo.png : le Silo de la carte, 28×62, dessiné à la main d'après l'image de référence : toit conique de bardeaux prune au
-# bord bombé, fût de planches verticales, collier de pierres claires en bas. Lumière à gauche.
+# assets/silo.png : le Silo de la carte, 28×62, dessiné à la main d'après l'image de référence : toit en dôme de bardeaux au
+# bord bombé, aux tons des toits des autres bâtiments (TOIT de scripts/batiments/style_v2.py), fût de planches verticales,
+# collier de pierres claires en bas. Lumière à gauche. Puis python3 scripts/batiments/ruines.py (silo_ruine.png).
 from PIL import Image
-import math, sys
+import math, os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from style_v2 import TOIT  # noqa: E402
 W, H = 28, 62
 C = {
- 'out': (40, 18, 24), 'rj': (58, 30, 44), 'rd': (76, 42, 58), 'rm': (94, 54, 74), 'rl': (110, 66, 88), 'rh': (124, 80, 100),
+ 'out': tuple(round(c * 0.7) for c in TOIT[0]),
+ 'rj': TOIT[0], 'rd': TOIT[2], 'rm': TOIT[3], 'rl': TOIT[4], 'rh': TOIT[5],
  'wo': (48, 22, 18), 'ws': (82, 40, 26), 'wd': (128, 72, 42), 'wm': (156, 94, 58), 'wl': (176, 114, 72), 'wh': (190, 128, 84),
  'so': (92, 64, 48), 'sj': (178, 160, 128), 'sd': (200, 186, 152), 'sm': (222, 210, 180), 'sl': (240, 232, 208),
 }
@@ -42,12 +46,14 @@ for x in range(0, 28):
         elif row >= bot - top - 1: c = 'sd'
         else: c = 'sm' if x < 22 else 'sd'
         put(x, y, c)
-# toit : cône aux épaules arrondies, bord inférieur bombé (débord d'un pixel de chaque côté)
+# toit : dôme (moitié cône, moitié quart de cercle : arrondi au sommet comme aux épaules), bord
+# inférieur bombé (débord d'un pixel de chaque côté)
 RR = 14.0
+DOME = 0.6           # part du quart de cercle dans le profil (0 : cône, 1 : demi-cercle)
 for x in range(0, 28):
     d = abs(x - cx) / RR
     if d > 1: continue
-    ytop = round(13 * d ** 1.05)
+    ytop = round(13 * ((1 - DOME) * d ** 1.05 + DOME * (1 - math.sqrt(max(0.0, 1 - d * d)))))
     ybot = round(16 + ell(x, RR, 4.6))
     for y in range(ytop, ybot + 1):
         if y == ytop or y == ybot or x in (0, 27): put(x, y, 'out'); continue
