@@ -9,6 +9,7 @@
 # met à jour assets/farm_spring_summer.tsx (taille, nombre de tuiles, animations de l'eau).
 # Le jeu ne lit qu'une planche pour la carte : les nouvelles tuiles s'y ajoutent, et tout ce
 # qui lit la planche (eau animée, arbres à couper, terre labourable) les voit.
+# Lancer ensuite scripts/carte/teinte_herbe.py (l'herbe assombrie).
 #
 # BLOCS : nom -> (fichier, colonne, rangée, largeur, hauteur en tuiles, source) ; source est le
 # coin haut-gauche et la taille (en px) de la partie du fichier copiée. carte_v2.py et le jeu

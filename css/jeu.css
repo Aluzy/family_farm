@@ -1386,7 +1386,7 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   bottom: var(--dock);
   z-index: 5;
   overflow: hidden;
-  background: #699654;
+  background: #5e874c;
   touch-action: none; /* le doigt fait glisser la carte, pas la page */
   -webkit-user-select: none;
   user-select: none;
