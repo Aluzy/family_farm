@@ -6,7 +6,7 @@ import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
 import { memberPerso } from '../engine/family.js';
-import { allPlots, hoeableTiles, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
+import { allPlots, hoeableTiles, terrainLines, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
 import { sheepToShear, woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
@@ -357,7 +357,7 @@ export function stageModel() {
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
     perso: memberPerso(mainCharacter(state)),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
-    heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: T.LIGNES, plots,
+    heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: terrainNow(rochers), plots,
     houe, hache, pioche, rochers, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
@@ -401,9 +401,18 @@ function stageCollect(lieu) {
 // recalculées seulement quand la terre change.
 let labourablesCache = { key: null, tiles: null };
 function labourables() {
-  const key = state.potager.parcelles.map((p) => p.case).join();
+  const key = state.potager.parcelles.map((p) => p.case).join() + '|' + brokenRocks(state).join(';');
   if (labourablesCache.key !== key) labourablesCache = { key, tiles: hoeableTiles(state) };
   return labourablesCache.tiles;
+}
+
+// Les rangées du terrain (une tuile sous un rocher cassé se laboure), recalculées seulement
+// quand les rochers cassés changent.
+let terrainCache = { key: null, lines: null };
+function terrainNow(rochers) {
+  const key = rochers.join(';');
+  if (terrainCache.key !== key) terrainCache = { key, lines: terrainLines(state) };
+  return terrainCache.lines;
 }
 
 // Version 1.12 : un bâtiment pas encore réparé ou construit se dessine délabré.

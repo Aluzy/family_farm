@@ -10,7 +10,7 @@ import {
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
-import { brokenRocks, buyTool, chopsLeft, chopTree, hasTool, mineRock, OUTILS, rockBroken, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
+import { brokenRocks, buyTool, chopsLeft, chopTree, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -8469,7 +8469,7 @@ test('hache : un coup sur un arbre donne du bois, de l\'XP, coûte de l\'énergi
   assertEqual([DATA.items.bois.category, isBuyable('bois')], ['produit', false], 'le bois se vend, ne se rachète pas');
 });
 
-test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il est cassé pour de bon', () => {
+test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il est cassé', () => {
   const s = garden();
   assertEqual(mineRock(s, '25,13').error, `Il te faut une pioche (Marché, ${DATA.PIOCHE.PRIX} 💰).`);
   s.outils = { hache: false, pioche: true, choisi: 'pioche' };
@@ -8481,12 +8481,38 @@ test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il
   for (let k = 1; k < DATA.PIOCHE.COUPS; k++) last = mineRock(s, '25,13');
   assertEqual([last.casse, rockBroken(s, '25,13'), brokenRocks(s), countItem(s, 'pierre')], [true, true, ['25,13'], DATA.PIOCHE.PIERRE * DATA.PIOCHE.COUPS]);
   assertEqual(mineRock(s, '25,13').ok, false, 'un rocher cassé ne se casse plus');
-  s.day += 1;
-  assertEqual(rockBroken(s, '25,13'), true, 'il ne revient pas le lendemain');
   assertEqual(mineRock(s, '44,16').ok, true, 'un autre rocher se casse');
   s.energie = 0;
   assertEqual(mineRock(s, '44,16').error, TIRED);
   assertEqual([DATA.items.pierre.category, isBuyable('pierre')], ['produit', false], 'la pierre se vend, ne se rachète pas');
+});
+
+test('pioche : un rocher cassé revient au bout de RETOUR jours, sauf si une parcelle occupe une de ses tuiles', () => {
+  const [lo, hi] = DATA.PIOCHE.RETOUR;
+  const tuile = DATA.TERRAIN.ROCHERS['18,27'][0];
+  const s = garden();
+  s.outils = { hache: false, pioche: true, choisi: 'pioche' };
+  s.potager.houe = true;
+  s.potager.parcelles = [];                       // sous le plafond de tuiles de terre
+  assertEqual([isArable(tuile), isArable(tuile, s), hoeStatus(s, tuile).action], [false, false, null], 'sous le rocher : pas de labour');
+  for (let k = 0; k < DATA.PIOCHE.COUPS; k++) mineRock(s, '18,27');
+  const retour = s.outils.rochers['18,27'].retour;
+  assert(retour >= s.day + lo && retour <= s.day + hi, `retour entre ${lo} et ${hi} jours (${retour - s.day})`);
+  assertEqual([isArable(tuile, s), terrainLines(s)[Math.floor(tuile / DATA.TERRAIN.LARGEUR)][tuile % DATA.TERRAIN.LARGEUR]], [true, '#'], 'la tuile libérée se laboure');
+  assert(hoe(s, tuile).ok, 'labour de la tuile libérée');
+  s.day = retour;
+  assertEqual([respawnRocks(s), rockBroken(s, '18,27')], [[], true], 'une parcelle sur sa tuile : il attend');
+  assert(hoe(s, tuile).ok, 'reboucher');
+  s.day = retour + 4;
+  assertEqual([respawnRocks(s), rockBroken(s, '18,27'), mineRock(s, '18,27').coups], [['18,27'], false, 1], 'la tuile libre : il revient, entier');
+  // au réveil (runNight), le jour venu
+  for (let k = 1; k < DATA.PIOCHE.COUPS; k++) mineRock(s, '18,27');
+  s.outils.rochers['18,27'].retour = s.day + 1;
+  runNight(s);
+  assertEqual(rockBroken(s, '18,27'), false, 'revenu au réveil');
+  const t = garden();
+  t.outils = { pioche: true, rochers: { '18,27': 2 } };
+  assertEqual(respawnRocks(t), [], 'un rocher entamé reste entamé');
 });
 
 // Version 1.15 : le milieu de l'ancien Champ, de l'herbe tout autour (les bordures s'y

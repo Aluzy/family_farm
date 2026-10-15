@@ -109,7 +109,7 @@
     hitColors: [0xe4e0dc, 0xc9c5c6, 0xa9a6ad, 0xe4e0dc, 0x5d5a63],
     sizes: [1, 2, 2, 2], burstSizes: [2, 2, 3, 3, 4],
     speed: [18, 46], lift: [45, 85], gravity: 280, fall: [2, 7], life: [650, 1100], fade: 300,
-    breakMs: 260,
+    breakMs: 260, backMs: 900,
   };
   // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
   const OCCLUDER_ALPHA = 0.6;
@@ -2186,17 +2186,26 @@
       }
 
       // Les rochers cassés (modèle.rochers : leurs identifiants) ne sont plus sur la carte ; un
-      // rocher qui se brise sous la pioche attend son dernier coup (breaking).
+      // rocher qui se brise sous la pioche attend son dernier coup (breaking). Un rocher qui
+      // revient (quelques jours plus tard, au réveil) apparaît en fondu.
       syncRocks(ids) {
         if (!this.rocks) return;
         const broken = new Set(ids || []);
+        const first = !this.rocksSynced;
+        this.rocksSynced = true;
         let changed = false;
         for (const r of this.rocks) {
           const gone = broken.has(r.id);
           if (gone === !!r.gone || (gone && r.breaking)) continue;
           r.gone = gone;
           changed = true;
-          if (r.img) r.img.setVisible(!gone).setAlpha(1).setScale(1).setPosition(r.x, r.y);
+          if (!r.img) continue;
+          this.tweens.killTweensOf(r.img);
+          r.img.setVisible(!gone).setAlpha(1).setScale(1).setOrigin(0).setPosition(r.x, r.y);
+          if (!gone && !first && !reducedMotion()) {
+            r.img.setAlpha(0);
+            this.tweens.add({ targets: r.img, alpha: 1, duration: ROCKS.backMs });
+          }
         }
         if (changed && this.fermier && this.fermier.regrid) this.fermier.regrid();
       }

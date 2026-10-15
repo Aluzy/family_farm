@@ -15,6 +15,7 @@ import { autoMaintain, autoTasks, newAutoReport, rainNight } from './automation.
 import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
+import { respawnRocks } from './outils.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // repas (version 1.8 : énergie au réveil), puis pousse. Lot 4 : la ponte. Lot 5 : les préparations en
@@ -196,6 +197,7 @@ export function runNight(state) {
   recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;
+  respawnRocks(state); // les rochers cassés dont le jour de retour est venu
   refreshUnlocks(state);
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
   noteTutorialSleep(state); // Lot 11 : la bulle « Dormir » se ferme à la première nuit

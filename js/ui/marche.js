@@ -143,7 +143,7 @@ function toolSlot(id) {
 
 const OUTILS_DESCRIPTIONS = {
   hache: 'Coupe les arbres de la carte : du bois 🪵 à chaque coup (3 coups par arbre et par jour).',
-  pioche: 'Casse les rochers de la carte : de la pierre 🪨 à chaque coup ; au 3e coup, le rocher disparaît.',
+  pioche: 'Casse les rochers de la carte : de la pierre 🪨 à chaque coup ; au 3e coup, le rocher disparaît (il revient 1 à 3 jours plus tard).',
   canne: 'Pour pêcher dans les mares (rien à pêcher sur la ferme pour l\'instant).',
 };
 

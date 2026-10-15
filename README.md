@@ -80,7 +80,8 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   chacune) : la hache en main, un appui sur un arbre de la carte le fait couper (1 bois 🪵,
   6 d'énergie, 10 XP ; 3 coups par arbre et par jour) ; la pioche en main, un appui sur un
   rocher le fait casser (1 pierre 🪨 par coup, 6 d'énergie, 10 XP ; au 3e coup, le rocher se
-  brise et disparaît de la carte pour de bon).
+  brise et disparaît). Il revient à sa place au bout de 1 à 3 jours, sauf si une parcelle
+  occupe une de ses cases (elles se labourent en attendant).
   Le bouton rond de la carte porte l'outil choisi : un appui le prend en main, un double
   appui ouvre la fenêtre **Outils** pour en changer. Les arbres du Verger (12 au plus)
   apparaissent sur la carte.
