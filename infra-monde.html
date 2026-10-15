@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="description" content="L'infra-monde de Ferme Familiale : une île d'herbe pâle sur une eau étoilée, ses arbres tordus et son habitant.">
+  <meta name="theme-color" content="#1f2943">
+  <title>Infra-monde — Ferme Familiale</title>
+  <style>
+    html,body{margin:0;height:100%;background:#1f2943;overflow:hidden;color:#e6dcf2;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    #infra{position:fixed;inset:0;touch-action:none}
+    #infra canvas{display:block}
+    .aide{position:fixed;left:12px;right:12px;bottom:12px;display:flex;justify-content:space-between;gap:12px;align-items:center;pointer-events:none;font-size:13px}
+    .aide span,.aide a{pointer-events:auto;background:rgba(20,18,32,.72);border:1px solid rgba(165,117,204,.45);border-radius:10px;padding:6px 10px}
+    .aide a{color:#e6dcf2;text-decoration:none;font-weight:600}
+  </style>
+</head>
+<body>
+  <div id="infra" aria-label="La carte de l'infra-monde"></div>
+  <div class="aide">
+    <span>Touchez le sol pour y marcher · flèches ou ZQSD</span>
+    <a href="jeu.html">← La ferme</a>
+  </div>
+  <script src="vendor/phaser.min.js"></script>
+  <script src="js/infra-monde.js"></script>
+</body>
+</html>
