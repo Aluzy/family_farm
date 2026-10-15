@@ -17,7 +17,7 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
-import { robotOn, robotTrip } from '../engine/automation.js';
+import { robotBattery, robotChargePct, robotOn, robotTrip } from '../engine/automation.js';
 import { showToast } from './toasts.js';
 import {
   activeTab, axeMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
@@ -419,7 +419,8 @@ function sprinklerSpots() {
 }
 
 // Le robot (récolte et semis automatiques) pour la carte : null sans lui ; { etat: 'repos' }
-// quand sa liste du jour est faite (ou pas commencée) ; sinon sa tâche en cours : la case
+// quand sa liste du jour est faite (ou pas commencée) ; { etat: 'charge' } rentré recharger sa
+// batterie vide (batterie : sa charge en % ; enCharge : sa station le recharge) ; sinon sa tâche en cours : la case
 // visée (une tuile de la carte, ou 'serre'), 'recolter' ou 'planter', où elle en est (prog,
 // de 0 à 1 ; elle dure dureeS secondes, dont la part `route` à rouler jusqu'à la parcelle), et
 // son rang dans la liste. `vitesse` : la sienne, en px par seconde (le retour à sa base).
@@ -428,14 +429,17 @@ function robotModel() {
   const R = DATA.ROBOT, S = DATA.TIME.CLOCK_SECONDS_PER_HOUR;
   const vitesse = (R.VITESSE * 16 * 60) / S;
   const r = state.robot;
-  if (nightActive(state) || !r || r.jour !== state.day || r.i >= r.taches.length) return { etat: 'repos', vitesse };
+  // sa batterie (en %) ; enCharge : sa station la recharge en ce moment
+  const batterie = robotChargePct(state), enCharge = robotBattery(state).conso > 0;
+  if (nightActive(state) || !r || r.jour !== state.day || r.i >= r.taches.length) return { etat: 'repos', vitesse, batterie, enCharge };
+  if (r.charge) return { etat: 'charge', vitesse, batterie, enCharge };
   const tache = r.taches[r.i];
   const p = allPlots(state).find((x) => x.id === tache.id);
   const d = robotTrip(state, r, r.i), duree = d.route + d.travail;
   return {
     etat: 'travail', t: tache.t, a: p && p.lieu === 'potager' && Number.isInteger(p.case) ? p.case : 'serre',
     prog: Math.max(0, Math.min(1, (absoluteHours(state) - r.debut) / duree)), dureeS: duree * S, route: d.route / duree,
-    n: r.i + 1, total: r.taches.length, vitesse,
+    n: r.i + 1, total: r.taches.length, vitesse, batterie, enCharge,
   };
 }
 

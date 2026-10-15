@@ -120,9 +120,18 @@
     "à HEURE, il dresse sa liste de tâches (récolter les parcelles mûres, puis les replanter) et",
     "les fait une à une (robotStep). Chaque tâche : rouler jusqu'à la parcelle, à VITESSE tuiles par",
     "minute d'horloge, puis MINUTES minutes de travail au bras. BASE (sa place, près de la porte de",
-    "la maison) et SERRE (devant la porte de la Serre) : en tuiles (colonne, rangée), comme sur la carte."
+    "la maison) et SERRE (devant la porte de la Serre) : en tuiles (colonne, rangée), comme sur la carte.",
+    "BATTERIE : chaque tâche faite vide WH_TACHE Wh de sa batterie ; pleine, à 100 % d'autonomie, elle",
+    "tient TACHES tâches. Chaque palier acheté (PALIER_PRIX pièces, au plus PALIERS_MAX) ajoute",
+    "PALIER_PCT % d'autonomie. Il se recharge à sa station, à côté de la maison, quand il n'a rien à",
+    "faire (avant 6 h, liste finie, et la nuit) : CHARGE_WH_S Wh par seconde de jeu, pris sur",
+    "l'électricité de la ferme comme la pompe (le frigo d'abord, le délestage le met en pause). Batterie",
+    "vide : il rentre à sa station et ne reprend sa liste qu'une fois rechargé à REPRISE %."
   ],
-  "ROBOT": { "HEURE": 6, "MINUTES": 4, "VITESSE": 0.5, "BASE": [32.9, 16.1], "SERRE": [48.9, 17.6] },
+  "ROBOT": {
+    "HEURE": 6, "MINUTES": 4, "VITESSE": 0.5, "BASE": [32.9, 16.1], "SERRE": [48.9, 17.6],
+    "BATTERIE": { "TACHES": 35, "WH_TACHE": 60, "CHARGE_WH_S": 25, "REPRISE": 100, "PALIER_PCT": 5, "PALIER_PRIX": 1500, "PALIERS_MAX": 20 }
+  },
   "//PERSONNAGE": [
     "Version 1.8 (v2, lot 4) : l'énergie du personnage (docs/conception-v2.md, section 5).",
     "Une jauge de 0 à MAX, stockée en millièmes (state.energie). Chaque action au clic",

@@ -81,6 +81,7 @@ export const GAME_ACTIONS = {
   'pick-toggle': 'Ranger la pioche',
   'rod-toggle': 'Ranger la canne à pêche',
   'upgrade-tank': 'Améliorer ou agrandir',
+  'robot-autonomie': 'Améliorer ou agrandir',
   'upgrade-fridge': 'Améliorer ou agrandir',
   'maintain': 'Entretenir un appareil',
   'repair': 'Réparer un appareil',

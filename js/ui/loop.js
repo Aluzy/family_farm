@@ -91,8 +91,14 @@ export function setMailSeen(value) {
 }
 
 // Le robot a fini sa liste du jour : une annonce (ce qu'il a récolté et semé), une fois.
+// Batterie vide en pleine liste : une annonce par panne (il rentre se recharger).
 function watchRobot() {
   const r = state.robot;
+  if (r && r.jour === state.day && r.charge && (r.annonceCharge || 0) < (r.pannes || 0)) {
+    r.annonceCharge = r.pannes;
+    notify(`🔋 Batterie du robot vide : il rentre à sa station et reprendra sa liste (${r.taches.length - r.i} tâche${r.taches.length - r.i > 1 ? 's' : ''}) une fois rechargé.`, 'info', { fenetre: 'robot' });
+    persistState();
+  }
   if (!r || r.annonce || r.jour !== state.day || !r.taches.length || r.i < r.taches.length) return;
   r.annonce = true;
   const recolte = itemsSummary(r.recoltes);

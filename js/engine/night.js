@@ -12,7 +12,7 @@ import { growOrchard } from './orchard.js';
 import { commerceNight } from './commerce.js';
 import { finishPreparations } from './kitchen.js';
 import { refreshUnlocks } from './techtree.js';
-import { autoMaintain, autoTasks, newAutoReport, rainNight } from './automation.js';
+import { autoMaintain, autoTasks, newAutoReport, rainNight, robotNight } from './automation.js';
 import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
@@ -32,10 +32,11 @@ import { respawnRocks, respawnTrees } from './outils.js';
 // enfin la péremption. Les préparations en cours se terminent avant le frigo :
 // la paille du blé qui finit de se moudre pendant la nuit sert donc à partir
 // de la nuit suivante. Juste avant la péremption, le blé de l'inventaire
-// rejoint le Silo s'il y a de la place (fillSilo) : au Silo, il ne périme pas.
+// rejoint le Silo s'il y a de la place (fillSilo) : au Silo, il ne périme pas. Le robot se
+// recharge juste après le frigo (robotNight), sur ce qui reste dans les batteries.
 // Chaque étape reçoit l'état et le modifie.
 // La pousse des cultures n'en fait plus partie : elle suit l'horloge (growDue).
-export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil];
+export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil];
 
 /* ---------- la nuit ---------- */
 

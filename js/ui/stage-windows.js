@@ -31,8 +31,9 @@ import {
 } from './stage.js';
 import {
   backToFerme, deviceName, renderDeviceFenetre, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
-  renderInstallationsMaison, renderPotager, renderZone2,
+  renderInstallationsMaison, renderPotager, renderRobotCard, renderZone2,
 } from './ferme.js';
+import { robotOn } from '../engine/automation.js';
 import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
@@ -271,6 +272,11 @@ export const STAGE_WINDOWS = {
   eau: {
     nom: 'Eau', icone: '💧', ok: () => isOwned(starterOf(state, 'pompe')) || isOwned(starterOf(state, 'reservoir')), bois: true,
     corps: () => renderEauFenetre(),
+  },
+  // Le robot de la ferme : un appui sur lui ou sur sa station de charge, à côté de la maison.
+  robot: {
+    nom: 'Robot', icone: '🤖', ok: () => robotOn(state), bois: true,
+    corps: () => `<div class="cards">${renderRobotCard()}</div>`,
   },
   // Meubles de la maison (intérieur) : chacun ouvre sa fenêtre, dans le cadre bois.
   four: {

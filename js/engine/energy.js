@@ -9,7 +9,7 @@ import { refreshUnlocks, techFlag, techPct } from './techtree.js';
 import { bumpCounter, noteEnergyRecord, updateChapters } from './campaign.js';
 import { nightActive } from './clock.js';
 import { growDue } from './crops.js';
-import { irrigate, robotStep } from './automation.js';
+import { irrigate, robotStep, runRobotCharge } from './automation.js';
 import { advanceNight, nightSpeed } from './night.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
@@ -68,6 +68,8 @@ export const CONSUMERS = [
   { id: 'pompe', run: runPump },
   { id: 'moulin', run: (state, dtMs) => runElectricStation(state, 'moulin', dtMs) },
   { id: 'presse', run: (state, dtMs) => runElectricStation(state, 'presse', dtMs) },
+  // la station de charge du robot, à côté de la maison
+  { id: 'robot', run: (state, dtMs) => runRobotCharge(state, dtMs) },
 ];
 
 // Arbre v2 (Délestage intelligent) : sous le seuil de charge totale, la pompe,
