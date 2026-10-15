@@ -4,7 +4,8 @@
 #   2 : la pompe électrique seule, posée à droite du puits (par-dessus l'image 1 une fois la
 #       pompe achetée ; la carte la fait vibrer d'un pixel vers la droite quand elle tourne).
 #       Le tuyau de l'image 1 court sous son bord gauche : décalée, elle reste raccordée.
-# Toit en dôme, aux tons des toits des bâtiments (TOIT de scripts/batiments/style_v2.py).
+# Aux couleurs de la serre, comme les bâtiments (PALETTE_SERRE de scripts/batiments/style_v2.py) :
+# toit en dôme, bois et pierres ; l'eau et la pompe gardent les leurs.
 # Lumière à gauche.
 from PIL import Image
 import math
@@ -12,17 +13,19 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from style_v2 import TOIT  # noqa: E402
+from style_v2 import PALETTE_SERRE as PS  # noqa: E402
+
+TOIT = PS['toit']
 
 W, H = 34, 40
 C = {
-    'out': (50, 34, 40),
+    'out': (36, 30, 20),
     # pierres
-    'sj': (70, 64, 62), 'sd': (96, 92, 88), 'sm': (124, 120, 112), 'sl': (156, 152, 140), 'sh': (184, 180, 166),
+    'sj': PS['pierre'][0], 'sd': PS['pierre'][1], 'sm': PS['pierre'][2], 'sl': PS['pierre'][3], 'sh': PS['pierre'][4],
     # eau
     'eau': (28, 38, 58), 'eau_l': (64, 96, 138),
     # bois
-    'wo': (60, 30, 22), 'wd': (92, 50, 30), 'wm': (128, 76, 44), 'wl': (162, 104, 62),
+    'wo': PS['cadre'][0], 'wd': PS['bois'][1], 'wm': PS['bois'][2], 'wl': PS['bois'][3],
     # toit (les tons des toits des bâtiments)
     'rj': TOIT[0], 'rd': TOIT[2], 'rm': TOIT[3], 'rl': TOIT[4], 'rh': TOIT[5],
     # pompe
