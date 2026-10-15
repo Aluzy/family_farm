@@ -19,7 +19,7 @@ document.addEventListener('click', (e) => {
 
   // Version 1.19 : la nuit, la famille dort ; la ferme attend le matin.
   if (nightActive(state) && NUIT_BLOQUEES.has(action)) {
-    showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).');
+    showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).');
     return;
   }
   const run = ACTIONS[action];

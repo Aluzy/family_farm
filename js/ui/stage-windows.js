@@ -5,6 +5,7 @@ import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { familyNameHtml } from './depart.js';
 import { nightActive } from '../engine/clock.js';
+import { asleep } from '../engine/night.js';
 import { memberPerso, planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { zone2Open, zone2Plots } from '../engine/crops.js';
@@ -15,7 +16,7 @@ import { formatCoins, formatDay, formatNumber, formatPercent, weekdayShort } fro
 import { dayOfMonth, monthName, moonPhase } from '../engine/lune.js';
 import { renderCalendrier } from './calendrier.js';
 import {
-  activeTab, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
+  activeTab, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { showToast } from './toasts.js';
@@ -99,6 +100,7 @@ export function enterInterior(id) {
 export function leaveInterior() {
   if (!stageInterior) return;
   stageInterior = null;
+  setCoucher(false); // sortir de la maison : il ne va plus se coucher (s'il dort déjà, il continue)
   stageWindow = null;
   stageReturn = null;
   setLastRenderAt(0);
@@ -606,16 +608,17 @@ export function renderTabContent() {
 // Bouton « Dormir » (lune en pixel art), en bas à droite sur tous les onglets. L'aperçu du repas est dans
 // son libellé (title / aria-label) ; une pastille ne s'affiche que si le repas prévu est insuffisant.
 export function renderSleepBar() {
-  // Version 1.19 : le bouton « Zzz » n'est là que la nuit (de 22 h à 6 h) ; il saute ce qui reste.
-  const nuit = nightActive(state);
+  // Version 1.19 : le bouton « Zzz » n'est là que la nuit (de 22 h à 6 h), tant que le personnage ne
+  // dort pas ; il l'envoie dans son lit (actionGoToBed), puis la nuit défile en accéléré.
+  const nuit = nightActive(state) && !asleep(state); // il dort : plus rien à faire
   // Après 19 h, le repas est pris : on montre ce qui a été mangé, plus ce qui est prévu.
   const plan = state.repas || planMeal(state);
   const short = plan.energie + EPS < plan.besoin;
   const eaten = `${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)}`;
   const meal = `${state.repas ? `Repas pris à ${DATA.TIME.MEAL_HOUR} h` : `Repas prévu à ${DATA.TIME.MEAL_HOUR} h`} : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
   const label = state.nuitEnCours && state.nuitEnCours.minuit
-    ? `Passer la nuit : réveil à ${DATA.TIME.DAY_START_HOUR} h`
-    : `Passer la nuit : réveil à ${DATA.TIME.DAY_START_HOUR} h. ${meal}`;
+    ? `Dormir : réveil à ${DATA.TIME.DAY_START_HOUR} h`
+    : `Dormir : réveil à ${DATA.TIME.DAY_START_HOUR} h. ${meal}`;
   // La barre d'outils (houe, pioche, hache, canne à pêche), en bas de la carte de la ferme,
   // sans fenêtre ouverte, dès qu'un outil est acheté (elle remplace le bouton rond de FLU-05).
   const outils = activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior ? toolBarHtml() : '';
@@ -641,6 +644,43 @@ export function syncTestDeviceSelect() {
   sel.innerHTML = devices.map((d) => `<option value="${d.id}">${deviceName(d)}</option>`).join('');
   sel.dataset.signature = signature;
   if (devices.some((d) => d.id === previous)) sel.value = previous;
+}
+
+// « Dormir » : pour dormir, le personnage doit être dans son lit. Sur la carte de la ferme, il
+// marche jusqu'à la porte de la maison (la vue glisse jusqu'à elle), puis l'intérieur s'ouvre ;
+// il va à son lit, s'y couche, et quand il dort la nuit défile en accéléré (asleepFromStage).
+// Un deuxième appui, pendant qu'il y va, l'endort tout de suite. Sans la carte, sans
+// l'intérieur de la maison (encore en ruine) ou sans personnage, il s'endort tout de suite.
+// On ne dort que la nuit.
+export function actionGoToBed() {
+  if (!nightActive(state)) { actionSleep(); return; }   // hors de la nuit : « on ne dort que la nuit »
+  if (asleep(state)) return;
+  if (coucher) { actionSleep(); return; }
+  const scene = window.FarmStage;
+  if (!interiorAvailable('maison') || !(scene && scene.hasFermier && scene.hasFermier() && scene.goHome)) { actionSleep(); return; }
+  setCoucher(true);
+  setVergerCase(null);
+  setActiveTab('ferme');
+  setEcranFerme(null);
+  stageWindow = null;
+  stageReturn = null;
+  if (stageInterior) {
+    // déjà dans la maison : il va au lit ; dans la Serre : il traverse jusqu'à la maison
+    if (stageInterior !== 'maison') enterInterior('maison');
+    setLastRenderAt(0);
+    refresh();
+    return;
+  }
+  setLastRenderAt(0);
+  refresh();
+  scene.goHome(() => { if (coucher && nightActive(state)) enterInterior('maison'); });
+}
+
+// La carte : il est couché dans son lit, il s'endort ; la nuit défile en accéléré.
+export function asleepFromStage() {
+  if (!coucher) return;
+  if (!nightActive(state)) { setCoucher(false); refresh(); return; }
+  actionSleep();
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
@@ -684,11 +724,12 @@ registerActions({
     stageWindow = null;
     stageReturn = null;
     stageInterior = null; // changer d'onglet (ou revenir sur « Ferme ») ramène à la carte
+    setCoucher(false);
     setEcranFerme(null);
     telView();
     refresh();
   },
   'sleep': () => {
-    actionSleep();
+    actionGoToBed();
   },
 });

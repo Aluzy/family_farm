@@ -21,7 +21,15 @@ export const RAW_DATA = {
       "Les cartons sont dans le coffre. Il est temps de redonner vie à la ferme."
     ]
   },
-  "TIME": { "DAY_START_HOUR": 6, "SECONDS_PER_HOUR": 30, "CLOCK_SECONDS_PER_HOUR": 18, "MIN_AWAKE_S": 30, "MEAL_HOUR": 19, "NIGHT_HOUR": 22 },
+  "TIME": {
+    "DAY_START_HOUR": 6,
+    "SECONDS_PER_HOUR": 30,
+    "CLOCK_SECONDS_PER_HOUR": 18,
+    "MIN_AWAKE_S": 30,
+    "MEAL_HOUR": 19,
+    "NIGHT_HOUR": 22,
+    "SLEEP_SECONDS_PER_HOUR": 4
+  },
   "FAMILY": {
     "MEMBRES": [
       { "id": "adulte-1", "nom": "Adulte 1", "enfant": false, "genre": "f" },
@@ -388,6 +396,14 @@ export const RAW_DATA = {
       "station": "four",
       "temps": 30,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "miel", "qte": 1 }, { "item": "epices", "qte": 1 }]
+    },
+    "mayonnaise": { "nom": "Mayonnaise", "icone": "🫙‍🥚", "station": "cuisine", "temps": 10, "ingredients": [{ "item": "oeuf", "qte": 3 }] },
+    "quenelle_poisson": {
+      "nom": "Quenelle de poisson",
+      "icone": "🐟‍🥟",
+      "station": "cuisine",
+      "temps": 20,
+      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "poisson"], "qte": 1 }]
     }
   },
   "crops": {
@@ -1085,7 +1101,9 @@ export const RAW_DATA = {
       "raclette",
       "creme_marrons",
       "tarte_myrtilles",
-      "pain_epices"
+      "pain_epices",
+      "mayonnaise",
+      "quenelle_poisson"
     ]
   },
   "CHAPITRES": {

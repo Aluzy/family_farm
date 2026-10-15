@@ -26,7 +26,8 @@
  *                FarmStage.view() (où en est la vue : repère 0, 1 ou 2, bornes),
  *                FarmStage.hasRoom(id) (l'intérieur d'un bâtiment peut-il être affiché ?),
  *                FarmStage.hasFermier() (le personnage est-il là pour ramasser ?),
- *                FarmStage.panTo(x, point { x, y } ou id de bâtiment) (glisse jusque-là).
+ *                FarmStage.panTo(x, point { x, y } ou id de bâtiment) (glisse jusque-là),
+ *                FarmStage.goHome(done) (« Dormir » : le personnage rentre dans la maison).
  *                onView(vue) est appelé quand l'écran courant change, quand un bord est
  *                atteint ou quitté, et au premier glissement du joueur.
  *                Version 1.18 : pickup(id) met un tas « à ramasser » dans l'inventaire et
@@ -252,8 +253,11 @@
   // Les tapis, les tableaux et la fenêtre sont à plat (sous tout le reste).
   const MEUBLES = [
     'four', 'cuisine', 'frigo', 'evier', 'plan', 'fenetre', 'plante', 'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
-    'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3',
+    'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3', 'paillasse',
   ];
+  // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
+  // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.
+  const LITS = ['lit_adulte', 'lit_enfant', 'paillasse'];
   const MEUBLE_PLAT = /^(tapis|tableau|fenetre)/;
   const MEUBLE_GHOST = 0.35;
   const ROOM_GAP = 64 * T;     // les intérieurs sont posés à droite de la carte, hors de portée de la vue
@@ -422,6 +426,7 @@
           if (r.image) L.image(r.image, v(r.image + '.png'));
         }
         for (const name of MEUBLES) L.image('meuble_' + name, v('meuble_' + name + '.png'));
+        for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
         L.image(MAP.tiles, v(MAP.image));
         for (const a of SUFFIXES) {
           L.image('house_' + a, v('house_' + a + '.png'));
@@ -503,6 +508,9 @@
               gain: (items) => this.showGain(items),
               // Version 1.19 : au Poulailler ou à l'Étable, il prend ce qui l'attend.
               collect: (lieu, done) => setTimeout(() => done(bridge && bridge.collect ? bridge.collect(lieu) : null), 0),
+              // Il dort dans son lit : la nuit peut passer.
+              asleep: () => setTimeout(() => { if (bridge && bridge.asleep) bridge.asleep(); }, 0),
+              has: (key) => this.has(key),
             });
           } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
         }
@@ -1585,6 +1593,9 @@
         // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
         if (this.ambient && !this.room) this.ambient.update(delta);
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
+        // Dans la maison, la vue suit le personnage qui va se coucher (la chambre est à droite).
+        const suivi = this.room && this.fermier && !this.drag && this.fermier.focus ? this.fermier.focus() : null;
+        if (suivi != null) this.setCentre(this.cx + (suivi - this.cx) * Math.min(1, dt / 300), this.cy);
         this.stepOccluders(delta);
         this.stepTallGrass(delta);
         this.stepShards(delta);
@@ -3098,6 +3109,16 @@
   // Version 1.18 : la carte a-t-elle son personnage (c'est lui qui ramasse) ?
   function hasFermier() { const s = getScene(); return !!(s && s.ready && s.fermier); }
 
+  // « Dormir » : sur la carte, le personnage marche jusqu'à la porte de la maison (la vue
+  // glisse jusqu'à elle) et entre ; `done` est appelé quand il est dedans (tout de suite s'il
+  // y est déjà).
+  function goHome(done) {
+    const s = getScene();
+    if (!s || !s.ready || !s.fermier || s.room) { setTimeout(done, 0); return; }
+    s.panTo('maison');
+    s.fermier.goHome(done);
+  }
+
   // Où en est la vue (voir viewInfo()) ; null tant que la scène n'est pas prête.
   function view() { const s = getScene(); return s && s.ready ? s.viewInfo() : null; }
 
@@ -3121,5 +3142,5 @@
     return s.panTo(best.p, false);
   }
 
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, scene: getScene }; // scene() : pour le débogage et les tests
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, goHome, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

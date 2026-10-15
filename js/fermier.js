@@ -1,9 +1,16 @@
 /* fermier.js — le personnage de la carte (version provisoire).
  *
  * Il habite la maison : le jour il en sort, flâne devant, et fait sur la carte ce que le
- * joueur vient de faire (labourer, planter, arroser, récolter). Le soir il rentre. Dans
- * l'intérieur de la maison, il cuisine quand une préparation est en cours et ouvre le
- * réfrigérateur quand son contenu change.
+ * joueur vient de faire (labourer, planter, arroser, récolter). Dans l'intérieur de la maison,
+ * il cuisine quand une préparation est en cours et ouvre le réfrigérateur quand son contenu
+ * change.
+ *
+ * Il ne dort que dans son lit. Le soir, il reste dehors jusqu'à ce que le joueur appuie sur
+ * « Dormir » (modèle.coucher) : il marche alors jusqu'à la porte de la maison (goHome), entre,
+ * va à son lit (la place lit_1 de l'intérieur : le premier lit d'adulte, sinon une paillasse)
+ * et s'y couche, debout entre le lit et sa couverture (meuble_<lit>_drap posé par-dessus lui),
+ * des « Z » au-dessus de la tête. Quand il dort, o.asleep() : la nuit défile en accéléré
+ * (modèle.dort) ; il reste couché, même si le joueur sort regarder la carte, jusqu'au réveil.
  *
  * Il n'est jamais à deux endroits à la fois : dehors, dans la maison ou dans la Serre (where).
  * Quand le joueur entre dans un intérieur, il y va : ce qu'il faisait dehors s'arrête, il
@@ -29,7 +36,7 @@
  * Animations réduites : pas de marche ni de retenue ; il se pose directement où il travaille.
  *
  * API : Fermier.attach(scène, { sheet, frames, world, objects, ground, reduced, resync, pickup, gain })
- *       → { filter(modèle), update(delta, intérieur), fetch(id), pos(), info(), destroy() }
+ *       → { filter(modèle), update(delta, intérieur), fetch(id), goHome(done), focus(), pos(), info(), destroy() }
  */
 (function (global) {
   'use strict';
@@ -46,6 +53,10 @@
   const ROAM = 7 * T;            // flânerie : rayon autour de la porte
   const OUT = [6, 21.5];         // heures où il est dehors
   const FADE_S = 0.25;
+  const HOME_MAX = 30 * T;       // « Dormir » : il arrive à la porte de moins loin que ça (il se presse)
+  const ASLEEP_S = 2.4;          // couché depuis ce temps, il dort : la nuit passe
+  const BED_FEET = 27;           // couché : ses pieds à cette hauteur sous le haut du lit (le visage au-dessus de la couverture)
+  const Z_S = 1.8;               // un « Z » monte pendant ce temps ; trois à la fois
   // Gestes : images (suffixe de la vue), durée de chacune (s), image du coup (la case change).
   const ACTS = {
     labourer: { anim: 'houe', frames: [0, 1, 2, 3, 3], dur: [0.14, 0.16, 0.08, 0.12, 0.18], hit: 3 },
@@ -212,14 +223,16 @@
           // Rentré dans la maison : il en ressort par la porte.
           if (!shown) { const d = door(); x = d.x; y = d.y; face = 'bas'; flip = false; appear(); }
           path = findPath(x, y, tx, ty);
-          if (!path || reduced() || pathLength(x, y, path) > (opts && opts.far ? TELEPORT_FAR : TELEPORT)) { x = tx; y = ty; path = []; }
+          const len = path ? pathLength(x, y, path) : 0;
+          if (path && opts && opts.max && len > opts.max && !reduced()) skipAlong(path, len - opts.max);
+          else if (!path || reduced() || len > (opts && opts.far ? TELEPORT_FAR : TELEPORT)) { x = tx; y = ty; path = []; }
         },
         step(dt) {
           age += dt;
           if (!path.length) return true;
           const p = path[0];
           const dx = p.x - x, dy = p.y - y, left = Math.hypot(dx, dy);
-          const v = SPEED * Math.min(1, 0.4 + age * 3);
+          const v = SPEED * (opts && opts.hurry ? 2 : 1) * Math.min(1, 0.4 + age * 3);
           const d = Math.min(left, v * dt);
           if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; look(dx, dy); }
           walked += d;
@@ -230,6 +243,14 @@
           return !path.length;
         },
       };
+    }
+    // Il saute `d` px du chemin (hors de la vue : il arrive de moins loin).
+    function skipAlong(path, d) {
+      while (path.length && d > 0) {
+        const p = path[0], left = Math.hypot(p.x - x, p.y - y);
+        if (left <= d) { x = p.x; y = p.y; d -= left; path.shift(); continue; }
+        x += ((p.x - x) / left) * d; y += ((p.y - y) / left) * d; d = 0;
+      }
     }
     function act(name, opts) {
       const A = ACTS[name];
@@ -357,6 +378,8 @@
     function filter(model) {
       const raw = model;
       ctx.hour = raw.heure == null ? 12 : raw.heure;
+      ctx.coucher = !!raw.coucher;
+      ctx.dort = !!raw.dort;
       pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));
       for (const id of [...claimed]) if (!pilesNow.has(id)) claimed.delete(id);
       if (prevRaw && raw.jour === prevRaw.jour && o.outside()) {
@@ -484,19 +507,20 @@
     }
     function schedule() {
       const outHours = ctx.hour >= OUT[0] && ctx.hour < OUT[1];
-      if (outHours && home) {
-        const d = door();
-        x = d.x; y = d.y; face = 'bas'; flip = false;
-        appear();
-        jobs.push(walkTo(d.x, d.y + T));
-        return;
-      }
-      if (!outHours && !home && shown) {
+      // Il dort (sans passer par l'intérieur : maison en ruine) : il rentre se coucher.
+      if (ctx.dort && !home && shown) {
         roamAt = null;
         const d = door();
         jobs.push(walkTo(d.x, d.y));
         jobs.push(once(() => { face = 'haut'; vanish(); home = true; where = 'maison'; }));
         jobs.push(wait(FADE_S));
+        return;
+      }
+      if (outHours && home) {
+        const d = door();
+        x = d.x; y = d.y; face = 'bas'; flip = false;
+        appear();
+        jobs.push(walkTo(d.x, d.y + T));
         return;
       }
       // Libre et dehors : il va chercher ce qui attend.
@@ -535,6 +559,19 @@
       roamAt = spot;
       idleAge = 0;
       return spot;
+    }
+
+    // « Dormir » : il laisse tout, marche (vite) jusqu'à la porte de la maison et entre ; `done`
+    // quand il est dedans. Déjà dans la maison (ou pas sur la carte) : `done` tout de suite.
+    let arriving = false;            // il vient d'entrer : il apparaîtra à l'entrée de l'intérieur
+    function goHome(done) {
+      if (!shown || home) { setTimeout(done, 0); return; }
+      const d = door();
+      const inside = () => { face = 'haut'; vanish(); home = true; where = 'maison'; arriving = true; roamAt = null; };
+      releaseAll(); claimed.clear(); basket = false; job = null;
+      if (reduced()) { jobs = []; inside(); setTimeout(done, 0); return; }
+      jobs = [walkTo(d.x, d.y, { far: true, hurry: true, max: HOME_MAX }), once(inside), wait(FADE_S), once(done)];
+      idleAge = 0;
     }
 
     // La hache en main, le joueur a touché un arbre : il va se placer à côté du tronc (à
@@ -688,7 +725,10 @@
     function enterView(room) {
       viewing = room.id;
       const rest = roomSpot(room, Math.round(room.view.x + room.view.w * 0.5), Math.round(room.view.y + room.view.h * 0.7), true);
-      if (where === room.id) {
+      if (where === room.id && arriving) {
+        // il vient d'entrer par la porte : il apparaît à l'entrée
+        inside.x = room.entree.x; inside.y = room.entree.y; inside.wait = 0; inside.alpha = 0;
+      } else if (where === room.id) {
         if (inside.at !== room.id) { inside.x = rest.x; inside.y = rest.y; }
         inside.wait = 0; inside.alpha = 1;
       } else {
@@ -704,6 +744,7 @@
       }
       inside.at = room.id; inside.path = []; inside.goal = null; inside.mode = 'idle'; inside.t = 0; inside.roam = rand(3, 7);
       inside.rest = rest;
+      arriving = false;
       frigoDue = false;
     }
     // Le joueur ressort : il ressort aussi par la porte, sauf la nuit dans la maison.
@@ -711,6 +752,7 @@
       const id = viewing;
       viewing = null;
       if (inside.s) inside.s.setVisible(false);
+      getUp();
       if (where !== id) return;
       if (id === 'maison' && (ctx.hour < OUT[0] || ctx.hour >= OUT[1])) return;
       const d = doorOf(id);
@@ -718,6 +760,90 @@
       appear();
       jobs = [walkTo(d.x, d.y + T)].concat(jobs);
     }
+    // Son lit dans `room` : la place lit_1 (le premier lit d'adulte, sinon la paillasse), si
+    // son dessin et sa couverture sont là. side = où il se tient avant de s'y coucher (au pied
+    // du lit), at = ses pieds une fois couché (la tête sur l'oreiller).
+    function bedOf(room) {
+      const p = (room.props || []).find((q) => q.name === 'lit_1');
+      const b = p && p.sprite;
+      if (!b || !b.visible || !o.has || !o.has(`meuble_${p.dessin}_drap`)) return null;
+      const top = b.y - b.height;
+      return {
+        key: `${p.dessin}@${b.x},${b.y}`, sprite: b, drap: `meuble_${p.dessin}_drap`,
+        side: roomSpot(room, Math.round(b.x), Math.round(b.y + 6)),
+        at: { x: Math.round(b.x), y: Math.min(top + BED_FEET, b.y - 1) },
+      };
+    }
+    // Il se couche : debout entre le lit et sa couverture, tourné vers nous.
+    function lieDown(S, bed) {
+      inside.mode = 'lit'; inside.bed = bed.key; inside.sleep = 0; inside.slept = false;
+      inside.x = bed.at.x; inside.y = bed.at.y; inside.face = 'bas'; inside.flip = false;
+      if (!inside.drap) inside.drap = scene.add.image(0, 0, bed.drap).setOrigin(0.5, 1);
+      inside.drap.setTexture(bed.drap).setPosition(bed.sprite.x, bed.sprite.y).setDepth(bed.sprite.depth + 0.2).setVisible(true);
+      sleepInBed(S, bed, 0);
+    }
+    function sleepInBed(S, bed, dt) {
+      inside.sleep += dt;
+      // un souffle lent ; les « Z » montent
+      const k = F[`idle_bas_${Math.floor(inside.sleep / (BREATH_S * 2)) % 2}`];
+      if (k !== undefined) S.setFrame(k);
+      S.setVisible(true).setAlpha(inside.alpha).setFlipX(false).setPosition(inside.x, inside.y).setDepth(bed.sprite.depth + 0.1);
+      if (inside.drap) inside.drap.setAlpha(1);
+      stepZ(inside.x, inside.y - 32 + 5, inside.sleep);
+      if (!inside.slept && inside.sleep >= (reduced() ? 0.8 : ASLEEP_S)) {
+        inside.slept = true;
+        if (o.asleep && !ctx.dort) o.asleep();   // il s'endort : la nuit défile en accéléré
+      }
+    }
+    // Il se lève : au pied du lit, sans couverture ni « Z ».
+    function getUp() {
+      if (inside.mode !== 'lit') return;
+      inside.mode = 'idle';
+      inside.bed = null;
+      if (inside.drap) inside.drap.setVisible(false);
+      stepZ(0, 0, -1);
+      const room = viewing && scene.rooms ? scene.rooms[viewing] : null;
+      const p = room && (room.props || []).find((q) => q.name === 'lit_1');
+      if (p && p.sprite) {
+        const side = roomSpot(room, Math.round(p.sprite.x), Math.round(p.sprite.y + 6));
+        inside.x = side.x; inside.y = side.y;
+      }
+      inside.path = []; inside.goal = null; inside.t = 0; inside.roam = rand(3, 7);
+    }
+    // Les « Z » au-dessus de sa tête (en `hx`, `hy`), qui grandissent en montant et
+    // s'effacent ; `t` < 0 : ils disparaissent. Dessinés en pixels (4, 5, puis 6 de côté).
+    const zs = [];
+    function zTexture(n) {
+      const key = `fermier_z${n}`;
+      if (scene.textures.exists(key)) return key;
+      const c = scene.textures.createCanvas(key, n + 2, n + 2);
+      const g = c.getContext();
+      const dot = (px, py, col) => { g.fillStyle = col; g.fillRect(px, py, 1, 1); };
+      const on = new Set();
+      for (let i = 0; i < n; i++) { on.add(`${i},0`); on.add(`${i},${n - 1}`); }
+      for (let r = 1; r < n - 1; r++) on.add(`${Math.round((n - 1) * (1 - r / (n - 1)))},${r}`);
+      for (const k of on) { const [a, b] = k.split(',').map(Number); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) dot(a + 1 + dx, b + 1 + dy, '#22314a'); }
+      for (const k of on) { const [a, b] = k.split(',').map(Number); dot(a + 1, b + 1, '#f4f1e6'); }
+      c.refresh();
+      return key;
+    }
+    function stepZ(hx, hy, t) {
+      if (t < 0 || reduced()) { for (const z of zs) z.setVisible(false); if (t >= 0 && reduced()) showZStill(hx, hy); return; }
+      for (let i = 0; i < 3; i++) {
+        if (!zs[i]) zs[i] = scene.add.image(0, 0, zTexture(4)).setOrigin(0.5, 1);
+        const p = ((t + (i * Z_S) / 3) % Z_S) / Z_S;            // 0 → 1 en montant
+        const z = zs[i];
+        z.setTexture(zTexture(p < 0.33 ? 4 : p < 0.66 ? 5 : 6));
+        z.setPosition(Math.round(hx + 4 + p * 12 + Math.sin(p * Math.PI * 2) * 1.5), Math.round(hy - 1 - p * 24))
+          .setAlpha(t < (i * Z_S) / 3 ? 0 : Math.min(1, p * 5, (1 - p) * 3)).setDepth(1e6).setVisible(true);
+      }
+    }
+    // Animations réduites : un seul « Z », immobile.
+    function showZStill(hx, hy) {
+      if (!zs[0]) zs[0] = scene.add.image(0, 0, zTexture(6)).setOrigin(0.5, 1);
+      zs[0].setTexture(zTexture(6)).setPosition(Math.round(hx + 8), Math.round(hy - 6)).setAlpha(1).setDepth(1e6).setVisible(true);
+    }
+
     function stepInside(room, dt) {
       if (!inside.s) inside.s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1);
       const S = inside.s;
@@ -727,8 +853,18 @@
       // Où il doit être : au réfrigérateur juste après un changement, à la cuisine pendant une
       // préparation ; sinon il se tient au milieu, et de temps en temps fait quelques pas.
       let want = null, busy = false;
-      if (frigoDue) { want = propSpot(room, 'frigo'); if (want) { inside.mode = 'frigo'; inside.t = 0; } frigoDue = false; }
-      if (inside.mode === 'frigo') { want = propSpot(room, 'frigo'); busy = !!want; }
+      // « Dormir » : son lit. Couché, il y reste tant que le coucher dure.
+      const bed = ctx.coucher && room.id === 'maison' ? bedOf(room) : null;
+      if (inside.mode === 'lit') {
+        if (bed && bed.key === inside.bed) { sleepInBed(S, bed, dt); return; }
+        getUp();
+      }
+      if (bed) { want = bed.side; busy = true; frigoDue = false; if (inside.mode === 'frigo') inside.mode = 'idle'; }
+      // il dort déjà (on revient dans la maison, ou deuxième appui sur « Dormir ») : au lit tout de suite
+      if (bed && ctx.dort && inside.mode !== 'lit') { inside.x = bed.side.x; inside.y = bed.side.y; inside.path = []; inside.goal = { x: bed.side.x, y: bed.side.y }; inside.alpha = 1; }
+      else if (frigoDue) { want = propSpot(room, 'frigo'); if (want) { inside.mode = 'frigo'; inside.t = 0; } frigoDue = false; }
+      if (bed) { /* il va au lit */ }
+      else if (inside.mode === 'frigo') { want = propSpot(room, 'frigo'); busy = !!want; }
       else if (cooking && room.id === 'maison') { want = propSpot(room, cooking) || propSpot(room, 'cuisine'); busy = !!want; }
       if (!busy && !reduced()) {
         inside.roam -= dt;
@@ -763,7 +899,8 @@
         let t = inside.t, i = 0;
         while (i < A.frames.length && t >= A.dur[i]) { t -= A.dur[i]; i++; }
         if (i >= A.frames.length) { inside.mode = 'idle'; name = 'idle_haut_0'; } else name = `frigo_${A.frames[i]}`;
-      } else if (want) name = `cuisine_${Math.floor(inside.t / 0.16) % 4}`;
+      } else if (bed) { lieDown(S, bed); return; }
+      else if (want) name = `cuisine_${Math.floor(inside.t / 0.16) % 4}`;
       else name = `idle_${inside.face === 'haut' ? 'haut' : 'bas'}_${Math.floor(inside.t / BREATH_S) % 2}`;
       const k = F[name];
       if (k !== undefined) S.setFrame(k);
@@ -805,16 +942,20 @@
       if (!shown) { schedule(); return; }
       idleAge += dt;
       draw(`idle_${face}_${Math.floor(idleAge / BREATH_S) % 2}`);
-      if (idleAge >= idleLen || ctx.hour < OUT[0] || ctx.hour >= OUT[1] || nextPile()) schedule();
+      if (idleAge >= idleLen || nextPile() || ctx.dort) schedule();
     }
 
     return {
       filter,
       update,
-      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, ou: where, dedans: viewing && inside.wait <= 0 ? { x: Math.round(inside.x), y: Math.round(inside.y) } : null, jobs: jobs.length + (job ? 1 : 0), retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
+      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, ou: where, couche: inside.mode === 'lit', dedans: viewing && inside.wait <= 0 ? { x: Math.round(inside.x), y: Math.round(inside.y) } : null, jobs: jobs.length + (job ? 1 : 0), retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
       // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
       fetch: (id) => fetch(id, true),
       goTo,
+      // « Dormir » : il rentre dans la maison (done : il est dedans).
+      goHome,
+      // Où la vue de l'intérieur doit être (x), pendant qu'il va se coucher ; null sinon.
+      focus: () => (ctx.coucher && viewing === 'maison' && where === 'maison' && inside.wait <= 0 && inside.s ? inside.x : null),
       // La hache : couper l'arbre dont le pied est en `foot` ({ x, y }).
       chop,
       // La pioche : casser le rocher dont le pied est en `foot`, de demi-largeur `half`.
@@ -830,7 +971,7 @@
       collect,
       // Où il est (pour la bulle « +x ») : ses pieds, ou null s'il n'est pas sur la carte.
       pos: () => (shown && !home ? { x, y } : null),
-      destroy() { s.destroy(); if (inside.s) inside.s.destroy(); holds.clear(); },
+      destroy() { s.destroy(); if (inside.s) inside.s.destroy(); if (inside.drap) inside.drap.destroy(); zs.forEach((z) => z.destroy()); holds.clear(); },
       // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
       setSheet(key) {
         o.sheet = key;

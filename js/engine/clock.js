@@ -43,7 +43,7 @@ export function clockHours(state) {
 
 // De NIGHT_HOUR (22 h) à DAY_START_HOUR (6 h), la nuit passe à la vitesse du jour :
 // state.nuitEnCours = { ms (temps de nuit écoulé depuis 22 h), minuit (la nuit est-elle
-// déjà calculée ?) }, null le jour. Voir startNight(), advanceNight() et skipNight().
+// déjà calculée ?), dort (le personnage dort dans son lit : la nuit défile en accéléré) }, null le jour. Voir startNight(), advanceNight() et skipNight().
 export function nightActive(state) {
   return !!(state && state.nuitEnCours && Number.isFinite(state.nuitEnCours.ms));
 }

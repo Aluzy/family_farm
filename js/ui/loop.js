@@ -124,8 +124,8 @@ function watchTechPoints() {
 // La journée suit l'horloge : de 6 h à 22 h, 18 s par heure. À 19 h, la famille prend
 // son repas. Version 1.19 : à 22 h, la famille va dormir et la nuit défile à la même
 // vitesse (tick : seule l'heure avance) ; à minuit, la nuit se calcule (récolte automatique
-// comprise) et le jour change ; à 6 h, le résumé du réveil s'affiche. Le bouton « Zzz » saute
-// ce qui reste. Jeu ouvert seulement : une absence n'avance l'horloge du jour que jusqu'à
+// comprise) et le jour change ; à 6 h, le résumé du réveil s'affiche. Le bouton « Zzz »
+// couche le personnage : quand il dort, la nuit défile en accéléré. Jeu ouvert seulement : une absence n'avance l'horloge du jour que jusqu'à
 // l'éveil minimal (voir simulateOffline). La nuit attend qu'une fenêtre ouverte soit
 // refermée, et ne commence pas tant qu'une bulle d'aide de la première partie est affichée
 // (le joueur lit), sauf celle qui explique la nuit.

@@ -308,6 +308,42 @@ ICONS['🫙'] = contour([
     '...dddddddddd',
 ])
 
+# mayonnaise : bocal de verre rempli de mayonnaise jaune pâle, couvercle rouge, une cuillère
+ICONS['🫙‍🥚'] = contour([
+    '',
+    '..........e',
+    '...hhhhhhhe',
+    '...rrrrrrre',
+    '...hhhhhhhe',
+    '..vvvvvvvvvv',
+    '..wnnnnnnnnd',
+    '..wnjnnnnnnd',
+    '..wnnnnnjnnd',
+    '..wnnnjnnnnd',
+    '..wnnnnnnnjd',
+    '..wjnnnnnnnd',
+    '..vvvvvvvvdd',
+    '...dddddddd',
+])
+
+# quenelle de poisson : deux quenelles dorées dans une sauce rosée, sur une assiette creuse
+ICONS['🐟‍🥟'] = contour([
+    '',
+    '',
+    '',
+    '',
+    '',
+    '....mmmLL',
+    '..mmmmmLLLC.mmm',
+    '.*mmLLLLCCmmmLL*',
+    '.**LCCCCC*mLLLC*',
+    '.&****&***LCCC**',
+    '..&&****&&****&',
+    '.wwwwwwwwwwwwwww',
+    '..efffffffffffe',
+    '....EEEEEEEEE',
+])
+
 # 🥫 conserve : boîte en fer, étiquette rouge à bande crème
 ICONS['🥫'] = contour([
     '',

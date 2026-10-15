@@ -57,7 +57,7 @@ function useTool(id) {
     return;
   }
   if (id === 'houe' || id === 'hache' || id === 'pioche' || id === 'canne') {
-    if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return; }
+    if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).'); return; }
   }
   applyResult(selectTool(state, id));
   if (id !== 'houe' && hoeMode) setHoeMode(false);
@@ -112,7 +112,7 @@ export function rodChipHtml() {
 // dans l'inventaire tout de suite ; la carte montre ensuite le personnage qui coupe. Renvoie
 // ce qu'il a coupé ({ bois: n }), ou null (la nuit, sans énergie, arbre épuisé : un message).
 export function chopFromStage(id) {
-  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return null; }
+  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).'); return null; }
   const r = chopTree(state, id);
   if (!r.ok) { showToast(r.error); return null; }
   persistState();
@@ -124,7 +124,7 @@ export function chopFromStage(id) {
 // l'inventaire tout de suite ; la carte montre ensuite le personnage qui frappe. Renvoie
 // { items: { pierre: n }, casse } (casse : ce coup brise le rocher), ou null (un message).
 export function mineFromStage(id) {
-  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return null; }
+  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).'); return null; }
   const r = mineRock(state, id);
   if (!r.ok) { showToast(r.error); return null; }
   persistState();
@@ -137,7 +137,7 @@ export function mineFromStage(id) {
 // personnage qui lance, attend la touche et ferre. Renvoie { poisson } (null : rien n'a
 // mordu), ou null (un message : la nuit, sans énergie, le poisson se fait rare).
 export function fishFromStage(eau) {
-  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return null; }
+  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).'); return null; }
   const r = castLine(state, eau);
   if (!r.ok) { showToast(r.error); return null; }
   persistState();

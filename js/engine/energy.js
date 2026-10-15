@@ -8,7 +8,7 @@ import { runCooking, runElectricStation } from './kitchen.js';
 import { refreshUnlocks, techFlag, techPct } from './techtree.js';
 import { bumpCounter, noteEnergyRecord, updateChapters } from './campaign.js';
 import { nightActive } from './clock.js';
-import { advanceNight } from './night.js';
+import { advanceNight, nightSpeed } from './night.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
 
@@ -116,7 +116,7 @@ export function tick(state, dt, horlogeArretee = false) {
   if (!(dtMs > 0)) return state;
   // Version 1.19 : la nuit, seule l'heure avance (la nuit se calcule d'un coup à minuit).
   if (nightActive(state)) {
-    if (!horlogeArretee) advanceNight(state, dtMs);
+    if (!horlogeArretee) advanceNight(state, dtMs * nightSpeed(state)); // il dort : en accéléré
     return state;
   }
   flowStep(state, dtMs);

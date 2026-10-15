@@ -6,7 +6,9 @@
 #   - cuisine et evier sont les modèles dessinés à la main, repris tels quels :
 #     scripts/batiments/originaux/meuble_cuisine.png (32 × 32) et meuble_evier.png (32 × 26) ;
 #   - les meubles du Marché (data/meubles.json) : chaise, table, tapis_1 à 3, lit_adulte,
-#     lit_enfant, chevet, canape, table_basse, tableau_1 à 3.
+#     lit_enfant, chevet, canape, table_basse, tableau_1 à 3 ;
+#   - la paillasse (sans lit acheté, le personnage dort dessus) et les couvertures seules
+#     des lits (lit_adulte_drap, lit_enfant_drap, paillasse_drap), posées sur le dormeur.
 # Vue de dessus à 45° (comme la carte) : on voit le dessus de chaque meuble, raccourci, et sa
 # face avant ; les tapis sont à plat, la fenêtre et les tableaux accrochés au mur (de face).
 # Lumière en haut à gauche.
@@ -326,6 +328,40 @@ def lit(enfant):
     outline(im)
     return im
 
+def paillasse():
+    # sans lit acheté, on dort sur une paillasse posée par terre : le matelas de paille (ses
+    # brins), l'oreiller, une couverture bleue rapiécée. Mêmes proportions que le lit adulte
+    # (l'oreiller aux rangées 5 à 9, la couverture à partir de la rangée 12) : le personnage
+    # s'y couche de la même façon.
+    W, H = 20, 34
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 0, 3, W - 1, H - 2, 'J0')               # matelas de paille
+    rect(put, 1, 3, W - 2, H - 3, 'J1')
+    for y in range(4, H - 3, 3):                      # brins de paille
+        for x in range(1 + y % 2, W - 1, 3):
+            put(x, y, 'J2')
+    rect(put, 3, 5, W - 4, 9, 'b3')                   # oreiller
+    rect(put, 3, 9, W - 4, 9, 'b1')
+    rect(put, 1, 12, W - 2, H - 3, 'B1')              # couverture, le haut rabattu
+    rect(put, 1, 12, W - 2, 14, 'B2')
+    rect(put, 4, 19, 8, 23, 'R1'); rect(put, 11, 25, 15, 28, 'J2')   # pièces cousues
+    rect(put, 1, H - 3, W - 2, H - 3, 'B0')
+    outline(im)
+    return im
+
+
+def drap(im, y0):
+    # la couverture seule (les rangées y0 et suivantes de l'image du lit) : posée par-dessus
+    # le personnage couché, elle le cache jusqu'aux épaules
+    out = im.copy()
+    px = out.load()
+    for y in range(min(y0, out.height)):
+        for x in range(out.width):
+            px[x, y] = (0, 0, 0, 0)
+    return out
+
+
 def chevet():
     # table de chevet : son dessus (la lampe posée dessus), sa face avec un tiroir
     W, H = 14, 22
@@ -416,6 +452,11 @@ def main():
         'lit_adulte': lit(False), 'lit_enfant': lit(True), 'chevet': chevet(), 'canape': canape(),
         'table_basse': table_basse(), 'tableau_1': tableau(1), 'tableau_2': tableau(2), 'tableau_3': tableau(3),
     }
+    images['paillasse'] = paillasse()
+    # les couvertures des lits (rangée 12 : le haut rabattu) : js/fermier.js les pose
+    # par-dessus le personnage quand il dort
+    for k in ('lit_adulte', 'lit_enfant', 'paillasse'):
+        images[k + '_drap'] = drap(images[k], 12)
     out = {f'meuble_{k}.png': im for k, im in images.items()}
     for name, im in out.items():
         im.save(os.path.join(ROOT, 'assets', name), optimize=True)
