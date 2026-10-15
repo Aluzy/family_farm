@@ -281,6 +281,7 @@
   const GAIN_FADE_MS = 1400;    // … s'estompe lentement (une prise pendant ce temps s'y ajoute)
   const LONG_PRESS_MS = 450;   // appui maintenu sur la citerne : sa bulle (litres) s'affiche
   const GROUND_CHECK_MS = 3000; // le fond de la carte est vérifié à ce rythme (voir repairGround)
+  const SPRITE_CHECKS = 8;      // et, à chaque fois, autant d'arbres, de barrières ou de rochers
   const ZONE_LABEL_UP = 14;    // px de carte : l'étiquette de la zone passe au-dessus de la barrière
   const LIGHT_MS = 1200;       // fondu entre deux lumières (un quart d'heure de jeu dure à peu près autant)
 
@@ -685,6 +686,49 @@
         this.drawLayer(ctx, raw, o.layer, set, img, o.cells, null, true);
         ctx.restore();
         o.tex.refresh();
+        o.probe = this.probeOf(o.tex, o.w, o.h);
+      }
+
+      // Un point opaque d'une image dessinée dans un canevas (null s'il n'y en a pas) : s'il
+      // redevient transparent, le navigateur a vidé le canevas (voir spritesWiped).
+      probeOf(tex, w, h) {
+        try {
+          const d = tex.getContext().getImageData(0, 0, w, h).data;
+          for (let i = 3; i < d.length; i += 4) if (d[i] > 200) { const k = (i - 3) / 4; return { x: k % w, y: (k / w) | 0 }; }
+        } catch (e) { /* pas de vérification pour cette image */ }
+        return null;
+      }
+
+      // Les arbres, les barrières et les rochers de la carte sont dessinés chacun dans son
+      // canevas : comme le fond, le navigateur peut les vider quand la page reste en
+      // arrière-plan. Vrai si l'un d'eux l'a été. `few` : quelques-uns seulement, à tour de rôle
+      // (la vérification régulière ; au retour sur la page, tous sont vérifiés).
+      spritesWiped(few) {
+        const all = (this.occluders || []).concat(this.rocks || []);
+        let list = all;
+        if (few && all.length > SPRITE_CHECKS) {
+          const k0 = this.spriteCheckAt = ((this.spriteCheckAt || 0) + SPRITE_CHECKS) % all.length;
+          list = Array.from({ length: SPRITE_CHECKS }, (_, i) => all[(k0 + i) % all.length]);
+        }
+        for (const o of list) {
+          if (!o.tex || !o.probe) continue;
+          try {
+            const ctx = o.tex.getContext();
+            if (ctx.isContextLost && ctx.isContextLost()) continue;   // pas encore rendu : on réessaiera
+            if (ctx.getImageData(o.probe.x, o.probe.y, 1, 1).data[3] === 0) return true;
+          } catch (e) { /* on ne sait pas : rien */ }
+        }
+        return false;
+      }
+
+      // Redessine les arbres, les barrières et les rochers de la carte dans leurs canevas.
+      paintSprites() {
+        const raw = this.mapRaw;
+        if (!raw || !this.has(MAP.tiles)) return;
+        const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
+        if (!set) return;
+        const img = this.textures.get(MAP.tiles).getSourceImage();
+        for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.tex) this.paintOccluder(o, raw, set, img);
       }
 
       // À chaque image : l'arbre devant le personnage (son pied plus bas que celui du
@@ -967,11 +1011,15 @@
       }
 
       // Redessine le fond s'il a été vidé (ou d'office avec `force`). Sans cela, au retour
-      // d'une absence, la carte n'affichait plus qu'un vert uni sous les bâtiments.
-      repairGround(force) {
+      // d'une absence, la carte n'affichait plus qu'un vert uni sous les bâtiments. Les arbres,
+      // les barrières et les rochers (leurs canevas) aussi : sinon il ne restait que leurs
+      // ombres. Et les images de la vie d'ambiance (bêtes, nuages, feuilles).
+      repairGround(force, few) {
         if (!this.textures.exists('ground')) return false;
-        if (!force && !this.groundWiped()) return false;
+        if (!force && !this.groundWiped() && !this.spritesWiped(few)) return false;
         this.paintGround();
+        this.paintSprites();
+        if (this.ambient && this.ambient.repaint) this.ambient.repaint();
         return true;
       }
 
@@ -1589,7 +1637,7 @@
         if (this.tankTipUntil && performance.now() >= this.tankTipUntil) this.showTankTip(false);
         this.syncTankTip();
         // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
-        if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false); }
+        if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false, true); }
         // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
         if (this.ambient && !this.room) this.ambient.update(delta);
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
