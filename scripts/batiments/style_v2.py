@@ -1,7 +1,7 @@
 # Les bâtiments du décor version 2, dans le style de la nouvelle ferme.
 #
 #   python3 scripts/batiments/style_v2.py            écrit assets/house_sp.png, barn_sp.png,
-#                                                    windmill_sp.png, poulailler.png
+#                                                    windmill_sp.png, poulailler.png, serre_sp.png
 #   python3 scripts/batiments/style_v2.py --apercu   écrit aussi apercu_style_v2.png
 #
 # Puis python3 scripts/batiments/ruines.py : les versions à réparer partent de ces images.
@@ -14,6 +14,9 @@
 # ensemble de pixels (une couleur d'origine, éventuellement limitée à une zone) ; ses couleurs
 # se rangent par luminosité et prennent, dans cet ordre, les tons de la rampe de la ferme.
 # Le relief du dessin (ses ombres, ses lumières) est donc gardé.
+# La serre : scripts/batiments/originaux/serre_modele.png (96 × 81 : toit de lattes, vitres et
+# double porte vitrée dans un cadre de bois), telle quelle ; l'ancienne verrière du pack est
+# gardée dans originaux/serre_sp_v1.png.
 import colorsys
 import os
 import sys
@@ -167,6 +170,7 @@ def main():
         'barn_sp.png': etable(),
         'windmill_sp.png': moulin(),
         'poulailler.png': poulailler(),
+        'serre_sp.png': Image.open(os.path.join(ORIG, 'serre_modele.png')).convert('RGBA'),
     }
     for nom, img in faits.items():
         img.save(os.path.join(ASSETS, nom))
