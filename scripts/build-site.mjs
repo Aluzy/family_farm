@@ -37,9 +37,9 @@ try {
 }
 
 const OUT = join(ROOT, '_site');
-const PAGES = ['index.html', 'jeu.html', 'encyclopedie.html', 'cookies.html'];
+const PAGES = ['index.html', 'jeu.html', 'encyclopedie.html', 'cookies.html', 'infra-monde.html'];
 const FOLDERS = ['css', 'assets', 'vendor'];
-const SCRIPTS = ['js/telemetry.js', 'js/ambient-life.js', 'js/fermier.js', 'js/farm-stage.js']; // scripts classiques, hors du regroupement
+const SCRIPTS = ['js/telemetry.js', 'js/ambient-life.js', 'js/fermier.js', 'js/farm-stage.js', 'js/infra-monde.js']; // scripts classiques, hors du regroupement
 const ENTRY = 'js/main.js';
 const BUNDLE = 'js/jeu.bundle.js';
 

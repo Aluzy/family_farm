@@ -3,6 +3,7 @@
 //   assets/carte_printemps_elargie.tmj → assets/carte_printemps.json   (la carte de la ferme)
 //   assets/serre_interieur.tmj         → assets/serre_interieur.json   (l'intérieur de la Serre)
 //   assets/maison_interieur.tmj        → assets/maison_interieur.json  (l'intérieur de la maison)
+//   assets/infra_monde.tmj             → assets/infra_monde.json       (l'infra-monde, infra-monde.html)
 //
 //   node scripts/build-map.mjs
 //
@@ -17,8 +18,9 @@ import { fileURLToPath } from 'node:url';
 import { basename, dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-// La planche principale : sans elle, la carte ne s'affiche pas. Les autres jeux de tuiles
-// sont facultatifs : si leur image manque dans assets/, leurs tuiles ne sont pas dessinées.
+// La planche principale (`main` d'une carte, celle de la ferme par défaut) : sans elle, la
+// carte ne s'affiche pas. Les autres jeux de tuiles sont facultatifs : si leur image manque
+// dans assets/, leurs tuiles ne sont pas dessinées.
 const MAIN = 'farm_spring_summer';
 const MAPS = [
   {
@@ -40,6 +42,13 @@ const MAPS = [
     // Couche d'objets « meubles » : un rectangle par meuble (voir ROOMS et bakeRooms()), et
     // le rectangle « vue » : ce que la vue cadre en entrant (sans lui, toute la maison).
     places: ['four', 'cuisine', 'frigo'],
+  },
+  {
+    // fabriquée par scripts/infra/carte.py ; « depart » : où l'habitant apparaît
+    source: 'assets/infra_monde.tmj',
+    target: 'assets/infra_monde.json',
+    main: 'infra_sol',
+    places: ['depart'],
   },
 ];
 
@@ -108,8 +117,9 @@ for (const def of MAPS) {
     const set = readTileset(name, errors);
     if (set) sets.push({ key: name, firstgid: t.firstgid, used: 0, set });
   }
-  if (!sets.some((s) => s.key === MAIN)) errors.push(`la carte n'utilise pas la planche ${MAIN}`);
-  else if (!sets.find((s) => s.key === MAIN).set.present) errors.push(`assets/${sets.find((s) => s.key === MAIN).set.image} introuvable`);
+  const main = def.main || MAIN;
+  if (!sets.some((s) => s.key === main)) errors.push(`la carte n'utilise pas la planche ${main}`);
+  else if (!sets.find((s) => s.key === main).set.present) errors.push(`assets/${sets.find((s) => s.key === main).set.image} introuvable`);
   const owner = (gid) => sets.find((s) => gid >= s.firstgid && gid < s.firstgid + s.set.tilecount);
 
   const names = new Set();
