@@ -17,13 +17,13 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks } from '../engine/outils.js';
 import { showToast } from './toasts.js';
 import {
-  activeTab, axeMode, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
+  activeTab, axeMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
 import { morph, refresh, setLastRenderAt } from './render.js';
 import {
-  allerAuLieu, interiorAvailable, interiorHelp, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue,
+  allerAuLieu, asleepFromStage, interiorAvailable, interiorHelp, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue,
   setStageInterior, setStageReturn, setStageWindow, stageInterior, STAGE_WINDOWS, windowLocked,
 } from './stage-windows.js';
 import { renderMoulin } from './cuisine.js';
@@ -325,13 +325,15 @@ export function stageModel() {
     // le décor de la cuisine, toujours là
     evier: { dessin: 'evier' }, plan: { dessin: 'plan' }, fenetre: { dessin: 'fenetre' }, plante: { dessin: 'plante' },
   };
-  // Meubles achetés au Marché : chacun à sa place (chaise_1…, lit_1… : les lits d'adulte d'abord).
+  // Meubles achetés au Marché : chacun à sa place (chaise_1…, lit_1… : les lits d'adulte d'abord ;
+  // sans lit d'adulte, la première place a une paillasse, où le personnage dort).
   for (const id of Object.keys(DATA.MEUBLES)) {
     const n = furnitureCount(state, id);
     if (id === 'chaise') for (let i = 1; i <= n; i++) meubles[`chaise_${i}`] = { dessin: 'chaise' };
     else if (!id.startsWith('lit_') && n > 0) meubles[id] = { dessin: id };
   }
-  const lits = [...Array(furnitureCount(state, 'lit_adulte')).fill('lit_adulte'), ...Array(furnitureCount(state, 'lit_enfant')).fill('lit_enfant')];
+  const adultes = furnitureCount(state, 'lit_adulte');
+  const lits = [...(adultes ? Array(adultes).fill('lit_adulte') : ['paillasse']), ...Array(furnitureCount(state, 'lit_enfant')).fill('lit_enfant')];
   lits.forEach((dessin, i) => { meubles[`lit_${i + 1}`] = { dessin }; });
   // Appui long sur la citerne : une bulle dit combien de litres elle contient.
   const citerneTexte = citerne >= 0 ? `💧 ${formatLitres(Math.min(state.eauMl, cap))} / ${formatLitres(cap)}` : '';
@@ -355,6 +357,8 @@ export function stageModel() {
   return {
     // version 1.19 : la nuit (22 h → 6 h), la famille dort : la carte ne fait rien faire
     nuit: nightActive(state),
+    // le joueur a appuyé sur « Dormir » : le personnage va à son lit (js/fermier.js)
+    coucher: coucher && nightActive(state),
     ramasser,
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
     perso: memberPerso(mainCharacter(state)),
@@ -454,7 +458,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, icone: (item) => (DATA.items[item] ? DATA.items[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, asleep: asleepFromStage, icone: (item) => (DATA.items[item] ? DATA.items[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

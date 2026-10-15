@@ -91,6 +91,13 @@ export function setRodMode(value) {
   if (value) { hoeMode = false; axeMode = false; pickMode = false; }
   return value;
 }
+// Le coucher : le joueur a appuyé sur « Dormir », le personnage va à son lit (la carte le
+// montre : la porte de la maison, l'intérieur, le lit). La nuit passe quand il y dort.
+export let coucher = false;
+export function setCoucher(value) {
+  coucher = value;
+  return value;
+}
 // Version 1.13 : case du Verger dont on choisit l'arbre (null : aucun choix ouvert).
 export let vergerCase = null;
 export function setVergerCase(value) {

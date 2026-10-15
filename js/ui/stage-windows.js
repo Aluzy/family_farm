@@ -15,7 +15,7 @@ import { formatCoins, formatDay, formatNumber, formatPercent, weekdayShort } fro
 import { dayOfMonth, monthName, moonPhase } from '../engine/lune.js';
 import { renderCalendrier } from './calendrier.js';
 import {
-  activeTab, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setComptoirTab, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
+  activeTab, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { showToast } from './toasts.js';
@@ -99,6 +99,7 @@ export function enterInterior(id) {
 export function leaveInterior() {
   if (!stageInterior) return;
   stageInterior = null;
+  setCoucher(false); // sortir de la maison : il ne va plus se coucher
   stageWindow = null;
   stageReturn = null;
   setLastRenderAt(0);
@@ -643,6 +644,41 @@ export function syncTestDeviceSelect() {
   if (devices.some((d) => d.id === previous)) sel.value = previous;
 }
 
+// « Dormir » : pour dormir, le personnage doit être dans son lit. Sur la carte de la ferme, il
+// marche jusqu'à la porte de la maison (la vue glisse jusqu'à elle), puis l'intérieur s'ouvre ;
+// il va à son lit, s'y couche, et la nuit passe quand il dort (asleepFromStage). Un deuxième
+// appui, pendant qu'il y va, saute l'attente. Sans la carte, sans l'intérieur de la maison
+// (encore en ruine) ou sans personnage, la nuit passe tout de suite, comme avant.
+export function actionGoToBed() {
+  if (!nightActive(state)) { actionSleep(); return; }   // hors de la nuit : le message du bouton
+  if (coucher) { actionSleep(); return; }
+  const scene = window.FarmStage;
+  if (!interiorAvailable('maison') || !(scene && scene.hasFermier && scene.hasFermier() && scene.goHome)) { actionSleep(); return; }
+  setCoucher(true);
+  setVergerCase(null);
+  setActiveTab('ferme');
+  setEcranFerme(null);
+  stageWindow = null;
+  stageReturn = null;
+  if (stageInterior) {
+    // déjà dans la maison : il va au lit ; dans la Serre : il traverse jusqu'à la maison
+    if (stageInterior !== 'maison') enterInterior('maison');
+    setLastRenderAt(0);
+    refresh();
+    return;
+  }
+  setLastRenderAt(0);
+  refresh();
+  scene.goHome(() => { if (coucher && nightActive(state)) enterInterior('maison'); });
+}
+
+// La carte : il dort dans son lit, la nuit passe (le résumé du réveil s'ouvre).
+export function asleepFromStage() {
+  if (!coucher) return;
+  if (!nightActive(state)) { setCoucher(false); refresh(); return; }
+  actionSleep();
+}
+
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
@@ -684,11 +720,12 @@ registerActions({
     stageWindow = null;
     stageReturn = null;
     stageInterior = null; // changer d'onglet (ou revenir sur « Ferme ») ramène à la carte
+    setCoucher(false);
     setEcranFerme(null);
     telView();
     refresh();
   },
   'sleep': () => {
-    actionSleep();
+    actionGoToBed();
   },
 });
