@@ -27,7 +27,8 @@
  *                FarmStage.hasRoom(id) (l'intérieur d'un bâtiment peut-il être affiché ?),
  *                FarmStage.hasFermier() (le personnage est-il là pour ramasser ?),
  *                FarmStage.panTo(x, point { x, y } ou id de bâtiment) (glisse jusque-là),
- *                FarmStage.goHome(done) (« Dormir » : le personnage rentre dans la maison).
+ *                FarmStage.goHome(done, suivre) (le personnage rentre dans la maison ; la vue le suit),
+ *                FarmStage.mealScene({ convives, heureux }) (le repas : la famille va à table).
  *                onView(vue) est appelé quand l'écran courant change, quand un bord est
  *                atteint ou quitté, et au premier glissement du joueur.
  *                Version 1.18 : pickup(id) met un tas « à ramasser » dans l'inventaire et
@@ -286,6 +287,10 @@
   // Bulles (assets/bulle.png, au double) : la pointe est à BUBBLE_TIP_X px CSS du bord gauche
   // et BUBBLE_TIP_Y px au-dessus du bas.
   const BUBBLE_TIP_X = 15, BUBBLE_TIP_Y = 2;
+  // Le repas : la bulle des convives qui ont bien mangé, et la taille d'un enfant (il prend la
+  // planche d'un adulte, réduite).
+  const JOIE = '😊';
+  const ENFANT_SCALE = 0.8;
   const GAIN_HOLD_MS = 1200;    // bulle « +x » au-dessus du personnage : elle reste, puis…
   const GAIN_FADE_MS = 1400;    // … s'estompe lentement (une prise pendant ce temps s'y ajoute)
   const LONG_PRESS_MS = 450;   // appui maintenu sur la citerne : sa bulle (litres) s'affiche
@@ -1601,6 +1606,48 @@
         this.placeGain();
       }
 
+      // Le repas (FarmStage.mealScene) : les planches des autres membres sont chargées, puis
+      // le personnage reçoit le repas (js/fermier.js). opts : { convives: [{ perso, enfant }],
+      // heureux } ; un enfant prend la planche d'un adulte, plus petite (ENFANT_SCALE).
+      startMeal(opts) {
+        if (!this.fermier || !this.fermier.startMeal) return false;
+        const convives = (opts.convives || []).map((c) => ({ key: 'perso_' + c.perso, file: 'personnages/perso_' + String(c.perso).padStart(2, '0') + '.png', scale: c.enfant ? ENFANT_SCALE : 1 }));
+        const go = () => this.fermier.startMeal({ convives: convives.filter((c) => this.has(c.key)), heureux: !!opts.heureux, done: () => { this.mealOn = false; } });
+        this.mealOn = true;
+        const manque = convives.filter((c) => !this.textures.exists(c.key));
+        if (!manque.length) { go(); return true; }
+        for (const c of manque) this.load.spritesheet(c.key, v(c.file), FERMIER_FRAME);
+        this.load.once('complete', go);
+        this.load.start();
+        return true;
+      }
+
+      // Les bulles de bonheur au-dessus des convives (fermier.mealHeads), dans le calque des
+      // étiquettes (caché dans un intérieur : elles restent visibles).
+      placeMealBubbles() {
+        const heads = this.room && this.fermier && this.fermier.mealHeads ? this.fermier.mealHeads() : [];
+        if (!this.joie) this.joie = [];
+        while (this.joie.length < heads.length) {
+          const el = document.createElement('div');
+          el.className = 'stage-gain stage-joie';
+          el.setAttribute('aria-hidden', 'true');
+          el.textContent = JOIE;
+          el.style.visibility = 'visible';
+          labelLayer.appendChild(el);
+          this.joie.push({ el, w: 0, h: 0 });
+        }
+        const f = heads.length ? this.screenFrame() : null;
+        this.joie.forEach((b, i) => {
+          const h = heads[i];
+          if (!h) { b.el.hidden = true; return; }
+          b.el.hidden = false;
+          if (!b.w) { b.w = b.el.offsetWidth; b.h = b.el.offsetHeight; }
+          const x = Math.round((h.x - f.left) * f.k - BUBBLE_TIP_X);
+          const y = Math.round((h.y - f.top) * f.k - b.h + BUBBLE_TIP_Y);
+          b.el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+        });
+      }
+
       placeGain() {
         const G = this.gain;
         if (!G || G.el.hidden) return;
@@ -1703,6 +1750,12 @@
         // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
         if (this.ambient && !this.room) this.ambient.update(delta);
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
+        // Dehors, la vue suit le personnage qui rentre (le repas) ; elle lâche s'il est dedans.
+        if (this.follow && !this.room && this.fermier && !this.drag) {
+          const p = this.fermier.pos();
+          if (p) { this.pan = null; this.setCentre(this.cx + (p.x - this.cx) * Math.min(1, dt / 250), this.cy + (p.y - 20 - this.cy) * Math.min(1, dt / 250)); }
+        }
+        this.placeMealBubbles();
         // Dans la maison, la vue suit le personnage qui va se coucher (la chambre est à droite).
         const suivi = this.room && this.fermier && !this.drag && this.fermier.focus ? this.fermier.focus() : null;
         if (suivi != null) this.setCentre(this.cx + (suivi - this.cx) * Math.min(1, dt / 300), this.cy);
@@ -3309,11 +3362,19 @@
   // « Dormir » : sur la carte, le personnage marche jusqu'à la porte de la maison (la vue
   // glisse jusqu'à elle) et entre ; `done` est appelé quand il est dedans (tout de suite s'il
   // y est déjà).
-  function goHome(done) {
+  function goHome(done, follow) {
     const s = getScene();
     if (!s || !s.ready || !s.fermier || s.room) { setTimeout(done, 0); return; }
-    s.panTo('maison');
-    s.fermier.goHome(done);
+    if (follow) s.follow = true;           // la vue le suit jusqu'à la porte
+    else s.panTo('maison');
+    s.fermier.goHome(() => { s.follow = false; done(); });
+  }
+
+  // Le repas de 19 h : le personnage (et la famille) iront à table dans la maison.
+  // opts : { convives: [{ perso, enfant }], heureux }. false : pas de personnage.
+  function mealScene(opts) {
+    const s = getScene();
+    return !!(s && s.ready && s.startMeal(opts || {}));
   }
 
   // Où en est la vue (voir viewInfo()) ; null tant que la scène n'est pas prête.
@@ -3339,5 +3400,5 @@
     return s.panTo(best.p, false);
   }
 
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, goHome, scene: getScene }; // scene() : pour le débogage et les tests
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, goHome, mealScene, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

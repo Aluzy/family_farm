@@ -10,6 +10,9 @@
     "  l'huile ou un fruit (une seule fois), + SPECIALES.bonus s'il contient une des",
     "  SPECIALES.items. Un ancien plat sans recette compte comme un plat de la Cuisine.",
     "  Version 1.8 : le bonheur moyen réduit l'énergie que coûte chaque action (DATA.PERSONNAGE).",
+    "  BULLE : sur la carte, pendant le repas, une bulle 😊 monte au-dessus de chaque convive si",
+    "  la famille a bien mangé : besoin couvert, et les plats lui rapportent au moins BULLE points",
+    "  (sans compter la baisse DECLIN ; un plat du Four, ou deux de la Cuisine).",
     "",
     "SORTIES : une sortie emmène toute la famille. Elle avance l'horloge de",
     "  `heures` (le temps passe comme d'habitude : panneaux, batteries, ateliers) et doit finir",
@@ -32,7 +35,8 @@
       "HUILE_FRUIT": 2,
       "SPECIALES": { "items": ["cacao", "cafe", "vanille"], "bonus": 4 },
       "PLATS_MAX": 3,
-      "FAIM": -2
+      "FAIM": -2,
+      "BULLE": 5
     },
     "ENFANT_PRIX": 50,
     "SORTIES": {

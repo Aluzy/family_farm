@@ -27,6 +27,7 @@
 #   ramasse_0..2             de profil, il ramasse un œuf dans la paille
 #   hache_cote_0..3          couper du bois : prêt, hache levée, élan, coup dans le tronc
 #   pioche_cote_0..3         casser un rocher : prêt, pioche levée, élan, coup au sol devant lui
+#   assis_<vue>_0..1         assis à table : les mains sur la table, la fourchette à la bouche
 #   peche_<vue>_0..3         pêcher : canne tenue, armée en arrière, lancée (il attend la
 #                            touche), relevée (il ferre). Le fil et le bouchon sont dessinés par
 #                            la carte, depuis le bout de la canne (PECHE_BOUT dans js/fermier.js)
@@ -200,6 +201,25 @@ def legs(cv, vue, walk, squat):
         up = lift[i]
         cv.rect(x, 25 + squat, x + 2, 28 - up, 'ov' if i == 0 else 'ov2')
         cv.rect(x, 29 - up, x + 2, 30 - up, 'bt')
+
+
+def legs_assis(cv, vue):
+    """Assis sur une chaise (le corps descendu de 4 px) : de face, les genoux et les bottes
+    sous la chaise ; de dos, rien que le bas du dos (les jambes passent sous la table) ; de
+    profil (tourné vers la droite), la cuisse à l'horizontale, le tibia qui descend."""
+    if vue == 'cote':
+        for (dx, ov, bt) in ((-1, 'ov2', 'bt2'), (0, 'ov', 'bt')):
+            cv.rect(8 + dx, 27, 12 + dx, 28, ov)        # cuisse
+            cv.rect(11 + dx, 29, 12 + dx, 30, ov)       # tibia
+            cv.rect(11 + dx, 31, 13 + dx, 31, bt)       # botte
+        return
+    if vue == 'bas':
+        cv.rect(5, 29, 7, 29, 'ov')                     # les genoux, vers nous
+        cv.rect(8, 29, 10, 29, 'ov2')
+        cv.rect(5, 30, 7, 31, 'bt')
+        cv.rect(8, 30, 10, 31, 'bt')
+        return
+    cv.rect(5, 29, 10, 29, 'ov2')                       # de dos : le bas du dos sur la chaise
 
 
 def couvre_chef(cv, vue, b):
@@ -387,16 +407,20 @@ def motif(cv):
                 cv.px[y][x] = 'sp'
 
 
-def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None):
+def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, sit=False):
     """Un personnage complet. hands : positions des mains (gauche, droite) ou (main avant,
-    main arrière) de profil ; before / after : dessins sous et sur le corps (outils)."""
+    main arrière) de profil ; before / after : dessins sous et sur le corps (outils) ; sit :
+    assis (avec b = 4, voir legs_assis)."""
     cv = Canvas()
     if before:
         before(cv)
     if vue == 'cote':
         far = hands[1] if hands else (7, 23 + b)
         arm(cv, 7, 18 + b, far[0], far[1], 'sh2')      # bras arrière, dans l'ombre
-    legs(cv, vue, walk, squat)
+    if sit:
+        legs_assis(cv, vue)
+    else:
+        legs(cv, vue, walk, squat)
     body(cv, vue, b + squat)
     if vue == 'cote':
         near = hands[0] if hands else (8, 23 + b)
@@ -532,6 +556,15 @@ def frames():
     F['peche_haut_1'] = figure('haut', b=-1, hands=((4, 22), (11, 16)), after=rod(11, 16, 13, 29))
     F['peche_haut_2'] = figure('haut', hands=((4, 22), (11, 20)), before=rod(11, 20, 15, 5))
     F['peche_haut_3'] = figure('haut', b=-1, hands=((4, 22), (11, 17)), before=rod(11, 17, 14, 1))
+    # assis à table (le repas) : 0 les mains sur la table, 1 la fourchette (un point de métal)
+    # portée à la bouche
+    fork = lambda x, y: (lambda cv: cv.put(x, y, 'mt'))
+    F['assis_bas_0'] = figure('bas', b=4, sit=True, hands=((4, 25), (11, 25)))
+    F['assis_bas_1'] = figure('bas', b=4, sit=True, hands=((4, 25), (9, 20)), after=fork(9, 19))
+    F['assis_haut_0'] = figure('haut', b=4, sit=True, hands=((4, 25), (11, 25)))
+    F['assis_haut_1'] = figure('haut', b=4, sit=True, hands=((4, 25), (11, 19)))
+    F['assis_cote_0'] = figure('cote', b=4, sit=True, hands=((12, 25), (11, 25)))
+    F['assis_cote_1'] = figure('cote', b=4, sit=True, hands=((11, 20), (11, 25)), after=fork(12, 19))
     return F
 
 

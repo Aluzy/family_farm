@@ -17,6 +17,7 @@ import {
   lastRenderAt, refresh, render, renderScheduled, setLastRenderAt, setRenderScheduled,
 } from './render.js';
 import { itemsSummary } from './inventaire.js';
+import { startMealScene } from './stage-windows.js';
 import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
 import {
@@ -151,9 +152,10 @@ function watchDay() {
 }
 let midnightSeen = false;
 
-// Le repas de 19 h. Pour l'instant, une annonce (un appui mène à la Famille) ; plus
-// tard, une petite cinématique se jouera ici.
+// Le repas de 19 h : une annonce (un appui mène à la Famille) et, sur la carte, la famille
+// qui passe à table (startMealScene).
 function playMealScene(repas) {
+  startMealScene(repas);
   const mange = itemsSummary(repas.mange);
   const complet = repas.couverture >= 100;
   const suite = complet ? 'Tout le monde a mangé à sa faim.' : `Repas insuffisant : ${formatNumber(Math.min(repas.energie, repas.besoin))} / ${formatNumber(repas.besoin)} calories, ton énergie remontera moins cette nuit.`;
