@@ -473,7 +473,9 @@
           d.fillStyle(0x5a3a1a).fillRect(Math.round(w / 2) - 7, h - 30, 14, 30);
         };
         bake('ph_dry', 16, 16, (d) => { d.fillStyle(0x8b5a2b).fillRect(0, 0, 16, 16); d.fillStyle(0x7a4d24).fillRect(0, 5, 16, 2).fillRect(0, 11, 16, 2); });
-        bake('ph_wet', 16, 16, (d) => { d.fillStyle(0x5b3a1c).fillRect(0, 0, 16, 16); d.fillStyle(0x4a2f16).fillRect(0, 5, 16, 2).fillRect(0, 11, 16, 2); });
+        // arrosée : la terre sèche, avec une tache sombre en ellipse au pied de la plante (comme
+        // assets/soil_wet.png, scripts/carte/terre_arrosee.py)
+        bake('ph_wet', 16, 16, (d) => { d.fillStyle(0x8b5a2b).fillRect(0, 0, 16, 16); d.fillStyle(0x7a4d24).fillRect(0, 5, 16, 2).fillRect(0, 11, 16, 2); d.fillStyle(0x5b3a1c).fillEllipse(8, 10.5, 13, 9); });
         bake('ph_maison', 93, 97, shed(0xc9a26b, 0xa8472f, 93, 97));
         bake('ph_etable', 104, 93, shed(0x8a5a34, 0x5a3a1a, 104, 93));
         bake('ph_moulin', 96, 128, shed(0xd8c7a3, 0x6b4423, 96, 128));
