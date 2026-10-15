@@ -6,6 +6,7 @@ import { allPlots, findPlot, harvest, isMature, maxStage, plant, plotZone, seedI
 import { plantableCropsFor } from './campaign.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
+import { absoluteHours, hourOfDay, nightActive } from './clock.js';
 
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
 
@@ -67,9 +68,37 @@ export function setSemis(state, plotId, mode, culture) {
   return { ok: true };
 }
 
+// Le réseau d'irrigation : tous les jours à TIME.ARROSAGE_HEURE (7 h), les asperseurs des
+// lieux qui ont l'arrosage automatique arrosent les plantes qui ont soif, avec l'eau du
+// réservoir (comme au clic ; la Gestion intelligente de l'eau sert d'abord les plantes les
+// plus proches de la récolte). Une fois par jour : appelée à chaque pas d'horloge (tick,
+// sleep, simulateOffline), elle n'agit qu'au premier pas passé 7 h. Sur la carte, les
+// asperseurs tournent ARROSAGE_S secondes (state.irrigation = { jour, h, cases }).
+// Renvoie { arrosees, sansEau }, ou null si ce n'est pas l'heure.
+export function irrigate(state) {
+  if (nightActive(state) || hourOfDay(state) < DATA.TIME.ARROSAGE_HEURE || hourOfDay(state) >= DATA.TIME.NIGHT_HOUR) return null;
+  if (state.irrigation && state.irrigation.jour === state.day) return null;
+  const prioritaire = !!techFlag(state, 'arrosagePrioritaire');
+  const faites = [];
+  let sansEau = 0;
+  for (const lieu of ['potager', 'serre']) {
+    if (!techAuto(state, 'arrosage', lieu)) continue;
+    if (lieu === 'serre' && !(state.serre && state.serre.construit)) continue;
+    let soif = allPlots(state).filter((p) => p.lieu === lieu && p.culture && !p.arrose && !isMature(p));
+    if (prioritaire) soif = soif.slice().sort((x, y) => (maxStage(x) - x.stade) - (maxStage(y) - y.stade));
+    for (const p of soif) {
+      if (water(state, p.id, true).ok) faites.push(p);
+      else sansEau += 1;
+    }
+  }
+  const cases = faites.filter((p) => p.lieu === 'potager' && Number.isInteger(p.case)).map((p) => p.case);
+  state.irrigation = { jour: state.day, h: absoluteHours(state), cases, arrosees: faites.length, sansEau };
+  return { arrosees: faites.length, sansEau };
+}
+
 // Étape nocturne (juste après le repas) : automatisations du niveau 5.
-// Zone de culture et Serre : récolte des parcelles mûres, semis automatique, puis
-// arrosage de toutes les parcelles plantées.
+// Zone de culture et Serre : récolte des parcelles mûres, semis automatique (l'arrosage
+// automatique, lui, se fait le matin à 7 h : irrigate).
 // Poulailler : nourrissage. Rien n'est réduit par la productivité ; si l'eau ou
 // le blé manquent, on sert ce qu'on peut et le rapport le signale au réveil.
 export function autoTasks(state) {
@@ -78,7 +107,6 @@ export function autoTasks(state) {
     { id: 'potager', plots: [...state.potager.parcelles, ...zone2Plots(state)] }, // la Zone de culture et le Champ
     { id: 'serre', plots: state.serre && state.serre.construit ? state.serre.parcelles : [] },
   ];
-  const prioritaire = !!techFlag(state, 'arrosagePrioritaire');
   for (const zone of zones) {
     const recolte = techAuto(state, 'recolte', zone.id);
     const arrosage = techAuto(state, 'arrosage', zone.id);
@@ -96,15 +124,7 @@ export function autoTasks(state) {
         else if (replanted === false) rap.sansGraine += 1;
       }
     }
-    if (arrosage) {
-      let aArroser = zone.plots.filter((p) => p.culture && !p.arrose && !isMature(p));
-      // Gestion intelligente de l'eau : les plantes les plus proches de la récolte d'abord.
-      if (prioritaire) aArroser = aArroser.slice().sort((x, y) => (maxStage(x) - x.stade) - (maxStage(y) - y.stade));
-      for (const p of aArroser) {
-        if (water(state, p.id, true).ok) rap.arrosees += 1;
-        else rap.sansEau += 1;
-      }
-    }
+    // l'arrosage automatique se fait à 7 h (irrigate), plus la nuit
   }
   if (techAuto(state, 'nourrissage', 'poulailler')) {
     rap.poulailler = true;

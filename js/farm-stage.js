@@ -136,6 +136,17 @@
     leaves: 26, colors: [0x2f6b3a, 0x4e8f43, 0x77ad4f, 0x9cc36a, 0x6b4a2b, 0x8a6337],
     rx: { pin: 17, arbre: 20 },
   };
+  // L'arrosage automatique : les asperseurs rotatifs (scripts/batiments/asperseur.py, 8 images,
+  // une par direction du bras ; le pied en bas au milieu). Quand il tourne, un asperseur fait un
+  // tour en `period` s et lance une goutte toutes les `de` s : elle part de la tête (`h0` px au-
+  // dessus du sol) à la vitesse `v` (au sol) et `vz` (vers le haut), retombe (`g`), son ombre
+  // la suit, et elle éclabousse la terre `splash` s. Tout se calcule à partir de l'instant :
+  // aucune goutte n'est gardée d'une image à l'autre.
+  const SPRINKLER = {
+    key: 'asperseur', file: 'asperseur.png', frame: { frameWidth: 9, frameHeight: 13 }, frames: 8,
+    period: 2, de: 0.012, h0: 9, g: 160, v: [22, 56], vz: [44, 54], jitter: 0.35, life: 1.2, splash: 0.2,
+    water: [0xe8f8ff, 0xb0e2fc, 0x78c0f0], shadow: 0x281e14,
+  };
   // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
   const OCCLUDER_ALPHA = 0.6;
   // L'herbe haute (scripts/carte/herbe_haute.py) : la couche d'objets « herbe_haute » de la
@@ -440,6 +451,7 @@
           L.tilemapTiledJSON(r.key, v(r.json));
           if (r.image) L.image(r.image, v(r.image + '.png'));
         }
+        L.spritesheet(SPRINKLER.key, v(SPRINKLER.file), SPRINKLER.frame);
         for (const name of MEUBLES) L.image('meuble_' + name, v('meuble_' + name + '.png'));
         for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
         L.image(MAP.tiles, v(MAP.image));
@@ -1762,6 +1774,7 @@
         this.stepOccluders(delta);
         this.stepTallGrass(delta);
         this.stepShards(delta);
+        this.stepSprinklers();
         this.stepFishing(delta);
         this.stepShadows();
         if (!this.room) this.placeLabels();
@@ -2319,6 +2332,76 @@
             });
           },
         });
+      }
+
+      // Les asperseurs (modèle.asperseurs : [{ x, y, on }]) : leur image, et quand ils se
+      // mettent à tourner (on), l'instant où le jet commence ; quand ils s'arrêtent, les gouttes
+      // déjà en l'air finissent de retomber.
+      syncSprinklers(list) {
+        if (!this.sprinklers) this.sprinklers = new Map();
+        const seen = new Set();
+        const now = performance.now() / 1000;
+        for (const a of list || []) {
+          const key = a.x + ',' + a.y;
+          seen.add(key);
+          let e = this.sprinklers.get(key);
+          if (!e) {
+            const img = this.has(SPRINKLER.key) ? this.add.sprite(a.x + 0.5, a.y + 1, SPRINKLER.key, 0).setOrigin(0.5, 1).setDepth(a.y + 1) : null;
+            e = { x: a.x, y: a.y, img, on: false, start: 0, stop: 0, phase: ((a.x * 7 + a.y * 13) % 100) / 100 * Math.PI * 2 };
+            this.sprinklers.set(key, e);
+          }
+          if (a.on && !e.on) { e.on = true; e.start = now; e.stop = Infinity; }
+          if (!a.on && e.on) { e.on = false; e.stop = now; }
+        }
+        for (const [key, e] of this.sprinklers) {
+          if (seen.has(key)) continue;
+          if (e.img) e.img.destroy();
+          this.sprinklers.delete(key);
+        }
+      }
+
+      // Les gouttes des asperseurs qui tournent, à cet instant (voir SPRINKLER) : en l'air
+      // (au-dessus des plantes), leurs ombres et les éclaboussures (sur la terre).
+      stepSprinklers() {
+        const S = SPRINKLER;
+        if (!this.sprinklers || !this.sprinklers.size) return;
+        if (!this.sprayAir) {
+          this.sprayAir = this.add.graphics().setDepth(this.light ? this.light.depth - 1 : 1e5);
+          this.sprayGround = this.add.graphics().setDepth(1.5);
+        }
+        const air = this.sprayAir.clear(), sol = this.sprayGround.clear();
+        if (this.room || reducedMotion()) return;
+        const now = performance.now() / 1000;
+        const n = Math.round(S.period / S.de);
+        const hash = (k, m) => { const x = Math.sin(k * 12.9898 + m * 78.233) * 43758.5453; return x - Math.floor(x); };
+        const dot = (g, x, y, c, a) => { g.fillStyle(c, a); g.fillRect(Math.round(x), Math.round(y), 1, 1); };
+        for (const e of this.sprinklers.values()) {
+          const t = now - e.start, fin = e.stop - e.start;
+          if (!e.start || t > fin + S.life) { if (e.img && e.img.frame.name !== 0) e.img.setFrame(0); continue; }
+          if (e.img && t <= fin) e.img.setFrame(((Math.round((2 * Math.PI * t / S.period + e.phase) / (Math.PI / 4)) % S.frames) + S.frames) % S.frames);
+          const vol = [];
+          for (let k = Math.max(0, Math.floor((t - S.life) / S.de)); k <= Math.floor(Math.min(t, fin) / S.de); k++) {
+            const em = k * S.de, age = t - em, kk = k % n;
+            const ang = 2 * Math.PI * em / S.period + e.phase + (hash(kk, 1) - 0.5) * S.jitter;
+            const v = S.v[0] + (S.v[1] - S.v[0]) * hash(kk, 2), vz = S.vz[0] + (S.vz[1] - S.vz[0]) * hash(kk, 4);
+            const h = S.h0 + vz * age - S.g * age * age / 2;
+            if (h > 0) {
+              vol.push([e.x + Math.cos(ang) * v * age, e.y + Math.sin(ang) * v * age, h, kk, vz - S.g * age]);
+              continue;
+            }
+            const ta = (vz + Math.sqrt(vz * vz + 2 * S.g * S.h0)) / S.g, a = age - ta;
+            if (a >= S.splash) continue;
+            const x = e.x + Math.cos(ang) * v * ta, y = e.y + Math.sin(ang) * v * ta;
+            if (a < 0.07) { dot(sol, x, y, S.water[0], 1); dot(sol, x - 1, y, S.water[1], 0.8); dot(sol, x + 1, y, S.water[1], 0.8); }
+            else if (a < 0.14) { dot(sol, x - 1, y - 1, S.water[0], 0.85); dot(sol, x + 1, y - 1, S.water[0], 0.85); dot(sol, x, y, S.water[2], 0.55); }
+            else { dot(sol, x - 2, y, S.water[1], 0.5); dot(sol, x + 2, y, S.water[1], 0.5); }
+          }
+          for (const [x, y, h, kk, vzz] of vol) {
+            dot(sol, x, y, S.shadow, 0.27);
+            dot(air, x, y - h, hash(kk, 3) < 0.45 ? S.water[0] : S.water[1], 1);
+            dot(air, x, y - h + (vzz > 0 ? 1 : -1), S.water[2], 0.6);
+          }
+        }
       }
 
       // Les arbres abattus (modèle.abattus : leurs identifiants) ne sont plus sur la carte ; un
@@ -2954,6 +3037,7 @@
         this.syncHoeGrid(model.labourables);
         this.syncRocks(model.rochers);
         this.syncFelled(model.abattus);
+        this.syncSprinklers(model.asperseurs);
         this.syncTrees(model.arbres || [], sfx, rebuild);
         this.syncPiles(model.ramasser || []);
         this.syncRooms(model, force);

@@ -4,6 +4,7 @@ import { batteryCapacity, tankCapacity } from './devices.js';
 import { awakeRequired, nightActive, nightLengthMs } from './clock.js';
 import { advanceNight } from './night.js';
 import { growDue } from './crops.js';
+import { irrigate } from './automation.js';
 import { flowStep, wearStep } from './energy.js';
 import { inventoryCounts } from './inventory.js';
 import { millPending, millTimeLeft, taskTimeLeft } from './kitchen.js';
@@ -111,6 +112,7 @@ export function simulateOffline(state, seconds) {
     if (H.USURE) wearStep(state, dtMs);
     state.awakeMs = Math.min(eveilMax, state.awakeMs + dtMs);
     growDue(state); // les plantes suivent l'horloge
+    irrigate(state);
     noteEnergyRecord(state);
     left -= dtMs;
   }

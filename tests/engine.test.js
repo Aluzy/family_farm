@@ -60,7 +60,7 @@ import {
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
   collectLeftovers, pickUp, piles,
-  absoluteHours, advanceNight, asleep, goToSleep, midnightMs, sleepTarget, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
+  absoluteHours, advanceNight, growDue, irrigate, asleep, goToSleep, midnightMs, sleepTarget, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
 } from '../js/engine/index.js';
 
 
@@ -3155,6 +3155,7 @@ test('arbre v2 : arrosage prioritaire quand l\'eau manque', () => {
   s.eauMl = ml(2); // de quoi arroser une seule carotte
   setInv(s, { conserve: 200, graine_carotte: 5 });
   sleepOnce(s);
+  matin(s);
   assertEqual([findPlot(s, 'potager-1').arrose, findPlot(s, 'potager-2').arrose], [true, false], 'dans l\'ordre des parcelles sans le nœud');
   const t = garden();
   testAddSeeds(t);
@@ -3165,9 +3166,11 @@ test('arbre v2 : arrosage prioritaire quand l\'eau manque', () => {
   t.eauMl = ml(2);
   setInv(t, { conserve: 200, graine_carotte: 5 });
   sleepOnce(t);
+  matin(t);
   assertEqual([findPlot(t, 'potager-1').arrose, findPlot(t, 'potager-2').arrose], [false, true], 'la plus proche de la récolte d\'abord');
   sleepOnce(t);
-  assertEqual(findPlot(t, 'potager-2').stade, 4, '24 h après l\'arrosage de minuit, elle a poussé');
+  matin(t);
+  assertEqual(findPlot(t, 'potager-2').stade, 4, '24 h après l\'arrosage de 7 h, elle a poussé');
 });
 
 test('version 1.19 : Réveil matinal I et II et Routine familiale sont retirés, remboursés, avec le réglage « Dormir tout seul »', () => {
@@ -3876,6 +3879,14 @@ function sleepOnce(s) {
   return sleep(s);
 }
 
+// L'arrosage automatique du matin : l'horloge à 7 h (les plantes qui ont fini leur cycle
+// poussent), puis les asperseurs (irrigate). Renvoie { arrosees, sansEau }.
+function matin(s) {
+  s.awakeMs = awakeMsAtHour(DATA.TIME.ARROSAGE_HEURE);
+  growDue(s);
+  return irrigate(s);
+}
+
 // Met exactement `n` pailles en stock.
 function setStraw(s, n) {
   takeItem(s, 'paille', countItem(s, 'paille'));
@@ -4385,11 +4396,15 @@ test('arrosage automatique : avec le Réseau d\'irrigation, et pas avant (le niv
   assertEqual(s.eauMl, ml(40));
   grantTech(s, 'ea_irrigation');
   const r = sleepOnce(s);
-  assertEqual(s.potager.parcelles.slice(0, 3).map((p) => p.arrose), [true, true, true], 'avec le nœud : arrosées à minuit');
+  assertEqual([r.auto.potager, r.auto.arrosees, s.potager.parcelles[0].arrose], [true, 0, false], 'la nuit, les asperseurs n\'arrosent pas');
+  const m = matin(s);
+  assertEqual(s.potager.parcelles.slice(0, 3).map((p) => p.arrose), [true, true, true], 'avec le nœud : arrosées à 7 h');
   assertEqual(s.eauMl, ml(34), '3 parcelles × 2 L');
-  assertEqual([r.auto.potager, r.auto.arrosees, r.auto.sansEau], [true, 3, 0]);
+  assertEqual([m.arrosees, m.sansEau, s.irrigation.jour, s.irrigation.cases.length], [3, 0, s.day, 3]);
+  assertEqual(irrigate(s), null, 'une fois par jour');
   sleepOnce(s);
-  assertEqual(s.potager.parcelles.slice(0, 3).map((p) => p.stade), [1, 1, 1], 'elles poussent 24 h après (minuit suivant), puis sont réarrosées');
+  matin(s);
+  assertEqual(s.potager.parcelles.slice(0, 3).map((p) => p.stade), [1, 1, 1], 'elles poussent 24 h après (le lendemain à 7 h), puis sont réarrosées');
   assertEqual(s.potager.parcelles.slice(0, 3).map((p) => p.arrose), [true, true, true]);
 });
 
@@ -4399,7 +4414,10 @@ test('arrosage automatique : une parcelle déjà arrosée à la main n\'est pas 
   plant(s, 'potager-2', 'carotte');
   assert(water(s, 'potager-1').ok);
   const eau = s.eauMl;
-  const rap = autoTasks(s);
+  s.awakeMs = awakeMsAtHour(6.5);
+  assertEqual(irrigate(s), null, 'avant 7 h : rien');
+  s.awakeMs = awakeMsAtHour(DATA.TIME.ARROSAGE_HEURE);
+  const rap = irrigate(s);
   assertEqual(rap.arrosees, 1);
   assertEqual(s.eauMl, eau - ml(2));
 });
@@ -4417,7 +4435,8 @@ testBase('récolte automatique : parcelles mûres seulement, carottes et graines
   const g = r.auto.recoltes.graine_carotte;
   assert(g === 1 || g === 2, `1 ou 2 graines, obtenu ${g}`);
   assertEqual(countItem(s, 'graine_carotte'), graines + g);
-  assertEqual([findPlot(s, 'potager-3').stade, findPlot(s, 'potager-3').arrose], [2, true], 'pas mûre : arrosée, elle poussera au bout de 24 h');
+  matin(s);
+  assertEqual([findPlot(s, 'potager-3').stade, findPlot(s, 'potager-3').arrose], [2, true], 'pas mûre : arrosée à 7 h, elle poussera au bout de 24 h');
   const t = auto5();
   plantRipe(t, 'potager-1', 'carotte');
   sleepOnce(t);
@@ -4442,9 +4461,10 @@ test('automatisations : elles couvrent toute la Zone de culture, plein champ com
   const r = sleepOnce(s);
   assertEqual(findPlot(s, 'potager-1').culture, null);
   assertEqual(s.silo.ble, silo + 8, '8 blés, comme au clic');
+  const m = matin(s);
   assertEqual([findPlot(s, 'potager-2').arrose, findPlot(s, 'potager-30').arrose], [true, true]);
   assertEqual(s.eauMl, eau - ml(2 + 2));
-  assertEqual([r.auto.potager, r.auto.arrosees, r.auto.recoltes.ble], [true, 2, 8]);
+  assertEqual([r.auto.potager, m.arrosees, r.auto.recoltes.ble], [true, 2, 8]);
   assertEqual('champ' in r.auto, false, 'le compte rendu n\'a plus de ligne Champ');
   const t = auto5();
   testAddWheat(t, 10);
@@ -4468,7 +4488,8 @@ test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que
   assertEqual(findPlot(s, 'potager-1').culture, null, 'riz mûr : récolté automatiquement');
   assertEqual(findPlot(s, 'potager-2').culture, null, 'houblon mûr : récolté automatiquement');
   assertEqual(r.auto.recoltes, { riz: 10, houblon: 6 });
-  assertEqual(findPlot(s, 'potager-3').arrose, true, 'riz pas mûr : arrosé (4 L, comme au clic), il poussera au bout de 24 h');
+  matin(s);
+  assertEqual(findPlot(s, 'potager-3').arrose, true, 'riz pas mûr : arrosé à 7 h (4 L, comme au clic), il poussera au bout de 24 h');
 
   // Oignon, ail, poivron, épinard, fraise pareil.
   const t = auto5('potager');
@@ -4485,6 +4506,7 @@ test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que
   // 'recolte' (comme la tomate) : la récolte rend aussi 1 à 2 graines bonus
   // (ici 2, déterministe avec la graine aléatoire n°1 utilisée par garden()).
   assertEqual(rt.auto.recoltes, { oignon: 8, graine_oignon: 2, ail: 6 });
+  matin(t);
   assertEqual(findPlot(t, 'potager-3').arrose, true);
 });
 
@@ -4530,7 +4552,8 @@ test('eau ou blé insuffisants : les automatisations servent ce qu\'elles peuven
   s.silo.ble = 1; // de quoi nourrir 2 poules
   s.eauMl = ml(5); // de quoi arroser 2 parcelles (2 L chacune)
   const r = sleepOnce(s);
-  assertEqual([r.auto.arrosees, r.auto.sansEau], [2, 2]);
+  const m = matin(s);
+  assertEqual([m.arrosees, m.sansEau], [2, 2]);
   assertEqual(s.potager.parcelles.slice(0, 4).map((p) => p.arrose), [true, true, false, false]);
   assertEqual([r.auto.nourries, r.auto.sansBle], [2, 2]);
   assertEqual(r.oeufs, 2);
@@ -4551,6 +4574,7 @@ testBase('semis automatique : replante la même culture, arrosée dans la foulé
   plantRipe(s, 'potager-1', 'patate');
   plantRipe(s, 'potager-2', 'carotte');
   const r = sleepOnce(s);
+  matin(s);
   const p1 = findPlot(s, 'potager-1');
   assertEqual([p1.culture, p1.stade, p1.arrose], ['patate', 0, true]);
   assertEqual(countItem(s, 'patate'), 8 - 1, 'la famille a mangé les 5 patates du stock, le semis en prend 1');
@@ -4629,6 +4653,7 @@ test('semis automatique : aussi pour le plein champ (blé), avec sa réserve', (
   testAddWheat(s, 3);
   plantRipe(s, 'potager-7', 'ble');
   sleepOnce(s);
+  matin(s);
   const p = findPlot(s, 'potager-7');
   assertEqual([p.culture, p.stade, p.arrose], ['ble', 0, true]);
   assertEqual(wheatTotal(s), 3 - 1 + 8 - 1, 'plantation à la main, récolte (8), semis');
@@ -4771,7 +4796,8 @@ testBase('rapport de réveil : ce que les automatisations ont fait', () => {
   assertEqual([r.auto.potager, r.auto.serre, r.auto.poulailler], [true, false, true]);
   assertEqual('champ' in r.auto, false);
   assertEqual(r.auto.recoltes, { patate: 8 });
-  assertEqual([r.auto.semees, r.auto.arrosees, r.auto.nourries], [1, 2, 4]);
+  assertEqual([r.auto.semees, r.auto.arrosees, r.auto.nourries], [1, 0, 4], 'l\'arrosage automatique se fait à 7 h');
+  assertEqual(matin(s).arrosees, 2);
   const n = createInitialState(1);
   const rn = sleepOnce(n);
   assertEqual([rn.auto.potager, rn.auto.serre, rn.auto.poulailler, rn.auto.arrosees], [false, false, false, 0]);
@@ -4791,10 +4817,10 @@ testBase('une nuit complète au niveau 5 : arrosage, pousse, récolte et semis s
     stades.push(findPlot(s, 'potager-1').stade);
     recoltes.push(r.auto.recoltes.patate || 0);
   }
-  // Arrosée à minuit, elle gagne son stade au minuit suivant (24 h d'horloge) : elle mûrit
-  // à la 7e nuit, juste avant les automatisations, qui la récoltent, la replantent et
-  // l'arrosent dans la foulée.
-  assertEqual(stades, [0, 1, 2, 3, 4, 5, 0, 1]);
+  // Arrosée à 7 h (runFor passe 7 h), elle gagne son stade le lendemain à 7 h : elle mûrit
+  // le 7e matin ; la récolte automatique de la nuit la replante, l'arrosage du matin suivant
+  // l'arrose.
+  assertEqual(stades, [0, 1, 2, 3, 4, 5, 0, 0]);
   assertEqual(recoltes, [0, 0, 0, 0, 0, 0, 8, 0], '8 patates récoltées à la 7e nuit');
 });
 
@@ -5052,7 +5078,8 @@ test('migration v14 → v15 : Champ construit avec des cultures, tout est regrou
   assertEqual(isAutomated(m, 'potager'), true);
   const r = sleepOnce(m);
   assertEqual(r.auto.recoltes.graine_tournesol > 0, true, 'le tournesol mûr de l\'ancien Champ est récolté tout seul');
-  assertEqual([findPlot(m, 'potager-11').culture, findPlot(m, 'potager-11').stade, findPlot(m, 'potager-11').arrose], ['tournesol', 0, true], 'et replanté (verrou gardé), arrosé');
+  matin(m);
+  assertEqual([findPlot(m, 'potager-11').culture, findPlot(m, 'potager-11').stade, findPlot(m, 'potager-11').arrose], ['tournesol', 0, true], 'et replanté (verrou gardé), arrosé à 7 h');
   assertEqual(findPlot(m, 'potager-10').stade, 6, 'le blé déjà arrosé a poussé');
   assertEqual(JSON.parse(JSON.stringify(m)), m);
   // une partie déjà à jour n'est pas retouchée
@@ -6696,8 +6723,9 @@ test('XP : les automatisations rapportent la moitié, la nuit donne celle des œ
   plantRipe(s, 'potager-1', 'carotte'); // planté au clic : 10
   plant(s, 'potager-2', 'carotte'); // 10
   const r = sleepOnce(s);
-  // récolte auto 10, arrosage auto de potager-2 : 5 (pas de semis automatique ici)
-  assertEqual([r.auto.recoltes.carotte > 0, r.auto.arrosees, r.auto.semees, s.progression.xp - xp0], [true, 1, 0, 20 + 10 + 5]);
+  const m = matin(s);
+  // récolte auto 10, arrosage auto de potager-2 à 7 h : 5 (pas de semis automatique ici)
+  assertEqual([r.auto.recoltes.carotte > 0, m.arrosees, r.auto.semees, s.progression.xp - xp0], [true, 1, 0, 20 + 10 + 5]);
   const p = ranch();
   p.poulailler.poules = 2;
   setInv(p, { ble: 5, conserve: 30 });
