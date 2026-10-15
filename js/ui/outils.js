@@ -1,6 +1,6 @@
 import { nightActive } from '../engine/clock.js';
-import { buyTool, chopTree, hasTool, OUTILS, selectTool, toolDef } from '../engine/outils.js';
-import { axeMode, hoeMode, setAxeMode, setHoeMode, state } from './store.js';
+import { buyTool, chopTree, hasTool, mineRock, OUTILS, selectTool, toolDef } from '../engine/outils.js';
+import { axeMode, hoeMode, pickMode, setAxeMode, setHoeMode, setPickMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
@@ -18,7 +18,6 @@ export let toolbarOpen = true;
 
 // Ce que fait un appui avec un outil qui n'a encore rien à faire sur la ferme.
 const EN_MAIN = {
-  pioche: 'il n\'y a encore rien à casser sur la ferme',
   canne: 'il n\'y a encore rien à pêcher sur la ferme',
 };
 
@@ -27,10 +26,11 @@ const EN_MAIN = {
 const BARRE_FLECHE = '<svg class="tool-bar-arrow" viewBox="0 0 5 3" width="20" height="12" aria-hidden="true" shape-rendering="crispEdges">' +
   '<rect x="0" y="0" width="5" height="1"/><rect x="1" y="1" width="3" height="1"/><rect x="2" y="2" width="1" height="1"/></svg>';
 
-// L'outil en main (la houe ou la hache), ou null.
+// L'outil en main (la houe, la hache ou la pioche), ou null.
 function enMain() {
   if (hoeMode) return 'houe';
   if (axeMode) return 'hache';
+  if (pickMode) return 'pioche';
   return null;
 }
 
@@ -57,15 +57,16 @@ function useTool(id) {
   if (!hasTool(state, id)) return;
   if (enMain() === id) {                     // l'outil en main : le ranger
     if (id === 'houe') ACTIONS['hoe-toggle']();
-    else { setAxeMode(false); refresh(); }
+    else { setAxeMode(false); setPickMode(false); refresh(); }
     return;
   }
-  if (id === 'houe' || id === 'hache') {
+  if (id === 'houe' || id === 'hache' || id === 'pioche') {
     if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return; }
   }
   applyResult(selectTool(state, id));
   if (id !== 'houe' && hoeMode) setHoeMode(false);
   if (id !== 'hache' && axeMode) setAxeMode(false);
+  if (id !== 'pioche' && pickMode) setPickMode(false);
   if (id === 'houe') {
     ACTIONS['hoe-toggle']();
     return;
@@ -73,6 +74,13 @@ function useTool(id) {
   if (id === 'hache') {
     setAxeMode(true);
     showToast(`${def.ICONE} Hache en main : touche un arbre de la carte pour le couper.`);
+    if (stageWindow) closeStageWindow();
+    else refresh();
+    return;
+  }
+  if (id === 'pioche') {
+    setPickMode(true);
+    showToast(`${def.ICONE} Pioche en main : touche un rocher de la carte pour le casser.`);
     if (stageWindow) closeStageWindow();
     else refresh();
     return;
@@ -89,6 +97,12 @@ export function axeChipHtml() {
   return `<button type="button" class="stage-chip hoe axe" data-action="axe-toggle" aria-pressed="true" aria-label="Hache en main : touche un arbre pour le couper. Ranger la hache" title="Touche un arbre de la carte pour le couper"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('hache')}</span><span class="stage-chip-text">Hache</span><span class="stage-chip-val num">🪵</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
 }
 
+// La puce « Pioche en main » de la carte : la toucher range la pioche.
+export function pickChipHtml() {
+  if (!pickMode || !hasTool(state, 'pioche') || stageInterior) return '';
+  return `<button type="button" class="stage-chip hoe axe" data-action="pick-toggle" aria-pressed="true" aria-label="Pioche en main : touche un rocher pour le casser. Ranger la pioche" title="Touche un rocher de la carte pour le casser"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('pioche')}</span><span class="stage-chip-text">Pioche</span><span class="stage-chip-val num">🪨</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+}
+
 // La carte (farm-stage.js) : la hache en main, le joueur a touché l'arbre `id`. Le bois entre
 // dans l'inventaire tout de suite ; la carte montre ensuite le personnage qui coupe. Renvoie
 // ce qu'il a coupé ({ bois: n }), ou null (la nuit, sans énergie, arbre épuisé : un message).
@@ -99,6 +113,18 @@ export function chopFromStage(id) {
   persistState();
   refresh();
   return { bois: r.bois };
+}
+
+// La carte : la pioche en main, le joueur a touché le rocher `id`. La pierre entre dans
+// l'inventaire tout de suite ; la carte montre ensuite le personnage qui frappe. Renvoie
+// { items: { pierre: n }, casse } (casse : ce coup brise le rocher), ou null (un message).
+export function mineFromStage(id) {
+  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return null; }
+  const r = mineRock(state, id);
+  if (!r.ok) { showToast(r.error); return null; }
+  persistState();
+  refresh();
+  return { items: { pierre: r.pierre }, casse: r.casse };
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
@@ -113,6 +139,10 @@ registerActions({
   },
   'axe-toggle': () => {
     setAxeMode(false);
+    refresh();
+  },
+  'pick-toggle': () => {
+    setPickMode(false);
     refresh();
   },
   'buy-tool': (target) => {

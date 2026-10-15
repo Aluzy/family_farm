@@ -78,6 +78,7 @@ export const GAME_ACTIONS = {
   'buy-tool': 'Acheter un outil (pioche, hache, canne à pêche)',
   'tool-use': 'Prendre ou ranger un outil (barre d\'outils)',
   'axe-toggle': 'Ranger la hache',
+  'pick-toggle': 'Ranger la pioche',
   'upgrade-tank': 'Améliorer ou agrandir',
   'upgrade-fridge': 'Améliorer ou agrandir',
   'maintain': 'Entretenir un appareil',

@@ -10,7 +10,7 @@ import {
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
-import { buyTool, chopsLeft, chopTree, hasTool, OUTILS, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
+import { brokenRocks, buyTool, chopsLeft, chopTree, hasTool, mineRock, OUTILS, rockBroken, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -6628,7 +6628,7 @@ test('tenue : état du suivi pour l\'interface', () => {
 test('DATA niveaux : seuils, gains d\'XP, XP des chapitres', () => {
   const N = DATA.NIVEAUX;
   assertEqual(N.SEUILS, [0, 500, 1200, 3000, 7500, 20000, 40000, 80000, 180000, 400000]);
-  assertEqual(N.XP, { labourer: 10, couper: 10, planter: 10, arroser: 10, recolter: 20, cueillir: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
+  assertEqual(N.XP, { labourer: 10, couper: 10, piocher: 10, planter: 10, arroser: 10, recolter: 20, cueillir: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
   assertEqual([N.AUTO, N.CHAPITRES_XP.slice(0, 4)], [50, [200, 500, 1000, 2500]]);
   assertEqual([0, 499, 500, 1199, 1200, 400000, 10 ** 7].map(levelForXp), [1, 1, 2, 2, 3, 10, 10]);
   assertEqual(createInitialState(1).progression, { xp: 0, niveau: 1, annonces: [] });
@@ -8467,6 +8467,26 @@ test('hache : un coup sur un arbre donne du bois, de l\'XP, coûte de l\'énergi
   s.energie = 0;
   assertEqual(chopTree(s, '14,25').error, TIRED);
   assertEqual([DATA.items.bois.category, isBuyable('bois')], ['produit', false], 'le bois se vend, ne se rachète pas');
+});
+
+test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il est cassé pour de bon', () => {
+  const s = garden();
+  assertEqual(mineRock(s, '25,13').error, `Il te faut une pioche (Marché, ${DATA.PIOCHE.PRIX} 💰).`);
+  s.outils = { hache: false, pioche: true, choisi: 'pioche' };
+  const [e, xp] = [s.energie, s.progression.xp];
+  const r = mineRock(s, '25,13');
+  assertEqual([r.ok, r.pierre, r.casse, countItem(s, 'pierre'), s.energie, s.progression.xp - xp],
+    [true, DATA.PIOCHE.PIERRE, false, DATA.PIOCHE.PIERRE, e - actionCost(s, 'piocher'), DATA.NIVEAUX.XP.piocher]);
+  let last = r;
+  for (let k = 1; k < DATA.PIOCHE.COUPS; k++) last = mineRock(s, '25,13');
+  assertEqual([last.casse, rockBroken(s, '25,13'), brokenRocks(s), countItem(s, 'pierre')], [true, true, ['25,13'], DATA.PIOCHE.PIERRE * DATA.PIOCHE.COUPS]);
+  assertEqual(mineRock(s, '25,13').ok, false, 'un rocher cassé ne se casse plus');
+  s.day += 1;
+  assertEqual(rockBroken(s, '25,13'), true, 'il ne revient pas le lendemain');
+  assertEqual(mineRock(s, '44,16').ok, true, 'un autre rocher se casse');
+  s.energie = 0;
+  assertEqual(mineRock(s, '44,16').error, TIRED);
+  assertEqual([DATA.items.pierre.category, isBuyable('pierre')], ['produit', false], 'la pierre se vend, ne se rachète pas');
 });
 
 // Version 1.15 : le milieu de l'ancien Champ, de l'herbe tout autour (les bordures s'y

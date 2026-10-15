@@ -262,7 +262,12 @@
     "au plus COUPES coups par jour ; il ne tombe pas (la forêt reste)."
   ],
   "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "COUPES": 3 },
-  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60 },
+  "//PIOCHE": [
+    "La pioche en main, un appui sur un rocher de la carte le fait casser : PIERRE pierre",
+    "dans l'inventaire à chaque coup, PERSONNAGE.COUTS.piocher d'énergie, NIVEAUX.XP.piocher",
+    "d'XP. Au COUPS-ième coup, le rocher se brise et disparaît de la carte (pour de bon)."
+  ],
+  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "COUPS": 3 },
   "CANNE": { "NOM": "Canne à pêche", "ICONE": "🎣", "PRIX": 60 },
   "//SERRE": [
     "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture.",

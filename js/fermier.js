@@ -50,6 +50,7 @@
   const ACTS = {
     labourer: { anim: 'houe', frames: [0, 1, 2, 3, 3], dur: [0.14, 0.16, 0.08, 0.12, 0.18], hit: 3 },
     couper: { anim: 'hache', frames: [0, 1, 1, 2, 3, 3], dur: [0.12, 0.16, 0.1, 0.06, 0.1, 0.24], hit: 4 },
+    piocher: { anim: 'pioche', frames: [0, 1, 1, 2, 3, 3], dur: [0.12, 0.18, 0.1, 0.06, 0.12, 0.26], hit: 4 },
     planter: { anim: 'plante', frames: [0, 1, 2, 2], dur: [0.14, 0.16, 0.18, 0.14], hit: 2 },
     arroser: { anim: 'arrose', frames: [0, 1, 2, 1, 2], dur: [0.14, 0.14, 0.2, 0.1, 0.24], hit: 2 },
     recolter: { anim: 'plante', frames: [1, 2, 1, 0], dur: [0.14, 0.2, 0.14, 0.12], hit: 2 },
@@ -90,6 +91,8 @@
         for (const b of g.bushes || []) mark(b.x0 + 6, b.base - 12, b.x1 - 6, b.base);
         // les barrières : leurs cases, sauf l'ouverture des portails (il les passe)
         for (const f of g.fences || []) mark(f.x, f.y, f.x + T, f.y + T);
+        // les rochers encore debout (sauf les cailloux) : leur pied
+        for (const k of g.rocks || []) mark(k.x0 + 3, k.base - 8, k.x1 - 3, k.base);
       }
     }
     const free = (c, r) => c >= 0 && r >= 0 && c < cols && r < rows && !blocked[r * cols + c];
@@ -526,17 +529,25 @@
     // gauche, sinon à droite), tourné vers lui, et donne un coup de hache. onHit : au coup.
     // Renvoie false s'il n'y a pas de place près du tronc (onHit est alors appelé tout de suite).
     function chop(foot, onHit) {
+      return strike('couper', foot, 11, onHit);
+    }
+    // La pioche en main, le joueur a touché un rocher (son pied en `foot`, sa demi-largeur
+    // `half`) : il se place à côté, le fer de la pioche tombe sur le rocher.
+    function mine(foot, half, onHit) {
+      return strike('piocher', foot, Math.max(8, half + 5), onHit);
+    }
+    function strike(name, foot, dx, onHit) {
       if (!blocked) buildGrid();
-      const sides = [{ x: foot.x - 11, flip: false }, { x: foot.x + 11, flip: true }];
+      const sides = [{ x: foot.x - dx, flip: false }, { x: foot.x + dx, flip: true }];
       let spot = null, side = sides[0];
       for (const sd of sides) { if (freeAt(sd.x, foot.y + 1)) { spot = { x: sd.x, y: foot.y + 1 }; side = sd; break; } }
       if (!spot) {
-        spot = nearestFree(foot.x - 11, foot.y + 1);
+        spot = nearestFree(foot.x - dx, foot.y + 1);
         if (spot) side = spot.x <= foot.x ? sides[0] : sides[1];
       }
       if (!spot) { if (onHit) onHit(); return false; }
       if (job && job.idle) job = null;
-      jobs = [walkTo(spot.x, spot.y), act('couper', { face: 'cote', flip: side.flip, onHit }), wait(rand(0.4, 1))].concat(jobs.filter((j) => !j.idle));
+      jobs = [walkTo(spot.x, spot.y), act(name, { face: 'cote', flip: side.flip, onHit }), wait(rand(0.4, 1))].concat(jobs.filter((j) => !j.idle));
       idleAge = 0;
       return true;
     }
@@ -763,6 +774,10 @@
       goTo,
       // La hache : couper l'arbre dont le pied est en `foot` ({ x, y }).
       chop,
+      // La pioche : casser le rocher dont le pied est en `foot`, de demi-largeur `half`.
+      mine,
+      // Le sol a changé (un rocher cassé) : la grille des cases libres est refaite.
+      regrid() { buildGrid(); },
       // Double appui sur le Poulailler ou l'Étable : il va y ramasser (false : rien à prendre).
       collect,
       // Où il est (pour la bulle « +x ») : ses pieds, ou null s'il n'est pas sur la carte.

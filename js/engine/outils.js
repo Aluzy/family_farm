@@ -101,3 +101,41 @@ export function chopTree(state, id) {
   gainActionXp(state, 'couper');
   return { ok: true, bois: H.BOIS, reste: chopsLeft(state, id) };
 }
+
+/* ---------- la pioche : casser un rocher de la carte ---------- */
+
+// Comme les arbres, les rochers n'existent que dans la carte (couche plantes_pierres) : le
+// moteur ne connaît d'eux qu'un identifiant donné par la carte (« x,y » d'une de leurs cases).
+// state.outils.rochers compte les coups reçus par chacun ; à PIOCHE.COUPS, il est cassé (pour
+// de bon : la carte ne le dessine plus).
+export function rockHits(state, id) {
+  const r = state.outils && state.outils.rochers;
+  return (r && r[id]) || 0;
+}
+
+export function rockBroken(state, id) {
+  return rockHits(state, id) >= DATA.PIOCHE.COUPS;
+}
+
+// Les rochers cassés (leurs identifiants).
+export function brokenRocks(state) {
+  const r = state.outils && state.outils.rochers;
+  return r ? Object.keys(r).filter((id) => r[id] >= DATA.PIOCHE.COUPS) : [];
+}
+
+// Un coup de pioche sur le rocher `id` : PIOCHE.PIERRE pierre dans l'inventaire, de l'énergie,
+// de l'XP. `casse` : le rocher vient de se briser.
+export function mineRock(state, id) {
+  const P = DATA.PIOCHE;
+  if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (Marché, ${P.PRIX} 💰).`);
+  if (typeof id !== 'string' || !id) return fail('Touche un rocher pour le casser.');
+  if (rockBroken(state, id)) return fail('Ce rocher est déjà cassé.');
+  if (!canAfford(state, 'piocher')) return fail(TIRED);
+  const o = outils(state);
+  if (!o.rochers || typeof o.rochers !== 'object') o.rochers = {};
+  o.rochers[id] = (o.rochers[id] || 0) + 1;
+  addItem(state, 'pierre', P.PIERRE);
+  spendEnergy(state, 'piocher');
+  gainActionXp(state, 'piocher');
+  return { ok: true, pierre: P.PIERRE, coups: o.rochers[id], casse: o.rochers[id] >= P.COUPS };
+}

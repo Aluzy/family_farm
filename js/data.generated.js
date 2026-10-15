@@ -53,6 +53,7 @@ export const RAW_DATA = {
     "MAX": 100,
     "COUTS": {
       "couper": 6,
+      "piocher": 6,
       "labourer": 5,
       "planter": 3,
       "arroser": 2,
@@ -131,6 +132,7 @@ export const RAW_DATA = {
     "huile": { "nom": "Huile de tournesol", "icone": "🛢️", "energie": 13, "prix": 4, "edible": false, "category": "ingrédient" },
     "laine": { "nom": "Laine", "icone": "🧶", "prix": 6, "edible": false, "category": "produit", "rachetable": false },
     "bois": { "nom": "Bois", "icone": "🪵", "prix": 2, "edible": false, "category": "produit", "rachetable": false },
+    "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
     "oignon": { "nom": "Oignon", "icone": "🧅", "energie": 6, "prix": 1, "edible": true, "category": "légume" },
     "graine_oignon": { "nom": "Graines d'oignon", "icone": "🌱‍🧅", "prix": 1, "edible": false, "category": "graine" },
     "ail": { "nom": "Ail", "icone": "🧄", "energie": 6, "prix": 2, "edible": true, "category": "légume" },
@@ -575,7 +577,7 @@ export const RAW_DATA = {
   },
   "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
   "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "COUPES": 3 },
-  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60 },
+  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "COUPS": 3 },
   "CANNE": { "NOM": "Canne à pêche", "ICONE": "🎣", "PRIX": 60 },
   "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "COUT": [0, 900, 1800, 3000, 5400] },
   "VERGER": {
@@ -1241,6 +1243,7 @@ export const RAW_DATA = {
     "XP": {
       "labourer": 10,
       "couper": 10,
+      "piocher": 10,
       "planter": 10,
       "arroser": 10,
       "recolter": 20,
