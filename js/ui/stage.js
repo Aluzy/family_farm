@@ -14,7 +14,7 @@ import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { TIRED } from '../engine/stamina.js';
-import { brokenRocks } from '../engine/outils.js';
+import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { showToast } from './toasts.js';
 import {
@@ -304,6 +304,8 @@ export function stageModel() {
   // la pioche en main : un appui sur un rocher de la carte le casse ; les rochers cassés n'y sont plus
   const pioche = pickMode && !!(state.outils && state.outils.pioche) && !stageInterior;
   const rochers = brokenRocks(state);
+  // la hache : les arbres abattus n'y sont plus (ils repoussent comme les rochers)
+  const abattus = fellenTrees(state);
   // la canne à pêche en main : un appui sur l'eau y fait pêcher
   const canne = rodMode && !!(state.outils && state.outils.canne) && !stageInterior;
   // Panneaux solaires sur le toit de la maison une fois le panneau acheté : un de plus par
@@ -366,8 +368,8 @@ export function stageModel() {
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
     perso: memberPerso(mainCharacter(state)),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
-    heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: terrainNow(rochers), plots,
-    houe, hache, pioche, canne, rochers, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: terrainNow(rochers.concat(abattus)), plots,
+    houe, hache, pioche, canne, rochers, abattus, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -410,13 +412,13 @@ function stageCollect(lieu) {
 // recalculées seulement quand la terre change.
 let labourablesCache = { key: null, tiles: null };
 function labourables() {
-  const key = state.potager.parcelles.map((p) => p.case).join() + '|' + brokenRocks(state).join(';');
+  const key = state.potager.parcelles.map((p) => p.case).join() + '|' + brokenRocks(state).join(';') + '|' + fellenTrees(state).join(';');
   if (labourablesCache.key !== key) labourablesCache = { key, tiles: hoeableTiles(state) };
   return labourablesCache.tiles;
 }
 
-// Les rangées du terrain (une tuile sous un rocher cassé se laboure), recalculées seulement
-// quand les rochers cassés changent.
+// Les rangées du terrain (une tuile sous un rocher cassé ou un arbre abattu se laboure),
+// recalculées seulement quand ils changent.
 let terrainCache = { key: null, lines: null };
 function terrainNow(rochers) {
   const key = rochers.join(';');

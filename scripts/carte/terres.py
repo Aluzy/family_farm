@@ -88,18 +88,58 @@ def main():
         dy = max(o['y'] - cy, 0, cy - (o['y'] + o['height']))
         return math.hypot(dx, dy) / T
 
+    # Les arbres que la hache abat (comme mapTrees dans js/farm-stage.js) : dans chaque couche
+    # d'arbres (sauf layer_tree_top), un groupe de cases voisines (côtés) de 2 à 6 cases de
+    # large et 3 à 7 de haut ; identifiant « colonne,rangée » du milieu de son pied. Les
+    # autres groupes (buissons, forêts soudées) ne tombent pas. arbre_de[couche][case] : son
+    # identifiant, ou None.
+    arbre_de = {}
+    for nom, l in layers.items():
+        if not nom.startswith('layer_tree') or 'top' in nom:
+            continue
+        data = l['data']
+        de = {}
+        vus_a = set()
+        for i0 in range(W * H):
+            if i0 in vus_a or not (data[i0] & 0x0fffffff):
+                continue
+            cases, pile = [], [i0]
+            vus_a.add(i0)
+            while pile:
+                i = pile.pop()
+                cases.append(i)
+                c, r = i % W, i // W
+                for j in (i - 1 if c > 0 else -1, i + 1 if c < W - 1 else -1, i - W, i + W):
+                    if 0 <= j < W * H and j not in vus_a and data[j] & 0x0fffffff:
+                        vus_a.add(j)
+                        pile.append(j)
+            cs = [i % W for i in cases]
+            rs = [i // W for i in cases]
+            w, h = max(cs) - min(cs) + 1, max(rs) - min(rs) + 1
+            ident = None
+            if 2 <= w <= 6 and 3 <= h <= 7:
+                pied = [i % W for i in cases if i // W == max(rs)]
+                ident = f'{(min(pied) + max(pied) + 1) // 2},{max(rs)}'
+            for i in cases:
+                de[i] = ident
+        arbre_de[nom] = de
+
     # Arbres du Verger : leurs rectangles et une tuile autour.
     verger = [o for n, o in objets.items() if n.startswith('arbre_verger_')]
     # les couches d'arbres ajoutées par scripts/carte/carte_v2.py (layer_tree_0, layer_tree_0b…)
     couvrantes = COUVRANTES + [n for n in layers if n.startswith('layer_tree') and n not in COUVRANTES]
     ok = []
     raison = []
+    arbres = {}                                   # identifiant -> cases qu'il est seul (avec d'autres arbres abattables) à couvrir
+    sous_arbres = {}                              # case -> arbres abattables qui la couvrent
     for i in range(W * H):
         c, r = i % W, i // W
         why = None
+        # les arbres abattables qui couvrent la case ; un autre décor (buisson, forêt…) la bloque
+        ab = {arbre_de[n].get(i) for n in arbre_de if gid(n, i)}
         if gid('ground', i) not in HERBE:
             why = 'sol'
-        elif any(gid(n, i) for n in couvrantes):
+        elif any(gid(n, i) for n in couvrantes if n not in arbre_de) or None in ab:
             why = 'decor'
         elif gid('plantes_pierres', i) and gid('plantes_pierres', i) not in PLANTES_OK and gid('plantes_pierres', i) not in ROCHERS:
             why = 'pierre'
@@ -114,6 +154,11 @@ def main():
                 why = 'enclos'
         if why is None and gid('plantes_pierres', i) in ROCHERS:
             why = 'rocher'
+        if why in (None, 'rocher') and ab:
+            why = 'rocher'                        # « o » : sous un objet qui s'enlève (rocher, arbre)
+            sous_arbres[i] = ab
+            for a in ab:
+                arbres.setdefault(a, []).append(i)
         ok.append(why is None)
         raison.append(why)
     # Les rochers : leurs cases.
@@ -150,13 +195,17 @@ def main():
             'scripts/carte/terres.py (ne pas modifier à la main). LIGNES : une chaîne par',
             'rangée de tuiles, « # » labourable, « + » herbe qui ne se laboure pas mais peut porter',
             'une bordure mi-herbe mi-terre, « o » sous un rocher (labourable une fois le rocher cassé),',
-            '« . » ni l\'un ni l\'autre. Numéro de tuile = rangée × LARGEUR + colonne.',
+            '« . » ni l\'un ni l\'autre. « o » : sous un rocher ou un arbre (labourable une fois tombé).',
+            'Numéro de tuile = rangée × LARGEUR + colonne.',
             'ZONES : coin (X, Y, en tuiles) et colonnes des anciennes zones de culture (1 : la Zone de',
             'culture, 2 : le Champ), pour convertir une ancienne case en tuile.',
             'ROCHERS : les tuiles de chaque rocher que la pioche casse (identifiant « colonne,rangée »',
-            'de sa case en bas à gauche, comme sur la carte).'
+            'de sa case en bas à gauche, comme sur la carte).',
+            'ARBRES : les tuiles « o » de chaque arbre que la hache abat (identifiant « colonne,rangée »',
+            'du milieu de son pied, comme sur la carte) ; une tuile sous plusieurs arbres ou sous un',
+            'arbre et un rocher se laboure quand tous sont tombés.'
         ],
-        'TERRAIN': {'LARGEUR': W, 'HAUTEUR': H, 'ZONES': zones, 'LIGNES': rows, 'ROCHERS': rochers},
+        'TERRAIN': {'LARGEUR': W, 'HAUTEUR': H, 'ZONES': zones, 'LIGNES': rows, 'ROCHERS': rochers, 'ARBRES': {k: sorted(v) for k, v in sorted(arbres.items())}},
     }
     with open(os.path.join(ROOT, 'data', 'terrain.json'), 'w', encoding='utf8') as f:
         json.dump(out, f, ensure_ascii=False, indent=2)

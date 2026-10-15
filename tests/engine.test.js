@@ -10,7 +10,7 @@ import {
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
-import { brokenRocks, buyTool, castLine, chopsLeft, fishLeft, chopTree, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
+import { brokenRocks, buyTool, castLine, chopsLeft, fellenTrees, fishLeft, chopTree, respawnTrees, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -8484,20 +8484,76 @@ test('outils : une partie avec la houe seule l\'a sur le bouton ; le Marché fer
   assertEqual(buyTool(t, 'hache').ok, farmOpen(t), 'le Marché ouvre avec le panneau et la pompe');
 });
 
-test('hache : un coup sur un arbre donne du bois, de l\'XP, coûte de l\'énergie ; COUPES par arbre et par jour', () => {
+test('hache : chaque coup sur un arbre donne du bois, de l\'XP, coûte de l\'énergie ; au COUPES-ième, il tombe', () => {
   const s = garden();
   assertEqual(chopTree(s, '14,25').error, `Il te faut une hache (Marché, ${DATA.HACHE.PRIX} 💰).`);
   s.outils = { hache: true, pioche: false, choisi: 'hache' };
   const [e, xp] = [s.energie, s.progression.xp];
   const r = chopTree(s, '14,25');
-  assertEqual([r.ok, r.bois, countItem(s, 'bois'), s.energie, s.progression.xp - xp], [true, DATA.HACHE.BOIS, DATA.HACHE.BOIS, e - actionCost(s, 'couper'), DATA.NIVEAUX.XP.couper]);
-  for (let k = 1; k < DATA.HACHE.COUPES; k++) chopTree(s, '14,25');
-  assertEqual([chopsLeft(s, '14,25'), chopTree(s, '14,25').ok, chopTree(s, '20,30').ok], [0, false, true], 'un autre arbre donne encore');
+  assertEqual([r.ok, r.bois, r.tombe, r.reste, countItem(s, 'bois'), s.energie, s.progression.xp - xp],
+    [true, DATA.HACHE.BOIS, false, DATA.HACHE.COUPES - 1, DATA.HACHE.BOIS, e - actionCost(s, 'couper'), DATA.NIVEAUX.XP.couper]);
+  let last = null;
+  for (let k = 1; k < DATA.HACHE.COUPES; k++) last = chopTree(s, '14,25');
+  assertEqual([last.tombe, chopsLeft(s, '14,25'), fellenTrees(s)], [true, 0, ['14,25']], 'au dernier coup, il tombe');
+  assertEqual([chopTree(s, '14,25').error, chopTree(s, '20,30').ok], ['Cet arbre est déjà abattu.', true], 'un autre arbre se coupe');
   s.day += 1;
-  assertEqual(chopsLeft(s, '14,25'), DATA.HACHE.COUPES, 'le lendemain, l\'arbre donne de nouveau');
+  assertEqual(chopsLeft(s, '20,30'), DATA.HACHE.COUPES - 1, 'les coups reçus restent d\'un jour à l\'autre');
   s.energie = 0;
-  assertEqual(chopTree(s, '14,25').error, TIRED);
+  assertEqual(chopTree(s, '20,30').error, TIRED);
   assertEqual([DATA.items.bois.category, isBuyable('bois')], ['produit', false], 'le bois se vend, ne se rachète pas');
+});
+
+test('hache : un arbre abattu repousse au bout de RETOUR jours, sauf si une parcelle occupe une de ses tuiles', () => {
+  const [lo, hi] = DATA.HACHE.RETOUR;
+  const A = DATA.TERRAIN.ARBRES;
+  assert(Object.keys(A).length > 50, 'les arbres de la carte ont leurs tuiles');
+  // un arbre et une de ses tuiles qu'il est seul à couvrir
+  const seul = (t) => !Object.entries(A).some(([k, l]) => l.includes(t) && k !== id) && !Object.values(DATA.TERRAIN.ROCHERS).some((l) => l.includes(t));
+  const etat = () => {
+    const x = garden();
+    x.outils = { hache: true, pioche: false, choisi: 'hache' };
+    x.potager.houe = true;
+    x.potager.parcelles = [];
+    return x;
+  };
+  // (une tuile qui se laboure une fois l'arbre tombé : pas au bord de la carte ni d'un chemin)
+  let id = null, tuile;
+  for (const [k, l] of Object.entries(A)) {
+    id = k;
+    const x = etat();
+    for (let n = 0; n < DATA.HACHE.COUPES; n++) chopTree(x, k);
+    tuile = l.find((t) => seul(t) && hoeStatus(x, t).ok);
+    if (tuile !== undefined) break;
+  }
+  assert(tuile !== undefined, 'un arbre seul sur une tuile labourable');
+  const s = etat();
+  assertEqual([isArable(tuile), isArable(tuile, s)], [false, false], 'sous l\'arbre : pas de labour');
+  for (let k = 0; k < DATA.HACHE.COUPES; k++) chopTree(s, id);
+  const retour = s.outils.arbres[id].retour;
+  assert(retour >= s.day + lo && retour <= s.day + hi, `repousse entre ${lo} et ${hi} jours (${retour - s.day})`);
+  assertEqual(isArable(tuile, s), true, 'la tuile libérée se laboure');
+  assert(hoe(s, tuile).ok, 'labour de la tuile libérée');
+  s.day = retour;
+  assertEqual([respawnTrees(s), fellenTrees(s)], [[], [id]], 'une parcelle sur sa tuile : il attend');
+  assert(hoe(s, tuile).ok, 'reboucher');
+  s.day = retour + 2;
+  assertEqual([respawnTrees(s), fellenTrees(s), chopsLeft(s, id)], [[id], [], DATA.HACHE.COUPES], 'la tuile libre : il repousse, entier');
+  for (let k = 0; k < DATA.HACHE.COUPES; k++) chopTree(s, id);
+  s.outils.arbres[id].retour = s.day + 1;
+  runNight(s);
+  assertEqual(fellenTrees(s), [], 'repoussé au réveil');
+  // une tuile sous deux arbres ne se laboure que quand les deux sont tombés
+  const double = Object.entries(A).flatMap(([k, l]) => l.map((t) => [t, k])).find(([t, k]) => Object.entries(A).some(([k2, l2]) => k2 !== k && l2.includes(t)));
+  if (double) {
+    const [t, k] = double;
+    const autre = Object.entries(A).find(([k2, l2]) => k2 !== k && l2.includes(t))[0];
+    const u = garden();
+    u.outils = { hache: true, choisi: 'hache' };
+    for (let n = 0; n < DATA.HACHE.COUPES; n++) chopTree(u, k);
+    assertEqual(isArable(t, u), false, 'l\'autre arbre la couvre encore');
+    for (let n = 0; n < DATA.HACHE.COUPES; n++) chopTree(u, autre);
+    assertEqual(isArable(t, u), true);
+  }
 });
 
 test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il est cassé', () => {

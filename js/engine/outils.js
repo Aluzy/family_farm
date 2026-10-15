@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS, nextRandom, randomInt } from './base.js';
 import { fail, farmOpen, spend } from './devices.js';
-import { buyHoe, hasHoe, rockGone } from './crops.js';
+import { buyHoe, hasHoe, rockGone, treeGone } from './crops.js';
 import { addItem } from './inventory.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
@@ -72,34 +72,42 @@ export function selectTool(state, id) {
 /* ---------- la hache : couper un arbre de la carte ---------- */
 
 // Les arbres de la carte n'existent que dans la carte (ses couches d'arbres) : le moteur ne
-// connaît d'eux qu'un identifiant donné par la carte (« x,y » de la case du pied). Chacun
-// donne au plus HACHE.COUPES coups par jour ; il ne tombe pas.
-function coupes(state) {
-  const o = outils(state);
-  if (!o.coupes || o.coupes.jour !== state.day) o.coupes = { jour: state.day, arbres: {} };
-  return o.coupes;
+// connaît d'eux qu'un identifiant donné par la carte (« x,y » du milieu de leur pied) et leurs
+// tuiles (DATA.TERRAIN.ARBRES). Comme les rochers : state.outils.arbres compte les coups reçus
+// par chacun ; au HACHE.COUPES-ième, il tombe : { retour }, le jour où il repousse (dans
+// HACHE.RETOUR jours, tiré au hasard). Ses tuiles libres se labourent en attendant.
+
+// Coups de hache que l'arbre `id` peut encore recevoir avant de tomber (0 : abattu).
+export function chopsLeft(state, id) {
+  const a = state.outils && state.outils.arbres && state.outils.arbres[id];
+  if (a && typeof a === 'object') return 0;
+  return Math.max(0, DATA.HACHE.COUPES - (a || 0));
 }
 
-// Coups de hache que l'arbre `id` peut encore recevoir aujourd'hui.
-export function chopsLeft(state, id) {
-  const c = state.outils && state.outils.coupes;
-  const faits = c && c.jour === state.day ? c.arbres[id] || 0 : 0;
-  return Math.max(0, DATA.HACHE.COUPES - faits);
+// Les arbres abattus (leurs identifiants).
+export function fellenTrees(state) {
+  const a = state.outils && state.outils.arbres;
+  return a ? Object.keys(a).filter((id) => treeGone(state, id)) : [];
 }
 
 // Un coup de hache sur l'arbre `id` : HACHE.BOIS bois dans l'inventaire, de l'énergie, de l'XP.
+// `tombe` : l'arbre vient de tomber.
 export function chopTree(state, id) {
   const H = DATA.HACHE;
   if (!hasTool(state, 'hache')) return fail(`Il te faut une hache (Marché, ${H.PRIX} 💰).`);
   if (typeof id !== 'string' || !id) return fail('Touche un arbre pour le couper.');
-  if (chopsLeft(state, id) <= 0) return fail('Cet arbre a assez donné aujourd\'hui : essaie un autre arbre, ou reviens demain.');
+  if (treeGone(state, id)) return fail('Cet arbre est déjà abattu.');
   if (!canAfford(state, 'couper')) return fail(TIRED);
-  const c = coupes(state);
-  c.arbres[id] = (c.arbres[id] || 0) + 1;
+  const o = outils(state);
+  if (!o.arbres || typeof o.arbres !== 'object') o.arbres = {};
+  delete o.coupes;                       // l'ancien compte des coups du jour
+  const coups = (o.arbres[id] || 0) + 1;
+  const tombe = coups >= H.COUPES;
+  o.arbres[id] = tombe ? { retour: state.day + randomInt(state, H.RETOUR[0], H.RETOUR[1]) } : coups;
   addItem(state, 'bois', H.BOIS);
   spendEnergy(state, 'couper');
   gainActionXp(state, 'couper');
-  return { ok: true, bois: H.BOIS, reste: chopsLeft(state, id) };
+  return { ok: true, bois: H.BOIS, reste: chopsLeft(state, id), coups, tombe };
 }
 
 /* ---------- la pioche : casser un rocher de la carte ---------- */
@@ -148,17 +156,26 @@ export function mineRock(state, id) {
 // réapparaît à sa place, sauf si une parcelle (terre labourée, plantée ou non) occupe une de
 // ses tuiles ; il réessaie alors chaque matin. Renvoie les rochers revenus.
 export function respawnRocks(state) {
-  const r = state.outils && state.outils.rochers;
-  if (!r) return [];
-  const R = DATA.TERRAIN.ROCHERS || {};
+  return respawn(state, state.outils && state.outils.rochers, DATA.TERRAIN.ROCHERS);
+}
+
+// De même, au réveil, les arbres abattus dont le jour est venu repoussent à leur place (sauf
+// sous une parcelle). Renvoie les arbres repoussés.
+export function respawnTrees(state) {
+  return respawn(state, state.outils && state.outils.arbres, DATA.TERRAIN.ARBRES);
+}
+
+function respawn(state, partis, tuiles) {
+  if (!partis) return [];
+  const T = tuiles || {};
   const prises = new Set(state.potager.parcelles.map((p) => p.case));
   const revenus = [];
-  for (const id of Object.keys(r)) {
-    const e = r[id];
+  for (const id of Object.keys(partis)) {
+    const e = partis[id];
     if (typeof e !== 'object') continue;
     if (!(Number(e.retour) <= state.day)) continue;
-    if ((R[id] || []).some((t) => prises.has(t))) continue;
-    delete r[id];
+    if ((T[id] || []).some((t) => prises.has(t))) continue;
+    delete partis[id];
     revenus.push(id);
   }
   return revenus;

@@ -126,6 +126,15 @@
     speed: [18, 46], lift: [45, 85], gravity: 280, fall: [2, 7], life: [650, 1100], fade: 300,
     breakMs: 260, backMs: 900,
   };
+  // La hache : au dernier coup, l'arbre bascule autour de son pied (du côté opposé au
+  // personnage) en `fallMs`, rebondit un peu, lâche des feuilles et des copeaux, reste couché
+  // `restMs` puis s'efface en `fadeMs`. Il repousse en fondu (`backMs`). L'ombre portée d'un arbre (voir
+  // scripts/carte/carte_v2.py) : un ovale de demi-largeur `rx` (pin ou arbre feuillu).
+  const FELL = {
+    fallMs: 700, angle: 86, bounce: 5, bounceMs: 140, restMs: 600, fadeMs: 700, backMs: 1200,
+    leaves: 26, colors: [0x2f6b3a, 0x4e8f43, 0x77ad4f, 0x9cc36a, 0x6b4a2b, 0x8a6337],
+    rx: { pin: 17, arbre: 20 },
+  };
   // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
   const OCCLUDER_ALPHA = 0.6;
   // L'herbe haute (scripts/carte/herbe_haute.py) : la couche d'objets « herbe_haute » de la
@@ -453,7 +462,7 @@
         this.defineAnims();
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
-        if (this.has(SHADOWS.key)) this.add.image(0, 0, SHADOWS.key).setOrigin(0).setDepth(SHADOWS.depth);
+        this.makeShadows();                   // les ombres des arbres (celles des arbres abattus en sont ôtées)
         this.watchGround();
         this.makeTileAnims();
         this.bakeRooms();
@@ -498,7 +507,8 @@
               sheet: 'fermier', frames: cases.frames, world: this.world, objects: this.objects, reduced: reducedMotion,
               ground: () => {
                 const g = this.ambient && this.ambient.ground ? this.ambient.ground() : null;
-                return g ? Object.assign({}, g, { rocks: this.rockFeet() }) : { rocks: this.rockFeet() };
+                const debout = (m) => !(this.felledFeet && this.felledFeet.has(m.x + ',' + m.base));
+                return g ? Object.assign({}, g, { trees: (g.trees || []).filter(debout), rocks: this.rockFeet() }) : { rocks: this.rockFeet() };
               },
               cols: () => this.grid.cols,
               outside: () => !this.room,
@@ -705,6 +715,7 @@
       // (la vérification régulière ; au retour sur la page, tous sont vérifiés).
       spritesWiped(few) {
         const all = (this.occluders || []).concat(this.rocks || []);
+        if (this.shadowTex && this.shadowProbe) all.push({ tex: this.shadowTex, probe: this.shadowProbe });
         let list = all;
         if (few && all.length > SPRITE_CHECKS) {
           const k0 = this.spriteCheckAt = ((this.spriteCheckAt || 0) + SPRITE_CHECKS) % all.length;
@@ -721,6 +732,56 @@
         return false;
       }
 
+      // Les ombres portées des arbres de la carte : une copie de ombres_arbres.png dans un
+      // canevas, d'où paintShadows ôte celles des arbres abattus.
+      makeShadows() {
+        if (!this.has(SHADOWS.key)) return;
+        const src = this.textures.get(SHADOWS.key).getSourceImage();
+        if (this.textures.exists('ombres_vives')) this.textures.remove('ombres_vives');
+        this.shadowTex = this.textures.createCanvas('ombres_vives', src.width, src.height);
+        this.add.image(0, 0, 'ombres_vives').setOrigin(0).setDepth(SHADOWS.depth);
+        this.paintShadows();
+      }
+
+      // L'ovale de l'ombre de l'arbre `t` (comme scripts/carte/carte_v2.py).
+      treeShadow(t) {
+        const rx = /sapin|pin/.test(t.kind || '') ? FELL.rx.pin : FELL.rx.arbre;
+        return { cx: t.foot.x + rx * 0.22, cy: t.foot.y, rx, ry: Math.max(3, Math.round(rx * 0.27)) };
+      }
+
+      paintShadows() {
+        if (!this.shadowTex) return;
+        const src = this.textures.get(SHADOWS.key).getSourceImage();
+        const ctx = this.shadowTex.getContext();
+        const W = this.shadowTex.width, H = this.shadowTex.height;
+        ctx.clearRect(0, 0, W, H);
+        ctx.drawImage(src, 0, 0);
+        const trees = this.mapTrees();
+        const down = trees.filter((t) => t.gone);
+        if (down.length) {
+          const ovals = down.map((t) => this.treeShadow(t));
+          ctx.save();
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.beginPath();
+          for (const e of ovals) { ctx.moveTo(e.cx + e.rx + 2, e.cy); ctx.ellipse(e.cx, e.cy, e.rx + 2, e.ry + 2, 0, 0, Math.PI * 2); }
+          ctx.fill();
+          ctx.restore();
+          // les ombres des arbres debout qui chevauchaient les leurs reviennent
+          const near = trees.filter((t) => !t.gone).map((t) => this.treeShadow(t))
+            .filter((e) => ovals.some((d) => Math.abs(d.cx - e.cx) < d.rx + e.rx + 4 && Math.abs(d.cy - e.cy) < d.ry + e.ry + 4));
+          if (near.length) {
+            ctx.save();
+            ctx.beginPath();
+            for (const e of near) { ctx.moveTo(e.cx + e.rx + 1, e.cy); ctx.ellipse(e.cx, e.cy, e.rx + 1, e.ry + 1, 0, 0, Math.PI * 2); }
+            ctx.clip();
+            ctx.drawImage(src, 0, 0);
+            ctx.restore();
+          }
+        }
+        this.shadowTex.refresh();
+        this.shadowProbe = this.probeOf(this.shadowTex, W, H);
+      }
+
       // Redessine les arbres, les barrières et les rochers de la carte dans leurs canevas.
       paintSprites() {
         const raw = this.mapRaw;
@@ -729,6 +790,7 @@
         if (!set) return;
         const img = this.textures.get(MAP.tiles).getSourceImage();
         for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.tex) this.paintOccluder(o, raw, set, img);
+        this.paintShadows();
       }
 
       // À chaque image : l'arbre devant le personnage (son pied plus bas que celui du
@@ -739,7 +801,7 @@
         const p = this.fermier && !this.room ? this.fermier.pos() : null;
         const k = Math.min(1, dt / 120);
         for (const o of this.occluders) {
-          if (!o.img) continue;
+          if (!o.img || o.regrowing) continue;
           const derriere = p && p.y < o.foot && p.x + 6 > o.x && p.x - 6 < o.x + o.w && p.y > o.y + 4 && p.y - 28 < o.y + o.h;
           const want = derriere ? OCCLUDER_ALPHA : 1;
           if (o.alpha === want) continue;
@@ -2141,6 +2203,7 @@
       mapTreeAt(wx, wy) {
         let best = null;
         for (const t of this.mapTrees()) {
+          if (t.gone || t.falling) continue;
           if (wx < t.x0 + 4 || wx > t.x1 - 4 || wy < t.y0 + 4 || wy > t.y1) continue;
           if (!best || t.foot.y > best.foot.y) best = t;
         }
@@ -2148,12 +2211,97 @@
       }
 
       // Un coup de hache sur l'arbre `t` : le jeu donne le bois tout de suite (bridge.chop) ;
-      // le personnage va au tronc, frappe, et au coup l'arbre tremble et « +1 🪵 » monte.
+      // le personnage va au tronc, frappe, et au coup l'arbre tremble et « +1 🪵 » monte. Au
+      // dernier coup (got.tombe), l'arbre tombe (fellTree).
       chop(t) {
         const got = bridge && bridge.chop ? bridge.chop(t.id) : null;
         if (!got) return;
-        const hit = () => { this.shakeTree(t); this.showGain(got); };
+        t.queued = (t.queued || 0) + 1;
+        if (got.tombe) {
+          t.falling = true;
+          // filet de sécurité : le personnage n'a pas donné le coup (la nuit, un autre lieu…)
+          if (t.fallTimer) t.fallTimer.remove();
+          t.fallTimer = this.time.delayedCall(9000, () => { if (t.falling) this.fellTree(t, false); });
+        }
+        const hit = () => {
+          t.queued = Math.max(0, t.queued - 1);
+          this.showGain({ bois: got.bois });
+          if (t.falling && !t.queued) { this.fellTree(t, true); return; }
+          this.shakeTree(t);
+        };
         if (!this.fermier || !this.fermier.chop(t.foot, hit)) hit();
+      }
+
+      // Le dernier coup de hache : l'arbre bascule autour de son pied, du côté opposé au
+      // personnage, rebondit au sol en lâchant feuilles et copeaux, puis s'efface. Son ombre
+      // s'en va, sa place se libère (le personnage y passe).
+      fellTree(t, anim) {
+        if (t.fallTimer) { t.fallTimer.remove(); t.fallTimer = null; }
+        const o = this.occluderOf(t);
+        const done = () => {
+          t.falling = false;
+          t.gone = true;
+          if (o && o.img) o.img.setVisible(false);
+          this.felledChanged();
+        };
+        if (!o || !o.img || !anim || reducedMotion() || !this.textures.exists(o.img.texture.key)) { done(); return; }
+        if (o.shake) { o.shake.destroy(); o.shake = null; t.shaking = false; }
+        const p = this.fermier && this.fermier.pos();
+        const dir = p && p.x > t.foot.x ? -1 : 1;
+        // une copie de l'image de l'arbre, qui tourne autour de son pied
+        const img = this.add.image(t.foot.x, t.foot.y, o.img.texture.key)
+          .setOrigin((t.foot.x - o.x) / o.w, (t.foot.y - o.y) / o.h).setDepth(o.foot).setAlpha(o.alpha == null ? 1 : o.alpha);
+        o.img.setVisible(false);
+        this.tweens.add({
+          targets: img, angle: dir * FELL.angle, duration: FELL.fallMs, ease: 'Quad.easeIn',
+          onComplete: () => {
+            // il touche le sol : feuilles et copeaux, un petit rebond, puis il s'efface
+            const len = t.foot.y - o.y;
+            const x0 = dir > 0 ? t.foot.x + len * 0.25 : t.foot.x - len;
+            this.spawnShards({ box: { x0, x1: x0 + len * 0.75, y0: t.foot.y - 10, y1: t.foot.y + 2 } }, FELL.leaves, true, null, FELL.colors);
+            done();
+            this.tweens.add({
+              targets: img, angle: dir * (FELL.angle - FELL.bounce), duration: FELL.bounceMs, yoyo: true, ease: 'Sine.easeOut',
+              onComplete: () => this.tweens.add({ targets: img, alpha: 0, delay: FELL.restMs, duration: FELL.fadeMs, onComplete: () => img.destroy() }),
+            });
+          },
+        });
+      }
+
+      // Les arbres abattus (modèle.abattus : leurs identifiants) ne sont plus sur la carte ; un
+      // arbre qui tombe sous la hache attend son dernier coup (falling). Un arbre qui repousse
+      // (quelques jours plus tard, au réveil) apparaît en fondu.
+      syncFelled(ids) {
+        const down = new Set(ids || []);
+        const first = !this.felledSynced;
+        this.felledSynced = true;
+        let changed = false;
+        for (const t of this.mapTrees()) {
+          const gone = down.has(t.id);
+          if (gone === !!t.gone || (gone && t.falling)) continue;
+          t.gone = gone;
+          changed = true;
+          const o = this.occluderOf(t);
+          if (!o || !o.img) continue;
+          this.tweens.killTweensOf(o.img);
+          o.regrowing = false;
+          o.img.setVisible(!gone).setAlpha(1);
+          o.alpha = 1;
+          if (!gone && !first && !reducedMotion()) {
+            o.regrowing = true;
+            o.img.setAlpha(0);
+            this.tweens.add({ targets: o.img, alpha: 1, duration: FELL.backMs, onComplete: () => { o.regrowing = false; } });
+          }
+        }
+        if (changed) this.felledChanged();
+      }
+
+      // Les arbres abattus ont changé : leurs ombres, et les cases où le personnage passe.
+      felledChanged() {
+        this.felledFeet = new Set(this.mapTrees().filter((t) => t.gone).map((t) => t.foot.x + ',' + t.foot.y));
+        this.paintShadows();
+        if (this.ambient && this.ambient.setContext) this.ambient.setContext({ felled: this.felledFeet });
+        if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       }
 
       // L'arbre tremble : celui qui a une feuille de sprites la joue (l'image de l'arbre est
@@ -2373,7 +2521,7 @@
       // Des éclats de pierre sautent du rocher (du côté où la pioche frappe, celui du
       // personnage en `fromX` ; de toute sa forme quand il se brise), retombent au sol autour
       // de lui, roulent un instant puis s'effacent.
-      spawnShards(r, n, burst, fromX) {
+      spawnShards(r, n, burst, fromX, palette) {
         if (reducedMotion()) return;
         const b = r.box || { x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h };
         const rnd = (a) => a[0] + Math.random() * (a[1] - a[0]);
@@ -2385,7 +2533,7 @@
           const y = burst ? b.y0 + Math.random() * (b.y1 - b.y0) : b.y0 + (b.y1 - b.y0) * 0.35 + (Math.random() - 0.5) * 3;
           const sizes = burst ? ROCKS.burstSizes : ROCKS.sizes;
           const size = sizes[(Math.random() * sizes.length) | 0];
-          const colors = burst ? ROCKS.colors : ROCKS.hitColors;
+          const colors = palette || (burst ? ROCKS.colors : ROCKS.hitColors);
           const color = colors[(Math.random() * colors.length) | 0];
           const obj = this.add.rectangle(Math.round(x), Math.round(y), size, Math.max(1, size - (Math.random() < 0.5 ? 1 : 0)), color).setOrigin(0.5, 1);
           // un coup : les éclats sautent surtout vers le personnage (hors du rocher, sur l'herbe)
@@ -2752,6 +2900,7 @@
         this.syncZoneGround(model);
         this.syncHoeGrid(model.labourables);
         this.syncRocks(model.rochers);
+        this.syncFelled(model.abattus);
         this.syncTrees(model.arbres || [], sfx, rebuild);
         this.syncPiles(model.ramasser || []);
         this.syncRooms(model, force);

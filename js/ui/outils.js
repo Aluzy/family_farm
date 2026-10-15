@@ -110,14 +110,14 @@ export function rodChipHtml() {
 
 // La carte (farm-stage.js) : la hache en main, le joueur a touché l'arbre `id`. Le bois entre
 // dans l'inventaire tout de suite ; la carte montre ensuite le personnage qui coupe. Renvoie
-// ce qu'il a coupé ({ bois: n }), ou null (la nuit, sans énergie, arbre épuisé : un message).
+// { bois: n, tombe } (tombe : ce coup abat l'arbre), ou null (la nuit, sans énergie : un message).
 export function chopFromStage(id) {
   if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).'); return null; }
   const r = chopTree(state, id);
   if (!r.ok) { showToast(r.error); return null; }
   persistState();
   refresh();
-  return { bois: r.bois };
+  return { bois: r.bois, tombe: r.tombe };
 }
 
 // La carte : la pioche en main, le joueur a touché le rocher `id`. La pierre entre dans
