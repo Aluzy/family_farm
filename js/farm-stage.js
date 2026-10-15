@@ -559,6 +559,10 @@
       // son pied comme le personnage et les bêtes (profondeur = y du pied). Qui passe derrière
       // est donc caché par lui ; l'arbre devient alors un peu transparent (OCCLUDER_ALPHA) pour
       // qu'on le voie passer. this.occluded : couche -> cases retirées du fond.
+      // Les barrières (couches « barrieres… ») aussi, mais rangée par rangée : un morceau de
+      // barrière = des cases voisines d'une même rangée, avec son pied au bas de la rangée. Le
+      // fond d'un enclos passe ainsi derrière les bêtes, le devant devant elles, et chaque
+      // tronçon de côté selon sa rangée.
       findOccluders() {
         this.occluders = [];
         this.occluded = new Map();
@@ -567,7 +571,8 @@
         const W = raw.width, H = raw.height, T = raw.tilewidth;
         for (const layer of raw.layers) {
           if (layer.type !== 'tilelayer' || !Array.isArray(layer.data) || layer.visible === false) continue;
-          if (!/tree|arbre/i.test(layer.name || '') || /top|haut/i.test(layer.name || '')) continue;
+          const fence = /barri/i.test(layer.name || '');
+          if (!fence && (!/tree|arbre/i.test(layer.name || '') || /top|haut/i.test(layer.name || ''))) continue;
           const gidAt = (i) => layer.data[i] & 0x0fffffff;
           const seen = new Uint8Array(W * H);
           const all = new Set();
@@ -581,11 +586,11 @@
               cells.push(i);
               all.add(i);
               c0 = Math.min(c0, c); c1 = Math.max(c1, c); r0 = Math.min(r0, r); r1 = Math.max(r1, r);
-              for (const j of [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, i - W, i + W]) {
+              for (const j of fence ? [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1] : [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, i - W, i + W]) {
                 if (j >= 0 && j < W * H && !seen[j] && gidAt(j)) { seen[j] = 1; stack.push(j); }
               }
             }
-            this.occluders.push({ layer, cells: new Set(cells), x: c0 * T, y: r0 * T, w: (c1 - c0 + 1) * T, h: (r1 - r0 + 1) * T, foot: (r1 + 1) * T - 3, img: null });
+            this.occluders.push({ layer, cells: new Set(cells), x: c0 * T, y: r0 * T, w: (c1 - c0 + 1) * T, h: (r1 - r0 + 1) * T, foot: (r1 + 1) * T - (fence ? 2 : 3), img: null });
           }
           this.occluded.set(layer, all);
         }
