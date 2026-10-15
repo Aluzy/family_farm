@@ -1,7 +1,8 @@
 # Les teintes de la carte, retouchées sur les planches générées :
 #   - l'herbe : ses trois teintes (claire, moyenne, foncée), chacune avec ses reflets et ses
-#     brins, un peu plus sombres ; la claire, trop criarde, un peu désaturée aussi ; les trois
-#     restent distinctes ;
+#     brins, plus sombres, moins saturées et un peu plus chaudes (« prairie chaude ») pour
+#     s'accorder au chemin ; la claire, trop criarde, la plus retouchée ; les trois restent
+#     distinctes ;
 #   - le chemin : du jaune à la terre battue (marron orangé), ses deux tons (clair et foncé),
 #     ses tons du sol et sa bordure.
 #
@@ -34,8 +35,10 @@ COULEURS = {
     'foncee': ['#3b8a00', '#3f9400', '#48b035', '#367f00', '#004505', '#3fb02a', '#51b040', '#005005',
                '#449f00', '#327501', '#367f01', '#2eb015', '#53b00e', '#5ab04a', '#4db004', '#337700'],
 }
-# (luminosité, saturation) en facteurs, par teinte
-REGLAGE = {'claire': (0.88, 0.92), 'moyenne': (0.90, 0.96), 'foncee': (0.92, 1.0)}
+# (luminosité, saturation) en facteurs, par teinte ; HERBE_DECALAGE : décalage de teinte en
+# degrés, négatif vers le jaune (une herbe plus chaude, qui s'accorde au chemin)
+REGLAGE = {'claire': (0.84, 0.70), 'moyenne': (0.86, 0.74), 'foncee': (0.88, 0.78)}
+HERBE_DECALAGE = -8
 
 
 def rgb(h):
@@ -45,6 +48,7 @@ def rgb(h):
 def assombrie(h, lum, sat):
     r, g, b = (c / 255 for c in rgb(h))
     hh, s, v = colorsys.rgb_to_hsv(r, g, b)
+    hh = (hh + HERBE_DECALAGE / 360) % 1
     return tuple(round(c * 255) for c in colorsys.hsv_to_rgb(hh, s * sat, v * lum))
 
 

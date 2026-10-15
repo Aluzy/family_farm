@@ -389,7 +389,7 @@
       }
 
       create() {
-        this.cameras.main.setBackgroundColor('#5e874c'); // vert de l'herbe de la carte
+        this.cameras.main.setBackgroundColor('#6a8157'); // vert de l'herbe de la carte
         this.cameras.main.roundPixels = false;
         this.makePlaceholders();
         this.defineFrames();
@@ -570,7 +570,7 @@
       // Le fond de la carte et les intérieurs. Appelée au démarrage et chaque fois que le
       // navigateur a vidé ces images.
       paintGround() {
-        this.paintMap('ground', this.mapRaw, this.world.w, this.world.h, '#5e874c');
+        this.paintMap('ground', this.mapRaw, this.world.w, this.world.h, '#6a8157');
         for (const r of Object.values(this.rooms)) this.paintMap(r.tex, r.raw, r.w, r.h, r.bg);
         for (const a of this.animAreas || []) this.paintAnimArea(a);
       }
@@ -774,7 +774,7 @@
         const ctx = tex.getContext();
         const img = this.textures.get(MAP.tiles).getSourceImage();
         ctx.imageSmoothingEnabled = false;
-        ctx.fillStyle = '#5e874c';
+        ctx.fillStyle = '#6a8157';
         for (const i of cells) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
         for (const layer of raw.layers) {
           if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, set, img, cells);
@@ -935,7 +935,7 @@
         ctx.clearRect(0, 0, area.tex.width, area.tex.height);
         ctx.save();
         ctx.translate(-area.x, -area.y);
-        ctx.fillStyle = '#5e874c';
+        ctx.fillStyle = '#6a8157';
         for (const i of area.cells) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
         for (const layer of raw.layers) {
           if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, set, img, area.cells, cur);
@@ -2027,7 +2027,7 @@
         this.roomPanned = false;
         const back = !room && left ? this.place(left.def.building) || this.outside : null;
         if (back) { this.cx = back.x; this.cy = back.y; }
-        cam.setBackgroundColor(room ? room.bg : '#5e874c');
+        cam.setBackgroundColor(room ? room.bg : '#6a8157');
         labelLayer.style.visibility = room ? 'hidden' : '';
         this.game.canvas.style.cursor = '';
         this.fit();
@@ -2212,7 +2212,7 @@
       // arrondis un par un ouvriraient des fentes entre parcelles voisines.
       render: { antialias: false, antialiasGL: false, roundPixels: false },
       transparent: false,
-      backgroundColor: '#5e874c',
+      backgroundColor: '#6a8157',
       // Taille du jeu = taille de la zone × densité de l'écran ; resize() la tient à jour.
       scale: {
         mode: global.Phaser.Scale.NONE,
