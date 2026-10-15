@@ -27,7 +27,7 @@
  * mouton.png, poule.png, chargées par farm-stage.js).
  *
  * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
- *       → { update(dt), setContext({ hour, trees, folds, herd }), scare(x, y),
+ *       → { update(dt), setContext({ hour, trees, folds, herd, felled }), scare(x, y),
  *           spawn(type), stats(), chat(activité) }
  */
 (function (global) {
@@ -269,6 +269,8 @@
     // dur : redessiner la carte dans Tiled suffit.
     const water = [];
     const mapTrees = [];              // { x, base (y du pied), top (y du haut du feuillage), r }
+    let felled = new Set();           // pieds (« x,base ») des arbres abattus à la hache : plus là
+    const standing = () => (felled.size ? mapTrees.filter((m) => !felled.has(m.x + ',' + m.base)) : mapTrees);
     const mapBushes = [];             // buissons : { x0, x1 (bords), base (y du pied) }
     const wood = new Set();           // cases des couches d'arbres (arbres de toutes tailles, buissons) : le chat les contourne
     // cases des barrières (couches « barrieres… » de la carte) : aucune bête ne s'y pose ni n'y
@@ -374,7 +376,7 @@
       if (waterSet.has(Math.floor(x / T) * T + ',' + Math.floor(y / T) * T)) return false;
       if (onFence(x, y, 4)) return false;
       for (const r of blocked) if (x > r.x - 8 && x < r.x + r.width + 8 && y > r.y - 8 && y < r.y + r.height + 8) return false;
-      for (const m of mapTrees) if (Math.abs(x - m.x) < m.r + 10 && y > m.top && y < m.base + 4) return false;
+      for (const m of standing()) if (Math.abs(x - m.x) < m.r + 10 && y > m.top && y < m.base + 4) return false;
       return true;
     }
 
@@ -399,7 +401,7 @@
     // Arbres visibles où une bête peut grimper ou d'où une feuille peut tomber : ceux de la
     // carte et les arbres adultes du Verger.
     function trunks() {
-      const list = mapTrees.slice();
+      const list = standing().slice();
       for (const s of trees) {
         if (s.active && s.scaleX >= 1) list.push({ x: s.x, base: s.y - 2, top: s.y - s.displayHeight * 0.92, r: s.displayWidth * 0.27 });
       }
@@ -1105,6 +1107,7 @@
         ctx.dusk = h >= 19.75 || h < 5;
       }
       if (c.trees) trees = c.trees.slice();
+      if (c.felled) felled = c.felled;
       // L'Étable et le Poulailler (leur image, ou rien tant qu'ils ne sont pas affichés) et le
       // nombre de bêtes de chaque espèce.
       if (c.folds) {
@@ -1133,7 +1136,7 @@
     return {
       update, setContext, scare, stats, spawn: (type) => spawn(type, true), wind: (x, y) => windAt(x, y, t), repaint,
       // L'eau et les arbres lus dans la carte : le personnage (js/fermier.js) les contourne.
-      ground: () => ({ water: waterSet, trees: mapTrees, bushes: mapBushes, fences: fenceWalls }),
+      ground: () => ({ water: waterSet, trees: mapTrees, bushes: mapBushes, fences: fenceWalls }),   // tous les arbres (la carte ôte les abattus)
       chat: (name) => (cat ? cat.force(name) : null),
     };
   }

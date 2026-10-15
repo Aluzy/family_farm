@@ -68,13 +68,43 @@ export function rockGone(state, id) {
   return !!r && (typeof r === 'object' || r >= DATA.PIOCHE.COUPS);
 }
 
-// Les tuiles libérées par les rochers cassés.
+// L'arbre `id` de la carte est-il abattu (state.outils.arbres[id] = { retour }) ?
+export function treeGone(state, id) {
+  const a = state && state.outils && state.outils.arbres && state.outils.arbres[id];
+  return !!a && typeof a === 'object';
+}
+
+// Pour chaque tuile « o » du terrain : les rochers et les arbres qui la couvrent (fait une fois).
+let couvertsDe = null, couvertsPour = null;
+function coveredBy() {
+  const T = DATA.TERRAIN;
+  if (couvertsPour === T) return couvertsDe;
+  couvertsDe = new Map();
+  const add = (kind, list) => {
+    for (const [id, tiles] of Object.entries(list || {})) {
+      for (const t of tiles) { if (!couvertsDe.has(t)) couvertsDe.set(t, []); couvertsDe.get(t).push([kind, id]); }
+    }
+  };
+  add('rocher', T.ROCHERS);
+  add('arbre', T.ARBRES);
+  couvertsPour = T;
+  return couvertsDe;
+}
+
+// Les tuiles libérées : celles dont tous les rochers sont cassés et tous les arbres abattus.
 export function freedRockTiles(state) {
   const out = new Set();
-  const R = DATA.TERRAIN.ROCHERS || {};
-  const casses = state && state.outils && state.outils.rochers;
-  if (!casses) return out;
-  for (const id of Object.keys(casses)) if (R[id] && rockGone(state, id)) for (const t of R[id]) out.add(t);
+  const o = state && state.outils;
+  if (!o || (!o.rochers && !o.arbres)) return out;
+  const gone = ([kind, id]) => (kind === 'rocher' ? rockGone(state, id) : treeGone(state, id));
+  const couverts = coveredBy();
+  const T = DATA.TERRAIN;
+  for (const [kind, partis, tuiles] of [['rocher', o.rochers, T.ROCHERS], ['arbre', o.arbres, T.ARBRES]]) {
+    for (const id of Object.keys(partis || {})) {
+      if (!tuiles || !tuiles[id] || !gone([kind, id])) continue;
+      for (const t of tuiles[id]) if (!out.has(t) && couverts.get(t).every(gone)) out.add(t);
+    }
+  }
   return out;
 }
 
