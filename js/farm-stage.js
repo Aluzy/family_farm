@@ -1618,7 +1618,6 @@
       // sinon une étiquette, sinon le bâtiment ou l'arbre le plus en avant.
       hitAt(wx, wy) {
         const hoeing = !!(lastModel && lastModel.houe);
-        let herbe = null;                            // une tuile labourable sous le doigt
         let refus = null;                            // en mode houe : une tuile qui ne se laboure pas
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
         const pile = !this.room && !hoeing ? this.pileAt(wx, wy) : null;
@@ -1631,7 +1630,6 @@
           // version 1.15 : en mode houe, toute tuile labourable (ou terre) se laboure ou se rebouche
           if (hoeing && z.zone && (p || this.arable(i))) return { hoe: { zone: z.zone, case: i }, place: z.place };
           if (p) return { plot: p, place: z.place, open: z.window };
-          if (z.zone && this.arable(i)) herbe = { window: z.window, place: z.place, herbe: true };
         }
         if (this.room) return this.propAt(wx, wy);   // dans un intérieur : ses meubles, rien d'autre
         // la hache en main : un arbre de la carte sous le doigt se coupe
@@ -1671,9 +1669,10 @@
           if (best.tree.fruits) return { treeHarvest: best.tree.id };
           if (best.tree.libre) return { treeSlot: best.tree.case };
         }
-        // version 1.15 : l'herbe labourable ouvre la fenêtre de la Zone de culture (et sa houe)
-        // en mode houe, une tuile qui ne se laboure pas dit pourquoi (le moteur refuse)
-        return best ? { window: best.window } : herbe || refus;
+        // L'herbe (même labourable) n'ouvre rien : la fenêtre de la Zone de culture s'ouvre par
+        // une parcelle déjà labourée, ou en mode houe. En mode houe, une tuile qui ne se laboure
+        // pas dit pourquoi (le moteur refuse).
+        return best ? { window: best.window } : refus;
       }
 
       tap(wx, wy) {
@@ -1681,10 +1680,10 @@
         const hit = this.hitAt(wx, wy);
         // Version 1.19 : dehors, un double appui sur l'herbe ou un chemin y envoie le personnage ;
         // sur le Poulailler ou l'Étable, il va y ramasser (œufs ; lait et laine). L'appui simple
-        // (la fenêtre de la Zone de culture, du bâtiment) attend donc DOUBLE_TAP_MS de voir s'il
-        // n'est pas suivi d'un second.
+        // sur ces bâtiments (leur fenêtre) attend donc DOUBLE_TAP_MS de voir s'il n'est pas
+        // suivi d'un second.
         const farmyard = hit && (hit.window === 'poulailler' || hit.window === 'etable') ? hit.window : null;
-        if (!this.room && (!hit || hit.herbe || farmyard)) {
+        if (!this.room && (!hit || farmyard)) {
           const now = performance.now(), prev = this.lastTap;
           const near = prev && Math.hypot(wx - prev.x, wy - prev.y) <= (DOUBLE_TAP_PX * pixelRatio()) / this.cameras.main.zoom;
           if (prev && now - prev.t <= DOUBLE_TAP_MS && near) {
