@@ -16,6 +16,7 @@ import { collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
+import { absoluteHours } from '../engine/clock.js';
 import { showToast } from './toasts.js';
 import {
   activeTab, axeMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
@@ -308,6 +309,9 @@ export function stageModel() {
   const abattus = fellenTrees(state);
   // la canne à pêche en main : un appui sur l'eau y fait pêcher
   const canne = rodMode && !!(state.outils && state.outils.canne) && !stageInterior;
+  // L'arrosage automatique : des asperseurs au milieu des parcelles (voir sprinklerSpots) ; un
+  // asperseur tourne ARROSAGE_S secondes après l'arrosage de 7 h s'il a arrosé une de ses cases.
+  const asperseurs = sprinklers();
   // Panneaux solaires sur le toit de la maison une fois le panneau acheté : un de plus par
   // niveau (2 au niveau 1, 6 au niveau 5).
   const panneau = starterOf(state, 'panneau');
@@ -369,8 +373,54 @@ export function stageModel() {
     perso: memberPerso(mainCharacter(state)),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: terrainNow(rochers.concat(abattus)), plots,
-    houe, hache, pioche, canne, rochers, abattus, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, canne, rochers, abattus, asperseurs, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
+}
+
+// Les asperseurs de la carte (voir stageModel) : [{ x, y (px de carte, le pied), on }]. Un
+// asperseur se pose à un coin de case et arrose les 4 × 4 cases autour de lui. Placement
+// glouton, recalculé seulement quand les parcelles changent : pour la première parcelle pas
+// encore couverte (de haut en bas, de gauche à droite), le coin qui couvre le plus de parcelles
+// pas encore couvertes (à égalité, le plus au milieu d'elles).
+let sprinklerCache = { key: null, list: [] };
+function sprinklerSpots() {
+  const cases = state.potager.parcelles.filter((p) => Number.isInteger(p.case)).map((p) => p.case).sort((a, b) => a - b);
+  const key = cases.join();
+  if (sprinklerCache.key === key) return sprinklerCache.list;
+  const W = DATA.TERRAIN.LARGEUR;
+  const libres = new Set(cases);
+  const couvre = (cx, cy) => {
+    const out = [];
+    for (let r = cy - 2; r <= cy + 1; r++) for (let c = cx - 2; c <= cx + 1; c++) if (c >= 0 && c < W && libres.has(r * W + c)) out.push(r * W + c);
+    return out;
+  };
+  const list = [];
+  for (const t of cases) {
+    if (!libres.has(t)) continue;
+    const c = t % W, r = Math.floor(t / W);
+    let best = null;
+    for (let cy = r - 1; cy <= r + 2; cy++) {
+      for (let cx = c - 1; cx <= c + 2; cx++) {
+        const l = couvre(cx, cy);
+        // à égalité, le coin le plus près du milieu des cases qu'il couvre
+        const mx = l.reduce((a, x) => a + (x % W) + 0.5, 0) / l.length, my = l.reduce((a, x) => a + Math.floor(x / W) + 0.5, 0) / l.length;
+        const d = Math.hypot(cx - mx, cy - my);
+        if (!best || l.length > best.cases.length || (l.length === best.cases.length && d < best.d)) best = { cx, cy, cases: l, d };
+      }
+    }
+    for (const x of best.cases) libres.delete(x);
+    list.push(best);
+  }
+  sprinklerCache = { key, list };
+  return list;
+}
+
+function sprinklers() {
+  if (!techAuto(state, 'arrosage', 'potager')) return [];
+  const I = state.irrigation;
+  const actif = !!I && I.jour === state.day && (absoluteHours(state) - I.h) * DATA.TIME.CLOCK_SECONDS_PER_HOUR < DATA.TIME.ARROSAGE_S;
+  const arrosees = new Set(actif ? I.cases || [] : []);
+  return sprinklerSpots().map((a) => ({ x: a.cx * 16, y: a.cy * 16, on: a.cases.some((t) => arrosees.has(t)) }));
 }
 
 // Texte d'une bulle : « 🥕 6 🌱 2 » (les emojis deviennent des icônes à l'affichage).

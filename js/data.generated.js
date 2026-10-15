@@ -29,7 +29,9 @@ export const RAW_DATA = {
     "MEAL_HOUR": 19,
     "NIGHT_HOUR": 22,
     "SLEEP_SECONDS_PER_HOUR": 4,
-    "POUSSE_HEURES": 24
+    "POUSSE_HEURES": 24,
+    "ARROSAGE_HEURE": 7,
+    "ARROSAGE_S": 9
   },
   "FAMILY": {
     "MEMBRES": [
@@ -808,7 +810,7 @@ export const RAW_DATA = {
         "cout": 900,
         "requiert": [{ "noeud": "ea_econome" }, { "batiment": "pompe", "niveau": 3 }, { "tuiles": 18 }],
         "effet": { "auto": { "arrosage": ["potager"] } },
-        "description": "Chaque nuit, toutes les parcelles plantées de la Zone de culture sont arrosées automatiquement."
+        "description": "Chaque matin à 7 h, des asperseurs arrosent toutes les parcelles plantées de la Zone de culture qui ont soif."
       },
       "ea_pompe_eco": {
         "branche": "eau",
@@ -832,7 +834,7 @@ export const RAW_DATA = {
         "cout": 600,
         "requiert": [{ "noeud": "ea_irrigation" }, { "construit": "serre" }],
         "effet": { "auto": { "arrosage": ["serre"] } },
-        "description": "Chaque nuit, les parcelles plantées de la Serre sont arrosées automatiquement."
+        "description": "Chaque matin à 7 h, les parcelles plantées de la Serre qui ont soif sont arrosées automatiquement."
       },
       "ea_gestion": {
         "branche": "eau",

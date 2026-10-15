@@ -180,8 +180,8 @@ export function advanceNight(state, dtMs) {
   n.ms = Math.min(nightLengthMs(), n.ms + Math.max(0, Number(dtMs) || 0));
   if (n.dort) recoverInSleep(state, n.ms - avant); // il dort : l'énergie remonte peu à peu
   let event = null;
-  // les plantes dont le cycle de pousse s'achève (avant minuit : avant que les
-  // automatisations de la nuit ne les réarrosent)
+  // les plantes dont le cycle de pousse s'achève (avant minuit : avant la récolte
+  // automatique de la nuit)
   growDue(state);
   if (!n.minuit && n.ms >= midnightMs()) {
     runNight(state);
