@@ -34,7 +34,7 @@ BLOCS = {
     'rive_sable': ('bordure_eau.png', 48, 45, 4, 4, (0, 0, 64, 64)),
     'rive_herbe': ('bordure_eau_herbe.png', 52, 45, 16, 4, (0, 0, 256, 64)),
     'arbre': ('arbre_clair.png', 48, 50, 3, 4, (0, 0, 48, 64)),
-    'pin': ('pin_clair_sp.png', 52, 50, 4, 4, (0, 0, 64, 64)),          # la 1re image : le pin sur 64 × 64
+    'pin': ('pin_clair_sp.png', 52, 50, 4, 4, (4, 0, 64, 64)),          # la 1re image (droite), sans sa marge
     'buisson_rond': ('arbre_clair.png', 57, 50, 3, 2, (48, 32, 48, 32)),
     'buisson_large': ('arbre_clair.png', 61, 50, 3, 2, (96, 32, 48, 32)),
     'barrieres': ('barrieres.png', 48, 54, 27, 7, (0, 0, 432, 112)),       # écrit par carte_v2.py

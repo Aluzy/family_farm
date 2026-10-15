@@ -91,8 +91,10 @@
     feuillu: { box: [12, 0, 4, 5], key: 'tree_sp', dx: -8, dy: 1, frames: [0, 1, 2, 1, 2, 3, 4, 5, 6, 7, 0] },
     sapin: { box: [9, 4, 3, 4], key: 'pine_sp', dx: -5, dy: 0, frames: [0, 1, 2, 1, 2, 1, 0] },
     // le décor version 2 (scripts/carte/planche_v2.py, arbre_clair.py) : l'arbre clair et le pin
-    arbre_clair: { box: [48, 50, 3, 4], key: 'arbre_clair_sp', dx: 0, dy: 0, frames: [0, 1, 2, 3, 4, 5, 6, 7, 0] },
-    pin_clair: { box: [52, 50, 4, 4], key: 'pin_clair_sp', dx: 0, dy: 0, frames: [0, 1, 2, 3, 4, 5, 6, 7, 0] },
+    // Ils restent d'un bloc et penchent autour de leur pied (images : 0 droit, 1 à droite, 2 à
+    // gauche, avec 4 px de marge de chaque côté) : droite, milieu, gauche, milieu, droite, milieu.
+    arbre_clair: { box: [48, 50, 3, 4], key: 'arbre_clair_sp', dx: -4, dy: 0, fps: 9, frames: [1, 0, 2, 0, 1, 0] },
+    pin_clair: { box: [52, 50, 4, 4], key: 'pin_clair_sp', dx: -4, dy: 0, fps: 9, frames: [1, 0, 2, 0, 1, 0] },
   };
   const CHOP_FPS = 12;
   const SHADOWS = { key: 'ombres_arbres', file: 'ombres_arbres.png', depth: 0.05 };
@@ -381,8 +383,8 @@
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
         L.image(SHADOWS.key, v(SHADOWS.file));
         L.spritesheet('pine_sp', v('pine_sp.png'), { frameWidth: 58, frameHeight: 64 });
-        L.spritesheet('arbre_clair_sp', v('arbre_clair_sp.png'), { frameWidth: 48, frameHeight: 64 });
-        L.spritesheet('pin_clair_sp', v('pin_clair_sp.png'), { frameWidth: 64, frameHeight: 64 });
+        L.spritesheet('arbre_clair_sp', v('arbre_clair_sp.png'), { frameWidth: 56, frameHeight: 64 });
+        L.spritesheet('pin_clair_sp', v('pin_clair_sp.png'), { frameWidth: 72, frameHeight: 64 });
         L.image(TREE_SHADOW.key, v(TREE_SHADOW.file));
         L.image('terre_bords', v('terre_bords.png'));
       }
@@ -1806,7 +1808,7 @@
           const s = this.add.sprite(t.ox + d.dx, t.oy + d.dy, d.key, d.frames[0]).setOrigin(0).setDepth(0.5);
           let k = 0;
           const timer = this.time.addEvent({
-            delay: 1000 / CHOP_FPS, repeat: d.frames.length - 1,
+            delay: 1000 / (d.fps || CHOP_FPS), repeat: d.frames.length - 1,
             callback: () => {
               k += 1;
               if (k < d.frames.length) { s.setFrame(d.frames[k]); return; }
