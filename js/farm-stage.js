@@ -103,8 +103,10 @@
   // carte, un point par touffe (type = variante, une rangée de la planche). Quand le personnage
   // la traverse, la touffe penche dans le sens de sa marche puis revient (images de `swing`,
   // 0 droite, 1 et 2 à droite, 3 et 4 à gauche). Une touffe sur une case labourée disparaît.
+  // Sa teinte suit l'herbe sur laquelle elle pousse : la couleur du fond sous son pied,
+  // rapportée à l'herbe la plus claire des touffes (`tint` : part de cette teinte, 0 à 1).
   const TALL_GRASS = { key: 'herbe_haute', file: 'herbe_haute.png', frame: { frameWidth: 28, frameHeight: 16 }, frames: 5,
-    swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 11, up: 7, down: 4 } };
+    swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 11, up: 7, down: 4 }, tint: 0.85 };
   const SHADOWS = { key: 'ombres_arbres', file: 'ombres_arbres.png', depth: 0.05 };
   const TREE_SHADOW = { key: 'ombre_arbre', file: 'ombre_arbre.png', dx: -16, dy: -8 };
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
@@ -671,6 +673,34 @@
           const img = this.add.image(Math.round(o.x), Math.round(o.y), TALL_GRASS.key, base).setOrigin(0.5, 1).setDepth(o.y);
           this.tallGrass.push({ img, x: o.x, y: o.y, base, cell: Math.floor(o.y / T - 0.01) * raw.width + Math.floor(o.x / T), t: -1, dir: 1, inside: false });
         }
+        this.tintTallGrass();
+      }
+
+      // La teinte de chaque touffe : la couleur moyenne du fond autour de son pied, divisée par
+      // celle de l'herbe la plus claire (sur laquelle les touffes sont dessinées).
+      tintTallGrass() {
+        let ctx = null;
+        try { ctx = this.textures.get('ground').getContext(); } catch (e) { return; }
+        if (!ctx) return;
+        const under = [];
+        for (const g of this.tallGrass) {
+          let r = 0, v = 0, b = 0, n = 0;
+          try {
+            const d = ctx.getImageData(Math.round(g.x) - 8, Math.round(g.y) - 4, 16, 6).data;
+            for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 200) { r += d[i]; v += d[i + 1]; b += d[i + 2]; n++; }
+          } catch (e) { return; }
+          under.push(n ? [r / n, v / n, b / n] : null);
+        }
+        const lum = (c) => c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
+        const seen = under.filter(Boolean).sort((a, b) => lum(a) - lum(b));
+        if (!seen.length) return;
+        const ref = seen[Math.floor((seen.length - 1) * 0.9)];        // l'herbe claire (sans les reflets isolés)
+        this.tallGrass.forEach((g, k) => {
+          const c = under[k];
+          if (!c) return;
+          const ch = (i) => Math.round(255 * (1 - TALL_GRASS.tint * (1 - Math.min(1, c[i] / Math.max(1, ref[i])))));
+          g.img.setTint((ch(0) << 16) | (ch(1) << 8) | ch(2));
+        });
         this.grassCheck = 0;
         this.grassPrev = null;
       }

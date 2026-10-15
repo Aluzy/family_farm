@@ -7,7 +7,8 @@
 #
 # assets/herbe_haute.png : des cases de L × H px, pied au milieu du bas ; une rangée par
 # variante (0 une touffe haute : deux touffes l'une derrière l'autre, 1 la même retournée,
-# 2 une touffe seule, plus basse), une colonne par
+# 2 une touffe seule, plus basse ; le bas de ces trois-là est rendu irrégulier ; 3 à 5 les
+# trois herbes de scripts/carte/originaux/herbes_hautes.png, telles quelles), une colonne par
 # image : 0 droite, 1 et 2 penchée à droite (un peu, plus), 3 et 4 penchée à gauche. Les brins
 # penchent d'autant plus qu'ils sont hauts (le pied ne bouge pas).
 #
@@ -24,9 +25,12 @@ import arbre_clair as AC
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 ARBRE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'arbre_feuillu.png')
+HERBES = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'herbes_hautes.png')
 SORTIE = os.path.join(ROOT, 'assets', 'herbe_haute.png')
 L, H = 28, 16
 T = 16
+# les variantes tirées pour les touffes (les touffes de l'arbre et les herbes dessinées, en alternance)
+VARIANTES = (0, 1, 2, 3, 4, 5, 0, 1, 3, 4, 5)
 TOUFFE = (12, 54, 36, 64)        # la touffe dans l'arbre (x0, y0, x1, y1)
 PENTES = [0, 1, 3, -1, -3]       # décalage (px) du haut des brins, pour chaque image
 
@@ -53,7 +57,7 @@ def touffes(libre):
                 if math.hypot(tx - cx, (ty - cy) * 1.2) > bord or not libre(tx, ty):
                     continue
                 for _ in range(0 if hasard.random() < 0.2 else 1 if hasard.random() < 0.8 else 2):
-                    out.append((tx * T + 8 + hasard.randint(-5, 5), ty * T + 12 + hasard.randint(-4, 3), hasard.choice((0, 0, 1, 1, 2))))
+                    out.append((tx * T + 8 + hasard.randint(-5, 5), ty * T + 12 + hasard.randint(-4, 3), hasard.choice(VARIANTES)))
         if len(out) == n0:
             print(f'  herbe haute : la zone {k} ({cx}, {cy}) ne porte aucune touffe')
     return sorted(out, key=lambda t: (t[1], t[0]))
@@ -109,6 +113,78 @@ def eclaircir(img):
     return out
 
 
+def bas_irregulier(img, graine):
+    """Le bas de la touffe, déchiqueté : chaque colonne perd 0 à 3 px (un profil qui ondule),
+    et le nouveau bas de chaque colonne prend le ton le plus sombre (le contour)."""
+    bb = img.getbbox()
+    img = img.crop(bb)
+    px = img.load()
+    w, h = img.size
+    sombre = min((px[x, y][:3] for y in range(h) for x in range(w) if px[x, y][3]), key=sum)
+    out = img.copy()
+    po = out.load()
+    for x in range(w):
+        a = (x + graine) * 0.9
+        coupe = max(0, min(3, round(1.4 + 1.1 * math.sin(a) + 0.8 * math.sin(a * 2.3 + graine))))
+        if x in (0, w - 1):
+            coupe = 3
+        for y in range(h - coupe, h):
+            po[x, y] = (0, 0, 0, 0)
+    # les pixels restés seuls (sans voisin à gauche, à droite ni au-dessus) s'en vont ; puis le
+    # bas de chaque colonne prend le ton du contour
+    seuls = [(x, y) for y in range(h) for x in range(w) if po[x, y][3]
+             and not any(0 <= x + dx < w and 0 <= y + dy < h and po[x + dx, y + dy][3] for dx, dy in ((-1, 0), (1, 0), (0, -1)))]
+    for q in seuls:
+        po[q] = (0, 0, 0, 0)
+    for x in range(w):
+        ys = [y for y in range(h) if po[x, y][3]]
+        if len(ys) > 1:
+            po[x, max(ys)] = sombre + (255,)
+    return out
+
+
+def herbes_dessinees():
+    """Les herbes de herbes_hautes.png : chaque groupe de pixels voisins (8 voisins) à part."""
+    im = Image.open(HERBES).convert('RGBA')
+    px = im.load()
+    w, h = im.size
+    vu = set()
+    out = []
+    for x0 in range(w):
+        for y0 in range(h):
+            if (x0, y0) in vu or not px[x0, y0][3]:
+                continue
+            pile, groupe = [(x0, y0)], []
+            vu.add((x0, y0))
+            while pile:
+                x, y = pile.pop()
+                groupe.append((x, y))
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        q = (x + dx, y + dy)
+                        if 0 <= q[0] < w and 0 <= q[1] < h and q not in vu and px[q][3]:
+                            vu.add(q)
+                            pile.append(q)
+            if len(groupe) < 12:                     # un brin isolé : avec le groupe le plus proche (plus bas)
+                continue
+            xs, ys = [p[0] for p in groupe], [p[1] for p in groupe]
+            out.append((min(xs), max(xs) + 1, groupe))
+    out.sort()
+    images = []
+    for x0, x1, groupe in out:
+        img = Image.new('RGBA', (x1 - x0, h))
+        for (x, y) in groupe:
+            img.putpixel((x - x0, y), px[x, y])
+        images.append(img)
+    # les brins isolés : rendus à l'herbe dont ils sont le plus près
+    for x in range(w):
+        for y in range(h):
+            if px[x, y][3] and (x, y) not in {(gx, gy) for _, _, g in out for (gx, gy) in g}:
+                k = min(range(len(out)), key=lambda i: 0 if out[i][0] <= x < out[i][1] else min(abs(x - out[i][0]), abs(x - out[i][1] + 1)))
+                images[k].putpixel((max(0, min(images[k].width - 1, x - out[k][0])), y), px[x, y])
+    return images
+
+
 def cadre(img):
     c = Image.new('RGBA', (L, H))
     bb = img.getbbox()
@@ -136,7 +212,8 @@ def double(t, dx):
 
 def main():
     t = eclaircir(touffe())
-    variantes = [cadre(double(t, 3)), cadre(double(t, 3).transpose(Image.FLIP_LEFT_RIGHT)), cadre(t)]
+    variantes = [cadre(bas_irregulier(double(t, 3), 1)), cadre(bas_irregulier(double(t, 3).transpose(Image.FLIP_LEFT_RIGHT), 4)),
+                 cadre(bas_irregulier(t, 7))] + [cadre(h) for h in herbes_dessinees()]
     planche = Image.new('RGBA', (L * len(PENTES), H * len(variantes)))
     for r, v in enumerate(variantes):
         for c, d in enumerate(PENTES):
