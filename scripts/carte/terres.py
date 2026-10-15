@@ -38,6 +38,11 @@ COUVRANTES = ['decor', 'barrieres', 'barrieres_portail', 'contour_herbe', 'anima
 PLANTES_OK = {399, 177, 175, 394, 400, 396, 397, 398, 322, 1509, 1508, 1433, 247, 100, 101, 102, 320}
 # … et les herbes hautes, fleurs et mauvaises herbes de herbe_deco.
 PLANTES_OK |= {PV.gid('herbe_deco', k) for k in range(16 * 10)}
+# Les rochers que la pioche casse (les mêmes que ROCKS.gids dans js/farm-stage.js) : un rocher
+# est un groupe de cases voisines (côtés) de ces tuiles, d'identifiant « colonne,rangée » de sa
+# case en bas à gauche. Une case qu'un rocher est seul à empêcher de labourer est notée « o » :
+# labourable tant que le rocher est cassé.
+ROCHERS = {466, 467, 541, 542, 616, 617, 691, 692, 764, 765, 766, 767}
 # Bâtiments : leur rectangle est interdit, plus `marge` tuiles autour (rayon, distance au rectangle).
 BATIMENTS = {
     'poulailler': 8,    # « dans un rayon de 8 tuiles du poulailler »
@@ -96,7 +101,7 @@ def main():
             why = 'sol'
         elif any(gid(n, i) for n in couvrantes):
             why = 'decor'
-        elif gid('plantes_pierres', i) and gid('plantes_pierres', i) not in PLANTES_OK:
+        elif gid('plantes_pierres', i) and gid('plantes_pierres', i) not in PLANTES_OK and gid('plantes_pierres', i) not in ROCHERS:
             why = 'pierre'
         else:
             for n, m in BATIMENTS.items():
@@ -107,8 +112,28 @@ def main():
                 why = 'verger'
             if not why and any(x0 <= c <= x1 and y0 <= r <= y1 for x0, y0, x1, y1 in ENCLOS):
                 why = 'enclos'
+        if why is None and gid('plantes_pierres', i) in ROCHERS:
+            why = 'rocher'
         ok.append(why is None)
         raison.append(why)
+    # Les rochers : leurs cases.
+    rochers = {}
+    vus = set()
+    for i0 in range(W * H):
+        if i0 in vus or gid('plantes_pierres', i0) not in ROCHERS:
+            continue
+        cases, pile = [], [i0]
+        vus.add(i0)
+        while pile:
+            i = pile.pop()
+            cases.append(i)
+            c, r = i % W, i // W
+            for j in (i - 1 if c > 0 else -1, i + 1 if c < W - 1 else -1, i - W, i + W):
+                if 0 <= j < W * H and j not in vus and gid('plantes_pierres', j) in ROCHERS:
+                    vus.add(j)
+                    pile.append(j)
+        c0, r1 = min(i % W for i in cases), max(i // W for i in cases)
+        rochers[f'{c0},{r1}'] = sorted(cases)
     # Anciennes zones de culture (avant la version 1.15) : leur coin haut-gauche en tuiles et
     # leur nombre de colonnes, pour retrouver la tuile d'une ancienne case (sauvegardes, départ).
     zones = {}
@@ -117,18 +142,21 @@ def main():
         zones[z] = {'X': round(o['x'] / T), 'Y': round(o['y'] / T), 'COLONNES': cols}
     # « + » : herbe foncée qui ne se laboure pas (abords d'un bâtiment, Verger), mais qui peut
     # porter la bordure mi-herbe mi-terre d'une tuile labourée voisine.
-    car = lambda i: '#' if ok[i] else '+' if raison[i] in ('batiment', 'verger', 'enclos') else '.'
+    car = lambda i: '#' if ok[i] else 'o' if raison[i] == 'rocher' else '+' if raison[i] in ('batiment', 'verger', 'enclos') else '.'
     rows = [''.join(car(r * W + c) for c in range(W)) for r in range(H)]
     out = {
         '//TERRAIN': [
             'Version 1.15 : tuiles labourables de la carte de la ferme, écrit par',
             'scripts/carte/terres.py (ne pas modifier à la main). LIGNES : une chaîne par',
             'rangée de tuiles, « # » labourable, « + » herbe qui ne se laboure pas mais peut porter',
-            'une bordure mi-herbe mi-terre, « . » ni l\'un ni l\'autre. Numéro de tuile = rangée × LARGEUR + colonne.',
+            'une bordure mi-herbe mi-terre, « o » sous un rocher (labourable une fois le rocher cassé),',
+            '« . » ni l\'un ni l\'autre. Numéro de tuile = rangée × LARGEUR + colonne.',
             'ZONES : coin (X, Y, en tuiles) et colonnes des anciennes zones de culture (1 : la Zone de',
-            'culture, 2 : le Champ), pour convertir une ancienne case en tuile.'
+            'culture, 2 : le Champ), pour convertir une ancienne case en tuile.',
+            'ROCHERS : les tuiles de chaque rocher que la pioche casse (identifiant « colonne,rangée »',
+            'de sa case en bas à gauche, comme sur la carte).'
         ],
-        'TERRAIN': {'LARGEUR': W, 'HAUTEUR': H, 'ZONES': zones, 'LIGNES': rows},
+        'TERRAIN': {'LARGEUR': W, 'HAUTEUR': H, 'ZONES': zones, 'LIGNES': rows, 'ROCHERS': rochers},
     }
     with open(os.path.join(ROOT, 'data', 'terrain.json'), 'w', encoding='utf8') as f:
         json.dump(out, f, ensure_ascii=False, indent=2)

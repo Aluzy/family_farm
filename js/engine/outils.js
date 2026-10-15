@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
-import { EPS } from './base.js';
+import { EPS, randomInt } from './base.js';
 import { fail, farmOpen, spend } from './devices.js';
-import { buyHoe, hasHoe } from './crops.js';
+import { buyHoe, hasHoe, rockGone } from './crops.js';
 import { addItem } from './inventory.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
@@ -100,4 +100,66 @@ export function chopTree(state, id) {
   spendEnergy(state, 'couper');
   gainActionXp(state, 'couper');
   return { ok: true, bois: H.BOIS, reste: chopsLeft(state, id) };
+}
+
+/* ---------- la pioche : casser un rocher de la carte ---------- */
+
+// Comme les arbres, les rochers n'existent que dans la carte (couche plantes_pierres) : le
+// moteur ne connaît d'eux qu'un identifiant (« x,y » de leur case en bas à gauche) et leurs
+// tuiles (DATA.TERRAIN.ROCHERS). state.outils.rochers compte les coups reçus par chacun ; au
+// PIOCHE.COUPS-ième, il est cassé : { retour }, le jour où il revient (dans PIOCHE.RETOUR
+// jours, tiré au hasard). Ses tuiles libres se labourent en attendant.
+export function rockHits(state, id) {
+  const r = state.outils && state.outils.rochers && state.outils.rochers[id];
+  if (!r) return 0;
+  return typeof r === 'object' ? DATA.PIOCHE.COUPS : r;
+}
+
+export function rockBroken(state, id) {
+  return rockGone(state, id);
+}
+
+// Les rochers cassés (leurs identifiants).
+export function brokenRocks(state) {
+  const r = state.outils && state.outils.rochers;
+  return r ? Object.keys(r).filter((id) => rockGone(state, id)) : [];
+}
+
+// Un coup de pioche sur le rocher `id` : PIOCHE.PIERRE pierre dans l'inventaire, de l'énergie,
+// de l'XP. `casse` : le rocher vient de se briser.
+export function mineRock(state, id) {
+  const P = DATA.PIOCHE;
+  if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (Marché, ${P.PRIX} 💰).`);
+  if (typeof id !== 'string' || !id) return fail('Touche un rocher pour le casser.');
+  if (rockGone(state, id)) return fail('Ce rocher est déjà cassé.');
+  if (!canAfford(state, 'piocher')) return fail(TIRED);
+  const o = outils(state);
+  if (!o.rochers || typeof o.rochers !== 'object') o.rochers = {};
+  const coups = (o.rochers[id] || 0) + 1;
+  const casse = coups >= P.COUPS;
+  o.rochers[id] = casse ? { retour: state.day + randomInt(state, P.RETOUR[0], P.RETOUR[1]) } : coups;
+  addItem(state, 'pierre', P.PIERRE);
+  spendEnergy(state, 'piocher');
+  gainActionXp(state, 'piocher');
+  return { ok: true, pierre: P.PIERRE, coups, casse };
+}
+
+// Au réveil (runNight, jour suivant) : un rocher cassé dont le jour de retour est venu
+// réapparaît à sa place, sauf si une parcelle (terre labourée, plantée ou non) occupe une de
+// ses tuiles ; il réessaie alors chaque matin. Renvoie les rochers revenus.
+export function respawnRocks(state) {
+  const r = state.outils && state.outils.rochers;
+  if (!r) return [];
+  const R = DATA.TERRAIN.ROCHERS || {};
+  const prises = new Set(state.potager.parcelles.map((p) => p.case));
+  const revenus = [];
+  for (const id of Object.keys(r)) {
+    const e = r[id];
+    if (typeof e !== 'object') continue;
+    if (!(Number(e.retour) <= state.day)) continue;
+    if ((R[id] || []).some((t) => prises.has(t))) continue;
+    delete r[id];
+    revenus.push(id);
+  }
+  return revenus;
 }

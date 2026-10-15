@@ -37,6 +37,8 @@ PALETTE = {
     '9': '#4e2210', 'Q': '#7e3a1c', 'U': '#b0643a', '0': '#ecd6a8', '-': '#c8a878',
     # vanille
     'S': '#4a2c18',
+    # pierre (gris des rochers de la carte)
+    'D': '#2e2a33', '~': '#5d5a63', 'I': '#86828c', '+': '#aca8b0', '*': '#d6d2d2',
 }
 
 # couleur de remplissage → couleur du contour posé à côté
@@ -44,7 +46,7 @@ SOMBRE = {}
 for _fill, _out in [('glLm', 'G'), ('YyoOM WA', 'K'), ('Nna', 'K'), ('stTS', 'k'),
                     ('dbiBw', 'q'), ('XxC', 'c'), ('rfF', 'R'), ('pvVu', 'P'),
                     ('Eeh', 'H'), ('Jzj', 'Z'), ('23455', '1'), ('876', '8'),
-                    ('QU0-', '9')]:
+                    ('QU0-', '9'), ('~I+*', 'D')]:
     for _c in _fill:
         if _c != ' ':
             SOMBRE[_c] = _out
@@ -518,6 +520,27 @@ ICONS['🪵'] = contour(grille([
     '..0-0ssssssssss.',
     '...00kkkkkkkkk..',
     '................',
+    '................',
+    '................',
+    '................',
+]))
+
+# ---------------------------------------------------------------- pierre (un rocher)
+# Un bloc de pierre posé au sol, éclairé en haut à gauche, une fêlure, deux facettes.
+ICONS['🪨'] = contour(grille([
+    '................',
+    '................',
+    '................',
+    '......**+++.....',
+    '....**++++I+....',
+    '...*++++I+III...',
+    '..*++++I+IIII~..',
+    '..++++I~IIII~~..',
+    '.*+++IIII~III~~.',
+    '.++++III~IIII~~.',
+    '.+++IIIII~II~~~.',
+    '.III~IIIIII~~~~.',
+    '..~~~~~~~~~~~~..',
     '................',
     '................',
     '................',

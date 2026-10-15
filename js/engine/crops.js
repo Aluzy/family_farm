@@ -58,15 +58,45 @@ function terrainChar(tile) {
   return T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
 }
 
-export function isArable(tile) {
-  return terrainChar(tile) === '#';
+// Les rochers que la pioche casse (DATA.TERRAIN.ROCHERS : leurs tuiles). state.outils.rochers
+// donne, pour chacun, le nombre de coups reçus (un nombre) ou, une fois cassé, { retour } :
+// le jour où il reviendra. Une tuile « o » du terrain est sous un rocher : labourable
+// seulement tant qu'il est cassé.
+export function rockGone(state, id) {
+  const r = state && state.outils && state.outils.rochers && state.outils.rochers[id];
+  return !!r && (typeof r === 'object' || r >= DATA.PIOCHE.COUPS);
+}
+
+// Les tuiles libérées par les rochers cassés.
+export function freedRockTiles(state) {
+  const out = new Set();
+  const R = DATA.TERRAIN.ROCHERS || {};
+  const casses = state && state.outils && state.outils.rochers;
+  if (!casses) return out;
+  for (const id of Object.keys(casses)) if (R[id] && rockGone(state, id)) for (const t of R[id]) out.add(t);
+  return out;
+}
+
+// La tuile est-elle labourable ? Sans `state`, une tuile sous un rocher ne l'est pas.
+export function isArable(tile, state) {
+  const ch = terrainChar(tile);
+  return ch === '#' || (ch === 'o' && freedRockTiles(state).has(tile));
 }
 
 // Version 1.15 : la tuile peut-elle porter une bordure mi-herbe mi-terre (herbe foncée,
-// labourable ou aux abords d'un bâtiment) ?
-export function canBorder(tile) {
+// labourable ou aux abords d'un bâtiment, ou libérée par un rocher cassé) ?
+export function canBorder(tile, state) {
   const ch = terrainChar(tile);
-  return ch === '#' || ch === '+';
+  return ch === '#' || ch === '+' || (ch === 'o' && freedRockTiles(state).has(tile));
+}
+
+// Les rangées du terrain pour la carte : une tuile sous un rocher cassé y est labourable
+// (« # »), sous un rocher debout non (« . »).
+export function terrainLines(state) {
+  const T = DATA.TERRAIN, libres = freedRockTiles(state);
+  return T.LIGNES.map((row, r) => (row.includes('o')
+    ? [...row].map((ch, c) => (ch === 'o' ? (libres.has(r * T.LARGEUR + c) ? '#' : '.') : ch)).join('')
+    : row));
 }
 
 // Dessin d'une tuile d'herbe à côté de la terre (comme sur la planche du jeu de tuiles) :
@@ -90,7 +120,7 @@ export function borderMask(dirt, tile) {
 // Tuiles d'herbe autour de `tile` (elle comprise) dont la bordure ne peut pas se dessiner :
 // une bordure sur un chemin, de l'eau, une pierre, un arbre (canBorder), ou une herbe prise
 // entre deux terres (masque 15).
-function badBorders(dirt, tile) {
+function badBorders(dirt, tile, state) {
   const W = DATA.TERRAIN.LARGEUR, H = DATA.TERRAIN.HAUTEUR;
   const c = tile % W, r = Math.floor(tile / W);
   let n = 0;
@@ -101,7 +131,7 @@ function badBorders(dirt, tile) {
       const t = rr * W + cc;
       if (dirt.has(t)) continue;
       const m = borderMask(dirt, t);
-      if (m && (m === 15 || !canBorder(t))) n += 1;
+      if (m && (m === 15 || !canBorder(t, state))) n += 1;
     }
   }
   return n;
@@ -112,9 +142,9 @@ function badBorders(dirt, tile) {
 // que de nouvelles.
 export function soilLayoutOk(state, tile, labour) {
   const dirt = new Set(state.potager.parcelles.map((p) => p.case));
-  const before = badBorders(dirt, tile);
+  const before = badBorders(dirt, tile, state);
   if (labour) dirt.add(tile); else dirt.delete(tile);
-  return badBorders(dirt, tile) <= before;
+  return badBorders(dirt, tile, state) <= before;
 }
 
 // Version 1.15 : tuiles d'herbe que la houe peut labourer maintenant, pour le dessin (hors
@@ -125,10 +155,10 @@ export function hoeableTiles(state) {
   const dirt = new Set(state.potager.parcelles.map((p) => p.case));
   const out = [];
   for (let t = 0; t < T.LARGEUR * T.HAUTEUR; t++) {
-    if (dirt.has(t) || !isArable(t)) continue;
-    const before = badBorders(dirt, t);
+    if (dirt.has(t) || !isArable(t, state)) continue;
+    const before = badBorders(dirt, t, state);
     dirt.add(t);
-    if (badBorders(dirt, t) <= before) out.push(t);
+    if (badBorders(dirt, t, state) <= before) out.push(t);
     dirt.delete(t);
   }
   return out;
@@ -194,7 +224,7 @@ export function zone2Open() {
 // Ce que fait la houe sur une tuile : { action: 'labourer' | 'reboucher' | null, ok, raison }.
 export function hoeStatus(state, tile) {
   const p = Number.isInteger(tile) ? plotAtTile(state, tile) : null;
-  if (!p && !isArable(tile)) return { action: null, ok: false, raison: 'On ne laboure ici que l\'herbe : pas les chemins, l\'eau, les pierres, les arbres, ni les abords des bâtiments.' };
+  if (!p && !isArable(tile, state)) return { action: null, ok: false, raison: 'On ne laboure ici que l\'herbe : pas les chemins, l\'eau, les pierres, les arbres, ni les abords des bâtiments.' };
   if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).` };
   if (p) {
     if (p.culture) return { action: null, ok: false, raison: 'Terre plantée : récolte d\'abord.' };

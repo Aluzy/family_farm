@@ -26,6 +26,7 @@
 #   frigo_0..2               de dos, il ouvre le réfrigérateur et se penche
 #   ramasse_0..2             de profil, il ramasse un œuf dans la paille
 #   hache_cote_0..3          couper du bois : prêt, hache levée, élan, coup dans le tronc
+#   pioche_cote_0..3         casser un rocher : prêt, pioche levée, élan, coup au sol devant lui
 #
 #   python3 scripts/personnage/fermier.py            écrit les images
 #   python3 scripts/personnage/fermier.py --apercu   écrit aussi apercu_<nom>.png (agrandi)
@@ -507,6 +508,13 @@ def frames():
     F['hache_cote_1'] = figure('cote', b=-1, hands=((8, 12), (7, 13)), after=hoe(8, 12, 4, 6, head(2, 4)))
     F['hache_cote_2'] = figure('cote', hands=((10, 14), (9, 15)), after=hoe(10, 14, 13, 10, head(13, 8)))
     F['hache_cote_3'] = figure('cote', hands=((11, 20), (10, 20)), after=hoe(11, 20, 14, 20, head(14, 18)))
+    # casser un rocher, de profil (le rocher à droite, au sol) : prêt, pioche levée derrière
+    # l'épaule, élan au-dessus de la tête, coup sur le rocher. Le fer, en travers du bout du
+    # manche, est une barre courbe de 5 pixels pointue des deux côtés.
+    F['pioche_cote_0'] = figure('cote', hands=((10, 21), (9, 22)), after=hoe(10, 21, 13, 15, [(11, 15), (12, 14), (13, 14), (14, 14), (15, 15)]))
+    F['pioche_cote_1'] = figure('cote', b=-1, hands=((8, 12), (7, 13)), after=hoe(8, 12, 4, 6, [(2, 7), (3, 6), (4, 5), (5, 5), (6, 4)]))
+    F['pioche_cote_2'] = figure('cote', hands=((10, 14), (9, 15)), after=hoe(10, 14, 12, 8, [(10, 7), (11, 7), (12, 8), (13, 9), (13, 10)]))
+    F['pioche_cote_3'] = figure('cote', squat=1, hands=((11, 21), (10, 22)), after=hoe(11, 21, 14, 25, [(12, 27), (13, 26), (14, 25), (15, 24), (15, 23)]))
     return F
 
 

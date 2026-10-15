@@ -88,6 +88,8 @@
     "laine": { "nom": "Laine", "icone": "🧶", "prix": 6, "edible": false, "category": "produit", "rachetable": false },
     "//bois": ["Le bois des arbres de la carte, coupé à la hache (HACHE). Ni périssable ni comestible :", "il se vend. Il ne se rachète pas au Marché."],
     "bois": { "nom": "Bois", "icone": "🪵", "prix": 2, "edible": false, "category": "produit", "rachetable": false },
+    "//pierre": ["La pierre des rochers de la carte, cassés à la pioche (PIOCHE). Ni périssable ni comestible :", "elle se vend. Elle ne se rachète pas au Marché."],
+    "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
     "//oignon": [
       "10 nouvelles cultures : Zone de culture (oignon, ail, poivron, épinard,",
       "fraise, riz, houblon), Serre exclusivement (cacao, vanille, café). Poivron",
