@@ -159,6 +159,14 @@
   };
   // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
   const OCCLUDER_ALPHA = 0.6;
+  // Le tronc creux au bord de l'étang (en bas à gauche) : ses tuiles dans la couche
+  // `layer` de la carte. Un double appui dessus, le personnage à moins de `near` px, ouvre une
+  // bulle de dialogue au-dessus de lui ; « Oui » mène à l'infra-monde (`page`). Plus loin, le
+  // double appui l'y envoie, comme sur l'herbe.
+  const HOLLOW = {
+    layer: 'plantes_pierres', gids: [539, 540], near: 22, page: 'infra-monde.html',
+    text: 'De drôles de couleurs luisent dans le creux du tronc, voulez-vous aller voir ?',
+  };
   // L'herbe haute (scripts/carte/herbe_haute.py) : la couche d'objets « herbe_haute » de la
   // carte, un point par touffe (type = variante, une rangée de la planche). Quand le personnage
   // la traverse, la touffe penche dans le sens de sa marche puis revient (images de `swing`,
@@ -1787,6 +1795,7 @@
         this.stepShards(delta);
         this.stepSprinklers();
         this.stepRobot(dt);
+        this.placeDialog();
         this.stepFishing(delta);
         this.stepShadows();
         if (!this.room) this.placeLabels();
@@ -2192,7 +2201,7 @@
             clearTimeout(prev.timer);
             this.lastTap = null;
             if (farmyard) this.goCollect(farmyard, hit.window);
-            else this.goHere(wx, wy);
+            else if (!this.askHollow(wx, wy)) this.goHere(wx, wy);
             return;
           }
           if (prev) clearTimeout(prev.timer);
@@ -3050,8 +3059,87 @@
 
       // Le personnage va au point (wx, wy) de la carte ; un rond marque un instant l'arrivée.
       // La nuit, la famille dort : rien.
+      /* ---------- le tronc creux : le passage vers l'infra-monde ---------- */
+
+      // Le rectangle du tronc creux sur la carte (px), lu une fois dans ses tuiles ; null
+      // s'il n'y est pas.
+      hollow() {
+        if (this.hollowBox !== undefined) return this.hollowBox;
+        this.hollowBox = null;
+        const raw = this.mapRaw;
+        const layer = raw && raw.layers.find((l) => l.name === HOLLOW.layer && Array.isArray(l.data));
+        if (!layer) return null;
+        const T = raw.tilewidth;
+        let box = null;
+        layer.data.forEach((g, i) => {
+          if (!HOLLOW.gids.includes(g & 0x0fffffff)) return;
+          const x = (i % raw.width) * T, y = Math.floor(i / raw.width) * T;
+          box = box ? { x0: Math.min(box.x0, x), y0: Math.min(box.y0, y), x1: Math.max(box.x1, x + T), y1: Math.max(box.y1, y + T) } : { x0: x, y0: y, x1: x + T, y1: y + T };
+        });
+        return (this.hollowBox = box);
+      }
+
+      // Un double appui en (wx, wy) : sur le tronc creux, le personnage tout près, la bulle
+      // s'ouvre (renvoie true) ; sinon rien (false : le personnage y va).
+      askHollow(wx, wy) {
+        const b = this.hollow();
+        if (!b || this.room || wx < b.x0 - 2 || wx > b.x1 + 2 || wy < b.y0 - 4 || wy > b.y1 + 2) return false;
+        const at = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+        if (!at) return false;
+        const dx = Math.max(b.x0 - at.x, 0, at.x - b.x1), dy = Math.max(b.y0 - at.y, 0, at.y - b.y1);
+        if (Math.hypot(dx, dy) > HOLLOW.near) return false;
+        this.openHollowDialog();
+        return true;
+      }
+
+      // La bulle de dialogue au-dessus du personnage : le texte, puis « Oui » et « Non ».
+      openHollowDialog() {
+        if (this.dialog) return;
+        const el = document.createElement('div');
+        el.className = 'stage-dialogue';
+        el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-label', 'Le tronc creux');
+        el.innerHTML = '<p></p><div class="stage-dialogue-choix"><button type="button" data-choix="oui">Oui</button><button type="button" data-choix="non">Non</button></div>';
+        el.querySelector('p').textContent = HOLLOW.text;
+        // ses appuis ne vont pas à la carte
+        for (const ev of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'wheel']) el.addEventListener(ev, (e) => e.stopPropagation());
+        el.addEventListener('click', (e) => {
+          const b = e.target.closest('button');
+          if (!b) return;
+          if (b.dataset.choix === 'oui') global.location.href = HOLLOW.page;
+          this.closeDialog();
+        });
+        labelLayer.appendChild(el);
+        this.dialog = { el, w: 0, h: 0 };
+        el.querySelector('button').focus({ preventScroll: true });
+      }
+
+      closeDialog() {
+        if (!this.dialog) return;
+        this.dialog.el.remove();
+        this.dialog = null;
+      }
+
+      // Chaque image : la bulle suit le personnage ; elle se ferme s'il s'éloigne du tronc ou
+      // si la vue entre dans un bâtiment.
+      placeDialog() {
+        const D = this.dialog;
+        if (!D) return;
+        const at = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+        const b = this.hollow();
+        if (!at || this.room || !b || Math.hypot(Math.max(b.x0 - at.x, 0, at.x - b.x1), Math.max(b.y0 - at.y, 0, at.y - b.y1)) > HOLLOW.near * 2) { this.closeDialog(); return; }
+        if (!D.w) { D.w = D.el.offsetWidth; D.h = D.el.offsetHeight; }
+        const f = this.screenFrame();
+        const x = Math.round((at.x - f.left) * f.k - BUBBLE_TIP_X);
+        const y = Math.round((at.y - 32 - f.top) * f.k - D.h + BUBBLE_TIP_Y);
+        D.el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+      }
+
       goHere(wx, wy) {
         if (!this.fermier || (lastModel && lastModel.nuit)) return;
+        // vers le tronc creux : il s'arrête à côté, à sa droite, pas dessus
+        const b = this.hollow();
+        if (b && wx >= b.x0 - 2 && wx <= b.x1 + 2 && wy >= b.y0 - 4 && wy <= b.y1 + 2) { wx = b.x1 + 8; wy = b.y1 - 3; }
         const at = this.fermier.goTo(wx, wy);
         if (!at) return;
         const g = this.add.graphics().setDepth(at.y - 1);
