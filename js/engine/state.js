@@ -323,6 +323,9 @@ export const MIGRATIONS = {
   // Réveil matinal I et II et Routine familiale sont retirés (remboursés), avec le
   // réglage « Dormir tout seul ».
   35: (state) => migrateNightClock(state),
+  // v36 → v37 : la Serre redessinée a deux bacs de 4 × 7 cases (56 au lieu de 63) ; ses
+  // niveaux vont de 16 à 56 parcelles (+10 par niveau).
+  36: (state) => migrateSerreBeds(state),
 };
 
 export function migrateNightClock(old) {
@@ -330,6 +333,19 @@ export function migrateNightClock(old) {
   state.version = 36;
   refundRetiredNodes(state);
   return state;
+}
+
+// Chaque Serre construite a les parcelles de son niveau : il en manque, elles s'ajoutent ;
+// il y en a trop, les vides s'en vont (une parcelle plantée reste jusqu'à sa récolte : elle
+// n'a plus de place dans les bacs, mais « tout récolter » la retrouve).
+export function migrateSerreBeds(old) {
+  const g = old.serre;
+  if (!g || typeof g !== 'object' || !g.construit || !Array.isArray(g.parcelles)) return { ...old, version: 37 };
+  const niveau = Math.max(1, Math.min(DATA.SERRE.PARCELLES.length, g.niveau | 0 || 1));
+  const cap = DATA.SERRE.PARCELLES[niveau - 1];
+  const parcelles = g.parcelles.filter((p, i) => i < cap || (p && p.culture));
+  for (let n = parcelles.length + 1; n <= cap; n++) parcelles.push(makePlot(n, DATA.SERRE.LIEU));
+  return { ...old, serre: { ...g, parcelles }, version: 37 };
 }
 
 export function migrateSerreSoil(old) {

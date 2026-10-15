@@ -5422,7 +5422,7 @@ function orchard() {
 test('DATA Lot 8 : Serre, Verger et Réfrigérateur (plus de saisons)', () => {
   assertEqual(DATA.SAISONS, undefined, 'version 1.6 : plus de saisons');
   assertEqual(DATA.VERGER.FENETRE, undefined, 'les fruits viennent toute l\'année');
-  assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 1000, PARCELLES: [15, 27, 39, 51, 63], COUT: [0, 900, 1800, 3000, 5400] });
+  assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 1000, PARCELLES: [16, 26, 36, 46, 56], COUT: [0, 900, 1800, 3000, 5400] });
   const V = DATA.VERGER;
   assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 12, 50, 125]);
   assertEqual([V.MATURITE, V.FRUITS, V.PERIODE], [15, 6, 3]);
@@ -5484,14 +5484,14 @@ test('Serre : 1 000 pièces, 15 parcelles, refus sans pièces ou si déjà const
   s.pieces = 1000;
   const r = buildSerre(reach(s, 'serre'));
   assertEqual([r.ok, r.cost, s.pieces], [true, 1000, 0]);
-  assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, 1, 15]);
+  assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, 1, 16]);
   assertEqual(s.serre.parcelles.every((p) => p.lieu === 'serre'), true);
   assertEqual(buildSerre(reach(s, 'serre')).ok, false);
-  assertEqual(allPlots(s).length, 21, '6 du Potager et 15 de la Serre');
+  assertEqual(allPlots(s).length, 22, '6 du Potager et 16 de la Serre');
   assertEqual(findPlot(s, 'serre-3').lieu, 'serre');
 });
 
-test('Serre : +12 parcelles par niveau jusqu\'à toute sa terre (63), 900 / 1 800 / 3 000 / 5 400 pièces', () => {
+test('Serre : +10 parcelles par niveau jusqu\'à toute sa terre (56), 900 / 1 800 / 3 000 / 5 400 pièces', () => {
   const s = garden();
   s.pieces = 100000;
   buildSerre(reach(s, 'serre'));
@@ -5502,7 +5502,7 @@ test('Serre : +12 parcelles par niveau jusqu\'à toute sa terre (63), 900 / 1 80
     assert(upgradeSerre(s).ok);
     seen.push([s.serre.niveau, s.serre.parcelles.length, before - s.pieces, cost]);
   }
-  assertEqual(seen, [[2, 27, 900, 900], [3, 39, 1800, 1800], [4, 51, 3000, 3000], [5, 63, 5400, 5400]]);
+  assertEqual(seen, [[2, 26, 900, 900], [3, 36, 1800, 1800], [4, 46, 3000, 3000], [5, 56, 5400, 5400]]);
   assertEqual(serreUpgradeCost(s), null);
   assertEqual(upgradeSerre(s).ok, false, 'niveau maximum');
   assertEqual(upgradeSerre(garden()).ok, false, 'pas construite');
@@ -6059,10 +6059,10 @@ test('mode test Lot 8 : constructions gratuites, batteries vides', () => {
   testBuildSerre(t);
   testBuildVerger(t);
   testBuildFridge(t);
-  assertEqual([t.serre.construit, t.serre.parcelles.length, t.verger.construit, t.frigo.construit, t.pieces], [true, 15, true, true, 0]);
+  assertEqual([t.serre.construit, t.serre.parcelles.length, t.verger.construit, t.frigo.construit, t.pieces], [true, 16, true, true, 0]);
   assertEqual(t.frigo.appareil.type, 'frigo');
   testBuildSerre(t);
-  assertEqual(t.serre.parcelles.length, 15, 'sans doublon');
+  assertEqual(t.serre.parcelles.length, 16, 'sans doublon');
   testEmptyBatteries(t);
   t.panneaux[0].allume = false;
   assertEqual(availableEnergy(t), 0);
@@ -9097,9 +9097,25 @@ test('migration v34 → v35 : une Serre construite reçoit les parcelles de son 
   old.serre = { ...old.serre, construit: true, niveau: 2, parcelles: makePlots(9, 'serre') };
   old.serre.parcelles[0].culture = 'tomate';
   const m = migrate(old);
-  assertEqual([m.version >= 35, m.serre.parcelles.length, m.serre.parcelles[0].culture, m.serre.parcelles[26].id], [true, 27, 'tomate', 'serre-27']);
+  assertEqual([m.version >= 35, m.serre.parcelles.length, m.serre.parcelles[0].culture, m.serre.parcelles[25].id], [true, 26, 'tomate', 'serre-26']);
   const vide = createInitialState();
   vide.version = 34;
+  assertEqual(migrate(vide).serre.construit, false, 'pas de Serre : rien ne change');
+});
+
+test('migration v36 → v37 : la Serre aux deux bacs (56) : parcelles de son niveau, les plantées en trop restent', () => {
+  const old = createInitialState();
+  old.version = 36;
+  old.serre = { ...old.serre, construit: true, niveau: 5, parcelles: makePlots(63, 'serre') };
+  old.serre.parcelles[60].culture = 'tomate';
+  const m = migrate(old);
+  assertEqual([m.version, m.serre.parcelles.length, m.serre.parcelles[56].id, m.serre.parcelles[56].culture], [37, 57, 'serre-61', 'tomate']);
+  const un = createInitialState();
+  un.version = 36;
+  un.serre = { ...un.serre, construit: true, niveau: 1, parcelles: makePlots(15, 'serre') };
+  assertEqual(migrate(un).serre.parcelles.map((p) => p.id).slice(-1), ['serre-16'], 'niveau 1 : 16 parcelles');
+  const vide = createInitialState();
+  vide.version = 36;
   assertEqual(migrate(vide).serre.construit, false, 'pas de Serre : rien ne change');
 });
 
