@@ -1,5 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
+import { dayOfMonth, monthName, yearNumber } from './lune.js';
 import {
   allDevices, batteryCapacity, farmOpen, isBroken, isOwned, maintainDevice, needsService, panelOutput, pumpFlow,
   repairDevice, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
@@ -127,14 +128,11 @@ export function weekdayShort(day) {
   return `${weekdayName(day, true).slice(0, 3)}.`;
 }
 
-// Numéro de la semaine (1 pour les jours 1 à 7).
-export function weekNumber(day) {
-  return Math.floor((Math.max(1, Math.floor(Number(day) || 1)) - 1) / 7) + 1;
-}
-
-// « Lundi · jour 8 »
+// La date du calendrier lunaire : « Mardi 9 Solaria », avec l'année à partir de l'an 2
+// (« Lundi 1 Solaria, an 2 »).
 export function formatDay(day) {
-  return `${weekdayName(day, true)} · jour ${formatNumber(Math.max(1, Math.floor(Number(day) || 1)))}`;
+  const an = yearNumber(day);
+  return `${weekdayName(day, true)} ${dayOfMonth(day)} ${monthName(day)}${an > 1 ? `, an ${an}` : ''}`;
 }
 
 /* ==========================================================================

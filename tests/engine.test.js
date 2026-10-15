@@ -27,7 +27,7 @@ import {
   dishPrice, drawEnergy, efficiency, energyStats, escapeHtml, expiringSoon, familyNeed, feedAllHens,
   feedFamily, feedHen, feedLivestock, findDevice, findMember, findPet, findPlot, finishPreparations,
   formatCoins, formatDay, formatDuration, formatHour, formatLitres, formatLitresRate, formatNumber, formatPercent,
-  formatQty, formatSigned, formatWh, formatWhRate, weekdayName, weekdayShort, weekNumber, freeCowPlaces, freeSheepPlaces, fridgeCount,
+  formatQty, formatSigned, formatWh, formatWhRate, weekdayName, weekdayShort, dayOfMonth, monthName, monthIndex, yearNumber, moonPhase, freeCowPlaces, freeSheepPlaces, fridgeCount,
   fridgeCounts, fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate, fridgeUnits,
   GAME_VERSION, getNotifications, grantTech, growAll, growOrchard, harvest, harvestAll, harvestYield,
   hourOfDay, ingredientOptions, inventoryCounts, isAutomated, isBroken, isBuyable,
@@ -63,6 +63,21 @@ import {
   advanceNight, midnightMs, nightActive, nightLengthMs, skipNight, startNight, collectAt, deposit,
 } from '../js/engine/index.js';
 
+
+// Le calendrier lunaire change la pousse, l'eau et les récoltes selon le jour. Les tests écrits
+// avant lui tournent lune neutre (un stade par nuit, rendements et eau de base) ; ceux de la
+// lune la rallument le temps du test (avecLune).
+const LUNE_REGLAGES = { ...DATA.LUNE };
+const LUNE_NEUTRE = { POUSSE_CHANCE: 0, POUSSE_NOUVELLE: 1, RECOLTE_PLEINE: 100, EAU_DECROISSANTE: 100 };
+Object.assign(DATA.LUNE, LUNE_NEUTRE);
+function avecLune(fn) {
+  Object.assign(DATA.LUNE, LUNE_REGLAGES);
+  try {
+    fn();
+  } finally {
+    Object.assign(DATA.LUNE, LUNE_NEUTRE);
+  }
+}
 
 const __tests = [];
 
@@ -8040,7 +8055,7 @@ test('données : buildCatalog() calcule sur une copie, RAW_DATA garde les valeur
   assertEqual([RAW_DATA.items.pain, DATA.items.pain.plat], [undefined, true]);
   // deux catalogues tirés des mêmes fichiers sont égaux et indépendants
   const autre = buildCatalog(RAW_DATA);
-  assertEqual(autre, DATA);
+  avecLune(() => assertEqual(autre, DATA)); // ces tests tournent lune neutre (voir avecLune)
   autre.items.carotte.prix = 99;
   assertEqual([DATA.items.carotte.prix, RAW_DATA.items.carotte.prix], [2, 1]);
 });
@@ -9232,9 +9247,63 @@ test('Ramassage (version 1.19) : à l\'Étable, le personnage tond les moutons p
 
 test('Jours de la semaine : le jour 1 est un lundi, la semaine tourne', () => {
   assertEqual([1, 2, 6, 7, 8, 14, 15].map((d) => weekdayName(d)), ['lundi', 'mardi', 'samedi', 'dimanche', 'lundi', 'dimanche', 'lundi']);
-  assertEqual([weekdayName(3, true), weekdayShort(1), weekdayShort(7)], ['Mercredi', 'Lun.', 'Dim.']);
-  assertEqual([1, 7, 8, 14, 15].map(weekNumber), [1, 1, 2, 2, 3]);
-  assertEqual([formatDay(8), formatDay(undefined), weekdayName(0)], ['Lundi · jour 8', 'Lundi · jour 1', 'lundi']);
+  assertEqual([weekdayName(3, true), weekdayShort(1), weekdayShort(7), weekdayName(0)], ['Mercredi', 'Lun.', 'Dim.', 'lundi']);
 });
+
+test('Calendrier lunaire : 12 mois de 14 jours, le jour 1 est le 1er Solaria de l\'an 1', () => {
+  const L = DATA.LUNE;
+  assertEqual([L.MOIS.length, L.PHASES.reduce((t, p) => t + p.jours, 0)], [12, L.JOURS_MOIS]);
+  assertEqual([1, 14, 15, 28, 29, 168, 169].map(dayOfMonth), [1, 14, 1, 14, 1, 14, 1]);
+  assertEqual([1, 14, 15, 29, 168, 169].map(monthName), ['Solaria', 'Solaria', 'Florea', 'Halima', 'Silentia', 'Solaria']);
+  assertEqual([monthIndex(168), yearNumber(1), yearNumber(168), yearNumber(169)], [11, 1, 1, 2]);
+  assertEqual([formatDay(1), formatDay(16), formatDay(169), formatDay(undefined)], ['Lundi 1 Solaria', 'Mardi 2 Florea', 'Lundi 1 Solaria, an 2', 'Lundi 1 Solaria']);
+  // le mois commence au premier croissant : 5 jours croissante, 2 pleine, 5 décroissante, 2 nouvelle
+  const phases = [];
+  for (let d = 1; d <= 15; d++) phases.push(moonPhase(d).id[0]);
+  assertEqual(phases.join(''), 'cccccppddddd' + 'nn' + 'c');
+});
+
+test('Lune : pleine, récoltes +50 % ; décroissante, arrosage −25 % ; nouvelle, rien ne pousse ; croissante, parfois 2 stades', () => avecLune(() => {
+  const serre = (day) => {
+    const s = garden();
+    s.pieces = 5000;
+    buildSerre(reach(s, 'serre'));
+    s.day = day;
+    plant(s, 'serre-1', 'tomate');
+    return s;
+  };
+  // pleine lune (jours 6 et 7) : 10 tomates → 15
+  let s = serre(6);
+  findPlot(s, 'serre-1').stade = maxStage(findPlot(s, 'serre-1'));
+  assertEqual([harvestYield(s, 'tomate'), harvest(s, 'serre-1').items.tomate], [15, 15]);
+  s = serre(5);
+  assertEqual(harvestYield(s, 'tomate'), 10, 'la veille, rendement de base');
+  // lune décroissante (jours 8 à 12) : 3 L → 2 L
+  s = serre(8);
+  let before = s.eauMl;
+  assert(water(s, 'serre-1').ok);
+  assertEqual([waterCostFor(s, 'tomate'), before - s.eauMl], [2, ml(2)]);
+  // nouvelle lune (jours 13 et 14) : arrosée, elle ne pousse pas
+  s = serre(13);
+  water(s, 'serre-1');
+  growAll(s);
+  assertEqual([findPlot(s, 'serre-1').stade, findPlot(s, 'serre-1').arrose], [0, false]);
+  // lune croissante (jours 1 à 5) : à 100 % de chances, 2 stades ; à 0 %, un seul
+  const chance = DATA.LUNE.POUSSE_CHANCE;
+  try {
+    DATA.LUNE.POUSSE_CHANCE = 100;
+    s = serre(1);
+    water(s, 'serre-1');
+    growAll(s);
+    assertEqual(findPlot(s, 'serre-1').stade, 2);
+    DATA.LUNE.POUSSE_CHANCE = 0;
+    s = serre(1);
+    water(s, 'serre-1');
+    growAll(s);
+    assertEqual(findPlot(s, 'serre-1').stade, 1);
+  } finally {
+    DATA.LUNE.POUSSE_CHANCE = chance;
+  }
+}));
 
 export const results = runTests();

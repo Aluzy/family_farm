@@ -302,5 +302,32 @@
       "pommier": { "nom": "Pommier", "icone": "🌳", "fruit": "pomme", "prix": 40 },
       "poirier": { "nom": "Poirier", "icone": "🌳", "fruit": "poire", "prix": 40 }
     }
+  },
+  "//LUNE": [
+    "Calendrier lunaire (inspiré du calendrier hégirien) : 12 mois de JOURS_MOIS jours, une",
+    "lunaison par mois ; l'année fait 12 × JOURS_MOIS jours. Le jour 1 de la partie est le",
+    "1er Solaria, an 1 (un lundi : un mois de 14 jours commence toujours un lundi). Comme",
+    "un mois hégirien, il commence au premier croissant : PHASES dans l'ordre du mois,",
+    "jours = leur durée (la somme fait JOURS_MOIS). Tout se déduit de state.day.",
+    "Effets sur les cultures (toutes les parcelles, Serre comprise), selon la phase de la",
+    "nuit ou du jour :",
+    "  croissante : une plante arrosée qui pousse a POUSSE_CHANCE % de chances de gagner",
+    "  un stade de plus ; pleine : une récolte rend RECOLTE_PLEINE % (arrondi) ;",
+    "  decroissante : un arrosage coûte EAU_DECROISSANTE % de son eau ; nouvelle : une plante",
+    "  arrosée gagne POUSSE_NOUVELLE stade (0 : elle ne pousse pas, l'arrosage du jour est perdu)."
+  ],
+  "LUNE": {
+    "JOURS_MOIS": 14,
+    "MOIS": ["Solaria", "Florea", "Halima", "Verdia", "Pluvia", "Zephyria", "Frutera", "Granaria", "Messidia", "Aurea", "Solena", "Silentia"],
+    "PHASES": [
+      { "id": "croissante", "nom": "Lune croissante", "icone": "🌒", "jours": 5 },
+      { "id": "pleine", "nom": "Pleine lune", "icone": "🌕", "jours": 2 },
+      { "id": "decroissante", "nom": "Lune décroissante", "icone": "🌘", "jours": 5 },
+      { "id": "nouvelle", "nom": "Nouvelle lune", "icone": "🌑", "jours": 2 }
+    ],
+    "POUSSE_CHANCE": 25,
+    "POUSSE_NOUVELLE": 0,
+    "RECOLTE_PLEINE": 150,
+    "EAU_DECROISSANTE": 75
   }
 }

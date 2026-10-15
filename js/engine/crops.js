@@ -1,5 +1,5 @@
 import { DATA, roundPct } from './catalog.js';
-import { EPS, randomInt } from './base.js';
+import { EPS, nextRandom, randomInt } from './base.js';
 import { fail, farmOpen, spend } from './devices.js';
 import { countItem, takeItem } from './inventory.js';
 import { takeWheat, wheatTotal } from './animals.js';
@@ -7,6 +7,7 @@ import { deposit } from './ramassage.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, isUnlocked, noteCropHarvested, noteWatered } from './campaign.js';
 import { gainActionXp, levelBlock, levelReached } from './levels.js';
+import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
@@ -312,16 +313,17 @@ export function isMature(plot) {
 }
 
 // Rendement d'une récolte : le même au clic et en automatique (version 1.8 : plus
-// de productivité), partout et toute l'année (version 1.6 : plus de saisons).
+// de productivité), partout (version 1.6 : plus de saisons) ; plus fort à la pleine lune.
 export function harvestYield(state, culture) {
-  return DATA.crops[culture].rendement;
+  return roundPct(DATA.crops[culture].rendement, moonHarvestPct(state));
 }
 
 // Eau d'un arrosage (L entiers) : celle de la culture, arrondie au litre le plus
 // proche, 1 L au minimum.
 export function waterCostFor(state, culture) {
-  // arbre v2 : Arrosage économe et Gestion intelligente de l'eau (en %)
-  return Math.max(1, roundPct(DATA.crops[culture].litres, techPct(state, 'eauArrosage')));
+  // arbre v2 : Arrosage économe et Gestion intelligente de l'eau (en %) ; moins à la lune
+  // décroissante
+  return Math.max(1, roundPct(DATA.crops[culture].litres, roundPct(techPct(state, 'eauArrosage'), moonWaterPct(state))));
 }
 
 export function waterCost(state, plot) {
@@ -417,13 +419,21 @@ export function harvest(state, plotId, auto = false) {
 
 // Deuxième étape nocturne : +1 stade si la parcelle a été arrosée (jusqu'au
 // dernier stade), puis remise à zéro de l'arrosage.
+// La pousse de la nuit (state.day : le jour qui s'achève) : un stade par plante arrosée. À la
+// nouvelle lune, LUNE.POUSSE_NOUVELLE stade (0 : rien ne pousse) ; à la lune croissante, une
+// plante qui pousse a LUNE.POUSSE_CHANCE % de chances de gagner un stade de plus.
 export function growAll(state) {
+  const stades = isMoonPhase(state, 'nouvelle') ? DATA.LUNE.POUSSE_NOUVELLE : 1;
+  const croissante = isMoonPhase(state, 'croissante') && DATA.LUNE.POUSSE_CHANCE > 0;
   for (const p of allPlots(state)) {
     if (!p.culture) {
       p.arrose = false;
       continue;
     }
-    if (p.arrose && p.stade < maxStage(p)) p.stade += 1;
+    if (p.arrose && stades > 0 && p.stade < maxStage(p)) {
+      p.stade = Math.min(maxStage(p), p.stade + stades);
+      if (croissante && p.stade < maxStage(p) && nextRandom(state) * 100 < DATA.LUNE.POUSSE_CHANCE) p.stade += 1;
+    }
     p.arrose = false;
   }
 }

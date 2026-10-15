@@ -228,6 +228,45 @@ def _lune():
 
 ICONS['🌙'] = _lune()
 
+
+def _phase(eclairee):
+    """Disque de la lune pour une phase : eclairee(px, py) dit si le point est au soleil.
+    Partie éclairée comme 🌙 (reflet en haut à gauche, ombre en bas à droite), le reste
+    gris bleu, contour sombre."""
+    import math
+    g = vide()
+    for y in range(16):
+        for x in range(16):
+            px, py = x + 0.5, y + 0.5
+            d = math.hypot(px - 8.0, py - 8.0)
+            if d > 6.2:
+                continue
+            if not eclairee(px, py):
+                g[y][x] = 'x' if d > 5.0 and (px - 8.0) + (py - 8.0) < -2 else 'X'
+            elif d > 4.9 and (px - 8.0) + (py - 8.0) < -1.5:
+                g[y][x] = 'W'
+            elif d > 4.9 and (px - 8.0) + (py - 8.0) > 2.5:
+                g[y][x] = 'A'
+            else:
+                g[y][x] = 'M'
+    return g
+
+
+def _lune_phase(eclairee, crateres=()):
+    g = _phase(eclairee)
+    for x, y in crateres:
+        if g[y][x] == 'M':
+            g[y][x] = 'A'
+    return contour(g)
+
+
+# Les phases du calendrier lunaire (data/crops.json, LUNE) : premier croissant éclairé à
+# droite, pleine lune, dernier croissant à gauche, nouvelle lune toute dans l'ombre.
+ICONS['🌒'] = _lune_phase(lambda px, py: (px - 4.4) ** 2 + (py - 8.0) ** 2 > 6.2 ** 2)
+ICONS['🌕'] = _lune_phase(lambda px, py: True, crateres=[(6, 6), (7, 6), (10, 8), (6, 10), (7, 10), (9, 11)])
+ICONS['🌘'] = _lune_phase(lambda px, py: (px - 11.6) ** 2 + (py - 8.0) ** 2 > 6.2 ** 2)
+ICONS['🌑'] = _lune_phase(lambda px, py: False)
+
 # ---------------------------------------------------------------- lever du jour
 ICONS['🌅'] = contour(grille([
     '................',

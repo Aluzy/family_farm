@@ -6,6 +6,7 @@ export * from './catalog.js';
 export * from './base.js';
 export * from './devices.js';
 export * from './clock.js';
+export * from './lune.js';
 export * from './energy.js';
 export * from './inventory.js';
 export * from './fridge.js';
