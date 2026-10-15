@@ -6,7 +6,7 @@ import { hourOfDay } from './clock.js';
 import { countItem, nextExpiry, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
 import { newStableReport } from './animals.js';
-import { energyMax, restoreEnergy, snackEnergy } from './stamina.js';
+import { energyMax, snackEnergy } from './stamina.js';
 import { newAutoReport } from './automation.js';
 import { autonomyPercent } from './campaign.js';
 
@@ -395,7 +395,7 @@ export function takeMeal(state) {
 
 // Première étape nocturne : le repas s'il n'a pas été pris à 19 h, puis son
 // compte recopié dans celui de la nuit. Version 1.8 : la couverture du repas
-// fixe l'énergie du personnage au réveil (restoreEnergy).
+// note l'énergie du personnage (elle remonte en dormant : recoverInSleep).
 export function feedFamily(state) {
   if (!state.repas) takeMeal(state);
   const { heure, ...repas } = state.repas;
@@ -409,7 +409,7 @@ export function feedFamily(state) {
     fruits: {},
     frigo: { mwh: 0, panne: false, vieillis: false },
   };
-  restoreEnergy(state, repas.couverture);
+  // l'énergie ne remonte plus d'un coup à minuit : en dormant, peu à peu (recoverInSleep)
   state.nuit.energieReveil = state.energie;
   return state.nuit;
 }

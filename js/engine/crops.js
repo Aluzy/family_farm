@@ -9,6 +9,7 @@ import { bumpCounter, isUnlocked, noteCropHarvested, noteWatered } from './campa
 import { gainActionXp, levelBlock, levelReached } from './levels.js';
 import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
+import { absoluteHours } from './clock.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -395,19 +396,21 @@ export function plant(state, plotId, culture, auto = false) {
   return { ok: true };
 }
 
-// Une fois par nuit et par parcelle ; consomme l'eau du réservoir. `auto` :
+// Une fois par cycle de pousse (TIME.POUSSE_HEURES heures d'horloge, voir growDue) et par
+// parcelle ; consomme l'eau du réservoir. `auto` :
 // arrosage d'une automatisation (moitié de l'XP, version 1.7).
 export function water(state, plotId, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
   if (!plot.culture) return fail('Rien n\'est planté ici.');
-  if (plot.arrose) return fail('Déjà arrosée : une fois par nuit.');
+  if (plot.arrose) return fail('Déjà arrosée : elle pousse.');
   if (isMature(plot)) return fail('Déjà mûre, inutile d\'arroser.');
   const litres = waterCost(state, plot);
   if (state.eauMl < litres * 1000) return fail('Pas assez d\'eau dans le réservoir.');
   if (!auto && !canAfford(state, 'arroser')) return fail(TIRED); // version 1.8
   state.eauMl -= litres * 1000;
   plot.arrose = true;
+  plot.arroseH = absoluteHours(state); // elle gagne son stade POUSSE_HEURES heures plus tard
   if (!auto) spendEnergy(state, 'arroser');
   gainActionXp(state, 'arroser', 1, auto);
   noteWatered(state, allPlots(state).filter((p) => p.arrose).length); // FLU-42 : chapitre 1
@@ -452,6 +455,9 @@ export function harvest(state, plotId, auto = false) {
 // La pousse de la nuit (state.day : le jour qui s'achève) : un stade par plante arrosée. À la
 // nouvelle lune, LUNE.POUSSE_NOUVELLE stade (0 : rien ne pousse) ; à la lune croissante, une
 // plante qui pousse a LUNE.POUSSE_CHANCE % de chances de gagner un stade de plus.
+//
+// Version des cycles : la pousse n'a plus lieu à minuit (growAll ne sert plus qu'aux essais) ;
+// chaque plante gagne son stade POUSSE_HEURES heures d'horloge après son arrosage (growDue).
 export function growAll(state) {
   const stades = isMoonPhase(state, 'nouvelle') ? DATA.LUNE.POUSSE_NOUVELLE : 1;
   const croissante = isMoonPhase(state, 'croissante') && DATA.LUNE.POUSSE_CHANCE > 0;
@@ -466,6 +472,41 @@ export function growAll(state) {
     }
     p.arrose = false;
   }
+}
+
+// La pousse suit l'horloge : une plante arrosée gagne son stade TIME.POUSSE_HEURES heures
+// d'horloge après son arrosage (p.arroseH, heure absolue), de jour comme de nuit, puis
+// redemande de l'eau. La lune joue au moment où le stade est gagné (voir growAll). Une
+// plante arrosée sans heure connue (ancienne sauvegarde) compte depuis 6 h du jour. Appelée
+// à chaque pas d'horloge (tick, advanceNight, sleep, simulateOffline). Renvoie le nombre de
+// plantes qui ont fini leur cycle.
+export function growDue(state) {
+  const now = absoluteHours(state);
+  const debutJour = ((Number(state.day) || 1) - 1) * 24 + DATA.TIME.DAY_START_HOUR;
+  let n = 0;
+  for (const p of allPlots(state)) {
+    if (!p.arrose) continue;
+    if (!Number.isFinite(p.arroseH)) p.arroseH = Math.min(debutJour, now);
+    if (now + EPS < p.arroseH + DATA.TIME.POUSSE_HEURES) continue;
+    if (p.culture && p.stade < maxStage(p)) {
+      const stades = isMoonPhase(state, 'nouvelle') ? DATA.LUNE.POUSSE_NOUVELLE : 1;
+      if (stades > 0) {
+        p.stade = Math.min(maxStage(p), p.stade + stades);
+        if (isMoonPhase(state, 'croissante') && DATA.LUNE.POUSSE_CHANCE > 0 && p.stade < maxStage(p) && nextRandom(state) * 100 < DATA.LUNE.POUSSE_CHANCE) p.stade += 1;
+      }
+    }
+    p.arrose = false;
+    delete p.arroseH;
+    n += 1;
+  }
+  return n;
+}
+
+// Heures d'horloge avant que la plante arrosée gagne son stade (null : pas arrosée).
+export function growHoursLeft(state, plot) {
+  if (!plot || !plot.arrose) return null;
+  const debut = Number.isFinite(plot.arroseH) ? plot.arroseH : ((Number(state.day) || 1) - 1) * 24 + DATA.TIME.DAY_START_HOUR;
+  return Math.max(0, debut + DATA.TIME.POUSSE_HEURES - absoluteHours(state));
 }
 
 /* ---------- Lot 8 : Serre ---------- */

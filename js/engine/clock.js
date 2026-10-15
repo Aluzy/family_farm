@@ -39,6 +39,19 @@ export function clockHours(state) {
   return h >= 24 ? h - 24 : h;
 }
 
+// L'heure absolue, en heures depuis minuit du jour 1 (décimales comprises) : 30,5 le jour 2
+// à 6 h 30. Le jour, d'après l'éveil ; la nuit, d'après le temps de nuit (passé minuit, le
+// jour a déjà changé). Sert aux cycles de pousse (growDue).
+export function absoluteHours(state) {
+  const H = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  const day = Number(state.day) || 1;
+  if (nightActive(state)) {
+    const n = state.nuitEnCours;
+    return ((n.minuit ? day - 1 : day) - 1) * 24 + DATA.TIME.NIGHT_HOUR + n.ms / H;
+  }
+  return (day - 1) * 24 + DATA.TIME.DAY_START_HOUR + Math.max(0, Number(state.awakeMs) || 0) / H;
+}
+
 /* ---------- version 1.19 : la nuit défile ---------- */
 
 // De NIGHT_HOUR (22 h) à DAY_START_HOUR (6 h), la nuit passe à la vitesse du jour :

@@ -29,6 +29,11 @@ export function nightsLabel(n) {
   return `${n} nuit${n > 1 ? 's' : ''}`;
 }
 
+// « 4 jours » : la pousse d'une culture, un stade par cycle de 24 h d'horloge.
+export function daysLabel(n) {
+  return `${n} jour${n > 1 ? 's' : ''}`;
+}
+
 // « 3 🥕 · 2 🍅 » à partir de { item: quantité }.
 export function itemsSummary(map) {
   return Object.entries(map)

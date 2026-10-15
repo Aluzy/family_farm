@@ -4,8 +4,9 @@ import { allDevices, batteryCapacity, isBroken, needsService, newDayStats, tankC
 import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
 import { expiringSoon, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
-import { feedFamily, newNightStats } from './family.js';
-import { growAll, readyCrops } from './crops.js';
+import { feedFamily, newNightStats, planMeal } from './family.js';
+import { growDue, readyCrops } from './crops.js';
+import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
 import { growOrchard } from './orchard.js';
 import { commerceNight } from './commerce.js';
@@ -33,7 +34,8 @@ import { respawnRocks } from './outils.js';
 // de la nuit suivante. Juste avant la péremption, le blé de l'inventaire
 // rejoint le Silo s'il y a de la place (fillSilo) : au Silo, il ne périme pas.
 // Chaque étape reçoit l'état et le modifie.
-export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, growAll, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil];
+// La pousse des cultures n'en fait plus partie : elle suit l'horloge (growDue).
+export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, fridgeNight, fillSilo, spoil];
 
 /* ---------- la nuit ---------- */
 
@@ -146,8 +148,16 @@ export function wakeSummary(report) {
 // aux essais.
 export function sleep(state) {
   if (!canSleep(state)) return null;
+  // jusqu'à minuit, les cycles de pousse qui s'achèvent ; puis la nuit (comme advanceNight)
+  state.nuitEnCours = { ms: midnightMs(), minuit: false };
+  growDue(state);
   const report = runNight(state);
   state.nuitEnCours = null;
+  // toute une nuit de sommeil : l'énergie du réveil ; les cycles de pousse jusqu'à 6 h
+  restoreEnergy(state, state.nuit.couverture);
+  growDue(state);
+  report.energieReveil = state.energie;
+  report.pretes = readyCrops(state);
   return report;
 }
 
@@ -166,19 +176,48 @@ export function startNight(state) {
 export function advanceNight(state, dtMs) {
   if (!nightActive(state)) return null;
   const n = state.nuitEnCours;
+  const avant = n.ms;
   n.ms = Math.min(nightLengthMs(), n.ms + Math.max(0, Number(dtMs) || 0));
+  if (n.dort) recoverInSleep(state, n.ms - avant); // il dort : l'énergie remonte peu à peu
   let event = null;
+  // les plantes dont le cycle de pousse s'achève (avant minuit : avant que les
+  // automatisations de la nuit ne les réarrosent)
+  growDue(state);
   if (!n.minuit && n.ms >= midnightMs()) {
-    n.minuit = true;
     runNight(state);
+    n.minuit = true; // après runNight : pendant le calcul, le jour n'a pas encore changé (absoluteHours)
     event = 'minuit';
   }
   if (n.ms >= nightLengthMs()) {
     state.nuitEnCours = null;
     state.reveil = true;
+    // l'énergie et les plantes mûres au réveil, pas à minuit
+    if (state.report) { state.report.energieReveil = state.energie; state.report.pretes = readyCrops(state); }
     event = 'reveil';
   }
   return event;
+}
+
+// L'énergie que le sommeil de cette nuit vise : celle du réveil d'après le repas du soir
+// (REVEIL_BASE + REVEIL_REPAS × couverture). Avant minuit, le repas pris (ou prévu) ; après,
+// celui que la famille a mangé.
+export function sleepTarget(state) {
+  const n = state.nuitEnCours;
+  const couverture = n && n.minuit && state.nuit && Number.isFinite(state.nuit.couverture) ? state.nuit.couverture
+    : state.repas ? state.repas.couverture : planMeal(state).couverture;
+  return wakeEnergy(state, couverture);
+}
+
+// En dormant, l'énergie remonte peu à peu : PERSONNAGE.SOMMEIL_HEURES heures de sommeil
+// pour atteindre sleepTarget (`ms` : temps d'horloge dormi). Une énergie plus haute est gardée.
+export function recoverInSleep(state, ms) {
+  if (!(ms > 0)) return state.energie;
+  const cible = sleepTarget(state);
+  const e = Number(state.energie) || 0;
+  if (e >= cible) return e;
+  const parMs = cible / (DATA.PERSONNAGE.SOMMEIL_HEURES * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
+  state.energie = Math.min(cible, energyMax(), Math.round(e + parMs * ms));
+  return state.energie;
 }
 
 // « Dormir » : le personnage dort dans son lit, la nuit défile en accéléré (une heure toutes
@@ -204,6 +243,7 @@ export function nightSpeed(state) {
 // rapport de réveil, ou null s'il n'y a pas de nuit en cours.
 export function skipNight(state) {
   if (!nightActive(state)) return null;
+  state.nuitEnCours.dort = true; // le reste de la nuit, il dort
   advanceNight(state, nightLengthMs());
   return state.report;
 }

@@ -5,7 +5,7 @@ import { energyChip, formatEnergy } from './energie.js';
 import { actionCost } from '../engine/stamina.js';
 import {
   allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plotZone, seedStock,
-  water, waterCost, waterCostFor, seedLabel,
+  growHoursLeft, water, waterCost, waterCostFor, seedLabel,
 } from '../engine/crops.js';
 import {
   buildPaturage, buildPoulailler, buildSilo, buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
@@ -281,7 +281,7 @@ function openPlantAllModal(lieu, zone) {
       return `
         <button type="button" class="btn plant-choice" data-action="plant-all" data-lieu="${lieu}"${z} data-crop="${c}"${n >= 1 ? '' : ' disabled'}>
           <span>${def.icone} ${def.nom}</span>
-          <span class="muted">${stock} : ${formatQty(n)} pour ${vides} parcelle${vides > 1 ? 's' : ''} · ${def.stades} nuits · ⚡ ${formatEnergy(Math.min(vides, Math.floor(n)) * actionCost(state, 'planter'))}</span>
+          <span class="muted">${stock} : ${formatQty(n)} pour ${vides} parcelle${vides > 1 ? 's' : ''} · ${def.stades} jours · ⚡ ${formatEnergy(Math.min(vides, Math.floor(n)) * actionCost(state, 'planter'))}</span>
         </button>`;
     })
     .join('');
@@ -343,7 +343,8 @@ export function plotCard(p, n) {
   } else {
     const litres = waterCost(state, p);
     const noWater = state.eauMl < litres * 1000;
-    const label = p.arrose ? 'Arrosée' : noWater ? `Arroser : il faut ${formatQty(litres)} L d'eau` : `Arroser (${formatQty(litres)} L)`;
+    const reste = growHoursLeft(state, p);
+    const label = p.arrose ? `Arrosée : un stade dans ${Math.max(1, Math.ceil(reste))} h` : noWater ? `Arroser : il faut ${formatQty(litres)} L d'eau` : `Arroser (${formatQty(litres)} L)`;
     main = iconBtn('💧', label, `data-action="water" data-id="${p.id}"`, { done: p.arrose, disabled: p.arrose || noWater });
   }
   return `
@@ -400,7 +401,7 @@ function openPlantModal(plotId) {
       return `
         <button type="button" class="btn plant-choice" data-action="plant" data-id="${plotId}" data-crop="${c}"${n > 0 ? '' : ' disabled'}>
           <span>${def.icone} ${def.nom}</span>
-          <span class="muted">${stock} : ${formatQty(n)} · ${def.stades} nuits · ${formatQty(waterCostFor(state, c))} L par arrosage</span>
+          <span class="muted">${stock} : ${formatQty(n)} · ${def.stades} jours · ${formatQty(waterCostFor(state, c))} L par arrosage</span>
         </button>`;
     })
     .join('');

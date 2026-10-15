@@ -21,7 +21,7 @@ import { stageUsable } from './stage.js';
 import { menuOpen } from './stage-windows.js';
 import { formatPlaces, formatStraw } from './elevage.js';
 import { millOutputText, stationRecipes } from './cuisine.js';
-import { nightsLabel } from './inventaire.js';
+import { daysLabel, nightsLabel } from './inventaire.js';
 import { artPx, REDUCED_MOTION } from './animations.js';
 import { openOptionsModal } from './options.js';
 import { registerActions } from './actions.js';
@@ -38,7 +38,7 @@ function cropsLine(lieu, what) {
       const out = DATA.items[cropProduct(c)];
       return what === 'eau'
         ? `${d.icone} ${d.nom.toLowerCase()} ${formatQty(d.litres)} L`
-        : `${d.icone} ${d.nom.toLowerCase()} : ${d.rendement} ${out.nom.toLowerCase()} en ${nightsLabel(d.stades)}`;
+        : `${d.icone} ${d.nom.toLowerCase()} : ${d.rendement} ${out.nom.toLowerCase()} en ${daysLabel(d.stades)}`;
     })
     .join(' · ');
 }
@@ -91,10 +91,10 @@ const HELP = {
   }),
   potager: () => ({
     nom: DATA.POTAGER.NOM,
-    role: `Planter, arroser, récolter : toutes les cultures poussent ici, sur n'importe quelle parcelle. Une plante arrosée gagne un stade chaque nuit ; sans eau, elle attend. La parcelle se libère après la récolte ; sur la carte, ta récolte entre dans l'inventaire quand ton personnage la ramasse (une bulle « +x » au-dessus de lui). Chaque culture arrive à son niveau (⭐ dans le bandeau). Le blé nourrit les poules et donne la farine ; il ne se plante qu'une fois le Silo construit. Le tournesol donne l'huile, le riz et le houblon servent en cuisine.`,
+    role: `Planter, arroser, récolter : toutes les cultures poussent ici, sur n'importe quelle parcelle. Une plante arrosée gagne un stade ${DATA.TIME.POUSSE_HEURES} heures plus tard (de jour comme de nuit), puis redemande de l'eau ; sans eau, elle attend. La parcelle se libère après la récolte ; sur la carte, ta récolte entre dans l'inventaire quand ton personnage la ramasse (une bulle « +x » au-dessus de lui). Chaque culture arrive à son niveau (⭐ dans le bandeau). Le blé nourrit les poules et donne la farine ; il ne se plante qu'une fois le Silo construit. Le tournesol donne l'huile, le riz et le houblon servent en cuisine.`,
     conso: `Eau par arrosage : ${cropsLine('potager', 'eau')}.`,
     prod: `${cropsLine('potager', 'recolte')}.`,
-    note: `Version 1.15 : toute l'herbe de la carte se cultive. La houe (Marché, ${DATA.HOUE.PRIX} 💰) change une tuile d'herbe en terre, ${DATA.PERSONNAGE.COUTS.labourer} d'énergie la tuile ; une terre vide se rebouche gratuitement. Pas sur les chemins, l'eau, les pierres, les arbres et les arbustes, ni à moins de 8 tuiles du Poulailler, ni aux abords de l'Étable, du Moulin, de la Serre et du Verger. Le nombre de tuiles de terre est plafonné par le niveau (${DATA.NIVEAUX.TUILES.filter((x, i, a) => a.indexOf(x) === i).join(' / ')}). L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture) ; ils travaillent la nuit, à 100 %.`,
+    note: `Version 1.15 : toute l'herbe de la carte se cultive. La houe (Marché, ${DATA.HOUE.PRIX} 💰) change une tuile d'herbe en terre, ${DATA.PERSONNAGE.COUTS.labourer} d'énergie la tuile ; une terre vide se rebouche gratuitement. Pas sur les chemins, l'eau, les pierres, les arbres et les arbustes, ni à moins de 8 tuiles du Poulailler, ni aux abords de l'Étable, du Moulin, de la Serre et du Verger. Le nombre de tuiles de terre est plafonné par le niveau (${DATA.NIVEAUX.TUILES.filter((x, i, a) => a.indexOf(x) === i).join(' / ')}). L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture) ; ils travaillent à minuit, à 100 % : une plante arrosée à minuit gagne son stade au minuit suivant.`,
   }),
   serre: () => ({
     nom: 'Serre',
@@ -249,11 +249,11 @@ const TUTO = {
     // FLU-19 : plus de parcelle avant le labour ; on achète la houe, on laboure, puis on plante
     texte: () => `${hasHoe(state) ? 'Ta houe' : `Achète d'abord la houe au Marché (${formatNumber(DATA.HOUE.PRIX)} 💰) : elle`} change l'herbe en terre ; les graines s'achètent dans l'onglet Graines du Marché. ${stageUsable()
       ? `Prends-la (bouton ${DATA.HOUE.ICONE} en bas à droite) et touche l'herbe foncée (les cases vertes) pour labourer. Range-la, puis touche une terre labourée pour planter, et touche-la encore pour l'arroser`
-      : 'Laboure, puis touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade chaque nuit : les carottes sont mûres en ${nightsLabel(DATA.crops.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante.' : 'Après la récolte, replante.'}`,
+      : 'Laboure, puis touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade ${DATA.TIME.POUSSE_HEURES} heures plus tard, puis redemande de l'eau : les carottes sont mûres en ${daysLabel(DATA.crops.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante.' : 'Après la récolte, replante.'}`,
   },
   dormir: {
     titre: '😴 Dormir',
-    texte: () => `À ${DATA.TIME.MEAL_HOUR} h la famille mange ; à ${DATA.TIME.NIGHT_HOUR} h, tout le monde va se coucher et la nuit défile jusqu'à ${DATA.TIME.DAY_START_HOUR} h. À minuit, les plantes arrosées poussent et les poules pondent. Pendant la nuit, le bouton « Zzz », en bas à droite, envoie ton personnage dans son lit : quand il dort, la nuit défile en accéléré.`,
+    texte: () => `À ${DATA.TIME.MEAL_HOUR} h la famille mange ; à ${DATA.TIME.NIGHT_HOUR} h, tout le monde va se coucher et la nuit défile jusqu'à ${DATA.TIME.DAY_START_HOUR} h. À minuit, les poules pondent. Pendant la nuit, le bouton « Zzz », en bas à droite, envoie ton personnage dans son lit : quand il dort, la nuit défile en accéléré et son énergie remonte peu à peu (il lui faut ${DATA.PERSONNAGE.SOMMEIL_HEURES} heures de sommeil).`,
   },
 };
 
@@ -407,7 +407,7 @@ export function openAboutModal() {
   const H = DATA.HORS_LIGNE;
   const rules = [
     `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} calories par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
-    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. À ${DATA.TIME.NIGHT_HOUR} h, elle va dormir et la nuit défile à la même vitesse : on ne peut plus rien faire à la ferme. À minuit, la nuit passe (pousse, ponte, lait, récolte automatique…) et le jour change ; à ${DATA.TIME.DAY_START_HOUR} h, c'est le réveil. Pendant la nuit, le bouton « Zzz » envoie ton personnage dans son lit (on ne dort que la nuit) : quand il dort, une heure passe toutes les ${DATA.TIME.SLEEP_SECONDS_PER_HOUR} s. L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
+    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. À ${DATA.TIME.NIGHT_HOUR} h, elle va dormir et la nuit défile à la même vitesse : on ne peut plus rien faire à la ferme. À minuit, la nuit passe (ponte, lait, récolte automatique…) et le jour change ; les plantes, elles, poussent ${DATA.TIME.POUSSE_HEURES} heures après leur arrosage, à toute heure ; à ${DATA.TIME.DAY_START_HOUR} h, c'est le réveil. Pendant la nuit, le bouton « Zzz » envoie ton personnage dans son lit (on ne dort que la nuit) : quand il dort, une heure passe toutes les ${DATA.TIME.SLEEP_SECONDS_PER_HOUR} s et son énergie remonte peu à peu (${DATA.PERSONNAGE.SOMMEIL_HEURES} heures de sommeil pour celle du réveil ; éveillé, rien ne revient). L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
     `La nuit : repas, puis une plante arrosée gagne un stade, une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
     `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}) : chaque action au clic en coûte (planter ${DATA.PERSONNAGE.COUTS.planter}, arroser ${DATA.PERSONNAGE.COUTS.arroser}, récolter ${DATA.PERSONNAGE.COUTS.recolter}…), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %) et ${DATA.PERSONNAGE.ENDURANCE} % de moins par niveau. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE}, et jusqu'à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} si le repas du soir a couvert le besoin ; un aliment mangé dans la journée rend ses calories ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}. Les automatisations ne coûtent rien.`,
     `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,

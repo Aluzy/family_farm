@@ -3,6 +3,7 @@ import { EPS } from './base.js';
 import { batteryCapacity, tankCapacity } from './devices.js';
 import { awakeRequired, nightActive, nightLengthMs } from './clock.js';
 import { advanceNight } from './night.js';
+import { growDue } from './crops.js';
 import { flowStep, wearStep } from './energy.js';
 import { inventoryCounts } from './inventory.js';
 import { millPending, millTimeLeft, taskTimeLeft } from './kitchen.js';
@@ -96,9 +97,10 @@ export function simulateOffline(state, seconds) {
   const before = offlineSnapshot(state);
   let left = Math.round(simule * 1000);
   // Version 1.19 : parti en pleine nuit, la nuit continue (minuit compris) ; le reste de
-  // l'absence suit la règle habituelle à partir du réveil.
+  // l'absence suit la règle habituelle à partir du réveil. Jeu fermé, le personnage dort.
   if (nightActive(state)) {
     const reste = nightLengthMs() - state.nuitEnCours.ms;
+    state.nuitEnCours.dort = true;
     advanceNight(state, left);
     left = Math.max(0, left - reste);
   }
@@ -108,6 +110,7 @@ export function simulateOffline(state, seconds) {
     flowStep(state, dtMs);
     if (H.USURE) wearStep(state, dtMs);
     state.awakeMs = Math.min(eveilMax, state.awakeMs + dtMs);
+    growDue(state); // les plantes suivent l'horloge
     noteEnergyRecord(state);
     left -= dtMs;
   }

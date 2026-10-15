@@ -44,7 +44,7 @@ export function energyDetailsHtml() {
   return `
     <div class="card">
       <span class="card-title"><span>⚡ L'énergie en détail</span></span>
-      <span class="muted">Chaque action au clic en dépense ; à 0, plus d'action jusqu'à un en-cas ou une nuit. Ce qui tourne seul (automatisations, ateliers, panneau) n'en coûte pas.</span>
+      <span class="muted">Chaque action au clic en dépense ; à 0, plus d'action jusqu'à un en-cas ou une nuit de sommeil (elle remonte peu à peu en dormant). Ce qui tourne seul (automatisations, ateliers, panneau) n'en coûte pas.</span>
       <span>😊 Bonheur de la famille : ${bonheur}.</span>
       <span class="muted">Ce que coûte chaque action maintenant : ${costs}.</span>
       <span class="level-line"><span>💪 Endurance : avec ton niveau, tes actions coûtent</span><span class="num">${endu} % de moins</span></span>

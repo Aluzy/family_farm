@@ -1,6 +1,6 @@
 {
   "//crops": [
-    "Cultures (sections 6.3 et 8.3). stades : nuits arrosées pour mûrir ;",
+    "Cultures (sections 6.3 et 8.3). stades : cycles de pousse (un arrosage, puis TIME.POUSSE_HEURES heures d'horloge) pour mûrir ;",
     "litres : eau par arrosage ; rendement : unités par récolte.",
     "graines.mode :",
     "  'recolte' : la récolte rend aussi min à max graines ;",
