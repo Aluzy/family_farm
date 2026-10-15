@@ -5,6 +5,12 @@
  * l'intérieur de la maison, il cuisine quand une préparation est en cours et ouvre le
  * réfrigérateur quand son contenu change.
  *
+ * Il n'est jamais à deux endroits à la fois : dehors, dans la maison ou dans la Serre (where).
+ * Quand le joueur entre dans un intérieur, il y va : ce qu'il faisait dehors s'arrête, il
+ * entre par la porte du bâtiment et apparaît à l'entrée de l'intérieur après le temps de la
+ * marche. Quand le joueur ressort, il ressort par la même porte (la nuit, il reste dans la
+ * maison). Dedans, il contourne les meubles et les bacs (room.walk, voir farm-stage.js).
+ *
  * Version 1.18 : il ramasse. Ce qui est produit attend à sa place (modèle.ramasser : une
  * récolte sur sa case, un arbre cueilli, les œufs au Poulailler, le lait et la laine à
  * l'Étable) et n'entre dans l'inventaire que quand il le prend (o.pickup). Une récolte se
@@ -182,6 +188,7 @@
     let idleAge = 0, idleLen = rand(4, 9);
     let ctx = { hour: 12, jour: null, out: true };
     let home = true;                // il est dans la maison (dehors : caché)
+    let where = 'maison';           // où il est : null (dehors), 'maison' ou 'serre'
 
     function walkTo(tx, ty, opts) {
       let path = null, walked = 0, age = 0;
@@ -236,7 +243,7 @@
       return { idle: !then, start() {}, step(dt) { t += dt; draw(`idle_${face}_${((t / BREATH_S) | 0) % 2}`); if (t >= sec) { if (then) then(); return true; } return false; } };
     }
     const once = (fn) => ({ start() { fn(); }, step() { return true; } });
-    function appear() { if (!shown) { shown = true; home = false; fade = 1; s.setVisible(true); } }
+    function appear() { if (!shown) { shown = true; home = false; where = null; fade = 1; s.setVisible(true); } }
     function vanish() { fade = -1; }
 
     /* ---------- les gestes du joueur (comparaison des modèles) ---------- */
@@ -473,7 +480,7 @@
         roamAt = null;
         const d = door();
         jobs.push(walkTo(d.x, d.y));
-        jobs.push(once(() => { face = 'haut'; vanish(); home = true; }));
+        jobs.push(once(() => { face = 'haut'; vanish(); home = true; where = 'maison'; }));
         jobs.push(wait(FADE_S));
         return;
       }
@@ -534,50 +541,179 @@
       return true;
     }
 
-    /* ---------- dans la maison ---------- */
+    /* ---------- dans un intérieur ---------- */
 
-    const inside = { s: null, x: 0, y: 0, face: 'bas', job: null, at: null, frigoT: 0, t: 0 };
+    // La porte (dehors) d'un bâtiment qui a un intérieur.
+    function doorOf(id) {
+      if (id === 'maison') return door();
+      const b = sprite(id);
+      if (b) return { x: Math.round(b.x + b.width * 0.5), y: Math.round(b.y + 6) };
+      const r = (o.objects || {})[id];
+      return r ? { x: r.x + r.width / 2, y: r.y + r.height + 6 } : door();
+    }
+
+    const IN_STEP = 4;               // px : la grille des chemins dans un intérieur
+    const ARRIVE_MAX = 3;            // s : il arrive au plus tard ce temps après le joueur (il se presse)
+    const inside = { s: null, x: 0, y: 0, face: 'bas', at: null, t: 0, wait: 0, alpha: 0, path: [], goal: null, roam: 0 };
     let cooking = null, frigoDue = false;
+    let viewing = null;              // l'intérieur que le joueur regarde
+    // Le point où il peut se tenir le plus près de (tx, ty) dans `room`. `clear` : sans meuble
+    // contre lui (pour flâner : il ne se plante pas devant une chaise).
+    function roomSpot(room, tx, ty, clear) {
+      const ok = clear ? (px, py) => room.walk(px, py) && !(room.props || []).some((p) => p.sprite && p.sprite.depth > 1
+        && px + 8 > p.x && px - 8 < p.x + p.w && py - 26 < p.y + p.h && py > p.y - 4) : room.walk;
+      if (ok(tx, ty)) return { x: tx, y: ty };
+      for (let d = IN_STEP; d < 96; d += IN_STEP) {
+        let best = null, bd = Infinity;
+        for (let k = -d; k <= d; k += IN_STEP) {
+          for (const [px, py] of [[tx + k, ty - d], [tx + k, ty + d], [tx - d, ty + k], [tx + d, ty + k]]) {
+            const dd = Math.hypot(px - tx, py - ty);
+            if (dd < bd && ok(px, py)) { bd = dd; best = { x: px, y: py }; }
+          }
+        }
+        if (best) return best;
+      }
+      return { x: tx, y: ty };
+    }
     function propSpot(room, name) {
       const p = (room.props || []).find((q) => q.name === name);
-      return p ? { x: Math.round(p.x + p.w / 2), y: Math.round(p.y + p.h + 9) } : null;
+      return p ? roomSpot(room, Math.round(p.x + p.w / 2), Math.round(p.y + p.h + 6)) : null;
+    }
+    function roomLineFree(room, x0, y0, x1, y1) {
+      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 2));
+      for (let i = 1; i <= n; i++) if (!room.walk(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n)) return false;
+      return true;
+    }
+    // Chemin dans un intérieur : A* sur une grille de IN_STEP px (8 directions), puis tendu.
+    function roomPath(room, x0, y0, x1, y1) {
+      if (roomLineFree(room, x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
+      const ox = room.x, cols = Math.ceil(room.w / IN_STEP), rows = Math.ceil(room.h / IN_STEP);
+      const cell = (x, y) => Math.max(0, Math.min(rows - 1, Math.round(y / IN_STEP))) * cols + Math.max(0, Math.min(cols - 1, Math.round((x - ox) / IN_STEP)));
+      const at = (i) => ({ x: ox + (i % cols) * IN_STEP, y: ((i / cols) | 0) * IN_STEP });
+      const ok = new Map();
+      const free = (i) => { if (!ok.has(i)) { const p = at(i); ok.set(i, room.walk(p.x, p.y)); } return ok.get(i); };
+      const start = cell(x0, y0), goal = cell(x1, y1);
+      const g = new Map([[start, 0]]), from = new Map();
+      const open = [[0, start]];
+      const gc = goal % cols, gr = (goal / cols) | 0;
+      const h = (i) => { const dc = Math.abs((i % cols) - gc), dr = Math.abs(((i / cols) | 0) - gr); return Math.max(dc, dr) + 0.414 * Math.min(dc, dr); };
+      let steps = 0, found = false;
+      while (open.length && steps++ < 8000) {
+        let m = 0;
+        for (let k = 1; k < open.length; k++) if (open[k][0] < open[m][0]) m = k;
+        const i = open.splice(m, 1)[0][1];
+        if (i === goal) { found = true; break; }
+        const c = i % cols, r = (i / cols) | 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (!dc && !dr) continue;
+            const nc = c + dc, nr = r + dr;
+            if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
+            const j = nr * cols + nc;
+            if (!free(j) || (dc && dr && (!free(r * cols + nc) || !free(nr * cols + c)))) continue;
+            const ng = g.get(i) + (dc && dr ? 1.414 : 1);
+            if (ng < (g.has(j) ? g.get(j) : Infinity)) { g.set(j, ng); from.set(j, i); open.push([ng + h(j), j]); }
+          }
+        }
+      }
+      if (!found) return [{ x: x1, y: y1 }];       // pas de chemin : tout droit (cas d'un meuble posé sur lui)
+      const pts = [];
+      for (let i = goal; i !== start; i = from.get(i)) pts.unshift(at(i));
+      pts[pts.length - 1] = { x: x1, y: y1 };
+      const out = [];
+      let ax = x0, ay = y0, k = 0;
+      while (k < pts.length) {
+        let far = k;
+        while (far + 1 < pts.length && roomLineFree(room, ax, ay, pts[far + 1].x, pts[far + 1].y)) far++;
+        out.push(pts[far]); ax = pts[far].x; ay = pts[far].y; k = far + 1;
+      }
+      return out;
+    }
+
+    // Le joueur entre dans `room` : il y est déjà, ou il y va (il quitte le dehors tout de suite).
+    function enterView(room) {
+      viewing = room.id;
+      const rest = roomSpot(room, Math.round(room.view.x + room.view.w * 0.5), Math.round(room.view.y + room.view.h * 0.7), true);
+      if (where === room.id) {
+        if (inside.at !== room.id) { inside.x = rest.x; inside.y = rest.y; }
+        inside.wait = 0; inside.alpha = 1;
+      } else {
+        const from = where ? doorOf(where) : { x, y };
+        const to = doorOf(room.id);
+        inside.wait = reduced() ? 0 : Math.min(ARRIVE_MAX, Math.hypot(to.x - from.x, to.y - from.y) / (SPEED * 2));
+        inside.x = room.entree.x; inside.y = room.entree.y; inside.alpha = 0;
+        // dehors : il est parti (ce qu'il allait faire attendra)
+        jobs = []; job = null; claimed.clear(); basket = false; roamAt = null;
+        shown = false; fade = 0; alpha = 0; s.setVisible(false);
+        x = to.x; y = to.y;
+        where = room.id; home = room.id === 'maison';
+      }
+      inside.at = room.id; inside.path = []; inside.goal = null; inside.mode = 'idle'; inside.t = 0; inside.roam = rand(3, 7);
+      inside.rest = rest;
+      frigoDue = false;
+    }
+    // Le joueur ressort : il ressort aussi par la porte, sauf la nuit dans la maison.
+    function leaveView() {
+      const id = viewing;
+      viewing = null;
+      if (inside.s) inside.s.setVisible(false);
+      if (where !== id) return;
+      if (id === 'maison' && (ctx.hour < OUT[0] || ctx.hour >= OUT[1])) return;
+      const d = doorOf(id);
+      x = d.x; y = d.y; face = 'bas'; flip = false;
+      appear();
+      jobs = [walkTo(d.x, d.y + T)].concat(jobs);
     }
     function stepInside(room, dt) {
       if (!inside.s) inside.s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1);
       const S = inside.s;
-      const rest = { x: Math.round(room.view.x + room.view.w * 0.5), y: Math.round(room.view.y + room.view.h * 0.7) };
-      if (inside.at !== room.id) { inside.at = room.id; inside.x = rest.x; inside.y = rest.y; inside.mode = 'idle'; inside.t = 0; frigoDue = false; }
+      if (inside.wait > 0) { inside.wait -= dt; S.setVisible(false); return; }   // il est en chemin
+      inside.alpha = Math.min(1, inside.alpha + dt / FADE_S);
       inside.t += dt;
-      // Où il doit être : au réfrigérateur juste après un changement, à la cuisine pendant une préparation.
-      let want = null;
+      // Où il doit être : au réfrigérateur juste après un changement, à la cuisine pendant une
+      // préparation ; sinon il se tient au milieu, et de temps en temps fait quelques pas.
+      let want = null, busy = false;
       if (frigoDue) { want = propSpot(room, 'frigo'); if (want) { inside.mode = 'frigo'; inside.t = 0; } frigoDue = false; }
-      if (inside.mode === 'frigo') want = propSpot(room, 'frigo');
-      else if (cooking) want = propSpot(room, cooking) || propSpot(room, 'cuisine');
-      const target = want || rest;
-      const dx = target.x - inside.x, dy = target.y - inside.y, left = Math.hypot(dx, dy);
+      if (inside.mode === 'frigo') { want = propSpot(room, 'frigo'); busy = !!want; }
+      else if (cooking && room.id === 'maison') { want = propSpot(room, cooking) || propSpot(room, 'cuisine'); busy = !!want; }
+      if (!busy && !reduced()) {
+        inside.roam -= dt;
+        if (inside.roam <= 0) {
+          inside.roam = rand(4, 9);
+          const v = room.view;
+          inside.rest = Math.random() < 0.4 ? roomSpot(room, Math.round(v.x + v.w * 0.5), Math.round(v.y + v.h * 0.7), true)
+            : roomSpot(room, Math.round(v.x + rand(0.15, 0.85) * v.w), Math.round(v.y + rand(0.3, 0.95) * v.h), true);
+        }
+      }
+      const target = want || inside.rest;
+      if (!inside.goal || inside.goal.x !== target.x || inside.goal.y !== target.y) {
+        inside.goal = target;
+        inside.path = reduced() ? [] : roomPath(room, inside.x, inside.y, target.x, target.y);
+        if (reduced()) { inside.x = target.x; inside.y = target.y; }
+      }
       let name;
-      if (left > 1 && !reduced()) {
+      if (inside.path.length) {
+        const p = inside.path[0];
+        const dx = p.x - inside.x, dy = p.y - inside.y, left = Math.hypot(dx, dy);
         const d = Math.min(left, SPEED * dt);
-        inside.x += (dx / left) * d; inside.y += (dy / left) * d;
+        if (left > 0.01) { inside.x += (dx / left) * d; inside.y += (dy / left) * d; }
+        if (left - d <= 0.3) inside.path.shift();
         inside.walked = (inside.walked || 0) + d;
         let f = 'bas', fl = false;
         if (Math.abs(dx) > Math.abs(dy) * 0.8) { f = 'cote'; fl = dx < 0; } else f = dy > 0 ? 'bas' : 'haut';
         inside.face = f; inside.flip = fl;
         name = `marche_${f}_${Math.floor(inside.walked / STRIDE) % 4}`;
         inside.t = 0;
-      } else {
-        inside.x = target.x; inside.y = target.y;
-        if (inside.mode === 'frigo') {
-          const A = ACTS.frigo;
-          let t = inside.t, i = 0;
-          while (i < A.frames.length && t >= A.dur[i]) { t -= A.dur[i]; i++; }
-          if (i >= A.frames.length) { inside.mode = 'idle'; name = 'idle_haut_0'; } else name = `frigo_${A.frames[i]}`;
-        } else if (want) name = `cuisine_${Math.floor(inside.t / 0.16) % 4}`;
-        else name = `idle_bas_${Math.floor(inside.t / BREATH_S) % 2}`;
-      }
+      } else if (inside.mode === 'frigo') {
+        const A = ACTS.frigo;
+        let t = inside.t, i = 0;
+        while (i < A.frames.length && t >= A.dur[i]) { t -= A.dur[i]; i++; }
+        if (i >= A.frames.length) { inside.mode = 'idle'; name = 'idle_haut_0'; } else name = `frigo_${A.frames[i]}`;
+      } else if (want) name = `cuisine_${Math.floor(inside.t / 0.16) % 4}`;
+      else name = `idle_${inside.face === 'haut' ? 'haut' : 'bas'}_${Math.floor(inside.t / BREATH_S) % 2}`;
       const k = F[name];
       if (k !== undefined) S.setFrame(k);
-      S.setVisible(true).setPosition(Math.round(inside.x), Math.round(inside.y)).setFlipX(!!inside.flip && name.indexOf('_cote_') > 0).setDepth(inside.y);
+      S.setVisible(true).setAlpha(inside.alpha).setPosition(Math.round(inside.x), Math.round(inside.y)).setFlipX(!!inside.flip && name.indexOf('_cote_') > 0).setDepth(inside.y);
     }
 
     /* ---------- par image ---------- */
@@ -593,12 +729,13 @@
       }
       const room = roomId ? scene.rooms[roomId] : null;
       if (room) {
+        if (viewing !== room.id) { if (viewing) leaveView(); enterView(room); }
         s.setVisible(false);
-        if (room.id === 'maison') stepInside(room, dt); else if (inside.s) inside.s.setVisible(false);
+        stepInside(room, dt);
         releaseAll();
         return;
       }
-      if (inside.s) { inside.s.setVisible(false); inside.at = null; }
+      if (viewing) leaveView();
       // Retour sur la carte : une pièce l'avait caché ; il réapparaît où il en était.
       if (shown && !s.visible) s.setVisible(true);
       if (fade) {
@@ -620,7 +757,7 @@
     return {
       filter,
       update,
-      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, jobs: jobs.length + (job ? 1 : 0), retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
+      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, ou: where, dedans: viewing && inside.wait <= 0 ? { x: Math.round(inside.x), y: Math.round(inside.y) } : null, jobs: jobs.length + (job ? 1 : 0), retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
       // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
       fetch: (id) => fetch(id, true),
       goTo,

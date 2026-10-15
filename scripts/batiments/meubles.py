@@ -3,6 +3,8 @@
 #   - les appareils, qui ouvrent leur fenêtre : four (four à pain voûté, feu dans la gueule),
 #     cuisine (fourneau sur son meuble, marmite fumante), frigo (réfrigérateur à deux portes) ;
 #   - le décor de la cuisine : evier, plan (plan de travail), fenetre, plante ;
+#   - cuisine et evier sont les modèles dessinés à la main, repris tels quels :
+#     scripts/batiments/originaux/meuble_cuisine.png (32 × 32) et meuble_evier.png (32 × 26) ;
 #   - les meubles du Marché (data/meubles.json) : chaise, table, tapis_1 à 3, lit_adulte,
 #     lit_enfant, chevet, canape, table_basse, tableau_1 à 3.
 # Vue de dessus à 45° (comme la carte) : on voit le dessus de chaque meuble, raccourci, et sa
@@ -165,39 +167,6 @@ def four():
     return im
 
 
-def cuisine():
-    # le fourneau de fonte sur son meuble : dessus de fonte avec deux feux (l'un allumé),
-    # une marmite rouge sur le feu de gauche ; dessous, le meuble de bois à deux portes
-    W, H = 32, 32
-    im = canvas(W, H)
-    put, _ = painter(im)
-    box(put, 0, 10, W, 11, 10, 'i1', 'w2', edge='i2')
-    rect(put, 0, 10, W - 1, 10, 'i2')                 # bord arrière éclairé
-    rect(put, 0, 21, 1, 30, 'w1')
-    doors(put, 0, 21, W, 10)
-    rect(put, 0, 31, W - 1, 31, 'w0')
-    for cx, cy in ((9, 15), (22, 15)):                # deux feux, des anneaux vus de dessus
-        for y in range(cy - 2, cy + 3):
-            for x in range(cx - 4, cx + 5):
-                d = ((x - cx) / 4.5) ** 2 + ((y - cy) / 2.6) ** 2
-                if 0.45 < d <= 1:
-                    put(x, y, 'i0')
-    for x in range(19, 26):
-        put(x, 15, 'f2' if x % 2 else 'f3')
-    # marmite : le corps (face avant), le couvercle ovale, la poignée
-    rect(put, 4, 7, 14, 14, 'r1')
-    rect(put, 4, 7, 6, 14, 'r2')
-    rect(put, 12, 7, 14, 14, 'r0')
-    for y in range(4, 8):
-        for x in range(3, 16):
-            if ((x - 9) / 6.5) ** 2 + ((y - 6) / 2.2) ** 2 <= 1:
-                put(x, y, 'i3' if y < 6 else 'i2')
-    put(9, 3, 'i1'); put(10, 3, 'i1')
-    for (x, y) in ((7, 2), (8, 1), (7, 0), (12, 2), (11, 1), (12, 0)):   # deux filets de vapeur
-        put(x, y, 's', 170)
-    outline(im)
-    return im
-
 def frigo():
     # le réfrigérateur : un mince dessus clair, puis la face avant à deux portes
     W, H = 20, 40
@@ -227,26 +196,6 @@ def plan():
     rect(put, 4, 10, 15, 10, 'w1')
     rect(put, 6, 6, 12, 7, 'g1'); rect(put, 6, 6, 12, 6, 'g2')   # une courgette couchée
     rect(put, 20, 6, 27, 6, 'b2'); rect(put, 20, 6, 22, 7, 'w0')  # couteau
-    outline(im)
-    return im
-
-def evier():
-    # évier : le dessus de bois, le bac d'inox creusé (on voit son fond et son eau), le
-    # robinet debout au bord arrière ; deux portes dessous
-    W, H = 32, 26
-    im = canvas(W, H)
-    put, _ = painter(im)
-    box(put, 0, 4, W, 11, 10, 'w4', 'w2', edge='w3')
-    rect(put, 0, 15, 1, 24, 'w1')
-    doors(put, 0, 15, W, 10)
-    rect(put, 0, 25, W - 1, 25, 'w0')
-    rect(put, 6, 6, 25, 13, 'b0')                     # le bac : bord, paroi du fond, fond
-    rect(put, 7, 7, 24, 8, 'i2')
-    rect(put, 7, 9, 24, 12, 'e1')
-    rect(put, 8, 10, 12, 10, 'e2')
-    rect(put, 15, 1, 16, 6, 'ch')                     # robinet
-    rect(put, 15, 1, 18, 1, 'ch')
-    put(18, 2, 'e2')
     outline(im)
     return im
 
@@ -455,10 +404,14 @@ def tableau(n):
     return im
 
 
+def modele(nom):
+    return Image.open(os.path.join(ROOT, 'scripts', 'batiments', 'originaux', f'meuble_{nom}.png')).convert('RGBA')
+
+
 def main():
     images = {
-        'four': four(), 'cuisine': cuisine(), 'frigo': frigo(),
-        'evier': evier(), 'plan': plan(), 'fenetre': fenetre(), 'plante': plante(),
+        'four': four(), 'cuisine': modele('cuisine'), 'frigo': frigo(),
+        'evier': modele('evier'), 'plan': plan(), 'fenetre': fenetre(), 'plante': plante(),
         'chaise': chaise(), 'table': table(), 'tapis_1': tapis(1), 'tapis_2': tapis(2), 'tapis_3': tapis(3),
         'lit_adulte': lit(False), 'lit_enfant': lit(True), 'chevet': chevet(), 'canape': canape(),
         'table_basse': table_basse(), 'tableau_1': tableau(1), 'tableau_2': tableau(2), 'tableau_3': tableau(3),

@@ -198,9 +198,13 @@
   // le rectangle reçoit les parcelles, `plots` = leur liste dans le modèle, `window` = fenêtre
   // ouverte par une parcelle où il n'y a rien à faire, `building` = bâtiment devant lequel la
   // vue revient à la sortie. `props` = couche d'objets dont chaque rectangle nommé reçoit un
-  // meuble (MEUBLES) : un appui sur le meuble ouvre la fenêtre de ce nom.
+  // meuble (MEUBLES) : un appui sur le meuble ouvre la fenêtre de ce nom. `image` : un dessin
+  // posé en fond à la place des tuiles (la Serre : scripts/batiments/serre_interieur.py).
+  // Couche d'objets « passages » (facultative) : les rectangles « sol » (où le personnage
+  // marche ; sans eux, les cases du sol de la carte) et le point « entree » (sans lui, le bas
+  // de la vue, en son milieu).
   const ROOMS = {
-    serre: { key: 'map_serre', json: 'serre_interieur.json', zones: /^serre_zone_(\d+)$/, plots: 'serre', window: 'serre', building: 'serre' },
+    serre: { key: 'map_serre', json: 'serre_interieur.json', image: 'serre_interieur', zones: /^serre_zone_(\d+)$/, plots: 'serre', window: 'serre', building: 'serre' },
     maison: { key: 'map_maison', json: 'maison_interieur.json', props: 'meubles', window: 'maison', building: 'maison' },
   };
   // Meubles de la maison (scripts/batiments/meubles.py, assets/meuble_<dessin>.png) : posés en
@@ -372,7 +376,10 @@
           else L.image(r.key, v(r.file));
         }
         L.tilemapTiledJSON(MAP.key, v(MAP.json));
-        for (const r of Object.values(ROOMS)) L.tilemapTiledJSON(r.key, v(r.json));
+        for (const r of Object.values(ROOMS)) {
+          L.tilemapTiledJSON(r.key, v(r.json));
+          if (r.image) L.image(r.image, v(r.image + '.png'));
+        }
         for (const name of MEUBLES) L.image('meuble_' + name, v('meuble_' + name + '.png'));
         L.image(MAP.tiles, v(MAP.image));
         for (const a of SUFFIXES) {
@@ -651,7 +658,7 @@
 
       // Dessine (ou redessine) une carte Tiled dans sa texture, puis l'envoie à la carte
       // graphique : toutes ses couches de tuiles, sur un fond uni.
-      paintMap(key, raw, w, h, bg) {
+      paintMap(key, raw, w, h, bg, image) {
         const tex = this.textures.get(key);
         const ctx = tex.getContext();
         ctx.imageSmoothingEnabled = false;
@@ -668,6 +675,7 @@
             }
           }
         }
+        if (image && this.has(image)) ctx.drawImage(this.textures.get(image).getSourceImage(), 0, 0);
         tex.refresh();
       }
 
@@ -675,7 +683,7 @@
       // navigateur a vidé ces images.
       paintGround() {
         this.paintMap('ground', this.mapRaw, this.world.w, this.world.h, '#6a8157');
-        for (const r of Object.values(this.rooms)) this.paintMap(r.tex, r.raw, r.w, r.h, r.bg);
+        for (const r of Object.values(this.rooms)) this.paintMap(r.tex, r.raw, r.w, r.h, r.bg, r.def.image);
         for (const a of this.animAreas || []) this.paintAnimArea(a);
       }
 
@@ -694,9 +702,13 @@
           const zones = [];
           const props = [];
           let vue = null;                            // rectangle « vue » : ce que la vue cadre
+          const floor = [];                          // rectangles « sol » (passages)
+          let entree = null;
           for (const layer of raw.layers) {
             for (const o of layer.type === 'objectgroup' ? layer.objects || [] : []) {
               if (o.name === 'vue' && o.width && o.height) vue = { x: x + o.x, y: o.y, w: o.width, h: o.height };
+              if (layer.name === 'passages' && o.name === 'sol' && o.width && o.height) floor.push({ x: x + o.x, y: o.y, w: o.width, h: o.height });
+              if (layer.name === 'passages' && o.name === 'entree') entree = { x: x + o.x, y: o.y };
             }
             if (def.props && layer.type === 'objectgroup' && layer.name === def.props) {
               for (const o of layer.objects || []) {
@@ -744,9 +756,11 @@
             : { x, y: 0, w, h };
           // `vue` cadre l'entrée ; si la carte est plus large, la vue y glisse de gauche à droite.
           const view = vue || full;
-          const room = { id, def, raw, tex: 'room_' + id, x, y: 0, w, h, view, centre: { x: x + w / 2, y: h / 2 }, full, slots, slotAt, props, bg: '#06182a' };
+          const room = { id, def, raw, tex: 'room_' + id, x, y: 0, w, h, view, centre: { x: x + w / 2, y: h / 2 }, full, slots, slotAt, props, zones, bg: '#06182a' };
+          room.walk = this.roomWalk(room, floor);
+          room.entree = entree || this.roomEntry(room);
           this.textures.createCanvas(room.tex, w, h);
-          this.paintMap(room.tex, raw, w, h, room.bg);
+          this.paintMap(room.tex, raw, w, h, room.bg, def.image);
           // Autour de l'intérieur, l'écran prend la couleur du coin de sa carte.
           try {
             const px = this.textures.get(room.tex).getContext().getImageData(0, 0, 1, 1).data;
@@ -759,6 +773,44 @@
           x += w + ROOM_GAP;
         }
         this.roomShade = this.add.graphics().setDepth(3);
+      }
+
+      // Où le personnage peut poser les pieds dans un intérieur : walk(x, y). Sur le sol (les
+      // rectangles « sol », sinon les cases du sol de la carte : la tuile la plus fréquente),
+      // hors des bacs de culture et des meubles posés (sauf les tapis, les tableaux, la fenêtre).
+      roomWalk(room, floor) {
+        const raw = room.raw, tw = raw.tilewidth;
+        let onFloor;
+        if (floor.length) onFloor = (x, y) => floor.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
+        else {
+          const layer = raw.layers.find((l) => l.type === 'tilelayer' && Array.isArray(l.data));
+          const count = new Map();
+          if (layer) for (const g of layer.data) if (g && g !== layer.data[0]) count.set(g, (count.get(g) || 0) + 1);
+          let sol = 0, best = 0;
+          for (const [g, n] of count) if (n > best) { best = n; sol = g; }
+          onFloor = (x, y) => {
+            const c = Math.floor((x - room.x) / tw), r = Math.floor(y / tw);
+            return !!layer && c >= 0 && r >= 0 && c < raw.width && r < raw.height && layer.data[r * raw.width + c] === sol;
+          };
+        }
+        const PAD = 3;            // les pieds restent à quelques pixels des bords
+        const SIDE = 7;           // et le corps ne se glisse pas entre deux chaises
+        return (x, y) => {
+          if (![[-PAD, 0], [PAD, 0], [0, -PAD], [0, 1]].every(([dx, dy]) => onFloor(x + dx, y + dy))) return false;
+          for (const z of room.zones || []) if (x > z.x - PAD && x < z.x + z.cols * T + PAD && y > z.y - 1 && y < z.y + z.rows * T + PAD + 2) return false;
+          for (const p of room.props || []) {
+            if (!p.sprite || MEUBLE_PLAT.test(p.dessin || p.name)) continue;
+            if (x > p.x - SIDE && x < p.x + p.w + SIDE && y > p.y && y < p.y + p.h + PAD + 2) return false;
+          }
+          return true;
+        };
+      }
+
+      // L'entrée d'un intérieur sans point « entree » : le bas du sol, au milieu de la vue.
+      roomEntry(room) {
+        const x = Math.round(room.view.x + room.view.w / 2);
+        for (let y = room.h - 2; y > 0; y -= 2) if (room.walk(x, y)) return { x, y };
+        return { x, y: Math.round(room.view.y + room.view.h * 0.7) };
       }
 
       // Le fond a-t-il été vidé ? Il est entièrement opaque quand il est dessiné : un point

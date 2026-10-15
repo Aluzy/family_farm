@@ -577,7 +577,7 @@ export const RAW_DATA = {
   "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "COUPES": 3 },
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60 },
   "CANNE": { "NOM": "Canne à pêche", "ICONE": "🎣", "PRIX": 60 },
-  "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [15, 27, 39, 51, 63], "COUT": [0, 900, 1800, 3000, 5400] },
+  "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "COUT": [0, 900, 1800, 3000, 5400] },
   "VERGER": {
     "CONSTRUCTION": 0,
     "EMPLACEMENTS_DEPART": 2,

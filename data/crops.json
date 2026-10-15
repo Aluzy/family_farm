@@ -269,7 +269,7 @@
     "CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",
     "atteindre le niveau n + 1 (index 0 non utilisé). Tomate, courgette, aubergine."
   ],
-  "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [15, 27, 39, 51, 63], "COUT": [0, 900, 1800, 3000, 5400] },
+  "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "COUT": [0, 900, 1800, 3000, 5400] },
   "//VERGER": [
     "Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent au Marché à prix",
     "fixe et se plantent sur un emplacement libre. Un arbre est adulte MATURITE",
