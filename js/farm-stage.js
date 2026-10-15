@@ -104,9 +104,10 @@
   // la traverse, la touffe penche dans le sens de sa marche puis revient (images de `swing`,
   // 0 droite, 1 et 2 à droite, 3 et 4 à gauche). Une touffe sur une case labourée disparaît.
   // Sa teinte suit l'herbe sur laquelle elle pousse : la couleur du fond sous son pied,
-  // rapportée à l'herbe la plus claire des touffes (`tint` : part de cette teinte, 0 à 1).
-  const TALL_GRASS = { key: 'herbe_haute', file: 'herbe_haute.png', frame: { frameWidth: 28, frameHeight: 16 }, frames: 5,
-    swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 11, up: 7, down: 4 }, tint: 0.85 };
+  // rapportée à l'herbe la plus claire des touffes, écart accentué (`contrast` : exposant) ;
+  // chaque touffe a en plus sa nuance (± `shade`) : deux touffes voisines ne se confondent pas.
+  const TALL_GRASS = { key: 'herbe_haute', file: 'herbe_haute.png', frame: { frameWidth: 22, frameHeight: 16 }, frames: 5,
+    swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 9, up: 6, down: 4 }, contrast: 2.2, shade: 0.12 };
   const SHADOWS = { key: 'ombres_arbres', file: 'ombres_arbres.png', depth: 0.05 };
   const TREE_SHADOW = { key: 'ombre_arbre', file: 'ombre_arbre.png', dx: -16, dy: -8 };
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
@@ -698,7 +699,10 @@
         this.tallGrass.forEach((g, k) => {
           const c = under[k];
           if (!c) return;
-          const ch = (i) => Math.round(255 * (1 - TALL_GRASS.tint * (1 - Math.min(1, c[i] / Math.max(1, ref[i])))));
+          // nuance propre à la touffe (toujours la même : tirée de sa position)
+          const n = Math.sin(g.x * 12.9898 + g.y * 78.233) * 43758.5453;
+          const own = 1 - TALL_GRASS.shade * (n - Math.floor(n));
+          const ch = (i) => Math.round(255 * own * Math.pow(Math.min(1, c[i] / Math.max(1, ref[i])), TALL_GRASS.contrast));
           g.img.setTint((ch(0) << 16) | (ch(1) << 8) | ch(2));
         });
         this.grassCheck = 0;
