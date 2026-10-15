@@ -318,7 +318,7 @@ export function renderPotager() {
   return `
     <div class="section-head">
       <h3>${icon('potager')}${DATA.POTAGER.NOM} · ${pot.parcelles.length} parcelles</h3>
-      <span class="chips">${autoChip('potager', `Récolte tout seul la nuit, arrose chaque matin à ${DATA.TIME.ARROSAGE_HEURE} h (asperseurs), à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
+      <span class="chips">${autoChip('potager', `Un robot récolte et replante dès ${DATA.ROBOT.HEURE} h, les asperseurs arrosent à ${DATA.TIME.ARROSAGE_HEURE} h, à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
     ${hoePanelHtml()}
     ${plots}
@@ -343,7 +343,7 @@ export function renderZone2() {
   return `
     <div class="section-head">
       <h3><span aria-hidden="true">${Z.ICONE}</span> ${Z.NOM} · ${plots.length} parcelles</h3>
-      <span class="chips">${autoChip('potager', `Récolte tout seul la nuit, arrose chaque matin à ${DATA.TIME.ARROSAGE_HEURE} h (asperseurs), à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
+      <span class="chips">${autoChip('potager', `Un robot récolte et replante dès ${DATA.ROBOT.HEURE} h, les asperseurs arrosent à ${DATA.TIME.ARROSAGE_HEURE} h, à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
     ${hoePanelHtml()}
     ${list}

@@ -115,6 +115,12 @@
     "//RESERVE_DEPART": "Réserve de semences de départ : quantité par item que la famille ne mange jamais. Vide depuis la suppression de la réserve dans l'Inventaire (les semences se rachètent au Marché).",
     "RESERVE_DEPART": {}
   },
+  "//ROBOT": [
+    "Le robot de la ferme (récolte et semis automatiques, Arbre des technologies) : tous les jours",
+    "à HEURE, il dresse sa liste de tâches (récolter les parcelles mûres, puis les replanter) et",
+    "les fait une à une, une toutes les MINUTES minutes d'horloge (robotStep)."
+  ],
+  "ROBOT": { "HEURE": 6, "MINUTES": 6 },
   "//PERSONNAGE": [
     "Version 1.8 (v2, lot 4) : l'énergie du personnage (docs/conception-v2.md, section 5).",
     "Une jauge de 0 à MAX, stockée en millièmes (state.energie). Chaque action au clic",

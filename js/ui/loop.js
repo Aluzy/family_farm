@@ -90,6 +90,18 @@ export function setMailSeen(value) {
   return value;
 }
 
+// Le robot a fini sa liste du jour : une annonce (ce qu'il a récolté et semé), une fois.
+function watchRobot() {
+  const r = state.robot;
+  if (!r || r.annonce || r.jour !== state.day || !r.taches.length || r.i < r.taches.length) return;
+  r.annonce = true;
+  const recolte = itemsSummary(r.recoltes);
+  const semis = r.semees ? `${r.semees} parcelle${r.semees > 1 ? 's' : ''} replantée${r.semees > 1 ? 's' : ''}` : '';
+  const manque = r.sansGraine ? ` ; ${r.sansGraine} sans graine` : '';
+  notify(`🤖 Le robot a fini sa liste : ${[recolte ? `récolté ${recolte}` : '', semis].filter(Boolean).join(', ') || 'rien à faire'}${manque}.`, 'info', { fenetre: 'zone' });
+  persistState();
+}
+
 function watchMail() {
   const box = mailbox(state);
   // FLU-18 : une lettre s'annonce quand l'écran est calme (pas sur l'histoire, ni sur le
@@ -195,6 +207,7 @@ export function frame(now) {
   watchTechPoints();
   watchDay();
   watchMail();
+  watchRobot();
   watchPreparations();
   watchUnlocks();
   if (ticked) watchAlerts();
