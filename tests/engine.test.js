@@ -10,7 +10,7 @@ import {
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
-import { brokenRocks, buyTool, chopsLeft, chopTree, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
+import { brokenRocks, buyTool, castLine, chopsLeft, fishLeft, chopTree, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -1833,9 +1833,10 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   // dans l'ordre de déclaration de DATA.recipes, donc après tarte_pommes.
   // Version 1.1 : les quatre plats retirés du livre (DATA.PLATS_RETIRES)
   // restent des aliments, ajoutés tout à la fin.
+  // Les poissons de la ferme (truite, brochet) sont rangés avec le bois et la pierre, après la poire.
   assertEqual(inventoryCounts(s), {
     conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20, oeuf: 20,
-    viande_mouton: 20, pomme: 20, poire: 20, oignon: 20, ail: 20, poivron: 20, epinard: 20, fraise: 20, riz: 20,
+    viande_mouton: 20, pomme: 20, poire: 20, truite: 20, brochet: 20, oignon: 20, ail: 20, poivron: 20, epinard: 20, fraise: 20, riz: 20,
     viande_boeuf: 20, viande_volaille: 20, lait: 20,
     // version 1.5 : denrées de la ville et de la cueillette (le sucre et les épices ne se mangent pas)
     poisson: 20, miel: 20, fromage_alpage: 20, champignon: 20, myrtille: 20, chataigne: 20,
@@ -6628,7 +6629,7 @@ test('tenue : état du suivi pour l\'interface', () => {
 test('DATA niveaux : seuils, gains d\'XP, XP des chapitres', () => {
   const N = DATA.NIVEAUX;
   assertEqual(N.SEUILS, [0, 500, 1200, 3000, 7500, 20000, 40000, 80000, 180000, 400000]);
-  assertEqual(N.XP, { labourer: 10, couper: 10, piocher: 10, planter: 10, arroser: 10, recolter: 20, cueillir: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
+  assertEqual(N.XP, { labourer: 10, couper: 10, piocher: 10, pecher: 15, planter: 10, arroser: 10, recolter: 20, cueillir: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
   assertEqual([N.AUTO, N.CHAPITRES_XP.slice(0, 4)], [50, [200, 500, 1000, 2500]]);
   assertEqual([0, 499, 500, 1199, 1200, 400000, 10 ** 7].map(levelForXp), [1, 1, 2, 2, 3, 10, 10]);
   assertEqual(createInitialState(1).progression, { xp: 0, niveau: 1, annonces: [] });
@@ -8485,6 +8486,40 @@ test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il
   s.energie = 0;
   assertEqual(mineRock(s, '44,16').error, TIRED);
   assertEqual([DATA.items.pierre.category, isBuyable('pierre')], ['produit', false], 'la pierre se vend, ne se rachète pas');
+});
+
+test('canne à pêche : un lancer coûte de l\'énergie ; une prise (truite, brochet) donne le poisson et de l\'XP ; JOUR prises par eau et par jour', () => {
+  const s = garden();
+  assertEqual(castLine(s, 'etang').error, `Il te faut une canne à pêche (Marché, ${DATA.CANNE.PRIX} 💰).`);
+  s.outils = { canne: true, choisi: 'canne' };
+  assertEqual(castLine(s, 'riviere').ok, false, 'eau inconnue');
+  const vus = new Set();
+  let lancers = 0, rien = 0;
+  const J = DATA.CANNE.JOUR.etang;
+  while (fishLeft(s, 'etang') > 0 && lancers < 200) {
+    s.energie = energyMax(s);
+    const [e, xp] = [s.energie, s.progression.xp];
+    const r = castLine(s, 'etang');
+    lancers += 1;
+    assert(r.ok, 'lancer');
+    assertEqual(s.energie, e - actionCost(s, 'pecher'), 'énergie à chaque lancer');
+    if (r.poisson) { vus.add(r.poisson); assertEqual(s.progression.xp - xp, DATA.NIVEAUX.XP.pecher); } else { rien += 1; assertEqual(s.progression.xp, xp, 'pas d\'XP sans prise'); }
+  }
+  assertEqual(countItem(s, 'truite') + countItem(s, 'brochet'), J, `${J} prises dans l'étang`);
+  assert(vus.has('truite') && lancers === J + rien, 'des truites ; les lancers vides ne comptent pas');
+  assertEqual(castLine(s, 'etang').ok, false, 'l\'étang ne donne plus aujourd\'hui');
+  assertEqual(fishLeft(s, 'mare'), DATA.CANNE.JOUR.mare, 'la mare, si');
+  s.day += 1;
+  assertEqual(fishLeft(s, 'etang'), J, 'le lendemain, l\'étang redonne');
+  s.energie = 0;
+  assertEqual(castLine(s, 'etang').error, TIRED);
+  // sur beaucoup de lancers, le brochet sort (plus rare que la truite)
+  const t = garden();
+  t.outils = { canne: true };
+  const n = { truite: 0, brochet: 0, rien: 0 };
+  for (let k = 0; k < 400; k++) { t.day = k; t.energie = energyMax(t); n[castLine(t, 'etang').poisson || 'rien'] += 1; }
+  assert(n.brochet > 40 && n.truite > n.brochet && n.rien > 40, `répartition ${JSON.stringify(n)}`);
+  assertEqual([DATA.items.truite.edible, DATA.items.brochet.edible, isBuyable('truite'), isBuyable('brochet')], [true, true, false, false]);
 });
 
 test('pioche : un rocher cassé revient au bout de RETOUR jours, sauf si une parcelle occupe une de ses tuiles', () => {

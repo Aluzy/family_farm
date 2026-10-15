@@ -76,12 +76,15 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
 - La **Zone de culture** est une grille de 30 cases ; le **Champ**,
   64 cases, s'ouvre quand le Moulin est construit. La **houe** (Marché, 40 💰) change
   l'herbe en terre (5 d'énergie, 10 XP) ou rebouche une terre vide ; le nombre de tuiles
-  de terre est plafonné par le niveau (6 à 64). La **hache** et la **pioche** (Marché, 60 💰
+  de terre est plafonné par le niveau (6 à 64). La **hache**, la **pioche** et la **canne à pêche** (Marché, 60 💰
   chacune) : la hache en main, un appui sur un arbre de la carte le fait couper (1 bois 🪵,
   6 d'énergie, 10 XP ; 3 coups par arbre et par jour) ; la pioche en main, un appui sur un
   rocher le fait casser (1 pierre 🪨 par coup, 6 d'énergie, 10 XP ; au 3e coup, le rocher se
   brise et disparaît). Il revient à sa place au bout de 1 à 3 jours, sauf si une parcelle
-  occupe une de ses cases (elles se labourent en attendant).
+  occupe une de ses cases (elles se labourent en attendant). La canne à pêche en main, un
+  appui sur l'eau fait pêcher : le personnage va sur la rive, lance, attend la touche et ferre
+  (4 d'énergie par lancer, 15 XP par prise). L'étang donne des truites 🐟‍🌈 et des brochets 🐟‍🦷
+  (6 prises par jour au plus), la mare surtout des truites (3 par jour).
   Le bouton rond de la carte porte l'outil choisi : un appui le prend en main, un double
   appui ouvre la fenêtre **Outils** pour en changer. Les arbres du Verger (12 au plus)
   apparaissent sur la carte.

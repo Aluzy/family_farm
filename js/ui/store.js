@@ -67,21 +67,28 @@ export function setEcranFerme(value) {
 export let hoeMode = false;
 export function setHoeMode(value) {
   hoeMode = value;
-  if (value) { axeMode = false; pickMode = false; } // un seul outil en main
+  if (value) { axeMode = false; pickMode = false; rodMode = false; } // un seul outil en main
   return value;
 }
 // La hache en main : un appui sur un arbre de la carte le fait couper (du bois).
 export let axeMode = false;
 export function setAxeMode(value) {
   axeMode = value;
-  if (value) { hoeMode = false; pickMode = false; }
+  if (value) { hoeMode = false; pickMode = false; rodMode = false; }
   return value;
 }
 // La pioche en main : un appui sur un rocher de la carte le fait casser (de la pierre).
 export let pickMode = false;
 export function setPickMode(value) {
   pickMode = value;
-  if (value) { hoeMode = false; axeMode = false; }
+  if (value) { hoeMode = false; axeMode = false; rodMode = false; }
+  return value;
+}
+// La canne à pêche en main : un appui sur l'eau de la carte y fait pêcher (truite, brochet).
+export let rodMode = false;
+export function setRodMode(value) {
+  rodMode = value;
+  if (value) { hoeMode = false; axeMode = false; pickMode = false; }
   return value;
 }
 // Version 1.13 : case du Verger dont on choisit l'arbre (null : aucun choix ouvert).

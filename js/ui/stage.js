@@ -17,7 +17,7 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks } from '../engine/outils.js';
 import { showToast } from './toasts.js';
 import {
-  activeTab, axeMode, ecranFerme, hoeMode, pickMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
+  activeTab, axeMode, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
@@ -30,7 +30,7 @@ import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
 import { closeModal } from './common.js';
-import { axeChipHtml, chopFromStage, mineFromStage, pickChipHtml } from './outils.js';
+import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, pickChipHtml, rodChipHtml } from './outils.js';
 
 /* ---------- Carte Phaser (voir farm-stage.js et docs/architecture-phaser.md) ---------- */
 
@@ -303,6 +303,8 @@ export function stageModel() {
   // la pioche en main : un appui sur un rocher de la carte le casse ; les rochers cassés n'y sont plus
   const pioche = pickMode && !!(state.outils && state.outils.pioche) && !stageInterior;
   const rochers = brokenRocks(state);
+  // la canne à pêche en main : un appui sur l'eau y fait pêcher
+  const canne = rodMode && !!(state.outils && state.outils.canne) && !stageInterior;
   // Panneaux solaires sur le toit de la maison une fois le panneau acheté : un de plus par
   // niveau (2 au niveau 1, 6 au niveau 5).
   const panneau = starterOf(state, 'panneau');
@@ -358,7 +360,7 @@ export function stageModel() {
     perso: memberPerso(mainCharacter(state)),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: terrainNow(rochers), plots,
-    houe, hache, pioche, rochers, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, canne, rochers, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -452,7 +454,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, icone: (item) => (DATA.items[item] ? DATA.items[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, icone: (item) => (DATA.items[item] ? DATA.items[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
@@ -550,7 +552,7 @@ function chapterChipHtml() {
   const valeur = objectiveValueText(o);
   const pct = Math.round(o.ratio * 100);
   const suite = p.objectifs.length > 1 ? `, objectif ${Math.min(faits + 1, p.objectifs.length)} sur ${p.objectifs.length}` : '';
-  const compacte = ((hoeMode && state.potager.houe) || axeMode || pickMode) && !stageInterior;
+  const compacte = ((hoeMode && state.potager.houe) || axeMode || pickMode || rodMode) && !stageInterior;
   const vers = OBJECTIF_CIBLES[o.type] ? 'Y aller' : 'Ouvrir les chapitres';
   return `<button type="button" class="stage-chip${compacte ? ' compact' : ''}" ${objectifAttrs(o.type)} aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. ${vers}" title="Chapitre ${p.chapitre} : ${p.titre} — ${o.libelle}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span>${compacte ? '' : `<span class="stage-chip-text">${o.libelle}</span>`}<span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
 }
@@ -578,7 +580,7 @@ function renderStageHud(el) {
     el.insertAdjacentHTML('beforeend', '<div class="stage-hud"></div><div class="stage-nav"></div>');
     hud = el.querySelector('.stage-hud');
   }
-  morph(hud, chapterChipHtml() + hoeChipHtml() + axeChipHtml() + pickChipHtml());
+  morph(hud, chapterChipHtml() + hoeChipHtml() + axeChipHtml() + pickChipHtml() + rodChipHtml());
   if (!stageView) stageView = FarmStage.view();
   renderStageNav(el);
 }

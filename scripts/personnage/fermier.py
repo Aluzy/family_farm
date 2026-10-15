@@ -27,6 +27,9 @@
 #   ramasse_0..2             de profil, il ramasse un œuf dans la paille
 #   hache_cote_0..3          couper du bois : prêt, hache levée, élan, coup dans le tronc
 #   pioche_cote_0..3         casser un rocher : prêt, pioche levée, élan, coup au sol devant lui
+#   peche_<vue>_0..3         pêcher : canne tenue, armée en arrière, lancée (il attend la
+#                            touche), relevée (il ferre). Le fil et le bouchon sont dessinés par
+#                            la carte, depuis le bout de la canne (PECHE_BOUT dans js/fermier.js)
 #
 #   python3 scripts/personnage/fermier.py            écrit les images
 #   python3 scripts/personnage/fermier.py --apercu   écrit aussi apercu_<nom>.png (agrandi)
@@ -515,6 +518,20 @@ def frames():
     F['pioche_cote_1'] = figure('cote', b=-1, hands=((8, 12), (7, 13)), after=hoe(8, 12, 4, 6, [(2, 7), (3, 6), (4, 5), (5, 5), (6, 4)]))
     F['pioche_cote_2'] = figure('cote', hands=((10, 14), (9, 15)), after=hoe(10, 14, 12, 8, [(10, 7), (11, 7), (12, 8), (13, 9), (13, 10)]))
     F['pioche_cote_3'] = figure('cote', squat=1, hands=((11, 21), (10, 22)), after=hoe(11, 21, 14, 25, [(12, 27), (13, 26), (14, 25), (15, 24), (15, 23)]))
+    # pêcher : la canne (bois, un peu plus sombre au bout) ; le fil part de son bout
+    rod = lambda x0, y0, x1, y1: (lambda cv: (cv.line(x0, y0, x1, y1, 'wd'), cv.put(x1, y1, 'bt2')))
+    F['peche_cote_0'] = figure('cote', hands=((10, 21), (9, 22)), after=rod(10, 21, 15, 8))
+    F['peche_cote_1'] = figure('cote', b=-1, hands=((8, 13), (7, 14)), after=rod(8, 13, 1, 3))
+    F['peche_cote_2'] = figure('cote', hands=((11, 20), (10, 21)), after=rod(11, 20, 15, 13))
+    F['peche_cote_3'] = figure('cote', b=-1, hands=((10, 18), (9, 19)), after=rod(10, 18, 13, 2))
+    F['peche_bas_0'] = figure('bas', hands=((4, 22), (11, 21)), after=rod(11, 21, 14, 9))
+    F['peche_bas_1'] = figure('bas', b=-1, hands=((4, 22), (11, 14)), after=rod(11, 14, 13, 1))
+    F['peche_bas_2'] = figure('bas', hands=((4, 22), (11, 21)), after=rod(11, 21, 15, 27))
+    F['peche_bas_3'] = figure('bas', b=-1, hands=((4, 22), (11, 17)), after=rod(11, 17, 15, 4))
+    F['peche_haut_0'] = figure('haut', hands=((4, 22), (11, 20)), before=rod(11, 20, 14, 8))
+    F['peche_haut_1'] = figure('haut', b=-1, hands=((4, 22), (11, 16)), after=rod(11, 16, 13, 29))
+    F['peche_haut_2'] = figure('haut', hands=((4, 22), (11, 20)), before=rod(11, 20, 15, 5))
+    F['peche_haut_3'] = figure('haut', b=-1, hands=((4, 22), (11, 17)), before=rod(11, 17, 14, 1))
     return F
 
 

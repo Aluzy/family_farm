@@ -1,6 +1,6 @@
 import { nightActive } from '../engine/clock.js';
-import { buyTool, chopTree, hasTool, mineRock, OUTILS, selectTool, toolDef } from '../engine/outils.js';
-import { axeMode, hoeMode, pickMode, setAxeMode, setHoeMode, setPickMode, state } from './store.js';
+import { buyTool, castLine, chopTree, hasTool, mineRock, OUTILS, selectTool, toolDef } from '../engine/outils.js';
+import { axeMode, hoeMode, pickMode, rodMode, setAxeMode, setHoeMode, setPickMode, setRodMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
@@ -16,11 +16,6 @@ import { closeStageWindow, stageInterior, stageWindow } from './stage-windows.js
 // range comme le menu : sa languette, au-dessus d'elle, la fait glisser hors de l'écran.
 export let toolbarOpen = true;
 
-// Ce que fait un appui avec un outil qui n'a encore rien à faire sur la ferme.
-const EN_MAIN = {
-  canne: 'il n\'y a encore rien à pêcher sur la ferme',
-};
-
 // Triangle de la languette (5 × 3 pixels), pointé vers le bas (barre ouverte : le sens où
 // elle se range) ; retourné quand la barre est rangée.
 const BARRE_FLECHE = '<svg class="tool-bar-arrow" viewBox="0 0 5 3" width="20" height="12" aria-hidden="true" shape-rendering="crispEdges">' +
@@ -31,6 +26,7 @@ function enMain() {
   if (hoeMode) return 'houe';
   if (axeMode) return 'hache';
   if (pickMode) return 'pioche';
+  if (rodMode) return 'canne';
   return null;
 }
 
@@ -57,16 +53,17 @@ function useTool(id) {
   if (!hasTool(state, id)) return;
   if (enMain() === id) {                     // l'outil en main : le ranger
     if (id === 'houe') ACTIONS['hoe-toggle']();
-    else { setAxeMode(false); setPickMode(false); refresh(); }
+    else { setAxeMode(false); setPickMode(false); setRodMode(false); refresh(); }
     return;
   }
-  if (id === 'houe' || id === 'hache' || id === 'pioche') {
+  if (id === 'houe' || id === 'hache' || id === 'pioche' || id === 'canne') {
     if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return; }
   }
   applyResult(selectTool(state, id));
   if (id !== 'houe' && hoeMode) setHoeMode(false);
   if (id !== 'hache' && axeMode) setAxeMode(false);
   if (id !== 'pioche' && pickMode) setPickMode(false);
+  if (id !== 'canne' && rodMode) setRodMode(false);
   if (id === 'houe') {
     ACTIONS['hoe-toggle']();
     return;
@@ -85,8 +82,10 @@ function useTool(id) {
     else refresh();
     return;
   }
-  refresh();
-  showToast(`${def.ICONE} ${def.NOM} : ${EN_MAIN[id]}.`);
+  setRodMode(true);
+  showToast(`${def.ICONE} Canne à pêche en main : touche l'eau de l'étang ou de la mare pour y pêcher.`);
+  if (stageWindow) closeStageWindow();
+  else refresh();
 }
 
 const DATA_ICONE = (id) => toolDef(id).ICONE;
@@ -101,6 +100,12 @@ export function axeChipHtml() {
 export function pickChipHtml() {
   if (!pickMode || !hasTool(state, 'pioche') || stageInterior) return '';
   return `<button type="button" class="stage-chip hoe axe" data-action="pick-toggle" aria-pressed="true" aria-label="Pioche en main : touche un rocher pour le casser. Ranger la pioche" title="Touche un rocher de la carte pour le casser"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('pioche')}</span><span class="stage-chip-text">Pioche</span><span class="stage-chip-val num">🪨</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+}
+
+// La puce « Canne à pêche en main » de la carte : la toucher range la canne.
+export function rodChipHtml() {
+  if (!rodMode || !hasTool(state, 'canne') || stageInterior) return '';
+  return `<button type="button" class="stage-chip hoe axe" data-action="rod-toggle" aria-pressed="true" aria-label="Canne à pêche en main : touche l'eau pour pêcher. Ranger la canne" title="Touche l'eau de l'étang ou de la mare pour y pêcher"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('canne')}</span><span class="stage-chip-text">Pêche</span><span class="stage-chip-val num">🐟‍🌈</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
 }
 
 // La carte (farm-stage.js) : la hache en main, le joueur a touché l'arbre `id`. Le bois entre
@@ -127,6 +132,19 @@ export function mineFromStage(id) {
   return { items: { pierre: r.pierre }, casse: r.casse };
 }
 
+// La carte : la canne en main, le joueur a touché l'eau `eau` (« etang » ou « mare »). La
+// prise (s'il y en a une) entre dans l'inventaire tout de suite ; la carte montre ensuite le
+// personnage qui lance, attend la touche et ferre. Renvoie { poisson } (null : rien n'a
+// mordu), ou null (un message : la nuit, sans énergie, le poisson se fait rare).
+export function fishFromStage(eau) {
+  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou passe la nuit (Zzz).'); return null; }
+  const r = castLine(state, eau);
+  if (!r.ok) { showToast(r.error); return null; }
+  persistState();
+  refresh();
+  return { poisson: r.poisson };
+}
+
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
@@ -143,6 +161,10 @@ registerActions({
   },
   'pick-toggle': () => {
     setPickMode(false);
+    refresh();
+  },
+  'rod-toggle': () => {
+    setRodMode(false);
     refresh();
   },
   'buy-tool': (target) => {
