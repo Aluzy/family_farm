@@ -99,6 +99,12 @@
   const CHOP_FPS = 12;
   // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
   const OCCLUDER_ALPHA = 0.6;
+  // L'herbe haute (scripts/carte/herbe_haute.py) : la couche d'objets « herbe_haute » de la
+  // carte, un point par touffe (type = variante, une rangée de la planche). Quand le personnage
+  // la traverse, la touffe penche dans le sens de sa marche puis revient (images de `swing`,
+  // 0 droite, 1 et 2 à droite, 3 et 4 à gauche). Une touffe sur une case labourée disparaît.
+  const TALL_GRASS = { key: 'herbe_haute', file: 'herbe_haute.png', frame: { frameWidth: 28, frameHeight: 16 }, frames: 5,
+    swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 11, up: 7, down: 4 } };
   const SHADOWS = { key: 'ombres_arbres', file: 'ombres_arbres.png', depth: 0.05 };
   const TREE_SHADOW = { key: 'ombre_arbre', file: 'ombre_arbre.png', dx: -16, dy: -8 };
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
@@ -368,6 +374,7 @@
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
+        L.spritesheet(TALL_GRASS.key, v(TALL_GRASS.file), TALL_GRASS.frame);
         L.spritesheet(ROOF_PANELS.key, v(ROOF_PANELS.file), ROOF_PANELS.frame);
         L.spritesheet(WELL.key, v(WELL.file), WELL.frame);
         L.spritesheet(TANK.key, v(TANK.file), TANK.frame);
@@ -557,6 +564,7 @@
         this.textures.createCanvas('ground', this.world.w, this.world.h);
         this.paintGround();
         this.makeOccluders();
+        this.makeTallGrass();
       }
 
       /* ---------- les arbres et les buissons, devant ou derrière le personnage ---------- */
@@ -646,6 +654,57 @@
           o.alpha = Math.abs(want - o.alpha) < 0.02 ? want : o.alpha + (want - o.alpha) * k;
           o.img.setAlpha(o.alpha);
           if (o.shake) o.shake.setAlpha(o.alpha);
+        }
+      }
+
+      /* ---------- l'herbe haute ---------- */
+
+      makeTallGrass() {
+        for (const g of this.tallGrass || []) g.img.destroy();
+        this.tallGrass = [];
+        const raw = this.mapRaw;
+        if (!raw || !this.has(TALL_GRASS.key)) return;
+        const layer = raw.layers.find((l) => l.type === 'objectgroup' && l.name === 'herbe_haute');
+        const rows = Math.floor(this.textures.get(TALL_GRASS.key).frameTotal / TALL_GRASS.frames) || 1;
+        for (const o of (layer && layer.objects) || []) {
+          const base = (Math.max(0, Number(o.type) | 0) % rows) * TALL_GRASS.frames;
+          const img = this.add.image(Math.round(o.x), Math.round(o.y), TALL_GRASS.key, base).setOrigin(0.5, 1).setDepth(o.y);
+          this.tallGrass.push({ img, x: o.x, y: o.y, base, cell: Math.floor(o.y / T - 0.01) * raw.width + Math.floor(o.x / T), t: -1, dir: 1, inside: false });
+        }
+        this.grassCheck = 0;
+        this.grassPrev = null;
+      }
+
+      // À chaque image : le personnage entre dans une touffe en marchant : elle penche dans le
+      // sens de sa marche (vers la droite s'il va à droite) et revient en se balançant.
+      stepTallGrass(dt) {
+        const list = this.tallGrass;
+        if (!list || !list.length) return;
+        this.grassCheck -= dt;
+        if (this.grassCheck <= 0) {                  // les cases labourées : plus d'herbe haute
+          this.grassCheck = 500;
+          for (const g of list) g.img.setVisible(!(this.dirt && this.dirt.has(g.cell)));
+        }
+        const p = this.fermier && !this.room ? this.fermier.pos() : null;
+        const prev = this.grassPrev;
+        const dx = p && prev ? p.x - prev.x : 0;
+        const moving = !!(p && prev && Math.hypot(dx, p.y - prev.y) > 0.05);
+        this.grassPrev = p ? { x: p.x, y: p.y } : null;
+        const R = TALL_GRASS.reach;
+        for (const g of list) {
+          const inside = !!p && Math.abs(p.x - g.x) < R.x && p.y > g.y - R.up && p.y < g.y + R.down;
+          if (inside && moving && (!g.inside || g.t < 0) && g.img.visible && !reducedMotion()) {
+            g.t = 0;
+            g.dir = Math.abs(dx) > 0.05 ? Math.sign(dx) : (p.x < g.x ? 1 : -1);
+          }
+          g.inside = inside;
+          if (g.t < 0) continue;
+          g.t += dt;
+          const k = Math.floor(g.t / TALL_GRASS.step);
+          if (k >= TALL_GRASS.swing.length) { g.t = -1; g.img.setFrame(g.base); continue; }
+          let f = TALL_GRASS.swing[k];
+          if (g.dir < 0) f = f === 1 ? 3 : f === 2 ? 4 : f === 3 ? 1 : f === 4 ? 2 : 0;
+          g.img.setFrame(g.base + f);
         }
       }
 
@@ -1456,6 +1515,7 @@
         if (this.ambient && !this.room) this.ambient.update(delta);
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
         this.stepOccluders(delta);
+        this.stepTallGrass(delta);
         if (!this.room) this.placeLabels();
         this.placePiles();
         this.placeGain();
