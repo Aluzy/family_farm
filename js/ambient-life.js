@@ -269,6 +269,7 @@
     // dur : redessiner la carte dans Tiled suffit.
     const water = [];
     const mapTrees = [];              // { x, base (y du pied), top (y du haut du feuillage), r }
+    const mapBushes = [];             // buissons : { x0, x1 (bords), base (y du pied) }
     const wood = new Set();           // cases des couches d'arbres (arbres de toutes tailles, buissons) : le chat les contourne
     (function readMap() {
       const raw = o.map;
@@ -335,6 +336,7 @@
             }
           }
           const w = x1 - x0 + 1, h = y1 - y0 + 1;
+          if (w >= 2 && w <= 4 && h <= 2) { mapBushes.push({ x0: x0 * T, x1: (x1 + 1) * T, base: (y1 + 1) * T - 2 }); continue; }
           if (w < 3 || w > 5 || h < 4 || h > 6) continue;
           // Pied du tronc : milieu des tuiles de la rangée du bas.
           const foot = cells.filter((j) => ((j / W) | 0) === y1).map((j) => j % W);
@@ -1110,7 +1112,7 @@
     return {
       update, setContext, scare, stats, spawn: (type) => spawn(type, true), wind: (x, y) => windAt(x, y, t), repaint,
       // L'eau et les arbres lus dans la carte : le personnage (js/fermier.js) les contourne.
-      ground: () => ({ water: waterSet, trees: mapTrees }),
+      ground: () => ({ water: waterSet, trees: mapTrees, bushes: mapBushes }),
       chat: (name) => (cat ? cat.force(name) : null),
     };
   }
