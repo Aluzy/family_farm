@@ -254,11 +254,14 @@
 
   // Lumière selon l'heure : couleur par laquelle la carte est multipliée (blanc = plein jour).
   // Aube chaude à 6 h, plein jour de 9 h à 16 h, lumière dorée de 17 h à 19 h, crépuscule
-  // vers 20-21 h, nuit bleue de 22 h à 5 h. La nuit reste claire : la carte doit rester jouable.
+  // vers 20-21 h, nuit bleue et sombre de 22 h à 5 h (on distingue encore les formes).
   const LIGHT_KEYS = [
-    [0, 0x8494d0], [5, 0x8494d0], [6, 0xf0d2b4], [7.5, 0xfff0dc], [9, 0xffffff], [16, 0xffffff],
-    [17.5, 0xffe2b0], [19, 0xfac48e], [20, 0xcfa0a8], [21, 0xa490c2], [22, 0x8494d0], [24, 0x8494d0],
+    [0, 0x3a4782], [5, 0x3a4782], [6, 0xd8b496], [7.5, 0xfff0dc], [9, 0xffffff], [16, 0xffffff],
+    [17.5, 0xffe2b0], [19, 0xf2b67e], [20, 0xb48a9a], [21, 0x6c6aa6], [22, 0x3a4782], [24, 0x3a4782],
   ];
+  // Ombres des bâtiments et des barrières : leur silhouette, noire et transparente, posée au
+  // sol (sous tout le reste) et décalée vers la droite et le bas (lumière en haut à gauche).
+  const CAST = { alpha: 0.5, building: { dx: 9, dy: 5 }, fence: { dx: 3, dy: 3 }, depth: 0.06 };
 
   // Cases de crops.png : r = rangée de la base de la plante, h = hauteur du dessin
   // (16 ou 32), c = colonnes des 4 phases. La table vient de la page au montage
@@ -628,6 +631,7 @@
           this.paintOccluder(o, raw, set, img);
           o.img = this.add.image(o.x, o.y, key).setOrigin(0).setDepth(o.foot);
           o.alpha = 1;
+          if (/barri/i.test(o.layer.name || '')) { if (o.shadow) o.shadow.destroy(); o.shadow = this.castShadow(o.img, CAST.fence); }
         });
       }
 
@@ -1550,6 +1554,7 @@
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
         this.stepOccluders(delta);
         this.stepTallGrass(delta);
+        this.stepShadows();
         if (!this.room) this.placeLabels();
         this.placePiles();
         this.placeGain();
@@ -2132,8 +2137,19 @@
         for (const def of BUILDINGS) {
           const want = info(def.id);
           const e = this.buildings.get(def.id);
-          if (e && (!want || rebuild || !!want.ruine !== !!e.ruine)) { e.sprite.destroy(); this.buildings.delete(def.id); }
-          if (want && !this.buildings.has(def.id)) this.buildings.set(def.id, { def, ruine: !!want.ruine, sprite: this.makeBuilding(def, sfx, !!want.ruine) });
+          if (e && (!want || rebuild || !!want.ruine !== !!e.ruine)) { e.sprite.destroy(); if (e.shadow) e.shadow.destroy(); this.buildings.delete(def.id); }
+          if (want && !this.buildings.has(def.id)) {
+            const sprite = this.makeBuilding(def, sfx, !!want.ruine);
+            this.buildings.set(def.id, { def, ruine: !!want.ruine, sprite, shadow: this.castShadow(sprite, CAST.building) });
+          }
+          // Le Moulin ne tourne que quand il moud (modèle.batiments.moulin.enMarche).
+          const b = want ? this.buildings.get(def.id) : null;
+          if (b && def.anim && b.sprite.anims) {
+            const key = b.sprite.texture.key;
+            const run = !!want.enMarche && !reducedMotion() && this.anims.exists(key);
+            if (run && !b.sprite.anims.isPlaying) b.sprite.play(key);
+            else if (!run && b.sprite.anims.isPlaying) { b.sprite.stop(); b.sprite.setFrame(0); }
+          }
           // Étiquette : centrée au-dessus de l'image.
           const s = want ? this.buildings.get(def.id).sprite : null;
           this.syncLabel(def.id, want, def.window, s ? s.x + s.width / 2 : 0, s ? s.y - s.height + (def.labelDown || 0) : 0);
@@ -2350,8 +2366,9 @@
       syncWell(pompe, enMarche) {
         if (!this.has(WELL.key)) return;
         const F = WELL.frames;
-        if (!this.well) this.well = this.placeProp(WELL);
+        if (!this.well) { this.well = this.placeProp(WELL); this.wellShadow = this.castShadow(this.well, CAST.building); }
         this.well.setFrame(pompe ? F.tuyau : F.puits);
+        if (this.wellShadow) this.wellShadow.setFrame(pompe ? F.tuyau : F.puits);
         if (pompe && !this.pump) {
           this.pump = this.add.image(this.well.x, this.well.y, WELL.key, F.pompe).setOrigin(0, 1).setDepth(this.well.depth + 0.1);
         } else if (!pompe && this.pump) {
@@ -2375,9 +2392,10 @@
       syncTank(niveau) {
         if (niveau < 0 || !this.has(TANK.key)) {
           if (this.tank) { this.tank.destroy(); this.tank = null; }
+          if (this.tankShadow) { this.tankShadow.destroy(); this.tankShadow = null; }
           return;
         }
-        if (!this.tank) this.tank = this.placeProp(TANK);
+        if (!this.tank) { this.tank = this.placeProp(TANK); this.tankShadow = this.castShadow(this.tank, CAST.building); }
         this.tank.setFrame(Math.min(niveau, TANK.max));
       }
 
@@ -2403,8 +2421,7 @@
         if (r) {
           s = this.add.image(0, 0, key, r.frame != null ? r.frame : undefined);   // délabré : immobile
         } else if (def.anim && real) {
-          s = this.add.sprite(0, 0, key, 0);
-          if (this.anims.exists(key) && !reducedMotion()) s.play(key);
+          s = this.add.sprite(0, 0, key, 0);         // l'animation : selon modèle.batiments (sync)
         } else {
           s = this.add.image(0, 0, key, real && def.frame != null ? def.frame : undefined);
         }
@@ -2414,6 +2431,24 @@
         const y = clamp(Math.round(o.y + o.height), s.height, this.world.h);
         s.setPosition(Math.round(x), Math.round(y)).setDepth(Math.round(y));
         return s;
+      }
+
+      // L'ombre d'une image posée au sol (bâtiment, barrière) : sa silhouette noire, décalée de
+      // `off` ({ dx, dy }), sous tout ce qui est debout. stepShadows lui fait suivre l'image.
+      castShadow(img, off) {
+        if (!img || !img.texture || img.texture.key.indexOf('ph_') === 0) return null;
+        const sh = this.add.image(img.x + off.dx, img.y + off.dy, img.texture.key, img.frame ? img.frame.name : undefined)
+          .setOrigin(img.originX, img.originY).setFlipX(img.flipX).setTintFill(0x000000).setAlpha(CAST.alpha).setDepth(CAST.depth);
+        sh.setData('ombre', off);
+        return sh;
+      }
+
+      // À chaque image : l'ombre d'un bâtiment animé (le Moulin) prend l'image du moment.
+      stepShadows() {
+        for (const e of this.buildings.values()) {
+          if (!e.shadow || !e.sprite.anims || !e.sprite.frame) continue;
+          if (e.shadow.frame.name !== e.sprite.frame.name) e.shadow.setFrame(e.sprite.frame.name);
+        }
       }
 
       syncCrop(e, p, x, y) {

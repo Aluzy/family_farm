@@ -286,6 +286,8 @@ export function stageModel() {
   const batiments = {};
   // version 1.12 : les bâtiments verrouillés sont aussi sur la carte (délabrés)
   for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok() || windowLocked(id), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id], ruine: buildingInRuins(id) };
+  // le Moulin ne tourne que quand il moud (du blé en cours)
+  batiments.moulin.enMarche = !!(state.stations && state.stations.moulin && state.stations.moulin.tache);
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
