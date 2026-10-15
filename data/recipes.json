@@ -384,6 +384,27 @@
       "temps": 30,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "miel", "qte": 1 }, { "item": "epices", "qte": 1 }],
       "libre": true
+    },
+    "//mayonnaise": "Trois œufs de la ferme battus en mayonnaise, à la Cuisine.",
+    "mayonnaise": {
+      "nom": "Mayonnaise",
+      "icone": "🫙‍🥚",
+      "station": "cuisine",
+      "temps": 10,
+      "ingredients": [{ "item": "oeuf", "qte": 3 }],
+      "libre": true
+    },
+    "//quenelle_poisson": [
+      "Farine et poisson : une truite ou un brochet pêchés sur la ferme, ou le poisson de la ville.",
+      "Énergie et prix du plat calculés avec la truite (le premier poisson de la liste)."
+    ],
+    "quenelle_poisson": {
+      "nom": "Quenelle de poisson",
+      "icone": "🐟‍🥟",
+      "station": "cuisine",
+      "temps": 20,
+      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "poisson"], "qte": 1 }],
+      "libre": true
     }
   }
 }

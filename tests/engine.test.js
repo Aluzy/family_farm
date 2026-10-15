@@ -1845,7 +1845,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
     pain_ail: 20, tarte_fraises: 20, confiture_fraises: 20,
     chocolat_chaud: 20, cafe_boisson: 20, creme_vanille: 20, biere_artisanale: 20,
     bocal_legumes: 20,
-    omelette_champignons: 20, poisson_grille: 20, raclette: 20, creme_marrons: 20, tarte_myrtilles: 20, pain_epices: 20,
+    omelette_champignons: 20, poisson_grille: 20, raclette: 20, creme_marrons: 20, tarte_myrtilles: 20, pain_epices: 20, mayonnaise: 20, quenelle_poisson: 20,
     ragout: 20, poivrons_farcis: 20, roti_boeuf: 20, poulet_roti_ail: 20,
   });
   assertEqual(countItem(s, 'paille'), 0, 'la paille n\'est pas un aliment');
@@ -1874,7 +1874,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
     carotte: 20, oeuf: 20, oignon: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, tarte_pommes: 20,
     soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, riz_au_lait: 20, pain_ail: 20,
     tarte_fraises: 20, chocolat_chaud: 20, cafe_boisson: 20, creme_vanille: 20,
-    omelette_champignons: 20, poisson_grille: 20, raclette: 20, creme_marrons: 20, tarte_myrtilles: 20, pain_epices: 20,
+    omelette_champignons: 20, poisson_grille: 20, raclette: 20, creme_marrons: 20, tarte_myrtilles: 20, pain_epices: 20, mayonnaise: 20, quenelle_poisson: 20,
     ragout: 20, poivrons_farcis: 20, roti_boeuf: 20, poulet_roti_ail: 20,
   });
   assertEqual(inventoryCounts(s), {
@@ -2745,6 +2745,8 @@ const TEMPS_PLATS_AVANT_LOT_14 = {
   bocal_legumes: 60,
   // version 1.5 (ville.json) : recettes des denrées de la ville
   omelette_champignons: 15, poisson_grille: 15, raclette: 20, creme_marrons: 25, tarte_myrtilles: 30, pain_epices: 30,
+  // recettes des œufs et des poissons de la ferme
+  mayonnaise: 10, quenelle_poisson: 20,
 };
 
 test('Lot 14 : temps de préparation des plats Four/Cuisine divisés par 2 (arrondi au supérieur), transformations intactes', () => {
@@ -2919,11 +2921,33 @@ test('nouvelles recettes : chacune se prépare quand ses conditions sont remplie
   }
 });
 
-test('arbre v2 : 16 recettes libres (dont 6 de la ville), 11 débloquées par un nœud', () => {
+test('mayonnaise (3 œufs) et quenelle de poisson (farine + truite, brochet ou poisson de la ville), à la Cuisine, dès sa construction', () => {
+  const s = atelier();
+  for (const id of ['mayonnaise', 'quenelle_poisson']) {
+    assertEqual([DATA.recipes[id].station, recipeUnlocked(s, id), DATA.items[id].edible], ['cuisine', true, true], id);
+  }
+  setInv(s, { oeuf: 2 });
+  assertEqual(recipeStatus(s, 'mayonnaise').code, 'manque', 'deux œufs ne suffisent pas');
+  setInv(s, { oeuf: 3 });
+  assertEqual(startRecipe(s, 'mayonnaise').ok, true);
+  assertEqual(countItem(s, 'oeuf'), 0, 'les trois œufs');
+  for (const poisson of ['truite', 'brochet', 'poisson']) {
+    s.stations.cuisine.tache = null;
+    setInv(s, { farine: 1, [poisson]: 1 });
+    assertEqual(recipeStatus(s, 'quenelle_poisson').code, 'pret', `avec ${poisson}`);
+    assertEqual(startRecipe(s, 'quenelle_poisson').ok, true, `avec ${poisson}`);
+    assertEqual([countItem(s, 'farine'), countItem(s, poisson)], [0, 0], `farine et ${poisson} pris`);
+  }
+  s.stations.cuisine.tache = null;
+  setInv(s, { truite: 1 });
+  assertEqual(recipeStatus(s, 'quenelle_poisson').code, 'manque', 'sans farine');
+});
+
+test('arbre v2 : 18 recettes libres (dont 6 de la ville, la mayonnaise et la quenelle de poisson), 11 débloquées par un nœud', () => {
   const s = atelier();
   const libres = Object.keys(DATA.recipes).filter((id) => recipeUnlocked(s, id));
   assertEqual(libres.sort(), [...DATA.techtree.RECETTES_LIBRES].sort());
-  assertEqual(libres.length, 16);
+  assertEqual(libres.length, 18);
   assertEqual(Object.keys(DATA.recipes).length - libres.length, 11);
   for (const id of Object.keys(DATA.recipes)) assert(recipeUnlocked(s, id) || recipeNode(id), `${id} : libre ou débloquée par un nœud`);
   setInv(s, { pain: 1, ail: 1, huile: 1 });
