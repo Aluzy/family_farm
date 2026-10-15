@@ -375,8 +375,8 @@ export function renderFamille() {
         <span class="card-title ration-title"><span>🍽️ Ration quotidienne : <span class="num">${formatNumber(shown)} / ${formatNumber(plan.besoin)}</span></span><span class="row ration-title-end">${pris ? '<span class="chip">✅ prise</span>' : ''}${helpToggleHtml('ration', 'ration quotidienne')}</span></span>
         <span class="bar" role="progressbar" aria-label="${pris ? 'Calories mangées' : 'Calories prévues'}" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
         <span class="muted" id="ration-help"${helpOpen.has('ration') ? '' : ' hidden'}>${pris ? 'Calories mangées' : 'Calories prévues'} pour un besoin de ${formatNumber(familyNeed(state))} calories par jour. ${pris
-          ? (short ? `⚠️ Le besoin n'a pas été couvert : ton énergie remontera moins cette nuit.` : `Le besoin a été couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)
-          : (short ? `⚠️ Le besoin ne sera pas couvert : ton énergie remontera moins cette nuit.` : `Le besoin sera couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} cette nuit.`)} La famille mange à ${DATA.TIME.MEAL_HOUR} h, ou au coucher si elle dort avant.</span>
+          ? (short ? `⚠️ Le besoin n'a pas été couvert : ton énergie remontera moins en dormant.` : `Le besoin a été couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} en dormant.`)
+          : (short ? `⚠️ Le besoin ne sera pas couvert : ton énergie remontera moins en dormant.` : `Le besoin sera couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} en dormant.`)} La famille mange à ${DATA.TIME.MEAL_HOUR} h, ou au coucher si elle dort avant.</span>
       </div>
     </div>
     ${renderPets()}

@@ -28,7 +28,8 @@ export const RAW_DATA = {
     "MIN_AWAKE_S": 30,
     "MEAL_HOUR": 19,
     "NIGHT_HOUR": 22,
-    "SLEEP_SECONDS_PER_HOUR": 4
+    "SLEEP_SECONDS_PER_HOUR": 4,
+    "POUSSE_HEURES": 24
   },
   "FAMILY": {
     "MEMBRES": [
@@ -78,7 +79,8 @@ export const RAW_DATA = {
     "ENDURANCE": 3,
     "REVEIL_BASE": 60,
     "REVEIL_REPAS": 40,
-    "MANGER_DIVISEUR": 5
+    "MANGER_DIVISEUR": 5,
+    "SOMMEIL_HEURES": 8
   },
   "MARCHE": { "PLANCHER": { "defaut": 120, "graine": 200 }, "PAS": 10, "MULTIPLICATEUR_PRODUCTION": 2, "TRANSFORMATIONS_DOUBLEES": ["farine"] },
   "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },

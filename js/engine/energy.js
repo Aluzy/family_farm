@@ -8,6 +8,7 @@ import { runCooking, runElectricStation } from './kitchen.js';
 import { refreshUnlocks, techFlag, techPct } from './techtree.js';
 import { bumpCounter, noteEnergyRecord, updateChapters } from './campaign.js';
 import { nightActive } from './clock.js';
+import { growDue } from './crops.js';
 import { advanceNight, nightSpeed } from './night.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
@@ -122,8 +123,8 @@ export function tick(state, dt, horlogeArretee = false) {
   flowStep(state, dtMs);
   wearStep(state, dtMs);
 
-  // e. temps d'éveil (l'heure s'en déduit)
-  if (!horlogeArretee) state.awakeMs += dtMs;
+  // e. temps d'éveil (l'heure s'en déduit) ; les plantes suivent l'horloge
+  if (!horlogeArretee) { state.awakeMs += dtMs; growDue(state); }
   refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
   noteEnergyRecord(state); // Lot 9 : record d'énergie stockée, puis objectifs du chapitre
   updateChapters(state);
