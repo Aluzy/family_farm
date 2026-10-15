@@ -96,22 +96,28 @@ def frame(kind):
             else:
                 put(x, y, 'tl' if y == 19 else 'wl' if x < CX else 'wm')
     # toit en dôme, bardeaux : demi-largeur span(y), un quart de cercle aplati du sommet (y = 1)
-    # au bord (y = 9) ; contour sombre, rangées de bardeaux aux joints décalés
+    # à l'avant-toit ; vu de 3/4, son bord bas est une demi-ellipse (bombe(x) pixels plus bas au
+    # milieu qu'aux bouts), et les rangées de bardeaux suivent cette courbe. Contour sombre.
     def span(y):
-        t = (9.5 - y) / 9.0
-        return 13.4 * math.sqrt(max(0.0, 1 - t * t)) if 1 <= y <= 9 else -1
+        t = (9.5 - min(y, 9)) / 9.0
+        return 13.4 * math.sqrt(max(0.0, 1 - t * t)) if y >= 1 else -1
+
+    def bombe(x):
+        d = (x - CX) / 14.0
+        return 2.2 * math.sqrt(max(0.0, 1 - d * d))
 
     def dedans(x, y):
-        return abs(x - CX) <= span(y)
+        return abs(x - CX) <= span(y) and y <= 9 + bombe(x)
 
-    for y in range(1, 10):
+    for y in range(1, 13):
         for x in range(CX - 14, CX + 15):
             if not dedans(x, y):
                 continue
-            if y == 9 or not (dedans(x - 1, y) and dedans(x + 1, y) and dedans(x, y - 1)):
+            if not (dedans(x - 1, y) and dedans(x + 1, y) and dedans(x, y - 1) and dedans(x, y + 1)):
                 put(x, y, 'rj'); continue
-            row = (y - 1) // 3
-            if (y - 1) % 3 == 2 or (x + (row % 2) * 2) % 4 == 0:
+            v = y - bombe(x)                      # hauteur le long de la courbe
+            row = math.floor((v - 1) / 3)
+            if (v - 1) - 3 * row >= 2.2 or (x + (row % 2) * 2) % 4 == 0:
                 put(x, y, 'rd'); continue
             t = (x - CX) / 13
             put(x, y, 'rh' if t < -0.45 else 'rl' if t < -0.1 else 'rm' if t < 0.45 else 'rd')
