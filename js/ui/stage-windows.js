@@ -676,6 +676,28 @@ export function actionGoToBed() {
   scene.goHome(() => { if (coucher && nightActive(state)) enterInterior('maison'); });
 }
 
+// Le repas de 19 h sur la carte : sur la Ferme, sans fenêtre ouverte, la maison réparée. Le
+// personnage rentre (la vue le suit jusqu'à la porte), l'intérieur de la maison s'ouvre ; il va
+// à table, la famille le rejoint, tous s'assoient et mangent. `heureux` : une bulle 😊
+// au-dessus de chacun. Renvoie false si la scène ne se joue pas (l'annonce suffit).
+export function startMealScene(repas) {
+  const scene = window.FarmStage;
+  if (activeTab !== 'ferme' || !stageActive() || stageWindow || nightActive(state)) return false;
+  if (!interiorAvailable('maison') || !(scene && scene.mealScene && scene.hasFermier && scene.hasFermier())) return false;
+  const B = DATA.VILLE.BONHEUR;
+  const heureux = repas.couverture >= 100 && (Number(repas.bonheur) || 0) - B.DECLIN >= B.BULLE;
+  const principal = mainCharacter(state);
+  const convives = state.famille.membres.filter((m) => m !== principal).map((m) => ({ perso: memberPerso(m), enfant: !!m.enfant }));
+  if (!scene.mealScene({ convives, heureux })) return false;
+  if (stageInterior === 'maison') return true;
+  if (stageInterior) { enterInterior('maison'); return true; }
+  scene.goHome(() => {
+    // le joueur a ouvert une fenêtre ou changé d'onglet entre-temps : il n'entre pas
+    if (activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior && !nightActive(state)) enterInterior('maison');
+  }, true);
+  return true;
+}
+
 // La carte : il est couché dans son lit, il s'endort ; la nuit défile en accéléré.
 export function asleepFromStage() {
   if (!coucher) return;

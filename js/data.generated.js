@@ -1341,7 +1341,8 @@ export const RAW_DATA = {
       "HUILE_FRUIT": 2,
       "SPECIALES": { "items": ["cacao", "cafe", "vanille"], "bonus": 4 },
       "PLATS_MAX": 3,
-      "FAIM": -2
+      "FAIM": -2,
+      "BULLE": 5
     },
     "ENFANT_PRIX": 50,
     "SORTIES": {
