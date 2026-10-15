@@ -22,71 +22,6 @@ const EN_MAIN = {
   canne: 'il n\'y a encore rien à pêcher sur la ferme',
 };
 
-// Le dessin de la barre (le modèle, en pixels) : # le bois, o une case, g le clou ; les
-// couleurs sont celles du menu (COULEURS).
-const BARRE = [
-  '........####################################....',
-  '.......###ooooo####ooooo####ooooo####ooooo###...',
-  '......###ooooooo##ooooooo##ooooooo##ooooooo###..',
-  '.....####ooooooo##ooooooo##ooooooo##ooooooo####.',
-  '....##g##ooooooo##ooooooo##ooooooo##ooooooo##g##',
-  '.....####ooooooo##ooooooo##ooooooo##ooooooo####.',
-  '......###ooooooo##ooooooo##ooooooo##ooooooo###..',
-  '.......###ooooo####ooooo####ooooo####ooooo###...',
-  '........####################################....',
-];
-// Les couleurs du menu (css/jeu.css, .bottom-nav) : sa bordure de bois autour, son fond crème
-// dedans ; une case, le fond un peu foncé des boutons du menu, cerclée de bois clair (de bois
-// sombre et plus claire pour l'outil en main) ; le clou, le filet doré du menu.
-const COULEURS = {
-  bord: '#8a5a34',
-  fond: 'rgba(255, 230, 178, 0.9)',
-  case: '#ead0a0',
-  caseBord: '#c9965e',
-  enMain: '#fbd98c',
-  enMainBord: '#8a5a34',
-  clou: '#d9a066',
-};
-const CASE = { x: 9, y: 1, w: 7, h: 7, pas: 9 };     // la case k : x + k × pas
-const BORD = 4;                            // les colonnes vides à gauche du dessin
-
-// Le bois du modèle : son contour (au bord du dessin) prend la bordure du menu, le reste son
-// fond ; une case, son pourtour (les pixels qui touchent le bois) et son intérieur.
-const PIX = (() => {
-  const H = BARRE.length, W = BARRE[0].length;
-  const at = (x, y) => (x >= 0 && y >= 0 && x < W && y < H ? BARRE[y][x] : '.');
-  const voisins = (x, y) => [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
-  return BARRE.map((row, y) => Array.from(row, (c, x) => {
-    if (c === '.') return null;
-    if (c === 'g') return 'clou';
-    const v = voisins(x, y).map(([a, b]) => at(a, b));
-    if (c === 'o') return v.some((t) => t !== 'o') ? 'caseBord' : 'case';
-    return v.includes('.') ? 'bord' : 'fond';
-  }));
-})();
-
-// Le dessin, en rectangles d'un pixel de haut (par morceaux de même couleur) ; la case
-// `active` (son rang) plus claire.
-function barreSvg(active) {
-  const rects = [];
-  PIX.forEach((row, y) => {
-    const teinte = (x) => {
-      const t = row[x];
-      if (t !== 'case' && t !== 'caseBord') return t;
-      if (Math.floor((x - CASE.x) / CASE.pas) !== active) return t;
-      return t === 'case' ? 'enMain' : 'enMainBord';
-    };
-    for (let x = 0; x < row.length;) {
-      const t = teinte(x);
-      let n = 1;
-      while (x + n < row.length && teinte(x + n) === t) n++;
-      if (t) rects.push(`<rect x="${x}" y="${y}" width="${n}" height="1" fill="${COULEURS[t]}"/>`);
-      x += n;
-    }
-  });
-  return `<svg class="tool-bar-art" viewBox="${BORD} 0 ${BARRE[0].length - BORD} ${BARRE.length}" aria-hidden="true" shape-rendering="crispEdges">${rects.join('')}</svg>`;
-}
-
 // Triangle de la languette (5 × 3 pixels), pointé vers le bas (barre ouverte : le sens où
 // elle se range) ; retourné quand la barre est rangée.
 const BARRE_FLECHE = '<svg class="tool-bar-arrow" viewBox="0 0 5 3" width="20" height="12" aria-hidden="true" shape-rendering="crispEdges">' +
@@ -104,19 +39,17 @@ function enMain() {
 export function toolBarHtml() {
   if (!OUTILS.some((id) => hasTool(state, id))) return '';
   const main = enMain();
-  const active = main ? OUTILS.indexOf(main) : -1;
-  const cases = OUTILS.map((id, k) => {
+  const cases = OUTILS.map((id) => {
     const def = toolDef(id);
-    const style = `style="--x:${CASE.x - BORD + k * CASE.pas}"`;
     if (!hasTool(state, id)) {
-      return `<span class="tool-slot vide" ${style} title="${def.NOM} : au Marché" aria-hidden="true"></span>`;
+      return `<span class="tool-slot vide" title="${def.NOM} : au Marché" aria-hidden="true"></span>`;
     }
     const tenu = id === main;
     const label = tenu ? `${def.NOM} en main : la ranger` : `Prendre : ${def.NOM}`;
-    return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" ${style} data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${label}" title="${label}">${def.ICONE}</button>`;
+    return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${label}" title="${label}">${def.ICONE}</button>`;
   }).join('');
   const tab = `<button type="button" class="tool-bar-tab" data-action="toolbar-toggle" aria-expanded="${toolbarOpen}" aria-label="${toolbarOpen ? 'Ranger la barre d\'outils' : 'Sortir la barre d\'outils'}" title="Outils">${BARRE_FLECHE}</button>`;
-  return tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${barreSvg(active)}${cases}</div>`;
+  return tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${cases}</div>`;
 }
 
 function useTool(id) {

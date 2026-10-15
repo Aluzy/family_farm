@@ -2248,12 +2248,11 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
 .perso-btn img { width: 32px; height: 32px; image-rendering: pixelated; }
 .perso-btn.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
 
-/* La barre d'outils (js/ui/outils.js) : en bas au milieu de la carte, le dessin du modèle
-   (44 × 9 pixels, ici --u px chacun) dans les couleurs du menu ; une case par outil, posée
-   sur sa case du dessin (--x : sa colonne), l'outil dessiné à 32 px. Rangée, elle glisse sous
-   le bord de l'écran et n'en dépasse que sa languette. */
+/* La barre d'outils (js/ui/outils.js) : en bas au milieu de la carte, dans le cadre bois des
+   cartes flottantes (bordure de 3 px, fond crème, filet clair) ; une case par outil, l'outil
+   dessiné à 32 px. Rangée, elle glisse sous le bord de l'écran et n'en dépasse que sa languette. */
 .tool-bar {
-  --u: 7.5px;
+  --u: 7.5px; /* la hauteur de la barre : 9 × --u */
   position: fixed;
   left: 50%;
   bottom: calc(var(--dock) + 6px);
@@ -2263,33 +2262,42 @@ body:has(#modal-root > *) .player-card { z-index: 95; opacity: 0.2; pointer-even
   align-items: center;
   transform: translate(-50%, calc(9 * var(--u) + 6px));
   transition: transform 0.2s ease-out;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
 }
 .tool-bar.open { transform: translate(-50%, 0); }
 .tool-bar[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .tool-bar { transition: none; } }
-.tool-bar-body { position: relative; width: calc(44 * var(--u)); height: calc(9 * var(--u)); }
+.tool-bar-body {
+  box-sizing: border-box;
+  display: flex;
+  gap: 5px;
+  height: calc(9 * var(--u));
+  padding: 5px;
+  background: rgba(255, 230, 178, 0.88);
+  border: 3px solid #8a5a34;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px rgba(217, 160, 102, 0.9);
+}
 .tool-bar:not(.open) .tool-bar-body { visibility: hidden; transition: visibility 0s 0.2s; }
-.tool-bar-art { display: block; width: 100%; height: 100%; }
 .tool-slot {
-  position: absolute;
-  left: calc(var(--x) * var(--u));
-  top: var(--u);
-  width: calc(7 * var(--u));
-  height: calc(7 * var(--u));
+  box-sizing: border-box;
+  height: 100%;
+  aspect-ratio: 1;
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: calc(2 * var(--u));
-  background: none;
+  border-radius: 4px;
+  background: #ead0a0;
+  box-shadow: inset 0 0 0 2px #d9a066;
   font-size: 1rem;
   cursor: pointer;
 }
+.tool-slot.active { background: #fbd98c; box-shadow: inset 0 0 0 2px #8a5a34; }
 .tool-slot .px { --pxs: 32px; vertical-align: 0; }
 .tool-slot:active { transform: translateY(1px); }
 .tool-slot:focus-visible { outline: 3px solid var(--color-sun); outline-offset: -2px; }
-.tool-slot.vide { cursor: default; }
+.tool-slot.vide { cursor: default; opacity: 0.6; }
 /* La languette, au-dessus du milieu de la barre : le même bois, le même fond. */
 .tool-bar-tab {
   position: relative;
