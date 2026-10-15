@@ -27,9 +27,9 @@ import sys
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from style_v2 import TOIT  # noqa: E402
+from style_v2 import TOIT, TOIT_SERRE  # noqa: E402
 
-TOITS = set(TOIT)
+TOITS = set(TOIT) | set(TOIT_SERRE)    # le poulailler garde TOIT ; la maison, l'étable et le moulin ont TOIT_SERRE
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 ASSETS = os.path.join(ROOT, 'assets')

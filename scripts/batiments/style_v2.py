@@ -14,6 +14,8 @@
 # ensemble de pixels (une couleur d'origine, éventuellement limitée à une zone) ; ses couleurs
 # se rangent par luminosité et prennent, dans cet ordre, les tons de la rampe de la ferme.
 # Le relief du dessin (ses ombres, ses lumières) est donc gardé.
+# Enfin, la maison, l'étable et le moulin prennent les couleurs de la serre (PALETTE_SERRE,
+# « bois naturel ») ; le poulailler garde celles de la ferme.
 # La serre : scripts/batiments/originaux/serre_modele.png (96 × 81 : toit de lattes, vitres et
 # double porte vitrée dans un cadre de bois), telle quelle ; l'ancienne verrière du pack est
 # gardée dans originaux/serre_sp_v1.png.
@@ -164,11 +166,75 @@ def ferme():
     return img
 
 
+# ---------- les couleurs de la serre (« bois naturel ») ----------
+# La maison, l'étable et le moulin prennent les couleurs de la serre : bois brun olive pour
+# les toits, les murs et les cadres, crème et beige pour les accents (vitres, volets, baies)
+# et la toile des ailes, pierre beige-gris. Chaque ton des rampes ci-dessus (TOIT, BOIS…) a son
+# remplaçant de même rang dans PALETTE_SERRE ; une couleur proche d'un ton (à 40 près) prend
+# son remplaçant plus leur écart (le relief du dessin est gardé). Les verts (lierre, buissons)
+# ne changent pas.
+
+
+def rampe(ancres, n):
+    """n tons de l'ancre sombre à l'ancre claire (interpolation par morceaux)."""
+    out = []
+    for i in range(n):
+        t = i / (n - 1) * (len(ancres) - 1)
+        k = min(len(ancres) - 2, int(t))
+        f = t - k
+        out.append(tuple(round(a * (1 - f) + b * f) for a, b in zip(ancres[k], ancres[k + 1])))
+    return out
+
+
+SERRE = {'sombre': (56, 47, 29), 'bois': (77, 64, 39), 'bois2': (90, 76, 50), 'bois3': (112, 96, 65),
+         'beige': (186, 172, 149), 'creme': (203, 189, 162), 'blanc': (225, 217, 202), 'tan': (188, 163, 122)}
+PALETTE_SERRE = {
+    'toit': rampe([(38, 30, 18), (70, 58, 36), (120, 104, 72)], 6),
+    'bois': rampe([SERRE['sombre'], SERRE['bois2'], SERRE['bois3'], (150, 130, 92), SERRE['tan']], 5),
+    'cadre': rampe([(30, 24, 14), SERRE['sombre'], SERRE['bois']], 5),
+    'accent': rampe([(120, 108, 84), SERRE['beige'], SERRE['blanc']], 5),
+    'pierre': rampe([(100, 92, 78), (150, 140, 120), (196, 186, 166)], 5),
+    'toile': [(170, 156, 128), SERRE['beige'], SERRE['creme'], SERRE['blanc']],
+}
+TOIT_SERRE = PALETTE_SERRE['toit']
+RAMPES = {'toit': TOIT, 'bois': BOIS, 'cadre': CADRE, 'accent': TURQUOISE, 'pierre': PIERRE, 'toile': TOILE}
+# les baies de l'étable (sa propre rampe turquoise sombre) : des accents
+RAMPES_EN_PLUS = [((24, 92, 88), 'accent', 1), ((32, 112, 108), 'accent', 1)]
+
+
+def harmoniser(img, remplace=None, garde=None):
+    """img aux couleurs de la serre. remplace : matière -> autre matière (le moulin : ses
+    poutres de bois prennent les cadres) ; garde(x, y, couleur) : pixels à ne pas toucher."""
+    tons = [(c, m, i) for m, r in RAMPES.items() for i, c in enumerate(r)] + RAMPES_EN_PLUS
+    cache = {}
+
+    def nouvelle(c):
+        if c not in cache:
+            e, m, i = min(tons, key=lambda t: sum((a - b) ** 2 for a, b in zip(c, t[0])))
+            if sum((a - b) ** 2 for a, b in zip(c, e)) > 40 ** 2:
+                cache[c] = c
+            else:
+                m = (remplace or {}).get(m, m)
+                n = PALETTE_SERRE[m][min(i, len(PALETTE_SERRE[m]) - 1)]
+                cache[c] = tuple(max(0, min(255, nv + cv - ev)) for nv, cv, ev in zip(n, c, e))
+        return cache[c]
+    out = img.copy()
+    px = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            p = px[x, y]
+            if not p[3] or (p[1] > p[0] + 15 and p[1] > p[2] + 15) or (garde and garde(x, y, p[:3])):
+                continue
+            px[x, y] = nouvelle(p[:3]) + (p[3],)
+    return out
+
+
 def main():
     faits = {
-        'house_sp.png': ferme(),
-        'barn_sp.png': etable(),
-        'windmill_sp.png': moulin(),
+        'house_sp.png': harmoniser(ferme()),
+        'barn_sp.png': harmoniser(etable()),
+        # le lierre du bas du moulin a un vert très sombre, le même que ses vitres : gardé
+        'windmill_sp.png': harmoniser(moulin(), {'bois': 'cadre'}, lambda x, y, c: y >= 92 and c == (14, 68, 62)),
         'poulailler.png': poulailler(),
         'serre_sp.png': Image.open(os.path.join(ORIG, 'serre_modele.png')).convert('RGBA'),
     }
