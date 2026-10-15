@@ -17,7 +17,7 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
-import { robotOn } from '../engine/automation.js';
+import { robotOn, robotTrip } from '../engine/automation.js';
 import { showToast } from './toasts.js';
 import {
   activeTab, axeMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
@@ -376,7 +376,7 @@ export function stageModel() {
     perso: memberPerso(mainCharacter(state)),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: terrainNow(rochers.concat(abattus)), plots,
-    houe, hache, pioche, canne, rochers, abattus, asperseurs, robot, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, canne, rochers, abattus, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -421,19 +421,38 @@ function sprinklerSpots() {
 // Le robot (récolte et semis automatiques) pour la carte : null sans lui ; { etat: 'repos' }
 // quand sa liste du jour est faite (ou pas commencée) ; sinon sa tâche en cours : la case
 // visée (une tuile de la carte, ou 'serre'), 'recolter' ou 'planter', où elle en est (prog,
-// de 0 à 1 ; elle dure dureeS secondes), et son rang dans la liste.
+// de 0 à 1 ; elle dure dureeS secondes, dont la part `route` à rouler jusqu'à la parcelle), et
+// son rang dans la liste. `vitesse` : la sienne, en px par seconde (le retour à sa base).
 function robotModel() {
   if (!robotOn(state)) return null;
+  const R = DATA.ROBOT, S = DATA.TIME.CLOCK_SECONDS_PER_HOUR;
+  const vitesse = (R.VITESSE * 16 * 60) / S;
   const r = state.robot;
-  if (nightActive(state) || !r || r.jour !== state.day || r.i >= r.taches.length) return { etat: 'repos' };
+  if (nightActive(state) || !r || r.jour !== state.day || r.i >= r.taches.length) return { etat: 'repos', vitesse };
   const tache = r.taches[r.i];
   const p = allPlots(state).find((x) => x.id === tache.id);
-  const pas = DATA.ROBOT.MINUTES / 60;
+  const d = robotTrip(state, r, r.i), duree = d.route + d.travail;
   return {
     etat: 'travail', t: tache.t, a: p && p.lieu === 'potager' && Number.isInteger(p.case) ? p.case : 'serre',
-    prog: Math.max(0, Math.min(1, (absoluteHours(state) - r.debut) / pas)), dureeS: pas * DATA.TIME.CLOCK_SECONDS_PER_HOUR,
-    n: r.i + 1, total: r.taches.length,
+    prog: Math.max(0, Math.min(1, (absoluteHours(state) - r.debut) / duree)), dureeS: duree * S, route: d.route / duree,
+    n: r.i + 1, total: r.taches.length, vitesse,
   };
+}
+
+// Ce que les automatisations ont fait aujourd'hui dans la Zone de culture (« recolter:12 »,
+// « planter:12 », « arroser:12 ») : le personnage ne va pas refaire ces gestes sur la carte.
+function autoDone() {
+  const out = [];
+  const r = state.robot;
+  if (r && r.jour === state.day) {
+    for (const tache of r.taches.slice(0, r.i)) {
+      const p = allPlots(state).find((x) => x.id === tache.id);
+      if (p && Number.isInteger(p.case)) out.push(`${tache.t}:${p.case}`);
+    }
+  }
+  const I = state.irrigation;
+  if (I && I.jour === state.day) for (const c of I.cases || []) out.push(`arroser:${c}`);
+  return out;
 }
 
 function sprinklers() {

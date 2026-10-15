@@ -60,7 +60,7 @@ import {
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
   collectLeftovers, pickUp, piles,
-  absoluteHours, advanceNight, growDue, irrigate, robotStep, asleep, goToSleep, midnightMs, sleepTarget, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
+  absoluteHours, advanceNight, growDue, irrigate, robotStep, robotTrip, asleep, goToSleep, midnightMs, sleepTarget, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
 } from '../js/engine/index.js';
 
 
@@ -3880,8 +3880,8 @@ function sleepOnce(s) {
 }
 
 // Le matin des automatisations : l'horloge à 7 h (les plantes qui ont fini leur cycle
-// poussent), le robot (sa liste de 6 h, une tâche toutes les ROBOT.MINUTES : 10 tâches avant
-// 7 h), puis les asperseurs (irrigate). Renvoie { arrosees, sansEau } ; le travail du robot
+// poussent), le robot (sa liste de 6 h, chaque tâche après son trajet : quelques parcelles
+// proches avant 7 h), puis les asperseurs (irrigate). Renvoie { arrosees, sansEau } ; le travail du robot
 // est dans s.robot.
 function matin(s) {
   s.awakeMs = awakeMsAtHour(DATA.TIME.ARROSAGE_HEURE);
@@ -4605,7 +4605,7 @@ testBase('semis automatique : replante la même culture, arrosée dans la foulé
   assertEqual(s.robot.taches.map((x) => x.t), ['recolter', 'planter', 'recolter', 'planter'], 'chaque parcelle récoltée est replantée juste après');
 });
 
-testBase('robot : à 6 h il dresse sa liste, puis fait une tâche toutes les ROBOT.MINUTES minutes', () => {
+testBase('robot : à 6 h il dresse sa liste, puis fait chaque tâche après son trajet et ROBOT.MINUTES de travail', () => {
   const s = auto5('potager');
   s.technologies.push('semis_auto');
   plantRipe(s, 'potager-1', 'patate');
@@ -4616,11 +4616,19 @@ testBase('robot : à 6 h il dresse sa liste, puis fait une tâche toutes les ROB
   s.awakeMs = awakeMsAtHour(DATA.ROBOT.HEURE);
   robotStep(s);
   assertEqual([s.robot.taches.length, s.robot.i, findPlot(s, 'potager-1').culture], [2, 0, 'patate'], 'deux récoltes à faire');
-  const pas = DATA.ROBOT.MINUTES / 60;
-  s.awakeMs = awakeMsAtHour(DATA.ROBOT.HEURE + pas);
+  const d = robotTrip(s, s.robot, 0);
+  const W = DATA.TERRAIN.LARGEUR, c = findPlot(s, 'potager-1').case;
+  const dist = Math.hypot((c % W) - 0.2 - DATA.ROBOT.BASE[0], Math.floor(c / W) + 0.95 - DATA.ROBOT.BASE[1]);
+  assertEqual(Math.round(d.route * 60 * 1000), Math.round((dist / DATA.ROBOT.VITESSE) * 1000), 'le trajet depuis sa base, à ROBOT.VITESSE tuiles par minute');
+  const fin = DATA.ROBOT.HEURE + d.route + d.travail;
+  s.awakeMs = awakeMsAtHour(fin - 0.01);
+  robotStep(s);
+  assertEqual(s.robot.i, 0, 'pas avant d\'être arrivé et d\'avoir travaillé');
+  s.awakeMs = awakeMsAtHour(fin);
   robotStep(s);
   assertEqual([s.robot.i, findPlot(s, 'potager-1').culture, s.robot.taches[1].t], [1, null, 'planter'], 'la première récolte ; son semis vient juste après');
-  s.awakeMs = awakeMsAtHour(DATA.ROBOT.HEURE + 2 * pas);
+  assertEqual(robotTrip(s, s.robot, 1).route, 0, 'le semis : sur place');
+  s.awakeMs = awakeMsAtHour(fin + DATA.ROBOT.MINUTES / 60);
   robotStep(s);
   assertEqual([s.robot.i, findPlot(s, 'potager-1').culture, findPlot(s, 'potager-2').culture], [2, 'patate', 'carotte'], 'replantée, la carotte attend son tour');
   s.awakeMs = awakeMsAtHour(12);

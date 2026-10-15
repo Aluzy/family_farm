@@ -371,7 +371,10 @@
       for (const p of prev.plots || []) before.set(p.case, p);
       for (const p of next.plots || []) after.set(p.case, p);
       const found = {};
+      // ce qu'a fait le robot ou un asperseur : pas un geste du personnage
+      const auto = new Set(next.parAuto || []);
       const add = (type, c, view) => {
+        if (auto.has(`${type}:${c}`)) return;
         (found[type] = found[type] || []).push(c);
         if (!holds.has(c)) holds.set(c, { view: view || NONE, t0: performance.now() });
       };
