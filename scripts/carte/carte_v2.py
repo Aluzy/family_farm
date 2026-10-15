@@ -44,6 +44,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arbres_3d as A3  # noqa: E402  (les pieds des arbres)
 import barrieres as BA  # noqa: E402  (les barrières)
+import herbe_haute as HH  # noqa: E402  (l'herbe haute)
 import planche_v2 as PV  # noqa: E402  (où sont les nouvelles tuiles)
 
 ROOT = PV.ROOT
@@ -170,7 +171,7 @@ def main():
     for i, h in sorted(herbe_pleine):
         r = rng.random()
         if r < 0.06:
-            semis[i] = PV.gid('herbe_deco', h * 16 + rng.randrange(16))             # herbe haute
+            rng.randrange(16)          # l'ancienne herbe haute (brins carrés) : retirée ; le tirage reste (les fleurs gardent leur place)
         elif r < 0.11:
             semis[i] = PV.gid('herbe_deco', (4 + h) * 16 + rng.randrange(16))       # fleurs
     for i in sorted(terre_pleine):
@@ -365,6 +366,27 @@ def main():
             for nom in ordre[len(ARBRES):]:
                 sortie['layers'].append(dict(l, name=nom, id=prochain, data=nouvelles[nom]))
                 prochain += 1
+    # l'herbe haute (scripts/carte/herbe_haute.py) : un point par touffe, sur l'herbe libre
+    rects = [o for l in m['layers'] if l['type'] == 'objectgroup' for o in l.get('objects', []) if o.get('width')]
+    dessus = [n for n in nouvelles if n not in ('ground', 'plantes_pierres')]     # une fleur, une touffe : sous l'herbe haute
+
+    def libre(tx, ty):
+        if not (0 <= tx < W and 0 <= ty < H) or not sur_herbe(ty * W + tx):
+            return False
+        i = ty * W + tx
+        if nouvelles['plantes_pierres'][i] not in HERBES | {0}:
+            return False                                       # une pierre, une souche : pas d'herbe haute dessus
+        if any(nouvelles[n][i] for n in dessus) or any(nouvelles[n][i + W] for n in dessus if n.startswith('layer_tree') and i + W < W * H):
+            return False
+        return not any(o['x'] - T < tx * T + 8 < o['x'] + o['width'] + T and o['y'] - T < ty * T + 8 < o['y'] + o['height'] + T for o in rects)
+
+    herbes = HH.touffes(libre)
+    sortie['layers'].append({'id': prochain, 'name': 'herbe_haute', 'type': 'objectgroup', 'draworder': 'topdown',
+                             'x': 0, 'y': 0, 'opacity': 1, 'visible': True,
+                             'objects': [{'id': 9000 + k, 'name': '', 'type': str(v), 'x': x, 'y': y, 'width': 0, 'height': 0,
+                                          'rotation': 0, 'visible': True, 'point': True} for k, (x, y, v) in enumerate(herbes)]})
+    prochain += 1
+    print(f'herbe haute : {len(herbes)} touffes')
     sortie['nextlayerid'] = prochain
     sortie['tilesets'] = []
     for t in m['tilesets']:
