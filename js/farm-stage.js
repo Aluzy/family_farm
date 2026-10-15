@@ -147,6 +147,14 @@
     period: 2, de: 0.012, h0: 9, g: 160, v: [22, 56], vz: [44, 54], jitter: 0.35, life: 1.2, splash: 0.2,
     water: [0xe8f8ff, 0xb0e2fc, 0x78c0f0], shadow: 0x281e14,
   };
+  // Le robot de la ferme (scripts/batiments/robot.py, 6 images : 0-1 roule, 2-4 le bras
+  // descend, 5 au repos ; le bas des chenilles en bas au milieu). Pendant une tâche, il roule
+  // jusqu'à la parcelle pendant `walk` de son temps puis descend le bras ; sa base : `dock` px
+  // à côté de la porte de la maison. Au-dessus de lui, une bulle : la tâche et son rang.
+  const ROBOT = {
+    key: 'robot', file: 'robot.png', frame: { frameWidth: 14, frameHeight: 16 },
+    walk: 0.55, speed: 46, dock: { dx: -34, dy: 12 }, icone: { recolter: '🧺', planter: '🌱' },
+  };
   // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
   const OCCLUDER_ALPHA = 0.6;
   // L'herbe haute (scripts/carte/herbe_haute.py) : la couche d'objets « herbe_haute » de la
@@ -452,6 +460,7 @@
           if (r.image) L.image(r.image, v(r.image + '.png'));
         }
         L.spritesheet(SPRINKLER.key, v(SPRINKLER.file), SPRINKLER.frame);
+        L.spritesheet(ROBOT.key, v(ROBOT.file), ROBOT.frame);
         for (const name of MEUBLES) L.image('meuble_' + name, v('meuble_' + name + '.png'));
         for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
         L.image(MAP.tiles, v(MAP.image));
@@ -1775,6 +1784,7 @@
         this.stepTallGrass(delta);
         this.stepShards(delta);
         this.stepSprinklers();
+        this.stepRobot(dt);
         this.stepFishing(delta);
         this.stepShadows();
         if (!this.room) this.placeLabels();
@@ -2358,6 +2368,91 @@
           if (e.img) e.img.destroy();
           this.sprinklers.delete(key);
         }
+      }
+
+      // Le robot : le modèle (robotModel dans js/ui/stage.js), et l'instant où il est arrivé (la
+      // tâche avance entre deux modèles au rythme de l'horloge).
+      syncRobot(m) {
+        if (!m) { if (this.bot) { this.bot.img.destroy(); this.bot.el.remove(); this.bot = null; } return; }
+        if (!this.bot) {
+          if (!this.has(ROBOT.key)) return;
+          const d = this.robotDock();
+          const img = this.add.sprite(d.x, d.y, ROBOT.key, 5).setOrigin(0.5, 1).setDepth(d.y);
+          const el = document.createElement('div');
+          el.className = 'stage-gain stage-robot';
+          el.setAttribute('aria-hidden', 'true');
+          el.hidden = true;
+          labelLayer.appendChild(el);
+          this.bot = { img, el, x: d.x, y: d.y, m: null, at: 0, n: 0, from: null, roll: 0, w: 0, h: 0, txt: '' };
+        }
+        const B = this.bot;
+        // une nouvelle tâche : il part d'où il est
+        if (m.etat === 'travail' && (!B.m || B.m.etat !== 'travail' || B.m.n !== m.n)) B.from = { x: B.x, y: B.y };
+        B.m = m;
+        B.at = performance.now();
+      }
+
+      // Sa base, à côté de la porte de la maison.
+      robotDock() {
+        const e = this.buildings && this.buildings.get('maison');
+        const s = e && e.sprite;
+        const door = s ? { x: s.x + s.width * 0.5, y: s.y + 6 } : { x: this.world.w / 2, y: this.world.h / 2 };
+        return { x: Math.round(door.x + ROBOT.dock.dx), y: Math.round(door.y + ROBOT.dock.dy) };
+      }
+
+      // Où il se tient pour travailler la case `a` : juste à gauche, le bras vers elle ; la
+      // Serre : devant sa porte.
+      robotSpot(a) {
+        if (a === 'serre') {
+          const e = this.buildings && this.buildings.get('serre');
+          const s = e && e.sprite;
+          return s ? { x: Math.round(s.x + s.width * 0.5), y: Math.round(s.y + 8) } : this.robotDock();
+        }
+        const W = this.grid.cols;
+        return { x: (a % W) * T - 3, y: Math.floor(a / W) * T + T - 1 };
+      }
+
+      stepRobot(dt) {
+        const B = this.bot;
+        if (!B) return;
+        const m = B.m;
+        let frame = 5, move = null;
+        if (m && m.etat === 'travail') {
+          const prog = Math.min(1, m.prog + (performance.now() - B.at) / 1000 / Math.max(0.1, m.dureeS));
+          const to = this.robotSpot(m.a), from = B.from || { x: B.x, y: B.y };
+          const k = Math.min(1, prog / ROBOT.walk);
+          const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;   // départ et arrivée en douceur
+          move = { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
+          if (k >= 1) {
+            const w = (prog - ROBOT.walk) / (1 - ROBOT.walk);           // le bras : descend, serre, remonte
+            frame = [2, 3, 4, 4, 3, 2][Math.min(5, Math.floor(w * 6))];
+          }
+          const txt = ROBOT.icone[m.t] + ' ' + m.n + '/' + m.total;
+          if (txt !== B.txt) { B.txt = txt; B.el.textContent = txt; B.w = 0; }
+        } else {
+          // la liste est faite : il rentre à sa base
+          const d = this.robotDock(), dx = d.x - B.x, dy = d.y - B.y, l = Math.hypot(dx, dy);
+          const st = Math.min(l, (ROBOT.speed * dt) / 1000);
+          if (l > 0.5) move = { x: B.x + (dx / l) * st, y: B.y + (dy / l) * st };
+        }
+        if (move) {
+          const moved = Math.hypot(move.x - B.x, move.y - B.y);
+          if (moved > 0.01) { B.roll += moved; if (move.x !== B.x) B.img.setFlipX(move.x < B.x); }
+          if (moved > 0.01 && frame === 5) frame = Math.floor(B.roll / 3) % 2;
+          B.x = move.x; B.y = move.y;
+        }
+        if (m && m.etat === 'travail' && frame === 5) frame = Math.floor(B.roll / 3) % 2;
+        if (frame >= 2 && frame <= 4) B.img.setFlipX(false);   // le bras vers la parcelle, à sa droite
+        B.img.setFrame(frame).setPosition(Math.round(B.x), Math.round(B.y)).setDepth(B.y).setVisible(!this.room);
+        // la bulle de sa tâche
+        const show = !this.room && m && m.etat === 'travail';
+        B.el.hidden = !show;
+        if (!show) return;
+        if (!B.w) { B.w = B.el.offsetWidth; B.h = B.el.offsetHeight; }
+        const f = this.screenFrame();
+        const x = Math.round((B.x - f.left) * f.k - BUBBLE_TIP_X);
+        const y = Math.round((B.y - 18 - f.top) * f.k - B.h + BUBBLE_TIP_Y);
+        B.el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
       }
 
       // Les gouttes des asperseurs qui tournent, à cet instant (voir SPRINKLER) : en l'air
@@ -3038,6 +3133,7 @@
         this.syncRocks(model.rochers);
         this.syncFelled(model.abattus);
         this.syncSprinklers(model.asperseurs);
+        this.syncRobot(model.robot);
         this.syncTrees(model.arbres || [], sfx, rebuild);
         this.syncPiles(model.ramasser || []);
         this.syncRooms(model, force);

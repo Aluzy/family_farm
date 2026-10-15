@@ -60,7 +60,7 @@ import {
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
   wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
   collectLeftovers, pickUp, piles,
-  absoluteHours, advanceNight, growDue, irrigate, asleep, goToSleep, midnightMs, sleepTarget, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
+  absoluteHours, advanceNight, growDue, irrigate, robotStep, asleep, goToSleep, midnightMs, sleepTarget, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
 } from '../js/engine/index.js';
 
 
@@ -3879,12 +3879,26 @@ function sleepOnce(s) {
   return sleep(s);
 }
 
-// L'arrosage automatique du matin : l'horloge à 7 h (les plantes qui ont fini leur cycle
-// poussent), puis les asperseurs (irrigate). Renvoie { arrosees, sansEau }.
+// Le matin des automatisations : l'horloge à 7 h (les plantes qui ont fini leur cycle
+// poussent), le robot (sa liste de 6 h, une tâche toutes les ROBOT.MINUTES : 10 tâches avant
+// 7 h), puis les asperseurs (irrigate). Renvoie { arrosees, sansEau } ; le travail du robot
+// est dans s.robot.
 function matin(s) {
   s.awakeMs = awakeMsAtHour(DATA.TIME.ARROSAGE_HEURE);
   growDue(s);
+  robotStep(s);
   return irrigate(s);
+}
+
+// Toute la journée du robot (de 6 h à 20 h) : il fait toute sa liste. Renvoie s.robot
+// (recoltes, semees, sansGraine).
+function robotJour(s) {
+  s.awakeMs = awakeMsAtHour(DATA.ROBOT.HEURE);
+  s.robot = null;
+  robotStep(s);
+  s.awakeMs = awakeMsAtHour(20);
+  robotStep(s);
+  return s.robot;
 }
 
 // Met exactement `n` pailles en stock.
@@ -4428,11 +4442,13 @@ testBase('récolte automatique : parcelles mûres seulement, carottes et graines
   plant(s, 'potager-3', 'carotte');
   findPlot(s, 'potager-3').stade = 2;
   const graines = countItem(s, 'graine_carotte');
-  const r = sleepOnce(s);
-  assertEqual(findPlot(s, 'potager-1').culture, null, 'mûre : récoltée, parcelle libérée');
+  sleepOnce(s);
+  assertEqual(findPlot(s, 'potager-1').culture, 'carotte', 'la nuit, rien ne se récolte');
+  matin(s);
+  assertEqual(findPlot(s, 'potager-1').culture, null, 'mûre : récoltée par le robot (à 6 h), parcelle libérée');
   assertEqual(countItem(s, 'carotte'), 6);
-  assertEqual(r.auto.recoltes.carotte, 6);
-  const g = r.auto.recoltes.graine_carotte;
+  assertEqual(s.robot.recoltes.carotte, 6);
+  const g = s.robot.recoltes.graine_carotte;
   assert(g === 1 || g === 2, `1 ou 2 graines, obtenu ${g}`);
   assertEqual(countItem(s, 'graine_carotte'), graines + g);
   matin(s);
@@ -4440,7 +4456,8 @@ testBase('récolte automatique : parcelles mûres seulement, carottes et graines
   const t = auto5();
   plantRipe(t, 'potager-1', 'carotte');
   sleepOnce(t);
-  assertEqual(findPlot(t, 'potager-1').culture, 'carotte', 'Zone de culture niveau 1 : rien ne se récolte seul');
+  matin(t);
+  assertEqual([findPlot(t, 'potager-1').culture, t.robot], ['carotte', undefined], 'Zone de culture niveau 1 : pas de robot, rien ne se récolte seul');
 });
 
 test('automatisations : elles couvrent toute la Zone de culture, plein champ compris (le blé va au Silo)', () => {
@@ -4459,12 +4476,12 @@ test('automatisations : elles couvrent toute la Zone de culture, plein champ com
   const silo = s.silo.ble;
   const eau = s.eauMl;
   const r = sleepOnce(s);
+  const m = matin(s);
   assertEqual(findPlot(s, 'potager-1').culture, null);
   assertEqual(s.silo.ble, silo + 8, '8 blés, comme au clic');
-  const m = matin(s);
   assertEqual([findPlot(s, 'potager-2').arrose, findPlot(s, 'potager-30').arrose], [true, true]);
   assertEqual(s.eauMl, eau - ml(2 + 2));
-  assertEqual([r.auto.potager, m.arrosees, r.auto.recoltes.ble], [true, 2, 8]);
+  assertEqual([r.auto.potager, m.arrosees, s.robot.recoltes.ble], [true, 2, 8]);
   assertEqual('champ' in r.auto, false, 'le compte rendu n\'a plus de ligne Champ');
   const t = auto5();
   testAddWheat(t, 10);
@@ -4484,11 +4501,11 @@ test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que
   plantRipe(s, 'potager-1', 'riz');
   plantRipe(s, 'potager-2', 'houblon');
   plant(s, 'potager-3', 'riz');
-  const r = sleepOnce(s);
+  sleepOnce(s);
+  matin(s);
   assertEqual(findPlot(s, 'potager-1').culture, null, 'riz mûr : récolté automatiquement');
   assertEqual(findPlot(s, 'potager-2').culture, null, 'houblon mûr : récolté automatiquement');
-  assertEqual(r.auto.recoltes, { riz: 10, houblon: 6 });
-  matin(s);
+  assertEqual(s.robot.recoltes, { riz: 10, houblon: 6 });
   assertEqual(findPlot(s, 'potager-3').arrose, true, 'riz pas mûr : arrosé à 7 h (4 L, comme au clic), il poussera au bout de 24 h');
 
   // Oignon, ail, poivron, épinard, fraise pareil.
@@ -4499,14 +4516,14 @@ test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que
   plantRipe(t, 'potager-1', 'oignon');
   plantRipe(t, 'potager-2', 'ail');
   plant(t, 'potager-3', 'epinard');
-  const rt = sleepOnce(t);
+  sleepOnce(t);
+  matin(t);
   assertEqual(findPlot(t, 'potager-1').culture, null);
   assertEqual(findPlot(t, 'potager-2').culture, null);
   // Rendement de base : 8 oignons, 6 ails. L'oignon est en mode
   // 'recolte' (comme la tomate) : la récolte rend aussi 1 à 2 graines bonus
   // (ici 2, déterministe avec la graine aléatoire n°1 utilisée par garden()).
-  assertEqual(rt.auto.recoltes, { oignon: 8, graine_oignon: 2, ail: 6 });
-  matin(t);
+  assertEqual(t.robot.recoltes, { oignon: 8, graine_oignon: 2, ail: 6 });
   assertEqual(findPlot(t, 'potager-3').arrose, true);
 });
 
@@ -4520,13 +4537,15 @@ test('Serre : automatisée seulement par ses nœuds (Irrigation de la Serre, Ser
   grantTech(s, 'ea_irrigation');
   grantTech(s, 'cu_recolte_auto');
   sleepOnce(s);
+  matin(s);
   assertEqual(findPlot(s, 'serre-1').culture, 'cacao', 'les nœuds de la Zone de culture ne touchent pas la Serre');
   assertEqual(isAutomated(s, 'serre'), false);
   grantTech(s, 'cu_serre_auto');
   const r = sleepOnce(s);
+  matin(s);
   assertEqual(isAutomated(s, 'serre'), true);
   assertEqual(r.auto.serre, true);
-  assert(r.auto.recoltes.cacao > 0, 'récolté tout seul');
+  assert(s.robot.recoltes.cacao > 0, 'récolté tout seul (le robot)');
   assertEqual(findPlot(s, 'serre-1').culture, 'cacao', 'et replanté (Serre autonome)');
 });
 
@@ -4564,6 +4583,7 @@ testBase('semis automatique : sans le nœud, la parcelle récoltée reste vide',
   const s = auto5('potager');
   plantRipe(s, 'potager-1', 'patate');
   sleepOnce(s);
+  matin(s);
   assertEqual(findPlot(s, 'potager-1').culture, null);
   assertEqual(countItem(s, 'patate'), 8, 'la famille a mangé les 5 patates du stock (plus de réserve)');
 });
@@ -4580,8 +4600,35 @@ testBase('semis automatique : replante la même culture, arrosée dans la foulé
   assertEqual(countItem(s, 'patate'), 8 - 1, 'la famille a mangé les 5 patates du stock, le semis en prend 1');
   const p2 = findPlot(s, 'potager-2');
   assertEqual([p2.culture, p2.stade, p2.arrose], ['carotte', 0, true], 'une graine de carotte de l\'inventaire');
-  assertEqual(countItem(s, 'graine_carotte'), 10 - 1 + r.auto.recoltes.graine_carotte - 1, 'une pour la plantation à la main, celles de la récolte, une pour le semis');
-  assertEqual(r.auto.semees, 2);
+  assertEqual(countItem(s, 'graine_carotte'), 10 - 1 + s.robot.recoltes.graine_carotte - 1, 'une pour la plantation à la main, celles de la récolte, une pour le semis');
+  assertEqual(s.robot.semees, 2);
+  assertEqual(s.robot.taches.map((x) => x.t), ['recolter', 'planter', 'recolter', 'planter'], 'chaque parcelle récoltée est replantée juste après');
+});
+
+testBase('robot : à 6 h il dresse sa liste, puis fait une tâche toutes les ROBOT.MINUTES minutes', () => {
+  const s = auto5('potager');
+  s.technologies.push('semis_auto');
+  plantRipe(s, 'potager-1', 'patate');
+  plantRipe(s, 'potager-2', 'carotte');
+  s.nuitEnCours = { ms: 0, minuit: false };
+  assertEqual([robotStep(s), s.robot], [0, undefined], 'pas la nuit');
+  s.nuitEnCours = null;
+  s.awakeMs = awakeMsAtHour(DATA.ROBOT.HEURE);
+  robotStep(s);
+  assertEqual([s.robot.taches.length, s.robot.i, findPlot(s, 'potager-1').culture], [2, 0, 'patate'], 'deux récoltes à faire');
+  const pas = DATA.ROBOT.MINUTES / 60;
+  s.awakeMs = awakeMsAtHour(DATA.ROBOT.HEURE + pas);
+  robotStep(s);
+  assertEqual([s.robot.i, findPlot(s, 'potager-1').culture, s.robot.taches[1].t], [1, null, 'planter'], 'la première récolte ; son semis vient juste après');
+  s.awakeMs = awakeMsAtHour(DATA.ROBOT.HEURE + 2 * pas);
+  robotStep(s);
+  assertEqual([s.robot.i, findPlot(s, 'potager-1').culture, findPlot(s, 'potager-2').culture], [2, 'patate', 'carotte'], 'replantée, la carotte attend son tour');
+  s.awakeMs = awakeMsAtHour(12);
+  robotStep(s);
+  assertEqual([s.robot.i, s.robot.taches.length, s.robot.semees, findPlot(s, 'potager-2').culture, findPlot(s, 'potager-2').stade], [4, 4, 2, 'carotte', 0]);
+  plantRipe(s, 'potager-3', 'patate');
+  robotStep(s);
+  assertEqual(findPlot(s, 'potager-3').stade, maxStage(findPlot(s, 'potager-3')), 'une liste par jour : la parcelle mûre plus tard attend le lendemain');
 });
 
 testBase('semis automatique : respecte la réserve de semences', () => {
@@ -4591,7 +4638,7 @@ testBase('semis automatique : respecte la réserve de semences', () => {
     s.technologies.push('semis_auto');
     setSeedReserve(s, 'patate', reserve);
     plantRipe(s, 'potager-1', 'patate');
-    const r = autoTasks(s);
+    const r = robotJour(s);
     return { culture: findPlot(s, 'potager-1').culture, patates: countItem(s, 'patate'), rap: r };
   };
   const a = essai(12);
@@ -4608,7 +4655,7 @@ test('semis automatique : sans graine, la parcelle reste vide et le rapport le d
   setInv(s, { conserve: 160, patate: 1 });
   plantRipe(s, 'potager-1', 'patate');
   setSemis(s, 'potager-1', 'verrou', 'carotte'); // des carottes à semer, mais aucune graine de carotte
-  const r = autoTasks(s);
+  const r = robotJour(s);
   assertEqual(findPlot(s, 'potager-1').culture, null, 'pas de graine de carotte : rien à semer');
   assertEqual([r.semees, r.sansGraine], [0, 1]);
 });
@@ -4620,7 +4667,7 @@ testBase('semis automatique : sans graine en stock, les carottes récoltées ren
   for (let i = 1; i <= 3; i++) plantRipe(s, `potager-${i}`, 'carotte');
   const reste = countItem(s, 'graine_carotte');
   if (reste > 0) takeItem(s, 'graine_carotte', reste);
-  const r = autoTasks(s);
+  const r = robotJour(s);
   const plots = ['potager-1', 'potager-2', 'potager-3'].map((id) => findPlot(s, id));
   assertEqual(plots.every((p) => p.culture === 'carotte' && p.stade === 0), true, 'chaque récolte rend au moins une graine : tout est replanté');
   assertEqual([countItem(s, 'carotte'), r.semees, r.sansGraine], [18, 3, 0]);
@@ -4637,7 +4684,7 @@ test('semis automatique : option par parcelle (désactiver, verrouiller une cult
   assertEqual(setSemis(s, 'potager-3', 'verrou', 'cacao').ok, false, 'le cacao ne se plante qu\'en Serre');
   assertEqual(findPlot(s, 'potager-3').verrou, 'carotte', 'un refus ne change pas le réglage');
   assertEqual(setSemis(s, 'potager-1', 'nimporte').ok, false);
-  const r = autoTasks(s);
+  const r = robotJour(s);
   assertEqual(findPlot(s, 'potager-1').culture, 'patate');
   assertEqual(findPlot(s, 'potager-2').culture, null, 'désactivé : reste vide');
   assertEqual(findPlot(s, 'potager-3').culture, 'carotte', 'verrouillé : toujours des carottes');
@@ -4795,9 +4842,9 @@ testBase('rapport de réveil : ce que les automatisations ont fait', () => {
   const r = sleepOnce(s);
   assertEqual([r.auto.potager, r.auto.serre, r.auto.poulailler], [true, false, true]);
   assertEqual('champ' in r.auto, false);
-  assertEqual(r.auto.recoltes, { patate: 8 });
-  assertEqual([r.auto.semees, r.auto.arrosees, r.auto.nourries], [1, 0, 4], 'l\'arrosage automatique se fait à 7 h');
+  assertEqual([r.auto.recoltes, r.auto.semees, r.auto.arrosees, r.auto.nourries], [{}, 0, 0, 4], 'la nuit : le nourrissage ; la récolte et le semis sont au robot, l\'arrosage aux asperseurs');
   assertEqual(matin(s).arrosees, 2);
+  assertEqual([s.robot.recoltes, s.robot.semees], [{ patate: 8 }, 1]);
   const n = createInitialState(1);
   const rn = sleepOnce(n);
   assertEqual([rn.auto.potager, rn.auto.serre, rn.auto.poulailler, rn.auto.arrosees], [false, false, false, 0]);
@@ -4813,15 +4860,15 @@ testBase('une nuit complète au niveau 5 : arrosage, pousse, récolte et semis s
   const recoltes = [];
   for (let i = 0; i < 8; i++) {
     runFor(s, 30);
-    const r = sleepOnce(s);
+    recoltes.push(s.robot && s.robot.jour === s.day ? s.robot.recoltes.patate || 0 : 0);
+    sleepOnce(s);
     stades.push(findPlot(s, 'potager-1').stade);
-    recoltes.push(r.auto.recoltes.patate || 0);
   }
   // Arrosée à 7 h (runFor passe 7 h), elle gagne son stade le lendemain à 7 h : elle mûrit
-  // le 7e matin ; la récolte automatique de la nuit la replante, l'arrosage du matin suivant
-  // l'arrose.
-  assertEqual(stades, [0, 1, 2, 3, 4, 5, 0, 0]);
-  assertEqual(recoltes, [0, 0, 0, 0, 0, 0, 8, 0], '8 patates récoltées à la 7e nuit');
+  // le 7e matin, après le passage du robot (sa liste est faite à 6 h) ; le robot la récolte
+  // et la replante le 8e matin, les asperseurs l'arrosent à 7 h.
+  assertEqual(stades, [0, 1, 2, 3, 4, 5, 6, 0]);
+  assertEqual(recoltes, [0, 0, 0, 0, 0, 0, 0, 8], '8 patates récoltées par le robot le 8e matin');
 });
 
 test('progression affichée dans l\'arbre : niveaux des bâtiments et appareils', () => {
@@ -5076,9 +5123,9 @@ test('migration v14 → v15 : Champ construit avec des cultures, tout est regrou
   assertEqual([isUnlocked(m, 'champ'), plantableCropsFor(m, 'potager').includes('ble')], [true, true]);
   // les automatisations acquises couvrent maintenant les anciennes parcelles du Champ
   assertEqual(isAutomated(m, 'potager'), true);
-  const r = sleepOnce(m);
-  assertEqual(r.auto.recoltes.graine_tournesol > 0, true, 'le tournesol mûr de l\'ancien Champ est récolté tout seul');
+  sleepOnce(m);
   matin(m);
+  assertEqual(m.robot.recoltes.graine_tournesol > 0, true, 'le tournesol mûr de l\'ancien Champ est récolté tout seul (le robot)');
   assertEqual([findPlot(m, 'potager-11').culture, findPlot(m, 'potager-11').stade, findPlot(m, 'potager-11').arrose], ['tournesol', 0, true], 'et replanté (verrou gardé), arrosé à 7 h');
   assertEqual(findPlot(m, 'potager-10').stade, 6, 'le blé déjà arrosé a poussé');
   assertEqual(JSON.parse(JSON.stringify(m)), m);
@@ -6722,10 +6769,10 @@ test('XP : les automatisations rapportent la moitié, la nuit donne celle des œ
   const xp0 = s.progression.xp;
   plantRipe(s, 'potager-1', 'carotte'); // planté au clic : 10
   plant(s, 'potager-2', 'carotte'); // 10
-  const r = sleepOnce(s);
+  sleepOnce(s);
   const m = matin(s);
-  // récolte auto 10, arrosage auto de potager-2 à 7 h : 5 (pas de semis automatique ici)
-  assertEqual([r.auto.recoltes.carotte > 0, m.arrosees, r.auto.semees, s.progression.xp - xp0], [true, 1, 0, 20 + 10 + 5]);
+  // récolte du robot 10, arrosage auto de potager-2 à 7 h : 5 (pas de semis automatique ici)
+  assertEqual([s.robot.recoltes.carotte > 0, m.arrosees, s.robot.semees, s.progression.xp - xp0], [true, 1, 0, 20 + 10 + 5]);
   const p = ranch();
   p.poulailler.poules = 2;
   setInv(p, { ble: 5, conserve: 30 });

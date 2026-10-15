@@ -96,9 +96,73 @@ export function irrigate(state) {
   return { arrosees: faites.length, sansEau };
 }
 
+// Le robot de la ferme : avec la récolte ou le semis automatiques, tous les jours à
+// ROBOT.HEURE (6 h) il dresse sa liste de tâches (récolter chaque parcelle mûre de la Zone de
+// culture et de la Serre ; après chaque récolte, si le semis automatique est acquis, la
+// replanter) et l'exécute dans l'ordre, une tâche toutes les ROBOT.MINUTES minutes d'horloge.
+// state.robot = { jour, taches: [{ t: 'recolter' | 'planter', id, c }], i (tâches faites),
+// debut (heure absolue du début de la tâche en cours), recoltes, semees, sansGraine, dernier }.
+// La carte le montre aller de parcelle en parcelle. Appelée à chaque pas d'horloge, le jour.
+export function robotOn(state) {
+  return ['potager', 'serre'].some((l) => techAuto(state, 'recolte', l) || techAuto(state, 'semis', l));
+}
+
+function robotTasks(state) {
+  const taches = [];
+  for (const lieu of ['potager', 'serre']) {
+    if (!techAuto(state, 'recolte', lieu)) continue;
+    if (lieu === 'serre' && !(state.serre && state.serre.construit)) continue;
+    for (const p of allPlots(state)) if (p.lieu === lieu && p.culture && isMature(p)) taches.push({ t: 'recolter', id: p.id });
+  }
+  return taches;
+}
+
+function robotDo(state, r, tache) {
+  const p = findPlot(state, tache.id);
+  r.dernier = { i: r.i, t: tache.t, id: tache.id, items: null };
+  if (!p) return;
+  if (tache.t === 'recolter') {
+    if (!p.culture || !isMature(p)) return;   // le joueur l'a récoltée entre-temps
+    const culture = p.culture;
+    const res = harvest(state, p.id, true);
+    if (!res.ok) return;
+    r.dernier.items = res.items;
+    for (const [item, qty] of Object.entries(res.items)) r.recoltes[item] = (r.recoltes[item] || 0) + qty;
+    // la replanter juste après, si le semis automatique de ce lieu le veut
+    if (techAuto(state, 'semis', p.lieu) && replantCulture(p, culture)) r.taches.splice(r.i + 1, 0, { t: 'planter', id: p.id, c: culture });
+    return;
+  }
+  if (p.culture) return;                     // déjà replantée (à la main)
+  const ok = autoReplant(state, p, tache.c);
+  if (ok === true) r.semees += 1;
+  else if (ok === false) r.sansGraine += 1;
+}
+
+export function robotStep(state) {
+  if (nightActive(state) || !robotOn(state)) return 0;
+  const R = DATA.ROBOT;
+  const debutJour = ((Number(state.day) || 1) - 1) * 24 + R.HEURE;
+  const now = absoluteHours(state);
+  if (now < debutJour) return 0;
+  let r = state.robot;
+  if (!r || r.jour !== state.day) {
+    r = state.robot = { jour: state.day, taches: robotTasks(state), i: 0, debut: debutJour, recoltes: {}, semees: 0, sansGraine: 0, dernier: null };
+  }
+  const pas = R.MINUTES / 60;
+  let n = 0;
+  while (r.i < r.taches.length && now + EPS >= r.debut + pas) {
+    robotDo(state, r, r.taches[r.i]);
+    r.i += 1;
+    r.debut += pas;
+    n += 1;
+  }
+  return n;
+}
+
 // Étape nocturne (juste après le repas) : automatisations du niveau 5.
-// Zone de culture et Serre : récolte des parcelles mûres, semis automatique (l'arrosage
-// automatique, lui, se fait le matin à 7 h : irrigate).
+// Zone de culture et Serre : plus rien la nuit (la récolte et le semis automatiques sont
+// le travail du robot, à partir de 6 h : robotStep ; l'arrosage, celui des asperseurs, à 7 h :
+// irrigate).
 // Poulailler : nourrissage. Rien n'est réduit par la productivité ; si l'eau ou
 // le blé manquent, on sert ce qu'on peut et le rapport le signale au réveil.
 export function autoTasks(state) {
@@ -112,19 +176,6 @@ export function autoTasks(state) {
     const arrosage = techAuto(state, 'arrosage', zone.id);
     if (!recolte && !arrosage) continue;
     rap[zone.id] = true;
-    if (recolte) {
-      for (const p of zone.plots) {
-        if (!p.culture || !isMature(p)) continue;
-        const culture = p.culture;
-        const r = harvest(state, p.id, true);
-        if (!r.ok) continue;
-        for (const [item, qty] of Object.entries(r.items)) rap.recoltes[item] = (rap.recoltes[item] || 0) + qty;
-        const replanted = autoReplant(state, p, culture);
-        if (replanted === true) rap.semees += 1;
-        else if (replanted === false) rap.sansGraine += 1;
-      }
-    }
-    // l'arrosage automatique se fait à 7 h (irrigate), plus la nuit
   }
   if (techAuto(state, 'nourrissage', 'poulailler')) {
     rap.poulailler = true;

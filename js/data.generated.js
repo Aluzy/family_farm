@@ -60,6 +60,7 @@ export const RAW_DATA = {
     "COMPAGNIE": { "MAX": 3, "ESPECES": { "chien": { "nom": "Chien", "icone": "🐶" }, "chat": { "nom": "Chat", "icone": "🐱" } } },
     "RESERVE_DEPART": {}
   },
+  "ROBOT": { "HEURE": 6, "MINUTES": 6 },
   "PERSONNAGE": {
     "MAX": 100,
     "COUTS": {
@@ -882,7 +883,7 @@ export const RAW_DATA = {
         "cout": 900,
         "requiert": [{ "noeud": "cu_outils" }, { "tuiles": 24 }],
         "effet": { "auto": { "recolte": ["potager"] } },
-        "description": "Chaque nuit, les parcelles mûres de la Zone de culture sont récoltées automatiquement."
+        "description": "Un robot récolte les parcelles mûres de la Zone de culture : chaque matin à 6 h, il dresse sa liste de tâches et les fait une à une."
       },
       "semis_auto": {
         "branche": "culture",
@@ -894,7 +895,7 @@ export const RAW_DATA = {
         "cout": 1200,
         "requiert": [{ "noeud": "cu_recolte_auto" }, { "noeud": "ea_irrigation" }],
         "effet": { "auto": { "semis": ["potager"] } },
-        "description": "Après une récolte automatique, la parcelle est replantée avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle."
+        "description": "Après chaque récolte, le robot replante la parcelle avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle."
       },
       "cu_serre_auto": {
         "branche": "culture",
@@ -906,7 +907,7 @@ export const RAW_DATA = {
         "cout": 1500,
         "requiert": [{ "noeud": "semis_auto" }, { "noeud": "ea_serre" }],
         "effet": { "auto": { "recolte": ["serre"], "semis": ["serre"] } },
-        "description": "La Serre est récoltée et replantée automatiquement chaque nuit, avec les mêmes réglages que le semis automatique."
+        "description": "Le robot récolte et replante aussi la Serre chaque matin, avec les mêmes réglages que le semis automatique."
       },
       "cu_verger_auto": {
         "branche": "culture",

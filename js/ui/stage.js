@@ -17,6 +17,7 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
+import { robotOn } from '../engine/automation.js';
 import { showToast } from './toasts.js';
 import {
   activeTab, axeMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
@@ -312,6 +313,8 @@ export function stageModel() {
   // L'arrosage automatique : des asperseurs au milieu des parcelles (voir sprinklerSpots) ; un
   // asperseur tourne ARROSAGE_S secondes après l'arrosage de 7 h s'il a arrosé une de ses cases.
   const asperseurs = sprinklers();
+  // le robot de la ferme : sa tâche en cours (voir robotModel)
+  const robot = robotModel();
   // Panneaux solaires sur le toit de la maison une fois le panneau acheté : un de plus par
   // niveau (2 au niveau 1, 6 au niveau 5).
   const panneau = starterOf(state, 'panneau');
@@ -373,7 +376,7 @@ export function stageModel() {
     perso: memberPerso(mainCharacter(state)),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: terrainNow(rochers.concat(abattus)), plots,
-    houe, hache, pioche, canne, rochers, abattus, asperseurs, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, canne, rochers, abattus, asperseurs, robot, labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -413,6 +416,24 @@ function sprinklerSpots() {
   }
   sprinklerCache = { key, list };
   return list;
+}
+
+// Le robot (récolte et semis automatiques) pour la carte : null sans lui ; { etat: 'repos' }
+// quand sa liste du jour est faite (ou pas commencée) ; sinon sa tâche en cours : la case
+// visée (une tuile de la carte, ou 'serre'), 'recolter' ou 'planter', où elle en est (prog,
+// de 0 à 1 ; elle dure dureeS secondes), et son rang dans la liste.
+function robotModel() {
+  if (!robotOn(state)) return null;
+  const r = state.robot;
+  if (nightActive(state) || !r || r.jour !== state.day || r.i >= r.taches.length) return { etat: 'repos' };
+  const tache = r.taches[r.i];
+  const p = allPlots(state).find((x) => x.id === tache.id);
+  const pas = DATA.ROBOT.MINUTES / 60;
+  return {
+    etat: 'travail', t: tache.t, a: p && p.lieu === 'potager' && Number.isInteger(p.case) ? p.case : 'serre',
+    prog: Math.max(0, Math.min(1, (absoluteHours(state) - r.debut) / pas)), dureeS: pas * DATA.TIME.CLOCK_SECONDS_PER_HOUR,
+    n: r.i + 1, total: r.taches.length,
+  };
 }
 
 function sprinklers() {
