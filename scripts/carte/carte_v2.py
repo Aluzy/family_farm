@@ -171,7 +171,7 @@ def main():
     for i, h in sorted(herbe_pleine):
         r = rng.random()
         if r < 0.06:
-            semis[i] = PV.gid('herbe_deco', h * 16 + rng.randrange(16))             # herbe haute
+            rng.randrange(16)          # l'ancienne herbe haute (brins carrés) : retirée ; le tirage reste (les fleurs gardent leur place)
         elif r < 0.11:
             semis[i] = PV.gid('herbe_deco', (4 + h) * 16 + rng.randrange(16))       # fleurs
     for i in sorted(terre_pleine):
