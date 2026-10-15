@@ -9,11 +9,12 @@
 #
 # assets/arbre_clair.png : trois dessins côte à côte, chacun dans une case de 48 × 64, posé pied
 # au milieu du bas de sa case :
-#   0 l'arbre, éclairci : chaque vert du modèle prend sa place (selon sa luminosité, dans le
-#     même ordre) sur une rampe de verts tirée de l'herbe, du vert profond au vert vif ; le
-#     tronc s'éclaircit un peu ; le relief du dessin est gardé ;
+#   0 l'arbre : scripts/carte/originaux/arbre_feuillu.png (48 × 64), dessiné à la main, repris
+#     tel quel (couleurs et contour compris) ;
 #   1 un buisson rond (trois bosses), 2 un buisson large (six bosses) : des dômes éclairés en
-#     haut à gauche, du feuillage de l'arbre éclairci, contour sombre ; l'arbre aussi a un contour.
+#     haut à gauche, du feuillage de l'arbre modèle éclairci (chaque vert du modèle prend sa
+#     place, selon sa luminosité, sur une rampe de verts tirée de l'herbe ; le relief est
+#     gardé), contour sombre.
 # assets/pin_clair.png : le pin (scripts/carte/originaux/pin_modele.png, 58 × 64) harmonisé de
 # la même façon, sur une rampe un peu plus froide et profonde (un conifère, même famille).
 # assets/arbre_clair_sp.png et assets/pin_clair_sp.png : 3 images d'inclinaison (le coup de
@@ -28,6 +29,7 @@ from PIL import Image
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 MODELE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'arbre_modele.png')
+ARBRE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'arbre_feuillu.png')
 SORTIE = os.path.join(ROOT, 'assets', 'arbre_clair.png')
 CW, CH = 48, 64
 
@@ -145,13 +147,14 @@ def buisson(texture, bosses, graine):
 
 
 def planche(modele):
-    arbre = eclaircir(modele)
-    # le houppier de l'arbre éclairci (le haut, sans le tronc) sert de texture aux buissons
-    houppier = arbre.crop((4, 4, 44, 40))
+    # le houppier du modèle éclairci (le haut, sans le tronc) sert de texture aux buissons
+    houppier = eclaircir(modele).crop((4, 4, 44, 40))
     rond = buisson(houppier, [(0, -10, 11), (-6, -5, 7), (6, -5, 7)], 3)
     large = buisson(houppier, [(-9, -8, 9), (8, -9, 10), (0, -14, 9), (-1, -5, 8), (14, -4, 6), (-15, -4, 5)], 7)
     out = Image.new('RGBA', (CW * 3, CH))
-    out.paste(contour(arbre), (0, 0))
+    arbre = Image.open(ARBRE).convert('RGBA')
+    assert arbre.size == (CW, CH), f'arbre_feuillu.png : {arbre.size}, il faut {CW} × {CH}'
+    out.paste(arbre, (0, 0))
     out.alpha_composite(rond, (CW, 0))
     out.alpha_composite(large, (CW * 2, 0))
     return out
@@ -193,7 +196,7 @@ def main():
     print(f'assets/pin_clair.png : le pin harmonisé ({pin.width} × {pin.height}, pied au milieu du bas)')
     # les feuilles d'inclinaison (hache) : l'arbre (48 × 64), le pin centré sur 64 × 64 ; pied
     # au bas de l'image
-    inclinaison(img.crop((0, 0, CW, CH)), CH - 2).save(os.path.join(ROOT, 'assets', 'arbre_clair_sp.png'))
+    inclinaison(img.crop((0, 0, CW, CH)), CH - 1).save(os.path.join(ROOT, 'assets', 'arbre_clair_sp.png'))
     pin64 = Image.new('RGBA', (64, 64))
     pin64.alpha_composite(pin, ((64 - pin.width) // 2, 64 - pin.height))
     inclinaison(pin64, 62).save(os.path.join(ROOT, 'assets', 'pin_clair_sp.png'))
