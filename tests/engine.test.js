@@ -4435,6 +4435,21 @@ test('arrosage automatique : une parcelle déjà arrosée à la main n\'est pas 
   assertEqual(s.eauMl, eau - ml(2));
 });
 
+test('arrosage automatique : les asperseurs repassent dans la journée pour une plante qui a soif à son tour', () => {
+  const s = auto5('potager');
+  plant(s, 'potager-1', 'carotte');
+  s.awakeMs = awakeMsAtHour(DATA.TIME.ARROSAGE_HEURE);
+  assertEqual(irrigate(s).arrosees, 1);
+  plant(s, 'potager-2', 'carotte'); // semée après 7 h (le robot, ou à la main)
+  assertEqual(irrigate(s), null, 'pas avant que les asperseurs aient fini de tourner');
+  s.awakeMs = awakeMsAtHour(9);
+  const r = irrigate(s);
+  assertEqual([r.arrosees, s.potager.parcelles[1].arrose], [1, true], 'repassage : elle est arrosée');
+  assertEqual([s.irrigation.cases.length, s.irrigation.faites.length, s.irrigation.arrosees], [1, 2, 2]);
+  s.awakeMs = awakeMsAtHour(12);
+  assertEqual(irrigate(s), null, 'plus personne n\'a soif : pas de passage');
+});
+
 testBase('récolte automatique : parcelles mûres seulement, carottes et graines à la clé', () => {
   const s = auto5('potager');
   plantRipe(s, 'potager-1', 'carotte');

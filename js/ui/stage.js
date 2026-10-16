@@ -6,7 +6,7 @@ import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
 import { memberPerso } from '../engine/family.js';
-import { allPlots, hoeableTiles, terrainLines, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
+import { allPlots, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
 import { sheepToShear, woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
@@ -265,8 +265,12 @@ export function stageModel() {
     const max = maxStage(p);
     const mature = isMature(p);
     const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
-    return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: !!p.arrose };
+    return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: mouillee(p) };
   };
+  // Avec l'arrosage automatique, la terre sèche la dernière heure du cycle (de 6 h à 7 h pour
+  // une plante arrosée la veille à 7 h) : les asperseurs la mouillent sous les yeux du joueur.
+  const seche = DATA.TIME.ARROSAGE_HEURE - DATA.TIME.DAY_START_HOUR;
+  const mouillee = (p) => !!p.arrose && !(techAuto(state, 'arrosage', p.lieu) && growHoursLeft(state, p) <= seche);
   // version 1.9 : chaque parcelle de zone a sa case ; la carte en tire la terre et ses bordures
   const zoneVue = () => (p) => ({ ...vue(p), case: p.case });
   const plots = state.potager.parcelles.map(zoneVue(1));
@@ -459,7 +463,7 @@ function autoDone() {
     }
   }
   const I = state.irrigation;
-  if (I && I.jour === state.day) for (const c of I.cases || []) out.push(`arroser:${c}`);
+  if (I && I.jour === state.day) for (const c of I.faites || I.cases || []) out.push(`arroser:${c}`);
   return out;
 }
 

@@ -73,28 +73,48 @@ export function setSemis(state, plotId, mode, culture) {
 // Le réseau d'irrigation : tous les jours à TIME.ARROSAGE_HEURE (7 h), les asperseurs des
 // lieux qui ont l'arrosage automatique arrosent les plantes qui ont soif, avec l'eau du
 // réservoir (comme au clic ; la Gestion intelligente de l'eau sert d'abord les plantes les
-// plus proches de la récolte). Une fois par jour : appelée à chaque pas d'horloge (tick,
-// sleep, simulateOffline), elle n'agit qu'au premier pas passé 7 h. Sur la carte, les
-// asperseurs tournent ARROSAGE_S secondes (state.irrigation = { jour, h, cases }).
-// Renvoie { arrosees, sansEau }, ou null si ce n'est pas l'heure.
-export function irrigate(state) {
-  if (nightActive(state) || hourOfDay(state) < DATA.TIME.ARROSAGE_HEURE || hourOfDay(state) >= DATA.TIME.NIGHT_HOUR) return null;
-  if (state.irrigation && state.irrigation.jour === state.day) return null;
+// plus proches de la récolte). Ensuite, jusqu'au soir, ils repassent pour toute plante qui
+// a soif à son tour (semée après 7 h, par le robot ou à la main ; ou dont le cycle, commencé
+// plus tard la veille, vient de finir), au plus tôt quand ils ont fini de tourner. Appelée à
+// chaque pas d'horloge (tick, sleep, simulateOffline). Sur la carte, les asperseurs tournent
+// ARROSAGE_S secondes (state.irrigation = { jour, h, cases : celles de ce passage, faites :
+// celles du jour, arrosees, sansEau }).
+// Renvoie { arrosees, sansEau } (ce passage), ou null s'il n'y a pas de passage.
+function thirstyPlots(state) {
   const prioritaire = !!techFlag(state, 'arrosagePrioritaire');
-  const faites = [];
-  let sansEau = 0;
+  const out = [];
   for (const lieu of ['potager', 'serre']) {
     if (!techAuto(state, 'arrosage', lieu)) continue;
     if (lieu === 'serre' && !(state.serre && state.serre.construit)) continue;
     let soif = allPlots(state).filter((p) => p.lieu === lieu && p.culture && !p.arrose && !isMature(p));
     if (prioritaire) soif = soif.slice().sort((x, y) => (maxStage(x) - x.stade) - (maxStage(y) - y.stade));
-    for (const p of soif) {
-      if (water(state, p.id, true).ok) faites.push(p);
-      else sansEau += 1;
-    }
+    out.push(...soif);
   }
+  return out;
+}
+
+export function irrigate(state) {
+  if (nightActive(state) || hourOfDay(state) < DATA.TIME.ARROSAGE_HEURE || hourOfDay(state) >= DATA.TIME.NIGHT_HOUR) return null;
+  const I = state.irrigation;
+  const dejaCeJour = !!I && I.jour === state.day;
+  const now = absoluteHours(state);
+  if (dejaCeJour && (now - I.h) * DATA.TIME.CLOCK_SECONDS_PER_HOUR < DATA.TIME.ARROSAGE_S) return null;
+  const soif = thirstyPlots(state);
+  if (dejaCeJour && !soif.length) return null;
+  const faites = [];
+  let sansEau = 0;
+  for (const p of soif) {
+    if (water(state, p.id, true).ok) faites.push(p);
+    else sansEau += 1;
+  }
+  // un repassage sans eau ne fait pas tourner les asperseurs (ni ne recommence aussitôt)
+  if (dejaCeJour && !faites.length) { I.sansEau = sansEau; I.h = now; I.cases = []; return { arrosees: 0, sansEau }; }
   const cases = faites.filter((p) => p.lieu === 'potager' && Number.isInteger(p.case)).map((p) => p.case);
-  state.irrigation = { jour: state.day, h: absoluteHours(state), cases, arrosees: faites.length, sansEau };
+  state.irrigation = {
+    jour: state.day, h: now, cases,
+    faites: (dejaCeJour ? I.faites || I.cases || [] : []).concat(cases),
+    arrosees: (dejaCeJour ? I.arrosees || 0 : 0) + faites.length, sansEau,
+  };
   return { arrosees: faites.length, sansEau };
 }
 
