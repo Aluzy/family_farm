@@ -4,7 +4,8 @@
 #
 #   ville_asphalte    la chaussée (4 variantes : nue, fissurée, tachée, gravillonnée), les tirets
 #   ville_trottoir    les dalles grises, la bordure du trottoir sur la chaussée (16 coins de Wang)
-#   ville_herbe       l'herbe (3 variantes), ses bords sur le trottoir et sur la chaussée, fleurs, touffes
+#   ville_herbe       l'herbe de la ferme (16 variantes), ses bords sur le trottoir et sur la
+#                     chaussée, les fleurs et herbes hautes de la ferme
 #   ville_pierre      les pavés de la place (et leurs bords de Wang sur l'herbe, pour Tiled), la pierre de taille de la
 #                     bibliothèque (corniche, colonnes, entrée), les dalles du jardin, les cailloux
 #   ville_brique      les murs de brique rouge, orange, ocre et bleue, bandeaux et colombages
@@ -15,14 +16,16 @@
 #                     panneau et tonneaux
 #   ville_menuiserie  les fenêtres, portes, la porte vitrée, la bouche d'aération
 #   ville_metal       les plaques d'égout, le climatiseur, les réverbères
-#   ville_eau         les deux fontaines (4 images : l'eau ondule, le jet retombe)
-#   ville_vegetation  les arbres, arbustes, buissons et leurs ombres
+#   ville_eau         les deux fontaines, remplies de l'eau de la ferme (8 images d'animation)
+#   ville_vegetation  les arbres, pins et buissons de la ferme, et leurs ombres
 #   ville_vehicules   les voitures garées (cinq couleurs, en long et en travers)
 #
 # Chaque matière est peinte sur sa propre couche de la carte, puis découpée en tuiles : une
 # planche ne garde qu'un exemplaire de chaque tuile (les motifs sont calés sur la grille). Les
 # sols sont posés en « coins de Wang » : la carte décide de la matière de chaque coin de
 # tuile, chaque tuile en déduit son dessin (les .tsx déclarent ces jeux, pour Tiled).
+# L'herbe, les arbres et buissons et l'eau sont ceux de la ferme (voir scripts/ville/ferme.py) :
+# relancer ce script après avoir retouché la planche de la ferme.
 #
 #   python3 scripts/ville/carte.py            écrit les planches, les .tsx et la carte
 #   python3 scripts/ville/carte.py --apercu   écrit aussi apercu_ville.png (la carte rendue)
@@ -32,6 +35,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import batiments as B  # noqa: E402
+import ferme as F  # noqa: E402
 import objets as O  # noqa: E402
 import sol as S  # noqa: E402
 from commun import ASSETS, ROOT, H, T, W, Planche, Toile, hasard, image  # noqa: E402
@@ -39,7 +43,7 @@ from commun import ASSETS, ROOT, H, T, W, Planche, Toile, hasard, image  # noqa:
 PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
     Planche('ville_asphalte', "La chaussée et ses tirets"),
     Planche('ville_trottoir', "Le trottoir et sa bordure"),
-    Planche('ville_herbe', "L'herbe, ses bords, fleurs et touffes"),
+    Planche('ville_herbe', "L'herbe de la ferme, ses bords, fleurs et herbes hautes"),
     Planche('ville_pierre', "Pavés de la place, pierre de taille, dalles, cailloux"),
     Planche('ville_brique', "Les murs de brique"),
     Planche('ville_verre', "Les murs de verre"),
@@ -47,8 +51,8 @@ PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
     Planche('ville_bois', "Planches, palissades, bancs, panneau, tonneaux"),
     Planche('ville_menuiserie', "Fenêtres et portes"),
     Planche('ville_metal', "Plaques d'égout, climatiseur, réverbères"),
-    Planche('ville_eau', "Les fontaines (4 images)", images=4),
-    Planche('ville_vegetation', "Arbres, arbustes, buissons et leurs ombres"),
+    Planche('ville_eau', "Les fontaines et l'eau de la ferme (8 images)", images=F.EAU_IMAGES, duree=F.EAU_DUREE),
+    Planche('ville_vegetation', "Arbres, pins et buissons de la ferme, et leurs ombres"),
     Planche('ville_vehicules', "Les voitures"),
 )}
 MATIERE_SOL = {'asphalte': 'asphalte', 'trottoir': 'trottoir', 'herbe': 'herbe', 'place': 'pierre'}
@@ -60,7 +64,7 @@ COUCHES = [
     ('marquage', 'asphalte', 1), ('egouts', 'metal', 1), ('dalles', 'pierre', 1), ('fleurs', 'herbe', 1),
     ('ombres', 'vegetation', 1), ('murs', 'brique', 1), ('pierre_de_taille', 'pierre', 1), ('vitrages', 'verre', 1),
     ('charpente', 'bois', 1), ('toits', 'toit', 1), ('menuiserie', 'menuiserie', 1), ('equipements', 'metal', 1),
-    ('fontaines', 'eau', 4), ('mobilier', 'bois', 1), ('vehicules', 'vehicules', 1), ('vegetation', 'vegetation', 1),
+    ('fontaines', 'eau', F.EAU_IMAGES), ('mobilier', 'bois', 1), ('vehicules', 'vehicules', 1), ('vegetation', 'vegetation', 1),
 ]
 
 
@@ -98,7 +102,7 @@ def tuile_sol(g, x, y):
         r = hasard(x, y, 7)
         v = {'asphalte': 1 if r < 0.04 else 2 if r < 0.08 else 3 if r < 0.11 else 0,
              'trottoir': 1 if r < 0.12 else 0,
-             'herbe': 0 if r < 0.5 else 1 if r < 0.8 else 2,
+             'herbe': int(hasard(x, y, 8) * 16),
              'place': 1 if r < 0.3 else 0}[m]
         return MATIERE_SOL[m], S.plein(m, v), f'{m}_{v}'
     presentes = sorted(set(c))
@@ -296,7 +300,7 @@ def details(c):
                 (21, 50), (15, 51), (9, 50), (44, 42), (55, 46), (50, 61), (39, 72), (45, 72), (34, 51),
                 (29, 57), (54, 59), (31, 69), (48, 70), (37, 56), (27, 46), (3, 47), (52, 66)]
     for i, (x, y) in enumerate(bouquets):
-        f.colle(O.fleurs(i, (238, 240, 236) if i % 4 else (240, 208, 110)), x * T, y * T)
+        f.colle(F.fleurs(i * 5), x * T, y * T)
     pris = set(bouquets)
     g = coins()
     for y in range(H):
@@ -304,18 +308,22 @@ def details(c):
             sur_place = (x + 0.5 - 44.5) ** 2 + (y + 0.5 - 62.5) ** 2 < 7.6 ** 2
             if (x, y) in pris or sur_place or any(g[y + j][x + i] != 'herbe' for i in (0, 1) for j in (0, 1)):
                 continue
-            if hasard(x, y, 51) > 0.86:
-                f.colle(O.touffe(int(hasard(x, y, 52) * 4)), x * T, y * T)
+            if hasard(x, y, 51) > 0.9:
+                f.colle(F.herbe_haute(int(hasard(x, y, 52) * 16)), x * T, y * T)
 
 
 # ---------- les objets ----------
 
-ARBRES = [(4.3, 44.5), (9.5, 44.5), (15.5, 44.5), (21, 44.5), (30, 16), (30, 29.5), (30.5, 56), (35.5, 62),
-          (52.5, 54.5), (27, 55.5), (27, 72.5), (31, 74.5), (36.5, 75), (54, 74.5), (56.5, 69), (57, 52)]
-ARBUSTES = [(3.5, 15), (44, 51), (35, 52.5)]
-BUISSONS = [(16.5, 29, 48, 40), (44, 44, 48, 40), (54.5, 44, 48, 40), (25.5, 58, 32, 32), (55.5, 59.5, 32, 32),
-            (34, 72, 48, 40), (55.5, 66.5, 32, 32), (6.5, 73, 32, 32), (27.5, 14, 32, 32), (16, 26, 32, 32),
-            (25.5, 63, 32, 32)]
+# Les pieds des arbres, pins et buissons (en tuiles) : là où l'image a un grand arbre, deux
+# ou trois arbres de la ferme, plus petits.
+ARBRES = [(2.5, 44), (5.5, 44.5), (8.5, 44), (11.5, 44.5), (14.5, 44), (17.5, 44.5), (20.5, 44), (22.5, 45.5),
+          (28.5, 15.5), (30, 17), (28.5, 29), (30, 30.5), (29.5, 55.5), (31.5, 54), (34.5, 61.5), (36, 60),
+          (52.5, 54.5), (54.5, 53), (27, 72.5), (30.5, 74), (33.5, 73.5), (36.5, 75), (51.5, 74.5),
+          (54, 74.5), (56.5, 69), (57, 51)]
+PINS = [(3.5, 15), (44, 51), (35, 52.5), (26.5, 55.5), (26.5, 67)]
+BUISSONS = [(16.5, 29, True), (44, 44, True), (54.5, 44, True), (25.5, 58, False), (55.5, 59.5, False),
+            (34, 72, True), (55.5, 66.5, False), (6.5, 73, False), (27.5, 14, False), (16, 26, False),
+            (25.5, 63, False), (41.5, 44.5, False)]
 
 
 def cale(v):
@@ -325,18 +333,16 @@ def cale(v):
 
 def objets(c):
     veg, ombres = c['vegetation'], c['ombres']
-    for i, (x, y) in enumerate(ARBRES):
-        px, py = cale(x * T - 40) + 40, cale(y * T - 90) + 90
-        ombres.colle(O.ombre(64, 18), px - 32, py - 10)
-        veg.colle(O.arbre(i % 3), px - 40, py - 90)
-    for i, (x, y) in enumerate(ARBUSTES):
-        px, py = cale(x * T - 16) + 16, cale(y * T - 46) + 46
-        ombres.colle(O.ombre(30, 10), px - 15, py - 6)
-        veg.colle(O.arbuste(i), px - 16, py - 46)
-    for i, (x, y, w, h) in enumerate(BUISSONS):
-        px, py = cale(x * T - w // 2) + w // 2, cale(y * T - h) + h
-        ombres.colle(O.ombre(w - 4, 10), px - w // 2 + 2, py - 7)
-        veg.colle(O.buisson(i, w, h), px - w // 2, py - h)
+    ombre = F.ombre()
+    plantes = [(x, y, F.arbre()) for x, y in ARBRES] + [(x, y, F.pin()) for x, y in PINS]
+    plantes += [(x, y, F.buisson(large)) for x, y, large in BUISSONS]
+    # de l'arrière vers l'avant : un arbre plus bas passe devant
+    for x, y, im in sorted(plantes, key=lambda p: p[1]):
+        w, h = im.size
+        x0, y0 = cale(x * T - w // 2), cale(y * T - h)
+        if h > 32:
+            ombres.colle(ombre, x0 + w // 2 - 16, y0 + h - 8)
+        veg.colle(im, x0, y0)
 
     v = c['vehicules']
     for coul, x in (('rouge', 6), ('bleue', 13), ('blanche', 19), ('blanche', 25)):
@@ -367,8 +373,8 @@ def objets(c):
         c['equipements'].colle(rev, x * T, 39 * T)
 
     fo = c['fontaines']
-    fo.colle([O.fontaine(k) for k in range(4)], 44 * T + 8 - 72, 62 * T + 8 - 72)
-    fo.colle([O.fontaine_globe(k) for k in range(4)], 50 * T - 56, 46 * T + 8 - 128)
+    fo.colle([O.fontaine(k) for k in range(F.EAU_IMAGES)], 44 * T + 8 - 72, 62 * T + 8 - 72)
+    fo.colle([O.fontaine_globe(k) for k in range(F.EAU_IMAGES)], 50 * T - 56, 46 * T + 8 - 128)
 
 
 # ---------- la découpe et l'écriture ----------

@@ -21,7 +21,7 @@
   <tile id="16"><properties><property name="nom" value="place_1"/></properties></tile>
  <wangsets>
   <wangset name="herbe / place" type="corner" tile="15">
-   <wangcolor name="herbe" color="#2e6c54" tile="0" probability="1"/>
+   <wangcolor name="herbe" color="#86a534" tile="0" probability="1"/>
    <wangcolor name="place" color="#a2a0a4" tile="15" probability="1"/>
    <wangtile tileid="0" wangid="0,1,0,1,0,1,0,1"/>
    <wangtile tileid="1" wangid="0,1,0,2,0,1,0,1"/>

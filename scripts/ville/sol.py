@@ -3,6 +3,8 @@
 # d'un passage A → B a la matière B au coin haut-gauche si n & 8, haut-droit si n & 4,
 # bas-gauche si n & 2, bas-droit si n & 1 (comme les rives de l'infra-monde). La matière B est
 # celle qui est « au-dessus » : la bordure du trottoir sur la chaussée, l'herbe sur le trottoir…
+# L'herbe est celle de la ferme (scripts/ville/ferme.py).
+import ferme
 from commun import T, hasard, image, mel, rgba, teinte
 
 ASPH = (102, 89, 81)
@@ -15,11 +17,8 @@ TROT_J = (102, 102, 112)
 BORD = (146, 146, 156)
 BORD_C = (176, 176, 184)
 BORD_K = (70, 66, 74)
-HERBE = (41, 99, 79)
-HERBE_S = (33, 84, 67)
-HERBE_C = (55, 119, 91)
-HERBE_CC = (74, 139, 101)
-HERBE_K = (26, 66, 52)
+HERBE_S = (114, 142, 44)          # le vert sombre de l'herbe de la ferme
+HERBE_K = (39, 83, 25)            # ses brins les plus sombres
 PLACE = (162, 160, 164)
 PLACE_S = (138, 136, 142)
 PLACE_J = (108, 106, 114)
@@ -64,17 +63,8 @@ def trottoir(x, y, v=0):
 
 
 def herbe(x, y, v=0):
-    brin = lambda xx, yy: hasard(xx % 16, yy % 16, v + 11) > 0.94
-    if brin(x, y):
-        return HERBE_C
-    if brin(x, y + 1):
-        return HERBE_CC
-    n = hasard(x, y, v + 19)
-    if n < 0.07:
-        return HERBE_S
-    if v == 2 and n > 0.9:
-        return HERBE_S
-    return HERBE
+    """L'herbe claire de la ferme, sa variante v (0..15)."""
+    return ferme.herbe(x, y, v)
 
 
 def place(x, y, v=0):
@@ -93,8 +83,8 @@ def place(x, y, v=0):
 
 
 MOTIFS = {'asphalte': asphalte, 'trottoir': trottoir, 'herbe': herbe, 'place': place}
-VARIANTES = {'asphalte': 4, 'trottoir': 2, 'herbe': 3, 'place': 2}
-COULEURS = {'asphalte': '#665951', 'trottoir': '#94949c', 'herbe': '#2e6c54', 'place': '#a2a0a4'}
+VARIANTES = {'asphalte': 4, 'trottoir': 2, 'herbe': 16, 'place': 2}
+COULEURS = {'asphalte': '#665951', 'trottoir': '#94949c', 'herbe': '#86a534', 'place': '#a2a0a4'}
 
 
 def plein(matiere, v=0):

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.2" name="ville_herbe" tilewidth="16" tileheight="16" tilecount="64" columns="16">
- <!-- L'herbe, ses bords, fleurs et touffes -->
- <image source="ville_herbe.png" width="256" height="64"/>
+<tileset version="1.10" tiledversion="1.12.2" name="ville_herbe" tilewidth="16" tileheight="16" tilecount="80" columns="16">
+ <!-- L'herbe de la ferme, ses bords, fleurs et herbes hautes -->
+ <image source="ville_herbe.png" width="256" height="80"/>
   <tile id="0"><properties><property name="nom" value="trottoir"/></properties></tile>
   <tile id="1"><properties><property name="nom" value="trottoir_herbe_1"/></properties></tile>
   <tile id="2"><properties><property name="nom" value="trottoir_herbe_2"/></properties></tile>
@@ -35,10 +35,23 @@
   <tile id="30"><properties><property name="nom" value="asphalte_herbe_14"/></properties></tile>
   <tile id="31"><properties><property name="nom" value="herbe_1"/></properties></tile>
   <tile id="32"><properties><property name="nom" value="herbe_2"/></properties></tile>
+  <tile id="33"><properties><property name="nom" value="herbe_3"/></properties></tile>
+  <tile id="34"><properties><property name="nom" value="herbe_4"/></properties></tile>
+  <tile id="35"><properties><property name="nom" value="herbe_5"/></properties></tile>
+  <tile id="36"><properties><property name="nom" value="herbe_6"/></properties></tile>
+  <tile id="37"><properties><property name="nom" value="herbe_7"/></properties></tile>
+  <tile id="38"><properties><property name="nom" value="herbe_8"/></properties></tile>
+  <tile id="39"><properties><property name="nom" value="herbe_9"/></properties></tile>
+  <tile id="40"><properties><property name="nom" value="herbe_10"/></properties></tile>
+  <tile id="41"><properties><property name="nom" value="herbe_11"/></properties></tile>
+  <tile id="42"><properties><property name="nom" value="herbe_12"/></properties></tile>
+  <tile id="43"><properties><property name="nom" value="herbe_13"/></properties></tile>
+  <tile id="44"><properties><property name="nom" value="herbe_14"/></properties></tile>
+  <tile id="45"><properties><property name="nom" value="herbe_15"/></properties></tile>
  <wangsets>
   <wangset name="trottoir / herbe" type="corner" tile="15">
    <wangcolor name="trottoir" color="#94949c" tile="0" probability="1"/>
-   <wangcolor name="herbe" color="#2e6c54" tile="15" probability="1"/>
+   <wangcolor name="herbe" color="#86a534" tile="15" probability="1"/>
    <wangtile tileid="0" wangid="0,1,0,1,0,1,0,1"/>
    <wangtile tileid="1" wangid="0,1,0,2,0,1,0,1"/>
    <wangtile tileid="2" wangid="0,1,0,1,0,2,0,1"/>
@@ -58,7 +71,7 @@
   </wangset>
   <wangset name="asphalte / herbe" type="corner" tile="15">
    <wangcolor name="asphalte" color="#665951" tile="16" probability="1"/>
-   <wangcolor name="herbe" color="#2e6c54" tile="15" probability="1"/>
+   <wangcolor name="herbe" color="#86a534" tile="15" probability="1"/>
    <wangtile tileid="16" wangid="0,1,0,1,0,1,0,1"/>
    <wangtile tileid="17" wangid="0,1,0,2,0,1,0,1"/>
    <wangtile tileid="18" wangid="0,1,0,1,0,2,0,1"/>

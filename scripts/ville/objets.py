@@ -1,8 +1,10 @@
 # Les objets de la ville, dessinés une fois puis posés sur les toiles : fenêtres et portes,
-# voitures, arbres et buissons, fontaines (animées), bancs, panneau, tonneau, réverbère,
-# plaque d'égout, climatiseur, fleurs, dalles et cailloux.
+# voitures, fontaines (l'eau de la ferme, animée), bancs, panneau, tonneau, réverbère, plaque
+# d'égout, climatiseur, dalles et cailloux. Les arbres, buissons et fleurs sont ceux de la
+# ferme (scripts/ville/ferme.py).
 import math
 
+import ferme
 from commun import K, contour, dessin, hasard, image, mel, rgba, teinte
 
 # ---------- la menuiserie ----------
@@ -220,108 +222,6 @@ def voiture(couleur, horizontale=False):
     return im
 
 
-# ---------- la végétation ----------
-
-FEUILLES = [(20, 52, 44), (30, 76, 58), (46, 102, 66), (72, 132, 74), (110, 164, 88)]
-TRONC = [(64, 44, 34), (96, 66, 46), (128, 92, 62)]
-
-
-def touffes(im, boules, graine, palette=FEUILLES):
-    """Des boules de feuillage, de l'arrière vers l'avant, éclairées du haut à gauche."""
-    w, h = im.size
-    for cx, cy, r in sorted(boules, key=lambda b: b[1]):
-        for y in range(max(0, int(cy - r - 1)), min(h, int(cy + r + 2))):
-            for x in range(max(0, int(cx - r - 1)), min(w, int(cx + r + 2))):
-                dd = math.hypot(x - cx, y - cy)
-                if dd > r + (hasard(x, y, graine) - 0.5) * 1.6:
-                    continue
-                t = math.hypot(x - (cx - r * 0.38), y - (cy - r * 0.42)) / (r * 1.25)
-                t += (hasard(x, y, graine + 1) - 0.5) * 0.28
-                i = 4 if t < 0.25 else 3 if t < 0.55 else 2 if t < 0.85 else 1
-                if dd > r - 1.2:
-                    i = min(i, 1)
-                im.putpixel((x, y), rgba(palette[i]))
-    return im
-
-
-def arbre(graine=0):
-    """5 × 6 tuiles : un grand arbre feuillu, le pied du tronc à (40, 90)."""
-    im = image(80, 96)
-    d = dessin(im)
-    # le tronc et ses racines
-    d.polygon(((33, 92), (36, 84), (36, 54), (44, 54), (44, 84), (48, 92), (42, 89), (40, 92), (38, 89)), fill=rgba(TRONC[1]))
-    d.line((42, 56, 42, 88), fill=rgba(TRONC[0]))
-    d.line((43, 56, 43, 86), fill=rgba(TRONC[0]))
-    d.line((37, 58, 37, 82), fill=rgba(TRONC[2]))
-    d.line((40, 62, 39, 70), fill=rgba(TRONC[0]))
-    boules = []
-    for i in range(16):
-        a = i / 16 * math.tau + hasard(i, graine) * 0.4
-        rr = 22 + 6 * hasard(i, graine, 2)
-        boules.append((40 + math.cos(a) * rr, 36 + math.sin(a) * rr * 0.78, 11 + 4 * hasard(i, graine, 3)))
-    for i in range(7):
-        a = i / 7 * math.tau + 0.4
-        boules.append((40 + math.cos(a) * 11, 34 + math.sin(a) * 9, 13))
-    boules.append((40, 30, 15))
-    touffes(im, boules, 70 + graine)
-    return contour(im, (20, 44, 36))
-
-
-def buisson(graine=0, w=32, h=32):
-    im = image(w, h)
-    boules = []
-    n = 6 if w <= 32 else 10
-    for i in range(n):
-        a = i / n * math.tau + hasard(i, graine)
-        boules.append((w / 2 + math.cos(a) * (w * 0.24), h * 0.55 + math.sin(a) * (h * 0.18), w * 0.2 + 2 * hasard(i, graine, 4)))
-    boules.append((w / 2, h * 0.5, w * 0.26))
-    touffes(im, boules, 90 + graine)
-    return contour(im, (20, 44, 36))
-
-
-def arbuste(graine=0):
-    """2 × 3 tuiles : un arbuste en cône (le petit sapin taillé)."""
-    im = image(32, 48)
-    d = dessin(im)
-    d.rectangle((15, 38, 17, 46), fill=rgba(TRONC[1]))
-    boules = []
-    for j in range(5):
-        y = 8 + j * 7
-        r = 5 + j * 1.8
-        boules += [(16 - r * 0.6, y + 3, r * 0.7), (16 + r * 0.6, y + 3, r * 0.7), (16, y, r * 0.75)]
-    touffes(im, boules, 110 + graine)
-    return contour(im, (20, 44, 36))
-
-
-def ombre(w, h, a=70):
-    im = image(w, h)
-    dessin(im).ellipse((0, 0, w - 1, h - 1), fill=(10, 30, 24, a))
-    return im
-
-
-def fleurs(graine=0, couleur=(238, 240, 236)):
-    """1 tuile : un bouquet de petites fleurs dans l'herbe."""
-    im = image(16, 16)
-    for i in range(3 + int(hasard(graine, 1) * 2)):
-        x = 3 + int(hasard(graine, i, 2) * 10)
-        y = 3 + int(hasard(graine, i, 3) * 10)
-        for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
-            im.putpixel((x + dx, y + dy), rgba(couleur))
-        im.putpixel((x, y), rgba((240, 210, 90)))
-        if y + 2 < 16:
-            im.putpixel((x, y + 2), rgba((30, 80, 60)))
-    return im
-
-
-def touffe(graine=0):
-    im = image(16, 16)
-    x0 = 4 + int(hasard(graine, 5) * 6)
-    for i, (dx, hh) in enumerate(((0, 3), (2, 5), (4, 4), (6, 2), (3, 6))):
-        for y in range(hh):
-            im.putpixel((x0 + dx, 13 - y), rgba((70, 140, 100) if y > 1 else (40, 98, 76)))
-    return im
-
-
 # ---------- la pierre ----------
 
 def dalle(graine=0):
@@ -403,22 +303,16 @@ def tonneau():
 
 # ---------- l'eau des fontaines ----------
 
-EAU = [(56, 90, 128), (78, 118, 162), (106, 148, 188), (168, 198, 222), (228, 240, 248)]
+EAU = [(28, 86, 158), (68, 162, 208), (76, 172, 214), (133, 199, 227), (222, 231, 242)]   # les bleus de l'eau de la ferme
 MARGELLE = [(118, 104, 84), (164, 146, 116), (200, 184, 150), (226, 214, 186)]
 
 
-def eau(x, y, cx, cy, k, profond=0.0):
-    """La couleur de l'eau en (x, y) à l'image k : des vaguelettes concentriques qui s'éloignent."""
-    r = math.hypot(x - cx, y - cy)
-    s = math.sin(r * 0.42 - k * math.pi / 2 + hasard(int(r), 3) * 0.6)
-    c = EAU[1] if profond < 0.5 else EAU[0]
-    if s > 0.9 and hasard(x // 2, y // 2, k) > 0.35:
-        c = EAU[3]
-    elif s > 0.6:
-        c = EAU[2]
-    if hasard(x, y, k, 9) > 0.995:
-        c = EAU[4]
-    return c
+def eau(x, y, k, ombre=False):
+    """L'eau de la ferme (scripts/ville/ferme.py) au pixel (x, y), image k : le fond peu profond,
+    une variante par tuile (le plus souvent nue) ; ombre : sous le rebord, plus sombre."""
+    r = hasard(x // 16, y // 16, 4)
+    c = ferme.eau(x, y, k, False, 0 if r < 0.7 else 1 + int(r * 70) % 7)
+    return teinte(c, 0.78) if ombre else c
 
 
 def anneau(im, cx, cy, r0, r1, ry=1.0):
@@ -445,15 +339,14 @@ def anneau(im, cx, cy, r0, r1, ry=1.0):
 
 
 def fontaine(k):
-    """9 × 9 tuiles, image k (0..3) : la grande fontaine de la place, à deux vasques."""
+    """9 × 9 tuiles, image k (0..7) : la grande fontaine de la place, à deux vasques."""
     im = image(144, 144)
     cx, cy = 71.5, 71.5
     for y in range(144):
         for x in range(144):
             r = math.hypot(x - cx, y - cy)
             if r < 59:
-                prof = 1.0 if (y < cy and r > 52) else 0.0
-                im.putpixel((x, y), rgba(eau(x, y, cx, cy, k, prof)))
+                im.putpixel((x, y), rgba(eau(x, y, k, y < cy and r > 53)))
     anneau(im, cx, cy, 58, 70)
     # la vasque du milieu
     for y in range(144):
@@ -462,7 +355,7 @@ def fontaine(k):
             if 24 <= r <= 27:
                 im.putpixel((x, y), rgba(EAU[3] if hasard(int(math.atan2(y - cy, x - cx) * 20), k) > 0.5 else EAU[2]))
             elif r < 20:
-                im.putpixel((x, y), rgba(eau(x, y, cx, cy, k + 2)))
+                im.putpixel((x, y), rgba(eau(x, y, (k + 4) % 8)))
     anneau(im, cx, cy, 19, 24)
     # le pied et le jet
     anneau(im, cx, cy, 0, 9)
@@ -470,28 +363,27 @@ def fontaine(k):
         for x in range(144):
             r = math.hypot(x - cx, y - cy)
             if r < 6:
-                c = EAU[3] if (r + k) % 3 < 1.5 else EAU[2]
+                c = EAU[3] if (r + k / 2) % 4 < 2 else EAU[2]
                 if r < 2.5:
                     c = EAU[4]
                 im.putpixel((x, y), rgba(c))
     # les gouttes qui retombent
     for i in range(14):
-        a = i / 14 * math.tau + k * 0.4
-        rr = 10 + ((i * 3 + k * 2) % 8)
+        a = (i + k / 8) / 14 * math.tau
+        rr = 10 + ((i * 3 + k) % 8)
         x, y = int(cx + math.cos(a) * rr), int(cy + math.sin(a) * rr)
         im.putpixel((x, y), rgba(EAU[4]))
     return contour(im)
 
 
 def fontaine_globe(k):
-    """7 × 10 tuiles, image k (0..3) : la fontaine au globe, sur ses quatre piliers."""
+    """7 × 10 tuiles, image k (0..7) : la fontaine au globe, sur ses quatre piliers."""
     im = image(112, 160)
     cx, cy, rx, ry = 55.5, 128, 54, 30
     for y in range(160):
         for x in range(112):
             if ((x - cx) / (rx - 9)) ** 2 + ((y - cy) / (ry - 7)) ** 2 < 1:
-                prof = 1.0 if y < cy - ry + 14 else 0.0
-                im.putpixel((x, y), rgba(eau(x, (y - cy) * 1.8 + cy, cx, cy, k, prof)))
+                im.putpixel((x, y), rgba(eau(x, y, k, y < cy - ry + 13)))
     for y in range(160):
         for x in range(112):
             e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
@@ -536,6 +428,6 @@ def fontaine_globe(k):
             im.putpixel((x, y), rgba((236, 246, 248)))
     # l'eau qui ruisselle du globe dans le bassin
     for i in range(6):
-        x = int(cx - 24 + i * 9 + (k % 2))
-        im.putpixel((x, 116 + (i * 3 + k * 2) % 10), rgba(EAU[4]))
+        x = int(cx - 24 + i * 9)
+        im.putpixel((x, 116 + (i * 3 + k) % 8), rgba(EAU[4]))
     return contour(im)
