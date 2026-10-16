@@ -10,22 +10,50 @@ import { countItem, takeItem } from './inventory.js';
 
 // state.technologies = liste des identifiants de nœuds acquis. On ignore les
 // identifiants inconnus (sauvegarde importée d'une autre version).
+//
+// Ces fonctions sont appelées des dizaines de fois par tick : on garde, pour chaque
+// liste, les nœuds connus (Set) et leurs effets rangés par clé, recalculés dès que la
+// liste change (buyTech et grantTech la complètent, une migration la remplace, un test
+// peut y pousser directement) : la copie gardée de la liste (sig) le détecte.
+const techCache = new WeakMap();
+const sameList = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
+function techIndex(state) {
+  const list = state.technologies;
+  if (!Array.isArray(list)) return null;
+  let c = techCache.get(list);
+  if (c && c.noeuds === DATA.techtree.noeuds && sameList(c.sig, list)) return c;
+  const noeuds = DATA.techtree.noeuds;
+  const owned = list.filter((id) => noeuds[id]);
+  const effets = new Map();
+  for (const id of owned) {
+    const e = noeuds[id].effet;
+    if (!e) continue;
+    for (const [key, v] of Object.entries(e)) {
+      if (v === undefined) continue;
+      if (!effets.has(key)) effets.set(key, []);
+      effets.get(key).push(v);
+    }
+  }
+  c = { sig: list.slice(), noeuds, owned, set: new Set(owned), effets };
+  techCache.set(list, c);
+  return c;
+}
+
 export function ownedTechs(state) {
-  return Array.isArray(state.technologies) ? state.technologies.filter((id) => DATA.techtree.noeuds[id]) : [];
+  const c = techIndex(state);
+  return c ? c.owned.slice() : [];
 }
 
 export function hasTech(state, id) {
-  return ownedTechs(state).includes(id);
+  const c = techIndex(state);
+  return !!c && c.set.has(id);
 }
 
 // Effets acquis portant la clé `key` (dans l'ordre des nœuds acquis).
 export function techEffects(state, key) {
-  const out = [];
-  for (const id of ownedTechs(state)) {
-    const e = DATA.techtree.noeuds[id].effet;
-    if (e && e[key] !== undefined) out.push(e[key]);
-  }
-  return out;
+  const c = techIndex(state);
+  const list = c && c.effets.get(key);
+  return list ? list.slice() : [];
 }
 
 // Effet en % : produit des % acquis, arrondi à chaque étape (100 = sans effet).

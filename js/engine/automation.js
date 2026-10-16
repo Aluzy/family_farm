@@ -4,7 +4,7 @@ import { allDevices, fail, maintainDevice, needsService, perSecond, perTick, spe
 import { drawEnergy, loadShedding } from './energy.js';
 import { availableEnergy } from './fridge.js';
 import { newNightStats } from './family.js';
-import { allPlots, findPlot, harvest, isMature, maxStage, plant, plotZone, seedItem, seedStock, water, zone2Plots } from './crops.js';
+import { allPlots, findPlot, harvest, harvestPlot, isMature, maxStage, noteWateredPlots, plant, plantPlot, plotZone, seedItem, seedStock, waterPlot, zone2Plots } from './crops.js';
 import { plantableCropsFor } from './campaign.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
@@ -104,9 +104,10 @@ export function irrigate(state) {
   const faites = [];
   let sansEau = 0;
   for (const p of soif) {
-    if (water(state, p.id, true).ok) faites.push(p);
+    if (waterPlot(state, p, true, false).ok) faites.push(p);
     else sansEau += 1;
   }
+  if (faites.length) noteWateredPlots(state); // le record, une fois pour tout le passage
   // un repassage sans eau ne fait pas tourner les asperseurs (ni ne recommence aussitôt)
   if (dejaCeJour && !faites.length) { I.sansEau = sansEau; I.h = now; I.cases = []; return { arrosees: 0, sansEau }; }
   const cases = faites.filter((p) => p.lieu === 'potager' && Number.isInteger(p.case)).map((p) => p.case);
@@ -395,10 +396,11 @@ export function waterAll(state, lieu, zone) {
   let sansEau = 0;
   let raison = '';
   for (const p of allPlots(state).filter(inZone(lieu, zone)).filter((x) => x.culture && !x.arrose && !isMature(x))) {
-    const r = water(state, p.id);
+    const r = waterPlot(state, p, false, false);
     if (r.ok) arrosees += 1;
     else { sansEau += 1; raison = raison || r.error; }
   }
+  if (arrosees) noteWateredPlots(state); // le record, une fois pour tout le lot
   groupDiscount(state, before);
   if (arrosees === 0 && sansEau === 0) return fail('Rien à arroser.');
   if (arrosees === 0) return fail(raison);
@@ -417,7 +419,7 @@ export function plantAll(state, lieu, culture, zone) {
   let plantees = 0;
   let raison = '';
   for (const p of vides) {
-    const r = plant(state, p.id, culture);
+    const r = plantPlot(state, p, culture);
     if (!r.ok) { raison = r.error; break; }
     plantees += 1;
   }
@@ -435,7 +437,7 @@ export function harvestAll(state, lieu, zone) {
   let raison = '';
   let aRamasser = false; // version 1.18 : au moins une récolte attend le personnage
   for (const p of allPlots(state).filter(inZone(lieu, zone)).filter((x) => x.culture && isMature(x))) {
-    const r = harvest(state, p.id);
+    const r = harvestPlot(state, p);
     if (!r.ok) { raison = raison || r.error; continue; }
     recoltees += 1;
     if (r.aRamasser) aRamasser = true;

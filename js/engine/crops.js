@@ -30,6 +30,11 @@ export function allPlots(state) {
   return [...state.potager.parcelles, ...zone2Plots(state), ...(state.serre ? state.serre.parcelles : [])];
 }
 
+// Les mêmes listes, sans les recopier (pour les parcourir).
+function plotLists(state) {
+  return [state.potager.parcelles, zone2Plots(state), state.serre ? state.serre.parcelles : []];
+}
+
 /* ---------- version 1.4 : le Champ (deuxième zone de culture) ---------- */
 
 // Parcelles du Champ (state.potager.zone2) : vide tant qu'il n'est pas ouvert. Elles portent
@@ -109,16 +114,17 @@ export function freedRockTiles(state) {
 }
 
 // La tuile est-elle labourable ? Sans `state`, une tuile sous un rocher ne l'est pas.
-export function isArable(tile, state) {
+// `libres` : freedRockTiles(state), à passer quand on teste beaucoup de tuiles d'un coup.
+export function isArable(tile, state, libres) {
   const ch = terrainChar(tile);
-  return ch === '#' || (ch === 'o' && freedRockTiles(state).has(tile));
+  return ch === '#' || (ch === 'o' && (libres || freedRockTiles(state)).has(tile));
 }
 
 // Version 1.15 : la tuile peut-elle porter une bordure mi-herbe mi-terre (herbe foncée,
 // labourable ou aux abords d'un bâtiment, ou libérée par un rocher cassé) ?
-export function canBorder(tile, state) {
+export function canBorder(tile, state, libres) {
   const ch = terrainChar(tile);
-  return ch === '#' || ch === '+' || (ch === 'o' && freedRockTiles(state).has(tile));
+  return ch === '#' || ch === '+' || (ch === 'o' && (libres || freedRockTiles(state)).has(tile));
 }
 
 // Les rangées du terrain pour la carte : une tuile sous un rocher cassé y est labourable
@@ -150,8 +156,8 @@ export function borderMask(dirt, tile) {
 
 // Tuiles d'herbe autour de `tile` (elle comprise) dont la bordure ne peut pas se dessiner :
 // une bordure sur un chemin, de l'eau, une pierre, un arbre (canBorder), ou une herbe prise
-// entre deux terres (masque 15).
-function badBorders(dirt, tile, state) {
+// entre deux terres (masque 15). `libres` : freedRockTiles(state), calculé une fois par l'appelant.
+function badBorders(dirt, tile, libres) {
   const W = DATA.TERRAIN.LARGEUR, H = DATA.TERRAIN.HAUTEUR;
   const c = tile % W, r = Math.floor(tile / W);
   let n = 0;
@@ -162,7 +168,7 @@ function badBorders(dirt, tile, state) {
       const t = rr * W + cc;
       if (dirt.has(t)) continue;
       const m = borderMask(dirt, t);
-      if (m && (m === 15 || !canBorder(t, state))) n += 1;
+      if (m && (m === 15 || !canBorder(t, null, libres))) n += 1;
     }
   }
   return n;
@@ -173,9 +179,10 @@ function badBorders(dirt, tile, state) {
 // que de nouvelles.
 export function soilLayoutOk(state, tile, labour) {
   const dirt = new Set(state.potager.parcelles.map((p) => p.case));
-  const before = badBorders(dirt, tile, state);
+  const libres = freedRockTiles(state);
+  const before = badBorders(dirt, tile, libres);
   if (labour) dirt.add(tile); else dirt.delete(tile);
-  return badBorders(dirt, tile, state) <= before;
+  return badBorders(dirt, tile, libres) <= before;
 }
 
 // Version 1.15 : tuiles d'herbe que la houe peut labourer maintenant, pour le dessin (hors
@@ -184,12 +191,13 @@ export function soilLayoutOk(state, tile, labour) {
 export function hoeableTiles(state) {
   const T = DATA.TERRAIN;
   const dirt = new Set(state.potager.parcelles.map((p) => p.case));
+  const libres = freedRockTiles(state); // une fois pour toute la carte
   const out = [];
   for (let t = 0; t < T.LARGEUR * T.HAUTEUR; t++) {
-    if (dirt.has(t) || !isArable(t, state)) continue;
-    const before = badBorders(dirt, t, state);
+    if (dirt.has(t) || !isArable(t, state, libres)) continue;
+    const before = badBorders(dirt, t, libres);
     dirt.add(t);
-    if (badBorders(dirt, t, state) <= before) out.push(t);
+    if (badBorders(dirt, t, libres) <= before) out.push(t);
     dirt.delete(t);
   }
   return out;
@@ -308,7 +316,10 @@ export function plotZone() {
 }
 
 export function findPlot(state, id) {
-  return allPlots(state).find((p) => p.id === id) || null;
+  for (const list of plotLists(state)) {
+    for (const p of list) if (p.id === id) return p;
+  }
+  return null;
 }
 
 export function seedItem(culture) {
@@ -410,6 +421,11 @@ export function readyCrops(state) {
 export function plant(state, plotId, culture, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
+  return plantPlot(state, plot, culture, auto);
+}
+
+// plant() sur la parcelle elle-même (les actions groupées l'ont déjà en main).
+export function plantPlot(state, plot, culture, auto = false) {
   const def = DATA.crops[culture];
   if (!def) return fail('Culture inconnue.');
   if (plot.culture) return fail('Cette parcelle est déjà plantée.');
@@ -432,6 +448,12 @@ export function plant(state, plotId, culture, auto = false) {
 export function water(state, plotId, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
+  return waterPlot(state, plot, auto);
+}
+
+// water() sur la parcelle elle-même. `note` = false : le record de parcelles arrosées
+// (noteWateredPlots) est laissé à l'appelant, qui le fait une fois après tout un lot.
+export function waterPlot(state, plot, auto = false, note = true) {
   if (!plot.culture) return fail('Rien n\'est planté ici.');
   if (plot.arrose) return fail('Déjà arrosée : elle pousse.');
   if (isMature(plot)) return fail('Déjà mûre, inutile d\'arroser.');
@@ -443,8 +465,17 @@ export function water(state, plotId, auto = false) {
   plot.arroseH = absoluteHours(state); // elle gagne son stade POUSSE_HEURES heures plus tard
   if (!auto) spendEnergy(state, 'arroser');
   gainActionXp(state, 'arroser', 1, auto);
-  noteWatered(state, allPlots(state).filter((p) => p.arrose).length); // FLU-42 : chapitre 1
+  if (note) noteWateredPlots(state);
   return { ok: true, litres };
+}
+
+// FLU-42 (chapitre 1) : record de parcelles arrosées en même temps.
+export function noteWateredPlots(state) {
+  let n = 0;
+  for (const list of plotLists(state)) {
+    for (const p of list) if (p.arrose) n += 1;
+  }
+  noteWatered(state, n);
 }
 
 // Récolte : la parcelle est libérée. `auto` = true pour une automatisation
@@ -452,6 +483,11 @@ export function water(state, plotId, auto = false) {
 export function harvest(state, plotId, auto = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
+  return harvestPlot(state, plot, auto);
+}
+
+// harvest() sur la parcelle elle-même.
+export function harvestPlot(state, plot, auto = false) {
   if (!plot.culture) return fail('Rien à récolter ici.');
   if (!isMature(plot)) return fail('Pas encore mûre.');
   if (!auto && !canAfford(state, 'recolter')) return fail(TIRED); // version 1.8

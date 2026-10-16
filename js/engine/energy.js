@@ -124,15 +124,29 @@ export function tick(state, dt, horlogeArretee = false) {
     if (!horlogeArretee) advanceNight(state, dtMs * nightSpeed(state)); // il dort : en accéléré
     return state;
   }
+  farmStep(state, dtMs, { horloge: !horlogeArretee });
+  refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
+  updateChapters(state); // objectifs du chapitre
+  return state;
+}
+
+// Un pas de jour de la ferme, le même pour tick, simulateOffline et advanceHours (sorties
+// en ville) : flux, usure (`usure`), puis, si l'heure avance (`horloge`), le temps d'éveil
+// (plafonné à `eveilMax`) et ce qui suit l'horloge : pousse, robot, asperseurs, entreprises.
+// Enfin le record d'énergie stockée (Lot 9). Ni nuit, ni repas : chaque appelant s'en charge.
+export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax = Infinity } = {}) {
   flowStep(state, dtMs);
-  wearStep(state, dtMs);
+  if (usure) wearStep(state, dtMs);
 
   // e. temps d'éveil (l'heure s'en déduit) ; les plantes suivent l'horloge
-  if (!horlogeArretee) { state.awakeMs += dtMs; growDue(state); robotStep(state); irrigate(state); companiesStep(state); }
-  refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
-  noteEnergyRecord(state); // Lot 9 : record d'énergie stockée, puis objectifs du chapitre
-  updateChapters(state);
-  return state;
+  if (horloge) {
+    state.awakeMs = Math.min(eveilMax, state.awakeMs + dtMs);
+    growDue(state);
+    robotStep(state);
+    irrigate(state);
+    companiesStep(state);
+  }
+  noteEnergyRecord(state); // Lot 9 : record d'énergie stockée
 }
 
 // Phases a à c de tick : production, stockage, consommateurs, Four et Cuisine.
