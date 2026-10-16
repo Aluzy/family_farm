@@ -19,7 +19,7 @@ import { helpBtn } from './aide.js';
 let enChoix = null;
 
 // Matière que la ferme fournit par nuit à ce commerce : le lait des vaches, la laine
-// des moutons ; pour la conserverie, les légumes en stock aujourd'hui.
+// des moutons ; pour l'étal de bocaux, les légumes en stock aujourd'hui.
 function matiereParNuit(type) {
   if (type === 'cremerie') return cowCount(state) * DATA.ANIMAUX.vache.laitParNuit;
   if (type === 'tissage') return (sheepCount(state) * DATA.ANIMAUX.mouton.laineParTonte) / DATA.ANIMAUX.mouton.joursLaine;
@@ -36,7 +36,7 @@ function estimation(type) {
 }
 
 function recette(def) {
-  return `${def.par} ${def.matiere} → 1 ${def.produit}, vendu${def.produit === 'conserve de légumes' ? 'e' : ''} ${formatCoins(def.prix)} 💰`;
+  return `${def.par} ${def.matiere} → 1 ${def.produit}, vendu ${formatCoins(def.prix)} 💰`;
 }
 
 function choiceCard(type) {

@@ -96,9 +96,16 @@ export function ingredientOptions(ing) {
 }
 
 // Somme d'un champ (energie ou prix) des ingrédients d'une recette, eau comprise.
-// Pour un ingrédient « l'un ou l'autre », on prend le premier (les valeurs sont égales).
+// Pour un ingrédient « l'un ou l'autre », le prix est celui de l'option la plus
+// chère : le plat ne se vend ainsi jamais à perte, quel que soit l'objet choisi
+// (bocal de légumes fait de poivrons, quenelle de dorade). L'énergie, elle,
+// reste celle de la première option.
 export function recipeSum(recipe, field, waterValue, data = DATA) {
-  const sum = recipe.ingredients.reduce((t, ing) => t + (data.items[ingredientOptions(ing)[0]][field] || 0) * ing.qte, 0);
+  const valeur = (ing) => {
+    const vals = ingredientOptions(ing).map((it) => data.items[it][field] || 0);
+    return field === 'prix' ? Math.max(...vals) : vals[0];
+  };
+  const sum = recipe.ingredients.reduce((t, ing) => t + valeur(ing) * ing.qte, 0);
   return sum + (recipe.eau || 0) * waterValue;
 }
 

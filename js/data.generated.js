@@ -130,7 +130,7 @@ export const RAW_DATA = {
     "tomate": { "nom": "Tomate", "icone": "🍅", "energie": 8, "prix": 1, "edible": true, "category": "légume" },
     "courgette": { "nom": "Courgette", "icone": "🥒", "energie": 10, "prix": 2, "edible": true, "category": "légume" },
     "aubergine": { "nom": "Aubergine", "icone": "🍆", "energie": 10, "prix": 2, "edible": true, "category": "légume" },
-    "conserve": { "nom": "Conserve", "icone": "🥫", "energie": 25, "prix": 3, "edible": true, "category": "conserve", "rachetable": false },
+    "conserve": { "nom": "Boîte de conserve", "icone": "🥫", "energie": 25, "prix": 3, "edible": true, "category": "conserve", "rachetable": false },
     "graine_carotte": { "nom": "Graines de carotte", "icone": "🌱‍🥕", "prix": 1, "edible": false, "category": "graine" },
     "graine_tomate": { "nom": "Graines de tomate", "icone": "🌱‍🍅", "prix": 1, "edible": false, "category": "graine" },
     "graine_courgette": { "nom": "Graines de courgette", "icone": "🌱‍🥒", "prix": 1, "edible": false, "category": "graine" },
@@ -145,7 +145,8 @@ export const RAW_DATA = {
       "prix": 10,
       "edible": true,
       "category": "produit",
-      "rachetable": false
+      "rachetable": false,
+      "retire": true
     },
     "pomme": { "nom": "Pomme", "icone": "🍎", "energie": 10, "prix": 2, "edible": true, "category": "fruit" },
     "poire": { "nom": "Poire", "icone": "🍐", "energie": 10, "prix": 2, "edible": true, "category": "fruit" },
@@ -199,7 +200,7 @@ export const RAW_DATA = {
     "lingot_fer": {
       "nom": "Lingot de fer",
       "icone": "🧈‍🔩",
-      "prix": 10,
+      "prix": 15,
       "edible": false,
       "category": "matériau",
       "rachetable": false,
@@ -208,7 +209,7 @@ export const RAW_DATA = {
     "lingot_cuivre": {
       "nom": "Lingot de cuivre",
       "icone": "🧈‍🟠",
-      "prix": 14,
+      "prix": 20,
       "edible": false,
       "category": "matériau",
       "rachetable": false,
@@ -217,7 +218,7 @@ export const RAW_DATA = {
     "lingot_or": {
       "nom": "Lingot d'or",
       "icone": "🧈‍🟡",
-      "prix": 26,
+      "prix": 35,
       "edible": false,
       "category": "matériau",
       "rachetable": false,
@@ -226,7 +227,7 @@ export const RAW_DATA = {
     "lingot_platine": {
       "nom": "Lingot de platine",
       "icone": "🧈‍⚪",
-      "prix": 42,
+      "prix": 55,
       "edible": false,
       "category": "matériau",
       "rachetable": false,
@@ -246,7 +247,16 @@ export const RAW_DATA = {
     "cacao": { "nom": "Cacao", "icone": "🍫", "prix": 8, "edible": false, "category": "ingrédient" },
     "vanille": { "nom": "Vanille", "icone": "🫘", "prix": 15, "edible": false, "category": "ingrédient" },
     "cafe": { "nom": "Café", "icone": "☕", "prix": 6, "edible": false, "category": "ingrédient" },
-    "viande_boeuf": { "nom": "Viande de bœuf", "icone": "🍖", "energie": 38, "prix": 10, "edible": true, "category": "produit", "rachetable": false },
+    "viande_boeuf": {
+      "nom": "Viande de bœuf",
+      "icone": "🍖",
+      "energie": 38,
+      "prix": 10,
+      "edible": true,
+      "category": "produit",
+      "rachetable": false,
+      "retire": true
+    },
     "viande_volaille": {
       "nom": "Viande de volaille",
       "icone": "🍗",
@@ -254,7 +264,8 @@ export const RAW_DATA = {
       "prix": 6,
       "edible": true,
       "category": "produit",
-      "rachetable": false
+      "rachetable": false,
+      "retire": true
     },
     "lait": { "nom": "Lait", "icone": "🥛", "energie": 16, "prix": 4, "edible": true, "category": "produit" },
     "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "edible": false, "category": "produit", "rachetable": false },
@@ -531,7 +542,7 @@ export const RAW_DATA = {
       "icone": "🐟‍🥟",
       "station": "cuisine",
       "temps": 20,
-      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "omble", "dorade", "sardine", "poisson"], "qte": 1 }]
+      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "omble", "dorade", "sardine", "anchois", "poisson"], "qte": 1 }]
     }
   },
   "crops": {
@@ -1187,7 +1198,7 @@ export const RAW_DATA = {
       "cui_conserverie": {
         "branche": "cuisine",
         "palier": 4,
-        "nom": "Conserverie",
+        "nom": "Mise en bocaux",
         "icone": "🫙",
         "fonction": "deblocage",
         "pt": 2,
@@ -1510,7 +1521,7 @@ export const RAW_DATA = {
       "commerce": {
         "nom": "Commerce",
         "icone": "🏪",
-        "note": "conserverie, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production"
+        "note": "étal de bocaux, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production"
       },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
     },
@@ -1543,15 +1554,15 @@ export const RAW_DATA = {
     "CHANGER": 5000,
     "TYPES": {
       "conserverie": {
-        "nom": "Conserverie",
-        "le": "la conserverie",
-        "icone": "🥫",
-        "produit": "conserve de légumes",
-        "produits": "conserves de légumes",
+        "nom": "Étal de bocaux",
+        "le": "l'étal de bocaux",
+        "icone": "🫙",
+        "produit": "bocal de légumes",
+        "produits": "bocaux de légumes",
         "prend": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard"],
         "matiere": "légumes",
         "par": 4,
-        "prix": 18
+        "prix": 24
       },
       "cremerie": {
         "nom": "Crèmerie",
@@ -1672,7 +1683,7 @@ export const RAW_DATA = {
           "intrantNom": "légumes",
           "par": 3,
           "produit": "Boîte de conserve",
-          "prixProduit": 21,
+          "prixProduit": 24,
           "quota": 4,
           "quotaMax": 30,
           "texte": "Met en boîte les légumes de la ferme."
