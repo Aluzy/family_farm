@@ -6,12 +6,14 @@ import { memberPerso } from '../engine/family.js';
 import { depositOreNotebook, hasTool, hitsNeeded, mineOre } from '../engine/outils.js';
 import { techFlag } from '../engine/techtree.js';
 import { rockGone, treeGone } from '../engine/crops.js';
+import { addItem } from '../engine/inventory.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
 import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
 import { chopFromStage, fishFromStage, mineFromStage } from './outils.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
+import { NUIT_BLOQUEES } from './actions.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -78,6 +80,41 @@ function joue(r) {
   return r;
 }
 
+// La nuit, la famille dort : les actions de jeu des cartes suivent la même règle que les
+// boutons de la ferme (NUIT_BLOQUEES, js/ui/actions.js ; js/ui/events.js). `action` : le nom
+// de l'action de la ferme qui fait la même chose (sans nom : refusée toute la nuit, comme couper,
+// piocher et pêcher, js/ui/outils.js). Renvoie un refus, ou null.
+function nuit(action) {
+  if (!nightActive(state) || (action && !NUIT_BLOQUEES.has(action))) return null;
+  const r = { ok: false, error: '🌙 La famille dort : attends le matin, ou va dormir (Zzz).' };
+  showToast(r.error);
+  return r;
+}
+
+// Les trouvailles de la montagne et de la plage (js/ville-carte.js, assets/faune.json) : chacune
+// est un objet de l'inventaire du même nom (data/items.json), qui se garde et se vend.
+const TROUVAILLES = ['ammonite', 'trilobite', 'quartz', 'amethyste', 'coquille', 'bulot', 'corail', 'perle'];
+
+// Une trouvaille ramassée : dans l'inventaire ({ ok, item, n } ou { ok: false }).
+function ramasse(sorte) {
+  const refus = nuit();
+  if (refus) return refus;
+  if (!TROUVAILLES.includes(sorte) || !DATA.items[sorte]) return joue({ ok: false, error: 'Trouvaille inconnue.' });
+  addItem(state, sorte, 1);
+  return joue({ ok: true, item: sorte, n: 1 });
+}
+
+// Le carnet des trouvailles d'avant (localStorage « ferme-trouvailles », quand rien n'entrait
+// dans l'inventaire) : ce qu'il comptait y entre, une fois. { ammonite: 2, … }.
+function verseTrouvailles(carnet) {
+  const items = {};
+  for (const sorte of TROUVAILLES) {
+    const n = Math.floor(Number(carnet && carnet[sorte]) || 0);
+    if (n > 0 && DATA.items[sorte]) { addItem(state, sorte, n); items[sorte] = n; }
+  }
+  return joue({ ok: true, items });
+}
+
 function parse(cible) {
   const [page, query = ''] = String(cible || '').split('?');
   return { page: page.replace(/^.*\//, ''), search: query ? '?' + query : '' };
@@ -133,9 +170,10 @@ window.FermeHote = {
   perso: () => memberPerso(mainCharacter(state)),
   go,
   vitrine,
-  vendre: (item, n) => joue(sellInTown(state, item, n)),
-  acheter: (id) => joue(buyCompany(state, id)),
-  quota: (id, q) => joue(setCompanyQuota(state, id, q)),
+  // (la nuit : comme les boutons de la ferme, NUIT_BLOQUEES ; le quota reste réglable)
+  vendre: (item, n) => nuit('sell-item') || joue(sellInTown(state, item, n)),
+  acheter: (id) => nuit('ville-buy') || joue(buyCompany(state, id)),
+  quota: (id, q) => nuit('entreprise-quota') || joue(setCompanyQuota(state, id, q)),
   outil: (id) => hasTool(state, id),
   // l'outil en main (barre d'outils) : 'hache', 'pioche', 'houe', 'canne' ou null
   enMain: () => (axeMode ? 'hache' : pickMode ? 'pioche' : hoeMode ? 'houe' : rodMode ? 'canne' : null),
@@ -151,8 +189,12 @@ window.FermeHote = {
   // la grotte : un minerai pris (« fer », « cuivre »…) va dans l'inventaire ({ ok, item, n } ou
   // { ok: false }) ; le carnet d'avant y est versé une fois ; les coups qu'il faut (Lames
   // affûtées) ; un réglage de l'arbre des technologies (la Lampe de mineur : tech('grotte'))
-  miner: (sorte) => { const r = mineOre(state, sorte); joue(r); return r; },
+  miner: (sorte) => nuit() || joue(mineOre(state, sorte)),
   verser: (carnet) => joue(depositOreNotebook(state, carnet)),
+  // la montagne et la plage : une trouvaille ramassée (« ammonite », « perle »…) va dans
+  // l'inventaire ({ ok, item, n } ou { ok: false }) ; le carnet d'avant y est versé une fois
+  ramasser: ramasse,
+  verserTrouvailles: verseTrouvailles,
   coups: (base) => hitsNeeded(state, base),
   tech: (cle) => techFlag(state, cle),
   say: (t) => showToast(t),

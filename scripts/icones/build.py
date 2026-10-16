@@ -47,6 +47,15 @@ FROM_SHEET = {
     '🫑': ('crops.png', 14, 11),
     '🥒': ('crops.png', 4, 11),
     '🍎': ('crops.png', 9, 12),
+    # les trouvailles de la montagne et de la plage (scripts/ville/faune.py) : l'image de la carte
+    '🪨‍🐚': ('trouvailles.png', 0, 0),
+    '🪨‍🪲': ('trouvailles.png', 1, 0),
+    '💎': ('trouvailles.png', 2, 0),
+    '💎‍🟣': ('trouvailles.png', 3, 0),
+    '🐚': ('trouvailles.png', 4, 0),
+    '🐌': ('trouvailles.png', 5, 0),
+    '🪸': ('trouvailles.png', 6, 0),
+    '🦪': ('trouvailles.png', 7, 0),
 }
 
 
