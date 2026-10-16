@@ -297,7 +297,7 @@ export const STAGE_WINDOWS = {
     nom: 'Installations', icone: '🏗️', ok: () => true, haute: true, bois: true,
     corps: () => renderBatiments(),
   },
-  // Commerce (menu latéral, au niveau qui le débloque) : la conserverie, la crèmerie ou le
+  // Commerce (menu latéral, au niveau qui le débloque) : l'étal de bocaux, la crèmerie ou le
   // tissage, son niveau et ses quotas ; aussi un onglet de la Maison.
   commerce: {
     nom: 'Commerce', icone: '🏪', ok: () => isUnlocked(state, 'commerce'), haute: true, bois: true,

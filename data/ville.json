@@ -32,7 +32,11 @@
     "  Chaque jour à HEURE, une entreprise achetée prend dans le stock de la ferme (l'inventaire,",
     "  puis le frigo) `par` unités de ses `intrants` (n'importe lesquels, les plus abondants",
     "  d'abord) pour chaque `produit` fabriqué, au plus `quota` produits (réglable de 0 à",
-    "  quotaMax, départ : quota), et les vend aussitôt `prixProduit` pièces chacun."
+    "  quotaMax, départ : quota), et les vend aussitôt `prixProduit` pièces chacun.",
+    "  Échelle de valeur (voir aussi COMMERCE, niveaux.json) : prixProduit = par × prix effectif",
+    "  de l'intrant le plus cher × 2, au-dessus du commerce de la ferme (×1,5) et des recettes",
+    "  (×1,3). Conserverie : 3 légumes (4 💰 au plus) → 24 ; Confiturerie : 3 fruits (4 💰) → 24 ;",
+    "  Fromagerie : 2 laits (8 💰) → 32."
   ],
   "VILLE": {
     "BONHEUR": {
@@ -60,7 +64,7 @@
     "ENTREPRISES": {
       "HEURE": 9,
       "LISTE": {
-        "conserverie": { "nom": "Conserverie", "icone": "🥫", "prix": 1500, "intrants": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard", "champignon"], "intrantNom": "légumes", "par": 3, "produit": "Boîte de conserve", "prixProduit": 21, "quota": 4, "quotaMax": 30, "texte": "Met en boîte les légumes de la ferme." },
+        "conserverie": { "nom": "Conserverie", "icone": "🥫", "prix": 1500, "intrants": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard", "champignon"], "intrantNom": "légumes", "par": 3, "produit": "Boîte de conserve", "prixProduit": 24, "quota": 4, "quotaMax": 30, "texte": "Met en boîte les légumes de la ferme." },
         "confiturerie": { "nom": "Confiturerie", "icone": "🍓", "prix": 2000, "intrants": ["fraise", "pomme", "poire", "myrtille", "chataigne"], "intrantNom": "fruits", "par": 3, "produit": "Pot de confiture", "prixProduit": 24, "quota": 4, "quotaMax": 30, "texte": "Cuit les fruits de la ferme en confiture." },
         "fromagerie": { "nom": "Fromagerie", "icone": "🧀", "prix": 2500, "intrants": ["lait"], "intrantNom": "litres de lait", "par": 2, "produit": "Fromage", "prixProduit": 32, "quota": 4, "quotaMax": 30, "texte": "Fait du fromage avec le lait de la ferme." }
       }

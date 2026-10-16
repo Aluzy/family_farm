@@ -65,6 +65,75 @@ const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'con
 const LIEUX = ['potager', 'serre'];
 const MODES_GRAINES = ['recolte', 'plant'];
 
+// Les clés d'effet des nœuds de l'arbre (techtree.noeuds[*].effet) que le moteur
+// lit, et où. Une clé écrite dans les données mais absente d'ici n'aurait aucun
+// effet en jeu : c'est une erreur. test-data.mjs vérifie que chacune est bien
+// lue dans js/ (techEffects, techPct, techSum, techFlag, techAuto…).
+export const EFFETS_TECHNO = [
+  'arrosagePrioritaire', // techFlag (automation.js)
+  'auto', // techAuto (techtree.js)
+  'conservation', // techSum (fridge.js)
+  'coupsMoins', // techSum (outils.js)
+  'croissanceSurface', // techFlag (animals.js)
+  'delestage', // techFlag (energy.js)
+  'eauArrosage', // techPct (crops.js)
+  'economie', // techEffects (energy.js)
+  'entretienAuto', // techFlag (devices.js)
+  'eveilMin', // lu directement par awakeRequired() (clock.js) ; plus aucun nœud ne le porte
+  'fileAttente', // techFlag (kitchen.js)
+  'frigoConso', // techPct (energy.js)
+  'gouter', // techFlag (family.js)
+  'grainesBonus', // techSum (crops.js)
+  'grotte', // techFlag (outils.js, ville-carte.js)
+  'groupeEconome', // techFlag (crops.js)
+  'parBle', // techFlag (animals.js)
+  'pecheJour', // techSum (outils.js)
+  'pecheTouche', // techSum (outils.js)
+  'pluie', // techFlag (crops.js)
+  'poulesParBle', // techFlag (animals.js)
+  'recettes', // techEffects (kitchen.js)
+  'recolteBonus', // techSum via withBonus() (outils.js)
+  'reveilEnergie', // techFlag (family.js)
+  'solaireBonus', // techFlag (energy.js)
+  'tempsPrepa', // techPct (techtree.js)
+  'usure', // techPct (devices.js)
+  'whParLitre', // techPct (energy.js)
+];
+
+// Les façons d'obtenir un objet (liste vide : aucune). Sert à l'avertissement
+// « objet introuvable » de validateData(). Les minerais viennent de la grotte
+// (mineOre, js/engine/outils.js : minerai_<sorte>), hors des données.
+export function sourcesOf(data, id) {
+  const out = [];
+  const it = data.items[id] || {};
+  for (const [rid, r] of Object.entries(data.recipes)) {
+    if ((r.transformation ? r.sortie : rid) === id) out.push(`recette ${rid}`);
+    if (r.sousProduit && r.sousProduit.item === id) out.push(`sous-produit de ${rid}`);
+  }
+  for (const [cid, c] of Object.entries(data.crops)) {
+    if ((c.produit || cid) === id) out.push(`récolte ${cid}`);
+    if (c.graines && c.graines.mode === 'recolte' && c.graines.item === id) out.push(`graines de ${cid}`);
+  }
+  for (const [aid, a] of Object.entries(data.VERGER.ARBRES)) if (a.fruit === id) out.push(`verger ${aid}`);
+  for (const [aid, a] of Object.entries(data.ANIMAUX)) {
+    for (const champ of ['produit', 'laine', 'lait']) if (a[champ] === id) out.push(`animal ${aid}`);
+  }
+  for (const [eau, p] of Object.entries((data.CANNE && data.CANNE.PRISES) || {})) if (id in p) out.push(`pêche ${eau}`);
+  for (const [sid, s] of Object.entries((data.VILLE && data.VILLE.SORTIES) || {})) {
+    if (id in (s.butin || {}) || (s.cueillettes || []).some((c) => id in c)) out.push(`sortie ${sid}`);
+  }
+  if (data.HACHE && id === 'bois') out.push('hache');
+  if (data.PIOCHE && id === 'pierre') out.push('pioche');
+  if (id.startsWith('minerai_')) out.push('grotte');
+  for (const table of ['START', 'DEPART']) if (data[table] && id in data[table].INVENTAIRE) out.push(`${table}.INVENTAIRE`);
+  if (data.FAMILY && id in data.FAMILY.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');
+  for (const [lid, l] of Object.entries(data.COURRIER || {})) if (id in (l.cadeaux || {})) out.push(`courrier ${lid}`);
+  if (it.ville) out.push('marché de la ville');
+  else if (it.rachetable !== false) out.push('Marché');
+  if (it.retire) out.push('ancienne sauvegarde (retire)');
+  return out;
+}
+
 const isInt = (n) => Number.isInteger(n);
 const isDish = (data, id) => !!data.recipes[id] && !data.recipes[id].transformation;
 
@@ -121,15 +190,13 @@ export function validateData(data) {
         return;
       }
       options.forEach((o) => needItem(at, o));
-      // Le prix et l'énergie du plat sont calculés avec la première option.
+      // L'énergie du plat est calculée avec la première option ; son prix avec
+      // l'option la plus chère (voir recipeSum() dans js/engine/catalog.js).
       if (options.length > 1 && options.every((o) => o in items)) {
         const first = items[options[0]];
         const autres = (champ) => options.filter((o) => (items[o][champ] || 0) !== (first[champ] || 0));
         if (r.energieForcee == null && autres('energie').length) {
           warn(at, `les options n'ont pas la même énergie : celle du plat est calculée avec « ${options[0]} » seulement`);
-        }
-        if (autres('prix').length) {
-          warn(at, `les options n'ont pas le même prix (${autres('prix').join(', ')}) : celui du plat est calculé avec « ${options[0]} » seulement`);
         }
       }
     });
@@ -269,6 +336,36 @@ export function validateData(data) {
     for (const cadeau of Object.keys(lettre.cadeaux || {})) needItem(`${where}.cadeaux`, cadeau);
     const q = lettre.quand || {};
     if (q.debloque !== undefined && !elements.includes(q.debloque)) err(where, `quand.debloque « ${q.debloque} » inconnu (NIVEAUX.ELEMENTS)`);
+  }
+  // Commerces de la ferme, entreprises et sorties de la ville, Silo, Étable, joueur simulé.
+  // (Les meubles, eux, ne citent aucun objet : rien à vérifier.)
+  const C = data.COMMERCE || {};
+  for (const [id, t] of Object.entries(C.TYPES || {})) for (const item of t.prend || []) needItem(`COMMERCE.TYPES.${id}.prend`, item);
+  const V = data.VILLE || {};
+  for (const [id, e] of Object.entries((V.ENTREPRISES && V.ENTREPRISES.LISTE) || {})) {
+    for (const item of e.intrants || []) needItem(`VILLE.ENTREPRISES.LISTE.${id}.intrants`, item);
+  }
+  for (const [id, s] of Object.entries(V.SORTIES || {})) {
+    for (const item of Object.keys(s.butin || {})) needItem(`VILLE.SORTIES.${id}.butin`, item);
+    (s.cueillettes || []).forEach((c, i) => { for (const item of Object.keys(c)) needItem(`VILLE.SORTIES.${id}.cueillettes[${i}]`, item); });
+  }
+  for (const item of (V.BONHEUR && V.BONHEUR.SPECIALES && V.BONHEUR.SPECIALES.items) || []) needItem('VILLE.BONHEUR.SPECIALES.items', item);
+  if (data.SILO) needItem('SILO.ITEM', data.SILO.ITEM);
+  if (data.PATURAGE) needItem('PATURAGE.nourriture', data.PATURAGE.nourriture);
+  const SIM = data.SIMULATION || {};
+  for (const item of Object.keys(SIM.ACHATS_CUISINE || {})) needItem('SIMULATION.ACHATS_CUISINE', item);
+  if (SIM.DEPANNAGE) needItem('SIMULATION.DEPANNAGE.item', SIM.DEPANNAGE.item);
+
+  /* arbre des technologies : chaque clé d'effet est lue par le moteur */
+  for (const [id, n] of Object.entries(techtree.noeuds)) {
+    for (const cle of Object.keys(n.effet || {})) {
+      if (!EFFETS_TECHNO.includes(cle)) err(`techtree.noeuds.${id}.effet`, `« ${cle} » : aucun code du moteur ne lit cette clé (EFFETS_TECHNO, scripts/lib/data.mjs)`);
+    }
+  }
+
+  /* chaque objet s'obtient d'une façon ou d'une autre (avertissement seulement) */
+  for (const id of Object.keys(items)) {
+    if (!sourcesOf(data, id).length) warn(`items.${id}`, 'aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)');
   }
   /* niveaux (version 1.7) : chaque élément ou culture débloqué une seule fois */
   const N = data.NIVEAUX;
