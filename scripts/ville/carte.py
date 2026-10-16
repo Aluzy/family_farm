@@ -44,6 +44,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import batiments as B  # noqa: E402
 import ferme as F  # noqa: E402
+import immeubles as I  # noqa: E402
 import objets as O  # noqa: E402
 import sol as S  # noqa: E402
 import voitures as V  # noqa: E402
@@ -64,7 +65,7 @@ PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
     Planche('ville_vegetation', "Arbres, pins et buissons de la ferme, et leurs ombres"),
     Planche('ville_vehicules', "Les voitures"),
 )}
-RETOUCHEES = {'ville_trottoir', 'ville_brique', 'ville_menuiserie'}
+RETOUCHEES = {'ville_trottoir'}     # (la brique et la menuiserie : redessinées avec les bâtiments en 3/4)
 MATIERE_SOL = {'asphalte': 'asphalte', 'trottoir': 'trottoir', 'herbe': 'herbe', 'place': 'pierre'}
 PLANCHE_PASSAGE = {('asphalte', 'trottoir'): 'trottoir', ('trottoir', 'herbe'): 'herbe',
                    ('asphalte', 'herbe'): 'herbe', ('herbe', 'place'): 'pierre'}
@@ -93,14 +94,13 @@ def coins():
     zone('trottoir', 0, 0, 5, 11)
     # l'îlot du milieu : trottoirs, jardin de la bibliothèque, la bande d'herbe près de la tour
     zone('trottoir', 0, 10, 33, 33)
-    zone('herbe', 13, 12, 31, 31)
+    zone('herbe', 14, 12, 31, 31)
     zone('herbe', 2, 12, 4, 15)
     # l'îlot de droite
     zone('trottoir', 42, 10, 56, 33)
     # en bas : le parc, le parking, le trottoir de droite et la place de la fontaine
     zone('herbe', 0, 42, 56, 73)
     zone('asphalte', 5, 48, 23, 73)
-    zone('trottoir', 9, 61, 9, 73)
     zone('trottoir', 0, 40, 56, 41)      # le trottoir du bas, d'un bout à l'autre
     return g
 
@@ -142,133 +142,72 @@ PASSAGES_TRIES = {tuple(sorted(p)): p for p in S.PASSAGES}
 
 # ---------- les bâtiments ----------
 
+BATIMENTS = []        # les bâtiments dessinés (immeubles.Batiment), pour la couche « batiments »
+
+
 def batiments(c):
-    murs, pierre, vitres, bois, toits, menu, equip = (c[k] for k in ('murs', 'pierre_de_taille', 'vitrages', 'charpente', 'toits', 'menuiserie', 'equipements'))
-    fen, porte = O.fenetre(), O.porte()
+    """Les bâtiments, en 3/4 (scripts/ville/immeubles.py) : façade vers le bas de l'écran, toit
+    vu au-dessus, aussi profond que le bâtiment. Les emprises laissent un passage derrière."""
+    Bt = I.Batiment
 
-    def fenetres(cols, ligne):
-        for x in cols:
-            menu.colle(fen, x * T, ligne * T)
+    def bat(*a, **k):
+        b = Bt(*a, **k).dessine(c)
+        BATIMENTS.append(b)
+        return b
 
-    # --- en haut, le bas des façades coupées par le bord de l'image
-    B.mur(murs, 5, 0, 14, 2, 'bleu', haut=False)
-    fenetres((6, 7, 11, 12), 0)
-    menu.colle(porte, 9 * T, 0)
-    B.mur(murs, 16, 0, 30, 2, 'ocre', haut=False)
-    fenetres((18, 19, 24), 0)
-    B.mur(murs, 45, 0, 56, 2, 'rouge', haut=False, droite=False)
-    fenetres((46, 49, 54), 0)
-    menu.colle(porte, 51 * T, 0)
+    # --- en haut, le rez-de-chaussée des façades coupées par le bord de la carte
+    bat('facade_bleue', 0, 14, 2, 4, 3, 'bleu', None, fenetres=[[1, 3, 5, 7, 11, 12]], portes=[9], gauche=False)
+    bat('facade_ocre', 16, 32, 2, 4, 3, 'ocre', None, fenetres=[[18, 20, 22, 26, 28]], portes=[24])
+    bat('facade_rouge', 43, 56, 2, 4, 3, 'rouge', None, fenetres=[[45, 47, 49, 53, 55]], portes=[51], droite=False)
 
-    # --- à gauche, la maison bleue (deux corps)
-    B.pan(toits, 0, 0, 3 * T, 6 * T, 'droite')
-    B.egout(toits, 3 * T, 0, 3 * T, 6 * T)
-    B.mur(murs, 0, 6, 2, 16, 'bleu', gauche=False)
-    fenetres((0,), 7)
-    fenetres((0,), 11)
-    B.pan(toits, 0, 16 * T, 5 * T, 22 * T, 'bas')
-    B.faitage(toits, 0, 16 * T + 3, 5 * T, 16 * T + 3)
-    B.mur(murs, 0, 22, 5, 32, 'bleu', gauche=False)
-    fenetres((0, 3), 23)
-    fenetres((0, 3), 26)
-    fenetres((3,), 29)
-    menu.colle(porte, 1 * T, 30 * T)
+    # --- l'îlot du milieu : la maison bleue, la tour, la bibliothèque et son jardin ; derrière,
+    # une cour pavée où l'on passe sous leurs toits
+    bat('maison_bleue', 0, 5, 32, 6, 3, 'bleu', 'pans', fenetres=[[3], [1, 3]], portes=[1], gauche=False)
 
-    # --- la tour de verre : toit plat, quatre étages de verre, socle de brique bleue
-    toits_plat = c['toits_plat']
-    B.toit_plat(toits_plat, 5 * T, 4 * T, 14 * T, 12 * T)
-    equip.colle(O.climatiseur(), 10 * T + 8, 5 * T)
-    # les flancs de verre montent jusque sous les coins coupés du toit (ils les remplissent)
-    B.verre(vitres, 5, 10, 7, 27, 'sombre')
-    B.verre(vitres, 7, 12, 12, 27, 'clair')
-    B.verre(vitres, 12, 10, 14, 27, 'sombre')
-    for x in (7 * T - 2, 12 * T - 2):
-        B.cadre(vitres, x, 10 * T, x + 4, 27 * T)
-    B.cadre(vitres, 5 * T, 27 * T, 14 * T, 28 * T)
-    B.mur(murs, 5, 28, 14, 32, 'bleu', haut=False)
-    menu.colle(O.porte_vitree(), 8 * T + 8, 30 * T)
+    # la tour : un socle de pierre vitré, quatre étages de verre entre des pilastres, un toit plat
+    X0, X1, BASE = 6 * T, 14 * T, 32 * T
+    tour = Bt('tour', 6, 14, 32, 8, 5, 'pierre', 'plat', bandeaux=False).dessine(c)
+    BATIMENTS.append(tour)
+    vit = c['vitrages']
+    for k in range(1, 5):
+        I.verre(vit, X0 + 10, BASE - (k + 1) * I.ETAGE + 6, X1 - 10, BASE - k * I.ETAGE - 4,
+                'clair' if k % 2 else 'sombre')
+    I.verre(vit, X0 + 10, BASE - 44, X1 - 10, BASE - 7, 'sombre', pas_x=24)
+    I.porte_double(c['menuiserie'], (X0 + X1) // 2 - 16, BASE - 6, haut=38, verre=True)
+    c['toits_plat'].colle(O.climatiseur(), X0 + 72, BASE - I.hauteur_facade(5) - 8 * T + 24)
 
-    # --- la bibliothèque : dôme de tuiles, verrière, façade de pierre à colonnes, aile gauche
-    B.pan(toits, 14 * T, 12 * T, 17 * T, 14 * T, 'bas')
-    B.faitage(toits, 14 * T, 12 * T + 3, 17 * T, 12 * T + 3)
-    B.mur(murs, 14, 14, 16, 22, 'ocre', haut=True)
-    fenetres((14, 15), 15)
-    fenetres((14, 15), 18)
-    cx = 21 * T + 8
-    dome = B.demi_ellipse_haut(cx, 9 * T, 5.5 * T, 4.5 * T)
-    B.pan(toits, 16 * T, 9 * T, cx, 18 * T, 'gauche', dome)
-    B.pan(toits, cx, 9 * T, 27 * T, 18 * T, 'droite', dome)
-    haut_dome = next(y for y in range(9 * T, 18 * T) if dome(cx, y))
-    B.faitage(toits, cx, haut_dome, cx, 18 * T)
-    B.egout(toits, 16 * T, 18 * T, 27 * T, 18 * T)
-    # le liseré clair du bord du dôme
-    for y in range(9 * T, 18 * T):
-        for x in range(16 * T, 27 * T):
-            if dome(x, y) and not all(dome(x + dx, y + dy) for dx, dy in ((2, 0), (-2, 0), (0, -2))):
-                toits.put(x, y, (214, 192, 150))
-    B.verre(vitres, 17, 18, 26, 19, 'verriere', pas_x=24, oblique=True)
-    B.verre(vitres, 16, 18, 17, 26, 'sombre', pas_x=8, pas_y=32)
-    B.verre(vitres, 26, 18, 27, 26, 'sombre', pas_x=8, pas_y=32)
-    B.facade_pierre(pierre, 17, 19, 26, 26)
-    B.entablement(pierre, 17, 26, 19)
-    for x in (18 * T + 3, 24 * T + 3):
-        B.colonne(pierre, x, 20, 26)
-    pierre.colle(O.entree(), 20 * T, 22 * T + 8)
+    # la bibliothèque : un corps de pierre à colonnes, coiffé d'un dôme, deux ailes de brique ;
+    # la porte en haut des marches, les marches sur l'allée du jardin
+    bat('aile_ouest', 15, 18, 25, 5, 1, 'ocre', 'pans', fenetres=[[16]])
+    bat('aile_est', 26, 29, 25, 5, 1, 'ocre', 'pans', fenetres=[[27]])
+    X0, X1, BASE = 18 * T, 26 * T, 25 * T
+    biblio = Bt('bibliotheque', 18, 26, 25, 6, 2, 'pierre', 'plat', bandeaux=False, pilastres=True).dessine(c)
+    BATIMENTS.append(biblio)
+    pierre = c['pierre_de_taille']
+    cx = (X0 + X1) // 2
+    egout = BASE - I.hauteur_facade(2)
+    for x in (X0 + 14, X0 + 34, X1 - 44, X1 - 24):
+        I.colonne(pierre, x, egout + I.FRISE, BASE - 6)
+    I.porte_double(pierre, cx - 16, BASE, haut=48)
+    I.marches(pierre, cx - 20, cx + 20, BASE, n=2)
+    I.dome(c['toits_plat'], cx, egout - 3 * T, 40)       # (sur le toit plat, peint après)
+    biblio.haut = egout - 3 * T - 40 - 16
 
-    # --- l'immeuble orange : toit à croupe (arêtiers à 45°), trois étages de fenêtres
-    X0, Y0, Yf, Y1 = 45 * T, 9 * T, 12 * T, 18 * T
-    B.pan(toits, X0, Y0, W * T, Yf, 'haut', lambda x, y: x - X0 >= y - Y0)
-    B.pan(toits, X0, Y0, X0 + 3 * T, Yf + 3 * T, 'gauche', lambda x, y: x - X0 < min(y - Y0, 2 * Yf - Y0 - y))
-    B.pan(toits, X0, Yf, W * T, Y1, 'bas', lambda x, y: x - X0 >= 2 * Yf - Y0 - y)
-    B.faitage(toits, X0 + 3 * T, Yf, W * T, Yf)
-    B.aretier(toits, X0, Y0, X0 + 3 * T, Yf)
-    B.aretier(toits, X0 + 3 * T, Yf, X0, Yf + 3 * T)
-    B.egout(toits, X0, Y1, W * T, Y1)
-    B.mur(murs, 45, 18, 56, 32, 'orange', droite=False)
-    B.bandeau(murs, 45, 56, 23)
-    B.bandeau(murs, 45, 56, 27)
-    fenetres((46, 48, 50, 52, 54), 19)
-    fenetres((46, 48, 50, 52, 54), 24)
-    fenetres((46, 48, 53, 55), 28)
-    menu.colle(porte, 51 * T, 30 * T)
+    # --- l'îlot de droite : l'immeuble orange, toit à croupe ; une cour derrière
+    bat('immeuble_orange', 44, 56, 32, 9, 3, 'orange', 'croupe',
+        fenetres=[[45, 47, 53, 55], [45, 47, 49, 51, 53, 55]], portes=[50], droite=False)
 
-    # --- la maison à pignons, en bas : deux ailes à pignon, un corps central
-    Yt, Yb = 39 * T, 43 * T
-    B.mur(murs, 25, 40, 42, 50, 'orange')
-    for ax in (25, 38):
-        g, d = ax * T, (ax + 4) * T
-        m = (g + d) // 2
-        pignon = lambda x, y, m=m: y > Yb - 52 + abs(x + 0.5 - m) * 1.5
-        B.pan(toits, g, Yt, m, Yb, 'gauche', lambda x, y, p=pignon: not p(x, y))
-        B.pan(toits, m, Yt, d, Yb, 'droite', lambda x, y, p=pignon: not p(x, y))
-        B.faitage(toits, m, Yt, m, Yb - 52)
-        for x in range(g, d):
-            y = round(Yb - 52 + abs(x + 0.5 - m) * 1.5)
-            for r, col in enumerate(((40, 31, 31), (88, 58, 40), (112, 76, 52), (40, 31, 31))):
-                if y - 3 + r < Yb:
-                    toits.put(x, y - 3 + r, col)
-        menu.colle(fen, m - 8, 41 * T - 4)
-    B.pan(toits, 29 * T, Yt, 38 * T, 41 * T, 'haut')
-    B.pan(toits, 29 * T, 41 * T, 38 * T, Yb, 'bas')
-    B.faitage(toits, 29 * T, 41 * T, 38 * T, 41 * T)
-    B.egout(toits, 29 * T, Yb, 38 * T, Yb)
-    for x in (29 * T, 38 * T - 4):
-        B.poutre(murs, x, 43, 50)
-    fenetres((26, 27, 30, 32, 34, 36, 39, 40), 43)
-    fenetres((26, 27, 30, 32, 34, 39, 40), 46)
-    menu.colle(porte, 37 * T, 48 * T)
+    # --- en bas : la maison à pignons (un corps, deux ailes au pignon sur la rue), en retrait du
+    # trottoir : son toit passe au-dessus, on marche derrière
+    bat('maison_corps', 29, 38, 52, 4, 2, 'orange', 'pans', fenetres=[[30, 32, 36], [30, 32, 34, 36]], portes=[34])
+    bat('maison_aile_ouest', 25, 29, 52, 4, 2, 'orange', 'pignon', fenetres=[[26.5]])
+    bat('maison_aile_est', 38, 42, 52, 4, 2, 'orange', 'pignon', fenetres=[[39.5]])
 
-    # --- en bas à gauche : la longue maison au faîtage vertical, son mur pignon, l'appentis
-    B.pan(toits, 0, 42 * T, 40, 70 * T, 'gauche')
-    B.pan(toits, 40, 42 * T, 5 * T, 70 * T, 'droite')
-    B.faitage(toits, 40, 42 * T, 40, 70 * T)
-    B.egout(toits, 0, 70 * T, 5 * T, 70 * T)
-    B.mur(murs, 0, 70, 5, 73, 'ocre', gauche=False, bas=False)
-    menu.colle(O.lucarne(), 0, 56 * T)
-    B.toit_planches(bois, 5, 60, 9, 70, verticale=True)
+    # --- en bas à gauche : la longue maison, pignon sur le parking, coupée par le bas de la carte
+    bat('longue_maison', 0, 5, 73, 22, 1, 'ocre', 'pignon', fenetres=[[0.5, 3.5]], portes=[2], gauche=False)
     # la remise de bois du parking
-    B.toit_planches(bois, 20, 69, 23, 71, verticale=False)
-    B.porte_planches(bois, 20 * T, 71 * T, 23 * T, 73 * T)
+    remise = bat('remise', 19, 23, 73, 3, 1, 'bois', 'planches', pilastres=False, bandeaux=False)
+    B.porte_planches(c['charpente'], 20 * T, 73 * T - 40, 22 * T, 73 * T)
 
 
 # ---------- le sol : marquages, plaques, dalles, fleurs ----------
@@ -306,12 +245,11 @@ def details(c):
             return S.PLACE_C
         return S.place(x % T, y % T)
     d.remplit(int(cx - rx) - 1, int(cy - ry) - 1, int(cx + rx) + 2, int(cy + ry) + 2, pave)
-    for y in range(26, 31):              # le chemin s'arrête à la palissade, avant le trottoir
-        for x in (20, 21):
+    for y in range(26, 31):              # des marches de la bibliothèque à la porte du jardin
+        for x in (21, 22):
             d.colle(O.dalle(x + y), x * T, y * T)
-    for x in range(27, 31):
-        for y in (21, 22):
-            d.colle(O.dalle(x * 3 + y), x * T, y * T)
+    for y in range(52, 55):              # devant la porte de la maison à pignons
+        d.colle(O.dalle(34 + y), 34 * T, y * T)
     for x, y in ((21, 49), (47, 52), (12, 47), (33, 66)):
         d.colle(O.caillou(x + y), x * T, y * T)
     f = c['fleurs']
@@ -339,10 +277,10 @@ def details(c):
 # ou trois arbres de la ferme, plus petits. Chacun tient dans son carré d'herbe (rien ne passe
 # devant un mur ni sur une palissade) et le passage entre les palissades du parc reste libre.
 ARBRES = [(3.5, 15), (6.5, 46), (9.5, 46.5), (12.5, 46), (15.5, 46.5), (18.5, 46), (21.5, 46.5),
-          (28.5, 15.5), (30, 17), (28.5, 29), (30, 30.5), (29.5, 55.5), (31.5, 54), (34.5, 61.5), (36, 60),
+          (28.5, 15.5), (30, 17), (28.5, 29), (30, 30.5), (29.5, 57.5), (32, 59), (34.5, 61.5), (36, 60),
           (52.5, 54.5), (54.5, 53), (27, 72.5), (30.5, 74), (33.5, 73.5), (36.5, 75), (51.5, 74.5),
           (54, 74.5), (56.5, 69), (57, 51)]
-PINS = [(44, 51), (35, 53.5), (28, 55.5), (28, 67)]
+PINS = [(44, 51), (37.5, 57.5), (27.5, 56), (28, 67)]
 BUISSONS = [(16.5, 29, True), (45.5, 43.5, True), (54.5, 44, True), (25.5, 58, False), (55.5, 59.5, False),
             (34, 72, True), (55.5, 66.5, False), (6.5, 73, False), (27.5, 14, False), (16, 26, False)]
 
@@ -386,18 +324,18 @@ def objets(c):
         gare(coul, sens, x * T, 49 * T + 40)
 
     mob = c['mobilier']
-    B.cloture_h(mob, 14 * T, 20 * T, 31 * T + 12)
-    B.cloture_h(mob, 22 * T, 31 * T + 8, 31 * T + 12)
+    B.cloture_h(mob, 14 * T, 21 * T, 31 * T + 12)
+    B.cloture_h(mob, 23 * T, 31 * T + 8, 31 * T + 12)
     B.cloture_v(mob, 31 * T + 8, 12 * T, 21 * T)
     B.cloture_v(mob, 31 * T + 8, 23 * T, 31 * T)
     B.cloture_v(mob, 24 * T + 6, 42 * T, 59 * T)
     B.cloture_v(mob, 24 * T + 6, 64 * T, H * T)
     B.cloture_h(mob, 24 * T, 27 * T, 59 * T + 12)
     mob.colle(O.banc(), 25 * T, 27 * T + 8)
-    mob.colle(O.banc(), 37 * T, 50 * T + 8)
+    mob.colle(O.banc(), 37 * T, 54 * T + 8)
     mob.colle(O.banc(True), 50 * T + 8, 54 * T)
     mob.colle(O.banc(), 24 * T + 4, 60 * T)
-    mob.colle(O.panneau(), 40 * T + 8, 50 * T)
+    mob.colle(O.panneau(), 40 * T + 8, 54 * T)
     tonneau = O.tonneau()
     mob.colle(tonneau, 23 * T + 4, 44 * T)
     mob.colle(tonneau, 44 * T, 45 * T)
@@ -466,12 +404,16 @@ def objets_carte(premier_id):
         carrefours.append({'id': i, 'name': nom, 'type': 'carrefour', 'rotation': 0, 'visible': True,
                            'x': x0 * T, 'y': y0 * T, 'width': (x1 - x0) * T, 'height': (y1 - y0) * T})
         i += 1
+    batiments = []
+    for b in BATIMENTS:
+        batiments.append(b.objet(i))
+        i += 1
     garees = []
     for x, y, dx, dy in GAREES:
         garees.append({'id': i, 'name': 'voiture', 'type': 'garee', 'rotation': 0, 'visible': True,
                        'x': x - dx, 'y': y - dy, 'width': 2 * dx, 'height': 2 * dy})
         i += 1
-    return routes, carrefours, garees, i
+    return routes, carrefours, garees, batiments, i
 
 def main():
     # les jeux de Wang des passages, en tête de leurs planches
@@ -520,11 +462,11 @@ def main():
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                         'opacity': 1, 'visible': True, 'data': data})
-    routes, carrefours, garees, prochain = objets_carte(2)
+    routes, carrefours, garees, batis, prochain = objets_carte(2)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': len(couches) + 5, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': len(couches) + 6, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             # où la promeneuse arrive (ville-carte.html) : sur le trottoir du bas, devant le parc
@@ -540,6 +482,11 @@ def main():
             # l'emprise au sol des voitures garées : la promeneuse en fait le tour
             {'id': len(couches) + 4, 'name': 'garees', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
              'visible': True, 'x': 0, 'y': 0, 'objects': garees},
+            # les bâtiments : leur emprise au sol (on n'y marche pas) et le haut de leur dessin
+            # (propriété « haut ») ; ce qui est dessiné au-dessus de l'emprise passe devant la
+            # promeneuse quand elle est derrière (js/ville-carte.js)
+            {'id': len(couches) + 5, 'name': 'batiments', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': batis},
         ],
     }
     with open(os.path.join(ASSETS, 'ville.tmj'), 'w') as f:

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.2" name="ville_pierre" tilewidth="16" tileheight="16" tilecount="112" columns="16">
+<tileset version="1.10" tiledversion="1.12.2" name="ville_pierre" tilewidth="16" tileheight="16" tilecount="128" columns="16">
  <!-- Pavés de la place, pierre de taille, dalles, cailloux -->
- <image source="ville_pierre.png" width="256" height="112"/>
+ <image source="ville_pierre.png" width="256" height="128"/>
   <tile id="0"><properties><property name="nom" value="herbe"/></properties></tile>
   <tile id="1"><properties><property name="nom" value="herbe_place_1"/></properties></tile>
   <tile id="2"><properties><property name="nom" value="herbe_place_2"/></properties></tile>

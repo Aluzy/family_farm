@@ -7,7 +7,15 @@
  * « depart ». La fermière : assets/fermiere.png, cases de 16 × 32 nommées dans
  * assets/fermiere.json (scripts/personnage/), la même que sur la carte de la ferme.
  *
- * Elle marche sur le sol (chaussée, trottoirs, herbe, pavés), pas à travers un mur, un toit,
+ * Les bâtiments sont en 3/4 (scripts/ville/immeubles.py) : la couche d'objets « batiments »
+ * donne l'emprise au sol de chacun (on n'y marche pas) et le haut de son dessin (propriété
+ * « haut »). Tout ce qui est dessiné au-dessus de l'emprise cache le sol de derrière, où l'on
+ * passe : les couches des bâtiments existent en deux exemplaires, l'un sous les personnages,
+ * l'autre (« …_devant ») par-dessus ; autour de chaque personnage, l'exemplaire du dessus
+ * s'efface si elle est devant le bâtiment (on la voit devant le mur), et devient transparent
+ * si elle est derrière (on la voit à travers le toit, comme sous les arbres).
+ *
+ * Elle marche sur le sol (chaussée, trottoirs, herbe, pavés), pas à travers un bâtiment,
  * une fontaine, une voiture, une palissade ou un banc : un toucher (ou un clic) l'envoie au
  * plus court jusque-là ; les flèches ou ZQSD la dirigent aussi. Sous un arbre, le feuillage
  * s'efface un peu pour la laisser voir. Avec « animations réduites », l'eau reste immobile.
@@ -29,8 +37,11 @@
   const MAP = { key: 'ville', file: 'assets/ville.json' };
   const HERO = { key: 'fermiere', file: 'assets/fermiere.png', names: 'assets/fermiere.json', w: 16, h: 32, foot: 30, speed: 48, stride: 4 };
   // Les couches qu'on ne traverse pas, et celle qui passe devant la promeneuse (le feuillage).
-  // (les voitures garées : par leur emprise au sol, couche d'objets « garees »)
-  const OBSTACLES = ['murs', 'pierre_de_taille', 'vitrages', 'charpente', 'toits', 'fontaines', 'mobilier'];
+  // (les bâtiments et les voitures garées : par leur emprise au sol, couches « batiments » et « garees »)
+  const OBSTACLES = ['fontaines', 'mobilier'];
+  // les couches des bâtiments, doublées d'un exemplaire « _devant » au-dessus des personnages
+  const BATI = ['murs', 'pierre_de_taille', 'vitrages', 'charpente', 'toits', 'menuiserie'];
+  const BATI_ALPHA = 0.45;
   const DEVANT = 'vegetation';
   const FEUILLAGE_ALPHA = 0.45;
   // La circulation : vitesses en px au sol par seconde, distances au sol.
@@ -61,6 +72,11 @@
       this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
         const data = this.cache.tilemap.get(MAP.key).data;
         for (const set of data.tilesets) this.load.image(set.name, 'assets/' + set.image);
+        // l'exemplaire du dessus de chaque couche de bâtiment
+        for (const name of BATI) {
+          const l = data.layers.find((x) => x.name === name);
+          if (l && !data.layers.some((x) => x.name === name + '_devant')) data.layers.push({ ...l, name: name + '_devant', data: l.data.slice() });
+        }
       });
     }
 
@@ -70,7 +86,8 @@
       const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, s.name));
       this.layers = {};
       map.layers.forEach((l, i) => {
-        this.layers[l.name] = map.createLayer(l.name, sets, 0, 0).setDepth(l.name === DEVANT ? 1e6 : -100 + i);
+        const depth = l.name === DEVANT ? 1e6 : l.name.endsWith('_devant') ? 5e5 + i : -100 + i;
+        this.layers[l.name] = map.createLayer(l.name, sets, 0, 0).setDepth(depth);
       });
       this.makeTileAnims();
 
@@ -83,9 +100,10 @@
         }
         this.walk.push(row);
       }
-      // les voitures garées : les tuiles dont le centre est sous leur emprise
+      // les bâtiments et les voitures garées : les tuiles dont le centre est sous leur emprise
       const objects = (name) => ((map.getObjectLayer(name) || {}).objects) || [];
-      for (const r of objects('garees')) {
+      this.makeBuildings(objects('batiments'));
+      for (const r of [...objects('garees'), ...objects('batiments')]) {
         for (let y = Math.floor(r.y / T); y <= Math.floor((r.y + r.height) / T); y++) {
           for (let x = Math.floor(r.x / T); x <= Math.floor((r.x + r.width) / T); x++) {
             const cx = x * T + T / 2, cy = y * T + T / 2;
@@ -156,6 +174,52 @@
         if (k === g.cur) continue;
         g.cur = k;
         for (const t of g.tiles) t.index = g.frames[k];
+      }
+    }
+
+    // ---------- les bâtiments ----------
+
+    // Chaque tuile de bâtiment appartient au bâtiment dont le dessin la couvre (de son « haut »
+    // à sa base, un peu plus large pour les débords de toit) ; celles de l'exemplaire du dessus
+    // qui n'appartiennent à aucun (les marches, posées au sol) en sont retirées.
+    makeBuildings(objs) {
+      this.buildings = objs.map((o) => {
+        const p = (o.properties || []).find((q) => q.name === 'haut');
+        return { name: o.name, x0: o.x - 8, x1: o.x + o.width + 8, top: p ? p.value : o.y, base: o.y + o.height };
+      });
+      this.covered = [];
+      this.owner = (x, y) => this.buildings.find((b) => x >= b.x0 && x < b.x1 && y >= b.top && y < b.base) || null;
+      for (const name of BATI) {
+        const up = this.layers[name + '_devant'], down = this.layers[name];
+        if (!up) continue;
+        up.forEachTile((t) => {
+          if (t.index < 0) return;
+          const b = this.owner(t.pixelX + T / 2, t.pixelY + T / 2);
+          if (!b) { up.removeTileAt(t.x, t.y); return; }
+          t.bat = b;
+          t.down = down.getTileAt(t.x, t.y);
+        });
+      }
+    }
+
+    // Autour de chaque personnage (sa boîte, en px) : devant un bâtiment, l'exemplaire du
+    // dessus s'efface (on la voit devant le mur) ; derrière, il devient transparent et celui du
+    // dessous s'efface (on la voit à travers) — pour la promeneuse seulement, les voitures
+    // passent simplement derrière.
+    uncover(boxes) {
+      for (const t of this.covered) { t.alpha = 1; if (t.down) t.down.alpha = 1; }
+      this.covered = [];
+      for (const { x, y, w, h, foot, see } of boxes) {
+        for (const name of BATI) {
+          const up = this.layers[name + '_devant'];
+          if (!up) continue;
+          for (const t of up.getTilesWithinWorldXY(x, y, w, h) || []) {
+            if (!t.bat) continue;
+            if (foot >= t.bat.base) t.alpha = 0;
+            else if (see) { t.alpha = BATI_ALPHA; if (t.down) t.down.alpha = 0; } else continue;
+            this.covered.push(t);
+          }
+        }
       }
     }
 
@@ -390,6 +454,10 @@
       H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y);
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5);
       this.fadeFoliage(Math.round(P.x), Math.round(P.y));
+      // les bâtiments autour des voitures, puis de la promeneuse
+      const boxes = (this.cars || []).map((c) => ({ x: c.x - 30, y: c.y - 38, w: 60, h: 56, foot: c.y, see: false }));
+      boxes.push({ x: P.x - HERO.w / 2, y: P.y - HERO.foot, w: HERO.w, h: HERO.h, foot: P.y, see: true });
+      this.uncover(boxes);
     }
   }
 

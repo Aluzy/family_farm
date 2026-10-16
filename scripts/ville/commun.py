@@ -102,6 +102,8 @@ class Toile:
             f = frames[min(i, len(frames) - 1)]
             # rogné au bord de la carte (alpha_composite ne prend pas de position négative)
             gx, gy = max(0, -x), max(0, -y)
+            if gx >= f.width or gy >= f.height:
+                continue
             f = f.crop((gx, gy, f.width, f.height))
             if f.width > 0 and f.height > 0 and x + gx < im.width and y + gy < im.height:
                 im.alpha_composite(f, (x + gx, y + gy))
