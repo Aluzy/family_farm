@@ -6408,9 +6408,13 @@ test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent p
   assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
     [['maison', 1], ['panneau', 1], ['pompe', 1], ['reservoir', 1], ['houe', 1], ['labours', 6], ['semis', 6], ['arrosees', 6], ['recoltes', 1]],
     [['niveau', 2], ['cultures', 4], ['silo', 1], ['semisBle', 1], ['siloBle', 50]],
-    [['pontes', 7], ['autonomie', 50]],
-    [['pains', 5], ['plats', 3]], [['laines', 10], ['autonomie', 60]], [['tenue', 1]], [['serie100', 7]],
+    [['pontes', 7], ['autonomie', 50], ['objet', 4]],
+    [['pains', 5], ['plats', 3], ['objet', 1]], [['laines', 10], ['autonomie', 60]], [['tenue', 1]], [['serie100', 7]],
   ]);
+  // version 1.22 : le palier 2 de l'Arbre des technologies (chapitre 3) demande du fer
+  assertEqual([L[2].objectifs[2].item, L[3].objectifs[2].item], ['minerai_fer', 'lingot_fer']);
+  assertEqual(DATA.techtree.PALIERS[2].chapitre, 3);
+  assert(Object.values(DATA.techtree.noeuds).some((n) => n.palier === 2 && n.ressources && n.ressources.lingot_fer), 'un nœud du palier 2 demande un lingot de fer');
   assertEqual([DATA.CHAPITRES.liste[5].objectifs[0].nuits, DATA.CHAPITRES.liste[5].objectifs[0].moyenne], [10, 80]);
   assertEqual(DATA.AUTONOMIE, { HISTORIQUE_MAX: 1000, GRAPHIQUE_NUITS: 20 });
   assertEqual(DATA.CHAPITRES.ELEMENTS, undefined, 'les libellés sont dans DATA.NIVEAUX.ELEMENTS');
@@ -6420,7 +6424,7 @@ test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', ()
   const s = createInitialState(1);
   assertEqual(s.campagne, {
     chapitre: 1, fini: false, annonces: [], historique: [],
-    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false, recoltes: 0, cultures: [], semisBle: 0, labours: 0, semis: 0, arroseesMax: 0 },
+    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false, recoltes: 0, cultures: [], semisBle: 0, labours: 0, semis: 0, arroseesMax: 0, objets: {} },
   });
   assertEqual(chapterReached(s), 1);
   assertEqual(lastAutonomy(s), 0);
@@ -6703,6 +6707,9 @@ testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () =>
     sleepOnce(s);
     assertEqual(s.campagne.compteurs.serieOeufs, night);
   }
+  assertEqual([s.campagne.chapitre, okList(s)], [3, [true, true, false]], 'version 1.22 : il manque le minerai de la grotte');
+  addItem(s, 'minerai_fer', 4);
+  updateChapters(s);
   assertEqual(s.campagne.chapitre, 4);
   assertEqual(s.campagne.annonces.map((a) => a.chapitre), [3]);
 });
@@ -6711,7 +6718,8 @@ test('chapitre 3 : sept nuits sans l\'autonomie requise ne suffisent pas', () =>
   const s = atChapter(3);
   s.campagne.compteurs.serieOeufs = 7;
   s.campagne.historique = [{ nuit: 1, pct: 49, energie: 73 }];
-  assertEqual(okList(s), [true, false]);
+  addItem(s, 'minerai_fer', 4);
+  assertEqual(okList(s), [true, false, true]);
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 3);
   s.campagne.historique.push({ nuit: 2, pct: 50, energie: 75 });
@@ -6759,8 +6767,14 @@ testBase('chapitre 4 : 5 pains et 3 plats différents', () => {
     assert(startRecipe(s, 'pain').ok);
     runFor(s, 25);
   }
-  assertEqual([s.campagne.compteurs.pains, okList(s)], [5, [true, false]]);
+  assertEqual([s.campagne.compteurs.pains, okList(s)], [5, [true, false, false]]);
   assertEqual(s.campagne.chapitre, 4, 'cinq pains ne font pas les trois plats');
+  // version 1.22 : un lingot de fer fondu au Four (4 minerais + du bois)
+  addItem(s, 'minerai_fer', 4);
+  addItem(s, 'bois', 3);
+  assert(startRecipe(s, 'lingot_fer').ok, 'fondre un lingot de fer');
+  runFor(s, 25);
+  assertEqual([countItem(s, 'minerai_fer'), countItem(s, 'lingot_fer'), okList(s)[2]], [0, 1, true]);
   const dishes = [['omelette', { oeuf: 3, huile: 1 }, 20], ['gratin_patates', { patate: 3, oeuf: 1 }, 35], ['ratatouille', { tomate: 1, courgette: 1, aubergine: 1, huile: 1 }, 35]];
   dishes.forEach(([id, ing, secs], i) => {
     for (const [item, n] of Object.entries(ing)) addItem(s, item, n);
@@ -6770,6 +6784,46 @@ testBase('chapitre 4 : 5 pains et 3 plats différents', () => {
   });
   assertEqual(s.campagne.chapitre, 5);
   assertEqual(s.campagne.annonces.map((a) => a.chapitre), [4]);
+});
+
+test('version 1.22 : objectif « objet » : le record reste quand le minerai est fondu ou le lingot dépensé', () => {
+  const s = atChapter(3);
+  const objet = () => chapterProgress(s).objectifs.find((o) => o.type === 'objet');
+  assertEqual([objet().item, objet().valeur, objet().ok], ['minerai_fer', 0, false]);
+  addItem(s, 'minerai_fer', 3);
+  updateChapters(s);
+  assertEqual(objet().valeur, 3);
+  takeItem(s, 'minerai_fer', 3);
+  updateChapters(s);
+  assertEqual([objet().valeur, s.campagne.compteurs.objets.minerai_fer], [3, 3], 'le record reste');
+  addItem(s, 'minerai_fer', 4);
+  assertEqual(objet().ok, true, 'quatre minerais en main, avant même le pas d\'horloge');
+  updateChapters(s);
+  takeItem(s, 'minerai_fer', 4);
+  assertEqual([objet().valeur, objet().ok], [4, true]);
+});
+
+test('version 1.22 : objectif « objet » : un minerai eu avant le chapitre compte, une ancienne sauvegarde sans record aussi', () => {
+  const s = atChapter(2);
+  addItem(s, 'minerai_fer', 5);
+  updateChapters(s);
+  takeItem(s, 'minerai_fer', 5);
+  s.campagne.chapitre = 3; // le chapitre 2 terminé (testGoToChapter remettrait les compteurs à zéro)
+  assertEqual(chapterProgress(s).objectifs[2].valeur, 5);
+  // une sauvegarde d'avant la version 1.22 : pas de compteurs.objets
+  const v = atChapter(3);
+  delete v.campagne.compteurs.objets;
+  assertEqual(chapterProgress(v).objectifs[2].valeur, 0);
+  addItem(v, 'minerai_fer', 4);
+  updateChapters(v);
+  assertEqual(v.campagne.compteurs.objets.minerai_fer, 4);
+});
+
+test('version 1.22 : une partie déjà au-delà du chapitre 4 ne recule pas', () => {
+  const s = atChapter(5);
+  updateChapters(s);
+  assertEqual([s.campagne.chapitre, s.campagne.fini], [5, false]);
+  assertEqual(chapterProgress(s).objectifs.some((o) => o.type === 'objet'), false);
 });
 
 testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {

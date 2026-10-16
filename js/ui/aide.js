@@ -54,6 +54,47 @@ function stationRecipesLine(id) {
     .join(' ; ');
 }
 
+// Noms d'objets en minuscules, séparés par des virgules : « miel, sucre, épices ».
+const itemNames = (ids) => ids.map((id) => DATA.items[id].nom.charAt(0).toLowerCase() + DATA.items[id].nom.slice(1)).join(', ');
+
+const capitalize = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+// Les recettes qui demandent l'un de ces objets (« pain, tarte aux pommes… »).
+function recipesUsing(items) {
+  return Object.values(DATA.recipes)
+    .filter((r) => !r.transformation && r.ingredients.some((i) => ingredientOptions(i).some((it) => items.includes(it))))
+    .map((r) => r.nom.toLowerCase());
+}
+
+// Ce que demande une recette : « 4 minerai de fer + 3 bois ».
+const ingredientsText = (r) => r.ingredients.map((i) => `${formatQty(i.qte)} ${ingredientOptions(i).map((it) => DATA.items[it].nom.toLowerCase()).join(' ou ')}`).join(' + ');
+
+// Les lingots fondus au Four (recettes lingot_*).
+const ingotRecipes = () => Object.values(DATA.recipes).filter((r) => r.sortie && /^lingot_/.test(r.sortie));
+
+// Les cultures de rente : celles qui ne poussent qu'à la Serre.
+const cashCrops = () => Object.keys(DATA.crops).filter((c) => DATA.crops[c].lieux.length === 1 && DATA.crops[c].lieux[0] === 'serre');
+
+// Les recettes de luxe (l'Épicerie fine de l'Arbre des technologies), vendues
+// `priceMultiplier` % du prix de leurs ingrédients.
+const luxuryRecipes = () => DATA.techtree.noeuds.cui_epicerie.effet.recettes.map((id) => DATA.recipes[id]).filter((r) => r && r.priceMultiplier);
+
+// Les eaux de la canne à pêche et ce qu'on y prend.
+const EAUX = { etang: 'Étang de la ferme', mare: 'Mare de la ferme', lac: 'Lac de la montagne', mer: 'Mer (depuis le ponton de la plage)' };
+
+// Le fromage d'alpage (fiche de l'Étable) : herbes de montagne → lait d'alpage → fromage.
+function alpageText() {
+  const V = DATA.ANIMAUX.vache;
+  const herbes = DATA.items[DATA.PATURAGE.herbes];
+  const lait = DATA.items[V.laitAlpage];
+  const r = DATA.recipes.fromage_alpage;
+  const fromage = DATA.items[r.sortie];
+  const laiterie = Object.values(DATA.techtree.noeuds).find((n) => n.effet && (n.effet.recettes || []).includes('fromage_alpage'));
+  const nb = (n) => (n === 1 ? 'nuit' : 'nuits');
+  const garde = DATA.CONSERVATION[DATA.PATURAGE.herbes];
+  return `${fromage.icone} Le ${fromage.nom.toLowerCase()}. À la montagne, cueille les ${herbes.nom.toLowerCase()} dans les prés : ce sont les trouvailles les plus courantes${garde ? `, et elles se gardent ${formatNumber(garde)} ${nb(garde)}` : ''}. Dans l'Étable, touche « Nourrir les vaches aux herbes » : chaque nuit, une vache mange ${formatNumber(V.herbesParNuit)} herbe à la place de ses ${formatStraw(V.pailleParNuit)} et donne du ${lait.nom.toLowerCase()} au lieu du lait. Quand les herbes manquent, elle reprend sa paille. En Cuisine${laiterie ? `, une fois la ${laiterie.nom} débloquée` : ''}, ${formatQty(r.ingredients[0].qte)} ${lait.nom.toLowerCase().replace('lait', 'laits')} font un ${fromage.nom.toLowerCase()}, plus cher que le fromage frais.`;
+}
+
 // Coûts des niveaux 2 à 5 d'un appareil : « 150 · 400 · 900 · 2 000 💰 ».
 function levelCosts(type) {
   return listNum(DATA.UPGRADE_COST[type].slice(1), '💰');
@@ -71,7 +112,7 @@ const HELP = {
   batterie: () => ({
     nom: 'Batterie',
     role: 'Stocke l\'électricité du panneau, pour le soir et la nuit. Elle ne se décharge jamais d\'elle-même.',
-    conso: 'Aucune : elle alimente la pompe, le moulin, la presse et le réfrigérateur.',
+    conso: 'Aucune : elle alimente la pompe (dont l\'eau sert aussi aux asperseurs), le moulin, la presse, le réfrigérateur et la station de charge du robot.',
     prod: `Capacité : ${listNum(DATA.GRID.batterie.wh, 'Wh')} selon le niveau (l'usure réduit la capacité utile). En ce moment : ${formatNumber(Math.floor(energyStats(state).charge / 1000))} / ${formatWh(energyStats(state).capacite)}.`,
     note: `Améliorer : ${levelCosts('batterie')}.`,
   }),
@@ -94,13 +135,13 @@ const HELP = {
     role: `Planter, arroser, récolter : toutes les cultures poussent ici, sur n'importe quelle parcelle. Une plante arrosée gagne un stade ${DATA.TIME.POUSSE_HEURES} heures plus tard (de jour comme de nuit), puis redemande de l'eau ; sans eau, elle attend. La parcelle se libère après la récolte ; sur la carte, ta récolte entre dans l'inventaire quand ton personnage la ramasse (une bulle « +x » au-dessus de lui). Chaque culture arrive à son niveau (⭐ dans le bandeau). Le blé nourrit les poules et donne la farine ; il ne se plante qu'une fois le Silo construit. Le tournesol donne l'huile, le riz et le houblon servent en cuisine.`,
     conso: `Eau par arrosage : ${cropsLine('potager', 'eau')}.`,
     prod: `${cropsLine('potager', 'recolte')}.`,
-    note: `Version 1.15 : toute l'herbe de la carte se cultive. La houe (Marché, ${DATA.HOUE.PRIX} 💰) change une tuile d'herbe en terre, ${DATA.PERSONNAGE.COUTS.labourer} d'énergie la tuile ; une terre vide se rebouche gratuitement. Pas sur les chemins, l'eau, les pierres, les arbres et les arbustes, ni à moins de 8 tuiles du Poulailler, ni aux abords de l'Étable, du Moulin, de la Serre et du Verger. Le nombre de tuiles de terre est plafonné par le niveau (${DATA.NIVEAUX.TUILES.filter((x, i, a) => a.indexOf(x) === i).join(' / ')}). L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture)  : la récolte et le semis, par un robot qui, chaque matin à ${DATA.ROBOT.HEURE} h, dresse sa liste de tâches et les fait une à une (il roule jusqu'à la parcelle puis travaille ${DATA.ROBOT.MINUTES} minutes). Sa batterie tient ${DATA.ROBOT.BATTERIE.TACHES} tâches à 100 % d'autonomie ; vide, il rentre à sa station de charge, à côté de la maison, et reprend sa liste une fois rechargé. La station prend l'électricité de la ferme (${DATA.ROBOT.BATTERIE.WH_TACHE} Wh par tâche, ${DATA.ROBOT.BATTERIE.CHARGE_WH_S} Wh/s), quand il est au repos et la nuit. Un appui sur le robot ou sa station : sa batterie, et +${DATA.ROBOT.BATTERIE.PALIER_PCT} % d'autonomie pour ${DATA.ROBOT.BATTERIE.PALIER_PRIX} 💰 ; l'arrosage, tous les matins à ${DATA.TIME.ARROSAGE_HEURE} h, par des asperseurs qui tournent au milieu des cultures (une plante arrosée à ${DATA.TIME.ARROSAGE_HEURE} h gagne son stade le lendemain à la même heure) ; ils repassent dans la journée pour les plantes qui ont soif plus tard (semées après ${DATA.TIME.ARROSAGE_HEURE} h).`,
+    note: `Version 1.15 : toute l'herbe de la carte se cultive. La houe (Marché, ${DATA.HOUE.PRIX} 💰) change une tuile d'herbe en terre, ${DATA.PERSONNAGE.COUTS.labourer} d'énergie la tuile ; une terre vide se rebouche gratuitement. Pas sur les chemins, l'eau, les pierres, les arbres et les arbustes, ni aux abords des bâtiments (Poulailler, Étable, Moulin, Serre, Verger). Le nombre de tuiles de terre est plafonné par le niveau (${DATA.NIVEAUX.TUILES.filter((x, i, a) => a.indexOf(x) === i).join(' / ')}). L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture)  : la récolte et le semis, par un robot qui, chaque matin à ${DATA.ROBOT.HEURE} h, dresse sa liste de tâches et les fait une à une (il roule jusqu'à la parcelle puis travaille ${DATA.ROBOT.MINUTES} minutes). Sa batterie tient ${DATA.ROBOT.BATTERIE.TACHES} tâches à 100 % d'autonomie ; vide, il rentre à sa station de charge, à côté de la maison, et reprend sa liste une fois rechargé. La station prend l'électricité de la ferme (${DATA.ROBOT.BATTERIE.WH_TACHE} Wh par tâche, ${DATA.ROBOT.BATTERIE.CHARGE_WH_S} Wh/s), quand il est au repos et la nuit. Un appui sur le robot ou sa station : sa batterie, et +${DATA.ROBOT.BATTERIE.PALIER_PCT} % d'autonomie pour ${DATA.ROBOT.BATTERIE.PALIER_PRIX} 💰 ; l'arrosage, tous les matins à ${DATA.TIME.ARROSAGE_HEURE} h, par des asperseurs qui tournent au milieu des cultures (une plante arrosée à ${DATA.TIME.ARROSAGE_HEURE} h gagne son stade le lendemain à la même heure) ; ils repassent dans la journée pour les plantes qui ont soif plus tard (semées après ${DATA.TIME.ARROSAGE_HEURE} h).`,
   }),
   serre: () => ({
     nom: 'Serre',
-    role: 'Des légumes à l\'abri, et trois cultures de rente (cacao, vanille, café) qu\'on ne trouve qu\'ici.',
+    role: `Des légumes à l'abri, et les cultures de rente (${cashCrops().map((c) => DATA.crops[c].nom.toLowerCase()).join(', ')}) qu'on ne trouve qu'ici.`,
     conso: `Eau par arrosage : ${cropsLine('serre', 'eau')}.`,
-    prod: `${cropsLine('serre', 'recolte')}. Cacao, vanille et café ne se mangent pas : ils servent à la vente et aux recettes de luxe.`,
+    prod: `${cropsLine('serre', 'recolte')}. Les cultures de rente ne se mangent pas : elles servent à la vente et aux recettes de luxe.`,
     note: `Construction : ${costLabel(DATA.SERRE.CONSTRUCTION)}. Parcelles par niveau : ${listNum(DATA.SERRE.PARCELLES, '')} ; agrandir : ${listNum(DATA.SERRE.COUT.slice(1), '💰')}.`,
   }),
   silo: () => ({
@@ -127,7 +168,7 @@ const HELP = {
       role: `Les moutons et les vaches vivent à l'Étable et s'achètent au Marché. Un mouton prend ${formatPlaces(P.placesParMouton)}, une vache ${formatPlaces(P.placesParVache)}. Une place achetée reste acquise.`,
       conso: `Chaque nuit, ${formatStraw(M.pailleParNuit)} par mouton et ${formatStraw(V.pailleParNuit)} par vache. La paille vient du Moulin : 1 blé moulu donne ${millOutputText()}. Elle ne s'achète pas au Marché.`,
       prod: `Un mouton nourri ${M.joursLaine} nuits donne ${M.laineParTonte} laine (à tondre). Une vache nourrie donne ${V.laitParNuit} lait la nuit même.`,
-      note: `Préparer l'Étable pour eux : ${costLabel(P.deblocage)} pour ${formatPlaces(P.placesDepart)} ; ensuite ${formatNumber(P.prixPlace)} 💰 la place, +${formatNumber(P.croissance - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre.`,
+      note: `Préparer l'Étable pour eux : ${costLabel(P.deblocage)} pour ${formatPlaces(P.placesDepart)} ; ensuite ${formatNumber(P.prixPlace)} 💰 la place, +${formatNumber(P.croissance - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre. ${alpageText()}`,
     };
   },
   verger: () => {
@@ -142,23 +183,23 @@ const HELP = {
   },
   four: () => ({
     nom: 'Four',
-    role: 'Cuit le pain et les plats au four. Une préparation à la fois ; le construire ouvre le Livre de recette.',
-    conso: 'Pas d\'électricité.',
+    role: `Cuit le pain et les plats au four, et fond les minerais de la grotte en lingots, avec du bois (${ingotRecipes().map((r) => DATA.items[r.sortie].nom.toLowerCase()).join(', ')}). Une préparation à la fois ; le construire ouvre le Livre de recette.`,
+    conso: 'Pas d\'électricité ; le bois des lingots vient des arbres coupés à la hache.',
     prod: `${stationRecipesLine('four')}.`,
-    note: 'Les temps de préparation suivent la productivité de la famille.',
+    note: 'Les temps de préparation suivent la productivité de la famille. Les lingots ne se vendent pas : ils paient les technologies (Arbre des technologies).',
   }),
   cuisine: () => ({
     nom: 'Cuisine',
     role: 'Prépare les plats mijotés. Une préparation à la fois.',
     conso: 'Pas d\'électricité.',
     prod: `${stationRecipesLine('cuisine')}.`,
-    note: `Un plat vaut ${formatNumber(DATA.RECETTES.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et les plats rendent la famille plus heureuse (son bonheur réduit l'énergie que coûtent tes actions) : chaque nuit le bonheur baisse de ${formatNumber(-DATA.VILLE.BONHEUR.DECLIN)}, et chacun des ${DATA.VILLE.BONHEUR.PLATS_MAX} meilleurs plats différents du repas en rend ${DATA.VILLE.BONHEUR.PLATS.cuisine} (Cuisine) ou ${DATA.VILLE.BONHEUR.PLATS.four} (Four), +${DATA.VILLE.BONHEUR.HUILE_FRUIT} avec de l'huile ou un fruit, +${DATA.VILLE.BONHEUR.SPECIALES.bonus} avec du cacao, du café ou de la vanille. Le repas commence par un exemplaire de chacun de ces plats. Quatre recettes de luxe (chocolat chaud, café, crème à la vanille, bière artisanale) se vendent 300 % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.RECETTES.COEF_PLAT)} %.`,
+    note: `Un plat vaut ${formatNumber(DATA.RECETTES.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et les plats rendent la famille plus heureuse (son bonheur réduit l'énergie que coûtent tes actions) : chaque soir, au repas, le bonheur baisse de ${formatNumber(-DATA.VILLE.BONHEUR.DECLIN)}, et chacun des ${DATA.VILLE.BONHEUR.PLATS_MAX} meilleurs plats différents du repas en rend ${DATA.VILLE.BONHEUR.PLATS.cuisine} (Cuisine) ou ${DATA.VILLE.BONHEUR.PLATS.four} (Four), +${DATA.VILLE.BONHEUR.HUILE_FRUIT} avec de l'huile ou un fruit, +${DATA.VILLE.BONHEUR.SPECIALES.bonus} avec du cacao, du café ou de la vanille. Le repas commence par un exemplaire de chacun de ces plats. Les recettes de luxe (${luxuryRecipes().map((r) => r.nom.toLowerCase()).join(', ')}) se vendent ${[...new Set(luxuryRecipes().map((r) => formatNumber(r.priceMultiplier)))].join(' ou ')} % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.RECETTES.COEF_PLAT)} %.`,
   }),
   moulin: () => ({
     nom: 'Moulin',
     role: 'Moud le blé en farine et en paille. Tout se fait dans le Moulin lui-même : « Moudre » 1, 5 ou 10 blés. Appareil électrique : interrupteur, usure, pannes. Il ne consomme du courant que quand il tourne.',
     conso: `${formatNumber(DATA.STATIONS.moulin.whParS)} Wh/s pendant qu'il tourne, et ${formatQty(DATA.recipes.farine.ingredients[0].qte)} blé par mouture (celui de l'inventaire d'abord, puis celui du Silo).`,
-    prod: `1 blé donne ${millOutputText()}, en ${formatQty(DATA.recipes.farine.temps)} s. La farine sert au pain et aux tartes ; la paille nourrit les moutons et les vaches.`,
+    prod: `1 blé donne ${millOutputText()}, en ${formatQty(DATA.recipes.farine.temps)} s. La farine sert en cuisine (${recipesUsing([DATA.recipes.farine.sortie]).join(', ')}) ; la paille nourrit les moutons et les vaches.`,
     note: 'Les blés sont moulus un par un. Sans énergie, le Moulin attend. La nuit, le blé en train d\'être moulu se termine ; ceux qui attendent reprennent au réveil. Tu peux reprendre le blé en attente.',
   }),
   presse: () => ({
@@ -170,13 +211,91 @@ const HELP = {
   }),
   ville: () => {
     const M = DATA.VILLE.MARCHE;
+    const B = DATA.VILLE.BONHEUR;
+    const E = DATA.VILLE.ENTREPRISES;
+    const voyages = Object.values(DATA.VILLE.SORTIES).filter((x) => x.lieu === 'voyage');
     return {
       nom: 'Ville',
       icone: '🏙️',
       lignes: [
-        ['Bonheur', 'Il monte avec les plats cuisinés et les sorties ; il baisse un peu chaque soir de repas cru. Plus la famille est heureuse, moins tes actions coûtent d\'énergie.'],
-        ['Sorties', `Toute la famille part ; le temps passe pendant la sortie (retour avant ${DATA.TIME.NIGHT_HOUR} h). Chaque sortie se fait une fois par jour. Les voyages sont plus longs et plus chers.`],
-        ['Marché de la ville', `Poisson, miel, fromage d'alpage, sucre et épices : introuvables au marché de la ferme. Un adulte y va (${M.HEURES} h aller-retour, ${formatNumber(M.PRIX)} 💰 de bus) ; le marché reste ouvert jusqu'au soir.`],
+        ['Bonheur', `Chaque soir, au repas, il baisse de ${formatNumber(-B.DECLIN)} pour tous (et de ${formatNumber(-B.FAIM)} de plus si le repas ne couvre pas le besoin). Les plats cuisinés (au plus ${B.PLATS_MAX} différents par repas) et les sorties le font remonter ; les aliments crus ne rapportent rien. Plus la famille est heureuse, moins tes actions coûtent d'énergie.`],
+        ['Sorties', `Toute la famille part ; le temps passe pendant la sortie (retour avant ${DATA.TIME.NIGHT_HOUR} h). Chaque sortie se fait une fois par jour. Les voyages (${voyages.map((x) => x.nom.toLowerCase()).join(', ')}) sont plus longs et plus chers, et rapportent de quoi cuisiner.`],
+        ['Marché de la ville', `${capitalize(itemNames(Object.keys(DATA.items).filter((id) => DATA.items[id].ville)))} : introuvables au marché de la ferme. Un adulte y va (${M.HEURES} h aller-retour, ${formatNumber(M.PRIX)} 💰 de bus) ; le marché reste ouvert jusqu'au soir.`],
+        ['Promenade', 'Ton personnage peut aussi aller en ville lui-même : au bout du chemin de la ferme, la navette part de l\'abri de bus et le dépose à la gare. Voir la fiche « Cartes d\'excursion ».'],
+        ['Étals', `Aux étals du marché, tu vends les produits de la ferme (${M.CATEGORIES.map((c) => `${c}s`).join(', ')}) ${formatNumber(M.VENTE)} % de leur prix.`],
+        ['Entreprises', `Les entrepôts de la ville s'achètent : ${Object.values(E.LISTE).map((x) => `${x.icone} ${x.nom} ${formatNumber(x.prix)} 💰`).join(' · ')}. Chaque jour à ${E.HEURE} h, une entreprise prend des produits dans le stock de la ferme, les transforme et vend aussitôt ce qu'elle fabrique, plus cher qu'un commerce de la ferme.`],
+        ['Gare', 'Le train mène de la ville à la montagne et à la plage.'],
+      ],
+    };
+  },
+  // Les fiches des outils, de la grotte, de la pêche, de l'Arbre des technologies et des
+  // cartes d'excursion (ouvertes depuis À propos).
+  outils: () => {
+    const C = DATA.PERSONNAGE.COUTS;
+    const H = DATA.HACHE;
+    const P = DATA.PIOCHE;
+    return {
+      nom: 'Outils',
+      icone: '🛠️',
+      lignes: [
+        ['Achat', `Chaque outil s'achète une fois au Marché, puis se choisit dans la barre d'outils de la carte : ${[DATA.HOUE, H, P, DATA.CANNE].map((o) => `${o.ICONE} ${o.NOM.toLowerCase()} ${formatNumber(o.PRIX)} 💰`).join(' · ')}.`],
+        ['Houe', `Change une tuile d'herbe en terre à cultiver : ${formatNumber(C.labourer)} d'énergie la tuile.`],
+        ['Hache', `Touche un arbre (à la ferme ou sur le chemin de la ville) : ${formatNumber(C.couper)} d'énergie et ${formatNumber(H.BOIS)} bois par coup. L'arbre tombe au ${H.COUPES}e coup et repousse ${H.RETOUR[0]} à ${H.RETOUR[1]} jours plus tard.`],
+        ['Pioche', `Touche un rocher : ${formatNumber(C.piocher)} d'énergie et ${formatNumber(P.PIERRE)} pierre par coup ; il se casse au ${P.COUPS}e coup et revient ${P.RETOUR[0]} à ${P.RETOUR[1]} jours plus tard. Dans la grotte, elle prend aussi le minerai.`],
+        ['Canne à pêche', `Touche l'eau : ${formatNumber(C.pecher)} d'énergie le lancer (voir la fiche « Pêche »).`],
+        ['Bois et pierre', 'Ils se vendent, et paient les technologies avec les lingots. La branche Outils de l\'Arbre des technologies rend les outils plus efficaces.'],
+      ],
+    };
+  },
+  grotte: () => ({
+    nom: 'Grotte, minerais et lingots',
+    icone: '⛏️',
+    lignes: [
+      ['La grotte', 'À la montagne (le train, depuis la gare de la ville), des entrées mènent sous terre. Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.'],
+      ['Minerais', `La pioche en main, touche un minerai dans les murs (${formatNumber(DATA.PERSONNAGE.COUTS.piocher)} d'énergie le coup) : il va dans l'inventaire. Le fer est partout ; le cuivre, l'or et le platine se trouvent de plus en plus bas.`],
+      ['Lingots', `Au Four, avec du bois : ${ingotRecipes().map((r) => `${DATA.items[r.sortie].nom.toLowerCase()} = ${ingredientsText(r)}`).join(' ; ')}.`],
+      ['À quoi ça sert', 'Minerais et lingots ne se vendent pas (ce sont des matériaux) : avec le bois et la pierre, ils paient les technologies de l\'Arbre des technologies.'],
+    ],
+  }),
+  peche: () => {
+    const C = DATA.CANNE;
+    const poissons = [...new Set(Object.values(C.PRISES).flatMap((p) => Object.keys(p)))];
+    return {
+      nom: 'Pêche',
+      icone: '🎣',
+      lignes: [
+        ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.`]),
+        ['Lancer', `La canne en main (Marché, ${formatNumber(C.PRIX)} 💰), touche l'eau : ${formatNumber(DATA.PERSONNAGE.COUTS.pecher)} d'énergie le lancer, et il arrive que rien ne morde.`],
+        ['Poissons', `Frais, ils se gardent peu de nuits : mange-les, vends-les ou cuisine-les (${recipesUsing([...poissons, 'poisson']).join(', ')}).`],
+      ],
+    };
+  },
+  techno: () => {
+    const T = DATA.techtree;
+    const noeuds = Object.values(T.noeuds);
+    return {
+      nom: 'Arbre des technologies',
+      icone: '🔬',
+      lignes: [
+        ['PT', `Les points de technologie (PT) : chaque chapitre terminé en rapporte (${T.POINTS.CHAPITRES.join(' · ')}), chaque jalon de maîtrise 1, et en mode libre 1 toutes les ${T.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % d'autonomie.`],
+        ['Coût', 'Une technologie se paie en PT, en pièces et en ressources : du bois et de la pierre (hache, pioche), puis des lingots fondus au Four avec le minerai de la grotte.'],
+        ['Paliers', `Les paliers s'ouvrent avec les chapitres : ${Object.entries(T.PALIERS).map(([n, p]) => `${n}. ${p.nom} (chapitre ${p.chapitre})`).join(' · ')}.`],
+        ['Branches', `${noeuds.length} technologies en ${T.branches.length} branches : ${T.branches.map((b) => `${b.icone} ${b.nom} (${noeuds.filter((x) => x.branche === b.id).length})`).join(' · ')}.`],
+        ['Outils', `${noeuds.filter((x) => x.branche === 'outils').map((x) => x.nom).join(', ')} : moins de coups, plus de bois, de pierre, de minerai et de poisson, moins d'énergie.`],
+      ],
+    };
+  },
+  cartes: () => {
+    const trouv = (lieu) => itemNames(Object.keys(DATA.items).filter((id) => DATA.items[id].trouvaille === lieu));
+    return {
+      nom: 'Cartes d\'excursion',
+      icone: '🗺️',
+      lignes: [
+        ['Le chemin', 'Au bout du chemin de la ferme, la flèche mène à la campagne : des arbres et des rochers, des voisins, et l\'abri de bus. La navette y passe dans la journée, mène à la gare, en ville, et en revient.'],
+        ['Ville', `Les étals achètent les produits de la ferme ${formatNumber(DATA.VILLE.MARCHE.VENTE)} % de leur prix ; les entreprises s'achètent dans les entrepôts. De la gare, le train part vers la montagne et la plage.`],
+        ['Montagne', `Des trouvailles à ramasser (${trouv('montagne')}), des animaux à regarder, le lac pour pêcher et les entrées des grottes.`],
+        ['Plage', `Des trouvailles à ramasser (${trouv('plage')}) et la pêche en mer depuis le ponton. Pas de grotte.`],
+        ['Bon à savoir', 'Le temps passe comme à la ferme (repas, entreprises, nuit). Les trouvailles vont dans l\'inventaire et se vendent ; ce qu\'on a ramassé revient le lendemain. La nuit, seul le sommeil de ton personnage l\'empêche d\'agir ; la famille, elle, reste à la maison.'],
       ],
     };
   },
@@ -193,6 +312,7 @@ const HELP = {
     lignes: [
       ['Rôle', 'Un commerce transforme chaque nuit, après le repas de la famille, une partie de la production de la ferme et la vend tout seul, sans passer par le Marché.'],
       ['Coût', 'Ni énergie ni électricité ; chaque pièce vendue rapporte 1 XP.'],
+      ['Valeur', `Il vend ses produits plus cher qu'une recette (${formatNumber(DATA.RECETTES.COEF_PLAT)} % du prix des ingrédients), mais moins qu'une entreprise de la ville.`],
       ['Choix', `Le premier choix est gratuit. En changer coûte ensuite ${formatNumber(DATA.COMMERCE.CHANGER)} 💰.`],
     ],
   }),
@@ -203,6 +323,16 @@ const HELP = {
     prod: 'Du froid : aucune péremption au frigo.',
     note: `S'il manque de courant plus de ${formatNumber(DATA.FRIGO.SEUIL_ALIMENTE)} % de la journée, ou pendant la nuit, chaque lot perd ${nightsLabel(DATA.FRIGO.PERTE_NUITS)} de conservation.`,
   }),
+};
+
+// Les fiches sans bâtiment, ouvertes depuis À propos.
+const FICHES = ['outils', 'grotte', 'peche', 'techno', 'cartes'];
+
+// Le nom des actions de DATA.PERSONNAGE.COUTS, pour la règle de l'énergie.
+const ACTIONS_NOMS = {
+  couper: 'couper', piocher: 'piocher', pecher: 'pêcher', labourer: 'labourer', planter: 'planter', arroser: 'arroser',
+  recolter: 'récolter', cueillir: 'cueillir', tondre: 'tondre', cuisiner: 'cuisiner', cuireFour: 'cuire au four',
+  moudre: 'moudre', presser: 'presser',
 };
 
 export function helpBtn(id) {
@@ -253,7 +383,7 @@ const TUTO = {
   },
   dormir: {
     titre: '😴 Dormir',
-    texte: () => `À ${DATA.TIME.MEAL_HOUR} h la famille mange ; à ${DATA.TIME.NIGHT_HOUR} h, tout le monde va se coucher et la nuit défile jusqu'à ${DATA.TIME.DAY_START_HOUR} h. À minuit, les poules pondent. Pendant la nuit, le bouton « Zzz », en bas à droite, envoie ton personnage dans son lit : quand il dort, la nuit défile en accéléré et son énergie remonte peu à peu (il lui faut ${DATA.PERSONNAGE.SOMMEIL_HEURES} heures de sommeil).`,
+    texte: () => `À ${DATA.TIME.MEAL_HOUR} h la famille mange ; à ${DATA.TIME.NIGHT_HOUR} h, la famille va se coucher et la nuit défile jusqu'à ${DATA.TIME.DAY_START_HOUR} h ; ton personnage peut encore agir tant qu'il ne dort pas. À minuit, les poules pondent. Pendant la nuit, le bouton « Zzz », en bas à droite, envoie ton personnage dans son lit : quand il dort, la nuit défile en accéléré et son énergie remonte peu à peu (il lui faut ${DATA.PERSONNAGE.SOMMEIL_HEURES} heures de sommeil).`,
   },
 };
 
@@ -406,14 +536,14 @@ export function openAboutModal() {
   const durees = [...Object.values(DATA.CONSERVATION), ...Object.values(DATA.CONSERVATION_CATEGORIE)];
   const H = DATA.HORS_LIGNE;
   const rules = [
-    `La famille (${adultes} adultes, ${enfants} enfants) a besoin de ${formatNumber(familyNeed(state))} calories par jour. Elle mange à chaque nuit, d'abord ce qui périme le plus tôt.`,
-    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. À ${DATA.TIME.NIGHT_HOUR} h, elle va dormir et la nuit défile à la même vitesse : on ne peut plus rien faire à la ferme. À minuit, la nuit passe (ponte, lait…) et le jour change ; les plantes, elles, poussent ${DATA.TIME.POUSSE_HEURES} heures après leur arrosage, à toute heure ; à ${DATA.TIME.DAY_START_HOUR} h, c'est le réveil. Pendant la nuit, le bouton « Zzz » envoie ton personnage dans son lit (on ne dort que la nuit) : quand il dort, une heure passe toutes les ${DATA.TIME.SLEEP_SECONDS_PER_HOUR} s et son énergie remonte peu à peu (${DATA.PERSONNAGE.SOMMEIL_HEURES} heures de sommeil pour celle du réveil ; éveillé, rien ne revient). L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
-    `La nuit : repas, puis une poule nourrie pond, les moutons et les vaches grossissent et le lait est produit, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
-    `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}) : chaque action au clic en coûte (planter ${DATA.PERSONNAGE.COUTS.planter}, arroser ${DATA.PERSONNAGE.COUTS.arroser}, récolter ${DATA.PERSONNAGE.COUTS.recolter}…), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %) et ${DATA.PERSONNAGE.ENDURANCE} % de moins par niveau. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE}, et jusqu'à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} si le repas du soir a couvert le besoin ; un aliment mangé dans la journée rend ses calories ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}. Les automatisations ne coûtent rien.`,
-    `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe, moulin, presse, réfrigérateur. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
+    `La famille (${adultes} adultes, ${enfants} enfants) a besoin chaque jour de ${formatNumber(familyNeed(state))} points d'énergie. Elle mange au repas du soir, d'abord ce qui périme le plus tôt.`,
+    `La journée commence à ${DATA.TIME.DAY_START_HOUR} h ; une heure passe toutes les ${DATA.TIME.CLOCK_SECONDS_PER_HOUR} s. À ${DATA.TIME.MEAL_HOUR} h, la famille prend son repas. À ${DATA.TIME.NIGHT_HOUR} h, elle va se coucher et reste à la maison ; la nuit défile à la même vitesse et ton personnage peut encore agir : seul son sommeil arrête les actions. À minuit, la nuit passe (ponte, lait…) et le jour change ; les plantes, elles, poussent ${DATA.TIME.POUSSE_HEURES} heures après leur arrosage, à toute heure ; à ${DATA.TIME.DAY_START_HOUR} h, c'est le réveil. Pendant la nuit, le bouton « Zzz » envoie ton personnage dans son lit (on ne dort que la nuit) : quand il dort, une heure passe toutes les ${DATA.TIME.SLEEP_SECONDS_PER_HOUR} s et son énergie remonte peu à peu (${DATA.PERSONNAGE.SOMMEIL_HEURES} heures de sommeil pour celle du réveil ; éveillé, rien ne revient). L'horloge s'arrête pendant que tu lis le résumé du réveil et quand le jeu est fermé.`,
+    `La nuit : repas, puis une poule nourrie pond, les moutons font leur laine, les vaches donnent leur lait, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
+    `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}) : chaque action au clic en coûte (${Object.entries(DATA.PERSONNAGE.COUTS).map(([a, n]) => `${ACTIONS_NOMS[a] || a} ${formatNumber(n)}`).join(', ')}), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %) et ${DATA.PERSONNAGE.ENDURANCE} % de moins par niveau. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE}, et jusqu'à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} si le repas du soir a couvert le besoin ; un aliment mangé dans la journée rend son énergie ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}. Les automatisations ne coûtent rien.`,
+    `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe (son eau sert aussi aux asperseurs de l'arrosage automatique), moulin, presse, réfrigérateur, station de charge du robot. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.WEAR.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.WEAR.MAINTAIN_RATE)} % de son prix, le réparer après une panne ${formatNumber(DATA.WEAR.REPAIR_RATE)} % (arrondis à l'entier supérieur).`,
     `Marché : prix de vente fixes. Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient d'achat, chaque unité vendue en retire ${formatNumber(M.PAS)} (plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %).`,
-    `Autonomie = calories mangées produites par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
-    `Arbre des technologies : ${Object.keys(DATA.techtree.noeuds).length} technologies en ${DATA.techtree.branches.length} branches, payées en points de technologie (chapitres terminés, jalons de maîtrise, mode libre) et en pièces. Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
+    `Autonomie = énergie mangée produite par la ferme ÷ ${formatNumber(familyNeed(state))}. ${chapterCount()} chapitres mènent à une famille autonome.`,
+    `Arbre des technologies : ${Object.keys(DATA.techtree.noeuds).length} technologies en ${DATA.techtree.branches.length} branches, payées en points de technologie (PT : chapitres terminés, jalons de maîtrise, mode libre), en pièces et en ressources (bois, pierre, puis lingots fondus au Four avec le minerai de la grotte). Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
   ];
   document.getElementById('modal-root').innerHTML = `
@@ -423,6 +553,8 @@ export function openAboutModal() {
         <p class="about-version"><strong>Ferme Familiale</strong> · version ${GAME_VERSION} <span class="muted">(format de sauvegarde ${STATE_VERSION})</span></p>
         <h3>Règles principales</h3>
         <ol class="about-rules">${rules.map((r) => `<li>${r}</li>`).join('')}</ol>
+        <h3>Fiches d'aide</h3>
+        <div class="row">${FICHES.map((id) => `<button type="button" class="btn" data-action="help" data-id="${id}">${HELP[id]().icone} ${HELP[id]().nom}</button>`).join('')}</div>
         <h3>Crédits</h3>
         <p class="muted">Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <a href="https://antarcticbees.itch.io/" target="_blank" rel="noopener noreferrer">https://antarcticbees.itch.io/</a></p>
         <p class="muted">Moteur d'affichage : Phaser 3 (licence MIT).</p>
