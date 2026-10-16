@@ -51,7 +51,15 @@
  * (couche « trouvailles » : un genre par endroit ; chaque jour, une partie des endroits, et ce
  * qu'on a ramassé ne revient que le lendemain — une maquette : rien n'entre encore dans
  * l'inventaire, un carnet les compte), des animaux à regarder (couche « animaux » : une zone
- * par espèce, FAUNE), les entrées des grottes (couche « grottes »).
+ * par espèce, FAUNE), les entrées des grottes (couche « passages » : la flèche y mène).
+ *
+ * Les grottes (?carte=grotte&grotte=<entrée>&niveau=<n>) ne sont pas des cartes Tiled : chaque
+ * niveau est tiré au hasard (le même toute la journée : la graine est l'entrée, le niveau et le
+ * jour) par un automate cellulaire, avec les morceaux de scripts/ville/grotte.py. On descend par
+ * le puits, on remonte par l'échelle (des passages, comme au bord des cartes). Le minerai est
+ * pris dans les murs qui touchent le sol, de plus en plus rare et précieux en profondeur (fer,
+ * cuivre, or, platine : GROTTE.poids) ; on le pioche en le touchant (une maquette : il va dans
+ * un carnet, pas encore dans l'inventaire). Il fait noir : on n'y voit qu'autour de soi.
  */
 (function () {
   'use strict';
@@ -67,11 +75,11 @@
   // La carte : ?carte=ville (par défaut) ou ?carte=transition (entre la ferme et la ville,
   // scripts/ville/transition.py) ; ?arrivee=<nom> : le point de la couche « arrivees » où l'on
   // apparaît (sinon « depart »).
-  const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json', montagne: 'assets/montagne.json', plage: 'assets/plage.json' };
+  const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json', montagne: 'assets/montagne.json', plage: 'assets/plage.json', grotte: null };
   const PARAMS = new URLSearchParams(window.location.search);
-  const NOM_CARTE = CARTES[PARAMS.get('carte')] ? PARAMS.get('carte') : 'ville';
+  const NOM_CARTE = Object.prototype.hasOwnProperty.call(CARTES, PARAMS.get('carte')) ? PARAMS.get('carte') : 'ville';
   const MAP = { key: NOM_CARTE, file: CARTES[NOM_CARTE] };
-  const TITRES = { transition: 'Le chemin de la ville', montagne: 'La montagne', plage: 'La plage' };
+  const TITRES = { transition: 'Le chemin de la ville', montagne: 'La montagne', plage: 'La plage', grotte: 'La grotte' };
   if (TITRES[NOM_CARTE]) document.title = TITRES[NOM_CARTE] + ' — Ferme Familiale';
   // Les passages vers une autre carte (couche « passages » : un rectangle au bord, sa cible, le
   // sens de sa flèche) : la flèche bleue (assets/fleche_passage.png, scripts/ville/fleche.py :
@@ -155,6 +163,17 @@
       dauphin: { size: 32, n: 1, texte: '🐬 Un dauphin saute au large !' },
     },
   };
+  // Les grottes (assets/grotte_tuiles.png, grotte_objets.png, grotte.json : scripts/ville/grotte.py) :
+  // la taille d'un niveau (en tuiles), le nombre de niveaux, la part de murs au départ et les
+  // passes de l'automate, la chance qu'un mur au bord du sol porte du minerai, les coups de
+  // pioche, la lumière autour de la promeneuse (px : nette jusqu'à r0, noire à partir de r1).
+  const GROTTE = {
+    tiles: 'assets/grotte_tuiles.png', objets: 'assets/grotte_objets.png', meta: 'assets/grotte.json',
+    w: 46, h: 34, niveaux: 8, murs: 0.46, passes: 5, minerai: 0.07, coups: 3, coup: 0.5,
+    lumiere: { r0: 44, r1: 132, noir: 0.93 }, store: 'ferme-grottes',
+    // le poids de chaque minerai au niveau n : le fer partout, les autres de plus en plus bas
+    poids: (n) => ({ fer: 1, cuivre: Math.max(0, (n - 1) * 0.35), or: Math.max(0, (n - 2.5) * 0.18), platine: Math.max(0, (n - 4) * 0.1) }),
+  };
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
@@ -194,7 +213,11 @@
     constructor() { super('ville'); }
 
     preload() {
-      this.load.tilemapTiledJSON(MAP.key, v(MAP.file));
+      if (!MAP.file) {
+        this.load.image('grotte_tuiles', v(GROTTE.tiles));
+        this.load.spritesheet('grotte_objets', v(GROTTE.objets), { frameWidth: 32, frameHeight: 32 });
+        this.load.json('grotte', v(GROTTE.meta));
+      } else this.load.tilemapTiledJSON(MAP.key, v(MAP.file));
       this.load.spritesheet(HERO.key, v(HERO.file), { frameWidth: HERO.w, frameHeight: HERO.h });
       this.load.json(HERO.key + '_noms', v(HERO.names));
       this.load.spritesheet(CARS.key, v(CARS.file), { frameWidth: 64, frameHeight: 64 });
@@ -221,7 +244,7 @@
         this.load.spritesheet('perso_' + e.perso, v('assets/personnages/perso_' + String(e.perso).padStart(2, '0') + '.png'), { frameWidth: 16, frameHeight: 32 });
       }
       // les planches des jeux de tuiles : lues dans la carte une fois chargée
-      this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
+      if (MAP.file) this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
         const data = this.cache.tilemap.get(MAP.key).data;
         for (const set of data.tilesets) this.load.image(set.name, v('assets/' + set.image));
         // l'exemplaire du dessus de chaque couche de bâtiment
@@ -235,14 +258,17 @@
     create() {
       // insertNull : une case vide reste vide (sans objet Tile) ; la grande ville en compte
       // des centaines de milliers dans ses couches clairsemées
-      const map = this.make.tilemap({ key: MAP.key, insertNull: true });
-      this.map = map;
-      const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
+      let map;
       this.layers = {};
-      map.layers.forEach((l, i) => {
-        const depth = l.name === DEVANT ? 1e6 : l.name.endsWith('_devant') ? 5e5 + i : -100 + i;
-        this.layers[l.name] = map.createLayer(l.name, sets, 0, 0).setDepth(depth);
-      });
+      if (MAP.file) {
+        map = this.make.tilemap({ key: MAP.key, insertNull: true });
+        const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
+        map.layers.forEach((l, i) => {
+          const depth = l.name === DEVANT ? 1e6 : l.name.endsWith('_devant') ? 5e5 + i : -100 + i;
+          this.layers[l.name] = map.createLayer(l.name, sets, 0, 0).setDepth(depth);
+        });
+      } else map = this.buildCave();
+      this.map = map;
       this.makeTileAnims();
 
       // où l'on marche : là où il y a du sol et rien de ce qu'on ne traverse pas
@@ -255,7 +281,7 @@
         this.walk.push(row);
       }
       // les bâtiments et les voitures garées : les tuiles dont le centre est sous leur emprise
-      const objects = (name) => ((map.getObjectLayer(name) || {}).objects) || [];
+      const objects = (name) => (this.cave && this.cave.objects[name]) || ((map.getObjectLayer(name) || {}).objects) || [];
       this.makeBuildings(objects('batiments'));
       for (const r of [...objects('garees'), ...objects('batiments')]) {
         for (let y = Math.floor(r.y / T); y <= Math.floor((r.y + r.height) / T); y++) {
@@ -304,7 +330,7 @@
         const w = cam.getWorldPoint(p.x, p.y);
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapGrotte(w)) return;
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w)) return;
         this.goTo(w.x, w.y);
       });
       // les trajets du bus de l'école roulent avec les autres (mêmes carrefours), sans voitures tirées dessus
@@ -314,7 +340,7 @@
       this.makeGare(objects('gare'));
       this.makeFinds(objects('trouvailles'));
       this.makeFauna(objects('animaux'));
-      this.grottes = objects('grottes');
+      this.makeCaveLife();
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A') : null;
       window.Ville = { scene: this };
     }
@@ -749,6 +775,7 @@
         ville: 'Touchez un trottoir pour y marcher · la gare pour prendre le train',
         montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
         plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
+        grotte: 'Touchez le sol pour y marcher · un minerai pour le piocher · l\u2019échelle pour remonter',
       };
       if (aide && textes[NOM_CARTE]) aide.textContent = textes[NOM_CARTE];
       const annuler = document.getElementById('gare-annuler');
@@ -1018,12 +1045,243 @@
       this.say(`✨ ${f.nom} ! (dans le carnet : ${rec.carnet[f.kind]})`);
     }
 
-    tapGrotte(w) {
-      const g = (this.grottes || []).find((o) => Math.abs(w.x - o.x) <= 20 && w.y >= o.y - 40 && w.y <= o.y + 10);
-      if (!g) return false;
-      this.say('🕳️ L’entrée d’une grotte. On pourra bientôt y descendre, chercher le fer, le cuivre, l’or et le platine.');
-      this.goTo(g.x, g.y + 8);
+    // ---------- les grottes ----------
+
+    // Le niveau du jour, tiré au hasard : des murs semés au hasard, lissés par un automate
+    // cellulaire (un mur entouré de murs le reste, une case entourée de sol s'ouvre), puis seule
+    // la plus grande salle est gardée. L'échelle (on arrive d'en haut) contre un mur, le puits
+    // (on descend) le plus loin possible ; le minerai dans les murs qui bordent le sol.
+    genCave(graine, niveau) {
+      const W = GROTTE.w, H = GROTTE.h;
+      let h = 2166136261;
+      for (let i = 0; i < graine.length; i++) { h ^= graine.charCodeAt(i); h = Math.imul(h, 16777619); }
+      let a = h >>> 0;
+      const rnd = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      const idx = (x, y) => y * W + x;
+      let g, salle;
+      for (let essai = 0; essai < 8; essai++) {
+        g = new Uint8Array(W * H);                       // 1 : mur, 0 : sol
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) g[idx(x, y)] = x < 2 || y < 2 || x >= W - 2 || y >= H - 2 || rnd() < GROTTE.murs ? 1 : 0;
+        for (let p = 0; p < GROTTE.passes; p++) {
+          const n = new Uint8Array(g);
+          for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+            let k = 0;
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) k += g[idx(x + dx, y + dy)];
+            n[idx(x, y)] = k >= 5 ? 1 : k <= 3 ? 0 : g[idx(x, y)];
+          }
+          for (let x = 0; x < W; x++) { n[idx(x, 0)] = n[idx(x, 1)] = n[idx(x, H - 1)] = n[idx(x, H - 2)] = 1; }
+          for (let y = 0; y < H; y++) { n[idx(0, y)] = n[idx(1, y)] = n[idx(W - 1, y)] = n[idx(W - 2, y)] = 1; }
+          g = n;
+        }
+        // la plus grande salle (4-voisins) ; les autres sont rebouchées
+        const zone = new Int32Array(W * H).fill(-1);
+        let best = null;
+        for (let i = 0; i < W * H; i++) {
+          if (g[i] || zone[i] >= 0) continue;
+          const q = [i];
+          zone[i] = i;
+          for (let k = 0; k < q.length; k++) {
+            const c = q[k], cx = c % W, cy = (c - cx) / W;
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+              const n = idx(cx + dx, cy + dy);
+              if (!g[n] && zone[n] < 0) { zone[n] = i; q.push(n); }
+            }
+          }
+          if (!best || q.length > best.length) best = q;
+        }
+        if (!best) continue;
+        const garde = new Set(best);
+        for (let i = 0; i < W * H; i++) if (!g[i] && !garde.has(i)) g[i] = 1;
+        salle = best;
+        if (best.length > W * H * 0.28) break;
+      }
+      const sol = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !g[idx(x, y)];
+      const ouvert = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].every(([dx, dy]) => sol(x + dx, y + dy));
+      // l'échelle : une case de sol sous un mur, avec du sol devant (on y arrive)
+      const pieds = salle.map((c) => [c % W, Math.floor(c / W)]).filter(([x, y]) => !sol(x, y - 1) && sol(x, y + 1) && sol(x - 1, y + 1) && sol(x + 1, y + 1));
+      const [ex, ey] = pieds.length ? pieds[Math.floor(rnd() * pieds.length)] : [salle[0] % W, Math.floor(salle[0] / W)];
+      // le puits : la case ouverte la plus loin de l'échelle
+      const dist = new Int32Array(W * H).fill(-1);
+      const q = [idx(ex, ey)];
+      dist[q[0]] = 0;
+      for (let k = 0; k < q.length; k++) {
+        const c = q[k], cx = c % W, cy = (c - cx) / W;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const n = idx(cx + dx, cy + dy);
+          if (sol(cx + dx, cy + dy) && dist[n] < 0) { dist[n] = dist[c] + 1; q.push(n); }
+        }
+      }
+      let px = ex, py = ey + 1, pd = -1;
+      for (const c of salle) { const x = c % W, y = Math.floor(c / W); if (ouvert(x, y) && dist[c] > pd) { pd = dist[c]; px = x; py = y; } }
+      // le minerai : les murs qui bordent le sol, la sorte tirée selon le niveau
+      const poids = GROTTE.poids(niveau), total = Object.values(poids).reduce((s, w) => s + w, 0);
+      const ores = [], decor = [], stalag = [];
+      for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+        if (g[idx(x, y)]) {
+          if (![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => sol(x + dx, y + dy)) || rnd() > GROTTE.minerai * (1 + niveau * 0.06)) continue;
+          let r = rnd() * total, kind = 'fer';
+          for (const [k, w] of Object.entries(poids)) { if (r < w) { kind = k; break; } r -= w; }
+          ores.push({ x, y, kind });
+          continue;
+        }
+        const pres = Math.abs(x - ex) + Math.abs(y - ey) < 4 || Math.abs(x - px) + Math.abs(y - py) < 3;
+        const r = rnd();
+        if (pres) continue;
+        if (r < 0.025 && ouvert(x, y)) stalag.push({ x, y, v: rnd() < 0.5 ? 0 : 1 });
+        else if (r < 0.06) decor.push({ x, y, kind: rnd() < 0.6 ? 'champignon' : 'cristal' });
+      }
+      return { W, H, g, sol, echelle: { x: ex, y: ey }, puits: niveau < GROTTE.niveaux ? { x: px, y: py } : null, ores, decor, stalag };
+    }
+
+    buildCave() {
+      const meta = this.cache.json.get('grotte') || { tuiles: {}, objets: [] };
+      const id = (PARAMS.get('grotte') || '1').replace(/[^\w-]/g, '').slice(0, 12) || '1';
+      const niveau = Math.max(1, Math.min(GROTTE.niveaux, parseInt(PARAMS.get('niveau'), 10) || 1));
+      const h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
+      const jour = h ? h.jour : Math.floor(Date.now() / 864e5);
+      const c = this.genCave(`${id}:${niveau}:${jour}`, niveau);
+      Object.assign(c, { id, niveau, jour, meta });
+      this.cave = c;
+      const map = this.make.tilemap({ tileWidth: T, tileHeight: T, width: c.W, height: c.H });
+      const set = map.addTilesetImage('grotte_tuiles', extrude(this.textures, 'grotte_tuiles', T), T, T, 1, 2);
+      ['sol', 'marquage', 'falaise', 'minerais', DEVANT].forEach((n, i) => { this.layers[n] = map.createBlankLayer(n, set).setDepth(n === DEVANT ? 1e6 : -100 + i); });
+      const t = (n) => meta.tuiles[n];
+      const r = (x, y, k) => { const s = Math.sin(x * 12.9898 + y * 78.233 + k) * 43758.5453; return s - Math.floor(s); };
+      for (let y = 0; y < c.H; y++) for (let x = 0; x < c.W; x++) {
+        if (c.sol(x, y)) {
+          const q = r(x, y, 1);
+          this.layers.sol.putTileAt(t('sol_' + (q < 0.7 ? 0 : q < 0.82 ? 1 : q < 0.9 ? 2 : q < 0.94 ? 3 : 4)), x, y);
+        } else if (c.sol(x, y + 1)) this.layers.falaise.putTileAt(t('paroi_' + Math.floor(r(x, y, 2) * 4)), x, y);
+        else {
+          const n = (c.sol(x, y - 1) ? 1 : 0) + (c.sol(x + 1, y) ? 2 : 0) + (c.sol(x - 1, y) ? 8 : 0);
+          this.layers.falaise.putTileAt(t('plafond_' + n), x, y);
+        }
+      }
+      // le minerai déjà pioché aujourd'hui ne revient que demain
+      const rec = this.readCaves();
+      if (rec.jour !== jour) { rec.jour = jour; rec.pris = []; }
+      this.caveRec = rec;
+      c.ores = c.ores.filter((o) => !rec.pris.includes(`${id}:${niveau}:${o.x},${o.y}`));
+      for (const o of c.ores) this.layers.minerais.putTileAt(t(o.kind), o.x, o.y);
+      for (const d of c.decor) this.layers.marquage.putTileAt(t(d.kind), d.x, d.y);
+      // les objets : l'échelle, le puits, les stalagmites (on ne passe pas à travers)
+      const ob = (n) => Math.max(0, meta.objets.indexOf(n));
+      const E = c.echelle, P = c.puits;
+      this.add.image(E.x * T + 8, E.y * T + 15, 'grotte_objets', ob('echelle')).setOrigin(0.5, 1).setDepth(E.y * T);
+      if (P) this.add.image(P.x * T + 8, P.y * T + 12, 'grotte_objets', ob('trou')).setOrigin(0.5, 0.75).setDepth(P.y * T - 8);
+      for (const s of c.stalag) {
+        this.add.image(s.x * T + 8, s.y * T + 15, 'grotte_objets', ob('stalagmite_' + s.v)).setOrigin(0.5, 1).setDepth(s.y * T + 15);
+        this.layers.marquage.putTileAt(t('sol_0'), s.x, s.y);
+      }
+      const ici = `ville-carte.html?carte=grotte&grotte=${id}`;
+      const pass = (nom, x, y, sens, cible) => ({ name: nom, x: x * T, y: y * T, width: T, height: T, properties: [{ name: 'cible', value: cible }, { name: 'sens', value: sens }] });
+      c.objects = {
+        depart: [{ x: E.x * T + 8, y: (E.y + 1) * T + 12 }],
+        arrivees: [{ name: 'haut', x: E.x * T + 8, y: (E.y + 1) * T + 12 }].concat(P ? [{ name: 'bas', x: P.x * T + 8, y: (P.y + 1) * T + 12 }] : []),
+        passages: [pass('remonter', E.x, E.y - 1, 'haut', niveau > 1 ? `${ici}&niveau=${niveau - 1}&arrivee=bas` : `ville-carte.html?carte=montagne&arrivee=grotte_${id}`)]
+          .concat(P ? [pass('descendre', P.x, P.y, 'bas', `${ici}&niveau=${niveau + 1}&arrivee=haut`)] : []),
+      };
+      this.cameras.main.setBackgroundColor('#0b090a');
+      return map;
+    }
+
+    readCaves() {
+      let r = null;
+      try { r = JSON.parse(window.localStorage.getItem(GROTTE.store) || 'null'); } catch (e) { r = null; }
+      return r && Array.isArray(r.pris) ? Object.assign({ carnet: {} }, r) : { jour: null, pris: [], carnet: {} };
+    }
+
+    // La lumière autour de la promeneuse (le reste de la grotte dans le noir), le niveau affiché,
+    // les stalagmites infranchissables, un éclat de temps en temps sur le minerai.
+    makeCaveLife() {
+      this.mine = null;
+      this.mining = null;
+      const c = this.cave;
+      if (!c) return;
+      for (const s of c.stalag) if (this.walk[s.y]) this.walk[s.y][s.x] = false;
+      const L = GROTTE.lumiere, N = 512, K = 4;          // une texture de N px, agrandie K fois
+      if (!this.textures.exists('lumiere_grotte')) {
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = N;
+        const g = cv.getContext('2d');
+        const grad = g.createRadialGradient(N / 2, N / 2, L.r0 / K, N / 2, N / 2, L.r1 / K);
+        grad.addColorStop(0, 'rgba(6,4,6,0)');
+        grad.addColorStop(0.55, `rgba(6,4,6,${L.noir * 0.6})`);
+        grad.addColorStop(1, `rgba(6,4,6,${L.noir})`);
+        g.fillStyle = grad;
+        g.fillRect(0, 0, N, N);
+        this.textures.addCanvas('lumiere_grotte', cv);
+      }
+      // (agrandie : elle couvre l'écran même au plus petit zoom)
+      this.light = this.add.image(0, 0, 'lumiere_grotte').setScale(K).setDepth(1.9e6);
+      this.say(`⛏️ La grotte — niveau ${c.niveau}${c.niveau >= GROTTE.niveaux ? ' (le plus profond)' : ''}`);
+    }
+
+    tapOre(w) {
+      const c = this.cave;
+      if (!c) return false;
+      const gx = Math.floor(w.x / T), gy = Math.floor(w.y / T);
+      const o = c.ores.find((q) => q.x === gx && q.y === gy);
+      if (!o) return false;
+      // la case de sol voisine la plus proche de la promeneuse
+      const P = this.heroPos;
+      const pres = [[0, 1], [-1, 0], [1, 0], [0, -1]].map(([dx, dy]) => ({ x: o.x + dx, y: o.y + dy }))
+        .filter((q) => this.canWalk(q.x, q.y))
+        .map((q) => ({ x: q.x * T + 8, y: q.y * T + 13 }))
+        .sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y));
+      if (!pres.length) return true;
+      this.mine = { ore: o, stand: pres[0] };
+      this.path = [];
+      if (Math.hypot(pres[0].x - P.x, pres[0].y - P.y) > 3) this.goTo(pres[0].x, pres[0].y);
       return true;
+    }
+
+    // Arrivée près du minerai : trois coups de pioche (pioche_cote), des éclats, puis il est pris.
+    stepMine(dt) {
+      const m = this.mine;
+      if (!m) return;
+      const P = this.heroPos;
+      if (!this.mining) {
+        if (this.path.length) return;
+        if (Math.hypot(m.stand.x - P.x, m.stand.y - P.y) > 6) { this.mine = null; return; }
+        this.mining = { t: 0, coup: 0, frame: 'pioche_cote_0' };
+        this.hero.setFlipX(m.ore.x * T + 8 < P.x - 2);
+        this.face = 'cote';
+      }
+      const g = this.mining;
+      g.t += dt;
+      const k = Math.min(3, Math.floor(g.t / GROTTE.coup * 4));
+      g.frame = 'pioche_cote_' + k;
+      if (g.t >= GROTTE.coup) {
+        g.t = 0;
+        g.coup++;
+        this.chips(m.ore);
+        if (g.coup >= GROTTE.coups) this.takeOre(m.ore);
+      }
+    }
+
+    chips(o) {
+      if (reduced()) return;
+      const col = { fer: 0xd2a88a, cuivre: 0xd67e46, or: 0xf0c846, platine: 0xe6eef8 }[o.kind] || 0x9a9088;
+      for (let i = 0; i < 4; i++) {
+        const r = this.add.rectangle(o.x * T + 8, o.y * T + 10, 2, 2, i % 2 ? col : 0x7a7068).setDepth(2e6);
+        this.tweens.add({ targets: r, x: r.x + (Math.random() - 0.5) * 22, y: r.y + 6 + Math.random() * 10, alpha: 0, duration: 380, onComplete: () => r.destroy() });
+      }
+      this.cameras.main.shake(70, 0.002);
+    }
+
+    takeOre(o) {
+      const c = this.cave;
+      this.mine = null;
+      this.mining = null;
+      c.ores.splice(c.ores.indexOf(o), 1);
+      this.layers.minerais.removeTileAt(o.x, o.y);
+      const rec = this.caveRec;
+      rec.pris.push(`${c.id}:${c.niveau}:${o.x},${o.y}`);
+      rec.carnet[o.kind] = (rec.carnet[o.kind] || 0) + 1;
+      try { window.localStorage.setItem(GROTTE.store, JSON.stringify(rec)); } catch (e) { /* ignoré */ }
+      const nom = ((c.meta.minerais || {})[o.kind] || {}).nom || o.kind;
+      this.say(`⛏️ ${nom} ! (dans le carnet : ${rec.carnet[o.kind]})`);
     }
 
     // ---------- les animaux ----------
@@ -1220,6 +1478,7 @@
       this.stepArrival(dt);
       this.stepFinds(time);
       this.stepFauna(time, dt);
+      this.stepMine(dt);
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
@@ -1243,7 +1502,9 @@
       }
       const H = this.hero;
       const moved = Math.hypot(P.x - x0, P.y - y0);
-      if (moved > 0) {
+      if (this.mining) {
+        H.setFrame(this.frame(this.mining.frame));
+      } else if (moved > 0) {
         if (Math.abs(vx) > Math.abs(vy) * 0.8) { this.face = 'cote'; H.setFlipX(vx < 0); } else { this.face = vy > 0 ? 'bas' : 'haut'; H.setFlipX(false); }
         this.walked += moved;
         H.setFrame(this.frame(`marche_${this.face}_${Math.floor(this.walked / HERO.stride) % 4}`));
@@ -1254,6 +1515,7 @@
       H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y).setAlpha(this.heroAlpha);
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5).setAlpha(this.heroAlpha);
       this.fadeFoliage(Math.round(P.x), Math.round(P.y));
+      if (this.light) this.light.setPosition(Math.round(P.x), Math.round(P.y - 12));
       // les bâtiments autour des voitures, puis de la promeneuse
       const boxes = (this.cars || []).map((c) => ({ x: c.x - 30, y: c.y - 38, w: 60, h: 56, foot: c.y, see: false }));
       boxes.push({ x: P.x - HERO.w / 2, y: P.y - HERO.foot, w: HERO.w, h: HERO.h, foot: P.y, see: true });

@@ -1,0 +1,59 @@
+{
+ "tuiles": {
+  "sol_0": 0,
+  "sol_1": 1,
+  "sol_2": 2,
+  "sol_3": 3,
+  "sol_4": 4,
+  "sol_5": 5,
+  "sol_6": 6,
+  "sol_7": 7,
+  "plafond_0": 8,
+  "plafond_1": 9,
+  "plafond_2": 10,
+  "plafond_3": 11,
+  "plafond_4": 12,
+  "plafond_5": 13,
+  "plafond_6": 14,
+  "plafond_7": 15,
+  "plafond_8": 16,
+  "plafond_9": 17,
+  "plafond_10": 18,
+  "plafond_11": 19,
+  "plafond_12": 20,
+  "plafond_13": 21,
+  "plafond_14": 22,
+  "plafond_15": 23,
+  "paroi_0": 24,
+  "paroi_1": 25,
+  "paroi_2": 26,
+  "paroi_3": 27,
+  "fer": 28,
+  "cuivre": 29,
+  "or": 30,
+  "platine": 31,
+  "champignon": 32,
+  "cristal": 33
+ },
+ "colonnes": 16,
+ "objets": [
+  "echelle",
+  "trou",
+  "stalagmite_0",
+  "stalagmite_1"
+ ],
+ "minerais": {
+  "fer": {
+   "nom": "Du minerai de fer"
+  },
+  "cuivre": {
+   "nom": "Du minerai de cuivre"
+  },
+  "or": {
+   "nom": "Une pépite d’or"
+  },
+  "platine": {
+   "nom": "Du platine, très rare"
+  }
+ }
+}

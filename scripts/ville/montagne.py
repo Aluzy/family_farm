@@ -7,7 +7,7 @@
 #   gare        « arret » (la voie, et où s'arrête le milieu du train), « quai » (où l'on monte)
 #   arrivees    « gare » : devant la porte de la gare, là où l'on paraît en descendant du train
 #   batiments   l'emprise de la gare (on la touche pour ouvrir la fenêtre des départs)
-#   grottes     l'entrée de chaque grotte (des points)
+#   passages    l'entrée de chaque grotte (la flèche y mène) ; arrivees « grotte_<n> » : on en ressort là
 #   trouvailles les endroits où l'on peut trouver quelque chose (« genre » : fossile, pierre)
 #   animaux     les zones des animaux (« espece » : marmotte, bouquetin, aigle)
 #
@@ -261,7 +261,11 @@ def main():
     obj.point('gare', 'arret', VOIE * T, ARRET * T)
     obj.point('gare', 'quai', 9.7 * T, ARRET * T)
     for gx in GROTTES:
-        obj.point('grottes', f'grotte_{gx}', gx * T + T, round(pied(gx * T + T)) + 6)
+        # l'entrée : une flèche y mène dans la grotte (js/ville-carte.js, ?carte=grotte) ; on en ressort là
+        bas = round(pied(gx * T + T))
+        obj.rect('passages', f'grotte_{gx}', gx * T - 4, bas - 20, 2 * T + 8, 28, 'passage', sens='haut',
+                 cible=f'ville-carte.html?carte=grotte&grotte={gx}&niveau=1&arrivee=haut')
+        obj.point('arrivees', f'grotte_{gx}', gx * T + T, bas + 12)
     for x, y, genre in TROUVAILLES:
         if y is None:
             y = (pied(x * T) + 20) / T
