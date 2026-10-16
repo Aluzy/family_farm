@@ -15,10 +15,18 @@
 //     ou une carte modifiée est donc rechargée, même sur un téléphone qui l'a en cache ;
 //   - ville-carte.html et infra-monde.html : des renvois vers jeu.html, où la ville et
 //     l'infra-monde s'affichent (js/ville-carte.js, js/infra-monde.js : même table) ;
+//   - les scripts classiques de la page (SCRIPTS) : minifiés un à un (esbuild), sans
+//     changer leur forme (toujours des scripts classiques, mêmes noms globaux) ;
 //   - les autres pages, le style, les images et Phaser, copiés tels quels.
 //
 // Les tests, les scripts, les données sources (data/) et les modules eux-mêmes
-// ne sont pas mis en ligne.
+// ne sont pas mis en ligne. Dans assets/, les fichiers de travail ne le sont pas non
+// plus (ASSETS_HORS_SITE) : cartes et jeux de tuiles Tiled (.tmj, .tsx), images que
+// seuls les générateurs Python lisent. Une carte publiée qui demanderait l'une de ces
+// images arrête la construction.
+//
+// La carte des sources de jeu.bundle.js (.map) n'est pas publiée ; pour l'avoir en
+// local : node scripts/build-site.mjs --sourcemap
 //
 // L'action GitHub (.github/workflows/site.yml) lance ce script à chaque push sur
 // main, après les tests, puis publie _site/. En local : npm install, puis
@@ -41,17 +49,61 @@ try {
 const OUT = join(ROOT, '_site');
 const PAGES = ['index.html', 'jeu.html', 'encyclopedie.html', 'cookies.html', 'infra-monde.html', 'ville-carte.html'];
 const FOLDERS = ['css', 'assets', 'vendor'];
+// Fichiers de assets/ jamais mis en ligne : le jeu ne les charge pas.
+const ASSETS_HORS_SITE = [
+  /\.(tmj|tsx)$/,                     // cartes et jeux de tuiles de travail Tiled (scripts/build-map.mjs en tire les .json)
+  /^portraits\/modele[a-z_]*\.png$/,  // modèles des portraits (scripts/personnage/portraits*.py)
+  // images lues seulement par les générateurs (scripts/carte/*.py) ou par Tiled, dont aucune
+  // carte construite ne pose de tuile (la vérification plus bas le garantit)
+  /^(arbre_clair|pin_clair|barrieres|bordure_eau|bordure_eau_herbe|eau|herbe_chemin|herbe_deco)\.png$/,
+];
+const SOURCEMAP = process.argv.includes('--sourcemap');
 const SCRIPTS = ['js/telemetry.js', 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', 'js/farm-stage.js', 'js/ville-carte.js', 'js/infra-monde.js']; // scripts classiques, hors du regroupement
 const ENTRY = 'js/main.js';
 const BUNDLE = 'js/jeu.bundle.js';
 
 rmSync(OUT, { recursive: true, force: true });
-for (const f of [...PAGES, ...SCRIPTS]) {
+for (const f of PAGES) {
   mkdirSync(dirname(join(OUT, f)), { recursive: true });
   cpSync(join(ROOT, f), join(OUT, f));
 }
+const assetsDir = join(ROOT, 'assets') + sep;
+const published = (src) => {
+  if (src.endsWith('.DS_Store')) return false;
+  if (!src.startsWith(assetsDir)) return true;
+  const name = src.slice(assetsDir.length).split(sep).join('/');
+  return !ASSETS_HORS_SITE.some((re) => re.test(name));
+};
 for (const d of FOLDERS) {
-  cpSync(join(ROOT, d), join(OUT, d), { recursive: true, filter: (src) => !src.endsWith('.DS_Store') });
+  cpSync(join(ROOT, d), join(OUT, d), { recursive: true, filter: published });
+}
+
+/* les scripts classiques : minifiés sur place, sans regroupement ni changement de forme
+   (pas de « format » : les noms globaux comme Telemetry restent tels quels) */
+for (const f of SCRIPTS) {
+  const { code } = await esbuild.transform(readFileSync(join(ROOT, f), 'utf8'), {
+    loader: 'js', minify: true, charset: 'utf8', legalComments: 'none', sourcefile: f, logLevel: 'warning',
+  });
+  mkdirSync(dirname(join(OUT, f)), { recursive: true });
+  writeFileSync(join(OUT, f), code);
+}
+
+/* les cartes publiées : chaque planche qu'elles demandent est publiée aussi (une image de
+   assets/ écartée par ASSETS_HORS_SITE ne doit manquer à aucune carte) */
+const missing = [];
+for (const name of readdirSync(join(OUT, 'assets'), { recursive: true })) {
+  if (!String(name).endsWith('.json')) continue;
+  let map;
+  try { map = JSON.parse(readFileSync(join(OUT, 'assets', name), 'utf8')); } catch { continue; }
+  for (const t of (map && Array.isArray(map.tilesets) ? map.tilesets : [])) {
+    if (t.image && existsSync(join(ROOT, 'assets', t.image)) && !existsSync(join(OUT, 'assets', t.image))) {
+      missing.push(`assets/${name} demande ${t.image}, écartée du site (ASSETS_HORS_SITE)`);
+    }
+  }
+}
+if (missing.length) {
+  console.error(missing.map((e) => `✗ ${e}`).join('\n'));
+  process.exit(1);
 }
 
 /* les modules, regroupés */
@@ -62,7 +114,7 @@ await esbuild.build({
   format: 'iife',       // un script classique : s'exécute en fin de page, comme avant les modules
   target: ['es2020'],
   minify: true,
-  sourcemap: true,      // jeu.bundle.js.map : le navigateur ne le charge que si les outils de développement sont ouverts
+  sourcemap: SOURCEMAP, // jeu.bundle.js.map : seulement avec --sourcemap (en local), jamais publié
   charset: 'utf8',      // les accents et les émojis restent tels quels
   legalComments: 'none',
   logLevel: 'warning',
@@ -132,22 +184,16 @@ const stamp = (page, src) => src.replace(/(<(?:script[^>]*\bsrc|link[^>]*\bhref)
 });
 html = stamp('jeu.html', html);
 if (/type="module"/.test(html)) errors.push('jeu.html : il reste un <script type="module"> après le regroupement');
-/* les cartes Phaser à part (la ville, l'infra-monde) : leurs images et cartes aussi, par la
-   même table, que leur script lit (fonction v) ; la table chargée juste avant lui */
-const MAP_PAGES = {}; // (la ville et l'infra-monde s'affichent dans jeu.html : leurs pages ne font qu'y mener)
-const mapPages = {};
-for (const [page, script] of Object.entries(MAP_PAGES)) {
-  const tag = `<script src="${script}"></script>`;
-  const src = readFileSync(join(OUT, page), 'utf8');
-  if (src.split(tag).length !== 2) { errors.push(`${page} : la balise ${tag} est attendue une fois, exactement sous cette forme.`); continue; }
-  mapPages[page] = stamp(page, src.replace(tag, `<script src="${ASSET_VERSIONS}"></script>\n  ${tag}`));
-}
 if (errors.length) {
   console.error(errors.map((e) => `✗ ${e}`).join('\n'));
   process.exit(1);
 }
 writeFileSync(join(OUT, 'jeu.html'), html);
-for (const [page, src] of Object.entries(mapPages)) writeFileSync(join(OUT, page), src);
 
 const ko = (f) => Math.round(statSync(join(OUT, f)).size / 1024);
-console.log(`_site/ construit : ${BUNDLE} ${ko(BUNDLE)} Ko, jeu.html ${ko('jeu.html')} Ko, ${count} fichiers suivis d'une empreinte, ${Object.keys(assetVersions).length} fichiers de assets/ aussi.`);
+let total = 0;
+for (const name of readdirSync(OUT, { recursive: true })) {
+  const st = statSync(join(OUT, name));
+  if (st.isFile()) total += st.size;
+}
+console.log(`_site/ construit : ${BUNDLE} ${ko(BUNDLE)} Ko, jeu.html ${ko('jeu.html')} Ko, ${count} fichiers suivis d'une empreinte, ${Object.keys(assetVersions).length} fichiers de assets/ aussi ; ${(total / 1048576).toFixed(1)} Mo en tout.`);

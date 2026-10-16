@@ -2,7 +2,7 @@
 // Tests du rapport quotidien (worker/src/report.mjs et worker/src/index.js).
 // Aucun accès réseau : le bucket R2 et l'API GitHub sont simulés.
 //
-// Usage : node test-report.mjs
+// Usage : node tests/test-report.mjs
 
 import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,9 +10,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
   buildReport, chapterSegments, renderMarkdown, reportSubject, fmtDuration, parisHour,
-} from './worker/src/report.mjs';
+} from '../worker/src/report.mjs';
 
-const here = dirname(fileURLToPath(import.meta.url));
+const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 let passed = 0;
 const failures = [];

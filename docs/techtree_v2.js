@@ -1,3 +1,6 @@
+// HISTORIQUE : proposition v2 gardée pour mémoire, plus tenue à jour. La source de vérité
+// de l'arbre des technologies est data/techtree.json (voir docs/arbre_technologique.md).
+//
 // Arbre des technologies v2 — proposition de données pour DATA.techtree
 // (remplace le bloc actuel de jeu.html, Lot 7). Voir arbre_technologique.md.
 //

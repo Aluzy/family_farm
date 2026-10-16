@@ -5,14 +5,14 @@
 // la page garde sa mise en forme, son en-tête, son pied et sa recherche. Seuls
 // le menu des catégories et les sections de <main> sont réécrits.
 //
-// Usage : node build-encyclopedie.mjs          (réécrit encyclopedie.html)
-//         node build-encyclopedie.mjs --check  (vérifie que la page est à jour, sans écrire)
+// Usage : node scripts/build-encyclopedie.mjs          (réécrit encyclopedie.html)
+//         node scripts/build-encyclopedie.mjs --check  (vérifie que la page est à jour, sans écrire)
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-const here = dirname(fileURLToPath(import.meta.url));
+const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 const jsonPath = join(here, 'encyclopedie_ferme_familiale.json');
 const htmlPath = join(here, 'encyclopedie.html');
 
@@ -78,7 +78,7 @@ out = remplacer(out, '<main class="wrap">', '    <p class="no-results"', `\n    
 const total = data.categories.reduce((t, c) => t + c.entrees.length, 0);
 if (process.argv.includes('--check')) {
   if (out !== page) {
-    console.error('encyclopedie.html n\'est pas à jour : lancer « node build-encyclopedie.mjs ».');
+    console.error('encyclopedie.html n\'est pas à jour : lancer « node scripts/build-encyclopedie.mjs ».');
     process.exit(1);
   }
   console.log(`encyclopedie.html est à jour (${total} termes, ${data.categories.length} catégories).`);
