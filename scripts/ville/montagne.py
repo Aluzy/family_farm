@@ -194,11 +194,10 @@ def dessine(c):
     for x in range(0, W * T, 6):
         if hasard(x, 71) < 0.5:
             c['marquage'].colle(O.caillou(int(hasard(x, 72) * 9)), x - 8, round(pied(x)) + int(hasard(x, 73) * 22) - 4)
-    X.eau_ovale(c['fontaines'], *LAC)
+    X.lac(c['fontaines'], *LAC, graine=3)
     OBJ.batiment(X.gare(c, 'gare', GARE[0], GARE[1], GARE[2], 'bois', 'ardoise'))
     mob = c['mobilier']
     mob.colle(O.banc(), 19 * T, 31 * T)
-    mob.colle(O.banc(), 37 * T, 29 * T)
     mob.colle(poteau('GROTTES'), (GROTTES[0] - 2) * T, 25 * T)
     rev = O.reverbere()
     for x in (10, 22):

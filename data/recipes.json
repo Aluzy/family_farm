@@ -395,7 +395,7 @@
       "libre": true
     },
     "//quenelle_poisson": [
-      "Farine et poisson : une truite ou un brochet pêchés sur la ferme, ou le poisson de la ville.",
+      "Farine et poisson : une truite ou un brochet pêchés sur la ferme, un omble chevalier du lac de la montagne, ou le poisson de la ville.",
       "Énergie et prix du plat calculés avec la truite (le premier poisson de la liste)."
     ],
     "quenelle_poisson": {
@@ -403,7 +403,7 @@
       "icone": "🐟‍🥟",
       "station": "cuisine",
       "temps": 20,
-      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "poisson"], "qte": 1 }],
+      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "omble", "poisson"], "qte": 1 }],
       "libre": true
     }
   }

@@ -216,6 +216,27 @@ ICONS['🐟‍🌈'] = [
     '................',
 ]
 
+# Omble chevalier (le lac de la montagne) : dos bleu-gris sombre semé de points clairs, ventre
+# rouge-orangé, nageoires bordées de blanc, queue en éventail.
+ICONS['🐟‍❄'] = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '.....qqqqqq.....',
+    '...qqdBdddBdq.qq',
+    '..qddBdddBddqdBq',
+    '.qkdddBdddBdqqdq',
+    '.qdrrrrrrrrrqqdq',
+    '..qrprrprrrpqqrq',
+    '...qqwrrrwqq..qq',
+    '.....qqqqqq.....',
+    '................',
+    '................',
+    '................',
+    '................',
+]
+
 # Brochet (l'étang de la ferme) : long et fin, museau en bec de canard, dos vert sombre tacheté
 # de jaune pâle, ventre crème, nageoires et queue vers l'arrière.
 ICONS['🐟‍🦷'] = [

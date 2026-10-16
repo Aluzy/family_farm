@@ -153,6 +153,39 @@ def eau_ovale(t, cx, cy, rx, ry, rive=(138, 112, 76), herbe=(70, 82, 40)):
 GENRES_ARBRES = {(48, 64): 'arbre', (64, 64): 'pin'}
 
 
+def lac(t, cx, cy, rx, ry, graine=0):
+    """Un lac (px) aux bords irréguliers : une rive de sable et de galets qui serpente, l'eau
+    animée de la ferme, claire près du bord (on voit le fond), plus profonde et plus sombre vers
+    le milieu ; les zones se mêlent (pas d'anneaux nets), le rebord du nord fait de l'ombre."""
+    def bord(a):
+        return 1 + 0.11 * math.sin(3 * a + graine) + 0.07 * math.sin(5 * a + 2 * graine) + 0.04 * math.sin(9 * a + 3 * graine)
+    rive = [(150, 126, 88), (132, 110, 78), (168, 146, 104), (112, 104, 96)]
+    for y in range(int(cy - ry * 1.3) - 2, int(cy + ry * 1.3) + 3):
+        for x in range(int(cx - rx * 1.3) - 2, int(cx + rx * 1.3) + 3):
+            u, v = (x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry
+            q = math.hypot(u, v) / bord(math.atan2(v, u))
+            if q > 1:
+                continue
+            # un peu de bruit : les limites entre les profondeurs ondulent
+            qn = q + (hasard(x // 3, y // 3, graine, 41) - 0.5) * 0.08
+            for k in range(F.EAU_IMAGES):
+                if q > 0.9:                                   # la rive : sable, galets, herbe au bord
+                    h = hasard(x, y, graine, 42)
+                    col = (78, 92, 44) if q > 0.97 and h < 0.5 else rive[3] if h < 0.12 else rive[int(h * 3) % 3]
+                elif qn > 0.82:                               # le bord : peu d'eau sur le sable
+                    col = mel(F.eau(x, y, k, False, 0), rive[0], 0.45)
+                elif qn > 0.58:                               # l'eau claire
+                    col = F.eau(x, y, k, False, 0 if hasard(x // 16, y // 16, 43) < 0.75 else 1 + int(hasard(x // 16, y // 16, 44) * 6))
+                elif qn > 0.3:                                # l'eau profonde
+                    col = F.eau(x, y, k, True, 0)
+                else:                                         # le plus profond : plus sombre
+                    col = teinte(F.eau(x, y, k, True, 0), 0.8)
+                # l'ombre du rebord, en haut de l'eau
+                if q <= 0.9 and v < 0 and q > 0.78:
+                    col = teinte(col, 0.85)
+                t.put(x, y, col, k)
+
+
 def plantes(veg, ombres, liste, objets=None):
     """Les arbres (x, y en tuiles : le pied ; im), du fond vers l'avant, calés sur la grille.
     objets : les arbres et les pins y vont (couche « arbres » : le jeu les dessine et on les

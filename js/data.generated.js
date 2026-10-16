@@ -155,6 +155,7 @@ export const RAW_DATA = {
     "bois": { "nom": "Bois", "icone": "🪵", "prix": 2, "edible": false, "category": "produit", "rachetable": false },
     "truite": { "nom": "Truite", "icone": "🐟‍🌈", "energie": 25, "prix": 4, "edible": true, "category": "produit", "rachetable": false },
     "brochet": { "nom": "Brochet", "icone": "🐟‍🦷", "energie": 38, "prix": 7, "edible": true, "category": "produit", "rachetable": false },
+    "omble": { "nom": "Omble chevalier", "icone": "🐟‍❄", "energie": 34, "prix": 9, "edible": true, "category": "produit", "rachetable": false },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
     "oignon": { "nom": "Oignon", "icone": "🧅", "energie": 6, "prix": 1, "edible": true, "category": "légume" },
     "graine_oignon": { "nom": "Graines d'oignon", "icone": "🌱‍🧅", "prix": 1, "edible": false, "category": "graine" },
@@ -415,7 +416,7 @@ export const RAW_DATA = {
       "icone": "🐟‍🥟",
       "station": "cuisine",
       "temps": 20,
-      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "poisson"], "qte": 1 }]
+      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "omble", "poisson"], "qte": 1 }]
     }
   },
   "crops": {
@@ -613,8 +614,8 @@ export const RAW_DATA = {
     "NOM": "Canne à pêche",
     "ICONE": "🎣",
     "PRIX": 60,
-    "PRISES": { "etang": { "truite": 50, "brochet": 25 }, "mare": { "truite": 55, "brochet": 5 } },
-    "JOUR": { "etang": 6, "mare": 3 }
+    "PRISES": { "etang": { "truite": 50, "brochet": 25 }, "mare": { "truite": 55, "brochet": 5 }, "lac": { "omble": 40, "truite": 25 } },
+    "JOUR": { "etang": 6, "mare": 3, "lac": 4 }
   },
   "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "COUT": [0, 900, 1800, 3000, 5400] },
   "VERGER": {
@@ -1781,6 +1782,7 @@ export const RAW_DATA = {
     "poire": 7,
     "truite": 2,
     "brochet": 2,
+    "omble": 2,
     "oignon": 6,
     "ail": 7,
     "poivron": 5,

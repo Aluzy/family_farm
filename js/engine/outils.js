@@ -207,7 +207,7 @@ export function castLine(state, eau) {
   if (!hasTool(state, 'canne')) return fail(`Il te faut une canne à pêche (Marché, ${C.PRIX} 💰).`);
   const chances = C.PRISES[eau];
   if (!chances) return fail('Touche l\'eau de l\'étang ou de la mare pour y pêcher.');
-  if (fishLeft(state, eau) <= 0) return fail(`Le poisson se fait rare ${eau === 'mare' ? 'dans la mare' : 'dans l\'étang'} aujourd'hui : essaie l'autre eau, ou reviens demain.`);
+  if (fishLeft(state, eau) <= 0) return fail(eau === 'lac' ? 'Le poisson se fait rare dans le lac aujourd\'hui : reviens demain.' : `Le poisson se fait rare ${eau === 'mare' ? 'dans la mare' : 'dans l\'étang'} aujourd'hui : essaie l'autre eau, ou reviens demain.`);
   if (!canAfford(state, 'pecher')) return fail(TIRED);
   spendEnergy(state, 'pecher');
   let tirage = nextRandom(state) * 100, poisson = null;

@@ -356,7 +356,9 @@ def bus_scolaire():
     milieu = (ROUTE[1] + ROUTE[2]) * T / 2
     ouest_bus, haut, bas, est = 31 * T, milieu - 15, milieu + 15, W * T + 48
     tour = [(est, haut), (ouest_bus, haut), (ouest_bus, bas), (est, bas)]
-    chemin_ = [(0.5 * T, 18.9 * T), (26 * T, 18.6 * T), (30 * T, 14.6 * T), (37 * T, 14.5 * T)]
+    # (ils attendent le bus devant l'abri, au bord du trottoir : on ne traverse pas l'abri)
+    devant = PIED_HAUT + 15
+    chemin_ = [(0.5 * T, 18.9 * T), (26 * T, 18.6 * T), (30 * T, devant), (37.5 * T, devant)]
     return ({'bus_matin': tour, 'bus_soir': tour, 'enfants_matin': chemin_, 'enfants_soir': chemin_[::-1]},
             {'arret': (38 * T, haut)})
 DEPART = (6, 18.9)

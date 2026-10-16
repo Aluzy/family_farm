@@ -92,6 +92,8 @@
     "//truite": ["Les poissons de l'étang et de la mare de la ferme, pêchés à la canne (CANNE) :", "frais (ils se gardent 2 nuits), ils se mangent ou se vendent ; ils ne se rachètent pas.", "Le « poisson » de la ville (plus bas) reste à part."],
     "truite": { "nom": "Truite", "icone": "🐟‍🌈", "energie": 25, "prix": 4, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
     "brochet": { "nom": "Brochet", "icone": "🐟‍🦷", "energie": 38, "prix": 7, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
+    "//omble": ["L'omble chevalier, pêché à la canne dans le lac de la montagne (CANNE.PRISES.lac) : frais", "(il se garde 2 nuits), il se mange ou se vend ; il ne se rachète pas."],
+    "omble": { "nom": "Omble chevalier", "icone": "🐟‍❄", "energie": 34, "prix": 9, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
     "//oignon": [
       "10 nouvelles cultures : Zone de culture (oignon, ail, poivron, épinard,",

@@ -227,6 +227,14 @@
     fall: { ms: 700, angle: 86, rest: 600, fade: 700, leaves: 22, colors: [0x2f6b3a, 0x4e8f43, 0x77ad4f, 0x9cc36a, 0x6b4a2b, 0x8a6337] },
     eclats: [0x5d5a63, 0x8a8790, 0xa9a6ad, 0xc9c5c6, 0xe4e0dc],
   };
+  // La pêche (la canne en main, un toucher sur l'eau de la couche « fontaines ») : l'eau de
+  // chaque carte pour le moteur du jeu (CANNE.PRISES : « lac », la montagne et son omble
+  // chevalier). On va sur la rive, on lance (le bouchon se pose à `portee` px au plus), on attend
+  // la touche (`attente` s), on ferre ; le moteur a décidé de la prise au lancer.
+  const PECHE = {
+    eaux: { montagne: 'lac' }, portee: 52, lancer: 0.4, attente: [2.2, 4.6], touche: 0.5, ferrer: 0.4,
+    bouchon: { haut: 0xd8483a, bas: 0xf4efe6, fil: 0xe8e4dc },
+  };
   // Les voisins (l'intérieur des maisons de la carte de transition) : la famille de chaque maison,
   // tirée une fois (deux parents, 1 à `enfantsMax` enfants, des personnages de
   // assets/personnages/ autres que ceux de la partie) et gardée sur l'appareil (localStorage
@@ -487,9 +495,10 @@
         const w = cam.getWorldPoint(p.x, p.y);
         this.work = null;
         this.entering = null;
+        if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapVoisin(w)) return;
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w)) return;
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) return;
         this.goTo(w.x, w.y);
@@ -967,7 +976,7 @@
       const aide = document.getElementById('aide-texte');
       const textes = {
         ville: 'Touchez un trottoir pour y marcher · la gare, un étal du marché, un entrepôt',
-        montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
+        montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
         plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
         grotte: 'Touchez le sol pour y marcher · un minerai pour le piocher · l\u2019échelle pour remonter',
         transition: 'Touchez l’herbe pour y marcher · une maison pour y entrer · la hache ou la pioche en main (barre d’outils) : un arbre, un rocher',
@@ -1927,6 +1936,85 @@
       }
     }
 
+    // ---------- la pêche ----------
+
+    // Un toucher sur l'eau, la canne en main : on va sur la rive la plus proche, puis on lance.
+    tapWater(w) {
+      const eau = PECHE.eaux[NOM_CARTE], H = hote();
+      if (!eau || !H || !H.enMain || H.enMain() !== 'canne' || this.fishing) return false;
+      const gx = Math.floor(w.x / T), gy = Math.floor(w.y / T);
+      if (!this.layers.fontaines || !this.layers.fontaines.getTileAt(gx, gy)) return false;
+      this.peche = { eau, cible: { x: w.x, y: w.y } };
+      this.work = null;
+      this.goTo(w.x, w.y);         // (la case libre la plus proche : la rive)
+      return true;
+    }
+
+    // Arrivé sur la rive : le lancer (le moteur dit tout de suite s'il y a une prise), l'attente,
+    // la touche, puis on ferre et la prise paraît.
+    stepFish(dt) {
+      const f = this.peche;
+      if (!f) return;
+      const P = this.heroPos;
+      if (!f.phase) {
+        if (this.path.length) return;
+        let dx = f.cible.x - P.x, dy = f.cible.y - P.y;
+        const d = Math.hypot(dx, dy);
+        if (d > 6 * T) { this.peche = null; return; }
+        const r = hote().pecher(f.eau);
+        if (!r) { this.peche = null; return; }
+        f.poisson = r.poisson;
+        // le bouchon : vers l'eau touchée, à portée de canne
+        const k = Math.min(1, PECHE.portee / Math.max(1, d));
+        f.bouchon = { x: P.x + dx * k, y: P.y + dy * k };
+        f.vue = Math.abs(dx) > Math.abs(dy) * 0.8 ? 'cote' : dy > 0 ? 'bas' : 'haut';
+        this.hero.setFlipX(f.vue === 'cote' && dx < 0);
+        this.face = f.vue;
+        f.phase = 'lancer';
+        f.t = 0;
+        f.attente = PECHE.attente[0] + Math.random() * (PECHE.attente[1] - PECHE.attente[0]);
+        this.fishing = true;
+        this.mining = { frame: `peche_${f.vue}_1` };
+        f.g = this.add.graphics().setDepth(Math.max(P.y, f.bouchon.y) + 1);
+      }
+      f.t += dt;
+      const B = PECHE.bouchon, g = f.g;
+      let bob = 0, fil = true;
+      if (f.phase === 'lancer') {
+        this.mining.frame = `peche_${f.vue}_${f.t < PECHE.lancer / 2 ? 1 : 2}`;
+        fil = f.t >= PECHE.lancer / 2;
+        if (f.t >= PECHE.lancer) { f.phase = 'attente'; f.t = 0; }
+      } else if (f.phase === 'attente') {
+        bob = reduced() ? 0 : Math.round(Math.sin(f.t * 3) * 0.6);
+        if (f.t >= f.attente) { f.phase = f.poisson ? 'touche' : 'ferrer'; f.t = 0; }
+      } else if (f.phase === 'touche') {
+        bob = 2;                                      // le bouchon plonge
+        if (f.t >= PECHE.touche) { f.phase = 'ferrer'; f.t = 0; }
+      } else if (f.phase === 'ferrer') {
+        this.mining.frame = `peche_${f.vue}_3`;
+        fil = false;
+        if (f.t >= PECHE.ferrer) {
+          g.destroy();
+          const o = f.poisson && hote().objet ? hote().objet(f.poisson) : null;
+          if (o) { this.popGain('+1 🐟'); this.say(`🎣 ${o.icone} ${o.nom} !`); } else this.say('🎣 Rien n\u2019a mordu… Essaie encore.');
+          this.peche = null;
+          this.fishing = false;
+          this.mining = null;
+          return;
+        }
+      }
+      g.clear();
+      if (!fil) return;
+      const bx = Math.round(f.bouchon.x), by = Math.round(f.bouchon.y) + bob;
+      const tip = { x: P.x + (f.vue === 'cote' ? (this.hero.flipX ? -8 : 8) : 6), y: P.y - (f.vue === 'haut' ? 30 : 24) };
+      g.lineStyle(1, B.fil, 0.8).lineBetween(tip.x, tip.y, bx, by - 1);
+      if (f.phase !== 'lancer' || f.t >= PECHE.lancer * 0.75) {
+        g.fillStyle(B.bas, 1).fillRect(bx - 1, by - 1, 3, 2);
+        if (f.phase !== 'touche') g.fillStyle(B.haut, 1).fillRect(bx - 1, by - 3, 3, 2);
+        if (f.phase === 'touche' && !reduced()) g.lineStyle(1, 0xffffff, 0.7).strokeEllipse(bx, by, 10 + f.t * 12, 4 + f.t * 4);
+      }
+    }
+
     // ---------- les maisons des voisins ----------
 
     // Un toucher sur une maison qui a une porte (un passage de même nom) : on va jusqu'à la
@@ -2120,12 +2208,13 @@
       this.stepFauna(time, dt);
       this.stepMine(dt);
       this.stepWork(dt);
+      this.stepFish(dt);
       this.stepEntering();
       this.stepFamily(time, dt);
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
-      const k = this.locked ? null : this.keys;
+      const k = this.locked || this.fishing ? null : this.keys;
       if (k) {
         vx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.Q.isDown || k.A.isDown ? 1 : 0);
         vy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.Z.isDown || k.W.isDown ? 1 : 0);
@@ -2133,6 +2222,7 @@
       if (vx || vy) {
         this.path = [];
         if (this.work && !this.work.started) this.work = null;
+        if (this.peche && !this.peche.phase) this.peche = null;
         this.entering = null;
         const l = Math.hypot(vx, vy), st = HERO.speed * dt;
         const nx = P.x + (vx / l) * st, ny = P.y + (vy / l) * st;
