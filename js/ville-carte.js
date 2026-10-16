@@ -57,6 +57,14 @@
  * « conserverie », « fromagerie », « confiturerie ») : les ventes et les achats passent tout
  * de suite par le moteur du jeu (FermeHote, js/ui/excursion.js).
  *
+ * La carte de transition est comme la ferme : ses barrières, son herbe haute qui penche quand on
+ * la traverse, ses arbres qu'on coupe la hache en main et ses rochers qu'on casse la pioche en
+ * main (le moteur du jeu compte les coups, donne le bois et la pierre, les fait revenir quelques
+ * jours plus tard : NATURE). Les deux maisons des voisins s'ouvrent (?carte=interieur&maison=
+ * <nom>) : l'intérieur de la maison de la ferme (assets/maison_interieur.json), meublé pour la
+ * famille qui y vit, tirée au hasard à la première visite (deux parents, un à trois enfants :
+ * VOISINS) ; elle va et vient dans la maison, on lui parle en la touchant.
+ *
  * Ces cartes s'affichent dans la page du jeu (jeu.html), à la place de la carte de la ferme :
  * la carte du joueur, la date et l'argent, le menu et la barre d'outils restent là, le temps
  * passe comme à la ferme, et c'est le personnage principal de la partie qui s'y promène.
@@ -84,7 +92,7 @@
   // La carte : ?carte=ville (par défaut) ou ?carte=transition (entre la ferme et la ville,
   // scripts/ville/transition.py) ; ?arrivee=<nom> : le point de la couche « arrivees » où l'on
   // apparaît (sinon « depart »).
-  const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json', montagne: 'assets/montagne.json', plage: 'assets/plage.json', grotte: null };
+  const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json', montagne: 'assets/montagne.json', plage: 'assets/plage.json', grotte: null, interieur: 'assets/maison_interieur.json' };
   // (fixés à chaque démarrage : VilleCarte.start(parent, '?carte=…&arrivee=…'))
   let PARAMS = new URLSearchParams('');
   let NOM_CARTE = 'ville';
@@ -196,7 +204,102 @@
     // le poids de chaque minerai au niveau n : le fer partout, les autres de plus en plus bas
     poids: (n) => ({ fer: 1, cuivre: Math.max(0, (n - 1) * 0.35), or: Math.max(0, (n - 2.5) * 0.18), platine: Math.max(0, (n - 4) * 0.1) }),
   };
+  // Comme à la ferme (couches « arbres », « rochers », « herbe_haute » de la carte) : les arbres
+  // (assets/arbre_clair_sp.png, pin_clair_sp.png : images 0 droit, 1 penché à droite, 2 à gauche,
+  // 4 px de marge ; `tronc` : les décalages, en px, des cases de leur pied qu'on ne traverse pas)
+  // et les rochers (assets/transition_objets.png, cases de 32 px ; `half`, `h` : où on les touche).
+  // Un toucher, l'outil en main : on y va, un coup (`swing` s, il porte à la 3e image du geste),
+  // le moteur compte (FermeHote.couper / piocher). Au dernier coup, l'arbre bascule (`fall`),
+  // le rocher éclate. L'herbe haute penche dans le sens de la marche puis revient (`swing` de
+  // `herbe` : les images de sa rangée), comme à la ferme.
+  const NATURE = {
+    arbres: {
+      arbre: { key: 'arbre_clair_sp', file: 'assets/arbre_clair_sp.png', w: 56, h: 64, tronc: [0], reach: 14 },
+      pin: { key: 'pin_clair_sp', file: 'assets/pin_clair_sp.png', w: 72, h: 64, tronc: [-4, 4], reach: 19 },
+    },
+    rochers: { rocher: { half: 13, h: 24, tronc: [-10, 0, 10], reach: 21 }, caillou: { half: 7, h: 12, tronc: [0], reach: 13 } },
+    objets: { key: 'transition_objets', file: 'assets/transition_objets.png', size: 32 },
+    ombre: { key: 'ombre_arbre', file: 'assets/ombre_arbre.png', dx: -16, dy: -8 },
+    herbe: { key: 'herbe_haute', file: 'assets/herbe_haute.png', w: 22, h: 16, frames: 5, swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 9, up: 6, down: 4 }, shade: 0.12 },
+    swing: 0.5, shake: [1, 0, 2, 0, 1, 0], shakeFps: 9, occ: 0.6,
+    fall: { ms: 700, angle: 86, rest: 600, fade: 700, leaves: 22, colors: [0x2f6b3a, 0x4e8f43, 0x77ad4f, 0x9cc36a, 0x6b4a2b, 0x8a6337] },
+    eclats: [0x5d5a63, 0x8a8790, 0xa9a6ad, 0xc9c5c6, 0xe4e0dc],
+  };
+  // Les voisins (l'intérieur des maisons de la carte de transition) : la famille de chaque maison,
+  // tirée une fois (deux parents, 1 à `enfantsMax` enfants, des personnages de
+  // assets/personnages/ autres que ceux de la partie) et gardée sur l'appareil (localStorage
+  // `store`). Les meubles (assets/meuble_<dessin>.png) prennent les places nommées de la couche
+  // « meubles » de l'intérieur : un lit d'adulte par parent, un lit d'enfant par enfant, une chaise
+  // par personne ; le reste (tableaux, plante, coin salon) au hasard. La sortie : `sortie` (px).
+  const VOISINS = {
+    store: 'ferme-voisins', enfantsMax: 3, persos: 50, speed: 24, kidSpeed: 32, scale: 0.8, wait: [1.5, 5],
+    sortie: { x: 232, y: 240, w: 32, h: 24 }, entree: { x: 248, y: 228 }, fond: '#06182a',
+    noms: ['Martin', 'Bernard', 'Dubois', 'Moreau', 'Laurent', 'Girard', 'Roux', 'Fournier', 'Mercier', 'Blanc', 'Garnier', 'Chevalier'],
+    prenoms: ['Camille', 'Claude', 'Dominique', 'Sacha', 'Alix', 'Morgan', 'Charlie', 'Maxime', 'Andréa', 'Yaël', 'Eden', 'Ange'],
+    enfants: ['Lou', 'Noa', 'Maé', 'Louison', 'Swann', 'Élie', 'Gaby', 'Robin', 'Jo', 'Lilou', 'Nino', 'Tom'],
+    paroles: {
+      adulte: ['Bonjour, voisin ! Les légumes de votre ferme sont les meilleurs du coin.', 'Entrez donc, il reste du café.',
+        'Le bus de l’école passe le matin vers 7 h, à l’arrêt au bout du chemin.', 'Il paraît que le marché de la ville paie bien les produits de la ferme.',
+        'Vous avez vu le train ? Il va jusqu’à la montagne et à la plage.', 'Quelle belle journée pour couper du bois !'],
+      enfant: ['Tu veux jouer avec moi ?', 'J’ai vu une marmotte à la montagne !', 'Le bus de l’école est tout jaune !',
+        'Ma maîtresse dit que les vaches font du lait. C’est vrai ?', 'Je vais construire une cabane dans les arbres.', 'Il y a des poissons dans la mare ?'],
+    },
+    meubles: ['four', 'cuisine', 'plan', 'evier', 'frigo', 'fenetre', 'plante', 'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
+      'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3'],
+    plats: /^(tapis|tableau|fenetre)/,
+  };
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  // La famille qui vit dans la maison `maison` : tirée au hasard la première fois, puis gardée.
+  // { nom, membres: [{ prenom, perso, enfant }], deco: { tableaux, plante, salon } }.
+  function voisins(maison) {
+    let all = {};
+    try { all = JSON.parse(window.localStorage.getItem(VOISINS.store) || '{}') || {}; } catch (e) { all = {}; }
+    if (all[maison] && Array.isArray(all[maison].membres) && all[maison].membres.length) return all[maison];
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    // des personnages que la partie et les autres voisins n'ont pas
+    const pris = new Set();
+    const H = hote(), h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
+    if (H && H.perso) pris.add(H.perso());
+    for (const e of (h && h.enfants) || []) pris.add(e.perso);
+    const autres = Object.values(all).filter((f) => f && Array.isArray(f.membres));
+    for (const f of autres) for (const m of f.membres) pris.add(m.perso);
+    const perso = () => {
+      const libres = [];
+      for (let n = 1; n <= VOISINS.persos; n++) if (!pris.has(n)) libres.push(n);
+      const n = libres.length ? pick(libres) : 1 + Math.floor(Math.random() * VOISINS.persos);
+      pris.add(n);
+      return n;
+    };
+    const dits = new Set();
+    const prenom = (liste) => { const l = liste.filter((p) => !dits.has(p)); const p = pick(l.length ? l : liste); dits.add(p); return p; };
+    const noms = VOISINS.noms.filter((n) => !autres.some((f) => f.nom === n));
+    const n = 1 + Math.floor(Math.random() * VOISINS.enfantsMax);
+    const membres = [0, 1].map(() => ({ prenom: prenom(VOISINS.prenoms), perso: perso(), enfant: false }));
+    for (let i = 0; i < n; i++) membres.push({ prenom: prenom(VOISINS.enfants), perso: perso(), enfant: true });
+    const f = {
+      nom: pick(noms.length ? noms : VOISINS.noms), membres,
+      deco: { tableaux: [1, 2, 3].filter(() => Math.random() < 0.7), plante: Math.random() < 0.6, salon: Math.random() < 0.75 },
+    };
+    all[maison] = f;
+    try { window.localStorage.setItem(VOISINS.store, JSON.stringify(all)); } catch (e) { /* gardée le temps de la visite */ }
+    return f;
+  }
+
+  // Le dessin posé à la place `place` de la couche « meubles » pour la famille `f` (null : rien).
+  function meubleDe(place, f) {
+    const enfants = f.membres.filter((m) => m.enfant).length;
+    let m;
+    if ((m = /^chaise_(\d+)$/.exec(place))) return Number(m[1]) <= Math.min(6, f.membres.length) ? 'chaise' : null;
+    if ((m = /^lit_(\d+)$/.exec(place))) {
+      const k = Number(m[1]);
+      return k <= 2 ? 'lit_adulte' : k >= 4 && k - 3 <= enfants ? 'lit_enfant' : null;
+    }
+    if ((m = /^tableau_(\d+)$/.exec(place))) return f.deco.tableaux.includes(Number(m[1])) ? place : null;
+    if (place === 'plante') return f.deco.plante ? place : null;
+    if (place === 'tapis_1' || place === 'table_basse') return f.deco.salon ? place : null;
+    return VOISINS.meubles.includes(place) ? place : null;
+  }
 
   // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
   // répète son propre bord (marge 1, espacement 2). Quand la caméra tombe entre deux pixels
@@ -261,15 +364,31 @@
           this.load.spritesheet('faune_' + e, v('assets/faune_' + e + '.png'), { frameWidth: z, frameHeight: z });
         }
       }
-      // les enfants de la partie (pour la scène du bus)
+      // les enfants de la partie (pour la scène du bus) ; dans une maison, la famille qui y vit
       const h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
-      for (const e of (h && h.enfants) || []) {
-        this.load.spritesheet('perso_' + e.perso, v('assets/personnages/perso_' + String(e.perso).padStart(2, '0') + '.png'), { frameWidth: 16, frameHeight: 32 });
+      const persos = ((h && h.enfants) || []).map((e) => e.perso);
+      this.famille = null;
+      if (NOM_CARTE === 'interieur') {
+        this.maison = PARAMS.get('maison') || 'maison_rouge';
+        this.famille = voisins(this.maison);
+        for (const m of this.famille.membres) persos.push(m.perso);
+        for (const n of VOISINS.meubles) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
+      }
+      for (const n of new Set(persos)) {
+        this.load.spritesheet('perso_' + n, v('assets/personnages/perso_' + String(n).padStart(2, '0') + '.png'), { frameWidth: 16, frameHeight: 32 });
       }
       // les planches des jeux de tuiles : lues dans la carte une fois chargée
       if (MAP.file) this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
         const data = this.cache.tilemap.get(MAP.key).data;
         for (const set of data.tilesets) this.load.image(set.name, v('assets/' + set.image));
+        // les arbres, les rochers, l'herbe haute (comme à la ferme)
+        const has = (n) => data.layers.some((l) => l.type === 'objectgroup' && l.name === n && (l.objects || []).length);
+        if (has('arbres')) {
+          for (const d of Object.values(NATURE.arbres)) this.load.spritesheet(d.key, v(d.file), { frameWidth: d.w, frameHeight: d.h });
+          this.load.image(NATURE.ombre.key, v(NATURE.ombre.file));
+        }
+        if (has('rochers')) this.load.spritesheet(NATURE.objets.key, v(NATURE.objets.file), { frameWidth: NATURE.objets.size, frameHeight: NATURE.objets.size });
+        if (has('herbe_haute')) this.load.spritesheet(NATURE.herbe.key, v(NATURE.herbe.file), { frameWidth: NATURE.herbe.w, frameHeight: NATURE.herbe.h });
         // l'exemplaire du dessus de chaque couche de bâtiment
         for (const name of BATI) {
           const l = data.layers.find((x) => x.name === name);
@@ -294,9 +413,10 @@
       this.map = map;
       this.makeTileAnims();
 
-      // où l'on marche : là où il y a du sol et rien de ce qu'on ne traverse pas
+      // où l'on marche : là où il y a du sol et rien de ce qu'on ne traverse pas (dans une
+      // maison : son plancher, voir makeInterior)
       this.walk = [];
-      for (let y = 0; y < map.height; y++) {
+      for (let y = 0; y < map.height && this.layers.sol; y++) {
         const row = [];
         for (let x = 0; x < map.width; x++) {
           row.push(!!this.layers.sol.getTileAt(x, y) && !OBSTACLES.some((n) => this.layers[n] && this.layers[n].getTileAt(x, y)));
@@ -315,11 +435,14 @@
         }
       }
 
+      this.makeInterior(map);
+      this.makeNature(objects);
+
       // la fermière : ses images par nom (marche_bas_0…, idle_cote_0…)
       const noms = (this.cache.json.get(HERO.key + '_noms') || {}).frames || [];
       this.frame = (name) => Math.max(0, noms.indexOf(name));
       const arrivee = PARAMS.get('arrivee');
-      const d = (arrivee && objects('arrivees').find((o) => o.name === arrivee)) || objects('depart')[0] || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
+      const d = (arrivee && objects('arrivees').find((o) => o.name === arrivee)) || objects('depart')[0] || (this.famille && VOISINS.entree) || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
       this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), HERO.key, this.frame('idle_bas_0')).setOrigin(0.5, HERO.foot / HERO.h);
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x1e1a18, 0.35);
       this.heroPos = { x: d.x, y: d.y };
@@ -339,7 +462,7 @@
       this.fitZoom();
       this.scale.on('resize', () => this.fitZoom());
 
-      this.makePassages(objects('passages'));
+      this.makePassages(objects('passages').concat(this.famille ? [this.interiorExit()] : []));
       // l'heure du jeu (HorlogeSortie : js/ui/excursion.js)
       this.clockEl = document.getElementById('horloge');
       this.clockAt = -1e9;
@@ -349,11 +472,13 @@
       // sur une trouvaille, la ramasser ; sur un animal ou une grotte, ce qu'on en voit ;
       // ailleurs, y aller
       this.input.on('pointerup', (p) => {
-        if (p.getDistance() > 8 || this.locked || this.dialog) return;
+        if (p.getDistance() > 8 || this.locked || this.dialog || this.mining) return;
         const w = cam.getWorldPoint(p.x, p.y);
+        this.work = null;
+        this.entering = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w)) return;
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapVoisin(w) || this.tapMaison(w)) return;
         this.goTo(w.x, w.y);
       });
       // les trajets du bus de l'école roulent avec les autres (mêmes carrefours), sans voitures tirées dessus
@@ -378,7 +503,8 @@
         const x = sens === 'gauche' ? o.x + 16 : sens === 'droite' ? o.x + o.width - 16 : cx;
         const y = sens === 'haut' ? o.y + 16 : sens === 'bas' ? o.y + o.height - 16 : cy;
         const arrow = this.add.image(Math.round(x), Math.round(y), PASS.key, PASS.sens.indexOf(sens)).setDepth(2e6).setVisible(false);
-        return { name: o.name, cible: prop('cible'), sens, rect: o, x, y, arrow };
+        // `proche` : la distance où la flèche paraît (une porte : tout près)
+        return { name: o.name, cible: prop('cible'), sens, rect: o, x, y, arrow, near: Number(prop('proche')) || PASS.near };
       }).filter((q) => q.cible && this.textures.exists(PASS.key));
     }
 
@@ -388,7 +514,7 @@
       for (const q of this.passages) {
         const r = q.rect;
         const d = Math.hypot(Math.max(r.x - P.x, 0, P.x - r.x - r.width), Math.max(r.y - P.y, 0, P.y - r.y - r.height));
-        q.arrow.setVisible(d <= PASS.near);
+        q.arrow.setVisible(d <= q.near);
         if (!q.arrow.visible) continue;
         const k = reduced() ? 0 : Math.round(Math.sin(time / 220) * PASS.bob);
         const [dx, dy] = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] }[q.sens];
@@ -801,6 +927,8 @@
         montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
         plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
         grotte: 'Touchez le sol pour y marcher · un minerai pour le piocher · l\u2019échelle pour remonter',
+        transition: 'Touchez l’herbe pour y marcher · une maison pour y entrer · la hache ou la pioche en main (barre d’outils) : un arbre, un rocher',
+        interieur: 'Touchez le plancher pour y marcher · un voisin pour lui parler · la flèche pour sortir',
       };
       if (aide && textes[NOM_CARTE]) aide.textContent = textes[NOM_CARTE];
       const annuler = document.getElementById('gare-annuler');
@@ -1530,6 +1658,351 @@
       }
     }
 
+    // ---------- les arbres, les rochers, l'herbe haute (comme à la ferme) ----------
+
+    // Les cases sous le pied d'un arbre ou d'un rocher : on ne les traverse pas tant qu'il est là.
+    blockUnder(o, dxs) {
+      o.cells = [];
+      const ty = Math.floor((o.y - 1) / T);
+      for (const dx of dxs) {
+        const tx = Math.floor((o.x + dx) / T);
+        if (!this.walk[ty] || tx < 0 || tx >= this.walk[ty].length || o.cells.some((c) => c[0] === tx)) continue;
+        o.cells.push([tx, ty, this.walk[ty][tx]]);
+        this.walk[ty][tx] = false;
+      }
+    }
+
+    unblock(o) {
+      for (const [tx, ty, was] of o.cells || []) if (this.walk[ty]) this.walk[ty][tx] = was;
+      o.cells = [];
+    }
+
+    makeNature(objects) {
+      this.trees = [];
+      this.rocks = [];
+      this.grass = [];
+      this.work = null;
+      const H = hote();
+      const id = (o) => NOM_CARTE + ':' + Math.round(o.x) + ',' + Math.round(o.y);
+      for (const o of objects('arbres')) {
+        const d = NATURE.arbres[o.type];
+        if (!d || !this.textures.exists(d.key) || (H && H.abattu && H.abattu(id(o)))) continue;
+        const t = { id: id(o), kind: 'arbre', def: d, x: o.x, y: o.y, alpha: 1, shake: -1 };
+        if (this.textures.exists(NATURE.ombre.key)) t.shadow = this.add.image(Math.round(o.x + NATURE.ombre.dx), Math.round(o.y + NATURE.ombre.dy), NATURE.ombre.key).setOrigin(0).setDepth(-60);
+        t.img = this.add.image(Math.round(o.x), Math.round(o.y), d.key, 0).setOrigin(0.5, 1).setDepth(o.y);
+        this.blockUnder(t, d.tronc);
+        this.trees.push(t);
+      }
+      for (const o of objects('rochers')) {
+        const d = NATURE.rochers[o.type];
+        const frame = Number(((o.properties || []).find((q) => q.name === 'image') || {}).value) || 0;
+        if (!d || !this.textures.exists(NATURE.objets.key) || (H && H.casse && H.casse(id(o)))) continue;
+        const r = { id: id(o), kind: 'rocher', def: d, x: o.x, y: o.y };
+        r.img = this.add.image(Math.round(o.x), Math.round(o.y), NATURE.objets.key, frame).setOrigin(0.5, 1).setDepth(o.y);
+        this.blockUnder(r, d.tronc);
+        this.rocks.push(r);
+      }
+      const G = NATURE.herbe;
+      if (this.textures.exists(G.key)) {
+        const rows = Math.floor((this.textures.get(G.key).frameTotal - 1) / G.frames) || 1;
+        for (const o of objects('herbe_haute')) {
+          const base = (Math.max(0, Number(o.type) | 0) % rows) * G.frames;
+          const img = this.add.image(Math.round(o.x), Math.round(o.y), G.key, base).setOrigin(0.5, 1).setDepth(o.y - 1);
+          // une nuance propre à chaque touffe (deux voisines ne se confondent pas)
+          const n = Math.sin(o.x * 12.9898 + o.y * 78.233) * 43758.5453;
+          const c = Math.round(255 * (1 - G.shade * (n - Math.floor(n))));
+          img.setTint((c << 16) | (c << 8) | c);
+          this.grass.push({ img, x: o.x, y: o.y, base, t: -1, dir: 1, inside: false });
+        }
+      }
+      this.grassPrev = null;
+    }
+
+    // Un toucher sur un arbre (la hache en main) ou un rocher (la pioche en main) : on y va, puis
+    // un coup. Sans l'outil, le toucher fait marcher, comme ailleurs.
+    tapNature(w) {
+      if (!this.trees || (!this.trees.length && !this.rocks.length)) return false;
+      const H = hote(), outil = H && H.enMain ? H.enMain() : null;
+      let list = [];
+      if (outil === 'hache') list = this.trees.filter((t) => !t.down && Math.abs(w.x - t.x) <= t.def.w / 2 - 8 && w.y <= t.y + 3 && w.y >= t.y - t.def.h + 4);
+      else if (outil === 'pioche') list = this.rocks.filter((r) => !r.down && Math.abs(w.x - r.x) <= r.def.half + 3 && w.y <= r.y + 4 && w.y >= r.y - r.def.h - 3);
+      if (!list.length) return false;
+      const o = list.sort((a, b) => b.y - a.y)[0];
+      const P = this.heroPos, side = P.x < o.x ? -1 : 1;
+      const spots = [side, -side].map((k) => ({ x: o.x + k * o.def.reach, y: o.y + 1 }));
+      const spot = spots.find((q) => this.canWalk(Math.floor(q.x / T), Math.floor(q.y / T))) || spots[0];
+      this.work = { o, outil, spot, started: false };
+      this.path = [];
+      if (Math.hypot(spot.x - P.x, spot.y - P.y) > 3) this.goTo(spot.x, spot.y);
+      return true;
+    }
+
+    // Arrivé près de l'arbre ou du rocher : le geste (hache_cote, pioche_cote), le coup porte à la
+    // troisième image (le moteur compte), puis le geste finit. Un coup par toucher.
+    stepWork(dt) {
+      const w = this.work;
+      if (!w) return;
+      const P = this.heroPos;
+      if (!w.started) {
+        if (this.path.length) return;
+        if (Math.hypot(w.spot.x - P.x, w.spot.y - P.y) > 12 || w.o.down) { this.work = null; return; }
+        w.started = true;
+        w.t = 0;
+        w.hit = false;
+        this.hero.setFlipX(w.o.x < P.x);
+        this.face = 'cote';
+        this.mining = { frame: w.outil + '_cote_0' };
+      }
+      w.t += dt;
+      const k = Math.min(3, Math.floor((w.t / NATURE.swing) * 4));
+      this.mining.frame = w.outil + '_cote_' + k;
+      if (k >= 2 && !w.hit) {
+        w.hit = true;
+        if (!this.hitNature(w)) { this.work = null; this.mining = null; return; }
+      }
+      if (w.t >= NATURE.swing) { this.work = null; this.mining = null; }
+    }
+
+    // Le coup : le moteur du jeu (le bois ou la pierre entre dans l'inventaire), puis ce qu'on
+    // voit. false : rien (pas de partie, la nuit, plus d'énergie : un message l'a dit).
+    hitNature(w) {
+      const H = hote(), o = w.o;
+      if (!H || !H.couper) { this.say('Il faut une partie en cours pour couper du bois ou casser des pierres.'); return false; }
+      if (o.kind === 'arbre') {
+        const r = H.couper(o.id);
+        if (!r) return false;
+        this.popGain(`+${r.bois} 🪵`);
+        if (r.tombe) this.fellTree(o); else o.shake = 0;
+        this.leaves(o, 5);
+      } else {
+        const r = H.piocher(o.id);
+        if (!r) return false;
+        this.popGain(`+${(r.items && r.items.pierre) || 1} 🪨`);
+        this.shards(o, r.casse ? 14 : 5);
+        if (r.casse) this.breakRock(o);
+        else if (!reduced()) this.tweens.add({ targets: o.img, x: o.img.x + (w.o.x < this.heroPos.x ? -1 : 1), duration: 50, yoyo: true });
+      }
+      return true;
+    }
+
+    // L'arbre abattu bascule autour de son pied, du côté opposé au personnage, puis s'efface.
+    fellTree(t) {
+      t.down = true;
+      t.shake = -1;
+      t.img.setFrame(0).setAlpha(1);
+      this.unblock(t);
+      const F = NATURE.fall, dir = t.x >= this.heroPos.x ? 1 : -1;
+      const gone = () => { t.img.destroy(); if (t.shadow) t.shadow.destroy(); this.trees.splice(this.trees.indexOf(t), 1); };
+      if (reduced()) { this.tweens.add({ targets: [t.img, t.shadow].filter(Boolean), alpha: 0, duration: 300, onComplete: gone }); return; }
+      if (t.shadow) this.tweens.add({ targets: t.shadow, alpha: 0, duration: F.ms });
+      this.tweens.add({
+        targets: t.img, angle: dir * F.angle, duration: F.ms, ease: 'Quad.easeIn',
+        onComplete: () => {
+          this.cameras.main.shake(90, 0.003);
+          this.leaves(t, F.leaves, dir);
+          this.tweens.add({ targets: t.img, alpha: 0, delay: F.rest, duration: F.fade, onComplete: gone });
+        },
+      });
+    }
+
+    breakRock(r) {
+      r.down = true;
+      this.unblock(r);
+      this.tweens.add({ targets: r.img, alpha: 0, scaleX: 1.15, scaleY: 0.7, duration: reduced() ? 120 : 260, onComplete: () => { r.img.destroy(); this.rocks.splice(this.rocks.indexOf(r), 1); } });
+    }
+
+    // Des feuilles et des copeaux (un coup de hache ; l'arbre tombé : là où sa cime touche le sol).
+    leaves(t, n, dir = 0) {
+      if (reduced()) return;
+      const F = NATURE.fall;
+      for (let i = 0; i < n; i++) {
+        const x0 = dir ? t.x + dir * (20 + Math.random() * 36) : t.x + (Math.random() - 0.5) * 30;
+        const y0 = dir ? t.y - 4 - Math.random() * 10 : t.y - 30 - Math.random() * 26;
+        const p = this.add.rectangle(x0, y0, 2, 2, F.colors[i % F.colors.length]).setDepth(t.y + 1);
+        this.tweens.add({ targets: p, x: x0 + (Math.random() - 0.5) * 26, y: y0 + 10 + Math.random() * 16, alpha: 0, angle: 180, duration: 600 + Math.random() * 500, onComplete: () => p.destroy() });
+      }
+    }
+
+    shards(r, n) {
+      if (reduced()) return;
+      const C = NATURE.eclats, side = r.x < this.heroPos.x ? 1 : -1;
+      for (let i = 0; i < n; i++) {
+        const s = this.add.rectangle(r.x + (Math.random() - 0.5) * 10, r.y - 8 - Math.random() * 8, i % 3 ? 2 : 3, 2, C[i % C.length]).setDepth(r.y + 1);
+        this.tweens.add({ targets: s, x: s.x + side * (4 + Math.random() * 18) + (Math.random() - 0.5) * 12, y: s.y + 8 + Math.random() * 10, alpha: 0, duration: 380 + Math.random() * 300, onComplete: () => s.destroy() });
+      }
+      this.cameras.main.shake(70, 0.002);
+    }
+
+    // « +1 🪵 » au-dessus du personnage, qui monte et s'efface.
+    popGain(texte) {
+      const P = this.heroPos;
+      const t = this.add.text(Math.round(P.x), Math.round(P.y - 34), texte, { fontFamily: 'system-ui, sans-serif', fontSize: '9px', color: '#fffbea', stroke: '#2a2018', strokeThickness: 3 })
+        .setOrigin(0.5, 1).setDepth(2e6).setResolution(4);
+      this.tweens.add({ targets: t, y: t.y - 14, alpha: 0, delay: 500, duration: 900, onComplete: () => t.destroy() });
+    }
+
+    // Chaque image : l'arbre qui vient d'être frappé tremble ; l'arbre devant le personnage
+    // s'éclaircit ; l'herbe haute qu'il traverse penche.
+    stepNature(dt) {
+      if (!this.trees) return;
+      const P = this.heroPos, k = Math.min(1, (dt * 1000) / 120);
+      for (const t of this.trees) {
+        if (t.down) continue;
+        if (t.shake >= 0) {
+          t.shake += dt;
+          const i = Math.floor(t.shake * NATURE.shakeFps);
+          if (i >= NATURE.shake.length || reduced()) { t.shake = -1; t.img.setFrame(0); } else t.img.setFrame(NATURE.shake[i]);
+        }
+        const derriere = P.y < t.y - 1 && Math.abs(P.x - t.x) < t.def.w / 2 - 2 && P.y > t.y - t.def.h + 8;
+        const want = derriere ? NATURE.occ : 1;
+        if (t.alpha !== want) {
+          t.alpha = Math.abs(want - t.alpha) < 0.02 ? want : t.alpha + (want - t.alpha) * k;
+          t.img.setAlpha(t.alpha);
+        }
+      }
+      const G = NATURE.herbe, prev = this.grassPrev;
+      const dx = prev ? P.x - prev.x : 0;
+      const moving = !!(prev && Math.hypot(dx, P.y - prev.y) > 0.05);
+      this.grassPrev = { x: P.x, y: P.y };
+      for (const g of this.grass) {
+        const inside = Math.abs(P.x - g.x) < G.reach.x && P.y > g.y - G.reach.up && P.y < g.y + G.reach.down;
+        if (inside && moving && (!g.inside || g.t < 0) && !reduced()) {
+          g.t = 0;
+          g.dir = Math.abs(dx) > 0.05 ? Math.sign(dx) : (P.x < g.x ? 1 : -1);
+        }
+        g.inside = inside;
+        if (g.t < 0) continue;
+        g.t += dt * 1000;
+        const i = Math.floor(g.t / G.step);
+        if (i >= G.swing.length) { g.t = -1; g.img.setFrame(g.base); continue; }
+        let f = G.swing[i];
+        if (g.dir < 0) f = f === 1 ? 3 : f === 2 ? 4 : f === 3 ? 1 : f === 4 ? 2 : 0;
+        g.img.setFrame(g.base + f);
+      }
+    }
+
+    // ---------- les maisons des voisins ----------
+
+    // Un toucher sur une maison qui a une porte (un passage de même nom) : on va jusqu'à la
+    // porte, et on entre.
+    tapMaison(w) {
+      const b = (this.buildings || []).find((q) => w.x >= q.x0 && w.x <= q.x1 && w.y >= q.top && w.y <= q.base + 8 && this.passages.some((p) => p.name === q.name));
+      if (!b) return false;
+      const q = this.passages.find((p) => p.name === b.name), r = q.rect;
+      this.entering = { q, x: r.x + r.width / 2, y: r.y + r.height - 3 };
+      this.goTo(this.entering.x, this.entering.y);
+      return true;
+    }
+
+    stepEntering() {
+      const e = this.entering;
+      if (!e || this.path.length) return;
+      this.entering = null;
+      if (Math.hypot(e.x - this.heroPos.x, e.y - this.heroPos.y) < 14) this.leave(e.q);
+    }
+
+    // L'intérieur (?carte=interieur) : la maison de la ferme (assets/maison_interieur.json), son
+    // plancher (la tuile la plus fréquente), les meubles de la famille, la famille.
+    makeInterior(map) {
+      this.npcs = [];
+      const f = this.famille;
+      if (!f) return;
+      const layer = this.layers.architecture;
+      const count = new Map();
+      const edge = layer.getTileAt(0, 0, true);
+      layer.forEachTile((t) => { if (t.index >= 0 && (!edge || t.index !== edge.index)) count.set(t.index, (count.get(t.index) || 0) + 1); });
+      let sol = -1, best = 0;
+      for (const [i, n] of count) if (n > best) { best = n; sol = i; }
+      this.walk = [];
+      for (let y = 0; y < map.height; y++) {
+        const row = [];
+        for (let x = 0; x < map.width; x++) { const t = layer.getTileAt(x, y); row.push(!!t && t.index === sol); }
+        this.walk.push(row);
+      }
+      // les meubles : posés en bas au centre de leur place ; ceux qui ne sont pas à plat arrêtent
+      // le personnage (les cases dont le centre est sous leur bas)
+      for (const o of ((map.getObjectLayer('meubles') || {}).objects) || []) {
+        const dessin = meubleDe(o.name, f);
+        if (!dessin || !this.textures.exists('meuble_' + dessin)) continue;
+        const plat = VOISINS.plats.test(dessin);
+        this.add.image(Math.round(o.x + o.width / 2), Math.round(o.y + o.height), 'meuble_' + dessin).setOrigin(0.5, 1).setDepth(plat ? -50 : o.y + o.height - 2);
+        if (plat) continue;
+        for (let ty = Math.floor(o.y / T); ty <= Math.floor((o.y + o.height) / T); ty++) {
+          for (let tx = Math.floor(o.x / T); tx <= Math.floor((o.x + o.width) / T); tx++) {
+            const cx = tx * T + T / 2, cy = ty * T + T / 2;
+            if (this.walk[ty] && cx >= o.x && cx <= o.x + o.width && cy >= o.y + o.height - 14 && cy <= o.y + o.height) this.walk[ty][tx] = false;
+          }
+        }
+      }
+      this.cameras.main.setBackgroundColor(VOISINS.fond);
+      // la famille, chacun sur une case libre du plancher
+      const libres = [];
+      this.walk.forEach((row, y) => row.forEach((ok, x) => { if (ok) libres.push({ x, y }); }));
+      const noms = (this.cache.json.get('perso_cases') || {}).frames || [];
+      this.npcFrame = (name) => Math.max(0, noms.indexOf(name));
+      for (const m of f.membres) {
+        const key = 'perso_' + m.perso;
+        if (!this.textures.exists(key) || !libres.length) continue;
+        const c = libres.splice(Math.floor(Math.random() * libres.length), 1)[0];
+        const x = c.x * T + T / 2, y = c.y * T + T - 2;
+        const s = this.add.sprite(x, y, key, this.npcFrame('idle_bas_0')).setOrigin(0.5, 30 / 32).setScale(m.enfant ? VOISINS.scale : 1);
+        const shadow = this.add.ellipse(x, y, m.enfant ? 9 : 11, 4, 0x1e1a18, 0.3);
+        this.npcs.push({ m, s, shadow, x, y, path: [], wait: 0.5 + Math.random() * 3, face: 'bas', walked: 0, speed: m.enfant ? VOISINS.kidSpeed : VOISINS.speed, talk: 0 });
+      }
+      const parents = f.membres.filter((m) => !m.enfant).map((m) => m.prenom), enfants = f.membres.filter((m) => m.enfant).map((m) => m.prenom);
+      const liste = (l) => (l.length > 1 ? l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1] : l[0]);
+      this.say(`🏠 Chez les ${f.nom} : ${liste(parents)}, et ${enfants.length > 1 ? 'leurs enfants' : 'leur enfant'} ${liste(enfants)}.`);
+    }
+
+    // La porte de la maison (en bas de la pièce du milieu) : ramène devant la maison.
+    interiorExit() {
+      const r = VOISINS.sortie;
+      return {
+        name: 'sortie', x: r.x, y: r.y, width: r.w, height: r.h,
+        properties: [{ name: 'cible', value: 'ville-carte.html?carte=transition&arrivee=' + this.maison }, { name: 'sens', value: 'bas' }, { name: 'proche', value: 40 }],
+      };
+    }
+
+    // Un toucher sur un membre de la famille : il se tourne vers le personnage et lui parle.
+    tapVoisin(w) {
+      const n = (this.npcs || []).find((q) => Math.abs(w.x - q.x) <= 8 && w.y <= q.y + 3 && w.y >= q.y - (q.m.enfant ? 24 : 30));
+      if (!n) return false;
+      const f = this.famille, l = VOISINS.paroles[n.m.enfant ? 'enfant' : 'adulte'];
+      n.path = [];
+      n.talk = 3;
+      n.face = 'cote';
+      n.s.setFlipX(this.heroPos.x < n.x);
+      this.say(`👋 ${n.m.prenom} ${f.nom} : « ${l[Math.floor(Math.random() * l.length)]} »`);
+      return true;
+    }
+
+    // La famille va et vient : une case libre au hasard, on y va, on attend un peu.
+    stepFamily(time, dt) {
+      for (const n of this.npcs || []) {
+        let moving = false;
+        if (n.talk > 0) n.talk -= dt;
+        else if (n.path.length) {
+          const to = n.path[0], dx = to.x - n.x, dy = to.y - n.y, l = Math.hypot(dx, dy), st = n.speed * dt;
+          if (Math.abs(dx) > Math.abs(dy) * 0.8) { n.face = 'cote'; n.s.setFlipX(dx < 0); } else { n.face = dy > 0 ? 'bas' : 'haut'; n.s.setFlipX(false); }
+          if (l <= st) { n.x = to.x; n.y = to.y; n.path.shift(); } else { n.x += (dx / l) * st; n.y += (dy / l) * st; }
+          n.walked += Math.min(l, st);
+          moving = true;
+          if (!n.path.length) n.wait = VOISINS.wait[0] + Math.random() * (VOISINS.wait[1] - VOISINS.wait[0]);
+        } else if ((n.wait -= dt) <= 0) {
+          const H = this.map.height, W = this.map.width;
+          for (let k = 0; k < 20 && !n.path.length; k++) {
+            const tx = Math.floor(Math.random() * W), ty = Math.floor(Math.random() * H);
+            if (!this.canWalk(tx, ty) || Math.hypot(tx * T - n.x, ty * T - n.y) > 9 * T) continue;
+            n.path = this.findPath(n.x, n.y, tx * T + T / 2, ty * T + T - 2) || [];
+          }
+          if (!n.path.length) n.wait = 1;
+        }
+        n.s.setFrame(this.npcFrame(moving ? `marche_${n.face}_${Math.floor(n.walked / 4) % 4}` : `idle_${n.face}_${Math.floor(time / 600 + n.m.perso) % 2}`));
+        n.s.setPosition(Math.round(n.x), Math.round(n.y)).setDepth(n.y);
+        n.shadow.setPosition(Math.round(n.x), Math.round(n.y)).setDepth(n.y - 0.5);
+      }
+    }
+
     canWalk(tx, ty) {
       return !!(this.walk[ty] && this.walk[ty][tx]);
     }
@@ -1537,6 +2010,12 @@
     // Le chemin le plus court (en tuiles, 8 directions sans couper un coin) jusqu'à la tuile
     // marchable la plus proche du point visé.
     goTo(x, y) {
+      const steps = this.findPath(this.heroPos.x, this.heroPos.y, x, y);
+      if (steps) this.path = steps;
+    }
+
+    // Le chemin (une liste de points, px) de (fx, fy) jusqu'à (x, y), ou null.
+    findPath(fx, fy, x, y) {
       const W = this.map.width, H = this.map.height;
       let gx = Math.floor(x / T), gy = Math.floor(y / T);
       if (!this.canWalk(gx, gy)) {
@@ -1548,10 +2027,10 @@
             if (!best || d < best.d) best = { x: gx + dx, y: gy + dy, d };
           }
         }
-        if (!best) return;
+        if (!best) return null;
         gx = best.x; gy = best.y; x = gx * T + T / 2; y = gy * T + T - 2;
       }
-      const sx = Math.floor(this.heroPos.x / T), sy = Math.floor(this.heroPos.y / T);
+      const sx = Math.floor(fx / T), sy = Math.floor(fy / T);
       const prev = new Map([[sy * W + sx, -1]]);
       const queue = [sy * W + sx];
       const goal = gy * W + gx;
@@ -1565,17 +2044,18 @@
           queue.push(n);
         }
       }
-      if (!prev.has(goal)) return;
+      if (!prev.has(goal)) return null;
       const steps = [];
       for (let c = goal; prev.get(c) !== -1; c = prev.get(c)) steps.push({ x: (c % W) * T + T / 2, y: Math.floor(c / W) * T + T - 2 });
       steps.reverse();
       if (steps.length) steps[steps.length - 1] = { x: Math.round(x), y: Math.round(y) };
-      this.path = steps;
+      return steps;
     }
 
     // Le feuillage devant la promeneuse s'efface un peu ; celui qu'elle a quitté revient.
     fadeFoliage(x, y) {
       for (const t of this.faded) t.alpha = 1;
+      if (!this.layers[DEVANT]) return;
       this.faded = this.layers[DEVANT].getTilesWithinWorldXY(x - HERO.w / 2, y - HERO.foot, HERO.w, HERO.h - 2) || [];
       for (const t of this.faded) t.alpha = FEUILLAGE_ALPHA;
     }
@@ -1593,6 +2073,9 @@
       this.stepFinds(time);
       this.stepFauna(time, dt);
       this.stepMine(dt);
+      this.stepWork(dt);
+      this.stepEntering();
+      this.stepFamily(time, dt);
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
@@ -1603,6 +2086,8 @@
       }
       if (vx || vy) {
         this.path = [];
+        if (this.work && !this.work.started) this.work = null;
+        this.entering = null;
         const l = Math.hypot(vx, vy), st = HERO.speed * dt;
         const nx = P.x + (vx / l) * st, ny = P.y + (vy / l) * st;
         // glisse le long d'un bord : chaque axe séparément
@@ -1629,6 +2114,7 @@
       H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y).setAlpha(this.heroAlpha);
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5).setAlpha(this.heroAlpha);
       this.fadeFoliage(Math.round(P.x), Math.round(P.y));
+      this.stepNature(dt);
       if (this.light) this.light.setPosition(Math.round(P.x), Math.round(P.y - 12));
       // les bâtiments autour des voitures, puis de la promeneuse
       const boxes = (this.cars || []).map((c) => ({ x: c.x - 30, y: c.y - 38, w: 60, h: 56, foot: c.y, see: false }));
