@@ -9,8 +9,8 @@
  "tilewidth": 16,
  "tileheight": 16,
  "infinite": false,
- "nextlayerid": 27,
- "nextobjectid": 202,
+ "nextlayerid": 28,
+ "nextobjectid": 205,
  "tilesets": [
   {
    "firstgid": 1,
@@ -666180,6 +666180,18 @@
      "y": 2713.6,
      "width": 0,
      "height": 0
+    },
+    {
+     "id": 196,
+     "name": "gare",
+     "type": "",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 456.0,
+     "y": 1590.4,
+     "width": 0,
+     "height": 0
     }
    ]
   },
@@ -666194,7 +666206,7 @@
    "y": 0,
    "objects": [
     {
-     "id": 196,
+     "id": 197,
      "name": "bus_matin",
      "type": "bus",
      "rotation": 0,
@@ -666223,7 +666235,7 @@
      ]
     },
     {
-     "id": 197,
+     "id": 198,
      "name": "bus_soir",
      "type": "bus",
      "rotation": 0,
@@ -666252,7 +666264,7 @@
      ]
     },
     {
-     "id": 198,
+     "id": 199,
      "name": "enfants_matin",
      "type": "bus",
      "rotation": 0,
@@ -666277,7 +666289,7 @@
      ]
     },
     {
-     "id": 199,
+     "id": 200,
      "name": "enfants_soir",
      "type": "bus",
      "rotation": 0,
@@ -666302,7 +666314,7 @@
      ]
     },
     {
-     "id": 200,
+     "id": 201,
      "name": "arret_matin",
      "type": "arret",
      "point": true,
@@ -666314,7 +666326,7 @@
      "height": 0
     },
     {
-     "id": 201,
+     "id": 202,
      "name": "arret_soir",
      "type": "arret",
      "point": true,
@@ -666322,6 +666334,42 @@
      "visible": true,
      "x": 1520,
      "y": 1713.0,
+     "width": 0,
+     "height": 0
+    }
+   ]
+  },
+  {
+   "id": 27,
+   "name": "gare",
+   "type": "objectgroup",
+   "draworder": "topdown",
+   "opacity": 1,
+   "visible": true,
+   "x": 0,
+   "y": 0,
+   "objects": [
+    {
+     "id": 203,
+     "name": "arret",
+     "type": "",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 272,
+     "y": 1504,
+     "width": 0,
+     "height": 0
+    },
+    {
+     "id": 204,
+     "name": "quai",
+     "type": "",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 299.2,
+     "y": 1504,
      "width": 0,
      "height": 0
     }

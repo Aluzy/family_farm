@@ -6,6 +6,8 @@
 //   assets/infra_monde.tmj             → assets/infra_monde.json       (l'infra-monde, infra-monde.html)
 //   assets/ville.tmj                   → assets/ville.json             (la ville, ville-carte.html)
 //   assets/transition.tmj              → assets/transition.json        (entre la ferme et la ville)
+//   assets/montagne.tmj                → assets/montagne.json          (la montagne, en train vers le nord)
+//   assets/plage.tmj                   → assets/plage.json             (la plage, en train vers le sud)
 //
 //   node scripts/build-map.mjs
 //
@@ -64,6 +66,19 @@ const MAPS = [
     source: 'assets/transition.tmj',
     target: 'assets/transition.json',
     main: 'transition_sol',
+    places: ['depart'],
+  },
+  {
+    // fabriquées par scripts/ville/montagne.py et plage.py ; où mène le train (ville-carte.html?carte=…)
+    source: 'assets/montagne.tmj',
+    target: 'assets/montagne.json',
+    main: 'montagne_sol',
+    places: ['depart'],
+  },
+  {
+    source: 'assets/plage.tmj',
+    target: 'assets/plage.json',
+    main: 'plage_sol',
     places: ['depart'],
   },
 ];

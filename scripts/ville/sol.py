@@ -92,9 +92,48 @@ def sable(x, y, v=0):
     return SABLE_S if r < 0.12 else SABLE_C if r > 0.93 else SABLE
 
 
-MOTIFS = {'asphalte': asphalte, 'trottoir': trottoir, 'herbe': herbe, 'place': place, 'sable': sable}
-VARIANTES = {'asphalte': 4, 'trottoir': 2, 'herbe': 16, 'place': 2, 'sable': 1}
-COULEURS = {'asphalte': '#665951', 'trottoir': '#94949c', 'herbe': '#86a534', 'place': '#a2a0a4', 'sable': '#dcc48a'}
+# Les sols du voyage en train (scripts/ville/montagne.py, plage.py) : la roche de la montagne,
+# la neige, le sable mouillé du bord de mer.
+ROCHE = (140, 134, 126)
+ROCHE_S = (112, 106, 100)
+ROCHE_C = (164, 158, 150)
+
+
+def roche(x, y, v=0):
+    # des dalles irrégulières : un joint sombre là où le bruit change de dalle
+    n = hasard(x, y, 43 + v)
+    d = lambda a, b: int(hasard(a // 6, b // 5, 44 + v) * 3)
+    c = teinte(ROCHE, 0.95 + 0.04 * d(x, y))
+    if d(x, y) != d(x + 1, y) or d(x, y) != d(x, y + 1):
+        c = ROCHE_S
+    elif n < 0.08:
+        c = teinte(c, 0.9)
+    elif n > 0.95:
+        c = ROCHE_C
+    return c
+
+
+NEIGE = (238, 242, 248)
+
+
+def neige(x, y, v=0):
+    n = hasard(x, y, 45 + v)
+    return (214, 224, 240) if n < 0.1 else (255, 255, 255) if n > 0.96 else NEIGE
+
+
+SABLE_M = (190, 164, 114)
+
+
+def sable_mouille(x, y, v=0):
+    n = hasard(x, y, 47 + v)
+    return teinte(SABLE_M, 0.92) if n < 0.1 else teinte(SABLE_M, 1.08) if n > 0.94 else SABLE_M
+
+
+MOTIFS = {'asphalte': asphalte, 'trottoir': trottoir, 'herbe': herbe, 'place': place, 'sable': sable,
+          'roche': roche, 'neige': neige, 'sable_mouille': sable_mouille}
+VARIANTES = {'asphalte': 4, 'trottoir': 2, 'herbe': 16, 'place': 2, 'sable': 1, 'roche': 1, 'neige': 1, 'sable_mouille': 1}
+COULEURS = {'asphalte': '#665951', 'trottoir': '#94949c', 'herbe': '#86a534', 'place': '#a2a0a4', 'sable': '#dcc48a',
+            'roche': '#8c867e', 'neige': '#eef2f8', 'sable_mouille': '#bea472'}
 
 
 def plein(matiere, v=0):
@@ -158,8 +197,10 @@ PASSAGES = {
 }
 
 
-def passage(a, b, n, v=0):
-    style = PASSAGES[(a, b)]
+def passage(a, b, n, v=0, style=None):
+    """style : celui de PASSAGES par défaut ; 'naturel' (un bord irrégulier, sans ombre),
+    'roche' (le rebord de la roche sur l'herbe), 'neige' (la neige sur la roche)."""
+    style = style or PASSAGES[(a, b)]
     fa, fb = MOTIFS[a], MOTIFS[b]
     im = image(T, T)
     for y in range(T):
@@ -179,10 +220,16 @@ def passage(a, b, n, v=0):
                     c = {1: PLACE_J, 2: PLACE_C}.get(d, c)
                 elif style == 'bois':
                     c = {1: (78, 50, 36), 2: (152, 104, 68), 3: (122, 80, 52)}.get(d, c)
+                elif style == 'roche':
+                    c = {1: teinte(ROCHE_S, 0.8), 2: ROCHE_C}.get(d, c)
+                elif style == 'neige':
+                    c = {1: (196, 208, 226), 2: (255, 255, 255)}.get(d, c)
+                elif style == 'naturel' and d == 1 and hasard(x, y, 49) < 0.5:
+                    c = fa(x, y, v)
             else:
                 c = fa(x, y, v)
                 # l'ombre portée du bord (la lumière vient du haut à gauche)
-                if style not in ('place', 'joint') and (dedans_b(x, y - 1, n) or dedans_b(x - 1, y, n)):
+                if style not in ('place', 'joint', 'naturel') and (dedans_b(x, y - 1, n) or dedans_b(x - 1, y, n)):
                     c = teinte(c, 0.78)
                 elif style == 'place' and distance(x, y, n, True) == 1:
                     c = HERBE_S
