@@ -116,6 +116,14 @@
     "bulot": { "nom": "Bulot", "icone": "🐌", "prix": 2, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
     "corail": { "nom": "Branche de corail", "icone": "🪸", "prix": 5, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
     "perle": { "nom": "Perle", "icone": "🦪", "prix": 12, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
+    "//herbes_montagne": [
+      "Les herbes de montagne : une trouvaille des prés de la montagne (genre « herbe », la plus",
+      "courante), cueillie comme les autres (FermeHote.ramasser). Fraîches, elles se gardent 3 nuits",
+      "(moins que le lait). Elles ne se mangent pas : à l'Étable, les vaches nourries aux herbes",
+      "(DATA.PATURAGE.herbes, ANIMAUX.vache.herbesParNuit, à la place de leur paille) donnent du lait",
+      "d'alpage. Elles se vendent peu."
+    ],
+    "herbes_montagne": { "nom": "Herbes de montagne", "icone": "🌿‍🏔️", "prix": 2, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "montagne", "conservation": 3 },
     "//minerai_fer": [
       "Les minerais de la grotte (fer partout, puis cuivre, or et platine de plus en plus bas), pris à",
       "la pioche (GROTTE, js/ville-carte.js). Au Four, 4 minerais et du bois donnent un",
@@ -202,6 +210,13 @@
       "conservation": 4
     },
     "lait": { "nom": "Lait", "icone": "🥛", "energie": 16, "prix": 4, "edible": true, "category": "produit", "conservation": 4 },
+    "//lait_alpage": [
+      "Le lait d'alpage : celui d'une vache nourrie aux herbes de montagne (voir feedLivestock()).",
+      "Il se garde comme le lait (4 nuits). Son prix est le prix final (12, contre 8 pour le lait une",
+      "fois doublé par MULTIPLICATEUR_PRODUCTION) : il n'est pas dans productionItemKeys(). Il ne",
+      "s'achète pas. En Cuisine, 3 laits d'alpage font un fromage d'alpage (recipes.fromage_alpage)."
+    ],
+    "lait_alpage": { "nom": "Lait d'alpage", "icone": "🥛‍🏔️", "energie": 18, "prix": 12, "edible": true, "category": "produit", "rachetable": false, "conservation": 4 },
     "//paille": [
       "Version 1.1 : la paille. Le Moulin en rend 1 par blé moulu (voir",
       "`recipes.farine.sousProduit`) ; les moutons et les vaches la mangent",
@@ -214,11 +229,15 @@
       "Version 1.5 (ville.json) : denrées venues de l'extérieur. \"ville\": true : elles ne",
       "s'achètent qu'au marché de la ville, pas à celui de la ferme. La cueillette de la forêt",
       "(champignon, myrtille, châtaigne) ne s'achète nulle part (rachetable: false) : on la",
-      "rapporte de la forêt ; le miel et le fromage d'alpage se rapportent aussi de la montagne."
+      "rapporte de la forêt ; le miel se rapporte aussi de la montagne.",
+      "Le fromage d'alpage (fromage au lait de vaches nourries aux herbes de la montagne) se fait en",
+      "Cuisine avec 3 laits d'alpage (recipes.fromage_alpage, une transformation : l'objet garde son",
+      "identifiant) ; il s'achète encore au marché de la ville. Son prix suit la règle des plats :",
+      "3 × 12 (lait d'alpage) × 1,3 = 47 ; son énergie aussi : 3 × 18 × 1,3 = 70."
     ],
     "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "edible": true, "category": "produit", "conservation": 2, "ville": true },
     "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "edible": true, "category": "produit", "ville": true },
-    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 25, "prix": 5, "edible": true, "category": "produit", "conservation": 10, "ville": true },
+    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "edible": true, "category": "produit", "conservation": 10, "ville": true },
     "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "edible": false, "category": "ingrédient", "ville": true },
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "edible": false, "category": "ingrédient", "ville": true },
     "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "edible": true, "category": "légume", "conservation": 3, "rachetable": false },

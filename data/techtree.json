@@ -408,8 +408,8 @@
         "cout": 300,
         "ressources": { "bois": 6, "lingot_fer": 2 },
         "requiert": [{ "construit": "paturage" }],
-        "effet": { "recettes": ["fromage_frais", "riz_au_lait"] },
-        "description": "Nouvelles recettes en Cuisine : fromage frais, riz au lait."
+        "effet": { "recettes": ["fromage_frais", "riz_au_lait", "fromage_alpage"] },
+        "description": "Nouvelles recettes en Cuisine : fromage frais, riz au lait, fromage d'alpage (avec le lait des vaches nourries aux herbes de montagne)."
       },
       "//prepa_2": [
         "(Version 1.1 : le nœud « Rôtisserie », cui_rotisserie, a disparu avec les",

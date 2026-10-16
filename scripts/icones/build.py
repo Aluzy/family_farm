@@ -56,6 +56,7 @@ FROM_SHEET = {
     '🐌': ('trouvailles.png', 5, 0),
     '🪸': ('trouvailles.png', 6, 0),
     '🦪': ('trouvailles.png', 7, 0),
+    '🌿‍🏔': ('trouvailles.png', 8, 0),
 }
 
 

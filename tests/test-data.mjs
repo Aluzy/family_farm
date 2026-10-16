@@ -135,6 +135,28 @@ test('objet impossible à obtenir : un avertissement, pas une erreur', () => {
   eq(sourcesOf(d, 'minerai_or'), ['grotte']);
   eq(sourcesOf(d, 'anchois'), ['pêche mer']);
 });
+test('le fromage d\'alpage : herbes de montagne (trouvaille) → lait d\'alpage (vache) → fromage (Cuisine)', () => {
+  eq(sourcesOf(DATA, 'herbes_montagne'), ['trouvaille (montagne)']);
+  eq(sourcesOf(DATA, 'lait_alpage'), ['animal vache']);
+  eq(sourcesOf(DATA, 'fromage_alpage'), ['recette fromage_alpage', 'marché de la ville']);
+});
+test('les trouvailles des cartes (assets/faune.json) sont les objets « trouvaille », chaque genre a ses endroits', () => {
+  const meta = JSON.parse(readFileSync('assets/faune.json', 'utf8')).trouvailles;
+  const objets = Object.keys(DATA.items).filter((id) => DATA.items[id].trouvaille);
+  eq(Object.keys(meta).sort(), objets.sort());
+  const genres = {};
+  for (const carte of ['montagne', 'plage']) {
+    const map = JSON.parse(readFileSync(`assets/${carte}.json`, 'utf8'));
+    const couche = map.layers.find((l) => l.name === 'trouvailles');
+    for (const o of couche.objects) {
+      const g = o.properties.find((p) => p.name === 'genre').value;
+      genres[g] = (genres[g] || 0) + 1;
+    }
+  }
+  for (const [id, m] of Object.entries(meta)) if (!genres[m.genre]) throw new Error(`${id} : aucun endroit du genre « ${m.genre} »`);
+  eq(meta.herbes_montagne.genre, 'herbe');
+  if (!(genres.herbe > genres.pierre)) throw new Error(`les herbes, les plus courantes de la montagne : ${JSON.stringify(genres)}`);
+});
 
 console.log('');
 console.log('Ferme Familiale — tests des données');

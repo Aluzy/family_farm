@@ -5,6 +5,7 @@
 #                 l'aigle (vu de dessus, en vol : son ombre court au sol, js/ville-carte.js)
 #   la plage      la mouette (debout, en vol), le crabe (de dessus), le dauphin (son saut)
 #   trouvailles   l'ammonite et le trilobite (fossiles), le quartz et l'améthyste (pierres),
+#                 les herbes de montagne (herbe : dans les prés),
 #                 la coquille Saint-Jacques et le bulot (coquillages), le corail, la perle
 #
 #   python3 scripts/ville/faune.py        écrit assets/faune_<espèce>.png, assets/trouvailles.png
@@ -337,6 +338,22 @@ def trouvaille(nom):
         ellipse(im, 3, 8, 12, 12, (220, 212, 214), (190, 180, 186))     # la nacre
         ellipse(im, 3, 2, 12, 7, s, teinte(s, 0.8), c)          # celle du dessus, entrouverte
         ellipse(im, 6, 8, 9, 11, (246, 244, 236), (210, 206, 200), (255, 255, 255))
+    elif nom == 'herbes_montagne':
+        # une touffe d'herbes des prés (thym, serpolet) : des brins qui s'écartent, quelques
+        # fleurs de gentiane (bleues) et d'edelweiss (blanches, le cœur jaune)
+        c, s, l = (92, 156, 70), (48, 104, 50), (150, 204, 104)
+        for x0, x1, y1, col in ((7, 3, 4, c), (8, 6, 2, l), (8, 10, 3, c), (9, 13, 5, c), (7, 5, 6, s),
+                                (9, 11, 7, s), (8, 8, 5, l), (6, 2, 8, s), (10, 14, 8, s)):
+            trait(im, [(x0, 13), (x1, y1)], col)
+        for x, y in ((4, 6), (12, 7), (6, 4), (11, 4)):
+            px(im, x, y, l)
+        for x, y in ((3, 4), (13, 5)):                   # les gentianes
+            px(im, x, y, (70, 102, 214))
+            px(im, x, y - 1, (126, 156, 240))
+        for x, y in ((8, 3), (10, 9)):                   # les edelweiss
+            for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                px(im, x + dx, y + dy, (244, 244, 236))
+            px(im, x, y, (236, 200, 80))
     return contour(im, K)
 
 
@@ -349,6 +366,8 @@ TROUVAILLES = [
     ('bulot', 'coquillage', 'Un bulot'),
     ('corail', 'corail', 'Une branche de corail'),
     ('perle', 'perle', 'Une perle, dans son huître'),
+    # (à la fin : les cases des autres ne bougent pas, scripts/icones/build.py les reprend)
+    ('herbes_montagne', 'herbe', 'Des herbes de montagne'),
 ]
 
 ESPECES = {

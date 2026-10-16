@@ -116,7 +116,7 @@ export function sourcesOf(data, id) {
   }
   for (const [aid, a] of Object.entries(data.VERGER.ARBRES)) if (a.fruit === id) out.push(`verger ${aid}`);
   for (const [aid, a] of Object.entries(data.ANIMAUX)) {
-    for (const champ of ['produit', 'laine', 'lait']) if (a[champ] === id) out.push(`animal ${aid}`);
+    for (const champ of ['produit', 'laine', 'lait', 'laitAlpage']) if (a[champ] === id) out.push(`animal ${aid}`);
   }
   for (const [eau, p] of Object.entries((data.CANNE && data.CANNE.PRISES) || {})) if (id in p) out.push(`pêche ${eau}`);
   for (const [sid, s] of Object.entries((data.VILLE && data.VILLE.SORTIES) || {})) {

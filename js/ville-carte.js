@@ -50,7 +50,8 @@
  * La montagne et la plage (scripts/ville/montagne.py, plage.py) : des trouvailles à ramasser
  * (couche « trouvailles » : un genre par endroit ; chaque jour, une partie des endroits, et ce
  * qu'on a ramassé ne revient que le lendemain ; une trouvaille ramassée va dans l'inventaire,
- * FermeHote.ramasser : fossiles, pierres, coquillages, corail, perles, qui se vendent), des
+ * FermeHote.ramasser : fossiles, pierres, coquillages, corail, perles, qui se vendent ; les
+ * herbes de montagne, dans les prés, que les vaches de l'Étable mangent pour le lait d'alpage), des
  * animaux à regarder (couche « animaux » : une zone par espèce, FAUNE) ; à la montagne
  * seulement, les entrées des grottes (couche « passages » : la flèche y mène ; la plage n'a pas
  * de grotte).

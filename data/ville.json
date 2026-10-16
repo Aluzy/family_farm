@@ -57,7 +57,7 @@
       "arcade": { "nom": "Salle d'arcade", "icone": "🕹", "lieu": "ville", "heures": 2, "prix": 4, "bonheur": { "enfant": 14, "adulte": 6 }, "texte": "Jeux vidéo et flippers." },
       "cinema": { "nom": "Cinéma", "icone": "🎬", "lieu": "ville", "heures": 3, "prix": 8, "bonheur": { "enfant": 12, "adulte": 12 }, "texte": "Un film en famille." },
       "amphitheatre": { "nom": "Amphithéâtre", "icone": "🎭", "lieu": "ville", "heures": 3, "prix": 6, "bonheur": { "enfant": 8, "adulte": 12 }, "texte": "Un spectacle en plein air." },
-      "montagne": { "nom": "Montagne", "icone": "🚆", "lieu": "voyage", "transport": "train", "heures": 8, "prix": 20, "bonheur": { "enfant": 20, "adulte": 20 }, "butin": { "miel": 2, "fromage_alpage": 2 }, "texte": "Le train jusqu'aux alpages : randonnée, miel et fromage d'alpage." },
+      "montagne": { "nom": "Montagne", "icone": "🚆", "lieu": "voyage", "transport": "train", "heures": 8, "prix": 20, "bonheur": { "enfant": 20, "adulte": 20 }, "butin": { "miel": 2 }, "texte": "Le train jusqu'aux alpages : randonnée et miel." },
       "foret": { "nom": "Forêt", "icone": "🚌", "lieu": "voyage", "transport": "bus", "heures": 5, "prix": 5, "bonheur": { "enfant": 15, "adulte": 15 }, "cueillettes": [{ "champignon": 3 }, { "myrtille": 5 }, { "champignon": 2, "chataigne": 4 }], "texte": "Le bus jusqu'à la forêt : promenade et cueillette du jour." }
     },
     "MARCHE": { "HEURES": 2, "PRIX": 3, "VENTE": 130, "CATEGORIES": ["légume", "fruit", "produit", "conserve"] },
