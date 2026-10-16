@@ -9,8 +9,8 @@
  "tilewidth": 16,
  "tileheight": 16,
  "infinite": false,
- "nextlayerid": 18,
- "nextobjectid": 1,
+ "nextlayerid": 19,
+ "nextobjectid": 2,
  "tilesets": [
   {
    "firstgid": 1,
@@ -69781,6 +69781,30 @@
     1795,
     1796,
     0
+   ]
+  },
+  {
+   "id": 18,
+   "name": "depart",
+   "type": "objectgroup",
+   "draworder": "topdown",
+   "opacity": 1,
+   "visible": true,
+   "x": 0,
+   "y": 0,
+   "objects": [
+    {
+     "id": 1,
+     "name": "depart",
+     "type": "",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 232.0,
+     "y": 654,
+     "width": 0,
+     "height": 0
+    }
    ]
   }
  ]

@@ -27,6 +27,9 @@
 # L'herbe, les arbres et buissons et l'eau sont ceux de la ferme (voir scripts/ville/ferme.py) :
 # relancer ce script après avoir retouché la planche de la ferme.
 #
+# La couche d'objets « depart » : le point où l'on arrive en se promenant (ville-carte.html,
+# js/ville-carte.js, qui lit assets/ville.json : node scripts/build-map.mjs).
+#
 #   python3 scripts/ville/carte.py            écrit les planches, les .tsx et la carte
 #   python3 scripts/ville/carte.py --apercu   écrit aussi apercu_ville.png (la carte rendue)
 import json
@@ -390,6 +393,8 @@ def objets(c):
 
 # ---------- la découpe et l'écriture ----------
 
+DEPART = (14, 40)          # la tuile où l'on arrive en ville : le trottoir du bas, devant le parc
+
 def main():
     # les jeux de Wang des passages, en tête de leurs planches
     for (a, b), p in PLANCHE_PASSAGE.items():
@@ -439,9 +444,15 @@ def main():
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': len(couches) + 1, 'nextobjectid': 1,
+        'infinite': False, 'nextlayerid': len(couches) + 2, 'nextobjectid': 2,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
-        'layers': couches,
+        'layers': couches + [
+            # où la promeneuse arrive (ville-carte.html) : sur le trottoir du bas, devant le parc
+            {'id': len(couches) + 1, 'name': 'depart', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0,
+             'objects': [{'id': 1, 'name': 'depart', 'type': '', 'point': True, 'rotation': 0, 'visible': True,
+                          'x': DEPART[0] * T + T / 2, 'y': DEPART[1] * T + T - 2, 'width': 0, 'height': 0}]},
+        ],
     }
     with open(os.path.join(ASSETS, 'ville.tmj'), 'w') as f:
         json.dump(carte, f, indent=1)

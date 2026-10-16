@@ -95,7 +95,10 @@ export function renderVille() {
       <div class="plots outings">${voyages.map(outingCard).join('')}</div>
     </details>
     <h3 class="section-title">🧺 Marché de la ville</h3>
-    ${townMarketHtml()}`;
+    ${townMarketHtml()}
+    <div class="card">
+      <a class="btn primary" href="ville-carte.html">🗺️ Se promener en ville</a>
+    </div>`;
 }
 
 registerActions({
