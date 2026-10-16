@@ -9892,4 +9892,20 @@ test('entreprises : plusieurs intrants, les plus abondants d\'abord ; achetée t
   assertEqual(countItem(s, 'poire'), 0);
 });
 
+test('trouvailles de la montagne et de la plage : des objets qui se gardent et se vendent', () => {
+  // les identifiants de assets/faune.json (trouvailles), ramassés par FermeHote.ramasser
+  const sortes = ['ammonite', 'trilobite', 'quartz', 'amethyste', 'coquille', 'bulot', 'corail', 'perle'];
+  const icones = new Set();
+  for (const id of sortes) {
+    const it = DATA.items[id];
+    assert(it, id);
+    assertEqual([it.category, it.edible, isPerishable(id), isBuyable(id), townSellable(id)], ['produit', false, false, false, true], id);
+    icones.add(it.icone);
+  }
+  assertEqual(icones.size, sortes.length, 'une icône par trouvaille');
+  const s = createInitialState();
+  addItem(s, 'perle', 2);
+  assertEqual(countItem(s, 'perle'), 2);
+});
+
 export const results = runTests();

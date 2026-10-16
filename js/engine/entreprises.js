@@ -80,7 +80,7 @@ export function ownsCompany(state, id) {
 export function buyCompany(state, id) {
   const def = companyDef(id);
   if (!def) return fail('Entreprise inconnue.');
-  if (ownsCompany(state, id)) return fail(`La ${def.nom.toLowerCase()} est déjà à vous.`);
+  if (ownsCompany(state, id)) return fail(`La ${def.nom.toLowerCase()} est déjà à toi.`);
   if (state.pieces + EPS < def.prix) return fail('Pas assez de pièces.');
   spend(state, def.prix, `Achat : ${def.nom}`);
   // achetée après l'heure de production : elle commence le lendemain

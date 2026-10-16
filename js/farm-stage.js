@@ -178,7 +178,7 @@
   };
   const HOLLOW = {
     layer: 'plantes_pierres', gids: [539, 540], near: 22, page: 'infra-monde.html',
-    text: 'De drôles de couleurs luisent dans le creux du tronc, voulez-vous aller voir ?',
+    text: 'De drôles de couleurs luisent dans le creux du tronc : veux-tu aller voir ?',
   };
   // L'herbe haute (scripts/carte/herbe_haute.py) : la couche d'objets « herbe_haute » de la
   // carte, un point par touffe (type = variante, une rangée de la planche). Quand le personnage

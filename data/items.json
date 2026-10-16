@@ -99,6 +99,20 @@
     "anchois": { "nom": "Anchois", "icone": "🐟‍💧", "energie": 14, "prix": 3, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
     "sardine": { "nom": "Sardine", "icone": "🐟‍🌊", "energie": 20, "prix": 4, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
+    "//ammonite": [
+      "Les trouvailles de la montagne (fossiles, pierres) et de la plage (coquillages, corail, perles),",
+      "ramassées sur la carte (js/ville-carte.js, FermeHote.ramasser) : l'identifiant est celui de",
+      "assets/faune.json (trouvailles). Ni périssables ni comestibles : elles se vendent. Elles ne se",
+      "rachètent pas au Marché."
+    ],
+    "ammonite": { "nom": "Ammonite fossile", "icone": "🪨‍🐚", "prix": 6, "edible": false, "category": "produit", "rachetable": false },
+    "trilobite": { "nom": "Trilobite fossile", "icone": "🪨‍🪲", "prix": 6, "edible": false, "category": "produit", "rachetable": false },
+    "quartz": { "nom": "Cristal de quartz", "icone": "💎", "prix": 4, "edible": false, "category": "produit", "rachetable": false },
+    "amethyste": { "nom": "Améthyste", "icone": "💎‍🟣", "prix": 7, "edible": false, "category": "produit", "rachetable": false },
+    "coquille": { "nom": "Coquille Saint-Jacques", "icone": "🐚", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
+    "bulot": { "nom": "Bulot", "icone": "🐌", "prix": 2, "edible": false, "category": "produit", "rachetable": false },
+    "corail": { "nom": "Branche de corail", "icone": "🪸", "prix": 5, "edible": false, "category": "produit", "rachetable": false },
+    "perle": { "nom": "Perle", "icone": "🦪", "prix": 12, "edible": false, "category": "produit", "rachetable": false },
     "//minerai_fer": [
       "Les minerais de la grotte (fer partout, puis cuivre, or et platine de plus en plus bas), pris à",
       "la pioche (GROTTE, js/ville-carte.js). Au Four, 4 minerais et du bois donnent un",
