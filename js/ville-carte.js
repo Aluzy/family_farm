@@ -177,17 +177,24 @@
     },
     terminus: { montagne: true, plage: true },
   };
-  // Le bus de ligne : de l'abri de la carte de transition jusqu'à la gare de la ville. On touche
-  // l'abri (couche « abri »), on attend devant (`attente`), le bus (le trajet `route` du bus de
-  // l'école) s'arrête à l'arrêt, on monte, il part ; en ville, il arrive par l'avenue qui longe
-  // la gare (`route`, son arrêt `arret`, d'où il paraît : `lead` px avant), on descend sur le trottoir. Il roule de `heures[0]` à
+  // Le bus de ligne, entre l'abri de la carte de transition et celui de la gare, en ville. On
+  // touche l'abri (sur la transition, la couche « abri » ; en ville, l'image `abri.image`, vue de
+  // profil, posée sur le trottoir : son milieu `x`, son pied `pied`), on attend à côté
+  // (`attente`), le bus (le trajet `route`) s'arrête à `arret` (un point de la couche « bus »,
+  // ou { x, y }), on monte, il part : on arrive à l'arrêt de l'autre carte (?bus=1), où l'on
+  // descend à `attente`. Le bus paraît `lead` px avant l'arrêt. Il roule de `heures[0]` à
   // `heures[1]` h ; `monte`, `part`, `descend`, `repart` : les temps (s) de chaque geste.
   const NAVETTE = {
-    departs: {
-      transition: { route: 'bus_matin', arret: 'arret', attente: { x: 600, y: 243 }, cible: 'ville-carte.html?carte=ville&arrivee=gare&bus=1' },
-    },
-    arrivees: {
-      ville: { route: 'avenue_ouest:nord>avenue_ouest:sud', arret: { x: 625, y: 1596 }, lead: 360 },
+    arrets: {
+      transition: {
+        route: 'bus_matin', arret: 'arret', attente: { x: 600, y: 243 },
+        cible: 'ville-carte.html?carte=ville&arrivee=gare&bus=1', choix: '🚉 La gare (en ville)', vers: 'jusqu’à la gare, en ville',
+      },
+      ville: {
+        abri: { image: 'assets/ville_abri_profil.png', x: 556, pied: 1556, ancre: 61, bloque: [[34, 94], [34, 95], [34, 96], [34, 97], [35, 95], [35, 96], [35, 97]] },
+        route: 'avenue_ouest:nord>avenue_ouest:sud', arret: { x: 625, y: 1528 }, attente: { x: 556, y: 1574 }, lead: 360,
+        cible: 'ville-carte.html?carte=transition&arrivee=ville&bus=1', choix: '🌾 La campagne (vers la ferme)', vers: 'jusqu’à l’arrêt de la campagne, sur le chemin de la ferme',
+      },
     },
     heures: [6, 22], monte: 0.8, part: 2.6, descend: 0.6, repart: 1.2,
   };
@@ -380,6 +387,8 @@
       this.load.spritesheet(BUS.key, v(BUS.file), { frameWidth: 112, frameHeight: 112 });
       this.load.json(BUS.key + '_meta', v(BUS.meta));
       this.load.json('perso_cases', v(BUS.kid.cases));
+      const abri = NAVETTE.arrets[NOM_CARTE] && NAVETTE.arrets[NOM_CARTE].abri;
+      if (abri) this.load.image('abri_profil', v(abri.image));
       if (TRAIN.gares[NOM_CARTE]) {
         this.load.spritesheet(TRAIN.key, v(TRAIN.file), { frameWidth: TRAIN.w, frameHeight: TRAIN.h });
         this.load.json(TRAIN.key + '_meta', v(TRAIN.meta));
@@ -993,7 +1002,7 @@
       this.gareEl = document.getElementById('gare-fenetre');
       const aide = document.getElementById('aide-texte');
       const textes = {
-        ville: 'Touchez un trottoir pour y marcher · la gare, un étal du marché, un entrepôt',
+        ville: 'Touchez un trottoir pour y marcher · la gare, l’arrêt de bus à côté, un étal du marché, un entrepôt',
         montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
         plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la canne en main : la mer, depuis le ponton · la gare pour rentrer',
         grotte: 'Touchez le sol pour y marcher · un minerai pour le piocher · l\u2019échelle pour remonter',
@@ -1311,19 +1320,31 @@
     makeNavette(map) {
       this.navette = null;
       this.abri = null;
-      const dep = NAVETTE.departs[NOM_CARTE];
-      const layer = dep && map && map.getLayer('abri');
-      if (layer) {
-        // l'abri touché : le rectangle de ses tuiles
+      const c = NAVETTE.arrets[NOM_CARTE];
+      if (!c) return;
+      if (c.abri && this.textures.exists('abri_profil')) {
+        // l'abri vu de profil : son image, rangée comme les personnages ; on ne marche pas dessus
+        const im = this.add.image(c.abri.x, c.abri.pied, 'abri_profil');
+        im.setOrigin(0.5, c.abri.ancre / im.height).setDepth(c.abri.pied);
+        const b = im.getBounds();
+        this.abri = { x0: b.x - 4, x1: b.right + 4, y0: b.y, y1: b.bottom + 4 };
+        for (const [tx, ty] of c.abri.bloque) if (this.walk[ty] && tx < this.walk[ty].length) this.walk[ty][tx] = false;
+      } else {
+        // l'abri de la carte (couche « abri ») : le rectangle de ses tuiles
+        const layer = map && map.getLayer('abri');
         let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-        layer.data.forEach((row, y) => row.forEach((tile, x) => {
+        if (layer) layer.data.forEach((row, y) => row.forEach((tile, x) => {
           if (!tile || tile.index < 0) return;
           x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
         }));
         if (x1 >= x0) this.abri = { x0: x0 * T - 4, x1: (x1 + 1) * T + 4, y0: y0 * T, y1: (y1 + 1) * T + 8 };
       }
-      const arr = NAVETTE.arrivees[NOM_CARTE];
-      if (arr && PARAMS.get('bus')) this.arriveByBus(arr);
+      if (PARAMS.get('bus')) this.arriveByBus(c);
+    }
+
+    // L'arrêt de la carte : un point de la couche « bus », ou { x, y }.
+    navetteStop(c) {
+      return typeof c.arret === 'string' ? this.busStops && this.busStops[c.arret] : c.arret;
     }
 
     // Le bus roule-t-il à cette heure ? (sans horloge : toujours)
@@ -1333,8 +1354,8 @@
     }
 
     tapAbri(w) {
-      const a = this.abri;
-      if (!a || this.navette || w.x < a.x0 || w.x > a.x1 || w.y < a.y0 || w.y > a.y1) return false;
+      const a = this.abri, c = NAVETTE.arrets[NOM_CARTE];
+      if (!a || !c || this.navette || w.x < a.x0 || w.x > a.x1 || w.y < a.y0 || w.y > a.y1) return false;
       if (!this.navetteOuverte()) { this.say(`🚌 Plus de bus à cette heure : le premier passe à ${NAVETTE.heures[0]} h.`); return true; }
       if (this.school) { this.say('🚌 Le bus de l’école est en route : le bus de ligne passe juste après.'); return true; }
       const el = this.gareEl, box = document.getElementById('gare-choix');
@@ -1342,44 +1363,45 @@
       box.textContent = '';
       const b = document.createElement('button');
       b.type = 'button';
-      b.textContent = '🚉 La gare (en ville)';
+      b.textContent = c.choix;
       b.addEventListener('click', () => this.startNavette());
       box.appendChild(b);
       document.getElementById('gare-titre').textContent = '🚌 L’arrêt de bus';
-      document.getElementById('gare-texte').textContent = 'Le bus de ligne passe dans un instant. Il va jusqu’à la gare.';
+      document.getElementById('gare-texte').textContent = `Le bus de ligne passe dans un instant. Il va ${c.vers}.`;
       el.hidden = false;
       this.dialog = true;
       b.focus();
       return true;
     }
 
-    // Le départ : on attend devant l'abri, le bus arrive et s'arrête, on monte, il part.
+    // Le départ : on attend à côté de l'abri, le bus arrive et s'arrête, on monte, il part.
     startNavette() {
       this.closeGare();
-      const dep = NAVETTE.departs[NOM_CARTE];
-      if (!dep || this.navette) return;
+      const c = NAVETTE.arrets[NOM_CARTE];
+      if (!c || this.navette) return;
       this.locked = true;
-      if (reduced()) { this.leave({ cible: dep.cible }); return; }
-      const stop = this.busStops && this.busStops[dep.arret];
-      const bus = stop && this.addBus(dep.route, stop);
-      if (!bus) { this.leave({ cible: dep.cible }); return; }
-      this.navette = { dep, bus, phase: 'attente', wait: 0 };
+      if (reduced()) { this.leave({ cible: c.cible }); return; }
+      const stop = this.navetteStop(c);
+      const bus = stop && this.addBus(c.route, stop, c.lead);
+      if (!bus) { this.leave({ cible: c.cible }); return; }
+      this.navette = { c, bus, phase: 'attente', wait: 0 };
       this.work = null;
-      this.goTo(dep.attente.x, dep.attente.y);
+      this.goTo(c.attente.x, c.attente.y);
     }
 
-    // L'arrivée (?bus=1) : le bus descend l'avenue et s'arrête ; on paraît sur le trottoir.
-    arriveByBus(arr) {
-      this.teleport(arr.arret.x - 66, arr.arret.y);
+    // L'arrivée (?bus=1) : le bus vient à l'arrêt et s'arrête ; on paraît à côté de l'abri.
+    arriveByBus(c) {
+      this.teleport(c.attente.x, c.attente.y);
       if (reduced()) return;
-      const bus = this.addBus(arr.route, arr.arret, arr.lead);
+      const stop = this.navetteStop(c);
+      const bus = stop && this.addBus(c.route, stop, c.lead);
       if (!bus) return;
       this.locked = true;
       this.heroAlpha = 0;
       const cam = this.cameras.main;
       cam.startFollow(bus.sprite, true, 0.12, 0.12);
-      cam.centerOn(arr.arret.x, arr.arret.y);
-      this.navette = { arr, bus, phase: 'arrivee', wait: 0 };
+      cam.centerOn(stop.x, stop.y);
+      this.navette = { c, bus, phase: 'arrivee', wait: 0 };
     }
 
     stepNavette(dt) {
@@ -1388,7 +1410,7 @@
       const bus = n.bus, roule = this.cars.includes(bus);
       if (n.phase === 'attente') {
         // (pas de chemin jusqu'à l'abri : on y est porté)
-        const P = this.heroPos, A = n.dep.attente;
+        const P = this.heroPos, A = n.c.attente;
         if (!this.path.length && Math.hypot(P.x - A.x, P.y - A.y) > 4) { P.x = A.x; P.y = A.y; }
         if (!this.path.length && (!roule || bus.atStop)) { this.face = 'bas'; this.hero.setFlipX(false); n.phase = 'montee'; n.wait = NAVETTE.monte; }
       } else if (n.phase === 'montee') {
@@ -1402,7 +1424,7 @@
         }
       } else if (n.phase === 'depart') {
         n.wait -= dt;
-        if (n.wait <= 0 || !roule) { n.phase = 'fin'; this.leave({ cible: n.dep.cible }); }
+        if (n.wait <= 0 || !roule) { n.phase = 'fin'; this.leave({ cible: n.c.cible }); }
       } else if (n.phase === 'arrivee') {
         if (!roule || bus.atStop) { n.phase = 'descente'; n.wait = NAVETTE.descend; }
       } else if (n.phase === 'descente') {
