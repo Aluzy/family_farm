@@ -203,7 +203,7 @@ def dessine(c):
         c['vegetation'].colle(parasol(coul, g), round(x * T - 16), round(y * T - 46))
     for x, y, w, h, gr in ((47, 30.5, 56, 40, 1), (50.5, 28.5, 64, 46, 2), (54, 31.5, 44, 32, 3), (44.5, 32.4, 32, 24, 4),
                            (52.5, 33.5, 52, 36, 5), (49, 26, 32, 24, 6)):
-        mob.colle(X.rocher(w, h, gr, mousse=False), round(x * T - w / 2), round(y * T - h))
+        OBJ.rocher(X.rocher(w, h, gr, mousse=False), x * T, y * T)    # on les casse à la pioche
     # les oyats sur les dunes, des pins maritimes au nord-est
     g = coins()
     fl = c['fleurs']
@@ -225,7 +225,7 @@ def dessine(c):
             r = hasard(i, j, 84)
             liste.append((px, py, F.pin() if r < 0.75 else F.buisson(r < 0.88)))
     liste += [(2, 5, F.pin()), (4, 14, F.pin()), (1.5, 20, F.buisson(True)), (3, 9, F.buisson())]
-    X.plantes(c['vegetation'], c['ombres'], liste)
+    X.plantes(c['vegetation'], c['ombres'], liste, OBJ)
 
 
 def main():

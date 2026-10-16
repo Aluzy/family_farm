@@ -205,7 +205,7 @@ def dessine(c):
         mob.colle(rev, x * T, 26 * T)
     for x, y, w, h, gr in ((24, 18, 44, 32, 1), (35, 15.5, 64, 44, 2), (51, 23, 52, 38, 3), (49, 34, 36, 26, 4),
                            (3, 26, 44, 32, 5), (26, 38, 32, 24, 6), (15, 40, 40, 28, 7), (54, 40, 32, 24, 8)):
-        mob.colle(X.rocher(w, h, gr), round(x * T - w / 2), round(y * T - h))
+        OBJ.rocher(X.rocher(w, h, gr), x * T, y * T)            # on les casse à la pioche
     # les fleurs et herbes hautes sur l'alpage
     g = coins()
     cx, cy, rx, ry = LAC
@@ -241,7 +241,7 @@ def dessine(c):
             r = hasard(i, j, 84)
             liste.append((px, py, F.pin() if r < 0.7 else F.buisson(r < 0.8) if r < 0.9 else F.arbre()))
     liste += [(3, 42, F.pin()), (6, 21, F.pin()), (2, 33, F.pin()), (13, 43, F.buisson(True))]
-    X.plantes(c['vegetation'], c['ombres'], liste)
+    X.plantes(c['vegetation'], c['ombres'], liste, OBJ)
 
 
 OBJ = X.Objets()

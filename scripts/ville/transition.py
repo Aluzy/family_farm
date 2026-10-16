@@ -52,6 +52,9 @@ COUCHES = [
     ('marquage', 'decor', 1), ('fleurs', 'decor', 1), ('ombres', 'vegetation', 1),
     ('fontaines', 'eau', F.EAU_IMAGES), ('murs', 'maisons', 1), ('mobilier', 'decor', 1),
     ('equipements', 'decor', 1), ('vegetation', 'vegetation', 1),
+    # l'abri de bus et les réverbères, chacun dans sa couche : le jeu les range selon leur pied
+    # (propriété « pied »), le personnage passe devant ou derrière, pas dessus (couche « obstacles »)
+    ('abri', 'decor', 1), ('reverberes_haut', 'decor', 1), ('reverberes_bas', 'decor', 1),
 ]
 
 # ---------- le plan ----------
@@ -76,7 +79,9 @@ ROCHERS_PLAN = [
     ('rocher_a', 45, 8), ('rocher_b', 34, 5), ('caillou_1', 30.5, 9.6), ('rocher_c', 14, 6),
     ('caillou_0', 2.5, 7.5), ('rocher_b', 31, 31),
 ]
-ARBRES, ROCHERS, HERBES = [], [], []     # remplis par dessine : (genre, x, y) en px ; (x, y, rangée)
+ARBRES, ROCHERS, HERBES = [], [], []
+OBSTACLES = []                        # (x, y, largeur, hauteur) en px : on ne marche pas dessus
+PIEDS = {'abri': PIED_HAUT, 'reverberes_haut': PIED_HAUT, 'reverberes_bas': PIED_BAS}     # remplis par dessine : (genre, x, y) en px ; (x, y, rangée)
 
 
 def chemin(x):
@@ -221,11 +226,14 @@ def dessine(c):
     B.tirets(mq, ROUTE[0] * T + 6 + 2 * T, W * T, cy - 2, cy + 2)
     eq = c['equipements']
     abri = E.abri_bus()
-    eq.colle(abri, 36 * T, PIED_HAUT - abri.height)
+    c['abri'].colle(abri, 36 * T, PIED_HAUT - abri.height)
+    OBSTACLES.append((36 * T + 2, PIED_HAUT - 22, 42, 26))          # le banc, la vitre, le poteau
     rev = O.reverbere()
     for x in (32, 42):
-        eq.colle(rev, x * T, PIED_HAUT - rev.height)
-        eq.colle(rev, x * T, PIED_BAS - rev.height)
+        c['reverberes_haut'].colle(rev, x * T, PIED_HAUT - rev.height)
+        c['reverberes_bas'].colle(rev, x * T, PIED_BAS - rev.height)
+        for pied in (PIED_HAUT, PIED_BAS):
+            OBSTACLES.append((x * T + 4, pied - 10, 8, 16))
     # la mare
     cx, cy, rx, ry = MARE
     eau = c['fontaines']
@@ -391,13 +399,18 @@ def objets_carte():
                                                    'x': x, 'y': y, 'width': 0, 'height': 0, **({'properties': props} if props else {})}
     noms = planche_objets()
     plantes = [point(f'arbre_{x}_{y}', genre, x, y) for genre, x, y in ARBRES]
-    rochers = [point(f'rocher_{x}_{y}', genre.split('_')[0], x, y, [{'name': 'image', 'type': 'int', 'value': noms.index(genre)}])
+    taille = lambda genre: (13, 24) if genre.startswith('rocher') else (7, 12)      # demi-largeur, hauteur où on le touche
+    rochers = [point(f'rocher_{x}_{y}', genre.split('_')[0], x, y, [{'name': 'image', 'type': 'int', 'value': noms.index(genre)},
+                                                                    {'name': 'demi', 'type': 'int', 'value': taille(genre)[0]},
+                                                                    {'name': 'haut', 'type': 'int', 'value': taille(genre)[1]}])
                for genre, x, y in ROCHERS]
+    obstacles = [{'id': 0, 'name': 'obstacle', 'type': '', 'rotation': 0, 'visible': True, 'x': x, 'y': y, 'width': w, 'height': h}
+                 for x, y, w, h in OBSTACLES]
     herbes = [point('', str(v), x, y) for x, y, v in HERBES]
-    for o in plantes + rochers + herbes:
+    for o in plantes + rochers + herbes + obstacles:
         o['id'] = i
         i += 1
-    return passages, arrivees, batis, bus, (plantes, rochers, herbes), i
+    return passages, arrivees, batis, bus, (plantes, rochers, herbes, obstacles), i
 
 
 def objet_groupe(id_, nom, objets):
@@ -440,13 +453,14 @@ def main():
     for i, nom in enumerate(['sol'] + [c[0] for c in COUCHES]):
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
-                        'opacity': 1, 'visible': True, 'data': data})
-    passages, arrivees, batis, bus, (plantes, rochers, herbes), prochain = objets_carte()
+                        'opacity': 1, 'visible': True, 'data': data,
+                        **({'properties': [{'name': 'pied', 'type': 'int', 'value': PIEDS[nom]}]} if nom in PIEDS else {})})
+    passages, arrivees, batis, bus, (plantes, rochers, herbes, obstacles), prochain = objets_carte()
     n = len(couches)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': n + 9, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': n + 10, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             objet_groupe(n + 1, 'depart', [{'id': 1, 'name': 'depart', 'type': '', 'point': True, 'rotation': 0, 'visible': True,
@@ -456,8 +470,11 @@ def main():
             objet_groupe(n + 4, 'batiments', batis),
             objet_groupe(n + 5, 'bus', bus),
             objet_groupe(n + 6, 'arbres', plantes),
-            objet_groupe(n + 7, 'rochers', rochers),
+            dict(objet_groupe(n + 7, 'rochers', rochers), properties=[
+                {'name': 'planche', 'type': 'string', 'value': 'transition_objets.png'},
+                {'name': 'largeur', 'type': 'int', 'value': 32}, {'name': 'hauteur', 'type': 'int', 'value': 32}]),
             objet_groupe(n + 8, 'herbe_haute', herbes),
+            objet_groupe(n + 9, 'obstacles', obstacles),
         ],
     }
     with open(os.path.join(ASSETS, 'transition.tmj'), 'w') as f:

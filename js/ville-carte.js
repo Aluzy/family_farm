@@ -217,8 +217,10 @@
       arbre: { key: 'arbre_clair_sp', file: 'assets/arbre_clair_sp.png', w: 56, h: 64, tronc: [0], reach: 14 },
       pin: { key: 'pin_clair_sp', file: 'assets/pin_clair_sp.png', w: 72, h: 64, tronc: [-4, 4], reach: 19 },
     },
-    rochers: { rocher: { half: 13, h: 24, tronc: [-10, 0, 10], reach: 21 }, caillou: { half: 7, h: 12, tronc: [0], reach: 13 } },
-    objets: { key: 'transition_objets', file: 'assets/transition_objets.png', size: 32 },
+    // un rocher : sa planche (propriétés « planche », « largeur », « hauteur » de la couche
+    // « rochers »), sa case (« image »), où on le touche (« demi » : la moitié de sa largeur,
+    // « haut ») ; les cases sous son pied ne se traversent pas
+    rochers: { key: 'rochers_carte' },
     ombre: { key: 'ombre_arbre', file: 'assets/ombre_arbre.png', dx: -16, dy: -8 },
     herbe: { key: 'herbe_haute', file: 'assets/herbe_haute.png', w: 22, h: 16, frames: 5, swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 9, up: 6, down: 4 }, shade: 0.12 },
     swing: 0.5, shake: [1, 0, 2, 0, 1, 0], shakeFps: 9, occ: 0.6,
@@ -389,7 +391,12 @@
           for (const d of Object.values(NATURE.arbres)) this.load.spritesheet(d.key, v(d.file), { frameWidth: d.w, frameHeight: d.h });
           this.load.image(NATURE.ombre.key, v(NATURE.ombre.file));
         }
-        if (has('rochers')) this.load.spritesheet(NATURE.objets.key, v(NATURE.objets.file), { frameWidth: NATURE.objets.size, frameHeight: NATURE.objets.size });
+        const roches = data.layers.find((l) => l.type === 'objectgroup' && l.name === 'rochers');
+        const rp = (n) => (((roches && roches.properties) || []).find((q) => q.name === n) || {}).value;
+        if (has('rochers') && rp('planche')) {
+          if (this.textures.exists(NATURE.rochers.key)) this.textures.remove(NATURE.rochers.key);
+          this.load.spritesheet(NATURE.rochers.key, v('assets/' + rp('planche')), { frameWidth: rp('largeur'), frameHeight: rp('hauteur') });
+        }
         if (has('herbe_haute')) this.load.spritesheet(NATURE.herbe.key, v(NATURE.herbe.file), { frameWidth: NATURE.herbe.w, frameHeight: NATURE.herbe.h });
         // l'exemplaire du dessus de chaque couche de bâtiment
         for (const name of BATI) {
@@ -408,7 +415,9 @@
         map = this.make.tilemap({ key: MAP.key, insertNull: true });
         const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
         map.layers.forEach((l, i) => {
-          const depth = l.name === DEVANT ? 1e6 : l.name.endsWith('_devant') ? 5e5 + i : -100 + i;
+          // une couche qui a un « pied » (l'abri de bus, les réverbères) se range comme les personnages
+          const pied = ((Array.isArray(l.properties) ? l.properties : []).find((q) => q.name === 'pied') || {}).value;
+          const depth = Number.isFinite(pied) ? pied : l.name === DEVANT ? 1e6 : l.name.endsWith('_devant') ? 5e5 + i : -100 + i;
           this.layers[l.name] = map.createLayer(l.name, sets, 0, 0).setDepth(depth);
         });
       } else map = this.buildCave();
@@ -428,7 +437,7 @@
       // les bâtiments et les voitures garées : les tuiles dont le centre est sous leur emprise
       const objects = (name) => (this.cave && this.cave.objects[name]) || ((map.getObjectLayer(name) || {}).objects) || [];
       this.makeBuildings(objects('batiments'));
-      for (const r of [...objects('garees'), ...objects('batiments')]) {
+      for (const r of [...objects('garees'), ...objects('batiments'), ...objects('obstacles')]) {
         for (let y = Math.floor(r.y / T); y <= Math.floor((r.y + r.height) / T); y++) {
           for (let x = Math.floor(r.x / T); x <= Math.floor((r.x + r.width) / T); x++) {
             const cx = x * T + T / 2, cy = y * T + T / 2;
@@ -1728,12 +1737,15 @@
         this.trees.push(t);
       }
       for (const o of objects('rochers')) {
-        const d = NATURE.rochers[o.type];
-        const frame = Number(((o.properties || []).find((q) => q.name === 'image') || {}).value) || 0;
-        if (!d || !this.textures.exists(NATURE.objets.key) || (H && H.casse && H.casse(id(o)))) continue;
+        const prop = (n) => Number(((o.properties || []).find((q) => q.name === n) || {}).value) || 0;
+        if (!this.textures.exists(NATURE.rochers.key) || (H && H.casse && H.casse(id(o)))) continue;
+        const half = prop('demi') || 12, d = { half, h: prop('haut') || 20, reach: half + 8 };
+        const tronc = [];
+        for (let dx = -Math.max(0, half - 6); dx <= Math.max(0, half - 6); dx += 8) tronc.push(dx);
+        if (!tronc.length) tronc.push(0);
         const r = { id: id(o), kind: 'rocher', def: d, x: o.x, y: o.y };
-        r.img = this.add.image(Math.round(o.x), Math.round(o.y), NATURE.objets.key, frame).setOrigin(0.5, 1).setDepth(o.y);
-        this.blockUnder(r, d.tronc);
+        r.img = this.add.image(Math.round(o.x), Math.round(o.y), NATURE.rochers.key, prop('image')).setOrigin(0.5, 1).setDepth(o.y);
+        this.blockUnder(r, tronc);
         this.rocks.push(r);
       }
       const G = NATURE.herbe;
