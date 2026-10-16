@@ -484,7 +484,7 @@ def details(c):
             if not herbe(x, y) or lac_dedans((x + 0.5) * T, (y + 0.5) * T, -24):
                 continue
             sur_place = ((x + 0.5) * T - PLACE[0]) ** 2 / (PLACE[2] + 16) ** 2 + ((y + 0.5) * T - PLACE[1]) ** 2 / (PLACE[3] + 16) ** 2 < 1
-            if sur_place or (x, y) in dallees:
+            if sur_place or (x, y) in dallees or (125 <= x <= 146 and 171 <= y <= 178):
                 continue
             r = hasard(x, y, 51)
             if r > 0.965:
@@ -602,7 +602,7 @@ def objets(c):
     B.cloture_v(mob, 148 * T, 187 * T, 206 * T)
     B.cloture_v(mob, 166 * T, 187 * T, 206 * T)
     for x, y, diag in ((70, 99, False), (96, 137, False), (88, 126, True), (60, 182, False), (100, 182, False),
-                       (77, 168, False), (125, 182, False), (152, 192, False), (156, 199, False), (40.2, 98, False)):
+                       (77, 168, False), (125, 182, False), (152, 192, False), (156, 199, False)):
         mob.colle(O.banc(diag), x * T, y * T)
     mob.colle(O.panneau(), 92 * T, 113 * T)
     tonneau = O.tonneau()
