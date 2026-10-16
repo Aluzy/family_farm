@@ -122,6 +122,14 @@ def matiere(u, v, w):
     return 'verre'
 
 
+def emprise(direction):
+    """La demi-largeur et la demi-hauteur (px, à l'écran) de la voiture au sol dans cette
+    direction : de côté 29 × 9, de face ou de dos 13 × 20, de trois quarts entre les deux."""
+    a = math.radians(DIRECTIONS[direction])
+    c, s = abs(math.cos(a)), abs(math.sin(a))
+    return round(HL * c + HW * s), round((HL * s + HW * c) * KY)
+
+
 def voiture(couleur, direction, ombre=True):
     """L'image CASE × CASE de la voiture, le centre au sol au pixel ANCRE."""
     palettes = {'caisse': tons(COULEURS[couleur]), 'verre': VERRE, 'pneu': PNEU, 'jante': JANTE,

@@ -371,13 +371,15 @@ def objets(c):
 
     def gare(coul, direction, x, y):
         v.colle(V.voiture(coul, direction), x - V.ANCRE[0], y - V.ANCRE[1])
+        GAREES.append((x, y) + V.emprise(direction))
 
-    # le long du trottoir de la grand-rue, dans le sens de leur voie (vers la gauche)
+    # contre le trottoir de la grand-rue, dans le sens de leur voie (vers la gauche), hors de la
+    # file où l'on roule
     for coul, x in (('rouge', 6), ('bleue', 13), ('blanche', 19), ('blanche', 25)):
-        gare(coul, 'gauche', x * T + 32, 34 * T + 24)
-    # dans la rue qui descend : elles viennent vers nous
+        gare(coul, 'gauche', x * T + 32, 34 * T + 10)
+    # contre le trottoir de la rue qui descend : elles viennent vers nous
     for coul, y in (('rouge', 22), ('blanche', 27)):
-        gare(coul, 'avant', 35 * T + 16, y * T + 40)
+        gare(coul, 'avant', 34 * T + 12, y * T + 40)
     # sur le parking, garées en marche avant (on voit leur coffre) ou en marche arrière
     for coul, sens, x in (('rouge', 'arriere', 6), ('marron', 'arriere', 9), ('blanche', 'avant', 13),
                           ('bleue', 'arriere', 16), ('bordeaux', 'avant', 20)):
@@ -411,6 +413,65 @@ def objets(c):
 # ---------- la découpe et l'écriture ----------
 
 DEPART = (14, 40)          # la tuile où l'on arrive en ville : le trottoir du bas, devant le parc
+
+# La circulation (js/ville-carte.js) : les voies, au milieu de chaque file (on roule à droite),
+# en px de la carte. La rue du haut (rangées 4 à 8), la rue qui descend (colonnes 34 à 40) et
+# la grand-rue (rangées 34 à 38) ; les voitures garées le long des trottoirs leur laissent la place.
+HAUT_O, HAUT_E = 86, 122          # la rue du haut : vers la gauche, vers la droite
+RUE_S, RUE_N = 587, 617           # la rue qui descend : vers le bas, vers le haut
+GRAND_O, GRAND_E = 578, 606       # la grand-rue : vers la gauche, vers la droite
+HORS = 48                         # on entre et on sort à 48 px hors de la carte
+GAUCHE, DROITE, DESSUS = -HORS, W * T + HORS, -HORS
+ENTREES = {                       # où l'on arrive sur la carte, et le premier point de la voie
+    'est_haut': (DROITE, HAUT_O), 'nord': (RUE_S, DESSUS), 'ouest': (GAUCHE, GRAND_E), 'est_bas': (DROITE, GRAND_O),
+}
+SORTIES = {
+    'est_haut': (DROITE, HAUT_E), 'nord': (RUE_N, DESSUS), 'ouest': (GAUCHE, GRAND_O), 'est_bas': (DROITE, GRAND_E),
+}
+# chaque trajet : l'entrée, les coins (là où l'on tourne), la sortie ; l'impasse de la rue du
+# haut (à gauche) n'en reçoit pas
+TRAJETS = {
+    ('est_haut', 'nord'): [(RUE_N, HAUT_O)],
+    ('est_haut', 'ouest'): [(RUE_S, HAUT_O), (RUE_S, GRAND_O)],
+    ('est_haut', 'est_bas'): [(RUE_S, HAUT_O), (RUE_S, GRAND_E)],
+    ('nord', 'est_haut'): [(RUE_S, HAUT_E)],
+    ('nord', 'ouest'): [(RUE_S, GRAND_O)],
+    ('nord', 'est_bas'): [(RUE_S, GRAND_E)],
+    ('ouest', 'est_bas'): [],
+    ('ouest', 'nord'): [(RUE_N, GRAND_E)],
+    ('ouest', 'est_haut'): [(RUE_N, GRAND_E), (RUE_N, HAUT_E)],
+    ('est_bas', 'ouest'): [],
+    ('est_bas', 'nord'): [(RUE_N, GRAND_O)],
+    ('est_bas', 'est_haut'): [(RUE_N, GRAND_O), (RUE_N, HAUT_E)],
+}
+# les carrefours : une voiture n'y entre que si aucune de celles qui y sont ne croise son trajet
+CARREFOURS = {'carrefour_haut': (34, 4, 41, 9), 'carrefour_bas': (34, 34, 41, 39)}   # en tuiles, [x0, x1[ × [y0, y1[
+
+
+GAREES = []      # les voitures garées : (x, y, demi-largeur, demi-hauteur) de leur emprise au sol
+
+
+def objets_carte(premier_id):
+    """Les couches d'objets de la circulation : « routes » (une polyligne par trajet, nommée
+    « entrée>sortie ») et « carrefours » (des rectangles)."""
+    routes, carrefours, i = [], [], premier_id
+    for (a, b), coins in TRAJETS.items():
+        pts = [ENTREES[a]] + coins + [SORTIES[b]]
+        x0, y0 = pts[0]
+        routes.append({'id': i, 'name': f'{a}>{b}', 'type': 'route', 'rotation': 0, 'visible': True,
+                       'x': x0, 'y': y0, 'width': 0, 'height': 0,
+                       'polyline': [{'x': x - x0, 'y': y - y0} for x, y in pts]})
+        i += 1
+    for nom, (x0, y0, x1, y1) in CARREFOURS.items():
+        carrefours.append({'id': i, 'name': nom, 'type': 'carrefour', 'rotation': 0, 'visible': True,
+                           'x': x0 * T, 'y': y0 * T, 'width': (x1 - x0) * T, 'height': (y1 - y0) * T})
+        i += 1
+    garees = []
+    for x, y, dx, dy in GAREES:
+        garees.append({'id': i, 'name': 'voiture', 'type': 'garee', 'rotation': 0, 'visible': True,
+                       'x': x - dx, 'y': y - dy, 'width': 2 * dx, 'height': 2 * dy})
+        i += 1
+    return routes, carrefours, garees, i
 
 def main():
     # les jeux de Wang des passages, en tête de leurs planches
@@ -459,10 +520,11 @@ def main():
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                         'opacity': 1, 'visible': True, 'data': data})
+    routes, carrefours, garees, prochain = objets_carte(2)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': len(couches) + 2, 'nextobjectid': 2,
+        'infinite': False, 'nextlayerid': len(couches) + 5, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             # où la promeneuse arrive (ville-carte.html) : sur le trottoir du bas, devant le parc
@@ -470,6 +532,14 @@ def main():
              'visible': True, 'x': 0, 'y': 0,
              'objects': [{'id': 1, 'name': 'depart', 'type': '', 'point': True, 'rotation': 0, 'visible': True,
                           'x': DEPART[0] * T + T / 2, 'y': DEPART[1] * T + T - 2, 'width': 0, 'height': 0}]},
+            # la circulation (js/ville-carte.js) : les trajets des voitures et les carrefours
+            {'id': len(couches) + 2, 'name': 'routes', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': routes},
+            {'id': len(couches) + 3, 'name': 'carrefours', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': carrefours},
+            # l'emprise au sol des voitures garées : la promeneuse en fait le tour
+            {'id': len(couches) + 4, 'name': 'garees', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': garees},
         ],
     }
     with open(os.path.join(ASSETS, 'ville.tmj'), 'w') as f:
