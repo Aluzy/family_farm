@@ -67,7 +67,7 @@ export function stageActive() {
 }
 
 // Heure du jour, de 0 à 24 (fractionnaire) : la journée commence à DAY_START_HOUR au réveil,
-// puis une heure passe toutes les CLOCK_SECONDS_PER_HOUR secondes d'éveil (18 s).
+// puis une heure passe toutes les CLOCK_SECONDS_PER_HOUR secondes d'éveil (30 s).
 export function heureDuJour() {
   return clockHours(state); // version 1.19 : la nuit défile aussi (22 h → 6 h)
 }

@@ -88,7 +88,7 @@
     couche: { debout: 3, assis: 2, sieste: 2 },
     sieste: { couche: 1 },
   };
-  // Durée d'une activité sur place, en secondes, tirée à son début (une heure du jeu dure 18 s).
+  // Durée d'une activité sur place, en secondes, tirée à son début (une heure du jeu dure 30 s).
   const CAT_TIME = { debout: [0.6, 2.4], assis: [3, 9], toilette: [2.5, 6], couche: [5, 14], sieste: [10, 25] };
   // Déplacements : vitesse (px par seconde), longueur (en tuiles), pas (px parcourus par image).
   const CAT_WALK = {

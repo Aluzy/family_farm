@@ -578,10 +578,10 @@ test('interrupteur : allume et éteint, id inconnu refusé', () => {
   assertEqual(toggleDevice(s, 'nope').ok, false);
 });
 
-test('heure : suit le temps d\'éveil, 6 h au réveil, +1 h toutes les 18 s', () => {
+test('heure : suit le temps d\'éveil, 6 h au réveil, +1 h toutes les 30 s', () => {
   const s = farm({ sun: false });
-  assertEqual(DATA.TIME.CLOCK_SECONDS_PER_HOUR, 18);
-  const H = 18000;
+  assertEqual(DATA.TIME.CLOCK_SECONDS_PER_HOUR, 30);
+  const H = 30000;
   assertEqual(hourOfDay(s), 6);
   s.awakeMs = H - 100;
   assertEqual(hourOfDay(s), 6);
@@ -631,27 +631,25 @@ test('horloge : l\'heure affichée ne change ni l\'usure ni le sommeil', () => {
   assertEqual(s.panneaux[0].usure, 0, '59,8 s de marche : pas encore un point');
   tick(s, 0.2);
   assertEqual(s.panneaux[0].usure, 1, '60 s de marche : 1 point, comme avant');
-  // On peut dormir après 30 s d'éveil, quelle que soit l'heure (30 s = 7 h 40 à 18 s par heure).
+  // On peut dormir après 30 s d'éveil, quelle que soit l'heure (30 s = 7 h à 30 s par heure).
   const t = farm();
   t.awakeMs = 29000;
-  assertEqual([hourOfDay(t), canSleep(t)], [7, false]);
+  assertEqual([hourOfDay(t), canSleep(t)], [6, false]);
   t.awakeMs = 30000;
   assertEqual([hourOfDay(t), canSleep(t)], [7, true]);
-  t.awakeMs = 18000 * 20;
+  t.awakeMs = 30000 * 20;
   assertEqual([hourOfDay(t), canSleep(t)], [2, true], 'veiller tard ne bloque rien');
   const day = t.day;
   assert(sleep(t) !== null);
   assertEqual([t.day, t.awakeMs, hourOfDay(t), clockHours(t)], [day + 1, 0, 6, 6], 'au réveil il est 6 h');
 });
 
-test('heure : 90 ticks de 0,2 s font bien une heure de jeu (flottants)', () => {
+test('heure : 150 ticks de 0,2 s font bien une heure de jeu (flottants)', () => {
   const s = farm({ sun: false });
-  for (let i = 0; i < 89; i++) tick(s, 0.2);
+  for (let i = 0; i < 149; i++) tick(s, 0.2);
   assertEqual(hourOfDay(s), 6);
+  assertEqual(canSleep(s), false, '29,8 s d\'éveil : trop tôt pour dormir');
   tick(s, 0.2);
-  assertEqual([s.awakeMs, hourOfDay(s)], [18000, 7]);
-  assertEqual(canSleep(s), false, '18 s d\'éveil : trop tôt pour dormir');
-  for (let i = 0; i < 60; i++) tick(s, 0.2);
   assertEqual([s.awakeMs, hourOfDay(s)], [30000, 7]);
   assertEqual(canSleep(s), true);
 });
@@ -710,7 +708,7 @@ test('ordre des étapes nocturnes : dans l\'ordre, avant le changement de jour',
     NIGHT_STEPS.push((st) => seen.push(['a', st.day, st.awakeMs]));
     NIGHT_STEPS.push((st) => seen.push(['b', st.day, st.awakeMs]));
     NIGHT_STEPS.push((st) => seen.push(['c', st.day, st.awakeMs]));
-    const s = farm();
+    const s = farm({ sun: false });
     sleep(s); // refusé : aucune étape
     assertEqual(seen, []);
     s.awakeMs = 30000;
@@ -7889,9 +7887,9 @@ test('version 1.1.1 : version 17, la migration v16 → v17 ajoute le repas du jo
   assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
 });
 
-test('version 1.1.3 : la journée va de 6 h à 22 h, 18 s par heure (288 s)', () => {
-  assertEqual([DATA.TIME.DAY_START_HOUR, DATA.TIME.MEAL_HOUR, DATA.TIME.NIGHT_HOUR, DATA.TIME.CLOCK_SECONDS_PER_HOUR], [6, 19, 22, 18]);
-  assertEqual([awakeMsAtHour(6), awakeMsAtHour(7), awakeMsAtHour(19), awakeMsAtHour(22)], [0, 18000, 234000, 288000]);
+test('version 1.21 : la journée va de 6 h à 22 h, 30 s par heure (480 s)', () => {
+  assertEqual([DATA.TIME.DAY_START_HOUR, DATA.TIME.MEAL_HOUR, DATA.TIME.NIGHT_HOUR, DATA.TIME.CLOCK_SECONDS_PER_HOUR], [6, 19, 22, 30]);
+  assertEqual([awakeMsAtHour(6), awakeMsAtHour(7), awakeMsAtHour(19), awakeMsAtHour(22)], [0, 30000, 390000, 480000]);
   // le repas et le coucher restent dans la journée, et l'on peut dormir bien avant 22 h
   assert(awakeMsAtHour(DATA.TIME.MEAL_HOUR) < awakeMsAtHour(DATA.TIME.NIGHT_HOUR), 'le repas précède le coucher');
   assert(DATA.TIME.MIN_AWAKE_S * 1000 < awakeMsAtHour(DATA.TIME.MEAL_HOUR), 'on peut dormir avant le repas');
@@ -7930,12 +7928,12 @@ test('version 1.1.1 : la nuit reprend le repas de 19 h sans faire manger une deu
   assertEqual([a.repas, b.repas, a.awakeMs, mealDue(a)], [null, null, 0, false], 'au réveil, le repas du jour est à prendre');
 });
 
-test('version 1.1.3 : 22 h (288 s d\'éveil) rend la nuit due ; l\'aperçu d\'autonomie suit le repas pris', () => {
+test('version 1.21 : 22 h (480 s d\'éveil) rend la nuit due ; l\'aperçu d\'autonomie suit le repas pris', () => {
   const s = garden();
   setInv(s, { conserve: 200 });
-  s.awakeMs = 287900;
+  s.awakeMs = 479900;
   assertEqual([bedtimeDue(s), hourOfDay(s)], [false, 21]);
-  s.awakeMs = 288000;
+  s.awakeMs = 480000;
   assertEqual([bedtimeDue(s), hourOfDay(s), canSleep(s)], [true, 22, true]);
   takeMeal(s);
   assertEqual(plannedAutonomy(s), s.repas.autonomie);
@@ -7964,7 +7962,7 @@ test('version 1.1.1 : hors-ligne, l\'horloge s\'arrête à l\'éveil minimal (ni
   t.awakeMs = awakeMsAtHour(20);
   takeMeal(t);
   simulateOffline(t, 3600);
-  assertEqual([t.awakeMs, hourOfDay(t), bedtimeDue(t), t.day], [252000, 20, false, 1]);
+  assertEqual([t.awakeMs, hourOfDay(t), bedtimeDue(t), t.day], [awakeMsAtHour(20), 20, false, 1]);
 });
 
 test('version 1.1.1 : devis d\'achat (buyQuote) = ce que buyItem achète, prix montant compris', () => {
@@ -9567,15 +9565,16 @@ test('Pousse calée sur l\'horloge : une plante arrosée à 10 h gagne son stade
   const p = findPlot(s, 'potager-1');
   assertEqual([p.arroseH, absoluteHours(s)], [10, 10], 'heure absolue de l\'arrosage');
   assertEqual(water(s, 'potager-1').error, 'Déjà arrosée : elle pousse.');
-  tick(s, (22 - 10) * 18);
+  const HS = DATA.TIME.CLOCK_SECONDS_PER_HOUR;
+  tick(s, (22 - 10) * HS);
   assertEqual([p.stade, p.arrose], [0, true], 'à 22 h, rien encore');
   startNight(s);
   advanceNight(s, nightLengthMs());
   assertEqual([s.day, hourOfDay(s), p.stade, p.arrose], [2, 6, 0, true], 'minuit ne fait plus pousser');
   s.reveil = false;
-  tick(s, 3.9 * 18);
+  tick(s, 3.9 * HS);
   assertEqual([p.stade, p.arrose], [0, true], '9 h 54 : pas encore');
-  tick(s, 0.2 * 18);
+  tick(s, 0.2 * HS);
   assertEqual([p.stade, p.arrose, 'arroseH' in p], [1, false, false], '10 h : un stade, et elle redemande de l\'eau');
 });
 
@@ -9586,12 +9585,13 @@ test('Énergie : elle remonte peu à peu en dormant (8 h pour le réveil), rien 
   startNight(s);
   const cible = sleepTarget(s);
   assert(cible > 0, 'le réveil vise une énergie');
-  advanceNight(s, 2 * 18000);
+  const H = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  advanceNight(s, 2 * H);
   assertEqual(s.energie, 0, 'éveillé : rien ne revient');
   goToSleep(s);
-  advanceNight(s, 4 * 18000);
+  advanceNight(s, 4 * H);
   assertEqual(Math.abs(s.energie - cible / 2) <= 1, true, '4 h de sommeil : la moitié');
-  advanceNight(s, 2 * 18000);
+  advanceNight(s, 2 * H);
   assertEqual(nightActive(s), false);
   assertEqual(Math.abs(s.energie - (cible * 6) / 8) <= 2, true, '6 h dormies sur 8 : les trois quarts');
   assertEqual(s.report.energieReveil, s.energie, 'le résumé du réveil donne l\'énergie de 6 h');

@@ -329,10 +329,11 @@
   // Bulles (assets/bulle.png, au double) : la pointe est à BUBBLE_TIP_X px CSS du bord gauche
   // et BUBBLE_TIP_Y px au-dessus du bas.
   const BUBBLE_TIP_X = 15, BUBBLE_TIP_Y = 2;
-  // Le repas : la bulle des convives qui ont bien mangé, et la taille d'un enfant (il prend la
-  // planche d'un adulte, réduite).
+  // Le repas : la bulle des convives qui ont bien mangé.
   const JOIE = '😊';
-  const ENFANT_SCALE = 0.8;
+  // La planche d'un personnage (dans assets/) : un adulte (perso_NN) ou un enfant (enfant_NN :
+  // dessiné plus petit, scripts/personnage/fermier.py).
+  const persoFile = (n, enfant) => 'personnages/' + (enfant ? 'enfant_' : 'perso_') + String(n).padStart(2, '0') + '.png';
   const GAIN_HOLD_MS = 1200;    // bulle « +x » au-dessus du personnage : elle reste, puis…
   const GAIN_FADE_MS = 1400;    // … s'estompe lentement (une prise pendant ce temps s'y ajoute)
   const LONG_PRESS_MS = 450;   // appui maintenu sur la citerne : sa bulle (litres) s'affiche
@@ -584,8 +585,8 @@
           try {
             this.family = global.FamilleFerme.attach(this, {
               fermier: this.fermier, frames: (this.cache.json.get('perso_cases') || cases || {}).frames, reduced: reducedMotion,
-              exit: { x: this.world.w - 12, y: EXIT.y }, childScale: ENFANT_SCALE,
-              file: (perso) => v('personnages/perso_' + String(perso).padStart(2, '0') + '.png'),
+              exit: { x: this.world.w - 12, y: EXIT.y },
+              file: (perso, enfant) => v(persoFile(perso, enfant)),
             });
           } catch (e) { console.warn('[FarmStage] famille indisponible', e); }
         }
@@ -1708,10 +1709,10 @@
 
       // Le repas (FarmStage.mealScene) : les planches des autres membres sont chargées, puis
       // le personnage reçoit le repas (js/fermier.js). opts : { convives: [{ perso, enfant }],
-      // heureux } ; un enfant prend la planche d'un adulte, plus petite (ENFANT_SCALE).
+      // heureux } ; un enfant a sa planche d'enfant (assets/personnages/enfant_NN.png).
       startMeal(opts) {
         if (!this.fermier || !this.fermier.startMeal) return false;
-        const convives = (opts.convives || []).map((c) => ({ key: 'perso_' + c.perso, file: 'personnages/perso_' + String(c.perso).padStart(2, '0') + '.png', scale: c.enfant ? ENFANT_SCALE : 1 }));
+        const convives = (opts.convives || []).map((c) => ({ key: (c.enfant ? 'enfant_' : 'perso_') + c.perso, file: persoFile(c.perso, c.enfant), scale: 1 }));
         const go = () => this.fermier.startMeal({ convives: convives.filter((c) => this.has(c.key)), heureux: !!opts.heureux, done: () => { this.mealOn = false; } });
         this.mealOn = true;
         const manque = convives.filter((c) => !this.textures.exists(c.key));

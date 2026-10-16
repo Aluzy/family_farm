@@ -1,7 +1,7 @@
 /*
  * La famille sur la carte de la ferme (js/farm-stage.js) : les membres autres que le personnage
- * du joueur (js/fermier.js), chacun avec son personnage (assets/personnages/perso_NN.png, les
- * enfants plus petits), font leur journée :
+ * du joueur (js/fermier.js), chacun avec son personnage (assets/personnages/perso_NN.png ; les
+ * enfants, leurs planches à eux : assets/personnages/enfant_NN.png), font leur journée :
  *
  *   - la nuit, avant 7 h et à partir de 18 h 45 (le repas est à 19 h), ils sont dans la maison ;
  *   - le jour, ils sortent par la porte et flânent autour de la maison, d'un coin à l'autre ;
@@ -13,7 +13,7 @@
  * « animations réduites », ils vont d'un point à l'autre sans marcher. Rien ne bouge dans un
  * intérieur (ils y sont cachés).
  *
- *   const famille = FamilleFerme.attach(scene, { fermier, frames, exit: { x, y }, childScale, reduced })
+ *   const famille = FamilleFerme.attach(scene, { fermier, frames, exit: { x, y }, file(perso, enfant), reduced })
  *   famille.sync(model)          // model.famille : [{ id, perso, enfant }], model.heure, model.semaine, model.nuit
  *   famille.update(deltaMs, room)
  *   famille.info()               // pour les tests : où est chacun
@@ -53,12 +53,14 @@
       return 'dehors';
     }
 
+    // la planche d'un membre : celle de son personnage d'adulte ou d'enfant
+    const cle = (def) => (def.enfant ? 'enfant_' : 'perso_') + def.perso;
+
     let rang = 0;                  // chacun son décalage : ils ne marchent pas l'un sur l'autre
     function creer(def) {
       const k = rang++;
-      const key = 'perso_' + def.perso;
+      const key = cle(def);
       const s = scene.add.sprite(0, 0, key, F.idle_bas_0 || 0).setOrigin(0.5, 1).setVisible(false).setAlpha(0);
-      if (def.enfant) s.setScale(o.childScale || 0.8);
       return {
         id: def.id, key, enfant: !!def.enfant, s,
         x: 0, y: 0, face: 'bas', flip: false, marche: 0,
@@ -154,7 +156,7 @@
         for (const [id, m] of membres) if (!ids.has(id)) { m.s.destroy(); membres.delete(id); }
         const manque = [];
         for (const def of defs) {
-          const key = 'perso_' + def.perso;
+          const key = cle(def);
           const m = membres.get(def.id);
           if (m && m.key === key) continue;
           if (!scene.textures.exists(key)) { manque.push(def); continue; }
@@ -167,7 +169,7 @@
           membres.set(def.id, n);
         }
         if (manque.length) {
-          for (const def of manque) scene.load.spritesheet('perso_' + def.perso, o.file(def.perso), { frameWidth: 16, frameHeight: 32 });
+          for (const def of manque) scene.load.spritesheet(cle(def), o.file(def.perso, def.enfant), { frameWidth: 16, frameHeight: 32 });
           scene.load.once('complete', () => this.sync(model));
           scene.load.start();
         }
