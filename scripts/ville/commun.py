@@ -96,6 +96,7 @@ class Toile:
     def colle(self, sprite, x, y, k=None):
         """Pose une image (ou une liste d'images, une par image d'animation) au pixel (x, y)."""
         frames = sprite if isinstance(sprite, (list, tuple)) else [sprite] * len(self.images)
+        x, y = round(x), round(y)
         for i, im in enumerate(self.images):
             if k is not None and i != k:
                 continue
