@@ -99,6 +99,20 @@
     "anchois": { "nom": "Anchois", "icone": "🐟‍💧", "energie": 14, "prix": 3, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
     "sardine": { "nom": "Sardine", "icone": "🐟‍🌊", "energie": 20, "prix": 4, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
+    "//minerai_fer": [
+      "Les minerais de la grotte (fer partout, puis cuivre, or et platine de plus en plus bas), pris à",
+      "la pioche (GROTTE, js/ville-carte.js). Au Four, 4 minerais et du bois donnent un",
+      "lingot (recipes.json : lingot_*). Minerais et lingots (catégorie « matériau ») servent à l'arbre",
+      "des technologies : invendables (ni au Marché ni en ville), ils ne se rachètent pas et ne périment pas."
+    ],
+    "minerai_fer": { "nom": "Minerai de fer", "icone": "🪨‍🔩", "prix": 2, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "minerai_cuivre": { "nom": "Minerai de cuivre", "icone": "🪨‍🟠", "prix": 3, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "minerai_or": { "nom": "Minerai d'or", "icone": "🪨‍🟡", "prix": 6, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "minerai_platine": { "nom": "Minerai de platine", "icone": "🪨‍⚪", "prix": 10, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "lingot_fer": { "nom": "Lingot de fer", "icone": "🧈‍🔩", "prix": 10, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "lingot_cuivre": { "nom": "Lingot de cuivre", "icone": "🧈‍🟠", "prix": 14, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "lingot_or": { "nom": "Lingot d'or", "icone": "🧈‍🟡", "prix": 26, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "lingot_platine": { "nom": "Lingot de platine", "icone": "🧈‍⚪", "prix": 42, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
     "//oignon": [
       "10 nouvelles cultures : Zone de culture (oignon, ail, poivron, épinard,",
       "fraise, riz, houblon), Serre exclusivement (cacao, vanille, café). Poivron",

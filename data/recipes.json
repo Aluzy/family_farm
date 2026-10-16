@@ -337,6 +337,55 @@
       "qteSortie": 1,
       "libre": true
     },
+    "//lingot_fer": [
+      "Les lingots (items.json : minerai_*, lingot_*) : au Four, 4 minerais et du bois pour le feu",
+      "donnent 1 lingot ; plus le métal est précieux, plus il faut de bois et de temps. Ils servent",
+      "à l'arbre des technologies (techtree.json : ressources)."
+    ],
+    "lingot_fer": {
+      "nom": "Fondre du fer",
+      "icone": "🧈‍🔩",
+      "station": "four",
+      "temps": 40,
+      "ingredients": [{ "item": "minerai_fer", "qte": 4 }, { "item": "bois", "qte": 3 }],
+      "transformation": true,
+      "sortie": "lingot_fer",
+      "qteSortie": 1,
+      "libre": true
+    },
+    "lingot_cuivre": {
+      "nom": "Fondre du cuivre",
+      "icone": "🧈‍🟠",
+      "station": "four",
+      "temps": 50,
+      "ingredients": [{ "item": "minerai_cuivre", "qte": 4 }, { "item": "bois", "qte": 3 }],
+      "transformation": true,
+      "sortie": "lingot_cuivre",
+      "qteSortie": 1,
+      "libre": true
+    },
+    "lingot_or": {
+      "nom": "Fondre de l'or",
+      "icone": "🧈‍🟡",
+      "station": "four",
+      "temps": 60,
+      "ingredients": [{ "item": "minerai_or", "qte": 4 }, { "item": "bois", "qte": 4 }],
+      "transformation": true,
+      "sortie": "lingot_or",
+      "qteSortie": 1,
+      "libre": true
+    },
+    "lingot_platine": {
+      "nom": "Fondre du platine",
+      "icone": "🧈‍⚪",
+      "station": "four",
+      "temps": 80,
+      "ingredients": [{ "item": "minerai_platine", "qte": 4 }, { "item": "bois", "qte": 5 }],
+      "transformation": true,
+      "sortie": "lingot_platine",
+      "qteSortie": 1,
+      "libre": true
+    },
     "omelette_champignons": {
       "nom": "Omelette aux champignons",
       "icone": "🍄",

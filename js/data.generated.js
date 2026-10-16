@@ -160,6 +160,78 @@ export const RAW_DATA = {
     "anchois": { "nom": "Anchois", "icone": "🐟‍💧", "energie": 14, "prix": 3, "edible": true, "category": "produit", "rachetable": false },
     "sardine": { "nom": "Sardine", "icone": "🐟‍🌊", "energie": 20, "prix": 4, "edible": true, "category": "produit", "rachetable": false },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
+    "minerai_fer": {
+      "nom": "Minerai de fer",
+      "icone": "🪨‍🔩",
+      "prix": 2,
+      "edible": false,
+      "category": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "minerai_cuivre": {
+      "nom": "Minerai de cuivre",
+      "icone": "🪨‍🟠",
+      "prix": 3,
+      "edible": false,
+      "category": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "minerai_or": {
+      "nom": "Minerai d'or",
+      "icone": "🪨‍🟡",
+      "prix": 6,
+      "edible": false,
+      "category": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "minerai_platine": {
+      "nom": "Minerai de platine",
+      "icone": "🪨‍⚪",
+      "prix": 10,
+      "edible": false,
+      "category": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "lingot_fer": {
+      "nom": "Lingot de fer",
+      "icone": "🧈‍🔩",
+      "prix": 10,
+      "edible": false,
+      "category": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "lingot_cuivre": {
+      "nom": "Lingot de cuivre",
+      "icone": "🧈‍🟠",
+      "prix": 14,
+      "edible": false,
+      "category": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "lingot_or": {
+      "nom": "Lingot d'or",
+      "icone": "🧈‍🟡",
+      "prix": 26,
+      "edible": false,
+      "category": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "lingot_platine": {
+      "nom": "Lingot de platine",
+      "icone": "🧈‍⚪",
+      "prix": 42,
+      "edible": false,
+      "category": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
     "oignon": { "nom": "Oignon", "icone": "🧅", "energie": 6, "prix": 1, "edible": true, "category": "légume" },
     "graine_oignon": { "nom": "Graines d'oignon", "icone": "🌱‍🧅", "prix": 1, "edible": false, "category": "graine" },
     "ail": { "nom": "Ail", "icone": "🧄", "energie": 6, "prix": 2, "edible": true, "category": "légume" },
@@ -369,6 +441,46 @@ export const RAW_DATA = {
       "ingredients": [{ "item": "graine_tournesol", "qte": 3 }],
       "transformation": true,
       "sortie": "huile",
+      "qteSortie": 1
+    },
+    "lingot_fer": {
+      "nom": "Fondre du fer",
+      "icone": "🧈‍🔩",
+      "station": "four",
+      "temps": 40,
+      "ingredients": [{ "item": "minerai_fer", "qte": 4 }, { "item": "bois", "qte": 3 }],
+      "transformation": true,
+      "sortie": "lingot_fer",
+      "qteSortie": 1
+    },
+    "lingot_cuivre": {
+      "nom": "Fondre du cuivre",
+      "icone": "🧈‍🟠",
+      "station": "four",
+      "temps": 50,
+      "ingredients": [{ "item": "minerai_cuivre", "qte": 4 }, { "item": "bois", "qte": 3 }],
+      "transformation": true,
+      "sortie": "lingot_cuivre",
+      "qteSortie": 1
+    },
+    "lingot_or": {
+      "nom": "Fondre de l'or",
+      "icone": "🧈‍🟡",
+      "station": "four",
+      "temps": 60,
+      "ingredients": [{ "item": "minerai_or", "qte": 4 }, { "item": "bois", "qte": 4 }],
+      "transformation": true,
+      "sortie": "lingot_or",
+      "qteSortie": 1
+    },
+    "lingot_platine": {
+      "nom": "Fondre du platine",
+      "icone": "🧈‍⚪",
+      "station": "four",
+      "temps": 80,
+      "ingredients": [{ "item": "minerai_platine", "qte": 4 }, { "item": "bois", "qte": 5 }],
+      "transformation": true,
+      "sortie": "lingot_platine",
       "qteSortie": 1
     },
     "omelette_champignons": {
@@ -722,7 +834,8 @@ export const RAW_DATA = {
       { "id": "culture", "nom": "Culture", "icone": "🌱", "suivi": ["potager"] },
       { "id": "elevage", "nom": "Élevage", "icone": "🐔", "suivi": ["poulailler", "silo"] },
       { "id": "cuisine", "nom": "Cuisine", "icone": "🍳", "suivi": ["stations"] },
-      { "id": "famille", "nom": "Famille", "icone": "👨‍👩‍👧‍👦", "suivi": [] }
+      { "id": "famille", "nom": "Famille", "icone": "👨‍👩‍👧‍👦", "suivi": [] },
+      { "id": "outils", "nom": "Outils", "icone": "🛠️", "suivi": [] }
     ],
     "NOEUDS_RETIRES": {
       "cui_rotisserie": { "pt": 1, "cout": 300 },
@@ -741,6 +854,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 100,
+        "ressources": { "bois": 6, "pierre": 4 },
         "requiert": [],
         "effet": { "usure": 75 },
         "description": "Le panneau, la batterie et les autres appareils s'usent 25 % moins vite."
@@ -753,6 +867,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 1,
         "cout": 400,
+        "ressources": { "lingot_fer": 3, "lingot_cuivre": 2 },
         "requiert": [{ "noeud": "en_entretien" }, { "batiment": "batterie", "niveau": 2 }],
         "effet": { "delestage": { "seuil": 10 } },
         "description": "Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte."
@@ -765,6 +880,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 500,
+        "ressources": { "lingot_fer": 4, "lingot_cuivre": 1 },
         "requiert": [{ "noeud": "en_entretien" }],
         "effet": { "entretienAuto": true },
         "description": "Chaque nuit, les appareils à 70 % d'usure ou plus sont entretenus automatiquement, au prix normal, si les pièces suffisent."
@@ -777,6 +893,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 600,
+        "ressources": { "lingot_cuivre": 3, "lingot_or": 1 },
         "requiert": [{ "noeud": "en_delestage" }, { "construit": "frigo" }],
         "effet": { "frigoConso": 70 },
         "description": "Le réfrigérateur consomme 30 % d'électricité en moins."
@@ -789,6 +906,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 2,
         "cout": 800,
+        "ressources": { "lingot_fer": 4, "lingot_cuivre": 3, "lingot_or": 1 },
         "requiert": [{ "noeud": "en_entretien_auto" }],
         "effet": { "solaireBonus": 110 },
         "description": "Le panneau produit 10 % de plus."
@@ -801,6 +919,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 150,
+        "ressources": { "bois": 6, "pierre": 6 },
         "requiert": [{ "batiment": "pompe", "niveau": 2 }],
         "effet": { "eauArrosage": 85 },
         "description": "Chaque arrosage consomme 15 % d'eau en moins."
@@ -813,6 +932,7 @@ export const RAW_DATA = {
         "fonction": "deblocage",
         "pt": 1,
         "cout": 250,
+        "ressources": { "bois": 10, "lingot_fer": 2 },
         "requiert": [{ "noeud": "ea_econome" }],
         "effet": { "pluie": 15 },
         "description": "Chaque nuit, 15 L d'eau de pluie s'ajoutent au réservoir sans électricité."
@@ -825,6 +945,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 900,
+        "ressources": { "lingot_fer": 3, "lingot_cuivre": 4 },
         "requiert": [{ "noeud": "ea_econome" }, { "batiment": "pompe", "niveau": 3 }, { "tuiles": 18 }],
         "effet": { "auto": { "arrosage": ["potager"] } },
         "description": "Chaque matin à 7 h, des asperseurs arrosent toutes les parcelles plantées de la Zone de culture qui ont soif."
@@ -837,6 +958,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 500,
+        "ressources": { "lingot_fer": 2, "lingot_cuivre": 2 },
         "requiert": [{ "noeud": "ea_econome" }, { "noeud": "en_entretien" }],
         "effet": { "whParLitre": 75 },
         "description": "La pompe consomme 25 % d'électricité en moins par litre."
@@ -849,6 +971,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 600,
+        "ressources": { "lingot_cuivre": 4, "lingot_or": 1 },
         "requiert": [{ "noeud": "ea_irrigation" }, { "construit": "serre" }],
         "effet": { "auto": { "arrosage": ["serre"] } },
         "description": "Chaque matin à 7 h, les parcelles plantées de la Serre qui ont soif sont arrosées automatiquement."
@@ -861,6 +984,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 3,
         "cout": 1500,
+        "ressources": { "lingot_cuivre": 3, "lingot_or": 2, "lingot_platine": 1 },
         "requiert": [{ "noeud": "ea_serre" }, { "noeud": "en_delestage" }],
         "effet": { "arrosagePrioritaire": true, "eauArrosage": 90 },
         "description": "Quand l'eau manque, l'arrosage automatique sert d'abord les plantes les plus proches de la récolte. Chaque arrosage consomme encore 10 % d'eau en moins."
@@ -873,6 +997,7 @@ export const RAW_DATA = {
         "fonction": "temps",
         "pt": 1,
         "cout": 100,
+        "ressources": { "bois": 8, "pierre": 5 },
         "requiert": [],
         "effet": { "groupeEconome": 25 },
         "description": "« Planter partout », « Arroser tout » et « Récolter tout » coûtent 25 % d'énergie en moins."
@@ -885,6 +1010,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 200,
+        "ressources": { "bois": 6, "pierre": 4 },
         "requiert": [],
         "effet": { "grainesBonus": 1 },
         "description": "Les cultures qui rendent des graines en donnent une de plus."
@@ -897,6 +1023,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 900,
+        "ressources": { "lingot_fer": 5, "lingot_cuivre": 2 },
         "requiert": [{ "noeud": "cu_outils" }, { "tuiles": 24 }],
         "effet": { "auto": { "recolte": ["potager"] } },
         "description": "Un robot récolte les parcelles mûres de la Zone de culture : chaque matin à 6 h, il dresse sa liste de tâches et les fait une à une."
@@ -909,6 +1036,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 1200,
+        "ressources": { "lingot_fer": 4, "lingot_cuivre": 3, "lingot_or": 1 },
         "requiert": [{ "noeud": "cu_recolte_auto" }, { "noeud": "ea_irrigation" }],
         "effet": { "auto": { "semis": ["potager"] } },
         "description": "Après chaque récolte, le robot replante la parcelle avec la même culture si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle."
@@ -921,6 +1049,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 3,
         "cout": 1500,
+        "ressources": { "lingot_fer": 4, "lingot_or": 2, "lingot_platine": 2 },
         "requiert": [{ "noeud": "semis_auto" }, { "noeud": "ea_serre" }],
         "effet": { "auto": { "recolte": ["serre"], "semis": ["serre"] } },
         "description": "Le robot récolte et replante aussi la Serre chaque matin, avec les mêmes réglages que le semis automatique."
@@ -933,6 +1062,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 800,
+        "ressources": { "bois": 10, "lingot_fer": 3, "lingot_cuivre": 2 },
         "requiert": [{ "noeud": "cu_recolte_auto" }, { "construit": "verger" }],
         "effet": { "auto": { "recolte": ["verger"] } },
         "description": "Chaque nuit, les arbres du Verger en fruits sont cueillis automatiquement (moitié de l'XP)."
@@ -945,6 +1075,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 200,
+        "ressources": { "bois": 8, "lingot_fer": 1 },
         "requiert": [{ "construit": "poulailler" }],
         "effet": { "poulesParBle": 5, "parBle": 2 },
         "description": "2 blé nourrissent 5 poules au lieu de 4."
@@ -957,6 +1088,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 600,
+        "ressources": { "bois": 6, "lingot_fer": 3 },
         "requiert": [{ "batiment": "poulailler", "niveau": 3 }, { "batiment": "silo", "niveau": 2 }],
         "effet": { "auto": { "nourrissage": ["poulailler"] } },
         "description": "Chaque nuit, les poules sont nourries automatiquement avec le blé du Silo."
@@ -969,6 +1101,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 500,
+        "ressources": { "lingot_fer": 3, "lingot_or": 1 },
         "requiert": [{ "noeud": "el_mangeoire" }, { "construit": "paturage" }],
         "effet": { "auto": { "tonte": ["paturage"] } },
         "description": "Chaque nuit, les moutons dont la laine est prête sont tondus automatiquement, avant de manger leur paille."
@@ -981,6 +1114,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 400,
+        "ressources": { "bois": 20, "pierre": 10 },
         "requiert": [{ "construit": "paturage" }],
         "effet": { "croissanceSurface": 110 },
         "description": "Le prix de chaque place supplémentaire pour les moutons et les vaches augmente de 10 % au lieu de 20 %."
@@ -993,6 +1127,7 @@ export const RAW_DATA = {
         "fonction": "temps",
         "pt": 1,
         "cout": 300,
+        "ressources": { "pierre": 4, "lingot_fer": 2 },
         "requiert": [],
         "effet": { "tempsPrepa": 80 },
         "description": "Les temps de préparation (Four, Cuisine, Moulin, Presse) baissent de 20 %."
@@ -1005,6 +1140,7 @@ export const RAW_DATA = {
         "fonction": "deblocage",
         "pt": 1,
         "cout": 200,
+        "ressources": { "pierre": 12, "lingot_fer": 1 },
         "requiert": [{ "construit": "four" }],
         "effet": { "recettes": ["pain_ail", "tarte_fraises", "quiche_epinards"] },
         "description": "Nouvelles recettes au Four : pain à l'ail, tarte aux fraises, quiche aux épinards."
@@ -1017,6 +1153,7 @@ export const RAW_DATA = {
         "fonction": "automatisation",
         "pt": 2,
         "cout": 500,
+        "ressources": { "lingot_fer": 3, "lingot_cuivre": 1 },
         "requiert": [{ "noeud": "prepa_1" }],
         "effet": { "fileAttente": 3 },
         "description": "Le Four, la Cuisine et la Presse acceptent jusqu'à 3 préparations à la suite : elles s'enchaînent sans clic, ingrédients réservés au lancement. (Le Moulin, lui, moud déjà la quantité de blé que tu choisis.)"
@@ -1029,6 +1166,7 @@ export const RAW_DATA = {
         "fonction": "deblocage",
         "pt": 1,
         "cout": 300,
+        "ressources": { "bois": 6, "lingot_fer": 2 },
         "requiert": [{ "construit": "paturage" }],
         "effet": { "recettes": ["fromage_frais", "riz_au_lait"] },
         "description": "Nouvelles recettes en Cuisine : fromage frais, riz au lait."
@@ -1041,6 +1179,7 @@ export const RAW_DATA = {
         "fonction": "temps",
         "pt": 1,
         "cout": 700,
+        "ressources": { "lingot_cuivre": 3, "lingot_or": 1 },
         "requiert": [{ "noeud": "cui_serie" }],
         "effet": { "tempsPrepa": 80 },
         "description": "Encore −20 % sur les temps de préparation (64 % du temps de départ en tout)."
@@ -1053,6 +1192,7 @@ export const RAW_DATA = {
         "fonction": "deblocage",
         "pt": 2,
         "cout": 600,
+        "ressources": { "lingot_fer": 3, "lingot_cuivre": 2 },
         "requiert": [{ "noeud": "cui_serie" }, { "noeud": "fa_cellier" }],
         "effet": { "recettes": ["bocal_legumes", "confiture_fraises"] },
         "description": "Nouvelles recettes en Cuisine : bocal de légumes (4 légumes d'une même sorte, ne périme pas) et confiture de fraises."
@@ -1065,6 +1205,7 @@ export const RAW_DATA = {
         "fonction": "deblocage",
         "pt": 2,
         "cout": 800,
+        "ressources": { "lingot_cuivre": 2, "lingot_or": 2 },
         "requiert": [{ "noeud": "cui_laiterie" }, { "construit": "serre" }],
         "effet": { "recettes": ["chocolat_chaud", "cafe_boisson", "creme_vanille", "biere_artisanale"] },
         "description": "Recettes de luxe en Cuisine : chocolat chaud, café, crème à la vanille, bière artisanale."
@@ -1077,6 +1218,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 100,
+        "ressources": { "bois": 10 },
         "requiert": [],
         "effet": { "reveilEnergie": 10 },
         "description": "Au réveil, l'énergie remonte de 10 points de plus."
@@ -1089,6 +1231,7 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 250,
+        "ressources": { "pierre": 12, "bois": 6 },
         "requiert": [],
         "effet": { "conservation": 1 },
         "description": "Hors réfrigérateur, tout ce qui périme se garde une nuit de plus."
@@ -1101,9 +1244,88 @@ export const RAW_DATA = {
         "fonction": "productivite",
         "pt": 1,
         "cout": 300,
+        "ressources": { "bois": 8, "lingot_fer": 1 },
         "requiert": [{ "noeud": "fa_cellier" }],
         "effet": { "gouter": 150 },
         "description": "Ce que tu manges dans la journée rend 50 % d'énergie en plus."
+      },
+      "out_hotte": {
+        "branche": "outils",
+        "palier": 1,
+        "nom": "Hotte de bûcheron",
+        "icone": "🧺",
+        "fonction": "productivite",
+        "pt": 1,
+        "cout": 80,
+        "ressources": { "bois": 12, "pierre": 2 },
+        "requiert": [],
+        "effet": { "recolteBonus": 33 },
+        "description": "Chaque coup de hache ou de pioche sur un arbre ou un rocher a 1 chance sur 3 de rapporter 1 bois ou 1 pierre de plus."
+      },
+      "out_lames": {
+        "branche": "outils",
+        "palier": 2,
+        "nom": "Lames affûtées",
+        "icone": "🪓",
+        "fonction": "productivite",
+        "pt": 1,
+        "cout": 200,
+        "ressources": { "bois": 4, "lingot_fer": 2 },
+        "requiert": [{ "noeud": "out_hotte" }],
+        "effet": { "coupsMoins": 1 },
+        "description": "Arbres, rochers et minerais de la grotte tombent en 2 coups au lieu de 3."
+      },
+      "out_socs": {
+        "branche": "outils",
+        "palier": 2,
+        "nom": "Socs en fer",
+        "icone": "⛏️",
+        "fonction": "productivite",
+        "pt": 1,
+        "cout": 200,
+        "ressources": { "bois": 4, "lingot_fer": 2 },
+        "requiert": [],
+        "effet": { "economie": { "labourer": 50 } },
+        "description": "La houe coûte 50 % d'énergie en moins."
+      },
+      "out_lampe": {
+        "branche": "outils",
+        "palier": 3,
+        "nom": "Lampe de mineur",
+        "icone": "🔦",
+        "fonction": "productivite",
+        "pt": 1,
+        "cout": 300,
+        "ressources": { "lingot_fer": 1, "lingot_cuivre": 2 },
+        "requiert": [{ "noeud": "out_lames" }],
+        "effet": { "grotte": { "lumiere": 150, "minerai": 25 } },
+        "description": "Dans la grotte, la lumière porte 50 % plus loin et chaque minerai a 1 chance sur 4 d'en donner un de plus."
+      },
+      "out_moulinet": {
+        "branche": "outils",
+        "palier": 3,
+        "nom": "Moulinet en laiton",
+        "icone": "🎣",
+        "fonction": "productivite",
+        "pt": 1,
+        "cout": 300,
+        "ressources": { "lingot_fer": 1, "lingot_cuivre": 2 },
+        "requiert": [],
+        "effet": { "pecheJour": 2, "pecheTouche": 20 },
+        "description": "Chaque eau donne 2 prises de plus par jour, et quand rien ne mord, un poisson a encore 1 chance sur 5 de mordre."
+      },
+      "out_platine": {
+        "branche": "outils",
+        "palier": 5,
+        "nom": "Outils en platine",
+        "icone": "🛠️",
+        "fonction": "productivite",
+        "pt": 2,
+        "cout": 1200,
+        "ressources": { "lingot_or": 2, "lingot_platine": 2 },
+        "requiert": [{ "noeud": "out_lames" }, { "noeud": "out_socs" }],
+        "effet": { "economie": { "couper": 50, "piocher": 50, "labourer": 50, "pecher": 50 } },
+        "description": "Couper, piocher, labourer et pêcher coûtent 50 % d'énergie en moins."
       }
     },
     "RECETTES_LIBRES": [
@@ -1117,6 +1339,10 @@ export const RAW_DATA = {
       "salade_tomates",
       "farine",
       "huile",
+      "lingot_fer",
+      "lingot_cuivre",
+      "lingot_or",
+      "lingot_platine",
       "omelette_champignons",
       "poisson_grille",
       "raclette",
