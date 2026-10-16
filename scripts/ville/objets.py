@@ -1,0 +1,541 @@
+# Les objets de la ville, dessinés une fois puis posés sur les toiles : fenêtres et portes,
+# voitures, arbres et buissons, fontaines (animées), bancs, panneau, tonneau, réverbère,
+# plaque d'égout, climatiseur, fleurs, dalles et cailloux.
+import math
+
+from commun import K, contour, dessin, hasard, image, mel, rgba, teinte
+
+# ---------- la menuiserie ----------
+
+PIERRE_CLAIRE = (204, 188, 156)
+PIERRE_OMBRE = (164, 146, 116)
+BOIS_K = (78, 50, 36)
+BOIS = (122, 80, 52)
+BOIS_C = (152, 104, 68)
+VITRE = (170, 186, 194)
+VITRE_C = (212, 226, 232)
+VITRE_S = (120, 138, 152)
+
+
+def fenetre():
+    """1 × 2 tuiles : linteau de pierre, cadre de bois, quatre carreaux, appui."""
+    im = image(16, 32)
+    d = dessin(im)
+    d.rectangle((0, 2, 15, 4), fill=rgba(K))
+    d.rectangle((1, 3, 14, 3), fill=rgba(PIERRE_CLAIRE))
+    d.rectangle((1, 5, 14, 27), fill=rgba(BOIS_K))
+    d.rectangle((2, 6, 13, 26), fill=rgba(VITRE))
+    for y in range(6, 27):
+        for x in range(2, 14):
+            c = VITRE
+            if y < 9:
+                c = VITRE_S
+            elif (x + (26 - y)) % 11 in (0, 1) and y < 22:
+                c = VITRE_C
+            elif hasard(x, y, 3) > 0.92:
+                c = mel(VITRE, VITRE_C, 0.5)
+            im.putpixel((x, y), rgba(c))
+    d.rectangle((7, 6, 8, 26), fill=rgba(BOIS))
+    d.rectangle((2, 16, 13, 16), fill=rgba(BOIS))
+    d.rectangle((0, 27, 15, 29), fill=rgba(K))
+    d.rectangle((1, 28, 14, 28), fill=rgba(PIERRE_CLAIRE))
+    d.rectangle((1, 30, 14, 30), fill=(0, 0, 0, 70))
+    return im
+
+
+def porte():
+    """1 × 2 tuiles : une porte de bois à panneaux, sa poignée, sa marche."""
+    im = image(16, 32)
+    d = dessin(im)
+    d.rectangle((1, 2, 14, 29), fill=rgba(K))
+    d.rectangle((2, 3, 13, 29), fill=rgba(BOIS))
+    for x0, y0, x1, y1 in ((4, 5, 11, 14), (4, 17, 11, 27)):
+        d.rectangle((x0, y0, x1, y1), fill=rgba(BOIS_K))
+        d.rectangle((x0 + 1, y0 + 1, x1, y1), fill=rgba(BOIS_C))
+        d.rectangle((x0 + 1, y0 + 1, x1 - 1, y1 - 1), fill=rgba(BOIS))
+    d.rectangle((11, 16, 12, 17), fill=rgba((236, 200, 96)))
+    d.rectangle((0, 30, 15, 31), fill=rgba((150, 146, 140)))
+    d.rectangle((0, 30, 15, 30), fill=rgba((184, 180, 174)))
+    return im
+
+
+def porte_vitree():
+    """2 × 2 tuiles : la double porte vitrée de la tour."""
+    im = image(32, 32)
+    d = dessin(im)
+    d.rectangle((1, 1, 30, 31), fill=rgba(K))
+    d.rectangle((2, 2, 29, 31), fill=rgba((120, 132, 142)))
+    for x0 in (4, 17):
+        d.rectangle((x0, 4, x0 + 10, 31), fill=rgba(K))
+        for y in range(5, 32):
+            for x in range(x0 + 1, x0 + 10):
+                c = VITRE_C if (x - x0 + (31 - y)) % 13 in (0, 1) else (VITRE if y > 8 else VITRE_S)
+                im.putpixel((x, y), rgba(c))
+    d.rectangle((13, 16, 13, 21), fill=rgba((220, 224, 228)))
+    d.rectangle((18, 16, 18, 21), fill=rgba((220, 224, 228)))
+    return im
+
+
+def lucarne():
+    """1 × 2 tuiles : la bouche d'aération posée sur un toit."""
+    im = image(16, 32)
+    d = dessin(im)
+    d.rectangle((0, 4, 15, 27), fill=rgba(K))
+    d.rectangle((1, 5, 14, 26), fill=rgba((196, 184, 162)))
+    d.rectangle((2, 7, 13, 24), fill=rgba((92, 84, 80)))
+    for y in range(8, 24, 3):
+        d.rectangle((2, y, 13, y), fill=rgba((150, 140, 128)))
+    d.rectangle((1, 27, 15, 28), fill=(0, 0, 0, 80))
+    return im
+
+
+def entree():
+    """3 × 3 tuiles : l'entrée sombre de la bibliothèque, son encadrement et ses marches."""
+    im = image(48, 48)
+    d = dessin(im)
+    d.rectangle((2, 4, 45, 41), fill=rgba(K))
+    d.rectangle((3, 5, 44, 41), fill=rgba(PIERRE_CLAIRE))
+    d.rectangle((3, 5, 44, 8), fill=rgba((224, 212, 184)))
+    d.rectangle((8, 11, 39, 41), fill=rgba(K))
+    d.rectangle((9, 12, 38, 41), fill=rgba(PIERRE_OMBRE))
+    d.rectangle((12, 15, 35, 41), fill=rgba((44, 30, 34)))
+    d.rectangle((12, 15, 35, 18), fill=rgba((28, 20, 24)))
+    for i, y in enumerate((41, 44)):
+        d.rectangle((6 - 2 * i, y, 41 + 2 * i, y + 2), fill=rgba((176, 166, 146)))
+        d.rectangle((6 - 2 * i, y, 41 + 2 * i, y), fill=rgba((214, 204, 184)))
+    return contour(im)
+
+
+# ---------- le métal ----------
+
+def plaque_egout():
+    im = image(32, 32)
+    for y in range(32):
+        for x in range(32):
+            r = math.hypot(x - 15.5, y - 15.5)
+            if r > 14:
+                continue
+            if r > 12.5:
+                c = (46, 40, 42)
+            elif r > 11:
+                c = (96, 90, 92) if (x + y) < 30 else (70, 64, 66)
+            else:
+                c = (62, 58, 62) if (x % 4 == 1 or y % 4 == 1) else (84, 80, 84)
+                if hasard(x, y, 8) > 0.9:
+                    c = teinte(c, 1.1)
+            im.putpixel((x, y), rgba(c))
+    return im
+
+
+def climatiseur():
+    """2 × 3 tuiles : le bloc de climatisation sur le toit plat de la tour."""
+    im = image(32, 48)
+    d = dessin(im)
+    d.rectangle((3, 6, 30, 44), fill=(0, 0, 0, 60))
+    d.rectangle((1, 3, 28, 41), fill=rgba(K))
+    d.rectangle((2, 4, 27, 40), fill=rgba((176, 176, 172)))
+    d.rectangle((2, 4, 27, 6), fill=rgba((208, 208, 204)))
+    d.ellipse((5, 9, 24, 28), fill=rgba((60, 60, 64)))
+    d.ellipse((7, 11, 22, 26), fill=rgba((96, 96, 100)))
+    for a in range(0, 360, 60):
+        x = 14.5 + 6 * math.cos(math.radians(a))
+        y = 18.5 + 6 * math.sin(math.radians(a))
+        d.line((14.5, 18.5, x, y), fill=rgba((60, 60, 64)))
+    d.ellipse((13, 17, 16, 20), fill=rgba((150, 150, 150)))
+    for y in range(31, 39, 2):
+        d.rectangle((5, y, 24, y), fill=rgba((128, 128, 126)))
+    return im
+
+
+def reverbere():
+    """1 × 3 tuiles : un réverbère noir à lanterne."""
+    im = image(16, 48)
+    d = dessin(im)
+    d.ellipse((3, 42, 12, 47), fill=(0, 0, 0, 70))
+    d.rectangle((7, 12, 8, 44), fill=rgba((52, 52, 60)))
+    d.rectangle((7, 12, 7, 44), fill=rgba((92, 92, 104)))
+    d.rectangle((5, 41, 10, 44), fill=rgba((52, 52, 60)))
+    d.polygon(((4, 4), (11, 4), (12, 11), (3, 11)), fill=rgba((52, 52, 60)))
+    d.rectangle((5, 6, 10, 10), fill=rgba((250, 228, 150)))
+    d.rectangle((6, 1, 9, 3), fill=rgba((52, 52, 60)))
+    return contour(im)
+
+
+# ---------- les voitures ----------
+
+VOITURES = {
+    'rouge': (198, 60, 54),
+    'bleue': (66, 114, 198),
+    'blanche': (226, 228, 232),
+    'marron': (142, 94, 62),
+    'bordeaux': (128, 60, 72),
+}
+
+
+def voiture(couleur, horizontale=False):
+    """Une voiture vue de dessus, l'avant en bas (2 × 4 tuiles) ; horizontale : l'avant à
+    droite (4 × 2 tuiles)."""
+    c = VOITURES[couleur]
+    im = image(32, 64)
+    d = dessin(im)
+    noir = (34, 32, 36)
+    # les roues qui dépassent
+    for y0 in (10, 44):
+        d.rectangle((2, y0, 29, y0 + 8), fill=rgba(noir))
+    # la caisse
+    d.rounded_rectangle((3, 1, 28, 62), radius=6, fill=rgba(c))
+    for y in range(1, 63):
+        for x in range(3, 29):
+            p = im.getpixel((x, y))
+            if p[3] and p[:3] == c:
+                if x <= 4:
+                    im.putpixel((x, y), rgba(teinte(c, 1.12)))
+                elif x >= 26:
+                    im.putpixel((x, y), rgba(teinte(c, 0.82)))
+    verre = (56, 66, 82)
+    verre_c = (140, 160, 182)
+    # lunette arrière, toit, pare-brise
+    d.rounded_rectangle((6, 9, 25, 15), radius=2, fill=rgba(verre))
+    d.rectangle((8, 10, 11, 10), fill=rgba(verre_c))
+    d.rounded_rectangle((6, 16, 25, 35), radius=2, fill=rgba(teinte(c, 0.9)))
+    d.rectangle((7, 17, 24, 17), fill=rgba(teinte(c, 1.1)))
+    d.rounded_rectangle((5, 36, 26, 44), radius=3, fill=rgba(verre))
+    d.line((8, 43, 14, 37), fill=rgba(verre_c))
+    d.line((10, 43, 16, 37), fill=rgba(verre_c))
+    # le capot, ses lignes
+    d.line((9, 47, 9, 57), fill=rgba(teinte(c, 0.86)))
+    d.line((22, 47, 22, 57), fill=rgba(teinte(c, 0.86)))
+    # rétroviseurs
+    d.rectangle((1, 37, 3, 39), fill=rgba(teinte(c, 0.8)))
+    d.rectangle((28, 37, 30, 39), fill=rgba(teinte(c, 0.8)))
+    # phares et feux
+    d.rectangle((5, 59, 9, 60), fill=rgba((250, 236, 170)))
+    d.rectangle((22, 59, 26, 60), fill=rgba((250, 236, 170)))
+    d.rectangle((5, 2, 8, 3), fill=rgba((214, 40, 40)))
+    d.rectangle((23, 2, 26, 3), fill=rgba((214, 40, 40)))
+    d.rectangle((8, 62, 23, 62), fill=rgba((150, 150, 156)))
+    im = contour(im)
+    if horizontale:
+        im = im.transpose(2)   # ROTATE_90 (sens inverse des aiguilles) : l'avant vient à droite
+    return im
+
+
+# ---------- la végétation ----------
+
+FEUILLES = [(20, 52, 44), (30, 76, 58), (46, 102, 66), (72, 132, 74), (110, 164, 88)]
+TRONC = [(64, 44, 34), (96, 66, 46), (128, 92, 62)]
+
+
+def touffes(im, boules, graine, palette=FEUILLES):
+    """Des boules de feuillage, de l'arrière vers l'avant, éclairées du haut à gauche."""
+    w, h = im.size
+    for cx, cy, r in sorted(boules, key=lambda b: b[1]):
+        for y in range(max(0, int(cy - r - 1)), min(h, int(cy + r + 2))):
+            for x in range(max(0, int(cx - r - 1)), min(w, int(cx + r + 2))):
+                dd = math.hypot(x - cx, y - cy)
+                if dd > r + (hasard(x, y, graine) - 0.5) * 1.6:
+                    continue
+                t = math.hypot(x - (cx - r * 0.38), y - (cy - r * 0.42)) / (r * 1.25)
+                t += (hasard(x, y, graine + 1) - 0.5) * 0.28
+                i = 4 if t < 0.25 else 3 if t < 0.55 else 2 if t < 0.85 else 1
+                if dd > r - 1.2:
+                    i = min(i, 1)
+                im.putpixel((x, y), rgba(palette[i]))
+    return im
+
+
+def arbre(graine=0):
+    """5 × 6 tuiles : un grand arbre feuillu, le pied du tronc à (40, 90)."""
+    im = image(80, 96)
+    d = dessin(im)
+    # le tronc et ses racines
+    d.polygon(((33, 92), (36, 84), (36, 54), (44, 54), (44, 84), (48, 92), (42, 89), (40, 92), (38, 89)), fill=rgba(TRONC[1]))
+    d.line((42, 56, 42, 88), fill=rgba(TRONC[0]))
+    d.line((43, 56, 43, 86), fill=rgba(TRONC[0]))
+    d.line((37, 58, 37, 82), fill=rgba(TRONC[2]))
+    d.line((40, 62, 39, 70), fill=rgba(TRONC[0]))
+    boules = []
+    for i in range(16):
+        a = i / 16 * math.tau + hasard(i, graine) * 0.4
+        rr = 22 + 6 * hasard(i, graine, 2)
+        boules.append((40 + math.cos(a) * rr, 36 + math.sin(a) * rr * 0.78, 11 + 4 * hasard(i, graine, 3)))
+    for i in range(7):
+        a = i / 7 * math.tau + 0.4
+        boules.append((40 + math.cos(a) * 11, 34 + math.sin(a) * 9, 13))
+    boules.append((40, 30, 15))
+    touffes(im, boules, 70 + graine)
+    return contour(im, (20, 44, 36))
+
+
+def buisson(graine=0, w=32, h=32):
+    im = image(w, h)
+    boules = []
+    n = 6 if w <= 32 else 10
+    for i in range(n):
+        a = i / n * math.tau + hasard(i, graine)
+        boules.append((w / 2 + math.cos(a) * (w * 0.24), h * 0.55 + math.sin(a) * (h * 0.18), w * 0.2 + 2 * hasard(i, graine, 4)))
+    boules.append((w / 2, h * 0.5, w * 0.26))
+    touffes(im, boules, 90 + graine)
+    return contour(im, (20, 44, 36))
+
+
+def arbuste(graine=0):
+    """2 × 3 tuiles : un arbuste en cône (le petit sapin taillé)."""
+    im = image(32, 48)
+    d = dessin(im)
+    d.rectangle((15, 38, 17, 46), fill=rgba(TRONC[1]))
+    boules = []
+    for j in range(5):
+        y = 8 + j * 7
+        r = 5 + j * 1.8
+        boules += [(16 - r * 0.6, y + 3, r * 0.7), (16 + r * 0.6, y + 3, r * 0.7), (16, y, r * 0.75)]
+    touffes(im, boules, 110 + graine)
+    return contour(im, (20, 44, 36))
+
+
+def ombre(w, h, a=70):
+    im = image(w, h)
+    dessin(im).ellipse((0, 0, w - 1, h - 1), fill=(10, 30, 24, a))
+    return im
+
+
+def fleurs(graine=0, couleur=(238, 240, 236)):
+    """1 tuile : un bouquet de petites fleurs dans l'herbe."""
+    im = image(16, 16)
+    for i in range(3 + int(hasard(graine, 1) * 2)):
+        x = 3 + int(hasard(graine, i, 2) * 10)
+        y = 3 + int(hasard(graine, i, 3) * 10)
+        for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+            im.putpixel((x + dx, y + dy), rgba(couleur))
+        im.putpixel((x, y), rgba((240, 210, 90)))
+        if y + 2 < 16:
+            im.putpixel((x, y + 2), rgba((30, 80, 60)))
+    return im
+
+
+def touffe(graine=0):
+    im = image(16, 16)
+    x0 = 4 + int(hasard(graine, 5) * 6)
+    for i, (dx, hh) in enumerate(((0, 3), (2, 5), (4, 4), (6, 2), (3, 6))):
+        for y in range(hh):
+            im.putpixel((x0 + dx, 13 - y), rgba((70, 140, 100) if y > 1 else (40, 98, 76)))
+    return im
+
+
+# ---------- la pierre ----------
+
+def dalle(graine=0):
+    """1 tuile : deux pierres plates d'un chemin dallé."""
+    im = image(16, 16)
+    d = dessin(im)
+    for i, (x0, y0) in enumerate(((1, 1), (8, 8))):
+        w = 6 + int(hasard(graine, i) * 2)
+        h = 5 + int(hasard(graine, i, 1) * 2)
+        d.rounded_rectangle((x0, y0, x0 + w, y0 + h), radius=2, fill=rgba((150, 136, 108)))
+        d.rounded_rectangle((x0, y0, x0 + w - 1, y0 + h - 1), radius=2, fill=rgba((212, 198, 160)))
+        d.rounded_rectangle((x0 + 1, y0 + 1, x0 + w - 1, y0 + h - 1), radius=2, fill=rgba((192, 178, 142)))
+    return im
+
+
+def caillou(graine=0):
+    im = image(16, 16)
+    d = dessin(im)
+    x, y = 4 + int(hasard(graine) * 6), 6 + int(hasard(graine, 1) * 5)
+    d.ellipse((x, y + 1, x + 7, y + 5), fill=(0, 0, 0, 60))
+    d.ellipse((x, y, x + 6, y + 4), fill=rgba((128, 126, 130)))
+    d.ellipse((x + 1, y, x + 4, y + 2), fill=rgba((176, 174, 178)))
+    return im
+
+
+# ---------- le bois ----------
+
+def banc(diagonal=False):
+    """3 × 2 tuiles : un banc de bois vu de dessus (le dossier en haut) ; diagonal : tourné."""
+    im = image(48, 32)
+    d = dessin(im)
+    d.rectangle((4, 22, 45, 26), fill=(0, 0, 0, 60))
+    for x in (5, 40):
+        d.rectangle((x, 8, x + 2, 24), fill=rgba((52, 44, 42)))
+    d.rectangle((2, 4, 45, 8), fill=rgba(BOIS_K))
+    d.rectangle((3, 5, 44, 6), fill=rgba(BOIS_C))
+    for i, y in enumerate((11, 15, 19)):
+        d.rectangle((2, y, 45, y + 3), fill=rgba(BOIS_K))
+        d.rectangle((3, y, 44, y + 2), fill=rgba(BOIS if i else BOIS_C))
+        d.rectangle((3, y, 44, y), fill=rgba(teinte(BOIS_C, 1.12)))
+    im = contour(im)
+    if diagonal:
+        grand = image(64, 64)
+        grand.paste(im, (8, 16))
+        im = grand.rotate(-33, resample=0)
+    return im
+
+
+def panneau():
+    """2 × 2 tuiles : le panneau d'affichage du parc."""
+    im = image(32, 32)
+    d = dessin(im)
+    d.rectangle((6, 18, 8, 30), fill=rgba(BOIS_K))
+    d.rectangle((23, 18, 25, 30), fill=rgba(BOIS_K))
+    d.rectangle((1, 2, 30, 20), fill=rgba(BOIS_K))
+    d.rectangle((2, 3, 29, 19), fill=rgba(BOIS))
+    d.rectangle((4, 5, 27, 17), fill=rgba((236, 232, 220)))
+    for i, y in enumerate((7, 10, 13)):
+        d.rectangle((6, y, 13 + 6 * (i % 2), y + 1), fill=rgba((60, 56, 60)))
+        d.rectangle((17, y, 25 - 3 * (i % 2), y + 1), fill=rgba((60, 56, 60)))
+    return contour(im)
+
+
+def tonneau():
+    """1 × 2 tuiles : un tonneau de bois cerclé."""
+    im = image(16, 32)
+    d = dessin(im)
+    d.ellipse((1, 25, 15, 31), fill=(0, 0, 0, 70))
+    d.rounded_rectangle((2, 12, 13, 29), radius=3, fill=rgba(BOIS))
+    for x in range(3, 13, 3):
+        d.line((x, 13, x, 28), fill=rgba(BOIS_K))
+    d.rectangle((2, 16, 13, 16), fill=rgba((70, 66, 70)))
+    d.rectangle((2, 25, 13, 25), fill=rgba((70, 66, 70)))
+    d.ellipse((2, 9, 13, 15), fill=rgba(BOIS_K))
+    d.ellipse((3, 10, 12, 14), fill=rgba((88, 58, 40)))
+    d.line((4, 12, 11, 12), fill=rgba(BOIS))
+    return contour(im)
+
+
+# ---------- l'eau des fontaines ----------
+
+EAU = [(56, 90, 128), (78, 118, 162), (106, 148, 188), (168, 198, 222), (228, 240, 248)]
+MARGELLE = [(118, 104, 84), (164, 146, 116), (200, 184, 150), (226, 214, 186)]
+
+
+def eau(x, y, cx, cy, k, profond=0.0):
+    """La couleur de l'eau en (x, y) à l'image k : des vaguelettes concentriques qui s'éloignent."""
+    r = math.hypot(x - cx, y - cy)
+    s = math.sin(r * 0.42 - k * math.pi / 2 + hasard(int(r), 3) * 0.6)
+    c = EAU[1] if profond < 0.5 else EAU[0]
+    if s > 0.9 and hasard(x // 2, y // 2, k) > 0.35:
+        c = EAU[3]
+    elif s > 0.6:
+        c = EAU[2]
+    if hasard(x, y, k, 9) > 0.995:
+        c = EAU[4]
+    return c
+
+
+def anneau(im, cx, cy, r0, r1, ry=1.0):
+    """La margelle de pierre entre les rayons r0 et r1 (éclairée en haut à gauche)."""
+    w, h = im.size
+    for y in range(h):
+        for x in range(w):
+            r = math.hypot(x - cx, (y - cy) / ry)
+            if r0 <= r <= r1:
+                a = math.atan2(y - cy, x - cx)
+                lum = -math.cos(a + math.pi / 4)
+                c = MARGELLE[2]
+                if r > r1 - 1.5 or r < r0 + 1:
+                    c = MARGELLE[0]
+                elif r < r0 + 3 and lum < 0.3:
+                    c = MARGELLE[1]
+                elif lum > 0.5 and r > r1 - 4:
+                    c = MARGELLE[3]
+                elif lum < -0.4:
+                    c = MARGELLE[1]
+                if hasard(x, y, 77) > 0.94:
+                    c = teinte(c, 0.93)
+                im.putpixel((x, y), rgba(c))
+
+
+def fontaine(k):
+    """9 × 9 tuiles, image k (0..3) : la grande fontaine de la place, à deux vasques."""
+    im = image(144, 144)
+    cx, cy = 71.5, 71.5
+    for y in range(144):
+        for x in range(144):
+            r = math.hypot(x - cx, y - cy)
+            if r < 59:
+                prof = 1.0 if (y < cy and r > 52) else 0.0
+                im.putpixel((x, y), rgba(eau(x, y, cx, cy, k, prof)))
+    anneau(im, cx, cy, 58, 70)
+    # la vasque du milieu
+    for y in range(144):
+        for x in range(144):
+            r = math.hypot(x - cx, y - cy)
+            if 24 <= r <= 27:
+                im.putpixel((x, y), rgba(EAU[3] if hasard(int(math.atan2(y - cy, x - cx) * 20), k) > 0.5 else EAU[2]))
+            elif r < 20:
+                im.putpixel((x, y), rgba(eau(x, y, cx, cy, k + 2)))
+    anneau(im, cx, cy, 19, 24)
+    # le pied et le jet
+    anneau(im, cx, cy, 0, 9)
+    for y in range(144):
+        for x in range(144):
+            r = math.hypot(x - cx, y - cy)
+            if r < 6:
+                c = EAU[3] if (r + k) % 3 < 1.5 else EAU[2]
+                if r < 2.5:
+                    c = EAU[4]
+                im.putpixel((x, y), rgba(c))
+    # les gouttes qui retombent
+    for i in range(14):
+        a = i / 14 * math.tau + k * 0.4
+        rr = 10 + ((i * 3 + k * 2) % 8)
+        x, y = int(cx + math.cos(a) * rr), int(cy + math.sin(a) * rr)
+        im.putpixel((x, y), rgba(EAU[4]))
+    return contour(im)
+
+
+def fontaine_globe(k):
+    """7 × 10 tuiles, image k (0..3) : la fontaine au globe, sur ses quatre piliers."""
+    im = image(112, 160)
+    cx, cy, rx, ry = 55.5, 128, 54, 30
+    for y in range(160):
+        for x in range(112):
+            if ((x - cx) / (rx - 9)) ** 2 + ((y - cy) / (ry - 7)) ** 2 < 1:
+                prof = 1.0 if y < cy - ry + 14 else 0.0
+                im.putpixel((x, y), rgba(eau(x, (y - cy) * 1.8 + cy, cx, cy, k, prof)))
+    for y in range(160):
+        for x in range(112):
+            e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+            i = ((x - cx) / (rx - 9)) ** 2 + ((y - cy) / (ry - 7)) ** 2
+            if e <= 1 and i >= 1:
+                c = MARGELLE[2] if y < cy else MARGELLE[1]
+                if y > cy + ry - 8:
+                    c = MARGELLE[0] if e > 0.86 else MARGELLE[1]
+                elif i < 1.12:
+                    c = MARGELLE[3] if y < cy else MARGELLE[2]
+                im.putpixel((x, y), rgba(c))
+    d = dessin(im)
+    # les quatre piliers
+    piliers = (((18, 112), (24, 74), (32, 44)), ((40, 126), (42, 90), (46, 64)),
+               ((71, 126), (69, 90), (65, 64)), ((93, 112), (87, 74), (79, 44)))
+    for (x0, y0), (x1, y1), (x2, y2) in piliers:
+        pts = []
+        for s in range(21):
+            t = s / 20
+            pts.append(((1 - t) ** 2 * x0 + 2 * (1 - t) * t * x1 + t * t * x2, (1 - t) ** 2 * y0 + 2 * (1 - t) * t * y1 + t * t * y2))
+        d.line(pts, fill=rgba(MARGELLE[0]), width=7)
+        d.line(pts, fill=rgba(MARGELLE[2]), width=4)
+        d.line([(x - 1, y) for x, y in pts], fill=rgba(MARGELLE[3]), width=1)
+    # le globe
+    gx, gy, gr = 55.5, 36, 33
+    for y in range(160):
+        for x in range(112):
+            r = math.hypot(x - gx, y - gy)
+            if r <= gr:
+                t = math.hypot(x - (gx - 11), y - (gy - 12)) / (gr * 1.5)
+                c = [(196, 222, 228), (150, 188, 198), (112, 152, 166), (80, 114, 130)][min(3, int(t * 4.4))]
+                # les continents en relief
+                if hasard(x // 3, y // 3, 31) > 0.62 and r < gr - 2:
+                    c = teinte(c, 0.86)
+                if r > gr - 1.2:
+                    c = (52, 76, 90)
+                im.putpixel((x, y), rgba(c))
+    for s in range(-6, 7):
+        y = int(gy + s * 4)
+        x = int(gx - 20 + abs(s) * 2)
+        if 0 <= y < 160:
+            im.putpixel((x, y), rgba((236, 246, 248)))
+    # l'eau qui ruisselle du globe dans le bassin
+    for i in range(6):
+        x = int(cx - 24 + i * 9 + (k % 2))
+        im.putpixel((x, 116 + (i * 3 + k * 2) % 10), rgba(EAU[4]))
+    return contour(im)
