@@ -9,6 +9,7 @@ import {
   advanceHours, applyMealHappiness, averageHappiness, buyInTown, goOut, goToTownMarket,
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
+import { hasTech, techEffects, techPct } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
 import { buyCompany, companiesStep, companyPlan, ownsCompany, sellInTown, setCompanyQuota, townSellList, townSellPrice, townSellable } from '../js/engine/index.js';
 import { brokenRocks, buyTool, castLine, chopsLeft, depositOreNotebook, hitsNeeded, mineOre, fellenTrees, fishLeft, chopTree, respawnTrees, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
@@ -2990,6 +2991,23 @@ test('arbre v2 : préparations en série (file de 3 par atelier)', () => {
   const r = sleep(s);
   assertEqual(r.termine.pain, 2);
   assertEqual([s.stations.four.tache, s.stations.four.file], [null, []]);
+});
+
+test('arbre v2 : les effets suivent la liste des technologies, même modifiée sur place ou remplacée', () => {
+  const s = farm();
+  assertEqual([techPct(s, 'usure'), hasTech(s, 'en_entretien')], [100, false]);
+  grantTech(s, 'en_entretien');
+  assertEqual([techPct(s, 'usure'), hasTech(s, 'en_entretien')], [75, true]);
+  s.technologies.push('inconnu', 'ea_econome'); // poussé directement : un identifiant inconnu est ignoré
+  assertEqual([techEffects(s, 'eauArrosage'), hasTech(s, 'inconnu')], [[85], false]);
+  techEffects(s, 'eauArrosage').push(1); // la liste rendue est une copie
+  assertEqual(techEffects(s, 'eauArrosage'), [85]);
+  s.technologies.splice(0, 1, 'ea_econome'); // même longueur, autre contenu
+  assertEqual([techPct(s, 'usure'), techEffects(s, 'eauArrosage')], [100, [85, 85]]);
+  s.technologies = ['en_entretien']; // remplacée (migration)
+  assertEqual([techPct(s, 'usure'), techPct(s, 'eauArrosage'), hasTech(s, 'ea_econome')], [75, 100, false]);
+  s.technologies = null;
+  assertEqual([techPct(s, 'usure'), hasTech(s, 'en_entretien')], [100, false]);
 });
 
 test('arbre v2 : effets sur l\'énergie (usure, délestage, frigo, panneaux orientables, pompe)', () => {
@@ -8604,6 +8622,28 @@ test('sorties : le temps passe (les panneaux produisent), sans repas ni nuit', (
   assertEqual(s.awakeMs, 2 * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
   assertEqual(s.day, day);
   assertEqual(s.repas, null);
+});
+
+test('sorties : pendant l\'absence, les plantes poussent et les asperseurs arrosent (le même pas que tick)', () => {
+  const s = garden();
+  s.pieces = 500;
+  assert(plant(s, 'potager-1', 'carotte').ok);
+  s.awakeMs = awakeMsAtHour(12);
+  assert(water(s, 'potager-1').ok);
+  s.day += 1; // le lendemain à 10 h : 22 h de pousse
+  s.awakeMs = awakeMsAtHour(10);
+  assert(goOut(s, 'cinema').ok);
+  assertEqual([findPlot(s, 'potager-1').stade, findPlot(s, 'potager-1').arrose], [1, false], '24 h après l\'arrosage, pendant le cinéma');
+  // arrosage automatique : à 7 h, pendant la sortie
+  const a = auto5('potager');
+  a.pieces = 500;
+  assert(plant(a, 'potager-2', 'carotte').ok);
+  const eau = a.eauMl;
+  assertEqual(hourOfDay(a), 6);
+  assert(goOut(a, 'cinema').ok);
+  assertEqual(findPlot(a, 'potager-2').arrose, true, 'arrosée à 7 h, famille en ville');
+  assertEqual(a.irrigation.jour, a.day);
+  assert(a.eauMl < eau);
 });
 
 test('marché de la ville : ouvert après le trajet, seuls ses objets s\'y vendent', () => {
