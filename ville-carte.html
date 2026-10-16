@@ -13,15 +13,18 @@
     .aide{position:fixed;left:12px;right:12px;bottom:12px;display:flex;justify-content:space-between;gap:12px;align-items:center;pointer-events:none;font-size:13px}
     .aide span,.aide a{pointer-events:auto;background:rgba(40,32,30,.78);border:1px solid rgba(240,220,180,.4);border-radius:10px;padding:6px 10px}
     .aide a{color:#f4efe6;text-decoration:none;font-weight:600}
+    .horloge{position:fixed;top:12px;right:12px;background:rgba(40,32,30,.78);border:1px solid rgba(240,220,180,.4);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
   </style>
 </head>
 <body>
   <div id="ville" aria-label="La carte de la ville"></div>
+  <div class="horloge" id="horloge" aria-live="off" hidden></div>
   <div class="aide">
     <span>Touchez un trottoir pour y marcher · flèches ou ZQSD</span>
     <a href="jeu.html">← La ferme</a>
   </div>
   <script src="vendor/phaser.min.js"></script>
+  <script src="js/horloge-sortie.js"></script>
   <script src="js/ville-carte.js"></script>
 </body>
 </html>

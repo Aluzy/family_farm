@@ -1,5 +1,5 @@
 import { DATA } from '../engine/catalog.js';
-import { formatLitres } from '../engine/format.js';
+import { formatLitres, weekdayIndex } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
@@ -374,6 +374,10 @@ export function stageModel() {
     ramasser,
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
     perso: memberPerso(mainCharacter(state)),
+    // les autres membres de la famille, qui font leur journée sur la carte (js/famille-ferme.js),
+    // et le jour de la semaine (0 : lundi) : les enfants vont à l'école les jours d'école
+    famille: state.famille.membres.filter((m) => m !== mainCharacter(state)).map((m) => ({ id: m.id, perso: memberPerso(m), enfant: !!m.enfant })),
+    semaine: weekdayIndex(state.day),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: terrainNow(rochers.concat(abattus)), plots,
     houe, hache, pioche, canne, rochers, abattus, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,

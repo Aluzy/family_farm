@@ -468,6 +468,7 @@
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
+        L.json('perso_cases', v('personnages/cases.json'));
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
         L.spritesheet(TALL_GRASS.key, v(TALL_GRASS.file), TALL_GRASS.frame);
@@ -576,6 +577,18 @@
             });
           } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
         }
+        // Les autres membres de la famille (js/famille-ferme.js, facultatif) : leur journée sur
+        // la carte, l'école des enfants (ils partent par le bout est du chemin).
+        this.family = null;
+        if (global.FamilleFerme && this.fermier) {
+          try {
+            this.family = global.FamilleFerme.attach(this, {
+              fermier: this.fermier, frames: (this.cache.json.get('perso_cases') || cases || {}).frames, reduced: reducedMotion,
+              exit: { x: this.world.w - 12, y: EXIT.y }, childScale: ENFANT_SCALE,
+              file: (perso) => v('personnages/perso_' + String(perso).padStart(2, '0') + '.png'),
+            });
+          } catch (e) { console.warn('[FarmStage] famille indisponible', e); }
+        }
         this.ready = true;
         if (lastModel) this.sync(lastModel, true);
         this.makeExit();
@@ -609,6 +622,7 @@
       tapExit(wx, wy) {
         const a = this.exit;
         if (!a || !a.visible || Math.abs(wx - a.x) > 18 || Math.abs(wy - a.y) > 18) return false;
+        if (global.FermeSortie) global.FermeSortie.mark();     // le temps continue de passer dehors
         global.location.href = EXIT.page;
         return true;
       }
@@ -1830,6 +1844,7 @@
         if (this.ambient && !this.room) this.ambient.update(delta);
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
         this.stepExit(time);
+        if (this.family) this.family.update(delta, this.room ? this.room.id : null);
         // Dehors, la vue suit le personnage qui rentre (le repas) ; elle lâche s'il est dedans.
         if (this.follow && !this.room && this.fermier && !this.drag) {
           const p = this.fermier.pos();
@@ -3229,6 +3244,7 @@
         // Le personnage compare ce modèle au précédent : une case qu'il n'a pas encore
         // travaillée garde son ancien dessin (voir js/fermier.js).
         this.rawModel = model;
+        if (this.family) this.family.sync(model);
         if (this.fermier) model = this.fermier.filter(model);
         const sfx = SFX;
         const rebuild = force || this.sfx !== sfx;   // premier affichage ou affichage forcé

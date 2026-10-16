@@ -34,6 +34,11 @@
  * transition) ; ?arrivee= choisit le point d'arrivée. Aux passages (couche « passages »), une
  * flèche bleue paraît quand on s'en approche : un toucher dessus mène à l'autre carte (ou à
  * la ferme, jeu.html).
+ *
+ * L'heure du jeu (js/horloge-sortie.js) s'affiche en haut à droite. Les jours d'école, le bus
+ * de l'école (couche « bus » : ses trajets, ses arrêts, le chemin des enfants) passe le matin et
+ * le soir : il roule avec les autres voitures et s'arrête le temps que les enfants de la
+ * famille montent ou descendent (BUS.scenes : l'heure de chaque scène, carte par carte).
  */
 (function () {
   'use strict';
@@ -81,6 +86,29 @@
     spawn: [900, 2600],
   };
   const KY = 0.7;
+  // Le bus de l'école (assets/ville_bus.png et .json, scripts/ville/bus.py : huit directions)
+  // et les enfants de la famille (leurs personnages, assets/personnages/perso_NN.png, plus
+  // petits), les jours d'école (lundi, mardi, jeudi, vendredi : js/horloge-sortie.js). Sur
+  // chaque carte, le matin et le soir, une scène : les heures (du jeu) où elle commence et
+  // après lesquelles elle ne commence plus, le trajet du bus et son arrêt (couche « bus »), le
+  // chemin des enfants, et s'ils montent dans le bus ou en descendent.
+  const BUS = {
+    key: 'bus', file: 'assets/ville_bus.png', meta: 'assets/ville_bus.json', half: 46, carHalf: 29,
+    speed: 70,             // px au sol par seconde (plus vite que les voitures : la ville est grande)
+    lead: 1400,            // il part au plus à cette distance de l'arrêt (déjà en route, en fondu)
+    kid: { speed: 32, scale: 0.8, fade: 0.5, cases: 'assets/personnages/cases.json' },
+    resume: 1.2,           // s : le temps que les enfants s'éloignent (ou montent) avant de repartir
+    scenes: {
+      transition: [
+        { nom: 'matin', debut: 7.2, fin: 8.4, bus: 'bus_matin', arret: 'arret', enfants: 'enfants_matin', monter: true },
+        { nom: 'soir', debut: 16.1, fin: 16.8, bus: 'bus_soir', arret: 'arret', enfants: 'enfants_soir', monter: false },
+      ],
+      ville: [
+        { nom: 'matin', debut: 7.2, fin: 8.6, bus: 'bus_matin', arret: 'arret_matin', enfants: 'enfants_matin', monter: false },
+        { nom: 'soir', debut: 15.6, fin: 16.4, bus: 'bus_soir', arret: 'arret_soir', enfants: 'enfants_soir', monter: true },
+      ],
+    },
+  };
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
@@ -126,6 +154,14 @@
       this.load.spritesheet(CARS.key, v(CARS.file), { frameWidth: 64, frameHeight: 64 });
       this.load.json(CARS.key + '_meta', v(CARS.meta));
       this.load.spritesheet(PASS.key, v(PASS.file), { frameWidth: 32, frameHeight: 32 });
+      this.load.spritesheet(BUS.key, v(BUS.file), { frameWidth: 112, frameHeight: 112 });
+      this.load.json(BUS.key + '_meta', v(BUS.meta));
+      this.load.json('perso_cases', v(BUS.kid.cases));
+      // les enfants de la partie (pour la scène du bus)
+      const h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
+      for (const e of (h && h.enfants) || []) {
+        this.load.spritesheet('perso_' + e.perso, v('assets/personnages/perso_' + String(e.perso).padStart(2, '0') + '.png'), { frameWidth: 16, frameHeight: 32 });
+      }
       // les planches des jeux de tuiles : lues dans la carte une fois chargée
       this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
         const data = this.cache.tilemap.get(MAP.key).data;
@@ -194,6 +230,10 @@
       this.scale.on('resize', () => this.fitZoom());
 
       this.makePassages(objects('passages'));
+      // l'heure du jeu (js/horloge-sortie.js), en haut à droite
+      this.clockEl = document.getElementById('horloge');
+      this.clockAt = -1e9;
+      this.stepClock(0);
       // un toucher : sur une flèche, changer de carte ; ailleurs, y aller
       this.input.on('pointerup', (p) => {
         if (p.getDistance() > 8) return;
@@ -202,7 +242,10 @@
         if (a) { this.leave(a); return; }
         this.goTo(w.x, w.y);
       });
-      this.makeTraffic(objects('routes'), objects('carrefours'));
+      // les trajets du bus de l'école roulent avec les autres (mêmes carrefours), sans voitures tirées dessus
+      const busObjs = objects('bus');
+      this.makeTraffic(objects('routes').concat(busObjs.filter((o) => o.polyline && /^bus_/.test(o.name)).map((o) => Object.assign({}, o, { bus: true }))), objects('carrefours'));
+      this.makeSchool(busObjs);
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A') : null;
       window.Ville = { scene: this };
     }
@@ -231,6 +274,17 @@
         const k = reduced() ? 0 : Math.round(Math.sin(time / 220) * PASS.bob);
         const [dx, dy] = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] }[q.sens];
         q.arrow.setPosition(Math.round(q.x + dx * k), Math.round(q.y + dy * k));
+      }
+    }
+
+    // L'heure du jeu, relue chaque seconde (null : pas de partie sur cet appareil).
+    stepClock(time) {
+      if (time - this.clockAt < 1000) return;
+      this.clockAt = time;
+      this.time = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
+      if (this.clockEl) {
+        this.clockEl.hidden = !this.time;
+        if (this.time) this.clockEl.textContent = '🕐 ' + window.HorlogeSortie.texte(this.time);
       }
     }
 
@@ -365,8 +419,9 @@
           const inside = out.filter((p) => p.x >= c.x0 && p.x <= c.x1 && p.y >= c.y0 && p.y <= c.y1);
           return inside.length ? { enter: inside[0].s, exit: inside[inside.length - 1].s, pts: inside } : null;
         });
-        return { name: o.name, pts: out, length: s, spans };
+        return { name: o.name, pts: out, length: s, spans, bus: !!o.bus };
       });
+      this.carRoutes = this.routes.filter((r) => !r.bus);
       // deux trajets se gênent dans un carrefour s'ils y passent tout près l'un de l'autre
       this.conflict = this.crossings.map((c, k) => this.routes.map((a) => this.routes.map((b) => {
         const sa = a.spans[k], sb = b.spans[k];
@@ -380,10 +435,10 @@
       })));
       this.routes.forEach((r, i) => { r.index = i; });
       this.nextSpawn = 600;
-      if (reduced() || !this.routes.length || !this.textures.exists(CARS.key)) return;
+      if (reduced() || !this.carRoutes.length || !this.textures.exists(CARS.key)) return;
       // quelques voitures déjà en route, hors des carrefours
       for (let n = 0; n < 10; n++) {
-        const r = Phaser.Utils.Array.GetRandom(this.routes);
+        const r = Phaser.Utils.Array.GetRandom(this.carRoutes);
         const s = 120 + Math.random() * (r.length - 240);
         if (r.spans.some((sp) => sp && s > sp.enter - 40 && s < sp.exit + 10)) continue;
         this.addCar(r, s);
@@ -420,7 +475,7 @@
       let a = Math.atan2(car.dy, car.dx) * 180 / Math.PI;
       if (a < 0) a += 360;
       const k = Math.round(a / (360 / dirs)) % dirs;
-      car.sprite.setFrame(car.color * dirs + k).setPosition(Math.round(car.x), Math.round(car.y)).setDepth(car.y);
+      car.sprite.setFrame(car.bus ? k : car.color * dirs + k).setPosition(Math.round(car.x), Math.round(car.y)).setDepth(car.y);
     }
 
     stepTraffic(time, dt) {
@@ -428,7 +483,7 @@
       this.nextSpawn -= dt * 1000;
       if (this.nextSpawn <= 0) {
         this.nextSpawn = CARS.spawn[0] + Math.random() * (CARS.spawn[1] - CARS.spawn[0]);
-        if (this.cars.length < CARS.max && this.textures.exists(CARS.key)) this.addCar(Phaser.Utils.Array.GetRandom(this.routes));
+        if (this.carRoutes.length && this.cars.length < CARS.max && this.textures.exists(CARS.key)) this.addCar(Phaser.Utils.Array.GetRandom(this.carRoutes));
       }
       const hero = this.heroPos;
       for (const car of [...this.cars]) {
@@ -443,7 +498,14 @@
           // (celles d'en face ou qui croisent en sens contraire : affaire des carrefours)
           if (o === car || o.dx * car.dx + o.dy * car.dy < -0.3) continue;
           const d = ahead(o.x, o.y);
-          if (d.along > 0 && d.side < CARS.lane) room = Math.min(room, d.along - CARS.gap);
+          // (un bus est plus long : on le suit de plus loin)
+          const gap = CARS.gap + (car.bus ? BUS.half - BUS.carHalf : 0) + (o.bus ? BUS.half - BUS.carHalf : 0);
+          if (d.along > 0 && d.side < CARS.lane) room = Math.min(room, d.along - gap);
+        }
+        // le bus de l'école s'arrête à son arrêt, le temps que les enfants montent ou descendent
+        if (car.stopAt !== undefined && car.stopAt !== null) {
+          room = Math.min(room, car.stopAt - car.s);
+          car.atStop = car.stopAt - car.s < 3 && car.v < 2;
         }
         const h = ahead(hero.x, hero.y);
         if (h.along > 0 && h.side < CARS.lane) room = Math.min(room, h.along - CARS.hero);
@@ -457,7 +519,8 @@
           else if (before < CARS.stop + 6) { c.held.add(car); car.held.add(k); }
         });
         // la vitesse : freiner pour s'arrêter à temps, sinon reprendre de la vitesse
-        const target = room <= 0 ? 0 : Math.min(CARS.speed, Math.sqrt(2 * CARS.decel * room));
+        const top = car.bus ? BUS.speed : CARS.speed;
+        const target = room <= 0 ? 0 : Math.min(top, Math.sqrt(2 * CARS.decel * room));
         car.v = target < car.v ? target : Math.min(target, car.v + CARS.accel * dt);
         car.s += car.v * dt;
         // sortie d'un carrefour
@@ -472,6 +535,138 @@
         }
         Object.assign(car, this.pointAt(r, car));
         this.placeCar(car);
+        if (car.alpha !== undefined && car.alpha < 1) { car.alpha = Math.min(1, car.alpha + dt * 2); car.sprite.setAlpha(car.alpha); }
+      }
+    }
+
+    // ---------- le bus de l'école ----------
+
+    makeSchool(objs) {
+      this.kids = [];
+      this.school = null;
+      this.schoolDone = new Set();
+      this.busStops = {};
+      this.kidPaths = {};
+      for (const o of objs) {
+        if (o.point) this.busStops[o.name] = { x: o.x, y: o.y };
+        else if (o.polyline && /^enfants_/.test(o.name)) this.kidPaths[o.name] = o.polyline.map((p) => ({ x: o.x + p.x, y: o.y + p.y }));
+      }
+      const noms = (this.cache.json.get('perso_cases') || {}).frames || [];
+      this.kidFrame = (name) => Math.max(0, noms.indexOf(name));
+    }
+
+    // Le bus sur son trajet, depuis l'entrée ; il s'arrêtera au point du trajet le plus proche de l'arrêt.
+    // L'abscisse (au sol) de l'arrêt sur un trajet du bus.
+    stopOn(routeName, stop) {
+      const route = this.routes.find((r) => r.name === routeName);
+      let best = null;
+      for (const p of route ? route.pts : []) { const d = Math.hypot(p.x - stop.x, p.y - stop.y); if (!best || d < best.d) best = { d, s: p.s }; }
+      return best ? best.s : null;
+    }
+
+    addBus(routeName, stop) {
+      const route = this.routes.find((r) => r.name === routeName);
+      if (!route || !this.textures.exists(BUS.key)) return null;
+      const meta = this.cache.json.get(BUS.key + '_meta') || { anchor: { x: 56, y: 70 }, frameWidth: 112, frameHeight: 112 };
+      const stopS = this.stopOn(routeName, stop);
+      const s0 = stopS === null ? 0 : Math.max(0, stopS - BUS.lead);
+      const car = { route, s: s0, i: 0, v: BUS.speed, color: 0, held: new Set(), bus: true, atStop: false, stopAt: stopS, alpha: s0 > 0 ? 0 : 1 };
+      Object.assign(car, this.pointAt(route, car));
+      car.sprite = this.add.sprite(0, 0, BUS.key, 0).setOrigin(meta.anchor.x / meta.frameWidth, meta.anchor.y / meta.frameHeight).setAlpha(car.alpha);
+      this.cars.push(car);
+      this.placeCar(car);
+      return car;
+    }
+
+    // Un enfant qui marche le long de `pts` (il paraît au premier point, en fondu) ; `bout` : il
+    // s'efface au bout du chemin (descendu du bus, il arrive à la porte ou au bord de la carte).
+    addKid(perso, pts, k, bout) {
+      const key = 'perso_' + perso;
+      if (!this.textures.exists(key) || !pts || pts.length < 2) return null;
+      const dx = (k % 2 ? 1 : -1) * 5 * Math.ceil(k / 2);
+      const kid = {
+        s: this.add.sprite(pts[0].x + dx, pts[0].y, key, this.kidFrame('idle_bas_0')).setOrigin(0.5, 30 / 32).setScale(BUS.kid.scale).setAlpha(0),
+        pts: pts.map((p, i) => ({ x: p.x + (i ? dx : dx), y: p.y })), i: 1, x: pts[0].x + dx, y: pts[0].y, alpha: 0, fade: 1, walked: 0, face: 'bas', arrived: false,
+        wait: k * 0.6, bout: !!bout,
+      };
+      this.kids.push(kid);
+      return kid;
+    }
+
+    stepKids(dt, time) {
+      for (const kid of [...this.kids]) {
+        let moving = false;
+        if (kid.wait > 0) kid.wait -= dt;
+        else if (!kid.arrived) {
+          const to = kid.pts[kid.i];
+          const dx = to.x - kid.x, dy = to.y - kid.y, l = Math.hypot(dx, dy), st = BUS.kid.speed * dt;
+          if (Math.abs(dx) > Math.abs(dy) * 0.8) { kid.face = 'cote'; kid.s.setFlipX(dx < 0); } else { kid.face = dy > 0 ? 'bas' : 'haut'; kid.s.setFlipX(false); }
+          if (l <= st) { kid.x = to.x; kid.y = to.y; kid.i++; if (kid.i >= kid.pts.length) kid.arrived = true; } else { kid.x += (dx / l) * st; kid.y += (dy / l) * st; }
+          kid.walked += Math.min(l, st);
+          moving = true;
+        }
+        if (kid.arrived && kid.bout && kid.fade >= 0) kid.fade = -1;
+        if (kid.fade) {
+          kid.alpha = Math.max(0, Math.min(1, kid.alpha + (kid.fade * dt) / BUS.kid.fade));
+          if (kid.alpha >= 1 && kid.fade > 0) kid.fade = 0;
+          if (kid.alpha <= 0 && kid.fade < 0) { kid.s.destroy(); this.kids.splice(this.kids.indexOf(kid), 1); continue; }
+        }
+        kid.s.setFrame(this.kidFrame(moving ? `marche_${kid.face}_${Math.floor(kid.walked / 4) % 4}` : `idle_${kid.face}_${Math.floor(time / 600) % 2}`));
+        kid.s.setPosition(Math.round(kid.x), Math.round(kid.y)).setDepth(kid.y).setAlpha(kid.alpha);
+      }
+    }
+
+    // Les jours d'école, aux heures de la scène : le bus arrive ; les enfants montent (ils sont
+    // venus à pied jusqu'à l'arrêt) ou descendent (et vont à pied jusqu'au bout de leur chemin,
+    // où ils s'effacent) ; puis le bus repart. Une scène par jour, matin et soir.
+    stepSchool(time, dt) {
+      this.stepKids(dt, time);
+      const t = this.time, list = BUS.scenes[NOM_CARTE] || [];
+      const sc = this.school;
+      if (!sc) {
+        if (!t || t.nuit || !window.HorlogeSortie.JOURS_ECOLE.includes(t.semaine) || !t.enfants.length || reduced()) return;
+        const def = list.find((d) => t.heure >= d.debut && t.heure < d.fin && !this.schoolDone.has(t.jour + ':' + d.nom));
+        if (!def) return;
+        const stop = this.busStops[def.arret], pts = this.kidPaths[def.enfants];
+        if (!stop || !pts) return;
+        this.schoolDone.add(t.jour + ':' + def.nom);
+        // ils montent : les enfants viennent à pied jusqu'à l'arrêt ; le premier des deux à
+        // partir (eux ou le bus) part tout de suite, l'autre de façon à arriver en même temps
+        const stopS = this.stopOn(def.bus, stop);
+        const tBus = stopS === null ? 0 : Math.min(stopS, BUS.lead) / BUS.speed;
+        let len = 0;
+        for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+        const tKids = def.monter ? len / BUS.kid.speed + 0.6 * t.enfants.length : 0;
+        this.school = { def, bus: null, phase: 'attente', kids: [], wait: 0, busIn: Math.max(0, tKids - tBus), kidsIn: Math.max(0, tBus - tKids) };
+        return;
+      }
+      const { def } = sc;
+      if (sc.phase === 'attente') {
+        sc.busIn -= dt; sc.kidsIn -= dt;
+        if (def.monter && !sc.kids.length && sc.kidsIn <= 0) sc.kids = t.enfants.map((e, k) => this.addKid(e.perso, this.kidPaths[def.enfants], k)).filter(Boolean);
+        if (!sc.bus && sc.busIn <= 0) { sc.bus = this.addBus(def.bus, this.busStops[def.arret]); if (!sc.bus) { this.school = null; return; } }
+        if (sc.bus && (!def.monter || sc.kids.length)) sc.phase = 'arrivee';
+        if (sc.phase === 'attente') return;
+      }
+      const bus = sc.bus;
+      if (!this.cars.includes(bus)) { this.school = null; return; }      // il est sorti de la carte
+      if (sc.phase === 'arrivee' && bus.atStop) {
+        sc.phase = 'arret';
+        if (!def.monter) sc.kids = t.enfants.map((e, k) => this.addKid(e.perso, this.kidPaths[def.enfants], k, true)).filter(Boolean);
+        sc.wait = BUS.resume;
+      }
+      if (sc.phase === 'arret') {
+        if (def.monter) {
+          // tous à l'arrêt : ils montent (s'effacent), puis le bus repart
+          if (sc.kids.every((k) => k.arrived || !this.kids.includes(k))) {
+            for (const k of sc.kids) if (k.fade >= 0) k.fade = -1;
+            sc.wait -= dt;
+            if (sc.wait <= 0) { bus.stopAt = null; sc.phase = 'depart'; }
+          }
+        } else {
+          sc.wait -= dt;
+          if (sc.wait <= 0) { bus.stopAt = null; sc.phase = 'depart'; }
+        }
       }
     }
 
@@ -530,6 +725,8 @@
       const dt = Math.min(delta, 100) / 1000;
       this.stepTraffic(time, dt);
       this.stepPassages(time);
+      this.stepClock(time);
+      this.stepSchool(time, dt);
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
