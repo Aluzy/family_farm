@@ -125,6 +125,7 @@ export function sourcesOf(data, id) {
   if (data.HACHE && id === 'bois') out.push('hache');
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
   if (id.startsWith('minerai_')) out.push('grotte');
+  if (it.trouvaille) out.push(`trouvaille (${it.trouvaille})`);
   for (const table of ['START', 'DEPART']) if (data[table] && id in data[table].INVENTAIRE) out.push(`${table}.INVENTAIRE`);
   if (data.FAMILY && id in data.FAMILY.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');
   for (const [lid, l] of Object.entries(data.COURRIER || {})) if (id in (l.cadeaux || {})) out.push(`courrier ${lid}`);

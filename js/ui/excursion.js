@@ -92,8 +92,9 @@ function nuit(action) {
 }
 
 // Les trouvailles de la montagne et de la plage (js/ville-carte.js, assets/faune.json) : chacune
-// est un objet de l'inventaire du même nom (data/items.json), qui se garde et se vend.
-const TROUVAILLES = ['ammonite', 'trilobite', 'quartz', 'amethyste', 'coquille', 'bulot', 'corail', 'perle'];
+// est un objet de l'inventaire du même nom (data/items.json, champ « trouvaille »), qui se garde
+// et se vend.
+const TROUVAILLES = Object.keys(DATA.items).filter((id) => DATA.items[id].trouvaille);
 
 // Une trouvaille ramassée : dans l'inventaire ({ ok, item, n } ou { ok: false }).
 function ramasse(sorte) {
