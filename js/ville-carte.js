@@ -177,6 +177,20 @@
     },
     terminus: { montagne: true, plage: true },
   };
+  // Le bus de ligne : de l'abri de la carte de transition jusqu'à la gare de la ville. On touche
+  // l'abri (couche « abri »), on attend devant (`attente`), le bus (le trajet `route` du bus de
+  // l'école) s'arrête à l'arrêt, on monte, il part ; en ville, il arrive par l'avenue qui longe
+  // la gare (`route`, son arrêt `arret`, d'où il paraît : `lead` px avant), on descend sur le trottoir. Il roule de `heures[0]` à
+  // `heures[1]` h ; `monte`, `part`, `descend`, `repart` : les temps (s) de chaque geste.
+  const NAVETTE = {
+    departs: {
+      transition: { route: 'bus_matin', arret: 'arret', attente: { x: 600, y: 243 }, cible: 'ville-carte.html?carte=ville&arrivee=gare&bus=1' },
+    },
+    arrivees: {
+      ville: { route: 'avenue_ouest:nord>avenue_ouest:sud', arret: { x: 625, y: 1596 }, lead: 360 },
+    },
+    heures: [6, 22], monte: 0.8, part: 2.6, descend: 0.6, repart: 1.2,
+  };
   // Les trouvailles (assets/trouvailles.png, scripts/ville/faune.py) : `part` des endroits en
   // ont une chaque jour ; on la ramasse à `reach` px. Ce qu'on a ramassé (et le carnet) :
   // localStorage « ferme-trouvailles ».
@@ -501,7 +515,7 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w)) return;
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w)) return;
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) return;
         this.goTo(w.x, w.y);
@@ -518,6 +532,7 @@
       this.makeTraffic(objects('routes').concat(busObjs.filter((o) => o.polyline && /^bus_/.test(o.name)).map((o) => Object.assign({}, o, { bus: true }))), objects('carrefours'));
       this.makeSchool(busObjs);
       this.makeGare(objects('gare'));
+      this.makeNavette(map);
       this.makeFinds(objects('trouvailles'));
       this.makeFauna(objects('animaux'));
       this.makeCaveLife();
@@ -864,12 +879,12 @@
       return best ? best.s : null;
     }
 
-    addBus(routeName, stop) {
+    addBus(routeName, stop, lead = BUS.lead) {
       const route = this.routes.find((r) => r.name === routeName);
       if (!route || !this.textures.exists(BUS.key)) return null;
       const meta = this.cache.json.get(BUS.key + '_meta') || { anchor: { x: 56, y: 70 }, frameWidth: 112, frameHeight: 112 };
       const stopS = this.stopOn(routeName, stop);
-      const s0 = stopS === null ? 0 : Math.max(0, stopS - BUS.lead);
+      const s0 = stopS === null ? 0 : Math.max(0, stopS - lead);
       const car = { route, s: s0, i: 0, v: BUS.speed, color: 0, held: new Set(), bus: true, atStop: false, stopAt: stopS, alpha: s0 > 0 ? 0 : 1 };
       Object.assign(car, this.pointAt(route, car));
       car.sprite = this.add.sprite(0, 0, BUS.key, 0).setOrigin(meta.anchor.x / meta.frameWidth, meta.anchor.y / meta.frameHeight).setAlpha(car.alpha);
@@ -982,7 +997,7 @@
         montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
         plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la canne en main : la mer, depuis le ponton · la gare pour rentrer',
         grotte: 'Touchez le sol pour y marcher · un minerai pour le piocher · l\u2019échelle pour remonter',
-        transition: 'Touchez l’herbe pour y marcher · une maison pour y entrer · la hache ou la pioche en main (barre d’outils) : un arbre, un rocher',
+        transition: 'Touchez l’herbe pour y marcher · une maison pour y entrer · l’abri de bus pour aller à la gare · la hache ou la pioche en main (barre d’outils) : un arbre, un rocher',
         interieur: 'Touchez le plancher pour y marcher · un voisin pour lui parler · la flèche pour sortir',
       };
       if (aide && textes[NOM_CARTE]) aide.textContent = textes[NOM_CARTE];
@@ -1027,6 +1042,8 @@
       }
       const texte = document.getElementById('gare-texte');
       if (texte) texte.textContent = 'Le train part dans un instant. Où voulez-vous aller ?';
+      const titre = document.getElementById('gare-titre');
+      if (titre) titre.textContent = '🚉 La gare';
       el.hidden = false;
       this.dialog = true;
       const first = box.querySelector('button');
@@ -1287,6 +1304,122 @@
         }
       }
       if (a.phase === 'fin') this.arrival = null;
+    }
+
+    // ---------- le bus de ligne (NAVETTE) ----------
+
+    makeNavette(map) {
+      this.navette = null;
+      this.abri = null;
+      const dep = NAVETTE.departs[NOM_CARTE];
+      const layer = dep && map && map.getLayer('abri');
+      if (layer) {
+        // l'abri touché : le rectangle de ses tuiles
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        layer.data.forEach((row, y) => row.forEach((tile, x) => {
+          if (!tile || tile.index < 0) return;
+          x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+        }));
+        if (x1 >= x0) this.abri = { x0: x0 * T - 4, x1: (x1 + 1) * T + 4, y0: y0 * T, y1: (y1 + 1) * T + 8 };
+      }
+      const arr = NAVETTE.arrivees[NOM_CARTE];
+      if (arr && PARAMS.get('bus')) this.arriveByBus(arr);
+    }
+
+    // Le bus roule-t-il à cette heure ? (sans horloge : toujours)
+    navetteOuverte() {
+      const t = this.time;
+      return !t || (!t.nuit && t.heure >= NAVETTE.heures[0] && t.heure < NAVETTE.heures[1]);
+    }
+
+    tapAbri(w) {
+      const a = this.abri;
+      if (!a || this.navette || w.x < a.x0 || w.x > a.x1 || w.y < a.y0 || w.y > a.y1) return false;
+      if (!this.navetteOuverte()) { this.say(`🚌 Plus de bus à cette heure : le premier passe à ${NAVETTE.heures[0]} h.`); return true; }
+      if (this.school) { this.say('🚌 Le bus de l’école est en route : le bus de ligne passe juste après.'); return true; }
+      const el = this.gareEl, box = document.getElementById('gare-choix');
+      if (!el || !box) return true;
+      box.textContent = '';
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = '🚉 La gare (en ville)';
+      b.addEventListener('click', () => this.startNavette());
+      box.appendChild(b);
+      document.getElementById('gare-titre').textContent = '🚌 L’arrêt de bus';
+      document.getElementById('gare-texte').textContent = 'Le bus de ligne passe dans un instant. Il va jusqu’à la gare.';
+      el.hidden = false;
+      this.dialog = true;
+      b.focus();
+      return true;
+    }
+
+    // Le départ : on attend devant l'abri, le bus arrive et s'arrête, on monte, il part.
+    startNavette() {
+      this.closeGare();
+      const dep = NAVETTE.departs[NOM_CARTE];
+      if (!dep || this.navette) return;
+      this.locked = true;
+      if (reduced()) { this.leave({ cible: dep.cible }); return; }
+      const stop = this.busStops && this.busStops[dep.arret];
+      const bus = stop && this.addBus(dep.route, stop);
+      if (!bus) { this.leave({ cible: dep.cible }); return; }
+      this.navette = { dep, bus, phase: 'attente', wait: 0 };
+      this.work = null;
+      this.goTo(dep.attente.x, dep.attente.y);
+    }
+
+    // L'arrivée (?bus=1) : le bus descend l'avenue et s'arrête ; on paraît sur le trottoir.
+    arriveByBus(arr) {
+      this.teleport(arr.arret.x - 66, arr.arret.y);
+      if (reduced()) return;
+      const bus = this.addBus(arr.route, arr.arret, arr.lead);
+      if (!bus) return;
+      this.locked = true;
+      this.heroAlpha = 0;
+      const cam = this.cameras.main;
+      cam.startFollow(bus.sprite, true, 0.12, 0.12);
+      cam.centerOn(arr.arret.x, arr.arret.y);
+      this.navette = { arr, bus, phase: 'arrivee', wait: 0 };
+    }
+
+    stepNavette(dt) {
+      const n = this.navette;
+      if (!n) return;
+      const bus = n.bus, roule = this.cars.includes(bus);
+      if (n.phase === 'attente') {
+        // (pas de chemin jusqu'à l'abri : on y est porté)
+        const P = this.heroPos, A = n.dep.attente;
+        if (!this.path.length && Math.hypot(P.x - A.x, P.y - A.y) > 4) { P.x = A.x; P.y = A.y; }
+        if (!this.path.length && (!roule || bus.atStop)) { this.face = 'bas'; this.hero.setFlipX(false); n.phase = 'montee'; n.wait = NAVETTE.monte; }
+      } else if (n.phase === 'montee') {
+        this.heroAlpha = Math.max(0, this.heroAlpha - dt / 0.4);
+        n.wait -= dt;
+        if (n.wait <= 0) {
+          bus.stopAt = null;
+          if (roule) this.cameras.main.startFollow(bus.sprite, true, 0.1, 0.1);
+          n.phase = 'depart';
+          n.wait = NAVETTE.part;
+        }
+      } else if (n.phase === 'depart') {
+        n.wait -= dt;
+        if (n.wait <= 0 || !roule) { n.phase = 'fin'; this.leave({ cible: n.dep.cible }); }
+      } else if (n.phase === 'arrivee') {
+        if (!roule || bus.atStop) { n.phase = 'descente'; n.wait = NAVETTE.descend; }
+      } else if (n.phase === 'descente') {
+        n.wait -= dt;
+        if (n.wait <= 0) { n.phase = 'paraît'; this.cameras.main.startFollow(this.hero, true, 0.08, 0.08); }
+      } else if (n.phase === 'paraît') {
+        this.heroAlpha = Math.min(1, this.heroAlpha + dt / 0.5);
+        if (this.heroAlpha >= 1) {
+          this.locked = false;
+          this.cameras.main.startFollow(this.hero, true, 0.12, 0.12);
+          n.phase = 'repart';
+          n.wait = NAVETTE.repart;
+        }
+      } else if (n.phase === 'repart') {
+        n.wait -= dt;
+        if (n.wait <= 0) { bus.stopAt = null; this.navette = null; }
+      }
     }
 
     // ---------- les trouvailles ----------
@@ -2228,6 +2361,7 @@
       this.stepTrain(dt);
       this.stepTrip(dt);
       this.stepArrival(dt);
+      this.stepNavette(dt);
       this.stepFinds(time);
       this.stepFauna(time, dt);
       this.stepMine(dt);
