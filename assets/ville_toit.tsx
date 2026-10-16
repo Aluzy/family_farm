@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.2" name="ville_toit" tilewidth="16" tileheight="16" tilecount="96" columns="16">
+<tileset version="1.10" tiledversion="1.12.2" name="ville_toit" tilewidth="16" tileheight="16" tilecount="160" columns="16">
  <!-- Les toits -->
- <image source="ville_toit.png" width="256" height="96"/>
+ <image source="ville_toit.png" width="256" height="160"/>
 </tileset>

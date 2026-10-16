@@ -45,69 +45,6 @@ def fenetre():
     return im
 
 
-def porte():
-    """1 × 2 tuiles : une porte de bois à panneaux, sa poignée, sa marche."""
-    im = image(16, 32)
-    d = dessin(im)
-    d.rectangle((1, 2, 14, 29), fill=rgba(K))
-    d.rectangle((2, 3, 13, 29), fill=rgba(BOIS))
-    for x0, y0, x1, y1 in ((4, 5, 11, 14), (4, 17, 11, 27)):
-        d.rectangle((x0, y0, x1, y1), fill=rgba(BOIS_K))
-        d.rectangle((x0 + 1, y0 + 1, x1, y1), fill=rgba(BOIS_C))
-        d.rectangle((x0 + 1, y0 + 1, x1 - 1, y1 - 1), fill=rgba(BOIS))
-    d.rectangle((11, 16, 12, 17), fill=rgba((236, 200, 96)))
-    d.rectangle((0, 30, 15, 31), fill=rgba((150, 146, 140)))
-    d.rectangle((0, 30, 15, 30), fill=rgba((184, 180, 174)))
-    return im
-
-
-def porte_vitree():
-    """2 × 2 tuiles : la double porte vitrée de la tour."""
-    im = image(32, 32)
-    d = dessin(im)
-    d.rectangle((1, 1, 30, 31), fill=rgba(K))
-    d.rectangle((2, 2, 29, 31), fill=rgba((120, 132, 142)))
-    for x0 in (4, 17):
-        d.rectangle((x0, 4, x0 + 10, 31), fill=rgba(K))
-        for y in range(5, 32):
-            for x in range(x0 + 1, x0 + 10):
-                c = VITRE_C if (x - x0 + (31 - y)) % 13 in (0, 1) else (VITRE if y > 8 else VITRE_S)
-                im.putpixel((x, y), rgba(c))
-    d.rectangle((13, 16, 13, 21), fill=rgba((220, 224, 228)))
-    d.rectangle((18, 16, 18, 21), fill=rgba((220, 224, 228)))
-    return im
-
-
-def lucarne():
-    """1 × 2 tuiles : la bouche d'aération posée sur un toit."""
-    im = image(16, 32)
-    d = dessin(im)
-    d.rectangle((0, 4, 15, 27), fill=rgba(K))
-    d.rectangle((1, 5, 14, 26), fill=rgba((196, 184, 162)))
-    d.rectangle((2, 7, 13, 24), fill=rgba((92, 84, 80)))
-    for y in range(8, 24, 3):
-        d.rectangle((2, y, 13, y), fill=rgba((150, 140, 128)))
-    d.rectangle((1, 27, 15, 28), fill=(0, 0, 0, 80))
-    return im
-
-
-def entree():
-    """3 × 3 tuiles : l'entrée sombre de la bibliothèque, son encadrement et ses marches."""
-    im = image(48, 48)
-    d = dessin(im)
-    d.rectangle((2, 4, 45, 41), fill=rgba(K))
-    d.rectangle((3, 5, 44, 41), fill=rgba(PIERRE_CLAIRE))
-    d.rectangle((3, 5, 44, 8), fill=rgba((224, 212, 184)))
-    d.rectangle((8, 11, 39, 41), fill=rgba(K))
-    d.rectangle((9, 12, 38, 41), fill=rgba(PIERRE_OMBRE))
-    d.rectangle((12, 15, 35, 41), fill=rgba((44, 30, 34)))
-    d.rectangle((12, 15, 35, 18), fill=rgba((28, 20, 24)))
-    for i, y in enumerate((41, 44)):
-        d.rectangle((6 - 2 * i, y, 41 + 2 * i, y + 2), fill=rgba((176, 166, 146)))
-        d.rectangle((6 - 2 * i, y, 41 + 2 * i, y), fill=rgba((214, 204, 184)))
-    return contour(im)
-
-
 # ---------- le métal ----------
 
 def plaque_egout():
