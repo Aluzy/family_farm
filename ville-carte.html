@@ -2,48 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="description" content="La ville de Ferme Familiale : ses rues, son parc, ses fontaines, où la fermière se promène.">
-  <meta name="theme-color" content="#665951">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ville — Ferme Familiale</title>
-  <style>
-    html,body{margin:0;height:100%;background:#665951;overflow:hidden;color:#f4efe6;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-    #ville{position:fixed;inset:0;touch-action:none}
-    #ville canvas{display:block}
-    .aide{position:fixed;left:12px;right:12px;bottom:12px;display:flex;justify-content:space-between;gap:12px;align-items:center;pointer-events:none;font-size:13px}
-    .aide span,.aide a{pointer-events:auto;background:rgba(40,32,30,.78);border:1px solid rgba(240,220,180,.4);border-radius:10px;padding:6px 10px}
-    .aide a{color:#f4efe6;text-decoration:none;font-weight:600}
-    .message{position:fixed;top:12px;left:12px;right:150px;max-width:460px;background:rgba(40,32,30,.88);border:1px solid rgba(240,220,180,.45);border-radius:10px;padding:8px 12px;font-size:14px;line-height:1.35}
-    .fenetre{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,16,14,.45);padding:16px}
-    .fenetre[hidden],.message[hidden]{display:none}
-    .fenetre .boite{background:#3a2f2b;border:2px solid rgba(240,220,180,.55);border-radius:14px;padding:16px 18px;max-width:340px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.45)}
-    .fenetre h2{margin:0 0 6px;font-size:18px}
-    .fenetre p{margin:0 0 12px;font-size:14px;opacity:.9}
-    .fenetre .choix{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
-    .fenetre button{font:inherit;font-size:15px;font-weight:600;color:#f4efe6;background:#2f5a9a;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:10px 12px;cursor:pointer;text-align:left}
-    .fenetre button:hover,.fenetre button:focus-visible{background:#3a6cb6;outline:2px solid #f0dcb4;outline-offset:1px}
-    .fenetre .annuler{background:transparent;width:100%;text-align:center;font-weight:500}
-    .horloge{position:fixed;top:12px;right:12px;background:rgba(40,32,30,.78);border:1px solid rgba(240,220,180,.4);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-  </style>
+  <!-- La ville, la carte de transition, la montagne, la plage et les grottes s'affichent dans la
+       page du jeu (js/ui/excursion.js) : cette ancienne adresse y mène, avec ses paramètres. -->
+  <script>location.replace('jeu.html' + (location.search || '?carte=ville'));</script>
 </head>
 <body>
-  <div id="ville" aria-label="La carte de la ville"></div>
-  <div class="horloge" id="horloge" aria-live="off" hidden></div>
-  <div class="message" id="message" role="status" aria-live="polite" hidden></div>
-  <div class="fenetre" id="gare-fenetre" role="dialog" aria-modal="true" aria-labelledby="gare-titre" hidden>
-    <div class="boite">
-      <h2 id="gare-titre">🚉 La gare</h2>
-      <p id="gare-texte">Où voulez-vous aller ?</p>
-      <div class="choix" id="gare-choix"></div>
-      <button type="button" class="annuler" id="gare-annuler">Rester ici</button>
-    </div>
-  </div>
-  <div class="aide">
-    <span id="aide-texte">Touchez un trottoir pour y marcher · flèches ou ZQSD</span>
-    <a href="jeu.html">← La ferme</a>
-  </div>
-  <script src="vendor/phaser.min.js"></script>
-  <script src="js/horloge-sortie.js"></script>
-  <script src="js/ville-carte.js"></script>
+  <p><a href="jeu.html?carte=ville">Aller en ville</a></p>
 </body>
 </html>

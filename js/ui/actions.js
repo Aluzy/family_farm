@@ -20,7 +20,7 @@ export function registerActions(handlers) {
 // vérifie que chaque action de jeu du rapport est dans l'une des deux listes.
 export const NUIT_PERMISES = new Set([
   'sleep', 'wake-water', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
-  'pet-add', 'pet-save', 'pet-remove', 'tool-use',
+  'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'entreprise-quota',
 ]);
 export const NUIT_BLOQUEES = new Set([
   'plant', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',

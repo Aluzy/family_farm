@@ -15,6 +15,7 @@ import { registerActions } from './actions.js';
 import { canPay } from './common.js';
 import { pxGauge } from './pixel-art.js';
 import { helpBtn } from './aide.js';
+import { companyIds, companyPlan, ownsCompany, setCompanyQuota, townSellPrice } from '../engine/entreprises.js';
 
 /* ---------- version 1.5 : la Ville (sorties, voyages, marché de la ville) ---------- */
 
@@ -78,6 +79,37 @@ function townMarketHtml() {
   return `<p class="hint">🧺 Au marché de la ville jusqu'au soir. Le prix monte un peu à chaque achat, comme à la ferme.</p><div class="inv-group">${rows}</div>`;
 }
 
+// Version 1.20 : les entreprises (on les achète en se promenant en ville, devant leur entrepôt) ;
+// ici, le quota du jour de celles qu'on a, et ce qu'elles ont fait.
+function companiesHtml() {
+  const H = DATA.VILLE.ENTREPRISES.HEURE;
+  const cards = companyIds().map((id) => {
+    const d = DATA.VILLE.ENTREPRISES.LISTE[id];
+    if (!ownsCompany(state, id)) {
+      return `
+      <div class="card outing done">
+        <span class="plot-head"><span class="plot-ico" aria-hidden="true">${d.icone}</span><span class="plot-name">${d.nom}</span></span>
+        <span class="muted">${d.texte} À acheter en ville, devant son entrepôt (au nord-ouest) : ${formatCoins(d.prix)} 💰.</span>
+      </div>`;
+    }
+    const c = state.ville.entreprises[id], plan = companyPlan(state, id), b = c.bilan;
+    const bilan = b ? `Le jour ${b.jour} : ${b.unites} × ${d.produit.toLowerCase()}, +${formatCoins(b.gain)} 💰${b.manque ? ` (il manquait des ${d.intrantNom})` : ''}` : 'Pas encore de production.';
+    return `
+      <div class="card outing">
+        <span class="plot-head"><span class="plot-ico" aria-hidden="true">${d.icone}</span><span class="plot-name">${d.nom}</span></span>
+        <span class="outing-facts"><span class="chip">${d.par} ${d.intrantNom} → 1 ${d.produit.toLowerCase()}</span><span class="chip">${formatCoins(d.prixProduit)} 💰 pièce</span><span class="chip">⏰ ${H} h</span></span>
+        <span class="device-actions">
+          <button type="button" class="btn" data-action="entreprise-quota" data-id="${id}" data-delta="-1"${c.quota > 0 ? '' : ' disabled'} aria-label="Un de moins">−</button>
+          <span>Quota : <strong>${c.quota}</strong> par jour</span>
+          <button type="button" class="btn" data-action="entreprise-quota" data-id="${id}" data-delta="1"${c.quota < d.quotaMax ? '' : ' disabled'} aria-label="Un de plus">+</button>
+        </span>
+        <span class="muted">En stock : ${formatNumber(plan.dispo)} ${d.intrantNom} (de quoi en faire ${formatNumber(Math.floor(plan.dispo / d.par))}).</span>
+        <span class="muted">${bilan}</span>
+      </div>`;
+  }).join('');
+  return `<p class="hint">🏭 Chaque jour à ${H} h, elles prennent leurs ingrédients dans le stock de la ferme et vendent ce qu'elles fabriquent. Au marché de la ville, la ferme vend aussi ses produits ${DATA.VILLE.MARCHE.VENTE - 100} % plus cher (lait : ${formatCoins(townSellPrice('lait'))} 💰).</p><div class="plots outings">${cards}</div>`;
+}
+
 export function renderVille() {
   const ids = Object.keys(DATA.VILLE.SORTIES);
   const enVille = ids.filter((id) => DATA.VILLE.SORTIES[id].lieu === 'ville');
@@ -96,12 +128,21 @@ export function renderVille() {
     </details>
     <h3 class="section-title">🧺 Marché de la ville</h3>
     ${townMarketHtml()}
+    <h3 class="section-title">🏭 Entreprises</h3>
+    ${companiesHtml()}
     <div class="card">
       <a class="btn primary" href="ville-carte.html">🗺️ Se promener en ville</a>
     </div>`;
 }
 
 registerActions({
+  'entreprise-quota': (target) => {
+    const id = target.dataset.id;
+    const c = state.ville && state.ville.entreprises && state.ville.entreprises[id];
+    if (!c) return;
+    applyResult(setCompanyQuota(state, id, c.quota + (Number(target.dataset.delta) || 0)));
+    refresh();
+  },
   'ville-go': (target) => {
     const id = target.dataset.id;
     const s = DATA.VILLE.SORTIES[id];

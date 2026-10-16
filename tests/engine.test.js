@@ -10,6 +10,7 @@ import {
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
+import { buyCompany, companiesStep, companyPlan, ownsCompany, sellInTown, setCompanyQuota, townSellList, townSellPrice, townSellable } from '../js/engine/index.js';
 import { brokenRocks, buyTool, castLine, chopsLeft, fellenTrees, fishLeft, chopTree, respawnTrees, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
@@ -9697,5 +9698,71 @@ test('Lune : pleine, récoltes +50 % ; décroissante, arrosage −25 % ; nouvell
     DATA.LUNE.POUSSE_CHANCE = chance;
   }
 }));
+
+/* ---------- version 1.20 : la vente en ville et les entreprises ---------- */
+
+test('vente en ville : VENTE % du prix de la ferme, les produits de la ferme seulement', () => {
+  const s = garden();
+  setInv(s, { lait: 5, carotte: 3, graine_carotte: 4, fromage_alpage: 1 });
+  assertEqual(townSellPrice('lait'), Math.ceil(DATA.items.lait.prix * DATA.VILLE.MARCHE.VENTE / 100));
+  assert(townSellPrice('lait') > DATA.items.lait.prix, 'plus cher qu\'au marché de la ferme');
+  assertEqual(townSellable('graine_carotte'), false, 'pas les graines');
+  assertEqual(townSellable('fromage_alpage'), false, 'pas ce qui s\'achète en ville');
+  assertEqual(townSellList(s).map((r) => r.item).sort(), ['carotte', 'lait']);
+  const avant = s.pieces;
+  const r = sellInTown(s, 'lait', 9);
+  assertEqual([r.ok, r.sold, r.gain], [true, 5, 5 * townSellPrice('lait')]);
+  assertEqual([countItem(s, 'lait'), s.pieces], [0, avant + r.gain]);
+  assertEqual(sellInTown(s, 'lait', 1).ok, false, 'plus rien');
+  assertEqual(sellInTown(s, 'graine_carotte', 1).ok, false);
+});
+
+test('entreprises : achat, quota, production et vente chaque jour à l\'heure', () => {
+  const s = garden();
+  const def = DATA.VILLE.ENTREPRISES.LISTE.fromagerie;
+  s.pieces = def.prix - 1;
+  assertEqual(buyCompany(s, 'fromagerie').ok, false, 'pas assez de pièces');
+  s.pieces = def.prix + 100;
+  s.awakeMs = awakeMsAtHour(8);
+  assert(buyCompany(s, 'fromagerie').ok);
+  assertEqual([ownsCompany(s, 'fromagerie'), s.pieces], [true, 100]);
+  assertEqual(buyCompany(s, 'fromagerie').ok, false, 'une seule fois');
+  assertEqual(setCompanyQuota(s, 'fromagerie', 999).quota, def.quotaMax);
+  assertEqual(setCompanyQuota(s, 'fromagerie', 3).quota, 3);
+  setInv(s, { lait: 7 });
+  assertEqual(companyPlan(s, 'fromagerie'), { unites: 3, dispo: 7 });
+  assertEqual(companiesStep(s), null, 'pas avant l\'heure');
+  s.awakeMs = awakeMsAtHour(DATA.VILLE.ENTREPRISES.HEURE);
+  const b = companiesStep(s).fromagerie;
+  assertEqual([b.unites, b.gain, b.pris.lait, b.manque], [3, 3 * def.prixProduit, 6, false]);
+  assertEqual([countItem(s, 'lait'), s.pieces], [1, 100 + 3 * def.prixProduit]);
+  assertEqual(companiesStep(s), null, 'une fois par jour');
+  // le lendemain : il manque du lait, elle fait ce qu'elle peut
+  s.day += 1;
+  setInv(s, { lait: 3 });
+  const c = companiesStep(s).fromagerie;
+  assertEqual([c.unites, c.manque, countItem(s, 'lait')], [1, true, 1]);
+});
+
+test('entreprises : plusieurs intrants, les plus abondants d\'abord ; achetée tard, elle commence le lendemain', () => {
+  const s = garden();
+  s.pieces = 10000;
+  s.awakeMs = awakeMsAtHour(15);
+  assert(buyCompany(s, 'confiturerie').ok);
+  setInv(s, { pomme: 5, fraise: 2 });
+  assertEqual(companiesStep(s), null, 'achetée après l\'heure : pas aujourd\'hui');
+  s.day += 1;
+  s.awakeMs = awakeMsAtHour(10);
+  setCompanyQuota(s, 'confiturerie', 2);
+  const b = companiesStep(s).confiturerie;
+  assertEqual([b.unites, b.pris.pomme, b.pris.fraise || 0], [2, 5, 1]);
+  // la journée qui passe (tick) la fait produire aussi
+  s.day += 1;
+  setInv(s, { poire: 3 });
+  s.awakeMs = awakeMsAtHour(DATA.VILLE.ENTREPRISES.HEURE) - 500;
+  tick(s, 1, false);
+  assertEqual(s.ville.entreprises.confiturerie.bilan.jour, s.day);
+  assertEqual(countItem(s, 'poire'), 0);
+});
 
 export const results = runTests();

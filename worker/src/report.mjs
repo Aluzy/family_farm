@@ -44,6 +44,7 @@ export const GAME_ACTIONS = {
   'ville-go': 'Partir en sortie ou en voyage',
   'ville-market': 'Aller au marché de la ville',
   'ville-buy': 'Acheter au marché de la ville',
+  'entreprise-quota': 'Régler le quota d\'une entreprise',
   'buy-pasture': 'Acheter une place à l\'Étable',
   'mill-start': 'Moudre du blé au Moulin',
   'mill-cancel': 'Moudre du blé au Moulin',

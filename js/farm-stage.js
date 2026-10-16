@@ -601,6 +601,12 @@
         // revenu de la carte de transition : au bout du chemin, la vue sur lui
         const params = new URLSearchParams(global.location.search);
         if (params.get('arrivee') !== 'est') return;
+        this.arriveEast();
+      }
+
+      // Revenu d'une autre carte : au bout du chemin, la vue sur lui (l'adresse perd ?arrivee=est).
+      arriveEast() {
+        const params = new URLSearchParams(global.location.search);
         params.delete('arrivee');
         const q = params.toString();
         global.history.replaceState(null, '', global.location.pathname + (q ? '?' + q : '') + global.location.hash);
@@ -622,8 +628,9 @@
       tapExit(wx, wy) {
         const a = this.exit;
         if (!a || !a.visible || Math.abs(wx - a.x) > 18 || Math.abs(wy - a.y) > 18) return false;
-        if (global.FermeSortie) global.FermeSortie.mark();     // le temps continue de passer dehors
-        global.location.href = EXIT.page;
+        // (dans la page du jeu : js/ui/excursion.js ; le jeu continue de tourner)
+        if (global.FermeHote) global.FermeHote.go(EXIT.page);
+        else global.location.href = EXIT.page;
         return true;
       }
 
@@ -3196,7 +3203,7 @@
         el.addEventListener('click', (e) => {
           const b = e.target.closest('button');
           if (!b) return;
-          if (b.dataset.choix === 'oui') global.location.href = HOLLOW.page;
+          if (b.dataset.choix === 'oui') { if (global.FermeHote) global.FermeHote.go(HOLLOW.page); else global.location.href = HOLLOW.page; }
           this.closeDialog();
         });
         labelLayer.appendChild(el);
@@ -3764,5 +3771,8 @@
     return s.panTo(best.p, false);
   }
 
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, goHome, mealScene, scene: getScene }; // scene() : pour le débogage et les tests
+  // Revenu d'une autre carte (js/ui/excursion.js) : le personnage au bout du chemin de l'est ;
+  // la scène pas encore prête, elle le fera en se créant (?arrivee=est).
+  function arriveEast() { const s = getScene(); if (s && s.ready) s.arriveEast(); }
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, goHome, mealScene, arriveEast, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

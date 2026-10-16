@@ -554,6 +554,14 @@ export function renderStage() {
   syncRamassage();
   const el = document.getElementById('farm-stage');
   let on = stageActive();
+  // Une autre carte est affichée (js/ui/excursion.js) : celle de la ferme se cache, les
+  // fenêtres et la barre d'outils restent.
+  if (on && document.body.classList.contains('en-excursion')) {
+    el.hidden = true;
+    document.body.classList.add('has-stage');
+    if (window.FarmStage && stageMounted) FarmStage.hide();
+    return;
+  }
   const wasOn = stageMounted && !el.hidden; // la carte était-elle déjà à l'écran ?
   if (on && !stageMounted) {
     stageMounted = true;
