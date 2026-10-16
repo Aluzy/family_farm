@@ -167,6 +167,15 @@
   // `layer` de la carte. Un double appui dessus, le personnage à moins de `near` px, ouvre une
   // bulle de dialogue au-dessus de lui ; « Oui » mène à l'infra-monde (`page`). Plus loin, le
   // double appui l'y envoie, comme sur l'herbe.
+  // La sortie vers la ville : le bout est du chemin, au bord de la carte (px, rangées 27 à 29).
+  // Quand le personnage est à moins de `near` px, la flèche bleue des passages
+  // (fleche_passage.png, scripts/ville/fleche.py ; image 0 : vers la droite) paraît et se
+  // balance ; un appui dessus mène à la carte de transition (`page`). En revenant de là
+  // (jeu.html?arrivee=est), le personnage apparaît au bout du chemin (`arrive`, px du bord).
+  const EXIT = {
+    key: 'fleche_passage', file: 'fleche_passage.png', y: 28.5 * 16, inset: 18, near: 80, bob: 3, arrive: 34,
+    page: 'ville-carte.html?carte=transition&arrivee=ferme',
+  };
   const HOLLOW = {
     layer: 'plantes_pierres', gids: [539, 540], near: 22, page: 'infra-monde.html',
     text: 'De drôles de couleurs luisent dans le creux du tronc, voulez-vous aller voir ?',
@@ -454,6 +463,7 @@
         L.image('soil_wet', v('soil_wet.png'));
         L.image('sign', v('sign.png'));
         L.image('panneau_ville', v('panneau_ville.png'));
+        L.spritesheet(EXIT.key, v(EXIT.file), { frameWidth: 32, frameHeight: 32 });
         L.image('silo', v('silo.png'));
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
@@ -568,6 +578,39 @@
         }
         this.ready = true;
         if (lastModel) this.sync(lastModel, true);
+        this.makeExit();
+      }
+
+      /* ---------- la sortie vers la ville ---------- */
+
+      makeExit() {
+        this.exit = this.has(EXIT.key) ? this.add.image(this.world.w - EXIT.inset, EXIT.y, EXIT.key, 0).setDepth(1e6).setVisible(false) : null;
+        // revenu de la carte de transition : au bout du chemin, la vue sur lui
+        const params = new URLSearchParams(global.location.search);
+        if (params.get('arrivee') !== 'est') return;
+        params.delete('arrivee');
+        const q = params.toString();
+        global.history.replaceState(null, '', global.location.pathname + (q ? '?' + q : '') + global.location.hash);
+        const at = this.fermier && this.fermier.arrive ? this.fermier.arrive(this.world.w - EXIT.arrive, EXIT.y) : null;
+        if (at) this.setCentre(at.x, at.y);
+      }
+
+      // La flèche paraît quand le personnage est tout près du bout du chemin.
+      stepExit(time) {
+        const a = this.exit;
+        if (!a) return;
+        const at = !this.room && this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+        const show = !!at && Math.hypot(this.world.w - at.x, EXIT.y - at.y) <= EXIT.near + EXIT.inset;
+        a.setVisible(show);
+        if (show) a.setPosition(Math.round(this.world.w - EXIT.inset + (reducedMotion() ? 0 : Math.round(Math.sin(time / 220) * EXIT.bob))), EXIT.y);
+      }
+
+      // Un appui sur la flèche : vers la carte de transition (true : l'appui est pris).
+      tapExit(wx, wy) {
+        const a = this.exit;
+        if (!a || !a.visible || Math.abs(wx - a.x) > 18 || Math.abs(wy - a.y) > 18) return false;
+        global.location.href = EXIT.page;
+        return true;
       }
 
       /* ---------- textures ---------- */
@@ -1786,6 +1829,7 @@
         // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
         if (this.ambient && !this.room) this.ambient.update(delta);
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
+        this.stepExit(time);
         // Dehors, la vue suit le personnage qui rentre (le repas) ; elle lâche s'il est dedans.
         if (this.follow && !this.room && this.fermier && !this.drag) {
           const p = this.fermier.pos();
@@ -2199,6 +2243,7 @@
       }
 
       tap(wx, wy) {
+        if (this.tapExit(wx, wy)) return;
         if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
         // Version 1.19 : dehors, un double appui sur l'herbe ou un chemin y envoie le personnage ;

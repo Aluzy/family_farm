@@ -29,6 +29,11 @@
  * vue de 3/4, une distance verticale à l'écran vaut 1 / KY au sol. Les voitures garées sont des
  * tuiles (couche « vehicules ») ; leur emprise au sol (couche « garees ») arrête la promeneuse.
  * Avec « animations réduites », pas de circulation.
+ *
+ * La même page montre aussi la carte de transition entre la ferme et la ville (?carte=
+ * transition) ; ?arrivee= choisit le point d'arrivée. Aux passages (couche « passages »), une
+ * flèche bleue paraît quand on s'en approche : un toucher dessus mène à l'autre carte (ou à
+ * la ferme, jeu.html).
  */
 (function () {
   'use strict';
@@ -41,7 +46,19 @@
     const t = window.FERME_ASSET_VERSIONS, k = file.replace(/^assets\//, '');
     return t && t[k] ? file + '?v=' + t[k] : file;
   };
-  const MAP = { key: 'ville', file: 'assets/ville.json' };
+  // La carte : ?carte=ville (par défaut) ou ?carte=transition (entre la ferme et la ville,
+  // scripts/ville/transition.py) ; ?arrivee=<nom> : le point de la couche « arrivees » où l'on
+  // apparaît (sinon « depart »).
+  const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json' };
+  const PARAMS = new URLSearchParams(window.location.search);
+  const NOM_CARTE = CARTES[PARAMS.get('carte')] ? PARAMS.get('carte') : 'ville';
+  const MAP = { key: NOM_CARTE, file: CARTES[NOM_CARTE] };
+  if (NOM_CARTE === 'transition') document.title = 'Le chemin de la ville — Ferme Familiale';
+  // Les passages vers une autre carte (couche « passages » : un rectangle au bord, sa cible, le
+  // sens de sa flèche) : la flèche bleue (assets/fleche_passage.png, scripts/ville/fleche.py :
+  // droite, gauche, haut, bas) paraît quand la promeneuse est à moins de `near` px, se balance
+  // de `bob` px ; un toucher dessus mène à la cible.
+  const PASS = { key: 'fleche_passage', file: 'assets/fleche_passage.png', near: 80, bob: 3, sens: ['droite', 'gauche', 'haut', 'bas'] };
   const HERO = { key: 'fermiere', file: 'assets/fermiere.png', names: 'assets/fermiere.json', w: 16, h: 32, foot: 30, speed: 48, stride: 4 };
   // Les couches qu'on ne traverse pas, et celle qui passe devant la promeneuse (le feuillage).
   // (les bâtiments et les voitures garées : par leur emprise au sol, couches « batiments » et « garees »)
@@ -108,6 +125,7 @@
       this.load.json(HERO.key + '_noms', v(HERO.names));
       this.load.spritesheet(CARS.key, v(CARS.file), { frameWidth: 64, frameHeight: 64 });
       this.load.json(CARS.key + '_meta', v(CARS.meta));
+      this.load.spritesheet(PASS.key, v(PASS.file), { frameWidth: 32, frameHeight: 32 });
       // les planches des jeux de tuiles : lues dans la carte une fois chargée
       this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
         const data = this.cache.tilemap.get(MAP.key).data;
@@ -157,7 +175,8 @@
       // la fermière : ses images par nom (marche_bas_0…, idle_cote_0…)
       const noms = (this.cache.json.get(HERO.key + '_noms') || {}).frames || [];
       this.frame = (name) => Math.max(0, noms.indexOf(name));
-      const d = objects('depart')[0] || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
+      const arrivee = PARAMS.get('arrivee');
+      const d = (arrivee && objects('arrivees').find((o) => o.name === arrivee)) || objects('depart')[0] || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
       this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), HERO.key, this.frame('idle_bas_0')).setOrigin(0.5, HERO.foot / HERO.h);
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x1e1a18, 0.35);
       this.heroPos = { x: d.x, y: d.y };
@@ -174,15 +193,53 @@
       this.fitZoom();
       this.scale.on('resize', () => this.fitZoom());
 
-      // un toucher : y aller
+      this.makePassages(objects('passages'));
+      // un toucher : sur une flèche, changer de carte ; ailleurs, y aller
       this.input.on('pointerup', (p) => {
         if (p.getDistance() > 8) return;
         const w = cam.getWorldPoint(p.x, p.y);
+        const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
+        if (a) { this.leave(a); return; }
         this.goTo(w.x, w.y);
       });
       this.makeTraffic(objects('routes'), objects('carrefours'));
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A') : null;
       window.Ville = { scene: this };
+    }
+
+    // Les flèches des passages : posées dans le rectangle, du côté de la carte (à 12 px du bord).
+    makePassages(objs) {
+      this.passages = objs.map((o) => {
+        const prop = (n) => ((o.properties || []).find((q) => q.name === n) || {}).value;
+        const sens = PASS.sens.includes(prop('sens')) ? prop('sens') : 'droite';
+        const cx = o.x + o.width / 2, cy = o.y + o.height / 2;
+        const x = sens === 'gauche' ? o.x + 16 : sens === 'droite' ? o.x + o.width - 16 : cx;
+        const y = sens === 'haut' ? o.y + 16 : sens === 'bas' ? o.y + o.height - 16 : cy;
+        const arrow = this.add.image(Math.round(x), Math.round(y), PASS.key, PASS.sens.indexOf(sens)).setDepth(2e6).setVisible(false);
+        return { name: o.name, cible: prop('cible'), sens, rect: o, x, y, arrow };
+      }).filter((q) => q.cible && this.textures.exists(PASS.key));
+    }
+
+    // Chaque image : une flèche paraît près de la promeneuse et se balance dans son sens.
+    stepPassages(time) {
+      const P = this.heroPos;
+      for (const q of this.passages) {
+        const r = q.rect;
+        const d = Math.hypot(Math.max(r.x - P.x, 0, P.x - r.x - r.width), Math.max(r.y - P.y, 0, P.y - r.y - r.height));
+        q.arrow.setVisible(d <= PASS.near);
+        if (!q.arrow.visible) continue;
+        const k = reduced() ? 0 : Math.round(Math.sin(time / 220) * PASS.bob);
+        const [dx, dy] = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] }[q.sens];
+        q.arrow.setPosition(Math.round(q.x + dx * k), Math.round(q.y + dy * k));
+      }
+    }
+
+    // Changer de carte : la page cible (une autre carte, ou la ferme).
+    leave(q) {
+      if (this.leaving) return;
+      this.leaving = true;
+      this.cameras.main.fadeOut(reduced() ? 0 : 250, 0, 0, 0);
+      setTimeout(() => { window.location.href = q.cible; }, reduced() ? 0 : 260);
     }
 
     fitZoom() {
@@ -472,6 +529,7 @@
       this.stepTileAnims(time);
       const dt = Math.min(delta, 100) / 1000;
       this.stepTraffic(time, dt);
+      this.stepPassages(time);
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
