@@ -17,7 +17,7 @@ jeu.html                  la page : structure seule, charge les fichiers ci-dess
  ├─ js/fermier.js         le personnage, facultatif : il refait sur la carte les gestes du joueur (voir docs/personnage.md)
  ├─ js/farm-stage.js      la scène : ne connaît ni `state` ni le moteur (script classique)
  └─ js/main.js            point d'entrée des modules ES
-     ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node run-tests.mjs
+     ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node tests/run-tests.mjs
      └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
 tests/engine.test.js      tests du moteur (jamais chargés par la page)
 assets/                   cartes Tiled (carte_printemps.json et serre_interieur.json, et leurs sources .tmj) + images du pack
@@ -235,7 +235,7 @@ finit par démarrer). Le jeu reste entièrement jouable dans ce cas.
 ## 7. Vérifier
 
 ```
-node run-tests.mjs                      # moteur
+node tests/run-tests.mjs                # moteur
 python3 -m http.server 8771             # puis http://localhost:8771/jeu.html
 ```
 
@@ -305,7 +305,7 @@ est la poignée de débogage posée par `js/main.js`).
 - **Animaux de compagnie** : jusqu'à 3 chiens ou chats (`DATA.FAMILY.COMPAGNIE`, `state.famille.animaux`, `addPet()`, `setPetProfile()`, `removePet()`). Gratuits, sans effet sur le besoin, la santé ou la productivité. Leur nom suit les règles d'un prénom et, comme lui, reste dans la sauvegarde locale.
 - **Interface** : fenêtre Famille (carte du joueur, en haut à gauche ; autrefois Maison › Famille). Deux boutons « ➕ Un adulte / Un enfant » (la fiche s'ouvre aussitôt pour le prénom), la section « Animaux de compagnie », et « Retirer de la famille » dans la fiche « Modifier » (deux appuis).
 - **Sauvegardes** : format 18. La migration ajoute une liste d'animaux vide et les compteurs ; les membres ne changent pas.
-- **Encyclopédie** : remise à jour avec le jeu (famille composable, animaux de compagnie, Étable et paille, Moulin, horloge et repas de 19 h, carte, Marché, fin des viandes). Le JSON fait foi ; `node build-encyclopedie.mjs` régénère la page, `--check` vérifie qu'elle est à jour.
+- **Encyclopédie** : remise à jour avec le jeu (famille composable, animaux de compagnie, Étable et paille, Moulin, horloge et repas de 19 h, carte, Marché, fin des viandes). Le JSON fait foi ; `node scripts/build-encyclopedie.mjs` régénère la page, `--check` vérifie qu'elle est à jour.
 - **Non fait** : les animaux de compagnie n'apparaissent pas sur la carte.
 
 ## Version 1.3 : le courrier

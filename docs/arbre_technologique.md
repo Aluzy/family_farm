@@ -1,5 +1,10 @@
 # Ferme Familiale — Arbre des technologies v2
 
+> ⚠️ **Document historique.** La source de vérité de l'arbre des technologies est
+> **`data/techtree.json`** (compilé dans `js/data.generated.js` par `scripts/build-data.mjs`).
+> Ce document et `docs/techtree_v2.js` sont la proposition v2 d'origine, gardés pour mémoire :
+> leurs valeurs (coûts, PT, nœuds) ne sont plus tenues à jour et peuvent différer du jeu.
+
 > Proposition de conception, à intégrer à `docs/conception.md` (section 1.4, 8.3 et 8.7) une fois validée.
 > Les données correspondantes sont dans `techtree_v2.js` (format `DATA.techtree`) ; les tableaux ci-dessous en sont générés.
 > 🟡 = valeur provisoire, à caler avec `simulate.mjs`.

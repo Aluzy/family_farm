@@ -15,7 +15,7 @@ La journée suit une horloge : réveil à 6 h, repas de la famille à
 - **Technique** : des pages HTML sans bibliothèque à installer ni serveur :
   `index.html` (page d'accueil), `jeu.html` (le jeu, dont le style est dans
   `css/` et le code dans `js/`) et `encyclopedie.html` (glossaire du jeu, généré depuis
-  `encyclopedie_ferme_familiale.json` par `node build-encyclopedie.mjs`), plus `cookies.html` (politique de cookies
+  `encyclopedie_ferme_familiale.json` par `node scripts/build-encyclopedie.mjs`), plus `cookies.html` (politique de cookies
   et traceurs). Le jeu se sert en HTTP (voir Structure) ; les autres pages s'ouvrent aussi depuis le disque.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
@@ -35,10 +35,12 @@ ses modules ne se chargent qu'en HTTP).
 ### En ligne (GitHub Pages)
 
 Le site est construit et publié par GitHub à chaque `git push` sur `main`
-(`.github/workflows/site.yml`) : les données sont régénérées, les tests passent, les
-modules du jeu sont regroupés en un seul fichier, puis le résultat est mis en ligne.
+(`.github/workflows/site.yml`) : les fichiers générés commités (données, encyclopédie,
+cartes) sont vérifiés à jour, les tests passent, les modules du jeu sont regroupés en un
+seul fichier, puis le résultat est mis en ligne. Un fichier généré oublié fait échouer
+l'action : relancer le script qui le fabrique (voir « Tests ») et commiter le résultat.
 Si un test échoue, rien n'est publié : le site reste sur sa version précédente, et
-GitHub prévient par e-mail. Il n'y a aucune commande à lancer.
+GitHub prévient par e-mail.
 
 Réglage du dépôt, une seule fois : **Settings → Pages → Build and deployment →
 Source : GitHub Actions**. Le site est à l'adresse
@@ -136,7 +138,8 @@ point d'entrée de **modules ES** :
 | `js/main.js` | charge tous les modules, puis démarre la partie |
 | `js/farm-stage.js`, `js/ambient-life.js`, `js/fermier.js` | la carte Phaser de l'onglet Ferme, sa vie d'ambiance et le personnage (scripts classiques, hors modules ; voir docs/personnage.md) |
 | `scripts/` | outils Node et Python : données, carte, site, vérifications, simulation, icônes (voir plus bas) |
-| `worker/`, `wrangler.toml`, `collect-server.mjs` | collecte des sessions et rapport quotidien (voir « Suivi de session ») |
+| `tests/` | les tests (`npm test`) : moteur, données, suivi de session, rapport quotidien |
+| `worker/`, `wrangler.toml`, `scripts/collect-server.mjs` | collecte des sessions et rapport quotidien (voir « Suivi de session ») |
 
 Chaque module importe ce qu'il utilise et exporte ce qu'il offre : plus aucune fonction du
 jeu n'est une variable globale. Conséquences :
@@ -158,7 +161,8 @@ chaque import mène à un fichier qui exporte bien le nom demandé, et qu'aucun 
 n'est oublié.
 
 **Le site mis en ligne** : `node scripts/build-site.mjs` (ou `npm run build`, après un
-`npm install`) fabrique `_site/`, ce que GitHub publie :
+`npm ci`, qui installe les versions exactes de `package-lock.json`) fabrique `_site/`, ce
+que GitHub publie :
 
 - `js/jeu.bundle.js` : tous les modules regroupés en un fichier, minifié (esbuild, seule
   dépendance du projet, et seulement pour cette étape). Le joueur charge un fichier au
@@ -166,7 +170,12 @@ n'est oublié.
 - `jeu.html` : la même page, qui charge ce fichier ; chaque fichier local y est suivi de
   `?v=<empreinte de son contenu>`. Un fichier modifié change d'adresse et le navigateur le
   recharge ; il n'y a plus de numéro à changer à la main à chaque version ;
-- les autres pages, `css/`, `assets/`, `vendor/`, copiés tels quels.
+- les scripts classiques de la page (`js/farm-stage.js`, `js/ville-carte.js`…) minifiés
+  un à un, sans changer de forme ;
+- les autres pages, `css/`, `assets/`, `vendor/`, copiés tels quels, sauf les fichiers de
+  travail de `assets/` que le jeu ne charge pas (cartes et jeux de tuiles Tiled `.tmj`/`.tsx`,
+  images lues seulement par les générateurs Python : `ASSETS_HORS_SITE` dans le script).
+  La carte des sources de `jeu.bundle.js` n'est pas publiée (`--sourcemap` pour l'avoir en local).
 
 Le site construit s'ouvre aussi depuis le disque (double-clic sur `_site/jeu.html`).
 Pour le voir en local comme en ligne : `python3 -m http.server -d _site`.
@@ -263,21 +272,38 @@ fichier et 10 en jeu.
 npm test
 ```
 
-Régénère les données et l'encyclopédie, puis lance tout : données valides
-(`test-data.mjs`), moteur (`run-tests.mjs`), suivi de session (`test-telemetry.mjs`),
-rapport quotidien (`test-report.mjs`), actions de l'interface
-(`scripts/check-actions.mjs`), modules et fichiers de la page (`scripts/check-page.mjs`).
-Chaque script se lance aussi seul avec `node`. Node 18 ou plus récent.
+Régénère les données et l'encyclopédie, vérifie que les cartes construites sont à jour
+avec les cartes Tiled (`node scripts/build-map.mjs --check`), puis lance tout : données
+valides (`tests/test-data.mjs`), moteur (`tests/run-tests.mjs`), suivi de session
+(`tests/test-telemetry.mjs`), rapport quotidien (`tests/test-report.mjs`), actions de
+l'interface (`scripts/check-actions.mjs`), modules et fichiers de la page
+(`scripts/check-page.mjs`). Chaque script se lance aussi seul avec `node`. Node 18 ou plus
+récent ; `npm ci` une fois (esbuild, pour `npm run build`).
 
-GitHub relance ces vérifications à chaque push (`.github/workflows/site.yml`) et ne met
-le site en ligne que si elles passent toutes.
+GitHub relance ces vérifications à chaque push sur `main` et à chaque pull request
+(`.github/workflows/site.yml`) et ne met le site en ligne que si elles passent toutes. Il
+ne régénère rien : `scripts/build-data.mjs`, `scripts/build-encyclopedie.mjs` et
+`scripts/build-map.mjs` y tournent avec `--check`, et un fichier généré pas à jour
+(`js/data.generated.js`, `encyclopedie.html`, `assets/*.json` des cartes) fait échouer
+l'action. Après une modification de `data/`, de `encyclopedie_ferme_familiale.json` ou d'une
+carte Tiled : `npm run build:data`, `node scripts/build-encyclopedie.mjs` ou
+`npm run build:map`, puis commiter le résultat.
 
 ### Carte et graphismes
 
-- **Cartes Tiled** : `node scripts/build-map.mjs` fabrique `assets/carte_printemps.json` (la
-  ferme) et `assets/serre_interieur.json` (l'intérieur de la Serre) à partir des cartes de
-  travail `.tmj` et de leurs jeux de tuiles `.tsx`. À relancer après chaque modification dans
-  Tiled ; voir [`docs/architecture-phaser.md`](docs/architecture-phaser.md).
+Les générateurs d'images (`scripts/**/*.py`) demandent Python 3 et Pillow :
+`pip install -r requirements.txt`. Leur option `--apercu` écrit des `apercu_*.png` à la
+racine, ignorés par git. Ils écrivent des PNG en couleurs vraies (RGBA) ; les PNG commités
+de `assets/` sont, eux, en palette indexée quand c'est possible sans perte (≤ 256 couleurs) :
+plus légers, pixel pour pixel identiques.
+
+- **Cartes Tiled** : `node scripts/build-map.mjs` (ou `npm run build:map`) fabrique les cartes
+  que le jeu charge (`assets/carte_printemps.json` pour la ferme, `serre_interieur.json`,
+  `maison_interieur.json`, `infra_monde.json`, `ville.json`, `transition.json`,
+  `montagne.json`, `plage.json`) à partir des cartes de travail `.tmj` et de leurs jeux de
+  tuiles `.tsx`. À relancer après chaque modification dans Tiled (ou d'un générateur
+  `scripts/ville/*.py`, `scripts/infra/carte.py`) ; `--check` vérifie sans écrire. Voir
+  [`docs/architecture-phaser.md`](docs/architecture-phaser.md).
 - **Icônes en pixel art** (elles remplacent les emojis à l'affichage) : les dessins sont dans
   `scripts/icones/art_*.py`, et `python3 scripts/icones/build.py` produit `assets/icones.png`
   et `js/ui/icones.generated.js` (Python 3 avec Pillow). `scripts/icones/preview.py` montre un
@@ -344,7 +370,7 @@ nuits, aller à un chapitre, et voir l'état complet de la partie.
 | [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | la carte de la ferme : découpage, cartes Tiled, pièges à éviter |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |
-| [`docs/arbre_technologique.md`](docs/arbre_technologique.md) | proposition d'arbre des technologies v2 (`docs/techtree_v2.js`) |
+| [`docs/arbre_technologique.md`](docs/arbre_technologique.md) | proposition d'arbre des technologies v2, historique (`docs/techtree_v2.js`) ; la source de vérité est `data/techtree.json` |
 | [`worker/README.md`](worker/README.md) | installation du Worker Cloudflare et du rapport quotidien |
 
 ## Suivi de session et politique de cookies
@@ -365,7 +391,7 @@ Control ou Do Not Track du navigateur désactive tout. La politique publique est
     `sessions/<sid>.json` dans un bucket R2 (juridiction UE). Le fichier
     `wrangler.toml` (racine) décrit ce Worker.
   - Ouvert en local (`file://`, `localhost`) : vers `http://127.0.0.1:8787/session`, où
-    `node collect-server.mjs` écrit les sessions dans `./sessions/` (essais).
+    `node scripts/collect-server.mjs` écrit les sessions dans `./sessions/` (essais).
   - Sur tout autre domaine : rien n'est envoyé.
 - **Si vous modifiez ce qui est collecté**, mettez à jour `cookies.html` et
   `POLICY_VERSION` dans `js/telemetry.js` : le consentement est alors redemandé.

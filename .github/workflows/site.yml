@@ -1,14 +1,21 @@
 name: Tests et mise en ligne
 
-# À chaque push : les données sont régénérées, les tests passent, le site est
-# construit (scripts/build-site.mjs). Sur main, s'il n'y a aucune erreur, le
+# À chaque push sur main et à chaque pull request : les fichiers générés commités
+# (données, encyclopédie, cartes) sont vérifiés à jour, les tests passent, le site
+# est construit (scripts/build-site.mjs). Sur main, s'il n'y a aucune erreur, le
 # site construit est publié sur GitHub Pages ; à la moindre erreur, le site en
 # ligne reste sur sa version précédente.
 #
+# Un fichier généré pas à jour fait échouer l'action : relancer en local
+# « npm run build:data », « node scripts/build-encyclopedie.mjs » ou
+# « npm run build:map », puis commiter le résultat.
+#
 # Réglage du dépôt requis, une fois : Settings › Pages › Source : GitHub Actions.
 
+# push limité à main : une branche avec une pull request n'est pas testée deux fois.
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -27,22 +34,23 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Installer esbuild
-        run: npm install --no-audit --no-fund
-      # Les fichiers générés sont refaits ici : une donnée modifiée sans relancer
-      # les scripts (depuis un téléphone, par exemple) est quand même prise en compte.
-      - name: Données du jeu (vérifiées, puis générées)
-        run: node scripts/build-data.mjs
-      - name: Encyclopédie (générée)
-        run: node build-encyclopedie.mjs
+          cache: npm
+      - name: Installer esbuild (versions de package-lock.json)
+        run: npm ci --no-audit --no-fund
+      - name: Données du jeu (vérifiées, et à jour)
+        run: node scripts/build-data.mjs --check
+      - name: Encyclopédie (à jour)
+        run: node scripts/build-encyclopedie.mjs --check
+      - name: Cartes (à jour avec les cartes Tiled)
+        run: node scripts/build-map.mjs --check
       - name: Vérification des données
-        run: node test-data.mjs
+        run: node tests/test-data.mjs
       - name: Moteur du jeu
-        run: node run-tests.mjs
+        run: node tests/run-tests.mjs
       - name: Suivi de session
-        run: node test-telemetry.mjs
+        run: node tests/test-telemetry.mjs
       - name: Rapport quotidien
-        run: node test-report.mjs
+        run: node tests/test-report.mjs
       - name: Actions de l'interface
         run: node scripts/check-actions.mjs
       - name: Modules et fichiers de la page

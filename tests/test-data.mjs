@@ -4,10 +4,10 @@
 // qu'on peut faire en ajoutant un objet, une recette ou une culture est bien
 // signalée, avec un message qui dit où.
 //
-// Usage : node test-data.mjs
+// Usage : node tests/test-data.mjs
 
 import { readdirSync, readFileSync } from 'node:fs';
-import { EFFETS_TECHNO, compileData, loadData, sourcesOf, stripNotes, validateData } from './scripts/lib/data.mjs';
+import { EFFETS_TECHNO, compileData, loadData, sourcesOf, stripNotes, validateData } from '../scripts/lib/data.mjs';
 
 let passed = 0;
 const failures = [];
