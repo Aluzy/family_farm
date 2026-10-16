@@ -1,0 +1,141 @@
+{
+ "especes": {
+  "marmotte": {
+   "image": "faune_marmotte.png",
+   "frameWidth": 16,
+   "frameHeight": 16,
+   "anchor": {
+    "x": 8,
+    "y": 15
+   },
+   "frames": [
+    "assise_0",
+    "assise_1",
+    "marche_0",
+    "marche_1"
+   ],
+   "nom": "Une marmotte"
+  },
+  "bouquetin": {
+   "image": "faune_bouquetin.png",
+   "frameWidth": 32,
+   "frameHeight": 32,
+   "anchor": {
+    "x": 16,
+    "y": 30
+   },
+   "frames": [
+    "debout_0",
+    "debout_1",
+    "marche_0",
+    "marche_1",
+    "marche_2",
+    "marche_3"
+   ],
+   "nom": "Un bouquetin"
+  },
+  "aigle": {
+   "image": "faune_aigle.png",
+   "frameWidth": 32,
+   "frameHeight": 32,
+   "anchor": {
+    "x": 16,
+    "y": 16
+   },
+   "frames": [
+    "vol_0",
+    "vol_1"
+   ],
+   "nom": "Un aigle royal"
+  },
+  "mouette": {
+   "image": "faune_mouette.png",
+   "frameWidth": 16,
+   "frameHeight": 16,
+   "anchor": {
+    "x": 8,
+    "y": 15
+   },
+   "frames": [
+    "debout_0",
+    "debout_1",
+    "vol_0",
+    "vol_1"
+   ],
+   "nom": "Une mouette"
+  },
+  "crabe": {
+   "image": "faune_crabe.png",
+   "frameWidth": 16,
+   "frameHeight": 16,
+   "anchor": {
+    "x": 8,
+    "y": 12
+   },
+   "frames": [
+    "marche_0",
+    "marche_1"
+   ],
+   "nom": "Un crabe"
+  },
+  "dauphin": {
+   "image": "faune_dauphin.png",
+   "frameWidth": 32,
+   "frameHeight": 32,
+   "anchor": {
+    "x": 16,
+    "y": 24
+   },
+   "frames": [
+    "saut_0",
+    "saut_1",
+    "saut_2",
+    "saut_3",
+    "gerbe"
+   ],
+   "nom": "Un dauphin"
+  }
+ },
+ "trouvailles": {
+  "ammonite": {
+   "frame": 0,
+   "genre": "fossile",
+   "nom": "Une ammonite fossile"
+  },
+  "trilobite": {
+   "frame": 1,
+   "genre": "fossile",
+   "nom": "Un trilobite fossile"
+  },
+  "quartz": {
+   "frame": 2,
+   "genre": "pierre",
+   "nom": "Un cristal de quartz"
+  },
+  "amethyste": {
+   "frame": 3,
+   "genre": "pierre",
+   "nom": "Une améthyste"
+  },
+  "coquille": {
+   "frame": 4,
+   "genre": "coquillage",
+   "nom": "Une coquille Saint-Jacques"
+  },
+  "bulot": {
+   "frame": 5,
+   "genre": "coquillage",
+   "nom": "Un bulot"
+  },
+  "corail": {
+   "frame": 6,
+   "genre": "corail",
+   "nom": "Une branche de corail"
+  },
+  "perle": {
+   "frame": 7,
+   "genre": "perle",
+   "nom": "Une perle, dans son huître"
+  }
+ }
+}

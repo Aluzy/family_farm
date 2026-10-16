@@ -714,7 +714,10 @@ def objets_bus(lignes, points, i):
                     'x': x, 'y': y, 'width': 0, 'height': 0})
         i += 1
     return out, i
-ARRIVEES = {'ferme': (2.5, 169.6)}
+ARRIVEES = {'ferme': (2.5, 169.6), 'gare': (28.5, 99.4)}
+# Le train (js/ville-carte.js) : il roule sur la voie de l'est, le long du quai de la gare ;
+# « arret » : l'axe de la voie et où s'arrête le milieu du train, « quai » : où l'on monte.
+GARE = {'arret': (P.VOIES[1], 94 * T), 'quai': (18.7 * T, 94 * T)}
 
 GAREES = []      # les voitures garées : (x, y, demi-largeur, demi-hauteur) de leur emprise au sol
 
@@ -756,7 +759,12 @@ def objets_carte(premier_id):
                          'x': x * T, 'y': y * T, 'width': 0, 'height': 0})
         i += 1
     bus, i = objets_bus(*bus_scolaire(), i)
-    return routes, carrefours, garees, batiments, passages, arrivees, bus, i
+    gare = []
+    for nom, (x, y) in GARE.items():
+        gare.append({'id': i, 'name': nom, 'type': '', 'point': True, 'rotation': 0, 'visible': True,
+                     'x': x, 'y': y, 'width': 0, 'height': 0})
+        i += 1
+    return routes, carrefours, garees, batiments, passages, arrivees, bus, gare, i
 
 
 def main():
@@ -764,6 +772,8 @@ def main():
     for (a, b), p in PLANCHE_PASSAGE.items():
         S.jeu_de_passage(PLANCHES[p], a, b)
     for m, n in S.VARIANTES.items():
+        if m not in MATIERE_SOL:
+            continue          # (les sols de la montagne et de la plage)
         for v in range(n):
             PLANCHES[MATIERE_SOL[m]].ajoute(S.plein(m, v), f'{m}_{v}')
 
@@ -806,11 +816,11 @@ def main():
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                         'opacity': 1, 'visible': True, 'data': data})
-    routes, carrefours, garees, batis, passages, arrivees, bus, prochain = objets_carte(2)
+    routes, carrefours, garees, batis, passages, arrivees, bus, gare, prochain = objets_carte(2)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': len(couches) + 9, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': len(couches) + 10, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             # où la promeneuse arrive (ville-carte.html) : sur le trottoir du bas, devant le parc
@@ -840,6 +850,9 @@ def main():
             # le bus de l'école : ses trajets, ses arrêts, le chemin des enfants
             {'id': len(couches) + 8, 'name': 'bus', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
              'visible': True, 'x': 0, 'y': 0, 'objects': bus},
+            # le train : où il s'arrête, où l'on monte
+            {'id': len(couches) + 9, 'name': 'gare', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': gare},
         ],
     }
     with open(os.path.join(ASSETS, 'ville.tmj'), 'w') as f:

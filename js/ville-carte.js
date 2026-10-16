@@ -39,6 +39,19 @@
  * de l'école (couche « bus » : ses trajets, ses arrêts, le chemin des enfants) passe le matin et
  * le soir : il roule avec les autres voitures et s'arrête le temps que les enfants de la
  * famille montent ou descendent (BUS.scenes : l'heure de chaque scène, carte par carte).
+ *
+ * La gare (le bâtiment « gare », couche « gare » : où s'arrête le train, où l'on monte) : un
+ * toucher dessus ouvre la fenêtre des départs (TRAIN.gares). On va jusqu'au quai, le train
+ * arrive, on monte, il repart et la caméra le suit jusqu'à la carte d'arrivée (?carte=montagne
+ * ou plage, &train=nord ou sud : le sens où il roule) ; là, on le voit arriver, et quand il
+ * s'arrête on paraît devant la gare. La montagne et la plage sont des terminus : le train y
+ * reste à quai ; en ville, il repart.
+ *
+ * La montagne et la plage (scripts/ville/montagne.py, plage.py) : des trouvailles à ramasser
+ * (couche « trouvailles » : un genre par endroit ; chaque jour, une partie des endroits, et ce
+ * qu'on a ramassé ne revient que le lendemain — une maquette : rien n'entre encore dans
+ * l'inventaire, un carnet les compte), des animaux à regarder (couche « animaux » : une zone
+ * par espèce, FAUNE), les entrées des grottes (couche « grottes »).
  */
 (function () {
   'use strict';
@@ -54,11 +67,12 @@
   // La carte : ?carte=ville (par défaut) ou ?carte=transition (entre la ferme et la ville,
   // scripts/ville/transition.py) ; ?arrivee=<nom> : le point de la couche « arrivees » où l'on
   // apparaît (sinon « depart »).
-  const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json' };
+  const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json', montagne: 'assets/montagne.json', plage: 'assets/plage.json' };
   const PARAMS = new URLSearchParams(window.location.search);
   const NOM_CARTE = CARTES[PARAMS.get('carte')] ? PARAMS.get('carte') : 'ville';
   const MAP = { key: NOM_CARTE, file: CARTES[NOM_CARTE] };
-  if (NOM_CARTE === 'transition') document.title = 'Le chemin de la ville — Ferme Familiale';
+  const TITRES = { transition: 'Le chemin de la ville', montagne: 'La montagne', plage: 'La plage' };
+  if (TITRES[NOM_CARTE]) document.title = TITRES[NOM_CARTE] + ' — Ferme Familiale';
   // Les passages vers une autre carte (couche « passages » : un rectangle au bord, sa cible, le
   // sens de sa flèche) : la flèche bleue (assets/fleche_passage.png, scripts/ville/fleche.py :
   // droite, gauche, haut, bas) paraît quand la promeneuse est à moins de `near` px, se balance
@@ -67,7 +81,7 @@
   const HERO = { key: 'fermiere', file: 'assets/fermiere.png', names: 'assets/fermiere.json', w: 16, h: 32, foot: 30, speed: 48, stride: 4 };
   // Les couches qu'on ne traverse pas, et celle qui passe devant la promeneuse (le feuillage).
   // (les bâtiments et les voitures garées : par leur emprise au sol, couches « batiments » et « garees »)
-  const OBSTACLES = ['fontaines', 'mobilier'];
+  const OBSTACLES = ['fontaines', 'mobilier', 'falaise', 'mer'];
   // les couches des bâtiments, doublées d'un exemplaire « _devant » au-dessus des personnages
   const BATI = ['murs', 'pierre_de_taille', 'vitrages', 'charpente', 'toits', 'menuiserie'];
   const BATI_ALPHA = 0.45;
@@ -107,6 +121,38 @@
         { nom: 'matin', debut: 7.2, fin: 8.6, bus: 'bus_matin', arret: 'arret_matin', enfants: 'enfants_matin', monter: false },
         { nom: 'soir', debut: 15.6, fin: 16.4, bus: 'bus_soir', arret: 'arret_soir', enfants: 'enfants_soir', monter: true },
       ],
+    },
+  };
+  // Le train (assets/ville_train.png et .json, scripts/ville/train.py : la cabine du nord, la
+  // voiture, la cabine du sud) : vitesses en px par seconde (à l'écran, la voie est nord-sud).
+  // Il paraît à `lead` px de son arrêt, en fondu ; on le quitte `leaveAfter` s après son départ.
+  // gares : les départs de chaque carte (la carte d'arrivée, le sens où l'on roule).
+  const TRAIN = {
+    key: 'train', file: 'assets/ville_train.png', meta: 'assets/ville_train.json', w: 48, h: 112,
+    speed: 190, accel: 60, decel: 80, lead: 720, board: 1.0, alight: 0.6, resume: 1.6, leaveAfter: 2.8,
+    gares: {
+      ville: [{ carte: 'montagne', label: '⛰️ La montagne', sens: 'nord' }, { carte: 'plage', label: '🏖️ La plage', sens: 'sud' }],
+      montagne: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'sud' }],
+      plage: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'nord' }],
+    },
+    terminus: { montagne: true, plage: true },
+  };
+  // Les trouvailles (assets/trouvailles.png, scripts/ville/faune.py) : `part` des endroits en
+  // ont une chaque jour ; on la ramasse à `reach` px. Ce qu'on a ramassé (et le carnet) :
+  // localStorage « ferme-trouvailles ».
+  const FINDS = { key: 'trouvailles', file: 'assets/trouvailles.png', store: 'ferme-trouvailles', part: 0.6, reach: 24 };
+  // Les animaux (assets/faune_<espèce>.png, assets/faune.json) : par zone, `n` animaux ; `speed`
+  // en px/s, `peur` : la distance où la promeneuse les dérange.
+  const FAUNE = {
+    meta: 'assets/faune.json',
+    cartes: { montagne: ['marmotte', 'bouquetin', 'aigle'], plage: ['mouette', 'crabe', 'dauphin'] },
+    especes: {
+      marmotte: { size: 16, n: 2, speed: 18, peur: 52, texte: '🐾 Une marmotte : elle siffle pour prévenir les autres.' },
+      bouquetin: { size: 32, n: 2, speed: 11, peur: 0, texte: '🐐 Un bouquetin : il grimpe les rochers les plus raides.' },
+      aigle: { size: 32, n: 1, texte: '🦅 Un aigle royal tourne très haut dans le ciel.' },
+      mouette: { size: 16, n: 3, speed: 16, peur: 44, texte: '🕊️ Une mouette : elle guette les restes du pique-nique.' },
+      crabe: { size: 16, n: 2, speed: 20, peur: 40, texte: '🦀 Un crabe : il file de côté.' },
+      dauphin: { size: 32, n: 1, texte: '🐬 Un dauphin saute au large !' },
     },
   };
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -157,6 +203,18 @@
       this.load.spritesheet(BUS.key, v(BUS.file), { frameWidth: 112, frameHeight: 112 });
       this.load.json(BUS.key + '_meta', v(BUS.meta));
       this.load.json('perso_cases', v(BUS.kid.cases));
+      if (TRAIN.gares[NOM_CARTE]) {
+        this.load.spritesheet(TRAIN.key, v(TRAIN.file), { frameWidth: TRAIN.w, frameHeight: TRAIN.h });
+        this.load.json(TRAIN.key + '_meta', v(TRAIN.meta));
+      }
+      if (FAUNE.cartes[NOM_CARTE]) {
+        this.load.json('faune', v(FAUNE.meta));
+        this.load.spritesheet(FINDS.key, v(FINDS.file), { frameWidth: 16, frameHeight: 16 });
+        for (const e of FAUNE.cartes[NOM_CARTE]) {
+          const z = FAUNE.especes[e].size;
+          this.load.spritesheet('faune_' + e, v('assets/faune_' + e + '.png'), { frameWidth: z, frameHeight: z });
+        }
+      }
       // les enfants de la partie (pour la scène du bus)
       const h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
       for (const e of (h && h.enfants) || []) {
@@ -216,6 +274,9 @@
       this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), HERO.key, this.frame('idle_bas_0')).setOrigin(0.5, HERO.foot / HERO.h);
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x1e1a18, 0.35);
       this.heroPos = { x: d.x, y: d.y };
+      this.heroAlpha = 1;
+      this.locked = false;          // pendant le voyage en train : ni toucher, ni clavier
+      this.dialog = false;
       this.face = 'bas';
       this.walked = 0;
       this.path = [];
@@ -234,18 +295,26 @@
       this.clockEl = document.getElementById('horloge');
       this.clockAt = -1e9;
       this.stepClock(0);
-      // un toucher : sur une flèche, changer de carte ; ailleurs, y aller
+      this.makeHud();
+      // un toucher : sur une flèche, changer de carte ; sur la gare, la fenêtre des départs ;
+      // sur une trouvaille, la ramasser ; sur un animal ou une grotte, ce qu'on en voit ;
+      // ailleurs, y aller
       this.input.on('pointerup', (p) => {
-        if (p.getDistance() > 8) return;
+        if (p.getDistance() > 8 || this.locked || this.dialog) return;
         const w = cam.getWorldPoint(p.x, p.y);
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapGrotte(w)) return;
         this.goTo(w.x, w.y);
       });
       // les trajets du bus de l'école roulent avec les autres (mêmes carrefours), sans voitures tirées dessus
       const busObjs = objects('bus');
       this.makeTraffic(objects('routes').concat(busObjs.filter((o) => o.polyline && /^bus_/.test(o.name)).map((o) => Object.assign({}, o, { bus: true }))), objects('carrefours'));
       this.makeSchool(busObjs);
+      this.makeGare(objects('gare'));
+      this.makeFinds(objects('trouvailles'));
+      this.makeFauna(objects('animaux'));
+      this.grottes = objects('grottes');
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A') : null;
       window.Ville = { scene: this };
     }
@@ -670,6 +739,425 @@
       }
     }
 
+    // ---------- les messages, la fenêtre de la gare ----------
+
+    makeHud() {
+      this.msgEl = document.getElementById('message');
+      this.gareEl = document.getElementById('gare-fenetre');
+      const aide = document.getElementById('aide-texte');
+      const textes = {
+        ville: 'Touchez un trottoir pour y marcher · la gare pour prendre le train',
+        montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
+        plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
+      };
+      if (aide && textes[NOM_CARTE]) aide.textContent = textes[NOM_CARTE];
+      const annuler = document.getElementById('gare-annuler');
+      if (annuler) annuler.addEventListener('click', () => this.closeGare());
+      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.dialog) this.closeGare(); });
+    }
+
+    say(texte) {
+      if (!this.msgEl) return;
+      this.msgEl.textContent = texte;
+      this.msgEl.hidden = false;
+      clearTimeout(this.sayTimer);
+      this.sayTimer = setTimeout(() => { this.msgEl.hidden = true; }, 3600);
+    }
+
+    // La gare touchée (le dessin du bâtiment « gare ») : la fenêtre des départs.
+    tapGare(w) {
+      const b = (this.buildings || []).find((q) => q.name === 'gare');
+      if (!b || !this.gare || !TRAIN.gares[NOM_CARTE] || w.x < b.x0 || w.x > b.x1 || w.y < b.top || w.y > b.base + 8) return false;
+      this.openGare();
+      return true;
+    }
+
+    openGare() {
+      const el = this.gareEl, list = TRAIN.gares[NOM_CARTE];
+      if (!el || !list) return;
+      const box = document.getElementById('gare-choix');
+      box.textContent = '';
+      for (const d of list) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = d.label;
+        b.addEventListener('click', () => this.startTrip(d));
+        box.appendChild(b);
+      }
+      const texte = document.getElementById('gare-texte');
+      if (texte) texte.textContent = list.length > 1 ? 'Le train part dans un instant. Où voulez-vous aller ?' : 'Le train vous ramène à la gare de la ville.';
+      el.hidden = false;
+      this.dialog = true;
+      const first = box.querySelector('button');
+      if (first) first.focus();
+    }
+
+    closeGare() {
+      if (this.gareEl) this.gareEl.hidden = true;
+      // (le relâchement du clic qui ferme la fenêtre ne doit pas faire marcher la promeneuse)
+      setTimeout(() => { this.dialog = false; }, 60);
+    }
+
+    // ---------- le train ----------
+
+    makeGare(objs) {
+      const pt = (n) => objs.find((o) => o.name === n);
+      const arret = pt('arret'), quai = pt('quai');
+      this.train = null;
+      this.trip = null;
+      this.arrival = null;
+      this.trainMeta = this.cache.json.get(TRAIN.key + '_meta') || null;
+      this.gare = arret && this.trainMeta && this.textures.exists(TRAIN.key)
+        ? { x: arret.x, stopY: arret.y, quai: quai ? { x: quai.x, y: quai.y } : { x: arret.x + 26, y: arret.y } } : null;
+      if (!this.gare) return;
+      const sens = PARAMS.get('train'), terminus = !!TRAIN.terminus[NOM_CARTE];
+      if (sens === 'nord' || sens === 'sud') this.arriveByTrain(sens === 'nord' ? -1 : 1, terminus);
+      else if (terminus) this.addTrain(this.gare.stopY, 0);          // à quai : il attend le retour
+    }
+
+    // La rame : ses trois voitures, `y` le milieu de celle du milieu ; dir : -1 vers le nord, 1 vers le sud.
+    addTrain(y, dir) {
+      const m = this.trainMeta;
+      if (this.train) for (const s of this.train.parts) s.destroy();
+      const parts = m.pieces.map((_, k) => this.add.sprite(this.gare.x, y, TRAIN.key, k).setOrigin(m.anchor.x / m.frameWidth, m.anchor.y / m.frameHeight));
+      this.train = { y, v: 0, dir, parts, alpha: 1, mode: 'arret', gone: 0, fadeIn: false, fadeOut: false };
+      this.placeTrain();
+      return this.train;
+    }
+
+    // Il arrive : il paraît à TRAIN.lead px de l'arrêt, en fondu, et freine pour s'arrêter pile.
+    trainIn(dir) {
+      const t = this.addTrain(this.gare.stopY - dir * TRAIN.lead, dir);
+      Object.assign(t, { mode: 'approche', v: TRAIN.speed, alpha: 0, fadeIn: true });
+      this.placeTrain();
+      return t;
+    }
+
+    placeTrain() {
+      const t = this.train, m = this.trainMeta, n = t.parts.length;
+      t.parts.forEach((s, k) => {
+        const y = t.y + (k - (n - 1) / 2) * m.pas;
+        s.setPosition(Math.round(this.gare.x), Math.round(y)).setDepth(y).setAlpha(t.alpha);
+      });
+    }
+
+    stepTrain(dt) {
+      const t = this.train;
+      if (!t) return;
+      if (t.mode === 'approche') {
+        const rest = (this.gare.stopY - t.y) * t.dir;
+        const target = rest <= 0 ? 0 : Math.min(TRAIN.speed, Math.max(12, Math.sqrt(2 * TRAIN.decel * rest)));
+        t.v = target < t.v ? target : Math.min(target, t.v + TRAIN.accel * dt);
+        t.y += t.dir * Math.min(t.v * dt, Math.max(0, rest));
+        if ((this.gare.stopY - t.y) * t.dir <= 0.5) { t.y = this.gare.stopY; t.v = 0; t.mode = 'arret'; }
+      } else if (t.mode === 'depart') {
+        t.v = Math.min(TRAIN.speed, t.v + TRAIN.accel * dt);
+        t.y += t.dir * t.v * dt;
+        t.gone += t.v * dt;
+        if (t.fadeOut) {
+          t.alpha = Math.max(0, Math.min(t.alpha, (TRAIN.lead - t.gone) / 200));
+          if (t.gone >= TRAIN.lead) { for (const s of t.parts) s.destroy(); this.train = null; return; }
+        }
+      }
+      if (t.fadeIn) { t.alpha = Math.min(1, t.alpha + dt * 2.5); if (t.alpha >= 1) t.fadeIn = false; }
+      this.placeTrain();
+    }
+
+    // Un départ choisi : la promeneuse va au quai, le train arrive (ou attend à quai), elle
+    // monte, il part ; la caméra le suit, puis la carte d'arrivée.
+    startTrip(dest) {
+      this.closeGare();
+      if (!this.gare || this.trip) return;
+      const dir = dest.sens === 'nord' ? -1 : 1;
+      const cible = `ville-carte.html?carte=${dest.carte}&arrivee=gare&train=${dest.sens}`;
+      this.locked = true;
+      if (reduced()) { this.leave({ cible }); return; }
+      this.trip = { cible, dir, phase: 'quai', wait: 0 };
+      this.path = [];
+      this.goTo(this.gare.quai.x, this.gare.quai.y);
+      if (this.train && this.train.mode === 'arret') this.train.dir = dir;       // à quai : il repartira dans l'autre sens
+      else this.trainIn(dir);
+    }
+
+    stepTrip(dt) {
+      const tr = this.trip, t = this.train;
+      if (!tr || !t) return;
+      const P = this.heroPos, q = this.gare.quai;
+      if (tr.phase === 'quai') {
+        // (pas de chemin jusqu'au quai : elle y est portée)
+        if (!this.path.length && Math.hypot(P.x - q.x, P.y - q.y) > 4) { P.x = q.x; P.y = q.y; }
+        if (!this.path.length && t.mode === 'arret') {
+          this.face = 'cote';
+          this.hero.setFlipX(q.x > this.gare.x);
+          tr.phase = 'montee';
+          tr.wait = TRAIN.board;
+        }
+      } else if (tr.phase === 'montee') {
+        this.heroAlpha = Math.max(0, this.heroAlpha - dt / 0.4);
+        tr.wait -= dt;
+        if (tr.wait <= 0) {
+          Object.assign(t, { mode: 'depart', v: 0, gone: 0 });
+          this.cameras.main.startFollow(t.parts[1], true, 0.1, 0.1);
+          tr.phase = 'depart';
+          tr.wait = TRAIN.leaveAfter;
+        }
+      } else if (tr.phase === 'depart') {
+        tr.wait -= dt;
+        if (tr.wait <= 0) { tr.phase = 'fin'; this.leave({ cible: tr.cible }); }
+      }
+    }
+
+    // Arrivée en train (?train=nord|sud) : on voit le train arriver ; à l'arrêt, la promeneuse
+    // paraît devant la gare. Hors d'un terminus, le train repart.
+    arriveByTrain(dir, terminus) {
+      if (reduced()) { if (terminus) this.addTrain(this.gare.stopY, 0); return; }
+      this.locked = true;
+      this.heroAlpha = 0;
+      const t = this.trainIn(dir);
+      const cam = this.cameras.main;
+      cam.startFollow(t.parts[1], true, 0.12, 0.12);
+      cam.centerOn(this.gare.x, this.gare.stopY);
+      this.arrival = { phase: 'train', wait: 0, terminus };
+    }
+
+    stepArrival(dt) {
+      const a = this.arrival, t = this.train;
+      if (!a) return;
+      if (a.phase === 'train') {
+        if (!t || t.mode === 'arret') { a.phase = 'descente'; a.wait = TRAIN.alight; }
+      } else if (a.phase === 'descente') {
+        a.wait -= dt;
+        if (a.wait <= 0) { a.phase = 'paraît'; this.cameras.main.startFollow(this.hero, true, 0.08, 0.08); }
+      } else if (a.phase === 'paraît') {
+        this.heroAlpha = Math.min(1, this.heroAlpha + dt / 0.5);
+        if (this.heroAlpha >= 1) {
+          this.locked = false;
+          this.cameras.main.startFollow(this.hero, true, 0.12, 0.12);
+          a.phase = a.terminus ? 'fin' : 'repart';
+          a.wait = TRAIN.resume;
+        }
+      } else if (a.phase === 'repart') {
+        a.wait -= dt;
+        if (a.wait <= 0) {
+          if (t) Object.assign(t, { mode: 'depart', v: 0, gone: 0, fadeOut: true });
+          a.phase = 'fin';
+        }
+      }
+      if (a.phase === 'fin') this.arrival = null;
+    }
+
+    // ---------- les trouvailles ----------
+
+    makeFinds(objs) {
+      this.finds = [];
+      this.pick = null;
+      const meta = (this.cache.json.get('faune') || {}).trouvailles || {};
+      if (!objs.length || !this.textures.exists(FINDS.key)) return;
+      if (!this.textures.exists('eclat')) {
+        const g = this.make.graphics({ x: 0, y: 0, add: false });
+        g.fillStyle(0xffffff, 1).fillRect(2, 0, 1, 5).fillRect(0, 2, 5, 1);
+        g.generateTexture('eclat', 5, 5);
+        g.destroy();
+      }
+      const jour = this.time ? this.time.jour : Math.floor(Date.now() / 864e5);
+      const rec = this.readFinds();
+      if (rec.jour !== jour) { rec.jour = jour; rec.pris = []; }
+      this.findRec = rec;
+      const hash = (str) => {
+        let h = 2166136261;
+        for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+        return ((h >>> 0) % 10007) / 10007;
+      };
+      for (const o of objs) {
+        const genre = ((o.properties || []).find((q) => q.name === 'genre') || {}).value;
+        const id = NOM_CARTE + ':' + o.name;
+        if (hash(jour + '/' + id) > FINDS.part || rec.pris.includes(id)) continue;
+        const kinds = Object.entries(meta).filter(([, m]) => m.genre === genre);
+        if (!kinds.length) continue;
+        const [kind, m] = kinds[Math.floor(hash(id + '#' + jour) * kinds.length) % kinds.length];
+        const s = this.add.image(Math.round(o.x), Math.round(o.y), FINDS.key, m.frame).setOrigin(0.5, 0.8).setDepth(o.y - 2);
+        const e = this.add.image(Math.round(o.x + 4), Math.round(o.y - 11), 'eclat').setDepth(o.y - 1).setAlpha(0);
+        this.finds.push({ id, kind, nom: m.nom, x: o.x, y: o.y, s, e, phase: hash(id) * 7 });
+      }
+    }
+
+    readFinds() {
+      let r = null;
+      try { r = JSON.parse(window.localStorage.getItem(FINDS.store) || 'null'); } catch (e) { r = null; }
+      return r && Array.isArray(r.pris) ? Object.assign({ carnet: {} }, r) : { jour: null, pris: [], carnet: {} };
+    }
+
+    tapFind(w) {
+      const f = (this.finds || []).find((q) => Math.abs(w.x - q.x) <= 11 && w.y >= q.y - 16 && w.y <= q.y + 6);
+      if (!f) return false;
+      this.pick = f;
+      if (Math.hypot(this.heroPos.x - f.x, this.heroPos.y - f.y) > FINDS.reach) this.goTo(f.x, f.y + 4);
+      return true;
+    }
+
+    stepFinds(time) {
+      const P = this.heroPos;
+      for (const f of [...(this.finds || [])]) {
+        // un éclat, de temps en temps
+        const k = Math.sin(time / 520 + f.phase);
+        f.e.setAlpha(reduced() ? 0 : Math.max(0, k) ** 12);
+        const d = Math.hypot(P.x - f.x, P.y - f.y);
+        if ((this.pick === f && d <= FINDS.reach && !this.path.length) || d <= 9) this.collect(f);
+      }
+    }
+
+    collect(f) {
+      this.finds.splice(this.finds.indexOf(f), 1);
+      if (this.pick === f) this.pick = null;
+      f.e.destroy();
+      this.tweens.add({ targets: f.s, y: f.s.y - 12, alpha: 0, duration: reduced() ? 0 : 450, onComplete: () => f.s.destroy() });
+      const rec = this.findRec;
+      rec.pris.push(f.id);
+      rec.carnet[f.kind] = (rec.carnet[f.kind] || 0) + 1;
+      try { window.localStorage.setItem(FINDS.store, JSON.stringify(rec)); } catch (e) { /* ignoré */ }
+      this.say(`✨ ${f.nom} ! (dans le carnet : ${rec.carnet[f.kind]})`);
+    }
+
+    tapGrotte(w) {
+      const g = (this.grottes || []).find((o) => Math.abs(w.x - o.x) <= 20 && w.y >= o.y - 40 && w.y <= o.y + 10);
+      if (!g) return false;
+      this.say('🕳️ L’entrée d’une grotte. On pourra bientôt y descendre, chercher le fer, le cuivre, l’or et le platine.');
+      this.goTo(g.x, g.y + 8);
+      return true;
+    }
+
+    // ---------- les animaux ----------
+
+    makeFauna(zones) {
+      this.animals = [];
+      const meta = (this.cache.json.get('faune') || {}).especes || {};
+      const rnd = (a, b) => a + Math.random() * (b - a);
+      for (const z of zones) {
+        const esp = ((z.properties || []).find((q) => q.name === 'espece') || {}).value || z.name;
+        const def = FAUNE.especes[esp], m = meta[esp];
+        if (!def || !m || !this.textures.exists('faune_' + esp)) continue;
+        const frames = {};
+        m.frames.forEach((n, i) => { frames[n] = i; });
+        for (let i = 0; i < def.n; i++) {
+          const x = rnd(z.x, z.x + z.width), y = rnd(z.y, z.y + z.height);
+          const s = this.add.sprite(Math.round(x), Math.round(y), 'faune_' + esp, 0).setOrigin(m.anchor.x / m.frameWidth, m.anchor.y / m.frameHeight);
+          const a = { esp, def, nom: m.nom, zone: z, frames, s, x, y, tx: x, ty: y, state: 'repos', wait: rnd(0.5, 4), walked: 0, alt: 0, alpha: 1, t: 0 };
+          if (esp === 'aigle') Object.assign(a, { cx: x, cy: y, ang: rnd(0, 6.3), shadow: this.add.ellipse(0, 0, 16, 5, 0x1e1a18, 0.18).setDepth(0) });
+          if (esp === 'mouette') a.shadow = this.add.ellipse(0, 0, 8, 3, 0x1e1a18, 0.25).setVisible(false);
+          if (esp === 'dauphin') { a.state = 'attente'; a.wait = rnd(2, 6); s.setVisible(false); }
+          this.animals.push(a);
+        }
+      }
+    }
+
+    tapAnimal(w) {
+      const a = (this.animals || []).find((q) => q.s.visible && q.alpha > 0.5 && Math.abs(w.x - q.s.x) <= (q.def.size > 16 ? 16 : 10)
+        && w.y >= q.s.y - (q.def.size > 16 ? 30 : 16) && w.y <= q.s.y + 6);
+      if (!a) return false;
+      this.say(a.def.texte);
+      return true;
+    }
+
+    stepFauna(time, dt) {
+      if (!this.animals || !this.animals.length) return;
+      const P = this.heroPos, still = reduced();
+      const rnd = (a, b) => a + Math.random() * (b - a);
+      const inZone = (z) => ({ x: rnd(z.x, z.x + z.width), y: rnd(z.y, z.y + z.height) });
+      const frame = (a, n) => { if (a.frames[n] !== undefined) a.s.setFrame(a.frames[n]); };
+      for (const a of this.animals) {
+        const z = a.zone;
+        if (a.esp === 'aigle') {
+          // il tourne en grands cercles, son centre dérive lentement d'un bout à l'autre de la carte
+          if (!still) {
+            a.ang += dt * 0.32;
+            if (Math.hypot(a.tx - a.cx, a.ty - a.cy) < 8) { const p = inZone(z); a.tx = p.x; a.ty = p.y; }
+            const l = Math.hypot(a.tx - a.cx, a.ty - a.cy) || 1;
+            a.cx += (a.tx - a.cx) / l * 10 * dt;
+            a.cy += (a.ty - a.cy) / l * 10 * dt;
+          }
+          const x = a.cx + Math.cos(a.ang) * 96, y = a.cy + Math.sin(a.ang) * 54;
+          a.s.setPosition(Math.round(x), Math.round(y)).setDepth(2e6).setRotation(a.ang + Math.PI);
+          frame(a, Math.floor(time / 900) % 5 === 0 ? 'vol_1' : 'vol_0');
+          a.shadow.setPosition(Math.round(x + 34), Math.round(y + 70));
+          continue;
+        }
+        if (a.esp === 'dauphin') {
+          // de temps en temps, un saut au large : la gerbe, le saut, la gerbe
+          const seq = ['gerbe', 'saut_0', 'saut_1', 'saut_2', 'saut_3', 'gerbe'];
+          if (a.state === 'attente') {
+            a.wait -= dt;
+            if (a.wait <= 0 && !still) { const p = inZone(z); Object.assign(a, { x: p.x, y: p.y, state: 'saut', t: 0, sens: Math.random() < 0.5 ? -1 : 1 }); }
+          } else {
+            a.t += dt;
+            const k = Math.floor(a.t / 0.17);
+            if (k >= seq.length) { a.state = 'attente'; a.wait = rnd(4, 11); a.s.setVisible(false); continue; }
+            frame(a, seq[k]);
+            a.s.setVisible(true).setFlipX(a.sens < 0).setPosition(Math.round(a.x + a.sens * k * 5), Math.round(a.y)).setDepth(a.y);
+          }
+          continue;
+        }
+        const dHero = Math.hypot(P.x - a.x, P.y - a.y);
+        // dérangé : la marmotte rentre dans son terrier, le crabe file, la mouette s'envole
+        if (a.def.peur && dHero < a.def.peur && ['repos', 'marche'].includes(a.state) && !still) {
+          if (a.esp === 'marmotte') { a.state = 'cache'; a.wait = rnd(6, 11); }
+          else if (a.esp === 'crabe') {
+            const l = dHero || 1;
+            a.tx = Math.max(z.x, Math.min(z.x + z.width, a.x + (a.x - P.x) / l * 56));
+            a.ty = Math.max(z.y, Math.min(z.y + z.height, a.y + (a.y - P.y) / l * 20));
+            a.state = 'fuite';
+          } else if (a.esp === 'mouette') {
+            let p = inZone(z);
+            for (let i = 0; i < 6 && Math.hypot(p.x - P.x, p.y - P.y) < 90; i++) p = inZone(z);
+            Object.assign(a, { tx: p.x, ty: p.y, state: 'vol', t: 0, x0: a.x, y0: a.y });
+          }
+        }
+        let moving = false;
+        if (a.state === 'cache') {
+          a.alpha = Math.max(0, a.alpha - dt / 0.3);
+          a.wait -= dt;
+          if (a.wait <= 0) { const p = inZone(z); Object.assign(a, { x: p.x, y: p.y, state: 'sort' }); }
+        } else if (a.state === 'sort') {
+          a.alpha = Math.min(1, a.alpha + dt / 0.5);
+          if (a.alpha >= 1) { a.state = 'repos'; a.wait = rnd(1, 3); }
+        } else if (a.state === 'vol') {
+          const l = Math.hypot(a.tx - a.x0, a.ty - a.y0) || 1, dur = Math.max(1.2, l / 70);
+          a.t += dt;
+          const q = Math.min(1, a.t / dur);
+          a.x = a.x0 + (a.tx - a.x0) * q;
+          a.y = a.y0 + (a.ty - a.y0) * q;
+          a.alt = Math.sin(q * Math.PI) * 26;
+          if (q >= 1) { a.state = 'repos'; a.wait = rnd(2, 6); a.alt = 0; }
+        } else if (a.state === 'repos') {
+          a.wait -= dt;
+          if (a.wait <= 0 && !still) {
+            const p = inZone(z);
+            // la mouette s'envole parfois d'elle-même
+            if (a.esp === 'mouette' && Math.random() < 0.3) Object.assign(a, { tx: p.x, ty: p.y, state: 'vol', t: 0, x0: a.x, y0: a.y });
+            else Object.assign(a, { tx: p.x, ty: p.y, state: 'marche' });
+          }
+        } else if (a.state === 'marche' || a.state === 'fuite') {
+          const dx = a.tx - a.x, dy = a.ty - a.y, l = Math.hypot(dx, dy), st = a.def.speed * (a.state === 'fuite' ? 3 : 1) * dt;
+          if (a.esp !== 'crabe' && Math.abs(dx) > 0.5) a.s.setFlipX(dx < 0);
+          if (l <= st) { a.x = a.tx; a.y = a.ty; a.state = 'repos'; a.wait = rnd(1.5, 5); } else { a.x += dx / l * st; a.y += dy / l * st; }
+          a.walked += Math.min(l, st);
+          moving = true;
+        }
+        // les images
+        if (a.state === 'vol') {
+          frame(a, Math.floor(time / 140) % 2 ? 'vol_1' : 'vol_0');
+          if (a.tx !== a.x) a.s.setFlipX(a.tx < a.x);
+        } else if (moving) {
+          const n = a.esp === 'mouette' ? ['debout_0', 'debout_1'] : a.esp === 'bouquetin' ? ['marche_0', 'marche_1', 'marche_2', 'marche_3'] : ['marche_0', 'marche_1'];
+          frame(a, n[Math.floor(a.walked / 3) % n.length]);
+        } else {
+          const n = { marmotte: ['assise_0', 'assise_1'], bouquetin: ['debout_0', 'debout_1'], mouette: ['debout_0', 'debout_1'], crabe: ['marche_0', 'marche_0'] }[a.esp];
+          frame(a, n[Math.floor(time / 1300 + a.x) % 2]);
+        }
+        a.s.setPosition(Math.round(a.x), Math.round(a.y - a.alt)).setDepth(a.state === 'vol' ? 2e6 : a.y).setAlpha(a.alpha).setVisible(a.alpha > 0);
+        if (a.shadow) a.shadow.setVisible(a.state === 'vol').setPosition(Math.round(a.x), Math.round(a.y)).setDepth(a.y - 1);
+      }
+    }
+
     canWalk(tx, ty) {
       return !!(this.walk[ty] && this.walk[ty][tx]);
     }
@@ -727,10 +1215,15 @@
       this.stepPassages(time);
       this.stepClock(time);
       this.stepSchool(time, dt);
+      this.stepTrain(dt);
+      this.stepTrip(dt);
+      this.stepArrival(dt);
+      this.stepFinds(time);
+      this.stepFauna(time, dt);
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
-      const k = this.keys;
+      const k = this.locked ? null : this.keys;
       if (k) {
         vx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.Q.isDown || k.A.isDown ? 1 : 0);
         vy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.Z.isDown || k.W.isDown ? 1 : 0);
@@ -758,8 +1251,8 @@
         // debout : elle respire (deux images, lentement)
         H.setFrame(this.frame(`idle_${this.face}_${Math.floor(time / 600) % 2}`));
       }
-      H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y);
-      this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5);
+      H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y).setAlpha(this.heroAlpha);
+      this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5).setAlpha(this.heroAlpha);
       this.fadeFoliage(Math.round(P.x), Math.round(P.y));
       // les bâtiments autour des voitures, puis de la promeneuse
       const boxes = (this.cars || []).map((c) => ({ x: c.x - 30, y: c.y - 38, w: 60, h: 56, foot: c.y, see: false }));
