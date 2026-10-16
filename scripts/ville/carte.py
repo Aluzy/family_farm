@@ -88,10 +88,10 @@ def coins():
     # l'îlot de droite
     zone('trottoir', 42, 10, 56, 33)
     # en bas : le parc, le parking, le trottoir de droite et la place de la fontaine
-    zone('herbe', 0, 40, 56, 73)
+    zone('herbe', 0, 42, 56, 73)
     zone('asphalte', 5, 48, 23, 73)
     zone('trottoir', 9, 61, 9, 73)
-    zone('trottoir', 43, 40, 56, 41)
+    zone('trottoir', 0, 40, 56, 41)      # le trottoir du bas, d'un bout à l'autre
     return g
 
 
@@ -296,10 +296,10 @@ def details(c):
             return S.PLACE_C
         return S.place(x % T, y % T)
     d.remplit(int(cx - rx) - 1, int(cy - ry) - 1, int(cx + rx) + 2, int(cy + ry) + 2, pave)
-    for y in range(26, 32):
+    for y in range(26, 31):              # le chemin s'arrête à la palissade, avant le trottoir
         for x in (20, 21):
             d.colle(O.dalle(x + y), x * T, y * T)
-    for x in range(28, 32):
+    for x in range(27, 31):
         for y in (21, 22):
             d.colle(O.dalle(x * 3 + y), x * T, y * T)
     for x, y in ((21, 49), (47, 52), (12, 47), (33, 66)):
@@ -308,14 +308,16 @@ def details(c):
     bouquets = [(18, 27), (25, 26), (26, 27), (16, 30), (19, 23), (5, 40), (9, 45), (12, 42), (13, 45),
                 (21, 50), (15, 51), (9, 50), (44, 42), (55, 46), (50, 61), (39, 72), (45, 72), (34, 51),
                 (29, 57), (54, 59), (31, 69), (48, 70), (37, 56), (27, 46), (3, 47), (52, 66)]
-    for i, (x, y) in enumerate(bouquets):
-        f.colle(F.fleurs(i * 5), x * T, y * T)
-    pris = set(bouquets)
     g = coins()
+    herbe = lambda x, y: all(g[y + j][x + i] == 'herbe' for i in (0, 1) for j in (0, 1))
+    for i, (x, y) in enumerate(bouquets):
+        if herbe(x, y):                    # jamais sur un trottoir
+            f.colle(F.fleurs(i * 5), x * T, y * T)
+    pris = set(bouquets)
     for y in range(H):
         for x in range(W):
             sur_place = ((x + 0.5) * T - PLACE[0]) ** 2 / (PLACE[2] + 16) ** 2 + ((y + 0.5) * T - PLACE[1]) ** 2 / (PLACE[3] + 16) ** 2 < 1
-            if (x, y) in pris or sur_place or any(g[y + j][x + i] != 'herbe' for i in (0, 1) for j in (0, 1)):
+            if (x, y) in pris or sur_place or not herbe(x, y):
                 continue
             if hasard(x, y, 51) > 0.9:
                 f.colle(F.herbe_haute(int(hasard(x, y, 52) * 16)), x * T, y * T)
@@ -326,7 +328,7 @@ def details(c):
 # Les pieds des arbres, pins et buissons (en tuiles) : là où l'image a un grand arbre, deux
 # ou trois arbres de la ferme, plus petits. Chacun tient dans son carré d'herbe (rien ne passe
 # devant un mur ni sur une palissade) et le passage entre les palissades du parc reste libre.
-ARBRES = [(3.5, 15), (2.5, 44), (5.5, 44.5), (8.5, 44), (11.5, 44.5), (14.5, 44), (17.5, 44.5), (20.5, 44), (22.5, 45.5),
+ARBRES = [(3.5, 15), (6.5, 46), (9.5, 46.5), (12.5, 46), (15.5, 46.5), (18.5, 46), (21.5, 46.5),
           (28.5, 15.5), (30, 17), (28.5, 29), (30, 30.5), (29.5, 55.5), (31.5, 54), (34.5, 61.5), (36, 60),
           (52.5, 54.5), (54.5, 53), (27, 72.5), (30.5, 74), (33.5, 73.5), (36.5, 75), (51.5, 74.5),
           (54, 74.5), (56.5, 69), (57, 51)]
@@ -366,7 +368,7 @@ def objets(c):
     B.cloture_h(mob, 22 * T, 31 * T + 8, 31 * T + 12)
     B.cloture_v(mob, 31 * T + 8, 12 * T, 21 * T)
     B.cloture_v(mob, 31 * T + 8, 23 * T, 31 * T)
-    B.cloture_v(mob, 24 * T + 6, 40 * T, 59 * T)
+    B.cloture_v(mob, 24 * T + 6, 42 * T, 59 * T)
     B.cloture_v(mob, 24 * T + 6, 64 * T, H * T)
     B.cloture_h(mob, 24 * T, 27 * T, 59 * T + 12)
     mob.colle(O.banc(), 25 * T, 27 * T + 8)
@@ -375,7 +377,7 @@ def objets(c):
     mob.colle(O.banc(), 24 * T + 4, 60 * T)
     mob.colle(O.panneau(), 40 * T + 8, 50 * T)
     tonneau = O.tonneau()
-    mob.colle(tonneau, 5 * T, 45 * T)
+    mob.colle(tonneau, 23 * T + 4, 44 * T)
     mob.colle(tonneau, 44 * T, 45 * T)
     rev = O.reverbere()
     for x in (5, 12, 23):
