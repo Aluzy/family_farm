@@ -151,13 +151,23 @@ class Planche:
         """Le nombre de numéros de tuile que la planche occupe (images d'animation comprises)."""
         return self.colonnes * self.rangees() * self.images
 
-    def ecrit(self):
+    def ecrit(self, garde=False):
+        """Écrit le .png et le .tsx. garde : le .png est une planche retouchée à la main, on la
+        laisse telle quelle (elle doit avoir encore la taille de la planche dessinée : ses
+        tuiles aux mêmes places), seul le .tsx est réécrit."""
         c, r = self.colonnes, self.rangees()
         im = image(c * T, r * T * self.images)
         for t, frames in enumerate(self.tuiles):
             for k, f in enumerate(frames):
                 im.paste(f, ((t % c) * T, (t // c + k * r) * T))
-        im.save(os.path.join(ASSETS, self.nom + '.png'), optimize=True)
+        png = os.path.join(ASSETS, self.nom + '.png')
+        if garde and os.path.exists(png):
+            taille = Image.open(png).size
+            if taille != im.size:
+                raise SystemExit(f'{self.nom}.png (retouchée) fait {taille}, la planche dessinée {im.size} : '
+                                 'ses tuiles ont bougé, relancer avec --redessine puis reprendre les retouches')
+        else:
+            im.save(png, optimize=True)
         noms = {t: n for n, t in sorted(self.noms.items(), key=lambda kv: kv[0])}
         lignes = [
             '<?xml version="1.0" encoding="UTF-8"?>',

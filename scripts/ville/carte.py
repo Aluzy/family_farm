@@ -18,7 +18,8 @@
 #   ville_metal       les plaques d'égout, le climatiseur, les réverbères
 #   ville_eau         les deux fontaines, remplies de l'eau de la ferme (8 images d'animation)
 #   ville_vegetation  les arbres, pins et buissons de la ferme, et leurs ombres
-#   ville_vehicules   les voitures garées (cinq couleurs, en long et en travers)
+#   ville_vehicules   les voitures garées, tirées de assets/ville_voitures.png (scripts/ville/
+#                     voitures.py : cinq couleurs, huit directions, pour les faire rouler)
 #
 # Chaque matière est peinte sur sa propre couche de la carte, puis découpée en tuiles : une
 # planche ne garde qu'un exemplaire de chaque tuile (les motifs sont calés sur la grille). Les
@@ -32,6 +33,10 @@
 #
 #   python3 scripts/ville/carte.py            écrit les planches, les .tsx et la carte
 #   python3 scripts/ville/carte.py --apercu   écrit aussi apercu_ville.png (la carte rendue)
+#
+# Les planches de RETOUCHEES ont été reprises à la main : le script ne réécrit pas leur .png
+# (seulement leur .tsx), tant que leurs tuiles restent aux mêmes places ; --redessine les
+# redessine quand même (et efface les retouches).
 import json
 import os
 import sys
@@ -41,6 +46,7 @@ import batiments as B  # noqa: E402
 import ferme as F  # noqa: E402
 import objets as O  # noqa: E402
 import sol as S  # noqa: E402
+import voitures as V  # noqa: E402
 from commun import ASSETS, ROOT, H, T, W, Planche, Toile, hasard, image  # noqa: E402
 
 PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
@@ -58,6 +64,7 @@ PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
     Planche('ville_vegetation', "Arbres, pins et buissons de la ferme, et leurs ombres"),
     Planche('ville_vehicules', "Les voitures"),
 )}
+RETOUCHEES = {'ville_trottoir', 'ville_brique', 'ville_menuiserie'}
 MATIERE_SOL = {'asphalte': 'asphalte', 'trottoir': 'trottoir', 'herbe': 'herbe', 'place': 'pierre'}
 PLANCHE_PASSAGE = {('asphalte', 'trottoir'): 'trottoir', ('trottoir', 'herbe'): 'herbe',
                    ('asphalte', 'herbe'): 'herbe', ('herbe', 'place'): 'pierre'}
@@ -358,13 +365,23 @@ def objets(c):
             ombres.colle(ombre, x0 + w // 2 - 16, y0 + h - 8)
         veg.colle(im, x0, y0)
 
+    # les voitures garées : de 3/4 (scripts/ville/voitures.py), le centre au sol en (x, y), posées
+    # au pixel près de la grille pour que les mêmes voitures retrouvent les mêmes tuiles
     v = c['vehicules']
+
+    def gare(coul, direction, x, y):
+        v.colle(V.voiture(coul, direction), x - V.ANCRE[0], y - V.ANCRE[1])
+
+    # le long du trottoir de la grand-rue, dans le sens de leur voie (vers la gauche)
     for coul, x in (('rouge', 6), ('bleue', 13), ('blanche', 19), ('blanche', 25)):
-        v.colle(O.voiture(coul, True), x * T, 34 * T)
+        gare(coul, 'gauche', x * T + 32, 34 * T + 24)
+    # dans la rue qui descend : elles viennent vers nous
     for coul, y in (('rouge', 22), ('blanche', 27)):
-        v.colle(O.voiture(coul), 35 * T, y * T)
-    for coul, x in (('rouge', 88), ('marron', 144), ('blanche', 208), ('bleue', 264), ('bordeaux', 328)):
-        v.colle(O.voiture(coul), x, 49 * T)
+        gare(coul, 'avant', 35 * T + 16, y * T + 40)
+    # sur le parking, garées en marche avant (on voit leur coffre) ou en marche arrière
+    for coul, sens, x in (('rouge', 'arriere', 6), ('marron', 'arriere', 9), ('blanche', 'avant', 13),
+                          ('bleue', 'arriere', 16), ('bordeaux', 'avant', 20)):
+        gare(coul, sens, x * T, 49 * T + 40)
 
     mob = c['mobilier']
     B.cloture_h(mob, 14 * T, 20 * T, 31 * T + 12)
@@ -435,7 +452,8 @@ def main():
     for k, p in PLANCHES.items():
         premier[k] = gid
         gid += p.nombre()
-        p.ecrit()
+        p.ecrit(garde=p.nom in RETOUCHEES and '--redessine' not in sys.argv)
+    V.planche()
     couches = []
     for i, nom in enumerate(['sol'] + [c[0] for c in COUCHES]):
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
