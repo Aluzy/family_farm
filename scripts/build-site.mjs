@@ -41,7 +41,7 @@ try {
 const OUT = join(ROOT, '_site');
 const PAGES = ['index.html', 'jeu.html', 'encyclopedie.html', 'cookies.html', 'infra-monde.html', 'ville-carte.html'];
 const FOLDERS = ['css', 'assets', 'vendor'];
-const SCRIPTS = ['js/telemetry.js', 'js/ambient-life.js', 'js/fermier.js', 'js/farm-stage.js', 'js/infra-monde.js', 'js/ville-carte.js']; // scripts classiques, hors du regroupement
+const SCRIPTS = ['js/telemetry.js', 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', 'js/farm-stage.js', 'js/infra-monde.js', 'js/horloge-sortie.js', 'js/ville-carte.js']; // scripts classiques, hors du regroupement
 const ENTRY = 'js/main.js';
 const BUNDLE = 'js/jeu.bundle.js';
 
@@ -134,7 +134,7 @@ html = stamp('jeu.html', html);
 if (/type="module"/.test(html)) errors.push('jeu.html : il reste un <script type="module"> après le regroupement');
 /* les cartes Phaser à part (la ville, l'infra-monde) : leurs images et cartes aussi, par la
    même table, que leur script lit (fonction v) ; la table chargée juste avant lui */
-const MAP_PAGES = { 'ville-carte.html': 'js/ville-carte.js', 'infra-monde.html': 'js/infra-monde.js' };
+const MAP_PAGES = { 'ville-carte.html': 'js/horloge-sortie.js', 'infra-monde.html': 'js/infra-monde.js' };
 const mapPages = {};
 for (const [page, script] of Object.entries(MAP_PAGES)) {
   const tag = `<script src="${script}"></script>`;

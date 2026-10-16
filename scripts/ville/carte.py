@@ -678,6 +678,42 @@ DEPART = (35, 167)          # la tuile où l'on arrive en ville : le trottoir de
 # Le passage vers la carte de transition (et la ferme), au bout ouest de la route de la ferme :
 # son rectangle (en tuiles), le sens de sa flèche, sa cible ; et où l'on arrive en venant de là.
 PASSAGES = [('vers_la_ferme', 0, 168, 1, 178, 'gauche', 'ville-carte.html?carte=transition&arrivee=ville')]
+
+
+def bus_scolaire():
+    """Le bus de l'école (couche « bus », js/ville-carte.js) : le matin, il entre par la route de
+    la ferme, monte l'avenue, prend la rue de l'école et s'arrête devant l'école (« arret_matin ») ;
+    les enfants descendent et vont à la porte (« enfants_matin »). Le soir, il vient de l'est
+    par la rue de l'école, s'arrête près de l'abri (« arret_soir »), les enfants y montent
+    (« enfants_soir »), et il repart par l'avenue et la route de la ferme. En px."""
+    rues = {r[0]: r for r in P.RUES_V + P.RUES_H}
+    route, av, ecole = rues['route_de_la_ferme'], rues['avenue_ouest'], rues['rue_de_l_ecole']
+    est, ouest = W * T + P.HORS, -P.HORS
+    lignes = {
+        'bus_matin': [(ouest, P.file_h(route, True)), (P.file_v(av, False), P.file_h(route, True)),
+                      (P.file_v(av, False), P.file_h(ecole, True)), (est, P.file_h(ecole, True))],
+        'bus_soir': [(est, P.file_h(ecole, False)), (P.file_v(av, True), P.file_h(ecole, False)),
+                     (P.file_v(av, True), P.file_h(route, False)), (ouest, P.file_h(route, False))],
+        'enfants_matin': [(97.5 * T, P.file_h(ecole, True) - 26), (99 * T, 103 * T), (99 * T, 100 * T + 6)],
+        'enfants_soir': [(99 * T, 100 * T + 6), (96.5 * T, 103 * T), (95.5 * T, P.file_h(ecole, False) - 18)],
+    }
+    points = {'arret_matin': (98 * T, P.file_h(ecole, True)), 'arret_soir': (95 * T, P.file_h(ecole, False))}
+    return lignes, points
+
+
+def objets_bus(lignes, points, i):
+    """Les objets de la couche « bus » : une polyligne par trajet, un point par arrêt."""
+    out = []
+    for nom, pts in lignes.items():
+        x0, y0 = pts[0]
+        out.append({'id': i, 'name': nom, 'type': 'bus', 'rotation': 0, 'visible': True, 'x': x0, 'y': y0,
+                    'width': 0, 'height': 0, 'polyline': [{'x': x - x0, 'y': y - y0} for x, y in pts]})
+        i += 1
+    for nom, (x, y) in points.items():
+        out.append({'id': i, 'name': nom, 'type': 'arret', 'point': True, 'rotation': 0, 'visible': True,
+                    'x': x, 'y': y, 'width': 0, 'height': 0})
+        i += 1
+    return out, i
 ARRIVEES = {'ferme': (2.5, 169.6)}
 
 GAREES = []      # les voitures garées : (x, y, demi-largeur, demi-hauteur) de leur emprise au sol
@@ -719,7 +755,8 @@ def objets_carte(premier_id):
         arrivees.append({'id': i, 'name': nom, 'type': '', 'point': True, 'rotation': 0, 'visible': True,
                          'x': x * T, 'y': y * T, 'width': 0, 'height': 0})
         i += 1
-    return routes, carrefours, garees, batiments, passages, arrivees, i
+    bus, i = objets_bus(*bus_scolaire(), i)
+    return routes, carrefours, garees, batiments, passages, arrivees, bus, i
 
 
 def main():
@@ -769,11 +806,11 @@ def main():
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                         'opacity': 1, 'visible': True, 'data': data})
-    routes, carrefours, garees, batis, passages, arrivees, prochain = objets_carte(2)
+    routes, carrefours, garees, batis, passages, arrivees, bus, prochain = objets_carte(2)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': len(couches) + 8, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': len(couches) + 9, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             # où la promeneuse arrive (ville-carte.html) : sur le trottoir du bas, devant le parc
@@ -800,6 +837,9 @@ def main():
              'visible': True, 'x': 0, 'y': 0, 'objects': passages},
             {'id': len(couches) + 7, 'name': 'arrivees', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
              'visible': True, 'x': 0, 'y': 0, 'objects': arrivees},
+            # le bus de l'école : ses trajets, ses arrêts, le chemin des enfants
+            {'id': len(couches) + 8, 'name': 'bus', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': bus},
         ],
     }
     with open(os.path.join(ASSETS, 'ville.tmj'), 'w') as f:

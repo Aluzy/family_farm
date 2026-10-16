@@ -114,7 +114,7 @@ export function formatPercent(p) {
 // phrase ; weekdayName(day, true) met la majuscule, weekdayShort donne l'abréviation.
 export const JOURS_SEMAINE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
-function weekdayIndex(day) {
+export function weekdayIndex(day) {
   return (Math.max(1, Math.floor(Number(day) || 1)) - 1) % 7;
 }
 

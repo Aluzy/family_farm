@@ -261,6 +261,19 @@ PASSAGES = [
     ('vers_la_ville', W - 1, 14, W, 22, 'droite', 'ville-carte.html?carte=ville&arrivee=ferme'),
 ]
 ARRIVEES = {'ferme': (2.5, 18.9), 'ville': (45.5, 14.6)}
+
+
+def bus_scolaire():
+    """Le bus de l'école (couche « bus ») : il vient de la ville par la file du haut, s'arrête à
+    l'abri, fait demi-tour au bout du goudron et repart vers l'est. Le matin les enfants arrivent
+    de la ferme par le chemin et montent (« enfants_matin ») ; le soir ils descendent et
+    rentrent (« enfants_soir »). En px."""
+    milieu = (ROUTE[1] + ROUTE[2]) * T / 2
+    ouest_bus, haut, bas, est = 31 * T, milieu - 15, milieu + 15, W * T + 48
+    tour = [(est, haut), (ouest_bus, haut), (ouest_bus, bas), (est, bas)]
+    chemin_ = [(0.5 * T, 18.9 * T), (26 * T, 18.6 * T), (30 * T, 14.6 * T), (37 * T, 14.5 * T)]
+    return ({'bus_matin': tour, 'bus_soir': tour, 'enfants_matin': chemin_, 'enfants_soir': chemin_[::-1]},
+            {'arret': (38 * T, haut)})
 DEPART = (6, 18.9)
 
 
@@ -285,7 +298,18 @@ def objets_carte():
                       'x': x0 + 4, 'y': y0 + h - 30, 'width': w - 8, 'height': 24,
                       'properties': [{'name': 'haut', 'type': 'int', 'value': int(y0)}]})
         i += 1
-    return passages, arrivees, batis, i
+    bus = []
+    lignes, points = bus_scolaire()
+    for nom, pts in lignes.items():
+        x0, y0 = pts[0]
+        bus.append({'id': i, 'name': nom, 'type': 'bus', 'rotation': 0, 'visible': True, 'x': x0, 'y': y0,
+                    'width': 0, 'height': 0, 'polyline': [{'x': x - x0, 'y': y - y0} for x, y in pts]})
+        i += 1
+    for nom, (x, y) in points.items():
+        bus.append({'id': i, 'name': nom, 'type': 'arret', 'point': True, 'rotation': 0, 'visible': True,
+                    'x': x, 'y': y, 'width': 0, 'height': 0})
+        i += 1
+    return passages, arrivees, batis, bus, i
 
 
 def objet_groupe(id_, nom, objets):
@@ -329,12 +353,12 @@ def main():
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                         'opacity': 1, 'visible': True, 'data': data})
-    passages, arrivees, batis, prochain = objets_carte()
+    passages, arrivees, batis, bus, prochain = objets_carte()
     n = len(couches)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': n + 5, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': n + 6, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             objet_groupe(n + 1, 'depart', [{'id': 1, 'name': 'depart', 'type': '', 'point': True, 'rotation': 0, 'visible': True,
@@ -342,6 +366,7 @@ def main():
             objet_groupe(n + 2, 'arrivees', arrivees),
             objet_groupe(n + 3, 'passages', passages),
             objet_groupe(n + 4, 'batiments', batis),
+            objet_groupe(n + 5, 'bus', bus),
         ],
     }
     with open(os.path.join(ASSETS, 'transition.tmj'), 'w') as f:

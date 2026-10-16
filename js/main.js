@@ -9,6 +9,7 @@ import { AUTOSAVE_MS, setState, state } from './ui/store.js';
 import {setTelChapter, telView} from './ui/consent.js';
 import { loadOrCreateState, persistState } from './ui/storage.js';
 import { catchUp, frame, onHide, renderLoop, setMailSeen, syncJobs } from './ui/loop.js';
+import { applySortie } from './ui/sortie.js';
 import { render } from './ui/render.js';
 import { watch as watchEmojis } from './ui/pixel-emoji.js';
 import { setAlertState } from './ui/toasts.js';
@@ -64,6 +65,7 @@ setTelChapter(state.campagne ? state.campagne.chapitre : null);
 syncJobs();
 setMailSeen(new Set(mailbox(state).map((l) => l.id))); // les lettres déjà là ne sont pas réannoncées
 setAlertState(alertSnapshot(state));
+applySortie(); // le temps passé en ville (ou sur la carte de transition) : rejoué comme joué
 catchUp(); // Lot 11 : le temps passé page fermée depuis la dernière sauvegarde
 
 // Lot 9 : les chapitres proposés par le mode test viennent de DATA.
