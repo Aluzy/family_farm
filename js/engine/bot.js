@@ -23,7 +23,7 @@ import { buildVerger, buyOrchardSlot, buyTree, harvestTree, orchardFree, orchard
 import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
 import { buyTech, hasTech, techPoints, techResources, techStatus } from './techtree.js';
 import {
-  chapterCount, chapterReached, cropUnlocked, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
+  chapterCount, chapterProgress, chapterReached, cropUnlocked, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
   readMail, unreadMail,
 } from './campaign.js';
 import { sleep } from './night.js';
@@ -304,6 +304,28 @@ function botGather(state, id) {
   for (const r of techResources(state, id)) if (!r.ok) addItem(state, r.item, r.qte - r.stock);
 }
 
+// Les objectifs « objet » du chapitre en cours (grotte, Four) : le joueur simulé rapporte
+// les minerais de la grotte (comme botGather pour l'arbre), et fond un lingot au Four dès
+// qu'il le peut, minerais et bois compris.
+export function botObjectives(state) {
+  if (!state.campagne || state.campagne.fini) return;
+  for (const o of chapterProgress(state).objectifs) {
+    if (o.type !== 'objet' || o.ok) continue;
+    const manque = o.cible - o.valeur;
+    const r = DATA.recipes[o.item];
+    if (o.item.startsWith('minerai_')) addItem(state, o.item, manque);
+    else if (r && r.transformation && r.sortie === o.item) {
+      const st = state.stations && state.stations[r.station];
+      if (!st || !st.construit || st.tache || !recipeUnlocked(state, o.item)) continue;
+      for (const ing of r.ingredients) {
+        const item = ingredientOptions(ing)[0];
+        if (countItem(state, item) + EPS < ing.qte) addItem(state, item, ing.qte - countItem(state, item));
+      }
+      botStartRecipe(state, o.item);
+    }
+  }
+}
+
 export function botCook(state) {
   if (!state.stations) return;
   botBuyStaples(state);
@@ -506,6 +528,7 @@ export function botActions(state, strat, options, soir) {
   // version 1.14 : les plats d'abord (quelques points d'énergie) : sans eux, plus de
   // bonheur, et chaque action coûte jusqu'au double ; une grande ferme épuisait l'énergie
   // avant la cuisine.
+  botObjectives(state);
   botCook(state);
   botFarm(state);
   botHoe(state);
