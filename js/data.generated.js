@@ -294,7 +294,7 @@ export const RAW_DATA = {
     },
     "omelette": {
       "nom": "Omelette",
-      "icone": "🍳",
+      "icone": "🍳‍🥚",
       "station": "cuisine",
       "temps": 15,
       "ingredients": [{ "item": "oeuf", "qte": 3 }, { "item": "huile", "qte": 1 }]
@@ -329,7 +329,7 @@ export const RAW_DATA = {
     },
     "soupe_legumes": {
       "nom": "Soupe de légumes",
-      "icone": "🍲",
+      "icone": "🍲‍🥕",
       "station": "cuisine",
       "temps": 30,
       "ingredients": [{ "item": "carotte", "qte": 1 }, { "item": "oignon", "qte": 1 }, { "item": "patate", "qte": 1 }],
@@ -344,15 +344,15 @@ export const RAW_DATA = {
     },
     "quiche_epinards": {
       "nom": "Quiche aux épinards",
-      "icone": "🥧",
+      "icone": "🥧‍🥬",
       "station": "four",
       "temps": 40,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "oeuf", "qte": 2 }, { "item": "lait", "qte": 1 }, { "item": "epinard", "qte": 1 }]
     },
-    "fromage_frais": { "nom": "Fromage frais", "icone": "🧀", "station": "cuisine", "temps": 60, "ingredients": [{ "item": "lait", "qte": 3 }] },
+    "fromage_frais": { "nom": "Fromage frais", "icone": "🧀‍🥛", "station": "cuisine", "temps": 60, "ingredients": [{ "item": "lait", "qte": 3 }] },
     "riz_au_lait": {
       "nom": "Riz au lait",
-      "icone": "🍚",
+      "icone": "🍚‍🥛",
       "station": "cuisine",
       "temps": 30,
       "ingredients": [{ "item": "riz", "qte": 2 }, { "item": "lait", "qte": 1 }]
@@ -373,22 +373,22 @@ export const RAW_DATA = {
     },
     "confiture_fraises": {
       "nom": "Confiture de fraises",
-      "icone": "🍓",
+      "icone": "🫙‍🍓",
       "station": "cuisine",
       "temps": 30,
       "ingredients": [{ "item": "fraise", "qte": 4 }]
     },
     "chocolat_chaud": {
       "nom": "Chocolat chaud",
-      "icone": "🍫",
+      "icone": "☕‍🍫",
       "station": "cuisine",
       "temps": 20,
       "ingredients": [{ "item": "cacao", "qte": 1 }, { "item": "lait", "qte": 1 }],
       "priceMultiplier": 300
     },
     "cafe_boisson": {
-      "nom": "Café",
-      "icone": "☕",
+      "nom": "Café chaud",
+      "icone": "☕‍🔥",
       "station": "cuisine",
       "temps": 10,
       "ingredients": [{ "item": "cafe", "qte": 1 }],
@@ -485,14 +485,14 @@ export const RAW_DATA = {
     },
     "omelette_champignons": {
       "nom": "Omelette aux champignons",
-      "icone": "🍄",
+      "icone": "🍳‍🍄",
       "station": "cuisine",
       "temps": 15,
       "ingredients": [{ "item": "oeuf", "qte": 2 }, { "item": "champignon", "qte": 2 }]
     },
     "poisson_grille": {
       "nom": "Poisson grillé à l'ail",
-      "icone": "🐟",
+      "icone": "🐟‍🔥",
       "station": "cuisine",
       "temps": 15,
       "ingredients": [{ "item": "poisson", "qte": 1 }, { "item": "ail", "qte": 1 }]
@@ -506,21 +506,21 @@ export const RAW_DATA = {
     },
     "creme_marrons": {
       "nom": "Crème de marrons",
-      "icone": "🌰",
+      "icone": "🫙‍🌰",
       "station": "cuisine",
       "temps": 25,
       "ingredients": [{ "item": "chataigne", "qte": 4 }, { "item": "sucre", "qte": 1 }]
     },
     "tarte_myrtilles": {
       "nom": "Tarte aux myrtilles",
-      "icone": "🥧",
+      "icone": "🥧‍🫐",
       "station": "four",
       "temps": 30,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "myrtille", "qte": 4 }, { "item": "sucre", "qte": 1 }]
     },
     "pain_epices": {
       "nom": "Pain d'épices",
-      "icone": "🍞",
+      "icone": "🍞‍🍯",
       "station": "four",
       "temps": 30,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "miel", "qte": 1 }, { "item": "epices", "qte": 1 }]
