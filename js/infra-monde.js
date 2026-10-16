@@ -32,6 +32,39 @@
   };
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
+  // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
+  // répète son propre bord (marge 1, espacement 2). Quand la caméra tombe entre deux pixels
+  // (zoom, écran à densité non entière), le GPU qui lit juste à côté d'une tuile retombe sur
+  // sa propre couleur, et non sur la tuile voisine de la planche : plus de fines lignes sombres
+  // aux jointures. Les numéros des tuiles ne changent pas.
+  function extrude(textures, key, t) {
+    const src = textures.get(key).getSourceImage();
+    const cols = Math.floor(src.width / t), rows = Math.floor(src.height / t);
+    const canvas = document.createElement('canvas');
+    canvas.width = cols * (t + 2);
+    canvas.height = rows * (t + 2);
+    const g = canvas.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const sx = c * t, sy = r * t, dx = c * (t + 2) + 1, dy = r * (t + 2) + 1;
+        g.drawImage(src, sx, sy, t, t, dx, dy, t, t);
+        g.drawImage(src, sx, sy, t, 1, dx, dy - 1, t, 1);                 // haut
+        g.drawImage(src, sx, sy + t - 1, t, 1, dx, dy + t, t, 1);         // bas
+        g.drawImage(src, sx, sy, 1, t, dx - 1, dy, 1, t);                 // gauche
+        g.drawImage(src, sx + t - 1, sy, 1, t, dx + t, dy, 1, t);         // droite
+        g.drawImage(src, sx, sy, 1, 1, dx - 1, dy - 1, 1, 1);             // les coins
+        g.drawImage(src, sx + t - 1, sy, 1, 1, dx + t, dy - 1, 1, 1);
+        g.drawImage(src, sx, sy + t - 1, 1, 1, dx - 1, dy + t, 1, 1);
+        g.drawImage(src, sx + t - 1, sy + t - 1, 1, 1, dx + t, dy + t, 1, 1);
+      }
+    }
+    const out = key + '_extrude';
+    if (textures.exists(out)) textures.remove(out);
+    textures.addCanvas(out, canvas);
+    return out;
+  }
+
   class InfraScene extends Phaser.Scene {
     constructor() { super('infra'); }
 
@@ -49,7 +82,7 @@
     create() {
       const map = this.make.tilemap({ key: MAP.key });
       this.map = map;
-      const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, s.name));
+      const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
       this.layers = {};
       map.layers.forEach((l, i) => { this.layers[l.name] = map.createLayer(l.name, sets, 0, 0).setDepth(-10 + i); });
       this.makeTileAnims();
@@ -232,6 +265,7 @@
       parent,
       backgroundColor: '#1f2943',
       pixelArt: true,
+      roundPixels: true,     // la caméra et les sprites calés sur des pixels entiers
       scale: { mode: Phaser.Scale.RESIZE, width: parent.clientWidth, height: parent.clientHeight },
       scene: [InfraScene],
     });
