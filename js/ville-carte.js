@@ -120,6 +120,8 @@
   // Les couches qu'on ne traverse pas, et celle qui passe devant la promeneuse (le feuillage).
   // (les bâtiments et les voitures garées : par leur emprise au sol, couches « batiments » et « garees »)
   const OBSTACLES = ['fontaines', 'mobilier', 'falaise', 'mer'];
+  // celles qu'on traverse quand même (le ponton de la plage, au-dessus de la mer)
+  const PASSABLES = ['ponton'];
   // les couches des bâtiments, doublées d'un exemplaire « _devant » au-dessus des personnages
   const BATI = ['murs', 'pierre_de_taille', 'vitrages', 'charpente', 'toits', 'menuiserie'];
   const BATI_ALPHA = 0.45;
@@ -227,12 +229,12 @@
     fall: { ms: 700, angle: 86, rest: 600, fade: 700, leaves: 22, colors: [0x2f6b3a, 0x4e8f43, 0x77ad4f, 0x9cc36a, 0x6b4a2b, 0x8a6337] },
     eclats: [0x5d5a63, 0x8a8790, 0xa9a6ad, 0xc9c5c6, 0xe4e0dc],
   };
-  // La pêche (la canne en main, un toucher sur l'eau de la couche « fontaines ») : l'eau de
-  // chaque carte pour le moteur du jeu (CANNE.PRISES : « lac », la montagne et son omble
-  // chevalier). On va sur la rive, on lance (le bouchon se pose à `portee` px au plus), on attend
+  // La pêche (la canne en main, un toucher sur l'eau : la couche `couches` de la carte) : l'eau
+  // de chaque carte pour le moteur du jeu (CANNE.PRISES : « lac », la montagne et son omble
+  // chevalier ; « mer », la plage : dorade, sardine, anchois, depuis le ponton ou le rivage). On va sur la rive, on lance (le bouchon se pose à `portee` px au plus), on attend
   // la touche (`attente` s), on ferre ; le moteur a décidé de la prise au lancer.
   const PECHE = {
-    eaux: { montagne: 'lac' }, portee: 52, lancer: 0.4, attente: [2.2, 4.6], touche: 0.5, ferrer: 0.4,
+    eaux: { montagne: 'lac', plage: 'mer' }, couches: { montagne: 'fontaines', plage: 'mer' }, portee: 52, lancer: 0.4, attente: [2.2, 4.6], touche: 0.5, ferrer: 0.4,
     bouchon: { haut: 0xd8483a, bas: 0xf4efe6, fil: 0xe8e4dc },
   };
   // Les voisins (l'intérieur des maisons de la carte de transition) : la famille de chaque maison,
@@ -438,7 +440,8 @@
       for (let y = 0; y < map.height && this.layers.sol; y++) {
         const row = [];
         for (let x = 0; x < map.width; x++) {
-          row.push(!!this.layers.sol.getTileAt(x, y) && !OBSTACLES.some((n) => this.layers[n] && this.layers[n].getTileAt(x, y)));
+          row.push(!!this.layers.sol.getTileAt(x, y) && (PASSABLES.some((n) => this.layers[n] && this.layers[n].getTileAt(x, y))
+            || !OBSTACLES.some((n) => this.layers[n] && this.layers[n].getTileAt(x, y))));
         }
         this.walk.push(row);
       }
@@ -977,7 +980,7 @@
       const textes = {
         ville: 'Touchez un trottoir pour y marcher · la gare, un étal du marché, un entrepôt',
         montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
-        plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
+        plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la canne en main : la mer, depuis le ponton · la gare pour rentrer',
         grotte: 'Touchez le sol pour y marcher · un minerai pour le piocher · l\u2019échelle pour remonter',
         transition: 'Touchez l’herbe pour y marcher · une maison pour y entrer · la hache ou la pioche en main (barre d’outils) : un arbre, un rocher',
         interieur: 'Touchez le plancher pour y marcher · un voisin pour lui parler · la flèche pour sortir',
@@ -1943,7 +1946,8 @@
       const eau = PECHE.eaux[NOM_CARTE], H = hote();
       if (!eau || !H || !H.enMain || H.enMain() !== 'canne' || this.fishing) return false;
       const gx = Math.floor(w.x / T), gy = Math.floor(w.y / T);
-      if (!this.layers.fontaines || !this.layers.fontaines.getTileAt(gx, gy)) return false;
+      const eauL = this.layers[PECHE.couches[NOM_CARTE]];
+      if (!eauL || !eauL.getTileAt(gx, gy) || (this.layers.ponton && this.layers.ponton.getTileAt(gx, gy))) return false;
       this.peche = { eau, cible: { x: w.x, y: w.y } };
       this.work = null;
       this.goTo(w.x, w.y);         // (la case libre la plus proche : la rive)
