@@ -168,11 +168,12 @@ def batiments(c):
     toits_plat = c['toits_plat']
     B.toit_plat(toits_plat, 5 * T, 4 * T, 14 * T, 12 * T)
     equip.colle(O.climatiseur(), 10 * T + 8, 5 * T)
-    B.verre(vitres, 5, 12, 7, 27, 'sombre')
+    # les flancs de verre montent jusque sous les coins coupés du toit (ils les remplissent)
+    B.verre(vitres, 5, 10, 7, 27, 'sombre')
     B.verre(vitres, 7, 12, 12, 27, 'clair')
-    B.verre(vitres, 12, 12, 14, 27, 'sombre')
+    B.verre(vitres, 12, 10, 14, 27, 'sombre')
     for x in (7 * T - 2, 12 * T - 2):
-        B.cadre(vitres, x, 12 * T, x + 4, 27 * T)
+        B.cadre(vitres, x, 10 * T, x + 4, 27 * T)
     B.cadre(vitres, 5 * T, 27 * T, 14 * T, 28 * T)
     B.mur(murs, 5, 28, 14, 32, 'bleu', haut=False)
     menu.colle(O.porte_vitree(), 8 * T + 8, 30 * T)
@@ -262,6 +263,10 @@ def batiments(c):
 
 # ---------- le sol : marquages, plaques, dalles, fleurs ----------
 
+# La place de la fontaine (px) : centre et demi-axes de l'ellipse, sous le pied du bassin.
+FONTAINE = (44 * T + 8 - 72, 62 * T + 8 - 72)        # le coin haut-gauche de l'image de la fontaine
+PLACE = (FONTAINE[0] + 72, FONTAINE[1] + 64 + 12, 6.7 * T, 4.4 * T)
+
 def details(c):
     m = c['marquage']
     for x0, x1 in ((14 * T, 34 * T), (42 * T, W * T)):
@@ -274,19 +279,23 @@ def details(c):
     for x, y in ((45, 4), (39, 14), (39, 27), (46, 36), (11, 63), (20, 62)):
         c['egouts'].colle(plaque, x * T, y * T)
     d = c['dalles']
-    # la place ronde de la fontaine : des pavés en cercle, cernés d'un rang plus sombre
-    cx, cy, r = 44.5 * T, 62.5 * T, 6.7 * T
+    # la place de la fontaine : une ellipse de pavés (le cercle vu de 3/4, comme le bassin),
+    # cernée d'un rang plus sombre
+    cx, cy, rx, ry = PLACE
 
     def pave(x, y):
-        e = r - ((x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2) ** 0.5
-        if e < 0:
+        dx, dy = x + 0.5 - cx, y + 0.5 - cy
+        q = ((dx / rx) ** 2 + (dy / ry) ** 2) ** 0.5
+        if q > 1:
             return None
+        # la distance au bord, en px, le long du rayon
+        e = (1 - q) * (rx * ry) / max(1e-6, ((ry * dx) ** 2 + (rx * dy) ** 2) ** 0.5) * (dx * dx + dy * dy) ** 0.5 if q > 0 else ry
         if e < 1:
             return (90, 88, 96)
         if e < 2.5:
             return S.PLACE_C
         return S.place(x % T, y % T)
-    d.remplit(int(cx - r) - 1, int(cy - r) - 1, int(cx + r) + 2, int(cy + r) + 2, pave)
+    d.remplit(int(cx - rx) - 1, int(cy - ry) - 1, int(cx + rx) + 2, int(cy + ry) + 2, pave)
     for y in range(26, 32):
         for x in (20, 21):
             d.colle(O.dalle(x + y), x * T, y * T)
@@ -305,7 +314,7 @@ def details(c):
     g = coins()
     for y in range(H):
         for x in range(W):
-            sur_place = (x + 0.5 - 44.5) ** 2 + (y + 0.5 - 62.5) ** 2 < 7.6 ** 2
+            sur_place = ((x + 0.5) * T - PLACE[0]) ** 2 / (PLACE[2] + 16) ** 2 + ((y + 0.5) * T - PLACE[1]) ** 2 / (PLACE[3] + 16) ** 2 < 1
             if (x, y) in pris or sur_place or any(g[y + j][x + i] != 'herbe' for i in (0, 1) for j in (0, 1)):
                 continue
             if hasard(x, y, 51) > 0.9:
@@ -321,10 +330,9 @@ ARBRES = [(3.5, 15), (2.5, 44), (5.5, 44.5), (8.5, 44), (11.5, 44.5), (14.5, 44)
           (28.5, 15.5), (30, 17), (28.5, 29), (30, 30.5), (29.5, 55.5), (31.5, 54), (34.5, 61.5), (36, 60),
           (52.5, 54.5), (54.5, 53), (27, 72.5), (30.5, 74), (33.5, 73.5), (36.5, 75), (51.5, 74.5),
           (54, 74.5), (56.5, 69), (57, 51)]
-PINS = [(44, 51), (35, 52.5), (28, 55.5), (28, 67)]
-BUISSONS = [(16.5, 29, True), (44, 44, True), (54.5, 44, True), (25.5, 58, False), (55.5, 59.5, False),
-            (34, 72, True), (55.5, 66.5, False), (6.5, 73, False), (27.5, 14, False), (16, 26, False),
-            (41.5, 44.5, False)]
+PINS = [(44, 51), (35, 53.5), (28, 55.5), (28, 67)]
+BUISSONS = [(16.5, 29, True), (45.5, 43.5, True), (54.5, 44, True), (25.5, 58, False), (55.5, 59.5, False),
+            (34, 72, True), (55.5, 66.5, False), (6.5, 73, False), (27.5, 14, False), (16, 26, False)]
 
 
 def cale(v):
@@ -374,7 +382,7 @@ def objets(c):
         c['equipements'].colle(rev, x * T, 39 * T)
 
     fo = c['fontaines']
-    fo.colle([O.fontaine(k) for k in range(F.EAU_IMAGES)], 44 * T + 8 - 72, 62 * T + 8 - 72)
+    fo.colle([O.fontaine(k) for k in range(F.EAU_IMAGES)], *FONTAINE)
     fo.colle([O.fontaine_globe(k) for k in range(F.EAU_IMAGES)], 50 * T - 56, 46 * T + 8 - 128)
 
 
