@@ -277,13 +277,15 @@
     "sur la rive, lance et attend la touche. Chaque lancer coûte PERSONNAGE.COUTS.pecher",
     "d'énergie ; une prise rapporte NIVEAUX.XP.pecher d'XP. PRISES[eau] : chances (en %) de",
     "prendre chaque poisson à un lancer (le reste : rien ne mord). « etang » : le grand étang",
-    "(profond, le brochet y vit) ; « mare » : la petite mare. JOUR[eau] : prises au plus par",
+    "(profond, le brochet y vit) ; « mare » : la petite mare ; « lac » : le lac de la montagne (l'omble",
+    "chevalier y vit, version 1.21 ; on y pêche depuis sa rive) ; « mer » : la mer de la plage (depuis",
+    "le ponton ou le rivage : dorade, sardine, anchois). JOUR[eau] : prises au plus par",
     "jour dans chaque eau (ensuite, le poisson se fait rare jusqu'au lendemain)."
   ],
   "CANNE": {
     "NOM": "Canne à pêche", "ICONE": "🎣", "PRIX": 60,
-    "PRISES": { "etang": { "truite": 50, "brochet": 25 }, "mare": { "truite": 55, "brochet": 5 } },
-    "JOUR": { "etang": 6, "mare": 3 }
+    "PRISES": { "etang": { "truite": 50, "brochet": 25 }, "mare": { "truite": 55, "brochet": 5 }, "lac": { "omble": 40, "truite": 25 }, "mer": { "dorade": 15, "sardine": 30, "anchois": 30 } },
+    "JOUR": { "etang": 6, "mare": 3, "lac": 4, "mer": 8 }
   },
   "//SERRE": [
     "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture.",

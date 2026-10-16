@@ -216,6 +216,88 @@ ICONS['🐟‍🌈'] = [
     '................',
 ]
 
+# Omble chevalier (le lac de la montagne) : dos bleu-gris sombre semé de points clairs, ventre
+# rouge-orangé, nageoires bordées de blanc, queue en éventail.
+ICONS['🐟‍❄'] = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '.....qqqqqq.....',
+    '...qqdBdddBdq.qq',
+    '..qddBdddBddqdBq',
+    '.qkdddBdddBdqqdq',
+    '.qdrrrrrrrrrqqdq',
+    '..qrprrprrrpqqrq',
+    '...qqwrrrwqq..qq',
+    '.....qqqqqq.....',
+    '................',
+    '................',
+    '................',
+    '................',
+]
+
+# Dorade royale (la mer, depuis le ponton de la plage) : haute et ronde, argentée, le dos gris
+# bleuté, le bandeau doré entre les yeux, la queue en fourche.
+ICONS['🐟‍⭐'] = [
+    '................',
+    '................',
+    '................',
+    '......aaaa......',
+    '....aaAAAAaa....',
+    '...aAAAAAAAAa.aa',
+    '..aWyyWAAAAAAaAa',
+    '.akWWWWWWWWWWaaa',
+    '.aWWWWWWWWWWWaaa',
+    '..aWWWBWBWBWWaWa',
+    '...aaWWWWWWaa.aa',
+    '.....aaaaaa.....',
+    '................',
+    '................',
+    '................',
+    '................',
+]
+
+# Anchois (la mer) : petit et fin, le dos vert-bleu, une bande argentée le long du flanc.
+ICONS['🐟‍💧'] = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.....qqqqqqq....',
+    '..qqqddbdbddqq.q',
+    '.qkdWWWWWWWWWqqd',
+    '..qqaaaaaaaaqq.q',
+    '.....qqqqqqq....',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+]
+
+# Sardine (la mer) : le dos bleu sombre, des points noirs sur le flanc argenté, le ventre blanc.
+ICONS['🐟‍🌊'] = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.....qqqqqqq....',
+    '...qqdddddddqq.q',
+    '..qkddbdbdbdddqq',
+    '..qWWkWWkWWkWqdq',
+    '..qwwwwwwwwwwqqq',
+    '...qqwwwwwwqq..q',
+    '.....qqqqqq.....',
+    '................',
+    '................',
+    '................',
+    '................',
+]
+
 # Brochet (l'étang de la ferme) : long et fin, museau en bec de canard, dos vert sombre tacheté
 # de jaune pâle, ventre crème, nageoires et queue vers l'arrière.
 ICONS['🐟‍🦷'] = [

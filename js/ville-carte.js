@@ -120,6 +120,8 @@
   // Les couches qu'on ne traverse pas, et celle qui passe devant la promeneuse (le feuillage).
   // (les bâtiments et les voitures garées : par leur emprise au sol, couches « batiments » et « garees »)
   const OBSTACLES = ['fontaines', 'mobilier', 'falaise', 'mer'];
+  // celles qu'on traverse quand même (le ponton de la plage, au-dessus de la mer)
+  const PASSABLES = ['ponton'];
   // les couches des bâtiments, doublées d'un exemplaire « _devant » au-dessus des personnages
   const BATI = ['murs', 'pierre_de_taille', 'vitrages', 'charpente', 'toits', 'menuiserie'];
   const BATI_ALPHA = 0.45;
@@ -170,8 +172,8 @@
     speed: 190, accel: 60, decel: 80, lead: 720, board: 1.0, alight: 0.6, resume: 1.6, leaveAfter: 2.8,
     gares: {
       ville: [{ carte: 'montagne', label: '⛰️ La montagne', sens: 'nord' }, { carte: 'plage', label: '🏖️ La plage', sens: 'sud' }],
-      montagne: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'sud' }],
-      plage: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'nord' }],
+      montagne: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'sud' }, { carte: 'plage', label: '🏖️ La plage', sens: 'sud' }],
+      plage: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'nord' }, { carte: 'montagne', label: '⛰️ La montagne', sens: 'nord' }],
     },
     terminus: { montagne: true, plage: true },
   };
@@ -217,13 +219,23 @@
       arbre: { key: 'arbre_clair_sp', file: 'assets/arbre_clair_sp.png', w: 56, h: 64, tronc: [0], reach: 14 },
       pin: { key: 'pin_clair_sp', file: 'assets/pin_clair_sp.png', w: 72, h: 64, tronc: [-4, 4], reach: 19 },
     },
-    rochers: { rocher: { half: 13, h: 24, tronc: [-10, 0, 10], reach: 21 }, caillou: { half: 7, h: 12, tronc: [0], reach: 13 } },
-    objets: { key: 'transition_objets', file: 'assets/transition_objets.png', size: 32 },
+    // un rocher : sa planche (propriétés « planche », « largeur », « hauteur » de la couche
+    // « rochers »), sa case (« image »), où on le touche (« demi » : la moitié de sa largeur,
+    // « haut ») ; les cases sous son pied ne se traversent pas
+    rochers: { key: 'rochers_carte' },
     ombre: { key: 'ombre_arbre', file: 'assets/ombre_arbre.png', dx: -16, dy: -8 },
     herbe: { key: 'herbe_haute', file: 'assets/herbe_haute.png', w: 22, h: 16, frames: 5, swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 9, up: 6, down: 4 }, shade: 0.12 },
     swing: 0.5, shake: [1, 0, 2, 0, 1, 0], shakeFps: 9, occ: 0.6,
     fall: { ms: 700, angle: 86, rest: 600, fade: 700, leaves: 22, colors: [0x2f6b3a, 0x4e8f43, 0x77ad4f, 0x9cc36a, 0x6b4a2b, 0x8a6337] },
     eclats: [0x5d5a63, 0x8a8790, 0xa9a6ad, 0xc9c5c6, 0xe4e0dc],
+  };
+  // La pêche (la canne en main, un toucher sur l'eau : la couche `couches` de la carte) : l'eau
+  // de chaque carte pour le moteur du jeu (CANNE.PRISES : « lac », la montagne et son omble
+  // chevalier ; « mer », la plage : dorade, sardine, anchois, depuis le ponton ou le rivage). On va sur la rive, on lance (le bouchon se pose à `portee` px au plus), on attend
+  // la touche (`attente` s), on ferre ; le moteur a décidé de la prise au lancer.
+  const PECHE = {
+    eaux: { montagne: 'lac', plage: 'mer' }, couches: { montagne: 'fontaines', plage: 'mer' }, portee: 52, lancer: 0.4, attente: [2.2, 4.6], touche: 0.5, ferrer: 0.4,
+    bouchon: { haut: 0xd8483a, bas: 0xf4efe6, fil: 0xe8e4dc },
   };
   // Les voisins (l'intérieur des maisons de la carte de transition) : la famille de chaque maison,
   // tirée une fois (deux parents, 1 à `enfantsMax` enfants, des personnages de
@@ -389,7 +401,12 @@
           for (const d of Object.values(NATURE.arbres)) this.load.spritesheet(d.key, v(d.file), { frameWidth: d.w, frameHeight: d.h });
           this.load.image(NATURE.ombre.key, v(NATURE.ombre.file));
         }
-        if (has('rochers')) this.load.spritesheet(NATURE.objets.key, v(NATURE.objets.file), { frameWidth: NATURE.objets.size, frameHeight: NATURE.objets.size });
+        const roches = data.layers.find((l) => l.type === 'objectgroup' && l.name === 'rochers');
+        const rp = (n) => (((roches && roches.properties) || []).find((q) => q.name === n) || {}).value;
+        if (has('rochers') && rp('planche')) {
+          if (this.textures.exists(NATURE.rochers.key)) this.textures.remove(NATURE.rochers.key);
+          this.load.spritesheet(NATURE.rochers.key, v('assets/' + rp('planche')), { frameWidth: rp('largeur'), frameHeight: rp('hauteur') });
+        }
         if (has('herbe_haute')) this.load.spritesheet(NATURE.herbe.key, v(NATURE.herbe.file), { frameWidth: NATURE.herbe.w, frameHeight: NATURE.herbe.h });
         // l'exemplaire du dessus de chaque couche de bâtiment
         for (const name of BATI) {
@@ -408,7 +425,9 @@
         map = this.make.tilemap({ key: MAP.key, insertNull: true });
         const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
         map.layers.forEach((l, i) => {
-          const depth = l.name === DEVANT ? 1e6 : l.name.endsWith('_devant') ? 5e5 + i : -100 + i;
+          // une couche qui a un « pied » (l'abri de bus, les réverbères) se range comme les personnages
+          const pied = ((Array.isArray(l.properties) ? l.properties : []).find((q) => q.name === 'pied') || {}).value;
+          const depth = Number.isFinite(pied) ? pied : l.name === DEVANT ? 1e6 : l.name.endsWith('_devant') ? 5e5 + i : -100 + i;
           this.layers[l.name] = map.createLayer(l.name, sets, 0, 0).setDepth(depth);
         });
       } else map = this.buildCave();
@@ -421,14 +440,15 @@
       for (let y = 0; y < map.height && this.layers.sol; y++) {
         const row = [];
         for (let x = 0; x < map.width; x++) {
-          row.push(!!this.layers.sol.getTileAt(x, y) && !OBSTACLES.some((n) => this.layers[n] && this.layers[n].getTileAt(x, y)));
+          row.push(!!this.layers.sol.getTileAt(x, y) && (PASSABLES.some((n) => this.layers[n] && this.layers[n].getTileAt(x, y))
+            || !OBSTACLES.some((n) => this.layers[n] && this.layers[n].getTileAt(x, y))));
         }
         this.walk.push(row);
       }
       // les bâtiments et les voitures garées : les tuiles dont le centre est sous leur emprise
       const objects = (name) => (this.cave && this.cave.objects[name]) || ((map.getObjectLayer(name) || {}).objects) || [];
       this.makeBuildings(objects('batiments'));
-      for (const r of [...objects('garees'), ...objects('batiments')]) {
+      for (const r of [...objects('garees'), ...objects('batiments'), ...objects('obstacles')]) {
         for (let y = Math.floor(r.y / T); y <= Math.floor((r.y + r.height) / T); y++) {
           for (let x = Math.floor(r.x / T); x <= Math.floor((r.x + r.width) / T); x++) {
             const cx = x * T + T / 2, cy = y * T + T / 2;
@@ -478,9 +498,10 @@
         const w = cam.getWorldPoint(p.x, p.y);
         this.work = null;
         this.entering = null;
+        if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapVoisin(w)) return;
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w)) return;
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) return;
         this.goTo(w.x, w.y);
@@ -958,8 +979,8 @@
       const aide = document.getElementById('aide-texte');
       const textes = {
         ville: 'Touchez un trottoir pour y marcher · la gare, un étal du marché, un entrepôt',
-        montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
-        plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
+        montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
+        plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la canne en main : la mer, depuis le ponton · la gare pour rentrer',
         grotte: 'Touchez le sol pour y marcher · un minerai pour le piocher · l\u2019échelle pour remonter',
         transition: 'Touchez l’herbe pour y marcher · une maison pour y entrer · la hache ou la pioche en main (barre d’outils) : un arbre, un rocher',
         interieur: 'Touchez le plancher pour y marcher · un voisin pour lui parler · la flèche pour sortir',
@@ -1005,7 +1026,7 @@
         box.appendChild(b);
       }
       const texte = document.getElementById('gare-texte');
-      if (texte) texte.textContent = list.length > 1 ? 'Le train part dans un instant. Où voulez-vous aller ?' : 'Le train vous ramène à la gare de la ville.';
+      if (texte) texte.textContent = 'Le train part dans un instant. Où voulez-vous aller ?';
       el.hidden = false;
       this.dialog = true;
       const first = box.querySelector('button');
@@ -1212,6 +1233,7 @@
     // Arrivée en train (?train=nord|sud) : on voit le train arriver ; à l'arrêt, la promeneuse
     // paraît devant la gare. Hors d'un terminus, le train repart.
     arriveByTrain(dir, terminus) {
+      this.toGareDoor();
       if (reduced()) { if (terminus) this.addTrain(this.gare.stopY, 0); return; }
       this.locked = true;
       this.heroAlpha = 0;
@@ -1220,6 +1242,25 @@
       cam.startFollow(t.parts[1], true, 0.12, 0.12);
       cam.centerOn(this.gare.x, this.gare.stopY);
       this.arrival = { phase: 'train', wait: 0, terminus };
+    }
+
+    // Descendu du train, on paraît devant la porte de la gare (le bas du bâtiment « gare », au
+    // milieu), sur la case libre la plus proche.
+    toGareDoor() {
+      const b = (this.buildings || []).find((q) => q.name === 'gare');
+      if (!b) return;
+      const x = (b.x0 + b.x1) / 2, y = b.base + 10;
+      let gx = Math.floor(x / T), gy = Math.floor(y / T), best = null;
+      for (let r = 0; r < 6 && !best; r++) {
+        for (let dy = 0; dy <= r && !best; dy++) for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), dy) === r && this.canWalk(gx + dx, gy + dy)) { best = { x: gx + dx, y: gy + dy }; break; }
+        }
+      }
+      if (!best) return;
+      this.heroPos.x = best.x === gx ? x : best.x * T + T / 2;
+      this.heroPos.y = best.y * T + T - 2;
+      this.face = 'bas';
+      this.hero.setPosition(Math.round(this.heroPos.x), Math.round(this.heroPos.y)).setFlipX(false);
     }
 
     stepArrival(dt) {
@@ -1728,12 +1769,15 @@
         this.trees.push(t);
       }
       for (const o of objects('rochers')) {
-        const d = NATURE.rochers[o.type];
-        const frame = Number(((o.properties || []).find((q) => q.name === 'image') || {}).value) || 0;
-        if (!d || !this.textures.exists(NATURE.objets.key) || (H && H.casse && H.casse(id(o)))) continue;
+        const prop = (n) => Number(((o.properties || []).find((q) => q.name === n) || {}).value) || 0;
+        if (!this.textures.exists(NATURE.rochers.key) || (H && H.casse && H.casse(id(o)))) continue;
+        const half = prop('demi') || 12, d = { half, h: prop('haut') || 20, reach: half + 8 };
+        const tronc = [];
+        for (let dx = -Math.max(0, half - 6); dx <= Math.max(0, half - 6); dx += 8) tronc.push(dx);
+        if (!tronc.length) tronc.push(0);
         const r = { id: id(o), kind: 'rocher', def: d, x: o.x, y: o.y };
-        r.img = this.add.image(Math.round(o.x), Math.round(o.y), NATURE.objets.key, frame).setOrigin(0.5, 1).setDepth(o.y);
-        this.blockUnder(r, d.tronc);
+        r.img = this.add.image(Math.round(o.x), Math.round(o.y), NATURE.rochers.key, prop('image')).setOrigin(0.5, 1).setDepth(o.y);
+        this.blockUnder(r, tronc);
         this.rocks.push(r);
       }
       const G = NATURE.herbe;
@@ -1912,6 +1956,86 @@
         let f = G.swing[i];
         if (g.dir < 0) f = f === 1 ? 3 : f === 2 ? 4 : f === 3 ? 1 : f === 4 ? 2 : 0;
         g.img.setFrame(g.base + f);
+      }
+    }
+
+    // ---------- la pêche ----------
+
+    // Un toucher sur l'eau, la canne en main : on va sur la rive la plus proche, puis on lance.
+    tapWater(w) {
+      const eau = PECHE.eaux[NOM_CARTE], H = hote();
+      if (!eau || !H || !H.enMain || H.enMain() !== 'canne' || this.fishing) return false;
+      const gx = Math.floor(w.x / T), gy = Math.floor(w.y / T);
+      const eauL = this.layers[PECHE.couches[NOM_CARTE]];
+      if (!eauL || !eauL.getTileAt(gx, gy) || (this.layers.ponton && this.layers.ponton.getTileAt(gx, gy))) return false;
+      this.peche = { eau, cible: { x: w.x, y: w.y } };
+      this.work = null;
+      this.goTo(w.x, w.y);         // (la case libre la plus proche : la rive)
+      return true;
+    }
+
+    // Arrivé sur la rive : le lancer (le moteur dit tout de suite s'il y a une prise), l'attente,
+    // la touche, puis on ferre et la prise paraît.
+    stepFish(dt) {
+      const f = this.peche;
+      if (!f) return;
+      const P = this.heroPos;
+      if (!f.phase) {
+        if (this.path.length) return;
+        let dx = f.cible.x - P.x, dy = f.cible.y - P.y;
+        const d = Math.hypot(dx, dy);
+        if (d > 6 * T) { this.peche = null; return; }
+        const r = hote().pecher(f.eau);
+        if (!r) { this.peche = null; return; }
+        f.poisson = r.poisson;
+        // le bouchon : vers l'eau touchée, à portée de canne
+        const k = Math.min(1, PECHE.portee / Math.max(1, d));
+        f.bouchon = { x: P.x + dx * k, y: P.y + dy * k };
+        f.vue = Math.abs(dx) > Math.abs(dy) * 0.8 ? 'cote' : dy > 0 ? 'bas' : 'haut';
+        this.hero.setFlipX(f.vue === 'cote' && dx < 0);
+        this.face = f.vue;
+        f.phase = 'lancer';
+        f.t = 0;
+        f.attente = PECHE.attente[0] + Math.random() * (PECHE.attente[1] - PECHE.attente[0]);
+        this.fishing = true;
+        this.mining = { frame: `peche_${f.vue}_1` };
+        f.g = this.add.graphics().setDepth(Math.max(P.y, f.bouchon.y) + 1);
+      }
+      f.t += dt;
+      const B = PECHE.bouchon, g = f.g;
+      let bob = 0, fil = true;
+      if (f.phase === 'lancer') {
+        this.mining.frame = `peche_${f.vue}_${f.t < PECHE.lancer / 2 ? 1 : 2}`;
+        fil = f.t >= PECHE.lancer / 2;
+        if (f.t >= PECHE.lancer) { f.phase = 'attente'; f.t = 0; }
+      } else if (f.phase === 'attente') {
+        bob = reduced() ? 0 : Math.round(Math.sin(f.t * 3) * 0.6);
+        if (f.t >= f.attente) { f.phase = f.poisson ? 'touche' : 'ferrer'; f.t = 0; }
+      } else if (f.phase === 'touche') {
+        bob = 2;                                      // le bouchon plonge
+        if (f.t >= PECHE.touche) { f.phase = 'ferrer'; f.t = 0; }
+      } else if (f.phase === 'ferrer') {
+        this.mining.frame = `peche_${f.vue}_3`;
+        fil = false;
+        if (f.t >= PECHE.ferrer) {
+          g.destroy();
+          const o = f.poisson && hote().objet ? hote().objet(f.poisson) : null;
+          if (o) { this.popGain('+1 🐟'); this.say(`🎣 ${o.icone} ${o.nom} !`); } else this.say('🎣 Rien n\u2019a mordu… Essaie encore.');
+          this.peche = null;
+          this.fishing = false;
+          this.mining = null;
+          return;
+        }
+      }
+      g.clear();
+      if (!fil) return;
+      const bx = Math.round(f.bouchon.x), by = Math.round(f.bouchon.y) + bob;
+      const tip = { x: P.x + (f.vue === 'cote' ? (this.hero.flipX ? -8 : 8) : 6), y: P.y - (f.vue === 'haut' ? 30 : 24) };
+      g.lineStyle(1, B.fil, 0.8).lineBetween(tip.x, tip.y, bx, by - 1);
+      if (f.phase !== 'lancer' || f.t >= PECHE.lancer * 0.75) {
+        g.fillStyle(B.bas, 1).fillRect(bx - 1, by - 1, 3, 2);
+        if (f.phase !== 'touche') g.fillStyle(B.haut, 1).fillRect(bx - 1, by - 3, 3, 2);
+        if (f.phase === 'touche' && !reduced()) g.lineStyle(1, 0xffffff, 0.7).strokeEllipse(bx, by, 10 + f.t * 12, 4 + f.t * 4);
       }
     }
 
@@ -2108,12 +2232,13 @@
       this.stepFauna(time, dt);
       this.stepMine(dt);
       this.stepWork(dt);
+      this.stepFish(dt);
       this.stepEntering();
       this.stepFamily(time, dt);
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
-      const k = this.locked ? null : this.keys;
+      const k = this.locked || this.fishing ? null : this.keys;
       if (k) {
         vx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.Q.isDown || k.A.isDown ? 1 : 0);
         vy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.Z.isDown || k.W.isDown ? 1 : 0);
@@ -2121,6 +2246,7 @@
       if (vx || vy) {
         this.path = [];
         if (this.work && !this.work.started) this.work = null;
+        if (this.peche && !this.peche.phase) this.peche = null;
         this.entering = null;
         const l = Math.hypot(vx, vy), st = HERO.speed * dt;
         const nx = P.x + (vx / l) * st, ny = P.y + (vy / l) * st;

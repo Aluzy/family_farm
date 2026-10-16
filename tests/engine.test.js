@@ -1835,7 +1835,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   // Les poissons de la ferme (truite, brochet) sont rangés avec le bois et la pierre, après la poire.
   assertEqual(inventoryCounts(s), {
     conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20, oeuf: 20,
-    viande_mouton: 20, pomme: 20, poire: 20, truite: 20, brochet: 20, oignon: 20, ail: 20, poivron: 20, epinard: 20, fraise: 20, riz: 20,
+    viande_mouton: 20, pomme: 20, poire: 20, truite: 20, brochet: 20, omble: 20, dorade: 20, anchois: 20, sardine: 20, oignon: 20, ail: 20, poivron: 20, epinard: 20, fraise: 20, riz: 20,
     viande_boeuf: 20, viande_volaille: 20, lait: 20,
     // version 1.5 : denrées de la ville et de la cueillette (le sucre et les épices ne se mangent pas)
     poisson: 20, miel: 20, fromage_alpage: 20, champignon: 20, myrtille: 20, chataigne: 20,
@@ -7963,6 +7963,42 @@ test('version 1.1.1 : hors-ligne, l\'horloge s\'arrête à l\'éveil minimal (ni
   takeMeal(t);
   simulateOffline(t, 3600);
   assertEqual([t.awakeMs, hourOfDay(t), bedtimeDue(t), t.day], [awakeMsAtHour(20), 20, false, 1]);
+});
+
+test('version 1.21 : le lac de la montagne, l\'omble chevalier', () => {
+  assertEqual(DATA.items.omble.nom, 'Omble chevalier');
+  assertEqual(DATA.CANNE.PRISES.lac, { omble: 40, truite: 25 });
+  const s = garden();
+  s.outils = { hache: false, pioche: false, canne: true, choisi: 'canne' };
+  assertEqual(fishLeft(s, 'lac'), DATA.CANNE.JOUR.lac);
+  const prises = new Set();
+  for (let i = 0; i < 60 && fishLeft(s, 'lac') > 0; i++) {
+    testFillEnergy(s);
+    const r = castLine(s, 'lac');
+    assert(r.ok, r.error);
+    if (r.poisson) prises.add(r.poisson);
+  }
+  assertEqual(fishLeft(s, 'lac'), 0, 'quatre prises au plus par jour');
+  assert([...prises].every((p) => p === 'omble' || p === 'truite'), 'omble ou truite');
+  assert(countItem(s, 'omble') + countItem(s, 'truite') === DATA.CANNE.JOUR.lac);
+  assertEqual(castLine(s, 'lac').error, 'Le poisson se fait rare dans le lac aujourd\'hui : reviens demain.');
+});
+
+test('version 1.21 : la mer de la plage, dorade, sardine, anchois', () => {
+  assertEqual(['dorade', 'anchois', 'sardine'].map((i) => DATA.items[i].nom), ['Dorade', 'Anchois', 'Sardine']);
+  const s = garden();
+  s.outils = { hache: false, pioche: false, canne: true, choisi: 'canne' };
+  assertEqual(fishLeft(s, 'mer'), DATA.CANNE.JOUR.mer);
+  const prises = new Set();
+  for (let i = 0; i < 80 && fishLeft(s, 'mer') > 0; i++) {
+    testFillEnergy(s);
+    const r = castLine(s, 'mer');
+    assert(r.ok, r.error);
+    if (r.poisson) prises.add(r.poisson);
+  }
+  assertEqual(fishLeft(s, 'mer'), 0);
+  assert([...prises].every((p) => ['dorade', 'sardine', 'anchois'].includes(p)), 'des poissons de mer');
+  assertEqual(castLine(s, 'mer').error, 'Le poisson se fait rare en mer aujourd\'hui : reviens demain.');
 });
 
 test('version 1.1.1 : devis d\'achat (buyQuote) = ce que buyItem achète, prix montant compris', () => {

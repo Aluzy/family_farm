@@ -149,12 +149,54 @@ def eau_ovale(t, cx, cy, rx, ry, rive=(138, 112, 76), herbe=(70, 82, 40)):
                 t.put(x, y, col, k)
 
 
-def plantes(veg, ombres, liste):
-    """Les arbres (x, y en tuiles : le pied ; im), du fond vers l'avant, calés sur la grille."""
+# Les arbres et les pins de la ferme (F.arbre, F.pin), à leur taille : on les coupe à la hache.
+GENRES_ARBRES = {(48, 64): 'arbre', (64, 64): 'pin'}
+
+
+def lac(t, cx, cy, rx, ry, graine=0):
+    """Un lac (px) aux bords irréguliers : une rive de sable et de galets qui serpente, l'eau
+    animée de la ferme, claire près du bord (on voit le fond), plus profonde et plus sombre vers
+    le milieu ; les zones se mêlent (pas d'anneaux nets), le rebord du nord fait de l'ombre."""
+    def bord(a):
+        return 1 + 0.11 * math.sin(3 * a + graine) + 0.07 * math.sin(5 * a + 2 * graine) + 0.04 * math.sin(9 * a + 3 * graine)
+    rive = [(150, 126, 88), (132, 110, 78), (168, 146, 104), (112, 104, 96)]
+    for y in range(int(cy - ry * 1.3) - 2, int(cy + ry * 1.3) + 3):
+        for x in range(int(cx - rx * 1.3) - 2, int(cx + rx * 1.3) + 3):
+            u, v = (x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry
+            q = math.hypot(u, v) / bord(math.atan2(v, u))
+            if q > 1:
+                continue
+            # un peu de bruit : les limites entre les profondeurs ondulent
+            qn = q + (hasard(x // 3, y // 3, graine, 41) - 0.5) * 0.08
+            for k in range(F.EAU_IMAGES):
+                if q > 0.9:                                   # la rive : sable, galets, herbe au bord
+                    h = hasard(x, y, graine, 42)
+                    col = (78, 92, 44) if q > 0.97 and h < 0.5 else rive[3] if h < 0.12 else rive[int(h * 3) % 3]
+                elif qn > 0.82:                               # le bord : peu d'eau sur le sable
+                    col = mel(F.eau(x, y, k, False, 0), rive[0], 0.45)
+                elif qn > 0.58:                               # l'eau claire
+                    col = F.eau(x, y, k, False, 0 if hasard(x // 16, y // 16, 43) < 0.75 else 1 + int(hasard(x // 16, y // 16, 44) * 6))
+                elif qn > 0.3:                                # l'eau profonde
+                    col = F.eau(x, y, k, True, 0)
+                else:                                         # le plus profond : plus sombre
+                    col = teinte(F.eau(x, y, k, True, 0), 0.8)
+                # l'ombre du rebord, en haut de l'eau
+                if q <= 0.9 and v < 0 and q > 0.78:
+                    col = teinte(col, 0.85)
+                t.put(x, y, col, k)
+
+
+def plantes(veg, ombres, liste, objets=None):
+    """Les arbres (x, y en tuiles : le pied ; im), du fond vers l'avant, calés sur la grille.
+    objets : les arbres et les pins y vont (couche « arbres » : le jeu les dessine et on les
+    coupe) ; les buissons restent dans les tuiles."""
     ombre = F.ombre()
     for x, y, im in sorted(liste, key=lambda p: p[1]):
         w, h = im.size
         x0, y0 = round(x * T - w / 2) // T * T, round(y * T - h) // T * T
+        if objets is not None and (w, h) in GENRES_ARBRES:
+            objets.arbre(GENRES_ARBRES[(w, h)], x0 + w // 2, y0 + h, im)
+            continue
         if h > 32:
             ombres.colle(ombre, x0 + w // 2 - 16, y0 + h - 8)
         veg.colle(im, x0, y0)
@@ -168,6 +210,24 @@ class Objets:
     def __init__(self):
         self.i = 1
         self.couches = {}
+        self.proprietes = {}          # couche -> ses propriétés (Tiled)
+        self.rochers = []             # les images des rochers (planche assets/<nom>_rochers.png)
+        self.sprites = []             # (pied, image, x, y) : pour l'aperçu
+
+    def arbre(self, genre, x, y, im):
+        """Un arbre ou un pin qu'on coupe : le milieu de son pied (px)."""
+        self.sprites.append((y, im, x - im.width // 2, y - im.height, True))
+        return self.point('arbres', f'arbre_{x}_{y}', x, y, genre)
+
+    def rocher(self, im, x, y, genre='rocher'):
+        """Un rocher qu'on casse à la pioche : son image (le pied au milieu du bas), le milieu de
+        son pied (px). demi, haut : où on le touche (la moitié de sa largeur, sa hauteur)."""
+        b = im.getbbox() or (0, 0, im.width, im.height)
+        im = im.crop(b)
+        self.rochers.append(im)
+        self.sprites.append((y, im, round(x - im.width / 2), round(y - im.height), False))
+        return self.point('rochers', f'rocher_{round(x)}_{round(y)}', round(x), round(y), genre,
+                          image=len(self.rochers) - 1, demi=max(4, im.width // 2 - 2), haut=max(6, round(im.height * 0.8)))
 
     def _ajoute(self, couche, o):
         o['id'] = self.i
@@ -236,9 +296,11 @@ def ecrit(nom, planches, couches, g, styles, dessine, objets, planche_sol='sol')
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[n] for cel in ligne]
         layers.append({'id': i + 1, 'name': n, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                        'opacity': 1, 'visible': True, 'data': data})
+    if objets.rochers:
+        planche_rochers(nom, objets)
     for j, (n, objs) in enumerate(objets.couches.items()):
         layers.append({'id': len(noms) + j + 1, 'name': n, 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
-                       'visible': True, 'x': 0, 'y': 0, 'objects': objs})
+                       'visible': True, 'x': 0, 'y': 0, 'objects': objs, **({'properties': Objets._props(objets.proprietes[n])} if n in objets.proprietes else {})})
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
@@ -259,4 +321,21 @@ def ecrit(nom, planches, couches, g, styles, dessine, objets, planche_sol='sol')
                     cel = cellules[n][y][x]
                     if cel:
                         rendu.alpha_composite(planches[cel[0]].tuiles[cel[1]][0], (x * T, y * T))
+        ombre = F.ombre()
+        for pied, im, x, y, arbre in sorted(objets.sprites, key=lambda q: q[0]):
+            if arbre:
+                rendu.alpha_composite(ombre, (x + im.width // 2 - 16, pied - 8))
+            rendu.alpha_composite(im, (max(0, x), max(0, y)))
         rendu.save(os.path.join(ROOT, f'apercu_{nom}.png'))
+
+
+def planche_rochers(nom, objets):
+    """assets/<nom>_rochers.png : les rochers de la carte, une case chacun (tous de la même
+    taille, le pied au milieu du bas) ; la couche « rochers » dit où est la planche."""
+    w = max(im.width for im in objets.rochers)
+    h = max(im.height for im in objets.rochers)
+    out = image(w * len(objets.rochers), h)
+    for i, im in enumerate(objets.rochers):
+        out.alpha_composite(im, (i * w + (w - im.width) // 2, h - im.height))
+    out.save(os.path.join(ASSETS, f'{nom}_rochers.png'), optimize=True)
+    objets.proprietes['rochers'] = {'planche': f'{nom}_rochers.png', 'largeur': w, 'hauteur': h}

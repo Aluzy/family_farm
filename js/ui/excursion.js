@@ -7,7 +7,7 @@ import { hasTool } from '../engine/outils.js';
 import { rockGone, treeGone } from '../engine/crops.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
 import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
-import { chopFromStage, mineFromStage } from './outils.js';
+import { chopFromStage, fishFromStage, mineFromStage } from './outils.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
@@ -144,6 +144,9 @@ window.FermeHote = {
   casse: (id) => rockGone(state, id),
   couper: (id) => chopFromStage(id),
   piocher: (id) => mineFromStage(id),
+  // la canne en main : un lancer dans l'eau `eau` (« lac » : la montagne) ; { poisson } ou null
+  pecher: (eau) => fishFromStage(eau),
+  objet: (item) => (DATA.items[item] ? { nom: DATA.items[item].nom, icone: DATA.items[item].icone } : null),
   say: (t) => showToast(t),
   // le god mode : les cartes ne font plus marcher le personnage (un toucher l'y pose)
   god: () => godMode,

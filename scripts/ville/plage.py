@@ -1,7 +1,9 @@
 # La plage (56 × 40 tuiles), où mène le train de la ville (vers le sud) : un terminus dans les
 # dunes. La voie arrive par le nord jusqu'à son heurtoir, la petite gare est à côté du quai ; une
 # promenade de planches descend vers le sable (les cabines de bain, les parasols), la mer au sud
-# (animée : le va-et-vient des vagues), des rochers à l'est.
+# (animée : le va-et-vient des vagues), des rochers à l'est. Un ponton de bois part du sable et
+# s'avance dans la mer : on y marche (couche « ponton », que js/ville-carte.js laisse traverser
+# même au-dessus de l'eau), et l'on pêche dans la mer (dorade, anchois, sardine).
 #
 # Les couches d'objets, pour js/ville-carte.js (comme la montagne, scripts/ville/montagne.py) :
 #   gare, arrivees, batiments, trouvailles (« genre » : coquillage, corail, perle), animaux
@@ -35,7 +37,7 @@ PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
 )}
 COUCHES = [
     ('rails', 'decor', 1), ('marquage', 'decor', 1), ('fleurs', 'vegetation', 1), ('ombres', 'vegetation', 1),
-    ('mer', 'mer', MER_IMAGES),
+    ('mer', 'mer', MER_IMAGES), ('ponton_ombre', 'decor', 1), ('ponton', 'decor', 1),
     ('murs', 'batiment', 1), ('pierre_de_taille', 'batiment', 1), ('vitrages', 'batiment', 1),
     ('charpente', 'batiment', 1), ('toits', 'batiment', 1), ('menuiserie', 'batiment', 1),
     ('mobilier', 'decor', 1), ('vegetation', 'vegetation', 1),
@@ -53,6 +55,9 @@ GARE = (12, 20, 13)
 PARVIS = (9, 23, 13, 16)
 PROMENADE = (15, 17, 16, 25)      # x0, x1, y0, y1 : les planches, du parvis au sable
 RIVAGE = 31 * T                   # la ligne moyenne du bord de l'eau (px)
+# Le ponton (en tuiles) : l'allée (x0, x1, du sable y0 jusqu'à y1), puis la plate-forme du bout.
+PONTON = (33, 35, 27, 35)
+PONTON_BOUT = (31, 37, 35, 38)
 OBJ = X.Objets()
 
 
@@ -184,6 +189,47 @@ def promenade(t):
             t.put(x, y, c)
 
 
+def ponton(t, ombre):
+    """Le ponton : des planches en travers, des longerons sombres sur les côtés, la tranche du
+    bout vue de face ; sous lui (couche à part, qu'on ne traverse pas) son ombre sur l'eau et les
+    pieux qui plongent. Tout le ponton tient dans ses tuiles : on y marche partout."""
+    x0, x1, y0, y1 = PONTON
+    a0, a1, b0, b1 = PONTON_BOUT
+    def dedans(x, y):
+        return (x0 * T <= x < x1 * T and y0 * T <= y < y1 * T) or (a0 * T <= x < a1 * T and b0 * T <= y < b1 * T)
+    for y in range(y0 * T, b1 * T):
+        for x in range(a0 * T, a1 * T):
+            if not dedans(x, y):
+                continue
+            q = y % 5
+            c = O.BOIS_K if q == 4 else O.BOIS_C if q == 0 else O.BOIS
+            if hasard(x // 9, y // 5, 92) < 0.18 and q not in (0, 4):
+                c = teinte(c, 0.88)
+            # les longerons : les bords de l'allée et de la plate-forme
+            if not dedans(x - 2, y) or not dedans(x + 2, y):
+                c = O.BOIS_K if not dedans(x - 1, y) or not dedans(x + 1, y) else teinte(O.BOIS, 0.8)
+            # la tranche, en bas de la plate-forme
+            if y >= b1 * T - 3:
+                c = teinte(O.BOIS_K, 0.85 if y == b1 * T - 1 else 1)
+            t.put(x, y, c)
+    # les têtes des pieux, aux coins et le long de l'allée
+    for (px, py) in [(a0 * T + 1, b0 * T + 1), (a1 * T - 4, b0 * T + 1), (a0 * T + 1, b1 * T - 7), (a1 * T - 4, b1 * T - 7)] + \
+                    [(x * T + 1, y * T + 1) for y in range(y0 + 4, y1, 3) for x in (x0, x1)]:
+        px = min(px, x1 * T - 4) if b0 * T > py else px
+        for dy in range(3):
+            for dx in range(3):
+                t.put(px + dx, py + dy, teinte(O.BOIS_K, 0.8) if dx == 0 or dy == 2 else O.BOIS_C)
+    # l'ombre sur l'eau (décalée vers le bas à droite) et les pieux sous la tranche
+    for y in range(31 * T, b1 * T + 8):
+        for x in range(a0 * T, a1 * T + 6):
+            if dedans(x - 4, y - 6) and not dedans(x, y):
+                ombre.put(x, y, (0, 0, 0, 70))
+    for px in (a0 * T + 2, (a0 + a1) * T // 2, a1 * T - 4):
+        for y in range(b1 * T, b1 * T + 6):
+            ombre.put(px, y, teinte(O.BOIS_K, 0.7))
+            ombre.put(px + 1, y, O.BOIS_K)
+
+
 def dessine(c):
     E.voie(c['rails'], VOIE * T, 0, HEURTOIR * T + 8)
     c['mobilier'].colle(X.heurtoir(), VOIE * T - 16, HEURTOIR * T - 14)
@@ -191,6 +237,7 @@ def dessine(c):
     OBJ.batiment(X.gare(c, 'gare', GARE[0], GARE[1], GARE[2], 'ocre', 'tuile_rouge'))
     promenade(c['marquage'])
     mer(c['mer'])
+    ponton(c['ponton'], c['ponton_ombre'])
     mob = c['mobilier']
     rev = O.reverbere()
     for x in (10, 22):
@@ -203,7 +250,7 @@ def dessine(c):
         c['vegetation'].colle(parasol(coul, g), round(x * T - 16), round(y * T - 46))
     for x, y, w, h, gr in ((47, 30.5, 56, 40, 1), (50.5, 28.5, 64, 46, 2), (54, 31.5, 44, 32, 3), (44.5, 32.4, 32, 24, 4),
                            (52.5, 33.5, 52, 36, 5), (49, 26, 32, 24, 6)):
-        mob.colle(X.rocher(w, h, gr, mousse=False), round(x * T - w / 2), round(y * T - h))
+        OBJ.rocher(X.rocher(w, h, gr, mousse=False), x * T, y * T)    # on les casse à la pioche
     # les oyats sur les dunes, des pins maritimes au nord-est
     g = coins()
     fl = c['fleurs']
@@ -225,7 +272,7 @@ def dessine(c):
             r = hasard(i, j, 84)
             liste.append((px, py, F.pin() if r < 0.75 else F.buisson(r < 0.88)))
     liste += [(2, 5, F.pin()), (4, 14, F.pin()), (1.5, 20, F.buisson(True)), (3, 9, F.buisson())]
-    X.plantes(c['vegetation'], c['ombres'], liste)
+    X.plantes(c['vegetation'], c['ombres'], liste, OBJ)
 
 
 def main():
