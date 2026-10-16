@@ -4,6 +4,7 @@
 //   assets/serre_interieur.tmj         → assets/serre_interieur.json   (l'intérieur de la Serre)
 //   assets/maison_interieur.tmj        → assets/maison_interieur.json  (l'intérieur de la maison)
 //   assets/infra_monde.tmj             → assets/infra_monde.json       (l'infra-monde, infra-monde.html)
+//   assets/ville.tmj                   → assets/ville.json             (la ville, ville-carte.html)
 //
 //   node scripts/build-map.mjs
 //
@@ -48,6 +49,13 @@ const MAPS = [
     source: 'assets/infra_monde.tmj',
     target: 'assets/infra_monde.json',
     main: 'infra_sol',
+    places: ['depart'],
+  },
+  {
+    // fabriquée par scripts/ville/carte.py ; « depart » : où l'on arrive en ville (ville-carte.html)
+    source: 'assets/ville.tmj',
+    target: 'assets/ville.json',
+    main: 'ville_asphalte',
     places: ['depart'],
   },
 ];
