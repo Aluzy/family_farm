@@ -39,6 +39,8 @@ PALETTE = {
     ']': '#5a1a2a', ')': '#c85a78', '(': '#f08aa4', '[': '#ffd0dc',
     # orange (carotte)
     '<': '#e0782a', '>': '#f8a850',
+    # violet (myrtilles)
+    '@': '#2a1640', '+': '#4a3a8a', '=': '#6a5ab8', '^': '#a89ae8',
 }
 
 # matière → teinte de son contour
@@ -46,7 +48,7 @@ SOMBRE = {}
 for _fill, _out in (('1234', 'I'), ('fF', 'I'), ('stTU', 'K'), ('weE', 'k'), ('YyoJ', 'O'),
                     ('bcCLm', 'B'), ('hrH', 'R'), ('glM', 'G'), ('duv', 'q'), ('xzZ', 'X'),
                     ('ijn', 'N'), ('pPaAS', 'R'), ('6789', 'B'), ('V', '0'), ('%&*', '$'),
-                    ('()[', ']'), ('<>', 'B')):
+                    ('()[', ']'), ('<>', 'B'), ('+=^', '@')):
     for _c in _fill:
         SOMBRE[_c] = _out
 CONTOURS = set(SOMBRE.values())
@@ -556,3 +558,263 @@ ICONS['☕'] = contour([
     '.weeeeeeeeeeE',
     '..EEEEEEEEEE',
 ])
+
+
+# ---------------------------------------------------------------------------------------------
+# Plats qui partageaient l'emoji de leur ingrédient (fraise / confiture…) : chacun a sa propre
+# suite « emoji de base + ZWJ + marque », pour qu'on les distingue dans l'inventaire.
+
+# confiture de fraises : bocal de confiture rouge, coiffé d'un tissu vichy noué d'une ficelle
+ICONS['🫙‍🍓'] = contour([
+    '',
+    '....wrwrwrwr',
+    '..wrwrwrwrwrwr',
+    '.rwrwrwrwrwrwrw',
+    '..rwooooooooro',
+    '..vvvvvvvvvvvv',
+    '..wvrrrrrrrrrd',
+    '..wvrHrrrrHrhd',
+    '..wvrrrrHrrrhd',
+    '..wvrrHrrrrHhd',
+    '..wvHrrrrHrrhd',
+    '..vvrrrrrrhhhd',
+    '..vvvvvvvvvvdd',
+    '...dddddddddd',
+])
+
+# crème de marrons : bocal de crème brune, couvercle doré, étiquette crème à la châtaigne
+ICONS['🫙‍🌰'] = contour([
+    '',
+    '...YYyyyyyyo',
+    '...yyyyyyyyo',
+    '....oooooooo',
+    '....vvvvvvvv',
+    '..vvvvvvvvvvvv',
+    '..wvZzzzzzzzxd',
+    '..wveeeezeeeEd',
+    '..wveeezZzeeEd',
+    '..wveeexzxeeEd',
+    '..wveeeeeeeeEd',
+    '..vvzzzzzzxxxd',
+    '..vvvvvvvvvvdd',
+    '...dddddddddd',
+])
+
+# riz au lait : verrine de riz crémeux sur un fond de caramel, cuillère plantée
+ICONS['🍚‍🥛'] = contour([
+    '',
+    '...........f',
+    '..........fF',
+    '.........fF',
+    '...vvvvvfFvvv',
+    '...vwewEfeEwv',
+    '...vweEeeeeEd',
+    '...vweeeEeeEd',
+    '...vwEeeeeEed',
+    '...vweeEeeeEd',
+    '...vw8888887d',
+    '...vw7777766d',
+    '...vvvvvvvvdd',
+    '....dddddddd',
+])
+
+# chocolat chaud : grand bol jaune de chocolat fumant
+ICONS['☕‍🍫'] = contour([
+    '',
+    '.....V...V',
+    '.....VV..VV',
+    '......V...V',
+    '',
+    '...zzzzzzzzzz',
+    '..zZZzzzzzzzzx',
+    '.YYYYYYYYYYYYyy',
+    '.YyyyyyyyyyyyoY',
+    '..Yyyyyyyyyyoo',
+    '..Yyyyyyyyyooo',
+    '...yyyyyyyooo',
+    '.....oooooo',
+    '......yyyo',
+])
+
+# café chaud : tasse émaillée bleue (la tasse sur soucoupe ☕ est l'ingrédient)
+ICONS['☕‍🔥'] = contour([
+    '',
+    '.....V..V',
+    '.....VV.VV',
+    '......V..V',
+    '',
+    '...vvvvvvvvv',
+    '...vxxzxxxxxd',
+    '...uuuuuuuuud',
+    '...uvuuuuuuuddd',
+    '...uvuuuuuuud,d',
+    '...uvuuuuuuud,d',
+    '...uvuuuuuuuddd',
+    '...uuuuuuuuud',
+    '....ddddddddd',
+])
+
+# poisson grillé : poisson doré marqué par le gril, rondelle de citron, sur une assiette
+ICONS['🐟‍🔥'] = contour([
+    '',
+    '',
+    '',
+    '',
+    '.....999988',
+    '...99996998888.',
+    '..9w999699869988',
+    '.99X99969986988',
+    '.8999869986988',
+    '..8888688687.88',
+    '....YY777777',
+    '.wwYyyYwwwwwwwww',
+    '..efffffffffffe',
+    '....EEEEEEEEE',
+])
+
+# fromage frais : faisselle blanche parsemée de ciboulette, sur une planchette
+ICONS['🧀‍🥛'] = contour([
+    '',
+    '',
+    '',
+    '',
+    '.....wwwwww',
+    '...wwwwlwwweE',
+    '..wwwlwwwwleeE',
+    '..wwwwwwleeeEE',
+    '..eeeeeeeeeEEE',
+    '..ewweeeeeeEEE',
+    '..eeeeeeeeEEEE',
+    '.TTTTTTTTTTTTTT',
+    '.ttttttttttttts',
+])
+
+# omelette : omelette dorée pliée en demi-lune, sur une assiette
+def _omelette(garniture=()):
+    rows = [
+        '',
+        '',
+        '',
+        '',
+        '......jjjjj',
+        '....jjnnjjjjj',
+        '...jnnjjjjjjjJ',
+        '..jnjjjjjjjjjJ',
+        '..jjjjjjjjjjJJi',
+        '..JjjjjjjjjJJii',
+        '..iJJJJJJJJiii',
+        '.wwiiiiiiiiiwwww',
+        '..efffffffffffe',
+        '....EEEEEEEEE',
+    ]
+    return sur(rows, garniture) if garniture else rows
+
+
+ICONS['🍳‍🥚'] = contour(_omelette([
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '........l',
+    '.......l.M',
+]))
+
+# omelette aux champignons : la même, garnie de lamelles de champignon
+ICONS['🍳‍🍄'] = contour(_omelette([
+    '',
+    '',
+    '',
+    '',
+    '',
+    '.....ZZ',
+    '....ZzzZ..ZZ',
+    '.....ee..ZzzZ',
+    '.....e....ee',
+    '..........e',
+]))
+
+# pain d'épices : pain long et sombre, dessus nappé de miel, une tranche coupée à gauche
+ICONS['🍞‍🍯'] = contour([
+    '',
+    '',
+    '',
+    '',
+    '.....oyyYyyyyo',
+    '....oyYyyyyyyoo',
+    '...cooooooooooo7',
+    '..LmLb777777777',
+    '..LLCb877877776',
+    '..LCLb777777776',
+    '..CLCb777787776',
+    '..CCCb777777766',
+    '..bbbb66666666',
+])
+
+# soupe de légumes : bol blanc à oreilles, velouté de carotte fumant, persil
+ICONS['🍲‍🥕'] = contour([
+    '',
+    '.....V...V',
+    '.....VV..VV',
+    '......V...V',
+    '',
+    '...eeeeeeeeee',
+    '..e>><>>>l>>>E',
+    '..e<>l>>><>>>E',
+    '.dwwwwwwwwwwwEd',
+    '.dwwuuuuuuuuEEd',
+    '..wweeeeeeeeEE',
+    '...weeeeeeeEE',
+    '.....EEEEEE',
+])
+
+# quiche aux épinards : une part de quiche, appareil doré semé d'épinards
+ICONS['🥧‍🥬'] = contour([
+    '',
+    '',
+    '',
+    '',
+    '...........LC',
+    '........LLjnjc',
+    '......LjjnljjC',
+    '....Ljjljjnjlc',
+    '..Ljnjjjljjjjc',
+    '.CCCCCCCCCCCCc',
+    '.Cjjljjjjgjjjc',
+    '.Cjjjjgjjjjljc',
+    '.ccccccccccccb',
+])
+
+
+# tarte aux myrtilles : tarte entière, garniture violette semée de myrtilles
+def _tarte_myrtilles():
+    import math
+    rows = []
+    for y in range(16):
+        r = ''
+        for x in range(16):
+            dx, dy = x - 7.5, y - 7.5
+            d = math.hypot(dx, dy)
+            lum = -(dx + dy)
+            if d > 7.0:
+                r += '.'
+            elif d > 5.4:  # bord cannelé, comme 🥧
+                ang = math.atan2(dy, dx)
+                creux = int((ang + math.pi) / (2 * math.pi) * 14) % 2
+                if lum > 2:
+                    r += 'C' if creux else 'L'
+                elif lum > -3:
+                    r += 'c' if creux else 'C'
+                else:
+                    r += 'b' if creux else 'c'
+            elif (x * 3 + y * 5) % 7 == 0:  # reflets des myrtilles
+                r += '^'
+            else:
+                r += '=' if lum > 0 else '+'
+        rows.append(r)
+    return rows
+
+
+ICONS['🥧‍🫐'] = contour(_tarte_myrtilles())
