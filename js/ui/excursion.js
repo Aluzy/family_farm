@@ -13,7 +13,8 @@ import { chopFromStage, fishFromStage, mineFromStage } from './outils.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
-import { NUIT_BLOQUEES } from './actions.js';
+import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
+import { asleep } from '../engine/night.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -80,13 +81,13 @@ function joue(r) {
   return r;
 }
 
-// La nuit, la famille dort : les actions de jeu des cartes suivent la même règle que les
-// boutons de la ferme (NUIT_BLOQUEES, js/ui/actions.js ; js/ui/events.js). `action` : le nom
-// de l'action de la ferme qui fait la même chose (sans nom : refusée toute la nuit, comme couper,
-// piocher et pêcher, js/ui/outils.js). Renvoie un refus, ou null.
+// Le personnage dort : les actions de jeu des cartes suivent la même règle que les boutons de
+// la ferme (SOMMEIL_BLOQUEES, js/ui/actions.js ; js/ui/events.js). La nuit seule n'empêche rien.
+// `action` : le nom de l'action de la ferme qui fait la même chose (sans nom : refusée pendant
+// le sommeil, comme couper, piocher et pêcher, js/ui/outils.js). Renvoie un refus, ou null.
 function nuit(action) {
-  if (!nightActive(state) || (action && !NUIT_BLOQUEES.has(action))) return null;
-  const r = { ok: false, error: '🌙 La famille dort : attends le matin, ou va dormir (Zzz).' };
+  if (!asleep(state) || (action && !SOMMEIL_BLOQUEES.has(action))) return null;
+  const r = { ok: false, error: SOMMEIL_MESSAGE };
   showToast(r.error);
   return r;
 }
@@ -171,7 +172,7 @@ window.FermeHote = {
   perso: () => memberPerso(mainCharacter(state)),
   go,
   vitrine,
-  // (la nuit : comme les boutons de la ferme, NUIT_BLOQUEES ; le quota reste réglable)
+  // (la nuit : comme les boutons de la ferme, SOMMEIL_BLOQUEES ; le quota reste réglable)
   vendre: (item, n) => nuit('sell-item') || joue(sellInTown(state, item, n)),
   acheter: (id) => nuit('ville-buy') || joue(buyCompany(state, id)),
   quota: (id, q) => nuit('entreprise-quota') || joue(setCompanyQuota(state, id, q)),
@@ -236,7 +237,7 @@ export function syncGodBar() {
       sel.value = '';
       sel.blur();
       if (!c) return;
-      if (nightActive(state)) { showToast('🌙 La nuit, la famille reste à la maison.'); return; }
+      if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return; }
       go(c);
     });
     document.body.appendChild(bar);
@@ -252,10 +253,11 @@ document.addEventListener('click', (e) => {
   go(a.getAttribute('href'));
 }, true);
 
-// La nuit (22 h, ou « Dormir ») se passe à la maison : retour à la ferme.
+// Le sommeil (« Dormir », ou la nuit passée hors du jeu) se passe à la maison : retour à la
+// ferme. La nuit seule n'y oblige pas.
 setInterval(() => {
   if (!active) return;
-  if (nightActive(state)) { rentre(false); showToast('🌙 La nuit tombe : retour à la maison.'); }
+  if (asleep(state)) { rentre(false); showToast('💤 Tu dors : retour à la maison.'); }
 }, 500);
 
 // Au chargement, l'adresse jeu.html?carte=… rouvre cette carte (après la mise en place).
@@ -263,7 +265,7 @@ export function resumeExcursion() {
   syncGodBar();
   const p = new URLSearchParams(window.location.search);
   const carte = p.get('carte');
-  if (!carte || setupPending(state) || nightActive(state)) {
+  if (!carte || setupPending(state) || asleep(state)) {
     if (carte) history.replaceState(null, '', 'jeu.html');
     return;
   }

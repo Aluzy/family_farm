@@ -1,4 +1,5 @@
-import { nightActive } from '../engine/clock.js';
+import { asleep } from '../engine/night.js';
+import { SOMMEIL_MESSAGE } from './actions.js';
 import { buyTool, castLine, chopTree, hasTool, mineRock, OUTILS, selectTool, toolDef } from '../engine/outils.js';
 import { axeMode, hoeMode, pickMode, rodMode, setAxeMode, setHoeMode, setPickMode, setRodMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -57,7 +58,7 @@ function useTool(id) {
     return;
   }
   if (id === 'houe' || id === 'hache' || id === 'pioche' || id === 'canne') {
-    if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).'); return; }
+    if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return; }
   }
   applyResult(selectTool(state, id));
   if (id !== 'houe' && hoeMode) setHoeMode(false);
@@ -110,9 +111,9 @@ export function rodChipHtml() {
 
 // La carte (farm-stage.js) : la hache en main, le joueur a touché l'arbre `id`. Le bois entre
 // dans l'inventaire tout de suite ; la carte montre ensuite le personnage qui coupe. Renvoie
-// { bois: n, tombe } (tombe : ce coup abat l'arbre), ou null (la nuit, sans énergie : un message).
+// { bois: n, tombe } (tombe : ce coup abat l'arbre), ou null (il dort, sans énergie : un message).
 export function chopFromStage(id) {
-  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).'); return null; }
+  if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return null; }
   const r = chopTree(state, id);
   if (!r.ok) { showToast(r.error); return null; }
   persistState();
@@ -124,7 +125,7 @@ export function chopFromStage(id) {
 // l'inventaire tout de suite ; la carte montre ensuite le personnage qui frappe. Renvoie
 // { items: { pierre: n }, casse } (casse : ce coup brise le rocher), ou null (un message).
 export function mineFromStage(id) {
-  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).'); return null; }
+  if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return null; }
   const r = mineRock(state, id);
   if (!r.ok) { showToast(r.error); return null; }
   persistState();
@@ -135,9 +136,9 @@ export function mineFromStage(id) {
 // La carte : la canne en main, le joueur a touché l'eau `eau` (« etang » ou « mare »). La
 // prise (s'il y en a une) entre dans l'inventaire tout de suite ; la carte montre ensuite le
 // personnage qui lance, attend la touche et ferre. Renvoie { poisson } (null : rien n'a
-// mordu), ou null (un message : la nuit, sans énergie, le poisson se fait rare).
+// mordu), ou null (un message : il dort, sans énergie, le poisson se fait rare).
 export function fishFromStage(eau) {
-  if (nightActive(state)) { showToast('🌙 La famille dort : attends le matin, ou va dormir (Zzz).'); return null; }
+  if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return null; }
   const r = castLine(state, eau);
   if (!r.ok) { showToast(r.error); return null; }
   persistState();
