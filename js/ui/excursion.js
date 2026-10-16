@@ -6,7 +6,7 @@ import { memberPerso } from '../engine/family.js';
 import { hasTool } from '../engine/outils.js';
 import { rockGone, treeGone } from '../engine/crops.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
-import { axeMode, hoeMode, pickMode, rodMode, state } from './store.js';
+import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
 import { chopFromStage, mineFromStage } from './outils.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
@@ -145,7 +145,49 @@ window.FermeHote = {
   couper: (id) => chopFromStage(id),
   piocher: (id) => mineFromStage(id),
   say: (t) => showToast(t),
+  // le god mode : les cartes ne font plus marcher le personnage (un toucher l'y pose)
+  god: () => godMode,
 };
+
+/* ---------- le god mode : un menu des cartes ---------- */
+
+// Toutes les cartes (et quelques endroits), pour y aller d'un coup (Options : god mode).
+const DESTINATIONS = [
+  ['🌾 La ferme', 'jeu.html'],
+  ['🛤️ Le chemin vers la ville', 'ville-carte.html?carte=transition&arrivee=ferme'],
+  ['🏠 La maison rouge (voisins)', 'ville-carte.html?carte=interieur&maison=maison_rouge'],
+  ['🏠 La maison grise (voisins)', 'ville-carte.html?carte=interieur&maison=maison_ardoise'],
+  ['🏙️ La ville (route de la ferme)', 'ville-carte.html?carte=ville&arrivee=ferme'],
+  ['🚉 La ville (la gare)', 'ville-carte.html?carte=ville&arrivee=gare'],
+  ['⛰️ La montagne', 'ville-carte.html?carte=montagne&arrivee=gare'],
+  ['⛏️ La grotte, niveau 1', 'ville-carte.html?carte=grotte&grotte=30&niveau=1&arrivee=haut'],
+  ['⛏️ La grotte, niveau 4', 'ville-carte.html?carte=grotte&grotte=30&niveau=4&arrivee=haut'],
+  ['⛏️ La grotte, niveau 8', 'ville-carte.html?carte=grotte&grotte=30&niveau=8&arrivee=haut'],
+  ['🏖️ La plage', 'ville-carte.html?carte=plage&arrivee=gare'],
+  ['🌈 L\'infra-monde', 'infra-monde.html'],
+];
+
+// La barre du god mode (en haut de l'écran) : le menu des cartes ; rien sans le god mode.
+export function syncGodBar() {
+  let bar = document.getElementById('god-bar');
+  if (!godMode) { if (bar) bar.remove(); return; }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'god-bar';
+    bar.innerHTML = '<label><span aria-hidden="true">⚡</span><select aria-label="God mode : aller à une carte"></select></label>';
+    const sel = bar.querySelector('select');
+    sel.innerHTML = '<option value="">God mode : aller à…</option>' + DESTINATIONS.map(([t, c]) => `<option value="${c}">${t}</option>`).join('');
+    sel.addEventListener('change', () => {
+      const c = sel.value;
+      sel.value = '';
+      sel.blur();
+      if (!c) return;
+      if (nightActive(state)) { showToast('🌙 La nuit, la famille reste à la maison.'); return; }
+      go(c);
+    });
+    document.body.appendChild(bar);
+  }
+}
 window.HorlogeSortie = { maintenant, texte, JOURS_ECOLE: [0, 1, 3, 4] };
 
 // Les liens vers une autre carte (« Se promener en ville ») : dans la page.
@@ -164,6 +206,7 @@ setInterval(() => {
 
 // Au chargement, l'adresse jeu.html?carte=… rouvre cette carte (après la mise en place).
 export function resumeExcursion() {
+  syncGodBar();
   const p = new URLSearchParams(window.location.search);
   const carte = p.get('carte');
   if (!carte || setupPending(state) || nightActive(state)) {

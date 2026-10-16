@@ -1,4 +1,5 @@
-import { setComptoirTab, setComptoirTabChoisi, setInvTab, setTestMode, state, testMode } from './store.js';
+import { setComptoirTab, setComptoirTabChoisi, setGodMode, setInvTab, setTestMode, state, testMode } from './store.js';
+import { syncGodBar } from './excursion.js';
 import { nightActive } from '../engine/clock.js';
 import { showToast } from './toasts.js';
 import { tel, telClick } from './consent.js';
@@ -30,6 +31,10 @@ document.addEventListener('change', (e) => {
   if (e.target && e.target.id === 'test-mode-toggle') {
     setTestMode(e.target.checked);
     scheduleRender();
+  }
+  if (e.target && e.target.id === 'god-mode-toggle') {
+    setGodMode(e.target.checked);
+    syncGodBar();
   }
 });
 

@@ -139,8 +139,8 @@
   };
   const KY = 0.7;
   // Le bus de l'école (assets/ville_bus.png et .json, scripts/ville/bus.py : huit directions)
-  // et les enfants de la famille (leurs personnages, assets/personnages/perso_NN.png, plus
-  // petits), les jours d'école (lundi, mardi, jeudi, vendredi : HorlogeSortie). Sur
+  // et les enfants de la famille (leurs planches d'enfant, assets/personnages/enfant_NN.png),
+  // les jours d'école (lundi, mardi, jeudi, vendredi : HorlogeSortie). Sur
   // chaque carte, le matin et le soir, une scène : les heures (du jeu) où elle commence et
   // après lesquelles elle ne commence plus, le trajet du bus et son arrêt (couche « bus »), le
   // chemin des enfants, et s'ils montent dans le bus ou en descendent.
@@ -148,7 +148,7 @@
     key: 'bus', file: 'assets/ville_bus.png', meta: 'assets/ville_bus.json', half: 46, carHalf: 29,
     speed: 70,             // px au sol par seconde (plus vite que les voitures : la ville est grande)
     lead: 1400,            // il part au plus à cette distance de l'arrêt (déjà en route, en fondu)
-    kid: { speed: 32, scale: 0.8, fade: 0.5, cases: 'assets/personnages/cases.json' },
+    kid: { speed: 32, fade: 0.5, cases: 'assets/personnages/cases.json' },
     resume: 1.2,           // s : le temps que les enfants s'éloignent (ou montent) avant de repartir
     scenes: {
       transition: [
@@ -232,7 +232,7 @@
   // « meubles » de l'intérieur : un lit d'adulte par parent, un lit d'enfant par enfant, une chaise
   // par personne ; le reste (tableaux, plante, coin salon) au hasard. La sortie : `sortie` (px).
   const VOISINS = {
-    store: 'ferme-voisins', enfantsMax: 3, persos: 50, speed: 24, kidSpeed: 32, scale: 0.8, wait: [1.5, 5],
+    store: 'ferme-voisins', enfantsMax: 3, persos: 50, speed: 24, kidSpeed: 32, wait: [1.5, 5],
     sortie: { x: 232, y: 240, w: 32, h: 24 }, entree: { x: 248, y: 228 }, fond: '#06182a',
     noms: ['Martin', 'Bernard', 'Dubois', 'Moreau', 'Laurent', 'Girard', 'Roux', 'Fournier', 'Mercier', 'Blanc', 'Garnier', 'Chevalier'],
     prenoms: ['Camille', 'Claude', 'Dominique', 'Sacha', 'Alix', 'Morgan', 'Charlie', 'Maxime', 'Andréa', 'Yaël', 'Eden', 'Ange'],
@@ -248,6 +248,8 @@
       'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3'],
     plats: /^(tapis|tableau|fenetre)/,
   };
+  // La planche d'un personnage : un adulte (perso_NN) ou un enfant (enfant_NN), assets/personnages/.
+  const sheetKey = (n, enfant) => (enfant ? 'enfant_' : 'perso_') + n;
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // La famille qui vit dans la maison `maison` : tirée au hasard la première fois, puis gardée.
@@ -257,26 +259,26 @@
     try { all = JSON.parse(window.localStorage.getItem(VOISINS.store) || '{}') || {}; } catch (e) { all = {}; }
     if (all[maison] && Array.isArray(all[maison].membres) && all[maison].membres.length) return all[maison];
     const pick = (a) => a[Math.floor(Math.random() * a.length)];
-    // des personnages que la partie et les autres voisins n'ont pas
-    const pris = new Set();
+    // des personnages (d'adulte, d'enfant) que la partie et les autres voisins n'ont pas
+    const pris = { adulte: new Set(), enfant: new Set() };
     const H = hote(), h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
-    if (H && H.perso) pris.add(H.perso());
-    for (const e of (h && h.enfants) || []) pris.add(e.perso);
+    if (H && H.perso) pris.adulte.add(H.perso());
+    for (const e of (h && h.enfants) || []) pris.enfant.add(e.perso);
     const autres = Object.values(all).filter((f) => f && Array.isArray(f.membres));
-    for (const f of autres) for (const m of f.membres) pris.add(m.perso);
-    const perso = () => {
-      const libres = [];
-      for (let n = 1; n <= VOISINS.persos; n++) if (!pris.has(n)) libres.push(n);
+    for (const f of autres) for (const m of f.membres) pris[m.enfant ? 'enfant' : 'adulte'].add(m.perso);
+    const perso = (enfant) => {
+      const p = pris[enfant ? 'enfant' : 'adulte'], libres = [];
+      for (let n = 1; n <= VOISINS.persos; n++) if (!p.has(n)) libres.push(n);
       const n = libres.length ? pick(libres) : 1 + Math.floor(Math.random() * VOISINS.persos);
-      pris.add(n);
+      p.add(n);
       return n;
     };
     const dits = new Set();
     const prenom = (liste) => { const l = liste.filter((p) => !dits.has(p)); const p = pick(l.length ? l : liste); dits.add(p); return p; };
     const noms = VOISINS.noms.filter((n) => !autres.some((f) => f.nom === n));
     const n = 1 + Math.floor(Math.random() * VOISINS.enfantsMax);
-    const membres = [0, 1].map(() => ({ prenom: prenom(VOISINS.prenoms), perso: perso(), enfant: false }));
-    for (let i = 0; i < n; i++) membres.push({ prenom: prenom(VOISINS.enfants), perso: perso(), enfant: true });
+    const membres = [0, 1].map(() => ({ prenom: prenom(VOISINS.prenoms), perso: perso(false), enfant: false }));
+    for (let i = 0; i < n; i++) membres.push({ prenom: prenom(VOISINS.enfants), perso: perso(true), enfant: true });
     const f = {
       nom: pick(noms.length ? noms : VOISINS.noms), membres,
       deco: { tableaux: [1, 2, 3].filter(() => Math.random() < 0.7), plante: Math.random() < 0.6, salon: Math.random() < 0.75 },
@@ -366,16 +368,16 @@
       }
       // les enfants de la partie (pour la scène du bus) ; dans une maison, la famille qui y vit
       const h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
-      const persos = ((h && h.enfants) || []).map((e) => e.perso);
+      const planches = ((h && h.enfants) || []).map((e) => sheetKey(e.perso, true));
       this.famille = null;
       if (NOM_CARTE === 'interieur') {
         this.maison = PARAMS.get('maison') || 'maison_rouge';
         this.famille = voisins(this.maison);
-        for (const m of this.famille.membres) persos.push(m.perso);
+        for (const m of this.famille.membres) planches.push(sheetKey(m.perso, m.enfant));
         for (const n of VOISINS.meubles) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
       }
-      for (const n of new Set(persos)) {
-        this.load.spritesheet('perso_' + n, v('assets/personnages/perso_' + String(n).padStart(2, '0') + '.png'), { frameWidth: 16, frameHeight: 32 });
+      for (const k of new Set(planches)) {
+        this.load.spritesheet(k, v('assets/personnages/' + k.replace(/_(\d+)$/, (_, n) => '_' + n.padStart(2, '0')) + '.png'), { frameWidth: 16, frameHeight: 32 });
       }
       // les planches des jeux de tuiles : lues dans la carte une fois chargée
       if (MAP.file) this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
@@ -478,8 +480,17 @@
         this.entering = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapVoisin(w) || this.tapMaison(w)) return;
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapVoisin(w)) return;
+        if (this.god()) { this.teleport(w.x, w.y); return; }
+        if (this.tapMaison(w)) return;
         this.goTo(w.x, w.y);
+      });
+      // le god mode : glisser déplace la vue (la caméra ne suit plus le personnage)
+      this.input.on('pointermove', (p) => {
+        if (!p.isDown || !this.god() || this.locked || this.dialog || p.getDistance() < 8) return;
+        if (this.followOn !== false) { cam.stopFollow(); this.followOn = false; }
+        cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
+        cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
       });
       // les trajets du bus de l'école roulent avec les autres (mêmes carrefours), sans voitures tirées dessus
       const busObjs = objects('bus');
@@ -514,7 +525,7 @@
       for (const q of this.passages) {
         const r = q.rect;
         const d = Math.hypot(Math.max(r.x - P.x, 0, P.x - r.x - r.width), Math.max(r.y - P.y, 0, P.y - r.y - r.height));
-        q.arrow.setVisible(d <= q.near);
+        q.arrow.setVisible(d <= q.near || this.god());
         if (!q.arrow.visible) continue;
         const k = reduced() ? 0 : Math.round(Math.sin(time / 220) * PASS.bob);
         const [dx, dy] = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] }[q.sens];
@@ -531,6 +542,29 @@
         this.clockEl.hidden = !this.time;
         if (this.time) this.clockEl.textContent = '🕐 ' + window.HorlogeSortie.texte(this.time);
       }
+    }
+
+    // Le god mode (Options du jeu) : un toucher pose le personnage, les flèches sont toutes là.
+    god() {
+      const H = hote();
+      return !!(H && H.god && H.god());
+    }
+
+    // Le personnage posé d'un coup sur la case libre la plus proche de (x, y) ; la caméra le suit de nouveau.
+    teleport(x, y) {
+      let gx = Math.floor(x / T), gy = Math.floor(y / T), best = this.canWalk(gx, gy) ? { x: gx, y: gy } : null;
+      for (let r = 1; r < 12 && !best; r++) {
+        for (let dy = -r; dy <= r && !best; dy++) for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) === r && this.canWalk(gx + dx, gy + dy)) { best = { x: gx + dx, y: gy + dy }; break; }
+        }
+      }
+      if (!best) return;
+      this.path = [];
+      this.work = null;
+      this.heroPos.x = best.x === gx && best.y === gy ? x : best.x * T + T / 2;
+      this.heroPos.y = best.x === gx && best.y === gy ? y : best.y * T + T - 2;
+      this.hero.setPosition(Math.round(this.heroPos.x), Math.round(this.heroPos.y));
+      if (this.followOn === false) { this.cameras.main.startFollow(this.hero, true, 0.12, 0.12); this.followOn = true; }
     }
 
     // Changer de carte : la page cible (une autre carte, ou la ferme).
@@ -826,11 +860,11 @@
     // Un enfant qui marche le long de `pts` (il paraît au premier point, en fondu) ; `bout` : il
     // s'efface au bout du chemin (descendu du bus, il arrive à la porte ou au bord de la carte).
     addKid(perso, pts, k, bout) {
-      const key = 'perso_' + perso;
+      const key = sheetKey(perso, true);
       if (!this.textures.exists(key) || !pts || pts.length < 2) return null;
       const dx = (k % 2 ? 1 : -1) * 5 * Math.ceil(k / 2);
       const kid = {
-        s: this.add.sprite(pts[0].x + dx, pts[0].y, key, this.kidFrame('idle_bas_0')).setOrigin(0.5, 30 / 32).setScale(BUS.kid.scale).setAlpha(0),
+        s: this.add.sprite(pts[0].x + dx, pts[0].y, key, this.kidFrame('idle_bas_0')).setOrigin(0.5, 30 / 32).setAlpha(0),
         pts: pts.map((p, i) => ({ x: p.x + (i ? dx : dx), y: p.y })), i: 1, x: pts[0].x + dx, y: pts[0].y, alpha: 0, fade: 1, walked: 0, face: 'bas', arrived: false,
         wait: k * 0.6, bout: !!bout,
       };
@@ -1941,11 +1975,11 @@
       const noms = (this.cache.json.get('perso_cases') || {}).frames || [];
       this.npcFrame = (name) => Math.max(0, noms.indexOf(name));
       for (const m of f.membres) {
-        const key = 'perso_' + m.perso;
+        const key = sheetKey(m.perso, m.enfant);
         if (!this.textures.exists(key) || !libres.length) continue;
         const c = libres.splice(Math.floor(Math.random() * libres.length), 1)[0];
         const x = c.x * T + T / 2, y = c.y * T + T - 2;
-        const s = this.add.sprite(x, y, key, this.npcFrame('idle_bas_0')).setOrigin(0.5, 30 / 32).setScale(m.enfant ? VOISINS.scale : 1);
+        const s = this.add.sprite(x, y, key, this.npcFrame('idle_bas_0')).setOrigin(0.5, 30 / 32);
         const shadow = this.add.ellipse(x, y, m.enfant ? 9 : 11, 4, 0x1e1a18, 0.3);
         this.npcs.push({ m, s, shadow, x, y, path: [], wait: 0.5 + Math.random() * 3, face: 'bas', walked: 0, speed: m.enfant ? VOISINS.kidSpeed : VOISINS.speed, talk: 0 });
       }

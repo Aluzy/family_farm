@@ -1,5 +1,5 @@
 import { GAME_VERSION } from '../engine/base.js';
-import { setEcranFerme, testMode } from './store.js';
+import { godMode, setEcranFerme, testMode } from './store.js';
 import { privacySectionHtml, tel } from './consent.js';
 import { copyFromTextarea, exportSaveText, importSaveText } from './storage.js';
 import { refresh } from './render.js';
@@ -101,6 +101,10 @@ export function openOptionsModal() {
             <label class="row check-row">
               <input type="checkbox" id="test-mode-toggle" ${testMode ? 'checked' : ''}>
               Activer le panneau de mode test
+            </label>
+            <label class="row check-row">
+              <input type="checkbox" id="god-mode-toggle" ${godMode ? 'checked' : ''}>
+              God mode : aller d'une carte à l'autre sans le personnage
             </label>
           </div>
           <div class="stack">

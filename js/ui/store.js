@@ -109,6 +109,15 @@ export function setTestMode(value) {
   testMode = value;
   return value;
 }
+// Le « god mode » (Options, sous le mode test) : on passe d'une carte à l'autre par un menu,
+// sans y mener le personnage (js/ui/excursion.js). Gardé sur l'appareil.
+const GOD_KEY = 'ferme-god-mode';
+export let godMode = (() => { try { return window.localStorage.getItem(GOD_KEY) === '1'; } catch (e) { return false; } })();
+export function setGodMode(value) {
+  godMode = !!value;
+  try { if (godMode) window.localStorage.setItem(GOD_KEY, '1'); else window.localStorage.removeItem(GOD_KEY); } catch (e) { /* le temps de la visite */ }
+  return godMode;
+}
 export let invTab = 'frais'; // Inventaire : 'frais', 'graines' ou 'produits'
 export function setInvTab(value) {
   invTab = value;

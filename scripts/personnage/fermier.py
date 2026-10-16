@@ -11,6 +11,12 @@
 #   garcon      : peau mate, cheveux bruns, chapeau de paille à ruban rouge, haut orange.
 # Les cinq derniers suivent les portraits de assets/portraits (scripts/personnage/portraits.py).
 #
+# Les 50 adultes du catalogue (scripts/personnage/catalogue.py) : assets/personnages/perso_XX.png.
+# Les 50 enfants (scripts/personnage/portraits_enfants.py, leurs portraits assets/portraits/
+# enfant_XX.png) : assets/personnages/enfant_XX.png, les mêmes cases. Un enfant est dessiné comme
+# un adulte, puis raccourci : quelques rangées du ventre et des jambes sont retirées (ENFANT_RANGEES),
+# la tête garde sa taille ; il fait 26 px de haut au lieu de 30, les pieds au même endroit.
+#
 # Trois vues : « bas » (de face), « haut » (de dos), « cote » (de profil, tourné vers la
 # droite ; la carte le retourne pour la gauche). Lumière en haut à gauche, contour sombre
 # ajouté à la fin.
@@ -141,6 +147,37 @@ def variante_catalogue(d):
     for x in d['details']:
         style[x] = True
     return {'couleurs': couleurs, **style}
+
+
+# Un enfant du catalogue des portraits d'enfants : ses coupes et couvre-chefs ramenés à ceux
+# que la carte sait dessiner.
+COUPES_ENFANT = {'court': 'courts', 'long': 'longs', 'couettes': 'couettes', 'queue': 'mi', 'chignon': 'chignon',
+                 'frange': 'frange', 'herisse': 'courts', 'boucles': 'courts', 'meche': 'courts'}
+CHAPEAUX_ENFANT = {None: None, 'casquette': 'casquette', 'bonnet': 'bonnet', 'paille': 'paille',
+                   'noeud': 'fleur', 'serre_tete': 'bandeau', 'fleur': 'fleur'}
+ENFANT_RANGEES = (21, 22, 26, 27)     # les rangées retirées (le ventre, les cuisses)
+
+
+def variante_enfant(d):
+    v = variante_catalogue(dict(d, coupe=COUPES_ENFANT.get(d['coupe'], 'courts'), chapeau=CHAPEAUX_ENFANT.get(d['chapeau'])))
+    for x in ('lunettes', 'rousseur', 'joues'):
+        v[x] = x in d['details']
+    v['joues'] = True                     # (des joues roses : un air d'enfant)
+    v.pop('pansement', None)
+    v.pop('salopette', None)
+    return v
+
+
+def raccourci(im):
+    """L'image d'un enfant : celle de l'adulte sans les rangées ENFANT_RANGEES, tassée vers le bas."""
+    out = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    y = H - 1
+    for r in range(H - 1, -1, -1):
+        if r in ENFANT_RANGEES:
+            continue
+        out.paste(im.crop((0, r, W, r + 1)), (0, y))
+        y -= 1
+    return out
 
 
 class Canvas:
@@ -578,13 +615,14 @@ def render(cv):
     return im
 
 
-def ecrire(nom, dossier='assets', portrait=True, cases=True):
+def ecrire(nom, dossier='assets', portrait=True, cases=True, enfant=False):
     F = frames()
     names = list(F)
     rows = (len(names) + COLS - 1) // COLS
     sheet = Image.new('RGBA', (COLS * W, rows * H), (0, 0, 0, 0))
     for i, n in enumerate(names):
-        sheet.paste(render(F[n]), ((i % COLS) * W, (i // COLS) * H))
+        im = render(F[n])
+        sheet.paste(raccourci(im) if enfant else im, ((i % COLS) * W, (i // COLS) * H))
     sheet.save(os.path.join(ROOT, dossier, f'{nom}.png'))
     if cases:
         with open(os.path.join(ROOT, dossier, f'{nom if dossier == "assets" else "cases"}.json'), 'w', encoding='utf-8') as f:
@@ -621,6 +659,32 @@ def main():
     for i, (nom, d) in enumerate(catalogue.personnages()):
         dessiner(variante_catalogue(d))
         ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=(i == 0))
+    # Les 50 enfants : assets/personnages/enfant_XX.png (les mêmes cases)
+    import portraits_enfants
+    for nom, d in portraits_enfants.enfants():
+        dessiner(variante_enfant(d))
+        ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=False, enfant=True)
+    if '--apercu' in sys.argv:
+        apercu_enfants()
+
+
+def apercu_enfants():
+    """apercu_enfants_carte.png : chaque enfant (portrait, puis de face, de profil, de dos), à côté d'un adulte."""
+    import portraits_enfants
+    S = 4
+    noms = list(frames())
+    IDLE = [noms.index(n) for n in ('idle_bas_0', 'idle_cote_0', 'idle_haut_0')]
+    out = Image.new('RGBA', (10 * 70 * S // 2, 5 * 40 * S // 2), (126, 170, 92, 255))
+    for i, (nom, _) in enumerate(portraits_enfants.enfants()):
+        sheet = Image.open(os.path.join(ROOT, 'assets', 'personnages', nom + '.png')).convert('RGBA')
+        por = Image.open(os.path.join(ROOT, 'assets', 'portraits', nom + '.png')).convert('RGBA')
+        x0, y0 = (i % 10) * 70, (i // 10) * 40
+        tile = Image.new('RGBA', (70, 40), (0, 0, 0, 0))
+        tile.alpha_composite(por, (0, 12))
+        for k, idx in enumerate(IDLE):
+            tile.alpha_composite(sheet.crop(((idx % COLS) * W, (idx // COLS) * H, (idx % COLS) * W + W, (idx // COLS) * H + H)), (18 + k * 17, 6))
+        out.alpha_composite(tile.resize((70 * S // 2, 40 * S // 2), Image.NEAREST), (x0 * S // 2, y0 * S // 2))
+    out.save(os.path.join(ROOT, 'apercu_enfants_carte.png'))
 
 
 if __name__ == '__main__':

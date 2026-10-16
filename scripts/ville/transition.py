@@ -59,8 +59,15 @@ COUCHES = [
 ROUTE = (28, 15, 21)           # la chaussée : de la colonne 28 au bord est, rangées 15 à 21 (coins)
 TROTTOIRS = (30, 13, 23)       # les trottoirs, au-dessus et au-dessous, à partir de la colonne 30
 MARE = (9 * T, 28 * T, 4 * T, 2.4 * T)
-# Les barrières de la ferme : (de la colonne, à la colonne, rangée), en tuiles.
-BARRIERES = [(3, 9, 15), (12, 20, 15), (23, 25, 15)]
+# Les barrières de la ferme : (de la colonne, à la colonne, rangée), en tuiles ; leur pied à
+# PIED_BARRIERE px du haut de la rangée, sur l'herbe (le bas de la rangée 15 touche déjà le chemin).
+BARRIERES = [(3, 8, 15), (12, 19, 15), (23, 25, 15)]
+PIED_BARRIERE = 7
+# Les pieds des réverbères et de l'abri de bus, au milieu des trottoirs (px depuis le haut de
+# la carte) : le trottoir du haut va de la rangée 13 au bord de la route (rangée 15), celui du
+# bas du bord de la route (rangée 21) à la rangée 23.
+PIED_HAUT = 14 * T + 4
+PIED_BAS = 22 * T + 6
 # Les rochers et les cailloux : (genre, milieu du pied en tuiles) ; le genre est une case de
 # assets/transition_objets.png (ROCHERS_IMAGES).
 ROCHERS_PLAN = [
@@ -77,7 +84,7 @@ def chemin(x):
     if x <= 9:
         return 17, 19
     if x <= 19:
-        return 16, 18
+        return 17, 20             # (il s'élargit vers le bas : l'herbe devant les maisons reste entière)
     return 17, 19
 
 
@@ -213,11 +220,12 @@ def dessine(c):
     cy = (ROUTE[1] + ROUTE[2]) * T // 2
     B.tirets(mq, ROUTE[0] * T + 6 + 2 * T, W * T, cy - 2, cy + 2)
     eq = c['equipements']
-    eq.colle(E.abri_bus(), 36 * T, ROUTE[1] * T - 48)
+    abri = E.abri_bus()
+    eq.colle(abri, 36 * T, PIED_HAUT - abri.height)
     rev = O.reverbere()
     for x in (32, 42):
-        eq.colle(rev, x * T, (ROUTE[1] - 3) * T)
-        eq.colle(rev, x * T, (ROUTE[2] - 1) * T)
+        eq.colle(rev, x * T, PIED_HAUT - rev.height)
+        eq.colle(rev, x * T, PIED_BAS - rev.height)
     # la mare
     cx, cy, rx, ry = MARE
     eau = c['fontaines']
@@ -294,7 +302,7 @@ def barrieres(mob, ombres):
     img = image(W * T, H * T)
     for x0, x1, y in BARRIERES:
         n = round((x1 + 1 - x0) * T / BR.PAS) - 1
-        BR.devant(img, P, x0 * T + 3, y * T + 14, n)
+        BR.devant(img, P, x0 * T + 3, y * T + PIED_BARRIERE, n)
     a = img.getchannel('A').point(lambda v: 128 if v else 0)
     ombre = Image.new('RGBA', img.size, (0, 0, 0, 0))
     ombre.putalpha(a)

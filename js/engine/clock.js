@@ -15,7 +15,7 @@ export function awakeRequired(state) {
 }
 
 // Heure de la journée (0 à 23) : 6 h au réveil, +1 heure toutes les
-// CLOCK_SECONDS_PER_HOUR secondes d'éveil (18 s). À 19 h la famille prend son
+// CLOCK_SECONDS_PER_HOUR secondes d'éveil (30 s). À 19 h la famille prend son
 // repas (mealDue / takeMeal) ; à 22 h la nuit se déroule d'elle-même
 // (bedtimeDue : c'est l'interface qui lance sleep(), jeu ouvert). Si rien ne
 // la lance, l'horloge repasse à 0 h et continue. (L'usure des appareils a sa

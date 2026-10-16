@@ -1403,6 +1403,10 @@ body.has-stage main { display: none; }
 #map-stage[data-carte="grotte"] { background: #0b090a; }
 #map-stage[hidden] { display: none; }
 #map-stage canvas { display: block; image-rendering: pixelated; }
+/* le god mode (Options) : le menu des cartes, à gauche sous la carte du joueur */
+#god-bar { position: fixed; left: 8px; top: calc(var(--player-h, 110px) + 10px); z-index: 40; }
+#god-bar label { display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 10px; background: rgba(40, 26, 14, 0.82); color: #fff3d6; font-size: 13px; }
+#god-bar select { max-width: 52vw; font: inherit; border-radius: 6px; border: 1px solid #b08850; background: #fff8e8; color: #3a2610; padding: 2px 4px; }
 #map-stage .map-retour { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--player-h, 110px) + 16px); z-index: 6; }
 .ville-message { position: fixed; left: 50%; transform: translateX(-50%); top: calc(var(--player-h, 110px) + 16px); z-index: 60; max-width: min(460px, calc(100vw - 32px)); background: rgba(40, 32, 30, .9); color: #f4efe6; border: 1px solid rgba(240, 220, 180, .45); border-radius: 10px; padding: 8px 12px; font-size: 14px; line-height: 1.35; }
 .ville-fenetre { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; background: rgba(20, 16, 14, .45); padding: 16px; color: #f4efe6; }

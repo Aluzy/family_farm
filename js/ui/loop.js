@@ -140,7 +140,7 @@ function watchTechPoints() {
   persistState();
 }
 
-// La journée suit l'horloge : de 6 h à 22 h, 18 s par heure. À 19 h, la famille prend
+// La journée suit l'horloge : de 6 h à 22 h, 30 s par heure. À 19 h, la famille prend
 // son repas. Version 1.19 : à 22 h, la famille va dormir et la nuit défile à la même
 // vitesse (tick : seule l'heure avance) ; à minuit, la nuit se calcule (récolte automatique
 // comprise) et le jour change ; à 6 h, le résumé du réveil s'affiche. Le bouton « Zzz »
