@@ -5,6 +5,7 @@ import { awakeRequired, nightActive, nightLengthMs } from './clock.js';
 import { advanceNight } from './night.js';
 import { growDue } from './crops.js';
 import { irrigate, robotStep } from './automation.js';
+import { companiesStep } from './entreprises.js';
 import { flowStep, wearStep } from './energy.js';
 import { inventoryCounts } from './inventory.js';
 import { millPending, millTimeLeft, taskTimeLeft } from './kitchen.js';
@@ -114,6 +115,7 @@ export function simulateOffline(state, seconds) {
     growDue(state); // les plantes suivent l'horloge
     robotStep(state);
     irrigate(state);
+    companiesStep(state);
     noteEnergyRecord(state);
     left -= dtMs;
   }

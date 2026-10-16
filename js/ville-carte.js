@@ -53,6 +53,12 @@
  * l'inventaire, un carnet les compte), des animaux à regarder (couche « animaux » : une zone
  * par espèce, FAUNE), les entrées des grottes (couche « passages » : la flèche y mène).
  *
+ * Le marché de la ville (couche « lieux » : les étals) et les entreprises (les entrepôts
+ * « conserverie », « fromagerie », « confiturerie ») : la page n'a pas le moteur du jeu. Elle
+ * montre la « vitrine » que la ferme a écrite en partant (ce qu'elle peut vendre ici, plus cher,
+ * ses pièces, ses entreprises) et note les ordres du joueur (« ferme-ordres ») ; la ferme les
+ * passe à son retour (js/ui/sortie.js).
+ *
  * Les grottes (?carte=grotte&grotte=<entrée>&niveau=<n>) ne sont pas des cartes Tiled : chaque
  * niveau est tiré au hasard (le même toute la journée : la graine est l'entrée, le niveau et le
  * jour) par un automate cellulaire, avec les morceaux de scripts/ville/grotte.py. On descend par
@@ -330,7 +336,7 @@
         const w = cam.getWorldPoint(p.x, p.y);
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w)) return;
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapOre(w) || this.tapLieu(w)) return;
         this.goTo(w.x, w.y);
       });
       // les trajets du bus de l'école roulent avec les autres (mêmes carrefours), sans voitures tirées dessus
@@ -341,6 +347,7 @@
       this.makeFinds(objects('trouvailles'));
       this.makeFauna(objects('animaux'));
       this.makeCaveLife();
+      this.lieux = objects('lieux');
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A') : null;
       window.Ville = { scene: this };
     }
@@ -772,7 +779,7 @@
       this.gareEl = document.getElementById('gare-fenetre');
       const aide = document.getElementById('aide-texte');
       const textes = {
-        ville: 'Touchez un trottoir pour y marcher · la gare pour prendre le train',
+        ville: 'Touchez un trottoir pour y marcher · la gare, un étal du marché, un entrepôt',
         montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
         plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la gare pour rentrer',
         grotte: 'Touchez le sol pour y marcher · un minerai pour le piocher · l\u2019échelle pour remonter',
@@ -780,7 +787,9 @@
       if (aide && textes[NOM_CARTE]) aide.textContent = textes[NOM_CARTE];
       const annuler = document.getElementById('gare-annuler');
       if (annuler) annuler.addEventListener('click', () => this.closeGare());
-      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.dialog) this.closeGare(); });
+      const fermer = document.getElementById('lieu-fermer');
+      if (fermer) fermer.addEventListener('click', () => this.closeLieu());
+      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.dialog) { if (this.lieu) this.closeLieu(); else this.closeGare(); } });
     }
 
     say(texte) {
@@ -823,6 +832,124 @@
       if (this.gareEl) this.gareEl.hidden = true;
       // (le relâchement du clic qui ferme la fenêtre ne doit pas faire marcher la promeneuse)
       setTimeout(() => { this.dialog = false; }, 60);
+    }
+
+    // ---------- le marché de la ville, les entreprises ----------
+
+    // Ce que la ferme a laissé en partant (js/ui/sortie.js) : les produits à vendre et leur prix
+    // en ville, les pièces, les entreprises. Seulement si c'est bien la sortie en cours.
+    vitrine() {
+      const lire = (k) => { try { return JSON.parse(window.localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+      const v = lire('ferme-vitrine'), s = lire('ferme-sortie');
+      return v && s && v.depuis === s.depuis ? v : null;
+    }
+
+    // Les ordres du joueur, passés par la ferme à son retour (js/ui/sortie.js).
+    ordres(v) {
+      let o = null;
+      try { o = JSON.parse(window.localStorage.getItem('ferme-ordres') || 'null'); } catch (e) { o = null; }
+      if (!o || o.depuis !== v.depuis) o = { depuis: v.depuis, ventes: {}, achats: [], quotas: {} };
+      return o;
+    }
+
+    saveOrdres(o) {
+      try { window.localStorage.setItem('ferme-ordres', JSON.stringify(o)); } catch (e) { /* ignoré */ }
+    }
+
+    // Les pièces, une fois les ordres passés.
+    piecesApres(v, o) {
+      let p = v.pieces;
+      for (const r of v.vente) p += (o.ventes[r.item] || 0) * r.prix;
+      for (const id of o.achats) { const e = v.entreprises.find((q) => q.id === id); if (e) p -= e.prix; }
+      return p;
+    }
+
+    tapLieu(w) {
+      const etal = (this.lieux || []).find((o) => o.name === 'marche' && w.x >= o.x && w.x <= o.x + o.width && w.y >= o.y && w.y <= o.y + o.height);
+      if (etal) { this.openLieu('marche'); return true; }
+      const v = this.vitrine();
+      const ids = v ? v.entreprises.map((e) => e.id) : ['conserverie', 'fromagerie', 'confiturerie'];
+      const b = (this.buildings || []).find((q) => ids.includes(q.name) && w.x >= q.x0 && w.x <= q.x1 && w.y >= q.top && w.y <= q.base + 8);
+      if (b) { this.openLieu(b.name); return true; }
+      return false;
+    }
+
+    openLieu(quoi) {
+      const el = document.getElementById('lieu-fenetre');
+      if (!el) return;
+      this.lieu = quoi;
+      this.renderLieu();
+      el.hidden = false;
+      this.dialog = true;
+      const b = el.querySelector('button:not([disabled])');
+      if (b) b.focus();
+    }
+
+    closeLieu() {
+      const el = document.getElementById('lieu-fenetre');
+      if (el) el.hidden = true;
+      this.lieu = null;
+      setTimeout(() => { this.dialog = false; }, 60);
+    }
+
+    renderLieu() {
+      const titre = document.getElementById('lieu-titre'), corps = document.getElementById('lieu-corps');
+      const v = this.vitrine();
+      const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      if (this.lieu === 'marche') {
+        titre.textContent = '🧺 Le marché de la ville';
+        if (!v) { corps.innerHTML = '<p class="note">Partez de la ferme pour venir vendre ses produits ici (rien à vendre sur cet appareil).</p>'; return; }
+        const o = this.ordres(v);
+        const rangs = v.vente.map((r) => {
+          const reste = r.qte - (o.ventes[r.item] || 0);
+          return `<div class="rang"><span aria-hidden="true">${esc(r.icone)}</span><span class="nom">${esc(r.nom)} <small>× ${reste}</small></span><span>${r.prix} 💰</span>
+            <button type="button" data-vendre="${esc(r.item)}" data-n="1"${reste > 0 ? '' : ' disabled'}>Vendre 1</button>
+            <button type="button" data-vendre="${esc(r.item)}" data-n="${reste}"${reste > 0 ? '' : ' disabled'}>Tout</button></div>`;
+        }).join('');
+        const vendu = v.vente.reduce((t, r) => t + (o.ventes[r.item] || 0) * r.prix, 0);
+        corps.innerHTML = `<p class="note">On achète ici les produits de la ferme plus cher qu'au Marché de la ferme. 💰 ${this.piecesApres(v, o)} pièces${vendu ? ` (dont +${vendu} des ventes d'aujourd'hui, encaissées au retour à la ferme)` : ''}.</p>
+          <div class="rangs">${rangs || '<p class="note">Rien à vendre : la ferme n’avait pas de produits en stock au départ.</p>'}</div>`;
+        corps.querySelectorAll('[data-vendre]').forEach((b) => b.addEventListener('click', () => {
+          const it = b.dataset.vendre, n = Number(b.dataset.n) || 0;
+          o.ventes[it] = (o.ventes[it] || 0) + n;
+          this.saveOrdres(o);
+          const r = v.vente.find((q) => q.item === it);
+          if (r) this.say(`🧺 Vendu : ${n} ${r.icone} ${r.nom.toLowerCase()} (+${n * r.prix} 💰)`);
+          this.renderLieu();
+        }));
+        return;
+      }
+      const e = v && v.entreprises.find((q) => q.id === this.lieu);
+      const nom = this.lieu.charAt(0).toUpperCase() + this.lieu.slice(1);
+      if (!e) { titre.textContent = '🏭 ' + nom; corps.innerHTML = '<p class="note">Partez de la ferme pour pouvoir acheter cette entreprise.</p>'; return; }
+      titre.textContent = `${e.icone} ${e.nom}`;
+      const o = this.ordres(v);
+      const achetee = e.achetee || o.achats.includes(e.id);
+      const pieces = this.piecesApres(v, o);
+      const quota = o.quotas[e.id] !== undefined ? o.quotas[e.id] : e.quota;
+      const fait = `${e.texte} Chaque jour à ${e.heure} h, elle prend ${e.par} ${e.intrantNom} de la ferme par ${e.produit.toLowerCase()} et le vend ${e.prixProduit} 💰.`;
+      if (!achetee) {
+        corps.innerHTML = `<p class="note">${esc(fait)}</p><p class="note">Prix : <strong>${e.prix} 💰</strong> · vos pièces : ${pieces} 💰</p>
+          <div class="choix"><button type="button" id="lieu-acheter"${pieces >= e.prix ? '' : ' disabled'}>${pieces >= e.prix ? `Acheter la ${esc(e.nom.toLowerCase())}` : 'Pas assez de pièces'}</button></div>`;
+        const b = document.getElementById('lieu-acheter');
+        if (b) b.addEventListener('click', () => {
+          if (this.piecesApres(v, o) < e.prix || o.achats.includes(e.id)) return;
+          o.achats.push(e.id);
+          this.saveOrdres(o);
+          this.say(`${e.icone} La ${e.nom.toLowerCase()} est à vous (elle commence au retour à la ferme).`);
+          this.renderLieu();
+        });
+        return;
+      }
+      const b = e.bilan;
+      corps.innerHTML = `<p class="note">${esc(fait)}</p>
+        <div class="quota"><button type="button" data-q="-1"${quota > 0 ? '' : ' disabled'} aria-label="Un de moins">−</button><span>Quota : <strong>${quota}</strong> ${esc(e.produit.toLowerCase())}${quota > 1 ? 's' : ''} par jour</span><button type="button" data-q="1"${quota < e.quotaMax ? '' : ' disabled'} aria-label="Un de plus">+</button></div>
+        <p class="note">${e.achetee ? (b ? `Le jour ${b.jour} : ${b.unites} fabriqués, +${b.gain} 💰.` : 'Pas encore de production.') + (e.dispo !== null ? ` En stock à la ferme : ${e.dispo} ${esc(e.intrantNom)}.` : '') : 'Achetée aujourd’hui : elle commence au retour à la ferme.'}</p>`;
+      corps.querySelectorAll('[data-q]').forEach((btn) => btn.addEventListener('click', () => {
+        o.quotas[e.id] = Math.max(0, Math.min(e.quotaMax, quota + Number(btn.dataset.q)));
+        this.saveOrdres(o);
+        this.renderLieu();
+      }));
     }
 
     // ---------- le train ----------

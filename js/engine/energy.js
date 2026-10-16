@@ -11,6 +11,7 @@ import { nightActive } from './clock.js';
 import { growDue } from './crops.js';
 import { irrigate, robotStep, runRobotCharge } from './automation.js';
 import { advanceNight, nightSpeed } from './night.js';
+import { companiesStep } from './entreprises.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
 
@@ -127,7 +128,7 @@ export function tick(state, dt, horlogeArretee = false) {
   wearStep(state, dtMs);
 
   // e. temps d'éveil (l'heure s'en déduit) ; les plantes suivent l'horloge
-  if (!horlogeArretee) { state.awakeMs += dtMs; growDue(state); robotStep(state); irrigate(state); }
+  if (!horlogeArretee) { state.awakeMs += dtMs; growDue(state); robotStep(state); irrigate(state); companiesStep(state); }
   refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
   noteEnergyRecord(state); // Lot 9 : record d'énergie stockée, puis objectifs du chapitre
   updateChapters(state);

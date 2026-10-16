@@ -615,16 +615,8 @@ def objets(c):
             mob.colle(E.caisse(i), x * T, y * T)
     # le marché : trois rangs d'étals de chaque côté de la rue de l'école
     couleurs_etal = list(E.AUVENTS)
-    n = 0
-    for y in (82, 89, 96):
-        for x in (122, 127, 132, 137, 142):
-            if x + 3 <= 145:
-                mob.colle(E.etal(couleurs_etal[n % 5], n), x * T, y * T)
-                n += 1
-    for y in (116, 123, 130, 137):
-        for x in (122, 127, 133):
-            mob.colle(E.etal(couleurs_etal[n % 5], n), x * T, y * T)
-            n += 1
+    for n, (x, y) in enumerate(etals()):
+        mob.colle(E.etal(couleurs_etal[n % 5], n), x * T, y * T)
     # le monument, les jeux d'enfants
     mob.colle(E.statue(), 80 * T + 8 - 24, 177 * T - 96)
     mob.colle(E.toboggan(), 127 * T, 189 * T)
@@ -715,6 +707,13 @@ def objets_bus(lignes, points, i):
         i += 1
     return out, i
 ARRIVEES = {'ferme': (2.5, 169.6), 'gare': (28.5, 99.4)}
+
+
+def etals():
+    """Les étals du marché (3 × 3 tuiles, leur coin haut-gauche) : trois rangs au nord de la rue
+    de l'école, quatre au sud."""
+    out = [(x, y) for y in (82, 89, 96) for x in (122, 127, 132, 137, 142) if x + 3 <= 145]
+    return out + [(x, y) for y in (116, 123, 130, 137) for x in (122, 127, 133)]
 # Le train (js/ville-carte.js) : il roule sur la voie de l'est, le long du quai de la gare ;
 # « arret » : l'axe de la voie et où s'arrête le milieu du train, « quai » : où l'on monte.
 GARE = {'arret': (P.VOIES[1], 94 * T), 'quai': (18.7 * T, 94 * T)}
@@ -759,12 +758,17 @@ def objets_carte(premier_id):
                          'x': x * T, 'y': y * T, 'width': 0, 'height': 0})
         i += 1
     bus, i = objets_bus(*bus_scolaire(), i)
-    gare = []
+    # les étals (js/ville-carte.js : un toucher ouvre la fenêtre du marché de la ville)
+    lieux, gare = [], []
+    for x, y in etals():
+        lieux.append({'id': i, 'name': 'marche', 'type': 'etal', 'rotation': 0, 'visible': True,
+                     'x': x * T, 'y': y * T, 'width': 3 * T, 'height': 3 * T})
+        i += 1
     for nom, (x, y) in GARE.items():
         gare.append({'id': i, 'name': nom, 'type': '', 'point': True, 'rotation': 0, 'visible': True,
                      'x': x, 'y': y, 'width': 0, 'height': 0})
         i += 1
-    return routes, carrefours, garees, batiments, passages, arrivees, bus, gare, i
+    return routes, carrefours, garees, batiments, passages, arrivees, bus, gare, lieux, i
 
 
 def main():
@@ -816,11 +820,11 @@ def main():
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                         'opacity': 1, 'visible': True, 'data': data})
-    routes, carrefours, garees, batis, passages, arrivees, bus, gare, prochain = objets_carte(2)
+    routes, carrefours, garees, batis, passages, arrivees, bus, gare, lieux, prochain = objets_carte(2)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': len(couches) + 10, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': len(couches) + 11, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             # où la promeneuse arrive (ville-carte.html) : sur le trottoir du bas, devant le parc
@@ -853,6 +857,9 @@ def main():
             # le train : où il s'arrête, où l'on monte
             {'id': len(couches) + 9, 'name': 'gare', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
              'visible': True, 'x': 0, 'y': 0, 'objects': gare},
+            # les lieux qu'on touche : les étals du marché
+            {'id': len(couches) + 10, 'name': 'lieux', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': lieux},
         ],
     }
     with open(os.path.join(ASSETS, 'ville.tmj'), 'w') as f:

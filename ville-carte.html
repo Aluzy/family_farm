@@ -16,12 +16,19 @@
     .message{position:fixed;top:12px;left:12px;right:150px;max-width:460px;background:rgba(40,32,30,.88);border:1px solid rgba(240,220,180,.45);border-radius:10px;padding:8px 12px;font-size:14px;line-height:1.35}
     .fenetre{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,16,14,.45);padding:16px}
     .fenetre[hidden],.message[hidden]{display:none}
-    .fenetre .boite{background:#3a2f2b;border:2px solid rgba(240,220,180,.55);border-radius:14px;padding:16px 18px;max-width:340px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+    .fenetre .boite{background:#3a2f2b;border:2px solid rgba(240,220,180,.55);border-radius:14px;padding:16px 18px;max-width:380px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.45)}
     .fenetre h2{margin:0 0 6px;font-size:18px}
     .fenetre p{margin:0 0 12px;font-size:14px;opacity:.9}
     .fenetre .choix{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
     .fenetre button{font:inherit;font-size:15px;font-weight:600;color:#f4efe6;background:#2f5a9a;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:10px 12px;cursor:pointer;text-align:left}
     .fenetre button:hover,.fenetre button:focus-visible{background:#3a6cb6;outline:2px solid #f0dcb4;outline-offset:1px}
+    .fenetre .rangs{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto;margin:0 0 10px}
+    .fenetre .rang{display:flex;align-items:center;gap:8px;font-size:14px;background:rgba(255,255,255,.06);border-radius:8px;padding:6px 8px}
+    .fenetre .rang .nom{flex:1}
+    .fenetre .rang button,.fenetre .quota button{padding:5px 9px;font-size:13px;text-align:center}
+    .fenetre .quota{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+    .fenetre .note{font-size:13px;opacity:.8;margin:0 0 8px}
+    .fenetre button:disabled{opacity:.45;cursor:default;background:#2f5a9a}
     .fenetre .annuler{background:transparent;width:100%;text-align:center;font-weight:500}
     .horloge{position:fixed;top:12px;right:12px;background:rgba(40,32,30,.78);border:1px solid rgba(240,220,180,.4);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
   </style>
@@ -36,6 +43,13 @@
       <p id="gare-texte">Où voulez-vous aller ?</p>
       <div class="choix" id="gare-choix"></div>
       <button type="button" class="annuler" id="gare-annuler">Rester ici</button>
+    </div>
+  </div>
+  <div class="fenetre" id="lieu-fenetre" role="dialog" aria-modal="true" aria-labelledby="lieu-titre" hidden>
+    <div class="boite">
+      <h2 id="lieu-titre"></h2>
+      <div id="lieu-corps"></div>
+      <button type="button" class="annuler" id="lieu-fermer">Fermer</button>
     </div>
   </div>
   <div class="aide">

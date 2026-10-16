@@ -1425,7 +1425,51 @@ export const RAW_DATA = {
         "texte": "Le bus jusqu'à la forêt : promenade et cueillette du jour."
       }
     },
-    "MARCHE": { "HEURES": 2, "PRIX": 3 }
+    "MARCHE": { "HEURES": 2, "PRIX": 3, "VENTE": 130, "CATEGORIES": ["légume", "fruit", "produit", "conserve"] },
+    "ENTREPRISES": {
+      "HEURE": 9,
+      "LISTE": {
+        "conserverie": {
+          "nom": "Conserverie",
+          "icone": "🥫",
+          "prix": 1500,
+          "intrants": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard", "champignon"],
+          "intrantNom": "légumes",
+          "par": 3,
+          "produit": "Boîte de conserve",
+          "prixProduit": 21,
+          "quota": 4,
+          "quotaMax": 30,
+          "texte": "Met en boîte les légumes de la ferme."
+        },
+        "confiturerie": {
+          "nom": "Confiturerie",
+          "icone": "🍓",
+          "prix": 2000,
+          "intrants": ["fraise", "pomme", "poire", "myrtille", "chataigne"],
+          "intrantNom": "fruits",
+          "par": 3,
+          "produit": "Pot de confiture",
+          "prixProduit": 24,
+          "quota": 4,
+          "quotaMax": 30,
+          "texte": "Cuit les fruits de la ferme en confiture."
+        },
+        "fromagerie": {
+          "nom": "Fromagerie",
+          "icone": "🧀",
+          "prix": 2500,
+          "intrants": ["lait"],
+          "intrantNom": "litres de lait",
+          "par": 2,
+          "produit": "Fromage",
+          "prixProduit": 32,
+          "quota": 4,
+          "quotaMax": 30,
+          "texte": "Fait du fromage avec le lait de la ferme."
+        }
+      }
+    }
   },
   "MEUBLES": {
     "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },

@@ -24,7 +24,15 @@
     "",
     "MARCHE : aller au marché de la ville prend HEURES heures et coûte PRIX pièces (un adulte",
     "  y va) ; il reste ouvert jusqu'au soir. On y achète les objets marqués \"ville\": true",
-    "  (items.json), introuvables au marché de la ferme."
+    "  (items.json), introuvables au marché de la ferme.",
+    "  Version 1.20 : en se promenant en ville (ville-carte.html), on vend aux étals du marché les",
+    "  produits de la ferme des CATEGORIES (pas ceux marqués \"ville\") VENTE % de leur prix.",
+    "",
+    "ENTREPRISES (version 1.20) : les entrepôts de la ville, qu'on achète en s'y promenant (prix).",
+    "  Chaque jour à HEURE, une entreprise achetée prend dans le stock de la ferme (l'inventaire,",
+    "  puis le frigo) `par` unités de ses `intrants` (n'importe lesquels, les plus abondants",
+    "  d'abord) pour chaque `produit` fabriqué, au plus `quota` produits (réglable de 0 à",
+    "  quotaMax, départ : quota), et les vend aussitôt `prixProduit` pièces chacun."
   ],
   "VILLE": {
     "BONHEUR": {
@@ -48,6 +56,14 @@
       "montagne": { "nom": "Montagne", "icone": "🚆", "lieu": "voyage", "transport": "train", "heures": 8, "prix": 20, "bonheur": { "enfant": 20, "adulte": 20 }, "butin": { "miel": 2, "fromage_alpage": 2 }, "texte": "Le train jusqu'aux alpages : randonnée, miel et fromage d'alpage." },
       "foret": { "nom": "Forêt", "icone": "🚌", "lieu": "voyage", "transport": "bus", "heures": 5, "prix": 5, "bonheur": { "enfant": 15, "adulte": 15 }, "cueillettes": [{ "champignon": 3 }, { "myrtille": 5 }, { "champignon": 2, "chataigne": 4 }], "texte": "Le bus jusqu'à la forêt : promenade et cueillette du jour." }
     },
-    "MARCHE": { "HEURES": 2, "PRIX": 3 }
+    "MARCHE": { "HEURES": 2, "PRIX": 3, "VENTE": 130, "CATEGORIES": ["légume", "fruit", "produit", "conserve"] },
+    "ENTREPRISES": {
+      "HEURE": 9,
+      "LISTE": {
+        "conserverie": { "nom": "Conserverie", "icone": "🥫", "prix": 1500, "intrants": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard", "champignon"], "intrantNom": "légumes", "par": 3, "produit": "Boîte de conserve", "prixProduit": 21, "quota": 4, "quotaMax": 30, "texte": "Met en boîte les légumes de la ferme." },
+        "confiturerie": { "nom": "Confiturerie", "icone": "🍓", "prix": 2000, "intrants": ["fraise", "pomme", "poire", "myrtille", "chataigne"], "intrantNom": "fruits", "par": 3, "produit": "Pot de confiture", "prixProduit": 24, "quota": 4, "quotaMax": 30, "texte": "Cuit les fruits de la ferme en confiture." },
+        "fromagerie": { "nom": "Fromagerie", "icone": "🧀", "prix": 2500, "intrants": ["lait"], "intrantNom": "litres de lait", "par": 2, "produit": "Fromage", "prixProduit": 32, "quota": 4, "quotaMax": 30, "texte": "Fait du fromage avec le lait de la ferme." }
+      }
+    }
   }
 }

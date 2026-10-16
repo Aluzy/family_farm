@@ -9,8 +9,8 @@
  "tilewidth": 16,
  "tileheight": 16,
  "infinite": false,
- "nextlayerid": 28,
- "nextobjectid": 205,
+ "nextlayerid": 29,
+ "nextobjectid": 232,
  "tilesets": [
   {
    "firstgid": 1,
@@ -666350,7 +666350,7 @@
    "y": 0,
    "objects": [
     {
-     "id": 203,
+     "id": 230,
      "name": "arret",
      "type": "",
      "point": true,
@@ -666362,7 +666362,7 @@
      "height": 0
     },
     {
-     "id": 204,
+     "id": 231,
      "name": "quai",
      "type": "",
      "point": true,
@@ -666372,6 +666372,315 @@
      "y": 1504,
      "width": 0,
      "height": 0
+    }
+   ]
+  },
+  {
+   "id": 28,
+   "name": "lieux",
+   "type": "objectgroup",
+   "draworder": "topdown",
+   "opacity": 1,
+   "visible": true,
+   "x": 0,
+   "y": 0,
+   "objects": [
+    {
+     "id": 203,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 1952,
+     "y": 1312,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 204,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2032,
+     "y": 1312,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 205,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2112,
+     "y": 1312,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 206,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2192,
+     "y": 1312,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 207,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2272,
+     "y": 1312,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 208,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 1952,
+     "y": 1424,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 209,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2032,
+     "y": 1424,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 210,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2112,
+     "y": 1424,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 211,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2192,
+     "y": 1424,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 212,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2272,
+     "y": 1424,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 213,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 1952,
+     "y": 1536,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 214,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2032,
+     "y": 1536,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 215,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2112,
+     "y": 1536,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 216,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2192,
+     "y": 1536,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 217,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2272,
+     "y": 1536,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 218,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 1952,
+     "y": 1856,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 219,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2032,
+     "y": 1856,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 220,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2128,
+     "y": 1856,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 221,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 1952,
+     "y": 1968,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 222,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2032,
+     "y": 1968,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 223,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2128,
+     "y": 1968,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 224,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 1952,
+     "y": 2080,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 225,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2032,
+     "y": 2080,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 226,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2128,
+     "y": 2080,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 227,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 1952,
+     "y": 2192,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 228,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2032,
+     "y": 2192,
+     "width": 48,
+     "height": 48
+    },
+    {
+     "id": 229,
+     "name": "marche",
+     "type": "etal",
+     "rotation": 0,
+     "visible": true,
+     "x": 2128,
+     "y": 2192,
+     "width": 48,
+     "height": 48
     }
    ]
   }
