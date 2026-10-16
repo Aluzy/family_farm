@@ -185,6 +185,23 @@
       ],
       "conservation": 8
     },
+    "//fromage_alpage": [
+      "Le fromage d'alpage : 3 laits d'alpage (les vaches nourries aux herbes de montagne), comme le",
+      "fromage frais avec le lait. Une transformation (l'objet fromage_alpage existe déjà : les",
+      "sauvegardes et le marché de la ville le gardent) ; son prix et son énergie, sur l'objet",
+      "(items.json), suivent la règle des plats (× 1,3). Débloqué par le même nœud que le fromage",
+      "frais (techtree : cui_laiterie)."
+    ],
+    "fromage_alpage": {
+      "nom": "Fromage d'alpage",
+      "icone": "🧀",
+      "station": "cuisine",
+      "temps": 60,
+      "ingredients": [{ "item": "lait_alpage", "qte": 3 }],
+      "transformation": true,
+      "sortie": "fromage_alpage",
+      "qteSortie": 1
+    },
     "riz_au_lait": {
       "nom": "Riz au lait",
       "icone": "🍚",

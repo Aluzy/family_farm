@@ -217,6 +217,15 @@ export const RAW_DATA = {
       "trouvaille": "plage"
     },
     "perle": { "nom": "Perle", "icone": "🦪", "prix": 12, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
+    "herbes_montagne": {
+      "nom": "Herbes de montagne",
+      "icone": "🌿‍🏔️",
+      "prix": 2,
+      "edible": false,
+      "category": "produit",
+      "rachetable": false,
+      "trouvaille": "montagne"
+    },
     "minerai_fer": {
       "nom": "Minerai de fer",
       "icone": "🪨‍🔩",
@@ -324,10 +333,19 @@ export const RAW_DATA = {
       "retire": true
     },
     "lait": { "nom": "Lait", "icone": "🥛", "energie": 16, "prix": 4, "edible": true, "category": "produit" },
+    "lait_alpage": {
+      "nom": "Lait d'alpage",
+      "icone": "🥛‍🏔️",
+      "energie": 18,
+      "prix": 12,
+      "edible": true,
+      "category": "produit",
+      "rachetable": false
+    },
     "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "edible": false, "category": "produit", "rachetable": false },
     "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "edible": true, "category": "produit", "ville": true },
     "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "edible": true, "category": "produit", "ville": true },
-    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 25, "prix": 5, "edible": true, "category": "produit", "ville": true },
+    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "edible": true, "category": "produit", "ville": true },
     "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "edible": false, "category": "ingrédient", "ville": true },
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "edible": false, "category": "ingrédient", "ville": true },
     "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "edible": true, "category": "légume", "rachetable": false },
@@ -417,6 +435,16 @@ export const RAW_DATA = {
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "oeuf", "qte": 2 }, { "item": "lait", "qte": 1 }, { "item": "epinard", "qte": 1 }]
     },
     "fromage_frais": { "nom": "Fromage frais", "icone": "🧀", "station": "cuisine", "temps": 60, "ingredients": [{ "item": "lait", "qte": 3 }] },
+    "fromage_alpage": {
+      "nom": "Fromage d'alpage",
+      "icone": "🧀",
+      "station": "cuisine",
+      "temps": 60,
+      "ingredients": [{ "item": "lait_alpage", "qte": 3 }],
+      "transformation": true,
+      "sortie": "fromage_alpage",
+      "qteSortie": 1
+    },
     "riz_au_lait": {
       "nom": "Riz au lait",
       "icone": "🍚",
@@ -839,7 +867,16 @@ export const RAW_DATA = {
   "ANIMAUX": {
     "poule": { "nom": "Poule", "icone": "🐔", "prix": 15, "poulesParBle": 2, "oeufsParNuit": 1, "produit": "oeuf" },
     "mouton": { "nom": "Mouton", "icone": "🐑", "prix": 60, "pailleParNuit": 1, "joursLaine": 2, "laineParTonte": 1, "laine": "laine" },
-    "vache": { "nom": "Vache", "icone": "🐄", "prix": 200, "pailleParNuit": 2, "laitParNuit": 1, "lait": "lait" }
+    "vache": {
+      "nom": "Vache",
+      "icone": "🐄",
+      "prix": 200,
+      "pailleParNuit": 2,
+      "laitParNuit": 1,
+      "lait": "lait",
+      "herbesParNuit": 1,
+      "laitAlpage": "lait_alpage"
+    }
   },
   "PATURAGE": {
     "deblocage": 150,
@@ -848,7 +885,8 @@ export const RAW_DATA = {
     "placesParVache": 3,
     "prixPlace": 40,
     "croissance": 120,
-    "nourriture": "paille"
+    "nourriture": "paille",
+    "herbes": "herbes_montagne"
   },
   "TECHNO": { "ONGLET": "techno", "SEUIL_PIECES": 100 },
   "techtree": {
@@ -1235,8 +1273,8 @@ export const RAW_DATA = {
         "cout": 300,
         "ressources": { "bois": 6, "lingot_fer": 2 },
         "requiert": [{ "construit": "paturage" }],
-        "effet": { "recettes": ["fromage_frais", "riz_au_lait"] },
-        "description": "Nouvelles recettes en Cuisine : fromage frais, riz au lait."
+        "effet": { "recettes": ["fromage_frais", "riz_au_lait", "fromage_alpage"] },
+        "description": "Nouvelles recettes en Cuisine : fromage frais, riz au lait, fromage d'alpage (avec le lait des vaches nourries aux herbes de montagne)."
       },
       "prepa_2": {
         "branche": "cuisine",
@@ -1712,8 +1750,8 @@ export const RAW_DATA = {
         "heures": 8,
         "prix": 20,
         "bonheur": { "enfant": 20, "adulte": 20 },
-        "butin": { "miel": 2, "fromage_alpage": 2 },
-        "texte": "Le train jusqu'aux alpages : randonnée, miel et fromage d'alpage."
+        "butin": { "miel": 2 },
+        "texte": "Le train jusqu'aux alpages : randonnée et miel."
       },
       "foret": {
         "nom": "Forêt",
@@ -2087,6 +2125,7 @@ export const RAW_DATA = {
     "dorade": 2,
     "anchois": 2,
     "sardine": 2,
+    "herbes_montagne": 3,
     "oignon": 6,
     "ail": 7,
     "poivron": 5,
@@ -2095,6 +2134,7 @@ export const RAW_DATA = {
     "viande_boeuf": 5,
     "viande_volaille": 4,
     "lait": 4,
+    "lait_alpage": 4,
     "poisson": 2,
     "fromage_alpage": 10,
     "champignon": 3,

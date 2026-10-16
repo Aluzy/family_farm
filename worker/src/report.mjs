@@ -26,6 +26,7 @@ export const GAME_ACTIONS = {
   'feed-hen': 'Nourrir les poules',
   'feed-all': 'Nourrir les poules',
   'shear': 'Tondre les moutons',
+  'cow-herbs': 'Nourrir les vaches aux herbes de montagne',
   'start-recipe': 'Cuisiner (préparer une recette)',
   'sell-item': 'Vendre',
   'buy-item': 'Acheter un produit ou une graine',

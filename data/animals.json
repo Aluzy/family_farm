@@ -26,12 +26,17 @@
     "- Une vache nourrie donne laitParNuit lait cette nuit-là.",
     "- Un animal qui n'a pas mangé ne produit rien cette nuit ; il ne lui arrive",
     "  rien d'autre.",
+    "- Les herbes de montagne (DATA.PATURAGE.herbes, une trouvaille de la montagne) : quand",
+    "  l'Étable les donne aux vaches (state.paturage.herbes, le bouton de l'Étable), une vache en",
+    "  mange herbesParNuit à la place de sa paille, tant qu'il en reste (les premières de la",
+    "  liste d'abord), et donne cette nuit-là laitParNuit laitAlpage (le lait d'alpage) au lieu",
+    "  de son lait. Sans herbes, elle reprend sa paille et son lait ordinaire.",
     "Ces quantités sont des réglages : elles se changent ici, sans toucher au code."
   ],
   "ANIMAUX": {
     "poule": { "nom": "Poule", "icone": "🐔", "prix": 15, "poulesParBle": 2, "oeufsParNuit": 1, "produit": "oeuf" },
     "mouton": { "nom": "Mouton", "icone": "🐑", "prix": 60, "pailleParNuit": 1, "joursLaine": 2, "laineParTonte": 1, "laine": "laine" },
-    "vache": { "nom": "Vache", "icone": "🐄", "prix": 200, "pailleParNuit": 2, "laitParNuit": 1, "lait": "lait" }
+    "vache": { "nom": "Vache", "icone": "🐄", "prix": 200, "pailleParNuit": 2, "laitParNuit": 1, "lait": "lait", "herbesParNuit": 1, "laitAlpage": "lait_alpage" }
   },
   "//PATURAGE": [
     "Lot 6 : Étable des moutons et des vaches",
@@ -44,7 +49,8 @@
     "l'achat au-delà des places de départ (voir pastureCost()). Une place",
     "achetée reste acquise. C'est le même équilibrage qu'avant la version 1.1,",
     "où 1 place valait 5 ares (50 a au départ, 5 a par mouton, 15 a par vache).",
-    "nourriture : l'objet que mangent les moutons et les vaches."
+    "nourriture : l'objet que mangent les moutons et les vaches.",
+    "herbes : ce que les vaches peuvent manger à la place (lait d'alpage, voir ANIMAUX)."
   ],
   "PATURAGE": {
     "deblocage": 150,
@@ -53,6 +59,7 @@
     "placesParVache": 3,
     "prixPlace": 40,
     "croissance": 120,
-    "nourriture": "paille"
+    "nourriture": "paille",
+    "herbes": "herbes_montagne"
   }
 }

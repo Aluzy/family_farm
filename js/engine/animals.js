@@ -447,10 +447,41 @@ export function strawStock(state) {
   return countItem(state, DATA.PATURAGE.nourriture);
 }
 
-// Paille que tous les moutons et toutes les vaches mangent en une nuit.
+// Paille que les moutons et les vaches mangent en une nuit (sans les vaches qui
+// mangeront des herbes de montagne à la place, voir cowsOnHerbs()).
 export function strawNeed(state) {
   const A = DATA.ANIMAUX;
-  return sheepCount(state) * A.mouton.pailleParNuit + cowCount(state) * A.vache.pailleParNuit;
+  return sheepCount(state) * A.mouton.pailleParNuit + (cowCount(state) - cowsOnHerbs(state)) * A.vache.pailleParNuit;
+}
+
+/* -- les herbes de montagne : le lait d'alpage -- */
+
+// Herbes de montagne en stock (une trouvaille de la montagne, DATA.PATURAGE.herbes).
+export function herbStock(state) {
+  return countItem(state, DATA.PATURAGE.herbes);
+}
+
+// Les vaches reçoivent-elles les herbes de montagne ? (state.paturage.herbes : le
+// bouton de l'Étable ; absent dans les sauvegardes d'avant : non.)
+export function herbsOn(state) {
+  return !!(state.paturage && state.paturage.herbes);
+}
+
+// Donner (ou non) les herbes de montagne aux vaches, chaque nuit, tant qu'il y en a.
+// (Le champ n'est écrit que s'il vaut true : l'Étable des sauvegardes d'avant ne change pas.)
+export function setCowHerbs(state, on) {
+  const p = state.paturage;
+  if (on && !p.construit) return fail('Prépare d\'abord l\'Étable pour les moutons et les vaches.');
+  if (on) p.herbes = true;
+  else delete p.herbes;
+  return { ok: true, herbes: !!on };
+}
+
+// Vaches qui mangeront des herbes cette nuit (les premières de la liste) : autant
+// que le stock en nourrit, si l'Étable les leur donne.
+export function cowsOnHerbs(state) {
+  if (!herbsOn(state)) return 0;
+  return Math.min(cowCount(state), Math.floor(herbStock(state) / DATA.ANIMAUX.vache.herbesParNuit));
 }
 
 // Paille qui manque pour nourrir tout le monde cette nuit (0 si le stock suffit).
@@ -459,9 +490,10 @@ export function strawMissing(state) {
 }
 
 // Compte rendu de la nuit à l'Étable : animaux présents, animaux nourris,
-// paille mangée, paille qui a manqué, laine avancée et lait donné.
+// paille mangée, paille qui a manqué ; herbes de montagne mangées et vaches
+// nourries aux herbes (comptées aussi dans vachesNourries).
 export function newStableReport() {
-  return { moutons: 0, vaches: 0, moutonsNourris: 0, vachesNourries: 0, paille: 0, manque: 0 };
+  return { moutons: 0, vaches: 0, moutonsNourris: 0, vachesNourries: 0, paille: 0, manque: 0, herbes: 0, vachesAlpage: 0 };
 }
 
 // Étape nocturne, juste après la ponte : les moutons puis les vaches mangent
@@ -470,6 +502,9 @@ export function newStableReport() {
 // la tonte) ; une vache nourrie donne son lait. Un animal qui n'a pas mangé ne
 // produit rien cette nuit, et rien d'autre ne lui arrive : ni perte, ni maladie.
 // La paille ne se partage pas : une vache qui n'a pas ses 2 pailles n'en mange aucune.
+// Les herbes de montagne (si l'Étable les donne, voir setCowHerbs()) : une vache
+// en mange herbesParNuit à la place de sa paille, tant qu'il en reste, et donne
+// son lait en lait d'alpage ; sans herbes, elle reprend sa paille.
 export function feedLivestock(state) {
   const A = DATA.ANIMAUX;
   const item = DATA.PATURAGE.nourriture;
@@ -492,15 +527,29 @@ export function feedLivestock(state) {
     m.laine = Math.min(A.mouton.joursLaine, (m.laine || 0) + 1);
   }
   let lait = 0;
+  let laitAlpage = 0;
+  const herbes = DATA.PATURAGE.herbes;
   for (const v of p.vaches) {
+    if (herbsOn(state) && countItem(state, herbes) >= A.vache.herbesParNuit) {
+      takeItem(state, herbes, A.vache.herbesParNuit);
+      rap.herbes += A.vache.herbesParNuit;
+      rap.vachesAlpage += 1;
+      rap.vachesNourries += 1;
+      laitAlpage += A.vache.laitParNuit;
+      continue;
+    }
     if (!eat(A.vache.pailleParNuit)) continue;
     rap.vachesNourries += 1;
     lait += A.vache.laitParNuit;
   }
-  if (lait > 0) deposit(state, 'etable', null, { [A.vache.lait]: lait }); // version 1.18 : à l'Étable
-  gainActionXp(state, 'lait', lait); // version 1.7
+  const produit = {};
+  if (lait > 0) produit[A.vache.lait] = lait;
+  if (laitAlpage > 0) produit[A.vache.laitAlpage] = laitAlpage;
+  deposit(state, 'etable', null, produit); // version 1.18 : à l'Étable
+  gainActionXp(state, 'lait', lait + laitAlpage); // version 1.7
   if (!state.nuit) state.nuit = newNightStats();
   state.nuit.lait = lait;
+  state.nuit.laitAlpage = laitAlpage;
   state.nuit.etable = rap;
   return rap;
 }

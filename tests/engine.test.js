@@ -10,6 +10,7 @@ import {
   dishHappiness, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus, townItems, townMarketOpen,
 } from '../js/engine/index.js';
 import { hasTech, techEffects, techPct } from '../js/engine/index.js';
+import { cowsOnHerbs, herbStock, herbsOn, roundPct, setCowHerbs } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
 import { buyCompany, companiesStep, companyPlan, ownsCompany, sellInTown, setCompanyQuota, townSellList, townSellPrice, townSellable } from '../js/engine/index.js';
 import { brokenRocks, buyTool, castLine, chopsLeft, depositOreNotebook, hitsNeeded, mineOre, fellenTrees, fishLeft, chopTree, respawnTrees, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
@@ -1837,7 +1838,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   assertEqual(inventoryCounts(s), {
     conserve: 25, carotte: 20, patate: 20, tomate: 20, courgette: 20, aubergine: 20, oeuf: 20,
     viande_mouton: 20, pomme: 20, poire: 20, truite: 20, brochet: 20, omble: 20, dorade: 20, anchois: 20, sardine: 20, oignon: 20, ail: 20, poivron: 20, epinard: 20, fraise: 20, riz: 20,
-    viande_boeuf: 20, viande_volaille: 20, lait: 20,
+    viande_boeuf: 20, viande_volaille: 20, lait: 20, lait_alpage: 20,
     // version 1.5 : denrées de la ville et de la cueillette (le sucre et les épices ne se mangent pas)
     poisson: 20, miel: 20, fromage_alpage: 20, champignon: 20, myrtille: 20, chataigne: 20,
     pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, tarte_pommes: 20,
@@ -2943,12 +2944,12 @@ test('mayonnaise (3 œufs) et quenelle de poisson (farine + truite, brochet ou p
   assertEqual(recipeStatus(s, 'quenelle_poisson').code, 'manque', 'sans farine');
 });
 
-test('arbre v2 : 22 recettes libres (dont 6 de la ville, la mayonnaise, la quenelle de poisson et les 4 lingots), 11 débloquées par un nœud', () => {
+test('arbre v2 : 22 recettes libres (dont 6 de la ville, la mayonnaise, la quenelle de poisson et les 4 lingots), 12 débloquées par un nœud', () => {
   const s = atelier();
   const libres = Object.keys(DATA.recipes).filter((id) => recipeUnlocked(s, id));
   assertEqual(libres.sort(), [...DATA.techtree.RECETTES_LIBRES].sort());
   assertEqual(libres.length, 22);
-  assertEqual(Object.keys(DATA.recipes).length - libres.length, 11);
+  assertEqual(Object.keys(DATA.recipes).length - libres.length, 12, 'dont le fromage d\'alpage (Laiterie)');
   for (const id of Object.keys(DATA.recipes)) assert(recipeUnlocked(s, id) || recipeNode(id), `${id} : libre ou débloquée par un nœud`);
   setInv(s, { pain: 1, ail: 1, huile: 1 });
   assertEqual(recipeStatus(s, 'pain_ail').code, 'verrouillee');
@@ -3925,9 +3926,9 @@ function setStraw(s, n) {
 }
 
 test('DATA Lot 6 : places de l\'Étable, mouton, vache, paille', () => {
-  assertEqual(DATA.PATURAGE, { deblocage: 150, placesDepart: 10, placesParMouton: 1, placesParVache: 3, prixPlace: 40, croissance: 120, nourriture: 'paille' });
+  assertEqual(DATA.PATURAGE, { deblocage: 150, placesDepart: 10, placesParMouton: 1, placesParVache: 3, prixPlace: 40, croissance: 120, nourriture: 'paille', herbes: 'herbes_montagne' });
   assertEqual(DATA.ANIMAUX.mouton, { nom: 'Mouton', icone: '🐑', prix: 60, pailleParNuit: 1, joursLaine: 2, laineParTonte: 1, laine: 'laine' });
-  assertEqual(DATA.ANIMAUX.vache, { nom: 'Vache', icone: '🐄', prix: 200, pailleParNuit: 2, laitParNuit: 1, lait: 'lait' });
+  assertEqual(DATA.ANIMAUX.vache, { nom: 'Vache', icone: '🐄', prix: 200, pailleParNuit: 2, laitParNuit: 1, lait: 'lait', herbesParNuit: 1, laitAlpage: 'lait_alpage' });
   // Lot 12 : laine 6 → 12, lait 4 → 8 (prix de vente doublés).
   assertEqual([DATA.items.laine.prix, DATA.items.laine.edible, shelfLife('laine')], [12, false, null]);
   assertEqual([DATA.items.lait.energie, DATA.items.lait.prix, shelfLife('lait')], [16, 8, 4]);
@@ -4044,7 +4045,7 @@ test('paille : chaque nuit un mouton en mange 1 et une vache 2', () => {
   setStraw(s, 20);
   assertEqual([strawStock(s), strawMissing(s)], [20, 0]);
   const rap = feedLivestock(s);
-  assertEqual(rap, { moutons: 3, vaches: 2, moutonsNourris: 3, vachesNourries: 2, paille: 7, manque: 0 });
+  assertEqual(rap, { moutons: 3, vaches: 2, moutonsNourris: 3, vachesNourries: 2, paille: 7, manque: 0, herbes: 0, vachesAlpage: 0 });
   assertEqual(strawStock(s), 13);
   assertEqual(s.nuit.etable, rap);
   // une nuit complète : même décompte, noté dans le compte rendu du réveil
@@ -4054,7 +4055,7 @@ test('paille : chaque nuit un mouton en mange 1 et une vache 2', () => {
   // sans animaux, la paille ne bouge pas
   const t = pature();
   setStraw(t, 5);
-  assertEqual(feedLivestock(t), { moutons: 0, vaches: 0, moutonsNourris: 0, vachesNourries: 0, paille: 0, manque: 0 });
+  assertEqual(feedLivestock(t), newStableReport());
   assertEqual(strawStock(t), 5);
 });
 
@@ -4117,6 +4118,66 @@ test('lait : une vache nourrie donne 1 lait cette nuit-là, une vache sans paill
   assertEqual([rep.lait, rep.etable.vachesNourries, rep.etable.paille, rep.etable.manque, strawStock(s)], [1, 1, 2, 2, 1]);
 });
 
+test('herbes de montagne : une vache nourrie aux herbes donne du lait d\'alpage, à la place de sa paille', () => {
+  const s = pature();
+  fillCows(s, 3);
+  setStraw(s, 6);
+  setInv(s, { paille: 6, herbes_montagne: 2 });
+  const V = DATA.ANIMAUX.vache;
+  assertEqual([DATA.PATURAGE.herbes, V.herbesParNuit, V.laitAlpage], ['herbes_montagne', 1, 'lait_alpage']);
+  // sans le bouton de l'Étable, les herbes restent dans l'inventaire
+  assertEqual([herbsOn(s), cowsOnHerbs(s), strawNeed(s)], [false, 0, 6]);
+  let rep = sleepOnce(s);
+  assertEqual([rep.lait, rep.laitAlpage, rep.etable.herbes, countItem(s, 'herbes_montagne')], [3, 0, 0, 2]);
+  // nourries aux herbes : les 2 premières vaches les mangent, la 3e sa paille
+  setInv(s, { paille: 6, herbes_montagne: 2 });
+  assertEqual(setCowHerbs(s, true), { ok: true, herbes: true });
+  assertEqual([herbsOn(s), herbStock(s), cowsOnHerbs(s), strawNeed(s), strawMissing(s)], [true, 2, 2, 2, 0]);
+  const laitAvant = countItem(s, 'lait');
+  rep = sleepOnce(s);
+  assertEqual([rep.lait, rep.laitAlpage, rep.etable.herbes, rep.etable.vachesAlpage, rep.etable.vachesNourries, rep.etable.paille],
+    [1, 2, 2, 2, 3, 2]);
+  assertEqual([countItem(s, 'lait_alpage'), countItem(s, 'lait') - laitAvant, countItem(s, 'herbes_montagne'), strawStock(s)], [2, 1, 0, 4]);
+  assertEqual(nightHarvest(rep).lait_alpage, 2);
+  // plus d'herbes : retour à la paille et au lait ordinaire, le bouton reste
+  rep = sleepOnce(s);
+  assertEqual([rep.lait, rep.laitAlpage, rep.etable.herbes, herbsOn(s)], [2, 0, 0, true]);
+  // revenir à la paille : le champ disparaît (l'Étable des sauvegardes d'avant)
+  assertEqual(setCowHerbs(s, false), { ok: true, herbes: false });
+  assertEqual('herbes' in s.paturage, false);
+  const t = farm();
+  assertEqual(setCowHerbs(t, true).ok, false, 'pas d\'Étable');
+});
+
+test('herbes de montagne : une trouvaille de la montagne, fraîche ; le lait d\'alpage vaut plus que le lait', () => {
+  const h = DATA.items.herbes_montagne;
+  assertEqual([h.trouvaille, h.edible, h.rachetable, DATA.CONSERVATION.herbes_montagne], ['montagne', false, false, 3]);
+  const l = DATA.items.lait_alpage;
+  assertEqual([l.edible, DATA.CONSERVATION.lait_alpage], [true, DATA.CONSERVATION.lait]);
+  assert(l.prix > DATA.items.lait.prix, 'le lait d\'alpage se vend plus cher que le lait');
+  assert(!isBuyable('herbes_montagne') && !isBuyable('lait_alpage'), 'ni l\'un ni l\'autre ne s\'achète au Marché');
+});
+
+test('fromage d\'alpage : 3 laits d\'alpage en Cuisine (nœud Laiterie), plus cher que le fromage frais', () => {
+  const r = DATA.recipes.fromage_alpage;
+  assertEqual([r.station, r.transformation, r.sortie, r.ingredients], ['cuisine', true, 'fromage_alpage', [{ item: 'lait_alpage', qte: 3 }]]);
+  assertEqual(recipeNode('fromage_alpage'), recipeNode('fromage_frais'));
+  // le prix et l'énergie suivent la règle des plats : ingrédients × 1,3
+  const coef = DATA.RECETTES.COEF_PLAT;
+  assertEqual(DATA.items.fromage_alpage.prix, roundPct(3 * DATA.items.lait_alpage.prix, coef));
+  assertEqual(DATA.items.fromage_alpage.energie, roundPct(3 * DATA.items.lait_alpage.energie, coef));
+  assert(DATA.items.fromage_alpage.prix > DATA.items.fromage_frais.prix, 'plus cher que le fromage frais');
+  assertEqual(DATA.VILLE.SORTIES.montagne.butin, { miel: 2 }, 'plus de fromage dans le butin de la montagne');
+  const s = atelier();
+  setInv(s, { lait_alpage: 3 });
+  assertEqual(recipeStatus(s, 'fromage_alpage').code, 'verrouillee');
+  grantTech(s, 'cui_laiterie', false);
+  assertEqual(startRecipe(s, 'fromage_alpage').ok, true);
+  assertEqual(countItem(s, 'lait_alpage'), 0);
+  runFor(s, DATA.recipes.fromage_alpage.temps + 1);
+  assertEqual(countItem(s, 'fromage_alpage'), 1);
+});
+
 test('paille insuffisante : on nourrit dans l\'ordre de la liste, les moutons puis les vaches', () => {
   const s = pature();
   fillSheep(s, 3);
@@ -4124,7 +4185,7 @@ test('paille insuffisante : on nourrit dans l\'ordre de la liste, les moutons pu
   // 4 pailles : les 3 moutons (3), puis il n'en reste qu'1 : aucune vache.
   setStraw(s, 4);
   let rap = feedLivestock(s);
-  assertEqual(rap, { moutons: 3, vaches: 2, moutonsNourris: 3, vachesNourries: 0, paille: 3, manque: 4 });
+  assertEqual(rap, { moutons: 3, vaches: 2, moutonsNourris: 3, vachesNourries: 0, paille: 3, manque: 4, herbes: 0, vachesAlpage: 0 });
   assertEqual([s.paturage.moutons.map((m) => m.laine), s.nuit.lait, strawStock(s)], [[1, 1, 1], 0, 1]);
   // 2 pailles : les deux premiers moutons seulement.
   setStraw(s, 2);
@@ -4193,7 +4254,7 @@ test('rapport de réveil : moutons, laine prête, vaches, paille', () => {
   sleepOnce(s);
   let rep = sleepOnce(s);
   assertEqual([rep.moutons, rep.lainePrete], [3, 3]);
-  assertEqual(rep.etable, { moutons: 3, vaches: 0, moutonsNourris: 3, vachesNourries: 0, paille: 3, manque: 0 });
+  assertEqual(rep.etable, { moutons: 3, vaches: 0, moutonsNourris: 3, vachesNourries: 0, paille: 3, manque: 0, herbes: 0, vachesAlpage: 0 });
   assertEqual([rep.paille, rep.pailleBesoin], [0, 3]);
   shear(s, 'mouton-1');
   rep = buildMorningReport(s);
@@ -8608,7 +8669,7 @@ test('voyages : butin de la montagne, cueillette du jour en forêt', () => {
   setInv(s, {});
   assert(goOut(s, 'montagne').ok);
   assertEqual(countItem(s, 'miel'), 2);
-  assertEqual(countItem(s, 'fromage_alpage'), 2);
+  assertEqual(countItem(s, 'fromage_alpage'), 0, 'le fromage d\'alpage se fait maintenant en Cuisine, avec le lait d\'alpage');
   // version 1.6 : la cueillette de la forêt tourne d'un jour à l'autre
   const t = garden();
   assertEqual([1, 2, 3, 4].map((day) => { t.day = day; return outingLoot(t, 'foret'); }),

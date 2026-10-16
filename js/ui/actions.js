@@ -32,7 +32,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'buy-orchard-slot', 'buy-tech', 'build-serre', 'build-poulailler', 'build-fridge', 'build-verger', 'build-silo',
   'build-paturage', 'build-station', 'upgrade', 'upgrade-silo', 'upgrade-serre', 'upgrade-poulailler', 'buy-hoe', 'buy-tool', 'axe-toggle', 'pick-toggle', 'rod-toggle',
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'robot-autonomie', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',
-  'fridge-in-all', 'fridge-out', 'toggle', 'semis-set',
+  'fridge-in-all', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
 ]);
 
 // Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).
