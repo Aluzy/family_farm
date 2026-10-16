@@ -324,6 +324,47 @@ def abri_bus():
     return im
 
 
+def abri_bus_profil():
+    """28 × 66 px : le même abri, tourné d'un quart de tour, le long d'une rue nord-sud (vue de
+    dessus à 45° : le toit, long dans le sens de la rue ; le bout sud, sa vitre et le banc
+    derrière ; le poteau « BUS » côté chaussée, à l'est). Le pied (le bas des montants) : y 60."""
+    im = image(28, 66)
+    d = dessin(im)
+    # l'ombre au sol, un peu décalée vers le sud-est
+    d.rectangle((4, 30, 22, 63), fill=(0, 0, 0, 55))
+    # le fond, sous le toit : la vitre du côté ouest (le dos de l'abri), vue de biais
+    d.rectangle((3, 36, 18, 59), fill=rgba(VITRE_S))
+    # le banc, le long de la vitre du fond, vu de côté (on en voit le bout et le dessus)
+    d.rectangle((6, 48, 15, 50), fill=rgba(BOIS))
+    d.rectangle((6, 48, 15, 48), fill=rgba(BOIS_C))
+    for x in (7, 14):
+        d.rectangle((x, 51, x, 55), fill=rgba(BOIS_K))
+    # la vitre du bout sud, par-dessus (transparente : le banc se voit au travers)
+    for y in range(41, 59):
+        for x in range(4, 18):
+            c = VITRE_C if (x + (58 - y)) % 11 in (0, 1) else VITRE
+            r, g, b, a = im.getpixel((x, y))
+            fond = (r, g, b) if a else VITRE_S
+            im.putpixel((x, y), rgba(mel(fond, c, 0.55)))
+    # les montants du bout sud
+    for x in (2, 17):
+        d.rectangle((x, 38, x + 1, 60), fill=rgba((60, 64, 74)))
+    # le toit : son dessus, long dans le sens de la rue, puis son épaisseur au bout sud
+    d.rectangle((1, 3, 19, 37), fill=rgba((92, 98, 110)))
+    d.rectangle((1, 3, 19, 4), fill=rgba((132, 138, 150)))
+    d.rectangle((1, 3, 2, 37), fill=rgba((118, 124, 136)))
+    for y in range(9, 36, 6):                     # les nervures de la tôle
+        d.line((3, y, 18, y), fill=rgba((80, 86, 98)))
+    d.rectangle((1, 37, 19, 40), fill=rgba((60, 64, 74)))
+    d.rectangle((1, 37, 19, 37), fill=rgba((110, 116, 128)))
+    # le poteau et le panneau « BUS », au bord de la chaussée
+    d.rectangle((23, 24, 24, 61), fill=rgba((70, 72, 80)))
+    d.rectangle((20, 14, 27, 23), fill=rgba((40, 92, 160)))
+    im = contour(im)
+    texte(im, 22, 16, 'B', (240, 240, 244))
+    return im
+
+
 def drapeau():
     """1 × 3 tuiles : un mât et son drapeau (devant l'école)."""
     im = image(16, 48)
