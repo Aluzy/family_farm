@@ -172,8 +172,8 @@
     speed: 190, accel: 60, decel: 80, lead: 720, board: 1.0, alight: 0.6, resume: 1.6, leaveAfter: 2.8,
     gares: {
       ville: [{ carte: 'montagne', label: '⛰️ La montagne', sens: 'nord' }, { carte: 'plage', label: '🏖️ La plage', sens: 'sud' }],
-      montagne: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'sud' }],
-      plage: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'nord' }],
+      montagne: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'sud' }, { carte: 'plage', label: '🏖️ La plage', sens: 'sud' }],
+      plage: [{ carte: 'ville', label: '🏙️ Retour en ville', sens: 'nord' }, { carte: 'montagne', label: '⛰️ La montagne', sens: 'nord' }],
     },
     terminus: { montagne: true, plage: true },
   };
@@ -1026,7 +1026,7 @@
         box.appendChild(b);
       }
       const texte = document.getElementById('gare-texte');
-      if (texte) texte.textContent = list.length > 1 ? 'Le train part dans un instant. Où voulez-vous aller ?' : 'Le train vous ramène à la gare de la ville.';
+      if (texte) texte.textContent = 'Le train part dans un instant. Où voulez-vous aller ?';
       el.hidden = false;
       this.dialog = true;
       const first = box.querySelector('button');
@@ -1233,6 +1233,7 @@
     // Arrivée en train (?train=nord|sud) : on voit le train arriver ; à l'arrêt, la promeneuse
     // paraît devant la gare. Hors d'un terminus, le train repart.
     arriveByTrain(dir, terminus) {
+      this.toGareDoor();
       if (reduced()) { if (terminus) this.addTrain(this.gare.stopY, 0); return; }
       this.locked = true;
       this.heroAlpha = 0;
@@ -1241,6 +1242,25 @@
       cam.startFollow(t.parts[1], true, 0.12, 0.12);
       cam.centerOn(this.gare.x, this.gare.stopY);
       this.arrival = { phase: 'train', wait: 0, terminus };
+    }
+
+    // Descendu du train, on paraît devant la porte de la gare (le bas du bâtiment « gare », au
+    // milieu), sur la case libre la plus proche.
+    toGareDoor() {
+      const b = (this.buildings || []).find((q) => q.name === 'gare');
+      if (!b) return;
+      const x = (b.x0 + b.x1) / 2, y = b.base + 10;
+      let gx = Math.floor(x / T), gy = Math.floor(y / T), best = null;
+      for (let r = 0; r < 6 && !best; r++) {
+        for (let dy = 0; dy <= r && !best; dy++) for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), dy) === r && this.canWalk(gx + dx, gy + dy)) { best = { x: gx + dx, y: gy + dy }; break; }
+        }
+      }
+      if (!best) return;
+      this.heroPos.x = best.x === gx ? x : best.x * T + T / 2;
+      this.heroPos.y = best.y * T + T - 2;
+      this.face = 'bas';
+      this.hero.setPosition(Math.round(this.heroPos.x), Math.round(this.heroPos.y)).setFlipX(false);
     }
 
     stepArrival(dt) {
