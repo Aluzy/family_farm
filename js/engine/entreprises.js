@@ -10,8 +10,8 @@ import { refreshUnlocks } from './techtree.js';
 
 /* ---------- version 1.20 : le marché de la ville (vente) et les entreprises (data/ville.json) ---------- */
 
-// Ce qu'on a vendu ou acheté en se promenant en ville (ville-carte.html) arrive ici au retour
-// à la ferme (js/ui/sortie.js) : la page de la ville ne fait que noter les ordres.
+// En se promenant en ville (js/ville-carte.js, dans la page du jeu : js/ui/excursion.js), on
+// vend aux étals et on achète les entreprises devant leur entrepôt.
 
 function stockOf(state, item) {
   return countItem(state, item) + fridgeCount(state, item);

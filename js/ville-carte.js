@@ -1,6 +1,6 @@
 /*
- * La ville (ville-carte.html), où l'on va depuis la fenêtre de la ville (« Se promener en
- * ville », tout en bas) : ses rues, son parc et ses fontaines, et la fermière qui s'y promène.
+ * La ville (jeu.html?carte=ville), où l'on va depuis la fenêtre de la ville (« Se promener en
+ * ville », tout en bas) : ses rues, son parc et ses fontaines, et le personnage qui s'y promène.
  *
  * La carte : assets/ville.json (scripts/ville/carte.py, puis scripts/build-map.mjs) ; ses
  * couches de tuiles (le sol, puis une couche par matière, de bas en haut) et son point
@@ -35,7 +35,7 @@
  * flèche bleue paraît quand on s'en approche : un toucher dessus mène à l'autre carte (ou à
  * la ferme, jeu.html).
  *
- * L'heure du jeu (js/horloge-sortie.js) s'affiche en haut à droite. Les jours d'école, le bus
+ * L'heure du jeu (HorlogeSortie, donnée par js/ui/excursion.js). Les jours d'école, le bus
  * de l'école (couche « bus » : ses trajets, ses arrêts, le chemin des enfants) passe le matin et
  * le soir : il roule avec les autres voitures et s'arrête le temps que les enfants de la
  * famille montent ou descendent (BUS.scenes : l'heure de chaque scène, carte par carte).
@@ -54,10 +54,13 @@
  * par espèce, FAUNE), les entrées des grottes (couche « passages » : la flèche y mène).
  *
  * Le marché de la ville (couche « lieux » : les étals) et les entreprises (les entrepôts
- * « conserverie », « fromagerie », « confiturerie ») : la page n'a pas le moteur du jeu. Elle
- * montre la « vitrine » que la ferme a écrite en partant (ce qu'elle peut vendre ici, plus cher,
- * ses pièces, ses entreprises) et note les ordres du joueur (« ferme-ordres ») ; la ferme les
- * passe à son retour (js/ui/sortie.js).
+ * « conserverie », « fromagerie », « confiturerie ») : les ventes et les achats passent tout
+ * de suite par le moteur du jeu (FermeHote, js/ui/excursion.js).
+ *
+ * Ces cartes s'affichent dans la page du jeu (jeu.html), à la place de la carte de la ferme :
+ * la carte du joueur, la date et l'argent, le menu et la barre d'outils restent là, le temps
+ * passe comme à la ferme, et c'est le personnage principal de la partie qui s'y promène.
+ * js/ui/excursion.js les ouvre (VilleCarte.start) et passe de l'une à l'autre (FermeHote.go).
  *
  * Les grottes (?carte=grotte&grotte=<entrée>&niveau=<n>) ne sont pas des cartes Tiled : chaque
  * niveau est tiré au hasard (le même toute la journée : la graine est l'entrée, le niveau et le
@@ -82,17 +85,30 @@
   // scripts/ville/transition.py) ; ?arrivee=<nom> : le point de la couche « arrivees » où l'on
   // apparaît (sinon « depart »).
   const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json', montagne: 'assets/montagne.json', plage: 'assets/plage.json', grotte: null };
-  const PARAMS = new URLSearchParams(window.location.search);
-  const NOM_CARTE = Object.prototype.hasOwnProperty.call(CARTES, PARAMS.get('carte')) ? PARAMS.get('carte') : 'ville';
-  const MAP = { key: NOM_CARTE, file: CARTES[NOM_CARTE] };
-  const TITRES = { transition: 'Le chemin de la ville', montagne: 'La montagne', plage: 'La plage', grotte: 'La grotte' };
-  if (TITRES[NOM_CARTE]) document.title = TITRES[NOM_CARTE] + ' — Ferme Familiale';
+  // (fixés à chaque démarrage : VilleCarte.start(parent, '?carte=…&arrivee=…'))
+  let PARAMS = new URLSearchParams('');
+  let NOM_CARTE = 'ville';
+  let MAP = { key: 'carte_ville', file: CARTES.ville };
+  function configure(search) {
+    PARAMS = new URLSearchParams(search || '');
+    NOM_CARTE = Object.prototype.hasOwnProperty.call(CARTES, PARAMS.get('carte')) ? PARAMS.get('carte') : 'ville';
+    MAP = { key: 'carte_' + NOM_CARTE, file: CARTES[NOM_CARTE] };
+  }
+  // La page du jeu (js/ui/excursion.js) : l'heure, le personnage principal, le marché, les
+  // entreprises, les outils, les messages, le passage d'une carte à l'autre.
+  const hote = () => window.FermeHote || null;
   // Les passages vers une autre carte (couche « passages » : un rectangle au bord, sa cible, le
   // sens de sa flèche) : la flèche bleue (assets/fleche_passage.png, scripts/ville/fleche.py :
   // droite, gauche, haut, bas) paraît quand la promeneuse est à moins de `near` px, se balance
   // de `bob` px ; un toucher dessus mène à la cible.
   const PASS = { key: 'fleche_passage', file: 'assets/fleche_passage.png', near: 80, bob: 3, sens: ['droite', 'gauche', 'haut', 'bas'] };
-  const HERO = { key: 'fermiere', file: 'assets/fermiere.png', names: 'assets/fermiere.json', w: 16, h: 32, foot: 30, speed: 48, stride: 4 };
+  // Le personnage principal de la partie (assets/personnages/perso_NN.png, ses cases nommées
+  // dans assets/personnages/cases.json), comme sur la carte de la ferme ; sans partie, la fermière.
+  const HERO = { key: 'heros', file: 'assets/fermiere.png', names: 'assets/fermiere.json', w: 16, h: 32, foot: 30, speed: 48, stride: 4 };
+  function heroSheet() {
+    const n = hote() && hote().perso ? hote().perso() : null;
+    return n ? { file: 'assets/personnages/perso_' + String(n).padStart(2, '0') + '.png', names: 'assets/personnages/cases.json' } : { file: HERO.file, names: HERO.names };
+  }
   // Les couches qu'on ne traverse pas, et celle qui passe devant la promeneuse (le feuillage).
   // (les bâtiments et les voitures garées : par leur emprise au sol, couches « batiments » et « garees »)
   const OBSTACLES = ['fontaines', 'mobilier', 'falaise', 'mer'];
@@ -116,7 +132,7 @@
   const KY = 0.7;
   // Le bus de l'école (assets/ville_bus.png et .json, scripts/ville/bus.py : huit directions)
   // et les enfants de la famille (leurs personnages, assets/personnages/perso_NN.png, plus
-  // petits), les jours d'école (lundi, mardi, jeudi, vendredi : js/horloge-sortie.js). Sur
+  // petits), les jours d'école (lundi, mardi, jeudi, vendredi : HorlogeSortie). Sur
   // chaque carte, le matin et le soir, une scène : les heures (du jeu) où elle commence et
   // après lesquelles elle ne commence plus, le trajet du bus et son arrêt (couche « bus »), le
   // chemin des enfants, et s'ils montent dans le bus ou en descendent.
@@ -224,8 +240,9 @@
         this.load.spritesheet('grotte_objets', v(GROTTE.objets), { frameWidth: 32, frameHeight: 32 });
         this.load.json('grotte', v(GROTTE.meta));
       } else this.load.tilemapTiledJSON(MAP.key, v(MAP.file));
-      this.load.spritesheet(HERO.key, v(HERO.file), { frameWidth: HERO.w, frameHeight: HERO.h });
-      this.load.json(HERO.key + '_noms', v(HERO.names));
+      const sheet = heroSheet();
+      this.load.spritesheet(HERO.key, v(sheet.file), { frameWidth: HERO.w, frameHeight: HERO.h });
+      this.load.json(HERO.key + '_noms', v(sheet.names));
       this.load.spritesheet(CARS.key, v(CARS.file), { frameWidth: 64, frameHeight: 64 });
       this.load.json(CARS.key + '_meta', v(CARS.meta));
       this.load.spritesheet(PASS.key, v(PASS.file), { frameWidth: 32, frameHeight: 32 });
@@ -323,7 +340,7 @@
       this.scale.on('resize', () => this.fitZoom());
 
       this.makePassages(objects('passages'));
-      // l'heure du jeu (js/horloge-sortie.js), en haut à droite
+      // l'heure du jeu (HorlogeSortie : js/ui/excursion.js)
       this.clockEl = document.getElementById('horloge');
       this.clockAt = -1e9;
       this.stepClock(0);
@@ -395,7 +412,7 @@
       if (this.leaving) return;
       this.leaving = true;
       this.cameras.main.fadeOut(reduced() ? 0 : 250, 0, 0, 0);
-      setTimeout(() => { window.location.href = q.cible; }, reduced() ? 0 : 260);
+      setTimeout(() => { if (hote()) hote().go(q.cible); else window.location.href = q.cible; }, reduced() ? 0 : 260);
     }
 
     fitZoom() {
@@ -775,6 +792,7 @@
     // ---------- les messages, la fenêtre de la gare ----------
 
     makeHud() {
+      ensureDom();
       this.msgEl = document.getElementById('message');
       this.gareEl = document.getElementById('gare-fenetre');
       const aide = document.getElementById('aide-texte');
@@ -786,13 +804,17 @@
       };
       if (aide && textes[NOM_CARTE]) aide.textContent = textes[NOM_CARTE];
       const annuler = document.getElementById('gare-annuler');
-      if (annuler) annuler.addEventListener('click', () => this.closeGare());
+      if (annuler) annuler.onclick = () => this.closeGare();
       const fermer = document.getElementById('lieu-fermer');
-      if (fermer) fermer.addEventListener('click', () => this.closeLieu());
-      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.dialog) { if (this.lieu) this.closeLieu(); else this.closeGare(); } });
+      if (fermer) fermer.onclick = () => this.closeLieu();
+      this.onKey = (e) => { if (e.key === 'Escape' && this.dialog) { if (this.lieu) this.closeLieu(); else this.closeGare(); } };
+      window.addEventListener('keydown', this.onKey);
+      this.events.once('destroy', () => window.removeEventListener('keydown', this.onKey));
+      if (hote() && textes[NOM_CARTE]) this.say('💡 ' + textes[NOM_CARTE]);
     }
 
     say(texte) {
+      if (hote() && hote().say) { hote().say(texte); return; }
       if (!this.msgEl) return;
       this.msgEl.textContent = texte;
       this.msgEl.hidden = false;
@@ -836,32 +858,10 @@
 
     // ---------- le marché de la ville, les entreprises ----------
 
-    // Ce que la ferme a laissé en partant (js/ui/sortie.js) : les produits à vendre et leur prix
-    // en ville, les pièces, les entreprises. Seulement si c'est bien la sortie en cours.
+    // La ferme (js/ui/excursion.js) : ce qu'elle peut vendre ici et à quel prix, ses pièces,
+    // ses entreprises ; null sans partie.
     vitrine() {
-      const lire = (k) => { try { return JSON.parse(window.localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
-      const v = lire('ferme-vitrine'), s = lire('ferme-sortie');
-      return v && s && v.depuis === s.depuis ? v : null;
-    }
-
-    // Les ordres du joueur, passés par la ferme à son retour (js/ui/sortie.js).
-    ordres(v) {
-      let o = null;
-      try { o = JSON.parse(window.localStorage.getItem('ferme-ordres') || 'null'); } catch (e) { o = null; }
-      if (!o || o.depuis !== v.depuis) o = { depuis: v.depuis, ventes: {}, achats: [], quotas: {} };
-      return o;
-    }
-
-    saveOrdres(o) {
-      try { window.localStorage.setItem('ferme-ordres', JSON.stringify(o)); } catch (e) { /* ignoré */ }
-    }
-
-    // Les pièces, une fois les ordres passés.
-    piecesApres(v, o) {
-      let p = v.pieces;
-      for (const r of v.vente) p += (o.ventes[r.item] || 0) * r.prix;
-      for (const id of o.achats) { const e = v.entreprises.find((q) => q.id === id); if (e) p -= e.prix; }
-      return p;
+      return hote() && hote().vitrine ? hote().vitrine() : null;
     }
 
     tapLieu(w) {
@@ -894,62 +894,48 @@
 
     renderLieu() {
       const titre = document.getElementById('lieu-titre'), corps = document.getElementById('lieu-corps');
-      const v = this.vitrine();
+      const v = this.vitrine(), H = hote();
       const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
       if (this.lieu === 'marche') {
         titre.textContent = '🧺 Le marché de la ville';
-        if (!v) { corps.innerHTML = '<p class="note">Partez de la ferme pour venir vendre ses produits ici (rien à vendre sur cet appareil).</p>'; return; }
-        const o = this.ordres(v);
-        const rangs = v.vente.map((r) => {
-          const reste = r.qte - (o.ventes[r.item] || 0);
-          return `<div class="rang"><span aria-hidden="true">${esc(r.icone)}</span><span class="nom">${esc(r.nom)} <small>× ${reste}</small></span><span>${r.prix} 💰</span>
-            <button type="button" data-vendre="${esc(r.item)}" data-n="1"${reste > 0 ? '' : ' disabled'}>Vendre 1</button>
-            <button type="button" data-vendre="${esc(r.item)}" data-n="${reste}"${reste > 0 ? '' : ' disabled'}>Tout</button></div>`;
-        }).join('');
-        const vendu = v.vente.reduce((t, r) => t + (o.ventes[r.item] || 0) * r.prix, 0);
-        corps.innerHTML = `<p class="note">On achète ici les produits de la ferme plus cher qu'au Marché de la ferme. 💰 ${this.piecesApres(v, o)} pièces${vendu ? ` (dont +${vendu} des ventes d'aujourd'hui, encaissées au retour à la ferme)` : ''}.</p>
-          <div class="rangs">${rangs || '<p class="note">Rien à vendre : la ferme n’avait pas de produits en stock au départ.</p>'}</div>`;
-        corps.querySelectorAll('[data-vendre]').forEach((b) => b.addEventListener('click', () => {
-          const it = b.dataset.vendre, n = Number(b.dataset.n) || 0;
-          o.ventes[it] = (o.ventes[it] || 0) + n;
-          this.saveOrdres(o);
-          const r = v.vente.find((q) => q.item === it);
-          if (r) this.say(`🧺 Vendu : ${n} ${r.icone} ${r.nom.toLowerCase()} (+${n * r.prix} 💰)`);
+        if (!v) { corps.innerHTML = '<p class="note">Il faut une partie en cours pour vendre les produits de la ferme.</p>'; return; }
+        const rangs = v.vente.map((r) => `<div class="rang"><span aria-hidden="true">${esc(r.icone)}</span><span class="nom">${esc(r.nom)} <small>× ${r.qte}</small></span><span>${r.prix} 💰</span>
+            <button type="button" data-vendre="${esc(r.item)}" data-n="1">Vendre 1</button>
+            <button type="button" data-vendre="${esc(r.item)}" data-n="${r.qte}">Tout</button></div>`).join('');
+        corps.innerHTML = `<p class="note">On achète ici les produits de la ferme plus cher qu'au Marché de la ferme. 💰 ${v.pieces} pièces.</p>
+          <div class="rangs">${rangs || '<p class="note">Rien à vendre : pas de produits de la ferme en stock.</p>'}</div>`;
+        corps.querySelectorAll('[data-vendre]').forEach((b) => { b.onclick = () => {
+          const it = b.dataset.vendre, r = H.vendre(it, Number(b.dataset.n) || 0);
+          const def = v.vente.find((q) => q.item === it);
+          if (r && r.ok && def) this.say(`🧺 Vendu : ${r.sold} ${def.icone} ${def.nom.toLowerCase()} (+${r.gain} 💰)`);
           this.renderLieu();
-        }));
+        }; });
         return;
       }
       const e = v && v.entreprises.find((q) => q.id === this.lieu);
       const nom = this.lieu.charAt(0).toUpperCase() + this.lieu.slice(1);
-      if (!e) { titre.textContent = '🏭 ' + nom; corps.innerHTML = '<p class="note">Partez de la ferme pour pouvoir acheter cette entreprise.</p>'; return; }
+      if (!e) { titre.textContent = '🏭 ' + nom; corps.innerHTML = '<p class="note">Il faut une partie en cours pour acheter cette entreprise.</p>'; return; }
       titre.textContent = `${e.icone} ${e.nom}`;
-      const o = this.ordres(v);
-      const achetee = e.achetee || o.achats.includes(e.id);
-      const pieces = this.piecesApres(v, o);
-      const quota = o.quotas[e.id] !== undefined ? o.quotas[e.id] : e.quota;
       const fait = `${e.texte} Chaque jour à ${e.heure} h, elle prend ${e.par} ${e.intrantNom} de la ferme par ${e.produit.toLowerCase()} et le vend ${e.prixProduit} 💰.`;
-      if (!achetee) {
-        corps.innerHTML = `<p class="note">${esc(fait)}</p><p class="note">Prix : <strong>${e.prix} 💰</strong> · vos pièces : ${pieces} 💰</p>
-          <div class="choix"><button type="button" id="lieu-acheter"${pieces >= e.prix ? '' : ' disabled'}>${pieces >= e.prix ? `Acheter la ${esc(e.nom.toLowerCase())}` : 'Pas assez de pièces'}</button></div>`;
+      if (!e.achetee) {
+        corps.innerHTML = `<p class="note">${esc(fait)}</p><p class="note">Prix : <strong>${e.prix} 💰</strong> · vos pièces : ${v.pieces} 💰</p>
+          <div class="choix"><button type="button" id="lieu-acheter"${v.pieces >= e.prix ? '' : ' disabled'}>${v.pieces >= e.prix ? `Acheter la ${esc(e.nom.toLowerCase())}` : 'Pas assez de pièces'}</button></div>`;
         const b = document.getElementById('lieu-acheter');
-        if (b) b.addEventListener('click', () => {
-          if (this.piecesApres(v, o) < e.prix || o.achats.includes(e.id)) return;
-          o.achats.push(e.id);
-          this.saveOrdres(o);
-          this.say(`${e.icone} La ${e.nom.toLowerCase()} est à vous (elle commence au retour à la ferme).`);
+        if (b) b.onclick = () => {
+          const r = H.acheter(e.id);
+          if (r && r.ok) this.say(`${e.icone} La ${e.nom.toLowerCase()} est à vous !`);
           this.renderLieu();
-        });
+        };
         return;
       }
       const b = e.bilan;
       corps.innerHTML = `<p class="note">${esc(fait)}</p>
-        <div class="quota"><button type="button" data-q="-1"${quota > 0 ? '' : ' disabled'} aria-label="Un de moins">−</button><span>Quota : <strong>${quota}</strong> ${esc(e.produit.toLowerCase())}${quota > 1 ? 's' : ''} par jour</span><button type="button" data-q="1"${quota < e.quotaMax ? '' : ' disabled'} aria-label="Un de plus">+</button></div>
-        <p class="note">${e.achetee ? (b ? `Le jour ${b.jour} : ${b.unites} fabriqués, +${b.gain} 💰.` : 'Pas encore de production.') + (e.dispo !== null ? ` En stock à la ferme : ${e.dispo} ${esc(e.intrantNom)}.` : '') : 'Achetée aujourd’hui : elle commence au retour à la ferme.'}</p>`;
-      corps.querySelectorAll('[data-q]').forEach((btn) => btn.addEventListener('click', () => {
-        o.quotas[e.id] = Math.max(0, Math.min(e.quotaMax, quota + Number(btn.dataset.q)));
-        this.saveOrdres(o);
+        <div class="quota"><button type="button" data-q="-1"${e.quota > 0 ? '' : ' disabled'} aria-label="Un de moins">−</button><span>Quota : <strong>${e.quota}</strong> ${esc(e.produit.toLowerCase())}${e.quota > 1 ? 's' : ''} par jour</span><button type="button" data-q="1"${e.quota < e.quotaMax ? '' : ' disabled'} aria-label="Un de plus">+</button></div>
+        <p class="note">${b ? `Le jour ${b.jour} : ${b.unites} fabriqués, +${b.gain} 💰.` : 'Pas encore de production.'} En stock à la ferme : ${e.dispo} ${esc(e.intrantNom)}.</p>`;
+      corps.querySelectorAll('[data-q]').forEach((btn) => { btn.onclick = () => {
+        H.quota(e.id, e.quota + Number(btn.dataset.q));
         this.renderLieu();
-      }));
+      }; });
     }
 
     // ---------- le train ----------
@@ -1350,6 +1336,7 @@
       const gx = Math.floor(w.x / T), gy = Math.floor(w.y / T);
       const o = c.ores.find((q) => q.x === gx && q.y === gy);
       if (!o) return false;
+      if (hote() && hote().outil && !hote().outil('pioche')) { this.say('⛏️ Il faut une pioche pour prendre ce minerai (à acheter à la ferme).'); return true; }
       // la case de sol voisine la plus proche de la promeneuse
       const P = this.heroPos;
       const pres = [[0, 1], [-1, 0], [1, 0], [0, -1]].map(([dx, dy]) => ({ x: o.x + dx, y: o.y + dy }))
@@ -1650,9 +1637,43 @@
     }
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const parent = document.getElementById('ville');
-    new Phaser.Game({
+  // Les fenêtres de la gare et des lieux, et la ligne des messages : créées une fois dans la
+  // page qui accueille la carte (leur style : css/jeu.css, « .ville-fenetre »).
+  function ensureDom() {
+    if (document.getElementById('gare-fenetre')) return;
+    const box = document.createElement('div');
+    box.innerHTML = `
+      <div class="ville-message" id="message" role="status" aria-live="polite" hidden></div>
+      <div class="ville-fenetre" id="gare-fenetre" role="dialog" aria-modal="true" aria-labelledby="gare-titre" hidden>
+        <div class="boite">
+          <h2 id="gare-titre">🚉 La gare</h2>
+          <p id="gare-texte">Où voulez-vous aller ?</p>
+          <div class="choix" id="gare-choix"></div>
+          <button type="button" class="annuler" id="gare-annuler">Rester ici</button>
+        </div>
+      </div>
+      <div class="ville-fenetre" id="lieu-fenetre" role="dialog" aria-modal="true" aria-labelledby="lieu-titre" hidden>
+        <div class="boite">
+          <h2 id="lieu-titre"></h2>
+          <div id="lieu-corps"></div>
+          <button type="button" class="annuler" id="lieu-fermer">Fermer</button>
+        </div>
+      </div>`;
+    while (box.firstElementChild) document.body.appendChild(box.firstElementChild);
+  }
+
+  // Une carte à la fois : start la montre dans `parent` (search : « ?carte=…&arrivee=… »),
+  // stop l'enlève (et ferme ses fenêtres).
+  let game = null;
+  function stop() {
+    for (const id of ['gare-fenetre', 'lieu-fenetre', 'message']) { const el = document.getElementById(id); if (el) el.hidden = true; }
+    if (game) { game.destroy(true); game = null; }
+    window.Ville = null;
+  }
+  function start(parent, search) {
+    stop();
+    configure(search);
+    game = new Phaser.Game({
       type: Phaser.AUTO,
       parent,
       backgroundColor: '#665951',
@@ -1661,5 +1682,7 @@
       scale: { mode: Phaser.Scale.RESIZE, width: parent.clientWidth, height: parent.clientHeight },
       scene: [VilleScene],
     });
-  });
+    return game;
+  }
+  window.VilleCarte = { start, stop, cartes: Object.keys(CARTES), carte: () => (game ? NOM_CARTE : null) };
 })();
