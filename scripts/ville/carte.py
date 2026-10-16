@@ -315,15 +315,16 @@ def details(c):
 # ---------- les objets ----------
 
 # Les pieds des arbres, pins et buissons (en tuiles) : là où l'image a un grand arbre, deux
-# ou trois arbres de la ferme, plus petits.
-ARBRES = [(2.5, 44), (5.5, 44.5), (8.5, 44), (11.5, 44.5), (14.5, 44), (17.5, 44.5), (20.5, 44), (22.5, 45.5),
+# ou trois arbres de la ferme, plus petits. Chacun tient dans son carré d'herbe (rien ne passe
+# devant un mur ni sur une palissade) et le passage entre les palissades du parc reste libre.
+ARBRES = [(3.5, 15), (2.5, 44), (5.5, 44.5), (8.5, 44), (11.5, 44.5), (14.5, 44), (17.5, 44.5), (20.5, 44), (22.5, 45.5),
           (28.5, 15.5), (30, 17), (28.5, 29), (30, 30.5), (29.5, 55.5), (31.5, 54), (34.5, 61.5), (36, 60),
           (52.5, 54.5), (54.5, 53), (27, 72.5), (30.5, 74), (33.5, 73.5), (36.5, 75), (51.5, 74.5),
           (54, 74.5), (56.5, 69), (57, 51)]
-PINS = [(3.5, 15), (44, 51), (35, 52.5), (26.5, 55.5), (26.5, 67)]
+PINS = [(44, 51), (35, 52.5), (28, 55.5), (28, 67)]
 BUISSONS = [(16.5, 29, True), (44, 44, True), (54.5, 44, True), (25.5, 58, False), (55.5, 59.5, False),
             (34, 72, True), (55.5, 66.5, False), (6.5, 73, False), (27.5, 14, False), (16, 26, False),
-            (25.5, 63, False), (41.5, 44.5, False)]
+            (41.5, 44.5, False)]
 
 
 def cale(v):

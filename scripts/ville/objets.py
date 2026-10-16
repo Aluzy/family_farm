@@ -338,42 +338,99 @@ def anneau(im, cx, cy, r0, r1, ry=1.0):
                 im.putpixel((x, y), rgba(c))
 
 
+def vasque(im, cx, cy, rx, ry, e, h, k, phase=0):
+    """Une vasque vue de 3/4 : le dessus du rebord (l'ellipse cx, cy, rx, ry, de largeur e), sa
+    paroi de face haute de h px, l'eau de la ferme (image k + phase) un peu sous le rebord, et la
+    paroi intérieure, dans l'ombre, au fond."""
+    w, hh = im.size
+    dedans = lambda x, y, a, b, dy=0: ((x + 0.5 - cx) / a) ** 2 + ((y + 0.5 - cy - dy) / b) ** 2 <= 1
+    ri, rj = rx - e, ry - e * ry / rx
+    for x in range(w):
+        u = (x + 0.5 - cx) / rx
+        if abs(u) > 1:
+            continue
+        bas = cy + ry * math.sqrt(1 - u * u)
+        for y in range(int(bas) - 1, min(hh, int(bas + h) + 1)):
+            if y + 0.5 < bas or dedans(x, y, rx, ry):
+                continue
+            c = MARGELLE[1] if u < 0.35 else MARGELLE[0]
+            if u < -0.6:
+                c = MARGELLE[2]
+            if (x + 3) % 12 == 0:
+                c = teinte(c, 0.82)
+            if y + 0.5 > bas + h - 1.5:
+                c = K
+            elif y + 0.5 < bas + 2:
+                c = teinte(MARGELLE[0], 0.8)
+            im.putpixel((x, y), rgba(c))
+    for y in range(hh):
+        for x in range(w):
+            if not dedans(x, y, rx, ry):
+                continue
+            if dedans(x, y, ri, rj):
+                if dedans(x, y, ri, rj, 3):
+                    im.putpixel((x, y), rgba(eau(x, y, (k + phase) % 8, not dedans(x, y, ri, rj, 6))))
+                else:
+                    im.putpixel((x, y), rgba(teinte(MARGELLE[1], 0.78)))
+                continue
+            a = math.atan2((y + 0.5 - cy) / ry, (x + 0.5 - cx) / rx)
+            lum = -math.cos(a + math.pi / 4)
+            c = MARGELLE[3] if lum > 0.45 else MARGELLE[2] if lum > -0.5 else MARGELLE[1]
+            if not dedans(x, y, rx - 1.2, ry - 1.2 * ry / rx):
+                c = MARGELLE[0]
+            im.putpixel((x, y), rgba(c))
+
+
+def colonne_ronde(im, x0, x1, y0, y1):
+    """Un fût de pierre (cylindre éclairé à gauche) de x0 à x1, de y0 à y1."""
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            t = (x - x0) / (x1 - x0 - 1)
+            c = MARGELLE[3] if t < 0.25 else MARGELLE[2] if t < 0.6 else MARGELLE[1] if t < 0.85 else MARGELLE[0]
+            im.putpixel((x, y), rgba(K if x in (x0, x1 - 1) else c))
+
+
 def fontaine(k):
-    """9 × 9 tuiles, image k (0..7) : la grande fontaine de la place, à deux vasques."""
+    """9 × 9 tuiles, image k (0..7) : la grande fontaine de la place, vue de 3/4 comme le reste de
+    la carte : un grand bassin (rebord, paroi de face, eau de la ferme), un fût qui porte une
+    vasque, un pinacle et son jet d'eau qui retombe en gerbe dans la vasque et le bassin."""
     im = image(144, 144)
-    cx, cy = 71.5, 71.5
-    for y in range(144):
-        for x in range(144):
-            r = math.hypot(x - cx, y - cy)
-            if r < 59:
-                im.putpixel((x, y), rgba(eau(x, y, k, y < cy and r > 53)))
-    anneau(im, cx, cy, 58, 70)
-    # la vasque du milieu
-    for y in range(144):
-        for x in range(144):
-            r = math.hypot(x - cx, y - cy)
-            if 24 <= r <= 27:
-                im.putpixel((x, y), rgba(EAU[3] if hasard(int(math.atan2(y - cy, x - cx) * 20), k) > 0.5 else EAU[2]))
-            elif r < 20:
-                im.putpixel((x, y), rgba(eau(x, y, (k + 4) % 8)))
-    anneau(im, cx, cy, 19, 24)
-    # le pied et le jet
-    anneau(im, cx, cy, 0, 9)
-    for y in range(144):
-        for x in range(144):
-            r = math.hypot(x - cx, y - cy)
-            if r < 6:
-                c = EAU[3] if (r + k / 2) % 4 < 2 else EAU[2]
-                if r < 2.5:
-                    c = EAU[4]
-                im.putpixel((x, y), rgba(c))
-    # les gouttes qui retombent
-    for i in range(14):
-        a = (i + k / 8) / 14 * math.tau
-        rr = 10 + ((i * 3 + k) % 8)
-        x, y = int(cx + math.cos(a) * rr), int(cy + math.sin(a) * rr)
-        im.putpixel((x, y), rgba(EAU[4]))
-    return contour(im)
+    cx = 71.5
+    vasque(im, cx, 64, 68, 42, 8, 14, k)
+    # les remous où retombe la gerbe
+    for i in range(12):
+        a = (i + 0.5) / 12 * math.tau
+        x, y = cx + math.cos(a) * 36, 74 + math.sin(a) * 20
+        for j in range(-2, 3):
+            if (j + k + i) % 4 < 2:
+                im.putpixel((int(x + j), int(y)), rgba(EAU[4]))
+    colonne_ronde(im, 63, 81, 50, 80)
+    vasque(im, cx, 46, 27, 15, 4, 7, k, 4)
+    colonne_ronde(im, 68, 76, 22, 47)
+    d = dessin(im)
+    d.ellipse((66, 16, 77, 25), fill=rgba(K))
+    d.ellipse((67, 17, 76, 24), fill=rgba(MARGELLE[2]))
+    d.ellipse((68, 18, 71, 20), fill=rgba(MARGELLE[3]))
+    im = contour(im)
+    # le jet : une colonne d'eau qui monte, puis la gerbe qui retombe dans la vasque (les arcs
+    # courts) et dans le bassin (les longs) ; les gouttes avancent d'image en image sur leur arc
+    for y in range(2, 17):
+        for x in (70, 71, 72, 73):
+            c = EAU[4] if (y + k) % 4 < 2 and x in (71, 72) else EAU[3]
+            im.putpixel((x, y), rgba(c))
+    for i in range(12):
+        a = (i + 0.5) / 12 * math.tau
+        dx, dy = math.cos(a), math.sin(a)
+        long = i % 2 == 1
+        portee, arrivee = (40, 74 + dy * 24) if long else (20, 47 + dy * 8)
+        for s in range(0, 16, 2):
+            t = ((s + k / 2) % 16) / 16
+            x = cx + dx * portee * t
+            y = 4 - 12 * t + (arrivee - 4 + 12) * t * t
+            for ddx, ddy, c in ((0, 0, EAU[4]), (1, 0, EAU[3]), (0, 1, EAU[3]), (1, 1, EAU[1])):
+                if 0 <= int(x) + ddx < 144 and 0 <= int(y) + ddy < 144:
+                    im.putpixel((int(x) + ddx, int(y) + ddy), rgba(c))
+    return im
 
 
 def fontaine_globe(k):
