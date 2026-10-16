@@ -593,6 +593,8 @@
         this.ready = true;
         if (lastModel) this.sync(lastModel, true);
         this.makeExit();
+        // Cachée pendant le chargement (une autre carte est affichée) : elle s'endort maintenant.
+        if (!visible) this.game.loop.sleep();
       }
 
       /* ---------- la sortie vers la ville ---------- */
@@ -3650,7 +3652,9 @@
     });
     game.events.once('ready', () => {
       scene = game.scene.getScene('farm');
-      if (visible) { awake = false; show(); } else game.loop.sleep();
+      // Cachée (une autre carte est affichée) : la boucle tourne jusqu'à la fin du chargement,
+      // sans quoi le chargeur s'arrête en route et la carte ne serait jamais prête.
+      if (visible) { awake = false; show(); } else if (ready()) game.loop.sleep();
     });
 
     // Retour sur la page (onglet réaffiché, téléphone rallumé) : le fond est vérifié tout de
@@ -3722,7 +3726,7 @@
   function hide() {
     visible = false;
     awake = false;
-    if (game && game.isBooted) game.loop.sleep();
+    if (game && game.isBooted && ready()) game.loop.sleep(); // sinon : à la fin du chargement
   }
 
   // L'intérieur `id` ('serre') peut-il être affiché ? Faux tant que la scène n'est pas prête,
