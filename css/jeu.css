@@ -574,6 +574,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 
 .chip.panne { background: var(--danger); border-color: var(--danger); color: var(--danger-contrast); }
 .chip.warn { border-color: var(--danger); color: var(--danger); }
+.chip.res.manque { border-color: var(--danger); color: var(--danger); }
 
 .visually-hidden {
   position: absolute;

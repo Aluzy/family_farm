@@ -4,6 +4,7 @@ import { fail, spend } from './devices.js';
 import { isAutomated } from './automation.js';
 import { chapterCount } from './campaign.js';
 import { soilCap, soilCount } from './crops.js';
+import { countItem, takeItem } from './inventory.js';
 
 /* ---------- Lot 7 : arbre des technologies (v2) ---------- */
 
@@ -135,6 +136,20 @@ export function grantTechPoints(state, n, raison) {
   pt.annonces.push({ pt: n, raison });
 }
 
+// Les ressources d'un nœud (bois, pierre, lingots : n.ressources), avec ce qu'on en a :
+// [{ item, qte, stock, ok }].
+export function techResources(state, id) {
+  const res = DATA.techtree.noeuds[id].ressources || {};
+  return Object.entries(res).map(([item, qte]) => {
+    const stock = Math.floor(countItem(state, item) + EPS);
+    return { item, qte, stock, ok: stock >= qte };
+  });
+}
+
+export function hasTechResources(state, id) {
+  return techResources(state, id).every((r) => r.ok);
+}
+
 export function buyTech(state, id) {
   const n = DATA.techtree.noeuds[id];
   if (!n) return fail('Technologie inconnue.');
@@ -143,11 +158,14 @@ export function buyTech(state, id) {
   const pt = techPoints(state);
   if (pt.solde < n.pt) return fail('Pas assez de points de technologie.');
   if (state.pieces + EPS < n.cout) return fail('Pas assez de pièces.');
+  const manque = techResources(state, id).filter((r) => !r.ok);
+  if (manque.length) return fail(`Il manque : ${manque.map((r) => `${r.qte - r.stock} ${DATA.items[r.item].icone} ${DATA.items[r.item].nom.toLowerCase()}`).join(', ')}.`);
   spend(state, n.cout, `Technologie : ${n.nom || id}`);
+  for (const r of techResources(state, id)) takeItem(state, r.item, r.qte);
   pt.solde -= n.pt;
   if (!Array.isArray(state.technologies)) state.technologies = [];
   state.technologies.push(id);
-  return { ok: true, cost: n.cout, pt: n.pt };
+  return { ok: true, cost: n.cout, pt: n.pt, ressources: n.ressources || {} };
 }
 
 // Valeur d'un jalon de maîtrise.

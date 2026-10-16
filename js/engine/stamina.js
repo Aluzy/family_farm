@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { levelReached } from './levels.js';
-import { techFlag } from './techtree.js';
+import { techEffects, techFlag } from './techtree.js';
 import { averageHappiness } from './ville.js';
 
 /* ---------- version 1.8 (v2, lot 4) : l'énergie du personnage ---------- */
@@ -37,7 +37,9 @@ export function actionCost(state, action, n = 1) {
   const base = (DATA.PERSONNAGE.COUTS[action] || 0) * n * MILLE;
   if (!base) return 0;
   const pct = happinessCostPct(state) * (100 - enduranceReduction(state));
-  return Math.ceil((base * pct) / 10000);
+  // arbre des technologies (branche Outils) : economie = { action: % en moins }, cumulés
+  const outils = techEffects(state, 'economie').reduce((m, e) => (e[action] ? (m * (100 - e[action])) / 100 : m), 100);
+  return Math.ceil((base * pct * outils) / 1000000);
 }
 
 // Le personnage a-t-il assez d'énergie pour cette action ?

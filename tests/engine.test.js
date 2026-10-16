@@ -11,7 +11,7 @@ import {
 } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
 import { buyCompany, companiesStep, companyPlan, ownsCompany, sellInTown, setCompanyQuota, townSellList, townSellPrice, townSellable } from '../js/engine/index.js';
-import { brokenRocks, buyTool, castLine, chopsLeft, fellenTrees, fishLeft, chopTree, respawnTrees, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
+import { brokenRocks, buyTool, castLine, chopsLeft, depositOreNotebook, hitsNeeded, mineOre, fellenTrees, fishLeft, chopTree, respawnTrees, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -2942,11 +2942,11 @@ test('mayonnaise (3 œufs) et quenelle de poisson (farine + truite, brochet ou p
   assertEqual(recipeStatus(s, 'quenelle_poisson').code, 'manque', 'sans farine');
 });
 
-test('arbre v2 : 18 recettes libres (dont 6 de la ville, la mayonnaise et la quenelle de poisson), 11 débloquées par un nœud', () => {
+test('arbre v2 : 22 recettes libres (dont 6 de la ville, la mayonnaise, la quenelle de poisson et les 4 lingots), 11 débloquées par un nœud', () => {
   const s = atelier();
   const libres = Object.keys(DATA.recipes).filter((id) => recipeUnlocked(s, id));
   assertEqual(libres.sort(), [...DATA.techtree.RECETTES_LIBRES].sort());
-  assertEqual(libres.length, 18);
+  assertEqual(libres.length, 22);
   assertEqual(Object.keys(DATA.recipes).length - libres.length, 11);
   for (const id of Object.keys(DATA.recipes)) assert(recipeUnlocked(s, id) || recipeNode(id), `${id} : libre ou débloquée par un nœud`);
   setInv(s, { pain: 1, ail: 1, huile: 1 });
@@ -4363,13 +4363,13 @@ function techReady(s, pt = 99) {
   return s;
 }
 
-test('DATA arbre v2 : 31 nœuds, 6 branches, paliers, points et prérequis cohérents', () => {
+test('DATA arbre v2 : 37 nœuds, 7 branches, paliers, points, ressources et prérequis cohérents', () => {
   assertEqual(DATA.AUTOMATISATION, undefined, 'plus d\'automatisation par le niveau 5');
   assertEqual(DATA.TECHNO, { ONGLET: 'techno', SEUIL_PIECES: 100 });
   const T = DATA.techtree;
   const N = T.noeuds;
-  assertEqual(Object.keys(N).length, 31); // 34 avant la version 1.1 (la Rôtisserie a disparu avec la viande), 33 puis 34 avec la Récolte du verger (1.13), 31 sans Réveil matinal I et II ni Routine familiale (1.19)
-  assertEqual(T.branches.map((b) => b.nom), ['Énergie', 'Eau', 'Culture', 'Élevage', 'Cuisine', 'Famille']);
+  assertEqual(Object.keys(N).length, 37); // 34 avant la version 1.1 (la Rôtisserie a disparu avec la viande), 33 puis 34 avec la Récolte du verger (1.13), 31 sans Réveil matinal I et II ni Routine familiale (1.19), 37 avec la branche Outils
+  assertEqual(T.branches.map((b) => b.nom), ['Énergie', 'Eau', 'Culture', 'Élevage', 'Cuisine', 'Famille', 'Outils']);
   assertEqual(Object.keys(T.PALIERS).map((p) => T.PALIERS[p].chapitre), [1, 3, 4, 5, 7]);
   assertEqual(T.POINTS.CHAPITRES, [2, 3, 3, 4, 4, 5, 5]);
   assertEqual(T.POINTS.MAITRISE.length, 6);
@@ -4381,6 +4381,10 @@ test('DATA arbre v2 : 31 nœuds, 6 branches, paliers, points et prérequis cohé
     assert(T.branches.some((b) => b.id === n.branche), `branche de ${id}`);
     assert(Number.isInteger(n.pt) && n.pt > 0 && Number.isInteger(n.cout), `coûts entiers : ${id}`);
     pt += n.pt;
+    // chaque nœud coûte aussi des ressources : bois et pierre aux premiers paliers, des lingots ensuite
+    assert(Object.keys(n.ressources || {}).length > 0, `${id} : des ressources`);
+    if (n.palier >= 3 && id !== 'el_paturage') assert(Object.keys(n.ressources).some((k) => k.startsWith('lingot_')), `${id} : des lingots dès le palier 3 (sauf l'Étable agrandie : du bois et de la pierre)`);
+    if (n.palier <= 1) assert(Object.keys(n.ressources).every((k) => k === 'bois' || k === 'pierre'), `${id} : bois et pierre au palier 1`);
     for (const r of n.requiert) {
       if (r.noeud) {
         assert(N[r.noeud], `${id} : ${r.noeud} existe`);
@@ -4389,7 +4393,7 @@ test('DATA arbre v2 : 31 nœuds, 6 branches, paliers, points et prérequis cohé
       if (r.batiment || r.construit || r.appareil) assert(T.batiments[r.batiment || r.construit || r.appareil], `${id} : bâtiment connu`);
     }
   }
-  assertEqual(pt, 47, '47 PT pour tout l\'arbre (50 avant la Récolte du verger, version 1.13 ; 52 avant le retrait de Réveil matinal I et II et de la Routine familiale, version 1.19)');
+  assertEqual(pt, 54, '54 PT pour tout l\'arbre (47 avant la branche Outils ; 50 avant la Récolte du verger, version 1.13 ; 52 avant le retrait de Réveil matinal I et II et de la Routine familiale, version 1.19)');
 });
 
 test('état initial Lot 7 : aucune technologie, semis réglé sur « même culture »', () => {
@@ -4813,6 +4817,8 @@ test('temps de préparation : la préparation lancée prend le temps réduit, ce
   assertEqual(s.stations.four.tache.dureeMs, 10000);
   s.pieces = 5000;
   techReady(s);
+  addItem(s, 'pierre', 4);
+  addItem(s, 'lingot_fer', 2);
   assert(buyTech(s, 'prepa_1').ok);
   assertEqual(s.stations.four.tache.dureeMs, 10000, 'déjà lancée : inchangée');
   runFor(s, 10);
@@ -4846,15 +4852,23 @@ test('prérequis : palier, bâtiment, nœud précédent, PT et pièces', () => {
   assertEqual(techPrereqs(s, 'cu_recolte_auto').map((p) => p.ok), [true, false, false]);
   const refus = buyTech(s, 'cu_recolte_auto');
   assertEqual([refus.ok, s.pieces, s.technologies, techPoints(s).solde], [false, 5000, [], 10]);
+  // les ressources : 8 bois et 5 pierre pour les Outils de jardin
+  addItem(s, 'bois', 8);
+  addItem(s, 'pierre', 4);
+  assertEqual(buyTech(s, 'cu_outils').error, 'Il manque : 1 🪨 pierre.');
+  assertEqual([s.pieces, countItem(s, 'bois')], [5000, 8], 'rien de payé');
+  addItem(s, 'pierre', 1);
   assertEqual(buyTech(s, 'cu_outils').ok, true);
-  assertEqual([s.pieces, techPoints(s).solde], [4900, 9], '1 PT + 100 💰');
+  assertEqual([s.pieces, techPoints(s).solde, countItem(s, 'bois'), countItem(s, 'pierre')], [4900, 9, 0, 0], '1 PT + 100 💰 + 8 bois + 5 pierre');
+  addItem(s, 'lingot_fer', 5);
+  addItem(s, 'lingot_cuivre', 2);
   growZone(s, 23);
   assertEqual(buyTech(s, 'cu_recolte_auto').ok, false, '23 tuiles ne suffisent pas');
   assertEqual(techPrereqs(s, 'cu_recolte_auto')[2].texte, '🟫 24 tuiles de terre', 'version 1.9 : des tuiles à la place du niveau 4 de la zone');
   growZone(s, 24);
   assertEqual(techStatus(s, 'cu_recolte_auto'), 'disponible');
   assertEqual(buyTech(s, 'cu_recolte_auto').ok, true);
-  assertEqual([s.pieces, techPoints(s).solde, techStatus(s, 'cu_recolte_auto')], [4000, 7, 'acquis']);
+  assertEqual([s.pieces, techPoints(s).solde, techStatus(s, 'cu_recolte_auto'), countItem(s, 'lingot_fer')], [4000, 7, 'acquis', 0]);
   assertEqual(buyTech(s, 'cu_recolte_auto').ok, false, 'déjà acquis : pas de deuxième paiement');
   // prérequis « construit » et niveau d'un appareil (version 1.6 : batterie niveau 2)
   assertEqual(techPrereqs(s, 'el_ration').map((p) => p.ok), [true, false], 'Poulailler à construire');
@@ -4862,6 +4876,7 @@ test('prérequis : palier, bâtiment, nœud précédent, PT et pièces', () => {
   s.batteries[0].niveau = 2;
   assertEqual(techPrereqs(s, 'en_delestage')[2].ok, true);
   // PT insuffisants
+  addItem(s, 'bois', 10);
   techPoints(s).solde = 0;
   assertEqual(buyTech(s, 'fa_sommeil').error, 'Pas assez de points de technologie.');
   techPoints(s).solde = 1;
@@ -5581,6 +5596,7 @@ test('sauvegarde : identifiants de technologie inconnus ignorés sans plantage',
   s.pieces = 0; // isole ce test du montant de départ pour vérifier le refus faute de pièces
   assertEqual(buyTech(s, 'fa_sommeil').ok, false, 'pas assez de pièces');
   s.pieces = 400;
+  addItem(s, 'bois', 10);
   assertEqual(buyTech(s, 'fa_sommeil').ok, true, 'la liste est recréée');
 });
 
@@ -8014,6 +8030,66 @@ test('version 1.21 : la mer de la plage, dorade, sardine, anchois', () => {
   assertEqual(fishLeft(s, 'mer'), 0);
   assert([...prises].every((p) => ['dorade', 'sardine', 'anchois'].includes(p)), 'des poissons de mer');
   assertEqual(castLine(s, 'mer').error, 'Le poisson se fait rare en mer aujourd\'hui : reviens demain.');
+});
+
+test('minerais et lingots : la grotte remplit l\'inventaire, le Four fond 4 minerais et du bois en 1 lingot', () => {
+  for (const m of ['fer', 'cuivre', 'or', 'platine']) {
+    const [mi, li] = [DATA.items['minerai_' + m], DATA.items['lingot_' + m]];
+    assertEqual([mi.category, li.category, mi.invendable, li.invendable, isBuyable('lingot_' + m)], ['matériau', 'matériau', true, true, false], m);
+    assertEqual(DATA.recipes['lingot_' + m].ingredients[0], { item: 'minerai_' + m, qte: 4 });
+  }
+  const s = atelier();
+  assertEqual(mineOre(s, 'fer').error, `Il te faut une pioche (Marché, ${DATA.PIOCHE.PRIX} 💰).`);
+  s.outils = { hache: false, pioche: true, choisi: 'pioche' };
+  const e = s.energie;
+  const r = mineOre(s, 'fer');
+  assertEqual([r.ok, r.item, r.n, countItem(s, 'minerai_fer'), s.energie], [true, 'minerai_fer', 1, 1, e - actionCost(s, 'piocher')]);
+  assertEqual(mineOre(s, 'diamant').error, 'Minerai inconnu.');
+  // le carnet d'avant : versé dans l'inventaire
+  depositOreNotebook(s, { fer: 3, or: 2, pierre: 9 });
+  assertEqual([countItem(s, 'minerai_fer'), countItem(s, 'minerai_or'), countItem(s, 'pierre')], [4, 2, 0]);
+  // au Four : 4 minerais de fer + 3 bois
+  assertEqual(startRecipe(s, 'lingot_fer').ok, false, 'pas de bois');
+  addItem(s, 'bois', 3);
+  assert(startRecipe(s, 'lingot_fer').ok);
+  assertEqual([countItem(s, 'minerai_fer'), countItem(s, 'bois')], [0, 0]);
+  runFor(s, recipeTime(s, 'lingot_fer') + 1);
+  assertEqual(countItem(s, 'lingot_fer'), 1);
+  // invendables, au Marché comme en ville
+  s.pompe.allume = true;
+  assert(/ne se vend pas/.test(sellItem(s, 'lingot_fer', 1).error));
+  assertEqual(townSellable('lingot_fer'), false);
+});
+
+test('branche Outils : coups en moins, ressources en plus, énergie, minerai, pêche', () => {
+  const s = garden();
+  s.outils = { hache: true, pioche: true, canne: true, choisi: 'hache' };
+  // Lames affûtées : 2 coups au lieu de 3
+  grantTech(s, 'out_lames');
+  assertEqual(hitsNeeded(s, DATA.HACHE.COUPES), DATA.HACHE.COUPES - 1);
+  chopTree(s, '14,25');
+  assertEqual(chopTree(s, '14,25').tombe, true, 'il tombe au 2e coup');
+  mineRock(s, 'x');
+  assertEqual(mineRock(s, 'x').casse, true);
+  // Hotte de bûcheron : parfois un bois de plus
+  grantTech(s, 'out_hotte');
+  let bois = 0;
+  for (let i = 0; i < 60; i++) { testFillEnergy(s); bois += chopTree(s, 'a' + i).bois; }
+  assert(bois > 60 && bois < 120, `de temps en temps un bois de plus (${bois} pour 60 coups)`);
+  // Socs en fer, puis Outils en platine : l'énergie de la houe, de la hache…
+  const base = actionCost(s, 'labourer'), hache = actionCost(s, 'couper');
+  grantTech(s, 'out_socs');
+  assertEqual(actionCost(s, 'labourer'), Math.ceil(base / 2));
+  grantTech(s, 'out_platine');
+  assertEqual([actionCost(s, 'labourer'), actionCost(s, 'couper')], [Math.ceil(base / 4), Math.ceil(hache / 2)]);
+  // Moulinet en laiton : 2 prises de plus par jour
+  grantTech(s, 'out_moulinet');
+  assertEqual(fishLeft(s, 'lac'), DATA.CANNE.JOUR.lac + 2);
+  // Lampe de mineur : parfois 2 minerais
+  grantTech(s, 'out_lampe');
+  let n = 0;
+  for (let i = 0; i < 60; i++) { testFillEnergy(s); n += mineOre(s, 'cuivre').n; }
+  assert(n > 60 && n < 100, `un minerai de plus de temps en temps (${n} pour 60)`);
 });
 
 test('version 1.1.1 : devis d\'achat (buyQuote) = ce que buyItem achète, prix montant compris', () => {

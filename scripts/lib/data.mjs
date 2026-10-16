@@ -61,7 +61,7 @@ export function loadData(root = ROOT) {
 
 /* ---------- vérification ---------- */
 
-const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'conserve'];
+const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'conserve', 'matériau'];
 const LIEUX = ['potager', 'serre'];
 const MODES_GRAINES = ['recolte', 'plant'];
 
@@ -179,6 +179,11 @@ export function validateData(data) {
       if (req.noeud === id) err(where, 'un nœud ne peut pas se demander lui-même');
       if (req.batiment !== undefined && !techtree.batiments[req.batiment]) err(where, `requiert le bâtiment « ${req.batiment} », absent de techtree.batiments`);
       if (req.tuiles !== undefined && !(Number.isInteger(req.tuiles) && req.tuiles > 0)) err(where, 'requiert des tuiles : un entier supérieur à 0');
+    }
+    for (const [item, qte] of Object.entries(n.ressources || {})) {
+      if (!data.items[item]) err(where, `coûte « ${item} », qui n'existe pas`);
+      else if (!(item === 'bois' || item === 'pierre' || data.items[item].category === 'matériau')) err(where, `coûte « ${item} » : bois, pierre ou un matériau (lingot) seulement`);
+      if (!(Number.isInteger(qte) && qte > 0)) err(where, `ressource « ${item} » : un entier supérieur à 0`);
     }
     for (const rid of (n.effet && n.effet.recettes) || []) {
       if (!recipes[rid]) err(where, `débloque la recette « ${rid} », qui n'existe pas`);

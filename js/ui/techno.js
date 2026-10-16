@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { awakeRequired } from '../engine/clock.js';
 import {
-  buyTech, hasTech, masteryValue, prepTimeMult, techFlag, techPoints, techPrereqs, techProgress, techStatus,
+  buyTech, hasTech, hasTechResources, masteryValue, prepTimeMult, techFlag, techPoints, techPrereqs, techProgress, techResources, techStatus,
 } from '../engine/techtree.js';
 import { formatCoins, formatNumber, formatPercent, formatQty } from '../engine/format.js';
 import { state } from './store.js';
@@ -49,6 +49,23 @@ function techCostLabel(n) {
   return `${formatNumber(n.pt)} PT + ${costLabel(n.cout)}`;
 }
 
+// Les ressources d'un nœud : une pastille par objet, « 🪵 3 / 8 » (en stock / demandé), marquée
+// quand il en manque. Une fois le nœud acquis : ce qu'il a coûté.
+function techResourceChips(id, acquis) {
+  const chips = techResources(state, id).map((r) => {
+    const it = DATA.items[r.item];
+    const texte = acquis ? `${it.icone} ${formatNumber(r.qte)}` : `${it.icone} ${formatNumber(Math.min(r.stock, r.qte))} / ${formatNumber(r.qte)}`;
+    return `<span class="chip res${acquis || r.ok ? '' : ' manque'}" title="${it.nom}${acquis ? '' : ` : ${formatNumber(r.stock)} en stock`}">${texte}</span>`;
+  });
+  return chips.length ? `<span class="level-chips tech-res" aria-label="Ressources">${chips.join('')}</span>` : '';
+}
+
+// Peut-on payer le nœud (PT, pièces, ressources) ?
+function techAffordable(id) {
+  const n = DATA.techtree.noeuds[id];
+  return techPoints(state).solde >= n.pt && canPay(n.cout) && hasTechResources(state, id);
+}
+
 function techNodeCard(id) {
   const n = DATA.techtree.noeuds[id];
   const status = techStatus(state, id);
@@ -62,7 +79,7 @@ function techNodeCard(id) {
   const prereqList = status === 'acquis'
     ? ''
     : `<ul class="prereqs" aria-label="Prérequis">${prereqs.map((p) => `<li class="${p.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${p.ok ? '✅' : '❌'}</span> ${p.texte}</li>`).join('')}</ul>`;
-  const affordable = pt.solde >= n.pt && canPay(n.cout);
+  const affordable = techAffordable(id);
   const button = status === 'acquis'
     ? ''
     : `<button type="button" class="btn${status === 'disponible' ? ' primary' : ''}" data-action="buy-tech" data-id="${id}"${status === 'disponible' && affordable ? '' : ' disabled'}>Acquérir (${techCostLabel(n)})</button>`;
@@ -70,6 +87,7 @@ function techNodeCard(id) {
     <article class="card tech-node ${status === 'acquis' ? 'owned' : status === 'disponible' ? 'available' : 'locked'}">
       <span class="card-title"><span>${n.icone} ${n.nom}</span>${chip}</span>
       <span class="muted">Palier ${n.palier} · ${techCostLabel(n)}</span>
+      ${techResourceChips(id, status === 'acquis')}
       <span class="desc">${n.description}</span>
       ${prereqList}
       ${button}
@@ -105,7 +123,7 @@ export function renderTechno() {
     const progress = techProgress(state, b.id).map(techLevelRow).join('');
     const owned = nodes.filter((id) => hasTech(state, id)).length;
     // FLU-28 : chaque branche est repliée, sauf celle qui a une technologie achetable
-    const achetable = nodes.some((id) => techStatus(state, id) === 'disponible' && pt.solde >= DATA.techtree.noeuds[id].pt && canPay(DATA.techtree.noeuds[id].cout));
+    const achetable = nodes.some((id) => techStatus(state, id) === 'disponible' && techAffordable(id));
     const open = achetable && !ouverte;
     if (open) ouverte = true;
     return `
@@ -128,7 +146,7 @@ export function renderTechno() {
       <h2>🌳 Arbre des technologies</h2>
       <span class="chips"><span class="chip" title="Points de technologie disponibles">🔬 ${formatNumber(pt.solde)} PT</span><span class="chip" title="Pièces disponibles">💰 ${formatCoins(state.pieces)}</span></span>
     </div>
-    <p class="muted">Chaque technologie coûte des points de technologie (PT) et des pièces, et s'ouvre à un palier de la campagne. Les chapitres terminés rapportent des PT (${P.CHAPITRES.join(' · ')}), comme les jalons de maîtrise ci-dessous.${libre} Tu as gagné ${formatNumber(pt.gagnes)} PT en tout.</p>
+    <p class="muted">Chaque technologie coûte des points de technologie (PT), des pièces et des ressources (🪵 bois et 🪨 pierre des arbres et des rochers ; des lingots, fondus au Four avec 4 minerais de la grotte et du bois), et s'ouvre à un palier de la campagne. Les chapitres terminés rapportent des PT (${P.CHAPITRES.join(' · ')}), comme les jalons de maîtrise ci-dessous.${libre} Tu as gagné ${formatNumber(pt.gagnes)} PT en tout.</p>
     <details class="card">
       <summary><strong>🏅 Jalons de maîtrise</strong> <span class="muted">(${pt.maitrise.length} / ${P.MAITRISE.length})</span></summary>
       ${masteryHtml()}
@@ -142,6 +160,7 @@ registerActions({
   'buy-tech': (target) => {
     const id = target.dataset.id;
     const result = applyResult(buyTech(state, id));
-    if (result.ok) showToast(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰)`);
+    const res = Object.entries(result.ressources || {}).map(([item, q]) => `, −${formatNumber(q)} ${DATA.items[item].icone}`).join('');
+    if (result.ok) showToast(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰${res})`);
   },
 });

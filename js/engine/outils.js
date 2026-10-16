@@ -5,6 +5,7 @@ import { buyHoe, hasHoe, rockGone, treeGone } from './crops.js';
 import { addItem } from './inventory.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
+import { techFlag, techSum } from './techtree.js';
 
 /* ---------- les outils : houe, pioche, hache, canne à pêche ---------- */
 
@@ -77,11 +78,24 @@ export function selectTool(state, id) {
 // par chacun ; au HACHE.COUPES-ième, il tombe : { retour }, le jour où il repousse (dans
 // HACHE.RETOUR jours, tiré au hasard). Ses tuiles libres se labourent en attendant.
 
+// Coups qu'il faut pour abattre un arbre, casser un rocher ou prendre un minerai (`base`) :
+// les Lames affûtées de l'arbre des technologies (branche Outils) en retirent (coupsMoins).
+export function hitsNeeded(state, base) {
+  return Math.max(1, base - techSum(state, 'coupsMoins'));
+}
+
+// Ce qu'un coup rapporte (`n`) : avec la Hotte de bûcheron (recolteBonus, en %), une
+// chance d'en avoir un de plus.
+function withBonus(state, n, key) {
+  const pct = techSum(state, key);
+  return n + (pct > 0 && nextRandom(state) * 100 < pct ? 1 : 0);
+}
+
 // Coups de hache que l'arbre `id` peut encore recevoir avant de tomber (0 : abattu).
 export function chopsLeft(state, id) {
   const a = state.outils && state.outils.arbres && state.outils.arbres[id];
   if (a && typeof a === 'object') return 0;
-  return Math.max(0, DATA.HACHE.COUPES - (a || 0));
+  return Math.max(0, hitsNeeded(state, DATA.HACHE.COUPES) - (a || 0));
 }
 
 // Les arbres abattus (leurs identifiants).
@@ -102,12 +116,13 @@ export function chopTree(state, id) {
   if (!o.arbres || typeof o.arbres !== 'object') o.arbres = {};
   delete o.coupes;                       // l'ancien compte des coups du jour
   const coups = (o.arbres[id] || 0) + 1;
-  const tombe = coups >= H.COUPES;
+  const tombe = coups >= hitsNeeded(state, H.COUPES);
   o.arbres[id] = tombe ? { retour: state.day + randomInt(state, H.RETOUR[0], H.RETOUR[1]) } : coups;
-  addItem(state, 'bois', H.BOIS);
+  const bois = withBonus(state, H.BOIS, 'recolteBonus');
+  addItem(state, 'bois', bois);
   spendEnergy(state, 'couper');
   gainActionXp(state, 'couper');
-  return { ok: true, bois: H.BOIS, reste: chopsLeft(state, id), coups, tombe };
+  return { ok: true, bois, reste: chopsLeft(state, id), coups, tombe };
 }
 
 /* ---------- la pioche : casser un rocher de la carte ---------- */
@@ -144,12 +159,46 @@ export function mineRock(state, id) {
   const o = outils(state);
   if (!o.rochers || typeof o.rochers !== 'object') o.rochers = {};
   const coups = (o.rochers[id] || 0) + 1;
-  const casse = coups >= P.COUPS;
+  const casse = coups >= hitsNeeded(state, P.COUPS);
   o.rochers[id] = casse ? { retour: state.day + randomInt(state, P.RETOUR[0], P.RETOUR[1]) } : coups;
-  addItem(state, 'pierre', P.PIERRE);
+  const pierre = withBonus(state, P.PIERRE, 'recolteBonus');
+  addItem(state, 'pierre', pierre);
   spendEnergy(state, 'piocher');
   gainActionXp(state, 'piocher');
-  return { ok: true, pierre: P.PIERRE, coups, casse };
+  return { ok: true, pierre, coups, casse };
+}
+
+/* ---------- la pioche dans la grotte : le minerai ---------- */
+
+export const MINERAIS = ['fer', 'cuivre', 'or', 'platine'];
+
+// Un minerai pris dans la grotte (la carte compte les coups de pioche, voir hitsNeeded) :
+// minerai_<sorte> dans l'inventaire (un de plus, parfois, avec la Lampe de mineur :
+// grotte.minerai %), l'énergie et l'XP d'un coup de pioche.
+export function mineOre(state, sorte) {
+  const P = DATA.PIOCHE;
+  if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (Marché, ${P.PRIX} 💰).`);
+  if (!MINERAIS.includes(sorte)) return fail('Minerai inconnu.');
+  if (!canAfford(state, 'piocher')) return fail(TIRED);
+  const lampe = techFlag(state, 'grotte');
+  const pct = lampe && lampe.minerai ? lampe.minerai : 0;
+  const n = 1 + (pct > 0 && nextRandom(state) * 100 < pct ? 1 : 0);
+  const item = 'minerai_' + sorte;
+  addItem(state, item, n);
+  spendEnergy(state, 'piocher');
+  gainActionXp(state, 'piocher');
+  return { ok: true, item, n };
+}
+
+// Le carnet des grottes d'avant les minerais (localStorage « ferme-grottes ») : ce qu'il
+// comptait entre dans l'inventaire, une fois. { fer: 3, … } → { minerai_fer: 3, … }.
+export function depositOreNotebook(state, carnet) {
+  const out = {};
+  for (const sorte of MINERAIS) {
+    const n = Math.floor(Number(carnet && carnet[sorte]) || 0);
+    if (n > 0) { addItem(state, 'minerai_' + sorte, n); out['minerai_' + sorte] = n; }
+  }
+  return { ok: true, items: out };
 }
 
 // Au réveil (runNight, jour suivant) : un rocher cassé dont le jour de retour est venu
@@ -195,9 +244,10 @@ function peche(state) {
 export function fishLeft(state, eau) {
   const J = DATA.CANNE.JOUR[eau];
   if (!J) return 0;
+  const max = J + techSum(state, 'pecheJour');   // le Moulinet en laiton (branche Outils)
   const p = state.outils && state.outils.peche;
   const faites = p && p.jour === state.day ? p.prises[eau] || 0 : 0;
-  return Math.max(0, J - faites);
+  return Math.max(0, max - faites);
 }
 
 // Un lancer dans l'eau `eau` : de l'énergie, puis peut-être un poisson (tiré selon
@@ -210,11 +260,18 @@ export function castLine(state, eau) {
   if (fishLeft(state, eau) <= 0) return fail(eau === 'lac' || eau === 'mer' ? `Le poisson se fait rare ${eau === 'lac' ? 'dans le lac' : 'en mer'} aujourd'hui : reviens demain.` : `Le poisson se fait rare ${eau === 'mare' ? 'dans la mare' : 'dans l\'étang'} aujourd'hui : essaie l'autre eau, ou reviens demain.`);
   if (!canAfford(state, 'pecher')) return fail(TIRED);
   spendEnergy(state, 'pecher');
-  let tirage = nextRandom(state) * 100, poisson = null;
-  for (const [item, pct] of Object.entries(chances)) {
-    if (tirage < pct) { poisson = item; break; }
-    tirage -= pct;
-  }
+  const tire = () => {
+    let tirage = nextRandom(state) * 100;
+    for (const [item, pct] of Object.entries(chances)) {
+      if (tirage < pct) return item;
+      tirage -= pct;
+    }
+    return null;
+  };
+  let poisson = tire();
+  // le Moulinet en laiton : rien n'a mordu, une chance (pecheTouche %) qu'un poisson morde quand même
+  const touche = techSum(state, 'pecheTouche');
+  if (!poisson && touche > 0 && nextRandom(state) * 100 < touche) poisson = tire();
   if (poisson) {
     const p = peche(state);
     p.prises[eau] = (p.prises[eau] || 0) + 1;

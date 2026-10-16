@@ -27,7 +27,7 @@ function takeStock(state, item, qty) {
 
 export function townSellable(item) {
   const def = DATA.items[item];
-  return !!def && !def.ville && DATA.VILLE.MARCHE.CATEGORIES.includes(def.category);
+  return !!def && !def.ville && !def.invendable && DATA.VILLE.MARCHE.CATEGORIES.includes(def.category);
 }
 
 // Le prix d'une unité aux étals de la ville : VENTE % du prix de la ferme, arrondi au-dessus.

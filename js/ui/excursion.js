@@ -3,7 +3,8 @@ import { clockHours, nightActive } from '../engine/clock.js';
 import { weekdayIndex } from '../engine/format.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { memberPerso } from '../engine/family.js';
-import { hasTool } from '../engine/outils.js';
+import { depositOreNotebook, hasTool, hitsNeeded, mineOre } from '../engine/outils.js';
+import { techFlag } from '../engine/techtree.js';
 import { rockGone, treeGone } from '../engine/crops.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
 import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
@@ -147,6 +148,13 @@ window.FermeHote = {
   // la canne en main : un lancer dans l'eau `eau` (« lac » : la montagne) ; { poisson } ou null
   pecher: (eau) => fishFromStage(eau),
   objet: (item) => (DATA.items[item] ? { nom: DATA.items[item].nom, icone: DATA.items[item].icone } : null),
+  // la grotte : un minerai pris (« fer », « cuivre »…) va dans l'inventaire ({ ok, item, n } ou
+  // { ok: false }) ; le carnet d'avant y est versé une fois ; les coups qu'il faut (Lames
+  // affûtées) ; un réglage de l'arbre des technologies (la Lampe de mineur : tech('grotte'))
+  miner: (sorte) => { const r = mineOre(state, sorte); joue(r); return r; },
+  verser: (carnet) => joue(depositOreNotebook(state, carnet)),
+  coups: (base) => hitsNeeded(state, base),
+  tech: (cle) => techFlag(state, cle),
   say: (t) => showToast(t),
   // le god mode : les cartes ne font plus marcher le personnage (un toucher l'y pose)
   god: () => godMode,

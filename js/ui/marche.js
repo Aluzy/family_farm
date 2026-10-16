@@ -227,7 +227,7 @@ export function renderComptoir(fenetre = false) {
   const tab = currentTab();
   let body;
   if (tab.id === 'vendre') {
-    const items = Object.keys(DATA.items).filter((k) => sellableCount(state, k) > 0);
+    const items = Object.keys(DATA.items).filter((k) => !DATA.items[k].invendable && sellableCount(state, k) > 0);
     body = slotsHtml(items.map(sellSlot), 'Tu n\'as rien à vendre pour l\'instant.');
   } else if (tab.id === 'acheter') {
     // FLU-01 : la puce d'objectif « Acheter une houe » mène ici (Ingrédients, le sous-rayon

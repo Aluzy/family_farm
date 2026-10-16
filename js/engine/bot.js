@@ -3,7 +3,7 @@ import { EPS } from './base.js';
 import { farmOpen, isBroken, isOwned, starterOf, upgradeCost, upgradeDevice } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { tick } from './energy.js';
-import { countItem, expiringSoon } from './inventory.js';
+import { addItem, countItem, expiringSoon } from './inventory.js';
 import { buildFridge, fridgeCount, fridgeLevel, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, upgradeFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
 import { planMeal } from './family.js';
@@ -21,7 +21,7 @@ import {
 import { chooseCommerce, commerceStock, commerceUpgradeCost, upgradeCommerce } from './commerce.js';
 import { buildVerger, buyOrchardSlot, buyTree, harvestTree, orchardFree, orchardSlotPrice, ripeTrees } from './orchard.js';
 import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
-import { buyTech, hasTech, techPoints, techStatus } from './techtree.js';
+import { buyTech, hasTech, techPoints, techResources, techStatus } from './techtree.js';
 import {
   chapterCount, chapterReached, cropUnlocked, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
   readMail, unreadMail,
@@ -299,6 +299,11 @@ export function botBuyStaples(state) {
   }
 }
 
+// Ce qui manque des ressources d'un nœud de l'arbre, mis dans l'inventaire du bot.
+function botGather(state, id) {
+  for (const r of techResources(state, id)) if (!r.ok) addItem(state, r.item, r.qte - r.stock);
+}
+
 export function botCook(state) {
   if (!state.stations) return;
   botBuyStaples(state);
@@ -411,7 +416,9 @@ export function botStepInfo(state, step, eveilS) {
       if (chapterReached(state) < 4) return { locked: true }; // d'abord les achats essentiels
       if (techStatus(state, step.id) !== 'disponible') return { locked: true };
       if (techPoints(state).solde < DATA.techtree.noeuds[step.id].pt) return { locked: true }; // arbre v2 : PT
-      return { cost: DATA.techtree.noeuds[step.id].cout, buy: () => buyTech(state, step.id) };
+      // les ressources (bois, pierre, lingots) : le joueur simulé va les chercher (couper,
+      // piocher, fondre au Four), ce que le bot ne fait pas pas à pas : elles lui sont données
+      return { cost: DATA.techtree.noeuds[step.id].cout, buy: () => { botGather(state, step.id); return buyTech(state, step.id); } };
     }
     default:
       return { done: true };

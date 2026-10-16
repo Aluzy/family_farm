@@ -108,6 +108,7 @@ export const MARKET_CLOSED = 'Le Marché ouvre quand le panneau solaire et la po
 export function sellItem(state, item, qty) {
   const def = DATA.items[item];
   if (!def) return fail('Objet inconnu.');
+  if (def.invendable) return fail(`${def.nom} ne se vend pas : il sert à l'arbre des technologies.`);
   if (!farmOpen(state)) return fail(MARKET_CLOSED);
   const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
   const fromInventory = takeItem(state, item, wanted);

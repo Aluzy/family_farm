@@ -75,8 +75,9 @@
  * jour) par un automate cellulaire, avec les morceaux de scripts/ville/grotte.py. On descend par
  * le puits, on remonte par l'échelle (des passages, comme au bord des cartes). Le minerai est
  * pris dans les murs qui touchent le sol, de plus en plus rare et précieux en profondeur (fer,
- * cuivre, or, platine : GROTTE.poids) ; on le pioche en le touchant (une maquette : il va dans
- * un carnet, pas encore dans l'inventaire). Il fait noir : on n'y voit qu'autour de soi.
+ * cuivre, or, platine : GROTTE.poids) ; on le pioche en le touchant : il va dans l'inventaire
+ * (FermeHote.miner ; au Four, 4 minerais et du bois font un lingot, pour l'arbre des
+ * technologies). Il fait noir : on n'y voit qu'autour de soi.
  */
 (function () {
   'use strict';
@@ -1631,6 +1632,12 @@
       // le minerai déjà pioché aujourd'hui ne revient que demain
       const rec = this.readCaves();
       if (rec.jour !== jour) { rec.jour = jour; rec.pris = []; }
+      // le carnet d'avant (le minerai n'allait pas encore dans l'inventaire) : versé une fois
+      if (hote() && hote().verser && rec.carnet && Object.keys(rec.carnet).length) {
+        hote().verser(rec.carnet);
+        rec.carnet = {};
+        try { window.localStorage.setItem(GROTTE.store, JSON.stringify(rec)); } catch (e) { /* ignoré */ }
+      }
       this.caveRec = rec;
       c.ores = c.ores.filter((o) => !rec.pris.includes(`${id}:${niveau}:${o.x},${o.y}`));
       for (const o of c.ores) this.layers.minerais.putTileAt(t(o.kind), o.x, o.y);
@@ -1670,8 +1677,12 @@
       const c = this.cave;
       if (!c) return;
       for (const s of c.stalag) if (this.walk[s.y]) this.walk[s.y][s.x] = false;
-      const L = GROTTE.lumiere, N = 512, K = 4;          // une texture de N px, agrandie K fois
-      if (!this.textures.exists('lumiere_grotte')) {
+      // la Lampe de mineur (arbre des technologies) éclaire plus loin : lumiere %
+      const lampe = hote() && hote().tech ? hote().tech('grotte') : null;
+      const f = lampe && lampe.lumiere ? lampe.lumiere / 100 : 1;
+      const L = { r0: GROTTE.lumiere.r0 * f, r1: GROTTE.lumiere.r1 * f, noir: GROTTE.lumiere.noir }, N = 512, K = 4;
+      const cle = 'lumiere_grotte_' + Math.round(f * 100);   // une texture de N px, agrandie K fois
+      if (!this.textures.exists(cle)) {
         const cv = document.createElement('canvas');
         cv.width = cv.height = N;
         const g = cv.getContext('2d');
@@ -1681,10 +1692,10 @@
         grad.addColorStop(1, `rgba(6,4,6,${L.noir})`);
         g.fillStyle = grad;
         g.fillRect(0, 0, N, N);
-        this.textures.addCanvas('lumiere_grotte', cv);
+        this.textures.addCanvas(cle, cv);
       }
       // (agrandie : elle couvre l'écran même au plus petit zoom)
-      this.light = this.add.image(0, 0, 'lumiere_grotte').setScale(K).setDepth(1.9e6);
+      this.light = this.add.image(0, 0, cle).setScale(K).setDepth(1.9e6);
       this.say(`⛏️ La grotte — niveau ${c.niveau}${c.niveau >= GROTTE.niveaux ? ' (le plus profond)' : ''}`);
     }
 
@@ -1728,7 +1739,8 @@
         g.t = 0;
         g.coup++;
         this.chips(m.ore);
-        if (g.coup >= GROTTE.coups) this.takeOre(m.ore);
+        const coups = hote() && hote().coups ? hote().coups(GROTTE.coups) : GROTTE.coups;
+        if (g.coup >= coups) this.takeOre(m.ore);
       }
     }
 
@@ -1746,14 +1758,22 @@
       const c = this.cave;
       this.mine = null;
       this.mining = null;
+      // dans le jeu : le minerai va dans l'inventaire (sans énergie, il reste dans le mur)
+      const H = hote();
+      const r = H && H.miner ? H.miner(o.kind) : null;
+      if (r && !r.ok) return;
       c.ores.splice(c.ores.indexOf(o), 1);
       this.layers.minerais.removeTileAt(o.x, o.y);
       const rec = this.caveRec;
       rec.pris.push(`${c.id}:${c.niveau}:${o.x},${o.y}`);
-      rec.carnet[o.kind] = (rec.carnet[o.kind] || 0) + 1;
+      if (!r) rec.carnet[o.kind] = (rec.carnet[o.kind] || 0) + 1;      // (la carte seule : le carnet)
       try { window.localStorage.setItem(GROTTE.store, JSON.stringify(rec)); } catch (e) { /* ignoré */ }
       const nom = ((c.meta.minerais || {})[o.kind] || {}).nom || o.kind;
-      this.say(`⛏️ ${nom} ! (dans le carnet : ${rec.carnet[o.kind]})`);
+      if (r) {
+        const it = H.objet ? H.objet(r.item) : null;
+        this.popGain(`+${r.n} ${it ? it.icone : '⛏️'}`);
+        this.say(`⛏️ ${it ? it.nom : nom}${r.n > 1 ? ` × ${r.n}` : ''} : dans l'inventaire. Au Four, 4 minerais font un lingot.`);
+      } else this.say(`⛏️ ${nom} ! (dans le carnet : ${rec.carnet[o.kind]})`);
     }
 
     // ---------- les animaux ----------
