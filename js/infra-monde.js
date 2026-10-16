@@ -15,6 +15,13 @@
   'use strict';
 
   const T = 16;
+  // l'adresse d'un fichier de assets/, suivie sur le site en ligne de « ?v=<empreinte de son
+  // contenu> » (js/assets-versions.js, écrit par scripts/build-site.mjs) : un fichier modifié
+  // change d'adresse, le téléphone le recharge au lieu de mélanger l'ancien et le nouveau.
+  const v = (file) => {
+    const t = window.FERME_ASSET_VERSIONS, k = file.replace(/^assets\//, '');
+    return t && t[k] ? file + '?v=' + t[k] : file;
+  };
   const MAP = { key: 'infra', file: 'assets/infra_monde.json' };
   const TREE = { key: 'infra_arbre', file: 'assets/infra_arbre.png', w: 32, h: 64, frames: 8, fps: 6, foot: 59 };
   // L'habitant (scripts/infra/habitant.py) : marche de face 0-3, de dos 4-7, de profil 8-11 ;
@@ -29,13 +36,13 @@
     constructor() { super('infra'); }
 
     preload() {
-      this.load.tilemapTiledJSON(MAP.key, MAP.file);
-      this.load.spritesheet(TREE.key, TREE.file, { frameWidth: TREE.w, frameHeight: TREE.h });
-      this.load.spritesheet(HERO.key, HERO.file, { frameWidth: HERO.w, frameHeight: HERO.h });
+      this.load.tilemapTiledJSON(MAP.key, v(MAP.file));
+      this.load.spritesheet(TREE.key, v(TREE.file), { frameWidth: TREE.w, frameHeight: TREE.h });
+      this.load.spritesheet(HERO.key, v(HERO.file), { frameWidth: HERO.w, frameHeight: HERO.h });
       // les planches des jeux de tuiles : lues dans la carte une fois chargée
       this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
         const data = this.cache.tilemap.get(MAP.key).data;
-        for (const set of data.tilesets) this.load.image(set.name, 'assets/' + set.image);
+        for (const set of data.tilesets) this.load.image(set.name, v('assets/' + set.image));
       });
     }
 

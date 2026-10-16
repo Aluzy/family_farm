@@ -13,6 +13,8 @@
 //   - js/assets-versions.js : l'empreinte de chaque fichier de assets/ (images,
 //     cartes), que js/farm-stage.js ajoute à leurs adresses (« ?v=… »). Une image
 //     ou une carte modifiée est donc rechargée, même sur un téléphone qui l'a en cache ;
+//   - ville-carte.html et infra-monde.html : de même, leur script et cette table d'empreintes,
+//     que js/ville-carte.js et js/infra-monde.js ajoutent aux adresses de leurs images ;
 //   - les autres pages, le style, les images et Phaser, copiés tels quels.
 //
 // Les tests, les scripts, les données sources (data/) et les modules eux-mêmes
@@ -119,20 +121,33 @@ html = html.replace(STAGE_TAG, `<script src="${ASSET_VERSIONS}"></script>\n${STA
 
 const errors = [];
 let count = 0;
-html = html.replace(/(<(?:script[^>]*\bsrc|link[^>]*\bhref)=")([^"]+)(")/g, (tag, before, ref, after) => {
+/* chaque script et style local d'une page suivi de « ?v=<empreinte> » */
+const stamp = (page, src) => src.replace(/(<(?:script[^>]*\bsrc|link[^>]*\bhref)=")([^"]+)(")/g, (tag, before, ref, after) => {
   if (/^[a-z]+:\/\//i.test(ref)) return tag; // adresse externe
-  if (ref.includes('?')) { errors.push(`${ref} : pas de « ?… » dans jeu.html, le suffixe est ajouté ici`); return tag; }
+  if (ref.includes('?')) { errors.push(`${ref} : pas de « ?… » dans ${page}, le suffixe est ajouté ici`); return tag; }
   const file = join(OUT, ref);
-  if (!existsSync(file)) { errors.push(`${ref} : fichier absent du site construit`); return tag; }
+  if (!existsSync(file)) { errors.push(`${ref} : fichier absent du site construit (${page})`); return tag; }
   count++;
   return `${before}${ref}?v=${fingerprint(file)}${after}`;
 });
+html = stamp('jeu.html', html);
 if (/type="module"/.test(html)) errors.push('jeu.html : il reste un <script type="module"> après le regroupement');
+/* les cartes Phaser à part (la ville, l'infra-monde) : leurs images et cartes aussi, par la
+   même table, que leur script lit (fonction v) ; la table chargée juste avant lui */
+const MAP_PAGES = { 'ville-carte.html': 'js/ville-carte.js', 'infra-monde.html': 'js/infra-monde.js' };
+const mapPages = {};
+for (const [page, script] of Object.entries(MAP_PAGES)) {
+  const tag = `<script src="${script}"></script>`;
+  const src = readFileSync(join(OUT, page), 'utf8');
+  if (src.split(tag).length !== 2) { errors.push(`${page} : la balise ${tag} est attendue une fois, exactement sous cette forme.`); continue; }
+  mapPages[page] = stamp(page, src.replace(tag, `<script src="${ASSET_VERSIONS}"></script>\n  ${tag}`));
+}
 if (errors.length) {
   console.error(errors.map((e) => `✗ ${e}`).join('\n'));
   process.exit(1);
 }
 writeFileSync(join(OUT, 'jeu.html'), html);
+for (const [page, src] of Object.entries(mapPages)) writeFileSync(join(OUT, page), src);
 
 const ko = (f) => Math.round(statSync(join(OUT, f)).size / 1024);
 console.log(`_site/ construit : ${BUNDLE} ${ko(BUNDLE)} Ko, jeu.html ${ko('jeu.html')} Ko, ${count} fichiers suivis d'une empreinte, ${Object.keys(assetVersions).length} fichiers de assets/ aussi.`);

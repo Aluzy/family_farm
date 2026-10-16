@@ -34,6 +34,13 @@
   'use strict';
 
   const T = 16;
+  // l'adresse d'un fichier de assets/, suivie sur le site en ligne de « ?v=<empreinte de son
+  // contenu> » (js/assets-versions.js, écrit par scripts/build-site.mjs) : un fichier modifié
+  // change d'adresse, le téléphone le recharge au lieu de mélanger l'ancien et le nouveau.
+  const v = (file) => {
+    const t = window.FERME_ASSET_VERSIONS, k = file.replace(/^assets\//, '');
+    return t && t[k] ? file + '?v=' + t[k] : file;
+  };
   const MAP = { key: 'ville', file: 'assets/ville.json' };
   const HERO = { key: 'fermiere', file: 'assets/fermiere.png', names: 'assets/fermiere.json', w: 16, h: 32, foot: 30, speed: 48, stride: 4 };
   // Les couches qu'on ne traverse pas, et celle qui passe devant la promeneuse (le feuillage).
@@ -63,15 +70,15 @@
     constructor() { super('ville'); }
 
     preload() {
-      this.load.tilemapTiledJSON(MAP.key, MAP.file);
-      this.load.spritesheet(HERO.key, HERO.file, { frameWidth: HERO.w, frameHeight: HERO.h });
-      this.load.json(HERO.key + '_noms', HERO.names);
-      this.load.spritesheet(CARS.key, CARS.file, { frameWidth: 64, frameHeight: 64 });
-      this.load.json(CARS.key + '_meta', CARS.meta);
+      this.load.tilemapTiledJSON(MAP.key, v(MAP.file));
+      this.load.spritesheet(HERO.key, v(HERO.file), { frameWidth: HERO.w, frameHeight: HERO.h });
+      this.load.json(HERO.key + '_noms', v(HERO.names));
+      this.load.spritesheet(CARS.key, v(CARS.file), { frameWidth: 64, frameHeight: 64 });
+      this.load.json(CARS.key + '_meta', v(CARS.meta));
       // les planches des jeux de tuiles : lues dans la carte une fois chargée
       this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
         const data = this.cache.tilemap.get(MAP.key).data;
-        for (const set of data.tilesets) this.load.image(set.name, 'assets/' + set.image);
+        for (const set of data.tilesets) this.load.image(set.name, v('assets/' + set.image));
         // l'exemplaire du dessus de chaque couche de bâtiment
         for (const name of BATI) {
           const l = data.layers.find((x) => x.name === name);
