@@ -5,6 +5,7 @@
 //   assets/maison_interieur.tmj        → assets/maison_interieur.json  (l'intérieur de la maison)
 //   assets/infra_monde.tmj             → assets/infra_monde.json       (l'infra-monde, infra-monde.html)
 //   assets/ville.tmj                   → assets/ville.json             (la ville, ville-carte.html)
+//   assets/transition.tmj              → assets/transition.json        (entre la ferme et la ville)
 //
 //   node scripts/build-map.mjs
 //
@@ -56,6 +57,13 @@ const MAPS = [
     source: 'assets/ville.tmj',
     target: 'assets/ville.json',
     main: 'ville_asphalte',
+    places: ['depart'],
+  },
+  {
+    // fabriquée par scripts/ville/transition.py ; entre la ferme et la ville (ville-carte.html?carte=transition)
+    source: 'assets/transition.tmj',
+    target: 'assets/transition.json',
+    main: 'transition_sol',
     places: ['depart'],
   },
 ];

@@ -675,6 +675,10 @@ def lac(t):
 # ---------- la découpe et l'écriture ----------
 
 DEPART = (35, 167)          # la tuile où l'on arrive en ville : le trottoir de l'avenue, près de la route de la ferme
+# Le passage vers la carte de transition (et la ferme), au bout ouest de la route de la ferme :
+# son rectangle (en tuiles), le sens de sa flèche, sa cible ; et où l'on arrive en venant de là.
+PASSAGES = [('vers_la_ferme', 0, 168, 1, 178, 'gauche', 'ville-carte.html?carte=transition&arrivee=ville')]
+ARRIVEES = {'ferme': (2.5, 169.6)}
 
 GAREES = []      # les voitures garées : (x, y, demi-largeur, demi-hauteur) de leur emprise au sol
 
@@ -703,7 +707,19 @@ def objets_carte(premier_id):
         garees.append({'id': i, 'name': 'voiture', 'type': 'garee', 'rotation': 0, 'visible': True,
                        'x': x - dx, 'y': y - dy, 'width': 2 * dx, 'height': 2 * dy})
         i += 1
-    return routes, carrefours, garees, batiments, i
+    passages = []
+    for nom, x0, y0, x1, y1, sens, cible in PASSAGES:
+        passages.append({'id': i, 'name': nom, 'type': 'passage', 'rotation': 0, 'visible': True,
+                         'x': x0 * T, 'y': y0 * T, 'width': (x1 - x0) * T, 'height': (y1 - y0) * T,
+                         'properties': [{'name': 'cible', 'type': 'string', 'value': cible},
+                                        {'name': 'sens', 'type': 'string', 'value': sens}]})
+        i += 1
+    arrivees = []
+    for nom, (x, y) in ARRIVEES.items():
+        arrivees.append({'id': i, 'name': nom, 'type': '', 'point': True, 'rotation': 0, 'visible': True,
+                         'x': x * T, 'y': y * T, 'width': 0, 'height': 0})
+        i += 1
+    return routes, carrefours, garees, batiments, passages, arrivees, i
 
 
 def main():
@@ -753,11 +769,11 @@ def main():
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                         'opacity': 1, 'visible': True, 'data': data})
-    routes, carrefours, garees, batis, prochain = objets_carte(2)
+    routes, carrefours, garees, batis, passages, arrivees, prochain = objets_carte(2)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': len(couches) + 6, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': len(couches) + 8, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             # où la promeneuse arrive (ville-carte.html) : sur le trottoir du bas, devant le parc
@@ -778,6 +794,12 @@ def main():
             # promeneuse quand elle est derrière (js/ville-carte.js)
             {'id': len(couches) + 5, 'name': 'batiments', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
              'visible': True, 'x': 0, 'y': 0, 'objects': batis},
+            # les passages vers d'autres cartes (js/ville-carte.js : la flèche bleue) et les
+            # points où l'on arrive en venant d'elles (?arrivee=)
+            {'id': len(couches) + 6, 'name': 'passages', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': passages},
+            {'id': len(couches) + 7, 'name': 'arrivees', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': arrivees},
         ],
     }
     with open(os.path.join(ASSETS, 'ville.tmj'), 'w') as f:

@@ -575,6 +575,21 @@
       return spot;
     }
 
+    // Il arrive d'une autre carte (la carte de transition) : il apparaît en (tx, ty) (la case
+    // libre la plus proche) et flâne là un moment, au lieu de sortir de la maison.
+    function arrive(tx, ty) {
+      const spot = nearestFree(Math.max(0, Math.min(world.w - 1, tx)), Math.max(1, Math.min(world.h - 1, ty)));
+      if (!spot) return null;
+      x = spot.x; y = spot.y; face = 'cote'; flip = true;
+      appear();
+      job = null;
+      jobs = [wait(rand(3, 5))];
+      roamAt = spot;
+      idleAge = 0;
+      draw(`idle_${face}_0`);
+      return spot;
+    }
+
     // « Dormir » : il laisse tout, marche (vite) jusqu'à la porte de la maison et entre ; `done`
     // quand il est dedans. Déjà dans la maison (ou pas sur la carte) : `done` tout de suite.
     let arriving = false;            // il vient d'entrer : il apparaîtra à l'entrée de l'intérieur
@@ -1110,6 +1125,8 @@
       // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
       fetch: (id) => fetch(id, true),
       goTo,
+      // Il arrive d'une autre carte, en (x, y).
+      arrive,
       // « Dormir » : il rentre dans la maison (done : il est dedans).
       goHome,
       // Où la vue de l'intérieur doit être (x), pendant qu'il va se coucher ; null sinon.

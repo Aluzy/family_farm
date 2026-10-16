@@ -9,8 +9,8 @@
  "tilewidth": 16,
  "tileheight": 16,
  "infinite": false,
- "nextlayerid": 24,
- "nextobjectid": 194,
+ "nextlayerid": 26,
+ "nextobjectid": 196,
  "tilesets": [
   {
    "firstgid": 1,
@@ -666121,6 +666121,65 @@
        "value": 3264
       }
      ]
+    }
+   ]
+  },
+  {
+   "id": 24,
+   "name": "passages",
+   "type": "objectgroup",
+   "draworder": "topdown",
+   "opacity": 1,
+   "visible": true,
+   "x": 0,
+   "y": 0,
+   "objects": [
+    {
+     "id": 194,
+     "name": "vers_la_ferme",
+     "type": "passage",
+     "rotation": 0,
+     "visible": true,
+     "x": 0,
+     "y": 2688,
+     "width": 16,
+     "height": 160,
+     "properties": [
+      {
+       "name": "cible",
+       "type": "string",
+       "value": "ville-carte.html?carte=transition&arrivee=ville"
+      },
+      {
+       "name": "sens",
+       "type": "string",
+       "value": "gauche"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": 25,
+   "name": "arrivees",
+   "type": "objectgroup",
+   "draworder": "topdown",
+   "opacity": 1,
+   "visible": true,
+   "x": 0,
+   "y": 0,
+   "objects": [
+    {
+     "id": 195,
+     "name": "ferme",
+     "type": "",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 40.0,
+     "y": 2713.6,
+     "width": 0,
+     "height": 0
     }
    ]
   }
