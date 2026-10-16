@@ -1,7 +1,7 @@
 # Les objets de la ville, dessinés une fois puis posés sur les toiles : fenêtres et portes,
-# voitures, fontaines (l'eau de la ferme, animée), bancs, panneau, tonneau, réverbère, plaque
+# fontaines (l'eau de la ferme, animée), bancs, panneau, tonneau, réverbère, plaque
 # d'égout, climatiseur, dalles et cailloux. Les arbres, buissons et fleurs sont ceux de la
-# ferme (scripts/ville/ferme.py).
+# ferme (scripts/ville/ferme.py), les voitures dans scripts/ville/voitures.py.
 import math
 
 import ferme
@@ -111,18 +111,23 @@ def entree():
 # ---------- le métal ----------
 
 def plaque_egout():
+    """2 × 2 tuiles : une plaque ronde vue de 3/4, donc une ellipse (écrasée de 0,7 comme le
+    bassin des fontaines et la place), sa grille en losanges écrasés elle aussi."""
     im = image(32, 32)
+    cx, cy, rx, ry = 15.5, 15.5, 14.5, 10.2
     for y in range(32):
         for x in range(32):
-            r = math.hypot(x - 15.5, y - 15.5)
-            if r > 14:
+            dx, dy = (x - cx) / rx, (y - cy) / ry
+            r = math.hypot(dx, dy)
+            if r > 1:
                 continue
-            if r > 12.5:
-                c = (46, 40, 42)
-            elif r > 11:
-                c = (96, 90, 92) if (x + y) < 30 else (70, 64, 66)
+            if r > 0.9:
+                c = (46, 40, 42)                                   # le joint dans l'asphalte
+            elif r > 0.8:
+                c = (104, 98, 100) if dy < -0.15 or dx < -0.5 else (70, 64, 66)   # le cadre
             else:
-                c = (62, 58, 62) if (x % 4 == 1 or y % 4 == 1) else (84, 80, 84)
+                gx, gy = x - cx, (y - cy) / 0.7
+                c = (62, 58, 62) if round(gx + gy) % 4 == 0 or round(gx - gy) % 4 == 0 else (84, 80, 84)
                 if hasard(x, y, 8) > 0.9:
                     c = teinte(c, 1.1)
             im.putpixel((x, y), rgba(c))
@@ -161,65 +166,6 @@ def reverbere():
     d.rectangle((5, 6, 10, 10), fill=rgba((250, 228, 150)))
     d.rectangle((6, 1, 9, 3), fill=rgba((52, 52, 60)))
     return contour(im)
-
-
-# ---------- les voitures ----------
-
-VOITURES = {
-    'rouge': (198, 60, 54),
-    'bleue': (66, 114, 198),
-    'blanche': (226, 228, 232),
-    'marron': (142, 94, 62),
-    'bordeaux': (128, 60, 72),
-}
-
-
-def voiture(couleur, horizontale=False):
-    """Une voiture vue de dessus, l'avant en bas (2 × 4 tuiles) ; horizontale : l'avant à
-    droite (4 × 2 tuiles)."""
-    c = VOITURES[couleur]
-    im = image(32, 64)
-    d = dessin(im)
-    noir = (34, 32, 36)
-    # les roues qui dépassent
-    for y0 in (10, 44):
-        d.rectangle((2, y0, 29, y0 + 8), fill=rgba(noir))
-    # la caisse
-    d.rounded_rectangle((3, 1, 28, 62), radius=6, fill=rgba(c))
-    for y in range(1, 63):
-        for x in range(3, 29):
-            p = im.getpixel((x, y))
-            if p[3] and p[:3] == c:
-                if x <= 4:
-                    im.putpixel((x, y), rgba(teinte(c, 1.12)))
-                elif x >= 26:
-                    im.putpixel((x, y), rgba(teinte(c, 0.82)))
-    verre = (56, 66, 82)
-    verre_c = (140, 160, 182)
-    # lunette arrière, toit, pare-brise
-    d.rounded_rectangle((6, 9, 25, 15), radius=2, fill=rgba(verre))
-    d.rectangle((8, 10, 11, 10), fill=rgba(verre_c))
-    d.rounded_rectangle((6, 16, 25, 35), radius=2, fill=rgba(teinte(c, 0.9)))
-    d.rectangle((7, 17, 24, 17), fill=rgba(teinte(c, 1.1)))
-    d.rounded_rectangle((5, 36, 26, 44), radius=3, fill=rgba(verre))
-    d.line((8, 43, 14, 37), fill=rgba(verre_c))
-    d.line((10, 43, 16, 37), fill=rgba(verre_c))
-    # le capot, ses lignes
-    d.line((9, 47, 9, 57), fill=rgba(teinte(c, 0.86)))
-    d.line((22, 47, 22, 57), fill=rgba(teinte(c, 0.86)))
-    # rétroviseurs
-    d.rectangle((1, 37, 3, 39), fill=rgba(teinte(c, 0.8)))
-    d.rectangle((28, 37, 30, 39), fill=rgba(teinte(c, 0.8)))
-    # phares et feux
-    d.rectangle((5, 59, 9, 60), fill=rgba((250, 236, 170)))
-    d.rectangle((22, 59, 26, 60), fill=rgba((250, 236, 170)))
-    d.rectangle((5, 2, 8, 3), fill=rgba((214, 40, 40)))
-    d.rectangle((23, 2, 26, 3), fill=rgba((214, 40, 40)))
-    d.rectangle((8, 62, 23, 62), fill=rgba((150, 150, 156)))
-    im = contour(im)
-    if horizontale:
-        im = im.transpose(2)   # ROTATE_90 (sens inverse des aiguilles) : l'avant vient à droite
-    return im
 
 
 # ---------- la pierre ----------
