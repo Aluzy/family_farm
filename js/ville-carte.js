@@ -54,14 +54,14 @@
   // La circulation : vitesses en px au sol par seconde, distances au sol.
   const CARS = {
     key: 'voitures', file: 'assets/ville_voitures.png', meta: 'assets/ville_voitures.json',
-    max: 6, speed: 46, accel: 40, decel: 90,
+    max: 16, speed: 46, accel: 40, decel: 90,
     gap: 70,          // d'un centre à l'autre, derrière une voiture (une longueur et un peu plus)
     lane: 16,         // l'écart de côté au-delà duquel ce n'est plus la même file
     hero: 44,         // la distance où elles s'arrêtent devant la promeneuse
     corner: 28,       // le rayon des virages
     cross: 22,        // deux trajets se croisent dans un carrefour s'ils passent à moins de ça
     stop: 34,         // on attend un carrefour le centre à ça de son bord (le nez dehors)
-    spawn: [1800, 5200],
+    spawn: [900, 2600],
   };
   const KY = 0.7;
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -121,7 +121,9 @@
     }
 
     create() {
-      const map = this.make.tilemap({ key: MAP.key });
+      // insertNull : une case vide reste vide (sans objet Tile) ; la grande ville en compte
+      // des centaines de milliers dans ses couches clairsemées
+      const map = this.make.tilemap({ key: MAP.key, insertNull: true });
       this.map = map;
       const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
       this.layers = {};
@@ -228,7 +230,13 @@
         return { name: o.name, x0: o.x - 8, x1: o.x + o.width + 8, top: p ? p.value : o.y, base: o.y + o.height };
       });
       this.covered = [];
-      this.owner = (x, y) => this.buildings.find((b) => x >= b.x0 && x < b.x1 && y >= b.top && y < b.base) || null;
+      // la tuile appartient au bâtiment le plus en avant (le plus bas) qui la recouvre : le
+      // toit d'un bâtiment de devant passe sur le pied de celui de derrière
+      this.owner = (x, y) => {
+        let best = null;
+        for (const b of this.buildings) if (x >= b.x0 && x < b.x1 && y >= b.top && y < b.base && (!best || b.base > best.base)) best = b;
+        return best;
+      };
       for (const name of BATI) {
         const up = this.layers[name + '_devant'], down = this.layers[name];
         if (!up) continue;
@@ -306,14 +314,18 @@
       this.conflict = this.crossings.map((c, k) => this.routes.map((a) => this.routes.map((b) => {
         const sa = a.spans[k], sb = b.spans[k];
         if (!sa || !sb) return false;
-        for (const p of sa.pts) for (const q of sb.pts) if (Math.hypot(p.x - q.x, (p.y - q.y) / KY) < CARS.cross) return true;
+        // (un point sur trois : ils sont à ~2 px les uns des autres)
+        for (let i = 0; i < sa.pts.length; i += 3) {
+          const p = sa.pts[i];
+          for (let j = 0; j < sb.pts.length; j += 3) if (Math.hypot(p.x - sb.pts[j].x, (p.y - sb.pts[j].y) / KY) < CARS.cross) return true;
+        }
         return false;
       })));
       this.routes.forEach((r, i) => { r.index = i; });
       this.nextSpawn = 600;
       if (reduced() || !this.routes.length || !this.textures.exists(CARS.key)) return;
       // quelques voitures déjà en route, hors des carrefours
-      for (let n = 0; n < 3; n++) {
+      for (let n = 0; n < 10; n++) {
         const r = Phaser.Utils.Array.GetRandom(this.routes);
         const s = 120 + Math.random() * (r.length - 240);
         if (r.spans.some((sp) => sp && s > sp.enter - 40 && s < sp.exit + 10)) continue;
@@ -431,8 +443,8 @@
       const prev = new Map([[sy * W + sx, -1]]);
       const queue = [sy * W + sx];
       const goal = gy * W + gx;
-      while (queue.length && !prev.has(goal)) {
-        const c = queue.shift(), cx = c % W, cy = (c - cx) / W;
+      for (let head = 0; head < queue.length && !prev.has(goal); head++) {
+        const c = queue[head], cx = c % W, cy = (c - cx) / W;
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
           const nx = cx + dx, ny = cy + dy, n = ny * W + nx;
           if (nx < 0 || ny < 0 || nx >= W || ny >= H || prev.has(n) || !this.canWalk(nx, ny)) continue;

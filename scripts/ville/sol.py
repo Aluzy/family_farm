@@ -82,9 +82,19 @@ def place(x, y, v=0):
     return c
 
 
-MOTIFS = {'asphalte': asphalte, 'trottoir': trottoir, 'herbe': herbe, 'place': place}
-VARIANTES = {'asphalte': 4, 'trottoir': 2, 'herbe': 16, 'place': 2}
-COULEURS = {'asphalte': '#665951', 'trottoir': '#94949c', 'herbe': '#86a534', 'place': '#a2a0a4'}
+SABLE = (220, 196, 138)
+SABLE_S = (196, 170, 112)
+SABLE_C = (238, 218, 166)
+
+
+def sable(x, y, v=0):
+    r = hasard(x, y, 41 + v)
+    return SABLE_S if r < 0.12 else SABLE_C if r > 0.93 else SABLE
+
+
+MOTIFS = {'asphalte': asphalte, 'trottoir': trottoir, 'herbe': herbe, 'place': place, 'sable': sable}
+VARIANTES = {'asphalte': 4, 'trottoir': 2, 'herbe': 16, 'place': 2, 'sable': 1}
+COULEURS = {'asphalte': '#665951', 'trottoir': '#94949c', 'herbe': '#86a534', 'place': '#a2a0a4', 'sable': '#dcc48a'}
 
 
 def plein(matiere, v=0):
@@ -142,6 +152,9 @@ PASSAGES = {
     ('trottoir', 'herbe'): 'herbe',
     ('asphalte', 'herbe'): 'herbe_bordure',
     ('herbe', 'place'): 'place',
+    ('trottoir', 'place'): 'joint',
+    ('asphalte', 'place'): 'bordure',
+    ('herbe', 'sable'): 'bois',
 }
 
 
@@ -162,10 +175,14 @@ def passage(a, b, n, v=0):
                     c = {1: BORD_K, 2: BORD_C, 3: BORD, 4: HERBE_K}.get(d, c)
                 elif style == 'place':
                     c = {1: teinte(PLACE_J, 0.88), 2: PLACE_C}.get(d, c)
+                elif style == 'joint':
+                    c = {1: PLACE_J, 2: PLACE_C}.get(d, c)
+                elif style == 'bois':
+                    c = {1: (78, 50, 36), 2: (152, 104, 68), 3: (122, 80, 52)}.get(d, c)
             else:
                 c = fa(x, y, v)
                 # l'ombre portée du bord (la lumière vient du haut à gauche)
-                if style != 'place' and (dedans_b(x, y - 1, n) or dedans_b(x - 1, y, n)):
+                if style not in ('place', 'joint') and (dedans_b(x, y - 1, n) or dedans_b(x - 1, y, n)):
                     c = teinte(c, 0.78)
                 elif style == 'place' and distance(x, y, n, True) == 1:
                     c = HERBE_S

@@ -67,34 +67,52 @@ TUILE_J = (104, 60, 44)
 OMBRAGE = {'bas': 1.0, 'haut': 0.8, 'gauche': 0.86, 'droite': 1.0}
 
 
-def tuile(x, y, sens):
-    """Les rangées de tuiles d'un pan dont l'égout est du côté `sens`."""
+# les couvertures : (tuile, arête claire, rang sombre, joint)
+COUVERTURES = {
+    'tuile': (TUILE, TUILE_C, TUILE_S, TUILE_J),
+    'tuile_rouge': ((156, 66, 52), (190, 94, 72), (98, 40, 34), (120, 50, 42)),
+    'ardoise': ((82, 88, 106), (112, 120, 140), (50, 54, 68), (64, 70, 86)),
+    'tole_grise': ((130, 136, 146), (168, 174, 182), (82, 86, 96), (104, 110, 120)),
+    'tole_bleue': ((82, 110, 148), (118, 148, 184), (50, 68, 96), (66, 88, 120)),
+}
+
+
+def tuile(x, y, sens, couv='tuile'):
+    """Les rangées de tuiles d'un pan dont l'égout est du côté `sens` ; une tôle : des ondes
+    qui descendent le pan."""
+    T_, C_, S_, J_ = COUVERTURES[couv]
     a, b = (x, y) if sens in ('bas', 'haut') else (y, x)
+    if couv.startswith('tole'):
+        o = a % 6
+        c = S_ if o == 0 else C_ if o == 1 else mel(T_, C_, 0.35) if o == 2 else T_
+        return teinte(c, OMBRAGE[sens])
     rang = b // 8
     ta, tb = (a + 4 * (rang % 2)) % 8, b % 8
     if sens in ('haut', 'gauche'):
         tb = 7 - tb
     if tb <= 1:
-        c = TUILE_S
+        c = S_
     elif tb == 7:
-        c = TUILE_C
+        c = C_
     elif ta == 0:
-        c = TUILE_J
+        c = J_
     else:
-        c = mel(TUILE, TUILE_C, (tb - 2) / 10)
+        c = mel(T_, C_, (tb - 2) / 10)
     return teinte(c, OMBRAGE[sens])
 
 
-def faitage(t, x0, y0, x1, y1):
+def faitage(t, x0, y0, x1, y1, couv='tuile'):
     """Le faîtage : une ligne de tuiles rondes (horizontale ou verticale, en px)."""
+    T_, C_, S_, J_ = COUVERTURES[couv]
+    rangs = (K, C_, teinte(C_, 1.08), T_, S_, K)
     if y0 == y1:
         for x in range(x0, x1):
-            for r, c in zip(range(-3, 3), (K, TUILE_C, teinte(TUILE_C, 1.08), TUILE, TUILE_S, K)):
-                t.put(x, y0 + r, c if (x % 8) or r in (-3, 2) else TUILE_S)
+            for r, c in zip(range(-3, 3), rangs):
+                t.put(x, y0 + r, c if (x % 8) or r in (-3, 2) else S_)
     else:
         for y in range(y0, y1):
-            for r, c in zip(range(-3, 3), (K, TUILE_C, teinte(TUILE_C, 1.08), TUILE, TUILE_S, K)):
-                t.put(x0 + r, y, c if (y % 8) or r in (-3, 2) else TUILE_S)
+            for r, c in zip(range(-3, 3), rangs):
+                t.put(x0 + r, y, c if (y % 8) or r in (-3, 2) else S_)
 
 
 def toit_plat(t, x0, y0, x1, y1, pan_coupe=32):

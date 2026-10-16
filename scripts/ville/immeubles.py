@@ -113,7 +113,7 @@ def porte(t, x, sol):
 
 # ---------- les toits ----------
 
-def toit_pans(t, X0, X1, egout, prof, debord=4):
+def toit_pans(t, X0, X1, egout, prof, debord=4, couv='tuile'):
     """Deux pans, faîtage parallèle à la façade. egout : le haut de la façade (px) ; prof :
     la profondeur du bâtiment (px). Le toit déborde de `debord` px sur les côtés."""
     devant = round(prof * DEVANT)
@@ -123,22 +123,22 @@ def toit_pans(t, X0, X1, egout, prof, debord=4):
 
     def f(x, y):
         if y >= faite:
-            c = B.tuile(x, y, 'bas')
+            c = B.tuile(x, y, 'bas', couv)
         else:
-            c = teinte(B.tuile(x, y, 'haut'), 1.12)
+            c = teinte(B.tuile(x, y, 'haut', couv), 1.12)
         if x in (x0, x1 - 1) or y == haut:
             return K
         if x in (x0 + 1, x1 - 2):
             return teinte(c, 0.8)
         return c
     t.remplit(x0, haut, x1, egout + 2, f)
-    B.faitage(t, x0 + 1, faite, x1 - 1, faite)
+    B.faitage(t, x0 + 1, faite, x1 - 1, faite, couv)
     for x in range(x0, x1):
         t.put(x, egout + 1, K)
-        t.put(x, egout, B.TUILE_S)
+        t.put(x, egout, B.COUVERTURES[couv][2])
 
 
-def toit_croupe(t, X0, X1, egout, prof, debord=4, gauche=True, droite=True):
+def toit_croupe(t, X0, X1, egout, prof, debord=4, gauche=True, droite=True, couv='tuile'):
     """Toit à croupe : le pan de devant en trapèze, les croupes en triangle aux deux bouts
     (gauche / droite : False si le bâtiment sort de la carte de ce côté)."""
     devant = round(prof * DEVANT)
@@ -164,24 +164,24 @@ def toit_croupe(t, X0, X1, egout, prof, debord=4, gauche=True, droite=True):
 
     def f(x, y):
         z = zone(x, y)
-        c = B.tuile(x, y, z)
+        c = B.tuile(x, y, z, couv)
         if z == 'haut':
             c = teinte(c, 1.12)
         elif z == 'gauche':
             c = teinte(c, 1.18)
         # les arêtiers : là où le pan change
         if any(zone(x + dx, y + dy) != z for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-            return B.TUILE_C if z in ('gauche', 'haut') else K
+            return B.COUVERTURES[couv][1] if z in ('gauche', 'haut') else K
         if (gauche and x == x0) or (droite and x == x1 - 1) or y == haut:
             return K
         return c
     t.remplit(x0, haut, x1, egout + 2, f)
     a = x0 + (rentre if gauche else 0)
     b = x1 - (rentre if droite else 0)
-    B.faitage(t, a, faite, b, faite)
+    B.faitage(t, a, faite, b, faite, couv)
     for x in range(x0, x1):
         t.put(x, egout + 1, K)
-        t.put(x, egout, B.TUILE_S)
+        t.put(x, egout, B.COUVERTURES[couv][2])
 
 
 def toit_plat(t, X0, X1, egout, prof):
@@ -189,7 +189,7 @@ def toit_plat(t, X0, X1, egout, prof):
     B.toit_plat(t, X0, egout - prof, X1, egout + 1, pan_coupe=0)
 
 
-def pignon(t_murs, t_toit, X0, X1, egout, prof, matiere, debord=4):
+def pignon(t_murs, t_toit, X0, X1, egout, prof, matiere, debord=4, couv='tuile', oculus=True):
     """Le faîtage part vers l'arrière : sur la façade, le mur pignon en triangle ; au-dessus,
     les deux pans vus de 3/4 (celui de gauche dans la lumière), le faîtage qui s'enfonce."""
     xm = (X0 + X1) / 2
@@ -208,7 +208,7 @@ def pignon(t_murs, t_toit, X0, X1, egout, prof, matiere, debord=4):
     t_murs.remplit(X0, egout - G, X1, egout, mur)
     # un oculus au milieu du pignon
     oy = round(egout - G * 0.45)
-    for y in range(oy - 5, oy + 5):
+    for y in (range(oy - 5, oy + 5) if oculus and G >= 18 else ()):
         for x in range(round(xm) - 5, round(xm) + 5):
             d = math.hypot(x + 0.5 - xm, y + 0.5 - oy)
             if d < 4.6:
@@ -221,7 +221,7 @@ def pignon(t_murs, t_toit, X0, X1, egout, prof, matiere, debord=4):
         if not (bas - prof <= y <= bas + 2):
             return None
         sens = 'gauche' if x < xm else 'droite'
-        c = B.tuile(x, y, sens)
+        c = B.tuile(x, y, sens, couv)
         c = teinte(c, 1.16) if sens == 'gauche' else teinte(c, 0.9)
         if y >= bas - 1:
             return K if y >= bas + 1 else B.PLANCHE[2] if y == bas else c
@@ -232,7 +232,7 @@ def pignon(t_murs, t_toit, X0, X1, egout, prof, matiere, debord=4):
         return c
     t_toit.remplit(x0, round(egout - G - prof), x1, egout + 3, pan)
     xr = round(xm)
-    B.faitage(t_toit, xr, round(egout - G - prof) + 1, xr, round(egout - G) - 2)
+    B.faitage(t_toit, xr, round(egout - G - prof) + 1, xr, round(egout - G) - 2, couv)
 
 
 def dome(t, cx, cy, R):
@@ -385,18 +385,21 @@ class Batiment:
         t = self.toit
         if t is None:                     # (coupé par le haut de la carte)
             self.haut = egout
+        couv = o.get('couv', 'tuile')
+        if t is None:
+            pass
         elif t == 'pans':
-            toit_pans(c['toits'], X0, X1, egout, P)
+            toit_pans(c['toits'], X0, X1, egout, P, couv=couv)
             self.haut = egout - P
         elif t == 'croupe':
-            toit_croupe(c['toits'], X0, X1, egout, P, gauche=g, droite=d)
+            toit_croupe(c['toits'], X0, X1, egout, P, gauche=g, droite=d, couv=couv)
             self.haut = egout - P
         elif t == 'plat':
             toit_plat(c['toits_plat'], X0, X1, egout, P)
             self.haut = egout - P
         elif t == 'pignon':
             G = round((X1 - X0) / 2 * 0.62)
-            pignon(c['murs'], c['toits'], X0, X1, egout, P, self.matiere)
+            pignon(c[toile], c['toits'], X0, X1, egout, P, self.matiere, couv=couv)
             self.haut = egout - G - P
         elif t == 'planches':
             # un appentis : un seul pan de planches, vu de 3/4

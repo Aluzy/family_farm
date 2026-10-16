@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 ASSETS = os.path.join(ROOT, 'assets')
 T = 16
-W, H = 56, 73                 # la carte, en tuiles (l'image de référence : 896 × 1168 px)
+W, H = 168, 219               # la carte, en tuiles (la maquette de la ville en photo, à 3 px de carte pour 1 px de photo)
 K = (40, 31, 31)              # le contour
 
 
