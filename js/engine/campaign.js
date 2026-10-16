@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, isOwned, starterOf } from './devices.js';
 import { earn } from './compta.js';
-import { addItem, lotsOf } from './inventory.js';
+import { addItem, countItem, lotsOf } from './inventory.js';
 import { fridgeLots } from './fridge.js';
 import { planMeal } from './family.js';
 import { averageHappiness } from './ville.js';
@@ -50,6 +50,7 @@ export function newCampaignCounters() {
     labours: 0, // FLU-42 : tuiles labourées au total
     semis: 0, // semis faits au total (toutes cultures)
     arroseesMax: 0, // record de parcelles arrosées le même jour
+    objets: {}, // version 1.22 : record de chaque objet suivi par un objectif « objet » { item: qté }
   };
 }
 
@@ -195,6 +196,25 @@ export function noteRecipeDone(state, recette, qty) {
   if (!exclus.includes(recette) && !c.compteurs.plats.includes(recette)) c.compteurs.plats.push(recette);
 }
 
+// Version 1.22 : les objets suivis par un objectif « objet » (minerai de fer, lingot de
+// fer…), de tous les chapitres.
+function trackedItems() {
+  return [...new Set(DATA.CHAPITRES.liste.flatMap((ch) => ch.objectifs.filter((o) => o.type === 'objet').map((o) => o.item)))];
+}
+
+// Le record de chacun de ces objets dans l'inventaire : un minerai fondu ou un lingot
+// dépensé dans l'Arbre des technologies reste compté. Appelée par updateChapters (à
+// chaque pas d'horloge), dès le début de la partie : ce qu'on a eu avant le chapitre compte.
+export function noteItemRecords(state) {
+  const c = state.campagne;
+  if (!c) return;
+  for (const item of trackedItems()) {
+    const n = countItem(state, item);
+    if (!c.compteurs.objets || typeof c.compteurs.objets !== 'object') c.compteurs.objets = {};
+    if (n > (c.compteurs.objets[item] || 0)) c.compteurs.objets[item] = n;
+  }
+}
+
 // Valeur actuelle d'un objectif.
 export function objectiveValue(state, obj) {
   const k = state.campagne.compteurs;
@@ -224,6 +244,8 @@ export function objectiveValue(state, obj) {
     case 'labours': return k.labours || 0;
     case 'semis': return k.semis || 0;
     case 'arrosees': return k.arroseesMax || 0;
+    // version 1.22 : le plus d'exemplaires d'un objet (`item`) eus en même temps
+    case 'objet': return Math.max(countItem(state, obj.item), (k.objets && k.objets[obj.item]) || 0);
     default: return 0;
   }
 }
@@ -259,6 +281,7 @@ export function completeChapter(state) {
 export function updateChapters(state) {
   const c = state.campagne;
   if (!c) return 0;
+  noteItemRecords(state);
   let done = 0;
   while (!c.fini && done < chapterCount() && chapterProgress(state).fait) {
     completeChapter(state);
