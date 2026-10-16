@@ -7,7 +7,16 @@
 #
 # Les passages (couche d'objets « passages ») : un rectangle au bord de la carte, sa cible
 # (la page et le point d'arrivée) et le sens de sa flèche bleue (js/ville-carte.js) ; les
-# points d'arrivée (couche « arrivees »), un par carte d'où l'on vient.
+# points d'arrivée (couche « arrivees »), un par carte d'où l'on vient. Devant la porte de
+# chaque maison, un passage mène à son intérieur (?carte=interieur&maison=<nom>).
+#
+# Comme à la ferme : les barrières de bois de la ferme (scripts/carte/barrieres.py) ; l'herbe
+# haute qui penche quand on la traverse (couche d'objets « herbe_haute » : un point par touffe,
+# type = sa rangée dans assets/herbe_haute.png) ; les arbres et les pins (couche « arbres » : le
+# milieu de leur pied, type arbre ou pin ; leurs images : assets/arbre_clair_sp.png et
+# pin_clair_sp.png) qu'on coupe à la hache, et les rochers et cailloux (couche « rochers » : le
+# milieu de leur pied, propriété « image » : la case de assets/transition_objets.png) qu'on
+# casse à la pioche. Ils ne sont pas dans les tuiles : le jeu les dessine (et les enlève).
 #
 #   python3 scripts/ville/transition.py            écrit assets/transition.tmj et ses planches
 #   python3 scripts/ville/transition.py --apercu   écrit aussi apercu_transition.png
@@ -22,6 +31,8 @@ import commun  # noqa: E402
 commun.W, commun.H = 48, 36          # (avant tout le reste : les toiles prennent cette taille)
 W, H, T = commun.W, commun.H, commun.T
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'carte'))
+import barrieres as BR  # noqa: E402
 import batiments as B  # noqa: E402
 import equipements as E  # noqa: E402
 import ferme as F  # noqa: E402
@@ -48,6 +59,17 @@ COUCHES = [
 ROUTE = (28, 15, 21)           # la chaussée : de la colonne 28 au bord est, rangées 15 à 21 (coins)
 TROTTOIRS = (30, 13, 23)       # les trottoirs, au-dessus et au-dessous, à partir de la colonne 30
 MARE = (9 * T, 28 * T, 4 * T, 2.4 * T)
+# Les barrières de la ferme : (de la colonne, à la colonne, rangée), en tuiles.
+BARRIERES = [(3, 9, 15), (12, 20, 15), (23, 25, 15)]
+# Les rochers et les cailloux : (genre, milieu du pied en tuiles) ; le genre est une case de
+# assets/transition_objets.png (ROCHERS_IMAGES).
+ROCHERS_PLAN = [
+    ('rocher_a', 6, 23.6), ('rocher_c', 19.5, 23.2), ('caillou_0', 14.5, 22.5), ('rocher_b', 24, 33),
+    ('rocher_a', 13, 31.6), ('caillou_1', 3.5, 26.5), ('rocher_c', 40, 28), ('caillou_0', 44.5, 33.5),
+    ('rocher_a', 45, 8), ('rocher_b', 34, 5), ('caillou_1', 30.5, 9.6), ('rocher_c', 14, 6),
+    ('caillou_0', 2.5, 7.5), ('rocher_b', 31, 31),
+]
+ARBRES, ROCHERS, HERBES = [], [], []     # remplis par dessine : (genre, x, y) en px ; (x, y, rangée)
 
 
 def chemin(x):
@@ -182,9 +204,7 @@ def dessine(c):
     mob = c['mobilier']
     puits = Image.open(os.path.join(ASSETS, 'puits.png')).convert('RGBA').crop((0, 0, 34, 40))
     mob.colle(puits, 25 * T, 10 * T)
-    B.cloture_h(mob, 3 * T, 10 * T, 15 * T + 12)
-    B.cloture_h(mob, 12 * T, 21 * T, 15 * T + 12)
-    B.cloture_h(mob, 23 * T, 26 * T, 15 * T + 12)
+    barrieres(mob, c['ombres'])
     mob.colle(O.tonneau(), 15 * T, 12 * T)
     mob.colle(poteau_ville(), 26 * T, 13 * T)
     mob.colle(O.banc(), 14 * T, 25 * T)
@@ -217,6 +237,10 @@ def dessine(c):
     # les fleurs et herbes hautes, sur l'herbe
     g = coins()
     f = c['fleurs']
+    pris = {(int(x + dx), int(y - 0.5)) for _, x, y in ROCHERS_PLAN for dx in (-1, 0, 1)}
+    # (pas d'herbe haute sur une maison, le puits, une barrière : ni sur leur case, ni juste au-dessus)
+    pleins = [c[n].images[0] for n in ('murs', 'mobilier', 'equipements')]
+    occupe = lambda x, y: any(im.crop((x * T, y * T, x * T + T, y * T + 2 * T)).getbbox() for im in pleins)
     for y in range(H):
         for x in range(W):
             if any(g[y + j][x + i] != 'herbe' for i in (0, 1) for j in (0, 1)):
@@ -226,11 +250,13 @@ def dessine(c):
             r = hasard(x, y, 51)
             if r > 0.95:
                 f.colle(F.fleurs(int(hasard(x, y, 53) * 40)), x * T, y * T)
-            elif r > 0.88:
-                f.colle(F.herbe_haute(int(hasard(x, y, 52) * 16)), x * T, y * T)
-    # les arbres : des bois au nord et au sud, rien sur le chemin, la route ou devant les maisons
-    veg, ombres = c['vegetation'], c['ombres']
-    ombre = F.ombre()
+            elif r > 0.89 and (x, y) not in pris and not occupe(x, y):
+                # une touffe d'herbe haute (le jeu la dessine) : son pied un peu au hasard dans la case
+                HERBES.append((x * T + 4 + int(hasard(x, y, 54) * 9), y * T + 10 + int(hasard(x, y, 55) * 6), int(hasard(x, y, 52) * 3)))
+    # les arbres : des bois au nord et au sud, rien sur le chemin, la route, devant les maisons
+    # ni sur les rochers ; les arbres et les pins sont des objets (le jeu les dessine, on les
+    # coupe), les buissons restent dans les tuiles
+    veg = c['vegetation']
     plantes = []
     for j, y in enumerate(range(4, H + 2, 4)):
         for i, x in enumerate(range(2, W, 4)):
@@ -242,25 +268,68 @@ def dessine(c):
                 continue
             if abs(px - cx / T) < rx / T + 2.5 and abs(py - cy / T) < ry / T + 3:
                 continue
+            if any(abs(px - a) < 2.2 and abs(py - b) < 1.6 for _, a, b in ROCHERS_PLAN):
+                continue
             r = hasard(i, j, 84)
-            plantes.append((px, py, F.pin() if r < 0.25 else F.buisson(r < 0.35) if r < 0.4 else F.arbre()))
-    plantes += [(4, 11, F.arbre()), (27.5, 9.5, F.buisson(True)), (16, 26, F.arbre()), (24, 27, F.pin())]
-    for x, y, im in sorted(plantes, key=lambda p: p[1]):
+            plantes.append((px, py, 'pin' if r < 0.25 else 'buisson_large' if r < 0.35 else 'buisson' if r < 0.4 else 'arbre'))
+    plantes += [(4, 11, 'arbre'), (27.5, 9.5, 'buisson_large'), (16, 26, 'arbre'), (24, 27, 'pin')]
+    images = {'arbre': F.arbre(), 'pin': F.pin(), 'buisson': F.buisson(), 'buisson_large': F.buisson(True)}
+    for x, y, genre in sorted(plantes, key=lambda p: p[1]):
+        im = images[genre]
         w, h = im.size
         x0, y0 = round(x * T - w / 2) // T * T, round(y * T - h) // T * T
-        if h > 32:
-            ombres.colle(ombre, x0 + w // 2 - 16, y0 + h - 8)
-        veg.colle(im, x0, y0)
+        if genre in ('arbre', 'pin'):
+            ARBRES.append((genre, x0 + w // 2, y0 + h))
+        else:
+            veg.colle(im, x0, y0)
+    # les rochers et les cailloux
+    for genre, x, y in ROCHERS_PLAN:
+        ROCHERS.append((genre, round(x * T), round(y * T)))
+
+
+def barrieres(mob, ombres):
+    """Les barrières de bois de la ferme, de part et d'autre des allées des maisons, et leur
+    ombre portée (comme à la ferme : décalée de 3 px vers le bas à droite, à moitié noire)."""
+    P = BR.pieces()
+    img = image(W * T, H * T)
+    for x0, x1, y in BARRIERES:
+        n = round((x1 + 1 - x0) * T / BR.PAS) - 1
+        BR.devant(img, P, x0 * T + 3, y * T + 14, n)
+    a = img.getchannel('A').point(lambda v: 128 if v else 0)
+    ombre = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    ombre.putalpha(a)
+    ombres.colle(ombre, 3, 3)
+    mob.colle(img, 0, 0)
 
 
 # ---------- les passages et les arrivées ----------
 
 PASSAGES = [
-    # (nom, rectangle en tuiles x0, y0, x1, y1, sens de la flèche, cible)
+    # (nom, rectangle en tuiles x0, y0, x1, y1, sens de la flèche, cible[, distance où la flèche paraît])
     ('vers_la_ferme', 0, 16, 1, 20, 'gauche', 'jeu.html?arrivee=est'),
     ('vers_la_ville', W - 1, 14, W, 22, 'droite', 'ville-carte.html?carte=ville&arrivee=ferme'),
+    # les portes des maisons (au bout de leur allée)
+    ('maison_rouge', 9.75, 13.5, 11.75, 15.5, 'haut', 'ville-carte.html?carte=interieur&maison=maison_rouge', 14),
+    ('maison_ardoise', 20.75, 13.5, 22.75, 15.5, 'haut', 'ville-carte.html?carte=interieur&maison=maison_ardoise', 14),
 ]
-ARRIVEES = {'ferme': (2.5, 18.9), 'ville': (45.5, 14.6)}
+ARRIVEES = {'ferme': (2.5, 18.9), 'ville': (45.5, 14.6), 'maison_rouge': (10.75, 16.7), 'maison_ardoise': (21.75, 16.7)}
+
+# Les images des rochers et des cailloux (assets/transition_objets.png, cases de 32 × 32, le
+# pied au milieu du bas) : lues dans la planche de la ferme, celles de ses rochers.
+ROCHERS_IMAGES = {'rocher_a': (15, 6, 2, 2), 'rocher_b': (15, 8, 2, 1), 'rocher_c': (15, 9, 2, 2),
+                  'caillou_0': (13, 10, 1, 1), 'caillou_1': (14, 10, 1, 1)}
+
+
+def planche_objets():
+    noms = list(ROCHERS_IMAGES)
+    out = image(32 * len(noms), 32)
+    for i, n in enumerate(noms):
+        im = F.bloc(*ROCHERS_IMAGES[n])
+        b = im.getbbox()
+        im = im.crop(b)
+        out.alpha_composite(im, (i * 32 + (32 - im.width) // 2, 32 - im.height))
+    out.save(os.path.join(ASSETS, 'transition_objets.png'), optimize=True)
+    return noms
 
 
 def bus_scolaire():
@@ -280,11 +349,12 @@ DEPART = (6, 18.9)
 def objets_carte():
     i = 2
     passages = []
-    for nom, x0, y0, x1, y1, sens, cible in PASSAGES:
+    for nom, x0, y0, x1, y1, sens, cible, *proche in PASSAGES:
+        props = [{'name': 'cible', 'type': 'string', 'value': cible}, {'name': 'sens', 'type': 'string', 'value': sens}]
+        if proche:
+            props.append({'name': 'proche', 'type': 'int', 'value': proche[0]})
         passages.append({'id': i, 'name': nom, 'type': 'passage', 'rotation': 0, 'visible': True,
-                         'x': x0 * T, 'y': y0 * T, 'width': (x1 - x0) * T, 'height': (y1 - y0) * T,
-                         'properties': [{'name': 'cible', 'type': 'string', 'value': cible},
-                                        {'name': 'sens', 'type': 'string', 'value': sens}]})
+                         'x': x0 * T, 'y': y0 * T, 'width': (x1 - x0) * T, 'height': (y1 - y0) * T, 'properties': props})
         i += 1
     arrivees = []
     for nom, (x, y) in ARRIVEES.items():
@@ -309,7 +379,17 @@ def objets_carte():
         bus.append({'id': i, 'name': nom, 'type': 'arret', 'point': True, 'rotation': 0, 'visible': True,
                     'x': x, 'y': y, 'width': 0, 'height': 0})
         i += 1
-    return passages, arrivees, batis, bus, i
+    point = lambda nom, genre, x, y, props=None: {'id': 0, 'name': nom, 'type': genre, 'point': True, 'rotation': 0, 'visible': True,
+                                                   'x': x, 'y': y, 'width': 0, 'height': 0, **({'properties': props} if props else {})}
+    noms = planche_objets()
+    plantes = [point(f'arbre_{x}_{y}', genre, x, y) for genre, x, y in ARBRES]
+    rochers = [point(f'rocher_{x}_{y}', genre.split('_')[0], x, y, [{'name': 'image', 'type': 'int', 'value': noms.index(genre)}])
+               for genre, x, y in ROCHERS]
+    herbes = [point('', str(v), x, y) for x, y, v in HERBES]
+    for o in plantes + rochers + herbes:
+        o['id'] = i
+        i += 1
+    return passages, arrivees, batis, bus, (plantes, rochers, herbes), i
 
 
 def objet_groupe(id_, nom, objets):
@@ -353,12 +433,12 @@ def main():
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                         'opacity': 1, 'visible': True, 'data': data})
-    passages, arrivees, batis, bus, prochain = objets_carte()
+    passages, arrivees, batis, bus, (plantes, rochers, herbes), prochain = objets_carte()
     n = len(couches)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': n + 6, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': n + 9, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             objet_groupe(n + 1, 'depart', [{'id': 1, 'name': 'depart', 'type': '', 'point': True, 'rotation': 0, 'visible': True,
@@ -367,6 +447,9 @@ def main():
             objet_groupe(n + 3, 'passages', passages),
             objet_groupe(n + 4, 'batiments', batis),
             objet_groupe(n + 5, 'bus', bus),
+            objet_groupe(n + 6, 'arbres', plantes),
+            objet_groupe(n + 7, 'rochers', rochers),
+            objet_groupe(n + 8, 'herbe_haute', herbes),
         ],
     }
     with open(os.path.join(ASSETS, 'transition.tmj'), 'w') as f:
@@ -382,6 +465,20 @@ def main():
                     cel = cellules[nom][y][x]
                     if cel:
                         rendu.alpha_composite(PLANCHES[cel[0]].tuiles[cel[1]][0], (x * T, y * T))
+        # les objets que le jeu dessine : herbe haute, rochers, arbres (rangés par leur pied)
+        herbe = Image.open(os.path.join(ASSETS, 'herbe_haute.png')).convert('RGBA')
+        objets = Image.open(os.path.join(ASSETS, 'transition_objets.png')).convert('RGBA')
+        sprites = [(y, herbe.crop((0, v * 16, 22, v * 16 + 16)), x - 11, y - 16) for x, y, v in HERBES]
+        for genre, x, y in ROCHERS:
+            k = list(ROCHERS_IMAGES).index(genre)
+            sprites.append((y, objets.crop((k * 32, 0, k * 32 + 32, 32)), x - 16, y - 32))
+        ombre = F.ombre()
+        for genre, x, y in ARBRES:
+            im = F.arbre() if genre == 'arbre' else F.pin()
+            rendu.alpha_composite(ombre, (x - 16, y - 8))
+            sprites.append((y, im, x - im.width // 2, y - im.height))
+        for _, im, x, y in sorted(sprites, key=lambda q: q[0]):
+            rendu.alpha_composite(im, (max(0, x), max(0, y)))
         rendu.save(os.path.join(ROOT, 'apercu_transition.png'))
 
 

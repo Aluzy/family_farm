@@ -4,8 +4,10 @@ import { weekdayIndex } from '../engine/format.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { memberPerso } from '../engine/family.js';
 import { hasTool } from '../engine/outils.js';
+import { rockGone, treeGone } from '../engine/crops.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
-import { state } from './store.js';
+import { axeMode, hoeMode, pickMode, rodMode, state } from './store.js';
+import { chopFromStage, mineFromStage } from './outils.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
@@ -19,7 +21,7 @@ import { showToast } from './toasts.js';
 // produisent, le repas, la nuit). C'est le personnage principal de la partie qui s'y promène.
 //
 // Les cartes passent par FermeHote (ci-dessous) : l'heure, le personnage, le marché, les
-// entreprises, les outils, les messages, et go(cible) pour changer de carte (« jeu.html… » : la
+// entreprises, les outils (la hache et la pioche en main : couper, piocher), les messages, et go(cible) pour changer de carte (« jeu.html… » : la
 // ferme ; « ville-carte.html?carte=… », « infra-monde.html » : une autre carte). L'adresse de la
 // page suit (jeu.html?carte=…) : recharger la page y ramène.
 
@@ -134,6 +136,14 @@ window.FermeHote = {
   acheter: (id) => joue(buyCompany(state, id)),
   quota: (id, q) => joue(setCompanyQuota(state, id, q)),
   outil: (id) => hasTool(state, id),
+  // l'outil en main (barre d'outils) : 'hache', 'pioche', 'houe', 'canne' ou null
+  enMain: () => (axeMode ? 'hache' : pickMode ? 'pioche' : hoeMode ? 'houe' : rodMode ? 'canne' : null),
+  // les arbres et les rochers des autres cartes (identifiants « <carte>:x,y ») : comme ceux de
+  // la ferme, abattus ou cassés en trois coups, ils reviennent quelques jours plus tard
+  abattu: (id) => treeGone(state, id),
+  casse: (id) => rockGone(state, id),
+  couper: (id) => chopFromStage(id),
+  piocher: (id) => mineFromStage(id),
   say: (t) => showToast(t),
 };
 window.HorlogeSortie = { maintenant, texte, JOURS_ECOLE: [0, 1, 3, 4] };
