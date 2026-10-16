@@ -316,58 +316,126 @@ def fontaine(k):
     return im
 
 
+GLOBE = [(44, 64, 80), (70, 102, 120), (98, 136, 152), (132, 170, 184), (176, 206, 214), (232, 244, 246)]
+BAYER = ((0, 2), (3, 1))
+
+
+def tube(im, pts, rayons, tons):
+    """Un tube de pierre le long des points pts (rayon rayons[i] en chaque point), éclairé du
+    haut à gauche, cerné de sombre : tout le contour d'abord, puis le plein par-dessus."""
+    px = im.load()
+    w, h = im.size
+    for passe in (0, 1):
+        for (x0, y0), r in zip(pts, rayons):
+            rr = r + (1 if passe == 0 else 0)
+            for y in range(int(y0 - rr) - 1, int(y0 + rr) + 2):
+                for x in range(int(x0 - rr) - 1, int(x0 + rr) + 2):
+                    dx, dy = x + 0.5 - x0, y + 0.5 - y0
+                    d = math.hypot(dx, dy)
+                    if d > rr or not (0 <= x < w and 0 <= y < h):
+                        continue
+                    if passe == 0:
+                        px[x, y] = rgba(K)
+                        continue
+                    b = -(dx * 0.62 + dy * 0.5) / max(r, 1)
+                    c = tons[3] if b > 0.45 else tons[2] if b > -0.1 else tons[1] if b > -0.6 else tons[0]
+                    px[x, y] = rgba(c)
+
+
 def fontaine_globe(k):
-    """7 × 10 tuiles, image k (0..7) : la fontaine au globe, sur ses quatre piliers."""
+    """7 × 10 tuiles, image k (0..7) : la fontaine au globe, vue de 3/4. Un bassin rond (le
+    rebord, sa paroi de face, l'eau de la ferme), un fût dressé dans l'eau d'où partent quatre
+    bras qui s'écartent puis remontent enserrer un globe de pierre bleutée."""
     im = image(112, 160)
-    cx, cy, rx, ry = 55.5, 128, 54, 30
-    for y in range(160):
-        for x in range(112):
-            if ((x - cx) / (rx - 9)) ** 2 + ((y - cy) / (ry - 7)) ** 2 < 1:
-                im.putpixel((x, y), rgba(eau(x, y, k, y < cy - ry + 13)))
-    for y in range(160):
-        for x in range(112):
-            e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
-            i = ((x - cx) / (rx - 9)) ** 2 + ((y - cy) / (ry - 7)) ** 2
-            if e <= 1 and i >= 1:
-                c = MARGELLE[2] if y < cy else MARGELLE[1]
-                if y > cy + ry - 8:
-                    c = MARGELLE[0] if e > 0.86 else MARGELLE[1]
-                elif i < 1.12:
-                    c = MARGELLE[3] if y < cy else MARGELLE[2]
-                im.putpixel((x, y), rgba(c))
-    d = dessin(im)
-    # les quatre piliers
-    piliers = (((18, 112), (24, 74), (32, 44)), ((40, 126), (42, 90), (46, 64)),
-               ((71, 126), (69, 90), (65, 64)), ((93, 112), (87, 74), (79, 44)))
-    for (x0, y0), (x1, y1), (x2, y2) in piliers:
-        pts = []
-        for s in range(21):
-            t = s / 20
-            pts.append(((1 - t) ** 2 * x0 + 2 * (1 - t) * t * x1 + t * t * x2, (1 - t) ** 2 * y0 + 2 * (1 - t) * t * y1 + t * t * y2))
-        d.line(pts, fill=rgba(MARGELLE[0]), width=7)
-        d.line(pts, fill=rgba(MARGELLE[2]), width=4)
-        d.line([(x - 1, y) for x, y in pts], fill=rgba(MARGELLE[3]), width=1)
-    # le globe
-    gx, gy, gr = 55.5, 36, 33
-    for y in range(160):
-        for x in range(112):
-            r = math.hypot(x - gx, y - gy)
-            if r <= gr:
-                t = math.hypot(x - (gx - 11), y - (gy - 12)) / (gr * 1.5)
-                c = [(196, 222, 228), (150, 188, 198), (112, 152, 166), (80, 114, 130)][min(3, int(t * 4.4))]
-                # les continents en relief
-                if hasard(x // 3, y // 3, 31) > 0.62 and r < gr - 2:
-                    c = teinte(c, 0.86)
-                if r > gr - 1.2:
-                    c = (52, 76, 90)
-                im.putpixel((x, y), rgba(c))
-    for s in range(-6, 7):
-        y = int(gy + s * 4)
-        x = int(gx - 20 + abs(s) * 2)
-        if 0 <= y < 160:
-            im.putpixel((x, y), rgba((236, 246, 248)))
-    # l'eau qui ruisselle du globe dans le bassin
-    for i in range(6):
-        x = int(cx - 24 + i * 9)
-        im.putpixel((x, 116 + (i * 3 + k) % 8), rgba(EAU[4]))
-    return contour(im)
+    cx, by = 55.5, 124                  # le pied du fût, au milieu du bassin
+    vasque(im, cx, 122, 52, 27, 7, 11, k)
+    px = im.load()
+    # les ronds dans l'eau autour du pied, qui s'élargissent d'image en image
+    for n in range(2):
+        r = 9 + ((k + 4 * n) % 8) * 2.2
+        for i in range(48):
+            a = i / 48 * math.tau
+            x, y = cx + math.cos(a) * r, by + 2 + math.sin(a) * r * 0.5
+            if math.sin(a) > -0.3 and (i + k) % 3:
+                px[int(x), int(y)] = rgba(EAU[4] if r < 20 else EAU[3])
+    # le globe, centré à la hauteur zc au-dessus du pied, et les bras (z : la hauteur, ρ : la
+    # distance à l'axe, φ : l'angle autour, la profondeur écrasée de 0,55 comme le bassin)
+    zc, gr = 80, 25
+    ecran = lambda rho, phi, z: (cx + rho * math.cos(phi), by + rho * math.sin(phi) * 0.55 - z)
+
+    def bras(phi):
+        ctrl = ((4, 30), (29, 38), (33, 62), (25, 90))
+        pts, rayons = [], []
+        for s in range(41):
+            t = s / 40
+            rho = sum(c[0] * w for c, w in zip(ctrl, ((1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t * t, t ** 3)))
+            z = sum(c[1] * w for c, w in zip(ctrl, ((1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t * t, t ** 3)))
+            pts.append(ecran(rho, phi, z))
+            rayons.append(4 - 2 * t)
+        return pts, rayons
+
+    pierre = [MARGELLE[0], MARGELLE[1], MARGELLE[2], MARGELLE[3]]
+    derriere = [math.radians(a) for a in (215, 325)]
+    devant = [math.radians(a) for a in (148, 32)]
+    for phi in derriere:
+        tube(im, *bras(phi), pierre)
+    # le fût : un cylindre qui s'affine, sa base dans l'eau et une bague où partent les bras
+    for y in range(by - zc + 10, by + 3):
+        z = by - y
+        hw = 6.5 - 1.5 * min(1, z / 60)
+        if z < 4:
+            hw = 8.5
+        elif 27 <= z <= 32:
+            hw = 7.5
+        for x in range(int(cx - hw), int(cx + hw) + 1):
+            t = (x + 0.5 - (cx - hw)) / (2 * hw)
+            if not 0 <= t <= 1:
+                continue
+            c = MARGELLE[3] if t < 0.25 else MARGELLE[2] if t < 0.55 else MARGELLE[1] if t < 0.82 else MARGELLE[0]
+            if z in (3, 4, 27, 32):
+                c = teinte(c, 0.8)
+            px[x, y] = rgba(c)
+    # le globe : éclairé du haut à gauche (tramé entre deux tons), méridiens et équateur gravés
+    gx, gy = cx, by - zc
+    lum = (-0.48, -0.56, 0.68)
+    for y in range(int(gy - gr) - 1, int(gy + gr) + 2):
+        for x in range(int(gx - gr) - 1, int(gx + gr) + 2):
+            dx, dy = (x + 0.5 - gx) / gr, (y + 0.5 - gy) / gr
+            q = dx * dx + dy * dy
+            if q > 1:
+                continue
+            nz = math.sqrt(1 - q)
+            b = dx * lum[0] + dy * lum[1] + nz * lum[2]
+            # le reflet de l'eau, en bas à droite
+            b += 0.22 * max(0, dx * 0.4 + dy * 0.8 - 0.55) / 0.45
+            v = max(0, min(4.99, (b + 0.3) * 3.6))
+            n = int(v)
+            if v - n > (BAYER[y % 2][x % 2] + 0.5) / 4:
+                n = min(4, n + 1)
+            c = GLOBE[n]
+            # les lignes du globe, sur la sphère penchée vers nous
+            ax, ay, az = dx, dy * 0.94 - nz * 0.34, dy * 0.34 + nz * 0.94     # un repère incliné
+            lon = math.atan2(ax, az)
+            lat = math.asin(max(-1, min(1, ay)))
+            if (any(abs(lat - m) < 0.045 for m in (-0.55, 0, 0.55)) and az > 0) or \
+                    (abs(ay) < 0.92 and az > 0 and any(abs(lon - m) < 0.05 for m in (-0.75, 0, 0.75))):
+                c = teinte(c, 0.87)
+            if q > 0.9 and n <= 1:
+                c = GLOBE[0]
+            px[x, y] = rgba(c)
+    # le point de brillance
+    for x, y, c in ((-9, -11, 5), (-8, -11, 5), (-9, -10, 5), (-10, -10, 4), (-7, -12, 4), (-11, -8, 4)):
+        px[int(gx + x), int(gy + y)] = rgba(GLOBE[c])
+    # les bras de devant, par-dessus le globe ; leurs bouts se referment contre lui
+    for phi in devant:
+        tube(im, *bras(phi), pierre)
+    im = contour(im)
+    # quelques gouttes qui ruissellent du globe et retombent dans le bassin
+    px = im.load()
+    for i, (dx, base) in enumerate(((-17, 66), (12, 70), (-4, 74))):
+        y = int(base + ((k * 3 + i * 5) % 24) * 1.4)
+        x = int(gx + dx)
+        if y < by + 8:
+            px[x, y] = rgba(EAU[4])
+            px[x, y - 1] = rgba(EAU[3])
+    return im
