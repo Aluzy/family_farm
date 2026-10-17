@@ -144,7 +144,7 @@ function watchTechPoints() {
 // La journée suit l'horloge : de 6 h à 22 h, 30 s par heure. À 19 h, la famille prend
 // son repas. Version 1.19 : à 22 h, la famille va dormir et la nuit défile à la même
 // vitesse (tick : seule l'heure avance) ; à minuit, la nuit se calcule (récolte automatique
-// comprise) et le jour change ; à 6 h, le résumé du réveil s'affiche. Le bouton « Zzz »
+// comprise) et le jour change ; à 6 h, c'est le réveil (sans résumé). Le bouton « Zzz »
 // couche le personnage : quand il dort, la nuit défile en accéléré. Jeu ouvert seulement : une absence n'avance l'horloge du jour que jusqu'à
 // l'éveil minimal (voir simulateOffline). La nuit attend qu'une fenêtre ouverte soit
 // refermée, et ne commence pas tant qu'une bulle d'aide de la première partie est affichée
@@ -181,11 +181,6 @@ function playMealScene(repas) {
   notify(`🍽️ ${DATA.TEMPS.HEURE_REPAS} h : la famille passe à table${mange ? ` (${mange})` : ''}. ${suite}`, { kind: complet ? 'repas' : 'alerte', cible: { fenetre: 'famille' } });
 }
 
-// Le résumé du réveil est-il à l'écran ? Tant qu'il l'est, l'horloge reste à 6 h.
-function wakeModalOpen() {
-  return !!document.getElementById('wake-title');
-}
-
 export function frame(now) {
   const wall = Date.now();
   if (wall - simulatedAt >= CATCH_UP_MIN_MS) {
@@ -201,7 +196,7 @@ export function frame(now) {
   accumulatorMs += elapsed;
   let ticked = false;
   // version 1.12 : pas d'heure avant le départ ; FLU-21 : ni pendant l'histoire ou une bulle d'aide
-  const horlogeArretee = wakeModalOpen() || setupPending(state) || storyOpen() || tutorialStopsClock();
+  const horlogeArretee = setupPending(state) || storyOpen() || tutorialStopsClock();
   while (accumulatorMs >= TICK_MS) {
     tick(state, TICK_MS / 1000, horlogeArretee);
     accumulatorMs -= TICK_MS;

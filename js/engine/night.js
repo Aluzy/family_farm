@@ -111,7 +111,7 @@ export function buildMorningReport(state) {
   };
 }
 
-// Résumé de réveil allégé : ce que la ferme a produit pendant la nuit, regroupé par
+// La récolte de la nuit : ce que la ferme a produit pendant la nuit, regroupé par
 // produit { item: quantité } = œufs pondus + lait + fruits du verger + récoltes
 // des automatisations. (Les « récoltes prêtes » à cueillir ne comptent pas : ce n'est
 // pas encore récolté.) Pure : ne lit que le rapport.
@@ -127,23 +127,6 @@ export function nightHarvest(report) {
   for (const [item, qty] of Object.entries(report.fruits || {})) add(item, qty);
   for (const [item, qty] of Object.entries((report.auto || {}).recoltes || {})) add(item, qty);
   return total;
-}
-
-// Tri stable : quantité décroissante, puis nom (ordre alphabétique français).
-// Renvoie { affiches: [{ item, qte }], reste: [{ item, qte }] } avec au plus `limite` produits affichés.
-export function wakeHarvestList(report, limite = DATA.REVEIL.RECOLTE_MAX) {
-  const rows = Object.entries(nightHarvest(report))
-    .map(([item, qte]) => ({ item, qte }))
-    .sort((x, y) => y.qte - x.qte || DATA.OBJETS[x.item].nom.localeCompare(DATA.OBJETS[y.item].nom, 'fr'));
-  return { affiches: rows.slice(0, limite), reste: rows.slice(limite) };
-}
-
-// Les deux indicateurs du résumé de réveil, en entiers (arrondi à l'unité inférieure,
-// comme formatPercent) : autonomie de la nuit, en %, et énergie du personnage au
-// réveil (version 1.8, à la place de la santé moyenne).
-export function wakeSummary(report) {
-  const floor = (x) => Math.floor((Number(x) || 0) + EPS);
-  return { autonomie: floor(report.autonomie), energie: floor((Number(report.energieReveil) || 0) / 1000), recolte: wakeHarvestList(report) };
 }
 
 // Ne fait rien tant que l'éveil minimal n'est pas atteint (renvoie null).

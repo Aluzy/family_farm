@@ -102,7 +102,8 @@
     viewInfo() {
       const b = this.bounds();
       const min = b.minX, max = b.maxX;
-      const mobile = max - min > 1 || b.maxY - b.minY > 1;
+      // la vue qui suit le personnage ne glisse pas au doigt : pas de flèches sur les bords
+      const mobile = !this.suitPerso() && (max - min > 1 || b.maxY - b.minY > 1);
       const xs = this.screens.map((p) => clamp(p.x, min, max));
       let ecran = 0;
       xs.forEach((x, i) => { if (Math.abs(this.cx - x) < Math.abs(this.cx - xs[ecran])) ecran = i; });
@@ -153,6 +154,7 @@
     // le lieu n'est pas sur la carte.
     panTo(target, now) {
       if (this.room) return false;                 // dans un intérieur, la vue ne glisse pas
+      if (this.suitPerso()) return true;           // dehors, elle reste sur le personnage
       const p = typeof target === 'number' ? { x: target, y: this.cy }
         : target && typeof target === 'object' ? target : this.place(target);
       if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return false;

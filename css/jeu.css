@@ -710,12 +710,6 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 
 .report-list { list-style: none; margin: 12px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 
-/* Résumé de réveil allégé */
-.wake-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
-.wake-kpi { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius); background: var(--bg-muted); border: 1px solid var(--border); }
-.wake-kpi strong { font-size: 1.4rem; }
-.wake-harvest { margin: 0 0 12px; line-height: 1.5; }
-.wake-actions { margin-top: 12px; justify-content: flex-end; }
 .btn.btn-pill { border-radius: 999px; min-width: 44px; }
 
 select {
@@ -1166,7 +1160,6 @@ summary.branch-head h3::before { content: '▸'; display: inline-block; margin-r
 }
 #toast-root .toast-link:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .toast-go { display: inline-block; margin-left: 4px; font-weight: 800; }
-.wake-hour { margin: -4px 0 8px; font-size: 0.85rem; }
 
 /* ---------- Dessins en pixel art (assets/art.png, js/ui/pixel-art.js) ---------- */
 
@@ -1799,7 +1792,6 @@ main .ancre { scroll-margin-top: 150px; }
 .cal-phases { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .cal-phase { display: flex; gap: 6px; align-items: flex-start; padding: 4px 6px; border-radius: 4px; }
 .cal-phase.current { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--wood-light); }
-.wake-moon { margin: 4px 0; }
 .hud .hud-money { width: 100%; padding: 0 6px; color: #8a2e22; }
 /* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante reste
    visible par-dessus, à 80 % de transparence, et laisse passer les appuis. */

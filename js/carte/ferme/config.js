@@ -277,22 +277,22 @@
   const ROOM_FADE_MS = 180;    // fondu à l'entrée et à la sortie
   const ROOM_PAD = { top: 44, bottom: 60 };   // px CSS laissés à l'objectif (en haut) et aux boutons (en bas)
 
-  const TAP_SLOP = 8;          // px CSS : au-delà, le geste est un glissement, pas un appui
-  const DOUBLE_TAP_MS = 300;   // deux appuis rapprochés sur l'herbe ou un chemin : le personnage y va
-  const DOUBLE_TAP_PX = 30;    // px CSS entre les deux appuis, au plus
+  // l'appui et le double appui (sur l'herbe ou un chemin : le personnage y va), comme sur les
+  // autres cartes (CarteKit.APPUI)
+  const TAP_SLOP = K.APPUI.glisse, DOUBLE_TAP_MS = K.APPUI.doubleMs, DOUBLE_TAP_PX = K.APPUI.doublePx;
   const MIN_TAP = 44;          // px CSS : taille minimale de la zone d'appui d'un bâtiment
   const INERTIA_MS = 260;      // constante de temps de l'élan après un glissement
   const MAX_SPEED = 1.5;       // px de carte par ms
   const PAN_MS = 380;          // durée d'un déplacement demandé par panTo()
+  const FOLLOW_MS = 250;       // la vue rattrape le personnage qui marche (constante de temps)
+  const FOLLOW_UP = 20;        // px de carte : le centre de la vue, au-dessus de ses pieds
   const LABEL_GAP = 3;         // px CSS entre l'étiquette et ce qu'elle nomme
   const LABEL_HOLD_MS = 1200;  // au doigt : le nom reste affiché ce temps après le relâchement
   // Bulles (assets/bulle.png, au double) : la pointe est à BUBBLE_TIP_X px CSS du bord gauche
-  // et BUBBLE_TIP_Y px au-dessus du bas.
-  const BUBBLE_TIP_X = 15, BUBBLE_TIP_Y = 2;
+  // et BUBBLE_TIP_Y px au-dessus du bas (les mêmes que la bulle « +x », CarteKit.BULLE).
+  const BUBBLE_TIP_X = K.BULLE.pointeX, BUBBLE_TIP_Y = K.BULLE.pointeY;
   // Le repas : la bulle des convives qui ont bien mangé.
   const JOIE = '😊';
-  const GAIN_HOLD_MS = 1200;    // bulle « +x » au-dessus du personnage : elle reste, puis…
-  const GAIN_FADE_MS = 1400;    // … s'estompe lentement (une prise pendant ce temps s'y ajoute)
   const LONG_PRESS_MS = 450;   // appui maintenu sur la citerne : sa bulle (litres) s'affiche
   const GROUND_CHECK_MS = 3000; // le fond de la carte est vérifié à ce rythme (voir repairGround)
   const SPRITE_CHECKS = 8;      // et, à chaque fois, autant d'arbres, de barrières ou de rochers
@@ -310,7 +310,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, FELL, SPRINKLER, ROBOT, OCCLUDER_ALPHA, EXIT, HOLLOW, TALL_GRASS, SHADOWS, TREE_SHADOW, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, GAIN_HOLD_MS, GAIN_FADE_MS, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, CAST },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, FELL, SPRINKLER, ROBOT, OCCLUDER_ALPHA, EXIT, HOLLOW, TALL_GRASS, SHADOWS, TREE_SHADOW, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, CAST },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

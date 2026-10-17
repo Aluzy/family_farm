@@ -9,7 +9,6 @@ import { telNight } from './consent.js';
 import { makeSeed, persistState } from './storage.js';
 import { setPendingAbsence, setSimulatedAt, syncJobs } from './loop.js';
 import { refresh } from './render.js';
-import { openWakeModal } from './reveil.js';
 import { notify } from './toasts.js';
 import { registerActions, sameHandler } from './actions.js';
 import { closeModal } from './modal.js';
@@ -54,14 +53,14 @@ export function actionNightStart() {
   refresh();
 }
 
-// 6 h (ou nuit sautée) : le résumé du réveil.
+// 6 h (ou nuit sautée) : le réveil. Pas de résumé : le personnage a pu passer la nuit debout,
+// la journée continue sans s'arrêter.
 export function wakeUp() {
   state.reveil = false;
   setCoucher(false); // il se lève
   syncJobs(); // les préparations terminées pendant la nuit ne sont pas annoncées par un toast
   persistState(); // sauvegarde après chaque nuit
   refresh();
-  if (state.report) openWakeModal(state.report, true);
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

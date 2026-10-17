@@ -35,7 +35,7 @@
  *                FarmStage.hasRoom(id) (l'intérieur d'un bâtiment peut-il être affiché ?),
  *                FarmStage.hasFermier() (le personnage est-il là pour ramasser ?),
  *                FarmStage.panTo(x, point { x, y } ou id de bâtiment) (glisse jusque-là),
- *                FarmStage.goHome(done, suivre) (le personnage rentre dans la maison ; la vue le suit),
+ *                FarmStage.goHome(done) (le personnage rentre dans la maison ; la vue le suit),
  *                FarmStage.mealScene({ convives, heureux }) (le repas : la famille va à table).
  *                onView(vue) est appelé quand l'écran courant change, quand un bord est
  *                atteint ou quitté, et au premier glissement du joueur.
@@ -47,7 +47,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, SFX, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, SHADOWS, TREE_SHADOW, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, MILL_FRAME, ROOF_PANELS, WELL, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
+  const { T, MAP, SFX, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, SHADOWS, TREE_SHADOW, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, MILL_FRAME, ROOF_PANELS, WELL, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
   const { clamp, pixelRatio, reducedMotion, v } = F;
 
   let game = null;          // le jeu Phaser de toutes les cartes (js/carte/jeu.js)
@@ -186,7 +186,7 @@
         I.on('pointerup', (p) => this.onUp(p, true));
         I.on('pointerupoutside', (p) => this.onUp(p, false));
         I.on('gameout', () => { if (!this.drag) this.setHover(null); });
-        I.on('wheel', (p, over, dx, dy) => { this.vx = this.vy = 0; this.pan = null; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
+        I.on('wheel', (p, over, dx, dy) => { if (this.suitPerso()) return; this.vx = this.vy = 0; this.pan = null; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
         this.scale.on('resize', () => this.fit());
         this.fit();
         // Vie d'ambiance (js/ambient-life.js, facultatif) : ombres de nuages, petites bêtes de
@@ -242,6 +242,7 @@
           } catch (e) { console.warn('[FarmStage] famille indisponible', e); }
         }
         this.ready = true;
+        this.followSnap = true;          // la vue part centrée sur le personnage
         if (this.ctx.lastModel) this.sync(this.ctx.lastModel, true);
         this.makeExit();
         // (cachée pendant le chargement, une autre carte affichée : js/carte/jeu.js l'endort)
@@ -281,7 +282,7 @@
           if (!pointer.wasTouch) {
             const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
             const hit = this.hitAt(wp.x, wp.y);
-            this.game.canvas.style.cursor = hit ? 'pointer' : this.room ? 'default' : 'grab';
+            this.game.canvas.style.cursor = hit ? 'pointer' : this.room || this.suitPerso() ? 'default' : 'grab';
             this.setHover(this.placeOf(hit));       // survol : le nom du lieu s'affiche
           }
           return;
@@ -296,6 +297,12 @@
           return;
         }
         if (d.held) return;              // bulle de la citerne : la carte ne bouge pas
+        // Dehors, la vue suit le personnage (comme sur les autres cartes) : un glissement ne la
+        // déplace pas, il annule seulement l'appui.
+        if (this.suitPerso()) {
+          if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; clearTimeout(d.holdTimer); this.setHover(null); }
+          return;
+        }
         if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) {
           d.moved = true;
           clearTimeout(d.holdTimer);
@@ -334,10 +341,11 @@
         }
         if (!d.moved) {
           // Appui : la vue revient où elle était (elle a pu bouger de quelques pixels).
-          this.setCentre(d.cx, d.cy);
+          if (!this.suitPerso()) this.setCentre(d.cx, d.cy);
           if (inside) this.tap(d.wx, d.wy);
           return;
         }
+        if (this.suitPerso()) return;
         // Élan léger, seulement si le doigt bougeait encore au moment du relâchement.
         if (reducedMotion() || performance.now() - d.lastT > 80) return;
         this.vx = clamp(d.vx, -MAX_SPEED, MAX_SPEED);
@@ -362,10 +370,16 @@
         if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
         this.stepExit(time);
         if (this.family) this.family.update(delta, this.room ? this.room.id : null);
-        // Dehors, la vue suit le personnage qui rentre (le repas) ; elle lâche s'il est dedans.
-        if (this.follow && !this.room && this.fermier && !this.drag) {
+        // Dehors, la vue suit le personnage, centrée sur lui (comme sur les autres cartes) ; elle
+        // s'arrête quand il est dans la maison.
+        if (this.suitPerso()) {
           const p = this.fermier.pos();
-          if (p) { this.pan = null; this.setCentre(this.cx + (p.x - this.cx) * Math.min(1, dt / 250), this.cy + (p.y - 20 - this.cy) * Math.min(1, dt / 250)); }
+          if (p) {
+            this.pan = null;
+            const k = this.followSnap ? 1 : Math.min(1, dt / FOLLOW_MS);
+            this.followSnap = false;
+            this.setCentre(this.cx + (p.x - this.cx) * k, this.cy + (p.y - FOLLOW_UP - this.cy) * k);
+          }
         }
         this.placeMealBubbles();
         // Dans la maison, la vue suit le personnage qui va se coucher (la chambre est à droite).
@@ -383,6 +397,12 @@
         this.placePiles();
         this.placeGain();
         this.reportView();
+      }
+
+      // La vue suit-elle le personnage ? Dehors, dès qu'il est sur la carte (sans lui, la vue
+      // glisse au doigt, comme avant).
+      suitPerso() {
+        return !this.room && !!this.fermier;
       }
 
       /* ---------- appuis ---------- */
@@ -601,10 +621,7 @@
         const b = this.hollow();
         if (b && wx >= b.x0 - 2 && wx <= b.x1 + 2 && wy >= b.y0 - 4 && wy <= b.y1 + 2) { wx = b.x1 + 8; wy = b.y1 - 3; }
         const at = this.fermier.goTo(wx, wy);
-        if (!at) return;
-        const g = this.add.graphics().setDepth(at.y - 1);
-        g.lineStyle(1, 0xfff1d2, 0.95).strokeEllipse(at.x, at.y - 1, 12, 6);
-        this.tweens.add({ targets: g, alpha: 0, duration: reducedMotion() ? 300 : 900, ease: 'Quad.easeIn', onComplete: () => g.destroy() });
+        if (at) K.anneau(this, at.x, at.y);
       }
     };
     for (const p of F.parties) {
@@ -716,15 +733,12 @@
   // Version 1.18 : la carte a-t-elle son personnage (c'est lui qui ramasse) ?
   function hasFermier() { const s = getScene(); return !!(s && s.ready && s.fermier); }
 
-  // « Dormir » : sur la carte, le personnage marche jusqu'à la porte de la maison (la vue
-  // glisse jusqu'à elle) et entre ; `done` est appelé quand il est dedans (tout de suite s'il
-  // y est déjà).
-  function goHome(done, follow) {
+  // « Dormir » : sur la carte, le personnage marche jusqu'à la porte de la maison (la vue le
+  // suit) et entre ; `done` est appelé quand il est dedans (tout de suite s'il y est déjà).
+  function goHome(done) {
     const s = getScene();
     if (!s || !s.ready || !s.fermier || s.room) { setTimeout(done, 0); return; }
-    if (follow) s.follow = true;           // la vue le suit jusqu'à la porte
-    else s.panTo('maison');
-    s.fermier.goHome(() => { s.follow = false; done(); });
+    s.fermier.goHome(done);
   }
 
   // Le repas de 19 h : le personnage (et la famille) iront à table dans la maison.

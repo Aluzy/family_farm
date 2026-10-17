@@ -96,7 +96,6 @@ export const RAW_DATA = {
   "MARCHE": { "PLANCHER": { "defaut": 120, "graine": 200 }, "PAS": 10, "MULTIPLICATEUR_PRODUCTION": 2, "TRANSFORMATIONS_DOUBLEES": ["farine"] },
   "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },
   "HORS_LIGNE": { "MAX_S": 28800, "PAS_S": 5, "USURE": false, "ECRAN_S": 60 },
-  "REVEIL": { "RECOLTE_MAX": 5 },
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
   "NIVEAU_MAX": 5,
   "RESEAU": {

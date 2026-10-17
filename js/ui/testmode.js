@@ -16,7 +16,6 @@ import { applyResult } from './game-actions.js';
 import { syncJobs } from './loop.js';
 import { refresh } from './render.js';
 import { syncTestDeviceSelect } from './stage-windows.js';
-import { openWakeModal } from './reveil.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { chartFrame, itemsText } from './common.js';
@@ -26,7 +25,7 @@ function actionTestNights(count) {
   syncJobs();
   persistState();
   refresh();
-  if (report) openWakeModal(report);
+  if (report) notify(`🌙 ${count} nuit${count > 1 ? 's' : ''} passée${count > 1 ? 's' : ''}.`);
 }
 
 /* ---------- Lot 10 : simulation d'un joueur automatique (mode test) ---------- */

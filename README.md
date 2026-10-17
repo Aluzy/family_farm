@@ -65,7 +65,7 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   mange à 19 h (ou au coucher, si elle dort avant), d'abord ce qui périme le plus tôt.
 - La journée va de 6 h à 22 h et une heure dure 18 s (288 s en tout). On peut **Dormir**
   après 30 s d'éveil ; à 22 h, la nuit se déroule d'elle-même. L'horloge
-  s'arrête pendant le résumé du réveil et quand le jeu est fermé.
+  s'arrête quand le jeu est fermé ; il n'y a plus de résumé au réveil.
 - La nuit : les plantes arrosées gagnent un stade, les poules nourries pondent,
   les moutons et les vaches mangent leur paille (laine, lait), les aliments vieillissent.
 - L'électricité et l'eau circulent en temps réel : panneau (de 7 h à 19 h) → batterie →
