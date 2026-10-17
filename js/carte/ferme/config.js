@@ -98,10 +98,6 @@
     speed: [18, 46], lift: [45, 85], gravity: 280, fall: [2, 7], life: [650, 1100], fade: 300,
     breakMs: 260, backMs: 900,
   };
-  // La hache : au dernier coup, l'arbre bascule autour de son pied (CarteKit.NATURE.chute,
-  // comme sur les autres cartes). L'ombre portée d'un arbre (voir scripts/carte/carte_v2.py) :
-  // un ovale de demi-largeur `rx` (pin ou arbre feuillu).
-  const FELL = { rx: { pin: 17, arbre: 20 } };
   // L'arrosage automatique : les asperseurs rotatifs (scripts/batiments/asperseur.py, 8 images,
   // une par direction du bras ; le pied en bas au milieu). Quand il tourne, un asperseur fait un
   // tour en `period` s et lance une goutte toutes les `de` s : elle part de la tête (`h0` px au-
@@ -149,8 +145,6 @@
   // sous son pied, rapportée à l'herbe la plus claire des touffes, écart accentué (`contrast` :
   // exposant) ; chaque touffe a en plus sa nuance (± `shade`).
   const TALL_GRASS = Object.assign({ contrast: 2.2 }, K.NATURE.herbe);
-  const SHADOWS = { key: 'ombres_arbres', file: 'ombres_arbres.png', depth: 0.05 };
-  const TREE_SHADOW = K.NATURE.ombre;
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
   const DEFAULT_W = 72 * T;
   const DEFAULT_H = 57 * T;
@@ -300,7 +294,13 @@
 
   // Ombres des bâtiments et des barrières : leur silhouette, noire et transparente, posée au
   // sol (sous tout le reste) et décalée vers la droite et le bas (lumière en haut à gauche).
-  const CAST = { alpha: 0.5, building: { dx: 9, dy: 5 }, fence: { dx: 3, dy: 3 }, depth: 0.06 };
+  // Les ombres portées qui suivent le soleil (js/carte/ferme/soleil.js) : il se lève à `lever` h,
+  // se couche à `coucher` h ; une ombre penche de `penche` px par px de hauteur au plus (soleil
+  // à l'horizon), sa longueur va de longueur[0] (midi) à longueur[1] (soleil bas) fois la
+  // hauteur de ce qui la porte ; `alpha` en plein jour, atteint en `fondu` h après le lever (et
+  // perdu en autant avant le coucher) ; repeinte tous les `pas` h. `base` : le pied d'une image
+  // est à tant de px au-dessus de son bas. Sous tout ce qui est debout (`depth`).
+  const SOLEIL = { lever: 6, coucher: 20, penche: 1, longueur: [0.3, 1], alpha: 0.38, fondu: 1, pas: 0.1, base: 2, depth: 0.06 };
 
   const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
 
@@ -310,7 +310,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, FELL, SPRINKLER, ROBOT, OCCLUDER_ALPHA, EXIT, HOLLOW, TALL_GRASS, SHADOWS, TREE_SHADOW, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, CAST },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, EXIT, HOLLOW, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

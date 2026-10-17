@@ -11,7 +11,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, SFX, TREE_OBJECT, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, SHADOWS, TREE_SHADOW, DEFAULT_OBJECTS, BUILDINGS, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, FERMIER_FRAME, ZONE_LABEL_UP, CAST } = F.C;
+  const { T, SFX, TREE_OBJECT, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, DEFAULT_OBJECTS, BUILDINGS, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, FERMIER_FRAME, ZONE_LABEL_UP } = F.C;
   const { clamp, reducedMotion, v } = F;
 
   F.partie({
@@ -41,10 +41,11 @@
       for (const def of BUILDINGS) {
         const want = info(def.id);
         const e = this.buildings.get(def.id);
-        if (e && (!want || rebuild || !!want.ruine !== !!e.ruine)) { e.sprite.destroy(); if (e.shadow) e.shadow.destroy(); this.buildings.delete(def.id); }
+        if (e && (!want || rebuild || !!want.ruine !== !!e.ruine)) { e.sprite.destroy(); this.buildings.delete(def.id); this.sunDirty = true; }
         if (want && !this.buildings.has(def.id)) {
           const sprite = this.makeBuilding(def, !!want.ruine);
-          this.buildings.set(def.id, { def, ruine: !!want.ruine, sprite, shadow: this.castShadow(sprite, CAST.building) });
+          this.buildings.set(def.id, { def, ruine: !!want.ruine, sprite });
+          this.sunDirty = true;
         }
         // Le Moulin ne tourne que quand il moud (modèle.batiments.moulin.enMarche).
         const b = want ? this.buildings.get(def.id) : null;
@@ -138,26 +139,22 @@
         seen.add(a.case);
         const key = own ? 'verger' : a.libre ? null : this.tex('tree_' + SFX, 'ph_arbre');
         let e = this.trees.get(a.case);
-        if (e && (rebuild || e.key !== key)) { e.sprite.destroy(); if (e.shadow) e.shadow.destroy(); this.trees.delete(a.case); e = null; }
+        if (e && (rebuild || e.key !== key)) { e.sprite.destroy(); this.trees.delete(a.case); e = null; this.sunDirty = true; }
         if (!key) continue;
         if (!e) {
           const sprite = this.add.image(0, 0, key, key.indexOf('ph_') !== 0 ? 0 : undefined);
           sprite.setOrigin(0.5, 1);
           e = { sprite, key, a };
           this.trees.set(a.case, e);
+          this.sunDirty = true;
         }
         e.a = a;
-        if (own) e.sprite.setFrame(a.dessin);
+        if (own && e.sprite.frame.name !== a.dessin) { e.sprite.setFrame(a.dessin); this.sunDirty = true; }
         const x = Math.round(o.x + o.width / 2), y = Math.round(o.y + o.height);
         e.sprite.setPosition(x, y).setDepth(y);
-        // un arbre adulte a son ombre portée, sur le sol
-        const ombre = this.has(TREE_SHADOW.key) && (!own || a.dessin >= ORCHARD_ADULT);
-        if (ombre && !e.shadow) e.shadow = this.add.image(0, 0, TREE_SHADOW.key).setOrigin(0).setDepth(SHADOWS.depth);
-        if (!ombre && e.shadow) { e.shadow.destroy(); e.shadow = null; }
-        if (e.shadow) e.shadow.setPosition(x + TREE_SHADOW.dx, y + TREE_SHADOW.dy);
       }
       for (const [c, e] of this.trees) {
-        if (!seen.has(c)) { e.sprite.destroy(); if (e.shadow) e.shadow.destroy(); this.trees.delete(c); }
+        if (!seen.has(c)) { e.sprite.destroy(); this.trees.delete(c); this.sunDirty = true; }
       }
     },
 
@@ -192,9 +189,9 @@
     syncWell(pompe, enMarche) {
       if (!this.has(WELL.key)) return;
       const F = WELL.frames;
-      if (!this.well) { this.well = this.placeProp(WELL); this.wellShadow = this.castShadow(this.well, CAST.building); }
-      this.well.setFrame(pompe ? F.tuyau : F.puits);
-      if (this.wellShadow) this.wellShadow.setFrame(pompe ? F.tuyau : F.puits);
+      if (!this.well) { this.well = this.placeProp(WELL); this.sunDirty = true; }
+      const image = pompe ? F.tuyau : F.puits;
+      if (this.well.frame.name !== image) { this.well.setFrame(image); this.sunDirty = true; }
       if (pompe && !this.pump) {
         this.pump = this.add.image(this.well.x, this.well.y, WELL.key, F.pompe).setOrigin(0, 1).setDepth(this.well.depth + 0.1);
       } else if (!pompe && this.pump) {
@@ -218,10 +215,9 @@
     syncTank(niveau) {
       if (niveau < 0 || !this.has(TANK.key)) {
         if (this.tank) { this.tank.destroy(); this.tank = null; }
-        if (this.tankShadow) { this.tankShadow.destroy(); this.tankShadow = null; }
         return;
       }
-      if (!this.tank) { this.tank = this.placeProp(TANK); this.tankShadow = this.castShadow(this.tank, CAST.building); }
+      if (!this.tank) { this.tank = this.placeProp(TANK); this.sunDirty = true; }
       this.tank.setFrame(Math.min(niveau, TANK.max));
     },
 

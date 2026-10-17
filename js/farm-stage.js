@@ -47,7 +47,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, SFX, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, SHADOWS, TREE_SHADOW, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, MILL_FRAME, ROOF_PANELS, WELL, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
+  const { T, MAP, SFX, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, MILL_FRAME, ROOF_PANELS, WELL, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
   const { clamp, pixelRatio, reducedMotion, v } = F;
 
   let game = null;          // le jeu Phaser de toutes les cartes (js/carte/jeu.js)
@@ -150,11 +150,9 @@
         L.spritesheet('windmill_' + SFX, v('windmill_' + SFX + '.png'), MILL_FRAME);
         L.spritesheet('tree_' + SFX, v('basic_' + SFX + '.png'), TREE_FRAME);
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
-        L.image(SHADOWS.key, v(SHADOWS.file));
         L.spritesheet('pine_sp', v('pine_sp.png'), { frameWidth: 58, frameHeight: 64 });
         L.spritesheet('arbre_clair_sp', v('arbre_clair_sp.png'), { frameWidth: 56, frameHeight: 64 });
         L.spritesheet('pin_clair_sp', v('pin_clair_sp.png'), { frameWidth: 72, frameHeight: 64 });
-        L.image(TREE_SHADOW.key, v(TREE_SHADOW.file));
         L.image('terre_bords', v('terre_bords.png'));
       }
 
@@ -166,7 +164,7 @@
         this.defineAnims();
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
-        this.makeShadows();                   // les ombres des arbres (celles des arbres abattus en sont ôtées)
+        this.makeSun();                       // les ombres portées, qui suivent le soleil (js/carte/ferme/soleil.js)
         this.watchGround();
         this.makeTileAnims();
         this.bakeRooms();
@@ -400,7 +398,7 @@
         this.stepRobot(dt);
         this.placeDialog();
         this.stepFishing(delta);
-        this.stepShadows();
+        this.stepSun();
         if (!this.room) this.placeLabels();
         this.placePiles();
         this.placeGain();
