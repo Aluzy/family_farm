@@ -66,5 +66,5 @@ installés par ce même déploiement.
 
 ## Tests
 
-`node test-report.mjs` (à la racine du dépôt) : calculs, passage été/hiver, publication
+`node tests/test-report.mjs` (depuis la racine du dépôt) : calculs, passage été/hiver, publication
 GitHub simulée (dépôt public refusé, jeton jamais journalisé), protections de la collecte.

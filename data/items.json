@@ -34,7 +34,7 @@
     "//aubergine": "8 × 1,25",
     "aubergine": { "nom": "Aubergine", "icone": "🍆", "energie": 10, "prix": 2, "edible": true, "category": "légume", "conservation": 5 },
     "//conserve": ["Non périssable, non rachetable au Marché (Lot 3).", "20 × 1,25"],
-    "conserve": { "nom": "Conserve", "icone": "🥫", "energie": 25, "prix": 3, "edible": true, "category": "conserve", "rachetable": false },
+    "conserve": { "nom": "Boîte de conserve", "icone": "🥫", "energie": 25, "prix": 3, "edible": true, "category": "conserve", "rachetable": false },
     "graine_carotte": { "nom": "Graines de carotte", "icone": "🌱‍🥕", "prix": 1, "edible": false, "category": "graine" },
     "graine_tomate": { "nom": "Graines de tomate", "icone": "🌱‍🍅", "prix": 1, "edible": false, "category": "graine" },
     "graine_courgette": { "nom": "Graines de courgette", "icone": "🌱‍🥒", "prix": 1, "edible": false, "category": "graine" },
@@ -64,7 +64,9 @@
       "définis pour les anciennes sauvegardes qui en contiennent : la famille",
       "peut encore les manger ou les vendre jusqu'au dernier. Leur prix est écrit",
       "ici tel qu'il était (déjà doublé : il ne passe plus par",
-      "applyProductionPriceMultiplier(), qui ne connaît que ce que la ferme produit)."
+      "applyProductionPriceMultiplier(), qui ne connaît que ce que la ferme produit).",
+      "« retire »: true : ni produits ni rachetables, ils ne s'obtiennent plus (le",
+      "vérificateur des données ne signale donc pas qu'ils sont introuvables)."
     ],
     "viande_mouton": {
       "nom": "Viande de mouton",
@@ -74,6 +76,7 @@
       "edible": true,
       "category": "produit",
       "rachetable": false,
+      "retire": true,
       "conservation": 5
     },
     "//pomme": "8 × 1,25",
@@ -99,20 +102,43 @@
     "anchois": { "nom": "Anchois", "icone": "🐟‍💧", "energie": 14, "prix": 3, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
     "sardine": { "nom": "Sardine", "icone": "🐟‍🌊", "energie": 20, "prix": 4, "edible": true, "category": "produit", "rachetable": false, "conservation": 2 },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
+    "//ammonite": [
+      "Les trouvailles de la montagne (fossiles, pierres) et de la plage (coquillages, corail, perles),",
+      "ramassées sur la carte (js/ville-carte.js, FermeHote.ramasser) : l'identifiant est celui de",
+      "assets/faune.json (trouvailles) ; « trouvaille » dit où (montagne, plage). Ni périssables ni comestibles : elles se vendent. Elles ne se",
+      "rachètent pas au Marché."
+    ],
+    "ammonite": { "nom": "Ammonite fossile", "icone": "🪨‍🐚", "prix": 6, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "montagne" },
+    "trilobite": { "nom": "Trilobite fossile", "icone": "🪨‍🪲", "prix": 6, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "montagne" },
+    "quartz": { "nom": "Cristal de quartz", "icone": "💎", "prix": 4, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "montagne" },
+    "amethyste": { "nom": "Améthyste", "icone": "💎‍🟣", "prix": 7, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "montagne" },
+    "coquille": { "nom": "Coquille Saint-Jacques", "icone": "🐚", "prix": 3, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
+    "bulot": { "nom": "Bulot", "icone": "🐌", "prix": 2, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
+    "corail": { "nom": "Branche de corail", "icone": "🪸", "prix": 5, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
+    "perle": { "nom": "Perle", "icone": "🦪", "prix": 12, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
+    "//herbes_montagne": [
+      "Les herbes de montagne : une trouvaille des prés de la montagne (genre « herbe », la plus",
+      "courante), cueillie comme les autres (FermeHote.ramasser). Fraîches, elles se gardent 3 nuits",
+      "(moins que le lait). Elles ne se mangent pas : à l'Étable, les vaches nourries aux herbes",
+      "(DATA.PATURAGE.herbes, ANIMAUX.vache.herbesParNuit, à la place de leur paille) donnent du lait",
+      "d'alpage. Elles se vendent peu."
+    ],
+    "herbes_montagne": { "nom": "Herbes de montagne", "icone": "🌿‍🏔️", "prix": 2, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "montagne", "conservation": 3 },
     "//minerai_fer": [
       "Les minerais de la grotte (fer partout, puis cuivre, or et platine de plus en plus bas), pris à",
       "la pioche (GROTTE, js/ville-carte.js). Au Four, 4 minerais et du bois donnent un",
       "lingot (recipes.json : lingot_*). Minerais et lingots (catégorie « matériau ») servent à l'arbre",
-      "des technologies : invendables (ni au Marché ni en ville), ils ne se rachètent pas et ne périment pas."
+      "des technologies : invendables (ni au Marché ni en ville), ils ne se rachètent pas et ne périment pas.",
+      "Leur prix, purement indicatif, couvre au moins celui des intrants (lingot ≥ 4 minerais + bois)."
     ],
     "minerai_fer": { "nom": "Minerai de fer", "icone": "🪨‍🔩", "prix": 2, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
     "minerai_cuivre": { "nom": "Minerai de cuivre", "icone": "🪨‍🟠", "prix": 3, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
     "minerai_or": { "nom": "Minerai d'or", "icone": "🪨‍🟡", "prix": 6, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
     "minerai_platine": { "nom": "Minerai de platine", "icone": "🪨‍⚪", "prix": 10, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
-    "lingot_fer": { "nom": "Lingot de fer", "icone": "🧈‍🔩", "prix": 10, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
-    "lingot_cuivre": { "nom": "Lingot de cuivre", "icone": "🧈‍🟠", "prix": 14, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
-    "lingot_or": { "nom": "Lingot d'or", "icone": "🧈‍🟡", "prix": 26, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
-    "lingot_platine": { "nom": "Lingot de platine", "icone": "🧈‍⚪", "prix": 42, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "lingot_fer": { "nom": "Lingot de fer", "icone": "🧈‍🔩", "prix": 15, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "lingot_cuivre": { "nom": "Lingot de cuivre", "icone": "🧈‍🟠", "prix": 20, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "lingot_or": { "nom": "Lingot d'or", "icone": "🧈‍🟡", "prix": 35, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
+    "lingot_platine": { "nom": "Lingot de platine", "icone": "🧈‍⚪", "prix": 55, "edible": false, "category": "matériau", "rachetable": false, "invendable": true },
     "//oignon": [
       "10 nouvelles cultures : Zone de culture (oignon, ail, poivron, épinard,",
       "fraise, riz, houblon), Serre exclusivement (cacao, vanille, café). Poivron",
@@ -169,6 +195,7 @@
       "edible": true,
       "category": "produit",
       "rachetable": false,
+      "retire": true,
       "conservation": 5
     },
     "viande_volaille": {
@@ -179,9 +206,17 @@
       "edible": true,
       "category": "produit",
       "rachetable": false,
+      "retire": true,
       "conservation": 4
     },
     "lait": { "nom": "Lait", "icone": "🥛", "energie": 16, "prix": 4, "edible": true, "category": "produit", "conservation": 4 },
+    "//lait_alpage": [
+      "Le lait d'alpage : celui d'une vache nourrie aux herbes de montagne (voir feedLivestock()).",
+      "Il se garde comme le lait (4 nuits). Son prix est le prix final (12, contre 8 pour le lait une",
+      "fois doublé par MULTIPLICATEUR_PRODUCTION) : il n'est pas dans productionItemKeys(). Il ne",
+      "s'achète pas. En Cuisine, 3 laits d'alpage font un fromage d'alpage (recipes.fromage_alpage)."
+    ],
+    "lait_alpage": { "nom": "Lait d'alpage", "icone": "🥛‍🏔️", "energie": 18, "prix": 12, "edible": true, "category": "produit", "rachetable": false, "conservation": 4 },
     "//paille": [
       "Version 1.1 : la paille. Le Moulin en rend 1 par blé moulu (voir",
       "`recipes.farine.sousProduit`) ; les moutons et les vaches la mangent",
@@ -194,11 +229,15 @@
       "Version 1.5 (ville.json) : denrées venues de l'extérieur. \"ville\": true : elles ne",
       "s'achètent qu'au marché de la ville, pas à celui de la ferme. La cueillette de la forêt",
       "(champignon, myrtille, châtaigne) ne s'achète nulle part (rachetable: false) : on la",
-      "rapporte de la forêt ; le miel et le fromage d'alpage se rapportent aussi de la montagne."
+      "rapporte de la forêt ; le miel se rapporte aussi de la montagne.",
+      "Le fromage d'alpage (fromage au lait de vaches nourries aux herbes de la montagne) se fait en",
+      "Cuisine avec 3 laits d'alpage (recipes.fromage_alpage, une transformation : l'objet garde son",
+      "identifiant) ; il s'achète encore au marché de la ville. Son prix suit la règle des plats :",
+      "3 × 12 (lait d'alpage) × 1,3 = 47 ; son énergie aussi : 3 × 18 × 1,3 = 70."
     ],
     "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "edible": true, "category": "produit", "conservation": 2, "ville": true },
     "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "edible": true, "category": "produit", "ville": true },
-    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 25, "prix": 5, "edible": true, "category": "produit", "conservation": 10, "ville": true },
+    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "edible": true, "category": "produit", "conservation": 10, "ville": true },
     "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "edible": false, "category": "ingrédient", "ville": true },
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "edible": false, "category": "ingrédient", "ville": true },
     "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "edible": true, "category": "légume", "conservation": 3, "rachetable": false },

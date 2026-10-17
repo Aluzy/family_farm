@@ -136,6 +136,11 @@
    "frame": 7,
    "genre": "perle",
    "nom": "Une perle, dans son huître"
+  },
+  "herbes_montagne": {
+   "frame": 8,
+   "genre": "herbe",
+   "nom": "Des herbes de montagne"
   }
  }
 }

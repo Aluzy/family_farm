@@ -9,9 +9,9 @@ import {
 } from '../engine/crops.js';
 import {
   buildPaturage, buildPoulailler, buildSilo, buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
-  cowCount, feedAllHens, feedHen, freeSheepPlaces, hensToFeed, pastureCost, shear,
-  sheepCount, sheepToShear, siloCapacity, siloUpgradeCost, stableOccupied, strawMissing, strawNeed,
-  strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
+  cowCount, cowsOnHerbs, feedAllHens, feedHen, freeSheepPlaces, hensToFeed, herbStock, herbsOn, pastureCost,
+  setCowHerbs, shear, sheepCount, sheepToShear, siloCapacity, siloUpgradeCost, stableOccupied, strawMissing,
+  strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
 } from '../engine/animals.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
 import { AUTO_TACHES, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
@@ -124,21 +124,32 @@ function cowNumber(v) {
 }
 
 // Animaux qui mangeront cette nuit avec la paille en stock : les moutons
-// d'abord, puis les vaches, dans l'ordre de la liste (comme feedLivestock()).
+// d'abord, puis les vaches, dans l'ordre de la liste (comme feedLivestock()) ;
+// les premières vaches mangent les herbes de montagne, si l'Étable les leur
+// donne (`alpage` : celles qui donneront du lait d'alpage).
 function strawPlan() {
   const A = DATA.ANIMAUX;
   let left = strawStock(state);
   const fed = new Set();
+  const alpage = new Set();
   for (const m of state.paturage.moutons) {
     if (left < A.mouton.pailleParNuit) continue;
     left -= A.mouton.pailleParNuit;
     fed.add(m.id);
   }
+  let herbes = cowsOnHerbs(state);
   for (const v of state.paturage.vaches) {
+    if (herbes > 0) {
+      herbes -= 1;
+      fed.add(v.id);
+      alpage.add(v.id);
+      continue;
+    }
     if (left < A.vache.pailleParNuit) continue;
     left -= A.vache.pailleParNuit;
     fed.add(v.id);
   }
+  fed.alpage = alpage;
   return fed;
 }
 
@@ -162,15 +173,43 @@ function sheepCard(m, fed) {
     </article>`;
 }
 
-// Carte d'une vache : pas de laine, son lait vient la nuit même où elle mange.
+// Carte d'une vache : pas de laine, son lait vient la nuit même où elle mange
+// (du lait d'alpage si elle mange des herbes de montagne).
 function cowCard(v, fed) {
   const willEat = fed.has(v.id);
+  const alpage = fed.alpage && fed.alpage.has(v.id);
+  const lait = DATA.items[DATA.ANIMAUX.vache.laitAlpage];
+  const etat = alpage ? `${lait.icone} ${lait.nom} cette nuit` : willEat ? '🥛 Lait cette nuit' : '⚠️ Sans paille';
   return `
     <article class="card animal-card ancre${willEat ? '' : ' hungry'}" id="animal-${v.id}">
       <span class="animal-art">${artPx(['cow'], '', v.id, 'grow')}</span>
       <strong>Vache n°${cowNumber(v)}</strong>
-      <span class="animal-state${willEat ? '' : ' alert'}">${willEat ? '🥛 Lait cette nuit' : '⚠️ Sans paille'}</span>
+      <span class="animal-state${willEat ? '' : ' alert'}">${etat}</span>
     </article>`;
+}
+
+// Carte « Herbes de montagne » de l'Étable : le stock (une trouvaille de la
+// montagne) et le bouton qui les donne (ou non) aux vaches, chaque nuit, à la
+// place de leur paille : elles donnent alors du lait d'alpage.
+function herbsCard(cCount) {
+  const herbes = DATA.items[DATA.PATURAGE.herbes];
+  const lait = DATA.items[DATA.ANIMAUX.vache.laitAlpage];
+  const stock = herbStock(state);
+  const on = herbsOn(state);
+  const n = cowsOnHerbs(state);
+  if (!cCount && !stock && !on) return '';
+  const parVache = DATA.ANIMAUX.vache.herbesParNuit;
+  let etat;
+  if (!on) etat = `<span class="muted">Les vaches mangent leur paille. Nourries aux herbes (${formatNumber(parVache)} par vache et par nuit, à la place de la paille), elles donnent du ${lait.nom.toLowerCase()}.</span>`;
+  else if (!cCount) etat = '<span class="muted">Pas de vache à nourrir.</span>';
+  else if (n > 0) etat = `<span>${lait.icone} ${plural(n, 'vache')} au ${lait.nom.toLowerCase()} cette nuit${n < cCount ? ` ; les autres mangent leur paille` : ''}.</span>`;
+  else etat = '<span class="alert">Plus d\'herbes : cueille-les dans les prés de la montagne (le train, à la gare de la ville).</span>';
+  return `
+    <div class="card ancre" id="etable-herbes">
+      <span class="card-title"><span><span aria-hidden="true">${herbes.icone}</span> ${herbes.nom} : <span class="num">${formatNumber(stock)}</span></span><span class="chip${on ? ' badge' : ''}">${on ? '✅ données aux vaches' : 'pas données'}</span></span>
+      ${etat}
+      <button type="button" class="btn${on ? '' : ' primary'}" data-action="cow-herbs" data-on="${on ? '0' : '1'}" aria-pressed="${on}"${on || cCount ? '' : ' disabled'}>${on ? '🌾 Revenir à la paille' : `${herbes.icone} Nourrir les vaches aux herbes`}</button>
+    </div>`;
 }
 
 // Section « Moutons et vaches » de l'Étable. (Le nom de la fonction et
@@ -221,6 +260,7 @@ export function renderPaturage() {
       <span class="card-title"><span><span aria-hidden="true">${straw.icone}</span> Paille : <span class="num">${formatQty(stock)} / ${formatQty(need)}</span> pour cette nuit</span><span class="chip${missing > 0 ? ' warn' : ''}">${missing > 0 ? `⚠️ il en manque ${formatNumber(missing)}` : '✅ assez'}</span></span>
       ${missing > 0 ? '<span class="alert">Mouds du blé au Moulin : 1 blé donne 1 paille.</span>' : ''}
     </div>
+    ${herbsCard(cCount)}
     ${sCount + cCount > 0 ? `<div class="animal-grid ancre" id="etable-animaux">${p.moutons.map((m) => sheepCard(m, fed)).join('')}${p.vaches.map((v) => cowCard(v, fed)).join('')}</div>` : ''}`;
 }
 
@@ -470,6 +510,10 @@ registerActions({
   'buy-pasture': () => {
     const result = applyResult(buyPasture(state));
     if (result.ok) showToast(`Place achetée : ${formatPlaces(result.places)} au total (−${formatCoins(result.cost)} 💰)`);
+  },
+  'cow-herbs': (target) => {
+    const result = applyResult(setCowHerbs(state, target.dataset.on === '1'));
+    if (result.ok) showToast(result.herbes ? `${DATA.items[DATA.PATURAGE.herbes].icone} Les vaches mangeront les herbes de montagne : lait d'alpage cette nuit.` : '🌾 Les vaches reviennent à la paille.');
   },
   'shear': (target) => {
     const result = applyResult(shear(state, target.dataset.id));

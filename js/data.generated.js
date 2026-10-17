@@ -130,7 +130,7 @@ export const RAW_DATA = {
     "tomate": { "nom": "Tomate", "icone": "🍅", "energie": 8, "prix": 1, "edible": true, "category": "légume" },
     "courgette": { "nom": "Courgette", "icone": "🥒", "energie": 10, "prix": 2, "edible": true, "category": "légume" },
     "aubergine": { "nom": "Aubergine", "icone": "🍆", "energie": 10, "prix": 2, "edible": true, "category": "légume" },
-    "conserve": { "nom": "Conserve", "icone": "🥫", "energie": 25, "prix": 3, "edible": true, "category": "conserve", "rachetable": false },
+    "conserve": { "nom": "Boîte de conserve", "icone": "🥫", "energie": 25, "prix": 3, "edible": true, "category": "conserve", "rachetable": false },
     "graine_carotte": { "nom": "Graines de carotte", "icone": "🌱‍🥕", "prix": 1, "edible": false, "category": "graine" },
     "graine_tomate": { "nom": "Graines de tomate", "icone": "🌱‍🍅", "prix": 1, "edible": false, "category": "graine" },
     "graine_courgette": { "nom": "Graines de courgette", "icone": "🌱‍🥒", "prix": 1, "edible": false, "category": "graine" },
@@ -145,7 +145,8 @@ export const RAW_DATA = {
       "prix": 10,
       "edible": true,
       "category": "produit",
-      "rachetable": false
+      "rachetable": false,
+      "retire": true
     },
     "pomme": { "nom": "Pomme", "icone": "🍎", "energie": 10, "prix": 2, "edible": true, "category": "fruit" },
     "poire": { "nom": "Poire", "icone": "🍐", "energie": 10, "prix": 2, "edible": true, "category": "fruit" },
@@ -160,6 +161,71 @@ export const RAW_DATA = {
     "anchois": { "nom": "Anchois", "icone": "🐟‍💧", "energie": 14, "prix": 3, "edible": true, "category": "produit", "rachetable": false },
     "sardine": { "nom": "Sardine", "icone": "🐟‍🌊", "energie": 20, "prix": 4, "edible": true, "category": "produit", "rachetable": false },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "edible": false, "category": "produit", "rachetable": false },
+    "ammonite": {
+      "nom": "Ammonite fossile",
+      "icone": "🪨‍🐚",
+      "prix": 6,
+      "edible": false,
+      "category": "produit",
+      "rachetable": false,
+      "trouvaille": "montagne"
+    },
+    "trilobite": {
+      "nom": "Trilobite fossile",
+      "icone": "🪨‍🪲",
+      "prix": 6,
+      "edible": false,
+      "category": "produit",
+      "rachetable": false,
+      "trouvaille": "montagne"
+    },
+    "quartz": {
+      "nom": "Cristal de quartz",
+      "icone": "💎",
+      "prix": 4,
+      "edible": false,
+      "category": "produit",
+      "rachetable": false,
+      "trouvaille": "montagne"
+    },
+    "amethyste": {
+      "nom": "Améthyste",
+      "icone": "💎‍🟣",
+      "prix": 7,
+      "edible": false,
+      "category": "produit",
+      "rachetable": false,
+      "trouvaille": "montagne"
+    },
+    "coquille": {
+      "nom": "Coquille Saint-Jacques",
+      "icone": "🐚",
+      "prix": 3,
+      "edible": false,
+      "category": "produit",
+      "rachetable": false,
+      "trouvaille": "plage"
+    },
+    "bulot": { "nom": "Bulot", "icone": "🐌", "prix": 2, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
+    "corail": {
+      "nom": "Branche de corail",
+      "icone": "🪸",
+      "prix": 5,
+      "edible": false,
+      "category": "produit",
+      "rachetable": false,
+      "trouvaille": "plage"
+    },
+    "perle": { "nom": "Perle", "icone": "🦪", "prix": 12, "edible": false, "category": "produit", "rachetable": false, "trouvaille": "plage" },
+    "herbes_montagne": {
+      "nom": "Herbes de montagne",
+      "icone": "🌿‍🏔️",
+      "prix": 2,
+      "edible": false,
+      "category": "produit",
+      "rachetable": false,
+      "trouvaille": "montagne"
+    },
     "minerai_fer": {
       "nom": "Minerai de fer",
       "icone": "🪨‍🔩",
@@ -199,7 +265,7 @@ export const RAW_DATA = {
     "lingot_fer": {
       "nom": "Lingot de fer",
       "icone": "🧈‍🔩",
-      "prix": 10,
+      "prix": 15,
       "edible": false,
       "category": "matériau",
       "rachetable": false,
@@ -208,7 +274,7 @@ export const RAW_DATA = {
     "lingot_cuivre": {
       "nom": "Lingot de cuivre",
       "icone": "🧈‍🟠",
-      "prix": 14,
+      "prix": 20,
       "edible": false,
       "category": "matériau",
       "rachetable": false,
@@ -217,7 +283,7 @@ export const RAW_DATA = {
     "lingot_or": {
       "nom": "Lingot d'or",
       "icone": "🧈‍🟡",
-      "prix": 26,
+      "prix": 35,
       "edible": false,
       "category": "matériau",
       "rachetable": false,
@@ -226,7 +292,7 @@ export const RAW_DATA = {
     "lingot_platine": {
       "nom": "Lingot de platine",
       "icone": "🧈‍⚪",
-      "prix": 42,
+      "prix": 55,
       "edible": false,
       "category": "matériau",
       "rachetable": false,
@@ -246,7 +312,16 @@ export const RAW_DATA = {
     "cacao": { "nom": "Cacao", "icone": "🍫", "prix": 8, "edible": false, "category": "ingrédient" },
     "vanille": { "nom": "Vanille", "icone": "🫘", "prix": 15, "edible": false, "category": "ingrédient" },
     "cafe": { "nom": "Café", "icone": "☕", "prix": 6, "edible": false, "category": "ingrédient" },
-    "viande_boeuf": { "nom": "Viande de bœuf", "icone": "🍖", "energie": 38, "prix": 10, "edible": true, "category": "produit", "rachetable": false },
+    "viande_boeuf": {
+      "nom": "Viande de bœuf",
+      "icone": "🍖",
+      "energie": 38,
+      "prix": 10,
+      "edible": true,
+      "category": "produit",
+      "rachetable": false,
+      "retire": true
+    },
     "viande_volaille": {
       "nom": "Viande de volaille",
       "icone": "🍗",
@@ -254,13 +329,23 @@ export const RAW_DATA = {
       "prix": 6,
       "edible": true,
       "category": "produit",
-      "rachetable": false
+      "rachetable": false,
+      "retire": true
     },
     "lait": { "nom": "Lait", "icone": "🥛", "energie": 16, "prix": 4, "edible": true, "category": "produit" },
+    "lait_alpage": {
+      "nom": "Lait d'alpage",
+      "icone": "🥛‍🏔️",
+      "energie": 18,
+      "prix": 12,
+      "edible": true,
+      "category": "produit",
+      "rachetable": false
+    },
     "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "edible": false, "category": "produit", "rachetable": false },
     "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "edible": true, "category": "produit", "ville": true },
     "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "edible": true, "category": "produit", "ville": true },
-    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 25, "prix": 5, "edible": true, "category": "produit", "ville": true },
+    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "edible": true, "category": "produit", "ville": true },
     "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "edible": false, "category": "ingrédient", "ville": true },
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "edible": false, "category": "ingrédient", "ville": true },
     "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "edible": true, "category": "légume", "rachetable": false },
@@ -294,7 +379,7 @@ export const RAW_DATA = {
     },
     "omelette": {
       "nom": "Omelette",
-      "icone": "🍳",
+      "icone": "🍳‍🥚",
       "station": "cuisine",
       "temps": 15,
       "ingredients": [{ "item": "oeuf", "qte": 3 }, { "item": "huile", "qte": 1 }]
@@ -329,7 +414,7 @@ export const RAW_DATA = {
     },
     "soupe_legumes": {
       "nom": "Soupe de légumes",
-      "icone": "🍲",
+      "icone": "🍲‍🥕",
       "station": "cuisine",
       "temps": 30,
       "ingredients": [{ "item": "carotte", "qte": 1 }, { "item": "oignon", "qte": 1 }, { "item": "patate", "qte": 1 }],
@@ -344,15 +429,25 @@ export const RAW_DATA = {
     },
     "quiche_epinards": {
       "nom": "Quiche aux épinards",
-      "icone": "🥧",
+      "icone": "🥧‍🥬",
       "station": "four",
       "temps": 40,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "oeuf", "qte": 2 }, { "item": "lait", "qte": 1 }, { "item": "epinard", "qte": 1 }]
     },
-    "fromage_frais": { "nom": "Fromage frais", "icone": "🧀", "station": "cuisine", "temps": 60, "ingredients": [{ "item": "lait", "qte": 3 }] },
+    "fromage_frais": { "nom": "Fromage frais", "icone": "🧀‍🥛", "station": "cuisine", "temps": 60, "ingredients": [{ "item": "lait", "qte": 3 }] },
+    "fromage_alpage": {
+      "nom": "Fromage d'alpage",
+      "icone": "🧀",
+      "station": "cuisine",
+      "temps": 60,
+      "ingredients": [{ "item": "lait_alpage", "qte": 3 }],
+      "transformation": true,
+      "sortie": "fromage_alpage",
+      "qteSortie": 1
+    },
     "riz_au_lait": {
       "nom": "Riz au lait",
-      "icone": "🍚",
+      "icone": "🍚‍🥛",
       "station": "cuisine",
       "temps": 30,
       "ingredients": [{ "item": "riz", "qte": 2 }, { "item": "lait", "qte": 1 }]
@@ -373,22 +468,22 @@ export const RAW_DATA = {
     },
     "confiture_fraises": {
       "nom": "Confiture de fraises",
-      "icone": "🍓",
+      "icone": "🫙‍🍓",
       "station": "cuisine",
       "temps": 30,
       "ingredients": [{ "item": "fraise", "qte": 4 }]
     },
     "chocolat_chaud": {
       "nom": "Chocolat chaud",
-      "icone": "🍫",
+      "icone": "☕‍🍫",
       "station": "cuisine",
       "temps": 20,
       "ingredients": [{ "item": "cacao", "qte": 1 }, { "item": "lait", "qte": 1 }],
       "priceMultiplier": 300
     },
     "cafe_boisson": {
-      "nom": "Café",
-      "icone": "☕",
+      "nom": "Café chaud",
+      "icone": "☕‍🔥",
       "station": "cuisine",
       "temps": 10,
       "ingredients": [{ "item": "cafe", "qte": 1 }],
@@ -485,14 +580,14 @@ export const RAW_DATA = {
     },
     "omelette_champignons": {
       "nom": "Omelette aux champignons",
-      "icone": "🍄",
+      "icone": "🍳‍🍄",
       "station": "cuisine",
       "temps": 15,
       "ingredients": [{ "item": "oeuf", "qte": 2 }, { "item": "champignon", "qte": 2 }]
     },
     "poisson_grille": {
       "nom": "Poisson grillé à l'ail",
-      "icone": "🐟",
+      "icone": "🐟‍🔥",
       "station": "cuisine",
       "temps": 15,
       "ingredients": [{ "item": "poisson", "qte": 1 }, { "item": "ail", "qte": 1 }]
@@ -506,21 +601,21 @@ export const RAW_DATA = {
     },
     "creme_marrons": {
       "nom": "Crème de marrons",
-      "icone": "🌰",
+      "icone": "🫙‍🌰",
       "station": "cuisine",
       "temps": 25,
       "ingredients": [{ "item": "chataigne", "qte": 4 }, { "item": "sucre", "qte": 1 }]
     },
     "tarte_myrtilles": {
       "nom": "Tarte aux myrtilles",
-      "icone": "🥧",
+      "icone": "🥧‍🫐",
       "station": "four",
       "temps": 30,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "myrtille", "qte": 4 }, { "item": "sucre", "qte": 1 }]
     },
     "pain_epices": {
       "nom": "Pain d'épices",
-      "icone": "🍞",
+      "icone": "🍞‍🍯",
       "station": "four",
       "temps": 30,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "miel", "qte": 1 }, { "item": "epices", "qte": 1 }]
@@ -531,7 +626,7 @@ export const RAW_DATA = {
       "icone": "🐟‍🥟",
       "station": "cuisine",
       "temps": 20,
-      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "omble", "dorade", "sardine", "poisson"], "qte": 1 }]
+      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "omble", "dorade", "sardine", "anchois", "poisson"], "qte": 1 }]
     }
   },
   "crops": {
@@ -772,7 +867,16 @@ export const RAW_DATA = {
   "ANIMAUX": {
     "poule": { "nom": "Poule", "icone": "🐔", "prix": 15, "poulesParBle": 2, "oeufsParNuit": 1, "produit": "oeuf" },
     "mouton": { "nom": "Mouton", "icone": "🐑", "prix": 60, "pailleParNuit": 1, "joursLaine": 2, "laineParTonte": 1, "laine": "laine" },
-    "vache": { "nom": "Vache", "icone": "🐄", "prix": 200, "pailleParNuit": 2, "laitParNuit": 1, "lait": "lait" }
+    "vache": {
+      "nom": "Vache",
+      "icone": "🐄",
+      "prix": 200,
+      "pailleParNuit": 2,
+      "laitParNuit": 1,
+      "lait": "lait",
+      "herbesParNuit": 1,
+      "laitAlpage": "lait_alpage"
+    }
   },
   "PATURAGE": {
     "deblocage": 150,
@@ -781,7 +885,8 @@ export const RAW_DATA = {
     "placesParVache": 3,
     "prixPlace": 40,
     "croissance": 120,
-    "nourriture": "paille"
+    "nourriture": "paille",
+    "herbes": "herbes_montagne"
   },
   "TECHNO": { "ONGLET": "techno", "SEUIL_PIECES": 100 },
   "techtree": {
@@ -1168,8 +1273,8 @@ export const RAW_DATA = {
         "cout": 300,
         "ressources": { "bois": 6, "lingot_fer": 2 },
         "requiert": [{ "construit": "paturage" }],
-        "effet": { "recettes": ["fromage_frais", "riz_au_lait"] },
-        "description": "Nouvelles recettes en Cuisine : fromage frais, riz au lait."
+        "effet": { "recettes": ["fromage_frais", "riz_au_lait", "fromage_alpage"] },
+        "description": "Nouvelles recettes en Cuisine : fromage frais, riz au lait, fromage d'alpage (avec le lait des vaches nourries aux herbes de montagne)."
       },
       "prepa_2": {
         "branche": "cuisine",
@@ -1187,7 +1292,7 @@ export const RAW_DATA = {
       "cui_conserverie": {
         "branche": "cuisine",
         "palier": 4,
-        "nom": "Conserverie",
+        "nom": "Mise en bocaux",
         "icone": "🫙",
         "fonction": "deblocage",
         "pt": 2,
@@ -1386,19 +1491,21 @@ export const RAW_DATA = {
       {
         "titre": "Le poulailler",
         "icone": "🐔",
-        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille.",
+        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille. L'Arbre des technologies demande maintenant du fer : une pioche en main, prends le chemin de la ville, puis le train jusqu'à la montagne, et descends à la grotte.",
         "objectifs": [
           { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
-          { "type": "autonomie", "cible": 50, "libelle": "Atteindre 50 % d'autonomie", "unite": "%" }
+          { "type": "autonomie", "cible": 50, "libelle": "Atteindre 50 % d'autonomie", "unite": "%" },
+          { "type": "objet", "item": "minerai_fer", "cible": 4, "libelle": "Rapporter 4 minerais de fer de la grotte", "unite": "" }
         ]
       },
       {
         "titre": "Le four et le livre de recette",
         "icone": "🍞",
-        "intro": "Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients.",
+        "intro": "Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients. Le Four fond aussi le minerai de la grotte, avec du bois : les lingots paient les technologies.",
         "objectifs": [
           { "type": "pains", "cible": 5, "recette": "pain", "libelle": "Cuire 5 pains", "unite": "" },
-          { "type": "plats", "cible": 3, "exclut": ["pain"], "libelle": "Préparer 3 plats différents (hors pain)", "unite": "" }
+          { "type": "plats", "cible": 3, "exclut": ["pain"], "libelle": "Préparer 3 plats différents (hors pain)", "unite": "" },
+          { "type": "objet", "item": "lingot_fer", "cible": 1, "libelle": "Fondre un lingot de fer au Four", "unite": "" }
         ]
       },
       {
@@ -1510,7 +1617,7 @@ export const RAW_DATA = {
       "commerce": {
         "nom": "Commerce",
         "icone": "🏪",
-        "note": "conserverie, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production"
+        "note": "étal de bocaux, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production"
       },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
     },
@@ -1543,15 +1650,15 @@ export const RAW_DATA = {
     "CHANGER": 5000,
     "TYPES": {
       "conserverie": {
-        "nom": "Conserverie",
-        "le": "la conserverie",
-        "icone": "🥫",
-        "produit": "conserve de légumes",
-        "produits": "conserves de légumes",
+        "nom": "Étal de bocaux",
+        "le": "l'étal de bocaux",
+        "icone": "🫙",
+        "produit": "bocal de légumes",
+        "produits": "bocaux de légumes",
         "prend": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard"],
         "matiere": "légumes",
         "par": 4,
-        "prix": 18
+        "prix": 24
       },
       "cremerie": {
         "nom": "Crèmerie",
@@ -1645,8 +1752,8 @@ export const RAW_DATA = {
         "heures": 8,
         "prix": 20,
         "bonheur": { "enfant": 20, "adulte": 20 },
-        "butin": { "miel": 2, "fromage_alpage": 2 },
-        "texte": "Le train jusqu'aux alpages : randonnée, miel et fromage d'alpage."
+        "butin": { "miel": 2 },
+        "texte": "Le train jusqu'aux alpages : randonnée et miel."
       },
       "foret": {
         "nom": "Forêt",
@@ -1672,7 +1779,7 @@ export const RAW_DATA = {
           "intrantNom": "légumes",
           "par": 3,
           "produit": "Boîte de conserve",
-          "prixProduit": 21,
+          "prixProduit": 24,
           "quota": 4,
           "quotaMax": 30,
           "texte": "Met en boîte les légumes de la ferme."
@@ -2020,6 +2127,7 @@ export const RAW_DATA = {
     "dorade": 2,
     "anchois": 2,
     "sardine": 2,
+    "herbes_montagne": 3,
     "oignon": 6,
     "ail": 7,
     "poivron": 5,
@@ -2028,6 +2136,7 @@ export const RAW_DATA = {
     "viande_boeuf": 5,
     "viande_volaille": 4,
     "lait": 4,
+    "lait_alpage": 4,
     "poisson": 2,
     "fromage_alpage": 10,
     "champignon": 3,

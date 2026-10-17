@@ -178,7 +178,7 @@
   };
   const HOLLOW = {
     layer: 'plantes_pierres', gids: [539, 540], near: 22, page: 'infra-monde.html',
-    text: 'De drôles de couleurs luisent dans le creux du tronc, voulez-vous aller voir ?',
+    text: 'De drôles de couleurs luisent dans le creux du tronc : veux-tu aller voir ?',
   };
   // L'herbe haute (scripts/carte/herbe_haute.py) : la couche d'objets « herbe_haute » de la
   // carte, un point par touffe (type = variante, une rangée de la planche). Quand le personnage
@@ -1636,7 +1636,7 @@
             labelLayer.appendChild(el);
             B = { el, id: p.id, texte: null, w: 0, h: 0, tr: '' };
             // Au clavier (le doigt et la souris passent par la carte : hitAt) ;
-            el.addEventListener('click', () => { if (this.fermier && !(lastModel && lastModel.nuit)) this.fermier.fetch(B.id); });
+            el.addEventListener('click', () => { if (this.fermier && !(lastModel && lastModel.coucher)) this.fermier.fetch(B.id); });
             this.piles.set(p.id, B);
           }
           B.p = p;
@@ -2293,7 +2293,7 @@
           return;
         }
         if (!hit) return;
-        if (hit.pile) { if (this.fermier && !(lastModel && lastModel.nuit)) this.fermier.fetch(hit.pile); return; }   // la nuit, la famille dort
+        if (hit.pile) { if (this.fermier && !(lastModel && lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien
         if (hit.window) { bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         if (hit.chop) { this.chop(hit.chop); return; }
@@ -3150,15 +3150,15 @@
       }
 
       // Version 1.19 : le personnage va ramasser au Poulailler ou à l'Étable. Rien à y prendre :
-      // la fenêtre du bâtiment s'ouvre, comme un appui simple. La nuit, la famille dort.
+      // la fenêtre du bâtiment s'ouvre, comme un appui simple. Au lit (ou en y allant) : rien.
       goCollect(lieu, win) {
-        if (lastModel && lastModel.nuit) return;
+        if (lastModel && lastModel.coucher) return;
         if (this.fermier && this.fermier.collect(lieu)) return;
         bridge.act('stage-open', { window: win });
       }
 
       // Le personnage va au point (wx, wy) de la carte ; un rond marque un instant l'arrivée.
-      // La nuit, la famille dort : rien.
+      // Au lit (ou en y allant) : rien. La nuit seule n'empêche pas de marcher.
       /* ---------- le tronc creux : le passage vers l'infra-monde ---------- */
 
       // Le rectangle du tronc creux sur la carte (px), lu une fois dans ses tuiles ; null
@@ -3236,7 +3236,7 @@
       }
 
       goHere(wx, wy) {
-        if (!this.fermier || (lastModel && lastModel.nuit)) return;
+        if (!this.fermier || (lastModel && lastModel.coucher)) return;
         // vers le tronc creux : il s'arrête à côté, à sa droite, pas dessus
         const b = this.hollow();
         if (b && wx >= b.x0 - 2 && wx <= b.x1 + 2 && wy >= b.y0 - 4 && wy <= b.y1 + 2) { wx = b.x1 + 8; wy = b.y1 - 3; }

@@ -1,0 +1,2 @@
+# Générateurs d’images en Python (scripts/**/*.py) : pip install -r requirements.txt
+Pillow>=10

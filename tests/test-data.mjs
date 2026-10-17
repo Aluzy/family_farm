@@ -4,9 +4,10 @@
 // qu'on peut faire en ajoutant un objet, une recette ou une culture est bien
 // signalée, avec un message qui dit où.
 //
-// Usage : node test-data.mjs
+// Usage : node tests/test-data.mjs
 
-import { compileData, loadData, stripNotes, validateData } from './scripts/lib/data.mjs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { EFFETS_TECHNO, compileData, loadData, sourcesOf, stripNotes, validateData } from '../scripts/lib/data.mjs';
 
 let passed = 0;
 const failures = [];
@@ -112,6 +113,50 @@ test('culture sans découpe : un avertissement, pas une erreur', () => {
 refuse('courrier : cadeau inconnu', (d) => { d.COURRIER.cousin_venezuela.cadeaux.mangue = 1; }, '« mangue »');
 refuse('inventaire de départ : objet inconnu', (d) => { d.START.INVENTAIRE.graine_melon = 2; }, 'START.INVENTAIRE : « graine_melon »');
 refuse('animal : produit inconnu', (d) => { d.ANIMAUX.poule.produit = 'oeufs'; }, 'ANIMAUX.poule.produit : « oeufs »');
+refuse('commerce : matière inconnue', (d) => { d.COMMERCE.TYPES.cremerie.prend.push('lait_chevre'); }, 'COMMERCE.TYPES.cremerie.prend : « lait_chevre »');
+refuse('entreprise : intrant inconnu', (d) => { d.VILLE.ENTREPRISES.LISTE.confiturerie.intrants.push('mangue'); }, 'VILLE.ENTREPRISES.LISTE.confiturerie.intrants : « mangue »');
+refuse('sortie : butin inconnu', (d) => { d.VILLE.SORTIES.montagne.butin.edelweiss = 1; }, 'VILLE.SORTIES.montagne.butin : « edelweiss »');
+refuse('sortie : cueillette inconnue', (d) => { d.VILLE.SORTIES.foret.cueillettes[0].truffe = 1; }, 'VILLE.SORTIES.foret.cueillettes[0] : « truffe »');
+
+/* ---------- arbre : clés d'effet ; objets qu'on peut obtenir ---------- */
+
+refuse('arbre : clé d\'effet que le moteur ne lit pas', (d) => { d.techtree.noeuds.cu_outils.effet.vitesseRecolte = 120; }, '« vitesseRecolte » : aucun code du moteur');
+test('chaque clé d\'effet de EFFETS_TECHNO est lue dans js/', () => {
+  const src = readdirSync('js/engine').map((f) => readFileSync(`js/engine/${f}`, 'utf8')).join('\n') + readFileSync('js/ville-carte.js', 'utf8');
+  const lue = (cle) => new RegExp(`(tech(Effects|Pct|Sum|Flag)\\(state, '${cle}'|withBonus\\([^)]*'${cle}'|e\\.${cle}\\b|tech\\('${cle}'\\))`).test(src);
+  eq(EFFETS_TECHNO.filter((cle) => !lue(cle)), []);
+});
+test('objet impossible à obtenir : un avertissement, pas une erreur', () => {
+  eq(validateData(DATA).warnings.filter((w) => w.includes('aucun moyen de l\'obtenir')), [], 'tout objet du dépôt s\'obtient');
+  const d = copy();
+  d.items.melon = { nom: 'Melon', icone: '🍈', energie: 9, prix: 2, edible: true, category: 'fruit', rachetable: false };
+  const r = validateData(d);
+  eq([r.errors, r.warnings.filter((w) => w.startsWith('items.melon'))], [[], ['items.melon : aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)']]);
+  eq(sourcesOf(d, 'minerai_or'), ['grotte']);
+  eq(sourcesOf(d, 'anchois'), ['pêche mer']);
+});
+test('le fromage d\'alpage : herbes de montagne (trouvaille) → lait d\'alpage (vache) → fromage (Cuisine)', () => {
+  eq(sourcesOf(DATA, 'herbes_montagne'), ['trouvaille (montagne)']);
+  eq(sourcesOf(DATA, 'lait_alpage'), ['animal vache']);
+  eq(sourcesOf(DATA, 'fromage_alpage'), ['recette fromage_alpage', 'marché de la ville']);
+});
+test('les trouvailles des cartes (assets/faune.json) sont les objets « trouvaille », chaque genre a ses endroits', () => {
+  const meta = JSON.parse(readFileSync('assets/faune.json', 'utf8')).trouvailles;
+  const objets = Object.keys(DATA.items).filter((id) => DATA.items[id].trouvaille);
+  eq(Object.keys(meta).sort(), objets.sort());
+  const genres = {};
+  for (const carte of ['montagne', 'plage']) {
+    const map = JSON.parse(readFileSync(`assets/${carte}.json`, 'utf8'));
+    const couche = map.layers.find((l) => l.name === 'trouvailles');
+    for (const o of couche.objects) {
+      const g = o.properties.find((p) => p.name === 'genre').value;
+      genres[g] = (genres[g] || 0) + 1;
+    }
+  }
+  for (const [id, m] of Object.entries(meta)) if (!genres[m.genre]) throw new Error(`${id} : aucun endroit du genre « ${m.genre} »`);
+  eq(meta.herbes_montagne.genre, 'herbe');
+  if (!(genres.herbe > genres.pierre)) throw new Error(`les herbes, les plus courantes de la montagne : ${JSON.stringify(genres)}`);
+});
 
 console.log('');
 console.log('Ferme Familiale — tests des données');

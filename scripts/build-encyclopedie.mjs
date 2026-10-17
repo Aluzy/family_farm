@@ -5,14 +5,21 @@
 // la page garde sa mise en forme, son en-tête, son pied et sa recherche. Seuls
 // le menu des catégories et les sections de <main> sont réécrits.
 //
-// Usage : node build-encyclopedie.mjs          (réécrit encyclopedie.html)
-//         node build-encyclopedie.mjs --check  (vérifie que la page est à jour, sans écrire)
+// Les descriptions peuvent citer les données du jeu (data/*.json) : {{DATA.chemin}} y
+// devient la valeur (un nombre est écrit à la française : « 1 500 »), et quelques
+// comptes ont un nom court (VALEURS : {{nb_technologies}}, {{nb_branches}}…). Ainsi,
+// l'encyclopédie suit les données sans être réécrite. Une valeur introuvable est une erreur.
+//
+// Usage : node scripts/build-encyclopedie.mjs          (réécrit encyclopedie.html)
+//         node scripts/build-encyclopedie.mjs --check  (vérifie que la page est à jour, sans écrire)
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { DATA } from '../js/engine/catalog.js';
+import { formatNumber } from '../js/engine/format.js';
 
-const here = dirname(fileURLToPath(import.meta.url));
+const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 const jsonPath = join(here, 'encyclopedie_ferme_familiale.json');
 const htmlPath = join(here, 'encyclopedie.html');
 
@@ -26,6 +33,26 @@ const esc = (s) => String(s)
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#x27;');
 
+// Les comptes qu'une description peut citer par leur nom : {{nb_technologies}}.
+const VALEURS = {
+  nb_technologies: Object.keys(DATA.techtree.noeuds).length,
+  nb_branches: DATA.techtree.branches.length,
+  nb_paliers: Object.keys(DATA.techtree.PALIERS).length,
+  nb_chapitres: DATA.CHAPITRES.liste.length,
+};
+
+// Remplace {{nom}} (VALEURS) et {{DATA.chemin.vers.valeur}} dans le texte de l'entrée `id`.
+function remplir(texte, id) {
+  return String(texte).replace(/\{\{([\w.]+)\}\}/g, (m, cle) => {
+    let v;
+    if (cle.startsWith('DATA.')) v = cle.split('.').slice(1).reduce((o, k) => (o == null ? undefined : o[k]), DATA);
+    else v = VALEURS[cle];
+    if (typeof v === 'number') return Number.isInteger(v) ? formatNumber(v) : String(v).replace('.', ',');
+    if (typeof v === 'string') return v;
+    throw new Error(`« ${id} » cite une valeur introuvable : ${m}`);
+  });
+}
+
 // Tous les termes, pour le libellé des liens ; un lien vers un terme inconnu est une erreur.
 const termes = new Map();
 for (const c of data.categories) {
@@ -36,13 +63,14 @@ for (const c of data.categories) {
 }
 
 function entree(e) {
+  const description = remplir(e.description, e.id);
   const liens = (e.liens || []).map((id) => {
     if (!termes.has(id)) throw new Error(`« ${e.id} » renvoie vers un terme inconnu : ${id}`);
     return `<a class="chip" href="#${id}">${esc(termes.get(id))}</a>`;
   });
-  return `        <article class="entry" id="${e.id}" data-search="${esc(`${e.terme} ${e.description}`.toLowerCase())}">
+  return `        <article class="entry" id="${e.id}" data-search="${esc(`${e.terme} ${description}`.toLowerCase())}">
           <h3>${esc(e.terme)}</h3>
-          <p>${esc(e.description)}</p>
+          <p>${esc(description)}</p>
           ${liens.length ? `<div class="links">${liens.join('')}</div>` : ''}
         </article>`;
 }
@@ -78,7 +106,7 @@ out = remplacer(out, '<main class="wrap">', '    <p class="no-results"', `\n    
 const total = data.categories.reduce((t, c) => t + c.entrees.length, 0);
 if (process.argv.includes('--check')) {
   if (out !== page) {
-    console.error('encyclopedie.html n\'est pas à jour : lancer « node build-encyclopedie.mjs ».');
+    console.error('encyclopedie.html n\'est pas à jour : lancer « node scripts/build-encyclopedie.mjs ».');
     process.exit(1);
   }
   console.log(`encyclopedie.html est à jour (${total} termes, ${data.categories.length} catégories).`);

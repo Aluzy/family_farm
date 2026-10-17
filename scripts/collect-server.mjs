@@ -5,7 +5,7 @@
 // même session (envoi périodique puis envoi final), le fichier est remplacé
 // par la version la plus récente.
 //
-// Sans dépendance. Usage : node collect-server.mjs [port]   (défaut : 8787)
+// Sans dépendance. Usage : node scripts/collect-server.mjs [port]   (défaut : 8787)
 
 import http from 'node:http';
 import { mkdirSync, writeFileSync, readdirSync, renameSync } from 'node:fs';
@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const PORT = Number(process.argv[2]) || 8787;
 const HOST = '127.0.0.1'; // uniquement cette machine
 const MAX_BYTES = 512 * 1024;
-const DIR = join(dirname(fileURLToPath(import.meta.url)), 'sessions');
+const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'sessions');
 const SID_RE = /^[A-Za-z0-9-]{8,64}$/;
 
 mkdirSync(DIR, { recursive: true });

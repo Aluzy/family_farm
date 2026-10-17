@@ -34,7 +34,7 @@
       "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille du Moulin" },
       "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
       "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
-      "commerce": { "nom": "Commerce", "icone": "🏪", "note": "conserverie, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production" },
+      "commerce": { "nom": "Commerce", "icone": "🏪", "note": "étal de bocaux, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production" },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
     },
     "//XP": [
@@ -74,7 +74,17 @@
     "frigo) et vend aussitôt le produit au prix `prix`, sans passer par le Marché :",
     "1 XP par pièce, comme une vente. Ni énergie ni électricité.",
     "CAPACITE : transformations par nuit au plus, par niveau ; COUT : prix du niveau",
-    "(index 0 = le choix, gratuit). CHANGER : prix pour changer de commerce."
+    "(index 0 = le choix, gratuit). CHANGER : prix pour changer de commerce.",
+    "",
+    "Échelle de valeur des transformations (même règle pour les trois systèmes) : la valeur",
+    "d'une unité prise est le prix effectif (après chargement : productions doublées) de",
+    "l'intrant le plus cher qu'elle peut être, pour ne jamais perdre quel que soit l'intrant :",
+    "  - recette à la maison (cuisine, four) : ×1,3 (RECETTES.COEF_PLAT, recipes.json) ;",
+    "  - commerce de la ferme (ici, passif) : ×1,5 → prix = par × valeur × 1,5 ;",
+    "  - entreprise de la ville (chère à acheter, quotas : ville.json) : ×2 → prixProduit = par × valeur × 2.",
+    "  Étal de bocaux : 4 légumes (4 💰 au plus) → 24 ; Crèmerie : 3 laits (8 💰) → 36 ;",
+    "  Métier à tisser : 2 laines (12 💰) → 36. Les noms ne doivent pas reprendre ceux des",
+    "  entreprises de la ville (Conserverie, Fromagerie, Confiturerie)."
   ],
   "COMMERCE": {
     "CAPACITE": [10, 20, 35, 50],
@@ -82,9 +92,9 @@
     "CHANGER": 5000,
     "TYPES": {
       "conserverie": {
-        "nom": "Conserverie", "le": "la conserverie", "icone": "🥫", "produit": "conserve de légumes", "produits": "conserves de légumes",
+        "nom": "Étal de bocaux", "le": "l'étal de bocaux", "icone": "🫙", "produit": "bocal de légumes", "produits": "bocaux de légumes",
         "prend": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard"],
-        "matiere": "légumes", "par": 4, "prix": 18
+        "matiere": "légumes", "par": 4, "prix": 24
       },
       "cremerie": {
         "nom": "Crèmerie", "le": "la crèmerie", "icone": "🧀", "produit": "fromage", "produits": "fromages",

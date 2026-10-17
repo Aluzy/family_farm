@@ -4,14 +4,14 @@
 // sendBeacon, événements) et vérifie surtout les règles de confidentialité :
 // rien n'est stocké ni envoyé sans consentement, rien après un retrait.
 //
-// Usage : node test-telemetry.mjs
+// Usage : node tests/test-telemetry.mjs
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
-const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'js', 'telemetry.js'), 'utf8');
+const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'js', 'telemetry.js'), 'utf8');
 
 let passed = 0;
 const failures = [];

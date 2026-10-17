@@ -78,6 +78,8 @@ export function buildMorningReport(state) {
     // Vaches présentes et lait donné cette nuit.
     vaches: state.paturage.vaches.length,
     lait: state.nuit.lait || 0,
+    // et le lait d'alpage (les vaches nourries aux herbes de montagne)
+    laitAlpage: state.nuit.laitAlpage || 0,
     // Version 1.1 : la nuit à l'Étable (animaux nourris, paille mangée, paille
     // qui a manqué), la paille en stock au réveil et celle qu'il faudra ce soir.
     etable: { ...newStableReport(), ...(state.nuit.etable || {}) },
@@ -121,6 +123,7 @@ export function nightHarvest(report) {
   };
   add('oeuf', report.oeufs);
   add('lait', report.lait);
+  add(DATA.ANIMAUX.vache.laitAlpage, report.laitAlpage);
   for (const [item, qty] of Object.entries(report.fruits || {})) add(item, qty);
   for (const [item, qty] of Object.entries((report.auto || {}).recoltes || {})) add(item, qty);
   return total;

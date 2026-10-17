@@ -3,14 +3,11 @@ import { EPS } from './base.js';
 import { batteryCapacity, tankCapacity } from './devices.js';
 import { awakeRequired, nightActive, nightLengthMs } from './clock.js';
 import { advanceNight } from './night.js';
-import { growDue } from './crops.js';
-import { irrigate, robotStep } from './automation.js';
-import { companiesStep } from './entreprises.js';
-import { flowStep, wearStep } from './energy.js';
+import { farmStep } from './energy.js';
 import { inventoryCounts } from './inventory.js';
 import { millPending, millTimeLeft, taskTimeLeft } from './kitchen.js';
 import { refreshUnlocks } from './techtree.js';
-import { noteEnergyRecord, updateChapters } from './campaign.js';
+import { updateChapters } from './campaign.js';
 
 /* ---------- Lot 11 : progression hors-ligne ---------- */
 
@@ -109,14 +106,7 @@ export function simulateOffline(state, seconds) {
   const eveilMax = Math.max(state.awakeMs, awakeRequired(state) * 1000);
   while (left > 0) {
     const dtMs = Math.min(H.PAS_S * 1000, left);
-    flowStep(state, dtMs);
-    if (H.USURE) wearStep(state, dtMs);
-    state.awakeMs = Math.min(eveilMax, state.awakeMs + dtMs);
-    growDue(state); // les plantes suivent l'horloge
-    robotStep(state);
-    irrigate(state);
-    companiesStep(state);
-    noteEnergyRecord(state);
+    farmStep(state, dtMs, { usure: !!H.USURE, eveilMax }); // le même pas que tick
     left -= dtMs;
   }
   if (simule > 0) {

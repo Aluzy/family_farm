@@ -49,9 +49,12 @@
  *
  * La montagne et la plage (scripts/ville/montagne.py, plage.py) : des trouvailles à ramasser
  * (couche « trouvailles » : un genre par endroit ; chaque jour, une partie des endroits, et ce
- * qu'on a ramassé ne revient que le lendemain — une maquette : rien n'entre encore dans
- * l'inventaire, un carnet les compte), des animaux à regarder (couche « animaux » : une zone
- * par espèce, FAUNE), les entrées des grottes (couche « passages » : la flèche y mène).
+ * qu'on a ramassé ne revient que le lendemain ; une trouvaille ramassée va dans l'inventaire,
+ * FermeHote.ramasser : fossiles, pierres, coquillages, corail, perles, qui se vendent ; les
+ * herbes de montagne, dans les prés, que les vaches de l'Étable mangent pour le lait d'alpage), des
+ * animaux à regarder (couche « animaux » : une zone par espèce, FAUNE) ; à la montagne
+ * seulement, les entrées des grottes (couche « passages » : la flèche y mène ; la plage n'a pas
+ * de grotte).
  *
  * Le marché de la ville (couche « lieux » : les étals) et les entreprises (les entrepôts
  * « conserverie », « fromagerie », « confiturerie ») : les ventes et les achats passent tout
@@ -189,19 +192,20 @@
     arrets: {
       transition: {
         route: 'bus_matin', arret: 'arret', attente: { x: 600, y: 243 },
-        cible: 'ville-carte.html?carte=ville&arrivee=gare&bus=1', choix: '🚉 La gare (en ville)', vers: 'jusqu’à la gare, en ville',
+        cible: 'ville-carte.html?carte=ville&arrivee=gare&bus=1', choix: '🚉 La gare (en ville)', vers: 'jusqu\'à la gare, en ville',
       },
       ville: {
         abri: { image: 'assets/ville_abri_profil.png', x: 556, pied: 1556, ancre: 61, bloque: [[34, 94], [34, 95], [34, 96], [34, 97], [35, 95], [35, 96], [35, 97]] },
         route: 'avenue_ouest:nord>avenue_ouest:sud', arret: { x: 625, y: 1528 }, attente: { x: 556, y: 1574 }, lead: 360,
-        cible: 'ville-carte.html?carte=transition&arrivee=ville&bus=1', choix: '🌾 La campagne (vers la ferme)', vers: 'jusqu’à l’arrêt de la campagne, sur le chemin de la ferme',
+        cible: 'ville-carte.html?carte=transition&arrivee=ville&bus=1', choix: '🌾 La campagne (vers la ferme)', vers: 'jusqu\'à l\'arrêt de la campagne, sur le chemin de la ferme',
       },
     },
     heures: [6, 22], monte: 0.8, part: 2.6, descend: 0.6, repart: 1.2,
   };
   // Les trouvailles (assets/trouvailles.png, scripts/ville/faune.py) : `part` des endroits en
-  // ont une chaque jour ; on la ramasse à `reach` px. Ce qu'on a ramassé (et le carnet) :
-  // localStorage « ferme-trouvailles ».
+  // ont une chaque jour ; on la ramasse à `reach` px, elle va dans l'inventaire (FermeHote.
+  // ramasser : l'objet du même nom, data/items.json). Ce qu'on a ramassé aujourd'hui (et le
+  // carnet d'avant, versé une fois dans l'inventaire) : localStorage « ferme-trouvailles ».
   const FINDS = { key: 'trouvailles', file: 'assets/trouvailles.png', store: 'ferme-trouvailles', part: 0.6, reach: 24 };
   // Les animaux (assets/faune_<espèce>.png, assets/faune.json) : par zone, `n` animaux ; `speed`
   // en px/s, `peur` : la distance où la promeneuse les dérange.
@@ -273,10 +277,10 @@
     enfants: ['Lou', 'Noa', 'Maé', 'Louison', 'Swann', 'Élie', 'Gaby', 'Robin', 'Jo', 'Lilou', 'Nino', 'Tom'],
     paroles: {
       adulte: ['Bonjour, voisin ! Les légumes de votre ferme sont les meilleurs du coin.', 'Entrez donc, il reste du café.',
-        'Le bus de l’école passe le matin vers 7 h, à l’arrêt au bout du chemin.', 'Il paraît que le marché de la ville paie bien les produits de la ferme.',
-        'Vous avez vu le train ? Il va jusqu’à la montagne et à la plage.', 'Quelle belle journée pour couper du bois !'],
-      enfant: ['Tu veux jouer avec moi ?', 'J’ai vu une marmotte à la montagne !', 'Le bus de l’école est tout jaune !',
-        'Ma maîtresse dit que les vaches font du lait. C’est vrai ?', 'Je vais construire une cabane dans les arbres.', 'Il y a des poissons dans la mare ?'],
+        'Le bus de l\'école passe le matin vers 7 h, à l\'arrêt au bout du chemin.', 'Il paraît que le marché de la ville paie bien les produits de la ferme.',
+        'Vous avez vu le train ? Il va jusqu\'à la montagne et à la plage.', 'Quelle belle journée pour couper du bois !'],
+      enfant: ['Tu veux jouer avec moi ?', 'J\'ai vu une marmotte à la montagne !', 'Le bus de l\'école est tout jaune !',
+        'Ma maîtresse dit que les vaches font du lait. C\'est vrai ?', 'Je vais construire une cabane dans les arbres.', 'Il y a des poissons dans la mare ?'],
     },
     meubles: ['four', 'cuisine', 'plan', 'evier', 'frigo', 'fenetre', 'plante', 'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
       'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3'],
@@ -285,6 +289,12 @@
   // La planche d'un personnage : un adulte (perso_NN) ou un enfant (enfant_NN), assets/personnages/.
   const sheetKey = (n, enfant) => (enfant ? 'enfant_' : 'perso_') + n;
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // Le joueur écrit dans un champ de la page (un nom, une quantité, un menu) : les flèches et
+  // ZQSD sont à lui, la promeneuse ne bouge pas.
+  const saisie = () => {
+    const el = document.activeElement;
+    return !!el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable);
+  };
 
   // La famille qui vit dans la maison `maison` : tirée au hasard la première fois, puis gardée.
   // { nom, membres: [{ prenom, perso, enfant }], deco: { tableaux, plante, salon } }.
@@ -510,7 +520,6 @@
 
       this.makePassages(objects('passages').concat(this.famille ? [this.interiorExit()] : []));
       // l'heure du jeu (HorlogeSortie : js/ui/excursion.js)
-      this.clockEl = document.getElementById('horloge');
       this.clockAt = -1e9;
       this.stepClock(0);
       this.makeHud();
@@ -547,7 +556,8 @@
       this.makeFauna(objects('animaux'));
       this.makeCaveLife();
       this.lieux = objects('lieux');
-      this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A') : null;
+      // (sans capture : les touches tapées dans un champ de la page y restent ; saisie())
+      this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;
       window.Ville = { scene: this };
     }
 
@@ -579,15 +589,12 @@
       }
     }
 
-    // L'heure du jeu, relue chaque seconde (null : pas de partie sur cet appareil).
+    // L'heure du jeu, relue chaque seconde (null : pas de partie sur cet appareil). (this.heure,
+    // pas this.time : c'est l'horloge de Phaser, celle de this.time.delayedCall.)
     stepClock(time) {
       if (time - this.clockAt < 1000) return;
       this.clockAt = time;
-      this.time = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
-      if (this.clockEl) {
-        this.clockEl.hidden = !this.time;
-        if (this.time) this.clockEl.textContent = '🕐 ' + window.HorlogeSortie.texte(this.time);
-      }
+      this.heure = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
     }
 
     // Le god mode (Options du jeu) : un toucher pose le personnage, les flèches sont toutes là.
@@ -618,7 +625,7 @@
       if (this.leaving) return;
       this.leaving = true;
       this.cameras.main.fadeOut(reduced() ? 0 : 250, 0, 0, 0);
-      setTimeout(() => { if (hote()) hote().go(q.cible); else window.location.href = q.cible; }, reduced() ? 0 : 260);
+      this.time.delayedCall(reduced() ? 0 : 260, () => { if (hote()) hote().go(q.cible); else window.location.href = q.cible; });
     }
 
     fitZoom() {
@@ -946,7 +953,7 @@
     // où ils s'effacent) ; puis le bus repart. Une scène par jour, matin et soir.
     stepSchool(time, dt) {
       this.stepKids(dt, time);
-      const t = this.time, list = BUS.scenes[NOM_CARTE] || [];
+      const t = this.heure, list = BUS.scenes[NOM_CARTE] || [];
       const sc = this.school;
       if (!sc) {
         if (!t || t.nuit || !window.HorlogeSortie.JOURS_ECOLE.includes(t.semaine) || !t.enfants.length || reduced()) return;
@@ -1001,16 +1008,14 @@
       ensureDom();
       this.msgEl = document.getElementById('message');
       this.gareEl = document.getElementById('gare-fenetre');
-      const aide = document.getElementById('aide-texte');
       const textes = {
-        ville: 'Touchez un trottoir pour y marcher · la gare, l’arrêt de bus à côté, un étal du marché, un entrepôt',
-        montagne: 'Touchez l’alpage pour y marcher · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
-        plage: 'Touchez le sable pour y marcher · une trouvaille pour la ramasser · la canne en main : la mer, depuis le ponton · la gare pour rentrer',
-        grotte: 'Touchez le sol pour y marcher · un minerai pour le piocher · l\u2019échelle pour remonter',
-        transition: 'Touchez l’herbe pour y marcher · une maison pour y entrer · l’abri de bus pour aller à la gare · la hache ou la pioche en main (barre d’outils) : un arbre, un rocher',
-        interieur: 'Touchez le plancher pour y marcher · un voisin pour lui parler · la flèche pour sortir',
+        ville: 'Touche un trottoir pour y marcher · la gare, l\'arrêt de bus à côté, un étal du marché, un entrepôt',
+        montagne: 'Touche l\'alpage pour y marcher · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
+        plage: 'Touche le sable pour y marcher · une trouvaille pour la ramasser · la canne en main : la mer, depuis le ponton · la gare pour rentrer',
+        grotte: 'Touche le sol pour y marcher · un minerai pour le piocher · l\'échelle pour remonter',
+        transition: 'Touche l\'herbe pour y marcher · une maison pour y entrer · l\'abri de bus pour aller à la gare · la hache ou la pioche en main (barre d\'outils) : un arbre, un rocher',
+        interieur: 'Touche le plancher pour y marcher · un voisin pour lui parler · la flèche pour sortir',
       };
-      if (aide && textes[NOM_CARTE]) aide.textContent = textes[NOM_CARTE];
       const annuler = document.getElementById('gare-annuler');
       if (annuler) annuler.onclick = () => this.closeGare();
       const fermer = document.getElementById('lieu-fermer');
@@ -1026,8 +1031,8 @@
       if (!this.msgEl) return;
       this.msgEl.textContent = texte;
       this.msgEl.hidden = false;
-      clearTimeout(this.sayTimer);
-      this.sayTimer = setTimeout(() => { this.msgEl.hidden = true; }, 3600);
+      if (this.sayTimer) this.sayTimer.remove();
+      this.sayTimer = this.time.delayedCall(3600, () => { this.msgEl.hidden = true; });
     }
 
     // La gare touchée (le dessin du bâtiment « gare ») : la fenêtre des départs.
@@ -1051,7 +1056,7 @@
         box.appendChild(b);
       }
       const texte = document.getElementById('gare-texte');
-      if (texte) texte.textContent = 'Le train part dans un instant. Où voulez-vous aller ?';
+      if (texte) texte.textContent = 'Le train part dans un instant. Où veux-tu aller ?';
       const titre = document.getElementById('gare-titre');
       if (titre) titre.textContent = '🚉 La gare';
       el.hidden = false;
@@ -1063,7 +1068,7 @@
     closeGare() {
       if (this.gareEl) this.gareEl.hidden = true;
       // (le relâchement du clic qui ferme la fenêtre ne doit pas faire marcher la promeneuse)
-      setTimeout(() => { this.dialog = false; }, 60);
+      this.time.delayedCall(60, () => { this.dialog = false; });
     }
 
     // ---------- le marché de la ville, les entreprises ----------
@@ -1099,7 +1104,7 @@
       const el = document.getElementById('lieu-fenetre');
       if (el) el.hidden = true;
       this.lieu = null;
-      setTimeout(() => { this.dialog = false; }, 60);
+      this.time.delayedCall(60, () => { this.dialog = false; });
     }
 
     renderLieu() {
@@ -1128,12 +1133,12 @@
       titre.textContent = `${e.icone} ${e.nom}`;
       const fait = `${e.texte} Chaque jour à ${e.heure} h, elle prend ${e.par} ${e.intrantNom} de la ferme par ${e.produit.toLowerCase()} et le vend ${e.prixProduit} 💰.`;
       if (!e.achetee) {
-        corps.innerHTML = `<p class="note">${esc(fait)}</p><p class="note">Prix : <strong>${e.prix} 💰</strong> · vos pièces : ${v.pieces} 💰</p>
+        corps.innerHTML = `<p class="note">${esc(fait)}</p><p class="note">Prix : <strong>${e.prix} 💰</strong> · tes pièces : ${v.pieces} 💰</p>
           <div class="choix"><button type="button" id="lieu-acheter"${v.pieces >= e.prix ? '' : ' disabled'}>${v.pieces >= e.prix ? `Acheter la ${esc(e.nom.toLowerCase())}` : 'Pas assez de pièces'}</button></div>`;
         const b = document.getElementById('lieu-acheter');
         if (b) b.onclick = () => {
           const r = H.acheter(e.id);
-          if (r && r.ok) this.say(`${e.icone} La ${e.nom.toLowerCase()} est à vous !`);
+          if (r && r.ok) this.say(`${e.icone} La ${e.nom.toLowerCase()} est à toi !`);
           this.renderLieu();
         };
         return;
@@ -1350,7 +1355,7 @@
 
     // Le bus roule-t-il à cette heure ? (sans horloge : toujours)
     navetteOuverte() {
-      const t = this.time;
+      const t = this.heure;
       return !t || (!t.nuit && t.heure >= NAVETTE.heures[0] && t.heure < NAVETTE.heures[1]);
     }
 
@@ -1358,7 +1363,7 @@
       const a = this.abri, c = NAVETTE.arrets[NOM_CARTE];
       if (!a || !c || this.navette || w.x < a.x0 || w.x > a.x1 || w.y < a.y0 || w.y > a.y1) return false;
       if (!this.navetteOuverte()) { this.say(`🚌 Plus de bus à cette heure : le premier passe à ${NAVETTE.heures[0]} h.`); return true; }
-      if (this.school) { this.say('🚌 Le bus de l’école est en route : le bus de ligne passe juste après.'); return true; }
+      if (this.school) { this.say('🚌 Le bus de l\'école est en route : le bus de ligne passe juste après.'); return true; }
       const el = this.gareEl, box = document.getElementById('gare-choix');
       if (!el || !box) return true;
       box.textContent = '';
@@ -1367,7 +1372,7 @@
       b.textContent = c.choix;
       b.addEventListener('click', () => this.startNavette());
       box.appendChild(b);
-      document.getElementById('gare-titre').textContent = '🚌 L’arrêt de bus';
+      document.getElementById('gare-titre').textContent = '🚌 L\'arrêt de bus';
       document.getElementById('gare-texte').textContent = `Le bus de ligne passe dans un instant. Il va ${c.vers}.`;
       el.hidden = false;
       this.dialog = true;
@@ -1458,9 +1463,16 @@
         g.generateTexture('eclat', 5, 5);
         g.destroy();
       }
-      const jour = this.time ? this.time.jour : Math.floor(Date.now() / 864e5);
+      const jour = this.heure ? this.heure.jour : Math.floor(Date.now() / 864e5);
       const rec = this.readFinds();
       if (rec.jour !== jour) { rec.jour = jour; rec.pris = []; }
+      // le carnet d'avant (les trouvailles n'allaient pas encore dans l'inventaire) : versé une fois
+      const H = hote();
+      if (H && H.verserTrouvailles && rec.carnet && Object.keys(rec.carnet).length) {
+        H.verserTrouvailles(rec.carnet);
+        rec.carnet = {};
+        try { window.localStorage.setItem(FINDS.store, JSON.stringify(rec)); } catch (e) { /* ignoré */ }
+      }
       this.findRec = rec;
       const hash = (str) => {
         let h = 2166136261;
@@ -1501,20 +1513,30 @@
         const k = Math.sin(time / 520 + f.phase);
         f.e.setAlpha(reduced() ? 0 : Math.max(0, k) ** 12);
         const d = Math.hypot(P.x - f.x, P.y - f.y);
+        // (refusée : la nuit ; on la retente après s'en être éloigné)
+        if (f.refus) { if (d > FINDS.reach) f.refus = false; continue; }
         if ((this.pick === f && d <= FINDS.reach && !this.path.length) || d <= 9) this.collect(f);
       }
     }
 
     collect(f) {
-      this.finds.splice(this.finds.indexOf(f), 1);
       if (this.pick === f) this.pick = null;
+      // dans le jeu : la trouvaille va dans l'inventaire (FermeHote.ramasser ; refusée, elle reste là)
+      const H = hote();
+      const r = H && H.ramasser ? H.ramasser(f.kind) : null;
+      if (r && !r.ok) { f.refus = true; return; }
+      this.finds.splice(this.finds.indexOf(f), 1);
       f.e.destroy();
       this.tweens.add({ targets: f.s, y: f.s.y - 12, alpha: 0, duration: reduced() ? 0 : 450, onComplete: () => f.s.destroy() });
       const rec = this.findRec;
       rec.pris.push(f.id);
-      rec.carnet[f.kind] = (rec.carnet[f.kind] || 0) + 1;
+      if (!r) rec.carnet[f.kind] = (rec.carnet[f.kind] || 0) + 1;      // (la carte seule : le carnet)
       try { window.localStorage.setItem(FINDS.store, JSON.stringify(rec)); } catch (e) { /* ignoré */ }
-      this.say(`✨ ${f.nom} ! (dans le carnet : ${rec.carnet[f.kind]})`);
+      if (r) {
+        const it = H.objet ? H.objet(r.item) : null;
+        this.popGain(`+${r.n} ${it ? it.icone : '✨'}`);
+        this.say(`✨ ${f.nom} : dans l'inventaire.`);
+      } else this.say(`✨ ${f.nom} ! (dans le carnet : ${rec.carnet[f.kind]})`);
     }
 
     // ---------- les grottes ----------
@@ -2195,7 +2217,7 @@
         if (f.t >= PECHE.ferrer) {
           g.destroy();
           const o = f.poisson && hote().objet ? hote().objet(f.poisson) : null;
-          if (o) { this.popGain('+1 🐟'); this.say(`🎣 ${o.icone} ${o.nom} !`); } else this.say('🎣 Rien n\u2019a mordu… Essaie encore.');
+          if (o) { this.popGain('+1 🐟'); this.say(`🎣 ${o.icone} ${o.nom} !`); } else this.say('🎣 Rien n\'a mordu… Essaie encore.');
           this.peche = null;
           this.fishing = false;
           this.mining = null;
@@ -2414,7 +2436,7 @@
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
-      const k = this.locked || this.fishing ? null : this.keys;
+      const k = this.locked || this.fishing || saisie() ? null : this.keys;
       if (k) {
         vx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.Q.isDown || k.A.isDown ? 1 : 0);
         vy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.Z.isDown || k.W.isDown ? 1 : 0);
@@ -2469,7 +2491,7 @@
       <div class="ville-fenetre" id="gare-fenetre" role="dialog" aria-modal="true" aria-labelledby="gare-titre" hidden>
         <div class="boite">
           <h2 id="gare-titre">🚉 La gare</h2>
-          <p id="gare-texte">Où voulez-vous aller ?</p>
+          <p id="gare-texte">Où veux-tu aller ?</p>
           <div class="choix" id="gare-choix"></div>
           <button type="button" class="annuler" id="gare-annuler">Rester ici</button>
         </div>

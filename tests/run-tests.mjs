@@ -5,11 +5,11 @@
 // affiche le nombre de tests passés et échoués. Code de sortie non nul en cas
 // d'échec.
 //
-// Usage : node run-tests.mjs
+// Usage : node tests/run-tests.mjs
 
 let results;
 try {
-  ({ results } = await import('./tests/engine.test.js'));
+  ({ results } = await import('./engine.test.js'));
 } catch (err) {
   console.error('Erreur pendant le chargement du moteur ou des tests :');
   console.error(err.stack || err.message || err);

@@ -18,7 +18,11 @@
     "ingrédients × COEF_PLAT, arrondie ; prix de vente = somme des prix × COEF_PLAT,",
     "arrondi. L'eau compte pour ENERGIE_EAU d'énergie et PRIX_EAU pièces par litre.",
     "PRIX_EAU (1) est ma lecture pour retrouver le prix du pain de la section 8.9",
-    "(2 farines + 1 L d'eau = 3, × 1,3 = 4) : à confirmer."
+    "(2 farines + 1 L d'eau = 3, × 1,3 = 4) : à confirmer.",
+    "Ingrédient « ou » : le prix compte l'option la plus chère (jamais de vente à perte),",
+    "l'énergie la première. Échelle de valeur des transformations : recette ×1,3 (ici) <",
+    "commerce de la ferme ×1,5 (COMMERCE, niveaux.json) < entreprise de la ville ×2",
+    "(VILLE.ENTREPRISES, ville.json)."
   ],
   "RECETTES": {
     "COEF_PLAT": 130,
@@ -71,7 +75,7 @@
     },
     "omelette": {
       "nom": "Omelette",
-      "icone": "🍳",
+      "icone": "🍳‍🥚",
       "station": "cuisine",
       "temps": 15,
       "ingredients": [{ "item": "oeuf", "qte": 3 }, { "item": "huile", "qte": 1 }],
@@ -139,7 +143,7 @@
     ],
     "soupe_legumes": {
       "nom": "Soupe de légumes",
-      "icone": "🍲",
+      "icone": "🍲‍🥕",
       "station": "cuisine",
       "temps": 30,
       "ingredients": [{ "item": "carotte", "qte": 1 }, { "item": "oignon", "qte": 1 }, { "item": "patate", "qte": 1 }],
@@ -156,7 +160,7 @@
     },
     "quiche_epinards": {
       "nom": "Quiche aux épinards",
-      "icone": "🥧",
+      "icone": "🥧‍🥬",
       "station": "four",
       "temps": 40,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "oeuf", "qte": 2 }, { "item": "lait", "qte": 1 }, { "item": "epinard", "qte": 1 }]
@@ -169,7 +173,7 @@
     ],
     "fromage_frais": {
       "nom": "Fromage frais",
-      "icone": "🧀",
+      "icone": "🧀‍🥛",
       "station": "cuisine",
       "temps": 60,
       "ingredients": [{ "item": "lait", "qte": 3 }],
@@ -181,9 +185,26 @@
       ],
       "conservation": 8
     },
+    "//fromage_alpage": [
+      "Le fromage d'alpage : 3 laits d'alpage (les vaches nourries aux herbes de montagne), comme le",
+      "fromage frais avec le lait. Une transformation (l'objet fromage_alpage existe déjà : les",
+      "sauvegardes et le marché de la ville le gardent) ; son prix et son énergie, sur l'objet",
+      "(items.json), suivent la règle des plats (× 1,3). Débloqué par le même nœud que le fromage",
+      "frais (techtree : cui_laiterie)."
+    ],
+    "fromage_alpage": {
+      "nom": "Fromage d'alpage",
+      "icone": "🧀",
+      "station": "cuisine",
+      "temps": 60,
+      "ingredients": [{ "item": "lait_alpage", "qte": 3 }],
+      "transformation": true,
+      "sortie": "fromage_alpage",
+      "qteSortie": 1
+    },
     "riz_au_lait": {
       "nom": "Riz au lait",
-      "icone": "🍚",
+      "icone": "🍚‍🥛",
       "station": "cuisine",
       "temps": 30,
       "ingredients": [{ "item": "riz", "qte": 2 }, { "item": "lait", "qte": 1 }]
@@ -220,7 +241,7 @@
     ],
     "confiture_fraises": {
       "nom": "Confiture de fraises",
-      "icone": "🍓",
+      "icone": "🫙‍🍓",
       "station": "cuisine",
       "temps": 30,
       "ingredients": [{ "item": "fraise", "qte": 4 }],
@@ -236,7 +257,7 @@
     ],
     "chocolat_chaud": {
       "nom": "Chocolat chaud",
-      "icone": "🍫",
+      "icone": "☕‍🍫",
       "station": "cuisine",
       "temps": 20,
       "ingredients": [{ "item": "cacao", "qte": 1 }, { "item": "lait", "qte": 1 }],
@@ -248,8 +269,8 @@
       "registerDishItems(), qui indexe chaque plat par l'id de sa recette."
     ],
     "cafe_boisson": {
-      "nom": "Café",
-      "icone": "☕",
+      "nom": "Café chaud",
+      "icone": "☕‍🔥",
       "station": "cuisine",
       "temps": 10,
       "ingredients": [{ "item": "cafe", "qte": 1 }],
@@ -292,7 +313,7 @@
       "conservation": null
     },
     "//bocal_legumes": [
-      "--- Arbre v2 : Conserverie. 4 légumes d'une même sorte + 1 L d'eau → 1 bocal",
+      "--- Arbre v2 : Mise en bocaux. 4 légumes d'une même sorte + 1 L d'eau → 1 bocal",
       "qui ne périme pas ; énergie forfaitaire (🟡 à caler)."
     ],
     "bocal_legumes": {
@@ -303,7 +324,7 @@
       "ingredients": [{ "ou": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "poivron", "epinard"], "qte": 4 }],
       "eau": 1,
       "energieForcee": 40,
-      "//conservation": "Arbre v2 (Conserverie) : le bocal de légumes ne périme pas.",
+      "//conservation": "Arbre v2 (Mise en bocaux) : le bocal de légumes ne périme pas.",
       "conservation": null
     },
     "//farine": [
@@ -388,7 +409,7 @@
     },
     "omelette_champignons": {
       "nom": "Omelette aux champignons",
-      "icone": "🍄",
+      "icone": "🍳‍🍄",
       "station": "cuisine",
       "temps": 15,
       "ingredients": [{ "item": "oeuf", "qte": 2 }, { "item": "champignon", "qte": 2 }],
@@ -396,7 +417,7 @@
     },
     "poisson_grille": {
       "nom": "Poisson grillé à l'ail",
-      "icone": "🐟",
+      "icone": "🐟‍🔥",
       "station": "cuisine",
       "temps": 15,
       "ingredients": [{ "item": "poisson", "qte": 1 }, { "item": "ail", "qte": 1 }],
@@ -412,7 +433,7 @@
     },
     "creme_marrons": {
       "nom": "Crème de marrons",
-      "icone": "🌰",
+      "icone": "🫙‍🌰",
       "station": "cuisine",
       "temps": 25,
       "ingredients": [{ "item": "chataigne", "qte": 4 }, { "item": "sucre", "qte": 1 }],
@@ -420,7 +441,7 @@
     },
     "tarte_myrtilles": {
       "nom": "Tarte aux myrtilles",
-      "icone": "🥧",
+      "icone": "🥧‍🫐",
       "station": "four",
       "temps": 30,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "myrtille", "qte": 4 }, { "item": "sucre", "qte": 1 }],
@@ -428,7 +449,7 @@
     },
     "pain_epices": {
       "nom": "Pain d'épices",
-      "icone": "🍞",
+      "icone": "🍞‍🍯",
       "station": "four",
       "temps": 30,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "miel", "qte": 1 }, { "item": "epices", "qte": 1 }],
@@ -445,14 +466,14 @@
     },
     "//quenelle_poisson": [
       "Farine et poisson : une truite ou un brochet pêchés sur la ferme, un omble chevalier du lac de la montagne, une dorade ou une sardine de la mer, ou le poisson de la ville.",
-      "Énergie et prix du plat calculés avec la truite (le premier poisson de la liste)."
+      "Énergie calculée avec la truite (le premier poisson de la liste), prix avec le poisson le plus cher."
     ],
     "quenelle_poisson": {
       "nom": "Quenelle de poisson",
       "icone": "🐟‍🥟",
       "station": "cuisine",
       "temps": 20,
-      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "omble", "dorade", "sardine", "poisson"], "qte": 1 }],
+      "ingredients": [{ "item": "farine", "qte": 1 }, { "ou": ["truite", "brochet", "omble", "dorade", "sardine", "anchois", "poisson"], "qte": 1 }],
       "libre": true
     }
   }

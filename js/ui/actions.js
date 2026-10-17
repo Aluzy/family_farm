@@ -13,16 +13,18 @@ export function registerActions(handlers) {
   }
 }
 
-// Version 1.19 : la nuit (de 22 h à 6 h), la famille dort. Ces actions de jeu attendent le
-// matin ; on peut toujours regarder (fenêtres, onglets, inventaire). NUIT_PERMISES : les
-// actions de jeu qui restent possibles (passer la nuit ; la famille, qui ne touche pas à la
-// ferme ; arroser depuis le résumé du réveil, qui s'ouvre au matin). scripts/check-actions.mjs
-// vérifie que chaque action de jeu du rapport est dans l'une des deux listes.
-export const NUIT_PERMISES = new Set([
+// La nuit (de 22 h à 6 h) n'empêche rien : seul le sommeil du personnage (« Dormir » : il est
+// dans son lit, la nuit défile en accéléré) arrête ces actions de jeu jusqu'au réveil ; on peut
+// toujours regarder (fenêtres, onglets, inventaire). SOMMEIL_PERMISES : les actions de jeu qui
+// restent possibles pendant qu'il dort (la famille, qui ne touche pas à la ferme ; arroser depuis
+// le résumé du réveil). scripts/check-actions.mjs vérifie que chaque action de jeu du rapport est
+// dans l'une des deux listes.
+export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
+export const SOMMEIL_PERMISES = new Set([
   'sleep', 'wake-water', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'entreprise-quota',
 ]);
-export const NUIT_BLOQUEES = new Set([
+export const SOMMEIL_BLOQUEES = new Set([
   'plant', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
   'sell-item', 'buy-item', 'buy-animal', 'buy-meuble', 'plant-tree', 'plant-all', 'hoe-many', 'commerce-choose',
   'commerce-upgrade', 'commerce-quota-dec', 'commerce-quota-inc', 'commerce-quota-max', 'harvest-tree', 'ville-go',
@@ -30,7 +32,7 @@ export const NUIT_BLOQUEES = new Set([
   'buy-orchard-slot', 'buy-tech', 'build-serre', 'build-poulailler', 'build-fridge', 'build-verger', 'build-silo',
   'build-paturage', 'build-station', 'upgrade', 'upgrade-silo', 'upgrade-serre', 'upgrade-poulailler', 'buy-hoe', 'buy-tool', 'axe-toggle', 'pick-toggle', 'rod-toggle',
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'robot-autonomie', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',
-  'fridge-in-all', 'fridge-out', 'toggle', 'semis-set',
+  'fridge-in-all', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
 ]);
 
 // Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).

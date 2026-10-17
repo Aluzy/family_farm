@@ -8,7 +8,7 @@
 #   arrivees    « gare » : devant la porte de la gare, là où l'on paraît en descendant du train
 #   batiments   l'emprise de la gare (on la touche pour ouvrir la fenêtre des départs)
 #   passages    l'entrée de chaque grotte (la flèche y mène) ; arrivees « grotte_<n> » : on en ressort là
-#   trouvailles les endroits où l'on peut trouver quelque chose (« genre » : fossile, pierre)
+#   trouvailles les endroits où l'on peut trouver quelque chose (« genre » : fossile, pierre, herbe)
 #   animaux     les zones des animaux (« espece » : marmotte, bouquetin, aigle)
 #
 #   python3 scripts/ville/montagne.py [--apercu]     écrit assets/montagne.tmj et ses planches
@@ -250,6 +250,11 @@ TROUVAILLES = [
     (19, None, 'fossile'), (26, None, 'fossile'), (34, None, 'fossile'), (41, None, 'fossile'), (51, None, 'fossile'),
     (22.5, 18.6, 'pierre'), (38.5, 18.2, 'pierre'), (54, 25.5, 'pierre'), (47, 34.4, 'pierre'), (5.2, 27.6, 'pierre'),
     (28, 38.6, 'pierre'), (33.5, 33.5, 'pierre'), (13, 40.5, 'pierre'),
+    # les herbes de montagne (les vaches qui les mangent donnent du lait d'alpage) : dans les prés,
+    # les plus nombreuses
+    (4.5, 23.5, 'herbe'), (5, 29.5, 'herbe'), (22, 24, 'herbe'), (26, 26, 'herbe'), (35, 28.5, 'herbe'),
+    (45, 27.5, 'herbe'), (49, 25.5, 'herbe'), (31, 37, 'herbe'), (39, 39, 'herbe'), (19.5, 40, 'herbe'),
+    (36.5, 37, 'herbe'), (53.5, 27.5, 'herbe'),
 ]
 
 

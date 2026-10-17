@@ -42,6 +42,12 @@
     return n ? { file: 'assets/personnages/perso_' + String(n).padStart(2, '0') + '.png', names: 'assets/personnages/cases.json' } : { file: 'assets/fermiere.png', names: 'assets/fermiere.json' };
   }
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // Le joueur écrit dans un champ de la page (un nom, une quantité, un menu) : les flèches et
+  // ZQSD sont à lui, la promeneuse ne bouge pas.
+  const saisie = () => {
+    const el = document.activeElement;
+    return !!el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable);
+  };
 
   // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
   // répète son propre bord (marge 1, espacement 2). Quand la caméra tombe entre deux pixels
@@ -160,12 +166,13 @@
         if (p.getDistance() > 8) return;
         const w = cam.getWorldPoint(p.x, p.y);
         if (Math.abs(w.x - this.npcPos.x) <= 10 && w.y >= this.npcPos.y - 38 && w.y <= this.npcPos.y + 4) {
-          if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('👁️ L\u2019habitant de l\u2019île vous regarde passer, sans un mot.');
+          if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('👁️ L\'habitant de l\'île te regarde passer, sans un mot.');
           return;
         }
         this.goTo(w.x, w.y);
       });
-      this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A') : null;
+      // (sans capture : les touches tapées dans un champ de la page y restent ; saisie())
+      this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;
       window.InfraMonde.scene = this;
     }
 
@@ -302,7 +309,7 @@
       this.stepNpc(time, dt);
       const P = this.heroPos;
       let vx = 0, vy = 0;
-      const k = this.keys;
+      const k = saisie() ? null : this.keys;
       if (k) {
         vx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.Q.isDown || k.A.isDown ? 1 : 0);
         vy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.Z.isDown || k.W.isDown ? 1 : 0);

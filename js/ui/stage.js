@@ -369,7 +369,7 @@ export function stageModel() {
   }
   const ramasser = tas.map((p) => ({ id: p.id, lieu: p.lieu, ref: p.ref, texte: itemsBulle(p.items) }));
   return {
-    // version 1.19 : la nuit (22 h → 6 h), la famille dort : la carte ne fait rien faire
+    // la nuit (22 h → 6 h) : la lumière ; la famille reste dedans (le joueur, lui, peut agir)
     nuit: nightActive(state),
     // le joueur a appuyé sur « Dormir » : le personnage va à son lit (js/fermier.js) ; il y
     // dort (la nuit défile en accéléré), même quand on regarde la carte de la ferme

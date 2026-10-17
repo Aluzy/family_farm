@@ -4,9 +4,9 @@ import { fail, spend } from './devices.js';
 import { addLot } from './inventory.js';
 import { buyItem } from './market.js';
 import { awakeMsAtHour, hourOfDay } from './clock.js';
-import { flowStep, wearStep } from './energy.js';
+import { farmStep } from './energy.js';
 import { refreshUnlocks } from './techtree.js';
-import { noteEnergyRecord, updateChapters } from './campaign.js';
+import { updateChapters } from './campaign.js';
 
 /* ---------- version 1.5 : bonheur, sorties et marché de la ville (data/ville.json) ---------- */
 
@@ -115,17 +115,15 @@ export function outingStatus(state, id) {
   return { ok: true, raison: '', texte: '' };
 }
 
-// Le temps passe pendant `heures` heures, comme si on attendait : panneaux, batteries,
-// pompe, ateliers et usure (par pas d'une seconde). Ni repas ni nuit ici : l'interface
-// les déclenche à l'heure, comme d'habitude, au retour.
+// Le temps passe pendant `heures` heures, comme si on attendait : le même pas que tick
+// (farmStep : panneaux, batteries, pompe, ateliers, usure, pousse, robot, asperseurs et
+// entreprises), par pas d'une seconde. Ni repas ni nuit ici : l'interface les déclenche
+// à l'heure, comme d'habitude, au retour.
 export function advanceHours(state, heures) {
   let left = Math.round(heures * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
   while (left > 0) {
     const dt = Math.min(1000, left);
-    flowStep(state, dt);
-    wearStep(state, dt);
-    state.awakeMs += dt;
-    noteEnergyRecord(state);
+    farmStep(state, dt);
     left -= dt;
   }
   refreshUnlocks(state);

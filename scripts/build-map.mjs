@@ -9,7 +9,9 @@
 //   assets/montagne.tmj                → assets/montagne.json          (la montagne, en train vers le nord)
 //   assets/plage.tmj                   → assets/plage.json             (la plage, en train vers le sud)
 //
-//   node scripts/build-map.mjs
+//   node scripts/build-map.mjs           (écrit les cartes)
+//   node scripts/build-map.mjs --check   (n'écrit rien : échoue si une carte commitée n'est
+//                                          plus à jour par rapport à sa carte de travail)
 //
 // Tiled enregistre une carte avec des jeux de tuiles externes (.tsx), que le jeu ne sait
 // pas lire : le script les remplace par leur description complète (image, taille, colonnes)
@@ -22,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { basename, dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const CHECK = process.argv.includes('--check');
 // La planche principale (`main` d'une carte, celle de la ferme par défaut) : sans elle, la
 // carte ne s'affiche pas. Les autres jeux de tuiles sont facultatifs : si leur image manque
 // dans assets/, leurs tuiles ne sont pas dessinées.
@@ -201,9 +204,19 @@ for (const def of MAPS) {
       ...(t.tiles.length ? { tiles: t.tiles } : {}),
     });
   }
-  writeFileSync(join(ROOT, def.target), JSON.stringify(map) + '\n');
+  const out = JSON.stringify(map) + '\n';
+  if (CHECK) {
+    const target = join(ROOT, def.target);
+    if (!existsSync(target) || readFileSync(target, 'utf8') !== out) {
+      console.error(`✗ ${def.target} n'est pas à jour avec ${def.source} : lancer « node scripts/build-map.mjs » et commiter le résultat.`);
+      failed = true;
+    }
+    continue;
+  }
+  writeFileSync(join(ROOT, def.target), out);
   const layers = map.layers.filter((l) => l.type === 'tilelayer').length;
   console.log(`${def.target} : ${map.width}×${map.height} tuiles, ${layers} couche${layers > 1 ? 's' : ''}, ${tiles} tuiles posées, ${def.zoneLayers ? `${zones} zones de culture` : `${names.size} rectangles`}, ${animated} tuile${animated > 1 ? 's' : ''} animée${animated > 1 ? 's' : ''} dans les planches.`);
   for (const n of notes) console.log('  ' + n);
 }
 if (failed) process.exit(1);
+if (CHECK) console.log(`✓ ${MAPS.length} cartes à jour avec leurs cartes de travail Tiled.`);
