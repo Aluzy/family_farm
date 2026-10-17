@@ -28,7 +28,7 @@
  * js/carte/ (CarteKit). La scène reçoit au montage un contexte (scène.ctx : le pont, le dossier
  * des images, les découpes des cultures, le calque des étiquettes, le dernier modèle).
  *
- * API publique : FarmStage.mount(element, { act, onView, pickup, icone, base, crops }) puis
+ * API publique : FarmStage.mount(element, { act, onView, pickup, icone, base, crops, carte }) puis
  *                FarmStage.update(modèle), FarmStage.show(), FarmStage.hide(),
  *                FarmStage.ready() (la scène est-elle affichable ?),
  *                FarmStage.view() (où en est la vue : repère 0, 1 ou 2, bornes),
@@ -60,7 +60,7 @@
   // Ce que la scène reçoit au montage (scene.ctx) : le pont vers la page, le dossier des
   // images, la table des découpes de crops.png, le calque DOM des étiquettes, le dernier
   // modèle reçu (appliqué dès que la scène est prête) et si la carte est affichée.
-  const ctx = { bridge: null, base: 'assets/', crops: {}, labelLayer: null, lastModel: null, visible: false };
+  const ctx = { bridge: null, base: 'assets/', crops: {}, carte: null, labelLayer: null, lastModel: null, visible: false };
 
   // La scène de la ferme : la classe est faite une fois (il faut Phaser), puis reçoit les
   // méthodes des fichiers de js/carte/ferme/ (FermeCarte.partie) ; ici, sa création, sa
@@ -391,6 +391,7 @@
         // Dans la maison, la vue suit le personnage qui va se coucher (la chambre est à droite).
         const suivi = this.room && this.fermier && !this.drag && this.fermier.focus ? this.fermier.focus() : null;
         if (suivi != null) this.setCentre(this.cx + (suivi - this.cx) * Math.min(1, dt / 300), this.cy);
+        this.cullDecor();
         this.stepOccluders(delta);
         this.stepTallGrass(delta);
         this.stepShards(delta);
@@ -647,6 +648,7 @@
     ctx.bridge = options;
     ctx.base = (options && options.base) || 'assets/';
     ctx.crops = (options && options.crops) || {};
+    ctx.carte = (options && options.carte) || null;
     ctx.labelLayer = document.createElement('div');
     ctx.labelLayer.className = 'stage-labels';
     element.appendChild(ctx.labelLayer);

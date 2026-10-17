@@ -5,7 +5,7 @@ import {
   testAgeInventory, testBuildFridge, testBuildSerre, testBuildStations, testBuildVerger,
   testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
   testRipenAll, testSetBuildingLevel5, testSetEnergyZero, testFillEnergy, testSetWear, testSkipAwake, testSleepNights,
-  testUnlockAllTechs, testWearMill, testWoolReady, testAddXp, testSetLevel,
+  testUnlockAllTechs, testWearMill, testWoolReady, testAddXp, testSetLevel, testFarmMap,
 } from '../engine/testmode.js';
 import { levelCount } from '../engine/levels.js';
 import { formatCoins, formatNumber, formatPercent } from '../engine/format.js';
@@ -19,6 +19,17 @@ import { syncTestDeviceSelect } from './stage-windows.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { chartFrame, itemsText } from './common.js';
+
+// La ferme générée (docs/carte-generee.md, étape 2) : la partie change de carte, puis la page
+// se recharge (la carte de la ferme se lit au montage de la scène).
+function actionTestFarmMap(generee) {
+  const champ = document.getElementById('test-graine');
+  const saisie = champ ? champ.value.trim() : '';
+  const graine = generee ? (saisie || String(Math.floor(Math.random() * 1e6))) : null;
+  testFarmMap(state, graine);
+  persistState();
+  location.reload();
+}
 
 function actionTestNights(count) {
   const { report } = testSleepNights(state, count);
@@ -217,5 +228,11 @@ registerActions({
   },
   'test-nights-5': () => {
     actionTestNights(5);
+  },
+  'test-ferme-generee': () => {
+    actionTestFarmMap(true);
+  },
+  'test-ferme-dessinee': () => {
+    actionTestFarmMap(false);
   },
 });

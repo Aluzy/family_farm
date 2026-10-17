@@ -1,0 +1,56 @@
+/* ---------- la planche de la carte de la ferme : où sont les tuiles ---------- */
+
+// La planche de la ferme (assets/farm_spring_summer.png, 75 colonnes de tuiles de 16 px) : les
+// 45 premières rangées sont la planche d'origine, les suivantes les blocs du décor version 2
+// (scripts/carte/planche_v2.py, BLOCS : mêmes noms, mêmes places). Le terrain d'une carte
+// (terrain-carte.js) et la ferme générée (ferme-generee.js) s'en servent.
+export const COLONNES = 75;
+
+// nom -> [colonne, rangée, largeur, hauteur] en tuiles
+export const BLOCS = {
+  herbe_chemin: [0, 45, 16, 16],
+  herbe_deco: [16, 45, 16, 10],
+  eau: [32, 45, 16, 16],
+  rive_sable: [48, 45, 4, 4],
+  rive_herbe: [52, 45, 16, 4],
+  arbre: [48, 50, 3, 4],
+  pin: [52, 50, 4, 4],
+  buisson_rond: [57, 50, 3, 2],
+  buisson_large: [61, 50, 3, 2],
+};
+
+// Numéro de tuile (gid, à partir de 1) de la k-ième tuile d'un bloc (rangée par rangée).
+export function blocGid(bloc, k) {
+  const [c, r, w] = BLOCS[bloc];
+  return 1 + (r + Math.floor(k / w)) * COLONNES + c + (k % w);
+}
+
+// Les tuiles entièrement transparentes de la planche que les cartes emploient (relevées dans
+// l'image) : elles ne couvrent rien. Les coins du pin (0 et 3) en sont.
+export const TUILES_VIDES = new Set([313, 316, 2354, 2357, 2579, 2582, 2583, blocGid('pin', 0), blocGid('pin', 3)]);
+
+// Sol d'herbe foncée : celui de la planche d'origine (et la terre des anciennes zones de
+// culture), puis l'herbe de herbe_chemin (rangées 0 à 3, pleine ; 13 à 15, raccords entre
+// deux teintes d'herbe). Comme HERBE dans scripts/carte/terres.py.
+export const HERBE = new Set([2415, 101, 579, 563, 102, 100, 259, 260, 261, 334, 335, 336, 409, 410, 411, 1167]);
+for (const r of [0, 1, 2, 3, 13, 14, 15]) for (let k = 0; k < 16; k++) HERBE.add(blocGid('herbe_chemin', r * 16 + k));
+
+// Couche « plantes_pierres » : ce qui reste labourable (fleurs, touffes d'herbe, brindilles,
+// et tout herbe_deco : herbes hautes, fleurs, mauvaises herbes).
+export const PLANTES_OK = new Set([399, 177, 175, 394, 400, 396, 397, 398, 322, 1509, 1508, 1433, 247, 100, 101, 102, 320]);
+for (let k = 0; k < 16 * 10; k++) PLANTES_OK.add(blocGid('herbe_deco', k));
+
+// Les rochers que la pioche casse (comme ROCKS.gids dans js/carte/ferme/config.js), et leurs
+// dessins : [dc, dr, gid] depuis le coin haut-gauche.
+export const ROCHERS = new Set([466, 467, 541, 542, 616, 617, 691, 692, 764, 765, 766, 767]);
+export const DESSINS_ROCHERS = {
+  gros: [[0, 0, 466], [1, 0, 467], [0, 1, 541], [1, 1, 542]],
+  haut: [[1, 0, 692], [0, 1, 766], [1, 1, 767]],
+  moyen: [[0, 0, 617]],
+  caillou: [[0, 0, 764]],
+  caillou2: [[0, 0, 765]],
+};
+
+// Le tronc creux au bord de l'étang (le passage vers l'infra-monde : HOLLOW dans
+// js/carte/ferme/config.js), deux tuiles côte à côte de « plantes_pierres ».
+export const TRONC_CREUX = [539, 540];

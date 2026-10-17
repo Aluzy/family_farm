@@ -13,6 +13,8 @@ export * from './fridge.js';
 export * from './market.js';
 export * from './family.js';
 export * from './terrain.js';
+export * from './terrain-carte.js';
+export * from './ferme-generee.js';
 export * from './crops.js';
 export * from './depart.js';
 export * from './animals.js';

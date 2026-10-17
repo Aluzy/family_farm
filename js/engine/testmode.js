@@ -5,7 +5,8 @@ import { noteCompta } from './compta.js';
 import { awakeMsAtHour } from './clock.js';
 import { addItem, spoil } from './inventory.js';
 import { openFridge } from './fridge.js';
-import { allPlots, makePlot, maxStage, openSerre, seedItem, zoneTile } from './crops.js';
+import { allPlots, makePlot, maxStage, openSerre, seedItem, startPlots, zoneTile } from './crops.js';
+import { farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { openVerger } from './orchard.js';
 import { openStation } from './kitchen.js';
@@ -15,6 +16,18 @@ import { sleep } from './night.js';
 import { gainXp, levelCount } from './levels.js';
 
 /* ---------- actions du mode test ---------- */
+
+// La ferme générée (docs/carte-generee.md, étape 2) : la partie passe sur la ferme de la
+// graine `graine` (null : revient à la carte de Tiled). Les terres, les arbres abattus et les
+// rochers cassés de l'autre carte n'ont pas de sens ici : la partie repart des parcelles de
+// départ, tous les arbres debout et tous les rochers entiers.
+export function testFarmMap(state, graine) {
+  if (graine === null || graine === undefined) delete state.carte;
+  else state.carte = { graine: String(graine) };
+  state.potager.parcelles = startPlots(farmTerrain(state));
+  if (state.outils) { state.outils.arbres = {}; state.outils.rochers = {}; }
+  return { ok: true, graine: state.carte ? state.carte.graine : null };
+}
 
 export function testAddPieces(state, amount) {
   state.pieces = Math.round(state.pieces + amount);
@@ -34,7 +47,7 @@ export function testHoeAll(state, zone = 1) {
   let n = list.reduce((m, p) => Math.max(m, Number((/^potager-(\d+)$/.exec(p.id) || [0, 0])[1])), 0);
   const cases = zone === 2 ? DATA.POTAGER.ZONE2.CASES : DATA.POTAGER.CASES;
   for (let c = 0; c < cases; c++) {
-    const tile = zoneTile(zone, c);
+    const tile = zoneTile(zone, c, farmTerrain(state));
     if (list.some((p) => p.case === tile)) continue;
     n += 1;
     list.push({ ...makePlot(n), case: tile });

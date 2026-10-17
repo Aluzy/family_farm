@@ -13,6 +13,7 @@
   const K = global.CarteKit;
   const F = global.FermeCarte;
   const { T, MAP, OCCLUDER_ALPHA, TALL_GRASS, SPRITE_CHECKS } = F.C;
+  const DECOR_MARGE = 64;           // px autour de la vue : dessiné quand même (voir cullDecor)
 
   F.partie({
 
@@ -210,6 +211,34 @@
       }
       const p = this.fermier && !this.room ? this.fermier.pos() : null;
       this.grassPrev = K.herbe(list, p, this.grassPrev, dt);
+    },
+
+    /* ---------- hors de la vue : pas dessinés ---------- */
+
+    // La ferme générée est grande (js/engine/ferme-generee.js : des centaines d'arbres, de
+    // rochers et de touffes) : une image d'arbre, de barrière, de rocher ou de touffe hors de la
+    // vue (à plus de DECOR_MARGE px) n'est pas dessinée. Sa visibilité ne change pas (un arbre
+    // abattu, une touffe sur la terre restent cachés) : elle porte `horsVue`, que sa méthode
+    // willRender consulte. Revu quand la vue a bougé de 8 px.
+    cullDecor() {
+      const v = this.cameras.main.worldView;
+      const cle = Math.round(v.x / 8) + ',' + Math.round(v.y / 8) + ',' + Math.round(v.width) + ',' + Math.round(v.height);
+      if (cle === this.cullKey) return;
+      this.cullKey = cle;
+      const M = DECOR_MARGE, x0 = v.x - M, y0 = v.y - M, x1 = v.right + M, y1 = v.bottom + M;
+      const marque = (img) => {
+        if (!img) return;
+        if (!img.horsVuePose) {
+          const rend = img.willRender;
+          img.willRender = function (camera) { return !this.horsVue && rend.call(this, camera); };
+          img.horsVuePose = true;
+        }
+        const w = img.displayWidth, h = img.displayHeight, x = img.x - img.originX * w, y = img.y - img.originY * h;
+        img.horsVue = x > x1 || x + w < x0 || y > y1 || y + h < y0;
+      };
+      for (const o of this.occluders || []) { marque(o.img); marque(o.shake); }
+      for (const o of this.rocks || []) marque(o.img);
+      for (const g of this.tallGrass || []) marque(g.img);
     },
 
     // L'image de l'arbre `t` (mapTrees) : celle qui contient sa première case.

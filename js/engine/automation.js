@@ -9,7 +9,7 @@ import { plantableCropsFor } from './campaign.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
 import { absoluteHours, dayHour, hourOfDay, nightActive } from './clock.js';
-import { farmTerrain } from './terrain.js';
+import { farmPoint, farmTerrain } from './terrain.js';
 
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
 
@@ -152,14 +152,14 @@ function robotSpot(state, id) {
     const W = farmTerrain(state).LARGEUR;
     return [(p.case % W) - 0.2, Math.floor(p.case / W) + 0.95];
   }
-  return DATA.ROBOT.SERRE;
+  return farmPoint(state, DATA.ROBOT.SERRE);
 }
 
 // La tâche i : { route, travail } en heures d'horloge (le trajet depuis la tâche d'avant, ou
 // depuis sa base pour la première, puis le travail au bras).
 export function robotTrip(state, r, i) {
   const R = DATA.ROBOT;
-  const a = i > 0 && i !== r.base ? robotSpot(state, r.taches[i - 1].id) : R.BASE;
+  const a = i > 0 && i !== r.base ? robotSpot(state, r.taches[i - 1].id) : farmPoint(state, R.BASE);
   const b = robotSpot(state, r.taches[i].id);
   return { route: Math.hypot(b[0] - a[0], b[1] - a[1]) / R.VITESSE / 60, travail: R.MINUTES / 60 };
 }

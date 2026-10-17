@@ -17,7 +17,7 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
-import { farmTerrain, tileCount } from '../engine/terrain.js';
+import { farmMap, farmTerrain, tileCount } from '../engine/terrain.js';
 import { robotBattery, robotChargePct, robotOn, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
 import {
@@ -561,7 +561,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
