@@ -239,6 +239,7 @@
       for (const o of this.occluders || []) { marque(o.img); marque(o.shake); }
       for (const o of this.rocks || []) marque(o.img);
       for (const g of this.tallGrass || []) marque(g.img);
+      for (const g of (this.gatherables || new Map()).values()) marque(g.img);
     },
 
     // L'image de l'arbre `t` (mapTrees) : celle qui contient sa première case.

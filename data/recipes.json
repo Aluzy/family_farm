@@ -8,6 +8,33 @@
     "avant ; debloque : onglets ouverts par la construction ; action : le geste",
     "d'une préparation (son XP, NIVEAUX.XP, et son énergie, PERSONNAGE.COUTS)."
   ],
+  "//ATELIER": [
+    "La ferme générée (docs/carte-generee.md, étape 3) : l'Atelier se construit avec des matériaux",
+    "(CONSTRUCTION : objet → quantité, pris dans l'inventaire), sans pièces. Une recette (RECETTES)",
+    "prend ses entrées dans l'inventaire et donne tout de suite sa sortie (un objet, ou un outil :",
+    "« outil » = houe, hache ou pioche, comme acheté au Marché) ; c'est le geste « fabriquer »",
+    "(PERSONNAGE.COUTS et NIVEAUX.XP). RAMASSAGE : chaque matin, autant de petites pierres, de",
+    "morceaux de bois et d'herbes sur l'herbe de la carte (tirés d'après la graine et le jour) ;",
+    "chacun se ramasse à la main (geste « ramasser ») et donne son objet."
+  ],
+  "ATELIER": {
+    "NOM": "Atelier", "ICONE": "🔨", "NIVEAU": 1,
+    "CONSTRUCTION": { "bois": 3, "pierre": 3 },
+    "RECETTES": {
+      "planche": { "entrees": { "bois": 2 }, "sortie": { "planche": 1 } },
+      "mur_pierre": { "entrees": { "pierre": 4 }, "sortie": { "mur_pierre": 1 } },
+      "porte": { "entrees": { "planche": 3 }, "sortie": { "porte": 1 } },
+      "paillasse": { "entrees": { "fibre": 3 }, "sortie": { "paillasse": 1 } },
+      "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
+      "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
+      "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" }
+    },
+    "RAMASSAGE": {
+      "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
+      "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
+      "herbe": { "nom": "Herbe", "objet": "fibre", "nombre": 18 }
+    }
+  },
   "STATIONS": {
     "four": { "nom": "Four", "article": "le", "icone": "🔥", "prixConstruction": 100, "electrique": false, "debloque": ["recettes"], "action": "cuireFour" },
     "cuisine": { "nom": "Cuisine", "article": "la", "icone": "🍳", "prixConstruction": 150, "electrique": false, "debloque": ["recettes"], "action": "cuisiner" },

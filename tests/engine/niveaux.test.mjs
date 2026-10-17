@@ -23,7 +23,7 @@ import {
 test('DATA niveaux : seuils, gains d\'XP, XP des chapitres', () => {
   const N = DATA.NIVEAUX;
   assertEqual(N.SEUILS, [0, 500, 1200, 3000, 7500, 20000, 40000, 80000, 180000, 400000]);
-  assertEqual(N.XP, { labourer: 10, couper: 10, piocher: 10, pecher: 15, planter: 10, arroser: 10, recolter: 20, cueillir: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
+  assertEqual(N.XP, { labourer: 10, ramasser: 2, fabriquer: 10, couper: 10, piocher: 10, pecher: 15, planter: 10, arroser: 10, recolter: 20, cueillir: 20, oeuf: 10, lait: 30, tondre: 30, cuisiner: 40, cuireFour: 50, moudre: 10, presser: 10, vendre: 1 });
   assertEqual([N.AUTO, N.CHAPITRES_XP.slice(0, 4)], [50, [200, 500, 1000, 2500]]);
   assertEqual([0, 499, 500, 1199, 1200, 400000, 10 ** 7].map(levelForXp), [1, 1, 2, 2, 3, 10, 10]);
   assertEqual(createInitialState(1).progression, { xp: 0, niveau: 1, annonces: [] });

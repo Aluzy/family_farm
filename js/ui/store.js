@@ -4,6 +4,7 @@
    ========================================================================== */
 
 import { isUnlocked } from '../engine/campaign.js';
+import { atelierOuvert } from '../engine/atelier.js';
 
 export const SAVE_KEY = 'ferme-save';
 export const TICK_MS = 200;
@@ -17,6 +18,7 @@ export const TABS = [
   { id: 'commerce', label: 'Commerce', icon: '🏪' }, // version 1.14 : fenêtre de la carte (menu latéral), au niveau du commerce
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦' },
   { id: 'inventaire', label: 'Inventaire', icon: '📦' },
+  { id: 'atelier', label: 'Atelier', icon: '🔨' }, // la ferme générée : fenêtre de la carte (menu latéral)
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳' },
   { id: 'comptoir', label: 'Marché', icon: '🧺' },
@@ -27,7 +29,7 @@ export const TABS = [
 // Menu latéral : les destinations, les unes au-dessus des autres (l'Arbre des technologies
 // n'y apparaît qu'au premier point de technologie, FLU-28 ; le Commerce, au niveau qui le
 // débloque). Les Installations n'y sont plus : tout ce qu'elles contiennent s'ouvre depuis la carte.
-export const NAV_TABS = ['ferme', 'commerce', 'inventaire', 'comptoir', 'techno', 'notifications'];
+export const NAV_TABS = ['ferme', 'commerce', 'inventaire', 'atelier', 'comptoir', 'techno', 'notifications'];
 
 // Écrans ouverts depuis la Ferme (raccourcis en haut de l'écran Ferme). Ils
 // restent des onglets pour le moteur et le suivi, mais n'ont pas d'icône en bas :
@@ -40,6 +42,7 @@ export function tabAvailable(id) {
   // FLU-28 : l'Arbre des technologies se montre au premier point de technologie gagné
   if (id === 'techno' && !techTreeShown()) return false;
   if (id === 'commerce') return isUnlocked(state, 'commerce');
+  if (id === 'atelier') return atelierOuvert(state);   // la ferme générée seulement (avec la carte)
   return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
 }
 
