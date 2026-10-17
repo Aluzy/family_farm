@@ -6,6 +6,7 @@ import { farmTerrain, tileCount } from './terrain.js';
 import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
+import { installStarter, removeStarter, starterBlock } from './depart.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -29,6 +30,16 @@ export function blocsPoses(state) {
 // La sorte du bloc posé sur `tile`, ou null.
 export function blocAt(state, tile) {
   return blocsPoses(state)[tile] || null;
+}
+
+// Ce qui est posé sur le bloc de `tile` (la pompe sur le puits : state.blocsDessus), ou null.
+export function blocDessus(state, tile) {
+  return (state.blocsDessus && state.blocsDessus[tile]) || null;
+}
+
+// Un bloc de cette sorte est-il déjà posé (par terre ou sur un autre) ?
+function dejaPose(state, sorte) {
+  return Object.values(blocsPoses(state)).includes(sorte) || Object.values(state.blocsDessus || {}).includes(sorte);
 }
 
 // Le bloc `tile` empêche-t-il de passer ?
@@ -128,11 +139,24 @@ export function poseStatus(state, sorte, tile) {
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
   if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
+  if (s.appareil) {
+    const r = starterBlock(state, s.appareil);
+    if (r) return { ok: false, raison: r === 'Répare d\'abord la maison.' ? 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.' : r === 'Achète d\'abord le panneau et la pompe.' ? 'Pose d\'abord le panneau solaire et la pompe.' : r };
+  }
+  // la pompe : sur le puits, sans prendre de case
+  if (s.sur) {
+    const sous = sorteDe(s.sur);
+    if (blocAt(state, tile) !== s.sur) return { ok: false, raison: `${s.nom} : à poser sur ${sous ? sous.nom.toLowerCase() : s.sur}.` };
+    if (blocDessus(state, tile)) return { ok: false, raison: 'Il y a déjà quelque chose dessus.' };
+    return { ok: true };
+  }
   if (blocAt(state, tile)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
   const ch = T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
   if (ch !== '#' && ch !== '+') return { ok: false, raison: 'On ne bâtit que sur l\'herbe : pas sur les chemins, l\'eau, les arbres, les rochers ni les bâtiments.' };
   if ((state.potager.parcelles || []).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
-  if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `La ${s.nom.toLowerCase()} se pose dans une pièce close : des murs tout autour, et une porte.` };
+  if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, et une porte).` };
+  if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
   return { ok: true };
 }
 
@@ -141,8 +165,15 @@ export function poserBloc(state, sorte, tile) {
   if (!st.ok) return fail(st.raison);
   const s = sorteDe(sorte);
   if (s.objet) takeItem(state, s.objet, 1);
-  if (!state.blocs || typeof state.blocs !== 'object') state.blocs = {};
-  state.blocs[tile] = sorte;
+  if (s.sur) {
+    if (!state.blocsDessus || typeof state.blocsDessus !== 'object') state.blocsDessus = {};
+    state.blocsDessus[tile] = sorte;
+  } else {
+    if (!state.blocs || typeof state.blocs !== 'object') state.blocs = {};
+    state.blocs[tile] = sorte;
+  }
+  // le panneau, la pompe, la citerne, la batterie : l'appareil est là (étape 5b-2)
+  if (s.appareil) installStarter(state, s.appareil);
   // un four, une cuisinière : la station est là (étape 5b, la maison)
   if (s.station && state.stations[s.station]) openStation(state, s.station);
   return { ok: true, sorte, case: tile };
@@ -151,10 +182,14 @@ export function poserBloc(state, sorte, tile) {
 // Reprend le bloc de `tile` : son objet revient dans l'inventaire (l'Atelier redevient à
 // poser). Une paillasse d'une pièce qui s'ouvre reste là, mais on n'y dort plus.
 export function reprendreBloc(state, tile) {
-  const sorte = blocAt(state, tile);
+  // ce qui est posé dessus d'abord (la pompe sur le puits)
+  const dessus = blocDessus(state, tile);
+  const sorte = dessus || blocAt(state, tile);
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
-  delete state.blocs[tile];
+  if (dessus) delete state.blocsDessus[tile];
+  else delete state.blocs[tile];
   const s = sorteDe(sorte);
+  if (s && s.appareil) removeStarter(state, s.appareil);
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)
   if (s && s.station && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;

@@ -38,7 +38,8 @@
           if (e) e.img.destroy();
           const x = (b.case % cols) * T + T / 2, y = (Math.floor(b.case / cols) + 1) * T;
           const plat = BLOCS_CARTE.plats.includes(b.sorte);
-          const img = this.add.image(x, y, BLOCS_CARTE.key, BLOCS_CARTE.frames[b.sorte] || 0).setOrigin(0.5, 1).setDepth(plat ? y - T : y);
+          // (le puits et la citerne : leurs propres images, posées par syncWell et syncTank)
+          const img = this.add.image(x, y, BLOCS_CARTE.key, BLOCS_CARTE.frames[b.sorte] || 0).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
           B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img });
           changed = true;
         }
@@ -49,6 +50,13 @@
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       }
       this.drawRooms(bati ? pieces : null);
+    },
+
+    // Le rectangle (px) de la case du premier bloc `sorte` posé, ou null : le puits et la
+    // citerne de la ferme générée y posent leurs images (modele.js, syncWell, syncTank).
+    blockRect(sorte) {
+      for (const e of (this.blocks || new Map()).values()) if (e.sorte === sorte) return { x: e.x - T / 2, y: e.y - T, width: T, height: T };
+      return null;
     },
 
     // Les cases que les blocs ferment au passage (murs, Atelier).

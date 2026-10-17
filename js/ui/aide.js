@@ -369,9 +369,11 @@ const TUTO = {
     // dit par où commencer
     texte: () => (!farmOpen(state) && atelierOuvert(state) && !houseRepaired(state)
       ? 'Une terre sauvage, sans maison : ramasse les petites pierres, les morceaux de bois et les herbes (un appui dessus), construis l\'Atelier (menu), fabriques-y des murs, une porte et une paillasse, puis bâtis une pièce close avec la case 🔨 de la barre d\'outils. Ce sera ton foyer : on y dort, puis s\'installent le panneau solaire et la pompe.'
+      : !farmOpen(state) && atelierOuvert(state)
+      ? 'Ton foyer est bâti. Fabrique à l\'Atelier un puits, une pompe et un panneau solaire (il faut des lingots : le minerai de la grotte, fondu au four), puis pose-les avec la case 🔨 : le puits et le panneau dehors, la pompe sur le puits. Ils ouvrent la Zone de culture et le Marché ; une citerne gardera ensuite l\'eau pour arroser.'
       : !farmOpen(state)
       ? `Rien ne fonctionne encore : ${houseRepaired(state) ? 'achète le panneau solaire et la pompe' : `répare d'abord la maison (${formatNumber(DATA.DEPART.MAISON)} 💰), puis achète le panneau solaire et la pompe`}${stageUsable() ? ` : ouvre 🏗️ Installations dans le menu${atelierOuvert(state) ? '' : ' (ou touche la maison)'}` : ' (Ferme › Énergie et eau)'}. Ils ouvrent la Zone de culture et le Marché ; le réservoir garde ensuite l'eau pour arroser.`
-      : `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.POMPE.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : maintiens le doigt sur la citerne pour voir son niveau.${stageUsable() ? ' Sur la carte, touche les panneaux du toit pour l\'énergie (panneau, batterie), la pompe du puits ou la citerne pour l\'eau (pompe, réservoir).' : ''}`),
+      : `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.POMPE.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : maintiens le doigt sur la citerne pour voir son niveau.${stageUsable() ? (atelierOuvert(state) ? ' Sur la carte, touche le panneau solaire ou la batterie pour l\'énergie, le puits ou la citerne pour l\'eau.' : ' Sur la carte, touche les panneaux du toit pour l\'énergie (panneau, batterie), la pompe du puits ou la citerne pour l\'eau (pompe, réservoir).') : ''}`),
   },
   potager: {
     titre: '🌱 La zone de culture',

@@ -109,6 +109,11 @@
     "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "four_pierre": { "nom": "Four de pierre", "icone": "🔥", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "puits_pierre": { "nom": "Puits de pierre", "icone": "🪣", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "pompe": { "nom": "Pompe", "icone": "⛲", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "panneau_solaire": { "nom": "Panneau solaire", "icone": "☀️", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "citerne": { "nom": "Citerne", "icone": "💧", "prix": 25, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "batterie": { "nom": "Batterie", "icone": "🔋", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "cuisiniere": { "nom": "Cuisinière", "icone": "🍳", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//ammonite": [
       "Les trouvailles de la montagne (fossiles, pierres) et de la plage (coquillages, corail, perles),",

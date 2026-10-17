@@ -147,18 +147,32 @@ export function starterBlock(state, type) {
 }
 
 export function buyStarter(state, type) {
+  if (atelierOuvert(state)) return fail(`Sur une terre sauvage, ${deviceLabel(type).toLowerCase()} se fabrique à l'Atelier et se pose sur la carte (🔨).`);
   const raison = starterBlock(state, type);
   if (raison) return fail(raison);
   const cost = DATA.DEPART.ACHATS[type];
   if (!pay(state, cost, `Achat : ${deviceLabel(type)}`)) return fail(NO_COINS);
+  installStarter(state, type);
+  return { ok: true, cost, ouvert: farmOpen(state) };
+}
+
+// L'appareil de départ `type` est là (acheté, ou posé sur la ferme générée : blocs.js), allumé
+// sauf le réservoir ; son prix (entretien, réparation) est celui de DEPART.ACHATS.
+export function installStarter(state, type) {
   const obj = starterOf(state, type);
   obj.achete = true;
   if (type !== 'reservoir') {
     obj.allume = true;
-    obj.prix = cost; // entretien et réparation suivent le prix payé
+    obj.prix = DATA.DEPART.ACHATS[type]; // entretien et réparation suivent le prix payé
   }
   // panneau et pompe : la Zone de culture et le Marché s'ouvrent
   if (farmOpen(state)) unlockTab(state, 'comptoir');
   updateChapters(state);
-  return { ok: true, cost, ouvert: farmOpen(state) };
+}
+
+// L'appareil de départ `type` n'est plus là (son bloc repris, sur la ferme générée).
+export function removeStarter(state, type) {
+  const obj = starterOf(state, type);
+  obj.achete = false;
+  if (type !== 'reservoir') obj.allume = false;
 }

@@ -175,3 +175,23 @@ Le Marché vend toujours les outils.
          plus là. Un appui dessus ouvre leur fenêtre ;
        - pas d'intérieur de maison (les repas n'ont pas de scène), pas de meubles, et le
          tutoriel n'arrête pas l'horloge : le foyer se bâtit en plusieurs jours.
+     - ✅ **5b-2, l'énergie et l'eau** : le puits et la citerne quittent la cour.
+       - Le puits, la pompe, le panneau solaire, la citerne et la batterie se fabriquent à
+         l'Atelier (il faut des lingots : le minerai de la grotte, fondu au four) :
+
+         | Bloc | Coût |
+         |---|---|
+         | puits | 8 pierres, 2 planches |
+         | pompe | 2 lingots de fer, 1 planche |
+         | panneau solaire | 2 lingots de fer, 1 de cuivre, 2 planches |
+         | citerne | 6 planches, 1 lingot de fer |
+         | batterie | 2 lingots de cuivre, 1 de fer |
+
+       - Posé, chacun installe l'appareil de départ du même nom au lieu de l'acheter ; repris,
+         l'appareil n'est plus là (`ATELIER.BLOCS[…].appareil`, `installStarter`,
+         `removeStarter`).
+       - Le puits, le panneau et la citerne se posent dehors, la pompe sur le puits
+         (`state.blocsDessus`). Il y en a un de chaque, et il faut d'abord le foyer. La citerne
+         attend le panneau et la pompe.
+       - Le puits et la citerne gardent leurs images (la pompe qui vibre, le niveau de l'eau),
+         posées sur leurs blocs. Un appui ouvre l'énergie ou l'eau.

@@ -8,7 +8,8 @@
 #
 # Même ordre que js/carte/ferme/config.js (BLOCS_CARTE.frames) : mur_pierre, porte, atelier,
 # paillasse, drap (la couverture, posée par-dessus le personnage couché), four, cuisiniere
-# (étape 5b : posés dans une pièce close, ils tiennent lieu des stations). Gris des rochers,
+# (étape 5b : posés dans une pièce close, ils tiennent lieu des stations), panneau, batterie
+# (étape 5b-2 : posés, ils installent l'appareil du même nom). Gris des rochers,
 # bruns des troncs, paille du poulailler ; lumière en haut à gauche, contour sombre de la
 # matière.
 import os
@@ -26,11 +27,13 @@ PALETTE = {
     'k': '#2e1c10', 's': '#5a3a20', 't': '#7e522e', 'T': '#a46e42', 'E': '#c89462',
     # fer
     'm': '#1e2833', 'n': '#64707e', 'p': '#aab6c4',
+    # cellules du panneau
+    'q': '#3a6ab0',
     # paille, toile
     'O': '#4a3010', 'o': '#b07a28', 'y': '#e2b448', 'Y': '#f6d880',
     'u': '#5a4630', 'v': '#c4ac84', 'w': '#e8d8b0', 'W': '#f6ecd0',
     # couverture (laine rouge)
-    'R': '#4a1418', 'r': '#9a3238', 'q': '#c8484a', 'Q': '#e07466',
+    'R': '#4a1418', 'r': '#9a3238', 'x': '#c8484a', 'Q': '#e07466',
     # le feu
     'F': '#ffd040',
 }
@@ -161,10 +164,10 @@ DESSINS = [
         '................',
         '................',
         '..RRRRRRRRRRRR..',
-        '.RQQQQQQQQQQQqR.',
-        '.RqqqqqqqqqqqrR.',
-        '.RqqQqqqqQqqqrR.',
-        '.RqqqqqqqqqqqrR.',
+        '.RQQQQQQQQQQQxR.',
+        '.RxxxxxxxxxxxrR.',
+        '.RxxQxxxxQxxxrR.',
+        '.RxxxxxxxxxxxrR.',
         '.RrrrrrrrrrrrrR.',
         '..RRRRRRRRRRRR..',
         '................',
@@ -224,6 +227,60 @@ DESSINS = [
         '.akTtTtTtTtTtka.',
         '.aksssssssssska.',
         '.aaaaaaaaaaaaaa.',
+    ],
+    # le panneau solaire : des cellules bleutées sur un châssis incliné, un mât de bois
+    [
+        '................',
+        '................',
+        '................',
+        '................',
+        '..............nn',
+        '...........nnmmm',
+        '........nnmqqmm.',
+        '.....nnmqqmqqm..',
+        '..nnmqqmqqmqqm..',
+        '.nmqqmqqmqqmm...',
+        '.mqqmqqmqqmm....',
+        '.mmmqqmqqmm.....',
+        '...mmmmmmm......',
+        '......ks........',
+        '......ks........',
+        '......ks........',
+        '......ks........',
+        '......ks........',
+        '......ks........',
+        '......ks........',
+        '.....kTsk.......',
+        '....kTTssk......',
+        '...kkkkkkkk.....',
+        '................',
+    ],
+    # la batterie : un coffre de fer, ses deux bornes, l'éclair
+    [
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '....mm....mm....',
+        '...mppm..mppm...',
+        '.mmmmmmmmmmmmmm.',
+        '.mnnnnnnnnnnnnm.',
+        '.mnppppnnnnnnnm.',
+        '.mnppnnnFFnnnnm.',
+        '.mnnnnnFFnnnnnm.',
+        '.mnnnnFFFFFnnnm.',
+        '.mnnnnnnFFnnnnm.',
+        '.mnnnnnFFnnnnnm.',
+        '.mnnnnnFnnnnnnm.',
+        '.mnnnnnnnnnnnnm.',
+        '.mnnnnnnnnnnnnm.',
+        '.mmmmmmmmmmmmmm.',
+        '................',
     ],
 ]
 

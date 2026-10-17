@@ -62,10 +62,10 @@
       }
       this.syncPerso(model.perso | 0);
       this.syncRoofPanels(model.panneaux | 0);
+      this.syncBlocks(model.blocs, model.bati, model.pieces);   // (avant le puits et la citerne : posés sur leurs blocs)
       this.syncWell(!!model.pompe, !!model.pompeEnMarche);
       this.syncTank(model.citerne == null ? -1 : model.citerne | 0);
       this.syncGatherables(model.ramassables);
-      this.syncBlocks(model.blocs, model.bati, model.pieces);
 
       // Parcelles des deux zones : on crée, met à jour, détruit. Tuiles jointives depuis le
       // coin de chaque rectangle (zone_culture_1, zone_culture_2).
@@ -192,7 +192,17 @@
     syncWell(pompe, enMarche) {
       if (!this.has(WELL.key)) return;
       const F = WELL.frames;
-      if (!this.well) { this.well = this.placeProp(WELL); this.sunDirty = true; }
+      // la ferme générée : le puits est un bloc posé (étape 5b-2), sinon il n'y en a pas
+      const rect = this.ctx.carte ? this.blockRect('puits') : null;
+      const at = rect ? rect.x + ',' + rect.y : '';
+      if (this.ctx.carte && this.well && this.wellAt !== at) {
+        this.well.destroy(); this.well = null;
+        if (this.pump) { this.pump.destroy(); this.pump = null; }
+        if (this.pumpShake) { this.pumpShake.remove(); this.pumpShake = null; }
+        this.sunDirty = true;
+      }
+      if (this.ctx.carte && !rect) return;
+      if (!this.well) { this.well = this.placeProp(WELL, rect); this.wellAt = at; this.sunDirty = true; }
       const image = pompe ? F.tuyau : F.puits;
       if (this.well.frame.name !== image) { this.well.setFrame(image); this.sunDirty = true; }
       if (pompe && !this.pump) {
@@ -216,17 +226,20 @@
 
     // La citerne, une fois le réservoir acheté : l'eau monte dans son tube de niveau.
     syncTank(niveau) {
-      if (niveau < 0 || !this.has(TANK.key)) {
-        if (this.tank) { this.tank.destroy(); this.tank = null; }
-        return;
+      // la ferme générée : la citerne est un bloc posé (étape 5b-2)
+      const rect = this.ctx.carte ? this.blockRect('citerne') : null;
+      const at = rect ? rect.x + ',' + rect.y : '';
+      if (niveau < 0 || !this.has(TANK.key) || (this.ctx.carte && !rect) || (this.tank && this.tankAt !== at)) {
+        if (this.tank) { this.tank.destroy(); this.tank = null; this.sunDirty = true; }
+        if (niveau < 0 || !this.has(TANK.key) || (this.ctx.carte && !rect)) return;
       }
-      if (!this.tank) { this.tank = this.placeProp(TANK); this.sunDirty = true; }
+      if (!this.tank) { this.tank = this.placeProp(TANK, rect); this.tankAt = at; this.sunDirty = true; }
       this.tank.setFrame(Math.min(niveau, TANK.max));
     },
 
-    // Image d'une planche posée comme un bâtiment sur le rectangle `def.object`.
-    placeProp(def) {
-      const o = this.objects[def.object] || DEFAULT_OBJECTS[def.object];
+    // Image d'une planche posée comme un bâtiment sur le rectangle `def.object` (ou `rect`).
+    placeProp(def, rect) {
+      const o = rect || this.objects[def.object] || DEFAULT_OBJECTS[def.object];
       const w = def.frame.frameWidth;
       const h = def.frame.frameHeight;
       const x = clamp(Math.round(o.x + o.width / 2 - w / 2), 0, this.world.w - w);

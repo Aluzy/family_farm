@@ -7,7 +7,7 @@
 import { assert, assertEqual, garden, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierOuvert, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierOuvert, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -60,7 +60,8 @@ for (const graine of ['1', '2', '7', 'abc', '12345']) {
     assert(vus.has(porte), 'le chemin passe devant la place de la maison');
     assert(!objets.maison, 'pas de maison : le foyer se bâtit');
     // les bâtiments de la cour (provisoires) et les rochers, les arbres
-    for (const n of ['grange', 'moulin', 'serre', 'verger', 'silo', 'poulailler', 'puits', 'citerne', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
+    for (const n of ['grange', 'moulin', 'serre', 'verger', 'silo', 'poulailler', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
+    assert(!objets.puits && !objets.citerne, 'le puits et la citerne se bâtissent');
     assertEqual(Object.keys(terrain.ROCHERS).length, FERME_GENEREE.ROCHERS, 'les rochers');
     assert(Object.keys(terrain.ARBRES).length > 150, 'des bois');
     // un étang assez grand pour la pêche (FISHING.etang : 30 cases), et le tronc creux à son bord
@@ -320,4 +321,37 @@ test('ferme générée : le four et la cuisinière se posent dans une pièce clo
   assert(s.unlockedTabs.includes('recettes'), 'le Livre de recette s\'ouvre');
   reprendreBloc(s, p.dedans);
   assertEqual([s.stations.four.construit, countItem(s, 'four_pierre')], [false, 1], 'repris : plus de four');
+});
+
+/* ---------- étape 5b-2 : l'énergie et l'eau en blocs ---------- */
+
+test('ferme générée : le puits, la pompe dessus, le panneau, la citerne et la batterie se posent et installent les appareils', () => {
+  const s = chantier('e1');
+  s.pieces = 100000;
+  for (const t of ['panneau', 'pompe', 'reservoir', 'batterie']) removeStarter(s, t);   // (une partie neuve : rien d'installé)
+  assertEqual(buyStarter(s, 'panneau').ok, false, 'pas en pièces');
+  // le foyer d'abord
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  setInv(s, { mur_pierre: 30, porte: 2, paillasse: 2, puits_pierre: 1, pompe: 1, panneau_solaire: 2, citerne: 1, batterie: 1 });
+  const dehors = (k) => (z.r + 7) * z.W + z.c + k;
+  assertEqual(poserBloc(s, 'panneau', dehors(0)).ok, false, 'sans foyer : rien ne s\'installe');
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  poserBloc(s, 'paillasse', p.dedans);
+  assertEqual(poserBloc(s, 'panneau', p.dedans + 1).ok, false, 'pas dans une pièce close');
+  assert(poserBloc(s, 'panneau', dehors(0)).ok);
+  assertEqual([isOwned(starterOf(s, 'panneau')), poserBloc(s, 'panneau', dehors(1)).ok], [true, false], 'un seul panneau');
+  assertEqual(poserBloc(s, 'pompe', dehors(2)).ok, false, 'la pompe : sur un puits');
+  assertEqual(poserBloc(s, 'citerne', dehors(4)).ok, false, 'la citerne attend la pompe');
+  assert(poserBloc(s, 'puits', dehors(2)).ok);
+  assert(poserBloc(s, 'pompe', dehors(2)).ok);
+  assertEqual([blocAt(s, dehors(2)), blocDessus(s, dehors(2)), isOwned(starterOf(s, 'pompe')), farmOpen(s)], ['puits', 'pompe', true, true]);
+  assert(poserBloc(s, 'citerne', dehors(4)).ok);
+  assert(poserBloc(s, 'batterie', dehors(6)).ok);
+  assertEqual(['reservoir', 'batterie'].map((t) => isOwned(starterOf(s, t))), [true, true]);
+  // reprendre : la pompe d'abord, puis le puits
+  reprendreBloc(s, dehors(2));
+  assertEqual([blocAt(s, dehors(2)), isOwned(starterOf(s, 'pompe')), countItem(s, 'pompe')], ['puits', false, 1]);
+  reprendreBloc(s, dehors(2));
+  assertEqual([blocAt(s, dehors(2)), countItem(s, 'puits_pierre')], [null, 1]);
 });
