@@ -7,6 +7,8 @@ import { findMember } from './family.js';
 import { updateChapters } from './campaign.js';
 import { startPlots } from './crops.js';
 import { farmTerrain } from './terrain.js';
+import { atelierOuvert } from './atelier.js';
+import { couchages } from './blocs.js';
 
 /* ---------- version 1.12 (v2, lot 8) : le départ d'une nouvelle partie ---------- */
 
@@ -117,11 +119,15 @@ export function setupPending(state) {
 
 /* -- la maison et les achats -- */
 
+// La maison est-elle réparée ? Sur la ferme générée (docs/carte-generee.md, étape 5b), il n'y a
+// pas de maison : le foyer est une pièce close avec une paillasse (js/engine/blocs.js).
 export function houseRepaired(state) {
+  if (atelierOuvert(state)) return couchages(state).length > 0;
   return !(state.maison && state.maison.reparee === false);
 }
 
 export function repairHouse(state) {
+  if (atelierOuvert(state)) return fail('Sur une terre sauvage, pas de maison à réparer : bâtis une pièce close (des murs, une porte) et pose-y une paillasse.');
   if (houseRepaired(state)) return fail('La maison est déjà réparée.');
   const cost = DATA.DEPART.MAISON;
   if (!pay(state, cost, 'Réparation de la maison')) return fail(NO_COINS);

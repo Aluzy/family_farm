@@ -9,6 +9,7 @@ import { recipeTime, techEffects, techFlag } from './techtree.js';
 import { noteRecipeDone } from './campaign.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
+import { farmSeed } from './terrain.js';
 
 /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
 
@@ -319,6 +320,10 @@ export function finishPreparations(state) {
 export function buildStation(state, id) {
   const def = DATA.STATIONS[id];
   if (!def) return fail('Atelier inconnu.');
+  // la ferme générée : le four et la cuisinière se fabriquent à l'Atelier et se posent (blocs.js)
+  if (farmSeed(state) !== null && Object.values(DATA.ATELIER.BLOCS).some((b) => b.station === id)) {
+    return fail(`Sur une terre sauvage, ${def.article} ${def.nom.toLowerCase()} se fabrique à l'Atelier et se pose dans une pièce close.`);
+  }
   // la Cuisine demande le Four
   const requis = () => {
     if (!def.requiert || state.stations[def.requiert].construit) return '';

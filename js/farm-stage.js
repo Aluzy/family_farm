@@ -234,6 +234,7 @@
               // la ferme générée : les blocs où l'on ne passe pas, et la paillasse où il dort
               blocks: () => this.blockCells(),
               couchage: () => this.bedSpot(),
+              foyer: () => this.homeDoor(),
             });
           } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
         }
@@ -512,6 +513,9 @@
         // la ferme générée : une pierre, un bout de bois, une herbe à ramasser à la main
         const brin = !this.room && !hoeing ? this.gatherAt(wx, wy) : null;
         if (brin) return { gather: brin };
+        // un four, une cuisinière posés (la ferme générée) : la fenêtre de sa station
+        const station = !this.room && !hoeing ? this.stationAt(wx, wy) : null;
+        if (station) return { window: station };
         for (const z of this.zones()) {
           const i = z.at(wx, wy);
           if (i < 0) continue;

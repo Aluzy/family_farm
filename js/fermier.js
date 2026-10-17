@@ -183,6 +183,9 @@
     function door() {
       const h = sprite('maison') || (scene.buildings && scene.buildings.get('maison') && scene.buildings.get('maison').sprite);
       if (h) return { x: Math.round(h.x + h.width * 0.5), y: Math.round(h.y + 6) };
+      // la ferme générée : la porte de son foyer (la pièce où il dort), sans maison
+      const f = o.foyer ? o.foyer() : null;
+      if (f) return f;
       const r = (o.objects || {}).maison;
       return r ? { x: r.x + r.width / 2, y: r.y + r.height + 6 } : { x: world.w / 2, y: world.h / 2 };
     }

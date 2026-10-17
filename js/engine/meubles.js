@@ -3,6 +3,7 @@ import { fail, NO_COINS, pay } from './devices.js';
 import { houseRepaired } from './depart.js';
 import { adultCount, childCount } from './family.js';
 import { memberHappiness, setHappiness } from './ville.js';
+import { farmSeed } from './terrain.js';
 
 /* ---------- Meubles de la maison (Marché, rayon Meubles) ----------
    state.meubles = { id: nombre } (absent : aucun). Un meuble acheté prend sa place dans
@@ -25,6 +26,7 @@ export function furnitureMax(state, id) {
 export function buyFurniture(state, id) {
   const def = DATA.MEUBLES[id];
   if (!def) return fail('Ce meuble n\'existe pas.');
+  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, pas de maison à meubler : tu bâtis et fabriques tout à l\'Atelier.');
   if (!houseRepaired(state)) return fail('Répare d\'abord la maison.');
   const max = furnitureMax(state, id);
   if (furnitureCount(state, id) >= max) {

@@ -163,3 +163,15 @@ Le Marché vend toujours les outils.
        blocs à poser dehors (la pompe sur un puits) ;
      - **l'ordre** : la maison (cuisine, installations), puis le poulailler, l'étable, la serre,
        le silo, le moulin et le verger.
+     - ✅ **5b-1, la maison** :
+       - la cour n'a plus de maison : sa place reste dégagée et le chemin part de devant elle ;
+       - le **foyer** est une pièce close avec une paillasse. `houseRepaired` le reconnaît, ce
+         qui ouvre les installations et l'objectif du chapitre 1 ; il n'y a rien à réparer ;
+       - le personnage, la famille et le robot rentrent et sortent par sa porte (`homeDoor`).
+         Avant qu'il existe, c'est la place de l'ancienne maison ;
+       - le **four de pierre** (8 pierres, 2 planches) et la **cuisinière** (6 pierres,
+         4 planches) se fabriquent à l'Atelier. Posés dans une pièce close, ils tiennent lieu
+         des stations du même nom (`DATA.ATELIER.BLOCS[…].station`) ; repris, la station n'est
+         plus là. Un appui dessus ouvre leur fenêtre ;
+       - pas d'intérieur de maison (les repas n'ont pas de scène), pas de meubles, et le
+         tutoriel n'arrête pas l'horloge : le foyer se bâtit en plusieurs jours.

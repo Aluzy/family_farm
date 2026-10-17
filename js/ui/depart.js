@@ -5,6 +5,7 @@ import {
   setMainCharacter, setupPending, starterBlock,
 } from '../engine/depart.js';
 import { familyNeed } from '../engine/family.js';
+import { atelierOuvert } from '../engine/atelier.js';
 import { escapeHtml, formatCoins, formatNumber } from '../engine/format.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
@@ -45,6 +46,14 @@ const STARTER_LABELS = {
 
 // Fenêtre Installations, avant tout : la maison à réparer, puis les appareils à acheter.
 export function renderStarterCards() {
+  // la ferme générée : pas de maison à réparer, un foyer à bâtir (js/engine/blocs.js)
+  if (!houseRepaired(state) && atelierOuvert(state)) {
+    return `
+      <div class="card starter house">
+        <span class="card-title"><span>🧱 Ton foyer</span><span class="chip warn">À bâtir</span></span>
+        <span class="muted">Pas de maison sur une terre sauvage : bâtis une pièce close (des murs tout autour, une porte) et pose-y une paillasse. Tant qu'elle n'existe pas, rien d'autre ne s'installe.</span>
+      </div>`;
+  }
   if (!houseRepaired(state)) {
     const cost = DATA.DEPART.MAISON;
     return `

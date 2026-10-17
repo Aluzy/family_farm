@@ -5,6 +5,7 @@ import { atelierConstruit, atelierOuvert } from './atelier.js';
 import { farmTerrain, tileCount } from './terrain.js';
 import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
+import { openStation } from './kitchen.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -142,6 +143,8 @@ export function poserBloc(state, sorte, tile) {
   if (s.objet) takeItem(state, s.objet, 1);
   if (!state.blocs || typeof state.blocs !== 'object') state.blocs = {};
   state.blocs[tile] = sorte;
+  // un four, une cuisinière : la station est là (étape 5b, la maison)
+  if (s.station && state.stations[s.station]) openStation(state, s.station);
   return { ok: true, sorte, case: tile };
 }
 
@@ -153,5 +156,7 @@ export function reprendreBloc(state, tile) {
   delete state.blocs[tile];
   const s = sorteDe(sorte);
   if (s && s.objet) addItem(state, s.objet, 1);
+  // la station s'en va avec lui (s'il n'y en a pas une autre posée)
+  if (s && s.station && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
   return { ok: true, sorte, case: tile };
 }

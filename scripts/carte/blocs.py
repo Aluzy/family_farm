@@ -7,7 +7,8 @@
 #   python3 scripts/carte/blocs.py --apercu   écrit aussi apercu_blocs.png
 #
 # Même ordre que js/carte/ferme/config.js (BLOCS_CARTE.frames) : mur_pierre, porte, atelier,
-# paillasse, drap (la couverture, posée par-dessus le personnage couché). Gris des rochers,
+# paillasse, drap (la couverture, posée par-dessus le personnage couché), four, cuisiniere
+# (étape 5b : posés dans une pièce close, ils tiennent lieu des stations). Gris des rochers,
 # bruns des troncs, paille du poulailler ; lumière en haut à gauche, contour sombre de la
 # matière.
 import os
@@ -30,6 +31,8 @@ PALETTE = {
     'u': '#5a4630', 'v': '#c4ac84', 'w': '#e8d8b0', 'W': '#f6ecd0',
     # couverture (laine rouge)
     'R': '#4a1418', 'r': '#9a3238', 'q': '#c8484a', 'Q': '#e07466',
+    # le feu
+    'F': '#ffd040',
 }
 
 DESSINS = [
@@ -167,6 +170,60 @@ DESSINS = [
         '................',
         '................',
         '................',
+    ],
+    # le four de pierre : une voûte de moellons, la bouche où rougeoie le feu
+    [
+        '................',
+        '................',
+        '................',
+        '................',
+        '.....aaaaaa.....',
+        '...aaeeeeddaa...',
+        '..aeedddddccba..',
+        '.aeddddcddccbba.',
+        '.adddcdddddcbba.',
+        '.adcddddcddcbba.',
+        '.addddkkkkddcba.',
+        '.acdkkRrrRkkcba.',
+        '.acdkRrQQrRkcba.',
+        '.acckrQFFQrkcba.',
+        '.abcckkkkkkccba.',
+        '.abbbbbbbbbbbba.',
+        '.ajjjjjjjjjjjja.',
+        '.adddcadddddcba.',
+        '.acccacccccbbba.',
+        '.abbbabbbbbbbba.',
+        '.ajjjjjjjjjjjja.',
+        '.adddddcadddcba.',
+        '.abbbbbbabbbbba.',
+        '.aaaaaaaaaaaaaa.',
+    ],
+    # la cuisinière : un fourneau de pierre et de fonte, une marmite dessus, le feu dessous
+    [
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '.......mm.......',
+        '.....mmppmm.....',
+        '....mppppppm....',
+        '....mnnnnnnm....',
+        '.aaaammmmmmaaaa.',
+        '.aeeeeeeeeeeeea.',
+        '.addmmmddmmmdda.',
+        '.adcmnmcdmnmcca.',
+        '.addmmmddmmmdda.',
+        '.aaaaaaaaaaaaaa.',
+        '.akkkkkkkkkkkka.',
+        '.akmmmmmmmmmmka.',
+        '.akmRrQQQQrRmka.',
+        '.akmrQFFFFQrmka.',
+        '.akmmmmmmmmmmka.',
+        '.akTtTtTtTtTtka.',
+        '.akTtTtTtTtTtka.',
+        '.aksssssssssska.',
+        '.aaaaaaaaaaaaaa.',
     ],
 ]
 

@@ -39,7 +39,8 @@
         return (id === 'maison' || o.visible) ? o : null;   // version 1.12 : la Zone de culture aussi, une fois la ferme ouverte
       };
       for (const def of BUILDINGS) {
-        const want = info(def.id);
+        // (la ferme générée n'a pas de rectangle pour ce qui se bâtit, comme la maison : rien)
+        const want = this.objects[def.object] ? info(def.id) : null;
         const e = this.buildings.get(def.id);
         if (e && (!want || rebuild || !!want.ruine !== !!e.ruine)) { e.sprite.destroy(); this.buildings.delete(def.id); this.sunDirty = true; }
         if (want && !this.buildings.has(def.id)) {

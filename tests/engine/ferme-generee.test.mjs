@@ -7,7 +7,7 @@
 import { assert, assertEqual, garden, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierOuvert, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierOuvert, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -34,7 +34,7 @@ test('ferme générée : la même graine donne la même carte, une autre graine 
   assert(JSON.stringify(c.carte) !== JSON.stringify(a.carte), 'une autre graine, une autre carte');
   // d'une fois sur l'autre (pas seulement dans la même page) : toujours la même ferme pour
   // « test-1 » (à mettre à jour si le générateur change, ce qui change les fermes des parties)
-  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 10995]);
+  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 11043]);
   assertEqual([a.carte.width, a.carte.height, a.terrain.LARGEUR, a.terrain.HAUTEUR], [FERME_GENEREE.LARGEUR, FERME_GENEREE.HAUTEUR, 144, 114]);
 });
 
@@ -55,10 +55,12 @@ for (const graine of ['1', '2', '7', 'abc', '12345']) {
       const i = pile.pop(), c = i % W;
       for (const j of [c ? i - 1 : -1, c < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < est.length && est[j] && !vus.has(j)) { vus.add(j); pile.push(j); }
     }
-    const m = objets.maison, porte = (Math.ceil((m.y + m.height) / T) + 1) * W + Math.round((m.x + m.width / 2) / T);
-    assert(vus.has(porte), 'le chemin passe devant la porte de la maison');
+    // (la place de la maison de la carte de Tiled, 513.5, 239, 94 × 95.6 px, décalée avec la cour)
+    const [dx, dy] = terrain.DECALAGE, porte = (Math.ceil((239 + 95.6) / T) + 1 + dy) * W + Math.round((513.5 + 47) / T) + dx;
+    assert(vus.has(porte), 'le chemin passe devant la place de la maison');
+    assert(!objets.maison, 'pas de maison : le foyer se bâtit');
     // les bâtiments de la cour (provisoires) et les rochers, les arbres
-    for (const n of ['maison', 'grange', 'moulin', 'serre', 'verger', 'silo', 'poulailler', 'puits', 'citerne', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
+    for (const n of ['grange', 'moulin', 'serre', 'verger', 'silo', 'poulailler', 'puits', 'citerne', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
     assertEqual(Object.keys(terrain.ROCHERS).length, FERME_GENEREE.ROCHERS, 'les rochers');
     assert(Object.keys(terrain.ARBRES).length > 150, 'des bois');
     // un étang assez grand pour la pêche (FISHING.etang : 30 cases), et le tronc creux à son bord
@@ -286,4 +288,36 @@ test('ferme générée : chaque nuit, qui n\'a pas de paillasse dans une pièce 
   // et la nuit le note pour le réveil
   const r = sleepOnce(s);
   assertEqual(r.sansCouchage.length, membres.length - 1);
+});
+
+/* ---------- étape 5b : la maison en blocs ---------- */
+
+test('ferme générée : pas de maison à réparer, le foyer est une pièce close avec une paillasse', () => {
+  const s = chantier('m1');
+  s.maison = { reparee: false };
+  assertEqual([houseRepaired(s), repairHouse(s).ok], [false, false], 'rien à réparer : à bâtir');
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assertEqual(houseRepaired(s), false, 'une pièce sans paillasse');
+  poserBloc(s, 'paillasse', p.dedans);
+  assertEqual(houseRepaired(s), true, 'le foyer');
+  assertEqual(buyFurniture(s, Object.keys(DATA.MEUBLES)[0]).ok, false, 'pas de maison à meubler');
+});
+
+test('ferme générée : le four et la cuisinière se posent dans une pièce close et tiennent lieu des stations', () => {
+  const s = chantier('m2');
+  s.pieces = 10000;
+  assertEqual(buildStation(s, 'four').ok, false, 'pas en pièces');
+  setInv(s, { mur_pierre: 40, porte: 2, four_pierre: 1, cuisiniere: 1 });
+  const z = terrainLibre(s, 6, 5), p = murs(z, 6, 5);
+  assertEqual(poserBloc(s, 'four', p.dedans).ok, false, 'hors d\'une pièce close');
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assert(poserBloc(s, 'four', p.dedans).ok);
+  assert(poserBloc(s, 'cuisiniere', p.dedans + 1).ok);
+  assertEqual([s.stations.four.construit, s.stations.cuisine.construit, blocBloque(s, p.dedans)], [true, true, true]);
+  assert(s.unlockedTabs.includes('recettes'), 'le Livre de recette s\'ouvre');
+  reprendreBloc(s, p.dedans);
+  assertEqual([s.stations.four.construit, countItem(s, 'four_pierre')], [false, 1], 'repris : plus de four');
 });

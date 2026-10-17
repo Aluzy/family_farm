@@ -37,6 +37,7 @@ import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, pickChipHtml,
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, couchages, piecesCloses } from '../engine/blocs.js';
+import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml } from './chantier.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
@@ -396,8 +397,18 @@ export function stageModel() {
     bati: buildMode && !stageInterior ? { sorte: buildMode } : null,
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
     couchages: couchages(state),
+    foyer: foyerPorte(),
     houe, hache, pioche, canne, rochers, abattus, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
+}
+
+// La ferme générée, sans maison : la porte du foyer (la première pièce close où l'on dort, sinon
+// la première pièce close), où le personnage rentre le soir et ressort le matin ; null sans pièce.
+function foyerPorte() {
+  if (!atelierOuvert(state)) return null;
+  const pieces = piecesCloses(state);
+  const p = pieces.find((q) => q.paillasses.length) || pieces[0];
+  return p ? p.portes[0] : null;
 }
 
 // Les asperseurs de la carte (voir stageModel) : [{ x, y (px de carte, le pied), on }]. Un
