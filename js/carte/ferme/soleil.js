@@ -1,7 +1,7 @@
 /* carte/ferme/soleil.js — la scène de la ferme : les ombres portées qui suivent le soleil.
  *
- * Le soleil se lève à l'est (à droite) à SOLEIL.lever heures et se couche à l'ouest (à gauche)
- * à SOLEIL.coucher ; il passe au sud, du côté d'où l'on regarde la carte. Les ombres partent
+ * Le soleil (CarteKit.SOLEIL, js/carte/lumiere.js) se lève à l'est (à droite) et se couche à
+ * l'ouest (à gauche) ; il passe au sud, du côté d'où l'on regarde la carte. Les ombres partent
  * donc vers le haut de la carte, derrière ce qui les porte, et penchent : vers la gauche le
  * matin, vers la droite le soir, longues quand le soleil est bas, courtes à midi (presque
  * cachées derrière). Elles s'estompent à l'aube et au crépuscule ; la nuit, il n'y en a pas.
@@ -23,25 +23,9 @@
 (function (global) {
   'use strict';
 
+  const K = global.CarteKit;
   const F = global.FermeCarte;
   const { SOLEIL } = F.C;
-
-  const clamp01 = (v) => Math.max(0, Math.min(1, v));
-
-  // Le soleil à l'heure h : { sh, k, alpha } (null : il est couché). sh : le cisaillement (de
-  // combien le haut de l'ombre glisse sur le côté, pour un px de hauteur : négatif à gauche) ;
-  // k : l'écrasement (la hauteur de l'ombre, pour un px de hauteur de l'objet).
-  function soleil(h) {
-    const S = SOLEIL;
-    if (h == null || h <= S.lever || h >= S.coucher) return null;
-    const t = Math.PI * (h - S.lever) / (S.coucher - S.lever);
-    const haut = Math.sin(t);                    // 0 à l'horizon, 1 à midi
-    return {
-      sh: -Math.cos(t) * S.penche,
-      k: S.longueur[1] - (S.longueur[1] - S.longueur[0]) * haut,
-      alpha: S.alpha * clamp01(Math.min(h - S.lever, S.coucher - h) / S.fondu),
-    };
-  }
 
   F.partie({
 
@@ -78,7 +62,7 @@
     stepSun() {
       if (!this.sunTex) return;
       const m = this.ctx.lastModel;
-      const s = soleil(m ? m.heure : null);
+      const s = K.soleil(m ? m.heure : null);
       if (!s) { this.sunImg.setVisible(false); this.sunKey = null; return; }
       this.sunImg.setVisible(true).setAlpha(s.alpha);
       const key = Math.round(m.heure / SOLEIL.pas);
@@ -93,20 +77,8 @@
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, this.sunTex.width, this.sunTex.height);
       ctx.imageSmoothingEnabled = false;
-      for (const c of this.sunCasters()) {
-        // un point de l'image à `v` px au-dessus du pied va à sh × v à côté, k × v au-dessus
-        // du pied : (u, v') de l'image → (x + u + sh·(pied − y − v'), pied − k·(pied − y − v'))
-        const top = c.pied - c.y;
-        ctx.setTransform(1, 0, -s.sh, s.k, c.x + s.sh * top, c.pied - s.k * top);
-        if (c.flip) { ctx.translate(c.w, 0); ctx.scale(-1, 1); }
-        try { ctx.drawImage(c.src, c.sx, c.sy, c.sw, c.shh, 0, 0, c.w, c.h); } catch (e) { /* image pas prête */ }
-      }
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      // tout ce qui est peint devient noir (sa transparence est gardée)
-      ctx.globalCompositeOperation = 'source-in';
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, this.sunTex.width, this.sunTex.height);
-      ctx.globalCompositeOperation = 'source-over';
+      for (const c of this.sunCasters()) K.ombrePortee(ctx, s, c.src, c.sx, c.sy, c.sw, c.shh, c.x, c.y, c.w, c.h, c.pied, c.flip);
+      K.noircir(ctx, this.sunTex.width, this.sunTex.height);
       this.sunTex.refresh();
     },
   });

@@ -156,6 +156,7 @@
     // L'arbre abattu bascule autour de son pied, du côté opposé au personnage, puis s'efface.
     fellTree(t) {
       t.down = true;
+      this.ombresSales = true;
       t.shake = -1;
       t.img.setFrame(0).setAlpha(1);
       this.unblock(t);
@@ -175,6 +176,7 @@
 
     breakRock(r) {
       r.down = true;
+      this.ombresSales = true;
       this.unblock(r);
       this.tweens.add({ targets: r.img, alpha: 0, scaleX: 1.15, scaleY: 0.7, duration: reduced() ? 120 : 260, onComplete: () => { r.img.destroy(); this.rocks.splice(this.rocks.indexOf(r), 1); } });
     },

@@ -294,13 +294,10 @@
 
   // Ombres des bâtiments et des barrières : leur silhouette, noire et transparente, posée au
   // sol (sous tout le reste) et décalée vers la droite et le bas (lumière en haut à gauche).
-  // Les ombres portées qui suivent le soleil (js/carte/ferme/soleil.js) : il se lève à `lever` h,
-  // se couche à `coucher` h ; une ombre penche de `penche` px par px de hauteur au plus (soleil
-  // à l'horizon), sa longueur va de longueur[0] (midi) à longueur[1] (soleil bas) fois la
-  // hauteur de ce qui la porte ; `alpha` en plein jour, atteint en `fondu` h après le lever (et
-  // perdu en autant avant le coucher) ; repeinte tous les `pas` h. `base` : le pied d'une image
-  // est à tant de px au-dessus de son bas. Sous tout ce qui est debout (`depth`).
-  const SOLEIL = { lever: 6, coucher: 20, penche: 1, longueur: [0.3, 1], alpha: 0.38, fondu: 1, pas: 0.1, base: 2, depth: 0.06 };
+  // Les ombres portées qui suivent le soleil (js/carte/ferme/soleil.js ; le soleil lui-même :
+  // CarteKit.SOLEIL) : repeintes tous les `pas` h ; `base` : le pied d'une image est à tant de
+  // px au-dessus de son bas ; sous tout ce qui est debout (`depth`).
+  const SOLEIL = { pas: 0.1, base: 2, depth: 0.06 };
 
   const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
 

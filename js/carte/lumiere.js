@@ -113,5 +113,48 @@
     };
   }
 
-  Object.assign(K, { LIGHT_KEYS, LIGHT_MS, lumiere, voile });
+  // Le soleil (les ombres portées : js/carte/ferme/soleil.js, js/carte/ville/ombres.js). Il se
+  // lève à l'est (à droite de la carte) à `lever` h, se couche à l'ouest à `coucher` h, en
+  // passant au sud, du côté d'où l'on regarde : les ombres partent vers le haut de la carte et
+  // penchent vers la gauche le matin, vers la droite le soir, de `penche` px par px de hauteur au
+  // plus (soleil à l'horizon) ; leur longueur va de longueur[0] (midi) à longueur[1] (soleil bas)
+  // fois la hauteur de ce qui les porte ; `alpha` en plein jour, atteint en `fondu` h après le
+  // lever et perdu en autant avant le coucher.
+  const SOLEIL = { lever: 6, coucher: 20, penche: 1, longueur: [0.3, 1], alpha: 0.38, fondu: 1 };
+
+  // Le soleil à l'heure h : { sh, k, alpha } (null : il est couché). sh : le cisaillement (de
+  // combien le haut de l'ombre glisse sur le côté, pour un px de hauteur : négatif à gauche) ;
+  // k : l'écrasement (la hauteur de l'ombre, pour un px de hauteur de l'objet).
+  function soleil(h) {
+    const S = SOLEIL;
+    if (h == null || h <= S.lever || h >= S.coucher) return null;
+    const t = Math.PI * (h - S.lever) / (S.coucher - S.lever);
+    const haut = Math.sin(t);                    // 0 à l'horizon, 1 à midi
+    return {
+      sh: -Math.cos(t) * S.penche,
+      k: S.longueur[1] - (S.longueur[1] - S.longueur[0]) * haut,
+      alpha: S.alpha * clamp(Math.min(h - S.lever, S.coucher - h) / S.fondu, 0, 1),
+    };
+  }
+
+  // Une ombre portée dans le canevas `ctx` : l'image (ou la partie sx, sy, sw, sh0 de src, posée
+  // en x, y, w × h px), son pied à `pied` px, le soleil `s`. Un point de l'image à v px au-dessus
+  // du pied va à sh·v à côté et k·v au-dessus du pied. Peinte en couleur : à rendre noire
+  // ensuite (noircir), comme tout le canevas.
+  function ombrePortee(ctx, s, src, sx, sy, sw, sh0, x, y, w, h, pied, flip) {
+    const top = pied - y;
+    ctx.setTransform(1, 0, -s.sh, s.k, x + s.sh * top, pied - s.k * top);
+    if (flip) { ctx.translate(w, 0); ctx.scale(-1, 1); }
+    try { ctx.drawImage(src, sx, sy, sw, sh0, 0, 0, w, h); } catch (e) { /* image pas prête */ }
+  }
+  // Tout ce qui est peint dans le canevas devient noir (sa transparence est gardée).
+  function noircir(ctx, w, h) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  Object.assign(K, { LIGHT_KEYS, LIGHT_MS, lumiere, voile, SOLEIL, soleil, ombrePortee, noircir });
 })(window);

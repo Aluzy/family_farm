@@ -220,6 +220,8 @@
       this.voile = JOUR_NUIT.includes(etat.nom) ? K.voile(this, map.widthInPixels, map.heightInPixels, VOL - 1) : null;
       // la nuit, les réverbères (couche « lumieres ») et les phares (js/carte/ville/eclairage.js)
       this.makeLighting(objects('lumieres'));
+      // les ombres portées, qui suivent le soleil (js/carte/ville/ombres.js)
+      this.makeShadows();
       this.clockAt = -1e9;
       this.stepClock(0);
       if (this.voile) this.voile.set(this.heure ? this.heure.heure : null, true);
@@ -664,6 +666,7 @@
       this.stepPassages(time);
       this.stepClock(time);
       this.stepLighting(dt);
+      this.stepShadows();
       if (this.voile) this.voile.step();
       this.stepSchool(time, dt);
       this.stepTrain(dt);
