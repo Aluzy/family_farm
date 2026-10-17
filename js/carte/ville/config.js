@@ -66,6 +66,15 @@
   // de l'écran, vers le haut] : de 3/4, son toit dépasse vers le haut), `haut` px au-dessus du sol, `ecart` px de
   // part et d'autre ; le cône : `portee` × `largeur` px ; les feux arrière, au bout opposé :
   // `rayon` px.
+  // Les ombres portées qui suivent le soleil (js/carte/ville/ombres.js ; le soleil : CarteKit.SOLEIL) :
+  // les couches de ce qui est debout (en plus des bâtiments, BATI) ; le canevas couvre la vue et
+  // `marge` px autour ; une ombre porte à `portee` px au plus de son pied ; repeint tous les
+  // `pas` h ; `base` : le pied d'une colonne de tuiles est à tant de px au-dessus de son bas ;
+  // sans partie sur l'appareil (pas d'heure), le soleil de `sansHeure` h.
+  const OMBRES = {
+    couches: ['vegetation', 'mobilier', 'equipements', 'abri', 'reverberes_haut', 'reverberes_bas'],
+    marge: 96, portee: 200, pas: 0.1, base: 2, sansHeure: 13,
+  };
   const ECLAIRAGE = {
     reverbere: {
       allume: 19.5, eteint: 6.5, decalage: 0.4, fondu: 0.6, clignote: 0.7,
@@ -274,7 +283,7 @@
 
   const parties = [];
   global.CarteVille = {
-    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS },
+    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS },
     etat, configure, hote, sheetKey, saisie: K.saisie, reduced: K.reduit, v: K.v, tuilesDans,
     // les méthodes de la scène, fichier par fichier (voir js/ville-carte.js)
     parties,

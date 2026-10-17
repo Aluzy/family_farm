@@ -115,7 +115,8 @@ et les voitures), `ecole.js` (le bus de l'école), `hud.js` (les messages, la fe
 `marche.js` (le marché, les entreprises), `train.js`, `navette.js` (le bus de ligne),
 `trouvailles.js`, `faune.js`, `nature.js` (arbres, rochers, herbe haute), `peche.js`,
 `lueurs.js` (les lumières de la grotte : lanterne, champignons, améthystes ; Phaser 4, WebGL),
-`eclairage.js` (la nuit : les réverbères de la couche d'objets « lumieres » et les phares des
+`ombres.js` (les ombres portées qui suivent le soleil, comme à la ferme : bâtiments, arbres,
+mobilier, réverbères, rochers ; un canevas de la vue, `OMBRES`), `eclairage.js` (la nuit : les réverbères de la couche d'objets « lumieres » et les phares des
 voitures, posés dans la carte de lumière du voile, `CarteKit.voile(…).eclaire`),
 `voisins.js` (leurs maisons, leur famille). Un fichier sur ~800 lignes au plus.
 
