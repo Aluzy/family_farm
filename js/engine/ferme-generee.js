@@ -1,0 +1,386 @@
+import { mulberry32 } from './base.js';
+import { blocGid, DESSINS_ROCHERS, TRONC_CREUX, TUILES_VIDES } from './planche.js';
+import { terrainOfMap } from './terrain-carte.js';
+import { chemin } from './chemin.js';
+
+/* ---------- la ferme générée d'après une graine ---------- */
+
+// Une carte de la ferme de LARGEUR × HAUTEUR tuiles (quatre fois la surface de la carte de
+// Tiled), toujours la même pour une même graine, au format de Tiled (comme
+// assets/carte_printemps.json, sans ses jeux de tuiles : la scène y met ceux de la carte de
+// Tiled). Elle est dessinée avec les tuiles du décor version 2 (planche.js), comme la carte de
+// Tiled l'est par scripts/carte/carte_v2.py :
+//   - l'herbe en trois teintes qui ondulent (un bruit), avec leurs raccords ;
+//   - des étangs aux bords irréguliers (peu profonds au bord, profonds au milieu) et leurs rives ;
+//   - un chemin de la cour jusqu'au bord est : le rectangle `vers_la_transition` (couche
+//     « passages ») y est posé, la sortie vers la carte de transition ;
+//   - des bois (arbres clairs, pins, buissons) plus denses vers les bords de la carte, des
+//     rochers, des fleurs, des touffes d'herbe haute, et le tronc creux au bord d'un étang (le
+//     passage vers l'infra-monde) ;
+//   - pour l'instant (étape 2 du projet, docs/carte-generee.md), une cour dégagée où les
+//     bâtiments de la carte de Tiled gardent leur disposition (COUR) : la construction bloc
+//     par bloc les remplacera.
+// genererFerme(graine) → { carte, terrain } ; le terrain est celui de terrain-carte.js (plus
+// DECALAGE : où la cour a été posée, en tuiles). Les cartes déjà faites sont gardées.
+
+export const FERME_GENEREE = {
+  LARGEUR: 144, HAUTEUR: 114, T: 16,
+  ETANGS: [2, 4], RAYON_ETANG: [[7, 10], [3, 7]],     // le premier étang (le plus grand), puis les autres
+  ROCHERS: 64, ARBRES_SEUIL: 0.56, ARBRES_BORD: 14,  // densité des bois ; les bords (tuiles) en ont plus
+  TOUFFES: 44, FLEURS: 0.05,
+};
+
+// La cour (provisoire) : les rectangles de la carte de Tiled (couche « batiment », puits et
+// citerne de DEFAULT_OBJECTS dans js/carte/ferme/config.js), en px. La cour est posée d'un
+// nombre entier de tuiles plus loin.
+const COUR = {
+  serre: [736.1, 273.6, 94, 78.3], maison: [513.5, 239, 94, 95.6], grange: [305, 253.8, 126.1, 81.6],
+  zone_culture_1: [464.5, 385.1, 78.1, 94], moulin: [626.1, 412.3, 95.6, 127], verger: [625.1, 303.7, 12.8, 15.9],
+  zone_culture_2: [622, 607.6, 130.8, 128.8], silo: [657, 238.5, 49.5, 64.3], poulailler: [128.5, 257, 63, 77],
+  puits: [596, 390, 34, 38], citerne: [629, 394, 24, 34],
+};
+[[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
+  [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
+  .forEach((p, i) => { COUR['arbre_verger_' + (i + 1)] = [p[0], p[1], 63.7, 78.2]; });
+
+// Un nombre de 32 bits d'après une chaîne (FNV-1a).
+function hache(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+
+// Un bruit lisse (valeurs sur une grille de `pas` tuiles, interpolées), entre 0 et 1, plusieurs
+// octaves.
+function bruit(graine, pas, octaves = 3) {
+  const g0 = hache(graine);
+  const val = (ix, iy, o) => {
+    let h = (g0 ^ Math.imul(ix, 374761393) ^ Math.imul(iy, 668265263) ^ Math.imul(o + 1, 2147483647)) >>> 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h = (h ^ (h >>> 16)) >>> 0;
+    return (h & 0xffff) / 0xffff;
+  };
+  const lisse = (t) => t * t * (3 - 2 * t);
+  return (x, y) => {
+    let s = 0, poids = 0, p = pas, a = 1;
+    for (let o = 0; o < octaves; o++) {
+      const fx = x / p, fy = y / p, ix = Math.floor(fx), iy = Math.floor(fy), tx = lisse(fx - ix), ty = lisse(fy - iy);
+      const v = (val(ix, iy, o) * (1 - tx) + val(ix + 1, iy, o) * tx) * (1 - ty) + (val(ix, iy + 1, o) * (1 - tx) + val(ix + 1, iy + 1, o) * tx) * ty;
+      s += v * a; poids += a; p /= 2; a /= 2;
+    }
+    return s / poids;
+  };
+}
+
+const cartes = new Map();
+
+export function genererFerme(graine) {
+  const cle = String(graine);
+  if (!cartes.has(cle)) cartes.set(cle, fabriquer(cle));
+  return cartes.get(cle);
+}
+
+function fabriquer(graine) {
+  const G = FERME_GENEREE, W = G.LARGEUR, H = G.HAUTEUR, T = G.T, N = W * H;
+  // un tirage par usage : changer l'un ne déplace pas les autres
+  const hasard = (nom) => mulberry32(hache(graine + ':' + nom));
+  const entre = (r, a, b) => a + Math.floor(r() * (b - a + 1));
+  const idx = (c, r) => r * W + c;
+  const dedans = (c, r) => c >= 0 && r >= 0 && c < W && r < H;
+
+  // ---- 1. la cour : où elle va, ce qu'elle interdit
+  let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+  for (const [x, y, w, h] of Object.values(COUR)) {
+    bx0 = Math.min(bx0, Math.floor(x / T)); by0 = Math.min(by0, Math.floor(y / T));
+    bx1 = Math.max(bx1, Math.ceil((x + w) / T)); by1 = Math.max(by1, Math.ceil((y + h) / T));
+  }
+  const rc = hasard('cour');
+  const cw = bx1 - bx0, ch = by1 - by0;
+  const ox = Math.round((W - cw) / 2 - 12 + (rc() - 0.5) * 16) - bx0;   // un peu à l'ouest : le chemin a de la place
+  const oy = Math.round((H - ch) / 2 + (rc() - 0.5) * 20) - by0;
+  const objets = {};
+  for (const [nom, [x, y, w, h]] of Object.entries(COUR)) objets[nom] = { x: x + ox * T, y: y + oy * T, width: w, height: h };
+  const cour = new Uint8Array(N);      // 1 : la cour (rien n'y pousse), plus 3 tuiles autour
+  for (let r = by0 + oy - 3; r <= by1 + oy + 3; r++) for (let c = bx0 + ox - 3; c <= bx1 + ox + 3; c++) if (dedans(c, r)) cour[idx(c, r)] = 1;
+  // sous un rectangle de la cour (sousObjet[1] : ou à une tuile près)
+  const sousObjet = [new Uint8Array(N), new Uint8Array(N)];
+  for (const o of Object.values(objets)) {
+    for (const marge of [0, 1]) {
+      for (let r = Math.floor(o.y / T) - marge; r < Math.ceil((o.y + o.height) / T) + marge; r++) {
+        for (let c = Math.floor(o.x / T) - marge; c < Math.ceil((o.x + o.width) / T) + marge; c++) if (dedans(c, r)) sousObjet[marge][idx(c, r)] = 1;
+      }
+    }
+  }
+
+  // ---- 2. le chemin : de devant la maison au bord est (3 tuiles de large, droit sur ses
+  // 8 dernières tuiles, au milieu des rangées de la sortie)
+  const classe = new Array(N).fill('herbe');
+  const rr = hasard('chemin');
+  const sortie = entre(rr, Math.round(H * 0.3), Math.round(H * 0.7));
+  const m = objets.maison;
+  const depart = [Math.round((m.x + m.width / 2) / T), Math.ceil((m.y + m.height) / T) + 1];
+  const meandre = bruit(graine + ':meandre', 9, 2);
+  const libreChemin = (i) => { const r = Math.floor(i / W); return r >= 2 && r < H - 2 && !sousObjet[1][i]; };
+  const cout = (i) => 1 + 4 * meandre(i % W, Math.floor(i / W));
+  const pas = chemin({ cols: W, rows: H, libre: libreChemin, cout }, idx(depart[0], depart[1]), idx(W - 9, sortie)) || [];
+  const route = new Set(pas);
+  for (let c = W - 9; c < W; c++) route.add(idx(c, sortie));
+  for (const i of route) {
+    const c = i % W, r = Math.floor(i / W);
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      if (dedans(c + dc, r + dr) && !sousObjet[0][idx(c + dc, r + dr)]) classe[idx(c + dc, r + dr)] = 'chemin';
+    }
+  }
+  const pres = (i, n, f) => {        // une case à moins de n tuiles où f est vrai ?
+    const c = i % W, r = Math.floor(i / W);
+    for (let dr = -n; dr <= n; dr++) for (let dc = -n; dc <= n; dc++) if (dedans(c + dc, r + dr) && f(idx(c + dc, r + dr))) return true;
+    return false;
+  };
+
+  // ---- 3. les étangs
+  const re = hasard('etangs');
+  const forme = bruit(graine + ':rives', 4, 2);
+  const etangs = [];
+  const nEtangs = entre(re, G.ETANGS[0], G.ETANGS[1]);
+  for (let k = 0, essais = 0; k < nEtangs && essais < 400; essais++) {
+    const [a, b] = G.RAYON_ETANG[k ? 1 : 0];
+    const rayon = a + re() * (b - a);
+    const cx = entre(re, Math.ceil(rayon) + 3, W - Math.ceil(rayon) - 4), cy = entre(re, Math.ceil(rayon) + 3, H - Math.ceil(rayon) - 4);
+    const cases = [], ax = 0.75 + re() * 0.5, ay = 0.75 + re() * 0.5;   // plus ou moins allongé
+    for (let r = Math.floor(cy - rayon * 1.6); r <= cy + rayon * 1.6; r++) {
+      for (let c = Math.floor(cx - rayon * 1.6); c <= cx + rayon * 1.6; c++) {
+        if (!dedans(c, r)) continue;
+        if (Math.hypot((c - cx) / ax, (r - cy) / ay) / rayon + (forme(c, r) - 0.5) * 1.1 < 1) cases.push(idx(c, r));
+      }
+    }
+    const loin = (i) => !pres(i, 3, (j) => classe[j] !== 'herbe' || cour[j]);
+    if (cases.length < 12 || !cases.every(loin)) continue;
+    for (const i of cases) classe[i] = 'eau';
+    etangs.push(cases);
+    k++;
+  }
+
+  // ---- 4. les sommets (coins des cases), la teinte de l'herbe, la profondeur de l'eau
+  const V = W + 1, sommet = new Array(V * (H + 1));
+  for (let y = 0; y <= H; y++) {
+    for (let x = 0; x <= W; x++) {
+      const n = { eau: 0, chemin: 0 };
+      for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+        const k = classe[idx(Math.min(W - 1, Math.max(0, x + dx)), Math.min(H - 1, Math.max(0, y + dy)))];
+        if (k in n) n[k]++;
+      }
+      sommet[y * V + x] = n.eau >= 2 ? 'eau' : n.chemin >= 2 ? 'chemin' : 'herbe';
+    }
+  }
+  const S = (x, y) => sommet[y * V + x];
+  const teinteDe = bruit(graine + ':teinte', 14, 2);
+  const teinte = new Uint8Array(V * (H + 1)), prof = new Uint8Array(V * (H + 1));
+  for (let y = 0; y <= H; y++) {
+    for (let x = 0; x <= W; x++) {
+      const b = teinteDe(x, y);
+      let t = b < 0.42 ? 0 : b < 0.6 ? 1 : 2;
+      for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) if (classe[idx(Math.min(W - 1, Math.max(0, x + dx)), Math.min(H - 1, Math.max(0, y + dy)))] === 'eau') t = 0;
+      teinte[y * V + x] = t;
+      let p = S(x, y) === 'eau';
+      for (let dy = -2; dy <= 2 && p; dy++) for (let dx = -2; dx <= 2 && p; dx++) {
+        const xx = x + dx, yy = y + dy;
+        if (xx >= 0 && yy >= 0 && xx <= W && yy <= H && S(xx, yy) !== 'eau') p = false;
+      }
+      prof[y * V + x] = p ? 1 : 0;
+    }
+  }
+  const masque = (f, x, y) => (f(x, y) ? 8 : 0) | (f(x + 1, y) ? 4 : 0) | (f(x, y + 1) ? 2 : 0) | (f(x + 1, y + 1) ? 1 : 0);
+
+  // ---- 5. le sol, les rives (comme scripts/carte/carte_v2.py, étape 3)
+  const vide = () => new Array(N).fill(0);
+  const ground = vide(), rives = vide(), plantes = vide();
+  const herbePleine = [];
+  const rs = hasard('sol');
+  for (let ty = 0; ty < H; ty++) {
+    for (let tx = 0; tx < W; tx++) {
+      const i = idx(tx, ty);
+      const coins = [[tx, ty], [tx + 1, ty], [tx, ty + 1], [tx + 1, ty + 1]];
+      const types = coins.map(([x, y]) => S(x, y));
+      const teintes = coins.map(([x, y]) => teinte[y * V + x]);
+      const h = Math.min(...teintes);
+      const r = rs();
+      if (types.includes('eau')) {
+        const n = masque((x, y) => prof[y * V + x], tx, ty);
+        const f = n === 0 ? (r < 0.7 ? 0 : 1 + Math.floor(rs() * 7)) : n === 15 ? 8 + (r < 0.7 ? (rs() < 0.5 ? 0 : 2) : Math.floor(rs() * 8)) : 16 + n;
+        ground[i] = blocGid('eau', f);
+        const terre = masque((x, y) => S(x, y) !== 'eau', tx, ty);
+        if (terre) {
+          const sable = coins.every(([x, y]) => S(x, y) === 'eau' || S(x, y) === 'chemin');
+          rives[i] = sable ? blocGid('rive_sable', terre) : blocGid('rive_herbe', h * 16 + terre);
+        }
+      } else if (types.includes('chemin')) {
+        const n = masque((x, y) => S(x, y) === 'chemin', tx, ty);
+        ground[i] = blocGid('herbe_chemin', n === 15 ? 4 * 16 + Math.floor(rs() * 8) : (5 + h * 2) * 16 + n);
+      } else if (Math.max(...teintes) > h) {
+        ground[i] = blocGid('herbe_chemin', (13 + h) * 16 + masque((x, y) => teinte[y * V + x] > h, tx, ty));
+      } else {
+        ground[i] = blocGid('herbe_chemin', h * 16 + Math.floor(rs() * 16));
+        herbePleine.push([i, h]);
+      }
+    }
+  }
+  // une case d'herbe franche : toute d'herbe, ses quatre coins aussi
+  const surHerbe = (i) => {
+    const tx = i % W, ty = Math.floor(i / W);
+    return classe[i] === 'herbe' && S(tx, ty) === 'herbe' && S(tx + 1, ty) === 'herbe' && S(tx, ty + 1) === 'herbe' && S(tx + 1, ty + 1) === 'herbe';
+  };
+  const pris = new Uint8Array(N);      // cases déjà prises (rochers, pieds des arbres, tronc creux)
+
+  // ---- 6. le tronc creux, au bord du plus grand étang
+  if (etangs.length) {
+    const rt = hasard('tronc');
+    const bords = [];
+    const eau = new Set(etangs[0]);
+    for (let i = 0; i < N; i++) {
+      const c = i % W;
+      if (c >= W - 1 || !surHerbe(i) || !surHerbe(i + 1) || cour[i]) continue;
+      if (pres(i, 2, (j) => eau.has(j)) && !pres(i, 1, (j) => eau.has(j))) bords.push(i);
+    }
+    if (bords.length) {
+      const i = bords[Math.floor(rt() * bords.length)];
+      plantes[i] = TRONC_CREUX[0]; plantes[i + 1] = TRONC_CREUX[1];
+      pris[i] = pris[i + 1] = 1;
+    }
+  }
+
+  // ---- 7. les rochers (jamais côte à côte : chacun est un groupe de cases à part)
+  const rk = hasard('rochers');
+  const formes = [['caillou', 0.36], ['moyen', 0.22], ['gros', 0.2], ['haut', 0.12], ['caillou2', 0.1]];
+  for (let n = 0, essais = 0; n < G.ROCHERS && essais < G.ROCHERS * 40; essais++) {
+    let t = rk(), nom = formes[0][0];
+    for (const [f, p] of formes) { if (t < p) { nom = f; break; } t -= p; }
+    const c0 = entre(rk, 1, W - 3), r0 = entre(rk, 1, H - 3);
+    const cases = DESSINS_ROCHERS[nom].map(([dc, dr, g]) => [idx(c0 + dc, r0 + dr), g]);
+    const ok = cases.every(([i]) => surHerbe(i) && !cour[i] && !pres(i, 1, (j) => pris[j] || classe[j] !== 'herbe'));
+    if (!ok) continue;
+    for (const [i, g] of cases) { plantes[i] = g; pris[i] = 1; }
+    n++;
+  }
+
+  // ---- 8. les arbres, les pins et les buissons
+  const ra = hasard('arbres');
+  const bois = bruit(graine + ':bois', 18, 3);
+  const poses = [];                    // [pied y, pied x, bloc, l, h] (px, comme carte_v2.py)
+  const tailles = { arbre: [3, 4], pin: [4, 4], buisson_rond: [3, 2], buisson_large: [3, 2] };
+  for (let gy = 1; gy < H; gy += 3) {
+    for (let gx = 0; gx < W; gx += 3) {
+      const tx = gx + Math.floor(ra() * 3), ty = gy + Math.floor(ra() * 3);
+      const bord = Math.min(tx, ty, W - 1 - tx, H - 1 - ty);
+      const d = bois(tx, ty) + Math.max(0, (G.ARBRES_BORD - bord) / G.ARBRES_BORD) * 0.45;
+      const tire = ra(), espece = ra();
+      // (au cœur d'un bois, presque à chaque place ; à sa lisière, moins souvent)
+      if (d < G.ARBRES_SEUIL || tire > Math.min(0.95, 0.45 + (d - G.ARBRES_SEUIL) * 3)) continue;
+      const bloc = espece < 0.58 ? 'arbre' : espece < 0.82 ? 'pin' : espece < 0.91 ? 'buisson_rond' : 'buisson_large';
+      const [w, h] = tailles[bloc];
+      const x0 = tx - Math.floor(w / 2), y1 = ty;
+      // le pied (la rangée du bas) sur de l'herbe franche, loin de la cour, du chemin, de l'eau
+      let ok = x0 >= 0 && x0 + w <= W && y1 < H - 1 && y1 - h + 1 >= 0;
+      for (let c = x0; ok && c < x0 + w; c++) {
+        const i = idx(c, y1);
+        ok = surHerbe(i) && !cour[i] && !pris[i] && !pres(i, 1, (j) => classe[j] !== 'herbe' || pris[j]);
+      }
+      for (let r = y1 - h + 1; ok && r <= y1; r++) for (let c = x0; ok && c < x0 + w; c++) ok = !cour[idx(c, r)] && classe[idx(c, r)] !== 'chemin';
+      if (!ok) continue;
+      for (let c = x0; c < x0 + w; c++) pris[idx(c, y1)] = 1;
+      poses.push([(y1 + 1) * T, (x0 + w / 2) * T, bloc, w, h]);
+    }
+  }
+  // chaque dessin va dans la couche la plus en arrière où il ne touche rien de déjà posé, et
+  // devant ceux qu'il chevauche (comme carte_v2.py, étape 5)
+  const ordre = ['layer_tree_4', 'layer_tree_3', 'layer_tree_2', 'layer_tree_1'];
+  const arbres = {}, occupe = {};
+  for (const nom of ordre) { arbres[nom] = vide(); occupe[nom] = new Set(); }
+  const places = [];
+  poses.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  for (const [fy, fx, bloc, w, h] of poses) {
+    const x0 = Math.round(fx / T - w / 2), y1 = Math.round(fy / T) - 1;
+    const cases = [];
+    for (let k = 0; k < w * h; k++) {
+      const tx = x0 + (k % w), ty = y1 - h + 1 + Math.floor(k / w), g = blocGid(bloc, k);
+      if (dedans(tx, ty) && !TUILES_VIDES.has(g)) cases.push([idx(tx, ty), g]);
+    }
+    const ids = new Set(cases.map((e) => e[0]));
+    const autour = new Set(ids);
+    for (const i of ids) {
+      const c = i % W;
+      for (const j of [c ? i - 1 : -1, c < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < N) autour.add(j);
+    }
+    let niveau = 0;
+    for (const [nom, autres] of places) if ([...ids].some((i) => autres.has(i))) niveau = Math.max(niveau, ordre.indexOf(nom) + 1);
+    let nom;
+    for (;;) {
+      if (niveau >= ordre.length) {
+        const n2 = 'layer_tree_0' + 'b'.repeat(niveau - 4);
+        ordre.push(n2); arbres[n2] = vide(); occupe[n2] = new Set();
+      }
+      nom = ordre[niveau];
+      if (![...autour].some((i) => occupe[nom].has(i))) break;
+      niveau++;
+    }
+    for (const [i, g] of cases) arbres[nom][i] = g;
+    for (const i of ids) occupe[nom].add(i);
+    places.push([nom, ids]);
+  }
+
+  // ---- 9. les fleurs, sur l'herbe franche libre
+  const rf = hasard('fleurs');
+  for (const [i, h] of herbePleine) {
+    if (rf() < G.FLEURS && !plantes[i] && !pris[i]) plantes[i] = blocGid('herbe_deco', (4 + h) * 16 + Math.floor(rf() * 16));
+  }
+
+  // ---- 10. l'herbe haute : des touffes groupées (comme scripts/carte/herbe_haute.py)
+  const rh = hasard('herbe_haute');
+  const dessus = Object.values(arbres);
+  const libreHerbe = (tx, ty) => {
+    if (!dedans(tx, ty)) return false;
+    const i = idx(tx, ty);
+    if (!surHerbe(i) || cour[i] || pris[i]) return false;
+    // (ni sous un arbre ni juste au-dessus de son pied)
+    return !dessus.some((d) => d[i] || (i + W < N && d[i + W]));
+  };
+  const touffes = [];
+  for (let k = 0, essais = 0; k < G.TOUFFES && essais < G.TOUFFES * 20; essais++) {
+    const cx = entre(rh, 3, W - 4), cy = entre(rh, 3, H - 4), r = 2.4 + rh() * 1.0;
+    if (!libreHerbe(cx, cy)) continue;
+    const bosses = [0, 1, 2, 3, 4].map(() => (rh() - 0.5) * 0.7);
+    const n0 = touffes.length;
+    for (let ty = Math.floor(cy - r - 2); ty <= cy + r + 2; ty++) {
+      for (let tx = Math.floor(cx - r - 2); tx <= cx + r + 2; tx++) {
+        const a = Math.atan2(ty - cy, tx - cx);
+        const bord = r * (1 + bosses.reduce((s, b, n) => s + b * Math.sin((n + 2) * a + n), 0) / 2);
+        if (Math.hypot(tx - cx, (ty - cy) * 1.2) > bord || !libreHerbe(tx, ty)) continue;
+        const nb = rh() < 0.15 ? 0 : rh() < 0.85 ? 1 : 2;
+        for (let q = 0; q < nb; q++) touffes.push([tx * T + 8 + Math.round((rh() - 0.5) * 8), ty * T + 12 + Math.round((rh() - 0.5) * 6), Math.floor(rh() * 3)]);
+      }
+    }
+    if (touffes.length > n0) k++;
+  }
+  touffes.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+
+  // ---- 11. la carte
+  // le poteau « Ville », au bout du chemin (comme sur la carte de Tiled : 34 px au-dessus du milieu)
+  objets.ville = { x: W * T - 60, y: (sortie + 0.5) * T - 34, width: 20, height: 24 };
+  const rect = (id, name, o) => ({ id, name, type: '', x: o.x, y: o.y, width: o.width, height: o.height, rotation: 0, visible: true });
+  const couche = (id, name, data) => ({ id, name, type: 'tilelayer', width: W, height: H, x: 0, y: 0, opacity: 1, visible: true, data });
+  let id = 1;
+  const layers = [couche(id++, 'ground', ground), couche(id++, 'contour_herbe', rives), couche(id++, 'plantes_pierres', plantes)];
+  for (const nom of ordre) layers.push(couche(id++, nom, arbres[nom]));
+  layers.push({ id: id++, name: 'batiment', type: 'objectgroup', draworder: 'topdown', x: 0, y: 0, opacity: 1, visible: true,
+    objects: Object.entries(objets).map(([n, o], k) => rect(k + 1, n, o)) });
+  layers.push({ id: id++, name: 'herbe_haute', type: 'objectgroup', draworder: 'topdown', x: 0, y: 0, opacity: 1, visible: true,
+    objects: touffes.map(([x, y, v], k) => ({ id: 9000 + k, name: '', type: String(v), x, y, width: 0, height: 0, rotation: 0, visible: true, point: true })) });
+  layers.push({ id: id++, name: 'passages', type: 'objectgroup', draworder: 'topdown', x: 0, y: 0, opacity: 1, visible: true,
+    objects: [rect(9500, 'vers_la_transition', { x: (W - 1) * T, y: (sortie - 1) * T, width: T, height: 3 * T })] });
+  const carte = {
+    type: 'map', orientation: 'orthogonal', renderorder: 'right-down', infinite: false,
+    width: W, height: H, tilewidth: T, tileheight: T, nextlayerid: id, nextobjectid: 9501,
+    graine, layers, tilesets: [],
+  };
+  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy] });
+  return { carte, terrain };
+}

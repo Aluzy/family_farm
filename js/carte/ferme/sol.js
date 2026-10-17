@@ -83,7 +83,10 @@
     // rectangles nommés de la couche d'objets (maison, grange, zone_culture…) sont relevés.
     bakeGround() {
       const ok = this.cache.tilemap.exists(MAP.key) && !this.missing.has(MAP.key);
-      const raw = ok ? this.cache.tilemap.get(MAP.key).data : null;
+      let raw = ok ? this.cache.tilemap.get(MAP.key).data : null;
+      // la ferme générée (ctx.carte, js/engine/ferme-generee.js) : à la place de la carte de
+      // Tiled, avec ses jeux de tuiles
+      if (raw && this.ctx.carte) raw = Object.assign({}, this.ctx.carte, { tilesets: raw.tilesets });
       const valid = !!(raw && raw.width && raw.height && raw.tilewidth && Array.isArray(raw.layers));
       if (valid) {
         this.world = { w: raw.width * raw.tilewidth, h: raw.height * raw.tileheight };
@@ -451,8 +454,10 @@
     },
 
     // Fait avancer les tuiles animées : une comparaison par tuile animée et par image ; une
-    // étendue n'est repeinte que si l'une de ses tuiles a changé d'image. Rien si le joueur
-    // a demandé moins d'animations : les images sont masquées, le fond montre la première.
+    // étendue n'est repeinte que si l'une de ses tuiles a changé d'image, et si elle est dans la
+    // vue (hors de la vue, elle est repeinte en y revenant : la ferme générée a plusieurs
+    // étangs). Rien si le joueur a demandé moins d'animations : les images sont masquées, le
+    // fond montre la première.
     stepTileAnims(time) {
       const still = reducedMotion();
       if (still !== this.tilesStill) {
@@ -467,9 +472,13 @@
         g.cur = k;
         changed.add(g.n);
       }
-      if (!changed.size) return;
+      // (une étendue restée hors de la vue garde `stale` : repeinte dès qu'elle y revient)
+      const v = this.cameras.main.worldView;
       for (const a of this.animAreas || []) {
-        for (const n of a.groups) if (changed.has(n)) { this.paintAnimArea(a); break; }
+        if (!a.stale) for (const n of a.groups) if (changed.has(n)) { a.stale = true; break; }
+        if (!a.stale || a.x > v.right || a.y > v.bottom || a.x + a.tex.width < v.x || a.y + a.tex.height < v.y) continue;
+        a.stale = false;
+        this.paintAnimArea(a);
       }
     },
   });

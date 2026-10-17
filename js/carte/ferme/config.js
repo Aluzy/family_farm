@@ -300,8 +300,10 @@
   // sol (sous tout le reste) et décalée vers la droite et le bas (lumière en haut à gauche).
   // Les ombres portées qui suivent le soleil (js/carte/ferme/soleil.js ; le soleil lui-même :
   // CarteKit.SOLEIL) : repeintes tous les `pas` h ; `base` : le pied d'une image est à tant de
-  // px au-dessus de son bas ; sous tout ce qui est debout (`depth`).
-  const SOLEIL = { pas: 0.1, base: 2, depth: 0.06 };
+  // px au-dessus de son bas ; sous tout ce qui est debout (`depth`). Le canevas couvre la vue et
+  // `marge` px autour (la ferme générée est grande) ; une ombre porte jusqu'à `portee` px de son
+  // pied.
+  const SOLEIL = { pas: 0.1, base: 2, depth: 0.06, marge: 96, portee: 200 };
 
   const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
 

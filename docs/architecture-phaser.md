@@ -96,9 +96,9 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | Fichier | Méthodes |
 |---|---|
 | `config.js` | les réglages (`FermeCarte.C` : `MAP`, `BUILDINGS`, `ROCKS`, `FISHING`, `ROOMS`…) |
-| `sol.js` | textures et dessins de secours, sol cuit (`bakeGround`, `drawLayer`), terre labourée, grille de la houe, tuiles animées, réparation du fond |
-| `decor.js` | arbres, buissons et barrières (`findOccluders`), herbe haute |
-| `soleil.js` | les ombres portées qui suivent le soleil : silhouettes des bâtiments, arbres, barrières et rochers, inclinées selon l'heure (vers la gauche le matin, la droite le soir, courtes à midi), peintes dans un seul canevas (`SOLEIL`) |
+| `sol.js` | textures et dessins de secours, sol cuit (`bakeGround`, `drawLayer` ; la ferme générée, `ctx.carte`, à la place de la carte de Tiled), terre labourée, grille de la houe, tuiles animées (repeintes dans la vue seulement), réparation du fond |
+| `decor.js` | arbres, buissons et barrières (`findOccluders`), herbe haute ; hors de la vue, ni eux ni les rochers ne sont dessinés (`cullDecor`) |
+| `soleil.js` | les ombres portées qui suivent le soleil : silhouettes des bâtiments, arbres, barrières et rochers, inclinées selon l'heure (vers la gauche le matin, la droite le soir, courtes à midi), peintes dans un seul canevas qui couvre la vue et une marge (`SOLEIL`) |
 | `interieurs.js` | intérieurs (`bakeRooms`, `setRoom`, meubles), repas |
 | `camera.js` | zoom, glissement, élan, repères, `panTo` |
 | `etiquettes.js` | étiquettes, bulles des tas, bulle « +x », bulle de la citerne (DOM) |

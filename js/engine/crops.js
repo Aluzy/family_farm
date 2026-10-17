@@ -189,10 +189,10 @@ export function hoeableTiles(state) {
 const SOIL_LAYOUT_REFUS = 'La terre déborde en bordure sur les 8 tuiles autour : elles doivent pouvoir devenir mi-herbe mi-terre (pas de chemin, d\'eau, de pierre ni d\'arbre à côté, et pas une seule tuile d\'herbe prise entre deux terres).';
 
 // Tuile d'une case des anciennes zones (1 : la Zone de culture, 2 : le Champ) : sauvegardes
-// d'avant la version 1.15, parcelles de départ, tests. (Sur la carte de Tiled : celle des
-// parties d'avant.)
-export function zoneTile(zone, kase) {
-  const T = farmTerrain(), Z = T.ZONES[zone === 2 ? 2 : 1];
+// d'avant la version 1.15, parcelles de départ, tests. T : le terrain (par défaut la carte de
+// Tiled, celle des parties d'avant).
+export function zoneTile(zone, kase, T = farmTerrain()) {
+  const Z = T.ZONES[zone === 2 ? 2 : 1];
   return (Z.Y + Math.floor(kase / Z.COLONNES)) * T.LARGEUR + Z.X + (kase % Z.COLONNES);
 }
 
@@ -201,9 +201,10 @@ export function plotAtTile(state, tile) {
   return state.potager.parcelles.find((p) => p.case === tile) || null;
 }
 
-// Parcelles de départ d'une partie neuve : les cases DEPART de l'ancienne Zone de culture.
-export function startPlots() {
-  return DATA.POTAGER.DEPART.map((c, i) => ({ ...makePlot(i + 1), case: zoneTile(1, c) }));
+// Parcelles de départ d'une partie neuve : les cases DEPART de l'ancienne Zone de culture (du
+// terrain T).
+export function startPlots(T = farmTerrain()) {
+  return DATA.POTAGER.DEPART.map((c, i) => ({ ...makePlot(i + 1), case: zoneTile(1, c, T) }));
 }
 
 // Tuiles de terre de la ferme et plafond du niveau.
