@@ -17,7 +17,8 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, apercu  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'icones'))
 import art_verger as A  # noqa: E402
 
@@ -36,7 +37,7 @@ def fruit_image(kind):
 
 
 def base_tree():
-    return Image.open(os.path.join(ROOT, 'assets', 'basic_sp.png')).convert('RGBA').crop((0, 0, CASE, CASE))
+    return Image.open(os.path.join(ASSETS, 'basic_sp.png')).convert('RGBA').crop((0, 0, CASE, CASE))
 
 
 def with_fruits(kind):
@@ -73,11 +74,9 @@ def planche():
 
 def main():
     sheet = planche()
-    sheet.save(os.path.join(ROOT, 'assets', 'verger.png'))
+    sheet.save(os.path.join(ASSETS, 'verger.png'))
     if '--apercu' in sys.argv:
-        bg = Image.new('RGBA', sheet.size, (74, 112, 58, 255))
-        bg.alpha_composite(sheet)
-        bg.resize((sheet.width * 4, sheet.height * 4), Image.NEAREST).save(os.path.join(ROOT, 'apercu_verger.png'))
+        apercu(sheet, 'apercu_verger.png', 4, (74, 112, 58))
 
 
 if __name__ == '__main__':

@@ -19,8 +19,9 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalogue  # noqa: E402
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-DIR = os.path.join(ROOT, 'assets', 'portraits')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, copie  # noqa: E402
+DIR = os.path.join(ASSETS, 'portraits')
 N = 16
 COU = 11           # première rangée du vêtement
 
@@ -79,10 +80,6 @@ def garcon(d):
     """Version 2 : tous les enfants partent du modèle de garçon (coupes, couvre-chefs et
     détails se posent dessus)."""
     return True
-
-
-def copie(g):
-    return [row[:] for row in g]
 
 
 def put(g, pts, c):

@@ -13,14 +13,12 @@
 import os
 import sys
 
-from PIL import Image
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, apercu, contour, points, rangee  # noqa: E402
+from robot import CAISSE, ECRAN, K  # noqa: E402,F401  (la borne a les couleurs du robot)
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 W, H = 12, 22
-K = (30, 26, 30)
-CAISSE = [(176, 206, 218), (120, 160, 182), (78, 112, 136)]
 SOCLE = [(170, 164, 150), (128, 122, 112), (92, 88, 82)]
-ECRAN = (24, 36, 44)
 JAUGE = [(120, 230, 120), (44, 84, 56)]
 ECLAIR = (255, 214, 72)
 VERT = [(120, 240, 120), (50, 110, 60)]
@@ -66,31 +64,16 @@ def image(n):
     put(10, 9, CABLE[1]); put(10, 10, CABLE[0]); put(10, 11, CABLE[0])
     for y in range(12, 18):
         put(10, y, CABLE[0] if y % 2 else CABLE[1])
-    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    for (x, y), c in px.items():
-        if 0 <= x < W and 0 <= y < H:
-            im.putpixel((x, y), c + (255,))
-    out = im.copy()
-    for y in range(H):
-        for x in range(W):
-            if im.getpixel((x, y))[3]:
-                continue
-            if any(0 <= x + dx < W and 0 <= y + dy < H and im.getpixel((x + dx, y + dy))[3] for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                out.putpixel((x, y), K + (255,))
-    return out
+    return contour(points(px, W, H), K)
 
 
 def main():
     N = 5
-    sheet = Image.new('RGBA', (W * N, H), (0, 0, 0, 0))
-    for n in range(N):
-        sheet.paste(image(n), (n * W, 0))
-    sheet.save(os.path.join(ROOT, 'assets', 'station_robot.png'), optimize=True)
+    sheet = rangee([image(n) for n in range(N)], W, H)
+    sheet.save(os.path.join(ASSETS, 'station_robot.png'), optimize=True)
     print(f'assets/station_robot.png : {N} images de {W} × {H} px')
     if '--apercu' in sys.argv:
-        bg = Image.new('RGBA', sheet.size, (150, 112, 74, 255))
-        bg.alpha_composite(sheet)
-        bg.resize((sheet.width * 8, sheet.height * 8), Image.NEAREST).save(os.path.join(ROOT, 'apercu_station_robot.png'))
+        apercu(sheet, 'apercu_station_robot.png', 8, (150, 112, 74))
 
 
 if __name__ == '__main__':

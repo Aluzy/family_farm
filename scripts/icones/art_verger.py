@@ -13,7 +13,7 @@ import os
 
 from PIL import Image
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pixel import ASSETS, rgb  # scripts/pixel.py (build.py met scripts/ dans le chemin)
 
 PALETTE = {
     # feuillage (teintes des arbres de la carte)
@@ -75,11 +75,6 @@ class Canvas:
         for (x, y), c in self.px.items():
             im.putpixel((x - x0, y - y0), rgb(PALETTE[c]))
         return im
-
-
-def rgb(h):
-    h = h.lstrip('#')
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
 
 
 def grid(rows):
@@ -274,7 +269,7 @@ SHORN = [  # rangées 10 à 19 de la case ; 20 à 23 (pattes) reprises telles qu
 
 
 def sheep_shorn():
-    src = Image.open(os.path.join(ROOT, 'assets', 'mouton.png')).convert('RGBA').crop((0, 0, 32, 24))
+    src = Image.open(os.path.join(ASSETS, 'mouton.png')).convert('RGBA').crop((0, 0, 32, 24))
     im = Image.new('RGBA', (32, 24), (0, 0, 0, 0))
     for y in range(20, 24):
         for x in range(32):

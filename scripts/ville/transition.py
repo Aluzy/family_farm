@@ -39,6 +39,7 @@ import ferme as F  # noqa: E402
 import objets as O  # noqa: E402
 import sol as S  # noqa: E402
 from commun import ASSETS, ROOT, K, Planche, Toile, hasard, image, rgba, teinte  # noqa: E402
+from sol import motif, tuile_ferme  # noqa: E402
 from PIL import Image  # noqa: E402
 
 PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
@@ -113,25 +114,6 @@ def coins():
 
 
 # ---------- les tuiles de sol ----------
-
-def tuile_ferme(c, x, y):
-    """Une tuile d'herbe et de chemin de la ferme (sa planche : la rangée 49 le chemin plein,
-    la rangée 50 les raccords, la tuile n ayant du chemin aux coins n & 8, 4, 2, 1)."""
-    n = sum(bit for v, bit in zip(c, (8, 4, 2, 1)) if v == 'chemin')
-    if n == 0:
-        v = int(hasard(x, y, 8) * 16)
-        return S.plein('herbe', v), f'herbe_{v}'
-    if n == 15:
-        v = int(hasard(x, y, 9) * 8)
-        return F.bloc(v, 49), f'chemin_{v}'
-    return F.bloc(n, 50), f'herbe_chemin_{n}'
-
-
-def motif(m, x, y):
-    if m == 'chemin':
-        return F.bloc(0, 49).getpixel((x % T, y % T))[:3]
-    return S.MOTIFS[m](x % T, y % T, 0)
-
 
 def tuile_jointure(c, x, y):
     """Là où le chemin de terre rejoint le goudron : chaque quart de tuile prend la matière de

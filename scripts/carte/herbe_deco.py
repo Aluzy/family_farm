@@ -29,10 +29,10 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import herbe_chemin as HC  # noqa: E402  (teintes d'herbe, planche herbe_chemin.png)
 
-ROOT = HC.ROOT
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, BAYER, ROOT, T, cote_a_cote  # noqa: E402
 ORIG = os.path.join(ROOT, 'scripts', 'carte', 'originaux')
-SORTIE = os.path.join(ROOT, 'assets', 'herbe_deco')
-T = 16
+SORTIE = os.path.join(ASSETS, 'herbe_deco')
 COLS = 16
 
 # Herbes hautes : les couleurs du modèle (de la plus sombre à la plus claire), et celles de
@@ -57,7 +57,6 @@ PETALES = {
 }
 COEUR = (225, 194, 76)
 TIGES = [(7, 69, 0), (8, 84, 0), (10, 99, 0), (14, 129, 0)]
-BAYER = HC.BAYER
 
 
 def charger(nom):
@@ -337,10 +336,7 @@ def apercu(deco):
             fond.paste(Image.new('RGBA', (COLS * T, T), c + (255,)), (0, k * T))
     fond.alpha_composite(deco)
     b = fond.resize((fond.width * z, fond.height * z), Image.NEAREST)
-    out = Image.new('RGBA', (a.width + b.width + 24, max(a.height, b.height)), (40, 40, 40, 255))
-    out.paste(b, (0, 0))
-    out.paste(a, (b.width + 24, 0))
-    return out
+    return cote_a_cote(b, a)
 
 
 def main():

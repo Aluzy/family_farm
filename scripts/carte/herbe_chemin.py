@@ -30,10 +30,10 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, BAYER, ROOT, T, cote_a_cote, wangid  # noqa: E402
 MODELE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'tuile_herbe_chemin.png')
-SORTIE = os.path.join(ROOT, 'assets', 'herbe_chemin')
-T = 16
+SORTIE = os.path.join(ASSETS, 'herbe_chemin')
 COLS = 16
 
 # Teintes de l'herbe : (luminosité, saturation, décalage de teinte en degrés vers le bleu-vert).
@@ -48,7 +48,6 @@ NOMS_CHEMIN = ['chemin', 'chemin foncé']
 CHEMIN_FOND = (251, 214, 10)
 CHEMIN_TONS = [(242, 205, 4), (227, 192, 4), (212, 176, 4)]
 BORD = [(182, 153, 4), (152, 127, 4), (122, 102, 4), (92, 78, 3)]
-BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
 
 
 def teinte(c, t):
@@ -229,9 +228,7 @@ def tsx(raccords, largeur, hauteur):
             ch, cc = p + 1, p + 2             # une herbe et la suivante
         else:
             ch, cc = h + 1, nh + 1 + p
-        tl, tr, bl, br = [(cc if (n >> k) & 1 else ch) for k in (3, 2, 1, 0)]
-        # ordre de Tiled : haut, haut-droit, droite, bas-droit, bas, bas-gauche, gauche, haut-gauche
-        lignes.append(f'   <wangtile tileid="{tid}" wangid="0,{tr},0,{br},0,{bl},0,{tl}"/>')
+        lignes.append(f'   <wangtile tileid="{tid}" wangid="{wangid(n, ch, cc)}"/>')
     noms = [(NOMS_HERBE[h], couleurs_h[h]) for h in range(nh)] + [(NOMS_CHEMIN[p], couleurs_c[p]) for p in range(npc)]
     couleurs = '\n'.join(f'   <wangcolor name="{n}" color="{c}" tile="-1" probability="1"/>' for n, c in noms)
     total = (largeur // T) * (hauteur // T)
@@ -285,10 +282,7 @@ def apercu(img, raccords):
     z = 3
     a = carte.resize((carte.width * z, carte.height * z), Image.NEAREST)
     b = img.resize((img.width * z, img.height * z), Image.NEAREST)
-    out = Image.new('RGBA', (a.width + b.width + 24, max(a.height, b.height)), (40, 40, 40, 255))
-    out.paste(b, (0, 0))
-    out.paste(a, (b.width + 24, 0))
-    return out
+    return cote_a_cote(b, a)
 
 
 def main():

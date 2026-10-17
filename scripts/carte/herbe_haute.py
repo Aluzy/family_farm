@@ -20,11 +20,11 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, T, apercu  # noqa: E402
 HERBES = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'herbes_hautes.png')
-SORTIE = os.path.join(ROOT, 'assets', 'herbe_haute.png')
+SORTIE = os.path.join(ASSETS, 'herbe_haute.png')
 L, H = 22, 16
-T = 16
 VARIANTES = (0, 1, 2)            # les herbes tirées pour les touffes, en alternance
 PENTES = [0, 1, 3, -1, -3]       # décalage (px) du haut des brins, pour chaque image
 
@@ -151,9 +151,7 @@ def main():
     planche.save(SORTIE)
     print(f'assets/herbe_haute.png : {len(variantes)} herbes × {len(PENTES)} images de {L} × {H}')
     if '--apercu' in sys.argv:
-        fond = Image.new('RGBA', planche.size, (120, 170, 70, 255))
-        fond.alpha_composite(planche)
-        fond.resize((fond.width * 8, fond.height * 8), Image.NEAREST).save(os.path.join(ROOT, 'apercu_herbe_haute.png'))
+        apercu(planche, 'apercu_herbe_haute.png', 8, (120, 170, 70))
 
 
 if __name__ == '__main__':

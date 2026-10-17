@@ -9,12 +9,14 @@
 # terre sèche prend sa teinte mouillée (HUMIDE) ; sur le bord, un anneau tramé (BAYER) mêle
 # une teinte à mi-chemin et la terre sèche, pour un bord doux.
 import os
+import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-SEC = os.path.join(ROOT, 'assets', 'soil_dry.png')
-SORTIE = os.path.join(ROOT, 'assets', 'soil_wet.png')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, BAYER, ROOT, mel  # noqa: E402
+SEC = os.path.join(ASSETS, 'soil_dry.png')
+SORTIE = os.path.join(ASSETS, 'soil_wet.png')
 
 CENTRE = (8.0, 10.5)
 RAYONS = (7.2, 5.0)
@@ -26,11 +28,6 @@ HUMIDE = {
     (0xa2, 0x7f, 0x56): (0x6b, 0x50, 0x31),
     (0x96, 0x6f, 0x49): (0x63, 0x45, 0x29),
 }
-BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
-
-
-def melange(a, b, t):
-    return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
 
 
 def main():
@@ -51,7 +48,7 @@ def main():
                 # bord : de plus en plus sec en s'éloignant, tramé
                 t = (d - (1 - BORD)) / (2 * BORD)          # 0 dedans, 1 dehors
                 if (BAYER[y % 4][x % 4] + 0.5) / 16 > t:
-                    out.putpixel((x, y), melange(HUMIDE[c], c, 0.45) + (a,))
+                    out.putpixel((x, y), mel(HUMIDE[c], c, 0.45) + (a,))
     out.save(SORTIE, optimize=True)
     print(f'{os.path.relpath(SORTIE, ROOT)} écrit')
 

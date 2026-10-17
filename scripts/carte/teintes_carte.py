@@ -16,10 +16,12 @@
 # ailleurs (fleurs, sable).
 import colorsys
 import os
+import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS  # noqa: E402
 FICHIERS = ['farm_spring_summer.png', 'herbe_chemin.png', 'herbe_deco.png', 'bordure_eau_herbe.png']
 # Où est le chemin : fichier -> (x, y, largeur, hauteur) en px ; le bloc herbe_chemin de la
 # planche de la carte (scripts/carte/planche_v2.py, BLOCS) : colonnes 0 à 15, rangées 45 à 60.
@@ -101,7 +103,7 @@ def retouche(px, table, x0, y0, w, h):
 
 def main():
     for nom in FICHIERS:
-        path = os.path.join(ROOT, 'assets', nom)
+        path = os.path.join(ASSETS, nom)
         im = Image.open(path).convert('RGBA')
         px = im.load()
         n = retouche(px, TABLE, 0, 0, im.width, im.height)

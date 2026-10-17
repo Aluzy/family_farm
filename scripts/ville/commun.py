@@ -6,26 +6,20 @@
 # motifs qui se répètent tous les 16 px (ou 32, 64) et calés sur la grille. La découpe en tuiles
 # retrouve alors les mêmes tuiles d'un bout à l'autre de la ville : une planche ne garde qu'un
 # exemplaire de chaque tuile.
+#
+# Les chemins du dépôt, le hasard fixe, le mélange de couleurs et le contour viennent de
+# scripts/pixel.py, comme pour les autres dossiers.
 import math
 import os
+import sys
 
 from PIL import Image, ImageDraw
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-ASSETS = os.path.join(ROOT, 'assets')
-T = 16
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+import pixel  # noqa: E402
+from pixel import ASSETS, ROOT, T, hasard, mel  # noqa: E402,F401
 W, H = 168, 219               # la carte, en tuiles (la maquette de la ville en photo, à 3 px de carte pour 1 px de photo)
 K = (40, 31, 31)              # le contour
-
-
-def hasard(*k):
-    """Un nombre fixe dans [0, 1[ pour ces clés (les images sont les mêmes à chaque lancement)."""
-    x = math.sin(sum(v * c for v, c in zip(k, (12.9898, 78.233, 37.719, 4.581, 91.27))) + 0.5) * 43758.5453
-    return x - math.floor(x)
-
-
-def mel(a, b, t):
-    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
 def teinte(c, f):
@@ -40,19 +34,9 @@ def rgba(c, a=255):
 
 
 def contour(im, couleur=K, diagonales=False):
-    """Un contour d'un pixel autour du dessin (sur les pixels transparents voisins)."""
-    w, h = im.size
-    src = im.load()
-    out = im.copy()
-    dst = out.load()
-    vois = ((1, 0), (-1, 0), (0, 1), (0, -1)) + (((1, 1), (-1, -1), (1, -1), (-1, 1)) if diagonales else ())
-    for y in range(h):
-        for x in range(w):
-            if src[x, y][3]:
-                continue
-            if any(0 <= x + dx < w and 0 <= y + dy < h and src[x + dx, y + dy][3] > 128 for dx, dy in vois):
-                dst[x, y] = rgba(couleur)
-    return out
+    """Un contour d'un pixel autour du dessin (sur les pixels transparents voisins de pixels
+    plus qu'à moitié opaques)."""
+    return pixel.contour(im, couleur, diagonales, seuil=128)
 
 
 def image(w, h):

@@ -46,7 +46,8 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, apercu  # noqa: E402
 W, H = 16, 32
 COLS = 8
 
@@ -633,12 +634,10 @@ def ecrire(nom, dossier='assets', portrait=True, cases=True, enfant=False):
     # Portrait : la tête et les épaules de face (debout), dans un carré de 20 × 20.
     face = Image.new('RGBA', (W + 4, H), (0, 0, 0, 0))
     face.paste(render(F['idle_bas_0']), (2, 0))
-    face.crop((0, 4, W + 4, 24)).save(os.path.join(ROOT, 'assets', f'portrait_{nom}.png'))
+    face.crop((0, 4, W + 4, 24)).save(os.path.join(ASSETS, f'portrait_{nom}.png'))
     print(f'assets/{nom}.png : {len(names)} cases de {W} × {H} px ({COLS} par rangée), et portrait_{nom}.png')
     if '--apercu' in sys.argv:
-        bg = Image.new('RGBA', sheet.size, (126, 170, 92, 255))
-        bg.alpha_composite(sheet)
-        bg.resize((sheet.width * 5, sheet.height * 5), Image.NEAREST).save(os.path.join(ROOT, f'apercu_{nom}.png'))
+        apercu(sheet, f'apercu_{nom}.png', 5, (126, 170, 92))
 
 
 def dessiner(v):
@@ -655,7 +654,7 @@ def main():
         ecrire(nom)
     # Les 50 du catalogue : assets/personnages/perso_XX.png, les noms des cases (les mêmes pour
     # tous) dans assets/personnages/cases.json ; leur portrait est dans assets/portraits.
-    os.makedirs(os.path.join(ROOT, 'assets', 'personnages'), exist_ok=True)
+    os.makedirs(os.path.join(ASSETS, 'personnages'), exist_ok=True)
     for i, (nom, d) in enumerate(catalogue.personnages()):
         dessiner(variante_catalogue(d))
         ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=(i == 0))
@@ -676,8 +675,8 @@ def apercu_enfants():
     IDLE = [noms.index(n) for n in ('idle_bas_0', 'idle_cote_0', 'idle_haut_0')]
     out = Image.new('RGBA', (10 * 70 * S // 2, 5 * 40 * S // 2), (126, 170, 92, 255))
     for i, (nom, _) in enumerate(portraits_enfants.enfants()):
-        sheet = Image.open(os.path.join(ROOT, 'assets', 'personnages', nom + '.png')).convert('RGBA')
-        por = Image.open(os.path.join(ROOT, 'assets', 'portraits', nom + '.png')).convert('RGBA')
+        sheet = Image.open(os.path.join(ASSETS, 'personnages', nom + '.png')).convert('RGBA')
+        por = Image.open(os.path.join(ASSETS, 'portraits', nom + '.png')).convert('RGBA')
         x0, y0 = (i % 10) * 70, (i // 10) * 40
         tile = Image.new('RGBA', (70, 40), (0, 0, 0, 0))
         tile.alpha_composite(por, (0, 12))

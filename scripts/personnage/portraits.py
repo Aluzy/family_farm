@@ -19,8 +19,9 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalogue  # noqa: E402  (les 50 personnages du catalogue)
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-DIR = os.path.join(ROOT, 'assets', 'portraits')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, copie, melange  # noqa: E402
+DIR = os.path.join(ASSETS, 'portraits')
 N = 16
 
 # Rôle de chaque couleur du modèle (lu dans l'image, couleur par couleur).
@@ -82,10 +83,6 @@ def lire_hommes():
     pal.update(palb)
     poils = {(x, y): gb[y][x] for y in range(N) for x in range(N) if gb[y][x] != g[y][x]}
     return g, pal, poils
-
-
-def copie(g):
-    return [row[:] for row in g]
 
 
 def contour(g):
@@ -342,10 +339,6 @@ def cheveux_longs(g):
     return g
 
 
-def melange(a, b, t=0.5):
-    return tuple(round(u * (1 - t) + v * t) for u, v in zip(a, b))
-
-
 def teintes_homme(pal):
     """Les couleurs propres au modèle d'homme, tirées de la palette du personnage."""
     pal['p'] = melange(pal['f'], pal['k'])
@@ -356,25 +349,8 @@ def teintes_homme(pal):
 
 # ---------- les personnages ----------
 
-PEAUX = {
-    'claire': {'e': (246, 214, 190), 'f': (240, 196, 160), 'j': (196, 150, 118), 'k': (232, 150, 120)},
-    'mate': {'e': (218, 166, 120), 'f': (198, 142, 96), 'j': (150, 100, 64), 'k': (200, 110, 80)},
-    'foncee': {'e': (150, 100, 66), 'f': (124, 80, 50), 'j': (88, 54, 32), 'k': (170, 84, 66)},
-}
-CHEVEUX = {
-    'gris': {'b': (200, 200, 194), 'c': (150, 150, 146), 'd': (112, 112, 108)},
-    'noirs': {'b': (60, 52, 48), 'c': (36, 30, 28), 'd': (24, 20, 18)},
-    'roux': {'b': (206, 104, 44), 'c': (160, 70, 28), 'd': (120, 50, 20)},
-    'blonds': {'b': (236, 200, 104), 'c': (196, 154, 64), 'd': (150, 112, 40)},
-    'bruns': {'b': (110, 70, 36), 'c': (74, 46, 22), 'd': (54, 34, 16)},
-}
-HABITS = {
-    'rouge': {'l': (70, 18, 14), 'm': (150, 42, 34), 'n': (206, 74, 58)},
-    'jean': {'l': (18, 30, 56), 'm': (58, 88, 140), 'n': (98, 134, 190)},
-    'jaune': {'l': (80, 60, 10), 'm': (206, 160, 40), 'n': (246, 214, 96)},
-    'lilas': {'l': (56, 30, 66), 'm': (150, 110, 172), 'n': (204, 174, 224)},
-    'orange': {'l': (84, 36, 10), 'm': (196, 102, 40), 'n': (238, 148, 74)},
-}
+# Les teintes des cinq personnages : celles du catalogue (scripts/personnage/catalogue.py).
+PEAUX, CHEVEUX, HABITS = catalogue.PEAU, catalogue.CHEVEUX, catalogue.HABITS
 EXTRA = {
     'q': (206, 206, 200), 'Q': (150, 120, 110),         # barbe, bouche dans la barbe
     'G': (40, 40, 48),                                  # monture des lunettes

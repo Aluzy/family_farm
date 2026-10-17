@@ -18,8 +18,9 @@ import math
 import os
 import sys
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-CARTE = os.path.join(ROOT, 'assets', 'carte_printemps.json')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT  # noqa: E402
+CARTE = os.path.join(ASSETS, 'carte_printemps.json')
 
 # Sol d'herbe foncée (et la terre des anciennes zones de culture).
 HERBE = {2415, 101, 579, 563, 102, 100, 259, 260, 261, 334, 335, 336, 409, 410, 411, 1167}
@@ -67,7 +68,7 @@ def main():
     # Une tuile entièrement transparente du jeu de tuiles (il y en a dans les couches d'arbres)
     # ne couvre rien.
     from PIL import Image
-    sheet = Image.open(os.path.join(ROOT, 'assets', 'farm_spring_summer.png')).convert('RGBA')
+    sheet = Image.open(os.path.join(ASSETS, 'farm_spring_summer.png')).convert('RGBA')
     cols = sheet.width // T
     vides = {}
 
@@ -218,7 +219,7 @@ def main():
 def apercu(d, ok, raison):
     from PIL import Image
     W, H, T = d['width'], d['height'], d['tilewidth']
-    sheet = Image.open(os.path.join(ROOT, 'assets', 'farm_spring_summer.png')).convert('RGBA')
+    sheet = Image.open(os.path.join(ASSETS, 'farm_spring_summer.png')).convert('RGBA')
     cols = sheet.width // T
     im = Image.new('RGBA', (W * T, H * T), (105, 150, 84, 255))
     for l in d['layers']:
