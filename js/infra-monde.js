@@ -19,68 +19,21 @@
 (function () {
   'use strict';
 
-  const T = 16;
-  // l'adresse d'un fichier de assets/, suivie sur le site en ligne de « ?v=<empreinte de son
-  // contenu> » (js/assets-versions.js, écrit par scripts/build-site.mjs) : un fichier modifié
-  // change d'adresse, le téléphone le recharge au lieu de mélanger l'ancien et le nouveau.
-  const v = (file) => {
-    const t = window.FERME_ASSET_VERSIONS, k = file.replace(/^assets\//, '');
-    return t && t[k] ? file + '?v=' + t[k] : file;
-  };
+  const K = window.CarteKit;
+  const T = K.T;
+  const v = K.v;
   const MAP = { key: 'infra', file: 'assets/infra_monde.json' };
   const TREE = { key: 'infra_arbre', file: 'assets/infra_arbre.png', w: 32, h: 64, frames: 8, fps: 6, foot: 59 };
   // L'habitant (scripts/infra/habitant.py) : marche de face 0-3, de dos 4-7, de profil 8-11 ;
   // debout de face 12 (13 : l'œil fermé), de dos 14, de profil 15 (16 : l'œil fermé).
   const HERO = {
     key: 'infra_habitant', file: 'assets/infra_habitant.png', w: 15, h: 40,
-    speed: 44, fps: 7, blink: { every: [2200, 4200], ms: 140 },
+    speed: K.VITESSES.habitant, fps: 7, blink: { every: [2200, 4200], ms: 140 },
   };
-  // Le personnage du joueur : ses cases nommées (assets/personnages/cases.json) ; sans partie, la fermière.
-  const PLAYER = { key: 'heros_infra', w: 16, h: 32, foot: 30, speed: 46, stride: 4 };
-  function playerSheet() {
-    const n = window.FermeHote && window.FermeHote.perso ? window.FermeHote.perso() : null;
-    return n ? { file: 'assets/personnages/perso_' + String(n).padStart(2, '0') + '.png', names: 'assets/personnages/cases.json' } : { file: 'assets/fermiere.png', names: 'assets/fermiere.json' };
-  }
-  const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  // Le joueur écrit dans un champ de la page (un nom, une quantité, un menu) : les flèches et
-  // ZQSD sont à lui, la promeneuse ne bouge pas.
-  const saisie = () => {
-    const el = document.activeElement;
-    return !!el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable);
-  };
-
-  // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
-  // répète son propre bord (marge 1, espacement 2). Quand la caméra tombe entre deux pixels
-  // (zoom, écran à densité non entière), le GPU qui lit juste à côté d'une tuile retombe sur
-  // sa propre couleur, et non sur la tuile voisine de la planche : plus de fines lignes sombres
-  // aux jointures. Les numéros des tuiles ne changent pas.
-  function extrude(textures, key, t) {
-    const src = textures.get(key).getSourceImage();
-    const cols = Math.floor(src.width / t), rows = Math.floor(src.height / t);
-    const canvas = document.createElement('canvas');
-    canvas.width = cols * (t + 2);
-    canvas.height = rows * (t + 2);
-    const g = canvas.getContext('2d');
-    g.imageSmoothingEnabled = false;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const sx = c * t, sy = r * t, dx = c * (t + 2) + 1, dy = r * (t + 2) + 1;
-        g.drawImage(src, sx, sy, t, t, dx, dy, t, t);
-        g.drawImage(src, sx, sy, t, 1, dx, dy - 1, t, 1);                 // haut
-        g.drawImage(src, sx, sy + t - 1, t, 1, dx, dy + t, t, 1);         // bas
-        g.drawImage(src, sx, sy, 1, t, dx - 1, dy, 1, t);                 // gauche
-        g.drawImage(src, sx + t - 1, sy, 1, t, dx + t, dy, 1, t);         // droite
-        g.drawImage(src, sx, sy, 1, 1, dx - 1, dy - 1, 1, 1);             // les coins
-        g.drawImage(src, sx + t - 1, sy, 1, 1, dx + t, dy - 1, 1, 1);
-        g.drawImage(src, sx, sy + t - 1, 1, 1, dx - 1, dy + t, 1, 1);
-        g.drawImage(src, sx + t - 1, sy + t - 1, 1, 1, dx + t, dy + t, 1, 1);
-      }
-    }
-    const out = key + '_extrude';
-    if (textures.exists(out)) textures.remove(out);
-    textures.addCanvas(out, canvas);
-    return out;
-  }
+  // Le personnage du joueur (CarteKit.planchePerso) : ses cases nommées ; sans partie, la fermière.
+  const PLAYER = { key: 'heros_infra', w: 16, h: 32, foot: 30, speed: K.VITESSES.infra, stride: 4 };
+  const reduced = K.reduit;
+  const saisie = K.saisie;
 
   class InfraScene extends Phaser.Scene {
     constructor() { super('infra'); }
@@ -89,7 +42,7 @@
       this.load.tilemapTiledJSON(MAP.key, v(MAP.file));
       this.load.spritesheet(TREE.key, v(TREE.file), { frameWidth: TREE.w, frameHeight: TREE.h });
       this.load.spritesheet(HERO.key, v(HERO.file), { frameWidth: HERO.w, frameHeight: HERO.h });
-      const sheet = playerSheet();
+      const sheet = K.planchePerso();
       this.load.spritesheet(PLAYER.key, v(sheet.file), { frameWidth: PLAYER.w, frameHeight: PLAYER.h });
       this.load.json(PLAYER.key + '_noms', v(sheet.names));
       // les planches des jeux de tuiles : lues dans la carte une fois chargée
@@ -102,7 +55,7 @@
     create() {
       const map = this.make.tilemap({ key: MAP.key });
       this.map = map;
-      const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
+      const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, K.extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
       this.layers = {};
       map.layers.forEach((l, i) => { this.layers[l.name] = map.createLayer(l.name, sets, 0, 0).setDepth(-10 + i); });
       this.makeTileAnims();
@@ -182,32 +135,13 @@
     }
 
     // Tuiles animées : les animations des jeux de tuiles (Tiled), jouées en changeant l'index
-    // des tuiles posées, toutes au même rythme que l'horloge.
+    // des tuiles posées, toutes au rythme de l'horloge (CarteKit).
     makeTileAnims() {
-      this.tileAnims = [];
-      const groups = new Map();
-      for (const set of this.map.tilesets) {
-        for (const [id, def] of Object.entries(set.tileData || {})) {
-          if (!def.animation || def.animation.length < 2) continue;
-          const gid = set.firstgid + Number(id);
-          groups.set(gid, { frames: def.animation.map((f) => set.firstgid + f.tileid), ms: def.animation[0].duration, tiles: [] });
-        }
-      }
-      if (!groups.size) return;
-      for (const layer of Object.values(this.layers)) {
-        layer.forEachTile((t) => { const g = groups.get(t.index); if (g) g.tiles.push(t); });
-      }
-      this.tileAnims = [...groups.values()].filter((g) => g.tiles.length);
+      this.tileAnims = K.animTuiles(this.map, this.layers);
     }
 
     stepTileAnims(time) {
-      if (reduced()) return;
-      for (const g of this.tileAnims) {
-        const k = Math.floor(time / g.ms) % g.frames.length;
-        if (k === g.cur) continue;
-        g.cur = k;
-        for (const t of g.tiles) t.index = g.frames[k];
-      }
+      K.pasAnimTuiles(this.tileAnims, time);
     }
 
     canWalk(tx, ty) {
@@ -221,50 +155,27 @@
       if (steps) this.path = steps;
     }
 
-    // La case marchable la plus proche de (x, y), en px (son milieu, au pied).
+    // La case marchable la plus proche de (x, y), en px (son milieu, au pied ; CarteKit.plusProche).
     nearWalk(x, y) {
       const gx = Math.floor(x / T), gy = Math.floor(y / T);
-      for (let r = 0; r < 12; r++) {
-        for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) === r && this.canWalk(gx + dx, gy + dy)) return { x: (gx + dx) * T + T / 2, y: (gy + dy) * T + T - 2 };
-        }
-      }
-      return { x, y };
+      const q = K.plusProche((i, j) => this.canWalk(gx + i, gy + j), 11);
+      return q ? { x: (gx + q.i) * T + T / 2, y: (gy + q.j) * T + T - 2 } : { x, y };
     }
 
+    // Le chemin le plus court en nombre de cases (CarteKit.chemin, un pas en diagonale compte
+    // pour un), jusqu'à la case marchable la plus proche du point visé ; null s'il n'y en a pas.
     pathFrom(from, x, y) {
       const W = this.map.width, H = this.map.height;
       let gx = Math.floor(x / T), gy = Math.floor(y / T);
       if (!this.canWalk(gx, gy)) {
-        let best = null;
-        for (let r = 1; r < 8 && !best; r++) {
-          for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !this.canWalk(gx + dx, gy + dy)) continue;
-            const d = Math.hypot(dx, dy);
-            if (!best || d < best.d) best = { x: gx + dx, y: gy + dy, d };
-          }
-        }
-        if (!best) return null;
-        gx = best.x; gy = best.y; x = gx * T + T / 2; y = gy * T + T - 2;
+        const q = K.plusProche((i, j) => this.canWalk(gx + i, gy + j), 7, { de: 1 });
+        if (!q) return null;
+        gx += q.i; gy += q.j; x = gx * T + T / 2; y = gy * T + T - 2;
       }
       const sx = Math.floor(from.x / T), sy = Math.floor(from.y / T);
-      const prev = new Map([[sy * W + sx, -1]]);
-      const queue = [sy * W + sx];
-      const goal = gy * W + gx;
-      while (queue.length && !prev.has(goal)) {
-        const c = queue.shift(), cx = c % W, cy = (c - cx) / W;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-          const nx = cx + dx, ny = cy + dy, n = ny * W + nx;
-          if (nx < 0 || ny < 0 || nx >= W || ny >= H || prev.has(n) || !this.canWalk(nx, ny)) continue;
-          if (dx && dy && (!this.canWalk(cx + dx, cy) || !this.canWalk(cx, cy + dy))) continue;
-          prev.set(n, c);
-          queue.push(n);
-        }
-      }
-      if (!prev.has(goal)) return null;
-      const steps = [];
-      for (let c = goal; prev.get(c) !== -1; c = prev.get(c)) steps.push({ x: (c % W) * T + T / 2, y: Math.floor(c / W) * T + T - 2 });
-      steps.reverse();
+      const cells = K.chemin({ cols: W, rows: H, libre: (i) => this.canWalk(i % W, (i / W) | 0) }, sy * W + sx, gy * W + gx, { diag: 1 });
+      if (!cells) return null;
+      const steps = cells.map((c) => ({ x: (c % W) * T + T / 2, y: Math.floor(c / W) * T + T - 2 }));
       if (steps.length) steps[steps.length - 1] = { x: Math.round(x), y: Math.round(y) };
       return steps;
     }
@@ -330,7 +241,8 @@
       const H = this.hero;
       const moved = Math.hypot(vx, vy) > 0;
       if (moved) {
-        if (Math.abs(vx) > Math.abs(vy) * 0.8) { this.face = 'cote'; H.setFlipX(vx < 0); } else { this.face = vy > 0 ? 'bas' : 'haut'; H.setFlipX(false); }
+        const r = K.regard(vx, vy);
+        this.face = r.face; H.setFlipX(r.flip);
         this.walked += PLAYER.speed * dt;
         H.setFrame(this.frame(`marche_${this.face}_${Math.floor(this.walked / PLAYER.stride) % 4}`));
       } else {

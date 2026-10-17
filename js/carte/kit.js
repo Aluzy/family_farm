@@ -1,0 +1,180 @@
+/* carte/kit.js — ce que toutes les cartes Phaser du jeu partagent (window.CarteKit).
+ *
+ * La ferme (js/farm-stage.js et js/carte/ferme/), la ville et les cartes qu'on rejoint par
+ * elle (js/ville-carte.js et js/carte/ville/), l'infra-monde (js/infra-monde.js), et les
+ * personnages (js/fermier.js, js/famille-ferme.js) lisent ici leurs réglages communs au lieu
+ * d'en garder chacun une copie qui finissait par diverger :
+ *
+ *   - T, la tuile (16 px) ; v(fichier), l'adresse versionnée d'un fichier de assets/ ;
+ *   - reduit(), le réglage « réduire les animations » (une seule requête, lue à chaque image) ;
+ *   - extrude(), les planches de tuiles à bord répété (pas de liseré au zoom non entier) ;
+ *   - planche(), planchePerso() : la planche d'un personnage (assets/personnages/) ;
+ *   - saisie() : le joueur écrit dans un champ de la page (le clavier n'est pas aux cartes) ;
+ *   - regard(dx, dy) : de face, de dos ou de profil selon le sens de la marche ;
+ *   - VITESSES : la vitesse de marche de chacun, carte par carte (px/s) ;
+ *   - cycle(), imageA(), animTuiles(), pasAnimTuiles() : les tuiles animées de Tiled ;
+ *   - FLECHE, balance() : la flèche bleue des passages vers une autre carte ;
+ *   - TEXTE, texte() : les petits textes qui montent au-dessus du personnage (« +1 🪵 »).
+ *
+ * Le reste du kit est dans les fichiers voisins, chargés juste après celui-ci : chemins.js
+ * (le chemin le plus court, la case libre la plus proche), nature.js (l'herbe haute, les arbres
+ * devant le personnage, les éclats, la pêche) et lumiere.js (le jour et la nuit).
+ *
+ * Script classique, chargé avant tous les autres scripts des cartes (voir jeu.html) ; il ne
+ * demande pas Phaser pour se charger. Voir docs/architecture-phaser.md.
+ */
+(function (global) {
+  'use strict';
+
+  const T = 16;
+
+  // Empreintes des fichiers de assets/ : « nom → empreinte de son contenu », écrites par
+  // scripts/build-site.mjs dans js/assets-versions.js (site en ligne seulement). Chaque
+  // fichier est demandé avec « ?v=<empreinte> » : modifié, il change d'adresse et le
+  // téléphone le recharge au lieu de garder l'ancien en cache. Sans ce fichier (jeu ouvert
+  // depuis le dépôt), les adresses restent sans suffixe. `file` : un nom dans assets/, avec
+  // ou sans le préfixe « assets/ » (la ferme charge depuis assets/, les autres cartes non).
+  function v(file) {
+    const t = global.FERME_ASSET_VERSIONS, k = String(file).replace(/^assets\//, '');
+    return t && t[k] ? file + '?v=' + t[k] : file;
+  }
+
+  // La question est posée à chaque image (tuiles animées, vie d'ambiance, personnages) : la
+  // requête est créée une fois, sa réponse suit toute seule le réglage du système.
+  const REDUIT = global.matchMedia ? global.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  function reduit() {
+    return !!(REDUIT && REDUIT.matches);
+  }
+
+  // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
+  // répète son propre bord (marge 1, espacement 2). Quand la caméra tombe entre deux pixels
+  // (zoom, écran à densité non entière), le GPU qui lit juste à côté d'une tuile retombe sur
+  // sa propre couleur, et non sur la tuile voisine de la planche : plus de fines lignes sombres
+  // aux jointures. Les numéros des tuiles ne changent pas.
+  function extrude(textures, key, t) {
+    const src = textures.get(key).getSourceImage();
+    const cols = Math.floor(src.width / t), rows = Math.floor(src.height / t);
+    const canvas = document.createElement('canvas');
+    canvas.width = cols * (t + 2);
+    canvas.height = rows * (t + 2);
+    const g = canvas.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const sx = c * t, sy = r * t, dx = c * (t + 2) + 1, dy = r * (t + 2) + 1;
+        g.drawImage(src, sx, sy, t, t, dx, dy, t, t);
+        g.drawImage(src, sx, sy, t, 1, dx, dy - 1, t, 1);                 // haut
+        g.drawImage(src, sx, sy + t - 1, t, 1, dx, dy + t, t, 1);         // bas
+        g.drawImage(src, sx, sy, 1, t, dx - 1, dy, 1, t);                 // gauche
+        g.drawImage(src, sx + t - 1, sy, 1, t, dx + t, dy, 1, t);         // droite
+        g.drawImage(src, sx, sy, 1, 1, dx - 1, dy - 1, 1, 1);             // les coins
+        g.drawImage(src, sx + t - 1, sy, 1, 1, dx + t, dy - 1, 1, 1);
+        g.drawImage(src, sx, sy + t - 1, 1, 1, dx - 1, dy + t, 1, 1);
+        g.drawImage(src, sx + t - 1, sy + t - 1, 1, 1, dx + t, dy + t, 1, 1);
+      }
+    }
+    const out = key + '_extrude';
+    if (textures.exists(out)) textures.remove(out);
+    textures.addCanvas(out, canvas);
+    return out;
+  }
+
+  // La planche d'un personnage, dans assets/ : un adulte (personnages/perso_NN.png) ou un
+  // enfant (personnages/enfant_NN.png : dessiné plus petit, scripts/personnage/fermier.py).
+  const planche = (n, enfant) => 'personnages/' + (enfant ? 'enfant_' : 'perso_') + String(n).padStart(2, '0') + '.png';
+  // Le personnage principal de la partie (FermeHote.perso, js/ui/excursion.js) sur une autre
+  // carte que la ferme : sa planche et ses cases nommées ; sans partie, la fermière.
+  function planchePerso() {
+    const H = global.FermeHote;
+    const n = H && H.perso ? H.perso() : null;
+    return n ? { file: 'assets/' + planche(n), names: 'assets/personnages/cases.json' } : { file: 'assets/fermiere.png', names: 'assets/fermiere.json' };
+  }
+
+  // Le joueur écrit dans un champ de la page (un nom, une quantité, un menu) : les flèches et
+  // ZQSD sont à lui, le personnage ne bouge pas (la ville, l'infra-monde).
+  function saisie() {
+    const el = document.activeElement;
+    return !!el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable);
+  }
+
+  // Où regarde un personnage qui marche de (dx, dy) : de profil (« cote », retourné s'il va
+  // à gauche) dès que le pas est un peu plus de côté que vertical, sinon de face ou de dos.
+  function regard(dx, dy) {
+    if (Math.abs(dx) > Math.abs(dy) * 0.8) return { face: 'cote', flip: dx < 0 };
+    return { face: dy > 0 ? 'bas' : 'haut', flip: false };
+  }
+
+  // La vitesse de marche de chacun (px de carte par seconde) : chaque carte a sa mesure (la
+  // ville est vue de plus près que la ferme), mais toutes sont ici.
+  const VITESSES = {
+    fermier: 58,                                   // le personnage, à la ferme (js/fermier.js)
+    famille: { adulte: 26, enfant: 32 },           // les autres membres, à la ferme (js/famille-ferme.js)
+    ville: 48,                                     // le personnage, en ville et sur les cartes du train
+    enfantsBus: 32,                                // les enfants qui vont au bus de l'école
+    voisins: { adulte: 24, enfant: 32 },           // les voisins, chez eux
+    infra: 46,                                     // le personnage, dans l'infra-monde
+    habitant: 44,                                  // l'habitant de l'infra-monde (il flâne à 60 %)
+  };
+
+  // Les tuiles animées de Tiled : une animation [{ tileid, duration (ms) }…] → ses tuiles
+  // (`ids`), la fin de chaque image (`ends`, ms depuis le début du cycle) et sa durée totale.
+  function cycle(anim) {
+    let t = 0;
+    return { ids: anim.map((f) => f.tileid), ends: anim.map((f) => (t += Math.max(1, f.duration))), total: t, cur: -1 };
+  }
+  // L'image d'un cycle à l'instant `time` (ms) : toutes les tuiles d'un même numéro changent
+  // ensemble, au rythme de l'horloge, comme dans Tiled.
+  function imageA(c, time) {
+    const t = time % c.total;
+    let k = 0;
+    while (k < c.ends.length - 1 && t >= c.ends[k]) k++;
+    return k;
+  }
+  // Une carte Phaser (Tilemap) : ses tuiles animées, regroupées par numéro de tuile
+  // (`layers` : ses calques). Elles s'animent en changeant l'index des tuiles posées.
+  function animTuiles(map, layers) {
+    const groups = new Map();
+    for (const set of map.tilesets) {
+      for (const [id, def] of Object.entries(set.tileData || {})) {
+        if (!def.animation || def.animation.length < 2) continue;
+        const c = cycle(def.animation);
+        groups.set(set.firstgid + Number(id), Object.assign(c, { frames: c.ids.map((n) => set.firstgid + n), tiles: [] }));
+      }
+    }
+    if (!groups.size) return [];
+    for (const layer of Object.values(layers)) {
+      layer.forEachTile((t) => { const g = groups.get(t.index); if (g) g.tiles.push(t); });
+    }
+    return [...groups.values()].filter((g) => g.tiles.length);
+  }
+  // Chaque image : les tuiles dont l'image a changé ; rien avec « réduire les animations ».
+  function pasAnimTuiles(list, time) {
+    if (reduit()) return;
+    for (const g of list) {
+      const k = imageA(g, time);
+      if (k === g.cur) continue;
+      g.cur = k;
+      for (const t of g.tiles) t.index = g.frames[k];
+    }
+  }
+
+  // La flèche bleue des passages (assets/fleche_passage.png, scripts/ville/fleche.py : images
+  // droite, gauche, haut, bas, de 32 px) : elle paraît quand le personnage est à moins de
+  // `near` px du passage et se balance de `bob` px, un aller-retour en 2π × `periode` ms.
+  const FLECHE = { key: 'fleche_passage', file: 'fleche_passage.png', size: 32, near: 80, bob: 3, periode: 220, sens: ['droite', 'gauche', 'haut', 'bas'] };
+  const balance = (time) => (reduit() ? 0 : Math.round(Math.sin(time / FLECHE.periode) * FLECHE.bob));
+
+  // Les petits textes au-dessus du personnage (« +1 🪵 », « ! » à la touche, « … ») : une
+  // police, des couleurs, un contour. `taille` en px de carte ; rendus à 4 fois leur taille
+  // pour rester nets au zoom.
+  const TEXTE = { fontFamily: 'system-ui, sans-serif', color: '#fffbea', stroke: '#2a2018', strokeThickness: 3, resolution: 4 };
+  function texte(scene, x, y, s, taille) {
+    return scene.add.text(Math.round(x), Math.round(y), s, { fontFamily: TEXTE.fontFamily, fontSize: (taille || 9) + 'px', color: TEXTE.color, stroke: TEXTE.stroke, strokeThickness: TEXTE.strokeThickness })
+      .setOrigin(0.5, 1).setResolution(TEXTE.resolution);
+  }
+
+  global.CarteKit = Object.assign(global.CarteKit || {}, {
+    T, v, reduit, extrude, planche, planchePerso, saisie, regard, VITESSES,
+    cycle, imageA, animTuiles, pasAnimTuiles, FLECHE, balance, TEXTE, texte,
+  });
+})(window);
