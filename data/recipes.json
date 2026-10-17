@@ -212,7 +212,7 @@
     },
     "//pain_ail": [
       "Utilise le pain (déjà un item via registerDishItems()) comme un",
-      "ingrédient ordinaire : startRecipe()/takeIngredient() le retirent de",
+      "ingrédient ordinaire : startRecipe()/takeWithSilo() le retirent de",
       "l'inventaire exactement comme n'importe quel autre item (voir test",
       "dédié). Il doit rester déclaré après `pain` dans cet objet pour que",
       "DATA.items.pain existe déjà quand dishEnergy()/dishPrice() le lisent au",
