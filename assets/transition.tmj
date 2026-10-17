@@ -9,8 +9,8 @@
  "tilewidth": 16,
  "tileheight": 16,
  "infinite": false,
- "nextlayerid": 22,
- "nextobjectid": 123,
+ "nextlayerid": 23,
+ "nextobjectid": 127,
  "tilesets": [
   {
    "firstgid": 1,
@@ -22900,6 +22900,66 @@
      "y": 348,
      "width": 8,
      "height": 16
+    }
+   ]
+  },
+  {
+   "id": 22,
+   "name": "lumieres",
+   "type": "objectgroup",
+   "draworder": "topdown",
+   "opacity": 1,
+   "visible": true,
+   "x": 0,
+   "y": 0,
+   "objects": [
+    {
+     "id": 123,
+     "name": "reverbere_520_188",
+     "type": "reverbere",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 520,
+     "y": 188,
+     "width": 0,
+     "height": 0
+    },
+    {
+     "id": 124,
+     "name": "reverbere_520_318",
+     "type": "reverbere",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 520,
+     "y": 318,
+     "width": 0,
+     "height": 0
+    },
+    {
+     "id": 125,
+     "name": "reverbere_680_188",
+     "type": "reverbere",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 680,
+     "y": 188,
+     "width": 0,
+     "height": 0
+    },
+    {
+     "id": 126,
+     "name": "reverbere_680_318",
+     "type": "reverbere",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 680,
+     "y": 318,
+     "width": 0,
+     "height": 0
     }
    ]
   }

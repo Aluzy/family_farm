@@ -218,6 +218,8 @@
       // les cartes où le jour et la nuit passent : au-dessus de la carte, des personnages et du
       // feuillage, sous ce qui vole, les flèches et les petits textes
       this.voile = JOUR_NUIT.includes(etat.nom) ? K.voile(this, map.widthInPixels, map.heightInPixels, VOL - 1) : null;
+      // la nuit, les réverbères (couche « lumieres ») et les phares (js/carte/ville/eclairage.js)
+      this.makeLighting(objects('lumieres'));
       this.clockAt = -1e9;
       this.stepClock(0);
       if (this.voile) this.voile.set(this.heure ? this.heure.heure : null, true);
@@ -661,6 +663,7 @@
       this.stepTraffic(time, dt);
       this.stepPassages(time);
       this.stepClock(time);
+      this.stepLighting(dt);
       if (this.voile) this.voile.step();
       this.stepSchool(time, dt);
       this.stepTrain(dt);

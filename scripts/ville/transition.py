@@ -82,6 +82,7 @@ ROCHERS_PLAN = [
 ]
 ARBRES, ROCHERS, HERBES = [], [], []
 OBSTACLES = []                        # (x, y, largeur, hauteur) en px : on ne marche pas dessus
+LUMIERES = []                         # les lanternes des réverbères (x, y) en px : couche « lumieres »
 PIEDS = {'abri': PIED_HAUT, 'reverberes_haut': PIED_HAUT, 'reverberes_bas': PIED_BAS}     # remplis par dessine : (genre, x, y) en px ; (x, y, rangée)
 
 
@@ -214,6 +215,7 @@ def dessine(c):
     for x in (32, 42):
         c['reverberes_haut'].colle(rev, x * T, PIED_HAUT - rev.height)
         c['reverberes_bas'].colle(rev, x * T, PIED_BAS - rev.height)
+        LUMIERES.extend((O.lanterne(x * T, PIED_HAUT - rev.height), O.lanterne(x * T, PIED_BAS - rev.height)))
         for pied in (PIED_HAUT, PIED_BAS):
             OBSTACLES.append((x * T + 4, pied - 10, 8, 16))
     # la mare
@@ -440,11 +442,16 @@ def main():
                         'opacity': 1, 'visible': True, 'data': data,
                         **({'properties': [{'name': 'pied', 'type': 'int', 'value': PIEDS[nom]}]} if nom in PIEDS else {})})
     passages, arrivees, batis, bus, (plantes, rochers, herbes, obstacles), prochain = objets_carte()
+    lumieres = []
+    for x, y in LUMIERES:
+        lumieres.append({'id': prochain, 'name': f'reverbere_{x}_{y}', 'type': 'reverbere', 'point': True, 'rotation': 0,
+                         'visible': True, 'x': x, 'y': y, 'width': 0, 'height': 0})
+        prochain += 1
     n = len(couches)
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': n + 10, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': n + 11, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             objet_groupe(n + 1, 'depart', [{'id': 1, 'name': 'depart', 'type': '', 'point': True, 'rotation': 0, 'visible': True,
@@ -459,6 +466,7 @@ def main():
                 {'name': 'largeur', 'type': 'int', 'value': 32}, {'name': 'hauteur', 'type': 'int', 'value': 32}]),
             objet_groupe(n + 8, 'herbe_haute', herbes),
             objet_groupe(n + 9, 'obstacles', obstacles),
+            objet_groupe(n + 10, 'lumieres', lumieres),
         ],
     }
     with open(os.path.join(ASSETS, 'transition.tmj'), 'w') as f:
