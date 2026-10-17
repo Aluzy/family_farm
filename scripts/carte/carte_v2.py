@@ -387,6 +387,13 @@ def main():
                                           'rotation': 0, 'visible': True, 'point': True} for k, (x, y, v) in enumerate(herbes)]})
     prochain += 1
     print(f'herbe haute : {len(herbes)} touffes')
+    # les passages : le bout est du chemin, vers la carte de transition (le jeu y pose la flèche
+    # et y fait arriver le personnage qui revient : js/carte/ferme/passages.js)
+    sortie['layers'].append({'id': prochain, 'name': 'passages', 'type': 'objectgroup', 'draworder': 'topdown',
+                             'x': 0, 'y': 0, 'opacity': 1, 'visible': True,
+                             'objects': [{'id': 9500, 'name': 'vers_la_transition', 'type': '', 'x': W * T - T, 'y': 27 * T,
+                                          'width': T, 'height': 3 * T, 'rotation': 0, 'visible': True}]})
+    prochain += 1
     sortie['nextlayerid'] = prochain
     sortie['tilesets'] = []
     for t in m['tilesets']:

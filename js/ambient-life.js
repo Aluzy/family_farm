@@ -363,9 +363,9 @@
       }
     })();
 
-    // Rectangles nommés de la carte (bâtiments, zones de culture, arbres du Verger) : un
-    // oiseau ne se pose pas dedans.
-    const blocked = Object.entries(o.objects || {}).filter(([name, r]) => name !== CAT_ROOF && r && r.width && r.height).map((e) => e[1]);
+    // Rectangles nommés de la carte (bâtiments, zones de culture, arbres du Verger ; pas les
+    // passages, vers_la_…) : un oiseau ne se pose pas dedans.
+    const blocked = Object.entries(o.objects || {}).filter(([name, r]) => name !== CAT_ROOF && !/^vers_la_/.test(name) && r && r.width && r.height).map((e) => e[1]);
     const waterSet = new Set(water.map((c) => c.x + ',' + c.y));
     // Sur une barrière ou tout contre : les pattes (le pied en x, y), à `half` px près de chaque
     // côté et un peu au-dessus (le corps).

@@ -33,8 +33,9 @@ const MAPS = [
   {
     source: 'assets/carte_printemps_elargie.tmj',
     target: 'assets/carte_printemps.json',
-    // Rectangles nommés dont js/farm-stage.js a besoin (voir BUILDINGS et bakeGround()).
-    places: ['maison', 'grange', 'moulin', 'serre', 'verger'],
+    // Rectangles nommés dont js/farm-stage.js a besoin (voir BUILDINGS et bakeGround() ;
+    // vers_la_transition : le bout est du chemin, voir js/carte/ferme/passages.js).
+    places: ['maison', 'grange', 'moulin', 'serre', 'verger', 'vers_la_transition'],
     oneOf: ['zone_culture_1', 'zone_culture'],       // l'un des deux : la zone de culture
   },
   {

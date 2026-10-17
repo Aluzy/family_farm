@@ -3,6 +3,7 @@ import { nextRandom, randomInt } from './base.js';
 import { canPay, fail, farmOpen, NO_COINS, spend } from './devices.js';
 import { buyHoe, hasHoe, rockGone, treeGone } from './crops.js';
 import { addItem } from './inventory.js';
+import { farmTerrain } from './terrain.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { techFlag, techSum } from './techtree.js';
@@ -74,7 +75,7 @@ export function selectTool(state, id) {
 
 // Les arbres de la carte n'existent que dans la carte (ses couches d'arbres) : le moteur ne
 // connaît d'eux qu'un identifiant donné par la carte (« x,y » du milieu de leur pied) et leurs
-// tuiles (DATA.TERRAIN.ARBRES). Comme les rochers : state.outils.arbres compte les coups reçus
+// tuiles (le terrain de la ferme, ARBRES). Comme les rochers : state.outils.arbres compte les coups reçus
 // par chacun ; au HACHE.COUPES-ième, il tombe : { retour }, le jour où il repousse (dans
 // HACHE.RETOUR jours, tiré au hasard). Ses tuiles libres se labourent en attendant.
 
@@ -136,7 +137,7 @@ export function chopTree(state, id) {
 
 // Comme les arbres, les rochers n'existent que dans la carte (couche plantes_pierres) : le
 // moteur ne connaît d'eux qu'un identifiant (« x,y » de leur case en bas à gauche) et leurs
-// tuiles (DATA.TERRAIN.ROCHERS). state.outils.rochers compte les coups reçus par chacun ; au
+// tuiles (le terrain de la ferme, ROCHERS). state.outils.rochers compte les coups reçus par chacun ; au
 // PIOCHE.COUPS-ième, il est cassé : { retour }, le jour où il revient (dans PIOCHE.RETOUR
 // jours, tiré au hasard). Ses tuiles libres se labourent en attendant (voir rockGone, crops.js).
 
@@ -199,13 +200,13 @@ export function depositOreNotebook(state, carnet) {
 // réapparaît à sa place, sauf si une parcelle (terre labourée, plantée ou non) occupe une de
 // ses tuiles ; il réessaie alors chaque matin. Renvoie les rochers revenus.
 export function respawnRocks(state) {
-  return respawn(state, state.outils && state.outils.rochers, DATA.TERRAIN.ROCHERS);
+  return respawn(state, state.outils && state.outils.rochers, farmTerrain(state).ROCHERS);
 }
 
 // De même, au réveil, les arbres abattus dont le jour est venu repoussent à leur place (sauf
 // sous une parcelle). Renvoie les arbres repoussés.
 export function respawnTrees(state) {
-  return respawn(state, state.outils && state.outils.arbres, DATA.TERRAIN.ARBRES);
+  return respawn(state, state.outils && state.outils.arbres, farmTerrain(state).ARBRES);
 }
 
 function respawn(state, partis, tuiles) {

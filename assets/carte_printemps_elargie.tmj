@@ -3038,9 +3038,32 @@
      "point": true
     }
    ]
+  },
+  {
+   "id": 21,
+   "name": "passages",
+   "type": "objectgroup",
+   "draworder": "topdown",
+   "x": 0,
+   "y": 0,
+   "opacity": 1,
+   "visible": true,
+   "objects": [
+    {
+     "id": 9500,
+     "name": "vers_la_transition",
+     "type": "",
+     "x": 1136,
+     "y": 432,
+     "width": 16,
+     "height": 48,
+     "rotation": 0,
+     "visible": true
+    }
+   ]
   }
  ],
- "nextlayerid": 21,
+ "nextlayerid": 22,
  "nextobjectid": 23,
  "orientation": "orthogonal",
  "renderorder": "right-down",

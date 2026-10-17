@@ -9,7 +9,7 @@ import {
   energyLevel, energyMax, farmOpen, fellenTrees, findPlot, fishLeft, happinessCostPct, hasHoe,
   hasTool, hoe, hoeableTiles, hoeStatus, isArable, isBuyable, makePlot, makePlots, migrate,
   migrateEnergy, migrateHoe, mineRock, OUTILS, ownedTools, plant, plantAll, plotAtTile,
-  respawnRocks, respawnTrees, restoreEnergy, rockGone, runNight, selectedTool, selectTool,
+  farmTerrain, respawnRocks, respawnTrees, restoreEnergy, rockGone, runNight, selectedTool, selectTool,
   snackEnergy, soilCap, soilCount, STATE_VERSION, terrainLines, testFillEnergy, testSetEnergyZero,
   testSetLevel, TIRED, toolDef, wakeEnergy, water, zoneTile,
 } from '../../js/engine/index.js';
@@ -447,6 +447,42 @@ test('version 1.15 : la grille de la houe montre exactement les tuiles que la ho
   assertEqual(tiles.includes(champ(2, 0)), false, 'pas une tuile qui laisserait une herbe seule');
   assertEqual(tiles.includes(champ(1, 0)), true, 'la voisine, oui');
   for (const t of tiles.slice(0, 40)) assertEqual(hoeStatus(s, t).ok, true, `tuile ${t}`);
+});
+
+test('carte générée (étape 1) : le moteur suit la taille du terrain de la ferme, pas 72 × 57', () => {
+  // un petit terrain de 10 × 8 tuiles : de l'herbe labourable entourée de chemin, un rocher
+  // de deux tuiles (« 4,3 ») au milieu
+  const petit = {
+    LARGEUR: 10, HAUTEUR: 8,
+    LIGNES: ['..........', '.########.', '.########.', '.###oo###.', '.########.', '.########.', '.########.', '..........'],
+    ROCHERS: { '4,3': [34, 35] }, ARBRES: {},
+    ZONES: { 1: { X: 1, Y: 1, COLONNES: 4 }, 2: { X: 5, Y: 4, COLONNES: 4 } },
+  };
+  const avant = DATA.TERRAIN;
+  DATA.TERRAIN = petit;
+  try {
+    const s = garden();
+    s.potager.parcelles = [];
+    s.potager.houe = true;
+    tireless(s);
+    testSetLevel(s, 6);
+    assertEqual(farmTerrain(s), petit);
+    assertEqual([isArable(22, s), isArable(34, s), isArable(80, s)], [true, false, false], 'herbe, rocher debout, hors du terrain');
+    const libres = hoeableTiles(s);
+    assert(libres.length > 0 && libres.every((t) => t < 80), 'la grille de la houe tient dans le terrain');
+    assertEqual([libres.includes(22), libres.includes(25)], [true, false], 'à côté du rocher : sa bordure ne se dessinerait pas');
+    // une rangée ne déborde pas sur la suivante : la tuile 29 (bout de la rangée 2) n'a pas
+    // la 30 (début de la rangée 3) pour voisine
+    assertEqual([borderMask(new Set([30]), 29), borderMask(new Set([28]), 29)], [0, 10]);
+    assertEqual([hoe(s, 22).ok, plotAtTile(s, 22).case], [true, 22]);
+    assertEqual(terrainLines(s)[3], '.###..###.', 'le rocher debout : pas de labour sous lui');
+    s.outils = { rochers: { '4,3': { retour: s.day } } };
+    assertEqual([isArable(34, s), hoeableTiles(s).includes(25), terrainLines(s)[3]], [true, true, '.########.'], 'cassé : sa place se laboure');
+    assertEqual(respawnRocks(s), ['4,3'], 'il revient à sa place');
+    assertEqual(zoneTile(2, 5), 5 * 10 + 6, 'les anciennes zones : en tuiles du terrain');
+  } finally {
+    DATA.TERRAIN = avant;
+  }
 });
 
 test('migration v32 → v33 (FLU-06) : la bulle de la houe n\'est pas remontrée à qui a déjà labouré', () => {

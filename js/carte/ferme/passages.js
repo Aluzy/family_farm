@@ -18,8 +18,15 @@
 
     /* ---------- la sortie vers la ville ---------- */
 
+    // Le bout du chemin : le milieu du bord droit du rectangle de la sortie (px de carte).
+    exitAt() {
+      const o = this.objects[EXIT.object];
+      return o ? { x: o.x + o.width, y: o.y + o.height / 2 } : { x: this.world.w, y: this.world.h / 2 };
+    },
+
     makeExit() {
-      this.exit = this.has(K.FLECHE.key) ? this.add.image(this.world.w - EXIT.inset, EXIT.y, K.FLECHE.key, 0).setDepth(1e6).setVisible(false) : null;
+      const e = this.exitAt();
+      this.exit = this.has(K.FLECHE.key) ? this.add.image(e.x - EXIT.inset, e.y, K.FLECHE.key, 0).setDepth(1e6).setVisible(false) : null;
       // revenu de la carte de transition : au bout du chemin, la vue sur lui
       const params = new URLSearchParams(global.location.search);
       if (params.get('arrivee') !== 'est') return;
@@ -32,7 +39,8 @@
       params.delete('arrivee');
       const q = params.toString();
       global.history.replaceState(null, '', global.location.pathname + (q ? '?' + q : '') + global.location.hash);
-      const at = this.fermier && this.fermier.arrive ? this.fermier.arrive(this.world.w - EXIT.arrive, EXIT.y) : null;
+      const e = this.exitAt();
+      const at = this.fermier && this.fermier.arrive ? this.fermier.arrive(e.x - EXIT.arrive, e.y) : null;
       if (at) this.setCentre(at.x, at.y);
     },
 
@@ -41,9 +49,10 @@
       const a = this.exit;
       if (!a) return;
       const at = !this.room && this.fermier && this.fermier.pos ? this.fermier.pos() : null;
-      const show = !!at && Math.hypot(this.world.w - at.x, EXIT.y - at.y) <= K.FLECHE.near + EXIT.inset;
+      const e = this.exitAt();
+      const show = !!at && Math.hypot(e.x - at.x, e.y - at.y) <= K.FLECHE.near + EXIT.inset;
       a.setVisible(show);
-      if (show) a.setPosition(Math.round(this.world.w - EXIT.inset + K.balance(time)), EXIT.y);
+      if (show) a.setPosition(Math.round(e.x - EXIT.inset + K.balance(time)), e.y);
     },
 
     // Un appui sur la flèche : vers la carte de transition (true : l'appui est pris).
