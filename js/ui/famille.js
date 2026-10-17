@@ -15,9 +15,9 @@ import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { renderAutonomyCard } from './chapitres.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { closeModal } from './common.js';
+import { closeModal, openModal } from './modal.js';
 
 /* ---------- Famille ---------- */
 
@@ -98,37 +98,32 @@ function openMemberModal(id) {
   // coiffure et la teinte des anciens portraits emoji).
   const persos = Array.from({ length: persoMax(m) }, (_, i) => i + 1)
     .map((n) => `<button type="button" class="btn perso-btn" data-action="member-perso" data-perso="${n}" aria-pressed="false" aria-label="Personnage ${n}" title="Personnage ${n}"><img src="${persoSrc(n, !!m.enfant)}" alt="" width="16" height="16"></button>`).join('');
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal member-modal" role="dialog" aria-modal="true" aria-labelledby="member-title" data-stop-propagation>
-        <h2 id="member-title">✏️ Modifier : ${escapeHtml(m.nom)}</h2>
-        <div class="member-preview" aria-live="polite">
-          <img class="portrait-px" id="member-preview-perso" src="" alt="" width="16" height="16">
-          <strong class="member-name" id="member-preview-name"></strong>
-        </div>
-        <div class="stack">
-          <div class="stack member-field">
-            <label for="member-prenom"><strong>Prénom</strong> <span class="muted">(${P.PRENOM_MAX} caractères au plus)</span></label>
-            <input type="text" id="member-prenom" class="member-input" maxlength="${P.PRENOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${memberNameHtml(m.id)}">
-          </div>
-          <div class="stack member-field" role="group" aria-label="Personnage">
-            <strong>Personnage</strong>
-            <div class="perso-grid">${persos}</div>
-          </div>
-          <p class="muted">Le prénom reste sur cet appareil, dans ta sauvegarde : il n'est jamais envoyé.</p>
-          <p class="alert" id="member-error" role="alert" hidden></p>
-        </div>
-        <div class="row">
-          <button type="button" class="btn primary" data-action="member-save">Enregistrer</button>
-          <button type="button" class="btn" data-action="close-modal">Annuler</button>
-        </div>
-        <div class="stack member-leave">${depart}</div>
+  openModal(`
+    <h2 id="member-title">✏️ Modifier : ${escapeHtml(m.nom)}</h2>
+    <div class="member-preview" aria-live="polite">
+      <img class="portrait-px" id="member-preview-perso" src="" alt="" width="16" height="16">
+      <strong class="member-name" id="member-preview-name"></strong>
+    </div>
+    <div class="stack">
+      <div class="stack member-field">
+        <label for="member-prenom"><strong>Prénom</strong> <span class="muted">(${P.PRENOM_MAX} caractères au plus)</span></label>
+        <input type="text" id="member-prenom" class="member-input" maxlength="${P.PRENOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${memberNameHtml(m.id)}">
       </div>
-    </div>`;
+      <div class="stack member-field" role="group" aria-label="Personnage">
+        <strong>Personnage</strong>
+        <div class="perso-grid">${persos}</div>
+      </div>
+      <p class="muted">Le prénom reste sur cet appareil, dans ta sauvegarde : il n'est jamais envoyé.</p>
+      <p class="alert" id="member-error" role="alert" hidden></p>
+    </div>
+    <div class="row">
+      <button type="button" class="btn primary" data-action="member-save">Enregistrer</button>
+      <button type="button" class="btn" data-action="close-modal">Annuler</button>
+    </div>
+    <div class="stack member-leave">${depart}</div>`, { labelledBy: 'member-title', className: 'modal member-modal', focus: '#member-prenom' });
   const input = document.getElementById('member-prenom');
   input.addEventListener('input', syncMemberModal);
   syncMemberModal();
-  input.focus();
   input.select();
 }
 
@@ -172,7 +167,7 @@ function saveMemberModal() {
   closeModal();
   persistState();
   refresh();
-  showToast('✏️ C\'est noté !');
+  notify('✏️ C\'est noté !');
 }
 
 // « Retirer de la famille » : un premier appui demande confirmation, le second
@@ -201,7 +196,7 @@ function removeMemberFromModal() {
   closeModal();
   persistState();
   refresh();
-  showToast(`👋 ${nom} a quitté la famille. Besoin : ${formatNumber(result.besoin)} calories par jour.`);
+  notify(`👋 ${nom} a quitté la famille. Besoin : ${formatNumber(result.besoin)} calories par jour.`);
 }
 
 /* -- version 1.2 : animaux de compagnie (chiens et chats) -- */
@@ -231,39 +226,34 @@ function openPetModal(id) {
   const P = DATA.FAMILY.PROFIL;
   petDraft = { id: a.id, espece: K.ESPECES[a.espece] ? a.espece : Object.keys(K.ESPECES)[0], depart: false };
   const especes = Object.entries(K.ESPECES).map(([k, e]) => `<button type="button" class="btn choice-btn" data-action="pet-espece" data-espece="${k}" aria-pressed="false"><span class="choice-emoji" aria-hidden="true">${e.icone}</span><span>${e.nom}</span></button>`).join('');
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal member-modal" role="dialog" aria-modal="true" aria-labelledby="pet-title" data-stop-propagation>
-        <h2 id="pet-title">✏️ Animal de compagnie</h2>
-        <div class="member-preview" aria-live="polite">
-          <span class="portrait-emoji" id="pet-preview-emoji" aria-hidden="true"></span>
-          <strong class="member-name" id="pet-preview-name"></strong>
-        </div>
-        <div class="stack">
-          <div class="stack member-field">
-            <label for="pet-nom"><strong>Nom</strong> <span class="muted">(${P.PRENOM_MAX} caractères au plus)</span></label>
-            <input type="text" id="pet-nom" class="member-input" maxlength="${P.PRENOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${petNameHtml(a.id)}">
-          </div>
-          <div class="stack member-field" role="group" aria-label="Chien ou chat">
-            <strong>Chien ou chat</strong>
-            <div class="row choice-row">${especes}</div>
-          </div>
-          <p class="muted">Il ne mange pas les réserves de la famille : il ne compte pas dans le besoin journalier. Son nom reste sur cet appareil, dans ta sauvegarde.</p>
-          <p class="alert" id="pet-error" role="alert" hidden></p>
-        </div>
-        <div class="row">
-          <button type="button" class="btn primary" data-action="pet-save">Enregistrer</button>
-          <button type="button" class="btn" data-action="close-modal">Annuler</button>
-        </div>
-        <div class="stack member-leave">
-          <button type="button" class="btn" data-action="pet-remove" id="pet-remove">Retirer de la famille</button>
-        </div>
+  openModal(`
+    <h2 id="pet-title">✏️ Animal de compagnie</h2>
+    <div class="member-preview" aria-live="polite">
+      <span class="portrait-emoji" id="pet-preview-emoji" aria-hidden="true"></span>
+      <strong class="member-name" id="pet-preview-name"></strong>
+    </div>
+    <div class="stack">
+      <div class="stack member-field">
+        <label for="pet-nom"><strong>Nom</strong> <span class="muted">(${P.PRENOM_MAX} caractères au plus)</span></label>
+        <input type="text" id="pet-nom" class="member-input" maxlength="${P.PRENOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${petNameHtml(a.id)}">
       </div>
-    </div>`;
+      <div class="stack member-field" role="group" aria-label="Chien ou chat">
+        <strong>Chien ou chat</strong>
+        <div class="row choice-row">${especes}</div>
+      </div>
+      <p class="muted">Il ne mange pas les réserves de la famille : il ne compte pas dans le besoin journalier. Son nom reste sur cet appareil, dans ta sauvegarde.</p>
+      <p class="alert" id="pet-error" role="alert" hidden></p>
+    </div>
+    <div class="row">
+      <button type="button" class="btn primary" data-action="pet-save">Enregistrer</button>
+      <button type="button" class="btn" data-action="close-modal">Annuler</button>
+    </div>
+    <div class="stack member-leave">
+      <button type="button" class="btn" data-action="pet-remove" id="pet-remove">Retirer de la famille</button>
+    </div>`, { labelledBy: 'pet-title', className: 'modal member-modal', focus: '#pet-nom' });
   const input = document.getElementById('pet-nom');
   input.addEventListener('input', syncPetModal);
   syncPetModal();
-  input.focus();
   input.select();
 }
 
@@ -304,7 +294,7 @@ function savePetModal() {
   closeModal();
   persistState();
   refresh();
-  showToast('✏️ C\'est noté !');
+  notify('✏️ C\'est noté !');
 }
 
 function removePetFromModal() {
@@ -327,7 +317,7 @@ function removePetFromModal() {
   closeModal();
   persistState();
   refresh();
-  showToast(`👋 ${nom} a quitté la famille.`);
+  notify(`👋 ${nom} a quitté la famille.`);
 }
 
 // Version 1.2 : composition de la famille (1 à 6 membres) et animaux de compagnie (3 au plus).
@@ -421,7 +411,7 @@ registerActions({
     const result = applyResult(addMember(state, enfant));
     if (result.ok) {
       persistState();
-      showToast(`👋 Un ${enfant ? 'enfant' : 'adulte'} rejoint la famille. Besoin : ${formatNumber(result.besoin)} calories par jour.`);
+      notify(`👋 Un ${enfant ? 'enfant' : 'adulte'} rejoint la famille. Besoin : ${formatNumber(result.besoin)} calories par jour.`);
       openMemberModal(result.id); // tout de suite : son prénom et son apparence
     }
   },

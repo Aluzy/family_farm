@@ -11,18 +11,19 @@ import { formatDuration, formatLitres, formatNumber } from '../engine/format.js'
 import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
-import { consentBannerDue, consentBannerPending, consentBannerShown, storyOpen, tutorialStopsClock, uiCalm } from './calme.js';
+import { consentBannerDue, consentBannerPending, consentBannerShown, modalRoot, storyOpen, tutorialStopsClock, uiCalm } from './calme.js';
 import { actionNightStart, wakeUp } from './game-actions.js';
 import {
   lastRenderAt, refresh, render, renderScheduled, setLastRenderAt, setRenderScheduled,
 } from './render.js';
-import { itemsSummary } from './inventaire.js';
 import { startMealScene } from './stage-windows.js';
 import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
 import {
-  ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, showToast, watchAlerts,
+  ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
 } from './toasts.js';
+import { openModal } from './modal.js';
+import { accord, itemsText, plural } from './common.js';
 
 // Lot 11 : heure (Date.now) jusqu'à laquelle la partie a été simulée. Elle est
 // écrite dans la sauvegarde ({ v, t, s } : t = simulatedAt) ; au chargement, ou
@@ -56,7 +57,7 @@ let technoOpened = false;
 
 function watchUnlocks() {
   const opened = state.unlockedTabs.includes(DATA.TECHNO.ONGLET);
-  if (opened && !technoOpened) showToast('🌳 Nouvel onglet : Arbre des technologies');
+  if (opened && !technoOpened) notify('🌳 Nouvel onglet : Arbre des technologies');
   technoOpened = opened;
 }
 
@@ -76,7 +77,7 @@ function watchPreparations() {
     if (was && !job) {
       const r = DATA.recipes[was];
       const out = DATA.items[recipeOutput(was)];
-      showToast(`${out.icone} ${r.transformation ? out.nom : r.nom} : prêt !`);
+      notify(`${out.icone} ${r.transformation ? out.nom : r.nom} : prêt !`);
     }
     lastJobs[id] = job ? job.recette : null;
   }
@@ -96,15 +97,15 @@ function watchRobot() {
   const r = state.robot;
   if (r && r.jour === state.day && r.charge && (r.annonceCharge || 0) < (r.pannes || 0)) {
     r.annonceCharge = r.pannes;
-    notify(`🔋 Batterie du robot vide : il rentre à sa station et reprendra sa liste (${r.taches.length - r.i} tâche${r.taches.length - r.i > 1 ? 's' : ''}) une fois rechargé.`, 'info', { fenetre: 'robot' });
+    notify(`🔋 Batterie du robot vide : il rentre à sa station et reprendra sa liste (${plural(r.taches.length - r.i, 'tâche')}) une fois rechargé.`, { cible: { fenetre: 'robot' } });
     persistState();
   }
   if (!r || r.annonce || r.jour !== state.day || !r.taches.length || r.i < r.taches.length) return;
   r.annonce = true;
-  const recolte = itemsSummary(r.recoltes);
-  const semis = r.semees ? `${r.semees} parcelle${r.semees > 1 ? 's' : ''} replantée${r.semees > 1 ? 's' : ''}` : '';
+  const recolte = itemsText(r.recoltes);
+  const semis = r.semees ? `${plural(r.semees, 'parcelle')} ${accord(r.semees, 'replantée')}` : '';
   const manque = r.sansGraine ? ` ; ${r.sansGraine} sans graine` : '';
-  notify(`🤖 Le robot a fini sa liste : ${[recolte ? `récolté ${recolte}` : '', semis].filter(Boolean).join(', ') || 'rien à faire'}${manque}.`, 'info', { fenetre: 'zone' });
+  notify(`🤖 Le robot a fini sa liste : ${[recolte ? `récolté ${recolte}` : '', semis].filter(Boolean).join(', ') || 'rien à faire'}${manque}.`, { cible: { fenetre: 'zone' } });
   persistState();
 }
 
@@ -123,7 +124,7 @@ function watchMail() {
     mailSeen.add(l.id);
     const def = DATA.COURRIER[l.id];
     if (!def || l.lu) continue;
-    notify(`${def.icone} ${def.objet} est arrivée ! Elle t'attend dans les Notifications.`, 'lettre', { page: 'notifications' });
+    notify(`${def.icone} ${def.objet} est arrivée ! Elle t'attend dans les Notifications.`, { kind: 'lettre', cible: { page: 'notifications' } });
     persistState();
     scheduleRender();
   }
@@ -134,9 +135,9 @@ function watchTechPoints() {
   const pt = state.pointsTech;
   if (!pt || !pt.annonces || !pt.annonces.length) return;
   const premier = pt.gagnes > 0 && pt.gagnes === pt.annonces.reduce((t, a) => t + a.pt, 0);
-  for (const a of pt.annonces.splice(0)) showToast(`🔬 +${formatNumber(a.pt)} PT : ${a.raison}`);
+  for (const a of pt.annonces.splice(0)) notify(`🔬 +${formatNumber(a.pt)} PT : ${a.raison}`);
   // FLU-28 : le premier point fait apparaître l'Arbre des technologies dans le menu latéral
-  if (premier) notify('🌳 L\'Arbre des technologies est ouvert : dépense tes points depuis le menu (🌳).', 'info', { fenetre: 'techno' });
+  if (premier) notify('🌳 L\'Arbre des technologies est ouvert : dépense tes points depuis le menu (🌳).', { cible: { fenetre: 'techno' } });
   persistState();
 }
 
@@ -155,7 +156,7 @@ function watchDay() {
     refresh();
     if (r.ok) playMealScene(r.repas);
   }
-  if (state.reveil && !document.getElementById('modal-root').childElementCount) wakeUp();
+  if (state.reveil && !modalRoot().childElementCount) wakeUp();
   if (nightActive(state)) {
     // minuit vient de passer : les préparations finies dans la nuit, sans toast
     if (state.nuitEnCours.minuit && !midnightSeen) { midnightSeen = true; syncJobs(); persistState(); scheduleRender(); }
@@ -163,7 +164,7 @@ function watchDay() {
   }
   midnightSeen = false;
   if (!bedtimeDue(state)) return;
-  if (document.getElementById('modal-root').childElementCount > 0) return;
+  if (modalRoot().childElementCount > 0) return;
   const step = tutorialStep(state);
   if (step && step !== 'dormir') return;
   actionNightStart();
@@ -174,10 +175,10 @@ let midnightSeen = false;
 // qui passe à table (startMealScene).
 function playMealScene(repas) {
   startMealScene(repas);
-  const mange = itemsSummary(repas.mange);
+  const mange = itemsText(repas.mange);
   const complet = repas.couverture >= 100;
   const suite = complet ? 'Tout le monde a mangé à sa faim.' : `Repas insuffisant : ${formatNumber(Math.min(repas.energie, repas.besoin))} / ${formatNumber(repas.besoin)} calories, ton énergie remontera moins cette nuit.`;
-  notify(`🍽️ ${DATA.TIME.MEAL_HOUR} h : la famille passe à table${mange ? ` (${mange})` : ''}. ${suite}`, complet ? 'repas' : 'alerte', { fenetre: 'famille' });
+  notify(`🍽️ ${DATA.TIME.MEAL_HOUR} h : la famille passe à table${mange ? ` (${mange})` : ''}. ${suite}`, { kind: complet ? 'repas' : 'alerte', cible: { fenetre: 'famille' } });
 }
 
 // Le résumé du réveil est-il à l'écran ? Tant qu'il l'est, l'horloge reste à 6 h.
@@ -247,7 +248,7 @@ export function catchUp(wall = Date.now()) {
 // avant l'écran de fin de chapitre).
 function watchAbsence() {
   if (!pendingAbsence) return;
-  if (document.getElementById('modal-root').childElementCount > 0) return;
+  if (modalRoot().childElementCount > 0) return;
   const report = pendingAbsence;
   pendingAbsence = null;
   openAbsenceModal(report);
@@ -255,7 +256,7 @@ function watchAbsence() {
 
 function openAbsenceModal(r) {
   const cap = DATA.HORS_LIGNE.MAX_S;
-  const done = itemsSummary(r.terminees);
+  const done = itemsText(r.terminees);
   const running = r.enCours.map((e) => {
     const def = DATA.STATIONS[e.station];
     const rec = DATA.recipes[e.recette];
@@ -281,15 +282,10 @@ function openAbsenceModal(r) {
     `<li>🌙 Aucune nuit n'est passée : l'horloge s'arrête quand le jeu est fermé, et les cultures, les animaux et la famille t'attendent.</li>`,
     DATA.HORS_LIGNE.USURE ? '' : '<li class="muted">🛠️ Les appareils ne se sont pas usés pendant ton absence.</li>',
   ];
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="absence-title" data-stop-propagation>
-        <h2 id="absence-title">⏳ Pendant ton absence…</h2>
-        <ul class="report-list">${lines.join('')}</ul>
-        <button type="button" class="btn primary" data-action="close-modal" id="absence-close">Reprendre</button>
-      </div>
-    </div>`;
-  document.getElementById('absence-close').focus();
+  openModal(`
+    <h2 id="absence-title">⏳ Pendant ton absence…</h2>
+    <ul class="report-list">${lines.join('')}</ul>
+    <button type="button" class="btn primary" data-action="close-modal" id="absence-close">Continuer</button>`, { labelledBy: 'absence-title', focus: '#absence-close' });
 }
 
 // Quitter la page ou la cacher : on sauvegarde tout de suite (sur mobile,

@@ -8,7 +8,6 @@ import { nightActive } from '../engine/clock.js';
 import { asleep } from '../engine/night.js';
 import { memberPerso, planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
-import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
 import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { notificationCount } from '../engine/alerts.js';
@@ -19,7 +18,7 @@ import {
   activeTab, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { MARKET_CLOSED } from '../engine/market.js';
 import { actionSleep } from './game-actions.js';
 import { artHtml } from './pixel-art.js';
@@ -31,7 +30,7 @@ import {
 } from './stage.js';
 import {
   backToFerme, deviceName, renderDeviceFenetre, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
-  renderInstallationsMaison, renderPotager, renderRobotCard, renderZone2,
+  renderInstallationsMaison, renderPotager, renderRobotCard,
 } from './ferme.js';
 import { robotOn } from '../engine/automation.js';
 import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
@@ -47,13 +46,15 @@ import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
 import { toolBarHtml, toolbarOpen } from './outils.js';
+import { rememberFocus } from './modal.js';
+import { jaugeClasse, plural } from './common.js';
 
 /* ---------- Fenêtres de la carte ---------- */
 
 // Un appui sur un bâtiment ou sur son étiquette ouvre une fenêtre dont le contenu est celui
 // des sections de la Ferme, redessiné à chaque rendu : les boutons y fonctionnent comme
 // dans la liste classique. Les fenêtres de #modal-root s'affichent par-dessus.
-export let stageWindow = null; // null, 'maison', 'etable', 'poulailler', 'serre', 'moulin', 'verger', 'zone', 'zone2' ou 'chapitres'
+export let stageWindow = null; // null, 'maison', 'etable', 'poulailler', 'serre', 'moulin', 'verger', 'zone' ou 'chapitres'
 export function setStageWindow(value) {
   stageWindow = value;
   return value;
@@ -109,6 +110,7 @@ export function leaveInterior() {
 }
 
 let stageWindowShown = null; // dernière fenêtre dessinée (avec son onglet) : pour remonter en haut au changement
+let windowFocusBack = null; // rend le focus à ce qui a ouvert la fenêtre (voir rememberFocus)
 let maisonTab = 'recettes'; // onglet de la fenêtre Maison
 let maisonTabChoisi = 'recettes'; // FLU-03 : le dernier onglet que le joueur a choisi
 export function setMaisonTab(value) {
@@ -349,12 +351,6 @@ export const STAGE_WINDOWS = {
     detail: () => `${state.potager.parcelles.length} parcelles`,
     corps: () => renderPotager(),
   },
-  // Le Champ : la deuxième zone de culture, ouverte avec le Moulin.
-  zone2: {
-    nom: DATA.POTAGER.ZONE2.NOM, icone: DATA.POTAGER.ZONE2.ICONE, ok: () => zone2Open(state), haute: true, sansTitre: true,
-    detail: () => `${zone2Plots(state).length} parcelles`,
-    corps: () => renderZone2(),
-  },
   chapitres: { nom: 'Chapitres', icone: '📜', ok: () => true, corps: () => renderChapterBanner() },
   // Version 1.5 : le poteau « Ville » au bout du chemin (sorties, voyages, marché de la ville).
   ville: { nom: 'Ville', icone: '🏙️', ok: () => true, sansTitre: true, corps: () => renderVille() },
@@ -372,8 +368,12 @@ export function renderStageWindow() {
   if (!stageWindow) {
     if (root.childElementCount) morph(root, '');
     stageWindowShown = null;
+    // la fenêtre fermée rend le focus au bouton (ou à l'étiquette) qui l'avait ouverte
+    if (windowFocusBack) windowFocusBack();
+    windowFocusBack = null;
     return;
   }
+  if (stageWindowShown === null) windowFocusBack = rememberFocus();
   const detail = w.detail ? w.detail() : '';
   morph(root, `
     <div class="window-layer${w.flottante ? ' flottante' : ''}">
@@ -382,7 +382,7 @@ export function renderStageWindow() {
         <header class="window-head">
           ${w.enTete ? `<h2 id="stage-window-title" class="visually-hidden">${w.nom}</h2>${w.enTete()}` : `<h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>`}
           ${stageWindow !== 'chapitres' && !w.enTete ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
-          <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer la fenêtre" title="Fermer">✕</button>
+          <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer" title="Fermer">✕</button>
         </header>
         ${w.onglets && !windowLocked(stageWindow) ? `<div class="window-tabs">${w.onglets()}</div>` : ''}
         <div class="window-body${w.sansTitre ? ' sans-titre' : ''}">${windowLocked(stageWindow) ? lockedBody(stageWindow) : w.corps()}</div>
@@ -470,6 +470,10 @@ export function applyAnchor() {
 // (ouvre la Famille).
 // Le prénom est saisi par le joueur : escapeHtml (memberNameHtml), jamais dans un data-*.
 let playerHeight = 0;
+let playerHtml = null; // dernier contenu de la carte du joueur
+let playerMeasure = true; // à mesurer : contenu changé, fenêtre redimensionnée, police chargée
+window.addEventListener('resize', () => { playerMeasure = true; });
+if (document.fonts) document.fonts.ready.then(() => { playerMeasure = true; }); // police chargée : autre hauteur
 export function renderIndicators() {
   const m = mainCharacter(state);
   const p = levelProgress(state);
@@ -479,7 +483,7 @@ export function renderIndicators() {
   const autoTitre = `Autonomie de la dernière nuit : ${auto}. Ouvrir la Famille`;
   const famille = 'data-action="stage-goto" data-window="famille"';
   const el = document.getElementById('player-card');
-  morph(el,
+  const html =
     `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
       // le portrait du personnage du joueur (version 1.17 : celui choisi dans sa fiche ; le
       // personnage principal est toujours un adulte)
@@ -489,12 +493,20 @@ export function renderIndicators() {
     `<button type="button" class="player-line level-ind" data-action="open-levels" title="${niveau}" aria-label="${niveau}"><span aria-hidden="true">⭐</span><span class="num" aria-hidden="true">Niv. ${p.niveau}</span><span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>` +
     `<button type="button" class="player-line" ${famille} title="${autoTitre}" aria-label="${autoTitre}"><span aria-hidden="true">🌿</span><span class="num" aria-hidden="true">${auto}</span></button>` +
     `</span>` +
-    playerGaugesHtml()
-  );
-  // Le contenu des écrans sans carte commence sous la carte du joueur.
-  if (el.offsetHeight && el.offsetHeight !== playerHeight) {
-    playerHeight = el.offsetHeight;
-    document.documentElement.style.setProperty('--player-h', playerHeight + 'px');
+    playerGaugesHtml();
+  if (html !== playerHtml) {
+    playerHtml = html;
+    playerMeasure = true;
+    morph(el, html);
+  }
+  // Le contenu des écrans sans carte commence sous la carte du joueur. Sa hauteur n'est lue
+  // (ce qui force la mise en page) que si son contenu ou la taille de la fenêtre a changé.
+  if (playerMeasure && el.offsetHeight) {
+    playerMeasure = false;
+    if (el.offsetHeight !== playerHeight) {
+      playerHeight = el.offsetHeight;
+      document.documentElement.style.setProperty('--player-h', playerHeight + 'px');
+    }
   }
   renderHud();
 }
@@ -506,19 +518,19 @@ function playerGaugesHtml() {
   const P = DATA.PERSONNAGE;
   const e = energyLevel(state);
   const ePct = Math.max(0, Math.min(100, Math.round((e / P.MAX) * 100)));
-  // mêmes seuils que la jauge de bonheur : vert à 65 % et plus, jaune de 20 à 64 %, rouge en dessous
-  const eCls = ePct >= 65 ? '' : ePct >= 20 ? ' mid' : ' low';
+  // mêmes seuils que la jauge de bonheur (jaugeClasse) : vert, jaune, rouge
+  const eCls = jaugeClasse(ePct);
   const endu = enduranceReduction(state);
   const enduMax = P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1);
   const dPct = enduMax > 0 ? Math.max(0, Math.min(100, Math.round((endu * 100) / enduMax))) : 0;
   const bonheur = Math.max(0, Math.min(100, averageHappiness(state)));
-  const bCls = bonheur >= 65 ? '' : bonheur >= 20 ? ' mid' : ' low';
+  const bCls = jaugeClasse(bonheur);
   const titre = `Énergie : ${e} / ${P.MAX}. Endurance : tes actions coûtent ${endu} % de moins. Bonheur de la famille : ${bonheur} %. Ouvrir la Famille`;
   const jauge = (icone, cls, pct) =>
     `<span class="player-gauge"><span class="player-gauge-icon">${icone}</span>` +
-    `<span class="player-gauge-bar"><span class="player-gauge-fill${cls}" style="height:${pct}%"></span></span></span>`;
+    `<span class="player-gauge-bar"><span class="player-gauge-fill${cls ? ` ${cls}` : ''}" style="height:${pct}%"></span></span></span>`;
   return `<button type="button" class="player-gauges" data-action="stage-goto" data-window="famille" title="${titre}" aria-label="${titre}">` +
-    `<span class="player-gauges-in" aria-hidden="true">${jauge('⚡', eCls, ePct)}${jauge('💪', ' endu', dPct)}${jauge('😊', bCls, bonheur)}</span></button>`;
+    `<span class="player-gauges-in" aria-hidden="true">${jauge('⚡', eCls, ePct)}${jauge('💪', 'endu', dPct)}${jauge('😊', bCls, bonheur)}</span></button>`;
 }
 
 // Carte flottante en haut à droite (comme dans Stardew Valley), dans le même cadre que la
@@ -568,7 +580,7 @@ export function renderTabbar() {
   nav.inert = !menuOpen;
   const tab = document.getElementById('side-tab');
   tab.setAttribute('aria-expanded', String(menuOpen));
-  tab.setAttribute('aria-label', menuOpen ? 'Fermer le menu' : `Ouvrir le menu${alerts > 0 ? ` (${alerts} alerte${alerts > 1 ? 's' : ''})` : ''}`);
+  tab.setAttribute('aria-label', menuOpen ? 'Fermer le menu' : `Ouvrir le menu${alerts > 0 ? ` (${plural(alerts, 'alerte')})` : ''}`);
   morph(tab, MENU_ARROW + (alerts > 0 && !menuOpen ? `<span class="side-tab-badge" aria-hidden="true">${alerts > 9 ? '9+' : alerts}</span>` : ''));
   morph(
     nav,
@@ -583,7 +595,7 @@ export function renderTabbar() {
           return `<button type="button" class="nav-btn locked" data-action="market-locked" title="${t.label}" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
         }
         const badge = t.id === 'notifications' && alerts > 0 ? `<span class="nav-badge" aria-hidden="true">${alerts}</span>` : '';
-        const label = t.id === 'notifications' && alerts > 0 ? `${t.label} (${alerts} alerte${alerts > 1 ? 's' : ''})` : t.label;
+        const label = t.id === 'notifications' && alerts > 0 ? `${t.label} (${plural(alerts, 'alerte')})` : t.label;
         return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" title="${t.label}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
       })
       .join('') +
@@ -730,7 +742,7 @@ registerActions({
     setMenuOpen(!menuOpen);
   },
   'market-locked': () => {
-    showToast(`🔒 ${MARKET_CLOSED}`);
+    notify(`🔒 ${MARKET_CLOSED}`);
   },
   'stage-goto': (target) => {
     allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);

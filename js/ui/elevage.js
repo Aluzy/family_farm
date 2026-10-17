@@ -4,7 +4,7 @@ import { countItem } from '../engine/inventory.js';
 import { energyChip, formatEnergy } from './energie.js';
 import { actionCost } from '../engine/stamina.js';
 import {
-  allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plotZone, seedStock,
+  allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, seedStock,
   growHoursLeft, water, waterCost, waterCostFor, seedLabel,
 } from '../engine/crops.js';
 import {
@@ -20,13 +20,13 @@ import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { applyResult } from './game-actions.js';
-import { itemsSummary } from './inventaire.js';
-import { artPx, coopArtRow, icon } from './animations.js';
+import { artIcon, artPx, coopArtRow } from './animations.js';
 import { pxGauge, pxText } from './pixel-art.js';
 import { helpBtn } from './aide.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { canPay, closeModal, costLabel, plural } from './common.js';
+import { accord, canPay, costLabel, itemsText, plural } from './common.js';
+import { closeModal, openModal } from './modal.js';
 
 /* ---------- Ferme : Silo et Poulailler ---------- */
 
@@ -35,7 +35,7 @@ export function renderSilo() {
   if (!s.construit) {
     const cost = DATA.SILO.CONSTRUCTION;
     return `
-      <div class="section-head"><h3>${icon('silo')}Silo</h3>${helpBtn('silo')}</div>
+      <div class="section-head"><h3>${artIcon('silo')}Silo</h3>${helpBtn('silo')}</div>
       <div class="card">
         <button type="button" class="btn primary" data-action="build-silo"${canPay(cost) ? '' : ' disabled'}>Réparer le Silo (${costLabel(cost)})</button>
       </div>`;
@@ -50,7 +50,7 @@ export function renderSilo() {
       ? '<button type="button" class="btn" disabled>Silo au niveau maximum</button>'
       : `<button type="button" class="btn" data-action="upgrade-silo"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${s.niveau + 1}, ${formatNumber(DATA.SILO.CAPACITE[s.niveau])} blés (${costLabel(up)})</button>`;
   return `
-    <div class="section-head"><h3>${icon('silo')}Silo · niveau ${s.niveau}</h3>${helpBtn('silo')}</div>
+    <div class="section-head"><h3>${artIcon('silo')}Silo · niveau ${s.niveau}</h3>${helpBtn('silo')}</div>
     <div class="card">
       <span class="big">${formatQty(s.ble)} / ${formatNumber(cap)} 🌾</span>
       <span class="bar" role="progressbar" aria-label="Remplissage du Silo" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${Math.round(s.ble)}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
@@ -64,7 +64,7 @@ export function renderPoulailler() {
   if (!p.construit) {
     const cost = DATA.POULAILLER.CONSTRUCTION;
     return `
-      <div class="section-head"><h3>${icon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
+      <div class="section-head"><h3>${artIcon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
       <div class="card">
         <button type="button" class="btn primary" data-action="build-poulailler"${canPay(cost) ? '' : ' disabled'}>Réparer le Poulailler (${costLabel(cost)})</button>
       </div>`;
@@ -86,7 +86,7 @@ export function renderPoulailler() {
   else hint = '';
   return `
     <div class="section-head">
-      <h3>${icon('poulailler')}Poulailler · niveau ${p.niveau}</h3>
+      <h3>${artIcon('poulailler')}Poulailler · niveau ${p.niveau}</h3>
       <span class="chips">${autoChip('poulailler', 'Nourrit les poules tout seul, à 100 %, pendant la nuit')}${helpBtn('poulailler')}</span>
     </div>
     <div class="card">
@@ -106,12 +106,12 @@ export function renderPoulailler() {
 
 // « 1 place », « 3 places ».
 export function formatPlaces(n) {
-  return `${formatNumber(n)} place${n > 1 ? 's' : ''}`;
+  return `${plural(n, 'place', formatNumber(n))}`;
 }
 
 // « 1 paille », « 2 pailles ».
 export function formatStraw(n) {
-  return `${formatNumber(n)} paille${n > 1 ? 's' : ''}`;
+  return `${plural(n, 'paille', formatNumber(n))}`;
 }
 
 function sheepNumber(m) {
@@ -224,7 +224,7 @@ export function renderPaturage() {
   if (!p.construit) {
     const cost = P.deblocage;
     return `
-      <div class="section-head"><h3>${icon('paturage')}Moutons et vaches</h3>${helpBtn('paturage')}</div>
+      <div class="section-head"><h3>${artIcon('paturage')}Moutons et vaches</h3>${helpBtn('paturage')}</div>
       <div class="card">
         <button type="button" class="btn primary" data-action="build-paturage"${canPay(cost) ? '' : ' disabled'}>Préparer ${formatPlaces(P.placesDepart)} pour les moutons et les vaches (${costLabel(cost)})</button>
       </div>`;
@@ -247,7 +247,7 @@ export function renderPaturage() {
   const buyOk = canPay(cost);
   return `
     <div class="section-head">
-      <h3>${icon('paturage')}Moutons et vaches · ${formatPlaces(p.places)}</h3>
+      <h3>${artIcon('paturage')}Moutons et vaches · ${formatPlaces(p.places)}</h3>
       <span class="chips">${autoChip('paturage', 'Tond tout seul les moutons dont la laine est prête, pendant la nuit')}${ready > 0 ? `<span class="chip badge">🧶 ${ready} à tondre</span>` : ''}${helpBtn('paturage')}</span>
     </div>
     <div class="card">
@@ -272,14 +272,12 @@ export function autoChip(id, title) {
   return `<span class="chip auto" title="${title}">🤖 ${taches.map((t) => noms[t]).join(', ')}</span>`;
 }
 
-// Arbre v2 (Outils de jardin) : « Arroser tout » et « Récolter tout ». `zone` (facultatif) :
-// 1 pour la Zone de culture seule, 2 pour le Champ seul (les deux portent le lieu 'potager').
+// Arbre v2 (Outils de jardin) : « Arroser tout » et « Récolter tout ».
 // Fluidité (FLU-09, FLU-10, FLU-11) : « Planter partout », « Arroser tout » et « Récolter
 // tout », dès le niveau 1, avec leur coût (eau, énergie) ; un bouton qui ne peut pas servir
 // dit pourquoi, en toutes lettres.
-export function groupButtons(lieu, zone) {
-  const plots = allPlots(state).filter((p) => p.lieu === lieu && (!zone || plotZone(p) === zone));
-  const z = zone ? ` data-zone="${zone}"` : '';
+export function groupButtons(lieu) {
+  const plots = allPlots(state).filter((p) => p.lieu === lieu);
   const vides = plots.filter((p) => !p.culture).length;
   const aArroser = plots.filter((p) => p.culture && !p.arrose && !isMature(p));
   const murs = plots.filter((p) => p.culture && isMature(p)).length;
@@ -287,7 +285,7 @@ export function groupButtons(lieu, zone) {
   const btns = [];
   const notes = [];
   if (vides) {
-    btns.push(`<button type="button" class="btn" data-action="plant-all-open" data-lieu="${lieu}"${z}>🌱 Planter partout (${vides} vide${vides > 1 ? 's' : ''})</button>`);
+    btns.push(`<button type="button" class="btn" data-action="plant-all-open" data-lieu="${lieu}">🌱 Planter partout (${plural(vides, 'vide')})</button>`);
   }
   if (aArroser.length) {
     const litres = aArroser.reduce((t, p) => t + waterCost(state, p), 0);
@@ -296,45 +294,39 @@ export function groupButtons(lieu, zone) {
     let manque = '';
     if (eau + 1e-9 < litres) manque = `Il manque ${formatQty(litres - eau)} L d'eau pour tout arroser.`;
     else if ((Number(state.energie) || 0) < energie) manque = `Il manque ${formatEnergy(energie - (Number(state.energie) || 0))} d'énergie pour tout arroser.`;
-    btns.push(`<button type="button" class="btn" data-action="water-all" data-lieu="${lieu}"${z}${manque ? ' disabled' : ''}>💧 Arroser tout (${aArroser.length} · ${formatQty(litres)} L · ⚡ ${formatEnergy(energie)})</button>`);
+    btns.push(`<button type="button" class="btn" data-action="water-all" data-lieu="${lieu}"${manque ? ' disabled' : ''}>💧 Arroser tout (${aArroser.length} · ${formatQty(litres)} L · ⚡ ${formatEnergy(energie)})</button>`);
     if (manque) notes.push(manque);
   }
   if (murs) {
     const energie = remise(murs * actionCost(state, 'recolter'));
     const manque = (Number(state.energie) || 0) < energie ? `Il manque ${formatEnergy(energie - (Number(state.energie) || 0))} d'énergie pour tout récolter.` : '';
-    btns.push(`<button type="button" class="btn" data-action="harvest-all" data-lieu="${lieu}"${z}${manque ? ' disabled' : ''}>🧺 Récolter tout (${murs} · ⚡ ${formatEnergy(energie)})</button>`);
+    btns.push(`<button type="button" class="btn" data-action="harvest-all" data-lieu="${lieu}"${manque ? ' disabled' : ''}>🧺 Récolter tout (${murs} · ⚡ ${formatEnergy(energie)})</button>`);
     if (manque) notes.push(manque);
   }
   return btns.join('') + notes.map((n) => `<span class="muted group-note">${n}</span>`).join('');
 }
 
-// FLU-09 : choix de la culture pour toutes les parcelles vides d'un lieu (d'une zone).
-function openPlantAllModal(lieu, zone) {
+// FLU-09 : choix de la culture pour toutes les parcelles vides d'un lieu.
+function openPlantAllModal(lieu) {
   tel('modal', 'plant');
-  const vides = allPlots(state).filter((p) => p.lieu === lieu && (!zone || plotZone(p) === Number(zone)) && !p.culture).length;
-  const z = zone ? ` data-zone="${zone}"` : '';
+  const vides = allPlots(state).filter((p) => p.lieu === lieu && !p.culture).length;
   const rows = plantableCropsFor(state, lieu)
     .map((c) => {
       const def = DATA.crops[c];
       const n = seedStock(state, c);
       const stock = seedLabel(c);
       return `
-        <button type="button" class="btn plant-choice" data-action="plant-all" data-lieu="${lieu}"${z} data-crop="${c}"${n >= 1 ? '' : ' disabled'}>
+        <button type="button" class="btn plant-choice" data-action="plant-all" data-lieu="${lieu}" data-crop="${c}"${n >= 1 ? '' : ' disabled'}>
           <span>${def.icone} ${def.nom}</span>
-          <span class="muted">${stock} : ${formatQty(n)} pour ${vides} parcelle${vides > 1 ? 's' : ''} · ${def.stades} jours · ⚡ ${formatEnergy(Math.min(vides, Math.floor(n)) * actionCost(state, 'planter'))}</span>
+          <span class="muted">${stock} : ${formatQty(n)} pour ${plural(vides, 'parcelle')} · ${def.stades} jours · ⚡ ${formatEnergy(Math.min(vides, Math.floor(n)) * actionCost(state, 'planter'))}</span>
         </button>`;
     })
     .join('');
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="plant-title" data-stop-propagation>
-        <h2 id="plant-title">🌱 Planter partout</h2>
-        <p class="muted">La même culture sur les ${vides} parcelle${vides > 1 ? 's' : ''} vide${vides > 1 ? 's' : ''}, autant que tes graines et ton énergie le permettent.</p>
-        <div class="stack">${rows}</div>
-        <button type="button" class="btn" data-action="close-modal">Annuler</button>
-      </div>
-    </div>
-  `;
+  openModal(`
+    <h2 id="plant-title">🌱 Planter partout</h2>
+    <p class="muted">La même culture sur les ${plural(vides, 'parcelle')} ${accord(vides, 'vide')}, autant que tes graines et ton énergie le permettent.</p>
+    <div class="stack">${rows}</div>
+    <button type="button" class="btn" data-action="close-modal">Annuler</button>`, { labelledBy: 'plant-title' });
 }
 
 function semisLabel(p) {
@@ -411,21 +403,15 @@ function openSemisModal(plotId) {
     const def = DATA.crops[c];
     return choice('verrou', c, `🔒 Toujours ${def.icone} ${def.nom}`, `${seedLabel(c)} en stock : ${formatQty(seedStock(state, c))}`);
   });
-  const root = document.getElementById('modal-root');
-  root.innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="semis-title" data-stop-propagation>
-        <h2 id="semis-title">🔁 Semis automatique</h2>
-        <p class="muted">Après une récolte automatique, cette parcelle est replantée si une graine reste au-delà de la réserve de semences.</p>
-        <div class="stack">
-          ${choice('meme', null, '🔁 Même culture que la récolte', 'Réglage par défaut.')}
-          ${choice('off', null, '⛔ Désactivé', 'La parcelle reste vide après la récolte.')}
-          ${locks.join('')}
-        </div>
-        <button type="button" class="btn" data-action="close-modal">Fermer</button>
-      </div>
+  openModal(`
+    <h2 id="semis-title">🔁 Semis automatique</h2>
+    <p class="muted">Après une récolte automatique, cette parcelle est replantée si une graine reste au-delà de la réserve de semences.</p>
+    <div class="stack">
+      ${choice('meme', null, '🔁 Même culture que la récolte', 'Réglage par défaut.')}
+      ${choice('off', null, '⛔ Désactivé', 'La parcelle reste vide après la récolte.')}
+      ${locks.join('')}
     </div>
-  `;
+    <button type="button" class="btn" data-action="close-modal">Fermer</button>`, { labelledBy: 'semis-title' });
 }
 
 // Choix de la graine à planter sur une parcelle vide.
@@ -445,22 +431,15 @@ function openPlantModal(plotId) {
         </button>`;
     })
     .join('');
-  const root = document.getElementById('modal-root');
-  root.innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="plant-title" data-stop-propagation>
-        <h2 id="plant-title">🌱 Planter</h2>
-        <p class="muted">Choisis ce que tu plantes sur cette parcelle.</p>
-        <div class="stack">${rows}</div>
-        <button type="button" class="btn" data-action="close-modal">Annuler</button>
-      </div>
-    </div>
-  `;
+  openModal(`
+    <h2 id="plant-title">🌱 Planter</h2>
+    <p class="muted">Choisis ce que tu plantes sur cette parcelle.</p>
+    <div class="stack">${rows}</div>
+    <button type="button" class="btn" data-action="close-modal">Annuler</button>`, { labelledBy: 'plant-title' });
 }
 
 function harvestToast(result) {
-  const parts = Object.entries(result.items).map(([item, n]) => `+${n} ${DATA.items[item].icone}`);
-  return `Récolte : ${parts.join(' ')}`;
+  return `Récolte : ${itemsText(result.items, 'gain')}`;
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
@@ -479,7 +458,7 @@ registerActions({
   'harvest': (target) => {
     const result = applyResult(harvest(state, target.dataset.id));
     // version 1.18 : ce qui attend le personnage s'annonce par sa bulle, au ramassage
-    if (result.ok && !result.aRamasser) showToast(harvestToast(result));
+    if (result.ok && !result.aRamasser) notify(harvestToast(result));
   },
   'build-silo': () => {
     applyResult(buildSilo(state));
@@ -495,50 +474,49 @@ registerActions({
   },
   'feed-hen': () => {
     const result = applyResult(feedHen(state));
-    if (result.ok) showToast('🌾 Une poule nourrie (1 blé pour 2 poules)');
+    if (result.ok) notify('🌾 Une poule nourrie (1 blé pour 2 poules)');
   },
   'feed-all': () => {
     const result = applyResult(feedAllHens(state));
     if (result.ok) {
-      showToast(`${result.nourries} poule${result.nourries > 1 ? 's' : ''} nourrie${result.nourries > 1 ? 's' : ''}.`);
+      notify(`${plural(result.nourries, 'poule')} ${accord(result.nourries, 'nourrie')}.`);
     }
   },
   'build-paturage': () => {
     const result = applyResult(buildPaturage(state));
-    if (result.ok) showToast(`🐑 L'Étable est prête pour les moutons et les vaches : ${formatPlaces(result.places)} (−${formatCoins(result.cost)} 💰)`);
+    if (result.ok) notify(`🐑 L'Étable est prête pour les moutons et les vaches : ${formatPlaces(result.places)} (−${formatCoins(result.cost)} 💰)`);
   },
   'buy-pasture': () => {
     const result = applyResult(buyPasture(state));
-    if (result.ok) showToast(`Place achetée : ${formatPlaces(result.places)} au total (−${formatCoins(result.cost)} 💰)`);
+    if (result.ok) notify(`Place achetée : ${formatPlaces(result.places)} au total (−${formatCoins(result.cost)} 💰)`);
   },
   'cow-herbs': (target) => {
     const result = applyResult(setCowHerbs(state, target.dataset.on === '1'));
-    if (result.ok) showToast(result.herbes ? `${DATA.items[DATA.PATURAGE.herbes].icone} Les vaches mangeront les herbes de montagne : lait d'alpage cette nuit.` : '🌾 Les vaches reviennent à la paille.');
+    if (result.ok) notify(result.herbes ? `${DATA.items[DATA.PATURAGE.herbes].icone} Les vaches mangeront les herbes de montagne : lait d'alpage cette nuit.` : '🌾 Les vaches reviennent à la paille.');
   },
   'shear': (target) => {
     const result = applyResult(shear(state, target.dataset.id));
-    if (result.ok && !result.aRamasser) showToast(`✂️ Tonte : +${result.laine} 🧶`);
+    if (result.ok && !result.aRamasser) notify(`✂️ Tonte : +${result.laine} 🧶`);
   },
   'plant-all-open': (target) => {
-    openPlantAllModal(target.dataset.lieu, target.dataset.zone);
+    openPlantAllModal(target.dataset.lieu);
   },
   'plant-all': (target) => {
     closeModal();
-    const zone = target.dataset.zone ? Number(target.dataset.zone) : undefined;
-    const result = applyResult(plantAll(state, target.dataset.lieu, target.dataset.crop, zone));
+    const result = applyResult(plantAll(state, target.dataset.lieu, target.dataset.crop));
     if (result.ok) {
       const def = DATA.crops[target.dataset.crop];
       const reste = result.vides - result.plantees;
-      showToast(`🌱 ${plural(result.plantees, 'parcelle')} de ${def.nom.toLowerCase()} plantée${result.plantees > 1 ? 's' : ''}${reste ? ` · ${reste} restée${reste > 1 ? 's' : ''} vide${reste > 1 ? 's' : ''} : ${result.raison}` : ''}`);
+      notify(`🌱 ${plural(result.plantees, 'parcelle')} de ${def.nom.toLowerCase()} ${accord(result.plantees, 'plantée')}${reste ? ` · ${plural(reste, 'restée')} ${accord(reste, 'vide')} : ${result.raison}` : ''}`);
     }
   },
   'water-all': (target) => {
-    const result = applyResult(waterAll(state, target.dataset.lieu, target.dataset.zone));
-    if (result.ok) showToast(`💧 ${plural(result.arrosees, 'parcelle')} arrosée${result.arrosees > 1 ? 's' : ''}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
+    const result = applyResult(waterAll(state, target.dataset.lieu));
+    if (result.ok) notify(`💧 ${plural(result.arrosees, 'parcelle')} ${accord(result.arrosees, 'arrosée')}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
   },
   'harvest-all': (target) => {
-    const result = applyResult(harvestAll(state, target.dataset.lieu, target.dataset.zone));
-    if (result.ok && !result.aRamasser) showToast(`🧺 ${itemsSummary(result.items)}`);
+    const result = applyResult(harvestAll(state, target.dataset.lieu));
+    if (result.ok && !result.aRamasser) notify(`🧺 ${itemsText(result.items)}`);
   },
   'semis-open': (target) => {
     openSemisModal(target.dataset.id);

@@ -1,15 +1,14 @@
 # Lot « bâtiments » : petites illustrations des installations (remplacent les symboles SVG b-*
 # de jeu.html). Dessins de 16×16 doublés en 32×32 (ART_SCALE = 2).
 # Format commun à tous les fichiers art_*.py : voir scripts/icones/build.py.
+from pixel import PALETTE_EAU, PALETTE_OR  # build.py met scripts/ dans le chemin
+
 PALETTE = {
+    **PALETTE_OR, **PALETTE_EAU,  # l'or et l'eau des icônes (scripts/pixel.py)
     # bois
-    'K': '#3a2414', 's': '#6a4426', 't': '#8a5a34', 'T': '#b07a48', 'U': '#d8a868',
+    's': '#6a4426', 't': '#8a5a34', 'T': '#b07a48', 'U': '#d8a868',
     # végétal
     'G': '#1f4a22', 'g': '#2f6e2c', 'l': '#4a9a3a', 'm': '#8cd06a',
-    # or / blé / huile
-    'O': '#8a5418', 'o': '#c7862a', 'y': '#f2c040', 'Y': '#fbe38a',
-    # eau, cellules solaires
-    'q': '#163a5c', 'd': '#2a70b0', 'b': '#4aa0e0', 'B': '#c4e8ff',
     # métal
     'k': '#2a2e3a', 'i': '#5e6676', 'a': '#98a0ac', 'A': '#c8ced6', 'w': '#ffffff', 'W': '#dfe6ee',
     # rouge

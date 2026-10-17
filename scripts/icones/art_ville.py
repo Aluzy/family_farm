@@ -2,14 +2,14 @@
 # (train, bus), denrées (poisson, miel, sucre, épices, cèpe, myrtilles, raclette), la ville,
 # le bonheur ; et le poteau indicateur de la carte (ART 'carte-panneau_ville', natif).
 # Format commun à tous les fichiers art_*.py : voir scripts/icones/build.py.
+from pixel import PALETTE_EAU, PALETTE_OR  # build.py met scripts/ dans le chemin
+
 PALETTE = {
-    # or / visage (mêmes teintes que 🙂 de art_gens.py)
-    'K': '#3a2414', 'Y': '#fbe38a', 'y': '#f2c040', 'o': '#c7862a', 'O': '#8a5418',
+    **PALETTE_OR, **PALETTE_EAU,  # l'or et l'eau des icônes (scripts/pixel.py)
+    # visage (mêmes teintes que 🙂 de art_gens.py)
     'e': '#3a2414', 'm': '#6e2a1a', 'c': '#e86a5a',
     # rouges
     'R': '#6e1a22', 'r': '#d83a3a', 'p': '#f07a6a', 'x': '#a82a30',
-    # bleus
-    'q': '#163a5c', 'b': '#4aa0e0', 'B': '#c4e8ff', 'd': '#2a70b0',
     # verts
     'G': '#1f4a22', 'g': '#2f6e2c', 'l': '#4a9a3a', 'L': '#8cd06a',
     # bois / brun

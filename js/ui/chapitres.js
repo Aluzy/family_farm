@@ -2,14 +2,16 @@ import { DATA } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { familyNeed } from '../engine/family.js';
 import {
-  autonomyHistory, chapterCount, chapterProgress, lastAutonomy, objectiveDef, plannedAutonomy, holdStatus,
+  acknowledgeChapter, autonomyHistory, chapterCount, chapterProgress, lastAutonomy, objectiveDef, plannedAutonomy, holdStatus,
 } from '../engine/campaign.js';
 import { formatNumber, formatPercent } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
+import { refresh } from './render.js';
 import { registerActions } from './actions.js';
-import { closeModal } from './common.js';
 import { helpBtn } from './aide.js';
+import { closeModal, openModal } from './modal.js';
+import { accord, chartFrame, plural } from './common.js';
 
 /* ---------- Lot 9 : chapitres, autonomie, graphique ---------- */
 
@@ -78,14 +80,9 @@ function autonomyChartHtml() {
   const N = DATA.AUTONOMIE.GRAPHIQUE_NUITS;
   const h = autonomyHistory(state);
   const W = 320, H = 130, left = 30, right = 6, top = 8, bottom = 20;
-  const plotW = W - left - right;
-  const plotH = H - top - bottom;
+  const { plotW, plotH, y, grid } = chartFrame({ W, H, left, right, top, bottom });
   const slot = plotW / N;
   const bw = slot * 0.7;
-  const y = (pct) => top + plotH * (1 - pct / 100);
-  const grid = [0, 25, 50, 75, 100]
-    .map((g) => `<line class="chart-grid" x1="${left}" y1="${y(g).toFixed(1)}" x2="${W - right}" y2="${y(g).toFixed(1)}"/><text class="chart-label" x="${left - 4}" y="${(y(g) + 3).toFixed(1)}" text-anchor="end">${g}</text>`)
-    .join('');
   const bars = h
     .map((e, i) => {
       const x = left + (N - h.length + i) * slot + (slot - bw) / 2;
@@ -102,7 +99,7 @@ function autonomyChartHtml() {
     ? `<line class="chart-target" x1="${left}" y1="${y(goal.cible).toFixed(1)}" x2="${W - right}" y2="${y(goal.cible).toFixed(1)}"><title>Objectif du chapitre : ${goal.cible} %</title></line>`
     : '';
   const label = h.length
-    ? `Autonomie des ${h.length} dernière${h.length > 1 ? 's' : ''} nuit${h.length > 1 ? 's' : ''} : ${h.map((e) => `nuit ${e.nuit}, ${formatPercent(e.pct)}`).join(' ; ')}`
+    ? `Autonomie des ${plural(h.length, 'dernière')} ${accord(h.length, 'nuit')} : ${h.map((e) => `nuit ${e.nuit}, ${formatPercent(e.pct)}`).join(' ; ')}`
     : 'Autonomie par nuit : aucune nuit pour l\'instant';
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">${grid}${bars}${target}${ends}</svg>`;
 }
@@ -134,17 +131,16 @@ function openChapterModal() {
        <ul class="objectives">${next.objectifs.map((o) => `<li class="objective"><span class="objective-label">⬜ ${o.libelle}</span></li>`).join('')}</ul>`
     : `<h3>🏆 Campagne terminée</h3>
        <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : continue de monter en niveau, à ton rythme. Chaque série de ${DATA.techtree.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>`;
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" id="chapter-modal" role="dialog" aria-modal="true" aria-labelledby="chapter-title" data-stop-propagation>
-        <h2 id="chapter-title">🎉 Chapitre ${a.chapitre} terminé</h2>
-        <p><strong>${done.icone} ${done.titre}</strong></p>
-        <p>⭐ +${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[a.chapitre - 1] || 0)} XP · 🔬 +${formatNumber(DATA.techtree.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
-        ${body}
-        <button type="button" class="btn primary" data-action="ack-chapter" id="chapter-close">Continuer</button>
-      </div>
-    </div>`;
-  document.getElementById('chapter-close').focus();
+  openModal(`
+    <h2 id="chapter-title">🎉 Chapitre ${a.chapitre} terminé</h2>
+    <p><strong>${done.icone} ${done.titre}</strong></p>
+    <p>⭐ +${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[a.chapitre - 1] || 0)} XP · 🔬 +${formatNumber(DATA.techtree.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
+    ${body}
+    <button type="button" class="btn primary" data-action="ack-chapter" id="chapter-close">Continuer</button>`, {
+    labelledBy: 'chapter-title', id: 'chapter-modal', focus: '#chapter-close',
+    // Lot 9 : la fermer (bouton ou fond) acquitte la fin du chapitre
+    onClose: () => { acknowledgeChapter(state); refresh(); },
+  });
 }
 
 // Ouvre l'écran de fin d'un chapitre dès qu'aucune autre fenêtre n'est ouverte.

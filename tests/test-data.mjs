@@ -4,16 +4,15 @@
 // qu'on peut faire en ajoutant un objet, une recette ou une culture est bien
 // signalée, avec un message qui dit où.
 //
-// Usage : node tests/test-data.mjs
+// Usage : node tests/test-data.mjs (ou node tests/run-tests.mjs data)
 
+import { test as nodeTest } from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { EFFETS_TECHNO, compileData, loadData, sourcesOf, stripNotes, validateData } from '../scripts/lib/data.mjs';
 
-let passed = 0;
-const failures = [];
-function test(name, fn) {
-  try { fn(); passed++; } catch (e) { failures.push(`${name} : ${e.message}`); }
-}
+// Lancés par node:test (node tests/run-tests.mjs --tous, ou ce fichier seul), dans l'ordre,
+// une fois le fichier chargé ; un test synchrone ou asynchrone (attendu).
+const test = (name, fn) => nodeTest(name, () => fn());
 function eq(actual, expected, message) {
   const a = JSON.stringify(actual);
   const b = JSON.stringify(expected);
@@ -68,6 +67,7 @@ test('une nouvelle recette bien écrite passe', () => {
 });
 refuse('recette : ingrédient inconnu', (d) => { d.recipes.tarte_poires = recette({ ingredients: [{ item: 'poires', qte: 3 }] }); }, 'recipes.tarte_poires.ingredients[0] : « poires »');
 refuse('recette : station inconnue', (d) => { d.recipes.tarte_poires = recette({ station: 'fourneau' }); }, 'station « fourneau » inconnue');
+refuse('atelier : action inconnue', (d) => { d.STATIONS.four.action = 'voler'; }, 'STATIONS.four : action « voler » inconnue');
 refuse('recette : quantité nulle', (d) => { d.recipes.tarte_poires = recette({ ingredients: [{ item: 'poire', qte: 0 }] }); }, 'qte doit être un entier supérieur à 0');
 refuse('recette : ni libre ni débloquée par l\'arbre', (d) => { d.recipes.tarte_poires = recette({ libre: undefined }); }, 'recette inaccessible');
 refuse('recette : un plat ne peut pas porter le nom d\'un objet', (d) => { d.recipes.cafe = recette(); }, '« cafe » est déjà un objet');
@@ -157,11 +157,3 @@ test('les trouvailles des cartes (assets/faune.json) sont les objets « trouvail
   eq(meta.herbes_montagne.genre, 'herbe');
   if (!(genres.herbe > genres.pierre)) throw new Error(`les herbes, les plus courantes de la montagne : ${JSON.stringify(genres)}`);
 });
-
-console.log('');
-console.log('Ferme Familiale — tests des données');
-console.log('-'.repeat(35));
-for (const f of failures) console.log(`✗ ${f}`);
-console.log('');
-console.log(`${passed}/${passed + failures.length} test(s) passé(s), ${failures.length} échec(s).`);
-process.exit(failures.length ? 1 : 0);

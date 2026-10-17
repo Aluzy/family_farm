@@ -1,8 +1,8 @@
 import { DATA, roundPct } from './catalog.js';
-import { EPS } from './base.js';
-import { fail, spend } from './devices.js';
+import { EPS, unlockTab } from './base.js';
+import { canPay, fail, NO_COINS, spend } from './devices.js';
 import { isAutomated } from './automation.js';
-import { chapterCount } from './campaign.js';
+import { chapterReached } from './campaign.js';
 import { soilCap, soilCount } from './crops.js';
 import { countItem, takeItem } from './inventory.js';
 
@@ -90,7 +90,7 @@ export function recipeTime(state, id) {
 }
 
 // Niveau d'un bâtiment (0 s'il n'est pas construit).
-export function buildingLevel(state, id) {
+function buildingLevel(state, id) {
   if (id === 'pompe') return state.pompe.niveau;
   // version 1.6 : un seul panneau, une seule batterie ; le réservoir a ses niveaux
   if (id === 'panneau') return state.panneaux[0].niveau;
@@ -109,10 +109,9 @@ export function isBuilt(state, id) {
 }
 
 // Chapitre en cours pour les paliers (au-delà du dernier une fois la campagne finie).
-export function techChapter(state) {
-  const c = state.campagne;
-  if (!c) return 1;
-  return c.fini ? chapterCount() + 1 : c.chapitre;
+// (Sans campagne : le premier ; chapterReached, lui, y voit le mode libre.)
+function techChapter(state) {
+  return state.campagne ? chapterReached(state) : 1;
 }
 
 // Prérequis d'un nœud, palier compris : [{ ok, texte }].
@@ -185,7 +184,7 @@ export function buyTech(state, id) {
   if (techStatus(state, id) !== 'disponible') return fail('Prérequis manquants.');
   const pt = techPoints(state);
   if (pt.solde < n.pt) return fail('Pas assez de points de technologie.');
-  if (state.pieces + EPS < n.cout) return fail('Pas assez de pièces.');
+  if (!canPay(state, n.cout)) return fail(NO_COINS);
   const manque = techResources(state, id).filter((r) => !r.ok);
   if (manque.length) return fail(`Il manque : ${manque.map((r) => `${r.qte - r.stock} ${DATA.items[r.item].icone} ${DATA.items[r.item].nom.toLowerCase()}`).join(', ')}.`);
   spend(state, n.cout, `Technologie : ${n.nom || id}`);
@@ -249,5 +248,5 @@ export function techProgress(state, brancheId) {
 // Première fois à SEUIL_PIECES pièces : l'onglet s'ajoute et ne disparaît plus.
 export function refreshUnlocks(state) {
   const tab = DATA.TECHNO.ONGLET;
-  if (state.pieces + EPS >= DATA.TECHNO.SEUIL_PIECES && !state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
+  if (state.pieces + EPS >= DATA.TECHNO.SEUIL_PIECES) unlockTab(state, tab);
 }

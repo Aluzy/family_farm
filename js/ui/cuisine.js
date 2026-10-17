@@ -22,11 +22,11 @@ import { refresh } from './render.js';
 import { switchHtml, wearHtml } from './ferme.js';
 import { formatStraw } from './elevage.js';
 import { nightsLabel } from './inventaire.js';
-import { icon } from './animations.js';
+import { artIcon } from './animations.js';
 import { helpBtn } from './aide.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { canPay, costLabel } from './common.js';
+import { accord, canPay, costLabel, plural } from './common.js';
 
 /* ---------- Lot 5 : ateliers (Ferme) et Livre de recette ---------- */
 
@@ -65,7 +65,7 @@ function stationBuildCard(id) {
   const blocked = need && !state.stations[def.requiert].construit;
   return `
     <div class="card station">
-      <span class="card-title"><span>${icon(id)}${def.nom}</span><span class="chips"><span class="chip">Non construit</span>${helpBtn(id)}</span></span>
+      <span class="card-title"><span>${artIcon(id)}${def.nom}</span><span class="chips"><span class="chip">Non construit</span>${helpBtn(id)}</span></span>
       <span class="muted">${stationBlurb(id)}</span>
       ${blocked ? `<span class="alert">Construis d'abord ${need.article} ${need.nom}.</span>` : ''}
       <button type="button" class="btn primary" data-action="build-station" data-station="${id}"${!blocked && canPay(def.cout) ? '' : ' disabled'}>${id === 'moulin' ? 'Réparer' : 'Construire'} ${def.article} ${def.nom} (${costLabel(def.cout)})</button>
@@ -85,7 +85,7 @@ export function renderAteliers() {
       : 'Se lancera depuis le Livre de recette, que le Four ouvre.';
     return `
       <div class="card station">
-        <span class="card-title"><span>${icon(id)}${def.nom}</span><span class="chips"><span class="chip">✅ Construit</span>${helpBtn(id)}</span></span>
+        <span class="card-title"><span>${artIcon(id)}${def.nom}</span><span class="chips"><span class="chip">✅ Construit</span>${helpBtn(id)}</span></span>
         <span class="muted">${where}</span>
       </div>`;
   });
@@ -106,7 +106,7 @@ export function renderMoulin() {
   const st = state.stations.moulin;
   if (!st.construit) {
     return `
-    <div class="section-head"><h3>${icon('moulin')}${def.nom}</h3></div>
+    <div class="section-head"><h3>${artIcon('moulin')}${def.nom}</h3></div>
     <div class="cards">${stationBuildCard('moulin')}</div>`;
   }
   const r = DATA.recipes.farine;
@@ -126,9 +126,9 @@ export function renderMoulin() {
     const left = millTimeLeft(state);
     const waiting = pending - 1;
     work = `
-      <span class="muted">⚙️ En train de moudre : encore <strong class="num">${formatNumber(pending)}</strong> blé${pending > 1 ? 's' : ''} · environ <span class="num">${Number.isFinite(left) ? formatDuration(left) : '?'}</span></span>
+      <span class="muted">⚙️ En train de moudre : encore <strong class="num">${formatNumber(pending)}</strong> ${accord(pending, 'blé')} · environ <span class="num">${Number.isFinite(left) ? formatDuration(left) : '?'}</span></span>
       <span class="bar" role="progressbar" aria-label="Avancement du blé en cours" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span class="bar-fill" style="width:${pct}%"></span></span>
-      ${waiting > 0 ? `<button type="button" class="btn" data-action="mill-cancel">Reprendre les ${formatNumber(waiting)} blé${waiting > 1 ? 's' : ''} en attente</button>` : ''}`;
+      ${waiting > 0 ? `<button type="button" class="btn" data-action="mill-cancel">Reprendre les ${plural(waiting, 'blé', formatNumber(waiting))} en attente</button>` : ''}`;
   } else {
     work = '<span class="muted">Le Moulin est prêt.</span>';
   }
@@ -140,12 +140,12 @@ export function renderMoulin() {
   const chip = job ? '<span class="chip">⏳ En marche</span>' : '<span class="chip">✅ Libre</span>';
   return `
     <div class="section-head">
-      <h3>${icon('moulin')}${def.nom}</h3>
+      <h3>${artIcon('moulin')}${def.nom}</h3>
       <span class="chips">${chip}${helpBtn('moulin')}</span>
     </div>
     <div class="cards">
       <div class="card station mill ancre${job ? ' busy' : ''}" id="moulin-moudre">
-        <span class="card-title"><span>🌾 Moudre : <span class="num">${formatQty(wheat)}</span> blé${wheat > 1 ? 's' : ''}</span><span class="chip">${formatNumber(each)} s par blé</span></span>
+        <span class="card-title"><span>🌾 Moudre : <span class="num">${formatQty(wheat)}</span> ${accord(wheat, 'blé')}</span><span class="chip">${formatNumber(each)} s par blé</span></span>
         <div class="row item-actions lot-btns">${lot(1)}${lot(5)}${lot(10)}</div>
         ${wheat < 1 ? '<span class="alert">Pas de blé à moudre : récolte du blé, ou achètes-en au Marché.</span>' : ''}
         ${stopped && (job || wheat >= 1) ? `<span class="alert">${isBroken(d) ? '⛔ Le Moulin est en panne : il faut le réparer.' : '⚠️ Le Moulin est arrêté : remets-le en marche.'}</span>` : ''}
@@ -217,7 +217,7 @@ function stationCard(id) {
   const chip = job ? '<span class="chip">⏳ Occupée</span>' : '<span class="chip">✅ Libre</span>';
   return `
     <div class="card station ancre${job ? ' busy' : ''}" id="station-${id}">
-      <span class="card-title"><span>${icon(id)}${def.nom}</span><span class="chips">${chip}${helpBtn(id)}</span></span>
+      <span class="card-title"><span>${artIcon(id)}${def.nom}</span><span class="chips">${chip}${helpBtn(id)}</span></span>
       ${work}
       ${power}
     </div>`;
@@ -300,13 +300,13 @@ registerActions({
     const result = applyResult(startMilling(state, Math.max(1, Number(target.dataset.q) || 1)));
     if (result.ok) {
       syncJobs();
-      showToast(`⚙️ ${formatNumber(result.quantite)} blé${result.quantite > 1 ? 's' : ''} au Moulin`);
+      notify(`⚙️ ${plural(result.quantite, 'blé', formatNumber(result.quantite))} au Moulin`);
       refresh();
     }
   },
   'mill-cancel': () => {
     const result = applyResult(cancelMilling(state));
-    if (result.ok) showToast(`🌾 ${formatNumber(result.rendu)} blé${result.rendu > 1 ? 's' : ''} repris`);
+    if (result.ok) notify(`🌾 ${plural(result.rendu, 'blé', formatNumber(result.rendu))} repris`);
   },
   'cancel-queued': (target) => {
     applyResult(cancelQueued(state, target.dataset.station, Number(target.dataset.index)));
@@ -316,7 +316,7 @@ registerActions({
     const result = applyResult(buildStation(state, id));
     if (result.ok) {
       const def = DATA.STATIONS[id];
-      showToast(`${def.icone} ${def.nom} construit${def.article === 'la' ? 'e' : ''} (−${formatCoins(result.cost)} 💰)${def.debloque ? ' · onglet Livre de recette débloqué !' : ''}`);
+      notify(`${def.icone} ${def.nom} construit${def.article === 'la' ? 'e' : ''} (−${formatCoins(result.cost)} 💰)${def.debloque ? ' · onglet Livre de recette débloqué !' : ''}`);
     }
   },
   'start-recipe': (target) => {
@@ -324,7 +324,7 @@ registerActions({
     const result = applyResult(startRecipe(state, id));
     if (result.ok) {
       syncJobs();
-      showToast(`${DATA.recipes[id].icone} ${DATA.recipes[id].nom} : préparation lancée`);
+      notify(`${DATA.recipes[id].icone} ${DATA.recipes[id].nom} : préparation lancée`);
     }
   },
 });

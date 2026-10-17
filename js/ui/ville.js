@@ -10,9 +10,9 @@ import { formatCoins, formatNumber } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { canPay } from './common.js';
+import { canPay, itemsText, jaugeClasse } from './common.js';
 import { pxGauge } from './pixel-art.js';
 import { helpBtn } from './aide.js';
 import { companyIds, companyPlan, ownsCompany, setCompanyQuota, townSellPrice } from '../engine/entreprises.js';
@@ -22,16 +22,11 @@ import { companyIds, companyPlan, ownsCompany, setCompanyQuota, townSellPrice } 
 // Jauge de bonheur (10 cases) : rouge en dessous de 35, dorée à partir de 85.
 export function happinessGaugeHtml(value, label = 'Bonheur') {
   const v = Math.round(value);
-  // Couleur selon le remplissage : vert à 65 % et plus, jaune de 20 à 64 %, rouge en dessous.
+  // Couleur selon le remplissage (jaugeClasse) : vert, jaune, rouge.
   const pct = (v * 100) / DATA.VILLE.BONHEUR.MAX;
-  const cls = pct >= 65 ? '' : pct >= 20 ? 'joie' : 'low';
+  const cls = jaugeClasse(pct, 'joie');
   // au moins une case allumée dès que le bonheur n'est pas nul : le rouge reste visible
   return pxGauge(v > 0 ? Math.max(1, Math.round(v / 10)) : 0, 10, `${label} : ${v} sur ${DATA.VILLE.BONHEUR.MAX}`, cls);
-}
-
-function lootLabel(loot) {
-  const parts = Object.entries(loot).filter(([, n]) => n > 0).map(([item, n]) => `${n} ${DATA.items[item].icone} ${DATA.items[item].nom.toLowerCase()}`);
-  return parts.length ? parts.join(', ') : '';
 }
 
 function gainLabel(s) {
@@ -43,7 +38,7 @@ function outingCard(id) {
   const s = DATA.VILLE.SORTIES[id];
   const st = outingStatus(state, id);
   const cost = outingCost(state, id);
-  const loot = lootLabel(outingLoot(state, id));
+  const loot = itemsText(outingLoot(state, id), 'nom');
   const prix = cost > 0 ? `${formatCoins(cost)} 💰` : 'gratuit';
   const label = s.transport ? `Prendre le ${s.transport}` : 'Y aller';
   return `
@@ -148,21 +143,21 @@ registerActions({
     const s = DATA.VILLE.SORTIES[id];
     const result = applyResult(goOut(state, id));
     if (!result.ok) return;
-    const loot = lootLabel(result.butin);
-    showToast(`${s.icone} ${s.nom} : retour à ${result.retour} h${result.cost ? ` (−${formatCoins(result.cost)} 💰)` : ''}${loot ? ` · rapporté : ${loot}` : ''} · 😊 bonheur en hausse`);
+    const loot = itemsText(result.butin, 'nom');
+    notify(`${s.icone} ${s.nom} : retour à ${result.retour} h${result.cost ? ` (−${formatCoins(result.cost)} 💰)` : ''}${loot ? ` · rapporté : ${loot}` : ''} · 😊 bonheur en hausse`);
     refresh();
   },
   'ville-market': () => {
     const result = applyResult(goToTownMarket(state));
     if (!result.ok) return;
-    showToast(`🚌 Au marché de la ville (−${formatCoins(result.cost)} 💰) : il reste ouvert jusqu'au soir`);
+    notify(`🚌 Au marché de la ville (−${formatCoins(result.cost)} 💰) : il reste ouvert jusqu'au soir`);
     refresh();
   },
   'ville-buy': (target) => {
     const item = target.dataset.item;
     const result = applyResult(buyInTown(state, item, Number(target.dataset.qty) || 1));
     if (!result.ok) return;
-    showToast(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
+    notify(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
     refresh();
   },
 });

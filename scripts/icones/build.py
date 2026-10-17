@@ -31,7 +31,9 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# scripts/ dans le chemin : les art_*.py (chargés ci-dessous) importent aussi scripts/pixel.py
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, rgb  # noqa: E402
 HERE = os.path.join(ROOT, 'scripts', 'icones')
 COLS = 16
 
@@ -58,11 +60,6 @@ FROM_SHEET = {
     '🦪': ('trouvailles.png', 7, 0),
     '🌿‍🏔': ('trouvailles.png', 8, 0),
 }
-
-
-def rgb(h):
-    h = h.lstrip('#')
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
 
 
 def grid_image(name, emoji, rows, palette, size=16):
@@ -137,7 +134,7 @@ def collect_art():
 
 
 def save_versioned(im, file):
-    path = os.path.join(ROOT, 'assets', file)
+    path = os.path.join(ASSETS, file)
     im.save(path, optimize=True)
     with open(path, 'rb') as f:
         return hashlib.sha256(f.read()).hexdigest()[:10]
@@ -182,7 +179,7 @@ def collect():
         if e in icons:
             continue
         if sheet not in sheets:
-            sheets[sheet] = Image.open(os.path.join(ROOT, 'assets', sheet)).convert('RGBA')
+            sheets[sheet] = Image.open(os.path.join(ASSETS, sheet)).convert('RGBA')
         icons[e] = sheets[sheet].crop((c * 16, r * 16, c * 16 + 16, r * 16 + 16))
     # 3. Icônes dérivées d'autres icônes (sachets de graines : art_graines.py) : une fonction
     #    derived(icônes) qui renvoie {emoji: Image 16×16}.
@@ -216,7 +213,7 @@ def main():
         if k.startswith('carte-'):
             im = art[k]
             box = im.getbbox()
-            (im.crop(box) if box else im).save(os.path.join(ROOT, 'assets', k[len('carte-'):] + '.png'), optimize=True)
+            (im.crop(box) if box else im).save(os.path.join(ASSETS, k[len('carte-'):] + '.png'), optimize=True)
     fim, ftable, fh = font_sheet(collect_font())
     fversion = save_versioned(fim, 'police.png')
     js = (

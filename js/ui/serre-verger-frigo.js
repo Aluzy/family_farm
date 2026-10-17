@@ -19,9 +19,9 @@ import { wearHtml } from './ferme.js';
 import { autoChip, groupButtons, plotCard } from './elevage.js';
 import { stationControls } from './cuisine.js';
 import { nightsLabel } from './inventaire.js';
-import { artPx, icon, treeArt } from './animations.js';
+import { artIcon, artPx, treeArt } from './animations.js';
 import { helpBtn } from './aide.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { refresh } from './render.js';
 import { openStageWindow, stageWindow } from './stage-windows.js';
@@ -34,7 +34,7 @@ export function renderSerre() {
   if (!g.construit) {
     const cost = DATA.SERRE.CONSTRUCTION;
     return `
-      <div class="section-head"><h3>${icon('serre')}Serre</h3>${helpBtn('serre')}</div>
+      <div class="section-head"><h3>${artIcon('serre')}Serre</h3>${helpBtn('serre')}</div>
       <div class="card">
         <button type="button" class="btn primary" data-action="build-serre"${canPay(cost) ? '' : ' disabled'}>Réparer la Serre (${costLabel(cost)})</button>
       </div>`;
@@ -46,7 +46,7 @@ export function renderSerre() {
       : `<button type="button" class="btn" data-action="upgrade-serre"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${g.niveau + 1}, ${DATA.SERRE.PARCELLES[g.niveau]} parcelles (${costLabel(up)})</button>`;
   return `
     <div class="section-head">
-      <h3>${icon('serre')}Serre · niveau ${g.niveau}</h3>
+      <h3>${artIcon('serre')}Serre · niveau ${g.niveau}</h3>
       <span class="chips">${autoChip('serre', 'Travaille tout seul, à 100 %, pendant la nuit')}${helpBtn('serre')}</span>
     </div>
     <div class="plots">${g.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
@@ -104,7 +104,7 @@ function treeChoice() {
   }).join('');
   return `
     <div class="card tree-choice">
-      <span class="card-title"><span>🌱 Choisir un arbre · emplacement ${c + 1}</span><button type="button" class="icon-btn" data-action="tree-slot-cancel" aria-label="Fermer le choix" title="Fermer">✕</button></span>
+      <span class="card-title"><span>🌱 Choisir un arbre · emplacement ${c + 1}</span><button type="button" class="icon-btn" data-action="tree-slot-cancel" aria-label="Fermer" title="Fermer">✕</button></span>
       ${rows}
     </div>`;
 }
@@ -115,7 +115,7 @@ export function renderVerger() {
   if (!v.construit) {
     const cost = V.CONSTRUCTION;
     return `
-      <div class="section-head"><h3>${icon('verger')}Verger</h3>${helpBtn('verger')}</div>
+      <div class="section-head"><h3>${artIcon('verger')}Verger</h3>${helpBtn('verger')}</div>
       <div class="card">
         <button type="button" class="btn primary" data-action="build-verger"${canPay(cost) ? '' : ' disabled'}>Aménager le Verger (${costLabel(cost)})</button>
       </div>`;
@@ -130,7 +130,7 @@ export function renderVerger() {
   const auto = techAuto(state, 'recolte', 'verger');
   return `
     <div class="section-head">
-      <h3>${icon('verger')}Verger · ${v.arbres.length} / ${v.places} emplacements</h3>
+      <h3>${artIcon('verger')}Verger · ${v.arbres.length} / ${v.places} emplacements</h3>
       <span class="chips">${auto ? autoChip('verger', 'Les arbres en fruits sont cueillis la nuit (Récolte du verger)') : ''}${helpBtn('verger')}</span>
     </div>
     ${treeChoice()}
@@ -157,7 +157,7 @@ export function renderFridgeCard() {
     const cost = DATA.FRIGO.CONSTRUCTION;
     return `
       <div class="card">
-        <span class="card-title"><span>${icon('frigo')}Réfrigérateur</span><span class="chips"><span class="chip">Non construit</span>${helpBtn('frigo')}</span></span>
+        <span class="card-title"><span>${artIcon('frigo')}Réfrigérateur</span><span class="chips"><span class="chip">Non construit</span>${helpBtn('frigo')}</span></span>
         <span class="muted">Les aliments rangés au frigo ne vieillissent plus. Il contient ${formatNumber(DATA.FRIGO.CAPACITE[0])} unités (jusqu'à ${formatNumber(DATA.FRIGO.CAPACITE[DATA.FRIGO.CAPACITE.length - 1])} en l'améliorant) et consomme un peu de courant par unité stockée (rien s'il est vide). Appareil électrique : interrupteur, usure, pannes.</span>
         <button type="button" class="btn primary" data-action="build-fridge"${canPay(cost) ? '' : ' disabled'}>Construire le Réfrigérateur (${costLabel(cost)})</button>
       </div>`;
@@ -173,7 +173,7 @@ export function renderFridgeCard() {
   const badge = st.badge ? `<span class="chip warn">⚠️ ${st.badge}</span>` : '';
   return `
     <div class="card fridge ancre ${ok ? 'cold' : 'warm'}" id="dev-frigo">
-      <span class="card-title"><span>${icon('frigo')}${fridgeIcon()} Réfrigérateur</span><span class="chips"><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span>${helpBtn('frigo')}</span></span>
+      <span class="card-title"><span>${artIcon('frigo')}${fridgeIcon()} Réfrigérateur</span><span class="chips"><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span>${helpBtn('frigo')}</span></span>
       ${badge}
       <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté.'} · onglet Inventaire › Frigo</span>
       ${fridgeFillHtml()}
@@ -205,14 +205,14 @@ function fridgeUpgradeHtml() {
 registerActions({
   'build-serre': () => {
     const result = applyResult(buildSerre(state));
-    if (result.ok) showToast(`🏡 Serre construite : ${state.serre.parcelles.length} parcelles (−${formatCoins(result.cost)} 💰)`);
+    if (result.ok) notify(`🏡 Serre construite : ${state.serre.parcelles.length} parcelles (−${formatCoins(result.cost)} 💰)`);
   },
   'upgrade-serre': () => {
     applyResult(upgradeSerre(state));
   },
   'build-verger': () => {
     const result = applyResult(buildVerger(state));
-    if (result.ok) showToast(`🌳 Verger aménagé : ${state.verger.places} emplacements`);
+    if (result.ok) notify(`🌳 Verger aménagé : ${state.verger.places} emplacements`);
   },
   // Version 1.13 : un emplacement libre (carte ou fenêtre) ouvre le choix de l'arbre.
   'tree-slot': (target) => {
@@ -229,23 +229,23 @@ registerActions({
     const result = applyResult(plantTree(state, espece, Number(target.dataset.case)));
     if (result.ok) {
       setVergerCase(null);
-      showToast(`🌱 ${DATA.VERGER.ARBRES[espece].nom} planté (−${formatCoins(result.cost)} 💰)`);
+      notify(`🌱 ${DATA.VERGER.ARBRES[espece].nom} planté (−${formatCoins(result.cost)} 💰)`);
     }
   },
   'harvest-tree': (target) => {
     const result = applyResult(harvestTree(state, target.dataset.id));
-    if (result.ok && !result.aRamasser) showToast(`+${result.qty} ${DATA.items[result.item].icone}`);
+    if (result.ok && !result.aRamasser) notify(`+${result.qty} ${DATA.items[result.item].icone}`);
   },
   'buy-orchard-slot': () => {
     const result = applyResult(buyOrchardSlot(state));
-    if (result.ok) showToast(`Emplacement acheté : ${result.places} au total (−${formatCoins(result.cost)} 💰)`);
+    if (result.ok) notify(`Emplacement acheté : ${result.places} au total (−${formatCoins(result.cost)} 💰)`);
   },
   'upgrade-fridge': () => {
     const result = applyResult(upgradeFridge(state));
-    if (result.ok) showToast(`🧊 Réfrigérateur niveau ${result.niveau} : ${result.capacite} unités (−${formatCoins(result.cost)} 💰)`);
+    if (result.ok) notify(`🧊 Réfrigérateur niveau ${result.niveau} : ${result.capacite} unités (−${formatCoins(result.cost)} 💰)`);
   },
   'build-fridge': () => {
     const result = applyResult(buildFridge(state));
-    if (result.ok) showToast(`🧊 Réfrigérateur construit (−${formatCoins(result.cost)} 💰)`);
+    if (result.ok) notify(`🧊 Réfrigérateur construit (−${formatCoins(result.cost)} 💰)`);
   },
 });

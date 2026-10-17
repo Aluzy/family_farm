@@ -79,7 +79,6 @@ export const EFFETS_TECHNO = [
   'eauArrosage', // techPct (crops.js)
   'economie', // techEffects (energy.js)
   'entretienAuto', // techFlag (devices.js)
-  'eveilMin', // lu directement par awakeRequired() (clock.js) ; plus aucun nœud ne le porte
   'fileAttente', // techFlag (kitchen.js)
   'frigoConso', // techPct (energy.js)
   'gouter', // techFlag (family.js)
@@ -167,6 +166,12 @@ export function validateData(data) {
     if (typeof it.edible !== 'boolean') err(where, 'edible doit être true ou false');
     if (it.edible && !(isInt(it.energie) && it.energie > 0)) err(where, 'un objet comestible (edible) a besoin d\'une energie entière');
     conservation(where, it);
+  }
+
+  /* ateliers */
+  const xpActions = (data.NIVEAUX && data.NIVEAUX.XP) || {};
+  for (const [id, st] of Object.entries(data.STATIONS)) {
+    if (!(st.action in xpActions)) err(`STATIONS.${id}`, `action « ${st.action} » inconnue (NIVEAUX.XP)`);
   }
 
   /* recettes */

@@ -14,73 +14,27 @@
  * arbres et l'eau restent immobiles, l'habitant ne bouge pas.
  *
  * La carte s'affiche dans la page du jeu (js/ui/excursion.js : InfraMonde.start, stop), à la
- * place de celle de la ferme ; le jeu continue de tourner.
+ * place de celle de la ferme : c'est une scène du jeu Phaser de toutes les cartes (js/carte/jeu.js) ;
+ * le jeu continue de tourner.
  */
 (function () {
   'use strict';
 
-  const T = 16;
-  // l'adresse d'un fichier de assets/, suivie sur le site en ligne de « ?v=<empreinte de son
-  // contenu> » (js/assets-versions.js, écrit par scripts/build-site.mjs) : un fichier modifié
-  // change d'adresse, le téléphone le recharge au lieu de mélanger l'ancien et le nouveau.
-  const v = (file) => {
-    const t = window.FERME_ASSET_VERSIONS, k = file.replace(/^assets\//, '');
-    return t && t[k] ? file + '?v=' + t[k] : file;
-  };
+  const K = window.CarteKit;
+  const T = K.T;
+  const v = K.v;
   const MAP = { key: 'infra', file: 'assets/infra_monde.json' };
   const TREE = { key: 'infra_arbre', file: 'assets/infra_arbre.png', w: 32, h: 64, frames: 8, fps: 6, foot: 59 };
   // L'habitant (scripts/infra/habitant.py) : marche de face 0-3, de dos 4-7, de profil 8-11 ;
   // debout de face 12 (13 : l'œil fermé), de dos 14, de profil 15 (16 : l'œil fermé).
   const HERO = {
     key: 'infra_habitant', file: 'assets/infra_habitant.png', w: 15, h: 40,
-    speed: 44, fps: 7, blink: { every: [2200, 4200], ms: 140 },
+    speed: K.VITESSES.habitant, fps: 7, blink: { every: [2200, 4200], ms: 140 },
   };
-  // Le personnage du joueur : ses cases nommées (assets/personnages/cases.json) ; sans partie, la fermière.
-  const PLAYER = { key: 'heros_infra', w: 16, h: 32, foot: 30, speed: 46, stride: 4 };
-  function playerSheet() {
-    const n = window.FermeHote && window.FermeHote.perso ? window.FermeHote.perso() : null;
-    return n ? { file: 'assets/personnages/perso_' + String(n).padStart(2, '0') + '.png', names: 'assets/personnages/cases.json' } : { file: 'assets/fermiere.png', names: 'assets/fermiere.json' };
-  }
-  const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  // Le joueur écrit dans un champ de la page (un nom, une quantité, un menu) : les flèches et
-  // ZQSD sont à lui, la promeneuse ne bouge pas.
-  const saisie = () => {
-    const el = document.activeElement;
-    return !!el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable);
-  };
-
-  // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
-  // répète son propre bord (marge 1, espacement 2). Quand la caméra tombe entre deux pixels
-  // (zoom, écran à densité non entière), le GPU qui lit juste à côté d'une tuile retombe sur
-  // sa propre couleur, et non sur la tuile voisine de la planche : plus de fines lignes sombres
-  // aux jointures. Les numéros des tuiles ne changent pas.
-  function extrude(textures, key, t) {
-    const src = textures.get(key).getSourceImage();
-    const cols = Math.floor(src.width / t), rows = Math.floor(src.height / t);
-    const canvas = document.createElement('canvas');
-    canvas.width = cols * (t + 2);
-    canvas.height = rows * (t + 2);
-    const g = canvas.getContext('2d');
-    g.imageSmoothingEnabled = false;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const sx = c * t, sy = r * t, dx = c * (t + 2) + 1, dy = r * (t + 2) + 1;
-        g.drawImage(src, sx, sy, t, t, dx, dy, t, t);
-        g.drawImage(src, sx, sy, t, 1, dx, dy - 1, t, 1);                 // haut
-        g.drawImage(src, sx, sy + t - 1, t, 1, dx, dy + t, t, 1);         // bas
-        g.drawImage(src, sx, sy, 1, t, dx - 1, dy, 1, t);                 // gauche
-        g.drawImage(src, sx + t - 1, sy, 1, t, dx + t, dy, 1, t);         // droite
-        g.drawImage(src, sx, sy, 1, 1, dx - 1, dy - 1, 1, 1);             // les coins
-        g.drawImage(src, sx + t - 1, sy, 1, 1, dx + t, dy - 1, 1, 1);
-        g.drawImage(src, sx, sy + t - 1, 1, 1, dx - 1, dy + t, 1, 1);
-        g.drawImage(src, sx + t - 1, sy + t - 1, 1, 1, dx + t, dy + t, 1, 1);
-      }
-    }
-    const out = key + '_extrude';
-    if (textures.exists(out)) textures.remove(out);
-    textures.addCanvas(out, canvas);
-    return out;
-  }
+  // Le personnage du joueur (CarteKit.planchePerso) : ses cases nommées ; sans partie, la fermière.
+  const PLAYER = { key: 'heros_infra', w: 16, h: 32, foot: 30, speed: K.VITESSES.infra, stride: 4 };
+  const reduced = K.reduit;
+  const saisie = K.saisie;
 
   class InfraScene extends Phaser.Scene {
     constructor() { super('infra'); }
@@ -89,20 +43,24 @@
       this.load.tilemapTiledJSON(MAP.key, v(MAP.file));
       this.load.spritesheet(TREE.key, v(TREE.file), { frameWidth: TREE.w, frameHeight: TREE.h });
       this.load.spritesheet(HERO.key, v(HERO.file), { frameWidth: HERO.w, frameHeight: HERO.h });
-      const sheet = playerSheet();
-      this.load.spritesheet(PLAYER.key, v(sheet.file), { frameWidth: PLAYER.w, frameHeight: PLAYER.h });
-      this.load.json(PLAYER.key + '_noms', v(sheet.names));
-      // les planches des jeux de tuiles : lues dans la carte une fois chargée
-      this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
+      // (la planche du personnage par son fichier : les textures restent d'une visite à l'autre)
+      const sheet = K.planchePerso();
+      this.playerKey = PLAYER.key + ':' + sheet.file;
+      this.load.spritesheet(this.playerKey, v(sheet.file), { frameWidth: PLAYER.w, frameHeight: PLAYER.h });
+      this.load.json(this.playerKey + '_noms', v(sheet.names));
+      // les planches des jeux de tuiles : lues dans la carte une fois chargée (déjà là : rien à demander)
+      const planches = () => {
         const data = this.cache.tilemap.get(MAP.key).data;
         for (const set of data.tilesets) this.load.image(set.name, v('assets/' + set.image));
-      });
+      };
+      if (this.cache.tilemap.exists(MAP.key)) planches();
+      else this.load.once('filecomplete-tilemapJSON-' + MAP.key, planches);
     }
 
     create() {
       const map = this.make.tilemap({ key: MAP.key });
       this.map = map;
-      const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
+      const sets = map.tilesets.map((s) => map.addTilesetImage(s.name, K.extrude(this.textures, s.name, s.tileWidth), s.tileWidth, s.tileHeight, 1, 2));
       this.layers = {};
       map.layers.forEach((l, i) => { this.layers[l.name] = map.createLayer(l.name, sets, 0, 0).setDepth(-10 + i); });
       this.makeTileAnims();
@@ -128,11 +86,11 @@
         return s;
       });
 
-      // l'habitant
+      // l'habitant (ses animations portent son nom : elles sont communes à toutes les cartes du jeu)
       const walkAnim = (key, start) => {
         if (!this.anims.exists(key)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(HERO.key, { start, end: start + 3 }), frameRate: HERO.fps, repeat: -1 });
       };
-      walkAnim('marche_face', 0); walkAnim('marche_dos', 4); walkAnim('marche_profil', 8);
+      walkAnim(HERO.key + '_marche_face', 0); walkAnim(HERO.key + '_marche_dos', 4); walkAnim(HERO.key + '_marche_profil', 8);
       const d = objects('depart')[0] || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
       // l'habitant, un peu plus loin ; il flâne d'un coin de l'île à l'autre
       const n0 = this.nearWalk(d.x + 3 * T, d.y);
@@ -144,9 +102,9 @@
       this.npcWait = 2;
       this.blinkAt = this.time.now + 1500;
       // le personnage du joueur : ses images par nom (marche_bas_0…, idle_cote_0…)
-      const noms = (this.cache.json.get(PLAYER.key + '_noms') || {}).frames || [];
+      const noms = (this.cache.json.get(this.playerKey + '_noms') || {}).frames || [];
       this.frame = (name) => Math.max(0, noms.indexOf(name));
-      this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), PLAYER.key, this.frame('idle_bas_0')).setOrigin(0.5, PLAYER.foot / PLAYER.h);
+      this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), this.playerKey, this.frame('idle_bas_0')).setOrigin(0.5, PLAYER.foot / PLAYER.h);
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x281e36, 0.45);
       this.heroPos = { x: d.x, y: d.y };
       this.face = 'bas';
@@ -155,15 +113,17 @@
 
       // la caméra suit l'habitant, au pixel près, sans sortir de la carte
       const cam = this.cameras.main;
+      cam.setBackgroundColor('#1f2943');
       cam.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
       cam.startFollow(this.hero, true, 0.12, 0.12);
       cam.setRoundPixels(true);
       this.fitZoom();
-      this.scale.on('resize', () => this.fitZoom());
+      window.CarteJeu.suitTaille(this, () => this.fitZoom());
 
-      // un toucher : y aller
+      // un toucher (moins de 8 px CSS entre l'appui et le relâchement) : y aller
+      const slop = 8 * K.ratio();
       this.input.on('pointerup', (p) => {
-        if (p.getDistance() > 8) return;
+        if (p.getDistance() > slop) return;
         const w = cam.getWorldPoint(p.x, p.y);
         if (Math.abs(w.x - this.npcPos.x) <= 10 && w.y >= this.npcPos.y - 38 && w.y <= this.npcPos.y + 4) {
           if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('👁️ L\'habitant de l\'île te regarde passer, sans un mot.');
@@ -174,40 +134,22 @@
       // (sans capture : les touches tapées dans un champ de la page y restent ; saisie())
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;
       window.InfraMonde.scene = this;
+      this.events.once('destroy', () => { if (window.InfraMonde.scene === this) window.InfraMonde.scene = null; });
     }
 
+    // Un zoom entier en pixels de l'écran (CarteJeu.zoomEntier), comme en ville.
     fitZoom() {
-      const { width, height } = this.scale;
-      this.cameras.main.setZoom(Math.max(2, Math.min(5, Math.floor(Math.min(width, height) / 170))));
+      this.cameras.main.setZoom(window.CarteJeu.zoomEntier(this));
     }
 
     // Tuiles animées : les animations des jeux de tuiles (Tiled), jouées en changeant l'index
-    // des tuiles posées, toutes au même rythme que l'horloge.
+    // des tuiles posées, toutes au rythme de l'horloge (CarteKit).
     makeTileAnims() {
-      this.tileAnims = [];
-      const groups = new Map();
-      for (const set of this.map.tilesets) {
-        for (const [id, def] of Object.entries(set.tileData || {})) {
-          if (!def.animation || def.animation.length < 2) continue;
-          const gid = set.firstgid + Number(id);
-          groups.set(gid, { frames: def.animation.map((f) => set.firstgid + f.tileid), ms: def.animation[0].duration, tiles: [] });
-        }
-      }
-      if (!groups.size) return;
-      for (const layer of Object.values(this.layers)) {
-        layer.forEachTile((t) => { const g = groups.get(t.index); if (g) g.tiles.push(t); });
-      }
-      this.tileAnims = [...groups.values()].filter((g) => g.tiles.length);
+      this.tileAnims = K.animTuiles(this.map, this.layers);
     }
 
     stepTileAnims(time) {
-      if (reduced()) return;
-      for (const g of this.tileAnims) {
-        const k = Math.floor(time / g.ms) % g.frames.length;
-        if (k === g.cur) continue;
-        g.cur = k;
-        for (const t of g.tiles) t.index = g.frames[k];
-      }
+      K.pasAnimTuiles(this.tileAnims, time);
     }
 
     canWalk(tx, ty) {
@@ -221,50 +163,27 @@
       if (steps) this.path = steps;
     }
 
-    // La case marchable la plus proche de (x, y), en px (son milieu, au pied).
+    // La case marchable la plus proche de (x, y), en px (son milieu, au pied ; CarteKit.plusProche).
     nearWalk(x, y) {
       const gx = Math.floor(x / T), gy = Math.floor(y / T);
-      for (let r = 0; r < 12; r++) {
-        for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) === r && this.canWalk(gx + dx, gy + dy)) return { x: (gx + dx) * T + T / 2, y: (gy + dy) * T + T - 2 };
-        }
-      }
-      return { x, y };
+      const q = K.plusProche((i, j) => this.canWalk(gx + i, gy + j), 11);
+      return q ? { x: (gx + q.i) * T + T / 2, y: (gy + q.j) * T + T - 2 } : { x, y };
     }
 
+    // Le chemin le plus court en nombre de cases (CarteKit.chemin, un pas en diagonale compte
+    // pour un), jusqu'à la case marchable la plus proche du point visé ; null s'il n'y en a pas.
     pathFrom(from, x, y) {
       const W = this.map.width, H = this.map.height;
       let gx = Math.floor(x / T), gy = Math.floor(y / T);
       if (!this.canWalk(gx, gy)) {
-        let best = null;
-        for (let r = 1; r < 8 && !best; r++) {
-          for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !this.canWalk(gx + dx, gy + dy)) continue;
-            const d = Math.hypot(dx, dy);
-            if (!best || d < best.d) best = { x: gx + dx, y: gy + dy, d };
-          }
-        }
-        if (!best) return null;
-        gx = best.x; gy = best.y; x = gx * T + T / 2; y = gy * T + T - 2;
+        const q = K.plusProche((i, j) => this.canWalk(gx + i, gy + j), 7, { de: 1 });
+        if (!q) return null;
+        gx += q.i; gy += q.j; x = gx * T + T / 2; y = gy * T + T - 2;
       }
       const sx = Math.floor(from.x / T), sy = Math.floor(from.y / T);
-      const prev = new Map([[sy * W + sx, -1]]);
-      const queue = [sy * W + sx];
-      const goal = gy * W + gx;
-      while (queue.length && !prev.has(goal)) {
-        const c = queue.shift(), cx = c % W, cy = (c - cx) / W;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-          const nx = cx + dx, ny = cy + dy, n = ny * W + nx;
-          if (nx < 0 || ny < 0 || nx >= W || ny >= H || prev.has(n) || !this.canWalk(nx, ny)) continue;
-          if (dx && dy && (!this.canWalk(cx + dx, cy) || !this.canWalk(cx, cy + dy))) continue;
-          prev.set(n, c);
-          queue.push(n);
-        }
-      }
-      if (!prev.has(goal)) return null;
-      const steps = [];
-      for (let c = goal; prev.get(c) !== -1; c = prev.get(c)) steps.push({ x: (c % W) * T + T / 2, y: Math.floor(c / W) * T + T - 2 });
-      steps.reverse();
+      const cells = K.chemin({ cols: W, rows: H, libre: (i) => this.canWalk(i % W, (i / W) | 0) }, sy * W + sx, gy * W + gx, { diag: 1 });
+      if (!cells) return null;
+      const steps = cells.map((c) => ({ x: (c % W) * T + T / 2, y: Math.floor(c / W) * T + T - 2 }));
       if (steps.length) steps[steps.length - 1] = { x: Math.round(x), y: Math.round(y) };
       return steps;
     }
@@ -290,7 +209,7 @@
       if (vx || vy) {
         this.npcFace = Math.abs(vx) > Math.abs(vy) * 1.1 ? 'profil' : vy > 0 ? 'face' : 'dos';
         if (this.npcFace === 'profil') N.setFlipX(vx < 0);
-        const key = 'marche_' + this.npcFace;
+        const key = HERO.key + '_marche_' + this.npcFace;
         if (!N.anims.isPlaying || N.anims.currentAnim.key !== key) N.play(key);
       } else {
         if (N.anims.isPlaying) N.stop();
@@ -330,7 +249,8 @@
       const H = this.hero;
       const moved = Math.hypot(vx, vy) > 0;
       if (moved) {
-        if (Math.abs(vx) > Math.abs(vy) * 0.8) { this.face = 'cote'; H.setFlipX(vx < 0); } else { this.face = vy > 0 ? 'bas' : 'haut'; H.setFlipX(false); }
+        const r = K.regard(vx, vy);
+        this.face = r.face; H.setFlipX(r.flip);
         this.walked += PLAYER.speed * dt;
         H.setFrame(this.frame(`marche_${this.face}_${Math.floor(this.walked / PLAYER.stride) % 4}`));
       } else {
@@ -341,24 +261,16 @@
     }
   }
 
-  // Une carte à la fois (js/ui/excursion.js) : start la montre dans `parent`, stop l'enlève.
-  let game = null;
-  function stop() {
-    if (game) { game.destroy(true); game = null; }
-    window.InfraMonde.scene = null;
-  }
+  // Une carte à la fois (js/ui/excursion.js), scène du jeu de toutes les cartes (js/carte/jeu.js) :
+  // start la montre dans `parent` (une scène neuve ; les images déjà chargées restent), stop
+  // l'enlève. Sans Phaser : false.
   function start(parent) {
-    stop();
-    game = new Phaser.Game({
-      type: Phaser.AUTO,
-      parent,
-      backgroundColor: '#1f2943',
-      pixelArt: true,
-      roundPixels: true,     // la caméra et les sprites calés sur des pixels entiers
-      scale: { mode: Phaser.Scale.RESIZE, width: parent.clientWidth, height: parent.clientHeight },
-      scene: [InfraScene],
-    });
-    return game;
+    if (!window.CarteJeu) return false;
+    return !!window.CarteJeu.montre(parent, 'infra', { cree: () => new InfraScene(), neuve: true });
+  }
+  function stop() {
+    if (window.CarteJeu && window.CarteJeu.affichee() === 'infra') window.CarteJeu.cache('infra');
+    window.InfraMonde.scene = null;
   }
   window.InfraMonde = { start, stop, scene: null };
 })();

@@ -1,18 +1,14 @@
 import { DATA, ingredientOptions, recipeOutput, recipeOutputQty } from './catalog.js';
-import { EPS } from './base.js';
-import { efficiency, fail, isBroken, makeDevice, perSecond, spend, tankCapacity } from './devices.js';
+import { EPS, unlockTab } from './base.js';
+import { buildWith, efficiency, fail, isBroken, makeDevice, perSecond, tankCapacity } from './devices.js';
 import { drawEnergy, loadShedding } from './energy.js';
-import { addItem, countItem, takeItem } from './inventory.js';
+import { addItem } from './inventory.js';
 import { availableEnergy } from './fridge.js';
-import { storeWheat, takeWheat, wheatTotal } from './animals.js';
+import { countWithSilo, storeWheat, storeWithSilo, takeWheat, takeWithSilo, wheatTotal } from './animals.js';
 import { recipeTime, techEffects, techFlag } from './techtree.js';
 import { noteRecipeDone } from './campaign.js';
-import { gainActionXp, levelBlock } from './levels.js';
+import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
-
-// XP d'une préparation terminée, et énergie pour la lancer (versions 1.7 et 1.8),
-// selon l'atelier.
-const STATION_XP = { four: 'cuireFour', cuisine: 'cuisiner', moulin: 'moudre', presse: 'presser' };
 
 /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
 
@@ -22,13 +18,18 @@ const STATION_XP = { four: 'cuireFour', cuisine: 'cuisiner', moulin: 'moudre', p
 // déjà sortis du stock qui seront moulus à la suite (voir startMilling()).
 // appareil : l'appareil du parc (Moulin, Presse) une fois construit, sinon null.
 
-export function isElectricStation(id) {
+// Blés en attente au Moulin derrière celui en cours (tâche.enAttente, entier ≥ 0).
+function queuedWheat(job) {
+  return Math.max(0, Math.floor(Number(job.enAttente) || 0));
+}
+
+function isElectricStation(id) {
   return !!DATA.STATIONS[id].electrique;
 }
 
 // Vitesse d'une préparation en % : 100 (version 1.8 : plus de productivité) ; pour
 // le Moulin et la Presse, le rendement de l'usure.
-export function stationSpeed(state, id) {
+function stationSpeed(state, id) {
   const st = state.stations[id];
   let v = 100;
   if (isElectricStation(id) && st.appareil) v = Math.floor((v * efficiency(st.appareil)) / 100);
@@ -44,24 +45,19 @@ export function taskTimeLeft(state, id) {
   return v > 0 ? Math.ceil((job.resteMs * 100) / v / 1000) : Infinity;
 }
 
-// Quantité disponible d'un ingrédient : le blé compte celui du Silo.
-export function ingredientStock(state, item) {
-  return item === DATA.SILO.ITEM ? wheatTotal(state) : countItem(state, item);
-}
-
 // Objet choisi pour un ingrédient : le premier de ses options en quantité
 // suffisante, ou null.
-export function pickIngredient(state, ing) {
-  return ingredientOptions(ing).find((item) => ingredientStock(state, item) + EPS >= ing.qte) || null;
+function pickIngredient(state, ing) {
+  return ingredientOptions(ing).find((item) => countWithSilo(state, item) + EPS >= ing.qte) || null;
 }
 
 // Une ligne par ingrédient (puis une pour l'eau) : { options, qte, have, ok, item }.
 // `have` est le meilleur stock parmi les options ; `item` l'option retenue.
-export function recipeLines(state, id) {
+function recipeLines(state, id) {
   const r = DATA.recipes[id];
   const lines = r.ingredients.map((ing) => {
     const item = pickIngredient(state, ing);
-    const have = Math.max(...ingredientOptions(ing).map((it) => ingredientStock(state, it)));
+    const have = Math.max(...ingredientOptions(ing).map((it) => countWithSilo(state, it)));
     return { options: ingredientOptions(ing), qte: ing.qte, have, ok: item !== null, item };
   });
   if (r.eau) lines.push({ eau: true, qte: r.eau, have: Math.floor(state.eauMl / 1000), ok: state.eauMl >= r.eau * 1000, item: null });
@@ -99,14 +95,14 @@ export function queueCapacity(state) {
 }
 
 // Reste-t-il une place dans la file d'un atelier occupé ?
-export function queueRoom(state, stationId) {
+function queueRoom(state, stationId) {
   const st = state.stations[stationId];
   const used = (st.tache ? 1 : 0) + (Array.isArray(st.file) ? st.file.length : 0);
   return used < queueCapacity(state);
 }
 
 // Démarre la préparation `recette` sur un atelier libre.
-export function beginTask(state, stationId, recette) {
+function beginTask(state, stationId, recette) {
   const temps = recipeTime(state, recette) * 1000;
   state.stations[stationId].tache = { recette, resteMs: temps, dureeMs: temps };
 }
@@ -117,17 +113,9 @@ export function cancelQueued(state, stationId, index) {
   const st = state.stations[stationId];
   if (!st || !Array.isArray(st.file) || !st.file[index]) return fail('Rien à annuler.');
   const [entry] = st.file.splice(index, 1);
-  for (const p of entry.pris || []) {
-    if (p.item === DATA.SILO.ITEM) storeWheat(state, p.qte);
-    else addItem(state, p.item, p.qte);
-  }
+  for (const p of entry.pris || []) storeWithSilo(state, p.item, p.qte);
   if (entry.eau) state.eauMl = Math.min(tankCapacity(state), state.eauMl + entry.eau * 1000);
   return { ok: true, recette: entry.recette };
-}
-
-export function takeIngredient(state, item, qty) {
-  if (item === DATA.SILO.ITEM) takeWheat(state, qty, 'inventaire');
-  else takeItem(state, item, qty);
 }
 
 // Lance une préparation : la station doit exister et être libre, les
@@ -149,14 +137,14 @@ export function startRecipe(state, id) {
   const lines = recipeLines(state, id);
   const missing = lines.find((l) => !l.ok);
   if (missing) return fail(missing.eau ? 'Pas assez d\'eau dans le réservoir.' : 'Il manque des ingrédients.');
-  const action = STATION_XP[r.station] || '';
+  const action = def.action; // énergie pour la lancer (version 1.8) et XP une fois finie (1.7)
   if (!canAfford(state, action)) return fail(TIRED); // version 1.8
   spendEnergy(state, action);
   const pris = [];
   for (const l of lines) {
     if (l.eau) state.eauMl = Math.max(0, state.eauMl - l.qte * 1000);
     else {
-      takeIngredient(state, l.item, l.qte);
+      takeWithSilo(state, l.item, l.qte); // le blé compte celui du Silo
       pris.push({ item: l.item, qte: l.qte });
     }
   }
@@ -178,11 +166,11 @@ export function startRecipe(state, id) {
 // Renvoie { item, qty, sousProduit, suite } (ou null si la station était
 // libre) ; `suite` : la même préparation repart aussitôt, parce qu'il restait
 // du blé en attente au Moulin.
-export function completeTask(state, id) {
+function completeTask(state, id) {
   const st = state.stations[id];
   if (!st.tache) return null;
   const recette = st.tache.recette;
-  const enAttente = Math.max(0, Math.floor(Number(st.tache.enAttente) || 0));
+  const enAttente = queuedWheat(st.tache);
   const item = recipeOutput(recette);
   const qty = recipeOutputQty(recette);
   addItem(state, item, qty);
@@ -190,7 +178,7 @@ export function completeTask(state, id) {
   if (extra) addItem(state, extra.item, extra.qte);
   st.tache = null;
   noteRecipeDone(state, recette, qty); // Lot 9
-  gainActionXp(state, STATION_XP[id] || '', 1);
+  gainActionXp(state, DATA.STATIONS[id].action, 1);
   if (enAttente > 0) {
     // Moulin : le blé suivant du lot se moud à la suite.
     beginTask(state, id, recette);
@@ -207,7 +195,7 @@ export function completeTask(state, id) {
 // Blés confiés au Moulin et pas encore moulus : celui en cours et ceux en attente.
 export function millPending(state) {
   const job = state.stations && state.stations.moulin ? state.stations.moulin.tache : null;
-  return job ? 1 + Math.max(0, Math.floor(Number(job.enAttente) || 0)) : 0;
+  return job ? 1 + queuedWheat(job) : 0;
 }
 
 // Secondes réelles pour finir tout le blé confié au Moulin, à sa vitesse
@@ -241,7 +229,7 @@ export function startMilling(state, qty = 1) {
   spendEnergy(state, 'moudre', n);
   takeWheat(state, n * parBle, 'inventaire');
   if (st.tache) {
-    st.tache.enAttente = Math.max(0, Math.floor(Number(st.tache.enAttente) || 0)) + n;
+    st.tache.enAttente = queuedWheat(st.tache) + n;
   } else {
     beginTask(state, 'moulin', recette);
     st.tache.enAttente = n - 1;
@@ -253,7 +241,7 @@ export function startMilling(state, qty = 1) {
 // moulu) : il retourne au stock, Silo d'abord.
 export function cancelMilling(state) {
   const job = state.stations.moulin.tache;
-  const n = job ? Math.max(0, Math.floor(Number(job.enAttente) || 0)) : 0;
+  const n = job ? queuedWheat(job) : 0;
   if (n <= 0) return fail('Aucun blé en attente au Moulin.');
   job.enAttente = 0;
   storeWheat(state, n * DATA.recipes[job.recette].ingredients[0].qte);
@@ -331,18 +319,14 @@ export function finishPreparations(state) {
 export function buildStation(state, id) {
   const def = DATA.STATIONS[id];
   if (!def) return fail('Atelier inconnu.');
-  const st = state.stations[id];
-  if (st.construit) return fail('Cet atelier est déjà construit.');
-  const lock = levelBlock(state, id); // version 1.12 : pas avant son niveau
-  if (lock) return fail(lock);
-  if (def.requiert && !state.stations[def.requiert].construit) {
+  // la Cuisine demande le Four
+  const requis = () => {
+    if (!def.requiert || state.stations[def.requiert].construit) return '';
     const need = DATA.STATIONS[def.requiert];
-    return fail(`Construis d'abord ${need.article} ${need.nom}.`);
-  }
-  if (state.pieces + EPS < def.cout) return fail('Pas assez de pièces.');
-  spend(state, def.cout, `Construction : ${def.nom}`);
-  openStation(state, id);
-  return { ok: true, cost: def.cout };
+    return `Construis d'abord ${need.article} ${need.nom}.`;
+  };
+  const opts = { built: state.stations[id].construit, deja: 'Cet atelier est déjà construit.', cost: def.cout, libelle: `Construction : ${def.nom}`, requis };
+  return buildWith(state, id, opts, () => { openStation(state, id); });
 }
 
 // Pose la station dans l'état (sans payer) : appareil pour les stations
@@ -352,7 +336,5 @@ export function openStation(state, id) {
   const st = state.stations[id];
   st.construit = true;
   if (def.electrique && !st.appareil) st.appareil = makeDevice(id, id, def.cout);
-  for (const tab of def.debloque || []) {
-    if (!state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
-  }
+  for (const tab of def.debloque || []) unlockTab(state, tab);
 }

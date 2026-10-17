@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
-import { EPS } from './base.js';
-import { deviceLabel, fail, farmOpen, isOwned, spend, starterOf } from './devices.js';
-import { defaultOrigin, shelfLife } from './inventory.js';
+import { unlockTab } from './base.js';
+import { deviceLabel, fail, farmOpen, isOwned, NO_COINS, pay, starterOf } from './devices.js';
+import { lotsFromCounts } from './inventory.js';
 import { createInitialState } from './state.js';
 import { findMember } from './family.js';
 import { updateChapters } from './campaign.js';
@@ -20,10 +20,7 @@ export function createNewGame(seed = 1, famille = null) {
   state.departV2 = true;
   state.pieces = D.PIECES;
   state.compta = [];
-  state.inventaire = {};
-  for (const [item, qty] of Object.entries(D.INVENTAIRE)) {
-    state.inventaire[item] = [{ qty, nightsLeft: shelfLife(item), origin: defaultOrigin(item) }];
-  }
+  state.inventaire = lotsFromCounts(D.INVENTAIRE);
   state.potager.parcelles = [];
   state.potager.houe = false;
   for (const type of ['panneau', 'batterie', 'pompe']) {
@@ -111,8 +108,7 @@ export function houseRepaired(state) {
 export function repairHouse(state) {
   if (houseRepaired(state)) return fail('La maison est déjà réparée.');
   const cost = DATA.DEPART.MAISON;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Réparation de la maison');
+  if (!pay(state, cost, 'Réparation de la maison')) return fail(NO_COINS);
   state.maison.reparee = true;
   updateChapters(state);
   return { ok: true, cost };
@@ -132,8 +128,7 @@ export function buyStarter(state, type) {
   const raison = starterBlock(state, type);
   if (raison) return fail(raison);
   const cost = DATA.DEPART.ACHATS[type];
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, `Achat : ${deviceLabel(type)}`);
+  if (!pay(state, cost, `Achat : ${deviceLabel(type)}`)) return fail(NO_COINS);
   const obj = starterOf(state, type);
   obj.achete = true;
   if (type !== 'reservoir') {
@@ -141,7 +136,7 @@ export function buyStarter(state, type) {
     obj.prix = cost; // entretien et réparation suivent le prix payé
   }
   // panneau et pompe : la Zone de culture et le Marché s'ouvrent
-  if (farmOpen(state) && !state.unlockedTabs.includes('comptoir')) state.unlockedTabs.push('comptoir');
+  if (farmOpen(state)) unlockTab(state, 'comptoir');
   updateChapters(state);
   return { ok: true, cost, ouvert: farmOpen(state) };
 }

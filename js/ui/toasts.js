@@ -13,7 +13,19 @@ import { deviceName } from './ferme.js';
 // lecteurs d'écran (#toast-root est une région aria-live). Une notification
 // identique à une notification affichée la remplace au lieu de s'empiler.
 const NOTIFY_MAX = 3;
-const NOTIFY_MS = { info: 2600, alerte: 5000, repas: 5000, lettre: 7000 };
+// Durée d'affichage : de quoi lire le texte (NOTIFY_MS_PAR_SIGNE par signe), entre
+// NOTIFY_MS_MIN et NOTIFY_MS_MAX ; une alerte, un repas ou une lettre restent au moins
+// leur durée propre.
+const NOTIFY_MS_MIN = 2600;
+const NOTIFY_MS_MAX = 7000;
+const NOTIFY_MS_PAR_SIGNE = 60;
+const NOTIFY_MS = { info: NOTIFY_MS_MIN, alerte: 5000, repas: 5000, lettre: NOTIFY_MS_MAX };
+
+export function notifyDuration(message, kind = 'info') {
+  const lecture = 1000 + String(message).length * NOTIFY_MS_PAR_SIGNE;
+  const min = NOTIFY_MS[kind] || NOTIFY_MS_MIN;
+  return Math.max(min, Math.min(NOTIFY_MS_MAX, lecture));
+}
 // Une même alerte n'est pas répétée avant ce délai (batteries qui se vident et
 // se rechargent au fil des ticks, par exemple).
 const ALERT_REPEAT_MS = 30000;
@@ -33,8 +45,10 @@ export function setAlertMuteUntil(value) {
   return value;
 }
 
-// `cible` (voir cibleAlerte) : la notification devient un bouton qui mène au menu concerné.
-export function notify(message, kind = 'info', cible = null) {
+// L'unique façon d'afficher un message au joueur. `kind` : 'info' (par défaut), 'alerte',
+// 'repas' ou 'lettre' ; `cible` (voir cibleAlerte) : la notification devient un bouton qui
+// mène au menu concerné.
+export function notify(message, { kind = 'info', cible = null } = {}) {
   const root = document.getElementById('toast-root');
   for (const el of Array.from(root.children)) {
     if (el.dataset.msg === message) el.remove();
@@ -56,11 +70,12 @@ export function notify(message, kind = 'info', cible = null) {
   }
   root.appendChild(el);
   while (root.children.length > NOTIFY_MAX) root.firstElementChild.remove();
-  setTimeout(() => el.remove(), NOTIFY_MS[kind] || NOTIFY_MS.info);
+  setTimeout(() => el.remove(), notifyDuration(message, kind));
 }
 
+// Pour js/ui/excursion.js (FermeHote.say des autres cartes) : une notification simple.
 export function showToast(message) {
-  notify(message, 'info');
+  notify(message);
 }
 
 function alertMessage(ev) {
@@ -85,7 +100,7 @@ export function watchAlerts() {
       const msg = alertMessage(ev);
       if (!msg || t - (lastAlertAt.get(msg) || 0) < ALERT_REPEAT_MS) continue;
       lastAlertAt.set(msg, t);
-      notify(msg, 'alerte', cibleAlerte(ev.type, ev.id));
+      notify(msg, { kind: 'alerte', cible: cibleAlerte(ev.type, ev.id) });
       tel('alert', ev.type);
     }
   }

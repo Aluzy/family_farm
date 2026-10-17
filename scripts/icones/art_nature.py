@@ -5,12 +5,12 @@
 # Les grilles ci-dessous ne donnent que le REMPLISSAGE : le contour de 1 px est ajouté
 # automatiquement autour (fonction contour), dans la teinte très sombre de la matière voisine
 # (table SOMBRE). Les verts des plantes sont ceux de assets/crops.png.
+from pixel import PALETTE_OR  # build.py met scripts/ dans le chemin
 
 PALETTE = {
+    **PALETTE_OR,  # l'or des icônes (scripts/pixel.py)
     # végétal (verts de crops.png)
     'G': '#0e4a3c', 'g': '#1f6650', 'l': '#3f8a44', 'L': '#6aae48', 'm': '#9ccf78',
-    # or / jaune
-    'K': '#3a2414', 'Y': '#fbe38a', 'y': '#f2c040', 'o': '#c7862a', 'O': '#8a5418',
     # cœur du tournesol
     'N': '#4a2a14', 'n': '#7e4f2c', 'a': '#a65a2b',
     # bois

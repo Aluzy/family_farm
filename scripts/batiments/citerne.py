@@ -6,6 +6,10 @@
 from PIL import Image
 import math
 import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, rangee  # noqa: E402
 
 W, H = 24, 34
 N = 5
@@ -96,9 +100,6 @@ def frame(niveau):
     return im
 
 
-sheet = Image.new('RGBA', (W * N, H), (0, 0, 0, 0))
-for n in range(N):
-    sheet.paste(frame(n), (n * W, 0))
-out = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'citerne.png'))
-sheet.save(out)
+sheet = rangee([frame(n) for n in range(N)], W, H)
+sheet.save(os.path.join(ASSETS, 'citerne.png'))
 print('assets/citerne.png :', N, 'images de', W, '×', H)

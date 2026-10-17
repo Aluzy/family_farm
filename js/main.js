@@ -11,7 +11,7 @@ import { loadOrCreateState, persistState } from './ui/storage.js';
 import { catchUp, frame, onHide, renderLoop, setMailSeen, syncJobs } from './ui/loop.js';
 import { resumeExcursion } from './ui/excursion.js';
 import { render } from './ui/render.js';
-import { watch as watchEmojis } from './ui/pixel-emoji.js';
+import { setEmojiNames, watch as watchEmojis } from './ui/pixel-emoji.js';
 import { setAlertState } from './ui/toasts.js';
 import * as engine from './engine/index.js';
 import { stageModel } from './ui/stage.js';
@@ -56,10 +56,21 @@ import './ui/toasts.js';
 import './ui/actions.js';
 import './ui/events.js';
 import './ui/common.js';
+import './ui/modal.js';
 import './ui/excursion.js';
 
 /* ---------- démarrage ---------- */
 
+// Le nom d'un objet sert de libellé à son icône (lecteurs d'écran) ; un emoji partagé par
+// plusieurs objets de noms différents, ou qui sert aussi de symbole dans l'interface (🌿 :
+// l'autonomie), garde l'emoji comme libellé.
+const SYMBOLES_UI = new Set(['🌿']);
+const emojiNames = {};
+for (const it of Object.values(DATA.items)) {
+  if (!it.icone || SYMBOLES_UI.has(it.icone)) continue;
+  emojiNames[it.icone] = it.icone in emojiNames && emojiNames[it.icone] !== it.nom ? null : it.nom;
+}
+setEmojiNames(Object.fromEntries(Object.entries(emojiNames).filter(([, nom]) => nom)));
 watchEmojis(); // emojis → icônes en pixel art partout dans la page (pixel-emoji.js)
 setState(loadOrCreateState());
 setTelChapter(state.campagne ? state.campagne.chapitre : null);

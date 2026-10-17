@@ -33,7 +33,7 @@
 (function (global) {
   'use strict';
 
-  const T = 16;
+  const T = global.CarteKit.T;   // la tuile (js/carte/kit.js)
   const TICK_MS = 100;      // décisions (événements) : 10 fois par seconde
   const MAX_ACTORS = 8;     // bêtes et feuilles affichées en même temps, tous types confondus
   const MARGIN = 24;        // px de carte : les bêtes naissent et disparaissent hors de la vue
@@ -783,6 +783,7 @@
 
     let herdWant = {};                 // espèce → nombre de bêtes, donné par la scène
     const herd = [];
+    let herdChanged = true;   // le troupeau a changé : les listes par bâtiment (fold.mine) sont à refaire
     const folds = {};
     for (const name in FOLDS) folds[name] = { name, def: FOLDS[name], sprite: null, fresh: true, turn: 0, k: 0, t: 0, door: null, key: '' };
     (function () {                     // l'enclos de l'Étable
@@ -986,18 +987,25 @@
         let have = 0;
         for (let i = herd.length - 1; i >= 0; i--) {
           if (herd[i].kind !== kind) continue;
-          if (++have > want) { herd[i].destroy(); herd.splice(i, 1); have--; }
+          if (++have > want) { herd[i].destroy(); herd.splice(i, 1); have--; herdChanged = true; }
         }
         // Une bête achetée en journée sort de son bâtiment comme les autres le matin.
-        for (; have < want; have++) herd.push(makeBeast(kind, f, f.fresh && foldOut(f)));
+        for (; have < want; have++) { herd.push(makeBeast(kind, f, f.fresh && foldOut(f))); herdChanged = true; }
+      }
+      // Les bêtes de chaque bâtiment, dans l'ordre du troupeau : refaites seulement quand il change.
+      if (herdChanged) {
+        herdChanged = false;
+        for (const name in folds) folds[name].mine = herd.filter((b) => b.fold === folds[name]);
       }
       for (const name in folds) {
         const f = folds[name];
         if (!foldUp(f)) continue;
-        const out = foldOut(f), mine = herd.filter((b) => b.fold === f);
+        const out = foldOut(f), mine = f.mine;
         if (f.fresh) { f.fresh = false; f.k = out && mine.length ? 2 : 0; syncDoor(f); }
         // La porte : ouverte tant qu'une bête est dehors ou doit sortir ; un cran par DOOR_STEP.
-        const goal = mine.some((b) => !b.inside()) || (out && mine.length) ? 2 : 0;
+        let dehors = false;
+        for (const b of mine) if (!b.inside()) { dehors = true; break; }
+        const goal = dehors || (out && mine.length) ? 2 : 0;
         if (f.k !== goal) {
           f.t += dt;
           if (f.t >= DOOR_STEP) { f.t = 0; f.k += goal > f.k ? 1 : -1; syncDoor(f); }
@@ -1009,6 +1017,7 @@
     function clearHerd() {
       for (const b of herd) b.destroy();
       herd.length = 0;
+      herdChanged = true;
       for (const name in folds) {
         const f = folds[name];
         f.k = 0; f.t = 0; f.fresh = true; f.turn = 0;

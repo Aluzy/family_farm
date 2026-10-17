@@ -9,6 +9,7 @@ import { familyLabelHtml } from './depart.js';
 import { bookStations, recipeMeta } from './cuisine.js';
 import { registerActions } from './actions.js';
 import { REDUCED_MOTION } from './animations.js';
+import { focusModal, openModal } from './modal.js';
 
 /* ---------- Essai : le Livre de recette comme un vrai livre ----------
    Une page à la fois, dans une couverture de cuir ; on tourne les pages avec ‹ ›, en
@@ -103,19 +104,15 @@ export function openRecipeBook() {
   tel('modal', 'book');
   page = Math.min(page, pageCount() - 1);
   flipping = false;
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop book-backdrop" data-action="close-modal">
-      <div class="book" role="dialog" aria-modal="true" aria-label="Livre de recette" data-stop-propagation>
-        <button type="button" class="book-close" data-action="close-modal" aria-label="Fermer le livre" title="Fermer">✕</button>
-        <div class="book-pages">
-          <section class="book-page" id="book-page"></section>
-        </div>
-        <div class="book-nav"></div>
-      </div>
-    </div>`;
+  openModal(`
+    <button type="button" class="book-close" data-action="close-modal" aria-label="Fermer" title="Fermer">✕</button>
+    <div class="book-pages">
+      <section class="book-page" id="book-page"></section>
+    </div>
+    <div class="book-nav"></div>`, { label: 'Livre de recette', className: 'book', backdropClass: 'book-backdrop', focus: false });
   bindSwipe(document.querySelector('#modal-root .book-pages'));
   renderRecipeBook();
-  document.querySelector('#modal-root .book-turn:not([disabled])')?.focus();
+  focusModal('.book-turn:not([disabled])');
 }
 
 // Appelé à chaque rendu : la page affichée suit le jeu (stocks, atelier occupé…).

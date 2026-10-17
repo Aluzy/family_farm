@@ -7,7 +7,7 @@ troupeau (poules, moutons, vaches), verger, serre, cuisine, four et réfrigérat
 La journée suit une horloge : réveil à 6 h, repas de la famille à
 19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
 
-- **Version** : 1.16.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
+- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi (autres
   documents : voir « Documentation » plus bas)
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
@@ -154,7 +154,7 @@ jeu n'est une variable globale. Conséquences :
 - **Node** lit les mêmes fichiers que le navigateur (`package.json` : `"type": "module"`) ;
   `npm test` lance toutes les vérifications.
 
-`tests/engine.test.js` (les tests du moteur) n'est jamais chargé par la page.
+`tests/engine/` (les tests du moteur) n'est jamais chargé par la page.
 
 `node scripts/check-page.mjs` vérifie que chaque fichier cité par la page existe, que
 chaque import mène à un fichier qui exporte bien le nom demandé, et qu'aucun module
@@ -272,13 +272,54 @@ fichier et 10 en jeu.
 npm test
 ```
 
-Régénère les données et l'encyclopédie, vérifie que les cartes construites sont à jour
-avec les cartes Tiled (`node scripts/build-map.mjs --check`), puis lance tout : données
-valides (`tests/test-data.mjs`), moteur (`tests/run-tests.mjs`), suivi de session
-(`tests/test-telemetry.mjs`), rapport quotidien (`tests/test-report.mjs`), actions de
-l'interface (`scripts/check-actions.mjs`), modules et fichiers de la page
-(`scripts/check-page.mjs`). Chaque script se lance aussi seul avec `node`. Node 18 ou plus
-récent ; `npm ci` une fois (esbuild, pour `npm run build`).
+`tests/all.mjs` régénère les données et l'encyclopédie, vérifie que les cartes construites
+sont à jour avec les cartes Tiled (`node scripts/build-map.mjs --check`) et s'arrête là si
+l'une de ces étapes échoue ; puis il lance tout, même après un échec, et fait le bilan : les
+suites de tests (`node tests/run-tests.mjs --tous`), les actions de l'interface
+(`scripts/check-actions.mjs`), les modules et fichiers de la page (`scripts/check-page.mjs`).
+Node 22 (celui de la CI) ; `npm ci` une fois (esbuild, pour `npm run build`).
+
+Les tests tournent sur `node:test`, le lanceur intégré de Node, un processus par fichier : un
+fichier qui plante est compté en échec sans arrêter les autres. Quatre suites :
+
+- **moteur** : `tests/engine/*.test.mjs`, un fichier par thème (énergie, potager, cuisine,
+  Étable, automatisation, chapitres, nuit, ville, outils…), chacun n'important que les
+  fonctions du moteur dont il se sert. L'aide commune est dans `tests/engine/aide.mjs` :
+  `test`, `assert`, `assertEqual` (égalité par `JSON.stringify` : l'ordre des clés compte),
+  la lune neutralisée (`avecLune` pour la rallumer) et les états de départ partagés
+  (`farm()`, `garden()`, `ranch()`, `atelier()`…). Une aide propre à un fichier reste dans ce
+  fichier ;
+- **données** : `tests/test-data.mjs` ; **suivi de session** : `tests/test-telemetry.mjs` ;
+  **rapport quotidien** : `tests/test-report.mjs`.
+
+```sh
+node tests/run-tests.mjs                 # le moteur seul (nombre de tests et durée par fichier)
+node tests/run-tests.mjs --tous          # les quatre suites
+node tests/run-tests.mjs cuisine nuit    # les fichiers dont le nom contient « cuisine » ou « nuit »
+node tests/run-tests.mjs --grep Moulin   # les tests dont le nom correspond (expression régulière)
+node tests/run-tests.mjs --lent          # et les tests de plus de 50 ms
+node --test tests/engine/cuisine.test.mjs   # un fichier seul, sortie de node:test
+```
+
+Un nouveau test du moteur va dans le fichier de son thème (ou un nouveau
+`tests/engine/<thème>.test.mjs`, pris tout seul par le lanceur), avec ses imports depuis
+`../../js/engine/index.js` et `./aide.mjs`.
+
+#### Test de fumée (navigateur, hors CI)
+
+```sh
+npm run smoke
+```
+
+`tests/smoke.mjs` sert le dépôt avec un petit serveur statique Node sur un port libre, ouvre
+`jeu.html` dans Chromium (Playwright), lance une nouvelle partie, puis visite les cartes par
+`window.FermeHote.go` (la ville par la gare, le chemin de transition, la montagne, la plage,
+la grotte) et revient à la ferme. Il échoue sur une erreur de la console, une exception de
+la page, une réponse HTTP ≥ 400 ou une carte qui ne s'ouvre pas ; les requêtes vers un autre
+hôte sont coupées. Playwright : celui du dépôt s'il est installé, sinon
+`/opt/node-tools/node_modules/playwright` ; navigateurs : `PLAYWRIGHT_BROWSERS_PATH` (par
+défaut `/opt/pw-browsers`). Sans Playwright ou sans Chromium, il le dit et sort sans erreur.
+`node tests/smoke.mjs --voir` ouvre une fenêtre. Compter une vingtaine de secondes.
 
 GitHub relance ces vérifications à chaque push sur `main` et à chaque pull request
 (`.github/workflows/site.yml`) et ne met le site en ligne que si elles passent toutes. Il

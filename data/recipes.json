@@ -5,13 +5,14 @@
     "fois, sans file d'attente. cout : prix de construction ; electrique : la",
     "station est un appareil du parc (interrupteur, usure, panne) qui prend",
     "whParS Wh par seconde de fonctionnement ; requiert : station à bâtir",
-    "avant ; debloque : onglets ouverts par la construction."
+    "avant ; debloque : onglets ouverts par la construction ; action : le geste",
+    "d'une préparation (son XP, NIVEAUX.XP, et son énergie, PERSONNAGE.COUTS)."
   ],
   "STATIONS": {
-    "four": { "nom": "Four", "article": "le", "icone": "🔥", "cout": 100, "electrique": false, "debloque": ["recettes"] },
-    "cuisine": { "nom": "Cuisine", "article": "la", "icone": "🍳", "cout": 150, "electrique": false, "debloque": ["recettes"] },
-    "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "cout": 120, "electrique": true, "whParS": 20 },
-    "presse": { "nom": "Presse", "article": "la", "icone": "🌻", "cout": 150, "electrique": true, "whParS": 30 }
+    "four": { "nom": "Four", "article": "le", "icone": "🔥", "cout": 100, "electrique": false, "debloque": ["recettes"], "action": "cuireFour" },
+    "cuisine": { "nom": "Cuisine", "article": "la", "icone": "🍳", "cout": 150, "electrique": false, "debloque": ["recettes"], "action": "cuisiner" },
+    "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "cout": 120, "electrique": true, "whParS": 20, "action": "moudre" },
+    "presse": { "nom": "Presse", "article": "la", "icone": "🌻", "cout": 150, "electrique": true, "whParS": 30, "action": "presser" }
   },
   "//RECETTES": [
     "Plats (sections 1.3, 1.4 et 6.8) : énergie = somme des énergies des",
@@ -211,7 +212,7 @@
     },
     "//pain_ail": [
       "Utilise le pain (déjà un item via registerDishItems()) comme un",
-      "ingrédient ordinaire : startRecipe()/takeIngredient() le retirent de",
+      "ingrédient ordinaire : startRecipe()/takeWithSilo() le retirent de",
       "l'inventaire exactement comme n'importe quel autre item (voir test",
       "dédié). Il doit rester déclaré après `pain` dans cet objet pour que",
       "DATA.items.pain existe déjà quand dishEnergy()/dishPrice() le lisent au",

@@ -4,9 +4,10 @@
 # ombrées par les petites fonctions ci-dessous ; les autres sont dessinées à la main.
 import math
 
+from pixel import PALETTE_OR  # build.py met scripts/ dans le chemin
+
 PALETTE = {
-    # or
-    'K': '#3a2414', 'Y': '#fbe38a', 'y': '#f2c040', 'o': '#c7862a', 'O': '#8a5418',
+    **PALETTE_OR,  # l'or des icônes (scripts/pixel.py)
     # rouge
     'R': '#4a1418', 'p': '#f08a84', 'r': '#c8404a', 'd': '#8a2430',
     # vert

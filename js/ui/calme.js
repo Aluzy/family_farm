@@ -8,8 +8,16 @@ import { state } from './store.js';
 // d'une lettre attendent ce calme, l'un après l'autre : jamais deux à la fois.
 let lastBusy = performance.now();
 
+// Le conteneur des fenêtres (#modal-root, fixe dans la page), cherché une fois : la boucle le
+// consulte à chaque image.
+let modalRootEl = null;
+export function modalRoot() {
+  if (!modalRootEl || !modalRootEl.isConnected) modalRootEl = document.getElementById('modal-root');
+  return modalRootEl;
+}
+
 export function modalOpen() {
-  const root = document.getElementById('modal-root');
+  const root = modalRoot();
   return !!(root && root.childElementCount > 0);
 }
 

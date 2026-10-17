@@ -15,10 +15,10 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-SHEET = os.path.join(ROOT, 'assets', 'crops.png')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, T  # noqa: E402
+SHEET = os.path.join(ASSETS, 'crops.png')
 ROW = 11
-T = 16
 
 C = {
     # feuillage (couleurs du pack)

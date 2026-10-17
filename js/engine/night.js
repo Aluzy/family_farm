@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { allDevices, batteryCapacity, isBroken, needsService, newDayStats, tankCapacity } from './devices.js';
+import { allDevices, fail, isBroken, needsService, newDayStats, storageCapacity, storedEnergy, tankCapacity } from './devices.js';
 import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
 import { expiringSoon, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
@@ -48,8 +48,8 @@ export function buildMorningReport(state) {
   const aSurveiller = (d) => ({ id: d.id, type: d.type, usure: d.usure });
   return {
     nuit: state.day,
-    energie: state.batteries.reduce((t, b) => t + b.chargeMwh, 0),
-    capacite: state.batteries.reduce((t, b) => t + batteryCapacity(b), 0),
+    energie: storedEnergy(state),
+    capacite: storageCapacity(state),
     energiePerdue: state.jour.perdue,
     eau: state.eauMl,
     capaciteEau: tankCapacity(state),
@@ -121,8 +121,8 @@ export function nightHarvest(report) {
     const n = Math.floor((Number(qty) || 0) + EPS);
     if (n > 0 && DATA.items[item]) total[item] = (total[item] || 0) + n;
   };
-  add('oeuf', report.oeufs);
-  add('lait', report.lait);
+  add(DATA.ANIMAUX.poule.produit, report.oeufs);
+  add(DATA.ANIMAUX.vache.lait, report.lait);
   add(DATA.ANIMAUX.vache.laitAlpage, report.laitAlpage);
   for (const [item, qty] of Object.entries(report.fruits || {})) add(item, qty);
   for (const [item, qty] of Object.entries((report.auto || {}).recoltes || {})) add(item, qty);
@@ -228,7 +228,7 @@ export function recoverInSleep(state, ms) {
 // les TIME.SLEEP_SECONDS_PER_HOUR secondes au lieu de CLOCK_SECONDS_PER_HOUR) jusqu'au réveil.
 // On ne dort que la nuit.
 export function goToSleep(state) {
-  if (!nightActive(state)) return { ok: false, error: `On ne dort que la nuit, de ${DATA.TIME.NIGHT_HOUR} h à ${DATA.TIME.DAY_START_HOUR} h.` };
+  if (!nightActive(state)) return fail(`On ne dort que la nuit, de ${DATA.TIME.NIGHT_HOUR} h à ${DATA.TIME.DAY_START_HOUR} h.`);
   state.nuitEnCours.dort = true;
   return { ok: true };
 }

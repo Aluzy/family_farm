@@ -17,18 +17,15 @@
 
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
-import { addItem } from './inventory.js';
-import { shear, storeWheat, woolReady } from './animals.js';
+import { shear, storeWithSilo, woolReady } from './animals.js';
 import { TIRED } from './stamina.js';
 
-export const LIEUX_RAMASSAGE = ['parcelle', 'arbre', 'poulailler', 'etable'];
-
-export function pileId(lieu, ref) {
+function pileId(lieu, ref) {
   return ref === null || ref === undefined ? lieu : `${lieu}:${ref}`;
 }
 
 // Le personnage de la carte ramasse-t-il ? (sinon, tout va directement à l'inventaire)
-export function pickupOn(state) {
+function pickupOn(state) {
   return !!state.ramassage;
 }
 
@@ -38,13 +35,6 @@ export function piles(state) {
   return a && typeof a === 'object' ? Object.entries(a).map(([id, p]) => ({ id, ...p })) : [];
 }
 
-// Un produit va à l'inventaire ; le blé va d'abord au Silo, le surplus dans l'inventaire.
-function give(state, item, qty) {
-  if (!(qty > 0)) return;
-  if (item === DATA.SILO.ITEM) storeWheat(state, qty);
-  else addItem(state, item, qty);
-}
-
 // Pose `items` ({ item: qté }) en tas à ramasser à (lieu, ref), ou les donne tout de suite
 // si le personnage ne ramasse pas ou si `ici` est faux (automatisation, Serre…). Renvoie
 // true si un tas a été posé.
@@ -52,7 +42,7 @@ export function deposit(state, lieu, ref, items, ici = true) {
   const list = Object.entries(items || {}).filter(([item, qty]) => DATA.items[item] && qty > 0);
   if (!list.length) return false;
   if (!ici || !pickupOn(state)) {
-    for (const [item, qty] of list) give(state, item, qty);
+    for (const [item, qty] of list) storeWithSilo(state, item, qty);
     return false;
   }
   if (!state.aRamasser || typeof state.aRamasser !== 'object') state.aRamasser = {};
@@ -67,7 +57,7 @@ export function pickUp(state, id) {
   const pile = state.aRamasser && state.aRamasser[id];
   if (!pile) return fail('Il n\'y a plus rien à ramasser ici.');
   delete state.aRamasser[id];
-  for (const [item, qty] of Object.entries(pile.items)) give(state, item, qty);
+  for (const [item, qty] of Object.entries(pile.items)) storeWithSilo(state, item, qty);
   return { ok: true, lieu: pile.lieu, items: { ...pile.items } };
 }
 

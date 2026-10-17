@@ -24,9 +24,9 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-SORTIE = os.path.join(ROOT, 'assets', 'eau')
-T = 16
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, BAYER, ROOT, T, melange, wangid  # noqa: E402
+SORTIE = os.path.join(ASSETS, 'eau')
 COLS = 16
 IMAGES = 8                    # images de l'animation
 DUREE = 160                   # ms par image
@@ -37,11 +37,6 @@ TONS = [(76, 172, 214), (60, 146, 200), (46, 120, 184), (34, 96, 170)]
 GRAIN = {0: [(68, 162, 208), (86, 182, 220)], 3: [(28, 86, 158), (40, 104, 178)]}
 REMOUS = (24, 74, 142)
 ECUME = (255, 255, 255)
-BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
-
-
-def melange(a, b, t):
-    return tuple(round(x * (1 - t) + y * t) for x, y in zip(a, b))
 
 
 # ---------------------------------------------------------------- les fonds (fixes)
@@ -218,8 +213,7 @@ def tsx(img, par_image):
         wang.append(f'   <wangtile tileid="{i}" wangid="0,1,0,1,0,1,0,1"/>')
         wang.append(f'   <wangtile tileid="{8 + i}" wangid="0,2,0,2,0,2,0,2"/>')
     for n in range(1, 15):
-        tl, tr, bl, br = [2 if (n >> k) & 1 else 1 for k in (3, 2, 1, 0)]
-        wang.append(f'   <wangtile tileid="{16 + n}" wangid="0,{tr},0,{br},0,{bl},0,{tl}"/>')
+        wang.append(f'   <wangtile tileid="{16 + n}" wangid="{wangid(n)}"/>')
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.12.2" name="eau" tilewidth="{T}" tileheight="{T}" tilecount="{(img.width // T) * (img.height // T)}" columns="{img.width // T}">
  <image source="eau.png" width="{img.width}" height="{img.height}"/>
@@ -238,7 +232,7 @@ def tsx(img, par_image):
 def apercu(img, par_image):
     """Une mare animée : le fond (profond au milieu, peu profond près des rives) et, par-dessus,
     les bordures de assets/bordure_eau.png. Un GIF, agrandi × 3."""
-    bord = Image.open(os.path.join(ROOT, 'assets', 'bordure_eau.png')).convert('RGBA')
+    bord = Image.open(os.path.join(ASSETS, 'bordure_eau.png')).convert('RGBA')
     W, H = 22, 15
 
     def terre(x, y):

@@ -10,28 +10,28 @@ import { state } from './store.js';
 import { tel } from './consent.js';
 import { deviceName } from './ferme.js';
 import { formatStraw } from './elevage.js';
-import { itemsSummary } from './inventaire.js';
 import { registerActions } from './actions.js';
-import { closeModal, costLabel, plural } from './common.js';
+import { accord, costLabel, itemsText, plural } from './common.js';
 import { applyResult } from './game-actions.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { waterAll } from '../engine/automation.js';
 import { allPlots, isMature } from '../engine/crops.js';
+import { closeModal, openModal } from './modal.js';
 
 // Lignes du réveil pour les automatisations (Lot 7) : ce qui a été fait, puis ce qui a manqué.
 function autoLines(a) {
   if (!a || !(a.potager || a.serre || a.poulailler || a.tondus)) return [];
   const done = [];
-  if (a.potager || a.serre) done.push(`💧 ${plural(a.arrosees, 'parcelle')} arrosée${a.arrosees > 1 ? 's' : ''}`);
-  const harvested = itemsSummary(a.recoltes || {});
+  if (a.potager || a.serre) done.push(`💧 ${plural(a.arrosees, 'parcelle')} ${accord(a.arrosees, 'arrosée')}`);
+  const harvested = itemsText(a.recoltes || {});
   if (harvested) done.push(`🧺 ${harvested}`);
   if (a.semees > 0) done.push(`🌱 ${plural(a.semees, 'semis')}`);
-  if (a.poulailler) done.push(`🌾 ${plural(a.nourries, 'poule')} nourrie${a.nourries > 1 ? 's' : ''}`);
-  if (a.tondus > 0) done.push(`✂️ ${plural(a.tondus, 'mouton')} tondu${a.tondus > 1 ? 's' : ''}`);
+  if (a.poulailler) done.push(`🌾 ${plural(a.nourries, 'poule')} ${accord(a.nourries, 'nourrie')}`);
+  if (a.tondus > 0) done.push(`✂️ ${plural(a.tondus, 'mouton')} ${accord(a.tondus, 'tondu')}`);
   const lines = [`<li>🤖 Automatisations : <strong>${done.join(' · ')}</strong></li>`];
-  if (a.sansEau > 0) lines.push(`<li class="alert">💧 Eau insuffisante : ${plural(a.sansEau, 'parcelle')} non arrosée${a.sansEau > 1 ? 's' : ''} cette nuit.</li>`);
-  if (a.sansBle > 0) lines.push(`<li class="alert">🌾 Blé insuffisant : ${plural(a.sansBle, 'poule')} non nourrie${a.sansBle > 1 ? 's' : ''}, pas d'œuf.</li>`);
-  if (a.sansGraine > 0) lines.push(`<li class="alert">🌱 Pas de graine au-delà de la réserve : ${plural(a.sansGraine, 'parcelle')} laissée${a.sansGraine > 1 ? 's' : ''} vide${a.sansGraine > 1 ? 's' : ''}.</li>`);
+  if (a.sansEau > 0) lines.push(`<li class="alert">💧 Eau insuffisante : ${plural(a.sansEau, 'parcelle')} non ${accord(a.sansEau, 'arrosée')} cette nuit.</li>`);
+  if (a.sansBle > 0) lines.push(`<li class="alert">🌾 Blé insuffisant : ${plural(a.sansBle, 'poule')} non ${accord(a.sansBle, 'nourrie')}, pas d'œuf.</li>`);
+  if (a.sansGraine > 0) lines.push(`<li class="alert">🌱 Pas de graine au-delà de la réserve : ${plural(a.sansGraine, 'parcelle')} ${accord(a.sansGraine, 'laissée')} ${accord(a.sansGraine, 'vide')}.</li>`);
   return lines;
 }
 
@@ -44,7 +44,7 @@ function stableLines(report) {
   const straw = DATA.items[DATA.PATURAGE.nourriture].icone;
   if (report.moutons > 0) {
     const fed = e ? ` · nourris : <strong class="num">${e.moutonsNourris} / ${e.moutons}</strong>` : '';
-    lines.push(`<li>🐑 Moutons : <strong class="num">${report.moutons}</strong>${fed}${report.lainePrete > 0 ? ` · 🧶 Laine prête : <strong class="num">${report.lainePrete}</strong> mouton${report.lainePrete > 1 ? 's' : ''} à tondre` : ''}</li>`);
+    lines.push(`<li>🐑 Moutons : <strong class="num">${report.moutons}</strong>${fed}${report.lainePrete > 0 ? ` · 🧶 Laine prête : <strong class="num">${report.lainePrete}</strong> ${accord(report.lainePrete, 'mouton')} à tondre` : ''}</li>`);
   }
   if (report.vaches > 0) {
     const fed = e ? ` · nourries : <strong class="num">${e.vachesNourries} / ${e.vaches}</strong>` : '';
@@ -53,7 +53,7 @@ function stableLines(report) {
   if (e && e.paille > 0) lines.push(`<li>${straw} Paille mangée cette nuit : <strong class="num">${formatNumber(e.paille)}</strong></li>`);
   if (e && e.manque > 0) {
     const sans = (e.moutons - e.moutonsNourris) + (e.vaches - e.vachesNourries);
-    lines.push(`<li class="alert">${straw} Il a manqué ${formatStraw(e.manque)} cette nuit : ${plural(sans, 'animal').replace('animals', 'animaux')} n'${sans > 1 ? 'ont' : 'a'} pas mangé, donc pas de laine ni de lait pour ${sans > 1 ? 'eux' : 'lui'}. Rien d'autre ne leur arrive.</li>`);
+    lines.push(`<li class="alert">${straw} Il a manqué ${formatStraw(e.manque)} cette nuit : ${sans} ${accord(sans, 'animal', 'animaux')} n'${accord(sans, 'a', 'ont')} pas mangé, donc pas de laine ni de lait pour ${accord(sans, 'lui', 'eux')}. Rien d'autre ne leur arrive.</li>`);
   }
   if (typeof report.pailleBesoin === 'number' && report.pailleBesoin > report.paille) {
     lines.push(`<li class="alert">${straw} Il manque de la paille pour la nuit prochaine : ${formatNumber(report.paille)} en stock, il en faut ${formatNumber(report.pailleBesoin)}. Mouds du blé au Moulin.</li>`);
@@ -64,15 +64,15 @@ function stableLines(report) {
 // Lot 8 : fruits du verger et nuit du frigo.
 function orchardFridgeLines(report) {
   const lines = [];
-  const fruits = itemsSummary(report.fruits || {});
+  const fruits = itemsText(report.fruits || {});
   if (fruits) lines.push(`<li>🌳 Fruits du verger : <strong>${fruits}</strong></li>`);
   // Version 1.14 : la vente du commerce.
   const c = report.commerce;
   const cdef = c && c.type && DATA.COMMERCE.TYPES[c.type];
-  if (cdef && c.n > 0) lines.push(`<li>${cdef.icone} ${cdef.nom} : <strong class="num">${formatNumber(c.n)}</strong> ${c.n > 1 ? cdef.produits : cdef.produit} vendu${c.n > 1 ? 's' : ''}, <strong class="num">+${formatCoins(c.pieces)} 💰</strong></li>`);
+  if (cdef && c.n > 0) lines.push(`<li>${cdef.icone} ${cdef.nom} : <strong class="num">${formatNumber(c.n)}</strong> ${accord(c.n, cdef.produit, cdef.produits)} ${accord(c.n, 'vendu')}, <strong class="num">+${formatCoins(c.pieces)} 💰</strong></li>`);
   const f = report.frigo;
   if (f && f.construit) {
-    lines.push(`<li>🧊 Frigo : <strong class="num">${formatWh(f.mwh)}</strong> prélevés pour la nuit · ${f.unites} unité${f.unites > 1 ? 's' : ''} au frais</li>`);
+    lines.push(`<li>🧊 Frigo : <strong class="num">${formatWh(f.mwh)}</strong> prélevés pour la nuit · ${plural(f.unites, 'unité')} au frais</li>`);
     if (f.panne) lines.push('<li class="alert">⚠️ Panne de froid cette nuit : batteries insuffisantes (ou frigo éteint).</li>');
     if (f.vieillis) lines.push('<li class="alert">⚠️ Le frigo n\'a pas assez tenu : chaque lot a perdu une nuit de conservation.</li>');
     else if (!f.couvreLaNuit) lines.push('<li class="alert">⚠️ La batterie ne couvrira pas la prochaine nuit du frigo.</li>');
@@ -91,9 +91,9 @@ export function openWakeModal(report, auto = false) {
     ...report.enPanne.map((d) => line(d, '⛔ {nom} : en panne, à réparer.')),
     ...report.aEntretenir.map((d) => line(d, '⚠️ {nom} : à entretenir (usure {usure} %).')),
   ];
-  const eaten = itemsSummary(report.mange);
-  const spoiled = itemsSummary(report.perimes);
-  const expiring = itemsSummary(report.aPerimer);
+  const eaten = itemsText(report.mange);
+  const spoiled = itemsText(report.perimes);
+  const expiring = itemsText(report.aPerimer);
   const shownEnergy = Math.min(report.energieMangee, report.besoin);
   const covered = report.couverture;
   const ready = report.pretes.length
@@ -105,7 +105,7 @@ export function openWakeModal(report, auto = false) {
     `<li>🍽️ Calories mangées : <strong class="num">${formatNumber(shownEnergy)} / ${formatNumber(report.besoin)}</strong> (${covered} %)${eaten ? ` — ${eaten}` : ''}</li>`,
     `<li>🌿 Autonomie de la nuit : <strong class="num">${formatPercent(report.autonomie)}</strong> (${formatNumber(report.energieProduit)} calories produites par la ferme sur ${formatNumber(report.besoin)})</li>`,
     `<li>⚡ Ton énergie au réveil : <strong class="num">${formatNumber(Math.floor((report.energieReveil || 0) / 1000))} / ${formatNumber(DATA.PERSONNAGE.MAX)}</strong> · 😊 bonheur ${report.bonheur >= 0 ? '+' : ''}${formatNumber(report.bonheur || 0)} au repas</li>`,
-    Object.keys(report.termine).length ? `<li>🍳 Terminé pendant la nuit : <strong>${itemsSummary(report.termine)}</strong></li>` : '',
+    Object.keys(report.termine).length ? `<li>🍳 Terminé pendant la nuit : <strong>${itemsText(report.termine)}</strong></li>` : '',
     report.poules > 0 || report.oeufs > 0
       ? `<li>🥚 Œufs pondus : <strong class="num">${formatNumber(report.oeufs)}</strong> · 🌾 Blé consommé par les poules : <strong class="num">${formatQty(report.bleConsomme)}</strong></li>`
       : '',
@@ -123,7 +123,7 @@ export function openWakeModal(report, auto = false) {
   const w = wakeSummary(report);
   const harvestName = (r) => `<span aria-hidden="true">${DATA.items[r.item].icone}</span> ${DATA.items[r.item].nom.toLowerCase()} ×${formatNumber(r.qte)}`;
   const harvestLine = w.recolte.affiches.length
-    ? w.recolte.affiches.map(harvestName).join(', ') + (w.recolte.reste.length ? ` <span class="muted">+ ${w.recolte.reste.length} autre${w.recolte.reste.length > 1 ? 's' : ''}</span>` : '')
+    ? w.recolte.affiches.map(harvestName).join(', ') + (w.recolte.reste.length ? ` <span class="muted">+ ${plural(w.recolte.reste.length, 'autre')}</span>` : '')
     : '<span class="muted">Rien récolté cette nuit</span>';
   const fullHarvest = w.recolte.reste.length
     ? `<li>🧺 Récolte complète de la nuit : <strong>${[...w.recolte.affiches, ...w.recolte.reste].map(harvestName).join(', ')}</strong></li>`
@@ -132,36 +132,30 @@ export function openWakeModal(report, auto = false) {
   // la lune du jour qui commence (report.nuit : la nuit qui vient de finir)
   const lune = moonPhase(report.nuit + 1);
   const soif = allPlots(state).filter((p) => p.lieu === DATA.POTAGER.LIEU && p.culture && !p.arrose && !isMature(p)).length;
-  root.innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="wake-title" data-stop-propagation>
-        <h2 id="wake-title">🌅 Réveil : ${formatDay(report.nuit + 1)}</h2>
-        <p class="wake-moon"><span aria-hidden="true">${lune.icone}</span> <strong>${lune.nom}</strong> : ${moonEffect(lune)}.</p>
-        <p class="muted wake-hour">${auto ? `Il était ${DATA.TIME.NIGHT_HOUR}&nbsp;h : la famille est allée se coucher. ` : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
-        <div class="wake-kpis">
-          <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>
-          <div class="wake-kpi"><span class="muted">⚡ Énergie</span><strong class="num">${formatNumber(w.energie)} / ${formatNumber(DATA.PERSONNAGE.MAX)}</strong></div>
-        </div>
-        <p class="wake-harvest"><strong>🧺 Récolte</strong> : ${harvestLine}</p>
-        <div id="wake-detail" hidden>
-          <ul class="report-list">
-            ${fullHarvest}
-            ${family.join('')}
-            <li>🔋 Électricité stockée : <strong class="num">${formatNumber(Math.floor(report.energie / 1000))} / ${formatWh(report.capacite)}</strong></li>
-            <li>💧 Eau disponible : <strong class="num">${formatNumber(Math.floor(report.eau / 1000))} / ${formatLitres(report.capaciteEau)}</strong></li>
-            ${report.energiePerdue >= 1000 ? `<li>☀️ Énergie perdue pendant la journée (batteries pleines) : <strong class="num">${formatWh(report.energiePerdue)}</strong></li>` : ''}
-            ${problems.length ? problems.join('') : '<li>✅ Tous les appareils sont en bon état.</li>'}
-          </ul>
-        </div>
-        <div class="row wake-actions">
-          <button type="button" class="btn btn-pill" data-action="wake-more" id="wake-more" aria-expanded="false" aria-controls="wake-detail">Voir plus</button>
-          ${soif ? `<button type="button" class="btn btn-pill" data-action="wake-water">💧 Arroser tout (${soif})</button>` : ''}
-          <button type="button" class="btn primary btn-pill" data-action="close-modal" id="wake-close">Bonne journée</button>
-        </div>
-      </div>
+  openModal(`
+    <h2 id="wake-title">🌅 Réveil : ${formatDay(report.nuit + 1)}</h2>
+    <p class="wake-moon"><span aria-hidden="true">${lune.icone}</span> <strong>${lune.nom}</strong> : ${moonEffect(lune)}.</p>
+    <p class="muted wake-hour">${auto ? `Il était ${DATA.TIME.NIGHT_HOUR}&nbsp;h : la famille est allée se coucher. ` : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
+    <div class="wake-kpis">
+      <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>
+      <div class="wake-kpi"><span class="muted">⚡ Énergie</span><strong class="num">${formatNumber(w.energie)} / ${formatNumber(DATA.PERSONNAGE.MAX)}</strong></div>
     </div>
-  `;
-  document.getElementById('wake-close').focus();
+    <p class="wake-harvest"><strong>🧺 Récolte</strong> : ${harvestLine}</p>
+    <div id="wake-detail" hidden>
+      <ul class="report-list">
+        ${fullHarvest}
+        ${family.join('')}
+        <li>🔋 Électricité stockée : <strong class="num">${formatNumber(Math.floor(report.energie / 1000))} / ${formatWh(report.capacite)}</strong></li>
+        <li>💧 Eau disponible : <strong class="num">${formatNumber(Math.floor(report.eau / 1000))} / ${formatLitres(report.capaciteEau)}</strong></li>
+        ${report.energiePerdue >= 1000 ? `<li>☀️ Énergie perdue pendant la journée (batteries pleines) : <strong class="num">${formatWh(report.energiePerdue)}</strong></li>` : ''}
+        ${problems.length ? problems.join('') : '<li>✅ Tous les appareils sont en bon état.</li>'}
+      </ul>
+    </div>
+    <div class="row wake-actions">
+      <button type="button" class="btn btn-pill" data-action="wake-more" id="wake-more" aria-expanded="false" aria-controls="wake-detail">Voir plus</button>
+      ${soif ? `<button type="button" class="btn btn-pill" data-action="wake-water">💧 Arroser tout (${soif})</button>` : ''}
+      <button type="button" class="btn primary btn-pill" data-action="close-modal" id="wake-close">Bonne journée</button>
+    </div>`, { labelledBy: 'wake-title', focus: '#wake-close' });
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
@@ -171,7 +165,7 @@ registerActions({
   'wake-water': () => {
     const result = applyResult(waterAll(state, 'potager'));
     closeModal();
-    if (result.ok) showToast(`💧 ${plural(result.arrosees, 'parcelle')} arrosée${result.arrosees > 1 ? 's' : ''}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
+    if (result.ok) notify(`💧 ${plural(result.arrosees, 'parcelle')} ${accord(result.arrosees, 'arrosée')}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
   },
   'wake-more': (target) => {
     const detail = document.getElementById('wake-detail');

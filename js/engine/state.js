@@ -2,8 +2,7 @@ import { DATA } from './catalog.js';
 import { STATE_VERSION } from './base.js';
 import { newVille } from './ville.js';
 import { batteryCapacity, newDayStats, startFarm } from './devices.js';
-import { addItem, defaultOrigin, lotRank, shelfLife } from './inventory.js';
-import { pushLots } from './fridge.js';
+import { addItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
 } from './family.js';
@@ -19,17 +18,10 @@ import { energyMax } from './stamina.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
-export function startInventory() {
-  const inv = {};
-  for (const [item, qty] of Object.entries(DATA.START.INVENTAIRE)) {
-    inv[item] = [{ qty, nightsLeft: shelfLife(item), origin: defaultOrigin(item) }];
-  }
-  return inv;
-}
-
 export function startHousehold() {
   return {
-    inventaire: startInventory(),
+    inventaire: lotsFromCounts(DATA.START.INVENTAIRE),
+    // zone2 : l'ancien Champ, toujours vide depuis la version 1.15 (voir migrateFreeSoil)
     potager: { parcelles: startPlots(), zone2: [], houe: false, houeVue: false },
     famille: {
       membres: DATA.FAMILY.MEMBRES.map(makeMember),
@@ -74,12 +66,12 @@ export function startLot6() {
 }
 
 // Lot 7 : aucune technologie acquise au départ.
-export function startLot7() {
+function startLot7() {
   return { technologies: [], pointsTech: newTechPoints() };
 }
 
 // Lot 8 : Serre, Verger et Réfrigérateur, tous à construire.
-export function startLot8() {
+function startLot8() {
   return {
     serre: { construit: false, niveau: 1, parcelles: [] },
     verger: { construit: false, places: DATA.VERGER.EMPLACEMENTS_DEPART, achetes: 0, compteur: 0, arbres: [] },
@@ -89,12 +81,12 @@ export function startLot8() {
 }
 
 // Lot 9 : la campagne commence au chapitre 1, sans historique.
-export function startLot9() {
+function startLot9() {
   return { campagne: newCampaign() };
 }
 
 // Lot 11 : les bulles d'aide commencent à la première (« eau »).
-export function startLot11() {
+function startLot11() {
   return { aide: newTutorial() };
 }
 
@@ -152,7 +144,7 @@ export const MIGRATIONS = {
         continue;
       }
       const qty = Number(v);
-      if (qty > 0) inventaire[item] = [{ qty, nightsLeft: shelfLife(item), origin: defaultOrigin(item) }];
+      if (qty > 0) inventaire[item] = [freshLot(item, qty)];
     }
     const nuit = state.nuit && typeof state.nuit === 'object'
       ? { ...state.nuit, perdus: state.nuit.perdus || {} }
@@ -328,7 +320,7 @@ export const MIGRATIONS = {
   36: (state) => migrateSerreBeds(state),
 };
 
-export function migrateNightClock(old) {
+function migrateNightClock(old) {
   const { routine, ...state } = old;
   state.version = 36;
   refundRetiredNodes(state);
@@ -338,7 +330,7 @@ export function migrateNightClock(old) {
 // Chaque Serre construite a les parcelles de son niveau : il en manque, elles s'ajoutent ;
 // il y en a trop, les vides s'en vont (une parcelle plantée reste jusqu'à sa récolte : elle
 // n'a plus de place dans les bacs, mais « tout récolter » la retrouve).
-export function migrateSerreBeds(old) {
+function migrateSerreBeds(old) {
   const g = old.serre;
   if (!g || typeof g !== 'object' || !g.construit || !Array.isArray(g.parcelles)) return { ...old, version: 37 };
   const niveau = Math.max(1, Math.min(DATA.SERRE.PARCELLES.length, g.niveau | 0 || 1));
@@ -348,7 +340,7 @@ export function migrateSerreBeds(old) {
   return { ...old, serre: { ...g, parcelles }, version: 37 };
 }
 
-export function migrateSerreSoil(old) {
+function migrateSerreSoil(old) {
   const g = old.serre;
   if (!g || typeof g !== 'object' || !g.construit || !Array.isArray(g.parcelles)) return { ...old, version: 35 };
   const niveau = Math.max(1, Math.min(DATA.SERRE.PARCELLES.length, g.niveau | 0 || 1));
@@ -548,14 +540,15 @@ export function migrateEnergy(old) {
 
 // Les nœuds retirés de l'arbre (NOEUDS_RETIRES) que la partie possède sont rendus :
 // leurs pièces et leurs points de technologie.
-export function refundRetiredNodes(state) {
+// `num` lit un nombre de la sauvegarde (migrateRules11 a le sien, plus strict).
+export function refundRetiredNodes(state, num = (x) => Number(x) || 0) {
   if (!Array.isArray(state.technologies)) return;
   for (const [id, n] of Object.entries(DATA.techtree.NOEUDS_RETIRES)) {
     if (!state.technologies.includes(id)) continue;
     state.technologies = state.technologies.filter((x) => x !== id);
-    state.pieces = Math.round((Number(state.pieces) || 0) + n.cout);
+    state.pieces = Math.round(num(state.pieces) + n.cout);
     if (!state.pointsTech || typeof state.pointsTech !== 'object') state.pointsTech = newTechPoints();
-    state.pointsTech.solde = (Number(state.pointsTech.solde) || 0) + n.pt;
+    state.pointsTech.solde = num(state.pointsTech.solde) + n.pt;
   }
 }
 
@@ -607,7 +600,7 @@ export function migrateSingleDevices(old) {
   return state;
 }
 
-export function migrateNoSeasons(old) {
+function migrateNoSeasons(old) {
   const state = { ...old, version: 23 };
   const c = state.campagne;
   if (c && typeof c === 'object' && c.compteurs && typeof c.compteurs === 'object') {
@@ -640,16 +633,15 @@ export function migrateWheatAndReserve(old) {
   const item = DATA.SILO.ITEM;
   if (inv && Array.isArray(inv[item])) {
     // Le blé déjà stocké part à conservation pleine (comme s'il venait d'être récolté).
-    const life = shelfLife(item);
     const qty = inv[item].reduce((t, l) => t + (Number(l && l.qty) || 0), 0);
     state.inventaire = { ...inv };
-    if (qty > 0) state.inventaire[item] = [{ qty, nightsLeft: life, origin: defaultOrigin(item) }];
+    if (qty > 0) state.inventaire[item] = [freshLot(item, qty)];
     else delete state.inventaire[item];
   }
   return state;
 }
 
-export function migrateFamily12(old) {
+function migrateFamily12(old) {
   const state = { ...old, version: 18 };
   const f = state.famille;
   if (f && typeof f === 'object' && !Array.isArray(f)) {
@@ -679,7 +671,7 @@ export function migrateFamily12(old) {
 // ils restent mangeables et vendables.
 export const MIGRATION_11 = { ARES_PAR_PLACE: 5, ANCIENS_JOURS_LAINE: 7, NUITS_PAILLE: 2 };
 
-export function migrateRules11(old) {
+function migrateRules11(old) {
   const K = MIGRATION_11;
   const A = DATA.ANIMAUX;
   const P = DATA.PATURAGE;
@@ -763,15 +755,7 @@ export function migrateRules11(old) {
   }
 
   // Arbre : nœuds retirés rendus.
-  if (Array.isArray(state.technologies)) {
-    for (const [id, n] of Object.entries(DATA.techtree.NOEUDS_RETIRES)) {
-      if (!state.technologies.includes(id)) continue;
-      state.technologies = state.technologies.filter((x) => x !== id);
-      state.pieces = Math.round(num(state.pieces) + n.cout);
-      if (!state.pointsTech || typeof state.pointsTech !== 'object') state.pointsTech = newTechPoints();
-      state.pointsTech.solde = num(state.pointsTech.solde) + n.pt;
-    }
-  }
+  refundRetiredNodes(state, num);
 
   // Comptes rendus : la nuit à l'Étable (vide pour une nuit d'avant la 1.1).
   if (state.nuit && typeof state.nuit === 'object' && !state.nuit.etable) state.nuit.etable = newStableReport();

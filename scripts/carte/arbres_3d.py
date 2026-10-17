@@ -26,7 +26,6 @@
 #   - Ombre portée : un ovale aplati au pied, poussé en bas à droite, au bord tramé.
 # Deux teintes s'ajoutent au feuillage (un vert de reflet, un vert d'ombre profonde) et une au
 # tronc (un brun d'ombre profonde). Un tramage ordonné adoucit le passage d'une teinte à l'autre.
-import colorsys
 import json
 import math
 import os
@@ -34,16 +33,15 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, BAYER, ROOT, T, hls  # noqa: E402
 ORIG = os.path.join(ROOT, 'scripts', 'carte', 'originaux')
-ASSETS = os.path.join(ROOT, 'assets')
 # La carte d'origine (avant la version 2 du décor, scripts/carte/carte_v2.py) : ses arbres
 # disent quelles tuiles de la planche refaire.
 CARTE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'carte_printemps_elargie_v1.tmj')
 if not os.path.exists(CARTE):
     CARTE = os.path.join(ASSETS, 'carte_printemps_elargie.tmj')
 CARTE_JEU = os.path.join(ASSETS, 'carte_printemps_elargie.tmj')
-T = 16
 COLS = 75                                   # colonnes de la planche
 TRONC_MIN = 100                             # pixels de tronc d'un groupe de tuiles d'arbre
 SPRITES = {'basic_sp.png': (80, 80), 'pine_sp.png': (58, 64)}
@@ -54,15 +52,9 @@ CRAN = 0.12                                 # écart de luminosité d'un cran
 EXTRA = {'f': [(196, 206, 142), (1, 30, 42)], 't': [(52, 24, 20)]}
 OMBRE = (8, 40, 30)                         # teinte de l'ombre portée
 OMBRE_A = 92                                # son opacité (sur 255) ; le bord tramé en vaut le tiers
-BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
 
 _n = math.sqrt(sum(c * c for c in LUMIERE))
 L = tuple(c / _n for c in LUMIERE)
-
-
-def hls(c):
-    h, l, s = colorsys.rgb_to_hls(*(v / 255 for v in c))
-    return h, l, s
 
 
 def famille(c):

@@ -1,9 +1,11 @@
 import { DATA } from '../engine/catalog.js';
-import { levelCount, levelProgress, levelUnlocks } from '../engine/levels.js';
+import { acknowledgeLevel, levelCount, levelProgress, levelUnlocks } from '../engine/levels.js';
 import { formatNumber } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
+import { refresh } from './render.js';
 import { registerActions } from './actions.js';
+import { openModal } from './modal.js';
 
 /* ---------- version 1.7 : niveaux d'expérience ---------- */
 
@@ -37,16 +39,15 @@ function openLevelUpModal() {
   const a = state.progression.annonces[0];
   if (!a) return;
   tel('modal', 'level');
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" id="level-modal" role="dialog" aria-modal="true" aria-labelledby="level-title" data-stop-propagation>
-        <h2 id="level-title">⭐ Niveau ${a.niveau} atteint</h2>
-        ${unlocksHtml(a.niveau) ? `<h3>✨ Nouveautés</h3>${unlocksHtml(a.niveau)}` : '<p class="muted">Rien de nouveau à ce niveau.</p>'}
-        <div class="stack">${levelBarHtml()}</div>
-        <button type="button" class="btn primary" data-action="close-modal" id="level-close">Continuer</button>
-      </div>
-    </div>`;
-  document.getElementById('level-close').focus();
+  openModal(`
+    <h2 id="level-title">⭐ Niveau ${a.niveau} atteint</h2>
+    ${unlocksHtml(a.niveau) ? `<h3>✨ Nouveautés</h3>${unlocksHtml(a.niveau)}` : '<p class="muted">Rien de nouveau à ce niveau.</p>'}
+    <div class="stack">${levelBarHtml()}</div>
+    <button type="button" class="btn primary" data-action="close-modal" id="level-close">Continuer</button>`, {
+    labelledBy: 'level-title', id: 'level-modal', focus: '#level-close',
+    // la fermer (bouton ou fond) acquitte l'annonce
+    onClose: () => { acknowledgeLevel(state); refresh(); },
+  });
 }
 
 // Ouvre l'écran d'un niveau atteint dès qu'aucune autre fenêtre n'est ouverte.
@@ -73,19 +74,14 @@ function openLevelsModal(tous = false) {
       </li>`);
   }
   const xp = DATA.NIVEAUX.XP;
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="levels-title" data-stop-propagation>
-        <h2 id="levels-title" tabindex="-1">⭐ Niveaux</h2>
-        <div class="stack">${levelBarHtml()}</div>
-        <p class="muted">L'expérience vient de tes actions : labourer ${xp.labourer} XP, planter ${xp.planter}, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée au Marché ; et de chaque chapitre terminé. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
-        <ul class="objectives">${rows.join('')}</ul>
-        ${tous || (debut === 1 && fin === levelCount()) ? '' : `<p class="row"><button type="button" class="btn" data-action="levels-all">Voir tous les niveaux (${levelCount()})</button></p>`}
-        <button type="button" class="btn primary" data-action="close-modal" id="levels-close">Fermer</button>
-      </div>
-    </div>`;
-  // FLU-33 : le focus sur le titre, et le niveau en cours en haut de la fenêtre
-  document.getElementById('levels-title').focus();
+  openModal(`
+    <h2 id="levels-title" tabindex="-1">⭐ Niveaux</h2>
+    <div class="stack">${levelBarHtml()}</div>
+    <p class="muted">L'expérience vient de tes actions : labourer ${xp.labourer} XP, planter ${xp.planter}, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée au Marché ; et de chaque chapitre terminé. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
+    <ul class="objectives">${rows.join('')}</ul>
+    ${tous || (debut === 1 && fin === levelCount()) ? '' : `<p class="row"><button type="button" class="btn" data-action="levels-all">Voir tous les niveaux (${levelCount()})</button></p>`}
+    <button type="button" class="btn primary" data-action="close-modal" id="levels-close">Fermer</button>`, { labelledBy: 'levels-title', focus: '#levels-title' });
+  // FLU-33 : le niveau en cours en haut de la fenêtre (le focus est sur le titre)
   const cur = document.getElementById(`level-${p.niveau}`);
   if (cur && tous) cur.scrollIntoView({ block: 'start' });
 }

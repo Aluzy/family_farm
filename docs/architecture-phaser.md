@@ -2,6 +2,8 @@
 
 Périmètre : la zone entre le bandeau « Ferme Familiale » (titre + indicateurs) et le menu
 du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur) reste en DOM.
+Les autres cartes (la ville et celles qu'on rejoint par elle, l'infra-monde) s'affichent au même
+endroit et partagent avec elle un kit commun (§ 1 bis) et le jour et la nuit (§ 1 ter).
 
 > **Piège à ne pas refaire :** aucune variable globale de la page ne doit s'appeler `screen`
 > (ni `name`, `status`, `top`, `event`…). `screen` masque `window.screen`, dont Phaser a besoin
@@ -13,13 +15,20 @@ du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
+ ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, lumiere.js ;
+ │                        jeu.js, le jeu Phaser de toutes les cartes (CarteJeu, voir § 1 quater)
  ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, les bêtes de l'Étable et du Poulailler (voir docs/vie-ambiance.md)
  ├─ js/fermier.js         le personnage, facultatif : il refait sur la carte les gestes du joueur (voir docs/personnage.md)
- ├─ js/farm-stage.js      la scène : ne connaît ni `state` ni le moteur (script classique)
+ ├─ js/famille-ferme.js   les autres membres de la famille sur la carte de la ferme
+ ├─ js/carte/ferme/       la scène de la ferme, fichier par fichier (FermeCarte : ses réglages et ses méthodes)
+ ├─ js/farm-stage.js      la scène de la ferme : ne connaît ni `state` ni le moteur (script classique)
+ ├─ js/carte/ville/       la scène de la ville et des cartes qu'on rejoint par elle, fichier par fichier (CarteVille)
+ ├─ js/ville-carte.js     cette scène : la ville, la transition, la montagne, la plage, les grottes, chez les voisins
+ ├─ js/infra-monde.js     l'infra-monde
  └─ js/main.js            point d'entrée des modules ES
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node tests/run-tests.mjs
      └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
-tests/engine.test.js      tests du moteur (jamais chargés par la page)
+tests/engine/             tests du moteur, un fichier par thème (jamais chargés par la page)
 assets/                   cartes Tiled (carte_printemps.json et serre_interieur.json, et leurs sources .tmj) + images du pack
 ```
 
@@ -37,15 +46,140 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
   batiments: { etable, poulailler, moulin, serre, verger, zone, zone2, silo },
   animaux: { vache, mouton, poule } (nombre de bêtes de l'Étable et du Poulailler) }`.
 - **`sync(modèle)` est idempotent** : `render()` appelle `renderStage()` environ 5 fois par
-  seconde ; un modèle identique est écarté avant la scène (comparaison de la clé JSON), un modèle
+  seconde ; un modèle identique est écarté avant la scène (comparaison de valeur avec le précédent, `pareil()`, sans texte JSON), un modèle
   différent crée, met à jour ou détruit exactement ce qui a changé.
 - **Pont d'actions** `stageAct(action, données)` : crée un bouton masqué portant
   `data-action` et `data-*`, le clique, le retire. L'unique écouteur de clics de la page fait le
   reste : une seule logique d'action, mêmes fenêtres, même suivi de session (aucune donnée
   nouvelle : seulement de nouveaux noms d'action, `stage-open`, `stage-close`, `maison-tab`).
 
-Pour ajouter un élément à la carte : un champ dans `stageModel()`, un bloc dans `sync()`,
-une action existante dans `tap()`. Jamais d'appel au moteur depuis `farm-stage.js`.
+Pour ajouter un élément à la carte : un champ dans `stageModel()`, un bloc dans `sync()`
+(`js/carte/ferme/modele.js`), une action existante dans `tap()` (`js/farm-stage.js`). Jamais
+d'appel au moteur depuis la scène.
+
+## 1 bis. Le kit commun des cartes, les fichiers des scènes
+
+Tous les fichiers des cartes sont des **scripts classiques** (pas des modules ES) : ils posent
+chacun un nom global, dans l'ordre de `jeu.html`, et `scripts/build-site.mjs` les minifie un à
+un (liste `SCRIPTS`), sans regroupement. C'était déjà la forme de `farm-stage.js` et de
+`ville-carte.js` : la page, les modules (`js/ui/stage.js`, `js/ui/excursion.js`) et les tests
+les trouvent sous les mêmes noms (`FarmStage`, `VilleCarte`, `InfraMonde`), et la scène de la
+ferme peut toujours manquer sans que le jeu s'arrête (§ 6). Les passer en modules regroupés par
+esbuild aurait demandé de changer leur chargement (après les modules, ou importés par eux) et la
+vérification de la page, pour un gain nul à l'exécution.
+
+**Le kit (`window.CarteKit`, `js/carte/`)**, chargé avant tout le reste des cartes, ne demande
+pas Phaser pour se charger. Ce que chaque carte avait en double y est une seule fois :
+
+| Fichier | Contenu |
+|---|---|
+| `kit.js` | `T` (16 px) ; `v(fichier)`, l'adresse versionnée d'un fichier de `assets/` (avec ou sans le préfixe `assets/`) ; `reduit()`, « réduire les animations » (une requête `matchMedia` créée une fois) ; `extrude()`, les planches de tuiles à bord répété ; `planche(n, enfant)`, `planchePerso()`, la planche d'un personnage ; `saisie()` ; `regard(dx, dy)`, de face, de dos ou de profil (la règle `|dx| > 0,8 × |dy|`) ; `VITESSES`, la vitesse de marche de chacun, carte par carte ; `cycle()`, `imageA()`, `animTuiles()`, `pasAnimTuiles()`, les tuiles animées de Tiled ; `FLECHE`, `balance()`, la flèche bleue des passages ; `TEXTE`, `texte()`, les petits textes qui montent au-dessus du personnage |
+| `chemins.js` | `chemin(grille, départ, but, { diag, max })` : le seul chercheur de chemin (A*, tas binaire, 8 directions sans couper un coin) ; `tendre()`, le chemin tendu (tout droit tant que rien ne gêne) ; `plusProche(ok, rayon)`, la place libre la plus proche (anneau par anneau, au plus près dans l'anneau) |
+| `nature.js` | `NATURE` (l'herbe haute, l'opacité d'un arbre devant le personnage, l'ombre d'un arbre, l'arbre qui tombe, les éclats de pierre), `PECHE` (l'attente de la touche, le bouchon et le fil) ; `herbe()`, l'herbe haute qui penche ; `fondu()`, l'arbre qui s'éclaircit |
+| `lumiere.js` | le jour et la nuit : `LIGHT_KEYS`, `lumiere(heure)`, `voile(scène, l, h, profondeur)` (§ 1 ter) |
+
+Le coût d'un pas en diagonale dépend de la carte : 1,414 à la ferme (dehors, cases de 16 px, et
+dans les intérieurs, grille de 4 px), 1 en ville et dans l'infra-monde, où l'ancienne recherche
+en largeur comptait les pas : leurs chemins ont gardé la même longueur en nombre de cases (3 000
+grilles tirées au hasard comparées à l'ancien A* de la ferme et à l'ancienne recherche en
+largeur : mêmes coûts partout).
+
+**La ferme** : `js/farm-stage.js` garde le montage, l'API `FarmStage`, et la scène elle-même :
+sa création, sa boucle d'image, les appuis et les gestes (tout ce qui passe par le pont
+d'actions `ctx.bridge.act`). La classe est faite une fois (`sceneClass()`, hors de `mount()`) ;
+elle reçoit au montage un **contexte** (`scène.ctx` : le pont, le dossier des images, les
+découpes de `crops.png`, le calque DOM des étiquettes, le dernier modèle, la carte est-elle
+affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les donne par
+`FermeCarte.partie({ … })` et `sceneClass()` les pose sur le prototype :
+
+| Fichier | Méthodes |
+|---|---|
+| `config.js` | les réglages (`FermeCarte.C` : `MAP`, `BUILDINGS`, `ROCKS`, `FISHING`, `ROOMS`…) |
+| `sol.js` | textures et dessins de secours, sol cuit (`bakeGround`, `drawLayer`), terre labourée, grille de la houe, tuiles animées, réparation du fond |
+| `decor.js` | arbres, buissons et barrières (`findOccluders`), ombres, herbe haute |
+| `interieurs.js` | intérieurs (`bakeRooms`, `setRoom`, meubles), repas |
+| `camera.js` | zoom, glissement, élan, repères, `panTo` |
+| `etiquettes.js` | étiquettes, bulles des tas, bulle « +x », bulle de la citerne (DOM) |
+| `hache.js`, `pioche.js`, `peche.js` | les arbres, les rochers, l'étang et la mare |
+| `passages.js` | la sortie vers la ville, le tronc creux |
+| `machines.js` | les asperseurs, le robot |
+| `modele.js` | `sync(modèle)` et ce qu'il crée (bâtiments, parcelles, Verger, puits, citerne) |
+
+**La ville** : `js/ville-carte.js` garde la scène (création, boucle d'image, marche, chemins,
+passages, horloge, grottes) et l'API `VilleCarte` ; ses réglages sont dans
+`js/carte/ville/config.js` (`CarteVille.C` ; `CarteVille.etat` : la carte affichée), ses autres
+méthodes dans `js/carte/ville/` (`CarteVille.partie`) : `circulation.js` (les bâtiments en 3/4
+et les voitures), `ecole.js` (le bus de l'école), `hud.js` (les messages, la fenêtre de la gare),
+`marche.js` (le marché, les entreprises), `train.js`, `navette.js` (le bus de ligne),
+`trouvailles.js`, `faune.js`, `nature.js` (arbres, rochers, herbe haute), `peche.js`,
+`voisins.js` (leurs maisons, leur famille). Un fichier sur ~800 lignes au plus.
+
+Réglages qui avaient divergé et qui n'en font plus qu'un : l'attente de la touche à la pêche
+(2,2 à 4,8 s, celle de la ferme ; la ville attendait 2,2 à 4,6 s), les feuilles d'un arbre qui
+tombe (26, celles de la ferme ; la ville en lâchait 22), les éclats d'un rocher qui se brise (la
+palette de la ferme : la ville finissait par un gris clair, `0xe4e0dc`, la ferme par `0x6f6a6c`),
+les petits textes « ! » et « … » de la pêche à la ferme (police et couleurs du « +1 » de la
+ville), la case libre la plus proche (anneau par anneau, au plus près dans l'anneau : la ville
+prenait, pour s'y poser d'un coup, la première trouvée, l'infra-monde aussi ; la ferme cherchait
+dans tout le carré de 13 cases), et les tuiles animées de la ville et de l'infra-monde, qui
+suivent maintenant la durée de chaque image comme à la ferme (toutes leurs images durent 400 ms :
+rien ne change à l'écran).
+
+## 1 ter. Le jour et la nuit
+
+Un voile de la taille de la carte (`CarteKit.voile`), un rectangle en mode « multiplier » posé
+au-dessus de ce qui est dessiné, prend la couleur de l'heure (`LIGHT_KEYS` : aube chaude à 6 h,
+plein jour de 9 h à 16 h, lumière dorée de 17 h à 19 h, crépuscule vers 20-21 h, nuit bleue et
+sombre de 22 h à 5 h ; caché en plein jour) et passe de l'une à l'autre en fondu (1,2 s ; tout de
+suite au premier affichage et avec « réduire les animations »).
+
+- **La ferme** : l'heure du modèle (`modèle.heure`), à la profondeur 1e6. Les intérieurs, posés
+  à droite de la carte, restent hors du voile : ils sont éclairés.
+- **La ville, la transition, la montagne et la plage** (`JOUR_NUIT`) : l'horloge du jeu
+  (`HorlogeSortie.maintenant().heure`, relue chaque seconde par `stepClock`), sous ce qui vole
+  (l'aigle, la mouette en vol : `VOL`), les flèches des passages et les petits textes, qui gardent
+  leurs couleurs. Sans partie (pas d'horloge) : plein jour.
+- **Pas de voile** : la grotte (elle a sa propre obscurité, la lumière autour du personnage),
+  l'intérieur des voisins (éclairé), l'infra-monde (sa lumière à lui).
+- Hors de portée pour l'instant : les réverbères et les fenêtres allumées la nuit.
+
+## 1 quater. Un seul jeu Phaser pour toutes les cartes
+
+`js/carte/jeu.js` (`window.CarteJeu`, chargé après le kit) tient **un seul `Phaser.Game`** :
+la ferme, la ville (et la transition, la montagne, la plage, la grotte, chez les voisins) et
+l'infra-monde en sont des scènes. Un canvas, un contexte WebGL, un jeu de textures. Avant, chaque
+changement de carte détruisait le jeu de la carte précédente et en créait un autre (nouveau
+contexte WebGL, images retéléchargées et redécodées, planches réextrudées), pendant que celui de
+la ferme dormait à côté avec ses propres textures.
+
+- **Changer de carte = changer de scène** (`CarteJeu.montre(zone, clé, { cree, data, neuve, garde })`).
+  La ferme est une scène *gardée* : elle s'endort (`scene.sleep`) et se réveille telle qu'on l'a
+  laissée (vue, personnage, intérieur). Une autre carte est une **scène neuve à chaque fois**
+  (`new VilleScene()`, ses paramètres en `data` : `{ search: '?carte=…&arrivee=…' }`, lus dans
+  `init()`), retirée quand on la quitte : ses objets, ses minuteries (`this.time`), ses tweens,
+  ses appuis et ses touches partent avec elle. Pendant une image (une carte quittée depuis une
+  minuterie de sa scène), le passage est fait juste après, hors de l'image.
+- **Les textures restent** : le chargeur d'une scène saute ce qui est déjà dans le jeu, une carte
+  revue ne redemande rien ; `CarteKit.extrude()` n'extrude une planche qu'une fois. Ce qui dépend
+  de la carte ou de la partie porte son fichier dans sa clé : la planche du personnage
+  (`heros:<fichier>`), celle des rochers d'une carte (`rochers_carte:<fichier>`) ; les
+  animations de l'habitant de l'infra-monde portent son nom (le gestionnaire d'animations est
+  commun).
+- **Le canvas** est rendu à la densité de l'écran (`CarteKit.ratio()`, plafonnée à 3) en
+  `Scale.NONE`, et posé dans la zone de la carte affichée (`#farm-stage`, `#map-stage`) ; un
+  `ResizeObserver` sur ces zones et `CarteJeu.taille()` tiennent sa taille. La ferme garde son
+  zoom non entier ; la ville et l'infra-monde prennent un **zoom entier en pixels de l'écran**
+  (`CarteJeu.zoomEntier` : 2 à 5 pixels CSS par pixel de carte comme avant, arrondi à un nombre
+  entier de pixels de l'écran) et arrondissent par leur caméra. Un écouteur de taille posé par une
+  scène passe par `CarteJeu.suitTaille(scène, fn)`, retiré à son arrêt.
+- **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la
+  page ; `CarteKit.saisie()` laisse les touches au champ qui a le focus ou à la fenêtre ouverte.
+- **Fenêtres des cartes** (la gare, l'arrêt de bus, un étal, une entreprise, le tronc creux) :
+  celles du jeu, par `FermeHote.modal(html, options)` / `FermeHote.closeModal()` (js/ui/modal.js :
+  cadre bois, focus gardé par Tab, Échap, focus rendu). Tant qu'une fenêtre est ouverte, les
+  touchers et les flèches ne vont pas à la carte.
+- **Sans Phaser** (ou sans WebGL ni canvas utilisable) : la ferme garde sa liste classique (§ 6) ;
+  une autre carte ne s'ouvre pas, le joueur reste où il est avec un message.
 
 ## 2. La carte : 72×57 tuiles, trois repères
 
@@ -95,7 +229,7 @@ bâtiments sont celles du printemps (suffixe `_sp` des fichiers du pack, constan
   rectangle est lu mais le jeu ne s'en sert pas encore.
 
   Un bâtiment verrouillé n'est pas dessiné (l'herbe reste). `SERRE_FRAME = 'cour'` dans
-  `farm-stage.js` affiche à la place la verrière avec sa cour pavée (177×144), nettement plus
+  `js/carte/ferme/config.js` affiche à la place la verrière avec sa cour pavée (177×144), nettement plus
   grande que le rectangle de la carte.
 - **Parcelles.** Le coin haut-gauche de `zone_culture_1` est calé sur la grille de 16 px
   (464,384) ; les parcelles sont des tuiles jointives, 5 colonnes au plus :
@@ -125,7 +259,7 @@ bâtiments sont celles du printemps (suffixe `_sp` des fichiers du pack, constan
 
 La taille de la carte est libre : le jeu la lit dans le fichier. Si elle change, reporter ses
 dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
-(`farm-stage.js`), qui servent quand le fichier ne se charge pas.
+(`js/carte/ferme/config.js`), qui servent quand le fichier ne se charge pas.
 
 ## 3. Caméra, glissement, appuis
 
@@ -144,7 +278,7 @@ dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
   (`setCentre()` borne le centre). `panTo()` accepte un lieu (`'moulin'`, `'zone'`…) et y
   centre la vue dans les deux sens.
 - **Densité de l'écran** : le canvas est rendu à `devicePixelRatio` (plafonné à 3) en mode
-  `Scale.NONE` ; `resize()` (ResizeObserver sur la zone) tient la taille à jour. Le zoom n'étant
+  `Scale.NONE` ; `CarteJeu.taille()` (ResizeObserver sur la zone) tient la taille à jour. Le zoom n'étant
   pas entier, c'est ce qui garde des pixels réguliers. `roundPixels` est désactivé (des sommets
   arrondis un à un ouvriraient des fentes entre parcelles voisines).
 - **Glissement libre** au doigt ou à la souris (deux axes, borné ; molette sur ordinateur), avec
@@ -162,7 +296,8 @@ dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
 
 `#farm-stage` est en `position: fixed`, de `--header-h` (hauteur du bandeau, mesurée à chaque
 rendu) à `--dock` (menu du bas). Visible seulement sur la Ferme hors écran de détail
-(`stageActive()`) ; ailleurs elle est masquée et la boucle Phaser dort (`loop.sleep()`).
+(`stageActive()`) ; ailleurs elle est masquée, sa scène dort et, si aucune autre carte n'est
+affichée, la boucle Phaser aussi (`CarteJeu.cache`).
 Quand elle est visible, `<main>` est masqué (`body.has-stage`).
 
 - **Boutons ronds** posés sur la carte, en haut à droite (DOM, 48 px) : 🌱 ouvre la fenêtre
@@ -210,7 +345,7 @@ culture (vide → `plant-open` ; mûre → `harvest` ; sèche → `water` ; déj
   de chacun, puis la deuxième…). Avec la progression actuelle (6, 9, 12, 15, 18 parcelles),
   9 parcelles font une rangée complète et 18 en font deux. Les emplacements que le joueur n'a
   pas encore sont assombris : sans cela, rien ne distingue une parcelle vide de la terre du bac.
-- **Scène** (`farm-stage.js`, `ROOMS`) : l'intérieur est cuit dans sa propre image, posée à
+- **Scène** (`js/carte/ferme/interieurs.js`, `ROOMS`) : l'intérieur est cuit dans sa propre image, posée à
   droite de la carte, hors de portée de la vue. `setRoom()` y fait sauter la caméra (court
   fondu) ; `fit()` cadre l'intérieur sans sa marge unie, entre l'objectif du chapitre et les
   boutons. Dedans : pas de glissement, pas d'étiquettes, pas de vie d'ambiance. À la sortie,
@@ -319,7 +454,7 @@ est la poignée de débogage posée par `js/main.js`).
 
 ## Version 1.4 : le Champ, les arbres du Verger, le bandeau sur une ligne
 
-- **Le Champ** : la deuxième zone de culture (rectangle `zone_culture_2`, 8 × 8 = 64 parcelles) s'ouvre en entier, sans rien payer, quand le Moulin se débloque. Moteur : `openZone2(state)`, appelée par `updateChapters()` ; les parcelles sont dans `state.potager.zone2`, portent le lieu `potager` (mêmes cultures et automatisations que la Zone de culture), `zone: 2` et les identifiants `zone2-n` ; `zone2Plots()`, `plotZone()`. `waterAll()` et `harvestAll()` prennent une zone en troisième argument. Valeurs dans `DATA.POTAGER.ZONE2` (`data/crops.json`).
+- **Le Champ** : la deuxième zone de culture (rectangle `zone_culture_2`, 8 × 8 = 64 parcelles) s'ouvre en entier, sans rien payer, quand le Moulin se débloque. Moteur : `openZone2(state)`, appelée par `updateChapters()` ; les parcelles sont dans `state.potager.zone2`, portent le lieu `potager` (mêmes cultures et automatisations que la Zone de culture), `zone: 2` et les identifiants `zone2-n` ; `zone2Plots()`, `plotZone()`. `waterAll()` et `harvestAll()` prennent une zone en troisième argument. Valeurs dans `DATA.POTAGER.ZONE2` (`data/crops.json`). (Version 1.15 : le Champ a rejoint la Zone de culture, voir `migrateFreeSoil()` ; ces fonctions et l'argument de zone ont disparu.)
 - **Sur la carte** : la scène a deux grilles (`grid`, `grid2`) et une seule table de parcelles ; `zones()` les parcourt pour l'affichage et pour les appuis. Lieu `zone2`, fenêtre `zone2` (`renderZone2()`), étiquette et pastille « à faire » propres. Les notifications d'arrosage et de récolte mènent à la Zone de culture d'abord, puis au Champ, puis à la Serre.
 - **Arbres du Verger** : `modèle.arbres` (12 au plus) ; `syncTrees()` pose le n-ième arbre sur `arbre_verger_n`. Un appui sur un arbre ouvre la fenêtre du Verger. Le Verger est limité à 12 emplacements (`DATA.VERGER.EMPLACEMENTS_MAX`) ; une partie qui en avait davantage garde ses arbres, dont 12 sont dessinés.
 - **Options** : le bouton ⚙️ quitte le bandeau pour le bout du menu du bas (`renderTabbar()`, même action `open-options`).

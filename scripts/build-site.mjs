@@ -58,7 +58,12 @@ const ASSETS_HORS_SITE = [
   /^(arbre_clair|pin_clair|barrieres|bordure_eau|bordure_eau_herbe|eau|herbe_chemin|herbe_deco)\.png$/,
 ];
 const SOURCEMAP = process.argv.includes('--sourcemap');
-const SCRIPTS = ['js/telemetry.js', 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', 'js/farm-stage.js', 'js/ville-carte.js', 'js/infra-monde.js']; // scripts classiques, hors du regroupement
+// scripts classiques, hors du regroupement : le kit commun des cartes (js/carte/), la ferme
+// (js/carte/ferme/ et js/farm-stage.js), la ville (js/carte/ville/ et js/ville-carte.js)…
+const CARTE_KIT = ['kit', 'chemins', 'nature', 'lumiere', 'jeu'].map((n) => `js/carte/${n}.js`);
+const CARTE_FERME = ['config', 'sol', 'decor', 'interieurs', 'camera', 'etiquettes', 'hache', 'pioche', 'peche', 'passages', 'machines', 'modele'].map((n) => `js/carte/ferme/${n}.js`);
+const CARTE_VILLE = ['config', 'circulation', 'ecole', 'hud', 'marche', 'train', 'navette', 'trouvailles', 'faune', 'nature', 'peche', 'voisins'].map((n) => `js/carte/ville/${n}.js`);
+const SCRIPTS = ['js/telemetry.js', ...CARTE_KIT, 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', ...CARTE_FERME, 'js/farm-stage.js', ...CARTE_VILLE, 'js/ville-carte.js', 'js/infra-monde.js'];
 const ENTRY = 'js/main.js';
 const BUNDLE = 'js/jeu.bundle.js';
 

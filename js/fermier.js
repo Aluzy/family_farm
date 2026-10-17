@@ -47,8 +47,9 @@
 (function (global) {
   'use strict';
 
-  const T = 16;
-  const SPEED = 58;              // px de carte par seconde
+  const K = global.CarteKit;
+  const T = K.T;
+  const SPEED = K.VITESSES.fermier;   // px de carte par seconde
   const STRIDE = 4;              // px par image de marche : les pieds suivent la distance
   const BREATH_S = 0.8;          // debout : secondes par souffle
   const HOLD_MS = 9000;          // une case n'est jamais retenue plus longtemps
@@ -135,52 +136,21 @@
       for (let i = 1; i < n; i++) if (!freeAt(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n)) return false;
       return true;
     }
-    // A* sur les cases (8 directions, sans couper les coins), puis le chemin est tendu : il va
-    // tout droit tant que rien ne le gêne. null : pas de chemin.
+    // Le chemin le plus court sur les cases (CarteKit.chemin : A*, 8 directions, sans couper
+    // les coins), puis tendu : il va tout droit tant que rien ne le gêne. null : pas de chemin.
+    let grid = null;
     function findPath(x0, y0, x1, y1) {
       if (!blocked) buildGrid();
       if (lineFree(x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
       const [sc, sr] = cellOf(x0, y0);
-      let [gc, gr] = cellOf(x1, y1);
+      const [gc, gr] = cellOf(x1, y1);
       if (!free(gc, gr)) return null;
-      const start = sr * cols + sc, goal = gr * cols + gc;
-      const g = new Float32Array(cols * rows).fill(Infinity);
-      const from = new Int32Array(cols * rows).fill(-1);
-      const heap = [];
-      const push = (i, f) => { heap.push([f, i]); let k = heap.length - 1; while (k > 0) { const p = (k - 1) >> 1; if (heap[p][0] <= heap[k][0]) break; [heap[p], heap[k]] = [heap[k], heap[p]]; k = p; } };
-      const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let k = 0; for (;;) { const l = 2 * k + 1, r = l + 1; let m = k; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === k) break; [heap[m], heap[k]] = [heap[k], heap[m]]; k = m; } } return top[1]; };
-      const h = (i) => { const dc = Math.abs((i % cols) - gc), dr = Math.abs(((i / cols) | 0) - gr); return Math.max(dc, dr) + 0.414 * Math.min(dc, dr); };
-      g[start] = 0; push(start, h(start));
-      let steps = 0;
-      while (heap.length && steps++ < 6000) {
-        const i = pop();
-        if (i === goal) break;
-        const c = i % cols, r = (i / cols) | 0;
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            if (!dc && !dr) continue;
-            const nc = c + dc, nr = r + dr;
-            if (!free(nc, nr)) continue;
-            if (dc && dr && (!free(c + dc, r) || !free(c, r + dr))) continue;
-            const j = nr * cols + nc, ng = g[i] + (dc && dr ? 1.414 : 1);
-            if (ng < g[j]) { g[j] = ng; from[j] = i; push(j, ng + h(j)); }
-          }
-        }
-      }
-      if (from[goal] < 0 && goal !== start) return null;
-      const cells = [];
-      for (let i = goal; i !== start && i >= 0; i = from[i]) cells.unshift(i);
+      if (!grid) grid = { cols, rows, libre: (i) => !blocked[i] };
+      const cells = K.chemin(grid, sr * cols + sc, gr * cols + gc, { max: 6000 });
+      if (!cells) return null;
       const pts = cells.map((i) => ({ x: (i % cols) * T + T / 2, y: ((i / cols) | 0) * T + T - 2 }));
       pts[pts.length - 1] = { x: x1, y: y1 };
-      // chemin tendu
-      const out = [];
-      let ax = x0, ay = y0, k = 0;
-      while (k < pts.length) {
-        let far = k;
-        while (far + 1 < pts.length && lineFree(ax, ay, pts[far + 1].x, pts[far + 1].y)) far++;
-        out.push(pts[far]); ax = pts[far].x; ay = pts[far].y; k = far + 1;
-      }
-      return out;
+      return K.tendre(pts, x0, y0, lineFree);
     }
     const pathLength = (x, y, path) => path.reduce((s, p) => { const d = Math.hypot(p.x - x, p.y - y); x = p.x; y = p.y; return s + d; }, 0);
 
@@ -188,6 +158,7 @@
 
     const s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1).setVisible(false);
     let x = 0, y = 0, face = 'bas', flip = false, shown = false, alpha = 0, fade = 0;
+    let lastPos = null;             // dernière position donnée par pos()
     let basket = false;
     function frame(name) {
       const k = F[name];
@@ -200,7 +171,7 @@
       s.setPosition(Math.round(x), Math.round(y)).setFlipX(flip).setDepth(y).setAlpha(alpha);
     }
     function look(dx, dy) {
-      if (Math.abs(dx) > Math.abs(dy) * 0.8) { face = 'cote'; flip = dx < 0; } else { face = dy > 0 ? 'bas' : 'haut'; flip = false; }
+      ({ face, flip } = K.regard(dx, dy));
     }
 
     /* ---------- dehors : la maison, le Poulailler ---------- */
@@ -546,20 +517,15 @@
       }
     }
 
-    // Le point libre le plus proche de (tx, ty) (6 cases au plus), null s'il n'y en a pas.
+    // Le point libre le plus proche de (tx, ty) (6 cases au plus, CarteKit.plusProche), null
+    // s'il n'y en a pas.
     function nearestFree(tx, ty) {
       if (!blocked) buildGrid();
       if (freeAt(tx, ty)) return { x: tx, y: ty };
       const [c0, r0] = cellOf(tx, ty);
-      let best = null, bd = Infinity;
-      for (let r = r0 - 6; r <= r0 + 6; r++) {
-        for (let c = c0 - 6; c <= c0 + 6; c++) {
-          if (!free(c, r)) continue;
-          const px = c * T + T / 2, py = r * T + T - 2, dd = Math.hypot(px - tx, py - ty);
-          if (dd < bd) { bd = dd; best = { x: px, y: py }; }
-        }
-      }
-      return best;
+      const at = (i, j) => ({ x: (c0 + i) * T + T / 2, y: (r0 + j) * T + T - 2 });
+      const best = K.plusProche((i, j) => free(c0 + i, r0 + j), 6, { dist: (i, j) => { const p = at(i, j); return Math.hypot(p.x - tx, p.y - ty); } });
+      return best ? at(best.i, best.j) : null;
     }
 
     // Version 1.19 : le joueur l'envoie en (tx, ty) (double appui sur la carte). Il y va avant
@@ -683,17 +649,9 @@
       const ok = clear ? (px, py) => room.walk(px, py) && !(room.props || []).some((p) => p.sprite && p.sprite.depth > 1
         && px + 8 > p.x && px - 8 < p.x + p.w && py - 26 < p.y + p.h && py > p.y - 4) : room.walk;
       if (ok(tx, ty)) return { x: tx, y: ty };
-      for (let d = IN_STEP; d < 96; d += IN_STEP) {
-        let best = null, bd = Infinity;
-        for (let k = -d; k <= d; k += IN_STEP) {
-          for (const [px, py] of [[tx + k, ty - d], [tx + k, ty + d], [tx - d, ty + k], [tx + d, ty + k]]) {
-            const dd = Math.hypot(px - tx, py - ty);
-            if (dd < bd && ok(px, py)) { bd = dd; best = { x: px, y: py }; }
-          }
-        }
-        if (best) return best;
-      }
-      return { x: tx, y: ty };
+      // sur une grille de IN_STEP px autour du point, jusqu'à 92 px
+      const best = K.plusProche((i, j) => ok(tx + i * IN_STEP, ty + j * IN_STEP), Math.floor(95 / IN_STEP), { de: 1 });
+      return best ? { x: tx + best.i * IN_STEP, y: ty + best.j * IN_STEP } : { x: tx, y: ty };
     }
     function propSpot(room, name) {
       const p = (room.props || []).find((q) => q.name === name);
@@ -704,50 +662,20 @@
       for (let i = 1; i <= n; i++) if (!room.walk(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n)) return false;
       return true;
     }
-    // Chemin dans un intérieur : A* sur une grille de IN_STEP px (8 directions), puis tendu.
+    // Chemin dans un intérieur : sur une grille de IN_STEP px (CarteKit.chemin), puis tendu.
     function roomPath(room, x0, y0, x1, y1) {
       if (roomLineFree(room, x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
       const ox = room.x, cols = Math.ceil(room.w / IN_STEP), rows = Math.ceil(room.h / IN_STEP);
       const cell = (x, y) => Math.max(0, Math.min(rows - 1, Math.round(y / IN_STEP))) * cols + Math.max(0, Math.min(cols - 1, Math.round((x - ox) / IN_STEP)));
       const at = (i) => ({ x: ox + (i % cols) * IN_STEP, y: ((i / cols) | 0) * IN_STEP });
       const ok = new Map();
-      const free = (i) => { if (!ok.has(i)) { const p = at(i); ok.set(i, room.walk(p.x, p.y)); } return ok.get(i); };
-      const start = cell(x0, y0), goal = cell(x1, y1);
-      const g = new Map([[start, 0]]), from = new Map();
-      const open = [[0, start]];
-      const gc = goal % cols, gr = (goal / cols) | 0;
-      const h = (i) => { const dc = Math.abs((i % cols) - gc), dr = Math.abs(((i / cols) | 0) - gr); return Math.max(dc, dr) + 0.414 * Math.min(dc, dr); };
-      let steps = 0, found = false;
-      while (open.length && steps++ < 8000) {
-        let m = 0;
-        for (let k = 1; k < open.length; k++) if (open[k][0] < open[m][0]) m = k;
-        const i = open.splice(m, 1)[0][1];
-        if (i === goal) { found = true; break; }
-        const c = i % cols, r = (i / cols) | 0;
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            if (!dc && !dr) continue;
-            const nc = c + dc, nr = r + dr;
-            if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
-            const j = nr * cols + nc;
-            if (!free(j) || (dc && dr && (!free(r * cols + nc) || !free(nr * cols + c)))) continue;
-            const ng = g.get(i) + (dc && dr ? 1.414 : 1);
-            if (ng < (g.has(j) ? g.get(j) : Infinity)) { g.set(j, ng); from.set(j, i); open.push([ng + h(j), j]); }
-          }
-        }
-      }
-      if (!found) return [{ x: x1, y: y1 }];       // pas de chemin : tout droit (cas d'un meuble posé sur lui)
-      const pts = [];
-      for (let i = goal; i !== start; i = from.get(i)) pts.unshift(at(i));
+      const libre = (i) => { if (!ok.has(i)) { const p = at(i); ok.set(i, room.walk(p.x, p.y)); } return ok.get(i); };
+      const cells = K.chemin({ cols, rows, libre }, cell(x0, y0), cell(x1, y1), { max: 8000 });
+      if (!cells) return [{ x: x1, y: y1 }];   // pas de chemin : tout droit (cas d'un meuble posé sur lui)
+      if (!cells.length) return [];             // déjà sur place
+      const pts = cells.map(at);
       pts[pts.length - 1] = { x: x1, y: y1 };
-      const out = [];
-      let ax = x0, ay = y0, k = 0;
-      while (k < pts.length) {
-        let far = k;
-        while (far + 1 < pts.length && roomLineFree(room, ax, ay, pts[far + 1].x, pts[far + 1].y)) far++;
-        out.push(pts[far]); ax = pts[far].x; ay = pts[far].y; k = far + 1;
-      }
-      return out;
+      return K.tendre(pts, x0, y0, (ax, ay, bx, by) => roomLineFree(room, ax, ay, bx, by));
     }
 
     // Le joueur entre dans `room` : il y est déjà, ou il y va (il quitte le dehors tout de suite).
@@ -950,10 +878,8 @@
         if (left > 0.01) { e.x += (dx / left) * d; e.y += (dy / left) * d; }
         if (left - d <= 0.3) e.path.shift();
         e.walked += d;
-        let f = 'bas', fl = false;
-        if (Math.abs(dx) > Math.abs(dy) * 0.8) { f = 'cote'; fl = dx < 0; } else f = dy > 0 ? 'bas' : 'haut';
-        e.face = f; e.flip = fl;
-        name = `marche_${f}_${Math.floor(e.walked / STRIDE) % 4}`;
+        ({ face: e.face, flip: e.flip } = K.regard(dx, dy));
+        name = `marche_${e.face}_${Math.floor(e.walked / STRIDE) % 4}`;
         return false;
       };
       const seat = e.seat;
@@ -1062,10 +988,8 @@
         if (left > 0.01) { inside.x += (dx / left) * d; inside.y += (dy / left) * d; }
         if (left - d <= 0.3) inside.path.shift();
         inside.walked = (inside.walked || 0) + d;
-        let f = 'bas', fl = false;
-        if (Math.abs(dx) > Math.abs(dy) * 0.8) { f = 'cote'; fl = dx < 0; } else f = dy > 0 ? 'bas' : 'haut';
-        inside.face = f; inside.flip = fl;
-        name = `marche_${f}_${Math.floor(inside.walked / STRIDE) % 4}`;
+        ({ face: inside.face, flip: inside.flip } = K.regard(dx, dy));
+        name = `marche_${inside.face}_${Math.floor(inside.walked / STRIDE) % 4}`;
         inside.t = 0;
       } else if (inside.mode === 'frigo') {
         const A = ACTS.frigo;
@@ -1152,7 +1076,13 @@
       // Double appui sur le Poulailler ou l'Étable : il va y ramasser (false : rien à prendre).
       collect,
       // Où il est (pour la bulle « +x ») : ses pieds, ou null s'il n'est pas sur la carte.
-      pos: () => (shown && !home ? { x, y } : null),
+      // Le même objet tant qu'il n'a pas bougé (demandé plusieurs fois par image) ; un nouveau
+      // dès qu'il bouge : celui qu'un appelant a gardé ne change jamais sous lui.
+      pos: () => {
+        if (!shown || home) return null;
+        if (!lastPos || lastPos.x !== x || lastPos.y !== y) lastPos = { x, y };
+        return lastPos;
+      },
       destroy() { endMeal(); s.destroy(); if (inside.s) inside.s.destroy(); if (inside.drap) inside.drap.destroy(); zs.forEach((z) => z.destroy()); holds.clear(); },
       // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
       setSheet(key) {

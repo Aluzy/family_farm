@@ -1,13 +1,15 @@
 # Outils communs aux images de l'infra-monde (scripts/infra/*.py) : les modèles fournis
-# (scripts/infra/originaux/), le contour, l'écriture des jeux de tuiles Tiled (.tsx).
+# (scripts/infra/originaux/), l'écriture des jeux de tuiles Tiled (.tsx). Le contour, le hasard
+# fixe, les mélanges et l'aperçu viennent de scripts/pixel.py.
 import os
+import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, T, apercu, contour, hasard, mel as melange, wangid  # noqa: E402,F401
+
 ORIGINAUX = os.path.join(ROOT, 'scripts', 'infra', 'originaux')
-ASSETS = os.path.join(ROOT, 'assets')
-T = 16
 
 # Les couleurs des modèles
 SOL = (134, 167, 106)             # l'herbe pâle
@@ -20,30 +22,6 @@ LUEUR = [(165, 117, 204), (117, 90, 139)]                            # les écla
 
 def modele(nom):
     return Image.open(os.path.join(ORIGINAUX, nom + '.png')).convert('RGBA')
-
-
-def melange(a, b, t):
-    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
-
-
-def hasard(*k):
-    # nombre pseudo-aléatoire fixe dans [0, 1[ (les images sont les mêmes à chaque lancement)
-    import math
-    x = math.sin(sum(v * c for v, c in zip(k, (12.9898, 78.233, 37.719, 4.581))) + 0.5) * 43758.5453
-    return x - math.floor(x)
-
-
-def contour(im, couleur):
-    """Un contour d'un pixel (voisins haut, bas, gauche, droite) autour du dessin."""
-    w, h = im.size
-    out = im.copy()
-    for y in range(h):
-        for x in range(w):
-            if im.getpixel((x, y))[3]:
-                continue
-            if any(0 <= x + dx < w and 0 <= y + dy < h and im.getpixel((x + dx, y + dy))[3] for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                out.putpixel((x, y), couleur + (255,))
-    return out
 
 
 def tsx(nom, image, colonnes, tuiles, animations=None, wang=None, probabilites=None, duree=180):
@@ -71,15 +49,8 @@ def tsx(nom, image, colonnes, tuiles, animations=None, wang=None, probabilites=N
                    f'   <wangcolor name="{c1[0]}" color="{c1[1]}" tile="0" probability="1"/>',
                    f'   <wangcolor name="{c2[0]}" color="{c2[1]}" tile="15" probability="1"/>']
         for t in range(16):
-            v = lambda bit: 2 if t & bit else 1
-            lignes.append(f'   <wangtile tileid="{t}" wangid="0,{v(4)},0,{v(1)},0,{v(2)},0,{v(8)}"/>')
+            lignes.append(f'   <wangtile tileid="{t}" wangid="{wangid(t)}"/>')
         lignes += ['  </wangset>', ' </wangsets>']
     lignes.append('</tileset>')
     with open(os.path.join(ASSETS, nom + '.tsx'), 'w') as f:
         f.write('\n'.join(lignes) + '\n')
-
-
-def apercu(im, nom, zoom=6, fond=(20, 18, 28)):
-    bg = Image.new('RGBA', im.size, fond + (255,))
-    bg.alpha_composite(im)
-    bg.resize((im.width * zoom, im.height * zoom), Image.NEAREST).save(os.path.join(ROOT, nom))

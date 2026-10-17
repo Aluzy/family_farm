@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
-import { EPS, nextRandom, randomInt } from './base.js';
-import { fail, farmOpen, spend } from './devices.js';
+import { nextRandom, randomInt } from './base.js';
+import { canPay, fail, farmOpen, NO_COINS, spend } from './devices.js';
 import { buyHoe, hasHoe, rockGone, treeGone } from './crops.js';
 import { addItem } from './inventory.js';
 import { gainActionXp } from './levels.js';
@@ -52,7 +52,7 @@ export function buyTool(state, id) {
   if (id === 'houe') return buyHoe(state);
   if (hasTool(state, id)) return fail(`Tu as déjà une ${def.NOM.toLowerCase()}.`);
   if (!farmOpen(state)) return fail(`La ${def.NOM.toLowerCase()} s'achète au Marché, qui ouvre avec le panneau et la pompe.`);
-  if (state.pieces + EPS < def.PRIX) return fail('Pas assez de pièces.');
+  if (!canPay(state, def.PRIX)) return fail(NO_COINS);
   const avant = selectedTool(state);
   spend(state, def.PRIX, `Achat : ${def.NOM}`);
   const o = outils(state);
@@ -84,11 +84,22 @@ export function hitsNeeded(state, base) {
   return Math.max(1, base - techSum(state, 'coupsMoins'));
 }
 
-// Ce qu'un coup rapporte (`n`) : avec la Hotte de bûcheron (recolteBonus, en %), une
-// chance d'en avoir un de plus.
-function withBonus(state, n, key) {
-  const pct = techSum(state, key);
+// Ce qu'un coup rapporte (`n`) : avec une chance de `pct` % d'en avoir un de plus (la Hotte
+// de bûcheron, recolteBonus ; la Lampe de mineur, grotte.minerai).
+function withBonus(state, n, pct) {
   return n + (pct > 0 && nextRandom(state) * 100 < pct ? 1 : 0);
+}
+
+// Un coup sur l'arbre ou le rocher `id` (`partis` : 'arbres' ou 'rochers' de state.outils) :
+// au `base`-ième coup (moins les Lames affûtées), il tombe : { retour }, le jour où il revient
+// (dans `retour` jours, tiré au hasard). Renvoie { coups, fini }.
+function hit(state, partis, id, base, retour) {
+  const o = outils(state);
+  if (!o[partis] || typeof o[partis] !== 'object') o[partis] = {};
+  const coups = (o[partis][id] || 0) + 1;
+  const fini = coups >= hitsNeeded(state, base);
+  o[partis][id] = fini ? { retour: state.day + randomInt(state, retour[0], retour[1]) } : coups;
+  return { coups, fini };
 }
 
 // Coups de hache que l'arbre `id` peut encore recevoir avant de tomber (0 : abattu).
@@ -112,13 +123,9 @@ export function chopTree(state, id) {
   if (typeof id !== 'string' || !id) return fail('Touche un arbre pour le couper.');
   if (treeGone(state, id)) return fail('Cet arbre est déjà abattu.');
   if (!canAfford(state, 'couper')) return fail(TIRED);
-  const o = outils(state);
-  if (!o.arbres || typeof o.arbres !== 'object') o.arbres = {};
-  delete o.coupes;                       // l'ancien compte des coups du jour
-  const coups = (o.arbres[id] || 0) + 1;
-  const tombe = coups >= hitsNeeded(state, H.COUPES);
-  o.arbres[id] = tombe ? { retour: state.day + randomInt(state, H.RETOUR[0], H.RETOUR[1]) } : coups;
-  const bois = withBonus(state, H.BOIS, 'recolteBonus');
+  delete outils(state).coupes;           // l'ancien compte des coups du jour
+  const { coups, fini: tombe } = hit(state, 'arbres', id, H.COUPES, H.RETOUR);
+  const bois = withBonus(state, H.BOIS, techSum(state, 'recolteBonus'));
   addItem(state, 'bois', bois);
   spendEnergy(state, 'couper');
   gainActionXp(state, 'couper');
@@ -131,16 +138,7 @@ export function chopTree(state, id) {
 // moteur ne connaît d'eux qu'un identifiant (« x,y » de leur case en bas à gauche) et leurs
 // tuiles (DATA.TERRAIN.ROCHERS). state.outils.rochers compte les coups reçus par chacun ; au
 // PIOCHE.COUPS-ième, il est cassé : { retour }, le jour où il revient (dans PIOCHE.RETOUR
-// jours, tiré au hasard). Ses tuiles libres se labourent en attendant.
-export function rockHits(state, id) {
-  const r = state.outils && state.outils.rochers && state.outils.rochers[id];
-  if (!r) return 0;
-  return typeof r === 'object' ? DATA.PIOCHE.COUPS : r;
-}
-
-export function rockBroken(state, id) {
-  return rockGone(state, id);
-}
+// jours, tiré au hasard). Ses tuiles libres se labourent en attendant (voir rockGone, crops.js).
 
 // Les rochers cassés (leurs identifiants).
 export function brokenRocks(state) {
@@ -156,12 +154,8 @@ export function mineRock(state, id) {
   if (typeof id !== 'string' || !id) return fail('Touche un rocher pour le casser.');
   if (rockGone(state, id)) return fail('Ce rocher est déjà cassé.');
   if (!canAfford(state, 'piocher')) return fail(TIRED);
-  const o = outils(state);
-  if (!o.rochers || typeof o.rochers !== 'object') o.rochers = {};
-  const coups = (o.rochers[id] || 0) + 1;
-  const casse = coups >= hitsNeeded(state, P.COUPS);
-  o.rochers[id] = casse ? { retour: state.day + randomInt(state, P.RETOUR[0], P.RETOUR[1]) } : coups;
-  const pierre = withBonus(state, P.PIERRE, 'recolteBonus');
+  const { coups, fini: casse } = hit(state, 'rochers', id, P.COUPS, P.RETOUR);
+  const pierre = withBonus(state, P.PIERRE, techSum(state, 'recolteBonus'));
   addItem(state, 'pierre', pierre);
   spendEnergy(state, 'piocher');
   gainActionXp(state, 'piocher');
@@ -170,7 +164,7 @@ export function mineRock(state, id) {
 
 /* ---------- la pioche dans la grotte : le minerai ---------- */
 
-export const MINERAIS = ['fer', 'cuivre', 'or', 'platine'];
+const MINERAIS = ['fer', 'cuivre', 'or', 'platine'];
 
 // Un minerai pris dans la grotte (la carte compte les coups de pioche, voir hitsNeeded) :
 // minerai_<sorte> dans l'inventaire (un de plus, parfois, avec la Lampe de mineur :
@@ -182,7 +176,7 @@ export function mineOre(state, sorte) {
   if (!canAfford(state, 'piocher')) return fail(TIRED);
   const lampe = techFlag(state, 'grotte');
   const pct = lampe && lampe.minerai ? lampe.minerai : 0;
-  const n = 1 + (pct > 0 && nextRandom(state) * 100 < pct ? 1 : 0);
+  const n = withBonus(state, 1, pct);
   const item = 'minerai_' + sorte;
   addItem(state, item, n);
   spendEnergy(state, 'piocher');

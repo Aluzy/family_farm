@@ -18,6 +18,7 @@ import immeubles as I
 import objets as O
 import sol as S
 from commun import ASSETS, ROOT, K, T, Toile, contour, hasard, image, mel, rgba, teinte
+from sol import motif, tuile_ferme
 
 # Les couches de bâtiment ont les noms de la ville : js/ville-carte.js les double d'un exemplaire
 # « _devant » pour passer derrière.
@@ -25,24 +26,6 @@ BATI = ['murs', 'pierre_de_taille', 'vitrages', 'charpente', 'toits', 'menuiseri
 
 
 # ---------- le sol ----------
-
-def tuile_ferme(c, x, y):
-    """Herbe et chemin de la ferme (scripts/ville/transition.py)."""
-    n = sum(bit for v, bit in zip(c, (8, 4, 2, 1)) if v == 'chemin')
-    if n == 0:
-        v = int(hasard(x, y, 8) * 16)
-        return S.plein('herbe', v), f'herbe_{v}'
-    if n == 15:
-        v = int(hasard(x, y, 9) * 8)
-        return F.bloc(v, 49), f'chemin_{v}'
-    return F.bloc(n, 50), f'herbe_chemin_{n}'
-
-
-def motif(m, x, y):
-    if m == 'chemin':
-        return F.bloc(0, 49).getpixel((x % T, y % T))[:3]
-    return S.MOTIFS[m](x % T, y % T, 0)
-
 
 def tuile_quarts(c, x, y):
     """Plus de deux matières, ou deux sans passage dessiné : chaque quart prend la matière de son

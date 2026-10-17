@@ -11,13 +11,14 @@
 # au pixel près, puis découpée en tuiles de 16 px (les tuiles identiques une seule fois) :
 # assets/barrieres.png (bloc « barrieres » de scripts/carte/planche_v2.py).
 import os
+import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, T  # noqa: E402
 ORIG = os.path.join(ROOT, 'scripts', 'carte', 'originaux')
-SORTIE = os.path.join(ROOT, 'assets', 'barrieres.png')
-T = 16
+SORTIE = os.path.join(ASSETS, 'barrieres.png')
 PAS = 9            # d'un poteau au suivant, devant et au fond
 TRONCON = 10       # un tronçon de poteau sur les côtés
 HAUT_DEVANT = 15   # un poteau du devant, du chapeau au pied

@@ -47,12 +47,12 @@ import barrieres as BA  # noqa: E402  (les barrières)
 import herbe_haute as HH  # noqa: E402  (l'herbe haute)
 import planche_v2 as PV  # noqa: E402  (où sont les nouvelles tuiles)
 
-ROOT = PV.ROOT
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, T  # noqa: E402
 ORIG = os.path.join(ROOT, 'scripts', 'carte', 'originaux')
 SOURCE = os.path.join(ORIG, 'carte_printemps_elargie_v1.tmj')
-CIBLE = os.path.join(ROOT, 'assets', 'carte_printemps_elargie.tmj')
-OMBRES = os.path.join(ROOT, 'assets', 'ombres_arbres.png')
-T = 16
+CIBLE = os.path.join(ASSETS, 'carte_printemps_elargie.tmj')
+OMBRES = os.path.join(ASSETS, 'ombres_arbres.png')
 ANCIEN = 3375                 # tuiles de la planche d'origine
 TERRE_ZONE = 1167             # le sol des anciennes zones de culture (montrées en herbe)
 # les bordures de terre des anciennes zones de culture : le jeu ne les dessine plus (herbe)

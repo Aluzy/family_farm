@@ -8,9 +8,9 @@ import { formatCoins, formatNumber } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { canPay, costLabel } from './common.js';
+import { accord, canPay, costLabel } from './common.js';
 import { helpBtn } from './aide.js';
 
 /* ---------- version 1.14 (v2, lot 10) : le commerce (Maison › Commerce) ---------- */
@@ -31,7 +31,7 @@ function estimation(type) {
   const n = Math.min(commerceCapacity(state), Math.floor(matiereParNuit(type) / def.par));
   const source = type === 'conserverie' ? 'avec les légumes en stock' : `avec ${type === 'cremerie' ? 'tes vaches' : 'tes moutons'}`;
   return n > 0
-    ? `Aujourd'hui, ${source} : environ <strong class="num">${formatNumber(n)}</strong> ${n > 1 ? def.produits : def.produit} par nuit, <strong class="num">+${formatCoins(n * def.prix)} 💰</strong>.`
+    ? `Aujourd'hui, ${source} : environ <strong class="num">${formatNumber(n)}</strong> ${accord(n, def.produit, def.produits)} par nuit, <strong class="num">+${formatCoins(n * def.prix)} 💰</strong>.`
     : `Aujourd'hui, ${source} : pas encore assez de ${def.matiere}.`;
 }
 
@@ -80,7 +80,7 @@ function currentCard() {
         <button type="button" class="btn small" data-action="commerce-quota-inc"${c.quota < cap ? '' : ' disabled'} aria-label="Un de plus">+</button>
         <button type="button" class="btn small" data-action="commerce-quota-max"${c.quota < cap ? '' : ' disabled'}>Max</button>
       </div>
-      <span class="muted">Avec le stock actuel (${formatNumber(commerceStock(state, c.type))} ${def.matiere}) : ${formatNumber(n)} ${n > 1 ? def.produits : def.produit} cette nuit, +${formatCoins(n * def.prix)} 💰.</span>
+      <span class="muted">Avec le stock actuel (${formatNumber(commerceStock(state, c.type))} ${def.matiere}) : ${formatNumber(n)} ${accord(n, def.produit, def.produits)} cette nuit, +${formatCoins(n * def.prix)} 💰.</span>
       ${up === null
         ? '<span class="muted">Capacité maximale atteinte.</span>'
         : `<button type="button" class="btn" data-action="commerce-upgrade"${canPay(up) ? '' : ' disabled'}>Agrandir : ${formatNumber(DATA.COMMERCE.CAPACITE[c.niveau])} par nuit (${costLabel(up)})</button>`}
@@ -118,12 +118,12 @@ registerActions({
     enChoix = null;
     if (result.ok) {
       const def = commerceDef(result.type);
-      showToast(`${def.icone} Ton commerce : ${def.le}${result.cost ? ` (−${formatCoins(result.cost)} 💰)` : ''}`);
+      notify(`${def.icone} Ton commerce : ${def.le}${result.cost ? ` (−${formatCoins(result.cost)} 💰)` : ''}`);
     }
   },
   'commerce-upgrade': () => {
     const result = applyResult(upgradeCommerce(state));
-    if (result.ok) showToast(`🏪 Commerce niveau ${result.niveau} : ${result.capacite} par nuit (−${formatCoins(result.cost)} 💰)`);
+    if (result.ok) notify(`🏪 Commerce niveau ${result.niveau} : ${result.capacite} par nuit (−${formatCoins(result.cost)} 💰)`);
   },
   'commerce-quota-dec': () => quota(state.commerce.quota - 1),
   'commerce-quota-inc': () => quota(state.commerce.quota + 1),

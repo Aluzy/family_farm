@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { applyMealHappiness, dishHappiness, memberHappiness } from './ville.js';
-import { EPS } from './base.js';
+import { EPS, floorPercent } from './base.js';
 import { fail } from './devices.js';
 import { hourOfDay } from './clock.js';
 import { countItem, nextExpiry, takeItem } from './inventory.js';
@@ -159,7 +159,7 @@ export function memberRoom(state) {
 }
 
 // Prochain numéro d'un type d'identifiant ; le compteur de l'état avance.
-export function nextFamilyNumber(state, type) {
+function nextFamilyNumber(state, type) {
   const f = state.famille;
   const vus = familyNumbers(f.membres, f.animaux);
   if (!f.numeros || typeof f.numeros !== 'object') f.numeros = vus;
@@ -282,11 +282,14 @@ export function familyNeed(state) {
 // Aliments dans l'ordre où la famille les mange : d'abord ce qui périme le plus
 // tôt (lot le plus ancien de chaque item ; ce qui ne périme pas passe en
 // dernier, donc les conserves), puis par énergie décroissante.
+// (la péremption de chaque aliment est lue une fois, pas à chaque comparaison du tri : même
+// ordre, l'aperçu du repas est recalculé à chaque rendu)
 export function mealOrder(state) {
   const keys = Object.keys(DATA.items).filter((k) => DATA.items[k].edible);
+  const expiry = new Map(keys.map((k) => [k, nextExpiry(state, k)]));
   return keys.sort((a, b) => {
-    const ea = nextExpiry(state, a);
-    const eb = nextExpiry(state, b);
+    const ea = expiry.get(a);
+    const eb = expiry.get(b);
     if (ea !== eb) return ea < eb ? -1 : 1;
     return DATA.items[b].energie - DATA.items[a].energie;
   });
@@ -298,7 +301,7 @@ export function mealOrder(state) {
 // même rang passent par énergie décroissante, l'inventaire avant le frigo.
 // La réserve de semences protège d'abord l'inventaire (c'est là qu'on prend les
 // plants), puis le frigo.
-export function mealEntries(state) {
+function mealEntries(state) {
   const entries = [];
   for (const item of mealOrder(state)) {
     const reserve = state.famille.reserve[item] || 0;
@@ -353,12 +356,17 @@ export function planMeal(state) {
     energie: covered,
     mange,
     froid,
-    couverture: need > 0 ? Math.min(100, Math.floor((covered * 100) / need)) : 100, // %
+    couverture: need > 0 ? floorPercent(covered, need) : 100, // %
   };
 }
 
+// La nuit du frigo : mWh prélevés, panne de froid, lots qui ont perdu une nuit.
+export function newFridgeNightStats() {
+  return { mwh: 0, panne: false, vieillis: false };
+}
+
 export function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 100, mange: {}, perdus: {}, oeufs: 0, lait: 0, etable: newStableReport(), termine: {}, auto: newAutoReport(), fruits: {}, frigo: { mwh: 0, panne: false, vieillis: false }, energieProduit: 0, autonomie: 0, pluie: 0, entretiens: [] };
+  return { besoin: 0, energie: 0, couverture: 100, mange: {}, perdus: {}, oeufs: 0, lait: 0, etable: newStableReport(), termine: {}, auto: newAutoReport(), fruits: {}, frigo: newFridgeNightStats(), energieProduit: 0, autonomie: 0, pluie: 0, entretiens: [] };
 }
 
 // Le repas de la famille, puis son bonheur. Version 1.1.1 : il se prend à 19 h
@@ -407,7 +415,7 @@ export function feedFamily(state) {
     oeufs: 0,
     auto: newAutoReport(),
     fruits: {},
-    frigo: { mwh: 0, panne: false, vieillis: false },
+    frigo: newFridgeNightStats(),
   };
   // l'énergie ne remonte plus d'un coup à minuit : en dormant, peu à peu (recoverInSleep)
   state.nuit.energieReveil = state.energie;

@@ -3,6 +3,8 @@
 # Format commun à tous les fichiers art_*.py : voir scripts/icones/build.py.
 from PIL import Image
 
+from pixel import PALETTE_OR, rgb  # build.py met scripts/ dans le chemin
+
 ZWJ = '‍'
 TEINTS = ['', '\U0001F3FB', '\U0001F3FC', '\U0001F3FD', '\U0001F3FE', '\U0001F3FF']
 
@@ -361,15 +363,10 @@ def avatar(nom, style, t):
 
 # --- Visages ronds (jaune doré, contour brun) et horloges
 PALETTE = {
-    'K': '#3a2414', 'Y': '#fbe38a', 'y': '#f2c040', 'o': '#c7862a', 'O': '#8a5418',
+    **PALETTE_OR,  # l'or des icônes (scripts/pixel.py)
     'e': '#3a2414', 'm': '#6e2a1a', 'r': '#e86a5a', 'b': '#4aa0e0', 'B': '#c4e8ff', 'q': '#163a5c',
     'w': '#ffffff', 'W': '#c8d0dc', 'g': '#5a6270', 'R': '#d83a3a', 'f': '#f2a048',
 }
-
-
-def rgb(h):
-    h = h.lstrip('#')
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
 
 
 def render(rows, pal):

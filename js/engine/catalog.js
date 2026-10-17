@@ -76,7 +76,7 @@ export function applyProductionPriceMultiplier(data) {
 // Lot 14 : temps de préparation des plats (voir DATA.RECETTES.DIVISEUR_TEMPS).
 // Chaque recette est traitée une seule fois, ce qui rend le résultat stable
 // (20 s → 10 s, 15 s → 8 s, 45 s → 23 s, etc.).
-export function applyDishTimeDivisor(data) {
+function applyDishTimeDivisor(data) {
   const R = data.RECETTES;
   for (const r of Object.values(data.recipes)) {
     if (R.STATIONS_TEMPS_DIVISE.includes(r.station)) r.temps = Math.ceil(r.temps / R.DIVISEUR_TEMPS);

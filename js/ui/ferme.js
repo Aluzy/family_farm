@@ -6,7 +6,6 @@ import {
 import { hourOfDay, nightActive } from '../engine/clock.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
 import { energyChip } from './energie.js';
-import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { hoePanelHtml } from './houe.js';
 import { renderStarterCards } from './depart.js';
 import { isUnlocked } from '../engine/campaign.js';
@@ -29,7 +28,7 @@ import { renderChapterBanner } from './chapitres.js';
 import {
   robotAutonomy, robotBattery, robotBusy, robotChargePct, robotOn, robotTaskCapacity, robotTasksLeft, upgradeRobotBattery,
 } from '../engine/automation.js';
-import { icon } from './animations.js';
+import { artIcon } from './animations.js';
 import { helpBtn, tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
 import { canPay, costLabel } from './common.js';
@@ -102,7 +101,6 @@ export function renderFerme() {
   return [
     `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}`,
     renderPotager(),
-    renderZone2(),
     isUnlocked(state, 'serre') ? renderSerre() : '',
     isUnlocked(state, 'silo') ? renderSilo() : '',
     coopShown() ? `<div id="etable-poules" class="ancre">${renderPoulailler()}</div>` : '',
@@ -159,7 +157,7 @@ function energieEauParts() {
   const owned = (t) => isOwned(starterOf(state, t));
   const panneauCard = owned('panneau') ? `
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
-        <span class="card-title"><span>${icon('panneau')}Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="card-title"><span>${artIcon('panneau')}Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
         <span>${powerVerdict(e)}</span>
         ${powerGauge(e.production, panelsMax())}
         <span class="muted">Panneau niveau ${state.panneaux[0].niveau} · ${sunText()}</span>
@@ -167,21 +165,21 @@ function energieEauParts() {
       </button>` : '';
   const batterieCard = owned('batterie') ? `
       <button type="button" class="card" data-action="open-screen" data-screen="batteries">
-        <span class="card-title"><span>${icon('batterie')}Stockage d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="card-title"><span>${artIcon('batterie')}Stockage d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
         <span class="big">${formatNumber(Math.floor(e.charge / 1000))} / ${formatWh(e.capacite)}</span>
         <span class="muted">${netText}</span>
         ${alertLine(e.batteriesAEntretenir, e.batteriesEnPanne)}
       </button>` : '';
   const pompeCard = owned('pompe') ? `
       <div class="card ancre${tutoTarget('eau')}" id="dev-pompe">
-        <span class="card-title"><span>${icon('pompe')}Pompe · niveau ${p.niveau}</span><span class="chips"><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span>${helpBtn('pompe')}</span></span>
+        <span class="card-title"><span>${artIcon('pompe')}Pompe · niveau ${p.niveau}</span><span class="chips"><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span>${helpBtn('pompe')}</span></span>
         <span class="muted">Débit réel : <span class="num">${formatLitresRate(p.debit)}</span> (max ${formatLitresRate(pumpFlow(p))})</span>
         ${wearHtml(p)}
         ${deviceControls(p)}
       </div>` : '';
   const reservoirCard = owned('reservoir') ? `
       <div class="card${tutoTarget('eau')}">
-        <span class="card-title"><span>${icon('reservoir')}Réservoir · niveau ${state.reservoir.niveau}</span>${helpBtn('reservoir')}</span>
+        <span class="card-title"><span>${artIcon('reservoir')}Réservoir · niveau ${state.reservoir.niveau}</span>${helpBtn('reservoir')}</span>
         <span class="big">${formatNumber(Math.floor(state.eauMl / 1000))} / ${formatLitres(cap)}</span>
         <span class="muted">${tankText}</span>
         ${tankUp === null
@@ -323,7 +321,7 @@ export function renderDeviceScreen(kind) {
   return `
     <div class="screen-head">
       <button type="button" class="btn" data-action="close-screen">← Ferme</button>
-      <h2>${icon(type)}${isPanels ? 'Production d\'énergie' : 'Stockage d\'énergie'}</h2>
+      <h2>${artIcon(type)}${isPanels ? 'Production d\'énergie' : 'Stockage d\'énergie'}</h2>
       ${helpBtn(type)}
     </div>
     ${deviceDetail(kind)}
@@ -350,39 +348,14 @@ export function renderDeviceFenetre(kind) {
 export function renderPotager() {
   const pot = state.potager;
   const plots = `<div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${groupButtons('potager', 1)}</div>`;
+    <div class="row plot-foot">${groupButtons('potager')}</div>`;
   return `
     <div class="section-head">
-      <h3>${icon('potager')}${DATA.POTAGER.NOM} · ${pot.parcelles.length} parcelles</h3>
+      <h3>${artIcon('potager')}${DATA.POTAGER.NOM} · ${pot.parcelles.length} parcelles</h3>
       <span class="chips">${autoChip('potager', `Un robot récolte et replante dès ${DATA.ROBOT.HEURE} h, les asperseurs arrosent à ${DATA.TIME.ARROSAGE_HEURE} h, à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
     ${hoePanelHtml()}
     ${plots}
-  `;
-}
-
-/* ---------- Ferme : le Champ (state.potager.zone2), deuxième zone de culture ---------- */
-
-// Ouvert avec le Moulin, en herbe (version 1.9) ; aucune section avant. Mêmes cartes de
-// parcelle et mêmes règles que la Zone de culture ; « Arroser tout » et « Récolter tout »
-// n'agissent qu'ici.
-export function renderZone2() {
-  const Z = DATA.POTAGER.ZONE2;
-  if (!zone2Open(state)) return '';
-  const plots = zone2Plots(state);
-  const list = hoeMode && state.potager.houe
-    ? ''
-    : plots.length
-      ? `<div class="plots">${plots.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${groupButtons('potager', 2)}</div>`
-      : '<p class="muted">Tout est en herbe : prends la houe pour labourer.</p>';
-  return `
-    <div class="section-head">
-      <h3><span aria-hidden="true">${Z.ICONE}</span> ${Z.NOM} · ${plots.length} parcelles</h3>
-      <span class="chips">${autoChip('potager', `Un robot récolte et replante dès ${DATA.ROBOT.HEURE} h, les asperseurs arrosent à ${DATA.TIME.ARROSAGE_HEURE} h, à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
-    </div>
-    ${hoePanelHtml()}
-    ${list}
   `;
 }
 

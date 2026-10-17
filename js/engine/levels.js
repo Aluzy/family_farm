@@ -1,4 +1,6 @@
 import { DATA } from './catalog.js';
+import { floorPercent } from './base.js';
+import { fail } from './devices.js';
 
 /* ---------- version 1.7 (v2, lot 3) : niveaux d'expérience ---------- */
 
@@ -77,7 +79,7 @@ export function levelProgress(state) {
   const max = p.niveau >= S.length;
   const debut = S[p.niveau - 1];
   const fin = max ? null : S[p.niveau];
-  const pct = max ? 100 : Math.min(100, Math.floor(((p.xp - debut) * 100) / (fin - debut)));
+  const pct = max ? 100 : floorPercent(p.xp - debut, fin - debut);
   return { niveau: p.niveau, xp: p.xp, debut, fin, max, pct, reste: max ? 0 : Math.max(0, fin - p.xp) };
 }
 
@@ -97,7 +99,7 @@ export function levelUnlocks(niveau) {
 // L'écran du niveau atteint a été vu.
 export function acknowledgeLevel(state) {
   const p = state.progression;
-  if (!p || !p.annonces.length) return { ok: false, error: 'Rien à annoncer.' };
+  if (!p || !p.annonces.length) return fail('Rien à annoncer.');
   p.annonces.shift();
   return { ok: true, restantes: p.annonces.length };
 }

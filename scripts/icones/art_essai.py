@@ -1,10 +1,9 @@
 # Icônes de l'essai (lot 0) : or, eau, pousse, œuf, lait, éclair, poule, mouton.
 # Format commun à tous les fichiers art_*.py : voir scripts/icones/build.py.
+from pixel import PALETTE_EAU, PALETTE_OR  # build.py met scripts/ dans le chemin
+
 PALETTE={
- # or
- 'K':'#3a2414','Y':'#fbe38a','y':'#f2c040','o':'#c7862a','O':'#8a5418',
- # eau
- 'q':'#163a5c','b':'#4aa0e0','B':'#c4e8ff','d':'#2a70b0',
+ **PALETTE_OR, **PALETTE_EAU,  # l'or et l'eau des icônes (scripts/pixel.py)
  # végétal
  'm':'#8cd06a','l':'#4a9a3a','g':'#2f6e2c','s':'#6a4426','t':'#8a5a34',
  # œuf, lait

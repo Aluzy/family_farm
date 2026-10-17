@@ -1,6 +1,7 @@
 import { artHtml } from './pixel-art.js';
 import { treeStage } from '../engine/orchard.js';
 import { state } from './store.js';
+import { plural } from './common.js';
 
 /* ---------- Lot 11 : illustrations et animations ---------- */
 
@@ -12,7 +13,7 @@ export function artPx(symbols, cls = '', key = '', anim = '') {
 }
 
 // Petite icône de bâtiment, devant un titre.
-export function icon(id) {
+export function artIcon(id) {
   return artHtml(`b-${id}`, 'art-icon');
 }
 
@@ -24,7 +25,7 @@ export function coopArtRow() {
   if (!p.poules) return '';
   const r = state.report;
   const laid = r && r.nuit === state.day ? r.oeufs : 0;
-  return `<span class="card-art-row">${artPx(['hen'])}${artPx(['egg'], `egg-art${laid > 0 ? '' : ' art-hidden'}`, `ponte-${laid > 0 ? state.day : 0}`, 'lay')}${laid > 0 ? `<span class="muted">+${laid} œuf${laid > 1 ? 's' : ''} cette nuit</span>` : ''}</span>`;
+  return `<span class="card-art-row">${artPx(['hen'])}${artPx(['egg'], `egg-art${laid > 0 ? '' : ' art-hidden'}`, `ponte-${laid > 0 ? state.day : 0}`, 'lay')}${laid > 0 ? `<span class="muted">+${plural(laid, 'œuf')} cette nuit</span>` : ''}</span>`;
 }
 
 // Version 1.13 : le dessin suit le stade (jeune arbre, arbuste, arbre, arbre en fruits).
