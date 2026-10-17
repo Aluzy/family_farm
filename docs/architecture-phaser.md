@@ -1,4 +1,4 @@
-# La carte de la ferme (Phaser 3) : architecture
+# La carte de la ferme (Phaser 4) : architecture
 
 Périmètre : la zone entre le bandeau « Ferme Familiale » (titre + indicateurs) et le menu
 du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur) reste en DOM.
@@ -14,7 +14,7 @@ endroit et partagent avec elle un kit commun (§ 1 bis) et le jour et la nuit (�
 ```
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
- ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
+ ├─ vendor/phaser.min.js  Phaser 4.2.1 (≈ 1,4 Mo)
  ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, gestes.js, lumiere.js ;
  │                        jeu.js, le jeu Phaser de toutes les cartes (CarteJeu, voir § 1 quater)
  ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, les bêtes de l'Étable et du Poulailler (voir docs/vie-ambiance.md)
@@ -76,7 +76,7 @@ pas Phaser pour se charger. Ce que chaque carte avait en double y est une seule 
 | `kit.js` | `T` (16 px) ; `v(fichier)`, l'adresse versionnée d'un fichier de `assets/` (avec ou sans le préfixe `assets/`) ; `reduit()`, « réduire les animations » (une requête `matchMedia` créée une fois) ; `extrude()`, les planches de tuiles à bord répété ; `planche(n, enfant)`, `planchePerso()`, la planche d'un personnage ; `saisie()` ; `regard(dx, dy)`, de face, de dos ou de profil (la règle `|dx| > 0,8 × |dy|`) ; `VITESSES`, la vitesse de marche de chacun, carte par carte ; `cycle()`, `imageA()`, `animTuiles()`, `pasAnimTuiles()`, les tuiles animées de Tiled ; `FLECHE`, `balance()`, la flèche bleue des passages ; `TEXTE`, `texte()`, les petits textes qui montent au-dessus du personnage |
 | `chemins.js` | `chemin(grille, départ, but, { diag, max })` : le seul chercheur de chemin (A*, tas binaire, 8 directions sans couper un coin) ; `tendre()`, le chemin tendu (tout droit tant que rien ne gêne) ; `plusProche(ok, rayon)`, la place libre la plus proche (anneau par anneau, au plus près dans l'anneau) |
 | `nature.js` | `NATURE` (l'herbe haute, l'opacité d'un arbre devant le personnage, l'ombre d'un arbre, l'arbre qui tombe, les éclats de pierre), `PECHE` (l'attente de la touche, le bouchon et le fil) ; `herbe()`, l'herbe haute qui penche ; `fondu()`, l'arbre qui s'éclaircit |
-| `gestes.js` | les gestes et leurs effets, pareils sur toutes les cartes : `APPUI` et `doubleAppui()` (un appui sur ce qui se touche : le personnage y va et fait son geste, un coup par appui ; un double appui ailleurs : il y marche), `MANETTE` et `manette()` (le doigt posé puis glissé : il marche dans la direction du glissement tant que le doigt reste posé, rien ne s'affiche), `astuceMarche()` (la bulle qui explique ce geste, une fois par appareil, au premier essai de marche au doigt), `anneau()` (le rond qui marque l'arrivée), `SECOUSSE` et `secousse()` (la vue tremble un peu quand un arbre tombe et à chaque coup de pioche), `BULLE` et `bulleGain()` (la bulle « +1 🪵 » au-dessus du personnage, en DOM). Sur toutes les cartes, la caméra suit le personnage |
+| `gestes.js` | les gestes et leurs effets, pareils sur toutes les cartes : `APPUI` et `doubleAppui()` (un appui sur ce qui se touche : le personnage y va et fait son geste, un coup par appui ; un double appui ailleurs : il y marche), `MANETTE` et `manette()` (le doigt posé puis glissé : il marche dans la direction du glissement tant que le doigt reste posé, rien ne s'affiche), `astuceMarche()` (la bulle qui explique ce geste, une fois par appareil, au premier essai de marche au doigt), `SECOUSSE` et `secousse()` (la vue tremble un peu quand un arbre tombe et à chaque coup de pioche), `BULLE` et `bulleGain()` (la bulle « +1 🪵 » au-dessus du personnage, en DOM). Sur toutes les cartes, la caméra suit le personnage |
 | `lumiere.js` | le jour et la nuit : `LIGHT_KEYS`, `lumiere(heure)`, `voile(scène, l, h, profondeur)` (§ 1 ter) |
 
 Le coût d'un pas en diagonale dépend de la carte : 1,414 à la ferme (dehors, cases de 16 px, et
@@ -113,6 +113,7 @@ méthodes dans `js/carte/ville/` (`CarteVille.partie`) : `circulation.js` (les b
 et les voitures), `ecole.js` (le bus de l'école), `hud.js` (les messages, la fenêtre de la gare),
 `marche.js` (le marché, les entreprises), `train.js`, `navette.js` (le bus de ligne),
 `trouvailles.js`, `faune.js`, `nature.js` (arbres, rochers, herbe haute), `peche.js`,
+`lueurs.js` (les lumières de la grotte : lanterne, champignons, améthystes ; Phaser 4, WebGL),
 `voisins.js` (leurs maisons, leur famille). Un fichier sur ~800 lignes au plus.
 
 Réglages qui avaient divergé et qui n'en font plus qu'un : l'attente de la touche à la pêche
@@ -284,7 +285,7 @@ dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
   arrondis un à un ouvriraient des fentes entre parcelles voisines).
 - **La vue suit le personnage** dehors, centrée sur lui (`suitPerso()`), comme sur les autres
   cartes : elle ne glisse plus au doigt et les flèches des bords ne paraissent plus ; un double
-  appui sur l'herbe ou un chemin l'y envoie (`CarteKit.doubleAppui`, `anneau`). Sans personnage
+  appui sur l'herbe ou un chemin l'y envoie (`CarteKit.doubleAppui`) et le doigt glissé l'y fait marcher (`CarteKit.manette`). Sans personnage
   (planche absente), la vue garde son glissement libre au doigt ou à la souris (deux axes, borné ;
   molette sur ordinateur), avec un élan léger au relâchement. Dans un intérieur, elle reste cadrée
   sur la pièce.
@@ -396,7 +397,7 @@ est la poignée de débogage posée par `js/main.js`).
 ## Crédits
 
 - Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <https://antarcticbees.itch.io/>
-- Moteur d'affichage : Phaser 3 (licence MIT)
+- Moteur d'affichage : Phaser 4 (licence MIT)
 
 ## Version 1.1 : ce qui a changé
 

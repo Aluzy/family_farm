@@ -85,7 +85,7 @@ ajouter : le JSON donne l'ordre).
   les repas de la nuit le trouvent.
 - **Double appui** (version 1.19) : dehors, deux appuis rapprochés (300 ms, 30 px) sur l'herbe
   ou un chemin l'y envoient (`goTo`, au point libre le plus proche) : il y va avant ses gestes en
-  attente, puis flâne autour jusqu'au soir. Un petit rond marque l'arrivée. Sur l'herbe
+  attente, puis flâne autour jusqu'au soir. Rien ne marque l'arrivée. Sur l'herbe
   labourable, l'appui simple (la fenêtre de la Zone de culture) attend donc 300 ms. La nuit, rien.
 - **Au doigt** : dehors, le doigt posé puis glissé (plus de 8 px) le fait marcher dans la
   direction du glissement tant qu'il reste posé, et il tourne avec le doigt (`steer`,

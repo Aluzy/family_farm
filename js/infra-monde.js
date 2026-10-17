@@ -122,7 +122,7 @@
 
       // un appui (moins de CarteKit.APPUI.glisse px CSS entre l'appui et le relâchement) sur
       // l'habitant : ce qu'on en voit ; ailleurs, un double appui (comme sur les autres cartes) :
-      // y aller, un rond marque l'arrivée
+      // y aller
       const slop = K.APPUI.glisse * K.ratio();
       const dbl = K.doubleAppui();
       this.input.on('pointerup', (p) => {
@@ -134,10 +134,7 @@
           return;
         }
         K.astuceMarche(p);           // un essai de marche : la marche au doigt s'explique, une fois
-        if (!dbl.appui(w.x, w.y, cam.zoom)) return;
-        this.goTo(w.x, w.y);
-        const fin = this.path[this.path.length - 1];
-        if (fin) K.anneau(this, fin.x, fin.y);
+        if (dbl.appui(w.x, w.y, cam.zoom)) this.goTo(w.x, w.y);
       });
       // le doigt posé puis glissé : il marche dans sa direction tant qu'il reste posé (CarteKit.manette)
       this.manette = K.manette(this);

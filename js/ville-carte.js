@@ -12,7 +12,7 @@
  *
  * Il marche sur le sol (chaussée, trottoirs, herbe, pavés), pas à travers un bâtiment, une
  * fontaine, une voiture, une palissade ou un banc : un double appui (ou un double clic) l'envoie
- * au plus court jusque-là (CarteKit.chemin), un rond marque l'arrivée (CarteKit.gestes) ; les flèches ou ZQSD le dirigent aussi. Sous un arbre, le
+ * au plus court jusque-là (CarteKit.chemin), le doigt glissé (CarteKit.manette), les flèches ou ZQSD le dirigent aussi. Sous un arbre, le
  * feuillage s'efface un peu pour le laisser voir. Avec « animations réduites », l'eau reste
  * immobile. Aux passages (couche « passages »), une flèche bleue paraît quand on s'en
  * approche : un toucher dessus mène à l'autre carte (ou à la ferme, jeu.html).
@@ -239,10 +239,10 @@
         if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) { this.dbl.oublie(); return; }
-        // ailleurs, un double appui (comme à la ferme) : elle y va, un rond marque l'arrivée
+        // ailleurs, un double appui (comme à la ferme) : elle y va
         // (un essai de marche : la marche au doigt s'explique, une fois)
         K.astuceMarche(p);
-        if (this.dbl.appui(w.x, w.y, cam.zoom)) this.walkTo(w.x, w.y);
+        if (this.dbl.appui(w.x, w.y, cam.zoom)) this.goTo(w.x, w.y);
       });
       // le doigt posé puis glissé : elle marche dans sa direction tant qu'il reste posé
       // (CarteKit.manette ; pas dans le god mode, ni pendant un voyage, une fenêtre, un geste)
@@ -478,10 +478,11 @@
       // les objets : l'échelle, le puits, les stalagmites (on ne passe pas à travers)
       const ob = (n) => Math.max(0, meta.objets.indexOf(n));
       const E = c.echelle, P = c.puits;
-      this.add.image(E.x * T + 8, E.y * T + 15, 'grotte_objets', ob('echelle')).setOrigin(0.5, 1).setDepth(E.y * T);
-      if (P) this.add.image(P.x * T + 8, P.y * T + 12, 'grotte_objets', ob('trou')).setOrigin(0.5, 0.75).setDepth(P.y * T - 8);
+      // (gardés : la lumière de la grotte les éclaire, js/carte/ville/lueurs.js)
+      c.images = [this.add.image(E.x * T + 8, E.y * T + 15, 'grotte_objets', ob('echelle')).setOrigin(0.5, 1).setDepth(E.y * T)];
+      if (P) c.images.push(this.add.image(P.x * T + 8, P.y * T + 12, 'grotte_objets', ob('trou')).setOrigin(0.5, 0.75).setDepth(P.y * T - 8));
       for (const s of c.stalag) {
-        this.add.image(s.x * T + 8, s.y * T + 15, 'grotte_objets', ob('stalagmite_' + s.v)).setOrigin(0.5, 1).setDepth(s.y * T + 15);
+        c.images.push(this.add.image(s.x * T + 8, s.y * T + 15, 'grotte_objets', ob('stalagmite_' + s.v)).setOrigin(0.5, 1).setDepth(s.y * T + 15));
         this.layers.marquage.putTileAt(t('sol_0'), s.x, s.y);
       }
       const ici = `ville-carte.html?carte=grotte&grotte=${id}`;
@@ -502,8 +503,9 @@
       return r && Array.isArray(r.pris) ? Object.assign({ carnet: {} }, r) : { jour: null, pris: [], carnet: {} };
     }
 
-    // La lumière autour de la promeneuse (le reste de la grotte dans le noir), le niveau affiché,
-    // les stalagmites infranchissables, un éclat de temps en temps sur le minerai.
+    // La lumière autour de la promeneuse (le reste de la grotte dans le noir : les lumières de
+    // js/carte/ville/lueurs.js, sinon une image noire percée autour d'elle), le niveau affiché,
+    // les stalagmites infranchissables.
     makeCaveLife() {
       this.mine = null;
       this.mining = null;
@@ -513,6 +515,7 @@
       // la Lampe de mineur (arbre des technologies) éclaire plus loin : lumiere %
       const lampe = hote() && hote().tech ? hote().tech('grotte') : null;
       const f = lampe && lampe.lumiere ? lampe.lumiere / 100 : 1;
+      if (this.makeCaveLights(f)) { this.say(`⛏️ La grotte — niveau ${c.niveau}${c.niveau >= GROTTE.jeu.NIVEAUX ? ' (le plus profond)' : ''}`); return; }
       const L = { r0: GROTTE.lumiere.r0 * f, r1: GROTTE.lumiere.r1 * f, noir: GROTTE.lumiere.noir }, N = 512, K = 4;
       const cle = 'lumiere_grotte_' + Math.round(f * 100);   // une texture de N px, agrandie K fois
       if (!this.textures.exists(cle)) {
@@ -622,13 +625,6 @@
       if (steps) this.path = steps;
     }
 
-    // Le double appui sur le sol : elle y va, et un rond marque un instant l'arrivée (CarteKit.anneau).
-    walkTo(x, y) {
-      this.goTo(x, y);
-      const fin = this.path[this.path.length - 1];
-      if (fin) K.anneau(this, fin.x, fin.y);
-    }
-
     // Le chemin (une liste de points, px) de (fx, fy) jusqu'à (x, y), ou null : le plus court en
     // nombre de cases (CarteKit.chemin, un pas en diagonale compte pour un), jusqu'à la case
     // marchable la plus proche du point visé (CarteKit.plusProche, 7 cases au plus).
@@ -674,6 +670,7 @@
       this.stepFinds(time);
       this.stepFauna(time, dt);
       this.stepMine(dt);
+      this.stepCaveLights(time, dt);
       this.stepWork(dt);
       this.stepFish(dt);
       this.stepEntering();

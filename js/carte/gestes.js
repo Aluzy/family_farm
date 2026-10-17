@@ -1,5 +1,5 @@
 /* carte/gestes.js — les gestes du joueur et ce qu'ils font voir, pareils sur toutes les cartes
- * (CarteKit.APPUI, doubleAppui, MANETTE, manette, astuceMarche, anneau, SECOUSSE, secousse, VIBRATION,
+ * (CarteKit.APPUI, doubleAppui, MANETTE, manette, astuceMarche, SECOUSSE, secousse, VIBRATION,
  * vibre, BULLE, bulleGain).
  *
  * La ferme (js/farm-stage.js, js/carte/ferme/), la ville et les cartes qu'on rejoint par elle
@@ -13,8 +13,7 @@
  *   - le doigt posé puis glissé (ou la souris, bouton enfoncé) : il marche dans la direction du
  *     glissement tant que le doigt reste posé, et tourne avec lui (manette ; rien ne s'affiche
  *     sous le doigt : le geste s'explique une fois, au premier essai de marche, astuceMarche) ;
- *   - un double appui (ou un double clic) ailleurs : il y marche, un rond marque un instant
- *     l'endroit où il va (anneau) ;
+ *   - un double appui (ou un double clic) ailleurs : il y marche (rien ne marque l'endroit) ;
  *   - ce qu'il prend (bois, pierre, minerai, poisson, trouvaille, récolte) monte au-dessus de lui
  *     dans une bulle « +1 🪵 » (bulleGain) ;
  *   - la vue tremble un peu quand un arbre tombe et à chaque coup de pioche (secousse) ;
@@ -107,16 +106,6 @@
     return true;
   }
 
-  // Le rond qui marque un instant l'endroit où le personnage va (px de carte : son pied), posé
-  // sur le sol juste sous lui, puis qui s'efface.
-  const ANNEAU = { l: 12, h: 6, couleur: 0xfff1d2, alpha: 0.95, ms: 900, msReduit: 300 };
-  function anneau(scene, x, y) {
-    const g = scene.add.graphics().setDepth(y - 1);
-    g.lineStyle(1, ANNEAU.couleur, ANNEAU.alpha).strokeEllipse(Math.round(x), Math.round(y) - 1, ANNEAU.l, ANNEAU.h);
-    scene.tweens.add({ targets: g, alpha: 0, duration: K.reduit() ? ANNEAU.msReduit : ANNEAU.ms, ease: 'Quad.easeIn', onComplete: () => g.destroy() });
-    return g;
-  }
-
   // La vue tremble un peu : `chute`, un arbre touche le sol ; `coup`, un coup de pioche (un
   // rocher, un minerai). `ms` : sa durée ; `force` : la part de la vue (Phaser, camera.shake).
   // Rien avec « réduire les animations ».
@@ -182,5 +171,5 @@
     };
   }
 
-  Object.assign(K, { APPUI, doubleAppui, MANETTE, manette, ASTUCE, astuceMarche, ANNEAU, anneau, SECOUSSE, secousse, VIBRATION, vibre, BULLE, bulleGain });
+  Object.assign(K, { APPUI, doubleAppui, MANETTE, manette, ASTUCE, astuceMarche, SECOUSSE, secousse, VIBRATION, vibre, BULLE, bulleGain });
 })(window);

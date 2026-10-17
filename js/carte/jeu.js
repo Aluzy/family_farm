@@ -62,7 +62,9 @@
       // Pixels nets sans arrondi des positions pour la ferme (zoom non entier : des sommets
       // arrondis un par un ouvriraient des fentes entre parcelles voisines) ; les autres cartes
       // arrondissent par leur caméra (zoom entier, setRoundPixels).
-      render: { antialias: false, antialiasGL: false, roundPixels: false },
+      // maxLights : les lumières qu'une vue garde (les plus proches de son centre ; la grotte,
+      // js/carte/ville/lueurs.js).
+      render: { antialias: false, antialiasGL: false, roundPixels: false, maxLights: 12 },
       transparent: false,
       backgroundColor: '#6a8157',
       // Taille du jeu = taille de la zone × densité de l'écran ; taille() la tient à jour.
