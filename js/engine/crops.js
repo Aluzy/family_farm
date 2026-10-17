@@ -295,18 +295,18 @@ export function findPlot(state, id) {
 }
 
 export function seedItem(culture) {
-  return DATA.crops[culture].graines.item;
+  return DATA.CULTURES[culture].graines.item;
 }
 
 // Objet que rend la récolte : le nom de la culture, sauf `produit` (tournesol).
 export function cropProduct(culture) {
-  return DATA.crops[culture].produit || culture;
+  return DATA.CULTURES[culture].produit || culture;
 }
 
 // Un item apparaît dans l'onglet Graines du Marché (et donc dans la liste
 // filtrée par seedForSale) s'il est de catégorie « graine », ou si c'est le
 // blé. Le blé garde sa catégorie « ingrédient » (prix, plancher de marché,
-// conservation et origine inchangés : voir DATA.items.ble et DATA.MARCHE) car
+// conservation et origine inchangés : voir DATA.OBJETS.ble et DATA.MARCHE) car
 // il reste avant tout la ressource du Silo, de l'alimentation des poules et
 // du Moulin ; ce test l'ajoute simplement à l'onglet Graines en plus, sans
 // rien retirer à sa présence dans l'onglet Acheter. On ne généralise pas ce
@@ -315,16 +315,16 @@ export function cropProduct(culture) {
 // FLU-15 : une culture qui se plante d'elle-même (la patate, l'ail, le riz…) a sa place
 // dans l'onglet Graines, à son prix habituel.
 export function isGraineComptoir(item) {
-  return DATA.items[item].category === 'graine' || item === DATA.SILO.ITEM
-    || Object.values(DATA.crops).some((c) => c.graines.item === item && c.graines.mode === 'plant');
+  return DATA.OBJETS[item].categorie === 'graine' || item === DATA.SILO.ITEM
+    || Object.values(DATA.CULTURES).some((c) => c.graines.item === item && c.graines.mode === 'plant');
 }
 
 // FLU-15 : ce qu'on plante pour une culture, en toutes lettres (« Graines », ou l'objet
 // lui-même : « Patates »).
 export function seedLabel(culture) {
-  const g = DATA.crops[culture].graines;
-  if (DATA.items[g.item].category === 'graine') return 'Graines';
-  const nom = DATA.items[g.item].nom;
+  const g = DATA.CULTURES[culture].graines;
+  if (DATA.OBJETS[g.item].categorie === 'graine') return 'Graines';
+  const nom = DATA.OBJETS[g.item].nom;
   return /s$/.test(nom) ? nom : `${nom}s`;
 }
 
@@ -341,12 +341,12 @@ function takeSeed(state, culture) {
 }
 
 export function plantableCrops(lieu) {
-  return Object.keys(DATA.crops).filter((c) => DATA.crops[c].lieux.includes(lieu));
+  return Object.keys(DATA.CULTURES).filter((c) => DATA.CULTURES[c].lieux.includes(lieu));
 }
 
 // Dernier stade d'une plante.
 export function maxStage(plot) {
-  return DATA.crops[plot.culture].stades;
+  return DATA.CULTURES[plot.culture].stades;
 }
 
 export function isMature(plot) {
@@ -356,7 +356,7 @@ export function isMature(plot) {
 // Rendement d'une récolte : le même au clic et en automatique (version 1.8 : plus
 // de productivité), partout (version 1.6 : plus de saisons) ; plus fort à la pleine lune.
 export function harvestYield(state, culture) {
-  return roundPct(DATA.crops[culture].rendement, moonHarvestPct(state));
+  return roundPct(DATA.CULTURES[culture].rendement, moonHarvestPct(state));
 }
 
 // Eau d'un arrosage (L entiers) : celle de la culture, arrondie au litre le plus
@@ -364,7 +364,7 @@ export function harvestYield(state, culture) {
 export function waterCostFor(state, culture) {
   // arbre v2 : Arrosage économe et Gestion intelligente de l'eau (en %) ; moins à la lune
   // décroissante
-  return Math.max(1, roundPct(DATA.crops[culture].litres, roundPct(techPct(state, 'eauArrosage'), moonWaterPct(state))));
+  return Math.max(1, roundPct(DATA.CULTURES[culture].litres, roundPct(techPct(state, 'eauArrosage'), moonWaterPct(state))));
 }
 
 export function waterCost(state, plot) {
@@ -395,7 +395,7 @@ export function plant(state, plotId, culture, auto = false) {
 
 // plant() sur la parcelle elle-même (les actions groupées l'ont déjà en main).
 export function plantPlot(state, plot, culture, auto = false) {
-  const def = DATA.crops[culture];
+  const def = DATA.CULTURES[culture];
   if (!def) return fail('Culture inconnue.');
   if (plot.culture) return fail('Cette parcelle est déjà plantée.');
   if (!def.lieux.includes(plot.lieu)) return fail(`${def.nom} ne se plante pas ici.`);
@@ -461,7 +461,7 @@ export function harvestPlot(state, plot, auto = false) {
   if (!isMature(plot)) return fail('Pas encore mûre.');
   if (!auto && !canAfford(state, 'recolter')) return fail(TIRED); // version 1.8
   const culture = plot.culture;
-  const def = DATA.crops[culture];
+  const def = DATA.CULTURES[culture];
   const items = {};
   const gain = (item, qty) => {
     if (qty > 0) items[item] = (items[item] || 0) + qty;
@@ -516,12 +516,12 @@ function gainStage(state, p) {
 // plantes qui ont fini leur cycle.
 export function growDue(state) {
   const now = absoluteHours(state);
-  const debutJour = dayHour(state, DATA.TIME.DAY_START_HOUR);
+  const debutJour = dayHour(state, DATA.TEMPS.HEURE_REVEIL);
   let n = 0;
   for (const p of allPlots(state)) {
     if (!p.arrose) continue;
     if (!Number.isFinite(p.arroseH)) p.arroseH = Math.min(debutJour, now);
-    if (now + EPS < p.arroseH + DATA.TIME.POUSSE_HEURES) continue;
+    if (now + EPS < p.arroseH + DATA.TEMPS.POUSSE_HEURES) continue;
     if (p.culture && p.stade < maxStage(p)) gainStage(state, p);
     p.arrose = false;
     delete p.arroseH;
@@ -533,8 +533,8 @@ export function growDue(state) {
 // Heures d'horloge avant que la plante arrosée gagne son stade (null : pas arrosée).
 export function growHoursLeft(state, plot) {
   if (!plot || !plot.arrose) return null;
-  const debut = Number.isFinite(plot.arroseH) ? plot.arroseH : dayHour(state, DATA.TIME.DAY_START_HOUR);
-  return Math.max(0, debut + DATA.TIME.POUSSE_HEURES - absoluteHours(state));
+  const debut = Number.isFinite(plot.arroseH) ? plot.arroseH : dayHour(state, DATA.TEMPS.HEURE_REVEIL);
+  return Math.max(0, debut + DATA.TEMPS.POUSSE_HEURES - absoluteHours(state));
 }
 
 /* ---------- Lot 8 : Serre ---------- */
@@ -543,12 +543,12 @@ export function growHoursLeft(state, plot) {
 // (arrosage, pousse, récolte).
 
 export function serreUpgradeCost(state) {
-  return nextLevelCost(DATA.SERRE.COUT, state.serre.niveau);
+  return nextLevelCost(DATA.SERRE.PRIX_NIVEAUX, state.serre.niveau);
 }
 
 export function buildSerre(state) {
   const deja = 'La Serre est déjà construite.';
-  return buildWith(state, 'serre', { built: state.serre.construit, deja, cost: DATA.SERRE.CONSTRUCTION, libelle: 'Serre' }, () => { openSerre(state); });
+  return buildWith(state, 'serre', { built: state.serre.construit, deja, cost: DATA.SERRE.PRIX_CONSTRUCTION, libelle: 'Serre' }, () => { openSerre(state); });
 }
 
 // Pose la Serre au niveau 1 (sans payer) et crée ses parcelles.

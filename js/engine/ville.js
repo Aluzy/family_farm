@@ -50,13 +50,13 @@ export function mealHappinessDelta(plan) {
 // l'autre » compte si toutes ses options comptent.
 export function dishHappiness(item) {
   const B = DATA.VILLE.BONHEUR;
-  const def = DATA.items[item];
+  const def = DATA.OBJETS[item];
   if (!def || !def.plat) return 0;
-  const r = DATA.recipes[item];
+  const r = DATA.RECETTES[item];
   if (!r || !(r.station in B.PLATS)) return B.PLATS.cuisine;
   const all = (ing, test) => ingredientOptions(ing).every(test);
-  const huileFruit = r.ingredients.some((ing) => all(ing, (x) => x === 'huile' || (DATA.items[x] && DATA.items[x].category === 'fruit')));
-  const speciale = r.ingredients.some((ing) => all(ing, (x) => B.SPECIALES.items.includes(x)));
+  const huileFruit = r.ingredients.some((ing) => all(ing, (x) => x === 'huile' || (DATA.OBJETS[x] && DATA.OBJETS[x].categorie === 'fruit')));
+  const speciale = r.ingredients.some((ing) => all(ing, (x) => B.SPECIALES.objets.includes(x)));
   return B.PLATS[r.station] + (huileFruit ? B.HUILE_FRUIT : 0) + (speciale ? B.SPECIALES.bonus : 0);
 }
 
@@ -102,7 +102,7 @@ export function outingStatus(state, id) {
   if (!s) return { ok: false, raison: 'inconnue', texte: 'Sortie inconnue.' };
   const v = ville(state);
   if (v.faits[id] === state.day) return { ok: false, raison: 'faite', texte: 'Déjà fait aujourd\'hui.' };
-  if (awakeHours(state) + s.heures > DATA.TIME.NIGHT_HOUR + EPS) return { ok: false, raison: 'tard', texte: `Trop tard : il faut ${s.heures} h, retour avant ${DATA.TIME.NIGHT_HOUR} h.` };
+  if (awakeHours(state) + s.heures > DATA.TEMPS.HEURE_NUIT + EPS) return { ok: false, raison: 'tard', texte: `Trop tard : il faut ${s.heures} h, retour avant ${DATA.TEMPS.HEURE_NUIT} h.` };
   const partants = outingMembers(state);
   if (!partants.length) return { ok: false, raison: 'personne', texte: 'Personne n\'est en état de sortir.' };
   if (s.enfants && !partants.some((m) => m.enfant)) return { ok: false, raison: 'enfants', texte: 'Il faut un enfant à emmener.' };
@@ -115,7 +115,7 @@ export function outingStatus(state, id) {
 // entreprises), par pas d'une seconde. Ni repas ni nuit ici : l'interface les déclenche
 // à l'heure, comme d'habitude, au retour.
 export function advanceHours(state, heures) {
-  let left = Math.round(heures * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
+  let left = Math.round(heures * DATA.TEMPS.SECONDES_PAR_HEURE * 1000);
   while (left > 0) {
     const dt = Math.min(1000, left);
     farmStep(state, dt);
@@ -156,7 +156,7 @@ export function townMarketOpen(state) {
 export function townMarketStatus(state) {
   const M = DATA.VILLE.MARCHE;
   if (townMarketOpen(state)) return { ok: false, raison: 'ouvert', texte: 'Déjà au marché aujourd\'hui.' };
-  if (awakeHours(state) + M.HEURES > DATA.TIME.NIGHT_HOUR + EPS) return { ok: false, raison: 'tard', texte: `Trop tard : il faut ${M.HEURES} h, retour avant ${DATA.TIME.NIGHT_HOUR} h.` };
+  if (awakeHours(state) + M.HEURES > DATA.TEMPS.HEURE_NUIT + EPS) return { ok: false, raison: 'tard', texte: `Trop tard : il faut ${M.HEURES} h, retour avant ${DATA.TEMPS.HEURE_NUIT} h.` };
   if (!canPay(state, M.PRIX)) return { ok: false, raison: 'pieces', texte: NO_COINS };
   return { ok: true, raison: '', texte: '' };
 }
@@ -174,11 +174,11 @@ export function goToTownMarket(state) {
 
 // Les objets du marché de la ville, dans l'ordre des objets.
 export function townItems() {
-  return Object.keys(DATA.items).filter((k) => DATA.items[k].ville);
+  return Object.keys(DATA.OBJETS).filter((k) => DATA.OBJETS[k].ville);
 }
 
 export function buyInTown(state, item, qty = 1) {
   if (!townMarketOpen(state)) return fail('Va d\'abord au marché de la ville.');
-  if (!DATA.items[item] || !DATA.items[item].ville) return fail('Cet objet ne se vend pas au marché de la ville.');
+  if (!DATA.OBJETS[item] || !DATA.OBJETS[item].ville) return fail('Cet objet ne se vend pas au marché de la ville.');
   return buyItem(state, item, qty, { ville: true });
 }

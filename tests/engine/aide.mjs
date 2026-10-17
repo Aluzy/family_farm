@@ -185,7 +185,7 @@ export function sleepOnce(s) {
 // proches avant 7 h), puis les asperseurs (irrigate). Renvoie { arrosees, sansEau } ; le travail du robot
 // est dans s.robot.
 export function matin(s) {
-  s.awakeMs = awakeMsAtHour(DATA.TIME.ARROSAGE_HEURE);
+  s.awakeMs = awakeMsAtHour(DATA.TEMPS.ARROSAGE_HEURE);
   growDue(s);
   robotStep(s);
   return irrigate(s);

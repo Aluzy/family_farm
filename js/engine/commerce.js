@@ -24,7 +24,7 @@ export function commerceCapacity(state) {
 
 // Prix du niveau suivant, ou null au niveau maximum.
 export function commerceUpgradeCost(state) {
-  return nextLevelCost(DATA.COMMERCE.COUT, state.commerce.niveau, DATA.COMMERCE.COUT.length);
+  return nextLevelCost(DATA.COMMERCE.PRIX_NIVEAUX, state.commerce.niveau, DATA.COMMERCE.PRIX_NIVEAUX.length);
 }
 
 // Prix pour choisir ce commerce : gratuit la première fois, CHANGER ensuite.

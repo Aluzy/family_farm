@@ -18,7 +18,7 @@ export function unlocksHtml(niveau) {
       return `<li><strong>${e.icone} ${e.nom}</strong><br><span class="muted">${e.note}</span></li>`;
     }),
     ...(u.cultures.length
-      ? [`<li><strong>🌱 Cultures</strong><br><span class="muted">${u.cultures.map((c) => `${DATA.crops[c].icone} ${DATA.crops[c].nom}`).join(', ')}</span></li>`]
+      ? [`<li><strong>🌱 Cultures</strong><br><span class="muted">${u.cultures.map((c) => `${DATA.CULTURES[c].icone} ${DATA.CULTURES[c].nom}`).join(', ')}</span></li>`]
       : []),
     ...(u.note ? [`<li class="muted">${u.note}</li>`] : []),
   ];

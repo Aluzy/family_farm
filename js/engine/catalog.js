@@ -29,9 +29,9 @@ export const DATA = buildCatalog(RAW_DATA);
 // objets concernés (récolte d'une culture, fruit du Verger, produit animal)
 // se déduisent des tables existantes plutôt que d'une liste écrite en dur,
 // pour qu'une nouvelle culture, un nouvel arbre ou un nouvel animal ajouté
-// plus tard à DATA.crops / DATA.VERGER.ARBRES / DATA.ANIMAUX soit couvert
+// plus tard à DATA.CULTURES / DATA.VERGER.ARBRES / DATA.ANIMAUX soit couvert
 // automatiquement, sans exception dispersée dans le code :
-// - DATA.crops : l'objet réellement récolté par chaque culture (`produit`
+// - DATA.CULTURES : l'objet réellement récolté par chaque culture (`produit`
 //   s'il diffère du nom de la culture, sinon la clé de la culture elle-même),
 //   en excluant tout objet de catégorie « graine » — le tournesol récolte
 //   ainsi `graine_tournesol`, une graine, qui n'est jamais concernée ;
@@ -46,16 +46,16 @@ export const DATA = buildCatalog(RAW_DATA);
 // (`data` : le catalogue lu ; buildCatalog() passe celui qu'il construit.)
 export function productionItemKeys(data = DATA) {
   const keys = new Set();
-  for (const [cropKey, crop] of Object.entries(data.crops)) {
+  for (const [cropKey, crop] of Object.entries(data.CULTURES)) {
     const item = crop.produit || cropKey;
-    if (data.items[item] && data.items[item].category !== 'graine') keys.add(item);
+    if (data.OBJETS[item] && data.OBJETS[item].categorie !== 'graine') keys.add(item);
   }
   for (const arbre of Object.values(data.VERGER.ARBRES)) {
-    if (data.items[arbre.fruit]) keys.add(arbre.fruit);
+    if (data.OBJETS[arbre.fruit]) keys.add(arbre.fruit);
   }
   for (const animal of Object.values(data.ANIMAUX)) {
     for (const champ of ['produit', 'laine', 'lait']) {
-      if (animal[champ] && data.items[animal[champ]]) keys.add(animal[champ]);
+      if (animal[champ] && data.OBJETS[animal[champ]]) keys.add(animal[champ]);
     }
   }
   return keys;
@@ -69,16 +69,16 @@ export function applyProductionPriceMultiplier(data) {
   const keys = productionItemKeys(data);
   for (const key of data.MARCHE.TRANSFORMATIONS_DOUBLEES) keys.add(key);
   for (const key of keys) {
-    data.items[key].prix *= mult;
+    data.OBJETS[key].prix *= mult;
   }
 }
 
-// Lot 14 : temps de préparation des plats (voir DATA.RECETTES.DIVISEUR_TEMPS).
+// Lot 14 : temps de préparation des plats (voir DATA.CUISINE.DIVISEUR_TEMPS).
 // Chaque recette est traitée une seule fois, ce qui rend le résultat stable
 // (20 s → 10 s, 15 s → 8 s, 45 s → 23 s, etc.).
 function applyDishTimeDivisor(data) {
-  const R = data.RECETTES;
-  for (const r of Object.values(data.recipes)) {
+  const R = data.CUISINE;
+  for (const r of Object.values(data.RECETTES)) {
     if (R.STATIONS_TEMPS_DIVISE.includes(r.station)) r.temps = Math.ceil(r.temps / R.DIVISEUR_TEMPS);
   }
 }
@@ -88,7 +88,7 @@ export function roundPct(x, pct) {
   return Math.floor((x * pct + 50) / 100);
 }
 
-/* ---------- Lot 5 : plats cuisinés (objets calculés depuis DATA.recipes) ---------- */
+/* ---------- Lot 5 : plats cuisinés (objets calculés depuis DATA.RECETTES) ---------- */
 
 // Les ingrédients d'une recette : un seul objet, ou l'un des objets de `ou`.
 export function ingredientOptions(ing) {
@@ -102,7 +102,7 @@ export function ingredientOptions(ing) {
 // reste celle de la première option.
 export function recipeSum(recipe, field, waterValue, data = DATA) {
   const valeur = (ing) => {
-    const vals = ingredientOptions(ing).map((it) => data.items[it][field] || 0);
+    const vals = ingredientOptions(ing).map((it) => data.OBJETS[it][field] || 0);
     return field === 'prix' ? Math.max(...vals) : vals[0];
   };
   const sum = recipe.ingredients.reduce((t, ing) => t + valeur(ing) * ing.qte, 0);
@@ -111,7 +111,7 @@ export function recipeSum(recipe, field, waterValue, data = DATA) {
 
 // Lot 11 (nutrition) : applique la règle d'arrondi centralisée d'une
 // revalorisation nutritionnelle des aliments de base (Math.round, arrondi
-// standard au demi supérieur). Utilisée pour dériver DATA.items[*].energie
+// standard au demi supérieur). Utilisée pour dériver DATA.OBJETS[*].energie
 // (voir commentaires « × 1,25 » sur chaque objet) ; centralisée ici pour que
 // toute future revalorisation applique la même règle, plutôt que des arrondis
 // ad hoc dispersés dans DATA.
@@ -122,20 +122,20 @@ export function scaleEnergie(valeurBase, augmentation = DATA.NUTRITION.AUGMENTAT
 // Énergie d'un plat : somme des ingrédients × 1,3, arrondie (pain 34, omelette 68, ragoût 144),
 // sauf si la recette porte un champ energieForcee (override explicite, voir gratin_patates).
 export function dishEnergy(id, data = DATA) {
-  const recipe = data.recipes[id];
+  const recipe = data.RECETTES[id];
   if (recipe.energieForcee != null) return recipe.energieForcee;
-  const R = data.RECETTES;
+  const R = data.CUISINE;
   return roundPct(recipeSum(recipe, 'energie', R.ENERGIE_EAU, data), R.COEF_PLAT);
 }
 
 // Prix de vente d'un plat : somme des prix × 1,3, arrondi, sauf si la recette
-// porte un champ priceMultiplier (override explicite du coefficient, pas de
+// porte un champ coefPrix (override explicite du coefficient, pas de
 // la formule elle-même — voir les 4 recettes « luxe » : chocolat chaud, café,
 // crème à la vanille, bière artisanale, toutes à ×3 au lieu de ×1,3).
 export function dishPrice(id, data = DATA) {
-  const recipe = data.recipes[id];
-  const R = data.RECETTES;
-  const coef = recipe.priceMultiplier != null ? recipe.priceMultiplier : R.COEF_PLAT;
+  const recipe = data.RECETTES[id];
+  const R = data.CUISINE;
+  const coef = recipe.coefPrix != null ? recipe.coefPrix : R.COEF_PLAT;
   return roundPct(recipeSum(recipe, 'prix', R.PRIX_EAU, data), coef);
 }
 
@@ -148,35 +148,35 @@ export function dishPrice(id, data = DATA) {
 // quel que soit l'ordre des recettes dans le fichier. Les objets, eux, sont
 // ajoutés dans l'ordre des recettes (c'est l'ordre du Livre de recette).
 export function registerDishItems(data) {
-  const isDish = (id) => !!data.recipes[id] && !data.recipes[id].transformation;
-  const known = { ...data, items: { ...data.items } }; // les objets, plus les plats déjà calculés
+  const isDish = (id) => !!data.RECETTES[id] && !data.RECETTES[id].transformation;
+  const known = { ...data, OBJETS: { ...data.OBJETS } }; // les objets, plus les plats déjà calculés
   const dishes = {};
   const enCours = [];
   const compute = (id) => {
     if (dishes[id]) return;
     if (enCours.includes(id)) throw new Error(`Recettes en boucle : ${[...enCours, id].join(' → ')}`);
     enCours.push(id);
-    const r = data.recipes[id];
+    const r = data.RECETTES[id];
     for (const ing of r.ingredients) {
       for (const option of ingredientOptions(ing)) if (isDish(option)) compute(option);
     }
-    dishes[id] = { nom: r.nom, icone: r.icone, energie: dishEnergy(id, known), prix: dishPrice(id, known), edible: true, category: 'plat', plat: true };
-    known.items[id] = dishes[id];
+    dishes[id] = { nom: r.nom, icone: r.icone, energie: dishEnergy(id, known), prix: dishPrice(id, known), mangeable: true, categorie: 'plat', plat: true };
+    known.OBJETS[id] = dishes[id];
     enCours.pop();
   };
-  const ids = Object.keys(data.recipes).filter(isDish);
+  const ids = Object.keys(data.RECETTES).filter(isDish);
   ids.forEach(compute);
-  for (const id of ids) data.items[id] = dishes[id];
+  for (const id of ids) data.OBJETS[id] = dishes[id];
   for (const [id, p] of Object.entries(data.PLATS_RETIRES)) {
-    data.items[id] = { nom: p.nom, icone: p.icone, energie: p.energie, prix: p.prix, edible: true, category: 'plat', plat: true, rachetable: false, retire: true };
+    data.OBJETS[id] = { nom: p.nom, icone: p.icone, energie: p.energie, prix: p.prix, mangeable: true, categorie: 'plat', plat: true, rachetable: false, retire: true };
   }
 }
 
 // Objet rendu par une recette et quantité rendue.
 export function recipeOutput(id) {
-  return DATA.recipes[id].sortie || id;
+  return DATA.RECETTES[id].sortie || id;
 }
 
 export function recipeOutputQty(id) {
-  return DATA.recipes[id].qteSortie || 1;
+  return DATA.RECETTES[id].qteSortie || 1;
 }

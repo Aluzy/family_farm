@@ -25,7 +25,7 @@
  * jour) par un automate cellulaire, avec les morceaux de scripts/ville/grotte.py. On descend par
  * le puits, on remonte par l'échelle (des passages, comme au bord des cartes). Le minerai est
  * pris dans les murs qui touchent le sol, de plus en plus rare et précieux en profondeur (fer,
- * cuivre, or, platine : GROTTE.poids) ; on le pioche en le touchant : il va dans l'inventaire
+ * cuivre, or, platine : GROTTE.poids, data/ville.json) ; on le pioche en le touchant : il va dans l'inventaire
  * (FermeHote.miner ; au Four, 4 minerais et du bois font un lingot, pour l'arbre des
  * technologies). Il fait noir : on n'y voit qu'autour de soi.
  *
@@ -351,7 +351,7 @@
     // la plus grande salle est gardée. L'échelle (on arrive d'en haut) contre un mur, le puits
     // (on descend) le plus loin possible ; le minerai dans les murs qui bordent le sol.
     genCave(graine, niveau) {
-      const W = GROTTE.w, H = GROTTE.h;
+      const J = GROTTE.jeu, W = J.LARGEUR, H = J.HAUTEUR;     // (data/ville.json, GROTTE)
       let h = 2166136261;
       for (let i = 0; i < graine.length; i++) { h ^= graine.charCodeAt(i); h = Math.imul(h, 16777619); }
       let a = h >>> 0;
@@ -360,8 +360,8 @@
       let g, salle;
       for (let essai = 0; essai < 8; essai++) {
         g = new Uint8Array(W * H);                       // 1 : mur, 0 : sol
-        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) g[idx(x, y)] = x < 2 || y < 2 || x >= W - 2 || y >= H - 2 || rnd() < GROTTE.murs ? 1 : 0;
-        for (let p = 0; p < GROTTE.passes; p++) {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) g[idx(x, y)] = x < 2 || y < 2 || x >= W - 2 || y >= H - 2 || rnd() < J.MURS ? 1 : 0;
+        for (let p = 0; p < J.PASSES; p++) {
           const n = new Uint8Array(g);
           for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
             let k = 0;
@@ -417,7 +417,7 @@
       const ores = [], decor = [], stalag = [];
       for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
         if (g[idx(x, y)]) {
-          if (![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => sol(x + dx, y + dy)) || rnd() > GROTTE.minerai * (1 + niveau * 0.06)) continue;
+          if (![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => sol(x + dx, y + dy)) || rnd() > J.MINERAI * (1 + niveau * J.MINERAI_NIVEAU)) continue;
           let r = rnd() * total, kind = 'fer';
           for (const [k, w] of Object.entries(poids)) { if (r < w) { kind = k; break; } r -= w; }
           ores.push({ x, y, kind });
@@ -429,13 +429,13 @@
         if (r < 0.025 && ouvert(x, y)) stalag.push({ x, y, v: rnd() < 0.5 ? 0 : 1 });
         else if (r < 0.06) decor.push({ x, y, kind: rnd() < 0.6 ? 'champignon' : 'cristal' });
       }
-      return { W, H, g, sol, echelle: { x: ex, y: ey }, puits: niveau < GROTTE.niveaux ? { x: px, y: py } : null, ores, decor, stalag };
+      return { W, H, g, sol, echelle: { x: ex, y: ey }, puits: niveau < J.NIVEAUX ? { x: px, y: py } : null, ores, decor, stalag };
     }
 
     buildCave() {
       const meta = this.cache.json.get('grotte') || { tuiles: {}, objets: [] };
       const id = (etat.params.get('grotte') || '1').replace(/[^\w-]/g, '').slice(0, 12) || '1';
-      const niveau = Math.max(1, Math.min(GROTTE.niveaux, parseInt(etat.params.get('niveau'), 10) || 1));
+      const niveau = Math.max(1, Math.min(GROTTE.jeu.NIVEAUX, parseInt(etat.params.get('niveau'), 10) || 1));
       const h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
       const jour = h ? h.jour : Math.floor(Date.now() / 864e5);
       const c = this.genCave(`${id}:${niveau}:${jour}`, niveau);
@@ -523,7 +523,7 @@
       }
       // (agrandie : elle couvre l'écran même au plus petit zoom)
       this.light = this.add.image(0, 0, cle).setScale(K).setDepth(1.9e6);
-      this.say(`⛏️ La grotte — niveau ${c.niveau}${c.niveau >= GROTTE.niveaux ? ' (le plus profond)' : ''}`);
+      this.say(`⛏️ La grotte — niveau ${c.niveau}${c.niveau >= GROTTE.jeu.NIVEAUX ? ' (le plus profond)' : ''}`);
     }
 
     tapOre(w) {
@@ -560,13 +560,14 @@
       }
       const g = this.mining;
       g.t += dt;
-      const k = Math.min(3, Math.floor(g.t / GROTTE.coup * 4));
+      const J = GROTTE.jeu;
+      const k = Math.min(3, Math.floor(g.t / J.COUP * 4));
       g.frame = 'pioche_cote_' + k;
-      if (g.t >= GROTTE.coup) {
+      if (g.t >= J.COUP) {
         g.t = 0;
         g.coup++;
         this.chips(m.ore);
-        const coups = hote() && hote().coups ? hote().coups(GROTTE.coups) : GROTTE.coups;
+        const coups = hote() && hote().coups ? hote().coups(J.COUPS) : J.COUPS;
         if (g.coup >= coups) this.takeOre(m.ore);
       }
     }

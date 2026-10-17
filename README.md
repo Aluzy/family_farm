@@ -252,7 +252,7 @@ L'encyclopédie se complète à part.
 - `conservation` (facultatif) : nuits avant péremption ; `null` = ne périme jamais ; sans ce
   champ, 6 nuits comme tous les plats.
 - L'énergie et le prix du plat sont calculés depuis les ingrédients ; `energieForcee` et
-  `priceMultiplier` permettent de les fixer. Un plat peut servir d'ingrédient à un autre,
+  `coefPrix` permettent de les fixer. Un plat peut servir d'ingrédient à un autre,
   quel que soit l'ordre dans le fichier.
 
 **Ajouter une culture** : l'objet récolté (et sa graine) dans `items.json`, la culture dans

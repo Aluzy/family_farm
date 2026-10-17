@@ -31,7 +31,7 @@ export function plural(n, mot, affiche = n) {
 //   'nom'    « 3 🥕 carotte, 2 🍅 tomate » (quantités nulles omises).
 export function itemsText(map, format = 'resume') {
   const entries = Object.entries(map || {});
-  const it = (item) => DATA.items[item];
+  const it = (item) => DATA.OBJETS[item];
   switch (format) {
     case 'bulle':
       return entries.filter(([item, n]) => it(item) && n > 0).map(([item, n]) => `${it(item).icone} ${n}`).join(' ');

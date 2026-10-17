@@ -23,22 +23,22 @@ import {
 /* ---------- Lot 6 : Étable — moutons, vaches, paille, laine, lait ---------- */
 
 test('DATA Lot 6 : places de l\'Étable, mouton, vache, paille', () => {
-  assertEqual(DATA.PATURAGE, { deblocage: 150, placesDepart: 10, placesParMouton: 1, placesParVache: 3, prixPlace: 40, croissance: 120, nourriture: 'paille', herbes: 'herbes_montagne' });
+  assertEqual(DATA.PATURAGE, { PRIX_CONSTRUCTION: 150, PLACES_DEPART: 10, PLACES_PAR_MOUTON: 1, PLACES_PAR_VACHE: 3, PRIX_PLACE: 40, CROISSANCE: 120, NOURRITURE: 'paille', HERBES: 'herbes_montagne' });
   assertEqual(DATA.ANIMAUX.mouton, { nom: 'Mouton', icone: '🐑', prix: 60, pailleParNuit: 1, joursLaine: 2, laineParTonte: 1, laine: 'laine' });
   assertEqual(DATA.ANIMAUX.vache, { nom: 'Vache', icone: '🐄', prix: 200, pailleParNuit: 2, laitParNuit: 1, lait: 'lait', herbesParNuit: 1, laitAlpage: 'lait_alpage' });
   // Lot 12 : laine 6 → 12, lait 4 → 8 (prix de vente doublés).
-  assertEqual([DATA.items.laine.prix, DATA.items.laine.edible, shelfLife('laine')], [12, false, null]);
-  assertEqual([DATA.items.lait.energie, DATA.items.lait.prix, shelfLife('lait')], [16, 8, 4]);
+  assertEqual([DATA.OBJETS.laine.prix, DATA.OBJETS.laine.mangeable, shelfLife('laine')], [12, false, null]);
+  assertEqual([DATA.OBJETS.lait.energie, DATA.OBJETS.lait.prix, shelfLife('lait')], [16, 8, 4]);
   // La paille : ni mangée ni périssable, vendue 1 pièce, jamais achetée au Marché.
-  const p = DATA.items.paille;
-  assertEqual([p.nom, p.prix, p.edible, p.category, p.rachetable], ['Paille', 1, false, 'produit', false]);
+  const p = DATA.OBJETS.paille;
+  assertEqual([p.nom, p.prix, p.mangeable, p.categorie, p.rachetable], ['Paille', 1, false, 'produit', false]);
   assertEqual([shelfLife('paille'), isPerishable('paille'), isBuyable('paille'), isGraineComptoir('paille')], [null, false, false, false]);
-  const memeIcone = Object.keys(DATA.items).filter((k) => k !== 'paille' && DATA.items[k].icone === p.icone);
+  const memeIcone = Object.keys(DATA.OBJETS).filter((k) => k !== 'paille' && DATA.OBJETS[k].icone === p.icone);
   assertEqual(memeIcone, [], 'l\'icône de la paille n\'est celle d\'aucun autre objet');
   // Les anciennes viandes existent encore (anciennes sauvegardes), avec leur énergie et leur conservation.
-  assertEqual([DATA.items.viande_mouton.energie, DATA.items.viande_mouton.prix, shelfLife('viande_mouton')], [scaleEnergie(30), 10, 5]);
-  assertEqual([DATA.items.viande_boeuf.energie, DATA.items.viande_boeuf.prix], [38, 10]);
-  assertEqual([DATA.items.viande_volaille.energie, DATA.items.viande_volaille.prix], [14, 6]);
+  assertEqual([DATA.OBJETS.viande_mouton.energie, DATA.OBJETS.viande_mouton.prix, shelfLife('viande_mouton')], [scaleEnergie(30), 10, 5]);
+  assertEqual([DATA.OBJETS.viande_boeuf.energie, DATA.OBJETS.viande_boeuf.prix], [38, 10]);
+  assertEqual([DATA.OBJETS.viande_volaille.energie, DATA.OBJETS.viande_volaille.prix], [14, 6]);
 });
 
 test('état initial Lot 6 : Étable à ouvrir, sans place, mouton ni vache', () => {
@@ -221,7 +221,7 @@ test('herbes de montagne : une vache nourrie aux herbes donne du lait d\'alpage,
   setStraw(s, 6);
   setInv(s, { paille: 6, herbes_montagne: 2 });
   const V = DATA.ANIMAUX.vache;
-  assertEqual([DATA.PATURAGE.herbes, V.herbesParNuit, V.laitAlpage], ['herbes_montagne', 1, 'lait_alpage']);
+  assertEqual([DATA.PATURAGE.HERBES, V.herbesParNuit, V.laitAlpage], ['herbes_montagne', 1, 'lait_alpage']);
   // sans le bouton de l'Étable, les herbes restent dans l'inventaire
   assertEqual([herbsOn(s), cowsOnHerbs(s), strawNeed(s)], [false, 0, 6]);
   let rep = sleepOnce(s);
@@ -247,23 +247,23 @@ test('herbes de montagne : une vache nourrie aux herbes donne du lait d\'alpage,
 });
 
 test('herbes de montagne : une trouvaille de la montagne, fraîche ; le lait d\'alpage vaut plus que le lait', () => {
-  const h = DATA.items.herbes_montagne;
-  assertEqual([h.trouvaille, h.edible, h.rachetable, DATA.CONSERVATION.herbes_montagne], ['montagne', false, false, 3]);
-  const l = DATA.items.lait_alpage;
-  assertEqual([l.edible, DATA.CONSERVATION.lait_alpage], [true, DATA.CONSERVATION.lait]);
-  assert(l.prix > DATA.items.lait.prix, 'le lait d\'alpage se vend plus cher que le lait');
+  const h = DATA.OBJETS.herbes_montagne;
+  assertEqual([h.trouvaille, h.mangeable, h.rachetable, DATA.CONSERVATION.herbes_montagne], ['montagne', false, false, 3]);
+  const l = DATA.OBJETS.lait_alpage;
+  assertEqual([l.mangeable, DATA.CONSERVATION.lait_alpage], [true, DATA.CONSERVATION.lait]);
+  assert(l.prix > DATA.OBJETS.lait.prix, 'le lait d\'alpage se vend plus cher que le lait');
   assert(!isBuyable('herbes_montagne') && !isBuyable('lait_alpage'), 'ni l\'un ni l\'autre ne s\'achète au Marché');
 });
 
 test('fromage d\'alpage : 3 laits d\'alpage en Cuisine (nœud Laiterie), plus cher que le fromage frais', () => {
-  const r = DATA.recipes.fromage_alpage;
+  const r = DATA.RECETTES.fromage_alpage;
   assertEqual([r.station, r.transformation, r.sortie, r.ingredients], ['cuisine', true, 'fromage_alpage', [{ item: 'lait_alpage', qte: 3 }]]);
   assertEqual(recipeNode('fromage_alpage'), recipeNode('fromage_frais'));
   // le prix et l'énergie suivent la règle des plats : ingrédients × 1,3
-  const coef = DATA.RECETTES.COEF_PLAT;
-  assertEqual(DATA.items.fromage_alpage.prix, roundPct(3 * DATA.items.lait_alpage.prix, coef));
-  assertEqual(DATA.items.fromage_alpage.energie, roundPct(3 * DATA.items.lait_alpage.energie, coef));
-  assert(DATA.items.fromage_alpage.prix > DATA.items.fromage_frais.prix, 'plus cher que le fromage frais');
+  const coef = DATA.CUISINE.COEF_PLAT;
+  assertEqual(DATA.OBJETS.fromage_alpage.prix, roundPct(3 * DATA.OBJETS.lait_alpage.prix, coef));
+  assertEqual(DATA.OBJETS.fromage_alpage.energie, roundPct(3 * DATA.OBJETS.lait_alpage.energie, coef));
+  assert(DATA.OBJETS.fromage_alpage.prix > DATA.OBJETS.fromage_frais.prix, 'plus cher que le fromage frais');
   assertEqual(DATA.VILLE.SORTIES.montagne.butin, { miel: 2 }, 'plus de fromage dans le butin de la montagne');
   const s = atelier();
   setInv(s, { lait_alpage: 3 });
@@ -271,7 +271,7 @@ test('fromage d\'alpage : 3 laits d\'alpage en Cuisine (nœud Laiterie), plus ch
   grantTech(s, 'cui_laiterie', false);
   assertEqual(startRecipe(s, 'fromage_alpage').ok, true);
   assertEqual(countItem(s, 'lait_alpage'), 0);
-  runFor(s, DATA.recipes.fromage_alpage.temps + 1);
+  runFor(s, DATA.RECETTES.fromage_alpage.temps + 1);
   assertEqual(countItem(s, 'fromage_alpage'), 1);
 });
 

@@ -26,7 +26,7 @@ test('Lot 10 : DATA.SIMULATION est cohérent (stratégies, jalons, plan)', () =>
   const S = DATA.SIMULATION;
   assertEqual(Object.keys(S.STRATEGIES).sort(), ['applique', 'minimal']);
   assertEqual([S.STRATEGIES.applique.eveilS, S.STRATEGIES.minimal.eveilS], [60, 30]);
-  assert(S.STRATEGIES.minimal.eveilS >= DATA.TIME.MIN_AWAKE_S, 'le joueur minimal reste éveillé au moins l\'éveil minimal');
+  assert(S.STRATEGIES.minimal.eveilS >= DATA.TEMPS.EVEIL_MIN_S, 'le joueur minimal reste éveillé au moins l\'éveil minimal');
   assertEqual(S.JALONS.map((j) => [j.nuit, j.pct]), [[8, 35], [15, 50], [25, 75], [40, 90], [60, 100]]);
   assertEqual(S.TOLERANCE_NUITS, 10);
   assertEqual(S.NUITS, 80);

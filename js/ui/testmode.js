@@ -197,7 +197,7 @@ registerActions({
     applyResult(testFillTank(state));
   },
   'test-wear': () => {
-    applyResult(testSetWear(state, document.getElementById('test-device').value, DATA.WEAR.BREAKDOWN));
+    applyResult(testSetWear(state, document.getElementById('test-device').value, DATA.USURE.PANNE));
   },
   'test-skip-awake': () => {
     applyResult(testSkipAwake(state));

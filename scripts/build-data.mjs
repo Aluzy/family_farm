@@ -41,7 +41,7 @@ try {
   // pas encore généré
 }
 
-const bilan = `${Object.keys(data.items).length} objets, ${Object.keys(data.recipes).length} recettes, ${Object.keys(data.crops).length} cultures, ${Object.keys(data.techtree.noeuds).length} technologies`;
+const bilan = `${Object.keys(data.OBJETS).length} objets, ${Object.keys(data.RECETTES).length} recettes, ${Object.keys(data.CULTURES).length} cultures, ${Object.keys(data.ARBRE.noeuds).length} technologies`;
 if (current === source) {
   console.log(`${GENERATED_FILE} est à jour (${bilan}).`);
 } else if (check) {

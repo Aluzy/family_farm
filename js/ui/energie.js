@@ -60,8 +60,8 @@ const ACTION_LABELS = {
 
 // Bouton « Manger » d'un aliment de l'Inventaire (ce qu'il rendrait).
 export function eatButton(item, texte = '') {
-  const def = DATA.items[item];
-  if (!def || !def.edible) return '';
+  const def = DATA.OBJETS[item];
+  if (!def || !def.mangeable) return '';
   const gain = snackEnergy(state, item);
   return `<button type="button" class="btn" data-action="eat" data-item="${item}" title="Manger : +${formatEnergyGain(gain)} énergie">🍴 ${texte ? `${texte} · ` : ''}+${formatEnergyGain(gain)} ⚡</button>`;
 }

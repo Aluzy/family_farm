@@ -20,11 +20,11 @@ export function makeMember(def) {
 
 /* ---------- version 1.1 : profil des membres de la famille ---------- */
 
-// Profil de départ d'un membre (défini dans DATA.FAMILY.MEMBRES, ou un membre
+// Profil de départ d'un membre (défini dans DATA.FAMILLE.MEMBRES, ou un membre
 // inconnu d'une sauvegarde importée) : prénom = son rôle, teinte 0.
 export function defaultMemberProfile(def) {
-  const P = DATA.FAMILY.PROFIL;
-  const base = DATA.FAMILY.MEMBRES.find((m) => m.id === (def && def.id));
+  const P = DATA.FAMILLE.PROFIL;
+  const base = DATA.FAMILLE.MEMBRES.find((m) => m.id === (def && def.id));
   const genre = base ? base.genre : P.GENRES[0];
   const nom = (base && base.nom) || (def && typeof def.nom === 'string' && def.nom) || 'Membre';
   return { prenom: nom, genre, teint: 0 };
@@ -41,14 +41,14 @@ export function cleanFirstName(text) {
 // (un caractère accentué ou un emoji compte pour un).
 export function validFirstName(text) {
   const n = Array.from(cleanFirstName(text)).length;
-  return n >= 1 && n <= DATA.FAMILY.PROFIL.PRENOM_MAX;
+  return n >= 1 && n <= DATA.FAMILLE.PROFIL.PRENOM_MAX;
 }
 
 // Emoji d'un portrait : 👩 / 👨 pour un adulte, 👧 / 👦 pour un enfant, suivi de
 // la teinte choisie (rien pour le jaune par défaut). Des valeurs inconnues
 // retombent sur le premier sexe et le jaune.
 export function portraitEmoji(enfant, genre, teint, style = 0) {
-  const P = DATA.FAMILY.PROFIL;
+  const P = DATA.FAMILLE.PROFIL;
   const set = P.PORTRAITS[enfant ? 'enfant' : 'adulte'];
   const base = set[genre] || set[P.GENRES[0]];
   // version 1.12 : la coiffure (planche d'avatars), jointe par un ZWJ
@@ -58,7 +58,7 @@ export function portraitEmoji(enfant, genre, teint, style = 0) {
 
 // Coiffure d'un membre (0 si elle n'a jamais été choisie).
 export function memberStyle(m) {
-  return m && Number.isInteger(m.style) && m.style >= 0 && m.style < DATA.FAMILY.PROFIL.STYLES.adulte.length ? m.style : 0;
+  return m && Number.isInteger(m.style) && m.style >= 0 && m.style < DATA.FAMILLE.PROFIL.STYLES.adulte.length ? m.style : 0;
 }
 
 // Version 1.17 : l'apparence d'un membre, un des personnages du catalogue : pour un adulte,
@@ -67,7 +67,7 @@ export function memberStyle(m) {
 // membre), le défaut de son âge selon son sexe. 0 sans membre.
 export function memberPerso(m) {
   if (!m) return 0;
-  const P = DATA.FAMILY.PROFIL;
+  const P = DATA.FAMILLE.PROFIL;
   if (Number.isInteger(m.perso) && m.perso >= 1 && m.perso <= persoMax(m)) return m.perso;
   const def = m.enfant ? P.PERSO_DEFAUT_ENFANT : P.PERSO_DEFAUT;
   return def[m.genre] || def[P.GENRES[0]];
@@ -75,7 +75,7 @@ export function memberPerso(m) {
 
 // Nombre de personnages au choix pour ce membre (selon son âge).
 export function persoMax(m) {
-  return m && m.enfant ? DATA.FAMILY.PROFIL.PERSOS_ENFANT : DATA.FAMILY.PROFIL.PERSOS;
+  return m && m.enfant ? DATA.FAMILLE.PROFIL.PERSOS_ENFANT : DATA.FAMILLE.PROFIL.PERSOS;
 }
 
 // Prénom affiché d'un membre : celui choisi, sinon son rôle. Texte brut : à
@@ -97,7 +97,7 @@ export function memberPortrait(state, id) {
 // garde sa valeur. Tout est vérifié avant de rien modifier : prénom de 1 à
 // PRENOM_MAX caractères (nettoyé), genre 'f' ou 'm', teinte entière de 0 à 5.
 export function setMemberProfile(state, id, profil) {
-  const P = DATA.FAMILY.PROFIL;
+  const P = DATA.FAMILLE.PROFIL;
   const m = findMember(state, id);
   if (!m) return fail('Membre introuvable.');
   if (!profil || typeof profil !== 'object') return fail('Profil invalide.');
@@ -155,7 +155,7 @@ export function childCount(state) {
 
 // Places encore libres dans la famille (0 à MEMBRES_MAX).
 export function memberRoom(state) {
-  return Math.max(0, DATA.FAMILY.COMPOSITION.MEMBRES_MAX - state.famille.membres.length);
+  return Math.max(0, DATA.FAMILLE.COMPOSITION.MEMBRES_MAX - state.famille.membres.length);
 }
 
 // Prochain numéro d'un type d'identifiant ; le compteur de l'état avance.
@@ -172,7 +172,7 @@ function nextFamilyNumber(state, type) {
 // Refusé au-delà de MEMBRES_MAX. Le nouveau venu arrive avec le bonheur moyen de
 // la famille. Son besoin s'ajoute dès le prochain repas.
 export function addMember(state, enfant = false) {
-  const C = DATA.FAMILY.COMPOSITION;
+  const C = DATA.FAMILLE.COMPOSITION;
   const f = state.famille;
   if (f.membres.length >= C.MEMBRES_MAX) return fail(`La famille est au complet : ${C.MEMBRES_MAX} membres au plus.`);
   const type = enfant ? 'enfant' : 'adulte';
@@ -186,7 +186,7 @@ export function addMember(state, enfant = false) {
 // Pourquoi un membre ne peut pas quitter la famille (texte), ou '' s'il le peut :
 // il reste toujours MEMBRES_MIN membre dont ADULTES_MIN adulte.
 export function memberRemovalBlock(state, id) {
-  const C = DATA.FAMILY.COMPOSITION;
+  const C = DATA.FAMILLE.COMPOSITION;
   const m = findMember(state, id);
   if (!m) return 'Membre introuvable.';
   if (state.famille.membres.length <= C.MEMBRES_MIN) return 'Il faut au moins un membre dans la famille.';
@@ -217,26 +217,26 @@ export function findPet(state, id) {
 }
 
 export function petRoom(state) {
-  return Math.max(0, DATA.FAMILY.COMPAGNIE.MAX - pets(state).length);
+  return Math.max(0, DATA.FAMILLE.COMPAGNIE.MAX - pets(state).length);
 }
 
 // Nom affiché d'un animal de compagnie (texte brut : à passer par escapeHtml()).
 export function petName(state, id) {
   const a = findPet(state, id);
   if (!a) return '';
-  const E = DATA.FAMILY.COMPAGNIE.ESPECES;
+  const E = DATA.FAMILLE.COMPAGNIE.ESPECES;
   return validFirstName(a.nom) ? cleanFirstName(a.nom) : (E[a.espece] ? E[a.espece].nom : 'Animal');
 }
 
 export function petIcon(espece) {
-  const e = DATA.FAMILY.COMPAGNIE.ESPECES[espece];
+  const e = DATA.FAMILLE.COMPAGNIE.ESPECES[espece];
   return e ? e.icone : '🐾';
 }
 
 // Adopte un chien ou un chat : refusé au-delà de COMPAGNIE.MAX. Gratuit, et sans
 // effet sur le besoin journalier ni sur le bonheur.
 export function addPet(state, espece) {
-  const K = DATA.FAMILY.COMPAGNIE;
+  const K = DATA.FAMILLE.COMPAGNIE;
   if (!K.ESPECES[espece]) return fail('Cet animal ne s\'adopte pas.');
   if (!Array.isArray(state.famille.animaux)) state.famille.animaux = [];
   if (state.famille.animaux.length >= K.MAX) return fail(`${K.MAX} animaux de compagnie au plus.`);
@@ -249,7 +249,7 @@ export function addPet(state, espece) {
 // Change le nom ou l'espèce d'un animal de compagnie : { nom, espece }. Un champ
 // absent garde sa valeur ; tout est vérifié avant de rien modifier.
 export function setPetProfile(state, id, profil) {
-  const K = DATA.FAMILY.COMPAGNIE;
+  const K = DATA.FAMILLE.COMPAGNIE;
   const a = findPet(state, id);
   if (!a) return fail('Animal introuvable.');
   if (!profil || typeof profil !== 'object') return fail('Profil invalide.');
@@ -257,7 +257,7 @@ export function setPetProfile(state, id, profil) {
   let espece = a.espece;
   if (profil.nom !== undefined) {
     if (typeof profil.nom !== 'string' || cleanFirstName(profil.nom) === '') return fail('Écris un nom.');
-    if (!validFirstName(profil.nom)) return fail(`Le nom doit faire ${DATA.FAMILY.PROFIL.PRENOM_MAX} caractères au plus.`);
+    if (!validFirstName(profil.nom)) return fail(`Le nom doit faire ${DATA.FAMILLE.PROFIL.PRENOM_MAX} caractères au plus.`);
     nom = cleanFirstName(profil.nom);
   }
   if (profil.espece !== undefined) {
@@ -276,7 +276,7 @@ export function removePet(state, id) {
 }
 
 export function familyNeed(state) {
-  return state.famille.membres.reduce((t, m) => t + DATA.FAMILY.AJ[m.enfant ? 'enfant' : 'adulte'], 0);
+  return state.famille.membres.reduce((t, m) => t + DATA.FAMILLE.AJ[m.enfant ? 'enfant' : 'adulte'], 0);
 }
 
 // Aliments dans l'ordre où la famille les mange : d'abord ce qui périme le plus
@@ -285,13 +285,13 @@ export function familyNeed(state) {
 // (la péremption de chaque aliment est lue une fois, pas à chaque comparaison du tri : même
 // ordre, l'aperçu du repas est recalculé à chaque rendu)
 export function mealOrder(state) {
-  const keys = Object.keys(DATA.items).filter((k) => DATA.items[k].edible);
+  const keys = Object.keys(DATA.OBJETS).filter((k) => DATA.OBJETS[k].mangeable);
   const expiry = new Map(keys.map((k) => [k, nextExpiry(state, k)]));
   return keys.sort((a, b) => {
     const ea = expiry.get(a);
     const eb = expiry.get(b);
     if (ea !== eb) return ea < eb ? -1 : 1;
-    return DATA.items[b].energie - DATA.items[a].energie;
+    return DATA.OBJETS[b].energie - DATA.OBJETS[a].energie;
   });
 }
 
@@ -314,7 +314,7 @@ function mealEntries(state) {
   }
   return entries.sort((a, b) => {
     if (a.rank !== b.rank) return a.rank < b.rank ? -1 : 1;
-    return DATA.items[b.item].energie - DATA.items[a.item].energie;
+    return DATA.OBJETS[b.item].energie - DATA.OBJETS[a.item].energie;
   });
 }
 
@@ -340,11 +340,11 @@ export function planMeal(state) {
     mange[entry.item] = (mange[entry.item] || 0) + 1;
     if (entry.froid) froid[entry.item] = (froid[entry.item] || 0) + 1;
     entry.spare -= 1;
-    covered += DATA.items[entry.item].energie;
+    covered += DATA.OBJETS[entry.item].energie;
   }
   for (const entry of entries) {
     if (covered >= need - EPS) break;
-    const energy = DATA.items[entry.item].energie;
+    const energy = DATA.OBJETS[entry.item].energie;
     const n = Math.min(entry.spare, Math.ceil((need - covered) / energy - EPS));
     if (n <= 0) continue;
     mange[entry.item] = (mange[entry.item] || 0) + n;
@@ -384,7 +384,7 @@ export function takeMeal(state) {
     takeItem(state, item, n - cold, pieces);
     if (cold > 0) takeFromFridge(state, item, cold, pieces);
     for (const p of pieces) {
-      if (p.origin === DATA.ORIGINE.PRODUIT) produit += p.qty * DATA.items[item].energie;
+      if (p.origin === DATA.ORIGINE.PRODUIT) produit += p.qty * DATA.OBJETS[item].energie;
     }
   }
   const bonheur = applyMealHappiness(state, plan); // version 1.5 : plats cuisinés → bonheur
@@ -426,8 +426,8 @@ export function feedFamily(state) {
 // de l'énergie au personnage (snackEnergy), jusqu'au maximum. L'aliment sort des
 // réserves : la famille ne le mangera pas ce soir.
 export function eatSnack(state, item) {
-  const def = DATA.items[item];
-  if (!def || !def.edible) return fail('Cela ne se mange pas.');
+  const def = DATA.OBJETS[item];
+  if (!def || !def.mangeable) return fail('Cela ne se mange pas.');
   if ((Number(state.energie) || 0) >= energyMax()) return fail('Ton énergie est déjà au maximum.');
   if (countItem(state, item) > 0) takeItem(state, item, 1);
   else if (fridgeCount(state, item) > 0) takeFromFridge(state, item, 1);
@@ -444,13 +444,13 @@ export function findMember(state, id) {
 // Items que la famille pourrait manger mais qui servent aussi de plants
 // (aujourd'hui la patate) : ce sont ceux dont la réserve se règle.
 export function reservableItems() {
-  return Object.keys(DATA.crops)
-    .map((c) => DATA.crops[c].graines.item)
-    .filter((item, i, all) => DATA.items[item].edible && all.indexOf(item) === i);
+  return Object.keys(DATA.CULTURES)
+    .map((c) => DATA.CULTURES[c].graines.item)
+    .filter((item, i, all) => DATA.OBJETS[item].mangeable && all.indexOf(item) === i);
 }
 
 export function setSeedReserve(state, item, qty) {
-  if (!DATA.items[item]) return fail('Objet inconnu.');
+  if (!DATA.OBJETS[item]) return fail('Objet inconnu.');
   const n = Math.max(0, Math.floor(Number(qty)));
   if (!Number.isFinite(n)) return fail('Quantité invalide.');
   state.famille.reserve[item] = n;

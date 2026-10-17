@@ -354,7 +354,7 @@
 > foi** sur le « parc d'appareils » (v15, 8.2, 9) et sur le réservoir qui suivait la pompe.
 > - **Un seul panneau et une seule batterie**, qui montent de niveau ; plus d'achat
 >   d'appareil supplémentaire. Panneau 40 / 90 / 160 / 260 / 400 Wh/s ; batterie
->   6 000 / 15 000 / 30 000 / 60 000 / 100 000 Wh (`DATA.GRID`).
+>   6 000 / 15 000 / 30 000 / 60 000 / 100 000 Wh (`DATA.RESEAU`).
 > - **Le panneau ne produit qu'entre 7 h et 19 h** (`DATA.SOLEIL`) ; un pas de temps à
 >   cheval sur 7 h ou 19 h produit au prorata (`sunlitMs()`). Le soir et la nuit, la pompe
 >   et le frigo vivent sur la batterie. Une journée entière de soleil au niveau 1 donne
@@ -362,7 +362,7 @@
 >   l'horloge est figée : le panneau produit si elle l'est entre 7 h et 19 h.
 > - **Le réservoir a ses propres niveaux** (40 / 80 / 160 / 300 / 500 L,
 >   `state.reservoir.niveau`, `upgradeTank()`) ; la pompe ne l'agrandit plus.
-> - **Coûts d'amélioration par appareil** (`DATA.UPGRADE_COST`, niveaux 2 à 5) : panneau
+> - **Coûts d'amélioration par appareil** (`DATA.RESEAU[appareil].prixNiveaux`, niveaux 2 à 5) : panneau
 >   150 / 400 / 900 / 2 000, batterie 180 / 450 / 1 000 / 2 200, pompe 100 / 250 / 600 /
 >   1 300, réservoir 120 / 300 / 700 / 1 500 (au lieu de 40 / 100 / 250 / 600 pour tous).
 >   Ces prix visent le départ v2 à 1 500 pièces (lot 8) ; d'ici là, avec 350 pièces au
@@ -461,7 +461,7 @@
 > **v24** : **le temps de préparation des plats du Four et de la Cuisine est
 > divisé par 2, arrondi à l'entier supérieur** (pain 20 s → 10 s, omelette 15 s
 > → 8 s, ragoût 45 s → 23 s, etc. ; voir les tableaux de recettes). Réglé à la
-> source : `DATA.RECETTES.DIVISEUR_TEMPS` (2) et `STATIONS_TEMPS_DIVISE`
+> source : `DATA.CUISINE.DIVISEUR_TEMPS` (2) et `STATIONS_TEMPS_DIVISE`
 > (`four`, `cuisine`), appliqués une seule fois au chargement par
 > `applyDishTimeDivisor()`. Le Moulin (5 s) et la Presse (10 s) ne changent
 > pas. Les nœuds « Préparation rapide » de l'arbre techno (×0,8 puis ×0,64)
@@ -485,7 +485,7 @@
 > `applyProductionPriceMultiplier()` que les productions de v21 (l'huile n'y
 > figure pas : inchangée à 4). Le pain est un plat : avec la farine doublée, la
 > formule normale (2 × 2 + 1 L d'eau) × 1,3 donnerait 7 ; pour qu'il vaille
-> exactement le double (8), la recette `pain` porte `priceMultiplier: 1.6`
+> exactement le double (8), la recette `pain` porte `coefPrix: 1.6`
 > (5 × 1,6), sur le mécanisme existant des recettes de luxe. Conséquence : les
 > plats qui utilisent de la farine ou du pain augmentent aussi (tarte aux
 > pommes 23 → 26, quiche aux épinards 26 → 29, tarte aux fraises 23 → 26, pain à
@@ -501,7 +501,7 @@
 > coefficient `DATA.MARCHE.MULTIPLICATEUR_PRODUCTION` (2) est appliqué une
 > seule fois, au chargement, par `applyProductionPriceMultiplier()` (juste
 > après `DATA`, avant `registerDishItems()`), sur la liste déduite de
-> `DATA.crops`, `DATA.VERGER.ARBRES` et `DATA.ANIMAUX`
+> `DATA.CULTURES`, `DATA.VERGER.ARBRES` et `DATA.ANIMAUX`
 > (`productionItemKeys()`) : une future culture, un futur arbre ou un futur
 > animal est couvert automatiquement. **Ne sont pas doublés** : les graines
 > (y compris `graine_tournesol`, récolte du tournesol), la conserve, la
@@ -523,7 +523,7 @@
 > à l'ail, et **4 recettes de luxe** — Chocolat chaud, Café, Crème à la
 > vanille, Bière artisanale — qui se vendent **×3 le prix de leurs
 > ingrédients** au lieu du coefficient ×1,3 normal (champ optionnel
-> `priceMultiplier` sur la recette, lu par `dishPrice()` ; l'énergie suit
+> `coefPrix` sur la recette, lu par `dishPrice()` ; l'énergie suit
 > toujours le calcul normal). Aucun nouvel item de base : toutes les
 > nouvelles recettes réutilisent des ingrédients déjà en jeu (légumes/fruits
 > des 10 cultures de v18, viande_boeuf/viande_volaille/lait de v19, et les
@@ -532,7 +532,7 @@
 > conserve 8 nuits (mieux que le lait cru, 4 nuits) et la **Confiture de
 > fraises** ne périme pas non plus — ces deux derniers chiffres sont des 🟡
 > décisions de game design ouvertes, la demande d'origine ne les chiffrant
-> pas. Pure addition de données (`DATA.recipes`) : **aucune migration de
+> pas. Pure addition de données (`DATA.RECETTES`) : **aucune migration de
 > sauvegarde n'est nécessaire**, comme pour les 10 cultures de v18.
 >
 > **v19** : la **vache** rejoint le pâturage (achat au Marché, 200 💰) — elle occupe **0,15 ha** (3× un mouton), grossit de 1 kg/nuit (40 → 150 kg) et donne **1 lait par nuit dès l'achat**, sans délai de maturité ni condition autre que la place au pâturage (contrairement à la laine du mouton). Abattage sur le même modèle que le mouton (poids × 50 %), donnant un item distinct `viande_boeuf`. L'ancien item générique « viande » (mouton) est renommé **`viande_mouton`** pour laisser la place à `viande_boeuf` et à `viande_volaille`. Les **poules peuvent désormais être abattues** au clic (bouton dédié au Poulailler, avec confirmation) : rendement fixe et volontairement modeste (3 portions de `viande_volaille`), la poule abattue quitte le cheptel (ne pond plus, ne mange plus de blé), sa place se libère mais n'est pas rachetée automatiquement. Voir 1.4, 8.5 et 8.6 pour le détail chiffré et la logique d'équilibrage.
@@ -814,7 +814,7 @@ longues (30 s) tiennent dans un éveil minimal.
 
 **Exception — Gratin de patates (§4)** : le calcul ingrédients × 1,3 donnerait
 91 (3 patates à 19 + 1 œuf à 13, soit 70 × 1,3), mais la recette porte un
-champ `energieForcee: 150` (override explicite dans `DATA.recipes`, lu par
+champ `energieForcee: 150` (override explicite dans `DATA.RECETTES`, lu par
 `dishEnergy()`) pour qu'une seule unité couvre exactement le besoin d'une
 journée de la famille de départ (2 adultes + 2 enfants = 150, voir 1.1). Le
 prix de vente du gratin, lui, reste calculé normalement depuis ses
@@ -822,7 +822,7 @@ ingrédients (`dishPrice()` n'est pas concerné par l'override).
 
 **🍽️bis 15 nouvelles recettes (v20)**
 
-Même système, mêmes fonctions (`DATA.recipes`, `dishEnergy()`, `dishPrice()`,
+Même système, mêmes fonctions (`DATA.RECETTES`, `dishEnergy()`, `dishPrice()`,
 `registerDishItems()`) : aucune nouvelle mécanique de cuisine, seulement de
 nouvelles entrées de données. Énergie et prix suivis dans la colonne
 « Énergie/Prix » sont calculés par le système existant (`recipeSum() ×
@@ -847,11 +847,11 @@ COEF_PLAT`, sauf les 4 recettes de luxe — voir plus bas).
 | Poulet rôti à l'ail | 1 viande de volaille + 2 patates + 1 ail | Four | 23 s | 75 | 23 | repas familial |
 
 **Recettes de luxe (🌟) — règle du multiplicateur** : ces 4 recettes portent un
-champ optionnel `priceMultiplier: 3` sur leur entrée `DATA.recipes`, lu par
-`dishPrice()` à la place de `DATA.RECETTES.COEF_PLAT` (×1,3 pour toutes les
+champ optionnel `coefPrix: 3` sur leur entrée `DATA.RECETTES`, lu par
+`dishPrice()` à la place de `DATA.CUISINE.COEF_PLAT` (×1,3 pour toutes les
 autres recettes) — sans dupliquer la formule de calcul (`recipeSum()` reste
 l'unique somme des prix). L'énergie de ces 4 plats suit toujours le calcul
-normal (`dishEnergy()`, ×1,3, jamais concerné par `priceMultiplier`) : le café
+normal (`dishEnergy()`, ×1,3, jamais concerné par `coefPrix`) : le café
 et la bière tombent à 0 énergie faute d'ingrédient comestible (le café et le
 houblon ne sont pas des aliments, voir 1.4 « Cultures de rente »), ce qui est
 cohérent avec le reste du jeu.
@@ -1447,7 +1447,7 @@ export const currentSeason = (day: number) =>
 
 ```ts
 // engine/day.ts — l'ordre compte
-export const MIN_AWAKE_S = 30;   // validé ; 🟡 réductible par l'arbre techno
+export const EVEIL_MIN_S = 30;   // validé ; 🟡 réductible par l'arbre techno
 
 export const canSleep = (s: GameState) => s.awakeSeconds >= awakeRequired(s);
 
@@ -1808,7 +1808,7 @@ Plats cuisinés : prix de vente = somme des ingrédients × 1,3, arrondi (formul
 - **Meunerie** : depuis v22, la farine (2 💰) vaut autant que le blé qu'elle transforme (2 💰) ; le Moulin ne fait donc plus perdre de valeur à la vente. La **Presse** est inchangée : 3 graines de tournesol (1 💰 chacune) donnent 1 huile à 4 💰, elle crée déjà de la valeur.
 
 **🟡 Décisions de game design ouvertes (v22)** :
-- **Pain à 8 via un coefficient dédié (1,6)** : la formule normale des plats (×1,3) donnerait 7. Le coefficient 1,6 est un réglage choisi pour obtenir exactement le double ; si l'on préfère laisser la formule agir (pain à 7), il suffit de retirer `priceMultiplier` de la recette `pain`.
+- **Pain à 8 via un coefficient dédié (1,6)** : la formule normale des plats (×1,3) donnerait 7. Le coefficient 1,6 est un réglage choisi pour obtenir exactement le double ; si l'on préfère laisser la formule agir (pain à 7), il suffit de retirer `coefPrix` de la recette `pain`.
 - **Plats à base de farine ou de pain** : ils montent de 3 à 5 💰 (voir v22) sans que leurs propres recettes aient été retouchées.
 
 ### 8.10 Courbe de progression cible

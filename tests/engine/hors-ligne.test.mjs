@@ -171,12 +171,12 @@ test('Lot 11 : pas d\'usure hors-ligne, même après 8 h de marche', () => {
 test('Lot 11 : hors-ligne, mêmes flux que le jeu, plafonnés par les capacités', () => {
   const live = farm({ pump: true });
   const away = farm({ pump: true });
-  const usure = DATA.WEAR.HEURES_PAR_POINT;
-  DATA.WEAR.HEURES_PAR_POINT = 1e9; // en jeu, l'usure baisse un peu le débit : on la retire pour comparer les flux
+  const usure = DATA.USURE.HEURES_PAR_POINT;
+  DATA.USURE.HEURES_PAR_POINT = 1e9; // en jeu, l'usure baisse un peu le débit : on la retire pour comparer les flux
   try {
     runFor(live, 30);
   } finally {
-    DATA.WEAR.HEURES_PAR_POINT = usure;
+    DATA.USURE.HEURES_PAR_POINT = usure;
   }
   const r = simulateOffline(away, 30);
   assertEqual(live.eauMl, away.eauMl, `eau : ${live.eauMl} mL en jeu, ${away.eauMl} hors-ligne`);
@@ -187,7 +187,7 @@ test('Lot 11 : hors-ligne, mêmes flux que le jeu, plafonnés par les capacités
   assertEqual(full.eauMl, tankCapacity(full), 'réservoir plein, pas au-delà');
   assertEqual(r8.energieFin, batteryCapacity(full.batteries[0]), 'batterie pleine, pas au-delà');
   assert(r8.energiePerdue > 0, 'le surplus est perdu');
-  assertEqual(r8.energieProduite, r8.energiePerdue + (r8.energieFin - r8.energieDebut) + r8.eauPompee * DATA.PUMP.WH_PAR_L, 'bilan énergétique exact, en entiers');
+  assertEqual(r8.energieProduite, r8.energiePerdue + (r8.energieFin - r8.energieDebut) + r8.eauPompee * DATA.POMPE.WH_PAR_L, 'bilan énergétique exact, en entiers');
 });
 
 test('Lot 11 : la progression hors-ligne compte pour les objectifs du chapitre', () => {
@@ -236,7 +236,7 @@ test('Lot 11 : alertes : panne, entretien, batteries vides, frigo coupé', () =>
   let now = alertSnapshot(s);
   assertEqual(alertEvents(snap, now), [{ type: 'entretien', id: 'panneau-1' }]);
   snap = now;
-  testSetWear(s, 'panneau-1', DATA.WEAR.BREAKDOWN);
+  testSetWear(s, 'panneau-1', DATA.USURE.PANNE);
   now = alertSnapshot(s);
   assertEqual(alertEvents(snap, now), [{ type: 'panne', id: 'panneau-1' }]);
   snap = now;
@@ -304,7 +304,7 @@ test('notifications : il manque de la paille pour les moutons et les vaches', ()
   const s = charged(pature());
   assertEqual(notifTypes(s), [], 'sans animaux, pas besoin de paille');
   fillSheep(s, 1);
-  const icone = DATA.items.paille.icone;
+  const icone = DATA.OBJETS.paille.icone;
   assertEqual(getNotifications(s), [{ id: 'paille', type: 'paille', texte: 'Il manque de la paille : 1 de plus pour nourrir les animaux cette nuit', priorite: 2, icone, nombre: 1 }]);
   fillCows(s, 2);
   assertEqual(getNotifications(s).map((x) => [x.type, x.nombre, x.texte]), [['paille', 5, 'Il manque de la paille : 5 de plus pour nourrir les animaux cette nuit']]);
@@ -347,11 +347,11 @@ test('notifications : panne, entretien et priorités (urgent d\'abord)', () => {
   const s = coldRoom();
   testAddSeeds(s);
   assert(plant(s, 'potager-1', 'carotte').ok);
-  testSetWear(s, 'panneau-1', DATA.WEAR.BREAKDOWN);
+  testSetWear(s, 'panneau-1', DATA.USURE.PANNE);
   const n = getNotifications(s);
   assertEqual(n.map((x) => x.type), ['panne', 'arrosage']);
   assertEqual(n.map((x) => x.priorite), [1, 2]);
-  testSetWear(s, 'panneau-1', DATA.WEAR.SERVICE_THRESHOLD);
+  testSetWear(s, 'panneau-1', DATA.USURE.SEUIL_ENTRETIEN);
   assertEqual(notifTypes(s), ['arrosage', 'entretien']);
   testSetWear(s, 'panneau-1', 0);
   assertEqual(notifTypes(s), ['arrosage'], 'l\'alerte disparaît quand la cause est réglée');
@@ -396,7 +396,7 @@ test('notifications : entiers, identifiants uniques, texte et icône présents',
   fillSheep(s, 2);
   testWoolReady(s);
   assert(plant(s, 'potager-1', 'carotte').ok);
-  testSetWear(s, 'panneau-1', DATA.WEAR.BREAKDOWN);
+  testSetWear(s, 'panneau-1', DATA.USURE.PANNE);
   const n = getNotifications(s);
   assertEqual(new Set(n.map((x) => x.id)).size, n.length, 'pas de doublon');
   for (const x of n) assert(Number.isInteger(x.nombre) && x.nombre > 0 && x.texte && x.icone, `entrée valide : ${x.id}`);
@@ -532,12 +532,12 @@ test('version 1.3 : la lettre du cousin est définie : Serre, 1 cacao, 1 vanille
   assertEqual([L.quand, L.cadeaux], [{ debloque: 'serre' }, { cacao: 1, vanille: 1, cafe: 1 }]);
   // les trois cadeaux se plantent tels quels, et seulement dans la Serre
   for (const item of Object.keys(L.cadeaux)) {
-    assertEqual([seedItem(item), DATA.crops[item].lieux], [item, ['serre']], item);
-    assert(DATA.crops[item].rendement > 1, `${item} : une récolte rend de quoi replanter`);
+    assertEqual([seedItem(item), DATA.CULTURES[item].lieux], [item, ['serre']], item);
+    assert(DATA.CULTURES[item].rendement > 1, `${item} : une récolte rend de quoi replanter`);
   }
   assert(L.texte.length >= 3 && L.texte.every((p) => typeof p === 'string' && p.length > 0), 'un texte en paragraphes');
   assert(/Venezuela/.test(L.lieu) && /cacao/.test(L.texte.join(' ')) && /vanille/.test(L.texte.join(' ')) && /café/.test(L.texte.join(' ')), 'la lettre parle de ses cadeaux');
-  for (const m of DATA.FAMILY.MEMBRES) assert(!L.texte.join(' ').includes(m.nom), 'pas de prénom dans la lettre');
+  for (const m of DATA.FAMILLE.MEMBRES) assert(!L.texte.join(' ').includes(m.nom), 'pas de prénom dans la lettre');
 });
 
 test('version 1.3 : la lettre arrive quand la Serre se débloque, une seule fois, avec ses trois graines', () => {

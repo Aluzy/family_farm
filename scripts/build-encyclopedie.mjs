@@ -35,9 +35,9 @@ const esc = (s) => String(s)
 
 // Les comptes qu'une description peut citer par leur nom : {{nb_technologies}}.
 const VALEURS = {
-  nb_technologies: Object.keys(DATA.techtree.noeuds).length,
-  nb_branches: DATA.techtree.branches.length,
-  nb_paliers: Object.keys(DATA.techtree.PALIERS).length,
+  nb_technologies: Object.keys(DATA.ARBRE.noeuds).length,
+  nb_branches: DATA.ARBRE.branches.length,
+  nb_paliers: Object.keys(DATA.ARBRE.PALIERS).length,
   nb_chapitres: DATA.CHAPITRES.liste.length,
 };
 
@@ -76,7 +76,7 @@ function entree(e) {
 }
 
 function section(c) {
-  return `    <section class="category" id="cat-${c.id}">
+  return `    <section class="categorie" id="cat-${c.id}">
       <div class="cat-head">
         <div class="cat-icon">${c.icone}</div>
         <div>

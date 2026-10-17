@@ -43,7 +43,7 @@ import { runAction } from './events.js';
 // la scène ne lit pas DATA, elle la reçoit au montage.
 function cropSprites() {
   const out = {};
-  for (const [id, crop] of Object.entries(DATA.crops)) if (crop.sprite) out[id] = crop.sprite;
+  for (const [id, crop] of Object.entries(DATA.CULTURES)) if (crop.sprite) out[id] = crop.sprite;
   return out;
 }
 
@@ -68,8 +68,8 @@ export function stageActive() {
   return stageUsable() && activeTab === 'ferme' && ecranFerme === null;
 }
 
-// Heure du jour, de 0 à 24 (fractionnaire) : la journée commence à DAY_START_HOUR au réveil,
-// puis une heure passe toutes les CLOCK_SECONDS_PER_HOUR secondes d'éveil (30 s).
+// Heure du jour, de 0 à 24 (fractionnaire) : la journée commence à HEURE_REVEIL au réveil,
+// puis une heure passe toutes les SECONDES_PAR_HEURE secondes d'éveil (30 s).
 export function heureDuJour() {
   return clockHours(state); // version 1.19 : la nuit défile aussi (22 h → 6 h)
 }
@@ -264,11 +264,11 @@ export function stageModel() {
     const max = maxStage(p);
     const mature = isMature(p);
     const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
-    return { id: p.id, culture: p.culture, icone: DATA.crops[p.culture].icone, phase, mature, arrosee: mouillee(p) };
+    return { id: p.id, culture: p.culture, icone: DATA.CULTURES[p.culture].icone, phase, mature, arrosee: mouillee(p) };
   };
   // Avec l'arrosage automatique, la terre sèche la dernière heure du cycle (de 6 h à 7 h pour
   // une plante arrosée la veille à 7 h) : les asperseurs la mouillent sous les yeux du joueur.
-  const seche = DATA.TIME.ARROSAGE_HEURE - DATA.TIME.DAY_START_HOUR;
+  const seche = DATA.TEMPS.ARROSAGE_HEURE - DATA.TEMPS.HEURE_REVEIL;
   const mouillee = (p) => !!p.arrose && !(techAuto(state, 'arrosage', p.lieu) && growHoursLeft(state, p) <= seche);
   // version 1.9 : chaque parcelle de zone a sa case ; la carte en tire la terre et ses bordures
   const zoneVue = () => (p) => ({ ...vue(p), case: p.case });
@@ -433,7 +433,7 @@ function sprinklerSpots() {
 // son rang dans la liste. `vitesse` : la sienne, en px par seconde (le retour à sa base).
 function robotModel() {
   if (!robotOn(state)) return null;
-  const R = DATA.ROBOT, S = DATA.TIME.CLOCK_SECONDS_PER_HOUR;
+  const R = DATA.ROBOT, S = DATA.TEMPS.SECONDES_PAR_HEURE;
   const vitesse = (R.VITESSE * 16 * 60) / S;
   const r = state.robot;
   // sa batterie (en %) ; enCharge : sa station la recharge en ce moment
@@ -469,7 +469,7 @@ function autoDone() {
 function sprinklers() {
   if (!techAuto(state, 'arrosage', 'potager')) return [];
   const I = state.irrigation;
-  const actif = !!I && I.jour === state.day && (absoluteHours(state) - I.h) * DATA.TIME.CLOCK_SECONDS_PER_HOUR < DATA.TIME.ARROSAGE_S;
+  const actif = !!I && I.jour === state.day && (absoluteHours(state) - I.h) * DATA.TEMPS.SECONDES_PAR_HEURE < DATA.TEMPS.ARROSAGE_S;
   const arrosees = new Set(actif ? I.cases || [] : []);
   return sprinklerSpots().map((a) => ({ x: a.cx * 16, y: a.cy * 16, on: a.cases.some((t) => arrosees.has(t)) }));
 }
@@ -560,7 +560,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, asleep: asleepFromStage, icone: (item) => (DATA.items[item] ? DATA.items[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

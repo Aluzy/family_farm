@@ -54,7 +54,7 @@ function pickIngredient(state, ing) {
 // Une ligne par ingrédient (puis une pour l'eau) : { options, qte, have, ok, item }.
 // `have` est le meilleur stock parmi les options ; `item` l'option retenue.
 function recipeLines(state, id) {
-  const r = DATA.recipes[id];
+  const r = DATA.RECETTES[id];
   const lines = r.ingredients.map((ing) => {
     const item = pickIngredient(state, ing);
     const have = Math.max(...ingredientOptions(ing).map((it) => countWithSilo(state, it)));
@@ -67,7 +67,7 @@ function recipeLines(state, id) {
 // État d'une recette pour l'interface : 'absente' (station non construite),
 // 'occupee', 'manque' (ingrédients) ou 'pret'.
 export function recipeStatus(state, id) {
-  const r = DATA.recipes[id];
+  const r = DATA.RECETTES[id];
   const st = state.stations[r.station];
   const lines = recipeLines(state, id);
   let code = 'pret';
@@ -80,13 +80,13 @@ export function recipeStatus(state, id) {
 
 // Arbre v2 : une recette est libre (RECETTES_LIBRES) ou débloquée par un nœud.
 export function recipeUnlocked(state, id) {
-  return DATA.techtree.RECETTES_LIBRES.includes(id) || techEffects(state, 'recettes').some((l) => l.includes(id));
+  return DATA.ARBRE.RECETTES_LIBRES.includes(id) || techEffects(state, 'recettes').some((l) => l.includes(id));
 }
 
 // Nœud qui débloque une recette (null si elle est libre).
 export function recipeNode(id) {
-  if (DATA.techtree.RECETTES_LIBRES.includes(id)) return null;
-  return Object.keys(DATA.techtree.noeuds).find((n) => (DATA.techtree.noeuds[n].effet.recettes || []).includes(id)) || null;
+  if (DATA.ARBRE.RECETTES_LIBRES.includes(id)) return null;
+  return Object.keys(DATA.ARBRE.noeuds).find((n) => (DATA.ARBRE.noeuds[n].effet.recettes || []).includes(id)) || null;
 }
 
 // Préparations en série : places totales d'un atelier (1 sans le nœud).
@@ -122,14 +122,14 @@ export function cancelQueued(state, stationId, index) {
 // ingrédients (et l'eau) présents. Tout est vérifié avant de retirer quoi que
 // ce soit ; ensuite les ingrédients partent et le minuteur démarre.
 export function startRecipe(state, id) {
-  const r = DATA.recipes[id];
+  const r = DATA.RECETTES[id];
   if (!r) return fail('Recette inconnue.');
   // Version 1.1 : le blé se moud dans le Moulin lui-même (startMilling()).
   if (r.horsLivre) return fail('Le blé se moud directement au Moulin.');
   const def = DATA.STATIONS[r.station];
   const st = state.stations[r.station];
   if (!recipeUnlocked(state, id)) {
-    const n = DATA.techtree.noeuds[recipeNode(id)];
+    const n = DATA.ARBRE.noeuds[recipeNode(id)];
     return fail(`Recette à débloquer dans l'Arbre des technologies${n ? ` (${n.nom})` : ''}.`);
   }
   if (!st.construit) return fail(`Construis d'abord ${def.article} ${def.nom}.`);
@@ -174,7 +174,7 @@ function completeTask(state, id) {
   const item = recipeOutput(recette);
   const qty = recipeOutputQty(recette);
   addItem(state, item, qty);
-  const extra = DATA.recipes[recette].sousProduit || null;
+  const extra = DATA.RECETTES[recette].sousProduit || null;
   if (extra) addItem(state, extra.item, extra.qte);
   st.tache = null;
   noteRecipeDone(state, recette, qty); // Lot 9
@@ -223,7 +223,7 @@ export function startMilling(state, qty = 1) {
   const n = Math.floor(Number(qty));
   if (!Number.isFinite(n) || n < 1) return fail('Choisis une quantité de blé.');
   const recette = 'farine';
-  const parBle = DATA.recipes[recette].ingredients[0].qte;
+  const parBle = DATA.RECETTES[recette].ingredients[0].qte;
   if (wheatTotal(state) + EPS < n * parBle) return fail('Pas assez de blé.');
   if (!canAfford(state, 'moudre', n)) return fail(TIRED); // version 1.8 : 1 par blé confié
   spendEnergy(state, 'moudre', n);
@@ -244,7 +244,7 @@ export function cancelMilling(state) {
   const n = job ? queuedWheat(job) : 0;
   if (n <= 0) return fail('Aucun blé en attente au Moulin.');
   job.enAttente = 0;
-  storeWheat(state, n * DATA.recipes[job.recette].ingredients[0].qte);
+  storeWheat(state, n * DATA.RECETTES[job.recette].ingredients[0].qte);
   return { ok: true, rendu: n };
 }
 
@@ -325,7 +325,7 @@ export function buildStation(state, id) {
     const need = DATA.STATIONS[def.requiert];
     return `Construis d'abord ${need.article} ${need.nom}.`;
   };
-  const opts = { built: state.stations[id].construit, deja: 'Cet atelier est déjà construit.', cost: def.cout, libelle: `Construction : ${def.nom}`, requis };
+  const opts = { built: state.stations[id].construit, deja: 'Cet atelier est déjà construit.', cost: def.prixConstruction, libelle: `Construction : ${def.nom}`, requis };
   return buildWith(state, id, opts, () => { openStation(state, id); });
 }
 
@@ -335,6 +335,6 @@ export function openStation(state, id) {
   const def = DATA.STATIONS[id];
   const st = state.stations[id];
   st.construit = true;
-  if (def.electrique && !st.appareil) st.appareil = makeDevice(id, id, def.cout);
+  if (def.electrique && !st.appareil) st.appareil = makeDevice(id, id, def.prixConstruction);
   for (const tab of def.debloque || []) unlockTab(state, tab);
 }

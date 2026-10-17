@@ -21,8 +21,8 @@ function techIndex(state) {
   const list = state.technologies;
   if (!Array.isArray(list)) return null;
   let c = techCache.get(list);
-  if (c && c.noeuds === DATA.techtree.noeuds && sameList(c.sig, list)) return c;
-  const noeuds = DATA.techtree.noeuds;
+  if (c && c.noeuds === DATA.ARBRE.noeuds && sameList(c.sig, list)) return c;
+  const noeuds = DATA.ARBRE.noeuds;
   const owned = list.filter((id) => noeuds[id]);
   const effets = new Map();
   for (const id of owned) {
@@ -86,7 +86,7 @@ export function prepTimeMult(state) {
 // Temps de préparation d'une recette avec les technologies actuelles, en
 // secondes entières à vitesse 1 (arrondi à la seconde supérieure).
 export function recipeTime(state, id) {
-  return Math.ceil((DATA.recipes[id].temps * prepTimeMult(state)) / 100);
+  return Math.ceil((DATA.RECETTES[id].temps * prepTimeMult(state)) / 100);
 }
 
 // Niveau d'un bâtiment (0 s'il n'est pas construit).
@@ -116,9 +116,9 @@ function techChapter(state) {
 
 // Prérequis d'un nœud, palier compris : [{ ok, texte }].
 export function techPrereqs(state, id) {
-  const n = DATA.techtree.noeuds[id];
-  const B = DATA.techtree.batiments;
-  const palier = DATA.techtree.PALIERS[n.palier];
+  const n = DATA.ARBRE.noeuds[id];
+  const B = DATA.ARBRE.batiments;
+  const palier = DATA.ARBRE.PALIERS[n.palier];
   const list = [{ ok: techChapter(state) >= palier.chapitre, texte: `📖 Palier ${n.palier} (${palier.nom}) : chapitre ${palier.chapitre}` }];
   for (const r of n.requiert) {
     if (r.batiment) {
@@ -131,7 +131,7 @@ export function techPrereqs(state, id) {
       const b = B[r.construit];
       list.push({ ok: isBuilt(state, r.construit), texte: `${b.icone} ${b.nom} construit` });
     } else {
-      const m = DATA.techtree.noeuds[r.noeud];
+      const m = DATA.ARBRE.noeuds[r.noeud];
       list.push({ ok: hasTech(state, r.noeud), texte: `${m.icone} ${m.nom}` });
     }
   }
@@ -166,7 +166,7 @@ export function grantTechPoints(state, n, raison) {
 // Les ressources d'un nœud (bois, pierre, lingots : n.ressources), avec ce qu'on en a :
 // [{ item, qte, stock, ok }].
 export function techResources(state, id) {
-  const res = DATA.techtree.noeuds[id].ressources || {};
+  const res = DATA.ARBRE.noeuds[id].ressources || {};
   return Object.entries(res).map(([item, qte]) => {
     const stock = Math.floor(countItem(state, item) + EPS);
     return { item, qte, stock, ok: stock >= qte };
@@ -178,21 +178,21 @@ export function hasTechResources(state, id) {
 }
 
 export function buyTech(state, id) {
-  const n = DATA.techtree.noeuds[id];
+  const n = DATA.ARBRE.noeuds[id];
   if (!n) return fail('Technologie inconnue.');
   if (hasTech(state, id)) return fail('Déjà acquise.');
   if (techStatus(state, id) !== 'disponible') return fail('Prérequis manquants.');
   const pt = techPoints(state);
   if (pt.solde < n.pt) return fail('Pas assez de points de technologie.');
-  if (!canPay(state, n.cout)) return fail(NO_COINS);
+  if (!canPay(state, n.prix)) return fail(NO_COINS);
   const manque = techResources(state, id).filter((r) => !r.ok);
-  if (manque.length) return fail(`Il manque : ${manque.map((r) => `${r.qte - r.stock} ${DATA.items[r.item].icone} ${DATA.items[r.item].nom.toLowerCase()}`).join(', ')}.`);
-  spend(state, n.cout, `Technologie : ${n.nom || id}`);
+  if (manque.length) return fail(`Il manque : ${manque.map((r) => `${r.qte - r.stock} ${DATA.OBJETS[r.item].icone} ${DATA.OBJETS[r.item].nom.toLowerCase()}`).join(', ')}.`);
+  spend(state, n.prix, `Technologie : ${n.nom || id}`);
   for (const r of techResources(state, id)) takeItem(state, r.item, r.qte);
   pt.solde -= n.pt;
   if (!Array.isArray(state.technologies)) state.technologies = [];
   state.technologies.push(id);
-  return { ok: true, cost: n.cout, pt: n.pt, ressources: n.ressources || {} };
+  return { ok: true, cost: n.prix, pt: n.pt, ressources: n.ressources || {} };
 }
 
 // Valeur d'un jalon de maîtrise.
@@ -211,7 +211,7 @@ export function checkMastery(state) {
   if (!state.campagne) return 0;
   const pt = techPoints(state);
   let n = 0;
-  for (const m of DATA.techtree.POINTS.MAITRISE) {
+  for (const m of DATA.ARBRE.POINTS.MAITRISE) {
     if (pt.maitrise.includes(m.id) || masteryValue(state, m) < m.cible) continue;
     pt.maitrise.push(m.id);
     grantTechPoints(state, 1, `Maîtrise : ${m.libelle}`);
@@ -223,10 +223,10 @@ export function checkMastery(state) {
 // Progression affichée dans une branche (les améliorations se font sur les
 // cartes des bâtiments) : [{ cle, nom, icone, type, ... }].
 export function techProgress(state, brancheId) {
-  const branche = DATA.techtree.branches.find((b) => b.id === brancheId);
+  const branche = DATA.ARBRE.branches.find((b) => b.id === brancheId);
   return branche.suivi.map((cle) => {
-    const def = DATA.techtree.suivi[cle];
-    const e = { cle, nom: def.nom, icone: def.icone, type: def.type, note: def.note || null, max: DATA.LEVEL_MAX };
+    const def = DATA.ARBRE.suivi[cle];
+    const e = { cle, nom: def.nom, icone: def.icone, type: def.type, note: def.note || null, max: DATA.NIVEAU_MAX };
     if (def.type === 'niveau') {
       e.niveau = buildingLevel(state, cle);
       e.automatise = isAutomated(state, cle);

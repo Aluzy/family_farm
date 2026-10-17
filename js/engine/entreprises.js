@@ -15,25 +15,25 @@ import { refreshUnlocks } from './techtree.js';
 /* ---------- la vente au marché de la ville ---------- */
 
 export function townSellable(item) {
-  const def = DATA.items[item];
-  return !!def && !def.ville && !def.invendable && DATA.VILLE.MARCHE.CATEGORIES.includes(def.category);
+  const def = DATA.OBJETS[item];
+  return !!def && !def.ville && !def.invendable && DATA.VILLE.MARCHE.CATEGORIES.includes(def.categorie);
 }
 
 // Le prix d'une unité aux étals de la ville : VENTE % du prix de la ferme, arrondi au-dessus.
 export function townSellPrice(item) {
-  return Math.ceil((DATA.items[item].prix * DATA.VILLE.MARCHE.VENTE) / 100 - EPS);
+  return Math.ceil((DATA.OBJETS[item].prix * DATA.VILLE.MARCHE.VENTE) / 100 - EPS);
 }
 
 // Ce qu'on peut vendre en ville : [{ item, qte, prix }], dans l'ordre des objets.
 export function townSellList(state) {
-  return Object.keys(DATA.items)
+  return Object.keys(DATA.OBJETS)
     .filter(townSellable)
     .map((item) => ({ item, qte: Math.floor(stockCount(state, item) + EPS), prix: townSellPrice(item) }))
     .filter((r) => r.qte > 0);
 }
 
 export function sellInTown(state, item, qty) {
-  const def = DATA.items[item];
+  const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
   if (!townSellable(item)) return fail(`${def.nom} ne se vend pas au marché de la ville.`);
   const n = takeStock(state, item, Math.min(Math.floor(Number(qty)) || 0, Math.floor(stockCount(state, item) + EPS)));
@@ -117,7 +117,7 @@ function produce(state, id) {
 // des entreprises qui viennent de produire, ou null.
 export function companiesStep(state) {
   if (!state.ville || !state.ville.entreprises) return null;
-  if (nightActive(state) || hourOfDay(state) < DATA.VILLE.ENTREPRISES.HEURE || hourOfDay(state) >= DATA.TIME.NIGHT_HOUR) return null;
+  if (nightActive(state) || hourOfDay(state) < DATA.VILLE.ENTREPRISES.HEURE || hourOfDay(state) >= DATA.TEMPS.HEURE_NUIT) return null;
   let out = null;
   for (const id of companyIds()) {
     const c = state.ville.entreprises[id];

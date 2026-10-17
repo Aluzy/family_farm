@@ -65,7 +65,7 @@ function vitrine() {
   const owned = (state.ville && state.ville.entreprises) || {};
   return {
     pieces: Math.floor(state.pieces),
-    vente: townSellList(state).map((r) => ({ ...r, nom: DATA.items[r.item].nom, icone: DATA.items[r.item].icone })),
+    vente: townSellList(state).map((r) => ({ ...r, nom: DATA.OBJETS[r.item].nom, icone: DATA.OBJETS[r.item].icone })),
     entreprises: companyIds().map((id) => {
       const d = DATA.VILLE.ENTREPRISES.LISTE[id], c = owned[id];
       return {
@@ -99,13 +99,13 @@ function nuit(action) {
 // Les trouvailles de la montagne et de la plage (js/ville-carte.js, assets/faune.json) : chacune
 // est un objet de l'inventaire du même nom (data/items.json, champ « trouvaille »), qui se garde
 // et se vend.
-const TROUVAILLES = Object.keys(DATA.items).filter((id) => DATA.items[id].trouvaille);
+const TROUVAILLES = Object.keys(DATA.OBJETS).filter((id) => DATA.OBJETS[id].trouvaille);
 
 // Une trouvaille ramassée : dans l'inventaire ({ ok, item, n } ou { ok: false }).
 function ramasse(sorte) {
   const refus = nuit();
   if (refus) return refus;
-  if (!TROUVAILLES.includes(sorte) || !DATA.items[sorte]) return joue({ ok: false, error: 'Trouvaille inconnue.' });
+  if (!TROUVAILLES.includes(sorte) || !DATA.OBJETS[sorte]) return joue({ ok: false, error: 'Trouvaille inconnue.' });
   addItem(state, sorte, 1);
   return joue({ ok: true, item: sorte, n: 1 });
 }
@@ -116,7 +116,7 @@ function verseTrouvailles(carnet) {
   const items = {};
   for (const sorte of TROUVAILLES) {
     const n = Math.floor(Number(carnet && carnet[sorte]) || 0);
-    if (n > 0 && DATA.items[sorte]) { addItem(state, sorte, n); items[sorte] = n; }
+    if (n > 0 && DATA.OBJETS[sorte]) { addItem(state, sorte, n); items[sorte] = n; }
   }
   return joue({ ok: true, items });
 }
@@ -197,7 +197,7 @@ window.FermeHote = {
   piocher: (id) => mineFromStage(id),
   // la canne en main : un lancer dans l'eau `eau` (« lac » : la montagne) ; { poisson } ou null
   pecher: (eau) => fishFromStage(eau),
-  objet: (item) => (DATA.items[item] ? { nom: DATA.items[item].nom, icone: DATA.items[item].icone } : null),
+  objet: (item) => (DATA.OBJETS[item] ? { nom: DATA.OBJETS[item].nom, icone: DATA.OBJETS[item].icone } : null),
   // la grotte : un minerai pris (« fer », « cuivre »…) va dans l'inventaire ({ ok, item, n } ou
   // { ok: false }) ; le carnet d'avant y est versé une fois ; les coups qu'il faut (Lames
   // affûtées) ; un réglage de l'arbre des technologies (la Lampe de mineur : tech('grotte'))
@@ -209,6 +209,10 @@ window.FermeHote = {
   verserTrouvailles: verseTrouvailles,
   coups: (base) => hitsNeeded(state, base),
   tech: (cle) => techFlag(state, cle),
+  // les réglages de jeu des cartes, écrits dans data/ville.json (GROTTE : les niveaux, le
+  // minerai, les coups de pioche ; NAVETTE : les horaires et les temps du bus de ligne) : lus
+  // par js/carte/ville/config.js ; une autre section de DATA n'est pas donnée aux cartes
+  donnees: (cle) => (cle === 'GROTTE' || cle === 'NAVETTE' ? DATA[cle] : null),
   say: (t) => showToast(t),
   // les fenêtres des cartes (la gare, l'arrêt de bus, un étal, une entreprise, le tronc creux) :
   // celles du jeu (js/ui/modal.js : cadre bois, focus gardé par Tab, Échap, focus rendu) ;

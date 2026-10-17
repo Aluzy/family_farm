@@ -18,11 +18,11 @@ import {
 /* ---------- Lot 1 : heure, parc électrique, eau, Dormir ---------- */
 
 test('DATA : grilles par niveau, coûts et départ (version 1.6 : un panneau, une batterie)', () => {
-  assertEqual(DATA.GRID.panneau.whParS, [40, 90, 160, 260, 400]);
-  assertEqual(DATA.GRID.batterie.wh, [6000, 15000, 30000, 60000, 100000]);
-  assertEqual(DATA.GRID.pompe.litresPerS, [1, 2, 4, 6, 10]);
-  assertEqual(DATA.GRID.reservoir.litres, [40, 80, 160, 300, 500]);
-  assertEqual(DATA.UPGRADE_COST, {
+  assertEqual(DATA.RESEAU.panneau.whParS, [40, 90, 160, 260, 400]);
+  assertEqual(DATA.RESEAU.batterie.wh, [6000, 15000, 30000, 60000, 100000]);
+  assertEqual(DATA.RESEAU.pompe.litresParS, [1, 2, 4, 6, 10]);
+  assertEqual(DATA.RESEAU.reservoir.litres, [40, 80, 160, 300, 500]);
+  assertEqual(Object.fromEntries(Object.entries(DATA.RESEAU).map(([k, v]) => [k, v.prixNiveaux])), {
     panneau: [0, 150, 400, 900, 2000], batterie: [0, 180, 450, 1000, 2200],
     pompe: [0, 100, 250, 600, 1300], reservoir: [0, 120, 300, 700, 1500],
   });
@@ -48,7 +48,7 @@ test('production : un panneau de niveau 1 produit 0,04 kWh/s au soleil', () => {
 });
 
 test('soleil : le panneau ne produit qu\'entre 7 h et 19 h, au prorata d\'un pas à cheval', () => {
-  const H = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  const H = DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
   const s = farm({ sun: false }); // 6 h
   tick(s, 10);
   assertEqual([s.batteries[0].chargeMwh, s.panneaux[0].prod], [0, 0], 'avant 7 h : rien');
@@ -205,7 +205,7 @@ test('le réservoir a ses propres niveaux : 120 / 300 / 700 / 1 500 💰', () =>
   const t = farm();
   t.pieces = 119;
   assertEqual([upgradeTank(t).ok, t.reservoir.niveau, t.pieces], [false, 1, 119]);
-  assertEqual(DATA.GRID.pompe.litresPerS[s.pompe.niveau - 1], 2);
+  assertEqual(DATA.RESEAU.pompe.litresParS[s.pompe.niveau - 1], 2);
 });
 
 test('usure : +1 point toutes les 2 heures de fonctionnement (60 s)', () => {
@@ -338,7 +338,7 @@ test('interrupteur : allume et éteint, id inconnu refusé', () => {
 
 test('heure : suit le temps d\'éveil, 6 h au réveil, +1 h toutes les 30 s', () => {
   const s = farm({ sun: false });
-  assertEqual(DATA.TIME.CLOCK_SECONDS_PER_HOUR, 30);
+  assertEqual(DATA.TEMPS.SECONDES_PAR_HEURE, 30);
   const H = 30000;
   assertEqual(hourOfDay(s), 6);
   s.awakeMs = H - 100;
@@ -362,7 +362,7 @@ test('heure : suit le temps d\'éveil, 6 h au réveil, +1 h toutes les 30 s', ()
 
 test('clockHours : la même heure, avec ses minutes, toujours dans [0, 24)', () => {
   const s = farm();
-  const H = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  const H = DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
   const at = (ms) => { s.awakeMs = ms; return clockHours(s); };
   assertEqual(at(0), 6);
   assertEqual(at(H / 2), 6.5, '6 h 30 après une demi-heure de jeu (9 s)');
@@ -383,7 +383,7 @@ test('clockHours : la même heure, avec ses minutes, toujours dans [0, 24)', () 
 
 test('horloge : l\'heure affichée ne change ni l\'usure ni le sommeil', () => {
   // L'usure garde sa propre « heure de marche » de 30 s : 1 point toutes les 2 heures = 60 s.
-  assertEqual([DATA.TIME.SECONDS_PER_HOUR, DATA.WEAR.HEURES_PAR_POINT, DATA.TIME.MIN_AWAKE_S, DATA.TIME.DAY_START_HOUR], [30, 2, 30, 6]);
+  assertEqual([DATA.TEMPS.SECONDES_HEURE_MARCHE, DATA.USURE.HEURES_PAR_POINT, DATA.TEMPS.EVEIL_MIN_S, DATA.TEMPS.HEURE_REVEIL], [30, 2, 30, 6]);
   const s = farm();
   for (let i = 0; i < 299; i++) tick(s, 0.2);
   assertEqual(s.panneaux[0].usure, 0, '59,8 s de marche : pas encore un point');

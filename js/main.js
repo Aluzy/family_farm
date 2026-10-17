@@ -66,7 +66,7 @@ import './ui/excursion.js';
 // l'autonomie), garde l'emoji comme libellé.
 const SYMBOLES_UI = new Set(['🌿']);
 const emojiNames = {};
-for (const it of Object.values(DATA.items)) {
+for (const it of Object.values(DATA.OBJETS)) {
   if (!it.icone || SYMBOLES_UI.has(it.icone)) continue;
   emojiNames[it.icone] = it.icone in emojiNames && emojiNames[it.icone] !== it.nom ? null : it.nom;
 }

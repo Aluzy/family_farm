@@ -39,7 +39,7 @@ function orchard() {
 test('DATA Lot 8 : Serre, Verger et Réfrigérateur (plus de saisons)', () => {
   assertEqual(DATA.SAISONS, undefined, 'version 1.6 : plus de saisons');
   assertEqual(DATA.VERGER.FENETRE, undefined, 'les fruits viennent toute l\'année');
-  assertEqual(DATA.SERRE, { LIEU: 'serre', CONSTRUCTION: 1000, PARCELLES: [16, 26, 36, 46, 56], COUT: [0, 900, 1800, 3000, 5400] });
+  assertEqual(DATA.SERRE, { LIEU: 'serre', PRIX_CONSTRUCTION: 1000, PARCELLES: [16, 26, 36, 46, 56], PRIX_NIVEAUX: [0, 900, 1800, 3000, 5400] });
   const V = DATA.VERGER;
   assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 12, 50, 125]);
   assertEqual([V.MATURITE, V.FRUITS, V.PERIODE], [15, 6, 3]);
@@ -47,11 +47,11 @@ test('DATA Lot 8 : Serre, Verger et Réfrigérateur (plus de saisons)', () => {
   assertEqual([V.ARBRES.pommier.fruit, V.ARBRES.poirier.fruit], ['pomme', 'poire']);
   for (const fruit of ['pomme', 'poire']) {
     // Lot 12 : prix de vente du fruit doublé (2 → 4).
-    assertEqual([DATA.items[fruit].energie, DATA.items[fruit].prix, shelfLife(fruit)], [scaleEnergie(8), 4, 7]);
+    assertEqual([DATA.OBJETS[fruit].energie, DATA.OBJETS[fruit].prix, shelfLife(fruit)], [scaleEnergie(8), 4, 7]);
   }
   const F = DATA.FRIGO;
-  assertEqual([F.CONSTRUCTION, F.BASE_WH_S, F.PAR_UNITE_MWH_S, F.BLOC_NUIT_S, F.SEUIL_ALIMENTE], [600, 0, 100, 30, 50], 'version 1.10 : rien à vide, 100 mWh/s par unité');
-  assertEqual([F.CAPACITE, F.COUT], [[25, 40, 60, 90, 120], [0, 300, 700, 1500, 3000]]);
+  assertEqual([F.PRIX_CONSTRUCTION, F.BASE_WH_S, F.PAR_UNITE_MWH_S, F.BLOC_NUIT_S, F.SEUIL_ALIMENTE], [600, 0, 100, 30, 50], 'version 1.10 : rien à vide, 100 mWh/s par unité');
+  assertEqual([F.CAPACITE, F.PRIX_NIVEAUX], [[25, 40, 60, 90, 120], [0, 300, 700, 1500, 3000]]);
 });
 
 test('état initial Lot 8 : Serre, Verger et Réfrigérateur à construire', () => {
@@ -144,9 +144,9 @@ test('Serre : tomate, courgette, aubergine, poivron, cacao, vanille, café', () 
 
 test('cultures de rente : cacao, vanille et café exclusivement en Serre', () => {
   const rente = ['cacao', 'vanille', 'cafe'];
-  // Sur DATA.crops directement, sans passer par l'interface : seul le lieu
+  // Sur DATA.CULTURES directement, sans passer par l'interface : seul le lieu
   // 'serre' est déclaré.
-  for (const c of rente) assertEqual(DATA.crops[c].lieux, ['serre']);
+  for (const c of rente) assertEqual(DATA.CULTURES[c].lieux, ['serre']);
   // plant() lui-même refuse la Zone de culture, pas seulement l'écran de
   // plantation (qui se contente de ne pas les proposer) : c'est bien la
   // fonction de plantation qui porte la règle.
@@ -876,7 +876,7 @@ test('version 1.13 : Récolte du verger, cueillette la nuit à moitié de l\'XP'
   const r = sleepOnce(s);
   assertEqual([r.fruits.pomme, countItem(s, 'pomme'), s.verger.arbres[0].fruits], [6, 6, false]);
   assert(s.progression.xp - xp >= 10, 'XP de la cueillette automatique');
-  assertEqual(DATA.techtree.noeuds.cu_verger_auto.effet, { auto: { recolte: ['verger'] } });
+  assertEqual(DATA.ARBRE.noeuds.cu_verger_auto.effet, { auto: { recolte: ['verger'] } });
 });
 
 test('migration v29 → v30 : chaque arbre reçoit sa case et garde son calendrier', () => {

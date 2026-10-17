@@ -400,7 +400,7 @@ est la poignée de débogage posée par `js/main.js`).
 - **Fenêtres** : deux tailles seulement (demi-écran, plein écran), ✕ toujours au même endroit, titre unique.
 - **Règle de rangement** : ce qui est un lieu s'ouvre sur la carte ; ce qui est un stock ou un échange est dans la barre du bas. Les animaux s'achètent à l'Étable, les arbres au Verger ; le Marché garde Vendre, Acheter, Graines. Famille, Livre de recette et Arbre des technologies ne s'ouvrent plus que dans la Maison (les pages restent pour le repli sans Phaser).
 - **Bandeau** : nuit et heure à côté du titre ; saison, eau et autonomie ouvrent leur fenêtre ; l'objectif du chapitre est affiché sous le bandeau.
-- **Horloge** : 6 h au réveil, 1 h toutes les 5 s d'éveil (`DATA.TIME.CLOCK_SECONDS_PER_HOUR`, distinct de `SECONDS_PER_HOUR` qui règle l'usure). La carte reçoit l'heure dans le modèle de vue et pose un voile coloré : aube, plein jour, soir doré, crépuscule, nuit.
+- **Horloge** : 6 h au réveil, 1 h toutes les 5 s d'éveil (`DATA.TEMPS.SECONDES_PAR_HEURE`, distinct de `SECONDES_HEURE_MARCHE` qui règle l'usure). La carte reçoit l'heure dans le modèle de vue et pose un voile coloré : aube, plein jour, soir doré, crépuscule, nuit.
 - **Moulin** : sa fenêtre moud le blé directement (`renderMoulin()`), 1 blé = 1 farine + 1 paille ; la mouture n'est plus dans le Livre de recette.
 - **Élevage** : plus d'abattage ni de poids. Chaque nuit un mouton mange 1 paille, une vache 2 ; nourrie, la vache donne du lait, le mouton de la laine toutes les 2 nuits nourries. Le mot « pâturage » a disparu des textes (la clé interne `state.paturage` reste).
 - **Famille** : prénom, femme ou homme, couleur de peau par membre (`setMemberProfile`). Le prénom reste dans la sauvegarde locale et n'est jamais envoyé au suivi.
@@ -421,7 +421,7 @@ est la poignée de débogage posée par `js/main.js`).
 
 ## Version 1.1.3 : journée de 6 h à 22 h
 
-- `DATA.TIME.CLOCK_SECONDS_PER_HOUR` passe de 5 à 18 s et `DATA.TIME.NIGHT_HOUR` de 24 à 22 : la journée dure 16 heures de 18 s, soit 288 s. Le repas reste à 19 h (234 s après le réveil).
+- `DATA.TEMPS.SECONDES_PAR_HEURE` passe de 5 à 18 s et `DATA.TEMPS.HEURE_NUIT` de 24 à 22 : la journée dure 16 heures de 18 s, soit 288 s. Le repas reste à 19 h (234 s après le réveil).
 - À 22 h, la nuit se lance d'elle-même (`bedtimeDue()`, ex-`midnightDue()`), avec les mêmes attentes qu'avant : fenêtre ouverte, aide de la première partie.
 - Version 1.19 : la nuit défile de 22 h à 6 h (`state.nuitEnCours`) ; à minuit, elle se calcule d'un coup (`runNight`) ; le bouton « Zzz » n'apparaît que la nuit et saute ce qui reste (`skipNight`). La nuit, les actions de jeu sont bloquées (`NUIT_BLOQUEES`, `js/ui/actions.js`).
 - Pas de changement de format de sauvegarde : l'heure se déduit de `state.awakeMs`. Une partie enregistrée en cours de journée reprend à l'heure qui correspond au même temps d'éveil avec la nouvelle durée.
@@ -435,9 +435,9 @@ est la poignée de débogage posée par `js/main.js`).
 
 ## Version 1.2 : composer sa famille
 
-- **Membres** : de 1 à 6 (`DATA.FAMILY.COMPOSITION`), dont au moins un adulte. `addMember(state, enfant)` et `removeMember(state, id)` ; le besoin journalier est la somme des apports des membres présents (`familyNeed()`), donc il suit tout seul : 50 par adulte, 25 par enfant.
+- **Membres** : de 1 à 6 (`DATA.FAMILLE.COMPOSITION`), dont au moins un adulte. `addMember(state, enfant)` et `removeMember(state, id)` ; le besoin journalier est la somme des apports des membres présents (`familyNeed()`), donc il suit tout seul : 50 par adulte, 25 par enfant.
 - **Garde-fous** : un nouveau membre arrive avec la santé moyenne de la famille (agrandir la famille ne soigne personne) ; un malade ne peut pas partir (`memberRemovalBlock()` dit pourquoi) ; un identifiant n'est jamais réutilisé (`state.famille.numeros`).
-- **Animaux de compagnie** : jusqu'à 3 chiens ou chats (`DATA.FAMILY.COMPAGNIE`, `state.famille.animaux`, `addPet()`, `setPetProfile()`, `removePet()`). Gratuits, sans effet sur le besoin, la santé ou la productivité. Leur nom suit les règles d'un prénom et, comme lui, reste dans la sauvegarde locale.
+- **Animaux de compagnie** : jusqu'à 3 chiens ou chats (`DATA.FAMILLE.COMPAGNIE`, `state.famille.animaux`, `addPet()`, `setPetProfile()`, `removePet()`). Gratuits, sans effet sur le besoin, la santé ou la productivité. Leur nom suit les règles d'un prénom et, comme lui, reste dans la sauvegarde locale.
 - **Interface** : fenêtre Famille (carte du joueur, en haut à gauche ; autrefois Maison › Famille). Deux boutons « ➕ Un adulte / Un enfant » (la fiche s'ouvre aussitôt pour le prénom), la section « Animaux de compagnie », et « Retirer de la famille » dans la fiche « Modifier » (deux appuis).
 - **Sauvegardes** : format 18. La migration ajoute une liste d'animaux vide et les compteurs ; les membres ne changent pas.
 - **Encyclopédie** : remise à jour avec le jeu (famille composable, animaux de compagnie, Étable et paille, Moulin, horloge et repas de 19 h, carte, Marché, fin des viandes). Le JSON fait foi ; `node scripts/build-encyclopedie.mjs` régénère la page, `--check` vérifie qu'elle est à jour.

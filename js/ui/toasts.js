@@ -83,10 +83,10 @@ function alertMessage(ev) {
   const name = d ? deviceName(d) : '';
   switch (ev.type) {
     case 'panne': return `⛔ ${name} en panne : il faut le réparer.`;
-    case 'entretien': return `⚠️ ${name} : usure à ${formatNumber(DATA.WEAR.SERVICE_THRESHOLD)} %, pense à l'entretenir.`;
+    case 'entretien': return `⚠️ ${name} : usure à ${formatNumber(DATA.USURE.SEUIL_ENTRETIEN)} %, pense à l'entretenir.`;
     case 'batteriesVides': return '🔋 Batterie vide : la pompe et les ateliers attendent le soleil.';
     case 'frigoCoupe': return '🧊 Réfrigérateur hors tension : il manque d\'énergie.';
-    case 'pailleManque': return `${DATA.items[DATA.PATURAGE.nourriture].icone} Il manque de la paille pour les animaux cette nuit : mouds du blé au Moulin.`;
+    case 'pailleManque': return `${DATA.OBJETS[DATA.PATURAGE.NOURRITURE].icone} Il manque de la paille pour les animaux cette nuit : mouds du blé au Moulin.`;
     default: return '';
   }
 }

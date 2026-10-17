@@ -111,14 +111,14 @@ function shopSlot(icone, nom, act, prix, coin, off, label) {
 }
 
 function sellSlot(item) {
-  const it = DATA.items[item];
+  const it = DATA.OBJETS[item];
   const n = sellableStock(item);
   return shopSlot(it.icone, it.nom, `data-mode="vendre" data-item="${item}"`, it.prix, pxText(String(n), 'light'), n < 1,
     `${it.nom} : ${formatCoins(it.prix)} pièces l'unité, ${formatQty(sellableCount(state, item))} à vendre`);
 }
 
 function buySlot(item, mode) {
-  const it = DATA.items[item];
+  const it = DATA.OBJETS[item];
   const price = buyPrice(state, item);
   const n = Math.floor(countItem(state, item) + EPS);
   const ok = buyQuote(state, item, 1).quantite >= 1;
@@ -170,13 +170,13 @@ function animalInfo(kind) {
     let ok = true;
     if (!p.construit) { note = '⚠️ Prépare d\'abord l\'Étable pour les moutons et les vaches.'; ok = false; }
     else if (freeSheepPlaces(state) <= 0) { note = `⚠️ L'Étable est pleine : achète une place de plus (${costLabel(pastureCost(state))}).`; ok = false; }
-    return { compte: sheepCount(state), cap: pastureCapacity(state), ok, note, infos: [`prend ${formatPlaces(DATA.PATURAGE.placesParMouton)}`, `mange ${formatStraw(def.pailleParNuit)} par nuit`, `${def.laineParTonte} laine toutes les ${def.joursLaine} nuits nourri`] };
+    return { compte: sheepCount(state), cap: pastureCapacity(state), ok, note, infos: [`prend ${formatPlaces(DATA.PATURAGE.PLACES_PAR_MOUTON)}`, `mange ${formatStraw(def.pailleParNuit)} par nuit`, `${def.laineParTonte} laine toutes les ${def.joursLaine} nuits nourri`] };
   }
   let note = `Places libres : ${freeCowPlaces(state)}.`;
   let ok = true;
   if (!p.construit) { note = '⚠️ Prépare d\'abord l\'Étable pour les moutons et les vaches.'; ok = false; }
-  else if (freeCowPlaces(state) <= 0) { note = `⚠️ Pas assez de place pour une vache (il lui faut ${formatPlaces(DATA.PATURAGE.placesParVache)} libres) : achète des places (${costLabel(pastureCost(state))} la prochaine).`; ok = false; }
-  return { compte: cowCount(state), cap: cowCapacity(state), ok, note, infos: [`prend ${formatPlaces(DATA.PATURAGE.placesParVache)}`, `mange ${formatStraw(def.pailleParNuit)} par nuit`, `${def.laitParNuit} lait chaque nuit où elle a mangé`] };
+  else if (freeCowPlaces(state) <= 0) { note = `⚠️ Pas assez de place pour une vache (il lui faut ${formatPlaces(DATA.PATURAGE.PLACES_PAR_VACHE)} libres) : achète des places (${costLabel(pastureCost(state))} la prochaine).`; ok = false; }
+  return { compte: cowCount(state), cap: cowCapacity(state), ok, note, infos: [`prend ${formatPlaces(DATA.PATURAGE.PLACES_PAR_VACHE)}`, `mange ${formatStraw(def.pailleParNuit)} par nuit`, `${def.laitParNuit} lait chaque nuit où elle a mangé`] };
 }
 
 const ESPECES = ['poule', 'mouton', 'vache'];
@@ -207,8 +207,8 @@ function animalSlot(kind) {
 // Le rayon Acheter a deux sous-rayons : Ingrédients (la houe en tête, légumes, fruits,
 // œufs, lait, farine…) et Plats (ce que cuisinent le Four et la Cuisine).
 const SOUS_RAYONS = [
-  { id: 'ingredients', label: 'Ingrédients', icon: '🥕', match: (k) => DATA.items[k].category !== 'plat' },
-  { id: 'plats', label: 'Plats', icon: '🍲', match: (k) => DATA.items[k].category === 'plat' },
+  { id: 'ingredients', label: 'Ingrédients', icon: '🥕', match: (k) => DATA.OBJETS[k].categorie !== 'plat' },
+  { id: 'plats', label: 'Plats', icon: '🍲', match: (k) => DATA.OBJETS[k].categorie === 'plat' },
 ];
 let sousRayon = 'ingredients';
 
@@ -228,13 +228,13 @@ export function renderComptoir(fenetre = false) {
   const tab = currentTab();
   let body;
   if (tab.id === 'vendre') {
-    const items = Object.keys(DATA.items).filter((k) => !DATA.items[k].invendable && sellableCount(state, k) > 0);
+    const items = Object.keys(DATA.OBJETS).filter((k) => !DATA.OBJETS[k].invendable && sellableCount(state, k) > 0);
     body = slotsHtml(items.map(sellSlot), 'Tu n\'as rien à vendre pour l\'instant.');
   } else if (tab.id === 'acheter') {
     // FLU-01 : la puce d'objectif « Acheter une houe » mène ici (Ingrédients, le sous-rayon
     // par défaut, a la houe en tête) ; le chapitre reste à une touche
     const rayon = SOUS_RAYONS.find((r) => r.id === sousRayon);
-    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && DATA.items[k].category !== 'graine' && rayon.match(k));
+    const items = Object.keys(DATA.OBJETS).filter((k) => isBuyable(k) && DATA.OBJETS[k].categorie !== 'graine' && rayon.match(k));
     const chapitre = !hasHoe(state) ? '<p class="row"><button type="button" class="btn small" data-action="aller" data-window="chapitres">📜 Voir le chapitre</button></p>' : '';
     const slots = items.map((k) => buySlot(k, 'acheter'));
     body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('pioche'), toolSlot('hache'), toolSlot('canne'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
@@ -243,7 +243,7 @@ export function renderComptoir(fenetre = false) {
   } else if (tab.id === 'meubles') {
     body = slotsHtml(Object.keys(DATA.MEUBLES).map(meubleSlot), '');
   } else {
-    const items = Object.keys(DATA.items).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
+    const items = Object.keys(DATA.OBJETS).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = slotsHtml(items.map((k) => buySlot(k, 'graines')), 'Aucune graine en vente.');
   }
   return fenetre ? body : `<h2>🧺 Marché</h2>${marketTabsHtml()}${body}`;
@@ -251,7 +251,7 @@ export function renderComptoir(fenetre = false) {
 
 // Une graine dont la culture n'est pas encore débloquée (tournesol) n'est pas en vente.
 function seedForSale(item) {
-  return !Object.keys(DATA.crops).some((c) => seedItem(c) === item && !isUnlocked(state, c));
+  return !Object.keys(DATA.CULTURES).some((c) => seedItem(c) === item && !isUnlocked(state, c));
 }
 
 /* -- Fiche d'un article (fenêtre de dialogue, cadre bois) : ses infos et les boutons de lot,
@@ -312,7 +312,7 @@ function shopBodyHtml(o) {
       <ul class="item-lines">${a.infos.map((l) => `<li>${l}</li>`).join('')}<li>${a.note}</li></ul>
       <div class="row item-actions lot-btns">${lots.join('')}</div>`;
   }
-  const it = DATA.items[o.id];
+  const it = DATA.OBJETS[o.id];
   if (o.mode === 'vendre') {
     const stock = sellableStock(o.id);
     const frigo = fridgeCount(state, o.id);
@@ -398,13 +398,13 @@ registerActions({
     const item = target.dataset.item;
     const result = applyResult(buyItem(state, item, Math.max(1, Number(target.dataset.q) || 1)));
     if (result.ok) {
-      notify(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
+      notify(`Acheté : ${result.bought} ${DATA.OBJETS[item].icone} (−${formatCoins(result.cost)} 💰)`);
       refresh();
     }
   },
   'sell-item': (target) => {
     const item = target.dataset.item;
     const result = applyResult(sellItem(state, item, Math.max(1, Number(target.dataset.q) || 1)));
-    if (result.ok) notify(`Vendu : ${result.sold} ${DATA.items[item].icone} (+${formatCoins(result.gain)} 💰)`);
+    if (result.ok) notify(`Vendu : ${result.sold} ${DATA.OBJETS[item].icone} (+${formatCoins(result.gain)} 💰)`);
   },
 });

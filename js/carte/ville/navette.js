@@ -2,7 +2,7 @@
  *
  * Entre l'abri de bus de la carte de transition et celui de la gare, en ville (NAVETTE) : on
  * touche l'abri, on attend, le bus arrive, on monte, il part ; on descend à l'arrêt de l'autre
- * carte (?bus=1).
+ * carte (?bus=1). Ses horaires et ses temps : data/ville.json (NAVETTE), par NAVETTE.jeu.
  *
  * Méthodes de la scène des cartes (js/ville-carte.js), posées sur son prototype : `this` est
  * la scène (voir docs/architecture-phaser.md).
@@ -52,13 +52,13 @@
     // Le bus roule-t-il à cette heure ? (sans horloge : toujours)
     navetteOuverte() {
       const t = this.heure;
-      return !t || (!t.nuit && t.heure >= NAVETTE.heures[0] && t.heure < NAVETTE.heures[1]);
+      return !t || (!t.nuit && t.heure >= NAVETTE.jeu.HORAIRES.DEBUT && t.heure < NAVETTE.jeu.HORAIRES.FIN);
     },
 
     tapAbri(w) {
       const a = this.abri, c = NAVETTE.arrets[etat.nom];
       if (!a || !c || this.navette || w.x < a.x0 || w.x > a.x1 || w.y < a.y0 || w.y > a.y1) return false;
-      if (!this.navetteOuverte()) { this.say(`🚌 Plus de bus à cette heure : le premier passe à ${NAVETTE.heures[0]} h.`); return true; }
+      if (!this.navetteOuverte()) { this.say(`🚌 Plus de bus à cette heure : le premier passe à ${NAVETTE.jeu.HORAIRES.DEBUT} h.`); return true; }
       if (this.school) { this.say('🚌 Le bus de l\'école est en route : le bus de ligne passe juste après.'); return true; }
       this.openChoix('🚌 L\'arrêt de bus', `Le bus de ligne passe dans un instant. Il va ${c.vers}.`, [{ label: c.choix, go: () => this.startNavette() }]);
       return true;
@@ -102,7 +102,7 @@
         // (pas de chemin jusqu'à l'abri : on y est porté)
         const P = this.heroPos, A = n.c.attente;
         if (!this.path.length && Math.hypot(P.x - A.x, P.y - A.y) > 4) { P.x = A.x; P.y = A.y; }
-        if (!this.path.length && (!roule || bus.atStop)) { this.face = 'bas'; this.hero.setFlipX(false); n.phase = 'montee'; n.wait = NAVETTE.monte; }
+        if (!this.path.length && (!roule || bus.atStop)) { this.face = 'bas'; this.hero.setFlipX(false); n.phase = 'montee'; n.wait = NAVETTE.jeu.DUREES.MONTEE; }
       } else if (n.phase === 'montee') {
         this.heroAlpha = Math.max(0, this.heroAlpha - dt / 0.4);
         n.wait -= dt;
@@ -110,13 +110,13 @@
           bus.stopAt = null;
           if (roule) this.cameras.main.startFollow(bus.sprite, true, 0.1, 0.1);
           n.phase = 'depart';
-          n.wait = NAVETTE.part;
+          n.wait = NAVETTE.jeu.DUREES.DEPART;
         }
       } else if (n.phase === 'depart') {
         n.wait -= dt;
         if (n.wait <= 0 || !roule) { n.phase = 'fin'; this.leave({ cible: n.c.cible }); }
       } else if (n.phase === 'arrivee') {
-        if (!roule || bus.atStop) { n.phase = 'descente'; n.wait = NAVETTE.descend; }
+        if (!roule || bus.atStop) { n.phase = 'descente'; n.wait = NAVETTE.jeu.DUREES.DESCENTE; }
       } else if (n.phase === 'descente') {
         n.wait -= dt;
         if (n.wait <= 0) { n.phase = 'paraît'; this.cameras.main.startFollow(this.hero, true, 0.08, 0.08); }
@@ -126,7 +126,7 @@
           this.locked = false;
           this.cameras.main.startFollow(this.hero, true, 0.12, 0.12);
           n.phase = 'repart';
-          n.wait = NAVETTE.repart;
+          n.wait = NAVETTE.jeu.DUREES.REPART;
         }
       } else if (n.phase === 'repart') {
         n.wait -= dt;

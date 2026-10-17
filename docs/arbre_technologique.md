@@ -6,7 +6,7 @@
 > leurs valeurs (coûts, PT, nœuds) ne sont plus tenues à jour et peuvent différer du jeu.
 
 > Proposition de conception, à intégrer à `docs/conception.md` (section 1.4, 8.3 et 8.7) une fois validée.
-> Les données correspondantes sont dans `techtree_v2.js` (format `DATA.techtree`) ; les tableaux ci-dessous en sont générés.
+> Les données correspondantes sont dans `techtree_v2.js` (format `DATA.ARBRE`) ; les tableaux ci-dessous en sont générés.
 > 🟡 = valeur provisoire, à caler avec `simulate.mjs`.
 
 ## 1. Décisions retenues
@@ -258,7 +258,7 @@ Dans le Livre de recette, une recette verrouillée reste visible, grisée, avec 
 | **Actions groupées** | « Arroser tout » et « Récolter tout » par zone, au clic : une tentative par parcelle, chacune payée en énergie comme un clic (version 1.8). | — |
 | **File de préparations** | Chaque atelier garde jusqu'à 3 préparations en attente ; les ingrédients sont retirés au moment de la mise en file ; annuler rend les ingrédients. Le hors-ligne fait avancer la file comme une préparation. | 3 places |
 | **Délestage** | Sous le seuil de charge totale des batteries, le Moulin, la Presse et la Pompe sont suspendus (pas éteints : ils reprennent seuls). | 10 % |
-| **Entretien automatique** | Au Dormir, chaque appareil à `SERVICE_THRESHOLD` (70 %) ou plus est entretenu si les pièces suffisent, dans l'ordre du parc ; résumé dans le rapport du réveil. | — |
+| **Entretien automatique** | Au Dormir, chaque appareil à `SEUIL_ENTRETIEN` (70 %) ou plus est entretenu si les pièces suffisent, dans l'ordre du parc ; résumé dans le rapport du réveil. | — |
 | **Arrosage prioritaire** | Quand l'eau ne suffit pas, l'arrosage automatique trie les parcelles par stades restants (croissant). | — |
 | **Routine familiale** | Réglage « Dormir tout seul » (désactivé par défaut) : jeu ouvert et onglet visible, `sleep()` est appelé dès que l'éveil minimal est écoulé. **Le hors-ligne ne fait toujours passer aucune nuit.** | — |
 
@@ -282,7 +282,7 @@ Repas → **pluie** → récolte automatique → semis automatique → arrosage 
 
 | Zone de `jeu.html` | Changement |
 |---|---|
-| `DATA.techtree` | Remplacé par `techtree_v2.js` ; `DATA.AUTOMATISATION` supprimé |
+| `DATA.ARBRE` | Remplacé par `techtree_v2.js` ; `DATA.AUTOMATISATION` supprimé |
 | Moteur, arbre | Agrégateur d'effets ; `techPrereqs()` gère `construit`, `appareil` et le palier ; `buyTech()` débite PT + pièces ; gain de PT dans `completeChapter()` et au réveil (maîtrise, mode libre) |
 | Moteur, ferme | `isAutomated()` et `autoTasks()` par tâche et par lieu (Serre et tonte ajoutées) ; eau, pompe, usure, frigo, blé, soins, conservation, graines lisent l'agrégateur ; pluie, délestage, entretien auto, file de préparations, bocal |
 | Interface | En-tête de l'onglet : solde de PT ; palier sur chaque carte ; recettes verrouillées dans le Livre ; boutons groupés ; file des ateliers ; réglage Routine dans ⚙️ Options |

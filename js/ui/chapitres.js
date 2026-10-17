@@ -130,11 +130,11 @@ function openChapterModal() {
        <p class="muted">${next.intro}</p>
        <ul class="objectives">${next.objectifs.map((o) => `<li class="objective"><span class="objective-label">⬜ ${o.libelle}</span></li>`).join('')}</ul>`
     : `<h3>🏆 Campagne terminée</h3>
-       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : continue de monter en niveau, à ton rythme. Chaque série de ${DATA.techtree.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>`;
+       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : continue de monter en niveau, à ton rythme. Chaque série de ${DATA.ARBRE.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>`;
   openModal(`
     <h2 id="chapter-title">🎉 Chapitre ${a.chapitre} terminé</h2>
     <p><strong>${done.icone} ${done.titre}</strong></p>
-    <p>⭐ +${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[a.chapitre - 1] || 0)} XP · 🔬 +${formatNumber(DATA.techtree.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
+    <p>⭐ +${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[a.chapitre - 1] || 0)} XP · 🔬 +${formatNumber(DATA.ARBRE.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
     ${body}
     <button type="button" class="btn primary" data-action="ack-chapter" id="chapter-close">Continuer</button>`, {
     labelledBy: 'chapter-title', id: 'chapter-modal', focus: '#chapter-close',

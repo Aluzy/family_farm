@@ -44,7 +44,7 @@ function techReady(s, pt = 99) {
 test('DATA arbre v2 : 37 nœuds, 7 branches, paliers, points, ressources et prérequis cohérents', () => {
   assertEqual(DATA.AUTOMATISATION, undefined, 'plus d\'automatisation par le niveau 5');
   assertEqual(DATA.TECHNO, { ONGLET: 'techno', SEUIL_PIECES: 100 });
-  const T = DATA.techtree;
+  const T = DATA.ARBRE;
   const N = T.noeuds;
   assertEqual(Object.keys(N).length, 37); // 34 avant la version 1.1 (la Rôtisserie a disparu avec la viande), 33 puis 34 avec la Récolte du verger (1.13), 31 sans Réveil matinal I et II ni Routine familiale (1.19), 37 avec la branche Outils
   assertEqual(T.branches.map((b) => b.nom), ['Énergie', 'Eau', 'Culture', 'Élevage', 'Cuisine', 'Famille', 'Outils']);
@@ -57,7 +57,7 @@ test('DATA arbre v2 : 37 nœuds, 7 branches, paliers, points, ressources et pré
   let pt = 0;
   for (const [id, n] of Object.entries(N)) {
     assert(T.branches.some((b) => b.id === n.branche), `branche de ${id}`);
-    assert(Number.isInteger(n.pt) && n.pt > 0 && Number.isInteger(n.cout), `coûts entiers : ${id}`);
+    assert(Number.isInteger(n.pt) && n.pt > 0 && Number.isInteger(n.prix), `coûts entiers : ${id}`);
     pt += n.pt;
     // chaque nœud coûte aussi des ressources : bois et pierre aux premiers paliers, des lingots ensuite
     assert(Object.keys(n.ressources || {}).length > 0, `${id} : des ressources`);
@@ -111,7 +111,7 @@ test('arrosage automatique : une parcelle déjà arrosée à la main n\'est pas 
   const eau = s.eauMl;
   s.awakeMs = awakeMsAtHour(6.5);
   assertEqual(irrigate(s), null, 'avant 7 h : rien');
-  s.awakeMs = awakeMsAtHour(DATA.TIME.ARROSAGE_HEURE);
+  s.awakeMs = awakeMsAtHour(DATA.TEMPS.ARROSAGE_HEURE);
   const rap = irrigate(s);
   assertEqual(rap.arrosees, 1);
   assertEqual(s.eauMl, eau - ml(2));
@@ -120,7 +120,7 @@ test('arrosage automatique : une parcelle déjà arrosée à la main n\'est pas 
 test('arrosage automatique : les asperseurs repassent dans la journée pour une plante qui a soif à son tour', () => {
   const s = auto5('potager');
   plant(s, 'potager-1', 'carotte');
-  s.awakeMs = awakeMsAtHour(DATA.TIME.ARROSAGE_HEURE);
+  s.awakeMs = awakeMsAtHour(DATA.TEMPS.ARROSAGE_HEURE);
   assertEqual(irrigate(s).arrosees, 1);
   plant(s, 'potager-2', 'carotte'); // semée après 7 h (le robot, ou à la main)
   assertEqual(irrigate(s), null, 'pas avant que les asperseurs aient fini de tourner');
@@ -158,7 +158,7 @@ testBase('récolte automatique : parcelles mûres seulement, carottes et graines
 
 test('automatisations : elles couvrent toute la Zone de culture, plein champ compris (le blé va au Silo)', () => {
   // les nœuds ne citent plus que la zone ('potager') et la Serre : plus de lieu « champ »
-  const N = DATA.techtree.noeuds;
+  const N = DATA.ARBRE.noeuds;
   assertEqual([N.ea_irrigation.effet.auto, N.cu_recolte_auto.effet.auto, N.semis_auto.effet.auto],
     [{ arrosage: ['potager'] }, { recolte: ['potager'] }, { semis: ['potager'] }]);
   assertEqual(Object.keys(AUTO_TACHES), ['potager', 'serre', 'poulailler', 'paturage', 'verger']);
@@ -227,7 +227,7 @@ test('Serre : automatisée seulement par ses nœuds (Irrigation de la Serre, Ser
   const s = garden();
   s.pieces = 5000;
   buildSerre(reach(s, 'serre'));
-  s.serre.niveau = DATA.LEVEL_MAX;
+  s.serre.niveau = DATA.NIVEAU_MAX;
   addItem(s, 'cacao', 3);
   plantRipe(s, 'serre-1', 'cacao');
   grantTech(s, 'ea_irrigation');
@@ -605,7 +605,7 @@ test('mode test Lot 7 : un bâtiment au niveau 5, tous les nœuds débloqués', 
   assertEqual([isAutomated(s, 'potager'), isAutomated(s, 'poulailler'), isAutomated(s, 'silo')], [false, false, false], 'le niveau 5 n\'automatise plus');
   assertEqual(testUnlockAllTechs(s).ok, true);
   assertEqual([isAutomated(s, 'potager'), isAutomated(s, 'serre'), isAutomated(s, 'poulailler'), isAutomated(s, 'paturage')], [true, true, true, true]);
-  assertEqual(s.technologies.slice().sort(), Object.keys(DATA.techtree.noeuds).sort());
+  assertEqual(s.technologies.slice().sort(), Object.keys(DATA.ARBRE.noeuds).sort());
   assertEqual(s.unlockedTabs.includes('techno'), true);
   assertEqual([awakeRequired(s), prepTimeMult(s)], [30, 64]);
   const t = JSON.parse(JSON.stringify(s));
@@ -656,8 +656,8 @@ test('progression affichée dans l\'arbre : niveaux des bâtiments et appareils'
   const culture = techProgress(s, 'culture');
   // une seule ligne : la Zone de culture (l'ancien Champ n'est plus suivi)
   assertEqual(culture.map((e) => [e.cle, e.nom, e.type, e.tuiles, e.max, e.automatise]), [['potager', 'Zone de culture', 'tuiles', 30, 30, true]], 'version 1.9 : les tuiles de terre, plus de niveau');
-  assertEqual([DATA.techtree.batiments.champ, DATA.techtree.suivi.champ], [undefined, undefined]);
-  assertEqual(DATA.techtree.batiments.potager.nom, 'Zone de culture');
+  assertEqual([DATA.ARBRE.batiments.champ, DATA.ARBRE.suivi.champ], [undefined, undefined]);
+  assertEqual(DATA.ARBRE.batiments.potager.nom, 'Zone de culture');
   const energie = techProgress(s, 'energie');
   assertEqual(energie.map((e) => [e.cle, e.type, e.niveau]), [['panneau', 'niveau', 1], ['batterie', 'niveau', 1]]);
   s.panneaux[0].niveau = 3;

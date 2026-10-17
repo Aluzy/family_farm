@@ -27,12 +27,12 @@ import {
 
 test('DATA Lot 5 : stations, recettes, farine et huile', () => {
   const S = DATA.STATIONS;
-  assertEqual([S.four.cout, S.cuisine.cout, S.moulin.cout, S.presse.cout], [100, 150, 120, 150]);
+  assertEqual([S.four.prixConstruction, S.cuisine.prixConstruction, S.moulin.prixConstruction, S.presse.prixConstruction], [100, 150, 120, 150]);
   assertEqual([S.four.electrique, S.cuisine.electrique, S.moulin.electrique, S.presse.electrique], [false, false, true, true]);
   assertEqual([S.moulin.whParS, S.presse.whParS], [20, 30]);
   assertEqual(S.cuisine.requiert, undefined, 'version 1.7 : la Cuisine (niveau 2) arrive avant le Four (niveau 5)');
   assertEqual([S.four.debloque, S.cuisine.debloque], [['recettes'], ['recettes']]);
-  const R = DATA.recipes;
+  const R = DATA.RECETTES;
   // Lot 14 : temps des plats Four/Cuisine divisés par 2, arrondis au supérieur.
   assertEqual([R.pain.station, R.pain.temps, R.pain.ingredients, R.pain.eau], ['four', 10, [{ item: 'farine', qte: 2 }], 1]);
   assertEqual([R.omelette.station, R.omelette.temps], ['cuisine', 8]); // 15 / 2 = 7,5 → 8
@@ -45,21 +45,21 @@ test('DATA Lot 5 : stations, recettes, farine et huile', () => {
   assertEqual([R.farine.ingredients, R.farine.qteSortie, R.farine.sousProduit, R.farine.horsLivre], [[{ item: 'ble', qte: 1 }], 1, { item: 'paille', qte: 1 }, true]);
   assertEqual([R.huile.sousProduit, R.huile.horsLivre], [undefined, undefined], 'la Presse ne change pas');
   assertEqual([R.huile.station, R.huile.temps, R.huile.ingredients], ['presse', 10, [{ item: 'graine_tournesol', qte: 3 }]]);
-  assertEqual([DATA.items.farine.energie, DATA.items.huile.energie], [scaleEnergie(10), scaleEnergie(10)]);
+  assertEqual([DATA.OBJETS.farine.energie, DATA.OBJETS.huile.energie], [scaleEnergie(10), scaleEnergie(10)]);
   // Lot 13 : farine 1 → 2 (doublée) ; huile inchangée.
-  assertEqual([DATA.items.farine.prix, DATA.items.huile.prix], [2, 4]);
-  assertEqual([DATA.items.farine.edible, DATA.items.huile.edible], [false, false]);
+  assertEqual([DATA.OBJETS.farine.prix, DATA.OBJETS.huile.prix], [2, 4]);
+  assertEqual([DATA.OBJETS.farine.mangeable, DATA.OBJETS.huile.mangeable], [false, false]);
 });
 
 test('énergie des plats : somme des ingrédients × 1,3, arrondie (pain 34, omelette 68, tarte aux pommes 90)', () => {
-  // Lot 11 (nutrition) : énergies des ingrédients × 1,25 (voir DATA.items),
+  // Lot 11 (nutrition) : énergies des ingrédients × 1,25 (voir DATA.OBJETS),
   // sauf gratin_patates qui porte un override explicite (energieForcee: 150).
-  assertEqual(DATA.items.pain.energie, 34);
-  assertEqual(DATA.items.omelette.energie, 68);
-  assertEqual(DATA.items.ratatouille.energie, 53);
-  assertEqual(DATA.items.gratin_patates.energie, 150);
-  assertEqual(DATA.items.compote.energie, 39);
-  assertEqual(DATA.items.tarte_pommes.energie, 90);
+  assertEqual(DATA.OBJETS.pain.energie, 34);
+  assertEqual(DATA.OBJETS.omelette.energie, 68);
+  assertEqual(DATA.OBJETS.ratatouille.energie, 53);
+  assertEqual(DATA.OBJETS.gratin_patates.energie, 150);
+  assertEqual(DATA.OBJETS.compote.energie, 39);
+  assertEqual(DATA.OBJETS.tarte_pommes.energie, 90);
   assertEqual(dishEnergy('tarte_pommes'), 90);
   assertEqual(dishEnergy('gratin_patates'), 150, 'override explicite, pas un calcul ingrédients × coefficient');
 });
@@ -78,7 +78,7 @@ test('Lot 11 (nutrition) : +25 % sur les aliments existants, arrondi centralisé
     ['pomme', 8, 10], ['poire', 8, 10], ['farine', 10, 13], ['huile', 10, 13],
   ];
   for (const [item, avant, apres] of avantApres) {
-    assertEqual(DATA.items[item].energie, apres, `${item} : ${avant} → ${apres}`);
+    assertEqual(DATA.OBJETS[item].energie, apres, `${item} : ${avant} → ${apres}`);
     assertEqual(scaleEnergie(avant), apres, `${item} : cohérent avec la règle d'arrondi`);
   }
 });
@@ -124,23 +124,23 @@ test('prix de vente des plats : somme des prix × 1,3, arrondi', () => {
   // plats gardent la même formule (somme des prix d'ingrédients × 1,3) et
   // ne sont donc doublés qu'indirectement, une seule fois. Le pain, fait de
   // farine et d'eau, est doublé explicitement au Lot 13 (4 → 8, voir
-  // recipes.pain.priceMultiplier).
-  assertEqual(DATA.items.pain.prix, 8, 'pain : 4 × 2 (Lot 13)');
-  assertEqual(DATA.items.omelette.prix, 21); // (3 œufs à 4 + huile 4) × 1,3 = 20,8
-  assertEqual(DATA.items.ratatouille.prix, 18); // (2 + 4 + 4 + huile 4) × 1,3 = 18,2
-  assertEqual(DATA.items.gratin_patates.prix, 21); // (3 patates à 4 + 1 œuf à 4) × 1,3 = 20,8
-  assertEqual(DATA.items.ragout.prix, 36); // plat retiré (version 1.1) : son ancien prix, gardé tel quel
-  assertEqual(DATA.items.compote.prix, 16); // 3 pommes à 4 × 1,3 = 15,6
-  assertEqual(DATA.items.tarte_pommes.prix, 26); // farine à 2 depuis le Lot 13 (23 avant)
+  // recipes.pain.coefPrix).
+  assertEqual(DATA.OBJETS.pain.prix, 8, 'pain : 4 × 2 (Lot 13)');
+  assertEqual(DATA.OBJETS.omelette.prix, 21); // (3 œufs à 4 + huile 4) × 1,3 = 20,8
+  assertEqual(DATA.OBJETS.ratatouille.prix, 18); // (2 + 4 + 4 + huile 4) × 1,3 = 18,2
+  assertEqual(DATA.OBJETS.gratin_patates.prix, 21); // (3 patates à 4 + 1 œuf à 4) × 1,3 = 20,8
+  assertEqual(DATA.OBJETS.ragout.prix, 36); // plat retiré (version 1.1) : son ancien prix, gardé tel quel
+  assertEqual(DATA.OBJETS.compote.prix, 16); // 3 pommes à 4 × 1,3 = 15,6
+  assertEqual(DATA.OBJETS.tarte_pommes.prix, 26); // farine à 2 depuis le Lot 13 (23 avant)
   // Productions de la ferme : ancienne valeur × 2.
-  assertEqual([DATA.items.viande_mouton.prix, DATA.items.pomme.prix, DATA.items.poire.prix], [10, 4, 4]);
+  assertEqual([DATA.OBJETS.viande_mouton.prix, DATA.OBJETS.pomme.prix, DATA.OBJETS.poire.prix], [10, 4, 4]);
   // Anciennes viandes : le bœuf vaut le mouton ; la volaille vaut moins.
-  assertEqual([DATA.items.viande_boeuf.prix, DATA.items.viande_volaille.prix, DATA.items.lait.prix], [10, 6, 8]);
+  assertEqual([DATA.OBJETS.viande_boeuf.prix, DATA.OBJETS.viande_volaille.prix, DATA.OBJETS.lait.prix], [10, 6, 8]);
 });
 
 test('Lot 12 : le gratin est doublé une seule fois (formule sur ingrédients déjà doublés, pas de ×2 en plus)', () => {
-  const it = DATA.items;
-  const R = DATA.RECETTES;
+  const it = DATA.OBJETS;
+  const R = DATA.CUISINE;
   const prixIngredients = 3 * it.patate.prix + 1 * it.oeuf.prix; // 12 + 4 = 16
   assertEqual(prixIngredients, 16);
   // Une seule application de la formule sur les prix d'ingrédients courants…
@@ -166,42 +166,42 @@ const PRIX_PRODUCTIONS_AVANT_LOT_12 = {
 };
 
 // Version 1.1 : les viandes ne sont plus des productions de la ferme. Leur prix
-// (déjà doublé au Lot 12) est écrit tel quel dans DATA.items.
+// (déjà doublé au Lot 12) est écrit tel quel dans DATA.OBJETS.
 const PRIX_ANCIENNES_VIANDES = { viande_mouton: 10, viande_boeuf: 10, viande_volaille: 6 };
 
 test('Lot 12 : chaque production de la ferme se vend deux fois son ancien prix', () => {
   for (const [id, avant] of Object.entries(PRIX_PRODUCTIONS_AVANT_LOT_12)) {
-    assertEqual(DATA.items[id].prix, avant * DATA.MARCHE.MULTIPLICATEUR_PRODUCTION, `${id} : ${avant} × 2`);
-    assertEqual(DATA.items[id].prix, avant * 2, `${id} : ancienne valeur × 2`);
+    assertEqual(DATA.OBJETS[id].prix, avant * DATA.MARCHE.MULTIPLICATEUR_PRODUCTION, `${id} : ${avant} × 2`);
+    assertEqual(DATA.OBJETS[id].prix, avant * 2, `${id} : ancienne valeur × 2`);
     assertEqual(sellPrice(id), avant * 2, `${id} : sellPrice()`);
   }
-  // La liste déduite de DATA.crops / VERGER / ANIMAUX correspond exactement
+  // La liste déduite de DATA.CULTURES / VERGER / ANIMAUX correspond exactement
   // à la liste attendue : ni oubli, ni objet en trop.
   assertEqual([...productionItemKeys()].sort(), Object.keys(PRIX_PRODUCTIONS_AVANT_LOT_12).sort());
   // Les anciennes viandes gardent leur prix sans passer par le doublement ; la
   // paille (sous-produit du Moulin) n'est pas doublée non plus.
   for (const [id, prix] of Object.entries(PRIX_ANCIENNES_VIANDES)) {
-    assertEqual([productionItemKeys().has(id), DATA.items[id].prix, sellPrice(id)], [false, prix, prix], id);
+    assertEqual([productionItemKeys().has(id), DATA.OBJETS[id].prix, sellPrice(id)], [false, prix, prix], id);
   }
-  assertEqual([productionItemKeys().has('paille'), DATA.items.paille.prix], [false, 1]);
+  assertEqual([productionItemKeys().has('paille'), DATA.OBJETS.paille.prix], [false, 1]);
 });
 
 test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni arbre doublé', () => {
-  const it = DATA.items;
+  const it = DATA.OBJETS;
   for (const [id, def] of Object.entries(it)) {
-    if (def.category === 'graine') assertEqual(def.prix, 1, `${id} : graine inchangée`);
+    if (def.categorie === 'graine') assertEqual(def.prix, 1, `${id} : graine inchangée`);
   }
   assertEqual(it.graine_tournesol.prix, 1, 'le tournesol récolte des graines : non doublées');
   assertEqual([it.conserve.prix, it.huile.prix], [3, 4]); // la farine, elle, double au Lot 13
   // Prix d'achat des graines au Marché : prix inchangé × plancher 2,0.
   assertEqual(buyPrice(garden(), 'graine_carotte'), 2);
   // Constructions, améliorations, animaux, arbres, soins : hors périmètre.
-  assertEqual([DATA.POULAILLER.CONSTRUCTION, DATA.SERRE.CONSTRUCTION, DATA.FRIGO.CONSTRUCTION], [40, 1000, 600]); // Serre : toute sa terre, prix relevé
-  assertEqual(DATA.STATIONS.four.cout, 100);
-  assertEqual(DATA.UPGRADE_COST.panneau, [0, 150, 400, 900, 2000]);
+  assertEqual([DATA.POULAILLER.PRIX_CONSTRUCTION, DATA.SERRE.PRIX_CONSTRUCTION, DATA.FRIGO.PRIX_CONSTRUCTION], [40, 1000, 600]); // Serre : toute sa terre, prix relevé
+  assertEqual(DATA.STATIONS.four.prixConstruction, 100);
+  assertEqual(DATA.RESEAU.panneau.prixNiveaux, [0, 150, 400, 900, 2000]);
   assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.mouton.prix, DATA.ANIMAUX.vache.prix], [15, 60, 200]);
   assertEqual([DATA.VERGER.ARBRES.pommier.prix, DATA.VERGER.ARBRES.poirier.prix], [40, 40]);
-  assertEqual(DATA.FAMILY.SOIN, undefined, 'version 1.8 : plus de soins');
+  assertEqual(DATA.FAMILLE.SOIN, undefined, 'version 1.8 : plus de soins');
 });
 
 test('Lot 12 : la vente crédite le nouveau montant et le Marché affiche le prix réellement payé', () => {
@@ -219,7 +219,7 @@ test('Lot 12 : la vente crédite le nouveau montant et le Marché affiche le pri
   const t = garden();
   t.pieces = 100;
   const affiche = buyPrice(t, 'tomate');
-  assertEqual(affiche, Math.ceil(DATA.items.tomate.prix * 1.2));
+  assertEqual(affiche, Math.ceil(DATA.OBJETS.tomate.prix * 1.2));
   const avantAchat = t.pieces;
   const b = buyItem(t, 'tomate');
   assertEqual([b.ok, b.cost], [true, affiche]);
@@ -279,18 +279,18 @@ const TEMPS_PLATS_AVANT_LOT_14 = {
 };
 
 test('Lot 14 : temps de préparation des plats Four/Cuisine divisés par 2 (arrondi au supérieur), transformations intactes', () => {
-  const ids = Object.keys(DATA.recipes).filter((id) => !DATA.recipes[id].transformation);
+  const ids = Object.keys(DATA.RECETTES).filter((id) => !DATA.RECETTES[id].transformation);
   assertEqual([...ids].sort(), Object.keys(TEMPS_PLATS_AVANT_LOT_14).sort(), 'aucun plat oublié ni en trop');
   for (const [id, avant] of Object.entries(TEMPS_PLATS_AVANT_LOT_14)) {
-    const r = DATA.recipes[id];
+    const r = DATA.RECETTES[id];
     assert(['four', 'cuisine'].includes(r.station), `${id} : plat du Four ou de la Cuisine`);
     assertEqual(r.temps, Math.ceil(avant / 2), `${id} : ${avant} s / 2 arrondi au supérieur`);
     assert(Number.isInteger(r.temps), `${id} : temps entier`);
   }
   // Cas à demi-seconde : arrondi vers le haut, jamais vers le bas.
-  assertEqual([DATA.recipes.omelette.temps, DATA.recipes.tarte_pommes.temps, DATA.recipes.pain_ail.temps], [8, 23, 8]);
+  assertEqual([DATA.RECETTES.omelette.temps, DATA.RECETTES.tarte_pommes.temps, DATA.RECETTES.pain_ail.temps], [8, 23, 8]);
   // Moulin et Presse : inchangés.
-  assertEqual([DATA.recipes.farine.temps, DATA.recipes.huile.temps], [5, 10]);
+  assertEqual([DATA.RECETTES.farine.temps, DATA.RECETTES.huile.temps], [5, 10]);
   // La durée d'une préparation lancée est bien le nouveau temps.
   const s = atelier();
   setInv(s, { oeuf: 3, huile: 1 });
@@ -299,14 +299,14 @@ test('Lot 14 : temps de préparation des plats Four/Cuisine divisés par 2 (arro
 });
 
 test('Lot 13 : farine et pain se vendent deux fois leur ancien prix', () => {
-  assertEqual([DATA.items.farine.prix, sellPrice('farine')], [2, 2], 'farine : 1 × 2');
-  assertEqual([DATA.items.pain.prix, sellPrice('pain')], [8, 8], 'pain : 4 × 2');
-  assertEqual(DATA.items.huile.prix, 4, 'l\'huile n\'est pas concernée');
+  assertEqual([DATA.OBJETS.farine.prix, sellPrice('farine')], [2, 2], 'farine : 1 × 2');
+  assertEqual([DATA.OBJETS.pain.prix, sellPrice('pain')], [8, 8], 'pain : 4 × 2');
+  assertEqual(DATA.OBJETS.huile.prix, 4, 'l\'huile n\'est pas concernée');
   // Le pain garde la formule des plats sur ses ingrédients (farine doublée) avec
   // son coefficient dédié : (2 farines à 2 + 1 L d'eau) × 1,6 = 8, et non 7 (×1,3).
-  assertEqual(DATA.recipes.pain.priceMultiplier, 160);
+  assertEqual(DATA.RECETTES.pain.coefPrix, 160);
   assertEqual(dishPrice('pain'), 8);
-  assertEqual(DATA.items.pain.prix, dishPrice('pain'));
+  assertEqual(DATA.OBJETS.pain.prix, dishPrice('pain'));
   const s = atelier();
   setInv(s, { farine: 3, pain: 2 });
   const avant = s.pieces;
@@ -339,13 +339,13 @@ const RECETTES_LUXE = ['chocolat_chaud', 'cafe_boisson', 'creme_vanille', 'biere
 test('nouvelles recettes : chacune existe, ses ingrédients et sa station existent, les quantités sont valides', () => {
   assertEqual(NOUVELLES_RECETTES.length, 12);
   for (const id of NOUVELLES_RECETTES) {
-    const r = DATA.recipes[id];
-    assert(!!r, `recette ${id} absente de DATA.recipes`);
+    const r = DATA.RECETTES[id];
+    assert(!!r, `recette ${id} absente de DATA.RECETTES`);
     assert(!!DATA.STATIONS[r.station], `${id} : station ${r.station} inconnue`);
     assert(Array.isArray(r.ingredients) && r.ingredients.length > 0, `${id} : ingrédients manquants`);
     for (const ing of r.ingredients) {
       for (const item of ingredientOptions(ing)) {
-        assert(!!DATA.items[item], `${id} : ingrédient ${item} absent de DATA.items`);
+        assert(!!DATA.OBJETS[item], `${id} : ingrédient ${item} absent de DATA.OBJETS`);
       }
       assert(typeof ing.qte === 'number' && ing.qte > 0, `${id} : quantité invalide pour ${ing.item || ing.ou}`);
     }
@@ -356,11 +356,11 @@ test('nouvelles recettes : chacune existe, ses ingrédients et sa station existe
 
 test('nouvelles recettes : aucune n\'est une transformation, toutes deviennent des items « plat »', () => {
   for (const id of NOUVELLES_RECETTES) {
-    const r = DATA.recipes[id];
+    const r = DATA.RECETTES[id];
     assert(!r.transformation, `${id} ne doit pas être classée comme une transformation`);
-    const it = DATA.items[id];
+    const it = DATA.OBJETS[id];
     assert(!!it, `${id} doit être enregistrée comme item par registerDishItems()`);
-    assertEqual([it.category, it.plat, it.edible], ['plat', true, true], id);
+    assertEqual([it.categorie, it.plat, it.mangeable], ['plat', true, true], id);
   }
 });
 
@@ -374,16 +374,16 @@ test('nouvelles recettes : énergie et prix, calculés par le système existant 
     tarte_fraises: [70, 26], confiture_fraises: [26, 21],
   };
   for (const [id, [energie, prix]] of Object.entries(attendu)) {
-    assertEqual([dishEnergy(id), DATA.items[id].energie], [energie, energie], id);
-    assertEqual([dishPrice(id), DATA.items[id].prix], [prix, prix], id);
+    assertEqual([dishEnergy(id), DATA.OBJETS[id].energie], [energie, energie], id);
+    assertEqual([dishPrice(id), DATA.OBJETS[id].prix], [prix, prix], id);
   }
 });
 
 test('4 recettes de luxe : prix ×3 sur les ingrédients (pas le coefficient ×1,3 normal), énergie inchangée', () => {
   for (const id of RECETTES_LUXE) {
-    assertEqual(DATA.recipes[id].priceMultiplier, 300, id);
+    assertEqual(DATA.RECETTES[id].coefPrix, 300, id);
   }
-  const R = DATA.RECETTES;
+  const R = DATA.CUISINE;
   const casLuxe = {
     // Lot 12 : prixIngredients suit les prix de vente doublés (cacao 16,
     // lait 8, café 12, vanille 30, œuf 4, houblon 6, eau 1 L à 1). Avant :
@@ -394,7 +394,7 @@ test('4 recettes de luxe : prix ×3 sur les ingrédients (pas le coefficient ×1
     biere_artisanale: { energie: 0, prixIngredients: 13 },
   };
   for (const [id, { energie, prixIngredients }] of Object.entries(casLuxe)) {
-    // Énergie : calcul normal (×COEF_PLAT), priceMultiplier ne la concerne pas.
+    // Énergie : calcul normal (×COEF_PLAT), coefPrix ne la concerne pas.
     assertEqual(dishEnergy(id), energie, `${id} : énergie normale (×${R.COEF_PLAT})`);
     // Prix : ×3, et surtout pas le ×1,3 qu'aurait donné le coefficient normal.
     assertEqual(dishPrice(id), prixIngredients * 3, `${id} : prix ×3`);
@@ -440,7 +440,7 @@ test('nouvelles recettes : chacune se prépare quand ses conditions sont remplie
   for (const id of NOUVELLES_RECETTES) {
     // Chaque recette, sans ses ingrédients : grisée (« manque »), refusée.
     setInv(s, {});
-    s.stations[DATA.recipes[id].station].tache = null; // station libre entre deux essais
+    s.stations[DATA.RECETTES[id].station].tache = null; // station libre entre deux essais
     assertEqual(recipeStatus(s, id).code, 'manque', `${id} sans ingrédients`);
     assertEqual(startRecipe(s, id).ok, false, `${id} refusée sans ingrédients`);
     // Avec les ingrédients (et l'eau, si nécessaire) : prête, et se lance.
@@ -448,14 +448,14 @@ test('nouvelles recettes : chacune se prépare quand ses conditions sont remplie
     s.eauMl = ml(40);
     assertEqual(recipeStatus(s, id).code, 'pret', `${id} avec ses ingrédients`);
     assertEqual(startRecipe(s, id).ok, true, `${id} se lance`);
-    assertEqual(s.stations[DATA.recipes[id].station].tache.recette, id);
+    assertEqual(s.stations[DATA.RECETTES[id].station].tache.recette, id);
   }
 });
 
 test('mayonnaise (3 œufs) et quenelle de poisson (farine + truite, brochet ou poisson de la ville), à la Cuisine, dès sa construction', () => {
   const s = atelier();
   for (const id of ['mayonnaise', 'quenelle_poisson']) {
-    assertEqual([DATA.recipes[id].station, recipeUnlocked(s, id), DATA.items[id].edible], ['cuisine', true, true], id);
+    assertEqual([DATA.RECETTES[id].station, recipeUnlocked(s, id), DATA.OBJETS[id].mangeable], ['cuisine', true, true], id);
   }
   setInv(s, { oeuf: 2 });
   assertEqual(recipeStatus(s, 'mayonnaise').code, 'manque', 'deux œufs ne suffisent pas');
@@ -476,11 +476,11 @@ test('mayonnaise (3 œufs) et quenelle de poisson (farine + truite, brochet ou p
 
 test('arbre v2 : 22 recettes libres (dont 6 de la ville, la mayonnaise, la quenelle de poisson et les 4 lingots), 12 débloquées par un nœud', () => {
   const s = atelier();
-  const libres = Object.keys(DATA.recipes).filter((id) => recipeUnlocked(s, id));
-  assertEqual(libres.sort(), [...DATA.techtree.RECETTES_LIBRES].sort());
+  const libres = Object.keys(DATA.RECETTES).filter((id) => recipeUnlocked(s, id));
+  assertEqual(libres.sort(), [...DATA.ARBRE.RECETTES_LIBRES].sort());
   assertEqual(libres.length, 22);
-  assertEqual(Object.keys(DATA.recipes).length - libres.length, 12, 'dont le fromage d\'alpage (Laiterie)');
-  for (const id of Object.keys(DATA.recipes)) assert(recipeUnlocked(s, id) || recipeNode(id), `${id} : libre ou débloquée par un nœud`);
+  assertEqual(Object.keys(DATA.RECETTES).length - libres.length, 12, 'dont le fromage d\'alpage (Laiterie)');
+  for (const id of Object.keys(DATA.RECETTES)) assert(recipeUnlocked(s, id) || recipeNode(id), `${id} : libre ou débloquée par un nœud`);
   setInv(s, { pain: 1, ail: 1, huile: 1 });
   assertEqual(recipeStatus(s, 'pain_ail').code, 'verrouillee');
   assertEqual(startRecipe(s, 'pain_ail').error, 'Recette à débloquer dans l\'Arbre des technologies (Boulangerie).');
@@ -494,7 +494,7 @@ test('arbre v2 : 22 recettes libres (dont 6 de la ville, la mayonnaise, la quene
   assertEqual(startRecipe(s, 'bocal_legumes').ok, true);
   runFor(s, 31);
   assertEqual(countItem(s, 'bocal_legumes'), 1);
-  assertEqual([shelfLife('bocal_legumes'), DATA.items.bocal_legumes.energie], [null, 40]);
+  assertEqual([shelfLife('bocal_legumes'), DATA.OBJETS.bocal_legumes.energie], [null, 40]);
 });
 
 test('arbre v2 : préparations en série (file de 3 par atelier)', () => {
@@ -679,9 +679,9 @@ test('arbre v2 : effets sur la famille (Bon sommeil, Goûter, Cellier)', () => {
   grantTech(s, 'fa_sommeil');
   assertEqual([wakeEnergy(s, 0), wakeEnergy(s, 50), wakeEnergy(s, 100)], [70000, 90000, 100000]);
   // Goûter : un en-cas rend 50 % de plus (gratin 150 calories → 30, puis 45)
-  assertEqual(snackEnergy(s, 'gratin_patates'), (DATA.items.gratin_patates.energie * 1000) / 5);
+  assertEqual(snackEnergy(s, 'gratin_patates'), (DATA.OBJETS.gratin_patates.energie * 1000) / 5);
   grantTech(s, 'fa_gouter');
-  assertEqual(snackEnergy(s, 'gratin_patates'), Math.floor((DATA.items.gratin_patates.energie * 1000 * 150) / 500));
+  assertEqual(snackEnergy(s, 'gratin_patates'), Math.floor((DATA.OBJETS.gratin_patates.energie * 1000 * 150) / 500));
   // Cellier : +1 nuit hors frigo pour ce qui périme, rien pour le reste
   grantTech(s, 'fa_cellier');
   setInv(s, {});
@@ -690,7 +690,7 @@ test('arbre v2 : effets sur la famille (Bon sommeil, Goûter, Cellier)', () => {
   assertEqual([lotsOf(s, 'carotte')[0].nightsLeft, lotsOf(s, 'ble')[0].nightsLeft], [7, 11]);
   addItem(s, 'conserve', 1);
   assertEqual(lotsOf(s, 'conserve')[0].nightsLeft, null);
-  assertEqual([DATA.techtree.noeuds.fa_remedes, DATA.techtree.noeuds.fa_menus], [undefined, undefined], 'nœuds de santé retirés');
+  assertEqual([DATA.ARBRE.noeuds.fa_remedes, DATA.ARBRE.noeuds.fa_menus], [undefined, undefined], 'nœuds de santé retirés');
 });
 
 test('arbre v2 : arrosage prioritaire quand l\'eau manque', () => {
@@ -726,7 +726,7 @@ test('version 1.19 : Réveil matinal I et II et Routine familiale sont retirés,
   vieille.pointsTech = { ...vieille.pointsTech, solde: 0 };
   const m = migrate({ v: 35, t: 0, s: vieille });
   assertEqual([m.version, m.technologies, m.routine, m.pieces, m.pointsTech.solde], [STATE_VERSION, ['fa_sommeil'], undefined, 10 + 200 + 500 + 2500, 1 + 1 + 3]);
-  for (const id of ['reveil_1', 'reveil_2', 'fa_routine']) assertEqual(DATA.techtree.noeuds[id], undefined, id);
+  for (const id of ['reveil_1', 'reveil_2', 'fa_routine']) assertEqual(DATA.ARBRE.noeuds[id], undefined, id);
   assertEqual(createInitialState(1).routine, undefined);
 });
 
@@ -747,10 +747,10 @@ test('Pain à l\'ail : retire bien 1 pain du stock, comme n\'importe quel autre 
 });
 
 test('Café (cafe_boisson) : id distinct de l\'item cafe, ne remplace pas l\'ingrédient de la Serre', () => {
-  assertEqual(DATA.items.cafe.category, 'ingrédient', 'l\'ingrédient de la Serre reste inchangé');
-  assertEqual(DATA.items.cafe.edible, false);
-  assertEqual(DATA.items.cafe_boisson.category, 'plat');
-  assertEqual(DATA.items.cafe_boisson.edible, true);
+  assertEqual(DATA.OBJETS.cafe.categorie, 'ingrédient', 'l\'ingrédient de la Serre reste inchangé');
+  assertEqual(DATA.OBJETS.cafe.mangeable, false);
+  assertEqual(DATA.OBJETS.cafe_boisson.categorie, 'plat');
+  assertEqual(DATA.OBJETS.cafe_boisson.mangeable, true);
 });
 
 test('la farine et l\'huile ne se mangent pas seules ; les plats se mangent', () => {
@@ -924,26 +924,26 @@ test('les recettes à fruits restent impossibles sans leurs fruits', () => {
 
 test('version 1.1 : plus aucune recette ne demande de viande, les anciens plats et les viandes restent mangeables et vendables', () => {
   const viandes = ['viande_mouton', 'viande_boeuf', 'viande_volaille'];
-  for (const [id, r] of Object.entries(DATA.recipes)) {
+  for (const [id, r] of Object.entries(DATA.RECETTES)) {
     for (const ing of r.ingredients) {
       for (const item of ingredientOptions(ing)) assert(!viandes.includes(item), `${id} ne demande pas de viande`);
     }
   }
   for (const id of PLATS_RETIRES) {
-    assertEqual(DATA.recipes[id], undefined, `${id} n'est plus une recette`);
-    assertEqual(DATA.techtree.RECETTES_LIBRES.includes(id), false, id);
-    for (const n of Object.values(DATA.techtree.noeuds)) assertEqual((n.effet.recettes || []).includes(id), false, `${id} dans ${n.nom}`);
-    const it = DATA.items[id];
-    assertEqual([it.category, it.plat, it.edible, it.retire], ['plat', true, true, true], id);
+    assertEqual(DATA.RECETTES[id], undefined, `${id} n'est plus une recette`);
+    assertEqual(DATA.ARBRE.RECETTES_LIBRES.includes(id), false, id);
+    for (const n of Object.values(DATA.ARBRE.noeuds)) assertEqual((n.effet.recettes || []).includes(id), false, `${id} dans ${n.nom}`);
+    const it = DATA.OBJETS[id];
+    assertEqual([it.categorie, it.plat, it.mangeable, it.retire], ['plat', true, true, true], id);
     assertEqual([isBuyable(id), shelfLife(id)], [false, 6], `${id} : ne s'achète pas, se garde comme un plat`);
   }
-  assertEqual(PLATS_RETIRES.map((id) => [DATA.items[id].energie, DATA.items[id].prix]), [[144, 36], [81, 26], [144, 36], [75, 23]], 'énergie et prix d\'avant');
+  assertEqual(PLATS_RETIRES.map((id) => [DATA.OBJETS[id].energie, DATA.OBJETS[id].prix]), [[144, 36], [81, 26], [144, 36], [75, 23]], 'énergie et prix d\'avant');
   assertEqual(Object.keys(DATA.PLATS_RETIRES), PLATS_RETIRES);
-  assertEqual(DATA.techtree.noeuds.cui_rotisserie, undefined, 'le nœud Rôtisserie a disparu');
-  assertEqual(DATA.techtree.NOEUDS_RETIRES, { cui_rotisserie: { pt: 1, cout: 300 }, fa_remedes: { pt: 1, cout: 100 }, fa_menus: { pt: 1, cout: 300 }, reveil_1: { pt: 1, cout: 200 }, reveil_2: { pt: 1, cout: 500 }, fa_routine: { pt: 3, cout: 2500 } });
+  assertEqual(DATA.ARBRE.noeuds.cui_rotisserie, undefined, 'le nœud Rôtisserie a disparu');
+  assertEqual(DATA.ARBRE.NOEUDS_RETIRES, { cui_rotisserie: { pt: 1, prix: 300 }, fa_remedes: { pt: 1, prix: 100 }, fa_menus: { pt: 1, prix: 300 }, reveil_1: { pt: 1, prix: 200 }, reveil_2: { pt: 1, prix: 500 }, fa_routine: { pt: 3, prix: 2500 } });
   // Les viandes : ni produites, ni achetables, mais toujours des aliments qui se vendent.
   for (const id of viandes) {
-    assertEqual([DATA.items[id].edible, isBuyable(id), buyItem(garden(), id).ok], [true, false, false], id);
+    assertEqual([DATA.OBJETS[id].mangeable, isBuyable(id), buyItem(garden(), id).ok], [true, false, false], id);
   }
   const s = atelier();
   setInv(s, { viande_mouton: 2, carotte: 2, patate: 1, ragout: 1, roti_boeuf: 1 });
@@ -1128,9 +1128,9 @@ test('Moulin : la mouture ne se lance plus depuis le Livre de recette', () => {
   setInv(s, { ble: 3 });
   assertEqual(startRecipe(s, 'farine'), { ok: false, error: 'Le blé se moud directement au Moulin.' });
   assertEqual([countItem(s, 'ble'), s.stations.moulin.tache], [3, null], 'rien n\'est retiré, rien ne démarre');
-  assertEqual(DATA.recipes.farine.horsLivre, true);
+  assertEqual(DATA.RECETTES.farine.horsLivre, true);
   // seule la mouture est hors du livre
-  assertEqual(Object.keys(DATA.recipes).filter((id) => DATA.recipes[id].horsLivre), ['farine']);
+  assertEqual(Object.keys(DATA.RECETTES).filter((id) => DATA.RECETTES[id].horsLivre), ['farine']);
 });
 
 test('Moulin : moudre 3 blés donne 3 farines et 3 pailles, un blé après l\'autre', () => {
@@ -1404,6 +1404,6 @@ test('migration v0 → version courante : les chaînes mènent au Lot 5', () => 
 
 // Arbre v2 : offre tous les nœuds de recettes (sans leurs prérequis).
 function unlockRecipes(s) {
-  for (const [id, n] of Object.entries(DATA.techtree.noeuds)) if (n.effet.recettes) grantTech(s, id, false);
+  for (const [id, n] of Object.entries(DATA.ARBRE.noeuds)) if (n.effet.recettes) grantTech(s, id, false);
   return s;
 }

@@ -25,9 +25,9 @@ let flipping = false;
 
 function bookRecipes() {
   const ids = bookStations();
-  return Object.keys(DATA.recipes)
-    .filter((id) => !DATA.recipes[id].horsLivre)
-    .sort((a, b) => ids.indexOf(DATA.recipes[a].station) - ids.indexOf(DATA.recipes[b].station));
+  return Object.keys(DATA.RECETTES)
+    .filter((id) => !DATA.RECETTES[id].horsLivre)
+    .sort((a, b) => ids.indexOf(DATA.RECETTES[a].station) - ids.indexOf(DATA.RECETTES[b].station));
 }
 
 function pageCount() {
@@ -40,8 +40,8 @@ function summaryHtml() {
     const def = DATA.STATIONS[sid];
     const items = recipes
       .map((id, i) => ({ id, n: i + 1 }))
-      .filter((x) => DATA.recipes[x.id].station === sid)
-      .map((x) => `<li><button type="button" class="book-toc-link" data-action="book-goto" data-page="${x.n}"><span>${DATA.recipes[x.id].icone} ${DATA.recipes[x.id].nom}</span><span class="book-toc-dots" aria-hidden="true"></span><span class="num">${x.n + 1}</span></button></li>`)
+      .filter((x) => DATA.RECETTES[x.id].station === sid)
+      .map((x) => `<li><button type="button" class="book-toc-link" data-action="book-goto" data-page="${x.n}"><span>${DATA.RECETTES[x.id].icone} ${DATA.RECETTES[x.id].nom}</span><span class="book-toc-dots" aria-hidden="true"></span><span class="num">${x.n + 1}</span></button></li>`)
       .join('');
     return items ? `<h3 class="book-h3">${def.icone} ${def.nom}</h3><ul class="book-toc">${items}</ul>` : '';
   }).join('');
@@ -52,21 +52,21 @@ function summaryHtml() {
 }
 
 function recipePageHtml(id) {
-  const r = DATA.recipes[id];
+  const r = DATA.RECETTES[id];
   const sdef = DATA.STATIONS[r.station];
   const status = recipeStatus(state, id);
   const lines = status.lignes
     .map((l) => {
       const what = l.eau
         ? `${formatQty(l.qte)} L d'eau`
-        : `${formatQty(l.qte)} ${l.options.map((it) => `${DATA.items[it].icone} ${DATA.items[it].nom.toLowerCase()}`).join(' ou ')}`;
+        : `${formatQty(l.qte)} ${l.options.map((it) => `${DATA.OBJETS[it].icone} ${DATA.OBJETS[it].nom.toLowerCase()}`).join(' ou ')}`;
       const have = l.eau ? `${formatNumber(l.have)} L` : `${formatQty(l.have)} en stock`;
       return `<li class="${l.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${l.ok ? '✅' : '❌'}</span> <span>${what}</span> <span class="book-note">(${have})</span></li>`;
     })
     .join('');
   let reason = '';
   if (status.code === 'verrouillee') {
-    const n = DATA.techtree.noeuds[status.noeud];
+    const n = DATA.ARBRE.noeuds[status.noeud];
     reason = `🔒 À débloquer dans l'Arbre des technologies${n ? ` : ${n.icone} ${n.nom}` : ''}.`;
   } else if (status.code === 'absente') reason = `Construis d'abord ${sdef.article} ${sdef.nom}.`;
   else if (status.code === 'occupee') reason = `${sdef.nom} : ${sdef.article === 'la' ? 'occupée' : 'occupé'}, attends la fin de la préparation.`;

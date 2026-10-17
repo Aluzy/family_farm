@@ -1,6 +1,6 @@
 {
-  "//crops": [
-    "Cultures (sections 6.3 et 8.3). stades : cycles de pousse (un arrosage, puis TIME.POUSSE_HEURES heures d'horloge) pour mûrir ;",
+  "//CULTURES": [
+    "Cultures (sections 6.3 et 8.3). stades : cycles de pousse (un arrosage, puis TEMPS.POUSSE_HEURES heures d'horloge) pour mûrir ;",
     "litres : eau par arrosage ; rendement : unités par récolte.",
     "graines.mode :",
     "  'recolte' : la récolte rend aussi min à max graines ;",
@@ -15,7 +15,7 @@
     "r = rangée de la base de la plante, h = hauteur du dessin (16 ou 32), c = colonnes des 4 phases.",
     "Sans sprite, la carte affiche l'icône de la culture."
   ],
-  "crops": {
+  "CULTURES": {
     "carotte": {
       "nom": "Carotte",
       "icone": "🥕",
@@ -150,7 +150,7 @@
     },
     "//riz": [
       "Riz : comestible directement (contrairement au blé), mais demande plus",
-      "d'eau par arrosage (4 L contre 2 L pour le blé) — voir DATA.GRID.pompe et",
+      "d'eau par arrosage (4 L contre 2 L pour le blé) — voir DATA.RESEAU.pompe et",
       "le point de vigilance signalé en fin de réponse au sujet du débit d'eau."
     ],
     "riz": {
@@ -292,7 +292,7 @@
     "CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",
     "atteindre le niveau n + 1 (index 0 non utilisé). Tomate, courgette, aubergine."
   ],
-  "SERRE": { "LIEU": "serre", "CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "COUT": [0, 900, 1800, 3000, 5400] },
+  "SERRE": { "LIEU": "serre", "PRIX_CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "PRIX_NIVEAUX": [0, 900, 1800, 3000, 5400] },
   "//VERGER": [
     "Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent au Marché à prix",
     "fixe et se plantent sur un emplacement libre. Un arbre est adulte MATURITE",
@@ -312,7 +312,7 @@
     "redonne ses fruits PERIODE nuits plus tard."
   ],
   "VERGER": {
-    "CONSTRUCTION": 0,
+    "PRIX_CONSTRUCTION": 0,
     "EMPLACEMENTS_DEPART": 2,
     "EMPLACEMENTS_MAX": 12,
     "EMPLACEMENT": { "base": 50, "croissance": 125 },

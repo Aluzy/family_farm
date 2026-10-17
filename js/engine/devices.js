@@ -62,7 +62,7 @@ function stationDevices(state) {
 // usure, ni interrupteur) : `reservoir.niveau` fixe sa capacité, `eauMl` est son
 // contenu en mL.
 export function startFarm() {
-  const prix = DATA.START.DEVICE_PRICE;
+  const prix = DATA.DEPART.PRIX_APPAREIL;
   return {
     panneaux: [makeDevice('panneau', 'panneau-1', prix)],
     batteries: [makeDevice('batterie', 'batterie-1', prix)],
@@ -114,21 +114,21 @@ export function findDevice(state, id) {
 
 // Rendement d'un appareil en % entier : 100 − ⌊usure ÷ 2⌋.
 export function efficiency(d) {
-  return 100 - Math.floor((d.usure * 100) / DATA.WEAR.EFFICIENCY_DIVISOR);
+  return 100 - Math.floor((d.usure * 100) / DATA.USURE.DIVISEUR_RENDEMENT);
 }
 
 export function isBroken(d) {
-  return d.usure >= DATA.WEAR.BREAKDOWN;
+  return d.usure >= DATA.USURE.PANNE;
 }
 
 export function needsService(d) {
-  return !isBroken(d) && d.usure >= DATA.WEAR.SERVICE_THRESHOLD;
+  return !isBroken(d) && d.usure >= DATA.USURE.SEUIL_ENTRETIEN;
 }
 
 // Production d'un panneau à son niveau et son usure actuels (mWh/s entiers).
 // Avec `state`, le bonus solaire de l'arbre (Panneaux orientables) s'y applique.
 export function panelOutput(d, state) {
-  const base = Math.floor((DATA.GRID.panneau.whParS[d.niveau - 1] * 1000 * efficiency(d)) / 100);
+  const base = Math.floor((DATA.RESEAU.panneau.whParS[d.niveau - 1] * 1000 * efficiency(d)) / 100);
   return state ? Math.floor((base * solarFactor(state)) / 100) : base;
 }
 
@@ -140,7 +140,7 @@ function solarFactor(state) {
 
 // Capacité utile d'une batterie (mWh) : capacité(niveau) × rendement.
 export function batteryCapacity(d) {
-  return Math.floor((DATA.GRID.batterie.wh[d.niveau - 1] * 1000 * efficiency(d)) / 100);
+  return Math.floor((DATA.RESEAU.batterie.wh[d.niveau - 1] * 1000 * efficiency(d)) / 100);
 }
 
 // Énergie stockée dans toutes les batteries (mWh), et leur capacité utile totale.
@@ -154,23 +154,23 @@ export function storageCapacity(state) {
 
 // Débit de la pompe (mL/s) selon son niveau et son rendement.
 export function pumpFlow(d) {
-  return Math.floor((DATA.GRID.pompe.litresPerS[d.niveau - 1] * 1000 * efficiency(d)) / 100);
+  return Math.floor((DATA.RESEAU.pompe.litresParS[d.niveau - 1] * 1000 * efficiency(d)) / 100);
 }
 
 // Capacité du réservoir (mL), selon son propre niveau.
 export function tankCapacity(state) {
   if (!isOwned(state.reservoir)) return 0; // version 1.12 : pas encore acheté
-  return DATA.GRID.reservoir.litres[state.reservoir.niveau - 1] * 1000;
+  return DATA.RESEAU.reservoir.litres[state.reservoir.niveau - 1] * 1000;
 }
 
 // Part (ms) d'une période de l'horloge, de `fromMs` à `fromMs + dtMs` (temps
 // d'éveil), où le soleil brille : entre SOLEIL.DEBUT h et SOLEIL.FIN h, chaque jour
 // de l'horloge (elle repasse à 0 h si personne ne dort).
 export function sunlitMs(fromMs, dtMs) {
-  const hourMs = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  const hourMs = DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
   const dayMs = 24 * hourMs;
-  const debut = (DATA.SOLEIL.DEBUT - DATA.TIME.DAY_START_HOUR) * hourMs;
-  const fin = (DATA.SOLEIL.FIN - DATA.TIME.DAY_START_HOUR) * hourMs;
+  const debut = (DATA.SOLEIL.DEBUT - DATA.TEMPS.HEURE_REVEIL) * hourMs;
+  const fin = (DATA.SOLEIL.FIN - DATA.TEMPS.HEURE_REVEIL) * hourMs;
   let lit = 0;
   const end = fromMs + dtMs;
   for (let day = Math.floor(fromMs / dayMs) * dayMs; day < end; day += dayMs) {
@@ -180,23 +180,23 @@ export function sunlitMs(fromMs, dtMs) {
 }
 
 export function maintainCost(d) {
-  return percentCeil(d.prix, DATA.WEAR.MAINTAIN_RATE);
+  return percentCeil(d.prix, DATA.USURE.TAUX_ENTRETIEN);
 }
 
 export function repairCost(d) {
-  return percentCeil(d.prix, DATA.WEAR.REPAIR_RATE);
+  return percentCeil(d.prix, DATA.USURE.TAUX_REPARATION);
 }
 
 // Coût du niveau suivant d'un appareil (ou du réservoir : { type: 'reservoir',
 // niveau }). Le Moulin, la Presse et le frigo n'ont pas de niveaux (null).
 export function upgradeCost(d) {
-  if (!DATA.GRID[d.type]) return null;
-  return nextLevelCost(DATA.UPGRADE_COST[d.type], d.niveau);
+  if (!DATA.RESEAU[d.type]) return null;
+  return nextLevelCost(DATA.RESEAU[d.type].prixNiveaux, d.niveau);
 }
 
 // Prix du niveau suivant dans une table de prix (couts[n] : du niveau n au niveau n + 1),
-// ou null à partir du niveau `max` (DATA.LEVEL_MAX par défaut).
-export function nextLevelCost(couts, niveau, max = DATA.LEVEL_MAX) {
+// ou null à partir du niveau `max` (DATA.NIVEAU_MAX par défaut).
+export function nextLevelCost(couts, niveau, max = DATA.NIVEAU_MAX) {
   return niveau >= max ? null : couts[niveau];
 }
 
@@ -286,7 +286,7 @@ export function upgradeDevice(state, id) {
   const d = findDevice(state, id);
   if (!d) return fail('Appareil introuvable.');
   if (!isOwned(d)) return fail(NOT_OWNED);
-  if (!DATA.GRID[d.type]) return fail('Cet appareil n\'a pas de niveaux.');
+  if (!DATA.RESEAU[d.type]) return fail('Cet appareil n\'a pas de niveaux.');
   return upgradeWith(state, upgradeCost(d), `Amélioration : ${deviceLabel(d.type)}`, () => { d.niveau += 1; });
 }
 

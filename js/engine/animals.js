@@ -22,7 +22,7 @@ export function siloCapacity(state) {
 }
 
 export function siloUpgradeCost(state) {
-  return nextLevelCost(DATA.SILO.COUT, state.silo.niveau);
+  return nextLevelCost(DATA.SILO.PRIX_NIVEAUX, state.silo.niveau);
 }
 
 export function wheatTotal(state) {
@@ -97,7 +97,7 @@ export function storeWithSilo(state, item, qty) {
 // Le Silo est offert (construction à 0 dans DATA) mais reste à construire.
 export function buildSilo(state) {
   const s = state.silo;
-  return buildWith(state, 'silo', { built: s.construit, deja: 'Le Silo est déjà construit.', cost: DATA.SILO.CONSTRUCTION, libelle: 'Réparation du Silo' }, () => {
+  return buildWith(state, 'silo', { built: s.construit, deja: 'Le Silo est déjà construit.', cost: DATA.SILO.PRIX_CONSTRUCTION, libelle: 'Réparation du Silo' }, () => {
     s.construit = true;
     s.niveau = 1;
     fillSilo(state);
@@ -119,12 +119,12 @@ export function coopCapacity(state) {
 }
 
 export function coopUpgradeCost(state) {
-  return nextLevelCost(DATA.POULAILLER.COUT, state.poulailler.niveau);
+  return nextLevelCost(DATA.POULAILLER.PRIX_NIVEAUX, state.poulailler.niveau);
 }
 
 export function buildPoulailler(state) {
   const p = state.poulailler;
-  return buildWith(state, 'poulailler', { built: p.construit, deja: 'Le Poulailler est déjà construit.', cost: DATA.POULAILLER.CONSTRUCTION, libelle: 'Poulailler' }, () => {
+  return buildWith(state, 'poulailler', { built: p.construit, deja: 'Le Poulailler est déjà construit.', cost: DATA.POULAILLER.PRIX_CONSTRUCTION, libelle: 'Poulailler' }, () => {
     p.construit = true;
     p.niveau = 1;
   });
@@ -278,12 +278,12 @@ export function layEggs(state) {
 
 // Nombre de moutons que `places` places accueillent (1 place chacun).
 export function maxSheep(places) {
-  return Math.floor(places / DATA.PATURAGE.placesParMouton);
+  return Math.floor(places / DATA.PATURAGE.PLACES_PAR_MOUTON);
 }
 
 // Nombre de vaches que `places` places accueillent (3 places chacune).
 export function maxCows(places) {
-  return Math.floor(places / DATA.PATURAGE.placesParVache);
+  return Math.floor(places / DATA.PATURAGE.PLACES_PAR_VACHE);
 }
 
 export function sheepCount(state) {
@@ -296,11 +296,11 @@ export function cowCount(state) {
 
 // Places prises par les moutons seuls / par les vaches seules.
 export function sheepPlaces(state) {
-  return sheepCount(state) * DATA.PATURAGE.placesParMouton;
+  return sheepCount(state) * DATA.PATURAGE.PLACES_PAR_MOUTON;
 }
 
 export function cowPlaces(state) {
-  return cowCount(state) * DATA.PATURAGE.placesParVache;
+  return cowCount(state) * DATA.PATURAGE.PLACES_PAR_VACHE;
 }
 
 // Places prises par tous les animaux (les places sont communes aux deux espèces).
@@ -343,19 +343,19 @@ export function freeCowPlaces(state) {
 // nombre d'animaux.
 export function pastureCost(state) {
   const P = DATA.PATURAGE;
-  const rank = Math.max(0, state.paturage.places - P.placesDepart) + 1;
+  const rank = Math.max(0, state.paturage.places - P.PLACES_DEPART) + 1;
   // arbre v2 (Étable agrandie) : croissance du prix réduite
-  const croissance = techFlag(state, 'croissanceSurface') || P.croissance;
-  return growthPrice(P.prixPlace, croissance, rank - 1);
+  const croissance = techFlag(state, 'croissanceSurface') || P.CROISSANCE;
+  return growthPrice(P.PRIX_PLACE, croissance, rank - 1);
 }
 
 // Ouvre l'Étable aux moutons et aux vaches : les places de départ sont acquises.
 export function buildPaturage(state) {
   const p = state.paturage;
   const deja = 'L\'Étable accueille déjà les moutons et les vaches.';
-  return buildWith(state, 'paturage', { built: p.construit, deja, cost: DATA.PATURAGE.deblocage, libelle: 'Étable préparée' }, () => {
+  return buildWith(state, 'paturage', { built: p.construit, deja, cost: DATA.PATURAGE.PRIX_CONSTRUCTION, libelle: 'Étable préparée' }, () => {
     p.construit = true;
-    p.places = DATA.PATURAGE.placesDepart;
+    p.places = DATA.PATURAGE.PLACES_DEPART;
     return { places: p.places };
   });
 }
@@ -408,7 +408,7 @@ export function buyCow(state) {
   const p = state.paturage;
   if (!p.construit) return fail('Prépare d\'abord l\'Étable pour les moutons et les vaches.');
   if (freeCowPlaces(state) <= 0) {
-    return fail(`Pas assez de place pour une vache : il lui faut ${DATA.PATURAGE.placesParVache} places libres.`);
+    return fail(`Pas assez de place pour une vache : il lui faut ${DATA.PATURAGE.PLACES_PAR_VACHE} places libres.`);
   }
   const price = animalPrice('vache');
   if (!pay(state, price, 'Achat : Vache')) return fail(NO_COINS);
@@ -434,7 +434,7 @@ export function sheepToShear(state) {
 
 // Paille en stock.
 export function strawStock(state) {
-  return countItem(state, DATA.PATURAGE.nourriture);
+  return countItem(state, DATA.PATURAGE.NOURRITURE);
 }
 
 // Paille que les moutons et les vaches mangent en une nuit (sans les vaches qui
@@ -446,9 +446,9 @@ export function strawNeed(state) {
 
 /* -- les herbes de montagne : le lait d'alpage -- */
 
-// Herbes de montagne en stock (une trouvaille de la montagne, DATA.PATURAGE.herbes).
+// Herbes de montagne en stock (une trouvaille de la montagne, DATA.PATURAGE.HERBES).
 export function herbStock(state) {
-  return countItem(state, DATA.PATURAGE.herbes);
+  return countItem(state, DATA.PATURAGE.HERBES);
 }
 
 // Les vaches reçoivent-elles les herbes de montagne ? (state.paturage.herbes : le
@@ -497,7 +497,7 @@ export function newStableReport() {
 // son lait en lait d'alpage ; sans herbes, elle reprend sa paille.
 export function feedLivestock(state) {
   const A = DATA.ANIMAUX;
-  const item = DATA.PATURAGE.nourriture;
+  const item = DATA.PATURAGE.NOURRITURE;
   const p = state.paturage;
   const rap = newStableReport();
   rap.moutons = p.moutons.length;
@@ -518,7 +518,7 @@ export function feedLivestock(state) {
   }
   let lait = 0;
   let laitAlpage = 0;
-  const herbes = DATA.PATURAGE.herbes;
+  const herbes = DATA.PATURAGE.HERBES;
   for (const v of p.vaches) {
     if (herbsOn(state) && countItem(state, herbes) >= A.vache.herbesParNuit) {
       takeItem(state, herbes, A.vache.herbesParNuit);

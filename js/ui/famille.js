@@ -79,7 +79,7 @@ function openMemberModal(id) {
   const m = findMember(state, id);
   if (!m) return;
   tel('modal', 'member'); // le nom de la fenêtre seulement : jamais le prénom
-  const P = DATA.FAMILY.PROFIL;
+  const P = DATA.FAMILLE.PROFIL;
   const age = m.enfant ? 'enfant' : 'adulte';
   memberDraft = {
     id: m.id,
@@ -93,7 +93,7 @@ function openMemberModal(id) {
   const depart = blocage
     ? `<span class="muted">${escapeHtml(blocage)}</span>`
     : `<button type="button" class="btn" data-action="member-remove" id="member-remove">Retirer de la famille</button>
-       <span class="muted">Le besoin de la famille baisse de ${DATA.FAMILY.AJ[age]} calories par jour.</span>`;
+       <span class="muted">Le besoin de la famille baisse de ${DATA.FAMILLE.AJ[age]} calories par jour.</span>`;
   // Version 1.17 : l'apparence est un des personnages de son âge (elle remplace le sexe, la
   // coiffure et la teinte des anciens portraits emoji).
   const persos = Array.from({ length: persoMax(m) }, (_, i) => i + 1)
@@ -206,7 +206,7 @@ function petNameHtml(id) {
 }
 
 function petCard(a) {
-  const e = DATA.FAMILY.COMPAGNIE.ESPECES[a.espece];
+  const e = DATA.FAMILLE.COMPAGNIE.ESPECES[a.espece];
   return `
     <article class="card portrait pet">
       <span class="portrait-emoji" aria-hidden="true">${petIcon(a.espece)}</span>
@@ -222,8 +222,8 @@ function openPetModal(id) {
   const a = findPet(state, id);
   if (!a) return;
   tel('modal', 'pet'); // le nom de la fenêtre seulement : jamais le nom de l'animal
-  const K = DATA.FAMILY.COMPAGNIE;
-  const P = DATA.FAMILY.PROFIL;
+  const K = DATA.FAMILLE.COMPAGNIE;
+  const P = DATA.FAMILLE.PROFIL;
   petDraft = { id: a.id, espece: K.ESPECES[a.espece] ? a.espece : Object.keys(K.ESPECES)[0], depart: false };
   const especes = Object.entries(K.ESPECES).map(([k, e]) => `<button type="button" class="btn choice-btn" data-action="pet-espece" data-espece="${k}" aria-pressed="false"><span class="choice-emoji" aria-hidden="true">${e.icone}</span><span>${e.nom}</span></button>`).join('');
   openModal(`
@@ -322,8 +322,8 @@ function removePetFromModal() {
 
 // Version 1.2 : composition de la famille (1 à 6 membres) et animaux de compagnie (3 au plus).
 function renderFamilyAdd() {
-  const C = DATA.FAMILY.COMPOSITION;
-  const AJ = DATA.FAMILY.AJ;
+  const C = DATA.FAMILLE.COMPOSITION;
+  const AJ = DATA.FAMILLE.AJ;
   const full = memberRoom(state) === 0;
   return `
     <div class="row family-add">
@@ -334,7 +334,7 @@ function renderFamilyAdd() {
 }
 
 function renderPets() {
-  const K = DATA.FAMILY.COMPAGNIE;
+  const K = DATA.FAMILLE.COMPAGNIE;
   const list = pets(state);
   const full = petRoom(state) === 0;
   const boutons = Object.entries(K.ESPECES)
@@ -366,7 +366,7 @@ export function renderFamille() {
         <span class="bar" role="progressbar" aria-label="${pris ? 'Calories mangées' : 'Calories prévues'}" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
         <span class="muted" id="ration-help"${helpOpen.has('ration') ? '' : ' hidden'}>${pris ? 'Calories mangées' : 'Calories prévues'} pour un besoin de ${formatNumber(familyNeed(state))} calories par jour. ${pris
           ? (short ? `⚠️ Le besoin n'a pas été couvert : ton énergie remontera moins en dormant.` : `Le besoin a été couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} en dormant.`)
-          : (short ? `⚠️ Le besoin ne sera pas couvert : ton énergie remontera moins en dormant.` : `Le besoin sera couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} en dormant.`)} La famille mange à ${DATA.TIME.MEAL_HOUR} h, ou au coucher si elle dort avant.</span>
+          : (short ? `⚠️ Le besoin ne sera pas couvert : ton énergie remontera moins en dormant.` : `Le besoin sera couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} en dormant.`)} La famille mange à ${DATA.TEMPS.HEURE_REPAS} h, ou au coucher si elle dort avant.</span>
       </div>
     </div>
     ${renderPets()}

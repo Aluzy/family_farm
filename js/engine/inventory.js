@@ -12,8 +12,8 @@ import { techSum } from './techtree.js';
 // Conservation d'un item en nuits, ou null s'il ne périme jamais.
 export function shelfLife(item) {
   if (DATA.CONSERVATION[item] !== undefined) return DATA.CONSERVATION[item];
-  const def = DATA.items[item];
-  if (def && DATA.CONSERVATION_CATEGORIE[def.category] !== undefined) return DATA.CONSERVATION_CATEGORIE[def.category];
+  const def = DATA.OBJETS[item];
+  if (def && DATA.CONSERVATION_CATEGORIE[def.categorie] !== undefined) return DATA.CONSERVATION_CATEGORIE[def.categorie];
   return null;
 }
 
@@ -29,8 +29,8 @@ export function isFridgeable(item) {
 
 // Origine d'un lot ajouté sans précision : « produit », sauf les conserves.
 export function defaultOrigin(item) {
-  const def = DATA.items[item];
-  const byCategory = def ? DATA.ORIGINE.PAR_CATEGORIE[def.category] : undefined;
+  const def = DATA.OBJETS[item];
+  const byCategory = def ? DATA.ORIGINE.PAR_CATEGORIE[def.categorie] : undefined;
   return byCategory || DATA.ORIGINE.PRODUIT;
 }
 
@@ -166,7 +166,7 @@ export function addLot(state, item, qty, origin) {
 }
 
 export function addItem(state, item, qty) {
-  if (!DATA.items[item] || !(qty > 0)) return 0;
+  if (!DATA.OBJETS[item] || !(qty > 0)) return 0;
   addLot(state, item, qty, defaultOrigin(item));
   return qty;
 }

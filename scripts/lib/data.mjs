@@ -7,7 +7,7 @@
 //   dans les fichiers                          pour le moteur
 //   ----------------------------------------   --------------------------------
 //   "conservation" sur un objet ou un plat     DATA.CONSERVATION[id]
-//   "libre": true sur une recette              DATA.techtree.RECETTES_LIBRES
+//   "libre": true sur une recette              DATA.ARBRE.RECETTES_LIBRES
 //   clés "//…" (notes)                         retirées
 //
 // Tout le reste passe tel quel.
@@ -104,12 +104,12 @@ export const EFFETS_TECHNO = [
 // (mineOre, js/engine/outils.js : minerai_<sorte>), hors des données.
 export function sourcesOf(data, id) {
   const out = [];
-  const it = data.items[id] || {};
-  for (const [rid, r] of Object.entries(data.recipes)) {
+  const it = data.OBJETS[id] || {};
+  for (const [rid, r] of Object.entries(data.RECETTES)) {
     if ((r.transformation ? r.sortie : rid) === id) out.push(`recette ${rid}`);
     if (r.sousProduit && r.sousProduit.item === id) out.push(`sous-produit de ${rid}`);
   }
-  for (const [cid, c] of Object.entries(data.crops)) {
+  for (const [cid, c] of Object.entries(data.CULTURES)) {
     if ((c.produit || cid) === id) out.push(`récolte ${cid}`);
     if (c.graines && c.graines.mode === 'recolte' && c.graines.item === id) out.push(`graines de ${cid}`);
   }
@@ -125,8 +125,9 @@ export function sourcesOf(data, id) {
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
   if (id.startsWith('minerai_')) out.push('grotte');
   if (it.trouvaille) out.push(`trouvaille (${it.trouvaille})`);
-  for (const table of ['START', 'DEPART']) if (data[table] && id in data[table].INVENTAIRE) out.push(`${table}.INVENTAIRE`);
-  if (data.FAMILY && id in data.FAMILY.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');
+  if (data.DEPART && id in data.DEPART.INVENTAIRE) out.push('DEPART.INVENTAIRE');
+  if (data.DEPART && data.DEPART.ETAT_INITIAL && id in data.DEPART.ETAT_INITIAL.INVENTAIRE) out.push('DEPART.ETAT_INITIAL.INVENTAIRE');
+  if (data.FAMILLE && id in data.FAMILLE.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');
   for (const [lid, l] of Object.entries(data.COURRIER || {})) if (id in (l.cadeaux || {})) out.push(`courrier ${lid}`);
   if (it.ville) out.push('marché de la ville');
   else if (it.rachetable !== false) out.push('Marché');
@@ -135,7 +136,7 @@ export function sourcesOf(data, id) {
 }
 
 const isInt = (n) => Number.isInteger(n);
-const isDish = (data, id) => !!data.recipes[id] && !data.recipes[id].transformation;
+const isDish = (data, id) => !!data.RECETTES[id] && !data.RECETTES[id].transformation;
 
 // Renvoie { errors, warnings } : des phrases prêtes à afficher. Une erreur
 // empêche de générer le jeu ; un avertissement signale une valeur douteuse.
@@ -144,11 +145,11 @@ export function validateData(data) {
   const warnings = [];
   const err = (where, message) => errors.push(`${where} : ${message}`);
   const warn = (where, message) => warnings.push(`${where} : ${message}`);
-  const { items, recipes, crops, techtree } = data;
+  const { OBJETS: items, RECETTES: recipes, CULTURES: crops, ARBRE: techtree } = data;
   // Ce qui peut être rangé dans l'inventaire : un objet, ou un plat (recette qui n'est pas une transformation).
   const exists = (id) => id in items || isDish(data, id);
   const needItem = (where, id) => {
-    if (!exists(id)) err(where, `« ${id} » n'est ni un objet (items) ni un plat (recipes)`);
+    if (!exists(id)) err(where, `« ${id} » n'est ni un objet (OBJETS) ni un plat (RECETTES)`);
   };
   const conservation = (where, def) => {
     if (!('conservation' in def)) return;
@@ -158,13 +159,13 @@ export function validateData(data) {
 
   /* objets */
   for (const [id, it] of Object.entries(items)) {
-    const where = `items.${id}`;
+    const where = `OBJETS.${id}`;
     if (typeof it.nom !== 'string' || !it.nom) err(where, 'nom manquant');
     if (typeof it.icone !== 'string' || !it.icone) err(where, 'icone manquante');
     if (!(isInt(it.prix) && it.prix >= 0)) err(where, `prix doit être un entier positif ; reçu ${JSON.stringify(it.prix)}`);
-    if (!CATEGORIES.includes(it.category)) err(where, `category « ${it.category} » inconnue (${CATEGORIES.join(', ')})`);
-    if (typeof it.edible !== 'boolean') err(where, 'edible doit être true ou false');
-    if (it.edible && !(isInt(it.energie) && it.energie > 0)) err(where, 'un objet comestible (edible) a besoin d\'une energie entière');
+    if (!CATEGORIES.includes(it.categorie)) err(where, `categorie « ${it.categorie} » inconnue (${CATEGORIES.join(', ')})`);
+    if (typeof it.mangeable !== 'boolean') err(where, 'mangeable doit être true ou false');
+    if (it.mangeable && !(isInt(it.energie) && it.energie > 0)) err(where, 'un objet comestible (mangeable) a besoin d\'une energie entière');
     conservation(where, it);
   }
 
@@ -176,7 +177,7 @@ export function validateData(data) {
 
   /* recettes */
   for (const [id, r] of Object.entries(recipes)) {
-    const where = `recipes.${id}`;
+    const where = `RECETTES.${id}`;
     if (typeof r.nom !== 'string' || !r.nom) err(where, 'nom manquant');
     if (typeof r.icone !== 'string' || !r.icone) err(where, 'icone manquante');
     if (!data.STATIONS[r.station]) err(where, `station « ${r.station} » inconnue (${Object.keys(data.STATIONS).join(', ')})`);
@@ -209,16 +210,16 @@ export function validateData(data) {
     if (r.transformation) {
       if (!r.sortie || !(r.sortie in items)) err(where, `une transformation rend un objet existant : sortie « ${r.sortie} » inconnue`);
       if (!(isInt(r.qteSortie) && r.qteSortie > 0)) err(where, 'qteSortie doit être un entier supérieur à 0');
-      if ('conservation' in r) err(where, 'la conservation d\'une transformation se règle sur l\'objet rendu (items), pas sur la recette');
+      if ('conservation' in r) err(where, 'la conservation d\'une transformation se règle sur l\'objet rendu (OBJETS), pas sur la recette');
     } else if (id in items) {
-      err(where, `un plat porte le nom de sa recette : « ${id} » est déjà un objet (items), il serait remplacé. Renommer la recette (comme cafe_boisson)`);
+      err(where, `un plat porte le nom de sa recette : « ${id} » est déjà un objet (OBJETS), il serait remplacé. Renommer la recette (comme cafe_boisson)`);
     }
     if (r.sousProduit) {
       needItem(`${where}.sousProduit`, r.sousProduit.item);
       if (!(isInt(r.sousProduit.qte) && r.sousProduit.qte > 0)) err(`${where}.sousProduit`, 'qte doit être un entier supérieur à 0');
     }
     if (r.energieForcee != null && !(isInt(r.energieForcee) && r.energieForcee > 0)) err(where, 'energieForcee doit être un entier supérieur à 0');
-    if (r.priceMultiplier != null && !(isInt(r.priceMultiplier) && r.priceMultiplier > 0)) err(where, 'priceMultiplier est un pourcentage entier (130 = ×1,3)');
+    if (r.coefPrix != null && !(isInt(r.coefPrix) && r.coefPrix > 0)) err(where, 'coefPrix est un pourcentage entier (130 = ×1,3)');
     if (r.libre !== undefined && r.libre !== true) err(where, 'libre vaut true, ou n\'est pas écrit');
     conservation(where, r);
   }
@@ -228,7 +229,7 @@ export function validateData(data) {
   const visiter = (id, chemin) => {
     if (etat[id] === 'fait') return;
     if (etat[id] === 'en cours') {
-      err(`recipes.${id}`, `recettes en boucle : ${[...chemin, id].join(' → ')}`);
+      err(`RECETTES.${id}`, `recettes en boucle : ${[...chemin, id].join(' → ')}`);
       return;
     }
     etat[id] = 'en cours';
@@ -244,18 +245,18 @@ export function validateData(data) {
   const paliers = Object.keys(techtree.PALIERS);
   const branches = techtree.branches.map((b) => b.id);
   for (const [id, n] of Object.entries(techtree.noeuds)) {
-    const where = `techtree.noeuds.${id}`;
+    const where = `ARBRE.noeuds.${id}`;
     if (!branches.includes(n.branche)) err(where, `branche « ${n.branche} » inconnue (${branches.join(', ')})`);
     if (!paliers.includes(String(n.palier))) err(where, `palier ${n.palier} inconnu (${paliers.join(', ')})`);
     for (const req of n.requiert || []) {
       if (req.noeud !== undefined && !techtree.noeuds[req.noeud]) err(where, `requiert le nœud « ${req.noeud} », qui n'existe pas`);
       if (req.noeud === id) err(where, 'un nœud ne peut pas se demander lui-même');
-      if (req.batiment !== undefined && !techtree.batiments[req.batiment]) err(where, `requiert le bâtiment « ${req.batiment} », absent de techtree.batiments`);
+      if (req.batiment !== undefined && !techtree.batiments[req.batiment]) err(where, `requiert le bâtiment « ${req.batiment} », absent de ARBRE.batiments`);
       if (req.tuiles !== undefined && !(Number.isInteger(req.tuiles) && req.tuiles > 0)) err(where, 'requiert des tuiles : un entier supérieur à 0');
     }
     for (const [item, qte] of Object.entries(n.ressources || {})) {
-      if (!data.items[item]) err(where, `coûte « ${item} », qui n'existe pas`);
-      else if (!(item === 'bois' || item === 'pierre' || data.items[item].category === 'matériau')) err(where, `coûte « ${item} » : bois, pierre ou un matériau (lingot) seulement`);
+      if (!data.OBJETS[item]) err(where, `coûte « ${item} », qui n'existe pas`);
+      else if (!(item === 'bois' || item === 'pierre' || data.OBJETS[item].categorie === 'matériau')) err(where, `coûte « ${item} » : bois, pierre ou un matériau (lingot) seulement`);
       if (!(Number.isInteger(qte) && qte > 0)) err(where, `ressource « ${item} » : un entier supérieur à 0`);
     }
     for (const rid of (n.effet && n.effet.recettes) || []) {
@@ -265,26 +266,26 @@ export function validateData(data) {
   }
   for (const [id, r] of Object.entries(recipes)) {
     const noeuds = debloqueePar[id] || [];
-    if (!r.libre && !noeuds.length) err(`recipes.${id}`, 'recette inaccessible : ni "libre": true, ni débloquée par un nœud de l\'arbre (effet.recettes)');
-    if (r.libre && noeuds.length) warn(`recipes.${id}`, `déjà libre : le nœud ${noeuds.join(', ')} ne débloque rien`);
+    if (!r.libre && !noeuds.length) err(`RECETTES.${id}`, 'recette inaccessible : ni "libre": true, ni débloquée par un nœud de l\'arbre (effet.recettes)');
+    if (r.libre && noeuds.length) warn(`RECETTES.${id}`, `déjà libre : le nœud ${noeuds.join(', ')} ne débloque rien`);
   }
 
   /* cultures */
   const elements = Object.keys(data.NIVEAUX.ELEMENTS);
   const deblocables = [...elements, ...Object.keys(crops)];
   for (const [id, c] of Object.entries(crops)) {
-    const where = `crops.${id}`;
+    const where = `CULTURES.${id}`;
     if (typeof c.nom !== 'string' || !c.nom) err(where, 'nom manquant');
     if (!Array.isArray(c.lieux) || !c.lieux.length || c.lieux.some((l) => !LIEUX.includes(l))) err(where, `lieux doit contenir ${LIEUX.join(' et/ou ')}`);
     for (const champ of ['stades', 'litres', 'rendement']) {
       if (!(isInt(c[champ]) && c[champ] > 0)) err(where, `${champ} doit être un entier supérieur à 0`);
     }
     const recolte = c.produit || id;
-    if (!(recolte in items)) err(where, `la récolte « ${recolte} » n'est pas un objet (items)${c.produit ? '' : ' : ajouter l\'objet, ou le champ "produit"'}`);
+    if (!(recolte in items)) err(where, `la récolte « ${recolte} » n'est pas un objet (OBJETS)${c.produit ? '' : ' : ajouter l\'objet, ou le champ "produit"'}`);
     if (c.requiert !== undefined && !elements.includes(c.requiert)) err(where, `requiert « ${c.requiert} » inconnu (NIVEAUX.ELEMENTS)`);
     const g = c.graines || {};
     if (!MODES_GRAINES.includes(g.mode)) err(where, `graines.mode « ${g.mode} » inconnu (${MODES_GRAINES.join(', ')})`);
-    if (!(g.item in items)) err(where, `graines.item « ${g.item} » n'est pas un objet (items)`);
+    if (!(g.item in items)) err(where, `graines.item « ${g.item} » n'est pas un objet (OBJETS)`);
     if (g.mode === 'recolte' && !(isInt(g.min) && isInt(g.max) && g.min >= 0 && g.max >= g.min)) err(where, 'graines.min et graines.max : deux entiers, min ≤ max');
     const s = c.sprite;
     if (!s) warn(where, 'pas de sprite : la carte affichera l\'icône à la place d\'un dessin');
@@ -330,12 +331,12 @@ export function validateData(data) {
   for (const [id, a] of Object.entries(data.ANIMAUX)) {
     for (const champ of ['produit', 'laine', 'lait']) if (a[champ] !== undefined) needItem(`ANIMAUX.${id}.${champ}`, a[champ]);
   }
-  for (const id of Object.keys(data.START.INVENTAIRE)) needItem('START.INVENTAIRE', id);
+  for (const id of Object.keys(data.DEPART.ETAT_INITIAL.INVENTAIRE)) needItem('DEPART.ETAT_INITIAL.INVENTAIRE', id);
   for (const id of Object.keys(data.DEPART.INVENTAIRE)) needItem('DEPART.INVENTAIRE', id); // version 1.12
-  for (const id of Object.keys(data.FAMILY.RESERVE_DEPART)) needItem('FAMILY.RESERVE_DEPART', id);
+  for (const id of Object.keys(data.FAMILLE.RESERVE_DEPART)) needItem('FAMILY.RESERVE_DEPART', id);
   for (const id of data.MARCHE.TRANSFORMATIONS_DOUBLEES) needItem('MARCHE.TRANSFORMATIONS_DOUBLEES', id);
   for (const id of Object.keys(data.PLATS_RETIRES)) {
-    if (exists(id)) err(`PLATS_RETIRES.${id}`, 'ce plat existe encore (items ou recipes) : il n\'est pas retiré');
+    if (exists(id)) err(`PLATS_RETIRES.${id}`, 'ce plat existe encore (OBJETS ou RECETTES) : il n\'est pas retiré');
   }
   for (const [id, lettre] of Object.entries(data.COURRIER)) {
     const where = `COURRIER.${id}`;
@@ -355,23 +356,52 @@ export function validateData(data) {
     for (const item of Object.keys(s.butin || {})) needItem(`VILLE.SORTIES.${id}.butin`, item);
     (s.cueillettes || []).forEach((c, i) => { for (const item of Object.keys(c)) needItem(`VILLE.SORTIES.${id}.cueillettes[${i}]`, item); });
   }
-  for (const item of (V.BONHEUR && V.BONHEUR.SPECIALES && V.BONHEUR.SPECIALES.items) || []) needItem('VILLE.BONHEUR.SPECIALES.items', item);
+  for (const item of (V.BONHEUR && V.BONHEUR.SPECIALES && V.BONHEUR.SPECIALES.objets) || []) needItem('VILLE.BONHEUR.SPECIALES.objets', item);
   if (data.SILO) needItem('SILO.ITEM', data.SILO.ITEM);
-  if (data.PATURAGE) needItem('PATURAGE.nourriture', data.PATURAGE.nourriture);
+  if (data.PATURAGE) needItem('PATURAGE.NOURRITURE', data.PATURAGE.NOURRITURE);
   const SIM = data.SIMULATION || {};
   for (const item of Object.keys(SIM.ACHATS_CUISINE || {})) needItem('SIMULATION.ACHATS_CUISINE', item);
   if (SIM.DEPANNAGE) needItem('SIMULATION.DEPANNAGE.item', SIM.DEPANNAGE.item);
 
+  /* les grottes et le bus de ligne (ville.json, lus par les cartes : js/carte/ville/config.js) */
+  const G = data.GROTTE;
+  if (G) {
+    for (const cle of ['LARGEUR', 'HAUTEUR', 'NIVEAUX', 'PASSES', 'COUPS']) {
+      if (!(isInt(G[cle]) && G[cle] >= 1)) err(`GROTTE.${cle}`, `un entier supérieur à 0 ; reçu ${JSON.stringify(G[cle])}`);
+    }
+    for (const cle of ['MURS', 'MINERAI']) {
+      if (!(typeof G[cle] === 'number' && G[cle] >= 0 && G[cle] <= 1)) err(`GROTTE.${cle}`, `une part entre 0 et 1 ; reçu ${JSON.stringify(G[cle])}`);
+    }
+    for (const cle of ['MINERAI_NIVEAU', 'COUP']) {
+      if (!(typeof G[cle] === 'number' && G[cle] >= 0)) err(`GROTTE.${cle}`, `un nombre positif ; reçu ${JSON.stringify(G[cle])}`);
+    }
+    // chaque sorte est l'objet minerai_<sorte> (mineOre, js/engine/outils.js) ; FIXE, ou DEPUIS et PENTE
+    for (const [sorte, p] of Object.entries(G.POIDS || {})) {
+      needItem('GROTTE.POIDS', `minerai_${sorte}`);
+      const ok = (n) => typeof n === 'number' && n >= 0;
+      if (!(p && ('FIXE' in p ? ok(p.FIXE) : ok(p.DEPUIS) && ok(p.PENTE)))) err(`GROTTE.POIDS.${sorte}`, 'FIXE, ou DEPUIS et PENTE : des nombres positifs');
+    }
+  }
+  const NV = data.NAVETTE;
+  if (NV) {
+    const h = NV.HORAIRES || {};
+    if (!(isInt(h.DEBUT) && isInt(h.FIN) && h.DEBUT >= 0 && h.FIN <= 24 && h.DEBUT < h.FIN)) err('NAVETTE.HORAIRES', `DEBUT et FIN : des heures entières, 0 ≤ DEBUT < FIN ≤ 24 ; reçu ${JSON.stringify(h)}`);
+    for (const cle of ['MONTEE', 'DEPART', 'DESCENTE', 'REPART']) {
+      const d = (NV.DUREES || {})[cle];
+      if (!(typeof d === 'number' && d >= 0)) err(`NAVETTE.DUREES.${cle}`, `une durée en secondes ; reçu ${JSON.stringify(d)}`);
+    }
+  }
+
   /* arbre des technologies : chaque clé d'effet est lue par le moteur */
   for (const [id, n] of Object.entries(techtree.noeuds)) {
     for (const cle of Object.keys(n.effet || {})) {
-      if (!EFFETS_TECHNO.includes(cle)) err(`techtree.noeuds.${id}.effet`, `« ${cle} » : aucun code du moteur ne lit cette clé (EFFETS_TECHNO, scripts/lib/data.mjs)`);
+      if (!EFFETS_TECHNO.includes(cle)) err(`ARBRE.noeuds.${id}.effet`, `« ${cle} » : aucun code du moteur ne lit cette clé (EFFETS_TECHNO, scripts/lib/data.mjs)`);
     }
   }
 
   /* chaque objet s'obtient d'une façon ou d'une autre (avertissement seulement) */
   for (const id of Object.keys(items)) {
-    if (!sourcesOf(data, id).length) warn(`items.${id}`, 'aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)');
+    if (!sourcesOf(data, id).length) warn(`OBJETS.${id}`, 'aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)');
   }
   /* niveaux (version 1.7) : chaque élément ou culture débloqué une seule fois */
   const N = data.NIVEAUX;
@@ -398,7 +428,7 @@ export function validateData(data) {
 export function compileData(data) {
   const out = JSON.parse(JSON.stringify(data));
   const CONSERVATION = {};
-  for (const table of [out.items, out.recipes]) {
+  for (const table of [out.OBJETS, out.RECETTES]) {
     for (const [id, def] of Object.entries(table)) {
       if ('conservation' in def) {
         CONSERVATION[id] = def.conservation;
@@ -407,9 +437,9 @@ export function compileData(data) {
     }
   }
   out.CONSERVATION = CONSERVATION;
-  out.techtree.RECETTES_LIBRES = [];
-  for (const [id, r] of Object.entries(out.recipes)) {
-    if (r.libre) out.techtree.RECETTES_LIBRES.push(id);
+  out.ARBRE.RECETTES_LIBRES = [];
+  for (const [id, r] of Object.entries(out.RECETTES)) {
+    if (r.libre) out.ARBRE.RECETTES_LIBRES.push(id);
     delete r.libre;
   }
   return out;

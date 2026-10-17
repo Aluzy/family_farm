@@ -119,7 +119,7 @@ export function nightHarvest(report) {
   const total = {};
   const add = (item, qty) => {
     const n = Math.floor((Number(qty) || 0) + EPS);
-    if (n > 0 && DATA.items[item]) total[item] = (total[item] || 0) + n;
+    if (n > 0 && DATA.OBJETS[item]) total[item] = (total[item] || 0) + n;
   };
   add(DATA.ANIMAUX.poule.produit, report.oeufs);
   add(DATA.ANIMAUX.vache.lait, report.lait);
@@ -134,7 +134,7 @@ export function nightHarvest(report) {
 export function wakeHarvestList(report, limite = DATA.REVEIL.RECOLTE_MAX) {
   const rows = Object.entries(nightHarvest(report))
     .map(([item, qte]) => ({ item, qte }))
-    .sort((x, y) => y.qte - x.qte || DATA.items[x.item].nom.localeCompare(DATA.items[y.item].nom, 'fr'));
+    .sort((x, y) => y.qte - x.qte || DATA.OBJETS[x.item].nom.localeCompare(DATA.OBJETS[y.item].nom, 'fr'));
   return { affiches: rows.slice(0, limite), reste: rows.slice(limite) };
 }
 
@@ -219,16 +219,16 @@ export function recoverInSleep(state, ms) {
   const cible = sleepTarget(state);
   const e = Number(state.energie) || 0;
   if (e >= cible) return e;
-  const parMs = cible / (DATA.PERSONNAGE.SOMMEIL_HEURES * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
+  const parMs = cible / (DATA.PERSONNAGE.SOMMEIL_HEURES * DATA.TEMPS.SECONDES_PAR_HEURE * 1000);
   state.energie = Math.min(cible, energyMax(), Math.round(e + parMs * ms));
   return state.energie;
 }
 
 // « Dormir » : le personnage dort dans son lit, la nuit défile en accéléré (une heure toutes
-// les TIME.SLEEP_SECONDS_PER_HOUR secondes au lieu de CLOCK_SECONDS_PER_HOUR) jusqu'au réveil.
+// les TIME.SECONDES_PAR_HEURE_SOMMEIL secondes au lieu de SECONDES_PAR_HEURE) jusqu'au réveil.
 // On ne dort que la nuit.
 export function goToSleep(state) {
-  if (!nightActive(state)) return fail(`On ne dort que la nuit, de ${DATA.TIME.NIGHT_HOUR} h à ${DATA.TIME.DAY_START_HOUR} h.`);
+  if (!nightActive(state)) return fail(`On ne dort que la nuit, de ${DATA.TEMPS.HEURE_NUIT} h à ${DATA.TEMPS.HEURE_REVEIL} h.`);
   state.nuitEnCours.dort = true;
   return { ok: true };
 }
@@ -240,7 +240,7 @@ export function asleep(state) {
 
 // Vitesse de la nuit : 1 (elle défile à l'heure de l'horloge), plus quand il dort.
 export function nightSpeed(state) {
-  return asleep(state) ? DATA.TIME.CLOCK_SECONDS_PER_HOUR / DATA.TIME.SLEEP_SECONDS_PER_HOUR : 1;
+  return asleep(state) ? DATA.TEMPS.SECONDES_PAR_HEURE / DATA.TEMPS.SECONDES_PAR_HEURE_SOMMEIL : 1;
 }
 
 // Le bouton nuit : ce qui reste de la nuit passe d'un coup (minuit compris). Renvoie le
