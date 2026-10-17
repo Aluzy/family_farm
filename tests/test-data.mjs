@@ -117,6 +117,11 @@ refuse('commerce : matière inconnue', (d) => { d.COMMERCE.TYPES.cremerie.prend.
 refuse('entreprise : intrant inconnu', (d) => { d.VILLE.ENTREPRISES.LISTE.confiturerie.intrants.push('mangue'); }, 'VILLE.ENTREPRISES.LISTE.confiturerie.intrants : « mangue »');
 refuse('sortie : butin inconnu', (d) => { d.VILLE.SORTIES.montagne.butin.edelweiss = 1; }, 'VILLE.SORTIES.montagne.butin : « edelweiss »');
 refuse('sortie : cueillette inconnue', (d) => { d.VILLE.SORTIES.foret.cueillettes[0].truffe = 1; }, 'VILLE.SORTIES.foret.cueillettes[0] : « truffe »');
+refuse('grotte : minerai inconnu', (d) => { d.GROTTE.POIDS.argent = { FIXE: 1 }; }, 'GROTTE.POIDS : « minerai_argent »');
+refuse('grotte : aucun niveau', (d) => { d.GROTTE.NIVEAUX = 0; }, 'GROTTE.NIVEAUX : un entier');
+refuse('grotte : une chance au-delà de 1', (d) => { d.GROTTE.MINERAI = 7; }, 'GROTTE.MINERAI : une part entre 0 et 1');
+refuse('navette : horaires à l\'envers', (d) => { d.NAVETTE.HORAIRES = { DEBUT: 22, FIN: 6 }; }, 'NAVETTE.HORAIRES');
+refuse('navette : heure hors de la journée', (d) => { d.NAVETTE.HORAIRES.FIN = 25; }, 'NAVETTE.HORAIRES');
 
 /* ---------- arbre : clés d'effet ; objets qu'on peut obtenir ---------- */
 
