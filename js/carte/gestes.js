@@ -1,5 +1,5 @@
 /* carte/gestes.js — les gestes du joueur et ce qu'ils font voir, pareils sur toutes les cartes
- * (CarteKit.APPUI, doubleAppui, anneau, SECOUSSE, secousse, BULLE, bulleGain).
+ * (CarteKit.APPUI, doubleAppui, anneau, SECOUSSE, secousse, VIBRATION, vibre, BULLE, bulleGain).
  *
  * La ferme (js/farm-stage.js, js/carte/ferme/), la ville et les cartes qu'on rejoint par elle
  * (js/ville-carte.js, js/carte/ville/) et l'infra-monde (js/infra-monde.js) se jouent de la même
@@ -13,7 +13,9 @@
  *     l'endroit où il va (anneau) ;
  *   - ce qu'il prend (bois, pierre, minerai, poisson, trouvaille, récolte) monte au-dessus de lui
  *     dans une bulle « +1 🪵 » (bulleGain) ;
- *   - la vue tremble un peu quand un arbre tombe et à chaque coup de pioche (secousse).
+ *   - la vue tremble un peu quand un arbre tombe et à chaque coup de pioche (secousse) ;
+ *   - le téléphone vibre à la touche d'un poisson et à chaque coup de hache, de pioche ou de
+ *     houe (vibre ; Android : l'API Vibration n'existe pas sur iPhone, rien n'y vibre).
  *
  * Script classique, chargé après js/carte/kit.js (voir jeu.html).
  */
@@ -64,6 +66,17 @@
     scene.cameras.main.shake(s.ms, s.force);
   }
 
+  // Le téléphone vibre (navigator.vibrate, ms : une durée, ou vibration, pause, vibration…) :
+  // `touche`, un poisson mord ; `hache`, `pioche`, `houe`, un coup de l'outil. Sans l'API
+  // (iPhone, ordinateur), rien ; le téléphone peut aussi avoir coupé les vibrations.
+  const VIBRATION = { touche: [40, 60, 40], hache: 20, pioche: 25, houe: 10 };
+  function vibre(sorte) {
+    const motif = VIBRATION[sorte];
+    const nav = global.navigator;
+    if (motif == null || !nav || typeof nav.vibrate !== 'function') return;
+    try { nav.vibrate(motif); } catch (e) { /* refusée (pas encore d'appui sur la page) : rien */ }
+  }
+
   // La bulle « +6 🥕 » au-dessus du personnage (DOM, assets/bulle.png : .stage-gain, css/jeu.css).
   // Elle reste `garde` ms puis s'estompe en `fondu` ms en montant un peu ; une prise qui arrive
   // avant qu'elle ait disparu s'y additionne. Sa pointe (à `pointeX` px CSS du bord gauche,
@@ -108,5 +121,5 @@
     };
   }
 
-  Object.assign(K, { APPUI, doubleAppui, ANNEAU, anneau, SECOUSSE, secousse, BULLE, bulleGain });
+  Object.assign(K, { APPUI, doubleAppui, ANNEAU, anneau, SECOUSSE, secousse, VIBRATION, vibre, BULLE, bulleGain });
 })(window);

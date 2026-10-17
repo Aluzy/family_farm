@@ -578,6 +578,7 @@
 
     chips(o) {
       K.secousse(this, 'coup');
+      K.vibre('pioche');
       if (reduced()) return;
       const col = { fer: 0xd2a88a, cuivre: 0xd67e46, or: 0xf0c846, platine: 0xe6eef8 }[o.kind] || 0x9a9088;
       for (let i = 0; i < 4; i++) {

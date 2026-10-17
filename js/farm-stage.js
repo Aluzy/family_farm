@@ -467,6 +467,7 @@
           L.seen.add(t);
           if (!L.ok.has(t)) continue;
           L.tiles.push(t);
+          K.vibre('houe');
           L.marks.push(this.add.rectangle((t % W) * T + T / 2, Math.floor(t / W) * T + T / 2, T - 2, T - 2, 0x8a5a2b, 0.55).setDepth(1.6));
         }
         L.last = { x: wp.x, y: wp.y };
@@ -592,7 +593,7 @@
         if (!hit) return;
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien
         if (hit.window) { this.ctx.bridge.act('stage-open', { window: hit.window }); return; }
-        if (hit.hoe) { this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
+        if (hit.hoe) { K.vibre('houe'); this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.mine) { this.mine(hit.mine); return; }
         if (hit.fish) { this.goFish(hit.fish, wx, wy); return; }

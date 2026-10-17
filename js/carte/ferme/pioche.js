@@ -146,6 +146,7 @@
         r.queued = Math.max(0, r.queued - 1);
         this.showGain(got.items);
         K.secousse(this, 'coup');
+        K.vibre('pioche');
         if (r.breaking && !r.queued) { this.breakRock(r, true); return; }
         this.shakeRock(r);
         const p = this.fermier && this.fermier.pos();
