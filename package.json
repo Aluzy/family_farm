@@ -5,7 +5,9 @@
   "scripts": {
     "build:data": "node scripts/build-data.mjs",
     "build:map": "node scripts/build-map.mjs",
-    "test": "node scripts/build-data.mjs && node scripts/build-encyclopedie.mjs && node scripts/build-map.mjs --check && node tests/test-data.mjs && node tests/run-tests.mjs && node tests/test-telemetry.mjs && node tests/test-report.mjs && node scripts/check-actions.mjs && node scripts/check-page.mjs",
+    "test": "node tests/all.mjs",
+    "test:moteur": "node tests/run-tests.mjs",
+    "smoke": "node tests/smoke.mjs",
     "build": "node scripts/build-data.mjs && node scripts/build-encyclopedie.mjs && node scripts/build-site.mjs"
   },
   "devDependencies": {

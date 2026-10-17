@@ -4,8 +4,9 @@
 // sendBeacon, événements) et vérifie surtout les règles de confidentialité :
 // rien n'est stocké ni envoyé sans consentement, rien après un retrait.
 //
-// Usage : node tests/test-telemetry.mjs
+// Usage : node tests/test-telemetry.mjs (ou node tests/run-tests.mjs telemetry)
 
+import { test as nodeTest } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -13,11 +14,9 @@ import vm from 'node:vm';
 
 const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'js', 'telemetry.js'), 'utf8');
 
-let passed = 0;
-const failures = [];
-function test(name, fn) {
-  try { fn(); passed++; } catch (e) { failures.push(`${name} : ${e.message}`); }
-}
+// Lancés par node:test (node tests/run-tests.mjs --tous, ou ce fichier seul), dans l'ordre,
+// une fois le fichier chargé ; un test synchrone ou asynchrone (attendu).
+const test = (name, fn) => nodeTest(name, () => fn());
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion fausse'); }
 function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${msg || 'différent'} : ${JSON.stringify(a)} ≠ ${JSON.stringify(b)}`); }
 
@@ -313,12 +312,3 @@ test('payload sans commentaire : liste « feedback » vide', () => {
   b.T.setConsent('granted');
   eq(b.beacons.at(-1).body.feedback, []);
 });
-
-console.log('Ferme Familiale — tests du suivi de session');
-console.log('-------------------------------------------\n');
-if (failures.length) {
-  for (const f of failures) console.log('ÉCHEC  ' + f);
-  console.log(`\n${passed} passé(s), ${failures.length} échec(s).`);
-  process.exit(1);
-}
-console.log(`${passed}/${passed} test(s) passé(s), 0 échec(s).`);

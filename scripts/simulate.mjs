@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Simulation et équilibrage (Lot 10, conception sections 8.10 et 8.11).
 //
-// Comme run-tests.mjs, ce script importe le moteur (js/engine/) et joue des
+// Comme les tests du moteur (tests/engine/), ce script importe le moteur (js/engine/) et joue des
 // parties complètes avec lui, sans interface.
 // Le joueur automatique et ses réglages vivent dans le moteur
 // (DATA.SIMULATION et fonctions bot*/simulate*) : le script ne fait que lancer

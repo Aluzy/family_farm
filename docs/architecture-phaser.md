@@ -19,7 +19,7 @@ jeu.html                  la page : structure seule, charge les fichiers ci-dess
  └─ js/main.js            point d'entrée des modules ES
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node tests/run-tests.mjs
      └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
-tests/engine.test.js      tests du moteur (jamais chargés par la page)
+tests/engine/             tests du moteur, un fichier par thème (jamais chargés par la page)
 assets/                   cartes Tiled (carte_printemps.json et serre_interieur.json, et leurs sources .tmj) + images du pack
 ```
 

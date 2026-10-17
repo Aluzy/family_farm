@@ -4,16 +4,15 @@
 // qu'on peut faire en ajoutant un objet, une recette ou une culture est bien
 // signalée, avec un message qui dit où.
 //
-// Usage : node tests/test-data.mjs
+// Usage : node tests/test-data.mjs (ou node tests/run-tests.mjs data)
 
+import { test as nodeTest } from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { EFFETS_TECHNO, compileData, loadData, sourcesOf, stripNotes, validateData } from '../scripts/lib/data.mjs';
 
-let passed = 0;
-const failures = [];
-function test(name, fn) {
-  try { fn(); passed++; } catch (e) { failures.push(`${name} : ${e.message}`); }
-}
+// Lancés par node:test (node tests/run-tests.mjs --tous, ou ce fichier seul), dans l'ordre,
+// une fois le fichier chargé ; un test synchrone ou asynchrone (attendu).
+const test = (name, fn) => nodeTest(name, () => fn());
 function eq(actual, expected, message) {
   const a = JSON.stringify(actual);
   const b = JSON.stringify(expected);
@@ -158,11 +157,3 @@ test('les trouvailles des cartes (assets/faune.json) sont les objets « trouvail
   eq(meta.herbes_montagne.genre, 'herbe');
   if (!(genres.herbe > genres.pierre)) throw new Error(`les herbes, les plus courantes de la montagne : ${JSON.stringify(genres)}`);
 });
-
-console.log('');
-console.log('Ferme Familiale — tests des données');
-console.log('-'.repeat(35));
-for (const f of failures) console.log(`✗ ${f}`);
-console.log('');
-console.log(`${passed}/${passed + failures.length} test(s) passé(s), ${failures.length} échec(s).`);
-process.exit(failures.length ? 1 : 0);
