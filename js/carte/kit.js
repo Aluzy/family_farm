@@ -7,9 +7,12 @@
  *
  *   - T, la tuile (16 px) ; v(fichier), l'adresse versionnée d'un fichier de assets/ ;
  *   - reduit(), le réglage « réduire les animations » (une seule requête, lue à chaque image) ;
- *   - extrude(), les planches de tuiles à bord répété (pas de liseré au zoom non entier) ;
+ *   - ratio(), la densité de l'écran à laquelle le canvas des cartes est rendu (plafonnée à 3) ;
+ *   - extrude(), les planches de tuiles à bord répété (pas de liseré au zoom non entier), faites
+ *     une fois par planche ;
  *   - planche(), planchePerso() : la planche d'un personnage (assets/personnages/) ;
- *   - saisie() : le joueur écrit dans un champ de la page (le clavier n'est pas aux cartes) ;
+ *   - saisie() : le joueur écrit dans un champ de la page, ou une fenêtre est ouverte (le clavier
+ *     n'est pas aux cartes) ;
  *   - regard(dx, dy) : de face, de dos ou de profil selon le sens de la marche ;
  *   - cases(noms) : les cases d'une planche par leur nom (une table, pas une recherche par image) ;
  *   - VITESSES : la vitesse de marche de chacun, carte par carte (px/s) ;
@@ -47,12 +50,21 @@
     return !!(REDUIT && REDUIT.matches);
   }
 
+  // Le canvas des cartes (un seul pour toutes : js/carte/jeu.js) est rendu à la densité de
+  // l'écran, plafonnée à 3 : la ferme, au zoom non entier, garde des pixels réguliers ; les
+  // autres cartes y prennent un zoom entier en pixels de l'écran.
+  function ratio() { return Math.min(3, Math.max(1, global.devicePixelRatio || 1)); }
+
   // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
   // répète son propre bord (marge 1, espacement 2). Quand la caméra tombe entre deux pixels
   // (zoom, écran à densité non entière), le GPU qui lit juste à côté d'une tuile retombe sur
   // sa propre couleur, et non sur la tuile voisine de la planche : plus de fines lignes sombres
-  // aux jointures. Les numéros des tuiles ne changent pas.
+  // aux jointures. Les numéros des tuiles ne changent pas. Faite une fois par planche : les
+  // textures restent d'une carte à l'autre (un seul jeu Phaser, js/carte/jeu.js), la planche
+  // extrudée aussi.
   function extrude(textures, key, t) {
+    const out = key + '_extrude';
+    if (textures.exists(out)) return out;
     const src = textures.get(key).getSourceImage();
     const cols = Math.floor(src.width / t), rows = Math.floor(src.height / t);
     const canvas = document.createElement('canvas');
@@ -74,8 +86,6 @@
         g.drawImage(src, sx + t - 1, sy + t - 1, 1, 1, dx + t, dy + t, 1, 1);
       }
     }
-    const out = key + '_extrude';
-    if (textures.exists(out)) textures.remove(out);
     textures.addCanvas(out, canvas);
     return out;
   }
@@ -91,11 +101,14 @@
     return n ? { file: 'assets/' + planche(n), names: 'assets/personnages/cases.json' } : { file: 'assets/fermiere.png', names: 'assets/fermiere.json' };
   }
 
-  // Le joueur écrit dans un champ de la page (un nom, une quantité, un menu) : les flèches et
-  // ZQSD sont à lui, le personnage ne bouge pas (la ville, l'infra-monde).
+  // Le joueur écrit dans un champ de la page (un nom, une quantité, un menu), ou une fenêtre du
+  // jeu est ouverte (#modal-root : la gare, un étal…) : les flèches et ZQSD sont à lui, le
+  // personnage ne bouge pas (la ville, l'infra-monde).
   function saisie() {
     const el = document.activeElement;
-    return !!el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable);
+    if (el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable)) return true;
+    const root = document.getElementById('modal-root');
+    return !!(root && root.childElementCount);
   }
 
   // Où regarde un personnage qui marche de (dx, dy) : de profil (« cote », retourné s'il va
@@ -199,7 +212,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, extrude, planche, planchePerso, saisie, regard, cases, VITESSES,
+    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES,
     cycle, imageA, animTuiles, pasAnimTuiles, FLECHE, balance, TEXTE, texte,
   });
 })(window);

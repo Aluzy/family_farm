@@ -1,7 +1,7 @@
 /* carte/ferme/passages.js — la scène de la ferme : la sortie vers la ville et le tronc creux.
  *
  * La flèche bleue au bout du chemin de l'est (CarteKit.FLECHE : vers la carte de transition),
- * l'arrivée d'une autre carte, et le tronc creux au bord de l'étang (la bulle « veux-tu aller
+ * l'arrivée d'une autre carte, et le tronc creux au bord de l'étang (la fenêtre « veux-tu aller
  * voir ? » qui mène à l'infra-monde).
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
@@ -12,7 +12,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { EXIT, HOLLOW, BUBBLE_TIP_X, BUBBLE_TIP_Y } = F.C;
+  const { EXIT, HOLLOW } = F.C;
 
   F.partie({
 
@@ -89,47 +89,35 @@
       return true;
     },
 
-    // La bulle de dialogue au-dessus du personnage : le texte, puis « Oui » et « Non ».
+    // La question, dans une fenêtre du jeu (FermeHote.modal, js/ui/modal.js : cadre bois, focus
+    // gardé par Tab, Échap) : le texte, puis « Oui » et « Non ».
     openHollowDialog() {
-      if (this.dialog) return;
-      const el = document.createElement('div');
-      el.className = 'stage-dialogue';
-      el.setAttribute('role', 'dialog');
-      el.setAttribute('aria-label', 'Le tronc creux');
-      el.innerHTML = '<p></p><div class="stage-dialogue-choix"><button type="button" data-choix="oui">Oui</button><button type="button" data-choix="non">Non</button></div>';
-      el.querySelector('p').textContent = HOLLOW.text;
-      // ses appuis ne vont pas à la carte
-      for (const ev of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'wheel']) el.addEventListener(ev, (e) => e.stopPropagation());
-      el.addEventListener('click', (e) => {
-        const b = e.target.closest('button');
-        if (!b) return;
-        if (b.dataset.choix === 'oui') { if (global.FermeHote) global.FermeHote.go(HOLLOW.page); else global.location.href = HOLLOW.page; }
-        this.closeDialog();
-      });
-      this.ctx.labelLayer.appendChild(el);
-      this.dialog = { el, w: 0, h: 0 };
-      el.querySelector('button').focus({ preventScroll: true });
+      const H = global.FermeHote;
+      if (this.dialog && this.dialog.isConnected) return;
+      if (!H || !H.modal) return;
+      const dlg = H.modal(`<h2 id="tronc-titre"><span aria-hidden="true">🌳</span> Le tronc creux</h2><p></p>
+        <div class="row tronc-choix"><button type="button" class="btn primary" data-choix="oui">Oui</button><button type="button" class="btn" data-action="close-modal">Non</button></div>`,
+      { labelledBy: 'tronc-titre', className: 'modal bois item-modal', focus: '[data-choix="oui"]', preventScroll: true });
+      dlg.querySelector('p').textContent = HOLLOW.text;
+      dlg.querySelector('[data-choix="oui"]').addEventListener('click', () => { H.closeModal(); H.go(HOLLOW.page); });
+      this.dialog = dlg;
     },
 
     closeDialog() {
-      if (!this.dialog) return;
-      this.dialog.el.remove();
+      const d = this.dialog;
       this.dialog = null;
+      if (d && d.isConnected && global.FermeHote && global.FermeHote.closeModal) global.FermeHote.closeModal();
     },
 
-    // Chaque image : la bulle suit le personnage ; elle se ferme s'il s'éloigne du tronc ou
-    // si la vue entre dans un bâtiment.
+    // Chaque image : la fenêtre se ferme si le personnage s'éloigne du tronc ou si la vue entre
+    // dans un bâtiment.
     placeDialog() {
       const D = this.dialog;
       if (!D) return;
+      if (!D.isConnected) { this.dialog = null; return; }
       const at = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const b = this.hollow();
-      if (!at || this.room || !b || Math.hypot(Math.max(b.x0 - at.x, 0, at.x - b.x1), Math.max(b.y0 - at.y, 0, at.y - b.y1)) > HOLLOW.near * 2) { this.closeDialog(); return; }
-      if (!D.w) { D.w = D.el.offsetWidth; D.h = D.el.offsetHeight; }
-      const f = this.screenFrame();
-      const x = Math.round((at.x - f.left) * f.k - BUBBLE_TIP_X);
-      const y = Math.round((at.y - 32 - f.top) * f.k - D.h + BUBBLE_TIP_Y);
-      D.el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+      if (!at || this.room || !b || Math.hypot(Math.max(b.x0 - at.x, 0, at.x - b.x1), Math.max(b.y0 - at.y, 0, at.y - b.y1)) > HOLLOW.near * 2) this.closeDialog();
     },
   });
 })(window);

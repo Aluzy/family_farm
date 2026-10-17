@@ -14,7 +14,8 @@
  * arbres et l'eau restent immobiles, l'habitant ne bouge pas.
  *
  * La carte s'affiche dans la page du jeu (js/ui/excursion.js : InfraMonde.start, stop), à la
- * place de celle de la ferme ; le jeu continue de tourner.
+ * place de celle de la ferme : c'est une scène du jeu Phaser de toutes les cartes (js/carte/jeu.js) ;
+ * le jeu continue de tourner.
  */
 (function () {
   'use strict';
@@ -42,14 +43,18 @@
       this.load.tilemapTiledJSON(MAP.key, v(MAP.file));
       this.load.spritesheet(TREE.key, v(TREE.file), { frameWidth: TREE.w, frameHeight: TREE.h });
       this.load.spritesheet(HERO.key, v(HERO.file), { frameWidth: HERO.w, frameHeight: HERO.h });
+      // (la planche du personnage par son fichier : les textures restent d'une visite à l'autre)
       const sheet = K.planchePerso();
-      this.load.spritesheet(PLAYER.key, v(sheet.file), { frameWidth: PLAYER.w, frameHeight: PLAYER.h });
-      this.load.json(PLAYER.key + '_noms', v(sheet.names));
-      // les planches des jeux de tuiles : lues dans la carte une fois chargée
-      this.load.once('filecomplete-tilemapJSON-' + MAP.key, () => {
+      this.playerKey = PLAYER.key + ':' + sheet.file;
+      this.load.spritesheet(this.playerKey, v(sheet.file), { frameWidth: PLAYER.w, frameHeight: PLAYER.h });
+      this.load.json(this.playerKey + '_noms', v(sheet.names));
+      // les planches des jeux de tuiles : lues dans la carte une fois chargée (déjà là : rien à demander)
+      const planches = () => {
         const data = this.cache.tilemap.get(MAP.key).data;
         for (const set of data.tilesets) this.load.image(set.name, v('assets/' + set.image));
-      });
+      };
+      if (this.cache.tilemap.exists(MAP.key)) planches();
+      else this.load.once('filecomplete-tilemapJSON-' + MAP.key, planches);
     }
 
     create() {
@@ -81,11 +86,11 @@
         return s;
       });
 
-      // l'habitant
+      // l'habitant (ses animations portent son nom : elles sont communes à toutes les cartes du jeu)
       const walkAnim = (key, start) => {
         if (!this.anims.exists(key)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(HERO.key, { start, end: start + 3 }), frameRate: HERO.fps, repeat: -1 });
       };
-      walkAnim('marche_face', 0); walkAnim('marche_dos', 4); walkAnim('marche_profil', 8);
+      walkAnim(HERO.key + '_marche_face', 0); walkAnim(HERO.key + '_marche_dos', 4); walkAnim(HERO.key + '_marche_profil', 8);
       const d = objects('depart')[0] || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
       // l'habitant, un peu plus loin ; il flâne d'un coin de l'île à l'autre
       const n0 = this.nearWalk(d.x + 3 * T, d.y);
@@ -97,9 +102,9 @@
       this.npcWait = 2;
       this.blinkAt = this.time.now + 1500;
       // le personnage du joueur : ses images par nom (marche_bas_0…, idle_cote_0…)
-      const noms = (this.cache.json.get(PLAYER.key + '_noms') || {}).frames || [];
+      const noms = (this.cache.json.get(this.playerKey + '_noms') || {}).frames || [];
       this.frame = (name) => Math.max(0, noms.indexOf(name));
-      this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), PLAYER.key, this.frame('idle_bas_0')).setOrigin(0.5, PLAYER.foot / PLAYER.h);
+      this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), this.playerKey, this.frame('idle_bas_0')).setOrigin(0.5, PLAYER.foot / PLAYER.h);
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x281e36, 0.45);
       this.heroPos = { x: d.x, y: d.y };
       this.face = 'bas';
@@ -108,15 +113,17 @@
 
       // la caméra suit l'habitant, au pixel près, sans sortir de la carte
       const cam = this.cameras.main;
+      cam.setBackgroundColor('#1f2943');
       cam.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
       cam.startFollow(this.hero, true, 0.12, 0.12);
       cam.setRoundPixels(true);
       this.fitZoom();
-      this.scale.on('resize', () => this.fitZoom());
+      window.CarteJeu.suitTaille(this, () => this.fitZoom());
 
-      // un toucher : y aller
+      // un toucher (moins de 8 px CSS entre l'appui et le relâchement) : y aller
+      const slop = 8 * K.ratio();
       this.input.on('pointerup', (p) => {
-        if (p.getDistance() > 8) return;
+        if (p.getDistance() > slop) return;
         const w = cam.getWorldPoint(p.x, p.y);
         if (Math.abs(w.x - this.npcPos.x) <= 10 && w.y >= this.npcPos.y - 38 && w.y <= this.npcPos.y + 4) {
           if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('👁️ L\'habitant de l\'île te regarde passer, sans un mot.');
@@ -127,11 +134,12 @@
       // (sans capture : les touches tapées dans un champ de la page y restent ; saisie())
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;
       window.InfraMonde.scene = this;
+      this.events.once('destroy', () => { if (window.InfraMonde.scene === this) window.InfraMonde.scene = null; });
     }
 
+    // Un zoom entier en pixels de l'écran (CarteJeu.zoomEntier), comme en ville.
     fitZoom() {
-      const { width, height } = this.scale;
-      this.cameras.main.setZoom(Math.max(2, Math.min(5, Math.floor(Math.min(width, height) / 170))));
+      this.cameras.main.setZoom(window.CarteJeu.zoomEntier(this));
     }
 
     // Tuiles animées : les animations des jeux de tuiles (Tiled), jouées en changeant l'index
@@ -201,7 +209,7 @@
       if (vx || vy) {
         this.npcFace = Math.abs(vx) > Math.abs(vy) * 1.1 ? 'profil' : vy > 0 ? 'face' : 'dos';
         if (this.npcFace === 'profil') N.setFlipX(vx < 0);
-        const key = 'marche_' + this.npcFace;
+        const key = HERO.key + '_marche_' + this.npcFace;
         if (!N.anims.isPlaying || N.anims.currentAnim.key !== key) N.play(key);
       } else {
         if (N.anims.isPlaying) N.stop();
@@ -253,24 +261,16 @@
     }
   }
 
-  // Une carte à la fois (js/ui/excursion.js) : start la montre dans `parent`, stop l'enlève.
-  let game = null;
-  function stop() {
-    if (game) { game.destroy(true); game = null; }
-    window.InfraMonde.scene = null;
-  }
+  // Une carte à la fois (js/ui/excursion.js), scène du jeu de toutes les cartes (js/carte/jeu.js) :
+  // start la montre dans `parent` (une scène neuve ; les images déjà chargées restent), stop
+  // l'enlève. Sans Phaser : false.
   function start(parent) {
-    stop();
-    game = new Phaser.Game({
-      type: Phaser.AUTO,
-      parent,
-      backgroundColor: '#1f2943',
-      pixelArt: true,
-      roundPixels: true,     // la caméra et les sprites calés sur des pixels entiers
-      scale: { mode: Phaser.Scale.RESIZE, width: parent.clientWidth, height: parent.clientHeight },
-      scene: [InfraScene],
-    });
-    return game;
+    if (!window.CarteJeu) return false;
+    return !!window.CarteJeu.montre(parent, 'infra', { cree: () => new InfraScene(), neuve: true });
+  }
+  function stop() {
+    if (window.CarteJeu && window.CarteJeu.affichee() === 'infra') window.CarteJeu.cache('infra');
+    window.InfraMonde.scene = null;
   }
   window.InfraMonde = { start, stop, scene: null };
 })();

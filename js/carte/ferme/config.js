@@ -304,9 +304,9 @@
 
   const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
 
-  // Le canvas est rendu à la densité de l'écran (plafonnée à 3) : avec un zoom non entier,
-  // les pixels de la carte restent réguliers.
-  function pixelRatio() { return Math.min(3, Math.max(1, global.devicePixelRatio || 1)); }
+  // Le canvas est rendu à la densité de l'écran (plafonnée à 3, CarteKit.ratio) : avec un zoom
+  // non entier, les pixels de la carte restent réguliers.
+  const pixelRatio = K.ratio;
 
   const parties = [];
   global.FermeCarte = {

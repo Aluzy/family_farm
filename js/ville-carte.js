@@ -60,15 +60,24 @@
   class VilleScene extends Phaser.Scene {
     constructor() { super('ville'); }
 
+    // Une instance par carte affichée (js/carte/jeu.js) : ses paramètres (« ?carte=…&arrivee=… »)
+    // fixent la carte avant son chargement.
+    init(data) {
+      V.configure(data && data.search);
+    }
+
     preload() {
       if (!etat.map.file) {
         this.load.image('grotte_tuiles', v(GROTTE.tiles));
         this.load.spritesheet('grotte_objets', v(GROTTE.objets), { frameWidth: 32, frameHeight: 32 });
         this.load.json('grotte', v(GROTTE.meta));
       } else this.load.tilemapTiledJSON(etat.map.key, v(etat.map.file));
+      // (la planche du personnage par son fichier : les textures restent d'une carte et d'une
+      // partie à l'autre, et le personnage de la partie peut changer)
       const sheet = K.planchePerso();
-      this.load.spritesheet(HERO.key, v(sheet.file), { frameWidth: HERO.w, frameHeight: HERO.h });
-      this.load.json(HERO.key + '_noms', v(sheet.names));
+      this.heroKey = HERO.key + ':' + sheet.file;
+      this.load.spritesheet(this.heroKey, v(sheet.file), { frameWidth: HERO.w, frameHeight: HERO.h });
+      this.load.json(this.heroKey + '_noms', v(sheet.names));
       this.load.spritesheet(CARS.key, v(CARS.file), { frameWidth: 64, frameHeight: 64 });
       this.load.json(CARS.key + '_meta', v(CARS.meta));
       this.load.spritesheet(PASS.key, v(PASS.file), { frameWidth: K.FLECHE.size, frameHeight: K.FLECHE.size });
@@ -102,29 +111,37 @@
         for (const n of VOISINS.meubles) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
       }
       for (const [k, file] of planches) this.load.spritesheet(k, v(file), { frameWidth: 16, frameHeight: 32 });
-      // les planches des jeux de tuiles : lues dans la carte une fois chargée
-      if (etat.map.file) this.load.once('filecomplete-tilemapJSON-' + etat.map.key, () => {
-        const data = this.cache.tilemap.get(etat.map.key).data;
-        for (const set of data.tilesets) this.load.image(set.name, v('assets/' + set.image));
-        // les arbres, les rochers, l'herbe haute (comme à la ferme)
-        const has = (n) => data.layers.some((l) => l.type === 'objectgroup' && l.name === n && (l.objects || []).length);
-        if (has('arbres')) {
-          for (const d of Object.values(NATURE.arbres)) this.load.spritesheet(d.key, v(d.file), { frameWidth: d.w, frameHeight: d.h });
-          this.load.image(K.NATURE.ombre.key, v('assets/' + K.NATURE.ombre.file));
-        }
-        const roches = data.layers.find((l) => l.type === 'objectgroup' && l.name === 'rochers');
-        const rp = (n) => (((roches && roches.properties) || []).find((q) => q.name === n) || {}).value;
-        if (has('rochers') && rp('planche')) {
-          if (this.textures.exists(NATURE.rochers.key)) this.textures.remove(NATURE.rochers.key);
-          this.load.spritesheet(NATURE.rochers.key, v('assets/' + rp('planche')), { frameWidth: rp('largeur'), frameHeight: rp('hauteur') });
-        }
-        if (has('herbe_haute')) this.load.spritesheet(K.NATURE.herbe.key, v('assets/' + K.NATURE.herbe.file), K.NATURE.herbe.frame);
-        // l'exemplaire du dessus de chaque couche de bâtiment
-        for (const name of BATI) {
-          const l = data.layers.find((x) => x.name === name);
-          if (l && !data.layers.some((x) => x.name === name + '_devant')) data.layers.push({ ...l, name: name + '_devant', data: l.data.slice() });
-        }
-      });
+      // les planches des jeux de tuiles : lues dans la carte une fois chargée (tout de suite si
+      // elle l'est déjà : une carte revue ne redemande rien)
+      if (!etat.map.file) return;
+      if (this.cache.tilemap.exists(etat.map.key)) this.loadMapAssets(this.cache.tilemap.get(etat.map.key).data);
+      else this.load.once('filecomplete-tilemapJSON-' + etat.map.key, () => this.loadMapAssets(this.cache.tilemap.get(etat.map.key).data));
+    }
+
+    // Ce que la carte Tiled demande : ses planches de tuiles, ses arbres, ses rochers, son herbe
+    // haute (le chargeur saute ce que le jeu a déjà).
+    loadMapAssets(data) {
+      for (const set of data.tilesets) this.load.image(set.name, v('assets/' + set.image));
+      // les arbres, les rochers, l'herbe haute (comme à la ferme)
+      const has = (n) => data.layers.some((l) => l.type === 'objectgroup' && l.name === n && (l.objects || []).length);
+      if (has('arbres')) {
+        for (const d of Object.values(NATURE.arbres)) this.load.spritesheet(d.key, v(d.file), { frameWidth: d.w, frameHeight: d.h });
+        this.load.image(K.NATURE.ombre.key, v('assets/' + K.NATURE.ombre.file));
+      }
+      const roches = data.layers.find((l) => l.type === 'objectgroup' && l.name === 'rochers');
+      const rp = (n) => (((roches && roches.properties) || []).find((q) => q.name === n) || {}).value;
+      // (une planche de rochers par carte : sa clé porte son fichier)
+      this.rochersKey = null;
+      if (has('rochers') && rp('planche')) {
+        this.rochersKey = NATURE.rochers.key + ':' + rp('planche');
+        this.load.spritesheet(this.rochersKey, v('assets/' + rp('planche')), { frameWidth: rp('largeur'), frameHeight: rp('hauteur') });
+      }
+      if (has('herbe_haute')) this.load.spritesheet(K.NATURE.herbe.key, v('assets/' + K.NATURE.herbe.file), K.NATURE.herbe.frame);
+      // l'exemplaire du dessus de chaque couche de bâtiment
+      for (const name of BATI) {
+        const l = data.layers.find((x) => x.name === name);
+        if (l && !data.layers.some((x) => x.name === name + '_devant')) data.layers.push({ ...l, name: name + '_devant', data: l.data.slice() });
+      }
     }
 
     create() {
@@ -172,11 +189,11 @@
       this.makeNature(objects);
 
       // la fermière : ses images par nom (marche_bas_0…, idle_cote_0…)
-      const noms = (this.cache.json.get(HERO.key + '_noms') || {}).frames || [];
+      const noms = (this.cache.json.get(this.heroKey + '_noms') || {}).frames || [];
       this.frame = K.cases(noms);
       const arrivee = etat.params.get('arrivee');
       const d = (arrivee && objects('arrivees').find((o) => o.name === arrivee)) || objects('depart')[0] || (this.famille && VOISINS.entree) || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
-      this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), HERO.key, this.frame('idle_bas_0')).setOrigin(0.5, HERO.foot / HERO.h);
+      this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), this.heroKey, this.frame('idle_bas_0')).setOrigin(0.5, HERO.foot / HERO.h);
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x1e1a18, 0.35);
       this.heroPos = { x: d.x, y: d.y };
       this.heroAlpha = 1;
@@ -189,11 +206,12 @@
 
       // la caméra suit la promeneuse, au pixel près, sans sortir de la carte
       const cam = this.cameras.main;
+      if (!this.cave) cam.setBackgroundColor('#665951');      // (la grotte a son noir : buildCave)
       cam.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
       cam.startFollow(this.hero, true, 0.12, 0.12);
       cam.setRoundPixels(true);
       this.fitZoom();
-      this.scale.on('resize', () => this.fitZoom());
+      window.CarteJeu.suitTaille(this, () => this.fitZoom());
 
       this.makePassages(objects('passages').concat(this.famille ? [this.interiorExit()] : []));
       // l'heure du jeu (HorlogeSortie : js/ui/excursion.js), et sa lumière (CarteKit.voile) sur
@@ -207,8 +225,11 @@
       // un toucher : sur une flèche, changer de carte ; sur la gare, la fenêtre des départs ;
       // sur une trouvaille, la ramasser ; sur un animal ou une grotte, ce qu'on en voit ;
       // ailleurs, y aller
+      // (un appui : moins de 8 px CSS entre l'appui et le relâchement ; le canvas est à la
+      // densité de l'écran)
+      const slop = 8 * K.ratio();
       this.input.on('pointerup', (p) => {
-        if (p.getDistance() > 8 || this.locked || this.dialog || this.mining) return;
+        if (p.getDistance() > slop || this.locked || this.dialog || this.mining) return;
         const w = cam.getWorldPoint(p.x, p.y);
         this.work = null;
         this.entering = null;
@@ -222,7 +243,7 @@
       });
       // le god mode : glisser déplace la vue (la caméra ne suit plus le personnage)
       this.input.on('pointermove', (p) => {
-        if (!p.isDown || !this.god() || this.locked || this.dialog || p.getDistance() < 8) return;
+        if (!p.isDown || !this.god() || this.locked || this.dialog || p.getDistance() < slop) return;
         if (this.followOn !== false) { cam.stopFollow(); this.followOn = false; }
         cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
         cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
@@ -240,6 +261,7 @@
       // (sans capture : les touches tapées dans un champ de la page y restent ; saisie())
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;
       window.Ville = { scene: this };
+      this.events.once('destroy', () => { if (window.Ville && window.Ville.scene === this) window.Ville = null; this.closeDialog(); });
     }
 
     // Les flèches des passages : posées dans le rectangle, du côté de la carte (à 12 px du bord).
@@ -307,9 +329,9 @@
       this.time.delayedCall(reduced() ? 0 : 260, () => { if (hote()) hote().go(q.cible); else window.location.href = q.cible; });
     }
 
+    // Un zoom entier en pixels de l'écran (CarteJeu.zoomEntier) : 2 à 5 pixels CSS par pixel de carte.
     fitZoom() {
-      const { width, height } = this.scale;
-      this.cameras.main.setZoom(Math.max(2, Math.min(5, Math.floor(Math.min(width, height) / 170))));
+      this.cameras.main.setZoom(window.CarteJeu.zoomEntier(this));
     }
 
     // Tuiles animées (l'eau des fontaines) : les animations des jeux de tuiles (Tiled), jouées
@@ -641,6 +663,7 @@
       this.stepFish(dt);
       this.stepEntering();
       this.stepFamily(time, dt);
+      this.stepDialog();
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
@@ -701,27 +724,19 @@
     }
   }
 
-  // Une carte à la fois : start la montre dans `parent` (search : « ?carte=…&arrivee=… »),
-  // stop l'enlève (et ferme ses fenêtres).
-  let game = null;
+  // Une carte à la fois, scène du jeu de toutes les cartes (js/carte/jeu.js) : start la montre
+  // dans `parent` (search : « ?carte=…&arrivee=… »), une scène neuve à chaque fois (les images
+  // déjà chargées restent) ; stop l'enlève (et ferme ses fenêtres). Sans Phaser : false.
+  function start(parent, search) {
+    if (!window.CarteJeu) return false;
+    window.Ville = null;
+    return !!window.CarteJeu.montre(parent, 'ville', { cree: () => new VilleScene(), data: { search }, neuve: true });
+  }
   function stop() {
-    for (const id of ['gare-fenetre', 'lieu-fenetre', 'message']) { const el = document.getElementById(id); if (el) el.hidden = true; }
-    if (game) { game.destroy(true); game = null; }
+    const s = window.Ville && window.Ville.scene;
+    if (s) s.closeDialog();
+    if (window.CarteJeu && window.CarteJeu.affichee() === 'ville') window.CarteJeu.cache('ville');
     window.Ville = null;
   }
-  function start(parent, search) {
-    stop();
-    V.configure(search);
-    game = new Phaser.Game({
-      type: Phaser.AUTO,
-      parent,
-      backgroundColor: '#665951',
-      pixelArt: true,
-      roundPixels: true,     // la caméra et les sprites calés sur des pixels entiers
-      scale: { mode: Phaser.Scale.RESIZE, width: parent.clientWidth, height: parent.clientHeight },
-      scene: [VilleScene],
-    });
-    return game;
-  }
-  window.VilleCarte = { start, stop, cartes: Object.keys(CARTES), carte: () => (game ? etat.nom : null) };
+  window.VilleCarte = { start, stop, cartes: Object.keys(CARTES), carte: () => (window.CarteJeu && window.CarteJeu.affichee() === 'ville' ? etat.nom : null) };
 })();
