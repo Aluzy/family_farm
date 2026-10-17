@@ -5,6 +5,8 @@ import { lotsFromCounts } from './inventory.js';
 import { createInitialState } from './state.js';
 import { findMember } from './family.js';
 import { updateChapters } from './campaign.js';
+import { startPlots } from './crops.js';
+import { farmTerrain } from './terrain.js';
 
 /* ---------- version 1.12 (v2, lot 8) : le départ d'une nouvelle partie ---------- */
 
@@ -40,6 +42,20 @@ export function createNewGame(seed = 1, famille = null) {
     finishSetup(state);
   }
   return state;
+}
+
+/* -- la ferme : celle du grand-père (dessinée) ou une ferme générée -- */
+
+// La partie passe sur la ferme générée d'après `graine` (null : la ferme dessinée, celle de
+// Tiled ; docs/carte-generee.md). Les terres, les arbres abattus et les rochers cassés de
+// l'autre carte n'ont pas de sens sur celle-ci : la partie repart des parcelles de départ (une
+// partie neuve, sans terre, n'en reçoit pas), tous les arbres debout et tous les rochers entiers.
+export function setFarmSeed(state, graine) {
+  if (graine === null || graine === undefined || graine === '') delete state.carte;
+  else state.carte = { graine: String(graine) };
+  state.potager.parcelles = state.potager.parcelles.length ? startPlots(farmTerrain(state)) : [];
+  if (state.outils) { state.outils.arbres = {}; state.outils.rochers = {}; }
+  return { ok: true, graine: state.carte ? state.carte.graine : null };
 }
 
 /* -- la famille -- */

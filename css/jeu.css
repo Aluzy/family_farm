@@ -1667,6 +1667,11 @@ main .ancre { scroll-margin-top: 150px; }
 /* ---------- version 1.12 : départ d'une nouvelle partie ---------- */
 
 .setup-members { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+/* Le choix de la ferme (dessinée ou générée d'après une graine) : js/ui/depart.js. */
+.setup-ferme { margin: 10px 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; gap: 6px; }
+.setup-ferme legend { padding: 0 4px; }
+.setup-choix { display: flex; gap: 8px; align-items: baseline; }
+.setup-graine { margin-top: 4px; }
 .setup-member {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;

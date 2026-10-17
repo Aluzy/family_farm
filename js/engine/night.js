@@ -17,7 +17,7 @@ import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
 import { respawnRocks, respawnTrees } from './outils.js';
-import { nuitCouchee } from './blocs.js';
+import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // repas (version 1.8 : énergie au réveil), puis pousse. Lot 4 : la ponte. Lot 5 : les préparations en
@@ -243,6 +243,8 @@ export function skipNight(state) {
 export function runNight(state) {
   state.nuit = newNightStats();
   for (const step of NIGHT_STEPS) step(state);
+  // la ferme générée : qui n'a pas de paillasse dans une pièce close perd du bonheur
+  const sansCouchage = nuitSansCouchage(state).map((m) => m.id);
   recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;
@@ -252,6 +254,7 @@ export function runNight(state) {
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
   noteTutorialSleep(state); // Lot 11 : la bulle « Dormir » se ferme à la première nuit
   state.report = buildMorningReport(state);
+  if (sansCouchage.length) state.report.sansCouchage = sansCouchage;
   state.jour = newDayStats();
   return state.report;
 }

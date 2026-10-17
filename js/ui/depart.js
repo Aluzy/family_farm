@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { isOwned, starterOf } from '../engine/devices.js';
 import {
-  buyStarter, familyName, finishSetup, houseRepaired, mainCharacter, repairHouse, setFamilyName,
+  buyStarter, familyName, finishSetup, houseRepaired, mainCharacter, repairHouse, setFamilyName, setFarmSeed,
   setMainCharacter, setupPending, starterBlock,
 } from '../engine/depart.js';
 import { familyNeed } from '../engine/family.js';
@@ -119,11 +119,25 @@ export function openSetupModal() {
     </div>
     <p class="muted">${state.famille.membres.length} / ${C.MEMBRES_MAX} membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> calories par jour. Pour retirer quelqu'un, ouvre sa fiche (✏️). Les animaux de compagnie s'adoptent ensuite dans la Famille.</p>
     <p class="muted">Le nom et les prénoms restent sur cet appareil, dans ta sauvegarde : ils ne sont jamais envoyés.</p>
+    <fieldset class="setup-ferme">
+      <legend><strong>La ferme</strong></legend>
+      <label class="setup-choix"><input type="radio" name="setup-ferme" value="dessinee"${setupFerme.generee ? '' : ' checked'}> La ferme du grand-père <span class="muted">(ses bâtiments à réparer)</span></label>
+      <label class="setup-choix"><input type="radio" name="setup-ferme" value="generee"${setupFerme.generee ? ' checked' : ''}> Une terre sauvage, quatre fois plus grande <span class="muted">(on ramasse, on fabrique, on bâtit bloc par bloc)</span></label>
+      <label class="setup-graine" for="setup-graine">Graine <span class="muted">(la même graine, la même terre ; vide : au hasard)</span></label>
+      <input type="text" id="setup-graine" class="member-input" inputmode="numeric" maxlength="12" autocomplete="off" value="${escapeHtml(setupFerme.graine)}">
+    </fieldset>
     <p class="alert" id="setup-error" role="alert" hidden></p>
     <div class="row"><button type="button" class="btn primary" data-action="setup-start">Partir pour la ferme</button></div>`, { labelledBy: 'setup-title', className: 'modal setup-modal', id: 'setup-modal', dismiss: false });
   const input = document.getElementById('setup-nom');
   input.addEventListener('input', () => { setupNameDraft = input.value; });
+  for (const r of document.querySelectorAll('input[name="setup-ferme"]')) r.addEventListener('change', () => { setupFerme.generee = r.value === 'generee' && r.checked; });
+  const g = document.getElementById('setup-graine');
+  g.addEventListener('input', () => { setupFerme.graine = g.value; });
 }
+
+// Le choix de la ferme sur l'écran de départ (gardé si l'écran revient, après la fiche d'un
+// membre) : la ferme dessinée, ou une ferme générée d'après une graine.
+const setupFerme = { generee: false, graine: '' };
 
 function openStoryModal() {
   tel('modal', 'histoire');
@@ -182,6 +196,13 @@ registerActions({
       return;
     }
     setupNameDraft = null;
+    // une terre sauvage : la ferme générée (la carte se lit au montage : la page se recharge)
+    if (setupFerme.generee) {
+      setFarmSeed(state, setupFerme.graine.trim() || String(Math.floor(Math.random() * 1e6)));
+      persistState();
+      location.reload();
+      return;
+    }
     persistState();
     refresh();
     openStoryModal();

@@ -19,7 +19,9 @@
     "pose sur une case de la carte (objet : pris dans l'inventaire, rendu quand on le reprend ;",
     "l'atelier, une fois construit, sans objet) ; bloque : on ne passe pas dessus ; ferme : il ferme une",
     "pièce (murs, portes, atelier) ; porte : une pièce close en a au moins une ; dedans : ne se pose",
-    "que dans une pièce close (la paillasse). PIECE_MAX : une pièce a au plus tant de cases."
+    "que dans une pièce close (la paillasse). PIECE_MAX : une pièce a au plus tant de cases.",
+    "BONHEUR_SANS_COUCHAGE (étape 5) : chaque nuit, chaque membre de la famille sans paillasse dans une",
+    "pièce close (une par personne, le personnage principal d'abord) perd autant de bonheur."
   ],
   "ATELIER": {
     "NOM": "Atelier", "ICONE": "🔨", "NIVEAU": 1,
@@ -40,6 +42,7 @@
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 120,
+    "BONHEUR_SANS_COUCHAGE": -8,
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
