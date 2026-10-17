@@ -1,4 +1,4 @@
-# La carte de la ferme (Phaser 3) : architecture
+# La carte de la ferme (Phaser 4) : architecture
 
 Périmètre : la zone entre le bandeau « Ferme Familiale » (titre + indicateurs) et le menu
 du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur) reste en DOM.
@@ -14,7 +14,7 @@ endroit et partagent avec elle un kit commun (§ 1 bis) et le jour et la nuit (�
 ```
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
- ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
+ ├─ vendor/phaser.min.js  Phaser 4.2.1 (≈ 1,4 Mo)
  ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, gestes.js, lumiere.js ;
  │                        jeu.js, le jeu Phaser de toutes les cartes (CarteJeu, voir § 1 quater)
  ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, les bêtes de l'Étable et du Poulailler (voir docs/vie-ambiance.md)
@@ -113,6 +113,7 @@ méthodes dans `js/carte/ville/` (`CarteVille.partie`) : `circulation.js` (les b
 et les voitures), `ecole.js` (le bus de l'école), `hud.js` (les messages, la fenêtre de la gare),
 `marche.js` (le marché, les entreprises), `train.js`, `navette.js` (le bus de ligne),
 `trouvailles.js`, `faune.js`, `nature.js` (arbres, rochers, herbe haute), `peche.js`,
+`lueurs.js` (les lumières de la grotte : lanterne, champignons, améthystes ; Phaser 4, WebGL),
 `voisins.js` (leurs maisons, leur famille). Un fichier sur ~800 lignes au plus.
 
 Réglages qui avaient divergé et qui n'en font plus qu'un : l'attente de la touche à la pêche
@@ -396,7 +397,7 @@ est la poignée de débogage posée par `js/main.js`).
 ## Crédits
 
 - Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <https://antarcticbees.itch.io/>
-- Moteur d'affichage : Phaser 3 (licence MIT)
+- Moteur d'affichage : Phaser 4 (licence MIT)
 
 ## Version 1.1 : ce qui a changé
 

@@ -1,4 +1,4 @@
-/* farm-stage.js — la carte de la ferme, dessinée avec Phaser 3.
+/* farm-stage.js — la carte de la ferme, dessinée avec Phaser 4.
  *
  * Règles d'architecture (voir docs/architecture-phaser.md) :
  *   1. Ce fichier ne lit JAMAIS l'état du jeu. Il reçoit un « modèle de vue »

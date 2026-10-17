@@ -19,7 +19,7 @@ La journée suit une horloge : réveil à 6 h, repas de la famille à
   et traceurs). Le jeu se sert en HTTP (voir Structure) ; les autres pages s'ouvrent aussi depuis le disque.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
-- **Carte de la ferme** : l'onglet Ferme affiche une carte en pixel art (Phaser 3,
+- **Carte de la ferme** : l'onglet Ferme affiche une carte en pixel art (Phaser 4,
   `vendor/phaser.min.js`, scène dans `js/farm-stage.js`, images et carte Tiled dans
   `assets/`) ; voir [`docs/architecture-phaser.md`](docs/architecture-phaser.md). Sans
   Phaser, la Ferme garde sa liste classique et le jeu reste jouable.
@@ -458,4 +458,4 @@ son nom brut suivi de « (non répertorié) ». `node scripts/check-actions.mjs`
 ## Crédits
 
 - Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <https://antarcticbees.itch.io/>
-- Moteur d'affichage : Phaser 3 (licence MIT)
+- Moteur d'affichage : Phaser 4 (licence MIT)

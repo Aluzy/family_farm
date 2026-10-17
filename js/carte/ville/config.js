@@ -157,6 +157,20 @@
   const GROTTE = {
     tiles: 'assets/grotte_tuiles.png', objets: 'assets/grotte_objets.png', meta: 'assets/grotte.json',
     lumiere: { r0: 44, r1: 132, noir: 0.93 }, store: 'ferme-grottes',
+    // Les lumières de la grotte (js/carte/ville/lueurs.js, WebGL) : l'ambiance presque noire ;
+    // la lanterne (rayon : × lumiere.r1, `haut` px au-dessus des pieds) ; le jour qui tombe du
+    // trou de l'échelle ; les champignons (intensité qui pulse de [0] à [1] en `periode` s, des
+    // spores par seconde) et les améthystes (intensité [0] de loin, [1] tout près, à moins de
+    // `portee` px ; une étincelle toutes les `eclat` s). `halo` : leur Point Light (rayon px).
+    lueurs: {
+      ambiance: 0x141018, haloDepth: -50,
+      lanterne: { couleur: 0xffd9a8, intensite: 1.5, rayon: 1.15, haut: 12 },
+      echelle: { couleur: 0xb8ccff, intensite: 0.8, rayon: 64 },
+      champignon: { couleur: 0x4ff0d2, intensite: [0.5, 1.05], rayon: 40, periode: [2.4, 4], spores: 0.8, spore: 0xa8fff0,
+        halo: { rayon: 10, intensite: 0.35, attenuation: 0.08 } },
+      cristal: { couleur: 0xa86cff, intensite: [0.35, 1.25], rayon: 34, portee: 56, eclat: [1.5, 4], etincelle: 0xf0deff,
+        halo: { rayon: 9, intensite: 0.3, attenuation: 0.08 } },
+    },
     get jeu() { return donnees('GROTTE'); },
     // le poids de chaque minerai au niveau n (GROTTE.POIDS) : FIXE partout (le fer), sinon
     // max(0, (n − DEPUIS) × PENTE), de plus en plus bas ; { fer: 1, cuivre: …, or: …, platine: … }

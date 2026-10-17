@@ -276,7 +276,7 @@
     castShadow(img, off) {
       if (!img || !img.texture || img.texture.key.indexOf('ph_') === 0) return null;
       const sh = this.add.image(img.x + off.dx, img.y + off.dy, img.texture.key, img.frame ? img.frame.name : undefined)
-        .setOrigin(img.originX, img.originY).setFlipX(img.flipX).setTintFill(0x000000).setAlpha(CAST.alpha).setDepth(CAST.depth);
+        .setOrigin(img.originX, img.originY).setFlipX(img.flipX).setTint(0x000000).setTintMode(global.Phaser.TintModes.FILL).setAlpha(CAST.alpha).setDepth(CAST.depth);
       sh.setData('ombre', off);
       return sh;
     },

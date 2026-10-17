@@ -478,10 +478,11 @@
       // les objets : l'échelle, le puits, les stalagmites (on ne passe pas à travers)
       const ob = (n) => Math.max(0, meta.objets.indexOf(n));
       const E = c.echelle, P = c.puits;
-      this.add.image(E.x * T + 8, E.y * T + 15, 'grotte_objets', ob('echelle')).setOrigin(0.5, 1).setDepth(E.y * T);
-      if (P) this.add.image(P.x * T + 8, P.y * T + 12, 'grotte_objets', ob('trou')).setOrigin(0.5, 0.75).setDepth(P.y * T - 8);
+      // (gardés : la lumière de la grotte les éclaire, js/carte/ville/lueurs.js)
+      c.images = [this.add.image(E.x * T + 8, E.y * T + 15, 'grotte_objets', ob('echelle')).setOrigin(0.5, 1).setDepth(E.y * T)];
+      if (P) c.images.push(this.add.image(P.x * T + 8, P.y * T + 12, 'grotte_objets', ob('trou')).setOrigin(0.5, 0.75).setDepth(P.y * T - 8));
       for (const s of c.stalag) {
-        this.add.image(s.x * T + 8, s.y * T + 15, 'grotte_objets', ob('stalagmite_' + s.v)).setOrigin(0.5, 1).setDepth(s.y * T + 15);
+        c.images.push(this.add.image(s.x * T + 8, s.y * T + 15, 'grotte_objets', ob('stalagmite_' + s.v)).setOrigin(0.5, 1).setDepth(s.y * T + 15));
         this.layers.marquage.putTileAt(t('sol_0'), s.x, s.y);
       }
       const ici = `ville-carte.html?carte=grotte&grotte=${id}`;
@@ -502,8 +503,9 @@
       return r && Array.isArray(r.pris) ? Object.assign({ carnet: {} }, r) : { jour: null, pris: [], carnet: {} };
     }
 
-    // La lumière autour de la promeneuse (le reste de la grotte dans le noir), le niveau affiché,
-    // les stalagmites infranchissables, un éclat de temps en temps sur le minerai.
+    // La lumière autour de la promeneuse (le reste de la grotte dans le noir : les lumières de
+    // js/carte/ville/lueurs.js, sinon une image noire percée autour d'elle), le niveau affiché,
+    // les stalagmites infranchissables.
     makeCaveLife() {
       this.mine = null;
       this.mining = null;
@@ -513,6 +515,7 @@
       // la Lampe de mineur (arbre des technologies) éclaire plus loin : lumiere %
       const lampe = hote() && hote().tech ? hote().tech('grotte') : null;
       const f = lampe && lampe.lumiere ? lampe.lumiere / 100 : 1;
+      if (this.makeCaveLights(f)) { this.say(`⛏️ La grotte — niveau ${c.niveau}${c.niveau >= GROTTE.jeu.NIVEAUX ? ' (le plus profond)' : ''}`); return; }
       const L = { r0: GROTTE.lumiere.r0 * f, r1: GROTTE.lumiere.r1 * f, noir: GROTTE.lumiere.noir }, N = 512, K = 4;
       const cle = 'lumiere_grotte_' + Math.round(f * 100);   // une texture de N px, agrandie K fois
       if (!this.textures.exists(cle)) {
@@ -667,6 +670,7 @@
       this.stepFinds(time);
       this.stepFauna(time, dt);
       this.stepMine(dt);
+      this.stepCaveLights(time, dt);
       this.stepWork(dt);
       this.stepFish(dt);
       this.stepEntering();
