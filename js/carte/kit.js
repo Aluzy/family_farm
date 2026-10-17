@@ -18,11 +18,12 @@
  *   - VITESSES : la vitesse de marche de chacun, carte par carte (px/s) ;
  *   - cycle(), imageA(), animTuiles(), pasAnimTuiles() : les tuiles animées de Tiled ;
  *   - FLECHE, balance() : la flèche bleue des passages vers une autre carte ;
- *   - TEXTE, texte() : les petits textes qui montent au-dessus du personnage (« +1 🪵 »).
+ *   - TEXTE, texte() : les petits textes qui montent au-dessus du personnage (« … »).
  *
  * Le reste du kit est dans les fichiers voisins, chargés juste après celui-ci : chemins.js
  * (le chemin le plus court, la case libre la plus proche), nature.js (l'herbe haute, les arbres
- * devant le personnage, les éclats, la pêche) et lumiere.js (le jour et la nuit).
+ * devant le personnage, les éclats, la pêche), gestes.js (l'appui et le double appui, le rond
+ * d'arrivée, la secousse de la vue, la bulle « +1 ») et lumiere.js (le jour et la nuit).
  *
  * Script classique, chargé avant tous les autres scripts des cartes (voir jeu.html) ; il ne
  * demande pas Phaser pour se charger. Voir docs/architecture-phaser.md.
@@ -202,7 +203,7 @@
   const FLECHE = { key: 'fleche_passage', file: 'fleche_passage.png', size: 32, near: 80, bob: 3, periode: 220, sens: ['droite', 'gauche', 'haut', 'bas'] };
   const balance = (time) => (reduit() ? 0 : Math.round(Math.sin(time / FLECHE.periode) * FLECHE.bob));
 
-  // Les petits textes au-dessus du personnage (« +1 🪵 », « ! » à la touche, « … ») : une
+  // Les petits textes au-dessus du personnage (« ! » à la touche, « … ») : une
   // police, des couleurs, un contour. `taille` en px de carte ; rendus à 4 fois leur taille
   // pour rester nets au zoom.
   const TEXTE = { fontFamily: 'system-ui, sans-serif', color: '#fffbea', stroke: '#2a2018', strokeThickness: 3, resolution: 4 };

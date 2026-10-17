@@ -120,16 +120,23 @@
       this.fitZoom();
       window.CarteJeu.suitTaille(this, () => this.fitZoom());
 
-      // un toucher (moins de 8 px CSS entre l'appui et le relâchement) : y aller
-      const slop = 8 * K.ratio();
+      // un appui (moins de CarteKit.APPUI.glisse px CSS entre l'appui et le relâchement) sur
+      // l'habitant : ce qu'on en voit ; ailleurs, un double appui (comme sur les autres cartes) :
+      // y aller, un rond marque l'arrivée
+      const slop = K.APPUI.glisse * K.ratio();
+      const dbl = K.doubleAppui();
       this.input.on('pointerup', (p) => {
         if (p.getDistance() > slop) return;
         const w = cam.getWorldPoint(p.x, p.y);
         if (Math.abs(w.x - this.npcPos.x) <= 10 && w.y >= this.npcPos.y - 38 && w.y <= this.npcPos.y + 4) {
+          dbl.oublie();
           if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('👁️ L\'habitant de l\'île te regarde passer, sans un mot.');
           return;
         }
+        if (!dbl.appui(w.x, w.y, cam.zoom)) return;
         this.goTo(w.x, w.y);
+        const fin = this.path[this.path.length - 1];
+        if (fin) K.anneau(this, fin.x, fin.y);
       });
       // (sans capture : les touches tapées dans un champ de la page y restent ; saisie())
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;

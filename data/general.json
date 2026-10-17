@@ -218,8 +218,6 @@
     "USURE": false,
     "ECRAN_S": 60
   },
-  "//REVEIL": "Résumé de réveil allégé : nombre maximal de produits listés dans « Récolte » (le reste va dans « Voir plus »).",
-  "REVEIL": { "RECOLTE_MAX": 5 },
   "//AIDE": ["Première partie : bulles d'aide, dans cet ordre. La dernière (« dormir »)", "se ferme aussi d'elle-même à la première nuit."],
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] }
 }

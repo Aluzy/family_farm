@@ -43,8 +43,9 @@
   const PASS = { key: K.FLECHE.key, file: 'assets/' + K.FLECHE.file, near: K.FLECHE.near, sens: K.FLECHE.sens };
   // Le personnage principal de la partie (CarteKit.planchePerso : assets/personnages/perso_NN.png,
   // ses cases nommées dans assets/personnages/cases.json), comme sur la carte de la ferme ; sans
-  // partie, la fermière.
-  const HERO = { key: 'heros', w: 16, h: 32, foot: 30, speed: K.VITESSES.ville, stride: 4 };
+  // partie, la fermière. `bulle` : la pointe de la bulle « +1 » (CarteKit.bulleGain), en px de
+  // carte au-dessus de ses pieds.
+  const HERO = { key: 'heros', w: 16, h: 32, foot: 30, speed: K.VITESSES.ville, stride: 4, bulle: 26 };
   // Les couches qu'on ne traverse pas, et celle qui passe devant la promeneuse (le feuillage).
   // (les bâtiments et les voitures garées : par leur emprise au sol, couches « batiments » et « garees »)
   const OBSTACLES = ['fontaines', 'mobilier', 'falaise', 'mer'];

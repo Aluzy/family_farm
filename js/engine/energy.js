@@ -122,9 +122,8 @@ function runPump(state, dtMs) {
 // (production, stockage, consommation, préparations), usure, puis le temps d'éveil.
 // Lot 11 : les trois phases sont séparées pour que la progression hors-ligne
 // réutilise exactement les mêmes flux, sans l'usure (voir simulateOffline).
-// Version 1.1.1 : `horlogeArretee` (le joueur lit le résumé du réveil) : tout
-// continue de tourner, mais l'heure n'avance pas ; la journée commence quand il
-// ferme le résumé.
+// `horlogeArretee` (le départ, l'histoire ou une bulle d'aide à l'écran) : tout
+// continue de tourner, mais l'heure n'avance pas.
 export function tick(state, dt, horlogeArretee = false) {
   const dtMs = Math.round((Number(dt) || 0) * 1000);
   if (!(dtMs > 0)) return state;

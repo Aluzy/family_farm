@@ -11,8 +11,8 @@
  * carte de la ferme.
  *
  * Il marche sur le sol (chaussée, trottoirs, herbe, pavés), pas à travers un bâtiment, une
- * fontaine, une voiture, une palissade ou un banc : un toucher (ou un clic) l'envoie au plus
- * court jusque-là (CarteKit.chemin) ; les flèches ou ZQSD le dirigent aussi. Sous un arbre, le
+ * fontaine, une voiture, une palissade ou un banc : un double appui (ou un double clic) l'envoie
+ * au plus court jusque-là (CarteKit.chemin), un rond marque l'arrivée (CarteKit.gestes) ; les flèches ou ZQSD le dirigent aussi. Sous un arbre, le
  * feuillage s'efface un peu pour le laisser voir. Avec « animations réduites », l'eau reste
  * immobile. Aux passages (couche « passages »), une flèche bleue paraît quand on s'en
  * approche : un toucher dessus mène à l'autre carte (ou à la ferme, jeu.html).
@@ -224,10 +224,10 @@
       this.makeHud();
       // un toucher : sur une flèche, changer de carte ; sur la gare, la fenêtre des départs ;
       // sur une trouvaille, la ramasser ; sur un animal ou une grotte, ce qu'on en voit ;
-      // ailleurs, y aller
-      // (un appui : moins de 8 px CSS entre l'appui et le relâchement ; le canvas est à la
-      // densité de l'écran)
-      const slop = 8 * K.ratio();
+      // ailleurs, un double appui : y aller (CarteKit.APPUI : moins de `glisse` px CSS entre
+      // l'appui et le relâchement ; le canvas est à la densité de l'écran)
+      const slop = K.APPUI.glisse * K.ratio();
+      this.dbl = K.doubleAppui();
       this.input.on('pointerup', (p) => {
         if (p.getDistance() > slop || this.locked || this.dialog || this.mining) return;
         const w = cam.getWorldPoint(p.x, p.y);
@@ -236,10 +236,11 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w)) return;
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
-        if (this.tapMaison(w)) return;
-        this.goTo(w.x, w.y);
+        if (this.tapMaison(w)) { this.dbl.oublie(); return; }
+        // ailleurs, un double appui (comme à la ferme) : elle y va, un rond marque l'arrivée
+        if (this.dbl.appui(w.x, w.y, cam.zoom)) this.walkTo(w.x, w.y);
       });
       // le god mode : glisser déplace la vue (la caméra ne suit plus le personnage)
       this.input.on('pointermove', (p) => {
@@ -532,7 +533,9 @@
       const gx = Math.floor(w.x / T), gy = Math.floor(w.y / T);
       const o = c.ores.find((q) => q.x === gx && q.y === gy);
       if (!o) return false;
-      if (hote() && hote().outil && !hote().outil('pioche')) { this.say('⛏️ Il faut une pioche pour prendre ce minerai (à acheter à la ferme).'); return true; }
+      // la pioche en main, comme pour les rochers (sans partie : la carte seule, toujours)
+      const H = hote();
+      if (H && H.enMain && H.enMain() !== 'pioche') return false;
       // la case de sol voisine la plus proche de la promeneuse
       const P = this.heroPos;
       const pres = [[0, 1], [-1, 0], [1, 0], [0, -1]].map(([dx, dy]) => ({ x: o.x + dx, y: o.y + dy }))
@@ -546,7 +549,8 @@
       return true;
     }
 
-    // Arrivée près du minerai : trois coups de pioche (pioche_cote), des éclats, puis il est pris.
+    // Arrivée près du minerai : un coup de pioche par appui (pioche_cote), des éclats ; au dernier
+    // des coups qu'il demande (GROTTE.COUPS, moins avec l'Arbre), il est pris.
     stepMine(dt) {
       const m = this.mine;
       if (!m) return;
@@ -564,22 +568,22 @@
       const k = Math.min(3, Math.floor(g.t / J.COUP * 4));
       g.frame = 'pioche_cote_' + k;
       if (g.t >= J.COUP) {
-        g.t = 0;
-        g.coup++;
         this.chips(m.ore);
+        m.ore.coups = (m.ore.coups || 0) + 1;
         const coups = hote() && hote().coups ? hote().coups(J.COUPS) : J.COUPS;
-        if (g.coup >= coups) this.takeOre(m.ore);
+        if (m.ore.coups >= coups) this.takeOre(m.ore);
+        else { this.mine = null; this.mining = null; }
       }
     }
 
     chips(o) {
+      K.secousse(this, 'coup');
       if (reduced()) return;
       const col = { fer: 0xd2a88a, cuivre: 0xd67e46, or: 0xf0c846, platine: 0xe6eef8 }[o.kind] || 0x9a9088;
       for (let i = 0; i < 4; i++) {
         const r = this.add.rectangle(o.x * T + 8, o.y * T + 10, 2, 2, i % 2 ? col : 0x7a7068).setDepth(2e6);
         this.tweens.add({ targets: r, x: r.x + (Math.random() - 0.5) * 22, y: r.y + 6 + Math.random() * 10, alpha: 0, duration: 380, onComplete: () => r.destroy() });
       }
-      this.cameras.main.shake(70, 0.002);
     }
 
     takeOre(o) {
@@ -597,11 +601,8 @@
       if (!r) rec.carnet[o.kind] = (rec.carnet[o.kind] || 0) + 1;      // (la carte seule : le carnet)
       try { window.localStorage.setItem(GROTTE.store, JSON.stringify(rec)); } catch (e) { /* ignoré */ }
       const nom = ((c.meta.minerais || {})[o.kind] || {}).nom || o.kind;
-      if (r) {
-        const it = H.objet ? H.objet(r.item) : null;
-        this.popGain(`+${r.n} ${it ? it.icone : '⛏️'}`);
-        this.say(`⛏️ ${it ? it.nom : nom}${r.n > 1 ? ` × ${r.n}` : ''} : dans l'inventaire. Au Four, 4 minerais font un lingot.`);
-      } else this.say(`⛏️ ${nom} ! (dans le carnet : ${rec.carnet[o.kind]})`);
+      if (r) this.popGain({ [r.item]: r.n });
+      else this.say(`⛏️ ${nom} ! (dans le carnet : ${rec.carnet[o.kind]})`);
     }
 
     canWalk(tx, ty) {
@@ -613,6 +614,13 @@
     goTo(x, y) {
       const steps = this.findPath(this.heroPos.x, this.heroPos.y, x, y);
       if (steps) this.path = steps;
+    }
+
+    // Le double appui sur le sol : elle y va, et un rond marque un instant l'arrivée (CarteKit.anneau).
+    walkTo(x, y) {
+      this.goTo(x, y);
+      const fin = this.path[this.path.length - 1];
+      if (fin) K.anneau(this, fin.x, fin.y);
     }
 
     // Le chemin (une liste de points, px) de (fx, fy) jusqu'à (x, y), ou null : le plus court en
@@ -706,6 +714,7 @@
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5).setAlpha(this.heroAlpha);
       this.fadeFoliage(Math.round(P.x), Math.round(P.y));
       this.stepNature(dt);
+      this.placeGain();
       if (this.light) this.light.setPosition(Math.round(P.x), Math.round(P.y - 12));
       // les bâtiments autour des voitures, puis de la promeneuse (les boîtes sont gardées d'une
       // image à l'autre : rien n'est alloué)

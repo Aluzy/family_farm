@@ -101,11 +101,8 @@
       rec.pris.push(f.id);
       if (!r) rec.carnet[f.kind] = (rec.carnet[f.kind] || 0) + 1;      // (la carte seule : le carnet)
       try { window.localStorage.setItem(FINDS.store, JSON.stringify(rec)); } catch (e) { /* ignoré */ }
-      if (r) {
-        const it = H.objet ? H.objet(r.item) : null;
-        this.popGain(`+${r.n} ${it ? it.icone : '✨'}`);
-        this.say(`✨ ${f.nom} : dans l'inventaire.`);
-      } else this.say(`✨ ${f.nom} ! (dans le carnet : ${rec.carnet[f.kind]})`);
+      if (r) this.popGain({ [r.item]: r.n });
+      else this.say(`✨ ${f.nom} ! (dans le carnet : ${rec.carnet[f.kind]})`);
     },
   });
 })(window);

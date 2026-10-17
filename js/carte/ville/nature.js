@@ -13,7 +13,7 @@
 
   const K = global.CarteKit;
   const V = global.CarteVille;
-  const { T, NATURE } = V.C;
+  const { T, NATURE, HERO } = V.C;
   const { hote, reduced } = V;
   const etat = V.etat;
 
@@ -137,13 +137,13 @@
       if (o.kind === 'arbre') {
         const r = H.couper(o.id);
         if (!r) return false;
-        this.popGain(`+${r.bois} 🪵`);
+        this.popGain({ bois: r.bois });
         if (r.tombe) this.fellTree(o); else o.shake = 0;
         this.leaves(o, 5);
       } else {
         const r = H.piocher(o.id);
         if (!r) return false;
-        this.popGain(`+${(r.items && r.items.pierre) || 1} 🪨`);
+        this.popGain(r.items || { pierre: 1 });
         this.shards(o, r.casse ? 14 : 5);
         if (r.casse) this.breakRock(o);
         else if (!reduced()) this.tweens.add({ targets: o.img, x: o.img.x + (w.o.x < this.heroPos.x ? -1 : 1), duration: 50, yoyo: true });
@@ -164,7 +164,7 @@
       this.tweens.add({
         targets: t.img, angle: dir * F.angle, duration: F.ms, ease: 'Quad.easeIn',
         onComplete: () => {
-          this.cameras.main.shake(90, 0.003);
+          K.secousse(this, 'chute');
           this.leaves(t, F.feuilles, dir);
           this.tweens.add({ targets: t.img, alpha: 0, delay: F.repos, duration: F.fondu, onComplete: gone });
         },
@@ -190,20 +190,39 @@
     },
 
     shards(r, n) {
+      K.secousse(this, 'coup');
       if (reduced()) return;
       const C = K.NATURE.eclats.couleurs, side = r.x < this.heroPos.x ? 1 : -1;
       for (let i = 0; i < n; i++) {
         const s = this.add.rectangle(r.x + (Math.random() - 0.5) * 10, r.y - 8 - Math.random() * 8, i % 3 ? 2 : 3, 2, C[i % C.length]).setDepth(r.y + 1);
         this.tweens.add({ targets: s, x: s.x + side * (4 + Math.random() * 18) + (Math.random() - 0.5) * 12, y: s.y + 8 + Math.random() * 10, alpha: 0, duration: 380 + Math.random() * 300, onComplete: () => s.destroy() });
       }
-      this.cameras.main.shake(70, 0.002);
     },
 
-    // « +1 🪵 » au-dessus du personnage, qui monte et s'efface.
-    popGain(texte) {
-      const P = this.heroPos;
-      const t = K.texte(this, P.x, P.y - 34, texte, 9).setDepth(2e6);
-      this.tweens.add({ targets: t, y: t.y - 14, alpha: 0, delay: 500, duration: 900, onComplete: () => t.destroy() });
+    // Ce que le personnage prend ({ objet: qté } : bois, pierre, minerai, poisson, trouvaille) :
+    // la bulle « +1 🪵 » au-dessus de lui (CarteKit.bulleGain, la même qu'à la ferme), dans une
+    // couche posée sur la carte (#map-stage), retirée avec la scène.
+    popGain(items) {
+      if (!this.gain) {
+        const zone = this.game.canvas && this.game.canvas.parentNode;
+        if (!zone) return;
+        const couche = document.createElement('div');
+        couche.className = 'stage-labels';
+        zone.appendChild(couche);
+        const H = hote();
+        this.gain = K.bulleGain(couche, (id) => { const o = H && H.objet ? H.objet(id) : null; return o ? o.icone : id; });
+        this.events.once('destroy', () => { couche.remove(); this.gain = null; });
+      }
+      this.gain.montre(items);
+      this.placeGain();
+    },
+
+    // Chaque image : la bulle suit le personnage, sa pointe HERO.bulle px au-dessus de ses pieds
+    // (px CSS dans la couche : le canvas est rendu à la densité de l'écran, CarteKit.ratio).
+    placeGain() {
+      if (!this.gain || !this.gain.visible()) return;
+      const cam = this.cameras.main, k = cam.zoom / K.ratio(), P = this.heroPos;
+      this.gain.place((P.x - cam.worldView.x) * k, (P.y - HERO.bulle - cam.worldView.y) * k);
     },
 
     // Chaque image : l'arbre qui vient d'être frappé tremble ; l'arbre devant le personnage

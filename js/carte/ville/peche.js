@@ -79,7 +79,12 @@
         if (f.t >= PECHE.ferrer) {
           g.destroy();
           const o = f.poisson && hote().objet ? hote().objet(f.poisson) : null;
-          if (o) { this.popGain('+1 🐟'); this.say(`🎣 ${o.icone} ${o.nom} !`); } else this.say('🎣 Rien n\'a mordu… Essaie encore.');
+          // la prise : la bulle « +1 » ; rien n'a mordu : « … » (comme à la ferme)
+          if (o) this.popGain({ [f.poisson]: 1 });
+          else {
+            const t = K.texte(this, P.x, P.y - 34, '…', 10).setDepth(2e6);
+            this.tweens.add({ targets: t, y: t.y - 6, alpha: 0, delay: 500, duration: 500, onComplete: () => t.destroy() });
+          }
           this.peche = null;
           this.fishing = false;
           this.mining = null;

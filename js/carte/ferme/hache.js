@@ -139,6 +139,7 @@
           const len = t.foot.y - o.y;
           const x0 = dir > 0 ? t.foot.x + len * 0.25 : t.foot.x - len;
           this.spawnShards({ box: { x0, x1: x0 + len * 0.75, y0: t.foot.y - 10, y1: t.foot.y + 2 } }, CHUTE.feuilles, true, null, CHUTE.couleurs);
+          K.secousse(this, 'chute');
           done();
           this.tweens.add({
             targets: img, angle: dir * (CHUTE.angle - CHUTE.rebond), duration: CHUTE.rebondMs, yoyo: true, ease: 'Sine.easeOut',

@@ -10,8 +10,9 @@
 (function (global) {
   'use strict';
 
+  const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, TREE_OBJECT, MIN_TAP, LABEL_GAP, BUBBLE_TIP_X, BUBBLE_TIP_Y, GAIN_HOLD_MS, GAIN_FADE_MS } = F.C;
+  const { T, TREE_OBJECT, MIN_TAP, LABEL_GAP, BUBBLE_TIP_X, BUBBLE_TIP_Y } = F.C;
   const { pixelRatio } = F;
 
   F.partie({
@@ -154,46 +155,22 @@
       return null;
     },
 
-    // Bulle « +6 🥕 » au-dessus du personnage : elle reste un instant puis s'estompe ; une
-    // prise qui arrive avant qu'elle ait disparu s'y additionne.
+    // Bulle « +6 🥕 » au-dessus du personnage (CarteKit.bulleGain, comme sur les autres cartes) :
+    // elle reste un instant puis s'estompe ; une prise qui arrive avant qu'elle ait disparu s'y
+    // additionne.
     showGain(items) {
-      const now = performance.now();
-      if (!this.gain) {
-        const el = document.createElement('div');
-        el.className = 'stage-gain';
-        el.setAttribute('role', 'status');
-        this.ctx.labelLayer.appendChild(el);
-        this.gain = { el, items: {}, until: 0, fadeAt: 0, w: 0 };
-      }
-      const G = this.gain;
-      if (now >= G.until) G.items = {};
-      for (const [item, qty] of Object.entries(items || {})) if (qty > 0) G.items[item] = (G.items[item] || 0) + qty;
-      const icone = (this.ctx.bridge && this.ctx.bridge.icone) || ((item) => item);
-      const texte = Object.entries(G.items).map(([item, qty]) => '+' + qty + ' ' + icone(item)).join('  ');
-      if (!texte) return;
-      G.el.textContent = texte;
-      G.el.hidden = false;
-      G.el.classList.remove('fade');
-      G.fadeAt = now + GAIN_HOLD_MS;
-      G.until = G.fadeAt + GAIN_FADE_MS;
-      G.w = 0;
+      if (!this.gain) this.gain = K.bulleGain(this.ctx.labelLayer, (item) => ((this.ctx.bridge && this.ctx.bridge.icone) ? this.ctx.bridge.icone(item) : item));
+      this.gain.montre(items);
       this.placeGain();
     },
 
     placeGain() {
       const G = this.gain;
-      if (!G || G.el.hidden) return;
-      const now = performance.now();
+      if (!G || !G.visible()) return;
       const at = this.fermier && !this.room ? this.fermier.pos() : null;
-      if (!at || now >= G.until) { G.el.hidden = true; G.el.classList.remove('fade'); G.until = 0; return; }
-      if (now >= G.fadeAt && !G.el.classList.contains('fade')) G.el.classList.add('fade');
-      if (!G.w) { G.w = G.el.offsetWidth; G.h = G.el.offsetHeight; }
+      if (!at) { G.place(null); return; }
       const f = this.screenFrame();
-      // elle monte doucement pendant qu'elle s'estompe
-      const rise = now >= G.fadeAt ? ((now - G.fadeAt) / GAIN_FADE_MS) * 10 : 0;
-      const x = Math.round((at.x - f.left) * f.k - BUBBLE_TIP_X);
-      const y = Math.round((at.y - 34 - f.top) * f.k - G.h + BUBBLE_TIP_Y - rise);
-      G.el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+      G.place((at.x - f.left) * f.k, (at.y - K.BULLE.dessus - f.top) * f.k);
     },
 
     /* ---------- étiquettes (DOM) ---------- */

@@ -712,7 +712,7 @@ export function startMealScene(repas) {
   scene.goHome(() => {
     // le joueur a ouvert une fenêtre ou changé d'onglet entre-temps : il n'entre pas
     if (activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior && !nightActive(state)) enterInterior('maison');
-  }, true);
+  });
   return true;
 }
 

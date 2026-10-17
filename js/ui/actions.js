@@ -16,12 +16,11 @@ export function registerActions(handlers) {
 // La nuit (de 22 h à 6 h) n'empêche rien : seul le sommeil du personnage (« Dormir » : il est
 // dans son lit, la nuit défile en accéléré) arrête ces actions de jeu jusqu'au réveil ; on peut
 // toujours regarder (fenêtres, onglets, inventaire). SOMMEIL_PERMISES : les actions de jeu qui
-// restent possibles pendant qu'il dort (la famille, qui ne touche pas à la ferme ; arroser depuis
-// le résumé du réveil). scripts/check-actions.mjs vérifie que chaque action de jeu du rapport est
+// restent possibles pendant qu'il dort (la famille, qui ne touche pas à la ferme). scripts/check-actions.mjs vérifie que chaque action de jeu du rapport est
 // dans l'une des deux listes.
 export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
 export const SOMMEIL_PERMISES = new Set([
-  'sleep', 'wake-water', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
+  'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'entreprise-quota',
 ]);
 export const SOMMEIL_BLOQUEES = new Set([

@@ -12,7 +12,7 @@ import {
   spoil, startMilling, startRecipe, STATE_VERSION, storeWheat, tankCapacity, testAddHens,
   testAddSeeds, testAddSheep, testEmptyBatteries, testFillBatteries, testRipenAll, testSetLevel,
   testSetWear, testUnlockAllTechs, testWoolReady, tick, toggleDevice, tutorialStep, unlockLevel,
-  unreadMail, updateChapters, wakeHarvestList, wakeSummary, water,
+  unreadMail, updateChapters, water,
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, atChapter, atelier, coldRoom, farm, fillCows, fillSheep, garden, kwh, ml,
@@ -457,60 +457,18 @@ test('migration v10 → v11 : bulles d\'aide seulement pour une partie pas encor
   assertEqual(migrate({ v: 0, t: 0, s: { day: 3, pieces: 10, stats: {} } }).aide.fini, true, 'depuis une très vieille sauvegarde');
 });
 
-// Résumé de réveil allégé (v0.18.0) : récolte de la nuit, tri, limite, indicateurs entiers.
+// La récolte de la nuit (nightHarvest) : œufs, lait, fruits et récoltes automatiques, par produit.
 const fakeReport = (over = {}) => ({ oeufs: 0, lait: 0, fruits: {}, auto: { recoltes: {} }, autonomie: 100, santeApres: 100, ...over });
 
-test('Résumé de réveil : rien récolté → liste vide', () => {
+test('récolte de la nuit : rien, un produit, puis tout regroupé par produit', () => {
   assertEqual(nightHarvest(fakeReport()), {});
-  assertEqual(wakeHarvestList(fakeReport()), { affiches: [], reste: [] });
-});
-
-test('Résumé de réveil : un seul produit', () => {
-  const r = fakeReport({ oeufs: 24 });
-  assertEqual(nightHarvest(r), { oeuf: 24 });
-  assertEqual(wakeHarvestList(r), { affiches: [{ item: 'oeuf', qte: 24 }], reste: [] });
-});
-
-test('Résumé de réveil : regroupe œufs, lait, fruits et récoltes automatiques par produit, quantité décroissante', () => {
+  assertEqual(nightHarvest(fakeReport({ oeufs: 24 })), { oeuf: 24 });
   const r = fakeReport({ oeufs: 24, lait: 2, fruits: { pomme: 3 }, auto: { recoltes: { carotte: 12, pomme: 4 } } });
   assertEqual(nightHarvest(r), { oeuf: 24, lait: 2, pomme: 7, carotte: 12 });
-  assertEqual(wakeHarvestList(r).affiches.map((x) => [x.item, x.qte]), [['oeuf', 24], ['carotte', 12], ['pomme', 7], ['lait', 2]]);
 });
 
-test('Résumé de réveil : limite de 5 produits, le reste va dans « Voir plus » ; égalité départagée par le nom', () => {
-  assertEqual(DATA.REVEIL.RECOLTE_MAX, 5);
-  const r = fakeReport({ oeufs: 9, lait: 9, auto: { recoltes: { carotte: 9, oignon: 5, ble: 4, patate: 3, epinard: 1 } } });
-  const { affiches, reste } = wakeHarvestList(r);
-  assertEqual(affiches.length, 5);
-  assertEqual(reste.length, 2);
-  // 9, 9, 9 : ordre alphabétique des noms (Carotte, Lait, Œuf), puis Oignon 5, Blé 4.
-  assertEqual(affiches.map((x) => x.item), ['carotte', 'lait', 'oeuf', 'oignon', 'ble']);
-  assertEqual(reste.map((x) => x.item), ['patate', 'epinard']);
-  assertEqual(wakeHarvestList(r, 3).affiches.length, 3, 'la limite est un paramètre');
-});
-
-test('Résumé de réveil : quantités négatives, nulles ou produits inconnus ignorés', () => {
+test('récolte de la nuit : quantités négatives, nulles ou produits inconnus ignorés', () => {
   assertEqual(nightHarvest(fakeReport({ oeufs: -2, lait: 0, fruits: { inconnu: 5, pomme: 0 } })), {});
-});
-
-test('Résumé de réveil : autonomie et énergie en entiers (arrondi inférieur)', () => {
-  const w = wakeSummary(fakeReport({ autonomie: 99.9, energieReveil: 87600 }));
-  assertEqual([w.autonomie, w.energie], [99, 87]);
-  const cent = wakeSummary(fakeReport({ autonomie: 100, energieReveil: 100000 }));
-  assertEqual([cent.autonomie, cent.energie], [100, 100]);
-  assertEqual(wakeSummary(fakeReport({ autonomie: NaN, energieReveil: undefined })).autonomie, 0);
-});
-
-test('Résumé de réveil : avec une vraie nuit, les œufs pondus sont dans la récolte', () => {
-  const s = ranch();
-  setInv(s, { ble: 10, conserve: 200 });
-  testAddHens(s, 4);
-  feedAllHens(s);
-  const report = sleepOnce(s);
-  const w = wakeSummary(report);
-  assertEqual(w.recolte.affiches, [{ item: 'oeuf', qte: report.oeufs }]);
-  assert(report.oeufs > 0, 'la ferme a pondu');
-  assertEqual([Number.isInteger(w.autonomie), Number.isInteger(w.energie)], [true, true]);
 });
 
 /* ---------- version 1.3 : le courrier (lettre du cousin au déblocage de la Serre) ---------- */

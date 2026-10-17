@@ -41,7 +41,6 @@ import './ui/notifications.js';
 import './ui/inventaire.js';
 import './ui/marche.js';
 import './ui/ville.js';
-import './ui/reveil.js';
 import './ui/chapitres.js';
 import './ui/niveaux.js';
 import './ui/energie.js';
