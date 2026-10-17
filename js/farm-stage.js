@@ -623,15 +623,14 @@
         this.ctx.bridge.act('stage-open', { window: win });
       }
 
-      // Le personnage va au point (wx, wy) de la carte ; un rond marque un instant l'arrivée.
+      // Le personnage va au point (wx, wy) de la carte.
       // Au lit (ou en y allant) : rien. La nuit seule n'empêche pas de marcher.
       goHere(wx, wy) {
         if (!this.fermier || (this.ctx.lastModel && this.ctx.lastModel.coucher)) return;
         // vers le tronc creux : il s'arrête à côté, à sa droite, pas dessus
         const b = this.hollow();
         if (b && wx >= b.x0 - 2 && wx <= b.x1 + 2 && wy >= b.y0 - 4 && wy <= b.y1 + 2) { wx = b.x1 + 8; wy = b.y1 - 3; }
-        const at = this.fermier.goTo(wx, wy);
-        if (at) K.anneau(this, at.x, at.y);
+        this.fermier.goTo(wx, wy);
       }
     };
     for (const p of F.parties) {

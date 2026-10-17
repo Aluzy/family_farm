@@ -12,7 +12,7 @@
  *
  * Il marche sur le sol (chaussée, trottoirs, herbe, pavés), pas à travers un bâtiment, une
  * fontaine, une voiture, une palissade ou un banc : un double appui (ou un double clic) l'envoie
- * au plus court jusque-là (CarteKit.chemin), un rond marque l'arrivée (CarteKit.gestes) ; les flèches ou ZQSD le dirigent aussi. Sous un arbre, le
+ * au plus court jusque-là (CarteKit.chemin), le doigt glissé (CarteKit.manette), les flèches ou ZQSD le dirigent aussi. Sous un arbre, le
  * feuillage s'efface un peu pour le laisser voir. Avec « animations réduites », l'eau reste
  * immobile. Aux passages (couche « passages »), une flèche bleue paraît quand on s'en
  * approche : un toucher dessus mène à l'autre carte (ou à la ferme, jeu.html).
@@ -239,10 +239,10 @@
         if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) { this.dbl.oublie(); return; }
-        // ailleurs, un double appui (comme à la ferme) : elle y va, un rond marque l'arrivée
+        // ailleurs, un double appui (comme à la ferme) : elle y va
         // (un essai de marche : la marche au doigt s'explique, une fois)
         K.astuceMarche(p);
-        if (this.dbl.appui(w.x, w.y, cam.zoom)) this.walkTo(w.x, w.y);
+        if (this.dbl.appui(w.x, w.y, cam.zoom)) this.goTo(w.x, w.y);
       });
       // le doigt posé puis glissé : elle marche dans sa direction tant qu'il reste posé
       // (CarteKit.manette ; pas dans le god mode, ni pendant un voyage, une fenêtre, un geste)
@@ -620,13 +620,6 @@
     goTo(x, y) {
       const steps = this.findPath(this.heroPos.x, this.heroPos.y, x, y);
       if (steps) this.path = steps;
-    }
-
-    // Le double appui sur le sol : elle y va, et un rond marque un instant l'arrivée (CarteKit.anneau).
-    walkTo(x, y) {
-      this.goTo(x, y);
-      const fin = this.path[this.path.length - 1];
-      if (fin) K.anneau(this, fin.x, fin.y);
     }
 
     // Le chemin (une liste de points, px) de (fx, fy) jusqu'à (x, y), ou null : le plus court en
