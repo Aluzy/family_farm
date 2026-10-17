@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
-import { EPS } from './base.js';
-import { fail, spend } from './devices.js';
+import { canPay, fail, nextLevelCost, NO_COINS, spend, upgradeWith } from './devices.js';
 import { earn } from './compta.js';
 import { countItem, lotRank, lotsOf, takeItem } from './inventory.js';
 import { gainActionXp } from './levels.js';
@@ -25,8 +24,7 @@ export function commerceCapacity(state) {
 
 // Prix du niveau suivant, ou null au niveau maximum.
 export function commerceUpgradeCost(state) {
-  const n = state.commerce.niveau;
-  return n < DATA.COMMERCE.COUT.length ? DATA.COMMERCE.COUT[n] : null;
+  return nextLevelCost(DATA.COMMERCE.COUT, state.commerce.niveau, DATA.COMMERCE.COUT.length);
 }
 
 // Prix pour choisir ce commerce : gratuit la première fois, CHANGER ensuite.
@@ -49,7 +47,7 @@ export function chooseCommerce(state, type) {
   if (!isUnlocked(state, 'commerce')) return fail(`Disponible au niveau ${DATA.NIVEAUX.liste.findIndex((n) => (n.debloque || []).includes('commerce')) + 1}.`);
   const cost = commerceChoiceCost(state, type);
   if (cost === null) return fail(`${def.le[0].toUpperCase()}${def.le.slice(1)} est déjà ton commerce.`);
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
+  if (!canPay(state, cost)) return fail(NO_COINS);
   if (cost) spend(state, cost, `Commerce : ${def.nom}`);
   const premier = !state.commerce.type;
   state.commerce.type = type;
@@ -59,14 +57,12 @@ export function chooseCommerce(state, type) {
 
 export function upgradeCommerce(state) {
   if (!state.commerce.type) return fail('Choisis d\'abord un commerce.');
-  const cost = commerceUpgradeCost(state);
-  if (cost === null) return fail('Le commerce est au niveau maximum.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Commerce agrandi');
-  const plein = state.commerce.quota >= commerceCapacity(state);
-  state.commerce.niveau += 1;
-  if (plein) state.commerce.quota = commerceCapacity(state); // un quota au maximum suit la capacité
-  return { ok: true, cost, niveau: state.commerce.niveau, capacite: commerceCapacity(state) };
+  return upgradeWith(state, commerceUpgradeCost(state), 'Commerce agrandi', () => {
+    const plein = state.commerce.quota >= commerceCapacity(state);
+    state.commerce.niveau += 1;
+    if (plein) state.commerce.quota = commerceCapacity(state); // un quota au maximum suit la capacité
+    return { niveau: state.commerce.niveau, capacite: commerceCapacity(state) };
+  }, 'Le commerce est au niveau maximum.');
 }
 
 // Transformations voulues par nuit, de 0 à la capacité.

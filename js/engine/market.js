@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, farmOpen, percentCeil, spend } from './devices.js';
+import { fail, farmOpen, NO_COINS, pay, percentCeil } from './devices.js';
 import { earn } from './compta.js';
 import { addLot, countItem, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
@@ -81,14 +81,13 @@ export function buyItem(state, item, qty = 1, { ville = false } = {}) {
   let cost = 0;
   for (let i = 0; i < qty; i++) {
     const price = buyPrice(state, item);
-    if (state.pieces + EPS < price) break;
-    spend(state, price, `${ville ? 'Achat en ville' : 'Achat'} : ${def.nom}`);
+    if (!pay(state, price, `${ville ? 'Achat en ville' : 'Achat'} : ${def.nom}`)) break;
     addLot(state, item, 1, DATA.ORIGINE.ACHETE);
     setMarketCoef(state, item, marketCoef(state, item) + DATA.MARCHE.PAS);
     bought += 1;
     cost += price;
   }
-  if (bought === 0) return fail('Pas assez de pièces.');
+  if (bought === 0) return fail(NO_COINS);
   if (item === DATA.SILO.ITEM && state.silo) fillSilo(state);
   return { ok: true, bought, cost };
 }

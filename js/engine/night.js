@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { allDevices, batteryCapacity, isBroken, needsService, newDayStats, tankCapacity } from './devices.js';
+import { allDevices, batteryCapacity, fail, isBroken, needsService, newDayStats, tankCapacity } from './devices.js';
 import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
 import { expiringSoon, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
@@ -228,7 +228,7 @@ export function recoverInSleep(state, ms) {
 // les TIME.SLEEP_SECONDS_PER_HOUR secondes au lieu de CLOCK_SECONDS_PER_HOUR) jusqu'au réveil.
 // On ne dort que la nuit.
 export function goToSleep(state) {
-  if (!nightActive(state)) return { ok: false, error: `On ne dort que la nuit, de ${DATA.TIME.NIGHT_HOUR} h à ${DATA.TIME.DAY_START_HOUR} h.` };
+  if (!nightActive(state)) return fail(`On ne dort que la nuit, de ${DATA.TIME.NIGHT_HOUR} h à ${DATA.TIME.DAY_START_HOUR} h.`);
   state.nuitEnCours.dort = true;
   return { ok: true };
 }

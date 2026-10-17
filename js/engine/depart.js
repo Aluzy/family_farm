@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
-import { EPS } from './base.js';
-import { deviceLabel, fail, farmOpen, isOwned, spend, starterOf } from './devices.js';
+import { deviceLabel, fail, farmOpen, isOwned, NO_COINS, pay, starterOf } from './devices.js';
 import { defaultOrigin, shelfLife } from './inventory.js';
 import { createInitialState } from './state.js';
 import { findMember } from './family.js';
@@ -111,8 +110,7 @@ export function houseRepaired(state) {
 export function repairHouse(state) {
   if (houseRepaired(state)) return fail('La maison est déjà réparée.');
   const cost = DATA.DEPART.MAISON;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Réparation de la maison');
+  if (!pay(state, cost, 'Réparation de la maison')) return fail(NO_COINS);
   state.maison.reparee = true;
   updateChapters(state);
   return { ok: true, cost };
@@ -132,8 +130,7 @@ export function buyStarter(state, type) {
   const raison = starterBlock(state, type);
   if (raison) return fail(raison);
   const cost = DATA.DEPART.ACHATS[type];
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, `Achat : ${deviceLabel(type)}`);
+  if (!pay(state, cost, `Achat : ${deviceLabel(type)}`)) return fail(NO_COINS);
   const obj = starterOf(state, type);
   obj.achete = true;
   if (type !== 'reservoir') {

@@ -1,7 +1,6 @@
-import { levelBlock } from './levels.js';
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, isBroken, makeDevice, perSecond, perTick, spend } from './devices.js';
+import { buildWith, fail, isBroken, makeDevice, nextLevelCost, perSecond, perTick, upgradeWith } from './devices.js';
 import { drawEnergy } from './energy.js';
 import { countItem, isFridgeable, isPerishable, lotRank, lotsOf } from './inventory.js';
 import { newNightStats } from './family.js';
@@ -58,17 +57,15 @@ export function fridgeRoom(state) {
 
 export function fridgeUpgradeCost(state) {
   const n = fridgeLevel(state);
-  return !n || n >= DATA.FRIGO.CAPACITE.length ? null : DATA.FRIGO.COUT[n];
+  return n ? nextLevelCost(DATA.FRIGO.COUT, n, DATA.FRIGO.CAPACITE.length) : null;
 }
 
 export function upgradeFridge(state) {
   if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
-  const cost = fridgeUpgradeCost(state);
-  if (cost === null) return fail('Niveau maximum atteint.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Amélioration : Réfrigérateur');
-  state.frigo.niveau = fridgeLevel(state) + 1;
-  return { ok: true, cost, niveau: state.frigo.niveau, capacite: fridgeCapacity(state) };
+  return upgradeWith(state, fridgeUpgradeCost(state), 'Amélioration : Réfrigérateur', () => {
+    state.frigo.niveau = fridgeLevel(state) + 1;
+    return { niveau: state.frigo.niveau, capacite: fridgeCapacity(state) };
+  });
 }
 
 // Consommation du frigo en marche (mWh/s) : base + une part par unité stockée.
@@ -298,15 +295,8 @@ export function fridgeNight(state) {
 }
 
 export function buildFridge(state) {
-  const f = state.frigo;
-  if (f.construit) return fail('Le Réfrigérateur est déjà construit.');
-  const lock = levelBlock(state, 'frigo'); // version 1.12 : pas avant son niveau
-  if (lock) return fail(lock);
-  const cost = DATA.FRIGO.CONSTRUCTION;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Achat : Réfrigérateur');
-  openFridge(state);
-  return { ok: true, cost };
+  const deja = 'Le Réfrigérateur est déjà construit.';
+  return buildWith(state, 'frigo', { built: state.frigo.construit, deja, cost: DATA.FRIGO.CONSTRUCTION, libelle: 'Achat : Réfrigérateur' }, () => { openFridge(state); });
 }
 
 // Pose le frigo dans l'état (sans payer).

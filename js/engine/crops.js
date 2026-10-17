@@ -1,12 +1,12 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, nextRandom, randomInt } from './base.js';
-import { fail, farmOpen, spend } from './devices.js';
+import { buildWith, fail, farmOpen, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
 import { countItem, takeItem } from './inventory.js';
 import { takeWheat, wheatTotal } from './animals.js';
 import { deposit } from './ramassage.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, isUnlocked, noteCropHarvested, noteWatered } from './campaign.js';
-import { gainActionXp, levelBlock, levelReached } from './levels.js';
+import { gainActionXp, levelReached } from './levels.js';
 import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { absoluteHours } from './clock.js';
@@ -248,8 +248,7 @@ export function buyHoe(state) {
   if (hasHoe(state)) return fail('Tu as déjà une houe.');
   if (!farmOpen(state)) return fail('La houe s\'achète au Marché, qui ouvre avec le panneau et la pompe.');
   const cost = DATA.HOUE.PRIX;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Achat : Houe');
+  if (!pay(state, cost, 'Achat : Houe')) return fail(NO_COINS);
   state.potager.houe = true;
   return { ok: true, cost };
 }
@@ -581,19 +580,12 @@ export function growHoursLeft(state, plot) {
 // (arrosage, pousse, récolte).
 
 export function serreUpgradeCost(state) {
-  return state.serre.niveau >= DATA.LEVEL_MAX ? null : DATA.SERRE.COUT[state.serre.niveau];
+  return nextLevelCost(DATA.SERRE.COUT, state.serre.niveau);
 }
 
 export function buildSerre(state) {
-  const g = state.serre;
-  if (g.construit) return fail('La Serre est déjà construite.');
-  const lock = levelBlock(state, 'serre'); // version 1.12 : pas avant son niveau
-  if (lock) return fail(lock);
-  const cost = DATA.SERRE.CONSTRUCTION;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Serre');
-  openSerre(state);
-  return { ok: true, cost };
+  const deja = 'La Serre est déjà construite.';
+  return buildWith(state, 'serre', { built: state.serre.construit, deja, cost: DATA.SERRE.CONSTRUCTION, libelle: 'Serre' }, () => { openSerre(state); });
 }
 
 // Pose la Serre au niveau 1 (sans payer) et crée ses parcelles.
@@ -607,12 +599,9 @@ export function openSerre(state) {
 export function upgradeSerre(state) {
   const g = state.serre;
   if (!g.construit) return fail('Construis d\'abord la Serre.');
-  const cost = serreUpgradeCost(state);
-  if (cost === null) return fail('Niveau maximum atteint.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Serre agrandie');
-  g.niveau += 1;
-  const target = DATA.SERRE.PARCELLES[g.niveau - 1];
-  for (let n = g.parcelles.length + 1; n <= target; n++) g.parcelles.push(makePlot(n, DATA.SERRE.LIEU));
-  return { ok: true, cost };
+  return upgradeWith(state, serreUpgradeCost(state), 'Serre agrandie', () => {
+    g.niveau += 1;
+    const target = DATA.SERRE.PARCELLES[g.niveau - 1];
+    for (let n = g.parcelles.length + 1; n <= target; n++) g.parcelles.push(makePlot(n, DATA.SERRE.LIEU));
+  });
 }

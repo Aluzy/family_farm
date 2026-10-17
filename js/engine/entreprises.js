@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, spend } from './devices.js';
+import { fail, NO_COINS, pay } from './devices.js';
 import { earn } from './compta.js';
 import { countItem, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
@@ -81,8 +81,7 @@ export function buyCompany(state, id) {
   const def = companyDef(id);
   if (!def) return fail('Entreprise inconnue.');
   if (ownsCompany(state, id)) return fail(`La ${def.nom.toLowerCase()} est déjà à toi.`);
-  if (state.pieces + EPS < def.prix) return fail('Pas assez de pièces.');
-  spend(state, def.prix, `Achat : ${def.nom}`);
+  if (!pay(state, def.prix, `Achat : ${def.nom}`)) return fail(NO_COINS);
   // achetée après l'heure de production : elle commence le lendemain
   const deja = !nightActive(state) && hourOfDay(state) >= DATA.VILLE.ENTREPRISES.HEURE;
   companies(state)[id] = { quota: def.quota, jour: deja ? state.day : 0, bilan: null };

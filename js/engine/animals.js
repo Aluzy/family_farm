@@ -1,12 +1,12 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, growthPrice, spend } from './devices.js';
+import { buildWith, fail, growthPrice, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { deposit } from './ramassage.js';
 import { newNightStats } from './family.js';
 import { techFlag } from './techtree.js';
 import { bumpCounter } from './campaign.js';
-import { gainActionXp, levelBlock } from './levels.js';
+import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
@@ -22,7 +22,7 @@ export function siloCapacity(state) {
 }
 
 export function siloUpgradeCost(state) {
-  return state.silo.niveau >= DATA.LEVEL_MAX ? null : DATA.SILO.COUT[state.silo.niveau];
+  return nextLevelCost(DATA.SILO.COUT, state.silo.niveau);
 }
 
 export function wheatTotal(state) {
@@ -78,27 +78,19 @@ export function takeWheat(state, qty, first = 'inventaire') {
 // Le Silo est offert (construction à 0 dans DATA) mais reste à construire.
 export function buildSilo(state) {
   const s = state.silo;
-  if (s.construit) return fail('Le Silo est déjà construit.');
-  const lock = levelBlock(state, 'silo'); // version 1.12 : pas avant son niveau
-  if (lock) return fail(lock);
-  const cost = DATA.SILO.CONSTRUCTION;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Réparation du Silo');
-  s.construit = true;
-  s.niveau = 1;
-  fillSilo(state);
-  return { ok: true, cost };
+  return buildWith(state, 'silo', { built: s.construit, deja: 'Le Silo est déjà construit.', cost: DATA.SILO.CONSTRUCTION, libelle: 'Réparation du Silo' }, () => {
+    s.construit = true;
+    s.niveau = 1;
+    fillSilo(state);
+  });
 }
 
 export function upgradeSilo(state) {
   if (!state.silo.construit) return fail('Construis d\'abord le Silo.');
-  const cost = siloUpgradeCost(state);
-  if (cost === null) return fail('Niveau maximum atteint.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Silo agrandi');
-  state.silo.niveau += 1;
-  fillSilo(state);
-  return { ok: true, cost };
+  return upgradeWith(state, siloUpgradeCost(state), 'Silo agrandi', () => {
+    state.silo.niveau += 1;
+    fillSilo(state);
+  });
 }
 
 /* ---------- Lot 4 : Poulailler et poules ---------- */
@@ -108,30 +100,20 @@ export function coopCapacity(state) {
 }
 
 export function coopUpgradeCost(state) {
-  return state.poulailler.niveau >= DATA.LEVEL_MAX ? null : DATA.POULAILLER.COUT[state.poulailler.niveau];
+  return nextLevelCost(DATA.POULAILLER.COUT, state.poulailler.niveau);
 }
 
 export function buildPoulailler(state) {
   const p = state.poulailler;
-  if (p.construit) return fail('Le Poulailler est déjà construit.');
-  const lock = levelBlock(state, 'poulailler'); // version 1.12 : pas avant son niveau
-  if (lock) return fail(lock);
-  const cost = DATA.POULAILLER.CONSTRUCTION;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Poulailler');
-  p.construit = true;
-  p.niveau = 1;
-  return { ok: true, cost };
+  return buildWith(state, 'poulailler', { built: p.construit, deja: 'Le Poulailler est déjà construit.', cost: DATA.POULAILLER.CONSTRUCTION, libelle: 'Poulailler' }, () => {
+    p.construit = true;
+    p.niveau = 1;
+  });
 }
 
 export function upgradePoulailler(state) {
   if (!state.poulailler.construit) return fail('Construis d\'abord le Poulailler.');
-  const cost = coopUpgradeCost(state);
-  if (cost === null) return fail('Niveau maximum atteint.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Poulailler agrandi');
-  state.poulailler.niveau += 1;
-  return { ok: true, cost };
+  return upgradeWith(state, coopUpgradeCost(state), 'Poulailler agrandi', () => { state.poulailler.niveau += 1; });
 }
 
 // Prix fixe d'un animal : il ne dépend ni du nombre d'animaux ni du Marché.
@@ -149,8 +131,7 @@ export function buyAnimal(state, kind) {
   if (!p.construit) return fail('Construis d\'abord le Poulailler.');
   if (p.poules >= coopCapacity(state)) return fail('Le Poulailler est plein.');
   const price = animalPrice(kind);
-  if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
-  spend(state, price, 'Achat : Poule');
+  if (!pay(state, price, 'Achat : Poule')) return fail(NO_COINS);
   p.poules += 1;
   return { ok: true, cost: price };
 }
@@ -356,15 +337,12 @@ export function pastureCost(state) {
 // Ouvre l'Étable aux moutons et aux vaches : les places de départ sont acquises.
 export function buildPaturage(state) {
   const p = state.paturage;
-  if (p.construit) return fail('L\'Étable accueille déjà les moutons et les vaches.');
-  const lock = levelBlock(state, 'paturage'); // version 1.12 : pas avant son niveau
-  if (lock) return fail(lock);
-  const cost = DATA.PATURAGE.deblocage;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Étable préparée');
-  p.construit = true;
-  p.places = DATA.PATURAGE.placesDepart;
-  return { ok: true, cost, places: p.places };
+  const deja = 'L\'Étable accueille déjà les moutons et les vaches.';
+  return buildWith(state, 'paturage', { built: p.construit, deja, cost: DATA.PATURAGE.deblocage, libelle: 'Étable préparée' }, () => {
+    p.construit = true;
+    p.places = DATA.PATURAGE.placesDepart;
+    return { places: p.places };
+  });
 }
 
 // Achète une place. Les places s'achètent à la suite, autant que les pièces le
@@ -374,8 +352,7 @@ export function buyPasture(state) {
   const p = state.paturage;
   if (!p.construit) return fail('Prépare d\'abord l\'Étable pour les moutons et les vaches.');
   const cost = pastureCost(state);
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Place à l\'Étable');
+  if (!pay(state, cost, 'Place à l\'Étable')) return fail(NO_COINS);
   p.places += 1;
   return { ok: true, cost, places: p.places };
 }
@@ -393,8 +370,7 @@ export function buySheep(state) {
   if (!p.construit) return fail('Prépare d\'abord l\'Étable pour les moutons et les vaches.');
   if (freeSheepPlaces(state) <= 0) return fail('L\'Étable est pleine : achète une place de plus.');
   const price = animalPrice('mouton');
-  if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
-  spend(state, price, 'Achat : Mouton');
+  if (!pay(state, price, 'Achat : Mouton')) return fail(NO_COINS);
   const sheep = makeSheep(state);
   p.moutons.push(sheep);
   return { ok: true, cost: price, id: sheep.id };
@@ -420,8 +396,7 @@ export function buyCow(state) {
     return fail(`Pas assez de place pour une vache : il lui faut ${DATA.PATURAGE.placesParVache} places libres.`);
   }
   const price = animalPrice('vache');
-  if (state.pieces + EPS < price) return fail('Pas assez de pièces.');
-  spend(state, price, 'Achat : Vache');
+  if (!pay(state, price, 'Achat : Vache')) return fail(NO_COINS);
   const cow = makeCow(state);
   p.vaches.push(cow);
   return { ok: true, cost: price, id: cow.id };

@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { allDevices, fail, maintainDevice, needsService, perSecond, perTick, spend, tankCapacity } from './devices.js';
+import { allDevices, fail, maintainDevice, needsService, NO_COINS, pay, perSecond, perTick, tankCapacity } from './devices.js';
 import { drawEnergy, loadShedding } from './energy.js';
 import { availableEnergy } from './fridge.js';
 import { newNightStats } from './family.js';
@@ -249,8 +249,7 @@ export function upgradeRobotBattery(state) {
   if (!robotOn(state)) return fail('Il faut d\'abord le robot (récolte ou semis automatiques).');
   const b = robotBattery(state);
   if (b.paliers >= B.PALIERS_MAX) return fail('Autonomie maximale atteinte.');
-  if (state.pieces + EPS < B.PALIER_PRIX) return fail('Pas assez de pièces.');
-  spend(state, B.PALIER_PRIX, 'Robot : autonomie');
+  if (!pay(state, B.PALIER_PRIX, 'Robot : autonomie')) return fail(NO_COINS);
   b.paliers += 1;
   return { ok: true, cost: B.PALIER_PRIX, autonomie: robotAutonomy(state) };
 }

@@ -1,6 +1,6 @@
 import { DATA, dishPrice, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
-import { farmOpen, isBroken, isOwned, starterOf, upgradeCost, upgradeDevice } from './devices.js';
+import { canPay, farmOpen, isBroken, isOwned, starterOf, upgradeCost, upgradeDevice } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { tick } from './energy.js';
 import { addItem, countItem, expiringSoon } from './inventory.js';
@@ -43,7 +43,7 @@ export function botCropScore(culture) {
 export function botBuySeed(state, item) {
   if (!isBuyable(item)) return false;
   const price = buyPrice(state, item);
-  if (price > DATA.SIMULATION.PRIX_GRAINE_MAX + EPS || state.pieces + EPS < price) return false;
+  if (price > DATA.SIMULATION.PRIX_GRAINE_MAX + EPS || !canPay(state, price)) return false;
   return buyItem(state, item, 1).ok === true;
 }
 
@@ -293,7 +293,7 @@ export function botBuyStaples(state) {
   if (!farmOpen(state)) return;
   for (const [item, a] of Object.entries(DATA.SIMULATION.ACHATS_CUISINE)) {
     for (let i = 0; i < a.stock && countItem(state, item) + fridgeCount(state, item) < a.stock; i++) {
-      if (!isBuyable(item) || buyPrice(state, item) > a.prixMax + EPS || state.pieces + EPS < buyPrice(state, item) + DATA.SIMULATION.CAISSE) break;
+      if (!isBuyable(item) || buyPrice(state, item) > a.prixMax + EPS || !canPay(state, buyPrice(state, item) + DATA.SIMULATION.CAISSE)) break;
       if (!buyItem(state, item, 1).ok) break;
     }
   }
@@ -471,8 +471,8 @@ export function botBuy(state, eveilS) {
       if (info.done || info.locked) continue;
       // une caisse reste en réserve pour les graines et le blé (sauf pour l'eau et l'énergie)
       const target = info.cost + (step.type === 'infra' ? 0 : S.CAISSE);
-      if (state.pieces + EPS < target) botRaiseFunds(state, target);
-      if (state.pieces + EPS < target) return;
+      if (!canPay(state, target)) botRaiseFunds(state, target);
+      if (!canPay(state, target)) return;
       if (!info.buy().ok) return;
       bought = true;
       break; // l'état a changé : on relit le plan depuis le début
@@ -545,7 +545,7 @@ export function botActions(state, strat, options, soir) {
   if (options.depannage) {
     const item = options.depannage.item;
     const price = buyPrice(state, item);
-    options.depannage.dernier = { prix: price, possible: state.pieces + EPS >= price };
+    options.depannage.dernier = { prix: price, possible: canPay(state, price) };
     if (options.depannage.dernier.possible) buyItem(state, item, 1);
   }
   botStore(state);

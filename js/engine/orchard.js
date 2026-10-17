@@ -1,9 +1,8 @@
 import { DATA } from './catalog.js';
-import { EPS } from './base.js';
-import { fail, growthPrice, spend } from './devices.js';
+import { buildWith, fail, growthPrice, NO_COINS, pay } from './devices.js';
 import { deposit } from './ramassage.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
-import { gainActionXp, levelBlock } from './levels.js';
+import { gainActionXp } from './levels.js';
 import { techAuto } from './techtree.js';
 
 /* ---------- Lot 8 : Verger ---------- */
@@ -26,15 +25,8 @@ export function orchardSlotPrice(state) {
 
 // Aménage le Verger (gratuit tant que DATA.VERGER.CONSTRUCTION vaut 0).
 export function buildVerger(state) {
-  const v = state.verger;
-  if (v.construit) return fail('Le Verger est déjà aménagé.');
-  const lock = levelBlock(state, 'verger'); // version 1.12 : pas avant son niveau
-  if (lock) return fail(lock);
-  const cost = DATA.VERGER.CONSTRUCTION;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Verger');
-  openVerger(state);
-  return { ok: true, cost };
+  const deja = 'Le Verger est déjà aménagé.';
+  return buildWith(state, 'verger', { built: state.verger.construit, deja, cost: DATA.VERGER.CONSTRUCTION, libelle: 'Verger' }, () => { openVerger(state); });
 }
 
 export function openVerger(state) {
@@ -48,8 +40,7 @@ export function buyOrchardSlot(state) {
   if (!v.construit) return fail('Aménage d\'abord le Verger (onglet Ferme).');
   if (v.places >= DATA.VERGER.EMPLACEMENTS_MAX) return fail('Le Verger a atteint sa taille maximale (' + DATA.VERGER.EMPLACEMENTS_MAX + ' emplacements).');
   const cost = orchardSlotPrice(state);
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Emplacement du Verger');
+  if (!pay(state, cost, 'Emplacement du Verger')) return fail(NO_COINS);
   v.places += 1;
   v.achetes += 1;
   return { ok: true, cost, places: v.places };
@@ -80,8 +71,7 @@ export function plantTree(state, espece, c = null) {
   const ou = c === null || c === undefined ? libres[0] : Number(c);
   if (!Number.isInteger(ou) || ou < 0 || ou >= v.places) return fail('Emplacement introuvable.');
   if (treeAt(state, ou)) return fail('Un arbre pousse déjà ici.');
-  if (state.pieces + EPS < def.prix) return fail('Pas assez de pièces.');
-  spend(state, def.prix, `Achat : ${def.nom}`);
+  if (!pay(state, def.prix, `Achat : ${def.nom}`)) return fail(NO_COINS);
   v.compteur += 1;
   const tree = newTree(`arbre-${v.compteur}`, espece, state.day, ou);
   v.arbres.push(tree);

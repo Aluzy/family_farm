@@ -1,4 +1,5 @@
 import { DATA } from './catalog.js';
+import { fail } from './devices.js';
 
 /* ---------- version 1.7 (v2, lot 3) : niveaux d'expérience ---------- */
 
@@ -97,7 +98,7 @@ export function levelUnlocks(niveau) {
 // L'écran du niveau atteint a été vu.
 export function acknowledgeLevel(state) {
   const p = state.progression;
-  if (!p || !p.annonces.length) return { ok: false, error: 'Rien à annoncer.' };
+  if (!p || !p.annonces.length) return fail('Rien à annoncer.');
   p.annonces.shift();
   return { ok: true, restantes: p.annonces.length };
 }

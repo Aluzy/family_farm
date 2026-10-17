@@ -2,6 +2,7 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { techFlag } from './techtree.js';
 import { noteCompta } from './compta.js';
+import { levelBlock } from './levels.js';
 
 /* ---------- appareils : fabrication et sélecteurs ---------- */
 
@@ -175,7 +176,13 @@ export function repairCost(d) {
 // niveau }). Le Moulin, la Presse et le frigo n'ont pas de niveaux (null).
 export function upgradeCost(d) {
   if (!DATA.GRID[d.type]) return null;
-  return d.niveau >= DATA.LEVEL_MAX ? null : DATA.UPGRADE_COST[d.type][d.niveau];
+  return nextLevelCost(DATA.UPGRADE_COST[d.type], d.niveau);
+}
+
+// Prix du niveau suivant dans une table de prix (couts[n] : du niveau n au niveau n + 1),
+// ou null à partir du niveau `max` (DATA.LEVEL_MAX par défaut).
+export function nextLevelCost(couts, niveau, max = DATA.LEVEL_MAX) {
+  return niveau >= max ? null : couts[niveau];
 }
 
 // Pièces entières : tout prix calculé est arrondi à l'entier supérieur.
@@ -206,6 +213,44 @@ export function spend(state, cost, libelle = 'Dépense') {
   noteCompta(state, -cost, libelle);
 }
 
+export const NO_COINS = 'Pas assez de pièces.';
+
+// Les pièces suffisent-elles pour payer `cost` ? (à EPS près)
+export function canPay(state, cost) {
+  return !(state.pieces + EPS < cost);
+}
+
+// Paie `cost` (spend, avec son libellé) si les pièces suffisent ; sinon renvoie false
+// sans rien dépenser : `if (!pay(state, cost, libelle)) return fail(NO_COINS);`.
+export function pay(state, cost, libelle) {
+  if (!canPay(state, cost)) return false;
+  spend(state, cost, libelle);
+  return true;
+}
+
+// Construction (ou ouverture) d'un bâtiment `id` débloqué par un niveau : refusée s'il
+// l'est déjà (`built` vrai, refus `deja`), avant son niveau (levelBlock, version 1.12),
+// si `requis()` renvoie un refus, ou sans assez de pièces. Sinon le prix est payé et
+// `poser()` installe le bâtiment (ce qu'il renvoie complète le résultat { ok, cost }).
+export function buildWith(state, id, { built, deja, cost, libelle, requis = null }, poser) {
+  if (built) return fail(deja);
+  const lock = levelBlock(state, id);
+  if (lock) return fail(lock);
+  const refus = requis ? requis() : '';
+  if (refus) return fail(refus);
+  if (!pay(state, cost, libelle)) return fail(NO_COINS);
+  return { ok: true, cost, ...poser() };
+}
+
+// Niveau suivant d'un bâtiment ou d'un appareil : refusé au niveau maximum (`cost` null,
+// refus `maxi`) ou sans assez de pièces. Sinon le prix est payé et `monter()` fait monter
+// le niveau (ce qu'il renvoie complète le résultat { ok, cost }).
+export function upgradeWith(state, cost, libelle, monter, maxi = 'Niveau maximum atteint.') {
+  if (cost === null) return fail(maxi);
+  if (!pay(state, cost, libelle)) return fail(NO_COINS);
+  return { ok: true, cost, ...monter() };
+}
+
 // Nom d'un appareil, pour les libellés des Comptes.
 const DEVICE_LABELS = { panneau: 'Panneau solaire', batterie: 'Batterie', pompe: 'Pompe', reservoir: 'Réservoir', moulin: 'Moulin', presse: 'Presse', frigo: 'Réfrigérateur' };
 export function deviceLabel(type) {
@@ -227,23 +272,14 @@ export function upgradeDevice(state, id) {
   if (!d) return fail('Appareil introuvable.');
   if (!isOwned(d)) return fail(NOT_OWNED);
   if (!DATA.GRID[d.type]) return fail('Cet appareil n\'a pas de niveaux.');
-  const cost = upgradeCost(d);
-  if (cost === null) return fail('Niveau maximum atteint.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, `Amélioration : ${deviceLabel(d.type)}`);
-  d.niveau += 1;
-  return { ok: true, cost };
+  return upgradeWith(state, upgradeCost(d), `Amélioration : ${deviceLabel(d.type)}`, () => { d.niveau += 1; });
 }
 
 // Le réservoir monte de niveau (version 1.6 : il ne suit plus la pompe).
 export function upgradeTank(state) {
   if (!isOwned(state.reservoir)) return fail('Le réservoir n\'est pas encore acheté.');
   const cost = upgradeCost({ type: 'reservoir', niveau: state.reservoir.niveau });
-  if (cost === null) return fail('Niveau maximum atteint.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Amélioration : Réservoir');
-  state.reservoir.niveau += 1;
-  return { ok: true, cost };
+  return upgradeWith(state, cost, 'Amélioration : Réservoir', () => { state.reservoir.niveau += 1; });
 }
 
 export function maintainDevice(state, id) {
@@ -252,8 +288,7 @@ export function maintainDevice(state, id) {
   if (isBroken(d)) return fail('Appareil en panne : il faut le réparer.');
   if (d.usure <= 0 && !(d.usureMs > 0)) return fail('Cet appareil n\'est pas usé.');
   const cost = maintainCost(d);
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, `Entretien : ${deviceLabel(d.type)}`);
+  if (!pay(state, cost, `Entretien : ${deviceLabel(d.type)}`)) return fail(NO_COINS);
   d.usure = 0;
   d.usureMs = 0;
   return { ok: true, cost };
@@ -266,8 +301,7 @@ export function repairDevice(state, id) {
   if (!d) return fail('Appareil introuvable.');
   if (!isBroken(d)) return fail('Cet appareil n\'est pas en panne.');
   const cost = repairCost(d);
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, `Réparation : ${deviceLabel(d.type)}`);
+  if (!pay(state, cost, `Réparation : ${deviceLabel(d.type)}`)) return fail(NO_COINS);
   d.usure = 0;
   d.usureMs = 0;
   d.allume = false;

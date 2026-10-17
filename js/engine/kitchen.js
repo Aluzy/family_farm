@@ -1,13 +1,13 @@
 import { DATA, ingredientOptions, recipeOutput, recipeOutputQty } from './catalog.js';
 import { EPS } from './base.js';
-import { efficiency, fail, isBroken, makeDevice, perSecond, spend, tankCapacity } from './devices.js';
+import { buildWith, efficiency, fail, isBroken, makeDevice, perSecond, tankCapacity } from './devices.js';
 import { drawEnergy, loadShedding } from './energy.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { availableEnergy } from './fridge.js';
 import { storeWheat, takeWheat, wheatTotal } from './animals.js';
 import { recipeTime, techEffects, techFlag } from './techtree.js';
 import { noteRecipeDone } from './campaign.js';
-import { gainActionXp, levelBlock } from './levels.js';
+import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
 // XP d'une préparation terminée, et énergie pour la lancer (versions 1.7 et 1.8),
@@ -331,18 +331,14 @@ export function finishPreparations(state) {
 export function buildStation(state, id) {
   const def = DATA.STATIONS[id];
   if (!def) return fail('Atelier inconnu.');
-  const st = state.stations[id];
-  if (st.construit) return fail('Cet atelier est déjà construit.');
-  const lock = levelBlock(state, id); // version 1.12 : pas avant son niveau
-  if (lock) return fail(lock);
-  if (def.requiert && !state.stations[def.requiert].construit) {
+  // la Cuisine demande le Four
+  const requis = () => {
+    if (!def.requiert || state.stations[def.requiert].construit) return '';
     const need = DATA.STATIONS[def.requiert];
-    return fail(`Construis d'abord ${need.article} ${need.nom}.`);
-  }
-  if (state.pieces + EPS < def.cout) return fail('Pas assez de pièces.');
-  spend(state, def.cout, `Construction : ${def.nom}`);
-  openStation(state, id);
-  return { ok: true, cost: def.cout };
+    return `Construis d'abord ${need.article} ${need.nom}.`;
+  };
+  const opts = { built: state.stations[id].construit, deja: 'Cet atelier est déjà construit.', cost: def.cout, libelle: `Construction : ${def.nom}`, requis };
+  return buildWith(state, id, opts, () => { openStation(state, id); });
 }
 
 // Pose la station dans l'état (sans payer) : appareil pour les stations

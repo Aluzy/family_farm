@@ -1,6 +1,6 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, spend } from './devices.js';
+import { canPay, fail, NO_COINS, spend } from './devices.js';
 import { isAutomated } from './automation.js';
 import { chapterCount } from './campaign.js';
 import { soilCap, soilCount } from './crops.js';
@@ -185,7 +185,7 @@ export function buyTech(state, id) {
   if (techStatus(state, id) !== 'disponible') return fail('Prérequis manquants.');
   const pt = techPoints(state);
   if (pt.solde < n.pt) return fail('Pas assez de points de technologie.');
-  if (state.pieces + EPS < n.cout) return fail('Pas assez de pièces.');
+  if (!canPay(state, n.cout)) return fail(NO_COINS);
   const manque = techResources(state, id).filter((r) => !r.ok);
   if (manque.length) return fail(`Il manque : ${manque.map((r) => `${r.qte - r.stock} ${DATA.items[r.item].icone} ${DATA.items[r.item].nom.toLowerCase()}`).join(', ')}.`);
   spend(state, n.cout, `Technologie : ${n.nom || id}`);

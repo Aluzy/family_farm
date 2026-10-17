@@ -1,6 +1,6 @@
 import { DATA, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, spend } from './devices.js';
+import { canPay, fail, NO_COINS, spend } from './devices.js';
 import { addLot } from './inventory.js';
 import { buyItem } from './market.js';
 import { awakeMsAtHour, hourOfDay } from './clock.js';
@@ -111,7 +111,7 @@ export function outingStatus(state, id) {
   const partants = outingMembers(state);
   if (!partants.length) return { ok: false, raison: 'personne', texte: 'Personne n\'est en état de sortir.' };
   if (s.enfants && !partants.some((m) => m.enfant)) return { ok: false, raison: 'enfants', texte: 'Il faut un enfant à emmener.' };
-  if (state.pieces + EPS < outingCost(state, id)) return { ok: false, raison: 'pieces', texte: 'Pas assez de pièces.' };
+  if (!canPay(state, outingCost(state, id))) return { ok: false, raison: 'pieces', texte: NO_COINS };
   return { ok: true, raison: '', texte: '' };
 }
 
@@ -162,7 +162,7 @@ export function townMarketStatus(state) {
   const M = DATA.VILLE.MARCHE;
   if (townMarketOpen(state)) return { ok: false, raison: 'ouvert', texte: 'Déjà au marché aujourd\'hui.' };
   if (returnHour(state, M.HEURES) > DATA.TIME.NIGHT_HOUR + EPS) return { ok: false, raison: 'tard', texte: `Trop tard : il faut ${M.HEURES} h, retour avant ${DATA.TIME.NIGHT_HOUR} h.` };
-  if (state.pieces + EPS < M.PRIX) return { ok: false, raison: 'pieces', texte: 'Pas assez de pièces.' };
+  if (!canPay(state, M.PRIX)) return { ok: false, raison: 'pieces', texte: NO_COINS };
   return { ok: true, raison: '', texte: '' };
 }
 
