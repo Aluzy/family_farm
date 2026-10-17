@@ -108,6 +108,8 @@
     "mur_pierre": { "nom": "Mur en pierre", "icone": "🧱", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "four_pierre": { "nom": "Four de pierre", "icone": "🔥", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "cuisiniere": { "nom": "Cuisinière", "icone": "🍳", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//ammonite": [
       "Les trouvailles de la montagne (fossiles, pierres) et de la plage (coquillages, corail, perles),",
       "ramassées sur la carte (js/ville-carte.js, FermeHote.ramasser) : l'identifiant est celui de",

@@ -79,7 +79,8 @@ export function setStageInterior(value) {
 // cuisine, réfrigérateur, chacun ouvre sa fenêtre). `gerer` : ce qu'ouvre le bouton « Gérer ».
 const INTERIORS = {
   serre: { ok: () => state.serre.construit, gerer: 'agrandir, tout arroser, tout récolter' },
-  maison: { ok: () => houseRepaired(state), gerer: 'livre de recette, commerce, installations' },
+  // (la ferme générée n'a pas de maison : on y vit dans les pièces qu'on bâtit, sans intérieur)
+  maison: { ok: () => houseRepaired(state) && !atelierOuvert(state), gerer: 'livre de recette, commerce, installations' },
 };
 export function interiorHelp(id) {
   return INTERIORS[id] ? INTERIORS[id].gerer : '';

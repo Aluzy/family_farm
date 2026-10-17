@@ -77,7 +77,8 @@
     // suivent la carte, où que les bâtiments y soient posés.
     makeScreens() {
       const centre = (...names) => {
-        const r = names.map((n) => this.objects[n]);
+        const r = names.map((n) => this.objects[n]).filter(Boolean);
+        if (!r.length) return { x: this.world.w / 2, y: this.world.h / 2 };
         const x0 = Math.min(...r.map((o) => o.x)), x1 = Math.max(...r.map((o) => o.x + o.width));
         const y0 = Math.min(...r.map((o) => o.y)), y1 = Math.max(...r.map((o) => o.y + o.height));
         return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };

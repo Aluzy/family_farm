@@ -21,7 +21,11 @@
     "pièce (murs, portes, atelier) ; porte : une pièce close en a au moins une ; dedans : ne se pose",
     "que dans une pièce close (la paillasse). PIECE_MAX : une pièce a au plus tant de cases.",
     "BONHEUR_SANS_COUCHAGE (étape 5) : chaque nuit, chaque membre de la famille sans paillasse dans une",
-    "pièce close (une par personne, le personnage principal d'abord) perd autant de bonheur."
+    "pièce close (une par personne, le personnage principal d'abord) perd autant de bonheur.",
+    "station (étape 5b, la maison) : posé dans une pièce close, le bloc tient lieu de la station du même",
+    "nom (STATIONS : le Four, la Cuisine) ; repris, la station n'est plus là (une préparation en cours",
+    "attend qu'il revienne). Sur la ferme générée, pas de maison : le foyer est une pièce close avec",
+    "une paillasse."
   ],
   "ATELIER": {
     "NOM": "Atelier", "ICONE": "🔨", "NIVEAU": 1,
@@ -31,6 +35,8 @@
       "mur_pierre": { "entrees": { "pierre": 4 }, "sortie": { "mur_pierre": 1 } },
       "porte": { "entrees": { "planche": 3 }, "sortie": { "porte": 1 } },
       "paillasse": { "entrees": { "fibre": 3 }, "sortie": { "paillasse": 1 } },
+      "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
+      "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" }
@@ -39,6 +45,8 @@
       "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true },
       "porte": { "nom": "Porte", "objet": "porte", "porte": true, "ferme": true },
       "paillasse": { "nom": "Paillasse", "objet": "paillasse", "dedans": true },
+      "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four" },
+      "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 120,

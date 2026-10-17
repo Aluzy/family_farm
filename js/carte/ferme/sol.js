@@ -99,6 +99,9 @@
           if (layer.type === 'objectgroup') for (const o of layer.objects || []) if (o.name) named[o.name] = o;
         }
         Object.assign(this.objects, named);
+        // la ferme générée : les rectangles par défaut qu'elle n'a pas (la maison, qui se bâtit)
+        // n'y sont pas
+        if (this.ctx.carte) for (const k of Object.keys(this.objects)) if (!(k in named)) delete this.objects[k];
         const zone = ZONE_OBJECTS.find((n) => named[n]);
         if (zone) this.objects.zone_culture = named[zone];
         else console.warn('[FarmStage] rectangle ' + ZONE_OBJECTS[0] + ' introuvable dans la carte : zone de culture à sa place par défaut');

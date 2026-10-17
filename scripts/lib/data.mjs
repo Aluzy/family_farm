@@ -413,6 +413,10 @@ export function validateData(data) {
       if (!r.sortie === !r.outil) err(`ATELIER.RECETTES.${rid}`, 'une sortie ou un outil (l\'un des deux)');
       if (r.outil && !['houe', 'hache', 'pioche'].includes(r.outil)) err(`ATELIER.RECETTES.${rid}.outil`, 'houe, hache ou pioche');
     }
+    for (const [bid, b] of Object.entries(A.BLOCS || {})) {
+      if (b.objet) needItem(`ATELIER.BLOCS.${bid}.objet`, b.objet);
+      if (b.station && !(data.STATIONS && data.STATIONS[b.station])) err(`ATELIER.BLOCS.${bid}.station`, `« ${b.station} » n'est pas une station (STATIONS)`);
+    }
     for (const [rid, r] of Object.entries(A.RAMASSAGE || {})) {
       needItem(`ATELIER.RAMASSAGE.${rid}.objet`, r.objet);
       if (!isInt(r.nombre) || r.nombre < 0) err(`ATELIER.RAMASSAGE.${rid}.nombre`, 'un entier positif ou nul');

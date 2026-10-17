@@ -17,9 +17,10 @@ import { chemin } from './chemin.js';
 //   - des bois (arbres clairs, pins, buissons) plus denses vers les bords de la carte, des
 //     rochers, des fleurs, des touffes d'herbe haute, et le tronc creux au bord d'un étang (le
 //     passage vers l'infra-monde) ;
-//   - pour l'instant (étape 2 du projet, docs/carte-generee.md), une cour dégagée où les
-//     bâtiments de la carte de Tiled gardent leur disposition (COUR) : la construction bloc
-//     par bloc les remplacera.
+//   - pour l'instant (docs/carte-generee.md), une cour dégagée où les bâtiments de la carte de
+//     Tiled gardent leur disposition (COUR) : la construction bloc par bloc les remplace un à un
+//     (étape 5b). La maison n'y est plus : sa place (MAISON) reste dégagée, le chemin part de
+//     devant elle ; le foyer se bâtit (une pièce close avec une paillasse).
 // genererFerme(graine) → { carte, terrain } ; le terrain est celui de terrain-carte.js (plus
 // DECALAGE : où la cour a été posée, en tuiles). Les cartes déjà faites sont gardées.
 
@@ -33,8 +34,9 @@ export const FERME_GENEREE = {
 // La cour (provisoire) : les rectangles de la carte de Tiled (couche « batiment », puits et
 // citerne de DEFAULT_OBJECTS dans js/carte/ferme/config.js), en px. La cour est posée d'un
 // nombre entier de tuiles plus loin.
+const MAISON = [513.5, 239, 94, 95.6];
 const COUR = {
-  serre: [736.1, 273.6, 94, 78.3], maison: [513.5, 239, 94, 95.6], grange: [305, 253.8, 126.1, 81.6],
+  serre: [736.1, 273.6, 94, 78.3], grange: [305, 253.8, 126.1, 81.6],
   zone_culture_1: [464.5, 385.1, 78.1, 94], moulin: [626.1, 412.3, 95.6, 127], verger: [625.1, 303.7, 12.8, 15.9],
   zone_culture_2: [622, 607.6, 130.8, 128.8], silo: [657, 238.5, 49.5, 64.3], poulailler: [128.5, 257, 63, 77],
   puits: [596, 390, 34, 38], citerne: [629, 394, 24, 34],
@@ -90,7 +92,7 @@ function fabriquer(graine) {
 
   // ---- 1. la cour : où elle va, ce qu'elle interdit
   let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
-  for (const [x, y, w, h] of Object.values(COUR)) {
+  for (const [x, y, w, h] of Object.values(COUR).concat([MAISON])) {
     bx0 = Math.min(bx0, Math.floor(x / T)); by0 = Math.min(by0, Math.floor(y / T));
     bx1 = Math.max(bx1, Math.ceil((x + w) / T)); by1 = Math.max(by1, Math.ceil((y + h) / T));
   }
@@ -117,8 +119,7 @@ function fabriquer(graine) {
   const classe = new Array(N).fill('herbe');
   const rr = hasard('chemin');
   const sortie = entre(rr, Math.round(H * 0.3), Math.round(H * 0.7));
-  const m = objets.maison;
-  const depart = [Math.round((m.x + m.width / 2) / T), Math.ceil((m.y + m.height) / T) + 1];
+  const depart = [Math.round((MAISON[0] + MAISON[2] / 2) / T) + ox, Math.ceil((MAISON[1] + MAISON[3]) / T) + 1 + oy];
   const meandre = bruit(graine + ':meandre', 9, 2);
   const libreChemin = (i) => { const r = Math.floor(i / W); return r >= 2 && r < H - 2 && !sousObjet[1][i]; };
   const cout = (i) => 1 + 4 * meandre(i % W, Math.floor(i / W));

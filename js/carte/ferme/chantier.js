@@ -77,6 +77,28 @@
       return c >= 0 && r >= 0 && c < cols && wy < this.world.h ? r * cols + c : -1;
     },
 
+    // Le foyer : devant la porte de la pièce où l'on dort (modèle.foyer : sa case), sinon devant
+    // l'Atelier, sinon (ferme générée) la place de l'ancienne maison ; null sur la ferme dessinée. Le personnage, la famille et le robot s'y rendent comme à la porte
+    // de la maison (la ferme générée n'en a pas).
+    homeDoor() {
+      const m = this.ctx.lastModel, cols = this.grid.cols;
+      const c = m && Number.isInteger(m.foyer) ? m.foyer : null;
+      if (c !== null) return { x: (c % cols) * T + T / 2, y: (Math.floor(c / cols) + 1) * T + 6 };
+      for (const e of (this.blocks || new Map()).values()) if (e.sorte === 'atelier') return { x: e.x, y: e.y + 8 };
+      // rien de bâti : au bord de la Zone de culture, sur la place de l'ancienne maison
+      const z = this.ctx.carte && this.objects.zone_culture;
+      return z ? { x: Math.round(z.x + z.width / 2), y: Math.round(z.y - 20) } : null;
+    },
+
+    // Le four ou la cuisinière sous le doigt : la fenêtre de sa station, ou null.
+    stationAt(wx, wy) {
+      for (const e of (this.blocks || new Map()).values()) {
+        const win = BLOCS_CARTE.fenetres[e.sorte];
+        if (win && Math.abs(wx - e.x) <= T / 2 + 2 && wy <= e.y + 2 && wy >= e.y - 24) return win;
+      }
+      return null;
+    },
+
     // Où il se couche : la première paillasse d'une pièce close (modèle.couchages), ou null.
     bedSpot() {
       const m = this.ctx.lastModel, list = (m && m.couchages) || [];

@@ -42,7 +42,8 @@
     function door() {
       const h = scene.buildings && scene.buildings.get('maison') && scene.buildings.get('maison').sprite;
       if (h) return { x: Math.round(h.x + h.width * 0.5), y: Math.round(h.y + 6) };
-      return { x: scene.world.w / 2, y: scene.world.h / 2 };
+      const f = scene.homeDoor ? scene.homeDoor() : null;   // la ferme générée : la porte du foyer
+      return f || { x: scene.world.w / 2, y: scene.world.h / 2 };
     }
 
     // Où il doit être à cette heure : 'dedans', 'dehors' ou 'ecole'.

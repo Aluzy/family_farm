@@ -70,7 +70,7 @@
     robotDock() {
       const e = this.buildings && this.buildings.get('maison');
       const s = e && e.sprite;
-      const door = s ? { x: s.x + s.width * 0.5, y: s.y + 6 } : { x: this.world.w / 2, y: this.world.h / 2 };
+      const door = s ? { x: s.x + s.width * 0.5, y: s.y + 6 } : this.homeDoor() || { x: this.world.w / 2, y: this.world.h / 2 };
       return { x: Math.round(door.x + ROBOT.dock.dx), y: Math.round(door.y + ROBOT.dock.dy) };
     },
 
