@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
-import { EPS } from './base.js';
-import { fail, isOwned, starterOf } from './devices.js';
+import { EPS, floorPercent } from './base.js';
+import { fail, isOwned, starterOf, storedEnergy } from './devices.js';
 import { earn } from './compta.js';
 import { addItem, countItem, lotsOf } from './inventory.js';
 import { fridgeLots } from './fridge.js';
@@ -9,6 +9,7 @@ import { averageHappiness } from './ville.js';
 import { plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
 import { gainXp, levelReached, unlockLevel } from './levels.js';
+import { houseRepaired } from './depart.js';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
 
@@ -58,13 +59,12 @@ export function newCampaignCounters() {
 
 // Autonomie d'une nuit en % : énergie « produit » mangée ÷ besoin, plafonnée à 100.
 export function autonomyPercent(energieProduit, besoin) {
-  if (!(besoin > 0)) return 0;
-  return Math.min(100, Math.floor((energieProduit * 100) / besoin)); // % entier, vers le bas
+  return floorPercent(energieProduit, besoin);
 }
 
 // Part de `qty` unités qui vient de lots « produit », en parcourant les lots dans
 // l'ordre où on les retire (sans rien modifier).
-export function producedShare(lots, qty) {
+function producedShare(lots, qty) {
   let rest = qty;
   let produit = 0;
   for (const lot of lots) {
@@ -177,7 +177,7 @@ export function bumpCounter(state, key, amount) {
 export function noteEnergyRecord(state) {
   const c = state.campagne;
   if (!c) return;
-  const total = state.batteries.reduce((t, b) => t + b.chargeMwh, 0);
+  const total = storedEnergy(state);
   if (!(total <= c.compteurs.mwhMax)) c.compteurs.mwhMax = total;
 }
 
@@ -205,7 +205,7 @@ function trackedItems() {
 // Le record de chacun de ces objets dans l'inventaire : un minerai fondu ou un lingot
 // dépensé dans l'Arbre des technologies reste compté. Appelée par updateChapters (à
 // chaque pas d'horloge), dès le début de la partie : ce qu'on a eu avant le chapitre compte.
-export function noteItemRecords(state) {
+function noteItemRecords(state) {
   const c = state.campagne;
   if (!c) return;
   for (const item of trackedItems()) {
@@ -231,7 +231,7 @@ export function objectiveValue(state, obj) {
     case 'tenue': return k.tenueReussie ? 1 : 0;
     case 'serie100': return k.serie100;
     // version 1.12 (v2, lot 8) : chapitres 1 et 2
-    case 'maison': return !(state.maison && state.maison.reparee === false) ? 1 : 0;
+    case 'maison': return houseRepaired(state) ? 1 : 0;
     case 'panneau': case 'pompe': case 'reservoir': return isOwned(starterOf(state, obj.type)) ? 1 : 0;
     case 'houe': return state.potager && state.potager.houe ? 1 : 0;
     case 'recoltes': return k.recoltes || 0;
@@ -308,7 +308,7 @@ export function unreadMail(state) {
 }
 
 // La condition d'une lettre est-elle remplie ?
-export function mailDue(state, def) {
+function mailDue(state, def) {
   const q = def.quand || {};
   if (q.depart) return !!(state.departV2 && state.famille && state.famille.configuree);
   if (q.debloque) return !!state.campagne && isUnlocked(state, q.debloque);
@@ -362,7 +362,7 @@ export function acknowledgeChapter(state) {
 // Elle réussit si l'autonomie y vaut `moyenne` % en moyenne (version 1.8 : plus de
 // soins, donc plus de condition « sans soin »). Une série ratée laisse place à une
 // nouvelle dès la nuit suivante.
-export function trackHold(state, pct) {
+function trackHold(state, pct) {
   const k = state.campagne.compteurs;
   const obj = objectiveDef('tenue');
   if (!obj || k.tenueReussie || chapterReached(state) < objectiveChapter('tenue')) return;
@@ -442,7 +442,8 @@ export function ownsElement(state, id) {
   const built = (b) => !!(b && b.construit);
   switch (id) {
     // 'champ' : l'ancien Champ construit (sauvegarde d'avant la version 15), ou
-    // une culture de plein champ en terre.
+    // une culture de plein champ en terre. (La liste n'est pas DATA.crops[].pleinChamp : le
+    // tournesol, de plein champ lui aussi, datait du chapitre 4 et a sa propre ligne.)
     case 'champ': return built(legacyChamp(state)) || ownedPlots(state).some((p) => p && ['ble', 'riz', 'houblon'].includes(p.culture));
     case 'silo': return built(state.silo);
     case 'poulailler': return built(state.poulailler) || (state.poulailler && state.poulailler.poules > 0);

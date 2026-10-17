@@ -270,7 +270,7 @@ function shopBodyHtml(o) {
     let why = '';
     if (!houseRepaired(state)) why = 'Répare d\'abord la maison.';
     else if (n >= max) why = def.max ? `Tu en as un pour chacun (${max}).` : 'Il est déjà dans la maison.';
-    else if (state.pieces < def.prix) why = 'Pas assez de pièces.';
+    else if (!canPay(def.prix)) why = 'Pas assez de pièces.';
     return `
       <div class="item-head"><span class="item-icon" aria-hidden="true">${meubleImg(o.id, 'meuble-big')}</span><span class="item-title"><strong id="item-title">${def.nom}</strong><span class="num">${formatCoins(def.prix)} 💰${def.max ? ` · ${n} / ${max}` : ''}</span></span></div>
       <ul class="item-lines">

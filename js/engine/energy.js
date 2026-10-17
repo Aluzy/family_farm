@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import {
-  allDevices, batteryCapacity, isBroken, needsService, panelOutput, perSecond, perTick, pumpFlow,
-  sunlitMs, tankCapacity,
+  allDevices, batteryCapacity, drawsPower, isBroken, needsService, panelOutput, perSecond, perTick, pumpFlow,
+  storageCapacity, storedEnergy, sunlitMs, tankCapacity,
 } from './devices.js';
 import { availableEnergy, runFridge } from './fridge.js';
 import { runCooking, runElectricStation } from './kitchen.js';
@@ -59,6 +59,15 @@ export function drawEnergy(state, energy) {
   return energy - Math.max(0, rest);
 }
 
+// Un prélèvement de la nuit (frigo, robot) : il n'est pas une puissance, les compteurs
+// d'affichage (mWh/s) des batteries n'y touchent pas. Renvoie l'énergie fournie.
+export function drawNightEnergy(state, energy) {
+  const saved = state.batteries.map((b) => b.sortie);
+  const got = drawEnergy(state, energy);
+  state.batteries.forEach((b, i) => { b.sortie = saved[i]; });
+  return got;
+}
+
 // Consommateurs d'énergie, exécutés dans l'ordre à chaque tick. Les lots
 // suivants y ajouteront le moulin, la presse et le réfrigérateur.
 // `run(state, dtMs)` prélève son énergie avec drawEnergy().
@@ -85,7 +94,7 @@ export function loadShedding(state) {
 // La pompe remplit le réservoir si elle est allumée, en état, et que le
 // réservoir n'est pas plein. Si l'énergie manque, elle tourne au prorata
 // (au mL près : chaque mL coûte WH_PAR_L mWh).
-export function runPump(state, dtMs) {
+function runPump(state, dtMs) {
   const p = state.pompe;
   p.debit = 0;
   p.conso = 0;
@@ -151,7 +160,7 @@ export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax =
 
 // Phases a à c de tick : production, stockage, consommateurs, Four et Cuisine.
 // Les quantités du pas (mWh) deviennent des puissances (mWh/s) pour l'affichage.
-export function flowStep(state, dtMs) {
+function flowStep(state, dtMs) {
   for (const b of state.batteries) {
     b.entree = 0;
     b.sortie = 0;
@@ -203,7 +212,7 @@ export function wearStep(state, dtMs) {
     if (d.type === 'panneau') worked = d.prod > 0;
     else if (d.type === 'batterie') worked = d.entree > 0 || d.sortie > 0;
     else if (d.type === 'pompe') worked = d.debit > 0;
-    else if (d.type === 'moulin' || d.type === 'presse' || d.type === 'frigo') worked = d.conso > 0; // Lots 5 et 8 : il tourne vraiment
+    else if (drawsPower(d.type)) worked = d.conso > 0; // Lots 5 et 8 : il tourne vraiment
     if (!worked) continue;
     d.usureMs = (d.usureMs || 0) + dtMs;
     const points = Math.floor(d.usureMs / msParPoint);
@@ -226,8 +235,8 @@ export function energyStats(state) {
     panneauxTotal: state.panneaux.length,
     panneauxAEntretenir: state.panneaux.filter(needsService).length,
     panneauxEnPanne: state.panneaux.filter(isBroken).length,
-    charge: state.batteries.reduce((t, b) => t + b.chargeMwh, 0),
-    capacite: state.batteries.reduce((t, b) => t + batteryCapacity(b), 0),
+    charge: storedEnergy(state),
+    capacite: storageCapacity(state),
     entree: state.batteries.reduce((t, b) => t + b.entree, 0),
     sortie: state.batteries.reduce((t, b) => t + b.sortie, 0),
     batteriesAEntretenir: state.batteries.filter(needsService).length,
@@ -260,7 +269,7 @@ export function deviceStatus(state, d) {
   } else if (d.type === 'frigo') {
     if (state.frigo.alimente) { code = 'marche'; label = 'Alimenté'; }
     else { code = 'attente'; label = 'Hors tension'; }
-  } else if (d.type === 'moulin' || d.type === 'presse') {
+  } else if (DATA.STATIONS[d.type]) { // le Moulin, la Presse
     const job = state.stations[d.type].tache;
     if (!job) { code = 'repos'; label = 'Au repos'; }
     else if (d.conso > 0) { code = 'marche'; label = 'En marche'; }

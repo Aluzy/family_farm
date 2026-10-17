@@ -6,7 +6,7 @@ import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
 import { memberPerso } from '../engine/family.js';
-import { allPlots, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, plotZone, soilCap, soilCount, zone2Open, zone2Plots } from '../engine/crops.js';
+import { allPlots, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, soilCap, soilCount } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
 import { sheepToShear, woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
@@ -78,7 +78,7 @@ export function horlogeEmoji(heure) {
 }
 
 // Lieux de la carte qui portent une étiquette (et une fenêtre du même nom).
-export const STAGE_LIEUX = ['maison', 'etable', 'poulailler', 'moulin', 'serre', 'verger', 'zone', 'zone2', 'silo', 'ville'];
+export const STAGE_LIEUX = ['maison', 'etable', 'poulailler', 'moulin', 'serre', 'verger', 'zone', 'silo', 'ville'];
 
 // La carte a douze emplacements d'arbres (rectangles arbre_verger_1 à 12) : autant que le
 // Verger peut en compter.
@@ -117,10 +117,9 @@ function fenetreDeCible(c) {
 
 // Parcelles d'un lieu ('potager' ou 'serre') qui attendent un geste, avec les règles des
 // notifications : à arroser, ou mûres (sauf ce que l'Arbre des technologies automatise).
-// `zone` (facultatif, pour 'potager') : 1 = la Zone de culture, 2 = le Champ.
-function parcellesAFaire(lieu, quoi, zone) {
+function parcellesAFaire(lieu, quoi) {
   return allPlots(state).filter((p) => {
-    if (!p.culture || p.lieu !== lieu || (zone && plotZone(p) !== zone)) return false;
+    if (!p.culture || p.lieu !== lieu) return false;
     if (isMature(p)) return quoi !== 'arrosage' && !techAuto(state, 'recolte', lieu);
     return quoi !== 'recolte' && !p.arrose && !techAuto(state, 'arrosage', lieu);
   }).length;
@@ -130,7 +129,7 @@ function parcellesAFaire(lieu, quoi, zone) {
 // nouveau : ce sont les alertes de getNotifications() et de alertSnapshot(), rangées là
 // où elles se règlent.
 function aFaireParLieu() {
-  const n = { maison: 0, etable: 0, poulailler: 0, moulin: 0, serre: 0, verger: 0, zone: 0, zone2: 0 };
+  const n = { maison: 0, etable: 0, poulailler: 0, moulin: 0, serre: 0, verger: 0, zone: 0 };
   const snap = alertSnapshot(state);
   for (const id of snap.panne.concat(snap.entretien)) {
     const f = fenetreDeCible(lieuAppareil(id));
@@ -142,17 +141,16 @@ function aFaireParLieu() {
     if (a.type === 'poules') n.poulailler += a.nombre;
     if (a.type === 'tonte') n.etable += a.nombre;
   }
-  n.zone = parcellesAFaire('potager', null, 1);
-  n.zone2 = parcellesAFaire('potager', null, 2);
+  n.zone = parcellesAFaire('potager', null);
   n.serre = parcellesAFaire('serre');
   n.verger = ripeTrees(state).length; // version 1.13 : arbres en fruits à cueillir
   return n;
 }
 
 // Première parcelle d'un lieu qui attend le geste `quoi` ('arrosage' ou 'recolte').
-function premiereParcelle(lieu, quoi, zone) {
+function premiereParcelle(lieu, quoi) {
   return allPlots(state).find((p) => {
-    if (!p.culture || p.lieu !== lieu || (zone && plotZone(p) !== zone)) return false;
+    if (!p.culture || p.lieu !== lieu) return false;
     if (isMature(p)) return quoi === 'recolte' && !techAuto(state, 'recolte', lieu);
     return quoi === 'arrosage' && !p.arrose && !techAuto(state, 'arrosage', lieu);
   }) || null;
@@ -167,12 +165,11 @@ export function cibleAlerte(type, id) {
     case 'batteriesVides': return { ecran: 'batteries' };
     case 'frigoCoupe': return { fenetre: 'installations', ancre: 'dev-frigo' };
     case 'arrosage': case 'recolte': {
-      // La Zone de culture d'abord, puis le Champ, puis la Serre.
-      const ou = parcellesAFaire('potager', type, 1) > 0 ? ['potager', 1, 'zone']
-        : parcellesAFaire('potager', type, 2) > 0 ? ['potager', 2, 'zone2']
-          : isUnlocked(state, 'serre') ? ['serre', null, 'serre'] : ['potager', 1, 'zone'];
-      const p = premiereParcelle(ou[0], type, ou[1]);
-      return { fenetre: ou[2], ancre: p ? `plot-${p.id}` : null };
+      // La Zone de culture d'abord, puis la Serre.
+      const ou = parcellesAFaire('potager', type) > 0 ? ['potager', 'zone']
+        : isUnlocked(state, 'serre') ? ['serre', 'serre'] : ['potager', 'zone'];
+      const p = premiereParcelle(ou[0], type);
+      return { fenetre: ou[1], ancre: p ? `plot-${p.id}` : null };
     }
     case 'poules': return { fenetre: 'poulailler', ancre: 'etable-poules' };
     case 'tonte': {

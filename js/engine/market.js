@@ -1,9 +1,9 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, farmOpen, percentCeil, spend } from './devices.js';
+import { fail, farmOpen, NO_COINS, pay, percentCeil } from './devices.js';
 import { earn } from './compta.js';
-import { addLot, countItem, takeItem } from './inventory.js';
-import { fridgeCount, takeFromFridge } from './fridge.js';
+import { addLot } from './inventory.js';
+import { stockCount, takeStock } from './fridge.js';
 import { refreshUnlocks } from './techtree.js';
 import { fillSilo } from './animals.js';
 import { gainActionXp } from './levels.js';
@@ -24,7 +24,7 @@ export function marketCoef(state, item) {
   return typeof c === 'number' ? c : marketFloor(item);
 }
 
-export function setMarketCoef(state, item, coef) {
+function setMarketCoef(state, item, coef) {
   if (!state.marche) state.marche = {};
   const c = Math.max(marketFloor(item), Math.round(coef));
   if (c <= marketFloor(item)) delete state.marche[item];
@@ -81,21 +81,20 @@ export function buyItem(state, item, qty = 1, { ville = false } = {}) {
   let cost = 0;
   for (let i = 0; i < qty; i++) {
     const price = buyPrice(state, item);
-    if (state.pieces + EPS < price) break;
-    spend(state, price, `${ville ? 'Achat en ville' : 'Achat'} : ${def.nom}`);
+    if (!pay(state, price, `${ville ? 'Achat en ville' : 'Achat'} : ${def.nom}`)) break;
     addLot(state, item, 1, DATA.ORIGINE.ACHETE);
     setMarketCoef(state, item, marketCoef(state, item) + DATA.MARCHE.PAS);
     bought += 1;
     cost += price;
   }
-  if (bought === 0) return fail('Pas assez de pièces.');
+  if (bought === 0) return fail(NO_COINS);
   if (item === DATA.SILO.ITEM && state.silo) fillSilo(state);
   return { ok: true, bought, cost };
 }
 
 // Quantité vendable d'un item : l'inventaire plus ce qui est rangé au frigo.
 export function sellableCount(state, item) {
-  return countItem(state, item) + fridgeCount(state, item);
+  return stockCount(state, item);
 }
 
 // Vend jusqu'à `qty` unités (les lots les plus anciens d'abord) au prix fixe ;
@@ -111,9 +110,7 @@ export function sellItem(state, item, qty) {
   if (def.invendable) return fail(`${def.nom} ne se vend pas : il sert à l'arbre des technologies.`);
   if (!farmOpen(state)) return fail(MARKET_CLOSED);
   const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
-  const fromInventory = takeItem(state, item, wanted);
-  const fromFridge = wanted - fromInventory > 0 ? takeFromFridge(state, item, wanted - fromInventory) : 0;
-  const n = fromInventory + fromFridge;
+  const n = takeStock(state, item, wanted);
   if (n <= 0) return fail('Rien à vendre.');
   const gain = n * sellPrice(item);
   earn(state, gain, `Vente : ${def.nom}`, n);

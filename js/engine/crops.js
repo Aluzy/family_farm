@@ -1,15 +1,14 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, nextRandom, randomInt } from './base.js';
-import { fail, farmOpen, spend } from './devices.js';
-import { countItem, takeItem } from './inventory.js';
-import { takeWheat, wheatTotal } from './animals.js';
+import { buildWith, fail, farmOpen, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
+import { countWithSilo, takeWithSilo } from './animals.js';
 import { deposit } from './ramassage.js';
 import { techPct, techSum } from './techtree.js';
-import { bumpCounter, isUnlocked, noteCropHarvested, noteWatered } from './campaign.js';
-import { gainActionXp, levelBlock, levelReached } from './levels.js';
+import { bumpCounter, noteCropHarvested, noteWatered } from './campaign.js';
+import { gainActionXp, levelReached } from './levels.js';
 import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
-import { absoluteHours } from './clock.js';
+import { absoluteHours, dayHour } from './clock.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -25,27 +24,16 @@ export function makePlots(count, lieu = DATA.POTAGER.LIEU) {
   return plots;
 }
 
-// Toutes les parcelles de la ferme : la Zone de culture d'abord, puis le Champ, puis la Serre.
+// Toutes les parcelles de la ferme : la Zone de culture d'abord, puis la Serre. (Le Champ de
+// la version 1.4, state.potager.zone2, a rejoint la Zone de culture en version 1.15 : voir
+// migrateFreeSoil ; la liste reste vide dans une partie à jour.)
 export function allPlots(state) {
-  return [...state.potager.parcelles, ...zone2Plots(state), ...(state.serre ? state.serre.parcelles : [])];
+  return [...state.potager.parcelles, ...(state.serre ? state.serre.parcelles : [])];
 }
 
 // Les mêmes listes, sans les recopier (pour les parcourir).
 function plotLists(state) {
-  return [state.potager.parcelles, zone2Plots(state), state.serre ? state.serre.parcelles : []];
-}
-
-/* ---------- version 1.4 : le Champ (deuxième zone de culture) ---------- */
-
-// Parcelles du Champ (state.potager.zone2) : vide tant qu'il n'est pas ouvert. Elles portent
-// le lieu de la Zone de culture ('potager') : toutes ses règles s'y appliquent sans rien
-// redire (cultures, règles, automatisations). `zone: 2` les distingue pour l'affichage.
-export function zone2Plots(state) {
-  return state.potager && Array.isArray(state.potager.zone2) ? state.potager.zone2 : [];
-}
-
-export function makeZone2Plot(n) {
-  return { ...makePlot(n), id: `${DATA.POTAGER.ZONE2.ID}-${n}`, zone: 2 };
+  return [state.potager.parcelles, state.serre ? state.serre.parcelles : []];
 }
 
 /* ---------- version 1.9 (v2, lot 5) : la houe ; version 1.15 : sur toute la carte ---------- */
@@ -54,10 +42,6 @@ export function makeZone2Plot(n) {
 // écrit par scripts/carte/terres.py : herbe foncée, hors chemins, eau, bâtiments, pierres,
 // arbres, arbustes et zones interdites) peut devenir de la terre. Une parcelle porte le
 // numéro de sa tuile (`case` = rangée × LARGEUR + colonne). Les parcelles sont rangées par tuile.
-export function terrainSize() {
-  return { largeur: DATA.TERRAIN.LARGEUR, hauteur: DATA.TERRAIN.HAUTEUR };
-}
-
 function terrainChar(tile) {
   const T = DATA.TERRAIN;
   if (!Number.isInteger(tile) || tile < 0 || tile >= T.LARGEUR * T.HAUTEUR) return '.';
@@ -97,7 +81,7 @@ function coveredBy() {
 }
 
 // Les tuiles libérées : celles dont tous les rochers sont cassés et tous les arbres abattus.
-export function freedRockTiles(state) {
+function freedRockTiles(state) {
   const out = new Set();
   const o = state && state.outils;
   if (!o || (!o.rochers && !o.arbres)) return out;
@@ -203,7 +187,7 @@ export function hoeableTiles(state) {
   return out;
 }
 
-export const SOIL_LAYOUT_REFUS = 'La terre déborde en bordure sur les 8 tuiles autour : elles doivent pouvoir devenir mi-herbe mi-terre (pas de chemin, d\'eau, de pierre ni d\'arbre à côté, et pas une seule tuile d\'herbe prise entre deux terres).';
+const SOIL_LAYOUT_REFUS = 'La terre déborde en bordure sur les 8 tuiles autour : elles doivent pouvoir devenir mi-herbe mi-terre (pas de chemin, d\'eau, de pierre ni d\'arbre à côté, et pas une seule tuile d\'herbe prise entre deux terres).';
 
 // Tuile d'une case des anciennes zones (1 : la Zone de culture, 2 : le Champ) : sauvegardes
 // d'avant la version 1.15, parcelles de départ, tests.
@@ -224,7 +208,7 @@ export function startPlots() {
 
 // Tuiles de terre de la ferme et plafond du niveau.
 export function soilCount(state) {
-  return state.potager ? state.potager.parcelles.length + zone2Plots(state).length : 0;
+  return state.potager ? state.potager.parcelles.length : 0;
 }
 
 export function soilCap(state) {
@@ -248,16 +232,9 @@ export function buyHoe(state) {
   if (hasHoe(state)) return fail('Tu as déjà une houe.');
   if (!farmOpen(state)) return fail('La houe s\'achète au Marché, qui ouvre avec le panneau et la pompe.');
   const cost = DATA.HOUE.PRIX;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Achat : Houe');
+  if (!pay(state, cost, 'Achat : Houe')) return fail(NO_COINS);
   state.potager.houe = true;
   return { ok: true, cost };
-}
-
-// Version 1.15 : le Champ n'est plus une zone à part (toutes les terres sont dans
-// state.potager.parcelles). Gardé pour les appels existants : toujours fermé.
-export function zone2Open() {
-  return false;
 }
 
 // Ce que fait la houe sur une tuile : { action: 'labourer' | 'reboucher' | null, ok, raison }.
@@ -310,11 +287,6 @@ export function hoe(state, tile) {
   return { ok: true, action: 'labourer', plot };
 }
 
-// Version 1.15 : une seule Zone de culture (toutes les terres de la carte).
-export function plotZone() {
-  return 1;
-}
-
 export function findPlot(state, id) {
   for (const list of plotLists(state)) {
     for (const p of list) if (p.id === id) return p;
@@ -359,16 +331,13 @@ export function seedLabel(culture) {
 // Graines disponibles pour semer une culture. Le blé sert de graine : celui de
 // l'inventaire et celui du Silo comptent tous les deux.
 export function seedStock(state, culture) {
-  const item = seedItem(culture);
-  return item === DATA.SILO.ITEM ? wheatTotal(state) : countItem(state, item);
+  return countWithSilo(state, seedItem(culture));
 }
 
 // Retire une graine. Le blé se prend d'abord dans l'inventaire (le Silo reste
 // pour les poules), puis dans le Silo.
-export function takeSeed(state, culture) {
-  const item = seedItem(culture);
-  if (item === DATA.SILO.ITEM) return takeWheat(state, 1, 'inventaire') ? 1 : 0;
-  return takeItem(state, item, 1);
+function takeSeed(state, culture) {
+  return takeWithSilo(state, seedItem(culture), 1);
 }
 
 export function plantableCrops(lieu) {
@@ -525,19 +494,18 @@ export function harvestPlot(state, plot, auto = false) {
 // Version des cycles : la pousse n'a plus lieu à minuit (growAll ne sert plus qu'aux essais) ;
 // chaque plante gagne son stade POUSSE_HEURES heures d'horloge après son arrosage (growDue).
 export function growAll(state) {
-  const stades = isMoonPhase(state, 'nouvelle') ? DATA.LUNE.POUSSE_NOUVELLE : 1;
-  const croissante = isMoonPhase(state, 'croissante') && DATA.LUNE.POUSSE_CHANCE > 0;
   for (const p of allPlots(state)) {
-    if (!p.culture) {
-      p.arrose = false;
-      continue;
-    }
-    if (p.arrose && stades > 0 && p.stade < maxStage(p)) {
-      p.stade = Math.min(maxStage(p), p.stade + stades);
-      if (croissante && p.stade < maxStage(p) && nextRandom(state) * 100 < DATA.LUNE.POUSSE_CHANCE) p.stade += 1;
-    }
+    if (p.culture && p.arrose && p.stade < maxStage(p)) gainStage(state, p);
     p.arrose = false;
   }
+}
+
+// Le stade gagné par une plante arrosée qui n'est pas mûre, selon la lune (voir growAll).
+function gainStage(state, p) {
+  const stades = isMoonPhase(state, 'nouvelle') ? DATA.LUNE.POUSSE_NOUVELLE : 1;
+  if (stades <= 0) return;
+  p.stade = Math.min(maxStage(p), p.stade + stades);
+  if (isMoonPhase(state, 'croissante') && DATA.LUNE.POUSSE_CHANCE > 0 && p.stade < maxStage(p) && nextRandom(state) * 100 < DATA.LUNE.POUSSE_CHANCE) p.stade += 1;
 }
 
 // La pousse suit l'horloge : une plante arrosée gagne son stade TIME.POUSSE_HEURES heures
@@ -548,19 +516,13 @@ export function growAll(state) {
 // plantes qui ont fini leur cycle.
 export function growDue(state) {
   const now = absoluteHours(state);
-  const debutJour = ((Number(state.day) || 1) - 1) * 24 + DATA.TIME.DAY_START_HOUR;
+  const debutJour = dayHour(state, DATA.TIME.DAY_START_HOUR);
   let n = 0;
   for (const p of allPlots(state)) {
     if (!p.arrose) continue;
     if (!Number.isFinite(p.arroseH)) p.arroseH = Math.min(debutJour, now);
     if (now + EPS < p.arroseH + DATA.TIME.POUSSE_HEURES) continue;
-    if (p.culture && p.stade < maxStage(p)) {
-      const stades = isMoonPhase(state, 'nouvelle') ? DATA.LUNE.POUSSE_NOUVELLE : 1;
-      if (stades > 0) {
-        p.stade = Math.min(maxStage(p), p.stade + stades);
-        if (isMoonPhase(state, 'croissante') && DATA.LUNE.POUSSE_CHANCE > 0 && p.stade < maxStage(p) && nextRandom(state) * 100 < DATA.LUNE.POUSSE_CHANCE) p.stade += 1;
-      }
-    }
+    if (p.culture && p.stade < maxStage(p)) gainStage(state, p);
     p.arrose = false;
     delete p.arroseH;
     n += 1;
@@ -571,7 +533,7 @@ export function growDue(state) {
 // Heures d'horloge avant que la plante arrosée gagne son stade (null : pas arrosée).
 export function growHoursLeft(state, plot) {
   if (!plot || !plot.arrose) return null;
-  const debut = Number.isFinite(plot.arroseH) ? plot.arroseH : ((Number(state.day) || 1) - 1) * 24 + DATA.TIME.DAY_START_HOUR;
+  const debut = Number.isFinite(plot.arroseH) ? plot.arroseH : dayHour(state, DATA.TIME.DAY_START_HOUR);
   return Math.max(0, debut + DATA.TIME.POUSSE_HEURES - absoluteHours(state));
 }
 
@@ -581,19 +543,12 @@ export function growHoursLeft(state, plot) {
 // (arrosage, pousse, récolte).
 
 export function serreUpgradeCost(state) {
-  return state.serre.niveau >= DATA.LEVEL_MAX ? null : DATA.SERRE.COUT[state.serre.niveau];
+  return nextLevelCost(DATA.SERRE.COUT, state.serre.niveau);
 }
 
 export function buildSerre(state) {
-  const g = state.serre;
-  if (g.construit) return fail('La Serre est déjà construite.');
-  const lock = levelBlock(state, 'serre'); // version 1.12 : pas avant son niveau
-  if (lock) return fail(lock);
-  const cost = DATA.SERRE.CONSTRUCTION;
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Serre');
-  openSerre(state);
-  return { ok: true, cost };
+  const deja = 'La Serre est déjà construite.';
+  return buildWith(state, 'serre', { built: state.serre.construit, deja, cost: DATA.SERRE.CONSTRUCTION, libelle: 'Serre' }, () => { openSerre(state); });
 }
 
 // Pose la Serre au niveau 1 (sans payer) et crée ses parcelles.
@@ -607,12 +562,9 @@ export function openSerre(state) {
 export function upgradeSerre(state) {
   const g = state.serre;
   if (!g.construit) return fail('Construis d\'abord la Serre.');
-  const cost = serreUpgradeCost(state);
-  if (cost === null) return fail('Niveau maximum atteint.');
-  if (state.pieces + EPS < cost) return fail('Pas assez de pièces.');
-  spend(state, cost, 'Serre agrandie');
-  g.niveau += 1;
-  const target = DATA.SERRE.PARCELLES[g.niveau - 1];
-  for (let n = g.parcelles.length + 1; n <= target; n++) g.parcelles.push(makePlot(n, DATA.SERRE.LIEU));
-  return { ok: true, cost };
+  return upgradeWith(state, serreUpgradeCost(state), 'Serre agrandie', () => {
+    g.niveau += 1;
+    const target = DATA.SERRE.PARCELLES[g.niveau - 1];
+    for (let n = g.parcelles.length + 1; n <= target; n++) g.parcelles.push(makePlot(n, DATA.SERRE.LIEU));
+  });
 }

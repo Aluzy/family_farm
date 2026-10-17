@@ -68,6 +68,7 @@ test('une nouvelle recette bien écrite passe', () => {
 });
 refuse('recette : ingrédient inconnu', (d) => { d.recipes.tarte_poires = recette({ ingredients: [{ item: 'poires', qte: 3 }] }); }, 'recipes.tarte_poires.ingredients[0] : « poires »');
 refuse('recette : station inconnue', (d) => { d.recipes.tarte_poires = recette({ station: 'fourneau' }); }, 'station « fourneau » inconnue');
+refuse('atelier : action inconnue', (d) => { d.STATIONS.four.action = 'voler'; }, 'STATIONS.four : action « voler » inconnue');
 refuse('recette : quantité nulle', (d) => { d.recipes.tarte_poires = recette({ ingredients: [{ item: 'poire', qte: 0 }] }); }, 'qte doit être un entier supérieur à 0');
 refuse('recette : ni libre ni débloquée par l\'arbre', (d) => { d.recipes.tarte_poires = recette({ libre: undefined }); }, 'recette inaccessible');
 refuse('recette : un plat ne peut pas porter le nom d\'un objet', (d) => { d.recipes.cafe = recette(); }, '« cafe » est déjà un objet');

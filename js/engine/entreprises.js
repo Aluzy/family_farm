@@ -1,9 +1,8 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, spend } from './devices.js';
+import { fail, NO_COINS, pay } from './devices.js';
 import { earn } from './compta.js';
-import { countItem, takeItem } from './inventory.js';
-import { fridgeCount, takeFromFridge } from './fridge.js';
+import { stockCount, takeStock } from './fridge.js';
 import { hourOfDay, nightActive } from './clock.js';
 import { gainActionXp } from './levels.js';
 import { refreshUnlocks } from './techtree.js';
@@ -12,16 +11,6 @@ import { refreshUnlocks } from './techtree.js';
 
 // En se promenant en ville (js/ville-carte.js, dans la page du jeu : js/ui/excursion.js), on
 // vend aux étals et on achète les entreprises devant leur entrepôt.
-
-function stockOf(state, item) {
-  return countItem(state, item) + fridgeCount(state, item);
-}
-
-// Prend `qty` unités : dans l'inventaire (il périt), puis au frigo. Renvoie ce qui a été pris.
-function takeStock(state, item, qty) {
-  const a = takeItem(state, item, qty);
-  return a + (qty - a > 0 ? takeFromFridge(state, item, qty - a) : 0);
-}
 
 /* ---------- la vente au marché de la ville ---------- */
 
@@ -39,7 +28,7 @@ export function townSellPrice(item) {
 export function townSellList(state) {
   return Object.keys(DATA.items)
     .filter(townSellable)
-    .map((item) => ({ item, qte: Math.floor(stockOf(state, item) + EPS), prix: townSellPrice(item) }))
+    .map((item) => ({ item, qte: Math.floor(stockCount(state, item) + EPS), prix: townSellPrice(item) }))
     .filter((r) => r.qte > 0);
 }
 
@@ -47,7 +36,7 @@ export function sellInTown(state, item, qty) {
   const def = DATA.items[item];
   if (!def) return fail('Objet inconnu.');
   if (!townSellable(item)) return fail(`${def.nom} ne se vend pas au marché de la ville.`);
-  const n = takeStock(state, item, Math.min(Math.floor(Number(qty)) || 0, Math.floor(stockOf(state, item) + EPS)));
+  const n = takeStock(state, item, Math.min(Math.floor(Number(qty)) || 0, Math.floor(stockCount(state, item) + EPS)));
   if (n <= 0) return fail('Rien à vendre.');
   const gain = n * townSellPrice(item);
   earn(state, gain, `Vente en ville : ${def.nom}`, n);
@@ -58,7 +47,7 @@ export function sellInTown(state, item, qty) {
 
 /* ---------- les entreprises ---------- */
 
-export function companyDef(id) {
+function companyDef(id) {
   return DATA.VILLE.ENTREPRISES.LISTE[id] || null;
 }
 
@@ -67,7 +56,7 @@ export function companyIds() {
 }
 
 // Les entreprises achetées : { id: { quota, jour, bilan } } (dans state.ville, créé au besoin).
-export function companies(state) {
+function companies(state) {
   if (!state.ville || typeof state.ville !== 'object') state.ville = { faits: {}, marche: 0 };
   if (!state.ville.entreprises || typeof state.ville.entreprises !== 'object') state.ville.entreprises = {};
   return state.ville.entreprises;
@@ -81,8 +70,7 @@ export function buyCompany(state, id) {
   const def = companyDef(id);
   if (!def) return fail('Entreprise inconnue.');
   if (ownsCompany(state, id)) return fail(`La ${def.nom.toLowerCase()} est déjà à toi.`);
-  if (state.pieces + EPS < def.prix) return fail('Pas assez de pièces.');
-  spend(state, def.prix, `Achat : ${def.nom}`);
+  if (!pay(state, def.prix, `Achat : ${def.nom}`)) return fail(NO_COINS);
   // achetée après l'heure de production : elle commence le lendemain
   const deja = !nightActive(state) && hourOfDay(state) >= DATA.VILLE.ENTREPRISES.HEURE;
   companies(state)[id] = { quota: def.quota, jour: deja ? state.day : 0, bilan: null };
@@ -101,7 +89,7 @@ export function setCompanyQuota(state, id, quota) {
 export function companyPlan(state, id) {
   const def = companyDef(id), c = companies(state)[id];
   if (!def || !c) return { unites: 0, dispo: 0 };
-  const dispo = def.intrants.reduce((t, item) => t + Math.floor(stockOf(state, item) + EPS), 0);
+  const dispo = def.intrants.reduce((t, item) => t + Math.floor(stockCount(state, item) + EPS), 0);
   return { unites: Math.min(c.quota, Math.floor(dispo / def.par)), dispo };
 }
 
@@ -111,10 +99,10 @@ function produce(state, id) {
   const pris = {};
   let reste = unites * def.par;
   // les intrants les plus abondants d'abord
-  const ordre = def.intrants.slice().sort((a, b) => stockOf(state, b) - stockOf(state, a));
+  const ordre = def.intrants.slice().sort((a, b) => stockCount(state, b) - stockCount(state, a));
   for (const item of ordre) {
     if (reste <= 0) break;
-    const n = takeStock(state, item, Math.min(reste, Math.floor(stockOf(state, item) + EPS)));
+    const n = takeStock(state, item, Math.min(reste, Math.floor(stockCount(state, item) + EPS)));
     if (n > 0) { pris[item] = n; reste -= n; }
   }
   const gain = unites * def.prixProduit;
