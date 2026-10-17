@@ -102,7 +102,7 @@
 
     /* ---------- où il peut marcher ---------- */
     // Bâtiments (rectangles nommés de la carte), eau, pieds des arbres et des buissons, barrières ; les zones de culture
-    // et l'herbe restent libres : il marche dans ses parcelles.
+    // et l'herbe restent libres : il marche dans ses parcelles. Les passages (vers_la_…) aussi : on y va.
     let blocked = null;
     function buildGrid() {
       blocked = new Uint8Array(cols * rows);
@@ -112,7 +112,7 @@
         }
       };
       for (const [name, r] of Object.entries(o.objects || {})) {
-        if (!r || !r.width || !r.height || /^zone_culture|^verger$/.test(name)) continue;
+        if (!r || !r.width || !r.height || /^zone_culture|^verger$|^vers_la_/.test(name)) continue;
         if (/^arbre_verger_/.test(name)) { const cx = r.x + r.width / 2; mark(cx - 8, r.y + r.height - 20, cx + 8, r.y + r.height); continue; }
         mark(r.x, r.y, r.x + r.width, r.y + r.height);
       }
@@ -146,7 +146,7 @@
       const [gc, gr] = cellOf(x1, y1);
       if (!free(gc, gr)) return null;
       if (!grid) grid = { cols, rows, libre: (i) => !blocked[i] };
-      const cells = K.chemin(grid, sr * cols + sc, gr * cols + gc, { max: 6000 });
+      const cells = K.chemin(grid, sr * cols + sc, gr * cols + gc, { max: Math.round(cols * rows * 1.5) });
       if (!cells) return null;
       const pts = cells.map((i) => ({ x: (i % cols) * T + T / 2, y: ((i / cols) | 0) * T + T - 2 }));
       pts[pts.length - 1] = { x: x1, y: y1 };

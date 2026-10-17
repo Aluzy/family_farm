@@ -31,6 +31,7 @@ import {
 } from './campaign.js';
 import { isAutomated } from './automation.js';
 import { sleep } from './night.js';
+import { farmTerrain, tileCount } from './terrain.js';
 import { createNewGame, buyStarter, houseRepaired, repairHouse, starterBlock } from './depart.js';
 
 /* ==========================================================================
@@ -212,14 +213,17 @@ export function botFarm(state) {
 
 // Tuiles labourables, des plus proches de l'ancienne Zone de culture aux plus lointaines
 // (version 1.15 : le joueur automatique cultive d'un seul tenant).
-let botTilesCache = null;
-function botTiles() {
-  if (botTilesCache) return botTilesCache;
-  const W = DATA.TERRAIN.LARGEUR, Z = DATA.TERRAIN.ZONES[1];
-  const tiles = [];
-  for (let t = 0; t < W * DATA.TERRAIN.HAUTEUR; t++) if (isArable(t)) tiles.push(t);
+// (Une fois par terrain.)
+let botTilesCache = null, botTilesPour = null;
+function botTiles(state) {
+  const T = farmTerrain(state);
+  if (botTilesPour === T) return botTilesCache;
+  const W = T.LARGEUR, Z = T.ZONES[1], n = tileCount(T);
+  const tiles = [], aucune = new Set(); // (les tuiles sous un rocher ou un arbre n'y sont pas)
+  for (let t = 0; t < n; t++) if (isArable(t, state, aucune)) tiles.push(t);
   const d = (t) => Math.hypot((t % W) - (Z.X + 2), Math.floor(t / W) - (Z.Y + 2.5));
   botTilesCache = tiles.sort((a, b) => d(a) - d(b) || a - b);
+  botTilesPour = T;
   return botTilesCache;
 }
 
@@ -228,7 +232,7 @@ function botTiles() {
 export function botHoe(state) {
   if (!hasHoe(state)) return;
   const reserve = actionCost(state, 'recolter') * 3;
-  for (const t of botTiles()) {
+  for (const t of botTiles(state)) {
     if (plotAtTile(state, t)) continue;
     if (state.energie < reserve + actionCost(state, 'labourer')) return;
     const st = hoeStatus(state, t);

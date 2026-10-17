@@ -138,6 +138,11 @@
 >   4 104 (989 avec les anciennes zones redevenues herbe). Les fleurs et touffes d'herbe n'empêchent rien : elles disparaissent sous la terre.
 > - Une parcelle porte le **numéro de sa tuile** (`case` = rangée × 72 + colonne). Le plafond de
 >   tuiles par niveau ne change pas (6 … 64). Le **Champ** n'est plus une zone à part.
+> - **Carte générée, étape 1** : le moteur lit le terrain par `farmTerrain(state)`
+>   (`js/engine/terrain.js`) sans supposer sa taille (72 × 57 n'est que celle de la carte de
+>   Tiled), et la scène lit la taille de la carte et sa sortie vers la transition (le
+>   rectangle `vers_la_transition`, couche « passages ») dans la carte : une carte générée
+>   d'après une graine pourra prendre sa place.
 > - **Bordures (comme sur la planche du jeu de tuiles)** : une tuile labourée est toute en
 >   terre, et les 8 tuiles d'herbe qui la touchent portent sa bordure mi-herbe mi-terre (dessin
 >   choisi par ses 4 coins). Un labour (ou un rebouchage) est **refusé** si une de ces

@@ -85,7 +85,10 @@
       const ok = this.cache.tilemap.exists(MAP.key) && !this.missing.has(MAP.key);
       const raw = ok ? this.cache.tilemap.get(MAP.key).data : null;
       const valid = !!(raw && raw.width && raw.height && raw.tilewidth && Array.isArray(raw.layers));
-      if (valid) this.world = { w: raw.width * raw.tilewidth, h: raw.height * raw.tileheight };
+      if (valid) {
+        this.world = { w: raw.width * raw.tilewidth, h: raw.height * raw.tileheight };
+        this.grid.cols = raw.width;
+      }
       this.mapRaw = valid ? raw : null;
       if (valid) {
         const named = {};

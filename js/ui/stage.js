@@ -17,6 +17,7 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
+import { farmTerrain, tileCount } from '../engine/terrain.js';
 import { robotBattery, robotChargePct, robotOn, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
 import {
@@ -302,7 +303,7 @@ export function stageModel() {
   const animaux = { vache: state.paturage.vaches.length, mouton: state.paturage.moutons.length, poule: state.poulailler.poules };
   // Version 1.15 : une parcelle porte le numéro de sa tuile sur la carte ; `terrain` dit
   // quelles tuiles la houe peut labourer (une chaîne par rangée, « # » labourable).
-  const T = DATA.TERRAIN;
+  const T = farmTerrain(state);
   const houe = hoeMode && !!state.potager.houe;
   // la hache en main : un appui sur un arbre de la carte le coupe
   const hache = axeMode && !!(state.outils && state.outils.hache) && !stageInterior;
@@ -382,7 +383,7 @@ export function stageModel() {
     famille: state.famille.membres.filter((m) => m !== mainCharacter(state)).map((m) => ({ id: m.id, perso: memberPerso(m), enfant: !!m.enfant })),
     semaine: weekdayIndex(state.day),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
-    heure, cols: T.LARGEUR, cases: T.LARGEUR * T.HAUTEUR, terrain: terrainNow(rochers.concat(abattus)), plots,
+    heure, cols: T.LARGEUR, cases: tileCount(T), terrain: terrainNow(rochers.concat(abattus)), plots,
     houe, hache, pioche, canne, rochers, abattus, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
@@ -395,9 +396,9 @@ export function stageModel() {
 let sprinklerCache = { key: null, list: [] };
 function sprinklerSpots() {
   const cases = state.potager.parcelles.filter((p) => Number.isInteger(p.case)).map((p) => p.case).sort((a, b) => a - b);
-  const key = cases.join();
+  const W = farmTerrain(state).LARGEUR;
+  const key = W + ':' + cases.join();
   if (sprinklerCache.key === key) return sprinklerCache.list;
-  const W = DATA.TERRAIN.LARGEUR;
   const libres = new Set(cases);
   const couvre = (cx, cy) => {
     const out = [];

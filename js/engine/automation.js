@@ -9,6 +9,7 @@ import { plantableCropsFor } from './campaign.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
 import { absoluteHours, dayHour, hourOfDay, nightActive } from './clock.js';
+import { farmTerrain } from './terrain.js';
 
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
 
@@ -148,7 +149,7 @@ function robotTasks(state) {
 function robotSpot(state, id) {
   const p = findPlot(state, id);
   if (p && p.lieu === 'potager' && Number.isInteger(p.case)) {
-    const W = DATA.TERRAIN.LARGEUR;
+    const W = farmTerrain(state).LARGEUR;
     return [(p.case % W) - 0.2, Math.floor(p.case / W) + 0.95];
   }
   return DATA.ROBOT.SERRE;

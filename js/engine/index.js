@@ -12,6 +12,7 @@ export * from './inventory.js';
 export * from './fridge.js';
 export * from './market.js';
 export * from './family.js';
+export * from './terrain.js';
 export * from './crops.js';
 export * from './depart.js';
 export * from './animals.js';

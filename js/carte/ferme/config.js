@@ -129,12 +129,13 @@
   // `layer` de la carte. Un double appui dessus, le personnage à moins de `near` px, ouvre une
   // bulle de dialogue au-dessus de lui ; « Oui » mène à l'infra-monde (`page`). Plus loin, le
   // double appui l'y envoie, comme sur l'herbe.
-  // La sortie vers la ville : le bout est du chemin, au bord de la carte (px, rangées 27 à 29).
-  // Quand le personnage est tout près, la flèche bleue des passages (CarteKit.FLECHE ; image 0 :
-  // vers la droite) paraît et se balance ; un appui dessus mène à la carte de transition
-  // (`page`). En revenant de là (jeu.html?arrivee=est), le personnage apparaît au bout du
-  // chemin (`arrive`, px du bord). `inset` : la flèche, à tant de px du bord.
-  const EXIT = { y: 28.5 * 16, inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };
+  // La sortie vers la ville : le bout est du chemin, au bord de la carte (le rectangle
+  // `vers_la_transition` de la carte, couche « passages » : la sortie est au milieu de son bord
+  // droit). Quand le personnage est tout près, la flèche bleue des passages (CarteKit.FLECHE ;
+  // image 0 : vers la droite) paraît et se balance ; un appui dessus mène à la carte de
+  // transition (`page`). En revenant de là (jeu.html?arrivee=est), le personnage apparaît au
+  // bout du chemin (`arrive`, px du bord). `inset` : la flèche, à tant de px du bord.
+  const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };
   const HOLLOW = {
     layer: 'plantes_pierres', gids: [539, 540], near: 22, page: 'infra-monde.html',
     text: 'De drôles de couleurs luisent dans le creux du tronc : veux-tu aller voir ?',
@@ -145,7 +146,8 @@
   // sous son pied, rapportée à l'herbe la plus claire des touffes, écart accentué (`contrast` :
   // exposant) ; chaque touffe a en plus sa nuance (± `shade`).
   const TALL_GRASS = Object.assign({ contrast: 2.2 }, K.NATURE.herbe);
-  // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json.
+  // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json. Avec une
+  // carte, ses dimensions et ses rectangles nommés prennent leur place (bakeGround).
   const DEFAULT_W = 72 * T;
   const DEFAULT_H = 57 * T;
   const DEFAULT_OBJECTS = {
@@ -165,6 +167,8 @@
     puits: { x: 596, y: 390, width: 34, height: 38 },
     // La citerne, juste à droite de la pompe du puits (son tuyau rejoint le moteur).
     citerne: { x: 629, y: 394, width: 24, height: 34 },
+    // La sortie vers la carte de transition (voir EXIT) : rangées 27 à 29, dernière colonne.
+    vers_la_transition: { x: 1136, y: 432, width: 16, height: 48 },
   };
   [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
     [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]

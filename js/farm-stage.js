@@ -11,8 +11,8 @@
  *      modèle, il ne fait rien ; appelé avec un modèle différent, il crée,
  *      met à jour ou détruit exactement ce qui a changé.
  *
- * La carte (Tiled, 72×57 tuiles de 16 px) est plus grande que l'écran : le zoom en montre
- * 21 rangées, et le doigt (ou la souris) la fait glisser dans les deux sens. Trois repères
+ * La carte (Tiled, 72×57 tuiles de 16 px ; la scène lit sa taille dans la carte) est plus
+ * grande que l'écran : le zoom en montre 21 rangées, et le doigt (ou la souris) la fait glisser dans les deux sens. Trois repères
  * (l'étable, la maison, le moulin et la serre) servent de points d'arrêt. Elle porte deux
  * zones de parcelles (la Zone de culture et le Champ) et les arbres du Verger.
  *
@@ -91,7 +91,7 @@
         this.light = null;               //   et son rectangle, en mode « multiplier »
         this.world = { w: DEFAULT_W, h: DEFAULT_H };
         this.objects = Object.assign({}, DEFAULT_OBJECTS);
-        this.grid = { x: 0, y: 0, cols: 72 };       // version 1.15 : la carte entière (tuile = rangée × colonnes + colonne)
+        this.grid = { x: 0, y: 0, cols: DEFAULT_W / T };  // version 1.15 : la carte entière (tuile = rangée × colonnes + colonne)
         this.screens = [];               // repères de la carte : gauche, milieu, droite (voir makeScreens)
         this.tileAnims = [];             // tuiles animées de la carte, par tuile (voir makeTileAnims)
         this.tileSprites = [];           // les images des étendues de cases animées (voir makeTileAnims)
@@ -239,7 +239,7 @@
           try {
             this.family = global.FamilleFerme.attach(this, {
               fermier: this.fermier, frames: (this.cache.json.get('perso_cases') || cases || {}).frames, reduced: reducedMotion,
-              exit: { x: this.world.w - 12, y: EXIT.y },
+              exit: { x: this.exitAt().x - 12, y: this.exitAt().y },
               file: (perso, enfant) => v(K.planche(perso, enfant)),
             });
           } catch (e) { console.warn('[FarmStage] famille indisponible', e); }

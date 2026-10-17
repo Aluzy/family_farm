@@ -9,6 +9,7 @@ import { gainActionXp, levelReached } from './levels.js';
 import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { absoluteHours, dayHour } from './clock.js';
+import { farmTerrain, tileCount } from './terrain.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -38,17 +39,16 @@ function plotLists(state) {
 
 /* ---------- version 1.9 (v2, lot 5) : la houe ; version 1.15 : sur toute la carte ---------- */
 
-// Version 1.15 : plus de zones fixes. Toute tuile labourable de la carte (DATA.TERRAIN,
-// écrit par scripts/carte/terres.py : herbe foncée, hors chemins, eau, bâtiments, pierres,
-// arbres, arbustes et zones interdites) peut devenir de la terre. Une parcelle porte le
-// numéro de sa tuile (`case` = rangée × LARGEUR + colonne). Les parcelles sont rangées par tuile.
-function terrainChar(tile) {
-  const T = DATA.TERRAIN;
-  if (!Number.isInteger(tile) || tile < 0 || tile >= T.LARGEUR * T.HAUTEUR) return '.';
+// Version 1.15 : plus de zones fixes. Toute tuile labourable de la carte (le terrain de la
+// ferme, farmTerrain : herbe foncée, hors chemins, eau, bâtiments, pierres, arbres, arbustes
+// et zones interdites) peut devenir de la terre. Une parcelle porte le numéro de sa tuile
+// (`case` = rangée × LARGEUR + colonne). Les parcelles sont rangées par tuile.
+function terrainChar(tile, T) {
+  if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return '.';
   return T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
 }
 
-// Les rochers que la pioche casse (DATA.TERRAIN.ROCHERS : leurs tuiles). state.outils.rochers
+// Les rochers que la pioche casse (le terrain de la ferme, ROCHERS : leurs tuiles). state.outils.rochers
 // donne, pour chacun, le nombre de coups reçus (un nombre) ou, une fois cassé, { retour } :
 // le jour où il reviendra. Une tuile « o » du terrain est sous un rocher : labourable
 // seulement tant qu'il est cassé.
@@ -63,10 +63,10 @@ export function treeGone(state, id) {
   return !!a && typeof a === 'object';
 }
 
-// Pour chaque tuile « o » du terrain : les rochers et les arbres qui la couvrent (fait une fois).
+// Pour chaque tuile « o » du terrain T : les rochers et les arbres qui la couvrent (fait une
+// fois par terrain).
 let couvertsDe = null, couvertsPour = null;
-function coveredBy() {
-  const T = DATA.TERRAIN;
+function coveredBy(T) {
   if (couvertsPour === T) return couvertsDe;
   couvertsDe = new Map();
   const add = (kind, list) => {
@@ -86,8 +86,7 @@ function freedRockTiles(state) {
   const o = state && state.outils;
   if (!o || (!o.rochers && !o.arbres)) return out;
   const gone = ([kind, id]) => (kind === 'rocher' ? rockGone(state, id) : treeGone(state, id));
-  const couverts = coveredBy();
-  const T = DATA.TERRAIN;
+  const T = farmTerrain(state), couverts = coveredBy(T);
   for (const [kind, partis, tuiles] of [['rocher', o.rochers, T.ROCHERS], ['arbre', o.arbres, T.ARBRES]]) {
     for (const id of Object.keys(partis || {})) {
       if (!tuiles || !tuiles[id] || !gone([kind, id])) continue;
@@ -100,21 +99,21 @@ function freedRockTiles(state) {
 // La tuile est-elle labourable ? Sans `state`, une tuile sous un rocher ne l'est pas.
 // `libres` : freedRockTiles(state), à passer quand on teste beaucoup de tuiles d'un coup.
 export function isArable(tile, state, libres) {
-  const ch = terrainChar(tile);
+  const ch = terrainChar(tile, farmTerrain(state));
   return ch === '#' || (ch === 'o' && (libres || freedRockTiles(state)).has(tile));
 }
 
 // Version 1.15 : la tuile peut-elle porter une bordure mi-herbe mi-terre (herbe foncée,
 // labourable ou aux abords d'un bâtiment, ou libérée par un rocher cassé) ?
 export function canBorder(tile, state, libres) {
-  const ch = terrainChar(tile);
+  const ch = terrainChar(tile, farmTerrain(state));
   return ch === '#' || ch === '+' || (ch === 'o' && (libres || freedRockTiles(state)).has(tile));
 }
 
 // Les rangées du terrain pour la carte : une tuile sous un rocher cassé y est labourable
 // (« # »), sous un rocher debout non (« . »).
 export function terrainLines(state) {
-  const T = DATA.TERRAIN, libres = freedRockTiles(state);
+  const T = farmTerrain(state), libres = freedRockTiles(state);
   return T.LIGNES.map((row, r) => (row.includes('o')
     ? [...row].map((ch, c) => (ch === 'o' ? (libres.has(r * T.LARGEUR + c) ? '#' : '.') : ch)).join('')
     : row));
@@ -124,9 +123,8 @@ export function terrainLines(state) {
 // ses quatre coins, chacun de terre si une des trois autres tuiles qui le partagent est
 // labourée. Bits : 8 haut-gauche, 4 haut-droite, 2 bas-gauche, 1 bas-droite. 0 : herbe
 // seule ; 15 (terre aux quatre coins, une tuile d'herbe prise entre deux terres) n'a pas de
-// dessin. `dirt` : l'ensemble des tuiles labourées.
-export function borderMask(dirt, tile) {
-  const W = DATA.TERRAIN.LARGEUR;
+// dessin. `dirt` : l'ensemble des tuiles labourées ; W : la largeur du terrain.
+export function borderMask(dirt, tile, W = farmTerrain().LARGEUR) {
   const c = tile % W;
   const at = (dc, dr) => {
     const cc = c + dc;
@@ -140,9 +138,10 @@ export function borderMask(dirt, tile) {
 
 // Tuiles d'herbe autour de `tile` (elle comprise) dont la bordure ne peut pas se dessiner :
 // une bordure sur un chemin, de l'eau, une pierre, un arbre (canBorder), ou une herbe prise
-// entre deux terres (masque 15). `libres` : freedRockTiles(state), calculé une fois par l'appelant.
-function badBorders(dirt, tile, libres) {
-  const W = DATA.TERRAIN.LARGEUR, H = DATA.TERRAIN.HAUTEUR;
+// entre deux terres (masque 15). `libres` : freedRockTiles(state), calculé une fois par
+// l'appelant.
+function badBorders(state, dirt, tile, libres) {
+  const T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR;
   const c = tile % W, r = Math.floor(tile / W);
   let n = 0;
   for (let dr = -1; dr <= 1; dr++) {
@@ -151,8 +150,8 @@ function badBorders(dirt, tile, libres) {
       if (cc < 0 || rr < 0 || cc >= W || rr >= H) { n += dirt.has(tile) ? 1 : 0; continue; }
       const t = rr * W + cc;
       if (dirt.has(t)) continue;
-      const m = borderMask(dirt, t);
-      if (m && (m === 15 || !canBorder(t, null, libres))) n += 1;
+      const m = borderMask(dirt, t, W);
+      if (m && (m === 15 || !canBorder(t, state, libres))) n += 1;
     }
   }
   return n;
@@ -164,24 +163,24 @@ function badBorders(dirt, tile, libres) {
 export function soilLayoutOk(state, tile, labour) {
   const dirt = new Set(state.potager.parcelles.map((p) => p.case));
   const libres = freedRockTiles(state);
-  const before = badBorders(dirt, tile, libres);
+  const before = badBorders(state, dirt, tile, libres);
   if (labour) dirt.add(tile); else dirt.delete(tile);
-  return badBorders(dirt, tile, libres) <= before;
+  return badBorders(state, dirt, tile, libres) <= before;
 }
 
 // Version 1.15 : tuiles d'herbe que la houe peut labourer maintenant, pour le dessin (hors
 // plafond et énergie, qui se disent au moment du labour) : labourables, sans terre, et dont
 // les bordures se dessineraient.
 export function hoeableTiles(state) {
-  const T = DATA.TERRAIN;
+  const n = tileCount(farmTerrain(state));
   const dirt = new Set(state.potager.parcelles.map((p) => p.case));
   const libres = freedRockTiles(state); // une fois pour toute la carte
   const out = [];
-  for (let t = 0; t < T.LARGEUR * T.HAUTEUR; t++) {
+  for (let t = 0; t < n; t++) {
     if (dirt.has(t) || !isArable(t, state, libres)) continue;
-    const before = badBorders(dirt, t, libres);
+    const before = badBorders(state, dirt, t, libres);
     dirt.add(t);
-    if (badBorders(dirt, t, libres) <= before) out.push(t);
+    if (badBorders(state, dirt, t, libres) <= before) out.push(t);
     dirt.delete(t);
   }
   return out;
@@ -190,10 +189,11 @@ export function hoeableTiles(state) {
 const SOIL_LAYOUT_REFUS = 'La terre déborde en bordure sur les 8 tuiles autour : elles doivent pouvoir devenir mi-herbe mi-terre (pas de chemin, d\'eau, de pierre ni d\'arbre à côté, et pas une seule tuile d\'herbe prise entre deux terres).';
 
 // Tuile d'une case des anciennes zones (1 : la Zone de culture, 2 : le Champ) : sauvegardes
-// d'avant la version 1.15, parcelles de départ, tests.
+// d'avant la version 1.15, parcelles de départ, tests. (Sur la carte de Tiled : celle des
+// parties d'avant.)
 export function zoneTile(zone, kase) {
-  const Z = DATA.TERRAIN.ZONES[zone === 2 ? 2 : 1];
-  return (Z.Y + Math.floor(kase / Z.COLONNES)) * DATA.TERRAIN.LARGEUR + Z.X + (kase % Z.COLONNES);
+  const T = farmTerrain(), Z = T.ZONES[zone === 2 ? 2 : 1];
+  return (Z.Y + Math.floor(kase / Z.COLONNES)) * T.LARGEUR + Z.X + (kase % Z.COLONNES);
 }
 
 // Parcelle (terre) d'une tuile, ou null (herbe).
