@@ -242,6 +242,7 @@ def dessine(c):
     rev = O.reverbere()
     for x in (10, 22):
         mob.colle(rev, x * T, 10 * T)
+        OBJ.point('lumieres', f'reverbere_{x}', *O.lanterne(x * T, 10 * T), 'reverbere')
     mob.colle(O.banc(), 19 * T, 15 * T)
     for i, coul in enumerate(((70, 112, 186), (196, 58, 52), (70, 146, 72), (232, 182, 58), (70, 112, 186), (196, 58, 52))):
         mob.colle(cabine(coul), (25 + 2.5 * i) * T, 18.5 * T)

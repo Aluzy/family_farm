@@ -9,8 +9,8 @@
  "tilewidth": 16,
  "tileheight": 16,
  "infinite": false,
- "nextlayerid": 25,
- "nextobjectid": 80,
+ "nextlayerid": 26,
+ "nextobjectid": 82,
  "tilesets": [
   {
    "firstgid": 1,
@@ -37986,6 +37986,44 @@
   },
   {
    "id": 23,
+   "name": "lumieres",
+   "type": "objectgroup",
+   "draworder": "topdown",
+   "opacity": 1,
+   "visible": true,
+   "x": 0,
+   "y": 0,
+   "objects": [
+    {
+     "name": "reverbere_10",
+     "type": "reverbere",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 168,
+     "y": 424,
+     "width": 0,
+     "height": 0,
+     "properties": [],
+     "id": 40
+    },
+    {
+     "name": "reverbere_22",
+     "type": "reverbere",
+     "point": true,
+     "rotation": 0,
+     "visible": true,
+     "x": 360,
+     "y": 424,
+     "width": 0,
+     "height": 0,
+     "properties": [],
+     "id": 41
+    }
+   ]
+  },
+  {
+   "id": 24,
    "name": "rochers",
    "type": "objectgroup",
    "draworder": "topdown",
@@ -38021,7 +38059,7 @@
        "value": 23
       }
      ],
-     "id": 40
+     "id": 42
     },
     {
      "name": "rocher_560_248",
@@ -38050,7 +38088,7 @@
        "value": 31
       }
      ],
-     "id": 41
+     "id": 43
     },
     {
      "name": "rocher_816_368",
@@ -38079,7 +38117,7 @@
        "value": 26
       }
      ],
-     "id": 42
+     "id": 44
     },
     {
      "name": "rocher_784_544",
@@ -38108,7 +38146,7 @@
        "value": 18
       }
      ],
-     "id": 43
+     "id": 45
     },
     {
      "name": "rocher_48_416",
@@ -38137,7 +38175,7 @@
        "value": 23
       }
      ],
-     "id": 44
+     "id": 46
     },
     {
      "name": "rocher_416_608",
@@ -38166,7 +38204,7 @@
        "value": 18
       }
      ],
-     "id": 45
+     "id": 47
     },
     {
      "name": "rocher_240_640",
@@ -38195,7 +38233,7 @@
        "value": 21
       }
      ],
-     "id": 46
+     "id": 48
     },
     {
      "name": "rocher_864_640",
@@ -38224,7 +38262,7 @@
        "value": 18
       }
      ],
-     "id": 47
+     "id": 49
     }
    ],
    "properties": [
@@ -38246,7 +38284,7 @@
    ]
   },
   {
-   "id": 24,
+   "id": 25,
    "name": "arbres",
    "type": "objectgroup",
    "draworder": "topdown",
@@ -38266,7 +38304,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 48
+     "id": 50
     },
     {
      "name": "arbre_632_272",
@@ -38279,7 +38317,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 49
+     "id": 51
     },
     {
      "name": "arbre_96_336",
@@ -38292,7 +38330,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 50
+     "id": 52
     },
     {
      "name": "arbre_816_368",
@@ -38305,7 +38343,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 51
+     "id": 53
     },
     {
      "name": "arbre_864_384",
@@ -38318,7 +38356,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 52
+     "id": 54
     },
     {
      "name": "arbre_592_384",
@@ -38331,7 +38369,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 53
+     "id": 55
     },
     {
      "name": "arbre_688_416",
@@ -38344,7 +38382,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 54
+     "id": 56
     },
     {
      "name": "arbre_568_432",
@@ -38357,7 +38395,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 55
+     "id": 57
     },
     {
      "name": "arbre_816_512",
@@ -38370,7 +38408,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 56
+     "id": 58
     },
     {
      "name": "arbre_32_528",
@@ -38383,7 +38421,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 57
+     "id": 59
     },
     {
      "name": "arbre_448_528",
@@ -38396,7 +38434,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 58
+     "id": 60
     },
     {
      "name": "arbre_240_560",
@@ -38409,7 +38447,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 59
+     "id": 61
     },
     {
      "name": "arbre_336_560",
@@ -38422,7 +38460,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 60
+     "id": 62
     },
     {
      "name": "arbre_432_560",
@@ -38435,7 +38473,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 61
+     "id": 63
     },
     {
      "name": "arbre_872_576",
@@ -38448,7 +38486,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 62
+     "id": 64
     },
     {
      "name": "arbre_480_576",
@@ -38461,7 +38499,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 63
+     "id": 65
     },
     {
      "name": "arbre_192_576",
@@ -38474,7 +38512,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 64
+     "id": 66
     },
     {
      "name": "arbre_280_624",
@@ -38487,7 +38525,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 65
+     "id": 67
     },
     {
      "name": "arbre_840_624",
@@ -38500,7 +38538,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 66
+     "id": 68
     },
     {
      "name": "arbre_792_656",
@@ -38513,7 +38551,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 67
+     "id": 69
     },
     {
      "name": "arbre_672_656",
@@ -38526,7 +38564,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 68
+     "id": 70
     },
     {
      "name": "arbre_240_656",
@@ -38539,7 +38577,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 69
+     "id": 71
     },
     {
      "name": "arbre_192_672",
@@ -38552,7 +38590,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 70
+     "id": 72
     },
     {
      "name": "arbre_48_672",
@@ -38565,7 +38603,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 71
+     "id": 73
     },
     {
      "name": "arbre_432_672",
@@ -38578,7 +38616,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 72
+     "id": 74
     },
     {
      "name": "arbre_832_672",
@@ -38591,7 +38629,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 73
+     "id": 75
     },
     {
      "name": "arbre_888_704",
@@ -38604,7 +38642,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 74
+     "id": 76
     },
     {
      "name": "arbre_240_704",
@@ -38617,7 +38655,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 75
+     "id": 77
     },
     {
      "name": "arbre_352_704",
@@ -38630,7 +38668,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 76
+     "id": 78
     },
     {
      "name": "arbre_688_720",
@@ -38643,7 +38681,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 77
+     "id": 79
     },
     {
      "name": "arbre_768_720",
@@ -38656,7 +38694,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 78
+     "id": 80
     },
     {
      "name": "arbre_720_720",
@@ -38669,7 +38707,7 @@
      "width": 0,
      "height": 0,
      "properties": [],
-     "id": 79
+     "id": 81
     }
    ]
   }

@@ -91,6 +91,16 @@ def climatiseur():
     return im
 
 
+# La vitre de la lanterne d'un réverbère, posé en (x, y) px (son coin haut gauche) : le point où
+# le jeu allume sa lumière la nuit (couche d'objets « lumieres », js/carte/ville/eclairage.js).
+LANTERNE = (8, 8)
+
+
+def lanterne(x, y):
+    """Le point (px) de la lanterne d'un réverbère posé en (x, y)."""
+    return x + LANTERNE[0], y + LANTERNE[1]
+
+
 def reverbere():
     """1 × 3 tuiles : un réverbère noir à lanterne."""
     im = image(16, 48)

@@ -180,6 +180,7 @@ PASSAGES_TRIES = {tuple(sorted(p)): p for p in S.PASSAGES}
 # ---------- les bâtiments ----------
 
 BATIMENTS = []        # les bâtiments dessinés (immeubles.Batiment), pour la couche « batiments »
+LUMIERES = []         # les lanternes des réverbères (x, y) en px : couche « lumieres »
 BRIQUES = ['rouge', 'orange', 'ocre', 'bleu']
 COUVS = ['tuile', 'tuile_rouge', 'ardoise', 'tuile']
 
@@ -629,12 +630,15 @@ def objets(c):
     pres_d_une_rue = lambda x, y, rs: any(r[1] - 3 <= x <= r[2] + 2 and r[3] - 3 <= y <= r[4] + 2 for r in rs)
     for _, x0, x1, y0, y1 in P.RUES_H:
         for x in range(x0 + 5, x1 - 2, 10):
-            if trottoir(x, y0 - 1) and not pres_d_une_rue(x, y0 - 1, P.RUES_V):
+            # (la rangée y0 − 1 est la bordure, déjà à moitié sur la chaussée : le trottoir plein est au-dessus)
+            if trottoir(x, y0 - 2) and not pres_d_une_rue(x, y0 - 1, P.RUES_V):
                 c['equipements'].colle(rev, x * T, (y0 - 3) * T)
+                LUMIERES.append(O.lanterne(x * T, (y0 - 3) * T))
     for _, x0, x1, y0, y1 in P.RUES_V:
         for y in range(y0 + 5, y1 - 2, 10):
-            if trottoir(x0 - 1, y) and not pres_d_une_rue(x0 - 1, y, P.RUES_H):
+            if trottoir(x0 - 2, y) and not pres_d_une_rue(x0 - 1, y, P.RUES_H):
                 c['equipements'].colle(rev, (x0 - 1) * T, (y - 2) * T)
+                LUMIERES.append(O.lanterne((x0 - 1) * T, (y - 2) * T))
 
     fo = c['fontaines']
     fo.colle([O.fontaine(k) for k in range(F.EAU_IMAGES)], *FONTAINE)
@@ -821,10 +825,15 @@ def main():
         couches.append({'id': i + 1, 'name': nom, 'type': 'tilelayer', 'width': W, 'height': H, 'x': 0, 'y': 0,
                         'opacity': 1, 'visible': True, 'data': data})
     routes, carrefours, garees, batis, passages, arrivees, bus, gare, lieux, prochain = objets_carte(2)
+    lumieres = []
+    for x, y in LUMIERES:
+        lumieres.append({'id': prochain, 'name': f'reverbere_{x}_{y}', 'type': 'reverbere', 'point': True, 'rotation': 0,
+                         'visible': True, 'x': x, 'y': y, 'width': 0, 'height': 0})
+        prochain += 1
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': len(couches) + 11, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': len(couches) + 12, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             # où la promeneuse arrive (ville-carte.html) : sur le trottoir du bas, devant le parc
@@ -860,6 +869,9 @@ def main():
             # les lieux qu'on touche : les étals du marché
             {'id': len(couches) + 10, 'name': 'lieux', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
              'visible': True, 'x': 0, 'y': 0, 'objects': lieux},
+            # les lanternes des réverbères : allumées la nuit (js/carte/ville/eclairage.js)
+            {'id': len(couches) + 11, 'name': 'lumieres', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': lumieres},
         ],
     }
     with open(os.path.join(ASSETS, 'ville.tmj'), 'w') as f:

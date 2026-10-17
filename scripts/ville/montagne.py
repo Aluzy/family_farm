@@ -202,6 +202,7 @@ def dessine(c):
     rev = O.reverbere()
     for x in (10, 22):
         mob.colle(rev, x * T, 26 * T)
+        OBJ.point('lumieres', f'reverbere_{x}', *O.lanterne(x * T, 26 * T), 'reverbere')
     for x, y, w, h, gr in ((24, 18, 44, 32, 1), (35, 15.5, 64, 44, 2), (51, 23, 52, 38, 3), (49, 34, 36, 26, 4),
                            (3, 26, 44, 32, 5), (26, 38, 32, 24, 6), (15, 40, 40, 28, 7), (54, 40, 32, 24, 8)):
         OBJ.rocher(X.rocher(w, h, gr), x * T, y * T)            # on les casse à la pioche

@@ -58,6 +58,26 @@
   const FEUILLAGE_ALPHA = 0.45;
   // Ce qui vole (l'aigle, une mouette en vol) : au-dessus de tout, sous le voile de la nuit.
   const VOL = 1.9e6;
+  // La nuit (js/carte/ville/eclairage.js) : les réverbères s'allument à `allume` h et s'éteignent
+  // à `eteint` h, chacun jusqu'à `decalage` h plus tard ; ils mettent `fondu` s à s'allumer et
+  // clignotent `clignote` s. Leur flaque de lumière : `dy` px sous la lanterne, `rayon` px,
+  // aplatie (`aplati`) ; la lanterne : `rayon` px ; leur halo (Point Light, au-dessus de la nuit).
+  // Les phares : au bout de la voiture, `bout` px de son milieu au sol ([de profil, vers le bas
+  // de l'écran, vers le haut] : de 3/4, son toit dépasse vers le haut), `haut` px au-dessus du sol, `ecart` px de
+  // part et d'autre ; le cône : `portee` × `largeur` px ; les feux arrière, au bout opposé :
+  // `rayon` px.
+  const ECLAIRAGE = {
+    reverbere: {
+      allume: 19.5, eteint: 6.5, decalage: 0.4, fondu: 0.6, clignote: 0.7,
+      sol: { dy: 30, rayon: 46, aplati: 0.6, teinte: 0xffc277, alpha: 0.85 },
+      lanterne: { rayon: 10, teinte: 0xfff0c4, alpha: 1 },
+      halo: { couleur: 0xffd890, rayon: 12, intensite: 0.22, attenuation: 0.08 },
+    },
+    phare: {
+      bout: [29, 11, 24], haut: 3, ecart: 3, portee: 58, largeur: 34, teinte: 0xfff4d8, alpha: 0.95,
+      feu: { rayon: 5, teinte: 0xff3a24, alpha: 0.85 },
+    },
+  };
   // La circulation : vitesses en px au sol par seconde, distances au sol.
   const CARS = {
     key: 'voitures', file: 'assets/ville_voitures.png', meta: 'assets/ville_voitures.json',
@@ -254,7 +274,7 @@
 
   const parties = [];
   global.CarteVille = {
-    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS },
+    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS },
     etat, configure, hote, sheetKey, saisie: K.saisie, reduced: K.reduit, v: K.v, tuilesDans,
     // les méthodes de la scène, fichier par fichier (voir js/ville-carte.js)
     parties,
