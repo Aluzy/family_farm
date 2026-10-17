@@ -56,6 +56,7 @@
       sprite(this.tank);
       for (const e of (this.trees || new Map()).values()) sprite(e.sprite);
       for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.img && o.tex && !o.gone) sprite(o.img, o.foot);
+      for (const e of (this.blocks || new Map()).values()) if (e.sorte !== 'paillasse') sprite(e.img);
       return out;
     },
 

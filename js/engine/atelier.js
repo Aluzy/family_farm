@@ -78,11 +78,11 @@ function cueillette(state) {
 }
 
 // Ce qu'il y a à ramasser sur la carte aujourd'hui (pas encore pris, pas sous une terre
-// labourée) : [{ id, sorte, objet, case }]. Rien hors de la ferme générée.
+// labourée, pas sous un bloc posé) : [{ id, sorte, objet, case }]. Rien hors de la ferme générée.
 export function ramassables(state) {
   if (!atelierOuvert(state)) return [];
   const pris = state.cueillette && state.cueillette.jour === state.day ? state.cueillette.pris : [];
-  return placesDuJour(state, state.day).filter((p) => !pris.includes(p.id) && !plotAtTile(state, p.case));
+  return placesDuJour(state, state.day).filter((p) => !pris.includes(p.id) && !plotAtTile(state, p.case) && !(state.blocs && state.blocs[p.case]));
 }
 
 // Le personnage ramasse `id` : son objet entre dans l'inventaire.

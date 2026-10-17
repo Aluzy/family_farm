@@ -70,29 +70,37 @@ export function setEcranFerme(value) {
 export let hoeMode = false;
 export function setHoeMode(value) {
   hoeMode = value;
-  if (value) { axeMode = false; pickMode = false; rodMode = false; } // un seul outil en main
+  if (value) { axeMode = false; pickMode = false; rodMode = false; buildMode = null; } // un seul outil en main
   return value;
 }
 // La hache en main : un appui sur un arbre de la carte le fait couper (du bois).
 export let axeMode = false;
 export function setAxeMode(value) {
   axeMode = value;
-  if (value) { hoeMode = false; pickMode = false; rodMode = false; }
+  if (value) { hoeMode = false; pickMode = false; rodMode = false; buildMode = null; }
   return value;
 }
 // La pioche en main : un appui sur un rocher de la carte le fait casser (de la pierre).
 export let pickMode = false;
 export function setPickMode(value) {
   pickMode = value;
-  if (value) { hoeMode = false; axeMode = false; rodMode = false; }
+  if (value) { hoeMode = false; axeMode = false; rodMode = false; buildMode = null; }
   return value;
 }
 // La canne à pêche en main : un appui sur l'eau de la carte y fait pêcher (truite, brochet).
 export let rodMode = false;
 export function setRodMode(value) {
   rodMode = value;
-  if (value) { hoeMode = false; axeMode = false; pickMode = false; }
+  if (value) { hoeMode = false; axeMode = false; pickMode = false; buildMode = null; }
   return value;
+}
+// La ferme générée, le mode « Construire » : la sorte de bloc qu'un appui sur une case pose
+// (null : le mode est fermé). Un seul outil ou mode à la fois.
+export let buildMode = null;
+export function setBuildMode(value) {
+  buildMode = value || null;
+  if (buildMode) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; }
+  return buildMode;
 }
 // Le coucher : le joueur a appuyé sur « Dormir », le personnage va à son lit (la carte le
 // montre : la porte de la maison, l'intérieur, le lit). La nuit passe quand il y dort.

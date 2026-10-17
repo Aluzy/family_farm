@@ -21,7 +21,7 @@ import { farmMap, farmTerrain, tileCount } from '../engine/terrain.js';
 import { robotBattery, robotChargePct, robotOn, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
 import {
-  activeTab, axeMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
+  activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
@@ -36,6 +36,8 @@ import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, pickChipHtml, rodChipHtml } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
+import { blocsPoses, couchages, piecesCloses } from '../engine/blocs.js';
+import { buildChipHtml } from './chantier.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { runAction } from './events.js';
@@ -388,6 +390,12 @@ export function stageModel() {
     heure, cols: T.LARGEUR, cases: tileCount(T), terrain: terrainNow(rochers.concat(abattus)), plots,
     // la ferme générée : ce qui est à ramasser à la main (js/engine/atelier.js)
     ramassables: ramassables(state).map((r) => ({ id: r.id, sorte: r.sorte, case: r.case })),
+    // et ses blocs posés, le mode Construire (les pièces closes s'y voient), les paillasses où
+    // l'on dort (js/engine/blocs.js)
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte })),
+    bati: buildMode && !stageInterior ? { sorte: buildMode } : null,
+    pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
+    couchages: couchages(state),
     houe, hache, pioche, canne, rochers, abattus, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
@@ -663,7 +671,7 @@ function chapterChipHtml() {
   const valeur = objectiveValueText(o);
   const pct = Math.round(o.ratio * 100);
   const suite = p.objectifs.length > 1 ? `, objectif ${Math.min(faits + 1, p.objectifs.length)} sur ${p.objectifs.length}` : '';
-  const compacte = ((hoeMode && state.potager.houe) || axeMode || pickMode || rodMode) && !stageInterior;
+  const compacte = ((hoeMode && state.potager.houe) || axeMode || pickMode || rodMode || buildMode) && !stageInterior;
   const vers = OBJECTIF_CIBLES[o.type] ? 'Y aller' : 'Ouvrir les chapitres';
   return `<button type="button" class="stage-chip${compacte ? ' compact' : ''}" ${objectifAttrs(o.type)} aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. ${vers}" title="Chapitre ${p.chapitre} : ${p.titre} — ${o.libelle}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span>${compacte ? '' : `<span class="stage-chip-text">${o.libelle}</span>`}<span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
 }
@@ -691,7 +699,7 @@ function renderStageHud(el) {
     el.insertAdjacentHTML('beforeend', '<div class="stage-hud"></div><div class="stage-nav"></div>');
     hud = el.querySelector('.stage-hud');
   }
-  morph(hud, chapterChipHtml() + hoeChipHtml() + axeChipHtml() + pickChipHtml() + rodChipHtml());
+  morph(hud, chapterChipHtml() + hoeChipHtml() + axeChipHtml() + pickChipHtml() + rodChipHtml() + buildChipHtml());
   if (!stageView) stageView = FarmStage.view();
   renderStageNav(el);
 }

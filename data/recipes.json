@@ -15,7 +15,11 @@
     "« outil » = houe, hache ou pioche, comme acheté au Marché) ; c'est le geste « fabriquer »",
     "(PERSONNAGE.COUTS et NIVEAUX.XP). RAMASSAGE : chaque matin, autant de petites pierres, de",
     "morceaux de bois et d'herbes sur l'herbe de la carte (tirés d'après la graine et le jour) ;",
-    "chacun se ramasse à la main (geste « ramasser ») et donne son objet."
+    "chacun se ramasse à la main (geste « ramasser ») et donne son objet. BLOCS (étape 4) : ce qui se",
+    "pose sur une case de la carte (objet : pris dans l'inventaire, rendu quand on le reprend ;",
+    "l'atelier, une fois construit, sans objet) ; bloque : on ne passe pas dessus ; ferme : il ferme une",
+    "pièce (murs, portes, atelier) ; porte : une pièce close en a au moins une ; dedans : ne se pose",
+    "que dans une pièce close (la paillasse). PIECE_MAX : une pièce a au plus tant de cases."
   ],
   "ATELIER": {
     "NOM": "Atelier", "ICONE": "🔨", "NIVEAU": 1,
@@ -29,6 +33,13 @@
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" }
     },
+    "BLOCS": {
+      "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true },
+      "porte": { "nom": "Porte", "objet": "porte", "porte": true, "ferme": true },
+      "paillasse": { "nom": "Paillasse", "objet": "paillasse", "dedans": true },
+      "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
+    },
+    "PIECE_MAX": 120,
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },

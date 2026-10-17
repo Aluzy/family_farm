@@ -15,7 +15,7 @@ import { formatCoins, formatDay, formatNumber, formatPercent, weekdayShort } fro
 import { dayOfMonth, monthName, moonPhase } from '../engine/lune.js';
 import { renderCalendrier } from './calendrier.js';
 import {
-  activeTab, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
+  activeTab, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setBuildMode, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
 } from './store.js';
 import { telView } from './consent.js';
 import { notify } from './toasts.js';
@@ -43,6 +43,7 @@ import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
 import { renderAtelier } from './atelier.js';
 import { atelierOuvert } from '../engine/atelier.js';
+import { couchages } from '../engine/blocs.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
@@ -683,6 +684,24 @@ export function actionGoToBed() {
   if (asleep(state)) return;
   if (coucher) { actionSleep(); return; }
   const scene = window.FarmStage;
+  // La ferme générée : on dort sur une paillasse d'une pièce close (js/engine/blocs.js), dehors
+  // sur la carte ; sans elle, la famille ne dort pas : la nuit passe sans rendre d'énergie.
+  if (atelierOuvert(state)) {
+    if (!couchages(state).length) notify('🛏 Sans paillasse dans une pièce close (des murs tout autour et une porte), la famille ne dort pas : pas d\'énergie retrouvée cette nuit.');
+    else if (scene && scene.hasFermier && scene.hasFermier() && scene.goHome) {
+      if (stageInterior) leaveInterior();
+      setCoucher(true);
+      setBuildMode(null);
+      setActiveTab('ferme');
+      setEcranFerme(null);
+      stageWindow = null;
+      stageReturn = null;
+      setLastRenderAt(0);
+      refresh();
+      scene.goHome(() => {});   // il va à sa paillasse ; endormi, la nuit défile (asleepFromStage)
+      return;
+    }
+  }
   if (!interiorAvailable('maison') || !(scene && scene.hasFermier && scene.hasFermier() && scene.goHome)) { actionSleep(); return; }
   setCoucher(true);
   setVergerCase(null);
