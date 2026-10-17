@@ -43,14 +43,10 @@ jobs:
         run: node scripts/build-encyclopedie.mjs --check
       - name: Cartes (à jour avec les cartes Tiled)
         run: node scripts/build-map.mjs --check
-      - name: Vérification des données
-        run: node tests/test-data.mjs
-      - name: Moteur du jeu
-        run: node tests/run-tests.mjs
-      - name: Suivi de session
-        run: node tests/test-telemetry.mjs
-      - name: Rapport quotidien
-        run: node tests/test-report.mjs
+      # node:test, un processus par fichier : moteur (tests/engine/), données, suivi de
+      # session, rapport quotidien ; nombre de tests et durée par fichier dans le journal.
+      - name: Tests (moteur, données, suivi de session, rapport quotidien)
+        run: node tests/run-tests.mjs --tous
       - name: Actions de l'interface
         run: node scripts/check-actions.mjs
       - name: Modules et fichiers de la page

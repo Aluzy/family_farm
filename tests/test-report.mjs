@@ -2,8 +2,9 @@
 // Tests du rapport quotidien (worker/src/report.mjs et worker/src/index.js).
 // Aucun accès réseau : le bucket R2 et l'API GitHub sont simulés.
 //
-// Usage : node tests/test-report.mjs
+// Usage : node tests/test-report.mjs (ou node tests/run-tests.mjs report)
 
+import { test as nodeTest } from 'node:test';
 import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -14,10 +15,9 @@ import {
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-let passed = 0;
-const failures = [];
-const queue = [];
-function test(name, fn) { queue.push({ name, fn }); }
+// Lancés par node:test (node tests/run-tests.mjs --tous, ou ce fichier seul), dans l'ordre,
+// une fois le fichier chargé ; un test synchrone ou asynchrone (attendu).
+const test = (name, fn) => nodeTest(name, () => fn());
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion fausse'); }
 function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${msg || 'différent'} : ${JSON.stringify(a)} ≠ ${JSON.stringify(b)}`); }
 
@@ -406,18 +406,3 @@ test('Worker : aucune trace de Resend ni de service d\'e-mail tiers', () => {
   const src = readFileSync(join(here, 'worker/src/index.js'), 'utf8');
   assert(!/resend/i.test(src));
 });
-
-/* ---------- exécution ---------- */
-
-for (const { name, fn } of queue) {
-  try { await fn(); passed++; } catch (e) { failures.push(`${name} : ${e.message}`); }
-}
-
-console.log('Ferme Familiale — tests du rapport quotidien');
-console.log('--------------------------------------------\n');
-if (failures.length) {
-  for (const f of failures) console.log('ÉCHEC  ' + f);
-  console.log(`\n${passed} passé(s), ${failures.length} échec(s).`);
-  process.exit(1);
-}
-console.log(`${passed}/${passed} test(s) passé(s), 0 échec(s).`);
