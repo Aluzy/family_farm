@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { fail, NO_COINS, pay } from './devices.js';
 import { houseRepaired } from './depart.js';
 import { adultCount, childCount } from './family.js';
-import { memberHappiness } from './ville.js';
+import { memberHappiness, setHappiness } from './ville.js';
 
 /* ---------- Meubles de la maison (Marché, rayon Meubles) ----------
    state.meubles = { id: nombre } (absent : aucun). Un meuble acheté prend sa place dans
@@ -32,7 +32,6 @@ export function buyFurniture(state, id) {
   }
   if (!pay(state, def.prix, `Meuble : ${def.nom}`)) return fail(NO_COINS);
   state.meubles = { ...(state.meubles || {}), [id]: furnitureCount(state, id) + 1 };
-  const B = DATA.VILLE.BONHEUR;
-  for (const m of state.famille.membres) m.bonheur = Math.max(0, Math.min(B.MAX, Math.round(memberHappiness(m) + (def.bonheur || 0))));
+  for (const m of state.famille.membres) setHappiness(m, memberHappiness(m) + (def.bonheur || 0));
   return { ok: true, cost: def.prix, bonheur: def.bonheur || 0, nombre: state.meubles[id] };
 }

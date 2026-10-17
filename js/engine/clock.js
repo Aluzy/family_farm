@@ -49,7 +49,18 @@ export function absoluteHours(state) {
     const n = state.nuitEnCours;
     return ((n.minuit ? day - 1 : day) - 1) * 24 + DATA.TIME.NIGHT_HOUR + n.ms / H;
   }
-  return (day - 1) * 24 + DATA.TIME.DAY_START_HOUR + Math.max(0, Number(state.awakeMs) || 0) / H;
+  return dayHour(state, DATA.TIME.DAY_START_HOUR) + Math.max(0, Number(state.awakeMs) || 0) / H;
+}
+
+// L'heure absolue (voir absoluteHours) de `heure` h du jour en cours (state.day).
+export function dayHour(state, heure) {
+  return ((Number(state.day) || 1) - 1) * 24 + heure;
+}
+
+// L'heure de la journée d'après l'éveil, sans repasser à 0 h après minuit (13,5 pour
+// 13 h 30) : sert à prévoir une heure de retour (sorties en ville).
+export function awakeHours(state) {
+  return DATA.TIME.DAY_START_HOUR + state.awakeMs / (DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
 }
 
 /* ---------- version 1.19 : la nuit défile ---------- */

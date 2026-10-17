@@ -137,6 +137,15 @@ export function batteryCapacity(d) {
   return Math.floor((DATA.GRID.batterie.wh[d.niveau - 1] * 1000 * efficiency(d)) / 100);
 }
 
+// Énergie stockée dans toutes les batteries (mWh), et leur capacité utile totale.
+export function storedEnergy(state) {
+  return state.batteries.reduce((t, b) => t + b.chargeMwh, 0);
+}
+
+export function storageCapacity(state) {
+  return state.batteries.reduce((t, b) => t + batteryCapacity(b), 0);
+}
+
 // Débit de la pompe (mL/s) selon son niveau et son rendement.
 export function pumpFlow(d) {
   return Math.floor((DATA.GRID.pompe.litresPerS[d.niveau - 1] * 1000 * efficiency(d)) / 100);

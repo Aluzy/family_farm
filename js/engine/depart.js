@@ -1,4 +1,5 @@
 import { DATA } from './catalog.js';
+import { unlockTab } from './base.js';
 import { deviceLabel, fail, farmOpen, isOwned, NO_COINS, pay, starterOf } from './devices.js';
 import { lotsFromCounts } from './inventory.js';
 import { createInitialState } from './state.js';
@@ -135,7 +136,7 @@ export function buyStarter(state, type) {
     obj.prix = cost; // entretien et réparation suivent le prix payé
   }
   // panneau et pompe : la Zone de culture et le Marché s'ouvrent
-  if (farmOpen(state) && !state.unlockedTabs.includes('comptoir')) state.unlockedTabs.push('comptoir');
+  if (farmOpen(state)) unlockTab(state, 'comptoir');
   updateChapters(state);
   return { ok: true, cost, ouvert: farmOpen(state) };
 }

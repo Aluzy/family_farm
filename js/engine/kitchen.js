@@ -1,5 +1,5 @@
 import { DATA, ingredientOptions, recipeOutput, recipeOutputQty } from './catalog.js';
-import { EPS } from './base.js';
+import { EPS, unlockTab } from './base.js';
 import { buildWith, efficiency, fail, isBroken, makeDevice, perSecond, tankCapacity } from './devices.js';
 import { drawEnergy, loadShedding } from './energy.js';
 import { addItem } from './inventory.js';
@@ -21,6 +21,11 @@ const STATION_XP = { four: 'cuireFour', cuisine: 'cuisiner', moulin: 'moudre', p
 // Moulin (version 1.1), la tâche porte aussi `enAttente` : le nombre de blés
 // déjà sortis du stock qui seront moulus à la suite (voir startMilling()).
 // appareil : l'appareil du parc (Moulin, Presse) une fois construit, sinon null.
+
+// Blés en attente au Moulin derrière celui en cours (tâche.enAttente, entier ≥ 0).
+function queuedWheat(job) {
+  return Math.max(0, Math.floor(Number(job.enAttente) || 0));
+}
 
 export function isElectricStation(id) {
   return !!DATA.STATIONS[id].electrique;
@@ -169,7 +174,7 @@ export function completeTask(state, id) {
   const st = state.stations[id];
   if (!st.tache) return null;
   const recette = st.tache.recette;
-  const enAttente = Math.max(0, Math.floor(Number(st.tache.enAttente) || 0));
+  const enAttente = queuedWheat(st.tache);
   const item = recipeOutput(recette);
   const qty = recipeOutputQty(recette);
   addItem(state, item, qty);
@@ -194,7 +199,7 @@ export function completeTask(state, id) {
 // Blés confiés au Moulin et pas encore moulus : celui en cours et ceux en attente.
 export function millPending(state) {
   const job = state.stations && state.stations.moulin ? state.stations.moulin.tache : null;
-  return job ? 1 + Math.max(0, Math.floor(Number(job.enAttente) || 0)) : 0;
+  return job ? 1 + queuedWheat(job) : 0;
 }
 
 // Secondes réelles pour finir tout le blé confié au Moulin, à sa vitesse
@@ -228,7 +233,7 @@ export function startMilling(state, qty = 1) {
   spendEnergy(state, 'moudre', n);
   takeWheat(state, n * parBle, 'inventaire');
   if (st.tache) {
-    st.tache.enAttente = Math.max(0, Math.floor(Number(st.tache.enAttente) || 0)) + n;
+    st.tache.enAttente = queuedWheat(st.tache) + n;
   } else {
     beginTask(state, 'moulin', recette);
     st.tache.enAttente = n - 1;
@@ -240,7 +245,7 @@ export function startMilling(state, qty = 1) {
 // moulu) : il retourne au stock, Silo d'abord.
 export function cancelMilling(state) {
   const job = state.stations.moulin.tache;
-  const n = job ? Math.max(0, Math.floor(Number(job.enAttente) || 0)) : 0;
+  const n = job ? queuedWheat(job) : 0;
   if (n <= 0) return fail('Aucun blé en attente au Moulin.');
   job.enAttente = 0;
   storeWheat(state, n * DATA.recipes[job.recette].ingredients[0].qte);
@@ -335,7 +340,5 @@ export function openStation(state, id) {
   const st = state.stations[id];
   st.construit = true;
   if (def.electrique && !st.appareil) st.appareil = makeDevice(id, id, def.cout);
-  for (const tab of def.debloque || []) {
-    if (!state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
-  }
+  for (const tab of def.debloque || []) unlockTab(state, tab);
 }

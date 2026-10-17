@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { applyMealHappiness, dishHappiness, memberHappiness } from './ville.js';
-import { EPS } from './base.js';
+import { EPS, floorPercent } from './base.js';
 import { fail } from './devices.js';
 import { hourOfDay } from './clock.js';
 import { countItem, nextExpiry, takeItem } from './inventory.js';
@@ -353,12 +353,17 @@ export function planMeal(state) {
     energie: covered,
     mange,
     froid,
-    couverture: need > 0 ? Math.min(100, Math.floor((covered * 100) / need)) : 100, // %
+    couverture: need > 0 ? floorPercent(covered, need) : 100, // %
   };
 }
 
+// La nuit du frigo : mWh prélevés, panne de froid, lots qui ont perdu une nuit.
+export function newFridgeNightStats() {
+  return { mwh: 0, panne: false, vieillis: false };
+}
+
 export function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 100, mange: {}, perdus: {}, oeufs: 0, lait: 0, etable: newStableReport(), termine: {}, auto: newAutoReport(), fruits: {}, frigo: { mwh: 0, panne: false, vieillis: false }, energieProduit: 0, autonomie: 0, pluie: 0, entretiens: [] };
+  return { besoin: 0, energie: 0, couverture: 100, mange: {}, perdus: {}, oeufs: 0, lait: 0, etable: newStableReport(), termine: {}, auto: newAutoReport(), fruits: {}, frigo: newFridgeNightStats(), energieProduit: 0, autonomie: 0, pluie: 0, entretiens: [] };
 }
 
 // Le repas de la famille, puis son bonheur. Version 1.1.1 : il se prend à 19 h
@@ -407,7 +412,7 @@ export function feedFamily(state) {
     oeufs: 0,
     auto: newAutoReport(),
     fruits: {},
-    frigo: { mwh: 0, panne: false, vieillis: false },
+    frigo: newFridgeNightStats(),
   };
   // l'énergie ne remonte plus d'un coup à minuit : en dormant, peu à peu (recoverInSleep)
   state.nuit.energieReveil = state.energie;

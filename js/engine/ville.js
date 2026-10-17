@@ -3,7 +3,7 @@ import { EPS } from './base.js';
 import { canPay, fail, NO_COINS, spend } from './devices.js';
 import { addLot } from './inventory.js';
 import { buyItem } from './market.js';
-import { awakeMsAtHour, hourOfDay } from './clock.js';
+import { awakeHours, awakeMsAtHour, hourOfDay } from './clock.js';
 import { farmStep } from './energy.js';
 import { refreshUnlocks } from './techtree.js';
 import { updateChapters } from './campaign.js';
@@ -19,7 +19,8 @@ export function memberHappiness(m) {
   return typeof m.bonheur === 'number' ? m.bonheur : DATA.VILLE.BONHEUR.DEPART;
 }
 
-function setHappiness(m, value) {
+// Change le bonheur d'un membre, borné de 0 à MAX, arrondi.
+export function setHappiness(m, value) {
   m.bonheur = Math.max(0, Math.min(DATA.VILLE.BONHEUR.MAX, Math.round(value)));
 }
 
@@ -95,19 +96,13 @@ export function outingLoot(state, id) {
   return { ...(s.butin || {}) };
 }
 
-// Heure de retour d'une sortie partie maintenant (avec les minutes, ex. 13,5).
-function returnHour(state, heures) {
-  const perHour = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
-  return DATA.TIME.DAY_START_HOUR + state.awakeMs / perHour + heures;
-}
-
 // Peut-on partir ? { ok, raison } ; raison : 'faite', 'tard', 'enfants', 'personne', 'pieces'.
 export function outingStatus(state, id) {
   const s = DATA.VILLE.SORTIES[id];
   if (!s) return { ok: false, raison: 'inconnue', texte: 'Sortie inconnue.' };
   const v = ville(state);
   if (v.faits[id] === state.day) return { ok: false, raison: 'faite', texte: 'Déjà fait aujourd\'hui.' };
-  if (returnHour(state, s.heures) > DATA.TIME.NIGHT_HOUR + EPS) return { ok: false, raison: 'tard', texte: `Trop tard : il faut ${s.heures} h, retour avant ${DATA.TIME.NIGHT_HOUR} h.` };
+  if (awakeHours(state) + s.heures > DATA.TIME.NIGHT_HOUR + EPS) return { ok: false, raison: 'tard', texte: `Trop tard : il faut ${s.heures} h, retour avant ${DATA.TIME.NIGHT_HOUR} h.` };
   const partants = outingMembers(state);
   if (!partants.length) return { ok: false, raison: 'personne', texte: 'Personne n\'est en état de sortir.' };
   if (s.enfants && !partants.some((m) => m.enfant)) return { ok: false, raison: 'enfants', texte: 'Il faut un enfant à emmener.' };
@@ -161,7 +156,7 @@ export function townMarketOpen(state) {
 export function townMarketStatus(state) {
   const M = DATA.VILLE.MARCHE;
   if (townMarketOpen(state)) return { ok: false, raison: 'ouvert', texte: 'Déjà au marché aujourd\'hui.' };
-  if (returnHour(state, M.HEURES) > DATA.TIME.NIGHT_HOUR + EPS) return { ok: false, raison: 'tard', texte: `Trop tard : il faut ${M.HEURES} h, retour avant ${DATA.TIME.NIGHT_HOUR} h.` };
+  if (awakeHours(state) + M.HEURES > DATA.TIME.NIGHT_HOUR + EPS) return { ok: false, raison: 'tard', texte: `Trop tard : il faut ${M.HEURES} h, retour avant ${DATA.TIME.NIGHT_HOUR} h.` };
   if (!canPay(state, M.PRIX)) return { ok: false, raison: 'pieces', texte: NO_COINS };
   return { ok: true, raison: '', texte: '' };
 }

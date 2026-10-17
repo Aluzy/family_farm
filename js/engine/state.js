@@ -539,14 +539,15 @@ export function migrateEnergy(old) {
 
 // Les nœuds retirés de l'arbre (NOEUDS_RETIRES) que la partie possède sont rendus :
 // leurs pièces et leurs points de technologie.
-export function refundRetiredNodes(state) {
+// `num` lit un nombre de la sauvegarde (migrateRules11 a le sien, plus strict).
+export function refundRetiredNodes(state, num = (x) => Number(x) || 0) {
   if (!Array.isArray(state.technologies)) return;
   for (const [id, n] of Object.entries(DATA.techtree.NOEUDS_RETIRES)) {
     if (!state.technologies.includes(id)) continue;
     state.technologies = state.technologies.filter((x) => x !== id);
-    state.pieces = Math.round((Number(state.pieces) || 0) + n.cout);
+    state.pieces = Math.round(num(state.pieces) + n.cout);
     if (!state.pointsTech || typeof state.pointsTech !== 'object') state.pointsTech = newTechPoints();
-    state.pointsTech.solde = (Number(state.pointsTech.solde) || 0) + n.pt;
+    state.pointsTech.solde = num(state.pointsTech.solde) + n.pt;
   }
 }
 
@@ -753,15 +754,7 @@ export function migrateRules11(old) {
   }
 
   // Arbre : nœuds retirés rendus.
-  if (Array.isArray(state.technologies)) {
-    for (const [id, n] of Object.entries(DATA.techtree.NOEUDS_RETIRES)) {
-      if (!state.technologies.includes(id)) continue;
-      state.technologies = state.technologies.filter((x) => x !== id);
-      state.pieces = Math.round(num(state.pieces) + n.cout);
-      if (!state.pointsTech || typeof state.pointsTech !== 'object') state.pointsTech = newTechPoints();
-      state.pointsTech.solde = num(state.pointsTech.solde) + n.pt;
-    }
-  }
+  refundRetiredNodes(state, num);
 
   // Comptes rendus : la nuit à l'Étable (vide pour une nuit d'avant la 1.1).
   if (state.nuit && typeof state.nuit === 'object' && !state.nuit.etable) state.nuit.etable = newStableReport();

@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import {
   allDevices, batteryCapacity, isBroken, needsService, panelOutput, perSecond, perTick, pumpFlow,
-  sunlitMs, tankCapacity,
+  storageCapacity, storedEnergy, sunlitMs, tankCapacity,
 } from './devices.js';
 import { availableEnergy, runFridge } from './fridge.js';
 import { runCooking, runElectricStation } from './kitchen.js';
@@ -57,6 +57,15 @@ export function drawEnergy(state, energy) {
     }
   }
   return energy - Math.max(0, rest);
+}
+
+// Un prélèvement de la nuit (frigo, robot) : il n'est pas une puissance, les compteurs
+// d'affichage (mWh/s) des batteries n'y touchent pas. Renvoie l'énergie fournie.
+export function drawNightEnergy(state, energy) {
+  const saved = state.batteries.map((b) => b.sortie);
+  const got = drawEnergy(state, energy);
+  state.batteries.forEach((b, i) => { b.sortie = saved[i]; });
+  return got;
 }
 
 // Consommateurs d'énergie, exécutés dans l'ordre à chaque tick. Les lots
@@ -226,8 +235,8 @@ export function energyStats(state) {
     panneauxTotal: state.panneaux.length,
     panneauxAEntretenir: state.panneaux.filter(needsService).length,
     panneauxEnPanne: state.panneaux.filter(isBroken).length,
-    charge: state.batteries.reduce((t, b) => t + b.chargeMwh, 0),
-    capacite: state.batteries.reduce((t, b) => t + batteryCapacity(b), 0),
+    charge: storedEnergy(state),
+    capacite: storageCapacity(state),
     entree: state.batteries.reduce((t, b) => t + b.entree, 0),
     sortie: state.batteries.reduce((t, b) => t + b.sortie, 0),
     batteriesAEntretenir: state.batteries.filter(needsService).length,

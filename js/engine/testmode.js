@@ -1,4 +1,5 @@
 import { DATA } from './catalog.js';
+import { unlockTab } from './base.js';
 import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './devices.js';
 import { noteCompta } from './compta.js';
 import { awakeMsAtHour } from './clock.js';
@@ -70,8 +71,7 @@ export function testAddTechPoints(state, n = 10) {
 
 export function testUnlockAllTechs(state) {
   state.technologies = Object.keys(DATA.techtree.noeuds);
-  const tab = DATA.TECHNO.ONGLET;
-  if (!state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
+  unlockTab(state, DATA.TECHNO.ONGLET);
   return { ok: true };
 }
 

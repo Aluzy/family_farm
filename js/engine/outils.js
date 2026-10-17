@@ -84,11 +84,22 @@ export function hitsNeeded(state, base) {
   return Math.max(1, base - techSum(state, 'coupsMoins'));
 }
 
-// Ce qu'un coup rapporte (`n`) : avec la Hotte de bûcheron (recolteBonus, en %), une
-// chance d'en avoir un de plus.
-function withBonus(state, n, key) {
-  const pct = techSum(state, key);
+// Ce qu'un coup rapporte (`n`) : avec une chance de `pct` % d'en avoir un de plus (la Hotte
+// de bûcheron, recolteBonus ; la Lampe de mineur, grotte.minerai).
+function withBonus(state, n, pct) {
   return n + (pct > 0 && nextRandom(state) * 100 < pct ? 1 : 0);
+}
+
+// Un coup sur l'arbre ou le rocher `id` (`partis` : 'arbres' ou 'rochers' de state.outils) :
+// au `base`-ième coup (moins les Lames affûtées), il tombe : { retour }, le jour où il revient
+// (dans `retour` jours, tiré au hasard). Renvoie { coups, fini }.
+function hit(state, partis, id, base, retour) {
+  const o = outils(state);
+  if (!o[partis] || typeof o[partis] !== 'object') o[partis] = {};
+  const coups = (o[partis][id] || 0) + 1;
+  const fini = coups >= hitsNeeded(state, base);
+  o[partis][id] = fini ? { retour: state.day + randomInt(state, retour[0], retour[1]) } : coups;
+  return { coups, fini };
 }
 
 // Coups de hache que l'arbre `id` peut encore recevoir avant de tomber (0 : abattu).
@@ -112,13 +123,9 @@ export function chopTree(state, id) {
   if (typeof id !== 'string' || !id) return fail('Touche un arbre pour le couper.');
   if (treeGone(state, id)) return fail('Cet arbre est déjà abattu.');
   if (!canAfford(state, 'couper')) return fail(TIRED);
-  const o = outils(state);
-  if (!o.arbres || typeof o.arbres !== 'object') o.arbres = {};
-  delete o.coupes;                       // l'ancien compte des coups du jour
-  const coups = (o.arbres[id] || 0) + 1;
-  const tombe = coups >= hitsNeeded(state, H.COUPES);
-  o.arbres[id] = tombe ? { retour: state.day + randomInt(state, H.RETOUR[0], H.RETOUR[1]) } : coups;
-  const bois = withBonus(state, H.BOIS, 'recolteBonus');
+  delete outils(state).coupes;           // l'ancien compte des coups du jour
+  const { coups, fini: tombe } = hit(state, 'arbres', id, H.COUPES, H.RETOUR);
+  const bois = withBonus(state, H.BOIS, techSum(state, 'recolteBonus'));
   addItem(state, 'bois', bois);
   spendEnergy(state, 'couper');
   gainActionXp(state, 'couper');
@@ -156,12 +163,8 @@ export function mineRock(state, id) {
   if (typeof id !== 'string' || !id) return fail('Touche un rocher pour le casser.');
   if (rockGone(state, id)) return fail('Ce rocher est déjà cassé.');
   if (!canAfford(state, 'piocher')) return fail(TIRED);
-  const o = outils(state);
-  if (!o.rochers || typeof o.rochers !== 'object') o.rochers = {};
-  const coups = (o.rochers[id] || 0) + 1;
-  const casse = coups >= hitsNeeded(state, P.COUPS);
-  o.rochers[id] = casse ? { retour: state.day + randomInt(state, P.RETOUR[0], P.RETOUR[1]) } : coups;
-  const pierre = withBonus(state, P.PIERRE, 'recolteBonus');
+  const { coups, fini: casse } = hit(state, 'rochers', id, P.COUPS, P.RETOUR);
+  const pierre = withBonus(state, P.PIERRE, techSum(state, 'recolteBonus'));
   addItem(state, 'pierre', pierre);
   spendEnergy(state, 'piocher');
   gainActionXp(state, 'piocher');
@@ -182,7 +185,7 @@ export function mineOre(state, sorte) {
   if (!canAfford(state, 'piocher')) return fail(TIRED);
   const lampe = techFlag(state, 'grotte');
   const pct = lampe && lampe.minerai ? lampe.minerai : 0;
-  const n = 1 + (pct > 0 && nextRandom(state) * 100 < pct ? 1 : 0);
+  const n = withBonus(state, 1, pct);
   const item = 'minerai_' + sorte;
   addItem(state, item, n);
   spendEnergy(state, 'piocher');

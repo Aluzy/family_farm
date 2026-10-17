@@ -22,6 +22,17 @@ export const STATE_VERSION = 37;
 export const GAME_VERSION = '1.16.0';
 export const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
+// `part` sur `total`, en % entier arrondi vers le bas et plafonné à 100 ; 0 sans total.
+export function floorPercent(part, total) {
+  if (!(total > 0)) return 0;
+  return Math.min(100, Math.floor((part * 100) / total));
+}
+
+// Ajoute un onglet du menu à ceux de la partie (une seule fois : il ne disparaît plus).
+export function unlockTab(state, tab) {
+  if (!state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
+}
+
 /* ---------- Lot 2 : aléatoire à graine (état dans state.rngSeed) ---------- */
 
 // Même suite que mulberry32(graine), mais l'état du générateur vit dans

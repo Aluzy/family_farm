@@ -1,11 +1,11 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { buildWith, fail, isBroken, makeDevice, nextLevelCost, perSecond, perTick, upgradeWith } from './devices.js';
-import { drawEnergy } from './energy.js';
+import { drawEnergy, drawNightEnergy } from './energy.js';
 import {
   ageLots, countItem, isFridgeable, isPerishable, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots, takeItem,
 } from './inventory.js';
-import { newNightStats } from './family.js';
+import { newFridgeNightStats, newNightStats } from './family.js';
 import { techPct } from './techtree.js';
 
 /* ---------- Lot 8 : réfrigérateur ---------- */
@@ -208,7 +208,7 @@ export function takeStock(state, item, qty) {
 
 export function nightFridgeStats(state) {
   if (!state.nuit) state.nuit = newNightStats();
-  if (!state.nuit.frigo) state.nuit.frigo = { mwh: 0, panne: false, vieillis: false };
+  if (!state.nuit.frigo) state.nuit.frigo = newFridgeNightStats();
   return state.nuit.frigo;
 }
 
@@ -228,11 +228,7 @@ export function nightPower(state) {
   const need = fridgeNightNeed(state);
   const avail = availableEnergy(state);
   const wanted = Math.min(need, avail);
-  // Un prélèvement de la nuit n'est pas une puissance : on ne touche pas aux
-  // compteurs d'affichage (mWh/s) des batteries.
-  const saved = state.batteries.map((b) => b.sortie);
-  drawEnergy(state, wanted);
-  state.batteries.forEach((b, i) => { b.sortie = saved[i]; });
+  drawNightEnergy(state, wanted);
   stats.mwh = wanted;
   if (avail < need) {
     f.panneNuit = true;

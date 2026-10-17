@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { allDevices, batteryCapacity, fail, isBroken, needsService, newDayStats, tankCapacity } from './devices.js';
+import { allDevices, fail, isBroken, needsService, newDayStats, storageCapacity, storedEnergy, tankCapacity } from './devices.js';
 import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
 import { expiringSoon, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
@@ -48,8 +48,8 @@ export function buildMorningReport(state) {
   const aSurveiller = (d) => ({ id: d.id, type: d.type, usure: d.usure });
   return {
     nuit: state.day,
-    energie: state.batteries.reduce((t, b) => t + b.chargeMwh, 0),
-    capacite: state.batteries.reduce((t, b) => t + batteryCapacity(b), 0),
+    energie: storedEnergy(state),
+    capacite: storageCapacity(state),
     energiePerdue: state.jour.perdue,
     eau: state.eauMl,
     capaciteEau: tankCapacity(state),

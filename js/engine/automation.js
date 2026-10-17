@@ -1,14 +1,14 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { allDevices, fail, maintainDevice, needsService, NO_COINS, pay, perSecond, perTick, tankCapacity } from './devices.js';
-import { drawEnergy, loadShedding } from './energy.js';
+import { drawEnergy, drawNightEnergy, loadShedding } from './energy.js';
 import { availableEnergy } from './fridge.js';
 import { newNightStats } from './family.js';
 import { allPlots, findPlot, harvest, harvestPlot, isMature, maxStage, noteWateredPlots, plant, plantPlot, plotZone, seedItem, seedStock, waterPlot, zone2Plots } from './crops.js';
 import { plantableCropsFor } from './campaign.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
-import { absoluteHours, hourOfDay, nightActive } from './clock.js';
+import { absoluteHours, dayHour, hourOfDay, nightActive } from './clock.js';
 
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
 
@@ -208,7 +208,7 @@ export function robotTasksLeft(state) {
 export function robotBusy(state) {
   const r = state.robot;
   if (nightActive(state) || !robotOn(state) || !r || r.jour !== state.day || r.charge) return false;
-  return r.i < r.taches.length && absoluteHours(state) + EPS >= ((Number(state.day) || 1) - 1) * 24 + DATA.ROBOT.HEURE;
+  return r.i < r.taches.length && absoluteHours(state) + EPS >= dayHour(state, DATA.ROBOT.HEURE);
 }
 
 // Consommateur d'électricité (energy.js, CONSUMERS) : à sa station, il recharge sa batterie
@@ -234,9 +234,7 @@ export function robotNight(state) {
   const b = robotBattery(state);
   const want = Math.min(robotCapacity(state) - b.mwh, availableEnergy(state));
   if (want <= 0) return 0;
-  const saved = state.batteries.map((x) => x.sortie);
-  const got = drawEnergy(state, want);
-  state.batteries.forEach((x, i) => { x.sortie = saved[i]; });
+  const got = drawNightEnergy(state, want);
   b.mwh += got;
   if (state.nuit) state.nuit.robot = got;
   return got;
@@ -278,7 +276,7 @@ function robotDo(state, r, tache) {
 export function robotStep(state) {
   if (nightActive(state) || !robotOn(state)) return 0;
   const R = DATA.ROBOT;
-  const debutJour = ((Number(state.day) || 1) - 1) * 24 + R.HEURE;
+  const debutJour = dayHour(state, R.HEURE);
   const now = absoluteHours(state);
   if (now < debutJour) return 0;
   let r = state.robot;

@@ -1,8 +1,8 @@
 import { DATA, roundPct } from './catalog.js';
-import { EPS } from './base.js';
+import { EPS, unlockTab } from './base.js';
 import { canPay, fail, NO_COINS, spend } from './devices.js';
 import { isAutomated } from './automation.js';
-import { chapterCount } from './campaign.js';
+import { chapterReached } from './campaign.js';
 import { soilCap, soilCount } from './crops.js';
 import { countItem, takeItem } from './inventory.js';
 
@@ -109,10 +109,9 @@ export function isBuilt(state, id) {
 }
 
 // Chapitre en cours pour les paliers (au-delà du dernier une fois la campagne finie).
+// (Sans campagne : le premier ; chapterReached, lui, y voit le mode libre.)
 export function techChapter(state) {
-  const c = state.campagne;
-  if (!c) return 1;
-  return c.fini ? chapterCount() + 1 : c.chapitre;
+  return state.campagne ? chapterReached(state) : 1;
 }
 
 // Prérequis d'un nœud, palier compris : [{ ok, texte }].
@@ -249,5 +248,5 @@ export function techProgress(state, brancheId) {
 // Première fois à SEUIL_PIECES pièces : l'onglet s'ajoute et ne disparaît plus.
 export function refreshUnlocks(state) {
   const tab = DATA.TECHNO.ONGLET;
-  if (state.pieces + EPS >= DATA.TECHNO.SEUIL_PIECES && !state.unlockedTabs.includes(tab)) state.unlockedTabs.push(tab);
+  if (state.pieces + EPS >= DATA.TECHNO.SEUIL_PIECES) unlockTab(state, tab);
 }

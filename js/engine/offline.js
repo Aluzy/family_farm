@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { batteryCapacity, tankCapacity } from './devices.js';
+import { storageCapacity, storedEnergy, tankCapacity } from './devices.js';
 import { awakeRequired, nightActive, nightLengthMs } from './clock.js';
 import { advanceNight } from './night.js';
 import { farmStep } from './energy.js';
@@ -26,7 +26,7 @@ export function offlineSnapshot(state) {
     produite: state.jour.produite,
     perdue: state.jour.perdue,
     eauPompee: state.jour.eau,
-    energie: state.batteries.reduce((t, b) => t + b.chargeMwh, 0),
+    energie: storedEnergy(state),
     eau: state.eauMl,
     taches,
     frigoEveil: f && f.construit ? f.eveilMs : 0,
@@ -64,8 +64,8 @@ export function offlineReport(state, before, demande, simule) {
     energieProduite: state.jour.produite - before.produite,
     energiePerdue: state.jour.perdue - before.perdue,
     energieDebut: before.energie,
-    energieFin: state.batteries.reduce((t, b) => t + b.chargeMwh, 0),
-    capacite: state.batteries.reduce((t, b) => t + batteryCapacity(b), 0),
+    energieFin: storedEnergy(state),
+    capacite: storageCapacity(state),
     eauPompee: state.jour.eau - before.eauPompee,
     eauDebut: before.eau,
     eauFin: state.eauMl,
