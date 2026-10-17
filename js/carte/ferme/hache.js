@@ -181,7 +181,7 @@
     // Les arbres abattus ont changé : leurs ombres, et les cases où le personnage passe.
     felledChanged() {
       this.felledFeet = new Set(this.mapTrees().filter((t) => t.gone).map((t) => t.foot.x + ',' + t.foot.y));
-      this.paintShadows();
+      this.sunDirty = true;
       if (this.ambient && this.ambient.setContext) this.ambient.setContext({ felled: this.felledFeet });
       if (this.fermier && this.fermier.regrid) this.fermier.regrid();
     },

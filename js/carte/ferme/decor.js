@@ -12,7 +12,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, FELL, OCCLUDER_ALPHA, TALL_GRASS, SHADOWS, SPRITE_CHECKS, CAST } = F.C;
+  const { T, MAP, OCCLUDER_ALPHA, TALL_GRASS, SPRITE_CHECKS } = F.C;
 
   F.partie({
 
@@ -74,7 +74,6 @@
         this.paintOccluder(o, raw, set, img);
         o.img = this.add.image(o.x, o.y, key).setOrigin(0).setDepth(o.foot);
         o.alpha = 1;
-        if (/barri/i.test(o.layer.name || '')) { if (o.shadow) o.shadow.destroy(); o.shadow = this.castShadow(o.img, CAST.fence); }
       });
     },
 
@@ -106,7 +105,6 @@
     // (la vérification régulière ; au retour sur la page, tous sont vérifiés).
     spritesWiped(few) {
       const all = (this.occluders || []).concat(this.rocks || []);
-      if (this.shadowTex && this.shadowProbe) all.push({ tex: this.shadowTex, probe: this.shadowProbe });
       let list = all;
       if (few && all.length > SPRITE_CHECKS) {
         const k0 = this.spriteCheckAt = ((this.spriteCheckAt || 0) + SPRITE_CHECKS) % all.length;
@@ -123,56 +121,6 @@
       return false;
     },
 
-    // Les ombres portées des arbres de la carte : une copie de ombres_arbres.png dans un
-    // canevas, d'où paintShadows ôte celles des arbres abattus.
-    makeShadows() {
-      if (!this.has(SHADOWS.key)) return;
-      const src = this.textures.get(SHADOWS.key).getSourceImage();
-      if (this.textures.exists('ombres_vives')) this.textures.remove('ombres_vives');
-      this.shadowTex = this.textures.createCanvas('ombres_vives', src.width, src.height);
-      this.add.image(0, 0, 'ombres_vives').setOrigin(0).setDepth(SHADOWS.depth);
-      this.paintShadows();
-    },
-
-    // L'ovale de l'ombre de l'arbre `t` (comme scripts/carte/carte_v2.py).
-    treeShadow(t) {
-      const rx = /sapin|pin/.test(t.kind || '') ? FELL.rx.pin : FELL.rx.arbre;
-      return { cx: t.foot.x + rx * 0.22, cy: t.foot.y, rx, ry: Math.max(3, Math.round(rx * 0.27)) };
-    },
-
-    paintShadows() {
-      if (!this.shadowTex) return;
-      const src = this.textures.get(SHADOWS.key).getSourceImage();
-      const ctx = this.shadowTex.getContext();
-      const W = this.shadowTex.width, H = this.shadowTex.height;
-      ctx.clearRect(0, 0, W, H);
-      ctx.drawImage(src, 0, 0);
-      const trees = this.mapTrees();
-      const down = trees.filter((t) => t.gone);
-      if (down.length) {
-        const ovals = down.map((t) => this.treeShadow(t));
-        ctx.save();
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.beginPath();
-        for (const e of ovals) { ctx.moveTo(e.cx + e.rx + 2, e.cy); ctx.ellipse(e.cx, e.cy, e.rx + 2, e.ry + 2, 0, 0, Math.PI * 2); }
-        ctx.fill();
-        ctx.restore();
-        // les ombres des arbres debout qui chevauchaient les leurs reviennent
-        const near = trees.filter((t) => !t.gone).map((t) => this.treeShadow(t))
-          .filter((e) => ovals.some((d) => Math.abs(d.cx - e.cx) < d.rx + e.rx + 4 && Math.abs(d.cy - e.cy) < d.ry + e.ry + 4));
-        if (near.length) {
-          ctx.save();
-          ctx.beginPath();
-          for (const e of near) { ctx.moveTo(e.cx + e.rx + 1, e.cy); ctx.ellipse(e.cx, e.cy, e.rx + 1, e.ry + 1, 0, 0, Math.PI * 2); }
-          ctx.clip();
-          ctx.drawImage(src, 0, 0);
-          ctx.restore();
-        }
-      }
-      this.shadowTex.refresh();
-      this.shadowProbe = this.probeOf(this.shadowTex, W, H);
-    },
-
     // Redessine les arbres, les barrières et les rochers de la carte dans leurs canevas.
     paintSprites() {
       const raw = this.mapRaw;
@@ -181,7 +129,7 @@
       if (!set) return;
       const img = this.textures.get(MAP.tiles).getSourceImage();
       for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.tex) this.paintOccluder(o, raw, set, img);
-      this.paintShadows();
+      this.sunDirty = true;            // (les ombres du soleil en sont tirées)
     },
 
     // À chaque image : l'arbre devant le personnage (son pied plus bas que celui du
@@ -269,24 +217,6 @@
       if (!this.occluders) return null;
       const i = t.cells.values().next().value;
       return this.occluders.find((o) => o.layer === t.layer && o.cells.has(i)) || null;
-    },
-
-    // L'ombre d'une image posée au sol (bâtiment, barrière) : sa silhouette noire, décalée de
-    // `off` ({ dx, dy }), sous tout ce qui est debout. stepShadows lui fait suivre l'image.
-    castShadow(img, off) {
-      if (!img || !img.texture || img.texture.key.indexOf('ph_') === 0) return null;
-      const sh = this.add.image(img.x + off.dx, img.y + off.dy, img.texture.key, img.frame ? img.frame.name : undefined)
-        .setOrigin(img.originX, img.originY).setFlipX(img.flipX).setTint(0x000000).setTintMode(global.Phaser.TintModes.FILL).setAlpha(CAST.alpha).setDepth(CAST.depth);
-      sh.setData('ombre', off);
-      return sh;
-    },
-
-    // À chaque image : l'ombre d'un bâtiment animé (le Moulin) prend l'image du moment.
-    stepShadows() {
-      for (const e of this.buildings.values()) {
-        if (!e.shadow || !e.sprite.anims || !e.sprite.frame) continue;
-        if (e.shadow.frame.name !== e.sprite.frame.name) e.shadow.setFrame(e.sprite.frame.name);
-      }
     },
   });
 })(window);
