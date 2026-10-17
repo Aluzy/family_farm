@@ -13,6 +13,7 @@ import { chopFromStage, fishFromStage, mineFromStage } from './outils.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
+import { closeModal, openModal } from './modal.js';
 import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
 
@@ -23,6 +24,9 @@ import { asleep } from '../engine/night.js';
 // la ferme : la carte du joueur, la date et l'argent, le menu latéral, la barre d'outils et les
 // fenêtres restent là, et le jeu continue de tourner (le temps passe, les entreprises
 // produisent, le repas, la nuit). C'est le personnage principal de la partie qui s'y promène.
+// Toutes ces cartes, et celle de la ferme, sont des scènes d'un seul jeu Phaser (js/carte/jeu.js) :
+// le canvas passe de #farm-stage à #map-stage, la ferme s'endort et se réveille telle qu'on
+// l'a laissée.
 //
 // Les cartes passent par FermeHote (ci-dessous) : l'heure, le personnage, le marché, les
 // entreprises, les outils (la hache et la pioche en main : couper, piocher), les messages, et go(cible) pour changer de carte (« jeu.html… » : la
@@ -135,7 +139,7 @@ function ouvre(page, search) {
   document.body.classList.add('en-excursion');
   history.replaceState(null, '', page === 'infra-monde.html' ? 'jeu.html?carte=infra' : 'jeu.html' + search);
   refresh();
-  lib.start(el, search);
+  if (lib.start(el, search) === false) { rentre(false); return false; }
   // l'infra-monde n'a pas de chemin de retour : un bouton
   if (page === 'infra-monde.html') {
     const b = document.createElement('button');
@@ -161,10 +165,16 @@ function rentre(est = true) {
 }
 
 // Changer de carte (une flèche, le train, un lien) : « jeu.html… » ramène à la ferme.
+// Sans Phaser (ou sans la carte), le joueur reste où il est, avec un message (les pages
+// ville-carte.html et infra-monde.html ne font que ramener ici).
 export function go(cible) {
   const { page, search } = parse(cible);
   if (page === 'jeu.html' || page === '') { rentre(new URLSearchParams(search).get('arrivee') === 'est'); return; }
-  if (!ouvre(page, search)) window.location.href = cible;
+  if (ouvre(page, search)) return;
+  if (!CARTES[page]) { window.location.href = cible; return; }
+  if (active) rentre(false);
+  else history.replaceState(null, '', 'jeu.html');
+  showToast('🗺️ Cette carte ne peut pas s\'afficher sur cet appareil.');
 }
 
 window.FermeHote = {
@@ -200,6 +210,11 @@ window.FermeHote = {
   coups: (base) => hitsNeeded(state, base),
   tech: (cle) => techFlag(state, cle),
   say: (t) => showToast(t),
+  // les fenêtres des cartes (la gare, l'arrêt de bus, un étal, une entreprise, le tronc creux) :
+  // celles du jeu (js/ui/modal.js : cadre bois, focus gardé par Tab, Échap, focus rendu) ;
+  // modal(html, options d'openModal) renvoie la boîte de dialogue
+  modal: (html, opts) => openModal(html, opts),
+  closeModal: () => closeModal(),
   // le god mode : les cartes ne font plus marcher le personnage (un toucher l'y pose)
   god: () => godMode,
 };

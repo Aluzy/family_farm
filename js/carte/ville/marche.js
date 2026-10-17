@@ -33,34 +33,39 @@
       return false;
     },
 
+    // La fenêtre d'un étal ou d'une entreprise (une fenêtre du jeu : hud.js, openDialog).
     openLieu(quoi) {
-      const el = document.getElementById('lieu-fenetre');
-      if (!el) return;
+      if (!this.openDialog('lieu-titre', '<div class="lieu-corps"></div>')) return;
       this.lieu = quoi;
       this.renderLieu();
-      el.hidden = false;
-      this.dialog = true;
-      const b = el.querySelector('button:not([disabled])');
-      if (b) b.focus();
+      this.focusDialog();
     },
 
-    closeLieu() {
-      const el = document.getElementById('lieu-fenetre');
-      if (el) el.hidden = true;
-      this.lieu = null;
-      this.time.delayedCall(60, () => { this.dialog = false; });
-    },
-
+    // Le contenu de la fenêtre, refait après chaque vente ou achat ; le bouton qui avait le
+    // focus le retrouve (même rôle : vendre tel produit, le quota…), sinon le premier choix.
     renderLieu() {
-      const titre = document.getElementById('lieu-titre'), corps = document.getElementById('lieu-corps');
+      const dlg = this.dialogEl;
+      if (!dlg || !this.lieu) return;
+      const titre = dlg.querySelector('#lieu-titre'), corps = dlg.querySelector('.lieu-corps');
+      const a = document.activeElement;
+      const avant = a && corps.contains(a) && a.tagName === 'BUTTON'
+        ? ['vendre', 'n', 'q'].filter((k) => a.dataset[k] !== undefined).map((k) => `[data-${k}="${CSS.escape(a.dataset[k])}"]`).join('') || (a.id ? '#' + CSS.escape(a.id) : '')
+        : null;
+      this.renderLieuCorps(titre, corps);
+      if (avant === null) return;
+      const b = avant && corps.querySelector(avant + ':not([disabled])');
+      if (b) b.focus({ preventScroll: true }); else this.focusDialog();
+    },
+
+    renderLieuCorps(titre, corps) {
       const v = this.vitrine(), H = hote();
       const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
       if (this.lieu === 'marche') {
         titre.textContent = '🧺 Le marché de la ville';
         if (!v) { corps.innerHTML = '<p class="note">Il faut une partie en cours pour vendre les produits de la ferme.</p>'; return; }
         const rangs = v.vente.map((r) => `<div class="rang"><span aria-hidden="true">${esc(r.icone)}</span><span class="nom">${esc(r.nom)} <small>× ${r.qte}</small></span><span>${r.prix} 💰</span>
-            <button type="button" data-vendre="${esc(r.item)}" data-n="1">Vendre 1</button>
-            <button type="button" data-vendre="${esc(r.item)}" data-n="${r.qte}">Tout</button></div>`).join('');
+            <button type="button" class="btn" data-vendre="${esc(r.item)}" data-n="1">Vendre 1</button>
+            <button type="button" class="btn" data-vendre="${esc(r.item)}" data-n="${r.qte}">Tout</button></div>`).join('');
         corps.innerHTML = `<p class="note">On achète ici les produits de la ferme plus cher qu'au Marché de la ferme. 💰 ${v.pieces} pièces.</p>
           <div class="rangs">${rangs || '<p class="note">Rien à vendre : pas de produits de la ferme en stock.</p>'}</div>`;
         corps.querySelectorAll('[data-vendre]').forEach((b) => { b.onclick = () => {
@@ -78,8 +83,8 @@
       const fait = `${e.texte} Chaque jour à ${e.heure} h, elle prend ${e.par} ${e.intrantNom} de la ferme par ${e.produit.toLowerCase()} et le vend ${e.prixProduit} 💰.`;
       if (!e.achetee) {
         corps.innerHTML = `<p class="note">${esc(fait)}</p><p class="note">Prix : <strong>${e.prix} 💰</strong> · tes pièces : ${v.pieces} 💰</p>
-          <div class="choix"><button type="button" id="lieu-acheter"${v.pieces >= e.prix ? '' : ' disabled'}>${v.pieces >= e.prix ? `Acheter la ${esc(e.nom.toLowerCase())}` : 'Pas assez de pièces'}</button></div>`;
-        const b = document.getElementById('lieu-acheter');
+          <div class="choix"><button type="button" class="btn primary" id="lieu-acheter"${v.pieces >= e.prix ? '' : ' disabled'}>${v.pieces >= e.prix ? `Acheter la ${esc(e.nom.toLowerCase())}` : 'Pas assez de pièces'}</button></div>`;
+        const b = corps.querySelector('#lieu-acheter');
         if (b) b.onclick = () => {
           const r = H.acheter(e.id);
           if (r && r.ok) this.say(`${e.icone} La ${e.nom.toLowerCase()} est à toi !`);
@@ -89,7 +94,7 @@
       }
       const b = e.bilan;
       corps.innerHTML = `<p class="note">${esc(fait)}</p>
-        <div class="quota"><button type="button" data-q="-1"${e.quota > 0 ? '' : ' disabled'} aria-label="Un de moins">−</button><span>Quota : <strong>${e.quota}</strong> ${esc(e.produit.toLowerCase())}${e.quota > 1 ? 's' : ''} par jour</span><button type="button" data-q="1"${e.quota < e.quotaMax ? '' : ' disabled'} aria-label="Un de plus">+</button></div>
+        <div class="quota"><button type="button" class="btn" data-q="-1"${e.quota > 0 ? '' : ' disabled'} aria-label="Un de moins">−</button><span>Quota : <strong>${e.quota}</strong> ${esc(e.produit.toLowerCase())}${e.quota > 1 ? 's' : ''} par jour</span><button type="button" class="btn" data-q="1"${e.quota < e.quotaMax ? '' : ' disabled'} aria-label="Un de plus">+</button></div>
         <p class="note">${b ? `Le jour ${b.jour} : ${b.unites} fabriqués, +${b.gain} 💰.` : 'Pas encore de production.'} En stock à la ferme : ${e.dispo} ${esc(e.intrantNom)}.</p>`;
       corps.querySelectorAll('[data-q]').forEach((btn) => { btn.onclick = () => {
         H.quota(e.id, e.quota + Number(btn.dataset.q));

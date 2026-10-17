@@ -15,7 +15,8 @@ endroit et partagent avec elle un kit commun (§ 1 bis) et le jour et la nuit (�
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 3.90 (≈ 1 Mo)
- ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, lumiere.js
+ ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, lumiere.js ;
+ │                        jeu.js, le jeu Phaser de toutes les cartes (CarteJeu, voir § 1 quater)
  ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, les bêtes de l'Étable et du Poulailler (voir docs/vie-ambiance.md)
  ├─ js/fermier.js         le personnage, facultatif : il refait sur la carte les gestes du joueur (voir docs/personnage.md)
  ├─ js/famille-ferme.js   les autres membres de la famille sur la carte de la ferme
@@ -142,6 +143,44 @@ suite au premier affichage et avec « réduire les animations »).
   l'intérieur des voisins (éclairé), l'infra-monde (sa lumière à lui).
 - Hors de portée pour l'instant : les réverbères et les fenêtres allumées la nuit.
 
+## 1 quater. Un seul jeu Phaser pour toutes les cartes
+
+`js/carte/jeu.js` (`window.CarteJeu`, chargé après le kit) tient **un seul `Phaser.Game`** :
+la ferme, la ville (et la transition, la montagne, la plage, la grotte, chez les voisins) et
+l'infra-monde en sont des scènes. Un canvas, un contexte WebGL, un jeu de textures. Avant, chaque
+changement de carte détruisait le jeu de la carte précédente et en créait un autre (nouveau
+contexte WebGL, images retéléchargées et redécodées, planches réextrudées), pendant que celui de
+la ferme dormait à côté avec ses propres textures.
+
+- **Changer de carte = changer de scène** (`CarteJeu.montre(zone, clé, { cree, data, neuve, garde })`).
+  La ferme est une scène *gardée* : elle s'endort (`scene.sleep`) et se réveille telle qu'on l'a
+  laissée (vue, personnage, intérieur). Une autre carte est une **scène neuve à chaque fois**
+  (`new VilleScene()`, ses paramètres en `data` : `{ search: '?carte=…&arrivee=…' }`, lus dans
+  `init()`), retirée quand on la quitte : ses objets, ses minuteries (`this.time`), ses tweens,
+  ses appuis et ses touches partent avec elle. Pendant une image (une carte quittée depuis une
+  minuterie de sa scène), le passage est fait juste après, hors de l'image.
+- **Les textures restent** : le chargeur d'une scène saute ce qui est déjà dans le jeu, une carte
+  revue ne redemande rien ; `CarteKit.extrude()` n'extrude une planche qu'une fois. Ce qui dépend
+  de la carte ou de la partie porte son fichier dans sa clé : la planche du personnage
+  (`heros:<fichier>`), celle des rochers d'une carte (`rochers_carte:<fichier>`) ; les
+  animations de l'habitant de l'infra-monde portent son nom (le gestionnaire d'animations est
+  commun).
+- **Le canvas** est rendu à la densité de l'écran (`CarteKit.ratio()`, plafonnée à 3) en
+  `Scale.NONE`, et posé dans la zone de la carte affichée (`#farm-stage`, `#map-stage`) ; un
+  `ResizeObserver` sur ces zones et `CarteJeu.taille()` tiennent sa taille. La ferme garde son
+  zoom non entier ; la ville et l'infra-monde prennent un **zoom entier en pixels de l'écran**
+  (`CarteJeu.zoomEntier` : 2 à 5 pixels CSS par pixel de carte comme avant, arrondi à un nombre
+  entier de pixels de l'écran) et arrondissent par leur caméra. Un écouteur de taille posé par une
+  scène passe par `CarteJeu.suitTaille(scène, fn)`, retiré à son arrêt.
+- **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la
+  page ; `CarteKit.saisie()` laisse les touches au champ qui a le focus ou à la fenêtre ouverte.
+- **Fenêtres des cartes** (la gare, l'arrêt de bus, un étal, une entreprise, le tronc creux) :
+  celles du jeu, par `FermeHote.modal(html, options)` / `FermeHote.closeModal()` (js/ui/modal.js :
+  cadre bois, focus gardé par Tab, Échap, focus rendu). Tant qu'une fenêtre est ouverte, les
+  touchers et les flèches ne vont pas à la carte.
+- **Sans Phaser** (ou sans WebGL ni canvas utilisable) : la ferme garde sa liste classique (§ 6) ;
+  une autre carte ne s'ouvre pas, le joueur reste où il est avec un message.
+
 ## 2. La carte : 72×57 tuiles, trois repères
 
 `assets/carte_printemps.json` est la carte Tiled du propriétaire : 72×57 tuiles de 16 px
@@ -239,7 +278,7 @@ dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
   (`setCentre()` borne le centre). `panTo()` accepte un lieu (`'moulin'`, `'zone'`…) et y
   centre la vue dans les deux sens.
 - **Densité de l'écran** : le canvas est rendu à `devicePixelRatio` (plafonné à 3) en mode
-  `Scale.NONE` ; `resize()` (ResizeObserver sur la zone) tient la taille à jour. Le zoom n'étant
+  `Scale.NONE` ; `CarteJeu.taille()` (ResizeObserver sur la zone) tient la taille à jour. Le zoom n'étant
   pas entier, c'est ce qui garde des pixels réguliers. `roundPixels` est désactivé (des sommets
   arrondis un à un ouvriraient des fentes entre parcelles voisines).
 - **Glissement libre** au doigt ou à la souris (deux axes, borné ; molette sur ordinateur), avec
@@ -257,7 +296,8 @@ dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
 
 `#farm-stage` est en `position: fixed`, de `--header-h` (hauteur du bandeau, mesurée à chaque
 rendu) à `--dock` (menu du bas). Visible seulement sur la Ferme hors écran de détail
-(`stageActive()`) ; ailleurs elle est masquée et la boucle Phaser dort (`loop.sleep()`).
+(`stageActive()`) ; ailleurs elle est masquée, sa scène dort et, si aucune autre carte n'est
+affichée, la boucle Phaser aussi (`CarteJeu.cache`).
 Quand elle est visible, `<main>` est masqué (`body.has-stage`).
 
 - **Boutons ronds** posés sur la carte, en haut à droite (DOM, 48 px) : 🌱 ouvre la fenêtre

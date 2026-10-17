@@ -60,19 +60,7 @@
       if (!a || !c || this.navette || w.x < a.x0 || w.x > a.x1 || w.y < a.y0 || w.y > a.y1) return false;
       if (!this.navetteOuverte()) { this.say(`🚌 Plus de bus à cette heure : le premier passe à ${NAVETTE.heures[0]} h.`); return true; }
       if (this.school) { this.say('🚌 Le bus de l\'école est en route : le bus de ligne passe juste après.'); return true; }
-      const el = this.gareEl, box = document.getElementById('gare-choix');
-      if (!el || !box) return true;
-      box.textContent = '';
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = c.choix;
-      b.addEventListener('click', () => this.startNavette());
-      box.appendChild(b);
-      document.getElementById('gare-titre').textContent = '🚌 L\'arrêt de bus';
-      document.getElementById('gare-texte').textContent = `Le bus de ligne passe dans un instant. Il va ${c.vers}.`;
-      el.hidden = false;
-      this.dialog = true;
-      b.focus();
+      this.openChoix('🚌 L\'arrêt de bus', `Le bus de ligne passe dans un instant. Il va ${c.vers}.`, [{ label: c.choix, go: () => this.startNavette() }]);
       return true;
     },
 

@@ -58,13 +58,13 @@
       }
       for (const o of objects('rochers')) {
         const prop = (n) => Number(((o.properties || []).find((q) => q.name === n) || {}).value) || 0;
-        if (!this.textures.exists(NATURE.rochers.key) || (H && H.casse && H.casse(id(o)))) continue;
+        if (!this.rochersKey || !this.textures.exists(this.rochersKey) || (H && H.casse && H.casse(id(o)))) continue;
         const half = prop('demi') || 12, d = { half, h: prop('haut') || 20, reach: half + 8 };
         const tronc = [];
         for (let dx = -Math.max(0, half - 6); dx <= Math.max(0, half - 6); dx += 8) tronc.push(dx);
         if (!tronc.length) tronc.push(0);
         const r = { id: id(o), kind: 'rocher', def: d, x: o.x, y: o.y };
-        r.img = this.add.image(Math.round(o.x), Math.round(o.y), NATURE.rochers.key, prop('image')).setOrigin(0.5, 1).setDepth(o.y);
+        r.img = this.add.image(Math.round(o.x), Math.round(o.y), this.rochersKey, prop('image')).setOrigin(0.5, 1).setDepth(o.y);
         this.blockUnder(r, tronc);
         this.rocks.push(r);
       }

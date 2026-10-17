@@ -50,7 +50,8 @@
   const { T, MAP, SFX, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, SHADOWS, TREE_SHADOW, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, MILL_FRAME, ROOF_PANELS, WELL, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
   const { clamp, pixelRatio, reducedMotion, v } = F;
 
-  let game = null;
+  let game = null;          // le jeu Phaser de toutes les cartes (js/carte/jeu.js)
+  let mounted = false;
   let scene = null;
   let host = null;
   let lastModel = null;     // le dernier modèle reçu (comparé au suivant, voir pareil())
@@ -243,8 +244,7 @@
         this.ready = true;
         if (this.ctx.lastModel) this.sync(this.ctx.lastModel, true);
         this.makeExit();
-        // Cachée pendant le chargement (une autre carte est affichée) : elle s'endort maintenant.
-        if (!this.ctx.visible) this.game.loop.sleep();
+        // (cachée pendant le chargement, une autre carte affichée : js/carte/jeu.js l'endort)
       }
 
       onDown(pointer) {
@@ -617,8 +617,8 @@
   }
 
   function mount(element, options) {
-    if (!global.Phaser) return false;      // pas de Phaser : la page garde son affichage classique
-    if (game) return true;
+    if (!global.Phaser || !global.CarteJeu) return false;   // pas de Phaser : la page garde son affichage classique
+    if (mounted) return true;
     host = element;
     ctx.bridge = options;
     ctx.base = (options && options.base) || 'assets/';
@@ -626,37 +626,13 @@
     ctx.labelLayer = document.createElement('div');
     ctx.labelLayer.className = 'stage-labels';
     element.appendChild(ctx.labelLayer);
-
-    const dpr = pixelRatio();
-    game = new global.Phaser.Game({
-      type: global.Phaser.AUTO,
-      parent: element,
-      // Pixels nets sans arrondi des positions : le zoom n'est pas entier, et des sommets
-      // arrondis un par un ouvriraient des fentes entre parcelles voisines.
-      render: { antialias: false, antialiasGL: false, roundPixels: false },
-      transparent: false,
-      backgroundColor: '#6a8157',
-      // Taille du jeu = taille de la zone × densité de l'écran ; resize() la tient à jour.
-      scale: {
-        mode: global.Phaser.Scale.NONE,
-        width: Math.max(1, Math.round((element.clientWidth || 320) * dpr)),
-        height: Math.max(1, Math.round((element.clientHeight || 480) * dpr)),
-        zoom: 1 / dpr,
-        expandParent: false,
-        autoRound: false,
-      },
-      // Le toucher est capturé (pas de défilement de page ni de clic fantôme après un appui).
-      input: { keyboard: false, gamepad: false, touch: { capture: true } },
-      audio: { noAudio: true },
-      banner: false,
-      scene: [new (sceneClass())(ctx)],
-    });
-    game.events.once('ready', () => {
-      scene = game.scene.getScene('farm');
-      // Cachée (une autre carte est affichée) : la boucle tourne jusqu'à la fin du chargement,
-      // sans quoi le chargeur s'arrête en route et la carte ne serait jamais prête.
-      if (ctx.visible) { awake = false; show(); } else if (ready()) game.loop.sleep();
-    });
+    // Le jeu Phaser est celui de toutes les cartes (js/carte/jeu.js) : la ferme en est une
+    // scène, gardée (endormie, pas retirée) quand une autre carte passe devant. Cachée, elle se
+    // crée quand même : elle est prête quand la page la montre.
+    game = global.CarteJeu.jeu(element);
+    if (!game) return false;
+    mounted = true;
+    if (ctx.visible) { awake = false; show(); } else global.CarteJeu.prepare(element, 'farm', () => new (sceneClass())(ctx));
 
     // Retour sur la page (onglet réaffiché, téléphone rallumé) : le fond est vérifié tout de
     // suite, puis encore un peu plus tard, le temps que le navigateur rende la mémoire graphique.
@@ -670,32 +646,17 @@
     document.addEventListener('visibilitychange', onBack);
     global.addEventListener('pageshow', onBack);
     global.addEventListener('focus', onBack);
-
-    if (global.ResizeObserver) new global.ResizeObserver(resize).observe(element);
-    global.addEventListener('resize', resize);
-    // Avant chaque geste, Phaser doit connaître la position exacte du canvas dans la page
-    // (le bandeau peut changer de hauteur sans que la fenêtre soit redimensionnée).
-    const refreshBounds = () => { if (game && game.isBooted) game.scale.updateBounds(); };
-    element.addEventListener('touchstart', refreshBounds, { capture: true, passive: true });
-    element.addEventListener('mousedown', refreshBounds, true);
     // Un clic sur le canvas est déjà traité par la scène : il ne remonte pas à la page.
     element.addEventListener('click', (e) => { if (game && e.target === game.canvas) e.stopPropagation(); });
     return true;
   }
 
-  // Aligne la taille du jeu sur celle de la zone (× densité de l'écran).
-  function resize() {
-    if (!game || !game.isBooted || !host) return;
-    const w = host.clientWidth, h = host.clientHeight;
-    if (!w || !h) return;                  // zone masquée
-    const dpr = pixelRatio();
-    const gw = Math.round(w * dpr), gh = Math.round(h * dpr);
-    game.scale.zoom = 1 / dpr;
-    if (gw !== game.scale.width || gh !== game.scale.height) game.scale.resize(gw, gh);
-    else game.scale.updateBounds();
-  }
-
   function getScene() { return game && (scene || (scene = game.scene.getScene('farm'))); }
+
+  // La ferme à l'écran : sa scène devant (réveillée telle qu'on l'a laissée), dans sa zone.
+  function montre() {
+    global.CarteJeu.montre(host, 'farm', { cree: () => new (sceneClass())(ctx), garde: true });
+  }
 
   function ready() { const s = getScene(); return !!(s && s.ready); }
 
@@ -724,7 +685,7 @@
 
   function update(model) {
     ctx.lastModel = model;
-    if (!game || !ctx.visible) return;
+    if (!mounted || !ctx.visible) return;
     if (lastModel && pareil(model, lastModel)) return;
     lastModel = model;
     const s = getScene();
@@ -733,13 +694,10 @@
 
   function show() {
     ctx.visible = true;
-    if (!game) return;
-    // Phaser démarre seulement quand la page a fini de charger : avant, rien à rafraîchir.
-    // La scène appliquera elle-même le dernier modèle reçu dans create().
-    if (!game.isBooted || awake) return;
+    if (!mounted || awake) return;
     awake = true;
-    game.loop.wake();
-    resize();
+    // (le jeu pas encore démarré : la scène appliquera elle-même le dernier modèle dans create())
+    montre();
     lastModel = null;
     if (ctx.lastModel) update(ctx.lastModel);
     const s = getScene();
@@ -749,7 +707,7 @@
   function hide() {
     ctx.visible = false;
     awake = false;
-    if (game && game.isBooted && ready()) game.loop.sleep(); // sinon : à la fin du chargement
+    if (mounted) global.CarteJeu.cache('farm');   // une autre carte affichée : rien ne change pour elle
   }
 
   // L'intérieur `id` ('serre') peut-il être affiché ? Faux tant que la scène n'est pas prête,
