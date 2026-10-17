@@ -31,16 +31,16 @@ export const FERME_GENEREE = {
   TOUFFES: 44, FLEURS: 0.05,
 };
 
-// La cour (provisoire) : les rectangles de la carte de Tiled (couche « batiment », puits et
-// citerne de DEFAULT_OBJECTS dans js/carte/ferme/config.js), en px. La cour est posée d'un
+// La cour (provisoire) : les rectangles de la carte de Tiled (couche « batiment »), en px. La cour est posée d'un
 // nombre entier de tuiles plus loin.
 const MAISON = [513.5, 239, 94, 95.6];
 const COUR = {
   serre: [736.1, 273.6, 94, 78.3], grange: [305, 253.8, 126.1, 81.6],
   zone_culture_1: [464.5, 385.1, 78.1, 94], moulin: [626.1, 412.3, 95.6, 127], verger: [625.1, 303.7, 12.8, 15.9],
   zone_culture_2: [622, 607.6, 130.8, 128.8], silo: [657, 238.5, 49.5, 64.3], poulailler: [128.5, 257, 63, 77],
-  puits: [596, 390, 34, 38], citerne: [629, 394, 24, 34],
 };
+// (le puits et la citerne, à côté du Moulin : se bâtissent aussi, étape 5b-2 ; leur place reste dégagée)
+const PUITS = [596, 390, 57, 38];
 [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
   [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
   .forEach((p, i) => { COUR['arbre_verger_' + (i + 1)] = [p[0], p[1], 63.7, 78.2]; });
@@ -92,7 +92,7 @@ function fabriquer(graine) {
 
   // ---- 1. la cour : où elle va, ce qu'elle interdit
   let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
-  for (const [x, y, w, h] of Object.values(COUR).concat([MAISON])) {
+  for (const [x, y, w, h] of Object.values(COUR).concat([MAISON, PUITS])) {
     bx0 = Math.min(bx0, Math.floor(x / T)); by0 = Math.min(by0, Math.floor(y / T));
     bx1 = Math.max(bx1, Math.ceil((x + w) / T)); by1 = Math.max(by1, Math.ceil((y + h) / T));
   }

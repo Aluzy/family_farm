@@ -147,10 +147,13 @@
   // px au-dessus du bas de la paillasse.
   const BLOCS_CARTE = {
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
-    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6 },
-    plats: ['paillasse'], bloquent: ['mur_pierre', 'atelier', 'four', 'cuisiniere'],
-    // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station
-    fenetres: { four: 'four', cuisiniere: 'cuisine' },
+    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8 },
+    plats: ['paillasse'], bloquent: ['mur_pierre', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie'],
+    // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png)
+    ailleurs: ['puits', 'citerne'],
+    // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
+    // batterie, le puits ou la citerne, l'énergie ou l'eau
+    fenetres: { four: 'four', cuisiniere: 'cuisine', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau' },
     voile: 0xc8ffb4, voileAlpha: 0.4, voileDepth: 0.08, coucheY: 4,
   };
   const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };

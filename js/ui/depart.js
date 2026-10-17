@@ -69,6 +69,15 @@ export function renderStarterCards() {
       const L = STARTER_LABELS[t];
       const cost = DATA.DEPART.ACHATS[t];
       const raison = starterBlock(state, t);
+      // la ferme générée : il se fabrique à l'Atelier et se pose sur la carte (étape 5b-2)
+      if (atelierOuvert(state)) {
+        const ou = t === 'pompe' ? 'sur un puits' : 'dehors';
+        return `
+        <div class="starter-row">
+          <span><span aria-hidden="true">${L.icone}</span> <strong>${L.nom}</strong><br><span class="muted">${L.note}</span></span>
+          <span class="muted">${raison && raison !== 'Achète d\'abord le panneau et la pompe.' ? escapeHtml(raison) : `À fabriquer à l'Atelier, puis à poser ${ou} (🔨).`}</span>
+        </div>`;
+      }
       return `
         <div class="starter-row">
           <span><span aria-hidden="true">${L.icone}</span> <strong>${L.nom}</strong><br><span class="muted">${L.note}</span></span>
