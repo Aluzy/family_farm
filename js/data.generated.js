@@ -398,6 +398,7 @@ export const RAW_DATA = {
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 120,
+    "BONHEUR_SANS_COUCHAGE": -8,
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },

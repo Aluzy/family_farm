@@ -57,6 +57,12 @@ export function actionNightStart() {
 // la journée continue sans s'arrêter.
 export function wakeUp() {
   state.reveil = false;
+  // la ferme générée : qui a dormi sans paillasse dans une pièce close (js/engine/blocs.js)
+  const sans = state.report && state.report.sansCouchage;
+  if (sans && sans.length) {
+    const noms = state.famille.membres.filter((m) => sans.includes(m.id)).map((m) => m.nom);
+    notify(`🛏 Sans paillasse dans une pièce close : ${noms.join(', ')} ${noms.length > 1 ? 'ont' : 'a'} mal dormi (${DATA.ATELIER.BONHEUR_SANS_COUCHAGE} 😊).`);
+  }
   setCoucher(false); // il se lève
   syncJobs(); // les préparations terminées pendant la nuit ne sont pas annoncées par un toast
   persistState(); // sauvegarde après chaque nuit

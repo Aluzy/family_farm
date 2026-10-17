@@ -3,6 +3,8 @@ import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { atelierConstruit, atelierOuvert } from './atelier.js';
 import { farmTerrain, tileCount } from './terrain.js';
+import { mainCharacter } from './depart.js';
+import { memberHappiness, setHappiness } from './ville.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -101,6 +103,18 @@ export function couchages(state) {
 // paillasse dans une pièce close pour le personnage principal (la première lui revient).
 export function nuitCouchee(state) {
   return !atelierOuvert(state) || couchages(state).length > 0;
+}
+
+// La nuit (runNight), sur la ferme générée : il faut une paillasse d'une pièce close par
+// personne, le personnage principal d'abord ; chaque membre sans couchage perd
+// ATELIER.BONHEUR_SANS_COUCHAGE de bonheur. Renvoie les membres sans couchage.
+export function nuitSansCouchage(state) {
+  if (!atelierOuvert(state)) return [];
+  const principal = mainCharacter(state);
+  const ordre = [principal].concat(state.famille.membres.filter((m) => m !== principal)).filter(Boolean);
+  const sans = ordre.slice(couchages(state).length);
+  for (const m of sans) setHappiness(m, memberHappiness(m) + DATA.ATELIER.BONHEUR_SANS_COUCHAGE);
+  return sans;
 }
 
 /* ---------- poser, reprendre ---------- */

@@ -5,7 +5,7 @@ import { noteCompta } from './compta.js';
 import { awakeMsAtHour } from './clock.js';
 import { addItem, spoil } from './inventory.js';
 import { openFridge } from './fridge.js';
-import { allPlots, makePlot, maxStage, openSerre, seedItem, startPlots, zoneTile } from './crops.js';
+import { allPlots, makePlot, maxStage, openSerre, seedItem, zoneTile } from './crops.js';
 import { farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { openVerger } from './orchard.js';
@@ -13,6 +13,7 @@ import { openStation } from './kitchen.js';
 import { grantTechPoints, refreshUnlocks } from './techtree.js';
 import { chapterCount, completeChapter, newCampaignCounters } from './campaign.js';
 import { sleep } from './night.js';
+import { setFarmSeed } from './depart.js';
 import { gainXp, levelCount } from './levels.js';
 
 /* ---------- actions du mode test ---------- */
@@ -22,11 +23,7 @@ import { gainXp, levelCount } from './levels.js';
 // rochers cassés de l'autre carte n'ont pas de sens ici : la partie repart des parcelles de
 // départ, tous les arbres debout et tous les rochers entiers.
 export function testFarmMap(state, graine) {
-  if (graine === null || graine === undefined) delete state.carte;
-  else state.carte = { graine: String(graine) };
-  state.potager.parcelles = startPlots(farmTerrain(state));
-  if (state.outils) { state.outils.arbres = {}; state.outils.rochers = {}; }
-  return { ok: true, graine: state.carte ? state.carte.graine : null };
+  return setFarmSeed(state, graine);
 }
 
 export function testAddPieces(state, amount) {

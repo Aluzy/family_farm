@@ -148,3 +148,10 @@ Le Marché vend toujours les outils.
 4. ✅ La pose bloc par bloc, la détection des pièces closes, les paillasses et le sommeil. Voir
    « Construire et dormir (étape 4) » plus haut.
 5. La nouvelle partie sur la carte générée, l'ajustement de la progression, et les tests.
+   - ✅ 5a :
+     - l'écran de départ propose « Une terre sauvage, quatre fois plus grande », avec une graine
+       au choix ou tirée au hasard (`setFarmSeed`) ;
+     - chaque nuit, chaque membre sans paillasse dans une pièce close perd 8 de bonheur
+       (`ATELIER.BONHEUR_SANS_COUCHAGE`, `nuitSansCouchage`) ; un message le dit au réveil.
+   - 5b : retirer les bâtiments provisoires de la cour. Leurs fonctions doivent passer à des
+     constructions bloc par bloc.

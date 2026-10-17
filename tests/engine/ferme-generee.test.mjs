@@ -7,7 +7,7 @@
 import { assert, assertEqual, garden, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierStatus, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierOuvert, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -250,4 +250,40 @@ test('ferme générée : des murs tout autour et une porte font une pièce close
   const t = garden();
   t.energie = 0;
   assertEqual(nuitCouchee(t), true);
+});
+
+/* ---------- étape 5 : la nouvelle partie, le bonheur sans couchage ---------- */
+
+test('nouvelle partie sur une ferme générée : la graine, sans terre au départ', () => {
+  const s = createNewGame(5);
+  assertEqual(s.potager.parcelles, []);
+  assertEqual(setFarmSeed(s, 'neuve'), { ok: true, graine: 'neuve' });
+  assertEqual([farmTerrain(s).LARGEUR, s.potager.parcelles, atelierOuvert(s)], [144, [], true]);
+  assertEqual(setFarmSeed(s, null).graine, null, 'et retour à la ferme dessinée');
+});
+
+test('ferme générée : chaque nuit, qui n\'a pas de paillasse dans une pièce close perd du bonheur', () => {
+  const s = chantier('b3');
+  const B = DATA.ATELIER.BONHEUR_SANS_COUCHAGE;
+  const membres = s.famille.membres;
+  assert(membres.length >= 2, 'une famille de plusieurs');
+  for (const m of membres) m.bonheur = 50;
+  // (sans repas : le bonheur du repas ne compte pas ici)
+  const avant = membres.map((m) => m.bonheur);
+  const sans = nuitSansCouchage(s);
+  assertEqual([sans.length, membres.map((m) => m.bonheur)], [membres.length, avant.map((b) => b + B)], 'personne n\'a de couchage');
+  // une pièce, une paillasse : le personnage principal dort, les autres non
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  poserBloc(s, 'paillasse', p.dedans);
+  for (const m of membres) m.bonheur = 50;
+  const sans2 = nuitSansCouchage(s);
+  assertEqual([sans2.includes(mainCharacter(s)), sans2.length], [false, membres.length - 1]);
+  assertEqual(mainCharacter(s).bonheur, 50);
+  // sur la ferme dessinée, rien
+  assertEqual(nuitSansCouchage(garden()), []);
+  // et la nuit le note pour le réveil
+  const r = sleepOnce(s);
+  assertEqual(r.sansCouchage.length, membres.length - 1);
 });
