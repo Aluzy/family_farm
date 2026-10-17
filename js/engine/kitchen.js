@@ -2,9 +2,9 @@ import { DATA, ingredientOptions, recipeOutput, recipeOutputQty } from './catalo
 import { EPS } from './base.js';
 import { buildWith, efficiency, fail, isBroken, makeDevice, perSecond, tankCapacity } from './devices.js';
 import { drawEnergy, loadShedding } from './energy.js';
-import { addItem, countItem, takeItem } from './inventory.js';
+import { addItem } from './inventory.js';
 import { availableEnergy } from './fridge.js';
-import { storeWheat, takeWheat, wheatTotal } from './animals.js';
+import { countWithSilo, storeWheat, storeWithSilo, takeWheat, takeWithSilo, wheatTotal } from './animals.js';
 import { recipeTime, techEffects, techFlag } from './techtree.js';
 import { noteRecipeDone } from './campaign.js';
 import { gainActionXp } from './levels.js';
@@ -44,15 +44,10 @@ export function taskTimeLeft(state, id) {
   return v > 0 ? Math.ceil((job.resteMs * 100) / v / 1000) : Infinity;
 }
 
-// Quantité disponible d'un ingrédient : le blé compte celui du Silo.
-export function ingredientStock(state, item) {
-  return item === DATA.SILO.ITEM ? wheatTotal(state) : countItem(state, item);
-}
-
 // Objet choisi pour un ingrédient : le premier de ses options en quantité
 // suffisante, ou null.
 export function pickIngredient(state, ing) {
-  return ingredientOptions(ing).find((item) => ingredientStock(state, item) + EPS >= ing.qte) || null;
+  return ingredientOptions(ing).find((item) => countWithSilo(state, item) + EPS >= ing.qte) || null;
 }
 
 // Une ligne par ingrédient (puis une pour l'eau) : { options, qte, have, ok, item }.
@@ -61,7 +56,7 @@ export function recipeLines(state, id) {
   const r = DATA.recipes[id];
   const lines = r.ingredients.map((ing) => {
     const item = pickIngredient(state, ing);
-    const have = Math.max(...ingredientOptions(ing).map((it) => ingredientStock(state, it)));
+    const have = Math.max(...ingredientOptions(ing).map((it) => countWithSilo(state, it)));
     return { options: ingredientOptions(ing), qte: ing.qte, have, ok: item !== null, item };
   });
   if (r.eau) lines.push({ eau: true, qte: r.eau, have: Math.floor(state.eauMl / 1000), ok: state.eauMl >= r.eau * 1000, item: null });
@@ -117,17 +112,9 @@ export function cancelQueued(state, stationId, index) {
   const st = state.stations[stationId];
   if (!st || !Array.isArray(st.file) || !st.file[index]) return fail('Rien à annuler.');
   const [entry] = st.file.splice(index, 1);
-  for (const p of entry.pris || []) {
-    if (p.item === DATA.SILO.ITEM) storeWheat(state, p.qte);
-    else addItem(state, p.item, p.qte);
-  }
+  for (const p of entry.pris || []) storeWithSilo(state, p.item, p.qte);
   if (entry.eau) state.eauMl = Math.min(tankCapacity(state), state.eauMl + entry.eau * 1000);
   return { ok: true, recette: entry.recette };
-}
-
-export function takeIngredient(state, item, qty) {
-  if (item === DATA.SILO.ITEM) takeWheat(state, qty, 'inventaire');
-  else takeItem(state, item, qty);
 }
 
 // Lance une préparation : la station doit exister et être libre, les
@@ -156,7 +143,7 @@ export function startRecipe(state, id) {
   for (const l of lines) {
     if (l.eau) state.eauMl = Math.max(0, state.eauMl - l.qte * 1000);
     else {
-      takeIngredient(state, l.item, l.qte);
+      takeWithSilo(state, l.item, l.qte); // le blé compte celui du Silo
       pris.push({ item: l.item, qte: l.qte });
     }
   }

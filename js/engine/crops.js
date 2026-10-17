@@ -1,8 +1,7 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, nextRandom, randomInt } from './base.js';
 import { buildWith, fail, farmOpen, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
-import { countItem, takeItem } from './inventory.js';
-import { takeWheat, wheatTotal } from './animals.js';
+import { countWithSilo, takeWithSilo } from './animals.js';
 import { deposit } from './ramassage.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, isUnlocked, noteCropHarvested, noteWatered } from './campaign.js';
@@ -358,16 +357,13 @@ export function seedLabel(culture) {
 // Graines disponibles pour semer une culture. Le blé sert de graine : celui de
 // l'inventaire et celui du Silo comptent tous les deux.
 export function seedStock(state, culture) {
-  const item = seedItem(culture);
-  return item === DATA.SILO.ITEM ? wheatTotal(state) : countItem(state, item);
+  return countWithSilo(state, seedItem(culture));
 }
 
 // Retire une graine. Le blé se prend d'abord dans l'inventaire (le Silo reste
 // pour les poules), puis dans le Silo.
-export function takeSeed(state, culture) {
-  const item = seedItem(culture);
-  if (item === DATA.SILO.ITEM) return takeWheat(state, 1, 'inventaire') ? 1 : 0;
-  return takeItem(state, item, 1);
+function takeSeed(state, culture) {
+  return takeWithSilo(state, seedItem(culture), 1);
 }
 
 export function plantableCrops(lieu) {

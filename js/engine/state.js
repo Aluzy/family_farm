@@ -2,8 +2,7 @@ import { DATA } from './catalog.js';
 import { STATE_VERSION } from './base.js';
 import { newVille } from './ville.js';
 import { batteryCapacity, newDayStats, startFarm } from './devices.js';
-import { addItem, defaultOrigin, lotRank, shelfLife } from './inventory.js';
-import { pushLots } from './fridge.js';
+import { addItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
 } from './family.js';
@@ -19,17 +18,9 @@ import { energyMax } from './stamina.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
-export function startInventory() {
-  const inv = {};
-  for (const [item, qty] of Object.entries(DATA.START.INVENTAIRE)) {
-    inv[item] = [{ qty, nightsLeft: shelfLife(item), origin: defaultOrigin(item) }];
-  }
-  return inv;
-}
-
 export function startHousehold() {
   return {
-    inventaire: startInventory(),
+    inventaire: lotsFromCounts(DATA.START.INVENTAIRE),
     potager: { parcelles: startPlots(), zone2: [], houe: false, houeVue: false },
     famille: {
       membres: DATA.FAMILY.MEMBRES.map(makeMember),
@@ -152,7 +143,7 @@ export const MIGRATIONS = {
         continue;
       }
       const qty = Number(v);
-      if (qty > 0) inventaire[item] = [{ qty, nightsLeft: shelfLife(item), origin: defaultOrigin(item) }];
+      if (qty > 0) inventaire[item] = [freshLot(item, qty)];
     }
     const nuit = state.nuit && typeof state.nuit === 'object'
       ? { ...state.nuit, perdus: state.nuit.perdus || {} }
@@ -640,10 +631,9 @@ export function migrateWheatAndReserve(old) {
   const item = DATA.SILO.ITEM;
   if (inv && Array.isArray(inv[item])) {
     // Le blé déjà stocké part à conservation pleine (comme s'il venait d'être récolté).
-    const life = shelfLife(item);
     const qty = inv[item].reduce((t, l) => t + (Number(l && l.qty) || 0), 0);
     state.inventaire = { ...inv };
-    if (qty > 0) state.inventaire[item] = [{ qty, nightsLeft: life, origin: defaultOrigin(item) }];
+    if (qty > 0) state.inventaire[item] = [freshLot(item, qty)];
     else delete state.inventaire[item];
   }
   return state;

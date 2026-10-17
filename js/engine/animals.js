@@ -75,6 +75,25 @@ export function takeWheat(state, qty, first = 'inventaire') {
   return true;
 }
 
+// Le blé a deux places, l'inventaire et le Silo ; les autres objets, l'inventaire seul.
+// Quantité d'un objet, blé du Silo compris (semis, ingrédients).
+export function countWithSilo(state, item) {
+  return item === DATA.SILO.ITEM ? wheatTotal(state) : countItem(state, item);
+}
+
+// Retire `qty` unités (le blé : tout ou rien, l'inventaire d'abord, puis le Silo) ;
+// renvoie la quantité retirée.
+export function takeWithSilo(state, item, qty) {
+  if (item === DATA.SILO.ITEM) return takeWheat(state, qty, 'inventaire') ? qty : 0;
+  return takeItem(state, item, qty);
+}
+
+// Range un produit : le blé d'abord au Silo (storeWheat), le reste dans l'inventaire.
+export function storeWithSilo(state, item, qty) {
+  if (item === DATA.SILO.ITEM) storeWheat(state, qty);
+  else addItem(state, item, qty);
+}
+
 // Le Silo est offert (construction à 0 dans DATA) mais reste à construire.
 export function buildSilo(state) {
   const s = state.silo;

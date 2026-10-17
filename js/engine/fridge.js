@@ -2,7 +2,9 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { buildWith, fail, isBroken, makeDevice, nextLevelCost, perSecond, perTick, upgradeWith } from './devices.js';
 import { drawEnergy } from './energy.js';
-import { countItem, isFridgeable, isPerishable, lotRank, lotsOf } from './inventory.js';
+import {
+  ageLots, countItem, isFridgeable, isPerishable, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots, takeItem,
+} from './inventory.js';
 import { newNightStats } from './family.js';
 import { techPct } from './techtree.js';
 
@@ -16,8 +18,7 @@ import { techPct } from './techtree.js';
 // reçu son énergie au dernier tick (❄️ ou ⚠️ à l'écran).
 
 export function fridgeLots(state, item) {
-  const lots = state.frigo && state.frigo.items ? state.frigo.items[item] : null;
-  return Array.isArray(lots) ? lots : [];
+  return lotList(state.frigo && state.frigo.items, item);
 }
 
 export function fridgeCount(state, item) {
@@ -108,34 +109,6 @@ export function runFridge(state, dtMs) {
   f.alimenteMs += dtMs;
 }
 
-// Retire jusqu'à `qty` unités d'une liste de lots (le plus ancien d'abord) et
-// renvoie les morceaux retirés, avec leur conservation et leur origine.
-export function pullLots(lots, qty) {
-  const out = [];
-  let rest = qty;
-  for (const lot of lots) {
-    if (rest <= 0) break;
-    const n = Math.min(lot.qty, rest);
-    if (n > 0) {
-      out.push({ qty: n, nightsLeft: lot.nightsLeft, origin: lot.origin });
-      lot.qty -= n;
-      rest -= n;
-    }
-  }
-  return out;
-}
-
-// Range des morceaux dans une liste de lots, en les fusionnant s'ils ont la même
-// conservation et la même origine ; le plus ancien reste en tête.
-export function pushLots(lots, pulled) {
-  for (const p of pulled) {
-    const same = lots.find((l) => l.nightsLeft === p.nightsLeft && l.origin === p.origin);
-    if (same) same.qty += p.qty;
-    else lots.push({ ...p });
-  }
-  lots.sort((a, b) => (lotRank(a) === lotRank(b) ? 0 : lotRank(a) < lotRank(b) ? -1 : 1));
-}
-
 // Déplace `qty` unités d'un aliment périssable de l'inventaire vers le frigo.
 // Les lots gardent leur compteur de conservation, qui se fige au frais.
 export function moveToFridge(state, item, qty) {
@@ -150,9 +123,7 @@ export function moveToFridge(state, item, qty) {
   if (n <= 0) return fail(`Le frigo est plein (${fridgeCapacity(state)} unités).`);
   const inv = lotsOf(state, item);
   const pulled = pullLots(inv, n);
-  const kept = inv.filter((l) => l.qty > 0);
-  if (kept.length) state.inventaire[item] = kept;
-  else delete state.inventaire[item];
+  keepLots(state.inventaire, item, inv);
   const lots = fridgeLots(state, item);
   pushLots(lots, pulled);
   state.frigo.items[item] = lots;
@@ -204,9 +175,7 @@ export function moveFromFridge(state, item, qty) {
   if (n <= 0) return fail('Rien à sortir.');
   const lots = fridgeLots(state, item);
   const pulled = pullLots(lots, n);
-  const kept = lots.filter((l) => l.qty > 0);
-  if (kept.length) state.frigo.items[item] = kept;
-  else delete state.frigo.items[item];
+  keepLots(state.frigo.items, item, lots);
   const inv = lotsOf(state, item);
   pushLots(inv, pulled);
   state.inventaire[item] = inv;
@@ -220,10 +189,21 @@ export function takeFromFridge(state, item, qty, out = null) {
   const pulled = pullLots(lots, qty);
   if (out) out.push(...pulled.map((p) => ({ qty: p.qty, origin: p.origin })));
   const taken = pulled.reduce((t, p) => t + p.qty, 0);
-  const kept = lots.filter((l) => l.qty > 0);
-  if (kept.length) state.frigo.items[item] = kept;
-  else if (state.frigo.items) delete state.frigo.items[item];
+  keepLots(state.frigo.items, item, lots);
   return taken;
+}
+
+/* -- le stock : l'inventaire et le frigo ensemble -- */
+
+// Quantité d'un objet dans l'inventaire et au frigo.
+export function stockCount(state, item) {
+  return countItem(state, item) + fridgeCount(state, item);
+}
+
+// Prend `qty` unités : dans l'inventaire (il périt), puis au frigo. Renvoie ce qui a été pris.
+export function takeStock(state, item, qty) {
+  const a = takeItem(state, item, qty);
+  return a + (qty - a > 0 ? takeFromFridge(state, item, qty - a) : 0);
 }
 
 export function nightFridgeStats(state) {
@@ -274,20 +254,7 @@ export function fridgeNight(state) {
   if (warm) {
     stats.vieillis = true;
     if (!state.nuit.perdus) state.nuit.perdus = {};
-    for (const item of Object.keys(f.items)) {
-      const kept = [];
-      for (const lot of fridgeLots(state, item)) {
-        if (lot.nightsLeft === null) {
-          kept.push(lot);
-          continue;
-        }
-        lot.nightsLeft -= F.PERTE_NUITS;
-        if (lot.nightsLeft <= 0) state.nuit.perdus[item] = (state.nuit.perdus[item] || 0) + lot.qty;
-        else kept.push(lot);
-      }
-      if (kept.length) f.items[item] = kept;
-      else delete f.items[item];
-    }
+    ageLots(f.items, F.PERTE_NUITS, state.nuit.perdus);
   }
   f.alimenteMs = 0;
   f.eveilMs = 0;

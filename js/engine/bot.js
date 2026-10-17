@@ -4,7 +4,7 @@ import { canPay, farmOpen, isBroken, isOwned, starterOf, upgradeCost, upgradeDev
 import { awakeRequired } from './clock.js';
 import { tick } from './energy.js';
 import { addItem, countItem, expiringSoon } from './inventory.js';
-import { buildFridge, fridgeCount, fridgeLevel, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, upgradeFridge } from './fridge.js';
+import { buildFridge, fridgeLevel, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
 import { planMeal } from './family.js';
 import { actionCost, energyLevel } from './stamina.js';
@@ -228,7 +228,7 @@ export function botMill(state) {
 export function botSpare(state, item) {
   if (item === DATA.SILO.ITEM) return wheatTotal(state);
   const reserve = state.famille.reserve[item] || 0;
-  return countItem(state, item) + fridgeCount(state, item) - reserve;
+  return stockCount(state, item) - reserve;
 }
 
 // Option retenue pour un ingrédient (celle dont il reste assez), ou null.
@@ -292,7 +292,7 @@ export function botStartRecipe(state, id) {
 export function botBuyStaples(state) {
   if (!farmOpen(state)) return;
   for (const [item, a] of Object.entries(DATA.SIMULATION.ACHATS_CUISINE)) {
-    for (let i = 0; i < a.stock && countItem(state, item) + fridgeCount(state, item) < a.stock; i++) {
+    for (let i = 0; i < a.stock && stockCount(state, item) < a.stock; i++) {
       if (!isBuyable(item) || buyPrice(state, item) > a.prixMax + EPS || !canPay(state, buyPrice(state, item) + DATA.SIMULATION.CAISSE)) break;
       if (!buyItem(state, item, 1).ok) break;
     }
