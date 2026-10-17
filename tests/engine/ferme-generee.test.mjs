@@ -4,10 +4,10 @@
    Lancer seul : node --test tests/engine/ferme-generee.test.mjs (ou node tests/run-tests.mjs ferme-generee).
    ========================================================================== */
 
-import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
+import { assert, assertEqual, garden, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierStatus, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierStatus, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -163,4 +163,91 @@ test('ferme générée : l\'Atelier se construit avec 3 bois et 3 pierres, puis 
   assertEqual([s.outils.hache, countItem(s, 'bois')], [true, 0]);
   setInv(s, { bois: 2, pierre: 2, fibre: 1 });
   assertEqual(craft(s, 'hache').ok, false, 'déjà une hache');
+});
+
+/* ---------- étape 4 : construire bloc par bloc ---------- */
+
+// Une ferme générée, l'Atelier construit, et `n` de chaque matériau en main.
+function chantier(graine, n = 40) {
+  const s = garden();
+  tireless(s);
+  testFarmMap(s, graine);
+  setInv(s, { bois: 3, pierre: 3 });
+  assert(buildAtelier(s).ok);
+  setInv(s, { mur_pierre: n, porte: n, paillasse: n });
+  return s;
+}
+
+// Une case d'herbe libre de `w` × `h` cases (coin haut-gauche), loin des bords.
+function terrainLibre(s, w, h) {
+  const T = farmTerrain(s), W = T.LARGEUR;
+  for (let r = 4; r < T.HAUTEUR - h - 4; r++) {
+    for (let c = 4; c < W - w - 4; c++) {
+      let ok = true;
+      for (let dr = 0; dr < h && ok; dr++) for (let dc = 0; dc < w && ok; dc++) ok = T.LIGNES[r + dr][c + dc] === '#' && !s.potager.parcelles.some((p) => p.case === (r + dr) * W + c + dc);
+      if (ok) return { c, r, W };
+    }
+  }
+  return null;
+}
+
+// Les murs d'une pièce de w × h cases (murs compris), la porte au milieu du bas.
+function murs({ c, r, W }, w, h) {
+  const out = [];
+  for (let dr = 0; dr < h; dr++) for (let dc = 0; dc < w; dc++) if (dr === 0 || dc === 0 || dr === h - 1 || dc === w - 1) out.push((r + dr) * W + c + dc);
+  return { murs: out.filter((t) => t !== (r + h - 1) * W + c + Math.floor(w / 2)), porte: (r + h - 1) * W + c + Math.floor(w / 2), dedans: (r + 1) * W + c + 1 };
+}
+
+test('ferme générée : poser et reprendre des blocs, sur l\'herbe seulement', () => {
+  const s = chantier('b1');
+  const z = terrainLibre(s, 6, 5);
+  const t = z.r * z.W + z.c;
+  assertEqual(poserBloc(s, 'mur_pierre', t), { ok: true, sorte: 'mur_pierre', case: t });
+  assertEqual([blocAt(s, t), countItem(s, 'mur_pierre'), isArable(t, s), blocBloque(s, t)], ['mur_pierre', 39, false, true]);
+  assertEqual(poserBloc(s, 'porte', t).ok, false, 'déjà un bloc');
+  const route = farmTerrain(s).LIGNES.join('').indexOf('.');
+  assertEqual(poserBloc(s, 'mur_pierre', route).ok, false, 'pas hors de l\'herbe');
+  assertEqual(poserBloc(s, 'paillasse', t + 2).ok, false, 'la paillasse : dans une pièce close');
+  assertEqual(reprendreBloc(s, t), { ok: true, sorte: 'mur_pierre', case: t });
+  assertEqual([blocAt(s, t), countItem(s, 'mur_pierre')], [null, 40]);
+  // l'Atelier se pose une fois
+  assertEqual(blocsEnMain(s, 'atelier'), 1);
+  assert(poserBloc(s, 'atelier', t).ok);
+  assertEqual([blocsEnMain(s, 'atelier'), poserBloc(s, 'atelier', t + 1).ok], [0, false]);
+  reprendreBloc(s, t);
+  assertEqual(blocsEnMain(s, 'atelier'), 1, 'repris : à poser de nouveau');
+  setInv(s, {});
+  assertEqual(poserBloc(s, 'mur_pierre', t).ok, false, 'plus de murs en main');
+});
+
+test('ferme générée : des murs tout autour et une porte font une pièce close, où l\'on dort sur une paillasse', () => {
+  const s = chantier('b2');
+  const z = terrainLibre(s, 5, 5);
+  const p = murs(z, 5, 5);
+  for (const t of p.murs) assert(poserBloc(s, 'mur_pierre', t).ok);
+  assertEqual(piecesCloses(s), [], 'sans porte : pas de pièce close');
+  assertEqual(nuitCouchee(s), false, 'pas de paillasse : on ne dort pas');
+  assert(poserBloc(s, 'porte', p.porte).ok);
+  const pc = piecesCloses(s);
+  assertEqual([pc.length, pc[0].cases.length, pc[0].portes], [1, 9, [p.porte]]);
+  assert(dansPiece(s, p.dedans));
+  assert(poserBloc(s, 'paillasse', p.dedans).ok);
+  assertEqual([couchages(s), nuitCouchee(s)], [[p.dedans], true]);
+  // la nuit : l'énergie revient
+  s.energie = 0;
+  assert(sleepOnce(s) !== null);
+  assert(s.energie > 0, 'couché : l\'énergie du réveil');
+  // (un coin repris : la pièce reste close, on ne passe pas en diagonale)
+  reprendreBloc(s, p.murs[0]);
+  assertEqual(nuitCouchee(s), true);
+  // un mur repris : la pièce s'ouvre, la paillasse reste mais on n'y dort plus
+  reprendreBloc(s, p.murs[1]);
+  assertEqual([piecesCloses(s), blocAt(s, p.dedans), nuitCouchee(s)], [[], 'paillasse', false]);
+  s.energie = 0;
+  assert(sleepOnce(s) !== null);
+  assertEqual(s.energie, 0, 'sans pièce close : la nuit ne rend rien');
+  // la carte de Tiled : on dort comme avant
+  const t = garden();
+  t.energie = 0;
+  assertEqual(nuitCouchee(t), true);
 });

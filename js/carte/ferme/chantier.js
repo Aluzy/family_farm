@@ -1,0 +1,90 @@
+/* carte/ferme/chantier.js — la scène de la ferme : les blocs posés et le mode « Construire ».
+ *
+ * Sur la ferme générée (docs/carte-generee.md, étape 4), le joueur pose des blocs sur les cases
+ * de la carte (js/engine/blocs.js) : murs en pierre, portes, paillasses, l'Atelier. Le modèle les
+ * donne (modèle.blocs : [{ case, sorte }]) ; chacun a son image (assets/blocs.png,
+ * scripts/carte/blocs.py), le bas sur le bas de sa case, rangée selon son pied (la paillasse,
+ * à plat, sous ce qui est debout). Les murs et l'Atelier arrêtent le personnage (blockCells) ;
+ * les portes et les paillasses se traversent. Ils portent une ombre (soleil.js).
+ *
+ * Le mode « Construire » (modèle.bati = { sorte }) : un appui sur une case y pose le bloc choisi,
+ * un appui sur un bloc le reprend (le pont : ctx.bridge.act('bloc')). Les pièces closes
+ * (modèle.pieces : leurs cases) sont teintées de vert.
+ *
+ * « Dormir » : le personnage va à la première paillasse d'une pièce close (bedSpot), s'y
+ * couche sous sa couverture (js/fermier.js, couchage).
+ *
+ * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
+ * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
+ */
+(function (global) {
+  'use strict';
+
+  const F = global.FermeCarte;
+  const { T, BLOCS_CARTE } = F.C;
+
+  F.partie({
+
+    // Les images des blocs : celles du modèle, créées, changées ou ôtées.
+    syncBlocks(list, bati, pieces) {
+      if (!this.blocks) this.blocks = new Map();
+      const B = this.blocks, seen = new Set(), cols = this.grid.cols;
+      let changed = false;
+      if (this.has(BLOCS_CARTE.key)) {
+        for (const b of list || []) {
+          seen.add(b.case);
+          const e = B.get(b.case);
+          if (e && e.sorte === b.sorte) continue;
+          if (e) e.img.destroy();
+          const x = (b.case % cols) * T + T / 2, y = (Math.floor(b.case / cols) + 1) * T;
+          const plat = BLOCS_CARTE.plats.includes(b.sorte);
+          const img = this.add.image(x, y, BLOCS_CARTE.key, BLOCS_CARTE.frames[b.sorte] || 0).setOrigin(0.5, 1).setDepth(plat ? y - T : y);
+          B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img });
+          changed = true;
+        }
+      }
+      for (const [c, e] of B) if (!seen.has(c)) { e.img.destroy(); B.delete(c); changed = true; }
+      if (changed) {
+        this.sunDirty = true;
+        if (this.fermier && this.fermier.regrid) this.fermier.regrid();
+      }
+      this.drawRooms(bati ? pieces : null);
+    },
+
+    // Les cases que les blocs ferment au passage (murs, Atelier).
+    blockCells() {
+      const out = [];
+      for (const e of (this.blocks || new Map()).values()) if (BLOCS_CARTE.bloquent.includes(e.sorte)) out.push(e.case);
+      return out;
+    },
+
+    // En mode Construire : les pièces closes, teintées de vert (null : rien).
+    drawRooms(pieces) {
+      const cle = pieces ? JSON.stringify(pieces) : '';
+      if (cle === this.roomsKey) return;
+      this.roomsKey = cle;
+      if (!this.roomsGfx) this.roomsGfx = this.add.graphics().setDepth(BLOCS_CARTE.voileDepth);
+      const g = this.roomsGfx, cols = this.grid.cols;
+      g.clear();
+      if (!pieces) return;
+      g.fillStyle(BLOCS_CARTE.voile, BLOCS_CARTE.voileAlpha);
+      for (const p of pieces) for (const c of p) g.fillRect((c % cols) * T, Math.floor(c / cols) * T, T, T);
+    },
+
+    // La case sous le doigt (son numéro), ou -1 hors de la carte.
+    tileAtPoint(wx, wy) {
+      const cols = this.grid.cols, c = Math.floor(wx / T), r = Math.floor(wy / T);
+      return c >= 0 && r >= 0 && c < cols && wy < this.world.h ? r * cols + c : -1;
+    },
+
+    // Où il se couche : la première paillasse d'une pièce close (modèle.couchages), ou null.
+    bedSpot() {
+      const m = this.ctx.lastModel, list = (m && m.couchages) || [];
+      for (const c of list) {
+        const e = this.blocks && this.blocks.get(c);
+        if (e && e.sorte === 'paillasse') return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, depth: e.img.depth, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y } };
+      }
+      return null;
+    },
+  });
+})(window);

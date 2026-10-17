@@ -103,6 +103,7 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `camera.js` | zoom, glissement, élan, repères, `panTo` |
 | `etiquettes.js` | étiquettes, bulles des tas, bulle « +x », bulle de la citerne (DOM) |
 | `hache.js`, `pioche.js`, `peche.js` | les arbres, les rochers, l'étang et la mare |
+| `chantier.js` | la ferme générée : les blocs posés (murs, portes, paillasses, Atelier), le mode Construire, les pièces closes, la paillasse où il dort |
 | `cueillette.js` | la ferme générée : ce qu'on ramasse à la main (pierres, bois, herbes), un appui et le personnage le prend |
 | `passages.js` | la sortie vers la ville (le rectangle `vers_la_transition` de la carte, `exitAt()`), le tronc creux |
 | `machines.js` | les asperseurs, le robot |

@@ -391,6 +391,13 @@ export const RAW_DATA = {
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" }
     },
+    "BLOCS": {
+      "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true },
+      "porte": { "nom": "Porte", "objet": "porte", "porte": true, "ferme": true },
+      "paillasse": { "nom": "Paillasse", "objet": "paillasse", "dedans": true },
+      "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
+    },
+    "PIECE_MAX": 120,
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },

@@ -99,6 +99,7 @@ function freedRockTiles(state) {
 // La tuile est-elle labourable ? Sans `state`, une tuile sous un rocher ne l'est pas.
 // `libres` : freedRockTiles(state), à passer quand on teste beaucoup de tuiles d'un coup.
 export function isArable(tile, state, libres) {
+  if (state && state.blocs && state.blocs[tile]) return false;     // un bloc posé (la ferme générée)
   const ch = terrainChar(tile, farmTerrain(state));
   return ch === '#' || (ch === 'o' && (libres || freedRockTiles(state)).has(tile));
 }

@@ -110,6 +110,31 @@ Le Marché vend toujours les outils.
 - **Sur la carte, pour l'instant**, l'Atelier n'est qu'une fenêtre. La pose bloc par bloc
   (étape 4) lui donnera sa place.
 
+## Construire et dormir (étape 4)
+
+- **Les blocs** (`js/engine/blocs.js`, `DATA.ATELIER.BLOCS`) : mur en pierre, porte, paillasse
+  et l'Atelier une fois construit. Ils se posent sur l'herbe, pas sur une terre labourée.
+  - Un bloc posé quitte l'inventaire ; repris, il y revient (`state.blocs` : case → sorte).
+  - Les murs et l'Atelier arrêtent le personnage ; on traverse les portes et les paillasses.
+  - Ils portent une ombre, comme le reste du décor.
+- **Une pièce close** : des cases entourées de murs, de portes ou de l'Atelier, avec au moins une
+  porte. Elle fait au plus 120 cases et ne touche pas le bord de la carte. Les coins ne comptent
+  pas : on ne passe pas en diagonale.
+- **Construire** se fait sur la carte (`js/ui/chantier.js`, `js/carte/ferme/chantier.js`) :
+  - une case 🔨 apparaît dans la barre d'outils dès que l'Atelier est construit ;
+  - une puce montre chaque bloc et ce qui en reste en main, ainsi que le nombre de paillasses
+    où l'on peut dormir ;
+  - un appui sur une case y pose le bloc choisi, un appui sur un bloc le reprend ;
+  - les pièces closes sont teintées de vert.
+- **Dormir** :
+  - « Dormir » envoie le personnage à la première paillasse d'une pièce close. Il s'y couche
+    sous sa couverture (`assets/blocs.png`, `scripts/carte/blocs.py`) et la nuit défile.
+  - Sans paillasse dans une pièce close, un message le dit : la famille ne dort pas, la nuit
+    passe sans rendre d'énergie (`nuitCouchee`).
+  - Pour l'instant, l'énergie est celle du personnage principal : la première paillasse lui
+    revient.
+- **La maison de la cour** est encore là, provisoirement. On n'y dort plus sur la ferme générée.
+
 ## Étapes
 
 1. ✅ Le terrain ne dépend plus de la carte. Le moteur passe par `farmTerrain(state)`
@@ -120,5 +145,6 @@ Le Marché vend toujours les outils.
    ferme dessinée »). Voir « La ferme générée » plus haut.
 3. ✅ Les ressources à ramasser, l'atelier, les objets et les recettes de matériaux. Voir
    « Ramasser et fabriquer (étape 3) » plus haut.
-4. La pose bloc par bloc, la détection des pièces closes, les paillasses et le sommeil.
+4. ✅ La pose bloc par bloc, la détection des pièces closes, les paillasses et le sommeil. Voir
+   « Construire et dormir (étape 4) » plus haut.
 5. La nouvelle partie sur la carte générée, l'ajustement de la progression, et les tests.

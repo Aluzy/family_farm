@@ -1530,6 +1530,26 @@ body.has-stage { padding-bottom: 0; }
 .stage-chip-go { flex: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; }
 .stage-chip-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--bg-muted); }
 .stage-chip-bar > span { display: block; height: 100%; background: var(--accent); }
+/* La ferme générée, le mode Construire (js/ui/chantier.js) : un bouton par bloc dans la puce,
+   celui choisi encadré ; la puce elle-même ne se touche pas (div), ses boutons oui. */
+.stage-chip.chantier { cursor: default; }
+.stage-chip.chantier .stage-chip-pill { gap: 4px; padding: 0 6px; }
+.stage-chip-bloc {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  padding: 0 5px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.stage-chip-bloc.active { border-color: var(--accent); background: var(--bg-muted); }
+.stage-chip.chantier .stage-chip-go { border: 0; background: none; padding: 0 4px; cursor: pointer; font: inherit; font-size: 1.1rem; }
 
 /* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des flèches. */
 .stage-room-bar {

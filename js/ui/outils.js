@@ -9,6 +9,8 @@ import { ACTIONS, registerActions } from './actions.js';
 import { persistState } from './storage.js';
 import { closeStageWindow, stageInterior, stageWindow } from './stage-windows.js';
 import { closeModal } from './modal.js';
+import { buildSlotHtml } from './chantier.js';
+import { setBuildMode } from './store.js';
 
 /* ---------- la barre d'outils, en bas de la carte ---------- */
 
@@ -34,7 +36,8 @@ function enMain() {
 // La barre d'outils de la carte, ou '' : sur la carte de la ferme, sans fenêtre ouverte,
 // dès qu'un outil est acheté.
 export function toolBarHtml() {
-  if (!OUTILS.some((id) => hasTool(state, id))) return '';
+  const bati = buildSlotHtml();             // la ferme générée : le mode Construire (js/ui/chantier.js)
+  if (!OUTILS.some((id) => hasTool(state, id)) && !bati) return '';
   const main = enMain();
   const cases = OUTILS.map((id) => {
     const def = toolDef(id);
@@ -44,7 +47,7 @@ export function toolBarHtml() {
     const tenu = id === main;
     const label = tenu ? `${def.NOM} en main : la ranger` : `Prendre : ${def.NOM}`;
     return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${label}" title="${label}">${def.ICONE}</button>`;
-  }).join('');
+  }).join('') + bati;
   const tab = `<button type="button" class="tool-bar-tab" data-action="toolbar-toggle" aria-expanded="${toolbarOpen}" aria-label="${toolbarOpen ? 'Ranger la barre d\'outils' : 'Sortir la barre d\'outils'}" title="Outils">${BARRE_FLECHE}</button>`;
   return tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${cases}</div>`;
 }
@@ -60,6 +63,7 @@ function useTool(id) {
   if (id === 'houe' || id === 'hache' || id === 'pioche' || id === 'canne') {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
   }
+  setBuildMode(null);
   applyResult(selectTool(state, id));
   if (id !== 'houe' && hoeMode) setHoeMode(false);
   if (id !== 'hache' && axeMode) setAxeMode(false);

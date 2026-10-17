@@ -120,6 +120,7 @@
         L.spritesheet(K.FLECHE.key, v(K.FLECHE.file), { frameWidth: K.FLECHE.size, frameHeight: K.FLECHE.size });
         L.image('silo', v('silo.png'));
         L.spritesheet(F.C.RAMASSABLES.key, v(F.C.RAMASSABLES.file), F.C.RAMASSABLES.frame);
+        L.spritesheet(F.C.BLOCS_CARTE.key, v(F.C.BLOCS_CARTE.file), F.C.BLOCS_CARTE.frame);
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
@@ -230,6 +231,9 @@
               // Il dort dans son lit : la nuit peut passer.
               asleep: () => setTimeout(() => { if (this.ctx.bridge && this.ctx.bridge.asleep) this.ctx.bridge.asleep(); }, 0),
               has: (key) => this.has(key),
+              // la ferme générée : les blocs où l'on ne passe pas, et la paillasse où il dort
+              blocks: () => this.blockCells(),
+              couchage: () => this.bedSpot(),
             });
           } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
         }
@@ -501,6 +505,8 @@
         const hoeing = !!(this.ctx.lastModel && this.ctx.lastModel.houe);
         let refus = null;                            // en mode houe : une tuile qui ne se laboure pas
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
+        // la ferme générée, en mode Construire : la case touchée (poser, reprendre), rien d'autre
+        if (!this.room && this.ctx.lastModel && this.ctx.lastModel.bati) { const c = this.tileAtPoint(wx, wy); return c >= 0 ? { bati: c } : null; }
         const pile = !this.room && !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
         // la ferme générée : une pierre, un bout de bois, une herbe à ramasser à la main
@@ -606,6 +612,7 @@
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien
         if (hit.window) { this.ctx.bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { K.vibre('houe'); this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
+        if (hit.bati !== undefined) { this.ctx.bridge.act('bloc', { case: hit.bati }); return; }
         if (hit.gather) { this.gather(hit.gather); return; }
         if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.mine) { this.mine(hit.mine); return; }

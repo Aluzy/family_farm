@@ -128,6 +128,8 @@
         // les rochers encore debout (sauf les cailloux) : leur pied
         for (const k of g.rocks || []) mark(k.x0 + 3, k.base - 8, k.x1 - 3, k.base);
       }
+      // la ferme générée : les murs et l'Atelier posés (leurs cases)
+      if (o.blocks) for (const c of o.blocks()) blocked[c] = 1;
     }
     const free = (c, r) => c >= 0 && r >= 0 && c < cols && r < rows && !blocked[r * cols + c];
     const cellOf = (x, y) => [Math.floor(x / T), Math.floor((y - 1) / T)];
@@ -494,6 +496,14 @@
     }
     function schedule() {
       const outHours = ctx.hour >= OUT[0] && ctx.hour < OUT[1];
+      // Il dort, et la ferme générée lui a une paillasse : il va s'y coucher.
+      const lit = ctx.dort && !home && shown && o.couchage ? o.couchage() : null;
+      if (lit) {
+        roamAt = null;
+        jobs.push(walkTo(lit.x, lit.y, { far: true }));
+        jobs.push(once(() => { couche = { lit, t: 0, slept: true }; }));
+        return;
+      }
       // Il dort (sans passer par l'intérieur : maison en ruine) : il rentre se coucher.
       if (ctx.dort && !home && shown) {
         roamAt = null;
@@ -593,6 +603,17 @@
     // quand il est dedans. Déjà dans la maison (ou pas sur la carte) : `done` tout de suite.
     let arriving = false;            // il vient d'entrer : il apparaîtra à l'entrée de l'intérieur
     function goHome(done) {
+      // la ferme générée : il va se coucher sur sa paillasse, dehors (couchage)
+      const lit = o.couchage ? o.couchage() : null;
+      if (lit) {
+        releaseAll(); claimed.clear(); basket = false; job = null;
+        // déjà rentré (la maison, provisoire) : il ressort par la porte
+        if (!shown || home) { const d = door(); x = d.x; y = d.y + 4; face = 'bas'; flip = false; home = false; where = null; appear(); }
+        if (reduced()) { jobs = []; x = lit.x; y = lit.y; couche = { lit, t: 0, slept: false }; setTimeout(done, 0); return; }
+        jobs = [walkTo(lit.x, lit.y, { far: true, hurry: true }), once(() => { couche = { lit, t: 0, slept: false }; }), once(done)];
+        idleAge = 0;
+        return;
+      }
       if (!shown || home) { setTimeout(done, 0); return; }
       const d = door();
       const inside = () => { face = 'haut'; vanish(); home = true; where = 'maison'; arriving = true; roamAt = null; };
@@ -1042,6 +1063,37 @@
       S.setVisible(true).setAlpha(inside.alpha).setPosition(Math.round(inside.x), Math.round(inside.y)).setFlipX(!!inside.flip && name.indexOf('_cote_') > 0).setDepth(inside.y);
     }
 
+    /* ---------- couché dehors, sur une paillasse (la ferme générée) ---------- */
+
+    // couche = { lit: { x, y (ses pieds), depth, drap: { key, frame, x, y } }, t, slept } : il
+    // dort debout entre la paillasse et sa couverture, tourné vers nous, comme dans son lit de
+    // la maison ; endormi (ASLEEP_S), la nuit défile.
+    let couche = null, drapDehors = null;
+    function sleepOutside(dt) {
+      const L = couche.lit;
+      couche.t += dt;
+      x = L.x; y = L.y; face = 'bas'; flip = false;
+      if (!shown) appear();
+      const k = F[`idle_bas_${Math.floor(couche.t / (BREATH_S * 2)) % 2}`];
+      if (k !== undefined) s.setFrame(k);
+      s.setVisible(true).setAlpha(alpha).setFlipX(false).setPosition(L.x, L.y).setDepth(L.depth + 0.1);
+      if (!drapDehors) drapDehors = scene.add.image(0, 0, L.drap.key, L.drap.frame).setOrigin(0.5, 1);
+      drapDehors.setPosition(L.drap.x, L.drap.y).setDepth(L.depth + 0.2).setVisible(true);
+      stepZ(L.x, L.y - 32 + 5, couche.t);
+      if (!couche.slept && couche.t >= (reduced() ? 0.8 : ASLEEP_S)) {
+        couche.slept = true;
+        if (o.asleep && !ctx.dort) o.asleep();
+      }
+    }
+    // Il se lève : à côté de la paillasse, sans couverture ni « Z ».
+    function getUpOutside() {
+      couche = null;
+      if (drapDehors) drapDehors.setVisible(false);
+      stepZ(0, 0, -1);
+      y += 4;
+      idleAge = 0;
+    }
+
     /* ---------- par image ---------- */
 
     function update(delta, roomId) {
@@ -1069,6 +1121,10 @@
         if (alpha >= 1 && fade > 0) fade = 0;
         if (alpha <= 0 && fade < 0) { fade = 0; shown = false; s.setVisible(false); }
       }
+      if (couche) {
+        if (ctx.coucher || ctx.dort) { sleepOutside(dt); return; }
+        getUpOutside();
+      }
       if (steer && (ctx.coucher || ctx.dort)) steerTo(null);
       if (steer && (!job || job.idle || job.walk)) {
         // une marche vers un geste reprendra au relâchement ; flânerie et double appui : oubliés
@@ -1092,7 +1148,7 @@
     return {
       filter,
       update,
-      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, ou: where, couche: inside.mode === 'lit', dedans: viewing && inside.wait <= 0 ? { x: Math.round(inside.x), y: Math.round(inside.y) } : null, jobs: jobs.length + (job ? 1 : 0), dirige: !!steer, retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
+      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, ou: where, couche: inside.mode === 'lit' || !!couche, dedans: viewing && inside.wait <= 0 ? { x: Math.round(inside.x), y: Math.round(inside.y) } : null, jobs: jobs.length + (job ? 1 : 0), dirige: !!steer, retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
       // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
       fetch: (id) => fetch(id, true),
       goTo,

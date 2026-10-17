@@ -17,6 +17,7 @@ import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
 import { respawnRocks, respawnTrees } from './outils.js';
+import { nuitCouchee } from './blocs.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // repas (version 1.8 : énergie au réveil), puis pousse. Lot 4 : la ponte. Lot 5 : les préparations en
@@ -140,8 +141,9 @@ export function sleep(state) {
   growDue(state);
   const report = runNight(state);
   state.nuitEnCours = null;
-  // toute une nuit de sommeil : l'énergie du réveil ; les cycles de pousse jusqu'à 6 h
-  restoreEnergy(state, state.nuit.couverture);
+  // toute une nuit de sommeil : l'énergie du réveil (sur la ferme générée, seulement couché
+  // sur une paillasse d'une pièce close : nuitCouchee) ; les cycles de pousse jusqu'à 6 h
+  if (nuitCouchee(state)) restoreEnergy(state, state.nuit.couverture);
   growDue(state);
   report.energieReveil = state.energie;
   report.pretes = readyCrops(state);
@@ -197,8 +199,9 @@ export function sleepTarget(state) {
 
 // En dormant, l'énergie remonte peu à peu : PERSONNAGE.SOMMEIL_HEURES heures de sommeil
 // pour atteindre sleepTarget (`ms` : temps d'horloge dormi). Une énergie plus haute est gardée.
+// Sur la ferme générée, sans paillasse dans une pièce close, on ne dort pas : rien ne revient.
 export function recoverInSleep(state, ms) {
-  if (!(ms > 0)) return state.energie;
+  if (!(ms > 0) || !nuitCouchee(state)) return state.energie;
   const cible = sleepTarget(state);
   const e = Number(state.energie) || 0;
   if (e >= cible) return e;
