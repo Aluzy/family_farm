@@ -11,6 +11,7 @@
  *   - planche(), planchePerso() : la planche d'un personnage (assets/personnages/) ;
  *   - saisie() : le joueur écrit dans un champ de la page (le clavier n'est pas aux cartes) ;
  *   - regard(dx, dy) : de face, de dos ou de profil selon le sens de la marche ;
+ *   - cases(noms) : les cases d'une planche par leur nom (une table, pas une recherche par image) ;
  *   - VITESSES : la vitesse de marche de chacun, carte par carte (px/s) ;
  *   - cycle(), imageA(), animTuiles(), pasAnimTuiles() : les tuiles animées de Tiled ;
  *   - FLECHE, balance() : la flèche bleue des passages vers une autre carte ;
@@ -99,9 +100,33 @@
 
   // Où regarde un personnage qui marche de (dx, dy) : de profil (« cote », retourné s'il va
   // à gauche) dès que le pas est un peu plus de côté que vertical, sinon de face ou de dos.
+  // (quatre réponses possibles, faites une fois : appelée à chaque image pour chaque marcheur)
+  const REGARDS = {
+    gauche: Object.freeze({ face: 'cote', flip: true }), droite: Object.freeze({ face: 'cote', flip: false }),
+    bas: Object.freeze({ face: 'bas', flip: false }), haut: Object.freeze({ face: 'haut', flip: false }),
+  };
   function regard(dx, dy) {
-    if (Math.abs(dx) > Math.abs(dy) * 0.8) return { face: 'cote', flip: dx < 0 };
-    return { face: dy > 0 ? 'bas' : 'haut', flip: false };
+    if (Math.abs(dx) > Math.abs(dy) * 0.8) return dx < 0 ? REGARDS.gauche : REGARDS.droite;
+    return dy > 0 ? REGARDS.bas : REGARDS.haut;
+  }
+
+  // Les cases d'une planche par leur nom (la liste `frames` de son JSON) : une table faite une
+  // fois, au lieu de chercher le nom dans la liste à chaque image ; un nom inconnu donne 0.
+  // `cases(noms).de('marche', 'bas', 2)` vaut `cases(noms)('marche_bas_2')`, sans refaire le
+  // nom à chaque image.
+  function cases(noms) {
+    const table = new Map();
+    (noms || []).forEach((n, i) => { if (!table.has(n)) table.set(n, i); });
+    const f = (name) => { const i = table.get(name); return i === undefined ? 0 : i; };
+    const deja = {};
+    f.de = (sorte, face, n) => {
+      const parFace = deja[sorte] || (deja[sorte] = {});
+      const liste = parFace[face] || (parFace[face] = []);
+      let i = liste[n];
+      if (i === undefined) i = liste[n] = f(sorte + '_' + face + '_' + n);
+      return i;
+    };
+    return f;
   }
 
   // La vitesse de marche de chacun (px de carte par seconde) : chaque carte a sa mesure (la
@@ -174,7 +199,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, extrude, planche, planchePerso, saisie, regard, VITESSES,
+    T, v, reduit, extrude, planche, planchePerso, saisie, regard, cases, VITESSES,
     cycle, imageA, animTuiles, pasAnimTuiles, FLECHE, balance, TEXTE, texte,
   });
 })(window);

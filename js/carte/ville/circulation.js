@@ -64,14 +64,20 @@
     // dessus s'efface (on la voit devant le mur) ; derrière, il devient transparent et celui du
     // dessous s'efface (on la voit à travers) — pour la promeneuse seulement, les voitures
     // passent simplement derrière.
+    // (les tuiles de chaque boîte et de chaque couche sont gardées tant que la boîte couvre les
+    // mêmes cases : voir CarteVille.tuilesDans ; `covered` est le même tableau, vidé)
     uncover(boxes) {
       for (const t of this.covered) { t.alpha = 1; if (t.down) t.down.alpha = 1; }
-      this.covered = [];
-      for (const { x, y, w, h, foot, see } of boxes) {
-        for (const name of BATI) {
-          const up = this.layers[name + '_devant'];
+      this.covered.length = 0;
+      if (!this.uncoverUp) this.uncoverUp = BATI.map((name) => this.layers[name + '_devant']);
+      const memos = this.uncoverMemo || (this.uncoverMemo = []);
+      for (let b = 0; b < boxes.length; b++) {
+        const { x, y, w, h, foot, see } = boxes[b];
+        const memo = memos[b] || (memos[b] = BATI.map(() => ({})));
+        for (let l = 0; l < BATI.length; l++) {
+          const up = this.uncoverUp[l];
           if (!up) continue;
-          for (const t of up.getTilesWithinWorldXY(x, y, w, h) || []) {
+          for (const t of V.tuilesDans(memo[l], up, x, y, w, h)) {
             if (!t.bat) continue;
             if (foot >= t.bat.base) t.alpha = 0;
             else if (see) { t.alpha = BATI_ALPHA; if (t.down) t.down.alpha = 0; } else continue;
@@ -145,15 +151,17 @@
       }
     },
 
-    // Le point du trajet à l'abscisse s, et la direction (au sol) où l'on roule.
-    pointAt(r, car) {
+    // Le point du trajet à l'abscisse s, et la direction (au sol) où l'on roule : écrits dans
+    // `out` (la voiture elle-même, à chaque image : rien n'est alloué) et renvoyés.
+    pointAt(r, car, out = {}) {
       const pts = r.pts;
       while (car.i < pts.length - 2 && pts[car.i + 1].s < car.s) car.i++;
       const a = pts[car.i], b = pts[car.i + 1] || a;
       const t = b.s > a.s ? Math.min(1, Math.max(0, (car.s - a.s) / (b.s - a.s))) : 0;
       const c = pts[Math.min(pts.length - 1, car.i + 3)], p = pts[Math.max(0, car.i - 2)];
       const dx = c.x - p.x, dy = (c.y - p.y) / KY, l = Math.hypot(dx, dy) || 1;
-      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, dx: dx / l, dy: dy / l };
+      out.x = a.x + (b.x - a.x) * t; out.y = a.y + (b.y - a.y) * t; out.dx = dx / l; out.dy = dy / l;
+      return out;
     },
 
     // Une voiture sur ce trajet, à l'abscisse s (0 : à l'entrée, hors de la carte), si la place
@@ -161,7 +169,7 @@
     addCar(route, s = 0) {
       const m = this.carMeta;
       const car = { route, s, i: 0, v: s ? CARS.speed : CARS.speed * 0.8, color: Math.floor(Math.random() * m.couleurs.length), held: new Set() };
-      Object.assign(car, this.pointAt(route, car));
+      this.pointAt(route, car, car);
       if (this.cars.some((o) => Math.hypot(o.x - car.x, (o.y - car.y) / KY) < CARS.gap * 1.3)) return null;
       const anchor = m.anchor || { x: 32, y: 40 };
       car.sprite = this.add.sprite(0, 0, CARS.key, 0).setOrigin(anchor.x / (m.frameWidth || 64), anchor.y / (m.frameHeight || 64));
@@ -186,54 +194,62 @@
         if (this.carRoutes.length && this.cars.length < CARS.max && this.textures.exists(CARS.key)) this.addCar(Phaser.Utils.Array.GetRandom(this.carRoutes));
       }
       const hero = this.heroPos;
-      for (const car of [...this.cars]) {
+      // (sans copie de la liste : une voiture sortie de la carte est retirée sur place, et la
+      // suivante prend son rang)
+      for (let n = 0; n < this.cars.length; n++) {
+        const car = this.cars[n];
         const r = car.route;
         // la place devant : la voiture de devant, la promeneuse, un carrefour occupé
+        // (devant elle : `along` le long de sa route, `side` de côté, au sol)
         let room = Infinity;
-        const ahead = (x, y) => {
-          const ex = x - car.x, ey = (y - car.y) / KY;
-          return { along: ex * car.dx + ey * car.dy, side: Math.abs(ex * car.dy - ey * car.dx) };
-        };
         for (const o of this.cars) {
           // (celles d'en face ou qui croisent en sens contraire : affaire des carrefours)
           if (o === car || o.dx * car.dx + o.dy * car.dy < -0.3) continue;
-          const d = ahead(o.x, o.y);
+          const ex = o.x - car.x, ey = (o.y - car.y) / KY;
+          const along = ex * car.dx + ey * car.dy, side = Math.abs(ex * car.dy - ey * car.dx);
           // (un bus est plus long : on le suit de plus loin)
           const gap = CARS.gap + (car.bus ? BUS.half - BUS.carHalf : 0) + (o.bus ? BUS.half - BUS.carHalf : 0);
-          if (d.along > 0 && d.side < CARS.lane) room = Math.min(room, d.along - gap);
+          if (along > 0 && side < CARS.lane) room = Math.min(room, along - gap);
         }
         // le bus de l'école s'arrête à son arrêt, le temps que les enfants montent ou descendent
         if (car.stopAt !== undefined && car.stopAt !== null) {
           room = Math.min(room, car.stopAt - car.s);
           car.atStop = car.stopAt - car.s < 3 && car.v < 2;
         }
-        const h = ahead(hero.x, hero.y);
-        if (h.along > 0 && h.side < CARS.lane) room = Math.min(room, h.along - CARS.hero);
-        this.crossings.forEach((c, k) => {
+        {
+          const ex = hero.x - car.x, ey = (hero.y - car.y) / KY;
+          const along = ex * car.dx + ey * car.dy, side = Math.abs(ex * car.dy - ey * car.dx);
+          if (along > 0 && side < CARS.lane) room = Math.min(room, along - CARS.hero);
+        }
+        for (let k = 0; k < this.crossings.length; k++) {
+          const c = this.crossings[k];
           const sp = r.spans[k];
-          if (!sp || car.held.has(k) || car.s > sp.exit) return;
+          if (!sp || car.held.has(k) || car.s > sp.exit) continue;
           const before = sp.enter - car.s;
-          if (before > CARS.stop + 30) return;
-          const blocked = [...c.held].some((o) => o !== car && this.conflict[k][r.index][o.route.index]);
+          if (before > CARS.stop + 30) continue;
+          let blocked = false;
+          for (const o of c.held) if (o !== car && this.conflict[k][r.index][o.route.index]) { blocked = true; break; }
           if (blocked) room = Math.min(room, before - CARS.stop);
           else if (before < CARS.stop + 6) { c.held.add(car); car.held.add(k); }
-        });
+        }
         // la vitesse : freiner pour s'arrêter à temps, sinon reprendre de la vitesse
         const top = car.bus ? BUS.speed : CARS.speed;
         const target = room <= 0 ? 0 : Math.min(top, Math.sqrt(2 * CARS.decel * room));
         car.v = target < car.v ? target : Math.min(target, car.v + CARS.accel * dt);
         car.s += car.v * dt;
-        // sortie d'un carrefour
-        for (const k of [...car.held]) {
+        // sortie d'un carrefour (retirer l'élément en cours d'un Set pendant qu'on le parcourt
+        // ne saute aucun des suivants)
+        for (const k of car.held) {
           if (car.s > r.spans[k].exit) { car.held.delete(k); this.crossings[k].held.delete(car); }
         }
         if (car.s >= r.length) {
           for (const k of car.held) this.crossings[k].held.delete(car);
           car.sprite.destroy();
-          this.cars.splice(this.cars.indexOf(car), 1);
+          this.cars.splice(n, 1);
+          n--;
           continue;
         }
-        Object.assign(car, this.pointAt(r, car));
+        this.pointAt(r, car, car);
         this.placeCar(car);
         if (car.alpha !== undefined && car.alpha < 1) { car.alpha = Math.min(1, car.alpha + dt * 2); car.sprite.setAlpha(car.alpha); }
       }

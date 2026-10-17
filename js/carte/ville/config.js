@@ -205,10 +205,28 @@
   // fichier : CarteKit.planche.
   const sheetKey = (n, enfant) => (enfant ? 'enfant_' : 'perso_') + n;
 
+  // Les tuiles d'une couche dans un rectangle (px), comme getTilesWithinWorldXY, mais gardées
+  // dans `memo` tant que le rectangle couvre les mêmes cases : Phaser fait un tableau neuf à
+  // chaque appel, et on le demande à chaque image pour chaque personnage et chaque couche.
+  // Les cases sont celles que Phaser calcule (bord gauche et haut arrondis en dessous, droit et
+  // bas au-dessus), sur la couche posée en (x, y) à son échelle. Les couches où l'on cherche
+  // (bâtiments, feuillage) ne changent plus de tuiles après la création de la carte.
+  function tuilesDans(memo, layer, x, y, w, h) {
+    const L = layer.layer;
+    const tw = L.baseTileWidth * layer.scaleX, th = L.baseTileHeight * layer.scaleY;
+    const x0 = Math.floor((x - layer.x) / tw), y0 = Math.floor((y - layer.y) / th);
+    const x1 = Math.ceil((x + w - layer.x) / tw), y1 = Math.ceil((y + h - layer.y) / th);
+    if (memo.layer !== layer || memo.x0 !== x0 || memo.y0 !== y0 || memo.x1 !== x1 || memo.y1 !== y1) {
+      memo.layer = layer; memo.x0 = x0; memo.y0 = y0; memo.x1 = x1; memo.y1 = y1;
+      memo.tiles = layer.getTilesWithinWorldXY(x, y, w, h) || [];
+    }
+    return memo.tiles;
+  }
+
   const parties = [];
   global.CarteVille = {
     C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS },
-    etat, configure, hote, sheetKey, saisie: K.saisie, reduced: K.reduit, v: K.v,
+    etat, configure, hote, sheetKey, saisie: K.saisie, reduced: K.reduit, v: K.v, tuilesDans,
     // les méthodes de la scène, fichier par fichier (voir js/ville-carte.js)
     parties,
     partie(methodes) { parties.push(methodes); },

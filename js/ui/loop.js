@@ -11,7 +11,7 @@ import { formatDuration, formatLitres, formatNumber } from '../engine/format.js'
 import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
-import { consentBannerDue, consentBannerPending, consentBannerShown, storyOpen, tutorialStopsClock, uiCalm } from './calme.js';
+import { consentBannerDue, consentBannerPending, consentBannerShown, modalRoot, storyOpen, tutorialStopsClock, uiCalm } from './calme.js';
 import { actionNightStart, wakeUp } from './game-actions.js';
 import {
   lastRenderAt, refresh, render, renderScheduled, setLastRenderAt, setRenderScheduled,
@@ -156,7 +156,7 @@ function watchDay() {
     refresh();
     if (r.ok) playMealScene(r.repas);
   }
-  if (state.reveil && !document.getElementById('modal-root').childElementCount) wakeUp();
+  if (state.reveil && !modalRoot().childElementCount) wakeUp();
   if (nightActive(state)) {
     // minuit vient de passer : les préparations finies dans la nuit, sans toast
     if (state.nuitEnCours.minuit && !midnightSeen) { midnightSeen = true; syncJobs(); persistState(); scheduleRender(); }
@@ -164,7 +164,7 @@ function watchDay() {
   }
   midnightSeen = false;
   if (!bedtimeDue(state)) return;
-  if (document.getElementById('modal-root').childElementCount > 0) return;
+  if (modalRoot().childElementCount > 0) return;
   const step = tutorialStep(state);
   if (step && step !== 'dormir') return;
   actionNightStart();
@@ -248,7 +248,7 @@ export function catchUp(wall = Date.now()) {
 // avant l'écran de fin de chapitre).
 function watchAbsence() {
   if (!pendingAbsence) return;
-  if (document.getElementById('modal-root').childElementCount > 0) return;
+  if (modalRoot().childElementCount > 0) return;
   const report = pendingAbsence;
   pendingAbsence = null;
   openAbsenceModal(report);

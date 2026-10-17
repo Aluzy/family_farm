@@ -118,8 +118,16 @@
     },
 
     // Prévient la page quand quelque chose qu'elle affiche a changé (pas à chaque image).
+    // viewInfo() n'est refaite que si ce dont elle dépend a bougé (centre, taille, zoom,
+    // intérieur, repères, glissement) : à l'arrêt, rien n'est alloué à chaque image.
     reportView() {
       if (!this.ctx.bridge || !this.ctx.bridge.onView) return;
+      const cam = this.cameras.main;
+      const I = this.viewIn || (this.viewIn = {});
+      if (I.cx === this.cx && I.cy === this.cy && I.zoom === cam.zoom && I.w === this.scale.width && I.h === this.scale.height
+        && I.room === this.room && I.screens === this.screens && I.dragged === this.dragged) return;
+      I.cx = this.cx; I.cy = this.cy; I.zoom = cam.zoom; I.w = this.scale.width; I.h = this.scale.height;
+      I.room = this.room; I.screens = this.screens; I.dragged = this.dragged;
       const v = this.viewInfo();
       const key = [v.ecran, v.mobile, v.gauche, v.droite, v.bas, v.glisse, v.interieur].join();
       if (key === this.viewKey) return;

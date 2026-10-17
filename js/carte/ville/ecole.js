@@ -32,7 +32,7 @@
         else if (o.polyline && /^enfants_/.test(o.name)) this.kidPaths[o.name] = o.polyline.map((p) => ({ x: o.x + p.x, y: o.y + p.y }));
       }
       const noms = (this.cache.json.get('perso_cases') || {}).frames || [];
-      this.kidFrame = (name) => Math.max(0, noms.indexOf(name));
+      this.kidFrame = K.cases(noms);
     },
 
     // Le bus sur son trajet, depuis l'entrée ; il s'arrêtera au point du trajet le plus proche de l'arrêt.
@@ -51,7 +51,7 @@
       const stopS = this.stopOn(routeName, stop);
       const s0 = stopS === null ? 0 : Math.max(0, stopS - lead);
       const car = { route, s: s0, i: 0, v: BUS.speed, color: 0, held: new Set(), bus: true, atStop: false, stopAt: stopS, alpha: s0 > 0 ? 0 : 1 };
-      Object.assign(car, this.pointAt(route, car));
+      this.pointAt(route, car, car);
       car.sprite = this.add.sprite(0, 0, BUS.key, 0).setOrigin(meta.anchor.x / meta.frameWidth, meta.anchor.y / meta.frameHeight).setAlpha(car.alpha);
       this.cars.push(car);
       this.placeCar(car);
@@ -74,7 +74,9 @@
     },
 
     stepKids(dt, time) {
-      for (const kid of [...this.kids]) {
+      // (sans copie de la liste : un enfant effacé est retiré sur place, le suivant prend son rang)
+      for (let n = 0; n < this.kids.length; n++) {
+        const kid = this.kids[n];
         let moving = false;
         if (kid.wait > 0) kid.wait -= dt;
         else if (!kid.arrived) {
@@ -90,9 +92,9 @@
         if (kid.fade) {
           kid.alpha = Math.max(0, Math.min(1, kid.alpha + (kid.fade * dt) / BUS.kid.fade));
           if (kid.alpha >= 1 && kid.fade > 0) kid.fade = 0;
-          if (kid.alpha <= 0 && kid.fade < 0) { kid.s.destroy(); this.kids.splice(this.kids.indexOf(kid), 1); continue; }
+          if (kid.alpha <= 0 && kid.fade < 0) { kid.s.destroy(); this.kids.splice(n, 1); n--; continue; }
         }
-        kid.s.setFrame(this.kidFrame(moving ? `marche_${kid.face}_${Math.floor(kid.walked / 4) % 4}` : `idle_${kid.face}_${Math.floor(time / 600) % 2}`));
+        kid.s.setFrame(moving ? this.kidFrame.de('marche', kid.face, Math.floor(kid.walked / 4) % 4) : this.kidFrame.de('idle', kid.face, Math.floor(time / 600) % 2));
         kid.s.setPosition(Math.round(kid.x), Math.round(kid.y)).setDepth(kid.y).setAlpha(kid.alpha);
       }
     },

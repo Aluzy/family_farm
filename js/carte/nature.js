@@ -51,7 +51,8 @@
   // (vers la droite s'il va à droite) et revient en se balançant. `list` : les touffes
   // ({ img, x, y, base (première image de sa rangée), t, dir, inside }) ; `P` : les pieds du
   // personnage (null : il n'est pas là) ; `prev` : ses pieds à l'image d'avant ; `dt` en ms.
-  // Renvoie la position à garder pour l'image suivante.
+  // Renvoie la position à garder pour l'image suivante (`prev` lui-même, mis à jour, quand il
+  // existe : rien n'est alloué à chaque image).
   function herbe(list, P, prev, dt) {
     const G = NATURE.herbe;
     const dx = P && prev ? P.x - prev.x : 0;
@@ -72,7 +73,10 @@
       if (g.dir < 0) f = f === 1 ? 3 : f === 2 ? 4 : f === 3 ? 1 : f === 4 ? 2 : 0;
       g.img.setFrame(g.base + f);
     }
-    return P ? { x: P.x, y: P.y } : null;
+    if (!P) return null;
+    if (!prev) return { x: P.x, y: P.y };
+    prev.x = P.x; prev.y = P.y;
+    return prev;
   }
 
   // L'opacité d'un arbre qui passe de `cur` à `want` (NATURE.devant derrière lui, 1 sinon)
