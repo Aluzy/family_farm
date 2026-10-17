@@ -240,8 +240,13 @@
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) { this.dbl.oublie(); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va, un rond marque l'arrivée
+        // (un essai de marche : la marche au doigt s'explique, une fois)
+        K.astuceMarche(p);
         if (this.dbl.appui(w.x, w.y, cam.zoom)) this.walkTo(w.x, w.y);
       });
+      // le doigt posé puis glissé : elle marche dans sa direction tant qu'il reste posé
+      // (CarteKit.manette ; pas dans le god mode, ni pendant un voyage, une fenêtre, un geste)
+      this.manette = K.manette(this, () => !this.god() && !this.locked && !this.dialog && !this.mining && !this.fishing);
       // le god mode : glisser déplace la vue (la caméra ne suit plus le personnage)
       this.input.on('pointermove', (p) => {
         if (!p.isDown || !this.god() || this.locked || this.dialog || p.getDistance() < slop) return;
@@ -678,7 +683,9 @@
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
       const k = this.locked || this.fishing || saisie() ? null : this.keys;
-      if (k) {
+      const j = this.locked || this.fishing || this.dialog ? null : this.manette.dir();
+      if (j) { vx = j.x; vy = j.y; }
+      else if (k) {
         vx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.Q.isDown || k.A.isDown ? 1 : 0);
         vy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.Z.isDown || k.W.isDown ? 1 : 0);
       }

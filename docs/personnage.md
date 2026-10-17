@@ -87,6 +87,13 @@ ajouter : le JSON donne l'ordre).
   ou un chemin l'y envoient (`goTo`, au point libre le plus proche) : il y va avant ses gestes en
   attente, puis flâne autour jusqu'au soir. Un petit rond marque l'arrivée. Sur l'herbe
   labourable, l'appui simple (la fenêtre de la Zone de culture) attend donc 300 ms. La nuit, rien.
+- **Au doigt** : dehors, le doigt posé puis glissé (plus de 8 px) le fait marcher dans la
+  direction du glissement tant qu'il reste posé, et il tourne avec le doigt (`steer`,
+  `CarteKit.manette`) ; il glisse le long de ce qui le gêne. Le geste qu'il fait finit d'abord,
+  ceux qui attendent reprennent au relâchement ; il souffle un instant puis flâne là. Pas avec la
+  houe qui laboure en glissant, ni pendant la pêche, ni au lit. Rien ne s'affiche sous le doigt :
+  au premier appui sur le sol (un essai de marche), une bulle explique le geste, une fois par
+  appareil (`CarteKit.astuceMarche`), sauf à qui a déjà glissé pour marcher.
 - **Dans la maison** (l'intérieur) : il cuisine devant la Cuisine (ou le Four) tant qu'une
   préparation est en cours ; quand le contenu du réfrigérateur change, il va l'ouvrir.
 - **Animations réduites** : ni marche ni retenue ; il se pose directement où il travaille.

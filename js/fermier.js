@@ -41,7 +41,7 @@
  * Animations réduites : pas de marche ni de retenue ; il se pose directement où il travaille.
  *
  * API : Fermier.attach(scène, { sheet, frames, world, objects, ground, reduced, resync, pickup, gain })
- *       → { filter(modèle), update(delta, intérieur), fetch(id), goHome(done), startMeal(o),
+ *       → { filter(modèle), update(delta, intérieur), fetch(id), goTo(x, y), steer(dir), goHome(done), startMeal(o),
  *           mealHeads(), focus(), pos(), info(), destroy() }
  */
 (function (global) {
@@ -201,6 +201,7 @@
     function walkTo(tx, ty, opts) {
       let path = null, walked = 0, age = 0;
       return {
+        walk: true,
         start() {
           // Rentré dans la maison : il en ressort par la porte.
           if (!shown) { const d = door(); x = d.x; y = d.y; face = 'bas'; flip = false; appear(); }
@@ -535,10 +536,41 @@
       const spot = nearestFree(Math.max(0, Math.min(world.w - 1, tx)), Math.max(1, Math.min(world.h - 1, ty)));
       if (!spot) return null;
       if (job && job.idle) job = null;
-      jobs = [walkTo(spot.x, spot.y, { far: true }), wait(rand(3, 5))].concat(jobs.filter((j) => !j.idle));
+      const w = walkTo(spot.x, spot.y, { far: true });
+      w.joueur = true;               // (le doigt qui le dirige l'annule : steer)
+      jobs = [w, wait(rand(3, 5))].concat(jobs.filter((j) => !j.idle));
       roamAt = spot;
       idleAge = 0;
       return spot;
+    }
+
+    // Le joueur le dirige au doigt (CarteKit.manette) : steer({ x, y }), il marche dans cette
+    // direction (de longueur 1) et glisse le long de ce qui le gêne ; steer(null), il s'arrête,
+    // souffle un instant, puis flâne là. Le geste qu'il fait finit d'abord ; ceux qui attendent
+    // reprennent après (le chemin vers un geste repart d'où il est). Au lit (ou en y allant) : rien.
+    let steer = null, steerWalked = 0;
+    function steerTo(dir) {
+      if (dir && !ctx.coucher && !ctx.dort) { steer = dir; return; }
+      if (!steer) return;
+      steer = null;
+      roamAt = { x, y };
+      idleAge = 0;
+      jobs.unshift(wait(rand(3, 5)));
+    }
+    function stepSteer(dt) {
+      if (!blocked) buildGrid();
+      if (!shown) { const d = door(); x = d.x; y = d.y; appear(); }
+      const v = SPEED * dt;
+      const nx = Math.max(0, Math.min(world.w - 1, x + steer.x * v)), ny = Math.max(1, Math.min(world.h - 1, y + steer.y * v));
+      // (coincé là où il ne devrait pas être : il en sort dans n'importe quelle direction)
+      const libre = (px, py) => freeAt(px, py) || !freeAt(x, y);
+      let mx = x, my = y;
+      if (libre(nx, ny)) { mx = nx; my = ny; } else if (libre(nx, y)) mx = nx; else if (libre(x, ny)) my = ny;
+      const d = Math.hypot(mx - x, my - y);
+      x = mx; y = my;
+      look(steer.x, steer.y);
+      steerWalked += d;
+      draw(d > 0.01 ? `${basket ? 'panier' : 'marche'}_${face}_${Math.floor(steerWalked / STRIDE) % 4}` : `idle_${face}_0`);
     }
 
     // Il arrive d'une autre carte (la carte de transition) : il apparaît en (tx, ty) (la case
@@ -1031,6 +1063,15 @@
         if (alpha >= 1 && fade > 0) fade = 0;
         if (alpha <= 0 && fade < 0) { fade = 0; shown = false; s.setVisible(false); }
       }
+      if (steer && (ctx.coucher || ctx.dort)) steerTo(null);
+      if (steer && (!job || job.idle || job.walk)) {
+        // une marche vers un geste reprendra au relâchement ; flânerie et double appui : oubliés
+        if (job && !job.idle && !job.joueur) jobs.unshift(job);
+        job = null;
+        jobs = jobs.filter((j) => !j.idle && !j.joueur);
+        stepSteer(dt);
+        return;
+      }
       if (!job && jobs.length) { job = jobs.shift(); job.start(); }
       if (job) {
         if (job.step(dt)) job = null;
@@ -1045,10 +1086,12 @@
     return {
       filter,
       update,
-      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, ou: where, couche: inside.mode === 'lit', dedans: viewing && inside.wait <= 0 ? { x: Math.round(inside.x), y: Math.round(inside.y) } : null, jobs: jobs.length + (job ? 1 : 0), retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
+      info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, ou: where, couche: inside.mode === 'lit', dedans: viewing && inside.wait <= 0 ? { x: Math.round(inside.x), y: Math.round(inside.y) } : null, jobs: jobs.length + (job ? 1 : 0), dirige: !!steer, retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
       // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
       fetch: (id) => fetch(id, true),
       goTo,
+      // Au doigt : il marche dans la direction { x, y } ; null : il s'arrête.
+      steer: steerTo,
       // Il arrive d'une autre carte, en (x, y).
       arrive,
       // Un chemin par les cases libres, de (x0, y0) à (x1, y1) : [{ x, y }…] ou null (pour
