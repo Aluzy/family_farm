@@ -1125,6 +1125,8 @@ summary.branch-head h3::before { content: '▸'; display: inline-block; margin-r
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
+/* Une fenêtre sans bouton à mettre en avant prend elle-même le focus (modal.js) : sans anneau. */
+#modal-root [role="dialog"][tabindex="-1"]:focus { outline: none; }
 
 .check-row { min-height: 44px; gap: 12px; cursor: pointer; }
 .check-row input[type="checkbox"] { width: 24px; height: 24px; margin: 0; accent-color: var(--accent); }
@@ -1589,23 +1591,17 @@ body.has-stage { padding-bottom: 0; }
   display: flex;
   gap: 8px;
 }
+/* Des boutons comme les autres (.btn, .btn.primary), en pastille. */
 .stage-room-btn {
-  min-height: 44px;
   padding: 0 16px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(28, 26, 20, 0.72);
-  color: #ffffff;
   font: inherit;
   font-weight: 600;
   white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 6px;
-  cursor: pointer;
 }
 .stage-room-btn:active { transform: translateY(1px); }
-.stage-room-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 
 /* Les flèches des bords de la carte. */
 .stage-arrow {
@@ -1936,18 +1932,21 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 }
 .stage-dialogue p { margin: 0 0 6px; white-space: normal; }
 .stage-dialogue-choix { display: flex; gap: 8px; justify-content: flex-end; }
+/* Les réponses : les couleurs des boutons du jeu (.btn, et .btn.primary pour « Oui »), en
+   plus petit pour tenir dans la bulle. */
 .stage-dialogue button {
   min-width: 52px;
   min-height: 32px;
   padding: 2px 10px;
-  border: 2px solid var(--color-ink);
-  border-radius: 6px;
-  background: #fbf3dc;
-  color: var(--color-ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-muted);
+  color: var(--text);
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
 }
-.stage-dialogue button[data-choix="oui"] { background: #c9a6e8; }
+.stage-dialogue button[data-choix="oui"] { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
 .stage-dialogue button:hover { filter: brightness(1.06); }
 .stage-dialogue button:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 

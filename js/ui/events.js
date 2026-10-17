@@ -1,13 +1,13 @@
 import { setComptoirTab, setComptoirTabChoisi, setGodMode, setInvTab, setTestMode, state, testMode } from './store.js';
 import { syncGodBar } from './excursion.js';
 import { asleep } from '../engine/night.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { tel, telClick } from './consent.js';
 import { scheduleRender } from './loop.js';
 import { refresh } from './render.js';
 import { closeStageWindow, leaveInterior, menuOpen, setMenuOpen, stageInterior, stageWindow } from './stage-windows.js';
 import { ACTIONS, SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE, registerActions } from './actions.js';
-import { closeModal } from './common.js';
+import { closeModal, trapFocus } from './modal.js';
 
 document.addEventListener('click', (e) => {
   const target = e.target.closest('[data-action]');
@@ -15,17 +15,22 @@ document.addEventListener('click', (e) => {
     if (!testMode && e.target && e.target.closest && !e.target.closest('#consent-banner')) tel('deadClick', e.target);
     return;
   }
-  const action = target.dataset.action;
-  telClick(target, action);
+  runAction(target.dataset.action, target, e);
+});
 
+// Exécute une action du registre comme le clic sur un élément qui porte data-action : suivi
+// du clic, puis l'action, sauf si le sommeil du personnage la bloque. `target` : l'élément
+// cliqué, ou { dataset } quand c'est la carte qui agit (stageAct, stage.js).
+export function runAction(action, target, e) {
+  telClick(target, action);
   // Le personnage dort (« Dormir ») : la ferme attend son réveil. La nuit seule n'empêche rien.
   if (asleep(state) && SOMMEIL_BLOQUEES.has(action)) {
-    showToast(SOMMEIL_MESSAGE);
+    notify(SOMMEIL_MESSAGE);
     return;
   }
   const run = ACTIONS[action];
   if (run) run(target, e, action);
-});
+}
 
 document.addEventListener('change', (e) => {
   if (e.target && e.target.id === 'test-mode-toggle') {
@@ -40,7 +45,9 @@ document.addEventListener('change', (e) => {
 
 // Lot 11 : Échap ferme la fenêtre ouverte (comme le bouton Fermer) ; d'abord celle de
 // #modal-root, puis la fenêtre de la carte, puis l'intérieur où le joueur est entré.
+// Tab et Maj+Tab restent dans la fenêtre de #modal-root ouverte (modal.js).
 document.addEventListener('keydown', (e) => {
+  if (trapFocus(e)) return;
   if (e.key !== 'Escape') return;
   if (menuOpen) {
     e.preventDefault();
@@ -57,13 +64,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-document.getElementById('modal-root').addEventListener('click', (e) => {
-  // ferme la modale si on clique sur le fond, pas sur son contenu
-  if (e.target.dataset.action === 'close-modal' && e.target.classList.contains('modal-backdrop')) {
-    closeModal();
-  }
-});
-
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
@@ -75,9 +75,5 @@ registerActions({
     setComptoirTab(target.dataset.tab);
     setComptoirTabChoisi(target.dataset.tab);
     refresh();
-  },
-  'cancel-new-game': () => {
-    document.getElementById('new-game-zone').innerHTML =
-    '<button class="btn danger-outline" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
   },
 });

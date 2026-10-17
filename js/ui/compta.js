@@ -3,6 +3,7 @@ import { formatDay, formatNumber, formatSigned } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { registerActions } from './actions.js';
+import { openModal } from './modal.js';
 
 /* ---------- Comptes : un appui sur les pièces (carte en haut à droite) ---------- */
 
@@ -30,18 +31,13 @@ function comptaHtml() {
 
 function openComptaModal() {
   tel('modal', 'compta');
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="compta-title" data-stop-propagation>
-        <h2 id="compta-title">💰 Comptes</h2>
-        ${comptaHtml()}
-        <button type="button" class="btn primary" data-action="close-modal" id="compta-close">Fermer</button>
-      </div>
-    </div>`;
+  openModal(`
+    <h2 id="compta-title">💰 Comptes</h2>
+    ${comptaHtml()}
+    <button type="button" class="btn primary" data-action="close-modal" id="compta-close">Fermer</button>`, { labelledBy: 'compta-title', focus: '#compta-close' });
   // les écritures les plus récentes, et le total, sont en bas
   const list = document.querySelector('#modal-root .compta');
   if (list) list.scrollTop = list.scrollHeight;
-  document.getElementById('compta-close').focus();
 }
 
 registerActions({

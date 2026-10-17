@@ -2,11 +2,11 @@ import { GAME_VERSION } from '../engine/base.js';
 import { godMode, setEcranFerme, testMode } from './store.js';
 import { privacySectionHtml, tel } from './consent.js';
 import { copyFromTextarea, exportSaveText, importSaveText } from './storage.js';
-import { refresh } from './render.js';
+import { morph, refresh } from './render.js';
 import { openAboutModal } from './aide.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { closeModal } from './common.js';
+import { closeModal, openModal } from './modal.js';
 
 /* ---------- options (modale) ---------- */
 
@@ -30,7 +30,7 @@ function feedbackZoneHtml() {
 function openFeedbackZone() {
   const zone = document.getElementById('feedback-zone');
   if (!zone) return;
-  zone.innerHTML = feedbackZoneHtml();
+  morph(zone, feedbackZoneHtml());
   const area = document.getElementById('feedback-text');
   if (area) area.focus();
 }
@@ -38,85 +38,89 @@ function openFeedbackZone() {
 function sendFeedback() {
   const area = document.getElementById('feedback-text');
   if (!area) return;
-  if (testMode) { showToast('Envoi désactivé en mode test.'); return; }
+  if (testMode) { notify('Envoi désactivé en mode test.'); return; }
   let result = 'inactive';
   try { result = Telemetry.feedback(area.value); } catch (e) { /* le suivi ne doit jamais gêner le jeu */ }
   if (result === 'ok') {
     const zone = document.getElementById('feedback-zone');
-    if (zone) zone.innerHTML = '';
-    showToast('Merci pour ton commentaire !');
+    if (zone) morph(zone, '');
+    notify('Merci pour ton commentaire !');
   } else if (result === 'empty') {
-    showToast('Écris ton commentaire avant de l\'envoyer.');
+    notify('Écris ton commentaire avant de l\'envoyer.');
   } else if (result === 'limit') {
-    showToast('Nombre maximal de commentaires atteint pour cette visite.');
+    notify('Nombre maximal de commentaires atteint pour cette visite.');
   } else {
-    showToast('Commentaire non envoyé : le suivi anonyme n\'est pas activé.');
+    notify('Commentaire non envoyé : le suivi anonyme n\'est pas activé.');
   }
+}
+
+// « Recommencer à zéro », puis sa confirmation dans la page (et non confirm() : certains
+// navigateurs et aperçus bloquent les boîtes de dialogue natives sans rien signaler).
+function newGameZoneHtml(confirmer = false) {
+  return confirmer
+    ? `<p class="alert">Toute la progression actuelle sera perdue.</p>
+    <div class="row">
+      <button class="btn danger" type="button" data-action="do-new-game">Oui, tout effacer</button>
+      <button class="btn" type="button" data-action="cancel-new-game">Annuler</button>
+    </div>`
+    : '<button class="btn danger-outline" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
 }
 
 export function openOptionsModal() {
   tel('modal', 'options');
-  const root = document.getElementById('modal-root');
-  root.innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="options-title" data-stop-propagation>
-        <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
-        <h2 id="options-title">⚙️ Options</h2>
-        <p class="muted about-version">Ferme Familiale · version ${GAME_VERSION}</p>
-        <div class="stack">
-          <div class="stack">
-            <strong>À propos</strong>
-            <div class="row">
-              <button class="btn" type="button" data-action="open-about">ℹ️ Règles principales et version</button>
-            </div>
-          </div>
-          <details class="more">
-            <summary>💾 Sauvegarde</summary>
-            <div class="stack">
-              <strong>Exporter la sauvegarde</strong>
-              <textarea id="export-area" rows="4" readonly></textarea>
-              <div class="row">
-                <button class="btn" type="button" data-action="do-export">Générer</button>
-                <button class="btn" type="button" data-action="copy-export">Copier</button>
-              </div>
-            </div>
-            <div class="stack">
-              <strong>Importer une sauvegarde</strong>
-              <textarea id="import-area" rows="4" placeholder="Coller le texte exporté ici"></textarea>
-              <div class="row">
-                <button class="btn" type="button" data-action="do-import">Importer</button>
-              </div>
-            </div>
-          </details>
-          <div class="stack">
-            <strong>Ton avis</strong>
-            <div class="row">
-              <button class="btn" type="button" data-action="open-feedback">💬 Aide-nous à améliorer le jeu !</button>
-            </div>
-            <div id="feedback-zone"></div>
-          </div>
-          ${privacySectionHtml()}
-          <div class="stack">
-            <strong>Mode test</strong>
-            <label class="row check-row">
-              <input type="checkbox" id="test-mode-toggle" ${testMode ? 'checked' : ''}>
-              Activer le panneau de mode test
-            </label>
-            <label class="row check-row">
-              <input type="checkbox" id="god-mode-toggle" ${godMode ? 'checked' : ''}>
-              God mode : aller d'une carte à l'autre sans le personnage
-            </label>
-          </div>
-          <div class="stack">
-            <strong>Nouvelle partie</strong>
-            <div class="row" id="new-game-zone">
-              <button class="btn danger-outline" type="button" data-action="ask-new-game">Recommencer à zéro</button>
-            </div>
-          </div>
+  openModal(`
+    <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
+    <h2 id="options-title">⚙️ Options</h2>
+    <p class="muted about-version">Ferme Familiale · version ${GAME_VERSION}</p>
+    <div class="stack">
+      <div class="stack">
+        <strong>À propos</strong>
+        <div class="row">
+          <button class="btn" type="button" data-action="open-about">ℹ️ Règles principales et version</button>
         </div>
       </div>
-    </div>
-  `;
+      <details class="more">
+        <summary>💾 Sauvegarde</summary>
+        <div class="stack">
+          <strong>Exporter la sauvegarde</strong>
+          <textarea id="export-area" rows="4" readonly></textarea>
+          <div class="row">
+            <button class="btn" type="button" data-action="do-export">Générer</button>
+            <button class="btn" type="button" data-action="copy-export">Copier</button>
+          </div>
+        </div>
+        <div class="stack">
+          <strong>Importer une sauvegarde</strong>
+          <textarea id="import-area" rows="4" placeholder="Coller le texte exporté ici"></textarea>
+          <div class="row">
+            <button class="btn" type="button" data-action="do-import">Importer</button>
+          </div>
+        </div>
+      </details>
+      <div class="stack">
+        <strong>Ton avis</strong>
+        <div class="row">
+          <button class="btn" type="button" data-action="open-feedback">💬 Aide-nous à améliorer le jeu !</button>
+        </div>
+        <div id="feedback-zone"></div>
+      </div>
+      ${privacySectionHtml()}
+      <div class="stack">
+        <strong>Mode test</strong>
+        <label class="row check-row">
+          <input type="checkbox" id="test-mode-toggle" ${testMode ? 'checked' : ''}>
+          Activer le panneau de mode test
+        </label>
+        <label class="row check-row">
+          <input type="checkbox" id="god-mode-toggle" ${godMode ? 'checked' : ''}>
+          God mode : aller d'une carte à l'autre sans le personnage
+        </label>
+      </div>
+      <div class="stack">
+        <strong>Nouvelle partie</strong>
+        <div class="row" id="new-game-zone">${newGameZoneHtml()}</div>
+      </div>
+    </div>`, { labelledBy: 'options-title' });
   // FLU-38 : sauvegarde repliée, « Recommencer à zéro » en bas, en contour rouge
   document.getElementById('export-area').addEventListener('click', (e) => e.target.select());
 }
@@ -145,21 +149,17 @@ registerActions({
   'do-import': () => {
     const area = document.getElementById('import-area');
     const ok = importSaveText(area.value);
-    showToast(ok ? 'Sauvegarde importée.' : 'Texte invalide, import annulé.');
+    notify(ok ? 'Sauvegarde importée.' : 'Texte invalide, import annulé.');
     if (ok) {
       setEcranFerme(null);
       closeModal();
       refresh();
     }
   },
-  // Confirmation dans la page (et non confirm()) : certains navigateurs et
-  // aperçus bloquent les boîtes de dialogue natives sans rien signaler.
   'ask-new-game': () => {
-    document.getElementById('new-game-zone').innerHTML = `
-    <p class="alert">Toute la progression actuelle sera perdue.</p>
-    <div class="row">
-      <button class="btn danger" type="button" data-action="do-new-game">Oui, tout effacer</button>
-      <button class="btn" type="button" data-action="cancel-new-game">Annuler</button>
-    </div>`;
+    morph(document.getElementById('new-game-zone'), newGameZoneHtml(true));
+  },
+  'cancel-new-game': () => {
+    morph(document.getElementById('new-game-zone'), newGameZoneHtml());
   },
 });

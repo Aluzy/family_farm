@@ -11,11 +11,12 @@ import { hoeMode, setHoeMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { formatEnergy } from './energie.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeStageWindow, stageWindow } from './stage-windows.js';
 import { showHoeHint } from './stage.js';
-import { canPay, closeModal } from './common.js';
+import { accord, canPay, plural } from './common.js';
+import { closeModal } from './modal.js';
 
 /* ---------- version 1.9 (v2, lot 5) : la houe ---------- */
 
@@ -60,12 +61,12 @@ registerActions({
     applyResult(r);
     // achetée depuis sa fiche du Marché : la fiche se ferme (un outil ne s'achète qu'une fois)
     if (r.ok && document.querySelector('#modal-root .shop-modal')) closeModal();
-    if (r.ok) showToast(`${DATA.HOUE.ICONE} Houe achetée : sur la carte, touche la houe dans la barre d'outils, en bas, pour labourer.`);
+    if (r.ok) notify(`${DATA.HOUE.ICONE} Houe achetée : sur la carte, touche la houe dans la barre d'outils, en bas, pour labourer.`);
   },
   // FLU-42 : la puce « Labourer 6 tuiles » met la houe en main (sans la ranger si elle y est)
   'hoe-take': () => {
     if (!hasHoe(state)) {
-      showToast(`Il te faut une houe (${formatCoins(DATA.HOUE.PRIX)} 💰).`);
+      notify(`Il te faut une houe (${formatCoins(DATA.HOUE.PRIX)} 💰).`);
       return;
     }
     if (!hoeMode) setHoeMode(true);
@@ -76,7 +77,7 @@ registerActions({
   },
   'hoe-toggle': () => {
     if (!hasHoe(state)) {
-      showToast(`Il te faut une houe (${formatCoins(DATA.HOUE.PRIX)} 💰).`);
+      notify(`Il te faut une houe (${formatCoins(DATA.HOUE.PRIX)} 💰).`);
       return;
     }
     setHoeMode(!hoeMode);
@@ -105,7 +106,7 @@ registerActions({
       if (r.error === TIRED || /Plafond/.test(r.error)) break;
     }
     refresh();
-    if (n) showToast(`${DATA.HOUE.ICONE} ${n} tuile${n > 1 ? 's' : ''} labourée${n > 1 ? 's' : ''}${raison ? ` · ${raison}` : ''}`);
-    else if (raison) showToast(raison);
+    if (n) notify(`${DATA.HOUE.ICONE} ${plural(n, 'tuile')} ${accord(n, 'labourée')}${raison ? ` · ${raison}` : ''}`);
+    else if (raison) notify(raison);
   },
 });

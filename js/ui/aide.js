@@ -26,6 +26,7 @@ import { artPx, REDUCED_MOTION } from './animations.js';
 import { openOptionsModal } from './options.js';
 import { registerActions } from './actions.js';
 import { costLabel } from './common.js';
+import { openModal } from './modal.js';
 
 /* ---------- Lot 11 : aide sur chaque bâtiment ---------- */
 
@@ -345,22 +346,17 @@ function openHelpModal(id) {
   if (!HELP[id]) return;
   const h = HELP[id]();
   const sym = id === 'reservoir' ? 'b-reservoir' : `b-${id}`;
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="help-title" data-stop-propagation>
-        <div class="help-head">${h.icone ? `<span class="help-emoji" aria-hidden="true">${h.icone}</span>` : artPx([sym])}<h2 id="help-title">${h.nom}</h2></div>
-        <ul class="help-list">
-          ${h.lignes
-            ? h.lignes.map(([titre, texte]) => `<li><strong>${titre}</strong>${texte}</li>`).join('')
-            : `<li><strong>Rôle</strong>${h.role}</li>
-          <li><strong>Consommation</strong>${h.conso}</li>
-          <li><strong>Production</strong>${h.prod}</li>
-          ${h.note ? `<li><strong>Bon à savoir</strong>${h.note}</li>` : ''}`}
-        </ul>
-        <button type="button" class="btn primary" data-action="close-modal" id="help-close">Compris</button>
-      </div>
-    </div>`;
-  document.getElementById('help-close').focus();
+  openModal(`
+    <div class="help-head">${h.icone ? `<span class="help-emoji" aria-hidden="true">${h.icone}</span>` : artPx([sym])}<h2 id="help-title">${h.nom}</h2></div>
+    <ul class="help-list">
+      ${h.lignes
+        ? h.lignes.map(([titre, texte]) => `<li><strong>${titre}</strong>${texte}</li>`).join('')
+        : `<li><strong>Rôle</strong>${h.role}</li>
+      <li><strong>Consommation</strong>${h.conso}</li>
+      <li><strong>Production</strong>${h.prod}</li>
+      ${h.note ? `<li><strong>Bon à savoir</strong>${h.note}</li>` : ''}`}
+    </ul>
+    <button type="button" class="btn primary" data-action="close-modal" id="help-close">Fermer</button>`, { labelledBy: 'help-title', focus: '#help-close' });
 }
 
 /* ---------- Lot 11 : bulles d'aide de la première partie ---------- */
@@ -546,26 +542,21 @@ export function openAboutModal() {
     `Arbre des technologies : ${Object.keys(DATA.techtree.noeuds).length} technologies en ${DATA.techtree.branches.length} branches, payées en points de technologie (PT : chapitres terminés, jalons de maîtrise, mode libre), en pièces et en ressources (bois, pierre, puis lingots fondus au Four avec le minerai de la grotte). Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
   ];
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois" role="dialog" aria-modal="true" aria-labelledby="about-title" data-stop-propagation>
-        <h2 id="about-title">ℹ️ À propos</h2>
-        <p class="about-version"><strong>Ferme Familiale</strong> · version ${GAME_VERSION} <span class="muted">(format de sauvegarde ${STATE_VERSION})</span></p>
-        <h3>Règles principales</h3>
-        <ol class="about-rules">${rules.map((r) => `<li>${r}</li>`).join('')}</ol>
-        <h3>Fiches d'aide</h3>
-        <div class="row">${FICHES.map((id) => `<button type="button" class="btn" data-action="help" data-id="${id}">${HELP[id]().icone} ${HELP[id]().nom}</button>`).join('')}</div>
-        <h3>Crédits</h3>
-        <p class="muted">Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <a href="https://antarcticbees.itch.io/" target="_blank" rel="noopener noreferrer">https://antarcticbees.itch.io/</a></p>
-        <p class="muted">Moteur d'affichage : Phaser 3 (licence MIT).</p>
-        <p class="muted">Icônes et illustrations des fiches : originales.</p>
-        <div class="row">
-          <button type="button" class="btn" data-action="open-options">← Options</button>
-          <button type="button" class="btn primary" data-action="close-modal" id="about-close">Fermer</button>
-        </div>
-      </div>
-    </div>`;
-  document.getElementById('about-close').focus();
+  openModal(`
+    <h2 id="about-title">ℹ️ À propos</h2>
+    <p class="about-version"><strong>Ferme Familiale</strong> · version ${GAME_VERSION} <span class="muted">(format de sauvegarde ${STATE_VERSION})</span></p>
+    <h3>Règles principales</h3>
+    <ol class="about-rules">${rules.map((r) => `<li>${r}</li>`).join('')}</ol>
+    <h3>Fiches d'aide</h3>
+    <div class="row">${FICHES.map((id) => `<button type="button" class="btn" data-action="help" data-id="${id}">${HELP[id]().icone} ${HELP[id]().nom}</button>`).join('')}</div>
+    <h3>Crédits</h3>
+    <p class="muted">Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <a href="https://antarcticbees.itch.io/" target="_blank" rel="noopener noreferrer">https://antarcticbees.itch.io/</a></p>
+    <p class="muted">Moteur d'affichage : Phaser 3 (licence MIT).</p>
+    <p class="muted">Icônes et illustrations des fiches : originales.</p>
+    <div class="row">
+      <button type="button" class="btn" data-action="open-options">← Options</button>
+      <button type="button" class="btn primary" data-action="close-modal" id="about-close">Fermer</button>
+    </div>`, { labelledBy: 'about-title', focus: '#about-close' });
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

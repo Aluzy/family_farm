@@ -6,7 +6,7 @@ import {
 import { eatSnack } from '../engine/family.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 
 /* ---------- version 1.8 : l'énergie du personnage ---------- */
@@ -71,6 +71,6 @@ export function eatButton(item, texte = '') {
 registerActions({
   'eat': (target) => {
     const r = applyResult(eatSnack(state, target.dataset.item));
-    if (r && r.ok) showToast(`⚡ +${formatEnergyGain(r.gain)} énergie`);
+    if (r && r.ok) notify(`⚡ +${formatEnergyGain(r.gain)} énergie`);
   },
 });

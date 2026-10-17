@@ -22,9 +22,10 @@ import { formatPlaces, formatStraw } from './elevage.js';
 import { pxText } from './pixel-art.js';
 import { tel } from './consent.js';
 import { morph, refresh } from './render.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { canPay, closeModal, costLabel } from './common.js';
+import { canPay, costLabel } from './common.js';
+import { closeModal, openModal } from './modal.js';
 
 /* ---------- Marché ---------- */
 
@@ -340,13 +341,9 @@ function shopBodyHtml(o) {
 function openShopModal(mode, id) {
   shopOpen = { mode, id };
   tel('modal', 'shop');
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois item-modal shop-modal" role="dialog" aria-modal="true" aria-labelledby="item-title" data-stop-propagation>
-        <div class="item-body"></div>
-        <div class="row"><button type="button" class="btn" data-action="close-modal">Fermer</button></div>
-      </div>
-    </div>`;
+  openModal(`
+    <div class="item-body"></div>
+    <div class="row"><button type="button" class="btn" data-action="close-modal">Fermer</button></div>`, { labelledBy: 'item-title', className: 'modal bois item-modal shop-modal' });
   renderShopModal();
 }
 
@@ -365,14 +362,10 @@ export function renderShopModal() {
 function openHelpModal() {
   const tab = currentTab();
   tel('modal', 'market-help');
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois item-modal" role="dialog" aria-modal="true" aria-labelledby="market-help-title" data-stop-propagation>
-        <h2 id="market-help-title"><span aria-hidden="true">${tab.icon}</span> ${tab.label}</h2>
-        <p>${helpText(tab.id)}</p>
-        <div class="row"><button type="button" class="btn" data-action="close-modal">Fermer</button></div>
-      </div>
-    </div>`;
+  openModal(`
+    <h2 id="market-help-title"><span aria-hidden="true">${tab.icon}</span> ${tab.label}</h2>
+    <p>${helpText(tab.id)}</p>
+    <div class="row"><button type="button" class="btn" data-action="close-modal">Fermer</button></div>`, { labelledBy: 'market-help-title', className: 'modal bois item-modal' });
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
@@ -390,7 +383,7 @@ registerActions({
     const result = applyResult(buyFurniture(state, id));
     if (result.ok) {
       const def = DATA.MEUBLES[id];
-      showToast(`🏠 ${def.nom} : installé dans ${PIECES[def.piece] || 'la maison'} (−${formatCoins(result.cost)} 💰${result.bonheur ? ` · 😊 +${result.bonheur}` : ''})`);
+      notify(`🏠 ${def.nom} : installé dans ${PIECES[def.piece] || 'la maison'} (−${formatCoins(result.cost)} 💰${result.bonheur ? ` · 😊 +${result.bonheur}` : ''})`);
     }
   },
   'market-help': () => {
@@ -399,19 +392,19 @@ registerActions({
   'buy-animal': (target) => {
     const kind = target.dataset.kind;
     const result = applyResult(buyAnimals(state, kind, Math.max(1, Number(target.dataset.q) || 1)));
-    if (result.ok) showToast(`Acheté : ${result.bought} ${DATA.ANIMAUX[kind].icone} (−${formatCoins(result.cost)} 💰)`);
+    if (result.ok) notify(`Acheté : ${result.bought} ${DATA.ANIMAUX[kind].icone} (−${formatCoins(result.cost)} 💰)`);
   },
   'buy-item': (target) => {
     const item = target.dataset.item;
     const result = applyResult(buyItem(state, item, Math.max(1, Number(target.dataset.q) || 1)));
     if (result.ok) {
-      showToast(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
+      notify(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
       refresh();
     }
   },
   'sell-item': (target) => {
     const item = target.dataset.item;
     const result = applyResult(sellItem(state, item, Math.max(1, Number(target.dataset.q) || 1)));
-    if (result.ok) showToast(`Vendu : ${result.sold} ${DATA.items[item].icone} (+${formatCoins(result.gain)} 💰)`);
+    if (result.ok) notify(`Vendu : ${result.sold} ${DATA.items[item].icone} (+${formatCoins(result.gain)} 💰)`);
   },
 });

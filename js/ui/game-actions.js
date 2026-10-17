@@ -10,9 +10,9 @@ import { makeSeed, persistState } from './storage.js';
 import { setPendingAbsence, setSimulatedAt, syncJobs } from './loop.js';
 import { refresh } from './render.js';
 import { openWakeModal } from './reveil.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions, sameHandler } from './actions.js';
-import { closeModal } from './common.js';
+import { closeModal } from './modal.js';
 
 /* ---------- actions du moteur (jamais d'accès direct à state depuis l'UI) ---------- */
 
@@ -30,7 +30,7 @@ function actionNewGame() {
 // Applique le résultat d'une action du moteur : message si elle est refusée,
 // puis rafraîchissement immédiat (sans attendre la cadence de 5 par seconde).
 export function applyResult(result) {
-  if (result && result.ok === false) showToast(result.error);
+  if (result && result.ok === false) notify(result.error);
   refresh();
   return result;
 }
@@ -40,7 +40,7 @@ export function applyResult(result) {
 // que la nuit.
 export function actionSleep() {
   const r = goToSleep(state);
-  if (!r.ok) showToast(r.error);
+  if (!r.ok) notify(r.error);
   else persistState();
   refresh();
 }
@@ -78,11 +78,11 @@ registerActions({
     const all = target.dataset.qty === 'all';
     const qty = all ? (action === 'fridge-in' ? countItem(state, item) : fridgeCount(state, item)) : Number(target.dataset.qty);
     const result = applyResult(action === 'fridge-in' ? moveToFridge(state, item, qty) : moveFromFridge(state, item, qty));
-    if (result.ok) showToast(`${action === 'fridge-in' ? '🧊 Rangé' : 'Sorti'} : ${result.moved} ${DATA.items[item].icone}${result.reste ? ` (frigo plein : ${result.reste} restent dehors)` : ''}`);
+    if (result.ok) notify(`${action === 'fridge-in' ? '🧊 Rangé' : 'Sorti'} : ${result.moved} ${DATA.items[item].icone}${result.reste ? ` (frigo plein : ${result.reste} restent dehors)` : ''}`);
   }),
   'do-new-game': () => {
     actionNewGame();
     closeModal();
-    showToast('Nouvelle partie lancée.');
+    notify('Nouvelle partie lancée.');
   },
 });

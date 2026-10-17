@@ -6,7 +6,7 @@ import {
 import { formatCoins, formatNumber, formatPercent, formatQty } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { canPay, costLabel } from './common.js';
 
@@ -161,6 +161,6 @@ registerActions({
     const id = target.dataset.id;
     const result = applyResult(buyTech(state, id));
     const res = Object.entries(result.ressources || {}).map(([item, q]) => `, −${formatNumber(q)} ${DATA.items[item].icone}`).join('');
-    if (result.ok) showToast(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰${res})`);
+    if (result.ok) notify(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰${res})`);
   },
 });
