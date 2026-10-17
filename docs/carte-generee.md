@@ -195,3 +195,13 @@ Le Marché vend toujours les outils.
          attend le panneau et la pompe.
        - Le puits et la citerne gardent leurs images (la pompe qui vibre, le niveau de l'eau),
          posées sur leurs blocs. Un appui ouvre l'énergie ou l'eau.
+     - ✅ **5b-3, le poulailler** : le Poulailler quitte la cour.
+       - Le **nichoir** (4 planches, 3 fibres) se fabrique à l'Atelier. Posé dans une pièce
+         close, il construit le Poulailler au niveau 1 (`ATELIER.BLOCS.nichoir.batiment`) ; repris,
+         le Poulailler n'est plus construit et retrouve son niveau quand on le repose. On ne
+         l'achète plus sur la ferme générée (`buildPoulailler` refuse).
+       - Un appui sur le nichoir ouvre la fenêtre du Poulailler ; un double appui y envoie le
+         personnage prendre les œufs, devant le nichoir. La bulle des œufs se pose au-dessus
+         (`keyBlockOf`).
+       - Les poules ne se montrent pas encore sur la carte : la vie de la cour les dessine
+         autour du bâtiment du Poulailler, que la ferme générée n'a pas.

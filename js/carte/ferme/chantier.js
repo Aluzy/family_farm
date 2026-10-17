@@ -59,6 +59,15 @@
       return null;
     },
 
+    // Le bloc clé du bâtiment `lieu` (le nichoir du Poulailler), posé : { x, y } (le bas de sa
+    // case), ou null.
+    keyBlockOf(lieu) {
+      const sorte = BLOCS_CARTE.cles[lieu];
+      if (!sorte) return null;
+      for (const e of (this.blocks || new Map()).values()) if (e.sorte === sorte) return e;
+      return null;
+    },
+
     // Les cases que les blocs ferment au passage (murs, Atelier).
     blockCells() {
       const out = [];

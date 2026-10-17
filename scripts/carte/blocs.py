@@ -9,7 +9,7 @@
 # Même ordre que js/carte/ferme/config.js (BLOCS_CARTE.frames) : mur_pierre, porte, atelier,
 # paillasse, drap (la couverture, posée par-dessus le personnage couché), four, cuisiniere
 # (étape 5b : posés dans une pièce close, ils tiennent lieu des stations), panneau, batterie
-# (étape 5b-2 : posés, ils installent l'appareil du même nom). Gris des rochers,
+# (étape 5b-2 : posés, ils installent l'appareil du même nom), nichoir (le bloc clé du Poulailler). Gris des rochers,
 # bruns des troncs, paille du poulailler ; lumière en haut à gauche, contour sombre de la
 # matière.
 import os
@@ -280,6 +280,33 @@ DESSINS = [
         '.mnnnnnnnnnnnnm.',
         '.mnnnnnnnnnnnnm.',
         '.mmmmmmmmmmmmmm.',
+        '................',
+    ],
+    # le nichoir : une caisse de bois sur pieds, sa paille, deux œufs
+    [
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '..kkkkkkkkkkkk..',
+        '.kEEEEEEEEEEEEk.',
+        'kETTTTTTTTTTTTEk',
+        'kkkkkkkkkkkkkkkk',
+        '.ktTkkkkkkkkTtk.',
+        '.kTk.yYyyYy.kTk.',
+        '.kTkyYwwYwwykTk.',
+        '.kTkyWwwWwwYkTk.',
+        '.kTkkkkkkkkkkTk.',
+        '.ktTtTtTtTtTtTk.',
+        '.kTtTtTtTtTtTtk.',
+        '.ksssssssssssssk',
+        '.ks..........sk.',
+        '.ks..........sk.',
+        '.kk..........kk.',
         '................',
     ],
 ]
