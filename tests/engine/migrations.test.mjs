@@ -172,7 +172,7 @@ test('migration v15 → v16 : la viande et les anciens plats de l\'inventaire et
   assertEqual(m.frigo.niveau, 1, 'version 1.10 : le frigo a un niveau');
   assertEqual(m.marche, { viande_mouton: 150 });
   for (const id of ['viande_mouton', 'viande_boeuf', 'viande_volaille', 'ragout', 'poulet_roti_ail', 'roti_boeuf', 'poivrons_farcis']) {
-    assertEqual([!!DATA.items[id], DATA.items[id].edible], [true, true], id);
+    assertEqual([!!DATA.OBJETS[id], DATA.OBJETS[id].mangeable], [true, true], id);
   }
   // la famille les mange (ce qui périme le plus tôt d'abord)
   const plan = planMeal(m);
@@ -202,7 +202,7 @@ test('migration v15 → v16 : la Rôtisserie est retirée de l\'arbre et rembour
   const m = migrate({ v: 15, t: 0, s: v15 });
   assertEqual(m.technologies, ['cu_outils', 'cui_boulangerie', 'cui_laiterie']);
   assertEqual([m.pieces, m.pointsTech.solde, m.pointsTech.gagnes], [800, 3, 9], '300 pièces et 1 point de technologie rendus');
-  assertEqual(ownedTechs(m).every((id) => DATA.techtree.noeuds[id]), true);
+  assertEqual(ownedTechs(m).every((id) => DATA.ARBRE.noeuds[id]), true);
   // sans ce nœud : rien n'est offert
   const sans = migrate({ v: 15, t: 0, s: v15State((s) => { s.technologies = ['cu_outils']; s.pieces = 500; }) });
   assertEqual([sans.pieces, sans.pointsTech.solde, sans.technologies], [500, 0, ['cu_outils']]);

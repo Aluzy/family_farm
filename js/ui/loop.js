@@ -75,8 +75,8 @@ function watchPreparations() {
     const job = state.stations[id].tache;
     const was = lastJobs[id];
     if (was && !job) {
-      const r = DATA.recipes[was];
-      const out = DATA.items[recipeOutput(was)];
+      const r = DATA.RECETTES[was];
+      const out = DATA.OBJETS[recipeOutput(was)];
       notify(`${out.icone} ${r.transformation ? out.nom : r.nom} : prêt !`);
     }
     lastJobs[id] = job ? job.recette : null;
@@ -178,7 +178,7 @@ function playMealScene(repas) {
   const mange = itemsText(repas.mange);
   const complet = repas.couverture >= 100;
   const suite = complet ? 'Tout le monde a mangé à sa faim.' : `Repas insuffisant : ${formatNumber(Math.min(repas.energie, repas.besoin))} / ${formatNumber(repas.besoin)} calories, ton énergie remontera moins cette nuit.`;
-  notify(`🍽️ ${DATA.TIME.MEAL_HOUR} h : la famille passe à table${mange ? ` (${mange})` : ''}. ${suite}`, { kind: complet ? 'repas' : 'alerte', cible: { fenetre: 'famille' } });
+  notify(`🍽️ ${DATA.TEMPS.HEURE_REPAS} h : la famille passe à table${mange ? ` (${mange})` : ''}. ${suite}`, { kind: complet ? 'repas' : 'alerte', cible: { fenetre: 'famille' } });
 }
 
 // Le résumé du réveil est-il à l'écran ? Tant qu'il l'est, l'horloge reste à 6 h.
@@ -259,7 +259,7 @@ function openAbsenceModal(r) {
   const done = itemsText(r.terminees);
   const running = r.enCours.map((e) => {
     const def = DATA.STATIONS[e.station];
-    const rec = DATA.recipes[e.recette];
+    const rec = DATA.RECETTES[e.recette];
     const left = Number.isFinite(e.reste) ? `encore ${formatDuration(e.reste)}` : 'en pause';
     // Au Moulin : le nombre de blés qu'il reste à moudre.
     const lot = e.quantite > 1 ? `${formatNumber(e.quantite)} blés à moudre` : rec.nom.toLowerCase();

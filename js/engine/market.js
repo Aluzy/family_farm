@@ -13,7 +13,7 @@ import { gainActionXp } from './levels.js';
 // Plancher du coefficient d'achat d'un item (1,2 ; 2,0 pour les graines).
 export function marketFloor(item) {
   const P = DATA.MARCHE.PLANCHER;
-  const p = P[DATA.items[item].category];
+  const p = P[DATA.OBJETS[item].categorie];
   return p === undefined ? P.defaut : p;
 }
 
@@ -32,12 +32,12 @@ function setMarketCoef(state, item, coef) {
 }
 
 export function isBuyable(item) {
-  const def = DATA.items[item];
+  const def = DATA.OBJETS[item];
   return !!def && def.rachetable !== false && !def.ville; // version 1.5 : « ville » = marché de la ville seulement
 }
 
 export function sellPrice(item) {
-  return DATA.items[item].prix;
+  return DATA.OBJETS[item].prix;
 }
 
 // Prix de la prochaine unité achetée.
@@ -49,7 +49,7 @@ export function buyPrice(state, item) {
 // pas entre deux unités, et l'on s'arrête quand les pièces manquent.
 // Renvoie { quantite, cout } : ce que buyItem(state, item, qty) achèterait.
 export function buyQuote(state, item, qty = 1) {
-  if (!DATA.items[item] || !isBuyable(item)) return { quantite: 0, cout: 0 };
+  if (!DATA.OBJETS[item] || !isBuyable(item)) return { quantite: 0, cout: 0 };
   const floor = marketFloor(item);
   let coef = marketCoef(state, item);
   let pieces = state.pieces;
@@ -73,7 +73,7 @@ export function buyQuote(state, item, qty = 1) {
 // `ville` : achat au marché de la ville (ville.js, buyInTown), le seul où se vendent les
 // objets marqués « ville ».
 export function buyItem(state, item, qty = 1, { ville = false } = {}) {
-  const def = DATA.items[item];
+  const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
   if (!ville && !farmOpen(state)) return fail(MARKET_CLOSED);
   if (ville ? !def.ville || def.rachetable === false : !isBuyable(item)) return fail(`${def.nom} ne s'achète pas ici.`);
@@ -105,7 +105,7 @@ export function sellableCount(state, item) {
 export const MARKET_CLOSED = 'Le Marché ouvre quand le panneau solaire et la pompe sont installés.';
 
 export function sellItem(state, item, qty) {
-  const def = DATA.items[item];
+  const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
   if (def.invendable) return fail(`${def.nom} ne se vend pas : il sert à l'arbre des technologies.`);
   if (!farmOpen(state)) return fail(MARKET_CLOSED);

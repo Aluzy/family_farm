@@ -60,7 +60,7 @@ function townMarketHtml() {
       </div>`;
   }
   const rows = townItems().map((item) => {
-    const it = DATA.items[item];
+    const it = DATA.OBJETS[item];
     const price = buyPrice(state, item);
     return `
       <div class="inv-row">
@@ -157,7 +157,7 @@ registerActions({
     const item = target.dataset.item;
     const result = applyResult(buyInTown(state, item, Number(target.dataset.qty) || 1));
     if (!result.ok) return;
-    notify(`Acheté : ${result.bought} ${DATA.items[item].icone} (−${formatCoins(result.cost)} 💰)`);
+    notify(`Acheté : ${result.bought} ${DATA.OBJETS[item].icone} (−${formatCoins(result.cost)} 💰)`);
     refresh();
   },
 });

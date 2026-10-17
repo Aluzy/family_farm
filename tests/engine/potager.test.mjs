@@ -16,7 +16,7 @@ import {
 /* ---------- Lot 2 : potager, famille, santé, conserves ---------- */
 
 test('DATA Lot 2 : objets, énergies et prix de vente', () => {
-  const it = DATA.items;
+  const it = DATA.OBJETS;
   // Lot 11 (nutrition) : +25 % par rapport aux valeurs d'origine (6, 15, 6, 8,
   // 8, 20), arrondi via scaleEnergie(). Lot 12 : les prix de vente des
   // récoltes (légumes) sont doublés par applyProductionPriceMultiplier() —
@@ -30,17 +30,17 @@ test('DATA Lot 2 : objets, énergies et prix de vente', () => {
   // non rachetable) : son prix reste inchangé.
   assertEqual([it.conserve.energie, it.conserve.prix], [scaleEnergie(20), 3]);
   assertEqual(it.conserve.rachetable, false);
-  assertEqual(it.conserve.category, 'conserve');
+  assertEqual(it.conserve.categorie, 'conserve');
   for (const k of ['graine_carotte', 'graine_tomate', 'graine_courgette', 'graine_aubergine']) {
-    assertEqual([it[k].prix, it[k].edible, it[k].category], [1, false, 'graine']);
+    assertEqual([it[k].prix, it[k].mangeable, it[k].categorie], [1, false, 'graine']);
   }
   for (const k of Object.keys(it)) {
-    assert(typeof it[k].edible === 'boolean' && typeof it[k].category === 'string', `${k} : edible et category`);
+    assert(typeof it[k].mangeable === 'boolean' && typeof it[k].categorie === 'string', `${k} : mangeable et categorie`);
   }
 });
 
 test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
-  const c = DATA.crops;
+  const c = DATA.CULTURES;
   assertEqual(Object.keys(c), [
     'carotte', 'patate', 'tomate', 'courgette', 'aubergine',
     'poivron', 'oignon', 'ail', 'epinard', 'fraise',
@@ -64,8 +64,8 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
 });
 
 test('DATA « 10 cultures » : stades, eau, rendement, graines, comestibilité, vente', () => {
-  const c = DATA.crops;
-  const it = DATA.items;
+  const c = DATA.CULTURES;
+  const it = DATA.OBJETS;
   assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz', 'houblon', 'cacao', 'vanille', 'cafe'].map((k) => c[k].stades),
     [5, 6, 6, 3, 4, 8, 6, 8, 10, 8]);
   assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz', 'houblon', 'cacao', 'vanille', 'cafe'].map((k) => c[k].litres),
@@ -89,9 +89,9 @@ test('DATA « 10 cultures » : stades, eau, rendement, graines, comestibilité, 
   for (const k of ['oignon', 'ail', 'epinard', 'fraise', 'poivron', 'cacao', 'vanille', 'cafe']) assertEqual([c[k].pleinChamp, c[k].requiert], [undefined, undefined], `${k} : ni plein champ ni bâtiment requis`);
   for (const k of ['cacao', 'vanille', 'cafe']) assertEqual(c[k].lieux, ['serre']);
   // Comestibilité et prix de vente exactement comme demandé.
-  assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz'].map((k) => [it[k].edible, it[k].energie]),
+  assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz'].map((k) => [it[k].mangeable, it[k].energie]),
     [[true, 6], [true, 6], [true, 7], [true, 5], [true, 5], [true, 10]]);
-  for (const k of ['houblon', 'cacao', 'vanille', 'cafe']) assertEqual(it[k].edible, false, `${k} n'est jamais comestible`);
+  for (const k of ['houblon', 'cacao', 'vanille', 'cafe']) assertEqual(it[k].mangeable, false, `${k} n'est jamais comestible`);
   // Lot 12 : prix de vente doublés (valeurs d'origine, en commentaire :
   // 1, 2, 2, 1, 2, 1, 3, 8, 15, 6).
   assertEqual(['oignon', 'ail', 'poivron', 'epinard', 'fraise', 'riz', 'houblon', 'cacao', 'vanille', 'cafe'].map((k) => it[k].prix),
@@ -261,7 +261,7 @@ testBase('graines rendues : carotte, tomate, courgette et aubergine rendent 1 à
       const before = countItem(s, seedName);
       const r = harvest(s, 'potager-1');
       gains.push(countItem(s, seedName) - before);
-      assertEqual(r.items[culture], DATA.crops[culture].rendement);
+      assertEqual(r.items[culture], DATA.CULTURES[culture].rendement);
     }
     return gains;
   }
@@ -289,7 +289,7 @@ test('aléatoire à graine : nextRandom suit mulberry32 et vit dans l\'état', (
 test('version 1.9 : la Zone de culture, grille de 30 cases ; plafond de tuiles par niveau', () => {
   assertEqual([DATA.POTAGER.LIEU, DATA.POTAGER.NOM, DATA.POTAGER.ICONE], ['potager', 'Zone de culture', '🌱']);
   assertEqual([DATA.POTAGER.COLONNES, DATA.POTAGER.CASES, DATA.POTAGER.ZONE2.COLONNES, DATA.POTAGER.ZONE2.CASES], [5, 30, 8, 64]);
-  assertEqual([DATA.POTAGER.PARCELLES, DATA.POTAGER.COUT], [undefined, undefined], 'plus d\'agrandissement en pièces');
+  assertEqual([DATA.POTAGER.PARCELLES, DATA.POTAGER.PRIX_NIVEAUX], [undefined, undefined], 'plus d\'agrandissement en pièces');
   assertEqual(DATA.CHAMP, undefined, 'le Champ n\'existe plus comme bâtiment');
   assertEqual(DATA.NIVEAUX.TUILES, [6, 12, 20, 32, 48, 64, 64, 64, 64, 64]);
   const s = garden();

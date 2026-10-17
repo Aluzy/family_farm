@@ -46,14 +46,14 @@ function techLevelRow(e) {
 
 // Coût d'un nœud : « 2 PT + 900 💰 ».
 function techCostLabel(n) {
-  return `${formatNumber(n.pt)} PT + ${costLabel(n.cout)}`;
+  return `${formatNumber(n.pt)} PT + ${costLabel(n.prix)}`;
 }
 
 // Les ressources d'un nœud : une pastille par objet, « 🪵 3 / 8 » (en stock / demandé), marquée
 // quand il en manque. Une fois le nœud acquis : ce qu'il a coûté.
 function techResourceChips(id, acquis) {
   const chips = techResources(state, id).map((r) => {
-    const it = DATA.items[r.item];
+    const it = DATA.OBJETS[r.item];
     const texte = acquis ? `${it.icone} ${formatNumber(r.qte)}` : `${it.icone} ${formatNumber(Math.min(r.stock, r.qte))} / ${formatNumber(r.qte)}`;
     return `<span class="chip res${acquis || r.ok ? '' : ' manque'}" title="${it.nom}${acquis ? '' : ` : ${formatNumber(r.stock)} en stock`}">${texte}</span>`;
   });
@@ -62,12 +62,12 @@ function techResourceChips(id, acquis) {
 
 // Peut-on payer le nœud (PT, pièces, ressources) ?
 function techAffordable(id) {
-  const n = DATA.techtree.noeuds[id];
-  return techPoints(state).solde >= n.pt && canPay(n.cout) && hasTechResources(state, id);
+  const n = DATA.ARBRE.noeuds[id];
+  return techPoints(state).solde >= n.pt && canPay(n.prix) && hasTechResources(state, id);
 }
 
 function techNodeCard(id) {
-  const n = DATA.techtree.noeuds[id];
+  const n = DATA.ARBRE.noeuds[id];
   const status = techStatus(state, id);
   const pt = techPoints(state);
   const chip = status === 'acquis'
@@ -104,7 +104,7 @@ function branchEffectChip(id) {
 // Jalons de maîtrise : chacun rapporte 1 PT, une seule fois.
 function masteryHtml() {
   const pt = techPoints(state);
-  const items = DATA.techtree.POINTS.MAITRISE.map((m) => {
+  const items = DATA.ARBRE.POINTS.MAITRISE.map((m) => {
     const done = pt.maitrise.includes(m.id);
     const v = Math.min(m.cible, masteryValue(state, m));
     return `<li class="${done ? 'ok' : ''}"><span aria-hidden="true">${done ? '✅' : '⬜'}</span> ${m.libelle} <span class="muted num">(${formatNumber(v)} / ${formatNumber(m.cible)})</span></li>`;
@@ -114,12 +114,12 @@ function masteryHtml() {
 
 export function renderTechno() {
   const pt = techPoints(state);
-  const P = DATA.techtree.POINTS;
+  const P = DATA.ARBRE.POINTS;
   let ouverte = false; // FLU-28 : une seule branche ouverte, la première où acquérir
-  const branches = DATA.techtree.branches.map((b) => {
-    const nodes = Object.keys(DATA.techtree.noeuds)
-      .filter((id) => DATA.techtree.noeuds[id].branche === b.id)
-      .sort((x, y) => DATA.techtree.noeuds[x].palier - DATA.techtree.noeuds[y].palier);
+  const branches = DATA.ARBRE.branches.map((b) => {
+    const nodes = Object.keys(DATA.ARBRE.noeuds)
+      .filter((id) => DATA.ARBRE.noeuds[id].branche === b.id)
+      .sort((x, y) => DATA.ARBRE.noeuds[x].palier - DATA.ARBRE.noeuds[y].palier);
     const progress = techProgress(state, b.id).map(techLevelRow).join('');
     const owned = nodes.filter((id) => hasTech(state, id)).length;
     // FLU-28 : chaque branche est repliée, sauf celle qui a une technologie achetable
@@ -160,7 +160,7 @@ registerActions({
   'buy-tech': (target) => {
     const id = target.dataset.id;
     const result = applyResult(buyTech(state, id));
-    const res = Object.entries(result.ressources || {}).map(([item, q]) => `, −${formatNumber(q)} ${DATA.items[item].icone}`).join('');
-    if (result.ok) notify(`${DATA.techtree.noeuds[id].icone} ${DATA.techtree.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰${res})`);
+    const res = Object.entries(result.ressources || {}).map(([item, q]) => `, −${formatNumber(q)} ${DATA.OBJETS[item].icone}`).join('');
+    if (result.ok) notify(`${DATA.ARBRE.noeuds[id].icone} ${DATA.ARBRE.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰${res})`);
   },
 });

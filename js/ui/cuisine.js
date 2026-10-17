@@ -30,28 +30,28 @@ import { accord, canPay, costLabel, plural } from './common.js';
 
 /* ---------- Lot 5 : ateliers (Ferme) et Livre de recette ---------- */
 
-// Recettes d'une station, dans l'ordre de DATA.recipes.
+// Recettes d'une station, dans l'ordre de DATA.RECETTES.
 export function stationRecipes(id) {
-  return Object.keys(DATA.recipes).filter((r) => DATA.recipes[r].station === id);
+  return Object.keys(DATA.RECETTES).filter((r) => DATA.RECETTES[r].station === id);
 }
 
 // Ateliers dont les préparations se lancent depuis le Livre de recette : tous,
 // sauf le Moulin, qui a son propre menu (voir renderMoulin()).
 export function bookStations() {
-  return Object.keys(DATA.STATIONS).filter((id) => !stationRecipes(id).every((r) => DATA.recipes[r].horsLivre));
+  return Object.keys(DATA.STATIONS).filter((id) => !stationRecipes(id).every((r) => DATA.RECETTES[r].horsLivre));
 }
 
 // Ce que rend le Moulin pour un blé : « 1 🥣 farine + 1 🪹 paille ».
 export function millOutputText() {
-  const r = DATA.recipes.farine;
-  const out = DATA.items[r.sortie];
-  const extra = DATA.items[r.sousProduit.item];
+  const r = DATA.RECETTES.farine;
+  const out = DATA.OBJETS[r.sortie];
+  const extra = DATA.OBJETS[r.sousProduit.item];
   return `${formatQty(r.qteSortie)} ${out.icone} ${out.nom.toLowerCase()} + ${formatQty(r.sousProduit.qte)} ${extra.icone} ${extra.nom.toLowerCase()}`;
 }
 
 function stationBlurb(id) {
   const def = DATA.STATIONS[id];
-  const names = stationRecipes(id).map((r) => DATA.recipes[r].nom.toLowerCase()).join(', ');
+  const names = stationRecipes(id).map((r) => DATA.RECETTES[r].nom.toLowerCase()).join(', ');
   const power = def.electrique
     ? ' Appareil électrique : il consomme du courant en marche, avec interrupteur, usure et pannes.'
     : ' Pas d\'électricité.';
@@ -68,7 +68,7 @@ function stationBuildCard(id) {
       <span class="card-title"><span>${artIcon(id)}${def.nom}</span><span class="chips"><span class="chip">Non construit</span>${helpBtn(id)}</span></span>
       <span class="muted">${stationBlurb(id)}</span>
       ${blocked ? `<span class="alert">Construis d'abord ${need.article} ${need.nom}.</span>` : ''}
-      <button type="button" class="btn primary" data-action="build-station" data-station="${id}"${!blocked && canPay(def.cout) ? '' : ' disabled'}>${id === 'moulin' ? 'Réparer' : 'Construire'} ${def.article} ${def.nom} (${costLabel(def.cout)})</button>
+      <button type="button" class="btn primary" data-action="build-station" data-station="${id}"${!blocked && canPay(def.prixConstruction) ? '' : ' disabled'}>${id === 'moulin' ? 'Réparer' : 'Construire'} ${def.article} ${def.nom} (${costLabel(def.prixConstruction)})</button>
     </div>`;
 }
 
@@ -109,14 +109,14 @@ export function renderMoulin() {
     <div class="section-head"><h3>${artIcon('moulin')}${def.nom}</h3></div>
     <div class="cards">${stationBuildCard('moulin')}</div>`;
   }
-  const r = DATA.recipes.farine;
+  const r = DATA.RECETTES.farine;
   const wheat = Math.floor(wheatTotal(state) + EPS);
   const d = st.appareil;
   const ds = deviceStatus(state, d);
   const job = st.tache;
   const pending = millPending(state);
-  const flour = DATA.items[r.sortie];
-  const straw = DATA.items[r.sousProduit.item];
+  const flour = DATA.OBJETS[r.sortie];
+  const straw = DATA.OBJETS[r.sousProduit.item];
   const need = strawNeed(state);
   const missing = strawMissing(state);
   const each = recipeTime(state, 'farine');
@@ -189,7 +189,7 @@ function stationCard(id) {
   const job = st.tache;
   let work;
   if (job) {
-    const r = DATA.recipes[job.recette];
+    const r = DATA.RECETTES[job.recette];
     const pct = Math.max(0, Math.min(100, Math.floor(((job.dureeMs - job.resteMs) * 100) / job.dureeMs)));
     const left = taskTimeLeft(state, id);
     work = `
@@ -202,7 +202,7 @@ function stationCard(id) {
   const file = Array.isArray(st.file) ? st.file : [];
   if (file.length) {
     work += `<span class="muted">En attente :</span><span class="level-chips">${file
-      .map((e, i) => `<span class="chip">${DATA.recipes[e.recette].icone} ${DATA.recipes[e.recette].nom} <button type="button" class="btn" data-action="cancel-queued" data-station="${id}" data-index="${i}" aria-label="Annuler ${DATA.recipes[e.recette].nom}">✕</button></span>`)
+      .map((e, i) => `<span class="chip">${DATA.RECETTES[e.recette].icone} ${DATA.RECETTES[e.recette].nom} <button type="button" class="btn" data-action="cancel-queued" data-station="${id}" data-index="${i}" aria-label="Annuler ${DATA.RECETTES[e.recette].nom}">✕</button></span>`)
       .join('')}</span>`;
   }
   let power = '';
@@ -224,8 +224,8 @@ function stationCard(id) {
 }
 
 export function recipeMeta(id) {
-  const r = DATA.recipes[id];
-  const out = DATA.items[recipeOutput(id)];
+  const r = DATA.RECETTES[id];
+  const out = DATA.OBJETS[recipeOutput(id)];
   if (r.transformation) return `→ ${recipeOutputQty(id)} ${out.icone} ${out.nom.toLowerCase()}`;
   const life = shelfLife(id);
   const joie = dishHappiness(recipeOutput(id));
@@ -233,21 +233,21 @@ export function recipeMeta(id) {
 }
 
 function recipeCard(id) {
-  const r = DATA.recipes[id];
+  const r = DATA.RECETTES[id];
   const sdef = DATA.STATIONS[r.station];
   const status = recipeStatus(state, id);
   const lines = status.lignes
     .map((l) => {
       const what = l.eau
         ? `${formatQty(l.qte)} L d'eau`
-        : `${formatQty(l.qte)} ${l.options.map((it) => `${DATA.items[it].icone} ${DATA.items[it].nom.toLowerCase()}`).join(' ou ')}`;
+        : `${formatQty(l.qte)} ${l.options.map((it) => `${DATA.OBJETS[it].icone} ${DATA.OBJETS[it].nom.toLowerCase()}`).join(' ou ')}`;
       const have = l.eau ? `${formatNumber(l.have)} L dans le réservoir` : `en stock : ${formatQty(l.have)}`;
       return `<li class="${l.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${l.ok ? '✅' : '❌'}</span> <span>${what}</span> <span class="muted">(${have})</span></li>`;
     })
     .join('');
   let reason = '';
   if (status.code === 'verrouillee') {
-    const n = DATA.techtree.noeuds[status.noeud];
+    const n = DATA.ARBRE.noeuds[status.noeud];
     reason = `<span class="alert">🔒 À débloquer dans l'Arbre des technologies : ${n ? `${n.icone} ${n.nom}` : ''}.</span>`;
   } else if (status.code === 'absente') reason = `<span class="alert">Construis d'abord ${sdef.article} ${sdef.nom}.</span>`;
   else if (status.code === 'occupee') reason = `<span class="alert">${sdef.nom} : ${sdef.article === 'la' ? 'occupée' : 'occupé'}, attends la fin de la préparation.</span>`;
@@ -266,7 +266,7 @@ function recipeCard(id) {
 // Fenêtre d'un meuble de la maison (four, cuisine) : l'atelier (à construire, ou ce qui y
 // cuit), puis ses recettes, qu'on lance d'ici comme depuis le Livre de recette.
 export function renderStationFenetre(id) {
-  const recipes = Object.keys(DATA.recipes).filter((r) => DATA.recipes[r].station === id && !DATA.recipes[r].horsLivre);
+  const recipes = Object.keys(DATA.RECETTES).filter((r) => DATA.RECETTES[r].station === id && !DATA.RECETTES[r].horsLivre);
   return `
     <div class="cards">${stationCard(id)}</div>
     ${state.stations[id].construit && recipes.length ? `<h3 class="section-title">Recettes</h3><div class="recipes">${recipes.map(recipeCard).join('')}</div>` : ''}`;
@@ -275,9 +275,9 @@ export function renderStationFenetre(id) {
 export function renderRecettes() {
   // Le Moulin et sa mouture n'y figurent pas : le blé se moud dans le Moulin (renderMoulin()).
   const ids = bookStations();
-  const recipes = Object.keys(DATA.recipes)
-    .filter((id) => !DATA.recipes[id].horsLivre)
-    .sort((a, b) => ids.indexOf(DATA.recipes[a].station) - ids.indexOf(DATA.recipes[b].station));
+  const recipes = Object.keys(DATA.RECETTES)
+    .filter((id) => !DATA.RECETTES[id].horsLivre)
+    .sort((a, b) => ids.indexOf(DATA.RECETTES[a].station) - ids.indexOf(DATA.RECETTES[b].station));
   return `
     <div class="section-head">
       <h2>📖 Livre de recette</h2>
@@ -324,7 +324,7 @@ registerActions({
     const result = applyResult(startRecipe(state, id));
     if (result.ok) {
       syncJobs();
-      notify(`${DATA.recipes[id].icone} ${DATA.recipes[id].nom} : préparation lancée`);
+      notify(`${DATA.RECETTES[id].icone} ${DATA.RECETTES[id].nom} : préparation lancée`);
     }
   },
 });

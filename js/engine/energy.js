@@ -103,7 +103,7 @@ function runPump(state, dtMs) {
   if (room <= 0) return;
   if (loadShedding(state)) return; // arbre v2 : délestage
   // mWh par mL × % (Pompe à haut rendement) : le coût d'un lot de mL est arrondi vers le haut.
-  const kPct = DATA.PUMP.WH_PAR_L * techPct(state, 'whParLitre');
+  const kPct = DATA.POMPE.WH_PAR_L * techPct(state, 'whParLitre');
   const wanted = Math.min(perTick(pumpFlow(p), dtMs), room);
   const ml = Math.min(wanted, Math.floor((availableEnergy(state) * 100) / kPct));
   if (ml <= 0) return;
@@ -206,7 +206,7 @@ function flowStep(state, dtMs) {
 // fonctionné pendant le pas (d'après les puissances laissées par flowStep).
 export function wearStep(state, dtMs) {
   // Arbre v2 (Entretien préventif) : usure à 75 % → un point demande plus de marche.
-  const msParPoint = Math.floor((DATA.WEAR.HEURES_PAR_POINT * DATA.TIME.SECONDS_PER_HOUR * 1000 * 100) / techPct(state, 'usure'));
+  const msParPoint = Math.floor((DATA.USURE.HEURES_PAR_POINT * DATA.TEMPS.SECONDES_HEURE_MARCHE * 1000 * 100) / techPct(state, 'usure'));
   for (const d of allDevices(state)) {
     let worked = false;
     if (d.type === 'panneau') worked = d.prod > 0;
@@ -217,9 +217,9 @@ export function wearStep(state, dtMs) {
     d.usureMs = (d.usureMs || 0) + dtMs;
     const points = Math.floor(d.usureMs / msParPoint);
     d.usureMs -= points * msParPoint;
-    d.usure = Math.min(DATA.WEAR.BREAKDOWN, d.usure + points);
+    d.usure = Math.min(DATA.USURE.PANNE, d.usure + points);
     if (isBroken(d)) {
-      d.usure = DATA.WEAR.BREAKDOWN;
+      d.usure = DATA.USURE.PANNE;
       d.allume = false;
     }
   }
@@ -263,7 +263,7 @@ export function deviceStatus(state, d) {
     const net = d.entree - d.sortie;
     if (net < 0) { code = 'decharge'; label = 'En décharge'; }
     else if (net > 0) { code = 'charge'; label = 'En charge'; }
-    else if (d.chargeMwh * 100 >= batteryCapacity(d) * DATA.GRID.batterie.pleine) { code = 'pleine'; label = 'Pleine'; }
+    else if (d.chargeMwh * 100 >= batteryCapacity(d) * DATA.RESEAU.batterie.pleine) { code = 'pleine'; label = 'Pleine'; }
     else if (d.chargeMwh <= 0) { code = 'vide'; label = 'Vide'; }
     else { code = 'attente'; label = 'En attente'; }
   } else if (d.type === 'frigo') {

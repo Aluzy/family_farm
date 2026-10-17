@@ -84,7 +84,7 @@ test('sorties : le temps passe (les panneaux produisent), sans repas ni nuit', (
   const s = garden();
   const day = s.day;
   advanceHours(s, 2);
-  assertEqual(s.awakeMs, 2 * DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000);
+  assertEqual(s.awakeMs, 2 * DATA.TEMPS.SECONDES_PAR_HEURE * 1000);
   assertEqual(s.day, day);
   assertEqual(s.repas, null);
 });
@@ -145,8 +145,8 @@ test('migration v21 → v22 : chaque membre reçoit son bonheur de départ', () 
 test('vente en ville : VENTE % du prix de la ferme, les produits de la ferme seulement', () => {
   const s = garden();
   setInv(s, { lait: 5, carotte: 3, graine_carotte: 4, fromage_alpage: 1 });
-  assertEqual(townSellPrice('lait'), Math.ceil(DATA.items.lait.prix * DATA.VILLE.MARCHE.VENTE / 100));
-  assert(townSellPrice('lait') > DATA.items.lait.prix, 'plus cher qu\'au marché de la ferme');
+  assertEqual(townSellPrice('lait'), Math.ceil(DATA.OBJETS.lait.prix * DATA.VILLE.MARCHE.VENTE / 100));
+  assert(townSellPrice('lait') > DATA.OBJETS.lait.prix, 'plus cher qu\'au marché de la ferme');
   assertEqual(townSellable('graine_carotte'), false, 'pas les graines');
   assertEqual(townSellable('fromage_alpage'), false, 'pas ce qui s\'achète en ville');
   assertEqual(townSellList(s).map((r) => r.item).sort(), ['carotte', 'lait']);
@@ -211,9 +211,9 @@ test('trouvailles de la montagne et de la plage : des objets qui se gardent et s
   const sortes = ['ammonite', 'trilobite', 'quartz', 'amethyste', 'coquille', 'bulot', 'corail', 'perle'];
   const icones = new Set();
   for (const id of sortes) {
-    const it = DATA.items[id];
+    const it = DATA.OBJETS[id];
     assert(it, id);
-    assertEqual([it.category, it.edible, isPerishable(id), isBuyable(id), townSellable(id)], ['produit', false, false, false, true], id);
+    assertEqual([it.categorie, it.mangeable, isPerishable(id), isBuyable(id), townSellable(id)], ['produit', false, false, false, true], id);
     icones.add(it.icone);
   }
   assertEqual(icones.size, sortes.length, 'une icône par trouvaille');

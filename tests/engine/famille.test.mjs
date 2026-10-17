@@ -23,7 +23,7 @@ import {
 /* ---------- version 1.1 : prénom, sexe et couleur de peau de chaque membre ---------- */
 
 test('profil : au départ, chaque membre porte son rôle comme prénom, le sexe de DATA et la teinte jaune', () => {
-  const P = DATA.FAMILY.PROFIL;
+  const P = DATA.FAMILLE.PROFIL;
   assertEqual([P.PRENOM_MAX, P.GENRES, P.TEINTS.length], [12, ['f', 'm'], 6]);
   assertEqual(P.TEINTS, ['', '🏻', '🏼', '🏽', '🏾', '🏿'], 'jaune par défaut, puis les cinq teintes des emojis');
   assertEqual(P.PORTRAITS, { adulte: { f: '👩', m: '👨' }, enfant: { f: '👧', m: '👦' } });
@@ -273,8 +273,8 @@ test('sérialisation JSON aller-retour avec potager, famille et nuit', () => {
 
 test('version 1.2 : format 18, la migration ajoute les animaux de compagnie et les compteurs sans toucher aux membres', () => {
   assertEqual(typeof MIGRATIONS[17], 'function');
-  assertEqual(DATA.FAMILY.COMPOSITION, { MEMBRES_MIN: 1, MEMBRES_MAX: 6, ADULTES_MIN: 1 });
-  assertEqual([DATA.FAMILY.COMPAGNIE.MAX, Object.keys(DATA.FAMILY.COMPAGNIE.ESPECES)], [3, ['chien', 'chat']]);
+  assertEqual(DATA.FAMILLE.COMPOSITION, { MEMBRES_MIN: 1, MEMBRES_MAX: 6, ADULTES_MIN: 1 });
+  assertEqual([DATA.FAMILLE.COMPAGNIE.MAX, Object.keys(DATA.FAMILLE.COMPAGNIE.ESPECES)], [3, ['chien', 'chat']]);
   const neuf = createInitialState(1);
   assertEqual([neuf.famille.animaux, neuf.famille.numeros, neuf.famille.membres.length], [[], { adulte: 2, enfant: 2, compagnon: 0 }, 4]);
   const v17 = JSON.parse(JSON.stringify(createInitialState(7)));
@@ -301,7 +301,7 @@ test('version 1.2 : ajouter des membres jusqu\'à 6, le besoin journalier suit',
   const e = addMember(s, true);
   assertEqual([e.ok, e.id, e.besoin, memberRoom(s)], [true, 'enfant-3', 225, 0]);
   const m = findMember(s, 'adulte-3');
-  assertEqual([m.nom, m.prenom, m.enfant, 'sante' in m, m.teint, DATA.FAMILY.PROFIL.GENRES.includes(m.genre)], ['Adulte 3', 'Adulte 3', false, false, 0, true]);
+  assertEqual([m.nom, m.prenom, m.enfant, 'sante' in m, m.teint, DATA.FAMILLE.PROFIL.GENRES.includes(m.genre)], ['Adulte 3', 'Adulte 3', false, false, 0, true]);
   assertEqual(findMember(s, 'enfant-3').enfant, true);
   const plein = addMember(s, true);
   assertEqual([plein.ok, s.famille.membres.length], [false, 6], 'pas de septième membre');
@@ -408,7 +408,7 @@ test('version 1.2 : nom et espèce d\'un animal de compagnie, départ, identifia
 
 test('version 1.11 : barème du bonheur des plats (atelier, huile ou fruit, cultures spéciales)', () => {
   const B = DATA.VILLE.BONHEUR;
-  assertEqual([B.DECLIN, B.PLATS, B.HUILE_FRUIT, B.SPECIALES, B.PLATS_MAX, B.REPAS_CRU, B.REPAS_PLATS], [-5, { cuisine: 3, four: 5 }, 2, { items: ['cacao', 'cafe', 'vanille'], bonus: 4 }, 3, undefined, undefined]);
+  assertEqual([B.DECLIN, B.PLATS, B.HUILE_FRUIT, B.SPECIALES, B.PLATS_MAX, B.REPAS_CRU, B.REPAS_PLATS], [-5, { cuisine: 3, four: 5 }, 2, { objets: ['cacao', 'cafe', 'vanille'], bonus: 4 }, 3, undefined, undefined]);
   const table = (ids) => ids.map(dishHappiness);
   assertEqual(table(['soupe_legumes', 'fromage_frais', 'bocal_legumes', 'biere_artisanale']), [3, 3, 3, 3], 'Cuisine');
   assertEqual(table(['omelette', 'salade_tomates', 'compote', 'confiture_fraises', 'creme_marrons']), [5, 5, 5, 5, 5], 'Cuisine + huile ou fruit');

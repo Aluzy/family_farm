@@ -20,20 +20,20 @@ import { energyMax } from './stamina.js';
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
 export function startHousehold() {
   return {
-    inventaire: lotsFromCounts(DATA.START.INVENTAIRE),
+    inventaire: lotsFromCounts(DATA.DEPART.ETAT_INITIAL.INVENTAIRE),
     // zone2 : l'ancien Champ, toujours vide depuis la version 1.15 (voir migrateFreeSoil)
     potager: { parcelles: startPlots(), zone2: [], houe: false, houeVue: false },
     famille: {
-      membres: DATA.FAMILY.MEMBRES.map(makeMember),
+      membres: DATA.FAMILLE.MEMBRES.map(makeMember),
       // version 1.2 : animaux de compagnie, et dernier numéro donné à un adulte, à un
       // enfant et à un animal (les identifiants ne sont jamais réutilisés)
       animaux: [],
-      numeros: familyNumbers(DATA.FAMILY.MEMBRES, []),
-      reserve: { ...DATA.FAMILY.RESERVE_DEPART },
+      numeros: familyNumbers(DATA.FAMILLE.MEMBRES, []),
+      reserve: { ...DATA.FAMILLE.RESERVE_DEPART },
       // version 1.12 : nom de famille, personnage principal, configuration faite
       // (une nouvelle partie part de createNewGame, qui ouvre l'écran de configuration)
       nom: '',
-      principal: DATA.FAMILY.MEMBRES.find((m) => !m.enfant).id,
+      principal: DATA.FAMILLE.MEMBRES.find((m) => !m.enfant).id,
       configuree: true,
     },
     nuit: newNightStats(),
@@ -97,7 +97,7 @@ export function createInitialState(seed = 1) {
     awakeMs: 0,
     repas: null, // version 1.1.1 : compte du repas de 19 h, jusqu'à la nuit (voir takeMeal)
     courrier: [], // version 1.3 : lettres reçues [{ id, nuit, lu }] (voir deliverMail)
-    pieces: DATA.START.PIECES,
+    pieces: DATA.DEPART.ETAT_INITIAL.PIECES,
     rngSeed: seed >>> 0,
     unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'],
     stats: {},
@@ -543,10 +543,10 @@ export function migrateEnergy(old) {
 // `num` lit un nombre de la sauvegarde (migrateRules11 a le sien, plus strict).
 export function refundRetiredNodes(state, num = (x) => Number(x) || 0) {
   if (!Array.isArray(state.technologies)) return;
-  for (const [id, n] of Object.entries(DATA.techtree.NOEUDS_RETIRES)) {
+  for (const [id, n] of Object.entries(DATA.ARBRE.NOEUDS_RETIRES)) {
     if (!state.technologies.includes(id)) continue;
     state.technologies = state.technologies.filter((x) => x !== id);
-    state.pieces = Math.round(num(state.pieces) + n.cout);
+    state.pieces = Math.round(num(state.pieces) + n.prix);
     if (!state.pointsTech || typeof state.pointsTech !== 'object') state.pointsTech = newTechPoints();
     state.pointsTech.solde = num(state.pointsTech.solde) + n.pt;
   }
@@ -563,10 +563,10 @@ export function migrateLevels(old) {
   const N = DATA.NIVEAUX;
   let niveau = N.CHAPITRE_NIVEAU[Math.min(chapitre, N.CHAPITRE_NIVEAU.length) - 1];
   for (const id of Object.keys(N.ELEMENTS)) if (ownsElement(state, id)) niveau = Math.max(niveau, unlockLevel(id));
-  for (const p of ownedPlots(state)) if (p && DATA.crops[p.culture]) niveau = Math.max(niveau, unlockLevel(p.culture));
+  for (const p of ownedPlots(state)) if (p && DATA.CULTURES[p.culture]) niveau = Math.max(niveau, unlockLevel(p.culture));
   const list = (x) => (Array.isArray(x) ? x : []);
   for (const p of [...list(state.potager && state.potager.zone2), ...list(state.serre && state.serre.parcelles)]) {
-    if (p && DATA.crops[p.culture]) niveau = Math.max(niveau, unlockLevel(p.culture));
+    if (p && DATA.CULTURES[p.culture]) niveau = Math.max(niveau, unlockLevel(p.culture));
   }
   state.progression = { xp: N.SEUILS[niveau - 1], niveau, annonces: [] };
   return state;
@@ -595,7 +595,7 @@ export function migrateSingleDevices(old) {
   delete state.compteurs;
   const pompe = state.pompe && Number.isInteger(state.pompe.niveau) ? state.pompe.niveau : 1;
   // (avant cette version, le réservoir n'existait pas à part : il suivait la pompe)
-  state.reservoir = { niveau: Math.min(DATA.LEVEL_MAX, Math.max(1, pompe)) };
+  state.reservoir = { niveau: Math.min(DATA.NIVEAU_MAX, Math.max(1, pompe)) };
   if (typeof state.pieces === 'number') state.pieces += rembourse;
   return state;
 }
@@ -684,8 +684,8 @@ function migrateRules11(old) {
     if (!m || typeof m !== 'object') continue;
     const d = defaultMemberProfile(m);
     m.prenom = validFirstName(m.prenom) ? cleanFirstName(m.prenom) : d.prenom;
-    m.genre = DATA.FAMILY.PROFIL.GENRES.includes(m.genre) ? m.genre : d.genre;
-    m.teint = Number.isInteger(m.teint) && m.teint >= 0 && m.teint < DATA.FAMILY.PROFIL.TEINTS.length ? m.teint : d.teint;
+    m.genre = DATA.FAMILLE.PROFIL.GENRES.includes(m.genre) ? m.genre : d.genre;
+    m.teint = Number.isInteger(m.teint) && m.teint >= 0 && m.teint < DATA.FAMILLE.PROFIL.TEINTS.length ? m.teint : d.teint;
   }
   // Nouveaux malades : des noms aux identifiants.
   const versId = (x) => {
@@ -704,12 +704,12 @@ function migrateRules11(old) {
     return { id: m.id, laine: Math.min(A.mouton.joursLaine, neuve) };
   });
   const vaches = (Array.isArray(oldP.vaches) ? oldP.vaches : []).filter((v) => v && typeof v === 'object').map((v) => ({ id: v.id }));
-  const occupees = moutons.length * P.placesParMouton + vaches.length * P.placesParVache;
+  const occupees = moutons.length * P.PLACES_PAR_MOUTON + vaches.length * P.PLACES_PAR_VACHE;
   const construit = !!oldP.construit;
   const places = 'places' in oldP ? Math.max(0, Math.floor(num(oldP.places))) : Math.floor(Math.max(0, num(oldP.ares)) / K.ARES_PAR_PLACE);
   state.paturage = {
     construit,
-    places: construit ? Math.max(places, occupees, P.placesDepart) : Math.max(places, occupees),
+    places: construit ? Math.max(places, occupees, P.PLACES_DEPART) : Math.max(places, occupees),
     compteur: num(oldP.compteur),
     compteurVache: num(oldP.compteurVache),
     moutons,
@@ -719,7 +719,7 @@ function migrateRules11(old) {
   // Paille offerte : quelques nuits d'avance pour les animaux déjà là.
   if (!state.inventaire || typeof state.inventaire !== 'object') state.inventaire = {};
   const cadeau = K.NUITS_PAILLE * (moutons.length * A.mouton.pailleParNuit + vaches.length * A.vache.pailleParNuit);
-  if (cadeau > 0) addItem(state, P.nourriture, cadeau);
+  if (cadeau > 0) addItem(state, P.NOURRITURE, cadeau);
 
   // Ateliers : recettes retirées terminées, moutures en file regroupées.
   const stations = state.stations && typeof state.stations === 'object' ? state.stations : {};
@@ -731,24 +731,24 @@ function migrateRules11(old) {
     for (const e of file) {
       const r = e && e.recette;
       if (DATA.PLATS_RETIRES[r]) addItem(state, r, 1);
-      else if (id === 'moulin' && DATA.recipes[r] && DATA.recipes[r].horsLivre) moutures += 1;
-      else if (DATA.recipes[r]) gardees.push(e);
+      else if (id === 'moulin' && DATA.RECETTES[r] && DATA.RECETTES[r].horsLivre) moutures += 1;
+      else if (DATA.RECETTES[r]) gardees.push(e);
     }
     if (st.tache && DATA.PLATS_RETIRES[st.tache.recette]) {
       addItem(state, st.tache.recette, 1);
       st.tache = null;
-    } else if (st.tache && !DATA.recipes[st.tache.recette]) {
+    } else if (st.tache && !DATA.RECETTES[st.tache.recette]) {
       st.tache = null;
     }
     if (id === 'moulin') {
       if (st.tache) {
         st.tache.enAttente = Math.max(0, Math.floor(num(st.tache.enAttente))) + moutures;
       } else if (moutures > 0) {
-        const temps = DATA.recipes.farine.temps * 1000;
+        const temps = DATA.RECETTES.farine.temps * 1000;
         st.tache = { recette: 'farine', resteMs: temps, dureeMs: temps, enAttente: moutures - 1 };
       }
     } else if (!st.tache && gardees.length) {
-      const temps = DATA.recipes[gardees[0].recette].temps * 1000;
+      const temps = DATA.RECETTES[gardees[0].recette].temps * 1000;
       st.tache = { recette: gardees.shift().recette, resteMs: temps, dureeMs: temps };
     }
     if (Array.isArray(st.file)) st.file = gardees;
@@ -788,7 +788,7 @@ export function migrateCropZone(old) {
     const gardees = new Set(rang.slice(0, max).map((x) => x.i));
     if (!state.inventaire || typeof state.inventaire !== 'object') state.inventaire = {};
     for (const x of rang.slice(max)) {
-      if (x.p.culture && DATA.crops[x.p.culture]) addItem(state, seedItem(x.p.culture), 1);
+      if (x.p.culture && DATA.CULTURES[x.p.culture]) addItem(state, seedItem(x.p.culture), 1);
     }
     plots = plots.filter((p, i) => gardees.has(i));
   }
@@ -814,7 +814,7 @@ export function migrateCropZone(old) {
 
 // Offre un nœud (et, si `avecPrerequis`, ses prérequis de type nœud) sans rien payer.
 export function grantTech(state, id, avecPrerequis = true) {
-  const n = DATA.techtree.noeuds[id];
+  const n = DATA.ARBRE.noeuds[id];
   if (!n) return;
   if (!Array.isArray(state.technologies)) state.technologies = [];
   if (avecPrerequis) for (const r of n.requiert) if (r.noeud) grantTech(state, r.noeud, true);
@@ -828,7 +828,7 @@ export function migrateTechTreeV2(old) {
   const c = state.campagne;
   if (c) {
     const faits = c.fini ? chapterCount() : Math.max(0, (c.chapitre || 1) - 1);
-    for (let i = 0; i < faits; i++) pt.solde += DATA.techtree.POINTS.CHAPITRES[i] || 0;
+    for (let i = 0; i < faits; i++) pt.solde += DATA.ARBRE.POINTS.CHAPITRES[i] || 0;
     pt.gagnes = pt.solde;
     if (c.compteurs) c.compteurs.nuits100 = (c.historique || []).filter((h) => h.pct >= 100).length;
   }
@@ -858,7 +858,7 @@ export function migrateTechTreeV2(old) {
 export function migrateToIntegers(old) {
   const num = (x, d = 0) => (typeof x === 'number' && Number.isFinite(x) ? x : d);
   const state = JSON.parse(JSON.stringify(old));
-  const msParPoint = DATA.WEAR.HEURES_PAR_POINT * DATA.TIME.SECONDS_PER_HOUR * 1000;
+  const msParPoint = DATA.USURE.HEURES_PAR_POINT * DATA.TEMPS.SECONDES_HEURE_MARCHE * 1000;
   state.pieces = Math.round(num(state.pieces));
   // Marché : coefficients 1,3 → 130 %.
   const marche = {};

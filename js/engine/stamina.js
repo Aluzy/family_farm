@@ -77,8 +77,8 @@ export function restoreEnergy(state, couverture) {
 // Énergie (millièmes) que rend un aliment mangé en journée : calories ÷ MANGER_DIVISEUR,
 // +50 % avec le Goûter de l'arbre (en %).
 export function snackEnergy(state, item) {
-  const def = DATA.items[item];
-  if (!def || !def.edible) return 0;
+  const def = DATA.OBJETS[item];
+  if (!def || !def.mangeable) return 0;
   const pct = techFlag(state, 'gouter') || 100;
   return Math.floor((def.energie * MILLE * pct) / (DATA.PERSONNAGE.MANGER_DIVISEUR * 100));
 }

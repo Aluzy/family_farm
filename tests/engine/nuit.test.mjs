@@ -36,11 +36,11 @@ test('version 1.1.1 : version 17, la migration v16 → v17 ajoute le repas du jo
 });
 
 test('version 1.21 : la journée va de 6 h à 22 h, 30 s par heure (480 s)', () => {
-  assertEqual([DATA.TIME.DAY_START_HOUR, DATA.TIME.MEAL_HOUR, DATA.TIME.NIGHT_HOUR, DATA.TIME.CLOCK_SECONDS_PER_HOUR], [6, 19, 22, 30]);
+  assertEqual([DATA.TEMPS.HEURE_REVEIL, DATA.TEMPS.HEURE_REPAS, DATA.TEMPS.HEURE_NUIT, DATA.TEMPS.SECONDES_PAR_HEURE], [6, 19, 22, 30]);
   assertEqual([awakeMsAtHour(6), awakeMsAtHour(7), awakeMsAtHour(19), awakeMsAtHour(22)], [0, 30000, 390000, 480000]);
   // le repas et le coucher restent dans la journée, et l'on peut dormir bien avant 22 h
-  assert(awakeMsAtHour(DATA.TIME.MEAL_HOUR) < awakeMsAtHour(DATA.TIME.NIGHT_HOUR), 'le repas précède le coucher');
-  assert(DATA.TIME.MIN_AWAKE_S * 1000 < awakeMsAtHour(DATA.TIME.MEAL_HOUR), 'on peut dormir avant le repas');
+  assert(awakeMsAtHour(DATA.TEMPS.HEURE_REPAS) < awakeMsAtHour(DATA.TEMPS.HEURE_NUIT), 'le repas précède le coucher');
+  assert(DATA.TEMPS.EVEIL_MIN_S * 1000 < awakeMsAtHour(DATA.TEMPS.HEURE_REPAS), 'on peut dormir avant le repas');
 });
 
 test('version 1.1.1 : le repas se prend à 19 h (234 s d\'éveil), une seule fois par jour', () => {
@@ -114,7 +114,7 @@ test('version 1.1.1 : hors-ligne, l\'horloge s\'arrête à l\'éveil minimal (ni
 });
 
 test('version 1.21 : le lac de la montagne, l\'omble chevalier', () => {
-  assertEqual(DATA.items.omble.nom, 'Omble chevalier');
+  assertEqual(DATA.OBJETS.omble.nom, 'Omble chevalier');
   assertEqual(DATA.CANNE.PRISES.lac, { omble: 40, truite: 25 });
   const s = garden();
   s.outils = { hache: false, pioche: false, canne: true, choisi: 'canne' };
@@ -133,7 +133,7 @@ test('version 1.21 : le lac de la montagne, l\'omble chevalier', () => {
 });
 
 test('version 1.21 : la mer de la plage, dorade, sardine, anchois', () => {
-  assertEqual(['dorade', 'anchois', 'sardine'].map((i) => DATA.items[i].nom), ['Dorade', 'Anchois', 'Sardine']);
+  assertEqual(['dorade', 'anchois', 'sardine'].map((i) => DATA.OBJETS[i].nom), ['Dorade', 'Anchois', 'Sardine']);
   const s = garden();
   s.outils = { hache: false, pioche: false, canne: true, choisi: 'canne' };
   assertEqual(fishLeft(s, 'mer'), DATA.CANNE.JOUR.mer);
@@ -151,9 +151,9 @@ test('version 1.21 : la mer de la plage, dorade, sardine, anchois', () => {
 
 test('minerais et lingots : la grotte remplit l\'inventaire, le Four fond 4 minerais et du bois en 1 lingot', () => {
   for (const m of ['fer', 'cuivre', 'or', 'platine']) {
-    const [mi, li] = [DATA.items['minerai_' + m], DATA.items['lingot_' + m]];
-    assertEqual([mi.category, li.category, mi.invendable, li.invendable, isBuyable('lingot_' + m)], ['matériau', 'matériau', true, true, false], m);
-    assertEqual(DATA.recipes['lingot_' + m].ingredients[0], { item: 'minerai_' + m, qte: 4 });
+    const [mi, li] = [DATA.OBJETS['minerai_' + m], DATA.OBJETS['lingot_' + m]];
+    assertEqual([mi.categorie, li.categorie, mi.invendable, li.invendable, isBuyable('lingot_' + m)], ['matériau', 'matériau', true, true, false], m);
+    assertEqual(DATA.RECETTES['lingot_' + m].ingredients[0], { item: 'minerai_' + m, qte: 4 });
   }
   const s = atelier();
   assertEqual(mineOre(s, 'fer').error, `Il te faut une pioche (Marché, ${DATA.PIOCHE.PRIX} 💰).`);
@@ -262,7 +262,7 @@ test('version 1.1.1 : sans mouton ni vache, jamais d\'alerte de paille', () => {
 
 test('Nuit qui défile (version 1.19) : 22 h → minuit (la nuit se calcule) → 6 h (réveil)', () => {
   const s = createInitialState(1);
-  const H = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  const H = DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
   s.awakeMs = awakeMsAtHour(21);
   assertEqual(startNight(s), false, 'pas avant 22 h');
   s.awakeMs = awakeMsAtHour(22);
@@ -308,7 +308,7 @@ test('Pousse calée sur l\'horloge : une plante arrosée à 10 h gagne son stade
   const p = findPlot(s, 'potager-1');
   assertEqual([p.arroseH, absoluteHours(s)], [10, 10], 'heure absolue de l\'arrosage');
   assertEqual(water(s, 'potager-1').error, 'Déjà arrosée : elle pousse.');
-  const HS = DATA.TIME.CLOCK_SECONDS_PER_HOUR;
+  const HS = DATA.TEMPS.SECONDES_PAR_HEURE;
   tick(s, (22 - 10) * HS);
   assertEqual([p.stade, p.arrose], [0, true], 'à 22 h, rien encore');
   startNight(s);
@@ -328,7 +328,7 @@ test('Énergie : elle remonte peu à peu en dormant (8 h pour le réveil), rien 
   startNight(s);
   const cible = sleepTarget(s);
   assert(cible > 0, 'le réveil vise une énergie');
-  const H = DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000;
+  const H = DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
   advanceNight(s, 2 * H);
   assertEqual(s.energie, 0, 'éveillé : rien ne revient');
   goToSleep(s);

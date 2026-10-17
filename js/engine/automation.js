@@ -35,7 +35,7 @@ export function isAutomated(state, id) {
 function replantCulture(plot, harvested) {
   const mode = plot.semis || 'meme';
   if (mode === 'off') return null;
-  return mode === 'verrou' && plot.verrou && DATA.crops[plot.verrou] ? plot.verrou : harvested;
+  return mode === 'verrou' && plot.verrou && DATA.CULTURES[plot.verrou] ? plot.verrou : harvested;
 }
 
 // Semis automatique d'une parcelle qui vient d'être récoltée. Renvoie null si
@@ -46,7 +46,7 @@ function autoReplant(state, plot, harvested) {
   if (!techAuto(state, 'semis', plot.lieu)) return null;
   const culture = replantCulture(plot, harvested);
   if (!culture) return null;
-  if (!DATA.crops[culture].lieux.includes(plot.lieu)) return false;
+  if (!DATA.CULTURES[culture].lieux.includes(plot.lieu)) return false;
   const reserve = state.famille.reserve[seedItem(culture)] || 0;
   if (seedStock(state, culture) - reserve < 1 - EPS) return false;
   return plant(state, plot.id, culture, true).ok === true;
@@ -59,7 +59,7 @@ export function setSemis(state, plotId, mode, culture) {
   if (!plot) return fail('Parcelle introuvable.');
   if (!['meme', 'off', 'verrou'].includes(mode)) return fail('Réglage inconnu.');
   if (mode === 'verrou') {
-    const def = DATA.crops[culture];
+    const def = DATA.CULTURES[culture];
     if (!def) return fail('Culture inconnue.');
     if (!def.lieux.includes(plot.lieu)) return fail(`${def.nom} ne se plante pas ici.`);
     plot.verrou = culture;
@@ -94,11 +94,11 @@ function thirstyPlots(state) {
 }
 
 export function irrigate(state) {
-  if (nightActive(state) || hourOfDay(state) < DATA.TIME.ARROSAGE_HEURE || hourOfDay(state) >= DATA.TIME.NIGHT_HOUR) return null;
+  if (nightActive(state) || hourOfDay(state) < DATA.TEMPS.ARROSAGE_HEURE || hourOfDay(state) >= DATA.TEMPS.HEURE_NUIT) return null;
   const I = state.irrigation;
   const dejaCeJour = !!I && I.jour === state.day;
   const now = absoluteHours(state);
-  if (dejaCeJour && (now - I.h) * DATA.TIME.CLOCK_SECONDS_PER_HOUR < DATA.TIME.ARROSAGE_S) return null;
+  if (dejaCeJour && (now - I.h) * DATA.TEMPS.SECONDES_PAR_HEURE < DATA.TEMPS.ARROSAGE_S) return null;
   const soif = thirstyPlots(state);
   if (dejaCeJour && !soif.length) return null;
   const faites = [];
@@ -407,8 +407,8 @@ export function waterAll(state, lieu) {
 // dans la limite des graines, de l'énergie et du niveau. Même énergie et XP
 // que N plantations à la main. Renvoie { ok, plantees, vides, raison } (raison de l'arrêt).
 export function plantAll(state, lieu, culture) {
-  if (!DATA.crops[culture]) return fail('Culture inconnue.');
-  if (!plantableCropsFor(state, lieu).includes(culture)) return fail(`${DATA.crops[culture].nom} ne se plante pas encore ici.`);
+  if (!DATA.CULTURES[culture]) return fail('Culture inconnue.');
+  if (!plantableCropsFor(state, lieu).includes(culture)) return fail(`${DATA.CULTURES[culture].nom} ne se plante pas encore ici.`);
   const vides = allPlots(state).filter(inPlace(lieu)).filter((x) => !x.culture);
   if (!vides.length) return fail('Aucune parcelle vide.');
   const before = Number(state.energie) || 0;

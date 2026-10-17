@@ -30,7 +30,7 @@ test('état initial : forme et valeurs attendues', () => {
 
 test('createInitialState() : une nouvelle partie démarre avec 350 pièces', () => {
   assertEqual(createInitialState().pieces, 350);
-  assertEqual(createInitialState().pieces, DATA.START.PIECES);
+  assertEqual(createInitialState().pieces, DATA.DEPART.ETAT_INITIAL.PIECES);
 });
 
 test('tick() fait avancer awakeMs (ms entières) sans toucher au jour ni aux pièces', () => {
@@ -127,32 +127,32 @@ test('générateur aléatoire reproductible à graine égale', () => {
 
 test('données : buildCatalog() calcule sur une copie, RAW_DATA garde les valeurs des fichiers', () => {
   // prix de production doublés, temps des plats divisés, plats enregistrés comme objets
-  assertEqual([RAW_DATA.items.carotte.prix, DATA.items.carotte.prix], [1, 2]);
-  assertEqual([RAW_DATA.recipes.pain.temps, DATA.recipes.pain.temps], [20, 10]);
-  assertEqual([RAW_DATA.items.pain, DATA.items.pain.plat], [undefined, true]);
+  assertEqual([RAW_DATA.OBJETS.carotte.prix, DATA.OBJETS.carotte.prix], [1, 2]);
+  assertEqual([RAW_DATA.RECETTES.pain.temps, DATA.RECETTES.pain.temps], [20, 10]);
+  assertEqual([RAW_DATA.OBJETS.pain, DATA.OBJETS.pain.plat], [undefined, true]);
   // deux catalogues tirés des mêmes fichiers sont égaux et indépendants
   const autre = buildCatalog(RAW_DATA);
   avecLune(() => assertEqual(autre, DATA)); // ces tests tournent lune neutre (voir avecLune)
-  autre.items.carotte.prix = 99;
-  assertEqual([DATA.items.carotte.prix, RAW_DATA.items.carotte.prix], [2, 1]);
+  autre.OBJETS.carotte.prix = 99;
+  assertEqual([DATA.OBJETS.carotte.prix, RAW_DATA.OBJETS.carotte.prix], [2, 1]);
 });
 
 test('données : l\'ordre des recettes dans le fichier ne change rien (le pain à l\'ail avant le pain)', () => {
   const raw = JSON.parse(JSON.stringify(RAW_DATA));
-  const { pain, ...autres } = raw.recipes;
-  raw.recipes = { ...autres, pain }; // le pain en dernier : le pain à l'ail, qui l'utilise, vient avant
+  const { pain, ...autres } = raw.RECETTES;
+  raw.RECETTES = { ...autres, pain }; // le pain en dernier : le pain à l'ail, qui l'utilise, vient avant
   const d = buildCatalog(raw);
   for (const id of ['pain', 'pain_ail']) {
-    assertEqual([d.items[id].energie, d.items[id].prix], [DATA.items[id].energie, DATA.items[id].prix], id);
+    assertEqual([d.OBJETS[id].energie, d.OBJETS[id].prix], [DATA.OBJETS[id].energie, DATA.OBJETS[id].prix], id);
   }
   // les plats restent rangés dans l'ordre des recettes
-  const plats = (data) => Object.keys(data.items).filter((id) => data.items[id].plat && !data.items[id].retire);
-  assertEqual(plats(d), Object.keys(raw.recipes).filter((id) => !raw.recipes[id].transformation));
+  const plats = (data) => Object.keys(data.OBJETS).filter((id) => data.OBJETS[id].plat && !data.OBJETS[id].retire);
+  assertEqual(plats(d), Object.keys(raw.RECETTES).filter((id) => !raw.RECETTES[id].transformation));
 });
 
 test('données : deux recettes qui s\'utilisent l\'une l\'autre sont refusées', () => {
   const raw = JSON.parse(JSON.stringify(RAW_DATA));
-  raw.recipes.pain.ingredients.push({ item: 'pain_ail', qte: 1 });
+  raw.RECETTES.pain.ingredients.push({ item: 'pain_ail', qte: 1 });
   let message = '';
   try {
     buildCatalog(raw);
@@ -163,7 +163,7 @@ test('données : deux recettes qui s\'utilisent l\'une l\'autre sont refusées',
 });
 
 test('données : chaque culture connaît sa découpe sur la carte', () => {
-  for (const [id, c] of Object.entries(DATA.crops)) {
+  for (const [id, c] of Object.entries(DATA.CULTURES)) {
     assert(c.sprite && c.sprite.c.length === 4 && [16, 32].includes(c.sprite.h), `${id} : sprite { r, h, c }`);
   }
 });
@@ -202,7 +202,7 @@ test('version 1.12 : réparer la maison (650), puis acheter panneau (150), pompe
   const r = buyStarter(s, 'pompe');
   assertEqual([r.cost, r.ouvert, farmOpen(s), s.unlockedTabs.includes('comptoir')], [90, true, true, true], 'panneau et pompe : la ferme s\'ouvre');
   assertEqual(buyStarter(s, 'reservoir').cost, 50);
-  assertEqual(tankCapacity(s), DATA.GRID.reservoir.litres[0] * 1000);
+  assertEqual(tankCapacity(s), DATA.RESEAU.reservoir.litres[0] * 1000);
   assertEqual([s.pieces, isOwned(s.batteries[0])], [1500 - 650 - 150 - 90 - 50, false], 'la batterie reste facultative');
   assertEqual(buyStarter(s, 'batterie').cost, 180);
   assertEqual([s.batteries[0].allume, s.batteries[0].prix, buyStarter(s, 'batterie').ok], [true, 180, false]);
@@ -259,7 +259,7 @@ test('version 1.12 : le joueur automatique part du départ v2 et termine le chap
 });
 
 test('version 1.12 : planche d\'avatars : 5 coiffures par âge, choisies dans la fiche du membre', () => {
-  const P = DATA.FAMILY.PROFIL;
+  const P = DATA.FAMILLE.PROFIL;
   assertEqual([P.STYLES.adulte.length, P.STYLES.enfant.length, P.STYLE_NOMS.adulte, P.STYLE_NOMS.enfant], [5, 5, ['Classique', 'Roux', 'Frisé', 'Cheveux gris', 'Blond'], ['Classique', 'Roux', 'Frisé', 'Casquette', 'Blond']]);
   assertEqual(portraitEmoji(true, 'f', 5, 4), '👧🏿\u200D👱', 'blonde');
   assertEqual(portraitEmoji(false, 'f', 0), '👩', 'coiffure 0 : le portrait d\'avant');

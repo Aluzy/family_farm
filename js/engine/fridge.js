@@ -58,7 +58,7 @@ export function fridgeRoom(state) {
 
 export function fridgeUpgradeCost(state) {
   const n = fridgeLevel(state);
-  return n ? nextLevelCost(DATA.FRIGO.COUT, n, DATA.FRIGO.CAPACITE.length) : null;
+  return n ? nextLevelCost(DATA.FRIGO.PRIX_NIVEAUX, n, DATA.FRIGO.CAPACITE.length) : null;
 }
 
 export function upgradeFridge(state) {
@@ -113,9 +113,9 @@ export function runFridge(state, dtMs) {
 // Les lots gardent leur compteur de conservation, qui se fige au frais.
 export function moveToFridge(state, item, qty) {
   if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
-  if (!DATA.items[item]) return fail('Objet inconnu.');
-  if (!isPerishable(item)) return fail(`${DATA.items[item].nom} ne périme pas : inutile de le ranger au frais.`);
-  if (!isFridgeable(item)) return fail(`${DATA.items[item].nom} ne se range pas au frigo : sa place est au Silo.`);
+  if (!DATA.OBJETS[item]) return fail('Objet inconnu.');
+  if (!isPerishable(item)) return fail(`${DATA.OBJETS[item].nom} ne périme pas : inutile de le ranger au frais.`);
+  if (!isFridgeable(item)) return fail(`${DATA.OBJETS[item].nom} ne se range pas au frigo : sa place est au Silo.`);
   const asked = Math.min(Math.floor(Number(qty)) || 0, Math.floor(countItem(state, item) + EPS));
   if (asked <= 0) return fail('Rien à ranger.');
   // version 1.10 : seulement ce qui tient
@@ -259,7 +259,7 @@ export function fridgeNight(state) {
 
 export function buildFridge(state) {
   const deja = 'Le Réfrigérateur est déjà construit.';
-  return buildWith(state, 'frigo', { built: state.frigo.construit, deja, cost: DATA.FRIGO.CONSTRUCTION, libelle: 'Achat : Réfrigérateur' }, () => { openFridge(state); });
+  return buildWith(state, 'frigo', { built: state.frigo.construit, deja, cost: DATA.FRIGO.PRIX_CONSTRUCTION, libelle: 'Achat : Réfrigérateur' }, () => { openFridge(state); });
 }
 
 // Pose le frigo dans l'état (sans payer).
@@ -267,6 +267,6 @@ export function openFridge(state) {
   const f = state.frigo;
   f.construit = true;
   if (!f.niveau) f.niveau = 1;
-  if (!f.appareil) f.appareil = makeDevice('frigo', 'frigo', DATA.FRIGO.CONSTRUCTION);
+  if (!f.appareil) f.appareil = makeDevice('frigo', 'frigo', DATA.FRIGO.PRIX_CONSTRUCTION);
   f.alimente = true;
 }

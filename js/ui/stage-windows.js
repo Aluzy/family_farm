@@ -633,10 +633,10 @@ export function renderSleepBar() {
   const plan = state.repas || planMeal(state);
   const short = plan.energie + EPS < plan.besoin;
   const eaten = `${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)}`;
-  const meal = `${state.repas ? `Repas pris à ${DATA.TIME.MEAL_HOUR} h` : `Repas prévu à ${DATA.TIME.MEAL_HOUR} h`} : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
+  const meal = `${state.repas ? `Repas pris à ${DATA.TEMPS.HEURE_REPAS} h` : `Repas prévu à ${DATA.TEMPS.HEURE_REPAS} h`} : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
   const label = state.nuitEnCours && state.nuitEnCours.minuit
-    ? `Dormir : réveil à ${DATA.TIME.DAY_START_HOUR} h`
-    : `Dormir : réveil à ${DATA.TIME.DAY_START_HOUR} h. ${meal}`;
+    ? `Dormir : réveil à ${DATA.TEMPS.HEURE_REVEIL} h`
+    : `Dormir : réveil à ${DATA.TEMPS.HEURE_REVEIL} h. ${meal}`;
   // La barre d'outils (houe, pioche, hache, canne à pêche), en bas de la carte de la ferme,
   // sans fenêtre ouverte, dès qu'un outil est acheté (elle remplace le bouton rond de FLU-05).
   const outils = activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior ? toolBarHtml() : '';

@@ -41,7 +41,7 @@ function autoLines(a) {
 function stableLines(report) {
   const lines = [];
   const e = report.etable || null;
-  const straw = DATA.items[DATA.PATURAGE.nourriture].icone;
+  const straw = DATA.OBJETS[DATA.PATURAGE.NOURRITURE].icone;
   if (report.moutons > 0) {
     const fed = e ? ` · nourris : <strong class="num">${e.moutonsNourris} / ${e.moutons}</strong>` : '';
     lines.push(`<li>🐑 Moutons : <strong class="num">${report.moutons}</strong>${fed}${report.lainePrete > 0 ? ` · 🧶 Laine prête : <strong class="num">${report.lainePrete}</strong> ${accord(report.lainePrete, 'mouton')} à tondre` : ''}</li>`);
@@ -98,7 +98,7 @@ export function openWakeModal(report, auto = false) {
   const covered = report.couverture;
   const ready = report.pretes.length
     ? report.pretes
-        .map((r) => `${r.nombre} ${DATA.crops[r.culture].icone} ${DATA.crops[r.culture].nom.toLowerCase()}`)
+        .map((r) => `${r.nombre} ${DATA.CULTURES[r.culture].icone} ${DATA.CULTURES[r.culture].nom.toLowerCase()}`)
         .join(', ')
     : '';
   const family = [
@@ -121,7 +121,7 @@ export function openWakeModal(report, auto = false) {
   // Résumé allégé : autonomie, énergie, récolte de la nuit. Tout le reste (ancien contenu du
   // réveil, inchangé) est dans « Voir plus ».
   const w = wakeSummary(report);
-  const harvestName = (r) => `<span aria-hidden="true">${DATA.items[r.item].icone}</span> ${DATA.items[r.item].nom.toLowerCase()} ×${formatNumber(r.qte)}`;
+  const harvestName = (r) => `<span aria-hidden="true">${DATA.OBJETS[r.item].icone}</span> ${DATA.OBJETS[r.item].nom.toLowerCase()} ×${formatNumber(r.qte)}`;
   const harvestLine = w.recolte.affiches.length
     ? w.recolte.affiches.map(harvestName).join(', ') + (w.recolte.reste.length ? ` <span class="muted">+ ${plural(w.recolte.reste.length, 'autre')}</span>` : '')
     : '<span class="muted">Rien récolté cette nuit</span>';
@@ -135,7 +135,7 @@ export function openWakeModal(report, auto = false) {
   openModal(`
     <h2 id="wake-title">🌅 Réveil : ${formatDay(report.nuit + 1)}</h2>
     <p class="wake-moon"><span aria-hidden="true">${lune.icone}</span> <strong>${lune.nom}</strong> : ${moonEffect(lune)}.</p>
-    <p class="muted wake-hour">${auto ? `Il était ${DATA.TIME.NIGHT_HOUR}&nbsp;h : la famille est allée se coucher. ` : ''}Il est ${DATA.TIME.DAY_START_HOUR}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
+    <p class="muted wake-hour">${auto ? `Il était ${DATA.TEMPS.HEURE_NUIT}&nbsp;h : la famille est allée se coucher. ` : ''}Il est ${DATA.TEMPS.HEURE_REVEIL}&nbsp;h. La journée commence quand tu fermes ce résumé.</p>
     <div class="wake-kpis">
       <div class="wake-kpi"><span class="muted">🌿 Autonomie</span><strong class="num">${formatPercent(w.autonomie)}</strong></div>
       <div class="wake-kpi"><span class="muted">⚡ Énergie</span><strong class="num">${formatNumber(w.energie)} / ${formatNumber(DATA.PERSONNAGE.MAX)}</strong></div>

@@ -33,7 +33,7 @@ import { closeModal, openModal } from './modal.js';
 export function renderSilo() {
   const s = state.silo;
   if (!s.construit) {
-    const cost = DATA.SILO.CONSTRUCTION;
+    const cost = DATA.SILO.PRIX_CONSTRUCTION;
     return `
       <div class="section-head"><h3>${artIcon('silo')}Silo</h3>${helpBtn('silo')}</div>
       <div class="card">
@@ -62,7 +62,7 @@ export function renderSilo() {
 export function renderPoulailler() {
   const p = state.poulailler;
   if (!p.construit) {
-    const cost = DATA.POULAILLER.CONSTRUCTION;
+    const cost = DATA.POULAILLER.PRIX_CONSTRUCTION;
     return `
       <div class="section-head"><h3>${artIcon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
       <div class="card">
@@ -178,7 +178,7 @@ function sheepCard(m, fed) {
 function cowCard(v, fed) {
   const willEat = fed.has(v.id);
   const alpage = fed.alpage && fed.alpage.has(v.id);
-  const lait = DATA.items[DATA.ANIMAUX.vache.laitAlpage];
+  const lait = DATA.OBJETS[DATA.ANIMAUX.vache.laitAlpage];
   const etat = alpage ? `${lait.icone} ${lait.nom} cette nuit` : willEat ? '🥛 Lait cette nuit' : '⚠️ Sans paille';
   return `
     <article class="card animal-card ancre${willEat ? '' : ' hungry'}" id="animal-${v.id}">
@@ -192,8 +192,8 @@ function cowCard(v, fed) {
 // montagne) et le bouton qui les donne (ou non) aux vaches, chaque nuit, à la
 // place de leur paille : elles donnent alors du lait d'alpage.
 function herbsCard(cCount) {
-  const herbes = DATA.items[DATA.PATURAGE.herbes];
-  const lait = DATA.items[DATA.ANIMAUX.vache.laitAlpage];
+  const herbes = DATA.OBJETS[DATA.PATURAGE.HERBES];
+  const lait = DATA.OBJETS[DATA.ANIMAUX.vache.laitAlpage];
   const stock = herbStock(state);
   const on = herbsOn(state);
   const n = cowsOnHerbs(state);
@@ -220,13 +220,13 @@ export function renderPaturage() {
   const P = DATA.PATURAGE;
   const M = DATA.ANIMAUX.mouton;
   const V = DATA.ANIMAUX.vache;
-  const straw = DATA.items[P.nourriture];
+  const straw = DATA.OBJETS[P.NOURRITURE];
   if (!p.construit) {
-    const cost = P.deblocage;
+    const cost = P.PRIX_CONSTRUCTION;
     return `
       <div class="section-head"><h3>${artIcon('paturage')}Moutons et vaches</h3>${helpBtn('paturage')}</div>
       <div class="card">
-        <button type="button" class="btn primary" data-action="build-paturage"${canPay(cost) ? '' : ' disabled'}>Préparer ${formatPlaces(P.placesDepart)} pour les moutons et les vaches (${costLabel(cost)})</button>
+        <button type="button" class="btn primary" data-action="build-paturage"${canPay(cost) ? '' : ' disabled'}>Préparer ${formatPlaces(P.PLACES_DEPART)} pour les moutons et les vaches (${costLabel(cost)})</button>
       </div>`;
   }
   const sCount = sheepCount(state);
@@ -312,7 +312,7 @@ function openPlantAllModal(lieu) {
   const vides = allPlots(state).filter((p) => p.lieu === lieu && !p.culture).length;
   const rows = plantableCropsFor(state, lieu)
     .map((c) => {
-      const def = DATA.crops[c];
+      const def = DATA.CULTURES[c];
       const n = seedStock(state, c);
       const stock = seedLabel(c);
       return `
@@ -331,7 +331,7 @@ function openPlantAllModal(lieu) {
 
 function semisLabel(p) {
   if (p.semis === 'off') return '⛔ Semis auto : désactivé';
-  if (p.semis === 'verrou' && p.verrou && DATA.crops[p.verrou]) return `🔒 Semis auto : ${DATA.crops[p.verrou].icone} ${DATA.crops[p.verrou].nom}`;
+  if (p.semis === 'verrou' && p.verrou && DATA.CULTURES[p.verrou]) return `🔒 Semis auto : ${DATA.CULTURES[p.verrou].icone} ${DATA.CULTURES[p.verrou].nom}`;
   return '🔁 Semis auto : même culture';
 }
 
@@ -364,13 +364,13 @@ export function plotCard(p, n) {
         <span class="plot-btns">${iconBtn('🌱', seedsAvailable ? 'Planter' : 'Planter : aucune graine', `data-action="plant-open" data-id="${p.id}"`, { primary: true, disabled: !seedsAvailable })}${autoButton(p)}</span>
       </div>`;
   }
-  const def = DATA.crops[p.culture];
+  const def = DATA.CULTURES[p.culture];
   const max = maxStage(p);
   const mature = isMature(p);
   const etat = mature ? 'mûre' : `stade ${p.stade} sur ${max}`;
   let main;
   if (mature) {
-    const label = `Récolter : +${harvestYield(state, p.culture)} ${DATA.items[cropProduct(p.culture)].nom.toLowerCase()}`;
+    const label = `Récolter : +${harvestYield(state, p.culture)} ${DATA.OBJETS[cropProduct(p.culture)].nom.toLowerCase()}`;
     main = iconBtn('🧺', label, `data-action="harvest" data-id="${p.id}"`, { primary: true });
   } else {
     const litres = waterCost(state, p);
@@ -400,7 +400,7 @@ function openSemisModal(plotId) {
       </button>`;
   };
   const locks = plantableCropsFor(state, plot.lieu).map((c) => {
-    const def = DATA.crops[c];
+    const def = DATA.CULTURES[c];
     return choice('verrou', c, `🔒 Toujours ${def.icone} ${def.nom}`, `${seedLabel(c)} en stock : ${formatQty(seedStock(state, c))}`);
   });
   openModal(`
@@ -421,7 +421,7 @@ function openPlantModal(plotId) {
   if (!plot || plot.culture) return;
   const rows = plantableCropsFor(state, plot.lieu)
     .map((c) => {
-      const def = DATA.crops[c];
+      const def = DATA.CULTURES[c];
       const n = seedStock(state, c);
       const stock = seedLabel(c);
       return `
@@ -492,7 +492,7 @@ registerActions({
   },
   'cow-herbs': (target) => {
     const result = applyResult(setCowHerbs(state, target.dataset.on === '1'));
-    if (result.ok) notify(result.herbes ? `${DATA.items[DATA.PATURAGE.herbes].icone} Les vaches mangeront les herbes de montagne : lait d'alpage cette nuit.` : '🌾 Les vaches reviennent à la paille.');
+    if (result.ok) notify(result.herbes ? `${DATA.OBJETS[DATA.PATURAGE.HERBES].icone} Les vaches mangeront les herbes de montagne : lait d'alpage cette nuit.` : '🌾 Les vaches reviennent à la paille.');
   },
   'shear': (target) => {
     const result = applyResult(shear(state, target.dataset.id));
@@ -505,7 +505,7 @@ registerActions({
     closeModal();
     const result = applyResult(plantAll(state, target.dataset.lieu, target.dataset.crop));
     if (result.ok) {
-      const def = DATA.crops[target.dataset.crop];
+      const def = DATA.CULTURES[target.dataset.crop];
       const reste = result.vides - result.plantees;
       notify(`🌱 ${plural(result.plantees, 'parcelle')} de ${def.nom.toLowerCase()} ${accord(result.plantees, 'plantée')}${reste ? ` · ${plural(reste, 'restée')} ${accord(reste, 'vide')} : ${result.raison}` : ''}`);
     }

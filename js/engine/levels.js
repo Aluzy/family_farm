@@ -91,7 +91,7 @@ export function levelUnlocks(niveau) {
     niveau,
     seuil: DATA.NIVEAUX.SEUILS[niveau - 1],
     elements: ids.filter((id) => DATA.NIVEAUX.ELEMENTS[id]),
-    cultures: ids.filter((id) => DATA.crops[id]),
+    cultures: ids.filter((id) => DATA.CULTURES[id]),
     note: def.note || null,
   };
 }

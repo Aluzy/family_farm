@@ -39,7 +39,7 @@ export function piles(state) {
 // si le personnage ne ramasse pas ou si `ici` est faux (automatisation, Serre…). Renvoie
 // true si un tas a été posé.
 export function deposit(state, lieu, ref, items, ici = true) {
-  const list = Object.entries(items || {}).filter(([item, qty]) => DATA.items[item] && qty > 0);
+  const list = Object.entries(items || {}).filter(([item, qty]) => DATA.OBJETS[item] && qty > 0);
   if (!list.length) return false;
   if (!ici || !pickupOn(state)) {
     for (const [item, qty] of list) storeWithSilo(state, item, qty);

@@ -58,7 +58,7 @@ function openMailModal(id) {
   persistState();
   const pieces = lu && lu.ok ? lu.pieces : 0; // version 1.14 : l'héritage versé à l'ouverture
   const cadeaux = Object.entries(def.cadeaux || {})
-    .map(([item, n]) => `${formatNumber(n)} <span aria-hidden="true">${DATA.items[item].icone}</span> ${DATA.items[item].nom}`)
+    .map(([item, n]) => `${formatNumber(n)} <span aria-hidden="true">${DATA.OBJETS[item].icone}</span> ${DATA.OBJETS[item].nom}`)
     .join(' · ');
   // Les cadeaux de cette lettre se plantent dans la Serre : un raccourci y mène si la carte l'affiche.
   const serre = def.quand && def.quand.debloque === 'serre';

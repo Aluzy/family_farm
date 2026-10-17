@@ -412,12 +412,12 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   testAddFood(s);
   // Lot 5 : la viande, les fruits, le pain et les plats sont aussi des aliments.
   // Lot « 10 cultures » : oignon, ail, poivron, épinard, fraise et riz sont
-  // comestibles (contrairement à houblon/cacao/vanille/café, edible: false,
-  // absents d'ici) — ajoutés à la suite dans DATA.items, donc à la fin ici.
+  // comestibles (contrairement à houblon/cacao/vanille/café, mangeable: false,
+  // absents d'ici) — ajoutés à la suite dans DATA.OBJETS, donc à la fin ici.
   // Les trois anciennes viandes et le lait sont à la fin des objets de base
   // (après café), donc juste avant les plats ; la paille, elle, ne se mange pas.
-  // Nouvelles recettes : ajoutées à DATA.items par registerDishItems(),
-  // dans l'ordre de déclaration de DATA.recipes, donc après tarte_pommes.
+  // Nouvelles recettes : ajoutées à DATA.OBJETS par registerDishItems(),
+  // dans l'ordre de déclaration de DATA.RECETTES, donc après tarte_pommes.
   // Version 1.1 : les quatre plats retirés du livre (DATA.PLATS_RETIRES)
   // restent des aliments, ajoutés tout à la fin.
   // Les poissons de la ferme (truite, brochet) sont rangés avec le bois et la pierre, après la poire.

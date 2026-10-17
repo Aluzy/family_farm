@@ -21,7 +21,7 @@ import { closeModal, openModal } from './modal.js';
 
 // Libellé d'une quantité : « 6 carottes », « 1 carotte », « 1 graine de tomate ».
 export function unitLabel(item, qty) {
-  const name = DATA.items[item].nom.toLowerCase();
+  const name = DATA.OBJETS[item].nom.toLowerCase();
   if (name.startsWith('graines ')) return qty > 1 ? name : `graine ${name.slice(8)}`;
   return qty > 1 && !/[sx]$/.test(name) ? `${name}s` : name;
 }
@@ -45,8 +45,8 @@ function expiringTonight(item) {
 const INVENTORY_TABS = [
   { id: 'frais', label: 'Frais', icon: '🥕', match: (k) => isPerishable(k), empty: 'Aucun aliment frais pour l\'instant.' },
   { id: 'frigo', label: 'Frigo', icon: '🧊', match: () => false, empty: '' },
-  { id: 'graines', label: 'Graines', icon: '🌱', match: (k) => DATA.items[k].category === 'graine', empty: 'Aucune graine pour l\'instant.' },
-  { id: 'produits', label: 'Produits', icon: '🥫', match: (k) => !isPerishable(k) && DATA.items[k].category !== 'graine', empty: 'Aucun produit pour l\'instant.' },
+  { id: 'graines', label: 'Graines', icon: '🌱', match: (k) => DATA.OBJETS[k].categorie === 'graine', empty: 'Aucune graine pour l\'instant.' },
+  { id: 'produits', label: 'Produits', icon: '🥫', match: (k) => !isPerishable(k) && DATA.OBJETS[k].categorie !== 'graine', empty: 'Aucun produit pour l\'instant.' },
 ];
 
 // Toujours sur une seule rangée. À partir de quatre onglets (`compact`), seul l'onglet
@@ -86,7 +86,7 @@ export function inventoryTabsHtml() {
 // Une case : le dessin, la quantité (police pixel, en bas à droite), et un point rouge si
 // une partie périt à la prochaine nuit. `lieu` : 'sac' (l'inventaire) ou 'frigo'.
 function slotHtml(item, n, lieu) {
-  const it = DATA.items[item];
+  const it = DATA.OBJETS[item];
   const soon = lieu === 'sac' && isPerishable(item) ? expiringTonight(item) : 0;
   const label = `${it.nom} : ${formatQty(n)}${lieu === 'frigo' ? ' au frais' : ''}${soon ? `, dont ${formatQty(soon)} ${accord(soon, 'périt', 'périssent')} cette nuit` : ''}`;
   return `<button type="button" class="inv-slot${soon ? ' soon' : ''}" data-action="inv-item" data-item="${item}" data-lieu="${lieu}" title="${it.nom}" aria-label="${label}">` +
@@ -108,10 +108,10 @@ function fridgeAllButton(items) {
 export function fridgeSlots() {
   const f = state.frigo;
   if (!f.construit) {
-    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans les Installations (🏗️, dans le menu)' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
+    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans les Installations (🏗️, dans le menu)' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.PRIX_CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
   }
   const counts = fridgeCounts(state);
-  const items = Object.keys(DATA.items).filter((k) => counts[k] > 0);
+  const items = Object.keys(DATA.OBJETS).filter((k) => counts[k] > 0);
   const ok = fridgeIcon() === '❄️';
   return `
     <p class="inv-fridge${ok ? '' : ' warm'}" title="${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté : chaque lot peut perdre une nuit.'}"><span aria-hidden="true">${fridgeIcon()}</span> <span class="num">${fridgeUnits(state)} / ${fridgeCapacity(state)}</span>${ok ? '' : ' · ⚠️ pas alimenté'}${!fridgeCoversNight(state) ? ' · ⚠️ la batterie ne couvrira pas la nuit' : ''}</p>
@@ -123,7 +123,7 @@ export function renderInventaire(fenetre = false) {
   const tab = currentTab();
   const head = fenetre ? '' : `<h2>📦 Inventaire</h2>${inventoryTabsHtml()}`;
   if (tab.id === 'frigo') return `${head}${fridgeSlots()}`;
-  const items = Object.keys(DATA.items).filter((k) => tab.match(k) && countItem(state, k) > 0);
+  const items = Object.keys(DATA.OBJETS).filter((k) => tab.match(k) && countItem(state, k) > 0);
   return `${head}
     ${items.length ? `<div class="inv-slots">${items.map((k) => slotHtml(k, countItem(state, k), 'sac')).join('')}</div>` : `<p class="hint">${tab.empty}</p>`}
     ${tab.id === 'frais' ? fridgeAllButton(items) : ''}`;
@@ -139,11 +139,11 @@ function itemQty(o) {
 }
 
 function itemBodyHtml(o) {
-  const it = DATA.items[o.item];
+  const it = DATA.OBJETS[o.item];
   const n = itemQty(o);
   const nom = it.nom.toLowerCase();
   const lines = [];
-  if (it.energie) lines.push(`🍽️ ${it.energie} cal${it.edible ? '' : ' (ingrédient)'}`);
+  if (it.energie) lines.push(`🍽️ ${it.energie} cal${it.mangeable ? '' : ' (ingrédient)'}`);
   if (dishHappiness(o.item)) lines.push(`😊 +${dishHappiness(o.item)} bonheur`);
   if (o.lieu === 'sac' && isPerishable(o.item)) {
     const soon = expiringTonight(o.item);
@@ -153,14 +153,14 @@ function itemBodyHtml(o) {
   }
   if (o.lieu === 'frigo') lines.push('🧊 Au frais : il ne vieillit pas tant que le frigo est alimenté.');
   if (o.item === DATA.SILO.ITEM && state.silo.construit) lines.push(`🛖 Silo : ${formatQty(state.silo.ble)}`);
-  if (it.category === 'graine') lines.push('🌱 Se sème dans la Zone de culture.');
+  if (it.categorie === 'graine') lines.push('🌱 Se sème dans la Zone de culture.');
   let actions = '';
   if (o.lieu === 'frigo') {
     actions = `
       <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="1">Sortir 1</button>
       <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="all">Tout sortir</button>`;
   } else {
-    if (it.edible) actions += eatButton(o.item, 'Manger');
+    if (it.mangeable) actions += eatButton(o.item, 'Manger');
     if (state.frigo.construit && isFridgeable(o.item)) {
       const off = fridgeRoom(state) < 1 ? ' disabled title="Le frigo est plein"' : '';
       actions += `
@@ -178,7 +178,7 @@ function itemBodyHtml(o) {
 }
 
 function openItemModal(item, lieu) {
-  if (!DATA.items[item]) return;
+  if (!DATA.OBJETS[item]) return;
   itemOpen = { item, lieu: lieu === 'frigo' ? 'frigo' : 'sac' };
   tel('modal', 'item');
   openModal(`

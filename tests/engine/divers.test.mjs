@@ -81,7 +81,7 @@ test('Comptes : chaque gain et dépense est noté ; même libellé le même jour
 
 test('Personnages (version 1.17) : adultes et enfants choisissent un des 50 personnages de leur âge ; défaut selon le sexe', () => {
   const s = createInitialState();
-  const P = DATA.FAMILY.PROFIL;
+  const P = DATA.FAMILLE.PROFIL;
   const adulte = s.famille.membres.find((m) => !m.enfant);
   const enfant = s.famille.membres.find((m) => m.enfant);
   assertEqual(memberPerso(adulte), P.PERSO_DEFAUT[adulte.genre], 'pas encore choisi : le défaut');

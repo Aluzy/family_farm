@@ -23,16 +23,16 @@ import {
 
 test('DATA Lot 4 : Silo, Poulailler, poule, blé, tournesol et œuf (plus de Champ)', () => {
   assertEqual(DATA.CHAMP, undefined, 'version 1.0 : le Champ a rejoint la Zone de culture');
-  assertEqual([DATA.SILO.CAPACITE, DATA.SILO.CONSTRUCTION, DATA.SILO.COUT], [[20, 50, 100, 200, 400], 0, [0, 30, 80, 180, 400]]);
-  assertEqual([DATA.POULAILLER.CONSTRUCTION, DATA.POULAILLER.CAPACITE, DATA.POULAILLER.COUT], [40, [4, 8, 12, 16, 24], [0, 100, 220, 450, 900]]);
+  assertEqual([DATA.SILO.CAPACITE, DATA.SILO.PRIX_CONSTRUCTION, DATA.SILO.PRIX_NIVEAUX], [[20, 50, 100, 200, 400], 0, [0, 30, 80, 180, 400]]);
+  assertEqual([DATA.POULAILLER.PRIX_CONSTRUCTION, DATA.POULAILLER.CAPACITE, DATA.POULAILLER.PRIX_NIVEAUX], [40, [4, 8, 12, 16, 24], [0, 100, 220, 450, 900]]);
   assertEqual([DATA.ANIMAUX.poule.prix, DATA.ANIMAUX.poule.poulesParBle, DATA.ANIMAUX.poule.oeufsParNuit], [15, 2, 1]);
-  const c = DATA.crops;
+  const c = DATA.CULTURES;
   assertEqual([c.ble.stades, c.ble.litres, c.ble.rendement, c.ble.graines], [7, 2, 8, { item: 'ble', mode: 'plant' }]);
   assertEqual([c.tournesol.stades, c.tournesol.litres, c.tournesol.rendement], [7, 2, 9]);
   assertEqual(cropProduct('tournesol'), 'graine_tournesol');
   assertEqual(cropProduct('ble'), 'ble');
   // Lot 12 : prix de vente de l'œuf doublé (2 → 4).
-  assertEqual([DATA.items.oeuf.energie, DATA.items.oeuf.prix, shelfLife('oeuf')], [scaleEnergie(10), 4, 6]);
+  assertEqual([DATA.OBJETS.oeuf.energie, DATA.OBJETS.oeuf.prix, shelfLife('oeuf')], [scaleEnergie(10), 4, 6]);
   assertEqual(shelfLife('ble'), 10, 'le blé périme dans l\'inventaire, jamais au Silo');
   assertEqual(shelfLife('graine_tournesol'), null);
 });
@@ -41,11 +41,11 @@ test('Marché – onglet Graines : isGraineComptoir()', () => {
   // Le blé y apparaît sans changer de catégorie (double fonction préservée :
   // Silo, Moulin, poules, plancher de marché ×1,2, comme avant).
   assertEqual(isGraineComptoir('ble'), true);
-  assertEqual(DATA.items.ble.category, 'ingrédient');
+  assertEqual(DATA.OBJETS.ble.categorie, 'ingrédient');
   assertEqual(marketFloor('ble'), DATA.MARCHE.PLANCHER.defaut);
   // Les graines de tournesol restent classées « graine », comme les autres graines.
   assertEqual(isGraineComptoir('graine_tournesol'), true);
-  assertEqual(DATA.items.graine_tournesol.category, 'graine');
+  assertEqual(DATA.OBJETS.graine_tournesol.categorie, 'graine');
   for (const k of ['graine_carotte', 'graine_tomate', 'graine_courgette', 'graine_aubergine']) {
     assertEqual(isGraineComptoir(k), true, k);
   }
@@ -77,7 +77,7 @@ test('Marché – onglet Graines : les 10 nouvelles cultures', () => {
   // qui applique cette règle, vit dans le bloc de rendu : on rejoue ici sa logique
   // — « aucune culture qui utilise cette graine n'est verrouillée ».)
   const s = createInitialState(1);
-  const seedLocked = (item) => Object.keys(DATA.crops).some((c) => DATA.crops[c].graines.item === item && !isUnlocked(s, c));
+  const seedLocked = (item) => Object.keys(DATA.CULTURES).some((c) => DATA.CULTURES[c].graines.item === item && !isUnlocked(s, c));
   for (const k of ['graine_oignon', 'graine_poivron', 'graine_epinard', 'graine_fraise']) {
     assertEqual(seedLocked(k), true, `${k} pas encore en vente au niveau 1`);
   }
@@ -287,7 +287,7 @@ test('achat de poule refusé si le poulailler est plein ou absent, et sans effet
   assertEqual(buyAnimal(s, 'mouton').ok, false, 'Étable pas encore prête : pas de mouton');
   assertEqual(buyAnimal(s, 'chevre').ok, false, 'animal inconnu');
   assertEqual(typeof sellItem, 'function');
-  assertEqual(DATA.items.poule, undefined, 'une poule n\'est pas un objet : elle ne se revend pas');
+  assertEqual(DATA.OBJETS.poule, undefined, 'une poule n\'est pas un objet : elle ne se revend pas');
 });
 
 test('poule non nourrie : pas d\'œuf ; poule nourrie : 1 œuf, puis remise à zéro', () => {
@@ -448,9 +448,9 @@ test('la famille mange les œufs (13 énergie) : ils périment avant les conserv
   const plan = planMeal(s);
   assertEqual(plan.mange.oeuf, 4);
   // Lot 11 (nutrition) : œuf 13, conserve 25.
-  const conserves = Math.ceil((150 - 4 * DATA.items.oeuf.energie) / DATA.items.conserve.energie);
+  const conserves = Math.ceil((150 - 4 * DATA.OBJETS.oeuf.energie) / DATA.OBJETS.conserve.energie);
   assertEqual(plan.mange.conserve, conserves);
-  assertEqual(plan.energie, 4 * DATA.items.oeuf.energie + conserves * DATA.items.conserve.energie);
+  assertEqual(plan.energie, 4 * DATA.OBJETS.oeuf.energie + conserves * DATA.OBJETS.conserve.energie);
 });
 
 test('migration v4 (Lot 3) → v5 : Silo et Poulailler apparaissent (plus de Champ), la partie est gardée', () => {

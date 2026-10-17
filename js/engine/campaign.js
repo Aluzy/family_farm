@@ -83,7 +83,7 @@ export function plannedAutonomy(state) {
   let produit = 0;
   for (const [item, n] of Object.entries(plan.mange)) {
     const cold = plan.froid[item] || 0;
-    const energie = DATA.items[item].energie;
+    const energie = DATA.OBJETS[item].energie;
     produit += producedShare(lotsOf(state, item), n - cold) * energie;
     if (cold > 0) produit += producedShare(fridgeLots(state, item), cold) * energie;
   }
@@ -143,7 +143,7 @@ export function objectiveDef(type) {
 // Une culture est-elle débloquée ? Il faut son niveau et, si elle demande un
 // bâtiment (`requiert` : le blé attend le Silo), que ce bâtiment soit construit.
 export function cropUnlocked(state, culture) {
-  const requis = DATA.crops[culture].requiert;
+  const requis = DATA.CULTURES[culture].requiert;
   return isUnlocked(state, culture) && (!requis || isBuilt(state, requis));
 }
 
@@ -185,7 +185,7 @@ export function noteEnergyRecord(state) {
 // transformations (Moulin, Presse) ne comptent ni comme pain ni comme plat.
 export function noteRecipeDone(state, recette, qty) {
   const c = state.campagne;
-  const r = DATA.recipes[recette];
+  const r = DATA.RECETTES[recette];
   if (!c || !r || r.transformation) return;
   const pain = objectiveDef('pains');
   if (pain && recette === pain.recette) {
@@ -268,7 +268,7 @@ export function completeChapter(state) {
   if (!c || c.fini) return fail('La campagne est terminée.');
   c.annonces.push({ chapitre: c.chapitre, nuit: state.day });
   // Arbre v2 : chaque chapitre terminé rapporte des points de technologie.
-  grantTechPoints(state, DATA.techtree.POINTS.CHAPITRES[c.chapitre - 1] || 0, `Chapitre ${c.chapitre} terminé`);
+  grantTechPoints(state, DATA.ARBRE.POINTS.CHAPITRES[c.chapitre - 1] || 0, `Chapitre ${c.chapitre} terminé`);
   // Version 1.7 : et de l'expérience (le succès « chapitre n terminé »).
   gainXp(state, DATA.NIVEAUX.CHAPITRES_XP[c.chapitre - 1] || 0);
   if (c.chapitre >= chapterCount()) c.fini = true;
@@ -416,7 +416,7 @@ export function recordNight(state) {
     if (c.fini) {
       const pt = techPoints(state);
       pt.libre += 1;
-      if (pt.libre % DATA.techtree.POINTS.MODE_LIBRE_NUITS_100 === 0) grantTechPoints(state, 1, 'Mode libre : nuits à 100 %');
+      if (pt.libre % DATA.ARBRE.POINTS.MODE_LIBRE_NUITS_100 === 0) grantTechPoints(state, 1, 'Mode libre : nuits à 100 %');
     }
   }
   trackHold(state, pct);
@@ -442,7 +442,7 @@ export function ownsElement(state, id) {
   const built = (b) => !!(b && b.construit);
   switch (id) {
     // 'champ' : l'ancien Champ construit (sauvegarde d'avant la version 15), ou
-    // une culture de plein champ en terre. (La liste n'est pas DATA.crops[].pleinChamp : le
+    // une culture de plein champ en terre. (La liste n'est pas DATA.CULTURES[].pleinChamp : le
     // tournesol, de plein champ lui aussi, datait du chapitre 4 et a sa propre ligne.)
     case 'champ': return built(legacyChamp(state)) || ownedPlots(state).some((p) => p && ['ble', 'riz', 'houblon'].includes(p.culture));
     case 'silo': return built(state.silo);

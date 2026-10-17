@@ -1,15 +1,4 @@
 {
-  "//START": "Départ de partie.",
-  "START": {
-    "PIECES": 350,
-    "//DEVICE_PRICE": [
-      "Les appareils de départ sont offerts : prix d'achat 0, donc entretien",
-      "et réparation gratuits pour eux (l'entretien vaut 20 % du prix d'achat)."
-    ],
-    "DEVICE_PRICE": 0,
-    "//INVENTAIRE": "Inventaire de départ (section 8.1) : 160 conserves = 10 nuits, plus le kit de graines.",
-    "INVENTAIRE": { "conserve": 160, "graine_carotte": 10, "patate": 6, "graine_tomate": 4 }
-  },
   "//DEPART": [
     "Version 1.12 (v2, lot 8) : départ d'une nouvelle partie (docs/conception-v2.md,",
     "sections 2 et 3). La famille arrive à la ferme du grand-père : la maison est à",
@@ -26,6 +15,20 @@
     "NOM": "Martin",
     "NOM_MIN": 2,
     "NOM_MAX": 20,
+    "//ETAT_INITIAL": [
+      "État de base de createInitialState() (les essais, les anciennes sauvegardes) : une",
+      "nouvelle partie le remplace par PIECES et INVENTAIRE ci-dessus (voir depart.js).",
+      "INVENTAIRE : section 8.1, 160 conserves = 10 nuits, plus le kit de graines."
+    ],
+    "ETAT_INITIAL": {
+      "PIECES": 350,
+      "INVENTAIRE": { "conserve": 160, "graine_carotte": 10, "patate": 6, "graine_tomate": 4 }
+    },
+    "//PRIX_APPAREIL": [
+      "Les appareils de départ sont offerts : prix d'achat 0, donc entretien",
+      "et réparation gratuits pour eux (l'entretien vaut 20 % du prix d'achat)."
+    ],
+    "PRIX_APPAREIL": 0,
     "//HISTOIRE": "Texte d'ouverture (section 3.1), montré une fois la famille installée ; {nom} : le nom de famille.",
     "HISTOIRE": [
       "Printemps 2021. Après des mois enfermés dans un appartement trop petit, la famille {nom} décide de tout quitter.",
@@ -33,23 +36,23 @@
       "Les cartons sont dans le coffre. Il est temps de redonner vie à la ferme."
     ]
   },
-  "//TIME": [
+  "//TEMPS": [
     "Temps : la journée commence à 6 h au réveil.",
-    "SECONDS_PER_HOUR : durée d'une « heure de marche » des appareils (usure,",
-    "voir WEAR.HEURES_PAR_POINT). Ne pas la changer pour régler l'horloge.",
-    "CLOCK_SECONDS_PER_HOUR : l'horloge affichée au joueur avance d'une heure",
+    "SECONDES_HEURE_MARCHE : durée d'une « heure de marche » des appareils (usure,",
+    "voir USURE.HEURES_PAR_POINT). Ne pas la changer pour régler l'horloge.",
+    "SECONDES_PAR_HEURE : l'horloge affichée au joueur avance d'une heure",
     "toutes les 30 s d'éveil (version 1.21 ; 18 s depuis la 1.1.3, 5 s auparavant). Voir hourOfDay()",
     "et clockHours().",
-    "MEAL_HOUR (version 1.1.1) : à 19 h, la famille prend son repas (takeMeal()).",
-    "NIGHT_HOUR : à 22 h (version 1.1.3 ; minuit auparavant), la journée est",
+    "HEURE_REPAS (version 1.1.1) : à 19 h, la famille prend son repas (takeMeal()).",
+    "HEURE_NUIT : à 22 h (version 1.1.3 ; minuit auparavant), la journée est",
     "finie : la nuit se déroule d'elle-même si le joueur n'a pas cliqué sur",
     "Dormir (bedtimeDue() ; c'est l'interface qui déclenche). La journée dure",
     "donc de 6 h à 22 h : 16 heures de 30 s, soit 480 s (8 minutes).",
     "Version 1.19 : à 22 h, la famille va dormir et la nuit défile à la même vitesse",
     "jusqu'à 6 h (8 heures, 240 s) : à minuit, la nuit se calcule (startNight,",
     "advanceNight) ; le bouton nuit, la nuit seulement, saute ce qui reste (skipNight).",
-    "MIN_AWAKE_S ne sert plus qu'au joueur automatique et aux essais (sleep()).",
-    "SLEEP_SECONDS_PER_HOUR : quand le personnage dort dans son lit (« Dormir », la nuit",
+    "EVEIL_MIN_S ne sert plus qu'au joueur automatique et aux essais (sleep()).",
+    "SECONDES_PAR_HEURE_SOMMEIL : quand le personnage dort dans son lit (« Dormir », la nuit",
     "seulement), la nuit défile en accéléré : une heure toutes les 3 s (version 1.21 ; 4 s",
     "auparavant ; goToSleep).",
     "POUSSE_HEURES : une plante arrosée gagne son stade POUSSE_HEURES heures d'horloge",
@@ -57,9 +60,9 @@
     "ARROSAGE_HEURE : avec l'arrosage automatique, les asperseurs arrosent tous les jours à cette",
     "heure les plantes qui ont soif (irrigate) ; sur la carte, ils tournent ARROSAGE_S secondes."
   ],
-  "TIME": { "DAY_START_HOUR": 6, "SECONDS_PER_HOUR": 30, "CLOCK_SECONDS_PER_HOUR": 30, "MIN_AWAKE_S": 30, "MEAL_HOUR": 19, "NIGHT_HOUR": 22, "SLEEP_SECONDS_PER_HOUR": 3, "POUSSE_HEURES": 24, "ARROSAGE_HEURE": 7, "ARROSAGE_S": 9 },
-  "//FAMILY": "Famille (sections 1.1, 1.4, 6.9 et 8.8 ; version 1.8 : plus de santé).",
-  "FAMILY": {
+  "TEMPS": { "HEURE_REVEIL": 6, "SECONDES_HEURE_MARCHE": 30, "SECONDES_PAR_HEURE": 30, "EVEIL_MIN_S": 30, "HEURE_REPAS": 19, "HEURE_NUIT": 22, "SECONDES_PAR_HEURE_SOMMEIL": 3, "POUSSE_HEURES": 24, "ARROSAGE_HEURE": 7, "ARROSAGE_S": 9 },
+  "//FAMILLE": "Famille (sections 1.1, 1.4, 6.9 et 8.8 ; version 1.8 : plus de santé).",
+  "FAMILLE": {
     "//MEMBRES": [
       "nom : le rôle (« Adulte 1 »), qui sert de prénom tant que le joueur n'en",
       "a pas choisi un ; genre : le sexe de départ ('f' ou 'm')."
@@ -168,7 +171,7 @@
     "//MULTIPLICATEUR_PRODUCTION": [
       "Lot 12 (doublement des prix de vente des productions de la ferme) :",
       "multiplicateur appliqué une seule fois, au chargement, au prix de",
-      "vente (DATA.items[x].prix) de chaque récolte de culture, fruit du",
+      "vente (DATA.OBJETS[x].prix) de chaque récolte de culture, fruit du",
       "Verger et produit animal (œuf, lait, laine) — jamais aux",
       "graines, aux achats du Marché qui ne sont pas des productions, aux",
       "bâtiments/appareils/services, ni aux ingrédients transformés",
@@ -176,7 +179,7 @@
       "partir des prix des ingrédients (voir dishPrice()) et serait donc",
       "doublé deux fois si ce multiplicateur s'y appliquait aussi. Voir",
       "applyProductionPriceMultiplier(), juste après DATA, qui détermine la",
-      "liste des objets concernés à partir de DATA.crops, DATA.VERGER.ARBRES",
+      "liste des objets concernés à partir de DATA.CULTURES, DATA.VERGER.ARBRES",
       "et DATA.ANIMAUX plutôt que d'une liste codée en dur ici."
     ],
     "MULTIPLICATEUR_PRODUCTION": 2,
@@ -184,7 +187,7 @@
       "Lot 13 : la farine (transformation du blé, pas une production directe de",
       "la ferme) reçoit elle aussi le multiplicateur ci-dessus, par choix",
       "explicite. L'huile, autre transformation, n'y figure pas. Le pain (plat)",
-      "est réglé sur sa propre recette : voir `recipes.pain.priceMultiplier`."
+      "est réglé sur sa propre recette : voir `recipes.pain.coefPrix`."
     ],
     "TRANSFORMATIONS_DOUBLEES": ["farine"]
   },

@@ -32,7 +32,7 @@ import { canPay, costLabel } from './common.js';
 export function renderSerre() {
   const g = state.serre;
   if (!g.construit) {
-    const cost = DATA.SERRE.CONSTRUCTION;
+    const cost = DATA.SERRE.PRIX_CONSTRUCTION;
     return `
       <div class="section-head"><h3>${artIcon('serre')}Serre</h3>${helpBtn('serre')}</div>
       <div class="card">
@@ -59,7 +59,7 @@ export function renderSerre() {
 function treeCard(tree) {
   const V = DATA.VERGER;
   const def = V.ARBRES[tree.espece];
-  const fruit = DATA.items[def.fruit];
+  const fruit = DATA.OBJETS[def.fruit];
   const age = Math.min(V.MATURITE, treeAge(state, tree));
   const adult = isTreeAdult(state, tree);
   const next = treeNextHarvest(state, tree);
@@ -95,7 +95,7 @@ function treeChoice() {
   if (c === null || c >= state.verger.places || treeAt(state, c)) return '';
   const V = DATA.VERGER;
   const rows = Object.entries(V.ARBRES).map(([espece, def]) => {
-    const fruit = DATA.items[def.fruit];
+    const fruit = DATA.OBJETS[def.fruit];
     return `
       <div class="shop-row">
         <div class="inv-main"><span><span aria-hidden="true">${fruit.icone}</span> ${def.nom}</span><span class="muted">${formatCoins(def.prix)} 💰</span></div>
@@ -113,7 +113,7 @@ export function renderVerger() {
   const v = state.verger;
   const V = DATA.VERGER;
   if (!v.construit) {
-    const cost = V.CONSTRUCTION;
+    const cost = V.PRIX_CONSTRUCTION;
     return `
       <div class="section-head"><h3>${artIcon('verger')}Verger</h3>${helpBtn('verger')}</div>
       <div class="card">
@@ -154,7 +154,7 @@ export function fridgeIcon() {
 export function renderFridgeCard() {
   const f = state.frigo;
   if (!f.construit) {
-    const cost = DATA.FRIGO.CONSTRUCTION;
+    const cost = DATA.FRIGO.PRIX_CONSTRUCTION;
     return `
       <div class="card">
         <span class="card-title"><span>${artIcon('frigo')}Réfrigérateur</span><span class="chips"><span class="chip">Non construit</span>${helpBtn('frigo')}</span></span>
@@ -234,7 +234,7 @@ registerActions({
   },
   'harvest-tree': (target) => {
     const result = applyResult(harvestTree(state, target.dataset.id));
-    if (result.ok && !result.aRamasser) notify(`+${result.qty} ${DATA.items[result.item].icone}`);
+    if (result.ok && !result.aRamasser) notify(`+${result.qty} ${DATA.OBJETS[result.item].icone}`);
   },
   'buy-orchard-slot': () => {
     const result = applyResult(buyOrchardSlot(state));

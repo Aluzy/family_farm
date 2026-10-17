@@ -57,7 +57,7 @@ test('version 1.8 : manger un aliment dans la journée rend ses calories ÷ 5', 
   assertEqual(eatSnack(s, 'carotte').ok, false, 'énergie pleine');
   s.energie = 10000;
   setInv(s, { carotte: 2 });
-  assertEqual(snackEnergy(s, 'carotte'), DATA.items.carotte.energie * 200);
+  assertEqual(snackEnergy(s, 'carotte'), DATA.OBJETS.carotte.energie * 200);
   const r = eatSnack(s, 'carotte');
   assertEqual([r.ok, s.energie, countItem(s, 'carotte')], [true, 10000 + snackEnergy(s, 'carotte'), 1]);
   assertEqual(eatSnack(s, 'graine_carotte').ok, false, 'ne se mange pas');
@@ -156,7 +156,7 @@ test('hache : chaque coup sur un arbre donne du bois, de l\'XP, coûte de l\'én
   assertEqual(chopsLeft(s, '20,30'), DATA.HACHE.COUPES - 1, 'les coups reçus restent d\'un jour à l\'autre');
   s.energie = 0;
   assertEqual(chopTree(s, '20,30').error, TIRED);
-  assertEqual([DATA.items.bois.category, isBuyable('bois')], ['produit', false], 'le bois se vend, ne se rachète pas');
+  assertEqual([DATA.OBJETS.bois.categorie, isBuyable('bois')], ['produit', false], 'le bois se vend, ne se rachète pas');
 });
 
 test('hache : un arbre abattu repousse au bout de RETOUR jours, sauf si une parcelle occupe une de ses tuiles', () => {
@@ -227,7 +227,7 @@ test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il
   assertEqual(mineRock(s, '44,16').ok, true, 'un autre rocher se casse');
   s.energie = 0;
   assertEqual(mineRock(s, '44,16').error, TIRED);
-  assertEqual([DATA.items.pierre.category, isBuyable('pierre')], ['produit', false], 'la pierre se vend, ne se rachète pas');
+  assertEqual([DATA.OBJETS.pierre.categorie, isBuyable('pierre')], ['produit', false], 'la pierre se vend, ne se rachète pas');
 });
 
 test('canne à pêche : un lancer coûte de l\'énergie ; une prise (truite, brochet) donne le poisson et de l\'XP ; JOUR prises par eau et par jour', () => {
@@ -261,7 +261,7 @@ test('canne à pêche : un lancer coûte de l\'énergie ; une prise (truite, bro
   const n = { truite: 0, brochet: 0, rien: 0 };
   for (let k = 0; k < 400; k++) { t.day = k; t.energie = energyMax(t); n[castLine(t, 'etang').poisson || 'rien'] += 1; }
   assert(n.brochet > 40 && n.truite > n.brochet && n.rien > 40, `répartition ${JSON.stringify(n)}`);
-  assertEqual([DATA.items.truite.edible, DATA.items.brochet.edible, isBuyable('truite'), isBuyable('brochet')], [true, true, false, false]);
+  assertEqual([DATA.OBJETS.truite.mangeable, DATA.OBJETS.brochet.mangeable, isBuyable('truite'), isBuyable('brochet')], [true, true, false, false]);
 });
 
 test('pioche : un rocher cassé revient au bout de RETOUR jours, sauf si une parcelle occupe une de ses tuiles', () => {

@@ -44,7 +44,7 @@ export function testHoeAll(state, zone = 1) {
 }
 
 export function testSetBuildingLevel5(state, id) {
-  const niveau = DATA.LEVEL_MAX;
+  const niveau = DATA.NIVEAU_MAX;
   if (id === 'potager') {
     // version 1.9 : toute la Zone de culture en terre (au-delà du plafond), avec la houe
     testHoeAll(state, 1);
@@ -70,7 +70,7 @@ export function testAddTechPoints(state, n = 10) {
 }
 
 export function testUnlockAllTechs(state) {
-  state.technologies = Object.keys(DATA.techtree.noeuds);
+  state.technologies = Object.keys(DATA.ARBRE.noeuds);
   unlockTab(state, DATA.TECHNO.ONGLET);
   return { ok: true };
 }
@@ -88,7 +88,7 @@ export function testFillTank(state) {
 export function testSetWear(state, id, usure) {
   const d = findDevice(state, id);
   if (!d) return fail('Appareil introuvable.');
-  d.usure = Math.max(0, Math.min(DATA.WEAR.BREAKDOWN, Math.round(usure)));
+  d.usure = Math.max(0, Math.min(DATA.USURE.PANNE, Math.round(usure)));
   d.usureMs = 0;
   if (isBroken(d)) d.allume = false;
   return { ok: true };
@@ -97,13 +97,13 @@ export function testSetWear(state, id, usure) {
 // Version 1.19 : l'horloge saute à 21 h 50 (la nuit commence peu après).
 export function testSkipAwake(state) {
   if (state.nuitEnCours) return fail('C\'est déjà la nuit.');
-  state.awakeMs = Math.max(state.awakeMs, awakeMsAtHour(DATA.TIME.NIGHT_HOUR) - DATA.TIME.CLOCK_SECONDS_PER_HOUR * 1000 / 6);
+  state.awakeMs = Math.max(state.awakeMs, awakeMsAtHour(DATA.TEMPS.HEURE_NUIT) - DATA.TEMPS.SECONDES_PAR_HEURE * 1000 / 6);
   return { ok: true };
 }
 
 // Lot 2 : 10 de chaque graine (et de chaque plant).
 export function testAddSeeds(state) {
-  for (const culture of Object.keys(DATA.crops)) addItem(state, seedItem(culture), 10);
+  for (const culture of Object.keys(DATA.CULTURES)) addItem(state, seedItem(culture), 10);
   return { ok: true };
 }
 
@@ -132,7 +132,7 @@ export function testAddSheep(state, count = 3) {
   const p = state.paturage;
   if (!p.construit) {
     p.construit = true;
-    p.places = DATA.PATURAGE.placesDepart;
+    p.places = DATA.PATURAGE.PLACES_DEPART;
   }
   const n = Math.min(count, freeSheepPlaces(state));
   for (let i = 0; i < n; i++) p.moutons.push(makeSheep(state));
@@ -150,7 +150,7 @@ export function testAddCows(state, count = 2) {
   const p = state.paturage;
   if (!p.construit) {
     p.construit = true;
-    p.places = DATA.PATURAGE.placesDepart;
+    p.places = DATA.PATURAGE.PLACES_DEPART;
   }
   const n = Math.min(count, freeCowPlaces(state));
   for (let i = 0; i < n; i++) p.vaches.push(makeCow(state));
@@ -159,7 +159,7 @@ export function testAddCows(state, count = 2) {
 
 // Version 1.1 : +20 pailles.
 export function testAddStraw(state, qty = 20) {
-  addItem(state, DATA.PATURAGE.nourriture, qty);
+  addItem(state, DATA.PATURAGE.NOURRITURE, qty);
   return { ok: true };
 }
 
@@ -189,7 +189,7 @@ export function testAddEggs(state, qty = 20) {
 export function testWearMill(state) {
   const d = state.stations.moulin.appareil;
   if (!d) return fail('Construis d\'abord le Moulin.');
-  return testSetWear(state, d.id, DATA.WEAR.BREAKDOWN);
+  return testSetWear(state, d.id, DATA.USURE.PANNE);
 }
 
 // Lot 9 : valide le chapitre en cours sans remplir son objectif (le suivant
@@ -273,8 +273,8 @@ export function testFillEnergy(state) {
 
 // Lot 3 : 20 unités de chaque aliment (à conservation pleine).
 export function testAddFood(state) {
-  for (const item of Object.keys(DATA.items)) {
-    if (DATA.items[item].edible) addItem(state, item, 20);
+  for (const item of Object.keys(DATA.OBJETS)) {
+    if (DATA.OBJETS[item].mangeable) addItem(state, item, 20);
   }
   return { ok: true };
 }

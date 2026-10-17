@@ -103,7 +103,7 @@ export function openSetupModal() {
   tel('modal', 'setup');
   const D = DATA.DEPART;
   const nom = setupNameDraft !== null ? setupNameDraft : familyName(state);
-  const C = DATA.FAMILY.COMPOSITION;
+  const C = DATA.FAMILLE.COMPOSITION;
   const full = state.famille.membres.length >= C.MEMBRES_MAX;
   openModal(`
     <h2 id="setup-title">🏡 Ta famille</h2>

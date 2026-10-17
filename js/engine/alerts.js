@@ -70,7 +70,7 @@ export function getNotifications(state) {
   add('poules', 2, '🐔', hens, '1 poule à nourrir', '{n} poules à nourrir');
   // Version 1.1 : les moutons et les vaches mangent de la paille chaque nuit.
   const paille = strawMissing(state);
-  add('paille', 2, DATA.items[DATA.PATURAGE.nourriture].icone, paille, 'Il manque de la paille : 1 de plus pour nourrir les animaux cette nuit', 'Il manque de la paille : {n} de plus pour nourrir les animaux cette nuit');
+  add('paille', 2, DATA.OBJETS[DATA.PATURAGE.NOURRITURE].icone, paille, 'Il manque de la paille : 1 de plus pour nourrir les animaux cette nuit', 'Il manque de la paille : {n} de plus pour nourrir les animaux cette nuit');
   add('entretien', 2, '🛠️', snap.entretien.length, '1 appareil à entretenir', '{n} appareils à entretenir');
 
   // 3 : récoltes et tontes prêtes.

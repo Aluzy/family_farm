@@ -23,10 +23,10 @@ export function orchardSlotPrice(state) {
   return growthPrice(E.base, E.croissance, state.verger.achetes);
 }
 
-// Aménage le Verger (gratuit tant que DATA.VERGER.CONSTRUCTION vaut 0).
+// Aménage le Verger (gratuit tant que DATA.VERGER.PRIX_CONSTRUCTION vaut 0).
 export function buildVerger(state) {
   const deja = 'Le Verger est déjà aménagé.';
-  return buildWith(state, 'verger', { built: state.verger.construit, deja, cost: DATA.VERGER.CONSTRUCTION, libelle: 'Verger' }, () => { openVerger(state); });
+  return buildWith(state, 'verger', { built: state.verger.construit, deja, cost: DATA.VERGER.PRIX_CONSTRUCTION, libelle: 'Verger' }, () => { openVerger(state); });
 }
 
 export function openVerger(state) {

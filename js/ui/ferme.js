@@ -184,7 +184,7 @@ function energieEauParts() {
         <span class="muted">${tankText}</span>
         ${tankUp === null
           ? '<button type="button" class="btn" disabled>Niveau max</button>'
-          : `<button type="button" class="btn" data-action="upgrade-tank"${canPay(tankUp) ? '' : ' disabled'}>Agrandir : ${formatLitres(DATA.GRID.reservoir.litres[state.reservoir.niveau] * 1000)} (${costLabel(tankUp)})</button>`}
+          : `<button type="button" class="btn" data-action="upgrade-tank"${canPay(tankUp) ? '' : ' disabled'}>Agrandir : ${formatLitres(DATA.RESEAU.reservoir.litres[state.reservoir.niveau] * 1000)} (${costLabel(tankUp)})</button>`}
       </div>` : '';
   return {
     robot: renderRobotCard(),
@@ -352,7 +352,7 @@ export function renderPotager() {
   return `
     <div class="section-head">
       <h3>${artIcon('potager')}${DATA.POTAGER.NOM} · ${pot.parcelles.length} parcelles</h3>
-      <span class="chips">${autoChip('potager', `Un robot récolte et replante dès ${DATA.ROBOT.HEURE} h, les asperseurs arrosent à ${DATA.TIME.ARROSAGE_HEURE} h, à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
+      <span class="chips">${autoChip('potager', `Un robot récolte et replante dès ${DATA.ROBOT.HEURE} h, les asperseurs arrosent à ${DATA.TEMPS.ARROSAGE_HEURE} h, à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
     ${hoePanelHtml()}
     ${plots}
