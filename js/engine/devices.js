@@ -42,7 +42,7 @@ export function makeDevice(type, id, prix) {
 }
 
 // Appareils des stations électriques déjà construites (Moulin, Presse).
-export function stationDevices(state) {
+function stationDevices(state) {
   if (!state.stations) return [];
   return Object.keys(DATA.STATIONS)
     .filter((id) => DATA.STATIONS[id].electrique && state.stations[id] && state.stations[id].appareil)
@@ -91,10 +91,10 @@ export function farmOpen(state) {
   return isOwned(starterOf(state, 'panneau')) && isOwned(starterOf(state, 'pompe'));
 }
 
-export const NOT_OWNED = 'Cet appareil n\'est pas encore acheté.';
+const NOT_OWNED = 'Cet appareil n\'est pas encore acheté.';
 
 // Lot 8 : le réfrigérateur est un appareil du parc une fois construit.
-export function fridgeDevices(state) {
+function fridgeDevices(state) {
   return state.frigo && state.frigo.construit && state.frigo.appareil ? [state.frigo.appareil] : [];
 }
 
@@ -128,7 +128,7 @@ export function panelOutput(d, state) {
 
 // Facteur solaire (%) : 100, ou le bonus des Panneaux orientables (version 1.6 :
 // plus de saisons, le nœud donne un bonus toute l'année).
-export function solarFactor(state) {
+function solarFactor(state) {
   return techFlag(state, 'solaireBonus') || 100;
 }
 

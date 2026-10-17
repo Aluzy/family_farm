@@ -90,7 +90,7 @@ export function recipeTime(state, id) {
 }
 
 // Niveau d'un bâtiment (0 s'il n'est pas construit).
-export function buildingLevel(state, id) {
+function buildingLevel(state, id) {
   if (id === 'pompe') return state.pompe.niveau;
   // version 1.6 : un seul panneau, une seule batterie ; le réservoir a ses niveaux
   if (id === 'panneau') return state.panneaux[0].niveau;
@@ -110,7 +110,7 @@ export function isBuilt(state, id) {
 
 // Chapitre en cours pour les paliers (au-delà du dernier une fois la campagne finie).
 // (Sans campagne : le premier ; chapterReached, lui, y voit le mode libre.)
-export function techChapter(state) {
+function techChapter(state) {
   return state.campagne ? chapterReached(state) : 1;
 }
 

@@ -94,7 +94,7 @@ export function loadShedding(state) {
 // La pompe remplit le réservoir si elle est allumée, en état, et que le
 // réservoir n'est pas plein. Si l'énergie manque, elle tourne au prorata
 // (au mL près : chaque mL coûte WH_PAR_L mWh).
-export function runPump(state, dtMs) {
+function runPump(state, dtMs) {
   const p = state.pompe;
   p.debit = 0;
   p.conso = 0;
@@ -160,7 +160,7 @@ export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax =
 
 // Phases a à c de tick : production, stockage, consommateurs, Four et Cuisine.
 // Les quantités du pas (mWh) deviennent des puissances (mWh/s) pour l'affichage.
-export function flowStep(state, dtMs) {
+function flowStep(state, dtMs) {
   for (const b of state.batteries) {
     b.entree = 0;
     b.sortie = 0;

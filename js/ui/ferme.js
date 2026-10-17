@@ -6,7 +6,6 @@ import {
 import { hourOfDay, nightActive } from '../engine/clock.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
 import { energyChip } from './energie.js';
-import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { hoePanelHtml } from './houe.js';
 import { renderStarterCards } from './depart.js';
 import { isUnlocked } from '../engine/campaign.js';
@@ -102,7 +101,6 @@ export function renderFerme() {
   return [
     `<h2>🌾 Ferme</h2>${renderFermeLinks()}${renderChapterBanner()}`,
     renderPotager(),
-    renderZone2(),
     isUnlocked(state, 'serre') ? renderSerre() : '',
     isUnlocked(state, 'silo') ? renderSilo() : '',
     coopShown() ? `<div id="etable-poules" class="ancre">${renderPoulailler()}</div>` : '',
@@ -350,7 +348,7 @@ export function renderDeviceFenetre(kind) {
 export function renderPotager() {
   const pot = state.potager;
   const plots = `<div class="plots${tutoTarget('potager')}">${pot.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${groupButtons('potager', 1)}</div>`;
+    <div class="row plot-foot">${groupButtons('potager')}</div>`;
   return `
     <div class="section-head">
       <h3>${icon('potager')}${DATA.POTAGER.NOM} · ${pot.parcelles.length} parcelles</h3>
@@ -358,31 +356,6 @@ export function renderPotager() {
     </div>
     ${hoePanelHtml()}
     ${plots}
-  `;
-}
-
-/* ---------- Ferme : le Champ (state.potager.zone2), deuxième zone de culture ---------- */
-
-// Ouvert avec le Moulin, en herbe (version 1.9) ; aucune section avant. Mêmes cartes de
-// parcelle et mêmes règles que la Zone de culture ; « Arroser tout » et « Récolter tout »
-// n'agissent qu'ici.
-export function renderZone2() {
-  const Z = DATA.POTAGER.ZONE2;
-  if (!zone2Open(state)) return '';
-  const plots = zone2Plots(state);
-  const list = hoeMode && state.potager.houe
-    ? ''
-    : plots.length
-      ? `<div class="plots">${plots.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${groupButtons('potager', 2)}</div>`
-      : '<p class="muted">Tout est en herbe : prends la houe pour labourer.</p>';
-  return `
-    <div class="section-head">
-      <h3><span aria-hidden="true">${Z.ICONE}</span> ${Z.NOM} · ${plots.length} parcelles</h3>
-      <span class="chips">${autoChip('potager', `Un robot récolte et replante dès ${DATA.ROBOT.HEURE} h, les asperseurs arrosent à ${DATA.TIME.ARROSAGE_HEURE} h, à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
-    </div>
-    ${hoePanelHtml()}
-    ${list}
   `;
 }
 

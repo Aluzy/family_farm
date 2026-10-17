@@ -159,7 +159,7 @@ export function memberRoom(state) {
 }
 
 // Prochain numéro d'un type d'identifiant ; le compteur de l'état avance.
-export function nextFamilyNumber(state, type) {
+function nextFamilyNumber(state, type) {
   const f = state.famille;
   const vus = familyNumbers(f.membres, f.animaux);
   if (!f.numeros || typeof f.numeros !== 'object') f.numeros = vus;
@@ -298,7 +298,7 @@ export function mealOrder(state) {
 // même rang passent par énergie décroissante, l'inventaire avant le frigo.
 // La réserve de semences protège d'abord l'inventaire (c'est là qu'on prend les
 // plants), puis le frigo.
-export function mealEntries(state) {
+function mealEntries(state) {
   const entries = [];
   for (const item of mealOrder(state)) {
     const reserve = state.famille.reserve[item] || 0;

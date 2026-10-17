@@ -8,7 +8,6 @@ import { nightActive } from '../engine/clock.js';
 import { asleep } from '../engine/night.js';
 import { memberPerso, planMeal } from '../engine/family.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
-import { zone2Open, zone2Plots } from '../engine/crops.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
 import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { notificationCount } from '../engine/alerts.js';
@@ -31,7 +30,7 @@ import {
 } from './stage.js';
 import {
   backToFerme, deviceName, renderDeviceFenetre, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
-  renderInstallationsMaison, renderPotager, renderRobotCard, renderZone2,
+  renderInstallationsMaison, renderPotager, renderRobotCard,
 } from './ferme.js';
 import { robotOn } from '../engine/automation.js';
 import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
@@ -53,7 +52,7 @@ import { toolBarHtml, toolbarOpen } from './outils.js';
 // Un appui sur un bâtiment ou sur son étiquette ouvre une fenêtre dont le contenu est celui
 // des sections de la Ferme, redessiné à chaque rendu : les boutons y fonctionnent comme
 // dans la liste classique. Les fenêtres de #modal-root s'affichent par-dessus.
-export let stageWindow = null; // null, 'maison', 'etable', 'poulailler', 'serre', 'moulin', 'verger', 'zone', 'zone2' ou 'chapitres'
+export let stageWindow = null; // null, 'maison', 'etable', 'poulailler', 'serre', 'moulin', 'verger', 'zone' ou 'chapitres'
 export function setStageWindow(value) {
   stageWindow = value;
   return value;
@@ -348,12 +347,6 @@ export const STAGE_WINDOWS = {
     nom: DATA.POTAGER.NOM, icone: '🌱', ok: () => true, haute: true, sansTitre: true, // version 1.12 : toujours sur la carte, même en herbe
     detail: () => `${state.potager.parcelles.length} parcelles`,
     corps: () => renderPotager(),
-  },
-  // Le Champ : la deuxième zone de culture, ouverte avec le Moulin.
-  zone2: {
-    nom: DATA.POTAGER.ZONE2.NOM, icone: DATA.POTAGER.ZONE2.ICONE, ok: () => zone2Open(state), haute: true, sansTitre: true,
-    detail: () => `${zone2Plots(state).length} parcelles`,
-    corps: () => renderZone2(),
   },
   chapitres: { nom: 'Chapitres', icone: '📜', ok: () => true, corps: () => renderChapterBanner() },
   // Version 1.5 : le poteau « Ville » au bout du chemin (sorties, voyages, marché de la ville).

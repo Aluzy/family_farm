@@ -206,7 +206,7 @@ export function takeStock(state, item, qty) {
   return a + (qty - a > 0 ? takeFromFridge(state, item, qty - a) : 0);
 }
 
-export function nightFridgeStats(state) {
+function nightFridgeStats(state) {
   if (!state.nuit) state.nuit = newNightStats();
   if (!state.nuit.frigo) state.nuit.frigo = newFridgeNightStats();
   return state.nuit.frigo;

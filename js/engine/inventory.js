@@ -36,7 +36,7 @@ export function defaultOrigin(item) {
 
 /* -- les lots, dans un rangement { item: [lots] } : l'inventaire ou le frigo (fridge.js) -- */
 
-export function newLot(qty, nightsLeft, origin) {
+function newLot(qty, nightsLeft, origin) {
   return { qty, nightsLeft, origin };
 }
 
@@ -59,7 +59,7 @@ export function lotList(store, item) {
 }
 
 // Range la liste de lots d'un objet, ou retire l'objet si elle est vide.
-export function storeLots(store, item, lots) {
+function storeLots(store, item, lots) {
   if (lots.length) store[item] = lots;
   else if (store) delete store[item];
 }
@@ -80,7 +80,7 @@ export function lotRank(lot) {
 }
 
 // Ordre des lots : le plus ancien en tête (tri stable).
-export function compareLots(a, b) {
+function compareLots(a, b) {
   return lotRank(a) === lotRank(b) ? 0 : lotRank(a) < lotRank(b) ? -1 : 1;
 }
 

@@ -78,11 +78,6 @@ export function plantTree(state, espece, c = null) {
   return { ok: true, cost: def.prix, id: tree.id, case: ou };
 }
 
-// Ancien nom (Marché, joueur automatique) : plante sur la première case libre.
-export function buyTree(state, espece) {
-  return plantTree(state, espece, null);
-}
-
 // Un arbre neuf : ses premiers fruits arrivent la nuit qui complète sa MATURITÉ-ième
 // nuit (planté le jour 1 : nuit 15).
 export function newTree(id, espece, plantee, c) {

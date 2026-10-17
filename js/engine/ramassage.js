@@ -20,14 +20,12 @@ import { fail } from './devices.js';
 import { shear, storeWithSilo, woolReady } from './animals.js';
 import { TIRED } from './stamina.js';
 
-export const LIEUX_RAMASSAGE = ['parcelle', 'arbre', 'poulailler', 'etable'];
-
-export function pileId(lieu, ref) {
+function pileId(lieu, ref) {
   return ref === null || ref === undefined ? lieu : `${lieu}:${ref}`;
 }
 
 // Le personnage de la carte ramasse-t-il ? (sinon, tout va directement à l'inventaire)
-export function pickupOn(state) {
+function pickupOn(state) {
   return !!state.ramassage;
 }
 

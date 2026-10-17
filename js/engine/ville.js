@@ -3,7 +3,7 @@ import { EPS } from './base.js';
 import { canPay, fail, NO_COINS, spend } from './devices.js';
 import { addLot } from './inventory.js';
 import { buyItem } from './market.js';
-import { awakeHours, awakeMsAtHour, hourOfDay } from './clock.js';
+import { awakeHours, hourOfDay } from './clock.js';
 import { farmStep } from './energy.js';
 import { refreshUnlocks } from './techtree.js';
 import { updateChapters } from './campaign.js';
@@ -181,9 +181,4 @@ export function buyInTown(state, item, qty = 1) {
   if (!townMarketOpen(state)) return fail('Va d\'abord au marché de la ville.');
   if (!DATA.items[item] || !DATA.items[item].ville) return fail('Cet objet ne se vend pas au marché de la ville.');
   return buyItem(state, item, qty, { ville: true });
-}
-
-// Heure (ms d'éveil) au-delà de laquelle une sortie de `heures` heures n'est plus possible.
-export function latestStart(heures) {
-  return awakeMsAtHour(DATA.TIME.NIGHT_HOUR - heures);
 }

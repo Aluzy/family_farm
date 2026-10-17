@@ -47,7 +47,7 @@ export function sellInTown(state, item, qty) {
 
 /* ---------- les entreprises ---------- */
 
-export function companyDef(id) {
+function companyDef(id) {
   return DATA.VILLE.ENTREPRISES.LISTE[id] || null;
 }
 
@@ -56,7 +56,7 @@ export function companyIds() {
 }
 
 // Les entreprises achetées : { id: { quota, jour, bilan } } (dans state.ville, créé au besoin).
-export function companies(state) {
+function companies(state) {
   if (!state.ville || typeof state.ville !== 'object') state.ville = { faits: {}, marche: 0 };
   if (!state.ville.entreprises || typeof state.ville.entreprises !== 'object') state.ville.entreprises = {};
   return state.ville.entreprises;

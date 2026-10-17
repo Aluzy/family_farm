@@ -24,27 +24,16 @@ export function makePlots(count, lieu = DATA.POTAGER.LIEU) {
   return plots;
 }
 
-// Toutes les parcelles de la ferme : la Zone de culture d'abord, puis le Champ, puis la Serre.
+// Toutes les parcelles de la ferme : la Zone de culture d'abord, puis la Serre. (Le Champ de
+// la version 1.4, state.potager.zone2, a rejoint la Zone de culture en version 1.15 : voir
+// migrateFreeSoil ; la liste reste vide dans une partie à jour.)
 export function allPlots(state) {
-  return [...state.potager.parcelles, ...zone2Plots(state), ...(state.serre ? state.serre.parcelles : [])];
+  return [...state.potager.parcelles, ...(state.serre ? state.serre.parcelles : [])];
 }
 
 // Les mêmes listes, sans les recopier (pour les parcourir).
 function plotLists(state) {
-  return [state.potager.parcelles, zone2Plots(state), state.serre ? state.serre.parcelles : []];
-}
-
-/* ---------- version 1.4 : le Champ (deuxième zone de culture) ---------- */
-
-// Parcelles du Champ (state.potager.zone2) : vide tant qu'il n'est pas ouvert. Elles portent
-// le lieu de la Zone de culture ('potager') : toutes ses règles s'y appliquent sans rien
-// redire (cultures, règles, automatisations). `zone: 2` les distingue pour l'affichage.
-export function zone2Plots(state) {
-  return state.potager && Array.isArray(state.potager.zone2) ? state.potager.zone2 : [];
-}
-
-export function makeZone2Plot(n) {
-  return { ...makePlot(n), id: `${DATA.POTAGER.ZONE2.ID}-${n}`, zone: 2 };
+  return [state.potager.parcelles, state.serre ? state.serre.parcelles : []];
 }
 
 /* ---------- version 1.9 (v2, lot 5) : la houe ; version 1.15 : sur toute la carte ---------- */
@@ -53,10 +42,6 @@ export function makeZone2Plot(n) {
 // écrit par scripts/carte/terres.py : herbe foncée, hors chemins, eau, bâtiments, pierres,
 // arbres, arbustes et zones interdites) peut devenir de la terre. Une parcelle porte le
 // numéro de sa tuile (`case` = rangée × LARGEUR + colonne). Les parcelles sont rangées par tuile.
-export function terrainSize() {
-  return { largeur: DATA.TERRAIN.LARGEUR, hauteur: DATA.TERRAIN.HAUTEUR };
-}
-
 function terrainChar(tile) {
   const T = DATA.TERRAIN;
   if (!Number.isInteger(tile) || tile < 0 || tile >= T.LARGEUR * T.HAUTEUR) return '.';
@@ -96,7 +81,7 @@ function coveredBy() {
 }
 
 // Les tuiles libérées : celles dont tous les rochers sont cassés et tous les arbres abattus.
-export function freedRockTiles(state) {
+function freedRockTiles(state) {
   const out = new Set();
   const o = state && state.outils;
   if (!o || (!o.rochers && !o.arbres)) return out;
@@ -202,7 +187,7 @@ export function hoeableTiles(state) {
   return out;
 }
 
-export const SOIL_LAYOUT_REFUS = 'La terre déborde en bordure sur les 8 tuiles autour : elles doivent pouvoir devenir mi-herbe mi-terre (pas de chemin, d\'eau, de pierre ni d\'arbre à côté, et pas une seule tuile d\'herbe prise entre deux terres).';
+const SOIL_LAYOUT_REFUS = 'La terre déborde en bordure sur les 8 tuiles autour : elles doivent pouvoir devenir mi-herbe mi-terre (pas de chemin, d\'eau, de pierre ni d\'arbre à côté, et pas une seule tuile d\'herbe prise entre deux terres).';
 
 // Tuile d'une case des anciennes zones (1 : la Zone de culture, 2 : le Champ) : sauvegardes
 // d'avant la version 1.15, parcelles de départ, tests.
@@ -223,7 +208,7 @@ export function startPlots() {
 
 // Tuiles de terre de la ferme et plafond du niveau.
 export function soilCount(state) {
-  return state.potager ? state.potager.parcelles.length + zone2Plots(state).length : 0;
+  return state.potager ? state.potager.parcelles.length : 0;
 }
 
 export function soilCap(state) {
@@ -250,12 +235,6 @@ export function buyHoe(state) {
   if (!pay(state, cost, 'Achat : Houe')) return fail(NO_COINS);
   state.potager.houe = true;
   return { ok: true, cost };
-}
-
-// Version 1.15 : le Champ n'est plus une zone à part (toutes les terres sont dans
-// state.potager.parcelles). Gardé pour les appels existants : toujours fermé.
-export function zone2Open() {
-  return false;
 }
 
 // Ce que fait la houe sur une tuile : { action: 'labourer' | 'reboucher' | null, ok, raison }.
@@ -306,11 +285,6 @@ export function hoe(state, tile) {
   gainActionXp(state, 'labourer');
   bumpCounter(state, 'labours', 1); // FLU-42 : chapitre 1
   return { ok: true, action: 'labourer', plot };
-}
-
-// Version 1.15 : une seule Zone de culture (toutes les terres de la carte).
-export function plotZone() {
-  return 1;
 }
 
 export function findPlot(state, id) {

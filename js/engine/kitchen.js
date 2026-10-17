@@ -27,13 +27,13 @@ function queuedWheat(job) {
   return Math.max(0, Math.floor(Number(job.enAttente) || 0));
 }
 
-export function isElectricStation(id) {
+function isElectricStation(id) {
   return !!DATA.STATIONS[id].electrique;
 }
 
 // Vitesse d'une préparation en % : 100 (version 1.8 : plus de productivité) ; pour
 // le Moulin et la Presse, le rendement de l'usure.
-export function stationSpeed(state, id) {
+function stationSpeed(state, id) {
   const st = state.stations[id];
   let v = 100;
   if (isElectricStation(id) && st.appareil) v = Math.floor((v * efficiency(st.appareil)) / 100);
@@ -51,13 +51,13 @@ export function taskTimeLeft(state, id) {
 
 // Objet choisi pour un ingrédient : le premier de ses options en quantité
 // suffisante, ou null.
-export function pickIngredient(state, ing) {
+function pickIngredient(state, ing) {
   return ingredientOptions(ing).find((item) => countWithSilo(state, item) + EPS >= ing.qte) || null;
 }
 
 // Une ligne par ingrédient (puis une pour l'eau) : { options, qte, have, ok, item }.
 // `have` est le meilleur stock parmi les options ; `item` l'option retenue.
-export function recipeLines(state, id) {
+function recipeLines(state, id) {
   const r = DATA.recipes[id];
   const lines = r.ingredients.map((ing) => {
     const item = pickIngredient(state, ing);
@@ -99,14 +99,14 @@ export function queueCapacity(state) {
 }
 
 // Reste-t-il une place dans la file d'un atelier occupé ?
-export function queueRoom(state, stationId) {
+function queueRoom(state, stationId) {
   const st = state.stations[stationId];
   const used = (st.tache ? 1 : 0) + (Array.isArray(st.file) ? st.file.length : 0);
   return used < queueCapacity(state);
 }
 
 // Démarre la préparation `recette` sur un atelier libre.
-export function beginTask(state, stationId, recette) {
+function beginTask(state, stationId, recette) {
   const temps = recipeTime(state, recette) * 1000;
   state.stations[stationId].tache = { recette, resteMs: temps, dureeMs: temps };
 }
@@ -170,7 +170,7 @@ export function startRecipe(state, id) {
 // Renvoie { item, qty, sousProduit, suite } (ou null si la station était
 // libre) ; `suite` : la même préparation repart aussitôt, parce qu'il restait
 // du blé en attente au Moulin.
-export function completeTask(state, id) {
+function completeTask(state, id) {
   const st = state.stations[id];
   if (!st.tache) return null;
   const recette = st.tache.recette;

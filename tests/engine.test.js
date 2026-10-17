@@ -13,7 +13,7 @@ import { hasTech, techEffects, techPct } from '../js/engine/index.js';
 import { cowsOnHerbs, herbStock, herbsOn, roundPct, setCowHerbs } from '../js/engine/index.js';
 import { comptaRecente, COMPTA_MAX, earn, noteCompta, memberPerso } from '../js/engine/index.js';
 import { buyCompany, companiesStep, companyPlan, ownsCompany, sellInTown, setCompanyQuota, townSellList, townSellPrice, townSellable } from '../js/engine/index.js';
-import { brokenRocks, buyTool, castLine, chopsLeft, depositOreNotebook, hitsNeeded, mineOre, fellenTrees, fishLeft, chopTree, respawnTrees, hasTool, mineRock, OUTILS, respawnRocks, rockBroken, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
+import { brokenRocks, buyTool, castLine, chopsLeft, depositOreNotebook, hitsNeeded, mineOre, fellenTrees, fishLeft, chopTree, respawnTrees, hasTool, mineRock, OUTILS, respawnRocks, rockGone, runNight, terrainLines, ownedTools, selectedTool, selectTool, toolDef } from '../js/engine/index.js';
 import {
   acknowledgeChapter, addItem, addLot, addMember, addPet, adultCount, advanceTutorial, alertEvents,
   alertSnapshot, allDevices, allPlots, animalBuyMax, animalPrice, animalRoom, AUTO_TACHES, autoMaintain,
@@ -22,7 +22,7 @@ import {
   botRaiseFunds, botRecipeValue, botSell, botSheep, botStepInfo, botWheatKept, buildCatalog, buildFridge,
   buildMorningReport, buildPaturage, buildPoulailler, buildSerre, buildSilo, buildStation, buildVerger,
   buyAnimal, buyAnimals, buyCow, buyItem, buyOrchardSlot, buyPasture, buyPrice, buyQuote,
-  buySheep, buyTech, buyTree, cancelMilling, cancelQueued, canSleep, chapterProgress,
+  buySheep, buyTech, cancelMilling, cancelQueued, canSleep, chapterProgress,
   chapterReached, checkMastery, childCount, cleanFirstName, clockHours, completeChapter, CONSUMERS,
   coopCapacity, coopUpgradeCost, countItem, cowCapacity, cowCount, cowPlaces, createInitialState,
   buyFurniture, furnitureCount, furnitureMax,
@@ -35,15 +35,15 @@ import {
   GAME_VERSION, getNotifications, grantTech, growAll, growOrchard, harvest, harvestAll, harvestYield,
   hourOfDay, ingredientOptions, inventoryCounts, isAutomated, isBroken, isBuyable,
   isGraineComptoir, isMature, isPerishable, isUnlocked, lastAutonomy, layEggs, loadShedding, lotsOf,
-  mailReceived, maintainCost, maintainDevice, makeDevice, makePlot, makePlots, makeZone2Plot, marketCoef, marketFloor,
+  mailReceived, maintainCost, maintainDevice, makeDevice, makePlot, makePlots, marketCoef, marketFloor,
   maxCows, maxSheep, maxStage, mealDue, mealOrder, memberName, memberPortrait, memberRemovalBlock,
   memberRoom, mergeOfflineReports, migrate, migrateCropZone, migrateTechTreeV2, migrateToIntegers,
   MIGRATION_11, MIGRATIONS, millPending, millTimeLeft, moveFromFridge, moveToFridge, mulberry32,
   newAutoReport, newCampaignCounters, newGameFrom, newNightStats, newStableReport, nextRandom,
   NIGHT_STEPS, nightHarvest, nightPower, notificationCount, offlineReport, offlineSnapshot,
-  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtTile, zoneTile, isArable, canBorder, hoeableTiles, borderMask, migrateFreeSoil, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, zone2Open, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, orchardSlotPrice, plantTree, harvestTree, treeStage, treeAt, freeOrchardCases, ripeTrees, migrateOrchard, newTree, commerceNight, chooseCommerce, upgradeCommerce, setCommerceQuota, commerceCapacity, commerceChoiceCost, commerceBatches, newCommerce,
+  openFridge, openSerre, openStation, holdStatus, levelBlock, memberStyle, TIRED, createNewGame, repairHouse, buyStarter, starterBlock, houseRepaired, farmOpen, isOwned, starterOf, familyName, mainCharacter, setFamilyName, setMainCharacter, setupFamily, finishSetup, setupPending, migrateDepart, MARKET_CLOSED, defaultOrigin, fridgeCapacity, fridgeRoom, fridgeUpgradeCost, upgradeFridge, migrateFridgeCapacity, buyHoe, hasHoe, hoe, hoeStatus, migrateHoe, plotAtTile, zoneTile, isArable, canBorder, hoeableTiles, borderMask, migrateFreeSoil, soilCap, soilCapNext, soilCount, startPlots, testHoeAll, botSnack, actionCost, actionsLeft, eatSnack, energyLevel, energyMax, enduranceReduction, happinessCostPct, migrateEnergy, refundRetiredNodes, restoreEnergy, snackEnergy, testFillEnergy, testSetEnergyZero, wakeEnergy, acknowledgeLevel, actionXp, gainXp, levelForXp, levelProgress, levelReached, levelUnlocks, migrateLevels, testAddXp, testSetLevel, migrateSingleDevices, sunlitMs, upgradeTank, orchardFree, treeNextHarvest, orchardSlotPrice, plantTree, harvestTree, treeStage, treeAt, freeOrchardCases, ripeTrees, migrateOrchard, newTree, commerceNight, chooseCommerce, upgradeCommerce, setCommerceQuota, commerceCapacity, commerceChoiceCost, commerceBatches, newCommerce,
   ownedTechs, panelOutput, pastureCapacity, pastureCost, petIcon, petName, petRoom, pets, planMeal,
-  plannedAutonomy, plant, plantableCrops, plantableCropsFor, plotZone, portraitEmoji, prepTimeMult,
+  plannedAutonomy, plant, plantableCrops, plantableCropsFor, portraitEmoji, prepTimeMult,
   productionItemKeys, queueCapacity, rainNight, randomInt, RAW_DATA,
   readMail, readyCrops, recipeNode, recipeStatus, recipeTime, recipeUnlocked, recordNight,
   removeMember, removePet, repairCost, repairDevice, reservableItems, scaleEnergie,
@@ -61,7 +61,7 @@ import {
   testWearMill, testWoolReady, tick, toggleDevice, tutorialStep, unlockLevel, unreadMail,
   updateChapters, upgradeCost, upgradeDevice, upgradePoulailler, upgradeSerre,
   upgradeSilo, validFirstName, wakeHarvestList, wakeSummary, water, waterAll, plantAll, waterCostFor, objectiveValue,
-  wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady, zone2Plots,
+  wheatForHens, wheatTotal, fillSilo, isFridgeable, moveAllToFridge, migrateWheatAndReserve, woolReady,
   collectLeftovers, pickUp, piles,
   absoluteHours, advanceNight, growDue, irrigate, robotStep, robotTrip, robotNight, robotBattery, robotCapacity, robotTaskCapacity, robotChargePct, runRobotCharge, upgradeRobotBattery, asleep, goToSleep, midnightMs, sleepTarget, nightActive, nightLengthMs, nightSpeed, skipNight, startNight, collectAt, deposit,
 } from '../js/engine/index.js';
@@ -796,14 +796,6 @@ function setInv(s, quantities) {
 function tireless(s) {
   s.energie = Number.MAX_SAFE_INTEGER;
   return s;
-}
-
-// Version 1.9 : le Champ n'a plus ses 64 parcelles d'office ; pour les tests qui en ont
-// besoin, il est labouré en entier dès qu'il est ouvert (mode test).
-function openZone2(s) {
-  if (!zone2Open(s) || zone2Plots(s).length >= DATA.POTAGER.ZONE2.CASES) return false;
-  testHoeAll(s, 2);
-  return true;
 }
 
 // Version 1.9 : la Zone de culture ne s'agrandit plus en pièces ; les tests qui veulent
@@ -2123,11 +2115,11 @@ test('Silo : les poules mangent d\'abord dans l\'inventaire (il y périme), puis
   setInv(s, { ble: 1 });
   s.silo.ble = 3;
   testAddHens(s, 4);
-  assertEqual(feedHen(s).compte, true);
+  assertEqual(feedHen(s).ok, true);
   assertEqual([s.silo.ble, countItem(s, 'ble')], [3, 0]);
-  assertEqual(feedHen(s).compte, true);
+  assertEqual(feedHen(s).ok, true);
   assertEqual([s.silo.ble, countItem(s, 'ble')], [3, 0], 'la 2e poule finit le blé entamé');
-  assertEqual(feedHen(s).compte, true);
+  assertEqual(feedHen(s).ok, true);
   assertEqual([s.silo.ble, countItem(s, 'ble')], [2, 0], 'l\'inventaire est vide : on entame le Silo');
   assertEqual(s.poulailler.nourries, 3);
   assertEqual(s.jour.ble, 2, 'blé mangé du jour');
@@ -2148,7 +2140,7 @@ test('blé entier : 1 blé nourrit 2 poules, une ration entamée ne revient pas 
   const r = sellItem(s, 'ble', 99);
   // Lot 12 : blé vendu 2 pièces l'unité ; le stock est toujours entier.
   assertEqual([r.ok, r.sold, r.gain], [true, 1, 2]);
-  assertEqual(feedHen(s).compte, true, 'la ration entamée nourrit encore une poule sans blé');
+  assertEqual(feedHen(s).ok, true, 'la ration entamée nourrit encore une poule sans blé');
   s.awakeMs = 30000;
   setInv(s, { conserve: 200 });
   sleep(s);
@@ -2217,8 +2209,8 @@ test('poule non nourrie : pas d\'œuf ; poule nourrie : 1 œuf, puis remise à z
   const s = ranch();
   setInv(s, { ble: 10, conserve: 200 });
   testAddHens(s, 4);
-  assertEqual(feedHen(s).compte, true);
-  assertEqual(feedHen(s).compte, true);
+  assertEqual(feedHen(s).ok, true);
+  assertEqual(feedHen(s).ok, true);
   assertEqual([s.poulailler.poules, s.poulailler.nourries], [4, 2]);
   assertEqual(layEggs(s), 2, '2 poules nourries sur 4 : 2 œufs');
   assertEqual(countItem(s, 'oeuf'), 2);
@@ -2263,7 +2255,7 @@ test('achat, nourrissage et ponte d\'une poule fonctionnent normalement', () => 
   assertEqual(buyAnimal(s, 'poule'), { ok: true, cost: 15 });
   assertEqual(s.poulailler.poules, 1);
   setInv(s, { ble: 10 });
-  assertEqual(feedHen(s).compte, true);
+  assertEqual(feedHen(s).ok, true);
   assertEqual(layEggs(s), 1);
   assertEqual(countItem(s, 'oeuf'), 1);
 });
@@ -2294,7 +2286,7 @@ test('« Nourrir tout » nourrit autant de poules que possible, dans la limite d
   setInv(s, { ble: 1 });
   testAddHens(s, 4);
   const r = feedAllHens(s);
-  assertEqual([r.ok, r.nourries, r.ratees], [true, 2, 0], '1 blé = 2 poules');
+  assertEqual([r.ok, r.nourries], [true, 2], '1 blé = 2 poules');
   assertEqual([s.poulailler.nourries, wheatTotal(s)], [2, 0]);
   assertEqual(feedAllHens(s).ok, false, 'plus de blé');
   assertEqual(feedHen(s).error, 'Pas assez de blé.');
@@ -2312,7 +2304,7 @@ test('nourrissage : le blé est retiré une fois par poule et par nuit', () => {
   const s = ranch();
   s.silo.ble = 10;
   testAddHens(s, 1);
-  assertEqual(feedHen(s).compte, true);
+  assertEqual(feedHen(s).ok, true);
   assertEqual(feedHen(s).ok, false, 'une seule fois par nuit');
   assertEqual([s.silo.ble, s.poulailler.restes], [9, 1], 'une poule seule entame un blé entier');
 });
@@ -5884,7 +5876,7 @@ test('Verger : 2 emplacements au départ, aucun arbre', () => {
   const s = orchard();
   assertEqual([s.verger.construit, s.verger.places, s.verger.arbres.length, orchardFree(s)], [true, 2, 0, 2]);
   assertEqual(buildVerger(reach(s, 'verger')).ok, false, 'déjà aménagé');
-  assertEqual(buyTree(garden(), 'pommier').ok, false, 'sans Verger');
+  assertEqual(plantTree(garden(), 'pommier').ok, false, 'sans Verger');
 });
 
 test('Verger : prix des emplacements supplémentaires 50 × 1,25^n arrondi à l\'entier supérieur', () => {
@@ -5926,20 +5918,20 @@ test('Verger : le nombre d\'emplacements est plafonné à 12', () => {
 test('Verger : arbre à 40 pièces sur un emplacement libre, pommier ou poirier', () => {
   const s = orchard();
   s.pieces = 100;
-  const a = buyTree(s, 'pommier');
+  const a = plantTree(s, 'pommier');
   assertEqual([a.ok, a.cost, s.pieces], [true, 40, 60]);
-  assertEqual(buyTree(s, 'poirier').ok, true);
+  assertEqual(plantTree(s, 'poirier').ok, true);
   assertEqual(s.pieces, 20);
   assertEqual(s.verger.arbres.map((t) => [t.id, t.espece, t.plantee]), [['arbre-1', 'pommier', 1], ['arbre-2', 'poirier', 1]]);
   s.pieces = 500;
-  assertEqual(buyTree(s, 'pommier').ok, false, 'verger plein');
+  assertEqual(plantTree(s, 'pommier').ok, false, 'verger plein');
   assertEqual(s.pieces, 500);
   buyOrchardSlot(s);
-  assertEqual(buyTree(s, 'pommier').ok, true, 'un emplacement acheté');
-  assertEqual(buyTree(s, 'cerisier').ok, false, 'arbre inconnu');
+  assertEqual(plantTree(s, 'pommier').ok, true, 'un emplacement acheté');
+  assertEqual(plantTree(s, 'cerisier').ok, false, 'arbre inconnu');
   const poor = orchard();
   poor.pieces = 39;
-  assertEqual(buyTree(poor, 'pommier').ok, false);
+  assertEqual(plantTree(poor, 'pommier').ok, false);
 });
 
 test('Verger : première récolte 15 nuits après la plantation', () => {
@@ -5947,7 +5939,7 @@ test('Verger : première récolte 15 nuits après la plantation', () => {
   grantTech(s, 'cu_verger_auto'); // version 1.13 : cueillis la nuit
   protect(s, 'pomme');
   s.day = 10;
-  buyTree(s, 'pommier');
+  plantTree(s, 'pommier');
   const fruits = {};
   while (s.day <= 30) {
     const day = s.day;
@@ -5964,7 +5956,7 @@ test('Verger : arbre planté à la nuit 1, première récolte à la nuit 15, pui
   const s = orchard();
   grantTech(s, 'cu_verger_auto');
   protect(s, 'poire');
-  buyTree(s, 'poirier');
+  plantTree(s, 'poirier');
   const fruits = {};
   while (s.day <= 30) {
     const day = s.day;
@@ -6307,7 +6299,7 @@ test('sérialisation JSON : Serre, Verger et Réfrigérateur font l\'aller-retou
   s.pieces = 9999;
   buildSerre(reach(s, 'serre'));
   buildVerger(reach(s, 'verger'));
-  buyTree(s, 'pommier');
+  plantTree(s, 'pommier');
   setInv(s, { carotte: 5, conserve: 500 });
   moveToFridge(s, 'carotte', 5);
   runFor(s, 2);
@@ -8536,7 +8528,7 @@ test('version 1.4 : format 20, le Champ commence vide et la migration l\'ajoute'
   const Z = DATA.POTAGER.ZONE2;
   assertEqual([Z.ID, Z.CASES, Z.COLONNES, Z.DEBLOCAGE], ['zone2', 64, 8, 'moulin']);
   const neuf = createInitialState(1);
-  assertEqual([neuf.potager.zone2, zone2Plots(neuf), allPlots(neuf).length], [[], [], 6]);
+  assertEqual([neuf.potager.zone2, allPlots(neuf).length], [[], 6]);
   const v19 = JSON.parse(JSON.stringify(createInitialState(3)));
   v19.version = 19;
   delete v19.potager.zone2;
@@ -8557,7 +8549,7 @@ test('version 1.4 : un Verger de plus de 12 emplacements garde ses arbres et ses
   s.verger.places = 15;
   s.verger.achetes = 13;
   s.pieces = 100000;
-  for (let i = 0; i < 15; i++) assert(buyTree(s, i % 2 ? 'poirier' : 'pommier').ok, `arbre ${i + 1}`);
+  for (let i = 0; i < 15; i++) assert(plantTree(s, i % 2 ? 'poirier' : 'pommier').ok, `arbre ${i + 1}`);
   assertEqual([s.verger.arbres.length, orchardFree(s)], [15, 0]);
   assertEqual(buyOrchardSlot(s).ok, false, 'plus d\'emplacement à vendre au-delà de 12');
   const v19 = JSON.parse(JSON.stringify(s));
@@ -8995,7 +8987,7 @@ test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il
     [true, DATA.PIOCHE.PIERRE, false, DATA.PIOCHE.PIERRE, e - actionCost(s, 'piocher'), DATA.NIVEAUX.XP.piocher]);
   let last = r;
   for (let k = 1; k < DATA.PIOCHE.COUPS; k++) last = mineRock(s, '25,13');
-  assertEqual([last.casse, rockBroken(s, '25,13'), brokenRocks(s), countItem(s, 'pierre')], [true, true, ['25,13'], DATA.PIOCHE.PIERRE * DATA.PIOCHE.COUPS]);
+  assertEqual([last.casse, rockGone(s, '25,13'), brokenRocks(s), countItem(s, 'pierre')], [true, true, ['25,13'], DATA.PIOCHE.PIERRE * DATA.PIOCHE.COUPS]);
   assertEqual(mineRock(s, '25,13').ok, false, 'un rocher cassé ne se casse plus');
   assertEqual(mineRock(s, '44,16').ok, true, 'un autre rocher se casse');
   s.energie = 0;
@@ -9051,15 +9043,15 @@ test('pioche : un rocher cassé revient au bout de RETOUR jours, sauf si une par
   assertEqual([isArable(tuile, s), terrainLines(s)[Math.floor(tuile / DATA.TERRAIN.LARGEUR)][tuile % DATA.TERRAIN.LARGEUR]], [true, '#'], 'la tuile libérée se laboure');
   assert(hoe(s, tuile).ok, 'labour de la tuile libérée');
   s.day = retour;
-  assertEqual([respawnRocks(s), rockBroken(s, '18,27')], [[], true], 'une parcelle sur sa tuile : il attend');
+  assertEqual([respawnRocks(s), rockGone(s, '18,27')], [[], true], 'une parcelle sur sa tuile : il attend');
   assert(hoe(s, tuile).ok, 'reboucher');
   s.day = retour + 4;
-  assertEqual([respawnRocks(s), rockBroken(s, '18,27'), mineRock(s, '18,27').coups], [['18,27'], false, 1], 'la tuile libre : il revient, entier');
+  assertEqual([respawnRocks(s), rockGone(s, '18,27'), mineRock(s, '18,27').coups], [['18,27'], false, 1], 'la tuile libre : il revient, entier');
   // au réveil (runNight), le jour venu
   for (let k = 1; k < DATA.PIOCHE.COUPS; k++) mineRock(s, '18,27');
   s.outils.rochers['18,27'].retour = s.day + 1;
   runNight(s);
-  assertEqual(rockBroken(s, '18,27'), false, 'revenu au réveil');
+  assertEqual(rockGone(s, '18,27'), false, 'revenu au réveil');
   const t = garden();
   t.outils = { pioche: true, rochers: { '18,27': 2 } };
   assertEqual(respawnRocks(t), [], 'un rocher entamé reste entamé');
@@ -9118,7 +9110,7 @@ test('version 1.9 : migration v26 → v27 : les parcelles prennent une case, la 
   const s = createInitialState(1);
   const old = JSON.parse(JSON.stringify(s));
   old.version = 26;
-  old.potager = { niveau: 2, parcelles: makePlots(12), zone2: [makeZone2Plot(1), makeZone2Plot(2)] };
+  old.potager = { niveau: 2, parcelles: makePlots(12), zone2: [1, 2].map((n) => ({ ...makePlot(n), id: `zone2-${n}`, zone: 2 })) };
   old.potager.parcelles[3].culture = 'carotte';
   const m = migrateHoe(old);
   assertEqual([m.version, 'niveau' in m.potager, m.potager.houe], [27, false, true]);
@@ -9367,7 +9359,7 @@ test('version 1.13 : un arbre se plante sur la case choisie du Verger', () => {
   assertEqual(treeAt(s, 1).espece, 'poirier');
   assertEqual(plantTree(s, 'pommier', 1).ok, false, 'case déjà prise');
   assertEqual(plantTree(s, 'pommier', 2).ok, false, 'case non achetée');
-  assertEqual(buyTree(s, 'pommier').case, 0, 'sans case : la première libre');
+  assertEqual(plantTree(s, 'pommier').case, 0, 'sans case : la première libre');
   assertEqual(freeOrchardCases(s), []);
 });
 

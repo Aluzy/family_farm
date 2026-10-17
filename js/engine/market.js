@@ -24,7 +24,7 @@ export function marketCoef(state, item) {
   return typeof c === 'number' ? c : marketFloor(item);
 }
 
-export function setMarketCoef(state, item, coef) {
+function setMarketCoef(state, item, coef) {
   if (!state.marche) state.marche = {};
   const c = Math.max(marketFloor(item), Math.round(coef));
   if (c <= marketFloor(item)) delete state.marche[item];

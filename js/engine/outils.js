@@ -138,16 +138,7 @@ export function chopTree(state, id) {
 // moteur ne connaît d'eux qu'un identifiant (« x,y » de leur case en bas à gauche) et leurs
 // tuiles (DATA.TERRAIN.ROCHERS). state.outils.rochers compte les coups reçus par chacun ; au
 // PIOCHE.COUPS-ième, il est cassé : { retour }, le jour où il revient (dans PIOCHE.RETOUR
-// jours, tiré au hasard). Ses tuiles libres se labourent en attendant.
-export function rockHits(state, id) {
-  const r = state.outils && state.outils.rochers && state.outils.rochers[id];
-  if (!r) return 0;
-  return typeof r === 'object' ? DATA.PIOCHE.COUPS : r;
-}
-
-export function rockBroken(state, id) {
-  return rockGone(state, id);
-}
+// jours, tiré au hasard). Ses tuiles libres se labourent en attendant (voir rockGone, crops.js).
 
 // Les rochers cassés (leurs identifiants).
 export function brokenRocks(state) {
@@ -173,7 +164,7 @@ export function mineRock(state, id) {
 
 /* ---------- la pioche dans la grotte : le minerai ---------- */
 
-export const MINERAIS = ['fer', 'cuivre', 'or', 'platine'];
+const MINERAIS = ['fer', 'cuivre', 'or', 'platine'];
 
 // Un minerai pris dans la grotte (la carte compte les coups de pioche, voir hitsNeeded) :
 // minerai_<sorte> dans l'inventaire (un de plus, parfois, avec la Lampe de mineur :

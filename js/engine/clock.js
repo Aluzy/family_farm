@@ -1,17 +1,11 @@
 import { DATA } from './catalog.js';
-import { ownedTechs } from './techtree.js';
 
 /* ---------- l'heure ---------- */
 
-// Éveil minimal avant de dormir : celui de départ, ou le plus bas des paliers
-// « Réveil matinal » acquis (Lot 7).
-export function awakeRequired(state) {
-  let required = DATA.TIME.MIN_AWAKE_S;
-  for (const id of ownedTechs(state)) {
-    const e = DATA.techtree.noeuds[id].effet;
-    if (e && e.eveilMin !== undefined) required = Math.min(required, e.eveilMin);
-  }
-  return required;
+// Éveil minimal avant de dormir (s). Version 1.19 : les paliers « Réveil matinal » qui le
+// raccourcissaient (effet eveilMin) sont retirés de l'arbre : c'est toujours MIN_AWAKE_S.
+export function awakeRequired() {
+  return DATA.TIME.MIN_AWAKE_S;
 }
 
 // Heure de la journée (0 à 23) : 6 h au réveil, +1 heure toutes les

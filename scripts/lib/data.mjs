@@ -79,7 +79,6 @@ export const EFFETS_TECHNO = [
   'eauArrosage', // techPct (crops.js)
   'economie', // techEffects (energy.js)
   'entretienAuto', // techFlag (devices.js)
-  'eveilMin', // lu directement par awakeRequired() (clock.js) ; plus aucun nœud ne le porte
   'fileAttente', // techFlag (kitchen.js)
   'frigoConso', // techPct (energy.js)
   'gouter', // techFlag (family.js)

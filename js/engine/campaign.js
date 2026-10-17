@@ -64,7 +64,7 @@ export function autonomyPercent(energieProduit, besoin) {
 
 // Part de `qty` unités qui vient de lots « produit », en parcourant les lots dans
 // l'ordre où on les retire (sans rien modifier).
-export function producedShare(lots, qty) {
+function producedShare(lots, qty) {
   let rest = qty;
   let produit = 0;
   for (const lot of lots) {
@@ -205,7 +205,7 @@ function trackedItems() {
 // Le record de chacun de ces objets dans l'inventaire : un minerai fondu ou un lingot
 // dépensé dans l'Arbre des technologies reste compté. Appelée par updateChapters (à
 // chaque pas d'horloge), dès le début de la partie : ce qu'on a eu avant le chapitre compte.
-export function noteItemRecords(state) {
+function noteItemRecords(state) {
   const c = state.campagne;
   if (!c) return;
   for (const item of trackedItems()) {
@@ -308,7 +308,7 @@ export function unreadMail(state) {
 }
 
 // La condition d'une lettre est-elle remplie ?
-export function mailDue(state, def) {
+function mailDue(state, def) {
   const q = def.quand || {};
   if (q.depart) return !!(state.departV2 && state.famille && state.famille.configuree);
   if (q.debloque) return !!state.campagne && isUnlocked(state, q.debloque);
@@ -362,7 +362,7 @@ export function acknowledgeChapter(state) {
 // Elle réussit si l'autonomie y vaut `moyenne` % en moyenne (version 1.8 : plus de
 // soins, donc plus de condition « sans soin »). Une série ratée laisse place à une
 // nouvelle dès la nuit suivante.
-export function trackHold(state, pct) {
+function trackHold(state, pct) {
   const k = state.campagne.compteurs;
   const obj = objectiveDef('tenue');
   if (!obj || k.tenueReussie || chapterReached(state) < objectiveChapter('tenue')) return;

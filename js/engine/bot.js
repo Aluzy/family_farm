@@ -22,7 +22,7 @@ import {
   siloUpgradeCost, strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
 } from './animals.js';
 import { chooseCommerce, commerceStock, commerceUpgradeCost, upgradeCommerce } from './commerce.js';
-import { buildVerger, buyOrchardSlot, buyTree, harvestTree, orchardFree, orchardSlotPrice, ripeTrees } from './orchard.js';
+import { buildVerger, buyOrchardSlot, harvestTree, orchardFree, orchardSlotPrice, plantTree, ripeTrees } from './orchard.js';
 import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
 import { buyTech, hasTech, techPoints, techResources, techStatus } from './techtree.js';
 import {
@@ -45,7 +45,7 @@ import { createNewGame, buyStarter, houseRepaired, repairHouse, starterBlock } f
 /* ---------- entretien, énergie, infrastructure ---------- */
 
 // Répare ce qui est en panne (et le rallume), entretient ce qui est usé.
-export function botMaintenance(state) {
+function botMaintenance(state) {
   for (const d of allDevices(state)) {
     if (isBroken(d)) {
       if (repairDevice(state, d.id).ok) toggleDevice(state, d.id);
@@ -71,7 +71,7 @@ export function botSnack(state) {
 }
 
 // Eau demandée par une journée : toutes les parcelles arrosées, plus la cuisine.
-export function botWaterPerDay(state) {
+function botWaterPerDay(state) {
   const S = DATA.SIMULATION;
   let litres = S.LITRES_CUISINE;
   for (const p of allPlots(state)) litres += p.culture ? waterCost(state, p) : S.LITRES_PARCELLE;
@@ -79,7 +79,7 @@ export function botWaterPerDay(state) {
 }
 
 // Énergie demandée par une journée (mWh) : pompe, réfrigérateur, Moulin et Presse.
-export function botEnergyPerDay(state, eveilS) {
+function botEnergyPerDay(state, eveilS) {
   let mwh = botWaterPerDay(state) * 1000 * DATA.PUMP.WH_PAR_L;
   if (state.frigo && state.frigo.construit) mwh += fridgeRate(state) * (eveilS + DATA.FRIGO.BLOC_NUIT_S);
   for (const id of Object.keys(DATA.STATIONS)) {
@@ -94,7 +94,7 @@ export function botEnergyPerDay(state, eveilS) {
 // panneau ne produit qu'au soleil (de 7 h à 19 h), sur la part ensoleillée de son
 // temps d'éveil. Renvoie la prochaine amélioration nécessaire { cost, buy }, ou
 // { done: true }.
-export function botInfraInfo(state, eveilS) {
+function botInfraInfo(state, eveilS) {
   const S = DATA.SIMULATION;
   // version 1.12 : rien à améliorer avant d'avoir acheté le panneau, la pompe et le réservoir
   if (!farmOpen(state) || !isOwned(state.reservoir)) return { locked: true };
@@ -121,27 +121,27 @@ export function botInfraInfo(state, eveilS) {
 /* ---------- cultures ---------- */
 
 // Énergie rendue par une parcelle et par nuit (critère de choix des légumes).
-export function botCropScore(culture) {
+function botCropScore(culture) {
   const c = DATA.crops[culture];
   const item = DATA.items[cropProduct(culture)];
   return ((item.energie || 0) * c.rendement) / c.stades;
 }
 
 // Achète une unité de graine si le prix reste raisonnable ; renvoie true si elle est là.
-export function botBuySeed(state, item) {
+function botBuySeed(state, item) {
   if (!isBuyable(item)) return false;
   const price = buyPrice(state, item);
   if (price > DATA.SIMULATION.PRIX_GRAINE_MAX + EPS || !canPay(state, price)) return false;
   return buyItem(state, item, 1).ok === true;
 }
 
-export function botHasSeed(state, culture) {
+function botHasSeed(state, culture) {
   return seedStock(state, culture) >= 1 - EPS || botBuySeed(state, seedItem(culture));
 }
 
 // Vrai tant que l'objectif « carottes récoltées » du chapitre en cours n'est pas
 // couvert par les récoltes faites et les carottes déjà en terre.
-export function botWantsCarrots(state) {
+function botWantsCarrots(state) {
   const obj = objectiveDef('carottes');
   if (!obj || chapterReached(state) > objectiveChapter('carottes')) return false;
   const inGround = allPlots(state).filter((p) => p.culture === 'carotte').length * DATA.crops.carotte.rendement;
@@ -162,7 +162,7 @@ export function botFieldTarget(state) {
 }
 
 // Culture à planter sur une parcelle vide, ou null.
-export function botPickCrop(state, plot) {
+function botPickCrop(state, plot) {
   const S = DATA.SIMULATION;
   const options = plantableCropsFor(state, plot.lieu);
   if (plot.lieu === DATA.POTAGER.LIEU) {
@@ -213,7 +213,7 @@ export function botFarm(state) {
 // Tuiles labourables, des plus proches de l'ancienne Zone de culture aux plus lointaines
 // (version 1.15 : le joueur automatique cultive d'un seul tenant).
 let botTilesCache = null;
-export function botTiles() {
+function botTiles() {
   if (botTilesCache) return botTilesCache;
   const W = DATA.TERRAIN.LARGEUR, Z = DATA.TERRAIN.ZONES[1];
   const tiles = [];
@@ -240,7 +240,7 @@ export function botHoe(state) {
 
 /* ---------- animaux ---------- */
 
-export function botHens(state) {
+function botHens(state) {
   const p = state.poulailler;
   if (!p.construit || p.poules <= 0) return;
   // pas de blé pour les poules : un dépannage au Marché, comme pour les graines
@@ -262,20 +262,20 @@ export function botSheep(state) {
 }
 
 // Version 1.13 : cueille les arbres en fruits du Verger.
-export function botOrchard(state) {
+function botOrchard(state) {
   for (const t of ripeTrees(state)) {
     if (!harvestTree(state, t.id).ok) break;
   }
 }
 
 // Version 1.14 : le joueur ouvre son courrier (l'héritage du niveau 9 est versé à l'ouverture).
-export function botMail(state) {
+function botMail(state) {
   for (const l of unreadMail(state)) readMail(state, l.id);
 }
 
 // Version 1.14 : au niveau 10, le joueur automatique choisit le commerce qui a le plus
 // de matière (laits, laines ou légumes, rapportés à la recette).
-export function botCommerce(state) {
+function botCommerce(state) {
   if (state.commerce.type || !isUnlocked(state, 'commerce')) return;
   const types = Object.keys(DATA.COMMERCE.TYPES);
   const best = types.reduce((a, t) => (commerceStock(state, t) / DATA.COMMERCE.TYPES[t].par > commerceStock(state, a) / DATA.COMMERCE.TYPES[a].par ? t : a), types[0]);
@@ -313,14 +313,14 @@ export function botMill(state) {
 /* ---------- cuisine ---------- */
 
 // Unités disponibles d'un ingrédient (inventaire et frigo), sans la réserve de semences.
-export function botSpare(state, item) {
+function botSpare(state, item) {
   if (item === DATA.SILO.ITEM) return wheatTotal(state);
   const reserve = state.famille.reserve[item] || 0;
   return stockCount(state, item) - reserve;
 }
 
 // Option retenue pour un ingrédient (celle dont il reste assez), ou null.
-export function botIngredient(state, ing) {
+function botIngredient(state, ing) {
   return ingredientOptions(ing).find((item) => botSpare(state, item) + EPS >= ing.qte) || null;
 }
 
@@ -366,7 +366,7 @@ export function botWheatKept(state) {
 }
 
 // Sort du frigo ce qu'il faut pour une recette, puis la lance.
-export function botStartRecipe(state, id) {
+function botStartRecipe(state, id) {
   const r = DATA.recipes[id];
   r.ingredients.forEach((ing) => {
     const item = botIngredient(state, ing);
@@ -377,7 +377,7 @@ export function botStartRecipe(state, id) {
 }
 
 // Version 1.14 : l'huile et la farine qui manquent aux plats s'achètent au Marché.
-export function botBuyStaples(state) {
+function botBuyStaples(state) {
   if (!farmOpen(state)) return;
   for (const [item, a] of Object.entries(DATA.SIMULATION.ACHATS_CUISINE)) {
     for (let i = 0; i < a.stock && stockCount(state, item) < a.stock; i++) {
@@ -395,7 +395,7 @@ function botGather(state, id) {
 // Les objectifs « objet » du chapitre en cours (grotte, Four) : le joueur simulé rapporte
 // les minerais de la grotte (comme botGather pour l'arbre), et fond un lingot au Four dès
 // qu'il le peut, minerais et bois compris.
-export function botObjectives(state) {
+function botObjectives(state) {
   if (!state.campagne || state.campagne.fini) return;
   for (const o of chapterProgress(state).objectifs) {
     if (o.type !== 'objet' || o.ok) continue;
@@ -414,7 +414,7 @@ export function botObjectives(state) {
   }
 }
 
-export function botCook(state) {
+function botCook(state) {
   if (!state.stations) return;
   botBuyStaples(state);
   for (const station of Object.keys(DATA.STATIONS)) {
@@ -510,7 +510,7 @@ export function botStepInfo(state, step, eveilS) {
       if (v.arbres.length >= step.n) return { done: true };
       if (orchardFree(state) <= 0) return { cost: orchardSlotPrice(state), buy: () => buyOrchardSlot(state) };
       const espece = Object.keys(DATA.VERGER.ARBRES)[v.arbres.length % Object.keys(DATA.VERGER.ARBRES).length];
-      return { cost: DATA.VERGER.ARBRES[espece].prix, buy: () => buyTree(state, espece) };
+      return { cost: DATA.VERGER.ARBRES[espece].prix, buy: () => plantTree(state, espece) };
     }
     case 'frigo':
       if (!isUnlocked(state, 'frigo')) return { locked: true };
@@ -599,7 +599,7 @@ export function botSell(state) {
 
 // Range au frais ce qui périme (sauf la réserve de semences), tant qu'il y a de la
 // place : d'abord ce qui périme le plus tôt.
-export function botStore(state) {
+function botStore(state) {
   const f = state.frigo;
   if (!f.construit || !f.appareil.allume || isBroken(f.appareil)) return;
   moveAllToFridge(state, state.famille.reserve || {});
@@ -608,7 +608,7 @@ export function botStore(state) {
 /* ---------- une journée, une partie ---------- */
 
 // Série d'actions du joueur. `soir` : dernière série avant de dormir.
-export function botActions(state, strat, options, soir) {
+function botActions(state, strat, options, soir) {
   botMaintenance(state);
   botMail(state);
   botSnack(state);

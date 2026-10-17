@@ -24,7 +24,7 @@ export function formatNumber(n) {
 }
 
 // Groupe un entier positif par milliers avec des espaces : 1234 -> "1 234".
-export function groupThousands(intValue) {
+function groupThousands(intValue) {
   const s = String(Math.trunc(intValue));
   let out = '';
   for (let i = 0; i < s.length; i++) {
@@ -101,7 +101,7 @@ export function formatPercent(p) {
 // Jours de la semaine : le jour 1 de la partie est un lundi, puis la semaine tourne (le
 // jour 8 est un lundi, le jour 14 un dimanche). Les noms sont en minuscules, comme dans une
 // phrase ; weekdayName(day, true) met la majuscule, weekdayShort donne l'abréviation.
-export const JOURS_SEMAINE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const JOURS_SEMAINE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
 export function weekdayIndex(day) {
   return (Math.max(1, Math.floor(Number(day) || 1)) - 1) % 7;

@@ -195,10 +195,9 @@ export function hensToFeed(state) {
 // Nourrit une poule (au clic). Sous productivité 1, le geste ne compte qu'avec
 // une probabilité égale à la productivité (tirage du générateur de l'état) : s'il
 // rate, rien n'est retiré du blé et la poule reste à nourrir. Le blé est pris
-// d'abord dans l'inventaire (il y périme), puis dans le Silo.
-// Lot 7 : `auto` = true pour le nourrissage automatique du niveau 5. (Version 1.8 :
-// plus de productivité, une poule nourrie à la main l'est toujours.)
-export function feedHen(state, auto = false) {
+// d'abord dans l'inventaire (il y périme), puis dans le Silo. (Version 1.8 : plus de
+// productivité, une poule nourrie à la main l'est toujours.)
+export function feedHen(state) {
   const p = state.poulailler;
   if (p.poules <= 0) return fail('Aucune poule à nourrir.');
   if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
@@ -214,11 +213,11 @@ export function feedHen(state, auto = false) {
   }
   p.restes -= 1;
   p.nourries += 1;
-  return { ok: true, compte: true };
+  return { ok: true };
 }
 
 // Ration des poules : { ble, poules } (1 blé → 2 poules, ou 2 blé → 5 poules).
-export function henRation(state) {
+function henRation(state) {
   const poules = techFlag(state, 'poulesParBle');
   const ble = techFlag(state, 'parBle');
   return poules && ble ? { ble, poules } : { ble: 1, poules: DATA.ANIMAUX.poule.poulesParBle };
@@ -236,23 +235,20 @@ export function wheatForHens(state, n) {
   return Math.ceil((left * r.ble) / r.poules);
 }
 
-// « Nourrir tout » : une tentative par poule restante, tant qu'il reste du blé.
-// Renvoie { ok, nourries, ratees } ; refusé si rien n'était possible.
-export function feedAllHens(state, auto = false) {
+// « Nourrir tout » : une poule après l'autre, tant qu'il reste du blé.
+// Renvoie { ok, nourries } ; refusé si rien n'était possible.
+export function feedAllHens(state) {
   const p = state.poulailler;
   if (p.poules <= 0) return fail('Aucune poule à nourrir.');
   if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
   if (!canFeedHen(state)) return fail('Pas assez de blé.');
   let nourries = 0;
-  let ratees = 0;
   const attempts = hensToFeed(state);
   for (let i = 0; i < attempts; i++) {
-    const r = feedHen(state, auto);
-    if (!r.ok) break; // plus de blé
-    if (r.compte) nourries += 1;
-    else ratees += 1;
+    if (!feedHen(state).ok) break; // plus de blé
+    nourries += 1;
   }
-  return { ok: true, nourries, ratees };
+  return { ok: true, nourries };
 }
 
 // Étape nocturne : chaque poule nourrie pond ses œufs, puis les compteurs
@@ -395,7 +391,7 @@ export function buySheep(state) {
   return { ok: true, cost: price, id: sheep.id };
 }
 
-export function findSheep(state, id) {
+function findSheep(state, id) {
   return state.paturage.moutons.find((m) => m.id === id) || null;
 }
 
@@ -421,7 +417,7 @@ export function buyCow(state) {
   return { ok: true, cost: price, id: cow.id };
 }
 
-export function findCow(state, id) {
+function findCow(state, id) {
   return state.paturage.vaches.find((v) => v.id === id) || null;
 }
 

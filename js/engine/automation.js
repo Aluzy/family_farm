@@ -4,7 +4,7 @@ import { allDevices, fail, maintainDevice, needsService, NO_COINS, pay, perSecon
 import { drawEnergy, drawNightEnergy, loadShedding } from './energy.js';
 import { availableEnergy } from './fridge.js';
 import { newNightStats } from './family.js';
-import { allPlots, findPlot, harvest, harvestPlot, isMature, maxStage, noteWateredPlots, plant, plantPlot, plotZone, seedItem, seedStock, waterPlot, zone2Plots } from './crops.js';
+import { allPlots, findPlot, harvest, harvestPlot, isMature, maxStage, noteWateredPlots, plant, plantPlot, seedItem, seedStock, waterPlot } from './crops.js';
 import { plantableCropsFor } from './campaign.js';
 import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
@@ -32,7 +32,7 @@ export function isAutomated(state, id) {
 
 // Culture que le semis automatique replante sur une parcelle dont on vient de récolter
 // `harvested` : la même, ou la culture verrouillée ; null si le semis est désactivé.
-export function replantCulture(plot, harvested) {
+function replantCulture(plot, harvested) {
   const mode = plot.semis || 'meme';
   if (mode === 'off') return null;
   return mode === 'verrou' && plot.verrou && DATA.crops[plot.verrou] ? plot.verrou : harvested;
@@ -42,7 +42,7 @@ export function replantCulture(plot, harvested) {
 // le semis ne s'applique pas (nœud absent ou parcelle désactivée), true si la
 // parcelle est replantée, false s'il n'y a pas de graine au-delà de la réserve
 // de semences.
-export function autoReplant(state, plot, harvested) {
+function autoReplant(state, plot, harvested) {
   if (!techAuto(state, 'semis', plot.lieu)) return null;
   const culture = replantCulture(plot, harvested);
   if (!culture) return null;
@@ -320,7 +320,7 @@ export function robotStep(state) {
 export function autoTasks(state) {
   const rap = newAutoReport();
   const zones = [
-    { id: 'potager', plots: [...state.potager.parcelles, ...zone2Plots(state)] }, // la Zone de culture et le Champ
+    { id: 'potager', plots: state.potager.parcelles },
     { id: 'serre', plots: state.serre && state.serre.construit ? state.serre.parcelles : [] },
   ];
   for (const zone of zones) {
@@ -333,7 +333,7 @@ export function autoTasks(state) {
     rap.poulailler = true;
     if (state.poulailler.poules > 0) {
       const before = state.poulailler.nourries;
-      feedAllHens(state, true);
+      feedAllHens(state);
       rap.nourries = state.poulailler.nourries - before;
       rap.sansBle = hensToFeed(state);
     }
@@ -375,8 +375,7 @@ export function autoMaintain(state) {
 
 // Arbre v2 (Outils de jardin) : « Arroser tout » d'un lieu (au clic : chaque
 // parcelle compte comme un arrosage manuel). Renvoie { ok, arrosees, sansEau }.
-// `zone` (facultatif) : 1 pour la Zone de culture seule, 2 pour le Champ seul.
-const inZone = (lieu, zone) => (p) => p.lieu === lieu && (!zone || plotZone(p) === Number(zone));
+const inPlace = (lieu) => (p) => p.lieu === lieu;
 
 // Fluidité (FLU-10) : disponible dès le niveau 1, même eau, énergie et XP qu'à la main.
 // Arbre v2 (Outils de jardin) : ces actions groupées coûtent `groupeEconome` % d'énergie en
@@ -387,12 +386,12 @@ function groupDiscount(state, before) {
   if (pct > 0 && spent > 0) state.energie += Math.floor((spent * pct) / 100);
 }
 
-export function waterAll(state, lieu, zone) {
+export function waterAll(state, lieu) {
   const before = Number(state.energie) || 0;
   let arrosees = 0;
   let sansEau = 0;
   let raison = '';
-  for (const p of allPlots(state).filter(inZone(lieu, zone)).filter((x) => x.culture && !x.arrose && !isMature(x))) {
+  for (const p of allPlots(state).filter(inPlace(lieu)).filter((x) => x.culture && !x.arrose && !isMature(x))) {
     const r = waterPlot(state, p, false, false);
     if (r.ok) arrosees += 1;
     else { sansEau += 1; raison = raison || r.error; }
@@ -405,12 +404,12 @@ export function waterAll(state, lieu, zone) {
 }
 
 // FLU-09 : « Planter partout » : la même culture sur toutes les parcelles vides d'un lieu
-// (d'une zone), dans la limite des graines, de l'énergie et du niveau. Même énergie et XP
+// dans la limite des graines, de l'énergie et du niveau. Même énergie et XP
 // que N plantations à la main. Renvoie { ok, plantees, vides, raison } (raison de l'arrêt).
-export function plantAll(state, lieu, culture, zone) {
+export function plantAll(state, lieu, culture) {
   if (!DATA.crops[culture]) return fail('Culture inconnue.');
   if (!plantableCropsFor(state, lieu).includes(culture)) return fail(`${DATA.crops[culture].nom} ne se plante pas encore ici.`);
-  const vides = allPlots(state).filter(inZone(lieu, zone)).filter((x) => !x.culture);
+  const vides = allPlots(state).filter(inPlace(lieu)).filter((x) => !x.culture);
   if (!vides.length) return fail('Aucune parcelle vide.');
   const before = Number(state.energie) || 0;
   let plantees = 0;
@@ -427,13 +426,13 @@ export function plantAll(state, lieu, culture, zone) {
 
 // Arbre v2 (Outils de jardin) : « Récolter tout » d'un lieu (au clic, avec la
 // productivité). Renvoie { ok, recoltees, items }.
-export function harvestAll(state, lieu, zone) {
+export function harvestAll(state, lieu) {
   const before = Number(state.energie) || 0;
   const items = {};
   let recoltees = 0;
   let raison = '';
   let aRamasser = false; // version 1.18 : au moins une récolte attend le personnage
-  for (const p of allPlots(state).filter(inZone(lieu, zone)).filter((x) => x.culture && isMature(x))) {
+  for (const p of allPlots(state).filter(inPlace(lieu)).filter((x) => x.culture && isMature(x))) {
     const r = harvestPlot(state, p);
     if (!r.ok) { raison = raison || r.error; continue; }
     recoltees += 1;
