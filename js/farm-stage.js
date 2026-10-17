@@ -119,6 +119,7 @@
         L.image('panneau_ville', v('panneau_ville.png'));
         L.spritesheet(K.FLECHE.key, v(K.FLECHE.file), { frameWidth: K.FLECHE.size, frameHeight: K.FLECHE.size });
         L.image('silo', v('silo.png'));
+        L.spritesheet(F.C.RAMASSABLES.key, v(F.C.RAMASSABLES.file), F.C.RAMASSABLES.frame);
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
@@ -502,6 +503,9 @@
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
         const pile = !this.room && !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
+        // la ferme générée : une pierre, un bout de bois, une herbe à ramasser à la main
+        const brin = !this.room && !hoeing ? this.gatherAt(wx, wy) : null;
+        if (brin) return { gather: brin };
         for (const z of this.zones()) {
           const i = z.at(wx, wy);
           if (i < 0) continue;
@@ -602,6 +606,7 @@
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien
         if (hit.window) { this.ctx.bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { K.vibre('houe'); this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
+        if (hit.gather) { this.gather(hit.gather); return; }
         if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.mine) { this.mine(hit.mine); return; }
         if (hit.fish) { this.goFish(hit.fish, wx, wy); return; }

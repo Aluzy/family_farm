@@ -41,7 +41,7 @@
  * Animations réduites : pas de marche ni de retenue ; il se pose directement où il travaille.
  *
  * API : Fermier.attach(scène, { sheet, frames, world, objects, ground, reduced, resync, pickup, gain })
- *       → { filter(modèle), update(delta, intérieur), fetch(id), goTo(x, y), steer(dir), goHome(done), startMeal(o),
+ *       → { filter(modèle), update(delta, intérieur), fetch(id), goTo(x, y), steer(dir), goHome(done), startMeal(o), gather(pied, coup),
  *           mealHeads(), focus(), pos(), info(), destroy() }
  */
 (function (global) {
@@ -80,6 +80,7 @@
     arroser: { anim: 'arrose', frames: [0, 1, 2, 1, 2], dur: [0.14, 0.14, 0.2, 0.1, 0.24], hit: 2 },
     recolter: { anim: 'plante', frames: [1, 2, 1, 0], dur: [0.14, 0.2, 0.14, 0.12], hit: 2 },
     ramasse: { anim: 'ramasse', frames: [0, 1, 2, 1, 2, 0], dur: [0.2, 0.2, 0.3, 0.2, 0.3, 0.2], hit: -1 },
+    cueille: { anim: 'ramasse', frames: [0, 1, 2, 1, 0], dur: [0.16, 0.18, 0.26, 0.16, 0.16], hit: 3 },
     frigo: { anim: 'frigo', frames: [0, 1, 2, 2, 1, 0], dur: [0.2, 0.25, 0.9, 0.3, 0.25, 0.2], hit: -1 },
   };
 
@@ -612,6 +613,11 @@
     function mine(foot, half, onHit) {
       return strike('piocher', foot, Math.max(8, half + 5), onHit);
     }
+    // La ferme générée : prendre à la main ce qui est au sol en `foot` (une pierre, un bout de
+    // bois, une herbe) ; il se baisse à côté.
+    function gather(foot, onHit) {
+      return strike('cueille', foot, 9, onHit);
+    }
     function strike(name, foot, dx, onHit) {
       if (!blocked) buildGrid();
       const sides = [{ x: foot.x - dx, flip: false }, { x: foot.x + dx, flip: true }];
@@ -1109,6 +1115,8 @@
       chop,
       // La pioche : casser le rocher dont le pied est en `foot`, de demi-largeur `half`.
       mine,
+      // À la main : prendre ce qui est au sol en `foot` (la ferme générée).
+      gather,
       // La canne à pêche : pêcher depuis `spot`, et où est le bout de la canne.
       fish,
       rodTip,

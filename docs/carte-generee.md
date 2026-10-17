@@ -39,7 +39,9 @@ L'atelier coûte 3 bois et 3 pierres. Il permet de fabriquer :
 | 4 pierres | 1 mur en pierre |
 | 3 planches | 1 porte |
 | 3 fibres | 1 paillasse |
-| bois + pierre + fibre | hache, pioche et houe en pierre (quantités à fixer) |
+| 2 bois + 1 pierre + 1 fibre | houe de pierre |
+| 2 bois + 2 pierres + 1 fibre | hache de pierre |
+| 2 bois + 3 pierres + 1 fibre | pioche de pierre |
 
 Le Marché vend toujours les outils.
 
@@ -87,6 +89,27 @@ Le Marché vend toujours les outils.
   reste une seule image (2304 × 1824 px, sous la limite de 4096 px des téléphones) : le passer en
   calques de tuiles ne s'est pas révélé nécessaire.
 
+## Ramasser et fabriquer (étape 3)
+
+- **Ramasser** (`js/engine/atelier.js`, `ramassables`, `ramasser`) :
+  - chaque matin, 14 petites pierres, 14 morceaux de bois et 18 herbes sont posés sur l'herbe
+    labourable, à des places tirées d'après la graine et le jour (`DATA.ATELIER.RAMASSAGE`) ;
+  - sur la carte, chacun a son image (`assets/ramassables.png`,
+    `scripts/carte/ramassables.py`). Un appui dessus : le personnage va à côté, se baisse et le
+    prend (`js/carte/ferme/cueillette.js`) ;
+  - le geste « ramasser » coûte 1 d'énergie et rapporte 2 XP ;
+  - `state.cueillette` garde ce qui a déjà été pris aujourd'hui.
+- **L'Atelier** est une fenêtre du menu latéral, sur la ferme générée seulement
+  (`js/ui/atelier.js`) :
+  - il se construit avec 3 bois et 3 pierres (`state.atelier`) ;
+  - ses recettes (`DATA.ATELIER.RECETTES`) sont fabriquées tout de suite : c'est le geste
+    « fabriquer », qui coûte 2 d'énergie et rapporte 10 XP ;
+  - les outils de pierre sont les mêmes que ceux du Marché, qui les vend toujours.
+- **Les nouveaux objets** (« matériau ») : fibre 🪢, planche 🪚, mur en pierre 🧱, porte 🚪,
+  paillasse 🛏 ; leurs icônes sont dans `scripts/icones/art_atelier.py`.
+- **Sur la carte, pour l'instant**, l'Atelier n'est qu'une fenêtre. La pose bloc par bloc
+  (étape 4) lui donnera sa place.
+
 ## Étapes
 
 1. ✅ Le terrain ne dépend plus de la carte. Le moteur passe par `farmTerrain(state)`
@@ -95,6 +118,7 @@ Le Marché vend toujours les outils.
 2. ✅ Le générateur à partir de la graine (`js/engine/ferme-generee.js`), à essayer dans le
    mode test (« Essayer la ferme générée », une graine au choix ou au hasard ; « Revenir à la
    ferme dessinée »). Voir « La ferme générée » plus haut.
-3. Les ressources ramassables, l'atelier, et les objets et recettes de matériaux.
+3. ✅ Les ressources à ramasser, l'atelier, les objets et les recettes de matériaux. Voir
+   « Ramasser et fabriquer (étape 3) » plus haut.
 4. La pose bloc par bloc, la détection des pièces closes, les paillasses et le sommeil.
 5. La nouvelle partie sur la carte générée, l'ajustement de la progression, et les tests.

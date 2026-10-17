@@ -39,3 +39,4 @@ export * from './commerce.js';
 export * from './meubles.js';
 export * from './compta.js';
 export * from './outils.js';
+export * from './atelier.js';

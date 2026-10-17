@@ -4,11 +4,11 @@
    Lancer seul : node --test tests/engine/ferme-generee.test.mjs (ou node tests/run-tests.mjs ferme-generee).
    ========================================================================== */
 
-import { assert, assertEqual, garden, test } from './aide.mjs';
+import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
+  atelierConstruit, atelierStatus, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
 const lire = (f) => JSON.parse(readFileSync(new URL('../../' + f, import.meta.url), 'utf8'));
@@ -106,4 +106,61 @@ test('ferme générée : une partie y passe en mode test, et en revient', () => 
   testFarmMap(s, null);
   assertEqual(['carte' in s, farmTerrain(s)], [false, DATA.TERRAIN], 'revenue sur la carte de Tiled');
   assert(createInitialState(1).carte === undefined, 'une partie neuve : la carte de Tiled (pour l\'instant)');
+});
+
+/* ---------- étape 3 : ramasser à la main, l'Atelier ---------- */
+
+test('ferme générée : chaque matin, des pierres, du bois et des herbes à ramasser à la main', () => {
+  const s = garden();
+  assertEqual(ramassables(s), [], 'pas sur la carte de Tiled');
+  testFarmMap(s, 'r1');
+  const R = DATA.ATELIER.RAMASSAGE, liste = ramassables(s);
+  assertEqual(liste.length, Object.values(R).reduce((a, d) => a + d.nombre, 0));
+  assert(liste.every((p) => isArable(p.case, s)), 'sur l\'herbe');
+  assertEqual(new Set(liste.map((p) => p.case)).size, liste.length, 'deux jamais sur la même tuile');
+  assertEqual(ramassables(s), liste, 'les mêmes toute la journée');
+  const avant = countItem(s, 'fibre'), e0 = s.energie;
+  const h = liste.find((p) => p.sorte === 'herbe');
+  assertEqual(ramasser(s, h.id), { ok: true, sorte: 'herbe', items: { fibre: 1 } });
+  assertEqual([countItem(s, 'fibre'), s.energie < e0, ramassables(s).length], [avant + 1, true, liste.length - 1]);
+  assertEqual(ramasser(s, h.id).ok, false, 'déjà ramassée');
+  s.energie = 0;
+  assertEqual(ramasser(s, liste[1].id).ok, false, 'à bout de forces');
+  // le lendemain, d'autres places, et tout est revenu
+  s.day += 1;
+  const demain = ramassables(s);
+  assertEqual(demain.length, liste.length);
+  assert(demain.map((p) => p.case).join() !== liste.map((p) => p.case).join(), 'ailleurs');
+});
+
+test('ferme générée : l\'Atelier se construit avec 3 bois et 3 pierres, puis fabrique', () => {
+  const s = garden();
+  tireless(s);
+  assertEqual(buildAtelier(s).ok, false, 'pas sur la carte de Tiled');
+  testFarmMap(s, 'r2');
+  setInv(s, {});
+  const st = atelierStatus(s);
+  assertEqual([st.ok, st.manque], [false, { bois: 3, pierre: 3 }]);
+  setInv(s, { bois: 11, pierre: 9, fibre: 5 });
+  assertEqual(craft(s, 'planche').ok, false, 'pas d\'Atelier');
+  const pieces = s.pieces;
+  assertEqual(buildAtelier(s), { ok: true });
+  assertEqual([atelierConstruit(s), countItem(s, 'bois'), countItem(s, 'pierre'), s.pieces], [true, 8, 6, pieces], 'payé en matériaux, sans pièces');
+  assertEqual(buildAtelier(s).ok, false, 'une seule fois');
+  // 2 bois → 1 planche ; 4 pierres → 1 mur ; 3 planches → 1 porte ; 3 fibres → 1 paillasse
+  for (let k = 0; k < 3; k++) assertEqual(craft(s, 'planche').items, { planche: 1 });
+  assertEqual([countItem(s, 'bois'), countItem(s, 'planche')], [2, 3]);
+  assertEqual(craft(s, 'porte').items, { porte: 1 });
+  assertEqual(craft(s, 'mur_pierre').items, { mur_pierre: 1 });
+  assertEqual(craft(s, 'paillasse').items, { paillasse: 1 });
+  assertEqual([countItem(s, 'planche'), countItem(s, 'pierre'), countItem(s, 'fibre'), countItem(s, 'porte'), countItem(s, 'mur_pierre'), countItem(s, 'paillasse')], [0, 2, 2, 1, 1, 1]);
+  const m = craftStatus(s, 'mur_pierre');
+  assertEqual([m.ok, m.manque], [false, { pierre: 2 }]);
+  // les outils de pierre
+  s.outils = { hache: false, pioche: false, canne: false, choisi: 'houe' };
+  setInv(s, { bois: 2, pierre: 2, fibre: 1 });
+  assertEqual(craft(s, 'hache').outil, 'hache');
+  assertEqual([s.outils.hache, countItem(s, 'bois')], [true, 0]);
+  setInv(s, { bois: 2, pierre: 2, fibre: 1 });
+  assertEqual(craft(s, 'hache').ok, false, 'déjà une hache');
 });

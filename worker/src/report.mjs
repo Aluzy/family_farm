@@ -77,6 +77,8 @@ export const GAME_ACTIONS = {
   'hoe-toggle': 'Prendre ou ranger la houe',
   'hoe-take': 'Prendre la houe (objectif du chapitre)',
   'buy-tool': 'Acheter un outil (pioche, hache, canne à pêche)',
+  'atelier-construire': 'Construire l\'Atelier (ferme générée)',
+  'atelier-fabriquer': 'Fabriquer à l\'Atelier (ferme générée)',
   'tool-use': 'Prendre ou ranger un outil (barre d\'outils)',
   'axe-toggle': 'Ranger la hache',
   'pick-toggle': 'Ranger la pioche',

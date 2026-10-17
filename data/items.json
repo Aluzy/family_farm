@@ -102,6 +102,12 @@
     "anchois": { "nom": "Anchois", "icone": "🐟‍💧", "energie": 14, "prix": 3, "mangeable": true, "categorie": "produit", "rachetable": false, "conservation": 2 },
     "sardine": { "nom": "Sardine", "icone": "🐟‍🌊", "energie": 20, "prix": 4, "mangeable": true, "categorie": "produit", "rachetable": false, "conservation": 2 },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "//fibre": ["La ferme générée (docs/carte-generee.md) : les herbes qu'on ramasse à la main donnent de la", "fibre (ATELIER.RAMASSAGE). Les matériaux de l'Atelier (ATELIER.RECETTES) : planche, mur en", "pierre, porte, paillasse. Ni périssables ni comestibles ; ils se vendent peu et ne se rachètent pas."],
+    "fibre": { "nom": "Fibre", "icone": "🪢", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "planche": { "nom": "Planche", "icone": "🪚", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mur_pierre": { "nom": "Mur en pierre", "icone": "🧱", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//ammonite": [
       "Les trouvailles de la montagne (fossiles, pierres) et de la plage (coquillages, corail, perles),",
       "ramassées sur la carte (js/ville-carte.js, FermeHote.ramasser) : l'identifiant est celui de",

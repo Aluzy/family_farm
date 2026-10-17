@@ -119,7 +119,7 @@
   // Le téléphone vibre (navigator.vibrate, ms : une durée, ou vibration, pause, vibration…) :
   // `touche`, un poisson mord ; `hache`, `pioche`, `houe`, un coup de l'outil. Sans l'API
   // (iPhone, ordinateur), rien ; le téléphone peut aussi avoir coupé les vibrations.
-  const VIBRATION = { touche: [40, 60, 40], hache: 20, pioche: 25, houe: 10 };
+  const VIBRATION = { touche: [40, 60, 40], hache: 20, pioche: 25, houe: 10, ramasse: 8 };
   function vibre(sorte) {
     const motif = VIBRATION[sorte];
     const nav = global.navigator;

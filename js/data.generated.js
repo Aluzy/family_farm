@@ -72,6 +72,8 @@ export const RAW_DATA = {
   "PERSONNAGE": {
     "MAX": 100,
     "COUTS": {
+      "ramasser": 1,
+      "fabriquer": 2,
       "couper": 6,
       "piocher": 6,
       "pecher": 4,
@@ -163,6 +165,11 @@ export const RAW_DATA = {
     "anchois": { "nom": "Anchois", "icone": "🐟‍💧", "energie": 14, "prix": 3, "mangeable": true, "categorie": "produit", "rachetable": false },
     "sardine": { "nom": "Sardine", "icone": "🐟‍🌊", "energie": 20, "prix": 4, "mangeable": true, "categorie": "produit", "rachetable": false },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "fibre": { "nom": "Fibre", "icone": "🪢", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "planche": { "nom": "Planche", "icone": "🪚", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mur_pierre": { "nom": "Mur en pierre", "icone": "🧱", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "ammonite": {
       "nom": "Ammonite fossile",
       "icone": "🪨‍🐚",
@@ -370,6 +377,26 @@ export const RAW_DATA = {
   },
   "CONSERVATION_CATEGORIE": { "plat": 6 },
   "ORIGINE": { "PRODUIT": "produit", "ACHETE": "acheté", "PAR_CATEGORIE": { "conserve": "acheté" } },
+  "ATELIER": {
+    "NOM": "Atelier",
+    "ICONE": "🔨",
+    "NIVEAU": 1,
+    "CONSTRUCTION": { "bois": 3, "pierre": 3 },
+    "RECETTES": {
+      "planche": { "entrees": { "bois": 2 }, "sortie": { "planche": 1 } },
+      "mur_pierre": { "entrees": { "pierre": 4 }, "sortie": { "mur_pierre": 1 } },
+      "porte": { "entrees": { "planche": 3 }, "sortie": { "porte": 1 } },
+      "paillasse": { "entrees": { "fibre": 3 }, "sortie": { "paillasse": 1 } },
+      "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
+      "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
+      "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" }
+    },
+    "RAMASSAGE": {
+      "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
+      "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
+      "herbe": { "nom": "Herbe", "objet": "fibre", "nombre": 18 }
+    }
+  },
   "STATIONS": {
     "four": {
       "nom": "Four",
@@ -1649,6 +1676,8 @@ export const RAW_DATA = {
     },
     "XP": {
       "labourer": 10,
+      "ramasser": 2,
+      "fabriquer": 10,
       "couper": 10,
       "piocher": 10,
       "pecher": 15,

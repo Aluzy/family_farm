@@ -121,6 +121,9 @@ export function sourcesOf(data, id) {
   for (const [sid, s] of Object.entries((data.VILLE && data.VILLE.SORTIES) || {})) {
     if (id in (s.butin || {}) || (s.cueillettes || []).some((c) => id in c)) out.push(`sortie ${sid}`);
   }
+  const A = data.ATELIER;
+  for (const [rid, r] of Object.entries((A && A.RECETTES) || {})) if (id in (r.sortie || {})) out.push(`atelier ${rid}`);
+  for (const [rid, r] of Object.entries((A && A.RAMASSAGE) || {})) if (r.objet === id) out.push(`ramassage ${rid}`);
   if (data.HACHE && id === 'bois') out.push('hache');
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
   if (id.startsWith('minerai_')) out.push('grotte');
@@ -400,6 +403,21 @@ export function validateData(data) {
   }
 
   /* chaque objet s'obtient d'une façon ou d'une autre (avertissement seulement) */
+  // L'Atelier de la ferme générée : sa construction, ses recettes, ce qui se ramasse.
+  const A = data.ATELIER;
+  if (A) {
+    for (const item of Object.keys(A.CONSTRUCTION || {})) needItem('ATELIER.CONSTRUCTION', item);
+    for (const [rid, r] of Object.entries(A.RECETTES || {})) {
+      for (const [item, n] of Object.entries(r.entrees || {})) { needItem(`ATELIER.RECETTES.${rid}.entrees`, item); if (!isInt(n) || n <= 0) err(`ATELIER.RECETTES.${rid}.entrees.${item}`, 'une quantité entière positive'); }
+      for (const item of Object.keys(r.sortie || {})) needItem(`ATELIER.RECETTES.${rid}.sortie`, item);
+      if (!r.sortie === !r.outil) err(`ATELIER.RECETTES.${rid}`, 'une sortie ou un outil (l\'un des deux)');
+      if (r.outil && !['houe', 'hache', 'pioche'].includes(r.outil)) err(`ATELIER.RECETTES.${rid}.outil`, 'houe, hache ou pioche');
+    }
+    for (const [rid, r] of Object.entries(A.RAMASSAGE || {})) {
+      needItem(`ATELIER.RAMASSAGE.${rid}.objet`, r.objet);
+      if (!isInt(r.nombre) || r.nombre < 0) err(`ATELIER.RAMASSAGE.${rid}.nombre`, 'un entier positif ou nul');
+    }
+  }
   for (const id of Object.keys(items)) {
     if (!sourcesOf(data, id).length) warn(`OBJETS.${id}`, 'aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)');
   }

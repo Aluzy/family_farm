@@ -41,6 +41,8 @@ import { memberNameHtml, persoSrc, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
+import { renderAtelier } from './atelier.js';
+import { atelierOuvert } from '../engine/atelier.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { tutoTarget } from './aide.js';
@@ -242,6 +244,12 @@ export const STAGE_WINDOWS = {
     nom: 'Inventaire', icone: '📦', ok: () => tabAvailable('inventaire'), bois: true, flottante: true,
     enTete: () => inventoryTabsHtml(),
     corps: () => renderInventaire(true),
+  },
+  // L'Atelier (menu latéral, sur la ferme générée seulement : js/ui/atelier.js) : fenêtre
+  // flottante dans le cadre bois, comme l'Inventaire.
+  atelier: {
+    nom: 'Atelier', icone: '🔨', ok: () => atelierOuvert(state), bois: true, flottante: true,
+    corps: () => renderAtelier(),
   },
   // Marché (menu latéral) : fenêtre flottante comme l'Inventaire ; en-tête : les rayons en
   // icônes seules et le « ? » du rayon ouvert.
@@ -568,7 +576,7 @@ const MENU_ARROW = '<svg class="side-tab-arrow" viewBox="0 0 5 9" width="10" hei
   '<rect x="0" y="0" width="1" height="9"/><rect x="1" y="1" width="1" height="7"/><rect x="2" y="2" width="1" height="5"/><rect x="3" y="3" width="1" height="3"/><rect x="4" y="4" width="1" height="1"/></svg>';
 
 export function renderTabbar() {
-  const current = ['commerce', 'inventaire', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
+  const current = ['commerce', 'inventaire', 'atelier', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
   const nav = document.getElementById('bottom-nav');
   if (!menuClickBound) {
@@ -749,7 +757,7 @@ registerActions({
   },
   'switch-tab': (target) => {
     // L'Inventaire et le Marché, avec la carte, sont des fenêtres flottantes par-dessus elle.
-    if (['installations', 'commerce', 'inventaire', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
+    if (['installations', 'commerce', 'inventaire', 'atelier', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
       if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
       allerAuLieu(target.dataset.tab);
       return;
