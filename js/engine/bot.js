@@ -1,17 +1,20 @@
 import { DATA, dishPrice, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
-import { canPay, farmOpen, isBroken, isOwned, starterOf, upgradeCost, upgradeDevice } from './devices.js';
+import {
+  allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, needsService, panelOutput, pumpFlow,
+  repairDevice, starterOf, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
+} from './devices.js';
 import { awakeRequired } from './clock.js';
 import { tick } from './energy.js';
 import { addItem, countItem, expiringSoon } from './inventory.js';
-import { buildFridge, fridgeLevel, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
+import { buildFridge, fridgeLevel, fridgeRate, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
-import { planMeal } from './family.js';
-import { actionCost, energyLevel } from './stamina.js';
+import { eatSnack, planMeal } from './family.js';
+import { actionCost, energyLevel, energyMax } from './stamina.js';
 import { averageHappiness, dishHappiness } from './ville.js';
 import {
   allPlots, buildSerre, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isArable, isMature, plant, plotAtTile, seedItem, seedStock,
-  serreUpgradeCost, soilCount, upgradeSerre, water,
+  serreUpgradeCost, soilCount, upgradeSerre, water, waterCost,
 } from './crops.js';
 import {
   animalPrice, buildPaturage, buildPoulailler, buildSilo, buyAnimal, buyCow, buyPasture, buySheep, canFeedHen, cowCount, freeCowPlaces,
@@ -26,9 +29,94 @@ import {
   chapterCount, chapterProgress, chapterReached, cropUnlocked, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
   readMail, unreadMail,
 } from './campaign.js';
+import { isAutomated } from './automation.js';
 import { sleep } from './night.js';
 import { createNewGame, buyStarter, houseRepaired, repairHouse, starterBlock } from './depart.js';
-import { botInfraInfo, botMaintenance, botSnack } from './format.js';
+
+/* ==========================================================================
+   Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et
+   8.11). Le joueur automatique joue avec les vraies actions du moteur, sans
+   interface : il sert au script scripts/simulate.mjs et au bouton du mode test.
+   Il ne lit ni l'horloge ni Math.random : une partie simulée est entièrement
+   déterminée par sa graine. Tout ce qu'il vise ou garde vit dans
+   DATA.SIMULATION.
+   ========================================================================== */
+
+/* ---------- entretien, énergie, infrastructure ---------- */
+
+// Répare ce qui est en panne (et le rallume), entretient ce qui est usé.
+export function botMaintenance(state) {
+  for (const d of allDevices(state)) {
+    if (isBroken(d)) {
+      if (repairDevice(state, d.id).ok) toggleDevice(state, d.id);
+    } else if (needsService(d)) {
+      maintainDevice(state, d.id);
+    }
+  }
+}
+
+// Version 1.8 : quand l'énergie ne suffit plus pour une récolte, le joueur mange un
+// en-cas, pris seulement dans ce que le repas du soir ne mangera pas (l'aliment le
+// plus nourrissant d'abord), et jamais au-delà du maximum.
+export function botSnack(state) {
+  for (let guard = 0; guard < 10; guard++) {
+    if (state.energie >= actionCost(state, 'recolter') || state.energie >= energyMax()) return;
+    const plan = planMeal(state);
+    if (plan.couverture < 100) return;
+    const spare = Object.keys(DATA.items)
+      .filter((k) => DATA.items[k].edible && countItem(state, k) - (plan.mange[k] || 0) - (state.famille.reserve[k] || 0) >= 1)
+      .sort((a, b) => DATA.items[b].energie - DATA.items[a].energie);
+    if (!spare.length || !eatSnack(state, spare[0]).ok) return;
+  }
+}
+
+// Eau demandée par une journée : toutes les parcelles arrosées, plus la cuisine.
+export function botWaterPerDay(state) {
+  const S = DATA.SIMULATION;
+  let litres = S.LITRES_CUISINE;
+  for (const p of allPlots(state)) litres += p.culture ? waterCost(state, p) : S.LITRES_PARCELLE;
+  return litres;
+}
+
+// Énergie demandée par une journée (mWh) : pompe, réfrigérateur, Moulin et Presse.
+export function botEnergyPerDay(state, eveilS) {
+  let mwh = botWaterPerDay(state) * 1000 * DATA.PUMP.WH_PAR_L;
+  if (state.frigo && state.frigo.construit) mwh += fridgeRate(state) * (eveilS + DATA.FRIGO.BLOC_NUIT_S);
+  for (const id of Object.keys(DATA.STATIONS)) {
+    const st = state.stations[id];
+    if (DATA.STATIONS[id].electrique && st.construit) mwh += Math.floor((DATA.STATIONS[id].whParS * 1000 * eveilS * DATA.SIMULATION.MARCHE_STATIONS) / 100);
+  }
+  return mwh;
+}
+
+// Pompe, réservoir, panneau et batterie : le joueur ne laisse pas la ferme manquer
+// d'eau ni d'énergie. Version 1.6 : un seul appareil de chaque, qu'il améliore ; le
+// panneau ne produit qu'au soleil (de 7 h à 19 h), sur la part ensoleillée de son
+// temps d'éveil. Renvoie la prochaine amélioration nécessaire { cost, buy }, ou
+// { done: true }.
+export function botInfraInfo(state, eveilS) {
+  const S = DATA.SIMULATION;
+  // version 1.12 : rien à améliorer avant d'avoir acheté le panneau, la pompe et le réservoir
+  if (!farmOpen(state) || !isOwned(state.reservoir)) return { locked: true };
+  const litres = botWaterPerDay(state);
+  const pump = state.pompe;
+  const needsFlow = litres * 1000 * 100 > pumpFlow(pump) * eveilS * S.MARGE_EAU;
+  if (pump.niveau < DATA.LEVEL_MAX && needsFlow) return { cost: upgradeCost(pump), buy: () => upgradeDevice(state, pump.id) };
+  const needsTank = isAutomated(state, 'potager') && litres * 1000 * 100 > tankCapacity(state) * S.MARGE_EAU;
+  if (state.reservoir.niveau < DATA.LEVEL_MAX && needsTank) {
+    return { cost: upgradeCost({ type: 'reservoir', niveau: state.reservoir.niveau }), buy: () => upgradeTank(state) };
+  }
+
+  const panel = state.panneaux[0];
+  const produced = Math.floor((panelOutput(panel) * sunlitMs(0, eveilS * 1000)) / 1000);
+  const need = botEnergyPerDay(state, eveilS);
+  if (panel.niveau < DATA.LEVEL_MAX && produced * 100 < need * S.MARGE_ENERGIE) return { cost: upgradeCost(panel), buy: () => upgradeDevice(state, panel.id) };
+  const battery = state.batteries[0];
+  if (isOwned(battery) && battery.niveau < DATA.LEVEL_MAX && batteryCapacity(battery) * 100 < need * S.MARGE_BATTERIE) {
+    return { cost: upgradeCost(battery), buy: () => upgradeDevice(state, battery.id) };
+  }
+  return { done: true };
+}
 
 /* ---------- cultures ---------- */
 
