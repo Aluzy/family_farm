@@ -33,7 +33,7 @@
 (function (global) {
   'use strict';
 
-  const T = 16;
+  const T = global.CarteKit.T;   // la tuile (js/carte/kit.js)
   const TICK_MS = 100;      // décisions (événements) : 10 fois par seconde
   const MAX_ACTORS = 8;     // bêtes et feuilles affichées en même temps, tous types confondus
   const MARGIN = 24;        // px de carte : les bêtes naissent et disparaissent hors de la vue

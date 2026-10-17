@@ -21,10 +21,11 @@
 (function (global) {
   'use strict';
 
-  const T = 16;
+  const K = global.CarteKit;
+  const T = K.T;
   const HORAIRE = { sortie: 7, rentree: 18.75, ecole: 7, finEcole: 16.5, retard: 0.4 };
   const JOURS_ECOLE = [0, 1, 3, 4];       // lundi, mardi, jeudi, vendredi (0 : lundi)
-  const VITESSE = { adulte: 26, enfant: 32 };    // px/s
+  const VITESSE = K.VITESSES.famille;     // px/s : { adulte, enfant }
   const ROAM = 6 * T;                      // autour de la maison
   const FADE_S = 0.5;
   const PAS = 4;                           // px par image de marche
@@ -141,7 +142,7 @@
       }
       const to = m.chemin[0];
       const dx = to.x - m.x, dy = to.y - m.y, l = Math.hypot(dx, dy), st = (m.enfant ? VITESSE.enfant : VITESSE.adulte) * dt;
-      if (Math.abs(dx) > Math.abs(dy) * 0.8) { m.face = 'cote'; m.flip = dx < 0; } else { m.face = dy > 0 ? 'bas' : 'haut'; m.flip = false; }
+      ({ face: m.face, flip: m.flip } = K.regard(dx, dy));
       if (l <= st) { m.x = to.x; m.y = to.y; m.chemin.shift(); } else { m.x += (dx / l) * st; m.y += (dy / l) * st; }
       m.marche += Math.min(l, st);
       return true;
