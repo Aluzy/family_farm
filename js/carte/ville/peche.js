@@ -69,7 +69,11 @@
         if (f.t >= PECHE.lancer) { f.phase = 'attente'; f.t = 0; }
       } else if (f.phase === 'attente') {
         bob = reduced() ? 0 : Math.round(Math.sin(f.t * 3) * 0.6);
-        if (f.t >= f.attente) { f.phase = f.poisson ? 'touche' : 'ferrer'; f.t = 0; }
+        if (f.t >= f.attente) {
+          f.phase = f.poisson ? 'touche' : 'ferrer';
+          f.t = 0;
+          if (f.poisson) K.vibre('touche');
+        }
       } else if (f.phase === 'touche') {
         bob = 2;                                      // le bouchon plonge
         if (f.t >= PECHE.touche) { f.phase = 'ferrer'; f.t = 0; }

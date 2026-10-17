@@ -137,6 +137,7 @@
       F.phase = 'bite';
       F.t = 0;
       this.ripple(F.target.x, F.target.y + 1);
+      K.vibre('touche');
       const p = this.fermier && this.fermier.pos();
       if (p) {
         const mark = K.texte(this, p.x, p.y - 36, '!', 12).setDepth(p.y + 50);

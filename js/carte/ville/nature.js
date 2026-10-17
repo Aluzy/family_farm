@@ -138,12 +138,14 @@
         const r = H.couper(o.id);
         if (!r) return false;
         this.popGain({ bois: r.bois });
+        K.vibre('hache');
         if (r.tombe) this.fellTree(o); else o.shake = 0;
         this.leaves(o, 5);
       } else {
         const r = H.piocher(o.id);
         if (!r) return false;
         this.popGain(r.items || { pierre: 1 });
+        K.vibre('pioche');
         this.shards(o, r.casse ? 14 : 5);
         if (r.casse) this.breakRock(o);
         else if (!reduced()) this.tweens.add({ targets: o.img, x: o.img.x + (w.o.x < this.heroPos.x ? -1 : 1), duration: 50, yoyo: true });

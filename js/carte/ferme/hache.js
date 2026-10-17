@@ -106,6 +106,7 @@
       const hit = () => {
         t.queued = Math.max(0, t.queued - 1);
         this.showGain({ bois: got.bois });
+        K.vibre('hache');
         if (t.falling && !t.queued) { this.fellTree(t, true); return; }
         this.shakeTree(t);
       };
