@@ -1,4 +1,4 @@
-/* carte/ferme/etiquettes.js — la carte de la ferme : ce qui est en DOM par-dessus la carte.
+/* carte/ferme/etiquettes.js — la scène de la ferme : ce qui est en DOM par-dessus la carte.
  *
  * Les étiquettes des lieux (nom et pastille « à faire »), les bulles des tas à ramasser, la bulle
  * « +x » au-dessus du personnage, la bulle de la citerne : des éléments DOM du calque des

@@ -1,4 +1,4 @@
-/* carte/ferme/hache.js — la carte de la ferme : la hache : les arbres de la carte.
+/* carte/ferme/hache.js — la scène de la ferme : la hache et les arbres de la carte.
  *
  * Les arbres de la carte (lus dans ses couches d'arbres), un coup de hache (le jeu compte, le
  * personnage frappe, l'arbre tremble), le dernier coup (l'arbre bascule : CarteKit.NATURE.chute),

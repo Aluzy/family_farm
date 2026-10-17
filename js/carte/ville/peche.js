@@ -1,4 +1,4 @@
-/* carte/ville/peche.js — la ville et les cartes qu'on rejoint par elle : la pêche.
+/* carte/ville/peche.js — la scène de la ville : la pêche.
  *
  * La canne en main, un toucher sur l'eau (le lac de la montagne, la mer depuis le ponton ou le
  * rivage) : on va sur la rive, on lance, la touche, on ferre (CarteKit.PECHE : comme à la

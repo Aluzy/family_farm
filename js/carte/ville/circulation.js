@@ -1,4 +1,4 @@
-/* carte/ville/circulation.js — la ville et les cartes qu'on rejoint par elle : les rues : les bâtiments et la circulation.
+/* carte/ville/circulation.js — la scène de la ville : les bâtiments et la circulation.
  *
  * Les bâtiments sont en 3/4 (scripts/ville/immeubles.py) : la couche d'objets « batiments »
  * donne l'emprise au sol de chacun (on n'y marche pas) et le haut de son dessin (propriété

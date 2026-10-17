@@ -1,4 +1,4 @@
-/* carte/ville/voisins.js — la ville et les cartes qu'on rejoint par elle : les maisons des voisins.
+/* carte/ville/voisins.js — la scène de la ville : les maisons des voisins.
  *
  * Les deux maisons des voisins de la carte de transition s'ouvrent (?carte=interieur&maison=
  * <nom>) : l'intérieur de la maison de la ferme (assets/maison_interieur.json), meublé pour la

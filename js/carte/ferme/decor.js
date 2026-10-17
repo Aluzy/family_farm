@@ -1,4 +1,4 @@
-/* carte/ferme/decor.js — la carte de la ferme : les arbres, les barrières, les ombres et l'herbe haute.
+/* carte/ferme/decor.js — la scène de la ferme : les arbres, les barrières, les ombres et l'herbe haute.
  *
  * Les arbres et les buissons de la carte (chacun son image, rangée selon son pied : le
  * personnage passe derrière, l'arbre devient un peu transparent), les barrières, les ombres

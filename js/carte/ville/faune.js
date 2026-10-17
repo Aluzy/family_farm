@@ -1,4 +1,4 @@
-/* carte/ville/faune.js — la ville et les cartes qu'on rejoint par elle : les animaux de la montagne et de la plage.
+/* carte/ville/faune.js — la scène de la ville : les animaux de la montagne et de la plage.
  *
  * Des animaux à regarder (couche « animaux » : une zone par espèce, FAUNE) : la marmotte qui
  * rentre dans son terrier, le bouquetin, l'aigle qui tourne haut dans le ciel ; la mouette qui

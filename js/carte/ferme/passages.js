@@ -1,4 +1,4 @@
-/* carte/ferme/passages.js — la carte de la ferme : la sortie vers la ville et le tronc creux.
+/* carte/ferme/passages.js — la scène de la ferme : la sortie vers la ville et le tronc creux.
  *
  * La flèche bleue au bout du chemin de l'est (CarteKit.FLECHE : vers la carte de transition),
  * l'arrivée d'une autre carte, et le tronc creux au bord de l'étang (la bulle « veux-tu aller

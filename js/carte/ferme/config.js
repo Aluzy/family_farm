@@ -1,4 +1,4 @@
-/* carte/ferme/config.js — la carte de la ferme : ses réglages (window.FermeCarte).
+/* carte/ferme/config.js — la scène de la ferme : ses réglages (window.FermeCarte).
  *
  * Les tables de la carte de la ferme (la carte Tiled, les bâtiments, les arbres, les rochers, la
  * pêche, les asperseurs, le robot, les intérieurs…), lues par js/farm-stage.js et par les
@@ -277,9 +277,9 @@
   const ROOM_FADE_MS = 180;    // fondu à l'entrée et à la sortie
   const ROOM_PAD = { top: 44, bottom: 60 };   // px CSS laissés à l'objectif (en haut) et aux boutons (en bas)
 
-  const TAP_SLOP = 8;
+  const TAP_SLOP = 8;          // px CSS : au-delà, le geste est un glissement, pas un appui
   const DOUBLE_TAP_MS = 300;   // deux appuis rapprochés sur l'herbe ou un chemin : le personnage y va
-  const DOUBLE_TAP_PX = 30;    // px CSS entre les deux appuis, au plus          // px CSS : au-delà, le geste est un glissement, pas un appui
+  const DOUBLE_TAP_PX = 30;    // px CSS entre les deux appuis, au plus
   const MIN_TAP = 44;          // px CSS : taille minimale de la zone d'appui d'un bâtiment
   const INERTIA_MS = 260;      // constante de temps de l'élan après un glissement
   const MAX_SPEED = 1.5;       // px de carte par ms

@@ -1,4 +1,4 @@
-/* carte/ferme/camera.js — la carte de la ferme : la caméra : zoom, glissement, repères.
+/* carte/ferme/camera.js — la scène de la ferme : la caméra (zoom, glissement, repères).
  *
  * Le zoom (VIEW_ROWS rangées en hauteur), le centre de la vue borné à la carte, l'élan après un
  * glissement, les trois repères et ce que la page en sait (onView), panTo().

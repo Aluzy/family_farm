@@ -1,4 +1,4 @@
-/* carte/ferme/pioche.js — la carte de la ferme : la pioche : les rochers de la carte.
+/* carte/ferme/pioche.js — la scène de la ferme : la pioche et les rochers de la carte.
  *
  * Les rochers de la carte (chacun son image), un coup de pioche (les éclats sautent), le
  * dernier coup (le rocher se brise : CarteKit.NATURE.eclats), les rochers qui reviennent.

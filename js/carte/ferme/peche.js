@@ -1,4 +1,4 @@
-/* carte/ferme/peche.js — la carte de la ferme : la canne à pêche : l'étang et la mare.
+/* carte/ferme/peche.js — la scène de la ferme : la canne à pêche, l'étang et la mare.
  *
  * Les eaux de la carte, la rive d'où pêcher, le lancer, le bouchon (CarteKit.PECHE), la touche,
  * le poisson qui saute jusqu'au personnage.

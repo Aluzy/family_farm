@@ -1,4 +1,4 @@
-/* carte/ville/hud.js — la ville et les cartes qu'on rejoint par elle : les messages et la fenêtre de la gare.
+/* carte/ville/hud.js — la scène de la ville : les messages et la fenêtre de la gare.
  *
  * La ligne des messages (FermeHote.say dans la page du jeu) et les fenêtres de la gare et des
  * lieux (créées une fois dans la page : leur style, css/jeu.css, « .ville-fenetre »). Un toucher

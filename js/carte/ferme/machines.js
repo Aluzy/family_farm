@@ -1,4 +1,4 @@
-/* carte/ferme/machines.js — la carte de la ferme : les asperseurs et le robot.
+/* carte/ferme/machines.js — la scène de la ferme : les asperseurs et le robot.
  *
  * Les asperseurs rotatifs (leurs gouttes, calculées à partir de l'instant) et le robot de la
  * ferme (sa route, son bras, sa station de charge, sa bulle).

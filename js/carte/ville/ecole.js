@@ -1,4 +1,4 @@
-/* carte/ville/ecole.js — la ville et les cartes qu'on rejoint par elle : le bus de l'école.
+/* carte/ville/ecole.js — la scène de la ville : le bus de l'école.
  *
  * L'heure du jeu (HorlogeSortie, donnée par js/ui/excursion.js). Les jours d'école, le bus
  * de l'école (couche « bus » : ses trajets, ses arrêts, le chemin des enfants) passe le matin et

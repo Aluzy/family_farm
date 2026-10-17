@@ -1,4 +1,4 @@
-/* carte/ville/navette.js — la ville et les cartes qu'on rejoint par elle : le bus de ligne.
+/* carte/ville/navette.js — la scène de la ville : le bus de ligne.
  *
  * Entre l'abri de bus de la carte de transition et celui de la gare, en ville (NAVETTE) : on
  * touche l'abri, on attend, le bus arrive, on monte, il part ; on descend à l'arrêt de l'autre

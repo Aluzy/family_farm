@@ -1,4 +1,4 @@
-/* carte/ferme/interieurs.js — la carte de la ferme : les intérieurs (la Serre, la maison) et le repas.
+/* carte/ferme/interieurs.js — la scène de la ferme : les intérieurs (la Serre, la maison) et le repas.
  *
  * Les petites cartes Tiled des intérieurs, posées à droite de la carte : leurs emplacements de
  * parcelles, leurs meubles, où le personnage marche ; l'entrée et la sortie (fondu) ; le repas

@@ -1,4 +1,4 @@
-/* carte/ville/nature.js — la ville et les cartes qu'on rejoint par elle : les arbres, les rochers et l'herbe haute.
+/* carte/ville/nature.js — la scène de la ville : les arbres, les rochers et l'herbe haute.
  *
  * La carte de transition est comme la ferme : ses barrières, son herbe haute qui penche quand on
  * la traverse, ses arbres qu'on coupe la hache en main et ses rochers qu'on casse la pioche en

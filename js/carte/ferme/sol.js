@@ -1,4 +1,4 @@
-/* carte/ferme/sol.js — la carte de la ferme : les textures de secours et le sol de la carte.
+/* carte/ferme/sol.js — la scène de la ferme : les textures de secours et le sol de la carte.
  *
  * Les textures (images du pack, dessins de secours, découpes), le sol cuit en une image
  * (bakeGround : toutes les couches de tuiles de la carte Tiled), la terre labourée, la grille

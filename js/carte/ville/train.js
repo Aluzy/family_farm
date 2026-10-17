@@ -1,4 +1,4 @@
-/* carte/ville/train.js — la ville et les cartes qu'on rejoint par elle : le train.
+/* carte/ville/train.js — la scène de la ville : le train.
  *
  * La gare (le bâtiment « gare », couche « gare » : où s'arrête le train, où l'on monte) : on va
  * jusqu'au quai, le train arrive, on monte, il repart et la caméra le suit jusqu'à la carte

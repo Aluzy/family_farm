@@ -1,4 +1,4 @@
-/* carte/ferme/modele.js — la carte de la ferme : la synchronisation avec le modèle de vue.
+/* carte/ferme/modele.js — la scène de la ferme : la synchronisation avec le modèle de vue.
  *
  * sync(modèle) : crée, met à jour ou détruit ce qui a changé (bâtiments, parcelles, arbres du
  * Verger, panneaux solaires, puits, citerne, personnage du joueur) ; idempotent.

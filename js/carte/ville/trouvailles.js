@@ -1,4 +1,4 @@
-/* carte/ville/trouvailles.js — la ville et les cartes qu'on rejoint par elle : les trouvailles de la montagne et de la plage.
+/* carte/ville/trouvailles.js — la scène de la ville : les trouvailles de la montagne et de la plage.
  *
  * Des trouvailles à ramasser (couche « trouvailles » : un genre par endroit ; chaque jour, une
  * partie des endroits, et ce qu'on a ramassé ne revient que le lendemain ; une trouvaille

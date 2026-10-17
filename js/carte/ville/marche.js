@@ -1,4 +1,4 @@
-/* carte/ville/marche.js — la ville et les cartes qu'on rejoint par elle : le marché de la ville et les entreprises.
+/* carte/ville/marche.js — la scène de la ville : le marché de la ville et les entreprises.
  *
  * Le marché de la ville (couche « lieux » : les étals) et les entreprises (les entrepôts
  * « conserverie », « fromagerie », « confiturerie ») : les ventes et les achats passent tout
