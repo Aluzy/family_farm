@@ -209,6 +209,10 @@ window.FermeHote = {
   verserTrouvailles: verseTrouvailles,
   coups: (base) => hitsNeeded(state, base),
   tech: (cle) => techFlag(state, cle),
+  // les réglages de jeu des cartes, écrits dans data/ville.json (GROTTE : les niveaux, le
+  // minerai, les coups de pioche ; NAVETTE : les horaires et les temps du bus de ligne) : lus
+  // par js/carte/ville/config.js ; une autre section de DATA n'est pas donnée aux cartes
+  donnees: (cle) => (cle === 'GROTTE' || cle === 'NAVETTE' ? DATA[cle] : null),
   say: (t) => showToast(t),
   // les fenêtres des cartes (la gare, l'arrêt de bus, un étal, une entreprise, le tronc creux) :
   // celles du jeu (js/ui/modal.js : cadre bois, focus gardé par Tab, Échap, focus rendu) ;

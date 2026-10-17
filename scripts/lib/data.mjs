@@ -363,6 +363,35 @@ export function validateData(data) {
   for (const item of Object.keys(SIM.ACHATS_CUISINE || {})) needItem('SIMULATION.ACHATS_CUISINE', item);
   if (SIM.DEPANNAGE) needItem('SIMULATION.DEPANNAGE.item', SIM.DEPANNAGE.item);
 
+  /* les grottes et le bus de ligne (ville.json, lus par les cartes : js/carte/ville/config.js) */
+  const G = data.GROTTE;
+  if (G) {
+    for (const cle of ['LARGEUR', 'HAUTEUR', 'NIVEAUX', 'PASSES', 'COUPS']) {
+      if (!(isInt(G[cle]) && G[cle] >= 1)) err(`GROTTE.${cle}`, `un entier supérieur à 0 ; reçu ${JSON.stringify(G[cle])}`);
+    }
+    for (const cle of ['MURS', 'MINERAI']) {
+      if (!(typeof G[cle] === 'number' && G[cle] >= 0 && G[cle] <= 1)) err(`GROTTE.${cle}`, `une part entre 0 et 1 ; reçu ${JSON.stringify(G[cle])}`);
+    }
+    for (const cle of ['MINERAI_NIVEAU', 'COUP']) {
+      if (!(typeof G[cle] === 'number' && G[cle] >= 0)) err(`GROTTE.${cle}`, `un nombre positif ; reçu ${JSON.stringify(G[cle])}`);
+    }
+    // chaque sorte est l'objet minerai_<sorte> (mineOre, js/engine/outils.js) ; FIXE, ou DEPUIS et PENTE
+    for (const [sorte, p] of Object.entries(G.POIDS || {})) {
+      needItem('GROTTE.POIDS', `minerai_${sorte}`);
+      const ok = (n) => typeof n === 'number' && n >= 0;
+      if (!(p && ('FIXE' in p ? ok(p.FIXE) : ok(p.DEPUIS) && ok(p.PENTE)))) err(`GROTTE.POIDS.${sorte}`, 'FIXE, ou DEPUIS et PENTE : des nombres positifs');
+    }
+  }
+  const NV = data.NAVETTE;
+  if (NV) {
+    const h = NV.HORAIRES || {};
+    if (!(isInt(h.DEBUT) && isInt(h.FIN) && h.DEBUT >= 0 && h.FIN <= 24 && h.DEBUT < h.FIN)) err('NAVETTE.HORAIRES', `DEBUT et FIN : des heures entières, 0 ≤ DEBUT < FIN ≤ 24 ; reçu ${JSON.stringify(h)}`);
+    for (const cle of ['MONTEE', 'DEPART', 'DESCENTE', 'REPART']) {
+      const d = (NV.DUREES || {})[cle];
+      if (!(typeof d === 'number' && d >= 0)) err(`NAVETTE.DUREES.${cle}`, `une durée en secondes ; reçu ${JSON.stringify(d)}`);
+    }
+  }
+
   /* arbre des technologies : chaque clé d'effet est lue par le moteur */
   for (const [id, n] of Object.entries(techtree.noeuds)) {
     for (const cle of Object.keys(n.effet || {})) {

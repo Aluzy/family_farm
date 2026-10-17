@@ -1840,6 +1840,24 @@ export const RAW_DATA = {
       }
     }
   },
+  "GROTTE": {
+    "LARGEUR": 46,
+    "HAUTEUR": 34,
+    "NIVEAUX": 8,
+    "MURS": 0.46,
+    "PASSES": 5,
+    "MINERAI": 0.07,
+    "MINERAI_NIVEAU": 0.06,
+    "POIDS": {
+      "fer": { "FIXE": 1 },
+      "cuivre": { "DEPUIS": 1, "PENTE": 0.35 },
+      "or": { "DEPUIS": 2.5, "PENTE": 0.18 },
+      "platine": { "DEPUIS": 4, "PENTE": 0.1 }
+    },
+    "COUPS": 3,
+    "COUP": 0.5
+  },
+  "NAVETTE": { "HORAIRES": { "DEBUT": 6, "FIN": 22 }, "DUREES": { "MONTEE": 0.8, "DEPART": 2.6, "DESCENTE": 0.6, "REPART": 1.2 } },
   "MEUBLES": {
     "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },
     "table": { "nom": "Table", "piece": "cuisine", "prix": 90, "bonheur": 3 },

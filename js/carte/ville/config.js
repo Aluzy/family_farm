@@ -30,6 +30,13 @@
   // La page du jeu (js/ui/excursion.js) : l'heure, le personnage principal, le marché, les
   // entreprises, les outils, les messages, le passage d'une carte à l'autre.
   const hote = () => global.FermeHote || null;
+  // Les réglages de jeu des cartes (data/ville.json : GROTTE, NAVETTE), que la page du jeu donne
+  // (FermeHote.donnees) ; ici ne restent que les images, les arrêts, la lumière, l'affichage.
+  function donnees(cle) {
+    const H = hote(), d = H && H.donnees ? H.donnees(cle) : null;
+    if (!d) throw new Error(`carte/ville/config.js : réglages ${cle} introuvables (data/ville.json, FermeHote.donnees)`);
+    return d;
+  }
   // Les passages vers une autre carte (couche « passages » : un rectangle au bord, sa cible, le
   // sens de sa flèche) : la flèche bleue (CarteKit.FLECHE) paraît quand la promeneuse est assez
   // près ; un toucher dessus mène à la cible.
@@ -105,8 +112,8 @@
   // profil, posée sur le trottoir : son milieu `x`, son pied `pied`), on attend à côté
   // (`attente`), le bus (le trajet `route`) s'arrête à `arret` (un point de la couche « bus »,
   // ou { x, y }), on monte, il part : on arrive à l'arrêt de l'autre carte (?bus=1), où l'on
-  // descend à `attente`. Le bus paraît `lead` px avant l'arrêt. Il roule de `heures[0]` à
-  // `heures[1]` h ; `monte`, `part`, `descend`, `repart` : les temps (s) de chaque geste.
+  // descend à `attente`. Le bus paraît `lead` px avant l'arrêt. Les heures où il roule et les
+  // temps de chaque geste : `jeu` (data/ville.json, NAVETTE : HORAIRES, DUREES).
   const NAVETTE = {
     arrets: {
       transition: {
@@ -119,7 +126,7 @@
         cible: 'ville-carte.html?carte=transition&arrivee=ville&bus=1', choix: '🌾 La campagne (vers la ferme)', vers: 'jusqu\'à l\'arrêt de la campagne, sur le chemin de la ferme',
       },
     },
-    heures: [6, 22], monte: 0.8, part: 2.6, descend: 0.6, repart: 1.2,
+    get jeu() { return donnees('NAVETTE'); },
   };
   // Les trouvailles (assets/trouvailles.png, scripts/ville/faune.py) : `part` des endroits en
   // ont une chaque jour ; on la ramasse à `reach` px, elle va dans l'inventaire (FermeHote.
@@ -141,15 +148,22 @@
     },
   };
   // Les grottes (assets/grotte_tuiles.png, grotte_objets.png, grotte.json : scripts/ville/grotte.py) :
-  // la taille d'un niveau (en tuiles), le nombre de niveaux, la part de murs au départ et les
-  // passes de l'automate, la chance qu'un mur au bord du sol porte du minerai, les coups de
-  // pioche, la lumière autour de la promeneuse (px : nette jusqu'à r0, noire à partir de r1).
+  // la lumière autour de la promeneuse (px : nette jusqu'à r0, noire à partir de r1), ce qu'on
+  // a pioché (localStorage `store`). Les réglages de jeu : `jeu` (data/ville.json, GROTTE : la
+  // taille d'un niveau en tuiles, le nombre de niveaux, la part de murs au départ et les passes
+  // de l'automate, la chance qu'un mur au bord du sol porte du minerai, le poids de chaque
+  // minerai, les coups de pioche et leur durée).
   const GROTTE = {
     tiles: 'assets/grotte_tuiles.png', objets: 'assets/grotte_objets.png', meta: 'assets/grotte.json',
-    w: 46, h: 34, niveaux: 8, murs: 0.46, passes: 5, minerai: 0.07, coups: 3, coup: 0.5,
     lumiere: { r0: 44, r1: 132, noir: 0.93 }, store: 'ferme-grottes',
-    // le poids de chaque minerai au niveau n : le fer partout, les autres de plus en plus bas
-    poids: (n) => ({ fer: 1, cuivre: Math.max(0, (n - 1) * 0.35), or: Math.max(0, (n - 2.5) * 0.18), platine: Math.max(0, (n - 4) * 0.1) }),
+    get jeu() { return donnees('GROTTE'); },
+    // le poids de chaque minerai au niveau n (GROTTE.POIDS) : FIXE partout (le fer), sinon
+    // max(0, (n − DEPUIS) × PENTE), de plus en plus bas ; { fer: 1, cuivre: …, or: …, platine: … }
+    poids(n) {
+      const out = {};
+      for (const [sorte, p] of Object.entries(this.jeu.POIDS)) out[sorte] = 'FIXE' in p ? p.FIXE : Math.max(0, (n - p.DEPUIS) * p.PENTE);
+      return out;
+    },
   };
   // Comme à la ferme (couches « arbres », « rochers », « herbe_haute » de la carte) : les arbres
   // (assets/arbre_clair_sp.png, pin_clair_sp.png : images 0 droit, 1 penché à droite, 2 à gauche,
