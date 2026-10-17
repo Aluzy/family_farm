@@ -583,6 +583,7 @@
         // suivi d'un second.
         const farmyard = hit && (hit.window === 'poulailler' || hit.window === 'etable') ? hit.window : null;
         if (!this.room && (!hit || farmyard)) {
+          if (!hit) K.astuceMarche(this.input.activePointer);   // un essai de marche : le geste s'explique, une fois
           const now = performance.now(), prev = this.lastTap;
           const near = prev && Math.hypot(wx - prev.x, wy - prev.y) <= (DOUBLE_TAP_PX * pixelRatio()) / this.cameras.main.zoom;
           if (prev && now - prev.t <= DOUBLE_TAP_MS && near) {

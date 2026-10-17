@@ -240,6 +240,8 @@
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) { this.dbl.oublie(); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va, un rond marque l'arrivée
+        // (un essai de marche : la marche au doigt s'explique, une fois)
+        K.astuceMarche(p);
         if (this.dbl.appui(w.x, w.y, cam.zoom)) this.walkTo(w.x, w.y);
       });
       // le doigt posé puis glissé : elle marche dans sa direction tant qu'il reste posé

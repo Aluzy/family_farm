@@ -133,6 +133,7 @@
           if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('👁️ L\'habitant de l\'île te regarde passer, sans un mot.');
           return;
         }
+        K.astuceMarche(p);           // un essai de marche : la marche au doigt s'explique, une fois
         if (!dbl.appui(w.x, w.y, cam.zoom)) return;
         this.goTo(w.x, w.y);
         const fin = this.path[this.path.length - 1];

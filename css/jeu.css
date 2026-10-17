@@ -1860,34 +1860,6 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 .stage-gain[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .stage-gain.fade { transition-duration: 0.4s; } }
 
-/* La manette au doigt (CarteKit.manette, js/carte/gestes.js) : un rond sous le point d'appui,
-   un bouton sous le doigt ; le personnage marche dans la direction de l'un vers l'autre. */
-.stage-manette {
-  position: absolute;
-  left: -36px;
-  top: -36px;
-  width: 72px;
-  height: 72px;
-  box-sizing: border-box;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 241, 210, 0.75);
-  background: rgba(40, 30, 54, 0.22);
-  z-index: 3;
-  pointer-events: none;
-  will-change: transform;
-}
-.stage-manette > div {
-  position: absolute;
-  left: 22px;
-  top: 22px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(255, 241, 210, 0.85);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-}
-.stage-manette[hidden] { display: none; }
-
 /* ---------- Carte du joueur, en haut à gauche (remplace le bandeau du haut) ----------
    Portrait du personnage principal, prénom, niveau (avec sa barre) et autonomie, dans le
    même cadre bois que la carte flottante de droite (.hud). */
