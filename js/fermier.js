@@ -158,6 +158,7 @@
 
     const s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1).setVisible(false);
     let x = 0, y = 0, face = 'bas', flip = false, shown = false, alpha = 0, fade = 0;
+    let lastPos = null;             // dernière position donnée par pos()
     let basket = false;
     function frame(name) {
       const k = F[name];
@@ -1075,7 +1076,13 @@
       // Double appui sur le Poulailler ou l'Étable : il va y ramasser (false : rien à prendre).
       collect,
       // Où il est (pour la bulle « +x ») : ses pieds, ou null s'il n'est pas sur la carte.
-      pos: () => (shown && !home ? { x, y } : null),
+      // Le même objet tant qu'il n'a pas bougé (demandé plusieurs fois par image) ; un nouveau
+      // dès qu'il bouge : celui qu'un appelant a gardé ne change jamais sous lui.
+      pos: () => {
+        if (!shown || home) return null;
+        if (!lastPos || lastPos.x !== x || lastPos.y !== y) lastPos = { x, y };
+        return lastPos;
+      },
       destroy() { endMeal(); s.destroy(); if (inside.s) inside.s.destroy(); if (inside.drap) inside.drap.destroy(); zs.forEach((z) => z.destroy()); holds.clear(); },
       // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
       setSheet(key) {

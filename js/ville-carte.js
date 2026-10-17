@@ -48,6 +48,14 @@
   const etat = V.etat;
   const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, VOISINS } = V.C;
   const { hote, sheetKey, saisie, reduced, v } = V;
+  // Le pas de la flèche d'un passage, selon son sens (elle se balance dans ce sens).
+  const SENS_PAS = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] };
+  // La n-ième boîte d'un personnage autour duquel les bâtiments s'effacent (voir uncover),
+  // l'objet de l'image d'avant réécrit.
+  function boite(boxes, n, x, y, w, h, foot, see) {
+    const b = boxes[n] || (boxes[n] = {});
+    b.x = x; b.y = y; b.w = w; b.h = h; b.foot = foot; b.see = see;
+  }
 
   class VilleScene extends Phaser.Scene {
     constructor() { super('ville'); }
@@ -165,7 +173,7 @@
 
       // la fermière : ses images par nom (marche_bas_0…, idle_cote_0…)
       const noms = (this.cache.json.get(HERO.key + '_noms') || {}).frames || [];
-      this.frame = (name) => Math.max(0, noms.indexOf(name));
+      this.frame = K.cases(noms);
       const arrivee = etat.params.get('arrivee');
       const d = (arrivee && objects('arrivees').find((o) => o.name === arrivee)) || objects('depart')[0] || (this.famille && VOISINS.entree) || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
       this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), HERO.key, this.frame('idle_bas_0')).setOrigin(0.5, HERO.foot / HERO.h);
@@ -257,7 +265,7 @@
         q.arrow.setVisible(d <= q.near || this.god());
         if (!q.arrow.visible) continue;
         const k = K.balance(time);
-        const [dx, dy] = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] }[q.sens];
+        const [dx, dy] = SENS_PAS[q.sens];
         q.arrow.setPosition(Math.round(q.x + dx * k), Math.round(q.y + dy * k));
       }
     }
@@ -604,10 +612,13 @@
     }
 
     // Le feuillage devant la promeneuse s'efface un peu ; celui qu'elle a quitté revient.
+    // (les tuiles du rectangle ne sont redemandées à la couche que quand il change de cases :
+    // voir CarteVille.tuilesDans)
     fadeFoliage(x, y) {
       for (const t of this.faded) t.alpha = 1;
       if (!this.layers[DEVANT]) return;
-      this.faded = this.layers[DEVANT].getTilesWithinWorldXY(x - HERO.w / 2, y - HERO.foot, HERO.w, HERO.h - 2) || [];
+      const c = this.fadedCache || (this.fadedCache = {});
+      this.faded = V.tuilesDans(c, this.layers[DEVANT], x - HERO.w / 2, y - HERO.foot, HERO.w, HERO.h - 2);
       for (const t of this.faded) t.alpha = FEUILLAGE_ALPHA;
     }
 
@@ -662,19 +673,23 @@
         const r = K.regard(vx, vy);
         this.face = r.face; H.setFlipX(r.flip);
         this.walked += moved;
-        H.setFrame(this.frame(`marche_${this.face}_${Math.floor(this.walked / HERO.stride) % 4}`));
+        H.setFrame(this.frame.de('marche', this.face, Math.floor(this.walked / HERO.stride) % 4));
       } else {
         // debout : elle respire (deux images, lentement)
-        H.setFrame(this.frame(`idle_${this.face}_${Math.floor(time / 600) % 2}`));
+        H.setFrame(this.frame.de('idle', this.face, Math.floor(time / 600) % 2));
       }
       H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y).setAlpha(this.heroAlpha);
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5).setAlpha(this.heroAlpha);
       this.fadeFoliage(Math.round(P.x), Math.round(P.y));
       this.stepNature(dt);
       if (this.light) this.light.setPosition(Math.round(P.x), Math.round(P.y - 12));
-      // les bâtiments autour des voitures, puis de la promeneuse
-      const boxes = (this.cars || []).map((c) => ({ x: c.x - 30, y: c.y - 38, w: 60, h: 56, foot: c.y, see: false }));
-      boxes.push({ x: P.x - HERO.w / 2, y: P.y - HERO.foot, w: HERO.w, h: HERO.h, foot: P.y, see: true });
+      // les bâtiments autour des voitures, puis de la promeneuse (les boîtes sont gardées d'une
+      // image à l'autre : rien n'est alloué)
+      const boxes = this.boxes || (this.boxes = []);
+      let n = 0;
+      if (this.cars) for (const c of this.cars) boite(boxes, n++, c.x - 30, c.y - 38, 60, 56, c.y, false);
+      boite(boxes, n++, P.x - HERO.w / 2, P.y - HERO.foot, HERO.w, HERO.h, P.y, true);
+      boxes.length = n;
       this.uncover(boxes);
     }
   }

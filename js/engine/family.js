@@ -282,11 +282,14 @@ export function familyNeed(state) {
 // Aliments dans l'ordre où la famille les mange : d'abord ce qui périme le plus
 // tôt (lot le plus ancien de chaque item ; ce qui ne périme pas passe en
 // dernier, donc les conserves), puis par énergie décroissante.
+// (la péremption de chaque aliment est lue une fois, pas à chaque comparaison du tri : même
+// ordre, l'aperçu du repas est recalculé à chaque rendu)
 export function mealOrder(state) {
   const keys = Object.keys(DATA.items).filter((k) => DATA.items[k].edible);
+  const expiry = new Map(keys.map((k) => [k, nextExpiry(state, k)]));
   return keys.sort((a, b) => {
-    const ea = nextExpiry(state, a);
-    const eb = nextExpiry(state, b);
+    const ea = expiry.get(a);
+    const eb = expiry.get(b);
     if (ea !== eb) return ea < eb ? -1 : 1;
     return DATA.items[b].energie - DATA.items[a].energie;
   });

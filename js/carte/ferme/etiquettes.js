@@ -41,6 +41,7 @@
         this.tankTip = el;
       }
       this.tankTip.hidden = false;
+      this.tipW = 0;
       this.tankTipUntil = 0;
       this.syncTankTip();
     },
@@ -50,16 +51,20 @@
       if (!el || el.hidden) return;
       const text = (this.ctx.lastModel && this.ctx.lastModel.citerneTexte) || '';
       if (!text || !this.tank) { this.showTankTip(false); return; }
-      if (el.textContent !== text) el.textContent = text;
+      // Sa taille n'est relue (lecture qui force la mise en page) que quand son texte change
+      // ou qu'elle réapparaît (showTankTip remet tipW à 0).
+      if (el.textContent !== text) { el.textContent = text; this.tipW = 0; }
+      if (!this.tipW) { this.tipW = el.offsetWidth; this.tipH = el.offsetHeight; }
       const dpr = pixelRatio();
       const cam = this.cameras.main;
       const k = cam.zoom / dpr;
       const left = this.cx - this.scale.width / cam.zoom / 2;
       const top = this.cy - this.scale.height / cam.zoom / 2;
-      const x = (this.tank.x + this.tank.width / 2 - left) * k - el.offsetWidth / 2;
-      const y = Math.max(0, (this.tank.y - this.tank.height - top) * k - el.offsetHeight - LABEL_GAP * 2);
-      const maxX = this.scale.width / dpr - el.offsetWidth - 4;
-      el.style.transform = 'translate(' + Math.round(Math.max(4, Math.min(x, maxX))) + 'px,' + Math.round(y) + 'px)';
+      const x = (this.tank.x + this.tank.width / 2 - left) * k - this.tipW / 2;
+      const y = Math.max(0, (this.tank.y - this.tank.height - top) * k - this.tipH - LABEL_GAP * 2);
+      const maxX = this.scale.width / dpr - this.tipW - 4;
+      const tr = 'translate(' + Math.round(Math.max(4, Math.min(x, maxX))) + 'px,' + Math.round(y) + 'px)';
+      if (tr !== this.tipTr) { this.tipTr = tr; el.style.transform = tr; }
     },
 
     /* ---------- version 1.18 : ce qui attend d'être ramassé ---------- */
@@ -110,9 +115,16 @@
     },
 
     // Repère de l'écran : px CSS par px de carte, coin haut-gauche de la vue.
+    // Le même objet tant que la vue ne bouge pas (il sert à plusieurs bulles à chaque image) ;
+    // un nouveau dès qu'elle bouge, sans toucher à celui d'avant.
     screenFrame() {
       const cam = this.cameras.main;
-      return { k: cam.zoom / pixelRatio(), left: this.cx - this.scale.width / cam.zoom / 2, top: this.cy - this.scale.height / cam.zoom / 2 };
+      const zoom = cam.zoom, dpr = pixelRatio(), w = this.scale.width, h = this.scale.height;
+      const F0 = this.frameMemo;
+      if (F0 && F0.zoom === zoom && F0.dpr === dpr && F0.w === w && F0.h === h && F0.cx === this.cx && F0.cy === this.cy) return F0.f;
+      const f = { k: zoom / dpr, left: this.cx - w / zoom / 2, top: this.cy - h / zoom / 2 };
+      this.frameMemo = { zoom, dpr, w, h, cx: this.cx, cy: this.cy, f };
+      return f;
     },
 
     placePiles() {

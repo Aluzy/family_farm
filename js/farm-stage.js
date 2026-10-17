@@ -53,7 +53,7 @@
   let game = null;
   let scene = null;
   let host = null;
-  let lastKey = '';
+  let lastModel = null;     // le dernier modèle reçu (comparé au suivant, voir pareil())
   let awake = false;        // la boucle Phaser tourne et la taille est à jour
 
   // Ce que la scène reçoit au montage (scene.ctx) : le pont vers la page, le dossier des
@@ -699,12 +699,34 @@
 
   function ready() { const s = getScene(); return !!(s && s.ready); }
 
+  // Deux modèles de vue ont-ils le même contenu ? (comparaison de valeur, sans fabriquer de
+  // texte : le modèle arrive environ 5 fois par seconde et ne change presque jamais.) Plus
+  // stricte que l'ancienne comparaison des clés JSON : un modèle « différent » de plus ne fait
+  // qu'un sync() de plus, qui est idempotent.
+  function pareil(a, b) {
+    if (a === b) return true;
+    if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return a !== a && b !== b; // NaN
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    if (Array.isArray(a)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) if (!pareil(a[i], b[i])) return false;
+      return true;
+    }
+    let n = 0;
+    for (const k in a) {
+      if (!Object.prototype.hasOwnProperty.call(a, k)) continue;
+      if (!Object.prototype.hasOwnProperty.call(b, k) || !pareil(a[k], b[k])) return false;
+      n++;
+    }
+    for (const k in b) if (Object.prototype.hasOwnProperty.call(b, k)) n--;
+    return n === 0;
+  }
+
   function update(model) {
     ctx.lastModel = model;
     if (!game || !ctx.visible) return;
-    const key = JSON.stringify(model);
-    if (key === lastKey) return;
-    lastKey = key;
+    if (lastModel && pareil(model, lastModel)) return;
+    lastModel = model;
     const s = getScene();
     if (s && s.ready) s.sync(model);
   }
@@ -718,7 +740,7 @@
     awake = true;
     game.loop.wake();
     resize();
-    lastKey = '';
+    lastModel = null;
     if (ctx.lastModel) update(ctx.lastModel);
     const s = getScene();
     if (s && s.ready) s.repairGround(false);

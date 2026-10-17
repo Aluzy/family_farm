@@ -45,7 +45,7 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
   batiments: { etable, poulailler, moulin, serre, verger, zone, zone2, silo },
   animaux: { vache, mouton, poule } (nombre de bêtes de l'Étable et du Poulailler) }`.
 - **`sync(modèle)` est idempotent** : `render()` appelle `renderStage()` environ 5 fois par
-  seconde ; un modèle identique est écarté avant la scène (comparaison de la clé JSON), un modèle
+  seconde ; un modèle identique est écarté avant la scène (comparaison de valeur avec le précédent, `pareil()`, sans texte JSON), un modèle
   différent crée, met à jour ou détruit exactement ce qui a changé.
 - **Pont d'actions** `stageAct(action, données)` : crée un bouton masqué portant
   `data-action` et `data-*`, le clique, le retire. L'unique écouteur de clics de la page fait le

@@ -162,7 +162,13 @@
     // Les bulles de bonheur au-dessus des convives (fermier.mealHeads), dans le calque des
     // étiquettes (caché dans un intérieur : elles restent visibles).
     placeMealBubbles() {
-      const heads = this.room && this.fermier && this.fermier.mealHeads ? this.fermier.mealHeads() : [];
+      const heads = this.room && this.fermier && this.fermier.mealHeads ? this.fermier.mealHeads() : null;
+      // Pas de repas (presque toujours) : rien à faire, une fois les bulles cachées.
+      if (!heads || !heads.length) {
+        if (this.joieShown) { for (const b of this.joie) b.el.hidden = true; this.joieShown = false; }
+        return;
+      }
+      this.joieShown = true;
       if (!this.joie) this.joie = [];
       while (this.joie.length < heads.length) {
         const el = document.createElement('div');
@@ -173,7 +179,7 @@
         this.ctx.labelLayer.appendChild(el);
         this.joie.push({ el, w: 0, h: 0 });
       }
-      const f = heads.length ? this.screenFrame() : null;
+      const f = this.screenFrame();
       this.joie.forEach((b, i) => {
         const h = heads[i];
         if (!h) { b.el.hidden = true; return; }

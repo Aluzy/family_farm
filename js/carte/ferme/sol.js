@@ -184,11 +184,15 @@
 
     // Animations de tuiles d'un jeu de tuiles (Tiled les range dans `tiles`) : numéro de
     // tuile dans la planche -> ses images [{ tileid, duration (ms) }].
+    // Lue une fois par jeu de tuiles (drawLayer la demande à chaque couche repeinte).
     tileFrames(set) {
+      if (!this.tileFramesOf) this.tileFramesOf = new WeakMap();
+      if (set && this.tileFramesOf.has(set)) return this.tileFramesOf.get(set);
       const out = new Map();
       for (const t of (set && set.tiles) || []) {
         if (Array.isArray(t.animation) && t.animation.length > 1) out.set(t.id, t.animation);
       }
+      if (set) this.tileFramesOf.set(set, out);
       return out;
     },
 
@@ -274,7 +278,7 @@
       }
     },
 
-    // `only` : seulement ces cases (repeinture partielle) ; `cur` : l'image du moment des
+    // `only` : seulement ces cases (repeinture partielle : un Set, ou un tableau déjà trié) ; `cur` : l'image du moment des
     // tuiles animées (numéro -> image), sinon leur première ; `arbre` : dessiner aussi les
     // cases des arbres (l'image d'un arbre, voir findOccluders). Sur la carte de la ferme, les
     // cases des zones de culture suivent zoneOver (voir zoneGround).
@@ -291,8 +295,7 @@
       // les arbres et buissons ont leur image (findOccluders) : pas dans le fond
       const hid = !arbre && ferme && this.occluded ? this.occluded.get(layer) : null;
       ctx.globalAlpha = layer.opacity == null ? 1 : layer.opacity;
-      layer.data.forEach((orig, i) => {
-        if (only && !only.has(i)) return;
+      const draw = (orig, i) => {
         if (dirt && dirt.has(i)) return;                                  // les fleurs labourées
         if (hid && hid.has(i)) return;
         let cell = orig;
@@ -313,7 +316,14 @@
         if (fd) { ctx.rotate(Math.PI / 2); ctx.scale(1, -1); }
         ctx.drawImage(img, sx, sy, tw, th, -tw / 2, -th / 2, tw, th);
         ctx.restore();
-      });
+      };
+      // Repeinture partielle : seulement les cases demandées, dans l'ordre (et non toute la
+      // couche, 4 104 cases, pour une mare de quelques dizaines toutes les 400 ms).
+      if (!only) layer.data.forEach(draw);
+      else {
+        const n = layer.data.length;
+        for (const i of Array.isArray(only) ? only : [...only].sort((a, b) => a - b)) if (i >= 0 && i < n) draw(layer.data[i], i);
+      }
       ctx.globalAlpha = 1;
       if (ferme && sol) this.drawZoneDirt(ctx, raw, only);
     },
@@ -404,7 +414,8 @@
         if (this.textures.exists(key)) this.textures.remove(key);
         const tex = this.textures.createCanvas(key, (c1 - c0 + 1) * tw, (r1 - r0 + 1) * th);
         const sprite = this.add.image(c0 * tw, r0 * th, key).setOrigin(0).setDepth(0.1);
-        areas.push({ cells, groups: ns, x: c0 * tw, y: r0 * th, tex, sprite });
+        // `ordre` : ses cases triées, pour drawLayer (calculé une fois)
+        areas.push({ cells, ordre: [...cells].sort((a, b) => a - b), groups: ns, x: c0 * tw, y: r0 * th, tex, sprite });
       }
       this.tileAnims = [...groups.values()];
       this.animAreas = areas;
@@ -419,7 +430,9 @@
       const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
       if (!set) return;
       const img = this.textures.get(MAP.tiles).getSourceImage();
-      const cur = new Map(this.tileAnims.map((g) => [g.n, g.ids[g.cur]]));
+      const cur = this.animCur || (this.animCur = new Map());   // la même table à chaque fois
+      cur.clear();
+      for (const g of this.tileAnims) cur.set(g.n, g.ids[g.cur]);
       const ctx = area.tex.getContext();
       ctx.imageSmoothingEnabled = false;
       ctx.clearRect(0, 0, area.tex.width, area.tex.height);
@@ -428,7 +441,7 @@
       ctx.fillStyle = '#6a8157';
       for (const i of area.cells) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
       for (const layer of raw.layers) {
-        if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, set, img, area.cells, cur);
+        if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, set, img, area.ordre, cur);
       }
       ctx.restore();
       area.tex.refresh();

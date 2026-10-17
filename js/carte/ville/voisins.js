@@ -129,7 +129,7 @@
       const libres = [];
       this.walk.forEach((row, y) => row.forEach((ok, x) => { if (ok) libres.push({ x, y }); }));
       const noms = (this.cache.json.get('perso_cases') || {}).frames || [];
-      this.npcFrame = (name) => Math.max(0, noms.indexOf(name));
+      this.npcFrame = K.cases(noms);
       for (const m of f.membres) {
         const key = sheetKey(m.perso, m.enfant);
         if (!this.textures.exists(key) || !libres.length) continue;
@@ -188,7 +188,7 @@
           }
           if (!n.path.length) n.wait = 1;
         }
-        n.s.setFrame(this.npcFrame(moving ? `marche_${n.face}_${Math.floor(n.walked / 4) % 4}` : `idle_${n.face}_${Math.floor(time / 600 + n.m.perso) % 2}`));
+        n.s.setFrame(moving ? this.npcFrame.de('marche', n.face, Math.floor(n.walked / 4) % 4) : this.npcFrame.de('idle', n.face, Math.floor(time / 600 + n.m.perso) % 2));
         n.s.setPosition(Math.round(n.x), Math.round(n.y)).setDepth(n.y);
         n.shadow.setPosition(Math.round(n.x), Math.round(n.y)).setDepth(n.y - 0.5);
       }
