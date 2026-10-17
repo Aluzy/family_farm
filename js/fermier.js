@@ -191,6 +191,8 @@
     }
     function coopSpot() {
       const c = sprite('poulailler');
+      // la ferme générée : devant le nichoir
+      if (!c && o.cle) return o.cle('poulailler');
       if (!c || c.texture.key.indexOf('ph_') === 0) return null;
       return { x: Math.round(c.x + 13), y: Math.round(c.y + 6) };
     }
@@ -421,7 +423,7 @@
     // (o.collect : les œufs ; le lait, et il tond les moutons prêts) et le rapporte devant la
     // maison.
     const isBuilding = (lieu) => lieu === 'poulailler' || lieu === 'etable';
-    function gather(lieu) {
+    function fillBasket(lieu) {
       claimed.delete(lieu);
       pilesNow.delete(lieu);
       if (o.collect) o.collect(lieu, (items) => { if (items && o.gain) o.gain(items); });
@@ -429,13 +431,13 @@
     function collect(lieu) {
       if (!isBuilding(lieu) || !pilesNow.has(lieu) || claimed.has(lieu)) return false;
       const spot = lieu === 'poulailler' ? coopSpot() : barnSpot();
-      if (reduced() || !spot) { gather(lieu); return true; }
+      if (reduced() || !spot) { fillBasket(lieu); return true; }
       claimed.add(lieu);
       const d = door();
       const list = [
         walkTo(spot.x, spot.y, { far: true }),
         act('ramasse', { face: 'cote', flip: false }),
-        once(() => { gather(lieu); basket = true; }),
+        once(() => { fillBasket(lieu); basket = true; }),
         walkTo(d.x, d.y + 4, { basket: true, far: true }),
         once(() => { basket = false; }),
         wait(0.6),

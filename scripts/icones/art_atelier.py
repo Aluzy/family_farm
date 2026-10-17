@@ -1,5 +1,5 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
-# mur en pierre, la porte, la paillasse et l'Atelier (un marteau).
+# mur en pierre, la porte, la paillasse, le nichoir et l'Atelier (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
 
@@ -112,6 +112,25 @@ ICONS = {
         '..uuu......uuu..',
         '................',
         '................',
+        '................',
+    ],
+    # nichoir : un nid de paille, trois œufs dedans
+    '🪺': [
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '....uu....uu....',
+        '...uwwu..uwwu...',
+        '..uwwwwuuwwwwu..',
+        '.OuwwwwuuwwwwuO.',
+        'OyouuuuwwuuuuoyO',
+        'OYyoyouwwuoyoyYO',
+        'OyYyoyouuoyoyYyO',
+        '.OoyYyoyoyoyYoO.',
+        '..OOoyoyoyoyOO..',
+        '....OOOOOOOO....',
         '................',
     ],
     # l'Atelier : un marteau, fer en haut, manche de bois
