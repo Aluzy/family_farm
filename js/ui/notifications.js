@@ -9,6 +9,8 @@ import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { cibleAttrs, cibleNom, notifCible } from './stage.js';
 import { registerActions } from './actions.js';
+import { openModal } from './modal.js';
+import { plural } from './common.js';
 
 /* ---------- Notifications ---------- */
 
@@ -40,7 +42,7 @@ export function renderNotifications(fenetre = false) {
     ${fenetre ? '' : '<h2>✉️ Notifications</h2>'}
     ${aLire.length ? `<h3 class="section-title">📬 Courrier</h3><ul class="notif-list">${aLire.map(mailRow).join('')}</ul>` : ''}
     ${list.length
-      ? `<p class="hint${aLire.length ? ' mail-title' : ''}">${list.length} chose${list.length > 1 ? 's' : ''} à voir aujourd'hui.</p><ul class="notif-list">${items}</ul>`
+      ? `<p class="hint${aLire.length ? ' mail-title' : ''}">${plural(list.length, 'chose')} à voir aujourd'hui.</p><ul class="notif-list">${items}</ul>`
       : `<p class="hint notif-empty">${aLire.length ? 'Rien d\'autre à signaler aujourd\'hui.' : 'Rien à signaler aujourd\'hui.'} 🌾</p>`}
     ${lues.length ? `<h3 class="section-title mail-title">📭 Courrier lu</h3><ul class="notif-list">${lues.map(mailRow).join('')}</ul>` : ''}`;
 }
@@ -60,23 +62,18 @@ function openMailModal(id) {
     .join(' · ');
   // Les cadeaux de cette lettre se plantent dans la Serre : un raccourci y mène si la carte l'affiche.
   const serre = def.quand && def.quand.debloque === 'serre';
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal letter" role="dialog" aria-modal="true" aria-labelledby="mail-title" data-stop-propagation>
-        <p class="letter-place">${def.lieu}</p>
-        <h2 id="mail-title">${def.icone} ${def.objet}</h2>
-        <div class="letter-body">${def.texte.map((p) => `<p>${withFamilyName(p)}</p>`).join('')}</div>
-        <p class="letter-sign">${def.signature}</p>
-        ${DATA.COURRIER[id].pieces ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${formatNumber(DATA.COURRIER[id].pieces)} <span aria-hidden="true">💰</span> pièces</span><span class="muted">${pieces ? 'Versées à l\'instant.' : 'Déjà versées.'}</span></div>` : ''}
-        ${cadeaux ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${cadeaux}</span><span class="muted">Déjà rangés dans ton inventaire.${serre ? ' Ils se plantent dans la Serre, et nulle part ailleurs.' : ''}</span></div>` : ''}
-        <div class="row">
-          ${serre ? `<button type="button" class="btn primary" ${cibleAttrs({ fenetre: 'serre' })}>Aller à la Serre</button>` : ''}
-          <button type="button" class="btn${serre ? '' : ' primary'}" data-action="close-modal" id="mail-close">Fermer</button>
-        </div>
-      </div>
-    </div>`;
   // Le focus va sur « Fermer » sans faire défiler : la lettre se lit depuis son en-tête.
-  document.getElementById('mail-close').focus({ preventScroll: true });
+  openModal(`
+    <p class="letter-place">${def.lieu}</p>
+    <h2 id="mail-title">${def.icone} ${def.objet}</h2>
+    <div class="letter-body">${def.texte.map((p) => `<p>${withFamilyName(p)}</p>`).join('')}</div>
+    <p class="letter-sign">${def.signature}</p>
+    ${DATA.COURRIER[id].pieces ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${formatNumber(DATA.COURRIER[id].pieces)} <span aria-hidden="true">💰</span> pièces</span><span class="muted">${pieces ? 'Versées à l\'instant.' : 'Déjà versées.'}</span></div>` : ''}
+    ${cadeaux ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${cadeaux}</span><span class="muted">Déjà rangés dans ton inventaire.${serre ? ' Ils se plantent dans la Serre, et nulle part ailleurs.' : ''}</span></div>` : ''}
+    <div class="row">
+      ${serre ? `<button type="button" class="btn primary" ${cibleAttrs({ fenetre: 'serre' })}>Aller à la Serre</button>` : ''}
+      <button type="button" class="btn${serre ? '' : ' primary'}" data-action="close-modal" id="mail-close">Fermer</button>
+    </div>`, { labelledBy: 'mail-title', className: 'modal letter', focus: '#mail-close', preventScroll: true });
   refresh();
 }
 

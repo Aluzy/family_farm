@@ -11,10 +11,11 @@ import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { memberAvatarHtml, memberNameHtml } from './famille.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { canPay, closeModal, costLabel } from './common.js';
+import { canPay, costLabel } from './common.js';
 import { tel } from './consent.js';
+import { openModal } from './modal.js';
 
 /* ---------- version 1.12 (v2, lot 8) : le départ d'une nouvelle partie ---------- */
 
@@ -104,26 +105,22 @@ export function openSetupModal() {
   const nom = setupNameDraft !== null ? setupNameDraft : familyName(state);
   const C = DATA.FAMILY.COMPOSITION;
   const full = state.famille.membres.length >= C.MEMBRES_MAX;
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop">
-      <div class="modal setup-modal" id="setup-modal" role="dialog" aria-modal="true" aria-labelledby="setup-title">
-        <h2 id="setup-title">🏡 Ta famille</h2>
-        <p class="muted">${CHOIX_PRINCIPAL ? 'Avant de partir pour la ferme du grand-père : le nom de la famille, ses membres, et qui tient la ferme au quotidien (le personnage principal, qui dépense l\'énergie à chaque action).' : 'Avant de partir pour la ferme du grand-père : le nom de la famille et ses membres. Le personnage principal (⭐), qui tient la ferme au quotidien, est le premier adulte.'}</p>
-        <div class="stack member-field">
-          <label for="setup-nom"><strong>Nom de famille</strong> <span class="muted">(${D.NOM_MIN} à ${D.NOM_MAX} signes)</span></label>
-          <input type="text" id="setup-nom" class="member-input" maxlength="${D.NOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${escapeHtml(nom)}">
-        </div>
-        <ul class="setup-members" aria-label="Membres de la famille">${state.famille.membres.map(setupMemberRow).join('')}</ul>
-        <div class="row">
-          <button type="button" class="btn" data-action="member-add" data-age="adulte"${full ? ' disabled' : ''}>➕ Un adulte</button>
-          <button type="button" class="btn" data-action="member-add" data-age="enfant"${full ? ' disabled' : ''}>➕ Un enfant</button>
-        </div>
-        <p class="muted">${state.famille.membres.length} / ${C.MEMBRES_MAX} membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> calories par jour. Pour retirer quelqu'un, ouvre sa fiche (✏️). Les animaux de compagnie s'adoptent ensuite dans la Famille.</p>
-        <p class="muted">Le nom et les prénoms restent sur cet appareil, dans ta sauvegarde : ils ne sont jamais envoyés.</p>
-        <p class="alert" id="setup-error" role="alert" hidden></p>
-        <div class="row"><button type="button" class="btn primary" data-action="setup-start">Partir pour la ferme</button></div>
-      </div>
-    </div>`;
+  openModal(`
+    <h2 id="setup-title">🏡 Ta famille</h2>
+    <p class="muted">${CHOIX_PRINCIPAL ? 'Avant de partir pour la ferme du grand-père : le nom de la famille, ses membres, et qui tient la ferme au quotidien (le personnage principal, qui dépense l\'énergie à chaque action).' : 'Avant de partir pour la ferme du grand-père : le nom de la famille et ses membres. Le personnage principal (⭐), qui tient la ferme au quotidien, est le premier adulte.'}</p>
+    <div class="stack member-field">
+      <label for="setup-nom"><strong>Nom de famille</strong> <span class="muted">(${D.NOM_MIN} à ${D.NOM_MAX} signes)</span></label>
+      <input type="text" id="setup-nom" class="member-input" maxlength="${D.NOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${escapeHtml(nom)}">
+    </div>
+    <ul class="setup-members" aria-label="Membres de la famille">${state.famille.membres.map(setupMemberRow).join('')}</ul>
+    <div class="row">
+      <button type="button" class="btn" data-action="member-add" data-age="adulte"${full ? ' disabled' : ''}>➕ Un adulte</button>
+      <button type="button" class="btn" data-action="member-add" data-age="enfant"${full ? ' disabled' : ''}>➕ Un enfant</button>
+    </div>
+    <p class="muted">${state.famille.membres.length} / ${C.MEMBRES_MAX} membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> calories par jour. Pour retirer quelqu'un, ouvre sa fiche (✏️). Les animaux de compagnie s'adoptent ensuite dans la Famille.</p>
+    <p class="muted">Le nom et les prénoms restent sur cet appareil, dans ta sauvegarde : ils ne sont jamais envoyés.</p>
+    <p class="alert" id="setup-error" role="alert" hidden></p>
+    <div class="row"><button type="button" class="btn primary" data-action="setup-start">Partir pour la ferme</button></div>`, { labelledBy: 'setup-title', className: 'modal setup-modal', id: 'setup-modal', dismiss: false });
   const input = document.getElementById('setup-nom');
   input.addEventListener('input', () => { setupNameDraft = input.value; });
 }
@@ -131,15 +128,11 @@ export function openSetupModal() {
 function openStoryModal() {
   tel('modal', 'histoire');
   const paras = DATA.DEPART.HISTOIRE.map((p) => `<p>${withFamilyName(p)}</p>`).join('');
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal story-modal" role="dialog" aria-modal="true" aria-labelledby="story-title" data-stop-propagation>
-        <h2 id="story-title">🚗 Le départ</h2>
-        ${paras}
-        <p class="muted">✉️ Une lettre du notaire t'attend dans les Notifications.</p>
-        <div class="row"><button type="button" class="btn primary" data-action="close-modal">En route</button></div>
-      </div>
-    </div>`;
+  openModal(`
+    <h2 id="story-title">🚗 Le départ</h2>
+    ${paras}
+    <p class="muted">✉️ Une lettre du notaire t'attend dans les Notifications.</p>
+    <div class="row"><button type="button" class="btn primary" data-action="close-modal">En route</button></div>`, { labelledBy: 'story-title', className: 'modal story-modal' });
 }
 
 // Appelée à chaque image : l'écran de configuration revient tant que la famille n'est pas
@@ -155,14 +148,14 @@ export function watchSetup() {
 registerActions({
   'repair-house': () => {
     const r = applyResult(repairHouse(state));
-    if (r.ok) showToast(`🏠 La maison est réparée (−${formatCoins(r.cost)} 💰). Installe le panneau et la pompe.`);
+    if (r.ok) notify(`🏠 La maison est réparée (−${formatCoins(r.cost)} 💰). Installe le panneau et la pompe.`);
   },
   'buy-starter': (target) => {
     const t = target.dataset.id;
     const r = applyResult(buyStarter(state, t));
     if (r.ok) {
       const L = STARTER_LABELS[t];
-      showToast(`${L.icone} ${L.nom} installé (−${formatCoins(r.cost)} 💰)${r.ouvert && (t === 'panneau' || t === 'pompe') ? ' · la Zone de culture et le Marché ouvrent' : ''}`);
+      notify(`${L.icone} ${L.nom} installé (−${formatCoins(r.cost)} 💰)${r.ouvert && (t === 'panneau' || t === 'pompe') ? ' · la Zone de culture et le Marché ouvrent' : ''}`);
     }
   },
   'main-character': (target) => {
@@ -170,7 +163,7 @@ registerActions({
     if (setupPending(state)) openSetupModal();
     else if (r.ok) {
       persistState();
-      showToast('⭐ Nouveau personnage principal.');
+      notify('⭐ Nouveau personnage principal.');
     }
   },
   'setup-start': () => {

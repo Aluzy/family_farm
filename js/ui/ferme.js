@@ -28,7 +28,7 @@ import { renderChapterBanner } from './chapitres.js';
 import {
   robotAutonomy, robotBattery, robotBusy, robotChargePct, robotOn, robotTaskCapacity, robotTasksLeft, upgradeRobotBattery,
 } from '../engine/automation.js';
-import { icon } from './animations.js';
+import { artIcon } from './animations.js';
 import { helpBtn, tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
 import { canPay, costLabel } from './common.js';
@@ -157,7 +157,7 @@ function energieEauParts() {
   const owned = (t) => isOwned(starterOf(state, t));
   const panneauCard = owned('panneau') ? `
       <button type="button" class="card" data-action="open-screen" data-screen="panneaux">
-        <span class="card-title"><span>${icon('panneau')}Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="card-title"><span>${artIcon('panneau')}Production d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
         <span>${powerVerdict(e)}</span>
         ${powerGauge(e.production, panelsMax())}
         <span class="muted">Panneau niveau ${state.panneaux[0].niveau} · ${sunText()}</span>
@@ -165,21 +165,21 @@ function energieEauParts() {
       </button>` : '';
   const batterieCard = owned('batterie') ? `
       <button type="button" class="card" data-action="open-screen" data-screen="batteries">
-        <span class="card-title"><span>${icon('batterie')}Stockage d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
+        <span class="card-title"><span>${artIcon('batterie')}Stockage d'énergie</span><span class="chevron" aria-hidden="true">›</span></span>
         <span class="big">${formatNumber(Math.floor(e.charge / 1000))} / ${formatWh(e.capacite)}</span>
         <span class="muted">${netText}</span>
         ${alertLine(e.batteriesAEntretenir, e.batteriesEnPanne)}
       </button>` : '';
   const pompeCard = owned('pompe') ? `
       <div class="card ancre${tutoTarget('eau')}" id="dev-pompe">
-        <span class="card-title"><span>${icon('pompe')}Pompe · niveau ${p.niveau}</span><span class="chips"><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span>${helpBtn('pompe')}</span></span>
+        <span class="card-title"><span>${artIcon('pompe')}Pompe · niveau ${p.niveau}</span><span class="chips"><span class="chip${ps.code === 'panne' ? ' panne' : ''}">${ps.label}</span>${helpBtn('pompe')}</span></span>
         <span class="muted">Débit réel : <span class="num">${formatLitresRate(p.debit)}</span> (max ${formatLitresRate(pumpFlow(p))})</span>
         ${wearHtml(p)}
         ${deviceControls(p)}
       </div>` : '';
   const reservoirCard = owned('reservoir') ? `
       <div class="card${tutoTarget('eau')}">
-        <span class="card-title"><span>${icon('reservoir')}Réservoir · niveau ${state.reservoir.niveau}</span>${helpBtn('reservoir')}</span>
+        <span class="card-title"><span>${artIcon('reservoir')}Réservoir · niveau ${state.reservoir.niveau}</span>${helpBtn('reservoir')}</span>
         <span class="big">${formatNumber(Math.floor(state.eauMl / 1000))} / ${formatLitres(cap)}</span>
         <span class="muted">${tankText}</span>
         ${tankUp === null
@@ -321,7 +321,7 @@ export function renderDeviceScreen(kind) {
   return `
     <div class="screen-head">
       <button type="button" class="btn" data-action="close-screen">← Ferme</button>
-      <h2>${icon(type)}${isPanels ? 'Production d\'énergie' : 'Stockage d\'énergie'}</h2>
+      <h2>${artIcon(type)}${isPanels ? 'Production d\'énergie' : 'Stockage d\'énergie'}</h2>
       ${helpBtn(type)}
     </div>
     ${deviceDetail(kind)}
@@ -351,7 +351,7 @@ export function renderPotager() {
     <div class="row plot-foot">${groupButtons('potager')}</div>`;
   return `
     <div class="section-head">
-      <h3>${icon('potager')}${DATA.POTAGER.NOM} · ${pot.parcelles.length} parcelles</h3>
+      <h3>${artIcon('potager')}${DATA.POTAGER.NOM} · ${pot.parcelles.length} parcelles</h3>
       <span class="chips">${autoChip('potager', `Un robot récolte et replante dès ${DATA.ROBOT.HEURE} h, les asperseurs arrosent à ${DATA.TIME.ARROSAGE_HEURE} h, à 100 %`)}${energyChip('arroser')}${helpBtn('potager')}</span>
     </div>
     ${hoePanelHtml()}

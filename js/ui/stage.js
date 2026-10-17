@@ -18,7 +18,7 @@ import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { robotBattery, robotChargePct, robotOn, robotTrip } from '../engine/automation.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import {
   activeTab, axeMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
 } from './store.js';
@@ -32,8 +32,10 @@ import {
 import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
-import { closeModal } from './common.js';
 import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, pickChipHtml, rodChipHtml } from './outils.js';
+import { closeModal } from './modal.js';
+import { itemsText } from './common.js';
+import { runAction } from './events.js';
 
 /* ---------- Carte Phaser (voir farm-stage.js et docs/architecture-phaser.md) ---------- */
 
@@ -364,7 +366,7 @@ export function stageModel() {
     items[M.laine] = (items[M.laine] || 0) + tondre;
     if (e) e.items = items; else tas.push({ id: 'etable', lieu: 'etable', ref: null, items });
   }
-  const ramasser = tas.map((p) => ({ id: p.id, lieu: p.lieu, ref: p.ref, texte: itemsBulle(p.items) }));
+  const ramasser = tas.map((p) => ({ id: p.id, lieu: p.lieu, ref: p.ref, texte: itemsText(p.items, 'bulle') })); // « 🥕 6 🌱 2 » : les emojis deviennent des icônes
   return {
     // la nuit (22 h → 6 h) : la lumière ; la famille reste dedans (le joueur, lui, peut agir)
     nuit: nightActive(state),
@@ -472,12 +474,6 @@ function sprinklers() {
   return sprinklerSpots().map((a) => ({ x: a.cx * 16, y: a.cy * 16, on: a.cases.some((t) => arrosees.has(t)) }));
 }
 
-// Texte d'une bulle : « 🥕 6 🌱 2 » (les emojis deviennent des icônes à l'affichage).
-function itemsBulle(items) {
-  return Object.entries(items || {}).filter(([item, qty]) => DATA.items[item] && qty > 0)
-    .map(([item, qty]) => `${DATA.items[item].icone} ${qty}`).join(' ');
-}
-
 // Version 1.18 : le personnage de la carte ramasse ce qui est produit. Sans lui (pas de
 // carte, ou une carte prête mais sans personnage), tout va directement à l'inventaire, et
 // ce qui attendait encore y entre.
@@ -501,8 +497,8 @@ function stagePickup(id) {
 // il prend ce qui l'attend (et tond les moutons prêts). Renvoie ce qu'il a pris, ou null.
 function stageCollect(lieu) {
   const r = collectAt(state, lieu);
-  if (r.ok && r.fatigue) showToast(TIRED);
-  else if (!r.ok && r.error === TIRED) showToast(TIRED);
+  if (r.ok && r.fatigue) notify(TIRED);
+  else if (!r.ok && r.error === TIRED) notify(TIRED);
   if (r.ok || r.error === TIRED) { persistState(); refresh(); }
   return r.ok ? r.items : null;
 }
@@ -538,17 +534,11 @@ function buildingInRuins(id) {
   }
 }
 
-// Pont carte → jeu : crée un bouton invisible portant data-action et le clique. La
-// délégation d'événements existante fait le reste (action, fenêtre, suivi).
+// Pont carte → jeu : l'action du registre, comme un clic sur un bouton qui porterait
+// data-action et ces data-* (en texte, comme dans le DOM) ; suivi et sommeil compris.
 function stageAct(action, data) {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.hidden = true;
-  b.dataset.action = action;
-  for (const k of Object.keys(data || {})) b.dataset[k] = data[k];
-  document.getElementById('farm-stage').appendChild(b);
-  b.click();
-  b.remove();
+  const target = { dataset: Object.fromEntries(Object.entries(data || {}).map(([k, v]) => [k, String(v)])) };
+  runAction(action, target, { target });
 }
 
 export function renderStage() {
@@ -710,8 +700,8 @@ function renderStageNav(el) {
   if (stageInterior) {
     const w = STAGE_WINDOWS[stageInterior];
     morph(nav, `<div class="stage-room-bar" role="group" aria-label="${w.nom}">
-      <button type="button" class="stage-room-btn" data-action="stage-exit" aria-label="Sortir : retour à la carte" title="Retour à la carte"><span aria-hidden="true">‹</span> Sortir</button>
-      <button type="button" class="stage-room-btn" data-action="stage-open" data-window="${stageInterior}" aria-label="${w.nom} : ${interiorHelp(stageInterior)}" title="${interiorHelp(stageInterior)}"><span aria-hidden="true">${w.icone}</span> Gérer</button>
+      <button type="button" class="btn btn-pill stage-room-btn" data-action="stage-exit" aria-label="Sortir : retour à la carte" title="Retour à la carte"><span aria-hidden="true">‹</span> Sortir</button>
+      <button type="button" class="btn primary btn-pill stage-room-btn" data-action="stage-open" data-window="${stageInterior}" aria-label="${w.nom} : ${interiorHelp(stageInterior)}" title="${interiorHelp(stageInterior)}"><span aria-hidden="true">${w.icone}</span> Gérer</button>
     </div>`);
     return;
   }
@@ -753,6 +743,8 @@ registerActions({
   },
   // FLU-07 : descend d'une demi-hauteur de vue
   'stage-pan-down': () => {
+    // TODO : FarmStage n'expose pas la vue de la caméra ; une méthode publique (son centre et
+    // sa taille) éviterait de lire ici les objets internes de Phaser (cameras.main.worldView).
     const s = window.FarmStage && FarmStage.scene();
     if (!s || !s.ready) return;
     const cam = s.cameras.main;

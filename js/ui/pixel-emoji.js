@@ -1,7 +1,8 @@
 // pixel-emoji.js — remplace à l'affichage les emojis qui ont leur icône en pixel art.
 //
 // Les textes du jeu gardent leurs emojis (données, messages, aide, encyclopédie) : seul
-// l'affichage change. Un emoji connu devient <i class="px" role="img" aria-label="💰">,
+// l'affichage change. Un emoji connu devient <i class="px" role="img" aria-label="💰"> (ou le
+// nom de l'objet, voir setEmojiNames),
 // une case de 16×16 de assets/icones.png. La planche et la table (icones.generated.js) sont
 // produites par scripts/icones/build.py à partir des dessins de scripts/icones/art_*.py.
 //
@@ -24,6 +25,10 @@ const KEYS = Object.keys(ICONES).sort((a, b) => b.length - a.length);
 const pattern = (key) => Array.from(key, (c) => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\uFE0F?') + '\\uFE0F?';
 const FIND = new RegExp(KEYS.map(pattern).join('|'), 'gu');
 const TEST = new RegExp(FIND.source, 'u');
+// Test rapide avant TEST : le texte contient-il au moins le premier signe d'un emoji connu ?
+// (la plupart des textes modifiés, l'heure, les quantités, n'en ont aucun)
+const QUICK = new RegExp(`[${[...new Set(KEYS.map((k) => String.fromCodePoint(k.codePointAt(0))))].join('').replace(/[\]\\^-]/g, '\\$&')}]`, 'u');
+const hasEmoji = (text) => !!text && QUICK.test(text) && TEST.test(text);
 const SKIP = new Set(['OPTION', 'TEXTAREA', 'INPUT', 'TITLE', 'SCRIPT', 'STYLE', 'SELECT']);
 
 // Feuille de style, posée une fois (la page n'a pas besoin de jeu.css).
@@ -49,20 +54,29 @@ function style(doc) {
   doc.head.appendChild(s);
 }
 
-function icon(doc, emoji) {
+// Nom lu par les lecteurs d'écran à la place de l'emoji, quand le jeu le connaît (le nom de
+// l'objet : « Carotte » pour 🥕). Donné par la page (main.js), car cette feuille sert aussi
+// aux pages sans moteur ; sans nom connu, l'emoji reste son propre libellé.
+let NOMS = {};
+export function setEmojiNames(noms) {
+  NOMS = {};
+  for (const [emoji, nom] of Object.entries(noms || {})) NOMS[emoji.replace(/️/g, '')] = nom;
+}
+
+function pxIcon(doc, emoji) {
   const key = emoji.replace(/️/g, '');
   const n = ICONES[key];
   const i = doc.createElement('i');
   i.className = 'px';
   i.setAttribute('role', 'img');
-  i.setAttribute('aria-label', key);
+  i.setAttribute('aria-label', NOMS[key] || key);
   i.setAttribute('style', `--px-x:${n % COLS};--px-y:${Math.floor(n / COLS)}`);
   return i;
 }
 
 function swapText(node) {
   const text = node.nodeValue;
-  if (!text || !TEST.test(text)) return;
+  if (!hasEmoji(text)) return;
   const parent = node.parentNode;
   if (!parent || (parent.nodeType === 1 && (SKIP.has(parent.nodeName) || parent.isContentEditable))) return;
   const doc = node.ownerDocument;
@@ -70,7 +84,7 @@ function swapText(node) {
   let last = 0;
   for (const m of text.matchAll(FIND)) {
     if (m.index > last) frag.appendChild(doc.createTextNode(text.slice(last, m.index)));
-    frag.appendChild(icon(doc, m[0]));
+    frag.appendChild(pxIcon(doc, m[0]));
     last = m.index + m[0].length;
   }
   if (last < text.length) frag.appendChild(doc.createTextNode(text.slice(last)));
@@ -81,10 +95,11 @@ function swapText(node) {
 export function pixelize(root) {
   if (!root) return;
   if (root.nodeType === 3) return swapText(root);
+  if (!hasEmoji(root.textContent)) return; // rien à remplacer dessous : pas de parcours
   const doc = root.ownerDocument || root;
   style(document);
   const walk = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-    acceptNode: (n) => (TEST.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+    acceptNode: (n) => (hasEmoji(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
   });
   const found = [];
   while (walk.nextNode()) found.push(walk.currentNode);
@@ -93,7 +108,8 @@ export function pixelize(root) {
 
 let observer = null;
 
-// Surveille `root` (par défaut le <body>) : chaque texte ajouté ou modifié est traité.
+// Surveille `root` (par défaut le <body>) : chaque texte ajouté ou modifié est traité (un
+// texte sans emoji est écarté d'un test rapide, voir hasEmoji).
 export function watch(root = document.body) {
   if (observer || !root || typeof MutationObserver === 'undefined') return;
   style(document);

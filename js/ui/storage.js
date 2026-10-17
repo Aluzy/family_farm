@@ -2,7 +2,7 @@ import { migrate } from '../engine/state.js';
 import { createNewGame } from '../engine/depart.js';
 import { SAVE_KEY, setState, state } from './store.js';
 import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 
 /* ---------- stockage : localStorage, toujours entouré de try/catch ---------- */
 
@@ -103,15 +103,15 @@ export function copyFromTextarea(area) {
     ok = false;
   }
   if (ok) {
-    showToast('Copié !');
+    notify('Copié !');
     return;
   }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(area.value).then(
-      () => showToast('Copié !'),
-      () => showToast('Copie impossible : le texte est sélectionné, copie-le à la main.')
+      () => notify('Copié !'),
+      () => notify('Copie impossible : le texte est sélectionné, copie-le à la main.')
     );
     return;
   }
-  showToast('Copie impossible : le texte est sélectionné, copie-le à la main.');
+  notify('Copie impossible : le texte est sélectionné, copie-le à la main.');
 }

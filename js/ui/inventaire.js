@@ -12,9 +12,10 @@ import { pxText } from './pixel-art.js';
 import { tel } from './consent.js';
 import { morph } from './render.js';
 import { stageUsable } from './stage.js';
-import { closeModal, costLabel } from './common.js';
-import { showToast } from './toasts.js';
+import { accord, costLabel, itemsText, plural } from './common.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
+import { closeModal, openModal } from './modal.js';
 
 /* ---------- Inventaire ---------- */
 
@@ -26,19 +27,12 @@ export function unitLabel(item, qty) {
 }
 
 export function nightsLabel(n) {
-  return `${n} nuit${n > 1 ? 's' : ''}`;
+  return plural(n, 'nuit');
 }
 
 // « 4 jours » : la pousse d'une culture, un stade par cycle de 24 h d'horloge.
 export function daysLabel(n) {
-  return `${n} jour${n > 1 ? 's' : ''}`;
-}
-
-// « 3 🥕 · 2 🍅 » à partir de { item: quantité }.
-export function itemsSummary(map) {
-  return Object.entries(map)
-    .map(([item, n]) => `${n} ${DATA.items[item].icone}`)
-    .join(' · ');
+  return plural(n, 'jour');
 }
 
 // Quantité d'un item qui périt à la prochaine nuit (lots à qui il reste 1 nuit).
@@ -94,7 +88,7 @@ export function inventoryTabsHtml() {
 function slotHtml(item, n, lieu) {
   const it = DATA.items[item];
   const soon = lieu === 'sac' && isPerishable(item) ? expiringTonight(item) : 0;
-  const label = `${it.nom} : ${formatQty(n)}${lieu === 'frigo' ? ' au frais' : ''}${soon ? `, dont ${formatQty(soon)} ${soon > 1 ? 'périssent' : 'périt'} cette nuit` : ''}`;
+  const label = `${it.nom} : ${formatQty(n)}${lieu === 'frigo' ? ' au frais' : ''}${soon ? `, dont ${formatQty(soon)} ${accord(soon, 'périt', 'périssent')} cette nuit` : ''}`;
   return `<button type="button" class="inv-slot${soon ? ' soon' : ''}" data-action="inv-item" data-item="${item}" data-lieu="${lieu}" title="${it.nom}" aria-label="${label}">` +
     `<span class="inv-slot-icon" aria-hidden="true">${it.icone}</span>` +
     `<span class="inv-slot-qty">${pxText(String(Math.round(n)), 'light')}</span>` +
@@ -155,7 +149,7 @@ function itemBodyHtml(o) {
     const soon = expiringTonight(o.item);
     const lots = lotsOf(state, o.item).map((l) => `${formatQty(l.qty)} : encore ${nightsLabel(l.nightsLeft)}`).join(' · ');
     if (lots) lines.push(`⏳ ${lots}`);
-    if (soon) lines.push(`⚠️ ${formatQty(soon)} ${soon > 1 ? 'périssent' : 'périt'} cette nuit`);
+    if (soon) lines.push(`⚠️ ${formatQty(soon)} ${accord(soon, 'périt', 'périssent')} cette nuit`);
   }
   if (o.lieu === 'frigo') lines.push('🧊 Au frais : il ne vieillit pas tant que le frigo est alimenté.');
   if (o.item === DATA.SILO.ITEM && state.silo.construit) lines.push(`🛖 Silo : ${formatQty(state.silo.ble)}`);
@@ -187,13 +181,9 @@ function openItemModal(item, lieu) {
   if (!DATA.items[item]) return;
   itemOpen = { item, lieu: lieu === 'frigo' ? 'frigo' : 'sac' };
   tel('modal', 'item');
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" data-action="close-modal">
-      <div class="modal bois item-modal" role="dialog" aria-modal="true" aria-labelledby="item-title" data-stop-propagation>
-        <div class="item-body"></div>
-        <div class="row"><button type="button" class="btn" data-action="close-modal">Fermer</button></div>
-      </div>
-    </div>`;
+  openModal(`
+    <div class="item-body"></div>
+    <div class="row"><button type="button" class="btn" data-action="close-modal">Fermer</button></div>`, { labelledBy: 'item-title', className: 'modal bois item-modal' });
   renderItemModal();
 }
 
@@ -217,6 +207,6 @@ registerActions({
   },
   'fridge-in-all': () => {
     const result = applyResult(moveAllToFridge(state));
-    if (result.ok) showToast(`🧊 Rangé au frigo : ${itemsSummary(result.items)}${result.reste ? ` · frigo plein, ${formatQty(result.reste)} restent dehors` : ''}`);
+    if (result.ok) notify(`🧊 Rangé au frigo : ${itemsText(result.items)}${result.reste ? ` · frigo plein, ${formatQty(result.reste)} restent dehors` : ''}`);
   },
 });

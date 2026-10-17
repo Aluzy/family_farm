@@ -4,11 +4,11 @@ import { buyTool, castLine, chopTree, hasTool, mineRock, OUTILS, selectTool, too
 import { axeMode, hoeMode, pickMode, rodMode, setAxeMode, setHoeMode, setPickMode, setRodMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { ACTIONS, registerActions } from './actions.js';
-import { closeModal } from './common.js';
 import { persistState } from './storage.js';
 import { closeStageWindow, stageInterior, stageWindow } from './stage-windows.js';
+import { closeModal } from './modal.js';
 
 /* ---------- la barre d'outils, en bas de la carte ---------- */
 
@@ -58,7 +58,7 @@ function useTool(id) {
     return;
   }
   if (id === 'houe' || id === 'hache' || id === 'pioche' || id === 'canne') {
-    if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return; }
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
   }
   applyResult(selectTool(state, id));
   if (id !== 'houe' && hoeMode) setHoeMode(false);
@@ -71,20 +71,20 @@ function useTool(id) {
   }
   if (id === 'hache') {
     setAxeMode(true);
-    showToast(`${def.ICONE} Hache en main : touche un arbre de la carte pour le couper.`);
+    notify(`${def.ICONE} Hache en main : touche un arbre de la carte pour le couper.`);
     if (stageWindow) closeStageWindow();
     else refresh();
     return;
   }
   if (id === 'pioche') {
     setPickMode(true);
-    showToast(`${def.ICONE} Pioche en main : touche un rocher de la carte pour le casser.`);
+    notify(`${def.ICONE} Pioche en main : touche un rocher de la carte pour le casser.`);
     if (stageWindow) closeStageWindow();
     else refresh();
     return;
   }
   setRodMode(true);
-  showToast(`${def.ICONE} Canne à pêche en main : touche l'eau de l'étang ou de la mare pour y pêcher.`);
+  notify(`${def.ICONE} Canne à pêche en main : touche l'eau de l'étang ou de la mare pour y pêcher.`);
   if (stageWindow) closeStageWindow();
   else refresh();
 }
@@ -113,9 +113,9 @@ export function rodChipHtml() {
 // dans l'inventaire tout de suite ; la carte montre ensuite le personnage qui coupe. Renvoie
 // { bois: n, tombe } (tombe : ce coup abat l'arbre), ou null (il dort, sans énergie : un message).
 export function chopFromStage(id) {
-  if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return null; }
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
   const r = chopTree(state, id);
-  if (!r.ok) { showToast(r.error); return null; }
+  if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
   return { bois: r.bois, tombe: r.tombe };
@@ -125,9 +125,9 @@ export function chopFromStage(id) {
 // l'inventaire tout de suite ; la carte montre ensuite le personnage qui frappe. Renvoie
 // { items: { pierre: n }, casse } (casse : ce coup brise le rocher), ou null (un message).
 export function mineFromStage(id) {
-  if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return null; }
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
   const r = mineRock(state, id);
-  if (!r.ok) { showToast(r.error); return null; }
+  if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
   return { items: { pierre: r.pierre }, casse: r.casse };
@@ -138,9 +138,9 @@ export function mineFromStage(id) {
 // personnage qui lance, attend la touche et ferre. Renvoie { poisson } (null : rien n'a
 // mordu), ou null (un message : il dort, sans énergie, le poisson se fait rare).
 export function fishFromStage(eau) {
-  if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return null; }
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
   const r = castLine(state, eau);
-  if (!r.ok) { showToast(r.error); return null; }
+  if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
   return { poisson: r.poisson };
@@ -175,6 +175,6 @@ registerActions({
     // achetée depuis sa fiche du Marché : la fiche se ferme (un outil ne s'achète qu'une fois)
     if (document.querySelector('#modal-root .shop-modal')) closeModal();
     const def = toolDef(id);
-    showToast(`${def.ICONE} ${def.NOM} achetée : elle est dans la barre d'outils, en bas de la carte.`);
+    notify(`${def.ICONE} ${def.NOM} achetée : elle est dans la barre d'outils, en bas de la carte.`);
   },
 });

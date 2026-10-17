@@ -16,10 +16,10 @@ import { applyResult } from './game-actions.js';
 import { syncJobs } from './loop.js';
 import { refresh } from './render.js';
 import { syncTestDeviceSelect } from './stage-windows.js';
-import { itemsSummary } from './inventaire.js';
 import { openWakeModal } from './reveil.js';
-import { showToast } from './toasts.js';
+import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
+import { chartFrame, itemsText } from './common.js';
 
 function actionTestNights(count) {
   const { report } = testSleepNights(state, count);
@@ -40,20 +40,15 @@ const SIM_NIGHTS = 60;
 function simulationHtml(rows) {
   const S = DATA.SIMULATION;
   const W = 320, H = 150, left = 30, right = 8, top = 8, bottom = 22;
-  const plotW = W - left - right;
-  const plotH = H - top - bottom;
+  const { plotW, plotH, y, grid } = chartFrame({ W, H, left, right, top, bottom });
   const first = rows[0].nuit;
   const last = rows[rows.length - 1].nuit;
   const span = Math.max(1, last - first);
   const x = (nuit) => left + plotW * ((nuit - first) / span);
-  const y = (pct) => top + plotH * (1 - pct / 100);
   const smooth = rows.map((r, i) => {
     const w = rows.slice(Math.max(0, i - S.LISSAGE + 1), i + 1);
     return w.reduce((t, q) => t + q.autonomie, 0) / w.length;
   });
-  const grid = [0, 25, 50, 75, 100]
-    .map((g) => `<line class="chart-grid" x1="${left}" y1="${y(g).toFixed(1)}" x2="${W - right}" y2="${y(g).toFixed(1)}"/><text class="chart-label" x="${left - 4}" y="${(y(g) + 3).toFixed(1)}" text-anchor="end">${g}</text>`)
-    .join('');
   const step = Math.max(1, Math.ceil(span / 6 / 5) * 5);
   const ticks = rows
     .filter((r) => (r.nuit - first) % step === 0)
@@ -89,7 +84,7 @@ function actionTestSimulate() {
   const box = document.getElementById('sim-result');
   box.innerHTML = simulationHtml(rows);
   box.hidden = false;
-  showToast(`Simulation de ${SIM_NIGHTS} nuits terminée`);
+  notify(`Simulation de ${SIM_NIGHTS} nuits terminée`);
 }
 
 export function renderTestPanel() {
@@ -115,7 +110,7 @@ registerActions({
   },
   'test-level5': () => {
     const result = applyResult(testSetBuildingLevel5(state, document.getElementById('test-building').value));
-    if (result.ok) showToast('Bâtiment au niveau 5.');
+    if (result.ok) notify('Bâtiment au niveau 5.');
   },
   'test-techs': () => {
     applyResult(testUnlockAllTechs(state));
@@ -167,8 +162,8 @@ registerActions({
   },
   'test-age': () => {
     const result = applyResult(testAgeInventory(state));
-    const lost = itemsSummary(result.perdus);
-    showToast(lost ? `Périmés : ${lost}` : 'Rien n\'a péri.');
+    const lost = itemsText(result.perdus);
+    notify(lost ? `Périmés : ${lost}` : 'Rien n\'a péri.');
   },
   'test-seeds': () => {
     applyResult(testAddSeeds(state));
@@ -190,7 +185,7 @@ registerActions({
   },
   'test-next-level': () => {
     const result = applyResult(testSetLevel(state, Math.min(levelCount(), state.progression.niveau + 1)));
-    if (result.ok) showToast(`Niveau ${result.niveau}`);
+    if (result.ok) notify(`Niveau ${result.niveau}`);
   },
   'test-add-1000': () => {
     applyResult(testAddPieces(state, 1000));
@@ -209,11 +204,11 @@ registerActions({
   },
   'test-complete-chapter': () => {
     const result = applyResult(testCompleteChapter(state));
-    if (result.ok) showToast(result.fini ? '🏆 Campagne terminée' : `Chapitre ${result.chapitre} atteint`);
+    if (result.ok) notify(result.fini ? '🏆 Campagne terminée' : `Chapitre ${result.chapitre} atteint`);
   },
   'test-goto-chapter': () => {
     const result = applyResult(testGoToChapter(state, document.getElementById('test-chapter').value));
-    if (result.ok) showToast(result.fini ? '🏆 Mode libre' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
+    if (result.ok) notify(result.fini ? '🏆 Mode libre' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
   },
   'test-simulate': () => {
     actionTestSimulate();
