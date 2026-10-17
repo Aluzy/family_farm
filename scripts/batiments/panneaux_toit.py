@@ -6,6 +6,10 @@
 # verticaux, bords haut et bas en escalier comme les rangs de bardeaux. Lumière à gauche.
 from PIL import Image
 import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, rangee  # noqa: E402
 
 OX, OY = 37, 2          # coin haut-gauche de la découpe dans house_sp.png
 FW, FH = 32, 47         # taille d'une image de la planche
@@ -56,14 +60,14 @@ def draw_panel(px, x0, row):
         px[x - OX, y - OY] = C['reflet'] + (255,)
 
 
-sheet = Image.new('RGBA', (FW * N, FH), (0, 0, 0, 0))
-for n in range(1, N + 1):
-    frame = Image.new('RGBA', (FW, FH), (0, 0, 0, 0))
-    px = frame.load()
+def frame(n):
+    im = Image.new('RGBA', (FW, FH), (0, 0, 0, 0))
+    px = im.load()
     for row, col in PLACES[:n]:
         draw_panel(px, COLS[col], row)
-    sheet.paste(frame, ((n - 1) * FW, 0))
+    return im
 
-out = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'panneaux_toit.png')
-sheet.save(os.path.normpath(out))
+
+sheet = rangee([frame(n) for n in range(1, N + 1)], FW, FH)
+sheet.save(os.path.join(ASSETS, 'panneaux_toit.png'))
 print('assets/panneaux_toit.png :', N, 'images de', FW, '×', FH)

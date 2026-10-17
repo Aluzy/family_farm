@@ -34,10 +34,10 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, BAYER, ROOT, T, cote_a_cote, wangid  # noqa: E402
 MODELE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'bordure_eau.png')
-SORTIE = os.path.join(ROOT, 'assets', 'bordure_eau')
-T = 16
+SORTIE = os.path.join(ASSETS, 'bordure_eau')
 
 SABLE = (232, 186, 15)        # le dessus de la terre
 LISERE = (245, 214, 92)       # le bord du dessus, éclairé
@@ -64,7 +64,6 @@ ARRONDI = [1, 3, 4]
 MOUILLE = (214, 168, 14)      # le sable mouillé, au bord de l'eau
 CAILLOU, CAILLOU_OMBRE = (214, 200, 168), (150, 120, 40)
 CLAIRE = (196, 226, 236, 150)  # l'eau peu profonde au pied de la berge (posée sur l'eau)
-BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
 
 
 def berge(modele):
@@ -246,8 +245,7 @@ def planche_herbe(modele):
 def tsx(img):
     lignes = []
     for n in range(16):
-        tl, tr, bl, br = [2 if (n >> k) & 1 else 1 for k in (3, 2, 1, 0)]
-        lignes.append(f'   <wangtile tileid="{n}" wangid="0,{tr},0,{br},0,{bl},0,{tl}"/>')
+        lignes.append(f'   <wangtile tileid="{n}" wangid="{wangid(n)}"/>')
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.12.2" name="bordure_eau" tilewidth="{T}" tileheight="{T}" tilecount="16" columns="4">
  <image source="bordure_eau.png" width="{img.width}" height="{img.height}"/>
@@ -287,10 +285,7 @@ def apercu(img):
     fond = Image.new('RGBA', img.size, (60, 150, 210, 255))
     fond.alpha_composite(img)
     b = fond.resize((img.width * z * 2, img.height * z * 2), Image.NEAREST)
-    res = Image.new('RGBA', (a.width + b.width + 24, max(a.height, b.height)), (40, 40, 40, 255))
-    res.paste(b, (0, 0))
-    res.paste(a, (b.width + 24, 0))
-    return res
+    return cote_a_cote(b, a)
 
 
 def main():

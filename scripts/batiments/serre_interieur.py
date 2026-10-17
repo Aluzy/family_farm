@@ -14,12 +14,13 @@
 import json
 import os
 import shutil
+import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT, T  # noqa: E402
 MODELE = os.path.join(ROOT, 'scripts', 'batiments', 'originaux', 'serre_interieur.png')
-T = 16
 BACS = [(16, 64, 64, 112), (96, 64, 64, 112)]       # x, y, largeur, hauteur (px) : la terre des bacs
 SOL = (4, 40, 168, 150)                             # le plancher, sous la verrière
 ENTREE = (88, 190)                                   # le milieu du bas
@@ -37,7 +38,7 @@ def main():
     im = Image.open(MODELE)
     W, H = im.width // T, im.height // T
     assert (W * T, H * T) == im.size, 'le dessin doit tomber sur la grille de 16 px'
-    shutil.copyfile(MODELE, os.path.join(ROOT, 'assets', 'serre_interieur.png'))
+    shutil.copyfile(MODELE, os.path.join(ASSETS, 'serre_interieur.png'))
     couches = [{'id': 1, 'name': 'serre_main_scene', 'type': 'tilelayer', 'width': W, 'height': H,
                 'x': 0, 'y': 0, 'opacity': 1, 'visible': True, 'data': [0] * (W * H)}]
     oid = 1
@@ -57,7 +58,7 @@ def main():
         'tilesets': [{'firstgid': 1, 'source': 'farm_spring_summer.tsx'}],
         'tilewidth': T, 'type': 'map', 'version': '1.10', 'width': W,
     }
-    with open(os.path.join(ROOT, 'assets', 'serre_interieur.tmj'), 'w', encoding='utf-8') as f:
+    with open(os.path.join(ASSETS, 'serre_interieur.tmj'), 'w', encoding='utf-8') as f:
         json.dump(carte, f, ensure_ascii=False, indent=1)
         f.write('\n')
     print(f'assets/serre_interieur.png, assets/serre_interieur.tmj : {W} × {H} cases, '

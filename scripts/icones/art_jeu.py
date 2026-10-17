@@ -8,13 +8,9 @@ import os
 
 from PIL import Image
 
+from pixel import ASSETS, rgb  # scripts/pixel.py (build.py met scripts/ dans le chemin)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
-ASSETS = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'assets')
-
-
-def rgb(h):
-    h = h.lstrip('#')
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
 
 
 def frame(sheet, w, h, n=0):

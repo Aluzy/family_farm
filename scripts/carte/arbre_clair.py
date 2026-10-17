@@ -27,10 +27,11 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, BAYER, ROOT, contour, hls  # noqa: E402
 MODELE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'arbre_modele.png')
 ARBRE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'arbre_feuillu.png')
-SORTIE = os.path.join(ROOT, 'assets', 'arbre_clair.png')
+SORTIE = os.path.join(ASSETS, 'arbre_clair.png')
 CW, CH = 48, 64
 
 # La rampe des verts, du plus sombre au plus clair : les verts de l'herbe (herbe_chemin),
@@ -42,12 +43,7 @@ CONTOUR = (6, 40, 8)
 RAMPE_PIN = [(4, 34, 18), (8, 56, 28), (14, 82, 36), (28, 112, 42), (52, 142, 48), (86, 174, 58),
              (124, 206, 80), (164, 232, 118)]
 MODELE_PIN = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'pin_modele.png')
-SORTIE_PIN = os.path.join(ROOT, 'assets', 'pin_clair.png')
-BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
-
-
-def hls(c):
-    return colorsys.rgb_to_hls(*(v / 255 for v in c))
+SORTIE_PIN = os.path.join(ASSETS, 'pin_clair.png')
 
 
 def vert(c, hmax=170):
@@ -91,20 +87,6 @@ def eclaircir(modele, rampe=None, hmax=170, clarte=(0.08, 0.92, 0.85)):
     return out
 
 
-def contour(img):
-    """Un contour sombre d'un pixel autour du dessin (il se détache de l'herbe vive)."""
-    out = img.copy()
-    px = img.load()
-    w, h = img.size
-    for y in range(h):
-        for x in range(w):
-            if px[x, y][3]:
-                continue
-            if any(0 <= a < w and 0 <= b < h and px[a, b][3] for a, b in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1))):
-                out.putpixel((x, y), CONTOUR + (255,))
-    return out
-
-
 def buisson(texture, bosses, graine):
     """Un buisson : des bosses rondes (cx, cy, r en pixels, par rapport au pied), chacune un
     dôme éclairé du haut à gauche, le bord bosselé ; la couleur est celle du feuillage de
@@ -143,7 +125,7 @@ def buisson(texture, bosses, graine):
                 c = RAMPE[3] + (255,)
             k = 0.55 + 0.75 * max(0.0, lam) + (BAYER[y % 4][x % 4] / 16 - 0.5) * 0.12
             out.putpixel((x, y), tuple(min(255, round(v * k)) for v in c[:3]) + (255,))
-    return contour(out)
+    return contour(out, CONTOUR)       # il se détache de l'herbe vive
 
 
 def planche(modele):
@@ -191,18 +173,18 @@ def main():
     img.save(SORTIE)
     print('assets/arbre_clair.png : arbre, buisson rond, buisson large (cases de 48 × 64)')
     pin0 = Image.open(MODELE_PIN).convert('RGBA')
-    pin = contour(eclaircir(pin0, RAMPE_PIN, 200, (0.04, 0.82, 1.2)))      # un peu plus sombre que le feuillu
+    pin = contour(eclaircir(pin0, RAMPE_PIN, 200, (0.04, 0.82, 1.2)), CONTOUR)      # un peu plus sombre que le feuillu
     pin.save(SORTIE_PIN)
     print(f'assets/pin_clair.png : le pin harmonisé ({pin.width} × {pin.height}, pied au milieu du bas)')
     # les feuilles d'inclinaison (hache) : l'arbre (48 × 64), le pin centré sur 64 × 64 ; pied
     # au bas de l'image
-    inclinaison(img.crop((0, 0, CW, CH)), CH - 1).save(os.path.join(ROOT, 'assets', 'arbre_clair_sp.png'))
+    inclinaison(img.crop((0, 0, CW, CH)), CH - 1).save(os.path.join(ASSETS, 'arbre_clair_sp.png'))
     pin64 = Image.new('RGBA', (64, 64))
     pin64.alpha_composite(pin, ((64 - pin.width) // 2, 64 - pin.height))
-    inclinaison(pin64, 62).save(os.path.join(ROOT, 'assets', 'pin_clair_sp.png'))
+    inclinaison(pin64, 62).save(os.path.join(ASSETS, 'pin_clair_sp.png'))
     print(f'assets/arbre_clair_sp.png, assets/pin_clair_sp.png : 3 images (droit, à droite, à gauche), {MARGE} px de marge')
     if '--apercu' in sys.argv:
-        herbe = Image.open(os.path.join(ROOT, 'assets', 'herbe_chemin.png')).convert('RGBA')
+        herbe = Image.open(os.path.join(ASSETS, 'herbe_chemin.png')).convert('RGBA')
         fond = Image.new('RGBA', (CW * 4 + 2 * 60, CH))
         for y in range(0, CH, 16):
             for x in range(0, fond.width, 16):

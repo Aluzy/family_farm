@@ -18,10 +18,9 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from commun import ASSETS, ROOT, K, contour, dessin, hasard, image, mel, rgba, teinte  # noqa: E402
+from commun import ASSETS, ROOT, K, T, contour, dessin, hasard, image, mel, rgba, teinte  # noqa: E402
 from PIL import Image  # noqa: E402
 
-T = 16
 SOL = [(70, 60, 56), (84, 72, 66), (98, 86, 78), (58, 50, 48)]
 PAROI = [(52, 46, 46), (74, 66, 64), (96, 88, 84), (122, 114, 108)]
 PLAFOND = [(30, 26, 28), (40, 35, 37), (50, 44, 46)]

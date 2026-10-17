@@ -10,9 +10,9 @@ import math
 import os
 import sys
 
-from PIL import Image
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, apercu, contour, points, rangee  # noqa: E402
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 W, H, N = 9, 13, 8
 K = (34, 24, 16)
 TIGE = [(92, 140, 76), (58, 98, 52), (36, 64, 34)]
@@ -35,31 +35,15 @@ def image(k):
     for r, c in ((1.6, METAL[1]), (2.8, METAL[0])):
         put(round(cx + math.cos(a) * r), round(cy + math.sin(a) * r * 0.7), c)
     put(round(cx), 3, LAITON[2])                 # l'axe
-    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    for (x, y), c in px.items():
-        if 0 <= x < W and 0 <= y < H:
-            im.putpixel((x, y), c + (255,))
-    # contour sombre autour du dessin
-    out = im.copy()
-    for y in range(H):
-        for x in range(W):
-            if im.getpixel((x, y))[3]:
-                continue
-            if any(0 <= x + dx < W and 0 <= y + dy < H and im.getpixel((x + dx, y + dy))[3] for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                out.putpixel((x, y), K + (255,))
-    return out
+    return contour(points(px, W, H), K)                # contour sombre autour du dessin
 
 
 def main():
-    sheet = Image.new('RGBA', (W * N, H), (0, 0, 0, 0))
-    for k in range(N):
-        sheet.paste(image(k), (k * W, 0))
-    sheet.save(os.path.join(ROOT, 'assets', 'asperseur.png'), optimize=True)
+    sheet = rangee([image(k) for k in range(N)], W, H)
+    sheet.save(os.path.join(ASSETS, 'asperseur.png'), optimize=True)
     print(f'assets/asperseur.png : {N} images de {W} × {H} px')
     if '--apercu' in sys.argv:
-        bg = Image.new('RGBA', sheet.size, (150, 112, 74, 255))
-        bg.alpha_composite(sheet)
-        bg.resize((sheet.width * 8, sheet.height * 8), Image.NEAREST).save(os.path.join(ROOT, 'apercu_asperseur.png'))
+        apercu(sheet, 'apercu_asperseur.png', 8, (150, 112, 74))
 
 
 if __name__ == '__main__':

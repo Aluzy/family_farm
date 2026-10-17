@@ -1,15 +1,16 @@
 # Lot « lieux et bêtes » : maisons, cabane, ruine, chantier, fontaine, chariot, panier, carton,
 # seau, bidon d'huile, poubelle, laine, vache, chien, chat, empreintes.
 # Format commun à tous les fichiers art_*.py : voir scripts/icones/build.py.
+from pixel import PALETTE_EAU  # build.py met scripts/ dans le chemin
+
 PALETTE = {
+    **PALETTE_EAU,  # l'eau des icônes (scripts/pixel.py)
     # bois (maison, cabane, seau)
     'K': '#2e1a12', 's': '#6a4426', 't': '#8a5a34', 'u': '#b07a48', 'U': '#d8a868',
     # murs crème
     'c': '#f2e6cc', 'C': '#d2bc98',
     # toit bordeaux (comme la maison de la carte)
     'X': '#2a0c18', 'R': '#5e1a2a', 'r': '#8a2c3e', 'p': '#b8465a',
-    # vitre / eau
-    'q': '#163a5c', 'd': '#2a70b0', 'b': '#4aa0e0', 'B': '#c4e8ff',
     # végétal
     'G': '#1f4a22', 'g': '#2f6e2c', 'l': '#4a9a3a', 'm': '#8cd06a',
     # métal / pierre

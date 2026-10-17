@@ -21,7 +21,8 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT  # noqa: E402
 
 C = {
     'K': (34, 22, 16),                                           # contour
@@ -459,7 +460,7 @@ def main():
         images[k + '_drap'] = drap(images[k], 12)
     out = {f'meuble_{k}.png': im for k, im in images.items()}
     for name, im in out.items():
-        im.save(os.path.join(ROOT, 'assets', name), optimize=True)
+        im.save(os.path.join(ASSETS, name), optimize=True)
     if '--apercu' in sys.argv:
         k = 4
         per = 7

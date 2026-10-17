@@ -16,13 +16,14 @@
 # (js/farm-stage.js, CHOP_TREES) s'en servent pour retrouver une tuile.
 import os
 import re
+import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-PLANCHE = os.path.join(ROOT, 'assets', 'farm_spring_summer.png')
-TSX = os.path.join(ROOT, 'assets', 'farm_spring_summer.tsx')
-T = 16
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, T  # noqa: E402
+PLANCHE = os.path.join(ASSETS, 'farm_spring_summer.png')
+TSX = os.path.join(ASSETS, 'farm_spring_summer.tsx')
 COLS = 75
 BASE = 45                     # rangées de la planche d'origine
 RANGEES = 61                  # rangées de la planche agrandie
@@ -53,7 +54,7 @@ def main():
     out = Image.new('RGBA', (COLS * T, RANGEES * T), (0, 0, 0, 0))
     out.paste(ancienne.crop((0, 0, COLS * T, BASE * T)), (0, 0))
     for nom, (fichier, c, r, w, h, (sx, sy, sw, sh)) in BLOCS.items():
-        img = Image.open(os.path.join(ROOT, 'assets', fichier)).convert('RGBA').crop((sx, sy, sx + sw, sy + sh))
+        img = Image.open(os.path.join(ASSETS, fichier)).convert('RGBA').crop((sx, sy, sx + sw, sy + sh))
         assert img.size == (w * T, h * T), (nom, img.size)
         out.paste(img, (c * T, r * T))
     out.save(PLANCHE)

@@ -13,6 +13,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, rangee  # noqa: E402
 from style_v2 import PALETTE_SERRE as PS  # noqa: E402
 
 TOIT = PS['toit']
@@ -152,9 +154,6 @@ def draw_pump(put):
     put(30, 31, 'voyant')
 
 
-sheet = Image.new('RGBA', (W * 3, H), (0, 0, 0, 0))
-for n, kind in enumerate(('puits', 'tuyau', 'pompe')):
-    sheet.paste(frame(kind), (n * W, 0))
-out = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'puits.png'))
-sheet.save(out)
+sheet = rangee([frame(kind) for kind in ('puits', 'tuyau', 'pompe')], W, H)
+sheet.save(os.path.join(ASSETS, 'puits.png'))
 print('assets/puits.png : 3 images de', W, '×', H)

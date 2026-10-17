@@ -145,6 +145,27 @@ def plein(matiere, v=0):
     return im
 
 
+def tuile_ferme(c, x, y):
+    """Une tuile d'herbe et de chemin de la ferme (sa planche : la rangée 49 le chemin plein,
+    la rangée 50 les raccords, la tuile n ayant du chemin aux coins n & 8, 4, 2, 1). Pour les
+    cartes qui touchent la ferme (scripts/ville/transition.py, excursion.py)."""
+    n = sum(bit for v, bit in zip(c, (8, 4, 2, 1)) if v == 'chemin')
+    if n == 0:
+        v = int(hasard(x, y, 8) * 16)
+        return plein('herbe', v), f'herbe_{v}'
+    if n == 15:
+        v = int(hasard(x, y, 9) * 8)
+        return ferme.bloc(v, 49), f'chemin_{v}'
+    return ferme.bloc(n, 50), f'herbe_chemin_{n}'
+
+
+def motif(m, x, y):
+    """La couleur du pixel (x, y) de la matière m (un sol de MOTIFS, ou le chemin de la ferme)."""
+    if m == 'chemin':
+        return ferme.bloc(0, 49).getpixel((x % T, y % T))[:3]
+    return MOTIFS[m](x % T, y % T, 0)
+
+
 # ---------- les passages ----------
 
 def dedans_b(x, y, n):

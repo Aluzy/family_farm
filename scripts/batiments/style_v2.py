@@ -25,9 +25,9 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, ROOT  # noqa: E402
 ORIG = os.path.join(ROOT, 'scripts', 'batiments', 'originaux')
-ASSETS = os.path.join(ROOT, 'assets')
 
 # Les rampes de la ferme (du plus sombre au plus clair), relevées sur ferme_modele.png.
 TOIT_MODELE = [(120, 60, 10), (142, 75, 12), (157, 85, 16), (225, 120, 22), (229, 136, 49), (238, 160, 82)]

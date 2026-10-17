@@ -16,7 +16,8 @@ import sys
 
 from PIL import Image
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+from pixel import ASSETS, apercu  # noqa: E402
 T, COLS = 16, 75
 TUILES = {1: 1612, 2: 1614, 3: 1613, 4: 1762, 5: 1687, 7: 1539, 8: 1764, 10: 1689, 11: 1537,
           12: 1763, 13: 1389, 14: 1387, 15: 1688}
@@ -53,16 +54,14 @@ def sans_herbe(im):
 
 
 def main():
-    sheet = Image.open(os.path.join(ROOT, 'assets', 'farm_spring_summer.png')).convert('RGBA')
+    sheet = Image.open(os.path.join(ASSETS, 'farm_spring_summer.png')).convert('RGBA')
     out = Image.new('RGBA', (16 * T, T), (0, 0, 0, 0))
     for m in range(1, 16):
         im = union(tile(sheet, DIAGONALES[m][0]), tile(sheet, DIAGONALES[m][1])) if m in DIAGONALES else tile(sheet, TUILES[m])
         out.paste(sans_herbe(im), (m * T, 0))
-    out.save(os.path.join(ROOT, 'assets', 'terre_bords.png'))
+    out.save(os.path.join(ASSETS, 'terre_bords.png'))
     if '--apercu' in sys.argv:
-        bg = Image.new('RGBA', out.size, (40, 90, 70, 255))
-        bg.alpha_composite(out)
-        bg.resize((out.width * 8, out.height * 8), Image.NEAREST).save(os.path.join(ROOT, 'apercu_terre_bords.png'))
+        apercu(out, 'apercu_terre_bords.png', 8, (40, 90, 70))
 
 
 if __name__ == '__main__':
