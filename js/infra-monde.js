@@ -138,6 +138,8 @@
         const fin = this.path[this.path.length - 1];
         if (fin) K.anneau(this, fin.x, fin.y);
       });
+      // le doigt posé puis glissé : il marche dans sa direction tant qu'il reste posé (CarteKit.manette)
+      this.manette = K.manette(this);
       // (sans capture : les touches tapées dans un champ de la page y restent ; saisie())
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;
       window.InfraMonde.scene = this;
@@ -236,7 +238,9 @@
       const P = this.heroPos;
       let vx = 0, vy = 0;
       const k = saisie() ? null : this.keys;
-      if (k) {
+      const j = this.manette.dir();
+      if (j) { vx = j.x; vy = j.y; }
+      else if (k) {
         vx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.Q.isDown || k.A.isDown ? 1 : 0);
         vy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.Z.isDown || k.W.isDown ? 1 : 0);
       }

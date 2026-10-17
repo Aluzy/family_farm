@@ -27,12 +27,12 @@
       this.dialog = false;
       this.dialogEl = null;
       const textes = {
-        ville: 'Touche deux fois un trottoir pour y marcher · la gare, l\'arrêt de bus à côté, un étal du marché, un entrepôt',
-        montagne: 'Touche deux fois l\'alpage pour y marcher · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
-        plage: 'Touche deux fois le sable pour y marcher · une trouvaille pour la ramasser · la canne en main : la mer, depuis le ponton · la gare pour rentrer',
-        grotte: 'Touche deux fois le sol pour y marcher · la pioche en main (barre d\'outils) : un minerai · l\'échelle pour remonter',
-        transition: 'Touche deux fois l\'herbe pour y marcher · une maison pour y entrer · l\'abri de bus pour aller à la gare · la hache ou la pioche en main (barre d\'outils) : un arbre, un rocher',
-        interieur: 'Touche deux fois le plancher pour y marcher · un voisin pour lui parler · la flèche pour sortir',
+        ville: 'Glisse le doigt pour marcher (ou touche deux fois un trottoir) · la gare, l\'arrêt de bus à côté, un étal du marché, un entrepôt',
+        montagne: 'Glisse le doigt pour marcher (ou touche deux fois l\'alpage) · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
+        plage: 'Glisse le doigt pour marcher (ou touche deux fois le sable) · une trouvaille pour la ramasser · la canne en main : la mer, depuis le ponton · la gare pour rentrer',
+        grotte: 'Glisse le doigt pour marcher (ou touche deux fois le sol) · la pioche en main (barre d\'outils) : un minerai · l\'échelle pour remonter',
+        transition: 'Glisse le doigt pour marcher (ou touche deux fois l\'herbe) · une maison pour y entrer · l\'abri de bus pour aller à la gare · la hache ou la pioche en main (barre d\'outils) : un arbre, un rocher',
+        interieur: 'Glisse le doigt pour marcher (ou touche deux fois le plancher) · un voisin pour lui parler · la flèche pour sortir',
       };
       if (textes[etat.nom]) this.say('💡 ' + textes[etat.nom]);
     },

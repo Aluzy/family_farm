@@ -185,6 +185,11 @@
         I.on('pointermove', this.onMove, this);
         I.on('pointerup', (p) => this.onUp(p, true));
         I.on('pointerupoutside', (p) => this.onUp(p, false));
+        // Dehors, le doigt posé puis glissé : le personnage marche dans sa direction tant qu'il
+        // reste posé (CarteKit.manette) ; pas quand la houe laboure, ni la bulle de la citerne,
+        // ni pendant la pêche, ni au lit.
+        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.held
+          && !this.fishing && !(this.ctx.lastModel && this.ctx.lastModel.coucher));
         I.on('gameout', () => { if (!this.drag) this.setHover(null); });
         I.on('wheel', (p, over, dx, dy) => { if (this.suitPerso()) return; this.vx = this.vy = 0; this.pan = null; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
         this.scale.on('resize', () => this.fit());
@@ -367,7 +372,10 @@
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false, true); }
         // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
         if (this.ambient && !this.room) this.ambient.update(delta);
-        if (this.fermier) this.fermier.update(delta, this.room ? this.room.id : null);
+        if (this.fermier) {
+          this.fermier.steer(this.room ? null : this.manette.dir());
+          this.fermier.update(delta, this.room ? this.room.id : null);
+        }
         this.stepExit(time);
         if (this.family) this.family.update(delta, this.room ? this.room.id : null);
         // Dehors, la vue suit le personnage, centrée sur lui (comme sur les autres cartes) ; elle
