@@ -168,6 +168,12 @@ export function validateData(data) {
     conservation(where, it);
   }
 
+  /* ateliers */
+  const xpActions = (data.NIVEAUX && data.NIVEAUX.XP) || {};
+  for (const [id, st] of Object.entries(data.STATIONS)) {
+    if (!(st.action in xpActions)) err(`STATIONS.${id}`, `action « ${st.action} » inconnue (NIVEAUX.XP)`);
+  }
+
   /* recettes */
   for (const [id, r] of Object.entries(recipes)) {
     const where = `recipes.${id}`;

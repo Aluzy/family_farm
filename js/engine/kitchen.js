@@ -10,10 +10,6 @@ import { noteRecipeDone } from './campaign.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 
-// XP d'une préparation terminée, et énergie pour la lancer (versions 1.7 et 1.8),
-// selon l'atelier.
-const STATION_XP = { four: 'cuireFour', cuisine: 'cuisiner', moulin: 'moudre', presse: 'presser' };
-
 /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
 
 // state.stations = { four|cuisine|moulin|presse: { construit, tache, appareil } }.
@@ -141,7 +137,7 @@ export function startRecipe(state, id) {
   const lines = recipeLines(state, id);
   const missing = lines.find((l) => !l.ok);
   if (missing) return fail(missing.eau ? 'Pas assez d\'eau dans le réservoir.' : 'Il manque des ingrédients.');
-  const action = STATION_XP[r.station] || '';
+  const action = def.action; // énergie pour la lancer (version 1.8) et XP une fois finie (1.7)
   if (!canAfford(state, action)) return fail(TIRED); // version 1.8
   spendEnergy(state, action);
   const pris = [];
@@ -182,7 +178,7 @@ function completeTask(state, id) {
   if (extra) addItem(state, extra.item, extra.qte);
   st.tache = null;
   noteRecipeDone(state, recette, qty); // Lot 9
-  gainActionXp(state, STATION_XP[id] || '', 1);
+  gainActionXp(state, DATA.STATIONS[id].action, 1);
   if (enAttente > 0) {
     // Moulin : le blé suivant du lot se moud à la suite.
     beginTask(state, id, recette);

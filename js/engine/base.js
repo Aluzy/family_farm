@@ -18,8 +18,9 @@ export function mulberry32(seed) {
 }
 
 export const STATE_VERSION = 37;
-// Version du jeu, affichée dans les Options (À propos).
-export const GAME_VERSION = '1.16.0';
+// Version du jeu, affichée dans les Options (À propos) : la dernière version notée dans le
+// code et les données (« version 1.22 » : les objectifs « objet »).
+export const GAME_VERSION = '1.22.0';
 export const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // `part` sur `total`, en % entier arrondi vers le bas et plafonné à 100 ; 0 sans total.

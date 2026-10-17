@@ -121,8 +121,8 @@ export function nightHarvest(report) {
     const n = Math.floor((Number(qty) || 0) + EPS);
     if (n > 0 && DATA.items[item]) total[item] = (total[item] || 0) + n;
   };
-  add('oeuf', report.oeufs);
-  add('lait', report.lait);
+  add(DATA.ANIMAUX.poule.produit, report.oeufs);
+  add(DATA.ANIMAUX.vache.lait, report.lait);
   add(DATA.ANIMAUX.vache.laitAlpage, report.laitAlpage);
   for (const [item, qty] of Object.entries(report.fruits || {})) add(item, qty);
   for (const [item, qty] of Object.entries((report.auto || {}).recoltes || {})) add(item, qty);

@@ -23,6 +23,12 @@ export function perSecond(amount, dtMs) {
   return dtMs > 0 ? Math.floor((amount * 1000) / dtMs) : 0;
 }
 
+// Appareil qui consomme quand il tourne (d.conso) : le frigo et les ateliers électriques
+// (Moulin, Presse : DATA.STATIONS[].electrique).
+export function drawsPower(type) {
+  return type === 'frigo' || !!(DATA.STATIONS[type] && DATA.STATIONS[type].electrique);
+}
+
 export function makeDevice(type, id, prix) {
   // usure : points entiers ; usureMs : temps de marche (ms) depuis le dernier point.
   const d = { id, type, niveau: 1, allume: true, usure: 0, usureMs: 0, prix };
@@ -35,7 +41,7 @@ export function makeDevice(type, id, prix) {
   } else if (type === 'pompe') {
     d.debit = 0; // mL/s réellement pompés au dernier tick
     d.conso = 0; // mWh/s consommés au dernier tick
-  } else if (type === 'moulin' || type === 'presse' || type === 'frigo') {
+  } else if (drawsPower(type)) {
     d.conso = 0; // mWh/s consommés au dernier tick (0 en pause ou au repos)
   }
   return d;
@@ -260,10 +266,10 @@ export function upgradeWith(state, cost, libelle, monter, maxi = 'Niveau maximum
   return { ok: true, cost, ...monter() };
 }
 
-// Nom d'un appareil, pour les libellés des Comptes.
-const DEVICE_LABELS = { panneau: 'Panneau solaire', batterie: 'Batterie', pompe: 'Pompe', reservoir: 'Réservoir', moulin: 'Moulin', presse: 'Presse', frigo: 'Réfrigérateur' };
+// Nom d'un appareil, pour les libellés des Comptes (un atelier : son nom, DATA.STATIONS).
+const DEVICE_LABELS = { panneau: 'Panneau solaire', batterie: 'Batterie', pompe: 'Pompe', reservoir: 'Réservoir', frigo: 'Réfrigérateur' };
 export function deviceLabel(type) {
-  return DEVICE_LABELS[type] || type;
+  return DEVICE_LABELS[type] || (DATA.STATIONS[type] && DATA.STATIONS[type].nom) || type;
 }
 
 export function toggleDevice(state, id) {
@@ -272,7 +278,7 @@ export function toggleDevice(state, id) {
   if (!isOwned(d)) return fail(NOT_OWNED);
   if (isBroken(d)) return fail('Appareil en panne : il faut le réparer.');
   d.allume = !d.allume;
-  if (!d.allume && (d.type === 'moulin' || d.type === 'presse' || d.type === 'frigo')) d.conso = 0;
+  if (!d.allume && drawsPower(d.type)) d.conso = 0;
   return { ok: true };
 }
 

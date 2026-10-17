@@ -442,7 +442,8 @@ export function ownsElement(state, id) {
   const built = (b) => !!(b && b.construit);
   switch (id) {
     // 'champ' : l'ancien Champ construit (sauvegarde d'avant la version 15), ou
-    // une culture de plein champ en terre.
+    // une culture de plein champ en terre. (La liste n'est pas DATA.crops[].pleinChamp : le
+    // tournesol, de plein champ lui aussi, datait du chapitre 4 et a sa propre ligne.)
     case 'champ': return built(legacyChamp(state)) || ownedPlots(state).some((p) => p && ['ble', 'riz', 'houblon'].includes(p.culture));
     case 'silo': return built(state.silo);
     case 'poulailler': return built(state.poulailler) || (state.poulailler && state.poulailler.poules > 0);

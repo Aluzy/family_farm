@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import {
-  allDevices, batteryCapacity, isBroken, needsService, panelOutput, perSecond, perTick, pumpFlow,
+  allDevices, batteryCapacity, drawsPower, isBroken, needsService, panelOutput, perSecond, perTick, pumpFlow,
   storageCapacity, storedEnergy, sunlitMs, tankCapacity,
 } from './devices.js';
 import { availableEnergy, runFridge } from './fridge.js';
@@ -212,7 +212,7 @@ export function wearStep(state, dtMs) {
     if (d.type === 'panneau') worked = d.prod > 0;
     else if (d.type === 'batterie') worked = d.entree > 0 || d.sortie > 0;
     else if (d.type === 'pompe') worked = d.debit > 0;
-    else if (d.type === 'moulin' || d.type === 'presse' || d.type === 'frigo') worked = d.conso > 0; // Lots 5 et 8 : il tourne vraiment
+    else if (drawsPower(d.type)) worked = d.conso > 0; // Lots 5 et 8 : il tourne vraiment
     if (!worked) continue;
     d.usureMs = (d.usureMs || 0) + dtMs;
     const points = Math.floor(d.usureMs / msParPoint);
@@ -269,7 +269,7 @@ export function deviceStatus(state, d) {
   } else if (d.type === 'frigo') {
     if (state.frigo.alimente) { code = 'marche'; label = 'Alimenté'; }
     else { code = 'attente'; label = 'Hors tension'; }
-  } else if (d.type === 'moulin' || d.type === 'presse') {
+  } else if (DATA.STATIONS[d.type]) { // le Moulin, la Presse
     const job = state.stations[d.type].tache;
     if (!job) { code = 'repos'; label = 'Au repos'; }
     else if (d.conso > 0) { code = 'marche'; label = 'En marche'; }
