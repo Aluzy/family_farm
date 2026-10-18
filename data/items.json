@@ -134,6 +134,7 @@
     "panneau_solaire": { "nom": "Panneau solaire", "icone": "☀️", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "citerne": { "nom": "Citerne", "icone": "💧", "prix": 25, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "batterie": { "nom": "Batterie", "icone": "🔋", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "station_robot": { "nom": "Station du robot", "icone": "🔌", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "cuisiniere": { "nom": "Cuisinière", "icone": "🍳", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//ammonite": [
       "Les trouvailles de la montagne (fossiles, pierres) et de la plage (coquillages, corail, perles),",

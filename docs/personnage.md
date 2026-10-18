@@ -69,7 +69,7 @@ ajouter : le JSON donne l'ordre).
   place (`state.aRamasser`, `js/engine/ramassage.js`). Une récolte se ramasse au geste même ;
   le reste, il va le chercher quand le joueur appuie sur sa bulle (« 🥚 6 » au-dessus du Poulailler, « 🥛 2 🧶 1 » au-dessus
   de l'Étable, « 🍎 4 » sur l'arbre…), même la nuit. Au Poulailler et à l'Étable, il remplit son
-  panier et le rapporte devant la maison. À chaque prise, une bulle « +6 🥕 » monte au-dessus de
+  panier : tout entre aussitôt dans l'inventaire, sans retour à la maison. À chaque prise, une bulle « +6 🥕 » monte au-dessus de
   lui, reste un instant puis s'estompe ; une prise qui arrive avant qu'elle ait disparu s'y
   additionne.
 - **Poulailler et Étable** (version 1.19) : ils ne se vident plus d'eux-mêmes. Un double appui

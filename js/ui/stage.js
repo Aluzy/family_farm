@@ -19,7 +19,7 @@ import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmSeed, farmTerrain, tileCount } from '../engine/terrain.js';
 import { tuilesChemins } from '../engine/ferme-generee.js';
-import { robotBattery, robotChargePct, robotOn, robotTrip } from '../engine/automation.js';
+import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
 import {
   activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
@@ -501,6 +501,7 @@ function sprinklerSpots() {
 // visée (une tuile de la carte, ou 'serre'), 'recolter' ou 'planter', où elle en est (prog,
 // de 0 à 1 ; elle dure dureeS secondes, dont la part `route` à rouler jusqu'à la parcelle), et
 // son rang dans la liste. `vitesse` : la sienne, en px par seconde (le retour à sa base).
+// `station` : sa station de charge (robotStation : la case du bloc posé, null, ou 'maison').
 function robotModel() {
   if (!robotOn(state)) return null;
   const R = DATA.ROBOT, S = DATA.TEMPS.SECONDES_PAR_HEURE;
@@ -508,15 +509,17 @@ function robotModel() {
   const r = state.robot;
   // sa batterie (en %) ; enCharge : sa station la recharge en ce moment
   const batterie = robotChargePct(state), enCharge = robotBattery(state).conso > 0;
-  if (nightActive(state) || !r || r.jour !== state.day || r.i >= r.taches.length) return { etat: 'repos', vitesse, batterie, enCharge };
-  if (r.charge) return { etat: 'charge', vitesse, batterie, enCharge };
+  // sa station : la case du bloc posé, null s'il n'est pas posé (ferme générée), 'maison'
+  const station = robotStation(state);
+  if (nightActive(state) || !r || r.jour !== state.day || r.i >= r.taches.length) return { etat: 'repos', vitesse, batterie, enCharge, station };
+  if (r.charge) return { etat: 'charge', vitesse, batterie, enCharge, station };
   const tache = r.taches[r.i];
   const p = allPlots(state).find((x) => x.id === tache.id);
   const d = robotTrip(state, r, r.i), duree = d.route + d.travail;
   return {
     etat: 'travail', t: tache.t, a: p && p.lieu === 'potager' && Number.isInteger(p.case) ? p.case : 'serre',
     prog: Math.max(0, Math.min(1, (absoluteHours(state) - r.debut) / duree)), dureeS: duree * S, route: d.route / duree,
-    n: r.i + 1, total: r.taches.length, vitesse, batterie, enCharge,
+    n: r.i + 1, total: r.taches.length, vitesse, batterie, enCharge, station,
   };
 }
 

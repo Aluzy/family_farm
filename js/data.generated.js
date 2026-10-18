@@ -205,6 +205,7 @@ export const RAW_DATA = {
     "panneau_solaire": { "nom": "Panneau solaire", "icone": "☀️", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "citerne": { "nom": "Citerne", "icone": "💧", "prix": 25, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "batterie": { "nom": "Batterie", "icone": "🔋", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "station_robot": { "nom": "Station du robot", "icone": "🔌", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "cuisiniere": { "nom": "Cuisinière", "icone": "🍳", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "ammonite": {
       "nom": "Ammonite fossile",
@@ -440,6 +441,7 @@ export const RAW_DATA = {
       "panneau_solaire": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "panneau_solaire": 1 } },
       "citerne": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "citerne": 1 } },
       "batterie": { "entrees": { "lingot_cuivre": 2, "lingot_fer": 1 }, "sortie": { "batterie": 1 } },
+      "station_robot": { "entrees": { "lingot_fer": 1, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "station_robot": 1 } },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" }
@@ -466,6 +468,7 @@ export const RAW_DATA = {
       "panneau": { "nom": "Panneau solaire", "objet": "panneau_solaire", "dehors": true, "bloque": true, "unique": true, "appareil": "panneau" },
       "citerne": { "nom": "Citerne", "objet": "citerne", "dehors": true, "bloque": true, "unique": true, "appareil": "reservoir" },
       "batterie": { "nom": "Batterie", "objet": "batterie", "bloque": true, "unique": true, "appareil": "batterie" },
+      "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 120,

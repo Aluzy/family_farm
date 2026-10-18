@@ -10,6 +10,8 @@ import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
 import { absoluteHours, dayHour, hourOfDay, nightActive } from './clock.js';
 import { farmPoint, farmTerrain } from './terrain.js';
+import { atelierOuvert } from './atelier.js';
+import { blocsPoses } from './blocs.js';
 
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
 
@@ -155,11 +157,30 @@ function robotSpot(state, id) {
   return farmPoint(state, DATA.ROBOT.SERRE);
 }
 
+// Sa station de charge. Sur la ferme générée, c'est un bloc qu'on pose (BLOCS station_robot,
+// fabriqué à l'Atelier) : sa case, ou null tant qu'elle n'est pas posée (il ne se recharge pas,
+// et attend près de la maison). Sur la ferme d'avant, elle est à côté de la maison : 'maison'.
+export function robotStation(state) {
+  if (!atelierOuvert(state)) return 'maison';
+  const t = Object.entries(blocsPoses(state)).find(([, s]) => s === 'station_robot');
+  return t ? Number(t[0]) : null;
+}
+
+// Sa base (en tuiles) : juste à droite de sa station posée, sinon ROBOT.BASE (près de la maison).
+function robotBase(state) {
+  const st = robotStation(state);
+  if (Number.isInteger(st)) {
+    const W = farmTerrain(state).LARGEUR;
+    return [(st % W) + 1.5, Math.floor(st / W) + 0.95];
+  }
+  return farmPoint(state, DATA.ROBOT.BASE);
+}
+
 // La tâche i : { route, travail } en heures d'horloge (le trajet depuis la tâche d'avant, ou
 // depuis sa base pour la première, puis le travail au bras).
 export function robotTrip(state, r, i) {
   const R = DATA.ROBOT;
-  const a = i > 0 && i !== r.base ? robotSpot(state, r.taches[i - 1].id) : farmPoint(state, R.BASE);
+  const a = i > 0 && i !== r.base ? robotSpot(state, r.taches[i - 1].id) : robotBase(state);
   const b = robotSpot(state, r.taches[i].id);
   return { route: Math.hypot(b[0] - a[0], b[1] - a[1]) / R.VITESSE / 60, travail: R.MINUTES / 60 };
 }
@@ -218,7 +239,7 @@ export function runRobotCharge(state, dtMs) {
   if (!robotOn(state)) return;
   const b = robotBattery(state);
   b.conso = 0;
-  if (robotBusy(state) || loadShedding(state)) return;
+  if (robotStation(state) === null || robotBusy(state) || loadShedding(state)) return;
   const room = robotCapacity(state) - b.mwh;
   if (room <= 0) return;
   const want = Math.min(room, perTick(DATA.ROBOT.BATTERIE.CHARGE_WH_S * 1000, dtMs), availableEnergy(state));
@@ -231,7 +252,7 @@ export function runRobotCharge(state, dtMs) {
 // Étape nocturne (après le frigo) : la nuit, il se recharge sur les batteries de la ferme, autant
 // qu'elles le peuvent. Rapport : state.nuit.robot (mWh pris).
 export function robotNight(state) {
-  if (!robotOn(state)) return 0;
+  if (!robotOn(state) || robotStation(state) === null) return 0;
   const b = robotBattery(state);
   const want = Math.min(robotCapacity(state) - b.mwh, availableEnergy(state));
   if (want <= 0) return 0;

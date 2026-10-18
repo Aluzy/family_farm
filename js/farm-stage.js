@@ -573,7 +573,7 @@
           const b = this.bot.img;
           test(b.x - b.width / 2, b.y, b.width, b.height, b.depth + 1, 'robot');
           const st = this.bot.station;
-          if (st) test(st.x - st.width / 2, st.y, st.width, st.height, st.depth + 1, 'robot');
+          if (st && st.visible) test(st.x - st.width / 2, st.y, st.width, st.height, st.depth + 1, 'robot');
         }
         if (this.tank) test(this.tank.x, this.tank.y, this.tank.width, this.tank.height, this.tank.depth + 1, 'eau');
         // Version 1.13 : un arbre en fruits se cueille, un emplacement libre propose de

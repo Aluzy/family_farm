@@ -44,13 +44,14 @@
     // Le robot : le modèle (robotModel dans js/ui/stage.js), et l'instant où il est arrivé (la
     // tâche avance entre deux modèles au rythme de l'horloge).
     syncRobot(m) {
+      let B0 = false;
       if (!m) {
         if (this.bot) { this.bot.img.destroy(); if (this.bot.station) this.bot.station.destroy(); this.bot.el.remove(); this.bot = null; }
         return;
       }
       if (!this.bot) {
         if (!this.has(ROBOT.key)) return;
-        const d = this.robotDock();
+        const d = this.robotHouse();
         const img = this.add.sprite(d.x, d.y, ROBOT.key, 5).setOrigin(0.5, 1).setDepth(d.y);
         const S = ROBOT.station;
         const station = this.has(S.key) ? this.add.sprite(d.x + S.dx, d.y + S.dy, S.key, 0).setOrigin(0.5, 1).setDepth(d.y + S.dy) : null;
@@ -59,15 +60,43 @@
         el.setAttribute('aria-hidden', 'true');
         el.hidden = true;
         this.ctx.labelLayer.appendChild(el);
-        this.bot = { img, station, el, x: d.x, y: d.y, m: null, at: 0, n: 0, roll: 0, w: 0, h: 0, txt: '' };
+        this.bot = { img, station, el, x: d.x, y: d.y, m: null, at: 0, n: 0, roll: 0, w: 0, h: 0, txt: '', path: null, but: null };
+        B0 = true;
       }
       const B = this.bot;
       B.m = m;
+      // (la première fois : il part de sa base)
+      if (B0) { const d = this.robotDock(); B.x = d.x; B.y = d.y; }
       B.at = performance.now();
     },
 
-    // Sa base, à côté de la porte de la maison.
+    // Sa station de charge : sur la ferme générée, le bloc posé (m.station : sa case ; null tant
+    // qu'elle n'est pas posée) ; sinon à côté de la porte de la maison, à gauche de sa base.
+    // { x, y } (le pied de son image) ou null.
+    robotStationAt() {
+      const st = this.bot && this.bot.m ? this.bot.m.station : 'maison';
+      if (st === null) return null;
+      if (Number.isInteger(st)) {
+        const W = this.grid.cols;
+        return { x: (st % W) * T + T / 2, y: (Math.floor(st / W) + 1) * T };
+      }
+      const d = this.robotHouse();
+      return { x: d.x + ROBOT.station.dx, y: d.y + ROBOT.station.dy };
+    },
+
+    // Sa base : juste à droite de sa station posée (comme ROBOT.BASE du moteur, robotBase),
+    // sinon à côté de la porte de la maison.
     robotDock() {
+      const st = this.bot && this.bot.m ? this.bot.m.station : 'maison';
+      if (Number.isInteger(st)) {
+        const W = this.grid.cols;
+        return { x: Math.round(((st % W) + 1.5) * T), y: Math.round((Math.floor(st / W) + 0.95) * T) };
+      }
+      return this.robotHouse();
+    },
+
+    // À côté de la porte de la maison.
+    robotHouse() {
       const e = this.buildings && this.buildings.get('maison');
       const s = e && e.sprite;
       const door = s ? { x: s.x + s.width * 0.5, y: s.y + 6 } : this.homeDoor() || { x: this.world.w / 2, y: this.world.h / 2 };
@@ -94,11 +123,27 @@
       // il roule à vitesse constante (m.vitesse px/s) : le moteur compte le trajet dans la
       // durée de la tâche (part `route`) ; en retard (page cachée), il rattrape plus vite
       const v = (m && m.vitesse) || ROBOT.speed;
+      // il contourne ce qui arrête le personnage (les bâtiments, les murs, l'eau, les arbres :
+      // le chemin du personnage, Fermier.path), sans entrer nulle part ; sans chemin, tout droit
       const toward = (to, t) => {
-        const dx = to.x - B.x, dy = to.y - B.y, l = Math.hypot(dx, dy);
-        if (l <= 0.5) return null;
-        const st = Math.min(l, Math.max(v, l / Math.max(ROBOT.catchUp, t)) * dt / 1000);
-        return { x: B.x + (dx / l) * st, y: B.y + (dy / l) * st };
+        if (Math.hypot(to.x - B.x, to.y - B.y) <= 0.5) { B.path = null; return null; }
+        const k = Math.round(to.x) + ',' + Math.round(to.y);
+        if (B.but !== k || !B.path || !B.path.length) {
+          B.but = k;
+          const p = this.fermier && this.fermier.path ? this.fermier.path(B.x, B.y, to.x, to.y) : null;
+          B.path = p && p.length ? p.slice() : [{ x: to.x, y: to.y }];
+          B.path[B.path.length - 1] = { x: to.x, y: to.y };
+        }
+        let l = 0, px = B.x, py = B.y;
+        for (const q of B.path) { l += Math.hypot(q.x - px, q.y - py); px = q.x; py = q.y; }
+        let st = Math.min(l, Math.max(v, l / Math.max(ROBOT.catchUp, t)) * dt / 1000);
+        let x = B.x, y = B.y;
+        while (st > 0 && B.path.length) {
+          const q = B.path[0], d = Math.hypot(q.x - x, q.y - y);
+          if (d <= st) { x = q.x; y = q.y; st -= d; B.path.shift(); continue; }
+          x += ((q.x - x) / d) * st; y += ((q.y - y) / d) * st; st = 0;
+        }
+        return { x, y };
       };
       if (m && m.etat === 'travail') {
         const prog = Math.min(1, m.prog + (performance.now() - B.at) / 1000 / Math.max(0.1, m.dureeS));
@@ -115,13 +160,14 @@
         move = toward(this.robotDock(), Infinity);
       }
       // à sa station : elle le recharge (la jauge monte, la lumière clignote) ; sa bulle, sa batterie
-      const dock = this.robotDock();
+      const dock = this.robotDock(), sp = this.robotStationAt();
       const docked = !move || Math.hypot(dock.x - B.x, dock.y - B.y) < 1;
       const charging = !!(m && m.enCharge && docked && m.etat !== 'travail');
       const empty = !!(m && m.etat === 'charge' && docked);      // batterie vide : sa bulle, même sans courant
       if (B.station) {
         const sf = charging ? 1 + (reducedMotion() ? 3 : Math.floor(performance.now() / 1000 / ROBOT.station.period) % 4) : 0;
-        B.station.setFrame(sf).setPosition(dock.x + ROBOT.station.dx, dock.y + ROBOT.station.dy).setDepth(dock.y + ROBOT.station.dy).setVisible(!this.room);
+        if (sp) B.station.setFrame(sf).setPosition(sp.x, sp.y).setDepth(sp.y);
+        B.station.setVisible(!!sp && !this.room);
       }
       if (charging || empty) {
         const txt = (charging ? '⚡ ' : '🔋 ') + m.batterie + ' %';
