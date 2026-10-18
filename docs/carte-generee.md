@@ -208,7 +208,7 @@ Le Marché vend toujours les outils.
     `etageEmprise`) ;
   - un appui sur l'escalier y monte, un appui sur son haut (la trémie) en redescend
     (`etage-toggle`) ;
-  - l'étage est dessiné au sommet des murs du bas (remonté de `ETAGE.dy`, 24 px) : son plancher
+  - l'étage est dessiné au sommet des murs du bas (remonté de `ETAGE.dy`, 30 px : la hauteur de la face des murs hauts) : son plancher
     couvre toute l'emprise ; à l'étage, le personnage est dessiné remonté et n'en sort pas
     (`etageCells` : seule l'emprise, sans ses murs) ;
   - ce qu'on voit dépend d'où est le personnage (`stepEtage`) : dehors, tous les niveaux l'un

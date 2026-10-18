@@ -156,10 +156,10 @@
     frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66, escalier: 69 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`) ; l'étage
-    // est dessiné `dy` px plus haut (au sommet des murs hauts) ; le niveau où l'on n'est pas,
+    // est dessiné `dy` px plus haut (la hauteur de la face des murs hauts : leurs faces se suivent) ; le niveau où l'on n'est pas,
     // quand on est dans le bâtiment : à `transparent` ; à l'étage, un voile sombre sur toute la
     // ferme (`voile`, `alpha` ; au-dessus de ce qui vole), et ce qui est de l'étage devant lui
-    etage: { haut: 70, dy: 24, transparent: 0.3, voile: 0x0d1018, alpha: 0.62 },
+    etage: { haut: 70, dy: 30, transparent: 0.3, voile: 0x0d1018, alpha: 0.62 },
     // les murs et la porte (d'un mur horizontal), une case plus hauts (assets/murs_hauts.png,
     // comme les maisons de la transition, scripts/carte/blocs.py murs_hauts : les 16 murs
     // raccordés, `murs` + masque, puis la porte) ; un mur devant quelqu'un (il le cache)
