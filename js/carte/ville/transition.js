@@ -18,6 +18,12 @@
  * parents quand il n'en reste plus, flânent autour de chez eux. La nuit, ils restent à la
  * maison. Ce qui est ramassé le reste jusqu'au lendemain (localStorage).
  *
+ * Les enfants vont à l'école comme ceux de la ferme (js/famille-ferme.js) : les jours d'école
+ * (HorlogeSortie.JOURS_ECOLE), de TRANSITION_VIE.ecole[0] h à ecole[1] h. Le matin, ils vont à
+ * pied jusqu'à l'abri de bus, où le bus de l'école (js/carte/ville/ecole.js) les attend ; le
+ * soir, ils en descendent et rentrent à pied chez eux. Entre les deux, ils ne sont pas sur la
+ * carte ; si le bus est déjà passé (ou sans animations), ils sont déjà partis, ou déjà rentrés.
+ *
  * Le joueur ramasse aussi : un toucher sur une ressource y envoie le personnage, qui la prend
  * en arrivant (FermeHote.ramasserTransition : l'objet entre dans l'inventaire, contre l'énergie
  * du geste « ramasser »). Une ressource qu'il vise, les voisins la laissent ; ce qu'il a pris
@@ -31,7 +37,7 @@
 
   const K = global.CarteKit;
   const V = global.CarteVille;
-  const { T, BLOCS, RAMASSABLES, TRANSITION_VIE, VOISINS } = V.C;
+  const { T, BLOCS, BUS, RAMASSABLES, TRANSITION_VIE, VOISINS } = V.C;
   const { hote, reduced, sheetKey } = V;
 
   // Le plan de la partie (FermeHote.transition), lu une fois par visite de la carte.
@@ -141,6 +147,9 @@
           const n = { m: mb, f, maison: m, porte, s, shadow, x: c.x, y: c.y, path: [], face: 'bas', walked: 0,
             speed: mb.enfant ? VOISINS.kidSpeed : VOISINS.speed, etat: 'dedans', t: Math.random() * 2, sortie: 0.5 + i * 1.6 + Math.random() * 2, porte_: 0, talk: 0 };
           this.dehors.push(n);
+          // (à l'école, le bus du matin passé : pas là)
+          const H = global.HorlogeSortie ? global.HorlogeSortie.maintenant() : null;
+          if (this.ecoleVoisin(n, H) && !this.busDuMatin(H)) this.monteVoisin(n, true);
           this.placeVoisin(n, 0, false);
         });
       }
@@ -212,13 +221,14 @@
           if (l <= st) { n.x = to.x; n.y = to.y; n.path.shift(); } else { n.x += (dx / l) * st; n.y += (dy / l) * st; }
           n.walked += Math.min(l, st);
           marche = true;
-        } else if ((n.t -= dt) <= 0) this.decideVoisin(n, jour);
+        } else if ((n.t -= dt) <= 0) this.decideVoisin(n, jour, H);
         this.placeVoisin(n, time, marche);
       }
     },
 
     // Arrivé au bout de son chemin (ou fini d'attendre) : que faire maintenant ?
-    decideVoisin(n, jour) {
+    decideVoisin(n, jour, H) {
+      if (n.m.enfant && this.decideEcole(n, H)) return;
       // (dedans, sortir, rentrer : à pied, par la porte)
       const va = (x, y) => { n.path = this.findPath(n.x, n.y, x, y) || []; n.t = n.path.length ? 0 : 0.01; };
       const rentrer = () => { n.etat = 'rentre'; const c = this.caseDedans(n.maison); va(c.x, c.y); };
@@ -290,6 +300,121 @@
       }
     },
 
+    // ---------- l'école des enfants des voisins ----------
+
+    // L'enfant `n` doit-il être à l'école (ou en chemin) à l'heure `H` ? (pas une fois rentré)
+    ecoleVoisin(n, H) {
+      const S = global.HorlogeSortie;
+      if (!n.m.enfant || !H || H.nuit || !S || !S.JOURS_ECOLE.includes(H.semaine) || n.retour === H.jour) return false;
+      return H.heure >= TRANSITION_VIE.ecole[0] && H.heure < TRANSITION_VIE.ecole[1];
+    },
+
+    // Le bus du matin passera-t-il encore (ou est-il à l'arrêt) ?
+    busDuMatin(H) {
+      const d = (BUS.scenes.transition || []).find((q) => q.monter);
+      if (!d || !H || reduced()) return false;
+      if (this.school) return this.school.def === d && this.school.phase !== 'depart';
+      return H.heure < d.fin && !(this.schoolDone && this.schoolDone.has(H.jour + ':' + d.nom));
+    },
+
+    // Où l'enfant `n` attend le bus : à côté de ceux de la ferme, devant l'abri.
+    arretVoisin(n) {
+      const pts = (this.kidPaths || {}).enfants_matin, k = this.dehors.filter((q) => q.m.enfant).indexOf(n);
+      const p = pts ? pts[pts.length - 1] : { x: n.x, y: n.y };
+      return { x: p.x + 16 + (k % 6) * 8, y: p.y + Math.floor(k / 6) * 6 };
+    },
+
+    // L'école décide de ce que fait l'enfant `n` (true), ou le laisse à sa journée (false).
+    decideEcole(n, H) {
+      switch (n.etat) {
+        case 'versBus':
+          // à l'arrêt : il attend le bus
+          n.etat = 'attendBus'; n.face = 'bas'; n.s.setFlipX(false); n.t = 1;
+          return true;
+        case 'attendBus':
+          // (plus de bus du matin : il est parti autrement)
+          if (!this.busDuMatin(H)) this.monteVoisin(n);
+          else n.t = 1;
+          return true;
+        case 'ecole': {
+          if (this.ecoleVoisin(n, H)) { n.t = 2; return true; }
+          // le bus du soir est là : il en descendra (descendVoisins) ; sinon il est déjà rentré
+          if (this.school && !this.school.def.monter && this.school.phase !== 'depart') { n.t = 1; return true; }
+          const c = this.caseDedans(n.maison);
+          n.x = c.x; n.y = c.y;
+          this.montreVoisin(n);
+          n.retour = H && H.jour;
+          n.etat = 'dedans';
+          n.sortie = TRANSITION_VIE.pause[0];
+          n.t = 1;
+          return true;
+        }
+        default:
+      }
+      if (!this.ecoleVoisin(n, H)) return false;
+      // l'heure de l'école : au bus du matin s'il passe encore, sinon déjà parti
+      if (this.busDuMatin(H)) {
+        const p = this.arretVoisin(n);
+        n.etat = 'versBus';
+        n.path = this.findPath(n.x, n.y, p.x, p.y) || [];
+        if (n.path.length) n.path[n.path.length - 1] = p;
+        n.t = n.path.length ? 0 : 0.01;
+      } else this.monteVoisin(n, true);
+      return true;
+    },
+
+    // Les enfants des voisins encore en route vers l'arrêt (le bus les attend).
+    voisinsVersBus() {
+      return (this.dehors || []).some((n) => n.etat === 'versBus');
+    },
+
+    // Les enfants des voisins (pour le bus de l'école : il passe aussi pour eux).
+    voisinsEcole() {
+      return (this.dehors || []).filter((n) => n.m.enfant);
+    },
+
+    // L'enfant `n` monte dans le bus (il s'efface) ; `deja` : il est déjà parti (sans le voir).
+    monteVoisin(n, deja) {
+      n.etat = 'ecole';
+      n.path = [];
+      n.t = 2;
+      n.cible = null;
+      if (deja || reduced()) { n.s.setVisible(false); n.shadow.setVisible(false); return; }
+      this.tweens.add({ targets: [n.s, n.shadow], alpha: 0, duration: BUS.kid.fade * 1000, onComplete: () => {
+        if (n.etat !== 'ecole') return;
+        n.s.setVisible(false).setAlpha(1); n.shadow.setVisible(false).setAlpha(0.3);
+      } });
+    },
+    monteVoisins() {
+      for (const n of this.dehors || []) if (n.etat === 'attendBus') this.monteVoisin(n);
+    },
+
+    montreVoisin(n) {
+      this.tweens.killTweensOf([n.s, n.shadow]);
+      n.s.setVisible(true).setAlpha(1);
+      n.shadow.setVisible(true).setAlpha(0.3);
+    },
+
+    // Le bus du soir à l'arrêt : les enfants des voisins en descendent et rentrent chez eux.
+    descendVoisins() {
+      const H = global.HorlogeSortie ? global.HorlogeSortie.maintenant() : null;
+      const pts = (this.kidPaths || {}).enfants_soir;
+      if (!pts) return;
+      let k = 0;
+      for (const n of this.dehors || []) {
+        if (n.etat !== 'ecole') continue;
+        n.x = pts[0].x + 16 + (k % 6) * 8; n.y = pts[0].y + Math.floor(k / 6) * 6;
+        k++;
+        this.montreVoisin(n);
+        n.retour = H && H.jour;
+        n.porte_ = 0;
+        n.etat = 'rentre';
+        const c = this.caseDedans(n.maison);
+        n.path = this.findPath(n.x, n.y, c.x, c.y) || [];
+        n.t = 0.3 + k * 0.4;
+      }
+    },
+
     placeVoisin(n, time, marche) {
       const F = this.npcFrame;
       let frame;
@@ -339,7 +464,7 @@
 
     // Un toucher sur un voisin (dehors ou chez lui) : il s'arrête et parle de ce que sa famille a ramassé.
     tapVoisinDehors(w) {
-      const n = (this.dehors || []).find((q) => Math.abs(w.x - q.x) <= 8 && w.y <= q.y + 3 && w.y >= q.y - (q.m.enfant ? 24 : 30));
+      const n = (this.dehors || []).find((q) => q.s.visible && Math.abs(w.x - q.x) <= 8 && w.y <= q.y + 3 && w.y >= q.y - (q.m.enfant ? 24 : 30));
       if (!n) return false;
       n.talk = 3;
       n.face = 'cote';

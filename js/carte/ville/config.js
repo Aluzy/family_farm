@@ -262,9 +262,10 @@
   // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h ; elles
   // rapportent `panier` ressources à la fois, se penchent `ramasse` s pour en prendre une,
   // soufflent `souffle` s avant la suivante, restent `pause` s à la maison (au hasard entre les deux) avant de ressortir. `store` : ce
-  // qui a été ramassé aujourd'hui (localStorage).
+  // qui a été ramassé aujourd'hui (localStorage). Les enfants sont à l'école de `ecole[0]` h à
+  // `ecole[1]` h les jours d'école, comme ceux de la ferme (js/famille-ferme.js, HORAIRE).
   const TRANSITION_VIE = {
-    store: 'ferme-transition-ramasses', jour: [7, 19], panier: 3, ramasse: 0.9, souffle: [1.5, 3.5], pause: [10, 25],
+    store: 'ferme-transition-ramasses', jour: [7, 19], panier: 3, ramasse: 0.9, souffle: [1.5, 3.5], pause: [10, 25], ecole: [7, 16.5],
     paroles: {
       adulte: { compte: 'Avec ma famille, on a déjà ramassé {n} ressource{s} aujourd\'hui. Ça fera de belles réserves !', rien: 'Je vais chercher du bois et des pierres pour la maison.' },
       enfant: { compte: 'On a trouvé {n} trésor{s} aujourd\'hui ! Des cailloux, du bois…', rien: 'J\'aide mes parents à ramasser du bois !' },

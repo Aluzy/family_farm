@@ -107,7 +107,9 @@
       const t = this.heure, list = BUS.scenes[etat.nom] || [];
       const sc = this.school;
       if (!sc) {
-        if (!t || t.nuit || !window.HorlogeSortie.JOURS_ECOLE.includes(t.semaine) || !t.enfants.length || reduced()) return;
+        // (le bus passe pour les enfants de la ferme, et pour ceux des voisins de la transition)
+        const voisins = this.voisinsEcole ? this.voisinsEcole().length : 0;
+        if (!t || t.nuit || !window.HorlogeSortie.JOURS_ECOLE.includes(t.semaine) || (!t.enfants.length && !voisins) || reduced()) return;
         const def = list.find((d) => t.heure >= d.debut && t.heure < d.fin && !this.schoolDone.has(t.jour + ':' + d.nom));
         if (!def) return;
         const stop = this.busStops[def.arret], pts = this.kidPaths[def.enfants];
@@ -126,23 +128,27 @@
       const { def } = sc;
       if (sc.phase === 'attente') {
         sc.busIn -= dt; sc.kidsIn -= dt;
-        if (def.monter && !sc.kids.length && sc.kidsIn <= 0) sc.kids = t.enfants.map((e, k) => this.addKid(e.perso, this.kidPaths[def.enfants], k)).filter(Boolean);
+        if (def.monter && !sc.partis && sc.kidsIn <= 0) { sc.partis = true; sc.kids = t.enfants.map((e, k) => this.addKid(e.perso, this.kidPaths[def.enfants], k)).filter(Boolean); }
         if (!sc.bus && sc.busIn <= 0) { sc.bus = this.addBus(def.bus, this.busStops[def.arret]); if (!sc.bus) { this.school = null; return; } }
-        if (sc.bus && (!def.monter || sc.kids.length)) sc.phase = 'arrivee';
+        if (sc.bus && (!def.monter || sc.partis)) sc.phase = 'arrivee';
         if (sc.phase === 'attente') return;
       }
       const bus = sc.bus;
       if (!this.cars.includes(bus)) { this.school = null; return; }      // il est sorti de la carte
       if (sc.phase === 'arrivee' && bus.atStop) {
         sc.phase = 'arret';
-        if (!def.monter) sc.kids = t.enfants.map((e, k) => this.addKid(e.perso, this.kidPaths[def.enfants], k, true)).filter(Boolean);
+        if (!def.monter) {
+          sc.kids = t.enfants.map((e, k) => this.addKid(e.perso, this.kidPaths[def.enfants], k, true)).filter(Boolean);
+          if (this.descendVoisins) this.descendVoisins();
+        }
         sc.wait = BUS.resume;
       }
       if (sc.phase === 'arret') {
         if (def.monter) {
-          // tous à l'arrêt : ils montent (s'effacent), puis le bus repart
-          if (sc.kids.every((k) => k.arrived || !this.kids.includes(k))) {
+          // tous à l'arrêt (et les enfants des voisins) : ils montent (s'effacent), puis le bus repart
+          if (sc.kids.every((k) => k.arrived || !this.kids.includes(k)) && !(this.voisinsVersBus && this.voisinsVersBus())) {
             for (const k of sc.kids) if (k.fade >= 0) k.fade = -1;
+            if (this.monteVoisins) this.monteVoisins();
             sc.wait -= dt;
             if (sc.wait <= 0) { bus.stopAt = null; sc.phase = 'depart'; }
           }
