@@ -265,8 +265,11 @@ function recipeCard(id) {
 
 // Fenêtre d'un meuble de la maison (four, cuisine) : l'atelier (à construire, ou ce qui y
 // cuit), puis ses recettes, qu'on lance d'ici comme depuis le Livre de recette.
-export function renderStationFenetre(id) {
-  const recipes = Object.keys(DATA.RECETTES).filter((r) => DATA.RECETTES[r].station === id && !DATA.RECETTES[r].horsLivre);
+// `fonte` (le four) : true, les transformations seules (les lingots : RECETTES.transformation) ;
+// false, les plats seuls ; absent, toutes les recettes de la station.
+export function renderStationFenetre(id, fonte) {
+  const recipes = Object.keys(DATA.RECETTES).filter((r) => DATA.RECETTES[r].station === id && !DATA.RECETTES[r].horsLivre
+    && (fonte === undefined || !!DATA.RECETTES[r].transformation === fonte));
   return `
     <div class="cards">${stationCard(id)}</div>
     ${state.stations[id].construit && recipes.length ? `<h3 class="section-title">Recettes</h3><div class="recipes">${recipes.map(recipeCard).join('')}</div>` : ''}`;

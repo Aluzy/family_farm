@@ -192,6 +192,11 @@ Le Marché vend toujours les outils.
          4 planches) se fabriquent à l'Atelier. Posés dans une pièce close, ils tiennent lieu
          des stations du même nom (`DATA.ATELIER.BLOCS[…].station`) ; repris, la station n'est
          plus là. Un appui dessus ouvre leur fenêtre ;
+       - la fenêtre du four a deux onglets :
+         - **Aliments** : les pains et les tartes ;
+         - **Objets** : la fonte des lingots (les recettes `transformation`).
+       - Pendant qu'une préparation cuit, les flammes du four bougent (`BLOCS_CARTE.feu`,
+         `stepFires`) ;
        - pas d'intérieur de maison (les repas n'ont pas de scène), pas de meubles, et le
          tutoriel n'arrête pas l'horloge : le foyer se bâtit en plusieurs jours.
      - ✅ **5b-2, l'énergie et l'eau** : le puits et la citerne quittent la cour.
