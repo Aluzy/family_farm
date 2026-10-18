@@ -50,6 +50,7 @@ HAUT, FOND = 14 / 16, 10 / 16
 BAS = H - 1                        # la rangée du pied (le bas de la case)
 FACE = round(16 * HAUT)            # la face d'un mur plein : 14 px
 CHAPE = H - FACE                   # son dessus : 10 px (rangées 0 à 9)
+LINTEAU = 4                        # le linteau de la porte, bien plus fin
 
 # ---------- les matières (du plus sombre au plus clair) ----------
 OUT = (36, 30, 20)                                     # le contour (celui du puits)
@@ -232,31 +233,44 @@ def mur(m):
 
 
 def porte():
-    """La porte dans un mur horizontal : la chape en linteau, une porte étroite de planches
-    cintrée, ses pentures et sa poignée, entre deux larges montants de pierre."""
-    t = Toile(mur(2 | 8))
-    x0, x1, y0 = 5, 10, CHAPE + 1
-    bois = planches([CADRE[1], BOIS[1], BOIS[2], BOIS[3]], pas=3, x0=x0)
-    for y in range(y0, BAS):
-        t.put(x0 - 1, y, OUT)
-        t.put(x1 + 1, y, OUT)
+    """La porte dans un mur horizontal, comme le bloc de la première version : un linteau de
+    pierre fin (LINTEAU rangées, bien moins haut que la chape des murs voisins), puis une
+    porte de planches cintrée sur presque toute la largeur de la case, ses deux pentures et sa
+    poignée, le seuil en bas."""
+    t = Toile()
+    for y in range(LINTEAU):                     # le linteau : contour, dessus clair, joint
+        for x in range(W):
+            t.put(x, y, (OUT, PIERRE[5], PIERRE[4], PIERRE[0])[y])
+    t.put(15, 2, PIERRE[2])
+    x0, x1, y0 = 2, 13, LINTEAU                   # le battant, de x0 à x1
+    bois = planches([CADRE[1], BOIS[1], BOIS[2], BOIS[3]], pas=2, x0=x0)
+    for y in range(y0, H):
+        t.put(0, y, OUT)
+        t.put(15, y, OUT)
+        t.put(1, y, CADRE[0])                    # le chambranle
+        t.put(14, y, CADRE[0])
         for x in range(x0, x1 + 1):
             t.put(x, y, bois(x, y))
-    # le cintre : les coins du haut de la porte, en pierre ; l'arc sombre au-dessus
-    for x in range(x0, x1 + 1):
-        t.put(x, y0 - 1, OUT if x0 < x < x1 else PIERRE[0])
-    t.put(x0, y0, OUT)
-    t.put(x1, y0, OUT)
-    for x in range(x0 + 1, x1):
-        t.put(x, y0, BOIS[3])
-    for y in (y0 + 3, y0 + 9):                   # les pentures
-        for x in range(x0, x1):
+    # le cintre : les coins du haut restent en pierre, l'arc sombre au-dessus du battant
+    for x, y, c in ((1, y0, PIERRE[3]), (2, y0, PIERRE[3]), (3, y0, PIERRE[2]), (12, y0, PIERRE[2]), (13, y0, PIERRE[1]), (14, y0, PIERRE[1]),
+                    (1, y0 + 1, PIERRE[3]), (14, y0 + 1, PIERRE[1])):
+        t.put(x, y, c)
+    for x, y in ((4, y0), (5, y0), (10, y0), (11, y0), (2, y0 + 1), (3, y0 + 1), (12, y0 + 1), (13, y0 + 1)):
+        t.put(x, y, CADRE[0])
+    for x in range(6, 10):
+        t.put(x, y0, CADRE[0])
+    for x in range(4, 12):                       # le haut du battant, éclairé
+        t.put(x, y0 + 1, BOIS[3] if x % 2 else BOIS[2])
+    for y in (y0 + 5, y0 + 14):                  # les pentures
+        for x in range(x0, x1 + 1):
             t.put(x, y, FER[1])
         t.put(x0, y, FER[2])
-    t.put(x1 - 1, y0 + 6, FER[4])                # la poignée
-    t.put(x1 - 1, y0 + 7, FER[1])
-    for x in range(x0, x1 + 1):                  # le seuil
+        t.put(x1, y, FER[0])
+    t.put(x1 - 2, y0 + 9, FER[4])                # la poignée
+    t.put(x1 - 2, y0 + 10, FER[0])
+    for x in range(1, 15):                       # le seuil
         t.put(x, BAS - 1, CADRE[2])
+        t.put(x, BAS, OUT)
     return t.im
 
 
