@@ -320,7 +320,8 @@ def porte_verticale():
 # ---------- les murs hauts (les maisons de la carte de transition) ----------
 # Les mêmes murs, une case plus hauts : une face de FACE + 16 px (images de 16 × 40, le bas sur
 # la case, le haut dépasse de 24 px au-dessus) ; murs_hauts.png : les 16 murs raccordés
-# (masque comme plus haut), puis la porte, percée au pied d'un mur plein.
+# (masque comme plus haut), puis la porte, percée au pied d'un mur plein, puis les 16 murs à
+# fenêtre (17 + masque) et les 16 murs aux pierres d'angle (33 + masque).
 HAUTEUR_EN_PLUS = T
 
 
@@ -360,14 +361,67 @@ def porte_haute():
     return t.im
 
 
+VITRE = [(52, 74, 96), (96, 136, 168), (150, 192, 216), (214, 236, 244)]   # le verre, du fond au reflet
+
+
+def fenetre(m):
+    """Le mur haut de masque m percé d'une fenêtre : sur la face (un mur sans voisin
+    au-dessous), un cadre de bois, quatre carreaux et leurs croisillons, un appui de pierre ;
+    un mur qui descend (vu de dessus seulement) reste plein."""
+    t = Toile(mur(m))
+    if m & 4:
+        return t.im
+    x0, x1, y0, y1 = 4, 11, CHAPE + 6, BAS - 8       # le dedans du cadre
+    for y in range(y0 - 1, y1 + 2):                  # le cadre
+        for x in range(x0 - 1, x1 + 2):
+            t.put(x, y, CADRE[0] if x in (x0 - 1, x1 + 1) or y in (y0 - 1, y1 + 1) else None)
+    for y in range(y0, y1 + 1):                      # les carreaux : sombres en bas, un reflet en haut à gauche
+        for x in range(x0, x1 + 1):
+            k = 1 if y > (y0 + y1) // 2 else 2
+            if x - x0 + (y - y0) < 3:
+                k = 3
+            t.put(x, y, VITRE[k])
+    xm, ym = (x0 + x1) // 2, (y0 + y1) // 2
+    for y in range(y0, y1 + 1):                      # les croisillons de bois
+        t.put(xm, y, BOIS[2])
+    for x in range(x0, x1 + 1):
+        t.put(x, ym, BOIS[2])
+    for x in range(x0 - 2, x1 + 3):                  # l'appui de pierre, éclairé, son ombre
+        t.put(x, y1 + 2, PIERRE[5])
+        t.put(x, y1 + 3, PIERRE[1])
+    for x in range(x0 - 1, x1 + 2):                  # le linteau
+        t.put(x, y0 - 2, PIERRE[4])
+    return t.im
+
+
+def pierre_angle(m):
+    """Le mur haut de masque m aux pierres d'angle : sur la face, de grosses pierres taillées
+    plus claires, une longue et une courte en alternance, aux bords libres (sans mur voisin à
+    côté) ; entre deux murs, aux deux bords (un pilier)."""
+    t = Toile(mur(m))
+    if m & 4:
+        return t.im
+    bords = [b for b, libre in (('g', not m & 8), ('d', not m & 2)) if libre] or ['g', 'd']
+    for k, y0 in enumerate(range(CHAPE + 1, BAS - 1, 5)):
+        long_ = 7 if k % 2 == 0 else 4
+        for b in bords:
+            xs = range(1, 1 + long_) if b == 'g' else range(15 - long_, 15)
+            for y in range(y0, min(y0 + 5, BAS)):
+                for x in xs:
+                    bordure = y == y0 + 4 or (b == 'g' and x == xs[-1]) or (b == 'd' and x == xs[0])
+                    t.put(x, y, PIERRE[0] if bordure else (250, 240, 214) if y == y0 else PIERRE[5] if (x + y) % 6 else PIERRE[4])
+    return t.im
+
+
 def murs_hauts():
-    """Les 16 murs raccordés et la porte, une case plus hauts (images de 16 × (24 + 16))."""
+    """Les 16 murs raccordés et la porte, une case plus hauts (images de 16 × (24 + 16)) ; puis
+    les 16 murs à fenêtre et les 16 murs aux pierres d'angle (BLOCS_CARTE.hauts.variantes)."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     H += HAUTEUR_EN_PLUS
     BAS, FACE = H - 1, FACE + HAUTEUR_EN_PLUS
     try:
-        return [mur(m) for m in range(16)] + [porte_haute()], H
+        return [mur(m) for m in range(16)] + [porte_haute()] + [fenetre(m) for m in range(16)] + [pierre_angle(m) for m in range(16)], H
     finally:
         H, BAS, FACE = garde
 

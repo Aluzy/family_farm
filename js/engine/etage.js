@@ -18,7 +18,7 @@ import { atelierOuvert } from './atelier.js';
 import { farmTerrain } from './terrain.js';
 
 // Les blocs qui se posent à l'étage.
-export const ETAGE_BLOCS = ['mur_pierre', 'porte', 'paillasse', 'lanterne', 'barriere'];
+export const ETAGE_BLOCS = ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'porte', 'paillasse', 'lanterne', 'barriere'];
 
 // Les blocs posés à l'étage : { [tuile]: sorte }.
 export function etageBlocs(state) {

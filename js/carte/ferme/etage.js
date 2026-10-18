@@ -77,7 +77,7 @@
           // les blocs de l'étage (les murs raccordés entre eux, hauts comme en bas)
           const at = new Map(etage.blocs.map((b) => [b.case, b.sorte]));
           for (const b of etage.blocs) {
-            const [key, f] = this.hautFrame(this.wallFrame(b, at, cols)), p = pos(b.case);
+            const [key, f] = this.blocImage(b, at, cols), p = pos(b.case);
             const plat = BLOCS_CARTE.plats.includes(b.sorte);
             const img = add(this.add.image(p.x, p.y - dy, key, f).setOrigin(0.5, 1).setDepth(p.y + (plat ? 0.7 : 1)));
             if (BLOCS_CARTE.bloquent.includes(b.sorte)) this.etageBloque.add(b.case);

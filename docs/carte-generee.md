@@ -121,6 +121,12 @@ Le Marché vend toujours les outils.
   - Un bloc posé quitte l'inventaire ; repris, il y revient (`state.blocs` : case → sorte).
   - Les murs et l'Atelier arrêtent le personnage ; on traverse les portes et les paillasses.
   - Ils portent une ombre, comme le reste du décor.
+  - **La fenêtre** (3 pierres, 1 planche) et **la pierre d'angle** (5 pierres) stylisent les
+    bâtiments : ce sont des murs (ils ferment une pièce, arrêtent le passage, se raccordent au
+    mur en pierre et entre eux, se posent aussi à l'étage). Sur leur face, la fenêtre a un cadre
+    de bois, quatre carreaux et un appui de pierre ; la pierre d'angle, de grosses pierres
+    claires en alternance aux bords libres (entre deux murs : aux deux bords, un pilier).
+    Images : `murs_hauts.png`, 17 + masque et 33 + masque (`BLOCS_CARTE.hauts.variantes`).
   - Les murs et la porte d'un mur horizontal sont une case plus hauts que les autres blocs
     (`assets/murs_hauts.png`, 16 × 40 px, comme les maisons de la transition). Un mur qui cache
     le personnage ou un membre de la famille s'efface à moitié, et tous s'effacent en mode

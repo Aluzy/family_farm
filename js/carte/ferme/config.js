@@ -164,7 +164,10 @@
     // comme les maisons de la transition, scripts/carte/blocs.py murs_hauts : les 16 murs
     // raccordés, `murs` + masque, puis la porte) ; un mur devant quelqu'un (il le cache)
     // s'efface jusqu'à `alpha`, à `vitesse` par seconde (chantier.js stepMurs)
-    hauts: { key: 'murs_hauts', file: 'murs_hauts.png', frame: { frameWidth: 16, frameHeight: 40 }, murs: 0, porte: 16, alpha: 0.4, vitesse: 4 },
+    // ; `variantes` : les murs qui se raccordent comme le mur en pierre, et où commencent leurs
+    // 16 images dans la planche (la fenêtre, les pierres d'angle ; sans la planche haute : le mur)
+    hauts: { key: 'murs_hauts', file: 'murs_hauts.png', frame: { frameWidth: 16, frameHeight: 40 }, murs: 0, porte: 16, alpha: 0.4, vitesse: 4,
+      variantes: { mur_pierre: 0, mur_fenetre: 17, pierre_angle: 33 } },
     // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
     barrieres: 50,
     // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour
@@ -181,7 +184,7 @@
     },
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js)
     ailleurs: ['puits', 'citerne', 'station_robot'],

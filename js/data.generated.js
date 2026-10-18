@@ -168,6 +168,8 @@ export const RAW_DATA = {
     "fibre": { "nom": "Fibre", "icone": "🪢", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "planche": { "nom": "Planche", "icone": "🪚", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "mur_pierre": { "nom": "Mur en pierre", "icone": "🧱", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mur_fenetre": { "nom": "Fenêtre", "icone": "🪟", "prix": 14, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "pierre_angle": { "nom": "Pierre d'angle", "icone": "🧱", "prix": 15, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "plancher": { "nom": "Plancher", "icone": "🟫‍🪚", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "barriere": { "nom": "Barrière", "icone": "🚧", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "chemin": { "nom": "Chemin", "icone": "🟫‍🪨", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -424,6 +426,8 @@ export const RAW_DATA = {
     "RECETTES": {
       "planche": { "entrees": { "bois": 2 }, "sortie": { "planche": 1 } },
       "mur_pierre": { "entrees": { "pierre": 4 }, "sortie": { "mur_pierre": 1 } },
+      "mur_fenetre": { "entrees": { "pierre": 3, "planche": 1 }, "sortie": { "mur_fenetre": 1 } },
+      "pierre_angle": { "entrees": { "pierre": 5 }, "sortie": { "pierre_angle": 1 } },
       "porte": { "entrees": { "planche": 3 }, "sortie": { "porte": 1 } },
       "plancher": { "entrees": { "planche": 2 }, "sortie": { "plancher": 1 } },
       "barriere": { "entrees": { "planche": 1 }, "sortie": { "barriere": 2 } },
@@ -450,6 +454,8 @@ export const RAW_DATA = {
     },
     "BLOCS": {
       "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true },
+      "mur_fenetre": { "nom": "Fenêtre", "objet": "mur_fenetre", "bloque": true, "ferme": true, "mur": true },
+      "pierre_angle": { "nom": "Pierre d'angle", "objet": "pierre_angle", "bloque": true, "ferme": true, "mur": true },
       "porte": { "nom": "Porte", "objet": "porte", "porte": true, "ferme": true },
       "paillasse": { "nom": "Paillasse", "objet": "paillasse", "dedans": true },
       "plancher": { "nom": "Plancher", "objet": "plancher", "sol": true },

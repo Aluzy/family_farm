@@ -106,6 +106,8 @@
     "fibre": { "nom": "Fibre", "icone": "🪢", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "planche": { "nom": "Planche", "icone": "🪚", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "mur_pierre": { "nom": "Mur en pierre", "icone": "🧱", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mur_fenetre": { "nom": "Fenêtre", "icone": "🪟", "prix": 14, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "pierre_angle": { "nom": "Pierre d'angle", "icone": "🧱", "prix": 15, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "plancher": { "nom": "Plancher", "icone": "🟫‍🪚", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "barriere": { "nom": "Barrière", "icone": "🚧", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "chemin": { "nom": "Chemin", "icone": "🟫‍🪨", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },

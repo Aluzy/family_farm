@@ -752,3 +752,16 @@ test('ferme générée (essai) : l\'escalier ouvre un étage au-dessus de sa pi�
   reprendreBloc(s, p.dedans);
   assertEqual([Object.keys(etageBlocs(s)).length, countItem(s, 'paillasse'), countItem(s, 'escalier')], [0, 2, 1]);
 });
+
+test('ferme générée : les fenêtres et les pierres d\'angle ferment une pièce comme des murs', () => {
+  const s = chantier('deco1');
+  setInv(s, { mur_pierre: 20, mur_fenetre: 4, pierre_angle: 4, porte: 1 });
+  const z = terrainLibre(s, 5, 4), p = murs(z, 5, 4);
+  const coins = [p.murs[0], p.murs[4], p.murs[p.murs.length - 1], p.murs[p.murs.length - 4]];
+  const fenetres = [p.murs[2], p.murs[p.murs.length - 2]];
+  for (const t of p.murs) assert(poserBloc(s, coins.includes(t) ? 'pierre_angle' : fenetres.includes(t) ? 'mur_fenetre' : 'mur_pierre', t).ok, `bloc ${t}`);
+  poserBloc(s, 'porte', p.porte);
+  assertEqual(piecesCloses(s).length, 1, 'une pièce close');
+  assertEqual([blocBloque(s, coins[0]), blocBloque(s, fenetres[0])], [true, true], 'on ne passe pas');
+  assertEqual([countItem(s, 'pierre_angle'), countItem(s, 'mur_fenetre')], [0, 2]);
+});
