@@ -130,7 +130,8 @@
       this.npcFrame = this.npcFrame || K.cases(noms);
       for (const m of P.maisons) {
         const f = V.voisins(m.nom);
-        const porte = { x: m.porte.x * T + T / 2, y: (m.porte.y + 1) * T + T - 3 };
+        // (devant la porte : en dessous, ou au-dessus pour une maison au sud du chemin)
+        const porte = { x: m.porte.x * T + T / 2, y: (m.porte.y + (m.sens === 'haut' ? -1 : 1)) * T + T - 3 };
         f.membres.forEach((mb, i) => {
           const key = sheetKey(mb.perso, mb.enfant);
           if (!this.textures.exists(key)) return;
@@ -278,7 +279,7 @@
           // plus rien à ramasser : il va et vient autour de chez lui, et finit par rentrer
           if (!jour || Math.random() < (n.m.enfant ? 0.05 : 0.15)) { rentrer(); return; }
           for (let k = 0; k < 15 && !n.path.length; k++) {
-            const tx = Math.floor((n.porte.x + (Math.random() - 0.5) * 12 * T) / T), ty = Math.floor((n.porte.y + Math.random() * 6 * T) / T);
+            const tx = Math.floor((n.porte.x + (Math.random() - 0.5) * 12 * T) / T), ty = Math.floor((n.porte.y + (n.maison.sens === 'haut' ? -1 : 1) * Math.random() * 6 * T) / T);
             if (this.canWalk(tx, ty)) n.path = this.findPath(n.x, n.y, tx * T + T / 2, ty * T + T - 2) || [];
           }
           n.t = VOISINS.wait[0] + Math.random() * (VOISINS.wait[1] - VOISINS.wait[0]);

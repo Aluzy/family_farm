@@ -208,7 +208,9 @@ parties.
   (`state.graineVoisins`, tirée à la création de la partie, ou à la première visite d'une
   ancienne partie). L'ouest contient :
   - le chemin de terre de la ferme à la route, qui ondule doucement ;
-  - 3 à 5 maisons de voisins, chacune avec une allée de sa porte au chemin. Elles sont bâties
+  - 3 à 5 maisons de voisins, réparties sur toute la largeur (une par bande de colonnes), tour à
+    tour au nord et au sud du chemin et plus ou moins loin de lui (`ECARTS`). La porte est face
+    au chemin (en bas au nord, en haut au sud), une allée l'y relie. Elles sont bâties
     avec les blocs de la ferme générée (`assets/blocs.png`) : murs raccordés, porte, plancher,
     meubles (four, cuisinière, paillasses, coffre à grain, atelier…) ;
   - la mare et son banc, le puits et le tonneau près des maisons, des barrières le long du
