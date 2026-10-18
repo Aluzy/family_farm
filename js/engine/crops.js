@@ -9,7 +9,7 @@ import { gainActionXp, levelReached } from './levels.js';
 import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { absoluteHours, dayHour } from './clock.js';
-import { farmTerrain, tileCount } from './terrain.js';
+import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -550,6 +550,8 @@ export function serreUpgradeCost(state) {
 
 export function buildSerre(state) {
   const deja = 'La Serre est déjà construite.';
+  // la ferme générée : un bac à semis, fabriqué à l'Atelier, posé dans une pièce close (blocs.js)
+  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, la Serre se bâtit : une pièce close et un bac à semis (Atelier).');
   return buildWith(state, 'serre', { built: state.serre.construit, deja, cost: DATA.SERRE.PRIX_CONSTRUCTION, libelle: 'Serre' }, () => { openSerre(state); });
 }
 

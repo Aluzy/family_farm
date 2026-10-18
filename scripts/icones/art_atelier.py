@@ -1,5 +1,5 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
-# mur en pierre, la porte, la paillasse, le nichoir, la mangeoire, l'Atelier et les
+# mur en pierre, la porte, la paillasse, le nichoir, la mangeoire, le bac à semis, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
@@ -17,6 +17,8 @@ PALETTE = {
     'u': '#5a4630', 'v': '#c8b088', 'w': '#ecdcb4',
     # fer
     'm': '#1e2833', 'n': '#64707e', 'p': '#9aa8b8', 'q': '#dfe7ef',
+    # terreau
+    'z': '#2e1e12', 'Z': '#4e3420',
     # baies (du plus clair au plus sombre)
     'h': '#ff9c8c', 'r': '#e8463e', 'x': '#c22a30', 'X': '#921c26', 'N': '#5e121a',
 }
@@ -173,6 +175,25 @@ ICONS = {
         '....NrxXNN......',
         '.....NXNN.......',
         '......NN........',
+    ],
+    # bac à semis : une caisse de terreau, trois pousses
+    '🎍': [
+        '................',
+        '................',
+        '................',
+        '..L....L....L...',
+        '.LlL..LlL..LlL..',
+        '.GlG..GlG..GlG..',
+        '..g....g....g...',
+        '..g....g....g...',
+        'kkkkkkkkkkkkkkkk',
+        'kZzZzZzZzZzZzZzk',
+        'kzZzzZzzZzzZzZzk',
+        'keeeeeeeeeeeeeek',
+        'kTTTTTTTTTTTTTTk',
+        'ktTtTtTtTtTtTtTk',
+        'kssssssssssssssk',
+        'kkkkkkkkkkkkkkkk',
     ],
     # l'Atelier : un marteau, fer en haut, manche de bois
     '🔨': [

@@ -4,10 +4,10 @@
    Lancer seul : node --test tests/engine/ferme-generee.test.mjs (ou node tests/run-tests.mjs ferme-generee).
    ========================================================================== */
 
-import { assert, assertEqual, garden, setInv, sleepOnce, test, tireless } from './aide.mjs';
+import { assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -34,7 +34,7 @@ test('ferme générée : la même graine donne la même carte, une autre graine 
   assert(JSON.stringify(c.carte) !== JSON.stringify(a.carte), 'une autre graine, une autre carte');
   // d'une fois sur l'autre (pas seulement dans la même page) : toujours la même ferme pour
   // « test-1 » (à mettre à jour si le générateur change, ce qui change les fermes des parties)
-  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 11517]);
+  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 11578]);
   assertEqual([a.carte.width, a.carte.height, a.terrain.LARGEUR, a.terrain.HAUTEUR], [FERME_GENEREE.LARGEUR, FERME_GENEREE.HAUTEUR, 144, 114]);
 });
 
@@ -60,8 +60,8 @@ for (const graine of ['1', '2', '7', 'abc', '12345']) {
     assert(vus.has(porte), 'le chemin passe devant la place de la maison');
     assert(!objets.maison, 'pas de maison : le foyer se bâtit');
     // les bâtiments de la cour (provisoires) et les rochers, les arbres
-    for (const n of ['moulin', 'serre', 'verger', 'silo', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
-    assert(!objets.poulailler && !objets.grange, 'le Poulailler et l\'Étable se bâtissent');
+    for (const n of ['moulin', 'verger', 'silo', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
+    assert(!objets.poulailler && !objets.grange && !objets.serre, 'le Poulailler, l\'Étable et la Serre se bâtissent');
     assert(!objets.puits && !objets.citerne, 'le puits et la citerne se bâtissent');
     assertEqual(Object.keys(terrain.ROCHERS).length, FERME_GENEREE.ROCHERS, 'les rochers');
     assert(Object.keys(terrain.ARBRES).length > 150, 'des bois');
@@ -332,7 +332,7 @@ test('ferme générée : le four et la cuisinière se posent dans une pièce clo
 /* ---------- étape 5b-2 : l'énergie et l'eau en blocs ---------- */
 
 test('ferme générée : le puits, la pompe dessus, le panneau, la citerne et la batterie se posent et installent les appareils', () => {
-  const s = chantier('e1');
+  const s = reach(chantier('e1'), 'paturage');
   s.pieces = 100000;
   for (const t of ['panneau', 'pompe', 'reservoir', 'batterie']) removeStarter(s, t);   // (une partie neuve : rien d'installé)
   assertEqual(buyStarter(s, 'panneau').ok, false, 'pas en pièces');
@@ -365,7 +365,7 @@ test('ferme générée : le puits, la pompe dessus, le panneau, la citerne et la
 /* ---------- étape 5b : le Poulailler (pièce close + nichoir) ---------- */
 
 test('ferme générée : un nichoir posé dans une pièce close construit le Poulailler', () => {
-  const s = chantier('p1');
+  const s = reach(chantier('p1'), 'poulailler');
   s.pieces = 100000;
   s.poulailler.construit = false;
   assertEqual(buildPoulailler(s).ok, false, 'pas en pièces');
@@ -384,7 +384,7 @@ test('ferme générée : un nichoir posé dans une pièce close construit le Pou
 /* ---------- étape 5b : l'Étable (pièce close + mangeoire) ---------- */
 
 test('ferme générée : une mangeoire posée dans une pièce close construit l\'Étable', () => {
-  const s = chantier('e1');
+  const s = reach(chantier('e1'), 'paturage');
   s.pieces = 100000;
   s.paturage.construit = false;
   s.paturage.places = 0;
@@ -401,4 +401,27 @@ test('ferme générée : une mangeoire posée dans une pièce close construit l\
   assertEqual([s.paturage.construit, freeSheepPlaces(s), countItem(s, 'mangeoire')], [false, 0, 1], 'repris : plus d\'Étable');
   poserBloc(s, 'mangeoire', p.dedans);
   assertEqual(s.paturage.places, DATA.PATURAGE.PLACES_DEPART + 2);
+});
+
+/* ---------- étape 5b : la Serre (pièce close + bac à semis) ---------- */
+
+test('ferme générée : un bac à semis posé dans une pièce close construit la Serre', () => {
+  const s = chantier('s1');
+  s.pieces = 100000;
+  s.serre = createInitialState(1).serre;   // comme une partie neuve
+  assertEqual(buildSerre(s).ok, false, 'pas en pièces');
+  setInv(s, { mur_pierre: 30, porte: 2, bac_semis: 1 });
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  s.progression.niveau = 1;
+  assertEqual(poserBloc(s, 'bac_semis', p.dedans).ok, false, 'pas avant le niveau de la Serre');
+  reach(s, 'serre');
+  assert(poserBloc(s, 'bac_semis', p.dedans).ok);
+  assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, 1, DATA.SERRE.PARCELLES[0]]);
+  s.serre.parcelles[0].culture = 'tomate';   // ce qui pousse reste là si on la reprend puis la repose
+  reprendreBloc(s, p.dedans);
+  assertEqual(s.serre.construit, false, 'reprise : plus de Serre');
+  poserBloc(s, 'bac_semis', p.dedans);
+  assertEqual([s.serre.construit, s.serre.parcelles[0].culture], [true, 'tomate']);
 });
