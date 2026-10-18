@@ -102,6 +102,12 @@ export function setBuildMode(value) {
   if (buildMode) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; }
   return buildMode;
 }
+// Le niveau où l'on construit, en mode Construire (0 : le sol, 1 : l'étage ; js/ui/chantier.js).
+export let buildLevel = 0;
+export function setBuildLevel(value) {
+  buildLevel = Math.max(0, Math.floor(Number(value) || 0));
+  return buildLevel;
+}
 // L'étage (un essai, js/engine/etage.js) : le personnage est-il monté par l'escalier ?
 export let etageVue = false;
 export function setEtageVue(value) {

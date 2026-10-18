@@ -199,7 +199,7 @@
       const S = SPRINKLER;
       if (!this.sprinklers || !this.sprinklers.size) return;
       if (!this.sprayAir) {
-        this.sprayAir = this.add.graphics().setDepth(this.light ? this.light.depth - 1 : 1e5);
+        this.sprayAir = this.add.graphics().setDepth(this.light ? this.light.depth - 2 : 1e5);
         this.sprayGround = this.add.graphics().setDepth(1.5);
       }
       const air = this.sprayAir.clear(), sol = this.sprayGround.clear();
