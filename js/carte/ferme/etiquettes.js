@@ -176,6 +176,22 @@
       G.place((at.x - f.left) * f.k, (at.y - K.BULLE.dessus - f.top) * f.k);
     },
 
+    // La bulle « +x » du second adulte (js/famille-ferme.js), au-dessus de lui.
+    showGainAide(items) {
+      if (!this.gainAide) this.gainAide = K.bulleGain(this.ctx.labelLayer, (item) => ((this.ctx.bridge && this.ctx.bridge.icone) ? this.ctx.bridge.icone(item) : item));
+      this.gainAide.montre(items);
+      this.placeGainAide();
+    },
+
+    placeGainAide() {
+      const G = this.gainAide;
+      if (!G || !G.visible()) return;
+      const at = this.family && !this.room ? this.family.aidePos() : null;
+      if (!at) { G.place(null); return; }
+      const f = this.screenFrame();
+      G.place((at.x - f.left) * f.k, (at.y - K.BULLE.dessus - f.top) * f.k);
+    },
+
     /* ---------- étiquettes (DOM) ---------- */
 
     // Une étiquette par lieu affiché : un bouton DOM qui ne reçoit pas les appuis (ils

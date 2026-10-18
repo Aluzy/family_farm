@@ -1143,6 +1143,8 @@
       // Un chemin par les cases libres, de (x0, y0) à (x1, y1) : [{ x, y }…] ou null (pour
       // les autres membres de la famille, js/famille-ferme.js).
       path: (x0, y0, x1, y1) => findPath(x0, y0, x1, y1),
+      // Où se tenir pour prendre ce qui attend au Poulailler ou à l'Étable ({ x, y }, ou null).
+      lieu: (l) => (l === 'poulailler' ? coopSpot() : l === 'etable' ? barnSpot() : null),
       // « Dormir » : il rentre dans la maison (done : il est dedans).
       goHome,
       // Où la vue de l'intérieur doit être (x), pendant qu'il va se coucher ; null sinon.

@@ -12,7 +12,7 @@ import { coopCapacity, sheepToShear, stableHoused, woolReady } from '../engine/a
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
-import { collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
+import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, enSelle, fellenTrees, morceauxDe } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
@@ -423,6 +423,8 @@ export function stageModel() {
     // les autres membres de la famille, qui font leur journée sur la carte (js/famille-ferme.js),
     // et le jour de la semaine (0 : lundi) : les enfants vont à l'école les jours d'école
     famille: state.famille.membres.filter((m) => m !== mainCharacter(state)).map((m) => ({ id: m.id, perso: memberPerso(m), enfant: !!m.enfant })),
+    // le second adulte du foyer et où il a à faire (le Poulailler, l'Étable : aideAFaire)
+    aide: aidant(state) ? { id: aidant(state).id, lieux: aideAFaire(state) } : null,
     semaine: weekdayIndex(state.day),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: tileCount(T), terrain: terrainNow(rochers.concat(abattus)), plots,
@@ -568,6 +570,25 @@ function stagePickup(id) {
 
 // Version 1.19 : le personnage est au Poulailler ou à l'Étable (envoyé par un double appui) :
 // il prend ce qui l'attend (et tond les moutons prêts). Renvoie ce qu'il a pris, ou null.
+// Le second adulte du foyer a fini au Poulailler ou à l'Étable (appelé par la carte) : ce qu'il
+// a pris ({ item: qté }), ou null.
+function stageAide(lieu) {
+  const r = aideBetes(state, lieu);
+  if (!r.ok) return null;
+  persistState();
+  refresh();
+  return r.items;
+}
+
+// Sans la carte de la ferme à l'écran (une autre carte, pas de carte) : le second adulte fait
+// quand même son travail aux heures où il est dehors (comme js/famille-ferme.js, HORAIRE).
+const AIDE_HEURES = [7, 18.75];
+function aideSansCarte() {
+  const h = clockHours(state);
+  if (nightActive(state) || h < AIDE_HEURES[0] || h >= AIDE_HEURES[1]) return;
+  for (const lieu of aideAFaire(state)) aideBetes(state, lieu);
+}
+
 function stageCollect(lieu) {
   const r = collectAt(state, lieu);
   if (r.ok && r.fatigue) notify(TIRED);
@@ -621,6 +642,7 @@ export function renderStage() {
   // Une autre carte est affichée (js/ui/excursion.js) : celle de la ferme se cache, les
   // fenêtres et la barre d'outils restent.
   if (on && document.body.classList.contains('en-excursion')) {
+    aideSansCarte();
     el.hidden = true;
     document.body.classList.add('has-stage');
     if (window.FarmStage && stageMounted) FarmStage.hide();
@@ -633,7 +655,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
@@ -645,6 +667,7 @@ export function renderStage() {
   el.hidden = !on;
   document.body.classList.toggle('has-stage', on);
   if (!on) {
+    aideSansCarte();
     if (window.FarmStage) FarmStage.hide();
     return;
   }

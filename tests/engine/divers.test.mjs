@@ -6,7 +6,7 @@
 import {
   buyFurniture, collectLeftovers, COMPTA_MAX, comptaRecente, countItem, createInitialState, DATA,
   earn, findPlot, furnitureCount, furnitureMax, harvest, layEggs, makePlots, memberPerso, migrate,
-  noteCompta, pickUp, piles, setMemberProfile, STATE_VERSION,
+  noteCompta, pickUp, piles, setMemberProfile, STATE_VERSION, aidant, aideAFaire, aideBetes, addItem, makeSheep, hensToFeed, removeMember,
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, garden, plantRipe, test, testBase,
@@ -135,4 +135,35 @@ test('Ramassage (version 1.18) : les œufs attendent au Poulailler, le lait et l
   assertEqual(piles(s).map((p) => p.id), ['poulailler']);
   assertEqual(pickUp(s, 'poulailler').items[oeuf], 2 * DATA.ANIMAUX.poule.oeufsParNuit);
   assertEqual(countItem(s, oeuf), avant + 2 * DATA.ANIMAUX.poule.oeufsParNuit);
+});
+
+test('Le second adulte du foyer nourrit les poules et prend les œufs, le lait et la laine', () => {
+  const s = createInitialState(1);
+  s.ramassage = true;
+  assertEqual(aidant(s).id, 'adulte-2', 'l\'autre adulte, pas le personnage principal');
+  s.poulailler.construit = true;
+  s.poulailler.poules = 2;
+  assertEqual(aideAFaire(s), [], 'pas de blé : rien à faire');
+  addItem(s, 'ble', 5);
+  assertEqual(aideAFaire(s), ['poulailler'], 'des poules à nourrir');
+  const r = aideBetes(s, 'poulailler');
+  assertEqual([r.ok, r.nourries, hensToFeed(s)], [true, 2, 0]);
+  const oeuf = DATA.ANIMAUX.poule.produit, avant = countItem(s, oeuf);
+  layEggs(s);
+  assertEqual(aideAFaire(s), ['poulailler'], 'des œufs qui attendent');
+  assertEqual(aideBetes(s, 'poulailler').items[oeuf], 2 * DATA.ANIMAUX.poule.oeufsParNuit);
+  assertEqual([countItem(s, oeuf), piles(s).length], [avant + 2 * DATA.ANIMAUX.poule.oeufsParNuit, 0], 'dans l\'inventaire');
+  // l'Étable : un mouton prêt, tondu sans l'énergie du personnage principal
+  s.paturage.construit = true;
+  const m = makeSheep(s);
+  m.laine = DATA.ANIMAUX.mouton.joursLaine;
+  s.paturage.moutons.push(m);
+  const energie = s.energie;
+  assertEqual(aideAFaire(s), ['etable']);
+  assertEqual(aideBetes(s, 'etable').items[DATA.ANIMAUX.mouton.laine], DATA.ANIMAUX.mouton.laineParTonte);
+  assertEqual([s.energie, aideAFaire(s)], [energie, []]);
+  assertEqual(aideBetes(s, 'etable').ok, false, 'plus rien');
+  // seul adulte : personne pour aider
+  removeMember(s, 'adulte-2');
+  assertEqual([aidant(s), aideAFaire(s)], [null, []]);
 });
