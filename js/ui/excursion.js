@@ -250,8 +250,6 @@ window.FermeHote = {
 const DESTINATIONS = [
   ['🌾 La ferme', 'jeu.html'],
   ['🛤️ Le chemin vers la ville', 'ville-carte.html?carte=transition&arrivee=ferme'],
-  ['🏠 La première maison des voisins', 'ville-carte.html?carte=interieur&maison=maison_1'],
-  ['🏠 La deuxième maison des voisins', 'ville-carte.html?carte=interieur&maison=maison_2'],
   ['🏙️ La ville (route de la ferme)', 'ville-carte.html?carte=ville&arrivee=ferme'],
   ['🚉 La ville (la gare)', 'ville-carte.html?carte=ville&arrivee=gare'],
   ['⛰️ La montagne', 'ville-carte.html?carte=montagne&arrivee=gare'],

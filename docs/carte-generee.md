@@ -223,15 +223,19 @@ parties.
     banc, les buissons, et les barrières de 2 à 8 tuiles.
 
   `js/carte/ville/transition.js` (`V.transitionCarte`) en fait la carte de la partie avant que
-  la scène ne la crée : le sol, les tampons, les portes (passages et arrivées), l'emprise des
-  maisons, les arbres, les rochers, l'herbe, et le trajet des enfants vers le bus.
-- **Les familles** : chaque maison a sa famille (`V.voisins`, la même qu'on trouve chez elle en
-  entrant). De 7 h à 19 h, ses membres sortent par la porte.
+  la scène ne la crée : le sol, les tampons, les arbres, les rochers, l'herbe, et le trajet des
+  enfants vers le bus.
+- **Les maisons sont ouvertes** : sans toit ni carte d'intérieur, on voit dedans et on y entre à
+  pied par la porte. Les murs et les meubles arrêtent la marche, le plancher et la porte non
+  (`poseMaison`).
+- **Les familles** : chaque maison a sa famille (`V.voisins`), qu'on voit aller et venir chez
+  elle. De 7 h à 19 h, ses membres sortent par la porte.
   - Les parents vont chercher la ressource libre la plus proche, la ramassent, et en rapportent
     trois à la fois à la maison avant de ressortir.
   - Les ressources sont des petites pierres, des morceaux de bois et des herbes : 18 par jour
     (`ressourcesDuJour`).
   - Les enfants, et les parents quand il n'y a plus rien, flânent autour de la maison.
+  - Rentrés, ils restent visibles et circulent dans la maison avant de ressortir.
   - La nuit, tout le monde reste chez soi.
   - Un toucher sur un voisin : il dit ce que sa famille a ramassé aujourd'hui.
   - Ce qui a été ramassé le reste jusqu'au lendemain (`localStorage`).

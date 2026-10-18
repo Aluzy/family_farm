@@ -14,8 +14,8 @@
 #
 # Les passages (couche d'objets « passages ») : un rectangle au bord de la carte, sa cible
 # (la page et le point d'arrivée) et le sens de sa flèche bleue (js/ville-carte.js) ; les
-# points d'arrivée (couche « arrivees »), un par carte d'où l'on vient. Devant la porte de
-# chaque maison, un passage mène à son intérieur (?carte=interieur&maison=<nom>).
+# points d'arrivée (couche « arrivees »), un par carte d'où l'on vient. Les maisons n'ont pas
+# de passage : on y entre à pied (js/carte/ville/transition.js).
 #
 # Comme à la ferme : les barrières de bois de la ferme (scripts/carte/barrieres.py) ; l'herbe
 # haute qui penche quand on la traverse (couche d'objets « herbe_haute » : un point par touffe,

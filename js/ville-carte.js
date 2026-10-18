@@ -2,8 +2,8 @@
  * La ville (jeu.html?carte=ville), où l'on va depuis la fenêtre de la ville (« Se promener en
  * ville », tout en bas) : ses rues, son parc et ses fontaines, et le personnage qui s'y promène.
  * La même scène montre la carte de transition entre la ferme et la ville (?carte=transition),
- * la montagne et la plage (où mène le train), les grottes de la montagne et l'intérieur des
- * maisons des voisins ; ?arrivee= choisit le point d'arrivée.
+ * la montagne et la plage (où mène le train) et les grottes de la montagne ; ?arrivee= choisit
+ * le point d'arrivée.
  *
  * La carte : assets/ville.json (scripts/ville/carte.py, puis scripts/build-map.mjs) ; ses
  * couches de tuiles (le sol, puis une couche par matière, de bas en haut) et son point
@@ -46,7 +46,7 @@
   const K = window.CarteKit;
   const V = window.CarteVille;
   const etat = V.etat;
-  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, VOISINS, BLOCS, RAMASSABLES } = V.C;
+  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, BLOCS, RAMASSABLES } = V.C;
   const { hote, sheetKey, saisie, reduced, v } = V;
   // Le pas de la flèche d'un passage, selon son sens (elle se balance dans ce sens).
   const SENS_PAS = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] };
@@ -98,18 +98,11 @@
           this.load.spritesheet('faune_' + e, v('assets/faune_' + e + '.png'), { frameWidth: z, frameHeight: z });
         }
       }
-      // les enfants de la partie (pour la scène du bus) ; dans une maison, la famille qui y vit
+      // les enfants de la partie (pour la scène du bus)
       const h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
       const planches = new Map();     // clé de la planche → son fichier
       const planche = (perso, enfant) => planches.set(sheetKey(perso, enfant), 'assets/' + K.planche(perso, enfant));
       for (const e of (h && h.enfants) || []) planche(e.perso, true);
-      this.famille = null;
-      if (etat.nom === 'interieur') {
-        this.maison = etat.params.get('maison') || 'maison_1';
-        this.famille = V.voisins(this.maison);
-        for (const m of this.famille.membres) planche(m.perso, m.enfant);
-        for (const n of VOISINS.meubles) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
-      }
       // la transition : son plan de la partie (js/carte/ville/transition.js), les blocs des
       // maisons, les ressources, les familles des maisons
       this.transition = etat.nom === 'transition' ? V.planTransition() : null;
@@ -178,8 +171,8 @@
       this.map = map;
       this.makeTileAnims();
 
-      // où l'on marche : là où il y a du sol et rien de ce qu'on ne traverse pas (dans une
-      // maison : son plancher, voir makeInterior)
+      // où l'on marche : là où il y a du sol et rien de ce qu'on ne traverse pas (les maisons
+      // des voisins de la transition : voir poseMaison)
       this.walk = [];
       for (let y = 0; y < map.height && this.layers.sol; y++) {
         const row = [];
@@ -201,7 +194,6 @@
         }
       }
 
-      this.makeInterior(map);
       this.makeNature(objects);
       this.makeVoisinsDehors();
 
@@ -209,7 +201,7 @@
       const noms = (this.cache.json.get(this.heroKey + '_noms') || {}).frames || [];
       this.frame = K.cases(noms);
       const arrivee = etat.params.get('arrivee');
-      const d = (arrivee && objects('arrivees').find((o) => o.name === arrivee)) || objects('depart')[0] || (this.famille && VOISINS.entree) || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
+      const d = (arrivee && objects('arrivees').find((o) => o.name === arrivee)) || objects('depart')[0] || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
       this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), this.heroKey, this.frame('idle_bas_0')).setOrigin(0.5, HERO.foot / HERO.h);
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x1e1a18, 0.35);
       this.heroPos = { x: d.x, y: d.y };
@@ -230,7 +222,7 @@
       this.fitZoom();
       window.CarteJeu.suitTaille(this, () => this.fitZoom());
 
-      this.makePassages(objects('passages').concat(this.famille ? [this.interiorExit()] : []));
+      this.makePassages(objects('passages'));
       // l'heure du jeu (HorlogeSortie : js/ui/excursion.js), et sa lumière (CarteKit.voile) sur
       // les cartes où le jour et la nuit passent : au-dessus de la carte, des personnages et du
       // feuillage, sous ce qui vole, les flèches et les petits textes
@@ -253,13 +245,11 @@
         if (p.getDistance() > slop || this.locked || this.dialog || this.mining) return;
         const w = cam.getWorldPoint(p.x, p.y);
         this.work = null;
-        this.entering = null;
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w) || this.tapVoisinDehors(w)) { this.dbl.oublie(); return; }
+        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
-        if (this.tapMaison(w)) { this.dbl.oublie(); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va
         // (un essai de marche : la marche au doigt s'explique, une fois)
         K.astuceMarche(p);
@@ -739,8 +729,6 @@
       this.stepWork(dt);
       this.stepPieces();
       this.stepFish(dt);
-      this.stepEntering();
-      this.stepFamily(time, dt);
       this.stepVoisinsDehors(time, dt);
       this.stepCueillette();
       this.stepDialog();
@@ -758,7 +746,6 @@
         this.path = [];
         if (this.work && !this.work.started) this.work = null;
         if (this.peche && !this.peche.phase) this.peche = null;
-        this.entering = null;
         const l = Math.hypot(vx, vy), st = HERO.speed * dt;
         const nx = P.x + (vx / l) * st, ny = P.y + (vy / l) * st;
         // glisse le long d'un bord : chaque axe séparément
