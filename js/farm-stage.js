@@ -369,6 +369,7 @@
         // si les images sont lentes (Phaser plafonne `delta`).
         if (this.pan) this.stepPan();
         else if (this.vx || this.vy) this.stepInertia(dt);
+        this.stepLanterns(time, dt / 1000);      // (avant le voile : leurs lumières y sont posées)
         this.lumiere.step();
         if (this.tileAnims.length && !this.room) this.stepTileAnims(time);
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);

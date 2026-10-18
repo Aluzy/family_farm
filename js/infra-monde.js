@@ -10,7 +10,9 @@
  * Le personnage principal de la partie (assets/personnages/perso_NN.png, comme sur la ferme)
  * marche sur le sol plein (les tuiles de la couche « sol »), pas dans l'eau ni à travers un
  * tronc : un toucher (ou un clic) l'envoie au plus court jusque-là ; les flèches ou ZQSD le
- * dirigent aussi. L'habitant de l'île y flâne de son côté. Avec « animations réduites », les
+ * dirigent aussi. L'habitant de l'île y flâne de son côté. La hache en main, un appui
+ * sur un arbre : un coup de hache ; au troisième, l'arbre tombe et lâche deux morceaux qu'on
+ * ramasse en marchant dessus (la lanterne scintillante, à l'Atelier) ; il repousse le lendemain. Avec « animations réduites », les
  * arbres et l'eau restent immobiles, l'habitant ne bouge pas.
  *
  * La carte s'affiche dans la page du jeu (js/ui/excursion.js : InfraMonde.start, stop), à la
@@ -25,6 +27,19 @@
   const v = K.v;
   const MAP = { key: 'infra', file: 'assets/infra_monde.json' };
   const TREE = { key: 'infra_arbre', file: 'assets/infra_arbre.png', w: 32, h: 64, frames: 8, fps: 6, foot: 59 };
+  // Les morceaux d'arbre (pour la lanterne scintillante, à l'Atelier) : la hache en main, un
+  // appui sur un arbre, le personnage va à côté (à `cote` px de son pied) et donne un coup de
+  // hache (hache_cote_0..3 en `swing` s, le coup porte à la 3e image ; un coup par appui). Au
+  // `coups`-ième (moins avec l'Arbre : FermeHote.coups), l'arbre tombe (CarteKit.NATURE.chute)
+  // et lâche `morceaux` morceaux là où sa cime touche le sol (à `loin` px de son pied) ; le
+  // personnage les ramasse en marchant dessus (à moins de `prise` px : FermeHote.ramasser).
+  // L'arbre repousse le lendemain. localStorage `store` : { jour, tombes : les numéros des arbres
+  // tombés, morceaux : ceux qui restent au sol, [{ x, y }] }.
+  const BOIS = {
+    item: 'bois_infra', cote: 11, swing: 0.5, coups: 3, morceaux: 2, loin: [16, 30], prise: 8,
+    store: 'ferme-infra', doigt: { x: 12, haut: 52, bas: 6 }, bulle: 26,
+    eclats: [0xc8a0e8, 0x4ff0d2, 0xffb8e0, 0xfff0a0],
+  };
   // L'habitant (scripts/infra/habitant.py) : marche de face 0-3, de dos 4-7, de profil 8-11 ;
   // debout de face 12 (13 : l'œil fermé), de dos 14, de profil 15 (16 : l'œil fermé).
   const HERO = {
@@ -83,8 +98,14 @@
         if (!reduced()) s.play({ key: TREE.key, startFrame: (i * 3) % TREE.frames, frameRate: TREE.fps * (0.85 + ((i * 37) % 30) / 100) });
         const tx = Math.floor(o.x / T), ty = Math.floor(o.y / T);
         if (this.walk[ty]) this.walk[ty][tx] = false;
+        s.n = i;
+        s.coups = 0;
         return s;
       });
+      this.boisRec = this.readBois();
+      for (const t of this.trees.filter((q) => this.boisRec.tombes.includes(q.n))) this.removeTree(t);
+      this.morceaux = [];
+      for (const m of this.boisRec.morceaux) this.dropPiece(m.x, m.y, false);
 
       // l'habitant (ses animations portent son nom : elles sont communes à toutes les cartes du jeu)
       const walkAnim = (key, start) => {
@@ -133,6 +154,7 @@
           if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('👁️ L\'habitant de l\'île te regarde passer, sans un mot.');
           return;
         }
+        if (this.tapTree(w)) { dbl.oublie(); return; }
         K.astuceMarche(p);           // un essai de marche : la marche au doigt s'explique, une fois
         if (dbl.appui(w.x, w.y, cam.zoom)) this.goTo(w.x, w.y);
       });
@@ -142,6 +164,177 @@
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;
       window.InfraMonde.scene = this;
       this.events.once('destroy', () => { if (window.InfraMonde.scene === this) window.InfraMonde.scene = null; });
+    }
+
+    // Les arbres tombés aujourd'hui et les morceaux restés au sol (le jour de l'horloge du jeu).
+    readBois() {
+      const h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
+      const jour = h ? h.jour : Math.floor(Date.now() / 864e5);
+      let r = null;
+      try { r = JSON.parse(window.localStorage.getItem(BOIS.store) || 'null'); } catch (e) { r = null; }
+      if (!r || r.jour !== jour) return { jour, tombes: [], morceaux: [] };
+      return { jour, tombes: r.tombes || r.pris || [], morceaux: Array.isArray(r.morceaux) ? r.morceaux : [] };
+    }
+
+    saveBois() {
+      this.boisRec.morceaux = this.morceaux.map((m) => ({ x: m.x, y: m.y }));
+      try { window.localStorage.setItem(BOIS.store, JSON.stringify(this.boisRec)); } catch (e) { /* ignoré */ }
+    }
+
+    // Un arbre de moins : son image, et sa case où l'on marche de nouveau.
+    removeTree(t) {
+      this.trees.splice(this.trees.indexOf(t), 1);
+      const tx = Math.floor(t.x / T), ty = Math.floor(t.y / T);
+      if (this.walk[ty] && this.layers.sol.getTileAt(tx, ty)) this.walk[ty][tx] = true;
+      t.destroy();
+    }
+
+    // Un appui sur un arbre, la hache en main : y aller ; arrivé, un coup de hache (stepTree).
+    // Sans la hache, l'appui fait marcher, comme ailleurs.
+    tapTree(w) {
+      const H = window.FermeHote;
+      if (H && H.enMain && H.enMain() !== 'hache') return false;
+      const D = BOIS.doigt;
+      const t = this.trees.find((s) => !s.down && Math.abs(w.x - s.x) <= D.x && w.y >= s.y - D.haut && w.y <= s.y + D.bas);
+      if (!t) return false;
+      if (this.chop && this.chop.started) return true;
+      // à côté du tronc, du côté où l'on est (sinon l'autre)
+      const P = this.heroPos, k = P.x < t.x ? -1 : 1;
+      const spots = [k, -k].map((c) => ({ x: t.x + c * BOIS.cote, y: t.y + 1 }));
+      const spot = spots.find((q) => this.canWalk(Math.floor(q.x / T), Math.floor(q.y / T))) || this.nearWalk(t.x, t.y + T);
+      this.chop = { arbre: t, spot, started: false };
+      this.path = [];
+      if (Math.hypot(spot.x - P.x, spot.y - P.y) > 3) this.goTo(spot.x, spot.y);
+      return true;
+    }
+
+    // Arrivé à côté de l'arbre : le geste de la hache ; au coup, l'arbre tremble (ou tombe).
+    stepTree(dt) {
+      const c = this.chop;
+      if (!c) return;
+      const P = this.heroPos;
+      if (!c.started) {
+        if (this.path.length) return;
+        if (Math.hypot(c.spot.x - P.x, c.spot.y - P.y) > 12 || c.arbre.down) { this.chop = null; return; }
+        c.started = true;
+        c.t = 0;
+        this.face = 'cote';
+        this.hero.setFlipX(c.arbre.x < P.x);
+      }
+      c.t += dt;
+      const k = Math.min(3, Math.floor((c.t / BOIS.swing) * 4));
+      c.frame = 'hache_cote_' + k;
+      if (k >= 2 && !c.hit) { c.hit = true; this.hitTree(c.arbre); }
+      if (c.t >= BOIS.swing) this.chop = null;
+    }
+
+    hitTree(t) {
+      const H = window.FermeHote;
+      K.vibre('hache');
+      t.coups += 1;
+      this.sparks(t, 4);
+      const coups = H && H.coups ? H.coups(BOIS.coups) : BOIS.coups;
+      if (t.coups >= coups) { this.fellTree(t); return; }
+      if (!reduced()) this.tweens.add({ targets: t, angle: { from: -3, to: 3 }, duration: 60, yoyo: true, repeat: 1, onComplete: () => t.setAngle(0) });
+    }
+
+    // Quelques éclats de couleur qui s'échappent de l'arbre.
+    sparks(t, n) {
+      if (reduced()) return;
+      for (let i = 0; i < n; i++) {
+        const q = this.add.rectangle(t.x + (Math.random() - 0.5) * 16, t.y - 20 - Math.random() * 20, 2, 2, BOIS.eclats[i % BOIS.eclats.length]).setDepth(t.y + 1);
+        this.tweens.add({ targets: q, y: q.y - 10 - Math.random() * 10, alpha: 0, duration: 500 + Math.random() * 300, onComplete: () => q.destroy() });
+      }
+    }
+
+    // L'arbre bascule autour de son pied, du côté opposé au personnage ; sa cime touche le sol et
+    // lâche les morceaux, puis il s'efface. (Gardé tout de suite : partir pendant la chute ne
+    // perd rien.)
+    fellTree(t) {
+      t.down = true;
+      t.stop();
+      const dir = t.x >= this.heroPos.x ? 1 : -1, F = K.NATURE.chute;
+      const spots = [];
+      for (let i = 0; i < BOIS.morceaux; i++) {
+        const d = BOIS.loin[0] + (BOIS.loin[1] - BOIS.loin[0]) * (BOIS.morceaux > 1 ? i / (BOIS.morceaux - 1) : 0.5);
+        const q = this.nearWalk(t.x + dir * d, t.y - 2 + (i % 2 ? 4 : -2));
+        spots.push({ x: q.x + (Math.random() - 0.5) * 4, y: q.y - 2 });
+      }
+      this.boisRec.tombes.push(t.n);
+      for (const q of spots) this.boisRec.morceaux.push(q);
+      try { window.localStorage.setItem(BOIS.store, JSON.stringify(this.boisRec)); } catch (e) { /* ignoré */ }
+      const drop = () => { for (const q of spots) this.dropPiece(q.x, q.y, true); };
+      const gone = () => this.removeTree(t);
+      if (reduced()) { drop(); this.tweens.add({ targets: t, alpha: 0, duration: 300, onComplete: gone }); return; }
+      this.tweens.add({
+        targets: t, angle: dir * F.angle, duration: F.ms, ease: 'Quad.easeIn',
+        onComplete: () => {
+          K.secousse(this, 'chute');
+          this.sparks(t, 10);
+          drop();
+          this.tweens.add({ targets: t, alpha: 0, delay: F.repos, duration: F.fondu, onComplete: gone });
+        },
+      });
+    }
+
+    // Un morceau d'arbre au sol (une petite bûche violette dont le cœur luit) ; `saute` : il
+    // vient de tomber, il rebondit un peu.
+    dropPiece(x, y, saute) {
+      if (!this.textures.exists('infra_morceau')) {
+        const cv = document.createElement('canvas');
+        cv.width = 10; cv.height = 6;
+        const g = cv.getContext('2d');
+        const px = (c, x0, y0, w, h) => { g.fillStyle = c; g.fillRect(x0, y0, w, h); };
+        px('#2a1838', 1, 0, 8, 6); px('#2a1838', 0, 1, 10, 4);
+        px('#8a62b0', 1, 1, 7, 2); px('#5a3a78', 1, 3, 7, 2); px('#c8a0e8', 2, 1, 4, 1);
+        px('#4ff0d2', 7, 2, 2, 2); px('#c8fff4', 8, 2, 1, 1);
+        this.textures.addCanvas('infra_morceau', cv);
+      }
+      const img = this.add.image(Math.round(x), Math.round(y), 'infra_morceau').setOrigin(0.5, 1).setDepth(y - 1);
+      const m = { x, y, img, refus: false };
+      this.morceaux.push(m);
+      if (saute && !reduced()) this.tweens.add({ targets: img, y: { from: img.y - 10, to: img.y }, duration: 380, ease: 'Bounce.easeOut' });
+    }
+
+    // Chaque image : un morceau sous les pieds du personnage est ramassé (refusé, la nuit : on
+    // le retente après s'en être éloigné).
+    stepPieces() {
+      const P = this.heroPos;
+      for (const m of [...this.morceaux]) {
+        const d = Math.hypot(P.x - m.x, P.y - m.y);
+        if (m.refus) { if (d > BOIS.prise * 2) m.refus = false; continue; }
+        if (d > BOIS.prise) continue;
+        const H = window.FermeHote;
+        const r = H && H.ramasser ? H.ramasser(BOIS.item) : null;
+        if (r && !r.ok) { m.refus = true; continue; }
+        this.morceaux.splice(this.morceaux.indexOf(m), 1);
+        this.tweens.add({ targets: m.img, y: m.img.y - 10, alpha: 0, duration: reduced() ? 0 : 350, onComplete: () => m.img.destroy() });
+        this.saveBois();
+        this.popGain({ [BOIS.item]: 1 });
+      }
+    }
+
+    // La bulle « +1 » au-dessus du personnage (CarteKit.bulleGain, comme sur les autres cartes),
+    // dans une couche posée sur la carte, retirée avec la scène ; placeGain la suit.
+    popGain(items) {
+      if (!this.gain) {
+        const zone = this.game.canvas && this.game.canvas.parentNode;
+        if (!zone) return;
+        const couche = document.createElement('div');
+        couche.className = 'stage-labels';
+        zone.appendChild(couche);
+        const H = window.FermeHote;
+        this.gain = K.bulleGain(couche, (id) => { const o = H && H.objet ? H.objet(id) : null; return o ? o.icone : id; });
+        this.events.once('destroy', () => { couche.remove(); this.gain = null; });
+      }
+      this.gain.montre(items);
+      this.placeGain();
+    }
+
+    placeGain() {
+      if (!this.gain || !this.gain.visible()) return;
+      const cam = this.cameras.main, k = cam.zoom / K.ratio(), P = this.heroPos;
+      this.gain.place((P.x - cam.worldView.x) * k, (P.y - BOIS.bulle - cam.worldView.y) * k);
     }
 
     // Un zoom entier en pixels de l'écran (CarteJeu.zoomEntier), comme en ville.
@@ -233,6 +426,8 @@
       this.stepTileAnims(time);
       const dt = Math.min(delta, 100) / 1000;
       this.stepNpc(time, dt);
+      this.stepTree(dt);
+      this.stepPieces();
       const P = this.heroPos;
       let vx = 0, vy = 0;
       const k = saisie() ? null : this.keys;
@@ -244,6 +439,7 @@
       }
       if (vx || vy) {
         this.path = [];
+        this.chop = null;
         const l = Math.hypot(vx, vy), st = PLAYER.speed * dt;
         const nx = P.x + (vx / l) * st, ny = P.y + (vy / l) * st;
         // glisse le long d'un bord : chaque axe séparément
@@ -257,7 +453,9 @@
       }
       const H = this.hero;
       const moved = Math.hypot(vx, vy) > 0;
-      if (moved) {
+      if (this.chop && this.chop.frame) {
+        H.setFrame(this.frame(this.chop.frame));
+      } else if (moved) {
         const r = K.regard(vx, vy);
         this.face = r.face; H.setFlipX(r.flip);
         this.walked += PLAYER.speed * dt;
@@ -267,6 +465,7 @@
       }
       H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y);
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5);
+      this.placeGain();
     }
   }
 

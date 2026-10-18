@@ -257,7 +257,7 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w) || this.tapVoisinDehors(w)) { this.dbl.oublie(); return; }
+        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w) || this.tapVoisinDehors(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) { this.dbl.oublie(); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va
@@ -494,6 +494,8 @@
       }
       this.caveRec = rec;
       c.ores = c.ores.filter((o) => !rec.pris.includes(`${id}:${niveau}:${o.x},${o.y}`));
+      // (les champignons lumineux cueillis aujourd'hui aussi : « m » devant leur case)
+      c.decor = c.decor.filter((d) => d.kind !== 'champignon' || !rec.pris.includes(`${id}:${niveau}:m${d.x},${d.y}`));
       for (const o of c.ores) this.layers.minerais.putTileAt(t(o.kind), o.x, o.y);
       for (const d of c.decor) this.layers.marquage.putTileAt(t(d.kind), d.x, d.y);
       // les objets : l'échelle, le puits, les stalagmites (on ne passe pas à travers)
@@ -576,6 +578,45 @@
       this.path = [];
       if (Math.hypot(pres[0].x - P.x, pres[0].y - P.y) > 3) this.goTo(pres[0].x, pres[0].y);
       return true;
+    }
+
+    // Un champignon lumineux (le décor qui luit au sol) : la promeneuse y va et le cueille
+    // (stepChampignon), sans outil ; il va dans l'inventaire (FermeHote.ramasser) et ne repousse
+    // que le lendemain. Avec un champignon, une lanterne scintillante à l'Atelier.
+    tapChampignon(w) {
+      const c = this.cave;
+      if (!c) return false;
+      const gx = Math.floor(w.x / T), gy = Math.floor(w.y / T);
+      const d = c.decor.find((q) => q.kind === 'champignon' && q.x === gx && q.y === gy);
+      if (!d) return false;
+      this.champi = d;
+      const x = d.x * T + 8, y = d.y * T + 13, P = this.heroPos;
+      if (Math.hypot(x - P.x, y - P.y) > GROTTE.cueille) this.goTo(x, y);
+      return true;
+    }
+
+    stepChampignon() {
+      const d = this.champi;
+      if (!d || this.path.length) return;
+      this.champi = null;
+      const P = this.heroPos;
+      if (Math.hypot(d.x * T + 8 - P.x, d.y * T + 13 - P.y) > GROTTE.cueille) return;
+      const c = this.cave, H = hote();
+      const r = H && H.ramasser ? H.ramasser('champignon_lumineux') : null;
+      if (r && !r.ok) return;
+      c.decor.splice(c.decor.indexOf(d), 1);
+      this.layers.marquage.removeTileAt(d.x, d.y);
+      // sa lumière s'éteint (js/carte/ville/lueurs.js)
+      const q = (this.lueurs || []).find((l) => l.kind === 'champignon' && l.x === d.x * T + 8 && l.y === d.y * T + 11);
+      if (q) {
+        this.lights.removeLight(q.light);
+        q.halo.destroy();
+        this.lueurs.splice(this.lueurs.indexOf(q), 1);
+      }
+      this.caveRec.pris.push(`${c.id}:${c.niveau}:m${d.x},${d.y}`);
+      try { window.localStorage.setItem(GROTTE.store, JSON.stringify(this.caveRec)); } catch (e) { /* ignoré */ }
+      if (r) this.popGain({ [r.item]: r.n });
+      else this.say('🍄 Un champignon lumineux ! (il luit encore dans ta main)');
     }
 
     // Arrivée près du minerai : un coup de pioche par appui (pioche_cote), des éclats ; au dernier
@@ -693,6 +734,7 @@
       this.stepFinds(time);
       this.stepFauna(time, dt);
       this.stepMine(dt);
+      this.stepChampignon();
       this.stepCaveLights(time, dt);
       this.stepWork(dt);
       this.stepFish(dt);

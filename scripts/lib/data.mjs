@@ -128,6 +128,7 @@ export function sourcesOf(data, id) {
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
   if (id.startsWith('minerai_')) out.push('grotte');
   if (it.trouvaille) out.push(`trouvaille (${it.trouvaille})`);
+  if (it.cueillette) out.push(`cueillette (${it.cueillette})`);
   if (data.DEPART && id in data.DEPART.INVENTAIRE) out.push('DEPART.INVENTAIRE');
   if (data.DEPART && data.DEPART.ETAT_INITIAL && id in data.DEPART.ETAT_INITIAL.INVENTAIRE) out.push('DEPART.ETAT_INITIAL.INVENTAIRE');
   if (data.FAMILLE && id in data.FAMILLE.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');

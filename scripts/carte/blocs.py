@@ -31,7 +31,10 @@
 #   31 à 46 : le plancher (BLOCS_CARTE.sols) : 31 + masque des planchers voisins, à plat sur sa
 #            case (les 16 px du bas de l'image), sous les blocs qu'on pose dessus ;
 #   47 à 49 : le four qui cuit (BLOCS_CARTE.feu) : ses flammes bougent, une image après
-#            l'autre (FLAMMES).
+#            l'autre (FLAMMES) ;
+#   50 à 65 : la barrière raccordée à ses voisines (BLOCS_CARTE.barrieres + masque) ;
+#   66 à 68 : la lanterne scintillante (BLOCS_CARTE.lanterne) : éteinte, puis allumée (deux
+#            images qui alternent, la nuit).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -71,6 +74,8 @@ CELLULE = [(22, 34, 62), (36, 62, 112), (62, 104, 164), (138, 182, 226)]
 OEUF = [(206, 192, 164), (238, 228, 206), (252, 248, 236)]
 FARINE = [(196, 188, 170), (236, 232, 222)]
 ROUGE, NOIR = (178, 52, 44), (40, 40, 44)
+INFRA = [(42, 24, 56), (72, 46, 104), (110, 74, 150), (152, 112, 196), (200, 164, 232)]   # le bois de l'infra-monde
+LUEUR = [(14, 58, 64), (31, 140, 138), (79, 240, 210), (200, 255, 244)]                   # le champignon lumineux
 
 
 class Toile:
@@ -696,6 +701,54 @@ def meule():
     return t.fini()
 
 
+def lanterne(eclat=None):
+    """La lanterne scintillante : un poteau tordu de bois de l'infra-monde, sa potence, et la
+    cage de fer où luit un champignon de la grotte. eclat None : éteinte (le jour), la vitre
+    sombre ; 0 ou 1 : allumée, le champignon et la vitre clairs (deux images qui alternent :
+    elle scintille)."""
+    t = Toile()
+    for y in range(8, BAS + 1):                  # le poteau, qui ondule un peu
+        x = 4 + (1 if 12 <= y <= 17 else 0)
+        t.put(x, y, INFRA[3])
+        t.put(x + 1, y, INFRA[2] if (y * 5) % 7 else INFRA[4])
+        t.put(x + 2, y, INFRA[1])
+    for x in range(3, 9):
+        t.put(x, BAS, INFRA[0])                  # le pied, dans l'herbe
+    for x in range(4, 12):                       # la potence
+        t.put(x, 6, INFRA[4] if x < 6 else INFRA[3])
+        t.put(x, 7, INFRA[1])
+    t.put(11, 8, FER[1])                         # le crochet
+    on = eclat is not None
+    vitre = LUEUR[2] if on else LUEUR[0]
+    for y in range(9, 18):                       # la cage : un toit de fer, la vitre, un fond
+        for x in range(8, 15):
+            if y == 9:
+                c = FER[3] if 9 <= x <= 13 else None
+            elif y == 10:
+                c = FER[3] if x == 8 else FER[2]
+            elif y == 17:
+                c = FER[1]
+            elif x in (8, 14):
+                c = FER[2] if x == 8 else FER[1]
+            elif x == 11:
+                c = FER[1]                       # le montant du milieu
+            else:
+                c = vitre
+            t.put(x, y, c)
+    # le champignon, derrière la vitre : son chapeau et son pied
+    cap = LUEUR[3] if on else LUEUR[1]
+    for x in range(9, 14):
+        t.put(x, 12, cap if x != 11 else (LUEUR[2] if on else LUEUR[1]))
+    for x in range(10, 13):
+        t.put(x, 11, cap)
+    for y in (13, 14, 15):
+        t.put(11, y, (236, 232, 222) if on else (118, 112, 100))
+    if on:
+        for x, y in ((9, 15 + eclat), (13, 14 - eclat), (12, 11 - eclat) if eclat else (10, 16)):
+            t.put(x, y, LUEUR[3])                # des spores qui brillent
+    return t.fini()
+
+
 MURS = 14                                        # le premier des 16 murs raccordés
 DESSINS = [mur(0), porte(), atelier(), paillasse(), drap(), four(), cuisiniere(), panneau(),
            batterie(), nichoir(), mangeoire(), bac_semis(), coffre_grain(), meule()] \
@@ -707,6 +760,8 @@ FEU_FOUR = len(DESSINS)                          # les flammes qui bougent (BLOC
 DESSINS += [four(k) for k in range(1, len(FLAMMES))]
 BARRIERES = len(DESSINS)                         # les 16 barrières raccordées (BLOCS_CARTE.barrieres)
 DESSINS += [barriere(m) for m in range(16)]
+LANTERNE = len(DESSINS)                          # la lanterne éteinte, puis allumée (2 images)
+DESSINS += [lanterne(), lanterne(0), lanterne(1)]
 
 
 # ---------- l'aperçu : une pièce close et les objets, sur l'herbe de la carte ----------
@@ -720,13 +775,13 @@ PIECE = [
     '..........',
     'a.n.g.s.r.',
     '..........',
-    'b.m.o.....',
+    'b.m.o.l...',
     '..........',
     'BBBB..B...',
     '...B..B...',
     '...BBBB...',
 ]
-SORTES = {'f': 5, 'c': 6, 'p': 3, 'd': 4, 'a': 2, 'n': 9, 'g': 10, 's': 11, 'b': 8, 'm': 13, 'o': 12, 'r': 7}
+SORTES = {'f': 5, 'c': 6, 'p': 3, 'd': 4, 'a': 2, 'n': 9, 'g': 10, 's': 11, 'b': 8, 'm': 13, 'o': 12, 'r': 7, 'l': 67}
 
 
 def masque(g, x, y):

@@ -186,6 +186,8 @@
   const GROTTE = {
     tiles: 'assets/grotte_tuiles.png', objets: 'assets/grotte_objets.png', meta: 'assets/grotte.json',
     lumiere: { r0: 44, r1: 132, noir: 0.93 }, store: 'ferme-grottes',
+    // un champignon lumineux se cueille à moins de `cueille` px (ville-carte.js, tapChampignon)
+    cueille: 14,
     // Les lumières de la grotte (js/carte/ville/lueurs.js, WebGL) : l'ambiance presque noire ;
     // la lanterne (rayon : × lumiere.r1, `haut` px au-dessus des pieds) ; le jour qui tombe du
     // trou de l'échelle ; les champignons (intensité qui pulse de [0] à [1] en `periode` s, des
