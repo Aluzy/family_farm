@@ -1,6 +1,7 @@
 # La carte de transition entre la ferme et la ville (48 × 36 tuiles) : à l'ouest, l'herbe et le
 # chemin de terre de la ferme (ses propres tuiles, lues dans la planche de la ferme), deux
-# maisons de voisins dans le style de la ferme, un puits, une mare ; à l'est, le chemin
+# maisons de voisins bâties en blocs, comme le foyer de la ferme générée (scripts/carte/blocs.py),
+# un puits, une mare ; à l'est, le chemin
 # devient la route goudronnée de la ville, ses trottoirs, ses réverbères et l'arrêt de bus
 # (celui des enfants qui vont à l'école). La route continue dans la ville (la route de la
 # ferme, à l'ouest de assets/ville.json).
@@ -33,6 +34,7 @@ W, H, T = commun.W, commun.H, commun.T
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'carte'))
 import barrieres as BR  # noqa: E402
+import blocs as BL  # noqa: E402
 import batiments as B  # noqa: E402
 import equipements as E  # noqa: E402
 import ferme as F  # noqa: E402
@@ -45,7 +47,7 @@ from PIL import Image  # noqa: E402
 PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
     Planche('transition_sol', "L'herbe et le chemin de la ferme, la route et les trottoirs de la ville"),
     Planche('transition_decor', "Marquage, fleurs, ombres, palissades, puits, panneau, arrêt de bus, réverbères"),
-    Planche('transition_maisons', "Les maisons des voisins, dans le style de la ferme"),
+    Planche('transition_maisons', "Les maisons des voisins, bâties en blocs"),
     Planche('transition_eau', "La mare, l'eau de la ferme (8 images)", images=F.EAU_IMAGES, duree=F.EAU_DUREE),
     Planche('transition_vegetation', "Arbres, pins et buissons de la ferme, et leurs ombres"),
 )}
@@ -159,17 +161,59 @@ def tuile_sol(g, x, y):
 
 # ---------- les maisons ----------
 
-def maison(couleur):
-    """La maison de la ferme (assets/house_sp.png), le toit repeint : 'rouge' ou 'ardoise'."""
-    im = Image.open(os.path.join(ASSETS, 'house_sp.png')).convert('RGBA')
-    px = im.load()
-    f = {'rouge': (1.32, 0.86, 0.72), 'ardoise': (0.86, 0.96, 1.16)}[couleur]
-    for y in range(im.height):
-        for x in range(im.width):
-            r, g, b, a = px[x, y]
-            # le toit : le haut de l'image, les tons bruns
-            if a and y < 46 and r >= g >= b and r - b < 70:
-                px[x, y] = (min(255, round(r * f[0])), min(255, round(g * f[1])), min(255, round(b * f[2])), a)
+# Les maisons des voisins, bâties en blocs comme le foyer de la ferme générée : les images de
+# assets/blocs.png (scripts/carte/blocs.py), posées case par case. Chaque plan : une rangée
+# de lettres par rangée de cases, M un mur, P la porte, . le plancher, une autre lettre un
+# meuble (BLOCS, sur le plancher), espace : rien. Les murs se raccordent à leurs voisins comme
+# sur la ferme (wallFrame de js/carte/ferme/chantier.js).
+PLANS = {
+    'maison_rouge': ['MMMMMM',
+                     'Mfc..M',
+                     'M...pM',
+                     'Mg..dM',
+                     'M....M',
+                     'MMMPMM'],
+    'maison_ardoise': ['MMMMMM',
+                       'Ma..bM',
+                       'M....M',
+                       'Mp..nM',
+                       'Md...M',
+                       'MMMPMM'],
+}
+# (la paillasse d : avec sa couverture)
+BLOCS = {'f': 'four', 'c': 'cuisiniere', 'p': 'paillasse', 'd': 'paillasse', 'g': 'coffre_grain',
+         'a': 'atelier', 'b': 'bac_semis', 'n': 'nichoir'}
+IMAGES_BLOCS = {'mur_pierre': 0, 'porte': 1, 'atelier': 2, 'paillasse': 3, 'drap': 4, 'four': 5, 'cuisiniere': 6,
+                'nichoir': 9, 'bac_semis': 11, 'coffre_grain': 12}
+
+
+def maison(plan):
+    """L'image d'une maison bâtie en blocs, d'après son plan : (largeur) × (hauteur + 8) px, le
+    haut des murs du fond dépasse de 8 px au-dessus de leur case."""
+    planche = Image.open(os.path.join(ASSETS, 'blocs.png')).convert('RGBA')
+    bloc = lambda k: planche.crop((k * BL.W, 0, (k + 1) * BL.W, BL.H))
+    rangs, cols = len(plan), len(plan[0])
+    im = image(cols * T, rangs * T + BL.H - T)
+    a = lambda x, y: plan[y][x] if 0 <= y < rangs and 0 <= x < cols else ' '
+    pose = lambda k, x, y: im.alpha_composite(bloc(k), (x * T, (y + 1) * T + BL.H - T - BL.H))
+    sol = lambda x, y: a(x, y) not in ' MP'
+    for y in range(rangs):                       # le plancher d'abord, à plat
+        for x in range(cols):
+            if sol(x, y):
+                m = (1 if sol(x, y - 1) else 0) | (2 if sol(x + 1, y) else 0) | (4 if sol(x, y + 1) else 0) | (8 if sol(x - 1, y) else 0)
+                pose(BL.SOLS + m, x, y)
+    for y in range(rangs):                       # puis, rangée par rangée, ce qui est debout
+        for x in range(cols):
+            c = a(x, y)
+            if c == 'M':
+                mur = lambda dx, dy, porte: a(x + dx, y + dy) == 'M' or (porte and a(x + dx, y + dy) == 'P')
+                pose(BL.MURS + (1 if mur(0, -1, False) else 0) + (2 if mur(1, 0, True) else 0) + (4 if mur(0, 1, False) else 0) + (8 if mur(-1, 0, True) else 0), x, y)
+            elif c == 'P':
+                pose(IMAGES_BLOCS['porte'], x, y)
+            elif c in BLOCS:
+                pose(IMAGES_BLOCS[BLOCS[c]], x, y)
+                if c == 'd':
+                    pose(IMAGES_BLOCS['drap'], x, y)
     return im
 
 
@@ -192,10 +236,12 @@ def poteau_ville():
 
 def dessine(c):
     m = c['murs']
-    for nom, couleur, x0, base in (('maison_rouge', 'rouge', 7 * T + 4, 14 * T + 6), ('maison_ardoise', 'ardoise', 18 * T + 4, 14 * T + 6)):
-        im = maison(couleur)
-        m.colle(im, x0, base - im.height)
-        MAISONS.append((nom, x0, base - im.height, im.width, im.height))
+    # (la porte au bout de son allée : colonne 10 et 21, rangée 13)
+    for nom, c0 in (('maison_rouge', 7), ('maison_ardoise', 18)):
+        im = maison(PLANS[nom])
+        base = 14 * T
+        m.colle(im, c0 * T, base - im.height)
+        MAISONS.append((nom, c0 * T, base - im.height, im.width, im.height))
     mob = c['mobilier']
     puits = Image.open(os.path.join(ASSETS, 'puits.png')).convert('RGBA').crop((0, 0, 34, 40))
     mob.colle(puits, 25 * T, 10 * T)
@@ -365,9 +411,10 @@ def objets_carte():
         i += 1
     batis = []
     for nom, x0, y0, w, h in MAISONS:
-        # l'emprise : le bas de la maison (on passe derrière le toit) ; « haut » : le haut du dessin
+        # l'emprise : toutes les cases de la maison (sans toit, on ne passe pas derrière : on
+        # entre par la porte) ; « haut » : le haut du dessin (le haut des murs du fond)
         batis.append({'id': i, 'name': nom, 'type': 'batiment', 'rotation': 0, 'visible': True,
-                      'x': x0 + 4, 'y': y0 + h - 30, 'width': w - 8, 'height': 24,
+                      'x': x0 + 2, 'y': y0 + (BL.H - T) + 2, 'width': w - 4, 'height': h - (BL.H - T) - 4,
                       'properties': [{'name': 'haut', 'type': 'int', 'value': int(y0)}]})
         i += 1
     bus = []
