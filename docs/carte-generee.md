@@ -121,6 +121,14 @@ Le Marché vend toujours les outils.
   - Un bloc posé quitte l'inventaire ; repris, il y revient (`state.blocs` : case → sorte).
   - Les murs et l'Atelier arrêtent le personnage ; on traverse les portes et les paillasses.
   - Ils portent une ombre, comme le reste du décor.
+  - Leurs images (`assets/blocs.png`, générées par `scripts/carte/blocs.py`) sont vues de haut
+    à 45°, comme la carte : le dessus raccourci, puis la face avant. Elles reprennent la pierre
+    et le bois des bâtiments.
+  - Un mur prend l'image qui le raccorde à ses voisins : 16 variantes, choisies par la scène
+    (`wallFrame`). Le long d'un côté de la pièce, le dessus des murs forme une bande continue,
+    et seul le dernier mur montre sa face.
+  - Une porte percée dans un mur vertical montre son seuil, vu de haut, et son battant
+    ouvert.
 - **Une pièce close** : des cases entourées de murs, de portes ou de l'Atelier, avec au moins une
   porte. Elle fait au plus 120 cases et ne touche pas le bord de la carte. Les coins ne comptent
   pas : on ne passe pas en diagonale.
