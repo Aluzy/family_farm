@@ -212,8 +212,8 @@ Le Marché vend toujours les outils.
     couvre toute l'emprise ; à l'étage, le personnage est dessiné remonté et n'en sort pas
     (`etageCells` : seule l'emprise, sans ses murs) ;
   - ce qu'on voit dépend d'où est le personnage (`stepEtage`) : dehors, tous les niveaux l'un
-    sur l'autre ; dans le bâtiment en bas, l'étage en transparence ; à l'étage, les blocs du
-    bas sous l'emprise en transparence (on voit les murs juste en dessous), et un mur de l'étage
+    sur l'autre ; dans le bâtiment en bas, l'étage en transparence ; à l'étage, un voile sombre
+    couvre la ferme et, devant lui, les blocs du bas sous l'emprise en transparence (on voit les murs juste en dessous), et un mur de l'étage
     devant lui s'efface ;
   - en mode Construire, à l'étage, le menu ne propose que les blocs de l'étage (murs, portes,
     paillasse, lanterne, barrière : `ETAGE_BLOCS`) ; ils n'ont pas d'autre effet que d'être là
