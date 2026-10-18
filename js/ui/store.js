@@ -115,10 +115,20 @@ export function setVergerCase(value) {
   vergerCase = value;
   return value;
 }
-export let testMode = false;
+// Le mode test (Options) : gardé sur l'appareil. Son panneau s'ouvre par le menu latéral
+// (« 🧪 Test ») et se ferme par son ✕ (testOpen).
+const TEST_KEY = 'ferme-mode-test';
+export let testMode = (() => { try { return window.localStorage.getItem(TEST_KEY) === '1'; } catch (e) { return false; } })();
+export let testOpen = false;
 export function setTestMode(value) {
-  testMode = value;
-  return value;
+  testMode = !!value;
+  testOpen = testMode;
+  try { if (testMode) window.localStorage.setItem(TEST_KEY, '1'); else window.localStorage.removeItem(TEST_KEY); } catch (e) { /* le temps de la visite */ }
+  return testMode;
+}
+export function setTestOpen(value) {
+  testOpen = !!value && testMode;
+  return testOpen;
 }
 // Le « god mode » (Options, sous le mode test) : on passe d'une carte à l'autre par un menu,
 // sans y mener le personnage (js/ui/excursion.js). Gardé sur l'appareil.

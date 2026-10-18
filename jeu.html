@@ -16,10 +16,32 @@
 
 <main>
   <section id="tab-content" class="panel"></section>
+</main>
 
-  <details class="test-panel" id="test-panel" hidden>
-    <summary>🧪 Mode test</summary>
+<section class="test-panel" id="test-panel" aria-labelledby="test-panel-title" hidden>
+  <div class="test-panel-head">
+    <h2 id="test-panel-title">🧪 Mode test</h2>
+    <button class="btn" type="button" data-action="test-close" aria-label="Fermer le mode test">✕</button>
+  </div>
     <div class="stack">
+      <strong>Ressources</strong>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-ressources">+20 bois, pierres, fibres, planches</button>
+        <button class="btn" type="button" data-action="test-metaux">+10 minerais et lingots</button>
+        <button class="btn" type="button" data-action="test-blocs">+5 de chaque bloc</button>
+      </div>
+      <div class="row">
+        <button class="btn" type="button" data-action="test-outils">Tous les outils</button>
+        <button class="btn" type="button" data-action="test-atelier">Construire l'Atelier</button>
+      </div>
+      <div class="row">
+        <label for="test-item">Objet</label>
+        <select id="test-item"></select>
+        <label for="test-qty">Qté</label>
+        <input id="test-qty" type="number" inputmode="numeric" min="1" max="9999" value="10" size="4">
+        <button class="btn" type="button" data-action="test-item">Ajouter</button>
+      </div>
+      <strong>Le reste</strong>
       <div class="row">
         <button class="btn" type="button" data-action="test-add-100">+100 💰</button>
         <button class="btn" type="button" data-action="test-add-1000">+1 000 💰</button>
@@ -106,10 +128,12 @@
         <button class="btn" type="button" data-action="test-ferme-dessinee">Revenir à la ferme dessinée</button>
       </div>
       <div class="sim-result" id="sim-result" hidden></div>
-      <div class="state-dump" id="state-dump"></div>
+      <details id="test-state">
+        <summary>L'état de la partie (JSON)</summary>
+        <div class="state-dump" id="state-dump"></div>
+      </details>
     </div>
-  </details>
-</main>
+</section>
 
 <div class="hud" id="hud"></div>
 <div class="sleep-fab" id="sleep-fab"></div>

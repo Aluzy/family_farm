@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
+  TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
 const lire = (f) => JSON.parse(readFileSync(new URL('../../' + f, import.meta.url), 'utf8'));
@@ -513,4 +514,24 @@ test('ferme générée : un jeune arbre se plante dans le sol, dehors, et donne 
   for (let i = 0; i < DATA.VERGER.MATURITE + 1; i++) sleepOnce(s);
   assert(t.fruits, 'en fruits');
   assert(harvestTree(s, t.id).ok);
+});
+
+test('mode test : les ressources, les blocs, les outils et l\'Atelier en un appui', () => {
+  const s = createNewGame(77);
+  setFarmSeed(s, '77');
+  assert(testAddRessources(s).ok);
+  for (const id of TEST_RESSOURCES) assertEqual(countItem(s, id) >= 20, true, id);
+  assert(testAddMetaux(s).ok);
+  assertEqual(countItem(s, 'lingot_fer') >= 10 && countItem(s, 'minerai_cuivre') >= 10, true);
+  assert(testAddBlocs(s).ok);
+  for (const b of Object.values(DATA.ATELIER.BLOCS)) if (b.objet) assert(countItem(s, b.objet) >= 5, b.objet);
+  assert(testAllTools(s).ok);
+  assert(s.potager.houe && s.outils.hache && s.outils.pioche && s.outils.canne);
+  assert(testBuildAtelier(s).ok);
+  assert(atelierConstruit(s));
+  const avant = countItem(s, 'panneau_solaire');
+  assertEqual(testAddItem(s, 'panneau_solaire', '3').items, { panneau_solaire: 3 });
+  assertEqual(countItem(s, 'panneau_solaire'), avant + 3);
+  assertEqual(testAddItem(s, 'licorne', 1).ok, false);
+  assertEqual(testBuildAtelier(createInitialState()).ok, false, 'pas d\'Atelier sur la ferme dessinée');
 });

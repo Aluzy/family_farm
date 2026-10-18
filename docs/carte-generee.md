@@ -203,6 +203,10 @@ parties.
 2. ✅ Le générateur à partir de la graine (`js/engine/ferme-generee.js`), à essayer dans le
    mode test (« Essayer la ferme générée », une graine au choix ou au hasard ; « Revenir à la
    ferme dessinée »). Voir « La ferme générée » plus haut.
+   Pour aller vite, la section « Ressources » du mode test (Options, puis « 🧪 Test » dans le
+   menu latéral) donne en un appui : 20 bois, pierres, fibres et planches ; 10 de chaque minerai et
+   lingot ; 5 de chaque bloc ; tous les outils ; l'Atelier construit ; ou n'importe quel objet,
+   en la quantité choisie.
 3. ✅ Les ressources à ramasser, l'atelier, les objets et les recettes de matériaux. Voir
    « Ramasser et fabriquer (étape 3) » plus haut.
 4. ✅ La pose bloc par bloc, la détection des pièces closes, les paillasses et le sommeil. Voir

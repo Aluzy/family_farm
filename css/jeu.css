@@ -54,6 +54,7 @@
   --z-menu: 55;        /* .side-menu, au-dessus des boutons flottants */
   --z-banner: 60;      /* .consent-banner (en bas) et .tuto (la bulle, au-dessus du bandeau) */
   --z-window: 90;      /* .window-layer : fenêtres de la carte */
+  --z-test: 95;        /* .test-panel (le mode test), au-dessus des fenêtres */
   --z-hud-over: 95;    /* la carte flottante, estompée, par-dessus une fenêtre ouverte */
   --z-modal: 100;      /* .modal-backdrop (#modal-root) : toujours au-dessus des fenêtres */
   --z-toast: 200;      /* #toast-root : les messages, tout en haut */
@@ -459,15 +460,28 @@ textarea, input[type="text"] {
   float: right;
 }
 
-details.test-panel {
-  margin-top: 16px;
+/* Le panneau du mode test (js/ui/testmode.js) : par-dessus la carte et les onglets, ouvert par
+   « 🧪 Test » du menu latéral, fermé par son ✕ ; il défile seul. */
+.test-panel {
+  position: fixed;
+  z-index: var(--z-test);
+  top: calc(8px + env(safe-area-inset-top));
+  right: 8px;
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  width: min(560px, calc(100vw - 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px dashed var(--border);
   border-radius: var(--radius);
-  padding: 8px 12px;
+  padding: 8px 12px 16px;
   background: var(--bg-muted);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
-
-details.test-panel summary {
+.test-panel[hidden] { display: none; }
+.test-panel-head { position: sticky; top: -8px; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; background: var(--bg-muted); }
+.test-panel-head h2 { margin: 0; font-size: 1.1rem; }
+.test-panel #test-qty { width: 5em; }
+.test-panel details summary {
   cursor: pointer;
   font-weight: 600;
   padding: 8px 0;
