@@ -214,7 +214,11 @@ parties.
     s'agrandira. La porte est face
     au chemin (en bas au nord, en haut au sud), une allée l'y relie. Elles sont bâties
     avec les blocs de la ferme générée (`assets/blocs.png`) : murs raccordés, porte, plancher,
-    meubles (four ou cuisinière, un lit par membre de la famille, coffre à grain, atelier…) ;
+    meubles (four ou cuisinière, un lit par membre de la famille, coffre à grain, atelier…).
+    Leurs murs et leur porte sont une case plus hauts que ceux de la ferme
+    (`assets/murs_hauts.png`, 16 × 40 px, `murs_hauts()` de `scripts/carte/blocs.py`) ; un mur
+    qui cache quelqu'un derrière lui (le joueur, un voisin, le livreur) s'efface à moitié
+    (`stepMurs`, `BLOCS.hauts`) ;
   - la mare et son banc, le puits et le tonneau près des maisons, des barrières le long du
     chemin, des buissons ;
   - les arbres et les rochers, que l'on coupe et que l'on casse comme avant, l'herbe haute et

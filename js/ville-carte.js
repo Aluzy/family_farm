@@ -110,6 +110,7 @@
       this.transition = etat.nom === 'transition' ? V.planTransition() : null;
       if (this.transition) {
         this.load.spritesheet(BLOCS.key, v(BLOCS.file), { frameWidth: BLOCS.w, frameHeight: BLOCS.h });
+        this.load.spritesheet(BLOCS.hauts.key, v(BLOCS.hauts.file), { frameWidth: BLOCS.hauts.w, frameHeight: BLOCS.hauts.h });
         this.load.spritesheet(RAMASSABLES.key, v(RAMASSABLES.file), { frameWidth: RAMASSABLES.w, frameHeight: RAMASSABLES.h });
         // les champs des agriculteurs (js/carte/ville/metiers.js)
         const C = TRANSITION_VIE.champ;
@@ -745,6 +746,7 @@
       this.stepFish(dt);
       this.stepVoisinsDehors(time, dt);
       this.stepLivreur(time, dt);
+      this.stepMurs(dt);
       this.stepCueillette();
       this.stepDialog();
       const P = this.heroPos;
