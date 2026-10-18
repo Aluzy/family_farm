@@ -29,7 +29,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'commerce-upgrade', 'commerce-quota-dec', 'commerce-quota-inc', 'commerce-quota-max', 'harvest-tree', 'ville-go',
   'ville-market', 'ville-buy', 'buy-pasture', 'mill-start', 'mill-cancel', 'repair-house', 'buy-starter',
   'buy-orchard-slot', 'buy-tech', 'build-serre', 'build-poulailler', 'build-fridge', 'build-verger', 'build-silo',
-  'build-paturage', 'build-station', 'atelier-construire', 'atelier-fabriquer', 'bloc', 'build-toggle', 'build-pick', 'upgrade', 'upgrade-silo', 'upgrade-serre', 'upgrade-poulailler', 'buy-hoe', 'buy-tool', 'axe-toggle', 'pick-toggle', 'rod-toggle',
+  'build-paturage', 'build-station', 'atelier-construire', 'atelier-fabriquer', 'bloc', 'build-toggle', 'build-pick', 'etage-toggle', 'upgrade', 'upgrade-silo', 'upgrade-serre', 'upgrade-poulailler', 'buy-hoe', 'buy-tool', 'axe-toggle', 'pick-toggle', 'rod-toggle',
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'robot-autonomie', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',
   'fridge-in-all', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
 ]);

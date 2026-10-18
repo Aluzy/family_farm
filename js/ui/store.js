@@ -102,6 +102,12 @@ export function setBuildMode(value) {
   if (buildMode) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; }
   return buildMode;
 }
+// L'étage (un essai, js/engine/etage.js) : le personnage est-il monté par l'escalier ?
+export let etageVue = false;
+export function setEtageVue(value) {
+  etageVue = !!value;
+  return etageVue;
+}
 // Le coucher : le joueur a appuyé sur « Dormir », le personnage va à son lit (la carte le
 // montre : la porte de la maison, l'intérieur, le lit). La nuit passe quand il y dort.
 export let coucher = false;

@@ -36,7 +36,8 @@
 #            l'autre (FLAMMES) ;
 #   50 à 65 : la barrière raccordée à ses voisines (BLOCS_CARTE.barrieres + masque) ;
 #   66 à 68 : la lanterne scintillante (BLOCS_CARTE.lanterne) : éteinte, puis allumée (deux
-#            images qui alternent, la nuit).
+#            images qui alternent, la nuit) ;
+#   69 et 70 : l'escalier, puis son haut vu de l'étage (BLOCS_CARTE.escalier, un essai).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -819,6 +820,63 @@ BARRIERES = len(DESSINS)                         # les 16 barrières raccordées
 DESSINS += [barriere(m) for m in range(16)]
 LANTERNE = len(DESSINS)                          # la lanterne éteinte, puis allumée (2 images)
 DESSINS += [lanterne(), lanterne(0), lanterne(1)]
+
+
+# ---------- l'escalier (un essai : l'étage, js/engine/etage.js) ----------
+
+def escalier():
+    """L'escalier vu d'en bas : quatre marches de bois qui montent vers le fond de la case (la
+    plus haute dépasse au-dessus d'elle), entre deux limons plus sombres."""
+    t = Toile()
+    for k in range(4):                           # de la plus haute (au fond) à la plus basse
+        y0 = 3 + k * 5
+        for x in range(1, 15):
+            for y in range(y0, y0 + 3):          # le giron, éclairé
+                t.put(x, y, BOIS[3] if (x + k) % 5 else BOIS[2])
+            t.put(x, y0, BOIS[4])                # le nez de la marche
+            for y in range(y0 + 3, y0 + 5):      # la contremarche, dans l'ombre
+                t.put(x, y, BOIS[1])
+    for y in range(3, H):                        # les limons, de chaque côté
+        for x in (1, 2):
+            t.put(x, y, CADRE[1] if x == 2 else CADRE[2])
+        for x in (13, 14):
+            t.put(x, y, CADRE[0])
+    for x in range(1, 15):
+        t.put(x, 2, OUT)
+        t.put(x, BAS, OUT)
+    for y in range(2, H):
+        t.put(0, y, OUT)
+        t.put(15, y, OUT)
+    return t.im
+
+
+def escalier_haut():
+    """Le haut de l'escalier, vu de l'étage : la trémie (un trou sombre où les marches
+    descendent, de plus en plus dans l'ombre) entourée d'une main courante de bois."""
+    t = Toile()
+    y0 = H - T                                   # le haut de la case
+    sombre = [BOIS[2], BOIS[1], CADRE[0], OUT]
+    for y in range(y0 + 2, H - 1):
+        k = min(3, (y - y0 - 2) // 3)
+        for x in range(3, 13):
+            t.put(x, y, sombre[k] if (y - y0) % 3 else OUT)
+    for x in range(1, 15):                       # la main courante (haut et bas)
+        t.put(x, y0, BOIS[4])
+        t.put(x, y0 + 1, BOIS[2])
+        t.put(x, BAS, BOIS[1])
+    for y in range(y0, H):                       # et ses côtés
+        for x in (1, 2, 13, 14):
+            t.put(x, y, BOIS[3] if x in (1, 13) else BOIS[1])
+    for x in range(W):
+        t.put(x, y0 - 1, OUT)
+    for y in range(y0 - 1, H):
+        t.put(0, y, OUT)
+        t.put(15, y, OUT)
+    return t.im
+
+
+ESCALIER = len(DESSINS)                          # l'escalier, puis son haut (BLOCS_CARTE.escalier)
+DESSINS += [escalier(), escalier_haut()]
 
 
 # ---------- l'aperçu : une pièce close et les objets, sur l'herbe de la carte ----------
