@@ -289,6 +289,13 @@
     "PRISES": { "etang": { "truite": 50, "brochet": 25 }, "mare": { "truite": 55, "brochet": 5 }, "lac": { "omble": 40, "truite": 25 }, "mer": { "dorade": 15, "sardine": 30, "anchois": 30 } },
     "JOUR": { "etang": 6, "mare": 3, "lac": 4, "mer": 8 }
   },
+  "//TRIPORTEUR": [
+    "Le triporteur s'achète une fois au Marché, comme les outils. Il va dans la barre d'outils,",
+    "où un appui fait monter le personnage dessus ou en descendre (state.outils.aPied : à pied).",
+    "En selle, il se déplace VITESSE fois plus vite sur les cartes, dehors (pas dans un intérieur",
+    "de la ferme ni dans la grotte). ARTICLE : « un » (les textes du Marché)."
+  ],
+  "TRIPORTEUR": { "NOM": "Triporteur", "ICONE": "🛺", "ARTICLE": "un", "PRIX": 450, "VITESSE": 3 },
   "//SERRE": [
     "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture.",
     "CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",

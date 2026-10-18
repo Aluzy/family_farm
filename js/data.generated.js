@@ -966,6 +966,7 @@ export const RAW_DATA = {
     },
     "JOUR": { "etang": 6, "mare": 3, "lac": 4, "mer": 8 }
   },
+  "TRIPORTEUR": { "NOM": "Triporteur", "ICONE": "🛺", "ARTICLE": "un", "PRIX": 450, "VITESSE": 3 },
   "SERRE": { "LIEU": "serre", "PRIX_CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "PRIX_NIVEAUX": [0, 900, 1800, 3000, 5400] },
   "VERGER": {
     "PRIX_CONSTRUCTION": 0,

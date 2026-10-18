@@ -140,13 +140,14 @@ function toolSlot(id) {
   const def = toolDef(id);
   const owned = hasTool(state, id);
   return shopSlot(def.ICONE, def.NOM, `data-mode="outil" data-kind="${id}"`, owned ? null : def.PRIX, owned ? '<span aria-hidden="true">✅</span>' : '', !owned && !canPay(def.PRIX),
-    `${def.NOM} : ${owned ? 'déjà achetée' : `${formatCoins(def.PRIX)} pièces`}`);
+    `${def.NOM} : ${owned ? (def.ARTICLE === 'un' ? 'déjà acheté' : 'déjà achetée') : `${formatCoins(def.PRIX)} pièces`}`);
 }
 
 const OUTILS_DESCRIPTIONS = {
   hache: 'Coupe les arbres de la carte : chaque coup lâche un morceau de bois 🪵 au sol ; au 3e coup, l\'arbre tombe et en lâche 2 de plus. Marche dessus pour les ramasser.',
   pioche: 'Casse les rochers de la carte : chaque coup lâche une pierre 🪨 au sol ; au 3e coup, le rocher se brise et en lâche 2 de plus (il revient 1 à 3 jours plus tard). Marche dessus pour les ramasser.',
   canne: 'Pêche dans l\'étang et la mare de la carte : truites 🐟‍🌈 et brochets 🐟‍🦷 (le brochet vit surtout dans l\'étang).',
+  triporteur: `Un tricycle à caisse : en selle, tu te déplaces ${DATA.TRIPORTEUR.VITESSE} fois plus vite sur toutes les cartes (pas dans un intérieur ni dans la grotte).`,
 };
 
 /* -- Les animaux : ce qu'ils deviennent dans la fiche (prix fixe, besoins, places). -- */
@@ -238,7 +239,7 @@ export function renderComptoir(fenetre = false) {
     const items = Object.keys(DATA.OBJETS).filter((k) => isBuyable(k) && DATA.OBJETS[k].categorie !== 'graine' && rayon.match(k));
     const chapitre = !hasHoe(state) ? '<p class="row"><button type="button" class="btn small" data-action="aller" data-window="chapitres">📜 Voir le chapitre</button></p>' : '';
     const slots = items.map((k) => buySlot(k, 'acheter'));
-    body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('pioche'), toolSlot('hache'), toolSlot('canne'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
+    body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('pioche'), toolSlot('hache'), toolSlot('canne'), toolSlot('triporteur'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
   } else if (tab.id === 'animaux') {
     body = slotsHtml(ESPECES.map(animalSlot), 'Aucun animal à vendre pour l\'instant.');
   } else if (tab.id === 'meubles') {
@@ -294,10 +295,11 @@ function shopBodyHtml(o) {
   }
   if (o.mode === 'outil') {
     const def = toolDef(o.id);
-    const owned = hasTool(state, o.id);
+    const owned = hasTool(state, o.id), un = def.ARTICLE === 'un';
+    const barre = o.id === 'triporteur' ? 'Il va dans la barre d\'outils, en bas de la carte : un appui pour monter dessus ou en descendre.' : 'Elle va dans la barre d\'outils, en bas de la carte : un appui la prend en main.';
     return `
-      <div class="item-head"><span class="item-icon" aria-hidden="true">${def.ICONE}</span><span class="item-title"><strong id="item-title">${def.NOM}</strong><span>${owned ? 'Déjà achetée' : `${formatCoins(def.PRIX)} 💰`}</span></span></div>
-      <ul class="item-lines"><li>${OUTILS_DESCRIPTIONS[o.id]}</li><li>Elle va dans la barre d'outils, en bas de la carte : un appui la prend en main.</li><li>Outil acheté une seule fois.</li></ul>
+      <div class="item-head"><span class="item-icon" aria-hidden="true">${def.ICONE}</span><span class="item-title"><strong id="item-title">${def.NOM}</strong><span>${owned ? (un ? 'Déjà acheté' : 'Déjà achetée') : `${formatCoins(def.PRIX)} 💰`}</span></span></div>
+      <ul class="item-lines"><li>${OUTILS_DESCRIPTIONS[o.id]}</li><li>${barre}</li><li>Acheté une seule fois.</li></ul>
       ${owned ? '' : `<div class="row item-actions"><button type="button" class="btn primary" data-action="buy-tool" data-outil="${o.id}"${canPay(def.PRIX) ? '' : ' disabled'}>Acheter (−${formatCoins(def.PRIX)} 💰)</button></div>`}`;
   }
   if (o.mode === 'animal') {
