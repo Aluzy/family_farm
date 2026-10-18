@@ -16,6 +16,8 @@ import { showToast } from './toasts.js';
 import { closeModal, openModal } from './modal.js';
 import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
+import { farmSeed } from '../engine/terrain.js';
+import { ressourcesDuJour, transitionPlan, transitionSeed } from '../engine/transition.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -221,6 +223,17 @@ window.FermeHote = {
   closeModal: () => closeModal(),
   // le god mode : les cartes ne font plus marcher le personnage (un toucher l'y pose)
   god: () => godMode,
+  // la carte de transition de la partie (js/engine/transition.js) : son plan (l'ouest, tiré
+  // d'après la graine), les ressources du jour et le jour. Une partie d'avant n'a pas encore
+  // de graine des voisins : elle la tire ici, une fois.
+  transition: () => {
+    if (!farmSeed(state) && !state.graineVoisins) {
+      state.graineVoisins = String(Math.floor(Math.random() * 1e9));
+      persistState();
+    }
+    const g = transitionSeed(state);
+    return { plan: transitionPlan(g), ressources: ressourcesDuJour(g, state.day), jour: state.day };
+  },
 };
 
 /* ---------- le god mode : un menu des cartes ---------- */
@@ -229,8 +242,8 @@ window.FermeHote = {
 const DESTINATIONS = [
   ['🌾 La ferme', 'jeu.html'],
   ['🛤️ Le chemin vers la ville', 'ville-carte.html?carte=transition&arrivee=ferme'],
-  ['🏠 La maison rouge (voisins)', 'ville-carte.html?carte=interieur&maison=maison_rouge'],
-  ['🏠 La maison grise (voisins)', 'ville-carte.html?carte=interieur&maison=maison_ardoise'],
+  ['🏠 La première maison des voisins', 'ville-carte.html?carte=interieur&maison=maison_1'],
+  ['🏠 La deuxième maison des voisins', 'ville-carte.html?carte=interieur&maison=maison_2'],
   ['🏙️ La ville (route de la ferme)', 'ville-carte.html?carte=ville&arrivee=ferme'],
   ['🚉 La ville (la gare)', 'ville-carte.html?carte=ville&arrivee=gare'],
   ['⛰️ La montagne', 'ville-carte.html?carte=montagne&arrivee=gare'],

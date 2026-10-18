@@ -22,6 +22,8 @@ export function createNewGame(seed = 1, famille = null) {
   const D = DATA.DEPART;
   const state = createInitialState(seed);
   state.departV2 = true;
+  // la graine de la carte de transition (js/engine/transition.js) quand la ferme n'est pas générée
+  state.graineVoisins = String(seed);
   state.pieces = D.PIECES;
   state.compta = [];
   state.inventaire = lotsFromCounts(D.INVENTAIRE);

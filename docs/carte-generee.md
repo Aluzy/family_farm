@@ -154,6 +154,46 @@ Le Marché vend toujours les outils.
     revient.
 - **La maison de la cour** est encore là, provisoirement. On n'y dort plus sur la ferme générée.
 
+## La carte de transition, tirée pour chaque partie
+
+La carte entre la ferme et la ville (`ville-carte.html?carte=transition`, 48 × 36 tuiles) a deux
+parties.
+
+- **L'est est fixe**, dessiné par `scripts/ville/transition.py` à partir de la colonne `OUEST`
+  (24) : le bout du chemin, la route, les trottoirs, les réverbères, l'arrêt de bus.
+- **L'ouest est tiré d'après la graine de la partie** (`js/engine/transition.js`,
+  `transitionPlan`). La graine est celle de la ferme générée, sinon celle des voisins
+  (`state.graineVoisins`, tirée à la création de la partie, ou à la première visite d'une
+  ancienne partie). L'ouest contient :
+  - le chemin de terre de la ferme à la route, qui ondule doucement ;
+  - 2 ou 3 maisons de voisins, chacune avec une allée de sa porte au chemin. Elles sont bâties
+    avec les blocs de la ferme générée (`assets/blocs.png`) : murs raccordés, porte, plancher,
+    meubles (four, cuisinière, paillasses, coffre à grain, atelier…) ;
+  - la mare et son banc, le puits et le tonneau près des maisons, des barrières le long du
+    chemin, des buissons ;
+  - les arbres et les rochers, que l'on coupe et que l'on casse comme avant, l'herbe haute et
+    les fleurs.
+- **Le kit de dessin** : la carte de Tiled n'a que de l'herbe à l'ouest, et porte dans sa
+  propriété `kit` de quoi y dessiner :
+  - les tuiles d'herbe et de chemin pour chaque jeu de coins ;
+  - les fleurs ;
+  - des tampons (des blocs de tuiles, une grille par couche) : la mare, le puits, le tonneau, le
+    banc, les buissons, et les barrières de 2 à 8 tuiles.
+
+  `js/carte/ville/transition.js` (`V.transitionCarte`) en fait la carte de la partie avant que
+  la scène ne la crée : le sol, les tampons, les portes (passages et arrivées), l'emprise des
+  maisons, les arbres, les rochers, l'herbe, et le trajet des enfants vers le bus.
+- **Les familles** : chaque maison a sa famille (`V.voisins`, la même qu'on trouve chez elle en
+  entrant). De 7 h à 19 h, ses membres sortent par la porte.
+  - Les parents vont chercher la ressource libre la plus proche, la ramassent, et en rapportent
+    trois à la fois à la maison avant de ressortir.
+  - Les ressources sont des petites pierres, des morceaux de bois et des herbes : 18 par jour
+    (`ressourcesDuJour`).
+  - Les enfants, et les parents quand il n'y a plus rien, flânent autour de la maison.
+  - La nuit, tout le monde reste chez soi.
+  - Un toucher sur un voisin : il dit ce que sa famille a ramassé aujourd'hui.
+  - Ce qui a été ramassé le reste jusqu'au lendemain (`localStorage`).
+
 ## Étapes
 
 1. ✅ Le terrain ne dépend plus de la carte. Le moteur passe par `farmTerrain(state)`
