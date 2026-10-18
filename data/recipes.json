@@ -43,7 +43,8 @@
     "le puits) sans prendre de case. Comme les achats : il faut le foyer, et la citerne attend le",
     "panneau et la pompe.",
     "batiment (étape 5b, les bâtiments) : le bloc clé d'un bâtiment. Posé dans une pièce close, il le",
-    "construit (le nichoir : le Poulailler ; la mangeoire : l'Étable ; le bac à semis : la Serre ; le coffre à grain : le Silo) ; repris, le bâtiment n'est plus là (ses bêtes restent)."
+    "construit (le nichoir : le Poulailler ; la mangeoire : l'Étable ; le bac à semis : la Serre ; le coffre à grain : le Silo) ; repris, le bâtiment n'est plus là (ses bêtes restent).",
+    "Le Poulailler veut aussi une porte sur le dehors et un enclos de barrières relié par une porte, et une case libre par poule dedans et dans l'enclos (blocs.js, etatPoulailler)."
   ],
   "ATELIER": {
     "NOM": "Atelier", "ICONE": "🔨", "NIVEAU": 1,

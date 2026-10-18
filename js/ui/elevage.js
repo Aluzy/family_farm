@@ -11,8 +11,10 @@ import {
   buildPaturage, buildPoulailler, buildSilo, buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
   cowCount, cowsOnHerbs, feedAllHens, feedHen, freeSheepPlaces, hensToFeed, herbStock, herbsOn, pastureCost,
   setCowHerbs, shear, sheepCount, sheepToShear, siloCapacity, siloUpgradeCost, stableOccupied, strawMissing,
-  strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
+  strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady, coopUpgradeRefus,
 } from '../engine/animals.js';
+import { etatPoulailler } from '../engine/blocs.js';
+import { farmSeed } from '../engine/terrain.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
 import { AUTO_TACHES, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
@@ -59,8 +61,27 @@ export function renderSilo() {
     </div>`;
 }
 
+// La ferme générée : ce qu'il faut pour que le Poulailler soit là (etatPoulailler), et les
+// cases libres pour les poules.
+function coopChecklist() {
+  const e = etatPoulailler(state);
+  const lignes = e.conditions.map((c) => `<li class="${c.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${c.ok ? '✅' : '❌'}</span> <span>${c.texte}</span></li>`).join('');
+  const place = e.piece ? `<span class="muted">Cases libres : ${e.libresPiece.length} dans le poulailler, ${e.enclos ? e.libresEnclos.length : 0} dans l'enclos (une poule par case de chaque côté).</span>` : '';
+  return `<ul class="ingredients">${lignes}</ul>${place}`;
+}
+
 export function renderPoulailler() {
   const p = state.poulailler;
+  const genere = farmSeed(state) !== null;
+  if (!p.construit && genere) {
+    return `
+      <div class="section-head"><h3>${artIcon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
+      <div class="card">
+        <span class="card-title">Pour bâtir le Poulailler</span>
+        ${coopChecklist()}
+        ${p.poules ? `<span class="alert">⚠️ Tes ${plural(p.poules, 'poule')} attendent : elles ne pondent pas tant que le Poulailler n'est pas complet.</span>` : ''}
+      </div>`;
+  }
   if (!p.construit) {
     const cost = DATA.POULAILLER.PRIX_CONSTRUCTION;
     return `
@@ -73,13 +94,16 @@ export function renderPoulailler() {
   const toFeed = hensToFeed(state);
   const noWheat = !canFeedHen(state);
   const up = coopUpgradeCost(state);
+  // (la ferme générée : il faut aussi la place des poules du niveau suivant)
+  const refus = coopUpgradeRefus(state);
   const upBtn =
     up === null
       ? '<button type="button" class="btn" disabled>Poulailler au niveau maximum</button>'
-      : `<button type="button" class="btn" data-action="upgrade-poulailler"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${p.niveau + 1}, ${DATA.POULAILLER.CAPACITE[p.niveau]} poules (${costLabel(up)})</button>`;
+      : `<button type="button" class="btn" data-action="upgrade-poulailler"${canPay(up) && !refus ? '' : ' disabled'}>Agrandir : niveau ${p.niveau + 1}, ${DATA.POULAILLER.CAPACITE[p.niveau]} poules (${costLabel(up)})</button>${refus ? `<span class="muted">${refus}</span>` : ''}`;
   // Une ligne d'état, courte ; les règles (rations, ponte, niveaux) sont dans « ? ».
   let hint;
-  if (p.poules === 0) hint = '<span class="muted">Aucune poule : achètes-en au Marché.</span>';
+  if (genere && p.poules > cap) hint = `<span class="alert">⚠️ ${plural(p.poules - cap, 'poule')} de trop pour la place : elles ne pondent pas.</span>`;
+  else if (p.poules === 0) hint = '<span class="muted">Aucune poule : achètes-en au Marché.</span>';
   else if (toFeed === 0) hint = '<span class="muted">✅ Toutes nourries : elles pondront cette nuit.</span>';
   else if (isAutomated(state, 'poulailler')) hint = '<span class="muted">🤖 Nourries toutes seules cette nuit.</span>';
   else if (noWheat) hint = '<span class="alert">⚠️ Pas assez de blé.</span>';

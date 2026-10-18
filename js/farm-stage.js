@@ -405,6 +405,7 @@
         this.stepShards(delta);
         this.stepSprinklers();
         this.stepFires(time);
+        this.stepHens(time, delta / 1000);
         this.stepRobot(dt);
         this.placeDialog();
         this.stepFishing(delta);

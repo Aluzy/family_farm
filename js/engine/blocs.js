@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { atelierConstruit, atelierOuvert } from './atelier.js';
-import { farmTerrain, tileCount } from './terrain.js';
+import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
@@ -243,6 +243,8 @@ function ouvrirBatiment(state, id) {
   if (!b) return;
   if (id === 'serre' && !(b.parcelles && b.parcelles.length)) { openSerre(state); return; }
   b.construit = true;
+  if (!b.niveau && id !== 'paturage') b.niveau = 1;
+  if (id === 'poulailler') { majPoulailler(state); return; }   // (pas sans son enclos : etatPoulailler)
   if (id === 'paturage') { if (!b.places) b.places = DATA.PATURAGE.PLACES_DEPART; } else if (!b.niveau) b.niveau = 1;
   if (id === 'silo') fillSilo(state);   // le blé de l'inventaire y entre, comme à sa réparation
 }
@@ -302,6 +304,7 @@ export function poserBloc(state, sorte, tile) {
   // un arbre fruitier : planté dans le sol, il n'est pas un bloc (orchard.js)
   if (s.arbre) {
     const tree = planterArbre(state, s.arbre, tile);
+    majPoulailler(state);
     return { ok: true, sorte, case: tile, arbre: tree.id };
   }
   if (s.sur) {
@@ -320,6 +323,7 @@ export function poserBloc(state, sorte, tile) {
   if (s.batiment) ouvrirBatiment(state, s.batiment);
   // un four, une cuisinière : la station est là (étape 5b, la maison)
   if (s.station && state.stations[s.station]) openStation(state, s.station);
+  majPoulailler(state);
   return { ok: true, sorte, case: tile };
 }
 
@@ -340,9 +344,96 @@ export function reprendreBloc(state, tile, opts) {
   else delete state.sols[tile];
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
-  if (s && s.batiment && state[s.batiment]) state[s.batiment].construit = false;
+  if (s && s.batiment && state[s.batiment] && s.batiment !== 'poulailler') state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)
   if (s && s.station && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
+  majPoulailler(state);
   return { ok: true, sorte, case: tile };
+}
+
+/* ---------- le Poulailler de la ferme générée : une enceinte, un nichoir, un enclos ---------- */
+
+// Le Poulailler est là quand tout y est :
+//   - une enceinte de murs (une pièce close) où le nichoir est posé ;
+//   - une porte de l'enceinte qui donne sur l'extérieur ;
+//   - un enclos : une étendue close de barrières (elle peut s'appuyer sur les murs de
+//     l'enceinte), reliée à l'enceinte par une autre de ses portes ;
+//   - une case libre au moins pour une poule, dans l'enceinte (hors nichoir) et dans l'enclos.
+// Une poule par case libre de l'enceinte et de l'enclos : places = le plus petit des deux
+// (coopCapacity le borne aussi par le niveau). etatPoulailler → { ok, conditions: [{ id, texte, ok }],
+// piece, enclos (leurs cases), porteDehors, porteEnclos, libresPiece, libresEnclos (cases), places }.
+export const CONDITIONS_POULAILLER = [
+  ['enceinte', 'Une enceinte de murs (une pièce close)'],
+  ['nichoir', 'Un nichoir dans l\'enceinte'],
+  ['dehors', 'Une porte de l\'enceinte qui donne sur l\'extérieur'],
+  ['enclos', 'Un enclos de barrières, relié à l\'enceinte par une autre porte'],
+  ['place', 'Une case libre par poule, dans l\'enceinte (hors nichoir) et dans l\'enclos'],
+];
+
+let pouleCle = null, pouleEtat = null;
+
+// L'étendue d'herbe atteinte depuis `depart` sans passer un mur, une porte, l'Atelier ou une
+// barrière : { cases, close (elle ne touche ni le bord ni ne dépasse PIECE_MAX), barriere (une
+// barrière la borde) }.
+function etendue(state, depart) {
+  const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.PIECE_MAX;
+  const arret = (t) => { const s = sorteDe(B[t]); return !!(s && (s.ferme || B[t] === 'barriere')); };
+  const vus = new Set([depart]), pile = [depart], cases = [];
+  let close = true, barriere = false;
+  while (pile.length) {
+    const i = pile.pop(), c = i % W, r = Math.floor(i / W);
+    cases.push(i);
+    if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max) { close = false; break; }
+    for (const j of [i - 1, i + 1, i - W, i + W]) {
+      if (arret(j)) { if (B[j] === 'barriere') barriere = true; continue; }
+      if (!vus.has(j)) { vus.add(j); pile.push(j); }
+    }
+  }
+  return { cases, close, barriere };
+}
+
+export function etatPoulailler(state) {
+  const B = blocsPoses(state);
+  const cle = farmSeed(state) + ':' + JSON.stringify(B) + ':' + (state.verger ? state.verger.arbres.map((a) => a.case).join(',') : '');
+  if (cle === pouleCle) return pouleEtat;
+  const T = farmTerrain(state), W = T.LARGEUR;
+  const ok = {}, e = { ok: false, piece: null, enclos: null, porteDehors: null, porteEnclos: null, libresPiece: [], libresEnclos: [], places: 0 };
+  const nid = Object.keys(B).map(Number).find((t) => B[t] === 'nichoir');
+  const pieces = atelierOuvert(state) ? piecesCloses(state) : [];
+  const p = nid === undefined ? null : pieces.find((q) => q.cases.includes(nid)) || null;
+  ok.nichoir = nid !== undefined && !!p;
+  ok.enceinte = !!p;
+  if (p) {
+    e.piece = p.cases;
+    // chaque porte : la case de l'autre côté (hors de l'enceinte) ; un enclos, ou le dehors
+    for (const d of p.portes) {
+      const o = [d - 1, d + 1, d - W, d + W].find((j) => !p.cases.includes(j) && !(sorteDe(B[j]) && (sorteDe(B[j]).ferme || B[j] === 'barriere')));
+      if (o === undefined || pieces.some((q) => q !== p && q.cases.includes(o))) continue;
+      const x = etendue(state, o);
+      if (x.close && x.barriere) { if (!e.enclos || x.cases.length > e.enclos.length) { e.enclos = x.cases; e.porteEnclos = d; } } else if (!x.close && e.porteDehors === null) e.porteDehors = d;
+    }
+    const arbres = new Set(state.verger ? state.verger.arbres.map((a) => a.case) : []);
+    const herbe = (t) => { const ch = T.LIGNES[Math.floor(t / W)][t % W]; return ch === '#' || ch === '+'; };
+    e.libresPiece = p.cases.filter((t) => !B[t]);
+    e.libresEnclos = (e.enclos || []).filter((t) => !B[t] && herbe(t) && !arbres.has(t));
+    e.places = e.enclos ? Math.min(e.libresPiece.length, e.libresEnclos.length) : 0;
+  }
+  ok.dehors = e.porteDehors !== null;
+  ok.enclos = !!e.enclos;
+  ok.place = e.places > 0;
+  e.conditions = CONDITIONS_POULAILLER.map(([id, texte]) => ({ id, texte, ok: !!ok[id] }));
+  e.ok = e.conditions.every((c) => c.ok);
+  pouleCle = cle;
+  pouleEtat = e;
+  return e;
+}
+
+// Sur la ferme générée, le Poulailler existe quand tout y est (etatPoulailler) ; il garde son
+// niveau et ses poules quand il ne l'est plus. Appelée après chaque bloc posé ou repris.
+export function majPoulailler(state) {
+  if (farmSeed(state) === null || !state.poulailler) return;
+  const e = etatPoulailler(state);
+  state.poulailler.construit = e.ok;
+  if (e.ok && !state.poulailler.niveau) state.poulailler.niveau = 1;
 }
