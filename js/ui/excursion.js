@@ -3,13 +3,13 @@ import { clockHours, nightActive } from '../engine/clock.js';
 import { weekdayIndex } from '../engine/format.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { memberPerso } from '../engine/family.js';
-import { depositOreNotebook, hasTool, hitsNeeded, mineOre } from '../engine/outils.js';
+import { depositOreNotebook, hasTool, hitsNeeded, mineOre, morceauxDe } from '../engine/outils.js';
 import { techFlag } from '../engine/techtree.js';
 import { rockGone, treeGone } from '../engine/crops.js';
 import { addItem } from '../engine/inventory.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
 import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
-import { chopFromStage, fishFromStage, mineFromStage } from './outils.js';
+import { chopFromStage, fishFromStage, mineFromStage, morceauFromStage } from './outils.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
@@ -196,8 +196,13 @@ window.FermeHote = {
   // la ferme, abattus ou cassés en trois coups, ils reviennent quelques jours plus tard
   abattu: (id) => treeGone(state, id),
   casse: (id) => rockGone(state, id),
-  couper: (id) => chopFromStage(id),
-  piocher: (id) => mineFromStage(id),
+  // (ou : la carte et les points où tombent les morceaux, voir chopTree)
+  couper: (id, ou) => chopFromStage(id, ou),
+  piocher: (id, ou) => mineFromStage(id, ou),
+  // les morceaux de bois et de pierre au sol de la carte `carte` ([{ n, item, x, y }]) ; celui
+  // sur lequel le personnage marche ({ ok, item, n } ou null)
+  morceaux: (carte) => morceauxDe(state, carte).map((m) => ({ n: m.n, item: m.item, x: m.x, y: m.y })),
+  ramasserMorceau: (n) => morceauFromStage(n),
   // la canne en main : un lancer dans l'eau `eau` (« lac » : la montagne) ; { poisson } ou null
   pecher: (eau) => fishFromStage(eau),
   objet: (item) => (DATA.OBJETS[item] ? { nom: DATA.OBJETS[item].nom, icone: DATA.OBJETS[item].icone } : null),

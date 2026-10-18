@@ -90,12 +90,19 @@
       return best;
     },
 
-    // Un coup de hache sur l'arbre `t` : le jeu donne le bois tout de suite (this.ctx.bridge.chop) ;
-    // le personnage va au tronc, frappe, et au coup l'arbre tremble et « +1 🪵 » monte. Au
-    // dernier coup (got.tombe), l'arbre tombe (fellTree).
+    // Un coup de hache sur l'arbre `t` : le jeu compte le coup tout de suite (this.ctx.bridge.chop)
+    // et pose son bois au sol ; le personnage va au tronc, frappe, et au coup l'arbre tremble et
+    // le morceau tombe à son pied (à ramasser en marchant dessus). Au dernier coup (got.tombe),
+    // l'arbre tombe (fellTree) et lâche les siens là où sa cime touche le sol.
     chop(t) {
-      const got = this.ctx.bridge && this.ctx.bridge.chop ? this.ctx.bridge.chop(t.id) : null;
+      // (l'arbre tombera du côté opposé au personnage, comme fellTree ; ses morceaux aussi)
+      const p = this.strikeSide(t.foot, 11);
+      const ou = this.piecePoints(t.foot, p, p.x > t.foot.x ? -1 : 1);
+      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.chop ? this.ctx.bridge.chop(t.id, ou) : null));
       if (!got) return;
+      const M2 = got.morceaux || { coup: [], fin: [] };
+      this.time.delayedCall(9000, () => this.revealPieces(M2.coup));   // (filet : le coup n'a pas été donné)
+      if (got.tombe) t.finPieces = M2.fin;
       t.queued = (t.queued || 0) + 1;
       if (got.tombe) {
         t.falling = true;
@@ -105,7 +112,7 @@
       }
       const hit = () => {
         t.queued = Math.max(0, t.queued - 1);
-        this.showGain({ bois: got.bois });
+        this.revealPieces(M2.coup);
         K.vibre('hache');
         if (t.falling && !t.queued) { this.fellTree(t, true); return; }
         this.shakeTree(t);
@@ -119,13 +126,15 @@
     fellTree(t, anim) {
       if (t.fallTimer) { t.fallTimer.remove(); t.fallTimer = null; }
       const o = this.occluderOf(t);
+      // ses morceaux, quand il touche le sol (tout de suite, sans animation)
+      const lache = () => { this.revealPieces(t.finPieces); t.finPieces = null; };
       const done = () => {
         t.falling = false;
         t.gone = true;
         if (o && o.img) o.img.setVisible(false);
         this.felledChanged();
       };
-      if (!o || !o.img || !anim || reducedMotion() || !this.textures.exists(o.img.texture.key)) { done(); return; }
+      if (!o || !o.img || !anim || reducedMotion() || !this.textures.exists(o.img.texture.key)) { done(); lache(); return; }
       if (o.shake) { o.shake.destroy(); o.shake = null; t.shaking = false; }
       const p = this.fermier && this.fermier.pos();
       const dir = p && p.x > t.foot.x ? -1 : 1;
@@ -142,6 +151,7 @@
           this.spawnShards({ box: { x0, x1: x0 + len * 0.75, y0: t.foot.y - 10, y1: t.foot.y + 2 } }, CHUTE.feuilles, true, null, CHUTE.couleurs);
           K.secousse(this, 'chute');
           done();
+          lache();
           this.tweens.add({
             targets: img, angle: dir * (CHUTE.angle - CHUTE.rebond), duration: CHUTE.rebondMs, yoyo: true, ease: 'Sine.easeOut',
             onComplete: () => this.tweens.add({ targets: img, alpha: 0, delay: CHUTE.repos, duration: CHUTE.fondu, onComplete: () => img.destroy() }),

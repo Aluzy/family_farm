@@ -737,6 +737,7 @@
       this.stepChampignon();
       this.stepCaveLights(time, dt);
       this.stepWork(dt);
+      this.stepPieces();
       this.stepFish(dt);
       this.stepEntering();
       this.stepFamily(time, dt);

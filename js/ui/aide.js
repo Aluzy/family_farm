@@ -242,8 +242,8 @@ const HELP = {
       lignes: [
         ['Achat', `Chaque outil s'achète une fois au Marché, puis se choisit dans la barre d'outils de la carte : ${[DATA.HOUE, H, P, DATA.CANNE].map((o) => `${o.ICONE} ${o.NOM.toLowerCase()} ${formatNumber(o.PRIX)} 💰`).join(' · ')}.`],
         ['Houe', `Change une tuile d'herbe en terre à cultiver : ${formatNumber(C.labourer)} d'énergie la tuile.`],
-        ['Hache', `Touche un arbre (à la ferme ou sur le chemin de la ville) : ${formatNumber(C.couper)} d'énergie et ${formatNumber(H.BOIS)} bois par coup. L'arbre tombe au ${H.COUPES}e coup et repousse ${H.RETOUR[0]} à ${H.RETOUR[1]} jours plus tard.`],
-        ['Pioche', `Touche un rocher : ${formatNumber(C.piocher)} d'énergie et ${formatNumber(P.PIERRE)} pierre par coup ; il se casse au ${P.COUPS}e coup et revient ${P.RETOUR[0]} à ${P.RETOUR[1]} jours plus tard. Dans la grotte, elle prend aussi le minerai.`],
+        ['Hache', `Touche un arbre (à la ferme ou sur le chemin de la ville) : ${formatNumber(C.couper)} d'énergie par coup, et ${formatNumber(H.BOIS)} bois qui tombe au sol. L'arbre tombe au ${H.COUPES}e coup, lâche ${formatNumber(H.CHUTE)} bois de plus là où il touche le sol, et repousse ${H.RETOUR[0]} à ${H.RETOUR[1]} jours plus tard. Marche sur le bois pour le ramasser.`],
+        ['Pioche', `Touche un rocher : ${formatNumber(C.piocher)} d'énergie par coup, et ${formatNumber(P.PIERRE)} pierre qui tombe au sol ; il se casse au ${P.COUPS}e coup en lâchant ${formatNumber(P.BRIS)} pierres de plus (marche dessus pour les ramasser) et revient ${P.RETOUR[0]} à ${P.RETOUR[1]} jours plus tard. Dans la grotte, elle prend aussi le minerai.`],
         ['Canne à pêche', `Touche l'eau : ${formatNumber(C.pecher)} d'énergie le lancer (voir la fiche « Pêche »).`],
         ['Bois et pierre', 'Ils se vendent, et paient les technologies avec les lingots. La branche Outils de l\'Arbre des technologies rend les outils plus efficaces.'],
       ],
