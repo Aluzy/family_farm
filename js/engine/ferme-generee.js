@@ -22,7 +22,8 @@ import { chemin } from './chemin.js';
 //     (étape 5b). La maison n'y est plus : sa place (MAISON) reste dégagée, le chemin part de
 //     devant elle ; le foyer se bâtit (une pièce close avec une paillasse).
 // genererFerme(graine) → { carte, terrain } ; le terrain est celui de terrain-carte.js (plus
-// DECALAGE : où la cour a été posée, en tuiles). Les cartes déjà faites sont gardées.
+// DECALAGE : où la cour a été posée, en tuiles ; BUISSONS : les buissons). Les cartes déjà faites
+// sont gardées.
 
 export const FERME_GENEREE = {
   LARGEUR: 144, HAUTEUR: 114, T: 16,
@@ -385,6 +386,9 @@ function fabriquer(graine) {
     width: W, height: H, tilewidth: T, tileheight: T, nextlayerid: id, nextobjectid: 9501,
     graine, layers, tilesets: [],
   };
-  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy] });
+  // BUISSONS : les buissons posés, [colonne de gauche, rangée du pied, largeur, hauteur] en tuiles
+  // (on y cueille des baies : atelier.js)
+  const buissons = poses.filter((p) => p[2].startsWith('buisson')).map(([fy, fx, , w, h]) => [Math.round(fx / T - w / 2), Math.round(fy / T) - 1, w, h]);
+  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy], BUISSONS: buissons });
   return { carte, terrain };
 }

@@ -420,6 +420,7 @@ export function validateData(data) {
     for (const [rid, r] of Object.entries(A.RAMASSAGE || {})) {
       needItem(`ATELIER.RAMASSAGE.${rid}.objet`, r.objet);
       if (!isInt(r.nombre) || r.nombre < 0) err(`ATELIER.RAMASSAGE.${rid}.nombre`, 'un entier positif ou nul');
+      if (r.quantite !== undefined && (!isInt(r.quantite) || r.quantite < 1)) err(`ATELIER.RAMASSAGE.${rid}.quantite`, 'un entier au moins égal à 1');
     }
   }
   for (const id of Object.keys(items)) {

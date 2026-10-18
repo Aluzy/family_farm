@@ -15,7 +15,10 @@
     "« outil » = houe, hache ou pioche, comme acheté au Marché) ; c'est le geste « fabriquer »",
     "(PERSONNAGE.COUTS et NIVEAUX.XP). RAMASSAGE : chaque matin, autant de petites pierres, de",
     "morceaux de bois et d'herbes sur l'herbe de la carte (tirés d'après la graine et le jour) ;",
-    "chacun se ramasse à la main (geste « ramasser ») et donne son objet. BLOCS (étape 4) : ce qui se",
+    "chacun se ramasse à la main (geste « ramasser ») et donne son objet (quantite : combien, 1 par",
+    "défaut). buissons : sur les buissons de la carte plutôt que sur l'herbe (les baies) ; gratuit :",
+    "sans énergie (les baies se cueillent même épuisé : de quoi manger quand il n'y a plus rien).",
+    "BLOCS (étape 4) : ce qui se",
     "pose sur une case de la carte (objet : pris dans l'inventaire, rendu quand on le reprend ;",
     "l'atelier, une fois construit, sans objet) ; bloque : on ne passe pas dessus ; ferme : il ferme une",
     "pièce (murs, portes, atelier) ; porte : une pièce close en a au moins une ; dedans : ne se pose",
@@ -75,7 +78,8 @@
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
-      "herbe": { "nom": "Herbe", "objet": "fibre", "nombre": 18 }
+      "herbe": { "nom": "Herbe", "objet": "fibre", "nombre": 18 },
+      "baies": { "nom": "Baies", "objet": "baies", "nombre": 16, "quantite": 3, "buissons": true, "gratuit": true }
     }
   },
   "STATIONS": {

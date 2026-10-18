@@ -98,6 +98,10 @@ Le Marché vend toujours les outils.
     `scripts/carte/ramassables.py`). Un appui dessus : le personnage va à côté, se baisse et le
     prend (`js/carte/ferme/cueillette.js`) ;
   - le geste « ramasser » coûte 1 d'énergie et rapporte 2 XP ;
+  - les **baies** : chaque matin, 16 buissons de la carte en portent (`RAMASSAGE.baies.buissons`,
+    `terrain.BUISSONS`), des grappes rouges de 4 × 4 pixels posées dessus. Un appui : le
+    personnage en cueille 3, **sans énergie** (`gratuit`) : même épuisé et sans réserves, il
+    trouve de quoi manger et ne reste pas bloqué ;
   - `state.cueillette` garde ce qui a déjà été pris aujourd'hui.
 - **L'Atelier** est une fenêtre du menu latéral, sur la ferme générée seulement
   (`js/ui/atelier.js`) :

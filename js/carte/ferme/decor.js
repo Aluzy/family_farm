@@ -239,7 +239,7 @@
       for (const o of this.occluders || []) { marque(o.img); marque(o.shake); }
       for (const o of this.rocks || []) marque(o.img);
       for (const g of this.tallGrass || []) marque(g.img);
-      for (const g of (this.gatherables || new Map()).values()) marque(g.img);
+      for (const g of (this.gatherables || new Map()).values()) g.imgs.forEach(marque);
       for (const e of (this.blocks || new Map()).values()) marque(e.img);
     },
 

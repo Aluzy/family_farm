@@ -7,7 +7,7 @@
 import { assert, assertEqual, garden, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierOuvert, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -120,7 +120,7 @@ test('ferme générée : chaque matin, des pierres, du bois et des herbes à ram
   testFarmMap(s, 'r1');
   const R = DATA.ATELIER.RAMASSAGE, liste = ramassables(s);
   assertEqual(liste.length, Object.values(R).reduce((a, d) => a + d.nombre, 0));
-  assert(liste.every((p) => isArable(p.case, s)), 'sur l\'herbe');
+  assert(liste.filter((p) => !p.buisson).every((p) => isArable(p.case, s)), 'sur l\'herbe');
   assertEqual(new Set(liste.map((p) => p.case)).size, liste.length, 'deux jamais sur la même tuile');
   assertEqual(ramassables(s), liste, 'les mêmes toute la journée');
   const avant = countItem(s, 'fibre'), e0 = s.energie;
@@ -130,6 +130,11 @@ test('ferme générée : chaque matin, des pierres, du bois et des herbes à ram
   assertEqual(ramasser(s, h.id).ok, false, 'déjà ramassée');
   s.energie = 0;
   assertEqual(ramasser(s, liste[1].id).ok, false, 'à bout de forces');
+  // les baies, sur les buissons : trois d'un coup, même à bout de forces, et elles se mangent
+  const b = liste.find((p) => p.sorte === 'baies'), T = farmTerrain(s);
+  assert(T.BUISSONS.some(([c0, r1, w]) => b.case === r1 * T.LARGEUR + c0 + Math.floor(w / 2)), 'au pied d\'un buisson');
+  assertEqual([ramasser(s, b.id), s.energie], [{ ok: true, sorte: 'baies', items: { baies: 3 } }, 0]);
+  assert(eatSnack(s, 'baies').ok && s.energie > 0, 'de quoi reprendre des forces');
   // le lendemain, d'autres places, et tout est revenu
   s.day += 1;
   const demain = ramassables(s);

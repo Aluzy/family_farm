@@ -14,7 +14,9 @@ import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 //   - chaque matin, des petites pierres, des morceaux de bois et des herbes sont posés sur
 //     l'herbe de la carte (DATA.ATELIER.RAMASSAGE : combien de chaque), à des places tirées
 //     d'après la graine et le jour ; le personnage les ramasse à la main (geste « ramasser »),
-//     chacun donne son objet (pierre, bois, fibre). state.cueillette = { jour, pris: [ids] } :
+//     chacun donne son objet (pierre, bois, fibre). Les baies poussent sur les buissons
+//     (RAMASSAGE.baies.buissons : la case est celle du milieu de leur pied) et se cueillent sans
+//     énergie (gratuit) : même épuisé, on trouve de quoi manger. state.cueillette = { jour, pris: [ids] } :
 //     ceux déjà ramassés aujourd'hui ;
 //   - l'Atelier se construit avec des matériaux (ATELIER.CONSTRUCTION), sans pièces
 //     (state.atelier = { construit, niveau }) ; ses recettes (ATELIER.RECETTES) transforment des
@@ -50,7 +52,7 @@ function herbes(T) {
   return herbesDe.get(T);
 }
 
-// Les places du jour `jour` : [{ id, sorte, objet, case }] (id : « sorte:case »), toutes les
+// Les places du jour `jour` : [{ id, sorte, objet, case, buisson? }] (id : « sorte:case »), toutes les
 // sortes tirées dans la même suite, sans deux sur la même tuile. Gardées pour le dernier jour.
 let placesCle = null, placesListe = [];
 function placesDuJour(state, jour) {
@@ -59,6 +61,16 @@ function placesDuJour(state, jour) {
   const T = farmTerrain(state), libres = herbes(T), r = mulberry32(hache(graine + ':ramassage:' + jour));
   const prises = new Set(), out = [];
   for (const [sorte, def] of Object.entries(DATA.ATELIER.RAMASSAGE)) {
+    if (def.buissons) {
+      // RAMASSAGE.baies.nombre buissons en portent ce matin, tirés au hasard
+      const B = (T.BUISSONS || []).slice();
+      for (let k = 0; k < def.nombre && B.length; k++) {
+        const [c0, r1, w] = B.splice(Math.floor(r() * B.length), 1)[0];
+        const t = r1 * T.LARGEUR + c0 + Math.floor(w / 2);
+        out.push({ id: sorte + ':' + t, sorte, objet: def.objet, case: t, buisson: true });
+      }
+      continue;
+    }
     for (let k = 0, essais = 0; k < def.nombre && essais < def.nombre * 20 && prises.size < libres.length; essais++) {
       const t = libres[Math.floor(r() * libres.length)];
       if (prises.has(t)) continue;
@@ -89,12 +101,13 @@ export function ramassables(state) {
 export function ramasser(state, id) {
   const p = ramassables(state).find((q) => q.id === id);
   if (!p) return fail('Il n\'y a plus rien à ramasser ici.');
-  if (!canAfford(state, 'ramasser')) return fail(TIRED);
+  const def = DATA.ATELIER.RAMASSAGE[p.sorte], n = def.quantite || 1;
+  if (!def.gratuit && !canAfford(state, 'ramasser')) return fail(TIRED);
   cueillette(state).pris.push(id);
-  addItem(state, p.objet, 1);
-  spendEnergy(state, 'ramasser');
+  addItem(state, p.objet, n);
+  if (!def.gratuit) spendEnergy(state, 'ramasser');
   gainActionXp(state, 'ramasser');
-  return { ok: true, sorte: p.sorte, items: { [p.objet]: 1 } };
+  return { ok: true, sorte: p.sorte, items: { [p.objet]: n } };
 }
 
 /* ---------- l'Atelier ---------- */

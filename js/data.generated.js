@@ -376,6 +376,7 @@ export const RAW_DATA = {
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient", "ville": true },
     "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "mangeable": true, "categorie": "légume", "rachetable": false },
     "myrtille": { "nom": "Myrtille", "icone": "🫐", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "rachetable": false },
+    "baies": { "nom": "Baies sauvages", "icone": "🍒", "energie": 5, "prix": 1, "mangeable": true, "categorie": "fruit", "rachetable": false },
     "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "mangeable": true, "categorie": "fruit", "rachetable": false }
   },
   "PLATS_RETIRES": {
@@ -429,7 +430,8 @@ export const RAW_DATA = {
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
-      "herbe": { "nom": "Herbe", "objet": "fibre", "nombre": 18 }
+      "herbe": { "nom": "Herbe", "objet": "fibre", "nombre": 18 },
+      "baies": { "nom": "Baies", "objet": "baies", "nombre": 16, "quantite": 3, "buissons": true, "gratuit": true }
     }
   },
   "STATIONS": {
@@ -2249,6 +2251,7 @@ export const RAW_DATA = {
     "fromage_alpage": 10,
     "champignon": 3,
     "myrtille": 3,
+    "baies": 2,
     "chataigne": 12,
     "pain": 7,
     "fromage_frais": 8,
