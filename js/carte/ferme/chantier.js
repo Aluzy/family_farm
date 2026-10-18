@@ -68,10 +68,12 @@
       return null;
     },
 
-    // Les cases que les blocs ferment au passage (murs, Atelier).
+    // Les cases que les blocs ferment au passage (murs, Atelier), et les arbres plantés.
     blockCells() {
       const out = [];
       for (const e of (this.blocks || new Map()).values()) if (BLOCS_CARTE.bloquent.includes(e.sorte)) out.push(e.case);
+      // les arbres plantés dans le sol : leur tronc
+      for (const e of (this.trees || new Map()).values()) if (e.a && e.a.sol) out.push(e.a.case);
       return out;
     },
 

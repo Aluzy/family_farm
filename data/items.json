@@ -114,6 +114,8 @@
     "bac_semis": { "nom": "Bac à semis", "icone": "🎍", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "coffre_grain": { "nom": "Coffre à grain", "icone": "🗃", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meule": { "nom": "Meule", "icone": "🪨‍⚙️", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "jeune_pommier": { "nom": "Jeune pommier", "icone": "🌱‍🍎", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "pommier" },
+    "jeune_poirier": { "nom": "Jeune poirier", "icone": "🌱‍🍐", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "poirier" },
     "puits_pierre": { "nom": "Puits de pierre", "icone": "🪣", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "pompe": { "nom": "Pompe", "icone": "⛲", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "panneau_solaire": { "nom": "Panneau solaire", "icone": "☀️", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },

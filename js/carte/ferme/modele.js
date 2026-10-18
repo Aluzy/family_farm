@@ -131,13 +131,14 @@
 
     // Arbres du Verger (version 1.13) : chaque case du Verger (arbre ou emplacement libre)
     // se pose sur le rectangle arbre_verger_<case + 1>, pied au bas du rectangle, avec le
-    // dessin de son stade. Au-delà des rectangles de la carte, rien n'est dessiné.
+    // dessin de son stade. Au-delà des rectangles de la carte, rien n'est dessiné. La ferme
+    // générée (a.sol) : l'arbre planté dans le sol, sur sa case de la carte (treeRect).
     // modèle.arbres[] = { case, id, libre, fruits, dessin } (dessin : ORCHARD_FRAMES).
     syncTrees(arbres, rebuild) {
       const seen = new Set();
       const own = this.has('verger');
       for (const a of arbres) {
-        const o = this.objects[TREE_OBJECT + (a.case + 1)];
+        const o = a.sol ? this.treeRect(a.case) : this.objects[TREE_OBJECT + (a.case + 1)];
         if (!o) continue;
         seen.add(a.case);
         const key = own ? 'verger' : a.libre ? null : this.tex('tree_' + SFX, 'ph_arbre');
@@ -159,6 +160,16 @@
       for (const [c, e] of this.trees) {
         if (!seen.has(c)) { e.sprite.destroy(); this.trees.delete(c); this.sunDirty = true; }
       }
+      // la ferme générée : un arbre planté ferme sa case au passage (blockCells)
+      const sol = arbres.filter((a) => a.sol).map((a) => a.case).join();
+      if (sol !== (this.treesSol || '')) { this.treesSol = sol; if (this.fermier && this.fermier.regrid) this.fermier.regrid(); }
+    },
+
+    // Le rectangle d'un arbre planté dans le sol (la ferme générée) : la taille de ceux du Verger,
+    // le pied au bas de sa case, centré sur elle.
+    treeRect(c) {
+      const cols = this.grid.cols, x = (c % cols) * T + T / 2, y = (Math.floor(c / cols) + 1) * T;
+      return { x: x - 32, y: y - 78, width: 64, height: 78 };
     },
 
     // Zone touchable d'une case du Verger : la taille du dessin (les petits dessins

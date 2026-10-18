@@ -7,7 +7,7 @@
 import { assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -34,7 +34,7 @@ test('ferme générée : la même graine donne la même carte, une autre graine 
   assert(JSON.stringify(c.carte) !== JSON.stringify(a.carte), 'une autre graine, une autre carte');
   // d'une fois sur l'autre (pas seulement dans la même page) : toujours la même ferme pour
   // « test-1 » (à mettre à jour si le générateur change, ce qui change les fermes des parties)
-  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 11742]);
+  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 12003]);
   assertEqual([a.carte.width, a.carte.height, a.terrain.LARGEUR, a.terrain.HAUTEUR], [FERME_GENEREE.LARGEUR, FERME_GENEREE.HAUTEUR, 144, 114]);
 });
 
@@ -60,8 +60,9 @@ for (const graine of ['1', '2', '7', 'abc', '12345']) {
     assert(vus.has(porte), 'le chemin passe devant la place de la maison');
     assert(!objets.maison, 'pas de maison : le foyer se bâtit');
     // les bâtiments de la cour (provisoires) et les rochers, les arbres
-    for (const n of ['verger', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
+    for (const n of ['ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
     assert(!objets.poulailler && !objets.grange && !objets.serre && !objets.silo && !objets.moulin, 'le Poulailler, l\'Étable, la Serre, le Silo et le Moulin se bâtissent');
+    assert(!objets.verger && !objets.arbre_verger_1, 'pas de Verger : les arbres se plantent dans le sol');
     assert(!objets.puits && !objets.citerne, 'le puits et la citerne se bâtissent');
     assertEqual(Object.keys(terrain.ROCHERS).length, FERME_GENEREE.ROCHERS, 'les rochers');
     assert(Object.keys(terrain.ARBRES).length > 150, 'des bois');
@@ -459,4 +460,31 @@ test('ferme générée : une meule posée dans une pièce close tient lieu du Mo
   assertEqual(s.stations.moulin.construit, true);
   reprendreBloc(s, p.dedans);
   assertEqual([s.stations.moulin.construit, countItem(s, 'meule')], [false, 1]);
+});
+
+/* ---------- étape 5b-8 : les arbres fruitiers, plantés dans le sol ---------- */
+
+test('ferme générée : un jeune arbre se plante dans le sol, dehors, et donne ses fruits', () => {
+  const s = reach(chantier('v1'), 'verger');
+  s.pieces = 100000;
+  assertEqual(buildVerger(s).ok, false, 'pas de Verger à aménager');
+  setInv(s, { mur_pierre: 30, porte: 2, jeune_pommier: 3 });
+  const z = terrainLibre(s, 8, 5), p = murs(z, 5, 5), W = z.W;
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assertEqual(poserBloc(s, 'pommier', p.dedans).ok, false, 'dehors, pas dans une pièce');
+  const ici = (z.r + 1) * W + z.c + 7;
+  s.progression.niveau = 1;
+  assertEqual(poserBloc(s, 'pommier', ici).ok, false, 'pas avant le niveau du Verger');
+  reach(s, 'verger');
+  assert(poserBloc(s, 'pommier', ici).ok);
+  assertEqual([s.verger.construit, s.verger.arbres.length, s.verger.arbres[0].case, blocAt(s, ici), countItem(s, 'jeune_pommier')], [true, 1, ici, null, 2]);
+  assertEqual(arable(ici, s), false, 'on ne laboure pas sous un arbre');
+  assertEqual(poserBloc(s, 'pommier', ici + 1).ok, false, 'trop près');
+  assertEqual(poserBloc(s, 'mur_pierre', ici).ok, false, 'pas de bloc sur un arbre');
+  // il pousse, puis donne ses fruits
+  const t = s.verger.arbres[0];
+  for (let i = 0; i < DATA.VERGER.MATURITE + 1; i++) sleepOnce(s);
+  assert(t.fruits, 'en fruits');
+  assert(harvestTree(s, t.id).ok);
 });

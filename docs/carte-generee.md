@@ -240,3 +240,16 @@ Le Marché vend toujours les outils.
        - Elle ne se pose qu'à partir du niveau du Moulin (`debloque: 'moulin'`, niveau 4).
        - Un appui sur la meule ouvre la fenêtre du Moulin. La vue de la carte, qui allait au
          moulin et à la serre, va à la deuxième zone de culture.
+     - ✅ **5b-8, les arbres fruitiers** : pas de Verger sur la ferme générée.
+       - Le **jeune pommier** et le **jeune poirier** (40 pièces) s'achètent au Marché, rayon
+         Graines, sur la ferme générée seulement, une fois le Verger débloqué (niveau 6).
+       - Avec la case 🔨, ils se **plantent dans le sol**, sur l'herbe, dehors, à au moins
+         3 cases d'un autre arbre (`ATELIER.BLOCS.pommier.arbre`, `ARBRE_ECART`). Ils ne sont pas
+         des blocs : chacun devient un arbre du Verger dont la case est sa case de la carte
+         (`planterArbre`, `arbreSurCase`). Il pousse et donne ses fruits comme avant (maturité,
+         stades, récolte tous les 3 jours, automatisation « Récolte du verger »).
+       - Sur la carte, l'arbre est dessiné sur sa case (`treeRect`), ferme son tronc au passage,
+         empêche d'y labourer ou d'y poser un bloc. Un appui sur un arbre en fruits le cueille.
+       - La fenêtre du Verger liste les arbres plantés. On n'aménage plus de Verger et on n'achète
+         plus d'emplacements (`buildVerger`, `buyOrchardSlot`, `plantTree` refusent) ; la cour
+         n'a plus ses douze emplacements ni le panneau.

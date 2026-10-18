@@ -176,6 +176,8 @@ export const RAW_DATA = {
     "bac_semis": { "nom": "Bac à semis", "icone": "🎍", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "coffre_grain": { "nom": "Coffre à grain", "icone": "🗃", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meule": { "nom": "Meule", "icone": "🪨‍⚙️", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "jeune_pommier": { "nom": "Jeune pommier", "icone": "🌱‍🍎", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "pommier" },
+    "jeune_poirier": { "nom": "Jeune poirier", "icone": "🌱‍🍐", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "poirier" },
     "puits_pierre": { "nom": "Puits de pierre", "icone": "🪣", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "pompe": { "nom": "Pompe", "icone": "⛲", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "panneau_solaire": { "nom": "Panneau solaire", "icone": "☀️", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -423,6 +425,8 @@ export const RAW_DATA = {
       "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four" },
       "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },
       "meule": { "nom": "Meule", "objet": "meule", "dedans": true, "bloque": true, "unique": true, "station": "moulin", "debloque": "moulin" },
+      "pommier": { "nom": "Pommier", "objet": "jeune_pommier", "dehors": true, "arbre": "pommier", "debloque": "verger" },
+      "poirier": { "nom": "Poirier", "objet": "jeune_poirier", "dehors": true, "arbre": "poirier", "debloque": "verger" },
       "nichoir": { "nom": "Nichoir", "objet": "nichoir", "dedans": true, "bloque": true, "unique": true, "batiment": "poulailler" },
       "mangeoire": { "nom": "Mangeoire", "objet": "mangeoire", "dedans": true, "bloque": true, "unique": true, "batiment": "paturage" },
       "bac_semis": { "nom": "Bac à semis", "objet": "bac_semis", "dedans": true, "bloque": true, "unique": true, "batiment": "serre" },
@@ -435,6 +439,7 @@ export const RAW_DATA = {
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 120,
+    "ARBRE_ECART": 3,
     "BONHEUR_SANS_COUCHAGE": -8,
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },

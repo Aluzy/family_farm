@@ -36,7 +36,7 @@ export const FERME_GENEREE = {
 // nombre entier de tuiles plus loin.
 const MAISON = [513.5, 239, 94, 95.6];
 const COUR = {
-  zone_culture_1: [464.5, 385.1, 78.1, 94], verger: [625.1, 303.7, 12.8, 15.9],
+  zone_culture_1: [464.5, 385.1, 78.1, 94],
   zone_culture_2: [622, 607.6, 130.8, 128.8],
 };
 // (le Poulailler, l'Étable, la Serre, le Silo et le Moulin se bâtissent aussi : une pièce close et
@@ -45,9 +45,11 @@ const POULAILLER = [128.5, 257, 63, 77], GRANGE = [305, 253.8, 126.1, 81.6], SER
   SILO = [657, 238.5, 49.5, 64.3], MOULIN = [626.1, 412.3, 95.6, 127];
 // (le puits et la citerne, à côté de la place du Moulin : se bâtissent aussi, étape 5b-2 ; leur place reste dégagée)
 const PUITS = [596, 390, 57, 38];
-[[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
-  [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
-  .forEach((p, i) => { COUR['arbre_verger_' + (i + 1)] = [p[0], p[1], 63.7, 78.2]; });
+// (pas de Verger ni d'emplacements : les arbres fruitiers se plantent dans le sol, n'importe où
+// sur l'herbe, étape 5b-8 ; la place de l'ancien Verger reste dégagée)
+const VERGER = [[625.1, 303.7, 12.8, 15.9]].concat([[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6],
+  [958.7, 561.6], [1039.3, 579.2], [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641],
+  [944.8, 673.1]].map(([x, y]) => [x, y, 63.7, 78.2]));
 
 // Un nombre de 32 bits d'après une chaîne (FNV-1a).
 function hache(s) {
@@ -96,7 +98,7 @@ function fabriquer(graine) {
 
   // ---- 1. la cour : où elle va, ce qu'elle interdit
   let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
-  for (const [x, y, w, h] of Object.values(COUR).concat([MAISON, PUITS, POULAILLER, GRANGE, SERRE, SILO, MOULIN])) {
+  for (const [x, y, w, h] of Object.values(COUR).concat([MAISON, PUITS, POULAILLER, GRANGE, SERRE, SILO, MOULIN], VERGER)) {
     bx0 = Math.min(bx0, Math.floor(x / T)); by0 = Math.min(by0, Math.floor(y / T));
     bx1 = Math.max(bx1, Math.ceil((x + w) / T)); by1 = Math.max(by1, Math.ceil((y + h) / T));
   }

@@ -417,7 +417,8 @@
       return { x: Math.round(b.x + b.width * 0.5), y: Math.round(b.y + 6) };
     }
     function treeSpot(c) {
-      const r = (o.objects || {})['arbre_verger_' + (c + 1)];
+      // (la ferme générée : l'arbre planté sur la case c de la carte)
+      const r = (o.objects || {})['arbre_verger_' + (c + 1)] || (o.arbre ? o.arbre(c) : null);
       return r ? { x: Math.round(r.x + r.width / 2 - 12), y: Math.round(r.y + r.height + 2), face: 'cote', flip: false } : null;
     }
     // Version 1.19 : le Poulailler et l'Étable ne se vident pas d'eux-mêmes ; le joueur l'y
