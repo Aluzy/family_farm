@@ -1,6 +1,6 @@
 import { asleep } from '../engine/night.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
-import { buyTool, castLine, chopTree, hasTool, mineRock, OUTILS, selectTool, toolDef } from '../engine/outils.js';
+import { buyTool, castLine, chopTree, hasTool, mineRock, OUTILS, ramasserMorceau, selectTool, toolDef } from '../engine/outils.js';
 import { axeMode, hoeMode, pickMode, rodMode, setAxeMode, setHoeMode, setPickMode, setRodMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
@@ -113,28 +113,40 @@ export function rodChipHtml() {
   return `<button type="button" class="stage-chip hoe axe" data-action="rod-toggle" aria-pressed="true" aria-label="Canne à pêche en main : touche l'eau pour pêcher. Ranger la canne" title="Touche l'eau de l'étang ou de la mare pour y pêcher"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('canne')}</span><span class="stage-chip-text">Pêche</span><span class="stage-chip-val num">🐟‍🌈</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
 }
 
-// La carte (farm-stage.js) : la hache en main, le joueur a touché l'arbre `id`. Le bois entre
-// dans l'inventaire tout de suite ; la carte montre ensuite le personnage qui coupe. Renvoie
-// { bois: n, tombe } (tombe : ce coup abat l'arbre), ou null (il dort, sans énergie : un message).
-export function chopFromStage(id) {
+// La carte (farm-stage.js, ou une autre : FermeHote.couper) : la hache en main, le joueur a
+// touché l'arbre `id`. Le coup compte tout de suite ; son bois tombe au sol, aux points que la
+// carte donne (`ou` : { carte, coup, fin }, voir chopTree) ; la carte montre ensuite le
+// personnage qui coupe, et les morceaux. Renvoie { bois, tombe, morceaux: { coup, fin } } (tombe :
+// ce coup abat l'arbre), ou null (il dort, sans énergie : un message).
+export function chopFromStage(id, ou) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = chopTree(state, id);
+  const r = chopTree(state, id, ou);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
-  return { bois: r.bois, tombe: r.tombe };
+  return { bois: r.bois, tombe: r.tombe, morceaux: r.morceaux };
 }
 
-// La carte : la pioche en main, le joueur a touché le rocher `id`. La pierre entre dans
-// l'inventaire tout de suite ; la carte montre ensuite le personnage qui frappe. Renvoie
-// { items: { pierre: n }, casse } (casse : ce coup brise le rocher), ou null (un message).
-export function mineFromStage(id) {
+// La carte : la pioche en main, le joueur a touché le rocher `id`. Comme chopFromStage : la
+// pierre tombe au sol. Renvoie { casse, morceaux } (casse : ce coup brise le rocher), ou null.
+export function mineFromStage(id, ou) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = mineRock(state, id);
+  const r = mineRock(state, id, ou);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
-  return { items: { pierre: r.pierre }, casse: r.casse };
+  return { items: { pierre: r.pierre }, casse: r.casse, morceaux: r.morceaux };
+}
+
+// La carte : le personnage a marché sur le morceau `n` (bois, pierre) : dans l'inventaire.
+// Renvoie { ok, item, n } ou null (il dort, ou le morceau n'est plus là).
+export function morceauFromStage(n) {
+  if (asleep(state)) return null;
+  const r = ramasserMorceau(state, n);
+  if (!r.ok) return null;
+  persistState();
+  refresh();
+  return r;
 }
 
 // La carte : la canne en main, le joueur a touché l'eau `eau` (« etang » ou « mare »). La

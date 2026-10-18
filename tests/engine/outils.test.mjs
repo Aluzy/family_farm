@@ -10,7 +10,7 @@ import {
   hasTool, hoe, hoeableTiles, hoeStatus, isArable, isBuyable, makePlot, makePlots, migrate,
   migrateEnergy, migrateHoe, mineRock, OUTILS, ownedTools, plant, plantAll, plotAtTile,
   farmTerrain, respawnRocks, respawnTrees, restoreEnergy, rockGone, runNight, selectedTool, selectTool,
-  snackEnergy, soilCap, soilCount, STATE_VERSION, terrainLines, testFillEnergy, testSetEnergyZero,
+  snackEnergy, soilCap, soilCount, STATE_VERSION, terrainLines, testFillEnergy, morceauxDe, ramasserMorceau, testSetEnergyZero,
   testSetLevel, TIRED, toolDef, wakeEnergy, water, zoneTile,
 } from '../../js/engine/index.js';
 import {
@@ -222,12 +222,30 @@ test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il
     [true, DATA.PIOCHE.PIERRE, false, DATA.PIOCHE.PIERRE, e - actionCost(s, 'piocher'), DATA.NIVEAUX.XP.piocher]);
   let last = r;
   for (let k = 1; k < DATA.PIOCHE.COUPS; k++) last = mineRock(s, '25,13');
-  assertEqual([last.casse, rockGone(s, '25,13'), brokenRocks(s), countItem(s, 'pierre')], [true, true, ['25,13'], DATA.PIOCHE.PIERRE * DATA.PIOCHE.COUPS]);
+  assertEqual([last.casse, rockGone(s, '25,13'), brokenRocks(s), countItem(s, 'pierre')], [true, true, ['25,13'], DATA.PIOCHE.PIERRE * DATA.PIOCHE.COUPS + DATA.PIOCHE.BRIS]);
   assertEqual(mineRock(s, '25,13').ok, false, 'un rocher cassé ne se casse plus');
   assertEqual(mineRock(s, '44,16').ok, true, 'un autre rocher se casse');
   s.energie = 0;
   assertEqual(mineRock(s, '44,16').error, TIRED);
   assertEqual([DATA.OBJETS.pierre.categorie, isBuyable('pierre')], ['produit', false], 'la pierre se vend, ne se rachète pas');
+});
+
+test('hache et pioche sur une carte : chaque coup lâche un morceau au sol, la chute et le bris deux de plus ; on les ramasse', () => {
+  const s = garden();
+  s.outils = { hache: true, pioche: true, choisi: 'hache' };
+  const ou = { carte: 'ferme', coup: [{ x: 10, y: 20 }, { x: 12, y: 22 }], fin: [{ x: 40, y: 20 }, { x: 52, y: 24 }] };
+  const coups = [];
+  for (let k = 0; k < DATA.HACHE.COUPES; k++) { testFillEnergy(s); coups.push(chopTree(s, '14,25', ou)); }
+  assertEqual(coups.map((r) => [r.morceaux.coup.length, r.morceaux.fin.length]), [[1, 0], [1, 0], [1, 2]], '1 par coup, 2 de plus à la chute');
+  assertEqual([countItem(s, 'bois'), morceauxDe(s, 'ferme').length, morceauxDe(s, 'ville').length], [0, 5, 0], 'au sol, pas dans l\'inventaire');
+  assertEqual(coups[2].morceaux.fin.map((m) => [m.item, m.x, m.y]), [['bois', 40, 20], ['bois', 52, 24]], 'là où la cime touche le sol');
+  // la pioche : pareil, 1 + 1 + 3 pierres
+  for (let k = 0; k < DATA.PIOCHE.COUPS; k++) { testFillEnergy(s); mineRock(s, '25,13', ou); }
+  const L = morceauxDe(s, 'ferme');
+  assertEqual([L.length, L.filter((m) => m.item === 'pierre').length, new Set(L.map((m) => m.n)).size], [10, 5, 10]);
+  // ramassés un à un (une fois chacun)
+  for (const m of L) assert(ramasserMorceau(s, m.n).ok);
+  assertEqual([countItem(s, 'bois'), countItem(s, 'pierre'), morceauxDe(s, 'ferme').length, ramasserMorceau(s, L[0].n).ok], [5, 5, 0, false]);
 });
 
 test('canne à pêche : un lancer coûte de l\'énergie ; une prise (truite, brochet) donne le poisson et de l\'XP ; JOUR prises par eau et par jour', () => {

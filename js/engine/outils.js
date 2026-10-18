@@ -116,9 +116,55 @@ export function fellenTrees(state) {
   return a ? Object.keys(a).filter((id) => treeGone(state, id)) : [];
 }
 
-// Un coup de hache sur l'arbre `id` : HACHE.BOIS bois dans l'inventaire, de l'énergie, de l'XP.
-// `tombe` : l'arbre vient de tomber.
-export function chopTree(state, id) {
+/* ---------- les morceaux au sol : le bois et la pierre lâchés par les coups ---------- */
+
+// Un coup de hache (ou de pioche) lâche ses morceaux au sol, sur la carte `carte` (« ferme »,
+// « transition », « ville », « montagne », « plage ») : state.morceaux = [{ n, item, carte, x, y }]
+// (x, y : px de la carte, donnés par elle ; n : un numéro unique, state.morceauxN). Le joueur
+// les ramasse en marchant dessus (ramasserMorceau) ; ils restent là jusqu'à ce qu'il les prenne.
+// Sans carte (le moteur seul, les tests), ils vont droit dans l'inventaire.
+export function morceauxDe(state, carte) {
+  return (state.morceaux || []).filter((m) => m.carte === carte);
+}
+
+// `nb` morceaux de `item` posés aux points `points` (le premier, le deuxième… puis on recommence).
+function poserMorceaux(state, item, nb, carte, points) {
+  const out = [];
+  if (!(nb > 0)) return out;
+  if (!Array.isArray(state.morceaux)) state.morceaux = [];
+  const P = Array.isArray(points) && points.length ? points : [{ x: 0, y: 0 }];
+  for (let i = 0; i < nb; i++) {
+    const p = P[i % P.length], k = Math.floor(i / P.length);
+    state.morceauxN = (state.morceauxN || 0) + 1;
+    const m = { n: state.morceauxN, item, carte, x: Math.round(Number(p.x) + k * 3) || 0, y: Math.round(Number(p.y) + k * 2) || 0 };
+    state.morceaux.push(m);
+    out.push(m);
+  }
+  return out;
+}
+
+// Ce qu'un coup lâche : `n` morceaux de `item` aux points `ou.coup`, et `extra` de plus (l'arbre
+// qui tombe, le rocher qui se brise) aux points `ou.fin` ; sans `ou`, dans l'inventaire.
+// Renvoie { coup, fin } (les morceaux posés) ou null.
+function lacher(state, item, n, extra, ou) {
+  if (!ou || typeof ou.carte !== 'string' || !ou.carte) { addItem(state, item, n + extra); return null; }
+  return { coup: poserMorceaux(state, item, n, ou.carte, ou.coup), fin: poserMorceaux(state, item, extra, ou.carte, ou.fin || ou.coup) };
+}
+
+// Le morceau `n` ramassé : dans l'inventaire (sans énergie). { ok, item, n } ou un refus.
+export function ramasserMorceau(state, n) {
+  const L = state.morceaux || [];
+  const i = L.findIndex((m) => m.n === n);
+  if (i < 0) return fail('Ce morceau n\'est plus là.');
+  const [m] = L.splice(i, 1);
+  addItem(state, m.item, 1);
+  return { ok: true, item: m.item, n: 1 };
+}
+
+// Un coup de hache sur l'arbre `id` : HACHE.BOIS bois au sol (au pied de l'arbre), de
+// l'énergie, de l'XP ; `tombe` : l'arbre vient de tomber, HACHE.CHUTE bois de plus (là où sa
+// cime touche le sol). `ou` : { carte, coup: [points], fin: [points] } (voir lacher).
+export function chopTree(state, id, ou) {
   const H = DATA.HACHE;
   if (!hasTool(state, 'hache')) return fail(`Il te faut une hache (Marché, ${H.PRIX} 💰).`);
   if (typeof id !== 'string' || !id) return fail('Touche un arbre pour le couper.');
@@ -127,10 +173,11 @@ export function chopTree(state, id) {
   delete outils(state).coupes;           // l'ancien compte des coups du jour
   const { coups, fini: tombe } = hit(state, 'arbres', id, H.COUPES, H.RETOUR);
   const bois = withBonus(state, H.BOIS, techSum(state, 'recolteBonus'));
-  addItem(state, 'bois', bois);
+  const chute = tombe ? H.CHUTE || 0 : 0;
+  const morceaux = lacher(state, 'bois', bois, chute, ou);
   spendEnergy(state, 'couper');
   gainActionXp(state, 'couper');
-  return { ok: true, bois, reste: chopsLeft(state, id), coups, tombe };
+  return { ok: true, bois, chute, morceaux, reste: chopsLeft(state, id), coups, tombe };
 }
 
 /* ---------- la pioche : casser un rocher de la carte ---------- */
@@ -147,9 +194,9 @@ export function brokenRocks(state) {
   return r ? Object.keys(r).filter((id) => rockGone(state, id)) : [];
 }
 
-// Un coup de pioche sur le rocher `id` : PIOCHE.PIERRE pierre dans l'inventaire, de l'énergie,
-// de l'XP. `casse` : le rocher vient de se briser.
-export function mineRock(state, id) {
+// Un coup de pioche sur le rocher `id` : PIOCHE.PIERRE pierre au sol, de l'énergie, de l'XP ;
+// `casse` : le rocher vient de se briser, PIOCHE.BRIS pierres de plus. `ou` : comme chopTree.
+export function mineRock(state, id, ou) {
   const P = DATA.PIOCHE;
   if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (Marché, ${P.PRIX} 💰).`);
   if (typeof id !== 'string' || !id) return fail('Touche un rocher pour le casser.');
@@ -157,10 +204,11 @@ export function mineRock(state, id) {
   if (!canAfford(state, 'piocher')) return fail(TIRED);
   const { coups, fini: casse } = hit(state, 'rochers', id, P.COUPS, P.RETOUR);
   const pierre = withBonus(state, P.PIERRE, techSum(state, 'recolteBonus'));
-  addItem(state, 'pierre', pierre);
+  const bris = casse ? P.BRIS || 0 : 0;
+  const morceaux = lacher(state, 'pierre', pierre, bris, ou);
   spendEnergy(state, 'piocher');
   gainActionXp(state, 'piocher');
-  return { ok: true, pierre, coups, casse };
+  return { ok: true, pierre, bris, morceaux, coups, casse };
 }
 
 /* ---------- la pioche dans la grotte : le minerai ---------- */

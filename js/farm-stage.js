@@ -406,6 +406,7 @@
         this.stepShards(delta);
         this.stepSprinklers();
         this.stepFires(time);
+        this.stepPieces();
         this.stepBeasts(time, delta / 1000);
         this.stepRobot(dt);
         this.placeDialog();

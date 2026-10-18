@@ -257,21 +257,23 @@
     "(⛏ est la houe)."
   ],
   "//HACHE": [
-    "La hache en main, un appui sur un arbre de la carte le fait couper : BOIS bois dans",
-    "l'inventaire à chaque coup, PERSONNAGE.COUTS.couper d'énergie, NIVEAUX.XP.couper d'XP. Au",
-    "COUPES-ième coup, l'arbre tombe et disparaît de la carte ; comme un rocher, il repousse à",
+    "La hache en main, un appui sur un arbre de la carte le fait couper : BOIS bois lâché au sol",
+    "à chaque coup (le joueur le ramasse en marchant dessus : state.morceaux), PERSONNAGE.COUTS.couper",
+    "d'énergie, NIVEAUX.XP.couper d'XP. Au COUPES-ième coup, l'arbre tombe (CHUTE bois de plus, là",
+    "où sa cime touche le sol) et disparaît de la carte ; comme un rocher, il repousse à",
     "sa place au bout de RETOUR jours (tiré entre les deux, au réveil), sauf si une parcelle",
     "occupe une de ses tuiles (elles se labourent en attendant) : il réessaie alors chaque matin."
   ],
-  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "COUPES": 3, "RETOUR": [1, 3] },
+  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "CHUTE": 2, "COUPES": 3, "RETOUR": [1, 3] },
   "//PIOCHE": [
-    "La pioche en main, un appui sur un rocher de la carte le fait casser : PIERRE pierre",
-    "dans l'inventaire à chaque coup, PERSONNAGE.COUTS.piocher d'énergie, NIVEAUX.XP.piocher",
-    "d'XP. Au COUPS-ième coup, le rocher se brise et disparaît de la carte ; il revient à sa",
+    "La pioche en main, un appui sur un rocher de la carte le fait casser : PIERRE pierre lâchée",
+    "au sol à chaque coup (à ramasser en marchant dessus), PERSONNAGE.COUTS.piocher d'énergie,",
+    "NIVEAUX.XP.piocher d'XP. Au COUPS-ième coup, le rocher se brise (BRIS pierres de plus) et",
+    "disparaît de la carte ; il revient à sa",
     "place au bout de RETOUR jours (tiré entre les deux, au réveil), sauf si une parcelle occupe",
     "une de ses tuiles (elles se labourent en attendant) : il réessaie alors chaque matin."
   ],
-  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "COUPS": 3, "RETOUR": [1, 3] },
+  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3] },
   "//CANNE": [
     "La canne à pêche en main, un appui sur l'eau de la carte y fait pêcher : le personnage va",
     "sur la rive, lance et attend la touche. Chaque lancer coûte PERSONNAGE.COUTS.pecher",

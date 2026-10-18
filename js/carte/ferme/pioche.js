@@ -129,12 +129,19 @@
         .map((r) => ({ x0: r.box.x0, x1: r.box.x1, base: r.foot }));
     },
 
-    // Un coup de pioche sur le rocher `r` : le jeu donne la pierre tout de suite (this.ctx.bridge.mine) ;
-    // le personnage va au rocher et frappe ; au coup, des éclats sautent et « +1 🪨 » monte.
-    // Au dernier coup, le rocher se brise en une gerbe d'éclats et disparaît.
+    // Un coup de pioche sur le rocher `r` : le jeu compte le coup tout de suite (this.ctx.bridge.mine)
+    // et pose sa pierre au sol ; le personnage va au rocher et frappe ; au coup, des éclats
+    // sautent et la pierre tombe à son pied (à ramasser en marchant dessus). Au dernier coup, le
+    // rocher se brise en une gerbe d'éclats, lâche ses pierres autour de lui et disparaît.
     mine(r) {
-      const got = this.ctx.bridge && this.ctx.bridge.mine ? this.ctx.bridge.mine(r.id) : null;
+      const b0 = r.box || { x0: r.x, x1: r.x + r.w };
+      const pied = { x: Math.round((b0.x0 + b0.x1) / 2), y: r.foot };
+      const ou = this.piecePoints(pied, this.strikeSide(pied, Math.max(8, (b0.x1 - b0.x0) / 2 + 5)), null);
+      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.mine ? this.ctx.bridge.mine(r.id, ou) : null));
       if (!got) return;
+      const M2 = got.morceaux || { coup: [], fin: [] };
+      this.time.delayedCall(9000, () => this.revealPieces(M2.coup));   // (filet : le coup n'a pas été donné)
+      if (got.casse) r.finPieces = M2.fin;
       r.queued = (r.queued || 0) + 1;
       if (got.casse) {
         r.breaking = true;
@@ -144,7 +151,7 @@
       }
       const hit = () => {
         r.queued = Math.max(0, r.queued - 1);
-        this.showGain(got.items);
+        this.revealPieces(M2.coup);
         K.secousse(this, 'coup');
         K.vibre('pioche');
         if (r.breaking && !r.queued) { this.breakRock(r, true); return; }
@@ -176,6 +183,8 @@
     // Le dernier coup : une gerbe d'éclats, le rocher s'affaisse et s'efface.
     breakRock(r, anim) {
       if (r.breakTimer) { r.breakTimer.remove(); r.breakTimer = null; }
+      this.revealPieces(r.finPieces);            // ses pierres, autour de lui
+      r.finPieces = null;
       r.breaking = false;
       r.gone = true;
       if (this.fermier && this.fermier.regrid) this.fermier.regrid();

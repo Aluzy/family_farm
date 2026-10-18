@@ -1,5 +1,6 @@
 /* carte/nature.js — ce qui pousse, tombe et se pêche, pareil sur toutes les cartes
- * (CarteKit.NATURE, CarteKit.PECHE, CarteKit.herbe, CarteKit.fondu).
+ * (CarteKit.NATURE, CarteKit.PECHE, CarteKit.herbe, CarteKit.fondu, CarteKit.MORCEAUX,
+ * CarteKit.pointsMorceaux).
  *
  * La ferme (js/carte/ferme/) et la carte de transition, la montagne, la plage
  * (js/carte/ville/nature.js, peche.js) ont la même herbe haute, les mêmes arbres qui
@@ -86,5 +87,44 @@
     return Math.abs(want - cur) < 0.02 ? want : cur + (want - cur) * k;
   }
 
-  Object.assign(K, { NATURE, PECHE, herbe, fondu });
+  // Les morceaux de bois et de pierre qu'un coup de hache ou de pioche lâche au sol (le moteur
+  // les garde : state.morceaux ; le joueur les ramasse en marchant dessus, à moins de `prise`
+  // px de leur pied). Chaque coup en lâche un au pied, du côté opposé au personnage (à `pied`
+  // px du milieu, `bas` px plus bas : il faut faire un pas pour le prendre) ; l'arbre qui
+  // tombe lâche les siens là où sa cime touche le sol (`cime` : px du pied, dans le sens de la
+  // chute), le rocher qui se brise autour de lui, plutôt devant et loin du personnage (`eclats` :
+  // px du milieu). Un point où l'on ne
+  // peut pas aller est poussé vers le plus proche où l'on peut (`cherche` px au plus). En
+  // tombant, le morceau rebondit (`saut` px, `sautMs` ms). Les images : assets/ramassables.png
+  // (`images` : la case de chaque objet).
+  const MORCEAUX = {
+    prise: 9, pied: 13, bas: 7, cime: [24, 36, 48], eclats: 15, cherche: 32, saut: 10, sautMs: 380,
+    images: { bois: 1, pierre: 0 },
+  };
+
+  // Les points où tombent les morceaux d'un coup : { coup: [3 points], fin: [3 points] } (px de
+  // carte). pied : { x, y } (le pied de l'arbre, le bas du rocher) ; joueur : { x } (ou null) ;
+  // chute : le sens de la chute de l'arbre (1 à droite, −1 à gauche ; null : un rocher) ;
+  // libre(x, y) : le personnage peut-il se tenir là ?
+  function pointsMorceaux(pied, joueur, chute, libre) {
+    const M = MORCEAUX, side = joueur && joueur.x > pied.x ? 1 : -1;
+    const r = () => (Math.random() - 0.5) * 4;
+    const pousse = (x, y) => {
+      if (!libre || libre(x, y)) return { x: Math.round(x), y: Math.round(y) };
+      for (let d = 4; d <= M.cherche; d += 4) {
+        for (let a = 0; a < 8; a++) {
+          const q = { x: x + Math.cos(a * Math.PI / 4) * d, y: y + Math.sin(a * Math.PI / 4) * d };
+          if (libre(q.x, q.y)) return { x: Math.round(q.x), y: Math.round(q.y) };
+        }
+      }
+      return { x: Math.round(x), y: Math.round(y) };
+    };
+    const coup = [0, 1, 2].map((i) => pousse(pied.x - side * (M.pied + i * 3) + r(), pied.y + M.bas + i * 3 + r()));
+    const fin = chute
+      ? M.cime.map((d, i) => pousse(pied.x + chute * d + r(), pied.y + (i % 2 ? 4 : -1) + r()))
+      : [[-1, 0.3], [-0.4, 0.9], [0.3, 1]].map(([ux, uy]) => pousse(pied.x - side * ux * -M.eclats + r(), pied.y + uy * M.eclats + r()));
+    return { coup, fin };
+  }
+
+  Object.assign(K, { NATURE, PECHE, MORCEAUX, herbe, fondu, pointsMorceaux });
 })(window);

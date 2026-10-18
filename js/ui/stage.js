@@ -14,7 +14,7 @@ import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { TIRED } from '../engine/stamina.js';
-import { brokenRocks, fellenTrees } from '../engine/outils.js';
+import { brokenRocks, fellenTrees, morceauxDe } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmSeed, farmTerrain, tileCount } from '../engine/terrain.js';
@@ -34,7 +34,7 @@ import {
 import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
-import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, pickChipHtml, rodChipHtml } from './outils.js';
+import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, couchages, etatEtable, etatPoulailler, piecesCloses, solsPoses } from '../engine/blocs.js';
@@ -428,6 +428,8 @@ export function stageModel() {
     heure, cols: T.LARGEUR, cases: tileCount(T), terrain: terrainNow(rochers.concat(abattus)), plots,
     // la ferme générée : ce qui est à ramasser à la main (js/engine/atelier.js)
     ramassables: ramassables(state).map((r) => ({ id: r.id, sorte: r.sorte, case: r.case, buisson: !!r.buisson })),
+    // le bois et la pierre lâchés par la hache et la pioche, à ramasser en marchant dessus
+    morceaux: morceauxDe(state, 'ferme').map((m) => ({ n: m.n, item: m.item, x: m.x, y: m.y })),
     // et ses blocs posés, le mode Construire (les pièces closes s'y voient), les paillasses où
     // l'on dort (js/engine/blocs.js)
     blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte })),
@@ -628,7 +630,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, ramasser: ramasserFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

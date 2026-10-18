@@ -144,8 +144,8 @@ function toolSlot(id) {
 }
 
 const OUTILS_DESCRIPTIONS = {
-  hache: 'Coupe les arbres de la carte : du bois 🪵 à chaque coup (3 coups par arbre et par jour).',
-  pioche: 'Casse les rochers de la carte : de la pierre 🪨 à chaque coup ; au 3e coup, le rocher disparaît (il revient 1 à 3 jours plus tard).',
+  hache: 'Coupe les arbres de la carte : chaque coup lâche un morceau de bois 🪵 au sol ; au 3e coup, l\'arbre tombe et en lâche 2 de plus. Marche dessus pour les ramasser.',
+  pioche: 'Casse les rochers de la carte : chaque coup lâche une pierre 🪨 au sol ; au 3e coup, le rocher se brise et en lâche 2 de plus (il revient 1 à 3 jours plus tard). Marche dessus pour les ramasser.',
   canne: 'Pêche dans l\'étang et la mare de la carte : truites 🐟‍🌈 et brochets 🐟‍🦷 (le brochet vit surtout dans l\'étang).',
 };
 
