@@ -36,7 +36,7 @@ import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, pickChipHtml, rodChipHtml } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, couchages, piecesCloses } from '../engine/blocs.js';
+import { blocsPoses, couchages, piecesCloses, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml } from './chantier.js';
 import { closeModal } from './modal.js';
@@ -400,6 +400,7 @@ export function stageModel() {
     // et ses blocs posés, le mode Construire (les pièces closes s'y voient), les paillasses où
     // l'on dort (js/engine/blocs.js)
     blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte })),
+    sols: Object.keys(solsPoses(state)).map(Number),
     bati: buildMode && !stageInterior ? { sorte: buildMode } : null,
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
     couchages: couchages(state),

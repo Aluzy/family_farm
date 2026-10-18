@@ -1,5 +1,5 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
-# mur en pierre, la porte, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, les jeunes arbres, l'Atelier et les
+# mur en pierre, la porte, le plancher, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, les jeunes arbres, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
@@ -100,6 +100,25 @@ ICONS = {
         '...kTtTtTtTtk...',
         '...ksssssssk....',
         '...kkkkkkkkk....',
+        '................',
+    ],
+    # plancher : un carré de lames de bois couchées, joints décalés, vu de haut
+    '🟫‍🪚': [
+        '................',
+        '.kkkkkkkkkkkkkk.',
+        '.keeeeeekeeeeek.',
+        '.kTTTTTTkTTTttk.',
+        '.kkkkkkkkkkkkkk.',
+        '.keeekeeeeeeeek.',
+        '.kTTtkTTTTTTttk.',
+        '.kkkkkkkkkkkkkk.',
+        '.keeeeeeeeekeek.',
+        '.kTTTTTTTttkTtk.',
+        '.kkkkkkkkkkkkkk.',
+        '.keeeeekeeeeeek.',
+        '.kTTTttkTTTTttk.',
+        '.kssssskssssssk.',
+        '.kkkkkkkkkkkkkk.',
         '................',
     ],
     # paillasse : un sac de toile bourré de paille, posé au sol

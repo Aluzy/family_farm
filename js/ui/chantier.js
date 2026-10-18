@@ -8,7 +8,7 @@
 
 import { DATA } from '../engine/catalog.js';
 import { atelierConstruit, atelierOuvert } from '../engine/atelier.js';
-import { blocAt, blocDessus, blocsEnMain, couchages, poserBloc, reprendreBloc } from '../engine/blocs.js';
+import { blocAt, blocDessus, blocsEnMain, couchages, poserBloc, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildMode, setBuildMode, state } from './store.js';
 import { persistState } from './storage.js';
@@ -70,7 +70,11 @@ registerActions({
     // (la pompe se pose sur le puits : un appui sur un puits libre la pose, ne reprend pas le puits)
     const sur = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sur;
     const surLibre = sur && blocAt(state, c) === sur && !blocDessus(state, c);
-    const r = blocAt(state, c) && !surLibre ? reprendreBloc(state, c) : poserBloc(state, buildMode, c);
+    // (le plancher en main : un appui sur un plancher sans rien dessus le reprend ; un autre
+    // bloc se pose dessus)
+    const sol = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sol;
+    const reprend = blocAt(state, c) ? !surLibre : sol && solAt(state, c);
+    const r = reprend ? reprendreBloc(state, c) : poserBloc(state, buildMode, c);
     if (!r.ok) { notify(r.error); return; }
     persistState();
     refresh();

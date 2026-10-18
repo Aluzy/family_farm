@@ -37,6 +37,16 @@ export function blocAt(state, tile) {
   return blocsPoses(state)[tile] || null;
 }
 
+// Les sols posés (le plancher) : { [case]: sorte }, sous les blocs (state.sols).
+export function solsPoses(state) {
+  return state.sols && typeof state.sols === 'object' ? state.sols : {};
+}
+
+// La sorte du sol posé sur `tile`, ou null.
+export function solAt(state, tile) {
+  return solsPoses(state)[tile] || null;
+}
+
 // Ce qui est posé sur le bloc de `tile` (la pompe sur le puits : state.blocsDessus), ou null.
 export function blocDessus(state, tile) {
   return (state.blocsDessus && state.blocsDessus[tile]) || null;
@@ -170,7 +180,13 @@ export function poseStatus(state, sorte, tile) {
     if (blocDessus(state, tile)) return { ok: false, raison: 'Il y a déjà quelque chose dessus.' };
     return { ok: true };
   }
-  if (blocAt(state, tile)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
+  // un sol (le plancher) : sous les blocs, pas sous ce qui ferme une pièce
+  if (s.sol) {
+    if (solAt(state, tile)) return { ok: false, raison: `Il y a déjà un ${s.nom.toLowerCase()} ici.` };
+    const b = sorteDe(blocAt(state, tile));
+    if (b && b.ferme) return { ok: false, raison: `${s.nom} : pas sous un mur, une porte ni l'Atelier.` };
+  } else if (blocAt(state, tile)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
+  if (s.ferme && solAt(state, tile)) return { ok: false, raison: 'Un plancher ici : reprends-le d\'abord.' };
   if (arbreSurCase(state, tile)) return { ok: false, raison: 'Un arbre pousse ici.' };
   // un arbre fruitier : loin des autres (son feuillage), à côté d'aucun bloc
   if (s.arbre && arbreProche(state, tile, DATA.ATELIER.ARBRE_ECART)) return { ok: false, raison: 'Trop près d\'un autre arbre : laisse-lui de la place.' };
@@ -195,6 +211,9 @@ export function poserBloc(state, sorte, tile) {
   if (s.sur) {
     if (!state.blocsDessus || typeof state.blocsDessus !== 'object') state.blocsDessus = {};
     state.blocsDessus[tile] = sorte;
+  } else if (s.sol) {
+    if (!state.sols || typeof state.sols !== 'object') state.sols = {};
+    state.sols[tile] = sorte;
   } else {
     if (!state.blocs || typeof state.blocs !== 'object') state.blocs = {};
     state.blocs[tile] = sorte;
@@ -209,14 +228,15 @@ export function poserBloc(state, sorte, tile) {
 }
 
 // Reprend le bloc de `tile` : son objet revient dans l'inventaire (l'Atelier redevient à
-// poser). Une paillasse d'une pièce qui s'ouvre reste là, mais on n'y dort plus.
+// poser). Une paillasse d'une pièce qui s'ouvre reste là, mais on n'y dort plus. Ce qui est
+// posé dessus d'abord (la pompe sur le puits), puis le bloc, puis le sol (le plancher).
 export function reprendreBloc(state, tile) {
-  // ce qui est posé dessus d'abord (la pompe sur le puits)
-  const dessus = blocDessus(state, tile);
-  const sorte = dessus || blocAt(state, tile);
+  const dessus = blocDessus(state, tile), bloc = blocAt(state, tile);
+  const sorte = dessus || bloc || solAt(state, tile);
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
   if (dessus) delete state.blocsDessus[tile];
-  else delete state.blocs[tile];
+  else if (bloc) delete state.blocs[tile];
+  else delete state.sols[tile];
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
   if (s && s.batiment && state[s.batiment]) state[s.batiment].construit = false;
