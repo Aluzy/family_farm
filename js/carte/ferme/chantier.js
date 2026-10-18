@@ -55,7 +55,7 @@
         const at = new Map((list || []).map((b) => [b.case, b.sorte]));
         for (const b of list || []) {
           seen.add(b.case);
-          const e = B.get(b.case), frame = this.wallFrame(b, at, cols), [key, f] = this.hautFrame(frame);
+          const e = B.get(b.case), [key, f] = this.blocImage(b, at, cols);
           if (e && e.sorte === b.sorte) {
             // (les flammes du four, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
             if ((e.img.frame.name !== f || e.img.texture.key !== key) && b.sorte !== BLOCS_CARTE.feu.sorte && b.sorte !== 'lanterne') { e.img.setTexture(key, f); changed = true; }
@@ -238,6 +238,15 @@
       if (changees.size && this.mapRaw) this.repaintCells(changees);
     },
 
+    // L'image du bloc b, raccordé à ses voisins (at : case -> sorte) : [clé, image]. Un mur, une
+    // fenêtre, des pierres d'angle : leur version haute (BLOCS_CARTE.hauts.variantes), sinon
+    // celle du mur de blocs.png.
+    blocImage(b, at, cols) {
+      const f = this.wallFrame(b, at, cols), H = BLOCS_CARTE.hauts, v = H.variantes[b.sorte];
+      if (v !== undefined && this.has(H.key) && f >= BLOCS_CARTE.murs && f < BLOCS_CARTE.murs + 16) return [H.key, H.murs + v + f - BLOCS_CARTE.murs];
+      return this.hautFrame(f);
+    },
+
     // L'image d'un bloc de blocs.png, ou celle de sa version haute (un mur, la porte d'un mur
     // horizontal : BLOCS_CARTE.hauts, si la planche est là) : [clé, image].
     hautFrame(frame) {
@@ -293,10 +302,12 @@
         const c = b.case % cols, is = (k) => at.get(k) === 'barriere';
         return BLOCS_CARTE.barrieres + (is(b.case - cols) ? 1 : 0) + (c < cols - 1 && is(b.case + 1) ? 2 : 0) + (is(b.case + cols) ? 4 : 0) + (c > 0 && is(b.case - 1) ? 8 : 0);
       }
-      const mur = b.sorte === 'mur_pierre';
+      // (la fenêtre et les pierres d'angle se raccordent comme le mur en pierre)
+      const V = BLOCS_CARTE.hauts.variantes;
+      const mur = V[b.sorte] !== undefined;
       if (!mur && b.sorte !== 'porte') return BLOCS_CARTE.frames[b.sorte] || 0;
       const c = b.case % cols;
-      const is = (k, porte) => { const s = at.get(k); return s === 'mur_pierre' || (porte && s === 'porte'); };
+      const is = (k, porte) => { const s = at.get(k); return V[s] !== undefined || (porte && s === 'porte'); };
       const n = is(b.case - cols), s = is(b.case + cols);
       const e = c < cols - 1 && is(b.case + 1, true), w = c > 0 && is(b.case - 1, true);
       if (!mur) return (n || s) && !(e || w) ? BLOCS_CARTE.porteVerticale : BLOCS_CARTE.frames.porte;

@@ -156,15 +156,18 @@
     frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66, escalier: 69 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`) ; l'étage
-    // est dessiné `dy` px plus haut (au sommet des murs hauts) ; le niveau où l'on n'est pas,
+    // est dessiné `dy` px plus haut (la hauteur de la face des murs hauts : leurs faces se suivent) ; le niveau où l'on n'est pas,
     // quand on est dans le bâtiment : à `transparent` ; à l'étage, un voile sombre sur toute la
     // ferme (`voile`, `alpha` ; au-dessus de ce qui vole), et ce qui est de l'étage devant lui
-    etage: { haut: 70, dy: 24, transparent: 0.3, voile: 0x0d1018, alpha: 0.62 },
+    etage: { haut: 70, dy: 30, transparent: 0.3, voile: 0x0d1018, alpha: 0.62 },
     // les murs et la porte (d'un mur horizontal), une case plus hauts (assets/murs_hauts.png,
     // comme les maisons de la transition, scripts/carte/blocs.py murs_hauts : les 16 murs
     // raccordés, `murs` + masque, puis la porte) ; un mur devant quelqu'un (il le cache)
     // s'efface jusqu'à `alpha`, à `vitesse` par seconde (chantier.js stepMurs)
-    hauts: { key: 'murs_hauts', file: 'murs_hauts.png', frame: { frameWidth: 16, frameHeight: 40 }, murs: 0, porte: 16, alpha: 0.4, vitesse: 4 },
+    // ; `variantes` : les murs qui se raccordent comme le mur en pierre, et où commencent leurs
+    // 16 images dans la planche (la fenêtre, les pierres d'angle ; sans la planche haute : le mur)
+    hauts: { key: 'murs_hauts', file: 'murs_hauts.png', frame: { frameWidth: 16, frameHeight: 40 }, murs: 0, porte: 16, alpha: 0.4, vitesse: 4,
+      variantes: { mur_pierre: 0, mur_fenetre: 17, pierre_angle: 33 } },
     // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
     barrieres: 50,
     // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour
@@ -181,7 +184,7 @@
     },
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js)
     ailleurs: ['puits', 'citerne', 'station_robot'],
