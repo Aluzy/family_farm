@@ -89,7 +89,8 @@
     // Les poules du Poulailler de la ferme générée (modèle.poulailler : { piece, enclos (les
     // cases libres), n (les poules qui y ont leur place) }, js/engine/blocs.js, etatPoulailler) :
     // une image par poule. Le jour (POULES.jour), elles vont et viennent dans l'enclos, picorent
-    // et grattent ; la nuit, chacune couve sur sa case du poulailler. Au changement, elles
+    // et grattent ; la nuit, elles couvent dans le poulailler, à plusieurs sur une case s'il le
+    // faut (la place compte une case par poule, pas leur sommeil). Au changement, elles
     // passent de l'un à l'autre en s'effaçant.
     syncHens(P, heure) {
       if (!this.hens) this.hens = [];
@@ -119,7 +120,8 @@
           // (de l'enclos au poulailler, ou l'inverse : elle s'efface, puis apparaît là-bas)
           if (h.lieu && h.img.alpha > 0) { h.img.setAlpha(Math.max(0, h.img.alpha - dt * 3)); continue; }
           h.lieu = lieu;
-          const p = this.henSpot(lieu === 'piece' ? cases[h.k % cases.length] : cases[Math.floor(Math.random() * cases.length)], lieu === 'enclos');
+          // (la nuit, n'importe où dans le poulailler : plusieurs peuvent dormir sur la même case)
+          const p = this.henSpot(cases[Math.floor(Math.random() * cases.length)], true);
           h.x = p.x; h.y = p.y; h.to = null; h.t = 0.5 + Math.random() * 2; h.pose = lieu === 'piece' ? 'couvee' : 'idle';
         }
         if (h.img.alpha < 1) h.img.setAlpha(Math.min(1, h.img.alpha + dt * 3));

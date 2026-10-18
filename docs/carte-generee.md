@@ -318,7 +318,8 @@ parties.
          (`keyBlockOf`).
        - **Les poules sur la carte** (`syncHens`, `stepHens`, `js/carte/ferme/chantier.js`) : une
          image par poule qui a sa place. De 6 h à 19 h, elles vont et viennent dans l'enclos,
-         picorent et grattent ; la nuit, chacune couve sur sa case du poulailler.
+         picorent et grattent ; la nuit, elles couvent dans le poulailler, où elles veulent (à
+         plusieurs sur une case s'il le faut).
      - ✅ **5b-4, l'étable** : l'Étable (la grange) quitte la cour.
        - La **mangeoire** (6 planches, 4 pierres, 2 fibres) se fabrique à l'Atelier. Posée dans
          une pièce close, elle ouvre l'Étable avec ses 10 places de départ (`PATURAGE.PLACES_DEPART`) ;
