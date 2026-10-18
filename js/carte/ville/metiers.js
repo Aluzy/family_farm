@@ -32,13 +32,15 @@
   const liste = (l) => (l.length > 1 ? l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1] : l[0] || '');
 
   // Où cuisiner dans la maison `m` : la case du plancher à côté du four ou de la cuisinière
-  // (c ou f dans son plan) ; { x, y } : où poser les pieds, { fx, fy } : le haut du fourneau.
+  // (c ou f dans son plan à son étape, m.grille) ; { x, y } : où poser les pieds, { fx, fy } :
+  // le haut du fourneau.
   function feuDe(m) {
-    for (let y = 0; y < m.plan.length; y++) {
-      const x = m.plan[y].search(/[cf]/);
+    const G = m.grille || m.plan;
+    for (let y = 0; y < G.length; y++) {
+      const x = G[y].search(/[cf]/);
       if (x < 0) continue;
       for (const [dx, dy] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
-        if ((m.plan[y + dy] || '')[x + dx] !== '.') continue;
+        if ((G[y + dy] || '')[x + dx] !== '.') continue;
         return { x: (m.x + x + dx) * T + T / 2, y: (m.y + y + dy) * T + T - 2, fx: (m.x + x) * T + T / 2, fy: (m.y + y) * T - 4, face: dy > 0 ? 'haut' : 'bas' };
       }
     }
@@ -47,18 +49,25 @@
 
   V.partie({
 
-    // Les foyers (FermeHote.voisins : la page dit leurs familles), les arbres du plan (ceux
-    // qu'un bûcheron peut abattre), le chemin du marché, les fourneaux, les champs.
-    makeMetiers() {
+    // Les foyers (FermeHote.voisins : la page dit leurs familles ; leur maison à son étape, leur
+    // métier), lus avant de bâtir les maisons (null : pas de partie).
+    chargeVoisins() {
       this.eco = null;
-      this.faits = {};
       const H = hote(), D = this.transition;
       if (!D || !D.plan || !H || !H.voisins) return;
       const familles = D.plan.maisons.map((m) => {
-        const f = V.voisins(m.nom);
+        const f = V.voisins(m.nom, m.lits);
         return { maison: m.nom, adultes: f.membres.filter((q) => !q.enfant).length, enfants: f.membres.filter((q) => q.enfant).length };
       });
       this.eco = H.voisins(familles);
+    },
+
+    // Les arbres du plan (ceux qu'un bûcheron peut abattre), le chemin du marché, les fourneaux,
+    // les champs.
+    makeMetiers() {
+      this.faits = {};
+      const D = this.transition;
+      if (!D || !D.plan || !this.eco) return;
       this.arbresPlan = new Set(D.plan.arbres.map((a) => `transition:${Math.round(a.x)},${Math.round(a.y)}`));
       const a = (((this.map.getObjectLayer('arrivees') || {}).objects) || []).find((o) => o.name === 'ville');
       this.versVille = a ? { x: a.x - 8, y: a.y } : null;
@@ -315,7 +324,10 @@
           : 'Je cultive mon champ, on mange nos légumes et je vends le reste en ville.';
       }
       const repas = plats ? ` Au dîner : ${plats}.` : hier && hier.couverture < 100 ? ' On n\'a pas mangé à notre faim…' : '';
-      return `${buch ? '🪓' : '🌾'} ${qui}, ${buch ? 'bûcheron' : 'agriculteur'} : « ${dit}${repas} » (${fo.argent} 💰 de côté, bonheur ${fo.bonheur} ${humeur})`;
+      // la maison : ce qu'on vient de s'offrir, ou ce pour quoi on économise
+      const offert = hier && hier.maison && N['maison:' + hier.maison];
+      const maison = offert ? ` Et hier, on a pu ${offert} !` : fo.projet ? ` On met de côté pour ${fo.projet.nom} (${fo.projet.prix} 💰).` : ' Notre maison est finie, on y est bien !';
+      return `${buch ? '🪓' : '🌾'} ${qui}, ${buch ? 'bûcheron' : 'agriculteur'} : « ${dit}${repas}${maison} » (${fo.argent} 💰 de côté, bonheur ${fo.bonheur} ${humeur})`;
     },
   });
 })(window);

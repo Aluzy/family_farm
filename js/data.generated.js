@@ -1983,7 +1983,20 @@ export const RAW_DATA = {
     "CONFORT": 100,
     "PLAISIR": 10,
     "RATTRAPAGE": 30,
-    "JOURNAL": 5
+    "JOURNAL": 5,
+    "MAISON": {
+      "RESERVE": 120,
+      "ETAPES": [
+        { "id": "agrandir", "nom": "agrandir la pièce principale", "prix": 150, "bonheur": 5 },
+        { "id": "chambre", "nom": "construire une chambre", "prix": 250, "bonheur": 8 },
+        { "id": "table", "nom": "acheter une table et des chaises", "prix": 80, "bonheur": 5 },
+        { "id": "chambre_enfants", "nom": "construire la chambre des enfants", "prix": 250, "bonheur": 8 },
+        { "id": "salon", "nom": "construire un salon", "prix": 300, "bonheur": 8 },
+        { "id": "canape", "nom": "acheter un canapé", "prix": 120, "bonheur": 5 },
+        { "id": "table_basse", "nom": "acheter une table basse", "prix": 60, "bonheur": 3 },
+        { "id": "tapis", "nom": "acheter un tapis", "prix": 40, "bonheur": 3 }
+      ]
+    }
   },
   "MEUBLES": {
     "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },

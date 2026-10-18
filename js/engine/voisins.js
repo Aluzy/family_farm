@@ -2,7 +2,7 @@ import { DATA, dishEnergy, ingredientOptions } from './catalog.js';
 import { randomInt } from './base.js';
 import { treeGone } from './crops.js';
 import { buyPrice, isBuyable, sellPrice } from './market.js';
-import { transitionPlan, transitionSeed } from './transition.js';
+import { maisonPlan, transitionPlan, transitionSeed } from './transition.js';
 import { mealHappinessDelta } from './ville.js';
 
 /* ---------- les voisins de la carte de transition : leur économie ---------- */
@@ -66,14 +66,15 @@ export function voisinFoyer(state, maison, compo) {
   let f = V.foyers[maison];
   if (!f || f.graine !== plan.graine || f.metier !== m.metier) {
     f = {
-      graine: plan.graine, metier: m.metier, adultes: 2, enfants: 1, argent: DATA.VOISINS.ARGENT, stock: {},
+      graine: plan.graine, metier: m.metier, adultes: 2, enfants: 1, argent: DATA.VOISINS.ARGENT, stock: {}, niveau: 0,
       champ: parcelles(m, state.day), bonheur: DATA.VILLE.BONHEUR.DEPART, jour: state.day - 1, coupes: { jour: state.day, n: 0 }, journal: [],
     };
     V.foyers[maison] = f;
   }
   if (compo) {
-    f.adultes = Math.max(1, compo.adultes | 0);
-    f.enfants = Math.max(0, compo.enfants | 0);
+    // (un lit chacun : la famille tient dans la maison)
+    f.adultes = Math.max(1, Math.min(m.lits || Infinity, compo.adultes | 0));
+    f.enfants = Math.max(0, Math.min((m.lits || Infinity) - f.adultes, compo.enfants | 0));
   }
   return f;
 }
@@ -204,6 +205,11 @@ function plantsGardes(f) {
   return out;
 }
 
+// L'étape suivante de la maison du foyer `f` (VOISINS.MAISON.ETAPES ; null : tout est fait).
+function prochaineEtape(f) {
+  return DATA.VOISINS.MAISON.ETAPES[f.niveau || 0] || null;
+}
+
 // Le foyer `f` (de la maison `maison`) vit la journée `jour`.
 function journee(state, maison, f, jour) {
   const V = DATA.VOISINS;
@@ -282,6 +288,14 @@ function journee(state, maison, f, jour) {
     }
   }
   for (const k of Object.keys(f.stock)) if (!(f.stock[k] > 0)) delete f.stock[k];
+  // la maison : l'étape suivante, s'il lui reste sa réserve après l'achat
+  const e = prochaineEtape(f);
+  if (e && f.argent - e.prix >= V.MAISON.RESERVE) {
+    f.argent -= e.prix;
+    f.niveau = (f.niveau || 0) + 1;
+    f.bonheur = Math.min(DATA.VILLE.BONHEUR.MAX, f.bonheur + e.bonheur);
+    J.maison = e.id;
+  }
   f.journal.push(J);
   if (f.journal.length > V.JOURNAL) f.journal.splice(0, f.journal.length - V.JOURNAL);
   f.jour = jour;
@@ -305,13 +319,15 @@ function stade(p, jour) {
   return Math.max(0, Math.min(2, Math.floor(((jour - p.plante) / (p.pret - p.plante)) * 3)));
 }
 
-// Ce que la carte montre et raconte de chaque foyer : { <maison>: { metier, adultes, enfants, argent, bonheur,
+// Ce que la carte montre et raconte de chaque foyer : { <maison>: { metier, lits, niveau (l'étape
+// de la maison), projet (la suivante, ou null), maison (son plan : maisonPlan), adultes, enfants, argent, bonheur,
 // quota, champ: [{ culture, stade }], hier: journal du dernier jour ou null } }.
 export function voisinsVue(state) {
   const out = {};
   for (const [maison, f] of Object.entries(voisinsFoyers(state))) {
     out[maison] = {
-      metier: f.metier, adultes: f.adultes, enfants: f.enfants, argent: f.argent, bonheur: f.bonheur, quota: voisinQuota(state, maison),
+      metier: f.metier, lits: maisonDe(state, maison).lits, niveau: f.niveau || 0, projet: prochaineEtape(f),
+      maison: maisonPlan(maisonDe(state, maison), f.niveau || 0), adultes: f.adultes, enfants: f.enfants, argent: f.argent, bonheur: f.bonheur, quota: voisinQuota(state, maison),
       champ: f.champ.map((p) => ({ culture: p.culture, stade: stade(p, state.day) })),
       hier: f.journal.length ? f.journal[f.journal.length - 1] : null,
     };

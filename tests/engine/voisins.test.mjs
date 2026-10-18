@@ -37,10 +37,15 @@ test('voisins : un foyer naît à la première visite, avec sa famille, son arge
   assertEqual(voisinFoyer(s, 'maison_99'), null);
   const champ = P.maisons.find((m) => m.metier === 'agriculteur');
   const f = voisinFoyer(s, champ.nom, { adultes: 2, enfants: 3 });
-  assertEqual([f.metier, f.adultes, f.enfants, f.argent], ['agriculteur', 2, 3, DATA.VOISINS.ARGENT]);
+  assertEqual([f.metier, f.adultes, f.enfants, f.argent], ['agriculteur', 2, Math.min(3, champ.lits - 2), DATA.VOISINS.ARGENT], 'un lit chacun');
   assertEqual(f.champ.length, champ.champ.w * champ.champ.h);
   assert(f.champ.every((p) => p.pret > s.day - 1), 'tout est planté');
   assertEqual(Object.keys(voisinsFoyers(s)).length, P.maisons.length);
+  // (un lit chacun : une famille trop grande pour la maison n'y entre pas toute)
+  const petite = P.maisons.find((m) => m.lits === Math.min(...P.maisons.map((q) => q.lits)));
+  const g = voisinFoyer(s, petite.nom, { adultes: 2, enfants: 9 });
+  assertEqual(g.adultes + g.enfants, petite.lits, 'autant de membres que de lits');
+  assertEqual(voisinsVue(s)[petite.nom].lits, petite.lits);
   assert(voisinFoyer(s, champ.nom) === f, 'le même foyer ensuite');
 });
 
@@ -60,9 +65,30 @@ test('voisins : un mois de journées, les deux métiers vivent de leur travail e
       assert(f.journal.some((J) => Object.keys(J.recolte).length), `${nom} : des récoltes`);
       assert(f.journal.some((J) => J.vendu > 0), `${nom} : des légumes vendus`);
     }
-    assert(f.argent > DATA.VOISINS.ARGENT, `${nom} : il s'est enrichi (${f.argent})`);
+    assert(f.argent >= DATA.VOISINS.MAISON.RESERVE, `${nom} : il garde sa réserve (${f.argent})`);
+    assert(f.niveau >= 3, `${nom} : sa maison a grandi (étape ${f.niveau})`);
     assert(f.bonheur >= DATA.VILLE.BONHEUR.DEPART, `${nom} : les plats le rendent heureux (${f.bonheur})`);
   }
+});
+
+test('voisins : la maison grandit quand la famille s\'enrichit, une étape par nuit, en gardant sa réserve', () => {
+  const { s, P } = partie();
+  const nom = P.maisons[0].nom, f = voisinsFoyers(s)[nom], E = DATA.VOISINS.MAISON.ETAPES;
+  assertEqual(f.niveau, 0, 'une petite pièce au départ');
+  assertEqual(voisinsVue(s)[nom].projet.id, E[0].id);
+  f.argent = E[0].prix + DATA.VOISINS.MAISON.RESERVE + 1000;
+  const b = f.bonheur;
+  runNight(s);
+  assertEqual([f.niveau, f.journal.at(-1).maison], [1, E[0].id], 'une étape la première nuit');
+  assert(f.bonheur > Math.min(b, DATA.VILLE.BONHEUR.MAX - E[0].bonheur), 'elle rend heureux');
+  for (let d = 0; d < 20; d++) runNight(s);
+  assertEqual(f.niveau, E.length, 'tout est fait');
+  assertEqual(voisinsVue(s)[nom].projet, null);
+  assert(voisinsVue(s)[nom].maison.objets.some((o) => o.nom === 'tapis_1'), 'le plan de la carte suit');
+  f.argent = 10;
+  const avant = f.niveau;
+  runNight(s);
+  assertEqual(f.niveau, avant);
 });
 
 test('voisins : l\'agriculteur sans argent mange ce qu\'il produit ; le bûcheron sans arbres ni argent a faim', () => {

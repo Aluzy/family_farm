@@ -26,10 +26,13 @@ export const TRANSITION = {
   // le chemin : la rangée de coins de son milieu (il fait deux tuiles de large) ; à la sortie
   // de la ferme (colonnes 0 à 2) et en arrivant à la route (OUEST - 2 et après), CHEMIN_Y
   CHEMIN_Y: 36, ECART: 4,
-  // les maisons : de 3 à 5, de LARGEURS × HAUTEURS cases (murs compris), à ECARTS rangées du chemin
-  MAISONS: [3, 5], ECARTS: [2, 12],
+  // les maisons : de 3 à 5, chacune sur une EMPRISE de colonnes × rangées (murs compris : toutes
+  // ses pièces, une fois agrandie : maisonPlan), à ECARTS rangées du chemin
+  MAISONS: [3, 5], EMPRISE: [11, 9], ECARTS: [2, 10],
   // les métiers des voisins (js/engine/voisins.js), le champ d'un agriculteur (colonnes × rangées)
-  METIERS: ['bucheron', 'agriculteur'], CHAMP: [4, 2], LARGEURS: [5, 6, 7], HAUTEURS: [5, 6],
+  METIERS: ['bucheron', 'agriculteur'], CHAMP: [4, 2],
+  // les lits d'une maison : un par membre de la famille (deux adultes, un à trois enfants)
+  LITS: [3, 5],
   // la taille des tampons du kit (scripts/ville/transition.py, KIT.tampons), en tuiles
   TAMPONS: { mare: [9, 6], puits: [3, 3], tonneau: [1, 2], banc: [3, 2], buisson: [3, 2], buisson_large: [3, 2] },
   // (les barrières : barriere_2 à barriere_8, n × 3 tuiles, leur pied dans la 2e rangée)
@@ -100,26 +103,34 @@ function tirer(graine) {
   for (let x = 0; x <= X; x++) for (let k = -1; k <= 1; k++) coins[milieu[x] + k][x] = true;
   for (let x = 0; x < X; x++) for (let j = milieu[x] - 2; j <= milieu[x] + 1; j++) prend(x, j);
 
-  // ----- les maisons, réparties sur toute la largeur : une par bande de colonnes, tour à tour
-  // au nord et au sud du chemin, plus ou moins loin de lui (ECARTS rangées entre le chemin et
-  // la maison) ; la porte face au chemin (en bas au nord, en haut au sud), une allée jusqu'à lui
+  // ----- les maisons, réparties sur toute la largeur : tour à tour au nord et au sud du chemin,
+  // chaque côté partagé en bandes de colonnes (une maison par bande), plus ou moins loin du
+  // chemin (ECARTS rangées entre lui et la maison) ; la porte face au chemin (en bas au nord, en
+  // haut au sud), une allée jusqu'à lui. Chaque maison réserve toute son EMPRISE : elle n'a
+  // d'abord qu'une petite pièce, et s'agrandit au fil des étapes que sa famille s'offre
+  // (maisonPlan, js/engine/voisins.js)
   const n = entre(TRANSITION.MAISONS[0], TRANSITION.MAISONS[1]);
-  const bande = (X - 2) / n;
-  let nord = r() < 0.5;
+  const premierNord = r() < 0.5;
+  const parCote = [Math.ceil(n / 2), Math.floor(n / 2)];
   const maisons = [];
   const plage = (x, w) => milieu.slice(x, x + w + 1);
-  for (let i = 0; i < n; i++, nord = !nord) {
-    const b0 = 1 + Math.round(i * bande), b1 = 1 + Math.round((i + 1) * bande) - 1;
+  const [w, h] = TRANSITION.EMPRISE;
+  for (let i = 0; i < n; i++) {
+    const nord = i % 2 === 0 ? premierNord : !premierNord, k = Math.floor(i / 2), sur = parCote[i % 2];
+    const bande = (X - 2) / sur;
+    const b0 = 1 + Math.round(k * bande), b1 = 1 + Math.round((k + 1) * bande) - 1;
+    const gauche = r() < 0.5, feu = r() < 0.5 ? 'c' : 'f', meuble = choix(['a', 'b', 'n', 'm']);
+    const lits = entre(TRANSITION.LITS[0], TRANSITION.LITS[1]);
     for (let essai = 0; essai < 40; essai++) {
-      const w = Math.min(choix(TRANSITION.LARGEURS), b1 - b0), h = choix(TRANSITION.HAUTEURS);
       const x0 = entre(b0, Math.max(b0, b1 - w)), d = entre(TRANSITION.ECARTS[0], TRANSITION.ECARTS[1]);
       const y0 = nord ? Math.min(...plage(x0, w)) - 2 - d - h + 1 : Math.max(...plage(x0, w)) + 2 + d;
-      if (y0 < 2 || y0 + h > H - 2 || !libre(x0 - 1, y0 - 2, w + 2, h + 3)) continue;
-      const porte = x0 + entre(1, w - 2), py = nord ? y0 + h - 1 : y0;
+      if (x0 + w > X - 1 || y0 < 2 || y0 + h > H - 2 || !libre(x0 - 1, y0 - 2, w + 2, h + 3)) continue;
+      const porte = x0 + (gauche ? PORTE : w - 1 - PORTE), py = nord ? y0 + h - 1 : y0;
       // l'allée : les cases entre la porte et le chemin, libres
       const a0 = nord ? py + 1 : milieu[porte] + 2, a1 = nord ? milieu[porte] - 3 : py - 1;
       if (a1 >= a0 && !libre(porte, a0, 2, a1 - a0 + 1)) continue;
-      const m = { nom: 'maison_' + (maisons.length + 1), x: x0, y: y0, w, h, sens: nord ? 'bas' : 'haut', porte: { x: porte, y: py }, plan: plan(w, h, porte - x0, r, !nord) };
+      const m = { nom: 'maison_' + (maisons.length + 1), x: x0, y: y0, w, h, sens: nord ? 'bas' : 'haut', porte: { x: porte, y: py }, gauche, feu, meuble, lits };
+      m.plan = maisonPlan(m, 0).grille;
       maisons.push(m);
       prend(m.x - 1, m.y - 2, w + 2, h + 3);
       // l'allée : deux colonnes de coins, de la porte au chemin
@@ -128,6 +139,7 @@ function tirer(graine) {
       break;
     }
   }
+  maisons.sort((a, b) => a.x - b.x).forEach((m, i) => { m.nom = 'maison_' + (i + 1); });
 
   // ----- les métiers (js/engine/voisins.js) : bûcheron ou agriculteur, tour à tour (le premier
   // au hasard : il y a toujours les deux) ; le champ de chaque agriculteur, à côté de sa maison
@@ -228,38 +240,85 @@ function taille(nom) {
   return TRANSITION.TAMPONS[nom];
 }
 
-// L'intérieur d'une maison de w × h cases, la porte à la colonne `porte` du mur du bas (du
-// haut si `haut`) : une
-// rangée de lettres par rangée (M un mur, P la porte, . le plancher, sinon un meuble posé sur
-// le plancher : f four, c cuisinière, p paillasse, d paillasse et sa couverture, g coffre à
-// grain, a atelier, b bac à semis, n nichoir, m meule). Rien juste devant la porte.
-const MEUBLES = ['f', 'c', 'g', 'a', 'b', 'n', 'm'];
-function plan(w, h, porte, r, haut = false) {
-  const g = Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => (y === 0 || x === 0 || y === h - 1 || x === w - 1 ? 'M' : '.')));
-  g[haut ? 0 : h - 1][porte] = 'P';
-  const cases = [];
-  const devant = (x, y) => x === porte && (haut ? y <= 2 : y >= h - 3);
-  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) if (!devant(x, y)) cases.push([x, y]);
-  // les meubles contre les murs d'abord (la rangée du haut), les couchages au fond à droite
-  const contre = cases.filter(([x, y]) => y === 1 || x === 1 || x === w - 2);
-  const pioche = (l) => l.splice(Math.floor(r() * l.length), 1)[0];
-  const n = Math.min(contre.length, 3 + Math.floor(r() * 2));
-  const meubles = MEUBLES.slice();
-  // (toujours de quoi cuisiner : la cuisinière ou le four d'abord, contre le mur du fond)
-  const fond = contre.filter(([, y]) => y === (haut ? h - 2 : 1));
-  const feu = pioche(fond.length ? fond : contre);
-  contre.splice(contre.findIndex(([x, y]) => x === feu[0] && y === feu[1]), 1);
-  g[feu[1]][feu[0]] = meubles.splice(meubles.indexOf(r() < 0.5 ? 'c' : 'f'), 1)[0];
-  for (let k = 1; k < n; k++) {
-    const [x, y] = pioche(contre);
-    g[y][x] = pioche(meubles);
+// Le plan d'une maison à l'étape `niveau` (0 à 8 : VOISINS.MAISON.ETAPES, achetées par sa
+// famille, js/engine/voisins.js), sur son emprise (EMPRISE : 11 × 9 cases). Dessiné ici porte
+// en bas et pièce principale à gauche, puis retourné selon la maison (sens : la porte vers le
+// chemin ; gauche : la pièce principale à gauche ou à droite) :
+//
+//   rangées 0 à 3 : le salon (étape 5) au-dessus de la pièce principale, la chambre des enfants
+//                   (étape 4) au-dessus de la chambre ;
+//   rangées 3 à 8 : la pièce principale (5 colonnes, 7 dès l'étape 1), la chambre (étape 2) à
+//                   côté ; une ouverture d'une case dans chaque mur partagé ; la porte en bas.
+//
+// Dans la pièce principale, une allée reste libre devant la porte et le long du mur du fond
+// (elle mène aux autres pièces) ; le four ou la cuisinière (m.feu) est au fond. Les lits (m.lits,
+// un par membre de la famille) y sont jusqu'à ce que la chambre soit bâtie ; ensuite la table et
+// ses chaises (étape 3) ; dans le salon, le canapé, la table basse et une plante, le tapis
+// (étapes 6 à 8).
+// { w, h, grille : une chaîne par rangée (M mur, P porte, . plancher, espace : dehors, X : sous
+// un grand meuble, sinon un meuble de assets/blocs.png : f four, c cuisinière, d lit, g coffre à
+// grain, a atelier, b bac à semis, n nichoir, m meule), objets : les meubles dessinés à part
+// ({ nom : table, chaise, canape, table_basse, plante, tapis_1 ; x, y : leur case en bas à gauche ;
+// w : leur largeur ; plat : posé au sol, on marche dessus }), lits : leurs cases, celles des
+// adultes d'abord }.
+const PORTE = 2;
+export function maisonPlan(m, niveau = 0) {
+  const [W, H] = TRANSITION.EMPRISE;
+  const g = Array.from({ length: H }, () => new Array(W).fill(' '));
+  const pieces = [[0, 3, niveau >= 1 ? 6 : 4, 8]];
+  if (niveau >= 2) pieces.push([6, 3, 10, 8]);
+  if (niveau >= 4) pieces.push([6, 0, 10, 3]);
+  if (niveau >= 5) pieces.push([0, 0, 6, 3]);
+  for (const [x0, y0, x1, y1] of pieces) {
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const bord = x === x0 || x === x1 || y === y0 || y === y1;
+        if (!bord) g[y][x] = '.';
+        else if (g[y][x] === ' ') g[y][x] = 'M';
+      }
+    }
   }
-  const lits = 2 + Math.floor(r() * 2);
-  for (let k = 0; k < lits && contre.length; k++) {
-    const [x, y] = pioche(contre);
-    g[y][x] = k === 0 || r() < 0.5 ? 'd' : 'p';
+  // les ouvertures d'une pièce à l'autre, la porte
+  if (niveau >= 2) g[4][6] = '.';
+  if (niveau >= 4) g[3][7] = '.';
+  if (niveau >= 5) g[3][2] = '.';
+  g[H - 1][PORTE] = 'P';
+  g[4][1] = m.feu || 'c';
+  const objets = [];
+  const meuble = (nom, x, y, w = 1, plat = false) => {
+    objets.push({ nom, x, y, w, plat });
+    if (!plat) for (let i = 0; i < w; i++) g[y][x + i] = 'X';
+  };
+  const nl = m.lits || TRANSITION.LITS[0];
+  let lits;
+  if (niveau === 0) lits = [[3, 4], [1, 6], [3, 6], [1, 7], [3, 5]];
+  else if (niveau === 1) lits = [[3, 5], [5, 5], [3, 7], [5, 7], [4, 7]];
+  else if (niveau < 4) lits = [[8, 5], [9, 5], [8, 7], [9, 7], [7, 7]];
+  else lits = [[8, 5], [8, 7], [8, 1], [9, 1], [7, 1]];
+  lits = lits.slice(0, nl);
+  for (const [x, y] of lits) g[y][x] = 'd';
+  // les autres meubles de la pièce principale, contre son mur
+  g[5][1] = niveau === 0 ? 'g' : m.meuble || 'a';
+  if (niveau >= 1) g[niveau >= 3 ? 7 : 6][niveau >= 3 ? 5 : 1] = 'g';
+  if (niveau >= 3) {
+    meuble('table', 3, 6, 3);
+    [[3, 5], [4, 5], [5, 5], [4, 7], [3, 7]].slice(0, nl).forEach(([x, y]) => meuble('chaise', x, y));
   }
-  return g.map((l) => l.join(''));
+  // (le canapé contre le mur du fond de la vue, la table basse devant lui : retourné, le salon
+  // garde ce sens)
+  const [yc, yt] = m.sens === 'haut' ? [2, 1] : [1, 2];
+  if (niveau >= 6) meuble('canape', 3, yc, 3);
+  if (niveau >= 7) { meuble('table_basse', 3, yt, 2); meuble('plante', 5, yt); }
+  if (niveau >= 8) meuble('tapis_1', 3, yt, 3, true);
+  // retourné selon la maison
+  const fx = (x, w = 1) => (m.gauche === false ? W - x - w : x), fy = (y) => (m.sens === 'haut' ? H - 1 - y : y);
+  const grille = [];
+  for (let y = 0; y < H; y++) grille.push(Array.from({ length: W }, (_, x) => g[fy(y)][fx(x)]).join(''));
+  return {
+    w: W, h: H, grille,
+    objets: objets.map((o) => ({ ...o, x: fx(o.x, o.w), y: fy(o.y) })),
+    lits: lits.map(([x, y]) => [fx(x), fy(y)]),
+  };
 }
 
 // Les ressources du jour `jour` sur la carte de la graine `graine` : [{ id, sorte, x, y }] (px,
