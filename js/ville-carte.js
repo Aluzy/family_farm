@@ -46,7 +46,7 @@
   const K = window.CarteKit;
   const V = window.CarteVille;
   const etat = V.etat;
-  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, BLOCS, RAMASSABLES } = V.C;
+  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, BLOCS, RAMASSABLES, TRANSITION_VIE } = V.C;
   const { hote, sheetKey, saisie, reduced, v } = V;
   // Le pas de la flèche d'un passage, selon son sens (elle se balance dans ce sens).
   const SENS_PAS = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] };
@@ -109,6 +109,10 @@
       if (this.transition) {
         this.load.spritesheet(BLOCS.key, v(BLOCS.file), { frameWidth: BLOCS.w, frameHeight: BLOCS.h });
         this.load.spritesheet(RAMASSABLES.key, v(RAMASSABLES.file), { frameWidth: RAMASSABLES.w, frameHeight: RAMASSABLES.h });
+        // les champs des agriculteurs (js/carte/ville/metiers.js)
+        const C = TRANSITION_VIE.champ;
+        this.load.spritesheet(C.terre, v(C.terreFile), { frameWidth: 16, frameHeight: 16 });
+        if (!this.textures.exists(C.crops)) this.load.image(C.crops, v(C.cropsFile));
         for (const m of this.transition.plan.maisons) for (const mb of V.voisins(m.nom).membres) planche(mb.perso, mb.enfant);
       }
       for (const [k, file] of planches) this.load.spritesheet(k, v(file), { frameWidth: 16, frameHeight: 32 });

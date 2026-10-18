@@ -120,7 +120,8 @@ et les voitures), `ecole.js` (le bus de l'école), `hud.js` (les messages, la fe
 `ombres.js` (les ombres portées qui suivent le soleil, comme à la ferme : bâtiments, arbres,
 mobilier, réverbères, rochers ; un canevas de la vue, `OMBRES`), `eclairage.js` (la nuit : les réverbères de la couche d'objets « lumieres » et les phares des
 voitures, posés dans la carte de lumière du voile, `CarteKit.voile(…).eclaire`),
-`voisins.js` (la famille de chaque maison des voisins). Un fichier sur ~800 lignes au plus.
+`voisins.js` (la famille de chaque maison des voisins), `metiers.js` (leur métier sur la carte :
+bûcherons, champs, marché, cuisine). Un fichier sur ~800 lignes au plus.
 
 Réglages qui avaient divergé et qui n'en font plus qu'un : l'attente de la touche à la pêche
 (2,2 à 4,8 s, celle de la ferme ; la ville attendait 2,2 à 4,6 s), les feuilles d'un arbre qui

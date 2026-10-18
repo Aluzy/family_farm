@@ -204,13 +204,16 @@
     },
 
     // L'arbre abattu bascule autour de son pied, du côté opposé au personnage, puis s'efface.
-    fellTree(t) {
+    // `par` : abattu par un autre (un voisin bûcheron : js/carte/ville/metiers.js) ; il tombe du
+    // côté opposé à lui, et la vue ne tremble que si le personnage est tout près.
+    fellTree(t, par) {
       t.down = true;
       this.ombresSales = true;
       t.shake = -1;
       t.img.setFrame(0).setAlpha(1);
       this.unblock(t);
-      const F = K.NATURE.chute, dir = t.x >= this.heroPos.x ? 1 : -1;
+      const F = K.NATURE.chute, qui = par || this.heroPos, dir = t.x >= qui.x ? 1 : -1;
+      const proche = !par || Math.hypot(t.x - this.heroPos.x, t.y - this.heroPos.y) < 120;
       const gone = () => { t.img.destroy(); if (t.shadow) t.shadow.destroy(); this.trees.splice(this.trees.indexOf(t), 1); };
       const lache = () => { for (const m of t.finPieces || []) this.showPiece(m, true); t.finPieces = null; };
       if (reduced()) { lache(); this.tweens.add({ targets: [t.img, t.shadow].filter(Boolean), alpha: 0, duration: 300, onComplete: gone }); return; }
@@ -218,7 +221,7 @@
       this.tweens.add({
         targets: t.img, angle: dir * F.angle, duration: F.ms, ease: 'Quad.easeIn',
         onComplete: () => {
-          K.secousse(this, 'chute');
+          if (proche) K.secousse(this, 'chute');
           lache();
           this.leaves(t, F.feuilles, dir);
           this.tweens.add({ targets: t.img, alpha: 0, delay: F.repos, duration: F.fondu, onComplete: gone });

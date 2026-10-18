@@ -31,7 +31,7 @@
         montagne: 'Glisse le doigt pour marcher (ou touche deux fois l\'alpage) · une trouvaille pour la ramasser · la canne en main : le lac · la gare pour rentrer',
         plage: 'Glisse le doigt pour marcher (ou touche deux fois le sable) · une trouvaille pour la ramasser · la canne en main : la mer, depuis le ponton · la gare pour rentrer',
         grotte: 'Glisse le doigt pour marcher (ou touche deux fois le sol) · la pioche en main (barre d\'outils) : un minerai · un champignon lumineux pour le cueillir · l\'échelle pour remonter',
-        transition: 'Glisse le doigt pour marcher (ou touche deux fois l\'herbe) · un voisin pour lui parler · l\'abri de bus pour aller à la gare · la hache ou la pioche en main (barre d\'outils) : un arbre, un rocher',
+        transition: 'Glisse le doigt pour marcher (ou touche deux fois l\'herbe) · un voisin (bûcheron ou agriculteur) pour lui parler · l\'abri de bus pour aller à la gare · la hache ou la pioche en main (barre d\'outils) : un arbre, un rocher',
       };
       if (textes[etat.nom]) this.say('💡 ' + textes[etat.nom]);
     },

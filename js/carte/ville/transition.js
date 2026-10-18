@@ -13,10 +13,9 @@
  * rangées selon leur pied comme le personnage, sans toit : on voit dedans, et on y entre à pied
  * par la porte (leurs murs et leurs meubles arrêtent la marche). Dans chacune vit une famille
  * (V.voisins), qu'on voit aller et venir chez elle : le jour (TRANSITION_VIE.jour), ses membres
- * sortent par la porte ; les parents vont chercher la ressource libre la plus proche, la
- * ramassent, et en rapportent quelques-unes à la maison avant de repartir ; les enfants, et les
- * parents quand il n'en reste plus, flânent autour de chez eux. La nuit, ils restent à la
- * maison. Ce qui est ramassé le reste jusqu'au lendemain (localStorage).
+ * sortent par la porte ; les parents font leur métier (bûcheron ou agriculteur : js/carte/ville/
+ * metiers.js, l'économie de leur foyer : js/engine/voisins.js), les enfants flânent autour de
+ * chez eux. La nuit, ils restent à la maison.
  *
  * Les enfants vont à l'école comme ceux de la ferme (js/famille-ferme.js) : les jours d'école
  * (HorlogeSortie.JOURS_ECOLE), de TRANSITION_VIE.ecole[0] h à ecole[1] h. Le matin, ils vont à
@@ -24,10 +23,10 @@
  * soir, ils en descendent et rentrent à pied chez eux. Entre les deux, ils ne sont pas sur la
  * carte ; si le bus est déjà passé (ou sans animations), ils sont déjà partis, ou déjà rentrés.
  *
- * Le joueur ramasse aussi : un toucher sur une ressource y envoie le personnage, qui la prend
- * en arrivant (FermeHote.ramasserTransition : l'objet entre dans l'inventaire, contre l'énergie
- * du geste « ramasser »). Une ressource qu'il vise, les voisins la laissent ; ce qu'il a pris
- * (le moteur s'en souvient : FermeHote.transition().pris) ne revient pas avant le lendemain.
+ * Les ressources du jour sont pour le joueur : un toucher sur l'une d'elles y envoie le
+ * personnage, qui la prend en arrivant (FermeHote.ramasserTransition : l'objet entre dans
+ * l'inventaire, contre l'énergie du geste « ramasser ») ; ce qu'il a pris (le moteur s'en
+ * souvient : FermeHote.transition().pris) ne revient pas avant le lendemain.
  *
  * Méthodes de la scène des cartes (js/ville-carte.js), posées sur son prototype : `this` est
  * la scène (voir docs/architecture-phaser.md).
@@ -46,17 +45,6 @@
     return H && H.transition ? H.transition() : null;
   }
   V.planTransition = planDuJour;
-
-  // Ce qui a été ramassé aujourd'hui : { graine, jour, ids: [...], panier: { maison: n } }.
-  function ramasses(graine, jour) {
-    let r = null;
-    try { r = JSON.parse(global.localStorage.getItem(TRANSITION_VIE.store) || 'null'); } catch (e) { r = null; }
-    if (!r || r.graine !== graine || r.jour !== jour) r = { graine, jour, ids: [], panier: {} };
-    return r;
-  }
-  function garde(r) {
-    try { global.localStorage.setItem(TRANSITION_VIE.store, JSON.stringify(r)); } catch (e) { /* gardé le temps de la visite */ }
-  }
 
   // La carte de la partie : une copie de la carte de Tiled (`base`, telle qu'elle a été chargée)
   // où l'ouest est rempli d'après le plan `P` et le kit de la carte.
@@ -116,7 +104,7 @@
   V.partie({
 
     // L'ouest de la carte de transition : les maisons en blocs, les ressources du jour, les
-    // familles dehors.
+    // familles, leurs métiers (makeMetiers : les foyers, les champs).
     makeVoisinsDehors() {
       this.dehors = [];
       this.ressources = new Map();
@@ -125,11 +113,10 @@
       const P = D.plan;
       for (const m of P.maisons) this.poseMaison(m);
       // les ressources du jour encore là
-      this.ramasses = ramasses(P.graine, D.jour);
       for (const r of D.ressources) {
-        if (this.ramasses.ids.includes(r.id) || (D.pris || []).includes(r.id) || !this.textures.exists(RAMASSABLES.key)) continue;
+        if ((D.pris || []).includes(r.id) || !this.textures.exists(RAMASSABLES.key)) continue;
         const img = this.add.image(r.x, r.y, RAMASSABLES.key, RAMASSABLES.frames[r.sorte] || 0).setOrigin(0.5, 1).setDepth(r.y - 1);
-        this.ressources.set(r.id, { ...r, img, prise: null });
+        this.ressources.set(r.id, { ...r, img });
       }
       // les familles : chacun chez soi pour commencer (on le voit), il sort un peu plus tard
       const noms = (this.cache.json.get('perso_cases') || {}).frames || [];
@@ -139,13 +126,14 @@
         // (devant la porte : en dessous, ou au-dessus pour une maison au sud du chemin)
         const porte = { x: m.porte.x * T + T / 2, y: (m.porte.y + (m.sens === 'haut' ? -1 : 1)) * T + T - 3 };
         f.membres.forEach((mb, i) => {
+          const rang = f.membres.slice(0, i).filter((q) => q.enfant === mb.enfant).length;
           const key = sheetKey(mb.perso, mb.enfant);
           if (!this.textures.exists(key)) return;
           const c = this.caseDedans(m);
           const s = this.add.sprite(c.x, c.y, key, this.npcFrame('idle_bas_0')).setOrigin(0.5, 30 / 32);
           const shadow = this.add.ellipse(c.x, c.y, mb.enfant ? 9 : 11, 4, 0x1e1a18, 0.3);
           const n = { m: mb, f, maison: m, porte, s, shadow, x: c.x, y: c.y, path: [], face: 'bas', walked: 0,
-            speed: mb.enfant ? VOISINS.kidSpeed : VOISINS.speed, etat: 'dedans', t: Math.random() * 2, sortie: 0.5 + i * 1.6 + Math.random() * 2, porte_: 0, talk: 0 };
+            speed: mb.enfant ? VOISINS.kidSpeed : VOISINS.speed, etat: 'dedans', t: Math.random() * 2, sortie: 0.5 + i * 1.6 + Math.random() * 2, porte_: 0, talk: 0, rang, geste: null };
           this.dehors.push(n);
           // (à l'école, le bus du matin passé : pas là)
           const H = global.HorlogeSortie ? global.HorlogeSortie.maintenant() : null;
@@ -153,6 +141,7 @@
           this.placeVoisin(n, 0, false);
         });
       }
+      this.makeMetiers();
     },
 
     // Une case libre du plancher de la maison `m`, au hasard : son point (px), où poser les pieds.
@@ -194,17 +183,6 @@
       }
     },
 
-    // La ressource libre la plus proche de `n` (null : il n'y en a plus).
-    ressourceProche(n) {
-      let best = null, d = Infinity;
-      for (const r of this.ressources.values()) {
-        if (r.prise) continue;
-        const e = Math.hypot(r.x - n.x, r.y - n.y);
-        if (e < d) { d = e; best = r; }
-      }
-      return best;
-    },
-
     // Un membre de la famille fait le prochain pas de sa journée.
     stepVoisinsDehors(time, dt) {
       if (!this.dehors || !this.dehors.length) return;
@@ -214,6 +192,8 @@
         let marche = false;
         if (n.etat === 'dedans') n.sortie -= dt;
         if (n.talk > 0) { n.talk -= dt; this.placeVoisin(n, time, false); continue; }
+        // (un geste du métier en cours : la hache, la houe, la cuisine)
+        if (!n.path.length && this.stepMetier(n, dt, time, H)) { this.placeVoisin(n, time, false); continue; }
         if (n.path.length) {
           const to = n.path[0], dx = to.x - n.x, dy = to.y - n.y, l = Math.hypot(dx, dy), st = n.speed * dt;
           const r = K.regard(dx, dy);
@@ -229,6 +209,7 @@
     // Arrivé au bout de son chemin (ou fini d'attendre) : que faire maintenant ?
     decideVoisin(n, jour, H) {
       if (n.m.enfant && this.decideEcole(n, H)) return;
+      if (!n.m.enfant && this.decideMetier(n, jour, H)) return;
       // (dedans, sortir, rentrer : à pied, par la porte)
       const va = (x, y) => { n.path = this.findPath(n.x, n.y, x, y) || []; n.t = n.path.length ? 0 : 0.01; };
       const rentrer = () => { n.etat = 'rentre'; const c = this.caseDedans(n.maison); va(c.x, c.y); };
@@ -246,38 +227,12 @@
           n.etat = 'cherche';
           n.t = 0;
           return;
-        case 'cherche': {
-          // (les enfants ne ramassent pas : ils jouent autour de la maison)
-          const r = jour && !n.m.enfant && n.porte_ < TRANSITION_VIE.panier ? this.ressourceProche(n) : null;
-          if (!r) { if (n.porte_ > 0 || !jour) { rentrer(); return; } n.etat = 'flane'; n.t = 0; return; }
-          const path = this.findPath(n.x, n.y, r.x, r.y);
-          if (!path) { r.prise = 'loin'; n.t = 0.2; return; }
-          r.prise = n;
-          n.cible = r;
-          n.path = path;
-          n.etat = 'va';
+        case 'cherche':
+          // (le métier des parents : decideMetier ; les enfants jouent autour de la maison)
+          if (!jour) { rentrer(); return; }
+          n.etat = 'flane';
+          n.t = 0;
           return;
-        }
-        case 'va':
-          // arrivé : il se penche, ramasse
-          n.etat = 'ramasse';
-          n.t = TRANSITION_VIE.ramasse;
-          return;
-        case 'ramasse': {
-          const r = n.cible;
-          n.cible = null;
-          if (r && this.ressources.has(r.id) && r.prise === n) {
-            r.img.destroy();
-            this.ressources.delete(r.id);
-            this.ramasses.ids.push(r.id);
-            this.ramasses.panier[n.maison.nom] = (this.ramasses.panier[n.maison.nom] || 0) + 1;
-            garde(this.ramasses);
-            n.porte_++;
-          }
-          n.etat = 'cherche';
-          n.t = TRANSITION_VIE.souffle[0] + Math.random() * (TRANSITION_VIE.souffle[1] - TRANSITION_VIE.souffle[0]);
-          return;
-        }
         case 'rentre':
           // chez lui : il pose ce qu'il porte, ressort un peu plus tard
           n.etat = 'dedans';
@@ -286,7 +241,7 @@
           n.t = VOISINS.wait[0] + Math.random() * (VOISINS.wait[1] - VOISINS.wait[0]);
           return;
         case 'flane': {
-          // plus rien à ramasser : il va et vient autour de chez lui, et finit par rentrer
+          // il va et vient autour de chez lui, et finit par rentrer
           if (!jour || Math.random() < (n.m.enfant ? 0.05 : 0.15)) { rentrer(); return; }
           for (let k = 0; k < 15 && !n.path.length; k++) {
             const tx = Math.floor((n.porte.x + (Math.random() - 0.5) * 12 * T) / T), ty = Math.floor((n.porte.y + (n.maison.sens === 'haut' ? -1 : 1) * Math.random() * 6 * T) / T);
@@ -378,7 +333,7 @@
       n.etat = 'ecole';
       n.path = [];
       n.t = 2;
-      n.cible = null;
+      n.geste = null;
       if (deja || reduced()) { n.s.setVisible(false); n.shadow.setVisible(false); return; }
       this.tweens.add({ targets: [n.s, n.shadow], alpha: 0, duration: BUS.kid.fade * 1000, onComplete: () => {
         if (n.etat !== 'ecole') return;
@@ -418,7 +373,7 @@
     placeVoisin(n, time, marche) {
       const F = this.npcFrame;
       let frame;
-      if (n.etat === 'ramasse' && !marche) frame = F('ramasse_' + Math.min(2, Math.floor((1 - n.t / TRANSITION_VIE.ramasse) * 3)));
+      if (n.geste && !marche) frame = F(n.geste);
       else if (marche) frame = F.de(n.porte_ > 0 ? 'panier' : 'marche', n.face, Math.floor(n.walked / 4) % 4);
       else frame = F.de('idle', n.face, Math.floor(time / 600 + n.m.perso) % 2);
       n.s.setFrame(frame);
@@ -427,17 +382,11 @@
     },
 
     // Un toucher sur une ressource : le personnage y va (s'il n'y est pas déjà) et la prend en
-    // arrivant (stepCueillette). Les voisins la laissent.
+    // arrivant (stepCueillette).
     tapRessource(w) {
       let r = null;
       for (const q of (this.ressources || new Map()).values()) if (Math.abs(w.x - q.x) <= 9 && w.y >= q.y - 14 && w.y <= q.y + 4) { r = q; break; }
       if (!r) return false;
-      if (r.prise && r.prise !== 'joueur' && r.prise !== 'loin') {
-        // un voisin y allait : il cherchera autre chose
-        const n = r.prise;
-        n.cible = null; n.path = []; n.etat = 'cherche'; n.t = 0.3;
-      }
-      r.prise = 'joueur';
       this.cueille = r;
       if (Math.hypot(this.heroPos.x - r.x, this.heroPos.y - r.y) > RAMASSABLES.reach) this.goTo(r.x, r.y + 2);
       return true;
@@ -452,27 +401,25 @@
       if (d > RAMASSABLES.reach || this.path.length) return;
       this.cueille = null;
       const H = hote();
-      if (!H || !H.ramasserTransition) { r.prise = null; this.say('Il faut une partie en cours pour ramasser.'); return; }
+      if (!H || !H.ramasserTransition) { this.say('Il faut une partie en cours pour ramasser.'); return; }
       const res = H.ramasserTransition(r.id);
-      if (!res || !res.ok) { r.prise = null; return; }   // (refusée : la nuit, trop fatigué ; le message est dit)
+      if (!res || !res.ok) return;   // (refusée : la nuit, trop fatigué ; le message est dit)
       this.ressources.delete(r.id);
-      this.ramasses.ids.push(r.id);
-      garde(this.ramasses);
       this.tweens.add({ targets: r.img, y: r.img.y - 10, alpha: 0, duration: reduced() ? 0 : 400, onComplete: () => r.img.destroy() });
       this.popGain({ [res.item]: res.n });
     },
 
-    // Un toucher sur un voisin (dehors ou chez lui) : il s'arrête et parle de ce que sa famille a ramassé.
+    // Un toucher sur un voisin (dehors ou chez lui) : il s'arrête et parle de son métier et de sa
+    // journée (paroleVoisin : js/carte/ville/metiers.js). (Un geste en cours, il le finit.)
     tapVoisinDehors(w) {
       const n = (this.dehors || []).find((q) => q.s.visible && Math.abs(w.x - q.x) <= 8 && w.y <= q.y + 3 && w.y >= q.y - (q.m.enfant ? 24 : 30));
       if (!n) return false;
-      n.talk = 3;
-      n.face = 'cote';
-      n.s.setFlipX(this.heroPos.x < n.x);
-      const k = (this.ramasses && this.ramasses.panier[n.maison.nom]) || 0;
-      const l = TRANSITION_VIE.paroles[n.m.enfant ? 'enfant' : 'adulte'];
-      const dit = k ? l.compte.replace('{n}', k).replace('{s}', k > 1 ? 's' : '') : l.rien;
-      this.say(`👋 ${n.m.prenom} ${n.f.nom} : « ${dit} »`);
+      if (!n.geste) {
+        n.talk = 3;
+        n.face = 'cote';
+        n.s.setFlipX(this.heroPos.x < n.x);
+      }
+      this.say(this.paroleVoisin(n));
       return true;
     },
   });
