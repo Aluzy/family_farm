@@ -1,8 +1,9 @@
 // chantier.js — la ferme générée (docs/carte-generee.md, étape 4) : le mode « Construire ».
 //
-// Une case de la barre d'outils (🔨, dès que l'Atelier est construit) ouvre le mode : une puce
-// sur la carte montre les blocs qu'on peut poser (murs, portes, paillasses, l'Atelier) et
-// combien il en reste ; on en choisit un, un appui sur une case de la carte l'y pose, un appui
+// Une case de la barre d'outils (🔨, dès que l'Atelier est construit) ouvre le mode : un menu
+// sur le côté droit de l'écran (deux colonnes de cases qui défilent, comme celles de la barre
+// d'outils) montre les blocs qu'on peut poser (murs, portes, paillasses, l'Atelier) et combien
+// il en reste ; on en choisit un, un appui sur une case de la carte l'y pose, un appui
 // sur un bloc le reprend. Les pièces closes sont teintées de vert sur la carte. Le moteur :
 // js/engine/blocs.js ; la carte : js/carte/ferme/chantier.js.
 
@@ -38,15 +39,16 @@ export function buildSlotHtml() {
   return `<button type="button" class="tool-slot${on ? ' active' : ''}" data-action="build-toggle" aria-pressed="${on}" aria-label="${label}" title="${label}">${DATA.ATELIER.ICONE}</button>`;
 }
 
-// La puce de la carte, en mode Construire : un bouton par bloc (avec ce qui reste), puis ✕.
+// Le menu de construction, sur le côté droit de l'écran : en haut, les paillasses d'une pièce
+// close et ✕ ; puis une case par bloc (son icône, ce qui reste), sur deux colonnes qui défilent.
 export function buildChipHtml() {
   if (!buildMode || !chantierOuvert()) return '';
   const blocs = SORTES().map((s) => {
     const n = blocsEnMain(state, s), on = s === buildMode, nom = DATA.ATELIER.BLOCS[s].nom;
-    return `<button type="button" class="stage-chip-bloc${on ? ' active' : ''}" data-action="build-pick" data-sorte="${s}" aria-pressed="${on}" aria-label="${nom} : ${n}" title="${nom} : ${n}"><span aria-hidden="true">${icone(s)}</span><span class="num">${n}</span></button>`;
+    return `<button type="button" class="tool-slot build-slot${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-pick" data-sorte="${s}" aria-pressed="${on}" aria-label="${nom} : ${n}" title="${nom} : ${n}"><span aria-hidden="true">${icone(s)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
   }).join('');
   const dodo = couchages(state).length;
-  return `<div class="stage-chip hoe chantier" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><span class="stage-chip-pill">${blocs}<span class="stage-chip-val num" title="Paillasses dans une pièce close">🛏 ${dodo}</span><button type="button" class="stage-chip-go" data-action="build-toggle" aria-label="Ranger : fin de la construction">✕</button></span></div>`;
+  return `<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-head"><span class="num" title="Paillasses dans une pièce close">🛏 ${dodo}</span><button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><div class="build-bar-grid">${blocs}</div></div>`;
 }
 
 registerActions({

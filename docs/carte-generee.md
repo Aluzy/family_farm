@@ -186,8 +186,10 @@ Le Marché vend toujours les outils.
     dans l'inventaire.
 - **Construire** se fait sur la carte (`js/ui/chantier.js`, `js/carte/ferme/chantier.js`) :
   - une case 🔨 apparaît dans la barre d'outils dès que l'Atelier est construit ;
-  - une puce montre chaque bloc et ce qui en reste en main, ainsi que le nombre de paillasses
-    où l'on peut dormir ; trop de blocs pour une ligne, elle passe à la ligne (aucun caché) ;
+  - un menu s'ouvre sur le côté droit de l'écran, dans le bois de la barre d'outils (même
+    cadre, mêmes cases) : en haut le nombre de paillasses où l'on peut dormir et ✕, puis une
+    case par bloc (son icône, ce qui en reste en main ; le bloc choisi encadré, un bloc épuisé
+    pâli) sur deux colonnes qui défilent (`.build-bar`) ;
   - à l'ouverture, un rappel bref (2 s) : « touche une case pour poser, un bloc pour le reprendre » ;
   - un appui sur une case y pose le bloc choisi, un appui sur un bloc le reprend ;
   - les pièces closes sont teintées de vert.

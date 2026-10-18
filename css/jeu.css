@@ -1544,27 +1544,56 @@ body.has-stage { padding-bottom: 0; }
 .stage-chip-go { flex: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; }
 .stage-chip-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--bg-muted); }
 .stage-chip-bar > span { display: block; height: 100%; background: var(--accent); }
-/* La ferme générée, le mode Construire (js/ui/chantier.js) : un bouton par bloc dans la puce,
-   celui choisi encadré ; la puce elle-même ne se touche pas (div), ses boutons oui. Trop de
-   blocs pour une ligne : ils passent à la ligne (aucun n'est caché). */
-.stage-chip.chantier { cursor: default; }
-.stage-chip.chantier .stage-chip-pill { flex-wrap: wrap; gap: 2px 4px; padding: 3px 6px; }
-.stage-chip-bloc {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 28px;
-  padding: 0 5px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
+/* La ferme générée, le mode Construire (js/ui/chantier.js) : le menu des blocs, sur le côté
+   droit de l'écran, dans le bois de la barre d'outils (même cadre, mêmes cases .tool-slot) :
+   en haut les paillasses et ✕, puis deux colonnes de cases qui défilent (le bloc choisi
+   encadré, comme l'outil en main ; un bloc qu'on n'a plus, pâli). */
+.build-bar {
+  --slot: 52px;
+  position: fixed;
+  right: calc(6px + env(safe-area-inset-right));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: var(--z-fab);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: min(calc(6 * (var(--slot) + 5px) + 44px), calc(100% - 180px));
+  padding: 5px;
+  background: rgba(var(--wood-bg-rgb), 0.88);
+  border: 3px solid var(--color-earth);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--wood-glow);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+  pointer-events: auto;
 }
-.stage-chip-bloc.active { border-color: var(--accent); background: var(--bg-muted); }
-.stage-chip.chantier .stage-chip-go { border: 0; background: none; padding: 0 4px; cursor: pointer; font: inherit; font-size: 1.1rem; }
+.build-bar-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 0 2px; font-weight: 700; }
+.build-bar-close {
+  width: 28px; height: 28px; padding: 0;
+  border: 0; border-radius: 4px;
+  background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light);
+  font: inherit; font-size: 1rem; line-height: 1; cursor: pointer;
+}
+.build-bar-grid {
+  display: grid;
+  grid-template-columns: repeat(2, var(--slot));
+  grid-auto-rows: var(--slot);
+  gap: 5px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-right: 1px;
+}
+.build-slot { position: relative; height: var(--slot); font-size: 1.4rem; }
+.build-slot .px { --pxs: 32px; }
+.build-slot-n {
+  position: absolute; right: 3px; bottom: 2px;
+  font-size: 0.72rem; font-weight: 800; line-height: 1;
+  color: var(--color-earth);
+}
+.build-slot.epuise { opacity: 0.55; }
 
 /* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des flèches. */
 .stage-room-bar {
