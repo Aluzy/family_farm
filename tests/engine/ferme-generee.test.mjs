@@ -7,7 +7,7 @@
 import { assert, assertEqual, garden, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierOuvert, buildPoulailler, coopCapacity, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierOuvert, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -34,7 +34,7 @@ test('ferme générée : la même graine donne la même carte, une autre graine 
   assert(JSON.stringify(c.carte) !== JSON.stringify(a.carte), 'une autre graine, une autre carte');
   // d'une fois sur l'autre (pas seulement dans la même page) : toujours la même ferme pour
   // « test-1 » (à mettre à jour si le générateur change, ce qui change les fermes des parties)
-  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 11367]);
+  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 11517]);
   assertEqual([a.carte.width, a.carte.height, a.terrain.LARGEUR, a.terrain.HAUTEUR], [FERME_GENEREE.LARGEUR, FERME_GENEREE.HAUTEUR, 144, 114]);
 });
 
@@ -60,8 +60,8 @@ for (const graine of ['1', '2', '7', 'abc', '12345']) {
     assert(vus.has(porte), 'le chemin passe devant la place de la maison');
     assert(!objets.maison, 'pas de maison : le foyer se bâtit');
     // les bâtiments de la cour (provisoires) et les rochers, les arbres
-    for (const n of ['grange', 'moulin', 'serre', 'verger', 'silo', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
-    assert(!objets.poulailler, 'le Poulailler se bâtit');
+    for (const n of ['moulin', 'serre', 'verger', 'silo', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
+    assert(!objets.poulailler && !objets.grange, 'le Poulailler et l\'Étable se bâtissent');
     assert(!objets.puits && !objets.citerne, 'le puits et la citerne se bâtissent');
     assertEqual(Object.keys(terrain.ROCHERS).length, FERME_GENEREE.ROCHERS, 'les rochers');
     assert(Object.keys(terrain.ARBRES).length > 150, 'des bois');
@@ -374,4 +374,26 @@ test('ferme générée : un nichoir posé dans une pièce close construit le Pou
   assertEqual(poserBloc(s, 'nichoir', p.dedans + 1).ok, false, 'un seul nichoir');
   reprendreBloc(s, p.dedans);
   assertEqual([s.poulailler.construit, coopCapacity(s)], [false, 0], 'repris : plus de Poulailler');
+});
+
+/* ---------- étape 5b : l'Étable (pièce close + mangeoire) ---------- */
+
+test('ferme générée : une mangeoire posée dans une pièce close construit l\'Étable', () => {
+  const s = chantier('e1');
+  s.pieces = 100000;
+  s.paturage.construit = false;
+  s.paturage.places = 0;
+  assertEqual(buildPaturage(s).ok, false, 'pas en pièces');
+  setInv(s, { mur_pierre: 30, porte: 2, mangeoire: 1 });
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  assertEqual(poserBloc(s, 'mangeoire', p.dedans).ok, false, 'hors d\'une pièce close');
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assert(poserBloc(s, 'mangeoire', p.dedans).ok);
+  assertEqual([s.paturage.construit, s.paturage.places, freeSheepPlaces(s)], [true, DATA.PATURAGE.PLACES_DEPART, DATA.PATURAGE.PLACES_DEPART]);
+  s.paturage.places += 2;   // des places achetées : gardées si on la reprend puis la repose
+  reprendreBloc(s, p.dedans);
+  assertEqual([s.paturage.construit, freeSheepPlaces(s), countItem(s, 'mangeoire')], [false, 0, 1], 'repris : plus d\'Étable');
+  poserBloc(s, 'mangeoire', p.dedans);
+  assertEqual(s.paturage.places, DATA.PATURAGE.PLACES_DEPART + 2);
 });

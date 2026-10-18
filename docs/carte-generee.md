@@ -205,3 +205,11 @@ Le Marché vend toujours les outils.
          (`keyBlockOf`).
        - Les poules ne se montrent pas encore sur la carte : la vie de la cour les dessine
          autour du bâtiment du Poulailler, que la ferme générée n'a pas.
+     - ✅ **5b-4, l'étable** : l'Étable (la grange) quitte la cour.
+       - La **mangeoire** (6 planches, 4 pierres, 2 fibres) se fabrique à l'Atelier. Posée dans
+         une pièce close, elle ouvre l'Étable avec ses 10 places de départ (`PATURAGE.PLACES_DEPART`) ;
+         reprise, l'Étable n'est plus construite et retrouve ses places achetées quand on la
+         repose. On ne la prépare plus en pièces sur la ferme générée (`buildPaturage` refuse).
+       - Un appui sur la mangeoire ouvre la fenêtre de l'Étable ; un double appui y envoie le
+         personnage prendre le lait et la laine (il tond les moutons prêts), devant la mangeoire.
+       - Comme les poules, les moutons et les vaches ne se montrent pas encore sur la carte.

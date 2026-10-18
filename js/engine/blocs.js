@@ -130,12 +130,12 @@ export function nuitSansCouchage(state) {
 }
 
 // Le bâtiment `id` est construit par son bloc clé (comme acheté, sans payer) ; repris puis
-// reposé, il retrouve son niveau.
+// reposé, il retrouve son niveau (l'Étable : ses places).
 function ouvrirBatiment(state, id) {
   const b = state[id];
   if (!b) return;
   b.construit = true;
-  if (!b.niveau) b.niveau = 1;
+  if (id === 'paturage') { if (!b.places) b.places = DATA.PATURAGE.PLACES_DEPART; } else if (!b.niveau) b.niveau = 1;
 }
 
 /* ---------- poser, reprendre ---------- */
@@ -183,7 +183,7 @@ export function poserBloc(state, sorte, tile) {
   }
   // le panneau, la pompe, la citerne, la batterie : l'appareil est là (étape 5b-2)
   if (s.appareil) installStarter(state, s.appareil);
-  // le bloc clé d'un bâtiment (le nichoir : le Poulailler) : le bâtiment est construit
+  // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable) : le bâtiment est construit
   if (s.batiment) ouvrirBatiment(state, s.batiment);
   // un four, une cuisinière : la station est là (étape 5b, la maison)
   if (s.station && state.stations[s.station]) openStation(state, s.station);

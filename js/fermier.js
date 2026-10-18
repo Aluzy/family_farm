@@ -411,6 +411,8 @@
     // son panier et le rapporte devant la maison ; à un arbre ou sur une case, il se baisse.
     function barnSpot() {
       const b = sprite('etable');
+      // la ferme générée : devant la mangeoire
+      if (!b && o.cle) return o.cle('etable');
       if (!b || b.texture.key.indexOf('ph_') === 0) return null;
       return { x: Math.round(b.x + b.width * 0.5), y: Math.round(b.y + 6) };
     }
