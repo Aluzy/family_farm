@@ -112,7 +112,8 @@
       const D = this.transition;
       if (!D || !D.plan || !this.textures.exists(BLOCS.key)) return;
       const P = D.plan;
-      for (const m of P.maisons) this.poseMaison(m);
+      this.chargeVoisins();
+      for (const m of P.maisons) this.poseMaison(m, this.eco && this.eco.foyers[m.nom] && this.eco.foyers[m.nom].maison);
       // les ressources du jour encore là
       for (const r of D.ressources) {
         if ((D.pris || []).includes(r.id) || !this.textures.exists(RAMASSABLES.key)) continue;
@@ -154,11 +155,16 @@
       return { x: c.x * T + T / 2, y: c.y * T + T - 2 };
     },
 
-    // Une maison : son plancher, ses murs (raccordés à leurs voisins), sa porte, ses meubles.
-    // On marche sur le plancher et par la porte ; les murs et les meubles arrêtent (m.libres :
-    // les cases du plancher où l'on peut aller, pour la famille).
-    poseMaison(m) {
-      const g = m.plan, h = g.length, w = g[0].length;
+    // Une maison, à l'étape où sa famille l'a bâtie (`vue` : son plan, maisonPlan du moteur ; sans
+    // partie, la première) : son plancher, ses murs (raccordés à leurs voisins), sa porte, ses
+    // meubles (ceux des blocs, et les grands : table, chaises, canapé… assets/meuble_*.png). On
+    // marche sur le plancher et par la porte ; les murs et les meubles arrêtent (m.libres : les
+    // cases du plancher où l'on peut aller, pour la famille ; m.litsCases : un lit par membre).
+    poseMaison(m, vue) {
+      const plan = vue || { grille: m.plan, objets: [], lits: [] };
+      if (!vue) m.plan.forEach((l, y) => [...l].forEach((c, x) => { if (c === 'd' || c === 'p') plan.lits.push([x, y]); }));
+      const g = plan.grille, h = g.length, w = g[0].length;
+      m.grille = g;
       const a = (x, y) => (y >= 0 && y < h && x >= 0 && x < w ? g[y][x] : ' ');
       const sol = (x, y) => !' MP'.includes(a(x, y));
       const img = (frame, x, y, plat) => {
@@ -170,6 +176,7 @@
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           const c = a(x, y), gx = m.x + x, gy = m.y + y;
+          if (c === ' ') continue;          // (l'emprise pas encore bâtie : de l'herbe)
           if (this.walk[gy] && gx >= 0 && gx < this.walk[gy].length) this.walk[gy][gx] = c === '.' || c === 'P';
           if (c === '.') m.libres.push({ x: gx, y: gy });
           if (sol(x, y)) img(BLOCS.sols + (sol(x, y - 1) ? 1 : 0) + (sol(x + 1, y) ? 2 : 0) + (sol(x, y + 1) ? 4 : 0) + (sol(x - 1, y) ? 8 : 0), x, y, true);
@@ -181,15 +188,23 @@
             const plat = c === 'p' || c === 'd';
             const i = img(BLOCS.meubles[c], x, y, false);
             if (plat) i.setDepth(i.y - T / 2);
-            if (plat) {
-              // un lit : la couverture par-dessus le dormeur ; on s'y couche depuis une case
-              // libre voisine (la plus proche du plancher, sinon n'importe laquelle)
-              img(BLOCS.drap, x, y).setDepth(i.depth + 0.1);
-              const v = [[0, 1], [0, -1], [-1, 0], [1, 0]].find(([dx, dy]) => a(x + dx, y + dy) === '.');
-              m.litsCases.push({ x: i.x, y: i.y - 2, depth: i.depth + 0.05, acces: v ? { x: (m.x + x + v[0]) * T + T / 2, y: (m.y + y + v[1] + 1) * T - 2 } : null });
-            }
+            if (plat) img(BLOCS.drap, x, y).setDepth(i.depth + 0.1);
           }
         }
+      }
+      // les lits, dans l'ordre du plan (ceux des adultes d'abord) : la couverture par-dessus le
+      // dormeur ; on s'y couche depuis une case libre voisine
+      for (const [x, y] of plan.lits) {
+        const px = (m.x + x) * T + T / 2, py = (m.y + y + 1) * T;
+        const v = [[0, 1], [0, -1], [-1, 0], [1, 0]].find(([dx, dy]) => a(x + dx, y + dy) === '.');
+        m.litsCases.push({ x: px, y: py - 2, depth: py - T / 2 + 0.05, acces: v ? { x: (m.x + x + v[0]) * T + T / 2, y: (m.y + y + v[1] + 1) * T - 2 } : null });
+      }
+      // les grands meubles : posés en bas au milieu de leurs cases (le tapis à plat, sous les autres)
+      for (const o of plan.objets) {
+        const key = 'meuble_' + o.nom;
+        if (!this.textures.exists(key)) continue;
+        const px = (m.x + o.x + o.w / 2) * T, py = (m.y + o.y + 1) * T;
+        this.add.image(Math.round(px), py - (o.plat ? 2 : 1), key).setOrigin(0.5, 1).setDepth(o.plat ? py - T - 199 : py - 3);
       }
     },
 

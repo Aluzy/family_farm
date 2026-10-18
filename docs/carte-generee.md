@@ -208,8 +208,10 @@ parties.
   (`state.graineVoisins`, tirée à la création de la partie, ou à la première visite d'une
   ancienne partie). L'ouest contient :
   - le chemin de terre de la ferme à la route, qui ondule doucement ;
-  - 3 à 5 maisons de voisins, réparties sur toute la largeur (une par bande de colonnes), tour à
-    tour au nord et au sud du chemin et plus ou moins loin de lui (`ECARTS`). La porte est face
+  - 3 à 5 maisons de voisins, réparties sur toute la largeur, tour à tour au nord et au sud du
+    chemin (chaque côté partagé en bandes de colonnes, une maison par bande) et plus ou moins
+    loin de lui (`ECARTS`). Chacune réserve toute son emprise (11 × 9 cases), où elle
+    s'agrandira. La porte est face
     au chemin (en bas au nord, en haut au sud), une allée l'y relie. Elles sont bâties
     avec les blocs de la ferme générée (`assets/blocs.png`) : murs raccordés, porte, plancher,
     meubles (four ou cuisinière, un lit par membre de la famille, coffre à grain, atelier…) ;
@@ -234,6 +236,15 @@ parties.
   elle. De 7 h à 19 h, ses membres sortent par la porte.
   - Les enfants flânent autour de la maison ; rentrés, tous restent visibles et circulent dans
     la maison avant de ressortir. Le soir, tout le monde reste chez soi.
+  - **La maison grandit avec la famille** (`maisonPlan`, `js/engine/transition.js` ; les étapes :
+    `VOISINS.MAISON` de `data/ville.json`). Elle n'a d'abord qu'une petite pièce ; chaque nuit, un
+    foyer qui garde sa réserve (`RESERVE`) après l'achat s'offre l'étape suivante, qui lui rend
+    un peu de bonheur : agrandir la pièce principale, construire une chambre (les lits y
+    déménagent), une table et des chaises, la chambre des enfants, un salon, un canapé, une table
+    basse (et une plante), un tapis. La carte dessine la maison à son étape (les grands meubles :
+    ceux de la maison de la ferme, `assets/meuble_*.png`) ; un voisin dit ce que sa famille
+    vient de s'offrir, ou ce pour quoi elle met de côté. Il faut environ deux mois de jeu pour
+    tout bâtir.
   - **Un lit chacun** : chaque maison a de 3 à 5 lits (paillasse et couverture, `TRANSITION.LITS`,
     `m.lits`), et sa famille deux adultes et autant d'enfants qu'il reste de lits. De 22 h à 6 h
     (`TRANSITION_VIE.sommeil`), chacun va à son lit et y dort, sous sa couverture ; au lever, il

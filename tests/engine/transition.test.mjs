@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import { readFileSync } from 'node:fs';
-import { countItem, createNewGame, DATA, ramasserTransition, ressourcesDuJour, setFarmSeed, TRANSITION, transitionPlan, transitionPris, transitionSeed } from '../../js/engine/index.js';
+import { countItem, createNewGame, DATA, maisonPlan, ramasserTransition, ressourcesDuJour, setFarmSeed, TRANSITION, transitionPlan, transitionPris, transitionSeed } from '../../js/engine/index.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const GRAINES = ['1', '2', '77', 'abc', 'b3', 'x9', '42', 'zz', 'ferme', '123456789'];
@@ -49,7 +49,7 @@ test('transition : trois à cinq maisons réparties à l\'ouest, de part et d\'a
       assert(nord ? m.y + m.h <= P.milieu[m.porte.x] - 2 : m.y >= P.milieu[m.porte.x] + 2, `${g} ${m.nom} : du bon côté du chemin`);
       assertEqual(m.porte.y, nord ? m.y + m.h - 1 : m.y);
       assertEqual(m.plan[m.porte.y - m.y][m.porte.x - m.x], 'P', `${g} ${m.nom} : la porte dans le mur face au chemin`);
-      assertEqual(m.plan[nord ? 0 : m.h - 1], 'M'.repeat(m.w), 'le mur du fond');
+      assertEqual(maisonPlan(m, 8).grille[nord ? 0 : m.h - 1], 'M'.repeat(m.w), 'agrandie, le mur du fond sur toute l\'emprise');
       const lits = m.plan.join('').split('').filter((c) => c === 'd' || c === 'p').length;
       assertEqual(m.lits, lits, `${g} ${m.nom} : ses lits comptés`);
       assert(lits >= TRANSITION.LITS[0] && lits <= TRANSITION.LITS[1], `${g} ${m.nom} : un lit par membre de la famille (${lits})`);
@@ -63,6 +63,46 @@ test('transition : trois à cinq maisons réparties à l\'ouest, de part et d\'a
     // réparties : des deux côtés du chemin, de l'ouest à l'est
     assert(new Set(P.maisons.map((m) => m.sens)).size === 2, `${g} : au nord et au sud du chemin`);
     assert(P.maisons[0].x < TRANSITION.OUEST / 3 && P.maisons[P.maisons.length - 1].x > TRANSITION.OUEST / 2, `${g} : sur toute la largeur`);
+  }
+});
+
+test('transition : la maison grandit étape par étape (pièces, chambres, salon, meubles), toujours habitable', () => {
+  const n = DATA.VOISINS.MAISON.ETAPES.length;
+  for (const g of GRAINES) {
+    for (const m of transitionPlan(g).maisons) {
+      let avant = 0;
+      for (let k = 0; k <= n; k++) {
+        const M = maisonPlan(m, k), G = M.grille, at = (x, y) => (G[y] || '')[x];
+        const ici = `${g} ${m.nom} étape ${k}`;
+        assertEqual([G.length, G[0].length], [m.h, m.w], ici);
+        assertEqual(at(m.porte.x - m.x, m.porte.y - m.y), 'P', `${ici} : la porte ne bouge pas`);
+        assert(G.some((l) => /[cf]/.test(l)), `${ici} : de quoi cuisiner`);
+        assertEqual(M.lits.length, m.lits, `${ici} : un lit par membre`);
+        for (const [x, y] of M.lits) assertEqual(at(x, y), 'd', `${ici} : le lit ${x},${y}`);
+        // tout le plancher se rejoint depuis la porte, et chaque lit est au bord d'une case atteinte
+        const vu = new Set(), file = [[m.porte.x - m.x, m.porte.y - m.y]];
+        while (file.length) {
+          const [x, y] = file.pop(), cle = x + ',' + y;
+          if (vu.has(cle) || !'.P'.includes(at(x, y) || '#')) continue;
+          vu.add(cle);
+          file.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+        }
+        const sol = G.join('').split('').filter((c) => c === '.').length;
+        assertEqual(vu.size - 1, sol, `${ici} : toutes les pièces communiquent`);
+        for (const [x, y] of M.lits) assert([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => vu.has(`${x + dx},${y + dy}`)), `${ici} : on atteint le lit ${x},${y}`);
+        const surface = G.join('').replace(/[ M]/g, '').length;
+        assert(surface >= avant, `${ici} : la maison ne rétrécit pas`);
+        avant = surface;
+        const noms = M.objets.map((o) => o.nom);
+        assertEqual(noms.includes('table'), k >= 3, `${ici} : la table`);
+        assertEqual(noms.filter((x) => x === 'chaise').length, k >= 3 ? m.lits : 0, `${ici} : une chaise par membre`);
+        assertEqual([noms.includes('canape'), noms.includes('table_basse'), noms.includes('tapis_1')], [k >= 6, k >= 7, k >= 8], `${ici} : le salon meublé`);
+      }
+      // les chambres : à partir de l'étape 2, plus de lit dans la pièce principale ; à la 4e, les
+      // enfants ont la leur
+      const pieces = (k) => maisonPlan(m, k).grille.join('').split('M').length;
+      assert(pieces(2) > pieces(1) && pieces(4) > pieces(3) && pieces(5) > pieces(4), `${g} ${m.nom} : de nouvelles pièces`);
+    }
   }
 });
 

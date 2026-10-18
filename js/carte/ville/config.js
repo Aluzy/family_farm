@@ -276,6 +276,9 @@
     // le champ d'un agriculteur : la terre labourée (16 bordures selon les coins, comme à la
     // ferme : scripts/carte/terre_bords.py) et les plantes (crops.png, « culture:stade »)
     champ: { terre: 'terre_bords_voisins', terreFile: 'assets/terre_bords.png', crops: 'crops', cropsFile: 'assets/crops.png' },
+    // les grands meubles des maisons agrandies (assets/meuble_<nom>.png, ceux de la maison de la
+    // ferme : le plan les place, maisonPlan du moteur)
+    meubles: ['table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_1'],
   };
   // La clé de la planche d'un personnage : un adulte (perso_N) ou un enfant (enfant_N) ; son
   // fichier : CarteKit.planche.

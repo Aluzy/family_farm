@@ -245,7 +245,8 @@ window.FermeHote = {
   ramasserTransition: (id) => nuit() || joue(ramasserTransition(state, id)),
   // les voisins de la transition (js/engine/voisins.js) : la page dit leurs familles (tirées par
   // elle : [{ maison, adultes, enfants }]) ; renvoie ce que la carte en montre (voisinsVue), le
-  // nom des plats et des légumes (« 🥔 patate ») et les images des cultures de leurs champs
+  // nom des plats, des légumes (« 🥔 patate ») et des étapes de leurs maisons (« maison:<id> »),
+  // et les images des cultures de leurs champs
   voisins: (familles) => {
     for (const f of familles || []) voisinFoyer(state, f.maison, f);
     persistState();
@@ -253,6 +254,7 @@ window.FermeHote = {
     const nom = (id) => { const o = DATA.OBJETS[id]; if (o) noms[id] = `${o.icone} ${o.nom.toLowerCase()}`; };
     for (const l of Object.values(DATA.VOISINS.RECETTES)) l.forEach(nom);
     for (const c of DATA.VOISINS.AGRICULTEUR.CULTURES) { nom(c); if (DATA.CULTURES[c].sprite) cultures[c] = DATA.CULTURES[c].sprite; }
+    for (const e of DATA.VOISINS.MAISON.ETAPES) noms['maison:' + e.id] = e.nom;
     return { foyers: voisinsVue(state), noms, cultures };
   },
   // sous les yeux du joueur, le bûcheron de `maison` abat l'arbre `id` : { ok, bois, reste }

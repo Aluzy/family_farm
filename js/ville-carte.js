@@ -113,6 +113,8 @@
         const C = TRANSITION_VIE.champ;
         this.load.spritesheet(C.terre, v(C.terreFile), { frameWidth: 16, frameHeight: 16 });
         if (!this.textures.exists(C.crops)) this.load.image(C.crops, v(C.cropsFile));
+        // les grands meubles des maisons agrandies (ceux de la maison de la ferme)
+        for (const n of TRANSITION_VIE.meubles) if (!this.textures.exists('meuble_' + n)) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
         for (const m of this.transition.plan.maisons) for (const mb of V.voisins(m.nom, m.lits).membres) planche(mb.perso, mb.enfant);
       }
       for (const [k, file] of planches) this.load.spritesheet(k, v(file), { frameWidth: 16, frameHeight: 32 });
