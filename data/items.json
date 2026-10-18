@@ -113,7 +113,7 @@
       "La lanterne scintillante (ATELIER : un champignon lumineux et un morceau d'arbre de l'infra-monde) :",
       "« cueillette » dit où se prennent ses matières à la main (FermeHote.ramasser, js/ui/excursion.js) :",
       "les champignons qui luisent au sol de la grotte (js/ville-carte.js, ils repoussent le lendemain),",
-      "un morceau des arbres tordus de l'infra-monde, à la hache (js/infra-monde.js, un par arbre et par jour).",
+      "les morceaux des arbres tordus de l'infra-monde (js/infra-monde.js : trois coups de hache, l'arbre tombe et en lâche deux).",
       "Posée sur la ferme, la lanterne éclaire la nuit (BLOCS lanterne, lumiere)."
     ],
     "champignon_lumineux": { "nom": "Champignon lumineux", "icone": "🍄‍✨", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "cueillette": "grotte" },

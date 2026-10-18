@@ -153,8 +153,12 @@ Le Marché vend toujours les outils.
   - **Ses matières se cueillent à la main** (champ `cueillette` de `data/items.json`, `FermeHote.ramasser`) :
     - les champignons qui luisent au sol de la grotte (`tapChampignon`, `js/ville-carte.js`) :
       un champignon cueilli s'éteint et ne repousse que le lendemain ;
-    - un morceau des arbres tordus de l'infra-monde, la hache en main : un coup de hache
-      (`tapTree`, `stepTree`, `js/infra-monde.js`), un morceau par arbre et par jour.
+    - les morceaux des arbres tordus de l'infra-monde, la hache en main (`tapTree`, `stepTree`,
+      `fellTree`, `stepPieces` dans `js/infra-monde.js`) :
+      - au troisième coup de hache (un coup par appui), l'arbre tombe ;
+      - il lâche deux morceaux là où sa cime touche le sol ;
+      - on les ramasse en marchant dessus ;
+      - l'arbre repousse le lendemain, et les morceaux laissés au sol y restent jusque-là.
   - **Où la poser** : dehors, dans la maison ou dans une enceinte vide, mais pas dans un
     bâtiment (comme la batterie). Elle arrête le passage.
   - **Le jour**, elle est éteinte.
