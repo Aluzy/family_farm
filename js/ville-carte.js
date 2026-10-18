@@ -257,7 +257,7 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w) || this.tapVoisinDehors(w)) { this.dbl.oublie(); return; }
+        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w) || this.tapVoisinDehors(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) { this.dbl.oublie(); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va
@@ -699,6 +699,7 @@
       this.stepEntering();
       this.stepFamily(time, dt);
       this.stepVoisinsDehors(time, dt);
+      this.stepCueillette();
       this.stepDialog();
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;

@@ -194,6 +194,12 @@ parties.
   - La nuit, tout le monde reste chez soi.
   - Un toucher sur un voisin : il dit ce que sa famille a ramassé aujourd'hui.
   - Ce qui a été ramassé le reste jusqu'au lendemain (`localStorage`).
+- **Le joueur ramasse aussi** (`ramasserTransition`, `js/engine/transition.js`) : un toucher sur
+  une ressource y envoie le personnage, qui la prend en arrivant. Comme sur la ferme générée :
+  une petite pierre donne une pierre, un morceau de bois du bois, une herbe une fibre, contre
+  l'énergie et l'XP du geste « ramasser » ; pas la nuit, ni épuisé. Les voisins laissent la
+  ressource qu'il vise. Ce qu'il a pris est gardé dans la partie (`state.transitionPris`,
+  `{ jour, ids }`) et ne revient pas avant le lendemain.
 
 ## Étapes
 

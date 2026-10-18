@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import { readFileSync } from 'node:fs';
-import { createNewGame, ressourcesDuJour, setFarmSeed, TRANSITION, transitionPlan, transitionSeed } from '../../js/engine/index.js';
+import { countItem, createNewGame, DATA, ramasserTransition, ressourcesDuJour, setFarmSeed, TRANSITION, transitionPlan, transitionPris, transitionSeed } from '../../js/engine/index.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const GRAINES = ['1', '2', '77', 'abc', 'b3', 'x9', '42', 'zz', 'ferme', '123456789'];
@@ -75,4 +75,22 @@ test('transition : la graine de la partie (ferme générée, sinon celle des voi
   setFarmSeed(s, 'pré');
   assertEqual(transitionSeed(s), 'pré');
   assertEqual(transitionSeed({}), '1', 'une partie sans graine : la carte par défaut');
+});
+
+test('transition : le joueur ramasse une ressource du jour, une fois, contre l\'énergie du geste', () => {
+  const s = createNewGame(4242);
+  const [r] = ressourcesDuJour(transitionSeed(s), s.day);
+  const item = TRANSITION.OBJETS[r.sorte], avant = countItem(s, item), e = s.energie;
+  assertEqual(ramasserTransition(s, r.id), { ok: true, item, n: 1 });
+  assertEqual(countItem(s, item), avant + 1);
+  assert(s.energie < e, 'de l\'énergie dépensée');
+  assertEqual(transitionPris(s), [r.id]);
+  assertEqual(ramasserTransition(s, r.id).ok, false, 'pas deux fois');
+  assertEqual(ramasserTransition(s, 'herbe:999,999').ok, false, 'pas une ressource du jour');
+  s.energie = 0;
+  const [, r2] = ressourcesDuJour(transitionSeed(s), s.day);
+  assertEqual(ramasserTransition(s, r2.id).ok, false, 'épuisé');
+  s.day += 1;
+  assertEqual(transitionPris(s), [], 'un autre jour : tout est à reprendre');
+  assert(DATA.OBJETS[item]);
 });

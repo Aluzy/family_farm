@@ -268,7 +268,8 @@
     key: 'blocs', file: 'assets/blocs.png', w: 16, h: 24, murs: 14, sols: 31, porte: 1, drap: 4,
     meubles: { f: 5, c: 6, p: 3, d: 3, g: 12, a: 2, b: 11, n: 9, m: 13 },
   };
-  const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };
+  // (le joueur prend une ressource à `reach` px de ses pieds)
+  const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, reach: 14, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };
   // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h ; elles
   // rapportent `panier` ressources à la fois, se penchent `ramasse` s pour en prendre une,
   // soufflent `souffle` s avant la suivante, restent `pause` s à la maison (au hasard entre les deux) avant de ressortir. `store` : ce
