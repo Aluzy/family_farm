@@ -121,6 +121,10 @@ Le Marché vend toujours les outils.
   - Un bloc posé quitte l'inventaire ; repris, il y revient (`state.blocs` : case → sorte).
   - Les murs et l'Atelier arrêtent le personnage ; on traverse les portes et les paillasses.
   - Ils portent une ombre, comme le reste du décor.
+  - Les murs et la porte d'un mur horizontal sont une case plus hauts que les autres blocs
+    (`assets/murs_hauts.png`, 16 × 40 px, comme les maisons de la transition). Un mur qui cache
+    le personnage ou un membre de la famille s'efface à moitié, et tous s'effacent en mode
+    Construire (`stepMurs`, `BLOCS_CARTE.hauts`).
   - Leurs images (`assets/blocs.png`, générées par `scripts/carte/blocs.py`) sont vues de haut
     à 45°, comme la carte : le dessus raccourci, puis la face avant. Elles reprennent la pierre
     et le bois des bâtiments.
@@ -214,7 +218,11 @@ parties.
     s'agrandira. La porte est face
     au chemin (en bas au nord, en haut au sud), une allée l'y relie. Elles sont bâties
     avec les blocs de la ferme générée (`assets/blocs.png`) : murs raccordés, porte, plancher,
-    meubles (four ou cuisinière, un lit par membre de la famille, coffre à grain, atelier…) ;
+    meubles (four ou cuisinière, un lit par membre de la famille, coffre à grain, atelier…).
+    Leurs murs et leur porte sont une case plus hauts, comme ceux de la ferme
+    (`assets/murs_hauts.png`, 16 × 40 px, `murs_hauts()` de `scripts/carte/blocs.py`) ; un mur
+    qui cache quelqu'un derrière lui (le joueur, un voisin, le livreur) s'efface à moitié
+    (`stepMurs`, `BLOCS.hauts`) ;
   - la mare et son banc, le puits et le tonneau près des maisons, des barrières le long du
     chemin, des buissons ;
   - les arbres et les rochers, que l'on coupe et que l'on casse comme avant, l'herbe haute et

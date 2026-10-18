@@ -3,7 +3,9 @@
 # la face avant (tournée vers le bas de l'écran). Des images de 16 × 24 côte à côte ; le bas de
 # chaque image est le bas de sa case, le haut dépasse sur la case du dessus.
 #
-#   python3 scripts/carte/blocs.py            écrit assets/blocs.png
+#   python3 scripts/carte/blocs.py            écrit assets/blocs.png et assets/murs_hauts.png
+#                                             (les murs une case plus hauts des maisons de la
+#                                             carte de transition, voir murs_hauts())
 #   python3 scripts/carte/blocs.py --apercu   écrit aussi apercu_blocs.png (la planche, puis
 #                                             une pièce close sur l'herbe de la carte)
 #
@@ -180,7 +182,7 @@ def pierre_face(x, y):
     joints = ASSISES[rang % len(ASSISES)]
     if w == 3 or x % 16 in joints:
         return PIERRE[0]
-    bas = rang >= 2
+    bas = v >= BAS - CHAPE - 5                   # (les deux dernières assises)
     if w == 0:
         return PIERRE[2 if bas else 3]
     if w == 2 or (x + 1) % 16 in joints:
@@ -312,6 +314,61 @@ def porte_verticale():
     t.put(11, yb + 3, FER[2])
     t.put(11, yp + 2, FER[2])
     return t.im
+
+
+# ---------- les murs hauts (les maisons de la carte de transition) ----------
+# Les mêmes murs, une case plus hauts : une face de FACE + 16 px (images de 16 × 40, le bas sur
+# la case, le haut dépasse de 24 px au-dessus) ; murs_hauts.png : les 16 murs raccordés
+# (masque comme plus haut), puis la porte, percée au pied d'un mur plein.
+HAUTEUR_EN_PLUS = T
+
+
+def porte_haute():
+    """La porte dans un mur haut : le mur plein (raccordé à gauche et à droite), un linteau de
+    pierre, et au-dessous la porte de planches cintrée, ses pentures, sa poignée, le seuil."""
+    t = Toile(mur(2 | 8))
+    y0, x0, x1 = H - 22, 2, 13                   # le haut du battant (22 px de porte)
+    for x in range(1, 15):                       # le linteau : une pierre claire, son ombre
+        t.put(x, y0 - 3, OUT)
+        t.put(x, y0 - 2, PIERRE[5])
+        t.put(x, y0 - 1, PIERRE[3])
+    bois = planches([CADRE[1], BOIS[1], BOIS[2], BOIS[3]], pas=2, x0=x0)
+    for y in range(y0, H):
+        t.put(1, y, CADRE[0])                    # le chambranle
+        t.put(14, y, CADRE[0])
+        for x in range(x0, x1 + 1):
+            t.put(x, y, bois(x, y))
+    for x, y in ((2, y0), (3, y0), (12, y0), (13, y0), (2, y0 + 1), (13, y0 + 1)):
+        t.put(x, y, PIERRE[2])                   # le cintre : les coins du haut restent en pierre
+    for x, y in ((4, y0), (11, y0), (3, y0 + 1), (12, y0 + 1)):
+        t.put(x, y, CADRE[0])
+    for x in range(5, 11):
+        t.put(x, y0, CADRE[0])
+    for x in range(4, 12):                       # le haut du battant, éclairé
+        t.put(x, y0 + 1, BOIS[3] if x % 2 else BOIS[2])
+    for y in (y0 + 4, y0 + 15):                  # les pentures
+        for x in range(x0, x1 + 1):
+            t.put(x, y, FER[1])
+        t.put(x0, y, FER[2])
+        t.put(x1, y, FER[0])
+    t.put(x1 - 2, y0 + 10, FER[4])               # la poignée
+    t.put(x1 - 2, y0 + 11, FER[0])
+    for x in range(1, 15):                       # le seuil
+        t.put(x, BAS - 1, CADRE[2])
+        t.put(x, BAS, OUT)
+    return t.im
+
+
+def murs_hauts():
+    """Les 16 murs raccordés et la porte, une case plus hauts (images de 16 × (24 + 16))."""
+    global H, BAS, FACE
+    garde = H, BAS, FACE
+    H += HAUTEUR_EN_PLUS
+    BAS, FACE = H - 1, FACE + HAUTEUR_EN_PLUS
+    try:
+        return [mur(m) for m in range(16)] + [porte_haute()], H
+    finally:
+        H, BAS, FACE = garde
 
 
 # ---------- le plancher ----------
@@ -843,6 +900,9 @@ def main():
     sheet = rangee(DESSINS, W, H)
     sheet.save(os.path.join(ASSETS, 'blocs.png'))
     print(f'assets/blocs.png : {len(DESSINS)} images de {W} × {H}')
+    hauts, h = murs_hauts()
+    rangee(hauts, W, h).save(os.path.join(ASSETS, 'murs_hauts.png'))
+    print(f'assets/murs_hauts.png : {len(hauts)} images de {W} × {h}')
     if '--apercu' in sys.argv:
         apercu_piece(sheet)
 

@@ -256,6 +256,10 @@
   const BLOCS = {
     key: 'blocs', file: 'assets/blocs.png', w: 16, h: 24, murs: 14, sols: 31, porte: 1, drap: 4,
     meubles: { f: 5, c: 6, p: 3, d: 3, g: 12, a: 2, b: 11, n: 9, m: 13 },
+    // les murs des maisons, une case plus hauts (assets/murs_hauts.png,
+    // scripts/carte/blocs.py murs_hauts : les 16 murs raccordés + masque, puis la porte) ; un mur
+    // devant quelqu'un (il le cache) s'efface jusqu'à `alpha`, à `vitesse` par seconde
+    hauts: { key: 'murs_hauts', file: 'assets/murs_hauts.png', w: 16, h: 40, murs: 0, porte: 16, alpha: 0.4, vitesse: 4 },
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)
   const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, reach: 14, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };

@@ -109,6 +109,8 @@
     makeVoisinsDehors() {
       this.dehors = [];
       this.livreur = null;           // (la scène sert à toutes les cartes : js/carte/ville/livreur.js)
+      this.mursHauts = null;         // les murs hauts des maisons, par case (murCase, stepMurs)
+      this.mursEfface = null;
       this.caisses = [];
       this.ressources = new Map();
       const D = this.transition;
@@ -170,9 +172,17 @@
       m.grille = g;
       const a = (x, y) => (y >= 0 && y < h && x >= 0 && x < w ? g[y][x] : ' ');
       const sol = (x, y) => !' MP'.includes(a(x, y));
-      const img = (frame, x, y, plat) => {
+      const img = (frame, x, y, plat, key = BLOCS.key) => {
         const px = (m.x + x) * T + T / 2, py = (m.y + y + 1) * T;
-        return this.add.image(px, py, BLOCS.key, frame).setOrigin(0.5, 1).setDepth(plat ? py - T - 200 : py);
+        return this.add.image(px, py, key, frame).setOrigin(0.5, 1).setDepth(plat ? py - T - 200 : py);
+      };
+      // (les murs et la porte : une case plus hauts, s'ils sont chargés ; voir stepMurs)
+      const hauts = this.textures.exists(BLOCS.hauts.key) ? BLOCS.hauts : null;
+      const mur = (frame, x, y) => {
+        if (!hauts) return img(BLOCS.murs + frame, x, y);
+        const i = img(hauts.murs + frame, x, y, false, hauts.key);
+        this.murCase(i, m.x + x, m.y + y);
+        return i;
       };
       m.libres = [];
       m.litsCases = [];
@@ -184,9 +194,12 @@
           if (c === '.') m.libres.push({ x: gx, y: gy });
           if (sol(x, y)) img(BLOCS.sols + (sol(x, y - 1) ? 1 : 0) + (sol(x + 1, y) ? 2 : 0) + (sol(x, y + 1) ? 4 : 0) + (sol(x - 1, y) ? 8 : 0), x, y, true);
           if (c === 'M') {
-            const mur = (dx, dy, porte) => a(x + dx, y + dy) === 'M' || (porte && a(x + dx, y + dy) === 'P');
-            img(BLOCS.murs + (mur(0, -1) ? 1 : 0) + (mur(1, 0, true) ? 2 : 0) + (mur(0, 1) ? 4 : 0) + (mur(-1, 0, true) ? 8 : 0), x, y);
-          } else if (c === 'P') img(BLOCS.porte, x, y);
+            const voisin = (dx, dy, porte) => a(x + dx, y + dy) === 'M' || (porte && a(x + dx, y + dy) === 'P');
+            mur((voisin(0, -1) ? 1 : 0) + (voisin(1, 0, true) ? 2 : 0) + (voisin(0, 1) ? 4 : 0) + (voisin(-1, 0, true) ? 8 : 0), x, y);
+          } else if (c === 'P') {
+            if (hauts) this.murCase(img(hauts.porte, x, y, false, hauts.key), m.x + x, m.y + y);
+            else img(BLOCS.porte, x, y);
+          }
           else if (BLOCS.meubles[c] !== undefined) {
             const plat = c === 'p' || c === 'd';
             const i = img(BLOCS.meubles[c], x, y, false);
@@ -208,6 +221,49 @@
         if (!this.textures.exists(key)) continue;
         const px = (m.x + o.x + o.w / 2) * T, py = (m.y + o.y + 1) * T;
         this.add.image(Math.round(px), py - (o.plat ? 2 : 1), key).setOrigin(0.5, 1).setDepth(o.plat ? py - T - 199 : py - 3);
+      }
+    },
+
+    // Un mur haut (ou une porte) de la case (gx, gy), à effacer quand il cache quelqu'un (stepMurs).
+    murCase(i, gx, gy) {
+      if (!this.mursHauts) this.mursHauts = new Map();
+      const k = gy * this.map.width + gx;
+      const l = this.mursHauts.get(k);
+      if (l) l.push(i); else this.mursHauts.set(k, [i]);
+    },
+
+    // Les murs hauts devant quelqu'un (le joueur, un voisin, le livreur : derrière eux, à une ou
+    // deux cases au-dessus de leur pied) s'effacent un peu, pour qu'on le voie ; les autres
+    // reviennent.
+    stepMurs(dt) {
+      const W = this.mursHauts;
+      if (!W) return;
+      const B = BLOCS.hauts, cols = this.map.width;
+      const devant = new Set();
+      const cache = (x, y) => {
+        const gx = Math.floor(x / T), gy = Math.floor((y - 1) / T);
+        for (let dy = 1; dy <= 2; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const l = W.get((gy + dy) * cols + gx + dx);
+            if (!l) continue;
+            // (le personnage fait ±6 px de large)
+            const px = (gx + dx) * T + T / 2;
+            if (Math.abs(px - x) < T / 2 + 6) for (const i of l) devant.add(i);
+          }
+        }
+      };
+      if (this.heroPos) cache(this.heroPos.x, this.heroPos.y);
+      for (const n of this.dehors || []) if (n.s && n.s.visible) cache(n.x, n.y);
+      const L = this.livreur;
+      if (L && L.s && L.s.visible) cache(L.x, L.y);
+      const pas = B.vitesse * dt;
+      if (!this.mursEfface) this.mursEfface = new Set();
+      for (const i of devant) this.mursEfface.add(i);
+      for (const i of this.mursEfface) {
+        const but = devant.has(i) ? B.alpha : 1;
+        const a = i.alpha < but ? Math.min(but, i.alpha + pas) : Math.max(but, i.alpha - pas);
+        i.setAlpha(a);
+        if (a === 1 && !devant.has(i)) this.mursEfface.delete(i);
       }
     },
 

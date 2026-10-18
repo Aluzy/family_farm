@@ -121,6 +121,7 @@
         L.image('silo', v('silo.png'));
         L.spritesheet(F.C.RAMASSABLES.key, v(F.C.RAMASSABLES.file), F.C.RAMASSABLES.frame);
         L.spritesheet(F.C.BLOCS_CARTE.key, v(F.C.BLOCS_CARTE.file), F.C.BLOCS_CARTE.frame);
+        L.spritesheet(F.C.BLOCS_CARTE.hauts.key, v(F.C.BLOCS_CARTE.hauts.file), F.C.BLOCS_CARTE.hauts.frame);
         L.spritesheet('chat', v('chat.png'), CAT_FRAME);
         L.spritesheet(K.TRIPORTEUR.key, v(K.TRIPORTEUR.file), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
@@ -407,6 +408,7 @@
         this.stepShards(delta);
         this.stepSprinklers();
         this.stepFires(time);
+        this.stepMurs(dt / 1000);
         this.stepPieces();
         this.stepBeasts(time, delta / 1000);
         this.stepRobot(dt);
