@@ -217,3 +217,12 @@ Le Marché vend toujours les outils.
        - Un appui sur la mangeoire ouvre la fenêtre de l'Étable ; un double appui y envoie le
          personnage prendre le lait et la laine (il tond les moutons prêts), devant la mangeoire.
        - Comme les poules, les moutons et les vaches ne se montrent pas encore sur la carte.
+     - ✅ **5b-5, la serre** : la Serre quitte la cour.
+       - Le **bac à semis** (8 planches, 4 pierres, 4 fibres) se fabrique à l'Atelier. Posé dans
+         une pièce close, il ouvre la Serre au niveau 1 avec ses parcelles (`openSerre`) ;
+         repris, la Serre n'est plus construite, et ce qui y pousse attend qu'il revienne. On
+         ne la répare plus en pièces sur la ferme générée (`buildSerre` refuse).
+       - Pas d'intérieur : un appui sur le bac ouvre la fenêtre de la Serre, où ses parcelles
+         se travaillent.
+       - Comme partout, un bloc clé ne se pose qu'à partir du niveau où son bâtiment se débloque
+         (`isUnlocked` : la Serre au niveau 7).

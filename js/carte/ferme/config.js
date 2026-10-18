@@ -149,15 +149,15 @@
   // px au-dessus du bas de la paillasse.
   const BLOCS_CARTE = {
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
-    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10 },
-    plats: ['paillasse'], bloquent: ['mur_pierre', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire'],
+    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11 },
+    plats: ['paillasse'], bloquent: ['mur_pierre', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png)
     ailleurs: ['puits', 'citerne'],
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
-    // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable
-    fenetres: { four: 'four', cuisiniere: 'cuisine', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable' },
+    // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre
+    fenetres: { four: 'four', cuisiniere: 'cuisine', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne
-    cles: { poulailler: 'nichoir', etable: 'mangeoire' },
+    cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis' },
     voile: 0xc8ffb4, voileAlpha: 0.4, voileDepth: 0.08, coucheY: 4,
   };
   const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };

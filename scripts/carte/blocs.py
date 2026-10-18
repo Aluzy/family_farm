@@ -10,7 +10,7 @@
 # paillasse, drap (la couverture, posée par-dessus le personnage couché), four, cuisiniere
 # (étape 5b : posés dans une pièce close, ils tiennent lieu des stations), panneau, batterie
 # (étape 5b-2 : posés, ils installent l'appareil du même nom), nichoir (le bloc clé du Poulailler),
-# mangeoire (celui de l'Étable). Gris des rochers,
+# mangeoire (celui de l'Étable), bac_semis (celui de la Serre). Gris des rochers,
 # bruns des troncs, paille du poulailler ; lumière en haut à gauche, contour sombre de la
 # matière.
 import os
@@ -37,6 +37,8 @@ PALETTE = {
     'R': '#4a1418', 'r': '#9a3238', 'x': '#c8484a', 'Q': '#e07466',
     # le feu
     'F': '#ffd040',
+    # terreau et pousses (le bac à semis)
+    'z': '#2e1e12', 'Z': '#4e3420', 'G': '#24502a', 'g': '#3a7a34', 'l': '#6ab048',
 }
 
 DESSINS = [
@@ -335,6 +337,33 @@ DESSINS = [
         '..ks.......sk...',
         '..ks........sk..',
         '..kk........kk..',
+        '................',
+    ],
+    # le bac à semis : une caisse de planches pleine de terreau, des pousses vertes
+    [
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '..l....l....l...',
+        '.lGl..lGl..lGl..',
+        '..g.l..g.l..g.l.',
+        '..g....g....g...',
+        'kkkkkkkkkkkkkkkk',
+        'kZzZzZzZzZzZzZzk',
+        'kzZzzZzzZzzZzZzk',
+        'kEEEEEEEEEEEEEEk',
+        'kTTTTTTTTTTTTTTk',
+        'ktTtTtTtTtTtTtTk',
+        'kssssssssssssssk',
+        'kkkkkkkkkkkkkkkk',
+        '.ks..........sk.',
+        '.kk..........kk.',
         '................',
     ],
 ]

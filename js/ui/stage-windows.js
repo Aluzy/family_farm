@@ -78,7 +78,8 @@ export function setStageInterior(value) {
 // Intérieurs : la Serre (ses parcelles) et, une fois réparée, la maison (ses meubles : four,
 // cuisine, réfrigérateur, chacun ouvre sa fenêtre). `gerer` : ce qu'ouvre le bouton « Gérer ».
 const INTERIORS = {
-  serre: { ok: () => state.serre.construit, gerer: 'agrandir, tout arroser, tout récolter' },
+  // (sur la ferme générée, la Serre se bâtit sans bâtiment : ses parcelles, dans sa fenêtre)
+  serre: { ok: () => state.serre.construit && !atelierOuvert(state), gerer: 'agrandir, tout arroser, tout récolter' },
   // (la ferme générée n'a pas de maison : on y vit dans les pièces qu'on bâtit, sans intérieur)
   maison: { ok: () => houseRepaired(state) && !atelierOuvert(state), gerer: 'livre de recette, commerce, installations' },
 };
