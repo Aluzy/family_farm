@@ -6,11 +6,12 @@ import {
   testCompleteChapter, testEmptyBatteries, testFillBatteries, testFillTank, testGoToChapter,
   testRipenAll, testSetBuildingLevel5, testSetEnergyZero, testFillEnergy, testSetWear, testSkipAwake, testSleepNights,
   testUnlockAllTechs, testWearMill, testWoolReady, testAddXp, testSetLevel, testFarmMap,
+  testAddItem, testAddRessources, testAddMetaux, testAddBlocs, testAllTools, testBuildAtelier,
 } from '../engine/testmode.js';
 import { levelCount } from '../engine/levels.js';
 import { formatCoins, formatNumber, formatPercent } from '../engine/format.js';
 import { simulateFromCopy, simulationReach } from '../engine/bot.js';
-import { state, testMode } from './store.js';
+import { setTestOpen, state, testMode, testOpen } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
 import { syncJobs } from './loop.js';
@@ -97,13 +98,26 @@ function actionTestSimulate() {
   notify(`Simulation de ${SIM_NIGHTS} nuits terminée`);
 }
 
+// La liste des objets (« Ajouter ») : tous ceux du jeu, rangés par catégorie, une fois.
+function syncTestItemSelect() {
+  const sel = document.getElementById('test-item');
+  if (sel.options.length) return;
+  const groupes = {};
+  for (const [id, o] of Object.entries(DATA.OBJETS)) (groupes[o.categorie || 'autre'] = groupes[o.categorie || 'autre'] || []).push([id, o]);
+  sel.innerHTML = Object.keys(groupes).sort().map((g) => `<optgroup label="${g}">${groupes[g]
+    .sort((a, b) => a[1].nom.localeCompare(b[1].nom, 'fr'))
+    .map(([id, o]) => `<option value="${id}">${o.icone || ''} ${o.nom}</option>`).join('')}</optgroup>`).join('');
+}
+
+// Le panneau du mode test, par-dessus la carte : ouvert par le menu latéral (« 🧪 Test »).
 export function renderTestPanel() {
   const panel = document.getElementById('test-panel');
-  panel.hidden = !testMode;
-  if (!testMode) return;
+  panel.hidden = !testMode || !testOpen;
+  if (panel.hidden) return;
   syncTestDeviceSelect();
-  // Lot 11 : l'état complet n'est sérialisé que si le panneau est déplié.
-  if (!panel.open) return;
+  syncTestItemSelect();
+  // Lot 11 : l'état complet n'est sérialisé que si son volet est déplié.
+  if (!document.getElementById('test-state').open) return;
   const dump = document.getElementById('state-dump');
   const text = JSON.stringify(state, null, 2);
   if (dump.textContent !== text) dump.textContent = text;
@@ -112,6 +126,39 @@ export function renderTestPanel() {
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
+  'test-open': () => {
+    setTestOpen(!testOpen);
+    refresh();
+  },
+  'test-close': () => {
+    setTestOpen(false);
+    refresh();
+  },
+  'test-ressources': () => {
+    applyResult(testAddRessources(state));
+    notify('+20 bois, pierres, fibres et planches');
+  },
+  'test-metaux': () => {
+    applyResult(testAddMetaux(state));
+    notify('+10 de chaque minerai et lingot');
+  },
+  'test-blocs': () => {
+    applyResult(testAddBlocs(state));
+    notify('+5 de chaque bloc');
+  },
+  'test-outils': () => {
+    applyResult(testAllTools(state));
+    notify('Houe, pioche, hache et canne en main');
+  },
+  'test-atelier': () => {
+    const result = applyResult(testBuildAtelier(state));
+    if (result.ok) notify('Atelier construit');
+  },
+  'test-item': () => {
+    const id = document.getElementById('test-item').value;
+    const result = applyResult(testAddItem(state, id, document.getElementById('test-qty').value));
+    if (result.ok) notify(`+${result.items[id]} ${DATA.OBJETS[id].nom}`);
+  },
   'test-straw': () => {
     applyResult(testAddStraw(state));
   },

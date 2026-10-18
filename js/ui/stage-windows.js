@@ -15,7 +15,7 @@ import { formatCoins, formatDay, formatNumber, formatPercent, weekdayShort } fro
 import { dayOfMonth, monthName, moonPhase } from '../engine/lune.js';
 import { renderCalendrier } from './calendrier.js';
 import {
-  activeTab, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setBuildMode, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS,
+  activeTab, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setBuildMode, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS, testMode, testOpen,
 } from './store.js';
 import { telView } from './consent.js';
 import { notify } from './toasts.js';
@@ -619,6 +619,8 @@ export function renderTabbar() {
         return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" title="${t.label}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
       })
       .join('') +
+      // Le mode test (activé dans les Options) : son panneau, par-dessus la carte.
+      (testMode ? `<button type="button" class="nav-btn${testOpen ? ' active' : ''}" data-action="test-open" title="Mode test" aria-label="Mode test" aria-pressed="${testOpen}"><span class="nav-icon" aria-hidden="true">🧪</span><span class="nav-label">Test</span></button>` : '') +
       // Version 1.4 : les Options ne sont plus dans le bandeau mais ici, au bout du menu.
       '<button type="button" class="nav-btn" id="options-btn" data-action="open-options" title="Options" aria-label="Options"><span class="nav-icon" aria-hidden="true">⚙️</span><span class="nav-label">Options</span></button>'
   );

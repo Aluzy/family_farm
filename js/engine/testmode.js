@@ -6,7 +6,7 @@ import { awakeMsAtHour } from './clock.js';
 import { addItem, spoil } from './inventory.js';
 import { openFridge } from './fridge.js';
 import { allPlots, makePlot, maxStage, openSerre, seedItem, zoneTile } from './crops.js';
-import { farmTerrain } from './terrain.js';
+import { farmSeed, farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { openVerger } from './orchard.js';
 import { openStation } from './kitchen.js';
@@ -302,4 +302,48 @@ export function testSleepNights(state, count) {
     report = sleep(state);
   }
   return { ok: true, report };
+}
+
+/* ---------- les ressources, pour essayer vite (la ferme générée surtout) ---------- */
+
+// `n` fois l'objet `id` (n'importe lequel de DATA.OBJETS).
+export function testAddItem(state, id, n = 10) {
+  if (!DATA.OBJETS[id]) return fail('Objet inconnu.');
+  const k = Math.max(1, Math.min(9999, Math.round(Number(n) || 0)));
+  addItem(state, id, k);
+  return { ok: true, items: { [id]: k } };
+}
+
+// Ce qui se ramasse et se fabrique d'abord : bois, pierre, fibre, planches (qty chacun).
+export const TEST_RESSOURCES = ['bois', 'pierre', 'fibre', 'planche'];
+export function testAddRessources(state, qty = 20) {
+  for (const id of TEST_RESSOURCES) addItem(state, id, qty);
+  return { ok: true };
+}
+
+// Les minerais et les lingots (qty de chaque).
+export function testAddMetaux(state, qty = 10) {
+  for (const id of Object.keys(DATA.OBJETS)) if (/^(minerai|lingot)_/.test(id)) addItem(state, id, qty);
+  return { ok: true };
+}
+
+// qty de chaque bloc à poser (ATELIER.BLOCS : murs, portes, plancher, four, panneau…).
+export function testAddBlocs(state, qty = 5) {
+  for (const b of Object.values(DATA.ATELIER.BLOCS)) if (b.objet && DATA.OBJETS[b.objet]) addItem(state, b.objet, qty);
+  return { ok: true };
+}
+
+// Tous les outils (houe, pioche, hache, canne), sans payer.
+export function testAllTools(state) {
+  state.potager.houe = true;
+  if (!state.outils || typeof state.outils !== 'object') state.outils = { hache: false, pioche: false, canne: false, choisi: 'houe' };
+  Object.assign(state.outils, { hache: true, pioche: true, canne: true });
+  return { ok: true };
+}
+
+// L'Atelier construit (sans matériaux) : la ferme générée seulement.
+export function testBuildAtelier(state) {
+  if (farmSeed(state) === null) return fail('L\'Atelier se construit sur une ferme générée.');
+  state.atelier = { construit: true, niveau: DATA.ATELIER.NIVEAU };
+  return { ok: true };
 }
