@@ -12,14 +12,14 @@ import { coopCapacity, sheepToShear, stableHoused, woolReady } from '../engine/a
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
-import { collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
+import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, enSelle, fellenTrees, morceauxDe } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmSeed, farmTerrain, tileCount } from '../engine/terrain.js';
 import { tuilesChemins } from '../engine/ferme-generee.js';
-import { robotBattery, robotChargePct, robotOn, robotTrip } from '../engine/automation.js';
+import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
 import {
   activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
@@ -423,6 +423,8 @@ export function stageModel() {
     // les autres membres de la famille, qui font leur journée sur la carte (js/famille-ferme.js),
     // et le jour de la semaine (0 : lundi) : les enfants vont à l'école les jours d'école
     famille: state.famille.membres.filter((m) => m !== mainCharacter(state)).map((m) => ({ id: m.id, perso: memberPerso(m), enfant: !!m.enfant })),
+    // le second adulte du foyer et où il a à faire (le Poulailler, l'Étable : aideAFaire)
+    aide: aidant(state) ? { id: aidant(state).id, lieux: aideAFaire(state) } : null,
     semaine: weekdayIndex(state.day),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: tileCount(T), terrain: terrainNow(rochers.concat(abattus)), plots,
@@ -501,6 +503,7 @@ function sprinklerSpots() {
 // visée (une tuile de la carte, ou 'serre'), 'recolter' ou 'planter', où elle en est (prog,
 // de 0 à 1 ; elle dure dureeS secondes, dont la part `route` à rouler jusqu'à la parcelle), et
 // son rang dans la liste. `vitesse` : la sienne, en px par seconde (le retour à sa base).
+// `station` : sa station de charge (robotStation : la case du bloc posé, null, ou 'maison').
 function robotModel() {
   if (!robotOn(state)) return null;
   const R = DATA.ROBOT, S = DATA.TEMPS.SECONDES_PAR_HEURE;
@@ -508,15 +511,17 @@ function robotModel() {
   const r = state.robot;
   // sa batterie (en %) ; enCharge : sa station la recharge en ce moment
   const batterie = robotChargePct(state), enCharge = robotBattery(state).conso > 0;
-  if (nightActive(state) || !r || r.jour !== state.day || r.i >= r.taches.length) return { etat: 'repos', vitesse, batterie, enCharge };
-  if (r.charge) return { etat: 'charge', vitesse, batterie, enCharge };
+  // sa station : la case du bloc posé, null s'il n'est pas posé (ferme générée), 'maison'
+  const station = robotStation(state);
+  if (nightActive(state) || !r || r.jour !== state.day || r.i >= r.taches.length) return { etat: 'repos', vitesse, batterie, enCharge, station };
+  if (r.charge) return { etat: 'charge', vitesse, batterie, enCharge, station };
   const tache = r.taches[r.i];
   const p = allPlots(state).find((x) => x.id === tache.id);
   const d = robotTrip(state, r, r.i), duree = d.route + d.travail;
   return {
     etat: 'travail', t: tache.t, a: p && p.lieu === 'potager' && Number.isInteger(p.case) ? p.case : 'serre',
     prog: Math.max(0, Math.min(1, (absoluteHours(state) - r.debut) / duree)), dureeS: duree * S, route: d.route / duree,
-    n: r.i + 1, total: r.taches.length, vitesse, batterie, enCharge,
+    n: r.i + 1, total: r.taches.length, vitesse, batterie, enCharge, station,
   };
 }
 
@@ -565,6 +570,25 @@ function stagePickup(id) {
 
 // Version 1.19 : le personnage est au Poulailler ou à l'Étable (envoyé par un double appui) :
 // il prend ce qui l'attend (et tond les moutons prêts). Renvoie ce qu'il a pris, ou null.
+// Le second adulte du foyer a fini au Poulailler ou à l'Étable (appelé par la carte) : ce qu'il
+// a pris ({ item: qté }), ou null.
+function stageAide(lieu) {
+  const r = aideBetes(state, lieu);
+  if (!r.ok) return null;
+  persistState();
+  refresh();
+  return r.items;
+}
+
+// Sans la carte de la ferme à l'écran (une autre carte, pas de carte) : le second adulte fait
+// quand même son travail aux heures où il est dehors (comme js/famille-ferme.js, HORAIRE).
+const AIDE_HEURES = [7, 18.75];
+function aideSansCarte() {
+  const h = clockHours(state);
+  if (nightActive(state) || h < AIDE_HEURES[0] || h >= AIDE_HEURES[1]) return;
+  for (const lieu of aideAFaire(state)) aideBetes(state, lieu);
+}
+
 function stageCollect(lieu) {
   const r = collectAt(state, lieu);
   if (r.ok && r.fatigue) notify(TIRED);
@@ -618,6 +642,7 @@ export function renderStage() {
   // Une autre carte est affichée (js/ui/excursion.js) : celle de la ferme se cache, les
   // fenêtres et la barre d'outils restent.
   if (on && document.body.classList.contains('en-excursion')) {
+    aideSansCarte();
     el.hidden = true;
     document.body.classList.add('has-stage');
     if (window.FarmStage && stageMounted) FarmStage.hide();
@@ -630,7 +655,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
@@ -642,6 +667,7 @@ export function renderStage() {
   el.hidden = !on;
   document.body.classList.toggle('has-stage', on);
   if (!on) {
+    aideSansCarte();
     if (window.FarmStage) FarmStage.hide();
     return;
   }

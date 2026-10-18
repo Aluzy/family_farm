@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { blocGid } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
+  isArable, migrate, ramassables, ramasser, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -646,7 +646,7 @@ test('migration v37 → v38 : une enceinte qui mêle une maison et un bâtiment 
   s.poulailler.construit = true;
   setInv(s, {});
   const m = migrate({ ...s, version: 37 });
-  assertEqual([m.version, m.blocs[p.dedans], m.blocs[p.dedans + 1], countItem(m, 'nichoir'), m.poulailler.construit], [40, 'paillasse', undefined, 1, false]);
+  assertEqual([m.version, m.blocs[p.dedans], m.blocs[p.dedans + 1], countItem(m, 'nichoir'), m.poulailler.construit], [STATE_VERSION, 'paillasse', undefined, 1, false]);
 });
 
 test('ferme générée : la barrière arrête le passage sans fermer de pièce ; le chemin se pose dehors, comme celui de la carte', () => {
@@ -698,4 +698,32 @@ test('ferme générée : la lanterne scintillante (un champignon lumineux et un 
   reprendreBloc(s, p.dedans + 1);
   assert(poserBloc(s, 'nichoir', p.dedans).ok);
   assertEqual(poserBloc(s, 'lanterne', p.dedans + 1).ok, false, 'pas dans un bâtiment');
+});
+
+test('ferme générée : la station du robot est un bloc à poser dehors ; sans elle, il ne se recharge pas', () => {
+  const s = chantier('robot1');
+  setInv(s, { station_robot: 1 });
+  const z = terrainLibre(s, 3, 3), t = (z.r + 1) * z.W + z.c + 1;
+  assertEqual(poserBloc(s, 'station_robot', t).ok, false, 'pas sans le robot');
+  grantTech(s, 'cu_recolte_auto');
+  assertEqual(robotStation(s), null, 'pas encore posée');
+  const b = robotBattery(s);
+  b.mwh = 0;
+  runRobotCharge(s, 1000);
+  assertEqual(b.mwh, 0, 'sans station : pas de charge');
+  const base = robotTrip(s, { taches: [{ t: 'recolter', id: 'x' }], base: 0 }, 0);
+  assert(poserBloc(s, 'station_robot', t).ok);
+  assertEqual([robotStation(s), blocBloque(s, t), countItem(s, 'station_robot')], [t, true, 0], 'posée : elle arrête le passage');
+  assert(base.route >= 0);
+  setInv(s, { station_robot: 1 });
+  assertEqual(poserBloc(s, 'station_robot', t + 2).ok, false, 'une seule station');
+  reprendreBloc(s, t);
+  assertEqual([robotStation(s), countItem(s, 'station_robot')], [null, 2], 'reprise : dans l\'inventaire');
+  // (une ancienne partie qui a le robot reçoit sa station)
+  const v = migrate({ ...JSON.parse(JSON.stringify(s)), version: 40, inventaire: JSON.parse(JSON.stringify(s.inventaire)) });
+  assertEqual(countItem(v, 'station_robot'), 2, 'elle en a déjà : rien de plus');
+  setInv(s, {});
+  const w = migrate({ ...JSON.parse(JSON.stringify(s)), version: 40 });
+  assertEqual([w.version, countItem(w, 'station_robot')], [STATE_VERSION, 1]);
+  void robotCapacity;
 });

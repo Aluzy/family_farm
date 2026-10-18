@@ -69,9 +69,17 @@ ajouter : le JSON donne l'ordre).
   place (`state.aRamasser`, `js/engine/ramassage.js`). Une récolte se ramasse au geste même ;
   le reste, il va le chercher quand le joueur appuie sur sa bulle (« 🥚 6 » au-dessus du Poulailler, « 🥛 2 🧶 1 » au-dessus
   de l'Étable, « 🍎 4 » sur l'arbre…), même la nuit. Au Poulailler et à l'Étable, il remplit son
-  panier et le rapporte devant la maison. À chaque prise, une bulle « +6 🥕 » monte au-dessus de
+  panier : tout entre aussitôt dans l'inventaire, sans retour à la maison. À chaque prise, une bulle « +6 🥕 » monte au-dessus de
   lui, reste un instant puis s'estompe ; une prise qui arrive avant qu'elle ait disparu s'y
   additionne.
+- **Le second adulte du foyer** (un adulte qui n'est pas le personnage principal : `aidant`,
+  `js/engine/ramassage.js`) s'occupe des bêtes tout seul. Le jour (de 7 h à 18 h 45), quand il y a
+  à faire au Poulailler (des poules à nourrir et du blé, des œufs) ou à l'Étable (du lait, de la
+  laine, des moutons prêts à tondre : `aideAFaire`), il y va, se baisse, puis nourrit les poules,
+  tond les moutons (sans l'énergie du personnage principal) et prend ce qui attend : tout entre
+  dans l'inventaire, une bulle « +x » monte au-dessus de lui (`aideBetes`,
+  `js/famille-ferme.js`). Sans la carte de la ferme à l'écran (une autre carte affichée), il le
+  fait quand même, aux mêmes heures.
 - **Poulailler et Étable** (version 1.19) : ils ne se vident plus d'eux-mêmes. Un double appui
   sur le bâtiment (ou un appui sur sa bulle) l'y envoie (`collect`) : au Poulailler, il prend les
   œufs ; à l'Étable, il tond les moutons prêts (énergie de la tonte, comme le bouton « Tondre » ;

@@ -165,7 +165,6 @@
     const s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1).setVisible(false);
     let x = 0, y = 0, face = 'bas', flip = false, shown = false, alpha = 0, fade = 0;
     let lastPos = null;             // dernière position donnée par pos()
-    let basket = false;
     function frame(name) {
       const k = F[name];
       if (k !== undefined) s.setFrame(k);
@@ -248,7 +247,7 @@
           if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; look(dx, dy); }
           walked += d;
           const k = Math.floor(walked / STRIDE) % 4;
-          draw(`${basket || (opts && opts.basket) ? 'panier' : 'marche'}_${face}_${k}`);
+          draw(`marche_${face}_${k}`);
           if (left - d > 0.3) return false;
           path.shift();
           return !path.length;
@@ -444,8 +443,8 @@
     }
     // Version 1.19 : le Poulailler et l'Étable ne se vident pas d'eux-mêmes ; le joueur l'y
     // envoie (double appui sur le bâtiment, ou appui sur sa bulle). Il y va, remplit son panier
-    // (o.collect : les œufs ; le lait, et il tond les moutons prêts) et le rapporte devant la
-    // maison.
+    // (o.collect : les œufs ; le lait, et il tond les moutons prêts) : tout entre aussitôt dans
+    // l'inventaire (la bulle « +x » monte au-dessus de lui), sans le rapporter à la maison.
     const isBuilding = (lieu) => lieu === 'poulailler' || lieu === 'etable';
     function fillBasket(lieu) {
       claimed.delete(lieu);
@@ -457,13 +456,10 @@
       const spot = lieu === 'poulailler' ? coopSpot() : barnSpot();
       if (reduced() || !spot) { fillBasket(lieu); return true; }
       claimed.add(lieu);
-      const d = door();
       const list = [
         walkTo(spot.x, spot.y, { far: true }),
         act('ramasse', { face: 'cote', flip: false }),
-        once(() => { fillBasket(lieu); basket = true; }),
-        walkTo(d.x, d.y + 4, { basket: true, far: true }),
-        once(() => { basket = false; }),
+        once(() => fillBasket(lieu)),
         wait(0.6),
       ];
       if (job && job.idle) job = null;
@@ -577,7 +573,7 @@
       x = mx; y = my;
       look(steer.x, steer.y);
       steerWalked += d;
-      draw(d > 0.01 ? `${basket ? 'panier' : 'marche'}_${face}_${Math.floor(steerWalked / STRIDE) % 4}` : `idle_${face}_0`);
+      draw(d > 0.01 ? `marche_${face}_${Math.floor(steerWalked / STRIDE) % 4}` : `idle_${face}_0`);
     }
 
     // Il arrive d'une autre carte (la carte de transition) : il apparaît en (tx, ty) (la case
@@ -601,7 +597,7 @@
       // la ferme générée : il va se coucher sur sa paillasse, dehors (couchage)
       const lit = o.couchage ? o.couchage() : null;
       if (lit) {
-        releaseAll(); claimed.clear(); basket = false; job = null;
+        releaseAll(); claimed.clear(); job = null;
         // déjà rentré (la maison, provisoire) : il ressort par la porte
         if (!shown || home) { const d = door(); x = d.x; y = d.y + 4; face = 'bas'; flip = false; home = false; where = null; appear(); }
         if (reduced()) { jobs = []; x = lit.x; y = lit.y; couche = { lit, t: 0, slept: false }; setTimeout(done, 0); return; }
@@ -612,7 +608,7 @@
       if (!shown || home) { setTimeout(done, 0); return; }
       const d = door();
       const inside = () => { face = 'haut'; vanish(); home = true; where = 'maison'; arriving = true; };
-      releaseAll(); claimed.clear(); basket = false; job = null;
+      releaseAll(); claimed.clear(); job = null;
       if (reduced()) { jobs = []; inside(); setTimeout(done, 0); return; }
       jobs = [walkTo(d.x, d.y, { far: true, hurry: true, max: HOME_MAX }), once(inside), wait(FADE_S), once(done)];
       idleAge = 0;
@@ -748,7 +744,7 @@
         inside.wait = reduced() ? 0 : Math.min(ARRIVE_MAX, Math.hypot(to.x - from.x, to.y - from.y) / (SPEED * 2));
         inside.x = room.entree.x; inside.y = room.entree.y; inside.alpha = 0;
         // dehors : il est parti (ce qu'il allait faire attendra)
-        jobs = []; job = null; claimed.clear(); basket = false;
+        jobs = []; job = null; claimed.clear();
         shown = false; fade = 0; alpha = 0; s.setVisible(false);
         x = to.x; y = to.y;
         where = room.id; home = room.id === 'maison';
@@ -1147,6 +1143,8 @@
       // Un chemin par les cases libres, de (x0, y0) à (x1, y1) : [{ x, y }…] ou null (pour
       // les autres membres de la famille, js/famille-ferme.js).
       path: (x0, y0, x1, y1) => findPath(x0, y0, x1, y1),
+      // Où se tenir pour prendre ce qui attend au Poulailler ou à l'Étable ({ x, y }, ou null).
+      lieu: (l) => (l === 'poulailler' ? coopSpot() : l === 'etable' ? barnSpot() : null),
       // « Dormir » : il rentre dans la maison (done : il est dedans).
       goHome,
       // Où la vue de l'intérieur doit être (x), pendant qu'il va se coucher ; null sinon.

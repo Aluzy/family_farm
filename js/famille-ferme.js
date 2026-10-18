@@ -5,6 +5,10 @@
  *
  *   - la nuit, avant 7 h et à partir de 18 h 45 (le repas est à 19 h), ils sont dans la maison ;
  *   - le jour, ils sortent par la porte et flânent autour de la maison, d'un coin à l'autre ;
+ *   - le second adulte du foyer (model.aide, le moteur : aidant) s'occupe des bêtes : le jour,
+ *     quand il y a à faire au Poulailler ou à l'Étable (model.aide.lieux), il y va, se baisse
+ *     (GESTE s) et nourrit les poules, prend les œufs, le lait et la laine (o.aide : tout entre
+ *     dans l'inventaire ; o.gain : la bulle « +x » au-dessus de lui) ;
  *   - les enfants vont à l'école le lundi, le mardi, le jeudi et le vendredi : à 7 h ils
  *     prennent le chemin de l'est jusqu'au bord de la carte (le bus les attend sur la carte de
  *     transition) et s'effacent ; à 16 h 30, ils reviennent par le même bout du chemin.
@@ -17,6 +21,7 @@
  *   famille.sync(model)          // model.famille : [{ id, perso, enfant }], model.heure, model.semaine, model.nuit
  *   famille.update(deltaMs, room)
  *   famille.info()               // pour les tests : où est chacun
+ *   famille.aidePos()            // où est le second adulte (sa bulle « +x »), ou null
  */
 (function (global) {
   'use strict';
@@ -29,6 +34,8 @@
   const ROAM = 6 * T;                      // autour de la maison
   const FADE_S = 0.5;
   const PAS = 4;                           // px par image de marche
+  const GESTE = 1.2;                       // s : le second adulte se baisse au Poulailler, à l'Étable
+  const REPOS = 3;                         // s avant de chercher autre chose à faire
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -73,6 +80,7 @@
         coin: { dx: rand(-ROAM, ROAM), dy: rand(T, ROAM) },
         // en file : un peu de retard au départ, un pas de côté sur le chemin
         retard: k * 0.7, cote: ((k % 3) - 1) * 6, pause: 0,
+        tache: null, geste: 0, repos: 0,     // le second adulte : le lieu où il va, son geste
       };
     }
 
@@ -111,13 +119,34 @@
       m.attente = rand(1, 3);
     }
 
+    // Le second adulte : y a-t-il à faire au Poulailler ou à l'Étable ? Il y va, se baisse
+    // (m.geste), puis le jeu fait le travail (o.aide) et la bulle monte (o.gain).
+    function soccuper(m) {
+      const A = model && model.aide;
+      if (!A || A.id !== m.id || m.enfant || m.tache || m.repos > 0 || !o.aide) return false;
+      const lieu = (A.lieux || []).find((l) => o.fermier && o.fermier.lieu && o.fermier.lieu(l));
+      if (!lieu) return false;
+      const spot = o.fermier.lieu(lieu);
+      m.tache = lieu;
+      aller(m, spot.x, spot.y, () => { m.face = 'cote'; m.flip = false; m.geste = reduced() ? 0.01 : GESTE; });
+      return true;
+    }
+    function finirTache(m) {
+      const lieu = m.tache;
+      m.tache = null;
+      m.repos = REPOS;
+      o.aide(lieu, (items) => { if (items && o.gain) o.gain(items); });
+    }
+
     function decider(m, dt) {
       const v = voulu(m);
       const d = door(), e = o.exit;
+      if (m.repos > 0) m.repos -= dt;
       if (m.ou === 'dehors' && m.visible && m.fade >= 0) {
+        if (m.tache && v !== 'dehors') m.tache = null;
         if (v === 'dedans' && !m.puis) aller(m, d.x, d.y, () => disparaitre(m, 'dedans'));
         else if (v === 'ecole' && !m.puis) aller(m, e.x, e.y, () => disparaitre(m, 'ecole'));
-        else if (v === 'dehors' && !m.chemin.length) {
+        else if (v === 'dehors' && !m.chemin.length && !m.tache && !soccuper(m)) {
           m.attente -= dt;
           if (m.attente <= 0) { m.attente = rand(3, 8); flanerVers(m); }
         }
@@ -179,6 +208,12 @@
       update(deltaMs, room) {
         const dt = Math.min(deltaMs, 100) / 1000;
         for (const m of membres.values()) {
+          // (le second adulte se baisse au Poulailler ou à l'Étable)
+          if (m.geste > 0 && !room) {
+            m.geste -= dt;
+            if (m.geste <= 0) { m.geste = 0; finirTache(m); }
+            else { dessiner(m, `ramasse_${Math.min(2, Math.floor((1 - m.geste / GESTE) * 3))}`); continue; }
+          }
           if (!room) decider(m, dt);
           const marche = !room && avancer(m, dt);
           if (m.fade) {
@@ -192,7 +227,11 @@
         }
       },
       info() {
-        return [...membres.values()].map((m) => ({ id: m.id, enfant: m.enfant, ou: m.ou, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0 }));
+        return [...membres.values()].map((m) => ({ id: m.id, enfant: m.enfant, ou: m.ou, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache }));
+      },
+      aidePos() {
+        const A = model && model.aide, m = A && membres.get(A.id);
+        return m && m.visible ? { x: m.x, y: m.y } : null;
       },
       destroy() { for (const m of membres.values()) m.s.destroy(); membres.clear(); },
     };

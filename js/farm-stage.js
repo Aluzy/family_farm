@@ -250,6 +250,9 @@
             this.family = global.FamilleFerme.attach(this, {
               fermier: this.fermier, frames: (this.cache.json.get('perso_cases') || cases || {}).frames, reduced: reducedMotion,
               exit: { x: this.exitAt().x - 12, y: this.exitAt().y },
+              // le second adulte a fini au Poulailler ou à l'Étable : ce qu'il a pris, sa bulle
+              aide: (lieu, done) => setTimeout(() => done(this.ctx.bridge && this.ctx.bridge.aide ? this.ctx.bridge.aide(lieu) : null), 0),
+              gain: (items) => this.showGainAide(items),
               file: (perso, enfant) => v(K.planche(perso, enfant)),
             });
           } catch (e) { console.warn('[FarmStage] famille indisponible', e); }
@@ -418,6 +421,7 @@
         if (!this.room) this.placeLabels();
         this.placePiles();
         this.placeGain();
+        this.placeGainAide();
         this.reportView();
       }
 
@@ -573,7 +577,7 @@
           const b = this.bot.img;
           test(b.x - b.width / 2, b.y, b.width, b.height, b.depth + 1, 'robot');
           const st = this.bot.station;
-          if (st) test(st.x - st.width / 2, st.y, st.width, st.height, st.depth + 1, 'robot');
+          if (st && st.visible) test(st.x - st.width / 2, st.y, st.width, st.height, st.depth + 1, 'robot');
         }
         if (this.tank) test(this.tank.x, this.tank.y, this.tank.width, this.tank.height, this.tank.depth + 1, 'eau');
         // Version 1.13 : un arbre en fruits se cueille, un emplacement libre propose de

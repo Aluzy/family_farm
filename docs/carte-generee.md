@@ -379,6 +379,15 @@ parties.
          attend le panneau et la pompe.
        - Le puits et la citerne gardent leurs images (la pompe qui vibre, le niveau de l'eau),
          posées sur leurs blocs. Un appui ouvre l'énergie ou l'eau.
+       - **La station du robot** (1 lingot de fer, 1 de cuivre, 2 planches) se fabrique aussi à
+         l'Atelier et se pose dehors, une seule, quand le robot est là (récolte ou semis
+         automatiques). Le robot part d'elle et y revient se recharger (`robotStation`) ; tant
+         qu'elle n'est pas posée, il attend près de la maison et ne se recharge pas (ni le jour,
+         ni la nuit). Elle garde son image animée (`station_robot.png`, `machines.js`) ; un
+         appui ouvre la fenêtre du robot. Une ancienne partie qui a déjà le robot en reçoit une
+         dans l'inventaire (migration v40 → v41).
+       - **Le robot contourne** les bâtiments, les murs, l'eau et les arbres, comme le
+         personnage (`Fermier.path`) : il ne passe plus au travers.
      - ✅ **5b-3, le poulailler** : le Poulailler quitte la cour.
        - Le **nichoir** (4 planches, 3 fibres) se fabrique à l'Atelier et se pose dans une pièce
          close. On n'achète plus le Poulailler sur la ferme générée (`buildPoulailler` refuse).

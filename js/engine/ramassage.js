@@ -17,7 +17,8 @@
 
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
-import { shear, storeWithSilo, woolReady } from './animals.js';
+import { canFeedHen, feedAllHens, hensToFeed, shear, storeWithSilo, woolReady } from './animals.js';
+import { mainCharacter } from './depart.js';
 import { TIRED } from './stamina.js';
 
 function pileId(lieu, ref) {
@@ -91,4 +92,48 @@ export function pickUpAll(state) {
 // Étape nocturne, la première : ce qui traîne encore est rentré avant les repas.
 export function collectLeftovers(state) {
   return pickUpAll(state);
+}
+
+/* ---------- le second adulte du foyer s'occupe des bêtes ---------- */
+
+// Le second adulte du foyer (un adulte qui n'est pas le personnage principal), ou null : le
+// jour, il nourrit les poules et prend les œufs au Poulailler, le lait et la laine à l'Étable
+// (il tond les moutons prêts), tout seul (js/famille-ferme.js ; sans la carte, js/ui/stage.js).
+export function aidant(state) {
+  const p = mainCharacter(state);
+  return ((state.famille && state.famille.membres) || []).find((m) => !m.enfant && m !== p) || null;
+}
+
+// Où l'aidant a à faire, dans l'ordre : le Poulailler (des poules à nourrir et du blé, ou des
+// œufs qui attendent), l'Étable (du lait ou de la laine qui attendent, des moutons prêts).
+export function aideAFaire(state) {
+  if (!aidant(state)) return [];
+  const a = state.aRamasser || {}, P = state.poulailler, E = state.paturage;
+  const out = [];
+  if (a.poulailler || (P && P.poules > 0 && hensToFeed(state) > 0 && canFeedHen(state))) out.push('poulailler');
+  if (a.etable || (E && (E.moutons || []).some(woolReady))) out.push('etable');
+  return out;
+}
+
+// L'aidant fait le travail du lieu (le Poulailler ou l'Étable) : il nourrit les poules, tond
+// les moutons prêts (sans l'énergie du personnage principal) et prend ce qui attend, qui entre
+// dans l'inventaire. Renvoie { ok, items, nourries }.
+export function aideBetes(state, lieu) {
+  if (!aidant(state)) return fail('Il faut un second adulte dans le foyer.');
+  const items = {};
+  let nourries = 0;
+  if (lieu === 'poulailler') {
+    const P = state.poulailler;
+    if (P && P.poules > 0 && hensToFeed(state) > 0 && canFeedHen(state)) nourries = feedAllHens(state).nourries || 0;
+  } else if (lieu === 'etable' && state.paturage) {
+    for (const m of state.paturage.moutons || []) {
+      if (!woolReady(m)) continue;
+      const r = shear(state, m.id, true);
+      if (r.ok) { const laine = DATA.ANIMAUX.mouton.laine; items[laine] = (items[laine] || 0) + r.laine; }
+    }
+  } else return fail('Lieu inconnu.');
+  const r = pickUp(state, lieu);
+  if (r.ok) for (const [item, qty] of Object.entries(r.items)) items[item] = (items[item] || 0) + qty;
+  if (!nourries && !Object.keys(items).length) return fail('Rien à faire ici.');
+  return { ok: true, items, nourries };
 }

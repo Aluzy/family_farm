@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { STATE_VERSION } from './base.js';
 import { newVille } from './ville.js';
 import { batteryCapacity, newDayStats, startFarm } from './devices.js';
-import { addItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
+import { addItem, countItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
 } from './family.js';
@@ -10,7 +10,7 @@ import { makePlot, seedItem, startPlots, zoneTile } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
 import { newCommerce } from './commerce.js';
-import { newAutoReport } from './automation.js';
+import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
@@ -334,6 +334,16 @@ export const MIGRATIONS = {
   39: (state) => {
     const s2 = { ...state, version: 40 };
     if (s2.carte && s2.paturage && typeof s2.paturage === 'object') { s2.paturage = { ...s2.paturage }; majPoulailler(s2); }
+    return s2;
+  },
+  // v40 → v41 : sur la ferme générée, la station du robot est un bloc à poser (fabriqué à
+  // l'Atelier) : qui a déjà le robot en reçoit une dans l'inventaire.
+  40: (state) => {
+    const s2 = { ...state, version: 41 };
+    if (s2.carte && s2.inventaire && robotOn(s2) && robotStation(s2) === null && !countItem(s2, 'station_robot')) {
+      s2.inventaire = JSON.parse(JSON.stringify(s2.inventaire));
+      addItem(s2, 'station_robot', 1);
+    }
     return s2;
   },
 };

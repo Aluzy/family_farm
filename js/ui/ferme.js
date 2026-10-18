@@ -26,7 +26,7 @@ import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frig
 import { renderAteliers, renderMoulin } from './cuisine.js';
 import { renderChapterBanner } from './chapitres.js';
 import {
-  robotAutonomy, robotBattery, robotBusy, robotChargePct, robotOn, robotTaskCapacity, robotTasksLeft, upgradeRobotBattery,
+  robotAutonomy, robotBattery, robotBusy, robotChargePct, robotOn, robotStation, robotTaskCapacity, robotTasksLeft, upgradeRobotBattery,
 } from '../engine/automation.js';
 import { artIcon } from './animations.js';
 import { helpBtn, tutoTarget } from './aide.js';
@@ -213,6 +213,9 @@ export function renderRobotCard() {
   else if (pct >= 100) charge = 'Batterie pleine';
   else if (robotBusy(state)) charge = 'il se rechargera à sa station';
   else if (nightActive(state)) charge = 'il se recharge cette nuit';
+  // sur la ferme générée, sa station est un bloc à poser (fabriqué à l'Atelier)
+  const station = robotStation(state);
+  if (station === null) charge = 'pas de station posée : il ne se recharge pas';
   const cls = pct < 20 ? ' bad' : pct < 40 ? ' warn' : '';
   const max = bat.paliers >= B.PALIERS_MAX;
   const btn = max
@@ -224,7 +227,7 @@ export function renderRobotCard() {
         <span class="bar" role="progressbar" aria-label="Batterie du robot" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
         <span class="muted">Encore <span class="num">${formatNumber(robotTasksLeft(state))}</span> tâches · ${charge}</span>
         <span>${etat}</span>
-        <span class="muted">Autonomie : <span class="num">${formatNumber(robotAutonomy(state))} %</span>, soit ${formatNumber(robotTaskCapacity(state))} tâches batterie pleine. Sa station, à côté de la maison, le recharge sur l'électricité de la ferme (${formatNumber(B.WH_TACHE)} Wh par tâche).</span>
+        <span class="muted">Autonomie : <span class="num">${formatNumber(robotAutonomy(state))} %</span>, soit ${formatNumber(robotTaskCapacity(state))} tâches batterie pleine. ${station === null ? 'Fabrique sa station de charge à l\'Atelier et pose-la dehors (🔨) : elle le recharge' : station === 'maison' ? 'Sa station, à côté de la maison, le recharge' : 'Sa station le recharge'} sur l'électricité de la ferme (${formatNumber(B.WH_TACHE)} Wh par tâche).</span>
         <span class="device-actions">${btn}</span>
       </div>`;
 }
