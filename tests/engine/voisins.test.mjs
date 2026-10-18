@@ -3,7 +3,7 @@
    Lancer seul : node --test tests/engine/voisins.test.mjs (ou node tests/run-tests.mjs voisins).
    ========================================================================== */
 
-import { arbresDebout, createNewGame, DATA, runNight, TRANSITION, transitionPlan, transitionSeed, treeGone, voisinAbat, voisinFoyer, voisinQuota, voisinsFoyers, voisinsVue } from '../../js/engine/index.js';
+import { arbresDebout, createNewGame, DATA, livraison, runNight, TRANSITION, transitionPlan, transitionSeed, treeGone, voisinAbat, voisinFoyer, voisinQuota, voisinsFoyers, voisinsVue } from '../../js/engine/index.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const GRAINES = ['1', '2', '77', 'abc', 'b3', 'x9', '42', 'zz', 'ferme', '123456789'];
@@ -91,6 +91,32 @@ test('voisins : la maison grandit quand la famille s\'enrichit, une étape par n
   assertEqual(f.niveau, avant);
 });
 
+test('voisins : le livreur emmène les caisses au marché ; chaque famille touche leur prix à son arrivée, une fois', () => {
+  const { s, P } = partie();
+  runNight(s);
+  const F = voisinsFoyers(s), avant = Object.fromEntries(Object.entries(F).map(([k, f]) => [k, f.argent]));
+  const valeurs = Object.fromEntries(Object.keys(F).map((k) => [k, voisinsVue(s)[k].valeur]));
+  assert(Object.values(valeurs).some((v) => v > 0), 'des caisses pleines le matin');
+  const r = livraison(s);
+  for (const k of Object.keys(F)) {
+    assertEqual(F[k].argent - avant[k], valeurs[k], `${k} : le prix de sa caisse crédité`);
+    assertEqual(r.foyers[k], valeurs[k]);
+    assertEqual([voisinsVue(s)[k].valeur, voisinsVue(s)[k].livree], [0, true], `${k} : la caisse vidée`);
+  }
+  assertEqual(r.total, Object.values(valeurs).reduce((a, b) => a + b, 0));
+  assertEqual(livraison(s).total, 0, 'une seule livraison par jour');
+  runNight(s);
+  for (const k of Object.keys(F)) {
+    const J = F[k].journal.at(-1);
+    assertEqual(J.vendu, valeurs[k], `${k} : la journée compte la livraison du matin, sans la recréditer`);
+  }
+  // sans le joueur, la tournée se fait quand même : la caisse est vendue au début de la journée
+  const g = F[P.maisons[0].nom], v = voisinsVue(s)[P.maisons[0].nom].valeur;
+  runNight(s);
+  assertEqual(g.journal.at(-1).vendu, v);
+  for (const m of P.maisons) assert(m.caisse && m.caisse.arret, `${m.nom} : une caisse de collecte`);
+});
+
 test('voisins : l\'agriculteur sans argent mange ce qu\'il produit ; le bûcheron sans arbres ni argent a faim', () => {
   const { s, P } = partie();
   const ag = P.maisons.find((m) => m.metier === 'agriculteur').nom, bu = P.maisons.find((m) => m.metier === 'bucheron').nom;
@@ -101,6 +127,7 @@ test('voisins : l\'agriculteur sans argent mange ce qu\'il produit ; le bûchero
   assertEqual(fa.journal[fa.journal.length - 1].couverture, 100, 'l\'agriculteur se nourrit de son champ');
   fb.argent = 0;
   fb.stock = {};
+  fb.caisse = {};
   for (const id of arbresDebout(s, bu)) s.outils.arbres[id] = { retour: s.day + 99 };
   const avant = fb.bonheur;
   runNight(s);
@@ -126,7 +153,8 @@ test('voisins : sous les yeux du joueur, le bûcheron abat un arbre de la carte 
   runNight(s);
   const J = voisinsFoyers(s)[bu].journal.at(-1);
   assertEqual(J.arbres, quota, 'la journée compte les arbres vus');
-  assertEqual(J.vendu, quota * DATA.VOISINS.BUCHERON.BOIS * DATA.OBJETS.bois.prix, 'leur bois vendu');
+  assertEqual(J.caisse.bois, (DATA.VOISINS.BUCHERON.ARBRES * 2) * DATA.VOISINS.BUCHERON.BOIS, 'leur bois dans la caisse de collecte');
+  assertEqual(voisinsVue(s)[bu].valeur, J.caisse.bois * DATA.OBJETS.bois.prix, 'ce qu\'elle vaut au marché');
   const vue = voisinsVue(s)[ag];
   assert(vue.champ.every((p) => p.stade >= -1 && p.stade <= 3), 'les stades du champ à dessiner');
 });

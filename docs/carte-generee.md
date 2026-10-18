@@ -276,6 +276,21 @@ parties.
     devant le four ou la cuisinière.
   - Un toucher sur un voisin : il raconte son métier et sa journée d'hier (arbres abattus ou
     récolte, ventes, plats du dîner), son argent de côté et son bonheur.
+- **Le livreur** (`js/carte/ville/livreur.js` ; le plan : `LIVREUR`, `js/engine/transition.js`) :
+  au-dessus de l'arrêt de bus, son habitation (il vit seul), l'entrepôt et, entre les deux, le
+  parking de son triporteur électrique (la carte de Tiled leur laisse la place : `RESERVE`,
+  `PARKING`, `scripts/ville/transition.py`). Devant chaque maison, au bord du chemin, une caisse
+  de collecte : chaque soir, la famille y met ce qu'elle vend (le bois, les légumes en trop).
+  - À 6 h, il se lève, va au parking, monte sur son triporteur et part vers la ferme en
+    s'arrêtant à chaque caisse pleine (de l'est à l'ouest), dont il prend les marchandises ; puis
+    il fait demi-tour jusqu'au marché de la ville, au bout de la route.
+  - En y arrivant, la caisse de chaque famille est vendue et son prix lui est aussitôt crédité
+    (`livraison`, `js/engine/voisins.js` ; un « +12 💰 » monte au-dessus de chaque caisse).
+  - Il reste en ville jusqu'à 11 h, revient garer son triporteur, rentre chez lui et se couche
+    à 22 h. Sans le joueur, la tournée se fait quand même : la caisse est vendue au début de la
+    journée suivante, ou à l'arrivée du joueur après 9 h.
+  - Un toucher sur lui : il raconte sa tournée ; sur une caisse : ce qu'elle contient et ce
+    qu'elle vaut au marché.
 - **Les ressources du jour sont pour le joueur** (`ramasserTransition`, `js/engine/transition.js`) :
   des petites pierres, des morceaux de bois et des herbes, 36 par jour (`ressourcesDuJour`). Un
   toucher sur l'une d'elles y envoie le personnage, qui la prend en arrivant. Comme sur la ferme

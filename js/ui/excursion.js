@@ -17,8 +17,8 @@ import { closeModal, openModal } from './modal.js';
 import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
 import { farmSeed } from '../engine/terrain.js';
-import { ramasserTransition, ressourcesDuJour, transitionPlan, transitionPris, transitionSeed } from '../engine/transition.js';
-import { voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
+import { LIVREUR, ramasserTransition, ressourcesDuJour, transitionPlan, transitionPris, transitionSeed } from '../engine/transition.js';
+import { livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -241,7 +241,7 @@ window.FermeHote = {
       persistState();
     }
     const g = transitionSeed(state);
-    return { plan: transitionPlan(g), ressources: ressourcesDuJour(g, state.day), pris: transitionPris(state), jour: state.day };
+    return { plan: transitionPlan(g), ressources: ressourcesDuJour(g, state.day), pris: transitionPris(state), jour: state.day, livreur: LIVREUR };
   },
   // le joueur y ramasse une ressource du jour (son id) : { ok, item, n } ou { ok: false }
   ramasserTransition: (id) => nuit() || joue(ramasserTransition(state, id)),
@@ -258,6 +258,13 @@ window.FermeHote = {
     for (const c of DATA.VOISINS.AGRICULTEUR.CULTURES) { nom(c); if (DATA.CULTURES[c].sprite) cultures[c] = DATA.CULTURES[c].sprite; }
     for (const e of DATA.VOISINS.MAISON.ETAPES) noms['maison:' + e.id] = e.nom;
     return { foyers: voisinsVue(state), noms, cultures };
+  },
+  // le livreur arrive au marché : la caisse de chaque famille vendue, son prix crédité
+  // ({ total, foyers: { <maison>: gain } })
+  livraison: () => {
+    const r = livraison(state);
+    if (r.total) persistState();
+    return r;
   },
   // sous les yeux du joueur, le bûcheron de `maison` abat l'arbre `id` : { ok, bois, reste }
   voisinAbat: (maison, id) => {

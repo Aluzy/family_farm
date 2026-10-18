@@ -58,6 +58,26 @@ export function transitionSeed(state) {
   return farmSeed(state) || (state && state.graineVoisins ? String(state.graineVoisins) : '1');
 }
 
+// Le livreur (js/carte/ville/livreur.js), à l'est, au-dessus de l'arrêt de bus (la carte de
+// Tiled lui laisse la place : scripts/ville/transition.py, RESERVE, PARKING) : son habitation
+// (il vit seul : un lit), l'entrepôt, en blocs comme les maisons des voisins (leur plan : grille,
+// objets, lits, comme maisonPlan ; x, y : leur case en haut à gauche), et la place de son
+// triporteur électrique au parking (px, le milieu du bas). Fixes, quelle que soit la graine.
+export const LIVREUR = {
+  maison: {
+    nom: 'livreur', x: 61, y: 21, w: 5, h: 6, porte: { x: 63, y: 26 },
+    grille: ['MMMMM', 'Md.cM', 'M...M', 'MX..M', 'Mg.XM', 'MMPMM'],
+    objets: [{ nom: 'chaise', x: 1, y: 3, w: 1 }, { nom: 'plante', x: 3, y: 4, w: 1 }],
+    lits: [[1, 1]],
+  },
+  entrepot: {
+    nom: 'entrepot', x: 75, y: 20, w: 7, h: 7, porte: { x: 77, y: 26 },
+    grille: ['MMMMMMM', 'MgggggM', 'M.....M', 'Mg...gM', 'Mga..gM', 'M.....M', 'MMPPMMM'],
+    objets: [], lits: [],
+  },
+  parking: { x: 70 * 16, y: 29 * 16 + 4 },
+};
+
 const plans = new Map();
 
 // Le plan de l'ouest de la carte pour la graine `graine` (sans les ressources : voir
@@ -141,6 +161,20 @@ function tirer(graine) {
   }
   maisons.sort((a, b) => a.x - b.x).forEach((m, i) => { m.nom = 'maison_' + (i + 1); });
 
+  // ----- la caisse de collecte de chaque maison (le livreur y prend chaque matin ce que la
+  // famille vend : js/engine/voisins.js) : au bord du chemin, au pied de l'allée, à côté d'elle ;
+  // le triporteur s'arrête sur le chemin, devant elle
+  for (const m of maisons) {
+    const nord = m.sens === 'bas';
+    for (const cx of [m.porte.x + 2, m.porte.x - 1]) {
+      const cy = cx >= 0 && cx < X ? (nord ? milieu[cx] - 2 : milieu[cx] + 1) : -1;
+      if (cy < 0 || maisons.some((o) => cx >= o.x - 1 && cx <= o.x + o.w && cy >= o.y - 1 && cy <= o.y + o.h)) continue;
+      m.caisse = { x: cx * 16 + 8, y: cy * 16 + 14, arret: { x: cx * 16 + 8, y: milieu[cx] * 16 } };
+      prend(cx, cy);
+      break;
+    }
+  }
+
   // ----- les métiers (js/engine/voisins.js) : bûcheron ou agriculteur, tour à tour (le premier
   // au hasard : il y a toujours les deux) ; le champ de chaque agriculteur, à côté de sa maison
   // (CHAMP cases, moins s'il manque de place), du côté opposé au chemin si rien n'y tient
@@ -194,7 +228,8 @@ function tirer(graine) {
       let ok = true;
       for (let i = x; i < x + l && ok; i++) for (let j = fy - 1; j <= fy; j++) if (pris[j][i] && !(j >= t - 2 && j <= t + 1)) ok = false;
       // (au-dessus du chemin, les cases sont prises par lui : on vérifie seulement les allées)
-      for (const m of maisons) if (m.porte.x + 1 >= x && m.porte.x <= x + l - 1) ok = false;
+      // (ni sur une allée, ni sur la caisse de collecte à côté d'elle)
+      for (const m of maisons) if (m.porte.x + 2 >= x && m.porte.x - 1 <= x + l - 1) ok = false;
       if (ok) { tampons.push({ nom, x, y: fy - 1 }); prend(x, fy - 1, l, 2); }
     }
     x += Math.max(1, l);

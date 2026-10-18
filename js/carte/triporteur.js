@@ -31,10 +31,11 @@
   // La case de la vue `face`, du coup de pédale `p`, de la couche `c` (0 : derrière, 1 : devant).
   const caseDe = (face, p, c) => (VUES.indexOf(face) * 2 + p) * 2 + c;
 
-  function triporteur(scene) {
-    if (!scene.textures.exists(TRIPORTEUR.key)) return null;
-    const sous = scene.add.image(0, 0, TRIPORTEUR.key, 0).setOrigin(0.5, 1).setVisible(false);
-    const sur = scene.add.image(0, 0, TRIPORTEUR.key, 1).setOrigin(0.5, 1).setVisible(false);
+  // (`key` : une autre planche aux mêmes cases, le triporteur électrique du livreur)
+  function triporteur(scene, key = TRIPORTEUR.key) {
+    if (!scene.textures.exists(key)) return null;
+    const sous = scene.add.image(0, 0, key, 0).setOrigin(0.5, 1).setVisible(false);
+    const sur = scene.add.image(0, 0, key, 1).setOrigin(0.5, 1).setVisible(false);
     return {
       place(x, y, face, flip, roule, alpha = 1) {
         const v = VUES.includes(face) ? face : 'bas';

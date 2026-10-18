@@ -1,6 +1,10 @@
 # Le triporteur du personnage (assets/triporteur.png) : un tricycle à caisse de bois à l'avant
 # (deux roues devant sous la caisse, une derrière sous la selle), cadre vert. Le personnage s'y
 # assoit (ses cases assis_<vue>, js/carte/triporteur.js) ; la carte le pose sur la selle.
+# Le triporteur électrique du livreur de la carte de transition (assets/triporteur_electrique.png,
+# js/carte/ville/livreur.js) : le même, cadre bleu, une batterie jaune sous la selle, la caisse
+# marquée d'un éclair. Et la caisse de collecte posée au bord du chemin devant chaque maison
+# des voisins (assets/caisse_collecte.png, 16 × 16 : pleine, vide).
 #
 # Cases de 40 × 32, le milieu du bas (20, 31) aux pieds du personnage, sur une rangée, dans cet
 # ordre : pour chaque vue (bas : de face ; haut : de dos ; cote : de profil, tourné vers la
@@ -8,7 +12,8 @@
 # (derrière le personnage) puis « dessus » (devant lui : la caisse vue de face, la roue arrière
 # vue de dos). Lumière en haut à gauche, contour sombre.
 #
-#   python3 scripts/personnage/triporteur.py            écrit assets/triporteur.png
+#   python3 scripts/personnage/triporteur.py            écrit assets/triporteur.png, triporteur_electrique.png
+#                                                        et caisse_collecte.png
 #   python3 scripts/personnage/triporteur.py --apercu   écrit aussi apercu_triporteur.png
 import os
 import sys
@@ -147,17 +152,88 @@ def vue_cote(p):
     return contour(dessous), contour(dessus)
 
 
-def main():
-    cases = []
-    for vue in VUES:
-        for p in (0, 1):
-            dessous, dessus = {'bas': vue_bas, 'haut': vue_haut, 'cote': vue_cote}[vue](p)
-            cases += [dessous, dessus]
-    planche = Image.new('RGBA', (W * len(cases), H), (0, 0, 0, 0))
+ELECTRIQUE = {'CADRE': (60, 104, 168, 255), 'CADRE_C': (110, 158, 220, 255), 'CADRE_S': (36, 64, 112, 255)}
+BATTERIE, ECLAIR = (232, 196, 56, 255), (250, 232, 120, 255)
+
+
+def planche(electrique=False):
+    """Les 12 cases du triporteur (vert) ou du triporteur électrique (bleu, batterie, éclair)."""
+    g = globals()
+    garde = {k: g[k] for k in ELECTRIQUE}
+    if electrique:
+        g.update(ELECTRIQUE)
+    try:
+        cases = []
+        for vue in VUES:
+            for p in (0, 1):
+                dessous, dessus = {'bas': vue_bas, 'haut': vue_haut, 'cote': vue_cote}[vue](p)
+                if electrique:
+                    dessous, dessus = electrifie(vue, dessous, dessus)
+                cases += [dessous, dessus]
+        return cases
+    finally:
+        g.update(garde)
+
+
+def electrifie(vue, dessous, dessus):
+    """La batterie sous la selle, l'éclair sur la caisse."""
+    d, e = ImageDraw.Draw(dessous), ImageDraw.Draw(dessus)
+    if vue == 'cote':
+        d.rectangle((12, 21, 16, 23), fill=BATTERIE)
+        d.line((30, 15, 32, 18), fill=ECLAIR)
+        d.line((32, 18, 30, 18), fill=ECLAIR)
+        d.line((30, 18, 33, 21), fill=ECLAIR)
+    elif vue == 'bas':
+        e.line((19, 21, 21, 24), fill=ECLAIR)
+        e.line((21, 24, 19, 24), fill=ECLAIR)
+        e.line((19, 24, 22, 27), fill=ECLAIR)
+    else:
+        e.rectangle((18, 20, 22, 21), fill=BATTERIE)
+    return dessous, dessus
+
+
+def caisse_collecte():
+    """La caisse de collecte (16 × 16, le pied en bas au milieu) : pleine (légumes, bûches), vide."""
+    out = []
+    for pleine in (True, False):
+        im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        if pleine:
+            for x, c in ((3, CAISSE[0]), (6, BOIS_S), (9, CAISSE[1]), (11, CAISSE[2])):
+                d.rectangle((x, 4, x + 2, 6), fill=c)
+        d.rectangle((2, 7, 13, 14), fill=BOIS)
+        d.line((2, 7, 13, 7), fill=BOIS_C)
+        d.line((2, 10, 13, 10), fill=BOIS_S)
+        d.line((2, 7, 2, 14), fill=BOIS_K)
+        d.line((13, 7, 13, 14), fill=BOIS_K)
+        d.line((7, 8, 8, 13), fill=BOIS_S)
+        px = im.load()
+        o = im.copy()
+        for y in range(16):
+            for x in range(16):
+                if not px[x, y][3] and any(0 <= x + dx < 16 and 0 <= y + dy < 16 and px[x + dx, y + dy][3] for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                    o.putpixel((x, y), CONTOUR)
+        out.append(o)
+    im = Image.new('RGBA', (32, 16), (0, 0, 0, 0))
+    for i, c in enumerate(out):
+        im.alpha_composite(c, (i * 16, 0))
+    return im
+
+
+def ecrit(cases, nom):
+    planche_ = Image.new('RGBA', (W * len(cases), H), (0, 0, 0, 0))
     for i, c in enumerate(cases):
-        planche.alpha_composite(c, (i * W, 0))
-    planche.save(os.path.join(ROOT, 'assets', 'triporteur.png'), optimize=True)
-    print(f'assets/triporteur.png : {len(cases)} cases de {W} × {H}')
+        planche_.alpha_composite(c, (i * W, 0))
+    planche_.save(os.path.join(ROOT, 'assets', nom), optimize=True)
+    print(f'assets/{nom} : {len(cases)} cases de {W} × {H}')
+
+
+def main():
+    ecrit(planche(True), 'triporteur_electrique.png')
+    caisse_collecte().save(os.path.join(ROOT, 'assets', 'caisse_collecte.png'), optimize=True)
+    print('assets/caisse_collecte.png : 2 cases de 16 × 16')
+    cases = planche()
+    ecrit(cases, 'triporteur.png')
     if '--apercu' in sys.argv:
         # chaque vue, ses deux couches l'une sur l'autre, en grand
         out = Image.new('RGBA', (W * 6 * 4, H * 4), (110, 160, 96, 255))
