@@ -22,7 +22,8 @@ import { chemin } from './chemin.js';
 //     (étape 5b). La maison n'y est plus : sa place (MAISON) reste dégagée, le chemin part de
 //     devant elle ; le foyer se bâtit (une pièce close avec une paillasse).
 // genererFerme(graine) → { carte, terrain } ; le terrain est celui de terrain-carte.js (plus
-// DECALAGE : où la cour a été posée, en tuiles). Les cartes déjà faites sont gardées.
+// DECALAGE : où la cour a été posée, en tuiles ; BUISSONS : les buissons). Les cartes déjà faites
+// sont gardées.
 
 export const FERME_GENEREE = {
   LARGEUR: 144, HAUTEUR: 114, T: 16,
@@ -35,12 +36,13 @@ export const FERME_GENEREE = {
 // nombre entier de tuiles plus loin.
 const MAISON = [513.5, 239, 94, 95.6];
 const COUR = {
-  serre: [736.1, 273.6, 94, 78.3], grange: [305, 253.8, 126.1, 81.6],
+  serre: [736.1, 273.6, 94, 78.3],
   zone_culture_1: [464.5, 385.1, 78.1, 94], moulin: [626.1, 412.3, 95.6, 127], verger: [625.1, 303.7, 12.8, 15.9],
   zone_culture_2: [622, 607.6, 130.8, 128.8], silo: [657, 238.5, 49.5, 64.3],
 };
-// (le Poulailler se bâtit aussi : une pièce close et un nichoir ; sa place reste dégagée)
-const POULAILLER = [128.5, 257, 63, 77];
+// (le Poulailler et l'Étable se bâtissent aussi : une pièce close et un nichoir, une mangeoire ;
+// leur place reste dégagée)
+const POULAILLER = [128.5, 257, 63, 77], GRANGE = [305, 253.8, 126.1, 81.6];
 // (le puits et la citerne, à côté du Moulin : se bâtissent aussi, étape 5b-2 ; leur place reste dégagée)
 const PUITS = [596, 390, 57, 38];
 [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
@@ -94,7 +96,7 @@ function fabriquer(graine) {
 
   // ---- 1. la cour : où elle va, ce qu'elle interdit
   let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
-  for (const [x, y, w, h] of Object.values(COUR).concat([MAISON, PUITS, POULAILLER])) {
+  for (const [x, y, w, h] of Object.values(COUR).concat([MAISON, PUITS, POULAILLER, GRANGE])) {
     bx0 = Math.min(bx0, Math.floor(x / T)); by0 = Math.min(by0, Math.floor(y / T));
     bx1 = Math.max(bx1, Math.ceil((x + w) / T)); by1 = Math.max(by1, Math.ceil((y + h) / T));
   }
@@ -384,6 +386,9 @@ function fabriquer(graine) {
     width: W, height: H, tilewidth: T, tileheight: T, nextlayerid: id, nextobjectid: 9501,
     graine, layers, tilesets: [],
   };
-  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy] });
+  // BUISSONS : les buissons posés, [colonne de gauche, rangée du pied, largeur, hauteur] en tuiles
+  // (on y cueille des baies : atelier.js)
+  const buissons = poses.filter((p) => p[2].startsWith('buisson')).map(([fy, fx, , w, h]) => [Math.round(fx / T - w / 2), Math.round(fy / T) - 1, w, h]);
+  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy], BUISSONS: buissons });
   return { carte, terrain };
 }

@@ -356,6 +356,8 @@ export function pastureCost(state) {
 export function buildPaturage(state) {
   const p = state.paturage;
   const deja = 'L\'Étable accueille déjà les moutons et les vaches.';
+  // la ferme générée : une mangeoire, fabriquée à l'Atelier, posée dans une pièce close (blocs.js)
+  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, l\'Étable se bâtit : une pièce close et une mangeoire (Atelier).');
   return buildWith(state, 'paturage', { built: p.construit, deja, cost: DATA.PATURAGE.PRIX_CONSTRUCTION, libelle: 'Étable préparée' }, () => {
     p.construit = true;
     p.places = DATA.PATURAGE.PLACES_DEPART;

@@ -110,6 +110,7 @@
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "four_pierre": { "nom": "Four de pierre", "icone": "🔥", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "nichoir": { "nom": "Nichoir", "icone": "🪺", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mangeoire": { "nom": "Mangeoire", "icone": "🛶", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "puits_pierre": { "nom": "Puits de pierre", "icone": "🪣", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "pompe": { "nom": "Pompe", "icone": "⛲", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "panneau_solaire": { "nom": "Panneau solaire", "icone": "☀️", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -256,6 +257,7 @@
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient", "ville": true },
     "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "mangeable": true, "categorie": "légume", "conservation": 3, "rachetable": false },
     "myrtille": { "nom": "Myrtille", "icone": "🫐", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 3, "rachetable": false },
+    "baies": { "nom": "Baies sauvages", "icone": "🍒", "energie": 5, "prix": 1, "mangeable": true, "categorie": "fruit", "conservation": 2, "rachetable": false },
     "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 12, "rachetable": false }
   },
   "//PLATS_RETIRES": [

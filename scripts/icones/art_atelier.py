@@ -1,5 +1,6 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
-# mur en pierre, la porte, la paillasse, le nichoir et l'Atelier (un marteau).
+# mur en pierre, la porte, la paillasse, le nichoir, la mangeoire, l'Atelier et les
+# baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
 
@@ -16,6 +17,8 @@ PALETTE = {
     'u': '#5a4630', 'v': '#c8b088', 'w': '#ecdcb4',
     # fer
     'm': '#1e2833', 'n': '#64707e', 'p': '#9aa8b8', 'q': '#dfe7ef',
+    # baies (du plus clair au plus sombre)
+    'h': '#ff9c8c', 'r': '#e8463e', 'x': '#c22a30', 'X': '#921c26', 'N': '#5e121a',
 }
 
 ICONS = {
@@ -132,6 +135,44 @@ ICONS = {
         '..OOoyoyoyoyOO..',
         '....OOOOOOOO....',
         '................',
+    ],
+    # mangeoire : une auge de planches sur pieds, pleine de foin
+    '🛶': [
+        '................',
+        '................',
+        '................',
+        '................',
+        '.....O.O..O.....',
+        '...OOyOYOyOO....',
+        '..OyYyyYyYyyO...',
+        '.kOyYoyYyoYyOkk.',
+        '.kOyoYyoYyoYyOk.',
+        'keeeeeeeeeeeeeek',
+        'kTTTTTTTTTTTTTTk',
+        'kkkkkkkkkkkkkkkk',
+        '.ktTtTtTtTtTtTk.',
+        '..ksssssssssk...',
+        '..ks.......sk...',
+        '..kk.......kk...',
+    ],
+    # baies sauvages : trois grappes rouges sur un brin de feuilles
+    '🍒': [
+        '................',
+        '..........GG....',
+        '.........GlLG...',
+        '........GlgG....',
+        '...NN..GgG......',
+        '..NhrN.G...NN...',
+        '.NhrxXN...NhrN..',
+        '.NrxXNN..NhrxXN.',
+        '..NXNN...NrxXNN.',
+        '...NN.....NXNN..',
+        '......NN...NN...',
+        '.....NhrN.......',
+        '....NhrxXN......',
+        '....NrxXNN......',
+        '.....NXNN.......',
+        '......NN........',
     ],
     # l'Atelier : un marteau, fer en haut, manche de bois
     '🔨': [

@@ -3,7 +3,9 @@
  * Sur la ferme générée (docs/carte-generee.md, étape 3), le moteur pose chaque matin des petites
  * pierres, des morceaux de bois et des herbes sur l'herbe (js/engine/atelier.js, ramassables) :
  * le modèle les donne (modèle.ramassables : [{ id, sorte, case }]), chacun a son image
- * (assets/ramassables.png, scripts/carte/ramassables.py), rangée selon son pied. Un appui
+ * (assets/ramassables.png, scripts/carte/ramassables.py), rangée selon son pied. Les baies :
+ * des grappes posées sur un buisson (modèle : la case du milieu de son pied ; RAMASSABLES.grappes),
+ * juste devant lui. Un appui
  * dessus : le personnage va à côté, se baisse et le prend (le pont : ctx.bridge.ramasser) ; la
  * bulle « +1 » monte et l'image s'efface.
  *
@@ -28,11 +30,19 @@
       for (const r of list || []) {
         seen.add(r.id);
         if (G.has(r.id)) continue;
+        const frame = RAMASSABLES.frames[r.sorte] || 0;
+        if (r.buisson) {
+          // sur le buisson : le bas de son pied, ses grappes devant lui (decor.js : pied − 3)
+          const bx = (r.case % cols) * T + T / 2, by = (Math.floor(r.case / cols) + 1) * T;
+          const imgs = RAMASSABLES.grappes.map(([dx, dy]) => this.add.image(bx + dx, by + dy, RAMASSABLES.key, frame).setOrigin(0.5, 1).setDepth(by - 2));
+          G.set(r.id, { id: r.id, sorte: r.sorte, x: bx, y: by - 8, foot: { x: bx, y: by }, imgs, busy: false });
+          continue;
+        }
         const x = (r.case % cols) * T + T / 2, y = Math.floor(r.case / cols) * T + RAMASSABLES.pied;
-        const img = this.add.image(x, y, RAMASSABLES.key, RAMASSABLES.frames[r.sorte] || 0).setOrigin(0.5, 1).setDepth(y);
-        G.set(r.id, { id: r.id, sorte: r.sorte, x, y, img, busy: false });
+        const img = this.add.image(x, y, RAMASSABLES.key, frame).setOrigin(0.5, 1).setDepth(y);
+        G.set(r.id, { id: r.id, sorte: r.sorte, x, y, imgs: [img], busy: false });
       }
-      for (const [id, g] of G) if (!seen.has(id) && !g.busy) { g.img.destroy(); G.delete(id); }
+      for (const [id, g] of G) if (!seen.has(id) && !g.busy) { g.imgs.forEach((i) => i.destroy()); G.delete(id); }
     },
 
     // Ce qu'il y a à ramasser sous le doigt (un peu plus large que l'image), ou null.
@@ -43,7 +53,7 @@
       for (const g of this.gatherables.values()) {
         if (g.busy) continue;
         const d = Math.hypot(wx - g.x, wy - (g.y - 6));
-        if (d <= r && d < bd) { best = g; bd = d; }
+        if (d <= (g.foot ? r + 10 : r) && d < bd) { best = g; bd = d; }
       }
       return best;
     },
@@ -57,10 +67,10 @@
         if (!got || !got.ok) { g.busy = false; return; }
         this.showGain(got.items);
         K.vibre('ramasse');
-        this.tweens.add({ targets: g.img, y: g.y - 6, alpha: 0, duration: 260, ease: 'Sine.easeOut', onComplete: () => g.img.destroy() });
+        for (const img of g.imgs) this.tweens.add({ targets: img, y: img.y - 6, alpha: 0, duration: 260, ease: 'Sine.easeOut', onComplete: () => img.destroy() });
         this.gatherables.delete(g.id);
       };
-      if (!this.fermier || !this.fermier.gather({ x: g.x, y: g.y }, prendre)) prendre();
+      if (!this.fermier || !this.fermier.gather(g.foot || { x: g.x, y: g.y }, prendre)) prendre();
     },
   });
 })(window);

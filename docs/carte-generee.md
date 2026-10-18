@@ -98,6 +98,10 @@ Le Marché vend toujours les outils.
     `scripts/carte/ramassables.py`). Un appui dessus : le personnage va à côté, se baisse et le
     prend (`js/carte/ferme/cueillette.js`) ;
   - le geste « ramasser » coûte 1 d'énergie et rapporte 2 XP ;
+  - les **baies** : chaque matin, 16 buissons de la carte en portent (`RAMASSAGE.baies.buissons`,
+    `terrain.BUISSONS`), des grappes rouges de 4 × 4 pixels posées dessus. Un appui : le
+    personnage en cueille 3, **sans énergie** (`gratuit`) : même épuisé et sans réserves, il
+    trouve de quoi manger et ne reste pas bloqué ;
   - `state.cueillette` garde ce qui a déjà été pris aujourd'hui.
 - **L'Atelier** est une fenêtre du menu latéral, sur la ferme générée seulement
   (`js/ui/atelier.js`) :
@@ -205,3 +209,11 @@ Le Marché vend toujours les outils.
          (`keyBlockOf`).
        - Les poules ne se montrent pas encore sur la carte : la vie de la cour les dessine
          autour du bâtiment du Poulailler, que la ferme générée n'a pas.
+     - ✅ **5b-4, l'étable** : l'Étable (la grange) quitte la cour.
+       - La **mangeoire** (6 planches, 4 pierres, 2 fibres) se fabrique à l'Atelier. Posée dans
+         une pièce close, elle ouvre l'Étable avec ses 10 places de départ (`PATURAGE.PLACES_DEPART`) ;
+         reprise, l'Étable n'est plus construite et retrouve ses places achetées quand on la
+         repose. On ne la prépare plus en pièces sur la ferme générée (`buildPaturage` refuse).
+       - Un appui sur la mangeoire ouvre la fenêtre de l'Étable ; un double appui y envoie le
+         personnage prendre le lait et la laine (il tond les moutons prêts), devant la mangeoire.
+       - Comme les poules, les moutons et les vaches ne se montrent pas encore sur la carte.

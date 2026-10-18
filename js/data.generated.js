@@ -172,6 +172,7 @@ export const RAW_DATA = {
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "four_pierre": { "nom": "Four de pierre", "icone": "🔥", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "nichoir": { "nom": "Nichoir", "icone": "🪺", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mangeoire": { "nom": "Mangeoire", "icone": "🛶", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "puits_pierre": { "nom": "Puits de pierre", "icone": "🪣", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "pompe": { "nom": "Pompe", "icone": "⛲", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "panneau_solaire": { "nom": "Panneau solaire", "icone": "☀️", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -375,6 +376,7 @@ export const RAW_DATA = {
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient", "ville": true },
     "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "mangeable": true, "categorie": "légume", "rachetable": false },
     "myrtille": { "nom": "Myrtille", "icone": "🫐", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "rachetable": false },
+    "baies": { "nom": "Baies sauvages", "icone": "🍒", "energie": 5, "prix": 1, "mangeable": true, "categorie": "fruit", "rachetable": false },
     "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "mangeable": true, "categorie": "fruit", "rachetable": false }
   },
   "PLATS_RETIRES": {
@@ -399,6 +401,7 @@ export const RAW_DATA = {
       "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
       "puits_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "puits_pierre": 1 } },
       "nichoir": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "nichoir": 1 } },
+      "mangeoire": { "entrees": { "planche": 6, "pierre": 4, "fibre": 2 }, "sortie": { "mangeoire": 1 } },
       "pompe": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "pompe": 1 } },
       "panneau_solaire": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "panneau_solaire": 1 } },
       "citerne": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "citerne": 1 } },
@@ -414,6 +417,7 @@ export const RAW_DATA = {
       "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four" },
       "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },
       "nichoir": { "nom": "Nichoir", "objet": "nichoir", "dedans": true, "bloque": true, "unique": true, "batiment": "poulailler" },
+      "mangeoire": { "nom": "Mangeoire", "objet": "mangeoire", "dedans": true, "bloque": true, "unique": true, "batiment": "paturage" },
       "puits": { "nom": "Puits", "objet": "puits_pierre", "dehors": true, "bloque": true, "unique": true },
       "pompe": { "nom": "Pompe", "objet": "pompe", "sur": "puits", "appareil": "pompe" },
       "panneau": { "nom": "Panneau solaire", "objet": "panneau_solaire", "dehors": true, "bloque": true, "unique": true, "appareil": "panneau" },
@@ -426,7 +430,8 @@ export const RAW_DATA = {
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
-      "herbe": { "nom": "Herbe", "objet": "fibre", "nombre": 18 }
+      "herbe": { "nom": "Herbe", "objet": "fibre", "nombre": 18 },
+      "baies": { "nom": "Baies", "objet": "baies", "nombre": 16, "quantite": 3, "buissons": true, "gratuit": true }
     }
   },
   "STATIONS": {
@@ -2246,6 +2251,7 @@ export const RAW_DATA = {
     "fromage_alpage": 10,
     "champignon": 3,
     "myrtille": 3,
+    "baies": 2,
     "chataigne": 12,
     "pain": 7,
     "fromage_frais": 8,
