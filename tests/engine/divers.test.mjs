@@ -49,7 +49,7 @@ test('migration v36 → v37 : la Serre aux deux bacs (56) : parcelles de son niv
   old.serre = { ...old.serre, construit: true, niveau: 5, parcelles: makePlots(63, 'serre') };
   old.serre.parcelles[60].culture = 'tomate';
   const m = migrate(old);
-  assertEqual([m.version, m.serre.parcelles.length, m.serre.parcelles[56].id, m.serre.parcelles[56].culture], [37, 57, 'serre-61', 'tomate']);
+  assertEqual([m.version, m.serre.parcelles.length, m.serre.parcelles[56].id, m.serre.parcelles[56].culture], [38, 57, 'serre-61', 'tomate']);
   const un = createInitialState();
   un.version = 36;
   un.serre = { ...un.serre, construit: true, niveau: 1, parcelles: makePlots(15, 'serre') };
