@@ -6,7 +6,8 @@
  * scripts/carte/blocs.py), le bas sur le bas de sa case, rangée selon son pied (la paillasse,
  * à plat, sous ce qui est debout). Un mur prend l'image qui le raccorde à ses voisins, une
  * porte celle de son mur, horizontal ou vertical (wallFrame). Le plancher (modèle.sols) est à
- * plat sous tout le reste (syncFloors). Le four qui cuit fait bouger ses flammes (stepFires). Les murs et l'Atelier arrêtent le personnage (blockCells) ;
+ * plat sous tout le reste (syncFloors). Une barrière prend l'image raccordée à ses voisines
+ * (wallFrame) ; un chemin change les tuiles du sol (syncPaths). Le four qui cuit fait bouger ses flammes (stepFires). Les murs et l'Atelier arrêtent le personnage (blockCells) ;
  * les portes et les paillasses se traversent. Ils portent une ombre (soleil.js).
  *
  * Le mode « Construire » (modèle.bati = { sorte }) : un appui sur une case y pose le bloc choisi,
@@ -85,11 +86,32 @@
       for (const [c, img] of S) if (!at.has(c)) { img.destroy(); S.delete(c); }
     },
 
+    // Les chemins posés (modèle.chemins : { cases, tuiles: [[case, tuile]] }) : des tuiles du
+    // chemin de la carte à la place du sol (sol.js, drawLayer), raccordées à l'herbe autour ;
+    // les fleurs de leurs cases disparaissent. Seules les cases qui changent sont repeintes.
+    syncPaths(chemins) {
+      const tuiles = new Map((chemins && chemins.tuiles) || []), cases = new Set((chemins && chemins.cases) || []);
+      const avant = this.pathOver || new Map(), avantCases = this.pathCells || new Set();
+      const changees = new Set();
+      for (const [c, g] of tuiles) if (avant.get(c) !== g) changees.add(c);
+      for (const c of avant.keys()) if (!tuiles.has(c)) changees.add(c);
+      for (const c of cases) if (!avantCases.has(c)) changees.add(c);
+      for (const c of avantCases) if (!cases.has(c)) changees.add(c);
+      this.pathOver = tuiles;
+      this.pathCells = cases;
+      if (changees.size && this.mapRaw) this.repaintCells(changees);
+    },
+
     // L'image du bloc b (at : case -> sorte de tous les blocs). Un mur : celle de ses voisins
     // (BLOCS_CARTE.murs + masque : 1 un mur au-dessus, 2 à droite, 4 au-dessous, 8 à gauche ;
     // une porte compte à gauche et à droite seulement). Une porte entre deux murs, l'un
     // au-dessus, l'autre au-dessous, et sans voisin à côté : celle d'un mur vertical.
     wallFrame(b, at, cols) {
+      if (b.sorte === 'barriere') {
+        // (une barrière : celles de ses voisines, BLOCS_CARTE.barrieres + masque)
+        const c = b.case % cols, is = (k) => at.get(k) === 'barriere';
+        return BLOCS_CARTE.barrieres + (is(b.case - cols) ? 1 : 0) + (c < cols - 1 && is(b.case + 1) ? 2 : 0) + (is(b.case + cols) ? 4 : 0) + (c > 0 && is(b.case - 1) ? 8 : 0);
+      }
       const mur = b.sorte === 'mur_pierre';
       if (!mur && b.sorte !== 'porte') return BLOCS_CARTE.frames[b.sorte] || 0;
       const c = b.case % cols;

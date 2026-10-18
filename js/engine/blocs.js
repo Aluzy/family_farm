@@ -137,7 +137,7 @@ function melangeSansMur(state, tile) {
 //   - une maison : la paillasse, le four, la cuisinière (et les blocs sans genre, la batterie) ;
 //   - un bâtiment : le nichoir (le Poulailler), la mangeoire (l'Étable), le bac à semis (la
 //     Serre), le coffre à grain (le Silo), la meule (le Moulin). Un bâtiment n'a que son bloc
-//     clé (et un plancher au sol, state.sols, qui n'est pas un bloc).
+//     clé (et un plancher au sol, state.sols, qui n'est pas un bloc ; les sols n'ont pas de genre).
 // Un bloc d'un autre genre n'y entre pas (poseStatus) ; un mur ou une porte qui, repris,
 // mêlerait deux enceintes de genres différents ne se reprend pas (reprendreBloc).
 export const GENRES_PIECE = { maison: 'la maison', poulailler: 'le Poulailler', paturage: 'l\'Étable', serre: 'la Serre', silo: 'le Silo', moulin: 'le Moulin' };
@@ -274,11 +274,11 @@ export function poseStatus(state, sorte, tile) {
   }
   // un sol (le plancher) : sous les blocs, pas sous ce qui ferme une pièce
   if (s.sol) {
-    if (solAt(state, tile)) return { ok: false, raison: `Il y a déjà un ${s.nom.toLowerCase()} ici.` };
+    if (solAt(state, tile)) return { ok: false, raison: `Il y a déjà un ${sorteDe(solAt(state, tile)).nom.toLowerCase()} ici.` };
     const b = sorteDe(blocAt(state, tile));
     if (b && b.ferme) return { ok: false, raison: `${s.nom} : pas sous un mur, une porte ni l'Atelier.` };
   } else if (blocAt(state, tile)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
-  if (s.ferme && solAt(state, tile)) return { ok: false, raison: 'Un plancher ici : reprends-le d\'abord.' };
+  if (s.ferme && solAt(state, tile)) return { ok: false, raison: `Un ${sorteDe(solAt(state, tile)).nom.toLowerCase()} ici : reprends-le d'abord.` };
   if (arbreSurCase(state, tile)) return { ok: false, raison: 'Un arbre pousse ici.' };
   // un arbre fruitier : loin des autres (son feuillage), à côté d'aucun bloc
   if (s.arbre && arbreProche(state, tile, DATA.ATELIER.ARBRE_ECART)) return { ok: false, raison: 'Trop près d\'un autre arbre : laisse-lui de la place.' };
@@ -288,7 +288,7 @@ export function poseStatus(state, sorte, tile) {
   if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, et une porte).` };
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
   // une maison ou un bâtiment : pas de bloc d'un autre genre (le premier posé décide)
-  const p = !s.ferme && pieceDe(state, tile);
+  const p = !s.ferme && !s.sol && pieceDe(state, tile);
   const refus = p && refusGenre(state, sorte, p);
   if (refus) return { ok: false, raison: refus };
   return { ok: true };

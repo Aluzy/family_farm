@@ -352,6 +352,47 @@ def plancher(m):
     return t.im
 
 
+# ---------- la barrière ----------
+
+def barriere(m):
+    """La barrière de masque m (1 une barrière au-dessus, 2 à droite, 4 au-dessous, 8 à
+    gauche) : un poteau de bois au milieu de la case (son dessus clair, la face au ton moyen,
+    le bord droit dans l'ombre) et deux lisses vers chaque voisine ; vers le haut et le bas,
+    les lisses fuient vers le fond : on en voit le dessus, une bande de bois le long du poteau.
+    Contour sombre autour (fini) : deux barrières voisines se raccordent sans couture."""
+    t = Toile()
+    n, e, s, w = (m & 1, m & 2, m & 4, m & 8)
+    x0, x1, haut = 6, 9, 9                       # le poteau : 4 px de large, son dessus en haut
+    # les lisses vers le fond (au-dessus) et vers nous (au-dessous) : leur dessus
+    if n:
+        t.rect(x0 + 1, 0, x1 - 1, haut, BOIS[3])
+        for y in range(0, haut):
+            t.put(x0 + 1, y, BOIS[4])
+    if s:
+        t.rect(x0 + 1, BAS - 6, x1 - 1, BAS, BOIS[3])
+        for y in range(BAS - 6, BAS + 1):
+            t.put(x0 + 1, y, BOIS[4])
+    # les lisses à gauche et à droite : deux planches couchées (le dessus clair, la face)
+    for y0 in (12, 17):
+        for (a, b, ok) in ((0, x0 - 1, w), (x1 + 1, W - 1, e)):
+            if not ok:
+                continue
+            for x in range(a, b + 1):
+                t.put(x, y0, BOIS[4])
+                t.put(x, y0 + 1, BOIS[2] if (x + y0) % 7 else BOIS[1])
+                t.put(x, y0 + 2, BOIS[1])
+    # le poteau
+    for y in range(haut, BAS + 1):
+        for x in range(x0, x1 + 1):
+            c = BOIS[3] if x == x0 else BOIS[1] if x == x1 else BOIS[2]
+            if y in (haut, haut + 1):
+                c = BOIS[4] if y == haut else BOIS[3]  # le dessus du poteau, coupé net
+            t.put(x, y, c)
+    for x in range(x0, x1 + 1):
+        t.put(x, BAS, BOIS[0])                   # le pied, dans l'herbe
+    return t.fini()
+
+
 # ---------- les objets ----------
 
 def atelier():
@@ -664,6 +705,8 @@ SOLS = len(DESSINS)                              # le premier des 16 planchers r
 DESSINS += [plancher(m) for m in range(16)]
 FEU_FOUR = len(DESSINS)                          # les flammes qui bougent (BLOCS_CARTE.feu)
 DESSINS += [four(k) for k in range(1, len(FLAMMES))]
+BARRIERES = len(DESSINS)                         # les 16 barrières raccordées (BLOCS_CARTE.barrieres)
+DESSINS += [barriere(m) for m in range(16)]
 
 
 # ---------- l'aperçu : une pièce close et les objets, sur l'herbe de la carte ----------
@@ -678,6 +721,10 @@ PIECE = [
     'a.n.g.s.r.',
     '..........',
     'b.m.o.....',
+    '..........',
+    'BBBB..B...',
+    '...B..B...',
+    '...BBBB...',
 ]
 SORTES = {'f': 5, 'c': 6, 'p': 3, 'd': 4, 'a': 2, 'n': 9, 'g': 10, 's': 11, 'b': 8, 'm': 13, 'o': 12, 'r': 7}
 
@@ -716,6 +763,9 @@ def apercu_piece(sheet):
             elif ch == 'd':                    # une paillasse et sa couverture
                 pose.append((y, x, SORTES['p']))
                 k = SORTES['d']
+            elif ch == 'B':                    # une barrière, raccordée aux voisines
+                k = BARRIERES + sum(b for b, (dx, dy) in ((1, (0, -1)), (2, (1, 0)), (4, (0, 1)), (8, (-1, 0)))
+                                    if 0 <= y + dy < len(PIECE) and 0 <= x + dx < len(rang) and PIECE[y + dy][x + dx] == 'B')
             elif ch in SORTES:
                 k = SORTES[ch]
             else:
