@@ -16,9 +16,9 @@
   // La carte : ?carte=ville (par défaut) ou ?carte=transition (entre la ferme et la ville,
   // scripts/ville/transition.py) ; ?arrivee=<nom> : le point de la couche « arrivees » où l'on
   // apparaît (sinon « depart »).
-  const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json', montagne: 'assets/montagne.json', plage: 'assets/plage.json', grotte: null, interieur: 'assets/maison_interieur.json' };
+  const CARTES = { ville: 'assets/ville.json', transition: 'assets/transition.json', montagne: 'assets/montagne.json', plage: 'assets/plage.json', grotte: null };
   // Les cartes où le jour et la nuit passent (CarteKit.voile) : la grotte a sa propre
-  // obscurité, l'intérieur des voisins reste éclairé.
+  // obscurité.
   const JOUR_NUIT = ['ville', 'transition', 'montagne', 'plage'];
   // (fixée à chaque démarrage : VilleCarte.start(parent, '?carte=…&arrivee=…'))
   const etat = { params: new URLSearchParams(''), nom: 'ville', map: { key: 'carte_ville', file: CARTES.ville } };
@@ -147,7 +147,7 @@
   const NAVETTE = {
     arrets: {
       transition: {
-        route: 'bus_matin', arret: 'arret', attente: { x: 600, y: 243 },
+        route: 'bus_matin', arret: 'arret', attente: { x: 984, y: 531 },
         cible: 'ville-carte.html?carte=ville&arrivee=gare&bus=1', choix: '🚉 La gare (en ville)', vers: 'jusqu\'à la gare, en ville',
       },
       ville: {
@@ -238,28 +238,15 @@
   const PECHE = {
     eaux: { montagne: 'lac', plage: 'mer' }, couches: { montagne: 'fontaines', plage: 'mer' }, portee: 52, lancer: 0.4, touche: 0.5, ferrer: 0.4,
   };
-  // Les voisins (l'intérieur des maisons de la carte de transition) : la famille de chaque maison,
-  // tirée une fois (deux parents, 1 à `enfantsMax` enfants, des personnages de
-  // assets/personnages/ autres que ceux de la partie) et gardée sur l'appareil (localStorage
-  // `store`). Les meubles (assets/meuble_<dessin>.png) prennent les places nommées de la couche
-  // « meubles » de l'intérieur : un lit d'adulte par parent, un lit d'enfant par enfant, une chaise
-  // par personne ; le reste (tableaux, plante, coin salon) au hasard. La sortie : `sortie` (px).
+  // Les voisins (les maisons de la carte de transition) : la famille de chaque maison, tirée une
+  // fois (deux parents, 1 à `enfantsMax` enfants, des personnages de assets/personnages/ autres
+  // que ceux de la partie) et gardée sur l'appareil (localStorage `store`) ; chez elle, chacun
+  // attend `wait` s (au hasard entre les deux) avant d'aller un peu plus loin.
   const VOISINS = {
     store: 'ferme-voisins', enfantsMax: 3, persos: 50, speed: K.VITESSES.voisins.adulte, kidSpeed: K.VITESSES.voisins.enfant, wait: [1.5, 5],
-    sortie: { x: 232, y: 240, w: 32, h: 24 }, entree: { x: 248, y: 228 }, fond: '#06182a',
     noms: ['Martin', 'Bernard', 'Dubois', 'Moreau', 'Laurent', 'Girard', 'Roux', 'Fournier', 'Mercier', 'Blanc', 'Garnier', 'Chevalier'],
     prenoms: ['Camille', 'Claude', 'Dominique', 'Sacha', 'Alix', 'Morgan', 'Charlie', 'Maxime', 'Andréa', 'Yaël', 'Eden', 'Ange'],
     enfants: ['Lou', 'Noa', 'Maé', 'Louison', 'Swann', 'Élie', 'Gaby', 'Robin', 'Jo', 'Lilou', 'Nino', 'Tom'],
-    paroles: {
-      adulte: ['Bonjour, voisin ! Les légumes de votre ferme sont les meilleurs du coin.', 'Entrez donc, il reste du café.',
-        'Le bus de l\'école passe le matin vers 7 h, à l\'arrêt au bout du chemin.', 'Il paraît que le marché de la ville paie bien les produits de la ferme.',
-        'Vous avez vu le train ? Il va jusqu\'à la montagne et à la plage.', 'Quelle belle journée pour couper du bois !'],
-      enfant: ['Tu veux jouer avec moi ?', 'J\'ai vu une marmotte à la montagne !', 'Le bus de l\'école est tout jaune !',
-        'Ma maîtresse dit que les vaches font du lait. C\'est vrai ?', 'Je vais construire une cabane dans les arbres.', 'Il y a des poissons dans la mare ?'],
-    },
-    meubles: ['four', 'cuisine', 'plan', 'evier', 'frigo', 'fenetre', 'plante', 'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
-      'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3'],
-    plats: /^(tapis|tableau|fenetre)/,
   };
   // La carte de transition (js/carte/ville/transition.js) : les maisons des voisins bâties avec
   // les blocs de la ferme générée (assets/blocs.png, scripts/carte/blocs.py : `murs` + masque

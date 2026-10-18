@@ -1,11 +1,11 @@
-# La carte de transition entre la ferme et la ville (48 × 36 tuiles). À l'est (à partir de la
+# La carte de transition entre la ferme et la ville (96 × 72 tuiles). À l'est (à partir de la
 # colonne OUEST), la partie fixe : le bout du chemin de terre de la ferme qui devient la route
 # goudronnée de la ville, ses trottoirs, ses réverbères et l'arrêt de bus (celui des enfants qui
 # vont à l'école). La route continue dans la ville (la route de la ferme, à l'ouest de
 # assets/ville.json).
 #
 # L'ouest (colonnes 0 à OUEST - 1) est tiré par le jeu pour chaque partie (js/engine/transition.js,
-# docs/carte-generee.md) : le chemin, deux ou trois maisons de voisins bâties en blocs et leurs
+# docs/carte-generee.md) : le chemin, trois à cinq maisons de voisins bâties en blocs et leurs
 # allées, la mare, le puits, les barrières, les arbres, les rochers, l'herbe haute, les fleurs.
 # Ce script n'y met que de l'herbe, et écrit le kit dont le jeu se sert pour l'y dessiner
 # (propriété « kit » de la carte, KIT) : les tuiles d'herbe et de chemin pour chaque jeu de
@@ -14,8 +14,8 @@
 #
 # Les passages (couche d'objets « passages ») : un rectangle au bord de la carte, sa cible
 # (la page et le point d'arrivée) et le sens de sa flèche bleue (js/ville-carte.js) ; les
-# points d'arrivée (couche « arrivees »), un par carte d'où l'on vient. Devant la porte de
-# chaque maison, un passage mène à son intérieur (?carte=interieur&maison=<nom>).
+# points d'arrivée (couche « arrivees »), un par carte d'où l'on vient. Les maisons n'ont pas
+# de passage : on y entre à pied (js/carte/ville/transition.js).
 #
 # Comme à la ferme : les barrières de bois de la ferme (scripts/carte/barrieres.py) ; l'herbe
 # haute qui penche quand on la traverse (couche d'objets « herbe_haute » : un point par touffe,
@@ -35,7 +35,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import commun  # noqa: E402
 
-commun.W, commun.H = 48, 36          # (avant tout le reste : les toiles prennent cette taille)
+commun.W, commun.H = 96, 72          # (avant tout le reste : les toiles prennent cette taille)
 W, H, T = commun.W, commun.H, commun.T
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'carte'))
@@ -67,26 +67,28 @@ COUCHES = [
 
 # ---------- le plan ----------
 
-OUEST = 24                     # les colonnes 0 à OUEST - 1 : tirées par le jeu
-ROUTE = (28, 15, 21)           # la chaussée : de la colonne 28 au bord est, rangées 15 à 21 (coins)
-TROTTOIRS = (30, 13, 23)       # les trottoirs, au-dessus et au-dessous, à partir de la colonne 30
+OUEST = 48                     # les colonnes 0 à OUEST - 1 : tirées par le jeu
+# (l'est : ses places d'origine, décalées de DX colonnes et DY rangées : la route au milieu)
+DX, DY = 24, 18
+ROUTE = (52, 33, 39)           # la chaussée : de la colonne 52 au bord est, rangées 33 à 39 (coins)
+TROTTOIRS = (54, 31, 41)       # les trottoirs, au-dessus et au-dessous, à partir de la colonne 54
 # La mare (un tampon du kit) : ses rayons en px
 MARE_R = (4 * T, 2.4 * T)
 # Les barrières de la ferme (des tampons du kit, de 2 à 8 tuiles de long) : leur pied à
 # PIED_BARRIERE px du haut de leur rangée.
 PIED_BARRIERE = 7
 # Les pieds des réverbères et de l'abri de bus, au milieu des trottoirs (px depuis le haut de
-# la carte) : le trottoir du haut va de la rangée 13 au bord de la route (rangée 15), celui du
-# bas du bord de la route (rangée 21) à la rangée 23.
-PIED_HAUT = 14 * T + 4
-PIED_BAS = 22 * T + 6
+# la carte) : le trottoir du haut va de la rangée 31 au bord de la route (rangée 33), celui du
+# bas du bord de la route (rangée 39) à la rangée 41.
+PIED_HAUT = 32 * T + 4
+PIED_BAS = 40 * T + 6
 # Les rochers et les cailloux : (genre, milieu du pied en tuiles) ; le genre est une case de
 # assets/transition_objets.png (ROCHERS_IMAGES).
 # (ceux de l'est : ceux de l'ouest sont tirés par le jeu)
-ROCHERS_PLAN = [
+ROCHERS_PLAN = [(g, x + DX, y + DY) for g, x, y in (
     ('rocher_b', 24.5, 33), ('rocher_c', 40, 28), ('caillou_0', 44.5, 33.5),
     ('rocher_a', 45, 8), ('rocher_b', 34, 5), ('caillou_1', 30.5, 9.6), ('rocher_b', 31, 31),
-]
+)] + [('rocher_a', 78, 8), ('caillou_0', 88.5, 19.5), ('rocher_c', 60, 62), ('caillou_1', 84.5, 66.6), ('rocher_b', 92, 50)]
 ARBRES, ROCHERS, HERBES = [], [], []
 OBSTACLES = []                        # (x, y, largeur, hauteur) en px : on ne marche pas dessus
 LUMIERES = []                         # les lanternes des réverbères (x, y) en px : couche « lumieres »
@@ -95,12 +97,12 @@ PIEDS = {'abri': PIED_HAUT, 'reverberes_haut': PIED_HAUT, 'reverberes_bas': PIED
 
 def chemin(x):
     """Les rangées de coins du chemin de terre à la colonne x (à l'est de OUEST)."""
-    return 17, 19
+    return 35, 37
 
 
 def coins():
     g = [['herbe'] * (W + 1) for _ in range(H + 1)]
-    # (à l'ouest, le chemin est tiré par le jeu : il arrive ici rangées 17 à 19)
+    # (à l'ouest, le chemin est tiré par le jeu : il arrive ici rangées 35 à 37)
     for x in range(OUEST, ROUTE[0] + 1):
         a, b = chemin(x)
         for y in range(a, b + 1):
@@ -178,16 +180,16 @@ def poteau_ville():
 
 def dessine(c):
     mob = c['mobilier']
-    mob.colle(poteau_ville(), 26 * T, 13 * T)
+    mob.colle(poteau_ville(), 50 * T, 31 * T)
     # la route : les tirets, l'arrêt de bus, les réverbères
     mq = c['marquage']
     cy = (ROUTE[1] + ROUTE[2]) * T // 2
     B.tirets(mq, ROUTE[0] * T + 6 + 2 * T, W * T, cy - 2, cy + 2)
     abri = E.abri_bus()
-    c['abri'].colle(abri, 36 * T, PIED_HAUT - abri.height)
-    OBSTACLES.append((36 * T + 2, PIED_HAUT - 22, 42, 26))          # le banc, la vitre, le poteau
+    c['abri'].colle(abri, 60 * T, PIED_HAUT - abri.height)
+    OBSTACLES.append((60 * T + 2, PIED_HAUT - 22, 42, 26))          # le banc, la vitre, le poteau
     rev = O.reverbere()
-    for x in (32, 42):
+    for x in (56, 66, 76, 86):
         c['reverberes_haut'].colle(rev, x * T, PIED_HAUT - rev.height)
         c['reverberes_bas'].colle(rev, x * T, PIED_BAS - rev.height)
         LUMIERES.extend((O.lanterne(x * T, PIED_HAUT - rev.height), O.lanterne(x * T, PIED_BAS - rev.height)))
@@ -210,8 +212,8 @@ def dessine(c):
             elif r > 0.89 and (x, y) not in pris and not occupe(x, y):
                 # une touffe d'herbe haute (le jeu la dessine) : son pied un peu au hasard dans la case
                 HERBES.append((x * T + 4 + int(hasard(x, y, 54) * 9), y * T + 10 + int(hasard(x, y, 55) * 6), int(hasard(x, y, 52) * 3)))
-    # les arbres de l'est : des bois au nord et au sud, rien sur le chemin, la route ni sur les
-    # rochers ; les arbres et les pins sont des objets (le jeu les dessine, on les coupe), les
+    # les arbres de l'est : des bois au nord et au sud, rien sur le chemin, la route, ni le
+    # long des trottoirs, ni sur les rochers ; les arbres et les pins sont des objets (le jeu les dessine, on les coupe), les
     # buissons restent dans les tuiles
     veg = c['vegetation']
     plantes = []
@@ -221,13 +223,13 @@ def dessine(c):
             py = y + (hasard(i, j, 82) - 0.5) * 1.6
             if hasard(i, j, 83) < 0.3 or px < OUEST + 1.5:
                 continue
-            if 11 <= py <= 25 or (x > 27 and py < 13) or (x > 27 and 22 <= py <= 26):
+            if 29 <= py <= 43 or (x > 51 and 23 <= py < 31) or (x > 51 and 40 <= py <= 48):
                 continue
             if any(abs(px - a) < 2.2 and abs(py - b) < 1.6 for _, a, b in ROCHERS_PLAN):
                 continue
             r = hasard(i, j, 84)
             plantes.append((px, py, 'pin' if r < 0.25 else 'buisson_large' if r < 0.35 else 'buisson' if r < 0.4 else 'arbre'))
-    plantes += [(27.5, 9.5, 'buisson_large'), (26, 27, 'pin')]
+    plantes += [(51.5, 27.5, 'buisson_large'), (50, 45, 'pin')]
     images = {'arbre': F.arbre(), 'pin': F.pin(), 'buisson': F.buisson(), 'buisson_large': F.buisson(True)}
     for x, y, genre in sorted(plantes, key=lambda p: p[1]):
         im = images[genre]
@@ -338,11 +340,10 @@ def kit():
 
 PASSAGES = [
     # (nom, rectangle en tuiles x0, y0, x1, y1, sens de la flèche, cible[, distance où la flèche paraît])
-    ('vers_la_ferme', 0, 16, 1, 20, 'gauche', 'jeu.html?arrivee=est'),
-    ('vers_la_ville', W - 1, 14, W, 22, 'droite', 'ville-carte.html?carte=ville&arrivee=ferme'),
-    # (les portes des maisons : le jeu les ajoute, avec les maisons)
+    ('vers_la_ferme', 0, 34, 1, 38, 'gauche', 'jeu.html?arrivee=est'),
+    ('vers_la_ville', W - 1, 32, W, 40, 'droite', 'ville-carte.html?carte=ville&arrivee=ferme'),
 ]
-ARRIVEES = {'ferme': (2.5, 18.9), 'ville': (45.5, 14.6)}
+ARRIVEES = {'ferme': (2.5, 36.9), 'ville': (W - 2.5, 32.6)}
 
 # Les images des rochers et des cailloux (assets/transition_objets.png, cases de 32 × 32, le
 # pied au milieu du bas) : lues dans la planche de la ferme, celles de ses rochers.
@@ -368,14 +369,14 @@ def bus_scolaire():
     de la ferme par le chemin et montent (« enfants_matin ») ; le soir ils descendent et
     rentrent (« enfants_soir »). En px."""
     milieu = (ROUTE[1] + ROUTE[2]) * T / 2
-    ouest_bus, haut, bas, est = 31 * T, milieu - 15, milieu + 15, W * T + 48
+    ouest_bus, haut, bas, est = 55 * T, milieu - 15, milieu + 15, W * T + 48
     tour = [(est, haut), (ouest_bus, haut), (ouest_bus, bas), (est, bas)]
     # (ils attendent le bus devant l'abri, au bord du trottoir : on ne traverse pas l'abri)
     devant = PIED_HAUT + 15
-    chemin_ = [(0.5 * T, 18.9 * T), (26 * T, 18.6 * T), (30 * T, devant), (37.5 * T, devant)]
+    chemin_ = [(0.5 * T, 36.9 * T), (50 * T, 36.6 * T), (54 * T, devant), (61.5 * T, devant)]
     return ({'bus_matin': tour, 'bus_soir': tour, 'enfants_matin': chemin_, 'enfants_soir': chemin_[::-1]},
-            {'arret': (38 * T, haut)})
-DEPART = (6, 18.9)
+            {'arret': (62 * T, haut)})
+DEPART = (6, 36.9)
 
 
 def objets_carte():

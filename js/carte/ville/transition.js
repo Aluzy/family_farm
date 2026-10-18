@@ -7,15 +7,16 @@
  * ressources du jour. La carte de Tiled (assets/transition.json, scripts/ville/transition.py)
  * n'a que de l'herbe à l'ouest et le kit (sa propriété « kit ») : V.transitionCarte en fait la
  * carte de la partie avant que la scène ne la crée (les tuiles du sol et des tampons, les
- * objets : passages et arrivées des portes, emprises des maisons, arbres, rochers, herbe).
+ * objets : arbres, rochers, herbe).
  *
  * Les maisons sont posées bloc par bloc avec les images de la ferme générée (assets/blocs.png),
- * rangées selon leur pied comme le personnage. Dans chacune vit une famille (V.voisins, la même
- * qu'on voit chez elle) : le jour (TRANSITION_VIE.jour), ses membres sortent par la porte ; les
- * parents vont chercher la ressource libre la plus proche, la ramassent, et en rapportent
- * quelques-unes à la maison avant de repartir ; les enfants, et les parents quand il n'en reste
- * plus, flânent autour de chez eux. La nuit, ils
- * restent à la maison. Ce qui est ramassé le reste jusqu'au lendemain (localStorage).
+ * rangées selon leur pied comme le personnage, sans toit : on voit dedans, et on y entre à pied
+ * par la porte (leurs murs et leurs meubles arrêtent la marche). Dans chacune vit une famille
+ * (V.voisins), qu'on voit aller et venir chez elle : le jour (TRANSITION_VIE.jour), ses membres
+ * sortent par la porte ; les parents vont chercher la ressource libre la plus proche, la
+ * ramassent, et en rapportent quelques-unes à la maison avant de repartir ; les enfants, et les
+ * parents quand il n'en reste plus, flânent autour de chez eux. La nuit, ils restent à la
+ * maison. Ce qui est ramassé le reste jusqu'au lendemain (localStorage).
  *
  * Le joueur ramasse aussi : un toucher sur une ressource y envoie le personnage, qui la prend
  * en arrivant (FermeHote.ramasserTransition : l'objet entre dans l'inventaire, contre l'énergie
@@ -80,15 +81,7 @@
     let id = data.nextobjectid || 1000;
     const objets = (n) => (couche(n) || { objects: [] }).objects;
     const point = (name, type, x, y, props) => ({ id: id++, name, type, point: true, rotation: 0, visible: true, x, y, width: 0, height: 0, ...(props ? { properties: props } : {}) });
-    for (const m of P.maisons) {
-      const px = m.porte.x * T, py = m.porte.y * T;
-      objets('passages').push({ id: id++, name: m.nom, type: 'passage', rotation: 0, visible: true, x: px - T / 2, y: py + T / 2, width: 2 * T, height: 2 * T,
-        properties: [{ name: 'cible', type: 'string', value: 'ville-carte.html?carte=interieur&maison=' + m.nom }, { name: 'sens', type: 'string', value: 'haut' }, { name: 'proche', type: 'int', value: 14 }] });
-      objets('arrivees').push(point(m.nom, '', px + T / 2, py + 2.7 * T));
-      // l'emprise : toute la maison (on y entre par la porte) ; « haut » : le haut des murs du fond
-      objets('batiments').push({ id: id++, name: m.nom, type: 'batiment', rotation: 0, visible: true, x: m.x * T + 2, y: m.y * T + 2, width: m.w * T - 4, height: m.h * T - 4,
-        properties: [{ name: 'haut', type: 'int', value: m.y * T - (BLOCS.h - T) }] });
-    }
+    // (les maisons n'ont ni passage ni emprise : on y entre à pied, voir poseMaison)
     for (const a of P.arbres) objets('arbres').push(point(`arbre_${a.x}_${a.y}`, a.genre, a.x, a.y));
     const images = ['rocher_a', 'rocher_b', 'rocher_c', 'caillou_0', 'caillou_1'];
     for (const r of P.rochers) {
@@ -132,24 +125,37 @@
         const img = this.add.image(r.x, r.y, RAMASSABLES.key, RAMASSABLES.frames[r.sorte] || 0).setOrigin(0.5, 1).setDepth(r.y - 1);
         this.ressources.set(r.id, { ...r, img, prise: null });
       }
-      // les familles : chacun à la maison pour commencer, il sort un peu plus tard
+      // les familles : chacun chez soi pour commencer (on le voit), il sort un peu plus tard
       const noms = (this.cache.json.get('perso_cases') || {}).frames || [];
       this.npcFrame = this.npcFrame || K.cases(noms);
       for (const m of P.maisons) {
         const f = V.voisins(m.nom);
-        const porte = { x: m.porte.x * T + T / 2, y: (m.porte.y + 1) * T + T - 3 };
+        // (devant la porte : en dessous, ou au-dessus pour une maison au sud du chemin)
+        const porte = { x: m.porte.x * T + T / 2, y: (m.porte.y + (m.sens === 'haut' ? -1 : 1)) * T + T - 3 };
         f.membres.forEach((mb, i) => {
           const key = sheetKey(mb.perso, mb.enfant);
           if (!this.textures.exists(key)) return;
-          const s = this.add.sprite(porte.x, porte.y, key, this.npcFrame('idle_bas_0')).setOrigin(0.5, 30 / 32).setVisible(false);
-          const shadow = this.add.ellipse(porte.x, porte.y, mb.enfant ? 9 : 11, 4, 0x1e1a18, 0.3).setVisible(false);
-          this.dehors.push({ m: mb, f, maison: m, porte, s, shadow, x: porte.x, y: porte.y, path: [], face: 'bas', walked: 0,
-            speed: mb.enfant ? VOISINS.kidSpeed : VOISINS.speed, etat: 'dedans', t: 0.5 + i * 1.6 + Math.random() * 2, porte_: 0, talk: 0 });
+          const c = this.caseDedans(m);
+          const s = this.add.sprite(c.x, c.y, key, this.npcFrame('idle_bas_0')).setOrigin(0.5, 30 / 32);
+          const shadow = this.add.ellipse(c.x, c.y, mb.enfant ? 9 : 11, 4, 0x1e1a18, 0.3);
+          const n = { m: mb, f, maison: m, porte, s, shadow, x: c.x, y: c.y, path: [], face: 'bas', walked: 0,
+            speed: mb.enfant ? VOISINS.kidSpeed : VOISINS.speed, etat: 'dedans', t: Math.random() * 2, sortie: 0.5 + i * 1.6 + Math.random() * 2, porte_: 0, talk: 0 };
+          this.dehors.push(n);
+          this.placeVoisin(n, 0, false);
         });
       }
     },
 
+    // Une case libre du plancher de la maison `m`, au hasard : son point (px), où poser les pieds.
+    caseDedans(m) {
+      const l = m.libres.length ? m.libres : [{ x: m.porte.x, y: m.porte.y - 1 }];
+      const c = l[Math.floor(Math.random() * l.length)];
+      return { x: c.x * T + T / 2, y: c.y * T + T - 2 };
+    },
+
     // Une maison : son plancher, ses murs (raccordés à leurs voisins), sa porte, ses meubles.
+    // On marche sur le plancher et par la porte ; les murs et les meubles arrêtent (m.libres :
+    // les cases du plancher où l'on peut aller, pour la famille).
     poseMaison(m) {
       const g = m.plan, h = g.length, w = g[0].length;
       const a = (x, y) => (y >= 0 && y < h && x >= 0 && x < w ? g[y][x] : ' ');
@@ -158,9 +164,12 @@
         const px = (m.x + x) * T + T / 2, py = (m.y + y + 1) * T;
         return this.add.image(px, py, BLOCS.key, frame).setOrigin(0.5, 1).setDepth(plat ? py - T - 200 : py);
       };
+      m.libres = [];
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
-          const c = a(x, y);
+          const c = a(x, y), gx = m.x + x, gy = m.y + y;
+          if (this.walk[gy] && gx >= 0 && gx < this.walk[gy].length) this.walk[gy][gx] = c === '.' || c === 'P';
+          if (c === '.') m.libres.push({ x: gx, y: gy });
           if (sol(x, y)) img(BLOCS.sols + (sol(x, y - 1) ? 1 : 0) + (sol(x + 1, y) ? 2 : 0) + (sol(x, y + 1) ? 4 : 0) + (sol(x - 1, y) ? 8 : 0), x, y, true);
           if (c === 'M') {
             const mur = (dx, dy, porte) => a(x + dx, y + dy) === 'M' || (porte && a(x + dx, y + dy) === 'P');
@@ -194,6 +203,7 @@
       const jour = !H || (H.heure >= TRANSITION_VIE.jour[0] && H.heure < TRANSITION_VIE.jour[1] && !H.nuit);
       for (const n of this.dehors) {
         let marche = false;
+        if (n.etat === 'dedans') n.sortie -= dt;
         if (n.talk > 0) { n.talk -= dt; this.placeVoisin(n, time, false); continue; }
         if (n.path.length) {
           const to = n.path[0], dx = to.x - n.x, dy = to.y - n.y, l = Math.hypot(dx, dy), st = n.speed * dt;
@@ -209,12 +219,22 @@
 
     // Arrivé au bout de son chemin (ou fini d'attendre) : que faire maintenant ?
     decideVoisin(n, jour) {
-      const sortir = () => { n.etat = 'cherche'; n.x = n.porte.x; n.y = n.porte.y; n.s.setVisible(true); n.shadow.setVisible(true); n.t = 0; };
-      const rentrer = () => { n.etat = 'rentre'; n.path = this.findPath(n.x, n.y, n.porte.x, n.porte.y) || []; n.t = 0; if (!n.path.length) n.t = 0.01; };
+      // (dedans, sortir, rentrer : à pied, par la porte)
+      const va = (x, y) => { n.path = this.findPath(n.x, n.y, x, y) || []; n.t = n.path.length ? 0 : 0.01; };
+      const rentrer = () => { n.etat = 'rentre'; const c = this.caseDedans(n.maison); va(c.x, c.y); };
       switch (n.etat) {
-        case 'dedans':
-          if (!jour) { n.t = 5; return; }
-          sortir();
+        case 'dedans': {
+          // chez lui : le jour, il ressort au bout d'un moment ; sinon il va et vient dans la maison
+          if (jour && n.sortie <= 0) { n.etat = 'sort'; va(n.porte.x, n.porte.y); return; }
+          const c = this.caseDedans(n.maison);
+          va(c.x, c.y);
+          n.t = VOISINS.wait[0] + Math.random() * (VOISINS.wait[1] - VOISINS.wait[0]) * (jour ? 1 : 3);
+          return;
+        }
+        case 'sort':
+          // devant la porte
+          n.etat = 'cherche';
+          n.t = 0;
           return;
         case 'cherche': {
           // (les enfants ne ramassent pas : ils jouent autour de la maison)
@@ -249,18 +269,17 @@
           return;
         }
         case 'rentre':
-          // à la porte : il entre, pose ce qu'il porte, ressort un peu plus tard
+          // chez lui : il pose ce qu'il porte, ressort un peu plus tard
           n.etat = 'dedans';
           n.porte_ = 0;
-          n.s.setVisible(false);
-          n.shadow.setVisible(false);
-          n.t = TRANSITION_VIE.pause[0] + Math.random() * (TRANSITION_VIE.pause[1] - TRANSITION_VIE.pause[0]);
+          n.sortie = TRANSITION_VIE.pause[0] + Math.random() * (TRANSITION_VIE.pause[1] - TRANSITION_VIE.pause[0]);
+          n.t = VOISINS.wait[0] + Math.random() * (VOISINS.wait[1] - VOISINS.wait[0]);
           return;
         case 'flane': {
           // plus rien à ramasser : il va et vient autour de chez lui, et finit par rentrer
           if (!jour || Math.random() < (n.m.enfant ? 0.05 : 0.15)) { rentrer(); return; }
           for (let k = 0; k < 15 && !n.path.length; k++) {
-            const tx = Math.floor((n.porte.x + (Math.random() - 0.5) * 12 * T) / T), ty = Math.floor((n.porte.y + Math.random() * 6 * T) / T);
+            const tx = Math.floor((n.porte.x + (Math.random() - 0.5) * 12 * T) / T), ty = Math.floor((n.porte.y + (n.maison.sens === 'haut' ? -1 : 1) * Math.random() * 6 * T) / T);
             if (this.canWalk(tx, ty)) n.path = this.findPath(n.x, n.y, tx * T + T / 2, ty * T + T - 2) || [];
           }
           n.t = VOISINS.wait[0] + Math.random() * (VOISINS.wait[1] - VOISINS.wait[0]);
@@ -272,7 +291,6 @@
     },
 
     placeVoisin(n, time, marche) {
-      if (!n.s.visible) return;
       const F = this.npcFrame;
       let frame;
       if (n.etat === 'ramasse' && !marche) frame = F('ramasse_' + Math.min(2, Math.floor((1 - n.t / TRANSITION_VIE.ramasse) * 3)));
@@ -319,9 +337,9 @@
       this.popGain({ [res.item]: res.n });
     },
 
-    // Un toucher sur un voisin dehors : il s'arrête et parle de ce que sa famille a ramassé.
+    // Un toucher sur un voisin (dehors ou chez lui) : il s'arrête et parle de ce que sa famille a ramassé.
     tapVoisinDehors(w) {
-      const n = (this.dehors || []).find((q) => q.s.visible && Math.abs(w.x - q.x) <= 8 && w.y <= q.y + 3 && w.y >= q.y - (q.m.enfant ? 24 : 30));
+      const n = (this.dehors || []).find((q) => Math.abs(w.x - q.x) <= 8 && w.y <= q.y + 3 && w.y >= q.y - (q.m.enfant ? 24 : 30));
       if (!n) return false;
       n.talk = 3;
       n.face = 'cote';

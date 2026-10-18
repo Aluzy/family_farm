@@ -31,27 +31,36 @@ test('transition : la même graine donne la même carte, une autre graine une au
 test('transition : le chemin va de la ferme à la route, sans sauter de rangée', () => {
   for (const g of GRAINES) {
     const P = transitionPlan(g), m = P.milieu;
-    assertEqual([m[0], m[1], m[2], m[TRANSITION.OUEST]], [18, 18, 18, 18], g + ' : droit aux deux bouts');
+    assertEqual([m[0], m[1], m[2], m[TRANSITION.OUEST]], new Array(4).fill(TRANSITION.CHEMIN_Y), g + ' : droit aux deux bouts');
     for (let x = 1; x < m.length; x++) assert(Math.abs(m[x] - m[x - 1]) <= 1, `${g} : colonne ${x}`);
     for (let x = 0; x <= TRANSITION.OUEST; x++) assert(P.coins[m[x]][x] && P.coins[m[x] - 1][x] && P.coins[m[x] + 1][x], `${g} : du chemin colonne ${x}`);
   }
 });
 
-test('transition : deux ou trois maisons à l\'ouest, une porte en bas, une allée jusqu\'au chemin', () => {
+test('transition : trois à cinq maisons réparties à l\'ouest, de part et d\'autre du chemin, la porte face à lui, une allée jusqu\'à lui', () => {
   for (const g of GRAINES) {
     const P = transitionPlan(g);
-    assert(P.maisons.length >= 2 && P.maisons.length <= 3, g);
+    assert(P.maisons.length >= TRANSITION.MAISONS[0] && P.maisons.length <= TRANSITION.MAISONS[1], g);
     P.maisons.forEach((m, i) => {
       assertEqual(m.nom, 'maison_' + (i + 1));
-      assert(m.x >= 1 && m.x + m.w <= TRANSITION.OUEST - 1 && m.y >= 2, `${g} ${m.nom} : dans l'ouest`);
+      assert(m.x >= 1 && m.x + m.w <= TRANSITION.OUEST - 1 && m.y >= 2 && m.y + m.h <= TRANSITION.HAUTEUR - 2, `${g} ${m.nom} : dans l'ouest`);
       assertEqual(m.plan.length, m.h);
-      assertEqual(m.plan[m.h - 1][m.porte.x - m.x], 'P', `${g} ${m.nom} : la porte dans le mur du bas`);
-      assertEqual(m.plan[0], 'M'.repeat(m.w), 'le mur du fond');
+      const nord = m.sens === 'bas';
+      assert(nord ? m.y + m.h <= P.milieu[m.porte.x] - 2 : m.y >= P.milieu[m.porte.x] + 2, `${g} ${m.nom} : du bon côté du chemin`);
+      assertEqual(m.porte.y, nord ? m.y + m.h - 1 : m.y);
+      assertEqual(m.plan[m.porte.y - m.y][m.porte.x - m.x], 'P', `${g} ${m.nom} : la porte dans le mur face au chemin`);
+      assertEqual(m.plan[nord ? 0 : m.h - 1], 'M'.repeat(m.w), 'le mur du fond');
       assert(m.plan.slice(1, -1).some((l) => l.includes('d')), `${g} ${m.nom} : au moins un lit`);
       // l'allée : du chemin à chaque rangée, de la porte jusqu'au chemin
-      for (let y = m.porte.y + 1; y <= P.milieu[m.porte.x]; y++) assert(P.coins[y][m.porte.x] && P.coins[y][m.porte.x + 1], `${g} ${m.nom} : allée rangée ${y}`);
-      if (i) { const p = P.maisons[i - 1]; assert(p.x + p.w < m.x, `${g} : les maisons ne se touchent pas`); }
+      const [y0, y1] = nord ? [m.porte.y + 1, P.milieu[m.porte.x]] : [P.milieu[m.porte.x], m.porte.y];
+      for (let y = y0; y <= y1; y++) assert(P.coins[y][m.porte.x] && P.coins[y][m.porte.x + 1], `${g} ${m.nom} : allée rangée ${y}`);
+      for (const p of P.maisons.slice(0, i)) {
+        assert(p.x + p.w < m.x || m.x + m.w < p.x || p.y + p.h < m.y || m.y + m.h < p.y, `${g} : les maisons ne se touchent pas`);
+      }
     });
+    // réparties : des deux côtés du chemin, de l'ouest à l'est
+    assert(new Set(P.maisons.map((m) => m.sens)).size === 2, `${g} : au nord et au sud du chemin`);
+    assert(P.maisons[0].x < TRANSITION.OUEST / 3 && P.maisons[P.maisons.length - 1].x > TRANSITION.OUEST / 2, `${g} : sur toute la largeur`);
   }
 });
 

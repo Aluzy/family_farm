@@ -23,7 +23,7 @@ jeu.html                  la page : structure seule, charge les fichiers ci-dess
  ├─ js/carte/ferme/       la scène de la ferme, fichier par fichier (FermeCarte : ses réglages et ses méthodes)
  ├─ js/farm-stage.js      la scène de la ferme : ne connaît ni `state` ni le moteur (script classique)
  ├─ js/carte/ville/       la scène de la ville et des cartes qu'on rejoint par elle, fichier par fichier (CarteVille)
- ├─ js/ville-carte.js     cette scène : la ville, la transition, la montagne, la plage, les grottes, chez les voisins
+ ├─ js/ville-carte.js     cette scène : la ville, la transition, la montagne, la plage, les grottes
  ├─ js/infra-monde.js     l'infra-monde
  └─ js/main.js            point d'entrée des modules ES
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node tests/run-tests.mjs
@@ -120,7 +120,7 @@ et les voitures), `ecole.js` (le bus de l'école), `hud.js` (les messages, la fe
 `ombres.js` (les ombres portées qui suivent le soleil, comme à la ferme : bâtiments, arbres,
 mobilier, réverbères, rochers ; un canevas de la vue, `OMBRES`), `eclairage.js` (la nuit : les réverbères de la couche d'objets « lumieres » et les phares des
 voitures, posés dans la carte de lumière du voile, `CarteKit.voile(…).eclaire`),
-`voisins.js` (leurs maisons, leur famille). Un fichier sur ~800 lignes au plus.
+`voisins.js` (la famille de chaque maison des voisins). Un fichier sur ~800 lignes au plus.
 
 Réglages qui avaient divergé et qui n'en font plus qu'un : l'attente de la touche à la pêche
 (2,2 à 4,8 s, celle de la ferme ; la ville attendait 2,2 à 4,6 s), les feuilles d'un arbre qui
@@ -148,13 +148,13 @@ suite au premier affichage et avec « réduire les animations »).
   (l'aigle, la mouette en vol : `VOL`), les flèches des passages et les petits textes, qui gardent
   leurs couleurs. Sans partie (pas d'horloge) : plein jour.
 - **Pas de voile** : la grotte (elle a sa propre obscurité, la lumière autour du personnage),
-  l'intérieur des voisins (éclairé), l'infra-monde (sa lumière à lui).
+  l'infra-monde (sa lumière à lui).
 - Hors de portée pour l'instant : les réverbères et les fenêtres allumées la nuit.
 
 ## 1 quater. Un seul jeu Phaser pour toutes les cartes
 
 `js/carte/jeu.js` (`window.CarteJeu`, chargé après le kit) tient **un seul `Phaser.Game`** :
-la ferme, la ville (et la transition, la montagne, la plage, la grotte, chez les voisins) et
+la ferme, la ville (et la transition, la montagne, la plage, la grotte) et
 l'infra-monde en sont des scènes. Un canvas, un contexte WebGL, un jeu de textures. Avant, chaque
 changement de carte détruisait le jeu de la carte précédente et en créait un autre (nouveau
 contexte WebGL, images retéléchargées et redécodées, planches réextrudées), pendant que celui de

@@ -10,7 +10,7 @@ import { farmSeed } from './terrain.js';
 // docs/carte-generee.md (la carte de transition). L'est de la carte (à partir de la colonne
 // OUEST : la route, les trottoirs, l'arrêt de bus) est fixe, dessiné par
 // scripts/ville/transition.py. L'ouest est tiré d'après la graine de la partie : le chemin de
-// terre qui va de la ferme à la route, deux ou trois maisons de voisins bâties en blocs (comme
+// terre qui va de la ferme à la route, trois à cinq maisons de voisins bâties en blocs (comme
 // le foyer de la ferme générée) avec leurs allées, la mare, le puits, le tonneau, le banc, les
 // barrières, les buissons, les arbres, les rochers, l'herbe haute, les fleurs. Chaque jour,
 // des ressources (petites pierres, morceaux de bois, herbes) poussent sur l'herbe : les
@@ -22,19 +22,19 @@ import { farmSeed } from './terrain.js';
 // de la graine (et du jour, pour les ressources) : la même partie retrouve la même carte.
 
 export const TRANSITION = {
-  LARGEUR: 48, HAUTEUR: 36, OUEST: 24,
+  LARGEUR: 96, HAUTEUR: 72, OUEST: 48,
   // le chemin : la rangée de coins de son milieu (il fait deux tuiles de large) ; à la sortie
   // de la ferme (colonnes 0 à 2) et en arrivant à la route (OUEST - 2 et après), CHEMIN_Y
-  CHEMIN_Y: 18, ECART: 3,
-  // les maisons : de 2 à 3, de LARGEURS × HAUTEURS cases (murs compris)
-  MAISONS: [2, 3], LARGEURS: [5, 6, 7], HAUTEURS: [5, 6],
+  CHEMIN_Y: 36, ECART: 4,
+  // les maisons : de 3 à 5, de LARGEURS × HAUTEURS cases (murs compris), à ECARTS rangées du chemin
+  MAISONS: [3, 5], ECARTS: [2, 12], LARGEURS: [5, 6, 7], HAUTEURS: [5, 6],
   // la taille des tampons du kit (scripts/ville/transition.py, KIT.tampons), en tuiles
   TAMPONS: { mare: [9, 6], puits: [3, 3], tonneau: [1, 2], banc: [3, 2], buisson: [3, 2], buisson_large: [3, 2] },
   // (les barrières : barriere_2 à barriere_8, n × 3 tuiles, leur pied dans la 2e rangée)
   BARRIERE: [2, 8],
-  ROCHERS: ['rocher_a', 'rocher_b', 'rocher_c', 'caillou_0', 'caillou_1'],
+  ROCHERS: ['rocher_a', 'rocher_b', 'rocher_c', 'caillou_0', 'caillou_1'], ROCHERS_N: 14,
   // les ressources du jour : combien, et de quelles sortes (les images de assets/ramassables.png)
-  RESSOURCES: 18, SORTES: ['petite_pierre', 'morceau_bois', 'herbe'],
+  RESSOURCES: 36, SORTES: ['petite_pierre', 'morceau_bois', 'herbe'],
   // ce que chaque sorte rapporte à qui la ramasse (une famille, ou le joueur : son inventaire)
   OBJETS: { petite_pierre: 'pierre', morceau_bois: 'bois', herbe: 'fibre' },
 };
@@ -98,30 +98,33 @@ function tirer(graine) {
   for (let x = 0; x <= X; x++) for (let k = -1; k <= 1; k++) coins[milieu[x] + k][x] = true;
   for (let x = 0; x < X; x++) for (let j = milieu[x] - 2; j <= milieu[x] + 1; j++) prend(x, j);
 
-  // ----- les maisons, au nord du chemin, de gauche à droite ; la porte en bas, une allée
-  // jusqu'au chemin
+  // ----- les maisons, réparties sur toute la largeur : une par bande de colonnes, tour à tour
+  // au nord et au sud du chemin, plus ou moins loin de lui (ECARTS rangées entre le chemin et
+  // la maison) ; la porte face au chemin (en bas au nord, en haut au sud), une allée jusqu'à lui
   const n = entre(TRANSITION.MAISONS[0], TRANSITION.MAISONS[1]);
-  const larges = Array.from({ length: n }, () => choix(TRANSITION.LARGEURS));
-  let reste = X - 2 - larges.reduce((a, b) => a + b, 0) - (n - 1);
-  // (trop larges ensemble : la plus large rétrécit, jusqu'à la plus petite largeur)
-  while (reste < 0) { const i = larges.indexOf(Math.max(...larges)); larges[i]--; reste++; }
+  const bande = (X - 2) / n;
+  let nord = r() < 0.5;
   const maisons = [];
-  let x0 = 1;
-  for (let i = 0; i < n; i++) {
-    const w = larges[i], h = choix(TRANSITION.HAUTEURS);
-    const decale = reste > 0 ? entre(0, Math.min(reste, i === 0 ? 3 : 4)) : 0;
-    reste -= decale;
-    x0 += decale;
-    // le bas de la maison : trois rangées au-dessus du plus haut du chemin sous elle
-    const haut = Math.min(...milieu.slice(x0, x0 + w + 1)) - 1;
-    const bas = haut - 3 - entre(0, 2);
-    const porte = x0 + entre(1, w - 2);
-    const m = { nom: 'maison_' + (i + 1), x: x0, y: bas - h + 1, w, h, porte: { x: porte, y: bas }, plan: plan(w, h, porte - x0, r) };
-    maisons.push(m);
-    prend(m.x - 1, m.y - 2, w + 2, h + 3);
-    // l'allée : deux colonnes de coins, de la porte au chemin
-    for (let j = bas + 1; j <= milieu[porte] - 1; j++) { coins[j][porte] = true; coins[j][porte + 1] = true; prend(porte, j); }
-    x0 += w + 1;
+  const plage = (x, w) => milieu.slice(x, x + w + 1);
+  for (let i = 0; i < n; i++, nord = !nord) {
+    const b0 = 1 + Math.round(i * bande), b1 = 1 + Math.round((i + 1) * bande) - 1;
+    for (let essai = 0; essai < 40; essai++) {
+      const w = Math.min(choix(TRANSITION.LARGEURS), b1 - b0), h = choix(TRANSITION.HAUTEURS);
+      const x0 = entre(b0, Math.max(b0, b1 - w)), d = entre(TRANSITION.ECARTS[0], TRANSITION.ECARTS[1]);
+      const y0 = nord ? Math.min(...plage(x0, w)) - 2 - d - h + 1 : Math.max(...plage(x0, w)) + 2 + d;
+      if (y0 < 2 || y0 + h > H - 2 || !libre(x0 - 1, y0 - 2, w + 2, h + 3)) continue;
+      const porte = x0 + entre(1, w - 2), py = nord ? y0 + h - 1 : y0;
+      // l'allée : les cases entre la porte et le chemin, libres
+      const a0 = nord ? py + 1 : milieu[porte] + 2, a1 = nord ? milieu[porte] - 3 : py - 1;
+      if (a1 >= a0 && !libre(porte, a0, 2, a1 - a0 + 1)) continue;
+      const m = { nom: 'maison_' + (maisons.length + 1), x: x0, y: y0, w, h, sens: nord ? 'bas' : 'haut', porte: { x: porte, y: py }, plan: plan(w, h, porte - x0, r, !nord) };
+      maisons.push(m);
+      prend(m.x - 1, m.y - 2, w + 2, h + 3);
+      // l'allée : deux colonnes de coins, de la porte au chemin
+      const c0 = nord ? py + 1 : milieu[porte] + 1, c1 = nord ? milieu[porte] - 1 : py;
+      for (let j = c0; j <= c1; j++) { coins[j][porte] = true; coins[j][porte + 1] = true; prend(porte, j, 2, 1); }
+      break;
+    }
   }
 
   // ----- les tampons du kit : la mare au sud, le puits et le tonneau près des maisons, le banc
@@ -178,7 +181,7 @@ function tirer(graine) {
 
   // ----- les rochers et les cailloux (px, le milieu de leur pied), l'herbe haute, les fleurs
   const rochers = [];
-  for (let k = 0, e = 0; k < 7 && e < 200; e++) {
+  for (let k = 0, e = 0; k < TRANSITION.ROCHERS_N && e < 400; e++) {
     const x = entre(1, X - 2), yy = entre(2, H - 3);
     if (!libre(x - 1, yy, 2, 1)) continue;
     prend(x - 1, yy - 1, 3, 2);
@@ -203,16 +206,18 @@ function taille(nom) {
   return TRANSITION.TAMPONS[nom];
 }
 
-// L'intérieur d'une maison de w × h cases, la porte à la colonne `porte` du mur du bas : une
+// L'intérieur d'une maison de w × h cases, la porte à la colonne `porte` du mur du bas (du
+// haut si `haut`) : une
 // rangée de lettres par rangée (M un mur, P la porte, . le plancher, sinon un meuble posé sur
 // le plancher : f four, c cuisinière, p paillasse, d paillasse et sa couverture, g coffre à
 // grain, a atelier, b bac à semis, n nichoir, m meule). Rien juste devant la porte.
 const MEUBLES = ['f', 'c', 'g', 'a', 'b', 'n', 'm'];
-function plan(w, h, porte, r) {
+function plan(w, h, porte, r, haut = false) {
   const g = Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => (y === 0 || x === 0 || y === h - 1 || x === w - 1 ? 'M' : '.')));
-  g[h - 1][porte] = 'P';
+  g[haut ? 0 : h - 1][porte] = 'P';
   const cases = [];
-  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) if (!(x === porte && y >= h - 3)) cases.push([x, y]);
+  const devant = (x, y) => x === porte && (haut ? y <= 2 : y >= h - 3);
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) if (!devant(x, y)) cases.push([x, y]);
   // les meubles contre les murs d'abord (la rangée du haut), les couchages au fond à droite
   const contre = cases.filter(([x, y]) => y === 1 || x === 1 || x === w - 2);
   const pioche = (l) => l.splice(Math.floor(r() * l.length), 1)[0];
