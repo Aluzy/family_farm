@@ -275,10 +275,11 @@
       const pas = H.vitesse * dt;
       for (const i of this.mursEfface) {
         if (!i.active) { this.mursEfface.delete(i); continue; }
-        const but = devant.has(i) ? H.alpha : 1;
+        // (sous l'étage, quand on y est : sa transparence à lui, js/carte/ferme/etage.js)
+        const base = i.etageA || 1, but = devant.has(i) ? Math.min(base, H.alpha) : base;
         const a = i.alpha < but ? Math.min(but, i.alpha + pas) : Math.max(but, i.alpha - pas);
         i.setAlpha(a);
-        if (a === 1 && !devant.has(i)) this.mursEfface.delete(i);
+        if (a === base && !devant.has(i)) this.mursEfface.delete(i);
       }
     },
 
