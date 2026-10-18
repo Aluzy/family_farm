@@ -31,16 +31,16 @@ test('transition : la même graine donne la même carte, une autre graine une au
 test('transition : le chemin va de la ferme à la route, sans sauter de rangée', () => {
   for (const g of GRAINES) {
     const P = transitionPlan(g), m = P.milieu;
-    assertEqual([m[0], m[1], m[2], m[TRANSITION.OUEST]], [18, 18, 18, 18], g + ' : droit aux deux bouts');
+    assertEqual([m[0], m[1], m[2], m[TRANSITION.OUEST]], new Array(4).fill(TRANSITION.CHEMIN_Y), g + ' : droit aux deux bouts');
     for (let x = 1; x < m.length; x++) assert(Math.abs(m[x] - m[x - 1]) <= 1, `${g} : colonne ${x}`);
     for (let x = 0; x <= TRANSITION.OUEST; x++) assert(P.coins[m[x]][x] && P.coins[m[x] - 1][x] && P.coins[m[x] + 1][x], `${g} : du chemin colonne ${x}`);
   }
 });
 
-test('transition : deux ou trois maisons à l\'ouest, une porte en bas, une allée jusqu\'au chemin', () => {
+test('transition : trois à cinq maisons à l\'ouest, une porte en bas, une allée jusqu\'au chemin', () => {
   for (const g of GRAINES) {
     const P = transitionPlan(g);
-    assert(P.maisons.length >= 2 && P.maisons.length <= 3, g);
+    assert(P.maisons.length >= TRANSITION.MAISONS[0] && P.maisons.length <= TRANSITION.MAISONS[1], g);
     P.maisons.forEach((m, i) => {
       assertEqual(m.nom, 'maison_' + (i + 1));
       assert(m.x >= 1 && m.x + m.w <= TRANSITION.OUEST - 1 && m.y >= 2, `${g} ${m.nom} : dans l'ouest`);

@@ -198,17 +198,17 @@ Le Marché vend toujours les outils.
 
 ## La carte de transition, tirée pour chaque partie
 
-La carte entre la ferme et la ville (`ville-carte.html?carte=transition`, 48 × 36 tuiles) a deux
+La carte entre la ferme et la ville (`ville-carte.html?carte=transition`, 96 × 72 tuiles) a deux
 parties.
 
 - **L'est est fixe**, dessiné par `scripts/ville/transition.py` à partir de la colonne `OUEST`
-  (24) : le bout du chemin, la route, les trottoirs, les réverbères, l'arrêt de bus.
+  (48) : le bout du chemin, la route, les trottoirs, les réverbères, l'arrêt de bus.
 - **L'ouest est tiré d'après la graine de la partie** (`js/engine/transition.js`,
   `transitionPlan`). La graine est celle de la ferme générée, sinon celle des voisins
   (`state.graineVoisins`, tirée à la création de la partie, ou à la première visite d'une
   ancienne partie). L'ouest contient :
   - le chemin de terre de la ferme à la route, qui ondule doucement ;
-  - 2 ou 3 maisons de voisins, chacune avec une allée de sa porte au chemin. Elles sont bâties
+  - 3 à 5 maisons de voisins, chacune avec une allée de sa porte au chemin. Elles sont bâties
     avec les blocs de la ferme générée (`assets/blocs.png`) : murs raccordés, porte, plancher,
     meubles (four, cuisinière, paillasses, coffre à grain, atelier…) ;
   - la mare et son banc, le puits et le tonneau près des maisons, des barrières le long du
@@ -232,7 +232,7 @@ parties.
   elle. De 7 h à 19 h, ses membres sortent par la porte.
   - Les parents vont chercher la ressource libre la plus proche, la ramassent, et en rapportent
     trois à la fois à la maison avant de ressortir.
-  - Les ressources sont des petites pierres, des morceaux de bois et des herbes : 18 par jour
+  - Les ressources sont des petites pierres, des morceaux de bois et des herbes : 36 par jour
     (`ressourcesDuJour`).
   - Les enfants, et les parents quand il n'y a plus rien, flânent autour de la maison.
   - Rentrés, ils restent visibles et circulent dans la maison avant de ressortir.

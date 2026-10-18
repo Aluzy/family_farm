@@ -10,7 +10,7 @@ import { farmSeed } from './terrain.js';
 // docs/carte-generee.md (la carte de transition). L'est de la carte (à partir de la colonne
 // OUEST : la route, les trottoirs, l'arrêt de bus) est fixe, dessiné par
 // scripts/ville/transition.py. L'ouest est tiré d'après la graine de la partie : le chemin de
-// terre qui va de la ferme à la route, deux ou trois maisons de voisins bâties en blocs (comme
+// terre qui va de la ferme à la route, trois à cinq maisons de voisins bâties en blocs (comme
 // le foyer de la ferme générée) avec leurs allées, la mare, le puits, le tonneau, le banc, les
 // barrières, les buissons, les arbres, les rochers, l'herbe haute, les fleurs. Chaque jour,
 // des ressources (petites pierres, morceaux de bois, herbes) poussent sur l'herbe : les
@@ -22,19 +22,19 @@ import { farmSeed } from './terrain.js';
 // de la graine (et du jour, pour les ressources) : la même partie retrouve la même carte.
 
 export const TRANSITION = {
-  LARGEUR: 48, HAUTEUR: 36, OUEST: 24,
+  LARGEUR: 96, HAUTEUR: 72, OUEST: 48,
   // le chemin : la rangée de coins de son milieu (il fait deux tuiles de large) ; à la sortie
   // de la ferme (colonnes 0 à 2) et en arrivant à la route (OUEST - 2 et après), CHEMIN_Y
-  CHEMIN_Y: 18, ECART: 3,
-  // les maisons : de 2 à 3, de LARGEURS × HAUTEURS cases (murs compris)
-  MAISONS: [2, 3], LARGEURS: [5, 6, 7], HAUTEURS: [5, 6],
+  CHEMIN_Y: 36, ECART: 4,
+  // les maisons : de 3 à 5, de LARGEURS × HAUTEURS cases (murs compris)
+  MAISONS: [3, 5], LARGEURS: [5, 6, 7], HAUTEURS: [5, 6],
   // la taille des tampons du kit (scripts/ville/transition.py, KIT.tampons), en tuiles
   TAMPONS: { mare: [9, 6], puits: [3, 3], tonneau: [1, 2], banc: [3, 2], buisson: [3, 2], buisson_large: [3, 2] },
   // (les barrières : barriere_2 à barriere_8, n × 3 tuiles, leur pied dans la 2e rangée)
   BARRIERE: [2, 8],
-  ROCHERS: ['rocher_a', 'rocher_b', 'rocher_c', 'caillou_0', 'caillou_1'],
+  ROCHERS: ['rocher_a', 'rocher_b', 'rocher_c', 'caillou_0', 'caillou_1'], ROCHERS_N: 14,
   // les ressources du jour : combien, et de quelles sortes (les images de assets/ramassables.png)
-  RESSOURCES: 18, SORTES: ['petite_pierre', 'morceau_bois', 'herbe'],
+  RESSOURCES: 36, SORTES: ['petite_pierre', 'morceau_bois', 'herbe'],
   // ce que chaque sorte rapporte à qui la ramasse (une famille, ou le joueur : son inventaire)
   OBJETS: { petite_pierre: 'pierre', morceau_bois: 'bois', herbe: 'fibre' },
 };
@@ -178,7 +178,7 @@ function tirer(graine) {
 
   // ----- les rochers et les cailloux (px, le milieu de leur pied), l'herbe haute, les fleurs
   const rochers = [];
-  for (let k = 0, e = 0; k < 7 && e < 200; e++) {
+  for (let k = 0, e = 0; k < TRANSITION.ROCHERS_N && e < 400; e++) {
     const x = entre(1, X - 2), yy = entre(2, H - 3);
     if (!libre(x - 1, yy, 2, 1)) continue;
     prend(x - 1, yy - 1, 3, 2);

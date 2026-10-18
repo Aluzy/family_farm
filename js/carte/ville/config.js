@@ -147,7 +147,7 @@
   const NAVETTE = {
     arrets: {
       transition: {
-        route: 'bus_matin', arret: 'arret', attente: { x: 600, y: 243 },
+        route: 'bus_matin', arret: 'arret', attente: { x: 984, y: 531 },
         cible: 'ville-carte.html?carte=ville&arrivee=gare&bus=1', choix: '🚉 La gare (en ville)', vers: 'jusqu\'à la gare, en ville',
       },
       ville: {
