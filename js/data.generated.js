@@ -1967,6 +1967,24 @@ export const RAW_DATA = {
     "COUP": 0.5
   },
   "NAVETTE": { "HORAIRES": { "DEBUT": 6, "FIN": 22 }, "DUREES": { "MONTEE": 0.8, "DEPART": 2.6, "DESCENTE": 0.6, "REPART": 1.2 } },
+  "VOISINS": {
+    "ARGENT": 150,
+    "BUCHERON": { "ARBRES": 3, "BOIS": 5 },
+    "AGRICULTEUR": {
+      "CULTURES": ["patate", "tomate", "courgette", "carotte", "aubergine", "patate"],
+      "RENDEMENT": 200,
+      "GARDE": 6,
+      "ACHATS": ["oeuf", "huile", "farine"]
+    },
+    "RECETTES": {
+      "bucheron": ["tarte_pommes", "gratin_patates", "omelette", "pain"],
+      "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"]
+    },
+    "CONFORT": 100,
+    "PLAISIR": 10,
+    "RATTRAPAGE": 30,
+    "JOURNAL": 5
+  },
   "MEUBLES": {
     "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },
     "table": { "nom": "Table", "piece": "cuisine", "prix": 90, "bonheur": 3 },

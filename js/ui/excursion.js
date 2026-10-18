@@ -18,6 +18,7 @@ import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
 import { farmSeed } from '../engine/terrain.js';
 import { ramasserTransition, ressourcesDuJour, transitionPlan, transitionPris, transitionSeed } from '../engine/transition.js';
+import { voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -242,6 +243,24 @@ window.FermeHote = {
   },
   // le joueur y ramasse une ressource du jour (son id) : { ok, item, n } ou { ok: false }
   ramasserTransition: (id) => nuit() || joue(ramasserTransition(state, id)),
+  // les voisins de la transition (js/engine/voisins.js) : la page dit leurs familles (tirées par
+  // elle : [{ maison, adultes, enfants }]) ; renvoie ce que la carte en montre (voisinsVue), le
+  // nom des plats et des légumes (« 🥔 patate ») et les images des cultures de leurs champs
+  voisins: (familles) => {
+    for (const f of familles || []) voisinFoyer(state, f.maison, f);
+    persistState();
+    const noms = {}, cultures = {};
+    const nom = (id) => { const o = DATA.OBJETS[id]; if (o) noms[id] = `${o.icone} ${o.nom.toLowerCase()}`; };
+    for (const l of Object.values(DATA.VOISINS.RECETTES)) l.forEach(nom);
+    for (const c of DATA.VOISINS.AGRICULTEUR.CULTURES) { nom(c); if (DATA.CULTURES[c].sprite) cultures[c] = DATA.CULTURES[c].sprite; }
+    return { foyers: voisinsVue(state), noms, cultures };
+  },
+  // sous les yeux du joueur, le bûcheron de `maison` abat l'arbre `id` : { ok, bois, reste }
+  voisinAbat: (maison, id) => {
+    const r = voisinAbat(state, maison, id);
+    if (r.ok) persistState();
+    return r;
+  },
 };
 
 /* ---------- le god mode : un menu des cartes ---------- */

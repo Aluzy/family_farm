@@ -27,7 +27,9 @@ export const TRANSITION = {
   // de la ferme (colonnes 0 à 2) et en arrivant à la route (OUEST - 2 et après), CHEMIN_Y
   CHEMIN_Y: 36, ECART: 4,
   // les maisons : de 3 à 5, de LARGEURS × HAUTEURS cases (murs compris), à ECARTS rangées du chemin
-  MAISONS: [3, 5], ECARTS: [2, 12], LARGEURS: [5, 6, 7], HAUTEURS: [5, 6],
+  MAISONS: [3, 5], ECARTS: [2, 12],
+  // les métiers des voisins (js/engine/voisins.js), le champ d'un agriculteur (colonnes × rangées)
+  METIERS: ['bucheron', 'agriculteur'], CHAMP: [4, 2], LARGEURS: [5, 6, 7], HAUTEURS: [5, 6],
   // la taille des tampons du kit (scripts/ville/transition.py, KIT.tampons), en tuiles
   TAMPONS: { mare: [9, 6], puits: [3, 3], tonneau: [1, 2], banc: [3, 2], buisson: [3, 2], buisson_large: [3, 2] },
   // (les barrières : barriere_2 à barriere_8, n × 3 tuiles, leur pied dans la 2e rangée)
@@ -127,6 +129,26 @@ function tirer(graine) {
     }
   }
 
+  // ----- les métiers (js/engine/voisins.js) : bûcheron ou agriculteur, tour à tour (le premier
+  // au hasard : il y a toujours les deux) ; le champ de chaque agriculteur, à côté de sa maison
+  // (CHAMP cases, moins s'il manque de place), du côté opposé au chemin si rien n'y tient
+  const premier = r() < 0.5 ? 0 : 1;
+  maisons.forEach((m, i) => { m.metier = TRANSITION.METIERS[(premier + i) % 2]; });
+  for (const m of maisons) {
+    if (m.metier !== 'agriculteur') continue;
+    const essais = [];
+    for (const [w, h] of [TRANSITION.CHAMP, [TRANSITION.CHAMP[0] - 1, TRANSITION.CHAMP[1]], [TRANSITION.CHAMP[0] - 1, 1]]) {
+      const bord = m.sens === 'bas' ? m.y + m.h - h : m.y;
+      essais.push([m.x + m.w + 1, bord, w, h], [m.x - w - 1, bord, w, h]);
+      essais.push([m.x + Math.floor((m.w - w) / 2), m.sens === 'bas' ? m.y - h - 3 : m.y + m.h + 2, w, h]);
+    }
+    const ok = essais.find(([x, y, w, h]) => libre(x - 1, y - 1, w + 2, h + 2));
+    if (!ok) continue;
+    const [x, y, w, h] = ok;
+    m.champ = { x, y, w, h };
+    prend(x - 1, y - 1, w + 2, h + 2);
+  }
+
   // ----- les tampons du kit : la mare au sud, le puits et le tonneau près des maisons, le banc
   // près de la mare, des barrières le long du chemin, des buissons
   const tampons = [];
@@ -223,7 +245,12 @@ function plan(w, h, porte, r, haut = false) {
   const pioche = (l) => l.splice(Math.floor(r() * l.length), 1)[0];
   const n = Math.min(contre.length, 3 + Math.floor(r() * 2));
   const meubles = MEUBLES.slice();
-  for (let k = 0; k < n; k++) {
+  // (toujours de quoi cuisiner : la cuisinière ou le four d'abord, contre le mur du fond)
+  const fond = contre.filter(([, y]) => y === (haut ? h - 2 : 1));
+  const feu = pioche(fond.length ? fond : contre);
+  contre.splice(contre.findIndex(([x, y]) => x === feu[0] && y === feu[1]), 1);
+  g[feu[1]][feu[0]] = meubles.splice(meubles.indexOf(r() < 0.5 ? 'c' : 'f'), 1)[0];
+  for (let k = 1; k < n; k++) {
     const [x, y] = pioche(contre);
     g[y][x] = pioche(meubles);
   }

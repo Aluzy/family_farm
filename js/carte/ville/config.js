@@ -259,17 +259,22 @@
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)
   const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, reach: 14, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };
-  // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h ; elles
-  // rapportent `panier` ressources à la fois, se penchent `ramasse` s pour en prendre une,
-  // soufflent `souffle` s avant la suivante, restent `pause` s à la maison (au hasard entre les deux) avant de ressortir. `store` : ce
-  // qui a été ramassé aujourd'hui (localStorage). Les enfants sont à l'école de `ecole[0]` h à
-  // `ecole[1]` h les jours d'école, comme ceux de la ferme (js/famille-ferme.js, HORAIRE).
+  // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h ; rentrés,
+  // ils restent `pause` s à la maison (au hasard entre les deux) avant de ressortir. Les enfants
+  // sont à l'école de `ecole[0]` h à `ecole[1]` h les jours d'école, comme ceux de la ferme
+  // (js/famille-ferme.js, HORAIRE). Les parents font leur métier (js/carte/ville/metiers.js) :
+  // le bûcheron abat un arbre en `coups` coups de hache de `coup` s chacun, puis rapporte le bois
+  // chez lui ; l'agriculteur travaille `parcelles` parcelles de son champ, `travail` s chacune
+  // (au hasard entre les deux) ; le second parent va au marché de la ville entre `marche[0]` h et
+  // `marche[1]` h (il y reste `enVille` s) ; l'un d'eux cuisine à partir de `cuisine` h, `cuisson` s
+  // devant le four ou la cuisinière (une volute de vapeur toutes les `vapeur` s).
   const TRANSITION_VIE = {
-    store: 'ferme-transition-ramasses', jour: [7, 19], panier: 3, ramasse: 0.9, souffle: [1.5, 3.5], pause: [10, 25], ecole: [7, 16.5],
-    paroles: {
-      adulte: { compte: 'Avec ma famille, on a déjà ramassé {n} ressource{s} aujourd\'hui. Ça fera de belles réserves !', rien: 'Je vais chercher du bois et des pierres pour la maison.' },
-      enfant: { compte: 'On a trouvé {n} trésor{s} aujourd\'hui ! Des cailloux, du bois…', rien: 'J\'aide mes parents à ramasser du bois !' },
-    },
+    jour: [7, 19], pause: [10, 25], ecole: [7, 16.5],
+    coups: 3, coup: 0.55, parcelles: 3, travail: [3, 5], marche: [11, 14], enVille: 18, cuisine: 17.5, cuisson: 16, vapeur: 0.45,
+    humeur: [70, 40],         // le bonheur : 😊 au-dessus de humeur[0], 🙂 au-dessus de humeur[1], 😟 en dessous
+    // le champ d'un agriculteur : la terre labourée (16 bordures selon les coins, comme à la
+    // ferme : scripts/carte/terre_bords.py) et les plantes (crops.png, « culture:stade »)
+    champ: { terre: 'terre_bords_voisins', terreFile: 'assets/terre_bords.png', crops: 'crops', cropsFile: 'assets/crops.png' },
   };
   // La clé de la planche d'un personnage : un adulte (perso_N) ou un enfant (enfant_N) ; son
   // fichier : CarteKit.planche.

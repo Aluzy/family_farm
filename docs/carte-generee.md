@@ -232,25 +232,42 @@ parties.
   (`poseMaison`).
 - **Les familles** : chaque maison a sa famille (`V.voisins`), qu'on voit aller et venir chez
   elle. De 7 h à 19 h, ses membres sortent par la porte.
-  - Les parents vont chercher la ressource libre la plus proche, la ramassent, et en rapportent
-    trois à la fois à la maison avant de ressortir.
-  - Les ressources sont des petites pierres, des morceaux de bois et des herbes : 36 par jour
-    (`ressourcesDuJour`).
-  - Les enfants, et les parents quand il n'y a plus rien, flânent autour de la maison.
-  - Rentrés, ils restent visibles et circulent dans la maison avant de ressortir.
-  - La nuit, tout le monde reste chez soi.
+  - Les enfants flânent autour de la maison ; rentrés, tous restent visibles et circulent dans
+    la maison avant de ressortir. La nuit, tout le monde reste chez soi.
   - Les enfants vont à l'école comme ceux de la ferme : le lundi, le mardi, le jeudi et le
     vendredi, de 7 h à 16 h 30. Le matin, ils vont à pied jusqu'à l'abri, où le bus de l'école
     les attend ; le soir, ils en descendent et rentrent chez eux. Si le bus est déjà passé (ou
     sans animations), ils sont déjà partis, ou déjà rentrés.
-  - Un toucher sur un voisin : il dit ce que sa famille a ramassé aujourd'hui.
-  - Ce qui a été ramassé le reste jusqu'au lendemain (`localStorage`).
-- **Le joueur ramasse aussi** (`ramasserTransition`, `js/engine/transition.js`) : un toucher sur
-  une ressource y envoie le personnage, qui la prend en arrivant. Comme sur la ferme générée :
-  une petite pierre donne une pierre, un morceau de bois du bois, une herbe une fibre, contre
-  l'énergie et l'XP du geste « ramasser » ; pas la nuit, ni épuisé. Les voisins laissent la
-  ressource qu'il vise. Ce qu'il a pris est gardé dans la partie (`state.transitionPris`,
-  `{ jour, ids }`) et ne revient pas avant le lendemain.
+- **Les métiers des voisins** : chaque maison est bûcheron ou agriculteur (le plan, tour à tour :
+  il y a toujours les deux) ; l'agriculteur a un champ de 4 × 2 parcelles à côté de sa maison,
+  et chaque maison a un four ou une cuisinière.
+  - **L'économie** (`js/engine/voisins.js`, réglages `VOISINS` de `data/ville.json`) : chaque
+    foyer (`state.voisins.foyers`) a son argent, son garde-manger, son champ et son bonheur. Il
+    naît à la première visite et vit une journée à chaque nuit du jeu (`voisinsNuit`, dans
+    `runNight`), avec les règles de la famille du joueur : le besoin journalier (`FAMILLE.AJ`),
+    le bonheur des repas (`mealHappinessDelta` : les plats cuisinés en rendent, la faim en coûte).
+  - **Le bûcheron** abat 3 arbres de la carte par adulte et par jour (5 bois chacun ; les arbres
+    repoussent comme ceux du joueur), vend le bois au marché et y achète tout ce qu'il mange.
+  - **L'agriculteur** achète ses graines (ou replante ses patates), récolte son champ, garde de
+    quoi cuisiner et vend le reste ; il n'achète que ce qu'il ne produit pas (œufs, huile, farine).
+  - **La cuisine** : chacun cuisine les plats de son métier (`VOISINS.RECETTES`) tant que le besoin
+    n'est pas couvert, puis complète avec des aliments crus. Des plats différents (3 au plus) ;
+    au-delà du besoin, il en cuisine pour le plaisir avec une petite part de son épargne.
+  - **Sur la carte** (`js/carte/ville/metiers.js`) : le bûcheron va abattre l'arbre debout le plus
+    proche en trois coups de hache (`FermeHote.voisinAbat` : l'arbre compte dans sa journée) et
+    rapporte le bois chez lui ; l'agriculteur travaille son champ (houe, arrosoir), dont on voit
+    la terre et les plantes à leur stade ; entre 11 h et 14 h, le second parent part au marché de
+    la ville par la route et en revient son panier plein ; à partir de 17 h 30, un parent cuisine
+    devant le four ou la cuisinière.
+  - Un toucher sur un voisin : il raconte son métier et sa journée d'hier (arbres abattus ou
+    récolte, ventes, plats du dîner), son argent de côté et son bonheur.
+- **Les ressources du jour sont pour le joueur** (`ramasserTransition`, `js/engine/transition.js`) :
+  des petites pierres, des morceaux de bois et des herbes, 36 par jour (`ressourcesDuJour`). Un
+  toucher sur l'une d'elles y envoie le personnage, qui la prend en arrivant. Comme sur la ferme
+  générée : une petite pierre donne une pierre, un morceau de bois du bois, une herbe une fibre,
+  contre l'énergie et l'XP du geste « ramasser » ; pas la nuit, ni épuisé. Ce qu'il a pris est
+  gardé dans la partie (`state.transitionPris`, `{ jour, ids }`) et ne revient pas avant le
+  lendemain.
 
 ## Étapes
 

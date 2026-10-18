@@ -121,5 +121,40 @@
   "NAVETTE": {
     "HORAIRES": { "DEBUT": 6, "FIN": 22 },
     "DUREES": { "MONTEE": 0.8, "DEPART": 2.6, "DESCENTE": 0.6, "REPART": 1.2 }
+  },
+  "//VOISINS": [
+    "L'économie des voisins de la carte de transition (js/engine/voisins.js). Chaque maison du plan",
+    "(js/engine/transition.js) a un métier : bûcheron ou agriculteur. Chaque foyer part avec",
+    "ARGENT pièces et vit sa journée à chaque nuit du jeu, comme la famille du joueur : le besoin",
+    "journalier (FAMILLE.AJ par membre), les plats qui rendent du bonheur (VILLE.BONHEUR : base de",
+    "l'atelier, PLATS_MAX plats au plus, FAIM si le repas ne couvre pas le besoin, DECLIN chaque jour).",
+    "BUCHERON : chaque adulte abat ARBRES arbres de la carte par jour (ceux du plan qui sont debout ;",
+    "ils repoussent comme ceux que le joueur coupe), BOIS bois par arbre, vendus au marché (prix de",
+    "vente du bois). Il achète au marché tout ce qu'il mange.",
+    "AGRICULTEUR : son champ (le plan : à côté de la maison) a une parcelle par case ; chaque",
+    "parcelle porte la culture CULTURES[i] (en boucle), plantée d'une graine achetée (ou d'un",
+    "plant de sa récolte, qu'il garde de côté) et récoltée au bout de ses stades (un par jour),",
+    "RENDEMENT % du rendement de la culture (il y passe ses journées). Au départ, le champ est déjà",
+    "planté. Il garde GARDE légumes de chaque sorte pour sa cuisine et vend le reste ; il",
+    "n'achète que ACHATS (ce qu'il ne produit pas) et ses graines.",
+    "RECETTES : ce que chaque métier sait cuisiner, du préféré au moins aimé ; il cuisine tant que",
+    "le besoin n'est pas couvert, puis complète avec des aliments crus. Des plats différents (chacun",
+    "rend son bonheur une fois, PLATS_MAX au plus) : le besoin couvert, il en cuisine encore pour le",
+    "plaisir, avec au plus PLAISIR % de ce qu'il a au-delà de CONFORT pièces (le reste, il l'épargne).",
+    "RATTRAPAGE : au plus tant de journées rejouées d'un coup (une partie revue après longtemps).",
+    "JOURNAL : les dernières journées gardées (ce qu'on raconte au joueur)."
+  ],
+  "VOISINS": {
+    "ARGENT": 150,
+    "BUCHERON": { "ARBRES": 3, "BOIS": 5 },
+    "AGRICULTEUR": { "CULTURES": ["patate", "tomate", "courgette", "carotte", "aubergine", "patate"], "RENDEMENT": 200, "GARDE": 6, "ACHATS": ["oeuf", "huile", "farine"] },
+    "RECETTES": {
+      "bucheron": ["tarte_pommes", "gratin_patates", "omelette", "pain"],
+      "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"]
+    },
+    "CONFORT": 100,
+    "PLAISIR": 10,
+    "RATTRAPAGE": 30,
+    "JOURNAL": 5
   }
 }
