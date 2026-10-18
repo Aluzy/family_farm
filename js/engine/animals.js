@@ -9,6 +9,7 @@ import { bumpCounter } from './campaign.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { farmSeed } from './terrain.js';
+import { etatPoulailler } from './blocs.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
 
@@ -117,8 +118,12 @@ export function upgradeSilo(state) {
 
 /* ---------- Lot 4 : Poulailler et poules ---------- */
 
+// Sur la ferme générée, une poule par case libre de l'enceinte et de l'enclos, au plus
+// (etatPoulailler, blocs.js) : la capacité du niveau, bornée par la place.
 export function coopCapacity(state) {
-  return state.poulailler.construit ? DATA.POULAILLER.CAPACITE[state.poulailler.niveau - 1] : 0;
+  if (!state.poulailler.construit) return 0;
+  const cap = DATA.POULAILLER.CAPACITE[state.poulailler.niveau - 1];
+  return farmSeed(state) === null ? cap : Math.min(cap, etatPoulailler(state).places);
 }
 
 export function coopUpgradeCost(state) {
@@ -128,7 +133,7 @@ export function coopUpgradeCost(state) {
 export function buildPoulailler(state) {
   const p = state.poulailler;
   // la ferme générée : un nichoir, fabriqué à l'Atelier, posé dans une pièce close (blocs.js)
-  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, le Poulailler se bâtit : une pièce close et un nichoir (Atelier).');
+  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, le Poulailler se bâtit : une enceinte de murs avec une porte sur l\'extérieur, un nichoir (Atelier), et un enclos de barrières relié par une porte.');
   return buildWith(state, 'poulailler', { built: p.construit, deja: 'Le Poulailler est déjà construit.', cost: DATA.POULAILLER.PRIX_CONSTRUCTION, libelle: 'Poulailler' }, () => {
     p.construit = true;
     p.niveau = 1;
@@ -137,7 +142,20 @@ export function buildPoulailler(state) {
 
 export function upgradePoulailler(state) {
   if (!state.poulailler.construit) return fail('Construis d\'abord le Poulailler.');
+  // la ferme générée : il faut aussi la place des poules du niveau suivant (une case libre par
+  // poule dans l'enceinte et dans l'enclos)
+  const refus = coopUpgradeRefus(state);
+  if (refus) return fail(refus);
   return upgradeWith(state, coopUpgradeCost(state), 'Poulailler agrandi', () => { state.poulailler.niveau += 1; });
+}
+
+// Sur la ferme générée, pourquoi le Poulailler ne peut pas monter de niveau (la place), ou null.
+export function coopUpgradeRefus(state) {
+  const p = state.poulailler;
+  if (farmSeed(state) === null || !p.construit || p.niveau >= DATA.POULAILLER.CAPACITE.length) return null;
+  const e = etatPoulailler(state), besoin = DATA.POULAILLER.CAPACITE[p.niveau];
+  if (e.libresPiece.length >= besoin && e.libresEnclos.length >= besoin) return null;
+  return `Pour le niveau ${p.niveau + 1} (${besoin} poules), il faut ${besoin} cases libres dans le poulailler et dans l'enclos : il y en a ${e.libresPiece.length} et ${e.libresEnclos.length}.`;
 }
 
 // Prix fixe d'un animal : il ne dépend ni du nombre d'animaux ni du Marché.
@@ -261,7 +279,8 @@ export function feedAllHens(state) {
 export function layEggs(state) {
   const p = state.poulailler;
   const def = DATA.ANIMAUX.poule;
-  const eggs = p.nourries * def.oeufsParNuit;
+  // (les poules en trop, au-delà des places, ne pondent pas : la ferme générée, coopCapacity)
+  const eggs = Math.min(p.nourries, coopCapacity(state)) * def.oeufsParNuit;
   // version 1.18 : les œufs attendent au Poulailler que le personnage vienne les chercher
   if (eggs > 0) deposit(state, 'poulailler', null, { [def.produit]: eggs });
   gainActionXp(state, 'oeuf', eggs); // version 1.7

@@ -170,6 +170,10 @@
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'coffre_grain' },
     voile: 0xc8ffb4, voileAlpha: 0.4, voileDepth: 0.08, coucheY: 4,
   };
+  // Les poules du Poulailler de la ferme générée (chantier.js, syncHens) : la planche des poules
+  // (HERD_SHEETS.poule : cases de 16 × 16, profil droit), dehors dans l'enclos de jour[0] h à
+  // jour[1] h (comme la porte du Poulailler, ambient-life.js), `vitesse` px/s.
+  const POULES = { key: 'poule', jour: [6, 19], vitesse: 10, frames: { idle: 0, picore0: 1, picore1: 2, marche0: 3, marche1: 4, gratte: 5, couvee: 6, ailes: 7 } };
   const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };
   const HOLLOW = {
     layer: 'plantes_pierres', gids: [539, 540], near: 22, page: 'infra-monde.html',
@@ -348,7 +352,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, EXIT, HOLLOW, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, POULES, EXIT, HOLLOW, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

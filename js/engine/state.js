@@ -15,7 +15,7 @@ import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsE
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
-import { rangerPieces } from './blocs.js';
+import { majPoulailler, rangerPieces } from './blocs.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -322,6 +322,14 @@ export const MIGRATIONS = {
   // v37 → v38 : une enceinte est une maison ou un bâtiment, pas les deux : les blocs qui
   // mêlent deux genres retournent dans l'inventaire (blocs.js, rangerPieces).
   37: (state) => migrateRoomKinds(state),
+  // v38 → v39 : sur la ferme générée, le Poulailler veut aussi une porte sur le dehors et un
+  // enclos de barrières (blocs.js, etatPoulailler) ; sans eux, il n'est plus là (niveau et
+  // poules gardés).
+  38: (state) => {
+    const s2 = { ...state, version: 39 };
+    if (s2.carte && s2.poulailler && typeof s2.poulailler === 'object') { s2.poulailler = { ...s2.poulailler }; majPoulailler(s2); }
+    return s2;
+  },
 };
 
 function migrateRoomKinds(old) {

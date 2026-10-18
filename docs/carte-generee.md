@@ -295,15 +295,30 @@ parties.
        - Le puits et la citerne gardent leurs images (la pompe qui vibre, le niveau de l'eau),
          posées sur leurs blocs. Un appui ouvre l'énergie ou l'eau.
      - ✅ **5b-3, le poulailler** : le Poulailler quitte la cour.
-       - Le **nichoir** (4 planches, 3 fibres) se fabrique à l'Atelier. Posé dans une pièce
-         close, il construit le Poulailler au niveau 1 (`ATELIER.BLOCS.nichoir.batiment`) ; repris,
-         le Poulailler n'est plus construit et retrouve son niveau quand on le repose. On ne
-         l'achète plus sur la ferme générée (`buildPoulailler` refuse).
+       - Le **nichoir** (4 planches, 3 fibres) se fabrique à l'Atelier et se pose dans une pièce
+         close. On n'achète plus le Poulailler sur la ferme générée (`buildPoulailler` refuse).
+       - **Le Poulailler est là quand tout y est** (`etatPoulailler`, `majPoulailler` après chaque
+         bloc posé ou repris, `js/engine/blocs.js`) :
+         - une enceinte de murs (une pièce close) avec le nichoir ;
+         - une porte de l'enceinte qui donne sur l'extérieur ;
+         - un enclos : une étendue close de barrières (elle peut s'appuyer sur les murs de
+           l'enceinte), reliée à l'enceinte par une autre porte ;
+         - une case libre par poule, dans l'enceinte (hors nichoir) et dans l'enclos (un plancher
+           laisse la case libre ; un bloc ou un arbre la prend).
+       - Il manque quelque chose : le Poulailler n'est plus là (pas d'achat de poules, pas de
+         ponte), mais il garde son niveau et ses poules. Sa fenêtre liste ce qui manque.
+       - **Capacité** (`coopCapacity`) : le plus petit de la capacité du niveau
+         (`POULAILLER.CAPACITE`) et des cases libres de l'enceinte et de l'enclos. Les poules en
+         trop (des cases reprises) restent mais ne pondent pas (`layEggs`).
+       - **Monter de niveau** : le prix, comme avant, et la place des poules du niveau suivant
+         dans l'enceinte et dans l'enclos (`coopUpgradeRefus`).
+       - Une partie d'avant (migration v39) : le Poulailler est revu d'après ces règles.
        - Un appui sur le nichoir ouvre la fenêtre du Poulailler ; un double appui y envoie le
          personnage prendre les œufs, devant le nichoir. La bulle des œufs se pose au-dessus
          (`keyBlockOf`).
-       - Les poules ne se montrent pas encore sur la carte : la vie de la cour les dessine
-         autour du bâtiment du Poulailler, que la ferme générée n'a pas.
+       - **Les poules sur la carte** (`syncHens`, `stepHens`, `js/carte/ferme/chantier.js`) : une
+         image par poule qui a sa place. De 6 h à 19 h, elles vont et viennent dans l'enclos,
+         picorent et grattent ; la nuit, chacune couve sur sa case du poulailler.
      - ✅ **5b-4, l'étable** : l'Étable (la grange) quitte la cour.
        - La **mangeoire** (6 planches, 4 pierres, 2 fibres) se fabrique à l'Atelier. Posée dans
          une pièce close, elle ouvre l'Étable avec ses 10 places de départ (`PATURAGE.PLACES_DEPART`) ;

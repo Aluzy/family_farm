@@ -125,9 +125,11 @@ export function testAddWheat(state, qty = 50) {
 }
 
 // Lot 4 : +4 poules, dans la limite de la capacité. Le Poulailler est construit
-// gratuitement s'il ne l'était pas.
+// gratuitement s'il ne l'était pas (pas sur la ferme générée).
 export function testAddHens(state, count = 4) {
   const p = state.poulailler;
+  // la ferme générée : le Poulailler se bâtit (enceinte, nichoir, enclos : blocs.js)
+  if (farmSeed(state) !== null && !p.construit) return fail('Bâtis d\'abord le Poulailler : une enceinte avec une porte sur le dehors, un nichoir et un enclos de barrières.');
   if (!p.construit) {
     p.construit = true;
     p.niveau = 1;

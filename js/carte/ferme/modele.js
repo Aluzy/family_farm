@@ -64,6 +64,7 @@
       this.syncRoofPanels(model.panneaux | 0);
       this.syncFloors(model.sols);
       this.syncPaths(model.chemins);
+      this.syncHens(model.poulailler, model.heure);
       this.fireOn = !!model.fourAllume;
       this.syncBlocks(model.blocs, model.bati, model.pieces);   // (avant le puits et la citerne : posés sur leurs blocs)
       this.syncWell(!!model.pompe, !!model.pompeEnMarche);

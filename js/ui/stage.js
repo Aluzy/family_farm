@@ -8,7 +8,7 @@ import { fridgeUnits } from '../engine/fridge.js';
 import { memberPerso } from '../engine/family.js';
 import { allPlots, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, soilCap, soilCount } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
-import { sheepToShear, woolReady } from '../engine/animals.js';
+import { coopCapacity, sheepToShear, woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
@@ -17,7 +17,7 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
-import { farmMap, farmTerrain, tileCount } from '../engine/terrain.js';
+import { farmMap, farmSeed, farmTerrain, tileCount } from '../engine/terrain.js';
 import { tuilesChemins } from '../engine/ferme-generee.js';
 import { robotBattery, robotChargePct, robotOn, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
@@ -37,13 +37,21 @@ import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, pickChipHtml, rodChipHtml } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, couchages, piecesCloses, solsPoses } from '../engine/blocs.js';
+import { blocsPoses, couchages, etatPoulailler, piecesCloses, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml } from './chantier.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { runAction } from './events.js';
 
+
+// Le Poulailler de la ferme générée, bâti (js/engine/blocs.js, etatPoulailler) : les cases
+// libres de l'enceinte et de l'enclos, et combien de poules y ont leur place ; sinon null.
+function poulesDuPoulailler() {
+  if (farmSeed(state) === null || !state.poulailler.construit) return null;
+  const e = etatPoulailler(state);
+  return { piece: e.libresPiece, enclos: e.libresEnclos, n: Math.min(state.poulailler.poules, coopCapacity(state)) };
+}
 
 // Les chemins posés (le bloc « chemin ») : les tuiles du sol qu'ils changent, calculées une
 // fois par disposition (js/engine/ferme-generee.js, tuilesChemins).
@@ -417,6 +425,8 @@ export function stageModel() {
     sols: Object.entries(solsPoses(state)).filter(([, k]) => k === 'plancher').map(([c]) => Number(c)),
     // les chemins posés : les tuiles du sol qu'ils changent ([[case, tuile]]) et leurs cases
     chemins: cheminsDuSol(T),
+    // le Poulailler de la ferme générée : ses cases libres et les poules qui y ont leur place
+    poulailler: poulesDuPoulailler(),
     // le four (son bloc) cuit-il ? ses flammes bougent (js/carte/ferme/chantier.js, stepFires)
     fourAllume: !!(state.stations.four && state.stations.four.construit && state.stations.four.tache),
     bati: buildMode && !stageInterior ? { sorte: buildMode } : null,

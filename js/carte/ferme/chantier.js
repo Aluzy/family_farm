@@ -24,7 +24,7 @@
   'use strict';
 
   const F = global.FermeCarte;
-  const { T, BLOCS_CARTE } = F.C;
+  const { T, BLOCS_CARTE, POULES } = F.C;
 
   F.partie({
 
@@ -84,6 +84,64 @@
         S.set(c, this.add.image(x, y, BLOCS_CARTE.key, frame).setOrigin(0.5, 1).setDepth(BLOCS_CARTE.solDepth));
       }
       for (const [c, img] of S) if (!at.has(c)) { img.destroy(); S.delete(c); }
+    },
+
+    // Les poules du Poulailler de la ferme générée (modèle.poulailler : { piece, enclos (les
+    // cases libres), n (les poules qui y ont leur place) }, js/engine/blocs.js, etatPoulailler) :
+    // une image par poule. Le jour (POULES.jour), elles vont et viennent dans l'enclos, picorent
+    // et grattent ; la nuit, chacune couve sur sa case du poulailler. Au changement, elles
+    // passent de l'un à l'autre en s'effaçant.
+    syncHens(P, heure) {
+      if (!this.hens) this.hens = [];
+      const H = this.hens, n = P && this.has(POULES.key) ? P.n | 0 : 0;
+      this.henPlan = P;
+      this.henDay = heure >= POULES.jour[0] && heure < POULES.jour[1];
+      while (H.length > n) H.pop().img.destroy();
+      while (H.length < n) H.push({ img: this.add.image(0, 0, POULES.key, 0).setOrigin(0.5, 1).setAlpha(0), k: H.length, lieu: null, x: 0, y: 0, to: null, t: 0, age: 0, pose: 'idle' });
+      const cle = P ? JSON.stringify([P.piece, P.enclos]) : '';
+      if (cle !== this.henKey) { this.henKey = cle; for (const h of H) h.lieu = null; }
+    },
+
+    // Le point (pieds) d'une case, un peu au hasard dans la case si `jeu`.
+    henSpot(c, jeu) {
+      const cols = this.grid.cols;
+      return { x: (c % cols) * T + T / 2 + (jeu ? Math.round((Math.random() - 0.5) * 8) : 0), y: Math.floor(c / cols) * T + T - 2 - (jeu ? Math.round(Math.random() * 4) : 0) };
+    },
+
+    stepHens(time, dt) {
+      const H = this.hens, P = this.henPlan;
+      if (!H || !H.length || !P) return;
+      const lieu = this.henDay ? 'enclos' : 'piece', cases = P[lieu] || [];
+      if (!cases.length) return;
+      const Fr = POULES.frames, still = F.reducedMotion && F.reducedMotion();
+      for (const h of H) {
+        if (h.lieu !== lieu) {
+          // (de l'enclos au poulailler, ou l'inverse : elle s'efface, puis apparaît là-bas)
+          if (h.lieu && h.img.alpha > 0) { h.img.setAlpha(Math.max(0, h.img.alpha - dt * 3)); continue; }
+          h.lieu = lieu;
+          const p = this.henSpot(lieu === 'piece' ? cases[h.k % cases.length] : cases[Math.floor(Math.random() * cases.length)], lieu === 'enclos');
+          h.x = p.x; h.y = p.y; h.to = null; h.t = 0.5 + Math.random() * 2; h.pose = lieu === 'piece' ? 'couvee' : 'idle';
+        }
+        if (h.img.alpha < 1) h.img.setAlpha(Math.min(1, h.img.alpha + dt * 3));
+        h.age += dt;
+        if (lieu === 'enclos' && !still) {
+          if (h.to) {
+            const dx = h.to.x - h.x, dy = h.to.y - h.y, l = Math.hypot(dx, dy), st = POULES.vitesse * dt;
+            if (Math.abs(dx) > 0.5) h.img.setFlipX(dx < 0);
+            if (l <= st) { h.x = h.to.x; h.y = h.to.y; h.to = null; h.t = 1 + Math.random() * 3; h.pose = Math.random() < 0.6 ? 'picore' : 'gratte'; h.age = 0; } else { h.x += (dx / l) * st; h.y += (dy / l) * st; }
+          } else if ((h.t -= dt) <= 0) {
+            h.to = this.henSpot(cases[Math.floor(Math.random() * cases.length)], true);
+            h.pose = 'marche';
+          }
+        }
+        let f;
+        if (h.lieu === 'piece') f = Fr.couvee;
+        else if (h.to) f = ((h.age / 0.15) | 0) % 2 ? Fr.marche1 : Fr.marche0;
+        else if (h.pose === 'picore') f = h.age % 1.2 < 0.5 ? (((h.age / 0.12) | 0) % 2 ? Fr.picore1 : Fr.picore0) : Fr.idle;
+        else if (h.pose === 'gratte') f = ((h.age / 0.18) | 0) % 2 ? Fr.gratte : Fr.idle;
+        else f = Fr.idle;
+        h.img.setFrame(f).setPosition(Math.round(h.x), Math.round(h.y)).setDepth(h.y);
+      }
     },
 
     // Les chemins posés (modèle.chemins : { cases, tuiles: [[case, tuile]] }) : des tuiles du
