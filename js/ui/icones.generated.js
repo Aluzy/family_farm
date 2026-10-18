@@ -1,7 +1,7 @@
 // Fichier produit par scripts/icones/build.py : ne pas modifier à la main.
 // emoji (sans U+FE0F) → rang dans assets/icones.png (COLS cases par rangée).
 // VERSION : empreinte de la planche, ajoutée à son adresse (pas de vieille planche en cache).
-export const VERSION = '4d938ae478';
+export const VERSION = '210aac62b0';
 export const COLS = 16;
 export const ROWS = 22;
 export const ICONES = {
@@ -324,25 +324,26 @@ export const ICONES = {
 "🪢": 316,
 "🪣": 317,
 "🪨": 318,
-"🪨‍⚪": 319,
-"🪨‍🐚": 320,
-"🪨‍🔩": 321,
-"🪨‍🟠": 322,
-"🪨‍🟡": 323,
-"🪨‍🪲": 324,
-"🪴": 325,
-"🪵": 326,
-"🪸": 327,
-"🪹": 328,
-"🪺": 329,
-"🫐": 330,
-"🫑": 331,
-"🫕": 332,
-"🫘": 333,
-"🫙": 334,
-"🫙‍🌰": 335,
-"🫙‍🍓": 336,
-"🫙‍🥚": 337
+"🪨‍⚙": 319,
+"🪨‍⚪": 320,
+"🪨‍🐚": 321,
+"🪨‍🔩": 322,
+"🪨‍🟠": 323,
+"🪨‍🟡": 324,
+"🪨‍🪲": 325,
+"🪴": 326,
+"🪵": 327,
+"🪸": 328,
+"🪹": 329,
+"🪺": 330,
+"🫐": 331,
+"🫑": 332,
+"🫕": 333,
+"🫘": 334,
+"🫙": 335,
+"🫙‍🌰": 336,
+"🫙‍🍓": 337,
+"🫙‍🥚": 338
 };
 // Dessins de 32×32 (assets/art.png) : nom → rang, ART_COLS cases par rangée.
 export const ART_VERSION = '18aefde1d9';

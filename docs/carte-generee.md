@@ -232,3 +232,11 @@ Le Marché vend toujours les outils.
          repris, le Silo n'est plus construit (son blé reste compté). On ne le répare plus sur
          la ferme générée (`buildSilo` refuse).
        - Un appui sur le coffre ouvre la fenêtre du Silo.
+     - ✅ **5b-7, le moulin** : le Moulin quitte la cour.
+       - La **meule** (10 pierres, 4 planches) se fabrique à l'Atelier. Posée dans une pièce
+         close, elle tient lieu de la station du Moulin (`station: 'moulin'`, comme le four et la
+         cuisinière) ; reprise, le Moulin n'est plus là. `buildStation` refuse sur la ferme
+         générée. Il moud comme avant, à l'électricité.
+       - Elle ne se pose qu'à partir du niveau du Moulin (`debloque: 'moulin'`, niveau 4).
+       - Un appui sur la meule ouvre la fenêtre du Moulin. La vue de la carte, qui allait au
+         moulin et à la serre, va à la deuxième zone de culture.
