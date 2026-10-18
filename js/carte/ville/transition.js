@@ -108,6 +108,8 @@
     // familles, leurs métiers (makeMetiers : les foyers, les champs).
     makeVoisinsDehors() {
       this.dehors = [];
+      this.livreur = null;           // (la scène sert à toutes les cartes : js/carte/ville/livreur.js)
+      this.caisses = [];
       this.ressources = new Map();
       const D = this.transition;
       if (!D || !D.plan || !this.textures.exists(BLOCS.key)) return;
@@ -146,6 +148,7 @@
         });
       }
       this.makeMetiers();
+      this.makeLivreur();
     },
 
     // Une case libre du plancher de la maison `m`, au hasard : son point (px), où poser les pieds.

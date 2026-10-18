@@ -72,6 +72,12 @@ OUEST = 48                     # les colonnes 0 à OUEST - 1 : tirées par le je
 DX, DY = 24, 18
 ROUTE = (52, 33, 39)           # la chaussée : de la colonne 52 au bord est, rangées 33 à 39 (coins)
 TROTTOIRS = (54, 31, 41)       # les trottoirs, au-dessus et au-dessous, à partir de la colonne 54
+# Au-dessus de l'arrêt de bus, le livreur (js/carte/ville/livreur.js) : son habitation et
+# l'entrepôt, bâtis en blocs par le jeu (js/engine/transition.js, LIVREUR), et entre les deux le
+# parking de son triporteur électrique, en enrobé bordé de trottoir (coins : x0, y0, x1, y1).
+# RESERVE (tuiles x0, y0, x1, y1) : ni arbre, ni herbe haute, ni fleur.
+PARKING = (66, 26, 74, 31)
+RESERVE = (60, 18, 83, 30)
 # La mare (un tampon du kit) : ses rayons en px
 MARE_R = (4 * T, 2.4 * T)
 # Les barrières de la ferme (des tampons du kit, de 2 à 8 tuiles de long) : leur pied à
@@ -87,12 +93,17 @@ PIED_BAS = 40 * T + 6
 # (ceux de l'est : ceux de l'ouest sont tirés par le jeu)
 ROCHERS_PLAN = [(g, x + DX, y + DY) for g, x, y in (
     ('rocher_b', 24.5, 33), ('rocher_c', 40, 28), ('caillou_0', 44.5, 33.5),
-    ('rocher_a', 45, 8), ('rocher_b', 34, 5), ('caillou_1', 30.5, 9.6), ('rocher_b', 31, 31),
+    ('rocher_a', 45, -4), ('rocher_b', 34, 5), ('caillou_1', 30.5, 9.6), ('rocher_b', 31, 31),
 )] + [('rocher_a', 78, 8), ('caillou_0', 88.5, 19.5), ('rocher_c', 60, 62), ('caillou_1', 84.5, 66.6), ('rocher_b', 92, 50)]
 ARBRES, ROCHERS, HERBES = [], [], []
 OBSTACLES = []                        # (x, y, largeur, hauteur) en px : on ne marche pas dessus
 LUMIERES = []                         # les lanternes des réverbères (x, y) en px : couche « lumieres »
 PIEDS = {'abri': PIED_HAUT, 'reverberes_haut': PIED_HAUT, 'reverberes_bas': PIED_BAS}     # remplis par dessine : (genre, x, y) en px ; (x, y, rangée)
+
+
+def reserve(x, y):
+    """La tuile (x, y) est-elle dans la place du livreur (RESERVE) ?"""
+    return RESERVE[0] <= x <= RESERVE[2] and RESERVE[1] <= y <= RESERVE[3]
 
 
 def chemin(x):
@@ -110,6 +121,11 @@ def coins():
     for y in range(TROTTOIRS[1], TROTTOIRS[2] + 1):
         for x in range(TROTTOIRS[0], W + 1):
             g[y][x] = 'trottoir'
+    # le parking du livreur : un trottoir autour, l'enrobé dedans
+    x0, y0, x1, y1 = PARKING
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            g[y][x] = 'asphalte' if x0 < x < x1 and y0 < y < y1 + 1 else 'trottoir'
     for y in range(ROUTE[1], ROUTE[2] + 1):
         for x in range(ROUTE[0], W + 1):
             g[y][x] = 'asphalte'
@@ -207,9 +223,9 @@ def dessine(c):
             if any(g[y + j][x + i] != 'herbe' for i in (0, 1) for j in (0, 1)):
                 continue
             r = hasard(x, y, 51)
-            if r > 0.95:
+            if r > 0.95 and not reserve(x, y):
                 f.colle(F.fleurs(int(hasard(x, y, 53) * 40)), x * T, y * T)
-            elif r > 0.89 and (x, y) not in pris and not occupe(x, y):
+            elif r > 0.89 and (x, y) not in pris and not occupe(x, y) and not reserve(x, y):
                 # une touffe d'herbe haute (le jeu la dessine) : son pied un peu au hasard dans la case
                 HERBES.append((x * T + 4 + int(hasard(x, y, 54) * 9), y * T + 10 + int(hasard(x, y, 55) * 6), int(hasard(x, y, 52) * 3)))
     # les arbres de l'est : des bois au nord et au sud, rien sur le chemin, la route, ni le
@@ -226,6 +242,8 @@ def dessine(c):
             if 29 <= py <= 43 or (x > 51 and 23 <= py < 31) or (x > 51 and 40 <= py <= 48):
                 continue
             if any(abs(px - a) < 2.2 and abs(py - b) < 1.6 for _, a, b in ROCHERS_PLAN):
+                continue
+            if RESERVE[0] - 2 <= px <= RESERVE[2] + 2 and RESERVE[1] - 1 <= py <= RESERVE[3] + 2:
                 continue
             r = hasard(i, j, 84)
             plantes.append((px, py, 'pin' if r < 0.25 else 'buisson_large' if r < 0.35 else 'buisson' if r < 0.4 else 'arbre'))

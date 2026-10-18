@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.2" name="transition_sol" tilewidth="16" tileheight="16" tilecount="64" columns="16">
+<tileset version="1.10" tiledversion="1.12.2" name="transition_sol" tilewidth="16" tileheight="16" tilecount="80" columns="16">
  <!-- L'herbe et le chemin de la ferme, la route et les trottoirs de la ville -->
- <image source="transition_sol.png" width="256" height="64"/>
+ <image source="transition_sol.png" width="256" height="80"/>
   <tile id="0"><properties><property name="nom" value="asphalte_0"/></properties></tile>
   <tile id="1"><properties><property name="nom" value="asphalte_1"/></properties></tile>
   <tile id="2"><properties><property name="nom" value="trottoir_0"/></properties></tile>
@@ -23,39 +23,49 @@
   <tile id="18"><properties><property name="nom" value="herbe_11"/></properties></tile>
   <tile id="19"><properties><property name="nom" value="trottoir_herbe_14"/></properties></tile>
   <tile id="20"><properties><property name="nom" value="trottoir_herbe_12"/></properties></tile>
-  <tile id="21"><properties><property name="nom" value="trottoir_herbe_10"/></properties></tile>
-  <tile id="22"><properties><property name="nom" value="asphalte_herbe_14"/></properties></tile>
-  <tile id="23"><properties><property name="nom" value="asphalte_herbe_12"/></properties></tile>
+  <tile id="21"><properties><property name="nom" value="trottoir_herbe_13"/></properties></tile>
+  <tile id="22"><properties><property name="nom" value="trottoir_herbe_10"/></properties></tile>
+  <tile id="23"><properties><property name="nom" value="asphalte_trottoir_14"/></properties></tile>
   <tile id="24"><properties><property name="nom" value="asphalte_trottoir_12"/></properties></tile>
-  <tile id="25"><properties><property name="nom" value="asphalte_herbe_10"/></properties></tile>
-  <tile id="26"><properties><property name="nom" value="herbe_chemin_1"/></properties></tile>
-  <tile id="27"><properties><property name="nom" value="herbe_chemin_3"/></properties></tile>
-  <tile id="28"><properties><property name="nom" value="jointure_herbe_asphalte_chemin_asphalte"/></properties></tile>
-  <tile id="29"><properties><property name="nom" value="herbe_chemin_5"/></properties></tile>
-  <tile id="30"><properties><property name="nom" value="chemin_7"/></properties></tile>
-  <tile id="31"><properties><property name="nom" value="chemin_0"/></properties></tile>
-  <tile id="32"><properties><property name="nom" value="chemin_6"/></properties></tile>
-  <tile id="33"><properties><property name="nom" value="jointure_chemin_asphalte_chemin_asphalte"/></properties></tile>
-  <tile id="34"><properties><property name="nom" value="chemin_1"/></properties></tile>
-  <tile id="35"><properties><property name="nom" value="herbe_chemin_4"/></properties></tile>
-  <tile id="36"><properties><property name="nom" value="herbe_chemin_12"/></properties></tile>
-  <tile id="37"><properties><property name="nom" value="jointure_chemin_asphalte_herbe_asphalte"/></properties></tile>
-  <tile id="38"><properties><property name="nom" value="asphalte_herbe_11"/></properties></tile>
-  <tile id="39"><properties><property name="nom" value="asphalte_herbe_3"/></properties></tile>
-  <tile id="40"><properties><property name="nom" value="asphalte_trottoir_3"/></properties></tile>
-  <tile id="41"><properties><property name="nom" value="trottoir_herbe_11"/></properties></tile>
-  <tile id="42"><properties><property name="nom" value="trottoir_herbe_3"/></properties></tile>
-  <tile id="43"><properties><property name="nom" value="chemin_2"/></properties></tile>
-  <tile id="44"><properties><property name="nom" value="chemin_3"/></properties></tile>
-  <tile id="45"><properties><property name="nom" value="chemin_4"/></properties></tile>
-  <tile id="46"><properties><property name="nom" value="chemin_5"/></properties></tile>
-  <tile id="47"><properties><property name="nom" value="herbe_chemin_2"/></properties></tile>
-  <tile id="48"><properties><property name="nom" value="herbe_chemin_6"/></properties></tile>
-  <tile id="49"><properties><property name="nom" value="herbe_chemin_7"/></properties></tile>
-  <tile id="50"><properties><property name="nom" value="herbe_chemin_8"/></properties></tile>
-  <tile id="51"><properties><property name="nom" value="herbe_chemin_9"/></properties></tile>
-  <tile id="52"><properties><property name="nom" value="herbe_chemin_10"/></properties></tile>
-  <tile id="53"><properties><property name="nom" value="herbe_chemin_11"/></properties></tile>
-  <tile id="54"><properties><property name="nom" value="herbe_chemin_13"/></properties></tile>
-  <tile id="55"><properties><property name="nom" value="herbe_chemin_14"/></properties></tile>
+  <tile id="25"><properties><property name="nom" value="asphalte_trottoir_13"/></properties></tile>
+  <tile id="26"><properties><property name="nom" value="trottoir_herbe_5"/></properties></tile>
+  <tile id="27"><properties><property name="nom" value="asphalte_trottoir_10"/></properties></tile>
+  <tile id="28"><properties><property name="nom" value="asphalte_trottoir_5"/></properties></tile>
+  <tile id="29"><properties><property name="nom" value="trottoir_herbe_8"/></properties></tile>
+  <tile id="30"><properties><property name="nom" value="trottoir_herbe_4"/></properties></tile>
+  <tile id="31"><properties><property name="nom" value="asphalte_trottoir_11"/></properties></tile>
+  <tile id="32"><properties><property name="nom" value="asphalte_trottoir_3"/></properties></tile>
+  <tile id="33"><properties><property name="nom" value="asphalte_trottoir_7"/></properties></tile>
+  <tile id="34"><properties><property name="nom" value="asphalte_herbe_14"/></properties></tile>
+  <tile id="35"><properties><property name="nom" value="asphalte_herbe_12"/></properties></tile>
+  <tile id="36"><properties><property name="nom" value="asphalte_herbe_10"/></properties></tile>
+  <tile id="37"><properties><property name="nom" value="herbe_chemin_1"/></properties></tile>
+  <tile id="38"><properties><property name="nom" value="herbe_chemin_3"/></properties></tile>
+  <tile id="39"><properties><property name="nom" value="jointure_herbe_asphalte_chemin_asphalte"/></properties></tile>
+  <tile id="40"><properties><property name="nom" value="herbe_chemin_5"/></properties></tile>
+  <tile id="41"><properties><property name="nom" value="chemin_7"/></properties></tile>
+  <tile id="42"><properties><property name="nom" value="chemin_0"/></properties></tile>
+  <tile id="43"><properties><property name="nom" value="chemin_6"/></properties></tile>
+  <tile id="44"><properties><property name="nom" value="jointure_chemin_asphalte_chemin_asphalte"/></properties></tile>
+  <tile id="45"><properties><property name="nom" value="chemin_1"/></properties></tile>
+  <tile id="46"><properties><property name="nom" value="herbe_chemin_4"/></properties></tile>
+  <tile id="47"><properties><property name="nom" value="herbe_chemin_12"/></properties></tile>
+  <tile id="48"><properties><property name="nom" value="jointure_chemin_asphalte_herbe_asphalte"/></properties></tile>
+  <tile id="49"><properties><property name="nom" value="asphalte_herbe_11"/></properties></tile>
+  <tile id="50"><properties><property name="nom" value="asphalte_herbe_3"/></properties></tile>
+  <tile id="51"><properties><property name="nom" value="trottoir_herbe_11"/></properties></tile>
+  <tile id="52"><properties><property name="nom" value="trottoir_herbe_3"/></properties></tile>
+  <tile id="53"><properties><property name="nom" value="chemin_2"/></properties></tile>
+  <tile id="54"><properties><property name="nom" value="chemin_3"/></properties></tile>
+  <tile id="55"><properties><property name="nom" value="chemin_4"/></properties></tile>
+  <tile id="56"><properties><property name="nom" value="chemin_5"/></properties></tile>
+  <tile id="57"><properties><property name="nom" value="herbe_chemin_2"/></properties></tile>
+  <tile id="58"><properties><property name="nom" value="herbe_chemin_6"/></properties></tile>
+  <tile id="59"><properties><property name="nom" value="herbe_chemin_7"/></properties></tile>
+  <tile id="60"><properties><property name="nom" value="herbe_chemin_8"/></properties></tile>
+  <tile id="61"><properties><property name="nom" value="herbe_chemin_9"/></properties></tile>
+  <tile id="62"><properties><property name="nom" value="herbe_chemin_10"/></properties></tile>
+  <tile id="63"><properties><property name="nom" value="herbe_chemin_11"/></properties></tile>
+  <tile id="64"><properties><property name="nom" value="herbe_chemin_13"/></properties></tile>
+  <tile id="65"><properties><property name="nom" value="herbe_chemin_14"/></properties></tile>
 </tileset>

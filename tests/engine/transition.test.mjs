@@ -66,6 +66,21 @@ test('transition : trois à cinq maisons réparties à l\'ouest, de part et d\'a
   }
 });
 
+test('transition : chaque maison a sa caisse de collecte, dans l\'herbe au bord du chemin ; le triporteur s\'arrête au milieu du chemin', () => {
+  for (const g of GRAINES) {
+    const P = transitionPlan(g);
+    for (const m of P.maisons) {
+      const c = m.caisse;
+      assert(c, `${g} ${m.nom} : une caisse`);
+      const cx = Math.floor(c.x / 16), cy = Math.floor(c.y / 16);
+      assert([[0, 0], [1, 0], [0, 1], [1, 1]].every(([a, b]) => !P.coins[cy + b][cx + a]), `${g} ${m.nom} : la caisse est dans l'herbe`);
+      assert(Math.abs(cy - P.milieu[cx]) <= 5, `${g} ${m.nom} : au bord du chemin`);
+      for (const o of P.maisons) assert(!(cx >= o.x && cx < o.x + o.w && cy >= o.y && cy < o.y + o.h), `${g} ${m.nom} : hors des maisons`);
+      assertEqual([c.arret.x, c.arret.y], [cx * 16 + 8, P.milieu[cx] * 16], `${g} ${m.nom} : l'arrêt au milieu du chemin`);
+    }
+  }
+});
+
 test('transition : la maison grandit étape par étape (pièces, chambres, salon, meubles), toujours habitable', () => {
   const n = DATA.VOISINS.MAISON.ETAPES.length;
   for (const g of GRAINES) {

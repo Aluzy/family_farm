@@ -279,6 +279,15 @@
     // les grands meubles des maisons agrandies (assets/meuble_<nom>.png, ceux de la maison de la
     // ferme : le plan les place, maisonPlan du moteur)
     meubles: ['table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_1'],
+    // le livreur (js/carte/ville/livreur.js) : son triporteur électrique (les cases du
+    // triporteur, js/carte/triporteur.js), les caisses de collecte (pleine, vide) ; il part à
+    // `depart` h, s'arrête `charge` s à chaque caisse ; arrivé au marché, il y reste jusqu'à
+    // `retour` h ; si le joueur arrive après `livre` h, la tournée du matin est déjà faite
+    livreur: {
+      tri: 'triporteur_electrique', triFile: 'assets/triporteur_electrique.png',
+      caisse: 'caisse_collecte', caisseFile: 'assets/caisse_collecte.png',
+      depart: 6, charge: 1.2, livre: 9, retour: 11,
+    },
   };
   // La clé de la planche d'un personnage : un adulte (perso_N) ou un enfant (enfant_N) ; son
   // fichier : CarteKit.planche.

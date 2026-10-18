@@ -118,6 +118,11 @@
         // les grands meubles des maisons agrandies (ceux de la maison de la ferme)
         for (const n of TRANSITION_VIE.meubles) if (!this.textures.exists('meuble_' + n)) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
         for (const m of this.transition.plan.maisons) for (const mb of V.voisins(m.nom, m.lits).membres) planche(mb.perso, mb.enfant);
+        // le livreur, son triporteur électrique, les caisses de collecte (js/carte/ville/livreur.js)
+        for (const mb of V.voisins('livreur', 1).membres) planche(mb.perso, false);
+        const Lv = TRANSITION_VIE.livreur;
+        if (!this.textures.exists(Lv.tri)) this.load.spritesheet(Lv.tri, v(Lv.triFile), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
+        if (!this.textures.exists(Lv.caisse)) this.load.spritesheet(Lv.caisse, v(Lv.caisseFile), { frameWidth: 16, frameHeight: 16 });
       }
       for (const [k, file] of planches) this.load.spritesheet(k, v(file), { frameWidth: 16, frameHeight: 32 });
       // les planches des jeux de tuiles : lues dans la carte une fois chargée (tout de suite si
@@ -257,7 +262,7 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w)) { this.dbl.oublie(); return; }
+        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w) || this.tapLivreur(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va
         // (un essai de marche : la marche au doigt s'explique, une fois)
@@ -739,6 +744,7 @@
       this.stepPieces();
       this.stepFish(dt);
       this.stepVoisinsDehors(time, dt);
+      this.stepLivreur(time, dt);
       this.stepCueillette();
       this.stepDialog();
       const P = this.heroPos;

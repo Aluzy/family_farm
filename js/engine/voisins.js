@@ -20,6 +20,9 @@ import { mealHappinessDelta } from './ville.js';
 //
 //   - le bûcheron abat des arbres de la carte (ceux du plan, debout ; ils repoussent comme ceux
 //     du joueur), vend leur bois au marché et y achète ce qu'il mange ;
+//   - ce qu'il vend part dans sa caisse de collecte ; le livreur l'emmène au marché le lendemain
+//     matin, et la famille en touche le prix quand il y arrive (livraison, sous les yeux du
+//     joueur ; sinon au début de la journée suivante) ;
 //   - l'agriculteur achète ses graines, récolte son champ, garde de quoi cuisiner et vend le
 //     reste ; il n'achète que ce qu'il ne produit pas (VOISINS.AGRICULTEUR.ACHATS) ;
 //   - chacun cuisine ce que son métier sait faire (VOISINS.RECETTES), tant que le besoin n'est
@@ -152,13 +155,30 @@ function acheter(state, f, J, item, n) {
   return true;
 }
 
-function vendre(f, J, item, n) {
+// Ce qu'il vend va dans sa caisse de collecte (f.caisse) : le livreur l'emmène au marché le
+// lendemain matin, et la famille en touche le prix à son arrivée (livrer).
+function enCaisse(f, J, item, n) {
   if (n <= 0) return;
   f.stock[item] -= n;
-  const gain = sellPrice(item) * n;
+  if (!f.caisse || typeof f.caisse !== 'object') f.caisse = {};
+  ajoute(f.caisse, item, n);
+  ajoute(J.caisse, item, n);
+}
+
+// Ce que vaut la caisse au marché (prix de vente de chaque objet).
+function valeurCaisse(f) {
+  return Object.entries(f.caisse || {}).reduce((t, [item, n]) => t + sellPrice(item) * n, 0);
+}
+
+// Le livreur arrive au marché avec la caisse du foyer `f` (le matin du jour `jour`) : son prix
+// est crédité à la famille. Renvoie { gain, ventes }.
+function livrer(f, jour) {
+  const ventes = { ...(f.caisse || {}) }, gain = valeurCaisse(f);
   f.argent += gain;
-  J.vendu += gain;
-  ajoute(J.ventes, item, n);
+  f.caisse = {};
+  f.livre = jour;
+  f.livraison = { jour, gain, ventes };
+  return { gain, ventes };
 }
 
 // Ce que le plat `id` coûterait au marché (les ingrédients qui manquent ; Infinity : il ne
@@ -213,7 +233,17 @@ function prochaineEtape(f) {
 // Le foyer `f` (de la maison `maison`) vit la journée `jour`.
 function journee(state, maison, f, jour) {
   const V = DATA.VOISINS;
-  const J = { jour, arbres: 0, bois: 0, recolte: {}, plante: 0, ventes: {}, vendu: 0, achete: 0, plats: [], couverture: 0, bonheur: 0 };
+  const J = { jour, arbres: 0, bois: 0, recolte: {}, plante: 0, caisse: {}, ventes: {}, vendu: 0, achete: 0, plats: [], couverture: 0, bonheur: 0 };
+  // le matin, la tournée du livreur : la caisse d'hier vendue au marché (si le joueur ne l'a pas
+  // déjà vue arriver : livraison)
+  if (f.livre !== jour) {
+    const l = livrer(f, jour);
+    J.vendu = l.gain;
+    J.ventes = l.ventes;
+  } else if (f.livraison && f.livraison.jour === jour) {
+    J.vendu = f.livraison.gain;
+    J.ventes = { ...f.livraison.ventes };
+  }
   if (f.metier === 'bucheron') {
     // les arbres de la journée : ceux que le joueur l'a vu abattre, puis le reste du quota
     const vus = f.coupes && f.coupes.jour === jour ? f.coupes.n : 0;
@@ -225,7 +255,7 @@ function journee(state, maison, f, jour) {
       J.arbres++;
     }
     J.bois = f.stock.bois || 0;
-    vendre(f, J, 'bois', f.stock.bois || 0);
+    enCaisse(f, J, 'bois', f.stock.bois || 0);
   } else {
     // le champ : la récolte de ce qui est prêt, puis les semis (une graine achetée, ou un plant
     // de la récolte), prêts au bout des stades de la culture
@@ -284,7 +314,7 @@ function journee(state, maison, f, jour) {
   // l'agriculteur vend ce qu'il ne garde pas pour sa cuisine
   if (f.metier === 'agriculteur') {
     for (const item of Object.keys(f.stock)) {
-      if (DATA.CULTURES[item] && DATA.OBJETS[item] && DATA.OBJETS[item].categorie === 'légume') vendre(f, J, item, (f.stock[item] || 0) - V.AGRICULTEUR.GARDE - (plants[item] || 0));
+      if (DATA.CULTURES[item] && DATA.OBJETS[item] && DATA.OBJETS[item].categorie === 'légume') enCaisse(f, J, item, (f.stock[item] || 0) - V.AGRICULTEUR.GARDE - (plants[item] || 0));
     }
   }
   for (const k of Object.keys(f.stock)) if (!(f.stock[k] > 0)) delete f.stock[k];
@@ -312,6 +342,19 @@ export function voisinsNuit(state) {
   }
 }
 
+// Sous les yeux du joueur, le livreur arrive au marché : la caisse de chaque foyer (pas encore
+// livrée aujourd'hui) est vendue, son prix crédité à la famille. { total, foyers: { <maison>: gain } }.
+export function livraison(state) {
+  const out = { total: 0, foyers: {} };
+  for (const [maison, f] of Object.entries(voisinsFoyers(state))) {
+    if (f.livre === state.day) continue;
+    const { gain } = livrer(f, state.day);
+    out.foyers[maison] = gain;
+    out.total += gain;
+  }
+  return out;
+}
+
 // Le stade d'une parcelle à dessiner (0 à 3 ; -1 : rien de planté ; 3 : prête).
 function stade(p, jour) {
   if (p.pret == null) return -1;
@@ -319,13 +362,15 @@ function stade(p, jour) {
   return Math.max(0, Math.min(2, Math.floor(((jour - p.plante) / (p.pret - p.plante)) * 3)));
 }
 
-// Ce que la carte montre et raconte de chaque foyer : { <maison>: { metier, lits, niveau (l'étape
+// Ce que la carte montre et raconte de chaque foyer : { <maison>: { caisse (ce qui attend le
+// livreur), valeur (son prix au marché), livree (le livreur est passé aujourd'hui), metier, lits, niveau (l'étape
 // de la maison), projet (la suivante, ou null), maison (son plan : maisonPlan), adultes, enfants, argent, bonheur,
 // quota, champ: [{ culture, stade }], hier: journal du dernier jour ou null } }.
 export function voisinsVue(state) {
   const out = {};
   for (const [maison, f] of Object.entries(voisinsFoyers(state))) {
     out[maison] = {
+      caisse: { ...(f.caisse || {}) }, valeur: valeurCaisse(f), livree: f.livre === state.day,
       metier: f.metier, lits: maisonDe(state, maison).lits, niveau: f.niveau || 0, projet: prochaineEtape(f),
       maison: maisonPlan(maisonDe(state, maison), f.niveau || 0), adultes: f.adultes, enfants: f.enfants, argent: f.argent, bonheur: f.bonheur, quota: voisinQuota(state, maison),
       champ: f.champ.map((p) => ({ culture: p.culture, stade: stade(p, state.day) })),
