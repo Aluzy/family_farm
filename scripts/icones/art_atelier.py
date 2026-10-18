@@ -1,5 +1,6 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
-# mur en pierre, la porte, le plancher, la barrière, le chemin, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, les jeunes arbres, l'Atelier et les
+# mur en pierre, la porte, le plancher, la barrière, le chemin, le champignon lumineux, le morceau
+# d'arbre de l'infra-monde, la lanterne, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, les jeunes arbres, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
@@ -23,6 +24,10 @@ PALETTE = {
     'P': '#5a6a14', 'i': '#b8c83a', 'I': '#e4ec7a',
     # baies (du plus clair au plus sombre)
     'h': '#ff9c8c', 'r': '#e8463e', 'x': '#c22a30', 'X': '#921c26', 'N': '#5e121a',
+    # la lueur du champignon de la grotte (du plus sombre au plus clair)
+    'C': '#0e3a40', 'D': '#1f8c8a', 'E': '#4ff0d2', 'F': '#c8fff4',
+    # le bois de l'infra-monde
+    'H': '#2a1838', 'J': '#5a3a78', 'K': '#8a62b0', 'M': '#c8a0e8',
 }
 
 ICONS = {
@@ -157,6 +162,63 @@ ICONS = {
         '.GlTTTeTTTTTtlG.',
         '.GgllllllllllgG.',
         '..GGGGGGGGGGGG..',
+        '................',
+    ],
+    # champignon lumineux (la grotte) : un chapeau cyan qui luit, des spores autour
+    '🍄‍✨': [
+        '................',
+        '.....CCCCCC.....',
+        '...CCEEFFEECC...',
+        '..CEEFFFEEEEDC..',
+        '.CEEFEEEEFEEDDC.',
+        '.CEEEEEDEEEEDDC.',
+        '.CDDEEEEEEEDDDC.',
+        '..CCCCCCCCCCCC..',
+        '.....uwwwu......',
+        '.....uwwvu......',
+        '.....uwwvu..F...',
+        '....uwwwvu......',
+        '....uwwwvvu.....',
+        '..F.uuuuuuu.....',
+        '.........F......',
+        '................',
+    ],
+    # morceau d'arbre de l'infra-monde : une bûche violette, ses cernes qui luisent
+    '🪵‍🌈': [
+        '................',
+        '................',
+        '................',
+        '.....HHHHHHHHH..',
+        '...HHKMMMMMMKJH.',
+        '..HMMHKKKKKKJJH.',
+        '.HMEEMHJJKJJJJH.',
+        '.HMEFEMHKMKJJJH.',
+        '.HMEEMHJJJJKJJH.',
+        '..HMMHKKKKKKJJH.',
+        '...HHJJJJJJJJH..',
+        '.....HHHHHHHHH..',
+        '................',
+        '................',
+        '................',
+        '................',
+    ],
+    # lanterne scintillante : la cage de fer, le champignon qui luit derrière la vitre
+    '🏮': [
+        '.......mm.......',
+        '......m..m......',
+        '......mnnm......',
+        '....mmmmmmmm....',
+        '...mpqqqqqqpm...',
+        '...mmmmmmmmmm...',
+        '...nEEFFFFEEn...',
+        '...nEFFFFFFEn...',
+        '...nEEEnnEEEn...',
+        '...nDEEnnEEDn...',
+        '...nDEEnnEEDn...',
+        '...nDDEnnEDDn...',
+        '...mmmmmmmmmm...',
+        '....mnnnnnnm....',
+        '.....mmmmmm.....',
         '................',
     ],
     # paillasse : un sac de toile bourré de paille, posé au sol

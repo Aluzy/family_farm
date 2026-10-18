@@ -10,7 +10,8 @@
  * Le personnage principal de la partie (assets/personnages/perso_NN.png, comme sur la ferme)
  * marche sur le sol plein (les tuiles de la couche « sol »), pas dans l'eau ni à travers un
  * tronc : un toucher (ou un clic) l'envoie au plus court jusque-là ; les flèches ou ZQSD le
- * dirigent aussi. L'habitant de l'île y flâne de son côté. Avec « animations réduites », les
+ * dirigent aussi. L'habitant de l'île y flâne de son côté. Un appui sur un arbre : le
+ * personnage en prend un morceau (un par arbre et par jour : la lanterne scintillante, à l'Atelier). Avec « animations réduites », les
  * arbres et l'eau restent immobiles, l'habitant ne bouge pas.
  *
  * La carte s'affiche dans la page du jeu (js/ui/excursion.js : InfraMonde.start, stop), à la
@@ -25,6 +26,10 @@
   const v = K.v;
   const MAP = { key: 'infra', file: 'assets/infra_monde.json' };
   const TREE = { key: 'infra_arbre', file: 'assets/infra_arbre.png', w: 32, h: 64, frames: 8, fps: 6, foot: 59 };
+  // Un morceau d'arbre (pour la lanterne scintillante, à l'Atelier) : un appui sur un arbre, le
+  // personnage y va (à moins de `reach` px) et en prend un (FermeHote.ramasser) ; un par arbre
+  // et par jour (localStorage `store` : { jour, pris : les numéros des arbres }).
+  const BOIS = { item: 'bois_infra', reach: 20, store: 'ferme-infra', doigt: { x: 12, haut: 52, bas: 6 } };
   // L'habitant (scripts/infra/habitant.py) : marche de face 0-3, de dos 4-7, de profil 8-11 ;
   // debout de face 12 (13 : l'œil fermé), de dos 14, de profil 15 (16 : l'œil fermé).
   const HERO = {
@@ -83,8 +88,10 @@
         if (!reduced()) s.play({ key: TREE.key, startFrame: (i * 3) % TREE.frames, frameRate: TREE.fps * (0.85 + ((i * 37) % 30) / 100) });
         const tx = Math.floor(o.x / T), ty = Math.floor(o.y / T);
         if (this.walk[ty]) this.walk[ty][tx] = false;
+        s.n = i;
         return s;
       });
+      this.boisRec = this.readBois();
 
       // l'habitant (ses animations portent son nom : elles sont communes à toutes les cartes du jeu)
       const walkAnim = (key, start) => {
@@ -133,6 +140,7 @@
           if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('👁️ L\'habitant de l\'île te regarde passer, sans un mot.');
           return;
         }
+        if (this.tapTree(w)) { dbl.oublie(); return; }
         K.astuceMarche(p);           // un essai de marche : la marche au doigt s'explique, une fois
         if (dbl.appui(w.x, w.y, cam.zoom)) this.goTo(w.x, w.y);
       });
@@ -142,6 +150,53 @@
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;
       window.InfraMonde.scene = this;
       this.events.once('destroy', () => { if (window.InfraMonde.scene === this) window.InfraMonde.scene = null; });
+    }
+
+    // Les arbres où l'on a déjà pris un morceau aujourd'hui (le jour de l'horloge du jeu).
+    readBois() {
+      const h = window.HorlogeSortie ? window.HorlogeSortie.maintenant() : null;
+      const jour = h ? h.jour : Math.floor(Date.now() / 864e5);
+      let r = null;
+      try { r = JSON.parse(window.localStorage.getItem(BOIS.store) || 'null'); } catch (e) { r = null; }
+      return r && r.jour === jour && Array.isArray(r.pris) ? r : { jour, pris: [] };
+    }
+
+    // Un appui sur un arbre : y aller ; arrivé, en prendre un morceau (stepTree).
+    tapTree(w) {
+      const D = BOIS.doigt;
+      const t = this.trees.find((s) => Math.abs(w.x - s.x) <= D.x && w.y >= s.y - D.haut && w.y <= s.y + D.bas);
+      if (!t) return false;
+      if (this.boisRec.pris.includes(t.n)) {
+        if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('🌈 Cet arbre t\'a déjà donné un morceau aujourd\'hui : reviens demain.');
+        return true;
+      }
+      this.cut = t;
+      const g = this.nearWalk(t.x, t.y + T);
+      if (Math.hypot(g.x - this.heroPos.x, g.y - this.heroPos.y) > 2) this.goTo(g.x, g.y);
+      return true;
+    }
+
+    stepTree() {
+      const t = this.cut;
+      if (!t || this.path.length) return;
+      this.cut = null;
+      if (Math.hypot(t.x - this.heroPos.x, t.y - this.heroPos.y) > BOIS.reach + T) return;
+      const H = window.FermeHote;
+      const r = H && H.ramasser ? H.ramasser(BOIS.item) : null;
+      if (r && !r.ok) return;
+      this.boisRec.pris.push(t.n);
+      try { window.localStorage.setItem(BOIS.store, JSON.stringify(this.boisRec)); } catch (e) { /* ignoré */ }
+      // l'arbre frémit, quelques éclats de couleur s'en échappent
+      if (!reduced()) {
+        this.tweens.add({ targets: t, angle: { from: -4, to: 4 }, duration: 70, yoyo: true, repeat: 2, onComplete: () => t.setAngle(0) });
+        const C = [0xc8a0e8, 0x4ff0d2, 0xffb8e0, 0xfff0a0];
+        for (let i = 0; i < 6; i++) {
+          const q = this.add.rectangle(t.x + (Math.random() - 0.5) * 16, t.y - 20 - Math.random() * 20, 2, 2, C[i % C.length]).setDepth(t.y + 1);
+          this.tweens.add({ targets: q, y: q.y - 10 - Math.random() * 10, alpha: 0, duration: 500 + Math.random() * 300, onComplete: () => q.destroy() });
+        }
+      }
+      const o = H && H.objet ? H.objet(BOIS.item) : null;
+      if (H && H.say) H.say(`${o ? o.icone : '🪵'} +1 ${o ? o.nom : 'morceau d\'arbre'}`);
     }
 
     // Un zoom entier en pixels de l'écran (CarteJeu.zoomEntier), comme en ville.
@@ -233,6 +288,7 @@
       this.stepTileAnims(time);
       const dt = Math.min(delta, 100) / 1000;
       this.stepNpc(time, dt);
+      this.stepTree();
       const P = this.heroPos;
       let vx = 0, vy = 0;
       const k = saisie() ? null : this.keys;

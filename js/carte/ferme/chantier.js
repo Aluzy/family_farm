@@ -7,7 +7,8 @@
  * à plat, sous ce qui est debout). Un mur prend l'image qui le raccorde à ses voisins, une
  * porte celle de son mur, horizontal ou vertical (wallFrame). Le plancher (modèle.sols) est à
  * plat sous tout le reste (syncFloors). Une barrière prend l'image raccordée à ses voisines
- * (wallFrame) ; un chemin change les tuiles du sol (syncPaths). Le four qui cuit fait bouger ses flammes (stepFires). Les murs et l'Atelier arrêtent le personnage (blockCells) ;
+ * (wallFrame) ; un chemin change les tuiles du sol (syncPaths). La lanterne s'allume la nuit et
+ * éclaire autour d'elle (stepLanterns). Le four qui cuit fait bouger ses flammes (stepFires). Les murs et l'Atelier arrêtent le personnage (blockCells) ;
  * les portes et les paillasses se traversent. Ils portent une ombre (soleil.js).
  *
  * Le mode « Construire » (modèle.bati = { sorte }) : un appui sur une case y pose le bloc choisi,
@@ -26,6 +27,23 @@
   const F = global.FermeCarte;
   const { T, BLOCS_CARTE, BETES } = F.C;
 
+  // La tache de lumière des lanternes : un disque blanc qui s'estompe vers son bord (R px de
+  // rayon), teinté et agrandi dans le voile (la même que les réverbères de la ville).
+  const R = 32;
+  function lueur(textures) {
+    if (textures.exists('lueur')) return;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 2 * R;
+    const g = cv.getContext('2d');
+    const grad = g.createRadialGradient(R, R, 0, R, R, R);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.45, 'rgba(255,255,255,0.55)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 2 * R, 2 * R);
+    textures.addCanvas('lueur', cv);
+  }
+
   F.partie({
 
     // Les images des blocs : celles du modèle, créées, changées ou ôtées.
@@ -39,8 +57,8 @@
           seen.add(b.case);
           const e = B.get(b.case), frame = this.wallFrame(b, at, cols);
           if (e && e.sorte === b.sorte) {
-            // (les flammes du four : stepFires choisit son image)
-            if (e.img.frame.name !== frame && b.sorte !== BLOCS_CARTE.feu.sorte) { e.img.setFrame(frame); changed = true; }
+            // (les flammes du four, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
+            if (e.img.frame.name !== frame && b.sorte !== BLOCS_CARTE.feu.sorte && b.sorte !== 'lanterne') { e.img.setFrame(frame); changed = true; }
             continue;
           }
           if (e) e.img.destroy();
@@ -67,6 +85,52 @@
       const F = BLOCS_CARTE.feu;
       const frame = this.fireOn ? F.frames[Math.floor(time * F.fps / 1000) % F.frames.length] : BLOCS_CARTE.frames[F.sorte];
       for (const e of this.blocks.values()) if (e.sorte === F.sorte && e.img.frame.name !== frame) e.img.setFrame(frame);
+    },
+
+    // Les lanternes scintillantes (BLOCS_CARTE.lanterne) : éteintes le jour ; quand la nuit tombe,
+    // elles s'allument, leurs deux images alternent au hasard et chacune pose sa lumière dans le
+    // voile de l'heure (CarteKit.voile, eclaire : une flaque cyan sur l'herbe et la vitre), qui
+    // vacille un peu ; un petit halo par-dessus (WebGL).
+    stepLanterns(time, dt) {
+      const L = BLOCS_CARTE.lanterne, V = this.lumiere;
+      const list = [];
+      for (const e of (this.blocks || new Map()).values()) if (e.sorte === 'lanterne') list.push(e);
+      if (!list.length && !this.lanternLights) return;
+      if (!this.lanternLights) {
+        this.lanternLights = [];
+        lueur(this.textures);
+        V.eclaire(() => this.lanternLights);
+      }
+      const out = this.lanternLights;
+      out.length = 0;
+      const nuit = this.room ? 0 : V.nuit, on = nuit > L.allume, calme = global.CarteKit.reduit();
+      const Ph = global.Phaser, webgl = this.sys.renderer.type === (Ph && Ph.WEBGL);
+      for (const e of list) {
+        if (e.phase == null) { e.phase = Math.random() * 7; e.flip = 0; e.k = 1; }
+        if (!on) {
+          if (e.img.frame.name !== BLOCS_CARTE.frames.lanterne) e.img.setFrame(BLOCS_CARTE.frames.lanterne);
+          if (e.halo) e.halo.setVisible(false);
+          continue;
+        }
+        // elle scintille : une image ou l'autre, et une lumière qui vacille
+        if (!calme && (e.flip -= dt) <= 0) {
+          e.flip = (0.4 + Math.random()) / L.fps;
+          e.frame = L.allumee[Math.random() < 0.5 ? 0 : 1];
+          e.k = 1 - L.vacille + Math.random() * L.vacille * 2;
+        }
+        const frame = calme ? L.allumee[0] : e.frame || L.allumee[0];
+        if (e.img.frame.name !== frame) e.img.setFrame(frame);
+        const k = (calme ? 1 : e.k * (0.92 + 0.08 * Math.sin(time / 300 + e.phase))) * Math.min(1, nuit / 0.4);
+        const S = L.sol, W = L.vitre;
+        out.push({ key: 'lueur', x: e.x + S.dx, y: e.y + S.dy, tint: S.teinte, alpha: S.alpha * k, scaleX: S.rayon / R, scaleY: (S.rayon * S.aplati) / R });
+        out.push({ key: 'lueur', x: e.x + W.dx, y: e.y + W.dy, tint: W.teinte, alpha: W.alpha * k, scaleX: W.rayon / R, scaleY: W.rayon / R });
+        if (webgl && !e.halo) {
+          const H = L.halo;
+          e.halo = this.add.pointlight(e.x + W.dx, e.y + W.dy, H.couleur, H.rayon, H.intensite, H.attenuation).setDepth(V.depth + 1);
+          e.img.once('destroy', () => { if (e.halo) e.halo.destroy(); });
+        }
+        if (e.halo) e.halo.setVisible(true).setAlpha(k);
+      }
     },
 
     // Les planchers posés (modèle.sols : leurs cases), à plat sous les blocs : chacun prend

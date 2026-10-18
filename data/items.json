@@ -109,6 +109,16 @@
     "plancher": { "nom": "Plancher", "icone": "🟫‍🪚", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "barriere": { "nom": "Barrière", "icone": "🚧", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "chemin": { "nom": "Chemin", "icone": "🟫‍🪨", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "//champignon_lumineux": [
+      "La lanterne scintillante (ATELIER : un champignon lumineux et un morceau d'arbre de l'infra-monde) :",
+      "« cueillette » dit où se prennent ses matières à la main (FermeHote.ramasser, js/ui/excursion.js) :",
+      "les champignons qui luisent au sol de la grotte (js/ville-carte.js, ils repoussent le lendemain),",
+      "un morceau des arbres tordus de l'infra-monde (js/infra-monde.js, un par arbre et par jour).",
+      "Posée sur la ferme, la lanterne éclaire la nuit (BLOCS lanterne, lumiere)."
+    ],
+    "champignon_lumineux": { "nom": "Champignon lumineux", "icone": "🍄‍✨", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "cueillette": "grotte" },
+    "bois_infra": { "nom": "Morceau d'arbre de l'infra-monde", "icone": "🪵‍🌈", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "cueillette": "infra" },
+    "lanterne": { "nom": "Lanterne scintillante", "icone": "🏮", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "four_pierre": { "nom": "Four de pierre", "icone": "🔥", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },

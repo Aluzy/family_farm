@@ -674,3 +674,28 @@ test('ferme générée : la barrière arrête le passage sans fermer de pièce ;
   assertEqual(poserBloc(s, 'chemin', p.dedans + 1).ok, false, 'le chemin : dehors');
   assert(poserBloc(s, 'plancher', p.dedans + 1).ok, 'un plancher au Poulailler, après le nichoir');
 });
+
+test('ferme générée : la lanterne scintillante (un champignon lumineux et un morceau d\'arbre de l\'infra-monde) éclaire, dehors ou dans la maison', () => {
+  const s = reach(chantier('l1'), 'poulailler');
+  // ses matières se cueillent (grotte, infra-monde) ; la recette de l'Atelier
+  assertEqual([DATA.OBJETS.champignon_lumineux.cueillette, DATA.OBJETS.bois_infra.cueillette], ['grotte', 'infra']);
+  setInv(s, { champignon_lumineux: 2, bois_infra: 1, mur_pierre: 30, porte: 2, nichoir: 1 });
+  assert(craft(s, 'lanterne').ok);
+  assertEqual([countItem(s, 'lanterne'), countItem(s, 'champignon_lumineux'), countItem(s, 'bois_infra')], [1, 1, 0]);
+  assertEqual(craft(s, 'lanterne').ok, false, 'plus de bois de l\'infra-monde');
+  assert(DATA.ATELIER.BLOCS.lanterne.lumiere);
+  // posée dehors : elle arrête le passage ; reprise, elle revient dans l'inventaire
+  const z = terrainLibre(s, 12, 5), dehors = (z.r + 2) * z.W + z.c + 8;
+  assert(poserBloc(s, 'lanterne', dehors).ok);
+  assertEqual([blocAt(s, dehors), blocBloque(s, dehors), countItem(s, 'lanterne')], ['lanterne', true, 0]);
+  reprendreBloc(s, dehors);
+  assertEqual([blocAt(s, dehors), countItem(s, 'lanterne')], [null, 1]);
+  // dans une enceinte vide : oui ; dans un bâtiment (le Poulailler) : non
+  const p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assert(poserBloc(s, 'lanterne', p.dedans + 1).ok, 'dans une enceinte vide');
+  reprendreBloc(s, p.dedans + 1);
+  assert(poserBloc(s, 'nichoir', p.dedans).ok);
+  assertEqual(poserBloc(s, 'lanterne', p.dedans + 1).ok, false, 'pas dans un bâtiment');
+});

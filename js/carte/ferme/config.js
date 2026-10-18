@@ -153,13 +153,25 @@
   // px au-dessus du bas de la paillasse.
   const BLOCS_CARTE = {
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
-    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13 },
+    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
     barrieres: 50,
+    // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour
+    // (frames.lanterne) ; allumée quand la nuit tombe (le voile de l'heure plus sombre que
+    // `allume`), ses deux images `allumee` alternent au hasard (elle scintille, `fps` au plus).
+    // Sa lumière dans le voile : une flaque `sol` sur l'herbe (rayon px, aplatie, teinte, alpha,
+    // dx/dy depuis le pied de la case), la vitre `vitre` ; elle vacille de ± `vacille` ; un petit
+    // halo par-dessus la nuit (WebGL).
+    lanterne: {
+      allumee: [67, 68], fps: 6, allume: 0.12, vacille: 0.12,
+      sol: { rayon: 54, aplati: 0.72, teinte: 0x8ff5e0, alpha: 0.95, dx: 2, dy: -5 },
+      vitre: { rayon: 11, teinte: 0xd8fff6, alpha: 0.9, dx: 4, dy: -11 },
+      halo: { couleur: 0x4ff0d2, rayon: 20, intensite: 0.09, attenuation: 0.08 },
+    },
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
-    plats: ['paillasse'], bloquent: ['mur_pierre', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule'],
+    plats: ['paillasse'], bloquent: ['mur_pierre', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png)
     ailleurs: ['puits', 'citerne'],
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la

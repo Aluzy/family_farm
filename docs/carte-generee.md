@@ -148,6 +148,19 @@ Le Marché vend toujours les outils.
 - **La barrière** (1 planche à l'Atelier : 2 barrières) arrête le passage et se raccorde à
   ses voisines, comme les murs (`BLOCS_CARTE.barrieres` + masque, `wallFrame`). Elle ne
   ferme pas de pièce : un enclos de barrières n'est ni une maison ni un bâtiment.
+- **La lanterne scintillante** (à l'Atelier : 1 champignon lumineux et 1 morceau d'arbre de
+  l'infra-monde) éclaire la nuit.
+  - **Ses matières se cueillent à la main** (champ `cueillette` de `data/items.json`, `FermeHote.ramasser`) :
+    - les champignons qui luisent au sol de la grotte (`tapChampignon`, `js/ville-carte.js`) :
+      un champignon cueilli s'éteint et ne repousse que le lendemain ;
+    - un morceau des arbres tordus de l'infra-monde (`tapTree`, `js/infra-monde.js`), un par
+      arbre et par jour.
+  - **Où la poser** : dehors, dans la maison ou dans une enceinte vide, mais pas dans un
+    bâtiment (comme la batterie). Elle arrête le passage.
+  - **Le jour**, elle est éteinte.
+  - **Quand la nuit tombe**, ses deux images alternent au hasard pour la faire scintiller.
+    Elle pose aussi sa lumière dans le voile de l'heure : une flaque cyan sur l'herbe et sa vitre,
+    qui vacillent un peu, plus un petit halo (`stepLanterns`, `BLOCS_CARTE.lanterne`).
 - **Une pièce close** : des cases entourées de murs, de portes ou de l'Atelier, avec au moins une
   porte. Elle fait au plus 120 cases et ne touche pas le bord de la carte. Les coins ne comptent
   pas : on ne passe pas en diagonale.
