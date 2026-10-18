@@ -239,6 +239,10 @@ parties.
   - Les enfants, et les parents quand il n'y a plus rien, flânent autour de la maison.
   - Rentrés, ils restent visibles et circulent dans la maison avant de ressortir.
   - La nuit, tout le monde reste chez soi.
+  - Les enfants vont à l'école comme ceux de la ferme : le lundi, le mardi, le jeudi et le
+    vendredi, de 7 h à 16 h 30. Le matin, ils vont à pied jusqu'à l'abri, où le bus de l'école
+    les attend ; le soir, ils en descendent et rentrent chez eux. Si le bus est déjà passé (ou
+    sans animations), ils sont déjà partis, ou déjà rentrés.
   - Un toucher sur un voisin : il dit ce que sa famille a ramassé aujourd'hui.
   - Ce qui a été ramassé le reste jusqu'au lendemain (`localStorage`).
 - **Le joueur ramasse aussi** (`ramasserTransition`, `js/engine/transition.js`) : un toucher sur
