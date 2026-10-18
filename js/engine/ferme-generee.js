@@ -37,11 +37,12 @@ export const FERME_GENEREE = {
 const MAISON = [513.5, 239, 94, 95.6];
 const COUR = {
   zone_culture_1: [464.5, 385.1, 78.1, 94], moulin: [626.1, 412.3, 95.6, 127], verger: [625.1, 303.7, 12.8, 15.9],
-  zone_culture_2: [622, 607.6, 130.8, 128.8], silo: [657, 238.5, 49.5, 64.3],
+  zone_culture_2: [622, 607.6, 130.8, 128.8],
 };
-// (le Poulailler, l'Étable et la Serre se bâtissent aussi : une pièce close et un nichoir, une
-// mangeoire, un bac à semis ; leur place reste dégagée)
-const POULAILLER = [128.5, 257, 63, 77], GRANGE = [305, 253.8, 126.1, 81.6], SERRE = [736.1, 273.6, 94, 78.3];
+// (le Poulailler, l'Étable, la Serre et le Silo se bâtissent aussi : une pièce close et un
+// nichoir, une mangeoire, un bac à semis, un coffre à grain ; leur place reste dégagée)
+const POULAILLER = [128.5, 257, 63, 77], GRANGE = [305, 253.8, 126.1, 81.6], SERRE = [736.1, 273.6, 94, 78.3],
+  SILO = [657, 238.5, 49.5, 64.3];
 // (le puits et la citerne, à côté du Moulin : se bâtissent aussi, étape 5b-2 ; leur place reste dégagée)
 const PUITS = [596, 390, 57, 38];
 [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
@@ -95,7 +96,7 @@ function fabriquer(graine) {
 
   // ---- 1. la cour : où elle va, ce qu'elle interdit
   let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
-  for (const [x, y, w, h] of Object.values(COUR).concat([MAISON, PUITS, POULAILLER, GRANGE, SERRE])) {
+  for (const [x, y, w, h] of Object.values(COUR).concat([MAISON, PUITS, POULAILLER, GRANGE, SERRE, SILO])) {
     bx0 = Math.min(bx0, Math.floor(x / T)); by0 = Math.min(by0, Math.floor(y / T));
     bx1 = Math.max(bx1, Math.ceil((x + w) / T)); by1 = Math.max(by1, Math.ceil((y + h) / T));
   }

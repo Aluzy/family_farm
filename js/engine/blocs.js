@@ -7,6 +7,7 @@ import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
 import { openSerre } from './crops.js';
+import { fillSilo } from './animals.js';
 import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
@@ -133,13 +134,14 @@ export function nuitSansCouchage(state) {
 }
 
 // Le bâtiment `id` est construit par son bloc clé (comme acheté, sans payer) ; repris puis
-// reposé, il retrouve son niveau (l'Étable : ses places ; la Serre : ses parcelles et ce qui y pousse).
+// reposé, il retrouve son niveau (l'Étable : ses places ; la Serre : ses parcelles et ce qui y pousse ; le Silo : son blé).
 function ouvrirBatiment(state, id) {
   const b = state[id];
   if (!b) return;
   if (id === 'serre' && !(b.parcelles && b.parcelles.length)) { openSerre(state); return; }
   b.construit = true;
   if (id === 'paturage') { if (!b.places) b.places = DATA.PATURAGE.PLACES_DEPART; } else if (!b.niveau) b.niveau = 1;
+  if (id === 'silo') fillSilo(state);   // le blé de l'inventaire y entre, comme à sa réparation
 }
 
 /* ---------- poser, reprendre ---------- */
@@ -189,7 +191,7 @@ export function poserBloc(state, sorte, tile) {
   }
   // le panneau, la pompe, la citerne, la batterie : l'appareil est là (étape 5b-2)
   if (s.appareil) installStarter(state, s.appareil);
-  // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable ; le bac à semis : la Serre) : le bâtiment est construit
+  // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable , le bac à semis : la Serre ; le coffre à grain : le Silo) : le bâtiment est construit
   if (s.batiment) ouvrirBatiment(state, s.batiment);
   // un four, une cuisinière : la station est là (étape 5b, la maison)
   if (s.station && state.stations[s.station]) openStation(state, s.station);

@@ -226,3 +226,9 @@ Le Marché vend toujours les outils.
          se travaillent.
        - Comme partout, un bloc clé ne se pose qu'à partir du niveau où son bâtiment se débloque
          (`isUnlocked` : la Serre au niveau 7).
+     - ✅ **5b-6, le silo** : le Silo quitte la cour.
+       - Le **coffre à grain** (6 planches, 2 fibres) se fabrique à l'Atelier. Posé dans une pièce
+         close, il construit le Silo au niveau 1 et y range le blé de l'inventaire (`fillSilo`) ;
+         repris, le Silo n'est plus construit (son blé reste compté). On ne le répare plus sur
+         la ferme générée (`buildSilo` refuse).
+       - Un appui sur le coffre ouvre la fenêtre du Silo.

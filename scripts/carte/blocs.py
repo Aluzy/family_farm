@@ -10,7 +10,8 @@
 # paillasse, drap (la couverture, posée par-dessus le personnage couché), four, cuisiniere
 # (étape 5b : posés dans une pièce close, ils tiennent lieu des stations), panneau, batterie
 # (étape 5b-2 : posés, ils installent l'appareil du même nom), nichoir (le bloc clé du Poulailler),
-# mangeoire (celui de l'Étable), bac_semis (celui de la Serre). Gris des rochers,
+# mangeoire (celui de l'Étable), bac_semis (celui de la Serre),
+# coffre_grain (celui du Silo). Gris des rochers,
 # bruns des troncs, paille du poulailler ; lumière en haut à gauche, contour sombre de la
 # matière.
 import os
@@ -364,6 +365,33 @@ DESSINS = [
         'kkkkkkkkkkkkkkkk',
         '.ks..........sk.',
         '.kk..........kk.',
+        '................',
+    ],
+    # le coffre à grain : un coffre de planches cerclé de fer, le blé déborde du couvercle
+    [
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '....y..Y..y.....',
+        '...yOy.yOyOy.y..',
+        '..yYoyYoyYoyYoy.',
+        '.kOyYoyYoyYoyOk.',
+        'kkkkkkkkkkkkkkkk',
+        'kEEEEEEEEEEEEEEk',
+        'kmnnnnnnnnnnnnmk',
+        'kTtTtTtTtTtTtTtk',
+        'ktTtTtTpptTtTtTk',
+        'kTtTtTtmmtTtTtTk',
+        'kmnnnnnnnnnnnnmk',
+        'ktTtTtTtTtTtTtTk',
+        'kssssssssssssssk',
+        'kkkkkkkkkkkkkkkk',
+        '.kk..........kk.',
+        '................',
         '................',
     ],
 ]
