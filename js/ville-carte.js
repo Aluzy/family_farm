@@ -77,6 +77,8 @@
       const sheet = K.planchePerso();
       this.heroKey = HERO.key + ':' + sheet.file;
       this.load.spritesheet(this.heroKey, v(sheet.file), { frameWidth: HERO.w, frameHeight: HERO.h });
+      // son triporteur (js/carte/triporteur.js)
+      if (!this.textures.exists(K.TRIPORTEUR.key)) this.load.spritesheet(K.TRIPORTEUR.key, v('assets/' + K.TRIPORTEUR.file), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
       this.load.json(this.heroKey + '_noms', v(sheet.names));
       this.load.spritesheet(CARS.key, v(CARS.file), { frameWidth: 64, frameHeight: 64 });
       this.load.json(CARS.key + '_meta', v(CARS.meta));
@@ -209,6 +211,7 @@
       const arrivee = etat.params.get('arrivee');
       const d = (arrivee && objects('arrivees').find((o) => o.name === arrivee)) || objects('depart')[0] || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
       this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), this.heroKey, this.frame('idle_bas_0')).setOrigin(0.5, HERO.foot / HERO.h);
+      this.selle = K.triporteur(this);
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x1e1a18, 0.35);
       this.heroPos = { x: d.x, y: d.y };
       this.heroAlpha = 1;
@@ -741,6 +744,10 @@
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
+      // en selle sur son triporteur (pas dans la grotte, ni pendant un geste) : plus vite
+      const Ho = hote();
+      const selle = !!(this.selle && Ho && Ho.triporteur && Ho.triporteur() && !this.cave && !this.mining && !this.locked);
+      const vit = HERO.speed * (selle ? K.TRIPORTEUR.vitesse : 1);
       const k = this.locked || this.fishing || saisie() ? null : this.keys;
       const j = this.locked || this.fishing || this.dialog ? null : this.manette.dir();
       if (j) { vx = j.x; vy = j.y; }
@@ -752,18 +759,19 @@
         this.path = [];
         if (this.work && !this.work.started) this.work = null;
         if (this.peche && !this.peche.phase) this.peche = null;
-        const l = Math.hypot(vx, vy), st = HERO.speed * dt;
+        const l = Math.hypot(vx, vy), st = vit * dt;
         const nx = P.x + (vx / l) * st, ny = P.y + (vy / l) * st;
         // glisse le long d'un bord : chaque axe séparément
         if (this.canWalk(Math.floor(nx / T), Math.floor(P.y / T))) P.x = nx;
         if (this.canWalk(Math.floor(P.x / T), Math.floor(ny / T))) P.y = ny;
       } else if (this.path.length) {
         const to = this.path[0];
-        const dx = to.x - P.x, dy = to.y - P.y, l = Math.hypot(dx, dy), st = HERO.speed * dt;
+        const dx = to.x - P.x, dy = to.y - P.y, l = Math.hypot(dx, dy), st = vit * dt;
         if (l <= st) { P.x = to.x; P.y = to.y; this.path.shift(); } else { P.x += (dx / l) * st; P.y += (dy / l) * st; }
         vx = dx; vy = dy;
       }
       const H = this.hero;
+      let hx = 0, hy = 0;
       const moved = Math.hypot(P.x - x0, P.y - y0);
       if (this.mining) {
         H.setFrame(this.frame(this.mining.frame));
@@ -776,7 +784,13 @@
         // debout : elle respire (deux images, lentement)
         H.setFrame(this.frame.de('idle', this.face, Math.floor(time / 600) % 2));
       }
-      H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y).setAlpha(this.heroAlpha);
+      if (selle) {
+        // assis sur le triporteur, qui roule sous lui
+        const r = this.selle.place(P.x, P.y, this.face, H.flipX, this.walked, this.heroAlpha);
+        H.setFrame(this.frame(r.image));
+        hx = r.dx; hy = r.dy;
+      } else if (this.selle) this.selle.cache();
+      H.setPosition(Math.round(P.x + hx), Math.round(P.y - hy)).setDepth(P.y).setAlpha(this.heroAlpha);
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5).setAlpha(this.heroAlpha);
       this.fadeFoliage(Math.round(P.x), Math.round(P.y));
       this.stepNature(dt);

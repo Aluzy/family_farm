@@ -11,7 +11,7 @@ import {
   migrateEnergy, migrateHoe, mineRock, OUTILS, ownedTools, plant, plantAll, plotAtTile,
   farmTerrain, respawnRocks, respawnTrees, restoreEnergy, rockGone, runNight, selectedTool, selectTool,
   snackEnergy, soilCap, soilCount, STATE_VERSION, terrainLines, testFillEnergy, morceauxDe, ramasserMorceau, testSetEnergyZero,
-  testSetLevel, TIRED, toolDef, wakeEnergy, water, zoneTile,
+  testSetLevel, TIRED, toolDef, wakeEnergy, water, zoneTile, enSelle, toggleTriporteur, vitesseDeplacement,
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, champ, garden, growZone, setInv, sleepOnce, test, tireless,
@@ -138,6 +138,25 @@ test('outils : une partie avec la houe seule l\'a sur le bouton ; le Marché fer
   const t = createInitialState(1);
   t.pieces = 1000;
   assertEqual(buyTool(t, 'hache').ok, farmOpen(t), 'le Marché ouvre avec le panneau et la pompe');
+});
+
+test('triporteur : acheté une fois au Marché, il fait rouler plus vite ; on en descend et on y remonte', () => {
+  const s = garden();
+  const T = DATA.TRIPORTEUR;
+  assertEqual([enSelle(s), vitesseDeplacement(s)], [false, 1], 'à pied sans triporteur');
+  assertEqual(toggleTriporteur(s).error, `Il te faut un triporteur (Marché, ${T.PRIX} 💰).`);
+  s.pieces = T.PRIX - 1;
+  assertEqual(buyTool(s, 'triporteur').ok, false, 'trop cher');
+  s.pieces = T.PRIX + 10;
+  const choisi = selectedTool(s);
+  assertEqual(buyTool(s, 'triporteur').ok, true);
+  assertEqual([s.pieces, enSelle(s), vitesseDeplacement(s), selectedTool(s)], [10, true, T.VITESSE, choisi], 'en selle tout de suite, sans changer d\'outil en main');
+  assert(!OUTILS.includes('triporteur') && !ownedTools(s).includes('triporteur'), 'il ne se prend pas en main');
+  assertEqual(buyTool(s, 'triporteur').error, 'Tu as déjà un triporteur.');
+  assertEqual(toggleTriporteur(s).enSelle, false);
+  assertEqual(vitesseDeplacement(s), 1, 'descendu : à pied');
+  assertEqual(toggleTriporteur(s).enSelle, true);
+  assertEqual(T.VITESSE, 3, 'trois fois plus vite');
 });
 
 test('hache : chaque coup sur un arbre donne du bois, de l\'XP, coûte de l\'énergie ; au COUPES-ième, il tombe', () => {

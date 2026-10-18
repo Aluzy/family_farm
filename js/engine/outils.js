@@ -16,7 +16,8 @@ import { techFlag, techSum } from './techtree.js';
 // L'ordre est celui de la barre d'outils de la carte.
 export const OUTILS = ['houe', 'pioche', 'hache', 'canne'];
 
-const CLES = { houe: 'HOUE', hache: 'HACHE', pioche: 'PIOCHE', canne: 'CANNE' };
+// (le triporteur s'achète comme un outil, mais ne se prend pas en main : enSelle)
+const CLES = { houe: 'HOUE', hache: 'HACHE', pioche: 'PIOCHE', canne: 'CANNE', triporteur: 'TRIPORTEUR' };
 
 // { NOM, ICONE, PRIX } d'un outil, ou null.
 export function toolDef(id) {
@@ -51,15 +52,38 @@ export function buyTool(state, id) {
   const def = toolDef(id);
   if (!def) return fail('Outil inconnu.');
   if (id === 'houe') return buyHoe(state);
-  if (hasTool(state, id)) return fail(`Tu as déjà une ${def.NOM.toLowerCase()}.`);
-  if (!farmOpen(state)) return fail(`La ${def.NOM.toLowerCase()} s'achète au Marché, qui ouvre avec le panneau et la pompe.`);
+  const un = def.ARTICLE === 'un';
+  if (hasTool(state, id)) return fail(`Tu as déjà ${un ? 'un' : 'une'} ${def.NOM.toLowerCase()}.`);
+  if (!farmOpen(state)) return fail(`${un ? 'Le' : 'La'} ${def.NOM.toLowerCase()} s'achète au Marché, qui ouvre avec le panneau et la pompe.`);
   if (!canPay(state, def.PRIX)) return fail(NO_COINS);
   const avant = selectedTool(state);
   spend(state, def.PRIX, `Achat : ${def.NOM}`);
   const o = outils(state);
   o[id] = true;
-  if (!avant) o.choisi = id;
+  if (id === 'triporteur') o.aPied = false;      // (acheté : il monte dessus)
+  else if (!avant) o.choisi = id;
   return { ok: true, cost: def.PRIX };
+}
+
+/* ---------- le triporteur : rouler plus vite sur la carte ---------- */
+
+// Le personnage est-il en selle (le triporteur acheté, et il n'en est pas descendu) ?
+export function enSelle(state) {
+  return hasTool(state, 'triporteur') && !(state.outils && state.outils.aPied);
+}
+
+// Monter sur le triporteur ou en descendre (un appui dans la barre d'outils).
+export function toggleTriporteur(state) {
+  const def = DATA.TRIPORTEUR;
+  if (!hasTool(state, 'triporteur')) return fail(`Il te faut un triporteur (Marché, ${def.PRIX} 💰).`);
+  const o = outils(state);
+  o.aPied = !o.aPied;
+  return { ok: true, enSelle: !o.aPied };
+}
+
+// Combien de fois plus vite il se déplace sur la carte (1 à pied).
+export function vitesseDeplacement(state) {
+  return enSelle(state) ? DATA.TRIPORTEUR.VITESSE : 1;
 }
 
 // Choisit un outil (un appui dans la barre d'outils).

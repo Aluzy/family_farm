@@ -62,6 +62,8 @@
       const sheet = K.planchePerso();
       this.playerKey = PLAYER.key + ':' + sheet.file;
       this.load.spritesheet(this.playerKey, v(sheet.file), { frameWidth: PLAYER.w, frameHeight: PLAYER.h });
+      // son triporteur (js/carte/triporteur.js)
+      if (!this.textures.exists(K.TRIPORTEUR.key)) this.load.spritesheet(K.TRIPORTEUR.key, v('assets/' + K.TRIPORTEUR.file), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
       this.load.json(this.playerKey + '_noms', v(sheet.names));
       // les planches des jeux de tuiles : lues dans la carte une fois chargée (déjà là : rien à demander)
       const planches = () => {
@@ -126,6 +128,7 @@
       const noms = (this.cache.json.get(this.playerKey + '_noms') || {}).frames || [];
       this.frame = (name) => Math.max(0, noms.indexOf(name));
       this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), this.playerKey, this.frame('idle_bas_0')).setOrigin(0.5, PLAYER.foot / PLAYER.h);
+      this.selle = K.triporteur(this);
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x281e36, 0.45);
       this.heroPos = { x: d.x, y: d.y };
       this.face = 'bas';
@@ -437,17 +440,21 @@
         vx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.Q.isDown || k.A.isDown ? 1 : 0);
         vy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.Z.isDown || k.W.isDown ? 1 : 0);
       }
+      // en selle sur son triporteur (pas pendant un coup de hache) : plus vite
+      const Ho = window.FermeHote;
+      const selle = !!(this.selle && Ho && Ho.triporteur && Ho.triporteur() && !(this.chop && this.chop.frame));
+      const vit = PLAYER.speed * (selle ? K.TRIPORTEUR.vitesse : 1);
       if (vx || vy) {
         this.path = [];
         this.chop = null;
-        const l = Math.hypot(vx, vy), st = PLAYER.speed * dt;
+        const l = Math.hypot(vx, vy), st = vit * dt;
         const nx = P.x + (vx / l) * st, ny = P.y + (vy / l) * st;
         // glisse le long d'un bord : chaque axe séparément
         if (this.canWalk(Math.floor(nx / T), Math.floor(P.y / T))) P.x = nx;
         if (this.canWalk(Math.floor(P.x / T), Math.floor(ny / T))) P.y = ny;
       } else if (this.path.length) {
         const to = this.path[0];
-        const dx = to.x - P.x, dy = to.y - P.y, l = Math.hypot(dx, dy), st = PLAYER.speed * dt;
+        const dx = to.x - P.x, dy = to.y - P.y, l = Math.hypot(dx, dy), st = vit * dt;
         if (l <= st) { P.x = to.x; P.y = to.y; this.path.shift(); } else { P.x += (dx / l) * st; P.y += (dy / l) * st; }
         vx = dx; vy = dy;
       }
@@ -458,12 +465,18 @@
       } else if (moved) {
         const r = K.regard(vx, vy);
         this.face = r.face; H.setFlipX(r.flip);
-        this.walked += PLAYER.speed * dt;
+        this.walked += vit * dt;
         H.setFrame(this.frame(`marche_${this.face}_${Math.floor(this.walked / PLAYER.stride) % 4}`));
       } else {
         H.setFrame(this.frame(`idle_${this.face}_${Math.floor(time / 600) % 2}`));
       }
-      H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y);
+      let hx = 0, hy = 0;
+      if (selle) {
+        const r = this.selle.place(P.x, P.y, this.face, H.flipX, this.walked);
+        H.setFrame(this.frame(r.image));
+        hx = r.dx; hy = r.dy;
+      } else if (this.selle) this.selle.cache();
+      H.setPosition(Math.round(P.x + hx), Math.round(P.y - hy)).setDepth(P.y);
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5);
       this.placeGain();
     }

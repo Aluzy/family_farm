@@ -15,7 +15,7 @@ endroit et partagent avec elle un kit commun (§ 1 bis) et le jour et la nuit (�
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 4.2.1 (≈ 1,4 Mo)
- ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, gestes.js, lumiere.js ;
+ ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, gestes.js, lumiere.js, triporteur.js ;
  │                        jeu.js, le jeu Phaser de toutes les cartes (CarteJeu, voir § 1 quater)
  ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, les bêtes de l'Étable et du Poulailler (voir docs/vie-ambiance.md)
  ├─ js/fermier.js         le personnage, facultatif : il refait sur la carte les gestes du joueur (voir docs/personnage.md)
@@ -78,6 +78,7 @@ pas Phaser pour se charger. Ce que chaque carte avait en double y est une seule 
 | `nature.js` | `NATURE` (l'herbe haute, l'opacité d'un arbre devant le personnage, l'ombre d'un arbre, l'arbre qui tombe, les éclats de pierre), `PECHE` (l'attente de la touche, le bouchon et le fil) ; `herbe()`, l'herbe haute qui penche ; `fondu()`, l'arbre qui s'éclaircit ; `MORCEAUX` et `pointsMorceaux()`, le bois et la pierre que la hache et la pioche lâchent au sol (un morceau par coup au pied, deux de plus là où l'arbre tombe ou autour du rocher brisé) |
 | `gestes.js` | les gestes et leurs effets, pareils sur toutes les cartes : `APPUI` et `doubleAppui()` (un appui sur ce qui se touche : le personnage y va et fait son geste, un coup par appui ; un double appui ailleurs : il y marche), `MANETTE` et `manette()` (le doigt posé puis glissé : il marche dans la direction du glissement tant que le doigt reste posé, rien ne s'affiche), `astuceMarche()` (la bulle qui explique ce geste, une fois par appareil, au premier essai de marche au doigt), `SECOUSSE` et `secousse()` (la vue tremble un peu quand un arbre tombe et à chaque coup de pioche), `BULLE` et `bulleGain()` (la bulle « +1 🪵 » au-dessus du personnage, en DOM). Sur toutes les cartes, la caméra suit le personnage |
 | `lumiere.js` | le jour et la nuit : `LIGHT_KEYS`, `lumiere(heure)`, `voile(scène, l, h, profondeur)` (§ 1 ter) |
+| `triporteur.js` | le triporteur du personnage (acheté au Marché : `enSelle`, moteur) : `TRIPORTEUR`, `triporteur(scène)` → `place(x, y, vue, retourné, roulé)` pose le tricycle sous lui et dit son image assise ; en selle, il va `TRIPORTEUR.vitesse` fois plus vite (ferme, cartes de la ville, infra-monde ; pas dans la grotte ni un intérieur, ni pendant un geste) |
 
 Le coût d'un pas en diagonale dépend de la carte : 1,414 à la ferme (dehors, cases de 16 px, et
 dans les intérieurs, grille de 4 px), 1 en ville et dans l'infra-monde, où l'ancienne recherche

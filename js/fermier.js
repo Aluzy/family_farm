@@ -36,6 +36,10 @@
  * l'ancien dessin de la case (« retenue ») jusqu'au coup de houe ou au geste de la main, puis
  * montre le nouveau. Une retenue ne dure jamais plus de HOLD_MS.
  *
+ * Le triporteur (acheté au Marché, modèle.triporteur : il est en selle) : dehors, quand il
+ * marche ou attend, il y est assis (js/carte/triporteur.js) et va TRIPORTEUR.vitesse fois plus
+ * vite ; pendant un geste ou dans un intérieur, il en descend.
+ *
  * Image : assets/fermier.png (cases de 16 × 32), noms des cases dans assets/fermier.json
  * (scripts/personnage/fermier.py). Sans elles, pas de personnage : rien d'autre ne change.
  * Animations réduites : pas de marche ni de retenue ; il se pose directement où il travaille.
@@ -166,11 +170,28 @@
       const k = F[name];
       if (k !== undefined) s.setFrame(k);
     }
+    // le triporteur (js/carte/triporteur.js) : dehors, quand il marche ou attend, il y est
+    // assis et roule plus vite (ctx.triporteur : le modèle dit qu'il est en selle) ; pendant un
+    // geste, dans un intérieur, il en descend
+    const selle = K.triporteur ? K.triporteur(scene) : null;
+    const ROULE = /^(marche|panier|idle)_(bas|haut|cote)_\d$/;
+    let roule = 0, rx = 0, ry = 0;
+    const enSelle = () => !!(selle && ctx.triporteur && shown && !home && !where);
+    const vitesse = () => (enSelle() ? K.TRIPORTEUR.vitesse : 1);
     let drawn = '';
     function draw(name) {
       drawn = name;
-      frame(name);
-      s.setPosition(Math.round(x), Math.round(y)).setFlipX(flip).setDepth(y).setAlpha(alpha);
+      if (enSelle() && ROULE.test(name)) {
+        roule += Math.hypot(x - rx, y - ry);
+        const r = selle.place(x, y, face, flip, roule, alpha);
+        frame(r.image);
+        s.setPosition(Math.round(x + r.dx), Math.round(y - r.dy)).setFlipX(flip).setDepth(y).setAlpha(alpha);
+      } else {
+        if (selle) selle.cache();
+        frame(name);
+        s.setPosition(Math.round(x), Math.round(y)).setFlipX(flip).setDepth(y).setAlpha(alpha);
+      }
+      rx = x; ry = y;
     }
     function look(dx, dy) {
       ({ face, flip } = K.regard(dx, dy));
@@ -222,7 +243,7 @@
           if (!path.length) return true;
           const p = path[0];
           const dx = p.x - x, dy = p.y - y, left = Math.hypot(dx, dy);
-          const v = SPEED * (opts && opts.hurry ? 2 : 1) * Math.min(1, 0.4 + age * 3);
+          const v = SPEED * vitesse() * (opts && opts.hurry ? 2 : 1) * Math.min(1, 0.4 + age * 3);
           const d = Math.min(left, v * dt);
           if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; look(dx, dy); }
           walked += d;
@@ -371,6 +392,7 @@
     function filter(model) {
       const raw = model;
       ctx.hour = raw.heure == null ? 12 : raw.heure;
+      ctx.triporteur = !!raw.triporteur;
       ctx.coucher = !!raw.coucher;
       ctx.dort = !!raw.dort;
       pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));
@@ -545,7 +567,7 @@
     function stepSteer(dt) {
       if (!blocked) buildGrid();
       if (!shown) { const d = door(); x = d.x; y = d.y; appear(); }
-      const v = SPEED * dt;
+      const v = SPEED * vitesse() * dt;
       const nx = Math.max(0, Math.min(world.w - 1, x + steer.x * v)), ny = Math.max(1, Math.min(world.h - 1, y + steer.y * v));
       // (coincé là où il ne devrait pas être : il en sort dans n'importe quelle direction)
       const libre = (px, py) => freeAt(px, py) || !freeAt(x, y);
@@ -1062,6 +1084,8 @@
 
     function update(delta, roomId) {
       const dt = Math.min(delta, 50) / 1000;
+      // (rentré, caché, descendu : plus de triporteur sous lui ; draw le repose s'il roule)
+      if (selle && (!enSelle() || !s.visible || !ROULE.test(drawn))) selle.cache();
       // Retenues trop longues (onglet caché, chemin bloqué) : la case se montre.
       if (holds.size) {
         const now = performance.now();
@@ -1154,7 +1178,7 @@
         if (!lastPos || lastPos.x !== x || lastPos.y !== y) lastPos = { x, y };
         return lastPos;
       },
-      destroy() { endMeal(); s.destroy(); if (inside.s) inside.s.destroy(); if (inside.drap) inside.drap.destroy(); zs.forEach((z) => z.destroy()); holds.clear(); },
+      destroy() { endMeal(); s.destroy(); if (selle) selle.destroy(); if (inside.s) inside.s.destroy(); if (inside.drap) inside.drap.destroy(); zs.forEach((z) => z.destroy()); holds.clear(); },
       // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
       setSheet(key) {
         o.sheet = key;

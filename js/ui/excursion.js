@@ -3,7 +3,7 @@ import { clockHours, nightActive } from '../engine/clock.js';
 import { weekdayIndex } from '../engine/format.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { memberPerso } from '../engine/family.js';
-import { depositOreNotebook, hasTool, hitsNeeded, mineOre, morceauxDe } from '../engine/outils.js';
+import { depositOreNotebook, enSelle, hasTool, hitsNeeded, mineOre, morceauxDe } from '../engine/outils.js';
 import { techFlag } from '../engine/techtree.js';
 import { rockGone, treeGone } from '../engine/crops.js';
 import { addItem } from '../engine/inventory.js';
@@ -230,6 +230,8 @@ window.FermeHote = {
   closeModal: () => closeModal(),
   // le god mode : les cartes ne font plus marcher le personnage (un toucher l'y pose)
   god: () => godMode,
+  // le personnage est en selle sur son triporteur (js/carte/triporteur.js) : il roule plus vite
+  triporteur: () => enSelle(state),
   // la carte de transition de la partie (js/engine/transition.js) : son plan (l'ouest, tiré
   // d'après la graine), les ressources du jour, celles que le joueur a déjà prises (pris) et le
   // jour. Une partie d'avant n'a pas encore de graine des voisins : elle la tire ici, une fois.
