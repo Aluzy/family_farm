@@ -146,7 +146,7 @@
   ],
   "VOISINS": {
     "ARGENT": 150,
-    "BUCHERON": { "ARBRES": 3, "BOIS": 5 },
+    "BUCHERON": { "ARBRES": 4, "BOIS": 5 },
     "AGRICULTEUR": { "CULTURES": ["patate", "tomate", "courgette", "carotte", "aubergine", "patate"], "RENDEMENT": 200, "GARDE": 6, "ACHATS": ["oeuf", "huile", "farine"] },
     "RECETTES": {
       "bucheron": ["tarte_pommes", "gratin_patates", "omelette", "pain"],

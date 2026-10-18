@@ -1969,7 +1969,7 @@ export const RAW_DATA = {
   "NAVETTE": { "HORAIRES": { "DEBUT": 6, "FIN": 22 }, "DUREES": { "MONTEE": 0.8, "DEPART": 2.6, "DESCENTE": 0.6, "REPART": 1.2 } },
   "VOISINS": {
     "ARGENT": 150,
-    "BUCHERON": { "ARBRES": 3, "BOIS": 5 },
+    "BUCHERON": { "ARBRES": 4, "BOIS": 5 },
     "AGRICULTEUR": {
       "CULTURES": ["patate", "tomate", "courgette", "carotte", "aubergine", "patate"],
       "RENDEMENT": 200,

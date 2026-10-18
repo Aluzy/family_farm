@@ -246,7 +246,7 @@ parties.
     naît à la première visite et vit une journée à chaque nuit du jeu (`voisinsNuit`, dans
     `runNight`), avec les règles de la famille du joueur : le besoin journalier (`FAMILLE.AJ`),
     le bonheur des repas (`mealHappinessDelta` : les plats cuisinés en rendent, la faim en coûte).
-  - **Le bûcheron** abat 3 arbres de la carte par adulte et par jour (5 bois chacun ; les arbres
+  - **Le bûcheron** abat 4 arbres de la carte par adulte et par jour (5 bois chacun ; les arbres
     repoussent comme ceux du joueur), vend le bois au marché et y achète tout ce qu'il mange.
   - **L'agriculteur** achète ses graines (ou replante ses patates), récolte son champ, garde de
     quoi cuisiner et vend le reste ; il n'achète que ce qu'il ne produit pas (œufs, huile, farine).
