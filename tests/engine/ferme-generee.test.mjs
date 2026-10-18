@@ -8,7 +8,7 @@ import { assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless }
 import { readFileSync } from 'node:fs';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
+  isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -534,4 +534,46 @@ test('mode test : les ressources, les blocs, les outils et l\'Atelier en un appu
   assertEqual(countItem(s, 'panneau_solaire'), avant + 3);
   assertEqual(testAddItem(s, 'licorne', 1).ok, false);
   assertEqual(testBuildAtelier(createInitialState()).ok, false, 'pas d\'Atelier sur la ferme dessinée');
+});
+
+test('ferme générée : une enceinte est une maison ou un bâtiment, le premier bloc décide', () => {
+  const s = reach(chantier('g1'), 'poulailler');
+  setInv(s, { mur_pierre: 40, porte: 4, paillasse: 2, four_pierre: 1, nichoir: 1, plancher: 2, batterie: 1 });
+  removeStarter(s, 'batterie');   // (une partie neuve : pas de batterie installée)
+  // deux enceintes côte à côte, un mur en commun
+  const z = terrainLibre(s, 9, 5), a = murs(z, 5, 5), b = murs({ ...z, c: z.c + 4 }, 5, 5);
+  for (const t of new Set([...a.murs, ...b.murs])) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', a.porte); poserBloc(s, 'porte', b.porte);
+  // la maison : un lit, puis un four ; pas de nichoir
+  assert(poserBloc(s, 'paillasse', a.dedans).ok);
+  assertEqual([genrePiece(s, a.dedans), genrePiece(s, b.dedans)], ['maison', null]);
+  assert(poserBloc(s, 'four', a.dedans + 1).ok, 'un four dans la maison');
+  assertEqual(poserBloc(s, 'nichoir', a.dedans + 2).ok, false, 'pas de nichoir dans la maison');
+  // le Poulailler : son nichoir, un plancher ; ni lit ni batterie
+  assert(poserBloc(s, 'plancher', b.dedans + 1).ok, 'un plancher, oui');
+  assert(poserBloc(s, 'nichoir', b.dedans).ok);
+  assertEqual(genrePiece(s, b.dedans), 'poulailler');
+  assertEqual(poserBloc(s, 'paillasse', b.dedans + 2).ok, false, 'pas de lit au Poulailler');
+  assertEqual(poserBloc(s, 'batterie', b.dedans + 2).error, 'Cette enceinte est le Poulailler : on n\'y pose que son bloc (et un plancher). Batterie : dans une autre enceinte.');
+  // le mur entre les deux ne se reprend pas (il mêlerait la maison et le Poulailler)
+  const commun = (z.r + 2) * z.W + z.c + 4;
+  assertEqual([reprendreBloc(s, commun).ok, blocAt(s, commun)], [false, 'mur_pierre']);
+  // un bloc clé dans une enceinte qui a déjà autre chose : refusé
+  reprendreBloc(s, b.dedans);
+  assert(poserBloc(s, 'batterie', b.dedans + 2).ok, 'une enceinte vide prend une batterie');
+  assertEqual(poserBloc(s, 'nichoir', b.dedans).ok, false, 'un bâtiment se bâtit dans une enceinte vide');
+});
+
+test('migration v37 → v38 : une enceinte qui mêle une maison et un bâtiment rend les blocs en trop', () => {
+  const s = reach(chantier('g2'), 'poulailler');
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assert(poserBloc(s, 'paillasse', p.dedans).ok);
+  // (une partie d'avant la règle : le nichoir posé à côté du lit)
+  s.blocs[p.dedans + 1] = 'nichoir';
+  s.poulailler.construit = true;
+  setInv(s, {});
+  const m = migrate({ ...s, version: 37 });
+  assertEqual([m.version, m.blocs[p.dedans], m.blocs[p.dedans + 1], countItem(m, 'nichoir'), m.poulailler.construit], [38, 'paillasse', undefined, 1, false]);
 });

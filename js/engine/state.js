@@ -15,6 +15,7 @@ import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsE
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
+import { rangerPieces } from './blocs.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -318,7 +319,19 @@ export const MIGRATIONS = {
   // v36 → v37 : la Serre redessinée a deux bacs de 4 × 7 cases (56 au lieu de 63) ; ses
   // niveaux vont de 16 à 56 parcelles (+10 par niveau).
   36: (state) => migrateSerreBeds(state),
+  // v37 → v38 : une enceinte est une maison ou un bâtiment, pas les deux : les blocs qui
+  // mêlent deux genres retournent dans l'inventaire (blocs.js, rangerPieces).
+  37: (state) => migrateRoomKinds(state),
 };
+
+function migrateRoomKinds(old) {
+  const state = { ...old, version: 38 };
+  if (state.blocs && typeof state.blocs === 'object' && state.carte && state.inventaire) {
+    state.blocs = { ...state.blocs };
+    rangerPieces(state);
+  }
+  return state;
+}
 
 function migrateNightClock(old) {
   const { routine, ...state } = old;

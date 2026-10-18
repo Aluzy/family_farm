@@ -139,6 +139,18 @@ Le Marché vend toujours les outils.
 - **Une pièce close** : des cases entourées de murs, de portes ou de l'Atelier, avec au moins une
   porte. Elle fait au plus 120 cases et ne touche pas le bord de la carte. Les coins ne comptent
   pas : on ne passe pas en diagonale.
+- **Une maison ou un bâtiment, pas les deux** (`genreBloc`, `genrePiece`, `js/engine/blocs.js`) :
+  le premier lit ou bloc clé posé dans une enceinte décide de ce qu'elle est.
+  - **La maison** : la paillasse, le four, la cuisinière (et la batterie, sans genre). On n'y
+    pose aucun bloc clé de bâtiment.
+  - **Un bâtiment** : le nichoir (le Poulailler), la mangeoire (l'Étable), le bac à semis (la
+    Serre), le coffre à grain (le Silo), la meule (le Moulin). Il ne prend que son bloc clé, et
+    un plancher au sol ; il se bâtit dans une enceinte vide.
+  - Un mur ou une porte entre deux enceintes de genres différents ne se reprend pas : les deux
+    n'en feraient plus qu'une.
+  - Une partie d'avant cette règle (migration v38, `rangerPieces`) : dans une enceinte qui mêle
+    deux genres, le premier trouvé (dans l'ordre des cases) reste ; les autres blocs retournent
+    dans l'inventaire.
 - **Construire** se fait sur la carte (`js/ui/chantier.js`, `js/carte/ferme/chantier.js`) :
   - une case 🔨 apparaît dans la barre d'outils dès que l'Atelier est construit ;
   - une puce montre chaque bloc et ce qui en reste en main, ainsi que le nombre de paillasses

@@ -116,6 +116,98 @@ export function piecesCloses(state) {
   return out;
 }
 
+// Reprendre le mur (ou la porte) de `tile` mêlerait-il deux genres ? null, ou la raison.
+function melangeSansMur(state, tile) {
+  const B = blocsPoses(state);
+  const avant = new Set(piecesCloses(state).map((p) => genreDe(B, p)).filter(Boolean));
+  if (!avant.size) return null;
+  const { [tile]: _ote, ...reste } = B;
+  const essai = { ...state, blocs: reste };
+  const pieces = piecesCloses(essai);
+  const mele = pieces.find((p) => intrus(reste, p).length);
+  piecesCloses(state);   // (le cache revient sur la vraie partie)
+  if (!mele) return null;
+  const genres = [...new Set(blocsDe(reste, mele.cases).map((b) => genreBloc(b.sorte)).filter(Boolean))].map((g) => GENRES_PIECE[g]);
+  return `Ce mur sépare ${genres.join(' et ')} : retiré, les deux ne feraient plus qu'une enceinte.`;
+}
+
+/* ---------- ce que devient une pièce close : une maison ou un bâtiment ---------- */
+
+// Le premier lit (paillasse) ou bloc clé posé dans une enceinte décide de ce qu'elle est :
+//   - une maison : la paillasse, le four, la cuisinière (et les blocs sans genre, la batterie) ;
+//   - un bâtiment : le nichoir (le Poulailler), la mangeoire (l'Étable), le bac à semis (la
+//     Serre), le coffre à grain (le Silo), la meule (le Moulin). Un bâtiment n'a que son bloc
+//     clé (et un plancher au sol, state.sols, qui n'est pas un bloc).
+// Un bloc d'un autre genre n'y entre pas (poseStatus) ; un mur ou une porte qui, repris,
+// mêlerait deux enceintes de genres différents ne se reprend pas (reprendreBloc).
+export const GENRES_PIECE = { maison: 'la maison', poulailler: 'le Poulailler', paturage: 'l\'Étable', serre: 'la Serre', silo: 'le Silo', moulin: 'le Moulin' };
+
+// Le genre d'un bloc : 'maison', l'id d'un bâtiment, ou null (sans genre : la batterie ; ou
+// dehors : les murs, les portes, le puits…).
+export function genreBloc(sorte) {
+  const s = sorteDe(sorte);
+  if (!s) return null;
+  if (s.batiment) return s.batiment;
+  if (s.station === 'moulin') return 'moulin';
+  if (sorte === 'paillasse' || s.station) return 'maison';
+  return null;
+}
+
+// Les blocs posés dans les cases `cases` (hors murs et portes, qui la bordent) : [{ case, sorte }].
+function blocsDe(B, cases) {
+  return cases.filter((t) => B[t]).map((t) => ({ case: t, sorte: B[t] }));
+}
+
+// Le genre de la pièce `p` (le premier bloc à genre, dans l'ordre des cases), ou null.
+function genreDe(B, p) {
+  for (const b of blocsDe(B, p.cases)) { const g = genreBloc(b.sorte); if (g) return g; }
+  return null;
+}
+
+// La pièce close de la tuile, ou null.
+export function pieceDe(state, tile) {
+  return piecesCloses(state).find((p) => p.cases.includes(tile)) || null;
+}
+
+// Le genre de la pièce close de la tuile ('maison', l'id d'un bâtiment) ou null.
+export function genrePiece(state, tile) {
+  const p = pieceDe(state, tile);
+  return p ? genreDe(blocsPoses(state), p) : null;
+}
+
+// Le bloc `sorte` peut-il entrer dans la pièce `p` ? null, ou la raison du refus.
+function refusGenre(state, sorte, p) {
+  const B = blocsPoses(state), g = genreBloc(sorte), deja = genreDe(B, p);
+  const s = sorteDe(sorte);
+  if (deja && deja !== 'maison') return `Cette enceinte est ${GENRES_PIECE[deja]} : on n'y pose que son bloc (et un plancher). ${s.nom} : dans une autre enceinte.`;
+  if (g && g !== 'maison') {
+    if (deja === 'maison') return `Cette enceinte est la maison : ${GENRES_PIECE[g]} se bâtit dans une autre enceinte.`;
+    if (blocsDe(B, p.cases).length) return `${GENRES_PIECE[g][0].toUpperCase()}${GENRES_PIECE[g].slice(1)} se bâtit dans une enceinte vide (seul un plancher peut y être).`;
+  }
+  return null;
+}
+
+// Les blocs de la pièce `p` qui n'y vont pas (une partie d'avant la règle) : tout ce qui n'est
+// pas du genre du premier bloc à genre ; dans un bâtiment, tout le reste. [{ case, sorte }]
+function intrus(B, p) {
+  const g = genreDe(B, p);
+  if (!g) return [];
+  return blocsDe(B, p.cases).filter((b) => (g === 'maison' ? genreBloc(b.sorte) && genreBloc(b.sorte) !== 'maison' : genreBloc(b.sorte) !== g));
+}
+
+// Une partie d'avant la règle : les blocs qui mêlent deux genres dans une enceinte retournent
+// dans l'inventaire (le premier genre trouvé reste). Renvoie les sortes reprises.
+export function rangerPieces(state) {
+  const repris = [];
+  for (let k = 0; k < 50; k++) {
+    const B = blocsPoses(state);
+    const trop = piecesCloses(state).flatMap((p) => intrus(B, p));
+    if (!trop.length) break;
+    for (const b of trop) if (reprendreBloc(state, b.case, { force: true }).ok) repris.push(b.sorte);
+  }
+  return repris;
+}
+
 // La tuile est-elle dans une pièce close ?
 export function dansPiece(state, tile) {
   return piecesCloses(state).some((p) => p.cases.includes(tile));
@@ -195,6 +287,10 @@ export function poseStatus(state, sorte, tile) {
   if ((state.potager.parcelles || []).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
   if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, et une porte).` };
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
+  // une maison ou un bâtiment : pas de bloc d'un autre genre (le premier posé décide)
+  const p = !s.ferme && pieceDe(state, tile);
+  const refus = p && refusGenre(state, sorte, p);
+  if (refus) return { ok: false, raison: refus };
   return { ok: true };
 }
 
@@ -230,10 +326,15 @@ export function poserBloc(state, sorte, tile) {
 // Reprend le bloc de `tile` : son objet revient dans l'inventaire (l'Atelier redevient à
 // poser). Une paillasse d'une pièce qui s'ouvre reste là, mais on n'y dort plus. Ce qui est
 // posé dessus d'abord (la pompe sur le puits), puis le bloc, puis le sol (le plancher).
-export function reprendreBloc(state, tile) {
+export function reprendreBloc(state, tile, opts) {
   const dessus = blocDessus(state, tile), bloc = blocAt(state, tile);
   const sorte = dessus || bloc || solAt(state, tile);
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
+  // un mur ou une porte entre une maison et un bâtiment (ou deux bâtiments) : il reste
+  if (!dessus && bloc && sorteDe(bloc).ferme && !(opts && opts.force)) {
+    const melange = melangeSansMur(state, tile);
+    if (melange) return fail(melange);
+  }
   if (dessus) delete state.blocsDessus[tile];
   else if (bloc) delete state.blocs[tile];
   else delete state.sols[tile];
