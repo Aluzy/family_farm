@@ -51,8 +51,10 @@ ajouter : le JSON donne l'ordre).
 
 ## Ce qu'il fait
 
-- **Le jour** (de 6 h à 21 h 30) il sort de la maison et flâne devant ; le soir il rentre et
-  disparaît derrière la porte.
+- **Le jour** (de 6 h à 21 h 30) il sort de la maison et se tient devant la porte ; le soir il
+  rentre et disparaît derrière la porte. Il ne bouge jamais de lui-même : ni flânerie dehors, ni
+  pas au hasard dans un intérieur ; il ne marche que pour le joueur (un geste, une bulle, le
+  double appui, le doigt) ou pour aller se coucher.
 - **Les gestes du joueur.** La carte compare deux modèles de vue qui se suivent, le même jour :
   une case qui devient de la terre (ou redevient de l'herbe), une graine, un arrosage ou une
   récolte est un geste. Il va à la case (à sa gauche, tourné vers elle) et fait le geste. Le jeu
@@ -65,8 +67,7 @@ ajouter : le JSON donne l'ordre).
   produit n'y entre que quand il le prend. Une récolte au clic sur la carte (une case, « Récolter
   tout », un arbre du Verger), une tonte au clic, les œufs et le lait de la nuit attendent à leur
   place (`state.aRamasser`, `js/engine/ramassage.js`). Une récolte se ramasse au geste même ;
-  le reste, il va le chercher dès qu'il est libre et dehors (le plus proche d'abord), ou tout de
-  suite quand le joueur appuie sur sa bulle (« 🥚 6 » au-dessus du Poulailler, « 🥛 2 🧶 1 » au-dessus
+  le reste, il va le chercher quand le joueur appuie sur sa bulle (« 🥚 6 » au-dessus du Poulailler, « 🥛 2 🧶 1 » au-dessus
   de l'Étable, « 🍎 4 » sur l'arbre…), même la nuit. Au Poulailler et à l'Étable, il remplit son
   panier et le rapporte devant la maison. À chaque prise, une bulle « +6 🥕 » monte au-dessus de
   lui, reste un instant puis s'estompe ; une prise qui arrive avant qu'elle ait disparu s'y
@@ -85,12 +86,12 @@ ajouter : le JSON donne l'ordre).
   les repas de la nuit le trouvent.
 - **Double appui** (version 1.19) : dehors, deux appuis rapprochés (300 ms, 30 px) sur l'herbe
   ou un chemin l'y envoient (`goTo`, au point libre le plus proche) : il y va avant ses gestes en
-  attente, puis flâne autour jusqu'au soir. Rien ne marque l'arrivée. Sur l'herbe
+  attente, puis y reste. Rien ne marque l'arrivée. Sur l'herbe
   labourable, l'appui simple (la fenêtre de la Zone de culture) attend donc 300 ms. La nuit, rien.
 - **Au doigt** : dehors, le doigt posé puis glissé (plus de 8 px) le fait marcher dans la
   direction du glissement tant qu'il reste posé, et il tourne avec le doigt (`steer`,
   `CarteKit.manette`) ; il glisse le long de ce qui le gêne. Le geste qu'il fait finit d'abord,
-  ceux qui attendent reprennent au relâchement ; il souffle un instant puis flâne là. Pas avec la
+  ceux qui attendent reprennent au relâchement ; il reste là. Pas avec la
   houe qui laboure en glissant, ni pendant la pêche, ni au lit. Rien ne s'affiche sous le doigt :
   au premier appui sur le sol (un essai de marche), une bulle explique le geste, une fois par
   appareil (`CarteKit.astuceMarche`), sauf à qui a déjà glissé pour marcher.
