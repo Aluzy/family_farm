@@ -1,5 +1,5 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
-# mur en pierre, la porte, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, l'Atelier et les
+# mur en pierre, la porte, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
@@ -212,6 +212,25 @@ ICONS = {
         'kmnnnnnnnnnnnnmk',
         'ktTtTtTtTtTtTtTk',
         'kssssssssssssssk',
+        'kkkkkkkkkkkkkkkk',
+    ],
+    # meule : une roue de pierre debout, son axe de fer, sur un bâti de bois
+    '🪨‍⚙️': [
+        '.....aaaaaa.....',
+        '...aaddddddaa...',
+        '..adddccccccba..',
+        '.adccccccccccba.',
+        '.adccbbbbbbccba.',
+        'adccbaaaaaabccba',
+        'adccbanmmnabccba',
+        'adccbammmmabccba',
+        'adccbaaaaaabccba',
+        '.acccbbbbbbccba.',
+        '.abccccccccccba.',
+        '..abccccccccba..',
+        'kkkkaabbbbaakkkk',
+        'keeeeeeeeeeeeeek',
+        'kTTTTTTTTTTTTTTk',
         'kkkkkkkkkkkkkkkk',
     ],
     # l'Atelier : un marteau, fer en haut, manche de bois

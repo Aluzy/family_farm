@@ -154,8 +154,9 @@ export function poseStatus(state, sorte, tile) {
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
   if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
-  // le bloc clé d'un bâtiment : pas avant le niveau où ce bâtiment se débloque
-  if (s.batiment && !isUnlocked(state, s.batiment)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(s.batiment)}.` };
+  // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
+  const verrou = s.batiment || s.debloque;
+  if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
   if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
   if (s.appareil) {
     const r = starterBlock(state, s.appareil);

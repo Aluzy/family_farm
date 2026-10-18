@@ -83,8 +83,10 @@
         const y0 = Math.min(...r.map((o) => o.y)), y1 = Math.max(...r.map((o) => o.y + o.height));
         return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
       };
-      // (la ferme générée n'a pas de grange : l'Étable s'y bâtit ; la Zone de culture la remplace)
-      this.screens = [centre(this.objects.grange ? 'grange' : 'zone_culture'), centre('maison', 'zone_culture'), centre('moulin', 'serre')];
+      // (la ferme générée n'a ni grange, ni moulin, ni serre : ils s'y bâtissent ; les zones de
+      // culture les remplacent)
+      const ou = (nom, autre) => (this.objects[nom] ? nom : autre);
+      this.screens = [centre(ou('grange', 'zone_culture')), centre('maison', 'zone_culture'), this.objects.moulin || this.objects.serre ? centre('moulin', 'serre') : centre(ou('zone_culture_2', 'zone_culture'))];
     },
 
     // Bornes du centre de la vue : elle ne sort jamais de la carte.

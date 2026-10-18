@@ -11,7 +11,7 @@
 # (étape 5b : posés dans une pièce close, ils tiennent lieu des stations), panneau, batterie
 # (étape 5b-2 : posés, ils installent l'appareil du même nom), nichoir (le bloc clé du Poulailler),
 # mangeoire (celui de l'Étable), bac_semis (celui de la Serre),
-# coffre_grain (celui du Silo). Gris des rochers,
+# coffre_grain (celui du Silo), meule (le Moulin). Gris des rochers,
 # bruns des troncs, paille du poulailler ; lumière en haut à gauche, contour sombre de la
 # matière.
 import os
@@ -392,6 +392,33 @@ DESSINS = [
         'kkkkkkkkkkkkkkkk',
         '.kk..........kk.',
         '................',
+        '................',
+    ],
+    # la meule : une roue de pierre debout sur son bâti de bois, son axe de fer, de la farine
+    [
+        '................',
+        '................',
+        '................',
+        '.....aaaaaa.....',
+        '...aaeeddddaa...',
+        '..aeddccccccba..',
+        '..adccccccccba..',
+        '.aedccbbbbccbba.',
+        '.adccbaaaabccba.',
+        '.adccbammabccba.',
+        '.adccbammabccba.',
+        '.adccbaaaabccba.',
+        '.acccbbbbbbcbba.',
+        '..accccccccbba..',
+        '..abccccccbbba..',
+        '...aabbbbbbaa...',
+        'kkkkkaaaaaakkkkk',
+        'kEEEEEEEEEEEEEEk',
+        'kTTTTTTTTTTTTTTk',
+        'kssssssssssssssk',
+        'kkkkkkkkkkkkkkkk',
+        '.ks.wWw..wWw.sk.',
+        '.kk.WWW..WWW.kk.',
         '................',
     ],
 ]
