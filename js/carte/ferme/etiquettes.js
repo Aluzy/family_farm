@@ -84,7 +84,10 @@
       }
       const b = this.buildings.get(p.lieu);
       // sur le bâtiment, sous son étiquette
-      return b ? { x: b.sprite.x + b.sprite.width / 2, y: b.sprite.y - Math.round(b.sprite.height * 0.45) } : null;
+      if (b) return { x: b.sprite.x + b.sprite.width / 2, y: b.sprite.y - Math.round(b.sprite.height * 0.45) };
+      // la ferme générée : au-dessus de son bloc clé (le nichoir)
+      const k = this.keyBlockOf && this.keyBlockOf(p.lieu);
+      return k ? { x: k.x, y: k.y - 24 } : null;
     },
 
     // Une bulle par tas (DOM, par-dessus le canvas) : « 🥚 6 ». Un appui l'envoie la chercher.

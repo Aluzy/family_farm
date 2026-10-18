@@ -30,7 +30,9 @@
     "(DEPART.ACHATS : panneau, pompe, réservoir, batterie) au lieu de l'acheter ; repris, il ne l'est plus.",
     "dehors : pas dans une pièce close ; unique : un seul posé ; sur : se pose sur ce bloc (la pompe sur",
     "le puits) sans prendre de case. Comme les achats : il faut le foyer, et la citerne attend le",
-    "panneau et la pompe."
+    "panneau et la pompe.",
+    "batiment (étape 5b, les bâtiments) : le bloc clé d'un bâtiment. Posé dans une pièce close, il le",
+    "construit (le nichoir : le Poulailler) ; repris, le bâtiment n'est plus là (ses bêtes restent)."
   ],
   "ATELIER": {
     "NOM": "Atelier", "ICONE": "🔨", "NIVEAU": 1,
@@ -43,6 +45,7 @@
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
       "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
       "puits_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "puits_pierre": 1 } },
+      "nichoir": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "nichoir": 1 } },
       "pompe": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "pompe": 1 } },
       "panneau_solaire": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "panneau_solaire": 1 } },
       "citerne": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "citerne": 1 } },
@@ -57,6 +60,7 @@
       "paillasse": { "nom": "Paillasse", "objet": "paillasse", "dedans": true },
       "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four" },
       "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },
+      "nichoir": { "nom": "Nichoir", "objet": "nichoir", "dedans": true, "bloque": true, "unique": true, "batiment": "poulailler" },
       "puits": { "nom": "Puits", "objet": "puits_pierre", "dehors": true, "bloque": true, "unique": true },
       "pompe": { "nom": "Pompe", "objet": "pompe", "sur": "puits", "appareil": "pompe" },
       "panneau": { "nom": "Panneau solaire", "objet": "panneau_solaire", "dehors": true, "bloque": true, "unique": true, "appareil": "panneau" },

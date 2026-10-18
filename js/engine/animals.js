@@ -8,6 +8,7 @@ import { techFlag } from './techtree.js';
 import { bumpCounter } from './campaign.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
+import { farmSeed } from './terrain.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
 
@@ -124,6 +125,8 @@ export function coopUpgradeCost(state) {
 
 export function buildPoulailler(state) {
   const p = state.poulailler;
+  // la ferme générée : un nichoir, fabriqué à l'Atelier, posé dans une pièce close (blocs.js)
+  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, le Poulailler se bâtit : une pièce close et un nichoir (Atelier).');
   return buildWith(state, 'poulailler', { built: p.construit, deja: 'Le Poulailler est déjà construit.', cost: DATA.POULAILLER.PRIX_CONSTRUCTION, libelle: 'Poulailler' }, () => {
     p.construit = true;
     p.niveau = 1;

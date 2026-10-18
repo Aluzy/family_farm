@@ -129,6 +129,15 @@ export function nuitSansCouchage(state) {
   return sans;
 }
 
+// Le bâtiment `id` est construit par son bloc clé (comme acheté, sans payer) ; repris puis
+// reposé, il retrouve son niveau.
+function ouvrirBatiment(state, id) {
+  const b = state[id];
+  if (!b) return;
+  b.construit = true;
+  if (!b.niveau) b.niveau = 1;
+}
+
 /* ---------- poser, reprendre ---------- */
 
 // Peut-on poser `sorte` sur `tile` ? { ok, raison }
@@ -174,6 +183,8 @@ export function poserBloc(state, sorte, tile) {
   }
   // le panneau, la pompe, la citerne, la batterie : l'appareil est là (étape 5b-2)
   if (s.appareil) installStarter(state, s.appareil);
+  // le bloc clé d'un bâtiment (le nichoir : le Poulailler) : le bâtiment est construit
+  if (s.batiment) ouvrirBatiment(state, s.batiment);
   // un four, une cuisinière : la station est là (étape 5b, la maison)
   if (s.station && state.stations[s.station]) openStation(state, s.station);
   return { ok: true, sorte, case: tile };
@@ -190,6 +201,7 @@ export function reprendreBloc(state, tile) {
   else delete state.blocs[tile];
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
+  if (s && s.batiment && state[s.batiment]) state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)
   if (s && s.station && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
