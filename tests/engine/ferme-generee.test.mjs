@@ -7,7 +7,7 @@
 import { assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -260,6 +260,32 @@ test('ferme générée : des murs tout autour et une porte font une pièce close
   const t = garden();
   t.energie = 0;
   assertEqual(nuitCouchee(t), true);
+});
+
+test('ferme générée : le plancher se pose à plat, sous les blocs, et se reprend en dernier', () => {
+  const s = chantier('b3');
+  setInv(s, { planche: 2 });
+  assertEqual(craft(s, 'plancher').items, { plancher: 1 }, '2 planches : un plancher');
+  setInv(s, { mur_pierre: 40, porte: 2, paillasse: 1, plancher: 3 });
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assertEqual(poserBloc(s, 'plancher', p.murs[0]).ok, false, 'pas sous un mur');
+  assert(poserBloc(s, 'plancher', p.dedans).ok);
+  assertEqual([solAt(s, p.dedans), blocAt(s, p.dedans), countItem(s, 'plancher'), isArable(p.dedans, s)], ['plancher', null, 2, false]);
+  assertEqual(poserBloc(s, 'plancher', p.dedans).ok, false, 'déjà un plancher');
+  assertEqual(piecesCloses(s)[0].cases.length, 9, 'la pièce reste close');
+  // une paillasse dessus : on y dort
+  assert(poserBloc(s, 'paillasse', p.dedans).ok);
+  assertEqual(couchages(s), [p.dedans]);
+  // dehors aussi (une terrasse), mais pas de mur dessus
+  const dehors = p.porte + z.W;
+  assert(poserBloc(s, 'plancher', dehors).ok);
+  assertEqual(poserBloc(s, 'mur_pierre', dehors).ok, false, 'pas de mur sur un plancher');
+  // repris : la paillasse d'abord, puis le plancher
+  assertEqual(reprendreBloc(s, p.dedans).sorte, 'paillasse');
+  assertEqual(reprendreBloc(s, p.dedans).sorte, 'plancher');
+  assertEqual([solAt(s, p.dedans), countItem(s, 'plancher')], [null, 2]);
 });
 
 /* ---------- étape 5 : la nouvelle partie, le bonheur sans couchage ---------- */

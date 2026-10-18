@@ -27,7 +27,9 @@
 #            droite, pas au-dessus ni au-dessous : un mur s'arrête devant une porte percée dans
 #            un mur vertical, sa face avant se voit) ;
 #   30 : la porte percée dans un mur vertical (BLOCS_CARTE.porteVerticale) : le seuil vu de
-#            haut, le battant ouvert contre le montant.
+#            haut, le battant ouvert contre le montant ;
+#   31 à 46 : le plancher (BLOCS_CARTE.sols) : 31 + masque des planchers voisins, à plat sur sa
+#            case (les 16 px du bas de l'image), sous les blocs qu'on pose dessus.
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -230,10 +232,10 @@ def mur(m):
 
 
 def porte():
-    """La porte dans un mur horizontal : la chape en linteau, une porte de planches cintrée,
-    ses pentures et sa poignée, entre deux montants de pierre."""
+    """La porte dans un mur horizontal : la chape en linteau, une porte étroite de planches
+    cintrée, ses pentures et sa poignée, entre deux larges montants de pierre."""
     t = Toile(mur(2 | 8))
-    x0, x1, y0 = 3, 12, CHAPE + 1
+    x0, x1, y0 = 5, 10, CHAPE + 1
     bois = planches([CADRE[1], BOIS[1], BOIS[2], BOIS[3]], pas=3, x0=x0)
     for y in range(y0, BAS):
         t.put(x0 - 1, y, OUT)
@@ -251,8 +253,8 @@ def porte():
         for x in range(x0, x1):
             t.put(x, y, FER[1])
         t.put(x0, y, FER[2])
-    t.put(x1 - 2, y0 + 6, FER[4])                # la poignée
-    t.put(x1 - 2, y0 + 7, FER[1])
+    t.put(x1 - 1, y0 + 6, FER[4])                # la poignée
+    t.put(x1 - 1, y0 + 7, FER[1])
     for x in range(x0, x1 + 1):                  # le seuil
         t.put(x, BAS - 1, CADRE[2])
     return t.im
@@ -287,6 +289,49 @@ def porte_verticale():
         t.put(x, yp - 1, BOIS[4])
     t.put(11, yb + 3, FER[2])
     t.put(11, yp + 2, FER[2])
+    return t.im
+
+
+# ---------- le plancher ----------
+
+def plancher(m):
+    """Le plancher de masque m (1 un plancher au-dessus, 2 à droite, 4 au-dessous, 8 à
+    gauche), à plat sur sa case : des lames couchées de 4 px, joints de bout décalés d'une lame
+    à l'autre (motif de 16 px de période : deux planchers voisins se raccordent). Un bord libre
+    a son contour ; en bas, le chant des lames, plus sombre."""
+    t = Toile()
+    n, e, s, w = (m & 1, m & 2, m & 4, m & 8)
+    y0 = H - T
+    for y in range(y0, H):
+        v = (y - y0) % 16
+        lame, k = v // 4, v % 4
+        bout = (5 * lame + 3) % 16                # où la lame s'arrête
+        for x in range(W):
+            if k == 3:
+                c = CADRE[2]                      # le joint entre deux lames
+            elif x % 16 == bout:
+                c = CADRE[3]                      # le joint de bout
+            elif k == 0:
+                c = BOIS[4] if hasard(lame, (x - bout) % 16 // 8) < 0.5 else BOIS[3]
+            elif (x + 2 * lame) % 7 == 0 and k == 1:
+                c = BOIS[1]                       # un nœud
+            else:
+                c = BOIS[3] if hasard(lame, (x - bout) % 16 // 8, 7) < 0.45 else BOIS[2]
+            t.put(x, y, c)
+    if not s:
+        for x in range(W):
+            t.put(x, BAS - 1, BOIS[1])            # le chant
+            t.put(x, BAS, OUT)
+    if not n:
+        for x in range(W):
+            t.put(x, y0, OUT)
+            t.put(x, y0 + 1, BOIS[4])
+    if not w:
+        for y in range(y0, H):
+            t.put(0, y, OUT)
+    if not e:
+        for y in range(y0, H):
+            t.put(15, y, OUT)
     return t.im
 
 
@@ -587,15 +632,17 @@ DESSINS = [mur(0), porte(), atelier(), paillasse(), drap(), four(), cuisiniere()
            batterie(), nichoir(), mangeoire(), bac_semis(), coffre_grain(), meule()] \
     + [mur(m) for m in range(16)] + [porte_verticale()]
 PORTE_VERTICALE = len(DESSINS) - 1
+SOLS = len(DESSINS)                              # le premier des 16 planchers raccordés
+DESSINS += [plancher(m) for m in range(16)]
 
 
 # ---------- l'aperçu : une pièce close et les objets, sur l'herbe de la carte ----------
 
 PIECE = [
     'MMMMMMM...',
-    'M.f.c.M...',
-    'M.....P.MM',
-    'M.p.d.M.MM',
+    'M=f=c=M...',
+    'M=====P.MM',
+    'M=p=d=M.MM',
     'MMMPMMM...',
     '..........',
     'a.n.g.s.r.',
@@ -622,6 +669,12 @@ def apercu_piece(sheet):
         for x in range(cols):
             fond.paste(herbe, (x * T, y * T))
     pose = []
+    sol = [[x > 0 and y > 0 and x < 6 and y < 4 for x in range(len(PIECE[0]))] for y in range(len(PIECE))]
+    for y in range(len(PIECE)):
+        for x in range(len(PIECE[0])):
+            if sol[y][x]:
+                m = sum(b for b, (dx, dy) in ((1, (0, -1)), (2, (1, 0)), (4, (0, 1)), (8, (-1, 0))) if sol[y + dy][x + dx])
+                fond.alpha_composite(sheet.crop(((SOLS + m) * W, 0, (SOLS + m + 1) * W, H)), ((x + 1) * T, (y + 2) * T - H))
     for y, rang in enumerate(PIECE):
         for x, ch in enumerate(rang):
             if ch == 'M':

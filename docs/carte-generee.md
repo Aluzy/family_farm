@@ -129,6 +129,13 @@ Le Marché vend toujours les outils.
     et seul le dernier mur montre sa face.
   - Une porte percée dans un mur vertical montre son seuil, vu de haut, et son battant
     ouvert.
+- **Le plancher** (2 planches à l'Atelier) se pose à plat sur l'herbe, dans une pièce ou
+  dehors en terrasse.
+  - Il ne prend pas la place d'un bloc : les meubles, le four ou la paillasse se posent
+    dessus (`state.sols`, `solAt`).
+  - On n'y pose ni mur, ni porte, ni l'Atelier, et on ne peut pas y labourer.
+  - Un appui avec le plancher en main le reprend, une fois ce qui est posé dessus repris.
+  - Comme les murs, il se raccorde à ses voisins (`syncFloors`).
 - **Une pièce close** : des cases entourées de murs, de portes ou de l'Atelier, avec au moins une
   porte. Elle fait au plus 120 cases et ne touche pas le bord de la carte. Les coins ne comptent
   pas : on ne passe pas en diagonale.

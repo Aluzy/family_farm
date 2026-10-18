@@ -5,7 +5,8 @@
  * donne (modèle.blocs : [{ case, sorte }]) ; chacun a son image (assets/blocs.png,
  * scripts/carte/blocs.py), le bas sur le bas de sa case, rangée selon son pied (la paillasse,
  * à plat, sous ce qui est debout). Un mur prend l'image qui le raccorde à ses voisins, une
- * porte celle de son mur, horizontal ou vertical (wallFrame). Les murs et l'Atelier arrêtent le personnage (blockCells) ;
+ * porte celle de son mur, horizontal ou vertical (wallFrame). Le plancher (modèle.sols) est à
+ * plat sous tout le reste (syncFloors). Les murs et l'Atelier arrêtent le personnage (blockCells) ;
  * les portes et les paillasses se traversent. Ils portent une ombre (soleil.js).
  *
  * Le mode « Construire » (modèle.bati = { sorte }) : un appui sur une case y pose le bloc choisi,
@@ -55,6 +56,23 @@
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       }
       this.drawRooms(bati ? pieces : null);
+    },
+
+    // Les planchers posés (modèle.sols : leurs cases), à plat sous les blocs : chacun prend
+    // l'image raccordée aux planchers voisins.
+    syncFloors(list) {
+      if (!this.floors) this.floors = new Map();
+      const S = this.floors, cols = this.grid.cols, at = new Set(list || []);
+      if (!this.has(BLOCS_CARTE.key)) return;
+      for (const c of at) {
+        const col = c % cols;
+        const m = (at.has(c - cols) ? 1 : 0) + (col < cols - 1 && at.has(c + 1) ? 2 : 0) + (at.has(c + cols) ? 4 : 0) + (col > 0 && at.has(c - 1) ? 8 : 0);
+        const frame = BLOCS_CARTE.sols + m, img = S.get(c);
+        if (img) { if (img.frame.name !== frame) img.setFrame(frame); continue; }
+        const x = col * T + T / 2, y = (Math.floor(c / cols) + 1) * T;
+        S.set(c, this.add.image(x, y, BLOCS_CARTE.key, frame).setOrigin(0.5, 1).setDepth(BLOCS_CARTE.solDepth));
+      }
+      for (const [c, img] of S) if (!at.has(c)) { img.destroy(); S.delete(c); }
     },
 
     // L'image du bloc b (at : case -> sorte de tous les blocs). Un mur : celle de ses voisins

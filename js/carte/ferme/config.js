@@ -145,13 +145,15 @@
   // Les blocs de la ferme générée (js/carte/ferme/chantier.js) : assets/blocs.png
   // (scripts/carte/blocs.py), une image de 16 × 24 par sorte (`frames` ; drap : la couverture
   // du dormeur), vue de haut à 45° ; un mur posé prend l'image raccordée à ses voisins (`murs`
-  // + masque, chantier.js wallFrame), une porte percée dans un mur vertical `porteVerticale`. `plats` : à plat, sous ce qui est debout ; `bloquent` : on ne passe pas.
+  // + masque, chantier.js wallFrame), une porte percée dans un mur vertical `porteVerticale`.
+  // Le plancher, à plat sous tout le reste (`solDepth`, sous les ombres du soleil) : `sols` +
+  // masque des planchers voisins. `plats` : à plat, sous ce qui est debout ; `bloquent` : on ne passe pas.
   // Les pièces closes, en mode Construire : un `voile` vert. Couché, ses pieds sont à `coucheY`
   // px au-dessus du bas de la paillasse.
   const BLOCS_CARTE = {
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
     frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13 },
-    murs: 14, porteVerticale: 30,
+    murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     plats: ['paillasse'], bloquent: ['mur_pierre', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png)
     ailleurs: ['puits', 'citerne'],

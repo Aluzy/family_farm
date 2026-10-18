@@ -95,7 +95,7 @@ export function ramassables(state) {
   if (!atelierOuvert(state)) return [];
   const pris = state.cueillette && state.cueillette.jour === state.day ? state.cueillette.pris : [];
   const arbres = new Set(state.verger ? state.verger.arbres.map((t) => t.case) : []);
-  return placesDuJour(state, state.day).filter((p) => !pris.includes(p.id) && !plotAtTile(state, p.case) && !(state.blocs && state.blocs[p.case]) && !arbres.has(p.case));
+  return placesDuJour(state, state.day).filter((p) => !pris.includes(p.id) && !plotAtTile(state, p.case) && !(state.blocs && state.blocs[p.case]) && !(state.sols && state.sols[p.case]) && !arbres.has(p.case));
 }
 
 // Le personnage ramasse `id` : son objet entre dans l'inventaire.
