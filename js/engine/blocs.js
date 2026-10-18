@@ -8,6 +8,7 @@ import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
 import { openSerre } from './crops.js';
 import { fillSilo } from './animals.js';
+import { arbreProche, arbreSurCase, planterArbre } from './orchard.js';
 import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
@@ -170,6 +171,9 @@ export function poseStatus(state, sorte, tile) {
     return { ok: true };
   }
   if (blocAt(state, tile)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
+  if (arbreSurCase(state, tile)) return { ok: false, raison: 'Un arbre pousse ici.' };
+  // un arbre fruitier : loin des autres (son feuillage), à côté d'aucun bloc
+  if (s.arbre && arbreProche(state, tile, DATA.ATELIER.ARBRE_ECART)) return { ok: false, raison: 'Trop près d\'un autre arbre : laisse-lui de la place.' };
   const ch = T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
   if (ch !== '#' && ch !== '+') return { ok: false, raison: 'On ne bâtit que sur l\'herbe : pas sur les chemins, l\'eau, les arbres, les rochers ni les bâtiments.' };
   if ((state.potager.parcelles || []).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
@@ -183,6 +187,11 @@ export function poserBloc(state, sorte, tile) {
   if (!st.ok) return fail(st.raison);
   const s = sorteDe(sorte);
   if (s.objet) takeItem(state, s.objet, 1);
+  // un arbre fruitier : planté dans le sol, il n'est pas un bloc (orchard.js)
+  if (s.arbre) {
+    const tree = planterArbre(state, s.arbre, tile);
+    return { ok: true, sorte, case: tile, arbre: tree.id };
+  }
   if (s.sur) {
     if (!state.blocsDessus || typeof state.blocsDessus !== 'object') state.blocsDessus = {};
     state.blocsDessus[tile] = sorte;

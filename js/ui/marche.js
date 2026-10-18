@@ -14,6 +14,7 @@ import {
 import { isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { buyFurniture, furnitureCount, furnitureMax } from '../engine/meubles.js';
 import { houseRepaired } from '../engine/depart.js';
+import { atelierOuvert } from '../engine/atelier.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { BUY_MAX, comptoirTab, comptoirTabChoisi, state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -249,8 +250,10 @@ export function renderComptoir(fenetre = false) {
   return fenetre ? body : `<h2>🧺 Marché</h2>${marketTabsHtml()}${body}`;
 }
 
-// Une graine dont la culture n'est pas encore débloquée (tournesol) n'est pas en vente.
+// Une graine dont la culture n'est pas encore débloquée (tournesol) n'est pas en vente. Un
+// jeune arbre (pommier, poirier) : sur la ferme générée seulement, une fois le Verger débloqué.
 function seedForSale(item) {
+  if (DATA.OBJETS[item].arbre) return atelierOuvert(state) && isUnlocked(state, 'verger');
   return !Object.keys(DATA.CULTURES).some((c) => seedItem(c) === item && !isUnlocked(state, c));
 }
 

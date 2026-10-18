@@ -189,7 +189,8 @@ test('Lot 12 : chaque production de la ferme se vend deux fois son ancien prix',
 test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni arbre doublé', () => {
   const it = DATA.OBJETS;
   for (const [id, def] of Object.entries(it)) {
-    if (def.categorie === 'graine') assertEqual(def.prix, 1, `${id} : graine inchangée`);
+    // (les jeunes arbres de la ferme générée ont le prix des arbres du Verger)
+    if (def.categorie === 'graine' && !def.arbre) assertEqual(def.prix, 1, `${id} : graine inchangée`);
   }
   assertEqual(it.graine_tournesol.prix, 1, 'le tournesol récolte des graines : non doublées');
   assertEqual([it.conserve.prix, it.huile.prix], [3, 4]); // la farine, elle, double au Lot 13

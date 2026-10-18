@@ -1,5 +1,5 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
-# mur en pierre, la porte, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, l'Atelier et les
+# mur en pierre, la porte, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, les jeunes arbres, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
@@ -19,6 +19,8 @@ PALETTE = {
     'm': '#1e2833', 'n': '#64707e', 'p': '#9aa8b8', 'q': '#dfe7ef',
     # terreau
     'z': '#2e1e12', 'Z': '#4e3420',
+    # poire
+    'P': '#5a6a14', 'i': '#b8c83a', 'I': '#e4ec7a',
     # baies (du plus clair au plus sombre)
     'h': '#ff9c8c', 'r': '#e8463e', 'x': '#c22a30', 'X': '#921c26', 'N': '#5e121a',
 }
@@ -232,6 +234,44 @@ ICONS = {
         'keeeeeeeeeeeeeek',
         'kTTTTTTTTTTTTTTk',
         'kkkkkkkkkkkkkkkk',
+    ],
+    # jeune pommier : un petit arbre en motte, une pomme
+    '🌱‍🍎': [
+        '................',
+        '.......GG.......',
+        '.....GGlLGG.....',
+        '....GlLLlgLG....',
+        '...GlLlggNhlG...',
+        '...GgllgGrNgG...',
+        '....GgggGGxG....',
+        '.....GGtGGG.....',
+        '.......tk.......',
+        '.......tk.......',
+        '.......tk.......',
+        '....uuutkuuu....',
+        '...uZzZzZzZzu...',
+        '...uzZzzZzZzu...',
+        '....uuuuuuuu....',
+        '................',
+    ],
+    # jeune poirier : un petit arbre en motte, une poire
+    '🌱‍🍐': [
+        '................',
+        '.......GG.......',
+        '.....GGlLGG.....',
+        '....GlLLlgLG....',
+        '...GlLlggPIlG...',
+        '...GgllgGiPgG...',
+        '....GgggGGiG....',
+        '.....GGtGGG.....',
+        '.......tk.......',
+        '.......tk.......',
+        '.......tk.......',
+        '....uuutkuuu....',
+        '...uZzZzZzZzu...',
+        '...uzZzzZzZzu...',
+        '....uuuuuuuu....',
+        '................',
     ],
     # l'Atelier : un marteau, fer en haut, manche de bois
     '🔨': [

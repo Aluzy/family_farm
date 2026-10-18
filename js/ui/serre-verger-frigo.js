@@ -11,6 +11,7 @@ import {
   treeAge, treeAt, treeNextHarvest, treeStageName,
 } from '../engine/orchard.js';
 import { canAfford } from '../engine/stamina.js';
+import { atelierOuvert } from '../engine/atelier.js';
 import { techAuto } from '../engine/techtree.js';
 import { formatCoins, formatNumber, formatWh } from '../engine/format.js';
 import { setVergerCase, state, vergerCase } from './store.js';
@@ -112,6 +113,17 @@ function treeChoice() {
 export function renderVerger() {
   const v = state.verger;
   const V = DATA.VERGER;
+  // la ferme générée : pas d'emplacements, les arbres plantés dans le sol (étape 5b-8)
+  if (atelierOuvert(state)) {
+    const auto = techAuto(state, 'recolte', 'verger');
+    return `
+      <div class="section-head">
+        <h3>${artIcon('verger')}Arbres fruitiers · ${v.arbres.length}</h3>
+        <span class="chips">${auto ? autoChip('verger', 'Les arbres en fruits sont cueillis la nuit (Récolte du verger)') : ''}${helpBtn('verger')}</span>
+      </div>
+      <p class="muted">Achète de jeunes arbres au Marché (rayon Graines), puis plante-les dans le sol, dehors, avec la case ${DATA.ATELIER.ICONE}. Un appui sur un arbre en fruits le cueille.</p>
+      ${v.arbres.length ? `<div class="plots">${v.arbres.map(treeCard).join('')}</div>` : ''}`;
+  }
   if (!v.construit) {
     const cost = V.PRIX_CONSTRUCTION;
     return `

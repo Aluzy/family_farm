@@ -100,6 +100,7 @@ function freedRockTiles(state) {
 // `libres` : freedRockTiles(state), à passer quand on teste beaucoup de tuiles d'un coup.
 export function isArable(tile, state, libres) {
   if (state && state.blocs && state.blocs[tile]) return false;     // un bloc posé (la ferme générée)
+  if (state && farmSeed(state) !== null && state.verger.arbres.some((t) => t.case === tile)) return false;   // un arbre planté (idem)
   const ch = terrainChar(tile, farmTerrain(state));
   return ch === '#' || (ch === 'o' && (libres || freedRockTiles(state)).has(tile));
 }

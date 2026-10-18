@@ -285,7 +285,13 @@ export function stageModel() {
   // Version 1.13 : chaque case achetée du Verger, arbre ou emplacement libre, avec son
   // dessin (0 libre, 1 jeune arbre, 2 arbuste, 3 arbre, 4 pommier et 5 poirier en fruits).
   const arbres = [];
-  if (isUnlocked(state, 'verger') && state.verger.construit) {
+  // (la ferme générée : chaque arbre planté dans le sol, sa case de la carte, sans emplacement)
+  if (atelierOuvert(state)) {
+    for (const t of state.verger.arbres) {
+      const st = treeStage(state, t);
+      arbres.push({ case: t.case, id: t.id, fruits: !!t.fruits, dessin: st < 3 ? st + 1 : t.espece === 'poirier' ? 5 : 4, sol: true });
+    }
+  } else if (isUnlocked(state, 'verger') && state.verger.construit) {
     for (let c = 0; c < Math.min(state.verger.places, STAGE_ARBRES); c++) {
       const t = treeAt(state, c);
       if (!t) { arbres.push({ case: c, libre: true, dessin: 0 }); continue; }

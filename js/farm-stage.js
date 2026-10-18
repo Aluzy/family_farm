@@ -236,6 +236,7 @@
               couchage: () => this.bedSpot(),
               foyer: () => this.homeDoor(),
               cle: (lieu) => { const k = this.keyBlockOf(lieu); return k ? { x: k.x, y: k.y + 6 } : null; },
+              arbre: (c) => (this.ctx.carte ? this.treeRect(c) : null),
             });
           } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
         }
