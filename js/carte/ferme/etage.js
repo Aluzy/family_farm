@@ -10,6 +10,8 @@
  * à l'étage. Ce qu'on voit dépend d'où est le personnage (stepEtage) :
  *   - dehors : tous les niveaux, l'un sur l'autre (le bâtiment et son étage) ;
  *   - dans le bâtiment, en bas : l'étage s'efface (ETAGE.transparent) ;
+ *   - en mode Construire, la vue suit le niveau où l'on construit (modèle.vueNiveau : 0, comme
+ *     en bas dans le bâtiment ; 1, comme à l'étage), où que soit le personnage ;
  *   - à l'étage : un voile sombre couvre la ferme (ETAGE.voile) ; devant lui, l'étage, les
  *     blocs du bas sous l'emprise, effacés (on voit en transparence les murs juste en
  *     dessous), et le personnage (etageZ : resserrés juste au-dessus du voile, lui-même
@@ -39,8 +41,11 @@
     },
 
     // L'étage du modèle, et le niveau où l'on est : dessiné (remonté de ETAGE.dy), ou ôté.
-    syncEtage(etage, niveau) {
+    syncEtage(etage, niveau, vueNiveau) {
       const on = !!(etage && etage.emprise.length);
+      // (en mode Construire : la vue montre le niveau où l'on construit)
+      const vn = on && vueNiveau != null ? vueNiveau : null;
+      if (vn !== (this.vueNiveau === undefined ? null : this.vueNiveau)) { this.vueNiveau = vn; this.etageVue = null; }
       const n = on && niveau ? 1 : 0;
       const cle = on ? JSON.stringify(etage) : '';
       if (cle === this.etageCle && n === (this.niveau || 0)) return;
@@ -104,7 +109,7 @@
       const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const cols = this.grid.cols;
       const dedans = p && this.etageEmprise.has(Math.floor((p.y - 1) / T) * cols + Math.floor(p.x / T));
-      const vue = this.niveau ? 'haut' : dedans ? 'bas' : 'dehors';
+      const vue = this.vueNiveau != null ? (this.vueNiveau ? 'haut' : 'bas') : this.niveau ? 'haut' : dedans ? 'bas' : 'dehors';
       if (vue !== this.etageVue) {
         this.etageVue = vue;
         const haut = vue === 'bas' ? E.transparent : 1, z = vue === 'haut';
@@ -162,9 +167,11 @@
       return this.niveau ? this.etageZ((Math.floor((y - 1) / T) + 1) * T + 0.8) : y;
     },
 
-    // Un point touché, ramené au sol de l'étage où l'on est (à l'étage : ETAGE.dy plus bas).
+    // Un point touché, ramené au sol du niveau montré (à l'étage : ETAGE.dy plus bas) ; en mode
+    // Construire, celui où l'on construit.
     etagePoint(wx, wy) {
-      return { x: wx, y: this.niveau ? wy + E.dy : wy };
+      const n = this.vueNiveau != null ? this.vueNiveau : this.niveau;
+      return { x: wx, y: n ? wy + E.dy : wy };
     },
 
     // Un escalier sous ce point (son bas, ou son haut à l'étage) : sa case, ou -1.

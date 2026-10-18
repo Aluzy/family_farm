@@ -215,7 +215,12 @@ Le Marché vend toujours les outils.
     sur l'autre ; dans le bâtiment en bas, l'étage en transparence ; à l'étage, un voile sombre
     couvre la ferme et, devant lui, les blocs du bas sous l'emprise en transparence (on voit les murs juste en dessous), et un mur de l'étage
     devant lui s'efface ;
-  - en mode Construire, à l'étage, le menu ne propose que les blocs de l'étage (murs, portes,
+  - en mode Construire, un petit carré au-dessus du menu montre le niveau où l'on construit
+    (0 au départ : le niveau où est le personnage). Un appui long l'ouvre : la liste des
+    niveaux, le plus haut en haut ; on glisse jusqu'à l'un et on lâche pour le choisir (un
+    appui simple ouvre ou ferme la liste ; `build-level-menu`, `build-level`). La vue de la
+    carte suit le niveau choisi, où que soit le personnage ;
+  - en mode Construire, à l'étage (niveau 1), le menu ne propose que les blocs de l'étage (murs, portes,
     paillasse, lanterne, barrière : `ETAGE_BLOCS`) ; ils n'ont pas d'autre effet que d'être là
     et d'arrêter le passage (`state.etage`) ;
   - l'escalier repris, ou la pièce ouverte, l'étage s'en va : ses blocs reviennent dans

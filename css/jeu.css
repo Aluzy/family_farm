@@ -1548,18 +1548,63 @@ body.has-stage { padding-bottom: 0; }
    droit de l'écran, dans le bois de la barre d'outils (même cadre, mêmes cases .tool-slot) :
    en haut les paillasses et ✕, puis deux colonnes de cases qui défilent (le bloc choisi
    encadré, comme l'outil en main ; un bloc qu'on n'a plus, pâli). */
-.build-bar {
+.build-dock {
   --slot: 52px;
   position: fixed;
   right: calc(6px + env(safe-area-inset-right));
   top: 50%;
   transform: translateY(-50%);
   z-index: var(--z-fab);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  max-height: calc(100% - 180px);
+  pointer-events: auto;
+}
+/* Le niveau de construction : un petit carré du même bois, au-dessus du menu (à droite) ; un
+   appui long ouvre au-dessus de lui la liste des niveaux, le plus haut en haut (on glisse
+   jusqu'à l'un, on lâche). */
+.build-level { position: relative; }
+.build-level-btn, .build-level-list {
+  box-sizing: border-box;
+  background: rgba(var(--wood-bg-rgb), 0.92);
+  border: 3px solid var(--color-earth);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--wood-glow);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+.build-level-btn {
+  width: calc(var(--slot) + 6px); height: calc(var(--slot) + 6px);
+  padding: 0;
+  font: inherit; font-size: 1.5rem; font-weight: 800; color: var(--color-earth);
+  cursor: pointer;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.build-level-list {
+  position: absolute; right: 0; bottom: 0;
+  display: flex; flex-direction: column; gap: 4px;
+  width: calc(var(--slot) + 6px);
+  padding: 3px;
+  z-index: 1;
+}
+.build-level-list[hidden] { display: none; }
+.build-level-item {
+  height: calc(var(--slot) - 6px);
+  padding: 0; border: 0; border-radius: 4px;
+  background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light);
+  font: inherit; font-size: 1.3rem; font-weight: 800; color: var(--color-earth);
+  cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.build-level-item.active { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--color-earth); }
+.build-level-item.survol { background: #fff1c9; box-shadow: inset 0 0 0 3px var(--color-sun); }
+.build-bar {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: min(calc(6 * (var(--slot) + 5px) + 44px), calc(100% - 180px));
+  min-height: 0;
+  max-height: calc(6 * (var(--slot) + 5px) + 44px);
   padding: 5px;
   background: rgba(var(--wood-bg-rgb), 0.88);
   border: 3px solid var(--color-earth);

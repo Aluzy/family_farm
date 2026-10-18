@@ -39,7 +39,7 @@ import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, couchages, etatEtable, etatPoulailler, piecesCloses, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
-import { buildChipHtml } from './chantier.js';
+import { buildChipHtml, niveauBati } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
@@ -500,8 +500,9 @@ function sprinklerSpots() {
   return list;
 }
 
-// L'étage pour la carte : { etage: { emprise, blocs, escaliers } ou null, niveau }. Plus
-// d'étage, ou le coucher : on redescend.
+// L'étage pour la carte : { etage: { emprise, blocs, escaliers } ou null, niveau, vueNiveau }.
+// vueNiveau : en mode Construire, le niveau où l'on construit (la vue le montre), sinon null.
+// Plus d'étage, ou le coucher : on redescend.
 function etageModel() {
   const emprise = etageEmprise(state);
   if ((!emprise.size || coucher || asleep(state) || stageInterior) && etageVue) setEtageVue(false);
@@ -509,6 +510,7 @@ function etageModel() {
   return {
     etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte })), escaliers: escaliers(state) },
     niveau: etageVue ? 1 : 0,
+    vueNiveau: buildMode && !stageInterior ? niveauBati() : null,
   };
 }
 

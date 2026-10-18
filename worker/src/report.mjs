@@ -82,6 +82,8 @@ export const GAME_ACTIONS = {
   'bloc': 'Poser ou reprendre un bloc (ferme générée)',
   'build-toggle': 'Construire : ouvrir ou ranger (ferme générée)',
   'build-pick': 'Construire : choisir un bloc (ferme générée)',
+  'build-level-menu': 'Construire : ouvrir la liste des niveaux (ferme générée)',
+  'build-level': 'Construire : choisir le niveau (ferme générée)',
   'etage-toggle': 'Monter ou descendre l\'escalier (ferme générée, essai)',
   'tool-use': 'Prendre ou ranger un outil (barre d\'outils)',
   'axe-toggle': 'Ranger la hache',
