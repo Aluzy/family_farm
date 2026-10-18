@@ -7,7 +7,7 @@
 import { assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import {
-  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
+  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap,
 } from '../../js/engine/index.js';
 
@@ -34,7 +34,7 @@ test('ferme générée : la même graine donne la même carte, une autre graine 
   assert(JSON.stringify(c.carte) !== JSON.stringify(a.carte), 'une autre graine, une autre carte');
   // d'une fois sur l'autre (pas seulement dans la même page) : toujours la même ferme pour
   // « test-1 » (à mettre à jour si le générateur change, ce qui change les fermes des parties)
-  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 11578]);
+  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 11603]);
   assertEqual([a.carte.width, a.carte.height, a.terrain.LARGEUR, a.terrain.HAUTEUR], [FERME_GENEREE.LARGEUR, FERME_GENEREE.HAUTEUR, 144, 114]);
 });
 
@@ -60,8 +60,8 @@ for (const graine of ['1', '2', '7', 'abc', '12345']) {
     assert(vus.has(porte), 'le chemin passe devant la place de la maison');
     assert(!objets.maison, 'pas de maison : le foyer se bâtit');
     // les bâtiments de la cour (provisoires) et les rochers, les arbres
-    for (const n of ['moulin', 'verger', 'silo', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
-    assert(!objets.poulailler && !objets.grange && !objets.serre, 'le Poulailler, l\'Étable et la Serre se bâtissent');
+    for (const n of ['moulin', 'verger', 'ville', 'zone_culture_1', 'zone_culture_2']) assert(objets[n], n);
+    assert(!objets.poulailler && !objets.grange && !objets.serre && !objets.silo, 'le Poulailler, l\'Étable, la Serre et le Silo se bâtissent');
     assert(!objets.puits && !objets.citerne, 'le puits et la citerne se bâtissent');
     assertEqual(Object.keys(terrain.ROCHERS).length, FERME_GENEREE.ROCHERS, 'les rochers');
     assert(Object.keys(terrain.ARBRES).length > 150, 'des bois');
@@ -424,4 +424,20 @@ test('ferme générée : un bac à semis posé dans une pièce close construit l
   assertEqual(s.serre.construit, false, 'reprise : plus de Serre');
   poserBloc(s, 'bac_semis', p.dedans);
   assertEqual([s.serre.construit, s.serre.parcelles[0].culture], [true, 'tomate']);
+});
+
+/* ---------- étape 5b : le Silo (pièce close + coffre à grain) ---------- */
+
+test('ferme générée : un coffre à grain posé dans une pièce close construit le Silo', () => {
+  const s = reach(chantier('g1'), 'silo');
+  s.silo = createInitialState(1).silo;
+  assertEqual(buildSilo(s).ok, false, 'pas en pièces');
+  setInv(s, { mur_pierre: 30, porte: 2, coffre_grain: 1, ble: 5 });
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assert(poserBloc(s, 'coffre_grain', p.dedans).ok);
+  assertEqual([s.silo.construit, siloCapacity(s) > 0, s.silo.ble, countItem(s, 'ble')], [true, true, 5, 0], 'le blé y entre');
+  reprendreBloc(s, p.dedans);
+  assertEqual([s.silo.construit, countItem(s, 'coffre_grain')], [false, 1]);
 });

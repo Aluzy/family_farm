@@ -98,6 +98,8 @@ export function storeWithSilo(state, item, qty) {
 // Le Silo est offert (construction à 0 dans DATA) mais reste à construire.
 export function buildSilo(state) {
   const s = state.silo;
+  // la ferme générée : un coffre à grain, fabriqué à l'Atelier, posé dans une pièce close (blocs.js)
+  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, le Silo se bâtit : une pièce close et un coffre à grain (Atelier).');
   return buildWith(state, 'silo', { built: s.construit, deja: 'Le Silo est déjà construit.', cost: DATA.SILO.PRIX_CONSTRUCTION, libelle: 'Réparation du Silo' }, () => {
     s.construit = true;
     s.niveau = 1;
