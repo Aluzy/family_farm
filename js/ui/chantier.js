@@ -11,13 +11,15 @@ import { DATA } from '../engine/catalog.js';
 import { atelierConstruit, atelierOuvert } from '../engine/atelier.js';
 import { blocAt, blocDessus, blocsEnMain, couchages, poserBloc, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
-import { buildMode, setBuildMode, state } from './store.js';
+import { buildMode, etageVue, setBuildMode, setEtageVue, state } from './store.js';
+import { ETAGE_BLOCS, etageEmprise, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 
-const SORTES = () => Object.keys(DATA.ATELIER.BLOCS);
+// (à l'étage : seulement ceux qui s'y posent)
+const SORTES = () => (etageVue ? ETAGE_BLOCS : Object.keys(DATA.ATELIER.BLOCS));
 const CONSEIL_MS = 2000;   // le rappel à l'ouverture du mode
 
 // Le mode Construire est-il possible ? (la ferme générée, l'Atelier construit)
@@ -48,7 +50,8 @@ export function buildChipHtml() {
     return `<button type="button" class="tool-slot build-slot${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-pick" data-sorte="${s}" aria-pressed="${on}" aria-label="${nom} : ${n}" title="${nom} : ${n}"><span aria-hidden="true">${icone(s)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
   }).join('');
   const dodo = couchages(state).length;
-  return `<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-head"><span class="num" title="Paillasses dans une pièce close">🛏 ${dodo}</span><button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><div class="build-bar-grid">${blocs}</div></div>`;
+  const tete = etageVue ? '<span title="À l\'étage : on bâtit au-dessus de la pièce de l\'escalier">🪜 Étage</span>' : `<span class="num" title="Paillasses dans une pièce close">🛏 ${dodo}</span>`;
+  return `<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-head">${tete}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><div class="build-bar-grid">${blocs}</div></div>`;
 }
 
 registerActions({
@@ -61,6 +64,16 @@ registerActions({
     notify(`${DATA.ATELIER.ICONE} Touche une case pour poser, un bloc pour le reprendre.`, { duree: CONSEIL_MS });
     refresh();
   },
+  // L'escalier (un essai, js/engine/etage.js) : monter à l'étage, ou en redescendre.
+  'etage-toggle': () => {
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    if (!etageVue && !etageEmprise(state).size) return;
+    setEtageVue(!etageVue);
+    // (le bloc en main : un de ceux qui se posent là où l'on arrive)
+    if (buildMode && !SORTES().includes(buildMode)) setBuildMode(SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
+    notify(etageVue ? '🪜 À l\'étage : touche l\'escalier pour redescendre.' : '🪜 En bas.', { duree: CONSEIL_MS });
+    refresh();
+  },
   'build-pick': (target) => {
     if (!buildMode) return;
     setBuildMode(target.dataset.sorte);
@@ -71,6 +84,14 @@ registerActions({
     if (!buildMode) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const c = Number(target.dataset.case);
+    // à l'étage : poser, reprendre un bloc de l'étage
+    if (etageVue) {
+      const r = etageBlocs(state)[c] ? reprendreEtage(state, c) : poserEtage(state, buildMode, c);
+      if (!r.ok) { notify(r.error); return; }
+      persistState();
+      refresh();
+      return;
+    }
     // (la pompe se pose sur le puits : un appui sur un puits libre la pose, ne reprend pas le puits)
     const sur = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sur;
     const surLibre = sur && blocAt(state, c) === sur && !blocDessus(state, c);

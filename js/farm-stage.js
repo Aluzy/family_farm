@@ -235,6 +235,8 @@
               has: (key) => this.has(key),
               // la ferme générée : les blocs où l'on ne passe pas, et la paillasse où il dort
               blocks: () => this.blockCells(),
+              // à l'étage, il passe devant son voile
+              depth: () => (this.etageDepth ? this.etageDepth() : 0),
               couchage: () => this.bedSpot(),
               foyer: () => this.homeDoor(),
               cle: (lieu) => { const k = this.keyBlockOf(lieu); return k ? { x: k.x, y: k.y + 6 } : null; },
@@ -521,6 +523,9 @@
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
         // la ferme générée, en mode Construire : la case touchée (poser, reprendre), rien d'autre
         if (!this.room && this.ctx.lastModel && this.ctx.lastModel.bati) { const c = this.tileAtPoint(wx, wy); return c >= 0 ? { bati: c } : null; }
+        // un escalier (un essai, js/carte/ferme/etage.js) : monter, descendre ; à l'étage, rien d'autre
+        if (this.escalierAt && this.escalierAt(wx, wy) >= 0) return { etage: true };
+        if (this.niveau) return null;
         const pile = !this.room && !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
         // la ferme générée : une pierre, un bout de bois, une herbe à ramasser à la main
@@ -630,6 +635,7 @@
         if (hit.window) { this.ctx.bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { K.vibre('houe'); this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         if (hit.bati !== undefined) { this.ctx.bridge.act('bloc', { case: hit.bati }); return; }
+        if (hit.etage) { this.ctx.bridge.act('etage-toggle', {}); return; }
         if (hit.gather) { this.gather(hit.gather); return; }
         if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.mine) { this.mine(hit.mine); return; }

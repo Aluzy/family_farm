@@ -320,6 +320,9 @@
 
     // Les cases que les blocs ferment au passage (murs, Atelier), et les arbres plantés.
     blockCells() {
+      // (à l'étage : seule l'emprise, sans ses murs ; js/carte/ferme/etage.js)
+      const haut = this.etageCells ? this.etageCells() : null;
+      if (haut) return haut;
       const out = [];
       for (const e of (this.blocks || new Map()).values()) if (BLOCS_CARTE.bloquent.includes(e.sorte)) out.push(e.case);
       // les arbres plantés dans le sol : leur tronc

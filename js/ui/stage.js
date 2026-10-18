@@ -22,7 +22,7 @@ import { tuilesChemins } from '../engine/ferme-generee.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
 import {
-  activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS,
+  activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
 } from './store.js';
 import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
@@ -40,6 +40,7 @@ import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, couchages, etatEtable, etatPoulailler, piecesCloses, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml } from './chantier.js';
+import { escaliers, etageBlocs, etageEmprise } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { runAction } from './events.js';
@@ -443,6 +444,8 @@ export function stageModel() {
     // le four (son bloc) cuit-il ? ses flammes bougent (js/carte/ferme/chantier.js, stepFires)
     fourAllume: !!(state.stations.four && state.stations.four.construit && state.stations.four.tache),
     bati: buildMode && !stageInterior ? { sorte: buildMode } : null,
+    // l'étage (un essai, js/engine/etage.js) et le niveau où est le personnage (0 : en bas)
+    ...etageModel(),
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
     couchages: couchages(state),
     foyer: foyerPorte(),
@@ -495,6 +498,18 @@ function sprinklerSpots() {
   }
   sprinklerCache = { key, list };
   return list;
+}
+
+// L'étage pour la carte : { etage: { emprise, blocs, escaliers } ou null, niveau }. Plus
+// d'étage, ou le coucher : on redescend.
+function etageModel() {
+  const emprise = etageEmprise(state);
+  if ((!emprise.size || coucher || asleep(state) || stageInterior) && etageVue) setEtageVue(false);
+  if (!emprise.size) return { etage: null, niveau: 0 };
+  return {
+    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte })), escaliers: escaliers(state) },
+    niveau: etageVue ? 1 : 0,
+  };
 }
 
 // Le robot (récolte et semis automatiques) pour la carte : null sans lui ; { etat: 'repos' }

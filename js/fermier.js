@@ -165,6 +165,7 @@
     const s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1).setVisible(false);
     let x = 0, y = 0, face = 'bas', flip = false, shown = false, alpha = 0, fade = 0;
     let lastPos = null;             // dernière position donnée par pos()
+    const dz = () => (o.depth ? o.depth() : 0);   // à l'étage : devant son voile
     function frame(name) {
       const k = F[name];
       if (k !== undefined) s.setFrame(k);
@@ -184,11 +185,11 @@
         roule += Math.hypot(x - rx, y - ry);
         const r = selle.place(x, y, face, flip, roule, alpha);
         frame(r.image);
-        s.setPosition(Math.round(x + r.dx), Math.round(y - r.dy)).setFlipX(flip).setDepth(y).setAlpha(alpha);
+        s.setPosition(Math.round(x + r.dx), Math.round(y - r.dy)).setFlipX(flip).setDepth(y + dz()).setAlpha(alpha);
       } else {
         if (selle) selle.cache();
         frame(name);
-        s.setPosition(Math.round(x), Math.round(y)).setFlipX(flip).setDepth(y).setAlpha(alpha);
+        s.setPosition(Math.round(x), Math.round(y)).setFlipX(flip).setDepth(y + dz()).setAlpha(alpha);
       }
       rx = x; ry = y;
     }
@@ -235,6 +236,8 @@
           path = findPath(x, y, tx, ty);
           const len = path ? pathLength(x, y, path) : 0;
           if (path && opts && opts.max && len > opts.max && !reduced()) skipAlong(path, len - opts.max);
+          // (à l'étage, sans chemin : il ne saute pas hors de l'étage, il reste où il est)
+          else if (!path && dz() > 0) path = [];
           else if (!path || reduced() || len > (opts && opts.far ? TELEPORT_FAR : TELEPORT)) { x = tx; y = ty; path = []; }
         },
         step(dt) {

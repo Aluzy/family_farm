@@ -42,4 +42,5 @@ export * from './compta.js';
 export * from './outils.js';
 export * from './atelier.js';
 export * from './blocs.js';
+export * from './etage.js';
 export * from './transition.js';

@@ -153,8 +153,11 @@
   // px au-dessus du bas de la paillasse.
   const BLOCS_CARTE = {
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
-    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66 },
+    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66, escalier: 69 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
+    // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`), un voile
+    // sombre sur toute la ferme (`voile`, `alpha`), le tout à la profondeur `depth`
+    etage: { haut: 70, depth: 500000, voile: 0x0d1018, alpha: 0.62 },
     // les murs et la porte (d'un mur horizontal), une case plus hauts (assets/murs_hauts.png,
     // comme les maisons de la transition, scripts/carte/blocs.py murs_hauts : les 16 murs
     // raccordés, `murs` + masque, puis la porte) ; un mur devant quelqu'un (il le cache)
@@ -176,7 +179,7 @@
     },
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
-    plats: ['paillasse'], bloquent: ['mur_pierre', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js)
     ailleurs: ['puits', 'citerne', 'station_robot'],

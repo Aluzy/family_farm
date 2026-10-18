@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { blocGid } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, ramassables, ramasser, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
+  isArable, migrate, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -726,4 +726,29 @@ test('ferme générée : la station du robot est un bloc à poser dehors ; sans 
   const w = migrate({ ...JSON.parse(JSON.stringify(s)), version: 40 });
   assertEqual([w.version, countItem(w, 'station_robot')], [STATE_VERSION, 1]);
   void robotCapacity;
+});
+
+test('ferme générée (essai) : l\'escalier ouvre un étage au-dessus de sa pièce close ; on y pose des blocs', () => {
+  const s = chantier('etage1');
+  setInv(s, { mur_pierre: 40, porte: 4, escalier: 1, paillasse: 2 });
+  const z = terrainLibre(s, 6, 5), p = murs(z, 6, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assertEqual(etageEmprise(s).size, 0, 'pas d\'escalier : pas d\'étage');
+  assert(poserBloc(s, 'escalier', p.dedans).ok, 'l\'escalier, dans la pièce close');
+  assertEqual([escaliers(s), blocBloque(s, p.dedans)], [[p.dedans], false], 'il se traverse');
+  const E = etageEmprise(s);
+  assertEqual(E.size, 6 * 5, 'la pièce et ses murs');
+  const coin = (z.r) * z.W + z.c;
+  assertEqual(poserEtage(s, 'mur_pierre', p.dedans).ok, false, 'pas sur le haut de l\'escalier');
+  assertEqual(poserEtage(s, 'four', p.dedans + 1).ok, false, 'pas n\'importe quel bloc');
+  assertEqual(poserEtage(s, 'mur_pierre', coin - 1).ok, false, 'pas hors de l\'emprise');
+  assert(poserEtage(s, 'mur_pierre', coin).ok, 'au-dessus d\'un mur');
+  assert(poserEtage(s, 'paillasse', p.dedans + 2).ok);
+  assertEqual(poserEtage(s, 'mur_pierre', coin).ok, false, 'déjà un bloc');
+  assertEqual([Object.keys(etageBlocs(s)).length, countItem(s, 'paillasse')], [2, 1]);
+  assert(reprendreEtage(s, coin).ok);
+  // l'escalier repris : l'étage s'en va, ses blocs reviennent
+  reprendreBloc(s, p.dedans);
+  assertEqual([Object.keys(etageBlocs(s)).length, countItem(s, 'paillasse'), countItem(s, 'escalier')], [0, 2, 1]);
 });

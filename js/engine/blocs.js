@@ -13,6 +13,7 @@ import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
+import { rangerEtage } from './etage.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -326,6 +327,7 @@ export function poserBloc(state, sorte, tile) {
   // un four, une cuisinière : la station est là (étape 5b, la maison)
   if (s.station && state.stations[s.station]) openStation(state, s.station);
   majPoulailler(state);
+  rangerEtage(state);   // (un mur qui coupe la pièce de l'escalier : l'étage rétrécit)
   return { ok: true, sorte, case: tile };
 }
 
@@ -351,6 +353,7 @@ export function reprendreBloc(state, tile, opts) {
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)
   if (s && s.station && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
   majPoulailler(state);
+  rangerEtage(state);   // (l'escalier repris, la pièce ouverte : l'étage s'en va)
   return { ok: true, sorte, case: tile };
 }
 
