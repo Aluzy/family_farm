@@ -155,6 +155,11 @@
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
     frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
+    // les murs et la porte (d'un mur horizontal), une case plus hauts (assets/murs_hauts.png,
+    // comme les maisons de la transition, scripts/carte/blocs.py murs_hauts : les 16 murs
+    // raccordés, `murs` + masque, puis la porte) ; un mur devant quelqu'un (il le cache)
+    // s'efface jusqu'à `alpha`, à `vitesse` par seconde (chantier.js stepMurs)
+    hauts: { key: 'murs_hauts', file: 'murs_hauts.png', frame: { frameWidth: 16, frameHeight: 40 }, murs: 0, porte: 16, alpha: 0.4, vitesse: 4 },
     // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
     barrieres: 50,
     // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour

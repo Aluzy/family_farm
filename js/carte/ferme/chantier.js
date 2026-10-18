@@ -55,17 +55,17 @@
         const at = new Map((list || []).map((b) => [b.case, b.sorte]));
         for (const b of list || []) {
           seen.add(b.case);
-          const e = B.get(b.case), frame = this.wallFrame(b, at, cols);
+          const e = B.get(b.case), frame = this.wallFrame(b, at, cols), [key, f] = this.hautFrame(frame);
           if (e && e.sorte === b.sorte) {
             // (les flammes du four, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
-            if (e.img.frame.name !== frame && b.sorte !== BLOCS_CARTE.feu.sorte && b.sorte !== 'lanterne') { e.img.setFrame(frame); changed = true; }
+            if ((e.img.frame.name !== f || e.img.texture.key !== key) && b.sorte !== BLOCS_CARTE.feu.sorte && b.sorte !== 'lanterne') { e.img.setTexture(key, f); changed = true; }
             continue;
           }
           if (e) e.img.destroy();
           const x = (b.case % cols) * T + T / 2, y = (Math.floor(b.case / cols) + 1) * T;
           const plat = BLOCS_CARTE.plats.includes(b.sorte);
           // (le puits et la citerne : leurs propres images, posées par syncWell et syncTank)
-          const img = this.add.image(x, y, BLOCS_CARTE.key, frame).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
+          const img = this.add.image(x, y, key, f).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
           B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img });
           changed = true;
         }
@@ -75,6 +75,7 @@
         this.sunDirty = true;
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       }
+      this.bati = !!bati;
       this.drawRooms(bati ? pieces : null);
     },
 
@@ -235,6 +236,50 @@
       this.pathOver = tuiles;
       this.pathCells = cases;
       if (changees.size && this.mapRaw) this.repaintCells(changees);
+    },
+
+    // L'image d'un bloc de blocs.png, ou celle de sa version haute (un mur, la porte d'un mur
+    // horizontal : BLOCS_CARTE.hauts, si la planche est là) : [clé, image].
+    hautFrame(frame) {
+      const H = BLOCS_CARTE.hauts;
+      if (!this.has(H.key)) return [BLOCS_CARTE.key, frame];
+      if (frame >= BLOCS_CARTE.murs && frame < BLOCS_CARTE.murs + 16) return [H.key, H.murs + frame - BLOCS_CARTE.murs];
+      if (frame === BLOCS_CARTE.frames.porte) return [H.key, H.porte];
+      return [BLOCS_CARTE.key, frame];
+    },
+
+    // Les murs hauts devant quelqu'un (le personnage, la famille : derrière eux, à une ou deux
+    // cases au-dessus de leur pied) s'effacent un peu, pour qu'on le voie ; les autres
+    // reviennent. En mode Construire, tous s'effacent (on voit les cases qu'ils cachent). Dans
+    // un intérieur, rien (la carte est cachée).
+    stepMurs(dt) {
+      const B = this.blocks, H = BLOCS_CARTE.hauts;
+      if (!B || !B.size || this.room) return;
+      const cols = this.grid.cols, devant = new Set();
+      const cache = (x, y) => {
+        const gx = Math.floor(x / T), gy = Math.floor((y - 1) / T);
+        for (let dy = 1; dy <= 2; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const e = B.get((gy + dy) * cols + gx + dx);
+            // (le personnage fait ±6 px de large)
+            if (e && e.img.texture.key === H.key && Math.abs(e.x - x) < T / 2 + 6) devant.add(e.img);
+          }
+        }
+      };
+      const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+      if (p) cache(p.x, p.y);
+      if (this.family) for (const m of this.family.info()) if (m.visible) cache(m.x, m.y);
+      if (this.bati) for (const e of B.values()) if (e.img.texture.key === H.key) devant.add(e.img);
+      if (!this.mursEfface) this.mursEfface = new Set();
+      for (const i of devant) this.mursEfface.add(i);
+      const pas = H.vitesse * dt;
+      for (const i of this.mursEfface) {
+        if (!i.active) { this.mursEfface.delete(i); continue; }
+        const but = devant.has(i) ? H.alpha : 1;
+        const a = i.alpha < but ? Math.min(but, i.alpha + pas) : Math.max(but, i.alpha - pas);
+        i.setAlpha(a);
+        if (a === 1 && !devant.has(i)) this.mursEfface.delete(i);
+      }
     },
 
     // L'image du bloc b (at : case -> sorte de tous les blocs). Un mur : celle de ses voisins
