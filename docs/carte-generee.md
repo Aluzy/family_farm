@@ -279,8 +279,11 @@ parties.
 - **Le livreur** (`js/carte/ville/livreur.js` ; le plan : `LIVREUR`, `js/engine/transition.js`) :
   au-dessus de l'arrêt de bus, son habitation (il vit seul), l'entrepôt et, entre les deux, le
   parking de son triporteur électrique (la carte de Tiled leur laisse la place : `RESERVE`,
-  `PARKING`, `scripts/ville/transition.py`). Devant chaque maison, au bord du chemin, une caisse
-  de collecte : chaque soir, la famille y met ce qu'elle vend (le bois, les légumes en trop).
+  `PARKING`, `scripts/ville/transition.py`). Devant chaque maison, dans l'herbe au bord du
+  chemin (une case d'herbe entre elle et l'allée), une caisse de collecte : chaque soir, la
+  famille y met ce qu'elle vend (le bois, les légumes en trop).
+  - Le triporteur ne roule qu'au milieu du chemin, puis de la route (`roule` : un point par
+    colonne, d'après `plan.milieu`) ; il s'arrête au milieu du chemin, devant chaque caisse.
   - À 6 h, il se lève, va au parking, monte sur son triporteur et part vers la ferme en
     s'arrêtant à chaque caisse pleine (de l'est à l'ouest), dont il prend les marchandises ; puis
     il fait demi-tour jusqu'au marché de la ville, au bout de la route.

@@ -162,13 +162,20 @@ function tirer(graine) {
   maisons.sort((a, b) => a.x - b.x).forEach((m, i) => { m.nom = 'maison_' + (i + 1); });
 
   // ----- la caisse de collecte de chaque maison (le livreur y prend chaque matin ce que la
-  // famille vend : js/engine/voisins.js) : au bord du chemin, au pied de l'allée, à côté d'elle ;
-  // le triporteur s'arrête sur le chemin, devant elle
+  // famille vend : js/engine/voisins.js) : dans l'herbe, au bord du chemin, près de l'allée (une
+  // case d'herbe entre elles) : la première case toute en herbe en s'éloignant du chemin ; le
+  // triporteur s'arrête au milieu du chemin, devant elle
+  const herbe = (x, y) => x >= 0 && x < X && y >= 1 && y < H - 1 && !coins[y][x] && !coins[y][x + 1] && !coins[y + 1][x] && !coins[y + 1][x + 1];
   for (const m of maisons) {
     const nord = m.sens === 'bas';
-    for (const cx of [m.porte.x + 2, m.porte.x - 1]) {
-      const cy = cx >= 0 && cx < X ? (nord ? milieu[cx] - 2 : milieu[cx] + 1) : -1;
-      if (cy < 0 || maisons.some((o) => cx >= o.x - 1 && cx <= o.x + o.w && cy >= o.y - 1 && cy <= o.y + o.h)) continue;
+    for (const cx of [m.porte.x + 3, m.porte.x - 2]) {
+      if (cx < 0 || cx >= X) continue;
+      let cy = -1;
+      for (let k = 2; k <= 5 && cy < 0; k++) {
+        const y = nord ? milieu[cx] - k : milieu[cx] + k - 1;
+        if (herbe(cx, y)) cy = y;           // (posée avant les arbres, la mare, les barrières)
+      }
+      if (cy < 0 || maisons.some((o) => cx >= o.x && cx < o.x + o.w && cy >= o.y && cy < o.y + o.h)) continue;
       m.caisse = { x: cx * 16 + 8, y: cy * 16 + 14, arret: { x: cx * 16 + 8, y: milieu[cx] * 16 } };
       prend(cx, cy);
       break;
@@ -229,7 +236,7 @@ function tirer(graine) {
       for (let i = x; i < x + l && ok; i++) for (let j = fy - 1; j <= fy; j++) if (pris[j][i] && !(j >= t - 2 && j <= t + 1)) ok = false;
       // (au-dessus du chemin, les cases sont prises par lui : on vérifie seulement les allées)
       // (ni sur une allée, ni sur la caisse de collecte à côté d'elle)
-      for (const m of maisons) if (m.porte.x + 2 >= x && m.porte.x - 1 <= x + l - 1) ok = false;
+      for (const m of maisons) if (m.porte.x + 3 >= x && m.porte.x - 2 <= x + l - 1) ok = false;
       if (ok) { tampons.push({ nom, x, y: fy - 1 }); prend(x, fy - 1, l, 2); }
     }
     x += Math.max(1, l);

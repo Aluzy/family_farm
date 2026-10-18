@@ -64,9 +64,10 @@
       const lit = maison.litsCases[0];
       const s = this.add.sprite(lit.x, lit.y, key, this.npcFrame('idle_bas_0')).setOrigin(0.5, 30 / 32);
       const shadow = this.add.ellipse(lit.x, lit.y, 11, 4, 0x1e1a18, 0.3);
-      const a = (((this.map.getObjectLayer('arrivees') || {}).objects) || []).find((o) => o.name === 'ville');
+      // (le marché : au bout de la route, à l'est, au milieu de la chaussée)
+      const M = D.plan.milieu, a = { x: this.map.widthInPixels - 10, y: M[M.length - 1] * T };
       this.livreur = {
-        f, mb, s, shadow, selle, maison, lit, parking: L.parking, marche: a ? { x: a.x - 8, y: a.y } : null,
+        f, mb, s, shadow, selle, maison, lit, parking: L.parking, marche: a,
         x: lit.x, y: lit.y, path: [], face: 'bas', flip: false, walked: 0, etat: 'dort', t: 0, monte: false, gare: true,
         arrets: [], livre: null,
       };
@@ -86,6 +87,26 @@
       const l = n.maison.libres;
       const c = l[Math.floor(Math.random() * l.length)];
       return { x: c.x * T + T / 2, y: c.y * T + T - 2 };
+    },
+
+    // Le milieu du chemin à l'abscisse x (px) : le plan (milieu, colonne par colonne) à l'ouest,
+    // puis le bout de chemin de l'est et la route, qui le prolongent tout droit.
+    milieuChemin(x) {
+      const M = this.transition.plan.milieu, c = Math.round(x / T);
+      return M[Math.max(0, Math.min(M.length - 1, c))] * T;
+    },
+
+    // En triporteur, il ne roule qu'au milieu du chemin (puis de la route) : de là où il est
+    // jusqu'au point `p` (sur le chemin), colonne par colonne ; s'il n'est pas sur le chemin (au
+    // parking), il le rejoint d'abord tout droit.
+    roule(n, p) {
+      const pts = [];
+      if (Math.abs(n.y - this.milieuChemin(n.x)) > 2) pts.push({ x: n.x, y: this.milieuChemin(n.x) });
+      const s = Math.sign(p.x - n.x) || 1;
+      for (let x = (Math.floor(n.x / T) + (s > 0 ? 1 : 0)) * T; s > 0 ? x < p.x : x > p.x; x += s * T) pts.push({ x, y: this.milieuChemin(x) });
+      pts.push({ x: p.x, y: p.y });
+      n.path = pts;
+      n.t = 0;
     },
 
     va(n, p) {
@@ -111,9 +132,9 @@
     // rien : il fait demi-tour vers le marché.
     prochainArret(n) {
       const c = this.caisses.filter((q) => q.pleine && !n.arrets.includes(q)).sort((a, b) => b.x - a.x)[0];
-      if (c) { n.etat = 'tournee'; n.cible = c; this.va(n, c.arret); return; }
+      if (c) { n.etat = 'tournee'; n.cible = c; this.roule(n, c.arret); return; }
       n.etat = 'versMarche';
-      this.va(n, n.marche);
+      this.roule(n, n.marche);
     },
 
     cacheLivreur(n, deja) {
@@ -200,7 +221,9 @@
           n.s.setVisible(true).setAlpha(1); n.shadow.setVisible(true).setAlpha(0.3);
           this.monteLivreur(n, n.marche);
           n.etat = 'retour';
-          this.va(n, n.parking);
+          // le long de la route jusqu'en face du parking, puis il y entre
+          this.roule(n, { x: n.parking.x, y: this.milieuChemin(n.parking.x) });
+          n.path.push({ x: n.parking.x, y: n.parking.y });
           return;
         case 'retour':
           // garé : il rentre chez lui
