@@ -10,6 +10,7 @@ import { blocGid } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
+  etatEtable, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -393,9 +394,9 @@ test('ferme générée : le puits, la pompe dessus, le panneau, la citerne et la
 
 /* ---------- étape 5b : le Poulailler (pièce close + nichoir) ---------- */
 
-// Un poulailler complet : une enceinte de 5 × 5 (porte sur le dehors en bas, porte à droite
+// Un poulailler (ou une étable) complet : une enceinte de 5 × 5 (porte sur le dehors en bas, porte à droite
 // vers l'enclos), un enclos de barrières de 3 × 3 cases à droite, appuyé sur le mur.
-function poulailler(s, z) {
+function enceinteEtEnclos(s, z) {
   const p = murs(z, 5, 5), W = z.W, at = (x, y) => (z.r + y) * W + z.c + x;
   const porteEnclos = at(4, 2);
   for (const t of p.murs) if (t !== porteEnclos) poserBloc(s, 'mur_pierre', t);
@@ -413,12 +414,12 @@ test('ferme générée : le Poulailler, une enceinte avec une porte dehors, un n
   s.poulailler.construit = false;
   assertEqual(buildPoulailler(s).ok, false, 'pas en pièces');
   setInv(s, { mur_pierre: 30, porte: 3, nichoir: 2, barriere: 20 });
-  const z = terrainLibre(s, 9, 6), p = poulailler(s, z);
+  const z = terrainLibre(s, 9, 6), p = enceinteEtEnclos(s, z);
   assertEqual(poserBloc(s, 'nichoir', p.dedans + 50).ok, false, 'hors d\'une pièce close');
   assert(poserBloc(s, 'nichoir', p.dedans).ok);
   // sans enclos : pas de Poulailler
   const sans = etatPoulailler(s);
-  assertEqual(sans.conditions.map((c) => [c.id, c.ok]), [['enceinte', true], ['nichoir', true], ['dehors', true], ['enclos', false], ['place', false]]);
+  assertEqual(sans.conditions.map((c) => [c.id, c.ok]), [['enceinte', true], ['cle', true], ['dehors', true], ['enclos', false], ['place', false]]);
   assertEqual([s.poulailler.construit, coopCapacity(s)], [false, 0]);
   // l'enclos fermé : le Poulailler est là ; 8 cases libres dedans, 9 dans l'enclos
   for (const t of p.barrieres) assert(poserBloc(s, 'barriere', t).ok);
@@ -445,7 +446,7 @@ test('ferme générée : le Poulailler monte de niveau s\'il a la place ; les po
   const s = reach(chantier('p2'), 'poulailler');
   s.pieces = 100000;
   setInv(s, { mur_pierre: 30, porte: 3, nichoir: 1, barriere: 20, plancher: 9 });
-  const z = terrainLibre(s, 9, 6), p = poulailler(s, z);
+  const z = terrainLibre(s, 9, 6), p = enceinteEtEnclos(s, z);
   poserBloc(s, 'nichoir', p.dedans);
   for (const t of p.barrieres) poserBloc(s, 'barriere', t);
   assert(s.poulailler.construit);
@@ -467,24 +468,38 @@ test('ferme générée : le Poulailler monte de niveau s\'il a la place ; les po
   assertEqual(coopCapacity(s), 6);
   assertEqual(layEggs(s), 6 * DATA.ANIMAUX.poule.oeufsParNuit);
 });
-test('ferme générée : une mangeoire posée dans une pièce close construit l\'Étable', () => {
+test('ferme générée : l\'Étable, une enceinte avec une porte dehors, une mangeoire et un enclos ; une place par case libre', () => {
   const s = reach(chantier('e1'), 'paturage');
   s.pieces = 100000;
   s.paturage.construit = false;
   s.paturage.places = 0;
   assertEqual(buildPaturage(s).ok, false, 'pas en pièces');
-  setInv(s, { mur_pierre: 30, porte: 2, mangeoire: 1 });
-  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
-  assertEqual(poserBloc(s, 'mangeoire', p.dedans).ok, false, 'hors d\'une pièce close');
-  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  setInv(s, { mur_pierre: 30, porte: 3, mangeoire: 1, barriere: 20 });
+  const z = terrainLibre(s, 9, 6), p = enceinteEtEnclos(s, z);
+  assertEqual(poserBloc(s, 'mangeoire', p.dedans + 50).ok, false, 'hors d\'une pièce close');
   assert(poserBloc(s, 'mangeoire', p.dedans).ok);
-  assertEqual([s.paturage.construit, s.paturage.places, freeSheepPlaces(s)], [true, DATA.PATURAGE.PLACES_DEPART, DATA.PATURAGE.PLACES_DEPART]);
-  s.paturage.places += 2;   // des places achetées : gardées si on la reprend puis la repose
+  assertEqual([s.paturage.construit, etatEtable(s).conditions.find((c) => c.id === 'enclos').ok], [false, false], 'sans enclos : pas d\'Étable');
+  for (const t of p.barrieres) poserBloc(s, 'barriere', t);
+  // 10 places de départ, mais 8 cases libres dans l'étable (9 dans l'enclos) : 8 places
+  assertEqual([s.paturage.construit, s.paturage.places, stablePlaces(s), freeSheepPlaces(s)], [true, DATA.PATURAGE.PLACES_DEPART, 8, 8]);
+  // une place de plus : il faut 11 cases libres de chaque côté
+  const r = buyPasture(s);
+  assertEqual(r.ok, false);
+  assert(/il faut 11 cases libres/.test(r.error), r.error);
+  // 2 vaches (3 places chacune) et 3 moutons : 9 places pour 8 → la seconde vache ne donne rien
+  s.paturage.moutons = [makeSheep(s), makeSheep(s), makeSheep(s)];
+  s.paturage.vaches = [makeCow(s), makeCow(s)];
+  const l = stableHoused(s);
+  assertEqual([l.moutons.size, l.vaches.size], [3, 1]);
+  setInv(s, { paille: 100 });
+  feedLivestock(s);
+  assertEqual([s.nuit.etable.moutonsNourris, s.nuit.etable.vachesNourries], [3, 1]);
+  // la mangeoire reprise : plus d'Étable (places et bêtes gardées)
+  s.paturage.places += 2;
   reprendreBloc(s, p.dedans);
-  assertEqual([s.paturage.construit, freeSheepPlaces(s), countItem(s, 'mangeoire')], [false, 0, 1], 'repris : plus d\'Étable');
+  assertEqual([s.paturage.construit, freeSheepPlaces(s), countItem(s, 'mangeoire'), s.paturage.moutons.length], [false, 0, 1, 3], 'repris : plus d\'Étable');
   poserBloc(s, 'mangeoire', p.dedans);
-  assertEqual(s.paturage.places, DATA.PATURAGE.PLACES_DEPART + 2);
+  assertEqual([s.paturage.construit, s.paturage.places], [true, DATA.PATURAGE.PLACES_DEPART + 2]);
 });
 
 /* ---------- étape 5b : la Serre (pièce close + bac à semis) ---------- */
@@ -631,7 +646,7 @@ test('migration v37 → v38 : une enceinte qui mêle une maison et un bâtiment 
   s.poulailler.construit = true;
   setInv(s, {});
   const m = migrate({ ...s, version: 37 });
-  assertEqual([m.version, m.blocs[p.dedans], m.blocs[p.dedans + 1], countItem(m, 'nichoir'), m.poulailler.construit], [39, 'paillasse', undefined, 1, false]);
+  assertEqual([m.version, m.blocs[p.dedans], m.blocs[p.dedans + 1], countItem(m, 'nichoir'), m.poulailler.construit], [40, 'paillasse', undefined, 1, false]);
 });
 
 test('ferme générée : la barrière arrête le passage sans fermer de pièce ; le chemin se pose dehors, comme celui de la carte', () => {

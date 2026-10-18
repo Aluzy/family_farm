@@ -24,7 +24,7 @@
   'use strict';
 
   const F = global.FermeCarte;
-  const { T, BLOCS_CARTE, POULES } = F.C;
+  const { T, BLOCS_CARTE, BETES } = F.C;
 
   F.partie({
 
@@ -86,63 +86,74 @@
       for (const [c, img] of S) if (!at.has(c)) { img.destroy(); S.delete(c); }
     },
 
-    // Les poules du Poulailler de la ferme générée (modèle.poulailler : { piece, enclos (les
-    // cases libres), n (les poules qui y ont leur place) }, js/engine/blocs.js, etatPoulailler) :
-    // une image par poule. Le jour (POULES.jour), elles vont et viennent dans l'enclos, picorent
-    // et grattent ; la nuit, elles couvent dans le poulailler, à plusieurs sur une case s'il le
-    // faut (la place compte une case par poule, pas leur sommeil). Au changement, elles
-    // passent de l'un à l'autre en s'effaçant.
-    syncHens(P, heure) {
-      if (!this.hens) this.hens = [];
-      const H = this.hens, n = P && this.has(POULES.key) ? P.n | 0 : 0;
-      this.henPlan = P;
-      this.henDay = heure >= POULES.jour[0] && heure < POULES.jour[1];
-      while (H.length > n) H.pop().img.destroy();
-      while (H.length < n) H.push({ img: this.add.image(0, 0, POULES.key, 0).setOrigin(0.5, 1).setAlpha(0), k: H.length, lieu: null, x: 0, y: 0, to: null, t: 0, age: 0, pose: 'idle' });
-      const cle = P ? JSON.stringify([P.piece, P.enclos]) : '';
-      if (cle !== this.henKey) { this.henKey = cle; for (const h of H) h.lieu = null; }
+    // Les bêtes du Poulailler et de l'Étable de la ferme générée (modèle.enclos : [{ id, piece,
+    // enclos (les cases libres), betes: [espèce…] (celles qui y ont leur place) }],
+    // js/engine/blocs.js, etatEnclos) : une image par bête. Le jour (BETES.jour), elles vont et
+    // viennent dans l'enclos (les poules picorent et grattent, les moutons et les vaches broutent) ;
+    // la nuit, elles dorment dans le bâtiment, où elles veulent (à plusieurs sur une case s'il le
+    // faut : la place compte une case par bête, pas leur sommeil). Au changement, elles passent de
+    // l'un à l'autre en s'effaçant.
+    syncBeasts(list, heure) {
+      if (!this.beasts) this.beasts = new Map();
+      const M = this.beasts, seen = new Set();
+      this.beastDay = heure >= BETES.jour[0] && heure < BETES.jour[1];
+      for (const b of list || []) {
+        const cle = JSON.stringify([b.piece, b.enclos]);
+        b.betes.forEach((kind, k) => {
+          const def = BETES.especes[kind];
+          if (!def || !this.has(def.key)) return;
+          const id = b.id + ':' + k;
+          seen.add(id);
+          let e = M.get(id);
+          if (e && e.kind !== kind) { e.img.destroy(); e = null; }
+          if (!e) {
+            e = { kind, def, img: this.add.image(0, 0, def.key, 0).setOrigin(0.5, 1).setAlpha(0), lieu: null, x: 0, y: 0, to: null, t: 0, age: 0, pose: null };
+            M.set(id, e);
+          }
+          if (e.cle !== cle) { e.cle = cle; e.lieu = null; }
+          e.plan = b;
+        });
+      }
+      for (const [id, e] of M) if (!seen.has(id)) { e.img.destroy(); M.delete(id); }
     },
 
-    // Le point (pieds) d'une case, un peu au hasard dans la case si `jeu`.
-    henSpot(c, jeu) {
+    // Le point (pieds) d'une case, un peu au hasard dans la case.
+    beastSpot(c) {
       const cols = this.grid.cols;
-      return { x: (c % cols) * T + T / 2 + (jeu ? Math.round((Math.random() - 0.5) * 8) : 0), y: Math.floor(c / cols) * T + T - 2 - (jeu ? Math.round(Math.random() * 4) : 0) };
+      return { x: (c % cols) * T + T / 2 + Math.round((Math.random() - 0.5) * 8), y: Math.floor(c / cols) * T + T - 2 - Math.round(Math.random() * 4) };
     },
 
-    stepHens(time, dt) {
-      const H = this.hens, P = this.henPlan;
-      if (!H || !H.length || !P) return;
-      const lieu = this.henDay ? 'enclos' : 'piece', cases = P[lieu] || [];
-      if (!cases.length) return;
-      const Fr = POULES.frames, still = F.reducedMotion && F.reducedMotion();
-      for (const h of H) {
-        if (h.lieu !== lieu) {
-          // (de l'enclos au poulailler, ou l'inverse : elle s'efface, puis apparaît là-bas)
-          if (h.lieu && h.img.alpha > 0) { h.img.setAlpha(Math.max(0, h.img.alpha - dt * 3)); continue; }
-          h.lieu = lieu;
-          // (la nuit, n'importe où dans le poulailler : plusieurs peuvent dormir sur la même case)
-          const p = this.henSpot(cases[Math.floor(Math.random() * cases.length)], true);
-          h.x = p.x; h.y = p.y; h.to = null; h.t = 0.5 + Math.random() * 2; h.pose = lieu === 'piece' ? 'couvee' : 'idle';
+    stepBeasts(time, dt) {
+      if (!this.beasts || !this.beasts.size) return;
+      const lieu = this.beastDay ? 'enclos' : 'piece', still = F.reducedMotion && F.reducedMotion();
+      for (const e of this.beasts.values()) {
+        const cases = (e.plan && e.plan[lieu]) || [];
+        if (!cases.length) continue;
+        const d = e.def, Fr = d.frames;
+        if (e.lieu !== lieu) {
+          // (de l'enclos au bâtiment, ou l'inverse : elle s'efface, puis apparaît là-bas)
+          if (e.lieu && e.img.alpha > 0) { e.img.setAlpha(Math.max(0, e.img.alpha - dt * 3)); continue; }
+          e.lieu = lieu;
+          const p = this.beastSpot(cases[Math.floor(Math.random() * cases.length)]);
+          e.x = p.x; e.y = p.y; e.to = null; e.t = 0.5 + Math.random() * 2; e.pose = null; e.age = Math.random() * 3;
         }
-        if (h.img.alpha < 1) h.img.setAlpha(Math.min(1, h.img.alpha + dt * 3));
-        h.age += dt;
+        if (e.img.alpha < 1) e.img.setAlpha(Math.min(1, e.img.alpha + dt * 3));
+        e.age += dt;
         if (lieu === 'enclos' && !still) {
-          if (h.to) {
-            const dx = h.to.x - h.x, dy = h.to.y - h.y, l = Math.hypot(dx, dy), st = POULES.vitesse * dt;
-            if (Math.abs(dx) > 0.5) h.img.setFlipX(dx < 0);
-            if (l <= st) { h.x = h.to.x; h.y = h.to.y; h.to = null; h.t = 1 + Math.random() * 3; h.pose = Math.random() < 0.6 ? 'picore' : 'gratte'; h.age = 0; } else { h.x += (dx / l) * st; h.y += (dy / l) * st; }
-          } else if ((h.t -= dt) <= 0) {
-            h.to = this.henSpot(cases[Math.floor(Math.random() * cases.length)], true);
-            h.pose = 'marche';
+          if (e.to) {
+            const dx = e.to.x - e.x, dy = e.to.y - e.y, l = Math.hypot(dx, dy), st = d.vitesse * dt;
+            if (Math.abs(dx) > 0.5) e.img.setFlipX(dx < 0);
+            if (l <= st) { e.x = e.to.x; e.y = e.to.y; e.to = null; e.t = d.pause[0] + Math.random() * (d.pause[1] - d.pause[0]); e.pose = d.poses[Math.floor(Math.random() * d.poses.length)]; e.age = 0; } else { e.x += (dx / l) * st; e.y += (dy / l) * st; }
+          } else if ((e.t -= dt) <= 0) {
+            e.to = this.beastSpot(cases[Math.floor(Math.random() * cases.length)]);
           }
         }
         let f;
-        if (h.lieu === 'piece') f = Fr.couvee;
-        else if (h.to) f = ((h.age / 0.15) | 0) % 2 ? Fr.marche1 : Fr.marche0;
-        else if (h.pose === 'picore') f = h.age % 1.2 < 0.5 ? (((h.age / 0.12) | 0) % 2 ? Fr.picore1 : Fr.picore0) : Fr.idle;
-        else if (h.pose === 'gratte') f = ((h.age / 0.18) | 0) % 2 ? Fr.gratte : Fr.idle;
+        if (e.lieu === 'piece') f = Fr[d.nuit[((e.age / 1.6) | 0) % d.nuit.length]];
+        else if (e.to) f = Fr[d.marche[((e.age / d.pas) | 0) % d.marche.length]];
+        else if (e.pose) { const [noms, periode, actif] = d.anims[e.pose]; f = (e.age % (periode * noms.length * 2)) < periode * noms.length * actif ? Fr[noms[((e.age / periode) | 0) % noms.length]] : Fr.idle; }
         else f = Fr.idle;
-        h.img.setFrame(f).setPosition(Math.round(h.x), Math.round(h.y)).setDepth(h.y);
+        e.img.setFrame(f).setPosition(Math.round(e.x), Math.round(e.y)).setDepth(e.y);
       }
     },
 

@@ -11,9 +11,9 @@ import {
   buildPaturage, buildPoulailler, buildSilo, buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
   cowCount, cowsOnHerbs, feedAllHens, feedHen, freeSheepPlaces, hensToFeed, herbStock, herbsOn, pastureCost,
   setCowHerbs, shear, sheepCount, sheepToShear, siloCapacity, siloUpgradeCost, stableOccupied, strawMissing,
-  strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady, coopUpgradeRefus,
+  strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady, coopUpgradeRefus, pastureRefus, stablePlaces,
 } from '../engine/animals.js';
-import { etatPoulailler } from '../engine/blocs.js';
+import { etatEtable, etatPoulailler } from '../engine/blocs.js';
 import { farmSeed } from '../engine/terrain.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
 import { AUTO_TACHES, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
@@ -61,12 +61,11 @@ export function renderSilo() {
     </div>`;
 }
 
-// La ferme générée : ce qu'il faut pour que le Poulailler soit là (etatPoulailler), et les
-// cases libres pour les poules.
-function coopChecklist() {
-  const e = etatPoulailler(state);
+// La ferme générée : ce qu'il faut pour que le Poulailler (ou l'Étable) soit là (etatEnclos,
+// blocs.js), et les cases libres de chaque côté.
+function enclosChecklist(e, nom, unite) {
   const lignes = e.conditions.map((c) => `<li class="${c.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${c.ok ? '✅' : '❌'}</span> <span>${c.texte}</span></li>`).join('');
-  const place = e.piece ? `<span class="muted">Cases libres : ${e.libresPiece.length} dans le poulailler, ${e.enclos ? e.libresEnclos.length : 0} dans l'enclos (une poule par case de chaque côté).</span>` : '';
+  const place = e.piece ? `<span class="muted">Cases libres : ${e.libresPiece.length} dans ${nom}, ${e.enclos ? e.libresEnclos.length : 0} dans l'enclos (${unite} par case de chaque côté).</span>` : '';
   return `<ul class="ingredients">${lignes}</ul>${place}`;
 }
 
@@ -78,7 +77,7 @@ export function renderPoulailler() {
       <div class="section-head"><h3>${artIcon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
       <div class="card">
         <span class="card-title">Pour bâtir le Poulailler</span>
-        ${coopChecklist()}
+        ${enclosChecklist(etatPoulailler(state), 'le poulailler', 'une poule')}
         ${p.poules ? `<span class="alert">⚠️ Tes ${plural(p.poules, 'poule')} attendent : elles ne pondent pas tant que le Poulailler n'est pas complet.</span>` : ''}
       </div>`;
   }
@@ -245,6 +244,16 @@ export function renderPaturage() {
   const M = DATA.ANIMAUX.mouton;
   const V = DATA.ANIMAUX.vache;
   const straw = DATA.OBJETS[P.NOURRITURE];
+  if (!p.construit && farmSeed(state) !== null) {
+    const betes = p.moutons.length + p.vaches.length;
+    return `
+      <div class="section-head"><h3>${artIcon('paturage')}Moutons et vaches</h3>${helpBtn('paturage')}</div>
+      <div class="card">
+        <span class="card-title">Pour bâtir l'Étable</span>
+        ${enclosChecklist(etatEtable(state), 'l\'étable', 'une place')}
+        ${betes ? `<span class="alert">⚠️ Tes ${plural(betes, 'bête')} attendent : elles ne donnent rien tant que l'Étable n'est pas complète.</span>` : ''}
+      </div>`;
+  }
   if (!p.construit) {
     const cost = P.PRIX_CONSTRUCTION;
     return `
@@ -258,7 +267,9 @@ export function renderPaturage() {
   const sFree = freeSheepPlaces(state);
   const cost = pastureCost(state);
   const occupied = stableOccupied(state);
-  const pct = p.places > 0 ? Math.min(100, Math.round((occupied / p.places) * 100)) : 0;
+  // (la ferme générée : les places achetées, bornées par les cases libres ; refus : pas la place d'une de plus)
+  const places = stablePlaces(state), refus = pastureRefus(state);
+  const pct = places > 0 ? Math.min(100, Math.round((occupied / places) * 100)) : 0;
   const ready = sheepToShear(state);
   const need = strawNeed(state);
   const stock = strawStock(state);
@@ -266,19 +277,20 @@ export function renderPaturage() {
   const fed = strawPlan();
   let hint = '';
   if (sCount === 0 && cCount === 0) hint = '<span class="muted">Aucun animal : achètes-en au Marché.</span>';
+  else if (occupied > places) hint = '<span class="alert">⚠️ Des bêtes de trop pour la place : elles ne donnent rien.</span>';
   else if (sFree === 0) hint = '<span class="alert">⚠️ Plus de place : achètes-en une.</span>';
   // Les places s'achètent à la suite, tant que les pièces suffisent (voir buyPasture()).
-  const buyOk = canPay(cost);
+  const buyOk = canPay(cost) && !refus;
   return `
     <div class="section-head">
-      <h3>${artIcon('paturage')}Moutons et vaches · ${formatPlaces(p.places)}</h3>
+      <h3>${artIcon('paturage')}Moutons et vaches · ${formatPlaces(places)}</h3>
       <span class="chips">${autoChip('paturage', 'Tond tout seul les moutons dont la laine est prête, pendant la nuit')}${ready > 0 ? `<span class="chip badge">🧶 ${ready} à tondre</span>` : ''}${helpBtn('paturage')}</span>
     </div>
     <div class="card">
-      <span class="card-title"><span class="big" aria-label="Moutons et vaches">${M.icone} ${sCount} · ${V.icone} ${cCount}</span><span class="chip num" title="Places occupées">${formatNumber(occupied)} / ${formatNumber(p.places)} places</span></span>
-      <span class="bar" role="progressbar" aria-label="Places occupées" aria-valuemin="0" aria-valuemax="${p.places}" aria-valuenow="${occupied}"><span class="bar-fill${sFree === 0 ? ' warn' : ''}" style="width:${pct}%"></span></span>
+      <span class="card-title"><span class="big" aria-label="Moutons et vaches">${M.icone} ${sCount} · ${V.icone} ${cCount}</span><span class="chip num" title="Places occupées">${formatNumber(occupied)} / ${formatNumber(places)} places</span></span>
+      <span class="bar" role="progressbar" aria-label="Places occupées" aria-valuemin="0" aria-valuemax="${places}" aria-valuenow="${occupied}"><span class="bar-fill${sFree === 0 ? ' warn' : ''}" style="width:${pct}%"></span></span>
       ${hint}
-      <button type="button" class="btn" data-action="buy-pasture"${buyOk ? '' : ' disabled'}>Acheter une place (${costLabel(cost)})</button>
+      <button type="button" class="btn" data-action="buy-pasture"${buyOk ? '' : ' disabled'}>Acheter une place (${costLabel(cost)})</button>${refus ? `<span class="muted">${refus}</span>` : ''}
     </div>
     <div class="card ancre" id="etable-paille">
       <span class="card-title"><span><span aria-hidden="true">${straw.icone}</span> Paille : <span class="num">${formatQty(stock)} / ${formatQty(need)}</span> pour cette nuit</span><span class="chip${missing > 0 ? ' warn' : ''}">${missing > 0 ? `⚠️ il en manque ${formatNumber(missing)}` : '✅ assez'}</span></span>

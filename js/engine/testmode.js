@@ -142,6 +142,8 @@ export function testAddHens(state, count = 4) {
 // gratuitement si elle ne l'était pas.
 export function testAddSheep(state, count = 3) {
   const p = state.paturage;
+  // la ferme générée : l'Étable se bâtit (enceinte, mangeoire, enclos : blocs.js)
+  if (farmSeed(state) !== null && !p.construit) return fail('Bâtis d\'abord l\'Étable : une enceinte avec une porte sur le dehors, une mangeoire et un enclos de barrières.');
   if (!p.construit) {
     p.construit = true;
     p.places = DATA.PATURAGE.PLACES_DEPART;
@@ -160,6 +162,8 @@ export function testWoolReady(state) {
 // +2 vaches, dans la limite des places libres, sur le modèle de testAddSheep().
 export function testAddCows(state, count = 2) {
   const p = state.paturage;
+  // la ferme générée : l'Étable se bâtit (enceinte, mangeoire, enclos : blocs.js)
+  if (farmSeed(state) !== null && !p.construit) return fail('Bâtis d\'abord l\'Étable : une enceinte avec une porte sur le dehors, une mangeoire et un enclos de barrières.');
   if (!p.construit) {
     p.construit = true;
     p.places = DATA.PATURAGE.PLACES_DEPART;

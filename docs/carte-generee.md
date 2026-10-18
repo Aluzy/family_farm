@@ -316,18 +316,29 @@ parties.
        - Un appui sur le nichoir ouvre la fenêtre du Poulailler ; un double appui y envoie le
          personnage prendre les œufs, devant le nichoir. La bulle des œufs se pose au-dessus
          (`keyBlockOf`).
-       - **Les poules sur la carte** (`syncHens`, `stepHens`, `js/carte/ferme/chantier.js`) : une
+       - **Les poules sur la carte** (`syncBeasts`, `stepBeasts`, `js/carte/ferme/chantier.js`) : une
          image par poule qui a sa place. De 6 h à 19 h, elles vont et viennent dans l'enclos,
          picorent et grattent ; la nuit, elles couvent dans le poulailler, où elles veulent (à
          plusieurs sur une case s'il le faut).
      - ✅ **5b-4, l'étable** : l'Étable (la grange) quitte la cour.
-       - La **mangeoire** (6 planches, 4 pierres, 2 fibres) se fabrique à l'Atelier. Posée dans
-         une pièce close, elle ouvre l'Étable avec ses 10 places de départ (`PATURAGE.PLACES_DEPART`) ;
-         reprise, l'Étable n'est plus construite et retrouve ses places achetées quand on la
-         repose. On ne la prépare plus en pièces sur la ferme générée (`buildPaturage` refuse).
+       - La **mangeoire** (6 planches, 4 pierres, 2 fibres) se fabrique à l'Atelier et se pose
+         dans une pièce close. On ne prépare plus l'Étable en pièces sur la ferme générée
+         (`buildPaturage` refuse).
+       - **Les mêmes conditions que le Poulailler** (`etatEtable`, `etatEnclos`) : l'enceinte avec
+         la mangeoire, une porte sur le dehors, un enclos de barrières relié par une autre porte,
+         et une case libre par place dans l'enceinte (hors mangeoire) et dans l'enclos. Il manque
+         quelque chose : plus d'Étable (places achetées et bêtes gardées) ; sa fenêtre liste ce
+         qui manque.
+       - **Places** (`stablePlaces`) : celles achetées (10 au départ, `PATURAGE.PLACES_DEPART`),
+         bornées par les cases libres. Un mouton prend une place, une vache trois. Les bêtes en
+         trop (les moutons d'abord, puis les vaches, `stableHoused`) restent mais ne mangent ni
+         ne donnent rien (`feedLivestock`).
+       - **Acheter une place** : le prix, comme avant, et une case libre de plus dans l'enceinte
+         et dans l'enclos (`pastureRefus`). Migration v40.
        - Un appui sur la mangeoire ouvre la fenêtre de l'Étable ; un double appui y envoie le
          personnage prendre le lait et la laine (il tond les moutons prêts), devant la mangeoire.
-       - Comme les poules, les moutons et les vaches ne se montrent pas encore sur la carte.
+       - **Les moutons et les vaches sur la carte**, comme les poules (`syncBeasts`, `stepBeasts`) :
+         de 6 h à 19 h, ils broutent dans l'enclos ; la nuit, ils dorment couchés dans l'étable.
      - ✅ **5b-5, la serre** : la Serre quitte la cour.
        - Le **bac à semis** (8 planches, 4 pierres, 4 fibres) se fabrique à l'Atelier. Posé dans
          une pièce close, il ouvre la Serre au niveau 1 avec ses parcelles (`openSerre`) ;
