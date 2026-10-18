@@ -18,6 +18,7 @@ import { brokenRocks, fellenTrees } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmTerrain, tileCount } from '../engine/terrain.js';
+import { tuilesChemins } from '../engine/ferme-generee.js';
 import { robotBattery, robotChargePct, robotOn, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
 import {
@@ -43,6 +44,19 @@ import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { runAction } from './events.js';
 
+
+// Les chemins posés (le bloc « chemin ») : les tuiles du sol qu'ils changent, calculées une
+// fois par disposition (js/engine/ferme-generee.js, tuilesChemins).
+let cheminsCle = null, cheminsVus = null;
+function cheminsDuSol(T) {
+  const cases = Object.entries(solsPoses(state)).filter(([, k]) => k === 'chemin').map(([c]) => Number(c));
+  const cle = T.LARGEUR + ':' + cases.join(',');
+  if (cle !== cheminsCle) {
+    cheminsCle = cle;
+    cheminsVus = { cases, tuiles: cases.length ? tuilesChemins(T, new Set(cases)) : [] };
+  }
+  return cheminsVus;
+}
 /* ---------- Carte Phaser (voir farm-stage.js et docs/architecture-phaser.md) ---------- */
 
 // Découpe de chaque culture dans assets/crops.png (champ "sprite" de data/crops.json) :
@@ -400,7 +414,9 @@ export function stageModel() {
     // et ses blocs posés, le mode Construire (les pièces closes s'y voient), les paillasses où
     // l'on dort (js/engine/blocs.js)
     blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte })),
-    sols: Object.keys(solsPoses(state)).map(Number),
+    sols: Object.entries(solsPoses(state)).filter(([, k]) => k === 'plancher').map(([c]) => Number(c)),
+    // les chemins posés : les tuiles du sol qu'ils changent ([[case, tuile]]) et leurs cases
+    chemins: cheminsDuSol(T),
     // le four (son bloc) cuit-il ? ses flammes bougent (js/carte/ferme/chantier.js, stepFires)
     fourAllume: !!(state.stations.four && state.stations.four.construit && state.stations.four.tache),
     bati: buildMode && !stageInterior ? { sorte: buildMode } : null,

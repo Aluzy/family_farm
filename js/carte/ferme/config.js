@@ -155,9 +155,11 @@
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
     frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
+    // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
+    barrieres: 50,
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
-    plats: ['paillasse'], bloquent: ['mur_pierre', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule'],
+    plats: ['paillasse'], bloquent: ['mur_pierre', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png)
     ailleurs: ['puits', 'citerne'],
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la

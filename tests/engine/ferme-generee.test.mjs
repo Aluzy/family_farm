@@ -6,9 +6,10 @@
 
 import { assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
+import { blocGid } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece,
+  isArable, migrate, ramassables, ramasser, robotTrip, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -576,4 +577,30 @@ test('migration v37 → v38 : une enceinte qui mêle une maison et un bâtiment 
   setInv(s, {});
   const m = migrate({ ...s, version: 37 });
   assertEqual([m.version, m.blocs[p.dedans], m.blocs[p.dedans + 1], countItem(m, 'nichoir'), m.poulailler.construit], [38, 'paillasse', undefined, 1, false]);
+});
+
+test('ferme générée : la barrière arrête le passage sans fermer de pièce ; le chemin se pose dehors, comme celui de la carte', () => {
+  const s = reach(chantier('h1'), 'poulailler');
+  setInv(s, { mur_pierre: 30, porte: 2, barriere: 30, chemin: 10, plancher: 2, nichoir: 1 });
+  // une enceinte de barrières : pas une pièce close
+  const z = terrainLibre(s, 12, 5), p = murs(z, 5, 5);
+  for (const t of p.murs) assert(poserBloc(s, 'barriere', t).ok);
+  assert(poserBloc(s, 'porte', p.porte).ok);
+  assertEqual([blocBloque(s, p.murs[0]), dansPiece(s, p.dedans), piecesCloses(s).length], [true, false, 0]);
+  // un chemin : sur l'herbe, dehors ; ses tuiles sont celles du chemin de la carte
+  const c = (z.r + 2) * z.W + z.c + 8;
+  assert(poserBloc(s, 'chemin', c).ok);
+  assert(poserBloc(s, 'chemin', c + 1).ok);
+  assertEqual([solAt(s, c), isArable(c, s)], ['chemin', false]);
+  const T = farmTerrain(s), tuiles = tuilesChemins(T, new Set([c, c + 1]));
+  assert(tuiles.some(([i]) => i === c) && tuiles.length >= 6, 'le chemin et ses raccords');
+  assert(tuiles.every(([, g]) => g >= blocGid('herbe_chemin', 0) && g <= blocGid('herbe_chemin', 255)), 'les tuiles herbe / chemin de la planche');
+  assertEqual(poserBloc(s, 'plancher', c).error, 'Il y a déjà un chemin ici.');
+  // pas dans une pièce close ; le plancher, lui, entre au Poulailler même après le nichoir
+  reprendreBloc(s, c); reprendreBloc(s, c + 1);
+  for (const k of p.murs) reprendreBloc(s, k);
+  for (const k of p.murs) poserBloc(s, 'mur_pierre', k);
+  assert(poserBloc(s, 'nichoir', p.dedans).ok);
+  assertEqual(poserBloc(s, 'chemin', p.dedans + 1).ok, false, 'le chemin : dehors');
+  assert(poserBloc(s, 'plancher', p.dedans + 1).ok, 'un plancher au Poulailler, après le nichoir');
 });

@@ -391,6 +391,58 @@ function fabriquer(graine) {
   // BUISSONS : les buissons posés, [colonne de gauche, rangée du pied, largeur, hauteur] en tuiles
   // (on y cueille des baies : atelier.js)
   const buissons = poses.filter((p) => p[2].startsWith('buisson')).map(([fy, fx, , w, h]) => [Math.round(fx / T - w / 2), Math.round(fy / T) - 1, w, h]);
-  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy], BUISSONS: buissons });
+  // (SOMMETS, TEINTES : les coins des cases, pour les chemins posés plus tard, tuileChemin)
+  const sommets = Uint8Array.from(sommet, (k) => (k === 'eau' ? 2 : k === 'chemin' ? 1 : 0));
+  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy], BUISSONS: buissons, SOMMETS: sommets, TEINTES: teinte });
   return { carte, terrain };
+}
+
+/* ---------- les chemins posés (le bloc « chemin », blocs.js) ---------- */
+
+// La tuile du sol de la case `i` avec les chemins posés `chemins` (un Set de cases), dessinée
+// comme le chemin de la carte (étape 5 de genererFerme) : un coin de case est du chemin s'il
+// l'était déjà, ou s'il touche une case de chemin posée ; l'eau reste de l'eau. Renvoie le
+// numéro de tuile, ou null : la case garde sa tuile de la carte (rien de posé ne la touche,
+// ou elle touche l'eau). Seulement sur la ferme générée (terrain.SOMMETS).
+export function tuileChemin(terrain, chemins, i) {
+  const S = terrain.SOMMETS, Te = terrain.TEINTES;
+  if (!S || !Te) return null;
+  const W = terrain.LARGEUR, H = terrain.HAUTEUR, V = W + 1;
+  const tx = i % W, ty = Math.floor(i / W);
+  const pose = (x, y) => {
+    for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+      const c = x + dx, r = y + dy;
+      if (c >= 0 && r >= 0 && c < W && r < H && chemins.has(r * W + c)) return true;
+    }
+    return false;
+  };
+  const coins = [[tx, ty], [tx + 1, ty], [tx, ty + 1], [tx + 1, ty + 1]];
+  let change = false;
+  const types = coins.map(([x, y]) => {
+    const k = S[y * V + x];
+    if (k === 2) return 2;
+    if (k === 0 && pose(x, y)) { change = true; return 1; }
+    return k;
+  });
+  if (!change || types.includes(2)) return null;
+  const h = Math.min(...coins.map(([x, y]) => Te[y * V + x]));
+  const n = (types[0] === 1 ? 8 : 0) | (types[1] === 1 ? 4 : 0) | (types[2] === 1 ? 2 : 0) | (types[3] === 1 ? 1 : 0);
+  return blocGid('herbe_chemin', n === 15 ? 4 * 16 + (hache('chemin:' + i) % 8) : (5 + h * 2) * 16 + n);
+}
+
+// Les tuiles du sol que les chemins posés changent : [[case, tuile]], les cases autour de
+// chaque chemin (et le chemin lui-même).
+export function tuilesChemins(terrain, chemins) {
+  const W = terrain.LARGEUR, H = terrain.HAUTEUR, out = [], vues = new Set();
+  for (const t of chemins) {
+    const c0 = t % W, r0 = Math.floor(t / W);
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const c = c0 + dc, r = r0 + dr, i = r * W + c;
+      if (c < 0 || r < 0 || c >= W || r >= H || vues.has(i)) continue;
+      vues.add(i);
+      const g = tuileChemin(terrain, chemins, i);
+      if (g) out.push([i, g]);
+    }
+  }
+  return out.sort((a, b) => a[0] - b[0]);
 }

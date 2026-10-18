@@ -136,6 +136,18 @@ Le Marché vend toujours les outils.
   - On n'y pose ni mur, ni porte, ni l'Atelier, et on ne peut pas y labourer.
   - Un appui avec le plancher en main le reprend, une fois ce qui est posé dessus repris.
   - Comme les murs, il se raccorde à ses voisins (`syncFloors`).
+- **Le chemin** (1 pierre à l'Atelier : 2 chemins) est un sol comme le plancher (`state.sols`),
+  dehors seulement : on ne laboure pas dessus, rien n'y pousse.
+  - Il se dessine avec les tuiles du chemin de la carte (`herbe_chemin`), raccordées à
+    l'herbe par les mêmes règles que le générateur : un coin de case touché par un chemin
+    posé devient du chemin, la teinte de l'herbe autour est gardée, l'eau reste de l'eau
+    (`tuileChemin`, `tuilesChemins` dans `js/engine/ferme-generee.js`, qui garde les coins et
+    les teintes de la carte : `terrain.SOMMETS`, `terrain.TEINTES`).
+  - La scène remplace ces tuiles du sol et efface les fleurs des cases de chemin
+    (`syncPaths`, `drawLayer`) ; seules les cases qui changent sont repeintes.
+- **La barrière** (1 planche à l'Atelier : 2 barrières) arrête le passage et se raccorde à
+  ses voisines, comme les murs (`BLOCS_CARTE.barrieres` + masque, `wallFrame`). Elle ne
+  ferme pas de pièce : un enclos de barrières n'est ni une maison ni un bâtiment.
 - **Une pièce close** : des cases entourées de murs, de portes ou de l'Atelier, avec au moins une
   porte. Elle fait au plus 120 cases et ne touche pas le bord de la carte. Les coins ne comptent
   pas : on ne passe pas en diagonale.

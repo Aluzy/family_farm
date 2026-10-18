@@ -1,5 +1,5 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
-# mur en pierre, la porte, le plancher, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, les jeunes arbres, l'Atelier et les
+# mur en pierre, la porte, le plancher, la barrière, le chemin, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, les jeunes arbres, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
@@ -119,6 +119,44 @@ ICONS = {
         '.kTTTttkTTTTttk.',
         '.kssssskssssssk.',
         '.kkkkkkkkkkkkkk.',
+        '................',
+    ],
+    # barrière : deux poteaux et deux lisses de bois
+    '🚧': [
+        '................',
+        '................',
+        '................',
+        '..kkk.....kkk...',
+        '..keT.....keT...',
+        'kkkeTkkkkkkeTkkk',
+        'keeeeeeeeeeeeeek',
+        'kssTtssssssTtssk',
+        'kkkeTkkkkkkeTkkk',
+        'kkkeTkkkkkkeTkkk',
+        'keeeeeeeeeeeeeek',
+        'kssTtssssssTtssk',
+        'kkkeTkkkkkkeTkkk',
+        '..keT.....keT...',
+        '..kst.....kst...',
+        '..kkk.....kkk...',
+    ],
+    # chemin : un carré de terre battue, quelques cailloux, bordé d'herbe
+    '🟫‍🪨': [
+        '................',
+        '..GGGGGGGGGGGG..',
+        '.GgllllllllllgG.',
+        '.GlTTeTTTTTeTlG.',
+        '.GlTTTTtTTTTTlG.',
+        '.GlTcTTTTTTTtlG.',
+        '.GlTbTTTTeTTTlG.',
+        '.GlTTTTTTTTcTlG.',
+        '.GlTTeTTTTTbTlG.',
+        '.GlTTTTtTTTTTlG.',
+        '.GlTtTTTTTcTTlG.',
+        '.GlTTTTTTTbTTlG.',
+        '.GlTTTeTTTTTtlG.',
+        '.GgllllllllllgG.',
+        '..GGGGGGGGGGGG..',
         '................',
     ],
     # paillasse : un sac de toile bourré de paille, posé au sol

@@ -301,14 +301,18 @@
       const sol = layer === raw.layers.find((l) => l.type === 'tilelayer');
       if (ferme && layer.name === ZONE_TILES.couche) return;              // l'ancienne bordure des zones
       const dirt = ferme && layer.name === ZONE_TILES.plantes ? this.dirt : null;
+      const paths = ferme && this.pathOver && this.pathOver.size ? this.pathOver : null;
+      const onPath = dirt && this.pathCells && this.pathCells.size ? this.pathCells : null;
       // les arbres et buissons ont leur image (findOccluders) : pas dans le fond
       const hid = !arbre && ferme && this.occluded ? this.occluded.get(layer) : null;
       ctx.globalAlpha = layer.opacity == null ? 1 : layer.opacity;
       const draw = (orig, i) => {
         if (dirt && dirt.has(i)) return;                                  // les fleurs labourées
+        if (onPath && onPath.has(i)) return;                              // et celles d'un chemin posé
         if (hid && hid.has(i)) return;
         let cell = orig;
-        if (sol && over && over.has(i)) cell = over.get(i);               // le sol des anciennes zones
+        if (sol && paths && paths.has(i)) cell = paths.get(i);           // un chemin posé (syncPaths)
+        else if (sol && over && over.has(i)) cell = over.get(i);          // le sol des anciennes zones
         else if (ferme && !sol && ZONE_TILES.bordures.has(cell & 0x0fffffff)) return; // leur bordure
         const gid = cell & 0x0fffffff;                   // les bits de poids fort sont des retournements
         if (!gid || gid < set.firstgid || gid >= last) return; // 0 = case vide, ou tuile d'une autre planche
