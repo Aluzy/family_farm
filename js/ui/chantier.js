@@ -17,6 +17,7 @@ import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 
 const SORTES = () => Object.keys(DATA.ATELIER.BLOCS);
+const CONSEIL_MS = 2000;   // le rappel à l'ouverture du mode
 
 // Le mode Construire est-il possible ? (la ferme générée, l'Atelier construit)
 export function chantierOuvert() {
@@ -54,7 +55,8 @@ registerActions({
     if (!chantierOuvert()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     setBuildMode(SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
-    notify(`${DATA.ATELIER.ICONE} Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre. Des murs tout autour et une porte font une pièce close.`);
+    // (un rappel bref, à chaque ouverture : il ne cache pas longtemps la puce des blocs)
+    notify(`${DATA.ATELIER.ICONE} Touche une case pour poser, un bloc pour le reprendre.`, { duree: CONSEIL_MS });
     refresh();
   },
   'build-pick': (target) => {

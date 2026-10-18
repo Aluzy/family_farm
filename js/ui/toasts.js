@@ -47,8 +47,8 @@ export function setAlertMuteUntil(value) {
 
 // L'unique façon d'afficher un message au joueur. `kind` : 'info' (par défaut), 'alerte',
 // 'repas' ou 'lettre' ; `cible` (voir cibleAlerte) : la notification devient un bouton qui
-// mène au menu concerné.
-export function notify(message, { kind = 'info', cible = null } = {}) {
+// mène au menu concerné ; `duree` (ms) : à la place de la durée de lecture (notifyDuration).
+export function notify(message, { kind = 'info', cible = null, duree = 0 } = {}) {
   const root = document.getElementById('toast-root');
   for (const el of Array.from(root.children)) {
     if (el.dataset.msg === message) el.remove();
@@ -70,7 +70,7 @@ export function notify(message, { kind = 'info', cible = null } = {}) {
   }
   root.appendChild(el);
   while (root.children.length > NOTIFY_MAX) root.firstElementChild.remove();
-  setTimeout(() => el.remove(), notifyDuration(message, kind));
+  setTimeout(() => el.remove(), duree || notifyDuration(message, kind));
 }
 
 // Pour js/ui/excursion.js (FermeHote.say des autres cartes) : une notification simple.

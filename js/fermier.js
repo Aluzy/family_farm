@@ -1,6 +1,6 @@
 /* fermier.js — le personnage de la carte (version provisoire).
  *
- * Il habite la maison : le jour il en sort, flâne devant, et fait sur la carte ce que le
+ * Il habite la maison : le jour il en sort, se tient devant, et fait sur la carte ce que le
  * joueur vient de faire (labourer, planter, arroser, récolter). Dans l'intérieur de la maison,
  * il cuisine quand une préparation est en cours et ouvre le réfrigérateur quand son contenu
  * change.
@@ -26,8 +26,8 @@
  * Version 1.18 : il ramasse. Ce qui est produit attend à sa place (modèle.ramasser : une
  * récolte sur sa case, un arbre cueilli, les œufs au Poulailler, le lait et la laine à
  * l'Étable) et n'entre dans l'inventaire que quand il le prend (o.pickup). Une récolte se
- * ramasse au geste même ; le reste, il va le chercher dès qu'il est libre et dehors, ou
- * tout de suite quand le joueur appuie sur sa bulle (fetch). À chaque prise, une bulle
+ * ramasse au geste même ; le reste, il va le chercher quand le joueur appuie sur sa bulle
+ * (fetch). Il ne bouge jamais de lui-même : ni flânerie, ni promenade dans un intérieur. À chaque prise, une bulle
  * « +6 🥕 » monte au-dessus de lui (o.gain) ; des prises rapprochées s'y additionnent.
  *
  * Comme le reste de la carte, il ne lit jamais l'état du jeu : il compare deux modèles de vue
@@ -57,7 +57,6 @@
   const CASCADE_MS = 90;         // entre deux cases de la cascade
   const TELEPORT = 24 * T;       // chemin plus long : il apparaît directement sur place
   const TELEPORT_FAR = 70 * T;   // le matin, il traverse la ferme jusqu'au Poulailler
-  const ROAM = 7 * T;            // flânerie : rayon autour de la porte
   const OUT = [6, 21.5];         // heures où il est dehors
   const FADE_S = 0.25;
   const HOME_MAX = 30 * T;       // « Dormir » : il arrive à la porte de moins loin que ça (il se presse)
@@ -312,7 +311,7 @@
     }
 
     function queueGeste(type, cases) {
-      // Il laisse tomber ce qu'il faisait en attendant (flâner, souffler).
+      // Il laisse tomber ce qu'il faisait en attendant (souffler).
       if (job && job.idle) job = null;
       jobs = jobs.filter((j) => !j.idle);
       // Ordre de visite : la case la plus proche, puis la plus proche de celle-là…
@@ -477,44 +476,17 @@
       return true;
     }
     // Le tas le plus proche qu'il n'a pas encore prévu d'aller prendre.
-    function nextPile() {
-      let best = null, bd = Infinity;
-      for (const p of pilesNow.values()) {
-        if (claimed.has(p.id) || isBuilding(p.lieu)) continue;   // le Poulailler et l'Étable : sur demande
-        const at = p.lieu === 'poulailler' ? coopSpot() : p.lieu === 'etable' ? barnSpot() : p.lieu === 'arbre' ? treeSpot(p.ref) : Number.isInteger(p.ref) ? tileXY(p.ref) : null;
-        const d = at ? Math.hypot(at.x - x, at.y - y) : 0;
-        if (d < bd) { bd = d; best = p; }
-      }
-      return best;
-    }
-    // Version 1.19 : envoyé quelque part par le joueur (double appui), il flâne là-bas
-    // plutôt que devant la porte, jusqu'à ce qu'il rentre le soir.
-    let roamAt = null;
-    function roam() {
-      const d = roamAt || door();
-      for (let i = 0; i < 8; i++) {
-        const tx = d.x + rand(-ROAM, ROAM), ty = d.y + (roamAt ? rand(-ROAM, ROAM) : rand(T, ROAM));
-        if (!freeAt(tx, ty)) continue;
-        const w = walkTo(tx, ty);
-        w.idle = true;
-        jobs.push(w);
-        jobs.push(wait(rand(2, 5)));
-        return;
-      }
-    }
     function schedule() {
       const outHours = ctx.hour >= OUT[0] && ctx.hour < OUT[1];
       // Il dort, et la ferme générée lui a une paillasse : il va s'y coucher.
       const lit = ctx.dort && !home && shown && o.couchage ? o.couchage() : null;
       if (lit) {
-        roamAt = null;
         jobs.push(walkTo(lit.x, lit.y, { far: true }));
         jobs.push(once(() => { couche = { lit, t: 0, slept: true }; }));
         return;
       }
       // Il dort (sans passer par l'intérieur : maison en ruine) : il rentre se coucher.
       if (ctx.dort && !home && shown) {
-        roamAt = null;
         const d = door();
         jobs.push(walkTo(d.x, d.y));
         jobs.push(once(() => { face = 'haut'; vanish(); home = true; where = 'maison'; }));
@@ -528,13 +500,9 @@
         jobs.push(walkTo(d.x, d.y + T));
         return;
       }
-      // Libre et dehors : il va chercher ce qui attend.
-      if (shown && outHours) { const p = nextPile(); if (p && fetch(p.id)) return; }
-      if (shown) {
-        idleAge = 0; idleLen = rand(5, 12);
-        if (Math.random() < 0.5 && !reduced()) roam();   // animations réduites : il ne se déplace pas pour rien
-        else jobs.push(wait(rand(2, 5)));
-      }
+      // Libre : il reste où il est (il ne bouge que pour le joueur : ses gestes, le doigt,
+      // le double appui, une bulle de tas).
+      if (shown) { idleAge = 0; idleLen = rand(5, 12); }
     }
 
     // Le point libre le plus proche de (tx, ty) (6 cases au plus, CarteKit.plusProche), null
@@ -549,7 +517,7 @@
     }
 
     // Version 1.19 : le joueur l'envoie en (tx, ty) (double appui sur la carte). Il y va avant
-    // le reste (ses gestes en attente suivent), y souffle un instant, puis flâne autour.
+    // le reste (ses gestes en attente suivent), puis y reste.
     // Renvoie le point où il va, ou null.
     function goTo(tx, ty) {
       const spot = nearestFree(Math.max(0, Math.min(world.w - 1, tx)), Math.max(1, Math.min(world.h - 1, ty)));
@@ -558,21 +526,19 @@
       const w = walkTo(spot.x, spot.y, { far: true });
       w.joueur = true;               // (le doigt qui le dirige l'annule : steer)
       jobs = [w, wait(rand(3, 5))].concat(jobs.filter((j) => !j.idle));
-      roamAt = spot;
       idleAge = 0;
       return spot;
     }
 
     // Le joueur le dirige au doigt (CarteKit.manette) : steer({ x, y }), il marche dans cette
     // direction (de longueur 1) et glisse le long de ce qui le gêne ; steer(null), il s'arrête,
-    // souffle un instant, puis flâne là. Le geste qu'il fait finit d'abord ; ceux qui attendent
+    // et reste là. Le geste qu'il fait finit d'abord ; ceux qui attendent
     // reprennent après (le chemin vers un geste repart d'où il est). Au lit (ou en y allant) : rien.
     let steer = null, steerWalked = 0;
     function steerTo(dir) {
       if (dir && !ctx.coucher && !ctx.dort) { steer = dir; return; }
       if (!steer) return;
       steer = null;
-      roamAt = { x, y };
       idleAge = 0;
       jobs.unshift(wait(rand(3, 5)));
     }
@@ -593,7 +559,7 @@
     }
 
     // Il arrive d'une autre carte (la carte de transition) : il apparaît en (tx, ty) (la case
-    // libre la plus proche) et flâne là un moment, au lieu de sortir de la maison.
+    // libre la plus proche) et reste là, au lieu de sortir de la maison.
     function arrive(tx, ty) {
       const spot = nearestFree(Math.max(0, Math.min(world.w - 1, tx)), Math.max(1, Math.min(world.h - 1, ty)));
       if (!spot) return null;
@@ -601,7 +567,6 @@
       appear();
       job = null;
       jobs = [wait(rand(3, 5))];
-      roamAt = spot;
       idleAge = 0;
       draw(`idle_${face}_0`);
       return spot;
@@ -624,7 +589,7 @@
       }
       if (!shown || home) { setTimeout(done, 0); return; }
       const d = door();
-      const inside = () => { face = 'haut'; vanish(); home = true; where = 'maison'; arriving = true; roamAt = null; };
+      const inside = () => { face = 'haut'; vanish(); home = true; where = 'maison'; arriving = true; };
       releaseAll(); claimed.clear(); basket = false; job = null;
       if (reduced()) { jobs = []; inside(); setTimeout(done, 0); return; }
       jobs = [walkTo(d.x, d.y, { far: true, hurry: true, max: HOME_MAX }), once(inside), wait(FADE_S), once(done)];
@@ -707,11 +672,11 @@
 
     const IN_STEP = 4;               // px : la grille des chemins dans un intérieur
     const ARRIVE_MAX = 3;            // s : il arrive au plus tard ce temps après le joueur (il se presse)
-    const inside = { s: null, x: 0, y: 0, face: 'bas', at: null, t: 0, wait: 0, alpha: 0, path: [], goal: null, roam: 0 };
+    const inside = { s: null, x: 0, y: 0, face: 'bas', at: null, t: 0, wait: 0, alpha: 0, path: [], goal: null };
     let cooking = null, frigoDue = false;
     let viewing = null;              // l'intérieur que le joueur regarde
     // Le point où il peut se tenir le plus près de (tx, ty) dans `room`. `clear` : sans meuble
-    // contre lui (pour flâner : il ne se plante pas devant une chaise).
+    // contre lui (pour s'y tenir : il ne se plante pas devant une chaise).
     function roomSpot(room, tx, ty, clear) {
       const ok = clear ? (px, py) => room.walk(px, py) && !(room.props || []).some((p) => p.sprite && p.sprite.depth > 1
         && px + 8 > p.x && px - 8 < p.x + p.w && py - 26 < p.y + p.h && py > p.y - 4) : room.walk;
@@ -761,12 +726,12 @@
         inside.wait = reduced() ? 0 : Math.min(ARRIVE_MAX, Math.hypot(to.x - from.x, to.y - from.y) / (SPEED * 2));
         inside.x = room.entree.x; inside.y = room.entree.y; inside.alpha = 0;
         // dehors : il est parti (ce qu'il allait faire attendra)
-        jobs = []; job = null; claimed.clear(); basket = false; roamAt = null;
+        jobs = []; job = null; claimed.clear(); basket = false;
         shown = false; fade = 0; alpha = 0; s.setVisible(false);
         x = to.x; y = to.y;
         where = room.id; home = room.id === 'maison';
       }
-      inside.at = room.id; inside.path = []; inside.goal = null; inside.mode = 'idle'; inside.t = 0; inside.roam = rand(3, 7);
+      inside.at = room.id; inside.path = []; inside.goal = null; inside.mode = 'idle'; inside.t = 0;
       inside.rest = rest;
       arriving = false;
       frigoDue = false;
@@ -833,7 +798,7 @@
         const side = roomSpot(room, Math.round(p.sprite.x), Math.round(p.sprite.y + 6));
         inside.x = side.x; inside.y = side.y;
       }
-      inside.path = []; inside.goal = null; inside.t = 0; inside.roam = rand(3, 7);
+      inside.path = []; inside.goal = null; inside.t = 0;
     }
     // Les « Z » au-dessus de sa tête (en `hx`, `hy`), qui grandissent en montant et
     // s'effacent ; `t` < 0 : ils disparaissent. Dessinés en pixels (4, 5, puis 6 de côté).
@@ -1017,30 +982,21 @@
       // le repas : à table, avec la famille
       if (meal && room.id === 'maison' && !ctx.coucher) { stepMeal(room, dt); return; }
       // Où il doit être : au réfrigérateur juste après un changement, à la cuisine pendant une
-      // préparation ; sinon il se tient au milieu, et de temps en temps fait quelques pas.
-      let want = null, busy = false;
+      // préparation ; sinon il se tient au milieu, sans bouger.
+      let want = null;
       // « Dormir » : son lit. Couché, il y reste tant que le coucher dure.
       const bed = ctx.coucher && room.id === 'maison' ? bedOf(room) : null;
       if (inside.mode === 'lit') {
         if (bed && bed.key === inside.bed) { sleepInBed(S, bed, dt); return; }
         getUp();
       }
-      if (bed) { want = bed.side; busy = true; frigoDue = false; if (inside.mode === 'frigo') inside.mode = 'idle'; }
+      if (bed) { want = bed.side; frigoDue = false; if (inside.mode === 'frigo') inside.mode = 'idle'; }
       // il dort déjà (on revient dans la maison, ou deuxième appui sur « Dormir ») : au lit tout de suite
       if (bed && ctx.dort && inside.mode !== 'lit') { inside.x = bed.side.x; inside.y = bed.side.y; inside.path = []; inside.goal = { x: bed.side.x, y: bed.side.y }; inside.alpha = 1; }
       else if (frigoDue) { want = propSpot(room, 'frigo'); if (want) { inside.mode = 'frigo'; inside.t = 0; } frigoDue = false; }
       if (bed) { /* il va au lit */ }
-      else if (inside.mode === 'frigo') { want = propSpot(room, 'frigo'); busy = !!want; }
-      else if (cooking && room.id === 'maison') { want = propSpot(room, cooking) || propSpot(room, 'cuisine'); busy = !!want; }
-      if (!busy && !reduced()) {
-        inside.roam -= dt;
-        if (inside.roam <= 0) {
-          inside.roam = rand(4, 9);
-          const v = room.view;
-          inside.rest = Math.random() < 0.4 ? roomSpot(room, Math.round(v.x + v.w * 0.5), Math.round(v.y + v.h * 0.7), true)
-            : roomSpot(room, Math.round(v.x + rand(0.15, 0.85) * v.w), Math.round(v.y + rand(0.3, 0.95) * v.h), true);
-        }
-      }
+      else if (inside.mode === 'frigo') want = propSpot(room, 'frigo');
+      else if (cooking && room.id === 'maison') want = propSpot(room, cooking) || propSpot(room, 'cuisine');
       const target = want || inside.rest;
       if (!inside.goal || inside.goal.x !== target.x || inside.goal.y !== target.y) {
         inside.goal = target;
@@ -1135,7 +1091,7 @@
       }
       if (steer && (ctx.coucher || ctx.dort)) steerTo(null);
       if (steer && (!job || job.idle || job.walk)) {
-        // une marche vers un geste reprendra au relâchement ; flânerie et double appui : oubliés
+        // une marche vers un geste reprendra au relâchement ; double appui : oublié
         if (job && !job.idle && !job.joueur) jobs.unshift(job);
         job = null;
         jobs = jobs.filter((j) => !j.idle && !j.joueur);
@@ -1150,7 +1106,7 @@
       if (!shown) { schedule(); return; }
       idleAge += dt;
       draw(`idle_${face}_${Math.floor(idleAge / BREATH_S) % 2}`);
-      if (idleAge >= idleLen || nextPile() || ctx.dort) schedule();
+      if (idleAge >= idleLen || ctx.dort) schedule();
     }
 
     return {

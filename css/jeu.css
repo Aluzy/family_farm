@@ -1531,9 +1531,10 @@ body.has-stage { padding-bottom: 0; }
 .stage-chip-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--bg-muted); }
 .stage-chip-bar > span { display: block; height: 100%; background: var(--accent); }
 /* La ferme générée, le mode Construire (js/ui/chantier.js) : un bouton par bloc dans la puce,
-   celui choisi encadré ; la puce elle-même ne se touche pas (div), ses boutons oui. */
+   celui choisi encadré ; la puce elle-même ne se touche pas (div), ses boutons oui. Trop de
+   blocs pour une ligne : ils passent à la ligne (aucun n'est caché). */
 .stage-chip.chantier { cursor: default; }
-.stage-chip.chantier .stage-chip-pill { gap: 4px; padding: 0 6px; }
+.stage-chip.chantier .stage-chip-pill { flex-wrap: wrap; gap: 2px 4px; padding: 3px 6px; }
 .stage-chip-bloc {
   flex: none;
   display: inline-flex;
