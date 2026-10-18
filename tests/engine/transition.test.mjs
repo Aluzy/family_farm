@@ -50,7 +50,9 @@ test('transition : trois à cinq maisons réparties à l\'ouest, de part et d\'a
       assertEqual(m.porte.y, nord ? m.y + m.h - 1 : m.y);
       assertEqual(m.plan[m.porte.y - m.y][m.porte.x - m.x], 'P', `${g} ${m.nom} : la porte dans le mur face au chemin`);
       assertEqual(m.plan[nord ? 0 : m.h - 1], 'M'.repeat(m.w), 'le mur du fond');
-      assert(m.plan.slice(1, -1).some((l) => l.includes('d')), `${g} ${m.nom} : au moins un lit`);
+      const lits = m.plan.join('').split('').filter((c) => c === 'd' || c === 'p').length;
+      assertEqual(m.lits, lits, `${g} ${m.nom} : ses lits comptés`);
+      assert(lits >= TRANSITION.LITS[0] && lits <= TRANSITION.LITS[1], `${g} ${m.nom} : un lit par membre de la famille (${lits})`);
       // l'allée : du chemin à chaque rangée, de la porte jusqu'au chemin
       const [y0, y1] = nord ? [m.porte.y + 1, P.milieu[m.porte.x]] : [P.milieu[m.porte.x], m.porte.y];
       for (let y = y0; y <= y1; y++) assert(P.coins[y][m.porte.x] && P.coins[y][m.porte.x + 1], `${g} ${m.nom} : allée rangée ${y}`);

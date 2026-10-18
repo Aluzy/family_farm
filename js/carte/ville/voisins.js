@@ -1,7 +1,7 @@
 /* carte/ville/voisins.js — les familles des voisins.
  *
  * Chaque maison de la carte de transition a sa famille, tirée au hasard à la première visite
- * (deux parents, un à trois enfants : VOISINS) puis gardée (localStorage). On la voit aller et
+ * (deux parents, un à trois enfants : VOISINS, un lit chacun) puis gardée (localStorage). On la voit aller et
  * venir chez elle et dehors : js/carte/ville/transition.js.
  */
 (function (global) {
@@ -12,11 +12,18 @@
   const { hote } = V;
 
   // La famille qui vit dans la maison `maison` : tirée au hasard la première fois, puis gardée.
-  // { nom, membres: [{ prenom, perso, enfant }] }.
-  function voisins(maison) {
+  // { nom, membres: [{ prenom, perso, enfant }] }. `lits` : les lits de la maison (le plan) ;
+  // deux adultes, et autant d'enfants qu'il reste de lits (un à VOISINS.enfantsMax).
+  function voisins(maison, lits = 0) {
     let all = {};
     try { all = JSON.parse(global.localStorage.getItem(VOISINS.store) || '{}') || {}; } catch (e) { all = {}; }
-    if (all[maison] && Array.isArray(all[maison].membres) && all[maison].membres.length) return all[maison];
+    const garde = () => { try { global.localStorage.setItem(VOISINS.store, JSON.stringify(all)); } catch (e) { /* gardée le temps de la visite */ } };
+    // (la famille tient dans ses lits : un enfant de trop d'une famille d'avant s'en va)
+    const place = (f) => {
+      if (lits > 2 && f.membres.length > lits) { f.membres = f.membres.filter((m, i) => !m.enfant || f.membres.slice(0, i).filter((q) => q.enfant).length < lits - 2); garde(); }
+      return f;
+    };
+    if (all[maison] && Array.isArray(all[maison].membres) && all[maison].membres.length) return place(all[maison]);
     const pick = (a) => a[Math.floor(Math.random() * a.length)];
     // des personnages (d'adulte, d'enfant) que la partie et les autres voisins n'ont pas
     const pris = { adulte: new Set(), enfant: new Set() };
@@ -35,12 +42,12 @@
     const dits = new Set();
     const prenom = (liste) => { const l = liste.filter((p) => !dits.has(p)); const p = pick(l.length ? l : liste); dits.add(p); return p; };
     const noms = VOISINS.noms.filter((n) => !autres.some((f) => f.nom === n));
-    const n = 1 + Math.floor(Math.random() * VOISINS.enfantsMax);
+    const n = 1 + Math.floor(Math.random() * Math.min(VOISINS.enfantsMax, lits > 2 ? lits - 2 : VOISINS.enfantsMax));
     const membres = [0, 1].map(() => ({ prenom: prenom(VOISINS.prenoms), perso: perso(false), enfant: false }));
     for (let i = 0; i < n; i++) membres.push({ prenom: prenom(VOISINS.enfants), perso: perso(true), enfant: true });
     const f = { nom: pick(noms.length ? noms : VOISINS.noms), membres };
     all[maison] = f;
-    try { global.localStorage.setItem(VOISINS.store, JSON.stringify(all)); } catch (e) { /* gardée le temps de la visite */ }
+    garde();
     return f;
   }
 

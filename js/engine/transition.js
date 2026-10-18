@@ -29,7 +29,9 @@ export const TRANSITION = {
   // les maisons : de 3 à 5, de LARGEURS × HAUTEURS cases (murs compris), à ECARTS rangées du chemin
   MAISONS: [3, 5], ECARTS: [2, 12],
   // les métiers des voisins (js/engine/voisins.js), le champ d'un agriculteur (colonnes × rangées)
-  METIERS: ['bucheron', 'agriculteur'], CHAMP: [4, 2], LARGEURS: [5, 6, 7], HAUTEURS: [5, 6],
+  METIERS: ['bucheron', 'agriculteur'], CHAMP: [4, 2],
+  // les lits d'une maison : un par membre de la famille (deux adultes, un à trois enfants)
+  LITS: [3, 5], LARGEURS: [5, 6, 7], HAUTEURS: [5, 6],
   // la taille des tampons du kit (scripts/ville/transition.py, KIT.tampons), en tuiles
   TAMPONS: { mare: [9, 6], puits: [3, 3], tonneau: [1, 2], banc: [3, 2], buisson: [3, 2], buisson_large: [3, 2] },
   // (les barrières : barriere_2 à barriere_8, n × 3 tuiles, leur pied dans la 2e rangée)
@@ -120,6 +122,7 @@ function tirer(graine) {
       const a0 = nord ? py + 1 : milieu[porte] + 2, a1 = nord ? milieu[porte] - 3 : py - 1;
       if (a1 >= a0 && !libre(porte, a0, 2, a1 - a0 + 1)) continue;
       const m = { nom: 'maison_' + (maisons.length + 1), x: x0, y: y0, w, h, sens: nord ? 'bas' : 'haut', porte: { x: porte, y: py }, plan: plan(w, h, porte - x0, r, !nord) };
+      m.lits = m.plan.join('').split('').filter((c) => c === 'd' || c === 'p').length;
       maisons.push(m);
       prend(m.x - 1, m.y - 2, w + 2, h + 3);
       // l'allée : deux colonnes de coins, de la porte au chemin
@@ -231,8 +234,8 @@ function taille(nom) {
 // L'intérieur d'une maison de w × h cases, la porte à la colonne `porte` du mur du bas (du
 // haut si `haut`) : une
 // rangée de lettres par rangée (M un mur, P la porte, . le plancher, sinon un meuble posé sur
-// le plancher : f four, c cuisinière, p paillasse, d paillasse et sa couverture, g coffre à
-// grain, a atelier, b bac à semis, n nichoir, m meule). Rien juste devant la porte.
+// le plancher : f four, c cuisinière, d paillasse et sa couverture (p : une paillasse seule),
+// g coffre à grain, a atelier, b bac à semis, n nichoir, m meule). Rien juste devant la porte.
 const MEUBLES = ['f', 'c', 'g', 'a', 'b', 'n', 'm'];
 function plan(w, h, porte, r, haut = false) {
   const g = Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => (y === 0 || x === 0 || y === h - 1 || x === w - 1 ? 'M' : '.')));
@@ -240,25 +243,28 @@ function plan(w, h, porte, r, haut = false) {
   const cases = [];
   const devant = (x, y) => x === porte && (haut ? y <= 2 : y >= h - 3);
   for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) if (!devant(x, y)) cases.push([x, y]);
-  // les meubles contre les murs d'abord (la rangée du haut), les couchages au fond à droite
+  // les meubles contre les murs d'abord (la rangée du haut)
   const contre = cases.filter(([x, y]) => y === 1 || x === 1 || x === w - 2);
   const pioche = (l) => l.splice(Math.floor(r() * l.length), 1)[0];
-  const n = Math.min(contre.length, 3 + Math.floor(r() * 2));
+  const prend = (l, c) => { const i = l.findIndex(([x, y]) => x === c[0] && y === c[1]); if (i >= 0) l.splice(i, 1); };
+  const pose = (lettre) => {
+    const c = contre.length ? pioche(contre) : pioche(cases);
+    prend(cases, c);
+    g[c[1]][c[0]] = lettre;
+  };
   const meubles = MEUBLES.slice();
   // (toujours de quoi cuisiner : la cuisinière ou le four d'abord, contre le mur du fond)
   const fond = contre.filter(([, y]) => y === (haut ? h - 2 : 1));
   const feu = pioche(fond.length ? fond : contre);
-  contre.splice(contre.findIndex(([x, y]) => x === feu[0] && y === feu[1]), 1);
+  prend(contre, feu);
+  prend(cases, feu);
   g[feu[1]][feu[0]] = meubles.splice(meubles.indexOf(r() < 0.5 ? 'c' : 'f'), 1)[0];
-  for (let k = 1; k < n; k++) {
-    const [x, y] = pioche(contre);
-    g[y][x] = pioche(meubles);
-  }
-  const lits = 2 + Math.floor(r() * 2);
-  for (let k = 0; k < lits && contre.length; k++) {
-    const [x, y] = pioche(contre);
-    g[y][x] = k === 0 || r() < 0.5 ? 'd' : 'p';
-  }
+  // un lit (paillasse et couverture) par membre de la famille : LITS (deux adultes, un à trois
+  // enfants), autant que la maison en tient en gardant une case libre ; puis d'autres meubles
+  const lits = Math.max(TRANSITION.LITS[0], Math.min(TRANSITION.LITS[0] + Math.floor(r() * (TRANSITION.LITS[1] - TRANSITION.LITS[0] + 1)), cases.length - 1));
+  for (let k = 0; k < lits && cases.length; k++) pose('d');
+  const n = Math.min(2 + Math.floor(r() * 2), contre.length, Math.max(0, cases.length - 2));
+  for (let k = 0; k < n; k++) pose(pioche(meubles));
   return g.map((l) => l.join(''));
 }
 

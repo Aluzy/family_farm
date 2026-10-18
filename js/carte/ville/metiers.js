@@ -55,7 +55,7 @@
       const H = hote(), D = this.transition;
       if (!D || !D.plan || !H || !H.voisins) return;
       const familles = D.plan.maisons.map((m) => {
-        const f = V.voisins(m.nom);
+        const f = V.voisins(m.nom, m.lits);
         return { maison: m.nom, adultes: f.membres.filter((q) => !q.enfant).length, enfants: f.membres.filter((q) => q.enfant).length };
       });
       this.eco = H.voisins(familles);

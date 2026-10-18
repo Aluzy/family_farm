@@ -212,7 +212,7 @@ parties.
     tour au nord et au sud du chemin et plus ou moins loin de lui (`ECARTS`). La porte est face
     au chemin (en bas au nord, en haut au sud), une allée l'y relie. Elles sont bâties
     avec les blocs de la ferme générée (`assets/blocs.png`) : murs raccordés, porte, plancher,
-    meubles (four, cuisinière, paillasses, coffre à grain, atelier…) ;
+    meubles (four ou cuisinière, un lit par membre de la famille, coffre à grain, atelier…) ;
   - la mare et son banc, le puits et le tonneau près des maisons, des barrières le long du
     chemin, des buissons ;
   - les arbres et les rochers, que l'on coupe et que l'on casse comme avant, l'herbe haute et
@@ -233,7 +233,11 @@ parties.
 - **Les familles** : chaque maison a sa famille (`V.voisins`), qu'on voit aller et venir chez
   elle. De 7 h à 19 h, ses membres sortent par la porte.
   - Les enfants flânent autour de la maison ; rentrés, tous restent visibles et circulent dans
-    la maison avant de ressortir. La nuit, tout le monde reste chez soi.
+    la maison avant de ressortir. Le soir, tout le monde reste chez soi.
+  - **Un lit chacun** : chaque maison a de 3 à 5 lits (paillasse et couverture, `TRANSITION.LITS`,
+    `m.lits`), et sa famille deux adultes et autant d'enfants qu'il reste de lits. De 22 h à 6 h
+    (`TRANSITION_VIE.sommeil`), chacun va à son lit et y dort, sous sa couverture ; au lever, il
+    reprend sa journée. Arrivé sur la carte en pleine nuit, on les trouve déjà couchés.
   - Les enfants vont à l'école comme ceux de la ferme : le lundi, le mardi, le jeudi et le
     vendredi, de 7 h à 16 h 30. Le matin, ils vont à pied jusqu'à l'abri, où le bus de l'école
     les attend ; le soir, ils en descendent et rentrent chez eux. Si le bus est déjà passé (ou

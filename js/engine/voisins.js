@@ -72,8 +72,9 @@ export function voisinFoyer(state, maison, compo) {
     V.foyers[maison] = f;
   }
   if (compo) {
-    f.adultes = Math.max(1, compo.adultes | 0);
-    f.enfants = Math.max(0, compo.enfants | 0);
+    // (un lit chacun : la famille tient dans la maison)
+    f.adultes = Math.max(1, Math.min(m.lits || Infinity, compo.adultes | 0));
+    f.enfants = Math.max(0, Math.min((m.lits || Infinity) - f.adultes, compo.enfants | 0));
   }
   return f;
 }
@@ -311,7 +312,7 @@ export function voisinsVue(state) {
   const out = {};
   for (const [maison, f] of Object.entries(voisinsFoyers(state))) {
     out[maison] = {
-      metier: f.metier, adultes: f.adultes, enfants: f.enfants, argent: f.argent, bonheur: f.bonheur, quota: voisinQuota(state, maison),
+      metier: f.metier, lits: maisonDe(state, maison).lits, adultes: f.adultes, enfants: f.enfants, argent: f.argent, bonheur: f.bonheur, quota: voisinQuota(state, maison),
       champ: f.champ.map((p) => ({ culture: p.culture, stade: stade(p, state.day) })),
       hier: f.journal.length ? f.journal[f.journal.length - 1] : null,
     };

@@ -37,10 +37,15 @@ test('voisins : un foyer naît à la première visite, avec sa famille, son arge
   assertEqual(voisinFoyer(s, 'maison_99'), null);
   const champ = P.maisons.find((m) => m.metier === 'agriculteur');
   const f = voisinFoyer(s, champ.nom, { adultes: 2, enfants: 3 });
-  assertEqual([f.metier, f.adultes, f.enfants, f.argent], ['agriculteur', 2, 3, DATA.VOISINS.ARGENT]);
+  assertEqual([f.metier, f.adultes, f.enfants, f.argent], ['agriculteur', 2, Math.min(3, champ.lits - 2), DATA.VOISINS.ARGENT], 'un lit chacun');
   assertEqual(f.champ.length, champ.champ.w * champ.champ.h);
   assert(f.champ.every((p) => p.pret > s.day - 1), 'tout est planté');
   assertEqual(Object.keys(voisinsFoyers(s)).length, P.maisons.length);
+  // (un lit chacun : une famille trop grande pour la maison n'y entre pas toute)
+  const petite = P.maisons.find((m) => m.lits === Math.min(...P.maisons.map((q) => q.lits)));
+  const g = voisinFoyer(s, petite.nom, { adultes: 2, enfants: 9 });
+  assertEqual(g.adultes + g.enfants, petite.lits, 'autant de membres que de lits');
+  assertEqual(voisinsVue(s)[petite.nom].lits, petite.lits);
   assert(voisinFoyer(s, champ.nom) === f, 'le même foyer ensuite');
 });
 

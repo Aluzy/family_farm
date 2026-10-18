@@ -259,7 +259,8 @@
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)
   const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, reach: 14, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };
-  // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h ; rentrés,
+  // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h, au lit de
+  // `sommeil[0]` h à `sommeil[1]` h (chacun le sien : la maison en a un par membre) ; rentrés,
   // ils restent `pause` s à la maison (au hasard entre les deux) avant de ressortir. Les enfants
   // sont à l'école de `ecole[0]` h à `ecole[1]` h les jours d'école, comme ceux de la ferme
   // (js/famille-ferme.js, HORAIRE). Les parents font leur métier (js/carte/ville/metiers.js) :
@@ -269,7 +270,7 @@
   // `marche[1]` h (il y reste `enVille` s) ; l'un d'eux cuisine à partir de `cuisine` h, `cuisson` s
   // devant le four ou la cuisinière (une volute de vapeur toutes les `vapeur` s).
   const TRANSITION_VIE = {
-    jour: [7, 19], pause: [10, 25], ecole: [7, 16.5],
+    jour: [7, 19], pause: [10, 25], ecole: [7, 16.5], sommeil: [22, 6],
     coups: 3, coup: 0.55, parcelles: 3, travail: [3, 5], marche: [11, 14], enVille: 18, cuisine: 17.5, cuisson: 16, vapeur: 0.45,
     humeur: [70, 40],         // le bonheur : 😊 au-dessus de humeur[0], 🙂 au-dessus de humeur[1], 😟 en dessous
     // le champ d'un agriculteur : la terre labourée (16 bordures selon les coins, comme à la

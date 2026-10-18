@@ -15,7 +15,8 @@
  * (V.voisins), qu'on voit aller et venir chez elle : le jour (TRANSITION_VIE.jour), ses membres
  * sortent par la porte ; les parents font leur métier (bûcheron ou agriculteur : js/carte/ville/
  * metiers.js, l'économie de leur foyer : js/engine/voisins.js), les enfants flânent autour de
- * chez eux. La nuit, ils restent à la maison.
+ * chez eux. Le soir, ils restent à la maison ; de TRANSITION_VIE.sommeil[0] h à sommeil[1] h, ils
+ * dorment, chacun dans son lit (la maison en a un par membre : le plan, js/engine/transition.js).
  *
  * Les enfants vont à l'école comme ceux de la ferme (js/famille-ferme.js) : les jours d'école
  * (HorlogeSortie.JOURS_ECOLE), de TRANSITION_VIE.ecole[0] h à ecole[1] h. Le matin, ils vont à
@@ -122,7 +123,7 @@
       const noms = (this.cache.json.get('perso_cases') || {}).frames || [];
       this.npcFrame = this.npcFrame || K.cases(noms);
       for (const m of P.maisons) {
-        const f = V.voisins(m.nom);
+        const f = V.voisins(m.nom, m.lits);
         // (devant la porte : en dessous, ou au-dessus pour une maison au sud du chemin)
         const porte = { x: m.porte.x * T + T / 2, y: (m.porte.y + (m.sens === 'haut' ? -1 : 1)) * T + T - 3 };
         f.membres.forEach((mb, i) => {
@@ -132,12 +133,14 @@
           const c = this.caseDedans(m);
           const s = this.add.sprite(c.x, c.y, key, this.npcFrame('idle_bas_0')).setOrigin(0.5, 30 / 32);
           const shadow = this.add.ellipse(c.x, c.y, mb.enfant ? 9 : 11, 4, 0x1e1a18, 0.3);
-          const n = { m: mb, f, maison: m, porte, s, shadow, x: c.x, y: c.y, path: [], face: 'bas', walked: 0,
+          const n = { m: mb, f, maison: m, porte, s, shadow, x: c.x, y: c.y, path: [], face: 'bas', walked: 0, lit: i, dodo: null,
             speed: mb.enfant ? VOISINS.kidSpeed : VOISINS.speed, etat: 'dedans', t: Math.random() * 2, sortie: 0.5 + i * 1.6 + Math.random() * 2, porte_: 0, talk: 0, rang, geste: null };
           this.dehors.push(n);
           // (à l'école, le bus du matin passé : pas là)
           const H = global.HorlogeSortie ? global.HorlogeSortie.maintenant() : null;
           if (this.ecoleVoisin(n, H) && !this.busDuMatin(H)) this.monteVoisin(n, true);
+          // (la nuit : déjà au lit)
+          if (this.heureDeDormir(H) && m.litsCases[i]) this.coucheVoisin(n);
           this.placeVoisin(n, 0, false);
         });
       }
@@ -163,6 +166,7 @@
         return this.add.image(px, py, BLOCS.key, frame).setOrigin(0.5, 1).setDepth(plat ? py - T - 200 : py);
       };
       m.libres = [];
+      m.litsCases = [];
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           const c = a(x, y), gx = m.x + x, gy = m.y + y;
@@ -177,7 +181,13 @@
             const plat = c === 'p' || c === 'd';
             const i = img(BLOCS.meubles[c], x, y, false);
             if (plat) i.setDepth(i.y - T / 2);
-            if (c === 'd') img(BLOCS.drap, x, y).setDepth(i.depth + 0.1);
+            if (plat) {
+              // un lit : la couverture par-dessus le dormeur ; on s'y couche depuis une case
+              // libre voisine (la plus proche du plancher, sinon n'importe laquelle)
+              img(BLOCS.drap, x, y).setDepth(i.depth + 0.1);
+              const v = [[0, 1], [0, -1], [-1, 0], [1, 0]].find(([dx, dy]) => a(x + dx, y + dy) === '.');
+              m.litsCases.push({ x: i.x, y: i.y - 2, depth: i.depth + 0.05, acces: v ? { x: (m.x + x + v[0]) * T + T / 2, y: (m.y + y + v[1] + 1) * T - 2 } : null });
+            }
           }
         }
       }
@@ -208,6 +218,7 @@
 
     // Arrivé au bout de son chemin (ou fini d'attendre) : que faire maintenant ?
     decideVoisin(n, jour, H) {
+      if (this.decideSommeil(n, H)) return;
       if (n.m.enfant && this.decideEcole(n, H)) return;
       if (!n.m.enfant && this.decideMetier(n, jour, H)) return;
       // (dedans, sortir, rentrer : à pied, par la porte)
@@ -253,6 +264,64 @@
         default:
           n.etat = 'cherche';
       }
+    },
+
+    // ---------- la nuit : chacun dans son lit ----------
+
+    // L'heure de dormir (TRANSITION_VIE.sommeil : de 22 h à 6 h ; la nuit du jeu compte ses
+    // heures au-delà de 24).
+    heureDeDormir(H) {
+      if (!H) return false;
+      const h = ((H.heure % 24) + 24) % 24, S = TRANSITION_VIE.sommeil;
+      return h >= S[0] || h < S[1];
+    },
+
+    // Le sommeil décide de ce que fait `n` (true), ou le laisse à sa journée (false) : à
+    // l'heure de dormir, il va à son lit et s'y couche ; à l'heure du lever, il se lève.
+    decideSommeil(n, H) {
+      const lit = n.maison.litsCases && n.maison.litsCases[n.lit];
+      if (!lit) return false;
+      const dort = this.heureDeDormir(H);
+      if (n.etat === 'dort') {
+        if (dort) n.t = 2;
+        else this.leveVoisin(n);
+        return true;
+      }
+      if (n.etat === 'versLit') { this.coucheVoisin(n); return true; }
+      if (!dort || n.etat === 'ecole' || n.etat === 'enVille') return false;
+      // (un geste en cours s'arrête là : l'arbre visé est libre pour un autre)
+      if (n.arbre) { n.arbre.cible = null; n.arbre = null; }
+      n.geste = null;
+      n.porte_ = 0;
+      n.etat = 'versLit';
+      const p = lit.acces || this.caseDedans(n.maison);
+      n.path = this.findPath(n.x, n.y, p.x, p.y) || [];
+      n.t = n.path.length ? 0 : 0.01;
+      return true;
+    },
+
+    coucheVoisin(n) {
+      const lit = n.maison.litsCases[n.lit];
+      n.etat = 'dort';
+      n.path = [];
+      n.x = lit.x; n.y = lit.y;
+      n.face = 'bas';
+      n.s.setFlipX(false);
+      n.geste = 'idle_bas_0';
+      n.dodo = lit.depth;
+      n.shadow.setVisible(false);
+      n.t = 2;
+    },
+
+    leveVoisin(n) {
+      const lit = n.maison.litsCases[n.lit], p = lit.acces || this.caseDedans(n.maison);
+      n.x = p.x; n.y = p.y;
+      n.dodo = null;
+      n.geste = null;
+      n.shadow.setVisible(n.s.visible);
+      n.etat = 'dedans';
+      n.sortie = TRANSITION_VIE.pause[0] + Math.random() * (TRANSITION_VIE.pause[1] - TRANSITION_VIE.pause[0]);
+      n.t = 0.5 + Math.random() * 2;
     },
 
     // ---------- l'école des enfants des voisins ----------
@@ -377,7 +446,7 @@
       else if (marche) frame = F.de(n.porte_ > 0 ? 'panier' : 'marche', n.face, Math.floor(n.walked / 4) % 4);
       else frame = F.de('idle', n.face, Math.floor(time / 600 + n.m.perso) % 2);
       n.s.setFrame(frame);
-      n.s.setPosition(Math.round(n.x), Math.round(n.y)).setDepth(n.y);
+      n.s.setPosition(Math.round(n.x), Math.round(n.y)).setDepth(n.dodo != null ? n.dodo : n.y);
       n.shadow.setPosition(Math.round(n.x), Math.round(n.y)).setDepth(n.y - 0.5);
     },
 
@@ -414,6 +483,7 @@
     tapVoisinDehors(w) {
       const n = (this.dehors || []).find((q) => q.s.visible && Math.abs(w.x - q.x) <= 8 && w.y <= q.y + 3 && w.y >= q.y - (q.m.enfant ? 24 : 30));
       if (!n) return false;
+      if (n.etat === 'dort') { this.say(`💤 ${n.m.prenom} ${n.f.nom} dort.`); return true; }
       if (!n.geste) {
         n.talk = 3;
         n.face = 'cote';
