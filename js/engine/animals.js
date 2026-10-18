@@ -9,7 +9,7 @@ import { bumpCounter } from './campaign.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { farmSeed } from './terrain.js';
-import { etatPoulailler } from './blocs.js';
+import { etatEtable, etatPoulailler } from './blocs.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
 
@@ -332,21 +332,29 @@ export function stableOccupied(state) {
   return sheepPlaces(state) + cowPlaces(state);
 }
 
+// Les places de l'Étable : celles achetées ; sur la ferme générée, bornées par la place (une
+// case libre de l'enceinte et de l'enclos par place : etatEtable, blocs.js).
+export function stablePlaces(state) {
+  const p = state.paturage;
+  if (!p.construit) return 0;
+  return farmSeed(state) === null ? p.places : Math.min(p.places, etatEtable(state).places);
+}
+
 // Places encore libres.
 export function stableFree(state) {
-  return state.paturage.construit ? Math.max(0, state.paturage.places - stableOccupied(state)) : 0;
+  return state.paturage.construit ? Math.max(0, stablePlaces(state) - stableOccupied(state)) : 0;
 }
 
 // Combien de moutons les places actuelles peuvent accueillir, compte tenu de
 // celles que prennent les vaches.
 export function pastureCapacity(state) {
-  return state.paturage.construit ? maxSheep(Math.max(0, state.paturage.places - cowPlaces(state))) : 0;
+  return state.paturage.construit ? maxSheep(Math.max(0, stablePlaces(state) - cowPlaces(state))) : 0;
 }
 
 // Combien de vaches les places actuelles peuvent accueillir, compte tenu de
 // celles que prennent les moutons.
 export function cowCapacity(state) {
-  return state.paturage.construit ? maxCows(Math.max(0, state.paturage.places - sheepPlaces(state))) : 0;
+  return state.paturage.construit ? maxCows(Math.max(0, stablePlaces(state) - sheepPlaces(state))) : 0;
 }
 
 // Moutons qu'on peut encore acheter.
@@ -373,12 +381,35 @@ export function pastureCost(state) {
   return growthPrice(P.PRIX_PLACE, croissance, rank - 1);
 }
 
+// Sur la ferme générée, pourquoi l'Étable ne peut pas prendre une place de plus (il faut une
+// case libre de plus dans l'enceinte et dans l'enclos), ou null.
+export function pastureRefus(state) {
+  const p = state.paturage;
+  if (farmSeed(state) === null || !p.construit) return null;
+  const e = etatEtable(state), besoin = p.places + 1;
+  if (e.libresPiece.length >= besoin && e.libresEnclos.length >= besoin) return null;
+  return `Pour ${besoin} places, il faut ${besoin} cases libres dans l'étable et dans l'enclos : il y en a ${e.libresPiece.length} et ${e.libresEnclos.length}.`;
+}
+
+// Les bêtes de l'Étable qui ont leur place (ferme générée : les places de stablePlaces, les
+// moutons d'abord, puis les vaches) ; les autres restent mais ne donnent rien. { moutons, vaches }
+// (des Set d'identifiants).
+export function stableHoused(state) {
+  const p = state.paturage, P = DATA.PATURAGE;
+  if (farmSeed(state) === null) return { moutons: new Set(p.moutons.map((m) => m.id)), vaches: new Set(p.vaches.map((v) => v.id)) };
+  let reste = stablePlaces(state);
+  const moutons = new Set(), vaches = new Set();
+  for (const m of p.moutons) if (reste >= P.PLACES_PAR_MOUTON) { moutons.add(m.id); reste -= P.PLACES_PAR_MOUTON; }
+  for (const v of p.vaches) if (reste >= P.PLACES_PAR_VACHE) { vaches.add(v.id); reste -= P.PLACES_PAR_VACHE; }
+  return { moutons, vaches };
+}
+
 // Ouvre l'Étable aux moutons et aux vaches : les places de départ sont acquises.
 export function buildPaturage(state) {
   const p = state.paturage;
   const deja = 'L\'Étable accueille déjà les moutons et les vaches.';
   // la ferme générée : une mangeoire, fabriquée à l'Atelier, posée dans une pièce close (blocs.js)
-  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, l\'Étable se bâtit : une pièce close et une mangeoire (Atelier).');
+  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, l\'Étable se bâtit : une enceinte de murs avec une porte sur l\'extérieur, une mangeoire (Atelier), et un enclos de barrières relié par une porte.');
   return buildWith(state, 'paturage', { built: p.construit, deja, cost: DATA.PATURAGE.PRIX_CONSTRUCTION, libelle: 'Étable préparée' }, () => {
     p.construit = true;
     p.places = DATA.PATURAGE.PLACES_DEPART;
@@ -392,6 +423,8 @@ export function buildPaturage(state) {
 export function buyPasture(state) {
   const p = state.paturage;
   if (!p.construit) return fail('Prépare d\'abord l\'Étable pour les moutons et les vaches.');
+  const refus = pastureRefus(state);
+  if (refus) return fail(refus);
   const cost = pastureCost(state);
   if (!pay(state, cost, 'Place à l\'Étable')) return fail(NO_COINS);
   p.places += 1;
@@ -537,7 +570,10 @@ export function feedLivestock(state) {
     rap.paille += qty;
     return true;
   };
+  // (la ferme générée : les bêtes sans place ne mangent ni ne donnent rien)
+  const loges = stableHoused(state);
   for (const m of p.moutons) {
+    if (!loges.moutons.has(m.id)) continue;
     if (!eat(A.mouton.pailleParNuit)) continue;
     rap.moutonsNourris += 1;
     m.laine = Math.min(A.mouton.joursLaine, (m.laine || 0) + 1);
@@ -546,6 +582,7 @@ export function feedLivestock(state) {
   let laitAlpage = 0;
   const herbes = DATA.PATURAGE.HERBES;
   for (const v of p.vaches) {
+    if (!loges.vaches.has(v.id)) continue;
     if (herbsOn(state) && countItem(state, herbes) >= A.vache.herbesParNuit) {
       takeItem(state, herbes, A.vache.herbesParNuit);
       rap.herbes += A.vache.herbesParNuit;

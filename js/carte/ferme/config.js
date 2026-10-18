@@ -170,10 +170,24 @@
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'coffre_grain' },
     voile: 0xc8ffb4, voileAlpha: 0.4, voileDepth: 0.08, coucheY: 4,
   };
-  // Les poules du Poulailler de la ferme générée (chantier.js, syncHens) : la planche des poules
-  // (HERD_SHEETS.poule : cases de 16 × 16, profil droit), dehors dans l'enclos de jour[0] h à
-  // jour[1] h (comme la porte du Poulailler, ambient-life.js), `vitesse` px/s.
-  const POULES = { key: 'poule', jour: [6, 19], vitesse: 10, frames: { idle: 0, picore0: 1, picore1: 2, marche0: 3, marche1: 4, gratte: 5, couvee: 6, ailes: 7 } };
+  // Les bêtes du Poulailler et de l'Étable de la ferme générée (chantier.js, syncBeasts) : leurs
+  // planches (HERD_SHEETS : profil droit), dehors dans l'enclos de jour[0] h à jour[1] h (comme
+  // la porte des bâtiments, ambient-life.js). Par espèce : `vitesse` (px/s), `pas` (s par image
+  // de marche), `pause` (s entre deux trajets), ce qu'elle fait à l'arrêt (anims : [images,
+  // s par image, part du temps où elle le fait]) et la nuit (nuit : images, lentement).
+  const GRAZER = { idle: 0, queue: 1, marche0: 2, marche1: 3, broute0: 4, broute1: 5, couchee0: 6, couchee1: 7 };
+  const BETES = {
+    jour: [6, 19],
+    especes: {
+      poule: { key: 'poule', vitesse: 10, pas: 0.15, pause: [1, 4], marche: ['marche0', 'marche1'], nuit: ['couvee'], poses: ['picore', 'gratte'],
+        anims: { picore: [['picore0', 'picore1'], 0.12, 0.4], gratte: [['gratte', 'idle'], 0.18, 0.8] },
+        frames: { idle: 0, picore0: 1, picore1: 2, marche0: 3, marche1: 4, gratte: 5, couvee: 6, ailes: 7 } },
+      mouton: { key: 'mouton', vitesse: 6, pas: 0.25, pause: [3, 8], marche: ['marche0', 'marche1'], nuit: ['couchee0', 'couchee0', 'couchee1'], poses: ['broute', 'broute', 'queue'],
+        anims: { broute: [['broute0', 'broute1'], 0.5, 0.9], queue: [['queue', 'idle'], 0.22, 0.3] }, frames: GRAZER },
+      vache: { key: 'vache', vitesse: 7, pas: 0.3, pause: [4, 10], marche: ['marche0', 'marche1'], nuit: ['couchee0', 'couchee0', 'couchee1'], poses: ['broute', 'broute', 'queue'],
+        anims: { broute: [['broute0', 'broute1'], 0.55, 0.9], queue: [['queue', 'idle'], 0.22, 0.3] }, frames: GRAZER },
+    },
+  };
   const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };
   const HOLLOW = {
     layer: 'plantes_pierres', gids: [539, 540], near: 22, page: 'infra-monde.html',
@@ -352,7 +366,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, POULES, EXIT, HOLLOW, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, HOLLOW, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

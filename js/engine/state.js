@@ -330,6 +330,12 @@ export const MIGRATIONS = {
     if (s2.carte && s2.poulailler && typeof s2.poulailler === 'object') { s2.poulailler = { ...s2.poulailler }; majPoulailler(s2); }
     return s2;
   },
+  // v39 → v40 : l'Étable aussi (une porte sur le dehors, un enclos ; une place par case libre).
+  39: (state) => {
+    const s2 = { ...state, version: 40 };
+    if (s2.carte && s2.paturage && typeof s2.paturage === 'object') { s2.paturage = { ...s2.paturage }; majPoulailler(s2); }
+    return s2;
+  },
 };
 
 function migrateRoomKinds(old) {

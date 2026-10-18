@@ -244,8 +244,7 @@ function ouvrirBatiment(state, id) {
   if (id === 'serre' && !(b.parcelles && b.parcelles.length)) { openSerre(state); return; }
   b.construit = true;
   if (!b.niveau && id !== 'paturage') b.niveau = 1;
-  if (id === 'poulailler') { majPoulailler(state); return; }   // (pas sans son enclos : etatPoulailler)
-  if (id === 'paturage') { if (!b.places) b.places = DATA.PATURAGE.PLACES_DEPART; } else if (!b.niveau) b.niveau = 1;
+  if (id === 'poulailler' || id === 'paturage') { majPoulailler(state); return; }   // (pas sans leur enclos : etatEnclos)
   if (id === 'silo') fillSilo(state);   // le blé de l'inventaire y entre, comme à sa réparation
 }
 
@@ -344,7 +343,7 @@ export function reprendreBloc(state, tile, opts) {
   else delete state.sols[tile];
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
-  if (s && s.batiment && state[s.batiment] && s.batiment !== 'poulailler') state[s.batiment].construit = false;
+  if (s && s.batiment && state[s.batiment] && !['poulailler', 'paturage'].includes(s.batiment)) state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)
   if (s && s.station && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
@@ -352,26 +351,35 @@ export function reprendreBloc(state, tile, opts) {
   return { ok: true, sorte, case: tile };
 }
 
-/* ---------- le Poulailler de la ferme générée : une enceinte, un nichoir, un enclos ---------- */
+/* ---------- le Poulailler et l'Étable de la ferme générée : une enceinte, un bloc clé, un enclos ---------- */
 
-// Le Poulailler est là quand tout y est :
-//   - une enceinte de murs (une pièce close) où le nichoir est posé ;
+// Le Poulailler (le nichoir) et l'Étable (la mangeoire) sont là quand tout y est :
+//   - une enceinte de murs (une pièce close) où le bloc clé est posé ;
 //   - une porte de l'enceinte qui donne sur l'extérieur ;
 //   - un enclos : une étendue close de barrières (elle peut s'appuyer sur les murs de
 //     l'enceinte), reliée à l'enceinte par une autre de ses portes ;
-//   - une case libre au moins pour une poule, dans l'enceinte (hors nichoir) et dans l'enclos.
-// Une poule par case libre de l'enceinte et de l'enclos : places = le plus petit des deux
-// (coopCapacity le borne aussi par le niveau). etatPoulailler → { ok, conditions: [{ id, texte, ok }],
-// piece, enclos (leurs cases), porteDehors, porteEnclos, libresPiece, libresEnclos (cases), places }.
-export const CONDITIONS_POULAILLER = [
-  ['enceinte', 'Une enceinte de murs (une pièce close)'],
-  ['nichoir', 'Un nichoir dans l\'enceinte'],
-  ['dehors', 'Une porte de l\'enceinte qui donne sur l\'extérieur'],
-  ['enclos', 'Un enclos de barrières, relié à l\'enceinte par une autre porte'],
-  ['place', 'Une case libre par poule, dans l\'enceinte (hors nichoir) et dans l\'enclos'],
-];
+//   - une case libre au moins, dans l'enceinte (hors bloc clé) et dans l'enclos.
+// Une place par case libre de l'enceinte et de l'enclos : places = le plus petit des deux (une
+// poule, un mouton : une place ; une vache : PATURAGE.PLACES_PAR_VACHE). Le Poulailler le borne
+// aussi par son niveau (coopCapacity), l'Étable par ses places achetées (stablePlaces).
+// etatEnclos(state, cle) → { ok, conditions: [{ id, texte, ok }], piece, enclos (leurs cases),
+// porteDehors, porteEnclos, libresPiece, libresEnclos (cases), places }.
+const ENCLOS = {
+  nichoir: { batiment: 'poulailler', bloc: 'Un nichoir', bete: 'poule', horsCle: 'hors nichoir' },
+  mangeoire: { batiment: 'paturage', bloc: 'Une mangeoire', bete: 'place (un mouton : 1, une vache : {vache})', horsCle: 'hors mangeoire' },
+};
+function conditionsEnclos(cle) {
+  const d = ENCLOS[cle];
+  return [
+    ['enceinte', 'Une enceinte de murs (une pièce close)'],
+    ['cle', `${d.bloc} dans l'enceinte`],
+    ['dehors', 'Une porte de l\'enceinte qui donne sur l\'extérieur'],
+    ['enclos', 'Un enclos de barrières, relié à l\'enceinte par une autre porte'],
+    ['place', `Une case libre par ${d.bete.replace('{vache}', DATA.PATURAGE.PLACES_PAR_VACHE)}, dans l'enceinte (${d.horsCle}) et dans l'enclos`],
+  ];
+}
 
-let pouleCle = null, pouleEtat = null;
+const enclosCache = new Map();
 
 // L'étendue d'herbe atteinte depuis `depart` sans passer un mur, une porte, l'Atelier ou une
 // barrière : { cases, close (elle ne touche ni le bord ni ne dépasse PIECE_MAX), barriere (une
@@ -393,16 +401,17 @@ function etendue(state, depart) {
   return { cases, close, barriere };
 }
 
-export function etatPoulailler(state) {
+export function etatEnclos(state, sorteCle) {
   const B = blocsPoses(state);
   const cle = farmSeed(state) + ':' + JSON.stringify(B) + ':' + (state.verger ? state.verger.arbres.map((a) => a.case).join(',') : '');
-  if (cle === pouleCle) return pouleEtat;
+  const vu = enclosCache.get(sorteCle);
+  if (vu && vu.cle === cle) return vu.etat;
   const T = farmTerrain(state), W = T.LARGEUR;
   const ok = {}, e = { ok: false, piece: null, enclos: null, porteDehors: null, porteEnclos: null, libresPiece: [], libresEnclos: [], places: 0 };
-  const nid = Object.keys(B).map(Number).find((t) => B[t] === 'nichoir');
+  const nid = Object.keys(B).map(Number).find((t) => B[t] === sorteCle);
   const pieces = atelierOuvert(state) ? piecesCloses(state) : [];
   const p = nid === undefined ? null : pieces.find((q) => q.cases.includes(nid)) || null;
-  ok.nichoir = nid !== undefined && !!p;
+  ok.cle = nid !== undefined && !!p;
   ok.enceinte = !!p;
   if (p) {
     e.piece = p.cases;
@@ -422,18 +431,33 @@ export function etatPoulailler(state) {
   ok.dehors = e.porteDehors !== null;
   ok.enclos = !!e.enclos;
   ok.place = e.places > 0;
-  e.conditions = CONDITIONS_POULAILLER.map(([id, texte]) => ({ id, texte, ok: !!ok[id] }));
+  e.conditions = conditionsEnclos(sorteCle).map(([id, texte]) => ({ id, texte, ok: !!ok[id] }));
   e.ok = e.conditions.every((c) => c.ok);
-  pouleCle = cle;
-  pouleEtat = e;
+  enclosCache.set(sorteCle, { cle, etat: e });
   return e;
 }
 
-// Sur la ferme générée, le Poulailler existe quand tout y est (etatPoulailler) ; il garde son
-// niveau et ses poules quand il ne l'est plus. Appelée après chaque bloc posé ou repris.
+export function etatPoulailler(state) {
+  return etatEnclos(state, 'nichoir');
+}
+
+export function etatEtable(state) {
+  return etatEnclos(state, 'mangeoire');
+}
+
+// Sur la ferme générée, le Poulailler et l'Étable existent quand tout y est (etatEnclos) ; ils
+// gardent leur niveau, leurs places et leurs bêtes quand ils ne le sont plus. Appelée après
+// chaque bloc posé ou repris.
 export function majPoulailler(state) {
-  if (farmSeed(state) === null || !state.poulailler) return;
-  const e = etatPoulailler(state);
-  state.poulailler.construit = e.ok;
-  if (e.ok && !state.poulailler.niveau) state.poulailler.niveau = 1;
+  if (farmSeed(state) === null) return;
+  if (state.poulailler) {
+    const e = etatPoulailler(state);
+    state.poulailler.construit = e.ok;
+    if (e.ok && !state.poulailler.niveau) state.poulailler.niveau = 1;
+  }
+  if (state.paturage) {
+    const e = etatEtable(state);
+    state.paturage.construit = e.ok;
+    if (e.ok && !state.paturage.places) state.paturage.places = DATA.PATURAGE.PLACES_DEPART;
+  }
 }
