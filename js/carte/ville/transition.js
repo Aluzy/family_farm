@@ -17,6 +17,11 @@
  * plus, flânent autour de chez eux. La nuit, ils
  * restent à la maison. Ce qui est ramassé le reste jusqu'au lendemain (localStorage).
  *
+ * Le joueur ramasse aussi : un toucher sur une ressource y envoie le personnage, qui la prend
+ * en arrivant (FermeHote.ramasserTransition : l'objet entre dans l'inventaire, contre l'énergie
+ * du geste « ramasser »). Une ressource qu'il vise, les voisins la laissent ; ce qu'il a pris
+ * (le moteur s'en souvient : FermeHote.transition().pris) ne revient pas avant le lendemain.
+ *
  * Méthodes de la scène des cartes (js/ville-carte.js), posées sur son prototype : `this` est
  * la scène (voir docs/architecture-phaser.md).
  */
@@ -26,7 +31,7 @@
   const K = global.CarteKit;
   const V = global.CarteVille;
   const { T, BLOCS, RAMASSABLES, TRANSITION_VIE, VOISINS } = V.C;
-  const { hote, sheetKey } = V;
+  const { hote, reduced, sheetKey } = V;
 
   // Le plan de la partie (FermeHote.transition), lu une fois par visite de la carte.
   function planDuJour() {
@@ -123,7 +128,7 @@
       // les ressources du jour encore là
       this.ramasses = ramasses(P.graine, D.jour);
       for (const r of D.ressources) {
-        if (this.ramasses.ids.includes(r.id) || !this.textures.exists(RAMASSABLES.key)) continue;
+        if (this.ramasses.ids.includes(r.id) || (D.pris || []).includes(r.id) || !this.textures.exists(RAMASSABLES.key)) continue;
         const img = this.add.image(r.x, r.y, RAMASSABLES.key, RAMASSABLES.frames[r.sorte] || 0).setOrigin(0.5, 1).setDepth(r.y - 1);
         this.ressources.set(r.id, { ...r, img, prise: null });
       }
@@ -231,7 +236,7 @@
         case 'ramasse': {
           const r = n.cible;
           n.cible = null;
-          if (r && this.ressources.has(r.id)) {
+          if (r && this.ressources.has(r.id) && r.prise === n) {
             r.img.destroy();
             this.ressources.delete(r.id);
             this.ramasses.ids.push(r.id);
@@ -276,6 +281,42 @@
       n.s.setFrame(frame);
       n.s.setPosition(Math.round(n.x), Math.round(n.y)).setDepth(n.y);
       n.shadow.setPosition(Math.round(n.x), Math.round(n.y)).setDepth(n.y - 0.5);
+    },
+
+    // Un toucher sur une ressource : le personnage y va (s'il n'y est pas déjà) et la prend en
+    // arrivant (stepCueillette). Les voisins la laissent.
+    tapRessource(w) {
+      let r = null;
+      for (const q of (this.ressources || new Map()).values()) if (Math.abs(w.x - q.x) <= 9 && w.y >= q.y - 14 && w.y <= q.y + 4) { r = q; break; }
+      if (!r) return false;
+      if (r.prise && r.prise !== 'joueur' && r.prise !== 'loin') {
+        // un voisin y allait : il cherchera autre chose
+        const n = r.prise;
+        n.cible = null; n.path = []; n.etat = 'cherche'; n.t = 0.3;
+      }
+      r.prise = 'joueur';
+      this.cueille = r;
+      if (Math.hypot(this.heroPos.x - r.x, this.heroPos.y - r.y) > RAMASSABLES.reach) this.goTo(r.x, r.y + 2);
+      return true;
+    },
+
+    // La ressource visée, une fois le personnage arrivé : dans l'inventaire.
+    stepCueillette() {
+      const r = this.cueille;
+      if (!r) return;
+      if (!this.ressources.has(r.id)) { this.cueille = null; return; }
+      const d = Math.hypot(this.heroPos.x - r.x, this.heroPos.y - r.y);
+      if (d > RAMASSABLES.reach || this.path.length) return;
+      this.cueille = null;
+      const H = hote();
+      if (!H || !H.ramasserTransition) { r.prise = null; this.say('Il faut une partie en cours pour ramasser.'); return; }
+      const res = H.ramasserTransition(r.id);
+      if (!res || !res.ok) { r.prise = null; return; }   // (refusée : la nuit, trop fatigué ; le message est dit)
+      this.ressources.delete(r.id);
+      this.ramasses.ids.push(r.id);
+      garde(this.ramasses);
+      this.tweens.add({ targets: r.img, y: r.img.y - 10, alpha: 0, duration: reduced() ? 0 : 400, onComplete: () => r.img.destroy() });
+      this.popGain({ [res.item]: res.n });
     },
 
     // Un toucher sur un voisin dehors : il s'arrête et parle de ce que sa famille a ramassé.

@@ -1,4 +1,8 @@
 import { mulberry32 } from './base.js';
+import { fail } from './devices.js';
+import { addItem } from './inventory.js';
+import { gainActionXp } from './levels.js';
+import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { farmSeed } from './terrain.js';
 
 /* ---------- la carte de transition, tirée pour chaque partie ---------- */
@@ -10,7 +14,8 @@ import { farmSeed } from './terrain.js';
 // le foyer de la ferme générée) avec leurs allées, la mare, le puits, le tonneau, le banc, les
 // barrières, les buissons, les arbres, les rochers, l'herbe haute, les fleurs. Chaque jour,
 // des ressources (petites pierres, morceaux de bois, herbes) poussent sur l'herbe : les
-// familles des maisons vont les ramasser (js/carte/ville/transition.js).
+// familles des maisons vont les ramasser (js/carte/ville/transition.js), le joueur aussi
+// (ramasserTransition : comme sur la ferme générée, geste « ramasser »).
 //
 // Le plan est en tuiles (16 px) pour le sol, les maisons et les tampons du kit, en px pour
 // ce que le jeu dessine lui-même (arbres, rochers, herbe haute, ressources). Il ne dépend que
@@ -30,7 +35,7 @@ export const TRANSITION = {
   ROCHERS: ['rocher_a', 'rocher_b', 'rocher_c', 'caillou_0', 'caillou_1'],
   // les ressources du jour : combien, et de quelles sortes (les images de assets/ramassables.png)
   RESSOURCES: 18, SORTES: ['petite_pierre', 'morceau_bois', 'herbe'],
-  // ce que chaque sorte rapporte à la famille qui la ramasse
+  // ce que chaque sorte rapporte à qui la ramasse (une famille, ou le joueur : son inventaire)
   OBJETS: { petite_pierre: 'pierre', morceau_bois: 'bois', herbe: 'fibre' },
 };
 
@@ -238,4 +243,28 @@ export function ressourcesDuJour(graine, jour) {
     out.push({ id: `${sorte}:${x},${y}`, sorte, x: x * 16 + 8, y: y * 16 + 14 });
   }
   return out;
+}
+
+/* ---------- le joueur ramasse ---------- */
+
+// Les ressources du jour que le joueur a déjà prises : [ids]. state.transitionPris = { jour, ids }.
+export function transitionPris(state) {
+  const p = state.transitionPris;
+  return p && p.jour === state.day && Array.isArray(p.ids) ? p.ids : [];
+}
+
+// Le joueur ramasse la ressource `id` du jour : son objet (TRANSITION.OBJETS) entre dans
+// l'inventaire, contre l'énergie et l'XP du geste « ramasser » (comme sur la ferme générée).
+// Une ressource ne se prend qu'une fois par jour.
+export function ramasserTransition(state, id) {
+  const r = ressourcesDuJour(transitionSeed(state), state.day).find((q) => q.id === id);
+  if (!r || transitionPris(state).includes(id)) return fail('Il n\'y a plus rien à ramasser ici.');
+  if (!canAfford(state, 'ramasser')) return fail(TIRED);
+  if (!state.transitionPris || state.transitionPris.jour !== state.day) state.transitionPris = { jour: state.day, ids: [] };
+  state.transitionPris.ids.push(id);
+  const item = TRANSITION.OBJETS[r.sorte];
+  addItem(state, item, 1);
+  spendEnergy(state, 'ramasser');
+  gainActionXp(state, 'ramasser');
+  return { ok: true, item, n: 1 };
 }
