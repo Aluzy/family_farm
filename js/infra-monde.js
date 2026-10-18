@@ -10,8 +10,9 @@
  * Le personnage principal de la partie (assets/personnages/perso_NN.png, comme sur la ferme)
  * marche sur le sol plein (les tuiles de la couche « sol »), pas dans l'eau ni à travers un
  * tronc : un toucher (ou un clic) l'envoie au plus court jusque-là ; les flèches ou ZQSD le
- * dirigent aussi. L'habitant de l'île y flâne de son côté. Un appui sur un arbre : le
- * personnage en prend un morceau (un par arbre et par jour : la lanterne scintillante, à l'Atelier). Avec « animations réduites », les
+ * dirigent aussi. L'habitant de l'île y flâne de son côté. La hache en main, un appui
+ * sur un arbre : le personnage en taille un morceau (un par arbre et par jour : la lanterne
+ * scintillante, à l'Atelier). Avec « animations réduites », les
  * arbres et l'eau restent immobiles, l'habitant ne bouge pas.
  *
  * La carte s'affiche dans la page du jeu (js/ui/excursion.js : InfraMonde.start, stop), à la
@@ -26,10 +27,12 @@
   const v = K.v;
   const MAP = { key: 'infra', file: 'assets/infra_monde.json' };
   const TREE = { key: 'infra_arbre', file: 'assets/infra_arbre.png', w: 32, h: 64, frames: 8, fps: 6, foot: 59 };
-  // Un morceau d'arbre (pour la lanterne scintillante, à l'Atelier) : un appui sur un arbre, le
-  // personnage y va (à moins de `reach` px) et en prend un (FermeHote.ramasser) ; un par arbre
-  // et par jour (localStorage `store` : { jour, pris : les numéros des arbres }).
-  const BOIS = { item: 'bois_infra', reach: 20, store: 'ferme-infra', doigt: { x: 12, haut: 52, bas: 6 } };
+  // Un morceau d'arbre (pour la lanterne scintillante, à l'Atelier) : la hache en main, un appui
+  // sur un arbre, le personnage va à côté (à `cote` px de son pied), donne un coup de hache
+  // (hache_cote_0..3 en `swing` s, le coup porte à la 3e image) et en prend un morceau
+  // (FermeHote.ramasser) ; un par arbre et par jour (localStorage `store` : { jour, pris : les
+  // numéros des arbres }).
+  const BOIS = { item: 'bois_infra', cote: 11, swing: 0.5, store: 'ferme-infra', doigt: { x: 12, haut: 52, bas: 6 } };
   // L'habitant (scripts/infra/habitant.py) : marche de face 0-3, de dos 4-7, de profil 8-11 ;
   // debout de face 12 (13 : l'œil fermé), de dos 14, de profil 15 (16 : l'œil fermé).
   const HERO = {
@@ -161,28 +164,50 @@
       return r && r.jour === jour && Array.isArray(r.pris) ? r : { jour, pris: [] };
     }
 
-    // Un appui sur un arbre : y aller ; arrivé, en prendre un morceau (stepTree).
+    // Un appui sur un arbre, la hache en main : y aller ; arrivé, un coup de hache (stepTree).
+    // Sans la hache : un mot pour le dire.
     tapTree(w) {
       const D = BOIS.doigt;
       const t = this.trees.find((s) => Math.abs(w.x - s.x) <= D.x && w.y >= s.y - D.haut && w.y <= s.y + D.bas);
       if (!t) return false;
-      if (this.boisRec.pris.includes(t.n)) {
-        if (window.FermeHote && window.FermeHote.say) window.FermeHote.say('🌈 Cet arbre t\'a déjà donné un morceau aujourd\'hui : reviens demain.');
-        return true;
-      }
-      this.cut = t;
-      const g = this.nearWalk(t.x, t.y + T);
-      if (Math.hypot(g.x - this.heroPos.x, g.y - this.heroPos.y) > 2) this.goTo(g.x, g.y);
+      const H = window.FermeHote, say = (m) => { if (H && H.say) H.say(m); };
+      if (H && H.enMain && H.enMain() !== 'hache') { say('🪓 Prends la hache en main (barre d\'outils) pour tailler un morceau de cet arbre.'); return true; }
+      if (this.boisRec.pris.includes(t.n)) { say('🌈 Cet arbre t\'a déjà donné un morceau aujourd\'hui : reviens demain.'); return true; }
+      if (this.chop && this.chop.started) return true;
+      // à côté du tronc, du côté où l'on est (sinon l'autre)
+      const P = this.heroPos, k = P.x < t.x ? -1 : 1;
+      const spots = [k, -k].map((c) => ({ x: t.x + c * BOIS.cote, y: t.y + 1 }));
+      const spot = spots.find((q) => this.canWalk(Math.floor(q.x / T), Math.floor(q.y / T))) || this.nearWalk(t.x, t.y + T);
+      this.chop = { arbre: t, spot, started: false };
+      this.path = [];
+      if (Math.hypot(spot.x - P.x, spot.y - P.y) > 3) this.goTo(spot.x, spot.y);
       return true;
     }
 
-    stepTree() {
-      const t = this.cut;
-      if (!t || this.path.length) return;
-      this.cut = null;
-      if (Math.hypot(t.x - this.heroPos.x, t.y - this.heroPos.y) > BOIS.reach + T) return;
+    // Arrivé à côté de l'arbre : le geste de la hache ; au coup, le morceau d'arbre.
+    stepTree(dt) {
+      const c = this.chop;
+      if (!c) return;
+      const P = this.heroPos;
+      if (!c.started) {
+        if (this.path.length) return;
+        if (Math.hypot(c.spot.x - P.x, c.spot.y - P.y) > 12) { this.chop = null; return; }
+        c.started = true;
+        c.t = 0;
+        this.face = 'cote';
+        this.hero.setFlipX(c.arbre.x < P.x);
+      }
+      c.t += dt;
+      const k = Math.min(3, Math.floor((c.t / BOIS.swing) * 4));
+      c.frame = 'hache_cote_' + k;
+      if (k >= 2 && !c.hit) { c.hit = true; this.takeWood(c.arbre); }
+      if (c.t >= BOIS.swing) this.chop = null;
+    }
+
+    takeWood(t) {
       const H = window.FermeHote;
       const r = H && H.ramasser ? H.ramasser(BOIS.item) : null;
+      K.vibre('hache');
       if (r && !r.ok) return;
       this.boisRec.pris.push(t.n);
       try { window.localStorage.setItem(BOIS.store, JSON.stringify(this.boisRec)); } catch (e) { /* ignoré */ }
@@ -288,7 +313,7 @@
       this.stepTileAnims(time);
       const dt = Math.min(delta, 100) / 1000;
       this.stepNpc(time, dt);
-      this.stepTree();
+      this.stepTree(dt);
       const P = this.heroPos;
       let vx = 0, vy = 0;
       const k = saisie() ? null : this.keys;
@@ -300,6 +325,7 @@
       }
       if (vx || vy) {
         this.path = [];
+        this.chop = null;
         const l = Math.hypot(vx, vy), st = PLAYER.speed * dt;
         const nx = P.x + (vx / l) * st, ny = P.y + (vy / l) * st;
         // glisse le long d'un bord : chaque axe séparément
@@ -313,7 +339,9 @@
       }
       const H = this.hero;
       const moved = Math.hypot(vx, vy) > 0;
-      if (moved) {
+      if (this.chop && this.chop.frame) {
+        H.setFrame(this.frame(this.chop.frame));
+      } else if (moved) {
         const r = K.regard(vx, vy);
         this.face = r.face; H.setFlipX(r.flip);
         this.walked += PLAYER.speed * dt;
