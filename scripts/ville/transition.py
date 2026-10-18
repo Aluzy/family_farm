@@ -1,9 +1,16 @@
-# La carte de transition entre la ferme et la ville (48 × 36 tuiles) : à l'ouest, l'herbe et le
-# chemin de terre de la ferme (ses propres tuiles, lues dans la planche de la ferme), deux
-# maisons de voisins dans le style de la ferme, un puits, une mare ; à l'est, le chemin
-# devient la route goudronnée de la ville, ses trottoirs, ses réverbères et l'arrêt de bus
-# (celui des enfants qui vont à l'école). La route continue dans la ville (la route de la
-# ferme, à l'ouest de assets/ville.json).
+# La carte de transition entre la ferme et la ville (48 × 36 tuiles). À l'est (à partir de la
+# colonne OUEST), la partie fixe : le bout du chemin de terre de la ferme qui devient la route
+# goudronnée de la ville, ses trottoirs, ses réverbères et l'arrêt de bus (celui des enfants qui
+# vont à l'école). La route continue dans la ville (la route de la ferme, à l'ouest de
+# assets/ville.json).
+#
+# L'ouest (colonnes 0 à OUEST - 1) est tiré par le jeu pour chaque partie (js/engine/transition.js,
+# docs/carte-generee.md) : le chemin, deux ou trois maisons de voisins bâties en blocs et leurs
+# allées, la mare, le puits, les barrières, les arbres, les rochers, l'herbe haute, les fleurs.
+# Ce script n'y met que de l'herbe, et écrit le kit dont le jeu se sert pour l'y dessiner
+# (propriété « kit » de la carte, KIT) : les tuiles d'herbe et de chemin pour chaque jeu de
+# coins, les fleurs, et des tampons (des blocs de tuiles, une grille par couche) : la mare, le
+# puits, le tonneau, le banc, les buissons, les barrières de 2 à 8 tuiles et leur ombre.
 #
 # Les passages (couche d'objets « passages ») : un rectangle au bord de la carte, sa cible
 # (la page et le point d'arrivée) et le sens de sa flèche bleue (js/ville-carte.js) ; les
@@ -33,6 +40,7 @@ W, H, T = commun.W, commun.H, commun.T
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'carte'))
 import barrieres as BR  # noqa: E402
+import blocs as BL  # noqa: E402
 import batiments as B  # noqa: E402
 import equipements as E  # noqa: E402
 import ferme as F  # noqa: E402
@@ -44,14 +52,13 @@ from PIL import Image  # noqa: E402
 
 PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
     Planche('transition_sol', "L'herbe et le chemin de la ferme, la route et les trottoirs de la ville"),
-    Planche('transition_decor', "Marquage, fleurs, ombres, palissades, puits, panneau, arrêt de bus, réverbères"),
-    Planche('transition_maisons', "Les maisons des voisins, dans le style de la ferme"),
+    Planche('transition_decor', "Marquage, fleurs, barrières, puits, tonneau, banc, panneau, arrêt de bus, réverbères"),
     Planche('transition_eau', "La mare, l'eau de la ferme (8 images)", images=F.EAU_IMAGES, duree=F.EAU_DUREE),
     Planche('transition_vegetation', "Arbres, pins et buissons de la ferme, et leurs ombres"),
 )}
 COUCHES = [
     ('marquage', 'decor', 1), ('fleurs', 'decor', 1), ('ombres', 'vegetation', 1),
-    ('fontaines', 'eau', F.EAU_IMAGES), ('murs', 'maisons', 1), ('mobilier', 'decor', 1),
+    ('fontaines', 'eau', F.EAU_IMAGES), ('mobilier', 'decor', 1),
     ('equipements', 'decor', 1), ('vegetation', 'vegetation', 1),
     # l'abri de bus et les réverbères, chacun dans sa couche : le jeu les range selon leur pied
     # (propriété « pied »), le personnage passe devant ou derrière, pas dessus (couche « obstacles »)
@@ -60,12 +67,13 @@ COUCHES = [
 
 # ---------- le plan ----------
 
+OUEST = 24                     # les colonnes 0 à OUEST - 1 : tirées par le jeu
 ROUTE = (28, 15, 21)           # la chaussée : de la colonne 28 au bord est, rangées 15 à 21 (coins)
 TROTTOIRS = (30, 13, 23)       # les trottoirs, au-dessus et au-dessous, à partir de la colonne 30
-MARE = (9 * T, 28 * T, 4 * T, 2.4 * T)
-# Les barrières de la ferme : (de la colonne, à la colonne, rangée), en tuiles ; leur pied à
-# PIED_BARRIERE px du haut de la rangée, sur l'herbe (le bas de la rangée 15 touche déjà le chemin).
-BARRIERES = [(3, 8, 15), (12, 19, 15), (23, 25, 15)]
+# La mare (un tampon du kit) : ses rayons en px
+MARE_R = (4 * T, 2.4 * T)
+# Les barrières de la ferme (des tampons du kit, de 2 à 8 tuiles de long) : leur pied à
+# PIED_BARRIERE px du haut de leur rangée.
 PIED_BARRIERE = 7
 # Les pieds des réverbères et de l'abri de bus, au milieu des trottoirs (px depuis le haut de
 # la carte) : le trottoir du haut va de la rangée 13 au bord de la route (rangée 15), celui du
@@ -74,11 +82,10 @@ PIED_HAUT = 14 * T + 4
 PIED_BAS = 22 * T + 6
 # Les rochers et les cailloux : (genre, milieu du pied en tuiles) ; le genre est une case de
 # assets/transition_objets.png (ROCHERS_IMAGES).
+# (ceux de l'est : ceux de l'ouest sont tirés par le jeu)
 ROCHERS_PLAN = [
-    ('rocher_a', 6, 23.6), ('rocher_c', 19.5, 23.2), ('caillou_0', 14.5, 22.5), ('rocher_b', 24, 33),
-    ('rocher_a', 13, 31.6), ('caillou_1', 3.5, 26.5), ('rocher_c', 40, 28), ('caillou_0', 44.5, 33.5),
-    ('rocher_a', 45, 8), ('rocher_b', 34, 5), ('caillou_1', 30.5, 9.6), ('rocher_c', 14, 6),
-    ('caillou_0', 2.5, 7.5), ('rocher_b', 31, 31),
+    ('rocher_b', 24.5, 33), ('rocher_c', 40, 28), ('caillou_0', 44.5, 33.5),
+    ('rocher_a', 45, 8), ('rocher_b', 34, 5), ('caillou_1', 30.5, 9.6), ('rocher_b', 31, 31),
 ]
 ARBRES, ROCHERS, HERBES = [], [], []
 OBSTACLES = []                        # (x, y, largeur, hauteur) en px : on ne marche pas dessus
@@ -87,24 +94,17 @@ PIEDS = {'abri': PIED_HAUT, 'reverberes_haut': PIED_HAUT, 'reverberes_bas': PIED
 
 
 def chemin(x):
-    """Les rangées de coins du chemin de terre à la colonne x (il ondule un peu)."""
-    if x <= 9:
-        return 17, 19
-    if x <= 19:
-        return 17, 20             # (il s'élargit vers le bas : l'herbe devant les maisons reste entière)
+    """Les rangées de coins du chemin de terre à la colonne x (à l'est de OUEST)."""
     return 17, 19
 
 
 def coins():
     g = [['herbe'] * (W + 1) for _ in range(H + 1)]
-    for x in range(0, ROUTE[0] + 1):
+    # (à l'ouest, le chemin est tiré par le jeu : il arrive ici rangées 17 à 19)
+    for x in range(OUEST, ROUTE[0] + 1):
         a, b = chemin(x)
         for y in range(a, b + 1):
             g[y][x] = 'chemin'
-    # les allées de terre jusqu'aux portes des maisons
-    for x, y0 in ((10, 14), (21, 14)):
-        for y in range(y0, 17):
-            g[y][x] = g[y][x + 1] = 'chemin'
     for y in range(TROTTOIRS[1], TROTTOIRS[2] + 1):
         for x in range(TROTTOIRS[0], W + 1):
             g[y][x] = 'trottoir'
@@ -157,23 +157,9 @@ def tuile_sol(g, x, y):
     return S.passage('asphalte', 'trottoir', n), f'asphalte_trottoir_{n}'
 
 
-# ---------- les maisons ----------
-
-def maison(couleur):
-    """La maison de la ferme (assets/house_sp.png), le toit repeint : 'rouge' ou 'ardoise'."""
-    im = Image.open(os.path.join(ASSETS, 'house_sp.png')).convert('RGBA')
-    px = im.load()
-    f = {'rouge': (1.32, 0.86, 0.72), 'ardoise': (0.86, 0.96, 1.16)}[couleur]
-    for y in range(im.height):
-        for x in range(im.width):
-            r, g, b, a = px[x, y]
-            # le toit : le haut de l'image, les tons bruns
-            if a and y < 46 and r >= g >= b and r - b < 70:
-                px[x, y] = (min(255, round(r * f[0])), min(255, round(g * f[1])), min(255, round(b * f[2])), a)
-    return im
-
-
-MAISONS = []     # (nom, x0, y0 de l'image, largeur, hauteur) : pour la couche « batiments »
+# Les maisons des voisins : bâties en blocs (assets/blocs.png) par le jeu, à l'ouest
+# (js/carte/ville/transition.js) ; MAISONS reste vide (couche « batiments »).
+MAISONS = []     # (nom, x0, y0 de l'image, largeur, hauteur)
 
 
 def poteau_ville():
@@ -191,23 +177,12 @@ def poteau_ville():
 
 
 def dessine(c):
-    m = c['murs']
-    for nom, couleur, x0, base in (('maison_rouge', 'rouge', 7 * T + 4, 14 * T + 6), ('maison_ardoise', 'ardoise', 18 * T + 4, 14 * T + 6)):
-        im = maison(couleur)
-        m.colle(im, x0, base - im.height)
-        MAISONS.append((nom, x0, base - im.height, im.width, im.height))
     mob = c['mobilier']
-    puits = Image.open(os.path.join(ASSETS, 'puits.png')).convert('RGBA').crop((0, 0, 34, 40))
-    mob.colle(puits, 25 * T, 10 * T)
-    barrieres(mob, c['ombres'])
-    mob.colle(O.tonneau(), 15 * T, 12 * T)
     mob.colle(poteau_ville(), 26 * T, 13 * T)
-    mob.colle(O.banc(), 14 * T, 25 * T)
     # la route : les tirets, l'arrêt de bus, les réverbères
     mq = c['marquage']
     cy = (ROUTE[1] + ROUTE[2]) * T // 2
     B.tirets(mq, ROUTE[0] * T + 6 + 2 * T, W * T, cy - 2, cy + 2)
-    eq = c['equipements']
     abri = E.abri_bus()
     c['abri'].colle(abri, 36 * T, PIED_HAUT - abri.height)
     OBSTACLES.append((36 * T + 2, PIED_HAUT - 22, 42, 26))          # le banc, la vitre, le poteau
@@ -218,34 +193,16 @@ def dessine(c):
         LUMIERES.extend((O.lanterne(x * T, PIED_HAUT - rev.height), O.lanterne(x * T, PIED_BAS - rev.height)))
         for pied in (PIED_HAUT, PIED_BAS):
             OBSTACLES.append((x * T + 4, pied - 10, 8, 16))
-    # la mare
-    cx, cy, rx, ry = MARE
-    eau = c['fontaines']
-    for y in range(int(cy - ry) - 2, int(cy + ry) + 3):
-        for x in range(int(cx - rx) - 2, int(cx + rx) + 3):
-            q = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2
-            if q > 1:
-                continue
-            q2 = ((x + 0.5 - cx) / (rx - 3)) ** 2 + ((y + 0.5 - cy) / (ry - 3)) ** 2
-            for k in range(F.EAU_IMAGES):
-                if q2 > 1:
-                    col = (70, 82, 40) if q > 0.9 else (138, 112, 76)
-                else:
-                    ombre = ((x + 0.5 - cx) / (rx - 3)) ** 2 + ((y + 0.5 - cy + 6) / (ry - 3)) ** 2 > 1
-                    col = O.eau(x, y, k, ombre)
-                eau.put(x, y, col, k)
-    # les fleurs et herbes hautes, sur l'herbe
+    # les fleurs et herbes hautes, sur l'herbe de l'est (celles de l'ouest : le jeu)
     g = coins()
     f = c['fleurs']
     pris = {(int(x + dx), int(y - 0.5)) for _, x, y in ROCHERS_PLAN for dx in (-1, 0, 1)}
-    # (pas d'herbe haute sur une maison, le puits, une barrière : ni sur leur case, ni juste au-dessus)
-    pleins = [c[n].images[0] for n in ('murs', 'mobilier', 'equipements')]
+    # (pas d'herbe haute sur le poteau, l'abri, un réverbère : ni sur leur case, ni juste au-dessus)
+    pleins = [c[n].images[0] for n in ('mobilier', 'equipements', 'abri', 'reverberes_haut', 'reverberes_bas')]
     occupe = lambda x, y: any(im.crop((x * T, y * T, x * T + T, y * T + 2 * T)).getbbox() for im in pleins)
     for y in range(H):
-        for x in range(W):
+        for x in range(OUEST, W):
             if any(g[y + j][x + i] != 'herbe' for i in (0, 1) for j in (0, 1)):
-                continue
-            if ((x + 0.5) * T - cx) ** 2 / (rx + 20) ** 2 + ((y + 0.5) * T - cy) ** 2 / (ry + 20) ** 2 < 1:
                 continue
             r = hasard(x, y, 51)
             if r > 0.95:
@@ -253,26 +210,24 @@ def dessine(c):
             elif r > 0.89 and (x, y) not in pris and not occupe(x, y):
                 # une touffe d'herbe haute (le jeu la dessine) : son pied un peu au hasard dans la case
                 HERBES.append((x * T + 4 + int(hasard(x, y, 54) * 9), y * T + 10 + int(hasard(x, y, 55) * 6), int(hasard(x, y, 52) * 3)))
-    # les arbres : des bois au nord et au sud, rien sur le chemin, la route, devant les maisons
-    # ni sur les rochers ; les arbres et les pins sont des objets (le jeu les dessine, on les
-    # coupe), les buissons restent dans les tuiles
+    # les arbres de l'est : des bois au nord et au sud, rien sur le chemin, la route ni sur les
+    # rochers ; les arbres et les pins sont des objets (le jeu les dessine, on les coupe), les
+    # buissons restent dans les tuiles
     veg = c['vegetation']
     plantes = []
     for j, y in enumerate(range(4, H + 2, 4)):
         for i, x in enumerate(range(2, W, 4)):
             px = x + (hasard(i, j, 81) - 0.5) * 2.4
             py = y + (hasard(i, j, 82) - 0.5) * 1.6
-            if hasard(i, j, 83) < 0.3:
+            if hasard(i, j, 83) < 0.3 or px < OUEST + 1.5:
                 continue
             if 11 <= py <= 25 or (x > 27 and py < 13) or (x > 27 and 22 <= py <= 26):
-                continue
-            if abs(px - cx / T) < rx / T + 2.5 and abs(py - cy / T) < ry / T + 3:
                 continue
             if any(abs(px - a) < 2.2 and abs(py - b) < 1.6 for _, a, b in ROCHERS_PLAN):
                 continue
             r = hasard(i, j, 84)
             plantes.append((px, py, 'pin' if r < 0.25 else 'buisson_large' if r < 0.35 else 'buisson' if r < 0.4 else 'arbre'))
-    plantes += [(4, 11, 'arbre'), (27.5, 9.5, 'buisson_large'), (16, 26, 'arbre'), (24, 27, 'pin')]
+    plantes += [(27.5, 9.5, 'buisson_large'), (26, 27, 'pin')]
     images = {'arbre': F.arbre(), 'pin': F.pin(), 'buisson': F.buisson(), 'buisson_large': F.buisson(True)}
     for x, y, genre in sorted(plantes, key=lambda p: p[1]):
         im = images[genre]
@@ -287,19 +242,96 @@ def dessine(c):
         ROCHERS.append((genre, round(x * T), round(y * T)))
 
 
-def barrieres(mob, ombres):
-    """Les barrières de bois de la ferme, de part et d'autre des allées des maisons, et leur
-    ombre portée (comme à la ferme : décalée de 3 px vers le bas à droite, à moitié noire)."""
-    P = BR.pieces()
-    img = image(W * T, H * T)
-    for x0, x1, y in BARRIERES:
-        n = round((x1 + 1 - x0) * T / BR.PAS) - 1
-        BR.devant(img, P, x0 * T + 3, y * T + PIED_BARRIERE, n)
+# ---------- le kit de l'ouest ----------
+
+def tampon_images(w, h, n=1):
+    return [image(w * T, h * T) for _ in range(n)]
+
+
+def mare(n):
+    """La mare : n images (l'eau qui bouge), sur un bloc de tuiles ; son centre au milieu."""
+    rx, ry = MARE_R
+    w, h = math.ceil((2 * rx + 6) / T), math.ceil((2 * ry + 6) / T)
+    cx, cy = w * T / 2, h * T / 2
+    ims = tampon_images(w, h, n)
+    for y in range(h * T):
+        for x in range(w * T):
+            q = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2
+            if q > 1:
+                continue
+            q2 = ((x + 0.5 - cx) / (rx - 3)) ** 2 + ((y + 0.5 - cy) / (ry - 3)) ** 2
+            for k in range(n):
+                if q2 > 1:
+                    col = (70, 82, 40) if q > 0.9 else (138, 112, 76)
+                else:
+                    ombre = ((x + 0.5 - cx) / (rx - 3)) ** 2 + ((y + 0.5 - cy + 6) / (ry - 3)) ** 2 > 1
+                    col = O.eau(x, y, k, ombre)
+                ims[k].putpixel((x, y), rgba(col))
+    return ims
+
+
+def barriere(n):
+    """Une barrière droite de n tuiles (son pied dans la 2e rangée du bloc) et son ombre
+    (décalée de 3 px vers le bas à droite, à moitié noire, comme à la ferme)."""
+    img = tampon_images(n, 3)[0]
+    BR.devant(img, BR.pieces(), 3, T + PIED_BARRIERE, round(n * T / BR.PAS) - 1)
+    ombre = tampon_images(n, 3)[0]
     a = img.getchannel('A').point(lambda v: 128 if v else 0)
-    ombre = Image.new('RGBA', img.size, (0, 0, 0, 0))
-    ombre.putalpha(a)
-    ombres.colle(ombre, 3, 3)
-    mob.colle(img, 0, 0)
+    noir = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    noir.putalpha(a)
+    ombre.alpha_composite(noir, (3, 3))
+    return img, ombre
+
+
+def colle_bloc(im, w, h, sprite, x=0, y=0):
+    im.alpha_composite(sprite, (x, y))
+    return im
+
+
+def kit():
+    """Les tuiles et les tampons de l'ouest, ajoutés aux planches : { sol, fleurs, tampons }
+    avec des (planche, numéro) que main() change en numéros de tuile de la carte."""
+    sol = {'herbe': [], 'chemin': [], 'raccords': {}}
+    for v in range(16):
+        sol['herbe'].append(('sol', PLANCHES['sol'].ajoute(S.plein('herbe', v), f'herbe_{v}')))
+    for v in range(8):
+        sol['chemin'].append(('sol', PLANCHES['sol'].ajoute(F.bloc(v, 49), f'chemin_{v}')))
+    for n in range(1, 15):
+        c = ['chemin' if n & b else 'herbe' for b in (8, 4, 2, 1)]
+        im, nom = S.tuile_ferme(c, 0, 0)
+        sol['raccords'][str(n)] = ('sol', PLANCHES['sol'].ajoute(im, nom))
+    fleurs = []
+    for k in range(40):
+        t = ('decor', PLANCHES['decor'].ajoute(F.fleurs(k)))
+        if t not in fleurs:
+            fleurs.append(t)
+    tampons = {}
+
+    def tampon(nom, couches, w, h):
+        """couches : { couche: (planche, [images d'un bloc de w × h tuiles]) }"""
+        out = {'w': w, 'h': h, 'couches': {}}
+        for couche, (p, ims) in couches.items():
+            grille = []
+            for ty in range(h):
+                for tx in range(w):
+                    frames = [im.crop((tx * T, ty * T, tx * T + T, ty * T + T)) for im in ims]
+                    grille.append(None if all(f.getbbox() is None for f in frames) else (p, PLANCHES[p].ajoute(frames)))
+            out['couches'][couche] = grille
+        tampons[nom] = out
+
+    eau = mare(F.EAU_IMAGES)
+    tampon('mare', {'fontaines': ('eau', eau)}, eau[0].width // T, eau[0].height // T)
+    puits = Image.open(os.path.join(ASSETS, 'puits.png')).convert('RGBA').crop((0, 0, 34, 40))
+    tampon('puits', {'mobilier': ('decor', [colle_bloc(tampon_images(3, 3)[0], 3, 3, puits)])}, 3, 3)
+    tampon('tonneau', {'mobilier': ('decor', [colle_bloc(tampon_images(1, 2)[0], 1, 2, O.tonneau())])}, 1, 2)
+    tampon('banc', {'mobilier': ('decor', [colle_bloc(tampon_images(3, 2)[0], 3, 2, O.banc())])}, 3, 2)
+    for large in (False, True):
+        b = F.buisson(large)
+        tampon('buisson_large' if large else 'buisson', {'vegetation': ('vegetation', [colle_bloc(tampon_images(3, 2)[0], 3, 2, b)])}, 3, 2)
+    for n in range(2, 9):
+        img, ombre = barriere(n)
+        tampon(f'barriere_{n}', {'mobilier': ('decor', [img]), 'ombres': ('vegetation', [ombre])}, n, 3)
+    return {'sol': sol, 'fleurs': fleurs, 'tampons': tampons}
 
 
 # ---------- les passages et les arrivées ----------
@@ -308,11 +340,9 @@ PASSAGES = [
     # (nom, rectangle en tuiles x0, y0, x1, y1, sens de la flèche, cible[, distance où la flèche paraît])
     ('vers_la_ferme', 0, 16, 1, 20, 'gauche', 'jeu.html?arrivee=est'),
     ('vers_la_ville', W - 1, 14, W, 22, 'droite', 'ville-carte.html?carte=ville&arrivee=ferme'),
-    # les portes des maisons (au bout de leur allée)
-    ('maison_rouge', 9.75, 13.5, 11.75, 15.5, 'haut', 'ville-carte.html?carte=interieur&maison=maison_rouge', 14),
-    ('maison_ardoise', 20.75, 13.5, 22.75, 15.5, 'haut', 'ville-carte.html?carte=interieur&maison=maison_ardoise', 14),
+    # (les portes des maisons : le jeu les ajoute, avec les maisons)
 ]
-ARRIVEES = {'ferme': (2.5, 18.9), 'ville': (45.5, 14.6), 'maison_rouge': (10.75, 16.7), 'maison_ardoise': (21.75, 16.7)}
+ARRIVEES = {'ferme': (2.5, 18.9), 'ville': (45.5, 14.6)}
 
 # Les images des rochers et des cailloux (assets/transition_objets.png, cases de 32 × 32, le
 # pied au milieu du bas) : lues dans la planche de la ferme, celles de ses rochers.
@@ -365,9 +395,10 @@ def objets_carte():
         i += 1
     batis = []
     for nom, x0, y0, w, h in MAISONS:
-        # l'emprise : le bas de la maison (on passe derrière le toit) ; « haut » : le haut du dessin
+        # l'emprise : toutes les cases de la maison (sans toit, on ne passe pas derrière : on
+        # entre par la porte) ; « haut » : le haut du dessin (le haut des murs du fond)
         batis.append({'id': i, 'name': nom, 'type': 'batiment', 'rotation': 0, 'visible': True,
-                      'x': x0 + 4, 'y': y0 + h - 30, 'width': w - 8, 'height': 24,
+                      'x': x0 + 2, 'y': y0 + (BL.H - T) + 2, 'width': w - 4, 'height': h - (BL.H - T) - 4,
                       'properties': [{'name': 'haut', 'type': 'int', 'value': int(y0)}]})
         i += 1
     bus = []
@@ -420,6 +451,7 @@ def main():
             cellules['sol'][y][x] = ('sol', PLANCHES['sol'].ajoute(im, nom))
     toiles = {nom: Toile(nom, p, n) for nom, p, n in COUCHES}
     dessine(toiles)
+    k = kit()
     for nom, p, n in COUCHES:
         t = toiles[nom]
         grille = [[None] * W for _ in range(H)]
@@ -431,10 +463,18 @@ def main():
                 grille[y][x] = (p, PLANCHES[p].ajoute(frames))
         cellules[nom] = grille
     premier, gid = {}, 1
-    for k, p in PLANCHES.items():
-        premier[k] = gid
+    for nom, p in PLANCHES.items():
+        premier[nom] = gid
         gid += p.nombre()
         p.ecrit()
+    numero = lambda t: 0 if t is None else premier[t[0]] + t[1]
+    KIT = {
+        'ouest': OUEST, 'sol': {'herbe': [numero(t) for t in k['sol']['herbe']], 'chemin': [numero(t) for t in k['sol']['chemin']],
+                                'raccords': {n: numero(t) for n, t in k['sol']['raccords'].items()}},
+        'fleurs': [numero(t) for t in k['fleurs']],
+        'tampons': {nom: {'w': d['w'], 'h': d['h'], 'couches': {c: [numero(t) for t in g] for c, g in d['couches'].items()}}
+                    for nom, d in k['tampons'].items()},
+    }
     couches = []
     for i, nom in enumerate(['sol'] + [c[0] for c in COUCHES]):
         data = [0 if cel is None else premier[cel[0]] + cel[1] for ligne in cellules[nom] for cel in ligne]
@@ -452,6 +492,8 @@ def main():
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
         'infinite': False, 'nextlayerid': n + 11, 'nextobjectid': prochain,
+        # le kit de l'ouest (voir l'en-tête) : lu par js/carte/ville/transition.js
+        'properties': [{'name': 'kit', 'type': 'string', 'value': json.dumps(KIT, separators=(',', ':'))}],
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             objet_groupe(n + 1, 'depart', [{'id': 1, 'name': 'depart', 'type': '', 'point': True, 'rotation': 0, 'visible': True,

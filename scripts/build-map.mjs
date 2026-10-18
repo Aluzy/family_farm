@@ -71,6 +71,9 @@ const MAPS = [
     target: 'assets/transition.json',
     main: 'transition_sol',
     places: ['depart'],
+    // l'ouest de la carte est tiré par le jeu avec les tuiles du kit (propriété « kit ») : ses
+    // jeux de tuiles restent, même sans tuile posée (l'eau de la mare)
+    garde: true,
   },
   {
     // fabriquées par scripts/ville/montagne.py et plage.py ; où mène le train (ville-carte.html?carte=…)
@@ -190,12 +193,12 @@ for (const def of MAPS) {
     continue;
   }
 
-  // Un jeu de tuiles dont aucune tuile n'est posée n'est pas recopié. Les numéros de tuile
-  // (firstgid) des autres ne changent pas.
+  // Un jeu de tuiles dont aucune tuile n'est posée n'est pas recopié (sauf `garde`). Les
+  // numéros de tuile (firstgid) des autres ne changent pas.
   let animated = 0;
   map.tilesets = [];
   for (const s of sets) {
-    if (!s.used) { notes.push(`jeu de tuiles ${s.key} : aucune tuile posée, laissé de côté`); continue; }
+    if (!s.used && !def.garde) { notes.push(`jeu de tuiles ${s.key} : aucune tuile posée, laissé de côté`); continue; }
     if (!s.set.present) notes.push(`⚠ assets/${s.set.image} manque : les ${s.used} tuiles de ${s.key} ne seront pas dessinées`);
     const t = s.set;
     animated += t.tiles.length;

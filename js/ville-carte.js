@@ -46,7 +46,7 @@
   const K = window.CarteKit;
   const V = window.CarteVille;
   const etat = V.etat;
-  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, VOISINS } = V.C;
+  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, VOISINS, BLOCS, RAMASSABLES } = V.C;
   const { hote, sheetKey, saisie, reduced, v } = V;
   // Le pas de la flèche d'un passage, selon son sens (elle se balance dans ce sens).
   const SENS_PAS = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] };
@@ -105,10 +105,18 @@
       for (const e of (h && h.enfants) || []) planche(e.perso, true);
       this.famille = null;
       if (etat.nom === 'interieur') {
-        this.maison = etat.params.get('maison') || 'maison_rouge';
+        this.maison = etat.params.get('maison') || 'maison_1';
         this.famille = V.voisins(this.maison);
         for (const m of this.famille.membres) planche(m.perso, m.enfant);
         for (const n of VOISINS.meubles) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
+      }
+      // la transition : son plan de la partie (js/carte/ville/transition.js), les blocs des
+      // maisons, les ressources, les familles des maisons
+      this.transition = etat.nom === 'transition' ? V.planTransition() : null;
+      if (this.transition) {
+        this.load.spritesheet(BLOCS.key, v(BLOCS.file), { frameWidth: BLOCS.w, frameHeight: BLOCS.h });
+        this.load.spritesheet(RAMASSABLES.key, v(RAMASSABLES.file), { frameWidth: RAMASSABLES.w, frameHeight: RAMASSABLES.h });
+        for (const m of this.transition.plan.maisons) for (const mb of V.voisins(m.nom).membres) planche(mb.perso, mb.enfant);
       }
       for (const [k, file] of planches) this.load.spritesheet(k, v(file), { frameWidth: 16, frameHeight: 32 });
       // les planches des jeux de tuiles : lues dans la carte une fois chargée (tout de suite si
@@ -121,6 +129,14 @@
     // Ce que la carte Tiled demande : ses planches de tuiles, ses arbres, ses rochers, son herbe
     // haute (le chargeur saute ce que le jeu a déjà).
     loadMapAssets(data) {
+      // la transition : l'ouest de la carte de la partie, refait à chaque visite d'après la carte
+      // de Tiled telle qu'elle a été chargée (gardée à part)
+      if (this.transition) {
+        const entry = this.cache.tilemap.get(etat.map.key);
+        if (!V.transitionBase) V.transitionBase = JSON.parse(JSON.stringify(data));
+        data = V.transitionCarte(V.transitionBase, this.transition.plan);
+        if (entry) entry.data = data;
+      }
       for (const set of data.tilesets) this.load.image(set.name, v('assets/' + set.image));
       // les arbres, les rochers, l'herbe haute (comme à la ferme)
       const has = (n) => data.layers.some((l) => l.type === 'objectgroup' && l.name === n && (l.objects || []).length);
@@ -187,6 +203,7 @@
 
       this.makeInterior(map);
       this.makeNature(objects);
+      this.makeVoisinsDehors();
 
       // la fermière : ses images par nom (marche_bas_0…, idle_cote_0…)
       const noms = (this.cache.json.get(this.heroKey + '_noms') || {}).frames || [];
@@ -240,7 +257,7 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w)) { this.dbl.oublie(); return; }
+        if (this.tapFind(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisin(w) || this.tapVoisinDehors(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         if (this.tapMaison(w)) { this.dbl.oublie(); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va
@@ -681,6 +698,7 @@
       this.stepFish(dt);
       this.stepEntering();
       this.stepFamily(time, dt);
+      this.stepVoisinsDehors(time, dt);
       this.stepDialog();
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;

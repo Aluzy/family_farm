@@ -401,6 +401,8 @@ export function stageModel() {
     // l'on dort (js/engine/blocs.js)
     blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte })),
     sols: Object.keys(solsPoses(state)).map(Number),
+    // le four (son bloc) cuit-il ? ses flammes bougent (js/carte/ferme/chantier.js, stepFires)
+    fourAllume: !!(state.stations.four && state.stations.four.construit && state.stations.four.tache),
     bati: buildMode && !stageInterior ? { sorte: buildMode } : null,
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
     couchages: couchages(state),

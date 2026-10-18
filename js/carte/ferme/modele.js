@@ -63,6 +63,7 @@
       this.syncPerso(model.perso | 0);
       this.syncRoofPanels(model.panneaux | 0);
       this.syncFloors(model.sols);
+      this.fireOn = !!model.fourAllume;
       this.syncBlocks(model.blocs, model.bati, model.pieces);   // (avant le puits et la citerne : posés sur leurs blocs)
       this.syncWell(!!model.pompe, !!model.pompeEnMarche);
       this.syncTank(model.citerne == null ? -1 : model.citerne | 0);

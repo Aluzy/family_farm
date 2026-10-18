@@ -259,6 +259,27 @@
       'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3'],
     plats: /^(tapis|tableau|fenetre)/,
   };
+  // La carte de transition (js/carte/ville/transition.js) : les maisons des voisins bâties avec
+  // les blocs de la ferme générée (assets/blocs.png, scripts/carte/blocs.py : `murs` + masque
+  // des murs voisins, `sols` + masque du plancher, la porte, la couverture, les meubles par la
+  // lettre du plan des maisons, js/engine/transition.js) ; les ressources qu'on y ramasse
+  // (assets/ramassables.png, comme à la ferme).
+  const BLOCS = {
+    key: 'blocs', file: 'assets/blocs.png', w: 16, h: 24, murs: 14, sols: 31, porte: 1, drap: 4,
+    meubles: { f: 5, c: 6, p: 3, d: 3, g: 12, a: 2, b: 11, n: 9, m: 13 },
+  };
+  const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };
+  // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h ; elles
+  // rapportent `panier` ressources à la fois, se penchent `ramasse` s pour en prendre une,
+  // soufflent `souffle` s avant la suivante, restent `pause` s à la maison (au hasard entre les deux) avant de ressortir. `store` : ce
+  // qui a été ramassé aujourd'hui (localStorage).
+  const TRANSITION_VIE = {
+    store: 'ferme-transition-ramasses', jour: [7, 19], panier: 3, ramasse: 0.9, souffle: [1.5, 3.5], pause: [10, 25],
+    paroles: {
+      adulte: { compte: 'Avec ma famille, on a déjà ramassé {n} ressource{s} aujourd\'hui. Ça fera de belles réserves !', rien: 'Je vais chercher du bois et des pierres pour la maison.' },
+      enfant: { compte: 'On a trouvé {n} trésor{s} aujourd\'hui ! Des cailloux, du bois…', rien: 'J\'aide mes parents à ramasser du bois !' },
+    },
+  };
   // La clé de la planche d'un personnage : un adulte (perso_N) ou un enfant (enfant_N) ; son
   // fichier : CarteKit.planche.
   const sheetKey = (n, enfant) => (enfant ? 'enfant_' : 'perso_') + n;
@@ -283,7 +304,7 @@
 
   const parties = [];
   global.CarteVille = {
-    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS },
+    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS, BLOCS, RAMASSABLES, TRANSITION_VIE },
     etat, configure, hote, sheetKey, saisie: K.saisie, reduced: K.reduit, v: K.v, tuilesDans,
     // les méthodes de la scène, fichier par fichier (voir js/ville-carte.js)
     parties,

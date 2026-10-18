@@ -29,7 +29,9 @@
 #   30 : la porte percée dans un mur vertical (BLOCS_CARTE.porteVerticale) : le seuil vu de
 #            haut, le battant ouvert contre le montant ;
 #   31 à 46 : le plancher (BLOCS_CARTE.sols) : 31 + masque des planchers voisins, à plat sur sa
-#            case (les 16 px du bas de l'image), sous les blocs qu'on pose dessus.
+#            case (les 16 px du bas de l'image), sous les blocs qu'on pose dessus ;
+#   47 à 49 : le four qui cuit (BLOCS_CARTE.feu) : ses flammes bougent, une image après
+#            l'autre (FLAMMES).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -414,9 +416,20 @@ def drap():
     return t.fini()
 
 
-def four():
+# Les flammes du four : (x, y, ton de FEU). FLAMMES[0] : le four au repos ; les suivantes, en
+# boucle, quand une préparation cuit (BLOCS_CARTE.feu) : la flamme penche, monte, retombe.
+FLAMMES = [
+    ((7, 16, 3), (8, 16, 3), (7, 15, 4), (8, 14, 3), (6, 16, 2), (9, 16, 2)),
+    ((6, 16, 3), (7, 16, 4), (8, 16, 3), (7, 15, 3), (7, 14, 4), (6, 13, 2), (9, 16, 2), (8, 15, 2)),
+    ((7, 16, 3), (8, 16, 4), (9, 16, 3), (8, 15, 4), (8, 14, 3), (9, 13, 2), (8, 12, 1), (6, 16, 2), (9, 15, 2)),
+    ((6, 16, 2), (7, 16, 3), (8, 16, 3), (6, 15, 3), (7, 15, 4), (7, 14, 3), (7, 13, 2), (9, 16, 2)),
+]
+
+
+def four(flamme=0):
     """Le four de pierre : une voûte de moellons sur son socle, la bouche où rougeoie le feu,
-    tournée vers le bas de l'écran."""
+    tournée vers le bas de l'écran. flamme : l'image du feu (FLAMMES), les braises en suivent
+    le rythme."""
     t = Toile()
     cx, cy, rx, ry = 7.5, 13.0, 7.0, 9.5
     for y in range(19):
@@ -439,9 +452,9 @@ def four():
             if y + 0.5 >= 14 - 3 * max(0.0, 1 - dx * dx) ** 0.5:
                 t.put(x, y, FEU[0])
     for x in range(5, 11):
-        t.put(x, 18, FEU[2] if x % 2 else FEU[1])
-        t.put(x, 17, FEU[1] if x % 3 else FEU[2])
-    for x, y, k in ((7, 16, 3), (8, 16, 3), (7, 15, 4), (8, 14, 3), (6, 16, 2), (9, 16, 2)):
+        t.put(x, 18, FEU[2] if (x + flamme) % 2 else FEU[1])
+        t.put(x, 17, FEU[1] if (x + flamme) % 3 else FEU[2])
+    for x, y, k in FLAMMES[flamme]:
         t.put(x, y, FEU[k])
     for x in range(4, 12):
         t.put(x, 19, PIERRE[5])                  # la sole, au bord de la bouche
@@ -649,6 +662,8 @@ DESSINS = [mur(0), porte(), atelier(), paillasse(), drap(), four(), cuisiniere()
 PORTE_VERTICALE = len(DESSINS) - 1
 SOLS = len(DESSINS)                              # le premier des 16 planchers raccordés
 DESSINS += [plancher(m) for m in range(16)]
+FEU_FOUR = len(DESSINS)                          # les flammes qui bougent (BLOCS_CARTE.feu)
+DESSINS += [four(k) for k in range(1, len(FLAMMES))]
 
 
 # ---------- l'aperçu : une pièce close et les objets, sur l'herbe de la carte ----------

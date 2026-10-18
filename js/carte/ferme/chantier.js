@@ -6,7 +6,7 @@
  * scripts/carte/blocs.py), le bas sur le bas de sa case, rangée selon son pied (la paillasse,
  * à plat, sous ce qui est debout). Un mur prend l'image qui le raccorde à ses voisins, une
  * porte celle de son mur, horizontal ou vertical (wallFrame). Le plancher (modèle.sols) est à
- * plat sous tout le reste (syncFloors). Les murs et l'Atelier arrêtent le personnage (blockCells) ;
+ * plat sous tout le reste (syncFloors). Le four qui cuit fait bouger ses flammes (stepFires). Les murs et l'Atelier arrêtent le personnage (blockCells) ;
  * les portes et les paillasses se traversent. Ils portent une ombre (soleil.js).
  *
  * Le mode « Construire » (modèle.bati = { sorte }) : un appui sur une case y pose le bloc choisi,
@@ -38,7 +38,8 @@
           seen.add(b.case);
           const e = B.get(b.case), frame = this.wallFrame(b, at, cols);
           if (e && e.sorte === b.sorte) {
-            if (e.img.frame.name !== frame) { e.img.setFrame(frame); changed = true; }
+            // (les flammes du four : stepFires choisit son image)
+            if (e.img.frame.name !== frame && b.sorte !== BLOCS_CARTE.feu.sorte) { e.img.setFrame(frame); changed = true; }
             continue;
           }
           if (e) e.img.destroy();
@@ -56,6 +57,15 @@
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       }
       this.drawRooms(bati ? pieces : null);
+    },
+
+    // Le four qui cuit (modèle.fourAllume) : ses flammes bougent, une image de
+    // BLOCS_CARTE.feu après l'autre ; éteint, il reprend son image.
+    stepFires(time) {
+      if (!this.blocks) return;
+      const F = BLOCS_CARTE.feu;
+      const frame = this.fireOn ? F.frames[Math.floor(time * F.fps / 1000) % F.frames.length] : BLOCS_CARTE.frames[F.sorte];
+      for (const e of this.blocks.values()) if (e.sorte === F.sorte && e.img.frame.name !== frame) e.img.setFrame(frame);
     },
 
     // Les planchers posés (modèle.sols : leurs cases), à plat sous les blocs : chacun prend

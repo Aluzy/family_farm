@@ -228,6 +228,13 @@ function renderPoulaillerWindow() {
   return coopShown() ? `<div id="etable-poules" class="ancre">${renderPoulailler()}${renderAchatPoules()}</div>` : '';
 }
 
+// Les onglets de la fenêtre du four : les recettes d'aliments, puis les objets (les lingots).
+const FOUR_TABS = [
+  { id: 'aliments', icon: '🍞', label: 'Aliments' },
+  { id: 'objets', icon: '🧈', label: 'Objets' },
+];
+let fourTab = 'aliments';
+
 // Fenêtres de la carte. Deux tailles seulement : pleine hauteur (`haute`) ou demi-hauteur.
 // Toutes sont dans le cadre bois des cartes (`bois: false` pour s'en passer).
 //   nom      : le lieu, tel qu'il est écrit sur son étiquette ;
@@ -292,9 +299,11 @@ export const STAGE_WINDOWS = {
     corps: () => `<div class="cards">${renderRobotCard()}</div>`,
   },
   // Meubles de la maison (intérieur) : chacun ouvre sa fenêtre, dans le cadre bois.
+  // Le four : deux onglets, les aliments (pains, tartes…) et les objets (la fonte des lingots).
   four: {
     nom: 'Four', icone: '🔥', ok: () => isUnlocked(state, 'four') || state.stations.four.construit, bois: true,
-    corps: () => renderStationFenetre('four'),
+    onglets: () => subtabsHtml(FOUR_TABS, fourTab, 'four-tab'),
+    corps: () => renderStationFenetre('four', fourTab === 'objets'),
   },
   cuisine: {
     nom: 'Cuisine', icone: '🍳', ok: () => isUnlocked(state, 'cuisine') || state.stations.cuisine.construit, bois: true,
@@ -760,6 +769,10 @@ registerActions({
   },
   'stage-exit': () => {
     leaveInterior();
+  },
+  'four-tab': (target) => {
+    fourTab = target.dataset.tab === 'objets' ? 'objets' : 'aliments';
+    renderStageWindow();
   },
   'maison-tab': (target) => {
     maisonTab = target.dataset.tab;
