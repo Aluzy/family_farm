@@ -234,15 +234,16 @@ def mur(m):
 
 def porte():
     """La porte dans un mur horizontal, comme le bloc de la première version : un linteau de
-    pierre fin (LINTEAU rangées, bien moins haut que la chape des murs voisins), puis une
-    porte de planches cintrée sur presque toute la largeur de la case, ses deux pentures et sa
-    poignée, le seuil en bas."""
+    pierre fin (LINTEAU rangées, bien moins haut que la chape des murs voisins), le bas aligné
+    sur l'arête de leur chape ; au-dessous, une porte de planches cintrée sur presque toute la
+    largeur de la case, ses deux pentures et sa poignée, le seuil en bas."""
     t = Toile()
-    for y in range(LINTEAU):                     # le linteau : contour, dessus clair, joint
+    yl = CHAPE - LINTEAU                         # le haut du linteau ; son bas : l'arête des murs
+    for y in range(LINTEAU):                     # le linteau : contour, dessus, l'arête claire
         for x in range(W):
-            t.put(x, y, (OUT, PIERRE[5], PIERRE[4], PIERRE[0])[y])
-    t.put(15, 2, PIERRE[2])
-    x0, x1, y0 = 2, 13, LINTEAU                   # le battant, de x0 à x1
+            t.put(x, yl + y, (OUT, PIERRE[4], PIERRE[3], PIERRE[5])[y])
+    t.put(15, yl + 2, PIERRE[2])
+    x0, x1, y0 = 2, 13, CHAPE                    # le battant, de x0 à x1
     bois = planches([CADRE[1], BOIS[1], BOIS[2], BOIS[3]], pas=2, x0=x0)
     for y in range(y0, H):
         t.put(0, y, OUT)
@@ -261,13 +262,13 @@ def porte():
         t.put(x, y0, CADRE[0])
     for x in range(4, 12):                       # le haut du battant, éclairé
         t.put(x, y0 + 1, BOIS[3] if x % 2 else BOIS[2])
-    for y in (y0 + 5, y0 + 14):                  # les pentures
+    for y in (y0 + 3, y0 + 10):                  # les pentures
         for x in range(x0, x1 + 1):
             t.put(x, y, FER[1])
         t.put(x0, y, FER[2])
         t.put(x1, y, FER[0])
-    t.put(x1 - 2, y0 + 9, FER[4])                # la poignée
-    t.put(x1 - 2, y0 + 10, FER[0])
+    t.put(x1 - 2, y0 + 6, FER[4])                # la poignée
+    t.put(x1 - 2, y0 + 7, FER[0])
     for x in range(1, 15):                       # le seuil
         t.put(x, BAS - 1, CADRE[2])
         t.put(x, BAS, OUT)
