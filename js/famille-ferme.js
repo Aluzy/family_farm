@@ -10,7 +10,7 @@
  *     (GESTE s) et nourrit les poules, prend les œufs, le lait et la laine (o.aide : tout entre
  *     dans l'inventaire ; o.gain : la bulle « +x » au-dessus de lui) ;
  *   - les enfants vont à l'école le lundi, le mardi, le jeudi et le vendredi ; elle commence à
- *     8 h (CarteKit.ECOLE). Chacun part de la maison le temps qu'il lui faut pour être au bord
+ *     8 h 45 (CarteKit.ECOLE). Chacun part de la maison le temps qu'il lui faut pour être au bord
  *     de la carte quand il doit marcher jusqu'au bus de la carte de transition
  *     (CarteKit.horaireEcole : sortieFerme) : la longueur de son chemin, à sa vitesse
  *     (departEcole) ; il prend le chemin de l'est et s'efface (parti avant le réveil du

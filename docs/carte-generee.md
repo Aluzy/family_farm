@@ -321,7 +321,7 @@ parties.
     (`TRANSITION_VIE.sommeil`), chacun va à son lit et y dort, sous sa couverture ; au lever, il
     reprend sa journée. Arrivé sur la carte en pleine nuit, on les trouve déjà couchés.
   - Les enfants vont à l'école comme ceux de la ferme : le lundi, le mardi, le jeudi et le
-    vendredi, de 7 h à 16 h 30. Le matin, ils vont à pied jusqu'à l'abri, où le bus de l'école
+    vendredi, de 8 h 45 à 16 h 45. Le matin, ils vont à pied jusqu'à l'abri, où le bus de l'école
     les attend ; le soir, ils en descendent et rentrent chez eux. Si le bus est déjà passé (ou
     sans animations), ils sont déjà partis, ou déjà rentrés.
 - **Les métiers des voisins** : chaque maison est bûcheron ou agriculteur (le plan, tour à tour :
@@ -423,22 +423,22 @@ fromagerie à 8 h (`VOISINS.FROMAGER.HORAIRES`) : ils descendent l'escalier, sor
 de l'immeuble, entrent dans la fromagerie et n'en ressortent qu'à 17 h. Ils passent alors par un
 étal du marché, rentrent le panier plein, et le premier arrivé cuisine devant le four. Les
 enfants vont à l'école comme ceux de la ferme (les jours `HorlogeSortie.JOURS_ECOLE`, de
-`CarteKit.ECOLE.debut` h, 8 h, à `fin` h) : ils y vont à pied, entrent par la porte de l'école
+`CarteKit.ECOLE.debut` h, 8 h 45, à `fin` h, 16 h 45) : ils y vont à pied, entrent par la porte de l'école
 (le bout du chemin des enfants qui descendent du bus), et rentrent à pied ; le reste du temps,
 ils sont au logement.
 
 ### L'horaire de l'école
 
-L'école commence à 8 h pour tous les enfants : ceux de la ferme, des voisins de la transition et
+L'école commence à 8 h 45 pour tous les enfants : ceux de la ferme, des voisins de la transition et
 de l'immeuble (`CarteKit.ECOLE`, `js/carte/kit.js`). Chacun part de chez lui le temps qu'il lui
 faut pour y être à l'heure : la longueur de son chemin divisée par sa vitesse (une heure du jeu :
-30 s), avec un peu d'avance. Le bus de l'école suit un horaire compté à rebours depuis 8 h
+30 s), avec un peu d'avance. Le bus de l'école suit un horaire compté à rebours depuis 8 h 45
 (`CarteKit.horaireEcole`) : son arrêt en ville le temps que les enfants marchent jusqu'à l'école,
 son arrêt de la transition `ECOLE.bus` h plus tôt ; les enfants de la ferme passent le bord de la
 ferme le temps de marcher jusqu'à cet arrêt. Les enfants de la ferme partent donc de la maison
 selon leur chemin jusqu'au bord de la ferme ; ceux des voisins, selon leur chemin jusqu'à l'abri ;
 ceux de l'immeuble, selon leur chemin (escaliers compris) jusqu'à la porte de l'école. Le soir,
-l'école finit à 16 h 30, et le bus repart de la ville quand les enfants y sont montés. Tous dorment de 22 h à 6 h. Un habitant marche sur son niveau et
+l'école finit à 16 h 45, et le bus repart de la ville quand les enfants y sont montés. Tous dorment de 22 h à 6 h. Un habitant marche sur son niveau et
 change de niveau par l'escalier ; on le voit dehors, ou dans l'immeuble quand on est à son
 niveau. Le toucher : il raconte son travail, ses achats et son dîner d'hier.
 

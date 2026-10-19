@@ -164,7 +164,7 @@
   // `longueurs` : le chemin des enfants sur la carte de la ville (de l'arrêt du bus à la porte de
   // l'école) et sur celle de la transition (du bord de la ferme à l'arrêt), en px, tels que
   // les cartes de Tiled les tracent ; une carte qui a le sien sous les yeux le mesure.
-  const ECOLE = { debut: 8, fin: 16.5, sParHeure: 30, marge: 0.05, bus: 0.5, monter: 2, longueurs: { ville: 115, transition: 997 } };
+  const ECOLE = { debut: 8.75, fin: 16.75, sParHeure: 30, marge: 0.05, bus: 0.5, monter: 2, longueurs: { ville: 115, transition: 997 } };
 
   // Combien d'heures du jeu pour faire `px` px à `vitesse` px/s (et `s` s de plus).
   const heuresDeMarche = (px, vitesse, s = 0) => (px / vitesse + s) / ECOLE.sParHeure;
