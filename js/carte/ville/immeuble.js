@@ -119,7 +119,9 @@
             const c = a(x, y);
             // le plancher : au rez-de-chaussée dans les pièces, aux étages sur toute l'emprise
             const sol = (i, j) => (n ? a(i, j) !== ' ' : !' MFP'.includes(a(i, j)));
-            if (sol(x, y)) pose(BLOCS.key, BLOCS.sols + (sol(x, y - 1) ? 1 : 0) + (sol(x + 1, y) ? 2 : 0) + (sol(x, y + 1) ? 4 : 0) + (sol(x - 1, y) ? 8 : 0), x, y, (py) => (n ? py - 0.1 : py - T - 200));
+            // (aux étages, rangé au haut de sa case : sous les meubles, l'escalier, les murs et le
+            // personnage de sa rangée, qu'il ne coupe pas ; au-dessus de ce qui est en bas)
+            if (sol(x, y)) pose(BLOCS.key, BLOCS.sols + (sol(x, y - 1) ? 1 : 0) + (sol(x + 1, y) ? 2 : 0) + (sol(x, y + 1) ? 4 : 0) + (sol(x - 1, y) ? 8 : 0), x, y, (py) => (n ? py - T + 0.5 : py - T - 200));
             if (mur(c)) {
               const v = (dx, dy, porte) => mur(a(x + dx, y + dy)) || (porte && a(x + dx, y + dy) === 'P');
               const m = (v(0, -1) ? 1 : 0) + (v(1, 0, true) ? 2 : 0) + (v(0, 1) ? 4 : 0) + (v(-1, 0, true) ? 8 : 0);
@@ -220,7 +222,10 @@
         im.niveaux.forEach((nv, k) => {
           // (dedans : le niveau du dessous en transparence, ceux du dessus cachés)
           const a = vue === 'dehors' || k === this.niveauVille ? 1 : k === this.niveauVille - 1 ? I.transparent : 0;
-          for (const o of nv.objs) o.setAlpha(a).setVisible(a > 0).setDepth(haut ? this.immeubleZ(o.immZ) : o.immZ);
+          // (à l'étage, le niveau du dessous passe tout entier sous celui où l'on est : son
+          // plancher le couvre, on n'en voit que ce qui dépasse de l'emprise)
+          const z = (o) => (!haut ? o.immZ : this.immeubleZ(o.immZ) - (k < this.niveauVille ? 0.002 : 0));
+          for (const o of nv.objs) o.setAlpha(a).setVisible(a > 0).setDepth(z(o));
           for (const m of nv.murs) m.a = a;
         });
         im.toit.setVisible(vue === 'dehors');
