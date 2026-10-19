@@ -9,7 +9,7 @@
 
 import { DATA } from '../engine/catalog.js';
 import { atelierConstruit, atelierOuvert } from '../engine/atelier.js';
-import { blocAt, blocDessus, blocsEnMain, couchages, poserBloc, reprendreBloc, solAt } from '../engine/blocs.js';
+import { blocAt, blocDessus, blocsEnMain, changeMur, couchages, poserBloc, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
 import { ETAGE_BLOCS, etageEmprise, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
@@ -161,7 +161,8 @@ registerActions({
     const c = Number(target.dataset.case);
     // à l'étage : poser, reprendre un bloc de l'étage
     if (niveauBati()) {
-      const r = etageBlocs(state)[c] ? reprendreEtage(state, c) : poserEtage(state, buildMode, c);
+      const e = etageBlocs(state)[c];
+      const r = e && !changeMur(e, buildMode) ? reprendreEtage(state, c) : poserEtage(state, buildMode, c);
       if (!r.ok) { notify(r.error); return; }
       persistState();
       refresh();
@@ -173,7 +174,8 @@ registerActions({
     // (le plancher en main : un appui sur un plancher sans rien dessus le reprend ; un autre
     // bloc se pose dessus)
     const sol = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sol;
-    const reprend = blocAt(state, c) ? !surLibre : sol && solAt(state, c);
+    // (une fenêtre, une pierre d'angle en main : un appui sur un autre mur le change)
+    const reprend = blocAt(state, c) ? !surLibre && !changeMur(blocAt(state, c), buildMode) : sol && solAt(state, c);
     const r = reprend ? reprendreBloc(state, c) : poserBloc(state, buildMode, c);
     if (!r.ok) { notify(r.error); return; }
     persistState();
