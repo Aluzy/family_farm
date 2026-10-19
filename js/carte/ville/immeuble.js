@@ -183,9 +183,12 @@
       return (this.niveauVille || 0) * I.dy;
     },
 
-    // Le personnage, à l'étage : devant le voile, rangé avec ce qui est de son niveau.
+    // Le personnage, à l'étage : devant le voile, rangé par sa rangée avec ce qui est de son
+    // niveau (comme à la ferme) : devant le plancher, le haut de l'escalier et les meubles de sa
+    // rangée, derrière ses murs. (Rangé par ses pieds, il passait sous le plancher de sa rangée,
+    // posé au bas de la case : on ne voyait que sa tête.)
     profondeurHeros(y) {
-      return this.niveauVille ? this.immeubleZ(y + this.niveauVille * 0.2 + 0.1) : y;
+      return this.niveauVille ? this.immeubleZ((Math.floor((y - 1) / T) + 1) * T + this.niveauVille * 0.2 - 0.02) : y;
     },
 
     // L'escalier sous les pieds (une case où l'on vient d'arriver) : on monte ou on descend ; puis

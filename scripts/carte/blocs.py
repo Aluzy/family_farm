@@ -53,6 +53,14 @@ sys.path.insert(0, os.path.join(HERE, '..', 'batiments'))  # style_v2.py
 from pixel import ASSETS, BAYER, ROOT, T, contour, hasard, rangee  # noqa: E402
 from style_v2 import PALETTE_SERRE as PS  # noqa: E402
 
+# les matières des immeubles de la ville (scripts/ville/batiments.py : la brique, la pierre de
+# taille), chargées par leur chemin (un dossier scripts/batiments porte le même nom)
+import importlib.util  # noqa: E402
+sys.path.append(os.path.join(HERE, '..', 'ville'))   # (son commun.py)
+_spec = importlib.util.spec_from_file_location('ville_batiments', os.path.join(HERE, '..', 'ville', 'batiments.py'))
+VB = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(VB)
+
 W, H = 16, 24
 HAUT, FOND = 14 / 16, 10 / 16
 BAS = H - 1                        # la rangée du pied (le bas de la case)
@@ -454,19 +462,63 @@ def pierre_angle(m):
     return t.im
 
 
+# les murs aux matières des immeubles de la ville : (nom, motif (x, y) → couleur, tons de la
+# corniche : base, joint, clair), dans l'ordre de murs_hauts.png
+MATIERES_VILLE = [
+    ('brique_rouge', lambda x, y: VB.brique(x, y, 'rouge'), VB.TAILLE),
+    ('brique_orange', lambda x, y: VB.brique(x, y, 'orange'), VB.TAILLE),
+    ('brique_ocre', lambda x, y: VB.brique(x, y, 'ocre'), VB.TAILLE),
+    ('brique_bleue', lambda x, y: VB.brique(x, y, 'bleu'), VB.TAILLE),
+    ('pierre_taille', VB.taille, VB.TAILLE),
+]
+SOCLE_VILLE = ((150, 140, 128), (118, 110, 102), (184, 176, 164))   # le soubassement (immeubles.py SOCLE)
+
+
+def mur_ville(m, motif, dessus):
+    """Le mur haut de masque m à la matière d'un immeuble de la ville : le dessus de la même
+    matière, un peu plus clair ; la face, du motif `motif` (calé sur la case : deux murs voisins
+    se raccordent), sous une corniche de pierre de taille et au-dessus d'un soubassement ; les
+    bords libres gardent le contour du mur en pierre."""
+    t = Toile(mur(m))
+    b, j, c = dessus
+    for y in range(H):
+        for x in range(W):
+            p = t.im.getpixel((x, y))
+            if not p[3] or p[:3] == OUT:
+                continue
+            face = not m & 4 and CHAPE < y < BAS
+            if face:
+                r = BAS - y                               # la hauteur au-dessus du pied
+                if y <= CHAPE + 2:
+                    col = (40, 31, 31) if y == CHAPE + 2 else VB.teinte(b, 0.9)    # la corniche, son ombre
+                elif r <= 5:
+                    col = SOCLE_VILLE[2] if r == 5 else SOCLE_VILLE[0] if x % 16 else SOCLE_VILLE[1]
+                else:
+                    col = motif(x, y + 4)
+                if (not m & 8 and x == 1) or (not m & 2 and x == 14):
+                    col = VB.teinte(col, 1.12 if x == 1 else 0.82)   # les arêtes : claire à gauche, sombre à droite
+            else:
+                # le dessus : la même matière, un peu plus claire (le haut du mur, au soleil)
+                col = c if y == 1 and not m & 1 else VB.teinte(motif(x, y), 1.06)
+            t.put(x, y, col)
+    return t.im
+
+
 def murs_hauts():
     """Les 16 murs raccordés et la porte, une case plus hauts (images de 16 × (24 + 16)) ; puis
     les 16 murs à fenêtre et les 16 murs aux pierres d'angle (BLOCS_CARTE.hauts.variantes) ; puis
     les fenêtres prolongées à gauche, à droite, des deux côtés (49, 65, 81 + masque) et les
     parois vitrées seules, prolongées à gauche, à droite, des deux côtés (97, 113, 129, 145 +
-    masque ; BLOCS_CARTE.hauts.joints)."""
+    masque ; BLOCS_CARTE.hauts.joints) ; puis les murs aux matières des immeubles de la ville
+    (MATIERES_VILLE : 161, 177, 193, 209, 225 + masque)."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     H += HAUTEUR_EN_PLUS
     BAS, FACE = H - 1, FACE + HAUTEUR_EN_PLUS
     try:
         return ([mur(m) for m in range(16)] + [porte_haute()] + [fenetre(m) for m in range(16)] + [pierre_angle(m) for m in range(16)]
-                + [fenetre(m, j) for j in (1, 2, 3) for m in range(16)] + [paroi_vitree(m, j) for j in range(4) for m in range(16)], H)
+                + [fenetre(m, j) for j in (1, 2, 3) for m in range(16)] + [paroi_vitree(m, j) for j in range(4) for m in range(16)]
+                + [mur_ville(m, motif, dessus) for _, motif, dessus in MATIERES_VILLE for m in range(16)], H)
     finally:
         H, BAS, FACE = garde
 
