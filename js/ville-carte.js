@@ -46,7 +46,7 @@
   const K = window.CarteKit;
   const V = window.CarteVille;
   const etat = V.etat;
-  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, BLOCS, RAMASSABLES, TRANSITION_VIE } = V.C;
+  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE } = V.C;
   const { hote, sheetKey, saisie, reduced, v } = V;
   // Le pas de la flèche d'un passage, selon son sens (elle se balance dans ce sens).
   const SENS_PAS = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] };
@@ -125,6 +125,13 @@
         if (!this.textures.exists(Lv.tri)) this.load.spritesheet(Lv.tri, v(Lv.triFile), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
         if (!this.textures.exists(Lv.caisse)) this.load.spritesheet(Lv.caisse, v(Lv.caisseFile), { frameWidth: 16, frameHeight: 16 });
       }
+      // l'immeuble en blocs de la ville (un essai, js/carte/ville/immeuble.js) : les blocs, les
+      // murs hauts, ses meubles
+      if (etat.nom === IMMEUBLE.carte) {
+        if (!this.textures.exists(BLOCS.key)) this.load.spritesheet(BLOCS.key, v(BLOCS.file), { frameWidth: BLOCS.w, frameHeight: BLOCS.h });
+        if (!this.textures.exists(BLOCS.hauts.key)) this.load.spritesheet(BLOCS.hauts.key, v(BLOCS.hauts.file), { frameWidth: BLOCS.hauts.w, frameHeight: BLOCS.hauts.h });
+        for (const n of IMMEUBLE.meubles) if (!this.textures.exists('meuble_' + n)) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
+      }
       for (const [k, file] of planches) this.load.spritesheet(k, v(file), { frameWidth: 16, frameHeight: 32 });
       // les planches des jeux de tuiles : lues dans la carte une fois chargée (tout de suite si
       // elle l'est déjà : une carte revue ne redemande rien)
@@ -160,6 +167,8 @@
         this.load.spritesheet(this.rochersKey, v('assets/' + rp('planche')), { frameWidth: rp('largeur'), frameHeight: rp('hauteur') });
       }
       if (has('herbe_haute')) this.load.spritesheet(K.NATURE.herbe.key, v('assets/' + K.NATURE.herbe.file), K.NATURE.herbe.frame);
+      // (la ville : sans le bâtiment que l'immeuble en blocs remplace)
+      if (etat.nom === IMMEUBLE.carte) V.immeubleCarte(data);
       // l'exemplaire du dessus de chaque couche de bâtiment
       for (const name of BATI) {
         const l = data.layers.find((x) => x.name === name);
@@ -210,6 +219,7 @@
 
       this.makeNature(objects);
       this.makeVoisinsDehors();
+      this.makeImmeuble();
 
       // la fermière : ses images par nom (marche_bas_0…, idle_cote_0…)
       const noms = (this.cache.json.get(this.heroKey + '_noms') || {}).frames || [];
@@ -268,7 +278,8 @@
         // ailleurs, un double appui (comme à la ferme) : elle y va
         // (un essai de marche : la marche au doigt s'explique, une fois)
         K.astuceMarche(p);
-        if (this.dbl.appui(w.x, w.y, cam.zoom)) this.goTo(w.x, w.y);
+        // (à un étage de l'immeuble : le point touché, ramené au sol de ce niveau)
+        if (this.dbl.appui(w.x, w.y, cam.zoom)) this.goTo(w.x, w.y + this.liftVille());
       });
       // le doigt posé puis glissé : elle marche dans sa direction tant qu'il reste posé
       // (CarteKit.manette ; pas dans le god mode, ni pendant un voyage, une fenêtre, un geste)
@@ -682,6 +693,8 @@
     }
 
     canWalk(tx, ty) {
+      // (à un étage de l'immeuble : seulement son niveau)
+      if (this.niveauVille) return this.marcheEtage(tx, ty);
       return !!(this.walk[ty] && this.walk[ty][tx]);
     }
 
@@ -747,6 +760,7 @@
       this.stepVoisinsDehors(time, dt);
       this.stepLivreur(time, dt);
       this.stepMurs(dt);
+      this.stepImmeuble(dt);
       this.stepCueillette();
       this.stepDialog();
       const P = this.heroPos;
@@ -798,12 +812,14 @@
         H.setFrame(this.frame(r.image));
         hx = r.dx; hy = r.dy;
       } else if (this.selle) this.selle.cache();
-      H.setPosition(Math.round(P.x + hx), Math.round(P.y - hy)).setDepth(P.y).setAlpha(this.heroAlpha);
-      this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5).setAlpha(this.heroAlpha);
+      // (à un étage de l'immeuble : remontée, devant le voile)
+      const lift = this.liftVille();
+      H.setPosition(Math.round(P.x + hx), Math.round(P.y - hy - lift)).setDepth(this.profondeurHeros(P.y)).setAlpha(this.heroAlpha);
+      this.shadow.setPosition(Math.round(P.x), Math.round(P.y - lift)).setDepth(this.profondeurHeros(P.y - 0.5)).setAlpha(this.heroAlpha);
       this.fadeFoliage(Math.round(P.x), Math.round(P.y));
       this.stepNature(dt);
       this.placeGain();
-      if (this.light) this.light.setPosition(Math.round(P.x), Math.round(P.y - 12));
+      if (this.light) this.light.setPosition(Math.round(P.x), Math.round(P.y - 12 - lift));
       // les bâtiments autour des voitures, puis de la promeneuse (les boîtes sont gardées d'une
       // image à l'autre : rien n'est alloué)
       const boxes = this.boxes || (this.boxes = []);

@@ -362,6 +362,34 @@ parties.
   gardé dans la partie (`state.transitionPris`, `{ jour, ids }`) et ne revient pas avant le
   lendemain.
 
+## L'immeuble en blocs de la ville (un essai)
+
+`js/carte/ville/immeuble.js`, réglages dans `IMMEUBLE` (`js/carte/ville/config.js`).
+
+- **Il remplace l'immeuble ocre** (à l'est de la grande ville, contre le bord). Au chargement de
+  la carte, `V.immeubleCarte` ôte ses tuiles et son emprise ; `makeImmeuble` pose à leur place un
+  immeuble bâti avec les blocs de la ferme (22 × 14 cases, 3 niveaux).
+- **Au rez-de-chaussée**, au milieu, le hall : une porte double sur la rue, une porte de chaque
+  côté vers un logement, et au fond l'escalier qui monte. **À chaque étage**, le palier : le haut
+  de l'escalier d'où l'on vient, l'escalier qui monte au suivant (sauf au dernier) et les deux
+  mêmes logements.
+- **Chaque logement** (`V.planImmeuble`, celui de droite en miroir) a trois pièces :
+  - un petit salon : un canapé, une table basse, un tapis, une plante ;
+  - la pièce de vie : la cuisine, le four, une table et deux chaises ;
+  - une chambre : deux lits et une table de chevet.
+- **Les murs** : ceux du tour sont hauts, avec des fenêtres en façade (deux fenêtres voisines
+  font une grande fenêtre) ; les cloisons sont basses, pour qu'on voie le fond des pièces. Un
+  toit de tuiles (`CarteKit.toit`, le même qu'à la ferme) couvre le dernier niveau.
+- **Monter, descendre** : marcher sur une marche de l'escalier fait changer de niveau. Le
+  personnage arrive sur le même escalier, au niveau d'à côté, dessiné remonté de 30 px par
+  niveau, et ne marche que sur ce niveau (`marcheEtage`).
+- **Ce qu'on voit** (`stepImmeuble`) :
+  - dehors : tous les niveaux l'un sur l'autre, et le toit ;
+  - dans l'immeuble : le toit s'efface, la façade de devant s'efface à moitié, le niveau du
+    dessous est en transparence et ceux du dessus sont cachés ;
+  - à un étage : un voile sombre couvre la ville, l'immeuble et le personnage passent devant ;
+  - un mur juste devant le personnage s'efface un peu.
+
 ## Étapes
 
 1. ✅ Le terrain ne dépend plus de la carte. Le moteur passe par `farmTerrain(state)`
