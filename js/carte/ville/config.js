@@ -103,9 +103,11 @@
   // Le bus de l'école (assets/ville_bus.png et .json, scripts/ville/bus.py : huit directions)
   // et les enfants de la famille (leurs planches d'enfant, assets/personnages/enfant_NN.png),
   // les jours d'école (lundi, mardi, jeudi, vendredi : HorlogeSortie). Sur
-  // chaque carte, le matin et le soir, une scène : les heures (du jeu) où elle commence et
-  // après lesquelles elle ne commence plus, le trajet du bus et son arrêt (couche « bus »), le
-  // chemin des enfants, et s'ils montent dans le bus ou en descendent.
+  // chaque carte, le matin et le soir, une scène : l'heure où le bus est à l'arrêt (`horaire` :
+  // son nom dans CarteKit.horaireEcole, compté à rebours depuis le début de l'école, ou à partir
+  // de sa fin ; la scène commence le temps qu'il faut au bus et aux enfants pour y être), le
+  // trajet du bus et son arrêt (couche « bus »), le chemin des enfants, et s'ils montent dans le
+  // bus ou en descendent.
   const BUS = {
     key: 'bus', file: 'assets/ville_bus.png', meta: 'assets/ville_bus.json', half: 46, carHalf: 29,
     speed: 70,             // px au sol par seconde (plus vite que les voitures : la ville est grande)
@@ -114,12 +116,12 @@
     resume: 1.2,           // s : le temps que les enfants s'éloignent (ou montent) avant de repartir
     scenes: {
       transition: [
-        { nom: 'matin', debut: 7.2, fin: 8.4, bus: 'bus_matin', arret: 'arret', enfants: 'enfants_matin', monter: true },
-        { nom: 'soir', debut: 16.1, fin: 16.8, bus: 'bus_soir', arret: 'arret', enfants: 'enfants_soir', monter: false },
+        { nom: 'matin', horaire: 'transitionMatin', bus: 'bus_matin', arret: 'arret', enfants: 'enfants_matin', monter: true },
+        { nom: 'soir', horaire: 'transitionSoir', bus: 'bus_soir', arret: 'arret', enfants: 'enfants_soir', monter: false },
       ],
       ville: [
-        { nom: 'matin', debut: 7.2, fin: 8.6, bus: 'bus_matin', arret: 'arret_matin', enfants: 'enfants_matin', monter: false },
-        { nom: 'soir', debut: 15.6, fin: 16.4, bus: 'bus_soir', arret: 'arret_soir', enfants: 'enfants_soir', monter: true },
+        { nom: 'matin', horaire: 'villeMatin', bus: 'bus_matin', arret: 'arret_matin', enfants: 'enfants_matin', monter: false },
+        { nom: 'soir', horaire: 'villeSoir', bus: 'bus_soir', arret: 'arret_soir', enfants: 'enfants_soir', monter: true },
       ],
     },
   };
@@ -167,7 +169,7 @@
   // en px/s, `peur` : la distance où la promeneuse les dérange.
   const FAUNE = {
     meta: 'assets/faune.json',
-    cartes: { montagne: ['marmotte', 'bouquetin', 'aigle'], plage: ['mouette', 'crabe', 'dauphin'] },
+    cartes: { montagne: ['marmotte', 'bouquetin', 'aigle'], plage: ['mouette', 'crabe', 'dauphin'], ville: ['cygne', 'canard'] },
     especes: {
       marmotte: { size: 16, n: 2, speed: 18, peur: 52, texte: '🐾 Une marmotte : elle siffle pour prévenir les autres.' },
       bouquetin: { size: 32, n: 2, speed: 11, peur: 0, texte: '🐐 Un bouquetin : il grimpe les rochers les plus raides.' },
@@ -175,6 +177,10 @@
       mouette: { size: 16, n: 3, speed: 16, peur: 44, texte: '🕊️ Une mouette : elle guette les restes du pique-nique.' },
       crabe: { size: 16, n: 2, speed: 20, peur: 40, texte: '🦀 Un crabe : il file de côté.' },
       dauphin: { size: 32, n: 1, texte: '🐬 Un dauphin saute au large !' },
+      // les oiseaux du lac du parc (nage) : en groupes de `groupe` (le premier mène, les autres
+      // le suivent) ; ils plongent la tête sous l'eau (`plonge` : la part de leurs arrêts)
+      cygne: { size: 32, n: 2, groupe: 2, speed: 7, peur: 44, nage: true, plonge: 0.3, texte: '🦢 Un cygne glisse sur le lac, majestueux.' },
+      canard: { size: 16, n: 7, groupe: 4, speed: 11, peur: 36, nage: true, plonge: 0.4, texte: '🦆 Un canard colvert : il plonge la tête sous l\'eau pour trouver à manger.' },
     },
   };
   // Les grottes (assets/grotte_tuiles.png, grotte_objets.png, grotte.json : scripts/ville/grotte.py) :
@@ -278,21 +284,32 @@
     facade: { key: 'immeuble_ville', file: 'assets/immeuble_ville.png', w: 16, h: 50, etages: 32, fenetre: 16, porte: 96 },
     escalier: 69, haut: 70, porteVerticale: 30, mursAlpha: 0.4, toitZ: 0.5,
     meubles: ['lit_adulte', 'lit_enfant', 'chevet', 'cuisine', 'four', 'table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_2'],
+    // Les familles des logements (js/carte/ville/habitants.js) : `lits` lits chacun ; les adultes
+    // travaillent à `travail` (sans partie : `horaires`, `salaire` ; sinon ceux du moteur,
+    // VOISINS.FROMAGER) ; tous dorment de `sommeil[0]` h à `sommeil[1]` h. Dehors, ils marchent
+    // à `vitesse` px/s ; ils partent au travail le temps du trajet avant l'embauche (une heure du
+    // jeu : `sParHeure` s), plus `marge` h. Au marché, ils restent `achat` s devant un étal ; le
+    // dîner cuit `cuisson` s. Les cases du logement de gauche (celui de droite en miroir) : le
+    // pied des lits (`couchage` : les deux adultes, l'enfant), la place devant le four (`feu`).
+    vie: {
+      lits: 3, travail: 'fromagerie', horaires: [8, 17], salaire: 16, sommeil: [22, 6], vitesse: 40, sParHeure: 30, marge: 0.25,
+      achat: 4, cuisson: 16, couchage: [[1, 3], [2, 3], [9, 3]], feu: [5, 7], humeur: [70, 40],
+    },
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)
   const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, reach: 14, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };
   // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h, au lit de
   // `sommeil[0]` h à `sommeil[1]` h (chacun le sien : la maison en a un par membre) ; rentrés,
   // ils restent `pause` s à la maison (au hasard entre les deux) avant de ressortir. Les enfants
-  // sont à l'école de `ecole[0]` h à `ecole[1]` h les jours d'école, comme ceux de la ferme
-  // (js/famille-ferme.js, HORAIRE). Les parents font leur métier (js/carte/ville/metiers.js) :
+  // vont à l'école comme ceux de la ferme (CarteKit.ECOLE : chacun part le temps qu'il lui faut
+  // pour arriver au bus à l'heure). Les parents font leur métier (js/carte/ville/metiers.js) :
   // le bûcheron abat un arbre en `coups` coups de hache de `coup` s chacun, puis rapporte le bois
   // chez lui ; l'agriculteur travaille `parcelles` parcelles de son champ, `travail` s chacune
   // (au hasard entre les deux) ; le second parent va au marché de la ville entre `marche[0]` h et
   // `marche[1]` h (il y reste `enVille` s) ; l'un d'eux cuisine à partir de `cuisine` h, `cuisson` s
   // devant le four ou la cuisinière (une volute de vapeur toutes les `vapeur` s).
   const TRANSITION_VIE = {
-    jour: [7, 19], pause: [10, 25], ecole: [7, 16.5], sommeil: [22, 6],
+    jour: [7, 19], pause: [10, 25], sommeil: [22, 6],
     coups: 3, coup: 0.55, parcelles: 3, travail: [3, 5], marche: [11, 14], enVille: 18, cuisine: 17.5, cuisson: 16, vapeur: 0.45,
     humeur: [70, 40],         // le bonheur : 😊 au-dessus de humeur[0], 🙂 au-dessus de humeur[1], 😟 en dessous
     // le champ d'un agriculteur : la terre labourée (16 bordures selon les coins, comme à la

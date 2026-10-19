@@ -138,11 +138,11 @@ export function voisinAbat(state, maison, id) {
 
 const ajoute = (o, k, n) => { o[k] = (o[k] || 0) + n; };
 
-// Peut-il acheter `item` au marché ? (le bûcheron : tout ce qui s'achète ; l'agriculteur : ce
-// qu'il ne produit pas, et ses graines)
+// Peut-il acheter `item` au marché ? (le bûcheron, le fromager : tout ce qui s'achète ;
+// l'agriculteur : ce qu'il ne produit pas, et ses graines)
 function peutAcheter(f, item, graine = false) {
   if (!isBuyable(item)) return false;
-  return f.metier === 'bucheron' || graine || DATA.VOISINS.AGRICULTEUR.ACHATS.includes(item);
+  return f.metier !== 'agriculteur' || graine || DATA.VOISINS.AGRICULTEUR.ACHATS.includes(item);
 }
 
 // Achète `n` `item` (false : pas assez d'argent, rien n'est acheté). Le prix est celui du marché.
@@ -151,6 +151,7 @@ function acheter(state, f, J, item, n) {
   if (cout > f.argent) return false;
   f.argent -= cout;
   J.achete += cout;
+  ajoute(J.achats, item, n);
   ajoute(f.stock, item, n);
   return true;
 }
@@ -225,15 +226,17 @@ function plantsGardes(f) {
   return out;
 }
 
-// L'étape suivante de la maison du foyer `f` (VOISINS.MAISON.ETAPES ; null : tout est fait).
+// L'étape suivante de la maison du foyer `f` (VOISINS.MAISON.ETAPES ; null : tout est fait,
+// ou un logement de l'immeuble, déjà meublé).
 function prochaineEtape(f) {
+  if (f.metier === 'fromager') return null;
   return DATA.VOISINS.MAISON.ETAPES[f.niveau || 0] || null;
 }
 
 // Le foyer `f` (de la maison `maison`) vit la journée `jour`.
 function journee(state, maison, f, jour) {
   const V = DATA.VOISINS;
-  const J = { jour, arbres: 0, bois: 0, recolte: {}, plante: 0, caisse: {}, ventes: {}, vendu: 0, achete: 0, plats: [], couverture: 0, bonheur: 0 };
+  const J = { jour, arbres: 0, bois: 0, recolte: {}, plante: 0, caisse: {}, ventes: {}, vendu: 0, salaire: 0, achete: 0, achats: {}, plats: [], couverture: 0, bonheur: 0 };
   // le matin, la tournée du livreur : la caisse d'hier vendue au marché (si le joueur ne l'a pas
   // déjà vue arriver : livraison)
   if (f.livre !== jour) {
@@ -256,6 +259,10 @@ function journee(state, maison, f, jour) {
     }
     J.bois = f.stock.bois || 0;
     enCaisse(f, J, 'bois', f.stock.bois || 0);
+  } else if (f.metier === 'fromager') {
+    // chaque adulte fait sa journée à la fromagerie : son salaire
+    J.salaire = V.FROMAGER.SALAIRE * f.adultes;
+    f.argent += J.salaire;
   } else {
     // le champ : la récolte de ce qui est prêt, puis les semis (une graine achetée, ou un plant
     // de la récolte), prêts au bout des stades de la culture
@@ -351,6 +358,70 @@ export function livraison(state) {
     const { gain } = livrer(f, state.day);
     out.foyers[maison] = gain;
     out.total += gain;
+  }
+  return out;
+}
+
+/* ---------- les familles de l'immeuble de la ville ---------- */
+
+// docs/carte-generee.md (les familles de l'immeuble). Chaque logement de l'immeuble en blocs de
+// la ville (VOISINS.IMMEUBLE.LOGEMENTS : « logement_1 »…) a son foyer, comme une maison de la
+// transition : state.immeuble = { foyers: { <logement>: foyer } }. Ses adultes travaillent à la
+// fromagerie de la ville (VOISINS.FROMAGER.HORAIRES) ; chacun y gagne VOISINS.FROMAGER.SALAIRE
+// pièces par jour, que la famille dépense au marché pour acheter les ingrédients de ses repas
+// (VOISINS.RECETTES.fromager), avec les mêmes règles que les voisins (journee).
+
+function immeuble(state) {
+  if (!state.immeuble || typeof state.immeuble !== 'object') state.immeuble = { foyers: {} };
+  if (!state.immeuble.foyers || typeof state.immeuble.foyers !== 'object') state.immeuble.foyers = {};
+  return state.immeuble;
+}
+
+// Les logements de l'immeuble : [« logement_1 », …].
+export function logementsImmeuble() {
+  return Array.from({ length: DATA.VOISINS.IMMEUBLE.LOGEMENTS }, (_, i) => `logement_${i + 1}`);
+}
+
+// Le foyer du logement `logement` (null : pas de tel logement). La première fois, il naît
+// (`compo` : { adultes, enfants }, la famille tirée par la page, un lit chacun) ; `compo` met
+// à jour la famille.
+export function immeubleFoyer(state, logement, compo) {
+  if (!logementsImmeuble().includes(logement)) return null;
+  const I = immeuble(state), lits = DATA.VOISINS.IMMEUBLE.LITS;
+  let f = I.foyers[logement];
+  if (!f || f.metier !== 'fromager') {
+    f = { metier: 'fromager', adultes: 2, enfants: 1, argent: DATA.VOISINS.ARGENT, stock: {}, champ: [], bonheur: DATA.VILLE.BONHEUR.DEPART, jour: state.day - 1, journal: [] };
+    I.foyers[logement] = f;
+  }
+  if (compo) {
+    f.adultes = Math.max(1, Math.min(lits, compo.adultes | 0));
+    f.enfants = Math.max(0, Math.min(lits - f.adultes, compo.enfants | 0));
+  }
+  return f;
+}
+
+// Les foyers de l'immeuble (ceux qui sont nés), par logement.
+export function immeubleFoyers(state) {
+  const I = immeuble(state), out = {};
+  for (const l of logementsImmeuble()) if (I.foyers[l]) out[l] = I.foyers[l];
+  return out;
+}
+
+// La nuit : chaque foyer de l'immeuble vit les journées qui lui manquent (comme voisinsNuit).
+export function immeubleNuit(state) {
+  for (const [logement, f] of Object.entries(immeubleFoyers(state))) {
+    if (!(Number(f.jour) < state.day)) continue;
+    let jour = Math.max(Number(f.jour) + 1, state.day - DATA.VOISINS.RATTRAPAGE + 1);
+    for (; jour <= state.day; jour++) journee(state, logement, f, jour);
+  }
+}
+
+// Ce que la carte montre et raconte de chaque foyer de l'immeuble : { <logement>: { metier,
+// adultes, enfants, argent, bonheur, hier } }.
+export function immeubleVue(state) {
+  const out = {};
+  for (const [logement, f] of Object.entries(immeubleFoyers(state))) {
+    out[logement] = { metier: f.metier, adultes: f.adultes, enfants: f.enfants, argent: f.argent, bonheur: f.bonheur, hier: f.journal.length ? f.journal[f.journal.length - 1] : null };
   }
   return out;
 }

@@ -18,7 +18,7 @@ import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
 import { farmSeed } from '../engine/terrain.js';
 import { LIVREUR, ramasserTransition, ressourcesDuJour, transitionPlan, transitionPris, transitionSeed } from '../engine/transition.js';
-import { livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
+import { immeubleFoyer, immeubleVue, livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -258,6 +258,18 @@ window.FermeHote = {
     for (const c of DATA.VOISINS.AGRICULTEUR.CULTURES) { nom(c); if (DATA.CULTURES[c].sprite) cultures[c] = DATA.CULTURES[c].sprite; }
     for (const e of DATA.VOISINS.MAISON.ETAPES) noms['maison:' + e.id] = e.nom;
     return { foyers: voisinsVue(state), noms, cultures };
+  },
+  // les familles de l'immeuble de la ville (js/engine/voisins.js) : la page dit leurs familles
+  // ([{ logement, adultes, enfants }]) ; renvoie ce que la carte en montre (immeubleVue), les
+  // horaires de la fromagerie, le salaire, et le nom des plats et des ingrédients
+  immeuble: (familles) => {
+    for (const f of familles || []) immeubleFoyer(state, f.logement, f);
+    persistState();
+    const noms = {};
+    const nom = (id) => { const o = DATA.OBJETS[id]; if (o) noms[id] = `${o.icone} ${o.nom.toLowerCase()}`; };
+    DATA.VOISINS.RECETTES.fromager.forEach(nom);
+    for (const f of Object.values(immeubleVue(state))) if (f.hier) Object.keys(f.hier.achats || {}).forEach(nom);
+    return { foyers: immeubleVue(state), noms, horaires: DATA.VOISINS.FROMAGER.HORAIRES, salaire: DATA.VOISINS.FROMAGER.SALAIRE };
   },
   // le livreur arrive au marché : la caisse de chaque famille vendue, son prix crédité
   // ({ total, foyers: { <maison>: gain } })

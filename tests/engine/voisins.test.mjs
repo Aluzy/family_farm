@@ -3,7 +3,7 @@
    Lancer seul : node --test tests/engine/voisins.test.mjs (ou node tests/run-tests.mjs voisins).
    ========================================================================== */
 
-import { arbresDebout, createNewGame, DATA, livraison, runNight, TRANSITION, transitionPlan, transitionSeed, treeGone, voisinAbat, voisinFoyer, voisinQuota, voisinsFoyers, voisinsVue } from '../../js/engine/index.js';
+import { arbresDebout, createNewGame, DATA, immeubleFoyer, immeubleFoyers, immeubleVue, livraison, logementsImmeuble, runNight, TRANSITION, transitionPlan, transitionSeed, treeGone, voisinAbat, voisinFoyer, voisinQuota, voisinsFoyers, voisinsVue } from '../../js/engine/index.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const GRAINES = ['1', '2', '77', 'abc', 'b3', 'x9', '42', 'zz', 'ferme', '123456789'];
@@ -157,4 +157,32 @@ test('voisins : sous les yeux du joueur, le bûcheron abat un arbre de la carte 
   assertEqual(voisinsVue(s)[bu].valeur, J.caisse.bois * DATA.OBJETS.bois.prix, 'ce qu\'elle vaut au marché');
   const vue = voisinsVue(s)[ag];
   assert(vue.champ.every((p) => p.stade >= -1 && p.stade <= 3), 'les stades du champ à dessiner');
+});
+
+test('immeuble : chaque logement a sa famille de fromagers (un lit chacun)', () => {
+  const s = createNewGame(4242);
+  assertEqual(logementsImmeuble().length, DATA.VOISINS.IMMEUBLE.LOGEMENTS);
+  assertEqual(immeubleFoyer(s, 'logement_99'), null);
+  const f = immeubleFoyer(s, 'logement_1', { adultes: 2, enfants: 5 });
+  assertEqual([f.metier, f.adultes, f.enfants, f.argent], ['fromager', 2, DATA.VOISINS.IMMEUBLE.LITS - 2, DATA.VOISINS.ARGENT]);
+  assert(immeubleFoyer(s, 'logement_1') === f, 'le même foyer ensuite');
+  assertEqual(Object.keys(immeubleFoyers(s)), ['logement_1']);
+});
+
+test('immeuble : chaque jour, les adultes touchent leur salaire de la fromagerie et la famille achète ses ingrédients au marché', () => {
+  const s = createNewGame(4242);
+  immeubleFoyer(s, 'logement_1', { adultes: 2, enfants: 1 });
+  immeubleFoyer(s, 'logement_2', { adultes: 1, enfants: 0 });
+  for (let d = 0; d < 10; d++) runNight(s);
+  for (const [nom, f] of Object.entries(immeubleFoyers(s))) {
+    assertEqual(f.journal.length, DATA.VOISINS.JOURNAL, nom);
+    for (const J of f.journal) {
+      assertEqual(J.salaire, DATA.VOISINS.FROMAGER.SALAIRE * f.adultes, `${nom} jour ${J.jour} : un salaire par adulte`);
+      assert(J.achete > 0 && Object.keys(J.achats).length, `${nom} : des ingrédients achetés au marché`);
+      assert(J.plats.every((p) => DATA.VOISINS.RECETTES.fromager.includes(p)), `${nom} : des plats de fromager`);
+      assertEqual(J.vendu, 0, 'il ne vend rien');
+    }
+    assert(f.argent >= 0, `${nom} : jamais à découvert`);
+  }
+  assertEqual(immeubleVue(s).logement_1.hier.salaire, DATA.VOISINS.FROMAGER.SALAIRE * 2);
 });

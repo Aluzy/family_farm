@@ -132,6 +132,8 @@
         const Fa = IMMEUBLE.facade;
         if (!this.textures.exists(Fa.key)) this.load.spritesheet(Fa.key, v(Fa.file), { frameWidth: Fa.w, frameHeight: Fa.h });
         for (const n of IMMEUBLE.meubles) if (!this.textures.exists('meuble_' + n)) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
+        // les familles de ses logements (js/carte/ville/habitants.js)
+        for (const L of V.logementsImmeuble()) for (const mb of V.familleImmeuble(L).membres) planche(mb.perso, mb.enfant);
       }
       for (const [k, file] of planches) this.load.spritesheet(k, v(file), { frameWidth: 16, frameHeight: 32 });
       // les planches des jeux de tuiles : lues dans la carte une fois chargée (tout de suite si
@@ -274,7 +276,7 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w) || this.tapLivreur(w)) { this.dbl.oublie(); return; }
+        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapHabitant(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w) || this.tapLivreur(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va
         // (un essai de marche : la marche au doigt s'explique, une fois)
@@ -302,6 +304,7 @@
       this.makeFauna(objects('animaux'));
       this.makeCaveLife();
       this.lieux = objects('lieux');
+      this.makeHabitants();
       // (sans capture : les touches tapées dans un champ de la page y restent ; saisie())
       this.keys = this.input.keyboard ? this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,Z,Q,S,D,W,A', false) : null;
       window.Ville = { scene: this };
@@ -709,16 +712,17 @@
     // Le chemin (une liste de points, px) de (fx, fy) jusqu'à (x, y), ou null : le plus court en
     // nombre de cases (CarteKit.chemin, un pas en diagonale compte pour un), jusqu'à la case
     // marchable la plus proche du point visé (CarteKit.plusProche, 7 cases au plus).
-    findPath(fx, fy, x, y) {
+    // `libre(gx, gy)` : la marche à suivre (par défaut celle du personnage, canWalk).
+    findPath(fx, fy, x, y, libre = (i, j) => this.canWalk(i, j)) {
       const W = this.map.width, H = this.map.height;
       let gx = Math.floor(x / T), gy = Math.floor(y / T);
-      if (!this.canWalk(gx, gy)) {
-        const q = K.plusProche((i, j) => this.canWalk(gx + i, gy + j), 7, { de: 1 });
+      if (!libre(gx, gy)) {
+        const q = K.plusProche((i, j) => libre(gx + i, gy + j), 7, { de: 1 });
         if (!q) return null;
         gx += q.i; gy += q.j; x = gx * T + T / 2; y = gy * T + T - 2;
       }
       const sx = Math.floor(fx / T), sy = Math.floor(fy / T);
-      const cells = K.chemin({ cols: W, rows: H, libre: (i) => this.canWalk(i % W, (i / W) | 0) }, sy * W + sx, gy * W + gx, { diag: 1 });
+      const cells = K.chemin({ cols: W, rows: H, libre: (i) => libre(i % W, (i / W) | 0) }, sy * W + sx, gy * W + gx, { diag: 1 });
       if (!cells) return null;
       const steps = cells.map((c) => ({ x: (c % W) * T + T / 2, y: Math.floor(c / W) * T + T - 2 }));
       if (steps.length) steps[steps.length - 1] = { x: Math.round(x), y: Math.round(y) };
@@ -762,6 +766,7 @@
       this.stepLivreur(time, dt);
       this.stepMurs(dt);
       this.stepImmeuble(dt);
+      this.stepHabitants(time, dt);
       this.stepCueillette();
       this.stepDialog();
       const P = this.heroPos;

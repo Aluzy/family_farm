@@ -9,9 +9,13 @@
  *     quand il y a à faire au Poulailler ou à l'Étable (model.aide.lieux), il y va, se baisse
  *     (GESTE s) et nourrit les poules, prend les œufs, le lait et la laine (o.aide : tout entre
  *     dans l'inventaire ; o.gain : la bulle « +x » au-dessus de lui) ;
- *   - les enfants vont à l'école le lundi, le mardi, le jeudi et le vendredi : à 7 h ils
- *     prennent le chemin de l'est jusqu'au bord de la carte (le bus les attend sur la carte de
- *     transition) et s'effacent ; à 16 h 30, ils reviennent par le même bout du chemin.
+ *   - les enfants vont à l'école le lundi, le mardi, le jeudi et le vendredi ; elle commence à
+ *     8 h 45 (CarteKit.ECOLE). Chacun part de la maison le temps qu'il lui faut pour être au bord
+ *     de la carte quand il doit marcher jusqu'au bus de la carte de transition
+ *     (CarteKit.horaireEcole : sortieFerme) : la longueur de son chemin, à sa vitesse
+ *     (departEcole) ; il prend le chemin de l'est et s'efface (parti avant le réveil du
+ *     joueur, on ne le voit pas partir). Le soir, il revient par le même bout du chemin, à
+ *     l'heure où le bus l'a ramené (retourFerme).
  *
  * Ils marchent par les chemins du personnage (fermier.path : les mêmes cases libres). Avec
  * « animations réduites », ils vont d'un point à l'autre sans marcher. Rien ne bouge dans un
@@ -28,7 +32,7 @@
 
   const K = global.CarteKit;
   const T = K.T;
-  const HORAIRE = { sortie: 7, rentree: 18.75, ecole: 7, finEcole: 16.5, retard: 0.4 };
+  const HORAIRE = { sortie: 7, rentree: 18.75, retard: 0.4 };
   const JOURS_ECOLE = [0, 1, 3, 4];       // lundi, mardi, jeudi, vendredi (0 : lundi)
   const VITESSE = K.VITESSES.famille;     // px/s : { adulte, enfant }
   const ROAM = 6 * T;                      // autour de la maison
@@ -53,11 +57,23 @@
       return f || { x: scene.world.w / 2, y: scene.world.h / 2 };
     }
 
+    // L'heure où l'enfant `m` part pour l'école : le bord de la carte à l'heure (sortieFerme),
+    // moins le temps de son chemin depuis la porte (à sa vitesse, et son retard dans la file).
+    // Calculée de nouveau si la porte change.
+    function departEcole(m) {
+      const d = door(), e = o.exit, cle = d.x + ',' + d.y;
+      if (m.ecole && m.ecole.cle === cle) return m.ecole.h;
+      const p = o.fermier && o.fermier.path ? o.fermier.path(d.x, d.y, e.x, e.y) : null;
+      const L = p && p.length ? K.longueur(p, d) : Math.hypot(e.x - d.x, e.y - d.y);
+      m.ecole = { cle, h: K.horaireEcole().sortieFerme - K.heuresDeMarche(L, VITESSE.enfant, m.retard) };
+      return m.ecole.h;
+    }
+
     // Où il doit être à cette heure : 'dedans', 'dehors' ou 'ecole'.
     function voulu(m) {
       if (!model || model.nuit) return 'dedans';
       const h = model.heure;
-      if (m.enfant && JOURS_ECOLE.includes(model.semaine) && h >= HORAIRE.ecole && h < HORAIRE.finEcole) return 'ecole';
+      if (m.enfant && JOURS_ECOLE.includes(model.semaine) && h >= departEcole(m) && h < K.horaireEcole().retourFerme) return 'ecole';
       if (h < HORAIRE.sortie || h >= HORAIRE.rentree) return 'dedans';
       return 'dehors';
     }
@@ -157,11 +173,11 @@
       if (m.ou === 'dedans' && v === 'dehors') { apparaitre(m, d.x, d.y); aller(m, d.x, d.y + T); }
       // c'est l'heure de l'école et il était encore à la maison : on le voit partir (pas s'il
       // est déjà bien tard, il est déjà parti)
-      else if (m.ou === 'dedans' && v === 'ecole' && h < HORAIRE.ecole + HORAIRE.retard) { apparaitre(m, d.x, d.y); aller(m, e.x, e.y, () => disparaitre(m, 'ecole')); }
+      else if (m.ou === 'dedans' && v === 'ecole' && h < departEcole(m) + HORAIRE.retard) { apparaitre(m, d.x, d.y); aller(m, e.x, e.y, () => disparaitre(m, 'ecole')); }
       else if (m.ou === 'dedans' && v === 'ecole') m.ou = 'ecole';
       // l'école est finie : il revient par le chemin de l'est
       else if (m.ou === 'ecole' && v === 'dehors') { apparaitre(m, e.x, e.y); aller(m, d.x + m.coin.dx, d.y + m.coin.dy); }
-      else if (m.ou === 'ecole' && v === 'dedans' && model && !model.nuit && h >= HORAIRE.finEcole) m.ou = 'dedans';
+      else if (m.ou === 'ecole' && v === 'dedans' && model && !model.nuit && h >= K.horaireEcole().retourFerme) m.ou = 'dedans';
     }
 
     function avancer(m, dt) {
@@ -227,7 +243,7 @@
         }
       },
       info() {
-        return [...membres.values()].map((m) => ({ id: m.id, enfant: m.enfant, ou: m.ou, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache }));
+        return [...membres.values()].map((m) => ({ id: m.id, enfant: m.enfant, ou: m.ou, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache, ecole: m.enfant ? departEcole(m) : null }));
       },
       aidePos() {
         const A = model && model.aide, m = A && membres.get(A.id);
