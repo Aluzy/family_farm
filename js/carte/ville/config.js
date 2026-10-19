@@ -267,21 +267,33 @@
     // devant quelqu'un (il le cache) s'efface jusqu'à `alpha`, à `vitesse` par seconde
     hauts: { key: 'murs_hauts', file: 'assets/murs_hauts.png', w: 16, h: 40, murs: 0, porte: 16, alpha: 0.4, vitesse: 4 },
   };
-  // L'immeuble en blocs de la ville (un essai : js/carte/ville/immeuble.js) : il remplace le
-  // bâtiment `remplace` de la carte (ses tuiles dans le rectangle `efface` [x, y, w, h] en cases,
-  // et son emprise) ; posé en (x, y), de w × h cases, sur `niveaux` niveaux, chacun `dy` px
-  // au-dessus du précédent. Dans l'immeuble, le niveau du dessous est à `transparent` ; à l'étage,
-  // un voile sombre (`voile`, `alpha`) couvre la ville. Les murs du tour : `facade`
-  // (immeuble_ville.png, scripts/carte/blocs.py immeuble_ville : des étages de `dy` px comme ceux
-  // des immeubles de la ville ; par sorte d'étage, `etages` images : le rez-de-chaussée, un
-  // étage, le dernier ; dans chacune, les murs + masque, puis les murs à fenêtre à `fenetre` +
-  // masque ; les deux moitiés de la porte double à `porte`) ;
+  // Les immeubles d'habitation de la ville, bâtis en blocs (js/carte/ville/immeuble.js) : chacun
+  // remplace le bâtiment `nom` de la carte (ses tuiles dans le rectangle `efface` [x, y, w, h] en
+  // cases, et son emprise) ; posé en (x, y), de w × h cases, sur `niveaux` niveaux, chacun `dy` px
+  // au-dessus du précédent. `plan` : la sorte de ses niveaux (V.planImmeuble : « double », deux
+  // logements de part et d'autre du hall ; « simple », un logement, le hall et l'escalier sur le
+  // côté) ; `facade` : la matière de ses murs du tour (une des `facades`) ; `logement` : le nom
+  // de ses logements dans le moteur (« logement_1 »… : VOISINS.IMMEUBLE.LOGEMENTS, data/ville.json).
+  // Dans un immeuble, le niveau du dessous est à `transparent` ; à l'étage, un voile sombre
+  // (`voile`, `alpha`) couvre la ville. Les murs du tour : `facades` (immeuble_ville*.png,
+  // scripts/carte/blocs.py immeuble_ville : des étages de `dy` px comme ceux des immeubles de la
+  // ville ; par sorte d'étage, `etages` images : le rez-de-chaussée, un étage, le dernier ; dans
+  // chacune, les murs + masque, puis les murs à fenêtre à `fenetre` + masque ; les deux moitiés de
+  // la porte double à `porte`) ;
   // `escalier`, `haut` : l'escalier et son haut dans blocs.png ; `porteVerticale` : la porte d'un
   // mur vertical. `meubles` : les grands meubles (assets/meuble_<nom>.png).
   const IMMEUBLE = {
-    carte: 'ville', remplace: 'immeuble_ocre', efface: [146, 36, 22, 16],
-    x: 146, y: 40, w: 22, h: 14, niveaux: 3, dy: 40, transparent: 0.3, voile: 0x0d1018, alpha: 0.62,
-    facade: { key: 'immeuble_ville', file: 'assets/immeuble_ville.png', w: 16, h: 50, etages: 32, fenetre: 16, porte: 96 },
+    carte: 'ville', dy: 40, transparent: 0.3, voile: 0x0d1018, alpha: 0.62,
+    batiments: [
+      { nom: 'immeuble_ocre', efface: [146, 36, 22, 16], x: 146, y: 40, w: 22, h: 14, niveaux: 3, plan: 'double', facade: 'ocre', logement: 'logement' },
+      { nom: 'residence_verre', efface: [1, 117, 10, 21], x: 1, y: 126, w: 10, h: 14, niveaux: 4, plan: 'simple', facade: 'bleu', logement: 'residence_verre' },
+      { nom: 'residence_ocre', efface: [1, 140, 10, 26], x: 1, y: 154, w: 10, h: 14, niveaux: 5, plan: 'simple', facade: 'ocre', logement: 'residence_ocre' },
+    ],
+    facades: {
+      ocre: { key: 'immeuble_ville', file: 'assets/immeuble_ville.png' },
+      bleu: { key: 'immeuble_ville_bleu', file: 'assets/immeuble_ville_bleu.png' },
+    },
+    facade: { w: 16, h: 50, etages: 32, fenetre: 16, porte: 96 },
     escalier: 69, haut: 70, porteVerticale: 30, mursAlpha: 0.4, toitZ: 0.5,
     meubles: ['lit_adulte', 'lit_enfant', 'chevet', 'cuisine', 'four', 'table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_2'],
     // Les familles des logements (js/carte/ville/habitants.js) : `lits` lits chacun ; les adultes
@@ -289,11 +301,10 @@
     // VOISINS.FROMAGER) ; tous dorment de `sommeil[0]` h à `sommeil[1]` h. Dehors, ils marchent
     // à `vitesse` px/s ; ils partent au travail le temps du trajet avant l'embauche (une heure du
     // jeu : `sParHeure` s), plus `marge` h. Au marché, ils restent `achat` s devant un étal ; le
-    // dîner cuit `cuisson` s. Les cases du logement de gauche (celui de droite en miroir) : le
-    // pied des lits (`couchage` : les deux adultes, l'enfant), la place devant le four (`feu`).
+    // dîner cuit `cuisson` s. (Le pied des lits et la place devant le four : le plan du niveau.)
     vie: {
       lits: 3, travail: 'fromagerie', horaires: [8, 17], salaire: 16, sommeil: [22, 6], vitesse: 40, sParHeure: 30, marge: 0.25,
-      achat: 4, cuisson: 16, couchage: [[1, 3], [2, 3], [9, 3]], feu: [5, 7], humeur: [70, 40],
+      achat: 4, cuisson: 16, humeur: [70, 40],
     },
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)

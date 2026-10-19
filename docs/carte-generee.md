@@ -373,14 +373,17 @@ parties.
   gardé dans la partie (`state.transitionPris`, `{ jour, ids }`) et ne revient pas avant le
   lendemain.
 
-## L'immeuble en blocs de la ville (un essai)
+## Les immeubles d'habitation en blocs de la ville
 
 `js/carte/ville/immeuble.js`, réglages dans `IMMEUBLE` (`js/carte/ville/config.js`).
 
-- **Il remplace l'immeuble ocre** (à l'est de la grande ville, contre le bord). Au chargement de
-  la carte, `V.immeubleCarte` ôte ses tuiles et son emprise ; `makeImmeuble` pose à leur place un
-  immeuble bâti avec les blocs de la ferme (22 × 14 cases, 3 niveaux).
-- **Au rez-de-chaussée**, le hall occupe le milieu de la moitié de devant (4 × 7 cases) : une
+- **Ils remplacent les immeubles d'habitation** de la ville (`IMMEUBLE.batiments`) : l'immeuble
+  ocre (à l'est, contre le bord), la résidence de verre et la résidence ocre (à l'ouest, le long
+  de la voie ferrée). Au chargement de la carte, `V.immeubleCarte` ôte leurs tuiles et leur
+  emprise ; `makeImmeuble` pose à leur place des immeubles bâtis avec les blocs de la ferme :
+  l'immeuble ocre (22 × 14 cases, 3 niveaux, plan « double »), la résidence de verre (10 × 14
+  cases, 4 niveaux) et la résidence ocre (10 × 14 cases, 5 niveaux), au plan « simple ».
+- **L'immeuble ocre (plan « double »)** : au rez-de-chaussée, le hall occupe le milieu de la moitié de devant (4 × 7 cases) : une
   porte double sur la rue, une porte de chaque côté vers un logement, et au fond l'escalier qui
   monte. **À chaque étage**, le palier, de la même taille : le haut de l'escalier d'où l'on
   vient, l'escalier qui monte au suivant (sauf au dernier) et les deux mêmes logements.
@@ -389,9 +392,14 @@ parties.
   - la pièce de vie : la cuisine, le four, une table et deux chaises ;
   - derrière, une chambre sur toute la largeur du logement (au-dessus du hall aussi ; un mur
     mitoyen sépare les deux chambres) : deux lits, deux tables de chevet, une plante.
+- **Les résidences (plan « simple »)**, plus étroites : un logement par niveau, sur toute la
+  largeur. La chambre au fond (deux lits, deux tables de chevet, une plante), la pièce de vie
+  (la cuisine, le four, une table et sa chaise, une plante), le salon devant à gauche (le
+  canapé, la table basse, le tapis) ; le hall (le palier aux étages) devant à droite, avec la
+  porte double sur la rue et l'escalier.
 - **La façade**, comme celle des immeubles de la ville (`immeuble_ville.png`,
   `immeuble_ville` dans `scripts/carte/blocs.py`) : des étages de 40 px (`IMMEUBLE.dy`) en briques
-  ocre (celles de l'immeuble qu'il remplace) ; un soubassement gris au rez-de-chaussée, un
+  de l'immeuble remplacé (ocre ; bleues pour la résidence de verre, `immeuble_ville_bleu.png`) ; un soubassement gris au rez-de-chaussée, un
   bandeau de pierre au plancher de chaque étage, une corniche sous le toit ; des pierres d'angle
   à refends aux angles ; les fenêtres de la ville (linteau, cadre de bois, quatre carreaux,
   appui), avec de l'espace au-dessus et au-dessous ; la porte double vitrée de l'entrée dans son
@@ -402,17 +410,19 @@ parties.
   niveau, et ne marche que sur ce niveau (`marcheEtage`).
 - **Ce qu'on voit** (`stepImmeuble`) :
   - dehors : tous les niveaux l'un sur l'autre, et le toit ;
-  - dans l'immeuble : le toit s'efface, la façade de devant s'efface à moitié, le niveau du
-    dessous est en transparence et ceux du dessus sont cachés ;
+  - dans un immeuble : son toit s'efface, sa façade de devant s'efface à moitié, le niveau du
+    dessous est en transparence et ceux du dessus sont cachés ; les autres restent vus de dehors ;
   - à un étage : un voile sombre couvre la ville, l'immeuble et le personnage passent devant ;
   - un mur juste devant le personnage s'efface un peu.
 
-### Les familles de l'immeuble
+### Les familles des immeubles
 
-Chaque logement de l'immeuble (deux par niveau, de part et d'autre du hall) a sa famille :
+Chaque logement des immeubles (deux par niveau dans l'immeuble ocre, un par niveau dans les
+résidences : 15 familles) a sa famille :
 deux adultes et un enfant, tirés comme les voisins de la transition (`V.voisins`, gardés en
 `localStorage`, un lit chacun). Le moteur (`js/engine/voisins.js` : `immeubleFoyer`,
-`immeubleNuit`, `immeubleVue` ; `state.immeuble.foyers`) leur donne le métier `fromager` : chaque
+`immeubleNuit`, `immeubleVue` ; `state.immeuble.foyers`, par logement : `logement_1`… pour
+l'immeuble ocre, `residence_verre_1`…, `residence_ocre_1`… : `VOISINS.IMMEUBLE.LOGEMENTS`) leur donne le métier `fromager` : chaque
 nuit, chaque adulte touche son salaire de la fromagerie (`VOISINS.FROMAGER.SALAIRE`, 16 pièces), et
 la famille achète au marché les ingrédients de ses repas (`VOISINS.RECETTES.fromager`), avec les
 mêmes règles que les voisins (besoin, plats, bonheur). Le journal garde ce qu'elle a acheté
@@ -420,7 +430,7 @@ mêmes règles que les voisins (besoin, plats, bonheur). Le journal garde ce qu'
 
 Sur la carte (`js/carte/ville/habitants.js`), les adultes partent le matin à pied pour être à la
 fromagerie à 8 h (`VOISINS.FROMAGER.HORAIRES`) : ils descendent l'escalier, sortent par la porte
-de l'immeuble, entrent dans la fromagerie et n'en ressortent qu'à 17 h. Ils passent alors par un
+de leur immeuble, entrent dans la fromagerie et n'en ressortent qu'à 17 h. Ils passent alors par un
 étal du marché, rentrent le panier plein, et le premier arrivé cuisine devant le four. Les
 enfants vont à l'école comme ceux de la ferme (les jours `HorlogeSortie.JOURS_ECOLE`, de
 `CarteKit.ECOLE.debut` h, 8 h 45, à `fin` h, 16 h 45) : ils y vont à pied, entrent par la porte de l'école
@@ -430,16 +440,16 @@ ils sont au logement.
 ### L'horaire de l'école
 
 L'école commence à 8 h 45 pour tous les enfants : ceux de la ferme, des voisins de la transition et
-de l'immeuble (`CarteKit.ECOLE`, `js/carte/kit.js`). Chacun part de chez lui le temps qu'il lui
+des immeubles (`CarteKit.ECOLE`, `js/carte/kit.js`). Chacun part de chez lui le temps qu'il lui
 faut pour y être à l'heure : la longueur de son chemin divisée par sa vitesse (une heure du jeu :
 30 s), avec un peu d'avance. Le bus de l'école suit un horaire compté à rebours depuis 8 h 45
 (`CarteKit.horaireEcole`) : son arrêt en ville le temps que les enfants marchent jusqu'à l'école,
 son arrêt de la transition `ECOLE.bus` h plus tôt ; les enfants de la ferme passent le bord de la
 ferme le temps de marcher jusqu'à cet arrêt. Les enfants de la ferme partent donc de la maison
 selon leur chemin jusqu'au bord de la ferme ; ceux des voisins, selon leur chemin jusqu'à l'abri ;
-ceux de l'immeuble, selon leur chemin (escaliers compris) jusqu'à la porte de l'école. Le soir,
+ceux des immeubles, selon leur chemin (escaliers compris) jusqu'à la porte de l'école. Le soir,
 l'école finit à 16 h 45, et le bus repart de la ville quand les enfants y sont montés. Tous dorment de 22 h à 6 h. Un habitant marche sur son niveau et
-change de niveau par l'escalier ; on le voit dehors, ou dans l'immeuble quand on est à son
+change de niveau par l'escalier ; on le voit dehors, ou dans son immeuble quand on y est, à son
 niveau. Le toucher : il raconte son travail, ses achats et son dîner d'hier.
 
 ## Étapes

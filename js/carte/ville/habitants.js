@@ -1,12 +1,13 @@
-/* carte/ville/habitants.js — la scène de la ville : les familles de l'immeuble en blocs.
+/* carte/ville/habitants.js — la scène de la ville : les familles des immeubles d'habitation.
  *
- * Chaque logement de l'immeuble (js/carte/ville/immeuble.js : deux par niveau, à gauche et à
- * droite du hall) a sa famille, tirée comme celles des voisins (V.voisins, un lit chacun : deux
+ * Chaque logement des immeubles en blocs (js/carte/ville/immeuble.js : dans le grand immeuble
+ * ocre, deux par niveau, à gauche et à droite du hall ; dans les résidences de l'ouest, un par
+ * niveau) a sa famille, tirée comme celles des voisins (V.voisins, un lit chacun : deux
  * adultes et un enfant) ; le moteur tient son économie (js/engine/voisins.js : FermeHote.immeuble).
  * Les adultes travaillent à la fromagerie de la ville (VOISINS.FROMAGER.HORAIRES, data/ville.json)
  * et y gagnent leur salaire ; la carte montre leur journée, à l'heure du jeu (IMMEUBLE.vie) :
  *
- *   - le matin, chaque adulte descend l'escalier, sort par la porte de l'immeuble et va à pied
+ *   - le matin, chaque adulte descend l'escalier, sort par la porte de son immeuble et va à pied
  *     à la fromagerie (il part assez tôt pour y être à l'heure) ; il y entre, et n'est plus sur
  *     la carte de la journée ;
  *   - à la fin de sa journée, il en ressort, passe par un étal du marché de la ville acheter
@@ -23,7 +24,7 @@
  *
  * Un habitant marche sur son niveau (le rez-de-chaussée : la marche de la carte ; un étage : la
  * marche de son niveau) et change de niveau par l'escalier, comme le personnage. On le voit
- * dehors, ou dans l'immeuble quand on est à son niveau. Un toucher sur lui : il raconte son
+ * dehors, ou dans son immeuble quand on y est, à son niveau. Un toucher sur lui : il raconte son
  * travail et ses achats d'hier (paroleHabitant).
  *
  * Méthodes de la scène des cartes (js/ville-carte.js), posées sur son prototype : `this` est
@@ -41,26 +42,34 @@
   const hasard = (a) => a[0] + Math.random() * (a[1] - a[0]);
   const liste = (l) => (l.length > 1 ? l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1] : l[0] || '');
 
-  // Les logements de l'immeuble : { nom (celui du moteur), niveau, cote (0 : à gauche du hall,
-  // 1 : à droite) }.
-  V.logementsImmeuble = () => Array.from({ length: I.niveaux * 2 }, (_, i) => ({ nom: `logement_${i + 1}`, niveau: Math.floor(i / 2), cote: i % 2 }));
+  // Les logements des immeubles : { nom (celui du moteur : `logement` de son immeuble, et son
+  // numéro), bat (son immeuble : IMMEUBLE.batiments), niveau, cote (son rang dans le niveau : le
+  // logement du plan, V.planImmeuble) }.
+  V.logementsImmeuble = () => {
+    const out = [];
+    for (const b of I.batiments) {
+      let k = 0;
+      for (let n = 0; n < b.niveaux; n++) V.planImmeuble(b, n, b.niveaux).logements.forEach((_, c) => out.push({ nom: `${b.logement}_${++k}`, bat: b, niveau: n, cote: c }));
+    }
+    return out;
+  };
   // La famille d'un logement (tirée une fois, gardée comme celles des voisins).
   V.familleImmeuble = (L) => V.voisins('immeuble:' + L.nom, VIE.lits);
 
-  // Le point (px) où poser les pieds sur la case (x, y) de l'immeuble.
-  const pied = (x, y) => ({ x: (I.x + x) * T + T / 2, y: (I.y + y) * T + T - 2 });
+  // Le point (px) où poser les pieds sur la case (x, y) de l'immeuble `im`.
+  const pied = (im, x, y) => ({ x: (im.x + x) * T + T / 2, y: (im.y + y) * T + T - 2 });
 
   V.partie({
 
-    // Les familles de l'immeuble : chacune chez elle (ou déjà partie au travail, ou couchée,
+    // Les familles des immeubles : chacune chez elle (ou déjà partie au travail, ou couchée,
     // selon l'heure).
     makeHabitants() {
       this.habitants = [];
-      const im = this.immeuble;
-      if (!im) return;
+      if (!this.immeubles || !this.immeubles.length) return;
       const noms = (this.cache.json.get('perso_cases') || {}).frames || [];
       this.npcFrame = this.npcFrame || K.cases(noms);
       const logements = V.logementsImmeuble();
+      for (const L of logements) L.im = this.immeubles.find((q) => q.b === L.bat);
       const H = hote();
       this.ecoImm = H && H.immeuble ? H.immeuble(logements.map((L) => {
         const f = V.familleImmeuble(L);
@@ -69,6 +78,7 @@
       this.faitsImm = {};
       const h = global.HorlogeSortie ? global.HorlogeSortie.maintenant() : null;
       for (const L of logements) {
+        if (!L.im) continue;
         this.poseLogement(L);
         const f = V.familleImmeuble(L);
         f.membres.forEach((mb, i) => {
@@ -87,22 +97,15 @@
     },
 
     // Les cases d'un logement : celles où l'on va et vient (libres), le pied des lits, la place
-    // devant le four (et de quel côté il est). Le plan est celui du logement de gauche
-    // (V.planImmeuble) ; celui de droite en miroir.
+    // devant le four (et de quel côté il est) : celles du plan de son niveau (V.planImmeuble).
     poseLogement(L) {
-      const nv = this.immeuble.niveaux[L.niveau];
-      const mx = (x) => (L.cote ? I.w - 1 - x : x);
+      const im = L.im, nv = im.niveaux[L.niveau], lg = nv.plan.logements[L.cote];
       L.libres = [];
-      for (let y = 1; y < I.h - 1; y++) {
-        for (let x = 1; x < I.w - 1; x++) {
-          const g = mx(x);
-          // (la chambre derrière, sur toute la largeur ; devant, la pièce de vie et le salon)
-          const dans = y < 5 ? g <= 9 : y > 5 && g <= 7;
-          if (dans && nv.marche[y][x] && nv.grille[y][x] === '.') L.libres.push(pied(x, y));
-        }
+      for (let y = 1; y < im.h - 1; y++) {
+        for (let x = 1; x < im.w - 1; x++) if (lg.dans(x, y) && nv.marche[y][x] && nv.grille[y][x] === '.') L.libres.push(pied(im, x, y));
       }
-      L.lits = VIE.couchage.map(([x, y]) => pied(mx(x), y));
-      L.feu = { ...pied(mx(VIE.feu[0]), VIE.feu[1]), flip: !L.cote };
+      L.lits = lg.lits.map(([x, y]) => pied(im, x, y));
+      L.feu = { ...pied(im, lg.feu[0], lg.feu[1]), flip: lg.flip };
     },
 
     // Le pied du lit de `n` (les adultes : le grand lit ; l'enfant : le sien).
@@ -113,7 +116,7 @@
 
     caseLogement(L) {
       const l = L.libres;
-      return l.length ? l[Math.floor(Math.random() * l.length)] : pied(I.w / 2, I.h - 2);
+      return l.length ? l[Math.floor(Math.random() * l.length)] : pied(L.im, L.im.w / 2, L.im.h - 2);
     },
 
     // Où est l'habitant `n` quand la carte s'ouvre, d'après l'heure.
@@ -125,10 +128,10 @@
         if (this.ecoleImm(n, H)) { n.jourEcole = jour; this.cacheHabitant(n, true); n.etat = 'ecole'; }
         return;
       }
-      if (h >= this.departImm() && h < fin) { n.jourTravail = jour; this.cacheHabitant(n, true); n.etat = 'travail'; return; }
+      if (h >= this.departImm(n.L.im) && h < fin) { n.jourTravail = jour; this.cacheHabitant(n, true); n.etat = 'travail'; return; }
       // (rentré du marché : le dîner est fait, ou à faire)
       if (h >= fin) { n.jourTravail = n.jourMarche = jour; }
-      if (h < debut && h >= this.departImm()) n.jourTravail = jour;
+      if (h < debut && h >= this.departImm(n.L.im)) n.jourTravail = jour;
     },
 
     // ---------- l'heure ----------
@@ -158,7 +161,7 @@
     departEcole(n) {
       if (n.departEcoleH == null) {
         const p = this.porteEcole(), lit = this.litImm(n);
-        const essai = { niv: n.L.niveau, x: lit.x, y: lit.y, path: [] };
+        const essai = { L: n.L, niv: n.L.niveau, x: lit.x, y: lit.y, path: [] };
         const L = p && this.allerImm(essai, p, 0) ? K.longueur(essai.path, lit) : 0;
         n.departEcoleH = K.ECOLE.debut - K.heuresDeMarche(L, n.speed) - K.ECOLE.marge;
       }
@@ -170,16 +173,17 @@
       return l && l.length ? l[l.length - 1] : null;
     },
 
-    // L'heure du départ au travail : le temps du trajet (à pied, jusqu'à la fromagerie) avant
-    // l'embauche, et une marge.
-    departImm() {
-      if (this.departImmH == null) this.departImmH = Math.max(VIE.sommeil[1] + 0.25, this.horairesImm()[0] - this.trajetImm(this.portesImm().fromagerie) - VIE.marge);
-      return this.departImmH;
+    // L'heure du départ au travail des adultes de l'immeuble `im` : le temps du trajet (à pied,
+    // jusqu'à la fromagerie) avant l'embauche, et une marge.
+    departImm(im) {
+      if (im.departH == null) im.departH = Math.max(VIE.sommeil[1] + 0.25, this.horairesImm()[0] - this.trajetImm(im, this.portesImm(im).fromagerie) - VIE.marge);
+      return im.departH;
     },
 
-    // Le temps (en heures du jeu) d'aller à pied de l'immeuble au point `p` (0 : pas de chemin).
-    trajetImm(p) {
-      const o = this.portesImm().sortie, l = p ? this.findPath(o.x, o.y, p.x, p.y, this.libreNiv(0)) : null;
+    // Le temps (en heures du jeu) d'aller à pied de l'immeuble `im` au point `p` (0 : pas de
+    // chemin).
+    trajetImm(im, p) {
+      const o = this.portesImm(im).sortie, l = p ? this.findPath(o.x, o.y, p.x, p.y, this.libreNiv(im, 0)) : null;
       if (!l) return 0;
       let d = 0;
       for (let i = 0, a = o; i < l.length; a = l[i++]) d += Math.hypot(l[i].x - a.x, l[i].y - a.y);
@@ -187,51 +191,49 @@
       return (d + 20 * T) / VIE.vitesse / VIE.sParHeure;
     },
 
-    // La sortie de l'immeuble (devant sa porte), la porte de la fromagerie (devant le milieu de
-    // sa façade).
-    portesImm() {
+    // La sortie de l'immeuble `im` (devant sa porte), la porte de la fromagerie (devant le
+    // milieu de sa façade).
+    portesImm(im) {
       const b = (this.buildings || []).find((q) => q.name === VIE.travail);
       return {
-        sortie: pied(I.w / 2 - 1, I.h),
+        sortie: pied(im, im.niveaux[0].plan.porte, im.h),
         fromagerie: b ? { x: Math.round((b.x0 + b.x1) / 2), y: b.base + T - 2 } : null,
       };
     },
 
     // ---------- marcher, d'un niveau à l'autre ----------
 
-    // La marche du niveau `niv` : (gx, gy) → y marche-t-on ? (le rez-de-chaussée : celle de la
-    // carte ; un étage : celle de son niveau)
-    libreNiv(niv) {
+    // La marche du niveau `niv` de l'immeuble `im` : (gx, gy) → y marche-t-on ? (le
+    // rez-de-chaussée : celle de la carte ; un étage : celle de son niveau)
+    libreNiv(im, niv) {
       if (!niv) return (gx, gy) => !!(this.walk[gy] && this.walk[gy][gx]);
-      const nv = this.immeuble.niveaux[niv];
-      return (gx, gy) => {
-        const x = gx - I.x, y = gy - I.y;
-        return x >= 0 && y >= 0 && x < I.w && y < I.h && nv.marche[y][x];
-      };
+      const nv = im.niveaux[niv];
+      return (gx, gy) => V.dansImmeuble(im, gx, gy) && nv.marche[gy - im.y][gx - im.x];
     },
 
-    // L'escalier du niveau `niv` qui monte (U) ou descend (D) : son point (px).
-    escalierImm(niv, c) {
-      const G = this.immeuble.niveaux[niv].grille;
-      for (let y = 0; y < G.length; y++) { const x = G[y].indexOf(c); if (x >= 0) return pied(x, y); }
+    // L'escalier du niveau `niv` de l'immeuble `im` qui monte (U) ou descend (D) : son point (px).
+    escalierImm(im, niv, c) {
+      const G = im.niveaux[niv].grille;
+      for (let y = 0; y < G.length; y++) { const x = G[y].indexOf(c); if (x >= 0) return pied(im, x, y); }
       return null;
     },
 
-    // Le chemin de `n` jusqu'au point `p` du niveau `niv` : par les escaliers s'il faut changer
-    // de niveau (un point { niv } : il arrive sur le niveau d'à côté). false : pas de chemin.
+    // Le chemin de `n` jusqu'au point `p` du niveau `niv` (de son immeuble) : par les escaliers
+    // s'il faut changer de niveau (un point { niv } : il arrive sur le niveau d'à côté). false :
+    // pas de chemin.
     allerImm(n, p, niv = 0) {
-      const pts = [];
+      const pts = [], im = n.L.im;
       let a = n.niv, x = n.x, y = n.y;
       while (a !== niv) {
-        const e = this.escalierImm(a, niv > a ? 'U' : 'D');
-        const l = e && this.findPath(x, y, e.x, e.y, this.libreNiv(a));
+        const e = this.escalierImm(im, a, niv > a ? 'U' : 'D');
+        const l = e && this.findPath(x, y, e.x, e.y, this.libreNiv(im, a));
         if (!l) return false;
         pts.push(...l);
         a += niv > a ? 1 : -1;
         pts.push({ x: e.x, y: e.y, niv: a });
         x = e.x; y = e.y;
       }
-      const l = this.findPath(x, y, p.x, p.y, this.libreNiv(a));
+      const l = this.findPath(x, y, p.x, p.y, this.libreNiv(im, a));
       if (!l) return false;
       pts.push(...l);
       n.path = pts;
@@ -268,10 +270,9 @@
       }
     },
 
-    // Dans l'emprise de l'immeuble ?
+    // Dans l'emprise de son immeuble ?
     dansImm(n) {
-      const x = Math.floor(n.x / T) - I.x, y = Math.floor((n.y - 1) / T) - I.y;
-      return x >= 0 && y >= 0 && x < I.w && y < I.h;
+      return V.dansImmeuble(n.L.im, Math.floor(n.x / T), Math.floor((n.y - 1) / T));
     },
 
     // Ce qui est fait aujourd'hui dans le logement `L` (le dîner) : { cuisine }.
@@ -315,7 +316,7 @@
         case 'travail': {
           if (h < fin) { n.t = 2; return; }
           // la journée finie : il ressort, et va au marché
-          const p = this.portesImm().fromagerie;
+          const p = this.portesImm(n.L.im).fromagerie;
           if (p) { n.x = p.x; n.y = p.y; }
           n.niv = 0;
           n.cache = false;
@@ -385,10 +386,10 @@
         return;
       }
       if (!n.m.enfant) {
-        if (h >= this.departImm() && h < fin && n.jourTravail !== jour) {
+        if (h >= this.departImm(n.L.im) && h < fin && n.jourTravail !== jour) {
           // le matin : au travail (il descend, sort, va à la fromagerie)
           n.jourTravail = jour;
-          const p = this.portesImm().fromagerie;
+          const p = this.portesImm(n.L.im).fromagerie;
           n.etat = 'versTravail';
           if (!p || !this.allerImm(n, p, 0)) { n.etat = 'travail'; this.cacheHabitant(n); n.t = 2; }
           return;
@@ -453,10 +454,10 @@
       n.shadow.setAlpha(0.3);
     },
 
-    // Son image, à sa place : dehors, ou dans l'immeuble à son niveau (remonté, et devant le
+    // Son image, à sa place : dehors, ou dans son immeuble à son niveau (remonté, et devant le
     // voile s'il est à un étage) quand on y est aussi.
     placeHabitant(n, time, marche) {
-      const F = this.npcFrame, im = this.immeuble;
+      const F = this.npcFrame, im = n.L.im;
       let frame;
       if (n.geste && !marche) frame = F(n.geste);
       else if (marche) frame = F.de(n.panier ? 'panier' : 'marche', n.face, Math.floor(n.walked / 4) % 4);

@@ -125,12 +125,12 @@
         if (!this.textures.exists(Lv.tri)) this.load.spritesheet(Lv.tri, v(Lv.triFile), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
         if (!this.textures.exists(Lv.caisse)) this.load.spritesheet(Lv.caisse, v(Lv.caisseFile), { frameWidth: 16, frameHeight: 16 });
       }
-      // l'immeuble en blocs de la ville (un essai, js/carte/ville/immeuble.js) : les blocs, sa
-      // façade, ses meubles
+      // les immeubles d'habitation de la ville, en blocs (js/carte/ville/immeuble.js) : les
+      // blocs, leurs façades, leurs meubles
       if (etat.nom === IMMEUBLE.carte) {
         if (!this.textures.exists(BLOCS.key)) this.load.spritesheet(BLOCS.key, v(BLOCS.file), { frameWidth: BLOCS.w, frameHeight: BLOCS.h });
         const Fa = IMMEUBLE.facade;
-        if (!this.textures.exists(Fa.key)) this.load.spritesheet(Fa.key, v(Fa.file), { frameWidth: Fa.w, frameHeight: Fa.h });
+        for (const f of Object.values(IMMEUBLE.facades)) if (!this.textures.exists(f.key)) this.load.spritesheet(f.key, v(f.file), { frameWidth: Fa.w, frameHeight: Fa.h });
         for (const n of IMMEUBLE.meubles) if (!this.textures.exists('meuble_' + n)) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
         // les familles de ses logements (js/carte/ville/habitants.js)
         for (const L of V.logementsImmeuble()) for (const mb of V.familleImmeuble(L).membres) planche(mb.perso, mb.enfant);
@@ -170,7 +170,7 @@
         this.load.spritesheet(this.rochersKey, v('assets/' + rp('planche')), { frameWidth: rp('largeur'), frameHeight: rp('hauteur') });
       }
       if (has('herbe_haute')) this.load.spritesheet(K.NATURE.herbe.key, v('assets/' + K.NATURE.herbe.file), K.NATURE.herbe.frame);
-      // (la ville : sans le bâtiment que l'immeuble en blocs remplace)
+      // (la ville : sans les bâtiments que les immeubles en blocs remplacent)
       if (etat.nom === IMMEUBLE.carte) V.immeubleCarte(data);
       // l'exemplaire du dessus de chaque couche de bâtiment
       for (const name of BATI) {
@@ -697,7 +697,7 @@
     }
 
     canWalk(tx, ty) {
-      // (à un étage de l'immeuble : seulement son niveau)
+      // (à un étage d'un immeuble : seulement son niveau)
       if (this.niveauVille) return this.marcheEtage(tx, ty);
       return !!(this.walk[ty] && this.walk[ty][tx]);
     }

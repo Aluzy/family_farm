@@ -543,16 +543,19 @@ def murs_hauts():
 #   - au rez-de-chaussée, la porte double vitrée de l'entrée dans son encadrement de pierre (deux
 #     images : la moitié gauche, la moitié droite).
 # Dans la planche : pour chaque sorte d'étage (rez-de-chaussée, étage, dernier), les 16 murs
-# (+ masque) puis les 16 murs à fenêtre ; puis les deux moitiés de la porte (96, 97).
+# (+ masque) puis les 16 murs à fenêtre ; puis les deux moitiés de la porte (96, 97). Une planche
+# par matière des immeubles de la ville (FACADES : immeuble_ville.png en briques ocre,
+# immeuble_ville_bleu.png en briques bleues, comme la résidence de verre).
 ETAGE_IMMEUBLE = 40
 SORTES_ETAGE = ('rez', 'etage', 'dernier')
 PIERRE_VILLE = ((208, 190, 152), (172, 154, 122), (226, 212, 180))   # immeubles.py PIERRE
 K_VILLE = (40, 31, 31)
+FACADES = [('immeuble_ville', 'brique_ocre'), ('immeuble_ville_bleu', 'brique_bleue')]
 
 
-def facade_immeuble(m, sorte, fenetre_=False):
+def facade_immeuble(m, sorte, fenetre_=False, matiere='brique_ocre'):
     """Le mur de masque m de l'immeuble, à l'étage `sorte`, avec ou sans sa fenêtre."""
-    motif, dessus = next((mo, de) for nom, mo, de in MATIERES_VILLE if nom == 'brique_ocre')
+    motif, dessus = next((mo, de) for nom, mo, de in MATIERES_VILLE if nom == matiere)
     t = Toile(mur_ville(m, motif, dessus))
     if m & 4:
         return t.im
@@ -618,10 +621,10 @@ def facade_immeuble(m, sorte, fenetre_=False):
     return t.im
 
 
-def porte_immeuble():
+def porte_immeuble(matiere='brique_ocre'):
     """Les deux moitiés de la porte double vitrée de l'entrée, dans son encadrement de pierre,
     percée dans le mur du rez-de-chaussée (masque 2 | 8)."""
-    gauche, droite = Toile(facade_immeuble(2 | 8, 'rez')), Toile(facade_immeuble(2 | 8, 'rez'))
+    gauche, droite = Toile(facade_immeuble(2 | 8, 'rez', matiere=matiere)), Toile(facade_immeuble(2 | 8, 'rez', matiere=matiere))
     larg, haut, P = 26, 34, PIERRE_VILLE
     x0, sol = 3, BAS
     y0 = sol - haut
@@ -643,9 +646,9 @@ def porte_immeuble():
     return [gauche.im, droite.im]
 
 
-def immeuble_ville():
-    """La planche de la façade de l'immeuble de la ville (voir plus haut) et la hauteur de ses
-    images."""
+def immeuble_ville(matiere='brique_ocre'):
+    """La planche de la façade de l'immeuble de la ville à la matière `matiere` (voir plus haut)
+    et la hauteur de ses images."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     H = CHAPE + ETAGE_IMMEUBLE
@@ -653,8 +656,8 @@ def immeuble_ville():
     try:
         out = []
         for sorte in SORTES_ETAGE:
-            out += [facade_immeuble(m, sorte) for m in range(16)] + [facade_immeuble(m, sorte, True) for m in range(16)]
-        return out + porte_immeuble(), H
+            out += [facade_immeuble(m, sorte, False, matiere) for m in range(16)] + [facade_immeuble(m, sorte, True, matiere) for m in range(16)]
+        return out + porte_immeuble(matiere), H
     finally:
         H, BAS, FACE = garde
 
@@ -1248,9 +1251,10 @@ def main():
     hauts, h = murs_hauts()
     rangee(hauts, W, h).save(os.path.join(ASSETS, 'murs_hauts.png'))
     print(f'assets/murs_hauts.png : {len(hauts)} images de {W} × {h}')
-    imm, h = immeuble_ville()
-    rangee(imm, W, h).save(os.path.join(ASSETS, 'immeuble_ville.png'))
-    print(f'assets/immeuble_ville.png : {len(imm)} images de {W} × {h}')
+    for nom, matiere in FACADES:
+        imm, h = immeuble_ville(matiere)
+        rangee(imm, W, h).save(os.path.join(ASSETS, nom + '.png'))
+        print(f'assets/{nom}.png : {len(imm)} images de {W} × {h}')
     if '--apercu' in sys.argv:
         apercu_piece(sheet)
 
