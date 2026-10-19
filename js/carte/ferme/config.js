@@ -160,6 +160,15 @@
     // quand on est dans le bâtiment : à `transparent` ; à l'étage, un voile sombre sur toute la
     // ferme (`voile`, `alpha` ; au-dessus de ce qui vole), et ce qui est de l'étage devant lui
     etage: { haut: 70, dy: 30, transparent: 0.3, voile: 0x0d1018, alpha: 0.62 },
+    // les toits (js/carte/ferme/toits.js) : les tuiles du versant sud et du versant nord (base,
+    // clair, sombre), le faîtage, le bord, la rive sous le versant sud (une couleur par rangée
+    // de pixels) ; au-dessus de la rangée du bas du bâtiment (`z`) ; à `derriere` quand le
+    // personnage passe derrière, à `vitesse` par seconde
+    toits: {
+      sud: [[178, 84, 58], [206, 112, 78], [130, 57, 41]], nord: [[138, 61, 44], [158, 75, 53], [101, 43, 31]],
+      faite: [[98, 41, 29], [192, 98, 68]], bord: [72, 31, 23], rive: [[94, 61, 41], [75, 49, 33], [56, 37, 25]],
+      z: 1.5, derriere: 0.45, vitesse: 4,
+    },
     // les murs et la porte (d'un mur horizontal), une case plus hauts (assets/murs_hauts.png,
     // comme les maisons de la transition, scripts/carte/blocs.py murs_hauts : les 16 murs
     // raccordés, `murs` + masque, puis la porte) ; un mur devant quelqu'un (il le cache)

@@ -234,6 +234,15 @@ Le Marché vend toujours les outils.
     et d'arrêter le passage (`state.etage`) ;
   - l'escalier repris, ou la pièce ouverte, l'étage s'en va : ses blocs reviennent dans
     l'inventaire (`rangerEtage`) ; au coucher, on redescend.
+- **Les toits** (`toits` dans `js/engine/etage.js`, `js/carte/ferme/toits.js`) : chaque
+  bâtiment (une pièce close) reçoit tout seul un toit de tuiles, posé sur son dernier niveau :
+  - sur ses murs, s'il n'a pas d'escalier ; sur les murs de son étage, au-dessus de ce qu'ils
+    ferment, s'il en a un (un étage sans murs tout autour reste une terrasse, sans toit) ;
+  - il couvre le bâtiment, murs compris, avec un faîtage au milieu, un versant sud clair, un
+    versant nord plus sombre et une rive sous le bas du toit (un canevas dessiné par toit,
+    couleurs dans `BLOCS_CARTE.toits`) ;
+  - il s'efface quand le personnage entre dans le bâtiment (en bas ou à l'étage) et en mode
+    Construire, et à moitié quand le personnage passe derrière (`stepToits`).
 
 ## La carte de transition, tirée pour chaque partie
 

@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { blocGid } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
+  isArable, migrate, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -786,4 +786,22 @@ test('ferme générée : une fenêtre change un mur sans l\'enlever (au sol et �
   assert(poserEtage(s, 'mur_pierre', coin).ok);
   assert(poserEtage(s, 'mur_fenetre', coin).ok, 'une fenêtre sur le mur de l\'étage');
   assertEqual([etageBlocs(s)[coin], countItem(s, 'mur_fenetre')], ['mur_fenetre', 1]);
+});
+
+test('ferme générée : un toit sur le dernier niveau de chaque bâtiment', () => {
+  const s = chantier('toit1');
+  setInv(s, { mur_pierre: 40, porte: 4, escalier: 1 });
+  const z = terrainLibre(s, 6, 5), p = murs(z, 6, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  assertEqual(toits(s).length, 0, 'pas de pièce close : pas de toit');
+  poserBloc(s, 'porte', p.porte);
+  assertEqual(toits(s).map((t) => [t.niveau, t.cases.length]), [[0, 30]], 'sur les murs du bas, murs compris');
+  // l'escalier : l'étage, à ciel ouvert tant que ses murs ne le ferment pas
+  poserBloc(s, 'escalier', p.dedans);
+  assertEqual(toits(s).length, 0, 'une terrasse');
+  const tour = [...p.murs, p.porte];
+  for (const t of tour) assert(poserEtage(s, 'mur_pierre', t).ok, `étage ${t}`);
+  assertEqual(toits(s).map((t) => [t.niveau, t.cases.length, t.dedans.length]), [[1, 30, 30]], 'sur les murs de l\'étage');
+  reprendreEtage(s, tour[3]);
+  assertEqual(toits(s).length, 0, 'un mur de l\'étage en moins : ouvert');
 });

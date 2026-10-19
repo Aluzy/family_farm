@@ -30,24 +30,73 @@ export function escaliers(state) {
   return Object.entries(blocsPoses(state)).filter(([, s]) => s === 'escalier').map(([t]) => Number(t));
 }
 
+// Une pièce close et les blocs qui ferment autour d'elle (les huit voisines) : un Set de tuiles.
+function avecMurs(state, cases) {
+  const out = new Set(), B = blocsPoses(state), W = farmTerrain(state).LARGEUR;
+  for (const t of cases) {
+    out.add(t);
+    const c = t % W;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (c + dx < 0 || c + dx >= W) continue;
+        const j = t + dy * W + dx, s = DATA.ATELIER.BLOCS[B[j]];
+        if (s && s.ferme) out.add(j);
+      }
+    }
+  }
+  return out;
+}
+
 // L'emprise de l'étage : les cases des pièces closes où un escalier est posé, et les murs et
 // les portes qui les bordent (les huit voisines). Un Set de tuiles.
 export function etageEmprise(state) {
   const out = new Set();
   if (!atelierOuvert(state)) return out;
-  const B = blocsPoses(state), W = farmTerrain(state).LARGEUR;
+  const B = blocsPoses(state);
   for (const p of piecesCloses(state)) {
     if (!p.cases.some((t) => B[t] === 'escalier')) continue;
-    for (const t of p.cases) {
-      out.add(t);
-      const c = t % W;
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          if (c + dx < 0 || c + dx >= W) continue;
-          const j = t + dy * W + dx, s = DATA.ATELIER.BLOCS[B[j]];
-          if (s && s.ferme) out.add(j);
+    for (const t of avecMurs(state, p.cases)) out.add(t);
+  }
+  return out;
+}
+
+// Les toits : chaque bâtiment (une pièce close) a le sien, posé sur son dernier niveau.
+//   - une pièce sans escalier : sur ses murs (niveau 0) ;
+//   - une pièce à escalier : sur les murs de l'étage, au-dessus de ce qu'ils ferment dans
+//     l'emprise (niveau 1) ; un étage sans murs tout autour reste à ciel ouvert (une terrasse).
+// [{ niveau, cases: [tuiles couvertes], dedans: [tuiles d'où l'on est dans le bâtiment] }]
+export function toits(state) {
+  if (!atelierOuvert(state)) return [];
+  const B = blocsPoses(state), E = etageBlocs(state), W = farmTerrain(state).LARGEUR;
+  const ferme = (t) => { const s = DATA.ATELIER.BLOCS[E[t]]; return !!(s && s.ferme); };
+  const out = [];
+  for (const p of piecesCloses(state)) {
+    const emprise = avecMurs(state, p.cases), tri = (a) => [...a].sort((x, y) => x - y);
+    if (!p.cases.some((t) => B[t] === 'escalier')) { out.push({ niveau: 0, cases: tri(emprise), dedans: tri(emprise) }); continue; }
+    // à l'étage : les cases libres de l'emprise qu'on ne rejoint pas depuis son bord
+    const voisins = (t) => { const c = t % W; return [c > 0 ? t - 1 : -1, c < W - 1 ? t + 1 : -1, t - W, t + W]; };
+    const libre = (t) => emprise.has(t) && !ferme(t);
+    const ouvert = new Set(), pile = [];
+    for (const t of emprise) if (libre(t) && voisins(t).some((j) => !emprise.has(j))) { ouvert.add(t); pile.push(t); }
+    while (pile.length) for (const j of voisins(pile.pop())) if (libre(j) && !ouvert.has(j)) { ouvert.add(j); pile.push(j); }
+    const vus = new Set();
+    for (const t of emprise) {
+      if (!libre(t) || ouvert.has(t) || vus.has(t)) continue;
+      const zone = [t], cases = new Set();
+      vus.add(t);
+      for (let i = 0; i < zone.length; i++) {
+        const k = zone[i], c = k % W;
+        cases.add(k);
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (c + dx < 0 || c + dx >= W) continue;
+            const j = k + dy * W + dx;
+            if (ferme(j) && emprise.has(j)) cases.add(j);
+          }
         }
+        for (const j of voisins(k)) if (libre(j) && !vus.has(j)) { vus.add(j); zone.push(j); }
       }
+      out.push({ niveau: 1, cases: tri(cases), dedans: tri(emprise) });
     }
   }
   return out;
