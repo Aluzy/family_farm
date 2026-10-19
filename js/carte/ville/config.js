@@ -261,6 +261,20 @@
     // devant quelqu'un (il le cache) s'efface jusqu'à `alpha`, à `vitesse` par seconde
     hauts: { key: 'murs_hauts', file: 'assets/murs_hauts.png', w: 16, h: 40, murs: 0, porte: 16, alpha: 0.4, vitesse: 4 },
   };
+  // L'immeuble en blocs de la ville (un essai : js/carte/ville/immeuble.js) : il remplace le
+  // bâtiment `remplace` de la carte (ses tuiles dans le rectangle `efface` [x, y, w, h] en cases,
+  // et son emprise) ; posé en (x, y), de w × h cases, sur `niveaux` niveaux, chacun `dy` px
+  // au-dessus du précédent. Dans l'immeuble, le niveau du dessous est à `transparent` ; à l'étage,
+  // un voile sombre (`voile`, `alpha`) couvre la ville. `fenetres` : les images des fenêtres de
+  // murs_hauts.png (seule, puis prolongée à gauche, à droite, des deux côtés : + masque) ;
+  // `escalier`, `haut` : l'escalier et son haut dans blocs.png ; `porteVerticale` : la porte d'un
+  // mur vertical. `meubles` : les grands meubles (assets/meuble_<nom>.png).
+  const IMMEUBLE = {
+    carte: 'ville', remplace: 'immeuble_ocre', efface: [146, 36, 22, 16],
+    x: 146, y: 38, w: 22, h: 14, niveaux: 3, dy: 30, transparent: 0.3, voile: 0x0d1018, alpha: 0.62,
+    fenetres: [17, 49, 65, 81], escalier: 69, haut: 70, porteVerticale: 30, mursAlpha: 0.4, toitZ: 0.5,
+    meubles: ['lit_adulte', 'lit_enfant', 'chevet', 'cuisine', 'four', 'table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_2'],
+  };
   // (le joueur prend une ressource à `reach` px de ses pieds)
   const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, reach: 14, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };
   // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h, au lit de
@@ -317,7 +331,7 @@
 
   const parties = [];
   global.CarteVille = {
-    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS, BLOCS, RAMASSABLES, TRANSITION_VIE },
+    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE },
     etat, configure, hote, sheetKey, saisie: K.saisie, reduced: K.reduit, v: K.v, tuilesDans,
     // les méthodes de la scène, fichier par fichier (voir js/ville-carte.js)
     parties,
