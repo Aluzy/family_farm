@@ -815,7 +815,7 @@
       // (à un étage de l'immeuble : remontée, devant le voile)
       const lift = this.liftVille();
       H.setPosition(Math.round(P.x + hx), Math.round(P.y - hy - lift)).setDepth(this.profondeurHeros(P.y)).setAlpha(this.heroAlpha);
-      this.shadow.setPosition(Math.round(P.x), Math.round(P.y - lift)).setDepth(this.profondeurHeros(P.y - 0.5)).setAlpha(this.heroAlpha);
+      this.shadow.setPosition(Math.round(P.x), Math.round(P.y - lift)).setDepth(this.niveauVille ? this.profondeurHeros(P.y) - 1e-6 : P.y - 0.5).setAlpha(this.heroAlpha);
       this.fadeFoliage(Math.round(P.x), Math.round(P.y));
       this.stepNature(dt);
       this.placeGain();
