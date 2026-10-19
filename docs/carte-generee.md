@@ -376,14 +376,15 @@ parties.
 - **Il remplace l'immeuble ocre** (à l'est de la grande ville, contre le bord). Au chargement de
   la carte, `V.immeubleCarte` ôte ses tuiles et son emprise ; `makeImmeuble` pose à leur place un
   immeuble bâti avec les blocs de la ferme (22 × 14 cases, 3 niveaux).
-- **Au rez-de-chaussée**, au milieu, le hall : une porte double sur la rue, une porte de chaque
-  côté vers un logement, et au fond l'escalier qui monte. **À chaque étage**, le palier : le haut
-  de l'escalier d'où l'on vient, l'escalier qui monte au suivant (sauf au dernier) et les deux
-  mêmes logements.
+- **Au rez-de-chaussée**, le hall occupe le milieu de la moitié de devant (4 × 7 cases) : une
+  porte double sur la rue, une porte de chaque côté vers un logement, et au fond l'escalier qui
+  monte. **À chaque étage**, le palier, de la même taille : le haut de l'escalier d'où l'on
+  vient, l'escalier qui monte au suivant (sauf au dernier) et les deux mêmes logements.
 - **Chaque logement** (`V.planImmeuble`, celui de droite en miroir) a trois pièces :
   - un petit salon : un canapé, une table basse, un tapis, une plante ;
   - la pièce de vie : la cuisine, le four, une table et deux chaises ;
-  - une chambre : deux lits et une table de chevet.
+  - derrière, une chambre sur toute la largeur du logement (au-dessus du hall aussi ; un mur
+    mitoyen sépare les deux chambres) : deux lits, deux tables de chevet, une plante.
 - **La façade**, comme celle des immeubles de la ville (`immeuble_ville.png`,
   `immeuble_ville` dans `scripts/carte/blocs.py`) : des étages de 40 px (`IMMEUBLE.dy`) en briques
   ocre (celles de l'immeuble qu'il remplace) ; un soubassement gris au rez-de-chaussée, un
