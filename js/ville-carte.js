@@ -125,11 +125,12 @@
         if (!this.textures.exists(Lv.tri)) this.load.spritesheet(Lv.tri, v(Lv.triFile), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
         if (!this.textures.exists(Lv.caisse)) this.load.spritesheet(Lv.caisse, v(Lv.caisseFile), { frameWidth: 16, frameHeight: 16 });
       }
-      // l'immeuble en blocs de la ville (un essai, js/carte/ville/immeuble.js) : les blocs, les
-      // murs hauts, ses meubles
+      // l'immeuble en blocs de la ville (un essai, js/carte/ville/immeuble.js) : les blocs, sa
+      // façade, ses meubles
       if (etat.nom === IMMEUBLE.carte) {
         if (!this.textures.exists(BLOCS.key)) this.load.spritesheet(BLOCS.key, v(BLOCS.file), { frameWidth: BLOCS.w, frameHeight: BLOCS.h });
-        if (!this.textures.exists(BLOCS.hauts.key)) this.load.spritesheet(BLOCS.hauts.key, v(BLOCS.hauts.file), { frameWidth: BLOCS.hauts.w, frameHeight: BLOCS.hauts.h });
+        const Fa = IMMEUBLE.facade;
+        if (!this.textures.exists(Fa.key)) this.load.spritesheet(Fa.key, v(Fa.file), { frameWidth: Fa.w, frameHeight: Fa.h });
         for (const n of IMMEUBLE.meubles) if (!this.textures.exists('meuble_' + n)) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
       }
       for (const [k, file] of planches) this.load.spritesheet(k, v(file), { frameWidth: 16, frameHeight: 32 });

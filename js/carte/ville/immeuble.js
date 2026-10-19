@@ -11,9 +11,11 @@
  *   - à chaque étage, le palier : le haut de l'escalier d'où l'on vient (on y redescend),
  *     l'escalier qui monte au suivant (sauf au dernier), et les deux mêmes logements ;
  *   - par-dessus le dernier, un toit de tuiles (CarteKit.toit).
- * Chaque niveau est dessiné IMMEUBLE.dy px au-dessus du précédent (le haut des murs hauts) : les
- * murs du tour sont hauts, en briques ocre (comme l'immeuble qu'il remplace), avec des fenêtres et
- * la porte d'entrée dans la même brique (deux fenêtres voisines font une
+ * Chaque niveau est dessiné IMMEUBLE.dy px au-dessus du précédent (un étage d'immeuble de la
+ * ville) : les murs du tour sont ceux de sa façade (assets/immeuble_ville.png, scripts/carte/
+ * blocs.py immeuble_ville : la brique ocre de l'immeuble qu'il remplace, le soubassement, les
+ * bandeaux entre les étages, la corniche sous le toit, les pierres d'angle, les fenêtres de la
+ * ville avec de l'espace au-dessus et au-dessous, la porte double vitrée de l'entrée) (deux fenêtres voisines font une
  * grande fenêtre) ; les cloisons sont basses (blocs.png), pour qu'on voie le fond des pièces.
  *
  * Marcher sur une marche de l'escalier fait monter (ou descendre) : le personnage arrive sur le
@@ -95,11 +97,13 @@
     makeImmeuble() {
       this.immeuble = null;
       this.niveauVille = 0;
-      if (V.etat.nom !== I.carte || !this.textures.exists(BLOCS.key) || !this.textures.exists(BLOCS.hauts.key)) return;
-      const N = I.niveaux, Hk = BLOCS.hauts.key;
+      if (V.etat.nom !== I.carte || !this.textures.exists(BLOCS.key) || !this.textures.exists(I.facade.key)) return;
+      const N = I.niveaux, Fk = I.facade.key;
       const im = this.immeuble = { niveaux: [], toit: null, vue: null };
       for (let n = 0; n < N; n++) {
         const plan = V.planImmeuble(n, N), G = plan.grille, lift = n * I.dy;
+        // la façade de cet étage (le rez-de-chaussée, un étage, le dernier : immeuble_ville.png)
+        const etage = I.facade.etages * (!n ? 0 : n === N - 1 ? 2 : 1);
         const a = (x, y) => (y >= 0 && y < I.h && x >= 0 && x < I.w ? G[y][x] : ' ');
         const objs = [], murs = [], marche = G.map((l) => [...l].map((c) => '.PUD'.includes(c)));
         const pose = (key, frame, x, y, z) => {
@@ -119,15 +123,14 @@
             if (mur(c)) {
               const v = (dx, dy, porte) => mur(a(x + dx, y + dy)) || (porte && a(x + dx, y + dy) === 'P');
               const m = (v(0, -1) ? 1 : 0) + (v(1, 0, true) ? 2 : 0) + (v(0, 1) ? 4 : 0) + (v(-1, 0, true) ? 8 : 0);
-              // (une fenêtre prolongée par sa voisine : une grande fenêtre)
-              const face = (i) => !mur(a(i, y + 1));
-              const f = c === 'F' && face(x) ? I.fenetres[(a(x - 1, y) === 'F' && face(x - 1) ? 1 : 0) + (a(x + 1, y) === 'F' && face(x + 1) ? 2 : 0)] + m : I.murs + m;
-              // (les murs du tour : hauts ; les cloisons : basses, on voit le fond des pièces)
-              const o = bord(x, y) ? pose(Hk, f, x, y, (py) => py) : pose(BLOCS.key, BLOCS.murs + m, x, y, (py) => py);
+              // (les murs du tour : ceux de la façade, avec ou sans fenêtre ; les cloisons : basses,
+              // on voit le fond des pièces)
+              const f = etage + (c === 'F' && !mur(a(x, y + 1)) ? I.facade.fenetre : 0) + m;
+              const o = bord(x, y) ? pose(Fk, f, x, y, (py) => py) : pose(BLOCS.key, BLOCS.murs + m, x, y, (py) => py);
               murs.push({ o, x: (I.x + x) * T + T / 2, gy: I.y + y, facade: y === I.h - 1 });
             } else if (c === 'P') {
               const vert = mur(a(x, y - 1)) && mur(a(x, y + 1));
-              const o = vert ? pose(BLOCS.key, I.porteVerticale, x, y, (py) => py) : bord(x, y) ? pose(Hk, I.porte, x, y, (py) => py) : pose(BLOCS.key, BLOCS.porte, x, y, (py) => py);
+              const o = vert ? pose(BLOCS.key, I.porteVerticale, x, y, (py) => py) : bord(x, y) ? pose(Fk, I.facade.porte + (a(x - 1, y) === 'P' ? 1 : 0), x, y, (py) => py) : pose(BLOCS.key, BLOCS.porte, x, y, (py) => py);
               murs.push({ o, x: (I.x + x) * T + T / 2, gy: I.y + y, facade: y === I.h - 1 });
             } else if (c === 'U') pose(BLOCS.key, I.escalier, x, y, (py) => py - T / 2);
             else if (c === 'D') pose(BLOCS.key, I.haut, x, y, (py) => py - 0.05);

@@ -529,6 +529,136 @@ def murs_hauts():
         H, BAS, FACE = garde
 
 
+# ---------- la façade de l'immeuble de la ville ----------
+# L'immeuble en blocs de la ville (js/carte/ville/immeuble.js) a des étages de ETAGE_IMMEUBLE px,
+# comme ceux des immeubles de la ville (scripts/ville/immeubles.py : des étages plus hauts que les
+# murs hauts de la ferme) : immeuble_ville.png, des images de 16 × (CHAPE + ETAGE_IMMEUBLE). Ses
+# murs sont en briques ocre ; sur leur face :
+#   - au rez-de-chaussée, le soubassement gris ; aux étages, le bandeau de pierre au plancher ;
+#     au dernier, en plus, la corniche sous le toit ;
+#   - aux bords libres (les angles de la façade), les pierres d'angle à refends, une longue et
+#     une courte en alternance (les pilastres des immeubles) ;
+#   - les fenêtres de la ville (un linteau de pierre, un cadre de bois, quatre carreaux, un
+#     appui), avec de l'espace au-dessus et au-dessous ;
+#   - au rez-de-chaussée, la porte double vitrée de l'entrée dans son encadrement de pierre (deux
+#     images : la moitié gauche, la moitié droite).
+# Dans la planche : pour chaque sorte d'étage (rez-de-chaussée, étage, dernier), les 16 murs
+# (+ masque) puis les 16 murs à fenêtre ; puis les deux moitiés de la porte (96, 97).
+ETAGE_IMMEUBLE = 40
+SORTES_ETAGE = ('rez', 'etage', 'dernier')
+PIERRE_VILLE = ((208, 190, 152), (172, 154, 122), (226, 212, 180))   # immeubles.py PIERRE
+K_VILLE = (40, 31, 31)
+
+
+def facade_immeuble(m, sorte, fenetre_=False):
+    """Le mur de masque m de l'immeuble, à l'étage `sorte`, avec ou sans sa fenêtre."""
+    motif, dessus = next((mo, de) for nom, mo, de in MATIERES_VILLE if nom == 'brique_ocre')
+    t = Toile(mur_ville(m, motif, dessus))
+    if m & 4:
+        return t.im
+    P, F0 = PIERRE_VILLE, CHAPE + 3          # (sous la corniche de mur_ville)
+    x0, x1 = (0 if m & 8 else 1), (15 if m & 2 else 14)
+    # (sous un autre étage, pas de corniche : la brique monte jusqu'au bandeau du dessus)
+    if sorte != 'dernier':
+        for y in range(CHAPE + 1, F0):
+            for x in range(x0, x1 + 1):
+                t.put(x, y, motif(x, y + 4))
+    for y in range(F0, BAS):
+        r = BAS - y                           # la hauteur au-dessus du plancher
+        for x in range(x0, x1 + 1):
+            c = None
+            # le bandeau au plancher (aux étages), la corniche sous le toit (au dernier)
+            if sorte != 'rez' and r <= 4:
+                c = K_VILLE if r == 1 else P[2] if r == 4 else P[0]
+            if sorte == 'dernier' and y < F0 + 5:
+                q = y - F0
+                c = P[2] if q == 0 else (P[1] if x % 6 in (0, 1) and q in (2, 3) else P[0]) if q < 4 else K_VILLE
+            # les pierres d'angle aux bords libres : à refends, une longue, une courte
+            for bord, sens in ((x0, 1), (x1, -1)):
+                if (sens == 1 and m & 8) or (sens == -1 and m & 2):
+                    continue
+                u = (x - bord) * sens
+                larg = 9 if (r // 8) % 2 else 6
+                if u < larg and r > (5 if sorte == 'rez' else 1):
+                    c = P[2] if u == 0 else P[1] if u == larg - 1 or r % 8 == 0 else P[0]
+            if c:
+                t.put(x, y, c)
+    if fenetre_:
+        # la fenêtre de la ville (scripts/ville/objets.py fenetre), raccourcie à 24 px : l'appui
+        # à 8 px du plancher (au-dessus du bandeau), de l'espace au-dessus du linteau
+        haut, bas = 24, BAS - 8
+        y0 = bas - haut
+        for y in range(y0, bas + 1):
+            v = y - y0
+            for x in range(2, 14):
+                if v == 0 or v == haut - 1:
+                    c = K_VILLE
+                elif v == 1:
+                    c = P[2]
+                elif v == haut - 2:
+                    c = P[2]
+                elif v == haut:
+                    c = (0, 0, 0)
+                elif x in (2, 13) or v == 2 or v == haut - 3:
+                    c = (78, 50, 36)
+                elif x in (7, 8) or v == haut // 2:
+                    c = (122, 80, 52)
+                elif v < 5:
+                    c = (120, 138, 152)
+                elif (x + (haut - v)) % 11 in (0, 1) and v < haut - 6:
+                    c = (212, 226, 232)
+                else:
+                    c = (170, 186, 194)
+                if v == haut:
+                    continue
+                t.put(x, y, c)
+            if v in (0, haut - 1):
+                t.put(1, y, K_VILLE)
+                t.put(14, y, K_VILLE)
+    return t.im
+
+
+def porte_immeuble():
+    """Les deux moitiés de la porte double vitrée de l'entrée, dans son encadrement de pierre,
+    percée dans le mur du rez-de-chaussée (masque 2 | 8)."""
+    gauche, droite = Toile(facade_immeuble(2 | 8, 'rez')), Toile(facade_immeuble(2 | 8, 'rez'))
+    larg, haut, P = 26, 34, PIERRE_VILLE
+    x0, sol = 3, BAS
+    y0 = sol - haut
+    for y in range(y0 - 3, sol):
+        for xx in range(x0 - 3, x0 + larg + 3):
+            u, v = xx - x0, y - y0
+            if u < 0 or u >= larg or v < 0:
+                c = K_VILLE if xx in (x0 - 3, x0 + larg + 2) or y == y0 - 3 else (P[2] if y < y0 - 1 or u < 0 else P[1])
+            elif u in (0, larg - 1, larg // 2 - 1, larg // 2) or v == 0:
+                c = K_VILLE
+            else:
+                c = (212, 226, 232) if (u + (haut - v)) % 13 in (0, 1) else ((170, 186, 194) if v > 4 else (120, 138, 152))
+            t, x = (gauche, xx) if xx < 16 else (droite, xx - 16)
+            t.put(x, y, c)
+    for xx in (x0 + larg // 2 - 3, x0 + larg // 2 + 2):
+        for y in range(sol - haut // 2 - 3, sol - haut // 2 + 3):
+            t, x = (gauche, xx) if xx < 16 else (droite, xx - 16)
+            t.put(x, y, (220, 224, 228))
+    return [gauche.im, droite.im]
+
+
+def immeuble_ville():
+    """La planche de la façade de l'immeuble de la ville (voir plus haut) et la hauteur de ses
+    images."""
+    global H, BAS, FACE
+    garde = H, BAS, FACE
+    H = CHAPE + ETAGE_IMMEUBLE
+    BAS, FACE = H - 1, ETAGE_IMMEUBLE
+    try:
+        out = []
+        for sorte in SORTES_ETAGE:
+            out += [facade_immeuble(m, sorte) for m in range(16)] + [facade_immeuble(m, sorte, True) for m in range(16)]
+        return out + porte_immeuble(), H
+    finally:
+        H, BAS, FACE = garde
+
+
 # ---------- le plancher ----------
 
 def plancher(m):
@@ -1118,6 +1248,9 @@ def main():
     hauts, h = murs_hauts()
     rangee(hauts, W, h).save(os.path.join(ASSETS, 'murs_hauts.png'))
     print(f'assets/murs_hauts.png : {len(hauts)} images de {W} × {h}')
+    imm, h = immeuble_ville()
+    rangee(imm, W, h).save(os.path.join(ASSETS, 'immeuble_ville.png'))
+    print(f'assets/immeuble_ville.png : {len(imm)} images de {W} × {h}')
     if '--apercu' in sys.argv:
         apercu_piece(sheet)
 
