@@ -161,7 +161,9 @@ test('voisins : sous les yeux du joueur, le bûcheron abat un arbre de la carte 
 
 test('immeuble : chaque logement a sa famille de fromagers (un lit chacun)', () => {
   const s = createNewGame(4242);
-  assertEqual(logementsImmeuble().length, DATA.VOISINS.IMMEUBLE.LOGEMENTS);
+  const L = DATA.VOISINS.IMMEUBLE.LOGEMENTS;
+  assertEqual(logementsImmeuble().length, Object.values(L).reduce((a, n) => a + n, 0));
+  assert(logementsImmeuble().includes('logement_6') && logementsImmeuble().includes(`residence_ocre_${L.residence_ocre}`), 'les logements de chaque immeuble');
   assertEqual(immeubleFoyer(s, 'logement_99'), null);
   const f = immeubleFoyer(s, 'logement_1', { adultes: 2, enfants: 5 });
   assertEqual([f.metier, f.adultes, f.enfants, f.argent], ['fromager', 2, DATA.VOISINS.IMMEUBLE.LITS - 2, DATA.VOISINS.ARGENT]);
@@ -173,6 +175,7 @@ test('immeuble : chaque jour, les adultes touchent leur salaire de la fromagerie
   const s = createNewGame(4242);
   immeubleFoyer(s, 'logement_1', { adultes: 2, enfants: 1 });
   immeubleFoyer(s, 'logement_2', { adultes: 1, enfants: 0 });
+  immeubleFoyer(s, 'residence_verre_1', { adultes: 2, enfants: 1 });
   for (let d = 0; d < 10; d++) runNight(s);
   for (const [nom, f] of Object.entries(immeubleFoyers(s))) {
     assertEqual(f.journal.length, DATA.VOISINS.JOURNAL, nom);

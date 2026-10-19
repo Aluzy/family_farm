@@ -147,9 +147,11 @@
     "si le foyer garde RESERVE pièces après l'achat, il s'offre l'étape suivante (une par nuit, dans",
     "l'ordre de ETAPES : nom, prix, bonheur gagné une fois). Le plan de chaque étape : maisonPlan",
     "(js/engine/transition.js).",
-    "IMMEUBLE : les LOGEMENTS de l'immeuble en blocs de la ville (js/carte/ville/immeuble.js), LITS",
-    "lits chacun ; leurs familles sont des fromagers.",
-    "FROMAGER : les adultes de l'immeuble travaillent à la fromagerie de la ville de HORAIRES[0] h à",
+    "IMMEUBLE : les LOGEMENTS des immeubles d'habitation en blocs de la ville (js/carte/ville/immeuble.js),",
+    "par nom (celui de leurs logements dans le moteur : « logement_1 »… pour le grand immeuble ocre,",
+    "« residence_verre_1 »… : IMMEUBLE.batiments, js/carte/ville/config.js) : leur nombre ; LITS lits",
+    "chacun ; leurs familles sont des fromagers.",
+    "FROMAGER : les adultes des immeubles travaillent à la fromagerie de la ville de HORAIRES[0] h à",
     "HORAIRES[1] h ; chacun y gagne SALAIRE pièces par jour, que la famille dépense au marché de la",
     "ville pour les ingrédients de ses repas (RECETTES.fromager ; il achète tout ce qu'il mange)."
   ],
@@ -162,7 +164,7 @@
       "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"],
       "fromager": ["omelette", "gratin_patates", "salade_tomates", "pain"]
     },
-    "IMMEUBLE": { "LOGEMENTS": 6, "LITS": 3 },
+    "IMMEUBLE": { "LOGEMENTS": { "logement": 6, "residence_verre": 4, "residence_ocre": 5 }, "LITS": 3 },
     "FROMAGER": { "SALAIRE": 16, "HORAIRES": [8, 17] },
     "CONFORT": 100,
     "PLAISIR": 10,

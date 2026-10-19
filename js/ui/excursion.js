@@ -259,7 +259,7 @@ window.FermeHote = {
     for (const e of DATA.VOISINS.MAISON.ETAPES) noms['maison:' + e.id] = e.nom;
     return { foyers: voisinsVue(state), noms, cultures };
   },
-  // les familles de l'immeuble de la ville (js/engine/voisins.js) : la page dit leurs familles
+  // les familles des immeubles de la ville (js/engine/voisins.js) : la page dit leurs familles
   // ([{ logement, adultes, enfants }]) ; renvoie ce que la carte en montre (immeubleVue), les
   // horaires de la fromagerie, le salaire, et le nom des plats et des ingrédients
   immeuble: (familles) => {

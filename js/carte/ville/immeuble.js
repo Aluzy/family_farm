@@ -1,9 +1,10 @@
-/* carte/ville/immeuble.js — la scène de la ville : un immeuble en blocs (un essai).
+/* carte/ville/immeuble.js — la scène de la ville : les immeubles d'habitation, en blocs.
  *
- * Un bâtiment de la ville (IMMEUBLE.remplace) est remplacé par un immeuble bâti en blocs, comme
- * les maisons de la ferme : on y entre à pied et on monte ses étages. V.immeubleCarte ôte ses
- * tuiles (le rectangle IMMEUBLE.efface) et son emprise de la carte avant que la scène ne la
- * crée ; makeImmeuble le pose à leur place, niveau par niveau (V.planImmeuble) :
+ * Les immeubles d'habitation de la ville (IMMEUBLE.batiments) sont remplacés par des immeubles
+ * bâtis en blocs, comme les maisons de la ferme : on y entre à pied et on monte leurs étages.
+ * V.immeubleCarte ôte leurs tuiles (le rectangle `efface` de chacun) et leur emprise de la carte
+ * avant que la scène ne la crée ; makeImmeuble les pose à leur place, niveau par niveau
+ * (V.planImmeuble). Un immeuble « double » (le grand immeuble ocre de l'est) :
  *   - au rez-de-chaussée, une entrée (le hall, au milieu de la moitié de devant : la porte
  *     double sur la rue) ; de chaque côté une porte mène à un logement : un petit salon (un
  *     canapé, une table basse), la pièce de vie (la cuisine, le four, une table et ses chaises),
@@ -11,22 +12,26 @@
  *     chevet). Au fond du hall, l'escalier monte au palier du dessus ;
  *   - à chaque étage, le palier : le haut de l'escalier d'où l'on vient (on y redescend),
  *     l'escalier qui monte au suivant (sauf au dernier), et les deux mêmes logements ;
- *   - par-dessus le dernier, un toit de tuiles (CarteKit.toit).
+ * un immeuble « simple » (les résidences de l'ouest, plus étroites) : un logement par niveau,
+ * les mêmes pièces (la chambre au fond, la pièce de vie, le salon devant à gauche) ; le hall
+ * (le palier aux étages) devant à droite, avec la porte d'entrée et l'escalier ;
+ *   - par-dessus le dernier niveau, un toit de tuiles (CarteKit.toit).
  * Chaque niveau est dessiné IMMEUBLE.dy px au-dessus du précédent (un étage d'immeuble de la
- * ville) : les murs du tour sont ceux de sa façade (assets/immeuble_ville.png, scripts/carte/
- * blocs.py immeuble_ville : la brique ocre de l'immeuble qu'il remplace, le soubassement, les
+ * ville) : les murs du tour sont ceux de sa façade (assets/immeuble_ville*.png, scripts/carte/
+ * blocs.py immeuble_ville : la brique de l'immeuble qu'il remplace, le soubassement, les
  * bandeaux entre les étages, la corniche sous le toit, les pierres d'angle, les fenêtres de la
  * ville avec de l'espace au-dessus et au-dessous, la porte double vitrée de l'entrée) (deux fenêtres voisines font une
  * grande fenêtre) ; les cloisons sont basses (blocs.png), pour qu'on voie le fond des pièces.
  *
  * Marcher sur une marche de l'escalier fait monter (ou descendre) : le personnage arrive sur le
  * même escalier, au niveau d'à côté (this.niveauVille), dessiné remonté, et ne marche plus que
- * sur ce niveau (marcheEtage). Ce qu'on voit (stepImmeuble), comme à la ferme :
+ * sur ce niveau (marcheEtage) de cet immeuble (this.immeubleIci). Ce qu'on voit (stepImmeuble),
+ * comme à la ferme :
  *   - dehors : tous les niveaux l'un sur l'autre, et le toit ;
- *   - dans l'immeuble : le toit s'efface, la façade de devant aussi (à moitié), le niveau où l'on est se voit, celui du dessous est
+ *   - dans un immeuble : son toit s'efface, la façade de devant aussi (à moitié), le niveau où l'on est se voit, celui du dessous est
  *     en transparence (IMMEUBLE.transparent : on voit ses murs sous le plancher), ceux du dessus
  *     sont cachés (empilés, leurs planchers couvriraient tout) ; un mur devant le personnage
- *     s'efface un peu ;
+ *     s'efface un peu ; les autres immeubles restent vus de dehors ;
  *   - à un étage : un voile sombre couvre la ville, l'immeuble et le personnage passent devant.
  *
  * Méthodes de la scène des cartes (js/ville-carte.js), posées sur son prototype : `this` est
@@ -39,13 +44,45 @@
   const V = global.CarteVille;
   const { T, BATI, BLOCS, IMMEUBLE: I, VOL } = V.C;
 
-  // Le plan du niveau n (sur N) : { grille: [chaînes], meubles: [{ nom, x, y, w, h, flip }] }.
-  // La grille : M un mur, F un mur à fenêtre, P une porte, . le plancher, U l'escalier qui
-  // monte, D le haut de l'escalier qui descend. Le logement de gauche, puis celui de droite, en
-  // miroir.
-  V.planImmeuble = function (n, N) {
-    const W = I.w, H = I.h, g = Array.from({ length: H }, () => Array(W).fill('.'));
+  // Le plan du niveau n (sur N) de l'immeuble `b` (IMMEUBLE.batiments) : { grille: [chaînes],
+  // meubles: [{ nom, x, y, w, h, flip }], porte (la case de gauche de la porte d'entrée),
+  // logements: [{ dans(x, y) (la case est-elle du logement ?), lits ([x, y] : le pied des lits
+  // des deux adultes, de l'enfant), feu ([x, y] : la place devant le four), flip (le four à
+  // gauche) }] }. La grille : M un mur, F un mur à fenêtre, P une porte, . le plancher, U
+  // l'escalier qui monte, D le haut de l'escalier qui descend.
+  V.planImmeuble = function (b, n, N) {
+    const W = b.w, H = b.h, g = Array.from({ length: H }, () => Array(W).fill('.'));
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!x || !y || x === W - 1 || y === H - 1) g[y][x] = 'M';
+    const meubles = [];
+    // (l'escalier monte d'une case ou de sa voisine, un niveau sur deux : on arrive en haut à
+    // côté de celui qui monte encore)
+    const escalier = (y, monte) => {
+      if (n < N - 1) g[y][monte(n)] = 'U';
+      if (n > 0) g[y][monte(n - 1)] = 'D';
+    };
+    if (b.plan === 'simple') {
+      // un logement : la chambre au fond (y = 1 à 3), la pièce de vie (5 à 8), le salon devant à
+      // gauche (x = 1 à 4) ; le hall devant à droite (x = 6 à 8), fermé par ses murs (x = 5,
+      // y = 9), la porte double sur la rue, l'escalier au fond
+      for (let x = 1; x < W - 1; x++) { g[4][x] = 'M'; g[9][x] = 'M'; }
+      for (let y = 10; y < H - 1; y++) g[y][5] = 'M';
+      g[4][6] = 'P'; g[9][4] = 'P'; g[11][5] = 'P';
+      for (const x of [2, 3]) g[H - 1][x] = 'F';
+      for (const x of [2, 3, 6, 7]) g[0][x] = 'F';
+      g[H - 1][7] = g[H - 1][8] = n ? 'F' : 'P';
+      escalier(10, (k) => (k % 2 ? 8 : 7));
+      meubles.push(
+        { nom: 'lit_adulte', x: 1, y: 1, w: 1, h: 2 }, { nom: 'chevet', x: 2, y: 1, w: 1, h: 1 }, { nom: 'plante', x: 4, y: 1, w: 1, h: 1 },
+        { nom: 'chevet', x: 7, y: 1, w: 1, h: 1 }, { nom: 'lit_enfant', x: 8, y: 1, w: 1, h: 2 },
+        { nom: 'cuisine', x: 1, y: 5, w: 2, h: 2 }, { nom: 'four', x: 3, y: 5, w: 2, h: 2 }, { nom: 'plante', x: 8, y: 5, w: 1, h: 1 },
+        // (la table, une chaise : on passe à côté, de la chambre au salon)
+        { nom: 'chaise', x: 4, y: 7, w: 1, h: 1 }, { nom: 'table', x: 5, y: 7, w: 3, h: 1 },
+        { nom: 'tapis_2', x: 1, y: 11, w: 3, h: 2, plat: true }, { nom: 'canape', x: 1, y: 10, w: 3, h: 2 }, { nom: 'table_basse', x: 1, y: 12, w: 2, h: 1 },
+      );
+      const logements = [{ dans: (x, y) => y < 9 || x < 5, lits: [[1, 3], [2, 3], [8, 3]], feu: [5, 6], flip: true }];
+      return { grille: g.map((l) => l.join('')), meubles, porte: 7, logements };
+    }
+    // « double » : deux logements, celui de gauche puis celui de droite, en miroir
     const miroir = (x) => W - 1 - x;
     const mur = (x, y, c = 'M') => { g[y][x] = c; g[y][miroir(x)] = c; };
     // le hall (et le palier) : la moitié de devant, entre ses murs (x = 8 et 13), sous le mur qui
@@ -63,11 +100,8 @@
     for (const x of [3, 4, 7, 8]) mur(x, 0, 'F');
     // le hall : la porte double sur la rue (au rez-de-chaussée), sinon deux fenêtres
     g[H - 1][10] = g[H - 1][11] = n ? 'F' : 'P';
-    // l'escalier, au fond du hall : il monte de la case 10 ou 11 (un niveau sur deux)
-    const monte = (k) => (k % 2 ? 11 : 10);
-    if (n < N - 1) g[6][monte(n)] = 'U';
-    if (n > 0) g[6][monte(n - 1)] = 'D';
-    const meubles = [];
+    // l'escalier, au fond du hall
+    escalier(6, (k) => (k % 2 ? 11 : 10));
     const gauche = [
       // la chambre (toute la largeur du logement) : deux lits, deux tables de chevet, une plante
       { nom: 'lit_adulte', x: 1, y: 1, w: 1, h: 2 }, { nom: 'chevet', x: 2, y: 1, w: 1, h: 1 }, { nom: 'plante', x: 5, y: 1, w: 1, h: 1 },
@@ -82,48 +116,73 @@
       meubles.push(m);
       meubles.push({ ...m, x: W - m.x - m.w, flip: !m.flip });
     }
-    return { grille: g.map((l) => l.join('')), meubles };
+    // (la chambre derrière, sur toute la largeur ; devant, la pièce de vie et le salon)
+    const logement = (cote) => {
+      const mx = (x) => (cote ? miroir(x) : x);
+      return { dans: (x, y) => (y < 5 ? mx(x) <= 9 : y > 5 && mx(x) <= 7), lits: [[1, 3], [2, 3], [9, 3]].map(([x, y]) => [mx(x), y]), feu: [mx(5), 7], flip: !cote };
+    };
+    return { grille: g.map((l) => l.join('')), meubles, porte: 10, logements: [logement(0), logement(1)] };
   };
 
-  // La carte de la ville sans le bâtiment que l'immeuble remplace : ses tuiles (les couches des
-  // bâtiments, dans IMMEUBLE.efface) et son emprise (la couche « batiments »).
+  // La carte de la ville sans les bâtiments que les immeubles remplacent : leurs tuiles (les
+  // couches des bâtiments, dans le rectangle `efface` de chacun) et leur emprise (la couche
+  // « batiments »).
   V.immeubleCarte = function (data) {
-    const [x0, y0, w, h] = I.efface, W = data.width;
+    const W = data.width, noms = I.batiments.map((b) => b.nom);
     for (const l of data.layers) {
-      if (l.type === 'tilelayer' && BATI.includes(l.name)) for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) l.data[y * W + x] = 0;
-      if (l.type === 'objectgroup' && l.name === 'batiments') l.objects = l.objects.filter((o) => o.name !== I.remplace);
+      if (l.type === 'tilelayer' && BATI.includes(l.name)) {
+        for (const b of I.batiments) {
+          const [x0, y0, w, h] = b.efface;
+          for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) l.data[y * W + x] = 0;
+        }
+      }
+      if (l.type === 'objectgroup' && l.name === 'batiments') l.objects = l.objects.filter((o) => !noms.includes(o.name));
     }
     return data;
   };
 
   const mur = (c) => c === 'M' || c === 'F';
-  const bord = (x, y) => !x || !y || x === I.w - 1 || y === I.h - 1;
+
+  // L'immeuble `im` (de la scène) contient-il la case (gx, gy) ?
+  V.dansImmeuble = (im, gx, gy) => gx >= im.x && gy >= im.y && gx < im.x + im.w && gy < im.y + im.h;
 
   V.partie({
 
-    // L'immeuble, posé niveau par niveau (V.planImmeuble), et son toit.
+    // Les immeubles, posés niveau par niveau (V.planImmeuble), et leurs toits.
     makeImmeuble() {
-      this.immeuble = null;
+      this.immeubles = [];
+      this.immeubleIci = null;
       this.niveauVille = 0;
-      if (V.etat.nom !== I.carte || !this.textures.exists(BLOCS.key) || !this.textures.exists(I.facade.key)) return;
-      const N = I.niveaux, Fk = I.facade.key;
-      const im = this.immeuble = { niveaux: [], toit: null, vue: null };
+      if (V.etat.nom !== I.carte || !this.textures.exists(BLOCS.key)) return;
+      for (const b of I.batiments) {
+        const Fk = I.facades[b.facade].key;
+        if (this.textures.exists(Fk)) this.immeubles.push(this.poseImmeuble(b, Fk));
+      }
+      // le voile de l'étage (montré quand on y est)
+      if (this.immeubles.length) this.voileImmeuble = this.add.rectangle(0, 0, this.map.widthInPixels, this.map.heightInPixels, I.voile, I.alpha).setOrigin(0).setDepth(this.voileImmeubleZ()).setVisible(false);
+    },
+
+    // L'immeuble `b` (IMMEUBLE.batiments), sa façade à la clé `Fk` : { b, x, y, w, h, niveaux:
+    // [{ objs, murs, marche, grille, plan }], toit, vue }.
+    poseImmeuble(b, Fk) {
+      const N = b.niveaux, bord = (x, y) => !x || !y || x === b.w - 1 || y === b.h - 1;
+      const im = { b, x: b.x, y: b.y, w: b.w, h: b.h, niveaux: [], toit: null, vue: null };
       for (let n = 0; n < N; n++) {
-        const plan = V.planImmeuble(n, N), G = plan.grille, lift = n * I.dy;
+        const plan = V.planImmeuble(b, n, N), G = plan.grille, lift = n * I.dy;
         // la façade de cet étage (le rez-de-chaussée, un étage, le dernier : immeuble_ville.png)
         const etage = I.facade.etages * (!n ? 0 : n === N - 1 ? 2 : 1);
-        const a = (x, y) => (y >= 0 && y < I.h && x >= 0 && x < I.w ? G[y][x] : ' ');
+        const a = (x, y) => (y >= 0 && y < b.h && x >= 0 && x < b.w ? G[y][x] : ' ');
         const objs = [], murs = [], marche = G.map((l) => [...l].map((c) => '.PUD'.includes(c)));
         const pose = (key, frame, x, y, z) => {
-          const px = (I.x + x) * T + T / 2, py = (I.y + y + 1) * T;
+          const px = (b.x + x) * T + T / 2, py = (b.y + y + 1) * T;
           const o = this.add.image(px, py - lift, key, frame).setOrigin(0.5, 1);
           o.immZ = z(py) + n * 0.2;
           o.setDepth(o.immZ);
           objs.push(o);
           return o;
         };
-        for (let y = 0; y < I.h; y++) {
-          for (let x = 0; x < I.w; x++) {
+        for (let y = 0; y < b.h; y++) {
+          for (let x = 0; x < b.w; x++) {
             const c = a(x, y);
             // le plancher : au rez-de-chaussée dans les pièces, aux étages sur toute l'emprise
             const sol = (i, j) => (n ? a(i, j) !== ' ' : !' MFP'.includes(a(i, j)));
@@ -137,11 +196,11 @@
               // on voit le fond des pièces)
               const f = etage + (c === 'F' && !mur(a(x, y + 1)) ? I.facade.fenetre : 0) + m;
               const o = bord(x, y) ? pose(Fk, f, x, y, (py) => py) : pose(BLOCS.key, BLOCS.murs + m, x, y, (py) => py);
-              murs.push({ o, x: (I.x + x) * T + T / 2, gy: I.y + y, facade: y === I.h - 1 });
+              murs.push({ o, x: (b.x + x) * T + T / 2, gy: b.y + y, facade: y === b.h - 1 });
             } else if (c === 'P') {
               const vert = mur(a(x, y - 1)) && mur(a(x, y + 1));
               const o = vert ? pose(BLOCS.key, I.porteVerticale, x, y, (py) => py) : bord(x, y) ? pose(Fk, I.facade.porte + (a(x - 1, y) === 'P' ? 1 : 0), x, y, (py) => py) : pose(BLOCS.key, BLOCS.porte, x, y, (py) => py);
-              murs.push({ o, x: (I.x + x) * T + T / 2, gy: I.y + y, facade: y === I.h - 1 });
+              murs.push({ o, x: (b.x + x) * T + T / 2, gy: b.y + y, facade: y === b.h - 1 });
             } else if (c === 'U') pose(BLOCS.key, I.escalier, x, y, (py) => py - T / 2);
             else if (c === 'D') pose(BLOCS.key, I.haut, x, y, (py) => py - 0.05);
           }
@@ -151,28 +210,27 @@
           const key = 'meuble_' + mb.nom;
           if (!mb.plat) for (let j = 0; j < mb.h; j++) for (let i = 0; i < mb.w; i++) marche[mb.y + j][mb.x + i] = false;
           if (!this.textures.exists(key)) continue;
-          const px = (I.x + mb.x + mb.w / 2) * T, py = (I.y + mb.y + mb.h) * T;
+          const px = (b.x + mb.x + mb.w / 2) * T, py = (b.y + mb.y + mb.h) * T;
           const o = this.add.image(Math.round(px), py - (mb.plat ? 2 : 1) - lift, key).setOrigin(0.5, 1).setFlipX(!!mb.flip);
           o.immZ = (mb.plat ? py - T * mb.h + 0.5 : py - 3) + n * 0.2;
           o.setDepth(o.immZ);
           objs.push(o);
         }
-        im.niveaux.push({ objs, murs, marche, grille: G });
+        im.niveaux.push({ objs, murs, marche, grille: G, plan });
       }
       // le rez-de-chaussée : on y entre depuis la rue
-      for (let y = 0; y < I.h; y++) for (let x = 0; x < I.w; x++) if (this.walk[I.y + y]) this.walk[I.y + y][I.x + x] = im.niveaux[0].marche[y][x];
+      for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (this.walk[b.y + y]) this.walk[b.y + y][b.x + x] = im.niveaux[0].marche[y][x];
       // le toit, sur le dernier niveau
       const cases = [];
-      for (let y = 0; y < I.h; y++) for (let x = 0; x < I.w; x++) cases.push((I.y + y) * this.map.width + I.x + x);
+      for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) cases.push((b.y + y) * this.map.width + b.x + x);
       const { cv, c0, r0, r1, dx } = K.toit(cases, this.map.width);
-      const cle = 'toit_immeuble';
+      const cle = 'toit_' + b.nom;
       if (this.textures.exists(cle)) this.textures.remove(cle);
       this.textures.addCanvas(cle, cv);
       im.toit = this.add.image(c0 * T - dx, r0 * T - N * I.dy, cle).setOrigin(0, 0);
       im.toit.immZ = (r1 + 1) * T + N * 0.2 + I.toitZ;
       im.toit.setDepth(im.toit.immZ);
-      // le voile de l'étage (montré quand on y est)
-      im.voile = this.add.rectangle(0, 0, this.map.widthInPixels, this.map.heightInPixels, I.voile, I.alpha).setOrigin(0).setDepth(this.voileImmeubleZ()).setVisible(false);
+      return im;
     },
 
     // Le voile de l'étage : au-dessus de la ville, de ses personnages et de son feuillage, sous ce
@@ -187,9 +245,9 @@
 
     // La case (x, y) du niveau où l'on est, à l'étage : y marche-t-on ? (hors de l'immeuble : non)
     marcheEtage(tx, ty) {
-      const im = this.immeuble, x = tx - I.x, y = ty - I.y;
-      if (!im || x < 0 || y < 0 || x >= I.w || y >= I.h) return false;
-      return im.niveaux[this.niveauVille].marche[y][x];
+      const im = this.immeubleIci;
+      if (!im || !V.dansImmeuble(im, tx, ty)) return false;
+      return im.niveaux[this.niveauVille].marche[ty - im.y][tx - im.x];
     },
 
     // De combien de px le personnage est dessiné remonté (le niveau où il est).
@@ -206,44 +264,46 @@
     },
 
     // L'escalier sous les pieds (une case où l'on vient d'arriver) : on monte ou on descend ; puis
-    // ce qu'on voit (dehors, dans l'immeuble, à l'étage), et les murs devant le personnage.
+    // ce qu'on voit (dehors, dans un immeuble, à l'étage), et les murs devant le personnage.
     stepImmeuble(dt) {
-      const im = this.immeuble;
-      if (!im) return;
+      if (!this.immeubles || !this.immeubles.length) return;
       const P = this.heroPos, gx = Math.floor(P.x / T), gy = Math.floor((P.y - 1) / T);
-      const x = gx - I.x, y = gy - I.y, dans = x >= 0 && y >= 0 && x < I.w && y < I.h;
-      const ici = gy * this.map.width + gx;
-      if (dans && ici !== im.case) {
-        const c = im.niveaux[this.niveauVille].grille[y][x];
+      // (l'immeuble où l'on est : à l'étage, on ne peut en sortir qu'en redescendant)
+      const ici = this.niveauVille && this.immeubleIci ? this.immeubleIci : this.immeubles.find((q) => V.dansImmeuble(q, gx, gy)) || null;
+      this.immeubleIci = ici;
+      const c0 = gy * this.map.width + gx;
+      if (ici && c0 !== ici.case) {
+        const c = ici.niveaux[this.niveauVille].grille[gy - ici.y][gx - ici.x];
         const vers = c === 'U' ? 1 : c === 'D' ? -1 : 0;
         if (vers) {
           this.niveauVille += vers;
           this.path = [];
         }
       }
-      im.case = ici;
+      for (const im of this.immeubles) im.case = im === ici ? c0 : -1;
       // ce qu'on voit
-      const vue = !dans && !this.niveauVille ? 'dehors' : String(this.niveauVille);
-      if (vue !== im.vue) {
+      const haut = this.niveauVille > 0;
+      for (const im of this.immeubles) {
+        const vue = im === ici ? String(this.niveauVille) : 'dehors';
+        if (vue === im.vue) continue;
         im.vue = vue;
-        const haut = this.niveauVille > 0;
         im.niveaux.forEach((nv, k) => {
           // (dedans : le niveau du dessous en transparence, ceux du dessus cachés)
           const a = vue === 'dehors' || k === this.niveauVille ? 1 : k === this.niveauVille - 1 ? I.transparent : 0;
           // (à l'étage, le niveau du dessous passe tout entier sous celui où l'on est : son
           // plancher le couvre, on n'en voit que ce qui dépasse de l'emprise)
-          const z = (o) => (!haut ? o.immZ : this.immeubleZ(o.immZ) - (k < this.niveauVille ? 0.002 : 0));
+          const z = (o) => (vue === 'dehors' || !haut ? o.immZ : this.immeubleZ(o.immZ) - (k < this.niveauVille ? 0.002 : 0));
           for (const o of nv.objs) o.setAlpha(a).setVisible(a > 0).setDepth(z(o));
           for (const m of nv.murs) m.a = a;
         });
         im.toit.setVisible(vue === 'dehors');
-        im.voile.setVisible(haut);
       }
+      this.voileImmeuble.setVisible(haut);
       // dans l'immeuble : la façade de devant, et les murs du niveau une ou deux cases devant le
       // personnage, s'effacent un peu
-      if (vue === 'dehors') return;
+      if (!ici) return;
       const pas = BLOCS.hauts.vitesse * dt;
-      for (const m of im.niveaux[this.niveauVille].murs) {
+      for (const m of ici.niveaux[this.niveauVille].murs) {
         const but = m.facade || (m.gy > gy && m.gy <= gy + 2 && Math.abs(m.x - P.x) < T / 2 + 6) ? I.mursAlpha : m.a;
         const a = m.o.alpha;
         if (a !== but) m.o.setAlpha(a < but ? Math.min(but, a + pas) : Math.max(but, a - pas));

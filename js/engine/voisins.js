@@ -362,10 +362,11 @@ export function livraison(state) {
   return out;
 }
 
-/* ---------- les familles de l'immeuble de la ville ---------- */
+/* ---------- les familles des immeubles de la ville ---------- */
 
-// docs/carte-generee.md (les familles de l'immeuble). Chaque logement de l'immeuble en blocs de
-// la ville (VOISINS.IMMEUBLE.LOGEMENTS : « logement_1 »…) a son foyer, comme une maison de la
+// docs/carte-generee.md (les familles des immeubles). Chaque logement des immeubles d'habitation
+// en blocs de la ville (VOISINS.IMMEUBLE.LOGEMENTS : « logement_1 »…, « residence_verre_1 »…) a
+// son foyer, comme une maison de la
 // transition : state.immeuble = { foyers: { <logement>: foyer } }. Ses adultes travaillent à la
 // fromagerie de la ville (VOISINS.FROMAGER.HORAIRES) ; chacun y gagne VOISINS.FROMAGER.SALAIRE
 // pièces par jour, que la famille dépense au marché pour acheter les ingrédients de ses repas
@@ -377,9 +378,9 @@ function immeuble(state) {
   return state.immeuble;
 }
 
-// Les logements de l'immeuble : [« logement_1 », …].
+// Les logements des immeubles : [« logement_1 », …, « residence_verre_1 », …].
 export function logementsImmeuble() {
-  return Array.from({ length: DATA.VOISINS.IMMEUBLE.LOGEMENTS }, (_, i) => `logement_${i + 1}`);
+  return Object.entries(DATA.VOISINS.IMMEUBLE.LOGEMENTS).flatMap(([nom, n]) => Array.from({ length: n }, (_, i) => `${nom}_${i + 1}`));
 }
 
 // Le foyer du logement `logement` (null : pas de tel logement). La première fois, il naît
@@ -400,14 +401,14 @@ export function immeubleFoyer(state, logement, compo) {
   return f;
 }
 
-// Les foyers de l'immeuble (ceux qui sont nés), par logement.
+// Les foyers des immeubles (ceux qui sont nés), par logement.
 export function immeubleFoyers(state) {
   const I = immeuble(state), out = {};
   for (const l of logementsImmeuble()) if (I.foyers[l]) out[l] = I.foyers[l];
   return out;
 }
 
-// La nuit : chaque foyer de l'immeuble vit les journées qui lui manquent (comme voisinsNuit).
+// La nuit : chaque foyer des immeubles vit les journées qui lui manquent (comme voisinsNuit).
 export function immeubleNuit(state) {
   for (const [logement, f] of Object.entries(immeubleFoyers(state))) {
     if (!(Number(f.jour) < state.day)) continue;
@@ -416,7 +417,7 @@ export function immeubleNuit(state) {
   }
 }
 
-// Ce que la carte montre et raconte de chaque foyer de l'immeuble : { <logement>: { metier,
+// Ce que la carte montre et raconte de chaque foyer des immeubles : { <logement>: { metier,
 // adultes, enfants, argent, bonheur, hier } }.
 export function immeubleVue(state) {
   const out = {};

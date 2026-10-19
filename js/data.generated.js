@@ -2040,7 +2040,7 @@ export const RAW_DATA = {
       "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"],
       "fromager": ["omelette", "gratin_patates", "salade_tomates", "pain"]
     },
-    "IMMEUBLE": { "LOGEMENTS": 6, "LITS": 3 },
+    "IMMEUBLE": { "LOGEMENTS": { "logement": 6, "residence_verre": 4, "residence_ocre": 5 }, "LITS": 3 },
     "FROMAGER": { "SALAIRE": 16, "HORAIRES": [8, 17] },
     "CONFORT": 100,
     "PLAISIR": 10,
