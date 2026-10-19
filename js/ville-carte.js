@@ -132,6 +132,8 @@
         const Fa = IMMEUBLE.facade;
         for (const f of Object.values(IMMEUBLE.facades)) if (!this.textures.exists(f.key)) this.load.spritesheet(f.key, v(f.file), { frameWidth: Fa.w, frameHeight: Fa.h });
         for (const n of IMMEUBLE.meubles) if (!this.textures.exists('meuble_' + n)) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
+        // (les enseignes des lieux : js/carte/ville/lieux.js)
+        for (const b of IMMEUBLE.batiments) if (b.enseigne && !this.textures.exists('enseigne_' + b.enseigne)) this.load.image('enseigne_' + b.enseigne, v('assets/enseigne_' + b.enseigne + '.png'));
         // les familles de ses logements (js/carte/ville/habitants.js)
         for (const L of V.logementsImmeuble()) for (const mb of V.familleImmeuble(L).membres) planche(mb.perso, mb.enfant);
       }

@@ -277,7 +277,9 @@
   // `seul` : un seul logement, à ce nom) ; `enfants` : les enfants de chaque famille (0 : des
   // studios, pour un couple ; sans : un T2, un enfant). Les maisons de ville (`MAISONS`, plan « maison ») : deux
   // niveaux, une famille et ses `enfants` ; elles remplacent les rangées de maisons dont le nom
-  // commence par l'un des `retire` (leurs tuiles : le rectangle `efface` de chaque maison).
+  // commence par l'un des `retire` (leurs tuiles : le rectangle `efface` de chaque maison). Les
+  // lieux (`LIEUX` : les commerces d'abord ; leur plan, V.plansLieux : js/carte/ville/lieux.js)
+  // n'ont pas de logement ; leur `enseigne` (assets/enseigne_<nom>.png) surmonte la porte.
   // Dans un immeuble, le niveau du dessous est à `transparent` ; à l'étage, un voile sombre
   // (`voile`, `alpha`) couvre la ville. Les murs du tour : `facades` (immeuble_ville*.png,
   // scripts/carte/blocs.py immeuble_ville : des étages de `dy` px comme ceux des immeubles de la
@@ -306,14 +308,24 @@
       x += w;
     }
   }
+  // Les lieux (docs/plan-ville.md) : le bâtiment qu'ils remplacent (dans `retire`), deux niveaux.
+  const LIEUX = [
+    { nom: 'boulangerie', efface: [45, 85, 7, 17], x: 46, y: 94, w: 5, h: 9, facade: 'bleu' },
+    { nom: 'pizzeria', efface: [146, 56, 11, 14], x: 146, y: 60, w: 11, h: 12, facade: 'rouge' },
+    { nom: 'burger', efface: [157, 56, 11, 14], x: 157, y: 60, w: 11, h: 12, facade: 'orange' },
+    { nom: 'poissonnerie', efface: [147, 81, 21, 21], x: 147, y: 90, w: 21, h: 14, facade: 'pierre' },
+    { nom: 'informatique', efface: [156, 16, 12, 16], x: 156, y: 21, w: 12, h: 13, facade: 'bleu' },
+  ].map((l) => ({ ...l, niveaux: 2, plan: l.nom, enseigne: l.nom }));
   const IMMEUBLE = {
-    carte: 'ville', dy: 40, transparent: 0.3, voile: 0x0d1018, alpha: 0.62, retire: ['maisons_a', 'maisons_b'],
+    carte: 'ville', dy: 40, transparent: 0.3, voile: 0x0d1018, alpha: 0.62,
+    retire: ['maisons_a', 'maisons_b', 'maison_bleue', 'bureaux_est', 'bureaux_du_marche', 'verriere_est'],
     batiments: [
       { nom: 'immeuble_ocre', efface: [146, 36, 22, 16], x: 146, y: 40, w: 22, h: 14, niveaux: 3, plan: 'double', facade: 'ocre', logement: 'logement' },
       { nom: 'residence_verre', efface: [1, 117, 10, 21], x: 1, y: 126, w: 10, h: 14, niveaux: 4, plan: 'simple', facade: 'bleu', logement: 'residence_verre' },
       { nom: 'residence_ocre', efface: [1, 140, 10, 26], x: 1, y: 154, w: 10, h: 14, niveaux: 5, plan: 'simple', facade: 'ocre', logement: 'residence_ocre' },
       { nom: 'tour_de_la_gare', efface: [21, 104, 12, 28], x: 21, y: 120, w: 12, h: 14, niveaux: 8, plan: 'simple', facade: 'pierre', logement: 'tour_de_la_gare', enfants: 0 },
       ...MAISONS,
+      ...LIEUX,
     ],
     facades: {
       ocre: { key: 'immeuble_ville', file: 'assets/immeuble_ville.png' },
@@ -324,7 +336,9 @@
     },
     facade: { w: 16, h: 50, etages: 32, fenetre: 16, porte: 96 },
     escalier: 69, haut: 70, porteVerticale: 30, mursAlpha: 0.4, toitZ: 0.5,
-    meubles: ['lit_adulte', 'lit_enfant', 'chevet', 'cuisine', 'four', 'table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_2'],
+    meubles: ['lit_adulte', 'lit_enfant', 'chevet', 'cuisine', 'four', 'table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_2',
+      'plan', 'frigo', 'evier', 'comptoir', 'four_boulanger', 'petrin', 'vitrine_pain', 'etagere_pain', 'four_pizza', 'friteuse', 'grill',
+      'etal_poisson', 'bac_homards', 'presentoir', 'etagere_info', 'bureau_ordi'],
     // Les familles des logements (js/carte/ville/habitants.js) : `lits` lits dans un logement
     // d'immeuble (une maison : deux adultes et ses enfants, un lit chacun) ; les adultes
     // travaillent à `travail` (sans partie : `horaires`, `salaire` ; sinon ceux du moteur,
