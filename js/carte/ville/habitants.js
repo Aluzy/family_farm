@@ -12,8 +12,13 @@
  *   - à la fin de sa journée, il en ressort, passe par un étal du marché de la ville acheter
  *     les ingrédients du dîner, et rentre chez lui son panier plein ;
  *   - le premier rentré cuisine devant le four du logement ;
- *   - les enfants restent à la maison ; de IMMEUBLE.vie.sommeil[0] h à sommeil[1] h, chacun
- *     dort dans la chambre (on ne le voit plus).
+ *   - les enfants vont à l'école comme ceux de la ferme : les jours d'école
+ *     (HorlogeSortie.JOURS_ECOLE), de TRANSITION_VIE.ecole[0] h à ecole[1] h ; ils y vont à pied
+ *     (ils habitent en ville : pas de bus), entrent par la porte de l'école (le bout du chemin
+ *     des enfants qui descendent du bus, couche « bus ») et rentrent à pied ; le reste du temps,
+ *     ils sont à la maison ;
+ *   - de IMMEUBLE.vie.sommeil[0] h à sommeil[1] h, chacun dort dans la chambre (on ne le voit
+ *     plus).
  *
  * Un habitant marche sur son niveau (le rez-de-chaussée : la marche de la carte ; un étage : la
  * marche de son niveau) et change de niveau par l'escalier, comme le personnage. On le voit
@@ -28,7 +33,7 @@
 
   const K = global.CarteKit;
   const V = global.CarteVille;
-  const { T, IMMEUBLE: I, VOISINS } = V.C;
+  const { T, IMMEUBLE: I, VOISINS, TRANSITION_VIE } = V.C;
   const { hote, reduced, sheetKey } = V;
   const VIE = I.vie;
 
@@ -115,7 +120,10 @@
       const h = this.heureImm(H), [debut, fin] = this.horairesImm();
       const jour = H ? H.jour : 0;
       if (this.dortImm(H)) { this.coucheHabitant(n); return; }
-      if (n.m.enfant) return;
+      if (n.m.enfant) {
+        if (this.ecoleImm(H)) { n.jourEcole = jour; this.cacheHabitant(n, true); n.etat = 'ecole'; }
+        return;
+      }
       if (h >= this.departImm() && h < fin) { n.jourTravail = jour; this.cacheHabitant(n, true); n.etat = 'travail'; return; }
       // (rentré du marché : le dîner est fait, ou à faire)
       if (h >= fin) { n.jourTravail = n.jourMarche = jour; }
@@ -135,18 +143,36 @@
       const h = this.heureImm(H), S = VIE.sommeil;
       return !!H.nuit || h >= S[0] || h < S[1];
     },
+    // L'heure de l'école (un jour d'école, aux heures de celle des enfants de la ferme : il
+    // part le temps du trajet avant, pour y être à l'heure) ?
+    ecoleImm(H) {
+      const S = global.HorlogeSortie, E = TRANSITION_VIE.ecole;
+      if (!H || H.nuit || !S || !S.JOURS_ECOLE.includes(H.semaine)) return false;
+      const h = this.heureImm(H);
+      if (this.departEcoleH == null) this.departEcoleH = Math.max(VIE.sommeil[1] + 0.25, E[0] - this.trajetImm(this.porteEcole()) - VIE.marge);
+      return h >= this.departEcoleH && h < E[1];
+    },
+    // La porte de l'école : le bout du chemin des enfants qui descendent du bus le matin.
+    porteEcole() {
+      const l = (this.kidPaths || {}).enfants_matin;
+      return l && l.length ? l[l.length - 1] : null;
+    },
+
     // L'heure du départ au travail : le temps du trajet (à pied, jusqu'à la fromagerie) avant
     // l'embauche, et une marge.
     departImm() {
-      if (this.departImmH == null) {
-        const p = this.portesImm(), l = p.fromagerie ? this.findPath(p.sortie.x, p.sortie.y, p.fromagerie.x, p.fromagerie.y, this.libreNiv(0)) : null;
-        let d = 0;
-        if (l) for (let i = 0, a = p.sortie; i < l.length; a = l[i++]) d += Math.hypot(l[i].x - a.x, l[i].y - a.y);
-        // (le temps de descendre et de sortir : une vingtaine de cases)
-        const s = (d + 20 * T) / VIE.vitesse;
-        this.departImmH = Math.max(VIE.sommeil[1] + 0.25, this.horairesImm()[0] - s / VIE.sParHeure - VIE.marge);
-      }
+      if (this.departImmH == null) this.departImmH = Math.max(VIE.sommeil[1] + 0.25, this.horairesImm()[0] - this.trajetImm(this.portesImm().fromagerie) - VIE.marge);
       return this.departImmH;
+    },
+
+    // Le temps (en heures du jeu) d'aller à pied de l'immeuble au point `p` (0 : pas de chemin).
+    trajetImm(p) {
+      const o = this.portesImm().sortie, l = p ? this.findPath(o.x, o.y, p.x, p.y, this.libreNiv(0)) : null;
+      if (!l) return 0;
+      let d = 0;
+      for (let i = 0, a = o; i < l.length; a = l[i++]) d += Math.hypot(l[i].x - a.x, l[i].y - a.y);
+      // (le temps de descendre et de sortir : une vingtaine de cases)
+      return (d + 20 * T) / VIE.vitesse / VIE.sParHeure;
     },
 
     // La sortie de l'immeuble (devant sa porte), la porte de la fromagerie (devant le milieu de
@@ -284,6 +310,24 @@
           if (!e || !this.allerImm(n, e, 0)) { n.etat = 'achete'; n.t = 0.01; }
           return;
         }
+        case 'versEcole':
+          // à la porte de l'école : il entre
+          n.etat = 'ecole';
+          this.cacheHabitant(n);
+          n.t = 2;
+          return;
+        case 'ecole': {
+          if (this.ecoleImm(H)) { n.t = 2; return; }
+          // l'école finie : il ressort et rentre à pied
+          const p = this.porteEcole();
+          if (p) { n.x = p.x; n.y = p.y; }
+          n.niv = 0;
+          n.cache = false;
+          this.montreHabitant(n);
+          n.etat = 'retour';
+          chezSoi();
+          return;
+        }
         case 'versMarche':
           // devant l'étal : il achète les ingrédients du dîner
           n.etat = 'achete';
@@ -317,6 +361,14 @@
         default:
       }
       // chez lui
+      if (n.m.enfant && this.ecoleImm(H) && n.jourEcole !== jour) {
+        // le matin : à l'école (il descend, sort, y va à pied)
+        n.jourEcole = jour;
+        const p = this.porteEcole();
+        n.etat = 'versEcole';
+        if (!p || !this.allerImm(n, p, 0)) { n.etat = 'ecole'; this.cacheHabitant(n); n.t = 2; }
+        return;
+      }
       if (!n.m.enfant) {
         if (h >= this.departImm() && h < fin && n.jourTravail !== jour) {
           // le matin : au travail (il descend, sort, va à la fromagerie)
@@ -375,7 +427,7 @@
       n.path = [];
       if (deja || reduced()) { n.cache = true; return; }
       this.tweens.add({ targets: [n.s, n.shadow], alpha: 0, duration: 500, onComplete: () => {
-        n.cache = n.etat === 'travail' || n.etat === 'dort';
+        n.cache = n.etat === 'travail' || n.etat === 'ecole' || n.etat === 'dort';
         n.s.setAlpha(1); n.shadow.setAlpha(0.3);
       } });
     },
@@ -424,7 +476,11 @@
     paroleHabitant(n) {
       const qui = `${n.m.prenom} ${n.f.nom}`, eco = this.ecoImm, fo = eco && eco.foyers[n.L.nom];
       const [debut, fin] = this.horairesImm();
-      if (n.m.enfant) return `👋 ${qui} : « Mes parents travaillent à la fromagerie 🧀 ! Ils rentrent après ${fin} h, avec les courses du marché. »`;
+      if (n.m.enfant) {
+        const E = TRANSITION_VIE.ecole, h = (x) => `${Math.floor(x)} h${x % 1 ? String(Math.round((x % 1) * 60)).padStart(2, '0') : ''}`;
+        const ecole = n.etat === 'versEcole' ? 'Je vais à l\'école, je ne dois pas être en retard !' : n.etat === 'retour' ? 'Je rentre de l\'école !' : `Je vais à l'école à pied, de ${h(E[0])} à ${h(E[1])}.`;
+        return `👋 ${qui} : « ${ecole} Mes parents travaillent à la fromagerie 🧀 ; ils rentrent après ${fin} h, avec les courses du marché. »`;
+      }
       const salaire = (eco && eco.salaire) || VIE.salaire;
       const travail = `Je travaille à la fromagerie de ${debut} h à ${fin} h, pour ${salaire} 💰 par jour.`;
       if (!fo) return `🧀 ${qui} : « ${travail} »`;

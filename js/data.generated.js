@@ -2041,7 +2041,7 @@ export const RAW_DATA = {
       "fromager": ["omelette", "gratin_patates", "salade_tomates", "pain"]
     },
     "IMMEUBLE": { "LOGEMENTS": 6, "LITS": 3 },
-    "FROMAGER": { "SALAIRE": 8, "HORAIRES": [8, 17] },
+    "FROMAGER": { "SALAIRE": 16, "HORAIRES": [8, 17] },
     "CONFORT": 100,
     "PLAISIR": 10,
     "RATTRAPAGE": 30,

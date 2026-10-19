@@ -286,7 +286,7 @@
     // dîner cuit `cuisson` s. Les cases du logement de gauche (celui de droite en miroir) : le
     // pied des lits (`couchage` : les deux adultes, l'enfant), la place devant le four (`feu`).
     vie: {
-      lits: 3, travail: 'fromagerie', horaires: [8, 17], salaire: 8, sommeil: [22, 6], vitesse: 40, sParHeure: 30, marge: 0.25,
+      lits: 3, travail: 'fromagerie', horaires: [8, 17], salaire: 16, sommeil: [22, 6], vitesse: 40, sParHeure: 30, marge: 0.25,
       achat: 4, cuisson: 16, couchage: [[1, 3], [2, 3], [9, 3]], feu: [5, 7], humeur: [70, 40],
     },
   };
