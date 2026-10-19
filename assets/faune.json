@@ -78,6 +78,42 @@
    ],
    "nom": "Un crabe"
   },
+  "cygne": {
+   "image": "faune_cygne.png",
+   "frameWidth": 32,
+   "frameHeight": 32,
+   "anchor": {
+    "x": 16,
+    "y": 24
+   },
+   "frames": [
+    "nage_0",
+    "nage_1",
+    "plonge_0",
+    "plonge_1"
+   ],
+   "nom": "Un cygne"
+  },
+  "canard": {
+   "image": "faune_canard.png",
+   "frameWidth": 16,
+   "frameHeight": 16,
+   "anchor": {
+    "x": 8,
+    "y": 12
+   },
+   "frames": [
+    "m_nage_0",
+    "m_nage_1",
+    "m_plonge_0",
+    "m_plonge_1",
+    "f_nage_0",
+    "f_nage_1",
+    "f_plonge_0",
+    "f_plonge_1"
+   ],
+   "nom": "Un canard colvert"
+  },
   "dauphin": {
    "image": "faune_dauphin.png",
    "frameWidth": 32,

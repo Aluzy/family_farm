@@ -55,7 +55,7 @@ import objets as O  # noqa: E402
 import plan as P  # noqa: E402
 import sol as S  # noqa: E402
 import voitures as V  # noqa: E402
-from commun import ASSETS, ROOT, H, T, W, Planche, Toile, hasard, image  # noqa: E402
+from commun import ASSETS, ROOT, H, T, W, Planche, Toile, hasard, image, mel, teinte  # noqa: E402
 
 PLANCHES = {p.nom.split('_', 1)[1]: p for p in (
     Planche('ville_asphalte', "La chaussée et ses tirets"),
@@ -702,25 +702,55 @@ def reverberes(c):
 
 
 def lac(t):
-    """Le lac du grand parc : l'eau de la ferme (animée), plus sombre sous la berge du haut,
-    une berge de terre et de cailloux."""
+    """Le lac du grand parc : une berge de terre et de cailloux, puis l'eau animée de la ferme,
+    claire au bord (peu d'eau sur la terre, on voit le fond), de plus en plus profonde et sombre
+    vers le milieu ; les zones se mêlent (leurs limites ondulent), la berge du haut fait de
+    l'ombre sur l'eau."""
     cx, cy, rx, ry = LAC
     x0, x1, y0, y1 = int(cx - rx * 1.15), int(cx + rx * 1.15), int(cy - ry * 1.15), int(cy + ry * 1.15)
+    fond = (138, 112, 76)
     for y in range(max(0, y0), min(H * T, y1)):
         for x in range(x0, x1):
             if not lac_dedans(x + 0.5, y + 0.5):
                 continue
             if not lac_dedans(x + 0.5, y + 0.5, 4):
                 # la berge : terre, cailloux, le contour
-                c = (138, 112, 76) if hasard(x, y, 95) > 0.25 else (164, 156, 146)
+                c = fond if hasard(x, y, 95) > 0.25 else (164, 156, 146)
                 if not lac_dedans(x + 0.5, y + 0.5, 1):
                     c = (70, 82, 40)
                 for k in range(F.EAU_IMAGES):
                     t.put(x, y, c, k)
                 continue
+            # la profondeur : 0 au bord, 1 au milieu (et un peu de bruit, les limites ondulent)
+            u, v = (x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry
+            a = math.atan2(v, u)
+            r = 1 + 0.06 * math.sin(3 * a + 0.7) + 0.04 * math.sin(5 * a + 2.1) + 0.03 * math.sin(8 * a)
+            p = 1 - math.hypot(u, v) / r + (hasard(x // 3, y // 3, 96) - 0.5) * 0.05
             ombre = not lac_dedans(x + 0.5, y + 0.5 + 7, 4)
             for k in range(F.EAU_IMAGES):
-                t.put(x, y, O.eau(x, y, k, ombre), k)
+                if p < 0.07:                                  # peu d'eau sur la terre du bord
+                    c = mel(F.eau(x, y, k, False, 0), fond, 0.4)
+                elif p < 0.2:                                 # l'eau claire, ses cailloux et herbes
+                    c = O.eau(x, y, k)
+                elif p < 0.45:                                # l'eau profonde
+                    c = F.eau(x, y, k, True, 0)
+                elif p < 0.7:                                 # plus profonde, plus sombre
+                    c = teinte(F.eau(x, y, k, True, 0), 0.86)
+                else:                                         # le fond du lac
+                    c = teinte(F.eau(x, y, k, True, 0), 0.74)
+                t.put(x, y, teinte(c, 0.82) if ombre else c, k)
+
+
+def animaux_du_lac():
+    """Les zones des oiseaux du lac (couche « animaux », js/carte/ville/faune.js) : un rectangle
+    dans l'eau du lac, un par espèce."""
+    cx, cy, rx, ry = LAC
+    zones = []
+    for nom, fx, fy in (('cygne', 0.55, 0.5), ('canard', 0.6, 0.55)):
+        w, h = rx * fx, ry * fy
+        zones.append({'name': nom, 'type': '', 'x': cx - w, 'y': cy - h, 'width': 2 * w, 'height': 2 * h,
+                      'rotation': 0, 'visible': True, 'properties': [{'name': 'espece', 'type': 'string', 'value': nom}]})
+    return zones
 
 
 # ---------- la découpe et l'écriture ----------
@@ -885,10 +915,14 @@ def main():
         lumieres.append({'id': prochain, 'name': f'reverbere_{x}_{y}', 'type': 'reverbere', 'point': True, 'rotation': 0,
                          'visible': True, 'x': x, 'y': y, 'width': 0, 'height': 0})
         prochain += 1
+    animaux = []
+    for z in animaux_du_lac():
+        animaux.append({'id': prochain, **z})
+        prochain += 1
     carte = {
         'type': 'map', 'version': '1.10', 'tiledversion': '1.12.2', 'orientation': 'orthogonal',
         'renderorder': 'right-down', 'width': W, 'height': H, 'tilewidth': T, 'tileheight': T,
-        'infinite': False, 'nextlayerid': len(couches) + 12, 'nextobjectid': prochain,
+        'infinite': False, 'nextlayerid': len(couches) + 13, 'nextobjectid': prochain,
         'tilesets': [{'firstgid': premier[k], 'source': f'{p.nom}.tsx'} for k, p in PLANCHES.items()],
         'layers': couches + [
             # où la promeneuse arrive (ville-carte.html) : sur le trottoir du bas, devant le parc
@@ -927,6 +961,9 @@ def main():
             # les lanternes des réverbères : allumées la nuit (js/carte/ville/eclairage.js)
             {'id': len(couches) + 11, 'name': 'lumieres', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
              'visible': True, 'x': 0, 'y': 0, 'objects': lumieres},
+            # les oiseaux du lac du parc : la zone de chaque espèce (js/carte/ville/faune.js)
+            {'id': len(couches) + 12, 'name': 'animaux', 'type': 'objectgroup', 'draworder': 'topdown', 'opacity': 1,
+             'visible': True, 'x': 0, 'y': 0, 'objects': animaux},
         ],
     }
     with open(os.path.join(ASSETS, 'ville.tmj'), 'w') as f:

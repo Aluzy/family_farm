@@ -169,7 +169,7 @@
   // en px/s, `peur` : la distance où la promeneuse les dérange.
   const FAUNE = {
     meta: 'assets/faune.json',
-    cartes: { montagne: ['marmotte', 'bouquetin', 'aigle'], plage: ['mouette', 'crabe', 'dauphin'] },
+    cartes: { montagne: ['marmotte', 'bouquetin', 'aigle'], plage: ['mouette', 'crabe', 'dauphin'], ville: ['cygne', 'canard'] },
     especes: {
       marmotte: { size: 16, n: 2, speed: 18, peur: 52, texte: '🐾 Une marmotte : elle siffle pour prévenir les autres.' },
       bouquetin: { size: 32, n: 2, speed: 11, peur: 0, texte: '🐐 Un bouquetin : il grimpe les rochers les plus raides.' },
@@ -177,6 +177,10 @@
       mouette: { size: 16, n: 3, speed: 16, peur: 44, texte: '🕊️ Une mouette : elle guette les restes du pique-nique.' },
       crabe: { size: 16, n: 2, speed: 20, peur: 40, texte: '🦀 Un crabe : il file de côté.' },
       dauphin: { size: 32, n: 1, texte: '🐬 Un dauphin saute au large !' },
+      // les oiseaux du lac du parc (nage) : en groupes de `groupe` (le premier mène, les autres
+      // le suivent) ; ils plongent la tête sous l'eau (`plonge` : la part de leurs arrêts)
+      cygne: { size: 32, n: 2, groupe: 2, speed: 7, peur: 44, nage: true, plonge: 0.3, texte: '🦢 Un cygne glisse sur le lac, majestueux.' },
+      canard: { size: 16, n: 7, groupe: 4, speed: 11, peur: 36, nage: true, plonge: 0.4, texte: '🦆 Un canard colvert : il plonge la tête sous l\'eau pour trouver à manger.' },
     },
   };
   // Les grottes (assets/grotte_tuiles.png, grotte_objets.png, grotte.json : scripts/ville/grotte.py) :

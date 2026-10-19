@@ -1,8 +1,11 @@
-/* carte/ville/faune.js — la scène de la ville : les animaux de la montagne et de la plage.
+/* carte/ville/faune.js — la scène de la ville : les animaux de la montagne, de la plage et du
+ * lac du parc de la ville.
  *
  * Des animaux à regarder (couche « animaux » : une zone par espèce, FAUNE) : la marmotte qui
  * rentre dans son terrier, le bouquetin, l'aigle qui tourne haut dans le ciel ; la mouette qui
- * s'envole, le crabe qui file de côté, le dauphin qui saute au large.
+ * s'envole, le crabe qui file de côté, le dauphin qui saute au large ; sur le lac du parc, les
+ * cygnes et les canards colverts (mâles et canes) qui nagent en petits groupes derrière le
+ * premier, flottent, plongent la tête sous l'eau, et s'éloignent quand on s'approche (stepNage).
  *
  * Méthodes de la scène des cartes (js/ville-carte.js), posées sur son prototype : `this` est
  * la scène (voir docs/architecture-phaser.md).
@@ -35,6 +38,12 @@
           if (esp === 'aigle') Object.assign(a, { cx: x, cy: y, ang: rnd(0, 6.3), shadow: this.add.ellipse(0, 0, 16, 5, 0x1e1a18, 0.18).setDepth(0) });
           if (esp === 'mouette') a.shadow = this.add.ellipse(0, 0, 8, 3, 0x1e1a18, 0.25).setVisible(false);
           if (esp === 'dauphin') { a.state = 'attente'; a.wait = rnd(2, 6); s.setVisible(false); }
+          if (def.nage) {
+            // (les canards : un mâle, une cane… ; dans chaque groupe, le premier mène)
+            const g = def.groupe || 1, d = def, chef = i % g ? this.animals[this.animals.length - (i % g)] : null;
+            Object.assign(a, { state: 'flotte', sorte: frames.m_nage_0 !== undefined ? (i % 2 ? 'f_' : 'm_') : '', chef, phase: Math.random() * 2, dir: Math.random() < 0.5 ? -1 : 1 });
+            if (chef) { a.x = chef.x - 10 * (i % g); a.y = chef.y + 4 * (i % g); a.ecart = { x: -(d.size > 16 ? 26 : 13) * (i % g) + rnd(-3, 3), y: ((i % g) % 2 ? 1 : -1) * rnd(4, 9) }; }
+          }
           this.animals.push(a);
         }
       }
@@ -46,6 +55,44 @@
       if (!a) return false;
       this.say(a.def.texte);
       return true;
+    },
+
+    // Un oiseau du lac : il nage vers un point de sa zone (ou suit le premier de son groupe), y
+    // flotte un moment, plonge parfois la tête sous l'eau ; dérangé, il nage vite vers le large.
+    stepNage(a, time, dt, P, still) {
+      const z = a.zone, d = a.def;
+      const rnd = (u, v) => u + Math.random() * (v - u);
+      const dans = (x, y) => ({ x: Math.max(z.x, Math.min(z.x + z.width, x)), y: Math.max(z.y, Math.min(z.y + z.height, y)) });
+      const dHero = Math.hypot(P.x - a.x, P.y - a.y);
+      if (!still && dHero < d.peur && !a.fuite) {
+        const l = dHero || 1, p = dans(a.x + (a.x - P.x) / l * 70, a.y + (a.y - P.y) / l * 40);
+        Object.assign(a, { tx: p.x, ty: p.y, state: 'nage', fuite: true });
+      }
+      if (a.chef && !a.fuite) {
+        // il suit le premier du groupe, un peu derrière lui
+        const c = a.chef, p = dans(c.x + a.ecart.x * c.dir, c.y + a.ecart.y);
+        if (a.state !== 'plonge' && Math.hypot(p.x - a.x, p.y - a.y) > 5) Object.assign(a, { tx: p.x, ty: p.y, state: 'nage' });
+      }
+      let moving = false;
+      if (a.state === 'nage' && !still) {
+        const dx = a.tx - a.x, dy = a.ty - a.y, l = Math.hypot(dx, dy), st = d.speed * (a.fuite ? 2.6 : 1) * dt;
+        if (Math.abs(dx) > 0.5) a.dir = dx < 0 ? -1 : 1;
+        if (l <= st) { a.x = a.tx; a.y = a.ty; a.state = 'flotte'; a.fuite = false; a.wait = rnd(2, 6); } else { a.x += dx / l * st; a.y += dy / l * st; moving = true; }
+      } else if (a.state === 'plonge') {
+        a.wait -= dt;
+        if (a.wait <= 0) { a.state = 'flotte'; a.wait = rnd(1.5, 4); }
+      } else if (a.state === 'flotte') {
+        a.wait -= dt;
+        if (a.wait <= 0 && !still) {
+          if (Math.random() < d.plonge) { a.state = 'plonge'; a.wait = rnd(1.2, 2.6); }
+          else if (!a.chef) { const p = { x: rnd(z.x, z.x + z.width), y: rnd(z.y, z.y + z.height) }; Object.assign(a, { tx: p.x, ty: p.y, state: 'nage' }); }
+          else a.wait = rnd(1, 3);
+        }
+      }
+      const k = Math.floor(time / (moving ? 320 : 760) + a.phase) % 2;
+      const n = a.sorte + (a.state === 'plonge' ? 'plonge' : 'nage') + '_' + k;
+      if (a.frames[n] !== undefined) a.s.setFrame(a.frames[n]);
+      a.s.setFlipX(a.dir < 0).setPosition(Math.round(a.x), Math.round(a.y)).setDepth(a.y);
     },
 
     stepFauna(time, dt) {
@@ -71,6 +118,7 @@
           a.shadow.setPosition(Math.round(x + 34), Math.round(y + 70));
           continue;
         }
+        if (a.def.nage) { this.stepNage(a, time, dt, P, still); continue; }
         if (a.esp === 'dauphin') {
           // de temps en temps, un saut au large : la gerbe, le saut, la gerbe
           const seq = ['gerbe', 'saut_0', 'saut_1', 'saut_2', 'saut_3', 'gerbe'];

@@ -4,6 +4,8 @@
 #   la montagne   la marmotte (assise, à quatre pattes), le bouquetin (debout, en marche),
 #                 l'aigle (vu de dessus, en vol : son ombre court au sol, js/ville-carte.js)
 #   la plage      la mouette (debout, en vol), le crabe (de dessus), le dauphin (son saut)
+#   la ville      sur le lac du parc : le cygne et le canard colvert (le mâle, la cane), qui
+#                 nagent ou plongent la tête sous l'eau
 #   trouvailles   l'ammonite et le trilobite (fossiles), le quartz et l'améthyste (pierres),
 #                 les herbes de montagne (herbe : dans les prés),
 #                 la coquille Saint-Jacques et le bulot (coquillages), le corail, la perle
@@ -264,6 +266,86 @@ def dauphin(k):
     return fini(im)
 
 
+# ---------- le lac du parc de la ville ----------
+
+REMOUS = (214, 236, 246)
+BEC_CYGNE = (232, 122, 44)
+COLVERT = {'tete': (40, 112, 64), 'tete_s': (24, 76, 44), 'poitrail': (118, 70, 50), 'corps': (176, 174, 168),
+           'corps_s': (130, 128, 124), 'bec': (226, 198, 64), 'queue': (40, 40, 46)}
+CANE = {'tete': (132, 98, 64), 'tete_s': (96, 70, 46), 'poitrail': (150, 112, 72), 'corps': (156, 118, 76),
+        'corps_s': (112, 82, 52), 'bec': (214, 128, 50), 'queue': (110, 80, 52)}
+
+
+def sous_l_eau(im, y):
+    """Ce qui est sous la surface (y et plus bas) n'est pas vu."""
+    for yy in range(y, im.height):
+        for x in range(im.width):
+            im.putpixel((x, yy), (0, 0, 0, 0))
+
+
+def remous(im, x0, x1, y, k):
+    """Les petites vagues autour d'un oiseau qui nage (la ligne y), k : elles bougent."""
+    for x in range(x0, x1 + 1):
+        if (x + k) % 3 != 2:
+            px(im, x, y, REMOUS)
+    px(im, x0 - 1 - k % 2, y + 1, REMOUS)
+    px(im, x1 + 1 + k % 2, y + 1, REMOUS)
+
+
+def cygne(pose, k):
+    """32 × 32, de profil (vers la droite), posé sur l'eau (la surface : y = 24). pose 'nage'
+    (k : le cou se balance) ou 'plonge' (la tête sous l'eau, le cou courbé)."""
+    im = image(32, 32)
+    ellipse(im, 3, 14, 8, 20, BLANC, teinte(BLANC, 0.84))            # la queue relevée
+    ellipse(im, 4, 16, 23, 30, BLANC, teinte(BLANC, 0.82))           # le corps, bas sur l'eau
+    ellipse(im, 7, 15, 19, 22, teinte(BLANC, 0.94), teinte(BLANC, 0.8), (255, 255, 255))   # l'aile
+    trait(im, [(8, 19), (12, 21), (17, 21)], teinte(BLANC, 0.78))
+    if pose == 'nage':
+        d = k
+        # le cou en S : il part du poitrail, se creuse, la tête penchée en avant
+        trait(im, [(19, 19), (22, 17), (23, 14), (22 + d, 11), (20 + d, 9), (20 + d, 6)], BLANC, 2)
+        ellipse(im, 19 + d, 3, 24 + d, 7, BLANC, teinte(BLANC, 0.85))
+        px(im, 22 + d, 4, K)
+        px(im, 24 + d, 4, K)
+        for x, y in ((25, 5), (26, 5), (27, 6), (25, 6)):
+            px(im, x + d, y, BEC_CYGNE)
+    else:
+        trait(im, [(19, 19), (23, 16), (26, 17), (27, 21), (27, 24)], BLANC, 2)
+    im = fini(im)
+    sous_l_eau(im, 24)
+    remous(im, 3, 24, 24, k)
+    return im
+
+
+def canard(sorte, pose, k):
+    """16 × 16, de profil (vers la droite), posé sur l'eau (la surface : y = 12). sorte : le
+    colvert ('m') ou la cane ('f') ; pose 'nage' (k : la tête bouge) ou 'plonge' (la tête sous
+    l'eau, la queue en l'air)."""
+    C = COLVERT if sorte == 'm' else CANE
+    im = image(16, 16)
+    if pose == 'nage':
+        trait(im, [(2, 8), (3, 9)], C['queue'])
+        ellipse(im, 2, 7, 12, 14, C['corps'], C['corps_s'])
+        ellipse(im, 9, 8, 13, 13, C['poitrail'], teinte(C['poitrail'], 0.8))
+        ellipse(im, 4, 7, 10, 10, teinte(C['corps'], 0.9), C['corps_s'])       # l'aile
+        h = k
+        ellipse(im, 10, 3 + h, 13, 7 + h, C['tete'], C['tete_s'])
+        px(im, 12, 4 + h, K)
+        px(im, 14, 5 + h, C['bec'])
+        px(im, 15, 5 + h, C['bec'])
+        if sorte == 'm':
+            px(im, 10, 8, (238, 238, 232))
+            px(im, 11, 8, (238, 238, 232))
+    else:
+        ellipse(im, 4, 7, 11, 14, C['corps'], C['corps_s'])
+        trait(im, [(4, 8), (3, 5), (4, 3)], C['queue'], 2)
+        ellipse(im, 5, 6, 9, 9, teinte(C['corps'], 0.9), C['corps_s'])
+    im = fini(im)
+    sous_l_eau(im, 12)
+    remous(im, 2, 13, 12, k)
+    return im
+
+
 # ---------- les trouvailles ----------
 
 def trouvaille(nom):
@@ -384,6 +466,11 @@ ESPECES = {
                            ('vol_0', lambda: mouette('vol', 0)), ('vol_1', lambda: mouette('vol', 1))]},
     'crabe': {'taille': (16, 16), 'ancre': (8, 12), 'nom': 'Un crabe',
               'images': [('marche_0', lambda: crabe(0)), ('marche_1', lambda: crabe(1))]},
+    'cygne': {'taille': (32, 32), 'ancre': (16, 24), 'nom': 'Un cygne',
+              'images': [('nage_0', lambda: cygne('nage', 0)), ('nage_1', lambda: cygne('nage', 1)),
+                         ('plonge_0', lambda: cygne('plonge', 0)), ('plonge_1', lambda: cygne('plonge', 1))]},
+    'canard': {'taille': (16, 16), 'ancre': (8, 12), 'nom': 'Un canard colvert',
+               'images': [(f'{s}_{p}_{k}', (lambda s=s, p=p, k=k: canard(s, p, k))) for s in ('m', 'f') for p in ('nage', 'plonge') for k in (0, 1)]},
     'dauphin': {'taille': (32, 32), 'ancre': (16, 24), 'nom': 'Un dauphin',
                 'images': [(f'saut_{k}', (lambda k=k: dauphin(k))) for k in range(4)] + [('gerbe', lambda: dauphin(4))]},
 }
