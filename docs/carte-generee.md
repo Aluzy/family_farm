@@ -130,6 +130,14 @@ Le Marché vend toujours les outils.
     Un mur se change sans être enlevé : avec une fenêtre (ou une pierre d'angle, un mur en
     pierre) en main, un appui sur un autre de ces murs le remplace, l'ancien revient dans
     l'inventaire et la pièce reste close (`BLOCS[].mur`, `changeMur` ; au sol et à l'étage).
+  - Deux fenêtres côte à côte (sur une même rangée, leurs faces visibles) forment une grande
+    fenêtre : le verre, l'appui et le linteau passent de l'une à l'autre, un montant de bois
+    entre elles (`BLOCS_CARTE.hauts.joints` ; images 49, 65, 81 + masque).
+  - **La paroi vitrée** (2 pierres, 1 lingot de fer) est un mur de verre : elle se pose comme un
+    mur (elle ferme une pièce) ou à la place d'un mur, comme une fenêtre. Le dessus est en
+    métal ; la face est en verre teinté, avec des montants, une traverse tous les 13 px et des
+    reflets en biais. Des parois voisines forment une façade continue (images 97 à 160). Elle
+    servira plus tard à construire des immeubles en verre en ville.
   - Les murs et la porte d'un mur horizontal sont une case plus hauts que les autres blocs
     (`assets/murs_hauts.png`, 16 × 40 px, comme les maisons de la transition). Un mur qui cache
     le personnage ou un membre de la famille s'efface à moitié, et tous s'effacent en mode
@@ -234,6 +242,15 @@ Le Marché vend toujours les outils.
     et d'arrêter le passage (`state.etage`) ;
   - l'escalier repris, ou la pièce ouverte, l'étage s'en va : ses blocs reviennent dans
     l'inventaire (`rangerEtage`) ; au coucher, on redescend.
+- **Les toits** (`toits` dans `js/engine/etage.js`, `js/carte/ferme/toits.js`) : chaque
+  bâtiment (une pièce close) reçoit tout seul un toit de tuiles, posé sur son dernier niveau :
+  - sur ses murs, s'il n'a pas d'escalier ; sur les murs de son étage, au-dessus de ce qu'ils
+    ferment, s'il en a un (un étage sans murs tout autour reste une terrasse, sans toit) ;
+  - il couvre le bâtiment, murs compris, avec un faîtage au milieu, un versant sud clair, un
+    versant nord plus sombre et une rive sous le bas du toit (un canevas dessiné par toit,
+    couleurs dans `BLOCS_CARTE.toits`) ;
+  - il s'efface quand le personnage entre dans le bâtiment (en bas ou à l'étage) et en mode
+    Construire, et à moitié quand le personnage passe derrière (`stepToits`).
 
 ## La carte de transition, tirée pour chaque partie
 

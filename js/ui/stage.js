@@ -40,7 +40,7 @@ import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, couchages, etatEtable, etatPoulailler, piecesCloses, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml, niveauBati } from './chantier.js';
-import { escaliers, etageBlocs, etageEmprise } from '../engine/etage.js';
+import { escaliers, etageBlocs, etageEmprise, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { runAction } from './events.js';
@@ -447,6 +447,8 @@ export function stageModel() {
     // l'étage (un essai, js/engine/etage.js) et le niveau où est le personnage (0 : en bas)
     ...etageModel(),
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
+    // les toits des bâtiments, sur leur dernier niveau (js/carte/ferme/toits.js)
+    toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
     houe, hache, pioche, canne, triporteur: enSelle(state), rochers, abattus, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,

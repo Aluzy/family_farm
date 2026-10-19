@@ -321,7 +321,8 @@ def porte_verticale():
 # Les mêmes murs, une case plus hauts : une face de FACE + 16 px (images de 16 × 40, le bas sur
 # la case, le haut dépasse de 24 px au-dessus) ; murs_hauts.png : les 16 murs raccordés
 # (masque comme plus haut), puis la porte, percée au pied d'un mur plein, puis les 16 murs à
-# fenêtre (17 + masque) et les 16 murs aux pierres d'angle (33 + masque).
+# fenêtre (17 + masque) et les 16 murs aux pierres d'angle (33 + masque), les fenêtres qu'une
+# voisine prolonge (une grande fenêtre : 49, 65, 81 + masque) et les parois vitrées (97 à 160).
 HAUTEUR_EN_PLUS = T
 
 
@@ -364,33 +365,73 @@ def porte_haute():
 VITRE = [(52, 74, 96), (96, 136, 168), (150, 192, 216), (214, 236, 244)]   # le verre, du fond au reflet
 
 
-def fenetre(m):
+def fenetre(m, j=0):
     """Le mur haut de masque m percé d'une fenêtre : sur la face (un mur sans voisin
     au-dessous), un cadre de bois, quatre carreaux et leurs croisillons, un appui de pierre ;
-    un mur qui descend (vu de dessus seulement) reste plein."""
+    un mur qui descend (vu de dessus seulement) reste plein. j : les fenêtres voisines qui la
+    prolongent (1 à gauche, 2 à droite) : le verre, l'appui et le linteau vont jusqu'au bord
+    de ce côté (deux fenêtres côte à côte font une grande fenêtre)."""
     t = Toile(mur(m))
     if m & 4:
         return t.im
-    x0, x1, y0, y1 = 4, 11, CHAPE + 6, BAS - 8       # le dedans du cadre
-    for y in range(y0 - 1, y1 + 2):                  # le cadre
-        for x in range(x0 - 1, x1 + 2):
-            t.put(x, y, CADRE[0] if x in (x0 - 1, x1 + 1) or y in (y0 - 1, y1 + 1) else None)
+    g, d = j & 1, j & 2
+    x0, x1, y0, y1 = 0 if g else 4, 15 if d else 11, CHAPE + 6, BAS - 8       # le dedans du cadre
+    for y in range(y0 - 1, y1 + 2):                  # le cadre (pas du côté d'une fenêtre voisine)
+        for x in range(max(0, x0 - 1), min(15, x1 + 1) + 1):
+            bord = (x == x0 - 1 and not g) or (x == x1 + 1 and not d) or y in (y0 - 1, y1 + 1)
+            t.put(x, y, CADRE[0] if bord else None)
     for y in range(y0, y1 + 1):                      # les carreaux : sombres en bas, un reflet en haut à gauche
         for x in range(x0, x1 + 1):
             k = 1 if y > (y0 + y1) // 2 else 2
-            if x - x0 + (y - y0) < 3:
+            if not g and x - x0 + (y - y0) < 3:
                 k = 3
             t.put(x, y, VITRE[k])
-    xm, ym = (x0 + x1) // 2, (y0 + y1) // 2
-    for y in range(y0, y1 + 1):                      # les croisillons de bois
+    xm, ym = 7, (y0 + y1) // 2
+    for y in range(y0, y1 + 1):                      # les croisillons de bois (et entre deux fenêtres)
         t.put(xm, y, BOIS[2])
+        if g:
+            t.put(0, y, BOIS[1])
     for x in range(x0, x1 + 1):
         t.put(x, ym, BOIS[2])
-    for x in range(x0 - 2, x1 + 3):                  # l'appui de pierre, éclairé, son ombre
+    for x in range(max(0, x0 - 2), min(15, x1 + 2) + 1):   # l'appui de pierre, éclairé, son ombre
         t.put(x, y1 + 2, PIERRE[5])
         t.put(x, y1 + 3, PIERRE[1])
-    for x in range(x0 - 1, x1 + 2):                  # le linteau
+    for x in range(max(0, x0 - 1), min(15, x1 + 1) + 1):   # le linteau
         t.put(x, y0 - 2, PIERRE[4])
+    return t.im
+
+
+# les tons du métal de la paroi vitrée, à la place de ceux de la pierre
+METAL = {PIERRE[0]: FER[1], PIERRE[1]: FER[1], PIERRE[2]: FER[2], PIERRE[3]: FER[3], PIERRE[4]: FER[3], PIERRE[5]: FER[4]}
+VERRE = [(46, 84, 104), (70, 122, 148), (118, 170, 196), (196, 228, 240)]   # le verre teinté, du fond au reflet
+
+
+def paroi_vitree(m, j=0):
+    """Le mur haut de masque m en paroi vitrée : le dessus en métal ; sur la face, du verre
+    teinté du pied à la chape, des montants de métal au bord droit (et au bord gauche, sans
+    paroi voisine de ce côté) et des traverses (un étage d'immeuble tous les 13 px), des reflets
+    en biais qui suivent d'une paroi à l'autre. j : les parois voisines (1 à gauche, 2 à droite)."""
+    t = Toile(mur(m))
+    for y in range(H):
+        for x in range(W):
+            c = t.im.getpixel((x, y))
+            if c[3] and c[:3] in METAL:
+                t.put(x, y, METAL[c[:3]])
+    if m & 4:
+        return t.im
+    xa, xb = (0 if m & 8 else 1), (15 if m & 2 else 14)
+    for y in range(CHAPE + 1, BAS):
+        v = y - (CHAPE + 1)
+        for x in range(xa, xb + 1):
+            if (x == xa and not j & 1) or x == xb or v % 13 == 0 or y == BAS - 1:
+                c = FER[1] if y == BAS - 1 else FER[2]   # les montants, les traverses, le socle
+            elif (x + y) % 16 in (0, 1):
+                c = VERRE[2]                             # le reflet en biais
+            elif (x + y) % 16 == 2:
+                c = VERRE[3]
+            else:
+                c = VERRE[1] if v % 13 < 7 else VERRE[0]
+            t.put(x, y, c)
     return t.im
 
 
@@ -415,13 +456,17 @@ def pierre_angle(m):
 
 def murs_hauts():
     """Les 16 murs raccordés et la porte, une case plus hauts (images de 16 × (24 + 16)) ; puis
-    les 16 murs à fenêtre et les 16 murs aux pierres d'angle (BLOCS_CARTE.hauts.variantes)."""
+    les 16 murs à fenêtre et les 16 murs aux pierres d'angle (BLOCS_CARTE.hauts.variantes) ; puis
+    les fenêtres prolongées à gauche, à droite, des deux côtés (49, 65, 81 + masque) et les
+    parois vitrées seules, prolongées à gauche, à droite, des deux côtés (97, 113, 129, 145 +
+    masque ; BLOCS_CARTE.hauts.joints)."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     H += HAUTEUR_EN_PLUS
     BAS, FACE = H - 1, FACE + HAUTEUR_EN_PLUS
     try:
-        return [mur(m) for m in range(16)] + [porte_haute()] + [fenetre(m) for m in range(16)] + [pierre_angle(m) for m in range(16)], H
+        return ([mur(m) for m in range(16)] + [porte_haute()] + [fenetre(m) for m in range(16)] + [pierre_angle(m) for m in range(16)]
+                + [fenetre(m, j) for j in (1, 2, 3) for m in range(16)] + [paroi_vitree(m, j) for j in range(4) for m in range(16)], H)
     finally:
         H, BAS, FACE = garde
 
