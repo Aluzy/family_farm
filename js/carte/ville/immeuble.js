@@ -52,6 +52,7 @@
   // gauche) }] }. La grille : M un mur, F un mur à fenêtre, P une porte, . le plancher, U
   // l'escalier qui monte, D le haut de l'escalier qui descend.
   V.planImmeuble = function (b, n, N) {
+    if (V.plansLieux && V.plansLieux[b.plan]) return V.planLieu(b, n, N);
     const W = b.w, H = b.h, g = Array.from({ length: H }, () => Array(W).fill('.'));
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!x || !y || x === W - 1 || y === H - 1) g[y][x] = 'M';
     const meubles = [];
@@ -250,6 +251,18 @@
           o.immZ = (mb.plat ? py - T * mb.h + 0.5 : py - 3) + n * 0.2;
           o.setDepth(o.immZ);
           objs.push(o);
+        }
+        // l'enseigne d'un lieu, au-dessus de sa porte (au rez-de-chaussée, sous l'étage)
+        const ens = 'enseigne_' + b.enseigne;
+        if (!n && b.enseigne && this.textures.exists(ens)) {
+          // (au milieu de la porte, sans dépasser de la façade)
+          const lw = this.textures.get(ens).getSourceImage().width / 2;
+          const px = Math.max((b.x + 1) * T + lw, Math.min((b.x + b.w - 1) * T - lw, (b.x + plan.porte + 1) * T)), py = (b.y + b.h) * T - 36;
+          const o = this.add.image(Math.round(px), py, ens).setOrigin(0.5, 1);
+          o.immZ = (b.y + b.h) * T + 0.3;
+          o.setDepth(o.immZ);
+          objs.push(o);
+          murs.push({ o, x: px, gy: b.y + b.h - 1, facade: true });
         }
         im.niveaux.push({ objs, murs, marche, grille: G, plan });
       }

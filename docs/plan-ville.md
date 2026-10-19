@@ -68,6 +68,12 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
 3. Les immeubles (fait) : la tour de la gare devient un immeuble de 8 studios (des couples sans
    enfant, `enfants: 0`) ; les 15 logements des trois autres immeubles sont les T2 (un
    enfant). La ville a ainsi ses 40 foyers et ses 135 habitants.
-4. Les lieux, par lots de 3 à 5, avec leurs décors.
+4. Les lieux, par lots de 3 à 5, avec leurs décors (`js/carte/ville/lieux.js`, les meubles et
+   les enseignes : `scripts/ville/commerces.py`) :
+   - lot 1, les commerces (fait) : boulangerie, pizzeria, fast-food de burgers, poissonnerie,
+     magasin d'informatique ;
+   - lot 2, les services et loisirs : mairie, musée, cinéma, écoles 2 et 3, bureau de négoce ;
+   - lot 3, les fabriques : minoterie, fabriques textile, de mayonnaise et de matériaux, usines
+     électronique et informatique, menuiserie.
 5. Les emplois et l'économie (`data/economie.json`, `js/engine/economie.js`) : recettes,
    stocks, flux, camions, salaires, sorties et bonheur.

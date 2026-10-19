@@ -393,6 +393,15 @@ parties.
   et l'entrée (la porte sur la rue, l'escalier). À l'étage, la chambre des parents, celle des
   enfants (un lit chacun : 2 dans un T3, 3 dans un T4) et le palier. Chacune loge une famille :
   deux adultes et ses `enfants` (docs/plan-ville.md).
+- **Les lieux** (`js/carte/ville/lieux.js`, `V.plansLieux`) : les commerces remplacent des
+  bâtiments sans rôle (docs/plan-ville.md) : la boulangerie (la maison bleue), la pizzeria et le
+  fast-food de burgers (les bureaux de l'est), la poissonnerie (les bureaux du marché), le
+  magasin d'informatique (la verrière de l'est). Deux niveaux : la boutique au rez-de-chaussée
+  (la salle des clients, le comptoir, l'atelier ou la cuisine derrière), la réserve et le
+  bureau à l'étage. Leur enseigne surmonte la porte (`enseigne_<lieu>.png`) ; leurs meubles
+  (le four de boulanger, le pétrin, la vitrine, le four à pizza, la friteuse, le grill, l'étal
+  de poissons, le bac à homards, les présentoirs, les étagères, le bureau et son écran) sont
+  dessinés par `scripts/ville/commerces.py`.
 - **L'immeuble ocre (plan « double »)** : au rez-de-chaussée, le hall occupe le milieu de la moitié de devant (4 × 7 cases) : une
   porte double sur la rue, une porte de chaque côté vers un logement, et au fond l'escalier qui
   monte. **À chaque étage**, le palier, de la même taille : le haut de l'escalier d'où l'on
