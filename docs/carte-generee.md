@@ -384,11 +384,16 @@ parties.
   - un petit salon : un canapé, une table basse, un tapis, une plante ;
   - la pièce de vie : la cuisine, le four, une table et deux chaises ;
   - une chambre : deux lits et une table de chevet.
-- **Les murs** : ceux du tour sont hauts, avec des fenêtres en façade (deux fenêtres voisines
-  font une grande fenêtre) ; les cloisons sont basses, pour qu'on voie le fond des pièces. Un
+- **La façade**, comme celle des immeubles de la ville (`immeuble_ville.png`,
+  `immeuble_ville` dans `scripts/carte/blocs.py`) : des étages de 40 px (`IMMEUBLE.dy`) en briques
+  ocre (celles de l'immeuble qu'il remplace) ; un soubassement gris au rez-de-chaussée, un
+  bandeau de pierre au plancher de chaque étage, une corniche sous le toit ; des pierres d'angle
+  à refends aux angles ; les fenêtres de la ville (linteau, cadre de bois, quatre carreaux,
+  appui), avec de l'espace au-dessus et au-dessous ; la porte double vitrée de l'entrée dans son
+  encadrement de pierre. Les cloisons sont des murs bas, pour qu'on voie le fond des pièces. Un
   toit de tuiles (`CarteKit.toit`, le même qu'à la ferme) couvre le dernier niveau.
 - **Monter, descendre** : marcher sur une marche de l'escalier fait changer de niveau. Le
-  personnage arrive sur le même escalier, au niveau d'à côté, dessiné remonté de 30 px par
+  personnage arrive sur le même escalier, au niveau d'à côté, dessiné remonté de 40 px par
   niveau, et ne marche que sur ce niveau (`marcheEtage`).
 - **Ce qu'on voit** (`stepImmeuble`) :
   - dehors : tous les niveaux l'un sur l'autre, et le toit ;
