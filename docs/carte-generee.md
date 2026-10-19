@@ -407,7 +407,12 @@ parties.
   tableaux, les bustes), des bureaux du centre-est (le cinéma : l'écran et ses fauteuils, la
   billetterie, la cabine de projection ; les écoles 2 et 3 : une classe par niveau) et des
   bureaux de la gare (le bureau de négoce : la salle des marchés, la salle de réunion) ; leurs
-  meubles : `scripts/ville/services.py`.
+  meubles : `scripts/ville/services.py`. Les fabriques prennent la place des usines, des
+  entrepôts et des bureaux de l'ouest (l'usine électronique, la fabrique de matériaux, la
+  fabrique textile, la minoterie, la fabrique de mayonnaise, l'usine informatique) et de la
+  longue maison (la menuiserie, tout en longueur) : l'atelier et ses machines au
+  rez-de-chaussée, les bureaux et la réserve à l'étage ; leurs machines :
+  `scripts/ville/fabriques.py`.
 - **L'immeuble ocre (plan « double »)** : au rez-de-chaussée, le hall occupe le milieu de la moitié de devant (4 × 7 cases) : une
   porte double sur la rue, une porte de chaque côté vers un logement, et au fond l'escalier qui
   monte. **À chaque étage**, le palier, de la même taille : le haut de l'escalier d'où l'on

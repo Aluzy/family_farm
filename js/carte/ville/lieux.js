@@ -17,7 +17,8 @@
  * loisirs : la mairie (l'accueil, la salle des mariages, les bureaux ; la salle du conseil et le
  * bureau du maire), le musée (deux salles d'exposition), le cinéma (la salle et ses fauteuils,
  * le hall et la billetterie ; la cabine de projection), les écoles (une classe par niveau), le
- * bureau de négoce (la salle des marchés ; la salle de réunion).
+ * bureau de négoce (la salle des marchés ; la salle de réunion). Une fabrique : l'atelier et ses
+ * machines au rez-de-chaussée, les bureaux et la réserve à l'étage.
  */
 (function (global) {
   'use strict';
@@ -208,6 +209,111 @@
             m('classeur', 4, 1), m('bureau_ordi', 6, 1, 2), m('chaise', 7, 2), m('coffre', 9, 1),
             m('chaise', 2, 5), m('table', 3, 5, 3), m('chaise', 6, 5, 1, 1, true), m('chaise', 2, 8), m('table', 3, 8, 3), m('chaise', 6, 8, 1, 1, true),
             m('etagere_livres', 8, 10, 2), m('plante', 1, 12),
+          ],
+        },
+      ],
+    },
+    // la minoterie (13 cases) : le silo à grain, deux moulins à cylindres, les sacs de farine,
+    // une palette, le chariot élévateur
+    minoterie: {
+      escalier: [11, 1], porte: 5, fenetres: { devant: [1, 2, 9, 10], derriere: [] },
+      niveaux: [
+        {
+          meubles: [
+            m('silo_grain', 1, 1, 2, 2), m('moulin', 4, 1, 2, 2), m('moulin', 7, 1, 2, 2),
+            m('sacs_farine', 1, 5, 2), m('sacs_farine', 3, 5, 2), m('sacs_farine', 8, 6, 2), m('palette', 1, 8, 2), m('chariot', 8, 9, 2),
+          ],
+        },
+        reserve(13),
+      ],
+    },
+    // la fabrique textile (11 cases) : deux métiers à tisser, les bobines, deux machines à
+    // coudre et leur table, les rouleaux de tissu
+    textile: {
+      escalier: [9, 1], porte: 4, fenetres: { devant: [1, 2, 7, 8], derriere: [] },
+      niveaux: [
+        {
+          meubles: [
+            m('metier_tisser', 1, 1, 2, 2), m('metier_tisser', 4, 1, 2, 2), m('bobines', 7, 1, 2),
+            m('machine_coudre', 1, 5), m('machine_coudre', 2, 5), m('table', 5, 5, 3), m('rouleaux_tissu', 1, 7, 2), m('rouleaux_tissu', 7, 7, 2),
+          ],
+        },
+        reserve(11),
+      ],
+    },
+    // la fabrique de mayonnaise (11 cases) : deux cuves de mélange, les caisses d'œufs, la chaîne
+    // de remplissage, les palettes de pots, le chariot
+    mayonnaise: {
+      escalier: [9, 1], porte: 4, fenetres: { devant: [1, 2, 7, 8], derriere: [] },
+      niveaux: [
+        {
+          meubles: [
+            m('cuve', 1, 1, 2, 2), m('cuve', 4, 1, 2, 2), m('caisse_oeufs', 7, 1), m('caisse_oeufs', 8, 1),
+            m('remplisseuse', 1, 4, 3), m('palette_pots', 5, 4, 2), m('palette_pots', 1, 7, 2), m('chariot', 7, 7, 2),
+          ],
+        },
+        reserve(11),
+      ],
+    },
+    // la fabrique de matériaux (13 cases) : la bétonnière, la presse à briques, les sacs de
+    // ciment, les palettes de briques, le chariot
+    materiaux: {
+      escalier: [11, 1], porte: 5, fenetres: { devant: [1, 2, 9, 10], derriere: [] },
+      niveaux: [
+        {
+          meubles: [
+            m('betonniere', 1, 1, 2, 2), m('presse_briques', 4, 1, 2, 2), m('sacs_ciment', 7, 1, 2),
+            m('palette_briques', 1, 5, 2), m('palette_briques', 3, 5, 2), m('palette_briques', 8, 5, 2), m('chariot', 9, 7, 2),
+          ],
+        },
+        reserve(13),
+      ],
+    },
+    // l'usine électronique (11 cases) : les armoires à composants, l'établi de soudure, deux
+    // chaînes de montage et leur bras robot, une palette, le chariot
+    electronique: {
+      escalier: [9, 1], porte: 4, fenetres: { devant: [1, 2, 7, 8], derriere: [3, 4, 6, 7] },
+      niveaux: [
+        {
+          meubles: [
+            m('armoire_composants', 1, 1), m('armoire_composants', 2, 1), m('etabli_soudure', 4, 1, 2),
+            m('chaine_montage', 1, 4, 3), m('chaine_montage', 4, 4, 3), m('robot_bras', 7, 4), m('palette', 1, 7, 2), m('chariot', 7, 7, 2),
+          ],
+        },
+        reserve(11),
+      ],
+    },
+    // l'usine informatique (14 cases) : les baies de serveurs, les étagères de cartons, la
+    // chaîne de montage et ses bras robots, les bancs de test, une palette, le chariot
+    usine_info: {
+      escalier: [12, 1], porte: 6, fenetres: { devant: [1, 2, 10, 11], derriere: [4, 5, 8, 9] },
+      niveaux: [
+        {
+          meubles: [
+            m('serveur', 1, 1), m('serveur', 2, 1), m('serveur', 3, 1), m('etagere_info', 5, 1, 2), m('etagere_info', 7, 1, 2),
+            m('chaine_montage', 1, 4, 3), m('chaine_montage', 4, 4, 3), m('robot_bras', 7, 4), m('chaine_montage', 8, 4, 3),
+            ...[1, 4, 7].flatMap((x) => [m('bureau_ordi', x, 7, 2), m('chaise', x + 1, 8)]),
+            m('palette', 1, 11, 2), m('chariot', 10, 11, 2),
+          ],
+        },
+        reserve(14),
+      ],
+    },
+    // la menuiserie (7 cases, tout en longueur) : les planches, les établis, la scie
+    // circulaire, les meubles finis ; à l'étage, le bureau et le stock de bois
+    menuiserie: {
+      escalier: [5, 1], porte: 2, fenetres: { devant: [1, 4], derriere: [2, 3] },
+      niveaux: [
+        {
+          meubles: [
+            m('planches', 1, 1, 3), m('etabli', 1, 4, 3), m('scie', 1, 7, 2), m('etabli', 1, 10, 3), m('planches', 1, 13, 3),
+            m('chaise', 1, 16), m('table', 2, 16, 3), m('armoire', 5, 10), m('armoire', 5, 13), m('palette', 1, 19, 2),
+          ],
+        },
+        {
+          meubles: [
+            m('planches', 1, 1, 3), m('bureau_ordi', 1, 4, 2), m('chaise', 2, 5), m('planches', 1, 8, 3), m('planches', 1, 11, 3),
+            m('etagere_info', 1, 14, 2), m('armoire', 5, 14), m('plante', 5, 19),
           ],
         },
       ],
