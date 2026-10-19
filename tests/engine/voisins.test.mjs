@@ -3,7 +3,7 @@
    Lancer seul : node --test tests/engine/voisins.test.mjs (ou node tests/run-tests.mjs voisins).
    ========================================================================== */
 
-import { arbresDebout, createNewGame, DATA, immeubleFoyer, immeubleFoyers, immeubleVue, livraison, logementsImmeuble, runNight, TRANSITION, transitionPlan, transitionSeed, treeGone, voisinAbat, voisinFoyer, voisinQuota, voisinsFoyers, voisinsVue } from '../../js/engine/index.js';
+import { arbresDebout, assigneEmplois, createNewGame, DATA, emploi, immeubleFoyer, immeubleFoyers, immeubleVue, livraison, logementsImmeuble, postesVille, runNight, TRANSITION, transitionPlan, transitionSeed, treeGone, voisinAbat, voisinFoyer, voisinQuota, voisinsFoyers, voisinsVue } from '../../js/engine/index.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const GRAINES = ['1', '2', '77', 'abc', 'b3', 'x9', '42', 'zz', 'ferme', '123456789'];
@@ -159,7 +159,7 @@ test('voisins : sous les yeux du joueur, le bûcheron abat un arbre de la carte 
   assert(vue.champ.every((p) => p.stade >= -1 && p.stade <= 3), 'les stades du champ à dessiner');
 });
 
-test('immeuble : chaque logement a sa famille de fromagers (un lit chacun)', () => {
+test('immeuble : chaque logement a sa famille de citadins (un lit chacun)', () => {
   const s = createNewGame(4242);
   const L = DATA.VOISINS.IMMEUBLE.LOGEMENTS;
   assertEqual(logementsImmeuble().length, Object.values(L).reduce((a, n) => a + n, 0));
@@ -168,12 +168,34 @@ test('immeuble : chaque logement a sa famille de fromagers (un lit chacun)', () 
   const m = immeubleFoyer(s, 'maison_1', { adultes: 2, enfants: 3 });
   assertEqual([m.adultes, m.enfants], [2, 3], 'une maison : deux adultes et trois enfants');
   const f = immeubleFoyer(s, 'logement_1', { adultes: 2, enfants: 5 });
-  assertEqual([f.metier, f.adultes, f.enfants, f.argent], ['fromager', 2, DATA.VOISINS.IMMEUBLE.LITS - 2, DATA.VOISINS.ARGENT]);
+  assertEqual([f.metier, f.adultes, f.enfants, f.argent], ['citadin', 2, DATA.VOISINS.IMMEUBLE.LITS - 2, DATA.VOISINS.ARGENT]);
   assert(immeubleFoyer(s, 'logement_1') === f, 'le même foyer ensuite');
   assertEqual(Object.keys(immeubleFoyers(s)), ['logement_1', 'maison_1']);
+  // une famille d'avant les emplois (toute à la fromagerie) devient citadine, son argent gardé
+  s.immeuble.foyers.logement_2 = { metier: 'fromager', adultes: 2, enfants: 1, argent: 77, stock: {}, champ: [], bonheur: 60, jour: s.day - 1, journal: [] };
+  assertEqual([immeubleFoyer(s, 'logement_2').metier, immeubleFoyer(s, 'logement_2').argent], ['citadin', 77]);
 });
 
-test('immeuble : chaque jour, les adultes touchent leur salaire de la fromagerie et la famille achète ses ingrédients au marché', () => {
+test('immeuble : chaque adulte a son poste, les 80 postes de la ville pour les 80 adultes', () => {
+  const s = createNewGame(4242);
+  const postes = postesVille();
+  assertEqual(postes.length, DATA.VOISINS.EMPLOIS.reduce((t, e) => t + e.POSTES, 0));
+  assertEqual(new Set(postes).size, DATA.VOISINS.EMPLOIS.length, 'chaque poste une fois par place');
+  assert(postes.every((k) => emploi(k)), 'des postes connus');
+  for (const l of logementsImmeuble()) immeubleFoyer(s, l, { adultes: 2, enfants: 1 });
+  assigneEmplois(s);
+  const F = immeubleFoyers(s), tous = Object.values(F).flatMap((f) => f.emplois);
+  assertEqual(tous.length, postes.length, 'un poste par adulte');
+  assertEqual(tous.slice().sort(), postes.slice().sort(), 'tous les postes pris, une fois');
+  // (les familles gardent leur poste ; un poste libéré revient au suivant)
+  const avant = F.logement_3.emplois.slice();
+  F.logement_1.emplois = [];
+  assigneEmplois(s);
+  assertEqual(F.logement_3.emplois, avant, 'les autres gardent le leur');
+  assertEqual(F.logement_1.emplois.length, 2);
+});
+
+test('immeuble : chaque jour, les adultes touchent le salaire de leur poste et la famille achète ses ingrédients au marché', () => {
   const s = createNewGame(4242);
   immeubleFoyer(s, 'logement_1', { adultes: 2, enfants: 1 });
   immeubleFoyer(s, 'logement_2', { adultes: 1, enfants: 0 });
@@ -182,12 +204,14 @@ test('immeuble : chaque jour, les adultes touchent leur salaire de la fromagerie
   for (const [nom, f] of Object.entries(immeubleFoyers(s))) {
     assertEqual(f.journal.length, DATA.VOISINS.JOURNAL, nom);
     for (const J of f.journal) {
-      assertEqual(J.salaire, DATA.VOISINS.FROMAGER.SALAIRE * f.adultes, `${nom} jour ${J.jour} : un salaire par adulte`);
+      assertEqual(J.salaire, f.emplois.reduce((t, k) => t + emploi(k).SALAIRE, 0), `${nom} jour ${J.jour} : le salaire de chaque adulte`);
+      assertEqual(f.emplois.length, f.adultes, `${nom} : un poste par adulte`);
       assert(J.achete > 0 && Object.keys(J.achats).length, `${nom} : des ingrédients achetés au marché`);
-      assert(J.plats.every((p) => DATA.VOISINS.RECETTES.fromager.includes(p)), `${nom} : des plats de fromager`);
+      assert(J.plats.every((p) => DATA.VOISINS.RECETTES.citadin.includes(p)), `${nom} : des plats de citadin`);
       assertEqual(J.vendu, 0, 'il ne vend rien');
     }
     assert(f.argent >= 0, `${nom} : jamais à découvert`);
   }
-  assertEqual(immeubleVue(s).logement_1.hier.salaire, DATA.VOISINS.FROMAGER.SALAIRE * 2);
+  const v = immeubleVue(s).logement_1;
+  assertEqual(v.hier.salaire, v.emplois.reduce((t, k) => t + emploi(k).SALAIRE, 0));
 });

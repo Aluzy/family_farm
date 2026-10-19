@@ -138,7 +138,7 @@ export function voisinAbat(state, maison, id) {
 
 const ajoute = (o, k, n) => { o[k] = (o[k] || 0) + n; };
 
-// Peut-il acheter `item` au marché ? (le bûcheron, le fromager : tout ce qui s'achète ;
+// Peut-il acheter `item` au marché ? (le bûcheron, le citadin : tout ce qui s'achète ;
 // l'agriculteur : ce qu'il ne produit pas, et ses graines)
 function peutAcheter(f, item, graine = false) {
   if (!isBuyable(item)) return false;
@@ -229,7 +229,7 @@ function plantsGardes(f) {
 // L'étape suivante de la maison du foyer `f` (VOISINS.MAISON.ETAPES ; null : tout est fait,
 // ou un logement de l'immeuble, déjà meublé).
 function prochaineEtape(f) {
-  if (f.metier === 'fromager') return null;
+  if (f.metier === 'citadin') return null;
   return DATA.VOISINS.MAISON.ETAPES[f.niveau || 0] || null;
 }
 
@@ -259,9 +259,9 @@ function journee(state, maison, f, jour) {
     }
     J.bois = f.stock.bois || 0;
     enCaisse(f, J, 'bois', f.stock.bois || 0);
-  } else if (f.metier === 'fromager') {
-    // chaque adulte fait sa journée à la fromagerie : son salaire
-    J.salaire = V.FROMAGER.SALAIRE * f.adultes;
+  } else if (f.metier === 'citadin') {
+    // chaque adulte fait sa journée à son poste : son salaire
+    J.salaire = salaireFoyer(f);
     f.argent += J.salaire;
   } else {
     // le champ : la récolte de ce qui est prêt, puis les semis (une graine achetée, ou un plant
@@ -366,11 +366,11 @@ export function livraison(state) {
 
 // docs/carte-generee.md (les familles des immeubles). Chaque logement des immeubles d'habitation
 // en blocs de la ville (VOISINS.IMMEUBLE.LOGEMENTS : « logement_1 »…, « residence_verre_1 »…) a
-// son foyer, comme une maison de la
-// transition : state.immeuble = { foyers: { <logement>: foyer } }. Ses adultes travaillent à la
-// fromagerie de la ville (VOISINS.FROMAGER.HORAIRES) ; chacun y gagne VOISINS.FROMAGER.SALAIRE
-// pièces par jour, que la famille dépense au marché pour acheter les ingrédients de ses repas
-// (VOISINS.RECETTES.fromager), avec les mêmes règles que les voisins (journee).
+// son foyer, comme une maison de la transition : state.immeuble = { foyers: { <logement>: foyer } }.
+// Ce sont des citadins : chaque adulte a son poste (VOISINS.EMPLOIS : f.emplois, « métier:lieu »,
+// assigneEmplois) et y gagne son salaire chaque jour, que la famille dépense au marché pour
+// acheter les ingrédients de ses repas (VOISINS.RECETTES.citadin), avec les mêmes règles que les
+// voisins (journee).
 
 function immeuble(state) {
   if (!state.immeuble || typeof state.immeuble !== 'object') state.immeuble = { foyers: {} };
@@ -390,8 +390,11 @@ export function immeubleFoyer(state, logement, compo) {
   if (!logementsImmeuble().includes(logement)) return null;
   const I = immeuble(state), lits = DATA.VOISINS.IMMEUBLE.LITS;
   let f = I.foyers[logement];
-  if (!f || f.metier !== 'fromager') {
-    f = { metier: 'fromager', adultes: 2, enfants: 1, argent: DATA.VOISINS.ARGENT, stock: {}, champ: [], bonheur: DATA.VILLE.BONHEUR.DEPART, jour: state.day - 1, journal: [] };
+  // (les familles d'avant les emplois travaillaient toutes à la fromagerie : elles gardent leur
+  // argent et leur journal, et recevront leur poste)
+  if (f && f.metier === 'fromager') f.metier = 'citadin';
+  if (!f || f.metier !== 'citadin') {
+    f = { metier: 'citadin', adultes: 2, enfants: 1, argent: DATA.VOISINS.ARGENT, stock: {}, champ: [], bonheur: DATA.VILLE.BONHEUR.DEPART, jour: state.day - 1, journal: [], emplois: [] };
     I.foyers[logement] = f;
   }
   if (compo) {
@@ -408,8 +411,50 @@ export function immeubleFoyers(state) {
   return out;
 }
 
+// Les postes de la ville : [« métier:lieu », …], un par poste (VOISINS.EMPLOIS), mêlés dans un
+// ordre fixe (les familles voisines n'ont pas toutes le même métier).
+export function postesVille() {
+  const out = [];
+  for (const e of DATA.VOISINS.EMPLOIS) for (let k = 0; k < e.POSTES; k++) out.push(`${e.METIER}:${e.LIEU}`);
+  // (un mélange fixe : le pas premier avec le nombre de postes parcourt toute la liste)
+  const n = out.length, pas = [37, 31, 29, 23, 19].find((p) => n % p) || 1;
+  return out.map((_, i) => out[(i * pas) % n]);
+}
+
+// Le poste « métier:lieu » : { METIER, LIEU, HORAIRES, SALAIRE } (undefined : pas de tel poste).
+export function emploi(cle) {
+  const [m, l] = String(cle || '').split(':');
+  return DATA.VOISINS.EMPLOIS.find((e) => e.METIER === m && e.LIEU === l);
+}
+
+// Ce que les adultes du foyer `f` gagnent par jour : la somme des salaires de leurs postes.
+function salaireFoyer(f) {
+  return (f.emplois || []).slice(0, f.adultes).reduce((t, k) => t + ((emploi(k) || {}).SALAIRE || 0), 0);
+}
+
+// Chaque adulte des foyers des immeubles a son poste : ceux qui en ont un le gardent ; les
+// autres prennent, dans l'ordre des logements, les postes libres (postesVille). Plus d'adultes
+// que de postes : les derniers n'en ont pas (pas de salaire).
+export function assigneEmplois(state) {
+  const foyers = immeubleFoyers(state), pris = {}, tous = postesVille(), postes = {};
+  for (const k of tous) postes[k] = (postes[k] || 0) + 1;
+  const garde = (k) => { if (emploi(k) && (pris[k] || 0) < postes[k]) { pris[k] = (pris[k] || 0) + 1; return true; } return false; };
+  for (const f of Object.values(foyers)) f.emplois = (f.emplois || []).slice(0, f.adultes).filter(garde);
+  for (const l of logementsImmeuble()) {
+    const f = foyers[l];
+    if (!f) continue;
+    while (f.emplois.length < f.adultes) {
+      const k = tous.find((q) => (pris[q] || 0) < postes[q]);
+      if (!k) break;
+      pris[k] = (pris[k] || 0) + 1;
+      f.emplois.push(k);
+    }
+  }
+}
+
 // La nuit : chaque foyer des immeubles vit les journées qui lui manquent (comme voisinsNuit).
 export function immeubleNuit(state) {
+  assigneEmplois(state);
   for (const [logement, f] of Object.entries(immeubleFoyers(state))) {
     if (!(Number(f.jour) < state.day)) continue;
     let jour = Math.max(Number(f.jour) + 1, state.day - DATA.VOISINS.RATTRAPAGE + 1);
@@ -418,11 +463,11 @@ export function immeubleNuit(state) {
 }
 
 // Ce que la carte montre et raconte de chaque foyer des immeubles : { <logement>: { metier,
-// adultes, enfants, argent, bonheur, hier } }.
+// emplois (le poste de chaque adulte), adultes, enfants, argent, bonheur, hier } }.
 export function immeubleVue(state) {
   const out = {};
   for (const [logement, f] of Object.entries(immeubleFoyers(state))) {
-    out[logement] = { metier: f.metier, adultes: f.adultes, enfants: f.enfants, argent: f.argent, bonheur: f.bonheur, hier: f.journal.length ? f.journal[f.journal.length - 1] : null };
+    out[logement] = { metier: f.metier, emplois: (f.emplois || []).slice(), adultes: f.adultes, enfants: f.enfants, argent: f.argent, bonheur: f.bonheur, hier: f.journal.length ? f.journal[f.journal.length - 1] : null };
   }
   return out;
 }

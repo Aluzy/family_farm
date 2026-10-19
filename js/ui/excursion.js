@@ -18,7 +18,7 @@ import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
 import { farmSeed } from '../engine/terrain.js';
 import { LIVREUR, ramasserTransition, ressourcesDuJour, transitionPlan, transitionPris, transitionSeed } from '../engine/transition.js';
-import { immeubleFoyer, immeubleVue, livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
+import { assigneEmplois, immeubleFoyer, immeubleVue, livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -260,16 +260,19 @@ window.FermeHote = {
     return { foyers: voisinsVue(state), noms, cultures };
   },
   // les familles des immeubles de la ville (js/engine/voisins.js) : la page dit leurs familles
-  // ([{ logement, adultes, enfants }]) ; renvoie ce que la carte en montre (immeubleVue), les
-  // horaires de la fromagerie, le salaire, et le nom des plats et des ingrédients
+  // ([{ logement, adultes, enfants }]) et chaque adulte reçoit son poste (assigneEmplois) ;
+  // renvoie ce que la carte en montre (immeubleVue), les postes de la ville (VOISINS.EMPLOIS,
+  // METIERS, LIEUX), et le nom des plats et des ingrédients
   immeuble: (familles) => {
     for (const f of familles || []) immeubleFoyer(state, f.logement, f);
+    assigneEmplois(state);
     persistState();
     const noms = {};
     const nom = (id) => { const o = DATA.OBJETS[id]; if (o) noms[id] = `${o.icone} ${o.nom.toLowerCase()}`; };
-    DATA.VOISINS.RECETTES.fromager.forEach(nom);
+    DATA.VOISINS.RECETTES.citadin.forEach(nom);
     for (const f of Object.values(immeubleVue(state))) if (f.hier) Object.keys(f.hier.achats || {}).forEach(nom);
-    return { foyers: immeubleVue(state), noms, horaires: DATA.VOISINS.FROMAGER.HORAIRES, salaire: DATA.VOISINS.FROMAGER.SALAIRE };
+    const V = DATA.VOISINS;
+    return { foyers: immeubleVue(state), noms, emplois: V.EMPLOIS, metiers: V.METIERS, lieux: V.LIEUX };
   },
   // le livreur arrive au marché : la caisse de chaque famille vendue, son prix crédité
   // ({ total, foyers: { <maison>: gain } })

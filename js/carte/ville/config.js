@@ -361,15 +361,21 @@
       'remplisseuse', 'palette_pots', 'caisse_oeufs', 'betonniere', 'presse_briques', 'palette_briques', 'sacs_ciment', 'chaine_montage',
       'etabli_soudure', 'armoire_composants', 'robot_bras', 'serveur', 'etabli', 'scie', 'planches', 'armoire', 'palette', 'chariot'],
     // Les familles des logements (js/carte/ville/habitants.js) : `lits` lits dans un logement
-    // d'immeuble (une maison : deux adultes et ses enfants, un lit chacun) ; les adultes
-    // travaillent à `travail` (sans partie : `horaires`, `salaire` ; sinon ceux du moteur,
-    // VOISINS.FROMAGER) ; tous dorment de `sommeil[0]` h à `sommeil[1]` h. Dehors, ils marchent
-    // à `vitesse` px/s ; ils partent au travail le temps du trajet avant l'embauche (une heure du
-    // jeu : `sParHeure` s), plus `marge` h. Au marché, ils restent `achat` s devant un étal ; le
-    // dîner cuit `cuisson` s. (Le pied des lits et la place devant le four : le plan du niveau.)
+    // d'immeuble (une maison : deux adultes et ses enfants, un lit chacun) ; chaque adulte a le
+    // poste que lui donne le moteur (VOISINS.EMPLOIS ; sans partie : ouvrier à `travail`, de
+    // `horaires[0]` h à `horaires[1]` h, pour `salaire`) ; ceux qui travaillent hors de la ville
+    // vont à la gare (`horsVille` : le bâtiment où ils vont, par lieu) ; un lieu qui n'est pas un
+    // bâtiment : sa case (`points`). Tous dorment de `sommeil[0]` h à `sommeil[1]` h (plus tôt
+    // levés, plus tard couchés selon leurs horaires). Dehors, ils marchent à `vitesse` px/s ; ils
+    // partent au travail le temps du trajet avant l'embauche (une heure du jeu : `sParHeure` s),
+    // plus `marge` h. Après leur dernier service, s'il est moins de `marche` h, ils passent au
+    // marché : ils restent `achat` s devant un étal ; le dîner cuit `cuisson` s. Les enfants vont
+    // aux `ecoles` (l'école de la carte, puis les lieux). (Le pied des lits et la place devant le
+    // four : le plan du niveau.)
     vie: {
-      lits: 3, travail: 'fromagerie', horaires: [8, 17], salaire: 16, sommeil: [22, 6], vitesse: 40, sParHeure: 30, marge: 0.25,
-      achat: 4, cuisson: 16, humeur: [70, 40],
+      lits: 3, travail: 'fromagerie', horaires: [8, 17], salaire: 26, sommeil: [22, 6], vitesse: 40, sParHeure: 30, marge: 0.25,
+      horsVille: { logistique: 'gare', scierie: 'gare', chaudronnerie: 'gare' }, points: { amphitheatre: [140, 184] },
+      ecoles: ['ecole', 'ecole_2', 'ecole_3'], marche: 20, achat: 4, cuisson: 16, humeur: [70, 40],
     },
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)
