@@ -63,8 +63,7 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
 
 1. Le plan (ce document).
 2. Les 17 maisons visitables et leurs familles (fait : plan « maison », `js/carte/ville/
-   immeuble.js`). En attendant l'étape 5, leurs adultes travaillent à la fromagerie, comme
-   ceux des immeubles.
+   immeuble.js`).
 3. Les immeubles (fait) : la tour de la gare devient un immeuble de 8 studios (des couples sans
    enfant, `enfants: 0`) ; les 15 logements des trois autres immeubles sont les T2 (un
    enfant). La ville a ainsi ses 40 foyers et ses 135 habitants.
@@ -77,5 +76,10 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
    - lot 3, les fabriques (fait ; leurs machines : `scripts/ville/fabriques.py`) : minoterie,
      fabriques textile, de mayonnaise et de matériaux, usines électronique et informatique,
      menuiserie.
-5. Les emplois et l'économie (`data/economie.json`, `js/engine/economie.js`) : recettes,
-   stocks, flux, camions, salaires, sorties et bonheur.
+5. Les emplois et l'économie, en trois parties :
+   - 5a, les emplois (fait) : la grille des postes (`VOISINS.EMPLOIS`, `data/ville.json` : le
+     métier, le lieu, les horaires en un ou deux services, le salaire), un poste pour chacun des
+     80 adultes (`assigneEmplois`, `js/engine/voisins.js`), leur journée sur la carte
+     (`js/carte/ville/habitants.js`), les enfants répartis dans les trois écoles ;
+   - 5b, les achats du joueur dans les commerces ;
+   - 5c, l'économie complète du modèle : recettes, stocks, flux, camions, sorties et bonheur.

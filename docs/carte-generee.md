@@ -453,20 +453,29 @@ maison (17 familles) a sa famille : deux adultes et un enfant (dans un studio, a
 maison, deux ou trois), tirés comme les voisins de la transition (`V.voisins`, gardés en
 `localStorage`, un lit chacun). Le moteur (`js/engine/voisins.js` : `immeubleFoyer`,
 `immeubleNuit`, `immeubleVue` ; `state.immeuble.foyers`, par logement : `logement_1`… pour
-l'immeuble ocre, `residence_verre_1`…, `residence_ocre_1`… : `VOISINS.IMMEUBLE.LOGEMENTS`) leur donne le métier `fromager` : chaque
-nuit, chaque adulte touche son salaire de la fromagerie (`VOISINS.FROMAGER.SALAIRE`, 16 pièces), et
-la famille achète au marché les ingrédients de ses repas (`VOISINS.RECETTES.fromager`), avec les
+l'immeuble ocre, `residence_verre_1`…, `residence_ocre_1`… : `VOISINS.IMMEUBLE.LOGEMENTS`) en
+fait des citadins : chaque adulte a son poste (`VOISINS.EMPLOIS`, `data/ville.json` : 80 postes
+pour les 80 adultes, docs/plan-ville.md ; `assigneEmplois` les donne dans l'ordre des
+logements, et chacun garde le sien), et chaque nuit, il touche le salaire de son poste ; la
+famille achète au marché les ingrédients de ses repas (`VOISINS.RECETTES.citadin`), avec les
 mêmes règles que les voisins (besoin, plats, bonheur). Le journal garde ce qu'elle a acheté
 (`achats`).
 
-Sur la carte (`js/carte/ville/habitants.js`), les adultes partent le matin à pied pour être à la
-fromagerie à 8 h (`VOISINS.FROMAGER.HORAIRES`) : ils descendent l'escalier, sortent par la porte
-de leur immeuble, entrent dans la fromagerie et n'en ressortent qu'à 17 h. Ils passent alors par un
-étal du marché, rentrent le panier plein, et le premier arrivé cuisine devant le four. Les
-enfants vont à l'école comme ceux de la ferme (les jours `HorlogeSortie.JOURS_ECOLE`, de
-`CarteKit.ECOLE.debut` h, 8 h 45, à `fin` h, 16 h 45) : ils y vont à pied, entrent par la porte de l'école
-(le bout du chemin des enfants qui descendent du bus), et rentrent à pied ; le reste du temps,
-ils sont au logement.
+Sur la carte (`js/carte/ville/habitants.js`), chaque adulte part à pied avant chacun de ses
+services (un ou deux par jour : les horaires de son métier), le temps du trajet avant le début :
+il descend l'escalier, sort, et va à son lieu. Dans un lieu bâti en blocs, il entre et se tient
+à sa place (au rez-de-chaussée, réparties dans la pièce) ; ailleurs (la fromagerie, la
+conserverie, la confiturerie, l'école de la carte, l'amphithéâtre ; la gare pour les chauffeurs,
+les scieurs et les chaudronniers, qui travaillent hors de la ville), il entre et n'est plus sur
+la carte. Entre deux services, il rentre chez lui ; après le dernier, avant 20 h, il passe par
+un étal du marché, rentre le panier plein, et le premier arrivé cuisine devant le four. Ceux qui
+commencent tôt se lèvent plus tôt, ceux qui finissent tard se couchent plus tard. Les enfants
+vont à l'école comme ceux de la ferme (les jours `HorlogeSortie.JOURS_ECOLE`, de
+`CarteKit.ECOLE.debut` h, 8 h 45, à `fin` h, 16 h 45), chacun à l'une des trois écoles (la plus
+proche qui a de la place : `repartitEcoles`) : ils y vont à pied ; à l'école de la carte, ils
+entrent par sa porte (le bout du chemin des enfants qui descendent du bus) ; aux écoles 2 et 3,
+ils prennent place derrière un pupitre. Ils rentrent à pied ; le reste du temps, ils sont au
+logement.
 
 ### L'horaire de l'école
 
