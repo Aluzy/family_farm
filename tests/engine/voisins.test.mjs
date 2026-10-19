@@ -163,12 +163,14 @@ test('immeuble : chaque logement a sa famille de fromagers (un lit chacun)', () 
   const s = createNewGame(4242);
   const L = DATA.VOISINS.IMMEUBLE.LOGEMENTS;
   assertEqual(logementsImmeuble().length, Object.values(L).reduce((a, n) => a + n, 0));
-  assert(logementsImmeuble().includes('logement_6') && logementsImmeuble().includes(`residence_ocre_${L.residence_ocre}`), 'les logements de chaque immeuble');
+  assert(logementsImmeuble().includes('logement_6') && logementsImmeuble().includes(`residence_ocre_${L.residence_ocre}`) && logementsImmeuble().includes(`maison_${L.maison}`), 'les logements de chaque immeuble et les maisons');
   assertEqual(immeubleFoyer(s, 'logement_99'), null);
+  const m = immeubleFoyer(s, 'maison_1', { adultes: 2, enfants: 3 });
+  assertEqual([m.adultes, m.enfants], [2, 3], 'une maison : deux adultes et trois enfants');
   const f = immeubleFoyer(s, 'logement_1', { adultes: 2, enfants: 5 });
   assertEqual([f.metier, f.adultes, f.enfants, f.argent], ['fromager', 2, DATA.VOISINS.IMMEUBLE.LITS - 2, DATA.VOISINS.ARGENT]);
   assert(immeubleFoyer(s, 'logement_1') === f, 'le même foyer ensuite');
-  assertEqual(Object.keys(immeubleFoyers(s)), ['logement_1']);
+  assertEqual(Object.keys(immeubleFoyers(s)), ['logement_1', 'maison_1']);
 });
 
 test('immeuble : chaque jour, les adultes touchent leur salaire de la fromagerie et la famille achète ses ingrédients au marché', () => {

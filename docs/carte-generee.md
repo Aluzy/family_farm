@@ -383,6 +383,14 @@ parties.
   emprise ; `makeImmeuble` pose à leur place des immeubles bâtis avec les blocs de la ferme :
   l'immeuble ocre (22 × 14 cases, 3 niveaux, plan « double »), la résidence de verre (10 × 14
   cases, 4 niveaux) et la résidence ocre (10 × 14 cases, 5 niveaux), au plan « simple ».
+- **Les maisons de ville (plan « maison »)** : les rangées de maisons du centre (`maisons_a*`,
+  `maisons_b*`, `IMMEUBLE.retire`) deviennent 17 maisons (`RANGEES` dans la config : 4 + 4 + 3 à
+  l'ouest de la rue, 2 + 2 + 2 à l'est), de 8 à 12 cases de large sur 10 de profondeur, deux
+  niveaux, en briques rouges, orange, ocre ou bleues (`immeuble_ville_<brique>.png`). Au
+  rez-de-chaussée, derrière, la pièce de vie (la cuisine, le four, la table) ; devant, le salon
+  et l'entrée (la porte sur la rue, l'escalier). À l'étage, la chambre des parents, celle des
+  enfants (un lit chacun : 2 dans un T3, 3 dans un T4) et le palier. Chacune loge une famille :
+  deux adultes et ses `enfants` (docs/plan-ville.md).
 - **L'immeuble ocre (plan « double »)** : au rez-de-chaussée, le hall occupe le milieu de la moitié de devant (4 × 7 cases) : une
   porte double sur la rue, une porte de chaque côté vers un logement, et au fond l'escalier qui
   monte. **À chaque étage**, le palier, de la même taille : le haut de l'escalier d'où l'on
@@ -418,8 +426,8 @@ parties.
 ### Les familles des immeubles
 
 Chaque logement des immeubles (deux par niveau dans l'immeuble ocre, un par niveau dans les
-résidences : 15 familles) a sa famille :
-deux adultes et un enfant, tirés comme les voisins de la transition (`V.voisins`, gardés en
+résidences : 15 familles) et chaque maison (17 familles) a sa famille : deux adultes et un
+enfant (dans une maison, deux ou trois), tirés comme les voisins de la transition (`V.voisins`, gardés en
 `localStorage`, un lit chacun). Le moteur (`js/engine/voisins.js` : `immeubleFoyer`,
 `immeubleNuit`, `immeubleVue` ; `state.immeuble.foyers`, par logement : `logement_1`… pour
 l'immeuble ocre, `residence_verre_1`…, `residence_ocre_1`… : `VOISINS.IMMEUBLE.LOGEMENTS`) leur donne le métier `fromager` : chaque

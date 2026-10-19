@@ -273,7 +273,10 @@
   // au-dessus du précédent. `plan` : la sorte de ses niveaux (V.planImmeuble : « double », deux
   // logements de part et d'autre du hall ; « simple », un logement, le hall et l'escalier sur le
   // côté) ; `facade` : la matière de ses murs du tour (une des `facades`) ; `logement` : le nom
-  // de ses logements dans le moteur (« logement_1 »… : VOISINS.IMMEUBLE.LOGEMENTS, data/ville.json).
+  // de ses logements dans le moteur (« logement_1 »… : VOISINS.IMMEUBLE.LOGEMENTS, data/ville.json ;
+  // `seul` : un seul logement, à ce nom). Les maisons de ville (`MAISONS`, plan « maison ») : deux
+  // niveaux, une famille et ses `enfants` ; elles remplacent les rangées de maisons dont le nom
+  // commence par l'un des `retire` (leurs tuiles : le rectangle `efface` de chaque maison).
   // Dans un immeuble, le niveau du dessous est à `transparent` ; à l'étage, un voile sombre
   // (`voile`, `alpha`) couvre la ville. Les murs du tour : `facades` (immeuble_ville*.png,
   // scripts/carte/blocs.py immeuble_ville : des étages de `dy` px comme ceux des immeubles de la
@@ -282,21 +285,45 @@
   // la porte double à `porte`) ;
   // `escalier`, `haut` : l'escalier et son haut dans blocs.png ; `porteVerticale` : la porte d'un
   // mur vertical. `meubles` : les grands meubles (assets/meuble_<nom>.png).
+  // Les maisons de ville (docs/plan-ville.md) : par rangée, sa première colonne, ses tuiles
+  // (de la ligne `haut` à la base), la ligne du haut de ses maisons ; puis chaque maison : sa
+  // largeur, ses enfants (2 : un T3 ; 3 : un T4), sa brique.
+  const RANGEES = [
+    { x: 46, haut: 16, base: 33, y: 23, maisons: [[8, 2, 'rouge'], [9, 2, 'orange'], [8, 2, 'ocre'], [9, 2, 'bleu']] },
+    { x: 46, haut: 35, base: 52, y: 42, maisons: [[8, 2, 'orange'], [9, 2, 'ocre'], [8, 2, 'bleu'], [9, 2, 'rouge']] },
+    { x: 46, haut: 53, base: 70, y: 60, maisons: [[11, 3, 'ocre'], [12, 3, 'rouge'], [11, 3, 'orange']] },
+    { x: 90, haut: 16, base: 33, y: 23, maisons: [[9, 2, 'bleu'], [9, 2, 'orange']] },
+    { x: 90, haut: 35, base: 52, y: 42, maisons: [[9, 2, 'rouge'], [9, 3, 'ocre']] },
+    { x: 90, haut: 53, base: 70, y: 60, maisons: [[9, 3, 'orange'], [9, 3, 'bleu']] },
+  ];
+  const MAISONS = [];
+  for (const R of RANGEES) {
+    let x = R.x;
+    for (const [w, enfants, facade] of R.maisons) {
+      const nom = 'maison_' + (MAISONS.length + 1);
+      MAISONS.push({ nom, efface: [x, R.haut, w, R.base - R.haut], x, y: R.y, w, h: R.base - R.y, niveaux: 2, plan: 'maison', facade, logement: nom, seul: true, enfants });
+      x += w;
+    }
+  }
   const IMMEUBLE = {
-    carte: 'ville', dy: 40, transparent: 0.3, voile: 0x0d1018, alpha: 0.62,
+    carte: 'ville', dy: 40, transparent: 0.3, voile: 0x0d1018, alpha: 0.62, retire: ['maisons_a', 'maisons_b'],
     batiments: [
       { nom: 'immeuble_ocre', efface: [146, 36, 22, 16], x: 146, y: 40, w: 22, h: 14, niveaux: 3, plan: 'double', facade: 'ocre', logement: 'logement' },
       { nom: 'residence_verre', efface: [1, 117, 10, 21], x: 1, y: 126, w: 10, h: 14, niveaux: 4, plan: 'simple', facade: 'bleu', logement: 'residence_verre' },
       { nom: 'residence_ocre', efface: [1, 140, 10, 26], x: 1, y: 154, w: 10, h: 14, niveaux: 5, plan: 'simple', facade: 'ocre', logement: 'residence_ocre' },
+      ...MAISONS,
     ],
     facades: {
       ocre: { key: 'immeuble_ville', file: 'assets/immeuble_ville.png' },
       bleu: { key: 'immeuble_ville_bleu', file: 'assets/immeuble_ville_bleu.png' },
+      rouge: { key: 'immeuble_ville_rouge', file: 'assets/immeuble_ville_rouge.png' },
+      orange: { key: 'immeuble_ville_orange', file: 'assets/immeuble_ville_orange.png' },
     },
     facade: { w: 16, h: 50, etages: 32, fenetre: 16, porte: 96 },
     escalier: 69, haut: 70, porteVerticale: 30, mursAlpha: 0.4, toitZ: 0.5,
     meubles: ['lit_adulte', 'lit_enfant', 'chevet', 'cuisine', 'four', 'table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_2'],
-    // Les familles des logements (js/carte/ville/habitants.js) : `lits` lits chacun ; les adultes
+    // Les familles des logements (js/carte/ville/habitants.js) : `lits` lits dans un logement
+    // d'immeuble (une maison : deux adultes et ses enfants, un lit chacun) ; les adultes
     // travaillent à `travail` (sans partie : `horaires`, `salaire` ; sinon ceux du moteur,
     // VOISINS.FROMAGER) ; tous dorment de `sommeil[0]` h à `sommeil[1]` h. Dehors, ils marchent
     // à `vitesse` px/s ; ils partent au travail le temps du trajet avant l'embauche (une heure du

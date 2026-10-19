@@ -62,7 +62,9 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
 ## Les étapes
 
 1. Le plan (ce document).
-2. Les 17 maisons visitables et leurs familles.
+2. Les 17 maisons visitables et leurs familles (fait : plan « maison », `js/carte/ville/
+   immeuble.js`). En attendant l'étape 5, leurs adultes travaillent à la fromagerie, comme
+   ceux des immeubles.
 3. Les immeubles : la tour de la gare, et la répartition en studios et T2.
 4. Les lieux, par lots de 3 à 5, avec leurs décors.
 5. Les emplois et l'économie (`data/economie.json`, `js/engine/economie.js`) : recettes,

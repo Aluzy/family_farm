@@ -545,12 +545,14 @@ def murs_hauts():
 # Dans la planche : pour chaque sorte d'étage (rez-de-chaussée, étage, dernier), les 16 murs
 # (+ masque) puis les 16 murs à fenêtre ; puis les deux moitiés de la porte (96, 97). Une planche
 # par matière des immeubles de la ville (FACADES : immeuble_ville.png en briques ocre,
-# immeuble_ville_bleu.png en briques bleues, comme la résidence de verre).
+# immeuble_ville_bleu.png en briques bleues, comme la résidence de verre ; rouges et orange pour
+# les maisons de ville).
 ETAGE_IMMEUBLE = 40
 SORTES_ETAGE = ('rez', 'etage', 'dernier')
 PIERRE_VILLE = ((208, 190, 152), (172, 154, 122), (226, 212, 180))   # immeubles.py PIERRE
 K_VILLE = (40, 31, 31)
-FACADES = [('immeuble_ville', 'brique_ocre'), ('immeuble_ville_bleu', 'brique_bleue')]
+FACADES = [('immeuble_ville', 'brique_ocre'), ('immeuble_ville_bleu', 'brique_bleue'), ('immeuble_ville_rouge', 'brique_rouge'),
+           ('immeuble_ville_orange', 'brique_orange')]
 
 
 def facade_immeuble(m, sorte, fenetre_=False, matiere='brique_ocre'):
