@@ -103,9 +103,11 @@
   // Le bus de l'école (assets/ville_bus.png et .json, scripts/ville/bus.py : huit directions)
   // et les enfants de la famille (leurs planches d'enfant, assets/personnages/enfant_NN.png),
   // les jours d'école (lundi, mardi, jeudi, vendredi : HorlogeSortie). Sur
-  // chaque carte, le matin et le soir, une scène : les heures (du jeu) où elle commence et
-  // après lesquelles elle ne commence plus, le trajet du bus et son arrêt (couche « bus »), le
-  // chemin des enfants, et s'ils montent dans le bus ou en descendent.
+  // chaque carte, le matin et le soir, une scène : l'heure où le bus est à l'arrêt (`horaire` :
+  // son nom dans CarteKit.horaireEcole, compté à rebours depuis le début de l'école, ou à partir
+  // de sa fin ; la scène commence le temps qu'il faut au bus et aux enfants pour y être), le
+  // trajet du bus et son arrêt (couche « bus »), le chemin des enfants, et s'ils montent dans le
+  // bus ou en descendent.
   const BUS = {
     key: 'bus', file: 'assets/ville_bus.png', meta: 'assets/ville_bus.json', half: 46, carHalf: 29,
     speed: 70,             // px au sol par seconde (plus vite que les voitures : la ville est grande)
@@ -114,12 +116,12 @@
     resume: 1.2,           // s : le temps que les enfants s'éloignent (ou montent) avant de repartir
     scenes: {
       transition: [
-        { nom: 'matin', debut: 7.2, fin: 8.4, bus: 'bus_matin', arret: 'arret', enfants: 'enfants_matin', monter: true },
-        { nom: 'soir', debut: 16.1, fin: 16.8, bus: 'bus_soir', arret: 'arret', enfants: 'enfants_soir', monter: false },
+        { nom: 'matin', horaire: 'transitionMatin', bus: 'bus_matin', arret: 'arret', enfants: 'enfants_matin', monter: true },
+        { nom: 'soir', horaire: 'transitionSoir', bus: 'bus_soir', arret: 'arret', enfants: 'enfants_soir', monter: false },
       ],
       ville: [
-        { nom: 'matin', debut: 7.2, fin: 8.6, bus: 'bus_matin', arret: 'arret_matin', enfants: 'enfants_matin', monter: false },
-        { nom: 'soir', debut: 15.6, fin: 16.4, bus: 'bus_soir', arret: 'arret_soir', enfants: 'enfants_soir', monter: true },
+        { nom: 'matin', horaire: 'villeMatin', bus: 'bus_matin', arret: 'arret_matin', enfants: 'enfants_matin', monter: false },
+        { nom: 'soir', horaire: 'villeSoir', bus: 'bus_soir', arret: 'arret_soir', enfants: 'enfants_soir', monter: true },
       ],
     },
   };
@@ -295,15 +297,15 @@
   // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h, au lit de
   // `sommeil[0]` h à `sommeil[1]` h (chacun le sien : la maison en a un par membre) ; rentrés,
   // ils restent `pause` s à la maison (au hasard entre les deux) avant de ressortir. Les enfants
-  // sont à l'école de `ecole[0]` h à `ecole[1]` h les jours d'école, comme ceux de la ferme
-  // (js/famille-ferme.js, HORAIRE). Les parents font leur métier (js/carte/ville/metiers.js) :
+  // vont à l'école comme ceux de la ferme (CarteKit.ECOLE : chacun part le temps qu'il lui faut
+  // pour arriver au bus à l'heure). Les parents font leur métier (js/carte/ville/metiers.js) :
   // le bûcheron abat un arbre en `coups` coups de hache de `coup` s chacun, puis rapporte le bois
   // chez lui ; l'agriculteur travaille `parcelles` parcelles de son champ, `travail` s chacune
   // (au hasard entre les deux) ; le second parent va au marché de la ville entre `marche[0]` h et
   // `marche[1]` h (il y reste `enVille` s) ; l'un d'eux cuisine à partir de `cuisine` h, `cuisson` s
   // devant le four ou la cuisinière (une volute de vapeur toutes les `vapeur` s).
   const TRANSITION_VIE = {
-    jour: [7, 19], pause: [10, 25], ecole: [7, 16.5], sommeil: [22, 6],
+    jour: [7, 19], pause: [10, 25], sommeil: [22, 6],
     coups: 3, coup: 0.55, parcelles: 3, travail: [3, 5], marche: [11, 14], enVille: 18, cuisine: 17.5, cuisson: 16, vapeur: 0.45,
     humeur: [70, 40],         // le bonheur : 😊 au-dessus de humeur[0], 🙂 au-dessus de humeur[1], 😟 en dessous
     // le champ d'un agriculteur : la terre labourée (16 bordures selon les coins, comme à la

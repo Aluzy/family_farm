@@ -19,9 +19,10 @@
  * dorment, chacun dans son lit (la maison en a un par membre : le plan, js/engine/transition.js).
  *
  * Les enfants vont à l'école comme ceux de la ferme (js/famille-ferme.js) : les jours d'école
- * (HorlogeSortie.JOURS_ECOLE), de TRANSITION_VIE.ecole[0] h à ecole[1] h. Le matin, ils vont à
- * pied jusqu'à l'abri de bus, où le bus de l'école (js/carte/ville/ecole.js) les attend ; le
- * soir, ils en descendent et rentrent à pied chez eux. Entre les deux, ils ne sont pas sur la
+ * (HorlogeSortie.JOURS_ECOLE), elle commence à CarteKit.ECOLE.debut h. Le matin, chacun part de
+ * chez lui le temps qu'il lui faut pour être à l'abri de bus quand le bus de l'école
+ * (js/carte/ville/ecole.js, CarteKit.horaireEcole) y passe (la longueur de son chemin, à sa
+ * vitesse : departEcoleVoisin) ; le soir, ils en descendent et rentrent à pied chez eux. Entre les deux, ils ne sont pas sur la
  * carte ; si le bus est déjà passé (ou sans animations), ils sont déjà partis, ou déjà rentrés.
  *
  * Les ressources du jour sont pour le joueur : un toucher sur l'une d'elles y envoie le
@@ -400,11 +401,25 @@
 
     // ---------- l'école des enfants des voisins ----------
 
-    // L'enfant `n` doit-il être à l'école (ou en chemin) à l'heure `H` ? (pas une fois rentré)
+    // L'enfant `n` doit-il être à l'école (ou en chemin) à l'heure `H` ? De son départ
+    // (departEcoleVoisin) au retour du bus, le soir. (pas une fois rentré)
     ecoleVoisin(n, H) {
       const S = global.HorlogeSortie;
       if (!n.m.enfant || !H || H.nuit || !S || !S.JOURS_ECOLE.includes(H.semaine) || n.retour === H.jour) return false;
-      return H.heure >= TRANSITION_VIE.ecole[0] && H.heure < TRANSITION_VIE.ecole[1];
+      return H.heure >= this.departEcoleVoisin(n) && H.heure < this.horaireBus().transitionSoir;
+    },
+
+    // L'heure où l'enfant `n` part de chez lui pour être à l'abri quand le bus du matin y est :
+    // le temps de faire son chemin (de chez lui à sa place devant l'abri), à sa vitesse, et la
+    // marge (CarteKit.ECOLE). Calculée une fois.
+    departEcoleVoisin(n) {
+      if (n.departEcole != null) return n.departEcole;
+      const c = this.caseDedans(n.maison), p = this.arretVoisin(n);
+      const l = this.findPath(c.x, c.y, p.x, p.y);
+      const d = this.horaireBus().transitionMatin - K.heuresDeMarche(l ? K.longueur(l, c) : 0, n.speed) - K.ECOLE.marge;
+      // (gardée une fois la carte prête : son chemin jusqu'à l'abri)
+      if (this.kidPaths) n.departEcole = d;
+      return d;
     },
 
     // Le bus du matin passera-t-il encore (ou est-il à l'arrêt) ?
@@ -412,7 +427,7 @@
       const d = (BUS.scenes.transition || []).find((q) => q.monter);
       if (!d || !H || reduced()) return false;
       if (this.school) return this.school.def === d && this.school.phase !== 'depart';
-      return H.heure < d.fin && !(this.schoolDone && this.schoolDone.has(H.jour + ':' + d.nom));
+      return H.heure < this.horaireScene(d).fin && !(this.schoolDone && this.schoolDone.has(H.jour + ':' + d.nom));
     },
 
     // Où l'enfant `n` attend le bus : à côté de ceux de la ferme, devant l'abri.

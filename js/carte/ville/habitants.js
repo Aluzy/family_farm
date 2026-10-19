@@ -13,10 +13,11 @@
  *     les ingrédients du dîner, et rentre chez lui son panier plein ;
  *   - le premier rentré cuisine devant le four du logement ;
  *   - les enfants vont à l'école comme ceux de la ferme : les jours d'école
- *     (HorlogeSortie.JOURS_ECOLE), de TRANSITION_VIE.ecole[0] h à ecole[1] h ; ils y vont à pied
- *     (ils habitent en ville : pas de bus), entrent par la porte de l'école (le bout du chemin
- *     des enfants qui descendent du bus, couche « bus ») et rentrent à pied ; le reste du temps,
- *     ils sont à la maison ;
+ *     (HorlogeSortie.JOURS_ECOLE), de CarteKit.ECOLE.debut h à fin h ; ils y vont à pied (ils
+ *     habitent en ville : pas de bus), et chacun part de chez lui le temps qu'il lui faut pour y
+ *     être à l'heure (la longueur de son chemin, à sa vitesse : departEcole) ; ils entrent par
+ *     la porte de l'école (le bout du chemin des enfants qui descendent du bus, couche « bus »)
+ *     et rentrent à pied à la fin de l'école ; le reste du temps, ils sont à la maison ;
  *   - de IMMEUBLE.vie.sommeil[0] h à sommeil[1] h, chacun dort dans la chambre (on ne le voit
  *     plus).
  *
@@ -33,7 +34,7 @@
 
   const K = global.CarteKit;
   const V = global.CarteVille;
-  const { T, IMMEUBLE: I, VOISINS, TRANSITION_VIE } = V.C;
+  const { T, IMMEUBLE: I, VOISINS } = V.C;
   const { hote, reduced, sheetKey } = V;
   const VIE = I.vie;
 
@@ -121,7 +122,7 @@
       const jour = H ? H.jour : 0;
       if (this.dortImm(H)) { this.coucheHabitant(n); return; }
       if (n.m.enfant) {
-        if (this.ecoleImm(H)) { n.jourEcole = jour; this.cacheHabitant(n, true); n.etat = 'ecole'; }
+        if (this.ecoleImm(n, H)) { n.jourEcole = jour; this.cacheHabitant(n, true); n.etat = 'ecole'; }
         return;
       }
       if (h >= this.departImm() && h < fin) { n.jourTravail = jour; this.cacheHabitant(n, true); n.etat = 'travail'; return; }
@@ -143,14 +144,25 @@
       const h = this.heureImm(H), S = VIE.sommeil;
       return !!H.nuit || h >= S[0] || h < S[1];
     },
-    // L'heure de l'école (un jour d'école, aux heures de celle des enfants de la ferme : il
-    // part le temps du trajet avant, pour y être à l'heure) ?
-    ecoleImm(H) {
-      const S = global.HorlogeSortie, E = TRANSITION_VIE.ecole;
+    // L'enfant `n` doit-il être à l'école (ou en chemin) ? Un jour d'école, de son départ
+    // (departEcole) à la fin de l'école (CarteKit.ECOLE).
+    ecoleImm(n, H) {
+      const S = global.HorlogeSortie;
       if (!H || H.nuit || !S || !S.JOURS_ECOLE.includes(H.semaine)) return false;
       const h = this.heureImm(H);
-      if (this.departEcoleH == null) this.departEcoleH = Math.max(VIE.sommeil[1] + 0.25, E[0] - this.trajetImm(this.porteEcole()) - VIE.marge);
-      return h >= this.departEcoleH && h < E[1];
+      return h >= this.departEcole(n) && h < K.ECOLE.fin;
+    },
+    // L'heure où l'enfant `n` part de chez lui pour être à l'école à l'heure : le temps de faire
+    // son chemin (de sa chambre à la porte de l'école, escaliers compris), à sa vitesse, et la
+    // marge (CarteKit.ECOLE). Calculée une fois.
+    departEcole(n) {
+      if (n.departEcoleH == null) {
+        const p = this.porteEcole(), lit = this.litImm(n);
+        const essai = { niv: n.L.niveau, x: lit.x, y: lit.y, path: [] };
+        const L = p && this.allerImm(essai, p, 0) ? K.longueur(essai.path, lit) : 0;
+        n.departEcoleH = K.ECOLE.debut - K.heuresDeMarche(L, n.speed) - K.ECOLE.marge;
+      }
+      return n.departEcoleH;
     },
     // La porte de l'école : le bout du chemin des enfants qui descendent du bus le matin.
     porteEcole() {
@@ -234,10 +246,13 @@
       const H = global.HorlogeSortie ? global.HorlogeSortie.maintenant() : null;
       for (const n of this.habitants) {
         let marche = false;
+        // (l'heure de partir pour l'école : il laisse ce qu'il faisait au logement)
+        if (n.m.enfant && n.etat === 'dedans' && n.path.length && n.jourEcole !== (H && H.jour) && this.ecoleImm(n, H)) { n.path = []; n.t = 0; }
         if (n.talk > 0) n.talk -= dt;
         else if (n.path.length) {
           const to = n.path[0], dx = to.x - n.x, dy = to.y - n.y, l = Math.hypot(dx, dy);
-          const st = (this.dansImm(n) ? n.speed : VIE.vitesse) * dt;   // (dehors, il marche d'un bon pas)
+          // (dehors, un adulte marche d'un bon pas ; un enfant, à son pas)
+          const st = (this.dansImm(n) || n.m.enfant ? n.speed : VIE.vitesse) * dt;
           const r = K.regard(dx, dy);
           n.face = r.face; n.s.setFlipX(r.flip);
           if (l <= st) {
@@ -317,7 +332,7 @@
           n.t = 2;
           return;
         case 'ecole': {
-          if (this.ecoleImm(H)) { n.t = 2; return; }
+          if (this.ecoleImm(n, H)) { n.t = 2; return; }
           // l'école finie : il ressort et rentre à pied
           const p = this.porteEcole();
           if (p) { n.x = p.x; n.y = p.y; }
@@ -361,7 +376,7 @@
         default:
       }
       // chez lui
-      if (n.m.enfant && this.ecoleImm(H) && n.jourEcole !== jour) {
+      if (n.m.enfant && this.ecoleImm(n, H) && n.jourEcole !== jour) {
         // le matin : à l'école (il descend, sort, y va à pied)
         n.jourEcole = jour;
         const p = this.porteEcole();
@@ -477,8 +492,9 @@
       const qui = `${n.m.prenom} ${n.f.nom}`, eco = this.ecoImm, fo = eco && eco.foyers[n.L.nom];
       const [debut, fin] = this.horairesImm();
       if (n.m.enfant) {
-        const E = TRANSITION_VIE.ecole, h = (x) => `${Math.floor(x)} h${x % 1 ? String(Math.round((x % 1) * 60)).padStart(2, '0') : ''}`;
-        const ecole = n.etat === 'versEcole' ? 'Je vais à l\'école, je ne dois pas être en retard !' : n.etat === 'retour' ? 'Je rentre de l\'école !' : `Je vais à l'école à pied, de ${h(E[0])} à ${h(E[1])}.`;
+        const E = K.ECOLE, h = (x) => { const m = Math.round(x * 60); return `${Math.floor(m / 60)} h${m % 60 ? String(m % 60).padStart(2, '0') : ''}`; };
+        const ecole = n.etat === 'versEcole' ? `Je vais à l'école, elle commence à ${h(E.debut)} : je ne dois pas être en retard !` : n.etat === 'retour' ? 'Je rentre de l\'école !'
+          : `L'école commence à ${h(E.debut)} : je pars à ${h(Math.ceil(this.departEcole(n) * 12) / 12)}, à pied, pour y être à l'heure. Elle finit à ${h(E.fin)}.`;
         return `👋 ${qui} : « ${ecole} Mes parents travaillent à la fromagerie 🧀 ; ils rentrent après ${fin} h, avec les courses du marché. »`;
       }
       const salaire = (eco && eco.salaire) || VIE.salaire;

@@ -3,7 +3,8 @@
  * L'heure du jeu (HorlogeSortie, donnée par js/ui/excursion.js). Les jours d'école, le bus
  * de l'école (couche « bus » : ses trajets, ses arrêts, le chemin des enfants) passe le matin et
  * le soir : il roule avec les autres voitures et s'arrête le temps que les enfants de la
- * famille montent ou descendent (BUS.scenes : l'heure de chaque scène, carte par carte).
+ * famille montent ou descendent (BUS.scenes : chaque scène, carte par carte ; l'heure où le bus
+ * est à l'arrêt : CarteKit.horaireEcole, pour que les enfants soient à l'école à l'heure).
  *
  * Méthodes de la scène des cartes (js/ville-carte.js), posées sur son prototype : `this` est
  * la scène (voir docs/architecture-phaser.md).
@@ -20,6 +21,38 @@
   V.partie({
 
     // ---------- le bus de l'école ----------
+
+    // L'horaire du bus sur cette carte (CarteKit.horaireEcole), avec le chemin des enfants de la
+    // carte mesuré.
+    // (pas encore de chemins, la scène se crée : l'horaire des longueurs de Tiled, pas gardé)
+    horaireBus() {
+      if (this.horaireBusH) return this.horaireBusH;
+      const l = K.longueur(this.kidPaths && this.kidPaths.enfants_matin);
+      const h = K.horaireEcole(l ? { [etat.nom]: l } : null);
+      if (this.kidPaths) this.horaireBusH = h;
+      return h;
+    },
+
+    // Les heures de la scène `def` : { arrivee (le bus à l'arrêt), debut (le bus part de loin,
+    // les enfants de leur bout du chemin, pour y être ensemble), fin (après, elle ne commence
+    // plus) }. `n` : les enfants qui montent.
+    horaireScene(def, n = 0) {
+      const cle = def.nom + ':' + n;
+      if (!this.horairesScenes) this.horairesScenes = new Map();
+      if (this.horairesScenes.has(cle)) return this.horairesScenes.get(cle);
+      const h = this.calculeScene(def, n);
+      if (this.kidPaths && this.routes) this.horairesScenes.set(cle, h);
+      return h;
+    },
+    calculeScene(def, n) {
+      const arrivee = this.horaireBus()[def.horaire], s = K.ECOLE.sParHeure;
+      const stop = this.busStops[def.arret], pts = this.kidPaths[def.enfants];
+      const stopS = stop && this.routes ? this.stopOn(def.bus, stop) : null;
+      const tBus = stopS === null ? 0 : Math.min(stopS, BUS.lead) / BUS.speed;
+      const tKids = def.monter ? K.longueur(pts) / BUS.kid.speed + 0.6 * n : 0;
+      const debut = arrivee - Math.max(tBus, tKids) / s;
+      return { arrivee, debut, fin: debut + 1, tBus, tKids };
+    },
 
     makeSchool(objs) {
       this.kids = [];
@@ -110,18 +143,14 @@
         // (le bus passe pour les enfants de la ferme, et pour ceux des voisins de la transition)
         const voisins = this.voisinsEcole ? this.voisinsEcole().length : 0;
         if (!t || t.nuit || !window.HorlogeSortie.JOURS_ECOLE.includes(t.semaine) || (!t.enfants.length && !voisins) || reduced()) return;
-        const def = list.find((d) => t.heure >= d.debut && t.heure < d.fin && !this.schoolDone.has(t.jour + ':' + d.nom));
+        const def = list.find((d) => { const q = this.horaireScene(d, t.enfants.length); return t.heure >= q.debut && t.heure < q.fin && !this.schoolDone.has(t.jour + ':' + d.nom); });
         if (!def) return;
         const stop = this.busStops[def.arret], pts = this.kidPaths[def.enfants];
         if (!stop || !pts) return;
         this.schoolDone.add(t.jour + ':' + def.nom);
         // ils montent : les enfants viennent à pied jusqu'à l'arrêt ; le premier des deux à
         // partir (eux ou le bus) part tout de suite, l'autre de façon à arriver en même temps
-        const stopS = this.stopOn(def.bus, stop);
-        const tBus = stopS === null ? 0 : Math.min(stopS, BUS.lead) / BUS.speed;
-        let len = 0;
-        for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-        const tKids = def.monter ? len / BUS.kid.speed + 0.6 * t.enfants.length : 0;
+        const { tBus, tKids } = this.horaireScene(def, t.enfants.length);
         this.school = { def, bus: null, phase: 'attente', kids: [], wait: 0, busIn: Math.max(0, tKids - tBus), kidsIn: Math.max(0, tBus - tKids) };
         return;
       }

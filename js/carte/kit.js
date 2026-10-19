@@ -155,6 +155,45 @@
     habitant: 44,                                  // l'habitant de l'infra-monde (il flâne à 60 %)
   };
 
+  // L'école : la même pour tous les enfants (ceux de la ferme, des voisins de la transition, de
+  // l'immeuble de la ville), de `debut` h à `fin` h, les jours d'école (HorlogeSortie.JOURS_ECOLE).
+  // Chaque enfant part de chez lui le temps qu'il lui faut pour y être à l'heure : sa distance
+  // à parcourir divisée par sa vitesse (une heure du jeu : `sParHeure` s), et `marge` h d'avance.
+  // Ceux de la ferme et de la transition prennent le bus de l'école : il roule `bus` h de l'arrêt
+  // de la transition à celui de la ville (hors des cartes) ; les enfants y montent en `monter` s.
+  // `longueurs` : le chemin des enfants sur la carte de la ville (de l'arrêt du bus à la porte de
+  // l'école) et sur celle de la transition (du bord de la ferme à l'arrêt), en px, tels que
+  // les cartes de Tiled les tracent ; une carte qui a le sien sous les yeux le mesure.
+  const ECOLE = { debut: 8, fin: 16.5, sParHeure: 30, marge: 0.05, bus: 0.5, monter: 2, longueurs: { ville: 115, transition: 997 } };
+
+  // Combien d'heures du jeu pour faire `px` px à `vitesse` px/s (et `s` s de plus).
+  const heuresDeMarche = (px, vitesse, s = 0) => (px / vitesse + s) / ECOLE.sParHeure;
+
+  // L'horaire du bus de l'école, compté à rebours depuis le début de l'école (et à partir de sa
+  // fin, le soir) : l'heure où il est à l'arrêt de la ville (villeMatin : les enfants en
+  // descendent et marchent jusqu'à l'école ; villeSoir : ils y sont montés), à l'arrêt de la
+  // transition (transitionMatin : ils y montent ; transitionSoir : ils en descendent), et celles
+  // où les enfants de la ferme passent le bord de la ferme (sortieFerme, le matin ; retourFerme,
+  // le soir). `L` : les longueurs mesurées (ECOLE.longueurs sinon).
+  function horaireEcole(L) {
+    const E = ECOLE, v = VITESSES.enfantsBus;
+    const lv = (L && L.ville) || E.longueurs.ville, lt = (L && L.transition) || E.longueurs.transition;
+    const villeMatin = E.debut - heuresDeMarche(lv, v) - E.marge;
+    const transitionMatin = villeMatin - E.bus;
+    const sortieFerme = transitionMatin - heuresDeMarche(lt, v, E.monter);
+    const villeSoir = E.fin + heuresDeMarche(lv, v, E.monter);
+    const transitionSoir = villeSoir + E.bus;
+    const retourFerme = transitionSoir + heuresDeMarche(lt, v);
+    return { villeMatin, transitionMatin, sortieFerme, villeSoir, transitionSoir, retourFerme };
+  }
+
+  // La longueur (px) d'une suite de points [{ x, y }], depuis `de` s'il est donné.
+  function longueur(pts, de) {
+    let d = 0, a = de || (pts && pts[0]);
+    for (const p of pts || []) { d += Math.hypot(p.x - a.x, p.y - a.y); a = p; }
+    return d;
+  }
+
   // Les tuiles animées de Tiled : une animation [{ tileid, duration (ms) }…] → ses tuiles
   // (`ids`), la fin de chaque image (`ends`, ms depuis le début du cycle) et sa durée totale.
   function cycle(anim) {
@@ -213,7 +252,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES,
+    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, ECOLE, heuresDeMarche, horaireEcole, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, FLECHE, balance, TEXTE, texte,
   });
 })(window);
