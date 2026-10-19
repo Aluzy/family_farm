@@ -384,7 +384,9 @@ parties.
   - un petit salon : un canapé, une table basse, un tapis, une plante ;
   - la pièce de vie : la cuisine, le four, une table et deux chaises ;
   - une chambre : deux lits et une table de chevet.
-- **Les murs** : ceux du tour sont hauts, avec des fenêtres en façade (deux fenêtres voisines
+- **Les murs** : ceux du tour sont hauts, en briques ocre comme l'immeuble qu'il remplace (les
+  murs de briques ocre de la ferme ; leurs fenêtres et la porte d'entrée sont dans la même brique :
+  `murs_hauts.png` 241 à 305), avec des fenêtres en façade (deux fenêtres voisines
   font une grande fenêtre) ; les cloisons sont basses, pour qu'on voie le fond des pièces. Un
   toit de tuiles (`CarteKit.toit`, le même qu'à la ferme) couvre le dernier niveau.
 - **Monter, descendre** : marcher sur une marche de l'escalier fait changer de niveau. Le

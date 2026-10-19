@@ -12,7 +12,8 @@
  *     l'escalier qui monte au suivant (sauf au dernier), et les deux mêmes logements ;
  *   - par-dessus le dernier, un toit de tuiles (CarteKit.toit).
  * Chaque niveau est dessiné IMMEUBLE.dy px au-dessus du précédent (le haut des murs hauts) : les
- * murs du tour sont hauts, avec des fenêtres dans les façades (deux fenêtres voisines font une
+ * murs du tour sont hauts, en briques ocre (comme l'immeuble qu'il remplace), avec des fenêtres et
+ * la porte d'entrée dans la même brique (deux fenêtres voisines font une
  * grande fenêtre) ; les cloisons sont basses (blocs.png), pour qu'on voie le fond des pièces.
  *
  * Marcher sur une marche de l'escalier fait monter (ou descendre) : le personnage arrive sur le
@@ -120,13 +121,13 @@
               const m = (v(0, -1) ? 1 : 0) + (v(1, 0, true) ? 2 : 0) + (v(0, 1) ? 4 : 0) + (v(-1, 0, true) ? 8 : 0);
               // (une fenêtre prolongée par sa voisine : une grande fenêtre)
               const face = (i) => !mur(a(i, y + 1));
-              const f = c === 'F' && face(x) ? I.fenetres[(a(x - 1, y) === 'F' && face(x - 1) ? 1 : 0) + (a(x + 1, y) === 'F' && face(x + 1) ? 2 : 0)] + m : BLOCS.hauts.murs + m;
+              const f = c === 'F' && face(x) ? I.fenetres[(a(x - 1, y) === 'F' && face(x - 1) ? 1 : 0) + (a(x + 1, y) === 'F' && face(x + 1) ? 2 : 0)] + m : I.murs + m;
               // (les murs du tour : hauts ; les cloisons : basses, on voit le fond des pièces)
               const o = bord(x, y) ? pose(Hk, f, x, y, (py) => py) : pose(BLOCS.key, BLOCS.murs + m, x, y, (py) => py);
               murs.push({ o, x: (I.x + x) * T + T / 2, gy: I.y + y, facade: y === I.h - 1 });
             } else if (c === 'P') {
               const vert = mur(a(x, y - 1)) && mur(a(x, y + 1));
-              const o = vert ? pose(BLOCS.key, I.porteVerticale, x, y, (py) => py) : bord(x, y) ? pose(Hk, BLOCS.hauts.porte, x, y, (py) => py) : pose(BLOCS.key, BLOCS.porte, x, y, (py) => py);
+              const o = vert ? pose(BLOCS.key, I.porteVerticale, x, y, (py) => py) : bord(x, y) ? pose(Hk, I.porte, x, y, (py) => py) : pose(BLOCS.key, BLOCS.porte, x, y, (py) => py);
               murs.push({ o, x: (I.x + x) * T + T / 2, gy: I.y + y, facade: y === I.h - 1 });
             } else if (c === 'U') pose(BLOCS.key, I.escalier, x, y, (py) => py - T / 2);
             else if (c === 'D') pose(BLOCS.key, I.haut, x, y, (py) => py - 0.05);

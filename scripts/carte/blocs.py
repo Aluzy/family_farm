@@ -334,10 +334,10 @@ def porte_verticale():
 HAUTEUR_EN_PLUS = T
 
 
-def porte_haute():
+def porte_haute(fond=None):
     """La porte dans un mur haut : le mur plein (raccordé à gauche et à droite), un linteau de
     pierre, et au-dessous la porte de planches cintrée, ses pentures, sa poignée, le seuil."""
-    t = Toile(mur(2 | 8))
+    t = Toile(fond(2 | 8) if fond else mur(2 | 8))
     y0, x0, x1 = H - 22, 2, 13                   # le haut du battant (22 px de porte)
     for x in range(1, 15):                       # le linteau : une pierre claire, son ombre
         t.put(x, y0 - 3, OUT)
@@ -373,13 +373,14 @@ def porte_haute():
 VITRE = [(52, 74, 96), (96, 136, 168), (150, 192, 216), (214, 236, 244)]   # le verre, du fond au reflet
 
 
-def fenetre(m, j=0):
+def fenetre(m, j=0, fond=None):
     """Le mur haut de masque m percé d'une fenêtre : sur la face (un mur sans voisin
     au-dessous), un cadre de bois, quatre carreaux et leurs croisillons, un appui de pierre ;
-    un mur qui descend (vu de dessus seulement) reste plein. j : les fenêtres voisines qui la
+    un mur qui descend (vu de dessus seulement) reste plein ; `fond` : le mur où elle est percée
+    (le mur en pierre, sinon). j : les fenêtres voisines qui la
     prolongent (1 à gauche, 2 à droite) : le verre, l'appui et le linteau vont jusqu'au bord
     de ce côté (deux fenêtres côte à côte font une grande fenêtre)."""
-    t = Toile(mur(m))
+    t = Toile(fond(m) if fond else mur(m))
     if m & 4:
         return t.im
     g, d = j & 1, j & 2
@@ -510,15 +511,20 @@ def murs_hauts():
     les fenêtres prolongées à gauche, à droite, des deux côtés (49, 65, 81 + masque) et les
     parois vitrées seules, prolongées à gauche, à droite, des deux côtés (97, 113, 129, 145 +
     masque ; BLOCS_CARTE.hauts.joints) ; puis les murs aux matières des immeubles de la ville
-    (MATIERES_VILLE : 161, 177, 193, 209, 225 + masque)."""
+    (MATIERES_VILLE : 161, 177, 193, 209, 225 + masque) ; puis, dans le mur de briques ocre
+    (l'immeuble de la ville), les fenêtres seules, prolongées à gauche, à droite, des deux
+    côtés (241, 257, 273, 289 + masque) et la porte (305)."""
     global H, BAS, FACE
     garde = H, BAS, FACE
+    motif, dessus = next((mo, de) for nom, mo, de in MATIERES_VILLE if nom == 'brique_ocre')
+    ocre = lambda m: mur_ville(m, motif, dessus)   # noqa: E731
     H += HAUTEUR_EN_PLUS
     BAS, FACE = H - 1, FACE + HAUTEUR_EN_PLUS
     try:
         return ([mur(m) for m in range(16)] + [porte_haute()] + [fenetre(m) for m in range(16)] + [pierre_angle(m) for m in range(16)]
                 + [fenetre(m, j) for j in (1, 2, 3) for m in range(16)] + [paroi_vitree(m, j) for j in range(4) for m in range(16)]
-                + [mur_ville(m, motif, dessus) for _, motif, dessus in MATIERES_VILLE for m in range(16)], H)
+                + [mur_ville(m, motif, dessus) for _, motif, dessus in MATIERES_VILLE for m in range(16)]
+                + [fenetre(m, j, ocre) for j in range(4) for m in range(16)] + [porte_haute(ocre)], H)
     finally:
         H, BAS, FACE = garde
 

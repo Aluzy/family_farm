@@ -265,14 +265,16 @@
   // bâtiment `remplace` de la carte (ses tuiles dans le rectangle `efface` [x, y, w, h] en cases,
   // et son emprise) ; posé en (x, y), de w × h cases, sur `niveaux` niveaux, chacun `dy` px
   // au-dessus du précédent. Dans l'immeuble, le niveau du dessous est à `transparent` ; à l'étage,
-  // un voile sombre (`voile`, `alpha`) couvre la ville. `fenetres` : les images des fenêtres de
-  // murs_hauts.png (seule, puis prolongée à gauche, à droite, des deux côtés : + masque) ;
+  // un voile sombre (`voile`, `alpha`) couvre la ville. Les murs du tour, en briques ocre
+  // (murs_hauts.png, scripts/carte/blocs.py) : `murs` + masque ; `fenetres` : les fenêtres dans
+  // la même brique (seule, puis prolongée à gauche, à droite, des deux côtés : + masque) ;
+  // `porte` : la porte d'entrée ;
   // `escalier`, `haut` : l'escalier et son haut dans blocs.png ; `porteVerticale` : la porte d'un
   // mur vertical. `meubles` : les grands meubles (assets/meuble_<nom>.png).
   const IMMEUBLE = {
     carte: 'ville', remplace: 'immeuble_ocre', efface: [146, 36, 22, 16],
     x: 146, y: 38, w: 22, h: 14, niveaux: 3, dy: 30, transparent: 0.3, voile: 0x0d1018, alpha: 0.62,
-    fenetres: [17, 49, 65, 81], escalier: 69, haut: 70, porteVerticale: 30, mursAlpha: 0.4, toitZ: 0.5,
+    murs: 193, fenetres: [241, 257, 273, 289], porte: 305, escalier: 69, haut: 70, porteVerticale: 30, mursAlpha: 0.4, toitZ: 0.5,
     meubles: ['lit_adulte', 'lit_enfant', 'chevet', 'cuisine', 'four', 'table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_2'],
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)
