@@ -65,6 +65,13 @@ export function blocBloque(state, tile) {
   return !!(s && s.bloque);
 }
 
+// Poser `sorte` sur `ancien` change le mur sans l'enlever ? (un mur en pierre, une fenêtre,
+// une pierre d'angle : BLOCS[].mur ; l'ancien revient dans l'inventaire)
+export function changeMur(ancien, sorte) {
+  const a = sorteDe(ancien), s = sorteDe(sorte);
+  return !!(a && s && a.mur && s.mur && ancien !== sorte);
+}
+
 // Combien de blocs `sorte` peut-on encore poser ? (l'Atelier : 1 s'il est construit et pas
 // encore posé)
 export function blocsEnMain(state, sorte) {
@@ -263,6 +270,8 @@ export function poseStatus(state, sorte, tile) {
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
+  // un mur posé : une fenêtre (ou une pierre d'angle) le remplace, la pièce reste close
+  if (changeMur(blocAt(state, tile), sorte)) return { ok: true };
   if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
   // la station du robot : quand il est là (récolte ou semis automatiques)
   if (s.robot && !robotOn(state)) return { ok: false, raison: 'Il faut d\'abord le robot : la récolte ou le semis automatiques (arbre des technologies).' };
@@ -303,7 +312,13 @@ export function poserBloc(state, sorte, tile) {
   const st = poseStatus(state, sorte, tile);
   if (!st.ok) return fail(st.raison);
   const s = sorteDe(sorte);
+  const ancien = blocAt(state, tile);
   if (s.objet) takeItem(state, s.objet, 1);
+  if (changeMur(ancien, sorte)) {
+    addItem(state, sorteDe(ancien).objet, 1);
+    state.blocs[tile] = sorte;
+    return { ok: true, sorte, case: tile, remplace: ancien };
+  }
   // un arbre fruitier : planté dans le sol, il n'est pas un bloc (orchard.js)
   if (s.arbre) {
     const tree = planterArbre(state, s.arbre, tile);

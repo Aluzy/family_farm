@@ -13,7 +13,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
-import { blocsEnMain, blocsPoses, piecesCloses } from './blocs.js';
+import { blocsEnMain, blocsPoses, changeMur, piecesCloses } from './blocs.js';
 import { atelierOuvert } from './atelier.js';
 import { farmTerrain } from './terrain.js';
 
@@ -59,7 +59,7 @@ export function poseEtageStatus(state, sorte, tile) {
   if (!s || !ETAGE_BLOCS.includes(sorte)) return { ok: false, raison: `${s ? s.nom : 'Ce bloc'} : ne se pose pas à l'étage.` };
   if (!etageEmprise(state).has(tile)) return { ok: false, raison: 'À l\'étage, on ne bâtit qu\'au-dessus d\'une pièce close qui a un escalier.' };
   if (blocsPoses(state)[tile] === 'escalier') return { ok: false, raison: 'Ici, c\'est le haut de l\'escalier.' };
-  if (etageBlocs(state)[tile]) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
+  if (etageBlocs(state)[tile] && !changeMur(etageBlocs(state)[tile], sorte)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
   if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   return { ok: true };
 }
@@ -68,9 +68,12 @@ export function poserEtage(state, sorte, tile) {
   const st = poseEtageStatus(state, sorte, tile);
   if (!st.ok) return fail(st.raison);
   takeItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
+  // un mur changé (une fenêtre à la place d'un mur en pierre) : l'ancien revient
+  const ancien = etageBlocs(state)[tile];
+  if (ancien) addItem(state, DATA.ATELIER.BLOCS[ancien].objet, 1);
   if (!state.etage || typeof state.etage !== 'object') state.etage = {};
   state.etage[tile] = sorte;
-  return { ok: true, sorte, case: tile, etage: true };
+  return ancien ? { ok: true, sorte, case: tile, etage: true, remplace: ancien } : { ok: true, sorte, case: tile, etage: true };
 }
 
 // Reprend le bloc de l'étage posé sur `tile` : son objet revient dans l'inventaire.

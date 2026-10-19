@@ -81,7 +81,7 @@
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" }
     },
     "BLOCS": {
-      "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true },
+      "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true, "mur": true },
       "mur_fenetre": { "nom": "Fenêtre", "objet": "mur_fenetre", "bloque": true, "ferme": true, "mur": true },
       "pierre_angle": { "nom": "Pierre d'angle", "objet": "pierre_angle", "bloque": true, "ferme": true, "mur": true },
       "porte": { "nom": "Porte", "objet": "porte", "porte": true, "ferme": true },

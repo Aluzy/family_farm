@@ -127,6 +127,9 @@ Le Marché vend toujours les outils.
     de bois, quatre carreaux et un appui de pierre ; la pierre d'angle, de grosses pierres
     claires en alternance aux bords libres (entre deux murs : aux deux bords, un pilier).
     Images : `murs_hauts.png`, 17 + masque et 33 + masque (`BLOCS_CARTE.hauts.variantes`).
+    Un mur se change sans être enlevé : avec une fenêtre (ou une pierre d'angle, un mur en
+    pierre) en main, un appui sur un autre de ces murs le remplace, l'ancien revient dans
+    l'inventaire et la pièce reste close (`BLOCS[].mur`, `changeMur` ; au sol et à l'étage).
   - Les murs et la porte d'un mur horizontal sont une case plus hauts que les autres blocs
     (`assets/murs_hauts.png`, 16 × 40 px, comme les maisons de la transition). Un mur qui cache
     le personnage ou un membre de la famille s'efface à moitié, et tous s'effacent en mode

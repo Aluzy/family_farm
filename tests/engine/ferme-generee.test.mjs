@@ -765,3 +765,25 @@ test('ferme générée : les fenêtres et les pierres d\'angle ferment une pièc
   assertEqual([blocBloque(s, coins[0]), blocBloque(s, fenetres[0])], [true, true], 'on ne passe pas');
   assertEqual([countItem(s, 'pierre_angle'), countItem(s, 'mur_fenetre')], [0, 2]);
 });
+
+test('ferme générée : une fenêtre change un mur sans l\'enlever (au sol et à l\'étage)', () => {
+  const s = chantier('deco2');
+  setInv(s, { mur_pierre: 20, mur_fenetre: 2, pierre_angle: 1, porte: 1, escalier: 1 });
+  const z = terrainLibre(s, 5, 4), p = murs(z, 5, 4);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  const m = p.murs[2], avant = countItem(s, 'mur_pierre');
+  const r = poserBloc(s, 'mur_fenetre', m);
+  assert(r.ok, r.error);
+  assertEqual([blocAt(s, m), r.remplace, countItem(s, 'mur_pierre'), countItem(s, 'mur_fenetre')], ['mur_fenetre', 'mur_pierre', avant + 1, 1]);
+  assertEqual(piecesCloses(s).length, 1, 'la pièce reste close');
+  assert(poserBloc(s, 'pierre_angle', m).ok, 'une pierre d\'angle à la place de la fenêtre');
+  assertEqual([blocAt(s, m), countItem(s, 'mur_fenetre')], ['pierre_angle', 2]);
+  assertEqual(poserBloc(s, 'porte', p.murs[3]).ok, false, 'une porte ne change pas un mur');
+  // à l'étage
+  poserBloc(s, 'escalier', p.dedans);
+  const coin = p.murs[0];
+  assert(poserEtage(s, 'mur_pierre', coin).ok);
+  assert(poserEtage(s, 'mur_fenetre', coin).ok, 'une fenêtre sur le mur de l\'étage');
+  assertEqual([etageBlocs(s)[coin], countItem(s, 'mur_fenetre')], ['mur_fenetre', 1]);
+});
