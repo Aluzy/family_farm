@@ -51,6 +51,8 @@ export function mealHappinessDelta(plan) {
 export function dishHappiness(item) {
   const B = DATA.VILLE.BONHEUR;
   const def = DATA.OBJETS[item];
+  // (un plat de boutique : son bonheur, items.json)
+  if (def && def.bonheur != null) return def.bonheur;
   if (!def || !def.plat) return 0;
   const r = DATA.RECETTES[item];
   if (!r || !(r.station in B.PLATS)) return B.PLATS.cuisine;
@@ -175,6 +177,43 @@ export function goToTownMarket(state) {
 // Les objets du marché de la ville, dans l'ordre des objets.
 export function townItems() {
   return Object.keys(DATA.OBJETS).filter((k) => DATA.OBJETS[k].ville);
+}
+
+// Les boutiques de la ville (VILLE.BOUTIQUES) : le prix d'un objet au comptoir (MARGE % de son
+// prix, arrondi au-dessus).
+export function shopPrice(item) {
+  return Math.ceil((DATA.OBJETS[item].prix * DATA.VILLE.BOUTIQUES.MARGE) / 100 - EPS);
+}
+
+// Ce que vend la boutique `id` : { nom, icone, objets: [{ item, nom, icone, prix, energie }] }
+// (null : pas de telle boutique).
+export function shopView(id) {
+  const b = DATA.VILLE.BOUTIQUES.LISTE[id];
+  if (!b) return null;
+  const objets = b.objets.filter((k) => DATA.OBJETS[k]).map((k) => {
+    const o = DATA.OBJETS[k];
+    return { item: k, nom: o.nom, icone: o.icone, prix: shopPrice(k), energie: o.energie || 0 };
+  });
+  return { nom: b.nom, icone: b.icone, objets };
+}
+
+// Achète `qty` `item` au comptoir de la boutique `id` (la carte n'ouvre le comptoir que quand un
+// employé y travaille) : autant que les pièces le permettent ; ils vont dans l'inventaire.
+export function buyInShop(state, id, item, qty = 1) {
+  const b = DATA.VILLE.BOUTIQUES.LISTE[id];
+  if (!b) return fail('Cette boutique n\'existe pas.');
+  const def = DATA.OBJETS[item];
+  if (!def || !b.objets.includes(item)) return fail(`${b.nom} ne vend pas cela.`);
+  const prix = shopPrice(item);
+  let bought = 0;
+  for (let i = 0; i < Math.max(0, Math.floor(Number(qty)) || 0); i++) {
+    if (!canPay(state, prix)) break;
+    spend(state, prix, `${b.nom} : ${def.nom}`);
+    addLot(state, item, 1, DATA.ORIGINE.ACHETE);
+    bought += 1;
+  }
+  if (!bought) return fail(NO_COINS);
+  return { ok: true, bought, cost: bought * prix };
 }
 
 export function buyInTown(state, item, qty = 1) {

@@ -370,12 +370,15 @@
     // partent au travail le temps du trajet avant l'embauche (une heure du jeu : `sParHeure` s),
     // plus `marge` h. Après leur dernier service, s'il est moins de `marche` h, ils passent au
     // marché : ils restent `achat` s devant un étal ; le dîner cuit `cuisson` s. Les enfants vont
-    // aux `ecoles` (l'école de la carte, puis les lieux). (Le pied des lits et la place devant le
-    // four : le plan du niveau.)
+    // aux `ecoles` (l'école de la carte, puis les lieux). Dans un lieu, le premier employé se tient
+    // au meuble de son métier (`postes`). (Le pied des lits et la place devant le four : le plan
+    // du niveau.)
     vie: {
       lits: 3, travail: 'fromagerie', horaires: [8, 17], salaire: 26, sommeil: [22, 6], vitesse: 40, sParHeure: 30, marge: 0.25,
       horsVille: { logistique: 'gare', scierie: 'gare', chaudronnerie: 'gare' }, points: { amphitheatre: [140, 184] },
       ecoles: ['ecole', 'ecole_2', 'ecole_3'], marche: 20, achat: 4, cuisson: 16, humeur: [70, 40],
+      // (la place du premier employé d'un lieu : derrière (-1) ou devant (1) ces meubles)
+      postes: { comptoir: -1, vitrine_pain: -1, etal_poisson: -1, tableau_noir: 1, pupitre: 1 },
     },
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)

@@ -5,10 +5,10 @@
 
 import {
   addItem, advanceHours, applyMealHappiness, averageHappiness, awakeMsAtHour, buyCompany,
-  buyInTown, buyItem, companiesStep, companyPlan, countItem, createInitialState, DATA, findPlot,
+  buyInShop, buyInTown, buyItem, companiesStep, dishHappiness, companyPlan, countItem, createInitialState, DATA, findPlot,
   goOut, goToTownMarket, happinessCostPct, hourOfDay, isBuyable, isPerishable, mealHappinessDelta,
   memberHappiness, migrate, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus,
-  ownsCompany, plant, removeMember, sellInTown, setCompanyQuota, STATE_VERSION, takeMeal, tick,
+  ownsCompany, plant, removeMember, sellInTown, setCompanyQuota, shopPrice, shopView, STATE_VERSION, takeMeal, tick,
   townItems, townMarketOpen, townSellable, townSellList, townSellPrice, water,
 } from '../../js/engine/index.js';
 import {
@@ -220,4 +220,31 @@ test('trouvailles de la montagne et de la plage : des objets qui se gardent et s
   const s = createInitialState();
   addItem(s, 'perle', 2);
   assertEqual(countItem(s, 'perle'), 2);
+});
+
+/* ---------- étape 5b : les boutiques de la ville ---------- */
+
+test('boutiques : on achète au comptoir ce que vend la boutique, MARGE % du prix', () => {
+  const s = createInitialState();
+  s.pieces = 100;
+  const B = DATA.VILLE.BOUTIQUES;
+  for (const [id, b] of Object.entries(B.LISTE)) {
+    for (const k of b.objets) assert(DATA.OBJETS[k], `${id} : ${k} existe`);
+    assertEqual(shopView(id).objets.length, b.objets.length);
+  }
+  assertEqual(shopPrice('pizza'), Math.ceil((DATA.OBJETS.pizza.prix * B.MARGE) / 100));
+  assertEqual(isBuyable('pizza'), false, 'pas au Marché de la ferme');
+  const r = buyInShop(s, 'pizzeria', 'pizza', 2);
+  assertEqual([r.ok, r.bought, r.cost, countItem(s, 'pizza'), s.pieces], [true, 2, 2 * shopPrice('pizza'), 2, 100 - 2 * shopPrice('pizza')]);
+  assertEqual(buyInShop(s, 'pizzeria', 'pain').ok, false, 'la pizzeria ne vend pas de pain');
+  assertEqual(buyInShop(s, 'nulle_part', 'pain').ok, false);
+  s.pieces = 0;
+  assertEqual(buyInShop(s, 'boulangerie', 'croissant').ok, false, 'sans pièces');
+});
+
+test('boutiques : une pizza ou un burger rend son bonheur au repas, comme un plat cuisiné', () => {
+  assertEqual(dishHappiness('pizza'), DATA.OBJETS.pizza.bonheur);
+  assertEqual(dishHappiness('burger'), DATA.OBJETS.burger.bonheur);
+  assertEqual(dishHappiness('ordinateur'), 0);
+  assertEqual(dishHappiness('carotte'), 0, 'un aliment cru : rien');
 });

@@ -81,5 +81,11 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
      métier, le lieu, les horaires en un ou deux services, le salaire), un poste pour chacun des
      80 adultes (`assigneEmplois`, `js/engine/voisins.js`), leur journée sur la carte
      (`js/carte/ville/habitants.js`), les enfants répartis dans les trois écoles ;
-   - 5b, les achats du joueur dans les commerces ;
+   - 5b, les achats du joueur dans les commerces (fait) : au comptoir d'une boutique (sa
+     vitrine, son étal, son présentoir), quand un employé y travaille, une fenêtre d'achat
+     (`VILLE.BOUTIQUES`, `data/ville.json` ; `buyInShop`, `js/engine/ville.js`) : le pain, les
+     croissants et les tartes, la pizza, le burger et les frites, les poissons, l'ordinateur.
+     Ils vont dans l'inventaire ; une pizza ou un burger rend son bonheur au repas ;
    - 5c, l'économie complète du modèle : recettes, stocks, flux, camions, sorties et bonheur.
+6. Les lignes de bus de la ville : les trajets à pied sont longs (jusqu'à 4 h de jeu d'un bout à
+   l'autre) ; les habitants qui travaillent loin de chez eux prennent le bus.

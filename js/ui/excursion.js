@@ -7,6 +7,7 @@ import { depositOreNotebook, enSelle, hasTool, hitsNeeded, mineOre, morceauxDe }
 import { techFlag } from '../engine/techtree.js';
 import { rockGone, treeGone } from '../engine/crops.js';
 import { addItem } from '../engine/inventory.js';
+import { buyInShop, shopView } from '../engine/ville.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
 import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
 import { chopFromStage, fishFromStage, mineFromStage, morceauFromStage } from './outils.js';
@@ -189,6 +190,10 @@ window.FermeHote = {
   // (la nuit : comme les boutons de la ferme, SOMMEIL_BLOQUEES ; le quota reste réglable)
   vendre: (item, n) => nuit('sell-item') || joue(sellInTown(state, item, n)),
   acheter: (id) => nuit('ville-buy') || joue(buyCompany(state, id)),
+  // les boutiques de la ville (VILLE.BOUTIQUES) : ce que vend la boutique `id` et les pièces de
+  // la ferme ; un achat au comptoir (la carte ne l'ouvre que quand un employé y travaille)
+  boutique: (id) => { const v = shopView(id); return v && { ...v, pieces: state.pieces }; },
+  acheterBoutique: (id, item, n) => nuit('ville-buy') || joue(buyInShop(state, id, item, n)),
   quota: (id, q) => nuit('entreprise-quota') || joue(setCompanyQuota(state, id, q)),
   outil: (id) => hasTool(state, id),
   // l'outil en main (barre d'outils) : 'hache', 'pioche', 'houe', 'canne' ou null

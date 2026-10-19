@@ -401,7 +401,11 @@ parties.
   bureau à l'étage. Leur enseigne surmonte la porte (`enseigne_<lieu>.png`) ; leurs meubles
   (le four de boulanger, le pétrin, la vitrine, le four à pizza, la friteuse, le grill, l'étal
   de poissons, le bac à homards, les présentoirs, les étagères, le bureau et son écran) sont
-  dessinés par `scripts/ville/commerces.py`. Les services et les loisirs prennent la place de
+  dessinés par `scripts/ville/commerces.py`. On achète au comptoir d'une boutique (ou à sa
+  vitrine, son étal, son présentoir) quand un employé y travaille : une fenêtre d'achat
+  (`tapBoutique`, `js/carte/ville/marche.js` ; `VILLE.BOUTIQUES`) ; sinon, la boutique dit ses
+  horaires. Le premier employé d'un lieu se tient derrière son comptoir ou devant le tableau
+  noir (`IMMEUBLE.vie.postes`). Les services et les loisirs prennent la place de
   la maison à deux ailes (la mairie : l'accueil, la salle des mariages, les bureaux ; à l'étage,
   la salle du conseil), de la tour (le musée : le squelette de dinosaure, les vitrines, les
   tableaux, les bustes), des bureaux du centre-est (le cinéma : l'écran et ses fauteuils, la

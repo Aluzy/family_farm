@@ -12,8 +12,8 @@
  * case de gauche de la porte d'entrée), `fenetres` { devant, derriere } (les colonnes des murs
  * à fenêtre ; devant, au rez-de-chaussée, la porte prend sa place).
  *
- * Un commerce : au rez-de-chaussée, la boutique (la salle des clients devant, le comptoir,
- * l'atelier ou la cuisine derrière) ; à l'étage, la réserve et le bureau. Les services et les
+ * Un commerce : au rez-de-chaussée, la boutique (la salle des clients devant, le comptoir et la
+ * place du vendeur derrière lui, l'atelier ou la cuisine au fond) ; à l'étage, la réserve et le bureau. Les services et les
  * loisirs : la mairie (l'accueil, la salle des mariages, les bureaux ; la salle du conseil et le
  * bureau du maire), le musée (deux salles d'exposition), le cinéma (la salle et ses fauteuils,
  * le hall et la billetterie ; la cabine de projection), les écoles (une classe par niveau), le
@@ -66,7 +66,7 @@
           murs: [[1, 5, 9, 5]], portes: [[8, 5]],
           meubles: [
             m('four_pizza', 1, 1, 2, 2), m('plan', 3, 1, 2), m('frigo', 5, 1), m('cuisine', 6, 1, 2, 2),
-            m('comptoir', 1, 6, 3), m('chaise', 4, 7), m('table', 5, 7, 3), m('chaise', 8, 7, 1, 1, true),
+            m('comptoir', 1, 7, 3), m('chaise', 4, 7), m('table', 5, 7, 3), m('chaise', 8, 7, 1, 1, true),
             m('chaise', 4, 9), m('table', 5, 9, 3), m('chaise', 8, 9, 1, 1, true), m('plante', 9, 10),
           ],
         },
@@ -82,9 +82,9 @@
           murs: [[1, 4, 9, 4]], portes: [[8, 4]],
           meubles: [
             m('grill', 1, 1, 2), m('friteuse', 3, 1), m('friteuse', 4, 1), m('plan', 5, 1, 2), m('frigo', 7, 1),
-            m('comptoir', 1, 5, 3), m('comptoir', 4, 5, 3),
-            m('chaise', 1, 7), m('table', 2, 7, 3), m('chaise', 5, 7, 1, 1, true),
-            m('chaise', 5, 9), m('table', 6, 9, 3), m('chaise', 9, 9, 1, 1, true),
+            m('comptoir', 1, 6, 3), m('comptoir', 4, 6, 3),
+            m('chaise', 1, 8), m('table', 2, 8, 3), m('chaise', 5, 8, 1, 1, true),
+            m('chaise', 6, 10), m('table', 7, 10, 3),
           ],
         },
         reserve(11),
@@ -115,7 +115,7 @@
           murs: [[1, 4, 10, 4]], portes: [[9, 4]],
           meubles: [
             m('bureau_ordi', 1, 1, 2), m('chaise', 2, 2), m('bureau_ordi', 4, 1, 2), m('chaise', 5, 2), m('etagere_info', 7, 1, 2),
-            m('comptoir', 1, 5, 3), m('etagere_info', 5, 5, 2), m('etagere_info', 7, 5, 2),
+            m('comptoir', 1, 6, 3), m('etagere_info', 5, 5, 2), m('etagere_info', 7, 5, 2),
             m('presentoir', 2, 8, 2), m('presentoir', 6, 8, 2), m('presentoir', 8, 10, 2), m('plante', 1, 11), m('plante', 10, 11),
           ],
         },

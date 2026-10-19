@@ -133,6 +133,7 @@ export function sourcesOf(data, id) {
   if (data.DEPART && data.DEPART.ETAT_INITIAL && id in data.DEPART.ETAT_INITIAL.INVENTAIRE) out.push('DEPART.ETAT_INITIAL.INVENTAIRE');
   if (data.FAMILLE && id in data.FAMILLE.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');
   for (const [lid, l] of Object.entries(data.COURRIER || {})) if (id in (l.cadeaux || {})) out.push(`courrier ${lid}`);
+  for (const [bid, b] of Object.entries((data.VILLE && data.VILLE.BOUTIQUES && data.VILLE.BOUTIQUES.LISTE) || {})) if ((b.objets || []).includes(id)) out.push(`boutique ${bid}`);
   if (it.ville) out.push('marché de la ville');
   else if (it.rachetable !== false) out.push('Marché');
   if (it.retire) out.push('ancienne sauvegarde (retire)');
