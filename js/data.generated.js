@@ -2037,8 +2037,11 @@ export const RAW_DATA = {
     },
     "RECETTES": {
       "bucheron": ["tarte_pommes", "gratin_patates", "omelette", "pain"],
-      "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"]
+      "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"],
+      "fromager": ["omelette", "gratin_patates", "salade_tomates", "pain"]
     },
+    "IMMEUBLE": { "LOGEMENTS": 6, "LITS": 3 },
+    "FROMAGER": { "SALAIRE": 8, "HORAIRES": [8, 17] },
     "CONFORT": 100,
     "PLAISIR": 10,
     "RATTRAPAGE": 30,

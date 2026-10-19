@@ -407,6 +407,25 @@ parties.
   - à un étage : un voile sombre couvre la ville, l'immeuble et le personnage passent devant ;
   - un mur juste devant le personnage s'efface un peu.
 
+### Les familles de l'immeuble
+
+Chaque logement de l'immeuble (deux par niveau, de part et d'autre du hall) a sa famille :
+deux adultes et un enfant, tirés comme les voisins de la transition (`V.voisins`, gardés en
+`localStorage`, un lit chacun). Le moteur (`js/engine/voisins.js` : `immeubleFoyer`,
+`immeubleNuit`, `immeubleVue` ; `state.immeuble.foyers`) leur donne le métier `fromager` : chaque
+nuit, chaque adulte touche son salaire de la fromagerie (`VOISINS.FROMAGER.SALAIRE`, 8 pièces), et
+la famille achète au marché les ingrédients de ses repas (`VOISINS.RECETTES.fromager`), avec les
+mêmes règles que les voisins (besoin, plats, bonheur). Le journal garde ce qu'elle a acheté
+(`achats`).
+
+Sur la carte (`js/carte/ville/habitants.js`), les adultes partent le matin à pied pour être à la
+fromagerie à 8 h (`VOISINS.FROMAGER.HORAIRES`) : ils descendent l'escalier, sortent par la porte
+de l'immeuble, entrent dans la fromagerie et n'en ressortent qu'à 17 h. Ils passent alors par un
+étal du marché, rentrent le panier plein, et le premier arrivé cuisine devant le four. Les
+enfants restent au logement. Tous dorment de 22 h à 6 h. Un habitant marche sur son niveau et
+change de niveau par l'escalier ; on le voit dehors, ou dans l'immeuble quand on est à son
+niveau. Le toucher : il raconte son travail, ses achats et son dîner d'hier.
+
 ## Étapes
 
 1. ✅ Le terrain ne dépend plus de la carte. Le moteur passe par `farmTerrain(state)`

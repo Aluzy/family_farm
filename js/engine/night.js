@@ -17,7 +17,7 @@ import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
 import { respawnRocks, respawnTrees } from './outils.js';
-import { voisinsNuit } from './voisins.js';
+import { immeubleNuit, voisinsNuit } from './voisins.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -248,6 +248,7 @@ export function runNight(state) {
   const sansCouchage = nuitSansCouchage(state).map((m) => m.id);
   recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   voisinsNuit(state); // les voisins de la transition vivent leur journée (js/engine/voisins.js)
+  immeubleNuit(state); // les familles de l'immeuble de la ville aussi
   state.day += 1;
   state.awakeMs = 0;
   respawnRocks(state); // les rochers cassés dont le jour de retour est venu

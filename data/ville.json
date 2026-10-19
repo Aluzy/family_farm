@@ -146,7 +146,12 @@
     "MAISON : la maison grandit avec la famille. Elle n'a d'abord qu'une petite pièce ; chaque nuit,",
     "si le foyer garde RESERVE pièces après l'achat, il s'offre l'étape suivante (une par nuit, dans",
     "l'ordre de ETAPES : nom, prix, bonheur gagné une fois). Le plan de chaque étape : maisonPlan",
-    "(js/engine/transition.js)."
+    "(js/engine/transition.js).",
+    "IMMEUBLE : les LOGEMENTS de l'immeuble en blocs de la ville (js/carte/ville/immeuble.js), LITS",
+    "lits chacun ; leurs familles sont des fromagers.",
+    "FROMAGER : les adultes de l'immeuble travaillent à la fromagerie de la ville de HORAIRES[0] h à",
+    "HORAIRES[1] h ; chacun y gagne SALAIRE pièces par jour, que la famille dépense au marché de la",
+    "ville pour les ingrédients de ses repas (RECETTES.fromager ; il achète tout ce qu'il mange)."
   ],
   "VOISINS": {
     "ARGENT": 150,
@@ -154,8 +159,11 @@
     "AGRICULTEUR": { "CULTURES": ["patate", "tomate", "courgette", "carotte", "aubergine", "patate"], "RENDEMENT": 200, "GARDE": 6, "ACHATS": ["oeuf", "huile", "farine"] },
     "RECETTES": {
       "bucheron": ["tarte_pommes", "gratin_patates", "omelette", "pain"],
-      "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"]
+      "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"],
+      "fromager": ["omelette", "gratin_patates", "salade_tomates", "pain"]
     },
+    "IMMEUBLE": { "LOGEMENTS": 6, "LITS": 3 },
+    "FROMAGER": { "SALAIRE": 8, "HORAIRES": [8, 17] },
     "CONFORT": 100,
     "PLAISIR": 10,
     "RATTRAPAGE": 30,

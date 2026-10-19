@@ -278,6 +278,17 @@
     facade: { key: 'immeuble_ville', file: 'assets/immeuble_ville.png', w: 16, h: 50, etages: 32, fenetre: 16, porte: 96 },
     escalier: 69, haut: 70, porteVerticale: 30, mursAlpha: 0.4, toitZ: 0.5,
     meubles: ['lit_adulte', 'lit_enfant', 'chevet', 'cuisine', 'four', 'table', 'chaise', 'canape', 'table_basse', 'plante', 'tapis_2'],
+    // Les familles des logements (js/carte/ville/habitants.js) : `lits` lits chacun ; les adultes
+    // travaillent à `travail` (sans partie : `horaires`, `salaire` ; sinon ceux du moteur,
+    // VOISINS.FROMAGER) ; tous dorment de `sommeil[0]` h à `sommeil[1]` h. Dehors, ils marchent
+    // à `vitesse` px/s ; ils partent au travail le temps du trajet avant l'embauche (une heure du
+    // jeu : `sParHeure` s), plus `marge` h. Au marché, ils restent `achat` s devant un étal ; le
+    // dîner cuit `cuisson` s. Les cases du logement de gauche (celui de droite en miroir) : le
+    // pied des lits (`couchage` : les deux adultes, l'enfant), la place devant le four (`feu`).
+    vie: {
+      lits: 3, travail: 'fromagerie', horaires: [8, 17], salaire: 8, sommeil: [22, 6], vitesse: 40, sParHeure: 30, marge: 0.25,
+      achat: 4, cuisson: 16, couchage: [[1, 3], [2, 3], [9, 3]], feu: [5, 7], humeur: [70, 40],
+    },
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)
   const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, reach: 14, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };
