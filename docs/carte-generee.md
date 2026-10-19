@@ -138,6 +138,13 @@ Le Marché vend toujours les outils.
     métal ; la face est en verre teinté, avec des montants, une traverse tous les 13 px et des
     reflets en biais. Des parois voisines forment une façade continue (images 97 à 160). Elle
     servira plus tard à construire des immeubles en verre en ville.
+  - **Les murs aux matières de la ville** reprennent les façades des immeubles de la grande ville
+    (les motifs de `scripts/ville/batiments.py`) : briques rouges, orange, ocre ou bleues
+    (3 pierres et 1 bois), pierre de taille (5 pierres). Le dessus est de la même matière, un
+    peu plus clair ; la face a une corniche en haut et un soubassement gris en bas. Ce sont des
+    murs (`mur: true`) : ils ferment une pièce, se raccordent à tous les autres murs, en changent
+    un sans qu'on l'enlève et se posent à l'étage. Images de `murs_hauts.png` : 161, 177, 193,
+    209, 225 + masque (`MATIERES_VILLE`, `scripts/carte/blocs.py`).
   - Les murs et la porte d'un mur horizontal sont une case plus hauts que les autres blocs
     (`assets/murs_hauts.png`, 16 × 40 px, comme les maisons de la transition). Un mur qui cache
     le personnage ou un membre de la famille s'efface à moitié, et tous s'effacent en mode

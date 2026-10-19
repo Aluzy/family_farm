@@ -816,3 +816,18 @@ test('ferme générée : la paroi vitrée se pose comme un mur ou à la place d\
   assert(poserBloc(s, 'paroi_vitree', p.murs[2]).ok, 'à la place d\'un mur');
   assertEqual([blocAt(s, p.murs[2]), blocBloque(s, p.murs[2]), countItem(s, 'paroi_vitree'), piecesCloses(s).length], ['paroi_vitree', true, 2, 1]);
 });
+
+test('ferme générée : les murs aux matières de la ville ferment une pièce et changent un mur', () => {
+  const sortes = ['mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille'];
+  for (const sorte of sortes) {
+    assertEqual([DATA.ATELIER.BLOCS[sorte].mur, DATA.ATELIER.RECETTES[sorte].sortie[sorte]], [true, 1], sorte);
+    const s = chantier('mv_' + sorte);
+    setInv(s, { [sorte]: 20, porte: 1 });
+    const z = terrainLibre(s, 5, 4), p = murs(z, 5, 4);
+    for (const t of p.murs) assert(poserBloc(s, sorte, t).ok, `${sorte} ${t}`);
+    poserBloc(s, 'porte', p.porte);
+    assertEqual(piecesCloses(s).length, 1, `${sorte} : une pièce close`);
+    setInv(s, { mur_pierre: 1 });
+    assert(poserBloc(s, 'mur_pierre', p.murs[1]).ok, `${sorte} : changé en mur en pierre`);
+  }
+});
