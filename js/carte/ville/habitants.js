@@ -196,9 +196,17 @@
       let r = null;
       const im = (this.immeubles || []).find((q) => q.b.nom === lieu);
       if (im) {
-        const nv = im.niveaux[0], places = [];
-        for (let y = 1; y < im.h - 2; y++) for (let x = 1; x < im.w - 1; x++) if (nv.marche[y][x] && nv.grille[y][x] === '.') places.push(pied(im, x, y));
-        r = { im, porte: pied(im, nv.plan.porte, im.h), places, k: 0 };
+        // (d'abord derrière le comptoir ou devant le tableau : VIE.postes ; puis toute la pièce)
+        const nv = im.niveaux[0], places = [], vu = new Set();
+        const libre = (x, y) => y > 0 && y < im.h - 2 && x > 0 && x < im.w - 1 && nv.marche[y][x] && nv.grille[y][x] === '.' && !vu.has(y * 99 + x);
+        const ajoute = (x, y) => { if (libre(x, y)) { vu.add(y * 99 + x); places.push(pied(im, x, y)); } };
+        for (const mb of nv.plan.meubles) {
+          const dy = VIE.postes[mb.nom];
+          if (dy) for (let i = 0; i < mb.w; i++) ajoute(mb.x + i, dy < 0 ? mb.y - 1 : mb.y + mb.h);
+        }
+        const prio = places.length;
+        for (let y = 1; y < im.h - 2; y++) for (let x = 1; x < im.w - 1; x++) ajoute(x, y);
+        r = { im, porte: pied(im, nv.plan.porte, im.h), places, prio, k: 0 };
       } else {
         const nom = VIE.horsVille[lieu] || lieu, pt = VIE.points[nom];
         const b = (this.buildings || []).find((q) => q.name === nom);
@@ -209,12 +217,15 @@
     },
 
     // La place d'un nouvel employé du lieu `lieu` (null : il n'y entre pas, on ne le voit plus) :
-    // les places du rez-de-chaussée, réparties sur toute la pièce.
+    // le premier, derrière le comptoir ou devant le tableau (s'il y en a) ; les autres, répartis
+    // sur toute la pièce.
     placeTravail(lieu) {
       const t = this.lieuTravail(lieu);
       if (!t || !t.places || !t.places.length) return null;
-      const l = t.places, pas = Math.max(1, Math.floor(l.length / 6)), k = t.k++;
-      return l[(k * pas + Math.floor((k * pas) / l.length)) % l.length];
+      const l = t.places, k = t.k++;
+      if (!k && t.prio) return l[0];
+      const reste = l.slice(t.prio ? 1 : 0), pas = Math.max(1, Math.floor(reste.length / 6)), j = k - (t.prio ? 1 : 0);
+      return reste[(j * pas + Math.floor((j * pas) / reste.length)) % reste.length];
     },
 
     // L'heure où `n` part pour son service `k` : le trajet (à pied, jusqu'à son lieu) avant le

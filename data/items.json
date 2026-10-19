@@ -280,6 +280,16 @@
     ],
     "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "mangeable": true, "categorie": "produit", "conservation": 2, "ville": true },
     "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "mangeable": true, "categorie": "produit", "ville": true },
+    "//boutiques": [
+      "Les produits des commerces de la ville (VILLE.BOUTIQUES, data/ville.json) : ils ne s'achètent",
+      "que là (« boutique » : la boutique qui les vend), pas au Marché de la ferme. Un plat de boutique",
+      "rend `bonheur` au repas (dishHappiness), comme un plat cuisiné ; l'ordinateur n'est pas un aliment."
+    ],
+    "croissant": { "nom": "Croissant", "icone": "🥐", "energie": 22, "prix": 5, "mangeable": true, "categorie": "produit", "bonheur": 3, "rachetable": false, "conservation": 2, "boutique": "boulangerie" },
+    "pizza": { "nom": "Pizza", "icone": "🍕", "energie": 80, "prix": 18, "mangeable": true, "categorie": "produit", "bonheur": 5, "rachetable": false, "conservation": 2, "boutique": "pizzeria" },
+    "burger": { "nom": "Burger", "icone": "🍔", "energie": 90, "prix": 16, "mangeable": true, "categorie": "produit", "bonheur": 5, "rachetable": false, "conservation": 2, "boutique": "burger" },
+    "frites": { "nom": "Frites", "icone": "🍟", "energie": 30, "prix": 5, "mangeable": true, "categorie": "produit", "bonheur": 3, "rachetable": false, "conservation": 2, "boutique": "burger" },
+    "ordinateur": { "nom": "Ordinateur", "icone": "💻", "prix": 240, "mangeable": false, "categorie": "produit", "rachetable": false, "boutique": "informatique" },
     "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "mangeable": true, "categorie": "produit", "conservation": 10, "ville": true },
     "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "mangeable": false, "categorie": "ingrédient", "ville": true },
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient", "ville": true },

@@ -1,8 +1,10 @@
-/* carte/ville/marche.js — la scène de la ville : le marché de la ville et les entreprises.
+/* carte/ville/marche.js — la scène de la ville : le marché, les boutiques et les entreprises.
  *
- * Le marché de la ville (couche « lieux » : les étals) et les entreprises (les entrepôts
- * « conserverie », « fromagerie », « confiturerie ») : les ventes et les achats passent tout
- * de suite par le moteur du jeu (FermeHote, js/ui/excursion.js).
+ * Le marché de la ville (couche « lieux » : les étals), les boutiques (les commerces bâtis en
+ * blocs, js/carte/ville/lieux.js : on achète à leur comptoir, VILLE.BOUTIQUES, quand un employé y
+ * travaille) et les entreprises (les entrepôts « conserverie », « fromagerie », « confiturerie ») :
+ * les ventes et les achats passent tout de suite par le moteur du jeu (FermeHote,
+ * js/ui/excursion.js).
  *
  * Méthodes de la scène des cartes (js/ville-carte.js), posées sur son prototype : `this` est
  * la scène (voir docs/architecture-phaser.md).
@@ -12,6 +14,9 @@
 
   const V = global.CarteVille;
   const { hote } = V;
+  const { T } = V.C;
+  // les meubles où l'on achète, dans une boutique (son comptoir, sa vitrine, son étal…)
+  const COMPTOIRS = ['comptoir', 'vitrine_pain', 'etal_poisson', 'presentoir'];
 
   V.partie({
 
@@ -23,7 +28,26 @@
       return hote() && hote().vitrine ? hote().vitrine() : null;
     },
 
+    // Un toucher sur le comptoir d'une boutique où l'on est (au rez-de-chaussée) : sa fenêtre,
+    // si un employé y travaille ; sinon, ses horaires.
+    tapBoutique(w) {
+      const im = this.immeubleIci, H = hote();
+      if (!im || this.niveauVille || !H || !H.boutique) return false;
+      const id = im.b.nom, B = H.boutique(id);
+      if (!B) return false;
+      const sur = im.niveaux[0].plan.meubles.some((mb) => COMPTOIRS.includes(mb.nom)
+        && w.x >= (im.x + mb.x) * T && w.x <= (im.x + mb.x + mb.w) * T && w.y >= (im.y + mb.y) * T - T && w.y <= (im.y + mb.y + mb.h) * T);
+      if (!sur) return false;
+      const ouvert = (this.habitants || []).some((n) => n.emploi && n.emploi.lieu === id && n.etat === 'travail' && !n.cache);
+      if (ouvert) { this.openLieu('boutique:' + id); return true; }
+      const h = (x) => { const m = Math.round(x * 60); return `${Math.floor(m / 60)} h${m % 60 ? String(m % 60).padStart(2, '0') : ''}`; };
+      const e = ((this.ecoImm && this.ecoImm.emplois) || []).find((q) => q.LIEU === id);
+      this.say(`🔒 ${B.icone} ${B.nom} : personne au comptoir.${e ? ` Ouvert ${e.HORAIRES.map(([a, b]) => `de ${h(a)} à ${h(b)}`).join(' et ')}.` : ''}`);
+      return true;
+    },
+
     tapLieu(w) {
+      if (this.tapBoutique(w)) return true;
       const etal = (this.lieux || []).find((o) => o.name === 'marche' && w.x >= o.x && w.x <= o.x + o.width && w.y >= o.y && w.y <= o.y + o.height);
       if (etal) { this.openLieu('marche'); return true; }
       const v = this.vitrine();
@@ -49,7 +73,7 @@
       const titre = dlg.querySelector('#lieu-titre'), corps = dlg.querySelector('.lieu-corps');
       const a = document.activeElement;
       const avant = a && corps.contains(a) && a.tagName === 'BUTTON'
-        ? ['vendre', 'n', 'q'].filter((k) => a.dataset[k] !== undefined).map((k) => `[data-${k}="${CSS.escape(a.dataset[k])}"]`).join('') || (a.id ? '#' + CSS.escape(a.id) : '')
+        ? ['vendre', 'acheter', 'n', 'q'].filter((k) => a.dataset[k] !== undefined).map((k) => `[data-${k}="${CSS.escape(a.dataset[k])}"]`).join('') || (a.id ? '#' + CSS.escape(a.id) : '')
         : null;
       this.renderLieuCorps(titre, corps);
       if (avant === null) return;
@@ -72,6 +96,23 @@
           const it = b.dataset.vendre, r = H.vendre(it, Number(b.dataset.n) || 0);
           const def = v.vente.find((q) => q.item === it);
           if (r && r.ok && def) this.say(`🧺 Vendu : ${r.sold} ${def.icone} ${def.nom.toLowerCase()} (+${r.gain} 💰)`);
+          this.renderLieu();
+        }; });
+        return;
+      }
+      if (this.lieu.startsWith('boutique:')) {
+        // une boutique : ses produits, leur prix, de quoi en acheter un ou cinq
+        const id = this.lieu.slice(9), B = H && H.boutique ? H.boutique(id) : null;
+        titre.textContent = B ? `${B.icone} ${B.nom}` : '🛍️ Boutique';
+        if (!B) { corps.innerHTML = '<p class="note">Il faut une partie en cours pour acheter.</p>'; return; }
+        const rangs = B.objets.map((o) => `<div class="rang"><span aria-hidden="true">${esc(o.icone)}</span><span class="nom">${esc(o.nom)}${o.energie ? ` <small>⚡ ${o.energie}</small>` : ''}</span><span>${o.prix} 💰</span>
+            <button type="button" class="btn" data-acheter="${esc(o.item)}" data-n="1"${B.pieces >= o.prix ? '' : ' disabled'}>Acheter 1</button>
+            <button type="button" class="btn" data-acheter="${esc(o.item)}" data-n="5"${B.pieces >= o.prix * 5 ? '' : ' disabled'}>5</button></div>`).join('');
+        corps.innerHTML = `<p class="note">Ce que tu achètes va dans l'inventaire. 💰 ${B.pieces} pièces.</p><div class="rangs">${rangs}</div>`;
+        corps.querySelectorAll('[data-acheter]').forEach((b) => { b.onclick = () => {
+          const it = b.dataset.acheter, r = H.acheterBoutique(id, it, Number(b.dataset.n) || 1);
+          const o = B.objets.find((q) => q.item === it);
+          if (r && r.ok && o) this.say(`🛍️ Acheté : ${r.bought} ${o.icone} ${o.nom.toLowerCase()} (−${r.cost} 💰)`);
           this.renderLieu();
         }; });
         return;

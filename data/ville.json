@@ -28,6 +28,10 @@
     "  Version 1.20 : en se promenant en ville (ville-carte.html), on vend aux étals du marché les",
     "  produits de la ferme des CATEGORIES (pas ceux marqués \"ville\") VENTE % de leur prix.",
     "",
+    "BOUTIQUES : les commerces de la ville (docs/plan-ville.md, étape 5b). Au comptoir, quand un",
+    "  employé y travaille (aux horaires de son poste, VOISINS.EMPLOIS), on achète les `objets` de",
+    "  la boutique MARGE % de leur prix (arrondi au-dessus). Ils vont dans l'inventaire.",
+    "",
     "ENTREPRISES (version 1.20) : les entrepôts de la ville, qu'on achète en s'y promenant (prix).",
     "  Chaque jour à HEURE, une entreprise achetée prend dans le stock de la ferme (l'inventaire,",
     "  puis le frigo) `par` unités de ses `intrants` (n'importe lesquels, les plus abondants",
@@ -61,6 +65,16 @@
       "foret": { "nom": "Forêt", "icone": "🚌", "lieu": "voyage", "transport": "bus", "heures": 5, "prix": 5, "bonheur": { "enfant": 15, "adulte": 15 }, "cueillettes": [{ "champignon": 3 }, { "myrtille": 5 }, { "champignon": 2, "chataigne": 4 }], "texte": "Le bus jusqu'à la forêt : promenade et cueillette du jour." }
     },
     "MARCHE": { "HEURES": 2, "PRIX": 3, "VENTE": 130, "CATEGORIES": ["légume", "fruit", "produit", "conserve"] },
+    "BOUTIQUES": {
+      "MARGE": 120,
+      "LISTE": {
+        "boulangerie": { "nom": "La boulangerie", "icone": "🥖", "objets": ["pain", "croissant", "tarte_pommes", "pain_epices"] },
+        "pizzeria": { "nom": "La pizzeria", "icone": "🍕", "objets": ["pizza"] },
+        "burger": { "nom": "Le fast-food", "icone": "🍔", "objets": ["burger", "frites"] },
+        "poissonnerie": { "nom": "La poissonnerie", "icone": "🐟", "objets": ["poisson", "sardine", "anchois", "truite", "dorade", "brochet"] },
+        "informatique": { "nom": "Le magasin d'informatique", "icone": "💻", "objets": ["ordinateur"] }
+      }
+    },
     "ENTREPRISES": {
       "HEURE": 9,
       "LISTE": {

@@ -428,6 +428,59 @@ export const RAW_DATA = {
     "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
     "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "mangeable": true, "categorie": "produit", "ville": true },
     "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "mangeable": true, "categorie": "produit", "ville": true },
+    "croissant": {
+      "nom": "Croissant",
+      "icone": "🥐",
+      "energie": 22,
+      "prix": 5,
+      "mangeable": true,
+      "categorie": "produit",
+      "bonheur": 3,
+      "rachetable": false,
+      "boutique": "boulangerie"
+    },
+    "pizza": {
+      "nom": "Pizza",
+      "icone": "🍕",
+      "energie": 80,
+      "prix": 18,
+      "mangeable": true,
+      "categorie": "produit",
+      "bonheur": 5,
+      "rachetable": false,
+      "boutique": "pizzeria"
+    },
+    "burger": {
+      "nom": "Burger",
+      "icone": "🍔",
+      "energie": 90,
+      "prix": 16,
+      "mangeable": true,
+      "categorie": "produit",
+      "bonheur": 5,
+      "rachetable": false,
+      "boutique": "burger"
+    },
+    "frites": {
+      "nom": "Frites",
+      "icone": "🍟",
+      "energie": 30,
+      "prix": 5,
+      "mangeable": true,
+      "categorie": "produit",
+      "bonheur": 3,
+      "rachetable": false,
+      "boutique": "burger"
+    },
+    "ordinateur": {
+      "nom": "Ordinateur",
+      "icone": "💻",
+      "prix": 240,
+      "mangeable": false,
+      "categorie": "produit",
+      "rachetable": false,
+      "boutique": "informatique"
+    },
     "fromage_alpage": {
       "nom": "Fromage d'alpage",
       "icone": "🧀",
@@ -1963,6 +2016,16 @@ export const RAW_DATA = {
       }
     },
     "MARCHE": { "HEURES": 2, "PRIX": 3, "VENTE": 130, "CATEGORIES": ["légume", "fruit", "produit", "conserve"] },
+    "BOUTIQUES": {
+      "MARGE": 120,
+      "LISTE": {
+        "boulangerie": { "nom": "La boulangerie", "icone": "🥖", "objets": ["pain", "croissant", "tarte_pommes", "pain_epices"] },
+        "pizzeria": { "nom": "La pizzeria", "icone": "🍕", "objets": ["pizza"] },
+        "burger": { "nom": "Le fast-food", "icone": "🍔", "objets": ["burger", "frites"] },
+        "poissonnerie": { "nom": "La poissonnerie", "icone": "🐟", "objets": ["poisson", "sardine", "anchois", "truite", "dorade", "brochet"] },
+        "informatique": { "nom": "Le magasin d'informatique", "icone": "💻", "objets": ["ordinateur"] }
+      }
+    },
     "ENTREPRISES": {
       "HEURE": 9,
       "LISTE": {
@@ -2459,6 +2522,10 @@ export const RAW_DATA = {
     "lait": 4,
     "lait_alpage": 4,
     "poisson": 2,
+    "croissant": 2,
+    "pizza": 2,
+    "burger": 2,
+    "frites": 2,
     "fromage_alpage": 10,
     "champignon": 3,
     "myrtille": 3,

@@ -426,7 +426,10 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
     viande_mouton: 20, pomme: 20, poire: 20, truite: 20, brochet: 20, omble: 20, dorade: 20, anchois: 20, sardine: 20, oignon: 20, ail: 20, poivron: 20, epinard: 20, fraise: 20, riz: 20,
     viande_boeuf: 20, viande_volaille: 20, lait: 20, lait_alpage: 20,
     // version 1.5 : denrées de la ville et de la cueillette (le sucre et les épices ne se mangent pas)
-    poisson: 20, miel: 20, fromage_alpage: 20, champignon: 20, myrtille: 20, baies: 20, chataigne: 20,
+    poisson: 20, miel: 20,
+    // les produits des boutiques de la ville (étape 5b ; l'ordinateur ne se mange pas)
+    croissant: 20, pizza: 20, burger: 20, frites: 20,
+    fromage_alpage: 20, champignon: 20, myrtille: 20, baies: 20, chataigne: 20,
     pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, tarte_pommes: 20,
     soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, fromage_frais: 20, riz_au_lait: 20,
     pain_ail: 20, tarte_fraises: 20, confiture_fraises: 20,
