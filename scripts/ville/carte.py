@@ -634,42 +634,49 @@ def objets(c):
 
 
 # Les réverbères : un tous les PAS_REVERBERE tuiles de chaque côté de chaque rue (en quinconce
-# d'un côté à l'autre), sur la bordure du trottoir ; à au plus DECALE_REVERBERE tuiles de sa
-# place, si elle est prise.
+# d'un côté à l'autre), sur le trottoir, leur pied à RECUL_REVERBERE px du bord de la chaussée
+# (un bout de trottoir entre eux et la rue) ; à au plus DECALE_REVERBERE tuiles de sa place, si
+# elle est prise.
 PAS_REVERBERE = 10
 DECALE_REVERBERE = 3
-# ce que le dessin d'un réverbère (1 × 3 tuiles) ne doit pas toucher : un bâtiment (sa tête
+RECUL_REVERBERE = 9
+# ce que le dessin d'un réverbère (16 × 48 px) ne doit pas toucher : un bâtiment (sa tête
 # passerait derrière, cachée), un arbre, une voiture garée, un banc, un étal, l'abri de bus…
 GENE_REVERBERE = ('murs', 'pierre_de_taille', 'vitrages', 'charpente', 'toits', 'menuiserie', 'equipements',
                   'fontaines', 'mobilier', 'vehicules', 'vegetation')
+# le dessin du réverbère (O.reverbere) : l'axe de son mât et son pied (px)
+MAT_REVERBERE, PIED_REVERBERE = 7.5, 45
 
 
 def reverberes(c):
-    """Les réverbères des rues, des deux côtés : le pied sur la bordure du trottoir (la rangée
-    ou la colonne à moitié sur la chaussée, dont l'autre moitié est du trottoir) ; pas devant un
-    carrefour ni ses passages piétons ; pas là où son dessin toucherait autre chose (voir
-    GENE_REVERBERE) : il se décale alors le long de la rue, ou ce côté-là s'en passe. Leurs
-    lanternes vont dans LUMIERES (allumées la nuit)."""
+    """Les réverbères des rues, des deux côtés, sur le trottoir : le bord de la chaussée est au
+    milieu de la bordure (la rangée ou la colonne de tuiles à moitié sur la chaussée), le pied
+    du réverbère RECUL_REVERBERE px derrière lui ; seulement là où il y a du trottoir derrière la
+    bordure ; pas devant un carrefour ni ses passages piétons ; pas là où son dessin toucherait
+    autre chose (voir GENE_REVERBERE) : il se décale alors le long de la rue, ou ce côté-là s'en
+    passe. Leurs lanternes vont dans LUMIERES (allumées la nuit)."""
     rev = O.reverbere()
     g = coins()
-    # (le bord de la tuile du pied, côté trottoir : ses deux coins sont du trottoir)
+    # (le bord de la bordure, côté trottoir : ses deux coins sont du trottoir)
     bord_h = lambda x, y: 0 <= x < W and 0 <= y <= H and g[y][x] == g[y][x + 1] == 'trottoir'
     bord_v = lambda x, y: 0 <= x <= W and 0 <= y < H and g[y][x] == g[y + 1][x] == 'trottoir'
     pres_d_une_rue = lambda x, y, rs: any(r[1] - 4 <= x <= r[2] + 3 and r[3] - 4 <= y <= r[4] + 3 for r in rs)
 
     def libre(x, y):
-        # (x, y) : la tuile du pied ; le dessin couvre la colonne x, de y − 2 à y
-        if not (0 <= x < W and 2 <= y < H):
+        # (x, y) : le coin haut gauche du dessin, en px ; sa lanterne et son mât (sans le bord)
+        x, y = round(x), round(y)
+        if not (0 <= x and x + 16 <= W * T and 0 <= y and y + 48 <= H * T):
             return False
-        boite = (x * T, (y - 2) * T, x * T + T, y * T + T)
+        boite = (x + 3, y, x + 13, y + 48)
         return all(c[n].images[0].crop(boite).getbbox() is None for n in GENE_REVERBERE)
 
     def pose(x, y):
-        c['equipements'].colle(rev, x * T, (y - 2) * T)
-        LUMIERES.append(O.lanterne(x * T, (y - 2) * T))
+        x, y = round(x), round(y)
+        c['equipements'].colle(rev, x, y)
+        LUMIERES.append(O.lanterne(x, y))
 
     def le_long(debut, fin, decale, place):
-        # `place(k)` : la tuile du pied à la k-ième case de la rue (ou None : pas ici)
+        # `place(k)` : le coin du dessin à la k-ième case de la rue (ou None : pas ici)
         for k in range(debut + decale, fin, PAS_REVERBERE):
             for d in sorted(range(-DECALE_REVERBERE, DECALE_REVERBERE + 1), key=abs):
                 q = place(k + d) if debut <= k + d < fin else None
@@ -677,14 +684,21 @@ def reverberes(c):
                     pose(*q)
                     break
 
+    R, M, Pd = RECUL_REVERBERE, MAT_REVERBERE, PIED_REVERBERE
     for _, x0, x1, y0, y1 in P.RUES_H:
-        # en haut : le pied sur la bordure (y0 − 1) ; en bas : sur la bordure (y1)
-        le_long(x0, x1, 5, lambda x: (x, y0 - 1) if bord_h(x, y0 - 1) and not pres_d_une_rue(x, y0 - 1, P.RUES_V) else None)
-        le_long(x0, x1, 10, lambda x: (x, y1) if bord_h(x, y1 + 1) and not pres_d_une_rue(x, y1, P.RUES_V) else None)
+        # en haut : le bord de la chaussée au milieu de la bordure y0 − 1 ; en bas, de la bordure y1
+        haut, bas = y0 * T - T / 2, y1 * T + T / 2
+        le_long(x0, x1, 5, lambda x: (x * T + T / 2 - M, haut - R - Pd)
+                if bord_h(x, y0 - 1) and not pres_d_une_rue(x, y0 - 1, P.RUES_V) else None)
+        le_long(x0, x1, 10, lambda x: (x * T + T / 2 - M, bas + R - Pd)
+                if bord_h(x, y1 + 1) and not pres_d_une_rue(x, y1, P.RUES_V) else None)
     for _, x0, x1, y0, y1 in P.RUES_V:
-        # à gauche : sur la bordure (x0 − 1) ; à droite : sur la bordure (x1)
-        le_long(y0, y1, 5, lambda y: (x0 - 1, y) if bord_v(x0 - 1, y) and not pres_d_une_rue(x0 - 1, y, P.RUES_H) else None)
-        le_long(y0, y1, 10, lambda y: (x1, y) if bord_v(x1 + 1, y) and not pres_d_une_rue(x1, y, P.RUES_H) else None)
+        # à gauche : le bord au milieu de la bordure x0 − 1 ; à droite, de la bordure x1
+        gauche, droite = x0 * T - T / 2, x1 * T + T / 2
+        le_long(y0, y1, 5, lambda y: (gauche - R - M, (y + 1) * T - Pd)
+                if bord_v(x0 - 1, y) and not pres_d_une_rue(x0 - 1, y, P.RUES_H) else None)
+        le_long(y0, y1, 10, lambda y: (droite + R - M, (y + 1) * T - Pd)
+                if bord_v(x1 + 1, y) and not pres_d_une_rue(x1, y, P.RUES_H) else None)
 
 
 def lac(t):
