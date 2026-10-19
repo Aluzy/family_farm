@@ -323,11 +323,19 @@
     { nom: 'ecole_2', plan: 'ecole', enseigne: 'ecole', efface: [120, 36, 16, 16], x: 120, y: 41, w: 16, h: 13, facade: 'orange' },
     { nom: 'ecole_3', plan: 'ecole', enseigne: 'ecole', efface: [120, 55, 16, 15], x: 120, y: 60, w: 16, h: 12, facade: 'orange' },
     { nom: 'negoce', efface: [23, 58, 11, 18], x: 23, y: 64, w: 11, h: 14, facade: 'rouge' },
+    { nom: 'electronique', efface: [1, 17, 11, 13], x: 1, y: 22, w: 11, h: 10, facade: 'rouge' },
+    { nom: 'materiaux', efface: [19, 19, 15, 13], x: 20, y: 24, w: 13, h: 10, facade: 'bleu' },
+    { nom: 'textile', efface: [0, 179, 13, 13], x: 1, y: 184, w: 11, h: 10, facade: 'rouge' },
+    { nom: 'minoterie', efface: [19, 179, 15, 15], x: 20, y: 184, w: 13, h: 12, facade: 'ocre' },
+    { nom: 'mayonnaise', efface: [1, 201, 11, 13], x: 1, y: 206, w: 11, h: 10, facade: 'rouge' },
+    { nom: 'usine_info', efface: [20, 146, 14, 20], x: 20, y: 152, w: 14, h: 14, facade: 'pierre' },
+    { nom: 'menuiserie', efface: [45, 118, 8, 29], x: 46, y: 127, w: 7, h: 22, facade: 'ocre' },
   ].map((l) => ({ niveaux: 2, plan: l.nom, enseigne: l.nom, ...l }));
   const IMMEUBLE = {
     carte: 'ville', dy: 40, transparent: 0.3, voile: 0x0d1018, alpha: 0.62,
     retire: ['maisons_a*', 'maisons_b*', 'maison_bleue', 'bureaux_est', 'bureaux_du_marche', 'verriere_est', 'maison_corps', 'maison_aile_ouest',
-      'maison_aile_est', 'tour', 'bureaux_bleus', 'bureaux_bruns', 'bureaux_clairs', 'bureaux_de_la_gare'],
+      'maison_aile_est', 'tour', 'bureaux_bleus', 'bureaux_bruns', 'bureaux_clairs', 'bureaux_de_la_gare', 'usine', 'hangar', 'entrepot_sud',
+      'entrepot_du_quai', 'usine_sud', 'bureaux_du_sud', 'longue_maison'],
     batiments: [
       { nom: 'immeuble_ocre', efface: [146, 36, 22, 16], x: 146, y: 40, w: 22, h: 14, niveaux: 3, plan: 'double', facade: 'ocre', logement: 'logement' },
       { nom: 'residence_verre', efface: [1, 117, 10, 21], x: 1, y: 126, w: 10, h: 14, niveaux: 4, plan: 'simple', facade: 'bleu', logement: 'residence_verre' },
@@ -349,7 +357,9 @@
       'plan', 'frigo', 'evier', 'comptoir', 'four_boulanger', 'petrin', 'vitrine_pain', 'etagere_pain', 'four_pizza', 'friteuse', 'grill',
       'etal_poisson', 'bac_homards', 'presentoir', 'etagere_info', 'bureau_ordi', 'pupitre', 'drapeau', 'classeur', 'banc', 'vitrine_musee', 'statue',
       'dinosaure', 'chevalet', 'ecran_cinema', 'fauteuils', 'popcorn', 'projecteur', 'tableau_noir', 'pupitre_eleve', 'etagere_livres', 'globe',
-      'tableau_cours', 'coffre'],
+      'tableau_cours', 'coffre', 'silo_grain', 'moulin', 'sacs_farine', 'metier_tisser', 'bobines', 'rouleaux_tissu', 'machine_coudre', 'cuve',
+      'remplisseuse', 'palette_pots', 'caisse_oeufs', 'betonniere', 'presse_briques', 'palette_briques', 'sacs_ciment', 'chaine_montage',
+      'etabli_soudure', 'armoire_composants', 'robot_bras', 'serveur', 'etabli', 'scie', 'planches', 'armoire', 'palette', 'chariot'],
     // Les familles des logements (js/carte/ville/habitants.js) : `lits` lits dans un logement
     // d'immeuble (une maison : deux adultes et ses enfants, un lit chacun) ; les adultes
     // travaillent à `travail` (sans partie : `horaires`, `salaire` ; sinon ceux du moteur,

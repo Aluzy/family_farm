@@ -74,7 +74,8 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
      magasin d'informatique ;
    - lot 2, les services et loisirs (fait ; leurs meubles : `scripts/ville/services.py`) :
      mairie, musée, cinéma, écoles 2 et 3, bureau de négoce ;
-   - lot 3, les fabriques : minoterie, fabriques textile, de mayonnaise et de matériaux, usines
-     électronique et informatique, menuiserie.
+   - lot 3, les fabriques (fait ; leurs machines : `scripts/ville/fabriques.py`) : minoterie,
+     fabriques textile, de mayonnaise et de matériaux, usines électronique et informatique,
+     menuiserie.
 5. Les emplois et l'économie (`data/economie.json`, `js/engine/economie.js`) : recettes,
    stocks, flux, camions, salaires, sorties et bonheur.
