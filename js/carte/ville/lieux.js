@@ -12,8 +12,12 @@
  * case de gauche de la porte d'entrée), `fenetres` { devant, derriere } (les colonnes des murs
  * à fenêtre ; devant, au rez-de-chaussée, la porte prend sa place).
  *
- * Le rez-de-chaussée est la boutique : la salle des clients devant, le comptoir, l'atelier ou la
- * cuisine derrière ; l'étage, la réserve et le bureau.
+ * Un commerce : au rez-de-chaussée, la boutique (la salle des clients devant, le comptoir,
+ * l'atelier ou la cuisine derrière) ; à l'étage, la réserve et le bureau. Les services et les
+ * loisirs : la mairie (l'accueil, la salle des mariages, les bureaux ; la salle du conseil et le
+ * bureau du maire), le musée (deux salles d'exposition), le cinéma (la salle et ses fauteuils,
+ * le hall et la billetterie ; la cabine de projection), les écoles (une classe par niveau), le
+ * bureau de négoce (la salle des marchés ; la salle de réunion).
  */
 (function (global) {
   'use strict';
@@ -28,6 +32,17 @@
     meubles: [
       m('bureau_ordi', 1, 1, 2), m('chaise', 2, 2), ...Array.from({ length: Math.max(1, Math.floor((W - 7) / 2)) }, (_, i) => m('etagere_info', 4 + 2 * i, 1, 2)),
       m('chaise', 1, 6), m('table', 2, 6, 3), m('chaise', 5, 6, 1, 1, true), m('plante', W - 2, 8),
+    ],
+  });
+
+  // une rangée de pupitres d'élèves, à la ligne y
+  const pupitres = (y) => [2, 4, 6, 9, 11, 13].map((x) => m('pupitre_eleve', x, y));
+  // une classe : le tableau noir, le bureau du maître, l'étagère à livres, le globe, trois rangées
+  // de pupitres
+  const classe = () => ({
+    meubles: [
+      m('etagere_livres', 1, 1, 2), m('globe', 4, 1), m('tableau_noir', 6, 1, 3), m('chaise', 11, 1), m('table', 10, 2, 3),
+      ...pupitres(5), ...pupitres(7), ...pupitres(9), m('plante', 1, 10),
     ],
   });
 
@@ -104,6 +119,97 @@
           ],
         },
         reserve(12),
+      ],
+    },
+    // la mairie (19 cases) : l'accueil au milieu (le comptoir, un banc), la salle des mariages à
+    // gauche (le pupitre entre deux drapeaux, deux bancs), les bureaux à droite ; à l'étage, la
+    // salle du conseil et le bureau du maire
+    mairie: {
+      escalier: [11, 1], porte: 9, fenetres: { devant: [2, 3, 5, 6, 12, 13, 15, 16], derriere: [2, 3, 8, 10, 15, 16] },
+      niveaux: [
+        {
+          murs: [[6, 1, 6, 7], [12, 1, 12, 7]], portes: [[6, 5], [12, 5]],
+          meubles: [
+            m('comptoir', 8, 2, 3), m('banc', 8, 5, 3),
+            m('drapeau', 1, 1), m('pupitre', 3, 1), m('drapeau', 5, 1), m('banc', 1, 3, 3), m('banc', 1, 5, 3),
+            m('classeur', 13, 1), m('bureau_ordi', 14, 1, 2), m('chaise', 15, 2), m('classeur', 17, 1),
+            m('bureau_ordi', 15, 4, 2), m('chaise', 16, 5), m('plante', 17, 7),
+          ],
+        },
+        {
+          meubles: [
+            m('drapeau', 1, 1), m('bureau_ordi', 2, 1, 2), m('chaise', 3, 2), m('drapeau', 5, 1),
+            m('chaise', 6, 4), m('table', 7, 4, 3), m('chaise', 10, 4, 1, 1, true), m('chaise', 6, 6), m('table', 7, 6, 3), m('chaise', 10, 6, 1, 1, true),
+            m('classeur', 13, 1), m('etagere_livres', 14, 1, 2), m('classeur', 17, 1), m('plante', 1, 7), m('plante', 17, 7),
+          ],
+        },
+      ],
+    },
+    // le musée (8 cases) : le squelette de dinosaure, un buste, deux vitrines, deux tableaux,
+    // l'accueil ; à l'étage, la galerie des tableaux et des statues
+    musee: {
+      escalier: [1, 1], porte: 3, fenetres: { devant: [1, 6], derriere: [3, 4] },
+      niveaux: [
+        {
+          meubles: [
+            m('dinosaure', 2, 2, 3, 2), m('statue', 6, 1), m('vitrine_musee', 1, 5, 2), m('vitrine_musee', 5, 5, 2),
+            m('chevalet', 1, 7), m('chevalet', 6, 7), m('comptoir', 4, 9, 3), m('plante', 1, 10),
+          ],
+        },
+        {
+          meubles: [
+            m('chevalet', 3, 1), m('chevalet', 5, 1), m('statue', 6, 3), m('vitrine_musee', 1, 4, 2), m('vitrine_musee', 4, 5, 2),
+            m('banc', 2, 7, 3), m('statue', 1, 9), m('chevalet', 6, 9),
+          ],
+        },
+      ],
+    },
+    // le cinéma (16 cases) : la salle (l'écran, trois rangées de fauteuils de part et d'autre de
+    // l'allée), le hall (la billetterie, la machine à pop-corn, un banc) ; à l'étage, la cabine
+    // de projection
+    cinema: {
+      escalier: [14, 10], porte: 7, fenetres: { devant: [2, 3, 12, 13], derriere: [] },
+      niveaux: [
+        {
+          murs: [[1, 9, 14, 9]], portes: [[8, 9]],
+          meubles: [
+            m('ecran_cinema', 5, 1, 6),
+            ...[4, 6, 8].flatMap((y) => [2, 5, 9, 12].map((x) => m('fauteuils', x, y, 3))),
+            m('comptoir', 1, 10, 3), m('popcorn', 4, 10), m('banc', 10, 11, 3), m('plante', 14, 12),
+          ],
+        },
+        {
+          meubles: [
+            m('etagere_info', 1, 1, 2), m('etagere_info', 3, 1, 2), m('bureau_ordi', 6, 1, 2), m('chaise', 7, 2), m('classeur', 9, 1),
+            m('projecteur', 5, 6), m('projecteur', 9, 6), m('chaise', 1, 9), m('table', 2, 9, 3), m('chaise', 5, 9, 1, 1, true), m('plante', 12, 12),
+          ],
+        },
+      ],
+    },
+    // l'école (16 cases) : une classe par niveau
+    ecole: {
+      escalier: [14, 1], porte: 7, fenetres: { devant: [2, 3, 5, 10, 12, 13], derriere: [3, 4, 11, 12] },
+      niveaux: [classe(), classe()],
+    },
+    // le bureau de négoce (11 cases) : la salle des marchés (le tableau des cours, six bureaux, le
+    // coffre, l'accueil) ; à l'étage, le bureau du directeur et la salle de réunion
+    negoce: {
+      escalier: [1, 1], porte: 4, fenetres: { devant: [1, 2, 7, 8], derriere: [3, 4, 6, 7] },
+      niveaux: [
+        {
+          meubles: [
+            m('tableau_cours', 3, 1, 3), m('coffre', 8, 1), m('classeur', 9, 1),
+            ...[4, 7].flatMap((y) => [1, 4, 7].flatMap((x) => [m('bureau_ordi', x, y, 2), m('chaise', x + 1, y + 1)])),
+            m('banc', 1, 11, 3), m('comptoir', 6, 10, 3), m('plante', 9, 12),
+          ],
+        },
+        {
+          meubles: [
+            m('classeur', 4, 1), m('bureau_ordi', 6, 1, 2), m('chaise', 7, 2), m('coffre', 9, 1),
+            m('chaise', 2, 5), m('table', 3, 5, 3), m('chaise', 6, 5, 1, 1, true), m('chaise', 2, 8), m('table', 3, 8, 3), m('chaise', 6, 8, 1, 1, true),
+            m('etagere_livres', 8, 10, 2), m('plante', 1, 12),
+          ],
+        },
       ],
     },
   };

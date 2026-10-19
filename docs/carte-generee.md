@@ -401,7 +401,13 @@ parties.
   bureau à l'étage. Leur enseigne surmonte la porte (`enseigne_<lieu>.png`) ; leurs meubles
   (le four de boulanger, le pétrin, la vitrine, le four à pizza, la friteuse, le grill, l'étal
   de poissons, le bac à homards, les présentoirs, les étagères, le bureau et son écran) sont
-  dessinés par `scripts/ville/commerces.py`.
+  dessinés par `scripts/ville/commerces.py`. Les services et les loisirs prennent la place de
+  la maison à deux ailes (la mairie : l'accueil, la salle des mariages, les bureaux ; à l'étage,
+  la salle du conseil), de la tour (le musée : le squelette de dinosaure, les vitrines, les
+  tableaux, les bustes), des bureaux du centre-est (le cinéma : l'écran et ses fauteuils, la
+  billetterie, la cabine de projection ; les écoles 2 et 3 : une classe par niveau) et des
+  bureaux de la gare (le bureau de négoce : la salle des marchés, la salle de réunion) ; leurs
+  meubles : `scripts/ville/services.py`.
 - **L'immeuble ocre (plan « double »)** : au rez-de-chaussée, le hall occupe le milieu de la moitié de devant (4 × 7 cases) : une
   porte double sur la rue, une porte de chaque côté vers un logement, et au fond l'escalier qui
   monte. **À chaque étage**, le palier, de la même taille : le haut de l'escalier d'où l'on

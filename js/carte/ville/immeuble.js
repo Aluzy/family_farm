@@ -164,7 +164,7 @@
   // couches des bâtiments, dans le rectangle `efface` de chacun) et leur emprise (la couche
   // « batiments »).
   V.immeubleCarte = function (data) {
-    const W = data.width, noms = I.batiments.map((b) => b.nom), retire = (n) => noms.includes(n) || (I.retire || []).some((p) => n.startsWith(p));
+    const W = data.width, noms = I.batiments.map((b) => b.nom), retire = (n) => noms.includes(n) || (I.retire || []).some((p) => (p.endsWith('*') ? n.startsWith(p.slice(0, -1)) : n === p));
     for (const l of data.layers) {
       if (l.type === 'tilelayer' && BATI.includes(l.name)) {
         for (const b of I.batiments) {
