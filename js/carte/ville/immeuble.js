@@ -46,8 +46,9 @@
 
   // Le plan du niveau n (sur N) de l'immeuble `b` (IMMEUBLE.batiments) : { grille: [chaînes],
   // meubles: [{ nom, x, y, w, h, flip }], porte (la case de gauche de la porte d'entrée),
-  // logements: [{ dans(x, y) (la case est-elle du logement ?), lits ([x, y] : le pied des lits
-  // des deux adultes, de l'enfant), feu ([x, y] : la place devant le four), flip (le four à
+  // logements: [{ dans(x, y, niv) (la case est-elle du logement ?), niveaux (ceux où l'on va et
+  // vient ; sans : le sien), lits ([x, y, niv] : le pied des lits des deux adultes, puis des
+  // enfants ; sans niv : son niveau), feu ([x, y] : la place devant le four), flip (le four à
   // gauche) }] }. La grille : M un mur, F un mur à fenêtre, P une porte, . le plancher, U
   // l'escalier qui monte, D le haut de l'escalier qui descend.
   V.planImmeuble = function (b, n, N) {
@@ -60,6 +61,37 @@
       if (n < N - 1) g[y][monte(n)] = 'U';
       if (n > 0) g[y][monte(n - 1)] = 'D';
     };
+    if (b.plan === 'maison') {
+      // une maison de ville, sur deux niveaux. Au rez-de-chaussée, derrière, la pièce de vie (la
+      // cuisine, le four, la table) ; devant, le salon à gauche, l'entrée à droite (la porte sur la
+      // rue, l'escalier). À l'étage, derrière, la chambre des parents à gauche et celle des
+      // enfants à droite (un lit chacun) ; devant, le palier.
+      const c = Math.floor(W / 2), k = b.enfants || 2;
+      for (let x = 1; x < W - 1; x++) g[5][x] = 'M';
+      for (const x of [2, 3]) g[H - 1][x] = 'F';
+      for (const x of [2, 3, W - 4, W - 3]) g[0][x] = 'F';
+      g[H - 1][W - 3] = g[H - 1][W - 2] = n ? 'F' : 'P';
+      escalier(6, () => W - 2);
+      if (!n) {
+        g[5][W - 4] = 'P';
+        meubles.push(
+          { nom: 'cuisine', x: 1, y: 1, w: 2, h: 2 }, { nom: 'four', x: 3, y: 1, w: 2, h: 2 }, { nom: 'plante', x: W - 2, y: 1, w: 1, h: 1 },
+          { nom: 'chaise', x: 2, y: 3, w: 1, h: 1 }, { nom: 'table', x: 1, y: 4, w: 3, h: 1 },
+          { nom: 'tapis_2', x: 1, y: 7, w: 3, h: 2, plat: true }, { nom: 'canape', x: 1, y: 6, w: 3, h: 2 }, { nom: 'table_basse', x: 1, y: 8, w: 2, h: 1 },
+        );
+        // (assez large : une chaise au bout de la table, la porte du fond plus loin)
+        if (W >= 10) meubles.push({ nom: 'chaise', x: 4, y: 4, w: 1, h: 1, flip: true });
+        const lits = [[1, 3, 1], [2, 3, 1]];
+        for (let i = 0; i < k; i++) lits.push([c + 1 + i, 3, 1]);
+        return { grille: g.map((l) => l.join('')), meubles, porte: W - 3, logements: [{ dans: () => true, niveaux: [0, 1], lits, feu: [5, 2], flip: true }] };
+      }
+      g[5][2] = 'P'; g[5][W - 3] = 'P';
+      for (let y = 1; y < 5; y++) g[y][c] = 'M';
+      meubles.push({ nom: 'lit_adulte', x: 1, y: 1, w: 1, h: 2 }, { nom: 'chevet', x: 2, y: 1, w: 1, h: 1 }, { nom: 'plante', x: 1, y: 6, w: 1, h: 1 });
+      if (c - 1 > 2) meubles.push({ nom: 'plante', x: c - 1, y: 1, w: 1, h: 1 });
+      for (let i = 0; i < k; i++) meubles.push({ nom: 'lit_enfant', x: c + 1 + i, y: 1, w: 1, h: 2 });
+      return { grille: g.map((l) => l.join('')), meubles, porte: W - 3, logements: [] };
+    }
     if (b.plan === 'simple') {
       // un logement : la chambre au fond (y = 1 à 3), la pièce de vie (5 à 8), le salon devant à
       // gauche (x = 1 à 4) ; le hall devant à droite (x = 6 à 8), fermé par ses murs (x = 5,
@@ -71,15 +103,18 @@
       for (const x of [2, 3, 6, 7]) g[0][x] = 'F';
       g[H - 1][7] = g[H - 1][8] = n ? 'F' : 'P';
       escalier(10, (k) => (k % 2 ? 8 : 7));
+      // (un studio, `enfants` à 0 : sans le lit de l'enfant)
+      const enfant = b.enfants !== 0;
+      if (enfant) meubles.push({ nom: 'chevet', x: 7, y: 1, w: 1, h: 1 }, { nom: 'lit_enfant', x: 8, y: 1, w: 1, h: 2 });
+      else meubles.push({ nom: 'plante', x: 8, y: 1, w: 1, h: 1 });
       meubles.push(
         { nom: 'lit_adulte', x: 1, y: 1, w: 1, h: 2 }, { nom: 'chevet', x: 2, y: 1, w: 1, h: 1 }, { nom: 'plante', x: 4, y: 1, w: 1, h: 1 },
-        { nom: 'chevet', x: 7, y: 1, w: 1, h: 1 }, { nom: 'lit_enfant', x: 8, y: 1, w: 1, h: 2 },
         { nom: 'cuisine', x: 1, y: 5, w: 2, h: 2 }, { nom: 'four', x: 3, y: 5, w: 2, h: 2 }, { nom: 'plante', x: 8, y: 5, w: 1, h: 1 },
         // (la table, une chaise : on passe à côté, de la chambre au salon)
         { nom: 'chaise', x: 4, y: 7, w: 1, h: 1 }, { nom: 'table', x: 5, y: 7, w: 3, h: 1 },
         { nom: 'tapis_2', x: 1, y: 11, w: 3, h: 2, plat: true }, { nom: 'canape', x: 1, y: 10, w: 3, h: 2 }, { nom: 'table_basse', x: 1, y: 12, w: 2, h: 1 },
       );
-      const logements = [{ dans: (x, y) => y < 9 || x < 5, lits: [[1, 3], [2, 3], [8, 3]], feu: [5, 6], flip: true }];
+      const logements = [{ dans: (x, y) => y < 9 || x < 5, lits: enfant ? [[1, 3], [2, 3], [8, 3]] : [[1, 3], [2, 3]], feu: [5, 6], flip: true }];
       return { grille: g.map((l) => l.join('')), meubles, porte: 7, logements };
     }
     // « double » : deux logements, celui de gauche puis celui de droite, en miroir
@@ -128,7 +163,7 @@
   // couches des bâtiments, dans le rectangle `efface` de chacun) et leur emprise (la couche
   // « batiments »).
   V.immeubleCarte = function (data) {
-    const W = data.width, noms = I.batiments.map((b) => b.nom);
+    const W = data.width, noms = I.batiments.map((b) => b.nom), retire = (n) => noms.includes(n) || (I.retire || []).some((p) => n.startsWith(p));
     for (const l of data.layers) {
       if (l.type === 'tilelayer' && BATI.includes(l.name)) {
         for (const b of I.batiments) {
@@ -136,7 +171,7 @@
           for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) l.data[y * W + x] = 0;
         }
       }
-      if (l.type === 'objectgroup' && l.name === 'batiments') l.objects = l.objects.filter((o) => !noms.includes(o.name));
+      if (l.type === 'objectgroup' && l.name === 'batiments') l.objects = l.objects.filter((o) => !retire(o.name));
     }
     return data;
   };

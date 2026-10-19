@@ -43,21 +43,24 @@
   const liste = (l) => (l.length > 1 ? l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1] : l[0] || '');
 
   // Les logements des immeubles : { nom (celui du moteur : `logement` de son immeuble, et son
-  // numéro), bat (son immeuble : IMMEUBLE.batiments), niveau, cote (son rang dans le niveau : le
-  // logement du plan, V.planImmeuble) }.
+  // numéro ; `seul` : le nom tout court), bat (son immeuble : IMMEUBLE.batiments), niveau, cote
+  // (son rang dans le niveau : le logement du plan, V.planImmeuble), lits (combien) }.
   V.logementsImmeuble = () => {
     const out = [];
     for (const b of I.batiments) {
       let k = 0;
-      for (let n = 0; n < b.niveaux; n++) V.planImmeuble(b, n, b.niveaux).logements.forEach((_, c) => out.push({ nom: `${b.logement}_${++k}`, bat: b, niveau: n, cote: c }));
+      for (let n = 0; n < b.niveaux; n++) {
+        V.planImmeuble(b, n, b.niveaux).logements.forEach((lg, c) => out.push({ nom: b.seul ? b.logement : `${b.logement}_${++k}`, bat: b, niveau: n, cote: c, lits: lg.lits.length }));
+      }
     }
     return out;
   };
-  // La famille d'un logement (tirée une fois, gardée comme celles des voisins).
-  V.familleImmeuble = (L) => V.voisins('immeuble:' + L.nom, VIE.lits);
+  // La famille d'un logement (tirée une fois, gardée comme celles des voisins) : dans une
+  // maison ou un studio, deux adultes et autant d'enfants qu'il reste de lits.
+  V.familleImmeuble = (L) => (L.bat.plan === 'maison' || L.bat.enfants != null ? V.voisins('immeuble:' + L.nom, L.lits, L.lits - 2) : V.voisins('immeuble:' + L.nom, VIE.lits));
 
-  // Le point (px) où poser les pieds sur la case (x, y) de l'immeuble `im`.
-  const pied = (im, x, y) => ({ x: (im.x + x) * T + T / 2, y: (im.y + y) * T + T - 2 });
+  // Le point (px) où poser les pieds sur la case (x, y) du niveau `niv` de l'immeuble `im`.
+  const pied = (im, x, y, niv = 0) => ({ x: (im.x + x) * T + T / 2, y: (im.y + y) * T + T - 2, niv });
 
   V.partie({
 
@@ -88,7 +91,7 @@
           const c = this.caseLogement(L);
           const s = this.add.sprite(c.x, c.y, key, this.npcFrame('idle_bas_0')).setOrigin(0.5, 30 / 32);
           const shadow = this.add.ellipse(c.x, c.y, mb.enfant ? 9 : 11, 4, 0x1e1a18, 0.3);
-          const n = { m: mb, f, L, s, shadow, x: c.x, y: c.y, niv: L.niveau, path: [], face: 'bas', walked: 0, rang,
+          const n = { m: mb, f, L, s, shadow, x: c.x, y: c.y, niv: c.niv, path: [], face: 'bas', walked: 0, rang,
             speed: mb.enfant ? VOISINS.kidSpeed : VOISINS.speed, etat: 'dedans', t: Math.random() * 2, cache: false, panier: 0, geste: null, talk: 0 };
           this.habitants.push(n);
           this.debutHabitant(n, h);
@@ -97,26 +100,30 @@
     },
 
     // Les cases d'un logement : celles où l'on va et vient (libres), le pied des lits, la place
-    // devant le four (et de quel côté il est) : celles du plan de son niveau (V.planImmeuble).
+    // devant le four (et de quel côté il est) : celles du plan de son niveau (V.planImmeuble ;
+    // chacune avec son niveau : une maison en a deux).
     poseLogement(L) {
-      const im = L.im, nv = im.niveaux[L.niveau], lg = nv.plan.logements[L.cote];
+      const im = L.im, lg = im.niveaux[L.niveau].plan.logements[L.cote];
       L.libres = [];
-      for (let y = 1; y < im.h - 1; y++) {
-        for (let x = 1; x < im.w - 1; x++) if (lg.dans(x, y) && nv.marche[y][x] && nv.grille[y][x] === '.') L.libres.push(pied(im, x, y));
+      for (const niv of lg.niveaux || [L.niveau]) {
+        const nv = im.niveaux[niv];
+        for (let y = 1; y < im.h - 1; y++) {
+          for (let x = 1; x < im.w - 1; x++) if (lg.dans(x, y, niv) && nv.marche[y][x] && nv.grille[y][x] === '.') L.libres.push(pied(im, x, y, niv));
+        }
       }
-      L.lits = lg.lits.map(([x, y]) => pied(im, x, y));
-      L.feu = { ...pied(im, lg.feu[0], lg.feu[1]), flip: lg.flip };
+      L.lits = lg.lits.map(([x, y, niv = L.niveau]) => pied(im, x, y, niv));
+      L.feu = { ...pied(im, lg.feu[0], lg.feu[1], L.niveau), flip: lg.flip };
     },
 
-    // Le pied du lit de `n` (les adultes : le grand lit ; l'enfant : le sien).
+    // Le pied du lit de `n` (les adultes : le grand lit ; chaque enfant : le sien).
     litImm(n) {
       const l = n.L.lits;
-      return l[Math.min(l.length - 1, n.m.enfant ? 2 : n.rang)];
+      return l[Math.min(l.length - 1, n.m.enfant ? 2 + n.rang : n.rang)];
     },
 
     caseLogement(L) {
       const l = L.libres;
-      return l.length ? l[Math.floor(Math.random() * l.length)] : pied(L.im, L.im.w / 2, L.im.h - 2);
+      return l.length ? l[Math.floor(Math.random() * l.length)] : pied(L.im, L.im.w / 2, L.im.h - 2, L.niveau);
     },
 
     // Où est l'habitant `n` quand la carte s'ouvre, d'après l'heure.
@@ -161,7 +168,7 @@
     departEcole(n) {
       if (n.departEcoleH == null) {
         const p = this.porteEcole(), lit = this.litImm(n);
-        const essai = { L: n.L, niv: n.L.niveau, x: lit.x, y: lit.y, path: [] };
+        const essai = { L: n.L, niv: lit.niv, x: lit.x, y: lit.y, path: [] };
         const L = p && this.allerImm(essai, p, 0) ? K.longueur(essai.path, lit) : 0;
         n.departEcoleH = K.ECOLE.debut - K.heuresDeMarche(L, n.speed) - K.ECOLE.marge;
       }
@@ -285,7 +292,7 @@
     // Arrivé au bout de son chemin (ou fini d'attendre) : que faire maintenant ?
     decideHabitant(n, H) {
       const h = this.heureImm(H), jour = H ? H.jour : 0, [, fin] = this.horairesImm();
-      const chezSoi = () => { const c = this.caseLogement(n.L); if (!this.allerImm(n, c, n.L.niveau)) { this.rentreHabitant(n); } };
+      const chezSoi = () => { const c = this.caseLogement(n.L); if (!this.allerImm(n, c, c.niv)) { this.rentreHabitant(n); } };
       const attendre = (k = 1) => { n.t = hasard(VOISINS.wait) * k; };
       // la nuit : chacun se couche (au lit s'il est chez lui ; sinon il rentre tout de suite)
       if (this.dortImm(H)) {
@@ -294,14 +301,15 @@
         if (n.cache || !this.dansImm(n)) { this.rentreHabitant(n); this.coucheHabitant(n); return; }
         n.geste = null;
         n.etat = 'versLit';
-        if (!this.allerImm(n, this.litImm(n), n.L.niveau)) this.coucheHabitant(n);
+        const lit = this.litImm(n);
+        if (!this.allerImm(n, lit, lit.niv)) this.coucheHabitant(n);
         return;
       }
       switch (n.etat) {
         case 'dort': {
           // le lever : au pied de son lit
           const p = this.litImm(n);
-          n.x = p.x; n.y = p.y; n.niv = n.L.niveau;
+          n.x = p.x; n.y = p.y; n.niv = p.niv;
           n.cache = false;
           n.etat = 'dedans';
           attendre();
@@ -399,7 +407,7 @@
         const cuisinier = this.habitants.some((q) => q.L === n.L && (q.etat === 'versFeu' || q.etat === 'cuisine'));
         if (n.jourMarche === jour && !faits.cuisine && !cuisinier) {
           n.etat = 'versFeu';
-          if (!this.allerImm(n, n.L.feu, n.L.niveau)) { n.etat = 'cuisine'; n.t = VIE.cuisson; }
+          if (!this.allerImm(n, n.L.feu, n.L.feu.niv)) { n.etat = 'cuisine'; n.t = VIE.cuisson; }
           return;
         }
       }
@@ -419,7 +427,7 @@
     // Rentré d'un coup (le soir venu, au travail ou en chemin) : chez lui.
     rentreHabitant(n) {
       const c = this.caseLogement(n.L);
-      n.x = c.x; n.y = c.y; n.niv = n.L.niveau;
+      n.x = c.x; n.y = c.y; n.niv = c.niv;
       n.path = [];
       n.panier = 0;
       n.etat = 'dedans';
@@ -430,7 +438,7 @@
     // Au lit : on ne le voit plus (la couverture par-dessus).
     coucheHabitant(n) {
       const p = this.litImm(n);
-      n.x = p.x; n.y = p.y; n.niv = n.L.niveau;
+      n.x = p.x; n.y = p.y; n.niv = p.niv;
       n.path = [];
       n.geste = null;
       n.panier = 0;
