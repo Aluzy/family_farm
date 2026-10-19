@@ -253,9 +253,13 @@ Le Marché vend toujours les outils.
   bâtiment (une pièce close) reçoit tout seul un toit de tuiles, posé sur son dernier niveau :
   - sur ses murs, s'il n'a pas d'escalier ; sur les murs de son étage, au-dessus de ce qu'ils
     ferment, s'il en a un (un étage sans murs tout autour reste une terrasse, sans toit) ;
-  - il couvre le bâtiment, murs compris, avec un faîtage au milieu, un versant sud clair, un
-    versant nord plus sombre et une rive sous le bas du toit (un canevas dessiné par toit,
-    couleurs dans `BLOCS_CARTE.toits`) ;
+  - il couvre le bâtiment, murs compris : un toit à croupes vu de 3/4, dessiné comme ceux des
+    immeubles de la ville (`CarteKit.toit`, `js/carte/toit.js`, couleurs dans `CarteKit.TOIT`).
+    Le pan de devant est grand (les trois quarts de la profondeur), celui de derrière est vu en
+    raccourci et plus clair. Les croupes forment des triangles aux deux bouts (la gauche dans la
+    lumière, la droite à l'ombre). Les rangs de tuiles font 8 px, avec un faîtage de tuiles
+    rondes. Le toit déborde un peu sur les côtés ; sous le pan de devant, il a un égout, une
+    planche de rive et une ombre portée sur le haut de la façade ;
   - il s'efface quand le personnage entre dans le bâtiment (en bas ou à l'étage) et en mode
     Construire, et à moitié quand le personnage passe derrière (`stepToits`).
 

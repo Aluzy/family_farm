@@ -164,11 +164,11 @@
       // le toit, sur le dernier niveau
       const cases = [];
       for (let y = 0; y < I.h; y++) for (let x = 0; x < I.w; x++) cases.push((I.y + y) * this.map.width + I.x + x);
-      const { cv, c0, r0, r1 } = K.toit(cases, this.map.width);
+      const { cv, c0, r0, r1, dx } = K.toit(cases, this.map.width);
       const cle = 'toit_immeuble';
       if (this.textures.exists(cle)) this.textures.remove(cle);
       this.textures.addCanvas(cle, cv);
-      im.toit = this.add.image(c0 * T, r0 * T - N * I.dy, cle).setOrigin(0, 0);
+      im.toit = this.add.image(c0 * T - dx, r0 * T - N * I.dy, cle).setOrigin(0, 0);
       im.toit.immZ = (r1 + 1) * T + N * 0.2 + I.toitZ;
       im.toit.setDepth(im.toit.immZ);
       // le voile de l'étage (montré quand on y est)

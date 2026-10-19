@@ -3,9 +3,8 @@
  * Chaque bâtiment bâti en blocs (une pièce close) a un toit de tuiles, posé sur son dernier
  * niveau (modèle.toits : [{ niveau, cases, dedans }], voir toits() dans js/engine/etage.js) :
  * sur ses murs (niveau 0), ou sur les murs de son étage (niveau 1), remonté comme l'étage de
- * ETAGE.dy px par niveau. Il couvre les cases du bâtiment, murs compris, avec un faîtage au
- * milieu de chaque colonne (le versant sud, face à nous, et le versant nord, plus sombre) et
- * une rive sombre au bas du versant sud (le dessin : CarteKit.toit, js/carte/toit.js).
+ * ETAGE.dy px par niveau. Il couvre les cases du bâtiment, murs compris : un toit à croupes vu
+ * de 3/4, comme ceux des immeubles de la ville (le dessin : CarteKit.toit, js/carte/toit.js).
  *
  * Un toit s'efface (stepToits) quand le personnage est dans son bâtiment (en bas ou à l'étage)
  * et en mode Construire ; à moitié quand le personnage passe derrière lui.
@@ -35,11 +34,11 @@
       const cols = this.grid.cols, dy = BLOCS_CARTE.etage.dy;
       this.toitsN = (this.toitsN || 0) + 1;
       toits.forEach((t, i) => {
-        const { cv, c0, r0, r1 } = dessine(t.cases, cols), key = `toit_${this.toitsN}_${i}`;
+        const { cv, c0, r0, r1, dx } = dessine(t.cases, cols), key = `toit_${this.toitsN}_${i}`;
         this.textures.addCanvas(key, cv);
-        const lift = dy * (t.niveau + 1), x = c0 * T, y = r0 * T - lift;
+        const lift = dy * (t.niveau + 1), x = c0 * T - dx, y = r0 * T - lift;
         const img = this.add.image(x, y, key).setOrigin(0, 0).setDepth((r1 + 1) * T + R.z);
-        this.toits.push({ key, img, dedans: new Set(t.dedans), x0: x, x1: x + cv.width, y0: y, y1: y + cv.height });
+        this.toits.push({ key, img, dedans: new Set(t.dedans), x0: x, x1: x + cv.width, y0: y, y1: y + cv.height, pied: (r1 + 1) * T });
       });
     },
 
@@ -54,7 +53,7 @@
       for (const t of this.toits) {
         let but = 1;
         if (bati || t.dedans.has(ici)) but = 0;
-        else if (p && p.x > t.x0 - 6 && p.x < t.x1 + 6 && p.y > t.y0 && p.y - 24 < t.y1 && p.y < t.y1 + BLOCS_CARTE.etage.dy) but = R.derriere;
+        else if (p && p.x > t.x0 - 6 && p.x < t.x1 + 6 && p.y > t.y0 && p.y - 24 < t.y1 && p.y < t.pied) but = R.derriere;   // (derrière : au-dessus du pied de la façade)
         const a = t.img.alpha;
         if (a !== but) t.img.setAlpha(a < but ? Math.min(but, a + pas) : Math.max(but, a - pas));
       }
