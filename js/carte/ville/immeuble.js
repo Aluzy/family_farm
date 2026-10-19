@@ -103,15 +103,18 @@
       for (const x of [2, 3, 6, 7]) g[0][x] = 'F';
       g[H - 1][7] = g[H - 1][8] = n ? 'F' : 'P';
       escalier(10, (k) => (k % 2 ? 8 : 7));
+      // (un studio, `enfants` à 0 : sans le lit de l'enfant)
+      const enfant = b.enfants !== 0;
+      if (enfant) meubles.push({ nom: 'chevet', x: 7, y: 1, w: 1, h: 1 }, { nom: 'lit_enfant', x: 8, y: 1, w: 1, h: 2 });
+      else meubles.push({ nom: 'plante', x: 8, y: 1, w: 1, h: 1 });
       meubles.push(
         { nom: 'lit_adulte', x: 1, y: 1, w: 1, h: 2 }, { nom: 'chevet', x: 2, y: 1, w: 1, h: 1 }, { nom: 'plante', x: 4, y: 1, w: 1, h: 1 },
-        { nom: 'chevet', x: 7, y: 1, w: 1, h: 1 }, { nom: 'lit_enfant', x: 8, y: 1, w: 1, h: 2 },
         { nom: 'cuisine', x: 1, y: 5, w: 2, h: 2 }, { nom: 'four', x: 3, y: 5, w: 2, h: 2 }, { nom: 'plante', x: 8, y: 5, w: 1, h: 1 },
         // (la table, une chaise : on passe à côté, de la chambre au salon)
         { nom: 'chaise', x: 4, y: 7, w: 1, h: 1 }, { nom: 'table', x: 5, y: 7, w: 3, h: 1 },
         { nom: 'tapis_2', x: 1, y: 11, w: 3, h: 2, plat: true }, { nom: 'canape', x: 1, y: 10, w: 3, h: 2 }, { nom: 'table_basse', x: 1, y: 12, w: 2, h: 1 },
       );
-      const logements = [{ dans: (x, y) => y < 9 || x < 5, lits: [[1, 3], [2, 3], [8, 3]], feu: [5, 6], flip: true }];
+      const logements = [{ dans: (x, y) => y < 9 || x < 5, lits: enfant ? [[1, 3], [2, 3], [8, 3]] : [[1, 3], [2, 3]], feu: [5, 6], flip: true }];
       return { grille: g.map((l) => l.join('')), meubles, porte: 7, logements };
     }
     // « double » : deux logements, celui de gauche puis celui de droite, en miroir

@@ -149,7 +149,7 @@
     "(js/engine/transition.js).",
     "IMMEUBLE : les LOGEMENTS des immeubles d'habitation en blocs de la ville (js/carte/ville/immeuble.js),",
     "par nom (celui de leurs logements dans le moteur : « logement_1 »… pour le grand immeuble ocre,",
-    "« residence_verre_1 »…, « maison_1 »… pour les maisons de ville : IMMEUBLE.batiments,",
+    "« residence_verre_1 »…, « tour_de_la_gare_1 »… (des studios), « maison_1 »… pour les maisons de ville : IMMEUBLE.batiments,",
     "js/carte/ville/config.js) : leur nombre ; au plus LITS lits chacun (un par membre de la",
     "famille) ; leurs familles sont des fromagers.",
     "FROMAGER : les adultes des immeubles travaillent à la fromagerie de la ville de HORAIRES[0] h à",
@@ -165,7 +165,7 @@
       "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"],
       "fromager": ["omelette", "gratin_patates", "salade_tomates", "pain"]
     },
-    "IMMEUBLE": { "LOGEMENTS": { "logement": 6, "residence_verre": 4, "residence_ocre": 5, "maison": 17 }, "LITS": 5 },
+    "IMMEUBLE": { "LOGEMENTS": { "logement": 6, "residence_verre": 4, "residence_ocre": 5, "maison": 17, "tour_de_la_gare": 8 }, "LITS": 5 },
     "FROMAGER": { "SALAIRE": 16, "HORAIRES": [8, 17] },
     "CONFORT": 100,
     "PLAISIR": 10,

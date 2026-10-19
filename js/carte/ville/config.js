@@ -274,7 +274,8 @@
   // logements de part et d'autre du hall ; « simple », un logement, le hall et l'escalier sur le
   // côté) ; `facade` : la matière de ses murs du tour (une des `facades`) ; `logement` : le nom
   // de ses logements dans le moteur (« logement_1 »… : VOISINS.IMMEUBLE.LOGEMENTS, data/ville.json ;
-  // `seul` : un seul logement, à ce nom). Les maisons de ville (`MAISONS`, plan « maison ») : deux
+  // `seul` : un seul logement, à ce nom) ; `enfants` : les enfants de chaque famille (0 : des
+  // studios, pour un couple ; sans : un T2, un enfant). Les maisons de ville (`MAISONS`, plan « maison ») : deux
   // niveaux, une famille et ses `enfants` ; elles remplacent les rangées de maisons dont le nom
   // commence par l'un des `retire` (leurs tuiles : le rectangle `efface` de chaque maison).
   // Dans un immeuble, le niveau du dessous est à `transparent` ; à l'étage, un voile sombre
@@ -311,6 +312,7 @@
       { nom: 'immeuble_ocre', efface: [146, 36, 22, 16], x: 146, y: 40, w: 22, h: 14, niveaux: 3, plan: 'double', facade: 'ocre', logement: 'logement' },
       { nom: 'residence_verre', efface: [1, 117, 10, 21], x: 1, y: 126, w: 10, h: 14, niveaux: 4, plan: 'simple', facade: 'bleu', logement: 'residence_verre' },
       { nom: 'residence_ocre', efface: [1, 140, 10, 26], x: 1, y: 154, w: 10, h: 14, niveaux: 5, plan: 'simple', facade: 'ocre', logement: 'residence_ocre' },
+      { nom: 'tour_de_la_gare', efface: [21, 104, 12, 28], x: 21, y: 120, w: 12, h: 14, niveaux: 8, plan: 'simple', facade: 'pierre', logement: 'tour_de_la_gare', enfants: 0 },
       ...MAISONS,
     ],
     facades: {
@@ -318,6 +320,7 @@
       bleu: { key: 'immeuble_ville_bleu', file: 'assets/immeuble_ville_bleu.png' },
       rouge: { key: 'immeuble_ville_rouge', file: 'assets/immeuble_ville_rouge.png' },
       orange: { key: 'immeuble_ville_orange', file: 'assets/immeuble_ville_orange.png' },
+      pierre: { key: 'immeuble_ville_pierre', file: 'assets/immeuble_ville_pierre.png' },
     },
     facade: { w: 16, h: 50, etages: 32, fenetre: 16, porte: 96 },
     escalier: 69, haut: 70, porteVerticale: 30, mursAlpha: 0.4, toitZ: 0.5,

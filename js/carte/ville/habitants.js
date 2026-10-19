@@ -56,8 +56,8 @@
     return out;
   };
   // La famille d'un logement (tirée une fois, gardée comme celles des voisins) : dans une
-  // maison, deux adultes et autant d'enfants qu'il reste de lits.
-  V.familleImmeuble = (L) => (L.bat.plan === 'maison' ? V.voisins('immeuble:' + L.nom, L.lits, L.lits - 2) : V.voisins('immeuble:' + L.nom, VIE.lits));
+  // maison ou un studio, deux adultes et autant d'enfants qu'il reste de lits.
+  V.familleImmeuble = (L) => (L.bat.plan === 'maison' || L.bat.enfants != null ? V.voisins('immeuble:' + L.nom, L.lits, L.lits - 2) : V.voisins('immeuble:' + L.nom, VIE.lits));
 
   // Le point (px) où poser les pieds sur la case (x, y) du niveau `niv` de l'immeuble `im`.
   const pied = (im, x, y, niv = 0) => ({ x: (im.x + x) * T + T / 2, y: (im.y + y) * T + T - 2, niv });

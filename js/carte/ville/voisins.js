@@ -21,7 +21,7 @@
     const garde = () => { try { global.localStorage.setItem(VOISINS.store, JSON.stringify(all)); } catch (e) { /* gardée le temps de la visite */ } };
     // (la famille tient dans ses lits : un enfant de trop d'une famille d'avant s'en va)
     const place = (f) => {
-      if (lits > 2 && f.membres.length > lits) { f.membres = f.membres.filter((m, i) => !m.enfant || f.membres.slice(0, i).filter((q) => q.enfant).length < lits - 2); garde(); }
+      if ((lits > 2 || enfants != null) && f.membres.length > lits) { f.membres = f.membres.filter((m, i) => !m.enfant || f.membres.slice(0, i).filter((q) => q.enfant).length < lits - 2); garde(); }
       return f;
     };
     if (all[maison] && Array.isArray(all[maison].membres) && all[maison].membres.length) return place(all[maison]);

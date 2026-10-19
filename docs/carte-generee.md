@@ -382,7 +382,9 @@ parties.
   de la voie ferrée). Au chargement de la carte, `V.immeubleCarte` ôte leurs tuiles et leur
   emprise ; `makeImmeuble` pose à leur place des immeubles bâtis avec les blocs de la ferme :
   l'immeuble ocre (22 × 14 cases, 3 niveaux, plan « double »), la résidence de verre (10 × 14
-  cases, 4 niveaux) et la résidence ocre (10 × 14 cases, 5 niveaux), au plan « simple ».
+  cases, 4 niveaux) et la résidence ocre (10 × 14 cases, 5 niveaux), au plan « simple » ; la
+  tour de la gare (12 × 14 cases, 8 niveaux, en pierre de taille), au même plan, en studios :
+  pour un couple, sans le lit de l'enfant (`enfants: 0`).
 - **Les maisons de ville (plan « maison »)** : les rangées de maisons du centre (`maisons_a*`,
   `maisons_b*`, `IMMEUBLE.retire`) deviennent 17 maisons (`RANGEES` dans la config : 4 + 4 + 3 à
   l'ouest de la rue, 2 + 2 + 2 à l'est), de 8 à 12 cases de large sur 10 de profondeur, deux
@@ -426,8 +428,9 @@ parties.
 ### Les familles des immeubles
 
 Chaque logement des immeubles (deux par niveau dans l'immeuble ocre, un par niveau dans les
-résidences : 15 familles) et chaque maison (17 familles) a sa famille : deux adultes et un
-enfant (dans une maison, deux ou trois), tirés comme les voisins de la transition (`V.voisins`, gardés en
+résidences : 15 familles ; un studio par niveau dans la tour de la gare : 8 couples) et chaque
+maison (17 familles) a sa famille : deux adultes et un enfant (dans un studio, aucun ; dans une
+maison, deux ou trois), tirés comme les voisins de la transition (`V.voisins`, gardés en
 `localStorage`, un lit chacun). Le moteur (`js/engine/voisins.js` : `immeubleFoyer`,
 `immeubleNuit`, `immeubleVue` ; `state.immeuble.foyers`, par logement : `logement_1`… pour
 l'immeuble ocre, `residence_verre_1`…, `residence_ocre_1`… : `VOISINS.IMMEUBLE.LOGEMENTS`) leur donne le métier `fromager` : chaque

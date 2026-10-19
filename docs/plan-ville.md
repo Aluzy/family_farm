@@ -65,7 +65,9 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
 2. Les 17 maisons visitables et leurs familles (fait : plan « maison », `js/carte/ville/
    immeuble.js`). En attendant l'étape 5, leurs adultes travaillent à la fromagerie, comme
    ceux des immeubles.
-3. Les immeubles : la tour de la gare, et la répartition en studios et T2.
+3. Les immeubles (fait) : la tour de la gare devient un immeuble de 8 studios (des couples sans
+   enfant, `enfants: 0`) ; les 15 logements des trois autres immeubles sont les T2 (un
+   enfant). La ville a ainsi ses 40 foyers et ses 135 habitants.
 4. Les lieux, par lots de 3 à 5, avec leurs décors.
 5. Les emplois et l'économie (`data/economie.json`, `js/engine/economie.js`) : recettes,
    stocks, flux, camions, salaires, sorties et bonheur.
