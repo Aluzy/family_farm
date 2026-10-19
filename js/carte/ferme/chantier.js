@@ -242,7 +242,12 @@
     // fenêtre, des pierres d'angle : leur version haute (BLOCS_CARTE.hauts.variantes), sinon
     // celle du mur de blocs.png.
     blocImage(b, at, cols) {
-      const f = this.wallFrame(b, at, cols), H = BLOCS_CARTE.hauts, v = H.variantes[b.sorte];
+      const f = this.wallFrame(b, at, cols), H = BLOCS_CARTE.hauts;
+      // (une fenêtre, une paroi vitrée : prolongée par sa voisine de même sorte, à gauche, à
+      // droite, si leurs faces se voient toutes deux)
+      const J = H.joints[b.sorte], face = (k) => H.variantes[at.get(k + cols)] === undefined;
+      const prolonge = (k) => at.get(k) === b.sorte && face(k) && Math.floor(k / cols) === Math.floor(b.case / cols);
+      const v = J && face(b.case) ? J[(prolonge(b.case - 1) ? 1 : 0) + (prolonge(b.case + 1) ? 2 : 0)] : H.variantes[b.sorte];
       if (v !== undefined && this.has(H.key) && f >= BLOCS_CARTE.murs && f < BLOCS_CARTE.murs + 16) return [H.key, H.murs + v + f - BLOCS_CARTE.murs];
       return this.hautFrame(f);
     },

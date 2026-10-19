@@ -805,3 +805,14 @@ test('ferme générée : un toit sur le dernier niveau de chaque bâtiment', () 
   reprendreEtage(s, tour[3]);
   assertEqual(toits(s).length, 0, 'un mur de l\'étage en moins : ouvert');
 });
+
+test('ferme générée : la paroi vitrée se pose comme un mur ou à la place d\'un mur', () => {
+  const s = chantier('vitre1');
+  setInv(s, { mur_pierre: 20, paroi_vitree: 4, porte: 1 });
+  const z = terrainLibre(s, 5, 4), p = murs(z, 5, 4);
+  for (const [i, t] of p.murs.entries()) assert(poserBloc(s, i === 1 ? 'paroi_vitree' : 'mur_pierre', t).ok, `bloc ${t}`);
+  poserBloc(s, 'porte', p.porte);
+  assertEqual(piecesCloses(s).length, 1, 'elle ferme la pièce');
+  assert(poserBloc(s, 'paroi_vitree', p.murs[2]).ok, 'à la place d\'un mur');
+  assertEqual([blocAt(s, p.murs[2]), blocBloque(s, p.murs[2]), countItem(s, 'paroi_vitree'), piecesCloses(s).length], ['paroi_vitree', true, 2, 1]);
+});
