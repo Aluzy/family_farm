@@ -625,25 +625,66 @@ def objets(c):
     mob.colle(E.balancoire(), 132 * T, 188 * T)
     # l'arrêt de bus devant l'école, les réverbères
     c['equipements'].colle(E.abri_bus(), 93 * T, 101 * T)
-    rev = O.reverbere()
-    trottoir = lambda x, y: 0 <= x < W and 0 <= y < H and all(g[y + j][x + i] == 'trottoir' for i in (0, 1) for j in (0, 1))
-    pres_d_une_rue = lambda x, y, rs: any(r[1] - 3 <= x <= r[2] + 2 and r[3] - 3 <= y <= r[4] + 2 for r in rs)
-    for _, x0, x1, y0, y1 in P.RUES_H:
-        for x in range(x0 + 5, x1 - 2, 10):
-            # (la rangée y0 − 1 est la bordure, déjà à moitié sur la chaussée : le trottoir plein est au-dessus)
-            if trottoir(x, y0 - 2) and not pres_d_une_rue(x, y0 - 1, P.RUES_V):
-                c['equipements'].colle(rev, x * T, (y0 - 3) * T)
-                LUMIERES.append(O.lanterne(x * T, (y0 - 3) * T))
-    for _, x0, x1, y0, y1 in P.RUES_V:
-        for y in range(y0 + 5, y1 - 2, 10):
-            if trottoir(x0 - 2, y) and not pres_d_une_rue(x0 - 1, y, P.RUES_H):
-                c['equipements'].colle(rev, (x0 - 1) * T, (y - 2) * T)
-                LUMIERES.append(O.lanterne((x0 - 1) * T, (y - 2) * T))
+    reverberes(c)
 
     fo = c['fontaines']
     fo.colle([O.fontaine(k) for k in range(F.EAU_IMAGES)], *FONTAINE)
     fo.colle([O.fontaine_globe(k) for k in range(F.EAU_IMAGES)], *GLOBE)
     lac(fo)
+
+
+# Les réverbères : un tous les PAS_REVERBERE tuiles de chaque côté de chaque rue (en quinconce
+# d'un côté à l'autre), sur la bordure du trottoir ; à au plus DECALE_REVERBERE tuiles de sa
+# place, si elle est prise.
+PAS_REVERBERE = 10
+DECALE_REVERBERE = 3
+# ce que le dessin d'un réverbère (1 × 3 tuiles) ne doit pas toucher : un bâtiment (sa tête
+# passerait derrière, cachée), un arbre, une voiture garée, un banc, un étal, l'abri de bus…
+GENE_REVERBERE = ('murs', 'pierre_de_taille', 'vitrages', 'charpente', 'toits', 'menuiserie', 'equipements',
+                  'fontaines', 'mobilier', 'vehicules', 'vegetation')
+
+
+def reverberes(c):
+    """Les réverbères des rues, des deux côtés : le pied sur la bordure du trottoir (la rangée
+    ou la colonne à moitié sur la chaussée, dont l'autre moitié est du trottoir) ; pas devant un
+    carrefour ni ses passages piétons ; pas là où son dessin toucherait autre chose (voir
+    GENE_REVERBERE) : il se décale alors le long de la rue, ou ce côté-là s'en passe. Leurs
+    lanternes vont dans LUMIERES (allumées la nuit)."""
+    rev = O.reverbere()
+    g = coins()
+    # (le bord de la tuile du pied, côté trottoir : ses deux coins sont du trottoir)
+    bord_h = lambda x, y: 0 <= x < W and 0 <= y <= H and g[y][x] == g[y][x + 1] == 'trottoir'
+    bord_v = lambda x, y: 0 <= x <= W and 0 <= y < H and g[y][x] == g[y + 1][x] == 'trottoir'
+    pres_d_une_rue = lambda x, y, rs: any(r[1] - 4 <= x <= r[2] + 3 and r[3] - 4 <= y <= r[4] + 3 for r in rs)
+
+    def libre(x, y):
+        # (x, y) : la tuile du pied ; le dessin couvre la colonne x, de y − 2 à y
+        if not (0 <= x < W and 2 <= y < H):
+            return False
+        boite = (x * T, (y - 2) * T, x * T + T, y * T + T)
+        return all(c[n].images[0].crop(boite).getbbox() is None for n in GENE_REVERBERE)
+
+    def pose(x, y):
+        c['equipements'].colle(rev, x * T, (y - 2) * T)
+        LUMIERES.append(O.lanterne(x * T, (y - 2) * T))
+
+    def le_long(debut, fin, decale, place):
+        # `place(k)` : la tuile du pied à la k-ième case de la rue (ou None : pas ici)
+        for k in range(debut + decale, fin, PAS_REVERBERE):
+            for d in sorted(range(-DECALE_REVERBERE, DECALE_REVERBERE + 1), key=abs):
+                q = place(k + d) if debut <= k + d < fin else None
+                if q and libre(*q):
+                    pose(*q)
+                    break
+
+    for _, x0, x1, y0, y1 in P.RUES_H:
+        # en haut : le pied sur la bordure (y0 − 1) ; en bas : sur la bordure (y1)
+        le_long(x0, x1, 5, lambda x: (x, y0 - 1) if bord_h(x, y0 - 1) and not pres_d_une_rue(x, y0 - 1, P.RUES_V) else None)
+        le_long(x0, x1, 10, lambda x: (x, y1) if bord_h(x, y1 + 1) and not pres_d_une_rue(x, y1, P.RUES_V) else None)
+    for _, x0, x1, y0, y1 in P.RUES_V:
+        # à gauche : sur la bordure (x0 − 1) ; à droite : sur la bordure (x1)
+        le_long(y0, y1, 5, lambda y: (x0 - 1, y) if bord_v(x0 - 1, y) and not pres_d_une_rue(x0 - 1, y, P.RUES_H) else None)
+        le_long(y0, y1, 10, lambda y: (x1, y) if bord_v(x1 + 1, y) and not pres_d_une_rue(x1, y, P.RUES_H) else None)
 
 
 def lac(t):
