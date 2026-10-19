@@ -1,13 +1,19 @@
 /* carte/toit.js — le toit de tuiles d'un bâtiment bâti en blocs, sur toutes les cartes.
  *
  * La ferme (js/carte/ferme/toits.js : un toit sur le dernier niveau de chaque pièce close) et la
- * ville (js/carte/ville/immeuble.js : l'immeuble en blocs) posent le même toit : un canevas qui
- * couvre les cases du bâtiment, murs compris, avec un faîtage au milieu de chaque colonne (le
- * versant sud, face à nous, et le versant nord, plus sombre), un bord sombre et une rive sous le
- * bas du versant sud (CarteKit.TOIT : les couleurs).
+ * ville (js/carte/ville/immeuble.js : l'immeuble en blocs) posent le même toit, dessiné comme
+ * ceux des immeubles de la ville vus de 3/4 (scripts/ville/immeubles.py toit_croupe) : un toit
+ * à croupes, dont l'emprise est celle du bâtiment, murs compris :
+ *   - le pan de devant, grand (TOIT.devant de la profondeur), face à nous ; celui de derrière vu
+ *     en raccourci, plus clair ; aux deux bouts, les croupes en triangle (la gauche dans la
+ *     lumière), séparées des pans par leurs arêtiers ;
+ *   - des rangs de tuiles de 8 px, décalés d'un rang à l'autre (batiments.py tuile) ;
+ *   - le faîtage, une ligne de tuiles rondes, entre les deux croupes ;
+ *   - le bord sombre, un débord de TOIT.debord px sur les côtés ; sous le pan de devant, l'égout,
+ *     la planche de rive et l'ombre du toit sur le haut de la façade.
  *
- *   const { cv, c0, r0, r1 } = CarteKit.toit(cases, cols)   // cases : les tuiles couvertes
- *   textures.addCanvas(clé, cv) ; image en (c0 * T, r0 * T − hauteur), origine en haut à gauche
+ *   const { cv, c0, r0, r1, dx } = CarteKit.toit(cases, cols)   // cases : les tuiles couvertes
+ *   textures.addCanvas(clé, cv) ; image en (c0 * T − dx, r0 * T − hauteur), origine en haut à gauche
  *
  * Script classique, chargé après le kit (js/carte/kit.js). Voir docs/architecture-phaser.md.
  */
@@ -16,22 +22,31 @@
 
   const K = global.CarteKit;
   const T = K.T;
-  // les tuiles du versant sud et du versant nord (base, clair, sombre), le faîtage, le bord, la
-  // rive sous le versant sud (une couleur par rangée de pixels)
+  // la couverture (batiments.py COUVERTURES['tuile'] : la tuile, son arête claire, le rang
+  // sombre, le joint), le contour, l'ombrage de chaque pan (le soleil en haut à gauche : le pan
+  // de derrière et la croupe gauche dans la lumière, la croupe droite à l'ombre), la part du pan
+  // de devant dans la profondeur, le débord sur les côtés (px), la planche de rive sous l'égout,
+  // l'ombre que le toit porte sur la façade
   const R = K.TOIT = {
-    sud: [[178, 84, 58], [206, 112, 78], [130, 57, 41]], nord: [[138, 61, 44], [158, 75, 53], [101, 43, 31]],
-    faite: [[98, 41, 29], [192, 98, 68]], bord: [72, 31, 23], rive: [[94, 61, 41], [75, 49, 33], [56, 37, 25]],
+    tuile: [134, 78, 56], claire: [166, 102, 72], sombre: [88, 50, 38], joint: [104, 60, 44], contour: [40, 31, 31],
+    ombrage: { bas: 1, haut: 1.14, gauche: 1.1, droite: 0.78 }, devant: 0.75, debord: 3,
+    planche: [[122, 80, 52], [98, 64, 42]], ombre: 0.35,
   };
+  const teinte = (c, f) => (f <= 1 ? c.map((v) => Math.round(v * f)) : c.map((v) => Math.round(v + (255 - v) * (f - 1))));
+  const mel = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 
-  // Une valeur de 0 à 1 qui dépend du pixel (le grain des tuiles).
-  const bruit = (x, y) => {
-    let h = (x * 374761393 + y * 668265263) | 0;
-    h = Math.imul(h ^ (h >>> 13), 1274126177);
-    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-  };
+  // La tuile du pixel (x, y) d'un pan dont l'égout est du côté `sens` (batiments.py tuile).
+  function tuile(x, y, sens) {
+    const [a, b] = sens === 'bas' || sens === 'haut' ? [x, y] : [y, x];
+    const rang = Math.floor(b / 8), ta = (a + 4 * (rang % 2)) % 8;
+    let tb = ((b % 8) + 8) % 8;
+    if (sens === 'haut' || sens === 'gauche') tb = 7 - tb;
+    const c = tb <= 1 ? R.sombre : tb === 7 ? R.claire : ta === 0 ? R.joint : mel(R.tuile, R.claire, (tb - 2) / 10);
+    return teinte(c, R.ombrage[sens]);
+  }
 
   // L'image d'un toit : un canevas qui couvre les cases `cases` (de la grille à `cols`
-  // colonnes) ; { cv, c0, r0, r1 }.
+  // colonnes) et le débord ; { cv, c0, r0, r1, dx } (dx : le débord, à gauche des cases).
   function toit(cases, cols) {
     const S = new Set(cases);
     let c0 = Infinity, c1 = -Infinity, r0 = Infinity, r1 = -Infinity;
@@ -39,47 +54,55 @@
       const c = t % cols, r = Math.floor(t / cols);
       c0 = Math.min(c0, c); c1 = Math.max(c1, c); r0 = Math.min(r0, r); r1 = Math.max(r1, r);
     }
-    const w = (c1 - c0 + 1) * T, h = (r1 - r0 + 1) * T + R.rive.length;
+    const D = R.debord, Wc = (c1 - c0 + 1) * T, E = (r1 - r0 + 1) * T;
+    const w = Wc + 2 * D, h = E + 7;
     const cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
     const g = cv.getContext('2d'), img = g.createImageData(w, h), d = img.data;
-    const met = (x, y, [r, v, b], k = 0) => {
-      const i = (y * w + x) * 4;
-      d[i] = Math.max(0, Math.min(255, r + k)); d[i + 1] = Math.max(0, Math.min(255, v + k)); d[i + 2] = Math.max(0, Math.min(255, b + k)); d[i + 3] = 255;
+    const met = (px, py, c, a = 255) => { const i = (py * w + px) * 4; d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = a; };
+    // (x, y : dans le repère des cases, le débord en x < 0 et x >= Wc)
+    const dedans = (x, y) => {
+      const c = c0 + Math.min(c1 - c0, Math.max(0, Math.floor(x / T))), r = r0 + Math.min(r1 - r0, Math.floor(y / T));
+      return S.has(r * cols + c);
     };
-    const dans = (c, r) => S.has(r * cols + c);
-    // le faîtage de chaque colonne : au milieu de ses cases
-    const faite = new Map();
-    for (let c = c0; c <= c1; c++) {
-      let a = Infinity, b = -Infinity;
-      for (let r = r0; r <= r1; r++) if (dans(c, r)) { a = Math.min(a, r); b = Math.max(b, r); }
-      if (a !== Infinity) faite.set(c, Math.round(((a + b + 1) * T) / 2) - r0 * T);
-    }
-    for (const t of cases) {
-      const c = t % cols, r = Math.floor(t / cols), fy = faite.get(c);
-      const ox = (c - c0) * T, oy = (r - r0) * T;
-      const n = !dans(c, r - 1), e = !dans(c + 1, r), s = !dans(c, r + 1), o = !dans(c - 1, r);
-      for (let py = 0; py < T; py++) {
-        for (let px = 0; px < T; px++) {
-          const x = ox + px, y = oy + py, k = Math.round((bruit(x, y) - 0.5) * 10);
-          // le bord du toit
-          if ((n && py === 0) || (e && px === T - 1) || (s && py === T - 1) || (o && px === 0)) { met(x, y, R.bord); continue; }
-          const dy = y - fy;
-          // le faîtage
-          if (dy >= -2 && dy <= 0) { met(x, y, dy === -2 ? R.faite[1] : R.faite[0], k); continue; }
-          const sud = dy > 0, P = sud ? R.sud : R.nord, haut = sud ? 5 : 3;
-          const l = sud ? dy - 1 : -dy - 1, rang = Math.floor(l / haut), u = l % haut;
-          // les rangs de tuiles : le haut éclairé, le bas sombre, une rainure toutes les 4 px
-          const rainure = (x + (rang % 2) * 2) % 4 === 0;
-          const teinte = sud ? (u === 0 ? P[1] : u === haut - 1 ? P[2] : P[0]) : (u === haut - 1 ? P[1] : u === 0 ? P[2] : P[0]);
-          met(x, y, rainure && u !== (sud ? 0 : haut - 1) ? P[2] : teinte, k);
+    const x0 = -D, x1 = Wc + D, devant = Math.round(E * R.devant), faite = E - devant;
+    const rentre = Math.min(Math.floor(E / 2), Math.floor((x1 - x0) / 2));
+    // le pan sous le pixel : 'bas' (devant), 'haut' (derrière), 'gauche', 'droite' (les croupes)
+    const zone = (x, y) => {
+      if (x < x0 + rentre && (y >= faite ? (x - x0) < rentre * (E - y) / devant : (x - x0) < rentre * y / faite)) return 'gauche';
+      if (x >= x1 - rentre && (y >= faite ? (x1 - 1 - x) < rentre * (E - y) / devant : (x1 - 1 - x) < rentre * y / faite)) return 'droite';
+      return y >= faite ? 'bas' : 'haut';
+    };
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const x = px - D, y = py;
+        if (!dedans(x, Math.min(y, E - 1))) continue;
+        // l'égout sous le pan de devant : le rang sombre, la planche de rive, son ombre sur la façade
+        if (y >= E) {
+          const k = y - E;
+          if (k < 4) met(px, py, k === 0 ? R.sombre : k === 3 || x === x0 || x === x1 - 1 ? R.contour : R.planche[k - 1]);
+          else met(px, py, [0, 0, 0], Math.round(255 * R.ombre * (7 - k) / 3));
+          continue;
         }
+        const z = zone(x, y);
+        let c = tuile(x, y, z);
+        // les arêtiers (là où le pan change), le bord
+        if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => zone(x + a, y + b) !== z)) c = z === 'gauche' || z === 'haut' ? R.claire : R.contour;
+        if (x === x0 || x === x1 - 1 || y === 0 || !dedans(x, y - 1) || !dedans(x - 1, y) || !dedans(x + 1, y)) c = R.contour;
+        met(px, py, c);
       }
-      // la rive : sous le bas du versant sud
-      if (s) for (let i = 0; i < R.rive.length; i++) for (let px = 0; px < T; px++) met(ox + px, oy + T + i, R.rive[i]);
+    }
+    // le faîtage : une ligne de tuiles rondes entre les deux croupes
+    const rangs = [R.contour, R.claire, teinte(R.claire, 1.08), R.tuile, R.sombre, R.contour];
+    for (let x = x0 + rentre; x < x1 - rentre; x++) {
+      for (let k = 0; k < rangs.length; k++) {
+        const y = faite - 3 + k;
+        if (y < 0 || y >= E || !dedans(x, y)) continue;
+        met(x + D, y, (x - x0) % 6 === 0 && k > 0 && k < 5 ? R.sombre : rangs[k]);
+      }
     }
     g.putImageData(img, 0, 0);
-    return { cv, c0, r0, r1 };
+    return { cv, c0, r0, r1, dx: D };
   }
 
   K.toit = toit;
