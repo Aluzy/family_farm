@@ -4,10 +4,11 @@
  * les maisons de la ferme : on y entre à pied et on monte ses étages. V.immeubleCarte ôte ses
  * tuiles (le rectangle IMMEUBLE.efface) et son emprise de la carte avant que la scène ne la
  * crée ; makeImmeuble le pose à leur place, niveau par niveau (V.planImmeuble) :
- *   - au rez-de-chaussée, une entrée (le hall, au milieu : la porte double sur la rue) ; de
- *     chaque côté une porte mène à un logement : un petit salon (un canapé, une table basse),
- *     la pièce de vie (la cuisine, le four, une table et ses chaises), une chambre (deux lits,
- *     une table de chevet). Au fond du hall, l'escalier monte au palier du dessus ;
+ *   - au rez-de-chaussée, une entrée (le hall, au milieu de la moitié de devant : la porte
+ *     double sur la rue) ; de chaque côté une porte mène à un logement : un petit salon (un
+ *     canapé, une table basse), la pièce de vie (la cuisine, le four, une table et ses chaises),
+ *     et derrière, sur toute la largeur du logement, une chambre (deux lits, deux tables de
+ *     chevet). Au fond du hall, l'escalier monte au palier du dessus ;
  *   - à chaque étage, le palier : le haut de l'escalier d'où l'on vient (on y redescend),
  *     l'escalier qui monte au suivant (sauf au dernier), et les deux mêmes logements ;
  *   - par-dessus le dernier, un toit de tuiles (CarteKit.toit).
@@ -46,27 +47,34 @@
     const W = I.w, H = I.h, g = Array.from({ length: H }, () => Array(W).fill('.'));
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!x || !y || x === W - 1 || y === H - 1) g[y][x] = 'M';
     const miroir = (x) => W - 1 - x;
-    for (let y = 0; y < H; y++) { g[y][8] = 'M'; g[y][miroir(8)] = 'M'; }
-    for (const x of [1, 2, 3, 4, 5, 6, 7]) for (const y of [4, 9]) { g[y][x] = 'M'; g[y][miroir(x)] = 'M'; }
+    const mur = (x, y, c = 'M') => { g[y][x] = c; g[y][miroir(x)] = c; };
+    // le hall (et le palier) : la moitié de devant, entre ses murs (x = 8 et 13), sous le mur qui
+    // le ferme au fond (y = 5) ; derrière, les chambres prennent toute la largeur, séparées par
+    // le mur mitoyen (x = 10 et 11)
+    for (let y = 5; y < H; y++) mur(8, y);
+    for (let y = 1; y < 5; y++) mur(10, y);
+    // les cloisons : chambre | pièce de vie (y = 5, jusqu'au hall), pièce de vie | salon (y = 9)
+    for (let x = 1; x <= 10; x++) mur(x, 5);
+    for (let x = 1; x <= 7; x++) mur(x, 9);
     // les portes : entre les pièces, et du hall au salon
-    for (const y of [4, 9]) { g[y][6] = 'P'; g[y][miroir(6)] = 'P'; }
-    g[11][8] = 'P'; g[11][miroir(8)] = 'P';
+    mur(7, 5, 'P'); mur(7, 9, 'P'); mur(8, 11, 'P');
     // les fenêtres de la façade (devant, derrière)
-    for (const x of [2, 3, 5, 6]) { g[H - 1][x] = 'F'; g[H - 1][miroir(x)] = 'F'; }
-    for (const x of [3, 4]) { g[0][x] = 'F'; g[0][miroir(x)] = 'F'; }
+    for (const x of [2, 3, 5, 6]) mur(x, H - 1, 'F');
+    for (const x of [3, 4, 7, 8]) mur(x, 0, 'F');
     // le hall : la porte double sur la rue (au rez-de-chaussée), sinon deux fenêtres
     g[H - 1][10] = g[H - 1][11] = n ? 'F' : 'P';
     // l'escalier, au fond du hall : il monte de la case 10 ou 11 (un niveau sur deux)
     const monte = (k) => (k % 2 ? 11 : 10);
-    if (n < N - 1) g[1][monte(n)] = 'U';
-    if (n > 0) g[1][monte(n - 1)] = 'D';
+    if (n < N - 1) g[6][monte(n)] = 'U';
+    if (n > 0) g[6][monte(n - 1)] = 'D';
     const meubles = [];
     const gauche = [
-      // la chambre : deux lits, une table de chevet
-      { nom: 'lit_adulte', x: 1, y: 1, w: 1, h: 2 }, { nom: 'chevet', x: 2, y: 1, w: 1, h: 1 }, { nom: 'lit_enfant', x: 7, y: 1, w: 1, h: 2 },
+      // la chambre (toute la largeur du logement) : deux lits, deux tables de chevet, une plante
+      { nom: 'lit_adulte', x: 1, y: 1, w: 1, h: 2 }, { nom: 'chevet', x: 2, y: 1, w: 1, h: 1 }, { nom: 'plante', x: 5, y: 1, w: 1, h: 1 },
+      { nom: 'chevet', x: 8, y: 1, w: 1, h: 1 }, { nom: 'lit_enfant', x: 9, y: 1, w: 1, h: 2 },
       // la pièce de vie : la cuisine, le four, la table et ses chaises
-      { nom: 'cuisine', x: 1, y: 5, w: 2, h: 2 }, { nom: 'four', x: 3, y: 5, w: 2, h: 2 },
-      { nom: 'chaise', x: 1, y: 7, w: 1, h: 1 }, { nom: 'table', x: 2, y: 7, w: 3, h: 2 }, { nom: 'chaise', x: 5, y: 7, w: 1, h: 1, flip: true },
+      { nom: 'cuisine', x: 1, y: 6, w: 2, h: 2 }, { nom: 'four', x: 3, y: 6, w: 2, h: 2 },
+      { nom: 'chaise', x: 1, y: 8, w: 1, h: 1 }, { nom: 'table', x: 2, y: 8, w: 3, h: 1 }, { nom: 'chaise', x: 5, y: 8, w: 1, h: 1, flip: true },
       // le salon : un tapis, le canapé, la table basse, une plante
       { nom: 'tapis_2', x: 1, y: 11, w: 3, h: 2, plat: true }, { nom: 'canape', x: 1, y: 10, w: 3, h: 2 }, { nom: 'table_basse', x: 1, y: 12, w: 2, h: 1 }, { nom: 'plante', x: 5, y: 10, w: 1, h: 1 },
     ];
@@ -119,7 +127,9 @@
             const c = a(x, y);
             // le plancher : au rez-de-chaussée dans les pièces, aux étages sur toute l'emprise
             const sol = (i, j) => (n ? a(i, j) !== ' ' : !' MFP'.includes(a(i, j)));
-            if (sol(x, y)) pose(BLOCS.key, BLOCS.sols + (sol(x, y - 1) ? 1 : 0) + (sol(x + 1, y) ? 2 : 0) + (sol(x, y + 1) ? 4 : 0) + (sol(x - 1, y) ? 8 : 0), x, y, (py) => (n ? py - 0.1 : py - T - 200));
+            // (aux étages, rangé au haut de sa case : sous les meubles, l'escalier, les murs et le
+            // personnage de sa rangée, qu'il ne coupe pas ; au-dessus de ce qui est en bas)
+            if (sol(x, y)) pose(BLOCS.key, BLOCS.sols + (sol(x, y - 1) ? 1 : 0) + (sol(x + 1, y) ? 2 : 0) + (sol(x, y + 1) ? 4 : 0) + (sol(x - 1, y) ? 8 : 0), x, y, (py) => (n ? py - T + 0.5 : py - T - 200));
             if (mur(c)) {
               const v = (dx, dy, porte) => mur(a(x + dx, y + dy)) || (porte && a(x + dx, y + dy) === 'P');
               const m = (v(0, -1) ? 1 : 0) + (v(1, 0, true) ? 2 : 0) + (v(0, 1) ? 4 : 0) + (v(-1, 0, true) ? 8 : 0);
@@ -220,7 +230,10 @@
         im.niveaux.forEach((nv, k) => {
           // (dedans : le niveau du dessous en transparence, ceux du dessus cachés)
           const a = vue === 'dehors' || k === this.niveauVille ? 1 : k === this.niveauVille - 1 ? I.transparent : 0;
-          for (const o of nv.objs) o.setAlpha(a).setVisible(a > 0).setDepth(haut ? this.immeubleZ(o.immZ) : o.immZ);
+          // (à l'étage, le niveau du dessous passe tout entier sous celui où l'on est : son
+          // plancher le couvre, on n'en voit que ce qui dépasse de l'emprise)
+          const z = (o) => (!haut ? o.immZ : this.immeubleZ(o.immZ) - (k < this.niveauVille ? 0.002 : 0));
+          for (const o of nv.objs) o.setAlpha(a).setVisible(a > 0).setDepth(z(o));
           for (const m of nv.murs) m.a = a;
         });
         im.toit.setVisible(vue === 'dehors');
