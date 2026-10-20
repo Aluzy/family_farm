@@ -4,6 +4,10 @@
  * enfants, leurs planches à eux : assets/personnages/enfant_NN.png), font leur journée :
  *
  *   - la nuit, avant 7 h et à partir de 18 h 45 (le repas est à 19 h), ils sont dans la maison ;
+ *     sur la ferme générée, pendant la nuit (model.nuit, 22 h → 6 h), chacun dort dans son lit
+ *     (o.lit(k) : le k-ième membre a le (k + 2)-ième couchage, le premier est au personnage du
+ *     joueur) : il y va, s'y couche sous la couverture (debout entre le lit et elle, tourné vers
+ *     nous, comme le personnage) et se lève au réveil ; sans lit pour lui, il reste dedans ;
  *   - le jour, ils sortent par la porte et flânent autour de la maison, d'un coin à l'autre ;
  *   - le second adulte du foyer (model.aide, le moteur : aidant) s'occupe des bêtes : le jour,
  *     quand il y a à faire au Poulailler ou à l'Étable (model.aide.lieux), il y va, se baisse
@@ -69,8 +73,12 @@
       return m.ecole.h;
     }
 
-    // Où il doit être à cette heure : 'dedans', 'dehors' ou 'ecole'.
+    // Son lit (o.lit), ou null.
+    const litDe = (m) => (o.lit && m.rang >= 0 ? o.lit(m.rang) : null);
+
+    // Où il doit être à cette heure : 'lit', 'dedans', 'dehors' ou 'ecole'.
     function voulu(m) {
+      if (model && model.nuit && litDe(m)) return 'lit';
       if (!model || model.nuit) return 'dedans';
       const h = model.heure;
       if (m.enfant && JOURS_ECOLE.includes(model.semaine) && h >= departEcole(m) && h < K.horaireEcole().retourFerme) return 'ecole';
@@ -97,7 +105,24 @@
         // en file : un peu de retard au départ, un pas de côté sur le chemin
         retard: k * 0.7, cote: ((k % 3) - 1) * 6, pause: 0,
         tache: null, geste: 0, repos: 0,     // le second adulte : le lieu où il va, son geste
+        rang: -1, couche: null, drap: null,  // la nuit : son rang (son lit, o.lit), son lit s'il y dort
       };
+    }
+
+    // Il se couche dans son lit `L` (o.lit) : debout entre le lit et sa couverture.
+    function coucher(m, L) {
+      m.couche = L; m.ou = 'lit'; m.chemin = []; m.puis = null; m.tache = null;
+      m.x = L.x; m.y = L.y; m.face = 'bas'; m.flip = false;
+      m.visible = true; m.fade = 1;
+      if (reduced()) m.alpha = 1;
+      if (!m.drap) m.drap = scene.add.image(0, 0, L.drap.key, L.drap.frame).setOrigin(0.5, 1);
+      m.drap.setTexture(L.drap.key, L.drap.frame).setPosition(L.drap.x, L.drap.y).setDepth(L.depth + 0.2).setVisible(true);
+    }
+    // Il se lève : à côté du lit, sans couverture ; il repart de là (dehors, visible).
+    function lever(m) {
+      m.couche = null; m.ou = 'dehors';
+      if (m.drap) m.drap.setVisible(false);
+      m.y += 4;
     }
 
     function dessiner(m, nom) {
@@ -158,6 +183,22 @@
       const v = voulu(m);
       const d = door(), e = o.exit;
       if (m.repos > 0) m.repos -= dt;
+      // la nuit : au lit (son lit a pu changer de place) ; le jour venu, il se lève
+      if (m.ou === 'lit') {
+        const L = v === 'lit' ? litDe(m) : null;
+        if (!L) lever(m);
+        else if (L.x !== m.couche.x || L.y !== m.couche.y) coucher(m, L);
+        else return;
+      }
+      if (v === 'lit') {
+        const L = litDe(m);
+        if (m.puis && m.vers === 'lit') return;               // il y va
+        if (!m.visible || m.fade < 0) { apparaitre(m, d.x, d.y); m.alpha = Math.max(m.alpha, 0.01); }
+        m.tache = null; m.vers = 'lit';
+        aller(m, L.x, L.y, () => { m.vers = null; coucher(m, litDe(m) || L); });
+        return;
+      }
+      m.vers = null;
       if (m.ou === 'dehors' && m.visible && m.fade >= 0) {
         if (m.tache && v !== 'dehors') m.tache = null;
         if (v === 'dedans' && !m.puis) aller(m, d.x, d.y, () => disparaitre(m, 'dedans'));
@@ -200,18 +241,21 @@
         model = next;
         const defs = (next && next.famille) || [];
         const ids = new Set(defs.map((d) => d.id));
-        for (const [id, m] of membres) if (!ids.has(id)) { m.s.destroy(); membres.delete(id); }
+        for (const [id, m] of membres) if (!ids.has(id)) { m.s.destroy(); if (m.drap) m.drap.destroy(); membres.delete(id); }
+        defs.forEach((def, i) => { const m = membres.get(def.id); if (m) m.rang = i; });
         const manque = [];
         for (const def of defs) {
           const key = cle(def);
           const m = membres.get(def.id);
           if (m && m.key === key) continue;
           if (!scene.textures.exists(key)) { manque.push(def); continue; }
-          if (m) m.s.destroy();
+          if (m) { m.s.destroy(); if (m.drap) m.drap.destroy(); }
           const n = creer(def);
+          n.rang = defs.indexOf(def);
           // au chargement de la page : il est déjà là où l'heure le veut (dehors : près de son coin)
           const v = voulu(n);
           if (v === 'dehors') { const d = door(); apparaitre(n, d.x + n.coin.dx, d.y + n.coin.dy); n.alpha = 1; n.fade = 0; }
+          else if (v === 'lit') { coucher(n, litDe(n)); n.alpha = 1; n.fade = 0; }
           else n.ou = v;
           membres.set(def.id, n);
         }
@@ -238,18 +282,25 @@
             if (m.alpha <= 0 && m.fade < 0) { m.fade = 0; m.visible = false; }
           }
           m.s.setVisible(m.visible && !room);
+          if (m.drap) m.drap.setVisible(!!m.couche && !room);
           if (!m.visible || room) continue;
+          // au lit : un souffle lent, juste devant le lit, sous sa couverture
+          if (m.couche) {
+            dessiner(m, `idle_bas_${Math.floor(performance.now() / 1600) % 2}`);
+            m.s.setDepth(m.couche.depth + 0.1);
+            continue;
+          }
           dessiner(m, marche ? `marche_${m.face}_${Math.floor(m.marche / PAS) % 4}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
         }
       },
       info() {
-        return [...membres.values()].map((m) => ({ id: m.id, enfant: m.enfant, ou: m.ou, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache, ecole: m.enfant ? departEcole(m) : null }));
+        return [...membres.values()].map((m) => ({ id: m.id, enfant: m.enfant, ou: m.ou, lit: !!m.couche, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache, ecole: m.enfant ? departEcole(m) : null }));
       },
       aidePos() {
         const A = model && model.aide, m = A && membres.get(A.id);
         return m && m.visible ? { x: m.x, y: m.y } : null;
       },
-      destroy() { for (const m of membres.values()) m.s.destroy(); membres.clear(); },
+      destroy() { for (const m of membres.values()) { m.s.destroy(); if (m.drap) m.drap.destroy(); } membres.clear(); },
     };
   }
 

@@ -257,6 +257,8 @@
               // le second adulte a fini au Poulailler ou à l'Étable : ce qu'il a pris, sa bulle
               aide: (lieu, done) => setTimeout(() => done(this.ctx.bridge && this.ctx.bridge.aide ? this.ctx.bridge.aide(lieu) : null), 0),
               gain: (items) => this.showGainAide(items),
+              // la nuit, le k-ième membre dort dans le (k + 2)-ième couchage (le premier : le personnage)
+              lit: (k) => (this.bedSpots ? this.bedSpots()[k + 1] || null : null),
               file: (perso, enfant) => v(K.planche(perso, enfant)),
             });
           } catch (e) { console.warn('[FarmStage] famille indisponible', e); }

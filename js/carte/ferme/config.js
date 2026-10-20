@@ -176,6 +176,9 @@
     // la pose d'un meuble (chantier.js syncPoseMeuble) : le quadrillage (`grille`, `grilleAlpha`,
     // `trait` px) ; l'aperçu du meuble, à `alpha`, ses cases teintées (`fond`) de `ok` s'il tient
     // là, de `non` sinon
+    // deux lits `seul` posés côte à côte (la même rangée) : un lit deux places (`double`),
+    // dessiné sur les deux cases (chantier.js syncLitsDoubles)
+    litDouble: { seul: 'lit_adulte', double: 'lit_double' },
     poseMeuble: { grille: 0xffffff, grilleAlpha: 0.35, trait: 0.5, alpha: 0.75, fond: 0.3, ok: 0x5bd36a, non: 0xff5a4a },
     rang: { voile: 0.9, dessous: 0.18, autres: 0.05, place: 0xffe9a8, placeAlpha: 0.55, manque: 0xff4a3a, manqueAlpha: 0.75 },
     // les toits (js/carte/ferme/toits.js ; leur dessin : CarteKit.toit) : au-dessus de la
@@ -389,10 +392,12 @@
   const MEUBLES = [
     'four', 'cuisine', 'frigo', 'evier', 'plan', 'fenetre', 'plante', 'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
     'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3', 'paillasse',
+    'lit_double',
   ];
   // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.
-  const LITS = ['lit_adulte', 'lit_enfant', 'paillasse'];
+  // (le lit double : deux lits adulte côte à côte, sur la ferme générée, js/carte/ferme/chantier.js)
+  const LITS = ['lit_adulte', 'lit_enfant', 'paillasse', 'lit_double'];
   const MEUBLE_PLAT = /^(tapis|tableau|fenetre)/;
   const MEUBLE_GHOST = 0.35;
   const ROOM_GAP = 64 * T;     // les intérieurs sont posés à droite de la carte, hors de portée de la vue

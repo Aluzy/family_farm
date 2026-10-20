@@ -109,6 +109,33 @@
       this.drawRooms(bati ? pieces : null);
       this.syncRang(bati && bati.rang ? bati.rang : 0, pieces, changed);
       this.syncPoseMeuble(bati && bati.meuble);
+      this.syncLitsDoubles();
+    },
+
+    // Deux lits adulte posés côte à côte (la même rangée, l'un juste à droite de l'autre) : un
+    // lit deux places (BLOCS_CARTE.litDouble), dessiné par l'image de celui de gauche sur les deux
+    // cases ; celle de droite se cache. Ils restent deux lits (deux couchages) ; seul, chacun
+    // reprend son dessin.
+    syncLitsDoubles() {
+      const B = this.blocks, D = BLOCS_CARTE.litDouble, cols = this.grid.cols;
+      if (!B || !this.textures.exists('meuble_' + D.double)) return;
+      const est = (e) => e && e.lit && e.dessin === D.seul && e.img && e.img.active;
+      const lits = [...B.values()].filter(est).sort((a, b) => a.case - b.case);
+      const pris = new Set();
+      for (const e of lits) e.paire = null;
+      for (const e of lits) {
+        const v = B.get(e.case + 1);
+        if (pris.has(e.case) || e.case % cols === cols - 1 || !est(v) || pris.has(v.case)) continue;
+        pris.add(e.case); pris.add(v.case);
+        e.paire = { gauche: true, autre: v };
+        v.paire = { gauche: false, autre: e };
+      }
+      let change = false;
+      for (const e of lits) {
+        const [key, x, vu] = !e.paire ? ['meuble_' + D.seul, e.x, true] : e.paire.gauche ? ['meuble_' + D.double, e.x + T / 2, true] : ['meuble_' + D.seul, e.x, false];
+        if (e.img.texture.key !== key || e.img.x !== x || e.img.visible !== vu) { e.img.setTexture(key).setX(x).setVisible(vu); change = true; }
+      }
+      if (change) this.sunDirty = true;
     },
 
     // La pose d'un meuble (modèle.bati.meuble : { grille, apercu: { case, dessin, largeur,
@@ -585,14 +612,31 @@
 
     // Où il se couche : la première paillasse (ou le premier lit) d'une pièce close (modèle.couchages), ou null.
     bedSpot() {
-      const m = this.ctx.lastModel, list = (m && m.couchages) || [];
+      return this.bedSpots()[0] || null;
+    },
+
+    // Les couchages, dans l'ordre (modèle.couchages ; le moteur : un par personne, le personnage
+    // principal d'abord, puis la famille, js/engine/blocs.js nuitSansCouchage) : où l'on s'y
+    // couche, { x, y (les pieds), depth, drap: { key, frame, x, y } }.
+    bedSpots() {
+      const m = this.ctx.lastModel, list = (m && m.couchages) || [], out = [];
       for (const c of list) {
+        const s = this.bedSpotOf(c);
+        if (s) out.push(s);
+      }
+      return out;
+    },
+    bedSpotOf(c) {
+      {
         const e = this.blocks && this.blocks.get(c);
         if (e && e.sorte === 'paillasse') return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, depth: e.img.depth, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y } };
         // un lit acheté au Marché : les pieds sous la couverture, la tête sur l'oreiller
         if (e && e.lit && this.has('meuble_' + e.dessin + '_drap')) {
           const top = e.img.y - e.img.height;
-          return { x: e.x, y: Math.min(top + BLOCS_CARTE.litPieds, e.img.y - 1), depth: e.img.depth, drap: { key: 'meuble_' + e.dessin + '_drap', frame: undefined, x: e.x, y: e.img.y } };
+          // (un lit double, syncLitsDoubles : sa moitié, sous la couverture des deux places)
+          const g = e.paire ? (e.paire.gauche ? e : e.paire.autre) : null, dd = 'meuble_' + BLOCS_CARTE.litDouble.double + '_drap';
+          const drap = g && this.has(dd) ? { key: dd, frame: undefined, x: g.img.x, y: g.img.y } : { key: 'meuble_' + e.dessin + '_drap', frame: undefined, x: e.x, y: e.img.y };
+          return { x: e.x, y: Math.min(top + BLOCS_CARTE.litPieds, e.img.y - 1), depth: e.img.depth, drap };
         }
       }
       return null;
