@@ -199,17 +199,25 @@ def brins(d, x, y0, h, n, ecart, couleurs=(VERT[1], VERT[3])):
 
 # ---------- la carotte ----------
 
-def fane(d, x, y0, h, ang):
-    """Une fane de carotte : une tige fine et des folioles de part et d'autre."""
-    x1, y1 = x + math.sin(ang) * h, y0 - math.cos(ang) * h
-    d.ligne(x, y0, x1, y1, TIGE)
-    for k in range(1, int(h)):
-        t = k / h
-        cx, cy = x + (x1 - x) * t, y0 + (y1 - y0) * t
-        if k % 2 == 0:
-            d.p(cx - 1, cy, VERT[3])
-            d.p(cx + 1, cy - 0.5, VERT[2])
-    d.p(x1, y1, VERT[4])
+def fane(d, x, y0, h, ang, courbe=0.12):
+    """Une fane de carotte, légère comme une plume : une tige fine qui s'arque, et de part et
+    d'autre des folioles d'un pixel (une sur deux plus claire), de plus en plus courtes vers le
+    bout. Sans contour : il souderait les fanes en un bloc."""
+    pts = []
+    for k in range(int(h * 2) + 1):
+        t = k / (h * 2)
+        a = ang + courbe * t * (1 if ang >= 0 else -1)
+        pts.append((x + math.sin(a) * h * t, y0 - math.cos(a) * h * t))
+    for px_, py_ in pts:
+        d.p(px_, py_, VERT[1], nu=True)
+    for k in range(3, len(pts) - 1, 3):
+        t = k / len(pts)
+        cx, cy = pts[k]
+        lg = 2 if t < 0.5 else 1                    # les folioles raccourcissent vers le bout
+        for s in (-1, 1):
+            for e in range(1, lg + 1):
+                d.p(cx + s * e, cy - e * 0.7, VERT[3] if (k // 3 + (s > 0)) % 2 else VERT[2], nu=True)
+    d.p(*pts[-1], VERT[4], nu=True)
 
 
 def carotte(phase):
@@ -217,21 +225,23 @@ def carotte(phase):
         return graine(BRUN[1:], 'rond')
     d = Dessin()
     if phase == 1:
-        fane(d, 7.5, 30, 4, -0.4)
-        fane(d, 8.5, 30, 5, 0.3)
+        fane(d, 7.5, 30, 4, -0.35)
+        fane(d, 8.5, 30, 5, 0.25)
     elif phase == 2:
-        for a, h in ((-0.6, 7), (-0.2, 9), (0.25, 8), (0.65, 6)):
-            fane(d, 8, 29, h, a)
+        for a, h in ((-0.7, 6), (-0.25, 9), (0.2, 8), (0.65, 6)):
+            fane(d, 8, 29.5, h, a)
         d.p(7, 30, ORANGE[2])
         d.p(8, 30, ORANGE[1])
     else:
-        for a, h in ((-0.75, 9), (-0.35, 12), (0.05, 13), (0.4, 11), (0.8, 8)):
-            fane(d, 8, 27, h, a)
-        # le collet orange de la carotte, qui sort de terre
+        for a, h in ((-0.85, 10), (-0.3, 13), (0.2, 14), (0.75, 10)):
+            fane(d, 8, 26.5, h, a)
+        # le collet orange de la carotte, qui sort de terre (un peu bombé, éclairé à gauche)
         for y, (x0, x1) in zip(range(27, 32), ((6, 10), (6, 10), (6, 10), (7, 9), (7, 9))):
             for x in range(x0, x1 + 1):
                 d.p(x, y, ORANGE[3] if x == x0 and y < 29 else ORANGE[2] if x < x1 else ORANGE[1])
-        d.p(8, 30, ORANGE[0])
+        for x in (7, 9):
+            d.p(x, 29, ORANGE[1])                  # les petites stries de la racine
+        d.p(8, 31, ORANGE[0])
     return d.image()
 
 
@@ -399,18 +409,34 @@ def tournesol(phase):
         d.ligne(9, 31, 9, 12, VERT[1])
         for y, s in ((27, -1), (23, 1), (19, -1), (15, 1)):
             d.feuille(8.5 + s * 3.4, y, 3.2, 1.8, s * 0.35)
-        # la fleur : des pétales jaunes autour d'un cœur brun
-        cx, cy = 8.5, 7.5
+        # la fleur, tournée vers nous : des sépales verts derrière, une couronne de pétales
+        # pointus bien séparés (un trait plus sombre entre deux), un cœur brun semé de graines
+        cx, cy, R, r = 8.0, 7.5, 7.4, 3.0
+        PET = 10
         for y in range(H):
             for x in range(W):
-                dx, dy = x + 0.5 - cx, y + 0.5 - cy
-                r = math.hypot(dx, dy)
-                a = math.atan2(dy, dx)
-                if r <= 2.6:
-                    d.p(x, y, BRUN[1] if (x + y) % 2 else BRUN[2])
-                elif r <= 5.2 + 0.7 * math.cos(a * 10):
-                    l = -(dx + dy) / 10
-                    d.p(x, y, JAUNE[3] if l > 0.15 else JAUNE[2] if l > -0.2 else JAUNE[1])
+                dx, dy = x + 0.5 - cx, (y + 0.5 - cy) * 1.08
+                rr = math.hypot(dx, dy)
+                a = (math.atan2(dy, dx) / (2 * math.pi)) % 1
+                f = (a * PET) % 1                                      # la place dans le pétale
+                pointe = 1 - abs(f - 0.5) * 2                          # 1 au milieu, 0 entre deux
+                bout = r + 0.5 + (R - r - 0.5) * (0.35 + 0.65 * pointe ** 0.8)
+                if rr <= r:
+                    # le cœur : un anneau sombre, des graines en quinconce, plus clair en haut à gauche
+                    if rr > r - 0.8:
+                        c = BRUN[0]
+                    elif (x + y) % 2 == 0:
+                        c = BRUN[2] if dx + dy < 0 else BRUN[1]
+                    else:
+                        c = BRUN[1] if dx + dy < 0 else BRUN[0]
+                    d.p(x, y, c)
+                elif rr <= bout:
+                    if pointe < 0.28:
+                        c = JAUNE[0]                                   # entre deux pétales
+                    else:
+                        l = -(dx + dy) / (2 * R) + 0.35 * pointe
+                        c = JAUNE[3] if l > 0.25 else JAUNE[2] if l > -0.05 else JAUNE[1]
+                    d.p(x, y, c)
     return d.image()
 
 
