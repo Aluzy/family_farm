@@ -697,7 +697,7 @@
         const b = this.hollow();
         if (b && wx >= b.x0 - 2 && wx <= b.x1 + 2 && wy >= b.y0 - 4 && wy <= b.y1 + 2) { wx = b.x1 + 8; wy = b.y1 - 3; }
         // (à l'étage : le point touché est sur le plancher, remonté)
-        const q = this.etagePoint ? this.etagePoint(wx, wy) : { x: wx, y: wy };
+        const q = this.etagePoint && !this.rang ? this.etagePoint(wx, wy) : { x: wx, y: wy };
         this.fermier.goTo(q.x, q.y);
       }
     };

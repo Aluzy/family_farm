@@ -741,7 +741,10 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          rehausse (`state.hauteurs`, jusqu'à `HAUTEUR_MAX`) en mode Construire au niveau n ≥ 1
          (le sélecteur de niveau, sans escalier) : un appui sur un mur haut de n blocs lui en
          ajoute un, sur un mur haut de n + 1 blocs reprend celui du dessus. Au niveau 0, un appui
-         sur un mur le reprend comme tout bloc (le bloc du dessus d'abord). La station suit (`majMoulin`) ;
+         sur un mur le reprend comme tout bloc (le bloc du dessus d'abord). Aux niveaux 1 et 2, la carte
+         montre le niveau seul (`syncRang`) : un voile sombre sur la ferme, devant lui le rang
+         de mur du niveau (celui du dessous à peine visible, les autres presque invisibles), les
+         places du bloc suivant surlignées ; un appui vise cette hauteur. La station suit (`majMoulin`) ;
          une partie d'avant garde sa meule, mais doit rehausser ses murs (migration v41 → v42).
          Sur la carte, les murs s'empilent de `etage.dy` px par bloc, un linteau ferme le dessus
          des portes, le toit se pose en haut de la tour ; dehors, une voilure de quatre ailes

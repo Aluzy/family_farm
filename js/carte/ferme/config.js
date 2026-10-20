@@ -168,6 +168,11 @@
     // quand on est dans le bâtiment : à `transparent` ; à l'étage, un voile sombre sur toute la
     // ferme (`voile`, `alpha` ; au-dessus de ce qui vole), et ce qui est de l'étage devant lui
     etage: { haut: 70, dy: 30, transparent: 0.3, voile: 0x0d1018, alpha: 0.62 },
+    // en mode Construire, aux niveaux où l'on rehausse les murs (chantier.js syncRang) : un
+    // voile sombre (`voile`) sur la ferme ; devant lui, le rang de mur du niveau, celui du
+    // dessous à `dessous`, les autres à `autres` (presque invisibles) ; les cases où poser le
+    // bloc suivant (`place`, `placeAlpha`) et les pièces closes (le voile vert) à cette hauteur
+    rang: { voile: 0.9, dessous: 0.18, autres: 0.05, place: 0xffe9a8, placeAlpha: 0.55 },
     // les toits (js/carte/ferme/toits.js ; leur dessin : CarteKit.toit) : au-dessus de la
     // rangée du bas du bâtiment (`z`) ; à `derriere` quand le personnage passe derrière, à
     // `vitesse` par seconde
