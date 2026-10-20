@@ -13,7 +13,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
-import { blocsEnMain, blocsPoses, changeMur, piecesCloses } from './blocs.js';
+import { blocsEnMain, blocsPoses, changeMur, genreBloc, piecesCloses, solsPoses } from './blocs.js';
 import { atelierOuvert } from './atelier.js';
 import { farmTerrain } from './terrain.js';
 
@@ -60,7 +60,10 @@ export function etageEmprise(state) {
   return out;
 }
 
-// Les toits : chaque bâtiment (une pièce close) a le sien, posé sur son dernier niveau.
+// Les toits : chaque bâtiment (une pièce close aménagée : un bloc qui en fait une maison ou un
+// bâtiment, un plancher ou un escalier) a le sien, posé sur son dernier niveau. Une pièce close
+// sans rien de tout ça reste à ciel ouvert : une cour, un passage enfermé entre les murs de
+// bâtiments voisins.
 //   - une pièce sans escalier : sur ses murs (niveau 0) ;
 //   - une pièce à escalier : sur les murs de l'étage, au-dessus de ce qu'ils ferment dans
 //     l'emprise (niveau 1) ; un étage sans murs tout autour reste à ciel ouvert (une terrasse).
@@ -69,8 +72,9 @@ export function toits(state) {
   if (!atelierOuvert(state)) return [];
   const B = blocsPoses(state), E = etageBlocs(state), W = farmTerrain(state).LARGEUR;
   const ferme = (t) => { const s = DATA.ATELIER.BLOCS[E[t]]; return !!(s && s.ferme); };
-  const out = [];
+  const out = [], S = solsPoses(state);
   for (const p of piecesCloses(state)) {
+    if (!p.cases.some((t) => genreBloc(B[t]) || S[t] || B[t] === 'escalier')) continue;   // (une cour)
     const emprise = avecMurs(state, p.cases), tri = (a) => [...a].sort((x, y) => x - y);
     // (la Serre, la pièce du bac à semis : un toit de verre, on voit ce qui pousse dessous)
     const verre = p.cases.some((t) => B[t] === 'bac_semis');

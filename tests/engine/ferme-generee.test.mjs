@@ -798,12 +798,14 @@ test('ferme générée : une fenêtre change un mur sans l\'enlever (au sol et �
 
 test('ferme générée : un toit sur le dernier niveau de chaque bâtiment', () => {
   const s = chantier('toit1');
-  setInv(s, { mur_pierre: 40, porte: 4, escalier: 1 });
+  setInv(s, { mur_pierre: 40, porte: 4, escalier: 1, paillasse: 1 });
   const z = terrainLibre(s, 6, 5), p = murs(z, 6, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   assertEqual(toits(s).length, 0, 'pas de pièce close : pas de toit');
   poserBloc(s, 'porte', p.porte);
-  assertEqual(toits(s).map((t) => [t.niveau, t.cases.length]), [[0, 30]], 'sur les murs du bas, murs compris');
+  assertEqual(toits(s).length, 0, 'une pièce close vide : une cour, à ciel ouvert');
+  poserBloc(s, 'paillasse', p.dedans + 1);
+  assertEqual(toits(s).map((t) => [t.niveau, t.cases.length]), [[0, 30]], 'aménagée : sur les murs du bas, murs compris');
   // l'escalier : l'étage, à ciel ouvert tant que ses murs ne le ferment pas
   poserBloc(s, 'escalier', p.dedans);
   assertEqual(toits(s).length, 0, 'une terrasse');
