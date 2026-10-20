@@ -250,7 +250,10 @@ Le Marché vend toujours les outils.
   - l'escalier repris, ou la pièce ouverte, l'étage s'en va : ses blocs reviennent dans
     l'inventaire (`rangerEtage`) ; au coucher, on redescend.
 - **Les toits** (`toits` dans `js/engine/etage.js`, `js/carte/ferme/toits.js`) : chaque
-  bâtiment (une pièce close) reçoit tout seul un toit de tuiles, posé sur son dernier niveau :
+  bâtiment (une pièce close aménagée : un bloc qui en fait une maison ou un bâtiment, un
+  plancher ou un escalier) reçoit tout seul un toit de tuiles, posé sur son dernier niveau ; une
+  pièce close sans rien de tout ça (une cour, un passage enfermé entre les murs de bâtiments
+  voisins) reste à ciel ouvert :
   - sur ses murs, s'il n'a pas d'escalier ; sur les murs de son étage, au-dessus de ce qu'ils
     ferment, s'il en a un (un étage sans murs tout autour reste une terrasse, sans toit) ;
   - il couvre le bâtiment, murs compris : un toit à croupes vu de 3/4, dessiné comme ceux des
