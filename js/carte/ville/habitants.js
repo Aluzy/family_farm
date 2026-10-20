@@ -12,6 +12,11 @@
  *     entre aussi ; ailleurs (la fromagerie, la conserverie, la confiturerie, l'école de la carte,
  *     l'amphithéâtre ; la gare pour ceux qui travaillent hors de la ville), il entre et n'est plus
  *     sur la carte jusqu'à la fin du service ;
+ *   - quand c'est plus court qu'à pied (le chemin jusqu'à l'arrêt, l'attente, le trajet, le
+ *     chemin depuis l'arrêt : planBus), il prend le bus (js/carte/ville/lignes.js) : il va à
+ *     l'arrêt, attend, monte (on ne le voit plus), descend à son arrêt et finit à pied ; pour le
+ *     travail et l'école, son heure de départ en tient compte ; la famille paie les tickets de
+ *     chaque jour (FermeHote.busImm) ;
  *   - entre deux services, il rentre chez lui ; après le dernier (assez tôt : IMMEUBLE.vie.marche),
  *     il passe par un étal du marché acheter les ingrédients du dîner, et rentre son panier plein ;
  *   - le premier rentré du marché cuisine devant le four du logement ;
@@ -40,7 +45,7 @@
 
   const K = global.CarteKit;
   const V = global.CarteVille;
-  const { T, IMMEUBLE: I, VOISINS } = V.C;
+  const { T, IMMEUBLE: I, VOISINS, LIGNES } = V.C;
   const { hote, reduced, sheetKey } = V;
   const VIE = I.vie;
 
@@ -107,6 +112,17 @@
       for (const n of this.habitants) if (n.emploi) n.place = this.placeTravail(n.emploi.lieu);
       this.repartitEcoles();
       for (const n of this.habitants) this.debutHabitant(n, h);
+      // les trajets en bus de chaque jour (aller et retour), par logement : leurs tickets
+      if (H && H.busImm && this.lignes && this.lignes.length) {
+        const trajets = {};
+        for (const n of this.habitants) {
+          let k = 0;
+          if (n.emploi) n.emploi.horaires.forEach((_, s) => { this.departService(n, s); if (n.busPlans[s]) k += 2; });
+          else if (n.m.enfant) { this.departEcole(n); if (n.busEcole) k += 2; }
+          if (k) trajets[n.L.nom] = (trajets[n.L.nom] || 0) + k;
+        }
+        H.busImm(trajets);
+      }
     },
 
     // Les cases d'un logement : celles où l'on va et vient (libres), le pied des lits, la place
@@ -237,9 +253,18 @@
 
     // L'heure où `n` part pour son service `k` : le trajet (à pied, jusqu'à son lieu) avant le
     // début, et la marge. Calculée une fois.
+    // (en bus, s'il est plus court et roule déjà à l'heure de partir : n.busPlans[k], planBus)
     departService(n, k) {
       n.departs = n.departs || [];
-      if (n.departs[k] == null) n.departs[k] = n.emploi.horaires[k][0] - this.trajetVers(n.L.im, n.emploi.lieu) - VIE.marge;
+      n.busPlans = n.busPlans || [];
+      if (n.departs[k] == null) {
+        const debut = n.emploi.horaires[k][0], pied = this.trajetVers(n.L.im, n.emploi.lieu);
+        const t = this.lieuTravail(n.emploi.lieu), p = t && (n.place || t.porte);
+        const b = p && this.planBus(this.portesImm(n.L.im).sortie, p, VIE.vitesse, null, pied - this.descente());
+        const bus = b && debut - b.duree - this.descente() - VIE.marge >= LIGNES.heures[0] ? b.duree + this.descente() : null;
+        n.busPlans[k] = bus ? b : null;
+        n.departs[k] = debut - (bus || pied) - VIE.marge;
+      }
       return n.departs[k];
     },
     // Le service que `n` doit prendre maintenant (-1 : aucun) : parti à l'heure, pas encore fini,
@@ -293,7 +318,12 @@
         const p = n.ecole && (n.ecole.place || n.ecole.porte), lit = this.litImm(n);
         const essai = { L: n.L, niv: lit.niv, x: lit.x, y: lit.y, path: [] };
         const L = p && this.allerImm(essai, p, 0) ? K.longueur(essai.path, lit) : 0;
-        n.departEcoleH = K.ECOLE.debut - K.heuresDeMarche(L, n.speed) - K.ECOLE.marge;
+        const pied = K.heuresDeMarche(L, n.speed);
+        // (en bus, s'il est plus court et roule déjà à l'heure de partir : n.busEcole)
+        const b = p && this.planBus(this.portesImm(n.L.im).sortie, p, n.speed, null, pied - this.descente(n.speed));
+        const bus = b && K.ECOLE.debut - b.duree - this.descente(n.speed) - K.ECOLE.marge >= LIGNES.heures[0] ? b.duree + this.descente(n.speed) : null;
+        n.busEcole = bus ? b : null;
+        n.departEcoleH = K.ECOLE.debut - (bus || pied) - K.ECOLE.marge;
       }
       return n.departEcoleH;
     },
@@ -405,6 +435,8 @@
       const H = global.HorlogeSortie ? global.HorlogeSortie.maintenant() : null;
       for (const n of this.habitants) {
         let marche = false;
+        // (à l'arrêt, dans le bus : js/carte/ville/lignes.js)
+        if (n.etat === 'attendBus' || n.etat === 'enBus') { this.stepBusHabitant(n, H); this.placeHabitant(n, time, false); continue; }
         // (l'heure de partir pour l'école : il laisse ce qu'il faisait au logement)
         if (n.m.enfant && n.etat === 'dedans' && n.path.length && n.jourEcole !== (H && H.jour) && this.ecoleImm(n, H)) { n.path = []; n.t = 0; }
         // (l'heure de partir au travail : de même)
@@ -444,7 +476,12 @@
     // Arrivé au bout de son chemin (ou fini d'attendre) : que faire maintenant ?
     decideHabitant(n, H) {
       const h = this.heureImm(H), jour = H ? H.jour : 0;
-      const chezSoi = () => { const c = this.caseLogement(n.L); if (!this.allerImm(n, c, c.niv)) { this.rentreHabitant(n); } };
+      // (rentrer chez soi : en bus si c'est plus court, sinon à pied)
+      const chezSoi = (bus = false) => {
+        const c = this.caseLogement(n.L);
+        if (bus && this.voyageBus(n, c, c.niv, n.etat, h)) return;
+        if (!this.allerImm(n, c, c.niv)) { this.rentreHabitant(n); }
+      };
       const attendre = (k = 1) => { n.t = hasard(VOISINS.wait) * k; };
       // ressortir du lieu où l'on n'était plus visible : devant sa porte
       const ressort = (p) => {
@@ -485,12 +522,13 @@
           const t = this.lieuTravail(n.emploi.lieu);
           ressort(t && t.porte);
           const e = k === S.length - 1 && h < VIE.marche ? this.etalImm() : null;
+          if (e && this.voyageBus(n, e, 0, 'versMarche', h)) return;
           if (e) {
             n.etat = 'versMarche';
             if (!this.allerImm(n, e, 0)) { n.etat = 'achete'; n.t = 0.01; }
           } else {
             n.etat = 'retour';
-            chezSoi();
+            chezSoi(true);
           }
           return;
         }
@@ -504,9 +542,15 @@
           const t = this.lieuTravail(n.sortie);
           ressort(t && t.porte);
           n.etat = 'retour';
-          chezSoi();
+          chezSoi(true);
           return;
         }
+        case 'versArret':
+          // à l'arrêt : il attend son bus, tourné vers la rue
+          n.etat = 'attendBus';
+          n.voyage.depuis = h;
+          n.face = 'bas';
+          return;
         case 'versEcole':
           // à son école : son pupitre, ou il entre
           this.arriveEcole(n);
@@ -516,7 +560,7 @@
           // l'école finie : il ressort et rentre à pied
           ressort(n.ecole && n.ecole.porte);
           n.etat = 'retour';
-          chezSoi();
+          chezSoi(true);
           return;
         }
         case 'versMarche':
@@ -530,7 +574,7 @@
           n.panier = 1;
           n.jourMarche = jour;
           n.etat = 'retour';
-          chezSoi();
+          chezSoi(true);
           return;
         case 'retour':
           // chez lui, le panier posé : le dîner (plus bas)
@@ -556,6 +600,7 @@
         // le matin : à l'école (il descend, sort, y va à pied)
         n.jourEcole = jour;
         const p = n.ecole && (n.ecole.place || n.ecole.porte);
+        if (p && n.busEcole && this.voyageBus(n, p, 0, 'versEcole', h, n.busEcole)) return;
         n.etat = 'versEcole';
         if (!p || !this.allerImm(n, p, 0)) this.arriveEcole(n, true);
         return;
@@ -567,6 +612,7 @@
           n.faits[k] = jour;
           n.service = k;
           const t = this.lieuTravail(n.emploi.lieu), p = t && (n.place || t.porte);
+          if (p && n.busPlans[k] && this.voyageBus(n, p, 0, 'versTravail', h, n.busPlans[k])) return;
           n.etat = 'versTravail';
           if (!p || !this.allerImm(n, p, 0)) this.arriveTravail(n, true);
           return;
@@ -605,6 +651,7 @@
       const t = this.lieuTravail(so), l = this.placesSpectateurs(so) || (t && t.places) || [];
       n.placeSortie = l.length ? l[Math.floor(Math.random() * l.length)] : null;
       const p = n.placeSortie || (t && t.porte);
+      if (!direct && p && this.voyageBus(n, p, 0, 'versSortie', this.heureImm(global.HorlogeSortie ? global.HorlogeSortie.maintenant() : null))) return;
       n.etat = 'versSortie';
       if (direct || !p || !this.allerImm(n, p, 0)) this.arriveSortie(n, true);
     },
@@ -637,6 +684,86 @@
         return;
       }
       this.cacheHabitant(n, deja);
+    },
+
+    // ---------- le bus (js/carte/ville/lignes.js) ----------
+
+    // Le temps (h) de descendre de son logement et de sortir de l'immeuble (comme trajetImm).
+    descente(vitesse = VIE.vitesse) {
+      return (20 * T) / vitesse / VIE.sParHeure;
+    },
+
+    // Le meilleur trajet en bus du point `a` au point `b`, à la vitesse `vitesse` (px/s) à pied :
+    // { tr, i, j (les arrêts où monter et descendre), duree (h) } ; null : à pied, c'est aussi
+    // bien (`pied` : le temps à pied, s'il est connu). `h` : l'heure du départ (le bus doit
+    // rouler jusqu'à l'arrivée ; sans : toujours). Les chemins jusqu'aux arrêts sont estimés (à
+    // vol d'oiseau en huit directions, plus un détour).
+    planBus(a, b, vitesse, h = null, pied = null) {
+      if (!this.lignes || !this.lignes.length || !a || !b) return null;
+      const sph = VIE.sParHeure, est = (p, q) => {
+        const dx = Math.abs(p.x - q.x), dy = Math.abs(p.y - q.y);
+        return ((Math.max(dx, dy) + 0.414 * Math.min(dx, dy)) * 1.15) / vitesse / sph;
+      };
+      if (pied == null) pied = est(a, b);
+      const attente = LIGNES.intervalle / 2 / 60;
+      let best = null;
+      for (const tr of this.lignes) {
+        const A = tr.arrets;
+        for (let i = 0; i < A.length - 1; i++) {
+          const wi = est(a, A[i].attente);
+          if (wi >= pied) continue;
+          for (let j = i + 1; j < A.length; j++) {
+            const route = ((A[j].s - A[i].s) / (LIGNES.vitesse * 0.8) + (j - i) * LIGNES.arret) / sph;
+            const d = wi + attente + route + est(A[j].attente, b);
+            if (!best || d < best.duree) best = { tr, i, j, duree: d };
+          }
+        }
+      }
+      // (assez plus court : un dixième de moins)
+      if (!best || best.duree > pied * 0.9) return null;
+      if (h != null && (h < LIGNES.heures[0] || h + best.duree > LIGNES.heures[1])) return null;
+      return best;
+    },
+
+    // `n` part en bus vers le point `p` (du niveau `niv`) ; arrivé, il prend l'état `etat` (celui
+    // du trajet à pied : son arrivée se fait comme d'habitude). `plan` : planBus (sinon, d'où il
+    // est, à l'heure `h`). false : pas de bus (il ira à pied).
+    voyageBus(n, p, niv, etat, h, plan = null) {
+      const b = plan || this.planBus(n, p, n.m.enfant ? n.speed : VIE.vitesse, h);
+      if (!b || (h != null && (h < LIGNES.heures[0] || h + b.duree > LIGNES.heures[1]))) return false;
+      const A = b.tr.arrets[b.i];
+      const avant = n.etat;
+      n.etat = 'versArret';
+      n.voyage = { tr: b.tr, i: b.i, j: b.j, p, niv, etat, depuis: h };
+      if (!this.allerImm(n, A.attente, 0)) { n.etat = avant; n.voyage = null; return false; }
+      return true;
+    },
+
+    // À l'arrêt, puis dans le bus : il monte dans le premier bus de sa ligne qui s'y arrête (on
+    // ne le voit plus), le suit, descend à son arrêt et finit à pied. Trop d'attente (une fois
+    // et demie l'intervalle), ou plus de bus : il y va à pied. La nuit : chez lui.
+    stepBusHabitant(n, H) {
+      const v = n.voyage, h = this.heureImm(H);
+      if (!v || this.dortImm(H, n)) { n.voyage = null; this.rentreHabitant(n); this.coucheHabitant(n); return; }
+      const fin = (p) => {
+        if (p) { n.x = p.x; n.y = p.y; }
+        n.niv = 0;
+        n.cache = false;
+        this.montreHabitant(n);
+        n.etat = v.etat;
+        n.voyage = null;
+        n.busCar = null;
+        if (!this.allerImm(n, v.p, v.niv)) { n.path = []; n.t = 0.01; }
+      };
+      if (n.etat === 'attendBus') {
+        const car = this.cars.find((c) => c.ligne === v.tr && c.k === v.i && c.atStop);
+        if (car) { n.etat = 'enBus'; n.busCar = car; n.cache = true; return; }
+        if (h - v.depuis > (LIGNES.intervalle * 1.5) / 60 || h >= LIGNES.heures[1]) fin(null);
+        return;
+      }
+      const car = n.busCar;
+      if (car && this.cars.includes(car) && !(car.k === v.j && car.atStop)) { n.x = car.x; n.y = car.y; return; }
+      fin(v.tr.arrets[v.j].attente);
     },
 
     // Un étal du marché, au hasard : le point devant lui.
@@ -674,7 +801,7 @@
       n.path = [];
       if (deja || reduced()) { n.cache = true; return; }
       this.tweens.add({ targets: [n.s, n.shadow], alpha: 0, duration: 500, onComplete: () => {
-        n.cache = n.etat === 'travail' || n.etat === 'ecole' || n.etat === 'sortie' || n.etat === 'dort';
+        n.cache = n.etat === 'travail' || n.etat === 'ecole' || n.etat === 'sortie' || n.etat === 'dort' || n.etat === 'enBus';
         n.s.setAlpha(1); n.shadow.setAlpha(0.3);
       } });
     },
@@ -735,7 +862,7 @@
       const M = (eco && eco.metiers) || {}, Li = (eco && eco.lieux) || {};
       const h = (x) => { const m = Math.round(x * 60); return `${Math.floor(m / 60)} h${m % 60 ? String(m % 60).padStart(2, '0') : ''}`; };
       const horaires = (S) => S.map(([a, b]) => `de ${h(a)} à ${h(b)}`).join(' et ');
-      const sortie = this.paroleSortie(n, Li);
+      const sortie = this.paroleBus(n) || this.paroleSortie(n, Li);
       if (n.m.enfant) {
         const E = K.ECOLE;
         const ecole = sortie ? sortie.trim() : n.etat === 'versEcole' ? `Je vais à l'école, elle commence à ${h(E.debut)} : je ne dois pas être en retard !` : n.etat === 'retour' ? 'Je rentre de l\'école !'
@@ -757,9 +884,18 @@
         dit += achats.length ? ` Hier, on a acheté au marché ${liste(achats)} (${hier.achete} 💰).` : ' Hier, on n\'a rien pu acheter au marché.';
         dit += hier.plats.length ? ` Au dîner : ${liste([...new Set(hier.plats)].map((p) => N[p] || p))}.` : '';
         if (hier.couverture < 100) dit += ' On n\'a pas mangé à notre faim…';
+        if (hier.bus) dit += ` Et ${hier.bus} ticket${hier.bus > 1 ? 's' : ''} de bus.`;
       }
       if (n.etat === 'achete') dit = ' Je fais les courses pour le dîner !' + dit;
       return `💼 ${qui} : « ${travail}${ici}${dit} » (${fo.argent} 💰 de côté, bonheur ${fo.bonheur} ${humeur})`;
+    },
+
+    // Ce que dit `n` de son trajet en bus ('' : il n'en prend pas).
+    paroleBus(n) {
+      const v = n.voyage;
+      if (!v || (n.etat !== 'versArret' && n.etat !== 'attendBus')) return '';
+      const L = v.tr.ligne, a = v.tr.arrets[v.j].nom;
+      return n.etat === 'versArret' ? ` Je vais prendre le bus de la ligne ${L.id}, jusqu'à l'arrêt ${a}.` : ` J'attends le bus de la ligne ${L.id} : je descends à l'arrêt ${a}.`;
     },
 
     // Ce que dit `n` de sa sortie du soir, en chemin, sur place ou au retour ('' : rien).

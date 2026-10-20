@@ -133,7 +133,12 @@
         });
         return { name: o.name, pts: out, length: s, spans, bus: !!o.bus };
       });
-      this.carRoutes = this.routes.filter((r) => !r.bus);
+      // (les voitures ne roulent pas le long des lignes de bus de la ville : elles ne font que
+      // les traverser ; LIGNES, js/carte/ville/lignes.js)
+      const voies = new Set();
+      for (const r of this.routes) if (/^ligne_/.test(r.name)) for (const p of r.pts) voies.add(`${Math.round(p.x / 8)},${Math.round(p.y / 8)}`);
+      const leLong = (r) => r.pts.reduce((n, p) => n + (voies.has(`${Math.round(p.x / 8)},${Math.round(p.y / 8)}`) ? 1 : 0), 0) * 2;
+      this.carRoutes = this.routes.filter((r) => !r.bus && (!voies.size || leLong(r) < 160));
       // deux trajets se gênent dans un carrefour s'ils y passent tout près l'un de l'autre
       this.conflict = this.crossings.map((c, k) => this.routes.map((a) => this.routes.map((b) => {
         const sa = a.spans[k], sb = b.spans[k];

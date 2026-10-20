@@ -265,6 +265,16 @@ export function ticketBus(state, n = 1) {
   return { ok: true, cost: prix };
 }
 
+// Les `n` tickets de bus d'un jour du foyer `f` (js/engine/voisins.js, journee) : autant qu'il
+// peut en payer ; à la caisse de la ville. Renvoie le nombre payé.
+export function payerBus(state, f, n) {
+  const T = E().BUS.TICKET, k = Math.max(0, Math.min(n, Math.floor(f.argent / T)));
+  f.argent -= k * T;
+  const e = economie(state);
+  e.tickets = (e.tickets || 0) + k * T;
+  return k;
+}
+
 // La matière que l'objet `item` de l'inventaire fournit au négoce (null : aucune).
 export function matiereDe(item) {
   const o = DATA.OBJETS[item];

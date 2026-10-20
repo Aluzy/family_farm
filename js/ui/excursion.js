@@ -20,7 +20,7 @@ import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
 import { farmSeed } from '../engine/terrain.js';
 import { LIVREUR, ramasserTransition, ressourcesDuJour, transitionPlan, transitionPris, transitionSeed } from '../engine/transition.js';
-import { assigneEmplois, immeubleFoyer, immeubleVue, livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
+import { assigneEmplois, immeubleBus, immeubleFoyer, immeubleVue, livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -205,6 +205,9 @@ window.FermeHote = {
   },
   // le bureau de négoce : ce qu'il rachète (les pénuries) et ce que la ferme en a ; une vente
   negoce: () => ({ offres: negoceOffres(state), pieces: Math.floor(state.pieces) }),
+  // les trajets en bus de chaque jour des familles de la ville, par logement (leurs tickets :
+  // js/carte/ville/habitants.js)
+  busImm: (trajets) => { immeubleBus(state, trajets); persistState(); },
   // les lignes de bus de la ville (js/carte/ville/lignes.js) : le prix et l'achat d'un ticket
   prixTicket: () => DATA.ECONOMIE.BUS.TICKET,
   ticketBus: () => nuit('ville-buy') || joue(ticketBus(state)),

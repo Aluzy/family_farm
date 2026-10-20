@@ -3,7 +3,7 @@
    Lancer seul : node --test tests/engine/voisins.test.mjs (ou node tests/run-tests.mjs voisins).
    ========================================================================== */
 
-import { arbresDebout, assigneEmplois, createNewGame, DATA, emploi, immeubleFoyer, immeubleFoyers, immeubleVue, livraison, logementsImmeuble, postesVille, runNight, TRANSITION, transitionPlan, transitionSeed, treeGone, voisinAbat, voisinFoyer, voisinQuota, voisinsFoyers, voisinsVue } from '../../js/engine/index.js';
+import { arbresDebout, assigneEmplois, createNewGame, DATA, emploi, immeubleBus, immeubleFoyer, immeubleFoyers, immeubleVue, livraison, logementsImmeuble, postesVille, runNight, TRANSITION, transitionPlan, transitionSeed, treeGone, voisinAbat, voisinFoyer, voisinQuota, voisinsFoyers, voisinsVue } from '../../js/engine/index.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const GRAINES = ['1', '2', '77', 'abc', 'b3', 'x9', '42', 'zz', 'ferme', '123456789'];
@@ -216,4 +216,18 @@ test('immeuble : chaque jour, les adultes touchent le salaire de leur poste et l
   }
   const v = immeubleVue(s).logement_1;
   assertEqual(v.hier.salaire, v.emplois.reduce((t, k) => t + emploi(k).SALAIRE, 0));
+});
+
+test('immeuble : les tickets de bus de chaque jour, payés par la famille à la caisse de la ville', () => {
+  const s = createNewGame(4242);
+  immeubleFoyer(s, 'logement_1', { adultes: 2, enfants: 1 });
+  immeubleFoyer(s, 'logement_2', { adultes: 2, enfants: 0 });
+  immeubleBus(s, { logement_1: 4 });
+  runNight(s);
+  const F = immeubleFoyers(s);
+  assertEqual(F.logement_1.journal.at(-1).bus, 4, 'quatre trajets');
+  assertEqual(F.logement_2.journal.at(-1).bus, undefined, 'pas de bus');
+  // (la caisse les reçoit la nuit suivante : l'économie passe avant les familles)
+  runNight(s);
+  assertEqual(s.economie.bilan.tickets, 4 * DATA.ECONOMIE.BUS.TICKET);
 });

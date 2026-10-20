@@ -119,11 +119,12 @@
   // une rangée par ligne) partent de `heures[0]` à `heures[1]` h, un toutes les `intervalle`
   // minutes du jeu dans chaque sens (ceux d'une ligne `decalage` minutes après l'heure : les deux
   // lignes partent du même bout de l'avenue), roulent à `vitesse` px/s et attendent `arret` s à chaque
-  // arrêt. Le ticket : ECONOMIE.BUS (data/economie.json).
+  // arrêt. Les rues des lignes leur sont réservées : les voitures ne font que les traverser
+  // (js/carte/ville/circulation.js). Le ticket : ECONOMIE.BUS (data/economie.json).
   const LIGNES = {
     key: 'bus_lignes', file: 'assets/ville_bus_lignes.png',
     poteau: { key: 'arret_bus', file: 'assets/ville_arret_bus.png', w: 16, h: 48, pied: 46 },
-    heures: [5, 23], intervalle: 40, vitesse: 90, arret: 2.5,
+    heures: [4.5, 23.5], intervalle: 30, vitesse: 160, arret: 1.5,
     rues: { avenue: { trottoir: 72, x: [600, 680] }, biblio: { trottoir: 70, y: [1170, 1230] } },
     arrets: {
       usines: { nom: 'Usines du nord', rue: 'avenue', y: 328 },
@@ -146,7 +147,7 @@
         },
       },
       {
-        id: 2, couleur: 'violette', decalage: 20,
+        id: 2, couleur: 'violette', decalage: 15,
         trajets: {
           est: { pts: [[625, -48], [625, 1215], [2736, 1215]], arrets: ['usines', 'negoce', 'maisons', 'bibliotheque', 'ecoles', 'pizzeria'] },
           ouest: { pts: [[2736, 1185], [655, 1185], [655, -48]], arrets: ['pizzeria', 'ecoles', 'bibliotheque', 'maisons', 'negoce', 'usines'] },

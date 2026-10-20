@@ -107,7 +107,8 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
        la veille (au plus 4 à la fois : `js/carte/ville/circulation.js`).
 6. Les lignes de bus de la ville : les trajets à pied sont longs (jusqu'à 4 h de jeu d'un bout à
    l'autre). Deux lignes (`LIGNES`, `js/carte/ville/config.js`), dans les deux sens, un bus
-   toutes les 40 minutes du jeu de 5 h à 23 h ; le ticket : 1 pièce le trajet, à la caisse de la
+   toutes les 30 minutes du jeu de 4 h 30 à 23 h 30, sur des rues qui leur sont réservées (les
+   voitures ne font que les traverser) ; le ticket : 1 pièce le trajet, à la caisse de la
    ville (`ECONOMIE.BUS`) :
    - la ligne 1 (verte), du nord au sud par l'avenue de l'ouest : usines du nord, bureau de
      négoce, gare et boulangerie, mairie, résidences, minoterie ;
@@ -119,7 +120,10 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
    - 6a, les lignes (fait ; `js/carte/ville/lignes.js`) : les bus qui roulent et s'arrêtent, les
      poteaux des arrêts ; le joueur touche un poteau, choisit son arrêt, paie son ticket, monte
      dans le prochain bus et descend à son arrêt ;
-   - 6b, les habitants qui prennent le bus pour aller au travail, à l'école ou en sortie, quand
-     c'est plus court qu'à pied (leurs tickets payés chaque jour) ;
+   - 6b, les habitants (fait ; `js/carte/ville/habitants.js`, `planBus`) : pour aller au
+     travail, à l'école, au marché, en sortie et pour rentrer, ils prennent le bus quand c'est
+     au moins un dixième plus court qu'à pied (le chemin jusqu'à l'arrêt, l'attente, le trajet,
+     le chemin depuis l'arrêt) ; ils vont à l'arrêt, attendent, montent, descendent et finissent
+     à pied ; la famille paie les tickets de chaque jour (`immeubleBus`, `payerBus`) ;
    - 6c, les chauffeurs : quatre postes de conducteur·rice de bus (pris à d'autres lieux, pour
      garder 80 postes), payés par la caisse de la ville.
