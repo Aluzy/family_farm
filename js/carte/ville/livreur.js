@@ -256,7 +256,7 @@
       } else {
         if (n.gare) n.selle.place(n.parking.x, n.parking.y, 'bas', false, 0);
         else n.selle.cache();
-        if (n.etat === 'dort') frame = F('idle_bas_0');
+        if (n.etat === 'dort') frame = F('dort_bas_' + (Math.floor((time || 0) / 1600) % 2));   // (les yeux fermés, il respire)
         else if (n.etat === 'charge') frame = F('ramasse_' + Math.min(2, Math.floor((1 - n.t / LV.charge) * 3)));
         else if (bouge) frame = F.de('marche', n.face, Math.floor(n.walked / 4) % 4);
         else frame = F.de('idle', n.face, Math.floor((time || 0) / 600) % 2);

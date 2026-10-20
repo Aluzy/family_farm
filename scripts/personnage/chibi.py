@@ -40,6 +40,8 @@ VUES = {'bas': 0, 'haut': 27, 'cote': 54}
 TX, TY = 2, 7          # où le modèle est posé dans la case
 K = (43, 29, 20)       # le contour
 TETE, TORSE, JAMBES = 11, 18, 24      # fin (exclue) de la tête, du haut du corps, des jambes
+# Les yeux de face (le blanc et la pupille de chacun, sur deux rangées), les mêmes pour tous les modèles
+YEUX = [(x, y) for y in (5, 6) for x in (3, 4, 7, 8)]
 # Les zones des bras, par vue : (colonnes, rangées)
 BRAS = {
     'bas': [(range(0, 3), range(11, 18)), (range(9, 12), range(11, 18))],
@@ -75,6 +77,24 @@ class Modele:
         F.C['ov2'] = commune([(x, y) for x in (7, 8) for y in range(18, 22)])
         F.C['bt'] = commune([(x, y) for x in (3, 4) for y in (22, 23)])
         F.C['bt2'] = mul(F.C['bt'], 0.7)
+        self.yeux = self.yeux_fermes(face)
+
+    @staticmethod
+    def yeux_fermes(face):
+        """Les yeux fermés, de face. Tous les modèles ont les yeux aux mêmes cases (YEUX : le
+        blanc et la pupille, sur deux rangées) : la rangée du haut prend la couleur de la peau
+        (la plus fréquente juste entre et sous les yeux), celle du bas devient un trait de cils
+        (la pupille si elle est sombre, sinon un brun sombre). Renvoie { case: couleur }."""
+        lum = lambda c: sum(c) / 3
+        peaux = Counter(face[p] for p in ((5, 6), (6, 6), (5, 7), (6, 7)) if p in face and min(face[p]) < 230)
+        if not peaux:
+            return {}
+        peau = peaux.most_common(1)[0][0]
+        pupilles = [face[p] for p in YEUX if p in face and min(face[p]) < 230]
+        sombre = min(pupilles, key=lum) if pupilles else None
+        cil = mul(sombre, 0.85) if sombre and lum(sombre) < 90 else (54, 36, 24)
+        haut = min(y for _, y in YEUX)
+        return {(x, y): peau if y == haut else cil for (x, y) in YEUX}
 
     def haut(self, vue, sans_bras):
         """La tête et le torse (rangées 0..17), avec ou sans les bras."""
@@ -137,7 +157,7 @@ def bras(cv, sx, sy, hx, hy, manche, peau, tete_cases):
 MODELE = {}           # le modèle du personnage en cours de dessin
 
 
-def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, sit=False):
+def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, sit=False, fermes=False):
     """Comme fermier.figure (mêmes paramètres, mêmes mains), d'après le modèle."""
     m = MODELE['m']
     cv = Canvas()
@@ -151,6 +171,8 @@ def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, si
     else:
         jambes(cv, m, vue, walk)
     haut = m.haut(vue, sans_bras=bool(hands))
+    if fermes and vue == 'bas':                       # il dort : les yeux fermés
+        haut = {**haut, **{p: c for p, c in m.yeux.items() if p in haut}}
     poser(cv, haut, 0, dy)
     tete = {(TX + x, TY + y + dy) for (x, y) in haut if y < TETE}
     if hands:

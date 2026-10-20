@@ -38,6 +38,7 @@
 #   faux_cote_0..3           faucher : prêt (la lame au sol devant lui), armée en arrière, le
 #                            coup qui balaie l'herbe devant ses pieds, la lame qui finit en avant
 #   assis_<vue>_0..1         assis à table : les mains sur la table, la fourchette à la bouche
+#   dort_bas_0..1            il dort, de face (dans son lit) : les yeux fermés, il respire
 #   peche_<vue>_0..3         pêcher : canne tenue, armée en arrière, lancée (il attend la
 #                            touche), relevée (il ferre). Le fil et le bouchon sont dessinés par
 #                            la carte, depuis le bout de la canne (PECHE_BOUT dans js/fermier.js)
@@ -449,7 +450,7 @@ def motif(cv):
                 cv.px[y][x] = 'sp'
 
 
-def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, sit=False):
+def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, sit=False, fermes=False):
     """Un personnage complet. hands : positions des mains (gauche, droite) ou (main avant,
     main arrière) de profil ; before / after : dessins sous et sur le corps (outils) ; sit :
     assis (avec b = 4, voir legs_assis)."""
@@ -624,6 +625,9 @@ def frames(figure=figure):
     F['faux_cote_1'] = figure('cote', b=-1, hands=((7, 19), (6, 20)), after=faux(10, 13, 3, 28, [(3, 29), (4, 30), (5, 30), (6, 30), (7, 30)]))
     F['faux_cote_2'] = figure('cote', squat=1, hands=((10, 21), (9, 22)), after=faux(7, 15, 12, 29, [(12, 30), (13, 30), (14, 30), (15, 29), (15, 28)]))
     F['faux_cote_3'] = figure('cote', hands=((11, 19), (10, 20)), after=faux(8, 13, 14, 26, [(14, 27), (15, 27), (15, 26), (15, 25), (14, 24)]))
+    # il dort (dans son lit, tourné vers nous) : les yeux fermés, il respire
+    F['dort_bas_0'] = figure('bas', fermes=True)
+    F['dort_bas_1'] = figure('bas', b=1, fermes=True)
     return F
 
 
