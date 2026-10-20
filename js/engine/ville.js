@@ -1,8 +1,8 @@
 import { DATA, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
 import { canPay, fail, NO_COINS, spend } from './devices.js';
-import { addLot, takeItem } from './inventory.js';
-import { coefPrix, economie, prendreStock, venteNegoce } from './economie.js';
+import { addLot, inventoryCounts, takeItem } from './inventory.js';
+import { coefPrix, economie, matiereDe, negoceVue, prendreStock, venteNegoce } from './economie.js';
 import { buyItem } from './market.js';
 import { awakeHours, hourOfDay } from './clock.js';
 import { farmStep } from './energy.js';
@@ -198,7 +198,9 @@ export function shopView(id, state = null) {
     return { item: k, nom: o.nom, icone: o.icone, prix: shopPrice(k, state, id), energie: o.energie || 0 };
   });
   const stock = state && b.produit ? Math.floor(economie(state).stocks[b.produit] || 0) : null;
-  return { nom: b.nom, icone: b.icone, stock, objets };
+  // (le cours : le prix du jour, en % du prix de base, selon le stock)
+  const cours = state && b.produit ? Math.round(coefPrix(state, b.produit) * 100) : 100;
+  return { nom: b.nom, icone: b.icone, stock, cours, objets };
 }
 
 // Achète `qty` `item` au comptoir de la boutique `id` (la carte n'ouvre le comptoir que quand un
@@ -223,6 +225,18 @@ export function buyInShop(state, id, item, qty = 1) {
   }
   if (!bought) return fail(NO_COINS);
   return { ok: true, bought, cost: bought * prix };
+}
+
+// Ce que le bureau de négoce rachète aujourd'hui, et ce que le joueur en a :
+// [{ matiere, nom, icone, quantite (la pénurie), prix, objets: [{ item, nom, icone, qte }] }].
+export function negoceOffres(state) {
+  const inv = inventoryCounts(state);
+  return negoceVue(state).map((r) => {
+    const d = DATA.ECONOMIE.PRODUITS[r.matiere];
+    const objets = Object.entries(inv).filter(([it]) => matiereDe(it) === r.matiere)
+      .map(([item, qte]) => ({ item, nom: DATA.OBJETS[item].nom, icone: DATA.OBJETS[item].icone, qte }));
+    return { ...r, nom: d.nom, icone: d.icone, objets };
+  });
 }
 
 // Le joueur vend `qty` `item` au bureau de négoce (js/engine/economie.js, venteNegoce : la

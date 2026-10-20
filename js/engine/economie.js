@@ -281,10 +281,16 @@ export function venteNegoce(state, item, n, prendre) {
   return { ok: true, sold: k, gain, matiere: m };
 }
 
-// Ce que la mairie montre de l'économie : le bilan d'hier, les stocks, les pénuries, la caisse.
+// Ce que la mairie montre de l'économie : le bilan d'hier, les stocks, les pénuries, la caisse ;
+// produits : [{ id, nom, icone, stock, demande (par jour), prix (du jour), base, matiere }] (les
+// matières premières d'abord) ; sorties : les visites des loisirs, le dernier jour de sortie.
 export function economieVue(state) {
-  const e = economie(state);
+  const e = economie(state), D = demandeTheorique(), X = E();
   const stocks = Object.fromEntries(Object.entries(e.stocks).map(([p, q]) => [p, Math.floor(q)]));
-  const prix = Object.fromEntries(Object.keys(E().PRODUITS).map((p) => [p, prixEco(state, p)]));
-  return { jour: e.jour, caisse: Math.round(e.caisse), bilan: e.bilan || null, stocks, prix, penuries: { ...e.penuries }, demande: demandeTheorique() };
+  const prix = Object.fromEntries(Object.keys(X.PRODUITS).map((p) => [p, prixEco(state, p)]));
+  const produits = Object.entries(X.PRODUITS).map(([id, d]) => ({
+    id, nom: d.nom, icone: d.icone, stock: stocks[id] || 0, demande: Math.round(D[id] || 0), prix: prix[id], base: d.prix, matiere: !!X.MATIERES[id],
+  })).sort((a, b) => b.matiere - a.matiere);
+  const { jour, ...sorties } = e.visites;
+  return { jour: e.jour, caisse: Math.round(e.caisse), bilan: e.bilan || null, stocks, prix, produits, penuries: { ...e.penuries }, demande: D, sorties, sortiesJour: jour ?? null, part: X.ENTREPRISES.PART };
 }

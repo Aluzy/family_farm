@@ -7,7 +7,8 @@ import { depositOreNotebook, enSelle, hasTool, hitsNeeded, mineOre, morceauxDe }
 import { techFlag } from '../engine/techtree.js';
 import { rockGone, treeGone } from '../engine/crops.js';
 import { addItem } from '../engine/inventory.js';
-import { buyInShop, shopView } from '../engine/ville.js';
+import { buyInShop, negoceOffres, sellToNegoce, shopView } from '../engine/ville.js';
+import { economie, economieVue } from '../engine/economie.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
 import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
 import { chopFromStage, fishFromStage, mineFromStage, morceauFromStage } from './outils.js';
@@ -76,6 +77,8 @@ function vitrine() {
         id, nom: d.nom, icone: d.icone, prix: d.prix, texte: d.texte, par: d.par, intrantNom: d.intrantNom,
         produit: d.produit, prixProduit: d.prixProduit, quotaMax: d.quotaMax, heure: DATA.VILLE.ENTREPRISES.HEURE,
         achetee: !!c, quota: c ? c.quota : d.quota, dispo: c ? companyPlan(state, id).dispo : null, bilan: c ? c.bilan : null,
+        // (ses comptes d'hier dans l'économie de la ville, js/engine/economie.js ; ta part)
+        eco: (economie(state).bilan && economie(state).bilan.comptes[id]) || null, part: DATA.ECONOMIE.ENTREPRISES.PART,
       };
     }),
   };
@@ -194,6 +197,15 @@ window.FermeHote = {
   // la ferme ; un achat au comptoir (la carte ne l'ouvre que quand un employé y travaille)
   boutique: (id) => { const v = shopView(id, state); return v && { ...v, pieces: state.pieces }; },
   acheterBoutique: (id, item, n) => nuit('ville-buy') || joue(buyInShop(state, id, item, n)),
+  // la mairie : le tableau de bord de l'économie (economieVue), les noms des lieux, les
+  // habitants de la ville (foyers, bonheur et argent moyens)
+  mairie: () => {
+    const F = Object.values(immeubleVue(state)), moy = (k) => (F.length ? Math.round(F.reduce((t, f) => t + f[k], 0) / F.length) : 0);
+    return { ...economieVue(state), lieux: DATA.VOISINS.LIEUX, habitants: { foyers: F.length, bonheur: moy('bonheur'), argent: moy('argent') }, pieces: Math.floor(state.pieces) };
+  },
+  // le bureau de négoce : ce qu'il rachète (les pénuries) et ce que la ferme en a ; une vente
+  negoce: () => ({ offres: negoceOffres(state), pieces: Math.floor(state.pieces) }),
+  vendreNegoce: (item, n) => nuit('sell-item') || joue(sellToNegoce(state, item, n)),
   quota: (id, q) => nuit('entreprise-quota') || joue(setCompanyQuota(state, id, q)),
   outil: (id) => hasTool(state, id),
   // l'outil en main (barre d'outils) : 'hache', 'pioche', 'houe', 'canne' ou null
