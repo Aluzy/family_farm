@@ -796,6 +796,29 @@ test('ferme générée : une fenêtre change un mur sans l\'enlever (au sol et �
   assertEqual([etageBlocs(s)[coin], countItem(s, 'mur_fenetre')], ['mur_fenetre', 1]);
 });
 
+test('ferme générée : des bouts de murs qui ne se touchent pas ne font pas de pièce close', () => {
+  // (une grande étendue ouverte, arrêtée à PIECE_MAX cases, ne doit pas faire un faux mur
+  // pour une autre : chaque pièce trouvée est vraiment fermée)
+  const s = chantier('pc1'), T = farmTerrain(s), W = T.LARGEUR, H = T.HAUTEUR;
+  let x = 7;
+  const R = () => (x = (x * 9301 + 49297) % 233280) / 233280;
+  s.blocs = {};
+  for (let k = 0; k < 40; k++) {
+    const c = 10 + Math.floor(R() * (W - 30)), r = 10 + Math.floor(R() * (H - 30)), v = R() < 0.5, n = 3 + Math.floor(R() * 8);
+    for (let i = 0; i < n; i++) s.blocs[v ? (r + i) * W + c : r * W + c + i] = i === 1 ? 'porte' : 'mur_pierre';
+  }
+  for (const p of piecesCloses(s)) {
+    const vu = new Set([p.cases[0]]), pile = [p.cases[0]];
+    let bord = false;
+    while (pile.length && vu.size <= p.cases.length) {
+      const i = pile.pop(), c = i % W, r = Math.floor(i / W);
+      if (c === 0 || r === 0 || c === W - 1 || r === H - 1) bord = true;
+      for (const j of [i - 1, i + 1, i - W, i + W]) if (!s.blocs[j] && !vu.has(j)) { vu.add(j); pile.push(j); }
+    }
+    assertEqual([bord, vu.size], [false, p.cases.length], 'une pièce vraiment fermée');
+  }
+});
+
 test('ferme générée : un toit sur le dernier niveau de chaque bâtiment', () => {
   const s = chantier('toit1');
   setInv(s, { mur_pierre: 40, porte: 4, escalier: 1, paillasse: 1 });
