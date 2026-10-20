@@ -250,7 +250,9 @@
   // labourée disparaît. Sa teinte suit l'herbe sur laquelle elle pousse : la couleur du fond
   // sous son pied, rapportée à l'herbe la plus claire des touffes, écart accentué (`contrast` :
   // exposant) ; chaque touffe a en plus sa nuance (± `shade`).
-  const TALL_GRASS = Object.assign({ contrast: 2.2 }, K.NATURE.herbe);
+  // Les touffes fleuries (rangées dont floor(r / 3) est impaire) portent en plus leurs fleurs
+  // (`fleurs`, même découpe), sans teinte : la teinte du sol les ternirait.
+  const TALL_GRASS = Object.assign({ contrast: 2.2, fleurs: { key: 'herbe_haute_fleurs', file: 'herbe_haute_fleurs.png' } }, K.NATURE.herbe);
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json. Avec une
   // carte, ses dimensions et ses rectangles nommés prennent leur place (bakeGround).
   const DEFAULT_W = 72 * T;

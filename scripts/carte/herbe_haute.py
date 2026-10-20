@@ -3,13 +3,21 @@
 # chacune (le jeu les joue quand le personnage la traverse, voir TALL_GRASS dans
 # js/farm-stage.js ; il les teinte d'après l'herbe sous leur pied).
 #
-#   python3 scripts/carte/herbe_haute.py            écrit assets/herbe_haute.png
+#   python3 scripts/carte/herbe_haute.py            écrit assets/herbe_haute.png et
+#                                                   assets/herbe_haute_fleurs.png
 #   python3 scripts/carte/herbe_haute.py --apercu   écrit aussi apercu_herbe_haute.png
 #
-# assets/herbe_haute.png : des cases de L × H px, pied au milieu du bas ; une rangée par herbe
-# (de gauche à droite dans le modèle), une colonne par image : 0 droite, 1 et 2 penchée à
+# assets/herbe_haute.png : des cases de L × H px, pied au milieu du bas ; une rangée par variante,
+# une colonne par image : 0 droite, 1 et 2 penchée à
 # droite (un peu, plus), 3 et 4 penchée à gauche. Les brins penchent d'autant plus qu'ils sont
 # hauts (le pied ne bouge pas).
+#
+# Les variantes : les trois herbes du modèle (de gauche à droite), dans chaque TEINTE (le vert du
+# modèle, puis ses tons rapportés à une autre gamme, luminosité gardée), sans puis avec des
+# fleurs (une tige d'un pixel qui dépasse du bout d'un brin, une petite fleur au bout). Rangée
+# r = herbe + 3 × (2 × teinte + fleurs) : les rangées 0..2 restent les herbes du modèle.
+# assets/herbe_haute_fleurs.png (même découpe) : les fleurs seules ; le jeu les pose par-dessus
+# la touffe sans la teinte du sol, qui les ternirait.
 #
 # Les zones d'herbe haute sont posées sur la carte par scripts/carte/carte_v2.py (couche
 # d'objets « herbe_haute » : un point par touffe, type = rangée de l'herbe).
@@ -24,7 +32,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from pixel import ASSETS, ROOT, T, apercu  # noqa: E402
 HERBES = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'herbes_hautes.png')
 SORTIE = os.path.join(ASSETS, 'herbe_haute.png')
-L, H = 22, 16
+SORTIE_FLEURS = os.path.join(ASSETS, 'herbe_haute_fleurs.png')
+L, H = 22, 20                    # (le haut : la place des tiges fleuries)
+H0 = 16                          # la hauteur des herbes du modèle
 VARIANTES = (0, 1, 2)            # les herbes tirées pour les touffes, en alternance
 PENTES = [0, 1, 3, -1, -3]       # décalage (px) du haut des brins, pour chaque image
 
@@ -56,6 +66,80 @@ def touffes(libre):
         if len(out) == n0:
             print(f'  herbe haute : la zone {k} ({cx}, {cy}) ne porte aucune touffe')
     return sorted(out, key=lambda t: (t[1], t[0]))
+
+
+# Les teintes : (sombre, moyen, clair) ; chaque couleur du modèle prend la couleur de la gamme
+# à sa luminosité (relative au vert le plus sombre et au plus clair du modèle).
+TEINTES = [
+    None,                                                      # le vert du modèle
+    ((34, 62, 6), (88, 112, 30), (160, 178, 60)),               # vert roussi
+    ((62, 42, 14), (124, 92, 40), (190, 154, 84)),              # brun léger
+    ((40, 18, 44), (84, 44, 88), (140, 94, 132)),               # mauve foncé
+]
+# Les fleurs : (pétale, cœur), une par tige.
+FLEURS = [((238, 236, 222), (236, 200, 60)), ((236, 196, 70), (196, 120, 30)),
+          ((222, 132, 170), (250, 214, 226)), ((150, 170, 232), (236, 236, 250)),
+          ((196, 140, 220), (240, 220, 250))]
+
+
+def lum(c):
+    return 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]
+
+
+def teinter(img, gamme):
+    if gamme is None:
+        return img.copy()
+    px = img.load()
+    cs = [px[x, y][:3] for y in range(img.height) for x in range(img.width) if px[x, y][3]]
+    l0, l1 = min(map(lum, cs)), max(map(lum, cs))
+    out = img.copy()
+    po = out.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            if not px[x, y][3]:
+                continue
+            t = (lum(px[x, y]) - l0) / max(1, l1 - l0)
+            a, b, k = (gamme[0], gamme[1], t * 2) if t < 0.5 else (gamme[1], gamme[2], t * 2 - 1)
+            po[x, y] = tuple(round(a[i] + (b[i] - a[i]) * k) for i in range(3)) + (255,)
+    return out
+
+
+def fleurir(img, graine):
+    """Une à deux tiges d'un pixel, du ton moyen de l'herbe, qui partent du bout d'un brin et
+    dépassent de 2 à 3 px ; au bout, une petite fleur (le cœur, un pétale à côté et un dessus).
+    Renvoie la touffe fleurie et ses fleurs seules."""
+    hasard = random.Random(graine)
+    out = img.copy()
+    seules = Image.new('RGBA', img.size)
+    ps = seules.load()
+    po = out.load()
+    w, h = out.size
+    cs = sorted((po[x, y][:3] for y in range(h) for x in range(w) if po[x, y][3]), key=lum)
+    tige = cs[len(cs) // 2]
+    # les bouts des brins : un pixel sans rien au-dessus, haut dans la touffe
+    bouts = [(x, y) for x in range(1, w - 1) for y in range(h) if po[x, y][3] and (y == 0 or not po[x, y - 1][3])
+             and all(not po[x, yy][3] for yy in range(y))]
+    bouts.sort(key=lambda q: q[1])
+    bouts = [q for q in bouts if q[1] <= bouts[0][1] + 4]
+    hasard.shuffle(bouts)
+    pris = []
+    for (x, y) in bouts:
+        if len(pris) == (1 if hasard.random() < 0.5 else 2):
+            break
+        if any(abs(x - px_) < 4 for px_ in pris):
+            continue
+        n = hasard.choice((2, 3))
+        if y - n - 1 < 1:
+            continue
+        for k in range(1, n + 1):
+            po[x, y - k] = tige + (255,)
+        petale, coeur = hasard.choice(FLEURS)
+        fy = y - n - 1
+        cote = hasard.choice((-1, 1))
+        for q, c in (((x, fy), coeur), ((x, fy - 1), petale), ((x + cote, fy), petale)):
+            po[q] = ps[q] = c + (255,)
+        pris.append(x)
+    return out, seules
 
 
 def herbes_dessinees():
@@ -129,7 +213,7 @@ def pencher(img, d):
     """Les brins penchés : chaque rangée glisse de d × (hauteur au-dessus du pied) / H."""
     out = Image.new('RGBA', img.size)
     for y in range(img.height):
-        k = round(d * (img.height - 1 - y) / (img.height - 1))
+        k = round(d * (img.height - 1 - y) / (H0 - 1))
         out.alpha_composite(img.crop((0, y, img.width, y + 1)), (k, y))
     return out
 
@@ -143,13 +227,23 @@ def double(t, dx):
 
 
 def main():
-    variantes = [cadre(h) for h in herbes_dessinees()]
+    herbes = [cadre(h) for h in herbes_dessinees()]
+    variantes, fleurs = [], []
+    for t, gamme in enumerate(TEINTES):
+        for fleuri in (False, True):
+            for n, h in enumerate(herbes):
+                v, f = fleurir(teinter(h, gamme), 10 * t + n) if fleuri else (teinter(h, gamme), Image.new('RGBA', h.size))
+                variantes.append(v)
+                fleurs.append(f)
     planche = Image.new('RGBA', (L * len(PENTES), H * len(variantes)))
-    for r, v in enumerate(variantes):
+    planche_fleurs = Image.new('RGBA', planche.size)
+    for r, (v, f) in enumerate(zip(variantes, fleurs)):
         for c, d in enumerate(PENTES):
             planche.alpha_composite(pencher(v, d), (c * L, r * H))
+            planche_fleurs.alpha_composite(pencher(f, d), (c * L, r * H))
     planche.save(SORTIE)
-    print(f'assets/herbe_haute.png : {len(variantes)} herbes × {len(PENTES)} images de {L} × {H}')
+    planche_fleurs.save(SORTIE_FLEURS)
+    print(f'assets/herbe_haute.png : {len(variantes)} variantes × {len(PENTES)} images de {L} × {H}')
     if '--apercu' in sys.argv:
         apercu(planche, 'apercu_herbe_haute.png', 8, (120, 170, 70))
 

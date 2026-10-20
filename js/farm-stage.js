@@ -130,6 +130,7 @@
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
         L.spritesheet(TALL_GRASS.key, v(TALL_GRASS.file), TALL_GRASS.frame);
+        L.spritesheet(TALL_GRASS.fleurs.key, v(TALL_GRASS.fleurs.file), TALL_GRASS.frame);
         L.spritesheet(ROOF_PANELS.key, v(ROOF_PANELS.file), ROOF_PANELS.frame);
         L.spritesheet(WELL.key, v(WELL.file), WELL.frame);
         L.spritesheet(TANK.key, v(TANK.file), TANK.frame);

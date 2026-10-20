@@ -153,7 +153,7 @@
     /* ---------- l'herbe haute ---------- */
 
     makeTallGrass() {
-      for (const g of this.tallGrass || []) g.img.destroy();
+      for (const g of this.tallGrass || []) { g.img.destroy(); if (g.fleurs) g.fleurs.destroy(); }
       this.tallGrass = [];
       const raw = this.mapRaw;
       if (!raw || !this.has(TALL_GRASS.key)) return;
@@ -162,7 +162,9 @@
       for (const o of (layer && layer.objects) || []) {
         const base = (Math.max(0, Number(o.type) | 0) % rows) * TALL_GRASS.frames;
         const img = this.add.image(Math.round(o.x), Math.round(o.y), TALL_GRASS.key, base).setOrigin(0.5, 1).setDepth(o.y);
-        this.tallGrass.push({ img, x: o.x, y: o.y, base, cell: Math.floor(o.y / T - 0.01) * raw.width + Math.floor(o.x / T), t: -1, dir: 1, inside: false });
+        const fleurie = Math.floor(base / TALL_GRASS.frames / 3) % 2 === 1 && this.has(TALL_GRASS.fleurs.key);
+        const fleurs = fleurie ? this.add.image(img.x, img.y, TALL_GRASS.fleurs.key, base).setOrigin(0.5, 1).setDepth(o.y + 0.01) : null;
+        this.tallGrass.push({ img, fleurs, x: o.x, y: o.y, base, cell: Math.floor(o.y / T - 0.01) * raw.width + Math.floor(o.x / T), t: -1, dir: 1, inside: false });
       }
       this.tintTallGrass();
     },
@@ -207,7 +209,10 @@
       this.grassCheck -= dt;
       if (this.grassCheck <= 0) {                  // les cases labourées : plus d'herbe haute
         this.grassCheck = 500;
-        for (const g of list) g.img.setVisible(!(this.dirt && this.dirt.has(g.cell)));
+        for (const g of list) {
+          g.img.setVisible(!(this.dirt && this.dirt.has(g.cell)));
+          if (g.fleurs) g.fleurs.setVisible(g.img.visible);
+        }
       }
       const p = this.fermier && !this.room ? this.fermier.pos() : null;
       this.grassPrev = K.herbe(list, p, this.grassPrev, dt);
@@ -238,7 +243,7 @@
       };
       for (const o of this.occluders || []) { marque(o.img); marque(o.shake); }
       for (const o of this.rocks || []) marque(o.img);
-      for (const g of this.tallGrass || []) marque(g.img);
+      for (const g of this.tallGrass || []) { marque(g.img); marque(g.fleurs); }
       for (const g of (this.gatherables || new Map()).values()) g.imgs.forEach(marque);
       for (const e of (this.blocks || new Map()).values()) marque(e.img);
     },

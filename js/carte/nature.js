@@ -13,12 +13,12 @@
   const K = global.CarteKit;
 
   const NATURE = {
-    // L'herbe haute (scripts/carte/herbe_haute.py, assets/herbe_haute.png : 5 images de 22×16
-    // par rangée, une rangée par variante). Quand le personnage la traverse, la touffe penche
+    // L'herbe haute (scripts/carte/herbe_haute.py, assets/herbe_haute.png : 5 images de 22×20
+    // par rangée, une rangée par variante : herbe + 3 × (2 × teinte + fleurs)). Quand le personnage la traverse, la touffe penche
     // dans le sens de sa marche puis revient (images de `swing`, `step` ms chacune : 0 droite,
     // 1 et 2 à droite, 3 et 4 à gauche). On est dans la touffe à moins de `reach` px de son pied.
     // Chaque touffe a sa nuance (± `shade`) : deux touffes voisines ne se confondent pas.
-    herbe: { key: 'herbe_haute', file: 'herbe_haute.png', frame: { frameWidth: 22, frameHeight: 16 }, frames: 5,
+    herbe: { key: 'herbe_haute', file: 'herbe_haute.png', frame: { frameWidth: 22, frameHeight: 20 }, frames: 5,
       swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 9, up: 6, down: 4 }, shade: 0.12 },
     // Un arbre devant le personnage, qui le cache : son opacité.
     devant: 0.6,
@@ -50,7 +50,7 @@
 
   // Chaque image : l'herbe haute que le personnage traverse penche dans le sens de sa marche
   // (vers la droite s'il va à droite) et revient en se balançant. `list` : les touffes
-  // ({ img, x, y, base (première image de sa rangée), t, dir, inside }) ; `P` : les pieds du
+  // ({ img, fleurs (ses fleurs, ou rien), x, y, base (première image de sa rangée), t, dir, inside }) ; `P` : les pieds du
   // personnage (null : il n'est pas là) ; `prev` : ses pieds à l'image d'avant ; `dt` en ms.
   // Renvoie la position à garder pour l'image suivante (`prev` lui-même, mis à jour, quand il
   // existe : rien n'est alloué à chaque image).
@@ -69,10 +69,11 @@
       if (g.t < 0) continue;
       g.t += dt;
       const k = Math.floor(g.t / G.step);
-      if (k >= G.swing.length) { g.t = -1; g.img.setFrame(g.base); continue; }
+      if (k >= G.swing.length) { g.t = -1; g.img.setFrame(g.base); if (g.fleurs) g.fleurs.setFrame(g.base); continue; }
       let f = G.swing[k];
       if (g.dir < 0) f = f === 1 ? 3 : f === 2 ? 4 : f === 3 ? 1 : f === 4 ? 2 : 0;
       g.img.setFrame(g.base + f);
+      if (g.fleurs) g.fleurs.setFrame(g.base + f);
     }
     if (!P) return null;
     if (!prev) return { x: P.x, y: P.y };
