@@ -171,8 +171,9 @@
     // en mode Construire, aux niveaux où l'on rehausse les murs (chantier.js syncRang) : un
     // voile sombre (`voile`) sur la ferme ; devant lui, le rang de mur du niveau, celui du
     // dessous à `dessous`, les autres à `autres` (presque invisibles) ; les cases où poser le
-    // bloc suivant (`place`, `placeAlpha`) et les pièces closes (le voile vert) à cette hauteur
-    rang: { voile: 0.9, dessous: 0.18, autres: 0.05, place: 0xffe9a8, placeAlpha: 0.55 },
+    // bloc suivant (`place`, `placeAlpha`) et les pièces closes (le voile vert) à cette hauteur ;
+    // un mur resté plus bas que ses voisins rehaussés : en rouge (`manque`, `manqueAlpha`)
+    rang: { voile: 0.9, dessous: 0.18, autres: 0.05, place: 0xffe9a8, placeAlpha: 0.55, manque: 0xff4a3a, manqueAlpha: 0.75 },
     // les toits (js/carte/ferme/toits.js ; leur dessin : CarteKit.toit) : au-dessus de la
     // rangée du bas du bâtiment (`z`) ; à `derriere` quand le personnage passe derrière, à
     // `vitesse` par seconde

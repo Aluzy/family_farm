@@ -614,13 +614,12 @@ export function etatMoulin(state) {
   const B = blocsPoses(state), W = farmTerrain(state).LARGEUR;
   const meule = Object.keys(B).map(Number).find((t) => B[t] === 'meule');
   const piece = meule !== undefined ? pieceDe(state, meule) : null;
-  let centre = false, bornes = null, hauts = 0, total = 0;
+  let centre = false, bornes = null, hauts = 0, total = 0, murs = new Set();
   if (piece) {
     const cs = piece.cases.map((t) => t % W), rs = piece.cases.map((t) => Math.floor(t / W));
     bornes = { c0: Math.min(...cs), c1: Math.max(...cs), r0: Math.min(...rs), r1: Math.max(...rs) };
     const mil = (a, b) => [Math.floor((a + b) / 2), Math.ceil((a + b) / 2)];
     centre = mil(bornes.c0, bornes.c1).includes(meule % W) && mil(bornes.r0, bornes.r1).includes(Math.floor(meule / W));
-    const murs = new Set();
     for (const t of piece.cases) {
       const c = t % W;
       for (let dy = -1; dy <= 1; dy++) {
@@ -637,9 +636,21 @@ export function etatMoulin(state) {
   const conditions = [
     { id: 'meule', texte: 'Une meule dans une pièce close (des murs tout autour, et une porte)', ok: !!piece },
     { id: 'centre', texte: 'La meule au centre de la pièce', ok: centre },
-    { id: 'hauteur', texte: `Les murs de la pièce hauts de ${H} blocs (${hauts} / ${total}) : en mode Construire, choisis le niveau 1 puis 2 et touche les murs pour les rehausser`, ok: !!piece && total > 0 && hauts === total },
+    { id: 'hauteur', texte: `Les murs de la pièce hauts de ${H} blocs (${hauts} / ${total}) : en mode Construire, choisis le niveau 1 puis 2 et touche les murs pour les rehausser${total > hauts && hauts > 0 ? ` ; ${manquants(state, murs, H)}` : ''}`, ok: !!piece && total > 0 && hauts === total },
   ];
   return { ok: conditions.every((c) => c.ok), conditions, piece, meule: meule === undefined ? null : meule, bornes, murs: { hauts, total } };
+}
+
+// Les murs de la tour encore trop bas, dits pour les trouver (vu de 3/4, les blocs de leurs
+// voisins les cachent) : leur côté et leur hauteur.
+function manquants(state, murs, H) {
+  const W = farmTerrain(state).LARGEUR, liste = [...murs].filter((j) => hauteurMur(state, j) < H);
+  const cs = [...murs].map((t) => t % W), rs = [...murs].map((t) => Math.floor(t / W));
+  const c0 = Math.min(...cs), c1 = Math.max(...cs), r0 = Math.min(...rs), r1 = Math.max(...rs);
+  const cote = (t) => { const c = t % W, r = Math.floor(t / W); return r === r0 ? 'au fond' : r === r1 ? 'en façade' : c === c0 ? 'à gauche' : c === c1 ? 'à droite' : 'dedans'; };
+  const parCote = {};
+  for (const t of liste) { const k = `${cote(t)} (${hauteurMur(state, t)} bloc${hauteurMur(state, t) > 1 ? 's' : ''})`; parCote[k] = (parCote[k] || 0) + 1; }
+  return `à rehausser : ${Object.entries(parCote).map(([k, n]) => `${n} ${k}`).join(', ')} — marqués en rouge aux niveaux 1 et 2`;
 }
 
 // Le Moulin de la ferme générée existe quand sa tour est bâtie (etatMoulin) : la station

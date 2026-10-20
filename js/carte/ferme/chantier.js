@@ -124,6 +124,7 @@
       this.rang = n;
       this.rangCle = n ? JSON.stringify(pieces) : '';
       if (this.rangGfx) this.rangGfx.clear();
+      if (this.rangManque) this.rangManque.clear();
       if (this.rangVoile) this.rangVoile.setVisible(!!n);
       if (!n) return;
       if (!this.rangVoile) this.rangVoile = this.add.rectangle(0, 0, this.world.w, this.world.h, BLOCS_CARTE.etage.voile, R.voile).setOrigin(0);
@@ -146,6 +147,22 @@
         });
         // (un mur haut de n blocs : la place du bloc suivant)
         if (e.img.texture.key === BLOCS_CARTE.hauts.key && rangs.length === n && e.sorte !== 'porte') g.fillRect(e.x - T / 2, e.y - T - n * dy, T, T);
+      }
+      // un mur pas plus haut que le niveau, à côté d'un mur plus haut que lui (un trou dans un
+      // mur rehaussé : vu de 3/4, les blocs de ses voisins le cachent) : en rouge, à la place de
+      // son bloc suivant
+      const B = this.blocks || new Map();
+      const mur = (e) => e && !e.cases && e.sorte !== 'porte' && e.img.texture.key === BLOCS_CARTE.hauts.key;
+      const h = (e) => 1 + (e.hauts || []).length;
+      // (devant les murs : les blocs des voisins ne le cachent pas)
+      if (!this.rangManque) this.rangManque = this.add.graphics();
+      const gm = this.rangManque.setDepth(this.etageZ(9999)).clear();
+      gm.fillStyle(R.manque, R.manqueAlpha);
+      for (const e of B.values()) {
+        if (!mur(e) || h(e) > n) continue;
+        let haut = false;
+        for (let dr = -1; dr <= 1 && !haut; dr++) for (let dc = -1; dc <= 1; dc++) { const v = B.get(e.case + dr * cols + dc); if (v !== e && mur(v) && h(v) > h(e)) { haut = true; break; } }
+        if (haut) gm.fillRect(e.x - T / 2, e.y - T - h(e) * dy, T, T);
       }
     },
 

@@ -616,6 +616,13 @@ test('ferme générée (version 1.25) : le Moulin, une tour aux murs hauts de 3 
   assertEqual([hauteurMur(s, m), poserBloc(s, 'mur_pierre', m).ok], [3, false], 'pas plus de 3');
   assertEqual(poserBloc(s, 'mur_fenetre', m).ok, false, 'un mur rehaussé ne se change pas');
   for (const t of p.murs.slice(1)) { poserBloc(s, 'mur_pierre', t); poserBloc(s, 'mur_pierre', t); }
+  // un mur du côté gauche resté à 2 blocs (vu de 3/4, ses voisins le cachent) : dit, marqué
+  const g = (z.r + 2) * W + z.c;
+  reprendreBloc(s, g);
+  e = etatMoulin(s);
+  assertEqual(e.murs, { hauts: 14, total: 15 });
+  assert(/à rehausser : 1 à gauche \(2 blocs\)/.test(e.conditions[2].texte), e.conditions[2].texte);
+  poserBloc(s, 'mur_pierre', g);
   e = etatMoulin(s);
   assertEqual([e.ok, e.murs, s.stations.moulin.construit, !!s.stations.moulin.appareil], [true, { hauts: 15, total: 15 }, true, true]);
   // reprendre : le bloc du dessus d'abord ; le Moulin n'est plus là

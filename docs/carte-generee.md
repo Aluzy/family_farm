@@ -744,7 +744,9 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          sur un mur le reprend comme tout bloc (le bloc du dessus d'abord). Aux niveaux 1 et 2, la carte
          montre le niveau seul (`syncRang`) : un voile sombre sur la ferme, devant lui le rang
          de mur du niveau (celui du dessous à peine visible, les autres presque invisibles), les
-         places du bloc suivant surlignées ; un appui vise cette hauteur. La station suit (`majMoulin`) ;
+         places du bloc suivant surlignées ; un appui vise cette hauteur. Vu de 3/4, les blocs empilés
+         d'un mur cachent la case de derrière : un mur resté plus bas que ses voisins y est marqué
+         en rouge, et la fenêtre du Moulin dit de quel côté sont ceux à rehausser. La station suit (`majMoulin`) ;
          une partie d'avant garde sa meule, mais doit rehausser ses murs (migration v41 → v42).
          Sur la carte, les murs s'empilent de `etage.dy` px par bloc, un linteau ferme le dessus
          des portes, le toit se pose en haut de la tour ; dehors, une voilure de quatre ailes
