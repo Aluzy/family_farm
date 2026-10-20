@@ -1645,6 +1645,7 @@ body.has-stage { padding-bottom: 0; }
   color: var(--color-earth);
 }
 .build-slot.epuise { opacity: 0.55; }
+.build-slot-img { max-width: 30px; max-height: 30px; image-rendering: pixelated; pointer-events: none; }
 
 /* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des flèches. */
 .stage-room-bar {

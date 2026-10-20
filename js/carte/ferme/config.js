@@ -216,6 +216,9 @@
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'coffre_grain' },
     voile: 0xc8ffb4, voileAlpha: 0.4, voileDepth: 0.08, coucheY: 4,
+    // un lit acheté (meuble posé) : couché, ses pieds à `litPieds` px sous le haut du lit ; un
+    // tableau : sur la face du mur, son bas à `tableau.dy` px au-dessus du bas de la case
+    litPieds: 27, tableau: { dy: 10 },
   };
   // Les bêtes du Poulailler et de l'Étable de la ferme générée (chantier.js, syncBeasts) : leurs
   // planches (HERD_SHEETS : profil droit), dehors dans l'enclos de jour[0] h à jour[1] h (comme

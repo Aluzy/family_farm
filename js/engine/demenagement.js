@@ -245,6 +245,12 @@ export function convertirPartie(state, graine) {
     v.arbres = v.arbres.filter((t) => t.case !== null);
   }
 
+  // 4 bis. les meubles achetés (l'intérieur de la maison) : dans l'inventaire, à poser
+  const meubles = {};
+  for (const [id, n] of Object.entries(state.meubles || {})) if (n > 0 && DATA.OBJETS['meuble_' + id]) meubles['meuble_' + id] = n;
+  for (const [o, n] of Object.entries(meubles)) addItem(state, o, n);
+  if (Object.keys(meubles).length) rendus.meubles = meubles;
+
   // 5. le reste : l'Atelier (à poser), les arbres abattus, les rochers cassés, la cueillette, le robot
   if (!state.atelier || !state.atelier.construit) state.atelier = { construit: true, niveau: DATA.ATELIER.NIVEAU };
   if (state.outils) { state.outils.arbres = {}; state.outils.rochers = {}; }

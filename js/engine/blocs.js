@@ -49,9 +49,14 @@ export function solAt(state, tile) {
   return solsPoses(state)[tile] || null;
 }
 
+// Ce qui est posé sur les blocs (la pompe sur le puits, un tableau sur un mur) : { [case]: sorte }.
+export function blocsDessusPoses(state) {
+  return state.blocsDessus && typeof state.blocsDessus === 'object' ? state.blocsDessus : {};
+}
+
 // Ce qui est posé sur le bloc de `tile` (la pompe sur le puits : state.blocsDessus), ou null.
 export function blocDessus(state, tile) {
-  return (state.blocsDessus && state.blocsDessus[tile]) || null;
+  return blocsDessusPoses(state)[tile] || null;
 }
 
 // Un bloc de cette sorte est-il déjà posé (par terre ou sur un autre) ?
@@ -67,6 +72,28 @@ export function blocBloque(state, tile) {
 
 // Poser `sorte` sur `ancien` change le mur sans l'enlever ? (un mur en pierre, une fenêtre,
 // une pierre d'angle : BLOCS[].mur ; l'ancien revient dans l'inventaire)
+// Les cases qu'un meuble posé en `tile` couvre (DATA.ATELIER.BLOCS : largeur vers la droite,
+// hauteur vers le haut ; sa case d'abord), ou null s'il sort de la ferme.
+export function empriseMeuble(state, sorte, tile) {
+  const s = sorteDe(sorte), T = farmTerrain(state), W = T.LARGEUR;
+  const l = (s && s.largeur) || 1, h = (s && s.hauteur) || 1, c = tile % W;
+  if (c + l > W || Math.floor(tile / W) - h + 1 < 0) return null;
+  const out = [];
+  for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < l; dx++) out.push(tile - dy * W + dx);
+  return out;
+}
+
+// Les cases couvertes par un meuble posé, hors la sienne : Map(case → case du meuble).
+export function casesCouvertes(state) {
+  const out = new Map();
+  for (const [k, sorte] of Object.entries(blocsPoses(state))) {
+    const s = sorteDe(sorte), t = Number(k);
+    if (!s || !s.meuble || ((s.largeur || 1) === 1 && (s.hauteur || 1) === 1)) continue;
+    for (const j of empriseMeuble(state, sorte, t) || []) if (j !== t) out.set(j, t);
+  }
+  return out;
+}
+
 export function changeMur(ancien, sorte) {
   const a = sorteDe(ancien), s = sorteDe(sorte);
   return !!(a && s && a.mur && s.mur && ancien !== sorte);
@@ -119,7 +146,7 @@ export function piecesCloses(state) {
       if (ouverte) continue;
       const portes = [...bord].filter((t) => sorteDe(B[t]).porte);
       if (!portes.length) continue;
-      out.push({ cases: cases.sort((a, b2) => a - b2), portes: portes.sort((a, b2) => a - b2), paillasses: cases.filter((t) => B[t] === 'paillasse').sort((a, b2) => a - b2) });
+      out.push({ cases: cases.sort((a, b2) => a - b2), portes: portes.sort((a, b2) => a - b2), paillasses: cases.filter((t) => B[t] === 'paillasse' || (sorteDe(B[t]) && sorteDe(B[t]).lit)).sort((a, b2) => a - b2) });
     }
   }
   piecesCle = cle;
@@ -160,7 +187,7 @@ export function genreBloc(sorte) {
   if (!s) return null;
   if (s.batiment) return s.batiment;
   if (s.station === 'moulin') return 'moulin';
-  if (sorte === 'paillasse' || s.station) return 'maison';
+  if (sorte === 'paillasse' || s.station || s.meuble) return 'maison';
   return null;
 }
 
@@ -299,7 +326,7 @@ export function poseStatus(state, sorte, tile) {
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
-  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Meubles).` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
@@ -314,9 +341,13 @@ export function poseStatus(state, sorte, tile) {
   }
   // la pompe : sur le puits, sans prendre de case
   if (s.sur) {
-    const sous = sorteDe(s.sur);
-    if (blocAt(state, tile) !== s.sur) return { ok: false, raison: `${s.nom} : à poser sur ${sous ? sous.nom.toLowerCase() : s.sur}.` };
+    const sous = sorteDe(s.sur), b = sorteDe(blocAt(state, tile));
+    // (un tableau : sur un mur, quel qu'il soit)
+    if (s.sur === 'mur' ? !(b && b.mur) : blocAt(state, tile) !== s.sur) return { ok: false, raison: `${s.nom} : à ${s.sur === 'mur' ? 'accrocher à un mur' : `poser sur ${sous ? sous.nom.toLowerCase() : s.sur}`}.` };
     if (blocDessus(state, tile)) return { ok: false, raison: 'Il y a déjà quelque chose dessus.' };
+    // (un tableau : sur la face du mur, qu'on voit quand rien ne ferme sous lui)
+    const dessous = s.sur === 'mur' && sorteDe(blocAt(state, tile + T.LARGEUR));
+    if (dessous && dessous.ferme) return { ok: false, raison: `${s.nom} : sur un mur dont on voit la face (sans mur ni porte juste en dessous).` };
     return { ok: true };
   }
   // un sol (le plancher) : sous les blocs, pas sous ce qui ferme une pièce
@@ -325,6 +356,7 @@ export function poseStatus(state, sorte, tile) {
     const b = sorteDe(blocAt(state, tile));
     if (b && b.ferme) return { ok: false, raison: `${s.nom} : pas sous un mur, une porte ni l'Atelier.` };
   } else if (blocAt(state, tile)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
+  else if (casesCouvertes(state).has(tile)) return { ok: false, raison: 'Un meuble occupe cette case.' };
   if (s.ferme && solAt(state, tile)) return { ok: false, raison: `Un ${sorteDe(solAt(state, tile)).nom.toLowerCase()} ici : reprends-le d'abord.` };
   if (arbreSurCase(state, tile)) return { ok: false, raison: 'Un arbre pousse ici.' };
   // un arbre fruitier : loin des autres (son feuillage), à côté d'aucun bloc
@@ -338,6 +370,13 @@ export function poseStatus(state, sorte, tile) {
   const p = !s.ferme && !s.sol && pieceDe(state, tile);
   const refus = p && refusGenre(state, sorte, p);
   if (refus) return { ok: false, raison: refus };
+  // un meuble de plusieurs cases : toutes libres, dans la même pièce
+  const cases = s.meuble ? empriseMeuble(state, sorte, tile) : [tile];
+  if (!cases || cases.length > 1) {
+    const couv = casesCouvertes(state), labour = new Set((state.potager.parcelles || []).map((q) => q.case));
+    const ok = cases && p && cases.every((j) => p.cases.includes(j) && !blocAt(state, j) && !couv.has(j) && !labour.has(j));
+    if (!ok) return { ok: false, raison: `${s.nom} : il lui faut ${s.largeur || 1} × ${s.hauteur || 1} cases libres dans la pièce (vers la droite${(s.hauteur || 1) > 1 ? ' et vers le haut' : ''}).` };
+  }
   return { ok: true };
 }
 
@@ -383,6 +422,8 @@ export function poserBloc(state, sorte, tile) {
 // poser). Une paillasse d'une pièce qui s'ouvre reste là, mais on n'y dort plus. Ce qui est
 // posé dessus d'abord (la pompe sur le puits), puis le bloc, puis le sol (le plancher).
 export function reprendreBloc(state, tile, opts) {
+  // (une case couverte par un meuble : le meuble)
+  if (!blocDessus(state, tile) && !blocAt(state, tile) && casesCouvertes(state).has(tile)) tile = casesCouvertes(state).get(tile);
   const dessus = blocDessus(state, tile), bloc = blocAt(state, tile);
   const sorte = dessus || bloc || solAt(state, tile);
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');

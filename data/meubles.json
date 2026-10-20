@@ -7,7 +7,8 @@
     "peut en avoir — un nombre (1 si absent), « membres » (un par membre de la famille),",
     "« adultes » ou « enfants » (un lit par adulte, par enfant). Les places des meubles à",
     "plusieurs exemplaires sont numérotées dans la carte : chaise_1…, lit_1… (les lits",
-    "d'adulte d'abord, puis ceux d'enfant)."
+    "d'adulte d'abord, puis ceux d'enfant). Sur la ferme générée, un meuble acheté arrive dans l'inventaire",
+    "(meuble_<id>) et se pose dans la maison avec le mode Construire (recipes.json, ATELIER.BLOCS.meuble_<id>)."
   ],
   "MEUBLES": {
     "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },

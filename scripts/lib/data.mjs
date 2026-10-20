@@ -124,6 +124,7 @@ export function sourcesOf(data, id) {
   const A = data.ATELIER;
   for (const [rid, r] of Object.entries((A && A.RECETTES) || {})) if (id in (r.sortie || {})) out.push(`atelier ${rid}`);
   for (const [rid, r] of Object.entries((A && A.RAMASSAGE) || {})) if (r.objet === id) out.push(`ramassage ${rid}`);
+  for (const [bid, b] of Object.entries((A && A.BLOCS) || {})) if (b.meuble && b.objet === id && data.MEUBLES && data.MEUBLES[b.meuble]) out.push(`meuble ${b.meuble} (Marché)`);
   if (data.HACHE && id === 'bois') out.push('hache');
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
   if (id.startsWith('minerai_')) out.push('grotte');

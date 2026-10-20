@@ -17,13 +17,15 @@ import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
+import { meubleSrc } from './marche.js';
 
 // Le niveau le plus haut où l'on peut construire (1 : un escalier ouvre un étage), et celui
 // où l'on construit (buildLevel, borné).
 const niveauMax = () => (etageEmprise(state).size ? 1 : 0);
 export const niveauBati = () => Math.min(buildLevel, niveauMax());
 // (à l'étage : seulement ceux qui s'y posent)
-const SORTES = () => (niveauBati() ? ETAGE_BLOCS : Object.keys(DATA.ATELIER.BLOCS));
+// (les meubles du Marché : seulement ceux qu'on a en main, ou celui qu'on pose)
+const SORTES = () => (niveauBati() ? ETAGE_BLOCS : Object.keys(DATA.ATELIER.BLOCS).filter((s) => !DATA.ATELIER.BLOCS[s].meuble || s === buildMode || blocsEnMain(state, s) > 0));
 // La liste des niveaux (au-dessus du menu) : ouverte ? Un appui long sur le carré l'ouvre, on
 // glisse jusqu'au niveau voulu et on lâche (APPUI_LONG_MS) ; un appui simple l'ouvre ou la ferme.
 let niveauListe = false;
@@ -35,9 +37,10 @@ export function chantierOuvert() {
   return atelierOuvert(state) && atelierConstruit(state);
 }
 
-// L'icône d'un bloc (celle de son objet ; l'Atelier : la sienne).
+// L'icône d'un bloc (celle de son objet ; un meuble : son dessin ; l'Atelier : la sienne).
 function icone(sorte) {
   const b = DATA.ATELIER.BLOCS[sorte];
+  if (b.meuble) return `<img class="build-slot-img" src="${meubleSrc(b.meuble)}" alt="" draggable="false">`;
   return b.objet ? DATA.OBJETS[b.objet].icone : DATA.ATELIER.ICONE;
 }
 

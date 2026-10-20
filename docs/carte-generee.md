@@ -597,8 +597,24 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          - **Objets** : la fonte des lingots (les recettes `transformation`).
        - Pendant qu'une préparation cuit, les flammes du four bougent (`BLOCS_CARTE.feu`,
          `stepFires`) ;
-       - pas d'intérieur de maison (les repas n'ont pas de scène), pas de meubles, et le
-         tutoriel n'arrête pas l'horloge : le foyer se bâtit en plusieurs jours.
+       - pas d'intérieur de maison (les repas n'ont pas de scène), et le tutoriel n'arrête pas
+         l'horloge : le foyer se bâtit en plusieurs jours ;
+       - **les meubles** du Marché (rayon Meubles, `data/meubles.json`) : une fois le foyer bâti,
+         un meuble acheté arrive dans l'inventaire (l'objet `meuble_<id>`, le bonheur est donné à
+         l'achat, comme avant) et se pose avec le mode Construire, comme un bloc
+         (`DATA.ATELIER.BLOCS.meuble_<id>`), dans une pièce close de la maison :
+         - la table, le canapé et la table basse prennent 3 ou 2 cases vers la droite, les lits
+           2 cases vers le haut, le tapis rouge 3 × 2 (`largeur`, `hauteur` ; rien d'autre ne se
+           pose sur ces cases, `casesCouvertes`) ; un appui sur l'une d'elles reprend le meuble ;
+         - les tapis sont à plat, on marche dessus ; le reste arrête le passage, sauf les lits ;
+         - un lit est un couchage, comme une paillasse : le personnage s'y couche, sous sa
+           couverture (`bedSpot`) ;
+         - un tableau s'accroche à la face d'un mur (sans mur ni porte juste en dessous :
+           `state.blocsDessus`, comme la pompe sur le puits) ; il s'efface avec son mur ;
+         - la carte pose leur dessin (`assets/meuble_<id>.png`) en bas au milieu de leurs cases
+           (`syncMeuble`, `syncTableaux` dans `js/carte/ferme/chantier.js`) ; le menu Construire
+           ne montre que les meubles qu'on a en main ;
+         - une ancienne partie qui déménage retrouve ses meubles achetés dans l'inventaire.
      - ✅ **5b-2, l'énergie et l'eau** : le puits et la citerne quittent la cour.
        - Le puits, la pompe, le panneau solaire, la citerne et la batterie se fabriquent à
          l'Atelier (il faut des lingots : le minerai de la grotte, fondu au four) :

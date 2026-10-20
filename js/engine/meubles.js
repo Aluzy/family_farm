@@ -4,10 +4,13 @@ import { houseRepaired } from './depart.js';
 import { adultCount, childCount } from './family.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { farmSeed } from './terrain.js';
+import { addItem } from './inventory.js';
 
 /* ---------- Meubles de la maison (Marché, rayon Meubles) ----------
    state.meubles = { id: nombre } (absent : aucun). Un meuble acheté prend sa place dans
-   l'intérieur de la maison et donne, une fois, un peu de bonheur à chaque membre. */
+   l'intérieur de la maison et donne, une fois, un peu de bonheur à chaque membre. Sur la ferme
+   générée, il arrive dans l'inventaire (l'objet meuble_<id>) et se pose dans la maison comme un
+   bloc (DATA.ATELIER.BLOCS.meuble_<id>, js/engine/blocs.js). */
 
 export function furnitureCount(state, id) {
   return (state.meubles && state.meubles[id]) | 0;
@@ -26,8 +29,8 @@ export function furnitureMax(state, id) {
 export function buyFurniture(state, id) {
   const def = DATA.MEUBLES[id];
   if (!def) return fail('Ce meuble n\'existe pas.');
-  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, pas de maison à meubler : tu bâtis et fabriques tout à l\'Atelier.');
-  if (!houseRepaired(state)) return fail('Répare d\'abord la maison.');
+  const sauvage = farmSeed(state) !== null;
+  if (!houseRepaired(state)) return fail(sauvage ? 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.' : 'Répare d\'abord la maison.');
   const max = furnitureMax(state, id);
   if (furnitureCount(state, id) >= max) {
     return fail(max > 1 || def.max ? `Tu en as déjà assez pour la famille (${max}).` : 'Tu l\'as déjà.');
@@ -35,5 +38,7 @@ export function buyFurniture(state, id) {
   if (!pay(state, def.prix, `Meuble : ${def.nom}`)) return fail(NO_COINS);
   state.meubles = { ...(state.meubles || {}), [id]: furnitureCount(state, id) + 1 };
   for (const m of state.famille.membres) setHappiness(m, memberHappiness(m) + (def.bonheur || 0));
-  return { ok: true, cost: def.prix, bonheur: def.bonheur || 0, nombre: state.meubles[id] };
+  // (sur une terre sauvage : dans l'inventaire, à poser dans la maison)
+  if (sauvage) addItem(state, 'meuble_' + id, 1);
+  return { ok: true, cost: def.prix, bonheur: def.bonheur || 0, nombre: state.meubles[id], aPoser: sauvage };
 }

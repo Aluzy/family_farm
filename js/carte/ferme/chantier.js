@@ -15,8 +15,12 @@
  * un appui sur un bloc le reprend (le pont : ctx.bridge.act('bloc')). Les pièces closes
  * (modèle.pieces : leurs cases) sont teintées de vert.
  *
- * « Dormir » : le personnage va à la première paillasse d'une pièce close (bedSpot), s'y
- * couche sous sa couverture (js/fermier.js, couchage).
+ * « Dormir » : le personnage va à la première paillasse (ou au premier lit) d'une pièce close
+ * (bedSpot), s'y couche sous sa couverture (js/fermier.js, couchage).
+ *
+ * Les meubles achetés au Marché (modèle.blocs : b.meuble) ont leur propre dessin et couvrent
+ * parfois plusieurs cases (syncMeuble) ; les tableaux s'accrochent à la face des murs
+ * (syncTableaux).
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -57,6 +61,8 @@
         const at = new Map((list || []).map((b) => [b.case, verre.has(b.case) && H.variantes[b.sorte] !== undefined ? 'mur_serre' : b.sorte]));
         for (const b of list || []) {
           seen.add(b.case);
+          // (un meuble acheté au Marché : son propre dessin, assets/meuble_<dessin>.png)
+          if (b.meuble) { if (this.syncMeuble(b)) changed = true; continue; }
           let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case) }, at, cols);
           if (verre.has(b.case) && key === H.key && f === H.porte) f = H.porteSerre;
           const e = B.get(b.case);
@@ -81,6 +87,49 @@
       }
       this.bati = !!bati;
       this.drawRooms(bati ? pieces : null);
+    },
+
+    // Un meuble posé (modèle.blocs : b.meuble = { dessin, largeur, hauteur, bloque, plat, lit }) :
+    // son dessin (assets/meuble_<dessin>.png) en bas au milieu des cases qu'il couvre (sa case,
+    // puis vers la droite et vers le haut) ; un tapis à plat sous le reste, un lit un peu plus bas
+    // que ce qui est debout (le dormeur passe devant sa tête). Renvoie vrai s'il a changé.
+    syncMeuble(b) {
+      const B = this.blocks, M = b.meuble, key = 'meuble_' + M.dessin, e = B.get(b.case);
+      if (e && e.sorte === b.sorte) return false;
+      if (e) e.img.destroy();
+      B.delete(b.case);
+      if (!this.textures.exists(key)) return !!e;
+      const cols = this.grid.cols, col = b.case % cols, row = Math.floor(b.case / cols);
+      const x = Math.round((col + M.largeur / 2) * T), y = (row + 1) * T;
+      const depth = M.plat ? y - T * M.hauteur - 0.5 : M.lit ? y - T / 2 : y;
+      const img = this.add.image(x, y - 1, key).setOrigin(0.5, 1).setDepth(depth);
+      const cases = [];
+      for (let dy = 0; dy < M.hauteur; dy++) for (let dx = 0; dx < M.largeur; dx++) cases.push(b.case - dy * cols + dx);
+      B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img, cases, bloque: M.bloque, plat: M.plat, lit: M.lit, dessin: M.dessin });
+      return true;
+    },
+
+    // Les tableaux accrochés aux murs (modèle.tableaux : [{ case, dessin }]) : sur la face du mur
+    // (BLOCS_CARTE.tableau.dy px au-dessus du bas de sa case), juste devant lui ; ils s'effacent
+    // avec lui (stepMurs : img.tableau).
+    syncTableaux(list) {
+      if (!this.tableaux) this.tableaux = new Map();
+      const M = this.tableaux, cols = this.grid.cols, seen = new Set();
+      for (const t of list || []) {
+        const key = 'meuble_' + t.dessin;
+        if (!this.textures.exists(key)) continue;
+        seen.add(t.case);
+        let e = M.get(t.case);
+        if (e && e.key !== key) { e.img.destroy(); e = null; }
+        if (!e) {
+          const x = (t.case % cols) * T + T / 2, y = (Math.floor(t.case / cols) + 1) * T;
+          e = { key, img: this.add.image(x, y - BLOCS_CARTE.tableau.dy, key).setOrigin(0.5, 1).setDepth(y + 0.5) };
+          M.set(t.case, e);
+        }
+        const mur = this.blocks && this.blocks.get(t.case);
+        if (mur) mur.img.tableau = e.img;
+      }
+      for (const [c, e] of M) if (!seen.has(c)) { e.img.destroy(); M.delete(c); }
     },
 
     // Le four qui cuit (modèle.fourAllume) : ses flammes bougent, une image de
@@ -297,6 +346,7 @@
         const base = i.etageA || 1, but = devant.has(i) ? Math.min(base, H.alpha) : base;
         const a = i.alpha < but ? Math.min(but, i.alpha + pas) : Math.max(but, i.alpha - pas);
         i.setAlpha(a);
+        if (i.tableau && i.tableau.active) i.tableau.setAlpha(a);
         if (a === base && !devant.has(i)) this.mursEfface.delete(i);
       }
     },
@@ -345,7 +395,10 @@
       const haut = this.etageCells ? this.etageCells() : null;
       if (haut) return haut;
       const out = [];
-      for (const e of (this.blocks || new Map()).values()) if (BLOCS_CARTE.bloquent.includes(e.sorte)) out.push(e.case);
+      for (const e of (this.blocks || new Map()).values()) {
+        if (e.cases) { if (e.bloque) out.push(...e.cases); }      // (un meuble : toutes ses cases)
+        else if (BLOCS_CARTE.bloquent.includes(e.sorte)) out.push(e.case);
+      }
       // les arbres plantés dans le sol : leur tronc
       for (const e of (this.trees || new Map()).values()) if (e.a && e.a.sol) out.push(e.a.case);
       return out;
@@ -392,12 +445,17 @@
       return null;
     },
 
-    // Où il se couche : la première paillasse d'une pièce close (modèle.couchages), ou null.
+    // Où il se couche : la première paillasse (ou le premier lit) d'une pièce close (modèle.couchages), ou null.
     bedSpot() {
       const m = this.ctx.lastModel, list = (m && m.couchages) || [];
       for (const c of list) {
         const e = this.blocks && this.blocks.get(c);
         if (e && e.sorte === 'paillasse') return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, depth: e.img.depth, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y } };
+        // un lit acheté au Marché : les pieds sous la couverture, la tête sur l'oreiller
+        if (e && e.lit && this.has('meuble_' + e.dessin + '_drap')) {
+          const top = e.img.y - e.img.height;
+          return { x: e.x, y: Math.min(top + BLOCS_CARTE.litPieds, e.img.y - 1), depth: e.img.depth, drap: { key: 'meuble_' + e.dessin + '_drap', frame: undefined, x: e.x, y: e.img.y } };
+        }
       }
       return null;
     },
