@@ -106,4 +106,20 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
        (`scripts/ville/camion.py`) roulent dans les rues, autant que l'économie en a fait rouler
        la veille (au plus 4 à la fois : `js/carte/ville/circulation.js`).
 6. Les lignes de bus de la ville : les trajets à pied sont longs (jusqu'à 4 h de jeu d'un bout à
-   l'autre) ; les habitants qui travaillent loin de chez eux prennent le bus.
+   l'autre). Deux lignes (`LIGNES`, `js/carte/ville/config.js`), dans les deux sens, un bus
+   toutes les 40 minutes du jeu de 5 h à 23 h ; le ticket : 1 pièce le trajet, à la caisse de la
+   ville (`ECONOMIE.BUS`) :
+   - la ligne 1 (verte), du nord au sud par l'avenue de l'ouest : usines du nord, bureau de
+     négoce, gare et boulangerie, mairie, résidences, minoterie ;
+   - la ligne 2 (violette), de l'avenue à l'est par la rue de la bibliothèque : usines du nord,
+     bureau de négoce, rue des maisons, bibliothèque, cinéma et écoles, pizzeria et
+     poissonnerie.
+
+   En trois parties :
+   - 6a, les lignes (fait ; `js/carte/ville/lignes.js`) : les bus qui roulent et s'arrêtent, les
+     poteaux des arrêts ; le joueur touche un poteau, choisit son arrêt, paie son ticket, monte
+     dans le prochain bus et descend à son arrêt ;
+   - 6b, les habitants qui prennent le bus pour aller au travail, à l'école ou en sortie, quand
+     c'est plus court qu'à pied (leurs tickets payés chaque jour) ;
+   - 6c, les chauffeurs : quatre postes de conducteur·rice de bus (pris à d'autres lieux, pour
+     garder 80 postes), payés par la caisse de la ville.

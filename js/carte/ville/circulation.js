@@ -29,7 +29,7 @@
   'use strict';
 
   const V = global.CarteVille;
-  const { T, BATI, BATI_ALPHA, CARS, KY, BUS, CAMION } = V.C;
+  const { T, BATI, BATI_ALPHA, CARS, KY, BUS, CAMION, LIGNES } = V.C;
   const { hote, reduced } = V;
   // (un bus, un camion sont plus longs qu'une voiture : de combien, devant et derrière)
   const rallonge = (c) => (c.bus ? BUS.half - BUS.carHalf : c.camion ? CAMION.half - BUS.carHalf : 0);
@@ -170,15 +170,19 @@
       return out;
     },
 
-    // Une voiture (ou un camion : `camion`) sur ce trajet, à l'abscisse s (0 : à l'entrée, hors
-    // de la carte), si la place est libre.
-    addCar(route, s = 0, camion = false) {
-      const m = camion ? this.cache.json.get(CAMION.key + '_meta') || { anchor: { x: 56, y: 70 }, frameWidth: 112, frameHeight: 112 } : this.carMeta;
-      const car = { route, s, i: 0, v: s ? CARS.speed : CARS.speed * 0.8, color: camion ? 0 : Math.floor(Math.random() * m.couleurs.length), held: new Set(), camion };
+    // Une voiture (ou un camion : `camion` ; ou un bus de ligne : `opts.ligne`, son trajet,
+    // js/carte/ville/lignes.js) sur ce trajet, à l'abscisse s (0 : à l'entrée, hors de la carte),
+    // si la place est libre.
+    addCar(route, s = 0, camion = false, opts = {}) {
+      const grand = camion || opts.ligne, B = { anchor: { x: 56, y: 70 }, frameWidth: 112, frameHeight: 112 };
+      const m = camion ? this.cache.json.get(CAMION.key + '_meta') || B : opts.ligne ? this.cache.json.get(BUS.key + '_meta') || B : this.carMeta;
+      const car = { route, s, i: 0, v: s ? CARS.speed : CARS.speed * 0.8, color: grand ? 0 : Math.floor(Math.random() * m.couleurs.length), held: new Set(), camion };
+      if (opts.ligne) { car.bus = true; car.ligne = opts.ligne; car.row = LIGNES.lignes.indexOf(opts.ligne.ligne); }
       this.pointAt(route, car, car);
-      if (this.cars.some((o) => Math.hypot(o.x - car.x, (o.y - car.y) / KY) < CARS.gap * 1.3 + rallonge(car) + rallonge(o))) return null;
+      // (la place est prise par une voiture qui va dans le même sens, tout près)
+      if (this.cars.some((o) => o.dx * car.dx + o.dy * car.dy > 0.3 && Math.hypot(o.x - car.x, (o.y - car.y) / KY) < CARS.gap * 1.3 + rallonge(car) + rallonge(o))) return null;
       const anchor = m.anchor || { x: 32, y: 40 };
-      car.sprite = this.add.sprite(0, 0, camion ? CAMION.key : CARS.key, 0).setOrigin(anchor.x / (m.frameWidth || 64), anchor.y / (m.frameHeight || 64));
+      car.sprite = this.add.sprite(0, 0, camion ? CAMION.key : opts.ligne ? LIGNES.key : CARS.key, 0).setOrigin(anchor.x / (m.frameWidth || 64), anchor.y / (m.frameHeight || 64));
       this.cars.push(car);
       this.placeCar(car);
       return car;
@@ -189,7 +193,7 @@
       let a = Math.atan2(car.dy, car.dx) * 180 / Math.PI;
       if (a < 0) a += 360;
       const k = Math.round(a / (360 / dirs)) % dirs;
-      car.sprite.setFrame(car.bus || car.camion ? k : car.color * dirs + k).setPosition(Math.round(car.x), Math.round(car.y)).setDepth(car.y);
+      car.sprite.setFrame(car.bus || car.camion ? (car.row || 0) * dirs + k : car.color * dirs + k).setPosition(Math.round(car.x), Math.round(car.y)).setDepth(car.y);
     },
 
     stepTraffic(time, dt) {
@@ -241,7 +245,7 @@
           else if (before < CARS.stop + 6) { c.held.add(car); car.held.add(k); }
         }
         // la vitesse : freiner pour s'arrêter à temps, sinon reprendre de la vitesse
-        const top = car.bus ? BUS.speed : CARS.speed;
+        const top = car.ligne ? LIGNES.vitesse : car.bus ? BUS.speed : CARS.speed;
         const target = room <= 0 ? 0 : Math.min(top, Math.sqrt(2 * CARS.decel * room));
         car.v = target < car.v ? target : Math.min(target, car.v + CARS.accel * dt);
         car.s += car.v * dt;

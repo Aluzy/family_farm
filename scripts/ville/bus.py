@@ -3,8 +3,12 @@
 # une longue caisse jaune, une bande de vitres tout autour, un pare-brise, quatre roues, un
 # pare-chocs noir et le panneau « ÉCOLE » sur le toit.
 #
+# Les bus des lignes de la ville (docs/plan-ville.md, étape 6) : le même bus, sans le panneau, à
+# la couleur de sa ligne (LIGNES).
+#
 #   python3 scripts/ville/bus.py      écrit assets/ville_bus.png (8 images de 112 × 112, dans
-#                                     l'ordre de voitures.DIRECTIONS) et assets/ville_bus.json
+#                                     l'ordre de voitures.DIRECTIONS) et assets/ville_bus.json ;
+#                                     assets/ville_bus_lignes.png (une rangée de 8 par ligne)
 import json
 import math
 import os
@@ -22,13 +26,15 @@ RR = 6.5
 CAISSE = (3, 30)           # le bas et le haut de la caisse
 JAUNE = (236, 178, 40)
 NOIR = (40, 38, 44)
+# la couleur de chaque ligne de la ville (js/carte/ville/config.js, LIGNES : dans cet ordre)
+LIGNES = [(58, 150, 88), (132, 82, 172)]
 
 
 def tons(c):
     return [teinte(c, 0.6), teinte(c, 0.8), c, teinte(c, 1.16)]
 
 
-def matiere(u, v, w):
+def matiere(u, v, w, panneau=True):
     """La matière au point (u : vers l'avant, v : vers la droite, w : vers le haut), ou None."""
     av = abs(v)
     if w < 0 or w > CAISSE[1] + 4:
@@ -38,7 +44,7 @@ def matiere(u, v, w):
         if d <= RR and HW - 5 <= av <= HW - 0.5:
             return 'jante' if d < 3 and av > HW - 1.6 else 'pneu'
     # le panneau ÉCOLE, sur le toit à l'avant
-    if CAISSE[1] < w <= CAISSE[1] + 4 and 28 <= u <= 40 and av <= 7:
+    if panneau and CAISSE[1] < w <= CAISSE[1] + 4 and 28 <= u <= 40 and av <= 7:
         return 'panneau' if w > CAISSE[1] + 1 else 'noir'
     if w > CAISSE[1] or w < CAISSE[0]:
         return None
@@ -74,14 +80,14 @@ def matiere(u, v, w):
     return 'caisse'
 
 
-def bus(direction, ombre=True):
-    palettes = {'caisse': tons(JAUNE), 'verre': VERRE, 'pneu': PNEU, 'jante': JANTE, 'chrome': CHROME,
+def bus(direction, ombre=True, couleur=JAUNE, panneau=True):
+    palettes = {'caisse': tons(couleur), 'verre': VERRE, 'pneu': PNEU, 'jante': JANTE, 'chrome': CHROME,
                 'phare': PHARE, 'feu': FEU, 'noir': [(26, 24, 28), (34, 32, 38), (44, 42, 48), (58, 56, 62)],
                 'panneau': [(150, 40, 36), (196, 52, 46), (220, 70, 60), (240, 110, 96)]}
     a = math.radians(DIRECTIONS[direction])
     ca, sa = math.cos(a), math.sin(a)
     local = lambda x, y: (x * ca + y * sa, -x * sa + y * ca)
-    plein = lambda x, y, z: matiere(*local(x, y), z) is not None
+    plein = lambda x, y, z: matiere(*local(x, y), z, panneau) is not None
     lum = (-0.45, -0.55, 0.7)
     n_l = math.sqrt(sum(c * c for c in lum))
     lum = tuple(c / n_l for c in lum)
@@ -95,7 +101,7 @@ def bus(direction, ombre=True):
             touche = None
             while z >= 0:
                 y = (sy + KZ * z) / KY
-                m = matiere(*local(x, y), z)
+                m = matiere(*local(x, y), z, panneau)
                 if m:
                     touche = (x, y, z, m)
                     break
@@ -137,6 +143,11 @@ def planche():
                    'anchor': {'x': ANCRE[0], 'y': ANCRE[1]}, 'directions': DIRECTIONS,
                    'longueur': 2 * HL, 'largeur': 2 * HW}, f, ensure_ascii=False, indent=1)
         f.write('\n')
+    lignes = image(CASE * len(DIRECTIONS), CASE * len(LIGNES))
+    for r, c in enumerate(LIGNES):
+        for k, d in enumerate(DIRECTIONS):
+            lignes.alpha_composite(bus(d, couleur=c, panneau=False), (k * CASE, r * CASE))
+    lignes.save(os.path.join(ASSETS, 'ville_bus_lignes.png'), optimize=True)
     return sheet
 
 

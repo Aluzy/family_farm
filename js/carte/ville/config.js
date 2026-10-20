@@ -108,6 +108,52 @@
   // de sa fin ; la scène commence le temps qu'il faut au bus et aux enfants pour y être), le
   // trajet du bus et son arrêt (couche « bus »), le chemin des enfants, et s'ils montent dans le
   // bus ou en descendent.
+  // Les lignes de bus de la ville (docs/plan-ville.md, étape 6 ; js/carte/ville/lignes.js) : deux
+  // lignes, chacune ses trajets (un par sens : une polyligne en px, d'un bord de la carte à un
+  // autre, sur la file de droite ; les coins arrondis comme ceux des voitures) et ses arrêts dans
+  // l'ordre du trajet. Un arrêt (`arrets`) : son nom et sa place sur sa rue (`rue` : 'avenue',
+  // l'avenue de l'ouest, à l'ordonnée `y` ; 'biblio', la rue de la bibliothèque, à l'abscisse
+  // `x`), où le bus s'arrête dans chaque sens ; le poteau (assets/ville_arret_bus.png,
+  // scripts/ville/arret_bus.py) est sur le trottoir de droite, `trottoir` px de côté (celui de
+  // la gare : l'abri de la NAVETTE). Les bus (assets/ville_bus_lignes.png, scripts/ville/bus.py :
+  // une rangée par ligne) partent de `heures[0]` à `heures[1]` h, un toutes les `intervalle`
+  // minutes du jeu dans chaque sens (ceux d'une ligne `decalage` minutes après l'heure : les deux
+  // lignes partent du même bout de l'avenue), roulent à `vitesse` px/s et attendent `arret` s à chaque
+  // arrêt. Le ticket : ECONOMIE.BUS (data/economie.json).
+  const LIGNES = {
+    key: 'bus_lignes', file: 'assets/ville_bus_lignes.png',
+    poteau: { key: 'arret_bus', file: 'assets/ville_arret_bus.png', w: 16, h: 48, pied: 46 },
+    heures: [5, 23], intervalle: 40, vitesse: 90, arret: 2.5,
+    rues: { avenue: { trottoir: 72, x: [600, 680] }, biblio: { trottoir: 70, y: [1170, 1230] } },
+    arrets: {
+      usines: { nom: 'Usines du nord', rue: 'avenue', y: 328 },
+      negoce: { nom: 'Bureau de négoce', rue: 'avenue', y: 968 },
+      gare: { nom: 'Gare et boulangerie', rue: 'avenue', y: 1528 },
+      mairie: { nom: 'Mairie', rue: 'avenue', y: 1960 },
+      residences: { nom: 'Résidences', rue: 'avenue', y: 2568 },
+      minoterie: { nom: 'Minoterie', rue: 'avenue', y: 3080 },
+      maisons: { nom: 'Rue des maisons', rue: 'biblio', x: 1032 },
+      bibliotheque: { nom: 'Bibliothèque', rue: 'biblio', x: 1608 },
+      ecoles: { nom: 'Cinéma et écoles', rue: 'biblio', x: 2056 },
+      pizzeria: { nom: 'Pizzeria et poissonnerie', rue: 'biblio', x: 2472 },
+    },
+    lignes: [
+      {
+        id: 1, couleur: 'vert',
+        trajets: {
+          sud: { pts: [[625, -48], [625, 3552]], arrets: ['usines', 'negoce', 'gare', 'mairie', 'residences', 'minoterie'] },
+          nord: { pts: [[655, 3552], [655, -48]], arrets: ['minoterie', 'residences', 'mairie', 'gare', 'negoce', 'usines'] },
+        },
+      },
+      {
+        id: 2, couleur: 'violette', decalage: 20,
+        trajets: {
+          est: { pts: [[625, -48], [625, 1215], [2736, 1215]], arrets: ['usines', 'negoce', 'maisons', 'bibliotheque', 'ecoles', 'pizzeria'] },
+          ouest: { pts: [[2736, 1185], [655, 1185], [655, -48]], arrets: ['pizzeria', 'ecoles', 'bibliotheque', 'maisons', 'negoce', 'usines'] },
+        },
+      },
+    ],
+  };
   // Les camions de la logistique (assets/ville_camion.png et .json, scripts/ville/camion.py :
   // huit directions) : de `heures[0]` à `heures[1]` h, autant sur les routes que l'économie en a
   // fait rouler hier (le bilan de la nuit, ECONOMIE.CAMIONS : js/engine/economie.js), au plus `max`
@@ -446,7 +492,7 @@
 
   const parties = [];
   global.CarteVille = {
-    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, CAMION, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE },
+    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, CAMION, LIGNES, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE },
     etat, configure, hote, sheetKey, saisie: K.saisie, reduced: K.reduit, v: K.v, tuilesDans,
     // les méthodes de la scène, fichier par fichier (voir js/ville-carte.js)
     parties,
