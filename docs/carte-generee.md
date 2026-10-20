@@ -705,8 +705,16 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
        - Un appui sur la meule ouvre la fenêtre du Moulin. La vue de la carte, qui allait au
          moulin et à la serre, va à la deuxième zone de culture.
      - ✅ **5b-8, les arbres fruitiers** : pas de Verger sur la ferme générée.
-       - Le **jeune pommier** et le **jeune poirier** (40 pièces) s'achètent au Marché, rayon
-         Graines, sur la ferme générée seulement, une fois le Verger débloqué (niveau 6).
+       - Le **jeune pommier** et le **jeune poirier** (40 pièces), le **jeune cerisier** (50), le
+         **jeune abricotier** et le **jeune pêcher** (45) s'achètent au Marché, rayon Graines, sur
+         la ferme générée seulement, une fois le Verger débloqué (niveau 6). Ils donnent des
+         pommes, des poires, des cerises, des abricots et des pêches.
+       - **Les dessins** (`assets/verger.png`, `scripts/verger/arbres.py`) : l'arbre adulte est le
+         feuillu de la carte (`arbre_feuillu.png`), son feuillage un peu teinté selon l'espèce ;
+         l'arbuste, un petit feuillu. Le jour avant ses fruits, l'arbre est **en fleur**
+         (`VERGER.FLORAISON`, `treeInBloom`) : fleurs blanc rosé (pommier), blanches (poirier),
+         blanc crème (abricotier), roses vives (pêcher) ; le cerisier en fleur est tout rose, sauf
+         le tronc. En fruits, de petits fruits sur le feuillage.
        - Avec la case 🔨, ils se **plantent dans le sol**, sur l'herbe, dehors, à au moins
          3 cases d'un autre arbre (`ATELIER.BLOCS.pommier.arbre`, `ARBRE_ECART`). Ils ne sont pas
          des blocs : chacun devient un arbre du Verger dont la case est sa case de la carte

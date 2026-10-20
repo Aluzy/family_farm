@@ -46,11 +46,12 @@
   // Arbres du Verger : le n-ième arbre du modèle se pose sur le rectangle `arbre_verger_n`.
   const TREE_OBJECT = 'arbre_verger_';
   const TREE_FRAME = { frameWidth: 80, frameHeight: 80 };   // basic_*.png : 8 images de 80×80 ; seule la première sert, les arbres ne bougent pas
-  // Version 1.13 : verger.png, 6 images de 80×80 : emplacement libre, jeune arbre, arbuste,
-  // arbre, pommier en fruits, poirier en fruits (scripts/verger/arbres.py).
-  const ORCHARD_FRAMES = { libre: 0, jeune: 1, arbuste: 2, arbre: 3, pommier: 4, poirier: 5 };
-  const ORCHARD_ADULT = 3;                                   // à partir de l'arbre : feuilles et écureuils
-  const TREE_BODY = 0.8;                                     // part de l'image qu'occupe l'arbre, en largeur
+  // verger.png, des images de 80×80 (scripts/verger/arbres.py) : emplacement libre, jeune arbre,
+  // puis quatre par espèce (arbuste, arbre, en fleur, en fruits) ; le modèle donne l'image
+  // (`dessin`) et le stade (`stade` : -1 libre, 0 jeune arbre, 1 arbuste, 2 arbre).
+  const ORCHARD_FRAMES = { libre: 0, jeune: 1, arbre: 3 };
+  const ORCHARD_ADULT = 2;                                   // à partir de l'arbre (stade) : feuilles et écureuils
+  const TREE_BODY = 0.5;                                     // part de l'image qu'occupe l'arbre (le feuillu de 48 px), en largeur
   // Ombres portées des arbres (scripts/carte/arbres_3d.py) : celles des arbres de la carte,
   // une image de la taille de la carte posée sur le sol (les arbres eux-mêmes en sont exclus),
   // et celle d'un arbre adulte du Verger, posée sous lui ; (dx, dy) : son coin haut-gauche par

@@ -7,7 +7,7 @@ import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
 import { memberPerso } from '../engine/family.js';
 import { allPlots, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, soilCap, soilCount } from '../engine/crops.js';
-import { ripeTrees, treeAt, treeStage } from '../engine/orchard.js';
+import { ripeTrees, treeAt, treeInBloom, treeStage } from '../engine/orchard.js';
 import { coopCapacity, sheepToShear, stableHoused, woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
@@ -314,21 +314,27 @@ export function stageModel() {
   // La Serre : ses parcelles se posent dans les bacs de son intérieur (vide tant qu'elle
   // n'est pas construite). `interieur` dit si le joueur y est entré.
   const serre = state.serre.construit ? state.serre.parcelles.map(vue) : [];
-  // Version 1.13 : chaque case achetée du Verger, arbre ou emplacement libre, avec son
-  // dessin (0 libre, 1 jeune arbre, 2 arbuste, 3 arbre, 4 pommier et 5 poirier en fruits).
+  // Version 1.13 : chaque case achetée du Verger, arbre ou emplacement libre, avec son dessin
+  // (assets/verger.png : 0 libre, 1 jeune arbre, puis pour chaque espèce, à partir de
+  // 2 + 4 × ARBRES[espèce].dessin : arbuste, arbre, en fleur, en fruits).
+  const dessinArbre = (t, st) => {
+    if (st === 0) return 1;
+    const d = 2 + 4 * ((DATA.VERGER.ARBRES[t.espece] && DATA.VERGER.ARBRES[t.espece].dessin) || 0);
+    return st === 1 ? d : t.fruits ? d + 3 : treeInBloom(state, t) ? d + 2 : d + 1;
+  };
   const arbres = [];
   // (la ferme générée : chaque arbre planté dans le sol, sa case de la carte, sans emplacement)
   if (atelierOuvert(state)) {
     for (const t of state.verger.arbres) {
       const st = treeStage(state, t);
-      arbres.push({ case: t.case, id: t.id, fruits: !!t.fruits, dessin: st < 3 ? st + 1 : t.espece === 'poirier' ? 5 : 4, sol: true });
+      arbres.push({ case: t.case, id: t.id, fruits: !!t.fruits, dessin: dessinArbre(t, st), stade: Math.min(st, 2), sol: true });
     }
   } else if (isUnlocked(state, 'verger') && state.verger.construit) {
     for (let c = 0; c < Math.min(state.verger.places, STAGE_ARBRES); c++) {
       const t = treeAt(state, c);
-      if (!t) { arbres.push({ case: c, libre: true, dessin: 0 }); continue; }
+      if (!t) { arbres.push({ case: c, libre: true, dessin: 0, stade: -1 }); continue; }
       const st = treeStage(state, t);
-      arbres.push({ case: c, id: t.id, fruits: !!t.fruits, dessin: st < 3 ? st + 1 : t.espece === 'poirier' ? 5 : 4 });
+      arbres.push({ case: c, id: t.id, fruits: !!t.fruits, dessin: dessinArbre(t, st), stade: Math.min(st, 2) });
     }
   }
   // Lieux étiquetés : seulement ceux que le jeu a débloqués (la maison et la zone sont

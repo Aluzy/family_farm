@@ -131,8 +131,16 @@ export function treeStage(state, tree) {
   return Math.min(2, Math.floor(treeAge(state, tree) / DATA.VERGER.NUITS_STADE));
 }
 
+// L'arbre fleurit avant ses fruits : les FLORAISON derniers jours avant la nuit où ils arrivent
+// (un arbre déjà grand, sans fruits). Rien que le dessin et le nom du stade.
+export function treeInBloom(state, tree) {
+  if (tree.fruits || treeStage(state, tree) < 2) return false;
+  const p = Number.isFinite(tree.prochaine) ? tree.prochaine : tree.plantee + DATA.VERGER.MATURITE - 1;
+  return state.day > p - (DATA.VERGER.FLORAISON || 0);
+}
+
 export function treeStageName(state, tree) {
-  return DATA.VERGER.STADES[treeStage(state, tree)];
+  return treeInBloom(state, tree) ? DATA.VERGER.FLEUR : DATA.VERGER.STADES[treeStage(state, tree)];
 }
 
 // Nuit (numéro absolu) où l'arbre donnera ses prochains fruits ; null s'il en porte déjà.

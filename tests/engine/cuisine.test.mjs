@@ -159,7 +159,7 @@ test('Lot 12 : le gratin est doublé une seule fois (formule sur ingrédients d�
 // Lot 12 : valeurs d'origine (avant doublement) des productions de la ferme.
 const PRIX_PRODUCTIONS_AVANT_LOT_12 = {
   carotte: 1, patate: 2, tomate: 1, courgette: 2, aubergine: 2, ble: 1,
-  oeuf: 2, pomme: 2, poire: 2, laine: 6,
+  oeuf: 2, pomme: 2, poire: 2, cerise: 2, abricot: 2, peche: 2, laine: 6,
   oignon: 1, ail: 2, poivron: 2, epinard: 1, fraise: 2, riz: 1,
   houblon: 3, cacao: 8, vanille: 15, cafe: 6,
   lait: 4,

@@ -4,6 +4,8 @@
 #   tree-adult    arbre fruitier adulte (houppier rond)
 #   tree-pommier  le même, chargé de pommes rouges
 #   tree-poirier  houppier plus haut et plus étroit, poires jaune-vert
+#   tree-cerisier, tree-abricotier, tree-pecher : le houppier du pommier, chargé de cerises,
+#                 d'abricots, de pêches
 #   plot-soil     emplacement vide : butte de terre labourée
 #   sheep-shorn   mouton tondu, tiré de la première case de assets/mouton.png
 # Les arbres sont calculés : un houppier = des touffes rondes, chacune éclairée en haut à
@@ -28,6 +30,10 @@ PALETTE = {
     'R': '#5e1018', 'r': '#b8303a', 'p': '#e0605a', 'P': '#f4b0a0',
     # poires
     'Y': '#5a5018', 'y': '#e0d040', 'v': '#b0a628', 'V': '#fcf6b0',
+    # cerises, abricots, pêches (du plus sombre au plus clair ; u : la joue rouge de la pêche)
+    'a': '#4a0810', 'b': '#a8121e', 'c': '#e8505a',
+    'e': '#6a3208', 'g': '#e8902a', 'i': '#ffd070',
+    'j': '#6a1e2a', 'k': '#ec7a62', 'o': '#ffc29a', 'u': '#c83448',
     'q': '#4a3020',  # queue des fruits
     # terre (assets/soil_dry.png)
     'S': '#4e3420', 'f': '#7e5a3a', 's': '#966f49', 'm': '#a27f56', 'M': '#ae8d62', 'n': '#c8aa7c',
@@ -150,6 +156,12 @@ def fruit(cv, x, y, kind):
     if kind == 'apple':
         rows = ['.q..', 'rprR', 'pPrR', 'rrrR', '.RR.']
         rows = ['..q.', '.rr.', 'rPpR', 'rprR', '.RR.']
+    elif kind == 'cherry':
+        rows = ['..q..', '.q.q.', 'cb.cb', 'ba.ba']
+    elif kind == 'apricot':
+        rows = ['..q.', '.ig.', 'iggg', 'ggge', '.ee.']
+    elif kind == 'peach':
+        rows = ['..q.', '.ok.', 'ookk', 'okku', '.jj.']
     else:
         rows = ['..q.', '.vy.', '.yy.', 'yVyv', 'yyvY', '.YY.']
     for dy, row in enumerate(rows):
@@ -192,9 +204,9 @@ def adult_tree(kind=None):
     # départ des branches dans le creux du houppier
     branches(cv, [(13, top - 1, 'T'), (12, top - 2, 'K'), (18, top - 1, 'T'), (19, top - 2, 'K'),
                   (14, top - 1, 't'), (17, top - 1, 'T'), (15, top - 1, 'T'), (16, top - 1, 'T')])
-    if kind == 'apple':
+    if kind in ('apple', 'cherry', 'apricot', 'peach'):
         for x, y in ((8, 6), (19, 3), (23, 10), (12, 11), (4, 13), (18, 14)):
-            fruit(cv, x, y, 'apple')
+            fruit(cv, x, y, kind)
     elif pear:
         for x, y in ((14, 3), (9, 9), (19, 8), (14, 13), (21, 14), (8, 16)):
             fruit(cv, x, y, 'pear')
@@ -289,6 +301,9 @@ def art():
         'tree-adult': adult_tree(),
         'tree-pommier': adult_tree('apple'),
         'tree-poirier': adult_tree('pear'),
+        'tree-cerisier': adult_tree('cherry'),
+        'tree-abricotier': adult_tree('apricot'),
+        'tree-pecher': adult_tree('peach'),
         'plot-soil': soil(),
         'sheep-shorn': sheep_shorn(),
     }
