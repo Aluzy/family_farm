@@ -29,7 +29,10 @@ export const FERME_GENEREE = {
   LARGEUR: 144, HAUTEUR: 114, T: 16,
   ETANGS: [2, 4], RAYON_ETANG: [[7, 10], [3, 7]],     // le premier étang (le plus grand), puis les autres
   ROCHERS: 64, ARBRES_SEUIL: 0.56, ARBRES_BORD: 14,  // densité des bois ; les bords (tuiles) en ont plus
-  TOUFFES: 44, TOUFFE_ZONE: 0.7, TOUFFE_FLEURS: 0.2, FLEURS: 0.05,
+  // l'herbe haute : le nombre de zones, leur rayon (tuiles), et par case un tirage t : autant de
+  // touffes que de seuils de TOUFFES_PAR_CASE sous t (0 à 3) ; puis sa teinte et ses fleurs
+  TOUFFES: 120, TOUFFES_RAYON: [2.6, 4.8], TOUFFES_PAR_CASE: [0.05, 0.4, 0.8], TOUFFE_ZONE: 0.7, TOUFFE_FLEURS: 0.2,
+  FLEURS: 0.05,
 };
 
 // La cour (provisoire) : les rectangles de la carte de Tiled (couche « batiment »), en px. La cour est posée d'un
@@ -367,7 +370,7 @@ function fabriquer(graine) {
   const variante = (herbe, zone) => herbe + 3 * (2 * (rt() < G.TOUFFE_ZONE ? zone : teinteTouffe()) + (rt() < G.TOUFFE_FLEURS ? 1 : 0));
   const touffes = [];
   for (let k = 0, essais = 0; k < G.TOUFFES && essais < G.TOUFFES * 20; essais++) {
-    const cx = entre(rh, 3, W - 4), cy = entre(rh, 3, H - 4), r = 2.4 + rh() * 1.0;
+    const cx = entre(rh, 3, W - 4), cy = entre(rh, 3, H - 4), r = G.TOUFFES_RAYON[0] + rh() * (G.TOUFFES_RAYON[1] - G.TOUFFES_RAYON[0]);
     if (!libreHerbe(cx, cy)) continue;
     const bosses = [0, 1, 2, 3, 4].map(() => (rh() - 0.5) * 0.7);
     const n0 = touffes.length, zone = teinteTouffe();
@@ -376,7 +379,7 @@ function fabriquer(graine) {
         const a = Math.atan2(ty - cy, tx - cx);
         const bord = r * (1 + bosses.reduce((s, b, n) => s + b * Math.sin((n + 2) * a + n), 0) / 2);
         if (Math.hypot(tx - cx, (ty - cy) * 1.2) > bord || !libreHerbe(tx, ty)) continue;
-        const nb = rh() < 0.15 ? 0 : rh() < 0.85 ? 1 : 2;
+        const t = rh(), nb = G.TOUFFES_PAR_CASE.filter((p) => t >= p).length;
         for (let q = 0; q < nb; q++) touffes.push([tx * T + 8 + Math.round((rh() - 0.5) * 8), ty * T + 12 + Math.round((rh() - 0.5) * 6), variante(Math.floor(rh() * 3), zone)]);
       }
     }

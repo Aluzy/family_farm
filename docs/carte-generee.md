@@ -70,7 +70,8 @@ Le Marché vend toujours les outils.
   - des bois (arbres clairs, pins, buissons), plus denses vers les bords ;
   - la terre labourée et celle des parcelles, sèche ou arrosée (`scripts/carte/terre_bords.py`,
     puis `terre_arrosee.py`) : des sillons qui ondulent, des mottes, un caillou ;
-  - 64 rochers, des fleurs, des touffes d'herbe haute : les trois herbes du modèle en quatre
+  - 64 rochers, des fleurs, des touffes d'herbe haute (120 zones de 2,6 à 4,8 tuiles de rayon,
+    jusqu'à trois touffes par case : environ 6 000) : les trois herbes du modèle en quatre
     teintes (vert, vert roussi, brun léger, mauve foncé ; chaque zone a la sienne, que la
     plupart de ses touffes prennent) et, pour une touffe sur cinq, fleuries (une tige d'un
     pixel, une petite fleur au bout, posée sans la teinte du sol : `scripts/carte/herbe_haute.py`,
