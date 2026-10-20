@@ -1,6 +1,7 @@
-# Les planches des bêtes de la ferme (assets/vache.png, mouton.png, poule.png) : leurs huit
-# premières cases (profil droit) sont les dessins d'origine, repris tels quels
-# (scripts/carte/originaux/<bête>.png) ; à leur suite, pour qu'elles marchent dans toutes les
+# Les planches des bêtes de la ferme (assets/vache.png, mouton.png, poule.png) : les huit
+# premières cases (profil droit) de la vache et du mouton sont les dessins d'origine, repris
+# tels quels (scripts/carte/originaux/<bête>.png) ; celles de la poule sont redessinées aux
+# proportions de sa vue de face (poule_profil) ; à leur suite, pour qu'elles marchent dans toutes les
 # directions et plus souplement (js/carte/ferme/config.js BETES, chantier.js stepBeasts) :
 #   8        pas      de profil, entre deux pas : debout, le corps levé d'un pixel (la marche de
 #                     profil passe par marche0, pas, marche1, pas)
@@ -61,6 +62,11 @@ class Toile:
                 if q not in plein and 0 <= q[0] < self.w and 0 <= q[1] < self.h:
                     self.px[q] = c
 
+    def sur(self, autre):
+        """Pose `autre` (déjà contourée) par-dessus : son contour la détache de ce qui est dessous."""
+        self.px.update(autre.px)
+        return self
+
     def image(self, couleurs):
         im = Image.new('RGBA', (self.w, self.h), (0, 0, 0, 0))
         for (x, y), c in self.px.items():
@@ -73,56 +79,93 @@ class Toile:
 TEMPS = [(1, 0, 0), (0, 0, 1), (0, 1, 0), (0, 0, 1)]
 
 
+# La règle de la vue de dessus à 45° (comme les meubles et le personnage : on voit le dessus
+# des choses, raccourci, et leur face avant) appliquée aux bêtes, d'après leur profil
+# d'origine (PROFIL, mesuré sur scripts/carte/originaux/<bête>.png, en px de contour à contour) :
+#   - de face ou de dos, la longueur du corps devient sa profondeur : on voit le dos, raccourci
+#     de DESSUS (un tiers), au-dessus de la face (le poitrail ou la croupe), qui garde la hauteur
+#     du corps ; la largeur du corps vaut LARGEUR fois sa hauteur ;
+#   - la tête garde sa hauteur ; de face, sa largeur vaut 0,8 fois sa hauteur, posée devant le
+#     poitrail ; de dos, on n'en voit que le sommet (le front, les oreilles, les cornes),
+#     derrière le dos ;
+#   - les pattes gardent celles du profil : un pixel de large, la même longueur, les mêmes
+#     couleurs (la proche claire, l'autre dans l'ombre ; la lumière vient d'en haut à gauche) ;
+#     les pattes du fond sont cachées par le corps.
+DESSUS, LARGEUR = 0.35, 1.6
+PROFIL = {
+    'vache': {'long': 18, 'haut': 10, 'pattes': 4, 'tete': 9},
+    'mouton': {'long': 14, 'haut': 9, 'pattes': 4, 'tete': 8},
+}
+
+
+def gabarit(nom):
+    """Les rangées et colonnes de la vue de face ou de dos (pieds sur la dernière rangée)."""
+    P = PROFIL[nom]
+    w, h = TAILLE[nom]
+    bas_corps = h - 1 - P['pattes']                  # la dernière rangée du corps
+    face = P['haut']
+    dessus = round(P['long'] * DESSUS)
+    larg = round(P['haut'] * LARGEUR)
+    x0 = (w - larg) // 2
+    return {'x0': x0, 'x1': x0 + larg - 1, 'cx': w // 2, 'haut_dos': bas_corps - face - dessus + 1,
+            'haut_face': bas_corps - face + 1, 'bas': bas_corps, 'pied': h - 1, 'tete': P['tete']}
+
+
 def vache(vue, k):
     t = Toile(32, 24)
     g, d, haut = TEMPS[k]
+    G = gabarit('vache')
     dy = -haut
+    x0, x1, cx = G['x0'], G['x1'], G['cx']
+    yd, yf, yb = G['haut_dos'] + dy, G['haut_face'] + dy, G['bas'] + dy
+    # les deux pattes de devant (de face) ou de derrière (de dos) : 1 px, la gauche claire
+    for x, leve, c in ((x0 + 3, g, 'o'), (x1 - 3, d, 'g')):
+        t.rect(x, G['bas'] + 1, x, G['pied'] - 1 - leve, c)
+        t.put(x, G['pied'] - leve, 'c')
     if vue == 'bas':
-        # pattes arrière (derrière, plus courtes), puis le corps, les pattes avant, la tête
-        for x, leve in ((11, g), (19, d)):
-            t.rect(x, 17, x + 1, 21 - leve, 'g')
-            t.rect(x, 21 - leve, x + 1, 21 - leve, 'x')
-        t.ovale(7, 8 + dy, 24, 17 + dy, 'b', 2)
-        t.rect(7, 15 + dy, 24, 17 + dy, 'o')
-        t.ovale(7, 10 + dy, 9, 14 + dy, 'n', 1)                  # taches sur les flancs
-        t.ovale(21, 9 + dy, 24, 12 + dy, 'n', 1)
-        for x, leve in ((9, d), (21, g)):
-            t.rect(x, 17, x + 1, 22 - leve, 'o')
-            t.put(x + 1, 18, 'g')
-            t.rect(x, 23 - leve, x + 1, 23 - leve, 'x')
-        # la tête : les oreilles, les cornes, la face blanche tachée, le mufle rose
-        t.rect(9, 7 + dy, 11, 8 + dy, 'o'); t.put(10, 8 + dy, 'r')
-        t.rect(20, 7 + dy, 22, 8 + dy, 'o'); t.put(21, 8 + dy, 'r')
-        t.put(12, 5 + dy, 'o'); t.put(11, 4 + dy, 'b')
-        t.put(19, 5 + dy, 'o'); t.put(20, 4 + dy, 'b')
-        t.ovale(12, 5 + dy, 19, 16 + dy, 'b', 1)
-        t.rect(12, 5 + dy, 14, 9 + dy, 'n')                      # la tache sur l'œil gauche
-        t.put(15, 5 + dy, 'n')
-        t.put(13, 9 + dy, 'x'); t.put(18, 9 + dy, 'x')           # les yeux
-        t.ovale(12, 13 + dy, 19, 16 + dy, 'r', 1)                # le mufle
-        t.put(14, 15 + dy, 'd'); t.put(17, 15 + dy, 'd')
-        t.rect(13, 12 + dy, 18, 12 + dy, 'o')
+        t.ovale(x0, yd, x1, yb, 'o', 2)                         # le corps : la face (le poitrail)
+        t.ovale(x0, yd, x1, yf, 'b', 2)                         # le dos, vu d'en haut, plus clair
+        t.rect(x0 + 1, yb, x1 - 1, yb, 'g')                     # le dessous, dans l'ombre
+        t.ovale(x0 + 1, yd + 2, x0 + 4, yd + 5, 'n', 1)         # taches
+        t.ovale(x1 - 4, yd + 1, x1 - 1, yd + 3, 'n', 1)
+        t.ovale(x1 - 3, yf + 2, x1, yf + 5, 'n', 1)
+        # la tête, devant le poitrail : 0,8 de sa hauteur en largeur ; son contour à elle
+        t.contour()
+        corps, t = t, Toile(32, 24)
+        th = G['tete']; tw = round(th * 0.8)
+        hx0 = cx - tw // 2; hx1 = hx0 + tw - 1; hy0 = yf - 2; hy1 = hy0 + th - 1
+        t.rect(hx0 - 2, hy0 + 2, hx0 - 1, hy0 + 3, 'o'); t.put(hx0 - 2, hy0 + 3, 'r')     # oreilles
+        t.rect(hx1 + 1, hy0 + 2, hx1 + 2, hy0 + 3, 'o'); t.put(hx1 + 2, hy0 + 3, 'r')
+        t.put(hx0, hy0 - 1, 'c'); t.put(hx1, hy0 - 1, 'c')                                # cornes
+        t.ovale(hx0, hy0, hx1, hy1, 'b', 1)
+        t.rect(hx0, hy0, hx0 + 2, hy0 + 3, 'n')                 # la tache autour d'un œil
+        t.put(hx0 + 1, hy0 + 3, 'x'); t.put(hx1 - 1, hy0 + 3, 'x')                        # yeux
+        t.ovale(hx0, hy1 - 3, hx1, hy1, 'r', 1)                 # le mufle
+        t.put(hx0 + 1, hy1 - 1, 'd'); t.put(hx1 - 1, hy1 - 1, 'd')
+        t.contour()
+        return corps.sur(t)
     else:
-        # de dos : les pattes avant (au loin), le corps, la queue, les pattes arrière
-        for x, leve in ((11, g), (19, d)):
-            t.rect(x, 17, x + 1, 21 - leve, 'g')
-            t.rect(x, 21 - leve, x + 1, 21 - leve, 'x')
-        t.rect(9, 7 + dy, 11, 8 + dy, 'o'); t.put(10, 7 + dy, 'r')   # les oreilles, au-dessus du dos
-        t.rect(20, 7 + dy, 22, 8 + dy, 'o'); t.put(21, 7 + dy, 'r')
-        t.put(12, 6 + dy, 'o'); t.put(19, 6 + dy, 'o')
-        t.ovale(12, 6 + dy, 19, 9 + dy, 'b', 1)                  # le haut de la tête, derrière
-        t.ovale(7, 8 + dy, 24, 18 + dy, 'b', 3)
-        t.rect(8, 16 + dy, 23, 18 + dy, 'o')
-        t.ovale(8, 9 + dy, 12, 13 + dy, 'n', 1)                  # taches
-        t.ovale(18, 12 + dy, 22, 15 + dy, 'n', 1)
-        t.rect(13, 16 + dy, 18, 17 + dy, 'r')                    # le pis, entre les pattes
-        t.rect(15, 9 + dy, 16, 9 + dy, 'o')                      # la queue
-        t.rect(15, 10 + dy, 15, 16 + dy, 'g')
-        t.rect(14, 16 + dy, 16, 18 + dy, 'n')
-        for x, leve in ((9, d), (21, g)):
-            t.rect(x, 18, x + 1, 22 - leve, 'o')
-            t.put(x, 19, 'g')
-            t.rect(x, 23 - leve, x + 1, 23 - leve, 'x')
+        # de dos : le sommet de la tête au fond, derrière le dos, puis le dos et la croupe
+        th = G['tete']; tw = round(th * 0.8)
+        hx0 = cx - tw // 2; hx1 = hx0 + tw - 1
+        t.rect(hx0 - 2, yd, hx0 - 1, yd + 1, 'o'); t.rect(hx1 + 1, yd, hx1 + 2, yd + 1, 'o')   # oreilles
+        t.put(hx0, yd - 2, 'c'); t.put(hx1, yd - 2, 'c')                                      # cornes
+        t.ovale(hx0, yd - 1, hx1, yd + 2, 'b', 1)
+        t.contour()
+        tete, t = t, Toile(32, 24)
+        for x, leve, c in ((x0 + 3, g, 'o'), (x1 - 3, d, 'g')):
+            t.rect(x, G['bas'] + 1, x, G['pied'] - 1 - leve, c)
+            t.put(x, G['pied'] - leve, 'c')
+        t.ovale(x0, yd + 1, x1, yb, 'o', 2)                     # la croupe
+        t.ovale(x0, yd + 1, x1, yf, 'b', 2)                     # le dos
+        t.rect(x0 + 1, yb, x1 - 1, yb, 'g')
+        t.ovale(x0 + 1, yd + 3, x0 + 4, yd + 6, 'n', 1)         # taches
+        t.ovale(x1 - 4, yf + 1, x1 - 1, yf + 4, 'n', 1)
+        t.rect(cx - 2, yb - 1, cx + 1, yb, 'r')                 # le pis, entre les pattes
+        t.put(cx, yf - 1, 'g'); t.rect(cx, yf, cx, yb - 2, 'g')  # la queue, de la croupe au jarret
+        t.rect(cx - 1, yb - 2, cx + 1, yb - 1, 'n')
+        t.contour()
+        return tete.sur(t)
     t.contour()
     return t
 
@@ -130,27 +173,38 @@ def vache(vue, k):
 def mouton(vue, k):
     t = Toile(32, 24)
     g, d, haut = TEMPS[k]
+    G = gabarit('mouton')
     dy = -haut
-    for x, leve in ((13, g), (18, d)):                           # pattes du fond (fines, comme de profil)
-        t.rect(x, 19, x, 22 - leve, 'p')
-        t.put(x, 22 - leve, 's')
-    t.ovale(8, 11 + dy, 23, 20 + dy, 'b', 3)                     # la laine
-    t.rect(9, 18 + dy, 22, 20 + dy, 'o')
-    for (x, y) in ((10, 13), (14, 12), (19, 14), (11, 17), (17, 17), (21, 12)):
-        t.put(x, y + dy, 'o')
-    for x, leve in ((11, d), (20, g)):                           # pattes de devant
-        t.rect(x, 20, x, 22 - leve, 'p')
-        t.put(x, 23 - leve, 's')
+    x0, x1, cx = G['x0'], G['x1'], G['cx']
+    yd, yf, yb = G['haut_dos'] + dy, G['haut_face'] + dy, G['bas'] + dy
+    for x, leve in ((x0 + 3, g), (x1 - 3, d)):                  # les pattes : 1 px, sombres
+        t.rect(x, G['bas'] + 1, x, G['pied'] - 1 - leve, 'p')
+        t.put(x, G['pied'] - leve, 's')
+    th = G['tete']; tw = round(th * 0.8)
+    hx0 = cx - tw // 2; hx1 = hx0 + tw - 1
     if vue == 'bas':
-        t.rect(10, 13 + dy, 12, 14 + dy, 'f'); t.rect(19, 13 + dy, 21, 14 + dy, 'f')   # les oreilles
-        t.ovale(13, 12 + dy, 18, 19 + dy, 'f', 1)               # la tête grise
-        t.rect(13, 11 + dy, 18, 12 + dy, 'b')                    # le toupet de laine
-        t.put(14, 14 + dy, 'K'); t.put(17, 14 + dy, 'K')         # les yeux
-        t.rect(15, 17 + dy, 16, 17 + dy, 'p')                    # le museau
+        t.ovale(x0, yd, x1, yb, 'o', 3)                         # la laine : la face
+        t.ovale(x0, yd, x1, yf, 'b', 3)                         # le dos, plus clair
+        for (x, y) in ((x0 + 2, yd + 2), (cx, yd + 1), (x1 - 3, yd + 3), (x0 + 3, yb - 2), (x1 - 3, yb - 2)):
+            t.put(x, y, 'g')                                    # les boucles de la laine
+        hy0 = yf - 1; hy1 = hy0 + th - 1
+        t.contour()
+        corps, t = t, Toile(32, 24)
+        t.rect(hx0 - 2, hy0 + 2, hx0 - 1, hy0 + 3, 'f'); t.rect(hx1 + 1, hy0 + 2, hx1 + 2, hy0 + 3, 'f')   # oreilles
+        t.ovale(hx0, hy0, hx1, hy1, 'f', 1)                     # la tête grise
+        t.rect(hx0, hy0, hx1, hy0 + 1, 'b')                     # le toupet
+        t.put(hx0 + 1, hy0 + 3, 'K'); t.put(hx1 - 1, hy0 + 3, 'K')                        # yeux
+        t.rect(cx - 1, hy1 - 1, cx, hy1 - 1, 'p')               # le museau
+        t.contour()
+        return corps.sur(t)
     else:
-        t.rect(9, 12 + dy, 11, 13 + dy, 'f'); t.rect(20, 12 + dy, 22, 13 + dy, 'f')    # les oreilles, de dos
-        t.rect(15, 12 + dy, 16, 14 + dy, 'o')                    # la petite queue
-        t.put(15, 15 + dy, 'g')
+        t.rect(hx0 - 1, yd, hx0, yd + 1, 'f'); t.rect(hx1, yd, hx1 + 1, yd + 1, 'f')      # oreilles, au fond
+        t.ovale(hx0 + 1, yd - 1, hx1 - 1, yd + 1, 'b', 1)       # le toupet, derrière le dos
+        t.ovale(x0, yd + 1, x1, yb, 'o', 3)                     # la croupe
+        t.ovale(x0, yd + 1, x1, yf, 'b', 3)                     # le dos
+        for (x, y) in ((x0 + 2, yd + 3), (cx + 1, yd + 2), (x1 - 3, yd + 4), (x0 + 3, yb - 2), (x1 - 3, yb - 2)):
+            t.put(x, y, 'g')
+        t.rect(cx - 1, yf - 1, cx, yf + 1, 'b'); t.rect(cx - 1, yf + 2, cx, yf + 2, 'g')   # la petite queue
     t.contour()
     return t
 
@@ -181,6 +235,44 @@ def poule(vue, k):
     return t
 
 
+# La poule de profil, aux proportions de celle de face et de dos (le corps de 8 × 7 px aux
+# coins arrondis, la tête de 4 × 5, la crête de 2, les pattes de 2 rangées et leurs doigts) :
+# ses huit poses, dans l'ordre de la planche d'origine (js/carte/ferme/config.js, BETES.poule).
+def poule_profil(pose):
+    t = Toile(16, 16)
+    tete = {'idle': (9, 3), 'picore0': (10, 7), 'picore1': (10, 10), 'couvee': (9, 5), 'ailes': (9, 3)}.get(pose, (9, 3))
+    assise = pose == 'couvee'
+    by = 2 if assise else 0                                      # assise : le corps plus bas
+    # les pattes (pas assise) : ( x de la patte, doigts : x0, x1, rangée du pied )
+    if not assise:
+        pattes = {'marche0': ((5, 4, 5, 15), (9, 9, 10, 15)), 'marche1': ((7, 6, 8, 15), (8, 8, 9, 14)),
+                  'gratte': ((8, 8, 9, 15), (5, 3, 4, 14))}.get(pose, ((6, 6, 7, 15), (8, 8, 9, 15)))
+        for x, a, b, py in pattes:
+            t.rect(x, 14, x, py - 1, 'p') if py > 14 else None
+            t.rect(a, py, b, py, 'p')
+    # la queue, dressée vers l'arrière (plus haut quand elle picore : elle bascule)
+    qy = -2 if pose.startswith('picore') else 0
+    t.rect(2, 5 + qy + by, 3, 8 + by, 'g'); t.rect(4, 6 + qy + by, 4, 8 + by, 'g'); t.put(3, 5 + qy + by, 'o')
+    t.ovale(3, 7 + by, 11 if not assise else 12, 13 + by, 'b', 2)        # le corps
+    t.rect(5, 12 + by, 10, 13 + by, 'o')
+    if pose == 'ailes':                                          # les ailes levées, déployées
+        t.ovale(3, 3, 7, 8, 'b', 1); t.rect(4, 7, 7, 8, 'o'); t.put(3, 3, 'o')
+    else:
+        t.rect(5, 9 + by, 8, 10 + by, 'o'); t.rect(6, 11 + by, 8, 11 + by, 'g')   # l'aile, repliée
+    hx, hy = tete
+    hy += by if assise else 0
+    t.ovale(hx, hy, hx + 3, hy + 4, 'b', 1)                      # la tête
+    t.rect(hx + 1, hy - 1, hx + 2, hy, 'r')                      # la crête
+    t.put(hx + 2, hy + 1, 'K')                                   # l'œil
+    t.put(hx + 4, hy + 2, 'j')                                   # le bec
+    t.rect(hx + 3, hy + 3, hx + 3, hy + 4, 'R')                  # le barbillon
+    t.contour()
+    return t
+
+
+POSES_POULE = ['idle', 'picore0', 'picore1', 'marche0', 'marche1', 'gratte', 'couvee', 'ailes']
+
+
 DESSINS = {'vache': vache, 'mouton': mouton, 'poule': poule}
 
 
@@ -196,8 +288,11 @@ def pas_de_profil(idle):
 
 def planche(nom):
     w, h = TAILLE[nom]
-    src = Image.open(os.path.join(ORIG, nom + '.png')).convert('RGBA')
-    cases = [src.crop((i * w, 0, i * w + w, h)) for i in range(8)]
+    if nom == 'poule':                                           # redessinée aux nouvelles proportions
+        cases = [poule_profil(p).image(COULEURS[nom]) for p in POSES_POULE]
+    else:
+        src = Image.open(os.path.join(ORIG, nom + '.png')).convert('RGBA')
+        cases = [src.crop((i * w, 0, i * w + w, h)) for i in range(8)]
     cases.append(pas_de_profil(cases[0]))
     for vue in ('bas', 'haut'):
         for k in range(4):
