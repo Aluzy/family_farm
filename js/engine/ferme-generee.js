@@ -30,8 +30,8 @@ export const FERME_GENEREE = {
   ETANGS: [2, 4], RAYON_ETANG: [[7, 10], [3, 7]],     // le premier étang (le plus grand), puis les autres
   ROCHERS: 64, ARBRES_SEUIL: 0.56, ARBRES_BORD: 14,  // densité des bois ; les bords (tuiles) en ont plus
   // l'herbe haute : le nombre de zones, leur rayon (tuiles), et par case un tirage t : autant de
-  // touffes que de seuils de TOUFFES_PAR_CASE sous t (0 à 3) ; puis sa teinte et ses fleurs
-  TOUFFES: 120, TOUFFES_RAYON: [2.6, 4.8], TOUFFES_PAR_CASE: [0.05, 0.4, 0.8], TOUFFE_ZONE: 0.7, TOUFFE_FLEURS: 0.2,
+  // touffes que de seuils de TOUFFES_PAR_CASE sous t (0 à 4) ; puis sa teinte et ses fleurs
+  TOUFFES: 200, TOUFFES_RAYON: [3, 6], TOUFFES_PAR_CASE: [0.02, 0.2, 0.55, 0.85], TOUFFE_ZONE: 0.7, TOUFFE_FLEURS: 0.2,
   FLEURS: 0.05,
 };
 
