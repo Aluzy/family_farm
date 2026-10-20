@@ -50,6 +50,10 @@ Le Marché vend toujours les outils.
 - On pose chaque mur et chaque porte sur une case de la carte.
 - Un espace entièrement entouré de murs, avec au moins une porte, devient une **pièce close**.
 - Les autres bâtiments suivent la même logique.
+- Version 1.26 : une case où se trouve une ressource de la carte (herbe haute, rocher, arbre) ne
+  se bâtit qu'une fois la ressource récoltée (fauchée, cassée, abattue ; terrain `HERBES`, `ROCHERS`,
+  `ARBRES`). Rien ne repousse sur une case bâtie ni dans une pièce close (`casesBaties`) ; une
+  partie d'avant voit l'herbe restée sous ses blocs fauchée, sans paille (migration v42 → v43).
 - Il n'y a **pas de toit** : on voit les murs et l'intérieur d'en haut.
 
 ### Dormir

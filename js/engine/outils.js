@@ -7,6 +7,8 @@ import { farmTerrain } from './terrain.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { techFlag, techSum } from './techtree.js';
+import { casesBaties } from './blocs.js';
+import { FERME_GENEREE } from './ferme-generee.js';
 
 /* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
@@ -309,15 +311,37 @@ export function scytheAround(state, ids, ou) {
   return { ok: true, fauchees: L, paille, morceaux: coup.length ? { coup, fin: [] } : null };
 }
 
-// Au réveil : les touffes dont le jour est venu repoussent. Renvoie leurs identifiants.
+// La case d'une touffe (son identifiant « x,y » : son pied, en px).
+function caseHerbe(state, id) {
+  const [x, y] = id.split(',').map(Number), T = FERME_GENEREE.T;
+  return Math.floor(y / T) * farmTerrain(state).LARGEUR + Math.floor(x / T);
+}
+
+// Au réveil : les touffes dont le jour est venu repoussent, sauf sur une case bâtie (elles
+// restent fauchées). Renvoie leurs identifiants.
 export function regrowGrass(state) {
   const h = state.outils && state.outils.herbes;
   if (!h) return [];
-  const out = [];
+  const out = [], baties = casesBaties(state);
   for (const id of Object.keys(h)) {
-    if (Number(h[id] && h[id].retour) <= state.day) { delete h[id]; out.push(id); }
+    if (!(Number(h[id] && h[id].retour) <= state.day)) continue;
+    if (baties.size && baties.has(caseHerbe(state, id))) continue;
+    delete h[id];
+    out.push(id);
   }
   return out;
+}
+
+// Les touffes d'herbe haute restées sous ce qui est bâti (une partie d'avant la version 1.26) :
+// fauchées, sans paille ; elles ne repoussent plus tant que la case est bâtie. Renvoie leur nombre.
+export function faucherSousBati(state) {
+  const H = farmTerrain(state).HERBES;
+  if (!H) return 0;
+  const o = outils(state);
+  if (!o.herbes || typeof o.herbes !== 'object') o.herbes = {};
+  let n = 0;
+  for (const t of casesBaties(state)) for (const id of H[t] || []) if (!o.herbes[id]) { o.herbes[id] = { retour: state.day }; n++; }
+  return n;
 }
 
 /* ---------- la pioche dans la grotte : le minerai ---------- */
@@ -354,8 +378,8 @@ export function depositOreNotebook(state, carnet) {
 }
 
 // Au réveil (runNight, jour suivant) : un rocher cassé dont le jour de retour est venu
-// réapparaît à sa place, sauf si une parcelle (terre labourée, plantée ou non) occupe une de
-// ses tuiles ; il réessaie alors chaque matin. Renvoie les rochers revenus.
+// réapparaît à sa place, sauf si une parcelle (terre labourée, plantée ou non) ou une case bâtie
+// occupe une de ses tuiles ; il réessaie alors chaque matin. Renvoie les rochers revenus.
 export function respawnRocks(state) {
   return respawn(state, state.outils && state.outils.rochers, farmTerrain(state).ROCHERS);
 }
@@ -369,7 +393,8 @@ export function respawnTrees(state) {
 function respawn(state, partis, tuiles) {
   if (!partis) return [];
   const T = tuiles || {};
-  const prises = new Set(state.potager.parcelles.map((p) => p.case));
+  // (une parcelle, ou une case bâtie)
+  const prises = new Set([...state.potager.parcelles.map((p) => p.case), ...casesBaties(state)]);
   const revenus = [];
   for (const id of Object.keys(partis)) {
     const e = partis[id];

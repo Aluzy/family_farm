@@ -10,7 +10,7 @@ import { blocGid, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
-  etatEtable, etatMoulin, hauteurMur, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
+  etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -192,12 +192,13 @@ function chantier(graine, n = 40) {
 }
 
 // Une case d'herbe libre de `w` × `h` cases (coin haut-gauche), loin des bords.
+// (de l'herbe, sans herbe haute : elle se fauche avant de bâtir)
 function terrainLibre(s, w, h) {
   const T = farmTerrain(s), W = T.LARGEUR;
   for (let r = 4; r < T.HAUTEUR - h - 4; r++) {
     for (let c = 4; c < W - w - 4; c++) {
       let ok = true;
-      for (let dr = 0; dr < h && ok; dr++) for (let dc = 0; dc < w && ok; dc++) ok = T.LIGNES[r + dr][c + dc] === '#' && !s.potager.parcelles.some((p) => p.case === (r + dr) * W + c + dc);
+      for (let dr = 0; dr < h && ok; dr++) for (let dc = 0; dc < w && ok; dc++) ok = T.LIGNES[r + dr][c + dc] === '#' && !s.potager.parcelles.some((p) => p.case === (r + dr) * W + c + dc) && !(T.HERBES && T.HERBES[(r + dr) * W + c + dc]);
       if (ok) return { c, r, W };
     }
   }
@@ -403,8 +404,8 @@ test('ferme générée : le puits, la pompe dessus, le panneau, la citerne et la
   s.pieces = 100000;
   for (const t of ['panneau', 'pompe', 'reservoir', 'batterie']) removeStarter(s, t);   // (une partie neuve : rien d'installé)
   assertEqual(buyStarter(s, 'panneau').ok, false, 'pas en pièces');
-  // le foyer d'abord
-  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  // le foyer d'abord (et, deux rangées sous lui, de quoi poser dehors)
+  const z = terrainLibre(s, 7, 8), p = murs(z, 5, 5);
   setInv(s, { mur_pierre: 30, porte: 2, paillasse: 2, puits_pierre: 1, pompe: 1, panneau_solaire: 2, citerne: 1, batterie: 1 });
   const dehors = (k) => (z.r + 7) * z.W + z.c + k;
   assertEqual(poserBloc(s, 'panneau', dehors(0)).ok, false, 'sans foyer : rien ne s\'installe');
@@ -584,6 +585,43 @@ test('ferme générée : un coffre à grain posé dans une pièce close construi
   assertEqual([s.silo.construit, siloCapacity(s) > 0, s.silo.ble, countItem(s, 'ble')], [true, true, 5, 0], 'le blé y entre');
   reprendreBloc(s, p.dedans);
   assertEqual([s.silo.construit, countItem(s, 'coffre_grain')], [false, 1]);
+});
+
+/* ---------- version 1.26 : les ressources de la carte avant de bâtir ---------- */
+
+test('ferme générée : on bâtit sur l\'herbe haute une fois fauchée, sur un rocher une fois cassé ; rien ne repousse sous ce qui est bâti', () => {
+  const s = chantier('r1');
+  const T = farmTerrain(s), W = T.LARGEUR;
+  // l'herbe haute : une case d'herbe où pousse une touffe
+  const t = Number(Object.keys(T.HERBES).find((k) => T.LIGNES[Math.floor(k / W)][k % W] === '#' && !s.potager.parcelles.some((p) => p.case === Number(k))));
+  const ids = herbesSur(s, t);
+  assert(ids.length > 0);
+  assertEqual(poserBloc(s, 'mur_pierre', t).ok, false, 'pas sur l\'herbe haute');
+  if (!s.outils) s.outils = {};
+  if (!s.outils.herbes) s.outils.herbes = {};
+  for (const id of ids) s.outils.herbes[id] = { retour: s.day };   // (fauchées : elles repousseraient ce matin)
+  assertEqual(herbesSur(s, t), []);
+  assert(poserBloc(s, 'mur_pierre', t).ok, 'fauchée : on bâtit');
+  assertEqual(regrowGrass(s), [], 'rien ne repousse sous le mur');
+  assert(ids.every((id) => grassCut(s, id)));
+  reprendreBloc(s, t);
+  assertEqual(regrowGrass(s).sort(), ids.slice().sort(), 'le mur repris : elle repousse');
+  // un rocher : pas tant qu'il est là ; cassé, sa case se bâtit ; il ne revient pas dessous
+  const [id, cases] = Object.entries(T.ROCHERS).find(([, cs]) => cs.length === 1 && !Object.values(T.ARBRES).some((a) => a.includes(cs[0])));
+  const r = cases[0];
+  assertEqual(poserBloc(s, 'mur_pierre', r).ok, false, 'pas sur un rocher');
+  if (!s.outils.rochers) s.outils.rochers = {};
+  s.outils.rochers[id] = { retour: s.day };
+  assert(poserBloc(s, 'mur_pierre', r).ok, 'cassé : on bâtit');
+  assertEqual(respawnRocks(s), [], 'il ne revient pas sous le mur');
+  reprendreBloc(s, r);
+  assertEqual(respawnRocks(s), [id]);
+  // une partie d'avant : les touffes sous un bloc sont fauchées, sans paille
+  const t2 = Number(Object.keys(T.HERBES).find((k) => Number(k) !== t && herbesSur(s, Number(k)).length));
+  s.blocs[t2] = 'mur_pierre';
+  const avant = countItem(s, 'paille');
+  assert(faucherSousBati(s) >= T.HERBES[t2].length);
+  assertEqual([herbesSur(s, t2), countItem(s, 'paille')], [[], avant]);
 });
 
 /* ---------- étape 5b : le Moulin (pièce close + meule) ---------- */
