@@ -10,7 +10,7 @@ import { blocGid, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
-  etatEtable, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
+  etatEtable, etatMoulin, hauteurMur, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -588,21 +588,62 @@ test('ferme générée : un coffre à grain posé dans une pièce close construi
 
 /* ---------- étape 5b : le Moulin (pièce close + meule) ---------- */
 
-test('ferme générée : une meule posée dans une pièce close tient lieu du Moulin', () => {
+test('ferme générée (version 1.25) : le Moulin, une tour aux murs hauts de 3 blocs avec la meule au centre', () => {
   const s = chantier('m1');
   s.pieces = 100000;
   assertEqual(buildStation(s, 'moulin').ok, false, 'pas en pièces');
+  setInv(s, { mur_pierre: 60, porte: 2, meule: 1 });
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5), W = z.W;
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  const centre = (z.r + 2) * W + z.c + 2;
+  s.progression.niveau = 1;
+  assertEqual(poserBloc(s, 'meule', centre).ok, false, 'pas avant le niveau du Moulin');
+  reach(s, 'moulin');
+  // la meule dans un coin : pas au centre
+  assert(poserBloc(s, 'meule', p.dedans).ok);
+  let e = etatMoulin(s);
+  assertEqual([e.ok, e.conditions.map((c) => c.ok), s.stations.moulin.construit], [false, [true, false, false], false]);
+  reprendreBloc(s, p.dedans);
+  assert(poserBloc(s, 'meule', centre).ok);
+  e = etatMoulin(s);
+  assertEqual([e.conditions.map((c) => c.ok), e.murs], [[true, true, false], { hauts: 0, total: 15 }], 'les murs, pas la porte');
+  // rehausser : le même mur posé sur un mur, jusqu'à 3 blocs
+  const m = p.murs[0];
+  assertEqual(poserBloc(s, 'mur_pierre', m), { ok: true, sorte: 'mur_pierre', case: m, hauteur: 2 });
+  assertEqual([hauteurMur(s, m), countItem(s, 'mur_pierre')], [2, 60 - 15 - 1]);
+  assert(poserBloc(s, 'mur_pierre', m).ok);
+  assertEqual([hauteurMur(s, m), poserBloc(s, 'mur_pierre', m).ok], [3, false], 'pas plus de 3');
+  assertEqual(poserBloc(s, 'mur_fenetre', m).ok, false, 'un mur rehaussé ne se change pas');
+  for (const t of p.murs.slice(1)) { poserBloc(s, 'mur_pierre', t); poserBloc(s, 'mur_pierre', t); }
+  e = etatMoulin(s);
+  assertEqual([e.ok, e.murs, s.stations.moulin.construit, !!s.stations.moulin.appareil], [true, { hauts: 15, total: 15 }, true, true]);
+  // reprendre : le bloc du dessus d'abord ; le Moulin n'est plus là
+  assertEqual(reprendreBloc(s, m), { ok: true, sorte: 'mur_pierre', case: m, hauteur: 2 });
+  assertEqual([s.stations.moulin.construit, blocAt(s, m)], [false, 'mur_pierre']);
+  assert(poserBloc(s, 'mur_pierre', m).ok);
+  assertEqual(s.stations.moulin.construit, true);
+  // la meule reprise : plus de Moulin
+  reprendreBloc(s, centre);
+  assertEqual([s.stations.moulin.construit, countItem(s, 'meule')], [false, 1]);
+  // un mur repris entièrement : ses blocs reviennent tous
+  const avant = countItem(s, 'mur_pierre');
+  for (let k = 0; k < 3; k++) assert(reprendreBloc(s, m).ok);
+  assertEqual([blocAt(s, m), hauteurMur(s, m), countItem(s, 'mur_pierre')], [null, 0, avant + 3]);
+});
+
+test('migration v41 → v42 : une meule seule ne fait plus le Moulin', () => {
+  const s = chantier('m2');
   setInv(s, { mur_pierre: 30, porte: 2, meule: 1 });
+  reach(s, 'moulin');
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   poserBloc(s, 'porte', p.porte);
-  s.progression.niveau = 1;
-  assertEqual(poserBloc(s, 'meule', p.dedans).ok, false, 'pas avant le niveau du Moulin');
-  reach(s, 'moulin');
-  assert(poserBloc(s, 'meule', p.dedans).ok);
-  assertEqual(s.stations.moulin.construit, true);
-  reprendreBloc(s, p.dedans);
-  assertEqual([s.stations.moulin.construit, countItem(s, 'meule')], [false, 1]);
+  poserBloc(s, 'meule', (z.r + 2) * z.W + z.c + 2);
+  // une partie d'avant : la meule posée avait ouvert la station
+  s.stations.moulin.construit = true;
+  const m = migrate({ v: 41, t: 0, s: { ...s, version: 41 } });
+  assertEqual([m.version, m.stations.moulin.construit], [STATE_VERSION, false]);
 });
 
 /* ---------- étape 5b-8 : les arbres fruitiers, plantés dans le sol ---------- */

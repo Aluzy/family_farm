@@ -6,7 +6,7 @@ import { ANCIENNE_COUR } from './ferme-generee.js';
 import { houseRepaired } from './depart.js';
 import { robotOn } from './automation.js';
 import { pickUpAll } from './ramassage.js';
-import { couchages, etatEtable, etatPoulailler, majPoulailler, pieceDe, serrePlaces } from './blocs.js';
+import { couchages, etatEtable, etatMoulin, etatPoulailler, majPoulailler, pieceDe, serrePlaces } from './blocs.js';
 
 /* ---------- déménager une ancienne partie sur la ferme générée ---------- */
 
@@ -90,6 +90,14 @@ function planPetit(cle) {
   return { w: 5, h: 4, plan };
 }
 
+// Le Moulin (version 1.25) : la petite pièce, la meule au centre, ses murs hauts de
+// MOULIN.HAUTEUR blocs (etatMoulin).
+function planMoulin() {
+  const p = planPetit('meule');
+  for (const b of p.plan) if (DATA.ATELIER.BLOCS[b.sorte].mur) b.hauteur = DATA.ATELIER.MOULIN.HAUTEUR;
+  return p;
+}
+
 // Des blocs dehors, en ligne, une case entre chacun.
 function planLigne(sortes) {
   return { w: sortes.length * 2 - 1, h: 1, plan: sortes.map((sorte, i) => ({ dx: i * 2, dy: 0, sorte })) };
@@ -120,7 +128,7 @@ function plans(state) {
   }
   if (state.serre && state.serre.construit) out.push({ id: 'serre', ou: 'serre', pose: true, parcelles: state.serre.parcelles.length, ...planSerre(state.serre.parcelles.length) });
   if (state.silo && state.silo.construit) out.push({ id: 'silo', ou: 'silo', pose: true, ...planPetit('coffre_grain') });
-  if (st('moulin')) out.push({ id: 'moulin', ou: 'moulin', pose: true, ...planPetit('meule') });
+  if (st('moulin')) out.push({ id: 'moulin', ou: 'moulin', pose: true, ...planMoulin() });
   // dehors : le puits (le décor de la cour d'avant ; la pompe dessus), le panneau, la citerne, la batterie
   const a = (type) => isOwned(starterOf(state, type));
   const dehors = ['puits'].concat(a('panneau') ? ['panneau'] : [], a('reservoir') ? ['citerne'] : [], a('batterie') ? ['batterie'] : []);
@@ -132,7 +140,7 @@ function plans(state) {
 // Les objets des blocs d'un plan (et la pompe) : { objet: qté }.
 function objetsDe(p) {
   const out = {};
-  for (const { sorte } of p.plan) { const o = DATA.ATELIER.BLOCS[sorte].objet; out[o] = (out[o] || 0) + 1; }
+  for (const { sorte, hauteur } of p.plan) { const o = DATA.ATELIER.BLOCS[sorte].objet; out[o] = (out[o] || 0) + (hauteur || 1); }
   if (p.pompe) out.pompe = (out.pompe || 0) + 1;
   return out;
 }
@@ -177,6 +185,7 @@ export function convertirPartie(state, graine) {
   state.blocs = {};
   state.sols = {};
   state.blocsDessus = {};
+  state.hauteurs = {};
   const batis = [], rendus = {};
   const rendre = (p) => {
     const objets = objetsDe(p);
@@ -196,9 +205,10 @@ export function convertirPartie(state, graine) {
     if (!ici) { rendre(p); continue; }
     p.cases = [];
     for (let r = ici[1]; r < ici[1] + p.h; r++) for (let c = ici[0]; c < ici[0] + p.w; c++) pris.add(r * W + c);
-    for (const { dx, dy, sorte } of p.plan) {
+    for (const { dx, dy, sorte, hauteur } of p.plan) {
       const t = (ici[1] + dy) * W + ici[0] + dx;
       state.blocs[t] = sorte;
+      if (hauteur > 1) state.hauteurs[t] = hauteur;
       p.cases.push(t);
       if (sorte === 'puits' && p.pompe) state.blocsDessus[t] = 'pompe';
     }
@@ -213,11 +223,11 @@ export function convertirPartie(state, graine) {
     paturage: (p) => { const e = etatEtable(state); return e.ok && e.places >= p.places; },
     serre: (p) => serrePlaces(state).length >= p.parcelles,
     silo: (p) => !!pieceDe(state, cleDe(p, 'coffre_grain')),
-    moulin: (p) => !!pieceDe(state, cleDe(p, 'meule')),
+    moulin: () => etatMoulin(state).ok,
   };
   for (const p of batis) {
     if (!verifie[p.id] || verifie[p.id](p)) continue;
-    for (const t of p.cases) { delete state.blocs[t]; delete state.blocsDessus[t]; }
+    for (const t of p.cases) { delete state.blocs[t]; delete state.blocsDessus[t]; delete state.hauteurs[t]; }
     rendre(p);
     p.rendu = true;
   }

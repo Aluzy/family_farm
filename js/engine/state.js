@@ -15,7 +15,7 @@ import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsE
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
-import { majPoulailler, rangerPieces } from './blocs.js';
+import { majMoulin, majPoulailler, rangerPieces } from './blocs.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -344,6 +344,13 @@ export const MIGRATIONS = {
       s2.inventaire = JSON.parse(JSON.stringify(s2.inventaire));
       addItem(s2, 'station_robot', 1);
     }
+    return s2;
+  },
+  // v41 → v42 : sur la ferme générée, le Moulin est une tour (des murs hauts de 3 blocs) avec la
+  // meule au centre (blocs.js, etatMoulin) ; une meule seule ne le fait plus (son appareil reste).
+  41: (state) => {
+    const s2 = { ...state, version: 42 };
+    if (s2.carte && s2.stations && s2.stations.moulin) { s2.stations = { ...s2.stations, moulin: { ...s2.stations.moulin } }; majMoulin(s2); }
     return s2;
   },
 };

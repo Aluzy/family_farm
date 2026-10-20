@@ -70,6 +70,7 @@
       this.syncTableaux(model.tableaux);                                         // (après les blocs : sur leurs murs)
       this.syncEtage(model.etage, model.niveau, model.vueNiveau);                // (après les blocs : ceux sous l'étage se cachent)
       this.syncToits(model.toits);
+      this.syncVoilure(model.moulinTour);
       this.syncWell(!!model.pompe, !!model.pompeEnMarche);
       this.syncTank(model.citerne == null ? -1 : model.citerne | 0);
       this.syncGatherables(model.ramassables);

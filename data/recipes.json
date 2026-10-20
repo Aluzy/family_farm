@@ -142,6 +142,15 @@
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 120,
+    "//HAUTEUR_MAX": [
+      "Version 1.25 : un mur se rehausse (le même mur posé sur lui) jusqu'à HAUTEUR_MAX blocs de haut ;",
+      "chaque bloc de plus se prend dans l'inventaire et y revient quand on le reprend (le bloc du",
+      "dessus d'abord). Le Moulin (MOULIN) : une pièce close dont tous les murs ont MOULIN.HAUTEUR",
+      "blocs de haut (les portes non), avec la meule au centre (la case du milieu, ou l'une des",
+      "cases du milieu quand la pièce a un nombre pair de cases de côté)."
+    ],
+    "HAUTEUR_MAX": 3,
+    "MOULIN": { "HAUTEUR": 3 },
     "ARBRE_ECART": 3,
     "BONHEUR_SANS_COUCHAGE": -8,
     "RAMASSAGE": {

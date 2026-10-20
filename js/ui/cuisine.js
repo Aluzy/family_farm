@@ -5,6 +5,8 @@ import { deviceStatus } from '../engine/energy.js';
 import { countItem, shelfLife } from '../engine/inventory.js';
 import { energyChip } from './energie.js';
 import { wheatTotal } from '../engine/animals.js';
+import { etatMoulin } from '../engine/blocs.js';
+import { farmSeed } from '../engine/terrain.js';
 import {
   buildStation, cancelMilling, cancelQueued, millPending, millTimeLeft, queueCapacity, recipeStatus,
   startMilling, startRecipe, taskTimeLeft,
@@ -104,6 +106,18 @@ export function renderMoulin() {
   if (!isUnlocked(state, 'moulin')) return '';
   const def = DATA.STATIONS.moulin;
   const st = state.stations.moulin;
+  // la ferme générée (version 1.25) : le Moulin est une tour bâtie en blocs (etatMoulin)
+  if (!st.construit && farmSeed(state) !== null) {
+    const e = etatMoulin(state);
+    const lignes = e.conditions.map((c) => `<li class="${c.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${c.ok ? '✅' : '❌'}</span> <span>${c.texte}</span></li>`).join('');
+    return `
+    <div class="section-head"><h3>${artIcon('moulin')}${def.nom}</h3>${helpBtn('moulin')}</div>
+    <div class="card">
+      <span class="card-title">Pour bâtir le Moulin</span>
+      <ul class="ingredients">${lignes}</ul>
+      <span class="muted">Une tour : une pièce close dont les murs ont ${DATA.ATELIER.MOULIN.HAUTEUR} blocs de haut, la meule (fabriquée à l'Atelier) au centre. Bâtie, sa voilure paraît dehors et tourne quand la meule moud.</span>
+    </div>`;
+  }
   if (!st.construit) {
     return `
     <div class="section-head"><h3>${artIcon('moulin')}${def.nom}</h3></div>

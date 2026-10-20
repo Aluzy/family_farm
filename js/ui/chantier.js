@@ -9,7 +9,7 @@
 
 import { DATA } from '../engine/catalog.js';
 import { atelierConstruit, atelierOuvert } from '../engine/atelier.js';
-import { blocAt, blocDessus, blocsEnMain, changeMur, couchages, poserBloc, reprendreBloc, solAt } from '../engine/blocs.js';
+import { blocAt, blocDessus, blocsEnMain, changeMur, couchages, hauteurMur, poserBloc, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
 import { ETAGE_BLOCS, etageEmprise, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
@@ -177,8 +177,12 @@ registerActions({
     // (le plancher en main : un appui sur un plancher sans rien dessus le reprend ; un autre
     // bloc se pose dessus)
     const sol = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sol;
-    // (une fenêtre, une pierre d'angle en main : un appui sur un autre mur le change)
-    const reprend = blocAt(state, c) ? !surLibre && !changeMur(blocAt(state, c), buildMode) : sol && solAt(state, c);
+    // (une fenêtre, une pierre d'angle en main : un appui sur un autre mur le change ; le même
+    // mur en main : un appui sur lui le rehausse d'un bloc, jusqu'à HAUTEUR_MAX ; au-delà, ou un
+    // autre bloc en main, il reprend le bloc du dessus)
+    const b = blocAt(state, c), sb = b && DATA.ATELIER.BLOCS[b];
+    const rehausse = !!(sb && sb.mur && b === buildMode && hauteurMur(state, c) < DATA.ATELIER.HAUTEUR_MAX);
+    const reprend = b ? !surLibre && !rehausse && !changeMur(b, buildMode) : sol && solAt(state, c);
     const r = reprend ? reprendreBloc(state, c) : poserBloc(state, buildMode, c);
     if (!r.ok) { notify(r.error); return; }
     persistState();
