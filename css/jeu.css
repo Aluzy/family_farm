@@ -2377,3 +2377,36 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 body.has-toolbar .stage-arrow.bas { bottom: calc(9 * 7.5px + 46px); }
 /* … et le bouton Dormir (la nuit) aussi, pour ne pas la couvrir sur un téléphone. */
 body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
+/* La pose d'un meuble (js/ui/chantier.js) : en bas, au-dessus de la barre d'outils, une
+   bande du même bois : ce qu'on fait, ✔️ (vert : le poser là où est son aperçu) et ❌ (sortir
+   de ce mode). */
+.pose-meuble {
+  position: fixed;
+  left: 50%;
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: var(--z-fab);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 6px 8px 6px 12px;
+  background: rgba(var(--wood-bg-rgb), 0.92);
+  border: 3px solid var(--color-earth);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--wood-glow);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+  font-weight: 700;
+  pointer-events: auto;
+}
+.pose-meuble-txt { flex: 1; min-width: 0; }
+.pose-meuble-ok, .pose-meuble-non {
+  flex: none;
+  width: 48px; height: 48px; padding: 0;
+  border: 0; border-radius: 6px;
+  font: inherit; font-size: 1.5rem; line-height: 1;
+  cursor: pointer;
+}
+.pose-meuble-ok { background: #6fcf6a; box-shadow: inset 0 0 0 3px #2f8a3a; }
+.pose-meuble-ok:disabled { background: #c9d8c2; box-shadow: inset 0 0 0 3px #9aa894; opacity: 0.6; cursor: default; }
+.pose-meuble-non { background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light); }

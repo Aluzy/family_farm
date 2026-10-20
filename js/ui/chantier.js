@@ -9,7 +9,7 @@
 
 import { DATA } from '../engine/catalog.js';
 import { atelierConstruit, atelierOuvert } from '../engine/atelier.js';
-import { blocAt, blocDessus, blocsEnMain, changeMur, couchages, hauteurMur, poserBloc, reprendreBloc, solAt } from '../engine/blocs.js';
+import { blocAt, blocDessus, blocsEnMain, changeMur, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
 import { ETAGE_BLOCS, etageEmprise, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
@@ -77,7 +77,10 @@ export function buildChipHtml() {
   const max = niveauMax(), lvl = niveau();
   const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n}">${n}</button>`).join('');
   const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}>${niveaux}</div></div>`;
-  return `<div class="build-dock">${choixNiveau}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-head">${tete}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><div class="build-bar-grid">${blocs}</div></div></div>`;
+  // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
+  const m = meubleModele(), ap = m && m.apercu;
+  const pose = m ? `<div class="pose-meuble" role="group" aria-label="Poser le meuble"><span class="pose-meuble-txt">${ap ? (ap.ok ? 'Le poser ici ?' : 'Il ne tient pas ici') : 'Touche une case pour placer le meuble'}</span><button type="button" class="pose-meuble-ok" data-action="meuble-ok"${ap && ap.ok ? '' : ' disabled'} aria-label="Poser le meuble ici" title="Poser le meuble ici">✔️</button><button type="button" class="pose-meuble-non" data-action="meuble-annule" aria-label="Sortir de la pose du meuble" title="Sortir de la pose du meuble">❌</button></div>` : '';
+  return `${pose}<div class="build-dock">${choixNiveau}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-head">${tete}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><div class="build-bar-grid">${blocs}</div></div></div>`;
 }
 
 // L'appui long sur le carré du niveau : la liste s'ouvre ; en glissant, le niveau sous le doigt
@@ -121,6 +124,29 @@ if (typeof document !== 'undefined') {
   }, true);
 }
 
+// La pose d'un meuble du Marché : un meuble en main (pas un tableau, qui s'accroche à un mur),
+// au sol, la carte montre un quadrillage ; un appui sur une case y pose son aperçu, calé sur la
+// grille (vert : il tient là ; rouge : non), sans le poser ; ✔️ le pose, ❌ sort de ce mode.
+// poseMeuble : { sorte, case } (l'aperçu), ou null.
+let poseMeuble = null;
+const meubleEnMain = () => {
+  const b = buildMode && DATA.ATELIER.BLOCS[buildMode];
+  return !!(b && b.meuble && !b.sur && !niveau());
+};
+// Pour la carte (modèle.bati.meuble) : la grille, et l'aperçu s'il y en a un
+// ({ case, dessin, largeur, hauteur, ok }).
+export function meubleModele() {
+  if (!meubleEnMain()) return null;
+  const p = poseMeuble && poseMeuble.sorte === buildMode ? poseMeuble : null, b = DATA.ATELIER.BLOCS[buildMode];
+  return { grille: true, apercu: p ? { case: p.case, dessin: b.meuble, largeur: b.largeur || 1, hauteur: b.hauteur || 1, plat: !!b.plat, ok: poseStatus(state, buildMode, p.case).ok } : null };
+}
+// Sort de la pose d'un meuble : l'aperçu s'efface, un bloc (pas un meuble) passe en main.
+function quitteMeuble() {
+  poseMeuble = null;
+  const autre = (s) => !DATA.ATELIER.BLOCS[s].meuble;
+  setBuildMode(SORTES().find((s) => autre(s) && blocsEnMain(state, s) > 0) || SORTES().find(autre) || null);
+}
+
 // (le bloc en main : un de ceux qui se posent au niveau où l'on construit)
 function blocDuNiveau() {
   if (buildMode && !SORTES().includes(buildMode)) setBuildMode(SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
@@ -128,7 +154,7 @@ function blocDuNiveau() {
 
 registerActions({
   'build-toggle': () => {
-    if (buildMode) { setBuildMode(null); refresh(); return; }
+    if (buildMode) { poseMeuble = null; setBuildMode(null); refresh(); return; }
     if (!chantierOuvert()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     setBuildLevel(etageVue ? 1 : 0);          // (on construit d'abord là où l'on est)
@@ -157,6 +183,7 @@ registerActions({
   // Un niveau de la liste : on y construit (la vue de la carte suit).
   'build-level': (target) => {
     if (!buildMode) return;
+    poseMeuble = null;
     setBuildLevel(Math.min(Number(target.dataset.niveau) || 0, niveauMax()));
     niveauListe = false;
     blocDuNiveau();
@@ -164,6 +191,7 @@ registerActions({
   },
   'build-pick': (target) => {
     if (!buildMode) return;
+    poseMeuble = null;
     setBuildMode(target.dataset.sorte);
     refresh();
   },
@@ -206,9 +234,26 @@ registerActions({
     // appui sur un bloc le reprend : un mur rehaussé, son bloc du dessus d'abord)
     const b = blocAt(state, c);
     const reprend = b ? !surLibre && !changeMur(b, buildMode) : sol && solAt(state, c);
+    // (un meuble en main, sur une case libre : son aperçu, pas encore posé)
+    if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
     const r = reprend ? reprendreBloc(state, c) : poserBloc(state, buildMode, c);
     if (!r.ok) { notify(r.error); return; }
     persistState();
+    refresh();
+  },
+  // La pose d'un meuble : ✔️ le pose là où est son aperçu ; ❌ sort de ce mode.
+  'meuble-ok': () => {
+    if (!poseMeuble || !meubleEnMain()) return;
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    const r = poserBloc(state, poseMeuble.sorte, poseMeuble.case);
+    if (!r.ok) { notify(r.error); return; }
+    poseMeuble = null;
+    if (!blocsEnMain(state, buildMode)) quitteMeuble();     // (plus de ce meuble : on en sort)
+    persistState();
+    refresh();
+  },
+  'meuble-annule': () => {
+    quitteMeuble();
     refresh();
   },
 });

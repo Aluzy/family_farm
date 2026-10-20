@@ -83,6 +83,8 @@ export const GAME_ACTIONS = {
   'bloc': 'Poser ou reprendre un bloc (ferme générée)',
   'build-toggle': 'Construire : ouvrir ou ranger (ferme générée)',
   'build-pick': 'Construire : choisir un bloc (ferme générée)',
+  'meuble-ok': 'Construire : poser le meuble là où est son aperçu (ferme générée)',
+  'meuble-annule': 'Construire : sortir de la pose d\'un meuble (ferme générée)',
   'build-level-menu': 'Construire : ouvrir la liste des niveaux (ferme générée)',
   'build-level': 'Construire : choisir le niveau (ferme générée)',
   'etage-toggle': 'Monter ou descendre l\'escalier (ferme générée, essai)',
