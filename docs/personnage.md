@@ -20,14 +20,16 @@ carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; s
 paille, casquette, bonnet, béret, bandeau, fleur ; détails : barbe, moustache, lunettes, taches de
 rousseur, boucles d'oreilles ; habits unis, à rayures, à carreaux ou à pois.
 
-**Nouveau dessin, à l'essai sur `perso_01`** (une femme aux cheveux longs) : une grosse tête
-(10 px de large), de grands yeux (le blanc et la pupille), une frange, les cheveux longs dans le
-dos (de dos et de profil), une mèche nouée d'un ruban rose sur l'épaule, une salopette à bavette
-et un contour brun. Sa
-planche est écrite par `scripts/personnage/chibi.py` (les têtes dessinées à la main, une par
-vue) avec les mêmes cases, la même taille et les mêmes positions de mains et d'outils
-(`frames()` de `fermier.py`, avec la figure de `chibi.py`) : rien ne change pour la carte.
-`fermier.py` saute les personnages de `ESSAIS`.
+**Nouveau dessin, à l'essai sur `perso_01` et `perso_02`** : une grosse tête (10 px de large),
+de grands yeux, un contour brun. Chaque personnage redessiné a son **modèle**,
+`scripts/personnage/modeles/<nom>.png` (12 × 79 px) : de face, de dos et de profil (tourné vers
+la droite), debout, empilés (rangées 0, 27 et 54 ; 25 rangées chacune, le contour du bas
+compris). `scripts/personnage/chibi.py` en tire la planche, avec les mêmes cases, la même
+taille et les mêmes positions de mains et d'outils (`frames()` de `fermier.py`, avec la figure
+de `chibi.py`) : debout, le modèle tel quel ; la marche lève une jambe ou les fait passer l'une
+devant l'autre ; avec un outil, les bras du modèle sont redessinés vers les mains. Rien ne
+change pour la carte. `fermier.py` saute les personnages de `ESSAIS`. Pour un nouveau
+personnage : son modèle dans `modeles/`, son nom dans `ESSAIS`, puis `chibi.py`.
 
 **Les adultes de la famille** (version 1.17) ont l'apparence d'un de ces 50 personnages : dans la
 fiche d'un adulte (✏️), la grille « Personnage » remplace le sexe, la coiffure et la teinte des

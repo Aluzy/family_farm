@@ -1,204 +1,124 @@
-# Le nouveau dessin des personnages de la carte, à l'essai sur perso_01 (une femme aux cheveux
-# longs) : une grosse tête (10 px de large, 11 de haut avec le contour), de grands yeux (le
-# blanc, la pupille), une frange, les cheveux longs dans le dos (CHEVELURE) et une mèche nouée
-# d'un ruban rose sur l'épaule, une salopette à bavette et ses bretelles, un contour brun. Mêmes cases, même taille
-# (16 × 32, les pieds en bas) et mêmes positions des mains et des outils que
-# scripts/personnage/fermier.py (ses frames() avec la figure d'ici) : rien ne change pour la carte.
+# Le nouveau dessin des personnages de la carte, à l'essai : une grosse tête, de grands yeux,
+# un contour brun. Chaque personnage redessiné a son modèle, scripts/personnage/modeles/<nom>.png
+# (12 × 79 px) : les trois vues debout, empilées, de 25 rangées chacune (contour du bas compris),
+# séparées de deux rangées vides :
+#   rangées  0..24   de face (« bas »)
+#   rangées 27..51   de dos (« haut »)
+#   rangées 54..78   de profil, tourné vers la droite (« cote » ; la carte le retourne)
+# Dans chaque vue : la tête et le torse sur les rangées 0..17, les jambes et les chaussures sur
+# 18..23 ; de face et de dos, les bras sur les colonnes 0..2 et 9..11 (les mains en 15..16) ; de
+# profil, le bras proche sur les colonnes 7..11, la main du bras lointain sur 0..2.
 #
-#   python3 scripts/personnage/chibi.py            écrit assets/personnages/perso_01.png
+# La planche (assets/personnages/<nom>.png) garde les cases, la taille (16 × 32, le modèle posé
+# en x 2, y 7, les pieds en bas) et les positions des mains et des outils de
+# scripts/personnage/fermier.py (ses frames() avec la figure d'ici) : rien ne change pour la
+# carte. Les poses reprennent les pixels du modèle : debout, le modèle tel quel ; la respiration,
+# le pas et l'accroupi déplacent le haut du corps ; la marche lève une jambe (de face, de dos)
+# ou les fait passer l'une devant l'autre (de profil) ; quand les mains tiennent un outil, les
+# bras du modèle sont retirés et redessinés vers les mains (manche et peau du modèle). Le
+# contour est refait à la fin. fermier.py n'écrit plus les planches de ESSAIS.
+#
+#   python3 scripts/personnage/chibi.py            écrit les planches de ESSAIS
 #   python3 scripts/personnage/chibi.py --apercu   écrit aussi apercu_chibi.png (agrandi)
-#
-# Les têtes sont dessinées à la main (TETES, une grille de 12 × 11 par vue, posée en x 2,
-# y 7) ; le corps suit le modèle (la bavette, les poches, la couture entre les jambes).
-# fermier.py n'écrit plus les planches de ESSAIS.
 import os
 import sys
+from collections import Counter
 
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import catalogue  # noqa: E402
 import fermier as F  # noqa: E402
 from fermier import Canvas, arm, legs_assis  # noqa: E402
 
-TX, TY = 2, 7         # le coin haut-gauche de la tête
-
-# K contour ; H cheveux, D leur ombre, M une mèche ; S peau, L peau dans l'ombre, B joue,
-# J bouche, N cou ; W blanc de l'œil, P pupille.
-TETES = {
-    'bas': [
-        '...KKKKKK...',
-        '..KHHHHHDK..',
-        '.KHHHHHHHDK.',
-        '.KHHHHHLHDK.',
-        'KHHMHHLMHHDK',
-        'KHHWPHLPWLDK',
-        'KHHWPSSPWSDK',
-        'KHHSSSSSBSDK',
-        'KHHSSJJJSHDK',
-        '.KHDSSSSDHK.',
-        '..KDDNNDDK..',
-    ],
-    'haut': [
-        '...KKKKKK...',
-        '..KHHHHHDK..',
-        '.KHHHHHHHDK.',
-        '.KHHMHHMHDK.',
-        'KHHHMHHMHHDK',
-        'KHHMHHHHMHDK',
-        'KHHMHHHHMHDK',
-        'KHMHHHMHHMDK',
-        'KHMHHHMHHMDK',
-        'KHMHHHMHHMDK',
-        '.KHMHHMHHDK.',
-    ],
-    'cote': [
-        '...KKKKKK...',
-        '..KHHHHHHK..',
-        '.KHHHHHHHHK.',
-        '.KHHMHHHHMHK',
-        'KDHMHHHHMLHK',
-        'KDHHHHHLSWPK',
-        'KDHMHSHSSWPK',
-        'KDHMHLSSSSSK',
-        'KDHHHSSSSJK.',
-        'KDHHHSSSSSK.',
-        'KDHHDNNNK...',
-    ],
+MODELES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modeles')
+VUES = {'bas': 0, 'haut': 27, 'cote': 54}
+TX, TY = 2, 7          # où le modèle est posé dans la case
+K = (43, 29, 20)       # le contour
+TETE, TORSE, JAMBES = 11, 18, 24      # fin (exclue) de la tête, du haut du corps, des jambes
+# Les zones des bras, par vue : (colonnes, rangées)
+BRAS = {
+    'bas': [(range(0, 3), range(11, 18)), (range(9, 12), range(11, 18))],
+    'haut': [(range(0, 3), range(11, 18)), (range(9, 12), range(11, 18))],
+    'cote': [(range(7, 12), range(12, 18)), (range(0, 3), range(13, 18))],
 }
-# Les cheveux longs sous la tête (posés en x 2, à partir de y 18) : dans le dos jusqu'à la
-# taille ; de profil, ils tombent derrière la nuque. De face, on ne voit que la mèche nouée d'un
-# ruban rose sur l'épaule (torse()).
-CHEVELURE = {
-    'haut': [
-        '..HMHHHMHD..',
-        '..HMHHHMHD..',
-        '...MHHHMD...',
-        '...HMHHMD...',
-        '....HHMD....',
-        '....DHHD....',
-    ],
-    'cote': [
-        '.DHHD.......',
-        '.DHHD.......',
-        '.DHMH.......',
-        '..DHH.......',
-        '..DHH.......',
-        '...DH.......',
-    ],
-}
-LETTRES = {'K': 'K', 'H': 'hr', 'D': 'hr2', 'M': 'hrm', 'S': 'sk', 'L': 'skl', 'B': 'skb', 'J': 'sk2',
-           'N': 'skn', 'W': 'wh', 'P': 'pu'}
 
 
 def mul(c, k):
-    return tuple(max(0, min(255, round(v * f))) for v, f in zip(c, k))
+    return tuple(max(0, min(255, round(v * k))) for v in c)
 
 
-def mix(a, b, t):
-    return tuple(round(x * (1 - t) + y * t) for x, y in zip(a, b))
+class Modele:
+    def __init__(self, nom):
+        im = Image.open(os.path.join(MODELES, nom + '.png')).convert('RGBA')
+        px = im.load()
+        self.vues = {}
+        for vue, y0 in VUES.items():
+            self.vues[vue] = {(x, y): px[x, y0 + y][:3] for y in range(25) for x in range(12)
+                              if px[x, y0 + y][3] and px[x, y0 + y][:3] != K}
+        face = self.vues['bas']
+
+        def commune(pts):
+            n = Counter(face[p] for p in pts if p in face)
+            return n.most_common(1)[0][0]
+        # les couleurs des bras : celles des colonnes du bord, de face
+        self.couleurs_bras = {face[(x, y)] for x in (0, 1, 10, 11) for y in range(12, 17) if (x, y) in face}
+        self.manche = commune([(x, y) for x in (0, 1, 2) for y in (12, 13, 14)])
+        self.manche2 = mul(self.manche, 0.8)
+        self.peau = commune([(x, y) for x in (1, 2, 9, 10) for y in (15, 16)])
+        # les jambes et les chaussures (pour assis)
+        F.C['ov'] = commune([(x, y) for x in (3, 4) for y in range(18, 22)])
+        F.C['ov2'] = commune([(x, y) for x in (7, 8) for y in range(18, 22)])
+        F.C['bt'] = commune([(x, y) for x in (3, 4) for y in (22, 23)])
+        F.C['bt2'] = mul(F.C['bt'], 0.7)
+
+    def haut(self, vue, sans_bras):
+        """La tête et le torse (rangées 0..17), avec ou sans les bras."""
+        out = {p: c for p, c in self.vues[vue].items() if p[1] < TORSE}
+        if sans_bras:
+            for cols, rangs in BRAS[vue]:
+                for x in cols:
+                    for y in rangs:
+                        if out.get((x, y)) in self.couleurs_bras:
+                            del out[(x, y)]
+        return out
+
+    def jambes(self, vue):
+        return {p: c for p, c in self.vues[vue].items() if TORSE <= p[1] < JAMBES}
 
 
-def couleurs():
-    """Les nuances du modèle, tirées des couleurs du personnage (fermier.C)."""
-    C = F.C
-    C.update({
-        'hrm': mix(C['hr'], C['hr2'], 0.6),
-        'skl': mul(C['sk'], (0.983, 0.918, 0.838)), 'skb': mul(C['sk'], (0.99, 0.96, 0.92)),
-        'skn': mul(C['sk'], (0.958, 0.796, 0.594)),
-        'wh': (255, 255, 255), 'pu': (82, 68, 56),
-        'sh3': mul(C['sh'], (0.914, 0.974, 0.822)), 'sh4': mul(C['sh'], (0.87, 0.96, 0.733)),
-        'ov3': mul(C['ov'], (0.94, 0.94, 0.94)), 'ov4': mul(C['ov'], (0.875, 0.875, 0.87)),
-        'ov5': mul(C['ov2'], (0.73, 0.73, 0.73)),
-        'bt3': mul(C['bt'], (0.88, 0.88, 0.88)), 'pin': (204, 88, 206),
-    })
-
-
-def tete(cv, vue, b):
-    """La tête (et le cou) ; rend les cases de la tête."""
+def poser(cv, pts, dx=0, dy=0):
     cases = set()
-    for j, rang in enumerate(TETES[vue]):
-        for i, ch in enumerate(rang):
-            if ch != '.':
-                cv.put(TX + i, TY + j + b, LETTRES[ch])
-                cases.add((TX + i, TY + j + b))
+    for (x, y), c in pts.items():
+        cv.put(TX + x + dx, TY + y + dy, c)
+        cases.add((TX + x + dx, TY + y + dy))
     return cases
 
 
-def chevelure(cv, vue, b):
-    """Les cheveux longs, sur le dos (dessinés après le torse, avant la tête)."""
-    for j, rang in enumerate(CHEVELURE.get(vue, ())):
-        for i, ch in enumerate(rang):
-            if ch != '.':
-                cv.put(TX + i, 18 + j + b, LETTRES[ch])
-
-
-def torse(cv, vue, b):
-    """La chemise, la bavette et la salopette, de l'épaule (y 18) à la taille (y 24)."""
+def jambes(cv, m, vue, walk):
+    """De face et de dos : la jambe qui avance se lève d'un pixel. De profil : la jambe lointaine
+    (à droite dans le modèle) et la proche passent l'une devant l'autre."""
+    pts = m.jambes(vue)
+    gauche = {p: c for p, c in pts.items() if p[0] < 6}
+    droite = {p: c for p, c in pts.items() if p[0] >= 6}
     if vue == 'cote':
-        cv.rect(6, 18 + b, 10, 20 + b, 'sh')
-        cv.rect(9, 19 + b, 10, 20 + b, 'ov')            # la bavette, devant
-        cv.put(8, 19 + b, 'ov2')                        # la bretelle
-        cv.put(8, 18 + b, 'ov2')
-        cv.rect(6, 21 + b, 10, 24 + b, 'ov')
-        cv.put(6, 21 + b, 'ov2')
-        cv.put(9, 22 + b, 'ov3')                        # la poche
-        cv.put(10, 23 + b, 'ov4')
-        cv.put(9, 18 + b, 'hr')                         # la mèche nouée, devant l'épaule
-        cv.put(9, 19 + b, 'pin')
-        cv.put(9, 20 + b, 'hr')
+        gauche = {p: c for p, c in pts.items() if p[0] < 5}
+        droite = {p: c for p, c in pts.items() if p[0] >= 5}
+        # (décalage de la proche, de la lointaine, levée de la proche, de la lointaine)
+        dp, dl, lp, ll = {None: (0, 0, 0, 0), 0: (0, 0, 0, 0), 1: (2, -2, 1, 0),
+                          2: (4, -4, 0, 0), 3: (2, -2, 0, 1)}[walk]
+        poser(cv, droite, dl, -ll)
+        poser(cv, gauche, dp, -lp)
         return
-    if vue == 'bas':
-        for x, c in zip(range(5, 11), ('sh', 'sh', 'sk', 'sk', 'hr', 'sh3')):
-            cv.put(x, 18 + b, c)                        # le col ouvert, la mèche sur l'épaule
-        for x, c in zip(range(5, 11), ('sh', 'ov2', 'ov', 'ov', 'pin', 'sh')):
-            cv.put(x, 19 + b, c)                        # la bretelle, la bavette, le nœud rose de la mèche
-        for x, c in zip(range(5, 11), ('sh', 'ov', 'ov', 'ov', 'hr', 'sh')):
-            cv.put(x, 20 + b, c)
-        cv.rect(5, 21 + b, 10, 24 + b, 'ov')
-        cv.put(6, 22 + b, 'ov3')                        # les poches
-        cv.put(9, 22 + b, 'ov3')
-        cv.put(5, 23 + b, 'ov4')
-        cv.put(10, 23 + b, 'ov4')
-        return
-    cv.rect(5, 18 + b, 10, 20 + b, 'sh')                # de dos : les bretelles croisées
-    for (x, y) in ((6, 18), (9, 18), (7, 19), (8, 19), (6, 20), (9, 20)):
-        cv.put(x, y + b, 'ov2')
-    cv.rect(5, 21 + b, 10, 24 + b, 'ov')
-    cv.put(10, 21 + b, 'ov3')
-    cv.put(10, 22 + b, 'ov4')
+    lg, ld = {None: (0, 0), 0: (0, 1), 1: (0, 0), 2: (1, 0), 3: (0, 0)}[walk]
+    poser(cv, gauche, 0, -lg)
+    poser(cv, droite, 0, -ld)
 
 
-def jambes(cv, vue, walk, squat):
-    """Les jambes (la couture entre les deux) et les chaussures ; walk : 0..3, None immobile."""
-    if vue == 'cote':
-        spread = {None: (0, 0), 0: (-2, 2), 1: (0, 0), 2: (2, -2), 3: (0, 0)}[walk]
-        for (x, ombre) in ((7 + spread[0], True), (7 + spread[1], False)):
-            cv.rect(x, 25 + squat, x + 1, 28, 'ov2' if ombre else 'ov')
-            cv.rect(x, 29, x + 2, 30, 'bt3' if ombre else 'bt')
-            if not ombre:
-                cv.put(x + 2, 30, 'bt2')
-        return
-    lift = {None: (0, 0), 0: (0, 1), 1: (0, 0), 2: (1, 0), 3: (0, 0)}[walk]
-    for i, x in enumerate((5, 8)):
-        up = lift[i]
-        cv.rect(x, 25 + squat, x + 2, 28 - up, 'ov' if i == 0 else 'ov2')
-        cv.rect(x, 29 - up, x + 2, 30 - up, 'bt')
-        cv.put(x + 1 + (i == 0), 29 - up, 'bt3' if i == 0 else 'bt')
-    # la couture : le creux entre les deux jambes
-    for y in range(26 + squat, 29 - max(lift)):
-        cv.put(7, y, 'ov3')
-        cv.put(8, y, 'ov5')
-    cv.put(7, 29 - lift[0], 'bt3')
-    cv.put(8, 29 - lift[1], 'bt2')
-    cv.put(8, 30 - lift[1], 'bt2')
-    cv.put(7, 30 - lift[0], 'bt3')
-
-
-def bras(cv, sx, sy, hx, hy, manche, tete_cases):
+def bras(cv, sx, sy, hx, hy, manche, peau, tete_cases):
     """Un bras par-dessus le reste ; sur la tête, un contour le détache des cheveux."""
     couche = Canvas()
     arm(couche, sx, sy, hx, hy, manche)
+    couche.rect(hx, hy, hx + 1, hy + 1, peau)
     pts = [(x, y) for y in range(F.H) for x in range(F.W) if couche.px[y][x] is not None]
     for (x, y) in pts:
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
@@ -209,54 +129,68 @@ def bras(cv, sx, sy, hx, hy, manche, tete_cases):
         cv.put(x, y, couche.px[y][x])
 
 
+MODELE = {}           # le modèle du personnage en cours de dessin
+
+
 def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, sit=False):
-    """Comme fermier.figure (mêmes paramètres, mêmes mains), avec le nouveau dessin."""
+    """Comme fermier.figure (mêmes paramètres, mêmes mains), d'après le modèle."""
+    m = MODELE['m']
     cv = Canvas()
     if before:
         before(cv)
-    if vue == 'cote':
-        far = hands[1] if hands else (7, 22 + b)
-        arm(cv, 7, 19 + b + squat, far[0], far[1], 'sh2')
+    dy = b + squat
+    if hands and vue == 'cote':
+        bras(cv, 7, 19 + dy, hands[1][0], hands[1][1], m.manche2, m.peau, set())
     if sit:
         legs_assis(cv, vue)
     else:
-        jambes(cv, vue, walk, squat)
-    torse(cv, vue, b + squat)
-    chevelure(cv, vue, b + squat)
-    tc = tete(cv, vue, b + squat)
-    if vue == 'cote':
-        near = hands[0] if hands else (8, 22 + b)
-        bras(cv, 8, 19 + b + squat, near[0], near[1], 'sh', tc)
-    else:
-        lh, rh = hands or ((3, 22 + b), (11, 22 + b))
-        bras(cv, 4, 19 + b + squat, lh[0], lh[1], 'sh', tc)
-        bras(cv, 11, 19 + b + squat, rh[0], rh[1], 'sh', tc)
-        if not hands:
-            cv.put(12, 20 + b + squat, 'sh3')           # le bras droit, dans l'ombre
-            cv.put(12, 21 + b + squat, 'sh4')
-            cv.put(12, 22 + b + squat, 'skl')
-            cv.put(12, 23 + b + squat, 'skl')
+        jambes(cv, m, vue, walk)
+    haut = m.haut(vue, sans_bras=bool(hands))
+    poser(cv, haut, 0, dy)
+    tete = {(TX + x, TY + y + dy) for (x, y) in haut if y < TETE}
+    if hands:
+        if vue == 'cote':
+            bras(cv, 8, 19 + dy, hands[0][0], hands[0][1], m.manche, m.peau, tete)
+        else:
+            bras(cv, 4, 19 + dy, hands[0][0], hands[0][1], m.manche, m.peau, tete)
+            bras(cv, 11, 19 + dy, hands[1][0], hands[1][1], m.manche, m.peau, tete)
     if after:
         after(cv)
-    F.motif(cv)
     cv.outline()
     return cv
 
 
-def main():
-    nom, d = catalogue.personnages()[0]
-    F.dessiner(F.variante_catalogue(d))
-    couleurs()
+def render(cv):
+    im = Image.new('RGBA', (F.W, F.H), (0, 0, 0, 0))
+    for y in range(F.H):
+        for x in range(F.W):
+            c = cv.px[y][x]
+            if c is not None:
+                im.putpixel((x, y), (F.C[c] if isinstance(c, str) else c) + (255,))
+    return im
+
+
+def ecrire(nom):
+    F.dessiner({'couleurs': {}})
+    MODELE['m'] = Modele(nom)
     cases = F.frames(figure)
     noms = list(cases)
     rangs = (len(noms) + F.COLS - 1) // F.COLS
     sheet = Image.new('RGBA', (F.COLS * F.W, rangs * F.H), (0, 0, 0, 0))
     for i, n in enumerate(noms):
-        sheet.paste(F.render(cases[n]), ((i % F.COLS) * F.W, (i // F.COLS) * F.H))
+        sheet.paste(render(cases[n]), ((i % F.COLS) * F.W, (i // F.COLS) * F.H))
     sheet.save(os.path.join(F.ASSETS, 'personnages', f'{nom}.png'))
     print(f'assets/personnages/{nom}.png : {len(noms)} cases (nouveau dessin, à l\'essai)')
+    return sheet
+
+
+def main():
+    planches = [ecrire(nom) for nom in F.ESSAIS]
     if '--apercu' in sys.argv:
-        F.apercu(sheet, 'apercu_chibi.png', 6, (126, 170, 92))
+        out = Image.new('RGBA', (planches[0].width * len(planches) + 8 * (len(planches) - 1), planches[0].height), (0, 0, 0, 0))
+        for i, s in enumerate(planches):
+            out.alpha_composite(s, (i * (s.width + 8), 0))
+        F.apercu(out, 'apercu_chibi.png', 5, (126, 170, 92))
 
 
 if __name__ == '__main__':

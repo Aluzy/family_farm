@@ -129,7 +129,7 @@ VARIANTES = {
 STYLE = {}         # le style du personnage en cours de dessin
 # Les personnages du catalogue redessinés à l'essai (grosse tête, grands yeux) : leur planche
 # est écrite par scripts/personnage/chibi.py, pas ici.
-ESSAIS = ('perso_01',)
+ESSAIS = ('perso_01', 'perso_02')
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalogue  # noqa: E402  (les 50 personnages du catalogue)
@@ -664,7 +664,7 @@ def main():
         if nom in ESSAIS:
             continue
         dessiner(variante_catalogue(d))
-        ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=(i == 1))
+        ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=(i == len(ESSAIS)))
     # Les 50 enfants : assets/personnages/enfant_XX.png (les mêmes cases)
     import portraits_enfants
     for nom, d in portraits_enfants.enfants():
