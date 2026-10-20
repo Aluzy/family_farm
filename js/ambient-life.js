@@ -52,6 +52,10 @@
     lucioles: { gap: [8, 22], max: 2, when: (c) => c.dusk },
   };
 
+  // Le halo des lucioles : sa taille (fois les 24 px de sa texture, fois celle de la luciole),
+  // sa teinte, son opacité quand la luciole brille le plus.
+  const HALO = { taille: 0.55, teinte: 0xd8ff6a, alpha: 0.7 };
+
   // Dessins : une lettre = un pixel (voir PALETTE), « . » = vide.
   const PALETTE = { w: '#ffffff', k: '#2a1c14', b: '#7a5637', d: '#4f3622', c: '#e2cfa8', y: '#e8a531', r: '#a9572b', t: '#cf8443' };
   const ART = {
@@ -256,6 +260,17 @@
       for (const e of [[16, 15, 13, 8], [28, 12, 14, 9], [34, 17, 11, 7], [22, 19, 12, 6]]) {
         c.beginPath(); c.ellipse(e[0], e[1], e[2], e[3], 0, 0, Math.PI * 2); c.fill();
       }
+    });
+
+    // Le halo des lucioles : un disque blanc qui s'estompe vers son bord, teinté et ajouté
+    // (ADD) à ce qu'il y a dessous.
+    canvasTexture('amb_halo', 24, 24, (c) => {
+      const g = c.createRadialGradient(12, 12, 0, 12, 12, 12);
+      g.addColorStop(0, 'rgba(255,255,255,0.9)');
+      g.addColorStop(0.3, 'rgba(255,255,255,0.45)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g;
+      c.fillRect(0, 0, 24, 24);
     });
 
     const sprite = (x, y, frame) => scene.add.image(x, y, 'amb', frame);
@@ -559,27 +574,32 @@
         };
       },
 
-      // Quelques points lumineux qui tournent et clignotent, au-dessus du voile de lumière.
+      // Quelques points lumineux qui tournent et clignotent, au-dessus du voile de lumière,
+      // chacun dans son halo (HALO : sa taille, son opacité au plus fort du clignotement).
       lucioles() {
         const c = freeSpot();
         if (!c) return null;
         const flies = [];
         for (let i = 0; i < 5; i++) {
+          const k = i % 2 ? 1 : 1.5;
           flies.push({
-            s: sprite(c.x, c.y, 'luc').setDepth(LIGHT + 1).setBlendMode(P.BlendModes.ADD).setTint(0xe6ff7a).setScale(i % 2 ? 1 : 1.5).setAlpha(0),
+            s: sprite(c.x, c.y, 'luc').setDepth(LIGHT + 1).setBlendMode(P.BlendModes.ADD).setTint(0xe6ff7a).setScale(k).setAlpha(0),
+            h: scene.add.image(c.x, c.y, 'amb_halo').setDepth(LIGHT + 0.5).setBlendMode(P.BlendModes.ADD).setTint(HALO.teinte).setScale(HALO.taille * k).setAlpha(0),
             rx: rand(10, 30), ry: rand(6, 18), fx: rand(0.25, 0.6), fy: rand(0.3, 0.7), fb: rand(1.2, 2.4), ph: rand(0, 6.28),
           });
         }
         const life = rand(14, 24);
         let age = 0;
         return {
-          sprites: flies.map((f) => f.s),
+          sprites: flies.flatMap((f) => [f.s, f.h]),
           step(dt) {
             age += dt;
             const env = clamp01(Math.min(age, life - age) / 1.5);
             for (const f of flies) {
-              const blink = Math.max(0, Math.sin(age * f.fb + f.ph));
-              f.s.setPosition(c.x + Math.sin(age * f.fx + f.ph) * f.rx, c.y - 6 + Math.cos(age * f.fy + f.ph * 2) * f.ry).setAlpha(env * blink * blink);
+              const blink = Math.max(0, Math.sin(age * f.fb + f.ph)), a = env * blink * blink;
+              const x = c.x + Math.sin(age * f.fx + f.ph) * f.rx, y = c.y - 6 + Math.cos(age * f.fy + f.ph * 2) * f.ry;
+              f.s.setPosition(x, y).setAlpha(a);
+              f.h.setPosition(x, y).setAlpha(a * HALO.alpha);
             }
             return age < life && ctx.dusk;
           },
