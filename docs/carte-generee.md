@@ -54,6 +54,8 @@ Le Marché vend toujours les outils.
   pose son aperçu calé sur la grille (vert : il tient là, rouge : non), sans le poser ; un glissement
   du doigt parti de l'aperçu le déplace case par case (la carte ne défile pas). ✔️ le pose,
   ❌ sort de ce mode (js/ui/chantier.js `meubleModele`, js/carte/ferme/chantier.js `syncPoseMeuble`).
+- Deux lits adulte posés côte à côte (la même rangée) deviennent sur la carte un lit deux places
+  (`assets/meuble_lit_double.png`, `syncLitsDoubles`) ; ils restent deux lits, deux couchages.
 - Version 1.26 : une case où se trouve une ressource de la carte (herbe haute, rocher, arbre) ne
   se bâtit qu'une fois la ressource récoltée (fauchée, cassée, abattue ; terrain `HERBES`, `ROCHERS`,
   `ARBRES`). Rien ne repousse sur une case bâtie ni dans une pièce close (`casesBaties`) ; une

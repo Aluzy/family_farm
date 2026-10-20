@@ -8,7 +8,8 @@
 #   - les meubles du Marché (data/meubles.json) : chaise, table, tapis_1 à 3, lit_adulte,
 #     lit_enfant, chevet, canape, table_basse, tableau_1 à 3 ;
 #   - la paillasse (sans lit acheté, le personnage dort dessus) et les couvertures seules
-#     des lits (lit_adulte_drap, lit_enfant_drap, paillasse_drap), posées sur le dormeur.
+#     des lits (lit_adulte_drap, lit_enfant_drap, paillasse_drap), posées sur le dormeur ;
+#   - le lit double (lit_double, lit_double_drap) : deux lits adulte côte à côte sur la carte.
 # Vue de dessus à 45° (comme la carte) : on voit le dessus de chaque meuble, raccourci, et sa
 # face avant ; les tapis sont à plat, la fenêtre et les tableaux accrochés au mur (de face).
 # Lumière en haut à gauche.
@@ -329,6 +330,30 @@ def lit(enfant):
     outline(im)
     return im
 
+def lit_double():
+    # deux lits adulte côte à côte (sur la carte, js/carte/ferme/chantier.js) : un lit deux
+    # places, la tête de lit d'un seul tenant, deux oreillers, une seule couverture ; mêmes
+    # rangées que le lit adulte (oreillers 5 à 9, couverture à partir de 12)
+    W, H = 36, 34
+    im = canvas(W, H)
+    put, _ = painter(im)
+    rect(put, 0, 0, W - 1, 3, 'w2')                   # tête de lit
+    rect(put, 0, 0, W - 1, 0, 'w3')
+    rect(put, 1, 4, W - 2, H - 5, 'c2')               # matelas
+    for x0 in (3, W // 2 + 1):                        # deux oreillers
+        rect(put, x0, 5, x0 + 13, 9, 'b3')
+        rect(put, x0, 9, x0 + 13, 9, 'b1')
+    rect(put, 1, 12, W - 2, H - 5, 'V1')              # couverture, le haut rabattu
+    rect(put, 1, 12, W - 2, 14, 'V2')
+    rect(put, W - 3, 15, W - 2, H - 5, 'V0')          # le pli sur le côté droit
+    for y in range(17, H - 5, 4):
+        for x in range(3, W - 4, 4):
+            put(x, y, 'V2')
+    box(put, 0, H - 4, W, 1, 3, 'w3', 'w1')           # pied de lit
+    outline(im)
+    return im
+
+
 def paillasse():
     # sans lit acheté, on dort sur une paillasse posée par terre : le matelas de paille (ses
     # brins), l'oreiller, une couverture bleue rapiécée. Mêmes proportions que le lit adulte
@@ -454,9 +479,10 @@ def main():
         'table_basse': table_basse(), 'tableau_1': tableau(1), 'tableau_2': tableau(2), 'tableau_3': tableau(3),
     }
     images['paillasse'] = paillasse()
+    images['lit_double'] = lit_double()
     # les couvertures des lits (rangée 12 : le haut rabattu) : js/fermier.js les pose
     # par-dessus le personnage quand il dort
-    for k in ('lit_adulte', 'lit_enfant', 'paillasse'):
+    for k in ('lit_adulte', 'lit_enfant', 'paillasse', 'lit_double'):
         images[k + '_drap'] = drap(images[k], 12)
     out = {f'meuble_{k}.png': im for k, im in images.items()}
     for name, im in out.items():
