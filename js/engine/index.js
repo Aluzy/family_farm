@@ -29,6 +29,7 @@ export * from './night.js';
 export * from './ramassage.js';
 export * from './ville.js';
 export * from './voisins.js';
+export * from './economie.js';
 export * from './entreprises.js';
 export * from './offline.js';
 export * from './alerts.js';

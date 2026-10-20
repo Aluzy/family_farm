@@ -192,7 +192,7 @@ window.FermeHote = {
   acheter: (id) => nuit('ville-buy') || joue(buyCompany(state, id)),
   // les boutiques de la ville (VILLE.BOUTIQUES) : ce que vend la boutique `id` et les pièces de
   // la ferme ; un achat au comptoir (la carte ne l'ouvre que quand un employé y travaille)
-  boutique: (id) => { const v = shopView(id); return v && { ...v, pieces: state.pieces }; },
+  boutique: (id) => { const v = shopView(id, state); return v && { ...v, pieces: state.pieces }; },
   acheterBoutique: (id, item, n) => nuit('ville-buy') || joue(buyInShop(state, id, item, n)),
   quota: (id, q) => nuit('entreprise-quota') || joue(setCompanyQuota(state, id, q)),
   outil: (id) => hasTool(state, id),

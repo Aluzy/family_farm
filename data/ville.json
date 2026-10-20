@@ -30,7 +30,9 @@
     "",
     "BOUTIQUES : les commerces de la ville (docs/plan-ville.md, étape 5b). Au comptoir, quand un",
     "  employé y travaille (aux horaires de son poste, VOISINS.EMPLOIS), on achète les `objets` de",
-    "  la boutique MARGE % de leur prix (arrondi au-dessus). Ils vont dans l'inventaire.",
+    "  la boutique MARGE % de leur prix (arrondi au-dessus), au cours du jour de son `produit`",
+    "  (ECONOMIE, data/economie.json : plus cher quand il manque), tant qu'il en reste en stock (une",
+    "  unité du produit par objet). Ils vont dans l'inventaire.",
     "",
     "ENTREPRISES (version 1.20) : les entrepôts de la ville, qu'on achète en s'y promenant (prix).",
     "  Chaque jour à HEURE, une entreprise achetée prend dans le stock de la ferme (l'inventaire,",
@@ -68,11 +70,11 @@
     "BOUTIQUES": {
       "MARGE": 120,
       "LISTE": {
-        "boulangerie": { "nom": "La boulangerie", "icone": "🥖", "objets": ["pain", "croissant", "tarte_pommes", "pain_epices"] },
-        "pizzeria": { "nom": "La pizzeria", "icone": "🍕", "objets": ["pizza"] },
-        "burger": { "nom": "Le fast-food", "icone": "🍔", "objets": ["burger", "frites"] },
-        "poissonnerie": { "nom": "La poissonnerie", "icone": "🐟", "objets": ["poisson", "sardine", "anchois", "truite", "dorade", "brochet"] },
-        "informatique": { "nom": "Le magasin d'informatique", "icone": "💻", "objets": ["ordinateur"] }
+        "boulangerie": { "nom": "La boulangerie", "icone": "🥖", "produit": "pain", "objets": ["pain", "croissant", "tarte_pommes", "pain_epices"] },
+        "pizzeria": { "nom": "La pizzeria", "icone": "🍕", "produit": "pizza", "objets": ["pizza"] },
+        "burger": { "nom": "Le fast-food", "icone": "🍔", "produit": "burger", "objets": ["burger", "frites"] },
+        "poissonnerie": { "nom": "La poissonnerie", "icone": "🐟", "produit": "poisson_v", "objets": ["poisson", "sardine", "anchois", "truite", "dorade", "brochet"] },
+        "informatique": { "nom": "Le magasin d'informatique", "icone": "💻", "produit": "ordinateur", "objets": ["ordinateur"] }
       }
     },
     "ENTREPRISES": {

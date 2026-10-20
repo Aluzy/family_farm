@@ -3,7 +3,8 @@ import { randomInt } from './base.js';
 import { treeGone } from './crops.js';
 import { buyPrice, isBuyable, sellPrice } from './market.js';
 import { maisonPlan, transitionPlan, transitionSeed } from './transition.js';
-import { mealHappinessDelta } from './ville.js';
+import { dishHappiness, mealHappinessDelta } from './ville.js';
+import { acheterRepasVille, sortieVille } from './economie.js';
 
 /* ---------- les voisins de la carte de transition : leur économie ---------- */
 
@@ -290,6 +291,14 @@ function journee(state, maison, f, jour) {
   // (des plats différents : chacun rend son bonheur une fois ; une fois le besoin couvert, il en
   // cuisine encore pour le plaisir avec au plus PLAISIR % de ce qu'il a au-delà de CONFORT
   // pièces ; sans ce confort, les plats qui nourrissent le plus pour le moins d'argent d'abord)
+  // (un citadin achète d'abord ses repas aux boutiques de la ville : js/engine/economie.js)
+  if (f.metier === 'citadin') {
+    const r = acheterRepasVille(state, f, besoin);
+    energie += r.energie;
+    J.boutiques = r.mange;
+    J.achete += r.cout;
+    for (const [x, k] of Object.entries(r.mange)) { ajoute(mange, x, k); if (dishHappiness(x) > 0 && !J.plats.includes(x)) J.plats.push(x); }
+  }
   const livre = V.RECETTES[f.metier].slice();
   if (f.argent < V.CONFORT) livre.sort((a, b) => devis(state, f, a).cout / dishEnergy(a) - devis(state, f, b).cout / dishEnergy(b));
   for (const id of livre) {
@@ -317,7 +326,15 @@ function journee(state, maison, f, jour) {
   }
   J.couverture = besoin ? Math.min(100, Math.round((energie / besoin) * 100)) : 100;
   J.bonheur = mealHappinessDelta({ mange, couverture: J.couverture });
+  // (un citadin : son meilleur plat seulement, et une baisse en plus ; ses sorties font le reste,
+  // ECONOMIE.LOISIRS)
+  if (f.metier === 'citadin') {
+    const L = DATA.ECONOMIE.LOISIRS, B = DATA.VILLE.BONHEUR, meilleur = Math.max(0, ...Object.keys(mange).map(dishHappiness));
+    J.bonheur = B.DECLIN - L.DECLIN + meilleur + (J.couverture < 100 ? B.FAIM : 0);
+  }
   f.bonheur = Math.max(0, Math.min(DATA.VILLE.BONHEUR.MAX, f.bonheur + J.bonheur));
+  // (un citadin malheureux sort : le cinéma, le musée, l'amphithéâtre)
+  if (f.metier === 'citadin') J.sortie = sortieVille(state, f, jour);
   // l'agriculteur vend ce qu'il ne garde pas pour sa cuisine
   if (f.metier === 'agriculteur') {
     for (const item of Object.keys(f.stock)) {

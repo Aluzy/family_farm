@@ -18,6 +18,7 @@ import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
 import { respawnRocks, respawnTrees } from './outils.js';
 import { immeubleNuit, voisinsNuit } from './voisins.js';
+import { economieNuit } from './economie.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -248,6 +249,7 @@ export function runNight(state) {
   const sansCouchage = nuitSansCouchage(state).map((m) => m.id);
   recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   voisinsNuit(state); // les voisins de la transition vivent leur journée (js/engine/voisins.js)
+  economieNuit(state); // l'économie de la ville : production, fabriques, stocks (js/engine/economie.js)
   immeubleNuit(state); // les familles des immeubles de la ville aussi
   state.day += 1;
   state.awakeMs = 0;

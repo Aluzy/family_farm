@@ -1,7 +1,8 @@
 import { DATA, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
 import { canPay, fail, NO_COINS, spend } from './devices.js';
-import { addLot } from './inventory.js';
+import { addLot, takeItem } from './inventory.js';
+import { coefPrix, economie, prendreStock, venteNegoce } from './economie.js';
 import { buyItem } from './market.js';
 import { awakeHours, hourOfDay } from './clock.js';
 import { farmStep } from './energy.js';
@@ -179,41 +180,55 @@ export function townItems() {
   return Object.keys(DATA.OBJETS).filter((k) => DATA.OBJETS[k].ville);
 }
 
-// Les boutiques de la ville (VILLE.BOUTIQUES) : le prix d'un objet au comptoir (MARGE % de son
-// prix, arrondi au-dessus).
-export function shopPrice(item) {
-  return Math.ceil((DATA.OBJETS[item].prix * DATA.VILLE.BOUTIQUES.MARGE) / 100 - EPS);
+// Les boutiques de la ville (VILLE.BOUTIQUES) : le prix d'un objet au comptoir : MARGE % de son
+// prix, au cours du jour du produit de la boutique (`boutique` ; sans partie : le prix de base),
+// arrondi au-dessus.
+export function shopPrice(item, state = null, boutique = DATA.OBJETS[item] && DATA.OBJETS[item].boutique) {
+  const b = DATA.VILLE.BOUTIQUES.LISTE[boutique], c = state && b && b.produit ? coefPrix(state, b.produit) : 1;
+  return Math.ceil((DATA.OBJETS[item].prix * DATA.VILLE.BOUTIQUES.MARGE * c) / 100 - EPS);
 }
 
-// Ce que vend la boutique `id` : { nom, icone, objets: [{ item, nom, icone, prix, energie }] }
-// (null : pas de telle boutique).
-export function shopView(id) {
+// Ce que vend la boutique `id` : { nom, icone, stock (les unités de son produit ; sans partie :
+// null), objets: [{ item, nom, icone, prix, energie }] } (null : pas de telle boutique).
+export function shopView(id, state = null) {
   const b = DATA.VILLE.BOUTIQUES.LISTE[id];
   if (!b) return null;
   const objets = b.objets.filter((k) => DATA.OBJETS[k]).map((k) => {
     const o = DATA.OBJETS[k];
-    return { item: k, nom: o.nom, icone: o.icone, prix: shopPrice(k), energie: o.energie || 0 };
+    return { item: k, nom: o.nom, icone: o.icone, prix: shopPrice(k, state, id), energie: o.energie || 0 };
   });
-  return { nom: b.nom, icone: b.icone, objets };
+  const stock = state && b.produit ? Math.floor(economie(state).stocks[b.produit] || 0) : null;
+  return { nom: b.nom, icone: b.icone, stock, objets };
 }
 
 // Achète `qty` `item` au comptoir de la boutique `id` (la carte n'ouvre le comptoir que quand un
-// employé y travaille) : autant que les pièces le permettent ; ils vont dans l'inventaire.
+// employé y travaille) : autant que les pièces et le stock de la boutique le permettent (une
+// unité de son produit par objet, js/engine/economie.js) ; ils vont dans l'inventaire.
 export function buyInShop(state, id, item, qty = 1) {
   const b = DATA.VILLE.BOUTIQUES.LISTE[id];
   if (!b) return fail('Cette boutique n\'existe pas.');
   const def = DATA.OBJETS[item];
   if (!def || !b.objets.includes(item)) return fail(`${b.nom} ne vend pas cela.`);
-  const prix = shopPrice(item);
+  const prix = shopPrice(item, state, id);
   let bought = 0;
   for (let i = 0; i < Math.max(0, Math.floor(Number(qty)) || 0); i++) {
     if (!canPay(state, prix)) break;
+    if (b.produit && !prendreStock(state, b.produit, 1, prix)) {
+      if (!bought) return fail(`${b.nom} n'en a plus aujourd'hui.`);
+      break;
+    }
     spend(state, prix, `${b.nom} : ${def.nom}`);
     addLot(state, item, 1, DATA.ORIGINE.ACHETE);
     bought += 1;
   }
   if (!bought) return fail(NO_COINS);
   return { ok: true, bought, cost: bought * prix };
+}
+
+// Le joueur vend `qty` `item` au bureau de négoce (js/engine/economie.js, venteNegoce : la
+// matière qui manque à la ville, au prix du négoce).
+export function sellToNegoce(state, item, qty = 1) {
+  return venteNegoce(state, item, Math.max(0, Math.floor(Number(qty)) || 0), (it, n) => takeItem(state, it, n));
 }
 
 export function buyInTown(state, item, qty = 1) {
