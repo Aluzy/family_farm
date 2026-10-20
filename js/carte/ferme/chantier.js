@@ -424,15 +424,18 @@
         if (lieu === 'enclos' && !still) {
           if (e.to) {
             const dx = e.to.x - e.x, dy = e.to.y - e.y, l = Math.hypot(dx, dy), st = d.vitesse * dt;
-            if (Math.abs(dx) > 0.5) e.img.setFlipX(dx < 0);
+            // (la vue du trajet, choisie à son départ : de face, de dos, ou de profil retourné)
+            if (!e.vue) e.vue = Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 'face' : 'dos') : 'marche';
+            e.img.setFlipX(e.vue === 'marche' ? dx < 0 || (Math.abs(dx) <= 0.5 && e.img.flipX) : false);
             if (l <= st) { e.x = e.to.x; e.y = e.to.y; e.to = null; e.t = d.pause[0] + Math.random() * (d.pause[1] - d.pause[0]); e.pose = d.poses[Math.floor(Math.random() * d.poses.length)]; e.age = 0; } else { e.x += (dx / l) * st; e.y += (dy / l) * st; }
           } else if ((e.t -= dt) <= 0) {
             e.to = this.beastSpot(cases[Math.floor(Math.random() * cases.length)]);
+            e.vue = null; e.age = 0;
           }
         }
         let f;
         if (e.lieu === 'piece') f = Fr[d.nuit[((e.age / 1.6) | 0) % d.nuit.length]];
-        else if (e.to) f = Fr[d.marche[((e.age / d.pas) | 0) % d.marche.length]];
+        else if (e.to) { const m = d[e.vue || 'marche'] || d.marche; f = Fr[m[((e.age / d.pas) | 0) % m.length]]; }
         else if (e.pose) { const [noms, periode, actif] = d.anims[e.pose]; f = (e.age % (periode * noms.length * 2)) < periode * noms.length * actif ? Fr[noms[((e.age / periode) | 0) % noms.length]] : Fr.idle; }
         else f = Fr.idle;
         e.img.setFrame(f).setPosition(Math.round(e.x), Math.round(e.y)).setDepth(e.y);

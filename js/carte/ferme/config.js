@@ -234,20 +234,24 @@
     litPieds: 27, tableau: { dy: 10 },
   };
   // Les bêtes du Poulailler et de l'Étable de la ferme générée (chantier.js, syncBeasts) : leurs
-  // planches (HERD_SHEETS : profil droit), dehors dans l'enclos de jour[0] h à jour[1] h (comme
-  // la porte des bâtiments, ambient-life.js). Par espèce : `vitesse` (px/s), `pas` (s par image
-  // de marche), `pause` (s entre deux trajets), ce qu'elle fait à l'arrêt (anims : [images,
-  // s par image, part du temps où elle le fait]) et la nuit (nuit : images, lentement).
-  const GRAZER = { idle: 0, queue: 1, marche0: 2, marche1: 3, broute0: 4, broute1: 5, couchee0: 6, couchee1: 7 };
+  // planches (HERD_SHEETS : profil droit, puis de face et de dos, scripts/carte/betes.py), dehors
+  // dans l'enclos de jour[0] h à jour[1] h (comme la porte des bâtiments, ambient-life.js). Par
+  // espèce : `vitesse` (px/s), `pas` (s par image de marche), `pause` (s entre deux trajets), sa
+  // marche (marche : de profil ; face, dos : vers nous, de dos ; quatre temps chacune, la vue
+  // suit la direction du trajet), ce qu'elle fait à l'arrêt (anims : [images, s par image, part
+  // du temps où elle le fait]) et la nuit (nuit : images, lentement).
+  const VUES = { pas: 8, bas0: 9, bas1: 10, bas2: 11, bas3: 12, haut0: 13, haut1: 14, haut2: 15, haut3: 16 };
+  const MARCHE = { marche: ['marche0', 'pas', 'marche1', 'pas'], face: ['bas0', 'bas1', 'bas2', 'bas3'], dos: ['haut0', 'haut1', 'haut2', 'haut3'] };
+  const GRAZER = { idle: 0, queue: 1, marche0: 2, marche1: 3, broute0: 4, broute1: 5, couchee0: 6, couchee1: 7, ...VUES };
   const BETES = {
     jour: [6, 19],
     especes: {
-      poule: { key: 'poule', vitesse: 10, pas: 0.15, pause: [1, 4], marche: ['marche0', 'marche1'], nuit: ['couvee'], poses: ['picore', 'gratte'],
+      poule: { key: 'poule', vitesse: 10, pas: 0.09, pause: [1, 4], ...MARCHE, nuit: ['couvee'], poses: ['picore', 'gratte'],
         anims: { picore: [['picore0', 'picore1'], 0.12, 0.4], gratte: [['gratte', 'idle'], 0.18, 0.8] },
-        frames: { idle: 0, picore0: 1, picore1: 2, marche0: 3, marche1: 4, gratte: 5, couvee: 6, ailes: 7 } },
-      mouton: { key: 'mouton', vitesse: 6, pas: 0.25, pause: [3, 8], marche: ['marche0', 'marche1'], nuit: ['couchee0', 'couchee0', 'couchee1'], poses: ['broute', 'broute', 'queue'],
+        frames: { idle: 0, picore0: 1, picore1: 2, marche0: 3, marche1: 4, gratte: 5, couvee: 6, ailes: 7, ...VUES } },
+      mouton: { key: 'mouton', vitesse: 6, pas: 0.14, pause: [3, 8], ...MARCHE, nuit: ['couchee0', 'couchee0', 'couchee1'], poses: ['broute', 'broute', 'queue'],
         anims: { broute: [['broute0', 'broute1'], 0.5, 0.9], queue: [['queue', 'idle'], 0.22, 0.3] }, frames: GRAZER },
-      vache: { key: 'vache', vitesse: 7, pas: 0.3, pause: [4, 10], marche: ['marche0', 'marche1'], nuit: ['couchee0', 'couchee0', 'couchee1'], poses: ['broute', 'broute', 'queue'],
+      vache: { key: 'vache', vitesse: 7, pas: 0.16, pause: [4, 10], ...MARCHE, nuit: ['couchee0', 'couchee0', 'couchee1'], poses: ['broute', 'broute', 'queue'],
         anims: { broute: [['broute0', 'broute1'], 0.55, 0.9], queue: [['queue', 'idle'], 0.22, 0.3] }, frames: GRAZER },
     },
   };

@@ -127,8 +127,11 @@
   // Le seuil du Poulailler dans poulailler.png (px de l'image) : le bas de la porte.
   const COOP_SILL = { x: 22, y: 43 };
 
-  // Vaches et moutons : cases de 32×24, profil droit, sabots sur la dernière rangée.
-  const GRAZER_FRAMES = ['idle', 'queue', 'marche0', 'marche1', 'broute0', 'broute1', 'couchee0', 'couchee1'];
+  // Vaches et moutons : cases de 32×24, profil droit, sabots sur la dernière rangée ; puis
+  // (scripts/carte/betes.py) entre deux pas de profil, et quatre temps de marche de face et
+  // de dos : la vue suit la direction du trajet (walkFrame).
+  const VUES_BETE = ['pas', 'bas0', 'bas1', 'bas2', 'bas3', 'haut0', 'haut1', 'haut2', 'haut3'];
+  const GRAZER_FRAMES = ['idle', 'queue', 'marche0', 'marche1', 'broute0', 'broute1', 'couchee0', 'couchee1', ...VUES_BETE];
   const GRAZER_NEXT = {
     debout: { broute: 6, marche: 3, couche: 1 },
     marche: { broute: 5, debout: 2 },
@@ -137,7 +140,7 @@
   };
   const GRAZER_TIME = { debout: [1.5, 4], broute: [4, 10], couche: [8, 16] };   // secondes
   // Poules : cases de 16×16, profil droit, pattes sur la dernière rangée.
-  const HEN_FRAMES = ['idle', 'picore0', 'picore1', 'marche0', 'marche1', 'gratte', 'couvee', 'ailes'];
+  const HEN_FRAMES = ['idle', 'picore0', 'picore1', 'marche0', 'marche1', 'gratte', 'couvee', 'ailes', ...VUES_BETE];
   const HEN_NEXT = {
     debout: { picore: 5, marche: 4, gratte: 2, couvee: 1, ailes: 1 },
     marche: { picore: 4, marche: 2, debout: 2, course: 1 },
@@ -906,7 +909,10 @@
       let face = Math.random() < 0.5 ? 1 : -1;
       let st = 'dedans', len = 0, before = null;
       let path = [], speed = 0, stride = 2, walked = 0;   // déplacement en cours
+      let vue = 'profil';                                 // profil, bas (vers nous), haut (de dos)
       const s = scene.add.image(0, 0, o.herd[kind], 0).setOrigin(0.5, 1).setVisible(false);
+      // (une planche d'avant, sans les vues de face et de dos : de profil seulement)
+      const vues = s.texture.frameTotal - 1 > H.frames.indexOf('haut3');
 
       function enter(name) {
         before = st; st = name; me.age = 0; walked = 0;
@@ -933,7 +939,7 @@
       function draw(frame, alpha, dy) {
         // Sur le seuil (en sortant ou en rentrant), la bête passe devant son bâtiment.
         const front = (st === 'sort' || st === 'rentre') && foldUp(f) ? f.sprite.depth + 0.6 : 0;
-        s.setFrame(F[frame]).setPosition(me.x, me.y + (dy || 0)).setFlipX(face < 0).setDepth(Math.max(me.y, front))
+        s.setFrame(F[frame]).setPosition(me.x, me.y + (dy || 0)).setFlipX(face < 0 && !/^(bas|haut)\d/.test(frame)).setDepth(Math.max(me.y, front))
           .setAlpha(alpha == null ? 1 : alpha).setVisible(true);
       }
       // Avance le long du chemin ; renvoie la distance qui reste jusqu'au dernier point.
@@ -942,12 +948,17 @@
         const dx = p.x - me.x, dy = p.y - me.y, left = Math.hypot(dx, dy), d = Math.min(left, speed * dt);
         if (left > 0.001) { me.x += (dx / left) * d; me.y += (dy / left) * d; }
         if (Math.abs(dx) > 1) face = dx > 0 ? 1 : -1;
+        if (left > 1) vue = Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 'bas' : 'haut') : 'profil';
         walked += d;
         if (left - d < 0.3 && path.length > 1) { path.shift(); return Infinity; }
         return path.length > 1 ? Infinity : left - d;
       }
-      const walkFrame = () => (st === 'course' ? (Math.floor(walked / stride) % 2 ? 'marche1' : 'marche0')
-        : ['marche0', 'idle', 'marche1', 'idle'][Math.floor(walked / stride) % 4]);
+      const walkFrame = () => {
+        const k = Math.floor(walked / stride) % 4;
+        if (vues && vue !== 'profil') return vue + k;
+        if (st === 'course') return k % 2 ? 'marche1' : 'marche0';
+        return ['marche0', vues ? 'pas' : 'idle', 'marche1', vues ? 'pas' : 'idle'][k];
+      };
 
       if (placed) {                              // elle est déjà dehors (le jeu s'ouvre en journée)
         const spot = spotFor(f, me, H.half) || foot(f);
