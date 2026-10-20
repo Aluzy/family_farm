@@ -70,7 +70,13 @@ Le Marché vend toujours les outils.
   - des bois (arbres clairs, pins, buissons), plus denses vers les bords ;
   - la terre labourée et celle des parcelles, sèche ou arrosée (`scripts/carte/terre_bords.py`,
     puis `terre_arrosee.py`) : des sillons qui ondulent, des mottes, un caillou ;
-  - 64 rochers, des fleurs, des touffes d'herbe haute. Les rochers (`scripts/carte/rochers.py`,
+  - 64 rochers, des fleurs, des touffes d'herbe haute (200 zones de 3 à 6 tuiles de rayon,
+    jusqu'à quatre touffes par case : environ 20 000 ; leurs images ne sont créées que près de la
+    vue, par morceaux de 256 px, `syncTallGrass`) : les trois herbes du modèle en quatre
+    teintes (vert, vert roussi, brun léger, mauve foncé ; chaque zone a la sienne, que la
+    plupart de ses touffes prennent) et, pour une touffe sur cinq, fleuries (une tige d'un
+    pixel, une petite fleur au bout, posée sans la teinte du sol : `scripts/carte/herbe_haute.py`,
+    `assets/herbe_haute_fleurs.png`). Les rochers (`scripts/carte/rochers.py`,
     `assets/rochers.png`, le bloc « rochers » de la planche) sont dessinés dans le style des
     blocs : la pierre des bâtiments taillée en pans, un contour sombre, de la mousse sur les
     gros. Trois tailles : 2 × 2 cases, 1 × 2 (debout ou couché) et 1 × 1 (`DESSINS_ROCHERS` :

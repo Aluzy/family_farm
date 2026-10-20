@@ -14,6 +14,7 @@
   const F = global.FermeCarte;
   const { T, MAP, OCCLUDER_ALPHA, TALL_GRASS, SPRITE_CHECKS } = F.C;
   const DECOR_MARGE = 64;           // px autour de la vue : dessiné quand même (voir cullDecor)
+  const HERBE_MORCEAU = 256;        // px : le côté d'un morceau d'herbe haute (voir makeTallGrass)
 
   F.partie({
 
@@ -152,51 +153,109 @@
 
     /* ---------- l'herbe haute ---------- */
 
+    // Les touffes sont des milliers (js/engine/ferme-generee.js) : leurs images ne sont créées
+    // que par morceaux de carte (HERBE_MORCEAU px de côté), quand un morceau approche de la vue
+    // (cullDecor : à moins de HERBE_MORCEAU px), et détruites quand il s'en éloigne (au-delà du
+    // double). `this.grassAll` : toutes les touffes (leur image quand leur morceau est là) ;
+    // `this.tallGrass` : celles qui ont leur image.
     makeTallGrass() {
-      for (const g of this.tallGrass || []) g.img.destroy();
+      for (const g of this.tallGrass || []) this.dropGrass(g);
       this.tallGrass = [];
+      this.grassAll = [];
+      this.grassChunks = new Map();
+      this.grassKey = this.cullKey = '';
       const raw = this.mapRaw;
       if (!raw || !this.has(TALL_GRASS.key)) return;
       const layer = raw.layers.find((l) => l.type === 'objectgroup' && l.name === 'herbe_haute');
       const rows = Math.floor(this.textures.get(TALL_GRASS.key).frameTotal / TALL_GRASS.frames) || 1;
+      const fleurs = this.has(TALL_GRASS.fleurs.key);
       for (const o of (layer && layer.objects) || []) {
         const base = (Math.max(0, Number(o.type) | 0) % rows) * TALL_GRASS.frames;
-        const img = this.add.image(Math.round(o.x), Math.round(o.y), TALL_GRASS.key, base).setOrigin(0.5, 1).setDepth(o.y);
-        this.tallGrass.push({ img, x: o.x, y: o.y, base, cell: Math.floor(o.y / T - 0.01) * raw.width + Math.floor(o.x / T), t: -1, dir: 1, inside: false });
+        const g = { img: null, fleurs: null, x: Math.round(o.x), y: o.y, base, fleurie: fleurs && Math.floor(base / TALL_GRASS.frames / 3) % 2 === 1,
+          tint: 0xffffff, cell: Math.floor(o.y / T - 0.01) * raw.width + Math.floor(o.x / T), t: -1, dir: 1, inside: false };
+        this.grassAll.push(g);
+        const k = Math.floor(g.x / HERBE_MORCEAU) + ',' + Math.floor(g.y / HERBE_MORCEAU);
+        if (!this.grassChunks.has(k)) this.grassChunks.set(k, { list: [], on: false });
+        this.grassChunks.get(k).list.push(g);
       }
       this.tintTallGrass();
     },
 
     // La teinte de chaque touffe : la couleur moyenne du fond autour de son pied, divisée par
-    // celle de l'herbe la plus claire (sur laquelle les touffes sont dessinées).
+    // celle de l'herbe la plus claire (sur laquelle les touffes sont dessinées). Lue une fois
+    // dans le fond entier.
     tintTallGrass() {
-      let ctx = null;
-      try { ctx = this.textures.get('ground').getContext(); } catch (e) { return; }
-      if (!ctx) return;
-      const under = [];
-      for (const g of this.tallGrass) {
+      let tex = null;
+      try { tex = this.textures.get('ground'); } catch (e) { return; }
+      const ctx = tex && tex.getContext && tex.getContext();
+      if (!ctx || !this.grassAll.length) return;
+      const W = ctx.canvas.width, H = ctx.canvas.height;
+      let d;
+      try { d = ctx.getImageData(0, 0, W, H).data; } catch (e) { return; }
+      const under = this.grassAll.map((g) => {
         let r = 0, v = 0, b = 0, n = 0;
-        try {
-          const d = ctx.getImageData(Math.round(g.x) - 8, Math.round(g.y) - 4, 16, 6).data;
-          for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 200) { r += d[i]; v += d[i + 1]; b += d[i + 2]; n++; }
-        } catch (e) { return; }
-        under.push(n ? [r / n, v / n, b / n] : null);
-      }
+        for (let y = Math.max(0, g.y - 4); y < Math.min(H, g.y + 2); y++) {
+          for (let x = Math.max(0, g.x - 8); x < Math.min(W, g.x + 8); x++) {
+            const i = (y * W + x) * 4;
+            if (d[i + 3] > 200) { r += d[i]; v += d[i + 1]; b += d[i + 2]; n++; }
+          }
+        }
+        return n ? [r / n, v / n, b / n] : null;
+      });
       const lum = (c) => c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
       const seen = under.filter(Boolean).sort((a, b) => lum(a) - lum(b));
       if (!seen.length) return;
       const ref = seen[Math.floor((seen.length - 1) * 0.9)];        // l'herbe claire (sans les reflets isolés)
-      this.tallGrass.forEach((g, k) => {
+      this.grassAll.forEach((g, k) => {
         const c = under[k];
         if (!c) return;
         // nuance propre à la touffe (toujours la même : tirée de sa position)
         const n = Math.sin(g.x * 12.9898 + g.y * 78.233) * 43758.5453;
         const own = 1 - TALL_GRASS.shade * (n - Math.floor(n));
         const ch = (i) => Math.round(255 * own * Math.pow(Math.min(1, c[i] / Math.max(1, ref[i])), TALL_GRASS.contrast));
-        g.img.setTint((ch(0) << 16) | (ch(1) << 8) | ch(2));
+        g.tint = (ch(0) << 16) | (ch(1) << 8) | ch(2);
+        if (g.img) g.img.setTint(g.tint);
       });
       this.grassCheck = 0;
       this.grassPrev = null;
+    },
+
+    // Les morceaux d'herbe haute près de la vue : leurs images créées ; loin : détruites.
+    syncTallGrass(v) {
+      if (!this.grassChunks || !this.grassChunks.size) return;
+      const C = HERBE_MORCEAU;
+      const cle = Math.floor(v.x / C) + ',' + Math.floor(v.y / C) + ',' + Math.ceil(v.right / C) + ',' + Math.ceil(v.bottom / C);
+      if (cle === this.grassKey) return;
+      this.grassKey = cle;
+      let change = false;
+      for (const [k, ch] of this.grassChunks) {
+        const [cx, cy] = k.split(',').map(Number);
+        const x0 = cx * C, y0 = cy * C, x1 = x0 + C, y1 = y0 + C;
+        const loin = (m) => x0 > v.right + m || x1 < v.x - m || y0 > v.bottom + m || y1 < v.y - m;
+        if (!ch.on && !loin(C)) {
+          ch.on = change = true;
+          for (const g of ch.list) {
+            g.img = this.add.image(g.x, g.y, TALL_GRASS.key, g.base).setOrigin(0.5, 1).setDepth(g.y).setTint(g.tint);
+            if (g.fleurie) g.fleurs = this.add.image(g.x, g.y, TALL_GRASS.fleurs.key, g.base).setOrigin(0.5, 1).setDepth(g.y + 0.01);
+            g.t = -1;
+          }
+        } else if (ch.on && loin(2 * C)) {
+          ch.on = false;
+          change = true;
+          for (const g of ch.list) this.dropGrass(g);
+        }
+      }
+      if (change) {
+        this.tallGrass = this.grassAll.filter((g) => g.img);
+        this.grassCheck = 0;
+      }
+    },
+
+    dropGrass(g) {
+      if (g.img) g.img.destroy();
+      if (g.fleurs) g.fleurs.destroy();
+      g.img = g.fleurs = null;
+      g.inside = false;
     },
 
     // À chaque image : le personnage entre dans une touffe en marchant : elle penche dans le
@@ -207,7 +266,10 @@
       this.grassCheck -= dt;
       if (this.grassCheck <= 0) {                  // les cases labourées : plus d'herbe haute
         this.grassCheck = 500;
-        for (const g of list) g.img.setVisible(!(this.dirt && this.dirt.has(g.cell)));
+        for (const g of list) {
+          g.img.setVisible(!(this.dirt && this.dirt.has(g.cell)));
+          if (g.fleurs) g.fleurs.setVisible(g.img.visible);
+        }
       }
       const p = this.fermier && !this.room ? this.fermier.pos() : null;
       this.grassPrev = K.herbe(list, p, this.grassPrev, dt);
@@ -225,6 +287,7 @@
       const cle = Math.round(v.x / 8) + ',' + Math.round(v.y / 8) + ',' + Math.round(v.width) + ',' + Math.round(v.height);
       if (cle === this.cullKey) return;
       this.cullKey = cle;
+      this.syncTallGrass(v);
       const M = DECOR_MARGE, x0 = v.x - M, y0 = v.y - M, x1 = v.right + M, y1 = v.bottom + M;
       const marque = (img) => {
         if (!img) return;
@@ -238,7 +301,7 @@
       };
       for (const o of this.occluders || []) { marque(o.img); marque(o.shake); }
       for (const o of this.rocks || []) marque(o.img);
-      for (const g of this.tallGrass || []) marque(g.img);
+      for (const g of this.tallGrass || []) { marque(g.img); marque(g.fleurs); }
       for (const g of (this.gatherables || new Map()).values()) g.imgs.forEach(marque);
       for (const e of (this.blocks || new Map()).values()) marque(e.img);
     },
