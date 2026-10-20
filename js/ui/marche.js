@@ -145,7 +145,7 @@ function hoeSlot() {
     `${H.NOM} : ${owned ? 'déjà achetée' : `${formatCoins(H.PRIX)} pièces`}`);
 }
 
-// La pioche, la hache et la canne à pêche, après la houe : achetées une fois, comme elle.
+// La pioche, la hache, la faux et la canne à pêche, après la houe : achetées une fois, comme elle.
 function toolSlot(id) {
   const def = toolDef(id);
   const owned = hasTool(state, id);
@@ -156,6 +156,7 @@ function toolSlot(id) {
 const OUTILS_DESCRIPTIONS = {
   hache: 'Coupe les arbres de la carte : chaque coup lâche un morceau de bois 🪵 au sol ; au 3e coup, l\'arbre tombe et en lâche 2 de plus. Marche dessus pour les ramasser.',
   pioche: 'Casse les rochers de la carte : chaque coup lâche une pierre 🪨 au sol ; au 3e coup, le rocher se brise et en lâche 2 de plus (il revient 1 à 3 jours plus tard). Marche dessus pour les ramasser.',
+  faux: `Fauche l'herbe haute de la carte : chaque touffe fauchée lâche ${DATA.FAUX.PAILLE} paille 🪹 au sol (elle repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard). Marche dessus pour la ramasser. La paille nourrit les moutons et les vaches.`,
   canne: 'Pêche dans l\'étang et la mare de la carte : truites 🐟‍🌈 et brochets 🐟‍🦷 (le brochet vit surtout dans l\'étang).',
   triporteur: `Un tricycle à caisse : en selle, tu te déplaces ${DATA.TRIPORTEUR.VITESSE} fois plus vite sur toutes les cartes (pas dans un intérieur ni dans la grotte).`,
 };
@@ -249,7 +250,7 @@ export function renderComptoir(fenetre = false) {
     const items = Object.keys(DATA.OBJETS).filter((k) => isBuyable(k) && DATA.OBJETS[k].categorie !== 'graine' && rayon.match(k));
     const chapitre = !hasHoe(state) ? '<p class="row"><button type="button" class="btn small" data-action="aller" data-window="chapitres">📜 Voir le chapitre</button></p>' : '';
     const slots = items.map((k) => buySlot(k, 'acheter'));
-    body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('pioche'), toolSlot('hache'), toolSlot('canne'), toolSlot('triporteur'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
+    body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('pioche'), toolSlot('hache'), toolSlot('faux'), toolSlot('canne'), toolSlot('triporteur'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
   } else if (tab.id === 'animaux') {
     body = slotsHtml(ESPECES.map(animalSlot), 'Aucun animal à vendre pour l\'instant.');
   } else if (tab.id === 'meubles') {

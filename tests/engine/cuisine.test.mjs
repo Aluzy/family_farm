@@ -41,8 +41,9 @@ test('DATA Lot 5 : stations, recettes, farine et huile', () => {
   assertEqual([R.compote.station, R.compote.temps, R.compote.ingredients], ['cuisine', 8, [{ ou: ['pomme', 'poire'], qte: 3 }]]);
   assertEqual([R.tarte_pommes.station, R.tarte_pommes.temps], ['four', 23]);
   assertEqual([R.farine.station, R.farine.temps, R.farine.sortie], ['moulin', 5, 'farine']);
-  // Version 1.1 : 1 blé moulu rend aussi 1 paille, et la mouture se lance au Moulin.
-  assertEqual([R.farine.ingredients, R.farine.qteSortie, R.farine.sousProduit, R.farine.horsLivre], [[{ item: 'ble', qte: 1 }], 1, { item: 'paille', qte: 1 }, true]);
+  // Version 1.1 : la mouture se lance au Moulin ; version 1.23 : 1 blé ne rend plus que de la
+  // farine (la paille se fauche).
+  assertEqual([R.farine.ingredients, R.farine.qteSortie, R.farine.sousProduit, R.farine.horsLivre], [[{ item: 'ble', qte: 1 }], 1, undefined, true]);
   assertEqual([R.huile.sousProduit, R.huile.horsLivre], [undefined, undefined], 'la Presse ne change pas');
   assertEqual([R.huile.station, R.huile.temps, R.huile.ingredients], ['presse', 10, [{ item: 'graine_tournesol', qte: 3 }]]);
   assertEqual([DATA.OBJETS.farine.energie, DATA.OBJETS.huile.energie], [scaleEnergie(10), scaleEnergie(10)]);
@@ -179,7 +180,7 @@ test('Lot 12 : chaque production de la ferme se vend deux fois son ancien prix',
   // à la liste attendue : ni oubli, ni objet en trop.
   assertEqual([...productionItemKeys()].sort(), Object.keys(PRIX_PRODUCTIONS_AVANT_LOT_12).sort());
   // Les anciennes viandes gardent leur prix sans passer par le doublement ; la
-  // paille (sous-produit du Moulin) n'est pas doublée non plus.
+  // paille (fauchée) n'est pas doublée non plus.
   for (const [id, prix] of Object.entries(PRIX_ANCIENNES_VIANDES)) {
     assertEqual([productionItemKeys().has(id), DATA.OBJETS[id].prix, sellPrice(id)], [false, prix, prix], id);
   }
@@ -972,7 +973,7 @@ test('recipeStatus : absente, occupée, manque ou prête, avec le détail des in
   assertEqual(recipeStatus(s, 'pain').code, 'occupee', 'le Four est pris');
 });
 
-test('Moulin : 1 blé → 1 farine et 1 paille en 5 s, 0,02 kWh/s pris sur les batteries', () => {
+test('Moulin : 1 blé → 1 farine (sans paille) en 5 s, 0,02 kWh/s pris sur les batteries', () => {
   const s = atelier();
   setInv(s, { ble: 1 });
   assertEqual(startMilling(s, 1), { ok: true, quantite: 1, enAttente: 0 });
@@ -982,7 +983,7 @@ test('Moulin : 1 blé → 1 farine et 1 paille en 5 s, 0,02 kWh/s pris sur les b
   assertEqual(s.stations.moulin.appareil.conso, kwh(0.02), 'consommation 0,02 kWh/s');
   // (l'usure, qui monte pendant la marche, allonge la préparation de quelques millisecondes)
   runFor(s, 0.4);
-  assertEqual([countItem(s, 'farine'), countItem(s, 'paille')], [1, 1], '1 blé donne 1 farine et 1 paille');
+  assertEqual([countItem(s, 'farine'), countItem(s, 'paille')], [1, 0], '1 blé donne 1 farine, pas de paille');
   assertEqual(s.stations.moulin.tache, null);
   assertEqual(s.batteries[0].chargeMwh, kwh(6 - 0.1), `5 s × 0,02 = 0,1 kWh : ${s.batteries[0].chargeMwh}`);
   tick(s, 0.2);
@@ -1122,7 +1123,7 @@ test('Moulin et Presse partagent les batteries : chacun tire sa part', () => {
   assertEqual(s.batteries[0].chargeMwh, kwh(6 - 0.1 - 0.3), `${s.batteries[0].chargeMwh}`);
 });
 
-/* ---------- version 1.1 : le Moulin moud par quantité, et donne de la paille ---------- */
+/* ---------- version 1.1 : le Moulin moud par quantité (la paille : version 1.23, la faux) ---------- */
 
 test('Moulin : la mouture ne se lance plus depuis le Livre de recette', () => {
   const s = atelier();
@@ -1134,18 +1135,18 @@ test('Moulin : la mouture ne se lance plus depuis le Livre de recette', () => {
   assertEqual(Object.keys(DATA.RECETTES).filter((id) => DATA.RECETTES[id].horsLivre), ['farine']);
 });
 
-test('Moulin : moudre 3 blés donne 3 farines et 3 pailles, un blé après l\'autre', () => {
+test('Moulin : moudre 3 blés donne 3 farines, un blé après l\'autre', () => {
   const s = atelier();
   setInv(s, { ble: 5 });
   assertEqual(startMilling(s, 3), { ok: true, quantite: 3, enAttente: 2 });
   assertEqual(countItem(s, 'ble'), 2, 'les 3 blés sortent du stock tout de suite');
   assertEqual([millPending(s), millTimeLeft(s)], [3, 15]);
   runFor(s, 5.4);
-  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), millPending(s)], [1, 1, 2], 'le premier blé est moulu, les autres suivent');
+  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), millPending(s)], [1, 0, 2], 'le premier blé est moulu, les autres suivent');
   runFor(s, 5.4);
-  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), millPending(s)], [2, 2, 1]);
+  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), millPending(s)], [2, 0, 1]);
   runFor(s, 5.4);
-  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), millPending(s)], [3, 3, 0]);
+  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), millPending(s)], [3, 0, 0]);
   assertEqual([s.stations.moulin.tache, millTimeLeft(s), countItem(s, 'ble')], [null, 0, 2]);
   // 3 blés × 5 s × 0,02 kWh/s = 0,3 kWh : la même énergie que trois moutures séparées
   assertEqual(s.batteries[0].chargeMwh, kwh(6 - 0.3));
@@ -1190,7 +1191,7 @@ test('Moulin : du blé ajouté pendant qu\'il tourne se met à la suite', () => 
   assertEqual(s.stations.moulin.tache.resteMs, reste, 'le blé en cours n\'est pas dérangé');
   assertEqual([millPending(s), countItem(s, 'ble')], [5, 1]);
   runFor(s, 30);
-  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), s.stations.moulin.tache], [5, 5, null]);
+  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), s.stations.moulin.tache], [5, 0, null]);
 });
 
 test('Moulin : annuler rend le blé en attente, pas celui qui est en train d\'être moulu', () => {
@@ -1204,7 +1205,7 @@ test('Moulin : annuler rend le blé en attente, pas celui qui est en train d\'ê
   assertEqual(s.silo.ble, 3);
   assertEqual(cancelMilling(s).ok, false, 'un seul blé, en cours : rien à reprendre');
   runFor(s, 5.4);
-  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), s.stations.moulin.tache], [1, 1, null]);
+  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), s.stations.moulin.tache], [1, 0, null]);
 });
 
 test('Moulin : la nuit termine seulement le blé en cours, le reste reprend au réveil', () => {
@@ -1215,8 +1216,8 @@ test('Moulin : la nuit termine seulement le blé en cours, le reste reprend au r
   const charge = s.batteries[0].chargeMwh;
   s.awakeMs = 30000;
   const r = sleep(s);
-  assertEqual(r.termine, { farine: 1, paille: 1 }, 'un seul blé fini pendant la nuit');
-  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), millPending(s)], [1, 1, 9]);
+  assertEqual(r.termine, { farine: 1 }, 'un seul blé fini pendant la nuit');
+  assertEqual([countItem(s, 'farine'), countItem(s, 'paille'), millPending(s)], [1, 0, 9]);
   assertEqual(s.stations.moulin.tache.resteMs, 5000, 'le blé suivant attend le matin, entier');
   assertEqual(s.batteries[0].chargeMwh, charge, 'pas d\'électricité prise pendant la nuit');
   runFor(s, 5.4);
@@ -1235,12 +1236,12 @@ test('Moulin : un long pas de temps moud plusieurs blés à la suite (hors-ligne
   storeWheat(s, 6);
   assert(startMilling(s, 6).ok);
   const r = simulateOffline(s, 17);
-  assertEqual(r.terminees, { farine: 3, paille: 3 }, '17 s : 3 blés moulus');
+  assertEqual(r.terminees, { farine: 3 }, '17 s : 3 blés moulus');
   assertEqual(r.enCours.map((e) => [e.station, e.recette, e.quantite]), [['moulin', 'farine', 3]]);
   assertEqual(r.enCours[0].reste, 13, '3 s sur le blé en cours + 2 blés de 5 s');
   const fin = simulateOffline(s, 600);
-  assertEqual([fin.terminees, fin.enCours, s.stations.moulin.tache], [{ farine: 3, paille: 3 }, [], null]);
-  assertEqual([countItem(s, 'farine'), countItem(s, 'paille')], [6, 6]);
+  assertEqual([fin.terminees, fin.enCours, s.stations.moulin.tache], [{ farine: 3 }, [], null]);
+  assertEqual([countItem(s, 'farine'), countItem(s, 'paille')], [6, 0]);
 });
 
 test('Moulin : la Préparation rapide raccourcit chaque blé du lot', () => {
@@ -1250,7 +1251,7 @@ test('Moulin : la Préparation rapide raccourcit chaque blé du lot', () => {
   startMilling(s, 3);
   assertEqual([s.stations.moulin.tache.dureeMs, millTimeLeft(s)], [4000, 12]);
   runFor(s, 12.6);
-  assertEqual([countItem(s, 'farine'), countItem(s, 'paille')], [3, 3]);
+  assertEqual([countItem(s, 'farine'), countItem(s, 'paille')], [3, 0]);
 });
 
 test('Dormir : une préparation en cours se termine immédiatement', () => {
@@ -1262,9 +1263,9 @@ test('Dormir : une préparation en cours se termine immédiatement', () => {
   assert(s.stations.four.tache.resteMs > 7000, 'le pain est loin d\'être fini');
   s.awakeMs = 30000;
   const r = sleep(s);
-  assertEqual([countItem(s, 'pain'), countItem(s, 'farine'), countItem(s, 'paille')], [1, 1, 1]);
+  assertEqual([countItem(s, 'pain'), countItem(s, 'farine'), countItem(s, 'paille')], [1, 1, 0]);
   assertEqual([s.stations.four.tache, s.stations.moulin.tache], [null, null], 'stations libérées');
-  assertEqual(r.termine, { pain: 1, farine: 1, paille: 1 });
+  assertEqual(r.termine, { pain: 1, farine: 1 });
   s.awakeMs = 30000;
   assertEqual(sleep(s).termine, {}, 'rien la nuit suivante');
 });

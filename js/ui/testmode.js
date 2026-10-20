@@ -148,7 +148,7 @@ registerActions({
   },
   'test-outils': () => {
     applyResult(testAllTools(state));
-    notify('Houe, pioche, hache et canne en main');
+    notify('Houe, pioche, hache, faux et canne en main');
   },
   'test-atelier': () => {
     const result = applyResult(testBuildAtelier(state));

@@ -101,10 +101,10 @@ test('Lot 11 : préparations terminées pendant l\'absence', () => {
   assert(startMilling(s, 1).ok, 'lancer la mouture');
   const r = simulateOffline(s, 10 * 60);
   const tri = (o) => Object.keys(o).sort().map((k) => [k, o[k]]);
-  assertEqual(tri(r.terminees), [['farine', 1], ['huile', 1], ['paille', 1], ['pain', 1]], 'la paille du blé moulu est comptée aussi');
+  assertEqual(tri(r.terminees), [['farine', 1], ['huile', 1], ['pain', 1]], 'version 1.23 : le Moulin ne donne plus de paille');
   assertEqual(r.enCours, []);
   for (const id of ['four', 'moulin', 'presse']) assertEqual(s.stations[id].tache, null, `${id} libre`);
-  assertEqual([countItem(s, 'pain'), countItem(s, 'farine'), countItem(s, 'huile'), countItem(s, 'paille')], [1, 1, 1, 1]);
+  assertEqual([countItem(s, 'pain'), countItem(s, 'farine'), countItem(s, 'huile'), countItem(s, 'paille')], [1, 1, 1, 0]);
   assertEqual(s.campagne.compteurs.pains, 1, 'le pain compte pour le chapitre');
 });
 
@@ -215,7 +215,7 @@ test('Lot 11 : deux absences successives s\'additionnent dans un seul bilan', ()
   const b = simulateOffline(s, 9 * 3600);
   const m = mergeOfflineReports(a, b);
   assertEqual([m.demande, m.simule, m.plafonne], [60 + 9 * 3600, 60 + 28800, true]);
-  assertEqual(m.terminees, { farine: 2, paille: 2 });
+  assertEqual(m.terminees, { farine: 2 });
   assertEqual([m.energieDebut, m.energieFin], [a.energieDebut, b.energieFin]);
   assert(near(m.energieProduite, a.energieProduite + b.energieProduite));
   assertEqual(mergeOfflineReports(null, b), b);
@@ -384,7 +384,7 @@ test('notifications : les tâches automatisées par la technologie ne sont pas s
   assertEqual(notifTypes(s).sort(), ['arrosage', 'poules', 'tonte']);
   testUnlockAllTechs(s);
   assertEqual(notifTypes(s), [], 'arrosage, nourrissage et tonte sont automatiques');
-  // la paille, elle, n'est automatisée par aucune technologie : il faut moudre du blé
+  // la paille, elle, n'est automatisée par aucune technologie : il faut la faucher
   setStraw(s, 0);
   assertEqual(notifTypes(s), ['paille']);
 });

@@ -1,12 +1,13 @@
 # Ce qu'on ramasse à la main sur la ferme générée (docs/carte-generee.md, étape 3) : la petite
 # pierre, le morceau de bois et l'herbe, posés au sol (le bas de l'image est le pied), puis une
-# grappe de baies (posée plusieurs fois sur un buisson) : quatre images de 16 × 16 côte à côte.
+# grappe de baies (posée plusieurs fois sur un buisson), puis la paille que la faux lâche (une
+# gerbe couchée, liée au milieu) : cinq images de 16 × 16 côte à côte.
 #
 #   python3 scripts/carte/ramassables.py            écrit assets/ramassables.png
 #   python3 scripts/carte/ramassables.py --apercu   écrit aussi apercu_ramassables.png
 #
 # Même ordre que js/carte/ferme/config.js (RAMASSABLES.frames) : petite_pierre, morceau_bois,
-# herbe, baies. La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
+# herbe, baies, paille. La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
 # sombre, sans les quatre coins (pas de carré) et sans contour ; au bas milieu de l'image. Les gris sont ceux des rochers de la carte, les bruns ceux des troncs, les verts ceux de
 # l'herbe haute ; contour d'un pixel dans la teinte très sombre de la matière, lumière en haut à
 # gauche.
@@ -27,6 +28,8 @@ PALETTE = {
     'G': '#24502a', 'g': '#3a7a34', 'l': '#5aa040', 'L': '#8cc85a',
     # baies : du plus clair au plus sombre
     'h': '#ff9c8c', 'r': '#e8463e', 'm': '#c22a30', 'n': '#921c26', 'N': '#5e121a',
+    # paille : du plus clair au plus sombre, et le lien
+    'p': '#fbe7a0', 'P': '#e9c464', 'q': '#c99a3a', 'Q': '#9a6e24', 'x': '#7a4a1c',
 }
 BAIES = [
     '.hr.',
@@ -115,8 +118,29 @@ def grappe():
     return im
 
 
+# la paille : une gerbe couchée, ses tiges dépassent des deux bouts, liée au milieu
+PAILLE = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '..p.pp.x.pp.p...',
+    '.pPpPPPxPPpPpP..',
+    '..PqPqPxqPqPqp..',
+    '.qQqQqqxQqQqQq..',
+    '..QQ.QQxQQ.QQ...',
+    '................',
+    '................',
+]
+
+
 def main():
-    images = [dessin(d, c) for d, c in zip(DESSINS, CONTOURS)] + [grappe()]
+    images = [dessin(d, c) for d, c in zip(DESSINS, CONTOURS)] + [grappe(), dessin(PAILLE, '#4a3010')]
     sheet = rangee(images, 16, 16)
     sheet.save(os.path.join(ASSETS, 'ramassables.png'))
     print(f'assets/ramassables.png : {len(images)} images de 16 × 16')

@@ -90,6 +90,7 @@ export const GAME_ACTIONS = {
   'axe-toggle': 'Ranger la hache',
   'pick-toggle': 'Ranger la pioche',
   'rod-toggle': 'Ranger la canne à pêche',
+  'scythe-toggle': 'Ranger la faux',
   'upgrade-tank': 'Améliorer ou agrandir',
   'robot-autonomie': 'Améliorer ou agrandir',
   'upgrade-fridge': 'Améliorer ou agrandir',

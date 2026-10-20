@@ -168,7 +168,7 @@ const HELP = {
     return {
       nom: 'Moutons et vaches',
       role: `Les moutons et les vaches vivent à l'Étable et s'achètent au Marché. Un mouton prend ${formatPlaces(P.PLACES_PAR_MOUTON)}, une vache ${formatPlaces(P.PLACES_PAR_VACHE)}. Une place achetée reste acquise.`,
-      conso: `Chaque nuit, ${formatStraw(M.pailleParNuit)} par mouton et ${formatStraw(V.pailleParNuit)} par vache. La paille vient du Moulin : 1 blé moulu donne ${millOutputText()}. Elle ne s'achète pas au Marché.`,
+      conso: `Chaque nuit, ${formatStraw(M.pailleParNuit)} par mouton et ${formatStraw(V.pailleParNuit)} par vache. La paille se fauche : la faux en main (Marché ou Atelier), chaque touffe d'herbe haute de la carte fauchée en donne ${formatStraw(DATA.FAUX.PAILLE)}, à ramasser au sol ; la touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard. Elle ne s'achète pas au Marché.`,
       prod: `Un mouton nourri ${M.joursLaine} nuits donne ${M.laineParTonte} laine (à tondre). Une vache nourrie donne ${V.laitParNuit} lait la nuit même.`,
       note: `Préparer l'Étable pour eux : ${costLabel(P.PRIX_CONSTRUCTION)} pour ${formatPlaces(P.PLACES_DEPART)} ; ensuite ${formatNumber(P.PRIX_PLACE)} 💰 la place, +${formatNumber(P.CROISSANCE - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre. ${alpageText()}`,
     };
@@ -199,9 +199,9 @@ const HELP = {
   }),
   moulin: () => ({
     nom: 'Moulin',
-    role: 'Moud le blé en farine et en paille. Tout se fait dans le Moulin lui-même : « Moudre » 1, 5 ou 10 blés. Appareil électrique : interrupteur, usure, pannes. Il ne consomme du courant que quand il tourne.',
+    role: 'Moud le blé en farine. Tout se fait dans le Moulin lui-même : « Moudre » 1, 5 ou 10 blés. Appareil électrique : interrupteur, usure, pannes. Il ne consomme du courant que quand il tourne.',
     conso: `${formatNumber(DATA.STATIONS.moulin.whParS)} Wh/s pendant qu'il tourne, et ${formatQty(DATA.RECETTES.farine.ingredients[0].qte)} blé par mouture (celui de l'inventaire d'abord, puis celui du Silo).`,
-    prod: `1 blé donne ${millOutputText()}, en ${formatQty(DATA.RECETTES.farine.temps)} s. La farine sert en cuisine (${recipesUsing([DATA.RECETTES.farine.sortie]).join(', ')}) ; la paille nourrit les moutons et les vaches.`,
+    prod: `1 blé donne ${millOutputText()}, en ${formatQty(DATA.RECETTES.farine.temps)} s. La farine sert en cuisine (${recipesUsing([DATA.RECETTES.farine.sortie]).join(', ')}).`,
     note: 'Les blés sont moulus un par un. Sans énergie, le Moulin attend. La nuit, le blé en train d\'être moulu se termine ; ceux qui attendent reprennent au réveil. Tu peux reprendre le blé en attente.',
   }),
   presse: () => ({
@@ -240,10 +240,11 @@ const HELP = {
       nom: 'Outils',
       icone: '🛠️',
       lignes: [
-        ['Achat', `Chaque outil s'achète une fois au Marché, puis se choisit dans la barre d'outils de la carte : ${[DATA.HOUE, H, P, DATA.CANNE].map((o) => `${o.ICONE} ${o.NOM.toLowerCase()} ${formatNumber(o.PRIX)} 💰`).join(' · ')}.`],
+        ['Achat', `Chaque outil s'achète une fois au Marché, puis se choisit dans la barre d'outils de la carte : ${[DATA.HOUE, H, P, DATA.FAUX, DATA.CANNE].map((o) => `${o.ICONE} ${o.NOM.toLowerCase()} ${formatNumber(o.PRIX)} 💰`).join(' · ')}.`],
         ['Houe', `Change une tuile d'herbe en terre à cultiver : ${formatNumber(C.labourer)} d'énergie la tuile.`],
         ['Hache', `Touche un arbre (à la ferme ou sur le chemin de la ville) : ${formatNumber(C.couper)} d'énergie par coup, et ${formatNumber(H.BOIS)} bois qui tombe au sol. L'arbre tombe au ${H.COUPES}e coup, lâche ${formatNumber(H.CHUTE)} bois de plus là où il touche le sol, et repousse ${H.RETOUR[0]} à ${H.RETOUR[1]} jours plus tard. Marche sur le bois pour le ramasser.`],
         ['Pioche', `Touche un rocher : ${formatNumber(C.piocher)} d'énergie par coup, et ${formatNumber(P.PIERRE)} pierre qui tombe au sol ; il se casse au ${P.COUPS}e coup en lâchant ${formatNumber(P.BRIS)} pierres de plus (marche dessus pour les ramasser) et revient ${P.RETOUR[0]} à ${P.RETOUR[1]} jours plus tard. Dans la grotte, elle prend aussi le minerai.`],
+        ['Faux', `Touche une touffe d'herbe haute : ${formatNumber(C.faucher)} d'énergie, et ${formatNumber(DATA.FAUX.PAILLE)} paille qui tombe au sol (marche dessus pour la ramasser). La touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard. C'est la seule façon d'avoir de la paille pour les moutons et les vaches.`],
         ['Canne à pêche', `Touche l'eau : ${formatNumber(C.pecher)} d'énergie le lancer (voir la fiche « Pêche »).`],
         ['Bois et pierre', 'Ils se vendent, et paient les technologies avec les lingots. La branche Outils de l\'Arbre des technologies rend les outils plus efficaces.'],
       ],
@@ -332,7 +333,7 @@ const FICHES = ['outils', 'grotte', 'peche', 'techno', 'cartes'];
 
 // Le nom des actions de DATA.PERSONNAGE.COUTS, pour la règle de l'énergie.
 const ACTIONS_NOMS = {
-  couper: 'couper', piocher: 'piocher', pecher: 'pêcher', labourer: 'labourer', planter: 'planter', arroser: 'arroser',
+  couper: 'couper', piocher: 'piocher', faucher: 'faucher', pecher: 'pêcher', labourer: 'labourer', planter: 'planter', arroser: 'arroser',
   recolter: 'récolter', cueillir: 'cueillir', tondre: 'tondre', cuisiner: 'cuisiner', cuireFour: 'cuire au four',
   moudre: 'moudre', presser: 'presser',
 };

@@ -14,7 +14,7 @@ import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { TIRED } from '../engine/stamina.js';
-import { brokenRocks, enSelle, fellenTrees, morceauxDe } from '../engine/outils.js';
+import { brokenRocks, cutGrass, enSelle, fellenTrees, morceauxDe } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmSeed, farmTerrain, tileCount } from '../engine/terrain.js';
@@ -22,7 +22,7 @@ import { tuilesChemins } from '../engine/ferme-generee.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
 import {
-  activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
+  activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
 } from './store.js';
 import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
@@ -34,7 +34,7 @@ import {
 import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
-import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml } from './outils.js';
+import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheChipHtml, scytheFromStage } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatPoulailler, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
@@ -216,11 +216,9 @@ export function cibleAlerte(type, id) {
       const m = state.paturage.moutons.find(woolReady);
       return { fenetre: 'etable', ancre: m ? `animal-${m.id}` : 'etable-animaux' };
     }
-    // La paille se fait au Moulin ; tant qu'il n'existe pas, on montre le stock à l'Étable.
+    // La paille se fauche (version 1.23) : on montre le stock à l'Étable.
     case 'paille': case 'pailleManque':
-      return isUnlocked(state, 'moulin') && state.stations.moulin.construit && moulinSurPlace()
-        ? { fenetre: 'moulin', ancre: 'moulin-moudre' }
-        : { fenetre: 'etable', ancre: 'etable-paille' };
+      return { fenetre: 'etable', ancre: 'etable-paille' };
     default: return { page: 'ferme' };
   }
 }
@@ -364,6 +362,10 @@ export function stageModel() {
   const rochers = brokenRocks(state);
   // la hache : les arbres abattus n'y sont plus (ils repoussent comme les rochers)
   const abattus = fellenTrees(state);
+  // la faux en main : un appui sur une touffe d'herbe haute la fauche ; les touffes fauchées
+  // n'y sont plus (elles repoussent)
+  const faux = scytheMode && !!(state.outils && state.outils.faux) && !stageInterior;
+  const fauchees = cutGrass(state);
   // la canne à pêche en main : un appui sur l'eau y fait pêcher
   const canne = rodMode && !!(state.outils && state.outils.canne) && !stageInterior;
   // L'arrosage automatique : des asperseurs au milieu des parcelles (voir sprinklerSpots) ; un
@@ -467,7 +469,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, canne, triporteur: enSelle(state), rochers, abattus, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, triporteur: enSelle(state), rochers, abattus, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -698,7 +700,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, chop: chopFromStage, mine: mineFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, chop: chopFromStage, mine: mineFromStage, scythe: scytheFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
@@ -797,7 +799,7 @@ function chapterChipHtml() {
   const valeur = objectiveValueText(o);
   const pct = Math.round(o.ratio * 100);
   const suite = p.objectifs.length > 1 ? `, objectif ${Math.min(faits + 1, p.objectifs.length)} sur ${p.objectifs.length}` : '';
-  const compacte = ((hoeMode && state.potager.houe) || axeMode || pickMode || rodMode || buildMode) && !stageInterior;
+  const compacte = ((hoeMode && state.potager.houe) || axeMode || pickMode || scytheMode || rodMode || buildMode) && !stageInterior;
   const vers = OBJECTIF_CIBLES[o.type] ? 'Y aller' : 'Ouvrir les chapitres';
   return `<button type="button" class="stage-chip${compacte ? ' compact' : ''}" ${objectifAttrs(o.type)} aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. ${vers}" title="Chapitre ${p.chapitre} : ${p.titre} — ${o.libelle}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span>${compacte ? '' : `<span class="stage-chip-text">${o.libelle}</span>`}<span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
 }
@@ -825,7 +827,7 @@ function renderStageHud(el) {
     el.insertAdjacentHTML('beforeend', '<div class="stage-hud"></div><div class="stage-nav"></div>');
     hud = el.querySelector('.stage-hud');
   }
-  morph(hud, chapterChipHtml() + hoeChipHtml() + axeChipHtml() + pickChipHtml() + rodChipHtml() + buildChipHtml());
+  morph(hud, chapterChipHtml() + hoeChipHtml() + axeChipHtml() + pickChipHtml() + scytheChipHtml() + rodChipHtml() + buildChipHtml());
   if (!stageView) stageView = FarmStage.view();
   renderStageNav(el);
 }

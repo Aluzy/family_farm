@@ -5,7 +5,7 @@
 
 import {
   actionCost, botBuy, botDay, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill,
-  botRaiseFunds, botRecipeValue, botSell, botSheep, botSnack, botStepInfo, botWheatKept, buildSilo,
+  botRaiseFunds, botScythe, cutGrass, hasTool, botRecipeValue, botSell, botSheep, botSnack, botStepInfo, botWheatKept, buildSilo,
   chapterReached, countItem, createInitialState, DATA, hasHoe, millPending, NIGHT_STEPS,
   openStation, planMeal, sheepCount, simulateFromCopy, simulateGame, simulatePlay, simulationReach,
   soilCount, testFillBatteries, testGoToChapter, testSetLevel, testWoolReady,
@@ -95,7 +95,7 @@ test('Lot 10 : simulateFromCopy ne touche pas la partie en cours', () => {
   assertEqual(rows.map((r) => r.nuit), [5, 6, 7, 8, 9, 10], 'la simulation continue à partir de la nuit en cours');
 });
 
-test('Lot 10 : le joueur automatique moud du blé pour la paille de ses moutons et de ses vaches', () => {
+test('Lot 10 : le joueur automatique fauche la paille de ses moutons et de ses vaches, et moud pour la farine', () => {
   const S = DATA.SIMULATION;
   assertEqual([S.PAILLE_NUITS, S.PAILLE_MAX_NUITS, S.FARINE_MAX], [3, 6, 12]);
   assertEqual(S.PRIORITE[5], [{ type: 'station', id: 'moulin' }, { type: 'paturage' }, { type: 'moutons', n: 3 }], 'le Moulin avant les moutons');
@@ -105,18 +105,21 @@ test('Lot 10 : le joueur automatique moud du blé pour la paille de ses moutons 
   fillSheep(s, 2);
   fillCows(s, 1);
   setInv(s, { ble: 20, farine: S.STOCK_FARINE, conserve: 200 });
-  // 4 pailles par nuit × 3 nuits d'avance = 12 blés à moudre
+  // version 1.23 : le Moulin ne donne plus de paille : avec assez de farine, il ne moud rien
   botMill(s);
-  assertEqual([millPending(s), countItem(s, 'ble')], [12, 8]);
-  botMill(s);
-  assertEqual(millPending(s), 12, 'il n\'en remet pas tant que le lot couvre le besoin');
-  // sans animaux et avec assez de farine : il ne moud rien
+  assertEqual([millPending(s), countItem(s, 'ble')], [0, 20]);
+  // 4 pailles par nuit × 3 nuits d'avance = 12 touffes fauchées (la faux achetée)
+  s.pieces = 1000;
+  botScythe(s);
+  assertEqual([hasTool(s, 'faux'), countItem(s, 'paille'), cutGrass(s).length], [true, 12, 12]);
+  botScythe(s);
+  assertEqual(countItem(s, 'paille'), 12, 'il n\'en fauche plus tant que la réserve couvre le besoin');
+  // sans animaux : il ne fauche rien ; avec trop peu de farine, il en moud
   const t = pature();
   openStation(t, 'moulin');
-  setInv(t, { ble: 20, farine: S.STOCK_FARINE });
-  botMill(t);
-  assertEqual(millPending(t), 0);
-  // avec trop peu de farine : il en moud, même sans animaux
+  t.pieces = 1000;
+  botScythe(t);
+  assertEqual(hasTool(t, 'faux'), false);
   setInv(t, { ble: 20 });
   botMill(t);
   assertEqual(millPending(t), S.STOCK_FARINE);

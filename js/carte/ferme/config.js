@@ -147,7 +147,7 @@
   // assets/ramassables.png (scripts/carte/ramassables.py), une image de 16 × 16 par sorte
   // (`frames`), le pied à `pied` px du haut de sa tuile ; `doigt` : px d'écran autour de lui où
   // un appui le prend.
-  const RAMASSABLES = { key: 'ramassables', file: 'ramassables.png', frame: { frameWidth: 16, frameHeight: 16 }, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2, baies: 3 }, pied: 14, doigt: 28,
+  const RAMASSABLES = { key: 'ramassables', file: 'ramassables.png', frame: { frameWidth: 16, frameHeight: 16 }, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2, baies: 3, paille: 4 }, pied: 14, doigt: 28,
     // les baies : des grappes posées sur le buisson (px depuis le milieu du bas de son pied)
     grappes: [[-13, -12], [-4, -21], [6, -15], [14, -8], [1, -6]] };
   // Les blocs de la ferme générée (js/carte/ferme/chantier.js) : assets/blocs.png

@@ -127,6 +127,7 @@ export function sourcesOf(data, id) {
   for (const [bid, b] of Object.entries((A && A.BLOCS) || {})) if (b.meuble && b.objet === id && data.MEUBLES && data.MEUBLES[b.meuble]) out.push(`meuble ${b.meuble} (Marché)`);
   if (data.HACHE && id === 'bois') out.push('hache');
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
+  if (data.FAUX && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('faux');
   if (id.startsWith('minerai_')) out.push('grotte');
   if (it.trouvaille) out.push(`trouvaille (${it.trouvaille})`);
   if (it.cueillette) out.push(`cueillette (${it.cueillette})`);
@@ -319,6 +320,10 @@ export function validateData(data) {
   needItem('PIOCHE (pierre)', 'pierre');
   const RT = data.PIOCHE && data.PIOCHE.RETOUR;
   if (!(Array.isArray(RT) && RT.length === 2 && RT.every((x) => isInt(x) && x >= 1) && RT[0] <= RT[1])) err('PIOCHE.RETOUR', 'deux entiers [min, max], 1 ≤ min ≤ max');
+  const FX = data.FAUX || {};
+  if (!(isInt(FX.PAILLE) && FX.PAILLE > 0 && isInt(FX.BOT_TOUFFES) && FX.BOT_TOUFFES > 0)) err('FAUX', 'PAILLE et BOT_TOUFFES : deux entiers supérieurs à 0');
+  const RF = FX.RETOUR;
+  if (!(Array.isArray(RF) && RF.length === 2 && RF.every((x) => isInt(x) && x >= 1) && RF[0] <= RF[1])) err('FAUX.RETOUR', 'deux entiers [min, max], 1 ≤ min ≤ max');
   const CN = data.CANNE || {};
   if (!(CN.PRISES && typeof CN.PRISES === 'object' && Object.keys(CN.PRISES).length)) err('CANNE.PRISES', 'les chances de prise par eau');
   for (const [eau, p] of Object.entries(CN.PRISES || {})) {
@@ -327,7 +332,7 @@ export function validateData(data) {
     if (Object.values(p).some((x) => !isInt(x) || x < 0) || total > 100) err(`CANNE.PRISES.${eau}`, 'des pourcentages entiers, 100 au plus en tout');
     if (!(isInt(CN.JOUR && CN.JOUR[eau]) && CN.JOUR[eau] > 0)) err(`CANNE.JOUR.${eau}`, 'un entier supérieur à 0');
   }
-  for (const k of ['HACHE', 'PIOCHE']) if (!(data[k] && isInt(data[k].PRIX) && data[k].PRIX >= 0 && data[k].NOM && data[k].ICONE)) err(k, 'NOM, ICONE et PRIX (un entier positif)');
+  for (const k of ['HACHE', 'PIOCHE', 'FAUX']) if (!(data[k] && isInt(data[k].PRIX) && data[k].PRIX >= 0 && data[k].NOM && data[k].ICONE)) err(k, 'NOM, ICONE et PRIX (un entier positif)');
   const TU = data.NIVEAUX.TUILES;
   if (!Array.isArray(TU) || TU.length !== data.NIVEAUX.SEUILS.length || TU.some((x, i) => !isInt(x) || (i > 0 && x < TU[i - 1]))) err('NIVEAUX.TUILES', 'un entier par niveau, jamais en baisse');
   else if (TU[0] < P.DEPART.length) err('NIVEAUX.TUILES', 'le premier plafond doit contenir les tuiles de départ');
@@ -414,7 +419,7 @@ export function validateData(data) {
       for (const [item, n] of Object.entries(r.entrees || {})) { needItem(`ATELIER.RECETTES.${rid}.entrees`, item); if (!isInt(n) || n <= 0) err(`ATELIER.RECETTES.${rid}.entrees.${item}`, 'une quantité entière positive'); }
       for (const item of Object.keys(r.sortie || {})) needItem(`ATELIER.RECETTES.${rid}.sortie`, item);
       if (!r.sortie === !r.outil) err(`ATELIER.RECETTES.${rid}`, 'une sortie ou un outil (l\'un des deux)');
-      if (r.outil && !['houe', 'hache', 'pioche'].includes(r.outil)) err(`ATELIER.RECETTES.${rid}.outil`, 'houe, hache ou pioche');
+      if (r.outil && !['houe', 'hache', 'pioche', 'faux'].includes(r.outil)) err(`ATELIER.RECETTES.${rid}.outil`, 'houe, hache, pioche ou faux');
     }
     for (const [bid, b] of Object.entries(A.BLOCS || {})) {
       if (b.objet) needItem(`ATELIER.BLOCS.${bid}.objet`, b.objet);

@@ -573,6 +573,11 @@
           const rocher = this.rockAt(wx, wy);
           if (rocher) return { mine: rocher };
         }
+        // la faux en main : une touffe d'herbe haute sous le doigt se fauche
+        if (this.ctx.lastModel && this.ctx.lastModel.faux) {
+          const touffe = this.grassAt(wx, wy);
+          if (touffe) return { scythe: touffe };
+        }
         // la hache en main : un arbre de la carte sous le doigt se coupe
         if (this.ctx.lastModel && this.ctx.lastModel.hache) {
           const arbre = this.mapTreeAt(wx, wy);
@@ -658,6 +663,7 @@
         if (hit.gather) { this.gather(hit.gather); return; }
         if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.mine) { this.mine(hit.mine); return; }
+        if (hit.scythe) { this.scythe(hit.scythe); return; }
         if (hit.fish) { this.goFish(hit.fish, wx, wy); return; }
         if (hit.treeHarvest) { this.ctx.bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }
         if (hit.treeSlot !== undefined) { this.ctx.bridge.act('tree-slot', { case: hit.treeSlot }); return; }

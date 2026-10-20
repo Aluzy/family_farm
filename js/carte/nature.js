@@ -100,7 +100,7 @@
   // (`images` : la case de chaque objet).
   const MORCEAUX = {
     prise: 9, pied: 13, bas: 7, cime: [24, 36, 48], eclats: 15, cherche: 32, saut: 10, sautMs: 380,
-    images: { bois: 1, pierre: 0 },
+    images: { bois: 1, pierre: 0, paille: 4 },
   };
 
   // Les points où tombent les morceaux d'un coup : { coup: [3 points], fin: [3 points] } (px de

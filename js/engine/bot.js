@@ -30,6 +30,7 @@ import {
   readMail, unreadMail,
 } from './campaign.js';
 import { isAutomated } from './automation.js';
+import { buyTool, grassCut, hasTool, scytheGrass } from './outils.js';
 import { sleep } from './night.js';
 import { farmTerrain, tileCount } from './terrain.js';
 import { createNewGame, buyStarter, houseRepaired, repairHouse, starterBlock } from './depart.js';
@@ -286,31 +287,32 @@ function botCommerce(state) {
   chooseCommerce(state, best);
 }
 
-// Le Moulin : il moud de quoi garder un peu de farine et, surtout, de la
-// paille d'avance pour les moutons et les vaches (PAILLE_NUITS nuits). Le blé
-// des poules et des semis reste de côté, sauf pour la paille de ce soir : des
-// animaux sans paille ne donnent ni laine ni lait. S'il manque encore du blé
-// pour cette paille-là, un dépannage au Marché (comme pour les poules).
+// Version 1.23 : la paille se fauche (la faux, FAUX) : dès qu'il a des moutons ou des
+// vaches, il achète la faux et fauche les touffes de son pré (« pre_0 »… : il n'a pas de
+// carte) pour PAILLE_NUITS nuits d'avance, tant qu'il en reste et qu'il a de l'énergie.
+export function botScythe(state) {
+  const besoin = strawNeed(state);
+  if (besoin <= 0) return;
+  if (!hasTool(state, 'faux') && !buyTool(state, 'faux').ok) return;
+  const voulu = besoin * DATA.SIMULATION.PAILLE_NUITS;
+  for (let k = 0; k < DATA.FAUX.BOT_TOUFFES && strawStock(state) < voulu; k++) {
+    const id = 'pre_' + k;
+    if (grassCut(state, id)) continue;
+    if (!scytheGrass(state, id).ok) break;
+  }
+}
+
+// Le Moulin : il moud de quoi garder un peu de farine (STOCK_FARINE). Le blé des poules et
+// des semis reste de côté.
 export function botMill(state) {
   const S = DATA.SIMULATION;
   const st = state.stations.moulin;
   if (!st.construit) return;
   const d = st.appareil;
   if (d && (!d.allume || isBroken(d))) return;
-  const enCours = millPending(state);
-  const besoin = strawNeed(state);
-  const farine = S.STOCK_FARINE - countItem(state, 'farine') - enCours;
-  const paille = besoin * S.PAILLE_NUITS - strawStock(state) - enCours;
-  const ceSoir = besoin - strawStock(state) - enCours;
-  const voulu = Math.max(farine, paille, 0);
+  const voulu = S.STOCK_FARINE - countItem(state, 'farine') - millPending(state);
   if (voulu < 1) return;
-  let libre = Math.max(0, wheatTotal(state) - botWheatKept(state));
-  if (ceSoir > libre) {
-    // la paille de ce soir passe avant la réserve de blé
-    while (wheatTotal(state) < ceSoir && botBuySeed(state, DATA.SILO.ITEM)) { /* un blé de plus */ }
-    libre = Math.max(libre, Math.min(ceSoir, wheatTotal(state)));
-  }
-  const n = Math.min(voulu, libre);
+  const n = Math.min(voulu, Math.max(0, wheatTotal(state) - botWheatKept(state)));
   if (n >= 1) startMilling(state, n);
 }
 
@@ -593,8 +595,7 @@ export function botSell(state) {
   if (laine >= 1) sellItem(state, 'laine', laine);
   const ble = countItem(state, DATA.SILO.ITEM) - S.BLE_MAX;
   if (ble >= 1) sellItem(state, DATA.SILO.ITEM, ble);
-  // la paille que la farine a donnée en trop (sans animaux, toute la paille),
-  // et la farine que la paille a donnée en trop
+  // la paille en trop (sans animaux, toute la paille), et la farine en trop
   const paille = strawStock(state) - strawNeed(state) * S.PAILLE_MAX_NUITS;
   if (paille >= 1) sellItem(state, DATA.PATURAGE.NOURRITURE, paille);
   const farine = countItem(state, 'farine') - S.FARINE_MAX;
@@ -628,6 +629,7 @@ function botActions(state, strat, options, soir) {
   botSheep(state);
   botOrchard(state);
   botCommerce(state);
+  botScythe(state);
   botMill(state);
   botCook(state);
   if (!soir) return;

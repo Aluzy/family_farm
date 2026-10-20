@@ -2,7 +2,7 @@
  *
  * Les arbres et les buissons de la carte (chacun son image, rangée selon son pied : le
  * personnage passe derrière, l'arbre devient un peu transparent), les barrières, les ombres
- * portées, l'herbe haute qui penche quand on la traverse (CarteKit.herbe).
+ * portées, l'herbe haute qui penche quand on la traverse (CarteKit.herbe) et que la faux fauche.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -12,7 +12,8 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, OCCLUDER_ALPHA, TALL_GRASS, SPRITE_CHECKS } = F.C;
+  const { T, MAP, OCCLUDER_ALPHA, TALL_GRASS, SPRITE_CHECKS, MIN_TAP } = F.C;
+  const { pixelRatio, reducedMotion } = F;
   const DECOR_MARGE = 64;           // px autour de la vue : dessiné quand même (voir cullDecor)
   const HERBE_MORCEAU = 256;        // px : le côté d'un morceau d'herbe haute (voir makeTallGrass)
 
@@ -164,6 +165,7 @@
       this.grassAll = [];
       this.grassChunks = new Map();
       this.grassKey = this.cullKey = '';
+      this.cutKey = null;
       const raw = this.mapRaw;
       if (!raw || !this.has(TALL_GRASS.key)) return;
       const layer = raw.layers.find((l) => l.type === 'objectgroup' && l.name === 'herbe_haute');
@@ -171,7 +173,7 @@
       const fleurs = this.has(TALL_GRASS.fleurs.key);
       for (const o of (layer && layer.objects) || []) {
         const base = (Math.max(0, Number(o.type) | 0) % rows) * TALL_GRASS.frames;
-        const g = { img: null, fleurs: null, x: Math.round(o.x), y: o.y, base, fleurie: fleurs && Math.floor(base / TALL_GRASS.frames / 3) % 2 === 1,
+        const g = { id: Math.round(o.x) + ',' + Math.round(o.y), img: null, fleurs: null, x: Math.round(o.x), y: o.y, base, fleurie: fleurs && Math.floor(base / TALL_GRASS.frames / 3) % 2 === 1,
           tint: 0xffffff, cell: Math.floor(o.y / T - 0.01) * raw.width + Math.floor(o.x / T), t: -1, dir: 1, inside: false };
         this.grassAll.push(g);
         const k = Math.floor(g.x / HERBE_MORCEAU) + ',' + Math.floor(g.y / HERBE_MORCEAU);
@@ -238,6 +240,7 @@
             g.img = this.add.image(g.x, g.y, TALL_GRASS.key, g.base).setOrigin(0.5, 1).setDepth(g.y).setTint(g.tint);
             if (g.fleurie) g.fleurs = this.add.image(g.x, g.y, TALL_GRASS.fleurs.key, g.base).setOrigin(0.5, 1).setDepth(g.y + 0.01);
             g.t = -1;
+            this.showGrass(g);
           }
         } else if (ch.on && loin(2 * C)) {
           ch.on = false;
@@ -249,6 +252,78 @@
         this.tallGrass = this.grassAll.filter((g) => g.img);
         this.grassCheck = 0;
       }
+    },
+
+    // Une touffe se voit sauf sur une case labourée, fauchée (elle repousse : modèle.fauchees) ou
+    // pendant qu'elle tombe sous la faux.
+    showGrass(g) {
+      if (!g.img) return;
+      const v = !g.cut && !g.tombe && !(this.dirt && this.dirt.has(g.cell));
+      g.img.setVisible(v);
+      if (g.fleurs) g.fleurs.setVisible(v);
+    },
+
+    // Les touffes fauchées (modèle.fauchees : leurs identifiants « x,y »). Une touffe qui
+    // repousse paraît en fondu.
+    syncCutGrass(ids) {
+      if (!this.grassAll) return;
+      const key = (ids || []).join(';');
+      if (key === this.cutKey) return;
+      const first = this.cutKey == null;
+      this.cutKey = key;
+      const cut = new Set(ids || []);
+      for (const g of this.grassAll) {
+        const c = cut.has(g.id);
+        if (c === !!g.cut) continue;
+        g.cut = c;
+        this.showGrass(g);
+        if (!c && !first && g.img && !reducedMotion()) {
+          for (const i of [g.img, g.fleurs]) if (i) { i.setAlpha(0); this.tweens.add({ targets: i, alpha: 1, duration: 600 }); }
+        }
+      }
+    },
+
+    // La touffe d'herbe haute sous le doigt (la plus en avant), ou null : sa boîte, un peu
+    // élargie (le doigt est gros, la touffe petite).
+    grassAt(wx, wy) {
+      const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom / 2;
+      const hx = Math.max(8, min * 0.6), haut = Math.max(14, min);
+      let best = null;
+      for (const g of this.tallGrass || []) {
+        if (g.cut || g.tombe || !g.img || !g.img.visible) continue;
+        if (Math.abs(wx - g.x) > hx || wy < g.y - haut || wy > g.y + 3) continue;
+        if (!best || Math.abs(wx - g.x) + Math.abs(wy - g.y + 6) < Math.abs(wx - best.x) + Math.abs(wy - best.y + 6)) best = g;
+      }
+      return best;
+    },
+
+    // Un coup de faux sur la touffe `g` : le jeu le compte tout de suite (this.ctx.bridge.scythe)
+    // et pose la paille au sol ; le personnage va à côté et fauche ; au coup, la touffe se couche
+    // et s'efface, la paille paraît à son pied.
+    scythe(g) {
+      const pied = { x: g.x, y: Math.round(g.y) };
+      const ou = { carte: 'ferme', coup: [{ x: pied.x, y: pied.y }] };
+      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.scythe ? this.ctx.bridge.scythe(g.id, ou) : null));
+      if (!got) return;
+      const M2 = got.morceaux || { coup: [], fin: [] };
+      g.tombe = true;
+      const fin = () => {
+        if (!g.tombe) return;
+        g.tombe = false;
+        g.cut = true;
+        this.showGrass(g);
+        this.revealPieces(M2.coup);
+      };
+      this.time.delayedCall(9000, fin);           // (filet : le coup n'a pas été donné)
+      const hit = () => {
+        K.vibre('pioche');
+        const imgs = [g.img, g.fleurs].filter(Boolean);
+        if (!imgs.length || reducedMotion()) { fin(); return; }
+        this.tweens.add({ targets: imgs, scaleY: 0.2, alpha: 0, duration: 220, ease: 'Quad.easeIn',
+          onComplete: () => { for (const i of imgs) i.setScale(1).setAlpha(1); fin(); } });
+        this.revealPieces(M2.coup);
+      };
+      if (!this.fermier || !this.fermier.scythe || !this.fermier.scythe(pied, hit)) hit();
     },
 
     dropGrass(g) {
@@ -266,10 +341,7 @@
       this.grassCheck -= dt;
       if (this.grassCheck <= 0) {                  // les cases labourées : plus d'herbe haute
         this.grassCheck = 500;
-        for (const g of list) {
-          g.img.setVisible(!(this.dirt && this.dirt.has(g.cell)));
-          if (g.fleurs) g.fleurs.setVisible(g.img.visible);
-        }
+        for (const g of list) this.showGrass(g);
       }
       const p = this.fermier && !this.room ? this.fermier.pos() : null;
       this.grassPrev = K.herbe(list, p, this.grassPrev, dt);
