@@ -51,7 +51,8 @@ Le Marché vend toujours les outils.
 - Un espace entièrement entouré de murs, avec au moins une porte, devient une **pièce close**.
 - Les autres bâtiments suivent la même logique.
 - Un meuble du Marché en main (pas un tableau) : la carte se quadrille ; un appui sur une case y
-  pose son aperçu calé sur la grille (vert : il tient là, rouge : non), sans le poser. ✔️ le pose,
+  pose son aperçu calé sur la grille (vert : il tient là, rouge : non), sans le poser ; un glissement
+  du doigt parti de l'aperçu le déplace case par case (la carte ne défile pas). ✔️ le pose,
   ❌ sort de ce mode (js/ui/chantier.js `meubleModele`, js/carte/ferme/chantier.js `syncPoseMeuble`).
 - Version 1.26 : une case où se trouve une ressource de la carte (herbe haute, rocher, arbre) ne
   se bâtit qu'une fois la ressource récoltée (fauchée, cassée, abattue ; terrain `HERBES`, `ROCHERS`,
