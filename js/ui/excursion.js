@@ -8,7 +8,7 @@ import { techFlag } from '../engine/techtree.js';
 import { rockGone, treeGone } from '../engine/crops.js';
 import { addItem } from '../engine/inventory.js';
 import { buyInShop, negoceOffres, sellToNegoce, shopView } from '../engine/ville.js';
-import { economie, economieVue, ticketBus } from '../engine/economie.js';
+import { economie, economieVue } from '../engine/economie.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
 import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
 import { chopFromStage, fishFromStage, mineFromStage, morceauFromStage } from './outils.js';
@@ -20,7 +20,7 @@ import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
 import { farmSeed } from '../engine/terrain.js';
 import { LIVREUR, ramasserTransition, ressourcesDuJour, transitionPlan, transitionPris, transitionSeed } from '../engine/transition.js';
-import { assigneEmplois, immeubleBus, immeubleFoyer, immeubleVue, livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
+import { assigneEmplois, immeubleFoyer, immeubleVue, livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -205,12 +205,6 @@ window.FermeHote = {
   },
   // le bureau de négoce : ce qu'il rachète (les pénuries) et ce que la ferme en a ; une vente
   negoce: () => ({ offres: negoceOffres(state), pieces: Math.floor(state.pieces) }),
-  // les trajets en bus de chaque jour des familles de la ville, par logement (leurs tickets :
-  // js/carte/ville/habitants.js)
-  busImm: (trajets) => { immeubleBus(state, trajets); persistState(); },
-  // les lignes de bus de la ville (js/carte/ville/lignes.js) : le prix et l'achat d'un ticket
-  prixTicket: () => DATA.ECONOMIE.BUS.TICKET,
-  ticketBus: () => nuit('ville-buy') || joue(ticketBus(state)),
   vendreNegoce: (item, n) => nuit('sell-item') || joue(sellToNegoce(state, item, n)),
   // la logistique d'hier (les camions de la carte) : { camions, transport, principaux (les
   // trois produits les plus fabriqués) } ; null avant la première nuit

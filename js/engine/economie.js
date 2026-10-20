@@ -20,7 +20,6 @@
 // comptes, caisse, pénuries) }.
 import { DATA } from './catalog.js';
 import { earn } from './compta.js';
-import { canPay, fail, NO_COINS, spend } from './devices.js';
 import { ownsCompany } from './entreprises.js';
 
 const E = () => DATA.ECONOMIE;
@@ -191,10 +190,6 @@ function journeeEco(state, jour) {
   caisse += Math.round((DATA.VOISINS.EMPLOIS.reduce((t, q) => t + q.POSTES * q.SALAIRE, 0) * X.CAISSE.IMPOT) / 100);
   caisse += e.billets || 0;
   e.billets = 0;
-  // (les tickets de bus d'hier)
-  B.tickets = e.tickets || 0;
-  caisse += B.tickets;
-  e.tickets = 0;
   e.caisse += caisse;
   B.caisse = caisse;
   e.bilan = B;
@@ -252,27 +247,6 @@ export function sortieVille(state, f, jour) {
   V[id] = (V[id] || 0) + f.adultes + f.enfants;
   e.billets = (e.billets || 0) + cout;
   return id;
-}
-
-// Un ticket de bus (`n` trajets, ECONOMIE.BUS) : payé par le joueur, à la caisse de la ville
-// (la nuit).
-export function ticketBus(state, n = 1) {
-  const prix = E().BUS.TICKET * Math.max(1, Math.floor(n) || 1);
-  if (!canPay(state, prix)) return fail(NO_COINS);
-  spend(state, prix, 'Ticket de bus');
-  const e = economie(state);
-  e.tickets = (e.tickets || 0) + prix;
-  return { ok: true, cost: prix };
-}
-
-// Les `n` tickets de bus d'un jour du foyer `f` (js/engine/voisins.js, journee) : autant qu'il
-// peut en payer ; à la caisse de la ville. Renvoie le nombre payé.
-export function payerBus(state, f, n) {
-  const T = E().BUS.TICKET, k = Math.max(0, Math.min(n, Math.floor(f.argent / T)));
-  f.argent -= k * T;
-  const e = economie(state);
-  e.tickets = (e.tickets || 0) + k * T;
-  return k;
 }
 
 // La matière que l'objet `item` de l'inventaire fournit au négoce (null : aucune).

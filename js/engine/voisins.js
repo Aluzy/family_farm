@@ -4,7 +4,7 @@ import { treeGone } from './crops.js';
 import { buyPrice, isBuyable, sellPrice } from './market.js';
 import { maisonPlan, transitionPlan, transitionSeed } from './transition.js';
 import { dishHappiness, mealHappinessDelta } from './ville.js';
-import { acheterRepasVille, payerBus, sortieVille } from './economie.js';
+import { acheterRepasVille, sortieVille } from './economie.js';
 
 /* ---------- les voisins de la carte de transition : leur économie ---------- */
 
@@ -264,8 +264,6 @@ function journee(state, maison, f, jour) {
     // chaque adulte fait sa journée à son poste : son salaire
     J.salaire = salaireFoyer(f);
     f.argent += J.salaire;
-    // (les tickets de bus de ceux qui le prennent : js/carte/ville/lignes.js, immeubleBus)
-    if (f.bus) J.bus = payerBus(state, f, f.bus);
   } else {
     // le champ : la récolte de ce qui est prêt, puis les semis (une graine achetée, ou un plant
     // de la récolte), prêts au bout des stades de la culture
@@ -421,13 +419,6 @@ export function immeubleFoyer(state, logement, compo) {
     f.enfants = Math.max(0, Math.min(lits - f.adultes, compo.enfants | 0));
   }
   return f;
-}
-
-// Les trajets en bus de chaque jour, par logement ({ logement: n } : ceux que la carte voit
-// prendre le bus pour aller au travail ou à l'école et en revenir, js/carte/ville/habitants.js) ;
-// le foyer paie leurs tickets chaque jour (journee).
-export function immeubleBus(state, trajets) {
-  for (const [logement, f] of Object.entries(immeubleFoyers(state))) f.bus = Math.max(0, Math.floor(Number(trajets && trajets[logement]) || 0));
 }
 
 // Les foyers des immeubles (ceux qui sont nés), par logement.

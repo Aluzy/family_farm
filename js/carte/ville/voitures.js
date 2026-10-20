@@ -51,8 +51,9 @@
   V.partie({
 
     // Le chemin d'une voiture du point `a` au point `b` par les rues : la polyligne (px) sur la
-    // file de droite ; null : pas de chemin (ou trop court).
-    trajetVoiture(a, b) {
+    // file de droite (à `ecart` px du milieu de la rue : un vélo roule au bord, VELO) ; null :
+    // pas de chemin (ou trop court).
+    trajetVoiture(a, b, ecart = VOITURES.ecart) {
       const S = surRue(a), E = surRue(b);
       if (!S || !E || Math.hypot(S.x - E.x, S.y - E.y) < 6 * T) return null;
       // (Dijkstra : le départ, les carrefours, l'arrivée ; on va d'un point à un autre de la même rue)
@@ -74,7 +75,7 @@
       const chemin = [];
       for (let i = fin; i >= 0; i = prec[i]) chemin.unshift(pts[i]);
       // les tronçons : leur sens (nord-sud ?), leur file ; ceux d'une même file fusionnés
-      const E2 = VOITURES.ecart, tr = [];
+      const E2 = ecart, tr = [];
       for (let i = 1; i < chemin.length; i++) {
         const a0 = chemin[i - 1], b0 = chemin[i], dx = b0.x - a0.x, dy = b0.y - a0.y;
         if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;

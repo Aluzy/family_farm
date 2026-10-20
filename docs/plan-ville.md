@@ -105,30 +105,19 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
        21 h 30 (`js/carte/ville/habitants.js`) ; le jour, les camions de la logistique
        (`scripts/ville/camion.py`) roulent dans les rues, autant que l'économie en a fait rouler
        la veille (au plus 4 à la fois : `js/carte/ville/circulation.js`).
-6. Les lignes de bus de la ville : les trajets à pied sont longs (jusqu'à 4 h de jeu d'un bout à
-   l'autre). Deux lignes (`LIGNES`, `js/carte/ville/config.js`), dans les deux sens, un bus
-   toutes les 30 minutes du jeu de 4 h 30 à 23 h 30, sur des rues qui leur sont réservées (les
-   voitures ne font que les traverser) ; le ticket : 1 pièce le trajet, à la caisse de la
-   ville (`ECONOMIE.BUS`) :
-   - la ligne 1 (verte), du nord au sud par l'avenue de l'ouest : usines du nord, bureau de
-     négoce, gare et boulangerie, mairie, résidences, minoterie ;
-   - la ligne 2 (violette), de l'avenue à l'est par la rue de la bibliothèque : usines du nord,
-     bureau de négoce, rue des maisons, bibliothèque, cinéma et écoles, pizzeria et
-     poissonnerie.
-
-   En trois parties :
-   - 6a, les lignes (fait ; `js/carte/ville/lignes.js`) : les bus qui roulent et s'arrêtent, les
-     poteaux des arrêts ; le joueur touche un poteau, choisit son arrêt, paie son ticket, monte
-     dans le prochain bus et descend à son arrêt ;
-   - 6b, les habitants (fait ; `js/carte/ville/habitants.js`, `planTrajet`) : pour aller au
-     travail, à l'école, au marché, en sortie et pour rentrer, ils prennent le bus quand c'est
-     au moins un dixième plus court qu'à pied (le chemin jusqu'à l'arrêt, l'attente, le trajet,
-     le chemin depuis l'arrêt) ; ils vont à l'arrêt, attendent, montent, descendent et finissent
-     à pied ; la famille paie les tickets de chaque jour (`immeubleBus`, `payerBus`). 20 % des
-     adultes (les 16 qui ont le plus long chemin jusqu'à leur travail) ont une voiture
+6. Les déplacements dans la ville : les trajets à pied sont longs (jusqu'à 4 h de jeu d'un bout à
+   l'autre). D'abord prévues, les lignes de bus (#197) ont été retirées : trop peu d'habitants y
+   gagnaient (leurs arrêts étaient loin de la plupart des maisons et des lieux de travail). À la
+   place :
+   - la circulation va plus vite : les voitures et les camions à 100 px/s, le bus de l'école à
+     120 ;
+   - 20 % des adultes (les 16 qui ont le plus long chemin jusqu'à leur travail) ont une voiture
      (`VOITURES`, `js/carte/ville/voitures.js`) : elle les attend au bord de la rue la plus
-     proche, roule par les rues dans la circulation et les dépose au plus près. La circulation
-     va plus vite : les voitures et les camions à 100 px/s, le bus de l'école à 120, ceux des
-     lignes à 200 ;
-   - 6c, les chauffeurs : quatre postes de conducteur·rice de bus (pris à d'autres lieux, pour
-     garder 80 postes), payés par la caisse de la ville.
+     proche, roule par les rues dans la circulation et les dépose au plus près ;
+   - les autres adultes vont à vélo (`VELO`, `js/carte/ville/velos.js` ; le vélo :
+     `scripts/personnage/velo.py`), 2,2 fois plus vite qu'à pied : en bas de chez eux, ils
+     montent dessus, roulent sur le trottoir jusqu'à la rue la plus proche, suivent les rues au
+     bord de la chaussée jusqu'à leur travail, descendent à la porte et entrent à pied ;
+   - chacun prend sa voiture ou son vélo quand c'est au moins un dixième plus court qu'à pied
+     (`planTrajet`, `js/carte/ville/habitants.js`) : pour le travail (l'heure de départ en
+     tient compte), le marché, les sorties et le retour à la maison. Les enfants vont à pied.
