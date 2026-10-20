@@ -161,7 +161,8 @@ def arbuste(im):
     pied = im.crop((14, 46, 34, h))
     out = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     out.alpha_composite(pied.crop((0, 6, pied.width, pied.height)), (14, h - pied.height + 6))
-    out.alpha_composite(hou, ((w - hou.width) // 2 + 1, h - pied.height + 6 - hou.height - 1))
+    # (le houppier recouvre le haut du tronc : pas de jour entre eux)
+    out.alpha_composite(hou, ((w - hou.width) // 2 + 1, h - pied.height + 6 - hou.height + 2))
     return out
 
 
