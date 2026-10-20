@@ -253,8 +253,18 @@ def courts(p):
 
 
 def couettes(p):
-    courts(p)
+    """La calotte et la frange ; les cheveux descendent devant les oreilles (on ne les voit pas)
+    jusqu'aux deux couettes nouées d'un ruban."""
+    calotte(p)
     frange(p)
+    for y in range(9, 14):
+        x0, x1 = p.bornes_visage(y)
+        if x0 is None:
+            continue
+        for x in (x0 - 3, x0 - 2):
+            p.set(x, y, C if x == x0 - 3 else B)
+        for x in (x1 + 2, x1 + 3):
+            p.set(x, y, C if x == x1 + 3 else B)
     for cx in (2, 29):
         for y in range(12, 22):
             r = 2.6 - abs(y - 16.5) * 0.28
