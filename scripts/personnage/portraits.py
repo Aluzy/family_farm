@@ -142,6 +142,14 @@ MECHE = {}              # les cheveux du modèle dans le contour et sur lui : sa
 CHEVELURE = {}          # les cheveux du modèle dehors, autour du visage
 
 
+def cou(x, y):
+    """La case est-elle entre les deux traits du cou (le contour du visage sous la mâchoire) ?"""
+    # (sous le dernier trait, dans le col de la chemise : entre les traits de la dernière rangée)
+    ty = min(y, max(t for (_, t) in TRAIT_CASES))
+    xs = [tx for (tx, t) in TRAIT_CASES if t == ty]
+    return len(xs) >= 2 and min(xs) < x < max(xs)
+
+
 def visage(g):
     """La base : le visage sans cheveux (la peau sous la mèche du modèle), le contour du visage,
     le cou et la chemise."""
@@ -159,7 +167,9 @@ def visage(g):
     for (x, y), c in g.items():
         if (x, y) in DEDANS or (x, y) in TRAIT_CASES:
             continue
-        if classe(c) == 'chemise' or (classe(c) == 'peau' and y >= 22):   # la chemise, le cou
+        # la chemise, et le cou : la peau sous le menton, entre les deux traits du cou (rien
+        # dans l'angle du cou et de la mâchoire)
+        if classe(c) == 'chemise' or (classe(c) == 'peau' and y >= 22 and cou(x, y)):
             p.set(x, y, c)
     return p
 
