@@ -301,7 +301,10 @@ export function stageModel() {
     if (!p.culture) return { id: p.id, culture: null, icone: '', phase: -1, mature: false, arrosee: !!p.arrose };
     const max = maxStage(p);
     const mature = isMature(p);
-    const phase = mature ? 3 : p.stade <= 0 ? 0 : p.stade / max < 0.5 ? 1 : 2;
+    // l'image de la plante : la graine (0) le jour du semis, la plante mûre (la dernière), et
+    // entre les deux, les autres images selon la croissance (sprite.c : 4 ou 5 images)
+    const n = (DATA.CULTURES[p.culture].sprite && DATA.CULTURES[p.culture].sprite.c.length) || 4;
+    const phase = mature ? n - 1 : p.stade <= 0 ? 0 : Math.min(n - 2, 1 + Math.floor((p.stade / max) * (n - 2)));
     return { id: p.id, culture: p.culture, icone: DATA.CULTURES[p.culture].icone, phase, mature, arrosee: mouillee(p) };
   };
   // Avec l'arrosage automatique, la terre sèche la dernière heure du cycle (de 6 h à 7 h pour
