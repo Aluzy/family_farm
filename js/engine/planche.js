@@ -17,6 +17,7 @@ export const BLOCS = {
   pin: [52, 50, 4, 4],
   buisson_rond: [57, 50, 3, 2],
   buisson_large: [61, 50, 3, 2],
+  rochers: [16, 55, 8, 2],
 };
 
 // Numéro de tuile (gid, à partir de 1) de la k-ième tuile d'un bloc (rangée par rangée).
@@ -40,15 +41,39 @@ for (const r of [0, 1, 2, 3, 13, 14, 15]) for (let k = 0; k < 16; k++) HERBE.add
 export const PLANTES_OK = new Set([399, 177, 175, 394, 400, 396, 397, 398, 322, 1509, 1508, 1433, 247, 100, 101, 102, 320]);
 for (let k = 0; k < 16 * 10; k++) PLANTES_OK.add(blocGid('herbe_deco', k));
 
-// Les rochers que la pioche casse (comme ROCKS.gids dans js/carte/ferme/config.js), et leurs
-// dessins : [dc, dr, gid] depuis le coin haut-gauche.
+// Les rochers que la pioche casse (comme ROCKS.gids dans js/carte/ferme/config.js) : ceux de
+// la planche d'origine (la carte de Tiled), puis ceux du bloc « rochers » (scripts/carte/
+// rochers.py : la ferme générée).
+const R = (k) => blocGid('rochers', k);
 export const ROCHERS = new Set([466, 467, 541, 542, 616, 617, 691, 692, 764, 765, 766, 767]);
+for (let k = 0; k < 16; k++) ROCHERS.add(R(k));
+// Les rochers de la ferme générée : pour chaque forme, son emprise (les cases qu'elle réserve
+// au tirage : [dc, dr] depuis le coin haut-gauche) et ses dessins ([dc, dr, gid], un au
+// choix), dans l'emprise :
+//   - gros : 2 × 2 cases ;
+//   - haut : 1 × 2 (debout, la colonne de droite) ou 2 × 1 (couché, la rangée du bas), dans
+//     l'emprise d'avant (un coin), pour que les rochers des parties déjà commencées restent où
+//     ils étaient ;
+//   - moyen, caillou, caillou2 : une case.
 export const DESSINS_ROCHERS = {
-  gros: [[0, 0, 466], [1, 0, 467], [0, 1, 541], [1, 1, 542]],
-  haut: [[1, 0, 692], [0, 1, 766], [1, 1, 767]],
-  moyen: [[0, 0, 617]],
-  caillou: [[0, 0, 764]],
-  caillou2: [[0, 0, 765]],
+  gros: {
+    emprise: [[0, 0], [1, 0], [0, 1], [1, 1]],
+    dessins: [
+      [[0, 0, R(0)], [1, 0, R(1)], [0, 1, R(8)], [1, 1, R(9)]],
+      [[0, 0, R(2)], [1, 0, R(3)], [0, 1, R(10)], [1, 1, R(11)]],
+    ],
+  },
+  haut: {
+    emprise: [[1, 0], [0, 1], [1, 1]],
+    dessins: [
+      [[1, 0, R(4)], [1, 1, R(12)]],
+      [[0, 1, R(5)], [1, 1, R(6)]],
+      [[0, 1, R(13)], [1, 1, R(14)]],
+    ],
+  },
+  moyen: { emprise: [[0, 0]], dessins: [[[0, 0, R(7)]]] },
+  caillou: { emprise: [[0, 0]], dessins: [[[0, 0, R(15)]]] },
+  caillou2: { emprise: [[0, 0]], dessins: [[[0, 0, R(7)]], [[0, 0, R(15)]]] },
 };
 
 // Le tronc creux au bord de l'étang (le passage vers l'infra-monde : HOLLOW dans
