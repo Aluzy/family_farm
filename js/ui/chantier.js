@@ -19,13 +19,19 @@ import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { meubleSrc } from './marche.js';
 
-// Le niveau le plus haut où l'on peut construire (1 : un escalier ouvre un étage), et celui
-// où l'on construit (buildLevel, borné).
-const niveauMax = () => (etageEmprise(state).size ? 1 : 0);
-export const niveauBati = () => Math.min(buildLevel, niveauMax());
-// (à l'étage : seulement ceux qui s'y posent)
+// Le niveau le plus haut où l'on construit (les rangs d'un mur rehaussé : 0 au sol, jusqu'à
+// HAUTEUR_MAX - 1 ; 1 est aussi l'étage d'une pièce à escalier), et celui où l'on construit
+// (buildLevel, borné). Au niveau n ≥ 1, un appui sur un mur haut de n blocs le rehausse d'un
+// bloc (le même mur en main), sur un mur haut de n + 1 blocs reprend son bloc du dessus ; au
+// niveau 0, un appui sur un mur le reprend, comme tout bloc.
+const niveauMax = () => Math.max(etageEmprise(state).size ? 1 : 0, DATA.ATELIER.HAUTEUR_MAX - 1);
+const niveau = () => Math.min(buildLevel, niveauMax());
+// L'étage, s'il y en a un et qu'on y construit : 1, sinon 0.
+export const niveauBati = () => (niveau() === 1 && etageEmprise(state).size ? 1 : 0);
+const MURS = () => Object.keys(DATA.ATELIER.BLOCS).filter((s) => DATA.ATELIER.BLOCS[s].mur);
+// (à l'étage : seulement ceux qui s'y posent ; plus haut que le sol : les murs)
 // (les meubles du Marché : seulement ceux qu'on a en main, ou celui qu'on pose)
-const SORTES = () => (niveauBati() ? ETAGE_BLOCS : Object.keys(DATA.ATELIER.BLOCS).filter((s) => !DATA.ATELIER.BLOCS[s].meuble || s === buildMode || blocsEnMain(state, s) > 0));
+const SORTES = () => (niveauBati() ? ETAGE_BLOCS : niveau() ? MURS() : Object.keys(DATA.ATELIER.BLOCS).filter((s) => !DATA.ATELIER.BLOCS[s].meuble || s === buildMode || blocsEnMain(state, s) > 0));
 // La liste des niveaux (au-dessus du menu) : ouverte ? Un appui long sur le carré l'ouvre, on
 // glisse jusqu'au niveau voulu et on lâche (APPUI_LONG_MS) ; un appui simple l'ouvre ou la ferme.
 let niveauListe = false;
@@ -61,13 +67,15 @@ export function buildChipHtml() {
     return `<button type="button" class="tool-slot build-slot${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-pick" data-sorte="${s}" aria-pressed="${on}" aria-label="${nom} : ${n}" title="${nom} : ${n}"><span aria-hidden="true">${icone(s)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
   }).join('');
   const dodo = couchages(state).length;
-  const tete = niveauBati() ? '<span title="À l\'étage : on bâtit au-dessus de la pièce de l\'escalier">🪜 Étage</span>' : `<span class="num" title="Paillasses dans une pièce close">🛏 ${dodo}</span>`;
+  const tete = niveauBati() ? '<span title="À l\'étage : on bâtit au-dessus de la pièce de l\'escalier ; ailleurs, on rehausse les murs">🪜 Étage</span>'
+    : niveau() ? `<span title="Niveau ${niveau()} : touche un mur haut de ${niveau()} bloc${niveau() > 1 ? 's' : ''} pour le rehausser, un mur plus haut pour reprendre son bloc du dessus">🧱 Rehausser</span>`
+    : `<span class="num" title="Paillasses dans une pièce close">🛏 ${dodo}</span>`;
   // le niveau de construction : un petit carré au-dessus du menu, et la liste des niveaux (le
   // plus haut en haut), qui s'ouvre au-dessus de lui
-  const max = niveauMax(), lvl = niveauBati();
+  const max = niveauMax(), lvl = niveau();
   const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n}">${n}</button>`).join('');
-  const niveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}>${niveaux}</div></div>`;
-  return `<div class="build-dock">${niveau}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-head">${tete}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><div class="build-bar-grid">${blocs}</div></div></div>`;
+  const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}>${niveaux}</div></div>`;
+  return `<div class="build-dock">${choixNiveau}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-head">${tete}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><div class="build-bar-grid">${blocs}</div></div></div>`;
 }
 
 // L'appui long sur le carré du niveau : la liste s'ouvre ; en glissant, le niveau sous le doigt
@@ -163,9 +171,24 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const c = Number(target.dataset.case);
     // à l'étage : poser, reprendre un bloc de l'étage
-    if (niveauBati()) {
+    if (niveauBati() && etageEmprise(state).has(c)) {
       const e = etageBlocs(state)[c];
       const r = e && !changeMur(e, buildMode) ? reprendreEtage(state, c) : poserEtage(state, buildMode, c);
+      if (!r.ok) { notify(r.error); return; }
+      persistState();
+      refresh();
+      return;
+    }
+    // plus haut que le sol : rehausser un mur, reprendre son bloc du dessus
+    const n = niveau();
+    if (n) {
+      const h = hauteurMur(state, c);
+      let r;
+      if (!h) r = { ok: false, error: `Niveau ${n} : touche un mur pour le rehausser (niveau 0 pour poser au sol).` };
+      else if (h === n + 1) r = reprendreBloc(state, c);
+      else if (h === n) r = poserBloc(state, blocAt(state, c), c);
+      else if (h < n) r = { ok: false, error: `Ce mur n'a que ${h} bloc${h > 1 ? 's' : ''} : rehausse-le d'abord au niveau ${h}.` };
+      else r = { ok: false, error: `Ce mur est plus haut : reprends son bloc du dessus au niveau ${h - 1}.` };
       if (!r.ok) { notify(r.error); return; }
       persistState();
       refresh();
@@ -177,12 +200,10 @@ registerActions({
     // (le plancher en main : un appui sur un plancher sans rien dessus le reprend ; un autre
     // bloc se pose dessus)
     const sol = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sol;
-    // (une fenêtre, une pierre d'angle en main : un appui sur un autre mur le change ; le même
-    // mur en main : un appui sur lui le rehausse d'un bloc, jusqu'à HAUTEUR_MAX ; au-delà, ou un
-    // autre bloc en main, il reprend le bloc du dessus)
-    const b = blocAt(state, c), sb = b && DATA.ATELIER.BLOCS[b];
-    const rehausse = !!(sb && sb.mur && b === buildMode && hauteurMur(state, c) < DATA.ATELIER.HAUTEUR_MAX);
-    const reprend = b ? !surLibre && !rehausse && !changeMur(b, buildMode) : sol && solAt(state, c);
+    // (une fenêtre, une pierre d'angle en main : un appui sur un autre mur le change ; sinon un
+    // appui sur un bloc le reprend : un mur rehaussé, son bloc du dessus d'abord)
+    const b = blocAt(state, c);
+    const reprend = b ? !surLibre && !changeMur(b, buildMode) : sol && solAt(state, c);
     const r = reprend ? reprendreBloc(state, c) : poserBloc(state, buildMode, c);
     if (!r.ok) { notify(r.error); return; }
     persistState();

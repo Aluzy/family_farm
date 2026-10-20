@@ -637,7 +637,7 @@ export function etatMoulin(state) {
   const conditions = [
     { id: 'meule', texte: 'Une meule dans une pièce close (des murs tout autour, et une porte)', ok: !!piece },
     { id: 'centre', texte: 'La meule au centre de la pièce', ok: centre },
-    { id: 'hauteur', texte: `Les murs de la pièce hauts de ${H} blocs (${hauts} / ${total}) : pose le même mur sur un mur pour le rehausser`, ok: !!piece && total > 0 && hauts === total },
+    { id: 'hauteur', texte: `Les murs de la pièce hauts de ${H} blocs (${hauts} / ${total}) : en mode Construire, choisis le niveau 1 puis 2 et touche les murs pour les rehausser`, ok: !!piece && total > 0 && hauts === total },
   ];
   return { ok: conditions.every((c) => c.ok), conditions, piece, meule: meule === undefined ? null : meule, bornes, murs: { hauts, total } };
 }

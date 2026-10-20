@@ -738,8 +738,10 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
        - Version 1.25 : le Moulin est une **tour** (`etatMoulin`). Une pièce close dont tous les
          murs (pas les portes) ont `ATELIER.MOULIN.HAUTEUR` (3) blocs de haut, avec la meule au
          centre (la case du milieu, ou l'une des deux du milieu si le côté est pair). Un mur se
-         rehausse en posant le même mur sur lui (`state.hauteurs`, jusqu'à `HAUTEUR_MAX`), se
-         rabaisse en le reprenant (le bloc du dessus d'abord). La station suit (`majMoulin`) ;
+         rehausse (`state.hauteurs`, jusqu'à `HAUTEUR_MAX`) en mode Construire au niveau n ≥ 1
+         (le sélecteur de niveau, sans escalier) : un appui sur un mur haut de n blocs lui en
+         ajoute un, sur un mur haut de n + 1 blocs reprend celui du dessus. Au niveau 0, un appui
+         sur un mur le reprend comme tout bloc (le bloc du dessus d'abord). La station suit (`majMoulin`) ;
          une partie d'avant garde sa meule, mais doit rehausser ses murs (migration v41 → v42).
          Sur la carte, les murs s'empilent de `etage.dy` px par bloc, un linteau ferme le dessus
          des portes, le toit se pose en haut de la tour ; dehors, une voilure de quatre ailes
