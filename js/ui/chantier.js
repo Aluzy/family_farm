@@ -241,7 +241,15 @@ registerActions({
     persistState();
     refresh();
   },
-  // La pose d'un meuble : ✔️ le pose là où est son aperçu ; ❌ sort de ce mode.
+  // La pose d'un meuble : l'aperçu glissé du doigt sur la case `case` (js/farm-stage.js) ;
+  // ✔️ le pose là où est son aperçu ; ❌ sort de ce mode.
+  'meuble-place': (target) => {
+    if (!meubleEnMain()) return;
+    const c = Number(target.dataset.case);
+    if (!Number.isInteger(c) || c < 0) return;
+    poseMeuble = { sorte: buildMode, case: c };
+    refresh();
+  },
   'meuble-ok': () => {
     if (!poseMeuble || !meubleEnMain()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }

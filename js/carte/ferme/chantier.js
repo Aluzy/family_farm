@@ -138,7 +138,16 @@
       const img = this.textures.exists(key)
         ? this.add.image(Math.round((col + a.largeur / 2) * T), y1 - 1, key).setOrigin(0.5, 1).setAlpha(P.alpha).setTint(a.ok ? 0xffffff : P.non).setDepth(this.etageZ(9998.5))
         : null;
-      this.apercu = { img, cadre };
+      // (ce que le doigt attrape pour le faire glisser : ses cases et son dessin, meubleSous)
+      const b = img ? img.getBounds() : null;
+      this.apercu = { img, cadre, case: a.case, x0: Math.min(x0, b ? b.x : x0), y0: Math.min(y1 - h, b ? b.y : y1 - h), x1: Math.max(x0 + w, b ? b.right : x0), y1 };
+    },
+
+    // L'aperçu du meuble sous ce point (sa case), ou null : un glissement parti de lui le
+    // déplace (js/farm-stage.js, drag.meuble).
+    meubleSous(wx, wy) {
+      const a = this.apercu;
+      return a && !this.room && wx >= a.x0 && wx <= a.x1 && wy >= a.y0 && wy <= a.y1 ? a.case : null;
     },
 
     // En mode Construire, au niveau `n` où l'on rehausse les murs (0 : aucun) : un voile sombre

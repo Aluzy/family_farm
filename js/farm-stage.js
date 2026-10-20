@@ -191,7 +191,7 @@
         // Dehors, le doigt posé puis glissé : le personnage marche dans sa direction tant qu'il
         // reste posé (CarteKit.manette) ; pas quand la houe laboure, ni la bulle de la citerne,
         // ni pendant la pêche, ni au lit.
-        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.held
+        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.held && !this.drag.meuble
           && !this.fishing && !(this.ctx.lastModel && this.ctx.lastModel.coucher));
         I.on('gameout', () => { if (!this.drag) this.setHover(null); });
         I.on('wheel', (p, over, dx, dy) => { if (this.suitPerso()) return; this.vx = this.vy = 0; this.pan = null; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
@@ -284,7 +284,11 @@
           fort: this.chargeStart(wp.x, wp.y),
           // FLU-12 : houe en main, un glissement parti d'une case verte laboure les cases traversées
           labour: null,
+          // la pose d'un meuble : un glissement parti de son aperçu le déplace, case par case
+          meuble: null,
         };
+        const mc = this.meubleSous ? this.meubleSous(wp.x, wp.y) : null;
+        if (mc !== null) { this.drag.meuble = { case: mc, c: Math.floor(wp.x / T), r: Math.floor(wp.y / T), dernier: mc }; return; }
         if (!this.drag.fort) this.drag.labour = this.labourStart(wp.x, wp.y);
         // Appui maintenu sur la citerne : une bulle dit combien de litres elle contient.
         if (!this.drag.labour && this.onTank(wp.x, wp.y)) {
@@ -315,6 +319,18 @@
         const zoom = this.cameras.main.zoom;
         const dx = pointer.x - d.x, dy = pointer.y - d.y;
         if (d.fort && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) this.chargeCancel(d);   // il marche
+        if (d.meuble) {
+          // l'aperçu du meuble suit le doigt, calé sur la grille (la page le replace : meuble-place)
+          if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; this.setHover(null); }
+          if (!d.moved) return;
+          const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y), m = d.meuble, cols = this.grid.cols;
+          const col = (m.case % cols) + Math.floor(wp.x / T) - m.c, row = Math.floor(m.case / cols) + Math.floor(wp.y / T) - m.r;
+          const nc = row * cols + col;
+          if (col < 0 || col >= cols || row < 0 || row * T >= this.world.h || nc === m.dernier) return;
+          m.dernier = nc;
+          this.ctx.bridge.act('meuble-place', { case: nc });
+          return;
+        }
         if (d.labour) {
           if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; this.setHover(null); }
           if (d.moved) this.labourTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
@@ -359,6 +375,7 @@
         }
         // Au doigt, rien ne « survole » : le nom reste un instant, puis s'efface.
         if (pointer.wasTouch && this.hoverId) this.hoverUntil = performance.now() + LABEL_HOLD_MS;
+        if (d.meuble && d.moved) return;           // l'aperçu du meuble a glissé : il reste où il est
         if (d.labour && d.moved) {
           this.clearLabourMarks();
           if (d.labour.tiles.length) this.ctx.bridge.act('hoe-many', { cases: d.labour.tiles.join(',') });

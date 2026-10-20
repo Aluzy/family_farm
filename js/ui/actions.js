@@ -21,7 +21,7 @@ export function registerActions(handlers) {
 export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
 export const SOMMEIL_PERMISES = new Set([
   'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start', 'demenagement-ok',
-  'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'entreprise-quota', 'meuble-annule',
+  'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'entreprise-quota', 'meuble-annule', 'meuble-place',
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'plant', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
