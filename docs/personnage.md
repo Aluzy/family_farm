@@ -20,6 +20,13 @@ carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; s
 paille, casquette, bonnet, béret, bandeau, fleur ; détails : barbe, moustache, lunettes, taches de
 rousseur, boucles d'oreilles ; habits unis, à rayures, à carreaux ou à pois.
 
+**Nouveau dessin, à l'essai sur `perso_01`** : une grosse tête (10 px de large), de grands
+yeux (le blanc et la pupille), une frange, une salopette à bavette et un contour brun. Sa
+planche est écrite par `scripts/personnage/chibi.py` (les têtes dessinées à la main, une par
+vue) avec les mêmes cases, la même taille et les mêmes positions de mains et d'outils
+(`frames()` de `fermier.py`, avec la figure de `chibi.py`) : rien ne change pour la carte.
+`fermier.py` saute les personnages de `ESSAIS`.
+
 **Les adultes de la famille** (version 1.17) ont l'apparence d'un de ces 50 personnages : dans la
 fiche d'un adulte (✏️), la grille « Personnage » remplace le sexe, la coiffure et la teinte des
 emojis (`member.perso`, 1 à 50 ; sans choix, `PERSO_DEFAUT` selon le sexe : 1 pour une femme, 7

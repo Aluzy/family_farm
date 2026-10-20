@@ -127,6 +127,9 @@ VARIANTES = {
     },
 }
 STYLE = {}         # le style du personnage en cours de dessin
+# Les personnages du catalogue redessinés à l'essai (grosse tête, grands yeux) : leur planche
+# est écrite par scripts/personnage/chibi.py, pas ici.
+ESSAIS = ('perso_01',)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalogue  # noqa: E402  (les 50 personnages du catalogue)
@@ -507,7 +510,9 @@ def basket(x, y, eggs=2):
     return draw
 
 
-def frames():
+def frames(figure=figure):
+    """Les cases (nom → dessin) ; figure : la fonction qui dessine le personnage (celle de ce
+    fichier, ou celle du nouveau dessin, scripts/personnage/chibi.py)."""
     F = {}
     for vue in ('bas', 'haut', 'cote'):
         # debout : il respire (le haut du corps descend d'un pixel)
@@ -656,8 +661,10 @@ def main():
     # tous) dans assets/personnages/cases.json ; leur portrait est dans assets/portraits.
     os.makedirs(os.path.join(ASSETS, 'personnages'), exist_ok=True)
     for i, (nom, d) in enumerate(catalogue.personnages()):
+        if nom in ESSAIS:
+            continue
         dessiner(variante_catalogue(d))
-        ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=(i == 0))
+        ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=(i == 1))
     # Les 50 enfants : assets/personnages/enfant_XX.png (les mêmes cases)
     import portraits_enfants
     for nom, d in portraits_enfants.enfants():
