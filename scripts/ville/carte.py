@@ -603,8 +603,12 @@ def objets(c):
     B.cloture_v(mob, 148 * T, 187 * T, 206 * T)
     B.cloture_v(mob, 166 * T, 187 * T, 206 * T)
     for x, y, diag in ((70, 99, False), (96, 137, False), (88, 126, True), (60, 182, False), (100, 182, False),
-                       (77, 168, False), (125, 182, False), (152, 192, False), (156, 199, False)):
+                       (125, 182, False), (152, 192, False), (156, 199, False)):
         mob.colle(O.banc(diag), x * T, y * T)
+    # les bancs de la place du monument (ses dalles : les tuiles 74 à 86 × 164 à 178) : près des
+    # bords, une rangée de dalles entre eux et l'herbe, tournés vers la statue
+    for x, y, sens in ((76, 165, 'bas'), (82, 165, 'bas'), (76, 176, 'haut'), (82, 176, 'haut'), (75, 170, 'droite'), (84, 170, 'gauche')):
+        mob.colle(O.banc_vers(sens), x * T, y * T)
     mob.colle(O.panneau(), 92 * T, 113 * T)
     tonneau = O.tonneau()
     for x, y in ((47, 114), (78, 114)):
@@ -619,7 +623,8 @@ def objets(c):
     for n, (x, y) in enumerate(etals()):
         mob.colle(E.etal(couleurs_etal[n % 5], n), x * T, y * T)
     # le monument, les jeux d'enfants
-    mob.colle(E.statue(), 80 * T + 8 - 24, 177 * T - 96)
+    # (au milieu de la place : le milieu de ses degrés, 82 px sous le haut de l'image, au milieu des dalles)
+    mob.colle(E.statue(), 80 * T + 8 - 48, round(171.5 * T) - 82)
     mob.colle(E.toboggan(), 127 * T, 189 * T)
     mob.colle(E.toboggan(), 137 * T, 196 * T)
     mob.colle(E.balancoire(), 132 * T, 188 * T)

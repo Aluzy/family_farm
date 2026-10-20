@@ -173,31 +173,34 @@ def etal(couleur, graine=0):
 # ---------- le parc ----------
 
 def statue():
-    """3 × 6 tuiles : le monument du parc, une figure de bronze sur un socle à degrés."""
-    im = image(48, 96)
+    """6 × 6 tuiles : le monument du parc, une figure de bronze sur un socle à degrés (deux fois
+    plus large que la première : le dessin de 3 tuiles, étiré en largeur autour de son milieu ;
+    la tête un peu moins)."""
+    im = image(96, 96)
     d = dessin(im)
+    X = lambda x: 48 + (x - 24) * 2                 # (de l'ancien dessin, 48 px, au nouveau)
     # les degrés
     for k, (w, y) in enumerate(((44, 84), (36, 78), (28, 72))):
         x0 = 24 - w // 2
-        d.rectangle((x0, y, x0 + w - 1, y + 7), fill=rgba(PIERRE[1]))
-        d.rectangle((x0, y, x0 + w - 1, y + 2), fill=rgba(PIERRE[2]))
-        d.rectangle((x0, y + 6, x0 + w - 1, y + 7), fill=rgba(PIERRE[3]))
+        d.rectangle((X(x0), y, X(x0 + w) - 1, y + 7), fill=rgba(PIERRE[1]))
+        d.rectangle((X(x0), y, X(x0 + w) - 1, y + 2), fill=rgba(PIERRE[2]))
+        d.rectangle((X(x0), y + 6, X(x0 + w) - 1, y + 7), fill=rgba(PIERRE[3]))
     # le socle
-    d.rectangle((14, 44, 33, 72), fill=rgba(PIERRE[0]))
-    d.rectangle((14, 44, 17, 72), fill=rgba(PIERRE[2]))
-    d.rectangle((30, 44, 33, 72), fill=rgba(PIERRE[1]))
-    d.rectangle((12, 40, 35, 45), fill=rgba(PIERRE[2]))
-    d.rectangle((12, 44, 35, 45), fill=rgba(PIERRE[3]))
-    d.rectangle((18, 52, 29, 60), fill=rgba(PIERRE[1]))
+    d.rectangle((X(14), 44, X(34) - 1, 72), fill=rgba(PIERRE[0]))
+    d.rectangle((X(14), 44, X(18) - 1, 72), fill=rgba(PIERRE[2]))
+    d.rectangle((X(30), 44, X(34) - 1, 72), fill=rgba(PIERRE[1]))
+    d.rectangle((X(12), 40, X(36) - 1, 45), fill=rgba(PIERRE[2]))
+    d.rectangle((X(12), 44, X(36) - 1, 45), fill=rgba(PIERRE[3]))
+    d.rectangle((X(18), 52, X(30) - 1, 60), fill=rgba(PIERRE[1]))
     # la figure : debout, un bras levé (bronze vert-de-gris)
     BR = ((58, 96, 86), (88, 132, 116), (126, 170, 150))
-    d.ellipse((20, 6, 27, 13), fill=rgba(BR[1]))
-    d.rectangle((19, 13, 28, 30), fill=rgba(BR[1]))
-    d.polygon(((18, 30), (29, 30), (31, 40), (16, 40)), fill=rgba(BR[0]))
-    d.line((28, 15, 34, 4), fill=rgba(BR[1]), width=3)
-    d.line((19, 16, 16, 28), fill=rgba(BR[0]), width=3)
-    d.rectangle((20, 14, 22, 30), fill=rgba(BR[2]))
-    d.ellipse((21, 7, 23, 9), fill=rgba(BR[2]))
+    d.ellipse((42, 4, 54, 13), fill=rgba(BR[1]))
+    d.rectangle((X(19), 13, X(29) - 1, 30), fill=rgba(BR[1]))
+    d.polygon(((X(18), 30), (X(29), 30), (X(31), 40), (X(16), 40)), fill=rgba(BR[0]))
+    d.line((X(28) - 2, 15, X(34) - 2, 2), fill=rgba(BR[1]), width=5)
+    d.line((X(19) + 2, 16, X(16) + 2, 28), fill=rgba(BR[0]), width=5)
+    d.rectangle((X(20), 14, X(23) - 1, 30), fill=rgba(BR[2]))
+    d.ellipse((45, 6, 48, 9), fill=rgba(BR[2]))
     return contour(im)
 
 

@@ -335,11 +335,12 @@
     }
   }
   // Les lieux (docs/plan-ville.md) : le bâtiment qu'ils remplacent (dans `retire`), deux niveaux ;
-  // leur plan et leur enseigne : leur nom (sinon `plan`, `enseigne` : les deux écoles).
+  // leur plan et leur enseigne : leur nom (sinon `plan`, `enseigne` : les deux écoles). Le bas de
+  // leur façade laisse le trottoir libre devant (la pizzeria, le fast-food, la menuiserie).
   const LIEUX = [
     { nom: 'boulangerie', efface: [45, 85, 7, 17], x: 46, y: 94, w: 5, h: 9, facade: 'bleu' },
-    { nom: 'pizzeria', efface: [146, 56, 11, 14], x: 146, y: 60, w: 11, h: 12, facade: 'rouge' },
-    { nom: 'burger', efface: [157, 56, 11, 14], x: 157, y: 60, w: 11, h: 12, facade: 'orange' },
+    { nom: 'pizzeria', efface: [146, 56, 11, 14], x: 146, y: 58, w: 11, h: 12, facade: 'rouge' },
+    { nom: 'burger', efface: [157, 56, 11, 14], x: 157, y: 58, w: 11, h: 12, facade: 'orange' },
     { nom: 'poissonnerie', efface: [147, 81, 21, 21], x: 147, y: 90, w: 21, h: 14, facade: 'pierre' },
     { nom: 'informatique', efface: [156, 16, 12, 16], x: 156, y: 21, w: 12, h: 13, facade: 'bleu' },
     { nom: 'mairie', efface: [58, 110, 19, 14], x: 58, y: 117, w: 19, h: 9, facade: 'pierre' },
@@ -354,7 +355,7 @@
     { nom: 'minoterie', efface: [19, 179, 15, 15], x: 20, y: 184, w: 13, h: 12, facade: 'ocre' },
     { nom: 'mayonnaise', efface: [1, 201, 11, 13], x: 1, y: 206, w: 11, h: 10, facade: 'rouge' },
     { nom: 'usine_info', efface: [20, 146, 14, 20], x: 20, y: 152, w: 14, h: 14, facade: 'pierre' },
-    { nom: 'menuiserie', efface: [45, 118, 8, 29], x: 46, y: 127, w: 7, h: 22, facade: 'ocre' },
+    { nom: 'menuiserie', efface: [45, 118, 8, 29], x: 46, y: 125, w: 7, h: 22, facade: 'ocre' },
   ].map((l) => ({ niveaux: 2, plan: l.nom, enseigne: l.nom, ...l }));
   const IMMEUBLE = {
     carte: 'ville', dy: 40, transparent: 0.3, voile: 0x0d1018, alpha: 0.62,

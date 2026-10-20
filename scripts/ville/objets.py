@@ -163,6 +163,17 @@ def banc(diagonal=False):
     return im
 
 
+def banc_vers(sens):
+    """Un banc de bois (banc) tourné pour regarder vers `sens` : 'bas' (le dossier en haut, 3 × 2
+    tuiles), 'haut' (le dossier en bas), 'droite' ou 'gauche' (2 × 3 tuiles, le dossier du côté
+    opposé). Son ombre reste en bas."""
+    im = banc()
+    tour = {'bas': 0, 'haut': 180, 'droite': 90, 'gauche': -90}[sens]
+    if tour:
+        im = im.rotate(tour, expand=True, resample=0)
+    return im
+
+
 def panneau():
     """2 × 2 tuiles : le panneau d'affichage du parc."""
     im = image(32, 32)
