@@ -253,3 +253,53 @@ export function convertirPartie(state, graine) {
   majPoulailler(state);
   return { ok: true, graine: g, batis: batis.filter((p) => !p.rendu).map((p) => p.id), rendus };
 }
+
+/* ---------- la proposition de déménager (au chargement d'une ancienne partie) ---------- */
+
+// Une ancienne partie se voit proposer le déménagement (écran de départ passé) ; « plus tard » le
+// remet à DEMENAGEMENT_DELAI jours (state.demenagement = { reporte: jour }).
+export const DEMENAGEMENT_DELAI = 3;
+
+export function demenagementPossible(state) {
+  return farmSeed(state) === null && !!(state.famille && state.famille.configuree);
+}
+
+export function demenagementPropose(state) {
+  if (!demenagementPossible(state)) return false;
+  const d = state.demenagement;
+  return !(d && Number.isInteger(d.reporte) && state.day < d.reporte + DEMENAGEMENT_DELAI);
+}
+
+export function reporterDemenagement(state) {
+  state.demenagement = { reporte: state.day };
+  return { ok: true, jusquau: state.day + DEMENAGEMENT_DELAI };
+}
+
+// La graine proposée : tirée de la partie (toujours la même pour elle).
+export function graineDemenagement(state) {
+  return String((Number(state.rngSeed) >>> 0) % 1000000);
+}
+
+// Ce que donnerait le déménagement sur la graine `graine`, sans toucher à la partie :
+// { ok, graine, batis, rendus, largeur, hauteur, sol (une lettre par case : h herbe, a arbre ou
+// rocher, e eau, c chemin), blocs: { case: sorte }, parcelles: [cases], arbres: [cases], cour: [c0, r0, c1, r1] }.
+export function apercuDemenagement(state, graine) {
+  const copie = JSON.parse(JSON.stringify(state));
+  const r = convertirPartie(copie, graine);
+  if (!r.ok) return r;
+  const T = farmTerrain(copie), W = T.LARGEUR, H = T.HAUTEUR, V = W + 1;
+  let sol = '';
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const ch = T.LIGNES[y][x], k = T.SOMMETS ? T.SOMMETS[y * V + x] : 0;
+      sol += ch === 'o' ? 'a' : ch !== '.' ? 'h' : k === 2 ? 'e' : 'c';
+    }
+  }
+  const tout = Object.keys(copie.blocs).map(Number).concat(copie.potager.parcelles.map((p) => p.case), copie.verger.arbres.map((t) => t.case));
+  const cs = tout.map((t) => t % W), rs = tout.map((t) => Math.floor(t / W));
+  return {
+    ...r, largeur: W, hauteur: H, sol, blocs: { ...copie.blocs },
+    parcelles: copie.potager.parcelles.map((p) => p.case), arbres: copie.verger.arbres.map((t) => t.case),
+    cour: tout.length ? [Math.min(...cs), Math.min(...rs), Math.max(...cs), Math.max(...rs)] : null,
+  };
+}

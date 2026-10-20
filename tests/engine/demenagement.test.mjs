@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import {
-  blocsPoses, blocDessus, buildPaturage, buildSerre, buildVerger, buyPasture, convertirPartie, countItem,
+  apercuDemenagement, blocsPoses, blocDessus, buildPaturage, DEMENAGEMENT_DELAI, demenagementPossible, demenagementPropose, graineDemenagement, reporterDemenagement, buildSerre, buildVerger, buyPasture, convertirPartie, countItem,
   couchages, createInitialState, DATA, etatEtable, etatPoulailler, farmSeed, farmTerrain, grantTech,
   houseRepaired, isOwned, nuitSansCouchage, plantTree, robotStation, serrePlaces, starterOf, upgradePoulailler,
   upgradeSerre,
@@ -110,4 +110,25 @@ test('Déménager : refus sur une ferme générée ou sans graine', () => {
   assertEqual(convertirPartie(s, '  ').ok, false);
   assert(convertirPartie(s, 'g').ok, 'déménagée');
   assertEqual(convertirPartie(s, 'h').ok, false);
+});
+
+test('Déménager : la proposition, « plus tard », et l\'aperçu sans toucher à la partie', () => {
+  const s = createInitialState(1);
+  s.famille.configuree = false;
+  assertEqual(demenagementPropose(s), false, 'pas avant l\'écran de départ');
+  s.famille.configuree = true;
+  assert(demenagementPossible(s) && demenagementPropose(s), 'proposé');
+  assertEqual(reporterDemenagement(s).jusquau, 1 + DEMENAGEMENT_DELAI);
+  assertEqual(demenagementPropose(s), false, 'plus tard');
+  s.day = 1 + DEMENAGEMENT_DELAI;
+  assert(demenagementPropose(s), 'proposé de nouveau');
+  assertEqual(graineDemenagement(s), graineDemenagement(structuredClone(s)), 'la même graine pour la partie');
+  const avant = JSON.stringify(s);
+  const a = apercuDemenagement(s, '77');
+  assertEqual(JSON.stringify(s), avant, 'la partie n\'a pas changé');
+  assert(a.ok && a.batis.includes('maison') && a.sol.length === a.largeur * a.hauteur, 'l\'aperçu');
+  assert(/^[hace]+$/.test(a.sol) && a.sol.includes('e'), 'herbe, arbres, chemin, eau');
+  assert(Object.values(a.blocs).includes('paillasse') && a.parcelles.length === s.potager.parcelles.length && a.cour, 'blocs, parcelles, cour');
+  assert(convertirPartie(s, '77').ok, 'déménagée');
+  assertEqual([demenagementPossible(s), demenagementPropose(s)], [false, false]);
 });

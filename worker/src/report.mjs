@@ -54,6 +54,7 @@ export const GAME_ACTIONS = {
   'buy-starter': 'Acheter un appareil de départ',
   'main-character': 'Choisir le personnage principal',
   'setup-start': 'Commencer la partie (famille configurée)',
+  'demenagement-ok': 'Déménager sur une terre sauvage',
   'member-remove': 'Retirer un membre de la famille',
   'pet-add': 'Adopter un animal de compagnie',
   'pet-save': 'Personnaliser un animal de compagnie',
@@ -109,6 +110,7 @@ export const INTERFACE_ACTIONS = new Set([
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open',
   'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel', 'commerce-pick', 'commerce-cancel',
   'ask-new-game', 'cancel-new-game', 'copy-export',
+  'open-demenagement', 'demenagement-hasard', 'demenagement-plus-tard',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,

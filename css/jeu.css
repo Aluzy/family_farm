@@ -1767,6 +1767,12 @@ main .ancre { scroll-margin-top: 150px; }
 .setup-ferme legend { padding: 0 4px; }
 .setup-choix { display: flex; gap: 8px; align-items: baseline; }
 .setup-graine { margin-top: 4px; }
+/* le déménagement d'une ancienne partie (ui/demenagement.js) : l'aperçu de la nouvelle terre */
+.demenagement-apercu { margin: 8px 0; }
+.demenagement-apercu canvas { display: block; width: 100%; max-height: 46vh; object-fit: contain; image-rendering: pixelated; border: 1px solid var(--border); border-radius: 8px; background: #7aa64a; }
+.demenagement-legende { margin: 4px 0 0; font-size: 0.85em; }
+.demenagement-liste { margin: 4px 0; padding-left: 1.2em; }
+#demenagement-graine { flex: 1; min-width: 0; }
 .setup-member {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
