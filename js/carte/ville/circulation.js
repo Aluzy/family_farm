@@ -103,36 +103,8 @@
       this.cars = [];
       this.carMeta = this.cache.json.get(CARS.key + '_meta') || { couleurs: ['rouge'], directions: { droite: 0 } };
       this.crossings = crossings.map((r) => ({ name: r.name, x0: r.x - 8, y0: r.y - 8, x1: r.x + r.width + 8, y1: r.y + r.height + 8, held: new Set() }));
-      this.routes = routes.filter((o) => o.polyline && o.polyline.length > 1).map((o) => {
-        const pts = o.polyline.map((p) => ({ x: o.x + p.x, y: o.y + p.y }));
-        const out = [pts[0]];
-        const line = (a, b) => {
-          const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2));
-          for (let i = 1; i <= n; i++) out.push({ x: a.x + (b.x - a.x) * i / n, y: a.y + (b.y - a.y) * i / n });
-        };
-        let cur = pts[0];
-        for (let i = 1; i < pts.length - 1; i++) {
-          const a = pts[i - 1], p = pts[i], b = pts[i + 1];
-          const la = Math.hypot(a.x - p.x, a.y - p.y), lb = Math.hypot(b.x - p.x, b.y - p.y);
-          const r = Math.min(CARS.corner, la / 2, lb / 2);
-          const p1 = { x: p.x + (a.x - p.x) / la * r, y: p.y + (a.y - p.y) / la * r };
-          const p2 = { x: p.x + (b.x - p.x) / lb * r, y: p.y + (b.y - p.y) / lb * r };
-          line(cur, p1);
-          for (let k = 1; k <= 16; k++) {
-            const t = k / 16, u = 1 - t;
-            out.push({ x: u * u * p1.x + 2 * u * t * p.x + t * t * p2.x, y: u * u * p1.y + 2 * u * t * p.y + t * t * p2.y });
-          }
-          cur = p2;
-        }
-        line(cur, pts[pts.length - 1]);
-        let s = 0;
-        out.forEach((p, i) => { if (i) s += Math.hypot(p.x - out[i - 1].x, (p.y - out[i - 1].y) / KY); p.s = s; });
-        const spans = this.crossings.map((c) => {
-          const inside = out.filter((p) => p.x >= c.x0 && p.x <= c.x1 && p.y >= c.y0 && p.y <= c.y1);
-          return inside.length ? { enter: inside[0].s, exit: inside[inside.length - 1].s, pts: inside } : null;
-        });
-        return { name: o.name, pts: out, length: s, spans, bus: !!o.bus };
-      });
+      this.routes = routes.filter((o) => o.polyline && o.polyline.length > 1)
+        .map((o) => this.routeDe(o.name, o.polyline.map((p) => ({ x: o.x + p.x, y: o.y + p.y })), !!o.bus));
       // (les voitures ne roulent pas le long des lignes de bus de la ville : elles ne font que
       // les traverser ; LIGNES, js/carte/ville/lignes.js)
       const voies = new Set();
@@ -140,16 +112,7 @@
       const leLong = (r) => r.pts.reduce((n, p) => n + (voies.has(`${Math.round(p.x / 8)},${Math.round(p.y / 8)}`) ? 1 : 0), 0) * 2;
       this.carRoutes = this.routes.filter((r) => !r.bus && (!voies.size || leLong(r) < 160));
       // deux trajets se gênent dans un carrefour s'ils y passent tout près l'un de l'autre
-      this.conflict = this.crossings.map((c, k) => this.routes.map((a) => this.routes.map((b) => {
-        const sa = a.spans[k], sb = b.spans[k];
-        if (!sa || !sb) return false;
-        // (un point sur trois : ils sont à ~2 px les uns des autres)
-        for (let i = 0; i < sa.pts.length; i += 3) {
-          const p = sa.pts[i];
-          for (let j = 0; j < sb.pts.length; j += 3) if (Math.hypot(p.x - sb.pts[j].x, (p.y - sb.pts[j].y) / KY) < CARS.cross) return true;
-        }
-        return false;
-      })));
+      this.conflict = this.crossings.map((c, k) => this.routes.map((a) => this.routes.map((b) => this.seGenent(a, b, k))));
       this.routes.forEach((r, i) => { r.index = i; });
       this.nextSpawn = 600;
       if (reduced() || !this.carRoutes.length || !this.textures.exists(CARS.key)) return;
@@ -160,6 +123,65 @@
         if (r.spans.some((sp) => sp && s > sp.enter - 40 && s < sp.exit + 10)) continue;
         this.addCar(r, s);
       }
+    },
+
+    // Un trajet : la polyligne `pts` (px), ses coins arrondis (une courbe de Bézier entre les deux
+    // points à CARS.corner du coin), puis des points tous les ~2 px avec leur abscisse au sol ;
+    // et, pour chaque carrefour, où il y entre et en sort.
+    routeDe(name, pts, bus = false) {
+      const out = [pts[0]];
+      const line = (a, b) => {
+        const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2));
+        for (let i = 1; i <= n; i++) out.push({ x: a.x + (b.x - a.x) * i / n, y: a.y + (b.y - a.y) * i / n });
+      };
+      let cur = pts[0];
+      for (let i = 1; i < pts.length - 1; i++) {
+        const a = pts[i - 1], p = pts[i], b = pts[i + 1];
+        const la = Math.hypot(a.x - p.x, a.y - p.y), lb = Math.hypot(b.x - p.x, b.y - p.y);
+        const r = Math.min(CARS.corner, la / 2, lb / 2);
+        const p1 = { x: p.x + (a.x - p.x) / la * r, y: p.y + (a.y - p.y) / la * r };
+        const p2 = { x: p.x + (b.x - p.x) / lb * r, y: p.y + (b.y - p.y) / lb * r };
+        line(cur, p1);
+        for (let k = 1; k <= 16; k++) {
+          const t = k / 16, u = 1 - t;
+          out.push({ x: u * u * p1.x + 2 * u * t * p.x + t * t * p2.x, y: u * u * p1.y + 2 * u * t * p.y + t * t * p2.y });
+        }
+        cur = p2;
+      }
+      line(cur, pts[pts.length - 1]);
+      let s = 0;
+      out.forEach((p, i) => { if (i) s += Math.hypot(p.x - out[i - 1].x, (p.y - out[i - 1].y) / KY); p.s = s; });
+      const spans = this.crossings.map((c) => {
+        const inside = out.filter((p) => p.x >= c.x0 && p.x <= c.x1 && p.y >= c.y0 && p.y <= c.y1);
+        return inside.length ? { enter: inside[0].s, exit: inside[inside.length - 1].s, pts: inside } : null;
+      });
+      return { name, pts: out, length: s, spans, bus };
+    },
+
+    // Les trajets `a` et `b` se gênent-ils dans le carrefour `k` (ils y passent tout près l'un de
+    // l'autre) ?
+    seGenent(a, b, k) {
+      const sa = a.spans[k], sb = b.spans[k];
+      if (!sa || !sb) return false;
+      // (un point sur trois : ils sont à ~2 px les uns des autres)
+      for (let i = 0; i < sa.pts.length; i += 3) {
+        const p = sa.pts[i];
+        for (let j = 0; j < sb.pts.length; j += 3) if (Math.hypot(p.x - sb.pts[j].x, (p.y - sb.pts[j].y) / KY) < CARS.cross) return true;
+      }
+      return false;
+    },
+
+    // Un trajet de plus, pendant le jeu (celui d'une voiture d'habitant : js/carte/ville/
+    // voitures.js) : son rang et ses carrefours, comme les autres.
+    ajouteRoute(r) {
+      r.index = this.routes.length;
+      this.routes.push(r);
+      this.crossings.forEach((c, k) => {
+        const M = this.conflict[k];
+        M[r.index] = this.routes.map((b) => this.seGenent(r, b, k));
+        for (const b of this.routes) if (b !== r) M[b.index][r.index] = M[r.index][b.index];
+      });
+      return r;
     },
 
     // Le point du trajet à l'abscisse s, et la direction (au sol) où l'on roule : écrits dans
@@ -243,7 +265,7 @@
           const sp = r.spans[k];
           if (!sp || car.held.has(k) || car.s > sp.exit) continue;
           const before = sp.enter - car.s;
-          if (before > CARS.stop + 30) continue;
+          if (before > CARS.stop + CARS.voit) continue;
           let blocked = false;
           for (const o of c.held) if (o !== car && this.conflict[k][r.index][o.route.index]) { blocked = true; break; }
           if (blocked) room = Math.min(room, before - CARS.stop);
@@ -268,7 +290,7 @@
         }
         this.pointAt(r, car, car);
         this.placeCar(car);
-        if (car.alpha !== undefined && car.alpha < 1) { car.alpha = Math.min(1, car.alpha + dt * 2); car.sprite.setAlpha(car.alpha); }
+        if (!car.partir && car.alpha !== undefined && car.alpha < 1) { car.alpha = Math.min(1, car.alpha + dt * 2); car.sprite.setAlpha(car.alpha); }
       }
     },
 

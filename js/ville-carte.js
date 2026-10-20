@@ -768,6 +768,7 @@
       this.stepArrival(dt);
       this.stepNavette(dt);
       this.stepLignes(dt);
+      this.stepVoitures(dt);
       this.stepFinds(time);
       this.stepFauna(time, dt);
       this.stepMine(dt);

@@ -90,13 +90,14 @@
   // La circulation : vitesses en px au sol par seconde, distances au sol.
   const CARS = {
     key: 'voitures', file: 'assets/ville_voitures.png', meta: 'assets/ville_voitures.json',
-    max: 16, speed: 46, accel: 40, decel: 90,
+    max: 16, speed: 100, accel: 80, decel: 180,
     gap: 70,          // d'un centre à l'autre, derrière une voiture (une longueur et un peu plus)
     lane: 16,         // l'écart de côté au-delà duquel ce n'est plus la même file
     hero: 44,         // la distance où elles s'arrêtent devant la promeneuse
     corner: 28,       // le rayon des virages
     cross: 22,        // deux trajets se croisent dans un carrefour s'ils passent à moins de ça
     stop: 34,         // on attend un carrefour le centre à ça de son bord (le nez dehors)
+    voit: 70,         // on regarde si le carrefour est libre à ça de l'endroit où l'on s'arrêterait
     spawn: [900, 2600],
   };
   const KY = 0.7;
@@ -124,7 +125,7 @@
   const LIGNES = {
     key: 'bus_lignes', file: 'assets/ville_bus_lignes.png',
     poteau: { key: 'arret_bus', file: 'assets/ville_arret_bus.png', w: 16, h: 48, pied: 46 },
-    heures: [4.5, 23.5], intervalle: 30, vitesse: 160, arret: 1.5,
+    heures: [4.5, 23.5], intervalle: 30, vitesse: 200, arret: 1.5,
     rues: { avenue: { trottoir: 72, x: [600, 680] }, biblio: { trottoir: 70, y: [1170, 1230] } },
     arrets: {
       usines: { nom: 'Usines du nord', rue: 'avenue', y: 328 },
@@ -155,6 +156,19 @@
       },
     ],
   };
+  // Les voitures des habitants (js/carte/ville/voitures.js) : `part` des adultes de la ville
+  // (ceux qui ont le plus long chemin jusqu'à leur travail) ont une voiture ; elle les attend au
+  // bord de la rue la plus proche, roule par les rues (`rues` : les chaussées de la ville, en
+  // tuiles, comme scripts/ville/plan.py : x0, x1, y0, y1 ; la file de droite à `ecart` px du
+  // milieu) et les dépose au bord de la rue la plus proche de là où ils vont.
+  const VOITURES = {
+    part: 0.2, ecart: 15,
+    rues: {
+      v: [['avenue_ouest', 36, 44, 0, 219], ['rue_des_maisons', 82, 88, 0, 157], ['boulevard', 110, 118, 0, 219], ['rue_des_bureaux', 138, 144, 0, 78]],
+      h: [['rue_du_haut', 36, 168, 10, 16], ['rue_de_la_bibliotheque', 36, 168, 72, 78], ['rue_de_l_ecole', 36, 168, 104, 112],
+        ['rue_des_parcs', 36, 168, 149, 157], ['route_de_la_ferme', 0, 44, 170, 176]],
+    },
+  };
   // Les camions de la logistique (assets/ville_camion.png et .json, scripts/ville/camion.py :
   // huit directions) : de `heures[0]` à `heures[1]` h, autant sur les routes que l'économie en a
   // fait rouler hier (le bilan de la nuit, ECONOMIE.CAMIONS : js/engine/economie.js), au plus `max`
@@ -162,7 +176,7 @@
   const CAMION = { key: 'camion', file: 'assets/ville_camion.png', meta: 'assets/ville_camion.json', half: 40, heures: [6, 20], max: 4 };
   const BUS = {
     key: 'bus', file: 'assets/ville_bus.png', meta: 'assets/ville_bus.json', half: 46, carHalf: 29,
-    speed: 70,             // px au sol par seconde (plus vite que les voitures : la ville est grande)
+    speed: 120,            // px au sol par seconde (plus vite que les voitures : la ville est grande)
     lead: 1400,            // il part au plus à cette distance de l'arrêt (déjà en route, en fondu)
     kid: { speed: K.VITESSES.enfantsBus, fade: 0.5, cases: 'assets/personnages/cases.json' },
     resume: 1.2,           // s : le temps que les enfants s'éloignent (ou montent) avant de repartir
@@ -493,7 +507,7 @@
 
   const parties = [];
   global.CarteVille = {
-    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, CAMION, LIGNES, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE },
+    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, CAMION, LIGNES, VOITURES, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE },
     etat, configure, hote, sheetKey, saisie: K.saisie, reduced: K.reduit, v: K.v, tuilesDans,
     // les méthodes de la scène, fichier par fichier (voir js/ville-carte.js)
     parties,

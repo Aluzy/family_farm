@@ -120,10 +120,15 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
    - 6a, les lignes (fait ; `js/carte/ville/lignes.js`) : les bus qui roulent et s'arrêtent, les
      poteaux des arrêts ; le joueur touche un poteau, choisit son arrêt, paie son ticket, monte
      dans le prochain bus et descend à son arrêt ;
-   - 6b, les habitants (fait ; `js/carte/ville/habitants.js`, `planBus`) : pour aller au
+   - 6b, les habitants (fait ; `js/carte/ville/habitants.js`, `planTrajet`) : pour aller au
      travail, à l'école, au marché, en sortie et pour rentrer, ils prennent le bus quand c'est
      au moins un dixième plus court qu'à pied (le chemin jusqu'à l'arrêt, l'attente, le trajet,
      le chemin depuis l'arrêt) ; ils vont à l'arrêt, attendent, montent, descendent et finissent
-     à pied ; la famille paie les tickets de chaque jour (`immeubleBus`, `payerBus`) ;
+     à pied ; la famille paie les tickets de chaque jour (`immeubleBus`, `payerBus`). 20 % des
+     adultes (les 16 qui ont le plus long chemin jusqu'à leur travail) ont une voiture
+     (`VOITURES`, `js/carte/ville/voitures.js`) : elle les attend au bord de la rue la plus
+     proche, roule par les rues dans la circulation et les dépose au plus près. La circulation
+     va plus vite : les voitures et les camions à 100 px/s, le bus de l'école à 120, ceux des
+     lignes à 200 ;
    - 6c, les chauffeurs : quatre postes de conducteur·rice de bus (pris à d'autres lieux, pour
      garder 80 postes), payés par la caisse de la ville.
