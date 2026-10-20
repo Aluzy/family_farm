@@ -92,27 +92,29 @@ export function piecesCloses(state) {
   const cle = W + ':' + JSON.stringify(B);
   if (cle === piecesCle) return piecesListe;
   const ferme = (t) => { const s = sorteDe(B[t]); return !!(s && s.ferme); };
-  const vus = new Set(), out = [], max = DATA.ATELIER.PIECE_MAX;
-  // une pièce touche forcément un bloc qui ferme : on part des cases voisines des blocs
+  const faites = new Set(), out = [], max = DATA.ATELIER.PIECE_MAX;
+  // une pièce touche forcément un bloc qui ferme : on part des cases voisines des blocs. Chaque
+  // étendue a ses propres cases vues : celles qu'une étendue ouverte (trop grande) a vues sans
+  // aller au-delà ne doivent pas en arrêter une autre (elles feraient un mur qui n'existe
+  // pas) ; `faites` : les cases déjà parcourues, d'où l'on ne repart pas.
   for (const k of Object.keys(B)) {
     const b = Number(k);
     if (!ferme(b)) continue;
     const c0 = b % W;
     for (const d of [c0 > 0 ? b - 1 : -1, c0 < W - 1 ? b + 1 : -1, b - W, b + W]) {
-      if (d < 0 || d >= W * H || ferme(d) || vus.has(d)) continue;
-      const cases = [], bord = new Set(), pile = [d];
+      if (d < 0 || d >= W * H || ferme(d) || faites.has(d)) continue;
+      const cases = [], bord = new Set(), pile = [d], vus = new Set([d]);
       let ouverte = false;
-      vus.add(d);
       while (pile.length) {
         const i = pile.pop(), c = i % W, r = Math.floor(i / W);
         cases.push(i);
-        if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max) { ouverte = true; }
+        faites.add(i);
+        if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max) { ouverte = true; break; }
         for (const j of [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, r > 0 ? i - W : -1, r < H - 1 ? i + W : -1]) {
           if (j < 0) continue;
           if (ferme(j)) { bord.add(j); continue; }
           if (!vus.has(j)) { vus.add(j); pile.push(j); }
         }
-        if (ouverte && cases.length > max) break;
       }
       if (ouverte) continue;
       const portes = [...bord].filter((t) => sorteDe(B[t]).porte);
