@@ -20,6 +20,24 @@ carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; s
 paille, casquette, bonnet, béret, bandeau, fleur ; détails : barbe, moustache, lunettes, taches de
 rousseur, boucles d'oreilles ; habits unis, à rayures, à carreaux ou à pois.
 
+**Le dessin** (d'après les modèles dessinés à la main de `perso_01` et `perso_02`) :
+une grosse tête (10 px de large), de grands yeux, un contour brun. Chaque personnage a son
+**modèle**, `scripts/personnage/modeles/<nom>.png` (12 × 79 px) : de face, de dos et de profil
+(tourné vers la droite), debout, empilés (rangées 0, 27 et 54 ; 25 rangées chacune, le contour
+du bas compris).
+- `scripts/personnage/modeles.py` tire les modèles du catalogue (adultes et enfants), en
+  suivant les motifs des modèles dessinés (les yeux de 2 × 2, l'ombre des cheveux à droite, la
+  salopette à bretelles, la couture entre les jambes…) : une couche de lettres par élément (le
+  corps, le visage, la coiffure, le couvre-chef, les détails). Il n'écrase pas les modèles de
+  `RETOUCHES` (dessinés ou retouchés à la main : `perso_01` à `perso_03`) ; un modèle retouché
+  s'y ajoute.
+- `scripts/personnage/chibi.py` en tire les planches (`assets/personnages/perso_XX.png`,
+  `enfant_XX.png`, et les planches par défaut `assets/fermiere.png` et `fermier.png`), avec les
+  cases, la taille et les positions de mains et d'outils de `frames()` (`fermier.py`) : debout,
+  le modèle tel quel ; la marche lève une jambe ou les fait passer l'une devant l'autre ; avec
+  un outil, les bras du modèle sont redessinés vers les mains. Un enfant est raccourci de 4
+  rangées (le ventre et les cuisses), la tête garde sa taille. `fermier.py` l'appelle.
+
 **Les adultes de la famille** (version 1.17) ont l'apparence d'un de ces 50 personnages : dans la
 fiche d'un adulte (✏️), la grille « Personnage » remplace le sexe, la coiffure et la teinte des
 emojis (`member.perso`, 1 à 50 ; sans choix, `PERSO_DEFAUT` selon le sexe : 1 pour une femme, 7
