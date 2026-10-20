@@ -444,6 +444,114 @@ def paroi_vitree(m, j=0):
     return t.im
 
 
+# le verre de la serre, clair et presque transparent (du fond au reflet, et son opacité), le
+# dessus vu au travers un peu plus transparent que la face
+VERRE_SERRE = [(150, 204, 192), (186, 226, 214), (226, 246, 238), (250, 255, 252)]
+VERRE_ALPHA = {'dessus': 96, 'face': 128, 'reflet': 190}
+
+
+def verre_serre(m, j=0):
+    """Le mur haut de masque m de la serre : du verre clair, qu'on voit au travers, dans des
+    arêtes de bois. Le dessus : une vitre posée à plat, une poutre de bois sur chaque bord libre
+    et sur l'arête de la chape ; la face (un mur sans voisin au-dessous) : des vitres entre un
+    montant de bois au bord droit (et au bord gauche, sans paroi voisine de ce côté), une
+    traverse au milieu, une sablière sous la chape et un soubassement de planches au pied ; des
+    reflets en biais. j : les murs de serre voisins (1 à gauche, 2 à droite)."""
+    t = Toile()
+    n, e, s, w = (m & 1, m & 2, m & 4, m & 8)
+    fin = BAS if s else CHAPE - 1
+
+    def vitre(x, y, a):
+        k = 2 if (x + y) % 16 in (0, 1) else 3 if (x + y) % 16 == 2 else 1 if y % 9 < 5 else 0
+        t.px[x, y] = VERRE_SERRE[k] + ((VERRE_ALPHA['reflet'] if k >= 2 else a),)
+
+    for y in range(0, fin + 1):                   # le dessus : la vitre à plat
+        for x in range(W):
+            vitre(x, y, VERRE_ALPHA['dessus'])
+    for x in range(W):                            # ses poutres : sur les bords libres
+        if not n:
+            t.put(x, 1, BOIS[3])
+            t.put(x, 2, BOIS[2])
+    for y in range(0, fin + 1):
+        if not w:
+            t.put(1, y, BOIS[3])
+            t.put(2, y, BOIS[2])
+        if not e:
+            t.put(13, y, BOIS[1])
+            t.put(14, y, BOIS[0])
+    if not s:
+        xa, xb = (0 if w else 1), (15 if e else 14)
+        for x in range(W):
+            t.put(x, CHAPE - 2, BOIS[3])          # l'arête de la chape : une poutre claire
+            t.put(x, CHAPE - 1, BOIS[2])
+            t.put(x, CHAPE, CADRE[0])             # son ombre sur la face
+        for y in range(CHAPE + 1, BAS):
+            v = y - (CHAPE + 1)
+            for x in range(xa, xb + 1):
+                if y >= BAS - 4:                  # le soubassement de planches
+                    t.put(x, y, BOIS[1] if y == BAS - 4 or x % 8 == 7 else BOIS[2] if y < BAS - 1 else BOIS[0])
+                elif v < 2:                       # la sablière
+                    t.put(x, y, BOIS[2] if v == 0 else BOIS[1])
+                elif (x == xa and not j & 1) or x == xb:
+                    t.put(x, y, BOIS[2] if x == xa else BOIS[1])   # les montants
+                elif v == (BAS - 4 - CHAPE) // 2:
+                    t.put(x, y, BOIS[2])          # la traverse
+                else:
+                    vitre(x, y, VERRE_ALPHA['face'])
+    # les bords libres : le contour
+    if not n:
+        for x in range(W):
+            t.put(x, 0, OUT)
+    if not w:
+        for y in range(H):
+            t.put(0, y, OUT)
+    if not e:
+        for y in range(H):
+            t.put(15, y, OUT)
+    if not s:
+        for x in range(W):
+            t.put(x, BAS, OUT)
+    if s and e:
+        for y in range(CHAPE, H):
+            t.put(15, y, OUT)
+    if s and w:
+        for y in range(CHAPE, H):
+            t.put(0, y, OUT)
+    if not n and not w:
+        t.efface(0, 0)
+    if not n and not e:
+        t.efface(15, 0)
+    return t.im
+
+
+def porte_serre():
+    """La porte de la serre, dans un mur de verre horizontal : un battant de bois vitré (un
+    cadre, deux carreaux, une traverse, un panneau plein en bas), sa poignée, le seuil."""
+    t = Toile(verre_serre(2 | 8))
+    y0, x0, x1 = H - 22, 2, 13                    # le haut du battant (22 px de porte)
+    for y in range(y0 - 2, H):
+        for x in range(x0 - 1, x1 + 2):
+            t.efface(x, y)
+    for x in range(x0 - 1, x1 + 2):               # le linteau
+        t.put(x, y0 - 2, BOIS[3])
+        t.put(x, y0 - 1, CADRE[0])
+    for y in range(y0, BAS):
+        for x in range(x0 - 1, x1 + 2):
+            cadre = x in (x0 - 1, x1 + 1, x0, x1) or y in (y0, y0 + 1) or y >= BAS - 7 or y == y0 + 7
+            if x in (x0 - 1, x1 + 1):
+                t.put(x, y, CADRE[0])             # le chambranle
+            elif cadre:
+                t.put(x, y, BOIS[2] if y < BAS - 7 or (x + y) % 5 else BOIS[1])
+            else:
+                k = 2 if (x + y) % 12 in (0, 1) else 1
+                t.px[x, y] = VERRE_SERRE[k] + ((VERRE_ALPHA['reflet'] if k == 2 else VERRE_ALPHA['face']),)
+    t.put(x1 - 2, BAS - 10, FER[4])               # la poignée
+    t.put(x1 - 2, BAS - 9, FER[0])
+    for x in range(W):                            # le seuil
+        t.put(x, BAS, OUT)
+    return t.im
+
+
 def pierre_angle(m):
     """Le mur haut de masque m aux pierres d'angle : sur la face, de grosses pierres taillées
     plus claires, une longue et une courte en alternance, aux bords libres (sans mur voisin à
@@ -513,7 +621,9 @@ def murs_hauts():
     masque ; BLOCS_CARTE.hauts.joints) ; puis les murs aux matières des immeubles de la ville
     (MATIERES_VILLE : 161, 177, 193, 209, 225 + masque) ; puis, dans le mur de briques ocre
     (l'immeuble de la ville), les fenêtres seules, prolongées à gauche, à droite, des deux
-    côtés (241, 257, 273, 289 + masque) et la porte (305)."""
+    côtés (241, 257, 273, 289 + masque) et la porte (305) ; puis les murs de verre de la serre,
+    seuls, prolongés à gauche, à droite, des deux côtés (306, 322, 338, 354 + masque) et sa
+    porte (370)."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     motif, dessus = next((mo, de) for nom, mo, de in MATIERES_VILLE if nom == 'brique_ocre')
@@ -524,7 +634,8 @@ def murs_hauts():
         return ([mur(m) for m in range(16)] + [porte_haute()] + [fenetre(m) for m in range(16)] + [pierre_angle(m) for m in range(16)]
                 + [fenetre(m, j) for j in (1, 2, 3) for m in range(16)] + [paroi_vitree(m, j) for j in range(4) for m in range(16)]
                 + [mur_ville(m, motif, dessus) for _, motif, dessus in MATIERES_VILLE for m in range(16)]
-                + [fenetre(m, j, ocre) for j in range(4) for m in range(16)] + [porte_haute(ocre)], H)
+                + [fenetre(m, j, ocre) for j in range(4) for m in range(16)] + [porte_haute(ocre)]
+                + [verre_serre(m, j) for j in range(4) for m in range(16)] + [porte_serre()], H)
     finally:
         H, BAS, FACE = garde
 

@@ -239,6 +239,25 @@ export function serrePlaces(state) {
   return p.cases.filter((t) => !B[t] && !passage.has(t));
 }
 
+// Les murs et les portes de l'enceinte de la Serre (la pièce du bac à semis : les blocs qui la
+// bordent, coins compris), dans l'ordre des cases ; la carte les dessine en verre et en bois.
+export function serreMurs(state) {
+  const B = blocsPoses(state), W = farmTerrain(state).LARGEUR;
+  const p = piecesCloses(state).find((q) => q.cases.some((t) => B[t] === 'bac_semis'));
+  if (!p) return [];
+  const out = new Set();
+  for (const t of p.cases) {
+    const c = t % W;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const j = t + dy * W + dx, s = sorteDe(B[j]);
+        if (c + dx >= 0 && c + dx < W && s && (s.mur || s.porte)) out.add(j);
+      }
+    }
+  }
+  return [...out].sort((a, b) => a - b);
+}
+
 // La famille dort-elle cette nuit ? Partout sauf sur la ferme générée ; là, il faut une
 // paillasse dans une pièce close pour le personnage principal (la première lui revient).
 export function nuitCouchee(state) {

@@ -37,7 +37,7 @@ import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, couchages, etatEtable, etatPoulailler, piecesCloses, serrePlaces, solsPoses } from '../engine/blocs.js';
+import { blocsPoses, couchages, etatEtable, etatPoulailler, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml, niveauBati } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise, toits } from '../engine/etage.js';
@@ -449,6 +449,8 @@ export function stageModel() {
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
     // la Serre de la ferme générée : les cases de sa pièce où ses parcelles se posent (serrePlaces)
     serreCases: atelierOuvert(state) && state.serre.construit ? serrePlaces(state) : null,
+    // et ses murs et ses portes, en verre et en bois (serreMurs)
+    serreMurs: atelierOuvert(state) ? serreMurs(state) : [],
     // les toits des bâtiments, sur leur dernier niveau (js/carte/ferme/toits.js)
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),

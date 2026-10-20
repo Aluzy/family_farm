@@ -37,15 +37,15 @@
   const mel = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 
   // Le toit de verre (la Serre) : des vitres claires, presque transparentes, entre des
-  // montants de fer tous les 8 px (des reflets en biais sur les vitres), le faîtage et le bord
-  // en fer.
-  const VERRE = { vitre: [196, 232, 226], alpha: 70, reflet: [236, 250, 246], refletAlpha: 150, fer: [150, 164, 160], ferClair: [204, 216, 212], ferSombre: [82, 92, 92] };
+  // montants de bois tous les 8 px (des reflets en biais sur les vitres), le faîtage et le bord
+  // en bois, comme ses murs (scripts/carte/blocs.py verre_serre).
+  const VERRE = { vitre: [196, 232, 226], alpha: 70, reflet: [236, 250, 246], refletAlpha: 150, bois: [138, 96, 58], boisClair: [176, 128, 80], boisSombre: [76, 52, 32] };
 
   // La couleur et l'opacité du pixel (x, y) d'un pan de verre dont l'égout est du côté `sens`.
   function vitre(x, y, sens) {
     const [a, b] = sens === 'bas' || sens === 'haut' ? [x, y] : [y, x];
     const ta = ((a % 8) + 8) % 8, tb = ((b % 8) + 8) % 8;
-    if (ta === 0 || tb === 0) return [teinte(ta === 0 && tb === 0 ? VERRE.ferSombre : VERRE.fer, R.ombrage[sens]), 235];
+    if (ta === 0 || tb === 0) return [teinte(ta === 0 && tb === 0 ? VERRE.boisSombre : VERRE.bois, R.ombrage[sens]), 235];
     if ((ta + tb) % 8 === 3 && ta < 5) return [VERRE.reflet, VERRE.refletAlpha];
     return [teinte(VERRE.vitre, R.ombrage[sens]), VERRE.alpha];
   }
@@ -96,21 +96,21 @@
         // l'égout sous le pan de devant : le rang sombre, la planche de rive, son ombre sur la façade
         if (y >= E) {
           const k = y - E;
-          if (k < 4) met(px, py, verre ? (k === 1 ? VERRE.ferClair : VERRE.ferSombre) : k === 0 ? R.sombre : k === 3 || x === x0 || x === x1 - 1 ? R.contour : R.planche[k - 1]);
+          if (k < 4) met(px, py, verre ? (k === 1 ? VERRE.boisClair : VERRE.boisSombre) : k === 0 ? R.sombre : k === 3 || x === x0 || x === x1 - 1 ? R.contour : R.planche[k - 1]);
           else met(px, py, [0, 0, 0], Math.round(255 * R.ombre * (7 - k) / 3));
           continue;
         }
         const z = zone(x, y);
         let [c, a] = verre ? vitre(x, y, z) : [tuile(x, y, z), 255];
         // les arêtiers (là où le pan change), le bord
-        if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([u, v]) => zone(x + u, y + v) !== z)) { c = verre ? (z === 'gauche' || z === 'haut' ? VERRE.ferClair : VERRE.ferSombre) : z === 'gauche' || z === 'haut' ? R.claire : R.contour; a = 255; }
-        if (x === x0 || x === x1 - 1 || y === 0 || !dedans(x, y - 1) || !dedans(x - 1, y) || !dedans(x + 1, y)) { c = verre ? VERRE.ferSombre : R.contour; a = 255; }
+        if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([u, v]) => zone(x + u, y + v) !== z)) { c = verre ? (z === 'gauche' || z === 'haut' ? VERRE.boisClair : VERRE.boisSombre) : z === 'gauche' || z === 'haut' ? R.claire : R.contour; a = 255; }
+        if (x === x0 || x === x1 - 1 || y === 0 || !dedans(x, y - 1) || !dedans(x - 1, y) || !dedans(x + 1, y)) { c = verre ? VERRE.boisSombre : R.contour; a = 255; }
         met(px, py, c, a);
       }
     }
     // le faîtage : une ligne de tuiles rondes entre les deux croupes
-    // (de verre : une poutre de fer, plus fine)
-    const rangs = verre ? [VERRE.ferSombre, VERRE.ferClair, VERRE.fer, VERRE.ferSombre] : [R.contour, R.claire, teinte(R.claire, 1.08), R.tuile, R.sombre, R.contour];
+    // (de verre : une poutre de bois, plus fine)
+    const rangs = verre ? [VERRE.boisSombre, VERRE.boisClair, VERRE.bois, VERRE.boisSombre] : [R.contour, R.claire, teinte(R.claire, 1.08), R.tuile, R.sombre, R.contour];
     for (let x = x0 + rentre; x < x1 - rentre; x++) {
       for (let k = 0; k < rangs.length; k++) {
         const y = faite - (verre ? 2 : 3) + k;
