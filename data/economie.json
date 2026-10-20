@@ -34,8 +34,6 @@
     "  baisse chaque jour de DECLIN de plus que celui de la famille du joueur : il leur faut sortir.",
     "  Quand le bonheur d'un foyer est sous SEUIL et qu'il garde RESERVE pièces, il sort (au plus",
     "  une fois par jour) : le prix par adulte (un enfant : moitié), le bonheur gagné, les places par jour (cap), le choix (part %).",
-    "BUS : les lignes de bus de la ville (js/carte/ville/lignes.js) : le prix d'un TICKET (un",
-    "  trajet), payé à la caisse de la ville.",
     "RATTRAPAGE : au plus tant de journées rejouées d'un coup."
   ],
   "ECONOMIE": {
@@ -130,7 +128,6 @@
         "musee": { "prix": 5, "bonheur": 9, "cap": 20, "part": 35 }
       }
     },
-    "BUS": { "TICKET": 1 },
     "RATTRAPAGE": 30
   }
 }

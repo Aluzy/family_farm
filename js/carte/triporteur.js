@@ -31,20 +31,21 @@
   // La case de la vue `face`, du coup de pédale `p`, de la couche `c` (0 : derrière, 1 : devant).
   const caseDe = (face, p, c) => (VUES.indexOf(face) * 2 + p) * 2 + c;
 
-  // (`key` : une autre planche aux mêmes cases, le triporteur électrique du livreur)
-  function triporteur(scene, key = TRIPORTEUR.key) {
+  // (`key` : une autre planche aux mêmes cases, le triporteur électrique du livreur ou le vélo des
+  // habitants de la ville ; `cfg` : ses mesures, comme TRIPORTEUR)
+  function triporteur(scene, key = TRIPORTEUR.key, cfg = TRIPORTEUR) {
     if (!scene.textures.exists(key)) return null;
     const sous = scene.add.image(0, 0, key, 0).setOrigin(0.5, 1).setVisible(false);
     const sur = scene.add.image(0, 0, key, 1).setOrigin(0.5, 1).setVisible(false);
     return {
       place(x, y, face, flip, roule, alpha = 1) {
         const v = VUES.includes(face) ? face : 'bas';
-        const p = Math.floor((roule || 0) / TRIPORTEUR.pedale) % 2;
+        const p = Math.floor((roule || 0) / cfg.pedale) % 2;
         const px = Math.round(x), py = Math.round(y) + 1;
         sous.setFrame(caseDe(v, p, 0)).setPosition(px, py).setFlipX(!!flip).setDepth(y - 0.5).setAlpha(alpha).setVisible(true);
         sur.setFrame(caseDe(v, p, 1)).setPosition(px, py).setFlipX(!!flip).setDepth(y + 0.5).setAlpha(alpha).setVisible(true);
-        const dx = v === 'cote' ? (flip ? TRIPORTEUR.recul : -TRIPORTEUR.recul) : 0;
-        return { image: `assis_${v}_${p}`, dx, dy: TRIPORTEUR.monte[v] };
+        const dx = v === 'cote' ? (flip ? cfg.recul : -cfg.recul) : 0;
+        return { image: `assis_${v}_${p}`, dx, dy: cfg.monte[v] };
       },
       cache() { sous.setVisible(false); sur.setVisible(false); },
       destroy() { sous.destroy(); sur.destroy(); },

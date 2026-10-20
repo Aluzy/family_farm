@@ -5,7 +5,7 @@
 
 import {
   acheterRepasVille, addItem, awakeMsAtHour, buyCompany, buyInShop, coefPrix, countItem, DATA, demandeTheorique, economie, economieNuit,
-  economieVue, matiereDe, ticketBus, negoceOffres, negoceVue, prixNegoce, sellToNegoce, shopView, sortieVille,
+  economieVue, matiereDe, negoceOffres, negoceVue, prixNegoce, sellToNegoce, shopView, sortieVille,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, garden, test } from './aide.mjs';
 
@@ -137,17 +137,4 @@ test('économie : les vues de la mairie, du négoce et des comptoirs', () => {
   economie(s).stocks.pizza = 0;
   assertEqual(shopView('pizzeria', s).cours, X.PRIX.MAX);
   assertEqual(shopView('pizzeria', s).stock, 0);
-});
-
-test('économie : le ticket de bus, payé à la caisse de la ville la nuit', () => {
-  const s = garden();
-  economieNuit(s);
-  s.pieces = 3;
-  assert(ticketBus(s).ok);
-  assertEqual(s.pieces, 3 - X.BUS.TICKET);
-  s.pieces = 0;
-  assertEqual(ticketBus(s).ok, false, 'sans pièces, pas de ticket');
-  s.day++;
-  economieNuit(s);
-  assertEqual(economie(s).bilan.tickets, X.BUS.TICKET);
 });
