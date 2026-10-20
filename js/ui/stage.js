@@ -39,7 +39,7 @@ import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatMoulin, etatPoulailler, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
-import { buildChipHtml, niveauBati, niveauRang } from './chantier.js';
+import { buildChipHtml, meubleModele, niveauBati, niveauRang } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
@@ -463,7 +463,7 @@ export function stageModel() {
     enclos: betesDesEnclos(),
     // le four (son bloc) cuit-il ? ses flammes bougent (js/carte/ferme/chantier.js, stepFires)
     fourAllume: !!(state.stations.four && state.stations.four.construit && state.stations.four.tache),
-    bati: buildMode && !stageInterior ? { sorte: buildMode, rang: niveauRang() } : null,
+    bati: buildMode && !stageInterior ? { sorte: buildMode, rang: niveauRang(), meuble: meubleModele() } : null,
     // l'étage (un essai, js/engine/etage.js) et le niveau où est le personnage (0 : en bas)
     ...etageModel(),
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,

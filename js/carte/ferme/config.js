@@ -173,6 +173,10 @@
     // dessous à `dessous`, les autres à `autres` (presque invisibles) ; les cases où poser le
     // bloc suivant (`place`, `placeAlpha`) et les pièces closes (le voile vert) à cette hauteur ;
     // un mur resté plus bas que ses voisins rehaussés : en rouge (`manque`, `manqueAlpha`)
+    // la pose d'un meuble (chantier.js syncPoseMeuble) : le quadrillage (`grille`, `grilleAlpha`,
+    // `trait` px) ; l'aperçu du meuble, à `alpha`, ses cases teintées (`fond`) de `ok` s'il tient
+    // là, de `non` sinon
+    poseMeuble: { grille: 0xffffff, grilleAlpha: 0.35, trait: 0.5, alpha: 0.75, fond: 0.3, ok: 0x5bd36a, non: 0xff5a4a },
     rang: { voile: 0.9, dessous: 0.18, autres: 0.05, place: 0xffe9a8, placeAlpha: 0.55, manque: 0xff4a3a, manqueAlpha: 0.75 },
     // les toits (js/carte/ferme/toits.js ; leur dessin : CarteKit.toit) : au-dessus de la
     // rangée du bas du bâtiment (`z`) ; à `derriere` quand le personnage passe derrière, à

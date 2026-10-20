@@ -108,6 +108,37 @@
       this.bati = !!bati;
       this.drawRooms(bati ? pieces : null);
       this.syncRang(bati && bati.rang ? bati.rang : 0, pieces, changed);
+      this.syncPoseMeuble(bati && bati.meuble);
+    },
+
+    // La pose d'un meuble (modèle.bati.meuble : { grille, apercu: { case, dessin, largeur,
+    // hauteur, plat, ok } | null }, js/ui/chantier.js) : un quadrillage sur la carte, et
+    // l'aperçu du meuble calé sur la grille (son dessin, transparent ; ses cases encadrées),
+    // vert s'il tient là, rouge sinon. null : rien.
+    syncPoseMeuble(m) {
+      const P = BLOCS_CARTE.poseMeuble, cols = this.grid.cols;
+      if (!this.grilleGfx) {
+        const g = this.grilleGfx = this.add.graphics().setDepth(BLOCS_CARTE.voileDepth + 0.01).setVisible(false);
+        g.lineStyle(P.trait, P.grille, P.grilleAlpha);
+        for (let c = 0; c <= cols; c++) g.lineBetween(c * T, 0, c * T, this.world.h);
+        for (let r = 0; r <= Math.ceil(this.world.h / T); r++) g.lineBetween(0, r * T, this.world.w, r * T);
+      }
+      this.grilleGfx.setVisible(!!(m && m.grille));
+      const a = m && m.apercu, cle = a ? JSON.stringify(a) : '';
+      if (cle === (this.apercuCle || '')) return;
+      this.apercuCle = cle;
+      if (this.apercu) { this.apercu.img && this.apercu.img.destroy(); this.apercu.cadre.destroy(); this.apercu = null; }
+      if (!a) return;
+      const col = a.case % cols, row = Math.floor(a.case / cols), couleur = a.ok ? P.ok : P.non;
+      const x0 = col * T, y1 = (row + 1) * T, w = a.largeur * T, h = a.hauteur * T;
+      const cadre = this.add.graphics().setDepth(this.etageZ(9998));
+      cadre.fillStyle(couleur, P.fond).fillRect(x0, y1 - h, w, h);
+      cadre.lineStyle(1, couleur, 1).strokeRect(x0 + 0.5, y1 - h + 0.5, w - 1, h - 1);
+      const key = 'meuble_' + a.dessin;
+      const img = this.textures.exists(key)
+        ? this.add.image(Math.round((col + a.largeur / 2) * T), y1 - 1, key).setOrigin(0.5, 1).setAlpha(P.alpha).setTint(a.ok ? 0xffffff : P.non).setDepth(this.etageZ(9998.5))
+        : null;
+      this.apercu = { img, cadre };
     },
 
     // En mode Construire, au niveau `n` où l'on rehausse les murs (0 : aucun) : un voile sombre
