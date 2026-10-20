@@ -504,7 +504,7 @@ def cale(v):
 # Les arbres, pins et buissons (en tuiles, le pied) posés à la main, puis ceux semés dans les
 # parcs et les bois (une grille tirée au hasard, toujours la même), loin des allées et du lac.
 ARBRES = [(61, 85), (76.5, 85.5), (61, 99), (76.5, 99.5), (92, 117), (106, 128), (92, 146.5), (107, 146),
-          (47.5, 118), (53, 121), (48, 140), (57.5, 117), (79, 117)]
+          (47.5, 118), (53, 121), (57.5, 117), (79, 117)]
 PINS = [(104, 141), (90.5, 128), (54, 131)]
 BUISSONS = [(62.5, 83, False), (75.5, 93, True), (91, 122, True), (106.5, 120, False), (79, 126, True)]
 SEMIS = [  # (x0, x1, y0, y1, pas)
@@ -603,8 +603,12 @@ def objets(c):
     B.cloture_v(mob, 148 * T, 187 * T, 206 * T)
     B.cloture_v(mob, 166 * T, 187 * T, 206 * T)
     for x, y, diag in ((70, 99, False), (96, 137, False), (88, 126, True), (60, 182, False), (100, 182, False),
-                       (77, 168, False), (125, 182, False), (152, 192, False), (156, 199, False)):
+                       (125, 182, False), (152, 192, False), (156, 199, False)):
         mob.colle(O.banc(diag), x * T, y * T)
+    # les bancs de la place du monument (ses dalles : les tuiles 74 à 86 × 164 à 178) : près des
+    # bords, une rangée de dalles entre eux et l'herbe, tournés vers la statue
+    for x, y, sens in ((76, 165, 'bas'), (82, 165, 'bas'), (76, 176, 'haut'), (82, 176, 'haut'), (75, 170, 'droite'), (84, 170, 'gauche')):
+        mob.colle(O.banc_vers(sens), x * T, y * T)
     mob.colle(O.panneau(), 92 * T, 113 * T)
     tonneau = O.tonneau()
     for x, y in ((47, 114), (78, 114)):
@@ -619,7 +623,8 @@ def objets(c):
     for n, (x, y) in enumerate(etals()):
         mob.colle(E.etal(couleurs_etal[n % 5], n), x * T, y * T)
     # le monument, les jeux d'enfants
-    mob.colle(E.statue(), 80 * T + 8 - 24, 177 * T - 96)
+    # (au milieu des dalles de la place : le milieu du dessus de son premier degré)
+    mob.colle(E.statue(), 80 * T + 8 - 48, round(171.5 * T) - 79)
     mob.colle(E.toboggan(), 127 * T, 189 * T)
     mob.colle(E.toboggan(), 137 * T, 196 * T)
     mob.colle(E.balancoire(), 132 * T, 188 * T)

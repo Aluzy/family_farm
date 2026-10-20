@@ -173,31 +173,74 @@ def etal(couleur, graine=0):
 # ---------- le parc ----------
 
 def statue():
-    """3 × 6 tuiles : le monument du parc, une figure de bronze sur un socle à degrés."""
-    im = image(48, 96)
+    """6 × 6 tuiles : le monument du parc, en vue de dessus à 45° comme le reste de la ville : trois
+    degrés et un socle (le dessus de chacun, éclairé, puis sa face de devant), et la figure de
+    bronze debout dessus, un bras levé (le haut de sa tête et de ses épaules vu d'en haut).
+    L'image est carrée (96 × 96) ; le milieu du dessus du premier degré : (48, 79)."""
+    im = image(96, 96)
     d = dessin(im)
-    # les degrés
-    for k, (w, y) in enumerate(((44, 84), (36, 78), (28, 72))):
-        x0 = 24 - w // 2
-        d.rectangle((x0, y, x0 + w - 1, y + 7), fill=rgba(PIERRE[1]))
-        d.rectangle((x0, y, x0 + w - 1, y + 2), fill=rgba(PIERRE[2]))
-        d.rectangle((x0, y + 6, x0 + w - 1, y + 7), fill=rgba(PIERRE[3]))
-    # le socle
-    d.rectangle((14, 44, 33, 72), fill=rgba(PIERRE[0]))
-    d.rectangle((14, 44, 17, 72), fill=rgba(PIERRE[2]))
-    d.rectangle((30, 44, 33, 72), fill=rgba(PIERRE[1]))
-    d.rectangle((12, 40, 35, 45), fill=rgba(PIERRE[2]))
-    d.rectangle((12, 44, 35, 45), fill=rgba(PIERRE[3]))
-    d.rectangle((18, 52, 29, 60), fill=rgba(PIERRE[1]))
-    # la figure : debout, un bras levé (bronze vert-de-gris)
-    BR = ((58, 96, 86), (88, 132, 116), (126, 170, 150))
-    d.ellipse((20, 6, 27, 13), fill=rgba(BR[1]))
-    d.rectangle((19, 13, 28, 30), fill=rgba(BR[1]))
-    d.polygon(((18, 30), (29, 30), (31, 40), (16, 40)), fill=rgba(BR[0]))
-    d.line((28, 15, 34, 4), fill=rgba(BR[1]), width=3)
-    d.line((19, 16, 16, 28), fill=rgba(BR[0]), width=3)
-    d.rectangle((20, 14, 22, 30), fill=rgba(BR[2]))
-    d.ellipse((21, 7, 23, 9), fill=rgba(BR[2]))
+
+    def bloc(x0, x1, y, dessus, face, joints=0):
+        """Un bloc de pierre : son dessus (de y, haut de `dessus` px), le nez de sa marche (un
+        rebord clair, puis son ombre), sa face (haute de `face`) ; `joints` : ses pierres de
+        taille, larges de tant de px (sur le dessus et la face, décalées d'un rang à l'autre)."""
+        d.rectangle((x0, y, x1, y + dessus - 1), fill=rgba(PIERRE[2]))
+        d.line((x0, y, x1, y), fill=rgba(teinte(PIERRE[2], 1.06)))
+        d.line((x1, y, x1, y + dessus - 1), fill=rgba(PIERRE[0]))
+        d.line((x0, y, x0, y + dessus - 1), fill=rgba(teinte(PIERRE[2], 1.06)))
+        f = y + dessus
+        # le nez : l'arête de la marche, éclairée, sur la face
+        d.line((x0, f, x1, f), fill=rgba(teinte(PIERRE[2], 1.08)))
+        d.rectangle((x0, f + 1, x1, f + face - 1), fill=rgba(PIERRE[0]))
+        d.line((x0, f + 1, x1, f + 1), fill=rgba(PIERRE[1]))
+        d.rectangle((x0, f + 1, x0 + 1, f + face - 1), fill=rgba(teinte(PIERRE[0], 1.08)))
+        d.rectangle((x1 - 2, f + 1, x1, f + face - 1), fill=rgba(PIERRE[1]))
+        d.line((x0, f + face - 1, x1, f + face - 1), fill=rgba(PIERRE[3]))
+        if joints:
+            # les joints des pierres : sur le dessus (un rang au milieu), sur la face
+            mi = y + dessus // 2
+            d.line((x0 + 2, mi, x1 - 2, mi), fill=rgba(teinte(PIERRE[2], 0.93)))
+            for r, (a, b) in enumerate(((y + 1, mi - 1), (mi + 1, f - 1), (f + 2, f + face - 2))):
+                for x in range(x0 + joints // 2 + (joints // 2 if r % 2 else 0), x1 - 2, joints):
+                    d.line((x, a, x, b), fill=rgba(teinte(PIERRE[2], 0.93) if r < 2 else PIERRE[1]))
+
+    def ombre(x0, x1, y, h=2):
+        """L'ombre d'un degré sur le dessus de celui de dessous (la lumière vient d'en haut à gauche)."""
+        for k in range(h):
+            for x in range(x0 + 2, x1 + 3):
+                if 0 <= x < 96:
+                    im.putpixel((x, y + k), rgba(teinte(PIERRE[2], 0.86 + 0.06 * k)))
+
+    # les trois degrés, du plus large (devant, en bas) au plus étroit : chacun jette son ombre
+    # sur le dessus de celui de dessous
+    bloc(4, 91, 71, 15, 7, joints=12)
+    bloc(13, 82, 64, 10, 7, joints=12)
+    ombre(13, 82, 81)
+    bloc(22, 73, 56, 6, 7, joints=12)
+    ombre(22, 73, 69)
+    # le socle : son dessus (où se tient la figure), sa face (la plaque), la corniche
+    ombre(31, 64, 57)
+    bloc(31, 64, 23, 12, 22)
+    d.rectangle((29, 33, 66, 35), fill=rgba(PIERRE[1]))
+    d.line((29, 33, 66, 33), fill=rgba(PIERRE[2]))
+    d.rectangle((40, 41, 55, 50), fill=rgba(PIERRE[1]))
+    d.rectangle((41, 42, 54, 49), fill=rgba(teinte(PIERRE[1], 1.08)))
+    # la figure : son ombre sur le socle, la robe (vue d'en haut : courte), les épaules, la tête,
+    # le bras levé
+    BR = ((58, 96, 86), (88, 132, 116), (126, 170, 150), (40, 70, 64))
+    d.ellipse((38, 26, 59, 33), fill=(0, 0, 0, 70))
+    d.polygon(((38, 31), (58, 31), (56, 18), (40, 18)), fill=rgba(BR[1]))
+    d.polygon(((38, 31), (58, 31), (57, 26), (39, 26)), fill=rgba(BR[0]))
+    d.line((48, 19, 48, 30), fill=rgba(BR[0]))
+    d.ellipse((37, 13, 59, 21), fill=rgba(BR[1]))                      # les épaules
+    d.ellipse((39, 13, 51, 18), fill=rgba(BR[2]))
+    d.line((39, 18, 37, 27), fill=rgba(BR[0]), width=4)                 # le bras le long du corps
+    d.line((56, 16, 66, 3), fill=rgba(BR[1]), width=5)                  # le bras levé
+    d.line((55, 15, 64, 3), fill=rgba(BR[2]), width=1)
+    d.ellipse((63, 0, 69, 6), fill=rgba(BR[1]))                         # la main
+    d.ellipse((42, 4, 54, 15), fill=rgba(BR[1]))                        # la tête
+    d.ellipse((43, 4, 51, 10), fill=rgba(BR[2]))
+    d.arc((42, 4, 54, 15), 20, 160, fill=rgba(BR[3]))
     return contour(im)
 
 
