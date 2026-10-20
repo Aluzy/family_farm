@@ -56,6 +56,10 @@ Le Marché vend toujours les outils.
   ❌ sort de ce mode (js/ui/chantier.js `meubleModele`, js/carte/ferme/chantier.js `syncPoseMeuble`).
 - Deux lits adulte posés côte à côte (la même rangée) deviennent sur la carte un lit deux places
   (`assets/meuble_lit_double.png`, `syncLitsDoubles`) ; ils restent deux lits, deux couchages.
+- La nuit (22 h → 6 h), chaque membre de la famille dort dans un lit : le k-ième a le (k + 2)-ième
+  couchage (le premier est au personnage du joueur, comme dans le moteur, `nuitSansCouchage`) ; il
+  y va, s'y couche sous la couverture et se lève au réveil (js/famille-ferme.js, `bedSpots`). Sans
+  lit pour lui, il reste dans la maison, comme avant.
 - Version 1.26 : une case où se trouve une ressource de la carte (herbe haute, rocher, arbre) ne
   se bâtit qu'une fois la ressource récoltée (fauchée, cassée, abattue ; terrain `HERBES`, `ROCHERS`,
   `ARBRES`). Rien ne repousse sur une case bâtie ni dans une pièce close (`casesBaties`) ; une

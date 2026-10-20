@@ -612,8 +612,22 @@
 
     // Où il se couche : la première paillasse (ou le premier lit) d'une pièce close (modèle.couchages), ou null.
     bedSpot() {
-      const m = this.ctx.lastModel, list = (m && m.couchages) || [];
+      return this.bedSpots()[0] || null;
+    },
+
+    // Les couchages, dans l'ordre (modèle.couchages ; le moteur : un par personne, le personnage
+    // principal d'abord, puis la famille, js/engine/blocs.js nuitSansCouchage) : où l'on s'y
+    // couche, { x, y (les pieds), depth, drap: { key, frame, x, y } }.
+    bedSpots() {
+      const m = this.ctx.lastModel, list = (m && m.couchages) || [], out = [];
       for (const c of list) {
+        const s = this.bedSpotOf(c);
+        if (s) out.push(s);
+      }
+      return out;
+    },
+    bedSpotOf(c) {
+      {
         const e = this.blocks && this.blocks.get(c);
         if (e && e.sorte === 'paillasse') return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, depth: e.img.depth, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y } };
         // un lit acheté au Marché : les pieds sous la couverture, la tête sur l'oreiller
