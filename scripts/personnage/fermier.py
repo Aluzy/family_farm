@@ -1,4 +1,6 @@
-# Les personnages de la carte (version provisoire). Pour chacun (VARIANTES) : une planche
+# Les cases et les gestes des personnages de la carte (frames()) ; les planches sont dessinées
+# par scripts/personnage/chibi.py, d'après les modèles de scripts/personnage/modeles (main()
+# l'appelle). L'ancien dessin (figure() d'ici), pour mémoire : pour chacun (VARIANTES) : une planche
 # assets/<nom>.png de cases 16 × 32 px, assets/<nom>.json qui donne le nom de chaque case (dans
 # l'ordre de la planche, 8 cases par rangée), et assets/portrait_<nom>.png (20 × 20 : la tête et
 # les épaules de face, pour la carte du joueur en haut à gauche).
@@ -127,9 +129,6 @@ VARIANTES = {
     },
 }
 STYLE = {}         # le style du personnage en cours de dessin
-# Les personnages du catalogue redessinés à l'essai (grosse tête, grands yeux) : leur planche
-# est écrite par scripts/personnage/chibi.py, pas ici.
-ESSAIS = ('perso_01', 'perso_02', 'perso_03')
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalogue  # noqa: E402  (les 50 personnages du catalogue)
@@ -654,22 +653,10 @@ def dessiner(v):
 
 
 def main():
-    for nom, v in VARIANTES.items():
-        dessiner(v)
-        ecrire(nom)
-    # Les 50 du catalogue : assets/personnages/perso_XX.png, les noms des cases (les mêmes pour
-    # tous) dans assets/personnages/cases.json ; leur portrait est dans assets/portraits.
-    os.makedirs(os.path.join(ASSETS, 'personnages'), exist_ok=True)
-    for i, (nom, d) in enumerate(catalogue.personnages()):
-        if nom in ESSAIS:
-            continue
-        dessiner(variante_catalogue(d))
-        ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=(i == len(ESSAIS)))
-    # Les 50 enfants : assets/personnages/enfant_XX.png (les mêmes cases)
-    import portraits_enfants
-    for nom, d in portraits_enfants.enfants():
-        dessiner(variante_enfant(d))
-        ecrire(nom, os.path.join('assets', 'personnages'), portrait=False, cases=False, enfant=True)
+    """Les planches de la carte sont maintenant dessinées par chibi.py, d'après les modèles
+    (scripts/personnage/modeles) ; ce fichier en garde les cases et les gestes (frames())."""
+    import chibi
+    chibi.main()
     if '--apercu' in sys.argv:
         apercu_enfants()
 

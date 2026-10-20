@@ -1,4 +1,4 @@
-# Le nouveau dessin des personnages de la carte, à l'essai : une grosse tête, de grands yeux,
+# Le dessin des personnages de la carte : une grosse tête, de grands yeux,
 # un contour brun. Chaque personnage redessiné a son modèle, scripts/personnage/modeles/<nom>.png
 # (12 × 79 px) : les trois vues debout, empilées, de 25 rangées chacune (contour du bas compris),
 # séparées de deux rangées vides :
@@ -16,9 +16,13 @@
 # le pas et l'accroupi déplacent le haut du corps ; la marche lève une jambe (de face, de dos)
 # ou les fait passer l'une devant l'autre (de profil) ; quand les mains tiennent un outil, les
 # bras du modèle sont retirés et redessinés vers les mains (manche et peau du modèle). Le
-# contour est refait à la fin. fermier.py n'écrit plus les planches de ESSAIS.
+# contour est refait à la fin.
 #
-#   python3 scripts/personnage/chibi.py            écrit les planches de ESSAIS
+#   python3 scripts/personnage/modeles.py          écrit les modèles tirés du catalogue
+#   python3 scripts/personnage/chibi.py            écrit les planches de tous les modèles :
+#                                                  assets/personnages/perso_XX.png et enfant_XX.png
+#                                                  (un enfant raccourci : ENFANT_RANGEES), et les
+#                                                  planches par défaut assets/fermiere.png, fermier.png
 #   python3 scripts/personnage/chibi.py --apercu   écrit aussi apercu_chibi.png (agrandi)
 import os
 import sys
@@ -170,7 +174,23 @@ def render(cv):
     return im
 
 
-def ecrire(nom):
+# Un enfant : dessiné comme un adulte, puis raccourci (ces rangées de la case retirées, le
+# haut tassé vers le bas : le ventre et les cuisses ; la tête garde sa taille).
+ENFANT_RANGEES = (20, 21, 26, 27)
+
+
+def raccourci(im):
+    out = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    y = F.H - 1
+    for r in range(F.H - 1, -1, -1):
+        if r in ENFANT_RANGEES:
+            continue
+        out.paste(im.crop((0, r, F.W, r + 1)), (0, y))
+        y -= 1
+    return out
+
+
+def ecrire(nom, enfant=False):
     F.dessiner({'couleurs': {}})
     MODELE['m'] = Modele(nom)
     cases = F.frames(figure)
@@ -178,18 +198,30 @@ def ecrire(nom):
     rangs = (len(noms) + F.COLS - 1) // F.COLS
     sheet = Image.new('RGBA', (F.COLS * F.W, rangs * F.H), (0, 0, 0, 0))
     for i, n in enumerate(noms):
-        sheet.paste(render(cases[n]), ((i % F.COLS) * F.W, (i // F.COLS) * F.H))
+        im = render(cases[n])
+        sheet.paste(raccourci(im) if enfant else im, ((i % F.COLS) * F.W, (i // F.COLS) * F.H))
     sheet.save(os.path.join(F.ASSETS, 'personnages', f'{nom}.png'))
-    print(f'assets/personnages/{nom}.png : {len(noms)} cases (nouveau dessin, à l\'essai)')
     return sheet
 
 
+# Les planches par défaut de la carte (avant que celle du personnage soit chargée) : la
+# fermière (perso_01) et le fermier (perso_07, le personnage par défaut d'un homme).
+DEFAUTS = {'fermiere': 'perso_01', 'fermier': 'perso_07'}
+
+
 def main():
-    planches = [ecrire(nom) for nom in F.ESSAIS]
+    noms = sorted(n[:-4] for n in os.listdir(MODELES) if n.endswith('.png'))
+    planches = {}
+    for nom in noms:
+        planches[nom] = ecrire(nom, enfant=nom.startswith('enfant_'))
+    for nom, src in DEFAUTS.items():
+        planches[src].save(os.path.join(F.ASSETS, f'{nom}.png'))
+    print(f'{len(noms)} planches écrites dans assets/personnages/, et ' + ', '.join(f'assets/{n}.png' for n in DEFAUTS))
     if '--apercu' in sys.argv:
-        out = Image.new('RGBA', (planches[0].width * len(planches) + 8 * (len(planches) - 1), planches[0].height), (0, 0, 0, 0))
-        for i, s in enumerate(planches):
-            out.alpha_composite(s, (i * (s.width + 8), 0))
+        choix = [planches[n] for n in noms[:3]]
+        out = Image.new('RGBA', (choix[0].width * 3 + 16, choix[0].height), (0, 0, 0, 0))
+        for i, sh in enumerate(choix):
+            out.alpha_composite(sh, (i * (sh.width + 8), 0))
         F.apercu(out, 'apercu_chibi.png', 5, (126, 170, 92))
 
 
