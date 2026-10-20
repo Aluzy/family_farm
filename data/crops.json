@@ -318,7 +318,10 @@
     "NUITS_STADE nuits par dessin jusqu'à l'arbre adulte, puis « en fruits ». Les fruits",
     "attendent sur l'arbre : récolte au clic (énergie et XP « cueillir ») ou par",
     "l'automatisation « Récolte du verger » (moitié de l'XP). Après une récolte, l'arbre",
-    "redonne ses fruits PERIODE nuits plus tard."
+    "redonne ses fruits PERIODE nuits plus tard. Il fleurit avant : FLORAISON nuits avant ses",
+    "fruits (le jour où ils arrivent la nuit), il est « en fleur » (FLEUR) ; la floraison ne",
+    "change rien au moteur, seulement au dessin et au nom du stade. Chaque espèce a son",
+    "`dessin` : son rang dans assets/verger.png (scripts/verger/arbres.py, ESPECES)."
   ],
   "VERGER": {
     "PRIX_CONSTRUCTION": 0,
@@ -330,9 +333,14 @@
     "PERIODE": 3,
     "NUITS_STADE": 5,
     "STADES": ["Jeune arbre", "Arbuste", "Arbre", "Arbre en fruits"],
+    "FLORAISON": 1,
+    "FLEUR": "Arbre en fleur",
     "ARBRES": {
-      "pommier": { "nom": "Pommier", "icone": "🌳", "fruit": "pomme", "prix": 40 },
-      "poirier": { "nom": "Poirier", "icone": "🌳", "fruit": "poire", "prix": 40 }
+      "pommier": { "nom": "Pommier", "icone": "🌳", "fruit": "pomme", "prix": 40, "dessin": 0 },
+      "poirier": { "nom": "Poirier", "icone": "🌳", "fruit": "poire", "prix": 40, "dessin": 1 },
+      "cerisier": { "nom": "Cerisier", "icone": "🌳", "fruit": "cerise", "prix": 50, "dessin": 2 },
+      "abricotier": { "nom": "Abricotier", "icone": "🌳", "fruit": "abricot", "prix": 45, "dessin": 3 },
+      "pecher": { "nom": "Pêcher", "icone": "🌳", "fruit": "peche", "prix": 45, "dessin": 4 }
     }
   },
   "//LUNE": [

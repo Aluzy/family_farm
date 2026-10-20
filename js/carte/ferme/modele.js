@@ -11,7 +11,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, SFX, TREE_OBJECT, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, DEFAULT_OBJECTS, BUILDINGS, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, FERMIER_FRAME, ZONE_LABEL_UP } = F.C;
+  const { T, SFX, TREE_OBJECT, ORCHARD_ADULT, TREE_BODY, DEFAULT_OBJECTS, BUILDINGS, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, FERMIER_FRAME, ZONE_LABEL_UP } = F.C;
   const { clamp, reducedMotion, v } = F;
 
   F.partie({
@@ -116,7 +116,7 @@
       // de bêtes : elle ouvre les portes le matin et fait sortir les bêtes.
       if (this.ambient) {
         const leafy = [];
-        for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0 && e.a.dessin >= ORCHARD_ADULT) leafy.push(e.sprite);
+        for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0 && e.a.stade >= ORCHARD_ADULT) leafy.push(e.sprite);
         const real = (id) => { const e = this.buildings.get(id); return e && e.sprite.texture.key.indexOf('ph_') !== 0 ? e.sprite : null; };
         const folds = { etable: real('etable'), poulailler: real('poulailler') };
         this.ambient.setContext({ hour: model.heure, trees: leafy, folds, herd: model.animaux || {} });
@@ -141,7 +141,7 @@
     // se pose sur le rectangle arbre_verger_<case + 1>, pied au bas du rectangle, avec le
     // dessin de son stade. Au-delà des rectangles de la carte, rien n'est dessiné. La ferme
     // générée (a.sol) : l'arbre planté dans le sol, sur sa case de la carte (treeRect).
-    // modèle.arbres[] = { case, id, libre, fruits, dessin } (dessin : ORCHARD_FRAMES).
+    // modèle.arbres[] = { case, id, libre, fruits, dessin, stade } (dessin : l'image de verger.png).
     syncTrees(arbres, rebuild) {
       const seen = new Set();
       const own = this.has('verger');
@@ -183,11 +183,11 @@
     // Zone touchable d'une case du Verger : la taille du dessin (les petits dessins
     // n'occupent que le bas de leur image de 80×80).
     orchardBox(e) {
-      const d = e.a ? e.a.dessin : ORCHARD_FRAMES.arbre;
-      if (d === ORCHARD_FRAMES.libre) return { w: 28, h: 12 };
-      if (d === ORCHARD_FRAMES.jeune) return { w: 18, h: 24 };
-      if (d === ORCHARD_FRAMES.arbuste) return { w: 32, h: 34 };
-      return { w: e.sprite.displayWidth * TREE_BODY, h: e.sprite.displayHeight };
+      const st = e.a ? e.a.stade : 2;
+      if (st < 0) return { w: 28, h: 12 };
+      if (st === 0) return { w: 18, h: 24 };
+      if (st === 1) return { w: 30, h: 40 };
+      return { w: e.sprite.displayWidth * TREE_BODY, h: 64 };
     },
 
     // Panneaux solaires sur le versant droit du toit : seulement sur la vraie image de la

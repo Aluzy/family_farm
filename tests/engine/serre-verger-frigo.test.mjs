@@ -14,7 +14,7 @@ import {
   orchardSlotPrice, planMeal, plant, plantableCrops, plantTree, readyCrops, repairCost,
   repairDevice, ripeTrees, scaleEnergie, serreUpgradeCost, shelfLife, STATE_VERSION, testAddSeeds,
   testBuildFridge, testBuildSerre, testBuildVerger, testEmptyBatteries, testFillBatteries,
-  testSetWear, tick, toggleDevice, treeAt, treeNextHarvest, treeStage, upgradeCost, upgradeFridge,
+  testSetWear, tick, toggleDevice, treeAt, treeInBloom, treeNextHarvest, treeStage, treeStageName, upgradeCost, upgradeFridge,
   upgradeSerre, water, waterCostFor,
 } from '../../js/engine/index.js';
 import {
@@ -837,6 +837,40 @@ test('version 1.13 : 4 dessins, 5 nuits par dessin, puis des fruits qui attenden
   assertEqual(stades, [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3]);
   assertEqual(countItem(s, 'pomme'), 0, 'rien n\'arrive seul dans l\'inventaire');
   assertEqual(ripeTrees(s).length, 1);
+});
+
+test('le Verger : un arbre fleurit le jour avant ses fruits (FLORAISON), à chaque cycle', () => {
+  const s = orchard();
+  protect(s, 'cerise');
+  assert(plantTree(s, 'cerisier', 0).ok, 'un cerisier');
+  const t = s.verger.arbres[0];
+  const fleurs = [];
+  for (let n = 0; n <= 16; n++) {
+    fleurs.push(treeInBloom(s, t));
+    sleepOnce(s);
+  }
+  // planté le jour 1 : en fleur le jour 15 (ses fruits arrivent cette nuit-là), puis en fruits
+  assertEqual(fleurs.map((f, i) => (f ? i + 1 : 0)).filter(Boolean), [15]);
+  assertEqual(treeStageName(s, t), 'Arbre en fruits');
+  assert(harvestTree(s, t.id).ok, 'cueilli');
+  assertEqual([countItem(s, 'cerise'), treeInBloom(s, t), treeStageName(s, t)], [6, false, 'Arbre']);
+  sleepOnce(s);
+  assertEqual(treeInBloom(s, t), false, 'le lendemain de la cueillette : des feuilles');
+  sleepOnce(s);
+  assertEqual([treeInBloom(s, t), treeStageName(s, t)], [true, DATA.VERGER.FLEUR], 'refleurit avant les fruits suivants');
+  sleepOnce(s);
+  assertEqual([t.fruits, treeInBloom(s, t)], [true, false]);
+});
+
+test('le Verger : cinq espèces, chacune son fruit, son jeune arbre et son dessin', () => {
+  const V = DATA.VERGER.ARBRES;
+  assertEqual(Object.keys(V), ['pommier', 'poirier', 'cerisier', 'abricotier', 'pecher']);
+  assertEqual(Object.values(V).map((a) => a.dessin), [0, 1, 2, 3, 4]);
+  for (const [espece, a] of Object.entries(V)) {
+    assertEqual(DATA.OBJETS[a.fruit].categorie, 'fruit', espece);
+    const jeune = Object.keys(DATA.OBJETS).find((k) => DATA.OBJETS[k].arbre === espece);
+    assertEqual([DATA.OBJETS[jeune].prix, DATA.ATELIER.BLOCS[espece].objet], [a.prix, jeune], espece);
+  }
 });
 
 test('version 1.13 : la cueillette au clic coûte de l\'énergie et rapporte 20 XP, fruits 3 nuits plus tard', () => {
