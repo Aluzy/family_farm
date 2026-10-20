@@ -22,7 +22,7 @@ import { chemin } from './chemin.js';
 //     (étape 5b). La maison n'y est plus : sa place (MAISON) reste dégagée, le chemin part de
 //     devant elle ; le foyer se bâtit (une pièce close avec une paillasse).
 // genererFerme(graine) → { carte, terrain } ; le terrain est celui de terrain-carte.js (plus
-// DECALAGE : où la cour a été posée, en tuiles ; BUISSONS : les buissons). Les cartes déjà faites
+// DECALAGE : où la cour a été posée, en tuiles ; BUISSONS : les buissons ; HERBES : les touffes d'herbe haute de chaque case). Les cartes déjà faites
 // sont gardées.
 
 export const FERME_GENEREE = {
@@ -411,7 +411,11 @@ function fabriquer(graine) {
   const buissons = poses.filter((p) => p[2].startsWith('buisson')).map(([fy, fx, , w, h]) => [Math.round(fx / T - w / 2), Math.round(fy / T) - 1, w, h]);
   // (SOMMETS, TEINTES : les coins des cases, pour les chemins posés plus tard, tuileChemin)
   const sommets = Uint8Array.from(sommet, (k) => (k === 'eau' ? 2 : k === 'chemin' ? 1 : 0));
-  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy], BUISSONS: buissons, SOMMETS: sommets, TEINTES: teinte });
+  // HERBES : les touffes d'herbe haute de chaque case, { case: [identifiants « x,y »] } (une case
+  // où l'herbe pousse ne se bâtit qu'une fois fauchée : blocs.js)
+  const herbes = {};
+  for (const [x, y] of touffes) { const l = (herbes[Math.floor(y / T) * W + Math.floor(x / T)] ||= []), id = `${x},${y}`; if (!l.includes(id)) l.push(id); }
+  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy], BUISSONS: buissons, SOMMETS: sommets, TEINTES: teinte, HERBES: herbes });
   return { carte, terrain };
 }
 

@@ -6,7 +6,8 @@ import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
-import { openSerre } from './crops.js';
+import { freedRockTiles, openSerre } from './crops.js';
+import { grassCut } from './outils.js';
 import { fillSilo } from './animals.js';
 import { arbreProche, arbreSurCase, planterArbre } from './orchard.js';
 import { isUnlocked } from './campaign.js';
@@ -84,6 +85,29 @@ export function empriseMeuble(state, sorte, tile) {
 }
 
 // Les cases couvertes par un meuble posé, hors la sienne : Map(case → case du meuble).
+// Les cases bâties (un bloc, un plancher, ce qui est posé dessus, un meuble, un arbre planté,
+// le dedans d'une pièce close) : rien de la carte n'y repousse (outils.js : l'herbe haute, les
+// rochers, les arbres).
+export function casesBaties(state) {
+  const out = new Set();
+  if (atelierOuvert(state)) for (const p of piecesCloses(state)) for (const t of p.cases) out.add(t);
+  for (const o of [state.blocs, state.sols, state.blocsDessus]) for (const k of Object.keys(o && typeof o === 'object' ? o : {})) out.add(Number(k));
+  for (const j of casesCouvertes(state).keys()) out.add(j);
+  if (farmSeed(state) !== null) for (const a of (state.verger && state.verger.arbres) || []) if (Number.isInteger(a.case)) out.add(a.case);
+  return out;
+}
+
+// Les touffes d'herbe haute (pas fauchées) de la case `tile` (le terrain : HERBES).
+export function herbesSur(state, tile) {
+  const H = farmTerrain(state).HERBES;
+  return ((H && H[tile]) || []).filter((id) => !grassCut(state, id));
+}
+
+// La case `tile` est-elle sous un rocher ou un arbre de la carte ?
+function rocherOuArbre(T, tile) {
+  return [T.ROCHERS, T.ARBRES].some((L) => Object.values(L || {}).some((cs) => cs.includes(tile)));
+}
+
 export function casesCouvertes(state) {
   const out = new Map();
   for (const [k, sorte] of Object.entries(blocsPoses(state))) {
@@ -389,8 +413,12 @@ export function poseStatus(state, sorte, tile) {
   if (arbreSurCase(state, tile)) return { ok: false, raison: 'Un arbre pousse ici.' };
   // un arbre fruitier : loin des autres (son feuillage), à côté d'aucun bloc
   if (s.arbre && arbreProche(state, tile, DATA.ATELIER.ARBRE_ECART)) return { ok: false, raison: 'Trop près d\'un autre arbre : laisse-lui de la place.' };
+  // (une case sous un rocher ou un arbre de la carte : une fois cassé, abattu, elle se bâtit)
   const ch = T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
-  if (ch !== '#' && ch !== '+') return { ok: false, raison: 'On ne bâtit que sur l\'herbe : pas sur les chemins, l\'eau, les arbres, les rochers ni les bâtiments.' };
+  if (ch === 'o' && (rocherOuArbre(T, tile)) && !freedRockTiles(state).has(tile)) return { ok: false, raison: 'Un rocher ou un arbre occupe cette case : casse-le ou abats-le d\'abord.' };
+  if (ch !== '#' && ch !== '+' && !(ch === 'o' && freedRockTiles(state).has(tile))) return { ok: false, raison: 'On ne bâtit que sur l\'herbe : pas sur les chemins, l\'eau, les arbres, les rochers ni les bâtiments.' };
+  // (l'herbe haute : à faucher d'abord)
+  if ((s.meuble ? empriseMeuble(state, sorte, tile) || [tile] : [tile]).some((j) => herbesSur(state, j).length)) return { ok: false, raison: 'De l\'herbe haute pousse ici : fauche-la d\'abord (la faux).' };
   if ((state.potager.parcelles || []).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
   if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, et une porte).` };
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };

@@ -81,7 +81,7 @@ function coveredBy(T) {
 }
 
 // Les tuiles libérées : celles dont tous les rochers sont cassés et tous les arbres abattus.
-function freedRockTiles(state) {
+export function freedRockTiles(state) {
   const out = new Set();
   const o = state && state.outils;
   if (!o || (!o.rochers && !o.arbres)) return out;
