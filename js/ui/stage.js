@@ -37,7 +37,7 @@ import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatPoulailler, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
+import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatMoulin, etatPoulailler, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml, niveauBati } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise, toits } from '../engine/etage.js';
@@ -346,6 +346,8 @@ export function stageModel() {
   for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok() || windowLocked(id), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id], ruine: buildingInRuins(id) };
   // le Moulin ne tourne que quand il moud (du blé en cours)
   batiments.moulin.enMarche = !!(state.stations && state.stations.moulin && state.stations.moulin.tache);
+  const hauteurs = hauteursPosees(state);
+  const tour = farmSeed(state) !== null ? etatMoulin(state) : null;
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
@@ -447,7 +449,11 @@ export function stageModel() {
     // et ses blocs posés, le mode Construire (les pièces closes s'y voient), les paillasses où
     // l'on dort (js/engine/blocs.js)
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte) })),
+    // (un mur rehaussé, version 1.25 : sa hauteur en blocs)
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}) })),
+    // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
+    // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
+    moulinTour: tour && tour.ok ? { ...tour.bornes, enMarche: batiments.moulin.enMarche } : null,
     // les tableaux accrochés aux murs (DATA.ATELIER.BLOCS : sur « mur »)
     tableaux: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].meuble).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
     sols: Object.entries(solsPoses(state)).filter(([, k]) => k === 'plancher').map(([c]) => Number(c)),

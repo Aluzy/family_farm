@@ -4,7 +4,9 @@ import { isBroken, maintainCost, repairCost } from '../engine/devices.js';
 import { deviceStatus } from '../engine/energy.js';
 import { countItem, shelfLife } from '../engine/inventory.js';
 import { energyChip } from './energie.js';
-import { strawMissing, strawNeed, strawStock, wheatTotal } from '../engine/animals.js';
+import { wheatTotal } from '../engine/animals.js';
+import { etatMoulin } from '../engine/blocs.js';
+import { farmSeed } from '../engine/terrain.js';
 import {
   buildStation, cancelMilling, cancelQueued, millPending, millTimeLeft, queueCapacity, recipeStatus,
   startMilling, startRecipe, taskTimeLeft,
@@ -20,7 +22,6 @@ import { applyResult } from './game-actions.js';
 import { syncJobs } from './loop.js';
 import { refresh } from './render.js';
 import { switchHtml, wearHtml } from './ferme.js';
-import { formatStraw } from './elevage.js';
 import { nightsLabel } from './inventaire.js';
 import { artIcon } from './animations.js';
 import { helpBtn } from './aide.js';
@@ -99,12 +100,24 @@ export function renderAteliers() {
 
 // Corps du menu du Moulin : pas encore construit, son bouton de construction ;
 // construit, le blé disponible (inventaire et Silo), « Moudre » par lot (×1, ×5, ×10), la
-// farine et la paille en stock, puis l'état de l'appareil (énergie, usure, interrupteur).
+// farine en stock (version 1.23 : la paille se fauche, elle n'est plus ici), puis l'état de l'appareil (énergie, usure, interrupteur).
 // Les règles (ce que donne un blé, la nuit, le Silo) sont dans « ? ».
 export function renderMoulin() {
   if (!isUnlocked(state, 'moulin')) return '';
   const def = DATA.STATIONS.moulin;
   const st = state.stations.moulin;
+  // la ferme générée (version 1.25) : le Moulin est une tour bâtie en blocs (etatMoulin)
+  if (!st.construit && farmSeed(state) !== null) {
+    const e = etatMoulin(state);
+    const lignes = e.conditions.map((c) => `<li class="${c.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${c.ok ? '✅' : '❌'}</span> <span>${c.texte}</span></li>`).join('');
+    return `
+    <div class="section-head"><h3>${artIcon('moulin')}${def.nom}</h3>${helpBtn('moulin')}</div>
+    <div class="card">
+      <span class="card-title">Pour bâtir le Moulin</span>
+      <ul class="ingredients">${lignes}</ul>
+      <span class="muted">Une tour : une pièce close dont les murs ont ${DATA.ATELIER.MOULIN.HAUTEUR} blocs de haut, la meule (fabriquée à l'Atelier) au centre. Bâtie, sa voilure paraît dehors et tourne quand la meule moud.</span>
+    </div>`;
+  }
   if (!st.construit) {
     return `
     <div class="section-head"><h3>${artIcon('moulin')}${def.nom}</h3></div>
@@ -117,9 +130,6 @@ export function renderMoulin() {
   const job = st.tache;
   const pending = millPending(state);
   const flour = DATA.OBJETS[r.sortie];
-  const straw = DATA.OBJETS[r.sousProduit.item];
-  const need = strawNeed(state);
-  const missing = strawMissing(state);
   const each = recipeTime(state, 'farine');
   let work;
   if (job) {
@@ -133,9 +143,6 @@ export function renderMoulin() {
   } else {
     work = '<span class="muted">Le Moulin est prêt.</span>';
   }
-  const strawNote = need > 0 && missing > 0
-    ? `<span class="alert">⚠️ Il manque ${formatStraw(missing)} pour les animaux cette nuit.</span>`
-    : '';
   const lot = (n) => `<button type="button" class="btn lot-btn${n === 1 ? ' primary' : ''}" data-action="mill-start" data-q="${n}"${wheat >= n ? '' : ' disabled'}><span>×${n}</span><small>${formatNumber(n * each)} s</small></button>`;
   const stopped = !d.allume || isBroken(d);
   const chip = job ? '<span class="chip">⏳ En marche</span>' : '<span class="chip">✅ Libre</span>';
@@ -154,8 +161,7 @@ export function renderMoulin() {
       </div>
       <div class="card">
         <span class="card-title"><span>📦 En stock</span></span>
-        <span class="mill-stock"><span><span aria-hidden="true">${flour.icone}</span> ${flour.nom} : <strong class="num">${formatQty(countItem(state, r.sortie))}</strong></span><span><span aria-hidden="true">${straw.icone}</span> ${straw.nom} : <strong class="num">${formatQty(strawStock(state))}</strong></span></span>
-        ${strawNote}
+        <span class="mill-stock"><span><span aria-hidden="true">${flour.icone}</span> ${flour.nom} : <strong class="num">${formatQty(countItem(state, r.sortie))}</strong></span></span>
       </div>
       <div class="card ancre" id="moulin-appareil">
         <span class="card-title"><span>⚡ Appareil</span><span class="chip${ds.code === 'panne' ? ' panne' : ''}">${ds.label}</span></span>

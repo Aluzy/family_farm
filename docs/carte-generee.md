@@ -735,6 +735,15 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
        - Elle ne se pose qu'à partir du niveau du Moulin (`debloque: 'moulin'`, niveau 4).
        - Un appui sur la meule ouvre la fenêtre du Moulin. La vue de la carte, qui allait au
          moulin et à la serre, va à la deuxième zone de culture.
+       - Version 1.25 : le Moulin est une **tour** (`etatMoulin`). Une pièce close dont tous les
+         murs (pas les portes) ont `ATELIER.MOULIN.HAUTEUR` (3) blocs de haut, avec la meule au
+         centre (la case du milieu, ou l'une des deux du milieu si le côté est pair). Un mur se
+         rehausse en posant le même mur sur lui (`state.hauteurs`, jusqu'à `HAUTEUR_MAX`), se
+         rabaisse en le reprenant (le bloc du dessus d'abord). La station suit (`majMoulin`) ;
+         une partie d'avant garde sa meule, mais doit rehausser ses murs (migration v41 → v42).
+         Sur la carte, les murs s'empilent de `etage.dy` px par bloc, un linteau ferme le dessus
+         des portes, le toit se pose en haut de la tour ; dehors, une voilure de quatre ailes
+         (`js/carte/ferme/moulin.js`) paraît sur la façade et tourne quand la meule moud.
      - ✅ **5b-8, les arbres fruitiers** : pas de Verger sur la ferme générée.
        - Le **jeune pommier** et le **jeune poirier** (40 pièces), le **jeune cerisier** (50), le
          **jeune abricotier** et le **jeune pêcher** (45) s'achètent au Marché, rayon Graines, sur

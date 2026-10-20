@@ -18,6 +18,11 @@
  * « Dormir » : le personnage va à la première paillasse (ou au premier lit) d'une pièce close
  * (bedSpot), s'y couche sous sa couverture (js/fermier.js, couchage).
  *
+ * Un mur rehaussé (version 1.25, modèle.blocs : b.hauteur) : son image répétée au-dessus de
+ * lui, BLOCS_CARTE.etage.dy px plus haut par bloc (syncHauts) ; il s'efface avec lui. Au-dessus
+ * d'une porte entre deux murs rehaussés, le mur continue (un linteau, aussi haut que le plus
+ * bas des deux).
+ *
  * Les meubles achetés au Marché (modèle.blocs : b.meuble) ont leur propre dessin et couvrent
  * parfois plusieurs cases (syncMeuble) ; les tableaux s'accrochent à la face des murs
  * (syncTableaux).
@@ -57,6 +62,16 @@
       const B = this.blocks, seen = new Set(), cols = this.grid.cols, H = BLOCS_CARTE.hauts;
       let changed = false;
       if (this.has(BLOCS_CARTE.key)) {
+        // (au-dessus d'une porte entre deux murs rehaussés : le mur continue, horizontal ou vertical)
+        const haut = new Map((list || []).filter((b) => b.hauteur > 1).map((b) => [b.case, b.hauteur]));
+        const linteau = (b) => {
+          if (b.sorte !== 'porte' || !haut.size) return null;
+          const h = (k) => haut.get(k) || 0;
+          const hz = Math.min(h(b.case - 1), h(b.case + 1)), vt = Math.min(h(b.case - cols), h(b.case + cols));
+          if (hz > 1) return { h: hz, frame: this.hautFrame(BLOCS_CARTE.murs + 2 + 8) };
+          if (vt > 1) return { h: vt, frame: this.hautFrame(BLOCS_CARTE.murs + 1 + 4) };
+          return null;
+        };
         const verre = new Set(serre || []);
         const at = new Map((list || []).map((b) => [b.case, verre.has(b.case) && H.variantes[b.sorte] !== undefined ? 'mur_serre' : b.sorte]));
         for (const b of list || []) {
@@ -69,24 +84,49 @@
           if (e && e.sorte === b.sorte) {
             // (les flammes du four, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
             if ((e.img.frame.name !== f || e.img.texture.key !== key) && b.sorte !== BLOCS_CARTE.feu.sorte && b.sorte !== 'lanterne') { e.img.setTexture(key, f); changed = true; }
+            const li = linteau(b);
+            if (this.syncHauts(e, li ? li.h : b.hauteur || 1, li && li.frame)) changed = true;
             continue;
           }
-          if (e) e.img.destroy();
+          if (e) { e.img.destroy(); this.syncHauts(e, 0); }
           const x = (b.case % cols) * T + T / 2, y = (Math.floor(b.case / cols) + 1) * T;
           const plat = BLOCS_CARTE.plats.includes(b.sorte);
           // (le puits et la citerne : leurs propres images, posées par syncWell et syncTank)
           const img = this.add.image(x, y, key, f).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
-          B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img });
+          const ne = { case: b.case, sorte: b.sorte, x, y, img };
+          B.set(b.case, ne);
+          const li = linteau(b);
+          this.syncHauts(ne, li ? li.h : b.hauteur || 1, li && li.frame);
           changed = true;
         }
       }
-      for (const [c, e] of B) if (!seen.has(c)) { e.img.destroy(); B.delete(c); changed = true; }
+      for (const [c, e] of B) if (!seen.has(c)) { e.img.destroy(); this.syncHauts(e, 0); B.delete(c); changed = true; }
       if (changed) {
         this.sunDirty = true;
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       }
       this.bati = !!bati;
       this.drawRooms(bati ? pieces : null);
+    },
+
+    // Les blocs du dessus d'un mur rehaussé (`h` blocs de haut ; 0 : tous ôtés) : son image,
+    // BLOCS_CARTE.etage.dy px plus haut par bloc, devant celle du dessous (`image` : [clé, image]
+    // à la place de la sienne : le linteau d'une porte). Renvoie vrai s'ils ont changé.
+    syncHauts(e, h, image) {
+      const L = e.hauts || [], dy = BLOCS_CARTE.etage.dy, want = Math.max(0, h - 1);
+      const [key, f] = image || [e.img.texture.key, e.img.frame.name];
+      let changed = false;
+      while (L.length > want) { L.pop().destroy(); changed = true; }
+      while (L.length < want) {
+        const k = L.length + 1;
+        L.push(this.add.image(e.x, e.y - dy * k, key, f).setOrigin(0.5, 1).setDepth(e.img.depth + 0.01 * k));
+        changed = true;
+      }
+      for (const i of L) if (i.frame.name !== f || i.texture.key !== key) i.setTexture(key, f);
+      e.hauts = L;
+      e.hauteur = h;
+      e.img.hauts = L;
+      return changed;
     },
 
     // Un meuble posé (modèle.blocs : b.meuble = { dessin, largeur, hauteur, bloque, plat, lit }) :
@@ -325,11 +365,11 @@
       const cols = this.grid.cols, devant = new Set();
       const cache = (x, y) => {
         const gx = Math.floor(x / T), gy = Math.floor((y - 1) / T);
-        for (let dy = 1; dy <= 2; dy++) {
+        for (let dy = 1; dy <= 6; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
             const e = B.get((gy + dy) * cols + gx + dx);
-            // (le personnage fait ±6 px de large)
-            if (e && e.img.texture.key === H.key && Math.abs(e.x - x) < T / 2 + 6) devant.add(e.img);
+            // (le personnage fait ±6 px de large ; un mur rehaussé cache plus loin derrière lui)
+            if (e && e.img.texture.key === H.key && dy <= 2 + 2 * ((e.hauteur || 1) - 1) && Math.abs(e.x - x) < T / 2 + 6) devant.add(e.img);
           }
         }
       };
@@ -347,6 +387,7 @@
         const a = i.alpha < but ? Math.min(but, i.alpha + pas) : Math.max(but, i.alpha - pas);
         i.setAlpha(a);
         if (i.tableau && i.tableau.active) i.tableau.setAlpha(a);
+        if (i.hauts) for (const h of i.hauts) if (h.active) h.setAlpha(a);
         if (a === base && !devant.has(i)) this.mursEfface.delete(i);
       }
     },

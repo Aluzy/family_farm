@@ -94,6 +94,28 @@ export function casesCouvertes(state) {
   return out;
 }
 
+/* ---------- les murs rehaussés (version 1.25) ---------- */
+
+// La hauteur d'un mur (1 à ATELIER.HAUTEUR_MAX) : state.hauteurs[tuile] quand il est rehaussé.
+// 0 sans mur.
+export function hauteurMur(state, tile) {
+  const s = sorteDe(blocAt(state, tile));
+  if (!s || !s.mur) return 0;
+  const h = state.hauteurs && Number(state.hauteurs[tile]);
+  return h > 1 ? Math.min(h, DATA.ATELIER.HAUTEUR_MAX) : 1;
+}
+
+// Les murs rehaussés : { [tuile]: hauteur } (2 ou plus).
+export function hauteursPosees(state) {
+  return state.hauteurs && typeof state.hauteurs === 'object' ? state.hauteurs : {};
+}
+
+function setHauteur(state, tile, h) {
+  if (!state.hauteurs || typeof state.hauteurs !== 'object') state.hauteurs = {};
+  if (h > 1) state.hauteurs[tile] = h;
+  else delete state.hauteurs[tile];
+}
+
 export function changeMur(ancien, sorte) {
   const a = sorteDe(ancien), s = sorteDe(sorte);
   return !!(a && s && a.mur && s.mur && ancien !== sorte);
@@ -330,8 +352,14 @@ export function poseStatus(state, sorte, tile) {
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
+  // le même mur posé sur un mur : il se rehausse d'un bloc (jusqu'à HAUTEUR_MAX)
+  if (s.mur && blocAt(state, tile) === sorte) {
+    return hauteurMur(state, tile) < DATA.ATELIER.HAUTEUR_MAX ? { ok: true } : { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
+  }
   // un mur posé : une fenêtre (ou une pierre d'angle) le remplace, la pièce reste close
-  if (changeMur(blocAt(state, tile), sorte)) return { ok: true };
+  if (changeMur(blocAt(state, tile), sorte)) {
+    return hauteurMur(state, tile) > 1 ? { ok: false, raison: 'Ce mur est rehaussé : reprends d\'abord ses blocs du dessus.' } : { ok: true };
+  }
   if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
   // la station du robot : quand il est là (récolte ou semis automatiques)
   if (s.robot && !robotOn(state)) return { ok: false, raison: 'Il faut d\'abord le robot : la récolte ou le semis automatiques (arbre des technologies).' };
@@ -386,6 +414,11 @@ export function poserBloc(state, sorte, tile) {
   const s = sorteDe(sorte);
   const ancien = blocAt(state, tile);
   if (s.objet) takeItem(state, s.objet, 1);
+  if (s.mur && ancien === sorte) {
+    setHauteur(state, tile, hauteurMur(state, tile) + 1);
+    majPoulailler(state);
+    return { ok: true, sorte, case: tile, hauteur: hauteurMur(state, tile) };
+  }
   if (changeMur(ancien, sorte)) {
     addItem(state, sorteDe(ancien).objet, 1);
     state.blocs[tile] = sorte;
@@ -411,8 +444,9 @@ export function poserBloc(state, sorte, tile) {
   if (s.appareil) installStarter(state, s.appareil);
   // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable , le bac à semis : la Serre ; le coffre à grain : le Silo) : le bâtiment est construit
   if (s.batiment) ouvrirBatiment(state, s.batiment);
-  // un four, une cuisinière : la station est là (étape 5b, la maison)
-  if (s.station && state.stations[s.station]) openStation(state, s.station);
+  // un four, une cuisinière : la station est là (étape 5b, la maison) ; la meule : le Moulin
+  // quand sa tour est bâtie (majMoulin)
+  if (s.station && s.station !== 'moulin' && state.stations[s.station]) openStation(state, s.station);
   majPoulailler(state);
   rangerEtage(state);   // (un mur qui coupe la pièce de l'escalier : l'étage rétrécit)
   return { ok: true, sorte, case: tile };
@@ -427,20 +461,27 @@ export function reprendreBloc(state, tile, opts) {
   const dessus = blocDessus(state, tile), bloc = blocAt(state, tile);
   const sorte = dessus || bloc || solAt(state, tile);
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
+  // un mur rehaussé : le bloc du dessus d'abord
+  if (!dessus && bloc && hauteurMur(state, tile) > 1) {
+    setHauteur(state, tile, hauteurMur(state, tile) - 1);
+    addItem(state, sorteDe(bloc).objet, 1);
+    majPoulailler(state);
+    return { ok: true, sorte: bloc, case: tile, hauteur: hauteurMur(state, tile) };
+  }
   // un mur ou une porte entre une maison et un bâtiment (ou deux bâtiments) : il reste
   if (!dessus && bloc && sorteDe(bloc).ferme && !(opts && opts.force)) {
     const melange = melangeSansMur(state, tile);
     if (melange) return fail(melange);
   }
   if (dessus) delete state.blocsDessus[tile];
-  else if (bloc) delete state.blocs[tile];
+  else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); }
   else delete state.sols[tile];
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
   if (s && s.batiment && state[s.batiment] && !['poulailler', 'paturage'].includes(s.batiment)) state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)
-  if (s && s.station && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
+  if (s && s.station && s.station !== 'moulin' && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
   majPoulailler(state);
   rangerEtage(state);   // (l'escalier repris, la pièce ouverte : l'étage s'en va)
   return { ok: true, sorte, case: tile };
@@ -555,4 +596,57 @@ export function majPoulailler(state) {
     state.paturage.construit = e.ok;
     if (e.ok && !state.paturage.places) state.paturage.places = DATA.PATURAGE.PLACES_DEPART;
   }
+  majMoulin(state);
+}
+
+/* ---------- le Moulin de la ferme générée : une tour et sa meule (version 1.25) ---------- */
+
+// Le Moulin est là quand :
+//   - la meule est posée dans une pièce close ;
+//   - elle est au centre de la pièce (la case du milieu de ses cases, en largeur et en hauteur ;
+//     l'une des deux du milieu quand le côté est pair) ;
+//   - tous les murs de la pièce (les blocs `mur` qui la bordent, ses huit voisines ; pas les
+//     portes) ont MOULIN.HAUTEUR blocs de haut.
+// etatMoulin(state) → { ok, conditions: [{ id, texte, ok }], piece, meule, bornes: { c0, c1, r0, r1 }
+// (les cases de la pièce), murs: { hauts, total } }.
+export function etatMoulin(state) {
+  const H = DATA.ATELIER.MOULIN.HAUTEUR;
+  const B = blocsPoses(state), W = farmTerrain(state).LARGEUR;
+  const meule = Object.keys(B).map(Number).find((t) => B[t] === 'meule');
+  const piece = meule !== undefined ? pieceDe(state, meule) : null;
+  let centre = false, bornes = null, hauts = 0, total = 0;
+  if (piece) {
+    const cs = piece.cases.map((t) => t % W), rs = piece.cases.map((t) => Math.floor(t / W));
+    bornes = { c0: Math.min(...cs), c1: Math.max(...cs), r0: Math.min(...rs), r1: Math.max(...rs) };
+    const mil = (a, b) => [Math.floor((a + b) / 2), Math.ceil((a + b) / 2)];
+    centre = mil(bornes.c0, bornes.c1).includes(meule % W) && mil(bornes.r0, bornes.r1).includes(Math.floor(meule / W));
+    const murs = new Set();
+    for (const t of piece.cases) {
+      const c = t % W;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (c + dx < 0 || c + dx >= W) continue;
+          const j = t + dy * W + dx, s = sorteDe(B[j]);
+          if (s && s.mur) murs.add(j);
+        }
+      }
+    }
+    total = murs.size;
+    hauts = [...murs].filter((j) => hauteurMur(state, j) >= H).length;
+  }
+  const conditions = [
+    { id: 'meule', texte: 'Une meule dans une pièce close (des murs tout autour, et une porte)', ok: !!piece },
+    { id: 'centre', texte: 'La meule au centre de la pièce', ok: centre },
+    { id: 'hauteur', texte: `Les murs de la pièce hauts de ${H} blocs (${hauts} / ${total}) : pose le même mur sur un mur pour le rehausser`, ok: !!piece && total > 0 && hauts === total },
+  ];
+  return { ok: conditions.every((c) => c.ok), conditions, piece, meule: meule === undefined ? null : meule, bornes, murs: { hauts, total } };
+}
+
+// Le Moulin de la ferme générée existe quand sa tour est bâtie (etatMoulin) : la station
+// moulin (son appareil, ses moutures) suit. Appelée après chaque bloc posé ou repris.
+export function majMoulin(state) {
+  if (farmSeed(state) === null || !state.stations || !state.stations.moulin) return;
+  const ok = etatMoulin(state).ok;
+  if (ok && !state.stations.moulin.construit) openStation(state, 'moulin');
+  else if (!ok) state.stations.moulin.construit = false;
 }

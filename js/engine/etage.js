@@ -13,7 +13,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
-import { blocsEnMain, blocsPoses, changeMur, genreBloc, piecesCloses, solsPoses } from './blocs.js';
+import { blocsEnMain, blocsPoses, changeMur, genreBloc, hauteurMur, piecesCloses, solsPoses } from './blocs.js';
 import { atelierOuvert } from './atelier.js';
 import { farmTerrain } from './terrain.js';
 
@@ -64,7 +64,8 @@ export function etageEmprise(state) {
 // bâtiment, un plancher ou un escalier) a le sien, posé sur son dernier niveau. Une pièce close
 // sans rien de tout ça reste à ciel ouvert : une cour, un passage enfermé entre les murs de
 // bâtiments voisins.
-//   - une pièce sans escalier : sur ses murs (niveau 0) ;
+//   - une pièce sans escalier : sur ses murs (niveau 0 ; ses murs rehaussés, version 1.25 : un
+//     niveau de plus par bloc du plus bas d'entre eux, la tour du Moulin) ;
 //   - une pièce à escalier : sur les murs de l'étage, au-dessus de ce qu'ils ferment dans
 //     l'emprise (niveau 1) ; un étage sans murs tout autour reste à ciel ouvert (une terrasse).
 // [{ niveau, cases: [tuiles couvertes], dedans: [tuiles d'où l'on est dans le bâtiment], verre (la Serre) }]
@@ -78,7 +79,11 @@ export function toits(state) {
     const emprise = avecMurs(state, p.cases), tri = (a) => [...a].sort((x, y) => x - y);
     // (la Serre, la pièce du bac à semis : un toit de verre, on voit ce qui pousse dessous)
     const verre = p.cases.some((t) => B[t] === 'bac_semis');
-    if (!p.cases.some((t) => B[t] === 'escalier')) { out.push({ niveau: 0, cases: tri(emprise), dedans: tri(emprise), verre }); continue; }
+    if (!p.cases.some((t) => B[t] === 'escalier')) {
+      const hauts = [...emprise].map((t) => hauteurMur(state, t)).filter((h) => h > 0);
+      out.push({ niveau: hauts.length ? Math.min(...hauts) - 1 : 0, cases: tri(emprise), dedans: tri(emprise), verre });
+      continue;
+    }
     // à l'étage : les cases libres de l'emprise qu'on ne rejoint pas depuis son bord
     const voisins = (t) => { const c = t % W; return [c > 0 ? t - 1 : -1, c < W - 1 ? t + 1 : -1, t - W, t + W]; };
     const libre = (t) => emprise.has(t) && !ferme(t);

@@ -424,6 +424,7 @@
         this.stepMurs(dt / 1000);
         this.stepEtage(dt / 1000);
         this.stepToits(dt / 1000);
+        this.stepVoilure(dt / 1000);
         this.stepPieces();
         this.stepBeasts(time, delta / 1000);
         this.stepRobot(dt);
