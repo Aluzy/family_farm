@@ -67,7 +67,11 @@ Le Marché vend toujours les outils.
   - 2 à 4 étangs avec leurs rives (le premier assez grand pour le brochet), et le tronc creux au
     bord de l'un d'eux ;
   - des bois (arbres clairs, pins, buissons), plus denses vers les bords ;
-  - 64 rochers, des fleurs, des touffes d'herbe haute.
+  - 64 rochers, des fleurs, des touffes d'herbe haute. Les rochers (`scripts/carte/rochers.py`,
+    `assets/rochers.png`, le bloc « rochers » de la planche) sont dessinés dans le style des
+    blocs : la pierre des bâtiments taillée en pans, un contour sombre, de la mousse sur les
+    gros. Trois tailles : 2 × 2 cases, 1 × 2 (debout ou couché) et 1 × 1 (`DESSINS_ROCHERS` :
+    l'emprise de chaque forme, et ses dessins).
 - **Le chemin** est tracé par un A* (`js/engine/chemin.js`), de la porte de la maison au bord
   est. Le rectangle `vers_la_transition` y est posé.
 - **Le terrain** (`js/engine/terrain-carte.js`) est calculé d'après la carte, avec les règles de

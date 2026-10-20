@@ -37,7 +37,7 @@ test('ferme générée : la même graine donne la même carte, une autre graine 
   assert(JSON.stringify(c.carte) !== JSON.stringify(a.carte), 'une autre graine, une autre carte');
   // d'une fois sur l'autre (pas seulement dans la même page) : toujours la même ferme pour
   // « test-1 » (à mettre à jour si le générateur change, ce qui change les fermes des parties)
-  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 12003]);
+  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 12007]);
   assertEqual([a.carte.width, a.carte.height, a.terrain.LARGEUR, a.terrain.HAUTEUR], [FERME_GENEREE.LARGEUR, FERME_GENEREE.HAUTEUR, 144, 114]);
 });
 

@@ -45,7 +45,7 @@
           }
         }
         this.rocks.push({
-          id: c0 + ',' + r1, layer, cells: new Set(cells),
+          id: c0 + ',' + r1, layer, cells: new Set(cells), neuf: cells.some((i) => (layer.data[i] & 0x0fffffff) >= ROCKS.neufs),
           x: c0 * T, y: r0 * T, w: (c1 - c0 + 1) * T, h: (r1 - r0 + 1) * T, foot: (r1 + 1) * T - 2, img: null,
         });
       }
@@ -214,7 +214,8 @@
         const y = burst ? b.y0 + Math.random() * (b.y1 - b.y0) : b.y0 + (b.y1 - b.y0) * 0.35 + (Math.random() - 0.5) * 3;
         const sizes = burst ? ROCKS.burstSizes : ROCKS.sizes;
         const size = sizes[(Math.random() * sizes.length) | 0];
-        const colors = palette || (burst ? K.NATURE.eclats.couleurs : K.NATURE.eclats.coup);
+        const E = r.neuf ? ROCKS.eclats : K.NATURE.eclats;
+        const colors = palette || (burst ? E.couleurs : E.coup);
         const color = colors[(Math.random() * colors.length) | 0];
         const obj = this.add.rectangle(Math.round(x), Math.round(y), size, Math.max(1, size - (Math.random() < 0.5 ? 1 : 0)), color).setOrigin(0.5, 1);
         // un coup : les éclats sautent surtout vers le personnage (hors du rocher, sur l'herbe)

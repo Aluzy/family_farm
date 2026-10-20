@@ -92,7 +92,14 @@
   // (CarteKit.NATURE.eclats, comme sur les autres cartes) ; ils retombent `fall` px sous leur
   // départ, roulent un peu puis s'effacent.
   const ROCKS = {
-    gids: new Set([466, 467, 541, 542, 616, 617, 691, 692, 764, 765, 766, 767]),
+    // (ceux de la planche d'origine, puis le bloc « rochers » de la ferme générée : ROCHERS de
+    // js/engine/planche.js, 16 tuiles à la colonne 16 des rangées 55 et 56)
+    gids: new Set([466, 467, 541, 542, 616, 617, 691, 692, 764, 765, 766, 767,
+      ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((k) => [1 + 55 * 75 + 16 + k, 1 + 56 * 75 + 16 + k])]),
+    // (les éclats des rochers de la ferme générée : la pierre de scripts/carte/rochers.py ; ceux
+    // de la planche d'origine : CarteKit.NATURE.eclats)
+    neufs: 1 + 55 * 75 + 16,
+    eclats: { couleurs: [0x645c4e, 0x7d7463, 0x968c78, 0xada38f, 0x4a443a], coup: [0xdcd4c2, 0xc4baa6, 0xada38f, 0xdcd4c2, 0x645c4e] },
     shards: 8, burst: 22,
     sizes: [1, 2, 2, 2], burstSizes: [2, 2, 3, 3, 4],
     speed: [18, 46], lift: [45, 85], gravity: 280, fall: [2, 7], life: [650, 1100], fade: 300,

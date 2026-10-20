@@ -262,10 +262,12 @@ function fabriquer(graine) {
     let t = rk(), nom = formes[0][0];
     for (const [f, p] of formes) { if (t < p) { nom = f; break; } t -= p; }
     const c0 = entre(rk, 1, W - 3), r0 = entre(rk, 1, H - 3);
-    const cases = DESSINS_ROCHERS[nom].map(([dc, dr, g]) => [idx(c0 + dc, r0 + dr), g]);
-    const ok = cases.every(([i]) => surHerbe(i) && !cour[i] && !pres(i, 1, (j) => pris[j] || classe[j] !== 'herbe'));
+    // (l'emprise de la forme est réservée ; un de ses dessins y est posé, choisi d'après la case)
+    const F = DESSINS_ROCHERS[nom];
+    const ok = F.emprise.every(([dc, dr]) => { const i = idx(c0 + dc, r0 + dr); return surHerbe(i) && !cour[i] && !pres(i, 1, (j) => pris[j] || classe[j] !== 'herbe'); });
     if (!ok) continue;
-    for (const [i, g] of cases) { plantes[i] = g; pris[i] = 1; }
+    for (const [dc, dr] of F.emprise) pris[idx(c0 + dc, r0 + dr)] = 1;
+    for (const [dc, dr, g] of F.dessins[(c0 * 7 + r0 * 13) % F.dessins.length]) plantes[idx(c0 + dc, r0 + dr)] = g;
     n++;
   }
 
