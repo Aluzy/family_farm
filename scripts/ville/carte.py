@@ -504,7 +504,7 @@ def cale(v):
 # Les arbres, pins et buissons (en tuiles, le pied) posés à la main, puis ceux semés dans les
 # parcs et les bois (une grille tirée au hasard, toujours la même), loin des allées et du lac.
 ARBRES = [(61, 85), (76.5, 85.5), (61, 99), (76.5, 99.5), (92, 117), (106, 128), (92, 146.5), (107, 146),
-          (47.5, 118), (53, 121), (48, 140), (57.5, 117), (79, 117)]
+          (47.5, 118), (53, 121), (57.5, 117), (79, 117)]
 PINS = [(104, 141), (90.5, 128), (54, 131)]
 BUISSONS = [(62.5, 83, False), (75.5, 93, True), (91, 122, True), (106.5, 120, False), (79, 126, True)]
 SEMIS = [  # (x0, x1, y0, y1, pas)

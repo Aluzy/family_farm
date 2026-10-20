@@ -180,23 +180,46 @@ def statue():
     im = image(96, 96)
     d = dessin(im)
 
-    def bloc(x0, x1, y, dessus, face):
-        """Un bloc de pierre : son dessus (de y, haut de `dessus` px) puis sa face (haute de `face`)."""
+    def bloc(x0, x1, y, dessus, face, joints=0):
+        """Un bloc de pierre : son dessus (de y, haut de `dessus` px), le nez de sa marche (un
+        rebord clair, puis son ombre), sa face (haute de `face`) ; `joints` : ses pierres de
+        taille, larges de tant de px (sur le dessus et la face, décalées d'un rang à l'autre)."""
         d.rectangle((x0, y, x1, y + dessus - 1), fill=rgba(PIERRE[2]))
         d.line((x0, y, x1, y), fill=rgba(teinte(PIERRE[2], 1.06)))
         d.line((x1, y, x1, y + dessus - 1), fill=rgba(PIERRE[0]))
+        d.line((x0, y, x0, y + dessus - 1), fill=rgba(teinte(PIERRE[2], 1.06)))
         f = y + dessus
-        d.rectangle((x0, f, x1, f + face - 1), fill=rgba(PIERRE[0]))
-        d.rectangle((x0, f, x0 + 1, f + face - 1), fill=rgba(PIERRE[2]))
-        d.rectangle((x1 - 2, f, x1, f + face - 1), fill=rgba(PIERRE[1]))
+        # le nez : l'arête de la marche, éclairée, sur la face
+        d.line((x0, f, x1, f), fill=rgba(teinte(PIERRE[2], 1.08)))
+        d.rectangle((x0, f + 1, x1, f + face - 1), fill=rgba(PIERRE[0]))
+        d.line((x0, f + 1, x1, f + 1), fill=rgba(PIERRE[1]))
+        d.rectangle((x0, f + 1, x0 + 1, f + face - 1), fill=rgba(teinte(PIERRE[0], 1.08)))
+        d.rectangle((x1 - 2, f + 1, x1, f + face - 1), fill=rgba(PIERRE[1]))
         d.line((x0, f + face - 1, x1, f + face - 1), fill=rgba(PIERRE[3]))
-        d.line((x0, f, x1, f), fill=rgba(PIERRE[1]))
+        if joints:
+            # les joints des pierres : sur le dessus (un rang au milieu), sur la face
+            mi = y + dessus // 2
+            d.line((x0 + 2, mi, x1 - 2, mi), fill=rgba(teinte(PIERRE[2], 0.93)))
+            for r, (a, b) in enumerate(((y + 1, mi - 1), (mi + 1, f - 1), (f + 2, f + face - 2))):
+                for x in range(x0 + joints // 2 + (joints // 2 if r % 2 else 0), x1 - 2, joints):
+                    d.line((x, a, x, b), fill=rgba(teinte(PIERRE[2], 0.93) if r < 2 else PIERRE[1]))
 
-    # les trois degrés, du plus large (devant, en bas) au plus étroit
-    bloc(4, 91, 71, 15, 6)
-    bloc(13, 82, 63, 13, 6)
-    bloc(22, 73, 56, 11, 6)
+    def ombre(x0, x1, y, h=2):
+        """L'ombre d'un degré sur le dessus de celui de dessous (la lumière vient d'en haut à gauche)."""
+        for k in range(h):
+            for x in range(x0 + 2, x1 + 3):
+                if 0 <= x < 96:
+                    im.putpixel((x, y + k), rgba(teinte(PIERRE[2], 0.86 + 0.06 * k)))
+
+    # les trois degrés, du plus large (devant, en bas) au plus étroit : chacun jette son ombre
+    # sur le dessus de celui de dessous
+    bloc(4, 91, 71, 15, 7, joints=12)
+    bloc(13, 82, 64, 10, 7, joints=12)
+    ombre(13, 82, 81)
+    bloc(22, 73, 56, 6, 7, joints=12)
+    ombre(22, 73, 69)
     # le socle : son dessus (où se tient la figure), sa face (la plaque), la corniche
+    ombre(31, 64, 57)
     bloc(31, 64, 23, 12, 22)
     d.rectangle((29, 33, 66, 35), fill=rgba(PIERRE[1]))
     d.line((29, 33, 66, 33), fill=rgba(PIERRE[2]))
