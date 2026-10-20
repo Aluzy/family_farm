@@ -30,7 +30,7 @@ facultatif : sans lui, la carte s'affiche comme avant, immobile.
 | Oiseau | arrive en vol, se pose, picore et sautille, repart ; s'envole si on appuie à moins de 48 px | le jour |
 | Feuille | tombe d'un feuillage, s'efface au sol | toute la journée |
 | Écureuil | descend d'un arbre, court jusqu'à un autre en s'arrêtant une fois, y grimpe | le jour |
-| Lucioles | 5 points lumineux au-dessus du voile de lumière | à partir de 19 h 45 |
+| Lucioles | 5 points lumineux au-dessus du voile de lumière, chacun dans un halo qui clignote avec lui (`HALO`) | à partir de 19 h 45 |
 | Chat | marche, s'assoit, fait sa toilette, se couche, fait la sieste, court ; détale si on appuie à moins de 48 px | toute la journée ; à partir de 19 h 45 il dort sur son toit, jusqu'à 6 h 30 |
 | Vaches et moutons | les portes de l'Étable coulissent, les bêtes sortent une à une dans l'enclos, broutent, marchent, se couchent, donnent des coups de queue | dehors de 7 h à 19 h, si l'Étable est affichée et qu'il y a des bêtes |
 | Poules | la porte du Poulailler s'ouvre, les poules sortent en liberté, picorent, grattent, trottinent, se posent | dehors de 6 h à 19 h, si le Poulailler est affiché et qu'il y a des poules |
