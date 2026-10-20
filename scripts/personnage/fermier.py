@@ -129,7 +129,7 @@ VARIANTES = {
 STYLE = {}         # le style du personnage en cours de dessin
 # Les personnages du catalogue redessinés à l'essai (grosse tête, grands yeux) : leur planche
 # est écrite par scripts/personnage/chibi.py, pas ici.
-ESSAIS = ('perso_01', 'perso_02')
+ESSAIS = ('perso_01', 'perso_02', 'perso_03')
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalogue  # noqa: E402  (les 50 personnages du catalogue)

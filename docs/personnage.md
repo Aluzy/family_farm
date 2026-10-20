@@ -20,7 +20,7 @@ carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; s
 paille, casquette, bonnet, béret, bandeau, fleur ; détails : barbe, moustache, lunettes, taches de
 rousseur, boucles d'oreilles ; habits unis, à rayures, à carreaux ou à pois.
 
-**Nouveau dessin, à l'essai sur `perso_01` et `perso_02`** : une grosse tête (10 px de large),
+**Nouveau dessin, à l'essai sur `perso_01`, `perso_02` et `perso_03`** : une grosse tête (10 px de large),
 de grands yeux, un contour brun. Chaque personnage redessiné a son **modèle**,
 `scripts/personnage/modeles/<nom>.png` (12 × 79 px) : de face, de dos et de profil (tourné vers
 la droite), debout, empilés (rangées 0, 27 et 54 ; 25 rangées chacune, le contour du bas
