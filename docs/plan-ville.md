@@ -86,6 +86,17 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
      (`VILLE.BOUTIQUES`, `data/ville.json` ; `buyInShop`, `js/engine/ville.js`) : le pain, les
      croissants et les tartes, la pizza, le burger et les frites, les poissons, l'ordinateur.
      Ils vont dans l'inventaire ; une pizza ou un burger rend son bonheur au repas ;
-   - 5c, l'économie complète du modèle : recettes, stocks, flux, camions, sorties et bonheur.
+   - 5c, l'économie complète du modèle (`ECONOMIE`, `data/economie.json` ; `js/engine/economie.js`),
+     en trois parties :
+     - 5c-1, le moteur (fait) : chaque nuit, les producteurs hors de la ville livrent ce qui
+       manque, les fabriques transforment (au plus leur capacité, ce que les camions portent),
+       les boutiques et l'export écoulent ; les prix suivent les stocks ; les citadins achètent
+       leurs repas aux boutiques et sortent au cinéma, au musée ou à l'amphithéâtre quand leur
+       bonheur baisse ; la caisse de la ville ; le bureau de négoce rachète au joueur les
+       matières en pénurie (`sellToNegoce`) ; le joueur propriétaire d'une entreprise touche la
+       moitié de son bénéfice ;
+     - 5c-2, les fenêtres : le tableau de bord de la mairie, la vente au négoce, les stocks et
+       les prix aux comptoirs ;
+     - 5c-3, sur la carte : les sorties visibles, les camions qui circulent.
 6. Les lignes de bus de la ville : les trajets à pied sont longs (jusqu'à 4 h de jeu d'un bout à
    l'autre) ; les habitants qui travaillent loin de chez eux prennent le bus.

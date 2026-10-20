@@ -207,7 +207,9 @@ test('immeuble : chaque jour, les adultes touchent le salaire de leur poste et l
       assertEqual(J.salaire, f.emplois.reduce((t, k) => t + emploi(k).SALAIRE, 0), `${nom} jour ${J.jour} : le salaire de chaque adulte`);
       assertEqual(f.emplois.length, f.adultes, `${nom} : un poste par adulte`);
       assert(J.achete > 0 && Object.keys(J.achats).length, `${nom} : des ingrédients achetés au marché`);
-      assert(J.plats.every((p) => DATA.VOISINS.RECETTES.citadin.includes(p)), `${nom} : des plats de citadin`);
+      // (les plats de citadin, et ce qui s'achète aux boutiques : ECONOMIE.REPAS)
+      const boutiques = Object.values(DATA.ECONOMIE.REPAS);
+      assert(J.plats.every((p) => DATA.VOISINS.RECETTES.citadin.includes(p) || boutiques.includes(p)), `${nom} : des plats de citadin`);
       assertEqual(J.vendu, 0, 'il ne vend rien');
     }
     assert(f.argent >= 0, `${nom} : jamais à découvert`);
