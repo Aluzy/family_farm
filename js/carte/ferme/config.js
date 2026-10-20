@@ -237,7 +237,9 @@
   };
   const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };
   const HOLLOW = {
-    layer: 'plantes_pierres', gids: [539, 540], near: 22, page: 'infra-monde.html',
+    // (539, 540 : celui du pack, sur la carte de Tiled ; 4150, 4151 : le bloc « tronc_creux » de la
+    // planche, sur la ferme générée, TRONC_CREUX dans js/engine/planche.js)
+    layer: 'plantes_pierres', gids: [539, 540, 4150, 4151], near: 22, page: 'infra-monde.html',
     text: 'De drôles de couleurs luisent dans le creux du tronc : veux-tu aller voir ?',
   };
   // L'herbe haute (CarteKit.NATURE.herbe) : la couche d'objets « herbe_haute » de la carte, un

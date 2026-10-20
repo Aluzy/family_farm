@@ -65,8 +65,11 @@ Le Marché vend toujours les outils.
   de Tiled :
   - l'herbe en trois teintes, qui ondulent selon un bruit ;
   - 2 à 4 étangs avec leurs rives (le premier assez grand pour le brochet), et le tronc creux au
-    bord de l'un d'eux ;
+    bord de l'un d'eux (`scripts/carte/tronc_creux.py` : une bûche moussue, ses lueurs au fond du
+    creux ; le bloc « tronc_creux » de la planche, `TRONC_CREUX`) ;
   - des bois (arbres clairs, pins, buissons), plus denses vers les bords ;
+  - la terre labourée et celle des parcelles, sèche ou arrosée (`scripts/carte/terre_bords.py`,
+    puis `terre_arrosee.py`) : des sillons qui ondulent, des mottes, un caillou ;
   - 64 rochers, des fleurs, des touffes d'herbe haute. Les rochers (`scripts/carte/rochers.py`,
     `assets/rochers.png`, le bloc « rochers » de la planche) sont dessinés dans le style des
     blocs : la pierre des bâtiments taillée en pans, un contour sombre, de la mousse sur les

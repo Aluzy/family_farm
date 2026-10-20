@@ -4,7 +4,7 @@
 #
 # À lancer après scripts/carte/arbres_3d.py (qui refait les 45 premières rangées de
 # assets/farm_spring_summer.png) et après les scripts des nouvelles planches (herbe_chemin,
-# herbe_deco, eau, bordure_eau, arbre_clair, rochers). Le script garde les 45 premières rangées
+# herbe_deco, eau, bordure_eau, arbre_clair, rochers, tronc_creux). Le script garde les 45 premières rangées
 # (la planche d'origine) et pose dessous, à partir de la rangée BASE, les blocs de BLOCS ; il
 # met à jour assets/farm_spring_summer.tsx (taille, nombre de tuiles, animations de l'eau).
 # Le jeu ne lit qu'une planche pour la carte : les nouvelles tuiles s'y ajoutent, et tout ce
@@ -40,6 +40,7 @@ BLOCS = {
     'buisson_large': ('arbre_clair.png', 61, 50, 3, 2, (96, 32, 48, 32)),
     'barrieres': ('barrieres.png', 48, 54, 27, 7, (0, 0, 432, 112)),       # écrit par carte_v2.py
     'rochers': ('rochers.png', 16, 55, 8, 2, (0, 0, 128, 32)),             # scripts/carte/rochers.py
+    'tronc_creux': ('tronc_creux.png', 24, 55, 2, 1, (0, 0, 32, 16)),      # scripts/carte/tronc_creux.py
 }
 EAU_TUILES, EAU_IMAGES, EAU_DUREE = 32, 8, 160     # voir scripts/carte/eau.py
 

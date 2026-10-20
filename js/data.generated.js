@@ -892,7 +892,7 @@ export const RAW_DATA = {
       "litres": 2,
       "rendement": 6,
       "graines": { "item": "graine_carotte", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 1, "h": 32, "c": [0, 1, 2, 3] }
+      "sprite": { "r": 23, "h": 32, "c": [0, 1, 2, 3] }
     },
     "patate": {
       "nom": "Patate",
@@ -902,7 +902,7 @@ export const RAW_DATA = {
       "litres": 3,
       "rendement": 8,
       "graines": { "item": "patate", "mode": "plant" },
-      "sprite": { "r": 3, "h": 32, "c": [0, 1, 2, 3] }
+      "sprite": { "r": 23, "h": 32, "c": [5, 6, 7, 8] }
     },
     "tomate": {
       "nom": "Tomate",
@@ -932,7 +932,7 @@ export const RAW_DATA = {
       "litres": 4,
       "rendement": 6,
       "graines": { "item": "graine_aubergine", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 15, "h": 32, "c": [0, 1, 2, 3] }
+      "sprite": { "r": 19, "h": 32, "c": [0, 1, 2, 3, 4] }
     },
     "poivron": {
       "nom": "Poivron",
@@ -942,7 +942,7 @@ export const RAW_DATA = {
       "litres": 4,
       "rendement": 6,
       "graines": { "item": "graine_poivron", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 17, "h": 32, "c": [0, 1, 2, 3] }
+      "sprite": { "r": 19, "h": 32, "c": [5, 6, 7, 8, 9] }
     },
     "oignon": {
       "nom": "Oignon",
@@ -962,7 +962,7 @@ export const RAW_DATA = {
       "litres": 2,
       "rendement": 6,
       "graines": { "item": "ail", "mode": "plant" },
-      "sprite": { "r": 17, "h": 32, "c": [4, 5, 6, 7] }
+      "sprite": { "r": 19, "h": 32, "c": [10, 11, 12, 13, 14] }
     },
     "epinard": {
       "nom": "Épinard",
@@ -972,7 +972,7 @@ export const RAW_DATA = {
       "litres": 3,
       "rendement": 8,
       "graines": { "item": "graine_epinard", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 6, "h": 16, "c": [0, 1, 2, 4] }
+      "sprite": { "r": 23, "h": 32, "c": [10, 11, 12, 13] }
     },
     "fraise": {
       "nom": "Fraise",
@@ -982,7 +982,7 @@ export const RAW_DATA = {
       "litres": 3,
       "rendement": 10,
       "graines": { "item": "graine_fraise", "mode": "recolte", "min": 2, "max": 3 },
-      "sprite": { "r": 4, "h": 16, "c": [9, 10, 12, 13] }
+      "sprite": { "r": 25, "h": 32, "c": [0, 1, 2, 3] }
     },
     "ble": {
       "nom": "Blé",
@@ -994,7 +994,7 @@ export const RAW_DATA = {
       "litres": 2,
       "rendement": 8,
       "graines": { "item": "ble", "mode": "plant" },
-      "sprite": { "r": 6, "h": 32, "c": [9, 10, 11, 12] }
+      "sprite": { "r": 25, "h": 32, "c": [5, 6, 7, 8] }
     },
     "tournesol": {
       "nom": "Tournesol",
@@ -1006,7 +1006,7 @@ export const RAW_DATA = {
       "rendement": 9,
       "produit": "graine_tournesol",
       "graines": { "item": "graine_tournesol", "mode": "plant" },
-      "sprite": { "r": 13, "h": 32, "c": [0, 1, 2, 3] }
+      "sprite": { "r": 27, "h": 32, "c": [0, 1, 2, 3] }
     },
     "riz": {
       "nom": "Riz",
@@ -1017,7 +1017,7 @@ export const RAW_DATA = {
       "litres": 4,
       "rendement": 10,
       "graines": { "item": "riz", "mode": "plant" },
-      "sprite": { "r": 6, "h": 32, "c": [9, 10, 11, 12] }
+      "sprite": { "r": 25, "h": 32, "c": [10, 11, 12, 13] }
     },
     "houblon": {
       "nom": "Houblon",
@@ -1028,7 +1028,7 @@ export const RAW_DATA = {
       "litres": 2,
       "rendement": 6,
       "graines": { "item": "houblon", "mode": "plant" },
-      "sprite": { "r": 1, "h": 32, "c": [9, 10, 11, 13] }
+      "sprite": { "r": 27, "h": 32, "c": [5, 6, 7, 8] }
     },
     "cacao": {
       "nom": "Cacao",
@@ -1038,7 +1038,7 @@ export const RAW_DATA = {
       "litres": 3,
       "rendement": 5,
       "graines": { "item": "cacao", "mode": "plant" },
-      "sprite": { "r": 15, "h": 32, "c": [4, 5, 6, 7] }
+      "sprite": { "r": 21, "h": 32, "c": [0, 1, 2, 3, 4] }
     },
     "vanille": {
       "nom": "Vanille",
@@ -1048,7 +1048,7 @@ export const RAW_DATA = {
       "litres": 2,
       "rendement": 3,
       "graines": { "item": "vanille", "mode": "plant" },
-      "sprite": { "r": 15, "h": 32, "c": [12, 13, 14, 15] }
+      "sprite": { "r": 21, "h": 32, "c": [10, 11, 12, 13, 14] }
     },
     "cafe": {
       "nom": "Café",
@@ -1058,7 +1058,7 @@ export const RAW_DATA = {
       "litres": 3,
       "rendement": 6,
       "graines": { "item": "cafe", "mode": "plant" },
-      "sprite": { "r": 15, "h": 32, "c": [8, 9, 10, 11] }
+      "sprite": { "r": 21, "h": 32, "c": [5, 6, 7, 8, 9] }
     }
   },
   "POTAGER": {

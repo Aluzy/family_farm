@@ -294,8 +294,8 @@ export function validateData(data) {
     if (g.mode === 'recolte' && !(isInt(g.min) && isInt(g.max) && g.min >= 0 && g.max >= g.min)) err(where, 'graines.min et graines.max : deux entiers, min ≤ max');
     const s = c.sprite;
     if (!s) warn(where, 'pas de sprite : la carte affichera l\'icône à la place d\'un dessin');
-    else if (!(isInt(s.r) && [16, 32].includes(s.h) && Array.isArray(s.c) && s.c.length === 4 && s.c.every(isInt))) {
-      err(where, 'sprite : { "r": rangée, "h": 16 ou 32, "c": [4 colonnes, une par phase] }');
+    else if (!(isInt(s.r) && [16, 32].includes(s.h) && Array.isArray(s.c) && [4, 5].includes(s.c.length) && s.c.every(isInt))) {
+      err(where, 'sprite : { "r": rangée, "h": 16 ou 32, "c": [4 ou 5 colonnes, une par phase : la graine d\'abord, la plante mûre en dernier] }');
     }
   }
 

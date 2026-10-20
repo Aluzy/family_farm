@@ -164,7 +164,11 @@ test('données : deux recettes qui s\'utilisent l\'une l\'autre sont refusées',
 
 test('données : chaque culture connaît sa découpe sur la carte', () => {
   for (const [id, c] of Object.entries(DATA.CULTURES)) {
-    assert(c.sprite && c.sprite.c.length === 4 && [16, 32].includes(c.sprite.h), `${id} : sprite { r, h, c }`);
+    assert(c.sprite && [4, 5].includes(c.sprite.c.length) && [16, 32].includes(c.sprite.h), `${id} : sprite { r, h, c }`);
+  }
+  // les cultures redessinées (scripts/carte/cultures.py) : dans les rangées ajoutées, la graine d'abord
+  for (const id of ['carotte', 'patate', 'epinard', 'fraise', 'ble', 'riz', 'tournesol', 'houblon', 'aubergine', 'poivron', 'ail', 'cacao', 'cafe', 'vanille']) {
+    assert(DATA.CULTURES[id].sprite.r >= 18, `${id} : dessinée pour le jeu (rangées 18 et suivantes de crops.png)`);
   }
 });
 

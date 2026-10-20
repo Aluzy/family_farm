@@ -244,7 +244,7 @@ bâtiments sont celles du printemps (suffixe `_sp` des fichiers du pack, constan
 - **Parcelles.** Le coin haut-gauche de `zone_culture_1` est calé sur la grille de 16 px
   (464,384) ; les parcelles sont des tuiles jointives, 5 colonnes au plus :
   6/12/18/24/30 parcelles = 2×3, 3×4, 3×6, 4×6, 5×6 (`stageCols()`). Terre sèche ou arrosée,
-  plante à 4 phases découpées dans `crops.png` (champ `sprite` de chaque culture dans `data/crops.json`, que la page
+  plante à 4 ou 5 phases, de la graine à la plante mûre, découpées dans `crops.png` (champ `sprite` de chaque culture dans `data/crops.json`, que la page
   passe à `FarmStage.mount()` : `crops`), balancement quand elle est mûre.
 - **Images manquantes** : formes de secours (`makePlaceholders()`), la carte reste utilisable.
   Sans le JSON de la carte : fond uni et rectangles par défaut (`DEFAULT_OBJECTS`).

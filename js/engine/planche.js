@@ -18,6 +18,7 @@ export const BLOCS = {
   buisson_rond: [57, 50, 3, 2],
   buisson_large: [61, 50, 3, 2],
   rochers: [16, 55, 8, 2],
+  tronc_creux: [24, 55, 2, 1],
 };
 
 // Numéro de tuile (gid, à partir de 1) de la k-ième tuile d'un bloc (rangée par rangée).
@@ -77,5 +78,6 @@ export const DESSINS_ROCHERS = {
 };
 
 // Le tronc creux au bord de l'étang (le passage vers l'infra-monde : HOLLOW dans
-// js/carte/ferme/config.js), deux tuiles côte à côte de « plantes_pierres ».
-export const TRONC_CREUX = [539, 540];
+// js/carte/ferme/config.js), deux tuiles côte à côte de « plantes_pierres » : celles du bloc
+// « tronc_creux » (scripts/carte/tronc_creux.py). La carte de Tiled garde celui du pack (539, 540).
+export const TRONC_CREUX = [blocGid('tronc_creux', 0), blocGid('tronc_creux', 1)];
