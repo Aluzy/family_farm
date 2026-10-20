@@ -46,7 +46,7 @@
   const K = window.CarteKit;
   const V = window.CarteVille;
   const etat = V.etat;
-  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, CAMION, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE } = V.C;
+  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, CAMION, LIGNES, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE } = V.C;
   const { hote, sheetKey, saisie, reduced, v } = V;
   // Le pas de la flèche d'un passage, selon son sens (elle se balance dans ce sens).
   const SENS_PAS = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] };
@@ -132,6 +132,9 @@
         const Fa = IMMEUBLE.facade;
         for (const f of Object.values(IMMEUBLE.facades)) if (!this.textures.exists(f.key)) this.load.spritesheet(f.key, v(f.file), { frameWidth: Fa.w, frameHeight: Fa.h });
         for (const n of IMMEUBLE.meubles) if (!this.textures.exists('meuble_' + n)) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
+        // les bus des lignes et les poteaux de leurs arrêts (js/carte/ville/lignes.js)
+        if (!this.textures.exists(LIGNES.key)) this.load.spritesheet(LIGNES.key, v(LIGNES.file), { frameWidth: 112, frameHeight: 112 });
+        if (!this.textures.exists(LIGNES.poteau.key)) this.load.spritesheet(LIGNES.poteau.key, v(LIGNES.poteau.file), { frameWidth: LIGNES.poteau.w, frameHeight: LIGNES.poteau.h });
         // les camions de la logistique (js/carte/ville/circulation.js)
         if (!this.textures.exists(CAMION.key)) this.load.spritesheet(CAMION.key, v(CAMION.file), { frameWidth: 112, frameHeight: 112 });
         this.load.json(CAMION.key + '_meta', v(CAMION.meta));
@@ -281,7 +284,7 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapHabitant(w) || this.tapCamion(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w) || this.tapLivreur(w)) { this.dbl.oublie(); return; }
+        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapArret(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapHabitant(w) || this.tapCamion(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w) || this.tapLivreur(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va
         // (un essai de marche : la marche au doigt s'explique, une fois)
@@ -300,11 +303,16 @@
         cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
       });
       // les trajets du bus de l'école roulent avec les autres (mêmes carrefours), sans voitures tirées dessus
+      // (de même, en ville, les trajets des lignes de bus : js/carte/ville/lignes.js)
       const busObjs = objects('bus');
-      this.makeTraffic(objects('routes').concat(busObjs.filter((o) => o.polyline && /^bus_/.test(o.name)).map((o) => Object.assign({}, o, { bus: true }))), objects('carrefours'));
+      const lignes = etat.nom === IMMEUBLE.carte ? LIGNES.lignes.flatMap((L) => Object.entries(L.trajets).map(([sens, t]) => ({
+        name: `ligne_${L.id}:${sens}`, x: 0, y: 0, polyline: t.pts.map(([x, y]) => ({ x, y })), bus: true,
+      }))) : [];
+      this.makeTraffic(objects('routes').concat(busObjs.filter((o) => o.polyline && /^bus_/.test(o.name)).map((o) => Object.assign({}, o, { bus: true })), lignes), objects('carrefours'));
       this.makeSchool(busObjs);
       this.makeGare(objects('gare'));
       this.makeNavette(map);
+      this.makeLignes(Object.fromEntries(this.routes.filter((r) => /^ligne_/.test(r.name)).map((r) => [r.name, r])));
       this.makeFinds(objects('trouvailles'));
       this.makeFauna(objects('animaux'));
       this.makeCaveLife();
@@ -759,6 +767,7 @@
       this.stepTrip(dt);
       this.stepArrival(dt);
       this.stepNavette(dt);
+      this.stepLignes(dt);
       this.stepFinds(time);
       this.stepFauna(time, dt);
       this.stepMine(dt);

@@ -2306,6 +2306,7 @@ export const RAW_DATA = {
         "musee": { "prix": 5, "bonheur": 9, "cap": 20, "part": 35 }
       }
     },
+    "BUS": { "TICKET": 1 },
     "RATTRAPAGE": 30
   },
   "MEUBLES": {
