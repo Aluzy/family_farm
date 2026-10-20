@@ -206,6 +206,14 @@ window.FermeHote = {
   // le bureau de négoce : ce qu'il rachète (les pénuries) et ce que la ferme en a ; une vente
   negoce: () => ({ offres: negoceOffres(state), pieces: Math.floor(state.pieces) }),
   vendreNegoce: (item, n) => nuit('sell-item') || joue(sellToNegoce(state, item, n)),
+  // la logistique d'hier (les camions de la carte) : { camions, transport, principaux (les
+  // trois produits les plus fabriqués) } ; null avant la première nuit
+  logistique: () => {
+    const b = economie(state).bilan, P = DATA.ECONOMIE.PRODUITS;
+    if (!b) return null;
+    const principaux = Object.entries(b.production).filter(([p]) => !DATA.ECONOMIE.MATIERES[p]).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([p]) => P[p].nom.toLowerCase());
+    return { camions: b.camions, transport: b.transport, principaux };
+  },
   quota: (id, q) => nuit('entreprise-quota') || joue(setCompanyQuota(state, id, q)),
   outil: (id) => hasTool(state, id),
   // l'outil en main (barre d'outils) : 'hache', 'pioche', 'houe', 'canne' ou null
@@ -287,6 +295,7 @@ window.FermeHote = {
     const noms = {};
     const nom = (id) => { const o = DATA.OBJETS[id]; if (o) noms[id] = `${o.icone} ${o.nom.toLowerCase()}`; };
     DATA.VOISINS.RECETTES.citadin.forEach(nom);
+    Object.values(DATA.ECONOMIE.REPAS).forEach(nom);
     for (const f of Object.values(immeubleVue(state))) if (f.hier) Object.keys(f.hier.achats || {}).forEach(nom);
     const V = DATA.VOISINS;
     return { foyers: immeubleVue(state), noms, emplois: V.EMPLOIS, metiers: V.METIERS, lieux: V.LIEUX };

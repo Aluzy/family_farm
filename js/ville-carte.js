@@ -46,7 +46,7 @@
   const K = window.CarteKit;
   const V = window.CarteVille;
   const etat = V.etat;
-  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE } = V.C;
+  const { T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, DEVANT, FEUILLAGE_ALPHA, VOL, CARS, BUS, CAMION, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE } = V.C;
   const { hote, sheetKey, saisie, reduced, v } = V;
   // Le pas de la flèche d'un passage, selon son sens (elle se balance dans ce sens).
   const SENS_PAS = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] };
@@ -132,6 +132,9 @@
         const Fa = IMMEUBLE.facade;
         for (const f of Object.values(IMMEUBLE.facades)) if (!this.textures.exists(f.key)) this.load.spritesheet(f.key, v(f.file), { frameWidth: Fa.w, frameHeight: Fa.h });
         for (const n of IMMEUBLE.meubles) if (!this.textures.exists('meuble_' + n)) this.load.image('meuble_' + n, v('assets/meuble_' + n + '.png'));
+        // les camions de la logistique (js/carte/ville/circulation.js)
+        if (!this.textures.exists(CAMION.key)) this.load.spritesheet(CAMION.key, v(CAMION.file), { frameWidth: 112, frameHeight: 112 });
+        this.load.json(CAMION.key + '_meta', v(CAMION.meta));
         // (les enseignes des lieux : js/carte/ville/lieux.js)
         for (const b of IMMEUBLE.batiments) if (b.enseigne && !this.textures.exists('enseigne_' + b.enseigne)) this.load.image('enseigne_' + b.enseigne, v('assets/enseigne_' + b.enseigne + '.png'));
         // les familles de ses logements (js/carte/ville/habitants.js)
@@ -278,7 +281,7 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapHabitant(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w) || this.tapLivreur(w)) { this.dbl.oublie(); return; }
+        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapHabitant(w) || this.tapCamion(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w) || this.tapLivreur(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va
         // (un essai de marche : la marche au doigt s'explique, une fois)
