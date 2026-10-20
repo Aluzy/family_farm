@@ -227,6 +227,18 @@ export function couchages(state) {
   return piecesCloses(state).flatMap((p) => p.paillasses);
 }
 
+// La Serre de la ferme générée sur la carte : les cases de la pièce close où est le bac à
+// semis, sans bloc, hors celles juste derrière ses portes (le passage), dans l'ordre des
+// cases. Ses parcelles s'y posent, une par case (les premières) ; [] sans bac dans une pièce.
+export function serrePlaces(state) {
+  const B = blocsPoses(state), W = farmTerrain(state).LARGEUR;
+  const p = piecesCloses(state).find((q) => q.cases.some((t) => B[t] === 'bac_semis'));
+  if (!p) return [];
+  const passage = new Set();
+  for (const d of p.portes) for (const j of [d - 1, d + 1, d - W, d + W]) passage.add(j);
+  return p.cases.filter((t) => !B[t] && !passage.has(t));
+}
+
 // La famille dort-elle cette nuit ? Partout sauf sur la ferme générée ; là, il faut une
 // paillasse dans une pièce close pour le personnage principal (la première lui revient).
 export function nuitCouchee(state) {

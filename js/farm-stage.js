@@ -460,8 +460,23 @@
         const list = [
           grid('zone', this.grid, m ? m.plots : [], 1, m ? m.cases || 0 : 0),
         ];
+        // la ferme générée : les parcelles de la Serre sur les cases de sa pièce (modèle.serreCases),
+        // pas dans l'intérieur
+        const sc = m && m.serreCases;
+        if (sc) {
+          const cols = this.grid.cols, rang = new Map(sc.map((c, i) => [c, i]));
+          list.push({
+            id: 'serre', place: null, window: 'serre', plots: m.serre || [], bac: true,
+            slot: (p, i) => i,
+            pos: (i) => (i < sc.length ? { x: (sc[i] % cols) * T, y: Math.floor(sc[i] / cols) * T } : null),
+            at: (wx, wy) => {
+              const i = rang.get(Math.floor(wy / T) * cols + Math.floor(wx / T));
+              return i === undefined || i >= (m.serre || []).length ? -1 : i;
+            },
+          });
+        }
         for (const r of Object.values(this.rooms)) {
-          if (!r.def.plots) continue;                // un intérieur sans parcelles (la maison)
+          if (!r.def.plots || (sc && r.id === 'serre')) continue;   // un intérieur sans parcelles (la maison)
           list.push({
             id: 'interieur-' + r.id, place: null, window: r.def.window, plots: m ? m[r.def.plots] || [] : [],
             slot: (p, i) => i,

@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { blocGid } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
+  isArable, migrate, serrePlaces, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -523,6 +523,12 @@ test('ferme générée : un bac à semis posé dans une pièce close construit l
   assertEqual(s.serre.construit, false, 'reprise : plus de Serre');
   poserBloc(s, 'bac_semis', p.dedans);
   assertEqual([s.serre.construit, s.serre.parcelles[0].culture], [true, 'tomate']);
+  // sur la carte : ses parcelles sur les cases libres de la pièce (ni le bac, ni la case
+  // derrière la porte) ; un toit de verre
+  const W = z.W, places = serrePlaces(s);
+  assertEqual(places.length, 9 - 2);
+  assert(!places.includes(p.dedans) && !places.includes(p.porte - W), 'ni le bac, ni le passage');
+  assertEqual(toits(s).map((t) => t.verre), [true]);
 });
 
 /* ---------- étape 5b : le Silo (pièce close + coffre à grain) ---------- */

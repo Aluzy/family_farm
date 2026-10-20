@@ -64,7 +64,7 @@ export function etageEmprise(state) {
 //   - une pièce sans escalier : sur ses murs (niveau 0) ;
 //   - une pièce à escalier : sur les murs de l'étage, au-dessus de ce qu'ils ferment dans
 //     l'emprise (niveau 1) ; un étage sans murs tout autour reste à ciel ouvert (une terrasse).
-// [{ niveau, cases: [tuiles couvertes], dedans: [tuiles d'où l'on est dans le bâtiment] }]
+// [{ niveau, cases: [tuiles couvertes], dedans: [tuiles d'où l'on est dans le bâtiment], verre (la Serre) }]
 export function toits(state) {
   if (!atelierOuvert(state)) return [];
   const B = blocsPoses(state), E = etageBlocs(state), W = farmTerrain(state).LARGEUR;
@@ -72,7 +72,9 @@ export function toits(state) {
   const out = [];
   for (const p of piecesCloses(state)) {
     const emprise = avecMurs(state, p.cases), tri = (a) => [...a].sort((x, y) => x - y);
-    if (!p.cases.some((t) => B[t] === 'escalier')) { out.push({ niveau: 0, cases: tri(emprise), dedans: tri(emprise) }); continue; }
+    // (la Serre, la pièce du bac à semis : un toit de verre, on voit ce qui pousse dessous)
+    const verre = p.cases.some((t) => B[t] === 'bac_semis');
+    if (!p.cases.some((t) => B[t] === 'escalier')) { out.push({ niveau: 0, cases: tri(emprise), dedans: tri(emprise), verre }); continue; }
     // à l'étage : les cases libres de l'emprise qu'on ne rejoint pas depuis son bord
     const voisins = (t) => { const c = t % W; return [c > 0 ? t - 1 : -1, c < W - 1 ? t + 1 : -1, t - W, t + W]; };
     const libre = (t) => emprise.has(t) && !ferme(t);
@@ -96,7 +98,7 @@ export function toits(state) {
         }
         for (const j of voisins(k)) if (libre(j) && !vus.has(j)) { vus.add(j); zone.push(j); }
       }
-      out.push({ niveau: 1, cases: tri(cases), dedans: tri(emprise) });
+      out.push({ niveau: 1, cases: tri(cases), dedans: tri(emprise), verre });
     }
   }
   return out;
