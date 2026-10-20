@@ -6,7 +6,7 @@
 
 import { assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
-import { blocGid } from '../../js/engine/planche.js';
+import { blocGid, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
@@ -88,7 +88,7 @@ for (const graine of ['1', '2', '7', 'abc', '12345']) {
     }
     assert(plus >= 30, 'un étang de 30 cases au moins : ' + plus);
     const pp = carte.layers.find((l) => l.name === 'plantes_pierres').data;
-    assert(pp.includes(539) && pp.includes(540), 'le tronc creux');
+    assert(pp.includes(TRONC_CREUX[0]) && pp.includes(TRONC_CREUX[1]) && !pp.includes(539), 'le tronc creux (le nouveau dessin, pas celui du pack)');
     // des milliers de tuiles labourables, dont les parcelles de départ
     assert(terrain.LIGNES.join('').split('#').length - 1 > 8000, 'de l\'herbe à labourer');
   });
