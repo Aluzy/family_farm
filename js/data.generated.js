@@ -76,6 +76,7 @@ export const RAW_DATA = {
       "fabriquer": 2,
       "couper": 6,
       "piocher": 6,
+      "faucher": 3,
       "pecher": 4,
       "labourer": 5,
       "planter": 3,
@@ -562,7 +563,8 @@ export const RAW_DATA = {
       "station_robot": { "entrees": { "lingot_fer": 1, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "station_robot": 1 } },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
-      "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" }
+      "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
+      "faux": { "entrees": { "bois": 3, "pierre": 2, "fibre": 1 }, "outil": "faux" }
     },
     "BLOCS": {
       "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true, "mur": true },
@@ -820,7 +822,6 @@ export const RAW_DATA = {
       "transformation": true,
       "sortie": "farine",
       "qteSortie": 1,
-      "sousProduit": { "item": "paille", "qte": 1 },
       "horsLivre": true
     },
     "huile": {
@@ -1115,6 +1116,7 @@ export const RAW_DATA = {
   "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
   "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "CHUTE": 2, "COUPES": 3, "RETOUR": [1, 3] },
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3] },
+  "FAUX": { "NOM": "Faux", "ICONE": "🌾‍🔪", "PRIX": 50, "PAILLE": 1, "RETOUR": [2, 4], "BOT_TOUFFES": 40 },
   "CANNE": {
     "NOM": "Canne à pêche",
     "ICONE": "🎣",
@@ -1819,7 +1821,7 @@ export const RAW_DATA = {
       {
         "titre": "Le troupeau",
         "icone": "🐑",
-        "intro": "Des moutons pour la laine, des vaches pour le lait. Ils vivent à l'Étable et mangent chaque nuit la paille que donne le Moulin.",
+        "intro": "Des moutons pour la laine, des vaches pour le lait. Ils vivent à l'Étable et mangent chaque nuit de la paille : fauche l'herbe haute de la carte avec la faux.",
         "objectifs": [
           { "type": "laines", "cible": 10, "libelle": "Tondre 10 laines", "unite": "" },
           { "type": "autonomie", "cible": 60, "libelle": "Atteindre 60 % d'autonomie", "unite": "%" }
@@ -1930,10 +1932,10 @@ export const RAW_DATA = {
       "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },
       "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe, et le Livre de recette" },
-      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches" },
+      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "la farine" },
       "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
       "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
-      "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille du Moulin" },
+      "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille fauchée" },
       "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
       "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
       "commerce": {
@@ -1949,6 +1951,7 @@ export const RAW_DATA = {
       "fabriquer": 10,
       "couper": 10,
       "piocher": 10,
+      "faucher": 4,
       "pecher": 15,
       "planter": 10,
       "arroser": 10,

@@ -1,8 +1,8 @@
 import { DATA } from '../engine/catalog.js';
 import { asleep } from '../engine/night.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
-import { buyTool, castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserMorceau, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
-import { axeMode, hoeMode, pickMode, rodMode, setAxeMode, setHoeMode, setPickMode, setRodMode, state } from './store.js';
+import { buyTool, castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserMorceau, scytheGrass, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
+import { axeMode, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -27,11 +27,12 @@ export let toolbarOpen = true;
 const BARRE_FLECHE = '<svg class="tool-bar-arrow" viewBox="0 0 5 3" width="20" height="12" aria-hidden="true" shape-rendering="crispEdges">' +
   '<rect x="0" y="0" width="5" height="1"/><rect x="1" y="1" width="3" height="1"/><rect x="2" y="2" width="1" height="1"/></svg>';
 
-// L'outil en main (la houe, la hache ou la pioche), ou null.
+// L'outil en main (la houe, la hache, la pioche, la faux ou la canne), ou null.
 function enMain() {
   if (hoeMode) return 'houe';
   if (axeMode) return 'hache';
   if (pickMode) return 'pioche';
+  if (scytheMode) return 'faux';
   if (rodMode) return 'canne';
   return null;
 }
@@ -75,10 +76,10 @@ function useTool(id) {
   }
   if (enMain() === id) {                     // l'outil en main : le ranger
     if (id === 'houe') ACTIONS['hoe-toggle']();
-    else { setAxeMode(false); setPickMode(false); setRodMode(false); refresh(); }
+    else { setAxeMode(false); setPickMode(false); setRodMode(false); setScytheMode(false); refresh(); }
     return;
   }
-  if (id === 'houe' || id === 'hache' || id === 'pioche' || id === 'canne') {
+  if (id === 'houe' || id === 'hache' || id === 'pioche' || id === 'faux' || id === 'canne') {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
   }
   setBuildMode(null);
@@ -87,6 +88,7 @@ function useTool(id) {
   if (id !== 'hache' && axeMode) setAxeMode(false);
   if (id !== 'pioche' && pickMode) setPickMode(false);
   if (id !== 'canne' && rodMode) setRodMode(false);
+  if (id !== 'faux' && scytheMode) setScytheMode(false);
   if (id === 'houe') {
     ACTIONS['hoe-toggle']();
     return;
@@ -101,6 +103,13 @@ function useTool(id) {
   if (id === 'pioche') {
     setPickMode(true);
     notify(`${def.ICONE} Pioche en main : touche un rocher de la carte pour le casser.`);
+    if (stageWindow) closeStageWindow();
+    else refresh();
+    return;
+  }
+  if (id === 'faux') {
+    setScytheMode(true);
+    notify(`${def.ICONE} Faux en main : touche une touffe d'herbe haute de la carte pour la faucher (de la paille).`);
     if (stageWindow) closeStageWindow();
     else refresh();
     return;
@@ -123,6 +132,12 @@ export function axeChipHtml() {
 export function pickChipHtml() {
   if (!pickMode || !hasTool(state, 'pioche') || stageInterior) return '';
   return `<button type="button" class="stage-chip hoe axe" data-action="pick-toggle" aria-pressed="true" aria-label="Pioche en main : touche un rocher pour le casser. Ranger la pioche" title="Touche un rocher de la carte pour le casser"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('pioche')}</span><span class="stage-chip-text">Pioche</span><span class="stage-chip-val num">🪨</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+}
+
+// La puce « Faux en main » de la carte : la toucher range la faux.
+export function scytheChipHtml() {
+  if (!scytheMode || !hasTool(state, 'faux') || stageInterior) return '';
+  return `<button type="button" class="stage-chip hoe axe" data-action="scythe-toggle" aria-pressed="true" aria-label="Faux en main : touche une touffe d'herbe haute pour la faucher. Ranger la faux" title="Touche une touffe d'herbe haute de la carte pour la faucher"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('faux')}</span><span class="stage-chip-text">Faux</span><span class="stage-chip-val num">${DATA.OBJETS[DATA.PATURAGE.NOURRITURE].icone}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
 }
 
 // La puce « Canne à pêche en main » de la carte : la toucher range la canne.
@@ -154,6 +169,17 @@ export function mineFromStage(id, ou) {
   persistState();
   refresh();
   return { items: { pierre: r.pierre }, casse: r.casse, morceaux: r.morceaux };
+}
+
+// La carte : la faux en main, le joueur a touché la touffe `id` (« x,y » de son pied). Comme
+// chopFromStage : la paille tombe au sol. Renvoie { morceaux }, ou null.
+export function scytheFromStage(id, ou) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const r = scytheGrass(state, id, ou);
+  if (!r.ok) { notify(r.error); return null; }
+  persistState();
+  refresh();
+  return { items: { [DATA.PATURAGE.NOURRITURE]: r.paille }, morceaux: r.morceaux };
 }
 
 // La carte : le personnage a marché sur le morceau `n` (bois, pierre) : dans l'inventaire.
@@ -196,6 +222,10 @@ registerActions({
   },
   'pick-toggle': () => {
     setPickMode(false);
+    refresh();
+  },
+  'scythe-toggle': () => {
+    setScytheMode(false);
     refresh();
   },
   'rod-toggle': () => {

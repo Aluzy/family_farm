@@ -70,28 +70,35 @@ export function setEcranFerme(value) {
 export let hoeMode = false;
 export function setHoeMode(value) {
   hoeMode = value;
-  if (value) { axeMode = false; pickMode = false; rodMode = false; buildMode = null; } // un seul outil en main
+  if (value) { axeMode = false; pickMode = false; rodMode = false; scytheMode = false; buildMode = null; } // un seul outil en main
   return value;
 }
 // La hache en main : un appui sur un arbre de la carte le fait couper (du bois).
 export let axeMode = false;
 export function setAxeMode(value) {
   axeMode = value;
-  if (value) { hoeMode = false; pickMode = false; rodMode = false; buildMode = null; }
+  if (value) { hoeMode = false; pickMode = false; rodMode = false; scytheMode = false; buildMode = null; }
   return value;
 }
 // La pioche en main : un appui sur un rocher de la carte le fait casser (de la pierre).
 export let pickMode = false;
 export function setPickMode(value) {
   pickMode = value;
-  if (value) { hoeMode = false; axeMode = false; rodMode = false; buildMode = null; }
+  if (value) { hoeMode = false; axeMode = false; rodMode = false; scytheMode = false; buildMode = null; }
   return value;
 }
 // La canne à pêche en main : un appui sur l'eau de la carte y fait pêcher (truite, brochet).
 export let rodMode = false;
 export function setRodMode(value) {
   rodMode = value;
-  if (value) { hoeMode = false; axeMode = false; pickMode = false; buildMode = null; }
+  if (value) { hoeMode = false; axeMode = false; pickMode = false; scytheMode = false; buildMode = null; }
+  return value;
+}
+// La faux en main : un appui sur une touffe d'herbe haute de la carte la fauche (de la paille).
+export let scytheMode = false;
+export function setScytheMode(value) {
+  scytheMode = value;
+  if (value) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; buildMode = null; }
   return value;
 }
 // La ferme générée, le mode « Construire » : la sorte de bloc qu'un appui sur une case pose
@@ -99,7 +106,7 @@ export function setRodMode(value) {
 export let buildMode = null;
 export function setBuildMode(value) {
   buildMode = value || null;
-  if (buildMode) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; }
+  if (buildMode) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; scytheMode = false; }
   return buildMode;
 }
 // Le niveau où l'on construit, en mode Construire (0 : le sol, 1 : l'étage ; js/ui/chantier.js).

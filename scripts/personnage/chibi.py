@@ -24,6 +24,7 @@
 #                                                  (un enfant raccourci : ENFANT_RANGEES), et les
 #                                                  planches par défaut assets/fermiere.png, fermier.png
 #   python3 scripts/personnage/chibi.py --apercu   écrit aussi apercu_chibi.png (agrandi)
+import json
 import os
 import sys
 from collections import Counter
@@ -210,12 +211,18 @@ DEFAUTS = {'fermiere': 'perso_01', 'fermier': 'perso_07'}
 
 
 def main():
-    noms = sorted(n[:-4] for n in os.listdir(MODELES) if n.endswith('.png'))
+    noms = sorted(n[:-4] for n in os.listdir(MODELES) if n.endswith('.png') and n.startswith(('perso_', 'enfant_')))
     planches = {}
     for nom in noms:
         planches[nom] = ecrire(nom, enfant=nom.startswith('enfant_'))
     for nom, src in DEFAUTS.items():
         planches[src].save(os.path.join(F.ASSETS, f'{nom}.png'))
+    # les noms des cases (les mêmes pour toutes les planches)
+    cases = {'frameWidth': F.W, 'frameHeight': F.H, 'frames': list(F.frames(figure))}
+    for chemin in [os.path.join(F.ASSETS, 'personnages', 'cases.json')] + [os.path.join(F.ASSETS, f'{nom}.json') for nom in DEFAUTS]:
+        with open(chemin, 'w', encoding='utf-8') as f:
+            json.dump(cases, f, ensure_ascii=False, indent=0)
+            f.write('\n')
     print(f'{len(noms)} planches écrites dans assets/personnages/, et ' + ', '.join(f'assets/{n}.png' for n in DEFAUTS))
     if '--apercu' in sys.argv:
         choix = [planches[n] for n in noms[:3]]

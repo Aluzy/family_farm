@@ -415,7 +415,7 @@ est la poignée de débogage posée par `js/main.js`).
 - **Règle de rangement** : ce qui est un lieu s'ouvre sur la carte ; ce qui est un stock ou un échange est dans la barre du bas. Les animaux s'achètent à l'Étable, les arbres au Verger ; le Marché garde Vendre, Acheter, Graines. Famille, Livre de recette et Arbre des technologies ne s'ouvrent plus que dans la Maison (les pages restent pour le repli sans Phaser).
 - **Bandeau** : nuit et heure à côté du titre ; saison, eau et autonomie ouvrent leur fenêtre ; l'objectif du chapitre est affiché sous le bandeau.
 - **Horloge** : 6 h au réveil, 1 h toutes les 5 s d'éveil (`DATA.TEMPS.SECONDES_PAR_HEURE`, distinct de `SECONDES_HEURE_MARCHE` qui règle l'usure). La carte reçoit l'heure dans le modèle de vue et pose un voile coloré : aube, plein jour, soir doré, crépuscule, nuit.
-- **Moulin** : sa fenêtre moud le blé directement (`renderMoulin()`), 1 blé = 1 farine + 1 paille ; la mouture n'est plus dans le Livre de recette.
+- **Moulin** : sa fenêtre moud le blé directement (`renderMoulin()`), 1 blé = 1 farine (version 1.23 : la paille se fauche, voir la faux) ; la mouture n'est plus dans le Livre de recette.
 - **Élevage** : plus d'abattage ni de poids. Chaque nuit un mouton mange 1 paille, une vache 2 ; nourrie, la vache donne du lait, le mouton de la laine toutes les 2 nuits nourries. Le mot « pâturage » a disparu des textes (la clé interne `state.paturage` reste).
 - **Famille** : prénom, femme ou homme, couleur de peau par membre (`setMemberProfile`). Le prénom reste dans la sauvegarde locale et n'est jamais envoyé au suivi.
 - **Sauvegardes** : format 16.

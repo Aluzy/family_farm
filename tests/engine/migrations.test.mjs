@@ -8,7 +8,7 @@ import {
   feedAllHens, freeCowPlaces, freeSheepPlaces, fridgeCount, lotsOf, makeDevice, makePlot,
   makePlots, memberName, memberPortrait, migrate, migrateTechTreeV2, MIGRATION_11, MIGRATIONS,
   millPending, newAutoReport, newStableReport, openStation, ownedTechs, pastureCost, planMeal,
-  prepTimeMult, sellItem, setMemberProfile, shear, sheepCount, sheepToShear, sleep, stableFree,
+  prepTimeMult, scytheGrass, sellItem, setMemberProfile, shear, sheepCount, sheepToShear, sleep, stableFree,
   stableOccupied, startMilling, startRecipe, STATE_VERSION, strawMissing, strawNeed, strawStock,
   techPoints, testFillBatteries, wheatTotal, zoneTile,
 } from '../../js/engine/index.js';
@@ -234,10 +234,10 @@ test('migration v15 → v16 : les préparations des recettes retirées sont term
   assertEqual(millPending(m), 3);
   // Presse : rien ne change.
   assertEqual(m.stations.presse.tache, { recette: 'huile', resteMs: 1000, dureeMs: 10000 });
-  // tout se termine ensuite normalement, avec la paille des 3 blés
+  // tout se termine ensuite normalement (version 1.23 : le Moulin ne donne plus de paille)
   testFillBatteries(m);
   runFor(m, 60);
-  assertEqual([countItem(m, 'farine'), countItem(m, 'paille'), countItem(m, 'omelette'), countItem(m, 'pain'), countItem(m, 'huile')], [3, 3, 1, 1, 1]);
+  assertEqual([countItem(m, 'farine'), countItem(m, 'paille'), countItem(m, 'omelette'), countItem(m, 'pain'), countItem(m, 'huile')], [3, 0, 1, 1, 1]);
   assertEqual(Object.keys(DATA.STATIONS).map((id) => m.stations[id].tache), [null, null, null, null]);
   // un Moulin dont seule la file contenait du blé (cas limite) repart avec ce blé
   const file = migrate({ v: 15, t: 0, s: v15State((s) => { openStation(s, 'moulin'); s.stations.moulin.file = [{ recette: 'farine', pris: [], eau: 0 }, { recette: 'farine', pris: [], eau: 0 }]; }) });
@@ -263,12 +263,13 @@ test('migration v15 → v16 : une partie avancée continue à tourner après la 
   assertEqual(JSON.parse(JSON.stringify(m)), m, 'l\'état migré se sauvegarde tel quel');
   assertEqual(strawStock(m), 10);
   testFillBatteries(m);
-  // 12 nuits de jeu : la tonte automatique, le Moulin et l'Étable fonctionnent ensemble
+  // 12 nuits de jeu : la tonte automatique, la faux et l'Étable fonctionnent ensemble
   let laines = 0;
   let lait = 0;
   for (let i = 0; i < 12; i++) {
     feedAllHens(m);
-    if (strawMissing(m) > 0 && wheatTotal(m) > 0) startMilling(m, Math.min(strawMissing(m), wheatTotal(m)));
+    if (!m.outils || !m.outils.faux) m.outils = { ...(m.outils || {}), faux: true };
+    for (let k = 0; strawMissing(m) > 0 && k < 40; k++) scytheGrass(m, `pre_${i}_${k}`);
     runFor(m, 30);
     const rep = sleep(m);
     assert(rep !== null, `nuit ${i + 1}`);

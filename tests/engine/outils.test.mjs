@@ -5,7 +5,7 @@
 
 import {
   actionCost, actionsLeft, actionXp, borderMask, brokenRocks, buyHoe, buyTool, canBorder, castLine,
-  chopsLeft, chopTree, countItem, createInitialState, DATA, eatSnack, enduranceReduction,
+  chopsLeft, chopTree, countItem, cutGrass, grassCut, scytheGrass, createInitialState, DATA, eatSnack, enduranceReduction,
   energyLevel, energyMax, farmOpen, fellenTrees, findPlot, fishLeft, happinessCostPct, hasHoe,
   hasTool, hoe, hoeableTiles, hoeStatus, isArable, isBuyable, makePlot, makePlots, migrate,
   migrateEnergy, migrateHoe, mineRock, OUTILS, ownedTools, plant, plantAll, plotAtTile,
@@ -126,7 +126,7 @@ test('outils : la hache et la pioche s\'achètent une fois au Marché ; l\'outil
   assertEqual([buyTool(s, 'canne').ok, hasTool(s, 'canne'), ownedTools(s)], [true, true, ['houe', 'pioche', 'hache', 'canne']], 'la canne à pêche, quatrième outil');
   assertEqual([selectTool(s, 'pioche').ok, selectedTool(s)], [true, 'pioche']);
   assertEqual(selectTool(s, 'marteau').ok, false, 'outil inconnu');
-  assertEqual(OUTILS.map((id) => toolDef(id).ICONE), ['⛏️', '⚒️', '🪓', '🎣']);
+  assertEqual(OUTILS.map((id) => toolDef(id).ICONE), ['⛏️', '⚒️', '🪓', '🌾‍🔪', '🎣']);
 });
 
 test('outils : une partie avec la houe seule l\'a sur le bouton ; le Marché fermé ne vend pas la hache', () => {
@@ -265,6 +265,28 @@ test('hache et pioche sur une carte : chaque coup lâche un morceau au sol, la c
   // ramassés un à un (une fois chacun)
   for (const m of L) assert(ramasserMorceau(s, m.n).ok);
   assertEqual([countItem(s, 'bois'), countItem(s, 'pierre'), morceauxDe(s, 'ferme').length, ramasserMorceau(s, L[0].n).ok], [5, 5, 0, false]);
+});
+
+test('faux : faucher une touffe donne de la paille au sol, de l\'XP, coûte de l\'énergie ; elle repousse au bout de RETOUR jours', () => {
+  const s = tireless(garden());
+  const X = DATA.FAUX;
+  assertEqual(scytheGrass(s, '40,60').ok, false, 'sans faux');
+  s.pieces = 1000;
+  assert(buyTool(s, 'faux').ok);
+  assertEqual(ownedTools(s), ['faux']);
+  const xp = s.progression.xp, e0 = energyLevel(s);
+  const r = scytheGrass(s, '40,60', { carte: 'ferme', coup: [{ x: 40, y: 60 }] });
+  assertEqual([r.ok, r.paille, r.morceaux.coup.map((m) => [m.item, m.x, m.y]), countItem(s, 'paille')], [true, X.PAILLE, [['paille', 40, 60]], 0], 'la paille tombe au sol');
+  assertEqual(ramasserMorceau(s, r.morceaux.coup[0].n).ok, true);
+  assertEqual(countItem(s, 'paille'), 1);
+  assertEqual([s.progression.xp - xp, e0 - energyLevel(s) > 0], [actionXp('faucher'), true]);
+  assertEqual([grassCut(s, '40,60'), cutGrass(s), scytheGrass(s, '40,60').ok], [true, ['40,60'], false], 'une touffe fauchée ne se refauche pas');
+  const retour = s.outils.herbes['40,60'].retour;
+  assert(retour >= s.day + X.RETOUR[0] && retour <= s.day + X.RETOUR[1]);
+  while (s.day < retour - 1) sleepOnce(s);
+  assertEqual(grassCut(s, '40,60'), true);
+  sleepOnce(s);
+  assertEqual([grassCut(s, '40,60'), cutGrass(s)], [false, []], 'elle a repoussé');
 });
 
 test('canne à pêche : un lancer coûte de l\'énergie ; une prise (truite, brochet) donne le poisson et de l\'XP ; JOUR prises par eau et par jour', () => {

@@ -8,7 +8,7 @@ import {
   buyPasture, buySheep, countItem, cowCapacity, cowCount, cowPlaces, cowsOnHerbs,
   createInitialState, DATA, feedLivestock, finishPreparations, freeCowPlaces, freeSheepPlaces,
   grantTech, herbsOn, herbStock, inventoryCounts, isBuyable, isGraineComptoir, isPerishable,
-  layEggs, makeDevice, maxCows, maxSheep, migrate, moveToFridge, newStableReport, NIGHT_STEPS,
+  layEggs, makeDevice, scytheGrass, maxCows, maxSheep, migrate, moveToFridge, newStableReport, NIGHT_STEPS,
   nightHarvest, pastureCapacity, pastureCost, planMeal, recipeNode, recipeStatus, roundPct,
   scaleEnergie, sellItem, setCowHerbs, shear, sheepCount, sheepPlaces, sheepToShear, shelfLife,
   sleep, stableFree, stableOccupied, startFarm, startHousehold, startLot4, startLot5, startMilling,
@@ -301,7 +301,7 @@ test('paille insuffisante : on nourrit dans l\'ordre de la liste, les moutons pu
   assertEqual(JSON.stringify(s.paturage), avant, 'animaux inchangés');
 });
 
-test('la paille du blé moulu nourrit les animaux (Moulin → Étable)', () => {
+test('la paille fauchée nourrit les animaux (faux → Étable) ; le Moulin n\'en donne plus', () => {
   const s = pature();
   s.stations.moulin = { construit: true, tache: null, appareil: makeDevice('moulin', 'moulin', 120) };
   testFillBatteries(s);
@@ -311,7 +311,10 @@ test('la paille du blé moulu nourrit les animaux (Moulin → Étable)', () => {
   assertEqual(strawMissing(s), 4);
   assert(startMilling(s, 4).ok);
   runFor(s, 21);
-  assertEqual([countItem(s, 'farine'), strawStock(s), strawMissing(s)], [4, 4, 0]);
+  assertEqual([countItem(s, 'farine'), strawStock(s), strawMissing(s)], [4, 0, 4], 'version 1.23 : la farine seule');
+  s.outils = { faux: true, choisi: 'faux' };
+  for (let k = 0; k < 4; k++) assert(scytheGrass(s, `${k * 16},40`).ok);
+  assertEqual([strawStock(s), strawMissing(s)], [4, 0]);
   const rep = sleepOnce(s);
   assertEqual([rep.etable.moutonsNourris, rep.etable.vachesNourries, rep.lait, strawStock(s)], [2, 1, 1, 0]);
   assertEqual(countItem(s, 'farine'), 4, 'la farine reste pour le pain');

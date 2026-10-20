@@ -35,6 +35,8 @@
 #   ramasse_0..2             de profil, il ramasse un œuf dans la paille
 #   hache_cote_0..3          couper du bois : prêt, hache levée, élan, coup dans le tronc
 #   pioche_cote_0..3         casser un rocher : prêt, pioche levée, élan, coup au sol devant lui
+#   faux_cote_0..3           faucher : prêt (la lame au sol devant lui), armée en arrière, le
+#                            coup qui balaie l'herbe devant ses pieds, la lame qui finit en avant
 #   assis_<vue>_0..1         assis à table : les mains sur la table, la fourchette à la bouche
 #   peche_<vue>_0..3         pêcher : canne tenue, armée en arrière, lancée (il attend la
 #                            touche), relevée (il ferre). Le fil et le bouchon sont dessinés par
@@ -607,6 +609,21 @@ def frames(figure=figure):
     F['assis_haut_1'] = figure('haut', b=4, sit=True, hands=((4, 25), (11, 19)))
     F['assis_cote_0'] = figure('cote', b=4, sit=True, hands=((12, 25), (11, 25)))
     F['assis_cote_1'] = figure('cote', b=4, sit=True, hands=((11, 20), (11, 25)), after=fork(12, 19))
+    # (en dernier : les cases des planches déjà faites gardent leur place)
+    # faucher, de profil (l'herbe à droite, au sol) : le long manche (bois) tenu à deux mains à
+    # hauteur de hanche, la lame (acier, son fil plus clair) au bout du bas, couchée près du sol :
+    # prêt (lame devant), armée en arrière (lame derrière ses talons), le coup (la lame balaie
+    # devant ses pieds), la fin du geste (lame en avant, relevée)
+    def faux(x0, y0, x1, y1, lame):
+        def draw(cv):
+            cv.line(x0, y0, x1, y1, 'wd')
+            for k, (x, y) in enumerate(lame):
+                cv.put(x, y, 'mt' if k else 'wd')
+        return draw
+    F['faux_cote_0'] = figure('cote', hands=((10, 20), (9, 21)), after=faux(7, 15, 13, 28, [(13, 29), (12, 30), (11, 30), (10, 30), (9, 30)]))
+    F['faux_cote_1'] = figure('cote', b=-1, hands=((7, 19), (6, 20)), after=faux(10, 13, 3, 28, [(3, 29), (4, 30), (5, 30), (6, 30), (7, 30)]))
+    F['faux_cote_2'] = figure('cote', squat=1, hands=((10, 21), (9, 22)), after=faux(7, 15, 12, 29, [(12, 30), (13, 30), (14, 30), (15, 29), (15, 28)]))
+    F['faux_cote_3'] = figure('cote', hands=((11, 19), (10, 20)), after=faux(8, 13, 14, 26, [(14, 27), (15, 27), (15, 26), (15, 25), (14, 24)]))
     return F
 
 

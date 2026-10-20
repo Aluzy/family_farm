@@ -27,11 +27,11 @@
       "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },
       "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe, et le Livre de recette" },
-      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "farine, et paille pour les moutons et les vaches" },
+      "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "la farine" },
       "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
       "//paturage": "'paturage' et 'moutons' : identifiants historiques (l'ancien Pâturage).",
       "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
-      "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille du Moulin" },
+      "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille fauchée" },
       "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
       "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
       "commerce": { "nom": "Commerce", "icone": "🏪", "note": "étal de bocaux, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production" },
@@ -45,7 +45,7 @@
       "automatisation fait l'action (arrosage, récolte, semis, tonte)."
     ],
     "XP": {
-      "labourer": 10, "ramasser": 2, "fabriquer": 10, "couper": 10, "piocher": 10, "pecher": 15, "planter": 10, "arroser": 10, "recolter": 20, "cueillir": 20,
+      "labourer": 10, "ramasser": 2, "fabriquer": 10, "couper": 10, "piocher": 10, "faucher": 4, "pecher": 15, "planter": 10, "arroser": 10, "recolter": 20, "cueillir": 20,
       "oeuf": 10, "lait": 30, "tondre": 30,
       "cuisiner": 40, "cuireFour": 50, "moudre": 10, "presser": 10,
       "vendre": 1

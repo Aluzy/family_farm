@@ -8,16 +8,16 @@ import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { techFlag, techSum } from './techtree.js';
 
-/* ---------- les outils : houe, pioche, hache, canne à pêche ---------- */
+/* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
-// La houe garde sa place (state.potager.houe) ; la hache, la pioche et la canne à pêche,
+// La houe garde sa place (state.potager.houe) ; la hache, la pioche, la faux et la canne à pêche,
 // achetées une fois au Marché, sont dans state.outils, avec le dernier outil choisi. Le champ
 // n'existe qu'une fois un outil acheté ou choisi : une partie sans lui n'a que la houe.
 // L'ordre est celui de la barre d'outils de la carte.
-export const OUTILS = ['houe', 'pioche', 'hache', 'canne'];
+export const OUTILS = ['houe', 'pioche', 'hache', 'faux', 'canne'];
 
 // (le triporteur s'achète comme un outil, mais ne se prend pas en main : enSelle)
-const CLES = { houe: 'HOUE', hache: 'HACHE', pioche: 'PIOCHE', canne: 'CANNE', triporteur: 'TRIPORTEUR' };
+const CLES = { houe: 'HOUE', hache: 'HACHE', pioche: 'PIOCHE', faux: 'FAUX', canne: 'CANNE', triporteur: 'TRIPORTEUR' };
 
 // { NOM, ICONE, PRIX } d'un outil, ou null.
 export function toolDef(id) {
@@ -233,6 +233,54 @@ export function mineRock(state, id, ou) {
   spendEnergy(state, 'piocher');
   gainActionXp(state, 'piocher');
   return { ok: true, pierre, bris, morceaux, coups, casse };
+}
+
+/* ---------- la faux : faucher l'herbe haute de la carte ---------- */
+
+// Comme les arbres et les rochers, les touffes d'herbe haute n'existent que dans la carte
+// (couche d'objets « herbe_haute ») : le moteur ne connaît d'elles qu'un identifiant
+// (« x,y » de leur pied, en px). state.outils.herbes[id] = { retour } : la touffe est fauchée,
+// elle repousse le jour `retour` (dans FAUX.RETOUR jours, tiré au hasard).
+
+// La touffe `id` est-elle fauchée ?
+export function grassCut(state, id) {
+  const h = state.outils && state.outils.herbes;
+  return !!(h && h[id]);
+}
+
+// Les touffes fauchées (leurs identifiants).
+export function cutGrass(state) {
+  const h = state.outils && state.outils.herbes;
+  return h ? Object.keys(h) : [];
+}
+
+// Un coup de faux sur la touffe `id` : FAUX.PAILLE paille au sol (aux points `ou.coup`, voir
+// lacher ; sans `ou`, dans l'inventaire), de l'énergie, de l'XP ; la touffe est fauchée.
+export function scytheGrass(state, id, ou) {
+  const X = DATA.FAUX;
+  if (!hasTool(state, 'faux')) return fail(`Il te faut une faux (Marché, ${X.PRIX} 💰).`);
+  if (typeof id !== 'string' || !id) return fail('Touche une touffe d\'herbe haute pour la faucher.');
+  if (grassCut(state, id)) return fail('Cette herbe est déjà fauchée.');
+  if (!canAfford(state, 'faucher')) return fail(TIRED);
+  const o = outils(state);
+  if (!o.herbes || typeof o.herbes !== 'object') o.herbes = {};
+  o.herbes[id] = { retour: state.day + randomInt(state, X.RETOUR[0], X.RETOUR[1]) };
+  const paille = withBonus(state, X.PAILLE, techSum(state, 'recolteBonus'));
+  const morceaux = lacher(state, DATA.PATURAGE.NOURRITURE, paille, 0, ou);
+  spendEnergy(state, 'faucher');
+  gainActionXp(state, 'faucher');
+  return { ok: true, paille, morceaux };
+}
+
+// Au réveil : les touffes dont le jour est venu repoussent. Renvoie leurs identifiants.
+export function regrowGrass(state) {
+  const h = state.outils && state.outils.herbes;
+  if (!h) return [];
+  const out = [];
+  for (const id of Object.keys(h)) {
+    if (Number(h[id] && h[id].retour) <= state.day) { delete h[id]; out.push(id); }
+  }
+  return out;
 }
 
 /* ---------- la pioche dans la grotte : le minerai ---------- */

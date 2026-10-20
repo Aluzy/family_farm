@@ -339,11 +339,11 @@ export function testAddBlocs(state, qty = 5) {
   return { ok: true };
 }
 
-// Tous les outils (houe, pioche, hache, canne), sans payer.
+// Tous les outils (houe, pioche, hache, faux, canne), sans payer.
 export function testAllTools(state) {
   state.potager.houe = true;
   if (!state.outils || typeof state.outils !== 'object') state.outils = { hache: false, pioche: false, canne: false, choisi: 'houe' };
-  Object.assign(state.outils, { hache: true, pioche: true, canne: true });
+  Object.assign(state.outils, { hache: true, pioche: true, faux: true, canne: true });
   return { ok: true };
 }
 

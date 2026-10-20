@@ -210,10 +210,10 @@ export function millTimeLeft(state) {
   return Math.ceil((ms * 100) / v / 1000);
 }
 
-// Moud `qty` blés au Moulin : 1 blé donne 1 farine et 1 paille, en 5 s chacun
+// Moud `qty` blés au Moulin : 1 blé donne 1 farine (version 1.23 : plus de paille), en 5 s chacun
 // (mêmes temps, énergie et usure qu'une préparation du Moulin). Tout le blé
 // demandé sort du stock tout de suite (l'inventaire d'abord, puis le Silo) ; il
-// se moud un par un, et la farine et la paille arrivent au fur et à mesure. Si
+// se moud un par un, et la farine arrive au fur et à mesure. Si
 // le Moulin tourne déjà, le blé s'ajoute à la suite. Refusé si le Moulin n'est
 // pas construit, si la quantité n'est pas un entier d'au moins 1, ou s'il n'y a
 // pas assez de blé.

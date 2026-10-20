@@ -280,11 +280,10 @@
     ],
     "lait_alpage": { "nom": "Lait d'alpage", "icone": "🥛‍🏔️", "energie": 18, "prix": 12, "mangeable": true, "categorie": "produit", "rachetable": false, "conservation": 4 },
     "//paille": [
-      "Version 1.1 : la paille. Le Moulin en rend 1 par blé moulu (voir",
-      "`recipes.farine.sousProduit`) ; les moutons et les vaches la mangent",
-      "chaque nuit (voir DATA.ANIMAUX et feedLivestock()). Elle ne périme pas, ne",
-      "se mange pas, se vend 1 pièce et ne s'achète pas au Marché : elle vient",
-      "seulement du Moulin."
+      "Version 1.1 : la paille ; les moutons et les vaches la mangent chaque nuit (voir",
+      "DATA.ANIMAUX et feedLivestock()). Version 1.23 : elle vient seulement de la faux (FAUX :",
+      "les touffes d'herbe haute fauchées), plus du Moulin. Elle ne périme pas, ne se mange pas,",
+      "se vend 1 pièce et ne s'achète pas au Marché."
     ],
     "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
     "//ville": [

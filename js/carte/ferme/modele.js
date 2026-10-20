@@ -106,6 +106,7 @@
       this.syncHoeGrid(model.labourables);
       this.syncRocks(model.rochers);
       this.syncFelled(model.abattus);
+      this.syncCutGrass(model.fauchees);
       this.syncSprinklers(model.asperseurs);
       this.syncRobot(model.robot);
       this.syncTrees(model.arbres || [], rebuild);

@@ -79,6 +79,7 @@
     lancer: { anim: 'peche', frames: [0, 1, 1, 2], dur: [0.25, 0.22, 0.1, 0.2], hit: 3 },
     ferrer: { anim: 'peche', frames: [3, 3, 0], dur: [0.12, 0.4, 0.25], hit: 1 },
     piocher: { anim: 'pioche', frames: [0, 1, 1, 2, 3, 3], dur: [0.12, 0.18, 0.1, 0.06, 0.12, 0.26], hit: 4 },
+    faucher: { anim: 'faux', frames: [0, 1, 1, 2, 3, 3], dur: [0.1, 0.16, 0.08, 0.08, 0.12, 0.22], hit: 3 },
     planter: { anim: 'plante', frames: [0, 1, 2, 2], dur: [0.14, 0.16, 0.18, 0.14], hit: 2 },
     arroser: { anim: 'arrose', frames: [0, 1, 2, 1, 2], dur: [0.14, 0.14, 0.2, 0.1, 0.24], hit: 2 },
     recolter: { anim: 'plante', frames: [1, 2, 1, 0], dur: [0.14, 0.2, 0.14, 0.12], hit: 2 },
@@ -629,6 +630,11 @@
     function mine(foot, half, onHit) {
       return strike('piocher', foot, Math.max(8, half + 5), onHit);
     }
+    // La faux en main, le joueur a touché une touffe d'herbe haute (son pied en `foot`) : il se
+    // place à côté, la lame balaie l'herbe à ses pieds.
+    function scythe(foot, onHit) {
+      return strike('faucher', foot, 7, onHit);
+    }
     // La ferme générée : prendre à la main ce qui est au sol en `foot` (une pierre, un bout de
     // bois, une herbe) ; il se baisse à côté.
     function gather(foot, onHit) {
@@ -1161,6 +1167,8 @@
       chop,
       // La pioche : casser le rocher dont le pied est en `foot`, de demi-largeur `half`.
       mine,
+      // La faux : faucher la touffe d'herbe haute dont le pied est en `foot`.
+      scythe,
       // À la main : prendre ce qui est au sol en `foot` (la ferme générée).
       gather,
       // La canne à pêche : pêcher depuis `spot`, et où est le bout de la canne.

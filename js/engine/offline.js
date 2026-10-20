@@ -38,7 +38,7 @@ export function offlineSnapshot(state) {
 // préparations terminées ou encore en cours, temps sans froid du réfrigérateur.
 export function offlineReport(state, before, demande, simule) {
   // Terminé pendant l'absence : tout ce que les ateliers ont ajouté aux stocks
-  // (plats, farine et paille du Moulin, huile), file d'attente et lots compris.
+  // (plats, farine du Moulin, huile), file d'attente et lots compris.
   const terminees = {};
   const avant = before.stocks || {};
   for (const [item, n] of Object.entries(inventoryCounts(state))) {

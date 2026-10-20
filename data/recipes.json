@@ -12,7 +12,7 @@
     "La ferme générée (docs/carte-generee.md, étape 3) : l'Atelier se construit avec des matériaux",
     "(CONSTRUCTION : objet → quantité, pris dans l'inventaire), sans pièces. Une recette (RECETTES)",
     "prend ses entrées dans l'inventaire et donne tout de suite sa sortie (un objet, ou un outil :",
-    "« outil » = houe, hache ou pioche, comme acheté au Marché) ; c'est le geste « fabriquer »",
+    "« outil » = houe, hache, pioche ou faux, comme acheté au Marché) ; c'est le geste « fabriquer »",
     "(PERSONNAGE.COUTS et NIVEAUX.XP). RAMASSAGE : chaque matin, autant de petites pierres, de",
     "morceaux de bois et d'herbes sur l'herbe de la carte (tirés d'après la graine et le jour) ;",
     "chacun se ramasse à la main (geste « ramasser ») et donne son objet (quantite : combien, 1 par",
@@ -88,7 +88,8 @@
       "station_robot": { "entrees": { "lingot_fer": 1, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "station_robot": 1 } },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
-      "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" }
+      "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
+      "faux": { "entrees": { "bois": 3, "pierre": 2, "fibre": 1 }, "outil": "faux" }
     },
     "BLOCS": {
       "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true, "mur": true },
@@ -472,7 +473,8 @@
     },
     "//farine": [
       "Transformations (section 8.2) : le Moulin et la Presse, appareils électriques.",
-      "Version 1.1 : moudre 1 blé rend 1 farine ET 1 paille (`sousProduit`). La",
+      "Version 1.1 : moudre 1 blé rendait 1 farine et 1 paille ; version 1.23 : la farine seule",
+      "(la paille se fauche, voir FAUX). La",
       "mouture ne se lance plus depuis le Livre de recette (`horsLivre`) mais",
       "dans le Moulin lui-même, par quantité : voir startMilling(). Le temps,",
       "l'énergie et l'usure restent ceux d'une préparation du Moulin."
@@ -486,7 +488,6 @@
       "transformation": true,
       "sortie": "farine",
       "qteSortie": 1,
-      "sousProduit": { "item": "paille", "qte": 1 },
       "horsLivre": true,
       "libre": true
     },

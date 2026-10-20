@@ -41,12 +41,13 @@ export function bookStations() {
   return Object.keys(DATA.STATIONS).filter((id) => !stationRecipes(id).every((r) => DATA.RECETTES[r].horsLivre));
 }
 
-// Ce que rend le Moulin pour un blé : « 1 🥣 farine + 1 🪹 paille ».
+// Ce que rend le Moulin pour un blé : « 1 🥣 farine » (et son sous-produit s'il en a un ; la
+// paille n'en est plus un depuis la version 1.23 : elle se fauche).
 export function millOutputText() {
   const r = DATA.RECETTES.farine;
   const out = DATA.OBJETS[r.sortie];
-  const extra = DATA.OBJETS[r.sousProduit.item];
-  return `${formatQty(r.qteSortie)} ${out.icone} ${out.nom.toLowerCase()} + ${formatQty(r.sousProduit.qte)} ${extra.icone} ${extra.nom.toLowerCase()}`;
+  const extra = r.sousProduit ? DATA.OBJETS[r.sousProduit.item] : null;
+  return `${formatQty(r.qteSortie)} ${out.icone} ${out.nom.toLowerCase()}${extra ? ` + ${formatQty(r.sousProduit.qte)} ${extra.icone} ${extra.nom.toLowerCase()}` : ''}`;
 }
 
 function stationBlurb(id) {
@@ -55,7 +56,7 @@ function stationBlurb(id) {
   const power = def.electrique
     ? ' Appareil électrique : il consomme du courant en marche, avec interrupteur, usure et pannes.'
     : ' Pas d\'électricité.';
-  if (id === 'moulin') return `Moud le blé : 1 blé donne ${millOutputText()}. La paille nourrit les moutons et les vaches. Le blé se moud ici même, dans le Moulin.${power}`;
+  if (id === 'moulin') return `Moud le blé : 1 blé donne ${millOutputText()}. Le blé se moud ici même, dans le Moulin.${power}`;
   return `${names.charAt(0).toUpperCase()}${names.slice(1)}.${power}${id === 'four' ? ' Le construire ouvre l\'onglet Livre de recette.' : ''}`;
 }
 
