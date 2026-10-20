@@ -37,7 +37,7 @@ import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, couchages, etatEtable, etatPoulailler, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
+import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatPoulailler, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml, niveauBati } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise, toits } from '../engine/etage.js';
@@ -444,7 +444,10 @@ export function stageModel() {
     morceaux: morceauxDe(state, 'ferme').map((m) => ({ n: m.n, item: m.item, x: m.x, y: m.y })),
     // et ses blocs posés, le mode Construire (les pièces closes s'y voient), les paillasses où
     // l'on dort (js/engine/blocs.js)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte })),
+    // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte) })),
+    // les tableaux accrochés aux murs (DATA.ATELIER.BLOCS : sur « mur »)
+    tableaux: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].meuble).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
     sols: Object.entries(solsPoses(state)).filter(([, k]) => k === 'plancher').map(([c]) => Number(c)),
     // les chemins posés : les tuiles du sol qu'ils changent ([[case, tuile]]) et leurs cases
     chemins: cheminsDuSol(T),
@@ -466,6 +469,14 @@ export function stageModel() {
     foyer: foyerPorte(),
     houe, hache, pioche, canne, triporteur: enSelle(state), rochers, abattus, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
+}
+
+// Un meuble posé sur la ferme générée (DATA.ATELIER.BLOCS.meuble_<id>) : ce que la carte en a
+// besoin ; {} pour un autre bloc.
+function meubleDe(sorte) {
+  const b = DATA.ATELIER.BLOCS[sorte];
+  if (!b || !b.meuble) return {};
+  return { meuble: { dessin: b.meuble, largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit } };
 }
 
 // La ferme générée, sans maison : la porte du foyer (la première pièce close où l'on dort, sinon

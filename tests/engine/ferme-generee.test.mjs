@@ -339,7 +339,44 @@ test('ferme générée : pas de maison à réparer, le foyer est une pièce clos
   assertEqual(houseRepaired(s), false, 'une pièce sans paillasse');
   poserBloc(s, 'paillasse', p.dedans);
   assertEqual(houseRepaired(s), true, 'le foyer');
-  assertEqual(buyFurniture(s, Object.keys(DATA.MEUBLES)[0]).ok, false, 'pas de maison à meubler');
+  // un meuble acheté : dans l'inventaire, à poser
+  s.pieces = 1000;
+  const id = Object.keys(DATA.MEUBLES)[0];
+  assertEqual([buyFurniture(s, id).aPoser, countItem(s, 'meuble_' + id)], [true, 1], 'le meuble arrive dans l\'inventaire');
+});
+
+test('ferme générée : les meubles du Marché se posent dans la maison (plusieurs cases, lits, tableaux)', () => {
+  const s = chantier('m9');
+  s.pieces = 10000;
+  assertEqual(buyFurniture(s, 'table').ok, false, 'pas de foyer : pas de meuble');
+  const z = terrainLibre(s, 8, 7), p = murs(z, 8, 7), W = z.W, at = (dc, dr) => (z.r + dr) * W + z.c + dc;
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  poserBloc(s, 'paillasse', p.dedans);
+  for (const id of ['table', 'chaise', 'lit_adulte', 'tableau_1', 'tapis_1']) assert(buyFurniture(s, id).ok, id);
+  // pas dehors
+  assertEqual(poserBloc(s, 'meuble_chaise', at(-2, 3)).ok, false, 'dehors');
+  // la table : trois cases vers la droite, toutes libres dans la pièce
+  assertEqual(poserBloc(s, 'meuble_table', at(5, 3)).ok, false, 'elle dépasse sur le mur');
+  assert(poserBloc(s, 'meuble_table', at(2, 3)).ok);
+  assertEqual(poserBloc(s, 'meuble_chaise', at(3, 3)).error, 'Un meuble occupe cette case.');
+  assert(poserBloc(s, 'meuble_chaise', at(3, 4)).ok);
+  // le lit : deux cases vers le haut ; on y dort comme sur une paillasse
+  assert(poserBloc(s, 'meuble_lit_adulte', at(6, 2)).ok);
+  assertEqual(couchages(s).length, 2);
+  // le tableau : sur un mur dont on voit la face, pas par terre
+  assertEqual(poserBloc(s, 'meuble_tableau_1', at(3, 2)).ok, false, 'par terre');
+  assertEqual(poserBloc(s, 'meuble_tableau_1', at(0, 3)).ok, false, 'un mur sous un autre : on ne voit pas sa face');
+  assert(poserBloc(s, 'meuble_tableau_1', at(3, 0)).ok, 'le mur du haut, face à la pièce');
+  assertEqual([blocDessus(s, at(3, 0)), blocAt(s, at(3, 0))], ['meuble_tableau_1', 'mur_pierre']);
+  // reprendre une case couverte : le meuble revient dans l'inventaire
+  assertEqual(reprendreBloc(s, at(4, 3)).sorte, 'meuble_table');
+  assertEqual([countItem(s, 'meuble_table'), blocAt(s, at(2, 3))], [1, null]);
+  // le tapis : à plat, on passe dessus
+  assert(poserBloc(s, 'meuble_tapis_1', at(2, 5)).ok);
+  assertEqual(blocBloque(s, at(2, 5)), false);
+  // un ancien meuble n'entre pas dans un bâtiment
+  assertEqual(genrePiece(s, at(2, 5)), 'maison');
 });
 
 test('ferme générée : le four et la cuisinière se posent dans une pièce close et tiennent lieu des stations', () => {

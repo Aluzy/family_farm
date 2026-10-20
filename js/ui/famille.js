@@ -42,14 +42,27 @@ function helpToggleHtml(id, label) {
   return `<button type="button" class="btn help-btn" data-action="family-help" data-help="${id}" aria-expanded="${helpOpen.has(id)}" aria-controls="${id}-help" aria-label="Aide : ${label}">?</button>`;
 }
 
-// Version 1.17 : le portrait d'un membre est celui de son personnage, 16 × 16 agrandi sans
+// Les portraits sont agrandis d'un nombre entier de fois (un pixel de l'image : k × k pixels
+// de l'écran) ; sinon certaines rangées de pixels sont doublées et pas d'autres (une pupille de
+// 1 ou 2 pixels, un iris de 4 ou 5). --portrait-<taille> : la taille d'affichage, en px CSS, la
+// plus proche de <taille> qui tombe juste pour l'écran (devicePixelRatio, qui change au zoom).
+function taillesPortraits() {
+  const r = window.devicePixelRatio || 1, root = document.documentElement.style;
+  for (const t of [40, 48, 64]) root.setProperty(`--portrait-${t}`, `${(Math.max(1, Math.round((t * r) / 32)) * 32) / r}px`);
+}
+if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.documentElement) {
+  taillesPortraits();
+  window.addEventListener('resize', taillesPortraits);
+}
+
+// Version 1.17 : le portrait d'un membre est celui de son personnage, 32 × 32 (un enfant : 16 × 16) agrandi sans
 // flou : assets/portraits/perso_XX.png pour un adulte, enfant_XX.png pour un enfant.
 export function persoSrc(n, enfant = false) {
   return `assets/portraits/${enfant ? 'enfant' : 'perso'}_${String(n).padStart(2, '0')}.png`;
 }
 export function memberAvatarHtml(id) {
   const m = findMember(state, id);
-  return `<img class="portrait-px" src="${persoSrc(memberPerso(m), !!(m && m.enfant))}" alt="" width="16" height="16">`;
+  return `<img class="portrait-px" src="${persoSrc(memberPerso(m), !!(m && m.enfant))}" alt="" width="32" height="32">`;
 }
 
 // FLU-24 : une carte par membre (portrait, nom, boutons), deux par ligne : toute la famille
@@ -97,11 +110,11 @@ function openMemberModal(id) {
   // Version 1.17 : l'apparence est un des personnages de son âge (elle remplace le sexe, la
   // coiffure et la teinte des anciens portraits emoji).
   const persos = Array.from({ length: persoMax(m) }, (_, i) => i + 1)
-    .map((n) => `<button type="button" class="btn perso-btn" data-action="member-perso" data-perso="${n}" aria-pressed="false" aria-label="Personnage ${n}" title="Personnage ${n}"><img src="${persoSrc(n, !!m.enfant)}" alt="" width="16" height="16"></button>`).join('');
+    .map((n) => `<button type="button" class="btn perso-btn" data-action="member-perso" data-perso="${n}" aria-pressed="false" aria-label="Personnage ${n}" title="Personnage ${n}"><img src="${persoSrc(n, !!m.enfant)}" alt="" width="32" height="32"></button>`).join('');
   openModal(`
     <h2 id="member-title">✏️ Modifier : ${escapeHtml(m.nom)}</h2>
     <div class="member-preview" aria-live="polite">
-      <img class="portrait-px" id="member-preview-perso" src="" alt="" width="16" height="16">
+      <img class="portrait-px" id="member-preview-perso" src="" alt="" width="32" height="32">
       <strong class="member-name" id="member-preview-name"></strong>
     </div>
     <div class="stack">
