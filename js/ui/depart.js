@@ -5,13 +5,11 @@ import {
   setMainCharacter, setupPending, starterBlock,
 } from '../engine/depart.js';
 import { familyNeed } from '../engine/family.js';
-import { reporterDemenagement } from '../engine/demenagement.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { escapeHtml, formatCoins, formatNumber } from '../engine/format.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
-import { refresh } from './render.js';
 import { memberAvatarHtml, memberNameHtml } from './famille.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
@@ -126,7 +124,7 @@ export function openSetupModal() {
   const full = state.famille.membres.length >= C.MEMBRES_MAX;
   openModal(`
     <h2 id="setup-title">🏡 Ta famille</h2>
-    <p class="muted">${CHOIX_PRINCIPAL ? 'Avant de partir pour la ferme du grand-père : le nom de la famille, ses membres, et qui tient la ferme au quotidien (le personnage principal, qui dépense l\'énergie à chaque action).' : 'Avant de partir pour la ferme du grand-père : le nom de la famille et ses membres. Le personnage principal (⭐), qui tient la ferme au quotidien, est le premier adulte.'}</p>
+    <p class="muted">${CHOIX_PRINCIPAL ? 'Avant de partir pour la ferme : le nom de la famille, ses membres, et qui tient la ferme au quotidien (le personnage principal, qui dépense l\'énergie à chaque action).' : 'Avant de partir pour la ferme : le nom de la famille et ses membres. Le personnage principal (⭐), qui tient la ferme au quotidien, est le premier adulte.'}</p>
     <div class="stack member-field">
       <label for="setup-nom"><strong>Nom de famille</strong> <span class="muted">(${D.NOM_MIN} à ${D.NOM_MAX} signes)</span></label>
       <input type="text" id="setup-nom" class="member-input" maxlength="${D.NOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${escapeHtml(nom)}">
@@ -140,8 +138,7 @@ export function openSetupModal() {
     <p class="muted">Le nom et les prénoms restent sur cet appareil, dans ta sauvegarde : ils ne sont jamais envoyés.</p>
     <fieldset class="setup-ferme">
       <legend><strong>La ferme</strong></legend>
-      <label class="setup-choix"><input type="radio" name="setup-ferme" value="dessinee"${setupFerme.generee ? '' : ' checked'}> La ferme du grand-père <span class="muted">(ses bâtiments à réparer)</span></label>
-      <label class="setup-choix"><input type="radio" name="setup-ferme" value="generee"${setupFerme.generee ? ' checked' : ''}> Une terre sauvage, quatre fois plus grande <span class="muted">(on ramasse, on fabrique, on bâtit bloc par bloc)</span></label>
+      <p class="muted">Une terre sauvage, sans bâtiment : on ramasse, on fabrique à l'Atelier et on bâtit bloc par bloc.</p>
       <label class="setup-graine" for="setup-graine">Graine <span class="muted">(la même graine, la même terre ; vide : au hasard)</span></label>
       <input type="text" id="setup-graine" class="member-input" inputmode="numeric" maxlength="12" autocomplete="off" value="${escapeHtml(setupFerme.graine)}">
     </fieldset>
@@ -149,24 +146,13 @@ export function openSetupModal() {
     <div class="row"><button type="button" class="btn primary" data-action="setup-start">Partir pour la ferme</button></div>`, { labelledBy: 'setup-title', className: 'modal setup-modal', id: 'setup-modal', dismiss: false });
   const input = document.getElementById('setup-nom');
   input.addEventListener('input', () => { setupNameDraft = input.value; });
-  for (const r of document.querySelectorAll('input[name="setup-ferme"]')) r.addEventListener('change', () => { setupFerme.generee = r.value === 'generee' && r.checked; });
   const g = document.getElementById('setup-graine');
   g.addEventListener('input', () => { setupFerme.graine = g.value; });
 }
 
-// Le choix de la ferme sur l'écran de départ (gardé si l'écran revient, après la fiche d'un
-// membre) : la ferme dessinée, ou une ferme générée d'après une graine.
-const setupFerme = { generee: false, graine: '' };
-
-function openStoryModal() {
-  tel('modal', 'histoire');
-  const paras = DATA.DEPART.HISTOIRE.map((p) => `<p>${withFamilyName(p)}</p>`).join('');
-  openModal(`
-    <h2 id="story-title">🚗 Le départ</h2>
-    ${paras}
-    <p class="muted">✉️ Une lettre du notaire t'attend dans les Notifications.</p>
-    <div class="row"><button type="button" class="btn primary" data-action="close-modal">En route</button></div>`, { labelledBy: 'story-title', className: 'modal story-modal' });
-}
+// La graine de la ferme sur l'écran de départ (gardée si l'écran revient, après la fiche d'un
+// membre). Une nouvelle partie est toujours sur une ferme générée d'après elle.
+const setupFerme = { graine: '' };
 
 // Appelée à chaque image : l'écran de configuration revient tant que la famille n'est pas
 // installée (après la fiche d'un membre, par exemple).
@@ -216,16 +202,8 @@ registerActions({
     }
     setupNameDraft = null;
     // une terre sauvage : la ferme générée (la carte se lit au montage : la page se recharge)
-    if (setupFerme.generee) {
-      setFarmSeed(state, setupFerme.graine.trim() || String(Math.floor(Math.random() * 1e6)));
-      persistState();
-      location.reload();
-      return;
-    }
-    // la ferme du grand-père, choisie à l'instant : le déménagement ne sera proposé que plus tard
-    reporterDemenagement(state);
+    setFarmSeed(state, setupFerme.graine.trim() || String(Math.floor(Math.random() * 1e6)));
     persistState();
-    refresh();
-    openStoryModal();
+    location.reload();
   },
 });

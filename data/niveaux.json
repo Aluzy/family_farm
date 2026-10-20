@@ -18,7 +18,7 @@
       { "debloque": ["presse", "verger"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre"] },
       { "debloque": ["frigo"] },
-      { "debloque": [], "note": "un courrier du notaire : l'héritage caché du grand-père" },
+      { "debloque": [], "note": "un courrier du notaire : un héritage caché" },
       { "debloque": ["commerce"] }
     ],
     "//ELEMENTS": "Libellé des éléments débloqués (écran du niveau, Ferme).",

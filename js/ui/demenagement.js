@@ -1,19 +1,18 @@
 // demenagement.js — une ancienne partie (la carte de Tiled) déménage sur une terre sauvage
-// (docs/carte-generee.md, « Les anciennes parties », étape 2) : la fenêtre qui le propose au
-// chargement (une fois par visite, puis tous les DEMENAGEMENT_DELAI jours après « plus tard »),
-// avec l'aperçu de la nouvelle terre ; on la rouvre depuis les Options.
+// (docs/carte-generee.md, « Les anciennes parties ») : la fenêtre qui s'ouvre au chargement, tant
+// que la partie est sur la carte de Tiled. Pas de « plus tard » : elle explique le déménagement,
+// montre l'aperçu de la nouvelle terre et laisse en choisir une autre (la graine).
 
 import { DATA } from '../engine/catalog.js';
 import { setupPending } from '../engine/depart.js';
 import {
-  apercuDemenagement, convertirPartie, demenagementPossible, demenagementPropose,
-  graineDemenagement, reporterDemenagement,
+  apercuDemenagement, convertirPartie, demenagementPossible, graineDemenagement,
 } from '../engine/demenagement.js';
 import { escapeHtml } from '../engine/format.js';
 import { SAVE_KEY, state } from './store.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
 import { registerActions } from './actions.js';
-import { closeModal, openModal } from './modal.js';
+import { openModal } from './modal.js';
 import { storyOpen, tutorialShown } from './calme.js';
 import { tel } from './consent.js';
 
@@ -37,15 +36,13 @@ const COULEURS = {
   mur: '#6d5a48', porte: '#a0703c', barriere: '#8b6a3e', bloc: '#e4c27a', parcelle: '#7a4f2c', arbre: '#d9483b',
 };
 
-let proposeeCetteVisite = false;
 let graineChoisie = null;
 
-// Appelée à chaque image (ui/loop.js) : la proposition s'ouvre une fois par visite, quand rien
-// d'autre n'est à l'écran.
+// Appelée à chaque image (ui/loop.js) : la fenêtre s'ouvre (et revient) tant que la partie n'a pas
+// déménagé, quand rien d'autre n'est à l'écran.
 export function watchDemenagement() {
-  if (proposeeCetteVisite || !state || setupPending(state) || !demenagementPropose(state)) return;
+  if (!state || setupPending(state) || !demenagementPossible(state)) return;
   if (document.getElementById('modal-root').childElementCount > 0 || storyOpen() || tutorialShown()) return;
-  proposeeCetteVisite = true;
   openDemenagementModal();
 }
 
@@ -61,7 +58,7 @@ export function openDemenagementModal() {
   if (graineChoisie === null) graineChoisie = graineDemenagement(state);
   openModal(`
     <h2 id="demenagement-title">🚚 Une terre sauvage</h2>
-    <p>La ferme peut déménager sur une terre sauvage, quatre fois plus grande : on y ramasse, on fabrique à l'Atelier et on bâtit bloc par bloc.</p>
+    <p>La ferme déménage sur une terre sauvage, quatre fois plus grande : on y ramasse, on fabrique à l'Atelier et on bâtit bloc par bloc.</p>
     <p class="muted">Rien ne se perd : l'argent, l'inventaire, le niveau, la famille, les bêtes et les cultures suivent. Tes bâtiments sont rebâtis en blocs, à leur place dans la cour, et l'Atelier est déjà construit.</p>
     <div class="demenagement-apercu">
       <canvas id="demenagement-carte" width="1" height="1" aria-label="Aperçu de la nouvelle terre"></canvas>
@@ -75,15 +72,14 @@ export function openDemenagementModal() {
       </p>
     </div>
     <div class="stack" id="demenagement-detail"></div>
-    <label class="setup-graine" for="demenagement-graine">Graine <span class="muted">(la même graine, la même terre)</span></label>
+    <label class="setup-graine" for="demenagement-graine">Ta terre ne te plaît pas ? Change de graine <span class="muted">(la même graine, la même terre)</span></label>
     <div class="row">
       <input type="text" id="demenagement-graine" class="member-input" inputmode="numeric" maxlength="12" autocomplete="off" value="${escapeHtml(graineChoisie)}">
       <button type="button" class="btn" data-action="demenagement-hasard">🎲 Une autre terre</button>
     </div>
     <p class="muted">On ne revient pas sur la ferme du grand-père : la partie d'avant reste gardée sur cet appareil, au cas où.</p>
     <div class="row">
-      <button type="button" class="btn primary" data-action="demenagement-ok">🚚 Déménager</button>
-      <button type="button" class="btn" data-action="demenagement-plus-tard">Plus tard</button>
+      <button type="button" class="btn primary" data-action="demenagement-ok">🚚 Déménager sur cette terre</button>
     </div>`, { labelledBy: 'demenagement-title', className: 'modal demenagement-modal', id: 'demenagement-modal', dismiss: false });
   const champ = document.getElementById('demenagement-graine');
   champ.addEventListener('change', () => { graineChoisie = champ.value.trim() || graineDemenagement(state); dessiner(); });
@@ -137,11 +133,6 @@ registerActions({
     if (champ) champ.value = graineChoisie;
     dessiner();
   },
-  'demenagement-plus-tard': () => {
-    reporterDemenagement(state);
-    persistState();
-    closeModal();
-  },
   'demenagement-ok': () => {
     const champ = document.getElementById('demenagement-graine');
     const graine = (champ && champ.value.trim()) || graineChoisie;
@@ -152,10 +143,6 @@ registerActions({
     if (!r.ok) return;
     persistState();
     location.reload();
-  },
-  'open-demenagement': () => {
-    closeModal();
-    openDemenagementModal();
   },
 });
 

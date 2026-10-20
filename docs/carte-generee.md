@@ -11,9 +11,8 @@ sans bâtiment au départ : on ramasse, on fabrique et on construit bloc par blo
   graine et ce que le joueur a changé (blocs posés, ressources prises).
 - **Accès à la transition** : un chemin garanti mène au bord est. Il se termine sur le
   rectangle `vers_la_transition`, que la carte générée fournit comme celle de Tiled.
-- **Parties en cours** : elles gardent la carte de Tiled. Seules les nouvelles parties ont la
-  carte générée. Une ancienne partie pourra déménager sur une ferme générée (voir « Les
-  anciennes parties »).
+- **Parties en cours** : une ancienne partie déménage sur une ferme générée à son chargement
+  (voir « Les anciennes parties ») ; une nouvelle partie a toujours la carte générée.
 - **Paiement** : les bâtiments se paient en matériaux seulement. Les pièces ne servent qu'à
   acheter des matériaux au Marché.
 
@@ -535,18 +534,17 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
 - **Le reste** : l'Atelier est construit (à poser). Les arbres abattus, les rochers cassés, la
   cueillette du jour et la tournée du robot repartent de zéro. Les tas à ramasser entrent dans
   l'inventaire.
-- **Étape 2, la proposition** (`js/ui/demenagement.js`) : au chargement d'une ancienne partie
-  (écran de départ passé), une fenêtre propose le déménagement, une fois par visite. Elle montre
-  l'aperçu de la nouvelle terre autour de la cour (`apercuDemenagement` : la conversion faite sur
-  une copie), la liste de ce qui est rebâti et de ce qui revient dans l'inventaire, et la graine
-  (tirée de la partie, `graineDemenagement` ; « Une autre terre » en tire une au hasard).
-  - **Déménager** : la sauvegarde d'avant reste sur l'appareil (`ferme-save-avant-demenagement`),
-    la partie est convertie et la page se recharge sur la terre sauvage.
-  - **Plus tard** : plus de proposition pendant `DEMENAGEMENT_DELAI` (3) jours
-    (`reporterDemenagement`, `state.demenagement`). Une nouvelle partie sur la ferme du grand-père
-    part avec ce délai.
-  - Les Options gardent un bouton « Déménager sur une terre sauvage » tant que la partie est sur
-    la carte de Tiled.
+- **Étape 2, le déménagement au chargement** (`js/ui/demenagement.js`) : une ancienne partie
+  (écran de départ passé) déménage, sans choix de rester : tant qu'elle est sur la carte de
+  Tiled, une fenêtre qu'on ne ferme pas l'explique. Elle montre l'aperçu de la nouvelle terre
+  autour de la cour (`apercuDemenagement` : la conversion faite sur une copie), la liste de ce qui
+  est rebâti et de ce qui revient dans l'inventaire, et la graine (tirée de la partie,
+  `graineDemenagement`) : si la terre ne plaît pas, on change de graine ou on en tire une au hasard
+  (« Une autre terre »).
+  - **Déménager sur cette terre** : la sauvegarde d'avant reste sur l'appareil
+    (`ferme-save-avant-demenagement`), la partie est convertie et la page se recharge.
+  - **Une nouvelle partie** est toujours sur une ferme générée : l'écran de départ explique la
+    terre sauvage et demande la graine (vide : au hasard), sans proposer la ferme du grand-père.
 - À venir (étape 3) : retirer la carte de Tiled quand plus aucune partie ne l'utilise.
 
 ## Étapes

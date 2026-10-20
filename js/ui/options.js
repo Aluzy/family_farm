@@ -1,6 +1,5 @@
 import { GAME_VERSION } from '../engine/base.js';
-import { godMode, setEcranFerme, state, testMode } from './store.js';
-import { demenagementPossible } from '../engine/demenagement.js';
+import { godMode, setEcranFerme, testMode } from './store.js';
 import { privacySectionHtml, tel } from './consent.js';
 import { copyFromTextarea, exportSaveText, importSaveText } from './storage.js';
 import { morph, refresh } from './render.js';
@@ -117,12 +116,6 @@ export function openOptionsModal() {
           God mode : aller d'une carte à l'autre sans le personnage
         </label>
       </div>
-      ${demenagementPossible(state) ? `<div class="stack">
-        <strong>La ferme</strong>
-        <div class="row">
-          <button class="btn" type="button" data-action="open-demenagement">🚚 Déménager sur une terre sauvage</button>
-        </div>
-      </div>` : ''}
       <div class="stack">
         <strong>Nouvelle partie</strong>
         <div class="row" id="new-game-zone">${newGameZoneHtml()}</div>
