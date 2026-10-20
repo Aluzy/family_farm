@@ -34,7 +34,7 @@ import {
 import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
-import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheChipHtml, scytheFromStage } from './outils.js';
+import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatPoulailler, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
@@ -700,7 +700,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, chop: chopFromStage, mine: mineFromStage, scythe: scytheFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, chop: chopFromStage, mine: mineFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

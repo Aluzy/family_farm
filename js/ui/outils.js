@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { asleep } from '../engine/night.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
-import { buyTool, castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserMorceau, scytheGrass, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
+import { buyTool, castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserMorceau, scytheAround, scytheGrass, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
 import { axeMode, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
@@ -150,10 +150,11 @@ export function rodChipHtml() {
 // touché l'arbre `id`. Le coup compte tout de suite ; son bois tombe au sol, aux points que la
 // carte donne (`ou` : { carte, coup, fin }, voir chopTree) ; la carte montre ensuite le
 // personnage qui coupe, et les morceaux. Renvoie { bois, tombe, morceaux: { coup, fin } } (tombe :
-// ce coup abat l'arbre), ou null (il dort, sans énergie : un message).
-export function chopFromStage(id, ou) {
+// ce coup abat l'arbre), ou null (il dort, sans énergie : un message). `fort` : le coup fort
+// (appui maintenu sur le personnage, COUP_FORT).
+export function chopFromStage(id, ou, fort) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = chopTree(state, id, ou);
+  const r = chopTree(state, id, ou, !!fort);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
@@ -162,9 +163,9 @@ export function chopFromStage(id, ou) {
 
 // La carte : la pioche en main, le joueur a touché le rocher `id`. Comme chopFromStage : la
 // pierre tombe au sol. Renvoie { casse, morceaux } (casse : ce coup brise le rocher), ou null.
-export function mineFromStage(id, ou) {
+export function mineFromStage(id, ou, fort) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = mineRock(state, id, ou);
+  const r = mineRock(state, id, ou, !!fort);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
@@ -180,6 +181,17 @@ export function scytheFromStage(id, ou) {
   persistState();
   refresh();
   return { items: { [DATA.PATURAGE.NOURRITURE]: r.paille }, morceaux: r.morceaux };
+}
+
+// La carte : le coup fort de la faux, il tournoie et fauche les touffes `ids` autour de lui
+// (`ou` : { carte, points: { id: [points] } }). Renvoie { fauchees, morceaux }, ou null.
+export function scytheAroundFromStage(ids, ou) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const r = scytheAround(state, ids, ou);
+  if (!r.ok) { notify(r.error); return null; }
+  persistState();
+  refresh();
+  return { fauchees: r.fauchees, morceaux: r.morceaux };
 }
 
 // La carte : le personnage a marché sur le morceau `n` (bois, pierre) : dans l'inventaire.

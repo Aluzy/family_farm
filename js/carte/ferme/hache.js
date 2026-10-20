@@ -93,12 +93,13 @@
     // Un coup de hache sur l'arbre `t` : le jeu compte le coup tout de suite (this.ctx.bridge.chop)
     // et pose son bois au sol ; le personnage va au tronc, frappe, et au coup l'arbre tremble et
     // le morceau tombe à son pied (à ramasser en marchant dessus). Au dernier coup (got.tombe),
-    // l'arbre tombe (fellTree) et lâche les siens là où sa cime touche le sol.
-    chop(t) {
+    // l'arbre tombe (fellTree) et lâche les siens là où sa cime touche le sol. `fort` : le coup
+    // fort (coupfort.js : il compte plusieurs coups, la vue tremble plus).
+    chop(t, fort) {
       // (l'arbre tombera du côté opposé au personnage, comme fellTree ; ses morceaux aussi)
       const p = this.strikeSide(t.foot, 11);
       const ou = this.piecePoints(t.foot, p, p.x > t.foot.x ? -1 : 1);
-      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.chop ? this.ctx.bridge.chop(t.id, ou) : null));
+      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.chop ? this.ctx.bridge.chop(t.id, ou, !!fort) : null));
       if (!got) return;
       const M2 = got.morceaux || { coup: [], fin: [] };
       this.time.delayedCall(9000, () => this.revealPieces(M2.coup));   // (filet : le coup n'a pas été donné)
@@ -113,7 +114,8 @@
       const hit = () => {
         t.queued = Math.max(0, t.queued - 1);
         this.revealPieces(M2.coup);
-        K.vibre('hache');
+        K.vibre(fort ? 'fort' : 'hache');
+        if (fort) K.secousse(this, 'fort');
         if (t.falling && !t.queued) { this.fellTree(t, true); return; }
         this.shakeTree(t);
       };

@@ -81,7 +81,10 @@ Le Marché vend toujours les outils.
     `js/carte/ferme/decor.js` ; geste `faux_cote_0..3`) : elle se couche et disparaît, sa paille
     tombe à son pied (`assets/ramassables.png`, 5ᵉ image) ; elle repousse 2 à 4 jours plus tard
     (`state.outils.herbes`, modèle `fauchees`). C'est la seule source de paille : le Moulin ne
-    fait plus que de la farine. Les rochers (`scripts/carte/rochers.py`,
+    fait plus que de la farine. Le coup fort (version 1.24, `js/carte/ferme/coupfort.js`) : un
+    appui maintenu sur le personnage qui tient un outil le fait trembler ; relâché, la hache ou
+    la pioche comptent `COUP_FORT.COUPS` coups, la faux tournoie et fauche les touffes à 16 px
+    autour de lui (`scytheAround`), la houe laboure les 3 × 3 tuiles autour de lui. Les rochers (`scripts/carte/rochers.py`,
     `assets/rochers.png`, le bloc « rochers » de la planche) sont dessinés dans le style des
     blocs : la pierre des bâtiments taillée en pans, un contour sombre, de la mousse sur les
     gros. Trois tailles : 2 × 2 cases, 1 × 2 (debout ou couché) et 1 × 1 (`DESSINS_ROCHERS` :

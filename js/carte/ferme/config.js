@@ -252,6 +252,14 @@
   // exposant) ; chaque touffe a en plus sa nuance (± `shade`).
   // Les touffes fleuries (rangées dont floor(r / 3) est impaire) portent en plus leurs fleurs
   // (`fleurs`, même découpe), sans teinte : la teinte du sol les ternirait.
+  // Le coup fort (js/carte/ferme/coupfort.js, version 1.24) : un appui maintenu sur le
+  // personnage qui tient la houe, la hache, la pioche ou la faux. Il se charge à partir de `arme`
+  // ms (il tremble), est plein à `plein` ms ; relâché plein, il frappe fort. La zone d'appui :
+  // son image, élargie à `doigt` px CSS au moins. La hache et la pioche frappent l'arbre ou le
+  // rocher dont le pied est à moins de `portee` px du sien ; la faux fauche les touffes à moins
+  // de `rayonFaux` px ; la houe laboure les tuiles à `rayonHoue` tuile(s) autour de la sienne.
+  const COUP_FORT = { arme: 250, plein: 850, doigt: 36, portee: 30, rayonFaux: 16, rayonHoue: 1,
+    poses: { houe: 'houe_{vue}_1', hache: 'hache_cote_1', pioche: 'pioche_cote_1', faux: 'faux_cote_1' } };
   const TALL_GRASS = Object.assign({ contrast: 2.2, fleurs: { key: 'herbe_haute_fleurs', file: 'herbe_haute_fleurs.png' } }, K.NATURE.herbe);
   // Sans carte : mêmes dimensions et mêmes rectangles que carte_printemps.json. Avec une
   // carte, ses dimensions et ses rectangles nommés prennent leur place (bakeGround).
@@ -420,7 +428,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, HOLLOW, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

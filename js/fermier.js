@@ -165,6 +165,7 @@
 
     const s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1).setVisible(false);
     let x = 0, y = 0, face = 'bas', flip = false, shown = false, alpha = 0, fade = 0;
+    let tremble = 0;                // le coup fort qui se charge (0 à 1, voir charge)
     let lastPos = null;             // dernière position donnée par pos()
     const dz = (yy) => (o.depth ? o.depth(yy) : yy);   // sa profondeur (à l'étage : devant son plancher)
     const lift = () => (o.lift ? o.lift() : 0);   // à l'étage : dessiné remonté (au sommet des murs)
@@ -192,6 +193,8 @@
         if (selle) selle.cache();
         frame(name);
         s.setPosition(Math.round(x), Math.round(y - lift())).setFlipX(flip).setDepth(dz(y)).setAlpha(alpha);
+        // le coup fort qui se charge : il tremble (d'autant plus que la charge monte)
+        if (tremble > 0 && !reduced()) s.x += Math.round((Math.random() * 2 - 1) * (0.6 + tremble));
       }
       rx = x; ry = y;
     }
@@ -296,6 +299,53 @@
     const once = (fn) => ({ start() { fn(); }, step() { return true; } });
     function appear() { if (!shown) { shown = true; home = false; where = null; fade = 1; s.setVisible(true); } }
     function vanish() { fade = -1; }
+
+    /* ---------- le coup fort (appui maintenu sur lui, un outil en main) ---------- */
+
+    // La charge, de 0 (rien) à 1 (pleine) : il s'arrête, tient l'outil prêt (`pose` : l'image ;
+    // une vue de profil seulement : il se tourne de profil) et tremble. 0 : il se relâche.
+    function charge(level, pose) {
+      tremble = Math.max(0, Math.min(1, level));
+      if (tremble <= 0 || (job && job.charge)) return;
+      const vue = /_cote_\d$/.test(pose || '') ? 'cote' : face;
+      if (vue !== face) { face = vue; }
+      job = { charge: true, joueur: true, start() {}, step() { draw(pose ? pose.replace('{vue}', face) : `idle_${face}_0`); return tremble <= 0; } };
+      jobs = [];
+      idleAge = 0;
+    }
+    // Un geste sur place (le coup fort de la houe, de la hache sans arbre…), tourné vers `vers`
+    // ({ x } : de profil, vers ce point ; rien : comme il est). onHit : au coup.
+    function actHere(name, onHit, vers) {
+      tremble = 0;
+      const prof = vers ? { face: 'cote', flip: vers.x < x } : { face, flip };
+      job = null;
+      jobs = [act(name, Object.assign(prof, { onHit })), wait(rand(0.4, 0.8))];
+      idleAge = 0;
+    }
+    // Le coup fort de la faux : il tournoie sur lui-même, la lame balaie tout autour (gauche,
+    // droite, deux fois). onHit : au milieu du tour.
+    function spin(onHit) {
+      tremble = 0;
+      const pas = [['faux_cote_1', false], ['faux_cote_2', false], ['idle_bas_0', false], ['faux_cote_2', true], ['idle_haut_0', false], ['faux_cote_2', false], ['faux_cote_2', true], ['faux_cote_3', true]];
+      let i = 0, t = 0, frappe = false;
+      job = null;
+      jobs = [{
+        joueur: true,
+        start() { if (reduced()) { if (onHit) onHit(); i = pas.length; } },
+        step(dt) {
+          t += dt;
+          if (t >= 0.07) { t -= 0.07; i++; }
+          if (!frappe && i >= 3) { frappe = true; if (onHit) onHit(); }
+          if (i >= pas.length) { face = 'cote'; draw(`idle_${face}_0`); return true; }
+          const [n, fl] = pas[i];
+          flip = fl;
+          face = n.indexOf('_bas_') >= 0 ? 'bas' : n.indexOf('_haut_') >= 0 ? 'haut' : 'cote';
+          draw(n);
+          return false;
+        },
+      }, wait(rand(0.4, 0.8))];
+      idleAge = 0;
+    }
 
     /* ---------- les gestes du joueur (comparaison des modèles) ---------- */
 
@@ -1169,6 +1219,12 @@
       mine,
       // La faux : faucher la touffe d'herbe haute dont le pied est en `foot`.
       scythe,
+      // Le coup fort : la charge (il tremble), un geste sur place, le tournoiement de la faux.
+      charge,
+      actHere,
+      spin,
+      // Sa vue et son sens (pour tenir l'outil prêt pendant la charge).
+      regard: () => ({ face, flip }),
       // À la main : prendre ce qui est au sol en `foot` (la ferme générée).
       gather,
       // La canne à pêche : pêcher depuis `spot`, et où est le bout de la canne.

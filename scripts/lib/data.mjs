@@ -324,6 +324,8 @@ export function validateData(data) {
   if (!(isInt(FX.PAILLE) && FX.PAILLE > 0 && isInt(FX.BOT_TOUFFES) && FX.BOT_TOUFFES > 0)) err('FAUX', 'PAILLE et BOT_TOUFFES : deux entiers supérieurs à 0');
   const RF = FX.RETOUR;
   if (!(Array.isArray(RF) && RF.length === 2 && RF.every((x) => isInt(x) && x >= 1) && RF[0] <= RF[1])) err('FAUX.RETOUR', 'deux entiers [min, max], 1 ≤ min ≤ max');
+  const CF = data.COUP_FORT || {};
+  if (!(isInt(CF.COUPS) && CF.COUPS >= 1 && isInt(CF.ENERGIE) && CF.ENERGIE >= 1)) err('COUP_FORT', 'COUPS et ENERGIE : deux entiers d\'au moins 1');
   const CN = data.CANNE || {};
   if (!(CN.PRISES && typeof CN.PRISES === 'object' && Object.keys(CN.PRISES).length)) err('CANNE.PRISES', 'les chances de prise par eau');
   for (const [eau, p] of Object.entries(CN.PRISES || {})) {

@@ -115,13 +115,19 @@ function withBonus(state, n, pct) {
   return n + (pct > 0 && nextRandom(state) * 100 < pct ? 1 : 0);
 }
 
+// Le coup fort (version 1.24, COUP_FORT) : { coups, energie } d'un coup, fort ou non.
+function force(fort) {
+  const C = DATA.COUP_FORT;
+  return fort ? { coups: C.COUPS, energie: C.ENERGIE } : { coups: 1, energie: 1 };
+}
+
 // Un coup sur l'arbre ou le rocher `id` (`partis` : 'arbres' ou 'rochers' de state.outils) :
 // au `base`-ième coup (moins les Lames affûtées), il tombe : { retour }, le jour où il revient
 // (dans `retour` jours, tiré au hasard). Renvoie { coups, fini }.
-function hit(state, partis, id, base, retour) {
+function hit(state, partis, id, base, retour, n = 1) {
   const o = outils(state);
   if (!o[partis] || typeof o[partis] !== 'object') o[partis] = {};
-  const coups = (o[partis][id] || 0) + 1;
+  const coups = (o[partis][id] || 0) + n;
   const fini = coups >= hitsNeeded(state, base);
   o[partis][id] = fini ? { retour: state.day + randomInt(state, retour[0], retour[1]) } : coups;
   return { coups, fini };
@@ -188,20 +194,22 @@ export function ramasserMorceau(state, n) {
 // Un coup de hache sur l'arbre `id` : HACHE.BOIS bois au sol (au pied de l'arbre), de
 // l'énergie, de l'XP ; `tombe` : l'arbre vient de tomber, HACHE.CHUTE bois de plus (là où sa
 // cime touche le sol). `ou` : { carte, coup: [points], fin: [points] } (voir lacher).
-export function chopTree(state, id, ou) {
+// `fort` : le coup fort (COUP_FORT : il compte plusieurs coups, pour plus d'énergie).
+export function chopTree(state, id, ou, fort = false) {
   const H = DATA.HACHE;
   if (!hasTool(state, 'hache')) return fail(`Il te faut une hache (Marché, ${H.PRIX} 💰).`);
   if (typeof id !== 'string' || !id) return fail('Touche un arbre pour le couper.');
   if (treeGone(state, id)) return fail('Cet arbre est déjà abattu.');
-  if (!canAfford(state, 'couper')) return fail(TIRED);
+  const f = force(fort);
+  if (!canAfford(state, 'couper', f.energie)) return fail(TIRED);
   delete outils(state).coupes;           // l'ancien compte des coups du jour
-  const { coups, fini: tombe } = hit(state, 'arbres', id, H.COUPES, H.RETOUR);
+  const { coups, fini: tombe } = hit(state, 'arbres', id, H.COUPES, H.RETOUR, f.coups);
   const bois = withBonus(state, H.BOIS, techSum(state, 'recolteBonus'));
   const chute = tombe ? H.CHUTE || 0 : 0;
   const morceaux = lacher(state, 'bois', bois, chute, ou);
-  spendEnergy(state, 'couper');
+  spendEnergy(state, 'couper', f.energie);
   gainActionXp(state, 'couper');
-  return { ok: true, bois, chute, morceaux, reste: chopsLeft(state, id), coups, tombe };
+  return { ok: true, bois, chute, morceaux, reste: chopsLeft(state, id), coups, tombe, fort: !!fort };
 }
 
 /* ---------- la pioche : casser un rocher de la carte ---------- */
@@ -219,20 +227,21 @@ export function brokenRocks(state) {
 }
 
 // Un coup de pioche sur le rocher `id` : PIOCHE.PIERRE pierre au sol, de l'énergie, de l'XP ;
-// `casse` : le rocher vient de se briser, PIOCHE.BRIS pierres de plus. `ou` : comme chopTree.
-export function mineRock(state, id, ou) {
+// `casse` : le rocher vient de se briser, PIOCHE.BRIS pierres de plus. `ou`, `fort` : comme chopTree.
+export function mineRock(state, id, ou, fort = false) {
   const P = DATA.PIOCHE;
   if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (Marché, ${P.PRIX} 💰).`);
   if (typeof id !== 'string' || !id) return fail('Touche un rocher pour le casser.');
   if (rockGone(state, id)) return fail('Ce rocher est déjà cassé.');
-  if (!canAfford(state, 'piocher')) return fail(TIRED);
-  const { coups, fini: casse } = hit(state, 'rochers', id, P.COUPS, P.RETOUR);
+  const f = force(fort);
+  if (!canAfford(state, 'piocher', f.energie)) return fail(TIRED);
+  const { coups, fini: casse } = hit(state, 'rochers', id, P.COUPS, P.RETOUR, f.coups);
   const pierre = withBonus(state, P.PIERRE, techSum(state, 'recolteBonus'));
   const bris = casse ? P.BRIS || 0 : 0;
   const morceaux = lacher(state, 'pierre', pierre, bris, ou);
-  spendEnergy(state, 'piocher');
+  spendEnergy(state, 'piocher', f.energie);
   gainActionXp(state, 'piocher');
-  return { ok: true, pierre, bris, morceaux, coups, casse };
+  return { ok: true, pierre, bris, morceaux, coups, casse, fort: !!fort };
 }
 
 /* ---------- la faux : faucher l'herbe haute de la carte ---------- */
@@ -270,6 +279,34 @@ export function scytheGrass(state, id, ou) {
   spendEnergy(state, 'faucher');
   gainActionXp(state, 'faucher');
   return { ok: true, paille, morceaux };
+}
+
+// Le coup fort de la faux (COUP_FORT) : il tournoie et fauche toutes les touffes `ids` (celles
+// autour de lui, que la carte donne), pour COUP_FORT.ENERGIE fois l'énergie d'un fauchage.
+// `ou` : { carte, points: { id: [points] } } (où tombe la paille de chaque touffe). Renvoie
+// { ok, fauchees: [ids], paille, morceaux: { coup: [...] } }.
+export function scytheAround(state, ids, ou) {
+  const X = DATA.FAUX;
+  if (!hasTool(state, 'faux')) return fail(`Il te faut une faux (Marché, ${X.PRIX} 💰).`);
+  const L = [...new Set((Array.isArray(ids) ? ids : []).filter((id) => typeof id === 'string' && id && !grassCut(state, id)))];
+  if (!L.length) return fail('Aucune herbe haute à faucher autour de toi.');
+  const E = DATA.COUP_FORT.ENERGIE;
+  if (!canAfford(state, 'faucher', E)) return fail(TIRED);
+  const o = outils(state);
+  if (!o.herbes || typeof o.herbes !== 'object') o.herbes = {};
+  let paille = 0;
+  const coup = [];
+  for (const id of L) {
+    o.herbes[id] = { retour: state.day + randomInt(state, X.RETOUR[0], X.RETOUR[1]) };
+    const n = withBonus(state, X.PAILLE, techSum(state, 'recolteBonus'));
+    paille += n;
+    const pts = ou && ou.points && ou.points[id];
+    const m = lacher(state, DATA.PATURAGE.NOURRITURE, n, 0, pts ? { carte: ou.carte, coup: pts } : null);
+    if (m) coup.push(...m.coup);
+    gainActionXp(state, 'faucher');
+  }
+  spendEnergy(state, 'faucher', E);
+  return { ok: true, fauchees: L, paille, morceaux: coup.length ? { coup, fin: [] } : null };
 }
 
 // Au réveil : les touffes dont le jour est venu repoussent. Renvoie leurs identifiants.
