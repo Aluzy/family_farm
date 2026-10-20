@@ -9,7 +9,11 @@
  * Ce qui porte une ombre : les bâtiments, le puits, la citerne, les arbres du verger, et les
  * arbres, buissons, barrières et rochers de la carte (leurs images, js/carte/ferme/decor.js,
  * pioche.js). Chaque ombre est la silhouette de son image, posée sur son pied et inclinée
- * (une transformation du canevas : cisaillement et écrasement). Toutes sont peintes, opaques,
+ * (une transformation du canevas : cisaillement et écrasement). Les murs bâtis en blocs et les
+ * toits, eux, sont des volumes (sunPrisms) : chaque mur, un pilier de sa case haut de ses
+ * blocs ; chaque toit, posé sur ses murs, monte jusqu'à son faîtage. Leur ombre est celle du
+ * volume (l'enveloppe de sa base et de son sommet projeté) : celles de deux murs voisins se
+ * raccordent, un mur continu porte une ombre continue. Toutes sont peintes, opaques,
  * dans un seul canevas, rendu noir puis posé avec une seule transparence : deux ombres qui se
  * croisent ne font pas une tache plus sombre.
  *
@@ -27,7 +31,17 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { SOLEIL } = F.C;
+  const { SOLEIL, T, BLOCS_CARTE } = F.C;
+
+  // L'enveloppe convexe de points [x, y] (la chaîne monotone).
+  function enveloppe(pts) {
+    const P = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const x = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const bas = [], haut = [];
+    for (const p of P) { while (bas.length >= 2 && x(bas[bas.length - 2], bas[bas.length - 1], p) <= 0) bas.pop(); bas.push(p); }
+    for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; while (haut.length >= 2 && x(haut[haut.length - 2], haut[haut.length - 1], p) <= 0) haut.pop(); haut.push(p); }
+    return bas.slice(0, -1).concat(haut.slice(0, -1));
+  }
 
   F.partie({
 
@@ -56,7 +70,29 @@
       sprite(this.tank);
       for (const e of (this.trees || new Map()).values()) sprite(e.sprite);
       for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.img && o.tex && !o.gone) sprite(o.img, o.foot);
-      for (const e of (this.blocks || new Map()).values()) if (e.sorte !== 'paillasse' && !e.plat) sprite(e.img);
+      // (les murs et les portes hautes : des volumes, sunPrisms)
+      for (const e of (this.blocks || new Map()).values()) if (e.sorte !== 'paillasse' && !e.plat && e.img.texture.key !== BLOCS_CARTE.hauts.key) sprite(e.img);
+      return out;
+    },
+
+    // Les volumes qui portent une ombre : [{ base: [[x, y]…] (au sol), sommets: [[x, y, v]…]
+    // (v : leur hauteur, px) }]. Un mur (ou une porte haute) : sa case, haute de ses blocs
+    // (ETAGE.dy px par bloc) ; un toit : posé sur ses murs, son faîtage au milieu.
+    sunPrisms() {
+      const out = [], dy = BLOCS_CARTE.etage.dy;
+      const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+      for (const e of (this.blocks || new Map()).values()) {
+        if (e.img.texture.key !== BLOCS_CARTE.hauts.key || !e.img.active) continue;
+        const r = rect(e.x - T / 2, e.y - T, e.x + T / 2, e.y - SOLEIL.base), v = dy * (e.hauteur || 1);
+        out.push({ base: r, sommets: r.map(([x, y]) => [x, y, v]) });
+      }
+      for (const t of this.toits || []) {
+        if (!t.ombre) continue;
+        const { x0, y0, x1, y1, v, faite } = t.ombre;
+        const r = rect(x0, y0, x1, y1), ym = (y0 + y1) / 2, d = (y1 - y0) / 2;
+        const fx0 = Math.min(x0 + d, (x0 + x1) / 2), fx1 = Math.max(x1 - d, (x0 + x1) / 2);
+        out.push({ base: r, sommets: r.map(([x, y]) => [x, y, v]).concat([[fx0, ym, v + faite], [fx1, ym, v + faite]]) });
+      }
       return out;
     },
 
@@ -102,6 +138,19 @@
         // une ombre porte jusqu'à `portee` px de son pied : on prend ce qui est un peu hors du canevas
         if (c.x + c.w + R < ox || c.x - R > ox + W || c.y > oy + H + R || c.pied < oy - 8) continue;
         K.ombrePortee(ctx, s, c.src, c.sx, c.sy, c.sw, c.shh, c.x - ox, c.y - oy, c.w, c.h, c.pied - oy, c.flip);
+      }
+      // les volumes : l'enveloppe de leur base et de leurs sommets projetés (un point à v px de
+      // haut va à sh·v à côté et k·v plus haut)
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = '#000';
+      for (const q of this.sunPrisms()) {
+        const pts = q.base.concat(q.sommets.map(([x, y, v]) => [x + s.sh * v, y - s.k * v]));
+        if (pts.every(([x]) => x < ox - 1) || pts.every(([x]) => x > ox + W + 1) || pts.every(([, y]) => y < oy - 1) || pts.every(([, y]) => y > oy + H + 1)) continue;
+        const h = enveloppe(pts);
+        ctx.beginPath();
+        h.forEach(([x, y], i) => (i ? ctx.lineTo(x - ox, y - oy) : ctx.moveTo(x - ox, y - oy)));
+        ctx.closePath();
+        ctx.fill();
       }
       K.noircir(ctx, W, H);
       this.sunTex.refresh();
