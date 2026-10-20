@@ -46,7 +46,9 @@
     },
     calculeScene(def, n) {
       const arrivee = this.horaireBus()[def.horaire], s = K.ECOLE.sParHeure;
-      const stop = this.busStops[def.arret], pts = this.kidPaths[def.enfants];
+      // (appelée aussi pendant la création de la scène, avant les arrêts et les chemins :
+      // l'enfant d'un voisin qui sort de chez lui ; l'horaire n'est alors pas gardé)
+      const stop = this.busStops && this.busStops[def.arret], pts = this.kidPaths && this.kidPaths[def.enfants];
       const stopS = stop && this.routes ? this.stopOn(def.bus, stop) : null;
       const tBus = stopS === null ? 0 : Math.min(stopS, BUS.lead) / BUS.speed;
       const tKids = def.monter ? K.longueur(pts) / BUS.kid.speed + 0.6 * n : 0;
