@@ -107,6 +107,46 @@
       }
       this.bati = !!bati;
       this.drawRooms(bati ? pieces : null);
+      this.syncRang(bati && bati.rang ? bati.rang : 0, pieces, changed);
+    },
+
+    // En mode Construire, au niveau `n` où l'on rehausse les murs (0 : aucun) : un voile sombre
+    // sur la ferme ; devant lui, le rang n des murs (leur bloc à cette hauteur), le rang n - 1
+    // plus pâle, les autres presque invisibles (BLOCS_CARTE.rang) ; les cases où poser le bloc
+    // suivant (le dessus des murs hauts de n blocs) et les pièces closes, remontées à la hauteur
+    // du niveau. Un appui vise cette hauteur (etagePoint).
+    syncRang(n, pieces, changed) {
+      const R = BLOCS_CARTE.rang, dy = BLOCS_CARTE.etage.dy, cols = this.grid.cols;
+      if (n === (this.rang || 0) && !changed && (!n || this.rangCle === JSON.stringify(pieces))) return;
+      const avant = this.rangImgs || [];
+      for (const i of avant) if (i.active) i.setDepth(i.rangZ).setAlpha(1);
+      this.rangImgs = [];
+      this.rang = n;
+      this.rangCle = n ? JSON.stringify(pieces) : '';
+      if (this.rangGfx) this.rangGfx.clear();
+      if (this.rangVoile) this.rangVoile.setVisible(!!n);
+      if (!n) return;
+      if (!this.rangVoile) this.rangVoile = this.add.rectangle(0, 0, this.world.w, this.world.h, BLOCS_CARTE.etage.voile, R.voile).setOrigin(0);
+      this.rangVoile.setDepth(this.etageVoileZ()).setVisible(true);
+      if (!this.rangGfx) this.rangGfx = this.add.graphics();
+      const g = this.rangGfx.setDepth(this.etageZ(0));
+      g.fillStyle(BLOCS_CARTE.voile, BLOCS_CARTE.voileAlpha * 0.6);
+      for (const p of pieces || []) for (const c of p) g.fillRect((c % cols) * T, Math.floor(c / cols) * T - n * dy, T, T);
+      g.fillStyle(R.place, R.placeAlpha);
+      for (const e of (this.blocks || new Map()).values()) {
+        if (e.cases) continue;
+        const rangs = [e.img, ...(e.hauts || [])];
+        const z0 = e.img.depth;              // (remis : les blocs du dessus juste devant lui)
+        rangs.forEach((i, k) => {
+          i.rangZ = z0 + 0.01 * k;
+          i.setDepth(i.rangZ);
+          this.rangImgs.push(i);
+          if (k === n || k === n - 1) i.setDepth(this.etageZ(i.rangZ)).setAlpha(k === n ? 1 : R.dessous);
+          else i.setAlpha(R.autres);
+        });
+        // (un mur haut de n blocs : la place du bloc suivant)
+        if (e.img.texture.key === BLOCS_CARTE.hauts.key && rangs.length === n && e.sorte !== 'porte') g.fillRect(e.x - T / 2, e.y - T - n * dy, T, T);
+      }
     },
 
     // Les blocs du dessus d'un mur rehaussé (`h` blocs de haut ; 0 : tous ôtés) : son image,
@@ -361,7 +401,7 @@
     // un intérieur, rien (la carte est cachée).
     stepMurs(dt) {
       const B = this.blocks, H = BLOCS_CARTE.hauts;
-      if (!B || !B.size || this.room) return;
+      if (!B || !B.size || this.room || this.rang) return;        // (au niveau où l'on rehausse : syncRang)
       const cols = this.grid.cols, devant = new Set();
       const cache = (x, y) => {
         const gx = Math.floor(x / T), gy = Math.floor((y - 1) / T);

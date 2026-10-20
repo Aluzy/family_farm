@@ -28,6 +28,8 @@ const niveauMax = () => Math.max(etageEmprise(state).size ? 1 : 0, DATA.ATELIER.
 const niveau = () => Math.min(buildLevel, niveauMax());
 // L'étage, s'il y en a un et qu'on y construit : 1, sinon 0.
 export const niveauBati = () => (niveau() === 1 && etageEmprise(state).size ? 1 : 0);
+// Le niveau où l'on rehausse les murs (la carte le montre seul : 1 ou 2), sinon 0.
+export const niveauRang = () => (niveauBati() ? 0 : niveau());
 const MURS = () => Object.keys(DATA.ATELIER.BLOCS).filter((s) => DATA.ATELIER.BLOCS[s].mur);
 // (à l'étage : seulement ceux qui s'y posent ; plus haut que le sol : les murs)
 // (les meubles du Marché : seulement ceux qu'on a en main, ou celui qu'on pose)

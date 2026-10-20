@@ -170,6 +170,8 @@
     // Un point touché, ramené au sol du niveau montré (à l'étage : ETAGE.dy plus bas) ; en mode
     // Construire, celui où l'on construit.
     etagePoint(wx, wy) {
+      // (au niveau où l'on rehausse les murs : à sa hauteur, js/carte/ferme/chantier.js syncRang)
+      if (this.rang) return { x: wx, y: wy + this.rang * E.dy };
       const n = this.vueNiveau != null ? this.vueNiveau : this.niveau;
       return { x: wx, y: n ? wy + E.dy : wy };
     },
