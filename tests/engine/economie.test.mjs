@@ -5,7 +5,7 @@
 
 import {
   acheterRepasVille, addItem, awakeMsAtHour, buyCompany, buyInShop, coefPrix, countItem, DATA, demandeTheorique, economie, economieNuit,
-  economieVue, matiereDe, negoceVue, prixNegoce, sellToNegoce, sortieVille,
+  economieVue, matiereDe, negoceOffres, negoceVue, prixNegoce, sellToNegoce, shopView, sortieVille,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, garden, test } from './aide.mjs';
 
@@ -118,4 +118,23 @@ test('économie : le propriétaire d\'une entreprise touche sa part du bénéfic
     assertEqual(b.part, Math.round((b.comptes[lieu].benefice * X.ENTREPRISES.PART) / 100));
     assertEqual(s.pieces, avant + b.part);
   }
+});
+
+test('économie : les vues de la mairie, du négoce et des comptoirs', () => {
+  const s = garden();
+  const v = economieVue(s);
+  assertEqual(v.produits.length, Object.keys(X.PRODUITS).length, 'tous les produits');
+  assert(v.produits.every((p) => p.nom && p.icone && p.prix >= 1), 'nom, icône, prix');
+  assert(v.produits[0].matiere, 'les matières premières d\'abord');
+  addItem(s, 'carotte', 4);
+  addItem(s, 'tomate', 2);
+  economie(s).penuries = { legume: 5 };
+  const o = negoceOffres(s);
+  assertEqual(o.length, 1);
+  assertEqual(o[0].nom, X.PRODUITS.legume.nom);
+  const objets = Object.fromEntries(o[0].objets.map((q) => [q.item, q.qte]));
+  assertEqual([objets.carotte, objets.tomate], [4, 2]);
+  economie(s).stocks.pizza = 0;
+  assertEqual(shopView('pizzeria', s).cours, X.PRIX.MAX);
+  assertEqual(shopView('pizzeria', s).stock, 0);
 });

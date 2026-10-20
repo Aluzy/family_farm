@@ -95,8 +95,11 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
        bonheur baisse ; la caisse de la ville ; le bureau de négoce rachète au joueur les
        matières en pénurie (`sellToNegoce`) ; le joueur propriétaire d'une entreprise touche la
        moitié de son bénéfice ;
-     - 5c-2, les fenêtres : le tableau de bord de la mairie, la vente au négoce, les stocks et
-       les prix aux comptoirs ;
+     - 5c-2, les fenêtres (fait ; `js/carte/ville/marche.js`) : au guichet de la mairie, le
+       tableau de bord (la caisse, les habitants, les pénuries, les stocks et les prix du jour,
+       les comptes d'hier) ; au guichet du bureau de négoce, la vente des matières qui manquent ;
+       aux comptoirs des boutiques, leur stock et leur cours ; dans la fenêtre d'une
+       entreprise du joueur, ses comptes dans l'économie de la ville et sa part ;
      - 5c-3, sur la carte : les sorties visibles, les camions qui circulent.
 6. Les lignes de bus de la ville : les trajets à pied sont longs (jusqu'à 4 h de jeu d'un bout à
    l'autre) ; les habitants qui travaillent loin de chez eux prennent le bus.
