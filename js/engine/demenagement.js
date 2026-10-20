@@ -254,25 +254,12 @@ export function convertirPartie(state, graine) {
   return { ok: true, graine: g, batis: batis.filter((p) => !p.rendu).map((p) => p.id), rendus };
 }
 
-/* ---------- la proposition de déménager (au chargement d'une ancienne partie) ---------- */
+/* ---------- le déménagement d'une ancienne partie (au chargement) ---------- */
 
-// Une ancienne partie se voit proposer le déménagement (écran de départ passé) ; « plus tard » le
-// remet à DEMENAGEMENT_DELAI jours (state.demenagement = { reporte: jour }).
-export const DEMENAGEMENT_DELAI = 3;
-
+// Une ancienne partie déménage (écran de départ passé) : la fenêtre ne propose pas de rester sur
+// la carte de Tiled, seulement de choisir sa terre (la graine).
 export function demenagementPossible(state) {
   return farmSeed(state) === null && !!(state.famille && state.famille.configuree);
-}
-
-export function demenagementPropose(state) {
-  if (!demenagementPossible(state)) return false;
-  const d = state.demenagement;
-  return !(d && Number.isInteger(d.reporte) && state.day < d.reporte + DEMENAGEMENT_DELAI);
-}
-
-export function reporterDemenagement(state) {
-  state.demenagement = { reporte: state.day };
-  return { ok: true, jusquau: state.day + DEMENAGEMENT_DELAI };
 }
 
 // La graine proposée : tirée de la partie (toujours la même pour elle).
