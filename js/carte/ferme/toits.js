@@ -32,6 +32,7 @@
       this.toitsCle = cle;
       for (const t of this.toits || []) { t.img.destroy(); this.textures.remove(t.key); }
       this.toits = [];
+      this.sunDirty = true;
       if (!cle) return;
       const cols = this.grid.cols, dy = BLOCS_CARTE.etage.dy;
       this.toitsN = (this.toitsN || 0) + 1;
@@ -40,8 +41,13 @@
         this.textures.addCanvas(key, cv);
         const lift = dy * (t.niveau + 1), x = c0 * T - dx, y = r0 * T - lift;
         const img = this.add.image(x, y, key).setOrigin(0, 0).setDepth((r1 + 1) * T + R.z);
-        this.toits.push({ key, img, dedans: new Set(t.dedans), x0: x, x1: x + cv.width, y0: y, y1: y + cv.height, pied: (r1 + 1) * T });
+        // (son ombre, js/carte/ferme/soleil.js : posé à `lift` px sur l'emprise, son faîtage
+        // plus haut de ce que le dessin dépasse de l'emprise remontée)
+        const c1 = Math.max(...t.cases.map((k) => k % cols));
+        const ombre = { x0: c0 * T, x1: (c1 + 1) * T, y0: r0 * T, y1: (r1 + 1) * T, v: lift, faite: Math.max(0, cv.height - (r1 + 1 - r0) * T) };
+        this.toits.push({ key, img, ombre, dedans: new Set(t.dedans), x0: x, x1: x + cv.width, y0: y, y1: y + cv.height, pied: (r1 + 1) * T });
       });
+      this.sunDirty = true;
     },
 
     // Un toit s'efface quand le personnage est dans son bâtiment, ou en mode Construire ; à
