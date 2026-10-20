@@ -6,6 +6,8 @@
  * ETAGE.dy px par niveau. Il couvre les cases du bâtiment, murs compris : un toit à croupes vu
  * de 3/4, comme ceux des immeubles de la ville (le dessin : CarteKit.toit, js/carte/toit.js).
  *
+ * La Serre (la pièce du bac à semis) a un toit de verre : on voit ses cultures au travers.
+ *
  * Un toit s'efface (stepToits) quand le personnage est dans son bâtiment (en bas ou à l'étage)
  * et en mode Construire ; à moitié quand le personnage passe derrière lui.
  *
@@ -19,7 +21,7 @@
   const R = BLOCS_CARTE.toits;
   // (le dessin d'un toit : CarteKit.toit, js/carte/toit.js)
 
-  const dessine = (cases, cols) => global.CarteKit.toit(cases, cols);
+  const dessine = (cases, cols, verre) => global.CarteKit.toit(cases, cols, verre);
 
   F.partie({
 
@@ -34,7 +36,7 @@
       const cols = this.grid.cols, dy = BLOCS_CARTE.etage.dy;
       this.toitsN = (this.toitsN || 0) + 1;
       toits.forEach((t, i) => {
-        const { cv, c0, r0, r1, dx } = dessine(t.cases, cols), key = `toit_${this.toitsN}_${i}`;
+        const { cv, c0, r0, r1, dx } = dessine(t.cases, cols, !!t.verre), key = `toit_${this.toitsN}_${i}`;
         this.textures.addCanvas(key, cv);
         const lift = dy * (t.niveau + 1), x = c0 * T - dx, y = r0 * T - lift;
         const img = this.add.image(x, y, key).setOrigin(0, 0).setDepth((r1 + 1) * T + R.z);

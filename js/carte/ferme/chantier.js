@@ -46,16 +46,20 @@
 
   F.partie({
 
-    // Les images des blocs : celles du modèle, créées, changées ou ôtées.
-    syncBlocks(list, bati, pieces) {
+    // Les images des blocs : celles du modèle, créées, changées ou ôtées. Les murs et la porte
+    // de l'enceinte de la Serre (`serre` : leurs cases) sont en verre et en bois.
+    syncBlocks(list, bati, pieces, serre) {
       if (!this.blocks) this.blocks = new Map();
-      const B = this.blocks, seen = new Set(), cols = this.grid.cols;
+      const B = this.blocks, seen = new Set(), cols = this.grid.cols, H = BLOCS_CARTE.hauts;
       let changed = false;
       if (this.has(BLOCS_CARTE.key)) {
-        const at = new Map((list || []).map((b) => [b.case, b.sorte]));
+        const verre = new Set(serre || []);
+        const at = new Map((list || []).map((b) => [b.case, verre.has(b.case) && H.variantes[b.sorte] !== undefined ? 'mur_serre' : b.sorte]));
         for (const b of list || []) {
           seen.add(b.case);
-          const e = B.get(b.case), [key, f] = this.blocImage(b, at, cols);
+          let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case) }, at, cols);
+          if (verre.has(b.case) && key === H.key && f === H.porte) f = H.porteSerre;
+          const e = B.get(b.case);
           if (e && e.sorte === b.sorte) {
             // (les flammes du four, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
             if ((e.img.frame.name !== f || e.img.texture.key !== key) && b.sorte !== BLOCS_CARTE.feu.sorte && b.sorte !== 'lanterne') { e.img.setTexture(key, f); changed = true; }

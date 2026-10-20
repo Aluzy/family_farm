@@ -173,10 +173,14 @@
     hauts: { key: 'murs_hauts', file: 'murs_hauts.png', frame: { frameWidth: 16, frameHeight: 40 }, murs: 0, porte: 16, alpha: 0.4, vitesse: 4,
       variantes: { mur_pierre: 0, mur_fenetre: 17, pierre_angle: 33, paroi_vitree: 97,
         // (les murs aux matières des immeubles de la ville : scripts/carte/blocs.py MATIERES_VILLE)
-        mur_brique_rouge: 161, mur_brique_orange: 177, mur_brique_ocre: 193, mur_brique_bleue: 209, mur_pierre_taille: 225 },
+        mur_brique_rouge: 161, mur_brique_orange: 177, mur_brique_ocre: 193, mur_brique_bleue: 209, mur_pierre_taille: 225,
+        // (les murs de l'enceinte de la Serre, quels qu'ils soient : du verre dans des arêtes de
+        // bois, scripts/carte/blocs.py verre_serre ; sa porte : `porteSerre`)
+        mur_serre: 306 },
+      porteSerre: 370,
       // `joints` : les murs qu'un voisin de même sorte prolonge (à gauche, à droite, des deux
       // côtés : deux fenêtres font une grande fenêtre, les parois vitrées une façade de verre)
-      joints: { mur_fenetre: [17, 49, 65, 81], paroi_vitree: [97, 113, 129, 145] } },
+      joints: { mur_fenetre: [17, 49, 65, 81], paroi_vitree: [97, 113, 129, 145], mur_serre: [306, 322, 338, 354] } },
     // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
     barrieres: 50,
     // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour

@@ -626,6 +626,15 @@ niveau. Le toucher : il raconte son travail, ses achats et son dîner d'hier.
          ne la répare plus en pièces sur la ferme générée (`buildSerre` refuse).
        - Pas d'intérieur : un appui sur le bac ouvre la fenêtre de la Serre, où ses parcelles
          se travaillent.
+       - **Sur la carte** : ses parcelles se posent sur les cases libres de sa pièce, une par
+         case (`serrePlaces` : ni le bac, ni les cases juste derrière ses portes, le passage),
+         dans des bacs de planches ; ce qui y pousse se voit, et un appui y plante, arrose ou
+         récolte comme au potager. Des parcelles de plus que de cases restent dans la fenêtre.
+         La pièce a un **toit de verre** (`toits` : `verre`, `CarteKit.toit(…, true)`) : des
+         vitres entre des montants de bois, on voit les cultures au travers.
+       - **Ses murs sont en verre** : quels que soient les blocs posés, les murs et la porte de
+         son enceinte (`serreMurs`) se dessinent en vitres claires dans des arêtes de bois
+         (`murs_hauts.png` 306 à 369, `verre_serre` ; la porte vitrée : 370, `porte_serre`).
        - Comme partout, un bloc clé ne se pose qu'à partir du niveau où son bâtiment se débloque
          (`isUnlocked` : la Serre au niveau 7).
      - ✅ **5b-6, le silo** : le Silo quitte la cour.
