@@ -108,6 +108,11 @@
   // de sa fin ; la scène commence le temps qu'il faut au bus et aux enfants pour y être), le
   // trajet du bus et son arrêt (couche « bus »), le chemin des enfants, et s'ils montent dans le
   // bus ou en descendent.
+  // Les camions de la logistique (assets/ville_camion.png et .json, scripts/ville/camion.py :
+  // huit directions) : de `heures[0]` à `heures[1]` h, autant sur les routes que l'économie en a
+  // fait rouler hier (le bilan de la nuit, ECONOMIE.CAMIONS : js/engine/economie.js), au plus `max`
+  // à la fois ; ils roulent comme les voitures, plus longs (`half` : la demi-longueur).
+  const CAMION = { key: 'camion', file: 'assets/ville_camion.png', meta: 'assets/ville_camion.json', half: 40, heures: [6, 20], max: 4 };
   const BUS = {
     key: 'bus', file: 'assets/ville_bus.png', meta: 'assets/ville_bus.json', half: 46, carHalf: 29,
     speed: 70,             // px au sol par seconde (plus vite que les voitures : la ville est grande)
@@ -371,14 +376,18 @@
     // plus `marge` h. Après leur dernier service, s'il est moins de `marche` h, ils passent au
     // marché : ils restent `achat` s devant un étal ; le dîner cuit `cuisson` s. Les enfants vont
     // aux `ecoles` (l'école de la carte, puis les lieux). Dans un lieu, le premier employé se tient
-    // au meuble de son métier (`postes`). (Le pied des lits et la place devant le four : le plan
-    // du niveau.)
+    // au meuble de son métier (`postes`). Le soir, la famille qui sort (sa sortie, ECONOMIE.LOISIRS :
+    // js/engine/economie.js) part de chez elle à `sortie[0]` h et rentre à `sortie[1]` h. (Le pied
+    // des lits et la place devant le four : le plan du niveau.)
     vie: {
       lits: 3, travail: 'fromagerie', horaires: [8, 17], salaire: 26, sommeil: [22, 6], vitesse: 40, sParHeure: 30, marge: 0.25,
       horsVille: { logistique: 'gare', scierie: 'gare', chaudronnerie: 'gare' }, points: { amphitheatre: [140, 184] },
-      ecoles: ['ecole', 'ecole_2', 'ecole_3'], marche: 20, achat: 4, cuisson: 16, humeur: [70, 40],
+      ecoles: ['ecole', 'ecole_2', 'ecole_3'], marche: 20, achat: 4, cuisson: 16, humeur: [70, 40], sortie: [19, 21.5],
       // (la place du premier employé d'un lieu : derrière (-1) ou devant (1) ces meubles)
       postes: { comptoir: -1, vitrine_pain: -1, etal_poisson: -1, tableau_noir: 1, pupitre: 1 },
+      // (au loisir, les spectateurs se tiennent devant ces meubles s'il y en a : les fauteuils du
+      // cinéma)
+      spectateurs: ['fauteuils'],
     },
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)
@@ -437,7 +446,7 @@
 
   const parties = [];
   global.CarteVille = {
-    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE },
+    C: { T: K.T, CARTES, JOUR_NUIT, PASS, HERO, OBSTACLES, PASSABLES, BATI, BATI_ALPHA, DEVANT, FEUILLAGE_ALPHA, VOL, ECLAIRAGE, OMBRES, CARS, KY, BUS, CAMION, TRAIN, NAVETTE, FINDS, FAUNE, GROTTE, NATURE, PECHE, VOISINS, BLOCS, IMMEUBLE, RAMASSABLES, TRANSITION_VIE },
     etat, configure, hote, sheetKey, saisie: K.saisie, reduced: K.reduit, v: K.v, tuilesDans,
     // les méthodes de la scène, fichier par fichier (voir js/ville-carte.js)
     parties,

@@ -100,6 +100,10 @@ l'école (3), la bibliothèque, la gare, le grand magasin, le marché, les parcs
        les comptes d'hier) ; au guichet du bureau de négoce, la vente des matières qui manquent ;
        aux comptoirs des boutiques, leur stock et leur cours ; dans la fenêtre d'une
        entreprise du joueur, ses comptes dans l'économie de la ville et sa part ;
-     - 5c-3, sur la carte : les sorties visibles, les camions qui circulent.
+     - 5c-3, sur la carte (fait) : le soir de sortie, la famille va à pied au cinéma (on la
+       voit dans la salle, devant les fauteuils), au musée ou à l'amphithéâtre, et rentre à
+       21 h 30 (`js/carte/ville/habitants.js`) ; le jour, les camions de la logistique
+       (`scripts/ville/camion.py`) roulent dans les rues, autant que l'économie en a fait rouler
+       la veille (au plus 4 à la fois : `js/carte/ville/circulation.js`).
 6. Les lignes de bus de la ville : les trajets à pied sont longs (jusqu'à 4 h de jeu d'un bout à
    l'autre) ; les habitants qui travaillent loin de chez eux prennent le bus.

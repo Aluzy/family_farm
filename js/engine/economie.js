@@ -15,7 +15,7 @@
 // achète au comptoir (js/engine/ville.js, buyInShop : prendreStock).
 //
 // state.economie = { jour, stocks: { produit: n }, conso: { produit: n (la demande vue) },
-// ventes: { lieu: pièces }, caisse, penuries: { matiere: n }, visites: { jour, lieu: n },
+// ventes: { lieu: pièces }, caisse, penuries: { matiere: n }, visites: { jour: { lieu: n } } (les derniers jours),
 // acc: { produit: fraction }, bilan (le dernier jour : production, ventes, export, camions,
 // comptes, caisse, pénuries) }.
 import { DATA } from './catalog.js';
@@ -232,8 +232,10 @@ export function acheterRepasVille(state, f, besoin) {
 export function sortieVille(state, f, jour) {
   const L = E().LOISIRS, e = economie(state);
   if (f.bonheur >= L.SEUIL) return null;
-  if (e.visites.jour !== jour) e.visites = { jour };
-  const lieux = Object.entries(L.LIEUX).filter(([id, l]) => (e.visites[id] || 0) + f.adultes + f.enfants <= l.cap);
+  // (les places de chaque jour : les familles rattrapent parfois plusieurs journées d'un coup)
+  for (const j of Object.keys(e.visites)) if (!(Number(j) >= jour - E().RATTRAPAGE)) delete e.visites[j];
+  const V = e.visites[jour] || (e.visites[jour] = {});
+  const lieux = Object.entries(L.LIEUX).filter(([id, l]) => (V[id] || 0) + f.adultes + f.enfants <= l.cap);
   if (!lieux.length) return null;
   const tot = lieux.reduce((t, [, l]) => t + l.part, 0);
   let x = (variation(jour, f.argent + ':' + f.bonheur) - 1 + E().VARIATION / 100) / ((2 * E().VARIATION) / 100) * tot;
@@ -242,7 +244,7 @@ export function sortieVille(state, f, jour) {
   if (f.argent - cout < L.RESERVE) return null;
   f.argent -= cout;
   f.bonheur = Math.min(DATA.VILLE.BONHEUR.MAX, f.bonheur + l.bonheur);
-  e.visites[id] = (e.visites[id] || 0) + f.adultes + f.enfants;
+  V[id] = (V[id] || 0) + f.adultes + f.enfants;
   e.billets = (e.billets || 0) + cout;
   return id;
 }
@@ -291,6 +293,7 @@ export function economieVue(state) {
   const produits = Object.entries(X.PRODUITS).map(([id, d]) => ({
     id, nom: d.nom, icone: d.icone, stock: stocks[id] || 0, demande: Math.round(D[id] || 0), prix: prix[id], base: d.prix, matiere: !!X.MATIERES[id],
   })).sort((a, b) => b.matiere - a.matiere);
-  const { jour, ...sorties } = e.visites;
+  const jours = Object.keys(e.visites).map(Number), jour = jours.length ? Math.max(...jours) : null;
+  const sorties = jour == null ? {} : { ...e.visites[jour] };
   return { jour: e.jour, caisse: Math.round(e.caisse), bilan: e.bilan || null, stocks, prix, produits, penuries: { ...e.penuries }, demande: D, sorties, sortiesJour: jour ?? null, part: X.ENTREPRISES.PART };
 }

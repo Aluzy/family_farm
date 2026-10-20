@@ -16,6 +16,10 @@
  * voiture qui s'y trouve ne croise leur trajet. Les longueurs se comptent au sol : la carte est
  * vue de 3/4, une distance verticale à l'écran vaut 1 / KY au sol. Les voitures garées sont des
  * tuiles (couche « vehicules ») ; leur emprise au sol (couche « garees ») arrête la promeneuse.
+ * Parmi elles, sur la carte de la ville, les camions de la logistique (assets/ville_camion.png,
+ * scripts/ville/camion.py ; CAMION) : le jour, autant que l'économie en a fait rouler hier (le
+ * bilan de la nuit : FermeHote.logistique), au plus CAMION.max à la fois ; un toucher sur l'un
+ * d'eux : ce qu'ils ont porté.
  * Avec « animations réduites », pas de circulation.
  *
  * Méthodes de la scène des cartes (js/ville-carte.js), posées sur son prototype : `this` est
@@ -25,8 +29,10 @@
   'use strict';
 
   const V = global.CarteVille;
-  const { T, BATI, BATI_ALPHA, CARS, KY, BUS } = V.C;
-  const { reduced } = V;
+  const { T, BATI, BATI_ALPHA, CARS, KY, BUS, CAMION } = V.C;
+  const { hote, reduced } = V;
+  // (un bus, un camion sont plus longs qu'une voiture : de combien, devant et derrière)
+  const rallonge = (c) => (c.bus ? BUS.half - BUS.carHalf : c.camion ? CAMION.half - BUS.carHalf : 0);
 
   V.partie({
     // ---------- les bâtiments ----------
@@ -164,15 +170,15 @@
       return out;
     },
 
-    // Une voiture sur ce trajet, à l'abscisse s (0 : à l'entrée, hors de la carte), si la place
-    // est libre.
-    addCar(route, s = 0) {
-      const m = this.carMeta;
-      const car = { route, s, i: 0, v: s ? CARS.speed : CARS.speed * 0.8, color: Math.floor(Math.random() * m.couleurs.length), held: new Set() };
+    // Une voiture (ou un camion : `camion`) sur ce trajet, à l'abscisse s (0 : à l'entrée, hors
+    // de la carte), si la place est libre.
+    addCar(route, s = 0, camion = false) {
+      const m = camion ? this.cache.json.get(CAMION.key + '_meta') || { anchor: { x: 56, y: 70 }, frameWidth: 112, frameHeight: 112 } : this.carMeta;
+      const car = { route, s, i: 0, v: s ? CARS.speed : CARS.speed * 0.8, color: camion ? 0 : Math.floor(Math.random() * m.couleurs.length), held: new Set(), camion };
       this.pointAt(route, car, car);
-      if (this.cars.some((o) => Math.hypot(o.x - car.x, (o.y - car.y) / KY) < CARS.gap * 1.3)) return null;
+      if (this.cars.some((o) => Math.hypot(o.x - car.x, (o.y - car.y) / KY) < CARS.gap * 1.3 + rallonge(car) + rallonge(o))) return null;
       const anchor = m.anchor || { x: 32, y: 40 };
-      car.sprite = this.add.sprite(0, 0, CARS.key, 0).setOrigin(anchor.x / (m.frameWidth || 64), anchor.y / (m.frameHeight || 64));
+      car.sprite = this.add.sprite(0, 0, camion ? CAMION.key : CARS.key, 0).setOrigin(anchor.x / (m.frameWidth || 64), anchor.y / (m.frameHeight || 64));
       this.cars.push(car);
       this.placeCar(car);
       return car;
@@ -183,7 +189,7 @@
       let a = Math.atan2(car.dy, car.dx) * 180 / Math.PI;
       if (a < 0) a += 360;
       const k = Math.round(a / (360 / dirs)) % dirs;
-      car.sprite.setFrame(car.bus ? k : car.color * dirs + k).setPosition(Math.round(car.x), Math.round(car.y)).setDepth(car.y);
+      car.sprite.setFrame(car.bus || car.camion ? k : car.color * dirs + k).setPosition(Math.round(car.x), Math.round(car.y)).setDepth(car.y);
     },
 
     stepTraffic(time, dt) {
@@ -191,7 +197,9 @@
       this.nextSpawn -= dt * 1000;
       if (this.nextSpawn <= 0) {
         this.nextSpawn = CARS.spawn[0] + Math.random() * (CARS.spawn[1] - CARS.spawn[0]);
-        if (this.carRoutes.length && this.cars.length < CARS.max && this.textures.exists(CARS.key)) this.addCar(Phaser.Utils.Array.GetRandom(this.carRoutes));
+        // (un camion, s'il en manque sur les routes ; sinon une voiture)
+        const camion = this.textures.exists(CAMION.key) && this.cars.filter((c) => c.camion).length < this.camionsVoulus();
+        if (this.carRoutes.length && this.cars.length < CARS.max && this.textures.exists(CARS.key)) this.addCar(Phaser.Utils.Array.GetRandom(this.carRoutes), 0, camion);
       }
       const hero = this.heroPos;
       // (sans copie de la liste : une voiture sortie de la carte est retirée sur place, et la
@@ -208,7 +216,7 @@
           const ex = o.x - car.x, ey = (o.y - car.y) / KY;
           const along = ex * car.dx + ey * car.dy, side = Math.abs(ex * car.dy - ey * car.dx);
           // (un bus est plus long : on le suit de plus loin)
-          const gap = CARS.gap + (car.bus ? BUS.half - BUS.carHalf : 0) + (o.bus ? BUS.half - BUS.carHalf : 0);
+          const gap = CARS.gap + rallonge(car) + rallonge(o);
           if (along > 0 && side < CARS.lane) room = Math.min(room, along - gap);
         }
         // le bus de l'école s'arrête à son arrêt, le temps que les enfants montent ou descendent
@@ -253,6 +261,23 @@
         this.placeCar(car);
         if (car.alpha !== undefined && car.alpha < 1) { car.alpha = Math.min(1, car.alpha + dt * 2); car.sprite.setAlpha(car.alpha); }
       }
+    },
+
+    // Combien de camions sur les routes maintenant : le jour (CAMION.heures), ceux que
+    // l'économie a fait rouler hier, au plus CAMION.max.
+    camionsVoulus() {
+      const H = global.HorlogeSortie ? global.HorlogeSortie.maintenant() : null, L = hote() && hote().logistique ? hote().logistique() : null;
+      if (!H || H.nuit || !L || H.heure < CAMION.heures[0] || H.heure >= CAMION.heures[1]) return 0;
+      return Math.min(CAMION.max, L.camions);
+    },
+
+    // Un toucher sur un camion : ce que la logistique a porté hier.
+    tapCamion(w) {
+      const c = (this.cars || []).find((q) => q.camion && Math.abs(w.x - q.x) <= 34 && w.y <= q.y + 8 && w.y >= q.y - 40);
+      const L = c && hote() && hote().logistique ? hote().logistique() : null;
+      if (!c || !L) return false;
+      this.say(`🚚 Un camion de la logistique. Hier, ${L.camions} camion${L.camions > 1 ? 's ont' : ' a'} porté ${L.transport} unités entre les producteurs, les fabriques et les boutiques de la ville${L.principaux.length ? ` (surtout ${L.principaux.join(', ')})` : ''}.`);
+      return true;
     },
   });
 })(window);

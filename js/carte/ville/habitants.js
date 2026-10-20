@@ -20,6 +20,10 @@
  *     écoles de la ville (la plus proche qui a de la place : repartitEcoles). Ils y vont à pied et
  *     partent le temps qu'il leur faut pour y être à l'heure (departEcole) ; dans les écoles 2 et
  *     3, ils prennent place derrière leur pupitre ;
+ *   - le soir, la famille qui sort (le moteur l'a décidé cette nuit : sa sortie, au cinéma, au
+ *     musée ou à l'amphithéâtre ; js/engine/economie.js, sortieVille) y va à pied à
+ *     IMMEUBLE.vie.sortie[0] h, une fois le dîner fait : au cinéma et au musée, on la voit dans la
+ *     salle quand on y entre ; elle rentre à sortie[1] h ;
  *   - chacun dort de IMMEUBLE.vie.sommeil[0] h à sommeil[1] h (on ne le voit plus) ; ceux qui
  *     commencent tôt se lèvent plus tôt, ceux qui finissent tard se couchent plus tard.
  *
@@ -136,8 +140,10 @@
     debutHabitant(n, H) {
       const h = this.heureImm(H), jour = H ? H.jour : 0;
       if (this.dortImm(H, n)) { this.coucheHabitant(n); return; }
+      // (le soir de sortie : déjà au loisir)
+      const so = this.sortieDe(n.L), sort = so && h >= VIE.sortie[0] + 0.5 && h < VIE.sortie[1];
       if (n.m.enfant) {
-        if (this.ecoleImm(n, H)) { n.jourEcole = jour; this.arriveEcole(n, true); }
+        if (this.ecoleImm(n, H)) { n.jourEcole = jour; this.arriveEcole(n, true); } else if (sort) this.partSortie(n, so, jour, true);
         return;
       }
       n.faits = [];
@@ -149,6 +155,7 @@
       }
       // (rentré du marché après son dernier service : le dîner est fait, ou à faire)
       if (h >= S[S.length - 1][1]) n.jourMarche = jour;
+      if (sort && h >= S[S.length - 1][1]) { this.faitsImmDe(n.L, jour).cuisine = true; this.partSortie(n, so, jour, true); }
     },
 
     // ---------- l'heure ----------
@@ -487,6 +494,19 @@
           }
           return;
         }
+        case 'versSortie':
+          // au loisir : à sa place dans la salle, ou il entre
+          this.arriveSortie(n);
+          return;
+        case 'sortie': {
+          if (h < VIE.sortie[1]) { n.t = 2; return; }
+          // la sortie finie : il ressort et rentre à pied
+          const t = this.lieuTravail(n.sortie);
+          ressort(t && t.porte);
+          n.etat = 'retour';
+          chezSoi();
+          return;
+        }
         case 'versEcole':
           // à son école : son pupitre, ou il entre
           this.arriveEcole(n);
@@ -560,9 +580,63 @@
           return;
         }
       }
+      // le soir de sortie, le dîner fait : toute la famille part au loisir
+      const so = this.sortieDe(n.L);
+      if (so && n.jourSortie !== jour && h >= VIE.sortie[0] && h < VIE.sortie[1] && !this.habitants.some((q) => q.L === n.L && (q.etat === 'versFeu' || q.etat === 'cuisine'))) {
+        this.partSortie(n, so, jour);
+        return;
+      }
       // il va et vient dans le logement
       chezSoi();
       attendre(n.m.enfant ? 1 : 1.5);
+    },
+
+    // La sortie du soir de la famille du logement `L` (le lieu : 'cinema', 'musee',
+    // 'amphitheatre' ; null : elle reste chez elle) : celle que le moteur a décidée la nuit.
+    sortieDe(L) {
+      const fo = this.ecoImm && this.ecoImm.foyers[L.nom];
+      return (fo && fo.hier && fo.hier.sortie) || null;
+    },
+    // `n` part au loisir `so` (sa place : une case de la salle, au hasard) ; `direct` : il y est
+    // déjà (la carte s'ouvre pendant la sortie).
+    partSortie(n, so, jour, direct = false) {
+      n.jourSortie = jour;
+      n.sortie = so;
+      const t = this.lieuTravail(so), l = this.placesSpectateurs(so) || (t && t.places) || [];
+      n.placeSortie = l.length ? l[Math.floor(Math.random() * l.length)] : null;
+      const p = n.placeSortie || (t && t.porte);
+      n.etat = 'versSortie';
+      if (direct || !p || !this.allerImm(n, p, 0)) this.arriveSortie(n, true);
+    },
+    // Les places des spectateurs du lieu `lieu` : devant ses fauteuils (IMMEUBLE.vie.spectateurs ;
+    // null : il n'en a pas). Gardées.
+    placesSpectateurs(lieu) {
+      this.spectT = this.spectT || {};
+      if (lieu in this.spectT) return this.spectT[lieu];
+      const im = (this.immeubles || []).find((q) => q.b.nom === lieu), l = [];
+      if (im) {
+        const nv = im.niveaux[0];
+        for (const mb of nv.plan.meubles) {
+          if (!VIE.spectateurs.includes(mb.nom)) continue;
+          const y = mb.y + mb.h;
+          for (let x = mb.x; x < mb.x + mb.w; x++) if (nv.marche[y] && nv.marche[y][x] && nv.grille[y][x] === '.') l.push(pied(im, x, y));
+        }
+      }
+      return (this.spectT[lieu] = l.length ? l : null);
+    },
+    // Arrivé au loisir : à sa place dans la salle (on le voit quand on y entre), ou il entre.
+    arriveSortie(n, deja) {
+      n.etat = 'sortie';
+      n.t = 2;
+      if (n.placeSortie) {
+        n.x = n.placeSortie.x; n.y = n.placeSortie.y; n.niv = 0;
+        n.path = [];
+        n.cache = false;
+        n.face = 'haut';
+        n.s.setFlipX(false);
+        return;
+      }
+      this.cacheHabitant(n, deja);
     },
 
     // Un étal du marché, au hasard : le point devant lui.
@@ -600,7 +674,7 @@
       n.path = [];
       if (deja || reduced()) { n.cache = true; return; }
       this.tweens.add({ targets: [n.s, n.shadow], alpha: 0, duration: 500, onComplete: () => {
-        n.cache = n.etat === 'travail' || n.etat === 'ecole' || n.etat === 'dort';
+        n.cache = n.etat === 'travail' || n.etat === 'ecole' || n.etat === 'sortie' || n.etat === 'dort';
         n.s.setAlpha(1); n.shadow.setAlpha(0.3);
       } });
     },
@@ -661,9 +735,10 @@
       const M = (eco && eco.metiers) || {}, Li = (eco && eco.lieux) || {};
       const h = (x) => { const m = Math.round(x * 60); return `${Math.floor(m / 60)} h${m % 60 ? String(m % 60).padStart(2, '0') : ''}`; };
       const horaires = (S) => S.map(([a, b]) => `de ${h(a)} à ${h(b)}`).join(' et ');
+      const sortie = this.paroleSortie(n, Li);
       if (n.m.enfant) {
         const E = K.ECOLE;
-        const ecole = n.etat === 'versEcole' ? `Je vais à l'école, elle commence à ${h(E.debut)} : je ne dois pas être en retard !` : n.etat === 'retour' ? 'Je rentre de l\'école !'
+        const ecole = sortie ? sortie.trim() : n.etat === 'versEcole' ? `Je vais à l'école, elle commence à ${h(E.debut)} : je ne dois pas être en retard !` : n.etat === 'retour' ? 'Je rentre de l\'école !'
           : n.etat === 'ecole' ? 'Chut, je suis en classe !'
           : `L'école commence à ${h(E.debut)} : je pars à ${h(Math.ceil(this.departEcole(n) * 12) / 12)}, à pied, pour y être à l'heure. Elle finit à ${h(E.fin)}.`;
         const parents = this.habitants.filter((q) => q.L === n.L && q.emploi).map((q) => `${q.m.prenom} est ${M[q.emploi.metier] || q.emploi.metier} à ${Li[q.emploi.lieu] || q.emploi.lieu}`);
@@ -671,19 +746,29 @@
       }
       const e = n.emploi;
       const travail = `Je suis ${M[e.metier] || e.metier} à ${Li[e.lieu] || e.lieu}, ${horaires(e.horaires)}, pour ${e.salaire} 💰 par jour.`;
-      const ici = n.etat === 'travail' ? ' Je suis au travail !' : n.etat === 'versTravail' ? ' Je pars au travail.' : '';
+      const ici = n.etat === 'travail' ? ' Je suis au travail !' : n.etat === 'versTravail' ? ' Je pars au travail.' : sortie;
       if (!fo) return `💼 ${qui} : « ${travail}${ici} »`;
       const N = eco.noms || {}, hier = fo.hier;
       const humeur = fo.bonheur >= VIE.humeur[0] ? '😊' : fo.bonheur >= VIE.humeur[1] ? '🙂' : '😟';
       let dit = '';
       if (hier) {
+        if (hier.sortie && !sortie) dit += ` Ce soir, on sort : ${Li[hier.sortie] || hier.sortie} !`;
         const achats = Object.entries(hier.achats || {}).map(([i, k]) => `${k} ${N[i] || i}`);
-        dit = achats.length ? ` Hier, on a acheté au marché ${liste(achats)} (${hier.achete} 💰).` : ' Hier, on n\'a rien pu acheter au marché.';
-        dit += hier.plats.length ? ` Au dîner : ${liste(hier.plats.map((p) => N[p] || p))}.` : '';
+        dit += achats.length ? ` Hier, on a acheté au marché ${liste(achats)} (${hier.achete} 💰).` : ' Hier, on n\'a rien pu acheter au marché.';
+        dit += hier.plats.length ? ` Au dîner : ${liste([...new Set(hier.plats)].map((p) => N[p] || p))}.` : '';
         if (hier.couverture < 100) dit += ' On n\'a pas mangé à notre faim…';
       }
       if (n.etat === 'achete') dit = ' Je fais les courses pour le dîner !' + dit;
       return `💼 ${qui} : « ${travail}${ici}${dit} » (${fo.argent} 💰 de côté, bonheur ${fo.bonheur} ${humeur})`;
+    },
+
+    // Ce que dit `n` de sa sortie du soir, en chemin, sur place ou au retour ('' : rien).
+    paroleSortie(n, Li) {
+      const lieu = n.sortie && (Li[n.sortie] || n.sortie);
+      if (n.etat === 'versSortie') return ` On va ${lieu.replace(/^(le|la|l')\s?/, (m) => ({ 'le ': 'au ', 'la ': 'à la ', 'l\'': 'à l\'' }[m] || m))}, toute la famille !`;
+      if (n.etat === 'sortie') return n.sortie === 'cinema' ? ' Chut, le film commence !' : n.sortie === 'musee' ? ' Regarde ce squelette de dinosaure !' : ' Quel beau spectacle !';
+      if (n.etat === 'retour' && n.jourSortie != null && n.sortie && n.jourSortie === (global.HorlogeSortie ? global.HorlogeSortie.maintenant().jour : 0)) return ` On rentre ${lieu.replace(/^(le |la |l')/, (m) => ({ 'le ': 'du ', 'la ': 'de la ', 'l\'': 'de l\'' }[m]))}, c'était bien !`;
+      return '';
     },
   });
 })(window);
