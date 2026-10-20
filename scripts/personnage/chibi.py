@@ -1,6 +1,7 @@
-# Le nouveau dessin des personnages de la carte, à l'essai sur perso_01 : une grosse tête
-# (10 px de large, 11 de haut avec le contour), de grands yeux (le blanc, la pupille), une
-# frange, une salopette à bavette et ses bretelles, un contour brun. Mêmes cases, même taille
+# Le nouveau dessin des personnages de la carte, à l'essai sur perso_01 (une femme aux cheveux
+# longs) : une grosse tête (10 px de large, 11 de haut avec le contour), de grands yeux (le
+# blanc, la pupille), une frange, les cheveux longs dans le dos (CHEVELURE) et une mèche nouée
+# d'un ruban rose sur l'épaule, une salopette à bavette et ses bretelles, un contour brun. Mêmes cases, même taille
 # (16 × 32, les pieds en bas) et mêmes positions des mains et des outils que
 # scripts/personnage/fermier.py (ses frames() avec la figure d'ici) : rien ne change pour la carte.
 #
@@ -48,8 +49,8 @@ TETES = {
         'KHHMHHHHMHDK',
         'KHMHHHMHHMDK',
         'KHMHHHMHHMDK',
-        '.KDDHHHHDDK.',
-        '..KDDNNDDK..',
+        'KHMHHHMHHMDK',
+        '.KHMHHMHHDK.',
     ],
     'cote': [
         '...KKKKKK...',
@@ -61,8 +62,29 @@ TETES = {
         'KDHMHSHSSWPK',
         'KDHMHLSSSSSK',
         'KDHHHSSSSJK.',
-        '.KDHHSSSSSK.',
-        '..KDDNNNK...',
+        'KDHHHSSSSSK.',
+        'KDHHDNNNK...',
+    ],
+}
+# Les cheveux longs sous la tête (posés en x 2, à partir de y 18) : dans le dos jusqu'à la
+# taille ; de profil, ils tombent derrière la nuque. De face, on ne voit que la mèche nouée d'un
+# ruban rose sur l'épaule (torse()).
+CHEVELURE = {
+    'haut': [
+        '..HMHHHMHD..',
+        '..HMHHHMHD..',
+        '...MHHHMD...',
+        '...HMHHMD...',
+        '....HHMD....',
+        '....DHHD....',
+    ],
+    'cote': [
+        '.DHHD.......',
+        '.DHHD.......',
+        '.DHMH.......',
+        '..DHH.......',
+        '..DHH.......',
+        '...DH.......',
     ],
 }
 LETTRES = {'K': 'K', 'H': 'hr', 'D': 'hr2', 'M': 'hrm', 'S': 'sk', 'L': 'skl', 'B': 'skb', 'J': 'sk2',
@@ -103,6 +125,14 @@ def tete(cv, vue, b):
     return cases
 
 
+def chevelure(cv, vue, b):
+    """Les cheveux longs, sur le dos (dessinés après le torse, avant la tête)."""
+    for j, rang in enumerate(CHEVELURE.get(vue, ())):
+        for i, ch in enumerate(rang):
+            if ch != '.':
+                cv.put(TX + i, 18 + j + b, LETTRES[ch])
+
+
 def torse(cv, vue, b):
     """La chemise, la bavette et la salopette, de l'épaule (y 18) à la taille (y 24)."""
     if vue == 'cote':
@@ -114,12 +144,15 @@ def torse(cv, vue, b):
         cv.put(6, 21 + b, 'ov2')
         cv.put(9, 22 + b, 'ov3')                        # la poche
         cv.put(10, 23 + b, 'ov4')
+        cv.put(9, 18 + b, 'hr')                         # la mèche nouée, devant l'épaule
+        cv.put(9, 19 + b, 'pin')
+        cv.put(9, 20 + b, 'hr')
         return
     if vue == 'bas':
         for x, c in zip(range(5, 11), ('sh', 'sh', 'sk', 'sk', 'hr', 'sh3')):
-            cv.put(x, 18 + b, c)                        # le col ouvert, une mèche sur l'épaule
+            cv.put(x, 18 + b, c)                        # le col ouvert, la mèche sur l'épaule
         for x, c in zip(range(5, 11), ('sh', 'ov2', 'ov', 'ov', 'pin', 'sh')):
-            cv.put(x, 19 + b, c)                        # la bretelle, la bavette, le bouton
+            cv.put(x, 19 + b, c)                        # la bretelle, la bavette, le nœud rose de la mèche
         for x, c in zip(range(5, 11), ('sh', 'ov', 'ov', 'ov', 'hr', 'sh')):
             cv.put(x, 20 + b, c)
         cv.rect(5, 21 + b, 10, 24 + b, 'ov')
@@ -189,6 +222,7 @@ def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, si
     else:
         jambes(cv, vue, walk, squat)
     torse(cv, vue, b + squat)
+    chevelure(cv, vue, b + squat)
     tc = tete(cv, vue, b + squat)
     if vue == 'cote':
         near = hands[0] if hands else (8, 22 + b)

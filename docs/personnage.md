@@ -20,8 +20,10 @@ carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; s
 paille, casquette, bonnet, béret, bandeau, fleur ; détails : barbe, moustache, lunettes, taches de
 rousseur, boucles d'oreilles ; habits unis, à rayures, à carreaux ou à pois.
 
-**Nouveau dessin, à l'essai sur `perso_01`** : une grosse tête (10 px de large), de grands
-yeux (le blanc et la pupille), une frange, une salopette à bavette et un contour brun. Sa
+**Nouveau dessin, à l'essai sur `perso_01`** (une femme aux cheveux longs) : une grosse tête
+(10 px de large), de grands yeux (le blanc et la pupille), une frange, les cheveux longs dans le
+dos (de dos et de profil), une mèche nouée d'un ruban rose sur l'épaule, une salopette à bavette
+et un contour brun. Sa
 planche est écrite par `scripts/personnage/chibi.py` (les têtes dessinées à la main, une par
 vue) avec les mêmes cases, la même taille et les mêmes positions de mains et d'outils
 (`frames()` de `fermier.py`, avec la figure de `chibi.py`) : rien ne change pour la carte.
