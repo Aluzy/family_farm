@@ -13,7 +13,10 @@ planches ont les mêmes cases, seules les couleurs et le style changent.
 
 **Le catalogue** : 50 personnages de plus, `perso_01` à `perso_50`, décrits dans
 `scripts/personnage/catalogue.py` (peau, cheveux, coupe, couvre-chef, détails, habit, motif).
-`scripts/personnage/portraits.py` en tire leur portrait 16 × 16 (`assets/portraits/perso_XX.png`),
+`scripts/personnage/portraits.py` en tire leur portrait 32 × 32 (`assets/portraits/perso_XX.png`), d'après le
+portrait modèle dessiné à la main (`scripts/personnage/modeles/portrait.png`, perso_01 : les autres
+en reprennent les nuances de peau et d'iris, avec leurs couleurs, leur coupe, leur couvre-chef et
+leurs détails),
 `scripts/personnage/fermier.py` leur planche de 70 cases (`assets/personnages/perso_XX.png`, les
 noms des cases, les mêmes pour tous, dans `assets/personnages/cases.json`). Coupes : longs, mi,
 carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; sur la tête : chapeau de
