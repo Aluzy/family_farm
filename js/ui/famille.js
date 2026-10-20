@@ -42,6 +42,19 @@ function helpToggleHtml(id, label) {
   return `<button type="button" class="btn help-btn" data-action="family-help" data-help="${id}" aria-expanded="${helpOpen.has(id)}" aria-controls="${id}-help" aria-label="Aide : ${label}">?</button>`;
 }
 
+// Les portraits sont agrandis d'un nombre entier de fois (un pixel de l'image : k × k pixels
+// de l'écran) ; sinon certaines rangées de pixels sont doublées et pas d'autres (une pupille de
+// 1 ou 2 pixels, un iris de 4 ou 5). --portrait-<taille> : la taille d'affichage, en px CSS, la
+// plus proche de <taille> qui tombe juste pour l'écran (devicePixelRatio, qui change au zoom).
+function taillesPortraits() {
+  const r = window.devicePixelRatio || 1, root = document.documentElement.style;
+  for (const t of [40, 48, 64]) root.setProperty(`--portrait-${t}`, `${(Math.max(1, Math.round((t * r) / 32)) * 32) / r}px`);
+}
+if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.documentElement) {
+  taillesPortraits();
+  window.addEventListener('resize', taillesPortraits);
+}
+
 // Version 1.17 : le portrait d'un membre est celui de son personnage, 32 × 32 (un enfant : 16 × 16) agrandi sans
 // flou : assets/portraits/perso_XX.png pour un adulte, enfant_XX.png pour un enfant.
 export function persoSrc(n, enfant = false) {
