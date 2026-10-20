@@ -124,7 +124,7 @@ export function openSetupModal() {
   const full = state.famille.membres.length >= C.MEMBRES_MAX;
   openModal(`
     <h2 id="setup-title">🏡 Ta famille</h2>
-    <p class="muted">${CHOIX_PRINCIPAL ? 'Avant de partir pour la ferme du grand-père : le nom de la famille, ses membres, et qui tient la ferme au quotidien (le personnage principal, qui dépense l\'énergie à chaque action).' : 'Avant de partir pour la ferme du grand-père : le nom de la famille et ses membres. Le personnage principal (⭐), qui tient la ferme au quotidien, est le premier adulte.'}</p>
+    <p class="muted">${CHOIX_PRINCIPAL ? 'Avant de partir pour la ferme : le nom de la famille, ses membres, et qui tient la ferme au quotidien (le personnage principal, qui dépense l\'énergie à chaque action).' : 'Avant de partir pour la ferme : le nom de la famille et ses membres. Le personnage principal (⭐), qui tient la ferme au quotidien, est le premier adulte.'}</p>
     <div class="stack member-field">
       <label for="setup-nom"><strong>Nom de famille</strong> <span class="muted">(${D.NOM_MIN} à ${D.NOM_MAX} signes)</span></label>
       <input type="text" id="setup-nom" class="member-input" maxlength="${D.NOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${escapeHtml(nom)}">
@@ -138,7 +138,7 @@ export function openSetupModal() {
     <p class="muted">Le nom et les prénoms restent sur cet appareil, dans ta sauvegarde : ils ne sont jamais envoyés.</p>
     <fieldset class="setup-ferme">
       <legend><strong>La ferme</strong></legend>
-      <p class="muted">Une terre sauvage, quatre fois plus grande que la ferme du grand-père, sans bâtiment : on ramasse, on fabrique à l'Atelier et on bâtit bloc par bloc.</p>
+      <p class="muted">Une terre sauvage, sans bâtiment : on ramasse, on fabrique à l'Atelier et on bâtit bloc par bloc.</p>
       <label class="setup-graine" for="setup-graine">Graine <span class="muted">(la même graine, la même terre ; vide : au hasard)</span></label>
       <input type="text" id="setup-graine" class="member-input" inputmode="numeric" maxlength="12" autocomplete="off" value="${escapeHtml(setupFerme.graine)}">
     </fieldset>

@@ -5,7 +5,7 @@
 
 import {
   addItem, addLot, autonomyHistory, autonomyPercent, buildPaturage, buildPoulailler, buildSilo,
-  buyAnimal, buyHoe, buyItem, buyStarter, chapterProgress, chapterReached, completeChapter,
+  buyAnimal, mailText, setFarmSeed, buyHoe, buyItem, buyStarter, chapterProgress, chapterReached, completeChapter,
   countItem, createInitialState, createNewGame, DATA, feedAllHens, findPlot, formatPercent,
   harvest, hoe, holdStatus, lastAutonomy, lotsOf, makePlot, maxStage, migrate, moveToFridge,
   objectiveValue, plannedAutonomy, plant, plantableCrops, plantableCropsFor, repairHouse, shear,
@@ -579,4 +579,18 @@ test('tenue : état du suivi pour l\'interface', () => {
   holdNights(u, 10, 22);
   assertEqual(holdStatus(u).etat, 'reussi');
   assertEqual(holdStatus(atChapter(5)).etat, 'attente', 'avant le chapitre 6 : rien n\'est suivi');
+});
+
+test('terre sauvage : ni le chapitre 1 ni les lettres du notaire ne parlent de la ferme du grand-père', () => {
+  const s = createNewGame(1);
+  const dessinee = chapterProgress(s);
+  assert(/grand-père/.test(dessinee.intro), 'la ferme dessinée garde son histoire');
+  setFarmSeed(s, '77');
+  const p = chapterProgress(s);
+  assertEqual(/grand-père/.test(p.intro), false, p.intro);
+  assertEqual(p.objectifs.slice(0, 4).map((o) => o.libelle), ['Bâtir le foyer (une pièce close, une paillasse)', 'Poser le panneau solaire', 'Poser la pompe sur le puits', 'Poser la citerne']);
+  for (const id of ['notaire_heritage', 'notaire_legs']) {
+    assertEqual(mailText(s, id).some((l) => /grand-père|moulin/.test(l)), false, id);
+    assert(mailText(createNewGame(1), id).some((l) => /grand-père/.test(l)), `${id} : la ferme dessinée garde sa lettre`);
+  }
 });

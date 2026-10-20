@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { withFamilyName } from './depart.js';
-import { mailbox, mailReceived, readMail } from '../engine/campaign.js';
+import { mailbox, mailReceived, mailText, readMail } from '../engine/campaign.js';
 import { getNotifications } from '../engine/alerts.js';
 import { formatNumber } from '../engine/format.js';
 import { state } from './store.js';
@@ -66,7 +66,7 @@ function openMailModal(id) {
   openModal(`
     <p class="letter-place">${def.lieu}</p>
     <h2 id="mail-title">${def.icone} ${def.objet}</h2>
-    <div class="letter-body">${def.texte.map((p) => `<p>${withFamilyName(p)}</p>`).join('')}</div>
+    <div class="letter-body">${mailText(state, id).map((p) => `<p>${withFamilyName(p)}</p>`).join('')}</div>
     <p class="letter-sign">${def.signature}</p>
     ${DATA.COURRIER[id].pieces ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${formatNumber(DATA.COURRIER[id].pieces)} <span aria-hidden="true">💰</span> pièces</span><span class="muted">${pieces ? 'Versées à l\'instant.' : 'Déjà versées.'}</span></div>` : ''}
     ${cadeaux ? `<div class="letter-gifts"><strong>Dans l'enveloppe</strong><span class="letter-gift-list">${cadeaux}</span><span class="muted">Déjà rangés dans ton inventaire.${serre ? ' Ils se plantent dans la Serre, et nulle part ailleurs.' : ''}</span></div>` : ''}

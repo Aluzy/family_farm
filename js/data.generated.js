@@ -1724,11 +1724,18 @@ export const RAW_DATA = {
         "titre": "L'héritage",
         "icone": "🏚️",
         "intro": "La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
+        "introSauvage": "Une terre sauvage est à ta famille, sans maison ni bâtiment. Ramasse des pierres, du bois et des herbes, construis l'Atelier, puis bâtis ton foyer : une pièce close et une paillasse. Pose le panneau solaire et la pompe, puis la citerne ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
-          { "type": "maison", "cible": 1, "libelle": "Réparer la maison", "unite": "" },
-          { "type": "panneau", "cible": 1, "libelle": "Acheter le panneau solaire", "unite": "" },
-          { "type": "pompe", "cible": 1, "libelle": "Acheter la pompe", "unite": "" },
-          { "type": "reservoir", "cible": 1, "libelle": "Acheter le réservoir", "unite": "" },
+          {
+            "type": "maison",
+            "cible": 1,
+            "libelle": "Réparer la maison",
+            "libelleSauvage": "Bâtir le foyer (une pièce close, une paillasse)",
+            "unite": ""
+          },
+          { "type": "panneau", "cible": 1, "libelle": "Acheter le panneau solaire", "libelleSauvage": "Poser le panneau solaire", "unite": "" },
+          { "type": "pompe", "cible": 1, "libelle": "Acheter la pompe", "libelleSauvage": "Poser la pompe sur le puits", "unite": "" },
+          { "type": "reservoir", "cible": 1, "libelle": "Acheter le réservoir", "libelleSauvage": "Poser la citerne", "unite": "" },
           { "type": "houe", "cible": 1, "libelle": "Acheter une houe au Marché", "unite": "" },
           { "type": "labours", "cible": 6, "libelle": "Labourer 6 tuiles", "unite": "" },
           { "type": "semis", "cible": 6, "libelle": "Planter 6 parcelles", "unite": "" },
@@ -1815,6 +1822,13 @@ export const RAW_DATA = {
         "Il savait, je crois, que vous remettriez la ferme debout. Les pièces vous sont versées à l'ouverture de ce courrier.",
         "Je vous prie d'agréer mes salutations distinguées."
       ],
+      "texteSauvage": [
+        "Madame, Monsieur {nom},",
+        "En rangeant les papiers de la succession, j'ai retrouvé une enveloppe à votre nom, cachetée.",
+        "« Ces 15 000 pièces sont aussi pour vous, faites-en bon usage ! »",
+        "Vous avez fait beaucoup de cette terre. Les pièces vous sont versées à l'ouverture de ce courrier.",
+        "Je vous prie d'agréer mes salutations distinguées."
+      ],
       "signature": "Maître Durand"
     },
     "notaire_heritage": {
@@ -1828,6 +1842,13 @@ export const RAW_DATA = {
         "J'ai l'honneur de vous confirmer que la ferme de votre grand-père vous revient désormais : la maison, les terres, le moulin et les dépendances.",
         "Je dois cependant vous prévenir : rien n'y fonctionne plus. Le toit de la maison fuit, le panneau solaire et la pompe ont été vendus, et les champs sont retournés à l'herbe.",
         "Votre grand-père vous a laissé de quoi commencer. Réparez d'abord la maison ; le reste viendra.",
+        "Je vous prie d'agréer mes salutations distinguées, et mes vœux de réussite."
+      ],
+      "texteSauvage": [
+        "Madame, Monsieur {nom},",
+        "J'ai l'honneur de vous confirmer que la terre du bout du chemin vous revient désormais : quelques hectares d'herbe, de bois et d'étangs, sans maison ni dépendances.",
+        "Je dois cependant vous prévenir : tout y est à bâtir. Il faudra ramasser, fabriquer et construire avant de pouvoir y dormir au sec.",
+        "Commencez par un abri ; le reste viendra.",
         "Je vous prie d'agréer mes salutations distinguées, et mes vœux de réussite."
       ],
       "signature": "Maître Durand"
@@ -1860,7 +1881,7 @@ export const RAW_DATA = {
       { "debloque": ["presse", "verger"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre"] },
       { "debloque": ["frigo"] },
-      { "debloque": [], "note": "un courrier du notaire : l'héritage caché du grand-père" },
+      { "debloque": [], "note": "un courrier du notaire : un héritage caché" },
       { "debloque": ["commerce"] }
     ],
     "ELEMENTS": {
