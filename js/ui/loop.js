@@ -1,6 +1,7 @@
 import { DATA, recipeOutput } from '../engine/catalog.js';
 import { setupPending } from '../engine/depart.js';
 import { watchSetup } from './depart.js';
+import { watchDemenagement } from './demenagement.js';
 import { bedtimeDue, mealDue, nightActive } from '../engine/clock.js';
 import { tick } from '../engine/energy.js';
 import { takeMeal } from '../engine/family.js';
@@ -205,6 +206,7 @@ export function frame(now) {
   }
   simulatedAt = wall;
   watchSetup(); // version 1.12 : la configuration de la famille passe avant tout
+  watchDemenagement(); // une ancienne partie : déménager sur une terre sauvage ?
   if (consentBannerDue()) showConsentBanner(); // FLU-17 : après l'histoire, la carte seule 500 ms
   watchTechPoints();
   watchDay();

@@ -51,6 +51,13 @@ const VERGER = [[625.1, 303.7, 12.8, 15.9]].concat([[942.9, 510.5], [1024.2, 528
   [958.7, 561.6], [1039.3, 579.2], [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641],
   [944.8, 673.1]].map(([x, y]) => [x, y, 63.7, 78.2]));
 
+// La place des bâtiments de la cour de la carte de Tiled ([x, y, largeur, hauteur], en px de cette
+// carte) : une partie qui déménage sur la ferme générée y retrouve les siens (demenagement.js).
+export const ANCIENNE_COUR = {
+  maison: MAISON, poulailler: POULAILLER, paturage: GRANGE, serre: SERRE, silo: SILO, moulin: MOULIN, puits: PUITS,
+  verger: VERGER.slice(1),
+};
+
 // Un nombre de 32 bits d'après une chaîne (FNV-1a).
 function hache(s) {
   let h = 2166136261;

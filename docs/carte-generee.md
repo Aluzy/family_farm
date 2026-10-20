@@ -12,7 +12,8 @@ sans bâtiment au départ : on ramasse, on fabrique et on construit bloc par blo
 - **Accès à la transition** : un chemin garanti mène au bord est. Il se termine sur le
   rectangle `vers_la_transition`, que la carte générée fournit comme celle de Tiled.
 - **Parties en cours** : elles gardent la carte de Tiled. Seules les nouvelles parties ont la
-  carte générée.
+  carte générée. Une ancienne partie pourra déménager sur une ferme générée (voir « Les
+  anciennes parties »).
 - **Paiement** : les bâtiments se paient en matériaux seulement. Les pièces ne servent qu'à
   acheter des matériaux au Marché.
 
@@ -502,6 +503,51 @@ ceux des immeubles, selon leur chemin (escaliers compris) jusqu'à la porte de l
 l'école finit à 16 h 45, et le bus repart de la ville quand les enfants y sont montés. Tous dorment de 22 h à 6 h. Un habitant marche sur son niveau et
 change de niveau par l'escalier ; on le voit dehors, ou dans son immeuble quand on y est, à son
 niveau. Le toucher : il raconte son travail, ses achats et son dîner d'hier.
+
+## Les anciennes parties
+
+Une partie de la carte de Tiled peut déménager sur une ferme générée, sans rien perdre
+(`convertirPartie(state, graine)`, `js/engine/demenagement.js`). Étape 1, le moteur :
+
+- **Ce qui reste** : l'argent, l'inventaire, le niveau, les technologies, la famille, les bêtes, les
+  niveaux des bâtiments et ce qui pousse.
+- **Les parcelles** gardent leur place : la cour de la carte de Tiled est posée sur la ferme
+  générée (`DECALAGE`). Une parcelle qui tombe hors de la terre labourable va sur la plus proche.
+- **Les bâtiments déjà là sont rebâtis en blocs**, chacun près de sa place d'avant
+  (`ANCIENNE_COUR`, `ferme-generee.js`), avec une case libre tout autour :
+
+  | Bâtiment | Blocs posés |
+  |---|---|
+  | la maison réparée | un foyer : une paillasse par membre, le four et la cuisinière s'ils sont construits |
+  | le Poulailler | une enceinte avec le nichoir, une porte sur le dehors, un enclos de barrières ; une case libre par poule de son niveau |
+  | l'Étable | la même chose avec la mangeoire, une case libre par place achetée |
+  | la Serre | une enceinte avec le bac à semis, une case par parcelle |
+  | le Silo, le Moulin | une petite enceinte avec le coffre à grain ou la meule |
+  | le puits, les appareils | le puits (la pompe dessus si elle est achetée), le panneau, la citerne, la batterie, en ligne |
+  | le robot | sa station, à côté du foyer |
+
+  Chaque bâtiment est ensuite vérifié par les règles du jeu (`couchages`, `etatPoulailler`,
+  `etatEtable`, `serrePlaces`, `pieceDe`). Un bâtiment qui ne trouve pas sa place ou n'est pas
+  reconnu rend ses blocs dans l'inventaire. Une maison pas encore réparée rend les blocs d'un
+  foyer (murs, porte, paillasses) : le foyer reste à bâtir.
+- **Les arbres du Verger** sont plantés dans le sol, près de leur emplacement d'avant, à
+  `ARBRE_ECART` cases l'un de l'autre.
+- **Le reste** : l'Atelier est construit (à poser). Les arbres abattus, les rochers cassés, la
+  cueillette du jour et la tournée du robot repartent de zéro. Les tas à ramasser entrent dans
+  l'inventaire.
+- **Étape 2, la proposition** (`js/ui/demenagement.js`) : au chargement d'une ancienne partie
+  (écran de départ passé), une fenêtre propose le déménagement, une fois par visite. Elle montre
+  l'aperçu de la nouvelle terre autour de la cour (`apercuDemenagement` : la conversion faite sur
+  une copie), la liste de ce qui est rebâti et de ce qui revient dans l'inventaire, et la graine
+  (tirée de la partie, `graineDemenagement` ; « Une autre terre » en tire une au hasard).
+  - **Déménager** : la sauvegarde d'avant reste sur l'appareil (`ferme-save-avant-demenagement`),
+    la partie est convertie et la page se recharge sur la terre sauvage.
+  - **Plus tard** : plus de proposition pendant `DEMENAGEMENT_DELAI` (3) jours
+    (`reporterDemenagement`, `state.demenagement`). Une nouvelle partie sur la ferme du grand-père
+    part avec ce délai.
+  - Les Options gardent un bouton « Déménager sur une terre sauvage » tant que la partie est sur
+    la carte de Tiled.
+- À venir (étape 3) : retirer la carte de Tiled quand plus aucune partie ne l'utilise.
 
 ## Étapes
 

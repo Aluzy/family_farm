@@ -5,6 +5,7 @@ import {
   setMainCharacter, setupPending, starterBlock,
 } from '../engine/depart.js';
 import { familyNeed } from '../engine/family.js';
+import { reporterDemenagement } from '../engine/demenagement.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { escapeHtml, formatCoins, formatNumber } from '../engine/format.js';
 import { state } from './store.js';
@@ -221,6 +222,8 @@ registerActions({
       location.reload();
       return;
     }
+    // la ferme du grand-père, choisie à l'instant : le déménagement ne sera proposé que plus tard
+    reporterDemenagement(state);
     persistState();
     refresh();
     openStoryModal();

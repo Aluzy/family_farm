@@ -20,7 +20,7 @@ export function registerActions(handlers) {
 // dans l'une des deux listes.
 export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
 export const SOMMEIL_PERMISES = new Set([
-  'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
+  'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start', 'demenagement-ok',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'entreprise-quota',
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
