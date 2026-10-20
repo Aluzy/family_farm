@@ -1116,6 +1116,7 @@ export const RAW_DATA = {
   "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
   "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "CHUTE": 2, "COUPES": 3, "RETOUR": [1, 3] },
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3] },
+  "COUP_FORT": { "COUPS": 2, "ENERGIE": 2 },
   "FAUX": { "NOM": "Faux", "ICONE": "🌾‍🔪", "PRIX": 50, "PAILLE": 1, "RETOUR": [2, 4], "BOT_TOUFFES": 40 },
   "CANNE": {
     "NOM": "Canne à pêche",

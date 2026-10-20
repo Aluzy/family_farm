@@ -133,11 +133,12 @@
     // et pose sa pierre au sol ; le personnage va au rocher et frappe ; au coup, des éclats
     // sautent et la pierre tombe à son pied (à ramasser en marchant dessus). Au dernier coup, le
     // rocher se brise en une gerbe d'éclats, lâche ses pierres autour de lui et disparaît.
-    mine(r) {
+    // `fort` : le coup fort (coupfort.js : il compte plusieurs coups, la vue tremble plus).
+    mine(r, fort) {
       const b0 = r.box || { x0: r.x, x1: r.x + r.w };
       const pied = { x: Math.round((b0.x0 + b0.x1) / 2), y: r.foot };
       const ou = this.piecePoints(pied, this.strikeSide(pied, Math.max(8, (b0.x1 - b0.x0) / 2 + 5)), null);
-      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.mine ? this.ctx.bridge.mine(r.id, ou) : null));
+      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.mine ? this.ctx.bridge.mine(r.id, ou, !!fort) : null));
       if (!got) return;
       const M2 = got.morceaux || { coup: [], fin: [] };
       this.time.delayedCall(9000, () => this.revealPieces(M2.coup));   // (filet : le coup n'a pas été donné)
@@ -152,8 +153,8 @@
       const hit = () => {
         r.queued = Math.max(0, r.queued - 1);
         this.revealPieces(M2.coup);
-        K.secousse(this, 'coup');
-        K.vibre('pioche');
+        K.secousse(this, fort ? 'fort' : 'coup');
+        K.vibre(fort ? 'fort' : 'pioche');
         if (r.breaking && !r.queued) { this.breakRock(r, true); return; }
         this.shakeRock(r);
         const p = this.fermier && this.fermier.pos();

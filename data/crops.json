@@ -283,6 +283,15 @@
     "fait plus que de la farine. Le joueur automatique (sans carte) fauche BOT_TOUFFES touffes de son",
     "pré au plus (« pre_0 »…) : il l'achète dès qu'il a des moutons ou des vaches."
   ],
+  "//COUP_FORT": [
+    "Version 1.24 : le coup fort. Un appui maintenu sur le personnage qui tient un outil le fait",
+    "trembler, puis frapper plus fort : la hache ou la pioche (sur l'arbre ou le rocher le plus",
+    "proche) compte COUPS coups pour ENERGIE fois l'énergie d'un coup ; la faux tournoie et fauche",
+    "toutes les touffes autour de lui (16 px : la carte, COUP_FORT de js/carte/ferme/config.js),",
+    "pour ENERGIE fois l'énergie d'un fauchage ; la houe laboure les tuiles autour de lui (chacune",
+    "à son prix)."
+  ],
+  "COUP_FORT": { "COUPS": 2, "ENERGIE": 2 },
   "FAUX": { "NOM": "Faux", "ICONE": "🌾‍🔪", "PRIX": 50, "PAILLE": 1, "RETOUR": [2, 4], "BOT_TOUFFES": 40 },
   "//CANNE": [
     "La canne à pêche en main, un appui sur l'eau de la carte y fait pêcher : le personnage va",

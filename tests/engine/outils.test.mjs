@@ -5,7 +5,7 @@
 
 import {
   actionCost, actionsLeft, actionXp, borderMask, brokenRocks, buyHoe, buyTool, canBorder, castLine,
-  chopsLeft, chopTree, countItem, cutGrass, grassCut, scytheGrass, createInitialState, DATA, eatSnack, enduranceReduction,
+  chopsLeft, chopTree, countItem, cutGrass, grassCut, scytheAround, scytheGrass, createInitialState, DATA, eatSnack, enduranceReduction,
   energyLevel, energyMax, farmOpen, fellenTrees, findPlot, fishLeft, happinessCostPct, hasHoe,
   hasTool, hoe, hoeableTiles, hoeStatus, isArable, isBuyable, makePlot, makePlots, migrate,
   migrateEnergy, migrateHoe, mineRock, OUTILS, ownedTools, plant, plantAll, plotAtTile,
@@ -287,6 +287,35 @@ test('faux : faucher une touffe donne de la paille au sol, de l\'XP, coûte de l
   assertEqual(grassCut(s, '40,60'), true);
   sleepOnce(s);
   assertEqual([grassCut(s, '40,60'), cutGrass(s)], [false, []], 'elle a repoussé');
+});
+
+test('coup fort (version 1.24) : la hache et la pioche comptent COUPS coups pour ENERGIE fois l\'énergie ; la faux fauche tout autour', () => {
+  const s = tireless(garden());
+  s.pieces = 1000;
+  for (const id of ['hache', 'pioche', 'faux']) assert(buyTool(s, id).ok);
+  const CF = DATA.COUP_FORT;
+  assertEqual([CF.COUPS, CF.ENERGIE], [2, 2]);
+  // la hache : un coup fort puis un coup ordinaire abattent l'arbre (3 coups)
+  let e0 = s.energie;
+  const a = chopTree(s, 'a1', null, true);
+  assertEqual([a.ok, a.fort, a.coups, a.tombe, chopsLeft(s, 'a1')], [true, true, 2, false, 1]);
+  assertEqual(e0 - s.energie, actionCost(s, 'couper', 2), 'l\'énergie de deux coups');
+  assertEqual(chopTree(s, 'a1').tombe, true, 'le coup suivant l\'abat');
+  // la pioche : de même pour un rocher
+  const r = mineRock(s, 'r1', null, true);
+  assertEqual([r.ok, r.coups, r.casse], [true, 2, false]);
+  assertEqual(mineRock(s, 'r1').casse, true);
+  // la faux : toutes les touffes données, une seule dépense (ENERGIE fauchages), la paille au sol
+  e0 = s.energie;
+  const pts = { '10,20': [{ x: 10, y: 20 }], '20,24': [{ x: 20, y: 24 }], '30,18': [{ x: 30, y: 18 }] };
+  const f = scytheAround(s, Object.keys(pts), { carte: 'ferme', points: pts });
+  assertEqual([f.ok, f.fauchees, f.paille, f.morceaux.coup.map((m) => [m.x, m.y])], [true, Object.keys(pts), 3, [[10, 20], [20, 24], [30, 18]]]);
+  assertEqual(e0 - s.energie, actionCost(s, 'faucher', 2));
+  assertEqual(cutGrass(s).sort(), Object.keys(pts).sort());
+  assertEqual(scytheAround(s, Object.keys(pts), null).ok, false, 'déjà fauchées : rien à faucher');
+  // sans assez d'énergie, rien n'est compté
+  testSetEnergyZero(s);
+  assertEqual([chopTree(s, 'a2', null, true).ok, (s.outils.arbres || {}).a2], [false, undefined]);
 });
 
 test('canne à pêche : un lancer coûte de l\'énergie ; une prise (truite, brochet) donne le poisson et de l\'XP ; JOUR prises par eau et par jour', () => {

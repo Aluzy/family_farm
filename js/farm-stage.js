@@ -280,9 +280,12 @@
           id: pointer.id, x: pointer.x, y: pointer.y, cx: this.cx, cy: this.cy,
           wx: wp.x, wy: wp.y, moved: false, vx: 0, vy: 0,
           lastX: pointer.x, lastY: pointer.y, lastT: performance.now(),
+          // version 1.24 : un appui maintenu sur le personnage, un outil en main : le coup fort
+          fort: this.chargeStart(wp.x, wp.y),
           // FLU-12 : houe en main, un glissement parti d'une case verte laboure les cases traversées
-          labour: this.labourStart(wp.x, wp.y),
+          labour: null,
         };
+        if (!this.drag.fort) this.drag.labour = this.labourStart(wp.x, wp.y);
         // Appui maintenu sur la citerne : une bulle dit combien de litres elle contient.
         if (!this.drag.labour && this.onTank(wp.x, wp.y)) {
           const d = this.drag;
@@ -308,9 +311,10 @@
           return;
         }
         if (d.id !== pointer.id) return;
-        if (!pointer.isDown) { this.drag = null; return; }   // relâché hors de la page
+        if (!pointer.isDown) { this.chargeCancel(d); this.drag = null; return; }   // relâché hors de la page
         const zoom = this.cameras.main.zoom;
         const dx = pointer.x - d.x, dy = pointer.y - d.y;
+        if (d.fort && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) this.chargeCancel(d);   // il marche
         if (d.labour) {
           if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; this.setHover(null); }
           if (d.moved) this.labourTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
@@ -347,6 +351,7 @@
         this.drag = null;
         this.game.canvas.style.cursor = '';
         clearTimeout(d.holdTimer);
+        if (d.fort && this.chargeEnd(d)) return;     // le coup fort (ou une charge lâchée trop tôt)
         if (d.held) {
           // La bulle reste un instant après le relâchement ; l'appui n'ouvre rien.
           this.tankTipUntil = performance.now() + LABEL_HOLD_MS;
@@ -388,6 +393,7 @@
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false, true); }
         // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
         if (this.ambient && !this.room) this.ambient.update(delta);
+        this.stepCharge();
         if (this.fermier) {
           this.fermier.steer(this.room ? null : this.manette.dir());
           this.fermier.update(delta, this.room ? this.room.id : null);

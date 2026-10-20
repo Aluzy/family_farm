@@ -109,7 +109,7 @@
   // La vue tremble un peu : `chute`, un arbre touche le sol ; `coup`, un coup de pioche (un
   // rocher, un minerai). `ms` : sa durée ; `force` : la part de la vue (Phaser, camera.shake).
   // Rien avec « réduire les animations ».
-  const SECOUSSE = { chute: { ms: 90, force: 0.003 }, coup: { ms: 70, force: 0.002 } };
+  const SECOUSSE = { chute: { ms: 90, force: 0.003 }, coup: { ms: 70, force: 0.002 }, fort: { ms: 140, force: 0.005 } };
   function secousse(scene, sorte) {
     const s = SECOUSSE[sorte];
     if (!s || K.reduit() || !scene.cameras || !scene.cameras.main) return;
@@ -119,7 +119,7 @@
   // Le téléphone vibre (navigator.vibrate, ms : une durée, ou vibration, pause, vibration…) :
   // `touche`, un poisson mord ; `hache`, `pioche`, `houe`, un coup de l'outil. Sans l'API
   // (iPhone, ordinateur), rien ; le téléphone peut aussi avoir coupé les vibrations.
-  const VIBRATION = { touche: [40, 60, 40], hache: 20, pioche: 25, houe: 10, ramasse: 8 };
+  const VIBRATION = { touche: [40, 60, 40], hache: 20, pioche: 25, houe: 10, ramasse: 8, fort: [30, 30, 60] };
   function vibre(sorte) {
     const motif = VIBRATION[sorte];
     const nav = global.navigator;
