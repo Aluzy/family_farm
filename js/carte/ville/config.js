@@ -355,7 +355,7 @@
     { nom: 'minoterie', efface: [19, 179, 15, 15], x: 20, y: 184, w: 13, h: 12, facade: 'ocre' },
     { nom: 'mayonnaise', efface: [1, 201, 11, 13], x: 1, y: 206, w: 11, h: 10, facade: 'rouge' },
     { nom: 'usine_info', efface: [20, 146, 14, 20], x: 20, y: 152, w: 14, h: 14, facade: 'pierre' },
-    { nom: 'menuiserie', efface: [45, 118, 8, 29], x: 46, y: 125, w: 7, h: 22, facade: 'ocre' },
+    { nom: 'menuiserie', efface: [45, 118, 8, 29], x: 46, y: 124, w: 7, h: 22, facade: 'ocre' },
   ].map((l) => ({ niveaux: 2, plan: l.nom, enseigne: l.nom, ...l }));
   const IMMEUBLE = {
     carte: 'ville', dy: 40, transparent: 0.3, voile: 0x0d1018, alpha: 0.62,

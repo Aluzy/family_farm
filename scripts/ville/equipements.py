@@ -173,34 +173,51 @@ def etal(couleur, graine=0):
 # ---------- le parc ----------
 
 def statue():
-    """6 × 6 tuiles : le monument du parc, une figure de bronze sur un socle à degrés (deux fois
-    plus large que la première : le dessin de 3 tuiles, étiré en largeur autour de son milieu ;
-    la tête un peu moins)."""
+    """6 × 6 tuiles : le monument du parc, en vue de dessus à 45° comme le reste de la ville : trois
+    degrés et un socle (le dessus de chacun, éclairé, puis sa face de devant), et la figure de
+    bronze debout dessus, un bras levé (le haut de sa tête et de ses épaules vu d'en haut).
+    L'image est carrée (96 × 96) ; le milieu du dessus du premier degré : (48, 79)."""
     im = image(96, 96)
     d = dessin(im)
-    X = lambda x: 48 + (x - 24) * 2                 # (de l'ancien dessin, 48 px, au nouveau)
-    # les degrés
-    for k, (w, y) in enumerate(((44, 84), (36, 78), (28, 72))):
-        x0 = 24 - w // 2
-        d.rectangle((X(x0), y, X(x0 + w) - 1, y + 7), fill=rgba(PIERRE[1]))
-        d.rectangle((X(x0), y, X(x0 + w) - 1, y + 2), fill=rgba(PIERRE[2]))
-        d.rectangle((X(x0), y + 6, X(x0 + w) - 1, y + 7), fill=rgba(PIERRE[3]))
-    # le socle
-    d.rectangle((X(14), 44, X(34) - 1, 72), fill=rgba(PIERRE[0]))
-    d.rectangle((X(14), 44, X(18) - 1, 72), fill=rgba(PIERRE[2]))
-    d.rectangle((X(30), 44, X(34) - 1, 72), fill=rgba(PIERRE[1]))
-    d.rectangle((X(12), 40, X(36) - 1, 45), fill=rgba(PIERRE[2]))
-    d.rectangle((X(12), 44, X(36) - 1, 45), fill=rgba(PIERRE[3]))
-    d.rectangle((X(18), 52, X(30) - 1, 60), fill=rgba(PIERRE[1]))
-    # la figure : debout, un bras levé (bronze vert-de-gris)
-    BR = ((58, 96, 86), (88, 132, 116), (126, 170, 150))
-    d.ellipse((42, 4, 54, 13), fill=rgba(BR[1]))
-    d.rectangle((X(19), 13, X(29) - 1, 30), fill=rgba(BR[1]))
-    d.polygon(((X(18), 30), (X(29), 30), (X(31), 40), (X(16), 40)), fill=rgba(BR[0]))
-    d.line((X(28) - 2, 15, X(34) - 2, 2), fill=rgba(BR[1]), width=5)
-    d.line((X(19) + 2, 16, X(16) + 2, 28), fill=rgba(BR[0]), width=5)
-    d.rectangle((X(20), 14, X(23) - 1, 30), fill=rgba(BR[2]))
-    d.ellipse((45, 6, 48, 9), fill=rgba(BR[2]))
+
+    def bloc(x0, x1, y, dessus, face):
+        """Un bloc de pierre : son dessus (de y, haut de `dessus` px) puis sa face (haute de `face`)."""
+        d.rectangle((x0, y, x1, y + dessus - 1), fill=rgba(PIERRE[2]))
+        d.line((x0, y, x1, y), fill=rgba(teinte(PIERRE[2], 1.06)))
+        d.line((x1, y, x1, y + dessus - 1), fill=rgba(PIERRE[0]))
+        f = y + dessus
+        d.rectangle((x0, f, x1, f + face - 1), fill=rgba(PIERRE[0]))
+        d.rectangle((x0, f, x0 + 1, f + face - 1), fill=rgba(PIERRE[2]))
+        d.rectangle((x1 - 2, f, x1, f + face - 1), fill=rgba(PIERRE[1]))
+        d.line((x0, f + face - 1, x1, f + face - 1), fill=rgba(PIERRE[3]))
+        d.line((x0, f, x1, f), fill=rgba(PIERRE[1]))
+
+    # les trois degrés, du plus large (devant, en bas) au plus étroit
+    bloc(4, 91, 71, 15, 6)
+    bloc(13, 82, 63, 13, 6)
+    bloc(22, 73, 56, 11, 6)
+    # le socle : son dessus (où se tient la figure), sa face (la plaque), la corniche
+    bloc(31, 64, 23, 12, 22)
+    d.rectangle((29, 33, 66, 35), fill=rgba(PIERRE[1]))
+    d.line((29, 33, 66, 33), fill=rgba(PIERRE[2]))
+    d.rectangle((40, 41, 55, 50), fill=rgba(PIERRE[1]))
+    d.rectangle((41, 42, 54, 49), fill=rgba(teinte(PIERRE[1], 1.08)))
+    # la figure : son ombre sur le socle, la robe (vue d'en haut : courte), les épaules, la tête,
+    # le bras levé
+    BR = ((58, 96, 86), (88, 132, 116), (126, 170, 150), (40, 70, 64))
+    d.ellipse((38, 26, 59, 33), fill=(0, 0, 0, 70))
+    d.polygon(((38, 31), (58, 31), (56, 18), (40, 18)), fill=rgba(BR[1]))
+    d.polygon(((38, 31), (58, 31), (57, 26), (39, 26)), fill=rgba(BR[0]))
+    d.line((48, 19, 48, 30), fill=rgba(BR[0]))
+    d.ellipse((37, 13, 59, 21), fill=rgba(BR[1]))                      # les épaules
+    d.ellipse((39, 13, 51, 18), fill=rgba(BR[2]))
+    d.line((39, 18, 37, 27), fill=rgba(BR[0]), width=4)                 # le bras le long du corps
+    d.line((56, 16, 66, 3), fill=rgba(BR[1]), width=5)                  # le bras levé
+    d.line((55, 15, 64, 3), fill=rgba(BR[2]), width=1)
+    d.ellipse((63, 0, 69, 6), fill=rgba(BR[1]))                         # la main
+    d.ellipse((42, 4, 54, 15), fill=rgba(BR[1]))                        # la tête
+    d.ellipse((43, 4, 51, 10), fill=rgba(BR[2]))
+    d.arc((42, 4, 54, 15), 20, 160, fill=rgba(BR[3]))
     return contour(im)
 
 

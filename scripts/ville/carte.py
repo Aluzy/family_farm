@@ -623,8 +623,8 @@ def objets(c):
     for n, (x, y) in enumerate(etals()):
         mob.colle(E.etal(couleurs_etal[n % 5], n), x * T, y * T)
     # le monument, les jeux d'enfants
-    # (au milieu de la place : le milieu de ses degrés, 82 px sous le haut de l'image, au milieu des dalles)
-    mob.colle(E.statue(), 80 * T + 8 - 48, round(171.5 * T) - 82)
+    # (au milieu des dalles de la place : le milieu du dessus de son premier degré)
+    mob.colle(E.statue(), 80 * T + 8 - 48, round(171.5 * T) - 79)
     mob.colle(E.toboggan(), 127 * T, 189 * T)
     mob.colle(E.toboggan(), 137 * T, 196 * T)
     mob.colle(E.balancoire(), 132 * T, 188 * T)
