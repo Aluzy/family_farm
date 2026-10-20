@@ -44,6 +44,7 @@
   const PAS = 4;                           // px par image de marche
   const GESTE = 1.2;                       // s : le second adulte se baisse au Poulailler, à l'Étable
   const REPOS = 3;                         // s avant de chercher autre chose à faire
+  const ENFANT_DY = 4;                     // px : un enfant couché est remonté d'autant (il est plus petit)
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -112,7 +113,8 @@
     // Il se couche dans son lit `L` (o.lit) : debout entre le lit et sa couverture.
     function coucher(m, L) {
       m.couche = L; m.ou = 'lit'; m.chemin = []; m.puis = null; m.tache = null;
-      m.x = L.x; m.y = L.y; m.face = 'bas'; m.flip = false;
+      // (un enfant est plus petit, ENFANT_RANGEES de scripts/personnage/chibi.py : remonté, la tête sur l'oreiller)
+      m.x = L.x; m.y = L.y - (m.enfant ? ENFANT_DY : 0); m.face = 'bas'; m.flip = false;
       m.visible = true; m.fade = 1;
       if (reduced()) m.alpha = 1;
       if (!m.drap) m.drap = scene.add.image(0, 0, L.drap.key, L.drap.frame).setOrigin(0.5, 1);
@@ -284,9 +286,10 @@
           m.s.setVisible(m.visible && !room);
           if (m.drap) m.drap.setVisible(!!m.couche && !room);
           if (!m.visible || room) continue;
-          // au lit : un souffle lent, juste devant le lit, sous sa couverture
+          // au lit : les yeux fermés, un souffle lent, juste devant le lit, sous sa couverture
           if (m.couche) {
-            dessiner(m, `idle_bas_${Math.floor(performance.now() / 1600) % 2}`);
+            const n = Math.floor(performance.now() / 1600) % 2;
+            dessiner(m, F[`dort_bas_${n}`] !== undefined ? `dort_bas_${n}` : `idle_bas_${n}`);
             m.s.setDepth(m.couche.depth + 0.1);
             continue;
           }

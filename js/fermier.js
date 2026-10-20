@@ -842,6 +842,12 @@
         at: { x: Math.round(b.x), y: Math.min(top + BED_FEET, b.y - 1) },
       };
     }
+    // La case de celui qui dort depuis `t` s : les yeux fermés (dort_bas_*, les planches
+    // d'avant : debout), un souffle lent.
+    function dortCase(t) {
+      const n = Math.floor(t / (BREATH_S * 2)) % 2;
+      return F[`dort_bas_${n}`] !== undefined ? `dort_bas_${n}` : `idle_bas_${n}`;
+    }
     // Il se couche : debout entre le lit et sa couverture, tourné vers nous.
     function lieDown(S, bed) {
       inside.mode = 'lit'; inside.bed = bed.key; inside.sleep = 0; inside.slept = false;
@@ -853,7 +859,7 @@
     function sleepInBed(S, bed, dt) {
       inside.sleep += dt;
       // un souffle lent ; les « Z » montent
-      const k = F[`idle_bas_${Math.floor(inside.sleep / (BREATH_S * 2)) % 2}`];
+      const k = F[dortCase(inside.sleep)];
       if (k !== undefined) S.setFrame(k);
       S.setVisible(true).setAlpha(inside.alpha).setFlipX(false).setPosition(inside.x, inside.y).setDepth(bed.sprite.depth + 0.1);
       if (inside.drap) inside.drap.setAlpha(1);
@@ -1116,7 +1122,7 @@
       couche.t += dt;
       x = L.x; y = L.y; face = 'bas'; flip = false;
       if (!shown) appear();
-      const k = F[`idle_bas_${Math.floor(couche.t / (BREATH_S * 2)) % 2}`];
+      const k = F[dortCase(couche.t)];
       if (k !== undefined) s.setFrame(k);
       s.setVisible(true).setAlpha(alpha).setFlipX(false).setPosition(L.x, L.y).setDepth(L.depth + 0.1);
       if (!drapDehors) drapDehors = scene.add.image(0, 0, L.drap.key, L.drap.frame).setOrigin(0.5, 1);
