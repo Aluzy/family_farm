@@ -566,12 +566,12 @@ function playerGaugesHtml() {
 }
 
 // Carte flottante en haut à droite, en pixel art (assets/hud, scripts/icones/hud.py) : un
-// cadran rond où la lune tourne dans sa rainure au fil de la lunaison (data/crops.json LUNE,
+// cadran rond où la lune tourne sur l'anneau au fil de la lunaison (data/crops.json LUNE,
 // 14 jours ; pleine en haut, nouvelle en bas, croissante à gauche, décroissante à droite), avec
 // le dessin de sa phase ; au milieu, le jour (« Jeu. 4 ») et le mois du calendrier lunaire sur
 // un médaillon ; l'heure sur une plaque en bas à droite. Un appui ouvre le Calendrier.
 // L'heure avance par tranches de 10 minutes.
-const CADRAN = { centre: 27.5, rayon: 21.6, lune: 11 }; // en pixels du dessin (cadran.png, lunes.png)
+const CADRAN = { centre: 27.5, rayon: 24, lune: 17 }; // en pixels du dessin (cadran.png, lunes.png)
 function renderHud() {
   const h = heureDuJour();
   const heure = Math.floor(h);

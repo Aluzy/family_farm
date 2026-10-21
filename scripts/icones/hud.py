@@ -12,10 +12,10 @@
 #                sens des aiguilles d'une montre depuis le haut) ;
 #   piece.png    l'argent, posé sur le bout gauche de sa pastille.
 # La carte de droite (renderHud) :
-#   cadran.png   le cadran rond (56 × 56) : un anneau de bois, la rainure où tourne la lune
+#   cadran.png   le cadran rond (56 × 56) : un anneau de bois, sur lequel tourne la lune
 #                (rayon RAINURE), le fond crème ;
 #   medaillon.png le médaillon ovale du jour et du mois (38 × 22), au milieu du cadran ;
-#   lunes.png    la lune, 14 cases de 11 × 11 : une par jour de la lunaison (data/crops.json
+#   lunes.png    la lune, 14 cases de 17 × 17 : une par jour de la lunaison (data/crops.json
 #                LUNE : croissante du jour 1 au 5, pleine les 6 et 7, décroissante du 8 au 12,
 #                nouvelle les 13 et 14).
 #
@@ -199,12 +199,12 @@ def anneau(pct):
     return im
 
 
-CADRAN, RAINURE = 56, 22
+CADRAN, RAINURE, LUNE = 56, 24, 17
 
 
 def cadran():
-    """Le cadran : contour, anneau de bois (reflet en haut à gauche), la rainure sombre de la
-    lune, un filet clair, le fond crème."""
+    """Le cadran : contour, anneau de bois (reflet en haut à gauche), un filet en creux, le
+    fond crème. La lune tourne à cheval sur l'anneau (rayon RAINURE)."""
     S = CADRAN
     c = (S - 1) / 2
     im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
@@ -218,15 +218,11 @@ def cadran():
                 col = PAL['o']
             elif d > 25.6:
                 col = PAL['h'] if haut else PAL['w']
-            elif d > 23.6:
+            elif d > 22.6:
                 col = PAL['m']
-            elif d > 22.6 + 1.0:
+            elif d > 21.6:
                 col = PAL['o']
-            elif d > RAINURE - 1.4:
-                col = '#2c2440'
-            elif d > RAINURE - 2.4:
-                col = PAL['o']
-            elif d > RAINURE - 3.4:
+            elif d > 20.6:
                 col = PAL['w'] if haut else PAL['h']
             else:
                 col = '#ffe6b2'
@@ -257,11 +253,11 @@ def medaillon():
 
 
 def lune(p):
-    """La lune (11 × 11) à l'âge p de la lunaison (0 : nouvelle, 0,5 : pleine) : éclairée à
+    """La lune (17 × 17) à l'âge p de la lunaison (0 : nouvelle, 0,5 : pleine) : éclairée à
     droite quand elle croît, à gauche quand elle décroît ; la part sombre reste visible."""
-    S = 11
+    S = LUNE
     c = (S - 1) / 2
-    r = 5.4
+    r = 8.4
     cosp = math.cos(2 * math.pi * p)
     im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     for y in range(S):
@@ -276,8 +272,8 @@ def lune(p):
             u = (x - c) / demi
             eclaire = u > cosp if p <= 0.5 else u < -math.cos(2 * math.pi * p)
             if eclaire:
-                col = '#fff6c8' if (x - c) + (y - c) < -3 else ('#d8c47a' if (x - c) + (y - c) > 3 else '#f2e29a')
-                if (x, y) in ((3, 6), (6, 3), (7, 7)):
+                col = '#fff6c8' if (x - c) + (y - c) < -5 else ('#d8c47a' if (x - c) + (y - c) > 5 else '#f2e29a')
+                if (x, y) in ((5, 9), (6, 9), (9, 5), (10, 11), (11, 11), (11, 10)):
                     col = '#d8c47a'                     # des cratères
             else:
                 col = '#3a3658'
@@ -297,9 +293,9 @@ def images():
     out['anneau'] = bande
     out['cadran'] = cadran()
     out['medaillon'] = medaillon()
-    lunes = Image.new('RGBA', (11 * 14, 11), (0, 0, 0, 0))
+    lunes = Image.new('RGBA', (LUNE * 14, LUNE), (0, 0, 0, 0))
     for k in range(14):
-        lunes.paste(lune(((k + 1.5) / 14) % 1), (11 * k, 0))
+        lunes.paste(lune(((k + 1.5) / 14) % 1), (LUNE * k, 0))
     out['lunes'] = lunes
     return out
 

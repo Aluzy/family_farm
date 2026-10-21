@@ -1853,7 +1853,7 @@ main .ancre { scroll-margin-top: 150px; }
 /* ---------- Carte flottante en haut à droite : le cadran de la lune, le jour, l'heure ----------
    Sur tous les écrans, au-dessus de la carte de la ferme et sous les fenêtres (window-layer,
    modal-root). En pixel art (assets/hud), à la taille --hp de la carte du joueur : le cadran
-   (56 × 56), la lune (11 × 11, 14 cases de lunes.png) posée dans sa rainure (--lx, --ly en
+   (56 × 56), la lune (17 × 17, 14 cases de lunes.png) posée sur son anneau (--lx, --ly en
    pixels du dessin, --lf sa case), le médaillon ovale (38 × 22) du jour et du mois, la plaque
    de l'heure en bas à droite. */
 .hud {
@@ -1870,6 +1870,7 @@ main .ancre { scroll-margin-top: 150px; }
   display: block;
   width: calc(56 * var(--hp));
   height: calc(56 * var(--hp));
+  margin: calc(5 * var(--hp)) calc(5 * var(--hp)) 0 0; /* la lune dépasse du cadran en haut et à droite */
   padding: 0;
   border: 0;
   background: url('../assets/hud/cadran.png') no-repeat 0 0 / 100% 100%;
@@ -1884,11 +1885,11 @@ main .ancre { scroll-margin-top: 150px; }
   position: absolute;
   left: calc(var(--lx) * var(--hp));
   top: calc(var(--ly) * var(--hp));
-  width: calc(11 * var(--hp));
-  height: calc(11 * var(--hp));
+  width: calc(17 * var(--hp));
+  height: calc(17 * var(--hp));
   background: url('../assets/hud/lunes.png') no-repeat;
-  background-size: calc(154 * var(--hp)) 100%;
-  background-position: calc(var(--lf) * -11 * var(--hp)) 0;
+  background-size: calc(238 * var(--hp)) 100%;
+  background-position: calc(var(--lf) * -17 * var(--hp)) 0;
   image-rendering: pixelated;
 }
 .hud-medaillon {
